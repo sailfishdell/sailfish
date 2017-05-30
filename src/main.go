@@ -21,9 +21,33 @@ func main() {
 	logger = log.NewLogfmtLogger(os.Stderr)
 	logger = log.With(logger, "listen", *listen, "caller", log.DefaultCaller)
 
+/*
+    // START prometheus metrics
+    fieldKeys := []string{"method", "error"}
+    requestCount := kitprometheus.NewCounterFrom(stdprometheus.CounterOpts{
+        Namespace: "redfish_group",
+        Subsystem: "redfish_service",
+        Name:      "request_count",
+        Help:      "Number of requests received.",
+    }, fieldKeys)
+    requestLatency := kitprometheus.NewSummaryFrom(stdprometheus.SummaryOpts{
+        Namespace: "redfish_group",
+        Subsystem: "redfish_service",
+        Name:      "request_latency_microseconds",
+        Help:      "Total duration of requests in microseconds.",
+    }, fieldKeys)
+    countResult := kitprometheus.NewSummaryFrom(stdprometheus.SummaryOpts{
+        Namespace: "redfish_group",
+        Subsystem: "redfish_service",
+        Name:      "count_result",
+        Help:      "The result of each count method.",
+    }, []string{})
+    // END prometheus metrics
+*/
+
 	var svc RedfishService
 	svc = NewService(*rootpath, logger)
-
+    svc = NewLoggingService(log.With(logger, "foo", "bar"), svc)
 	redfishHandler := httptransport.NewServer(
 		makeRedfishEndpoint(svc),
 		decodeRedfishRequest,
