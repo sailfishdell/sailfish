@@ -8,6 +8,7 @@ import (
 
 	"github.com/go-kit/kit/log"
 	httptransport "github.com/go-kit/kit/transport/http"
+    "github.com/gorilla/mux"
 )
 
 func main() {
@@ -30,7 +31,10 @@ func main() {
 		encodeResponse,
 	)
 
-	http.Handle("/redfish/v1", redfishHandler)
+    r := mux.NewRouter()
+	r.PathPrefix("/redfish/v1/").Handler(http.StripPrefix("/redfish/v1/", redfishHandler))
+
+	http.Handle("/", r)
 	logger.Log("msg", "HTTP", "addr", *listen)
 	logger.Log("err", http.ListenAndServe(*listen, nil))
 }
