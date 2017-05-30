@@ -5,16 +5,15 @@ import (
 	"net/http"
 	"os"
 
-
 	"github.com/go-kit/kit/log"
 	httptransport "github.com/go-kit/kit/transport/http"
-    "github.com/gorilla/mux"
+	"github.com/gorilla/mux"
 )
 
 func main() {
 	var (
-		listen = flag.String("listen", ":8080", "HTTP listen address")
-	    rootpath = flag.String("root", "serve", "base path from which to serve redfish data templates")
+		listen   = flag.String("listen", ":8080", "HTTP listen address")
+		rootpath = flag.String("root", "serve", "base path from which to serve redfish data templates")
 	)
 	flag.Parse()
 
@@ -31,7 +30,7 @@ func main() {
 		encodeResponse,
 	)
 
-    r := mux.NewRouter()
+	r := mux.NewRouter()
 	r.PathPrefix("/redfish/v1/").Handler(http.StripPrefix("/redfish/v1/", redfishHandler))
 
 	http.Handle("/", r)

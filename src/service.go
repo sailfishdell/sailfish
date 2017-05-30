@@ -1,14 +1,14 @@
 package main
 
 import (
+	"bytes"
 	"github.com/go-kit/kit/log"
+	"net/http"
 	"os"
 	"path"
+	"strings"
 	"sync"
 	"text/template"
-    "net/http"
-    "strings"
-    "bytes"
 )
 
 type RedfishService interface {
@@ -54,23 +54,23 @@ func NewService(rootPath string, logger log.Logger) RedfishService {
 type ServiceMiddleware func(RedfishService) RedfishService
 
 func (rh *redfishService) GetRedfish(r *http.Request) ([]byte, error) {
-    templateName := r.URL.Path + "/index.json"
-    templateName = strings.Replace(templateName, "/", "_", -1)
-    if strings.HasPrefix(templateName, "_") {
-        templateName = templateName[1:]
-    }
-    if strings.HasPrefix(templateName, "redfish_v1_") {
-        templateName = templateName[len("redfish_v1_"):]
-    }
+	templateName := r.URL.Path + "/index.json"
+	templateName = strings.Replace(templateName, "/", "_", -1)
+	if strings.HasPrefix(templateName, "_") {
+		templateName = templateName[1:]
+	}
+	if strings.HasPrefix(templateName, "redfish_v1_") {
+		templateName = templateName[len("redfish_v1_"):]
+	}
 
-    rh.logger.Log("Template_Start", templateName)
-    defer rh.logger.Log("Template_Done", templateName)
+	rh.logger.Log("Template_Start", templateName)
+	defer rh.logger.Log("Template_Done", templateName)
 
-    rh.templateLock.RLock()
-    defer rh.templateLock.RUnlock()
-    buf := new(bytes.Buffer)
-    rh.templates.ExecuteTemplate(buf, templateName, nil)
-    return buf.Bytes(), nil
+	rh.templateLock.RLock()
+	defer rh.templateLock.RUnlock()
+	buf := new(bytes.Buffer)
+	rh.templates.ExecuteTemplate(buf, templateName, nil)
+	return buf.Bytes(), nil
 }
 
 func (rh *redfishService) PutRedfish(string) ([]byte, error) {
