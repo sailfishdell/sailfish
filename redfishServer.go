@@ -9,6 +9,8 @@ import (
     "strings"
     "sync"
     "github.com/go-kit/kit/log"
+    "os/signal"
+    "syscall"
 
     stdprometheus "github.com/prometheus/client_golang/prometheus"
     "github.com/prometheus/client_golang/prometheus/promhttp"
@@ -54,7 +56,7 @@ type loggingMW struct {
 func main() {
     var (
         listen = flag.String("listen", ":8080", "HTTP listen address")
-	    rootpath = flag.String("root", "serve", "base path from which to serve redfish data templates")
+	    rootpath string = flag.String("root", "serve", "base path from which to serve redfish data templates")
     )
 	flag.Parse()
 
@@ -107,7 +109,7 @@ func main() {
         for {
         <-s
         loadConfig(true)
-        log.Println("Reloaded")
+        logger.Log("msg", "Reloaded")
         }
     }()
 
