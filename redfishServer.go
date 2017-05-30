@@ -2,27 +2,35 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"net/http"
 	"os"
 	"path"
 	"text/template"
     "strings"
+    "sync"
+    "github.com/go-kit/kit/log"
+
+    stdprometheus "github.com/prometheus/client_golang/prometheus"
+    "github.com/prometheus/client_golang/prometheus/promhttp"
+    kitprometheus "github.com/go-kit/kit/metrics/prometheus"
 
 	"github.com/gorilla/mux"
 )
 
 type redfishHandler struct {
 	root string
-    thisTmpl *template.Template
+    templateLock sync.RWMutex
+    templates *template.Template
+    logger log.Logger
 }
 
 func (rh *redfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-    ctx := r.Context()
-    fmt.Fprintf(os.Stdout, "context: %s\n", ctx)
-    fmt.Fprintf(os.Stdout, "vars: %s\n", vars)
-	fmt.Fprintf(os.Stdout, "Serving URL: %s\n", r.URL.Path)
+    // ctx := r.Context()
+	// vars := mux.Vars(r)
+    // rh.logger.Log( "context", ctx )
+    // rh.logger.Log( "vars", vars )
+
+    rh.logger.Log( "URL", r.URL.Path )
 
     templateName := r.URL.Path + "/index.json"
     templateName = strings.Replace(templateName, "/", "_", -1)
@@ -30,33 +38,86 @@ func (rh *redfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
         templateName = templateName[1:]
     }
 
-    fmt.Fprintf(os.Stdout, "Executing template: %s\n", templateName)
+    rh.logger.Log("Template_Start", templateName)
+    defer rh.logger.Log("Template_Done", templateName)
 
-	rh.thisTmpl.ExecuteTemplate(w, templateName, nil)
+    rh.templateLock.RLock()
+    defer rh.templateLock.RUnlock()
+	rh.templates.ExecuteTemplate(w, templateName, nil)
+}
 
-	fmt.Fprintf(os.Stdout, "done executing\n")
+type loggingMW struct {
+    logger log.Logger
 }
 
 
 func main() {
-	var rootpath = flag.String("root", "serve", "help message")
+    var (
+        listen = flag.String("listen", ":8080", "HTTP listen address")
+	    rootpath = flag.String("root", "serve", "base path from which to serve redfish data templates")
+    )
 	flag.Parse()
 
-    templatePath :=  path.Join(*rootpath, "*.json")
-    fmt.Fprintf(os.Stdout, "the path is %s\n", templatePath )
+    logger := log.NewLogfmtLogger(log.NewSyncWriter(os.Stdout))
+    logger = log.With(logger, "ts", log.DefaultTimestampUTC, "caller", log.DefaultCaller, "listen", *listen)
 
-    rh := &redfishHandler{root: *rootpath, thisTmpl: nil}
 
-    loadConfig := func(canFail bool) {
-        tempTemplate := template.Must(template.New("the template").ParseGlob(templatePath))
-        rh.thisTmpl = tempTemplate
+    fieldKeys := []string{"method", "error"}
+    requestCount := kitprometheus.NewCounterFrom(stdprometheus.CounterOpts{
+        Namespace: "redfish_group",
+        Subsystem: "redfish_service",
+        Name:      "request_count",
+        Help:      "Number of requests received.",
+    }, fieldKeys)
+    requestLatency := kitprometheus.NewSummaryFrom(stdprometheus.SummaryOpts{
+        Namespace: "redfish_group",
+        Subsystem: "redfish_service",
+        Name:      "request_latency_microseconds",
+        Help:      "Total duration of requests in microseconds.",
+    }, fieldKeys)
+    countResult := kitprometheus.NewSummaryFrom(stdprometheus.SummaryOpts{
+        Namespace: "redfish_group",
+        Subsystem: "redfish_service",
+        Name:      "count_result",
+        Help:      "The result of each count method.",
+    }, []string{})
+
+    logger.Log("reqC", requestCount, "reqL", requestLatency, "countR", countResult)
+
+    var rh *redfishHandler
+    rh = &redfishHandler{root: *rootpath, templates: nil, logger: logger}
+
+    loadConfig := func(exitOnErr bool) {
+        templatePath :=  path.Join(*rootpath, "*.json")
+        logger.Log("path", templatePath )
+        tempTemplate, err := template.New("the template").ParseGlob(templatePath)
+        if err != nil {
+            logger.Log("Fatal error parsing template", err)
+            if exitOnErr { os.Exit(1) }
+        }
+        rh.templateLock.Lock()
+        rh.templates = tempTemplate
+        rh.templateLock.Unlock()
     }
 
     loadConfig(false)
+    s := make(chan os.Signal, 1)
+    signal.Notify(s, syscall.SIGUSR2)
+    go func() {
+        for {
+        <-s
+        loadConfig(true)
+        log.Println("Reloaded")
+        }
+    }()
 
 	r := mux.NewRouter()
 	r.PathPrefix("/redfish/v1/").Handler(http.StripPrefix("/redfish/v1/", rh))
 
+
+    http.Handle("/metrics", promhttp.Handler())
 	http.Handle("/", r)
-	http.ListenAndServe(":8080", nil)
+
+    logger.Log("msg", "starting HTTP", "addr", *listen)
+    logger.Log("err", http.ListenAndServe(*listen, nil))
 }
