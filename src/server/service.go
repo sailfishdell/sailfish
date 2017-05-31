@@ -28,12 +28,16 @@ type redfishService struct {
 }
 
 func NewService(logger Logger, templatesDir string, pluginName string) RedfishService {
+    var err error
 	rh := &redfishService{root: templatesDir}
 
-	loadConfig := func(exitOnErr bool) {
+	rh.loadConfig = func(exitOnErr bool) {
 		templatePath := path.Join(templatesDir, "*.json")
 		logger.Log("msg", "Loading config from path", "path", templatePath)
-		tempTemplate, err := template.New("the template").ParseGlob(templatePath)
+		tempTemplate := template.New("the template")
+        tempTemplate.Funcs(funcMap)
+        tempTemplate, err = tempTemplate.ParseGlob(templatePath)
+
 		if err != nil {
 			logger.Log("msg", "Fatal error parsing template", "err", err)
 			if exitOnErr {
@@ -45,7 +49,7 @@ func NewService(logger Logger, templatesDir string, pluginName string) RedfishSe
 		rh.templateLock.Unlock()
 	}
 
-	loadConfig(false)
+	rh.loadConfig(false)
 
 	return rh
 }
