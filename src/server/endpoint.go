@@ -63,46 +63,39 @@ func makeDeleteRedfishEndpoint(s RedfishService) endpoint.Endpoint {
 	}
 }
 
-// probably a better way to do this instead of hardcoding stuff here
 func NewRedfishHandler(svc RedfishService, r *mux.Router) {
-	getHandler := httptransport.NewServer(
-		makeGetRedfishEndpoint(svc),
-		decodeRedfishRequest,
-		encodeResponse,
-	)
+	r.PathPrefix("/redfish/v1/").Methods("GET").Handler(
+		httptransport.NewServer(
+			makeGetRedfishEndpoint(svc),
+			decodeRedfishRequest,
+			encodeResponse,
+		))
 
-	r.PathPrefix("/redfish/v1/").Handler(http.StripPrefix("/redfish/v1/", getHandler)).Methods("GET")
+	r.PathPrefix("/redfish/v1/").Methods("PUT").Handler(
+		httptransport.NewServer(
+			makePutRedfishEndpoint(svc),
+			decodeRedfishRequest,
+			encodeResponse,
+		))
 
-	putHandler := httptransport.NewServer(
-		makePutRedfishEndpoint(svc),
-		decodeRedfishRequest,
-		encodeResponse,
-	)
+	r.PathPrefix("/redfish/v1/").Methods("POST").Handler(
+		httptransport.NewServer(
+			makePostRedfishEndpoint(svc),
+			decodeRedfishRequest,
+			encodeResponse,
+		))
 
-	r.PathPrefix("/redfish/v1/").Handler(http.StripPrefix("/redfish/v1/", putHandler)).Methods("PUT")
+	r.PathPrefix("/redfish/v1/").Methods("PATCH").Handler(
+		httptransport.NewServer(
+			makePatchRedfishEndpoint(svc),
+			decodeRedfishRequest,
+			encodeResponse,
+		))
 
-	postHandler := httptransport.NewServer(
-		makePostRedfishEndpoint(svc),
-		decodeRedfishRequest,
-		encodeResponse,
-	)
-
-	r.PathPrefix("/redfish/v1/").Handler(http.StripPrefix("/redfish/v1/", postHandler)).Methods("POST")
-
-	patchHandler := httptransport.NewServer(
-		makePatchRedfishEndpoint(svc),
-		decodeRedfishRequest,
-		encodeResponse,
-	)
-
-	r.PathPrefix("/redfish/v1/").Handler(http.StripPrefix("/redfish/v1/", patchHandler)).Methods("PATCH")
-
-	deleteHandler := httptransport.NewServer(
-		makeDeleteRedfishEndpoint(svc),
-		decodeRedfishRequest,
-		encodeResponse,
-	)
-
-	r.PathPrefix("/redfish/v1/").Handler(http.StripPrefix("/redfish/v1/", deleteHandler)).Methods("DELETE")
-
+	r.PathPrefix("/redfish/v1/").Methods("DELETE").Handler(
+		httptransport.NewServer(
+			makeDeleteRedfishEndpoint(svc),
+			decodeRedfishRequest,
+			encodeResponse,
+		))
 }
