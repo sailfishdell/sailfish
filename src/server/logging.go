@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/go-kit/kit/log"
+	"github.com/google/uuid"
 )
 
 type Logger interface {
@@ -57,7 +58,7 @@ func (s *loggingService) GetRedfish(ctx context.Context, r *http.Request) (ret [
 			"err", err,
 		)
 	}(time.Now())
-	return s.RedfishService.GetRedfish(WithLogger(ctx, log.With(s.logger, "method", r.Method, "URL", r.URL.Path)), r)
+	return s.RedfishService.GetRedfish(WithLogger(ctx, log.With(s.logger, "method", r.Method, "URL", r.URL.Path, "UUID", uuid.New())), r)
 }
 
 func (s *loggingService) PutRedfish(ctx context.Context, r *http.Request) (ret []byte, err error) {
@@ -69,7 +70,7 @@ func (s *loggingService) PutRedfish(ctx context.Context, r *http.Request) (ret [
 			"err", err,
 		)
 	}(time.Now())
-	return s.RedfishService.PutRedfish(ctx, r)
+	return s.RedfishService.PutRedfish(WithLogger(ctx, log.With(s.logger, "method", r.Method, "URL", r.URL.Path, "UUID", uuid.New())), r)
 }
 
 func (s *loggingService) PatchRedfish(ctx context.Context, r *http.Request) (ret []byte, err error) {
@@ -81,7 +82,7 @@ func (s *loggingService) PatchRedfish(ctx context.Context, r *http.Request) (ret
 			"err", err,
 		)
 	}(time.Now())
-	return s.RedfishService.PatchRedfish(ctx, r)
+	return s.RedfishService.PatchRedfish(WithLogger(ctx, log.With(s.logger, "method", r.Method, "URL", r.URL.Path, "UUID", uuid.New())), r)
 }
 
 func (s *loggingService) PostRedfish(ctx context.Context, r *http.Request) (ret []byte, err error) {
@@ -93,7 +94,7 @@ func (s *loggingService) PostRedfish(ctx context.Context, r *http.Request) (ret 
 			"err", err,
 		)
 	}(time.Now())
-	return s.RedfishService.PostRedfish(ctx, r)
+	return s.RedfishService.PostRedfish(WithLogger(ctx, log.With(s.logger, "method", r.Method, "URL", r.URL.Path, "UUID", uuid.New())), r)
 }
 
 func (s *loggingService) DeleteRedfish(ctx context.Context, r *http.Request) (ret []byte, err error) {
@@ -105,5 +106,5 @@ func (s *loggingService) DeleteRedfish(ctx context.Context, r *http.Request) (re
 			"err", err,
 		)
 	}(time.Now())
-	return s.RedfishService.DeleteRedfish(ctx, r)
+	return s.RedfishService.DeleteRedfish(WithLogger(ctx, log.With(s.logger, "method", r.Method, "URL", r.URL.Path, "UUID", uuid.New())), r)
 }
