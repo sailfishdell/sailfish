@@ -13,10 +13,10 @@ import (
 
 type RedfishService interface {
 	GetRedfish(r *http.Request) ([]byte, error)
-	PutRedfish(string) ([]byte, error)
-	PostRedfish(string) ([]byte, error)
-	PatchRedfish(string) ([]byte, error)
-	DeleteRedfish(string) ([]byte, error)
+	PutRedfish(r *http.Request) ([]byte, error)
+	PostRedfish(r *http.Request) ([]byte, error)
+	PatchRedfish(r *http.Request) ([]byte, error)
+	DeleteRedfish(r *http.Request) ([]byte, error)
 }
 
 type redfishService struct {
@@ -73,15 +73,15 @@ func (rh *redfishService) GetRedfish(r *http.Request) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func (rh *redfishService) PutRedfish(string) ([]byte, error) {
+func (rh *redfishService) PutRedfish(r *http.Request) ([]byte, error) {
 	return []byte(""), nil
 }
-func (rh *redfishService) PostRedfish(string) ([]byte, error) {
+func (rh *redfishService) PostRedfish(r *http.Request) ([]byte, error) {
 	return []byte(""), nil
 }
-func (rh *redfishService) PatchRedfish(string) ([]byte, error) {
+func (rh *redfishService) PatchRedfish(r *http.Request) ([]byte, error) {
 	return []byte(""), nil
 }
-func (rh *redfishService) DeleteRedfish(string) ([]byte, error) {
+func (rh *redfishService) DeleteRedfish(r *http.Request) ([]byte, error) {
 	return []byte(""), nil
 }

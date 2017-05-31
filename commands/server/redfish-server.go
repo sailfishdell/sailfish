@@ -4,13 +4,11 @@ import (
 	"flag"
 	"net/http"
 	"os"
-
 	"github.com/go-kit/kit/log"
 	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
 	"github.com/gorilla/mux"
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-
     "github.com/superchalupa/go-redfish/src/server"
 )
 
@@ -29,7 +27,7 @@ func main() {
 	svc = server.NewService(*rootpath, logger)
 	svc = server.NewLoggingService(log.With(logger, "foo", "bar"), svc)
 
-	fieldKeys := []string{"method"}
+	fieldKeys := []string{"method", "URL"}
 	svc = server.NewInstrumentingService(
 		kitprometheus.NewCounterFrom(stdprometheus.CounterOpts{
 			Namespace: "redfish",
@@ -46,10 +44,8 @@ func main() {
 		svc,
 	)
 
-	redfishHandler := server.NewRedfishHandler(svc)
-    
 	r := mux.NewRouter()
-	r.PathPrefix("/redfish/v1/").Handler(http.StripPrefix("/redfish/v1/", redfishHandler))
+	server.NewRedfishHandler(svc, r)
 
 	http.Handle("/", r)
 	http.Handle("/metrics", promhttp.Handler())
