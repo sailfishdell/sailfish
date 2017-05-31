@@ -9,14 +9,15 @@ import (
 	"strings"
 	"sync"
 	"text/template"
+    "context"
 )
 
 type RedfishService interface {
-	GetRedfish(r *http.Request) ([]byte, error)
-	PutRedfish(r *http.Request) ([]byte, error)
-	PostRedfish(r *http.Request) ([]byte, error)
-	PatchRedfish(r *http.Request) ([]byte, error)
-	DeleteRedfish(r *http.Request) ([]byte, error)
+	GetRedfish(ctx context.Context, r *http.Request) ([]byte, error)
+	PutRedfish(ctx context.Context, r *http.Request) ([]byte, error)
+	PostRedfish(ctx context.Context, r *http.Request) ([]byte, error)
+	PatchRedfish(ctx context.Context, r *http.Request) ([]byte, error)
+	DeleteRedfish(ctx context.Context, r *http.Request) ([]byte, error)
 }
 
 type redfishService struct {
@@ -53,7 +54,7 @@ func NewService(rootPath string, logger log.Logger) RedfishService {
 // ServiceMiddleware is a chainable behavior modifier for RedfishService.
 type ServiceMiddleware func(RedfishService) RedfishService
 
-func (rh *redfishService) GetRedfish(r *http.Request) ([]byte, error) {
+func (rh *redfishService) GetRedfish(ctx context.Context, r *http.Request) ([]byte, error) {
 	templateName := r.URL.Path + "/index.json"
 	templateName = strings.Replace(templateName, "/", "_", -1)
 	if strings.HasPrefix(templateName, "_") {
@@ -73,15 +74,15 @@ func (rh *redfishService) GetRedfish(r *http.Request) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func (rh *redfishService) PutRedfish(r *http.Request) ([]byte, error) {
+func (rh *redfishService) PutRedfish(ctx context.Context, r *http.Request) ([]byte, error) {
 	return []byte(""), nil
 }
-func (rh *redfishService) PostRedfish(r *http.Request) ([]byte, error) {
+func (rh *redfishService) PostRedfish(ctx context.Context, r *http.Request) ([]byte, error) {
 	return []byte(""), nil
 }
-func (rh *redfishService) PatchRedfish(r *http.Request) ([]byte, error) {
+func (rh *redfishService) PatchRedfish(ctx context.Context, r *http.Request) ([]byte, error) {
 	return []byte(""), nil
 }
-func (rh *redfishService) DeleteRedfish(r *http.Request) ([]byte, error) {
+func (rh *redfishService) DeleteRedfish(ctx context.Context, r *http.Request) ([]byte, error) {
 	return []byte(""), nil
 }

@@ -3,6 +3,7 @@ package server
 import (
 	"net/http"
 	"time"
+    "context"
 
 	"github.com/go-kit/kit/log"
 )
@@ -17,7 +18,7 @@ func NewLoggingService(logger log.Logger, s RedfishService) RedfishService {
 	return &loggingService{logger, s}
 }
 
-func (s *loggingService) GetRedfish(r *http.Request) (ret []byte, err error) {
+func (s *loggingService) GetRedfish(ctx context.Context, r *http.Request) (ret []byte, err error) {
 	defer func(begin time.Time) {
 		s.logger.Log(
 			"method", r.Method,
@@ -26,10 +27,10 @@ func (s *loggingService) GetRedfish(r *http.Request) (ret []byte, err error) {
 			"err", err,
 		)
 	}(time.Now())
-	return s.RedfishService.GetRedfish(r)
+	return s.RedfishService.GetRedfish(ctx, r)
 }
 
-func (s *loggingService) PutRedfish(r *http.Request) (ret []byte, err error) {
+func (s *loggingService) PutRedfish(ctx context.Context, r *http.Request) (ret []byte, err error) {
 	defer func(begin time.Time) {
 		s.logger.Log(
 			"method", r.Method,
@@ -38,10 +39,10 @@ func (s *loggingService) PutRedfish(r *http.Request) (ret []byte, err error) {
 			"err", err,
 		)
 	}(time.Now())
-	return s.RedfishService.PutRedfish(r)
+	return s.RedfishService.PutRedfish(ctx, r)
 }
 
-func (s *loggingService) PatchRedfish(r *http.Request) (ret []byte, err error) {
+func (s *loggingService) PatchRedfish(ctx context.Context, r *http.Request) (ret []byte, err error) {
 	defer func(begin time.Time) {
 		s.logger.Log(
 			"method", r.Method,
@@ -50,10 +51,10 @@ func (s *loggingService) PatchRedfish(r *http.Request) (ret []byte, err error) {
 			"err", err,
 		)
 	}(time.Now())
-	return s.RedfishService.PatchRedfish(r)
+	return s.RedfishService.PatchRedfish(ctx, r)
 }
 
-func (s *loggingService) PostRedfish(r *http.Request) (ret []byte, err error) {
+func (s *loggingService) PostRedfish(ctx context.Context, r *http.Request) (ret []byte, err error) {
 	defer func(begin time.Time) {
 		s.logger.Log(
 			"method", r.Method,
@@ -62,10 +63,10 @@ func (s *loggingService) PostRedfish(r *http.Request) (ret []byte, err error) {
 			"err", err,
 		)
 	}(time.Now())
-	return s.RedfishService.PostRedfish(r)
+	return s.RedfishService.PostRedfish(ctx, r)
 }
 
-func (s *loggingService) DeleteRedfish(r *http.Request) (ret []byte, err error) {
+func (s *loggingService) DeleteRedfish(ctx context.Context, r *http.Request) (ret []byte, err error) {
 	defer func(begin time.Time) {
 		s.logger.Log(
 			"method", r.Method,
@@ -74,5 +75,5 @@ func (s *loggingService) DeleteRedfish(r *http.Request) (ret []byte, err error) 
 			"err", err,
 		)
 	}(time.Now())
-	return s.RedfishService.DeleteRedfish(r)
+	return s.RedfishService.DeleteRedfish(ctx, r)
 }

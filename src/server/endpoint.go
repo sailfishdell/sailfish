@@ -8,12 +8,15 @@ import (
 	"net/http"
 )
 
+// we are basically tied to HTTP, so just pass the request down to the function
+// don't anticipate ever adding grpc or other support here, so this should be fine for now
+// if we do add, we'll have to simply re-work the function parameters.
 func decodeRedfishRequest(_ context.Context, r *http.Request) (interface{}, error) {
-	// import "io/ioutil"
-	//  return ioutil.ReadAll(r.Body)
 	return r, nil
 }
 
+// probably could do something cool with channels and goroutines here so that
+// we dont buffer the entire response, but not worth the effort at this moment
 func encodeResponse(_ context.Context, w http.ResponseWriter, response interface{}) error {
 	s := response.([]byte)
 	w.Write(s)
@@ -23,7 +26,7 @@ func encodeResponse(_ context.Context, w http.ResponseWriter, response interface
 func makeGetRedfishEndpoint(s RedfishService) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(*http.Request)
-		resp, err := s.GetRedfish(req)
+		resp, err := s.GetRedfish(ctx, req)
 		return resp, err
 	}
 }
@@ -31,7 +34,7 @@ func makeGetRedfishEndpoint(s RedfishService) endpoint.Endpoint {
 func makePutRedfishEndpoint(s RedfishService) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(*http.Request)
-		resp, err := s.PutRedfish(req)
+		resp, err := s.PutRedfish(ctx, req)
 		return resp, err
 	}
 }
@@ -39,7 +42,7 @@ func makePutRedfishEndpoint(s RedfishService) endpoint.Endpoint {
 func makePostRedfishEndpoint(s RedfishService) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(*http.Request)
-		resp, err := s.PostRedfish(req)
+		resp, err := s.PostRedfish(ctx, req)
 		return resp, err
 	}
 }
@@ -47,7 +50,7 @@ func makePostRedfishEndpoint(s RedfishService) endpoint.Endpoint {
 func makePatchRedfishEndpoint(s RedfishService) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(*http.Request)
-		resp, err := s.PatchRedfish(req)
+		resp, err := s.PatchRedfish(ctx, req)
 		return resp, err
 	}
 }
@@ -55,7 +58,7 @@ func makePatchRedfishEndpoint(s RedfishService) endpoint.Endpoint {
 func makeDeleteRedfishEndpoint(s RedfishService) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(*http.Request)
-		resp, err := s.DeleteRedfish(req)
+		resp, err := s.DeleteRedfish(ctx, req)
 		return resp, err
 	}
 }
