@@ -3,7 +3,7 @@ package server
 import (
 	"context"
 	"github.com/go-kit/kit/endpoint"
-        httptransport "github.com/go-kit/kit/transport/http"
+	httptransport "github.com/go-kit/kit/transport/http"
 
 	"net/http"
 )
@@ -28,12 +28,10 @@ func makeRedfishEndpoint(s RedfishService) endpoint.Endpoint {
 	}
 }
 
-
-func NewRedfishHandler(svc RedfishService)  *httptransport.Server {
-    return httptransport.NewServer(
-            makeRedfishEndpoint(svc),
-                    decodeRedfishRequest,
-                            encodeResponse,
-                                )
+func NewRedfishHandler(svc RedfishService) *httptransport.Server {
+	return httptransport.NewServer(
+		makeRedfishEndpoint(svc),
+		decodeRedfishRequest,
+		encodeResponse,
+	)
 }
-
