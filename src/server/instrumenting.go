@@ -1,9 +1,9 @@
 package server
 
 import (
+	"context"
 	"net/http"
 	"time"
-    "context"
 
 	"github.com/go-kit/kit/metrics"
 )

@@ -2,14 +2,13 @@ package server
 
 import (
 	"bytes"
-	"github.com/go-kit/kit/log"
+	"context"
 	"net/http"
 	"os"
 	"path"
 	"strings"
 	"sync"
 	"text/template"
-    "context"
 )
 
 type RedfishService interface {
@@ -24,19 +23,18 @@ type redfishService struct {
 	root         string
 	templateLock sync.RWMutex
 	templates    *template.Template
-	logger       log.Logger
 	loadConfig   (bool)
 }
 
-func NewService(rootPath string, logger log.Logger) RedfishService {
-	rh := &redfishService{root: rootPath, logger: logger}
+func NewService(rootPath string, logger Logger) RedfishService {
+	rh := &redfishService{root: rootPath}
 
 	loadConfig := func(exitOnErr bool) {
 		templatePath := path.Join(rootPath, "*.json")
 		logger.Log("path", templatePath)
 		tempTemplate, err := template.New("the template").ParseGlob(templatePath)
 		if err != nil {
-			logger.Log("Fatal error parsing template", err)
+			logger.Log("msg", "Fatal error parsing template", "err", err)
 			if exitOnErr {
 				os.Exit(1)
 			}
@@ -64,8 +62,9 @@ func (rh *redfishService) GetRedfish(ctx context.Context, r *http.Request) ([]by
 		templateName = templateName[len("redfish_v1_"):]
 	}
 
-	rh.logger.Log("Template_Start", templateName)
-	defer rh.logger.Log("Template_Done", templateName)
+	logger := RequestLogger(ctx)
+	logger.Log("Template_Start", templateName)
+	defer logger.Log("Template_Done", templateName)
 
 	rh.templateLock.RLock()
 	defer rh.templateLock.RUnlock()

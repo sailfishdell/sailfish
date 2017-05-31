@@ -2,14 +2,14 @@ package main
 
 import (
 	"flag"
-	"net/http"
-	"os"
 	"github.com/go-kit/kit/log"
 	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
 	"github.com/gorilla/mux"
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-    "github.com/superchalupa/go-redfish/src/server"
+	"github.com/superchalupa/go-redfish/src/server"
+	"net/http"
+	"os"
 )
 
 func main() {
@@ -25,7 +25,7 @@ func main() {
 
 	var svc server.RedfishService
 	svc = server.NewService(*rootpath, logger)
-	svc = server.NewLoggingService(log.With(logger, "foo", "bar"), svc)
+	svc = server.NewLoggingService(logger, svc)
 
 	fieldKeys := []string{"method", "URL"}
 	svc = server.NewInstrumentingService(
