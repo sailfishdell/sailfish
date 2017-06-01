@@ -1,11 +1,11 @@
 package samplebackend
 
 import (
-    "time"
-    "text/template"
+	"text/template"
+	"time"
 )
 
-var funcMap = template.FuncMap {
-    "sleep": func() string { time.Sleep(1 * time.Second); return "slept" },
-    "hello": func() string { return "HELLO WORLD" },
+var funcMap = template.FuncMap{
+	"sleep": func() string { time.Sleep(1 * time.Second); return "slept" },
+	"hello": func() string { return "HELLO WORLD" },
 }

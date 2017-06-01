@@ -4,27 +4,13 @@
     "Name": "Root Service",
     "RedfishVersion": "1.0.2",
     "UUID": " {{- index . "root_UUID" -}} ",
-    "Systems": {
-        "@odata.id": "/redfish/v1/Systems"
+
+{{ range $key, $value := index . "root_links" }}
+    "{{ $key }}": {
+        "@odata.id": "{{ $value }}"
     },
-    "Chassis": {
-        "@odata.id": "/redfish/v1/Chassis"
-    },
-    "Managers": {
-        "@odata.id": "/redfish/v1/Managers"
-    },
-    "Tasks": {
-        "@odata.id": "/redfish/v1/TaskService"
-    },
-    "SessionService": {
-        "@odata.id": "/redfish/v1/SessionService"
-    },
-    "AccountService": {
-        "@odata.id": "/redfish/v1/AccountService"
-    },
-    "EventService": {
-        "@odata.id": "/redfish/v1/EventService"
-    },
+    {{end}}
+
     "Links": {
         "Sessions": {
             "@odata.id": "/redfish/v1/SessionService/Sessions"
@@ -33,5 +19,5 @@
     "Oem": {},
     "@odata.context": "/redfish/v1/$metadata#ServiceRoot",
     {{ index . "odata_self_id" }},
-    {{ index . "redfish_std_copyright"}}
+    {{ index . "odata_std_copyright"}}
 }

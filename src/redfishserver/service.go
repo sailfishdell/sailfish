@@ -24,19 +24,18 @@ type redfishService struct {
 	templates    *template.Template
 	loadConfig   func(bool)
     backendFuncMap template.FuncMap
-    getViewData func(string, string, map[string]string)map[string]string
+    getViewData func(string, string, map[string]string)map[string]interface{}
     mapURLToTemplate func(string) (string, map[string]string)
 }
 
 type Config struct {
     BackendFuncMap template.FuncMap
-    GetViewData func(string, string, map[string]string)map[string]string
+    GetViewData func(string, string, map[string]string)map[string]interface{}
     MapURLToTemplate func(string) (string, map[string]string)
 }
 
-// right now macos doesn't support plugins, so right now main executable
-// configures this and passes it in. Later this will use plugin loading
-// infrastructure
+// right now macos doesn't support plugins, so main executable configures this
+// and passes it in. Later this will use plugin loading infrastructure
 func NewService(logger Logger, templatesDir string, backendConfig Config) RedfishService {
     var err error
 	rh := &redfishService{root: templatesDir, backendFuncMap: backendConfig.BackendFuncMap, getViewData: backendConfig.GetViewData, mapURLToTemplate: backendConfig.MapURLToTemplate}
