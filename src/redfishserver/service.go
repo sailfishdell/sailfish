@@ -1,4 +1,4 @@
-package server
+package redfishserver
 
 import (
 	"bytes"
@@ -24,18 +24,27 @@ type redfishService struct {
 	templateLock sync.RWMutex
 	templates    *template.Template
 	loadConfig   func(bool)
-	pageModel    map[string]interface{}
+    backendFuncMap template.FuncMap
+    getViewData func(string)map[string]string
 }
 
-func NewService(logger Logger, templatesDir string, pluginName string) RedfishService {
+type Config struct {
+    BackendFuncMap template.FuncMap
+    GetViewData func(string)map[string]string
+}
+
+// right now macos doesn't support plugins, so right now main executable
+// configures this and passes it in. Later this will use plugin loading
+// infrastructure
+func NewService(logger Logger, templatesDir string, backendConfig Config) RedfishService {
     var err error
-	rh := &redfishService{root: templatesDir}
+	rh := &redfishService{root: templatesDir, backendFuncMap: backendConfig.BackendFuncMap, getViewData: backendConfig.GetViewData}
 
 	rh.loadConfig = func(exitOnErr bool) {
 		templatePath := path.Join(templatesDir, "*.json")
 		logger.Log("msg", "Loading config from path", "path", templatePath)
 		tempTemplate := template.New("the template")
-        tempTemplate.Funcs(funcMap)
+        tempTemplate.Funcs(rh.backendFuncMap)
         tempTemplate, err = tempTemplate.ParseGlob(templatePath)
 
 		if err != nil {

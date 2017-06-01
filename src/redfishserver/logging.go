@@ -1,4 +1,4 @@
-package server
+package redfishserver
 
 import (
 	"context"

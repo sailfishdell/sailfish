@@ -7,7 +7,8 @@ import (
 	"github.com/gorilla/mux"
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/superchalupa/go-redfish/src/server"
+	"github.com/superchalupa/go-redfish/src/redfishserver"
+	"github.com/superchalupa/go-redfish/src/samplebackend"
 	"net/http"
 	"os"
     "io/ioutil"
@@ -17,7 +18,6 @@ import (
 type AppConfig struct {
     Listen string  `yaml: listen`
     TemplatesDir string `yaml: templatesDir`
-    BackendPluginName string `yaml: backendPluginName`
 }
 
 func loadConfig(filename string) (AppConfig, error) {
@@ -40,7 +40,6 @@ func main() {
 		configFile   = flag.String("config", "app.yaml", "Application configuration file")
 		listen   = flag.String("listen", ":8080", "HTTP listen address")
 		templatesDir = flag.String("templates", "serve", "base path from which to serve redfish data templates")
-		pluginName = flag.String("backendPlugin", "null", "name of the backend plugin")
 	)
 	flag.Parse()
 
@@ -49,17 +48,17 @@ func main() {
 
     appConfig, _:= loadConfig(*configFile)
     if len(*listen) > 0 { appConfig.Listen = *listen }
-    if len(*pluginName) > 0 { appConfig.BackendPluginName = *pluginName }
     if len(*templatesDir) > 0 { appConfig.TemplatesDir = *templatesDir }
 
 	logger = log.With(logger, "listen", *listen, "caller", log.DefaultCaller)
 
-	var svc server.RedfishService
-	svc = server.NewService(logger, appConfig.TemplatesDir, appConfig.BackendPluginName)
-	svc = server.NewLoggingService(logger, svc)
+	var svc redfishserver.RedfishService
+    var backend redfishserver.Config = samplebackend.Config
+	svc = redfishserver.NewService(logger, appConfig.TemplatesDir, backend)
+	svc = redfishserver.NewLoggingService(logger, svc)
 
 	fieldKeys := []string{"method", "URL"}
-	svc = server.NewInstrumentingService(
+	svc = redfishserver.NewInstrumentingService(
 		kitprometheus.NewCounterFrom(stdprometheus.CounterOpts{
 			Namespace: "redfish",
 			Subsystem: "redfish_service",
@@ -76,7 +75,7 @@ func main() {
 	)
 
 	r := mux.NewRouter()
-	server.NewRedfishHandler(svc, r)
+	redfishserver.NewRedfishHandler(svc, r)
 
 	http.Handle("/", r)
 	http.Handle("/metrics", promhttp.Handler())
