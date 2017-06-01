@@ -24,14 +24,14 @@ type redfishService struct {
 	templates    *template.Template
 	loadConfig   func(bool)
     backendFuncMap template.FuncMap
-    getViewData func(string, string, map[string]string)map[string]interface{}
-    mapURLToTemplate func(string) (string, map[string]string)
+    getViewData func(*http.Request, string, map[string]string)map[string]interface{}
+    mapURLToTemplate func(*http.Request) (string, map[string]string, error)
 }
 
 type Config struct {
     BackendFuncMap template.FuncMap
-    GetViewData func(string, string, map[string]string)map[string]interface{}
-    MapURLToTemplate func(string) (string, map[string]string)
+    GetViewData func(*http.Request, string, map[string]string)map[string]interface{}
+    MapURLToTemplate func(*http.Request) (string, map[string]string, error)
 }
 
 // right now macos doesn't support plugins, so main executable configures this
@@ -42,7 +42,7 @@ func NewService(logger Logger, templatesDir string, backendConfig Config) Redfis
 
 	rh.loadConfig = func(exitOnErr bool) {
 		templatePath := path.Join(templatesDir, "*.json")
-		logger.Log("msg", "Loading config from path", "path", templatePath)
+		logger.Log("msg", "Loading templates from path", "path", templatePath)
 		tempTemplate := template.New("the template")
         tempTemplate.Funcs(rh.backendFuncMap)
         tempTemplate, err = tempTemplate.ParseGlob(templatePath)
@@ -67,15 +67,22 @@ func NewService(logger Logger, templatesDir string, backendConfig Config) Redfis
 type ServiceMiddleware func(RedfishService) RedfishService
 
 func (rh *redfishService) GetRedfish(ctx context.Context, r *http.Request) ([]byte, error) {
-	templateName, args := rh.mapURLToTemplate(r.URL.Path)
-
 	logger := RequestLogger(ctx)
+
+	templateName, args, err := rh.mapURLToTemplate(r)
+    if err != nil {
+        logger.Log("error", "Error getting mapping for URL", "url", r.URL.Path)
+        return nil, err
+    }
+
 	logger.Log("templatename", templateName)
+	logger.Log("defined_templates", rh.templates.DefinedTemplates())
 
 	rh.templateLock.RLock()
 	defer rh.templateLock.RUnlock()
+
 	buf := new(bytes.Buffer)
-    viewData := rh.getViewData(r.URL.Path, templateName, args)
+    viewData := rh.getViewData(r, templateName, args)
 	rh.templates.ExecuteTemplate(buf, templateName, viewData)
 	return buf.Bytes(), nil
 }

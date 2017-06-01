@@ -1,11 +1,17 @@
 {
     "@odata.type": "#ComputerSystemCollection.ComputerSystemCollection",
     "Name": "Computer System Collection",
-    "Members@odata.count": 1,
+    "Members@odata.count": {{index . "systems" | len}},
     "Members": [
-        {
-            "@odata.id": "/redfish/v1/Systems/437XR1138R2"
-        }
+
+// TODO: missing comma between elements
+
+{{ range $key, $value := index . "systems" }}
+    {
+        "@odata.id": "/redfish/v1/Systems/{{- $key -}}"
+    }
+{{end}}
+
     ],
     "@odata.context": "/redfish/v1/$metadata#Systems",
     {{ index . "odata_self_id" }},

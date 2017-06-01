@@ -9,7 +9,7 @@
     "{{ $key }}": {
         "@odata.id": "{{ $value }}"
     },
-    {{end}}
+{{end}}
 
     "Links": {
         "Sessions": {
@@ -19,5 +19,5 @@
     "Oem": {},
     "@odata.context": "/redfish/v1/$metadata#ServiceRoot",
     {{ index . "odata_self_id" }},
-    {{ index . "odata_std_copyright"}}
+    {{ index . "redfish_std_copyright"}}
 }
