@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"os"
 	"path"
-	"strings"
 	"sync"
 	"text/template"
 )
@@ -25,12 +24,14 @@ type redfishService struct {
 	templates    *template.Template
 	loadConfig   func(bool)
     backendFuncMap template.FuncMap
-    getViewData func(string)map[string]string
+    getViewData func(string, string, map[string]string)map[string]string
+    mapURLToTemplate func(string) (string, map[string]string)
 }
 
 type Config struct {
     BackendFuncMap template.FuncMap
-    GetViewData func(string)map[string]string
+    GetViewData func(string, string, map[string]string)map[string]string
+    MapURLToTemplate func(string) (string, map[string]string)
 }
 
 // right now macos doesn't support plugins, so right now main executable
@@ -38,7 +39,7 @@ type Config struct {
 // infrastructure
 func NewService(logger Logger, templatesDir string, backendConfig Config) RedfishService {
     var err error
-	rh := &redfishService{root: templatesDir, backendFuncMap: backendConfig.BackendFuncMap, getViewData: backendConfig.GetViewData}
+	rh := &redfishService{root: templatesDir, backendFuncMap: backendConfig.BackendFuncMap, getViewData: backendConfig.GetViewData, mapURLToTemplate: backendConfig.MapURLToTemplate}
 
 	rh.loadConfig = func(exitOnErr bool) {
 		templatePath := path.Join(templatesDir, "*.json")
@@ -63,23 +64,11 @@ func NewService(logger Logger, templatesDir string, backendConfig Config) Redfis
 	return rh
 }
 
-func getViewData(rh *redfishService, templateName string) interface{} {
-    return nil
-}
-
 // ServiceMiddleware is a chainable behavior modifier for RedfishService.
 type ServiceMiddleware func(RedfishService) RedfishService
 
 func (rh *redfishService) GetRedfish(ctx context.Context, r *http.Request) ([]byte, error) {
-	templateName := r.URL.Path + "/index.json"
-	templateName = strings.Replace(templateName, "//", "/", -1)
-	templateName = strings.Replace(templateName, "/", "_", -1)
-	if strings.HasPrefix(templateName, "_") {
-		templateName = templateName[1:]
-	}
-	if strings.HasPrefix(templateName, "redfish_v1_") {
-		templateName = templateName[len("redfish_v1_"):]
-	}
+	templateName, args := rh.mapURLToTemplate(r.URL.Path)
 
 	logger := RequestLogger(ctx)
 	logger.Log("templatename", templateName)
@@ -87,7 +76,8 @@ func (rh *redfishService) GetRedfish(ctx context.Context, r *http.Request) ([]by
 	rh.templateLock.RLock()
 	defer rh.templateLock.RUnlock()
 	buf := new(bytes.Buffer)
-	rh.templates.ExecuteTemplate(buf, templateName, getViewData(rh, templateName))
+    viewData := rh.getViewData(r.URL.Path, templateName, args)
+	rh.templates.ExecuteTemplate(buf, templateName, viewData)
 	return buf.Bytes(), nil
 }
 

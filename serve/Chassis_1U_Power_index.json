@@ -138,6 +138,6 @@
     ],
     "Oem": {},
     "@odata.context": "/redfish/v1/$metadata#Power.Power",
-    "@odata.id": "/redfish/v1/Chassis/1U/Power",
-    "@Redfish.Copyright": "Copyright 2014-2016 Distributed Management Task Force, Inc. (DMTF). For the full DMTF copyright policy, see http://www.dmtf.org/about/policies/copyright."
+    {{ index . "odata_self_id" }},
+    {{ index . "redfish_std_copyright"}}
 }
