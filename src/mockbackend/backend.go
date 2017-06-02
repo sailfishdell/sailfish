@@ -1,15 +1,21 @@
-package samplebackend
+package mockbackend
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/superchalupa/go-redfish/src/redfishserver"
 	"net/http"
 	"regexp"
 	"strings"
-    "encoding/json"
+	"text/template"
 )
 
+// Config This is the backend plugin configuration for this backend
 var Config redfishserver.Config = redfishserver.Config{BackendFuncMap: funcMap, GetViewData: getViewData, MapURLToTemplate: mapURLToTemplate}
+
+var funcMap = template.FuncMap{
+	"hello": func() string { return "HELLO WORLD" },
+}
 
 func mapURLToTemplate(r *http.Request) (templateName string, args map[string]string, err error) {
 	url := r.URL.Path
@@ -40,8 +46,7 @@ type odataLink struct {
 	Target string
 }
 
-var initialMockupData string = `
-{
+var initialMockupData = []byte(`{
     "root_links": [
         {"name": "Systems", "target": "/redfish/v1/Systems" },
         {"name": "Chassis", "target": "/redfish/v1/Chassis" },
@@ -73,17 +78,16 @@ var initialMockupData string = `
             "name": "a dummy system"
         }
     }
-}
-`
+}`)
 
 var globalViewData interface{}
 
 func init() {
-    err := json.Unmarshal([]byte(initialMockupData), &globalViewData)
-    if err != nil {
-        fmt.Println("error:", err)
-        panic(err)
-    }
+	err := json.Unmarshal(initialMockupData, &globalViewData)
+	if err != nil {
+		fmt.Println("error:", err)
+		panic(err)
+	}
 }
 
 func getViewData(r *http.Request, templateName string, args map[string]string) (viewData map[string]interface{}) {

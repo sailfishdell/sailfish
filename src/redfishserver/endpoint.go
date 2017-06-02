@@ -65,14 +65,14 @@ func makeRedfishDeleteEndpoint(s RedfishService) endpoint.Endpoint {
 
 func NewRedfishHandler(svc RedfishService, r *mux.Router) {
 	contentTypeOption := httptransport.ServerAfter(httptransport.SetContentType("application/json;charset=utf-8"))
-    odataVersion := httptransport.ServerAfter(httptransport.SetResponseHeader("OData-Version", "4.0"))
-    // TODO: Content-Encoding: (should) - probably for gzip? doesn't look like its supported yet
-    // TODO: Location - (CONDITIONAL SHALL) for POST to return where the object was created
-    // TODO: Cache-Control
-    // TODO: Via
-    // TODO: Max-Forwards (SHOULD)
-    // TODO: Access-Control-Allow-Origin (SHALL)
-    // TODO: Allow - (SHALL) - returns GET/PUT/POST/PATCH/DELETE/HEAD
+	odataVersion := httptransport.ServerAfter(httptransport.SetResponseHeader("OData-Version", "4.0"))
+	// TODO: Content-Encoding: (should) - probably for gzip? doesn't look like its supported yet
+	// TODO: Location - (CONDITIONAL SHALL) for POST to return where the object was created
+	// TODO: Cache-Control
+	// TODO: Via
+	// TODO: Max-Forwards (SHOULD)
+	// TODO: Access-Control-Allow-Origin (SHALL)
+	// TODO: Allow - (SHALL) - returns GET/PUT/POST/PATCH/DELETE/HEAD
 
 	r.PathPrefix("/redfish/v1/").Methods("GET").Handler(
 		httptransport.NewServer(
@@ -80,7 +80,7 @@ func NewRedfishHandler(svc RedfishService, r *mux.Router) {
 			decodeRedfishRequest,
 			encodeResponse,
 			contentTypeOption,
-            odataVersion,
+			odataVersion,
 		))
 
 	r.PathPrefix("/redfish/v1/").Methods("PUT").Handler(
@@ -89,7 +89,7 @@ func NewRedfishHandler(svc RedfishService, r *mux.Router) {
 			decodeRedfishRequest,
 			encodeResponse,
 			contentTypeOption,
-            odataVersion,
+			odataVersion,
 		))
 
 	r.PathPrefix("/redfish/v1/").Methods("POST").Handler(
@@ -98,7 +98,7 @@ func NewRedfishHandler(svc RedfishService, r *mux.Router) {
 			decodeRedfishRequest,
 			encodeResponse,
 			contentTypeOption,
-            odataVersion,
+			odataVersion,
 		))
 
 	r.PathPrefix("/redfish/v1/").Methods("PATCH").Handler(
@@ -107,7 +107,7 @@ func NewRedfishHandler(svc RedfishService, r *mux.Router) {
 			decodeRedfishRequest,
 			encodeResponse,
 			contentTypeOption,
-            odataVersion,
+			odataVersion,
 		))
 
 	r.PathPrefix("/redfish/v1/").Methods("DELETE").Handler(
@@ -116,6 +116,6 @@ func NewRedfishHandler(svc RedfishService, r *mux.Router) {
 			decodeRedfishRequest,
 			encodeResponse,
 			contentTypeOption,
-            odataVersion,
+			odataVersion,
 		))
 }

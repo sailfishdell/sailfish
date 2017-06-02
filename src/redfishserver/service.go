@@ -74,28 +74,28 @@ type templateParams struct {
 }
 
 func checkHeaders(ctx context.Context, r *http.Request) (err error) {
-    // TODO: check Content-Type (for things with request body only)
-    // TODO: check OData-MaxVersion "Indicates the maximum version of OData
-    //                              that an odata-aware client understands"
-    // TODO: check OData-Version "Services shall reject requests which specify
-    //                              an unsupported OData version. If a service
-    //                              encounters a version that it does not
-    //                              support, the service should reject the
-    //                              request with status code [412]
-    //                              (#status-412). If client does not specify
-    //                              an Odata-Version header, the client is
-    //                              outside the boundaries of this
-    //                              specification."
-    return
+	// TODO: check Content-Type (for things with request body only)
+	// TODO: check OData-MaxVersion "Indicates the maximum version of OData
+	//                              that an odata-aware client understands"
+	// TODO: check OData-Version "Services shall reject requests which specify
+	//                              an unsupported OData version. If a service
+	//                              encounters a version that it does not
+	//                              support, the service should reject the
+	//                              request with status code [412]
+	//                              (#status-412). If client does not specify
+	//                              an Odata-Version header, the client is
+	//                              outside the boundaries of this
+	//                              specification."
+	return
 }
 
 func (rh *serviceBackendConfig) RedfishGet(ctx context.Context, r *http.Request) ([]byte, error) {
 	logger := RequestLogger(ctx)
 
-    err := checkHeaders(ctx, r)
-    if err != nil {
-        return nil, err
-    }
+	err := checkHeaders(ctx, r)
+	if err != nil {
+		return nil, err
+	}
 
 	templateName, args, err := rh.mapURLToTemplate(r)
 	if err != nil {
@@ -105,23 +105,23 @@ func (rh *serviceBackendConfig) RedfishGet(ctx context.Context, r *http.Request)
 
 	buf := new(bytes.Buffer)
 
-    if len(templateName) > 0 {
-        rh.templateLock.RLock()
-        defer rh.templateLock.RUnlock()
+	if len(templateName) > 0 {
+		rh.templateLock.RLock()
+		defer rh.templateLock.RUnlock()
 
-        viewData := rh.getViewData(r, templateName, args)
+		viewData := rh.getViewData(r, templateName, args)
 
-        rh.templates.ExecuteTemplate(buf, templateName, templateParams{ViewData: viewData, Args: args})
-    }
+		rh.templates.ExecuteTemplate(buf, templateName, templateParams{ViewData: viewData, Args: args})
+	}
 
-    // TODO: need a mechanism to return headers that the encoder will add
-    //       sketch: return a struct containing output plus funcs to set headers
-    // TODO: ETag -
-    // TODO: X-Auth-Token - (SHALL)
-    // TODO: Retry-After
-    // TODO: WWW-Authenticate - (SHALL)
-    // TODO: Server
-    // TODO: Link
+	// TODO: need a mechanism to return headers that the encoder will add
+	//       sketch: return a struct containing output plus funcs to set headers
+	// TODO: ETag -
+	// TODO: X-Auth-Token - (SHALL)
+	// TODO: Retry-After
+	// TODO: WWW-Authenticate - (SHALL)
+	// TODO: Server
+	// TODO: Link
 	return buf.Bytes(), nil
 }
 
