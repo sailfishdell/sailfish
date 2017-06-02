@@ -1,16 +1,12 @@
 {
     "@odata.type": "#ComputerSystemCollection.ComputerSystemCollection",
     "Name": "Computer System Collection",
-    "Members@odata.count": {{index . "systems" | len}},
+    "Members@odata.count": {{index .ViewData "systems" | len}},
     "Members": [
-{{ range $index, $value := index . "systemList" }}
-    {{ if $index }},{{end}}
-    {
-        "@odata.id": "/redfish/v1/Systems/{{- $value -}}"
-    }{{end}}
-
+{{- range $index, $value := index .ViewData "systemList" -}}{{- if $index -}},{{- end }}
+        { "@odata.id": "/redfish/v1/Systems/{{- $value -}}" }{{- end }}
     ],
     "@odata.context": "/redfish/v1/$metadata#Systems",
-    {{ index . "odata_self_id" }},
-    {{ index . "redfish_std_copyright"}}
+    {{ index .ViewData "odata_self_id" }},
+    {{ index .ViewData "redfish_std_copyright"}}
 }

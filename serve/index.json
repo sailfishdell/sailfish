@@ -4,8 +4,8 @@
     "Id": "RootService",
     "Name": "Root Service",
     "RedfishVersion": "1.0.2",
-    "UUID": " {{- index . "root_UUID" -}} ",
-{{ range $index, $value := index . "root_links" }}
+    "UUID": " {{- index .ViewData "root_UUID" -}} ",
+{{- range $index, $value := index .ViewData "root_links" }}
     "{{- $value.Name -}}": {
         "odata.id": "{{- $value.Target -}}"
     },{{end}}
@@ -15,6 +15,6 @@
         }
     },
     "Oem": {},
-    {{ index . "odata_self_id" }},
-    {{ index . "redfish_std_copyright"}}
+    {{ index .ViewData "odata_self_id" }},
+    {{ index .ViewData "redfish_std_copyright"}}
 }

@@ -66,6 +66,11 @@ func NewService(logger Logger, templatesDir string, backendConfig Config) Redfis
 // ServiceMiddleware is a chainable behavior modifier for RedfishService.
 type ServiceMiddleware func(RedfishService) RedfishService
 
+type templateParams struct {
+	Args     map[string]string
+	ViewData map[string]interface{}
+}
+
 func (rh *redfishService) GetRedfish(ctx context.Context, r *http.Request) ([]byte, error) {
 	logger := RequestLogger(ctx)
 
@@ -83,7 +88,8 @@ func (rh *redfishService) GetRedfish(ctx context.Context, r *http.Request) ([]by
 
 	buf := new(bytes.Buffer)
 	viewData := rh.getViewData(r, templateName, args)
-	rh.templates.ExecuteTemplate(buf, templateName, viewData)
+
+	rh.templates.ExecuteTemplate(buf, templateName, templateParams{ViewData: viewData, Args: args})
 	return buf.Bytes(), nil
 }
 
