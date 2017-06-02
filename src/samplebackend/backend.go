@@ -1,18 +1,18 @@
 package samplebackend
 
 import (
+	"fmt"
 	"github.com/superchalupa/go-redfish/src/redfishserver"
+	"net/http"
+	"regexp"
 	"strings"
-    "net/http"
-    "regexp"
-    "fmt"
 )
 
 var Config redfishserver.Config = redfishserver.Config{BackendFuncMap: funcMap, GetViewData: getViewData, MapURLToTemplate: mapURLToTemplate}
 
 func mapURLToTemplate(r *http.Request) (templateName string, args map[string]string, err error) {
-    url := r.URL.Path
-    args = make(map[string]string)
+	url := r.URL.Path
+	args = make(map[string]string)
 
 	templateName = url + "/index.json"
 	templateName = strings.Replace(templateName, "//", "/", -1)
@@ -24,18 +24,23 @@ func mapURLToTemplate(r *http.Request) (templateName string, args map[string]str
 		templateName = templateName[len("redfish_v1_"):]
 	}
 
-    var systemRegexp = regexp.MustCompile("^/redfish/v1/Systems/([a-zA-Z0-9]+)")
-    if system := systemRegexp.FindSubmatch([]byte(r.URL.Path)); system != nil {
-            fmt.Printf("Found a system URL: %s\n", system[1])
-            templateName = "System_template.json"
-            args["System"] = string(system[1])
-    }
+	var systemRegexp = regexp.MustCompile("^/redfish/v1/Systems/([a-zA-Z0-9]+)")
+	if system := systemRegexp.FindSubmatch([]byte(r.URL.Path)); system != nil {
+		fmt.Printf("Found a system URL: %s\n", system[1])
+		templateName = "System_template.json"
+		args["System"] = string(system[1])
+	}
 
 	return
 }
 
-func getViewData(r* http.Request, templateName string, args map[string]string) (viewData map[string]interface{}) {
-    url := r.URL.Path
+type odataLink struct {
+	Name   string
+	Target string
+}
+
+func getViewData(r *http.Request, templateName string, args map[string]string) (viewData map[string]interface{}) {
+	url := r.URL.Path
 
 	viewData = make(map[string]interface{})
 
@@ -44,35 +49,36 @@ func getViewData(r* http.Request, templateName string, args map[string]string) (
 	viewData["manager_UUID"] = "58893887-8974-2487-2389-841168418919"
 
 	// root links
-	var root_links map[string]string
-	root_links = make(map[string]string)
-	root_links["Systems"] = "/redfish/v1/Systems"
-    // uncomment these as we get the templates in
-	//root_links["Chassis"] = "/redfish/v1/Chassis"
-	//root_links["Managers"] = "/redfish/v1/Managers"
-	//root_links["Tasks"] = "/redfish/v1/TaskService"
-	//root_links["SessionService"] = "/redfish/v1/SessionService"
-	//root_links["AccountService"] = "/redfish/v1/AccountService"
-	//root_links["EventService"] = "/redfish/v1/EventService"
+	var root_links []odataLink
+	root_links = append(root_links, odataLink{Name: "Systems", Target: "/redfish/v1/Systems"})
+	root_links = append(root_links, odataLink{Name: "Chassis", Target: "/redfish/v1/Chassis"})
+	root_links = append(root_links, odataLink{Name: "Tasks", Target: "/redfish/v1/TaskService"})
+	root_links = append(root_links, odataLink{Name: "SessionService", Target: "/redfish/v1/SessionService"})
+	root_links = append(root_links, odataLink{Name: "AccountService", Target: "/redfish/v1/AccountService"})
+	root_links = append(root_links, odataLink{Name: "EventService", Target: "/redfish/v1/EventService"})
 	viewData["root_links"] = root_links
 
-    var systems map[string]interface{}
-    systems = make(map[string]interface{})
+	// in order to properly output JSON without trailing commas, need the list of systems in an array (maps have trailing comma issue)
+	var systemList []string
+	systemList = append(systemList, "437XR1138R2")
+	systemList = append(systemList, "dummy")
+	viewData["systemList"] = systemList
 
-    // System 437XR1138R2
-    var system_437XR1138R2 map[string]string
-    system_437XR1138R2 = make( map[string]string )
+	// Then we make a sub-map to hold the actual data for each system
+	var systems map[string]interface{}
+	systems = make(map[string]interface{})
+	// now hook the systems into viewdata
+	viewData["systems"] = systems
 
-    systems["437XR1138R2"] = system_437XR1138R2
+	// System 437XR1138R2
+	var system_437XR1138R2 map[string]string
+	system_437XR1138R2 = make(map[string]string)
+	systems["437XR1138R2"] = system_437XR1138R2
 
-    // System "dummy"
-    var system_dummy map[string]string
-    system_dummy = make( map[string]string )
-
-    systems["dummy"] = system_dummy
-
-
-    viewData["systems"] = systems
+	// System "DummySystem"
+	var system_DummySystem map[string]string
+	system_DummySystem = make(map[string]string)
+	systems["DummySystem"] = system_DummySystem
 
 	// standard static tags that are useful in the templates
 	viewData["self_uri"] = url

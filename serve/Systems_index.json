@@ -3,14 +3,11 @@
     "Name": "Computer System Collection",
     "Members@odata.count": {{index . "systems" | len}},
     "Members": [
-
-// TODO: missing comma between elements
-
-{{ range $key, $value := index . "systems" }}
+{{ range $index, $value := index . "systemList" }}
+    {{ if $index }},{{end}}
     {
-        "@odata.id": "/redfish/v1/Systems/{{- $key -}}"
-    }
-{{end}}
+        "@odata.id": "/redfish/v1/Systems/{{- $value -}}"
+    }{{end}}
 
     ],
     "@odata.context": "/redfish/v1/$metadata#Systems",

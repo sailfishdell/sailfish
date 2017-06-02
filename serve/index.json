@@ -1,23 +1,20 @@
 {
     "@odata.type": "#ServiceRoot.v1_0_2.ServiceRoot",
+    "@odata.context": "/redfish/v1/$metadata#ServiceRoot",
     "Id": "RootService",
     "Name": "Root Service",
     "RedfishVersion": "1.0.2",
     "UUID": " {{- index . "root_UUID" -}} ",
-
-{{ range $key, $value := index . "root_links" }}
-    "{{ $key }}": {
-        "@odata.id": "{{ $value }}"
-    },
-{{end}}
-
+{{ range $index, $value := index . "root_links" }}
+    "{{- $value.Name -}}": {
+        "odata.id": "{{- $value.Target -}}"
+    },{{end}}
     "Links": {
         "Sessions": {
             "@odata.id": "/redfish/v1/SessionService/Sessions"
         }
     },
     "Oem": {},
-    "@odata.context": "/redfish/v1/$metadata#ServiceRoot",
     {{ index . "odata_self_id" }},
     {{ index . "redfish_std_copyright"}}
 }
