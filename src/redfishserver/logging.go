@@ -49,7 +49,7 @@ func NewLoggingService(logger Logger, s RedfishService) RedfishService {
 	return &loggingService{logger, s}
 }
 
-func (s *loggingService) GetRedfish(ctx context.Context, r *http.Request) (ret []byte, err error) {
+func (s *loggingService) RedfishGet(ctx context.Context, r *http.Request) (ret []byte, err error) {
 	defer func(begin time.Time) {
 		s.logger.Log(
 			"method", r.Method,
@@ -58,10 +58,10 @@ func (s *loggingService) GetRedfish(ctx context.Context, r *http.Request) (ret [
 			"err", err,
 		)
 	}(time.Now())
-	return s.RedfishService.GetRedfish(WithLogger(ctx, log.With(s.logger, "method", r.Method, "URL", r.URL.Path, "UUID", uuid.New())), r)
+	return s.RedfishService.RedfishGet(WithLogger(ctx, log.With(s.logger, "method", r.Method, "URL", r.URL.Path, "UUID", uuid.New())), r)
 }
 
-func (s *loggingService) PutRedfish(ctx context.Context, r *http.Request) (ret []byte, err error) {
+func (s *loggingService) RedfishPut(ctx context.Context, r *http.Request) (ret []byte, err error) {
 	defer func(begin time.Time) {
 		s.logger.Log(
 			"method", r.Method,
@@ -70,10 +70,10 @@ func (s *loggingService) PutRedfish(ctx context.Context, r *http.Request) (ret [
 			"err", err,
 		)
 	}(time.Now())
-	return s.RedfishService.PutRedfish(WithLogger(ctx, log.With(s.logger, "method", r.Method, "URL", r.URL.Path, "UUID", uuid.New())), r)
+	return s.RedfishService.RedfishPut(WithLogger(ctx, log.With(s.logger, "method", r.Method, "URL", r.URL.Path, "UUID", uuid.New())), r)
 }
 
-func (s *loggingService) PatchRedfish(ctx context.Context, r *http.Request) (ret []byte, err error) {
+func (s *loggingService) RedfishPatch(ctx context.Context, r *http.Request) (ret []byte, err error) {
 	defer func(begin time.Time) {
 		s.logger.Log(
 			"method", r.Method,
@@ -82,10 +82,10 @@ func (s *loggingService) PatchRedfish(ctx context.Context, r *http.Request) (ret
 			"err", err,
 		)
 	}(time.Now())
-	return s.RedfishService.PatchRedfish(WithLogger(ctx, log.With(s.logger, "method", r.Method, "URL", r.URL.Path, "UUID", uuid.New())), r)
+	return s.RedfishService.RedfishPatch(WithLogger(ctx, log.With(s.logger, "method", r.Method, "URL", r.URL.Path, "UUID", uuid.New())), r)
 }
 
-func (s *loggingService) PostRedfish(ctx context.Context, r *http.Request) (ret []byte, err error) {
+func (s *loggingService) RedfishPost(ctx context.Context, r *http.Request) (ret []byte, err error) {
 	defer func(begin time.Time) {
 		s.logger.Log(
 			"method", r.Method,
@@ -94,10 +94,10 @@ func (s *loggingService) PostRedfish(ctx context.Context, r *http.Request) (ret 
 			"err", err,
 		)
 	}(time.Now())
-	return s.RedfishService.PostRedfish(WithLogger(ctx, log.With(s.logger, "method", r.Method, "URL", r.URL.Path, "UUID", uuid.New())), r)
+	return s.RedfishService.RedfishPost(WithLogger(ctx, log.With(s.logger, "method", r.Method, "URL", r.URL.Path, "UUID", uuid.New())), r)
 }
 
-func (s *loggingService) DeleteRedfish(ctx context.Context, r *http.Request) (ret []byte, err error) {
+func (s *loggingService) RedfishDelete(ctx context.Context, r *http.Request) (ret []byte, err error) {
 	defer func(begin time.Time) {
 		s.logger.Log(
 			"method", r.Method,
@@ -106,5 +106,5 @@ func (s *loggingService) DeleteRedfish(ctx context.Context, r *http.Request) (re
 			"err", err,
 		)
 	}(time.Now())
-	return s.RedfishService.DeleteRedfish(WithLogger(ctx, log.With(s.logger, "method", r.Method, "URL", r.URL.Path, "UUID", uuid.New())), r)
+	return s.RedfishService.RedfishDelete(WithLogger(ctx, log.With(s.logger, "method", r.Method, "URL", r.URL.Path, "UUID", uuid.New())), r)
 }

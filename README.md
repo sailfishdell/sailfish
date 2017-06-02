@@ -26,8 +26,8 @@ TODO
 
     - The /redfish/v1 should either redirect to /redfish/v1/ or it should be treated identically
 
-    - HTTP Headers:
-        - ACCEPT (required) (rfc7231) "Indicates to the server what media type(s) this
+    - HTTP Request Headers:
+        - Accept (shall) (rfc7231) "Indicates to the server what media type(s) this
             client is prepared to accept. Services shall support
             requests for resources with an Accept header
             including application/json or application/
@@ -35,6 +35,22 @@ TODO
             requests for metadata with an Accept header
             including application/xml or application/
             xml;charset=utf-8."
+        - Accept-Encoding (should) (rfc7231)
+
+    - Resource Retrieval: "Services may, but are not required to, support
+            the convention of retrieving individual properties of a Resource by
+            appending a segment containing the property name to the URI of the
+            resource."
+
+    - 6.4.2.4.1 - Query Parameters
+        - $skip
+        - $top
+
+    - extended errors
+
+    - 6.4.4.1 - PATCH -
+
+    - HTTP Response Headers:
 
 
 placeholder note:

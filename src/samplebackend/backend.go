@@ -64,8 +64,6 @@ func init() {
 
 	// in order to properly output JSON without trailing commas, need the list of systems in an array (maps have trailing comma issue)
 	var systemList []string
-	systemList = append(systemList, "437XR1138R2")
-	systemList = append(systemList, "dummy")
 	globalViewData["systemList"] = systemList
 
 	// Then we make a sub-map to hold the actual data for each system
@@ -78,13 +76,25 @@ func init() {
 	var system_437XR1138R2 map[string]string
 	system_437XR1138R2 = make(map[string]string)
 	systems["437XR1138R2"] = system_437XR1138R2
+	systemList = append(systemList, "437XR1138R2")
+	system_437XR1138R2["name"] = "WebFrontEnd483"
+	system_437XR1138R2["SystemType"] = "Physical"
+	system_437XR1138R2["AssetTag"] = "Chicago-45Z-2381"
+	system_437XR1138R2["Manufacturer"] = "Contoso"
+	system_437XR1138R2["Model"] = "3500RX"
+	system_437XR1138R2["SKU"] = "8675309"
+	system_437XR1138R2["SerialNumber"] = "437XR1138R2"
+	system_437XR1138R2["PartNumber"] = "224071-J23"
+	system_437XR1138R2["Description"] = "Web Front End node"
+	system_437XR1138R2["UUID"] = "38947555-7742-3448-3784-823347823834"
+	system_437XR1138R2["HostName"] = "web483"
 
-	systems["437XR1138R2"].(map[string]string)["name"] = "WebFrontEnd483"
-
-	// System "DummySystem"
-	var system_DummySystem map[string]string
-	system_DummySystem = make(map[string]string)
-	systems["DummySystem"] = system_DummySystem
+	// System "dummy"
+	var system_dummy map[string]string
+	system_dummy = make(map[string]string)
+	systems["dummy"] = system_dummy
+	systemList = append(systemList, "dummy")
+	system_dummy["name"] = "a dummy system"
 }
 
 func getViewData(r *http.Request, templateName string, args map[string]string) (viewData map[string]interface{}) {

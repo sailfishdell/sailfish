@@ -1,17 +1,24 @@
+{{- $currentSystem := .Args.System -}}
 {
     "@odata.type": "#ComputerSystem.v1_1_0.ComputerSystem",
-    "Id": "437XR1138R2",
-    "Name": "WebFrontEnd483",
-    "SystemType": "Physical",
-    "AssetTag": "Chicago-45Z-2381",
-    "Manufacturer": "Contoso",
-    "Model": "3500RX",
-    "SKU": "8675309",
-    "SerialNumber": "437XR1138R2",
-    "PartNumber": "224071-J23",
-    "Description": "Web Front End node",
-    "UUID": "38947555-7742-3448-3784-823347823834",
-    "HostName": "web483",
+    "@odata.context": "/redfish/v1/$metadata#ComputerSystem.ComputerSystem",
+
+    TEST: {{ index .ViewData.systems $currentSystem }}
+
+{{- with index .ViewData.systems $currentSystem }}
+    "Id": "{{ $currentSystem }}",
+    "Name": "{{ .name }}",
+    "SystemType": "{{- .SystemType -}}",
+    "AssetTag": "{{- .AssetTag -}}",
+    "Manufacturer": "{{- .Manufacturer -}}",
+    "Model": "{{- .Model -}}",
+    "SKU": "{{- .SKU -}}",
+    "SerialNumber": "{{- .SerialNumber -}}",
+    "PartNumber": "{{- .PartNumber -}}",
+    "Description": "{{- .Description -}}",
+    "UUID": "{{- .UUID -}}",
+    "HostName": "{{- .HostName -}}",
+
     "Status": {
         "State": "Enabled",
         "Health": "OK",
@@ -128,7 +135,7 @@
             }
         }
     },
-    "@odata.context": "/redfish/v1/$metadata#ComputerSystem.ComputerSystem",
-    {{ index . "odata_self_id" }},
-    {{ index . "redfish_std_copyright"}}
+{{end}}
+    {{ .ViewData.odata_self_id }},
+    {{ .ViewData.redfish_std_copyright }}
 }

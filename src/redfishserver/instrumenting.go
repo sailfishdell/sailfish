@@ -23,42 +23,42 @@ func NewInstrumentingService(counter metrics.Counter, latency metrics.Histogram,
 	}
 }
 
-func (s *instrumentingService) GetRedfish(ctx context.Context, r *http.Request) (ret []byte, err error) {
+func (s *instrumentingService) RedfishGet(ctx context.Context, r *http.Request) (ret []byte, err error) {
 	defer func(begin time.Time) {
 		s.requestCount.With("URL", r.URL.Path, "method", r.Method).Add(1)
 		s.requestLatency.With("URL", r.URL.Path, "method", r.Method).Observe(time.Since(begin).Seconds())
 	}(time.Now())
-	return s.RedfishService.GetRedfish(ctx, r)
+	return s.RedfishService.RedfishGet(ctx, r)
 }
 
-func (s *instrumentingService) PutRedfish(ctx context.Context, r *http.Request) (ret []byte, err error) {
+func (s *instrumentingService) RedfishPut(ctx context.Context, r *http.Request) (ret []byte, err error) {
 	defer func(begin time.Time) {
 		s.requestCount.With("URL", r.URL.Path, "method", r.Method).Add(1)
 		s.requestLatency.With("URL", r.URL.Path, "method", r.Method).Observe(time.Since(begin).Seconds())
 	}(time.Now())
-	return s.RedfishService.PutRedfish(ctx, r)
+	return s.RedfishService.RedfishPut(ctx, r)
 }
 
-func (s *instrumentingService) PatchRedfish(ctx context.Context, r *http.Request) (ret []byte, err error) {
+func (s *instrumentingService) RedfishPatch(ctx context.Context, r *http.Request) (ret []byte, err error) {
 	defer func(begin time.Time) {
 		s.requestCount.With("URL", r.URL.Path, "method", r.Method).Add(1)
 		s.requestLatency.With("URL", r.URL.Path, "method", r.Method).Observe(time.Since(begin).Seconds())
 	}(time.Now())
-	return s.RedfishService.PatchRedfish(ctx, r)
+	return s.RedfishService.RedfishPatch(ctx, r)
 }
 
-func (s *instrumentingService) PostRedfish(ctx context.Context, r *http.Request) (ret []byte, err error) {
+func (s *instrumentingService) RedfishPost(ctx context.Context, r *http.Request) (ret []byte, err error) {
 	defer func(begin time.Time) {
 		s.requestCount.With("URL", r.URL.Path, "method", r.Method).Add(1)
 		s.requestLatency.With("URL", r.URL.Path, "method", r.Method).Observe(time.Since(begin).Seconds())
 	}(time.Now())
-	return s.RedfishService.PostRedfish(ctx, r)
+	return s.RedfishService.RedfishPost(ctx, r)
 }
 
-func (s *instrumentingService) DeleteRedfish(ctx context.Context, r *http.Request) (ret []byte, err error) {
+func (s *instrumentingService) RedfishDelete(ctx context.Context, r *http.Request) (ret []byte, err error) {
 	defer func(begin time.Time) {
 		s.requestCount.With("URL", r.URL.Path, "method", r.Method).Add(1)
 		s.requestLatency.With("URL", r.URL.Path, "method", r.Method).Observe(time.Since(begin).Seconds())
 	}(time.Now())
-	return s.RedfishService.DeleteRedfish(ctx, r)
+	return s.RedfishService.RedfishDelete(ctx, r)
 }

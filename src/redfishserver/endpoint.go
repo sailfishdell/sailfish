@@ -23,79 +23,99 @@ func encodeResponse(_ context.Context, w http.ResponseWriter, response interface
 	return nil
 }
 
-func makeGetRedfishEndpoint(s RedfishService) endpoint.Endpoint {
+func makeRedfishGetEndpoint(s RedfishService) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(*http.Request)
-		resp, err := s.GetRedfish(ctx, req)
+		resp, err := s.RedfishGet(ctx, req)
 		return resp, err
 	}
 }
 
-func makePutRedfishEndpoint(s RedfishService) endpoint.Endpoint {
+func makeRedfishPutEndpoint(s RedfishService) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(*http.Request)
-		resp, err := s.PutRedfish(ctx, req)
+		resp, err := s.RedfishPut(ctx, req)
 		return resp, err
 	}
 }
 
-func makePostRedfishEndpoint(s RedfishService) endpoint.Endpoint {
+func makeRedfishPostEndpoint(s RedfishService) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(*http.Request)
-		resp, err := s.PostRedfish(ctx, req)
+		resp, err := s.RedfishPost(ctx, req)
 		return resp, err
 	}
 }
 
-func makePatchRedfishEndpoint(s RedfishService) endpoint.Endpoint {
+func makeRedfishPatchEndpoint(s RedfishService) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(*http.Request)
-		resp, err := s.PatchRedfish(ctx, req)
+		resp, err := s.RedfishPatch(ctx, req)
 		return resp, err
 	}
 }
 
-func makeDeleteRedfishEndpoint(s RedfishService) endpoint.Endpoint {
+func makeRedfishDeleteEndpoint(s RedfishService) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(*http.Request)
-		resp, err := s.DeleteRedfish(ctx, req)
+		resp, err := s.RedfishDelete(ctx, req)
 		return resp, err
 	}
 }
 
 func NewRedfishHandler(svc RedfishService, r *mux.Router) {
+	contentTypeOption := httptransport.ServerAfter(httptransport.SetContentType("application/json;charset=utf-8"))
+    odataVersion := httptransport.ServerAfter(httptransport.SetResponseHeader("OData-Version", "4.0"))
+    // TODO: Content-Encoding: (should) - probably for gzip? doesn't look like its supported yet
+    // TODO: Location - (CONDITIONAL SHALL) for POST to return where the object was created
+    // TODO: Cache-Control
+    // TODO: Via
+    // TODO: Max-Forwards (SHOULD)
+    // TODO: Access-Control-Allow-Origin (SHALL)
+    // TODO: Allow - (SHALL) - returns GET/PUT/POST/PATCH/DELETE/HEAD
+
 	r.PathPrefix("/redfish/v1/").Methods("GET").Handler(
 		httptransport.NewServer(
-			makeGetRedfishEndpoint(svc),
+			makeRedfishGetEndpoint(svc),
 			decodeRedfishRequest,
 			encodeResponse,
+			contentTypeOption,
+            odataVersion,
 		))
 
 	r.PathPrefix("/redfish/v1/").Methods("PUT").Handler(
 		httptransport.NewServer(
-			makePutRedfishEndpoint(svc),
+			makeRedfishPutEndpoint(svc),
 			decodeRedfishRequest,
 			encodeResponse,
+			contentTypeOption,
+            odataVersion,
 		))
 
 	r.PathPrefix("/redfish/v1/").Methods("POST").Handler(
 		httptransport.NewServer(
-			makePostRedfishEndpoint(svc),
+			makeRedfishPostEndpoint(svc),
 			decodeRedfishRequest,
 			encodeResponse,
+			contentTypeOption,
+            odataVersion,
 		))
 
 	r.PathPrefix("/redfish/v1/").Methods("PATCH").Handler(
 		httptransport.NewServer(
-			makePatchRedfishEndpoint(svc),
+			makeRedfishPatchEndpoint(svc),
 			decodeRedfishRequest,
 			encodeResponse,
+			contentTypeOption,
+            odataVersion,
 		))
 
 	r.PathPrefix("/redfish/v1/").Methods("DELETE").Handler(
 		httptransport.NewServer(
-			makeDeleteRedfishEndpoint(svc),
+			makeRedfishDeleteEndpoint(svc),
 			decodeRedfishRequest,
 			encodeResponse,
+			contentTypeOption,
+            odataVersion,
 		))
 }
