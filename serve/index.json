@@ -6,8 +6,8 @@
     "RedfishVersion": "1.0.2",
     "UUID": " {{- index .ViewData "root_UUID" -}} ",
 {{- range $index, $value := index .ViewData "root_links" }}
-    "{{- $value.Name -}}": {
-        "odata.id": "{{- $value.Target -}}"
+    "{{- $value.name -}}": {
+        "odata.id": "{{- $value.target -}}"
     },{{end}}
     "Links": {
         "Sessions": {

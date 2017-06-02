@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"regexp"
 	"strings"
+    "encoding/json"
 )
 
 var Config redfishserver.Config = redfishserver.Config{BackendFuncMap: funcMap, GetViewData: getViewData, MapURLToTemplate: mapURLToTemplate}
@@ -39,69 +40,57 @@ type odataLink struct {
 	Target string
 }
 
-var globalViewData map[string]interface{}
+var initialMockupData string = `
+{
+    "root_links": [
+        {"name": "Systems", "target": "/redfish/v1/Systems" },
+        {"name": "Chassis", "target": "/redfish/v1/Chassis" },
+        {"name": "Tasks", "target": "/redfish/v1/TaskService" },
+        {"name": "SessionService", "target": "/redfish/v1/SessionService" },
+        {"name": "AccountService", "target": "/redfish/v1/AccountService" },
+        {"name": "EventService", "target": "/redfish/v1/EventService" }
+    ],
+    "root_UUID": "92384634-2938-2342-8820-489239905423",
+    "manager_UUID": "58893887-8974-2487-2389-841168418919",
+    "redfish_std_copyright": "@Redfish.Copyright: Copyright 2014-2016 Distributed Management Task Force, Inc. (DMTF). For the full DMTF copyright policy, see http://www.dmtf.org/about/policies/copyright.",
+    "systemList": [ "437XR1138R2", "dummy"],
+
+    "systems": {
+        "437XR1138R2": {
+            "name": "WebFrontEnd483",
+            "SystemType": "Physical",
+            "AssetTag": "Chicago-45Z-2381",
+            "Manufacturer": "Contoso",
+            "Model": "3500RX",
+            "SKU": "8675309",
+            "SerialNumber": "437XR1138R2",
+            "PartNumber": "224071-J23",
+            "Description": "Web Front End node",
+            "UUID": "38947555-7742-3448-3784-823347823834",
+            "HostName": "web483"
+        },
+        "dummy": {
+            "name": "a dummy system"
+        }
+    }
+}
+`
+
+var globalViewData interface{}
 
 func init() {
-	// allocate
-	globalViewData = make(map[string]interface{})
-
-	// root links
-	var root_links []odataLink
-	root_links = append(root_links, odataLink{Name: "Systems", Target: "/redfish/v1/Systems"})
-	root_links = append(root_links, odataLink{Name: "Chassis", Target: "/redfish/v1/Chassis"})
-	root_links = append(root_links, odataLink{Name: "Tasks", Target: "/redfish/v1/TaskService"})
-	root_links = append(root_links, odataLink{Name: "SessionService", Target: "/redfish/v1/SessionService"})
-	root_links = append(root_links, odataLink{Name: "AccountService", Target: "/redfish/v1/AccountService"})
-	root_links = append(root_links, odataLink{Name: "EventService", Target: "/redfish/v1/EventService"})
-	globalViewData["root_links"] = root_links
-
-	// some standard stuff that should be available
-	globalViewData["root_UUID"] = "92384634-2938-2342-8820-489239905423"
-	globalViewData["manager_UUID"] = "58893887-8974-2487-2389-841168418919"
-
-	// copyright (static)
-	globalViewData["redfish_std_copyright"] = "\"@Redfish.Copyright\": \"Copyright 2014-2016 Distributed Management Task Force, Inc. (DMTF). For the full DMTF copyright policy, see http://www.dmtf.org/about/policies/copyright.\""
-
-	// in order to properly output JSON without trailing commas, need the list of systems in an array (maps have trailing comma issue)
-	var systemList []string
-	globalViewData["systemList"] = systemList
-
-	// Then we make a sub-map to hold the actual data for each system
-	var systems map[string]interface{}
-	systems = make(map[string]interface{})
-	// now hook the systems into viewdata
-	globalViewData["systems"] = systems
-
-	// System 437XR1138R2
-	var system_437XR1138R2 map[string]string
-	system_437XR1138R2 = make(map[string]string)
-	systems["437XR1138R2"] = system_437XR1138R2
-	systemList = append(systemList, "437XR1138R2")
-	system_437XR1138R2["name"] = "WebFrontEnd483"
-	system_437XR1138R2["SystemType"] = "Physical"
-	system_437XR1138R2["AssetTag"] = "Chicago-45Z-2381"
-	system_437XR1138R2["Manufacturer"] = "Contoso"
-	system_437XR1138R2["Model"] = "3500RX"
-	system_437XR1138R2["SKU"] = "8675309"
-	system_437XR1138R2["SerialNumber"] = "437XR1138R2"
-	system_437XR1138R2["PartNumber"] = "224071-J23"
-	system_437XR1138R2["Description"] = "Web Front End node"
-	system_437XR1138R2["UUID"] = "38947555-7742-3448-3784-823347823834"
-	system_437XR1138R2["HostName"] = "web483"
-
-	// System "dummy"
-	var system_dummy map[string]string
-	system_dummy = make(map[string]string)
-	systems["dummy"] = system_dummy
-	systemList = append(systemList, "dummy")
-	system_dummy["name"] = "a dummy system"
+    err := json.Unmarshal([]byte(initialMockupData), &globalViewData)
+    if err != nil {
+        fmt.Println("error:", err)
+        panic(err)
+    }
 }
 
 func getViewData(r *http.Request, templateName string, args map[string]string) (viewData map[string]interface{}) {
 	url := r.URL.Path
 
 	viewData = make(map[string]interface{})
-	for k, v := range globalViewData {
+	for k, v := range globalViewData.(map[string]interface{}) {
 		viewData[k] = v
 	}
 

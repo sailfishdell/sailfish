@@ -3,8 +3,6 @@
     "@odata.type": "#ComputerSystem.v1_1_0.ComputerSystem",
     "@odata.context": "/redfish/v1/$metadata#ComputerSystem.ComputerSystem",
 
-    TEST: {{ index .ViewData.systems $currentSystem }}
-
 {{- with index .ViewData.systems $currentSystem }}
     "Id": "{{ $currentSystem }}",
     "Name": "{{ .name }}",

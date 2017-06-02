@@ -20,7 +20,7 @@ type RedfishService interface {
 	RedfishOptions(ctx context.Context, r *http.Request) ([]byte, error)
 }
 
-type redfishService struct {
+type serviceBackendConfig struct {
 	root             string
 	templateLock     sync.RWMutex
 	templates        *template.Template
@@ -40,7 +40,7 @@ type Config struct {
 // and passes it in. Later this will use plugin loading infrastructure
 func NewService(logger Logger, templatesDir string, backendConfig Config) RedfishService {
 	var err error
-	rh := &redfishService{root: templatesDir, backendFuncMap: backendConfig.BackendFuncMap, getViewData: backendConfig.GetViewData, mapURLToTemplate: backendConfig.MapURLToTemplate}
+	rh := &serviceBackendConfig{root: templatesDir, backendFuncMap: backendConfig.BackendFuncMap, getViewData: backendConfig.GetViewData, mapURLToTemplate: backendConfig.MapURLToTemplate}
 
 	rh.loadConfig = func(exitOnErr bool) {
 		templatePath := path.Join(templatesDir, "*.json")
@@ -89,7 +89,7 @@ func checkHeaders(ctx context.Context, r *http.Request) (err error) {
     return
 }
 
-func (rh *redfishService) RedfishGet(ctx context.Context, r *http.Request) ([]byte, error) {
+func (rh *serviceBackendConfig) RedfishGet(ctx context.Context, r *http.Request) ([]byte, error) {
 	logger := RequestLogger(ctx)
 
     err := checkHeaders(ctx, r)
@@ -103,13 +103,16 @@ func (rh *redfishService) RedfishGet(ctx context.Context, r *http.Request) ([]by
 		return nil, err
 	}
 
-	rh.templateLock.RLock()
-	defer rh.templateLock.RUnlock()
-
 	buf := new(bytes.Buffer)
-	viewData := rh.getViewData(r, templateName, args)
 
-	rh.templates.ExecuteTemplate(buf, templateName, templateParams{ViewData: viewData, Args: args})
+    if len(templateName) > 0 {
+        rh.templateLock.RLock()
+        defer rh.templateLock.RUnlock()
+
+        viewData := rh.getViewData(r, templateName, args)
+
+        rh.templates.ExecuteTemplate(buf, templateName, templateParams{ViewData: viewData, Args: args})
+    }
 
     // TODO: need a mechanism to return headers that the encoder will add
     //       sketch: return a struct containing output plus funcs to set headers
@@ -122,26 +125,26 @@ func (rh *redfishService) RedfishGet(ctx context.Context, r *http.Request) ([]by
 	return buf.Bytes(), nil
 }
 
-func (rh *redfishService) RedfishPut(ctx context.Context, r *http.Request) ([]byte, error) {
+func (rh *serviceBackendConfig) RedfishPut(ctx context.Context, r *http.Request) ([]byte, error) {
 	return []byte(""), nil
 }
 
-func (rh *redfishService) RedfishPost(ctx context.Context, r *http.Request) ([]byte, error) {
+func (rh *serviceBackendConfig) RedfishPost(ctx context.Context, r *http.Request) ([]byte, error) {
 	return []byte(""), nil
 }
 
-func (rh *redfishService) RedfishPatch(ctx context.Context, r *http.Request) ([]byte, error) {
+func (rh *serviceBackendConfig) RedfishPatch(ctx context.Context, r *http.Request) ([]byte, error) {
 	return []byte(""), nil
 }
 
-func (rh *redfishService) RedfishDelete(ctx context.Context, r *http.Request) ([]byte, error) {
+func (rh *serviceBackendConfig) RedfishDelete(ctx context.Context, r *http.Request) ([]byte, error) {
 	return []byte(""), nil
 }
 
-func (rh *redfishService) RedfishHead(ctx context.Context, r *http.Request) ([]byte, error) {
+func (rh *serviceBackendConfig) RedfishHead(ctx context.Context, r *http.Request) ([]byte, error) {
 	return []byte(""), nil
 }
 
-func (rh *redfishService) RedfishOptions(ctx context.Context, r *http.Request) ([]byte, error) {
+func (rh *serviceBackendConfig) RedfishOptions(ctx context.Context, r *http.Request) ([]byte, error) {
 	return []byte(""), nil
 }
