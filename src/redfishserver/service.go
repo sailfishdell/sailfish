@@ -11,7 +11,7 @@ import (
 )
 
 type RedfishService interface {
-	RedfishGet(ctx context.Context, r *http.Request) ([]byte, error)
+	RedfishGet(ctx context.Context, r *http.Request) (interface{}, error)
 	RedfishPut(ctx context.Context, r *http.Request) ([]byte, error)
 	RedfishPost(ctx context.Context, r *http.Request) ([]byte, error)
 	RedfishPatch(ctx context.Context, r *http.Request) ([]byte, error)
@@ -89,7 +89,7 @@ func checkHeaders(ctx context.Context, r *http.Request) (err error) {
 	return
 }
 
-func (rh *serviceBackendConfig) RedfishGet(ctx context.Context, r *http.Request) ([]byte, error) {
+func (rh *serviceBackendConfig) RedfishGet(ctx context.Context, r *http.Request) (interface{}, error) {
 	logger := RequestLogger(ctx)
 
 	err := checkHeaders(ctx, r)
@@ -122,7 +122,12 @@ func (rh *serviceBackendConfig) RedfishGet(ctx context.Context, r *http.Request)
 	// TODO: WWW-Authenticate - (SHALL)
 	// TODO: Server
 	// TODO: Link
-	return buf.Bytes(), nil
+
+    return func(ctx context.Context, w http.ResponseWriter) error {
+            w.Header().Set("Server", "go-redfish/0.1")
+	        _, err := w.Write(buf.Bytes())
+            return err
+    }, nil
 }
 
 func (rh *serviceBackendConfig) RedfishPut(ctx context.Context, r *http.Request) ([]byte, error) {

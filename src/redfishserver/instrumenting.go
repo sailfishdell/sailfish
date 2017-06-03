@@ -23,7 +23,7 @@ func NewInstrumentingService(counter metrics.Counter, latency metrics.Histogram,
 	}
 }
 
-func (s *instrumentingService) RedfishGet(ctx context.Context, r *http.Request) (ret []byte, err error) {
+func (s *instrumentingService) RedfishGet(ctx context.Context, r *http.Request) (ret interface{}, err error) {
 	defer func(begin time.Time) {
 		s.requestCount.With("URL", r.URL.Path, "method", r.Method).Add(1)
 		s.requestLatency.With("URL", r.URL.Path, "method", r.Method).Observe(time.Since(begin).Seconds())

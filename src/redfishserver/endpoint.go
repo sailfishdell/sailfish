@@ -17,9 +17,13 @@ func decodeRedfishRequest(_ context.Context, r *http.Request) (interface{}, erro
 
 // probably could do something cool with channels and goroutines here so that
 // we dont buffer the entire response, but not worth the effort at this moment
-func encodeResponse(_ context.Context, w http.ResponseWriter, response interface{}) error {
-	s := response.([]byte)
-	w.Write(s)
+func encodeResponse(ctx context.Context, w http.ResponseWriter, response interface{}) error {
+    switch response := response.(type) {
+        case []byte:
+	        w.Write(response)
+        case func(context.Context, http.ResponseWriter)(error):
+            return response(ctx, w)
+    }
 	return nil
 }
 

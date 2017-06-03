@@ -49,7 +49,7 @@ func NewLoggingService(logger Logger, s RedfishService) RedfishService {
 	return &loggingService{logger, s}
 }
 
-func (s *loggingService) RedfishGet(ctx context.Context, r *http.Request) (ret []byte, err error) {
+func (s *loggingService) RedfishGet(ctx context.Context, r *http.Request) (ret interface{}, err error) {
 	defer func(begin time.Time) {
 		s.logger.Log(
 			"method", r.Method,
