@@ -6,14 +6,14 @@ import (
 )
 
 type Endpoints struct {
-    RedfishRootGetEndpoint              endpoint.Endpoint
-    RedfishSessionServiceGetEndpoint    endpoint.Endpoint
+	RedfishRootGetEndpoint           endpoint.Endpoint
+	RedfishSessionServiceGetEndpoint endpoint.Endpoint
 }
 
 func MakeServerEndpoints(s Service) Endpoints {
-    return Endpoints{
-            RedfishRootGetEndpoint:  makeRedfishRootGetEndpoint(s),
-        }
+	return Endpoints{
+		RedfishRootGetEndpoint: makeRedfishRootGetEndpoint(s),
+	}
 }
 
 func makeRedfishRootGetEndpoint(s Service) endpoint.Endpoint {
@@ -25,6 +25,6 @@ func makeRedfishRootGetEndpoint(s Service) endpoint.Endpoint {
 }
 
 type redfishGetRequest struct {
-    headers map[string]string
-    url string
+	headers map[string]string
+	url     string
 }

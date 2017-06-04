@@ -3,32 +3,35 @@ package redfishserver
 import (
 	"bytes"
 	"context"
+	"errors"
 	"os"
 	"path"
 	"sync"
 	"text/template"
-    "errors"
 )
 
 type Service interface {
 	RedfishGet(ctx context.Context, headers map[string]string, url string) (interface{}, error)
 }
 
-type Config struct {
-	MapURLToTemplate  func(string) (string, map[string]string, error)
-	BackendFuncMap    template.FuncMap
-	GetViewData       func(context.Context, string, string, map[string]string) map[string]interface{}
-    PostProcessTemplate func(context.Context, []byte, string, map[string]string)  map[string]string
+// ServiceMiddleware is a chainable behavior modifier for Service.
+type ServiceMiddleware func(Service) Service
 
-    // private fields
-	root             string
-	templateLock     sync.RWMutex
-	templates        *template.Template
-	loadConfig       func(bool)
+type Config struct {
+	MapURLToTemplate    func(string) (string, map[string]string, error)
+	BackendFuncMap      template.FuncMap
+	GetViewData         func(context.Context, string, string, map[string]string) map[string]interface{}
+	PostProcessTemplate func(context.Context, []byte, string, map[string]string) map[string]string
+
+	// private fields
+	root         string
+	templateLock sync.RWMutex
+	templates    *template.Template
+	loadConfig   func(bool)
 }
 
 var (
-    ErrNotFound        = errors.New("not found")
+	ErrNotFound = errors.New("not found")
 )
 
 // right now macos doesn't support plugins, so main executable configures this
@@ -36,7 +39,7 @@ var (
 func NewService(logger Logger, templatesDir string, rh Config) Service {
 	var err error
 
-    rh.root = templatesDir
+	rh.root = templatesDir
 	rh.loadConfig = func(exitOnErr bool) {
 		templatePath := path.Join(templatesDir, "*.json")
 		logger.Log("msg", "Loading templates from path", "path", templatePath)
@@ -59,9 +62,6 @@ func NewService(logger Logger, templatesDir string, rh Config) Service {
 
 	return &rh
 }
-
-// ServiceMiddleware is a chainable behavior modifier for Service.
-type ServiceMiddleware func(Service) Service
 
 type templateParams struct {
 	Args     map[string]string
@@ -87,6 +87,6 @@ func (rh *Config) RedfishGet(ctx context.Context, headers map[string]string, url
 		rh.templateLock.RUnlock()
 	}
 
-    output := buf.Bytes()
-    return  output, nil
+	output := buf.Bytes()
+	return output, nil
 }

@@ -11,8 +11,8 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/superchalupa/go-redfish/src/rfs2"
 	"github.com/superchalupa/go-redfish/src/mb2"
+	"github.com/superchalupa/go-redfish/src/rfs2"
 )
 
 type AppConfig struct {

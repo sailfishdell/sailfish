@@ -18,7 +18,7 @@ func NewInstrumentingService(counter metrics.Counter, latency metrics.Histogram,
 	return &instrumentingService{
 		requestCount:   counter,
 		requestLatency: latency,
-		Service: s,
+		Service:        s,
 	}
 }
 
