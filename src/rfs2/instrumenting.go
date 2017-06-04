@@ -2,7 +2,6 @@ package redfishserver
 
 import (
 	"context"
-	"net/http"
 	"time"
 
 	"github.com/go-kit/kit/metrics"
@@ -23,10 +22,10 @@ func NewInstrumentingService(counter metrics.Counter, latency metrics.Histogram,
 	}
 }
 
-func (s *instrumentingService) RedfishGet(ctx context.Context, r *http.Request) (ret interface{}, err error) {
+func (s *instrumentingService) RedfishGet(ctx context.Context, headers map[string]string, url string) (interface{}, error) {
 	defer func(begin time.Time) {
-		s.requestCount.With("URL", r.URL.Path, "method", r.Method).Add(1)
-		s.requestLatency.With("URL", r.URL.Path, "method", r.Method).Observe(time.Since(begin).Seconds())
+		s.requestCount.With("URL", url, "method", "GET").Add(1)
+		s.requestLatency.With("URL", url, "method", "GET").Observe(time.Since(begin).Seconds())
 	}(time.Now())
-	return s.Service.RedfishGet(ctx, r)
+	return s.Service.RedfishGet(ctx, headers, url)
 }

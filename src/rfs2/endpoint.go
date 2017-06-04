@@ -3,7 +3,6 @@ package redfishserver
 import (
 	"context"
 	"github.com/go-kit/kit/endpoint"
-	"net/http"
 )
 
 type Endpoints struct {
@@ -19,8 +18,13 @@ func MakeServerEndpoints(s Service) Endpoints {
 
 func makeRedfishRootGetEndpoint(s Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(*http.Request)
-		resp, err := s.RedfishGet(ctx, req)
-		return resp, err
+		req := request.(redfishGetRequest)
+		output, err := s.RedfishGet(ctx, req.headers, req.url)
+		return output, err
 	}
+}
+
+type redfishGetRequest struct {
+    headers map[string]string
+    url string
 }

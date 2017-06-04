@@ -3,25 +3,22 @@ package redfishserver
 import (
 	"bytes"
 	"context"
-	"net/http"
 	"os"
 	"path"
 	"sync"
 	"text/template"
+    "errors"
 )
 
-const HTTP_HEADER_SERVER = "go-redfish/0.1"
-
 type Service interface {
-	RedfishGet(ctx context.Context, r *http.Request) (interface{}, error)
+	RedfishGet(ctx context.Context, headers map[string]string, url string) (interface{}, error)
 }
 
-
 type Config struct {
-	MapURLToTemplate  func(*http.Request) (string, map[string]string, error)
+	MapURLToTemplate  func(string) (string, map[string]string, error)
 	BackendFuncMap    template.FuncMap
-	GetViewData       func(context.Context, *http.Request, string, map[string]string) map[string]interface{}
-    PostProcessTemplate func(context.Context, *http.Request, []byte, string, map[string]string)  map[string]string
+	GetViewData       func(context.Context, string, string, map[string]string) map[string]interface{}
+    PostProcessTemplate func(context.Context, []byte, string, map[string]string)  map[string]string
 
     // private fields
 	root             string
@@ -29,6 +26,10 @@ type Config struct {
 	templates        *template.Template
 	loadConfig       func(bool)
 }
+
+var (
+    ErrNotFound        = errors.New("not found")
+)
 
 // right now macos doesn't support plugins, so main executable configures this
 // and passes it in. Later this will use plugin loading infrastructure
@@ -67,39 +68,18 @@ type templateParams struct {
 	ViewData map[string]interface{}
 }
 
-func checkHeaders(ctx context.Context, r *http.Request) (err error) {
-	// TODO: check Content-Type (for things with request body only)
-	// TODO: check OData-MaxVersion "Indicates the maximum version of OData
-	//                              that an odata-aware client understands"
-	// TODO: check OData-Version "Services shall reject requests which specify
-	//                              an unsupported OData version. If a service
-	//                              encounters a version that it does not
-	//                              support, the service should reject the
-	//                              request with status code [412]
-	//                              (#status-412). If client does not specify
-	//                              an Odata-Version header, the client is
-	//                              outside the boundaries of this
-	//                              specification."
-	return
-}
-
-func (rh *Config) RedfishGet(ctx context.Context, r *http.Request) (interface{}, error) {
+func (rh *Config) RedfishGet(ctx context.Context, headers map[string]string, url string) (interface{}, error) {
 	logger := RequestLogger(ctx)
 
-	err := checkHeaders(ctx, r)
+	templateName, args, err := rh.MapURLToTemplate(url)
 	if err != nil {
-		return nil, err
-	}
-
-	templateName, args, err := rh.MapURLToTemplate(r)
-	if err != nil {
-		logger.Log("error", "Error getting mapping for URL", "url", r.URL.Path)
+		logger.Log("error", "Error getting mapping for URL", "url", url)
 		return nil, err
 	}
 
 	buf := new(bytes.Buffer)
 
-	viewData := rh.GetViewData(ctx, r, templateName, args)
+	viewData := rh.GetViewData(ctx, url, templateName, args)
 
 	if len(templateName) > 0 {
 		rh.templateLock.RLock()
@@ -108,32 +88,5 @@ func (rh *Config) RedfishGet(ctx context.Context, r *http.Request) (interface{},
 	}
 
     output := buf.Bytes()
-
-    var headers map[string]string
-    headers = make(map[string]string)
-    headers["Server"] = HTTP_HEADER_SERVER
-    if rh.PostProcessTemplate != nil {
-	    headers = rh.PostProcessTemplate(ctx, r, output, templateName, args)
-    }
-
-    // need to evaluate all of the headers we'll need
-	// TODO: ETag -
-	// TODO: X-Auth-Token - (SHALL)
-	// TODO: Retry-After
-	// TODO: WWW-Authenticate - (SHALL) Used for 401 (Unauthorized) requests to indicate the authentication schemes that are usable
-	// TODO: Server
-	// TODO: Link
-
-    return func(ctx context.Context, w http.ResponseWriter) error {
-            for k,v := range headers {
-                w.Header().Set(k,v)
-            }
-
-            //w.Header().Set("Access-Control-Allow-Origin", "*")
-            //w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-            //w.Header().Set("Access-Control-Allow-Headers", "Origin, Content-Type")
-
-	        _, err := w.Write(output)
-            return err
-    }, nil
+    return  output, nil
 }

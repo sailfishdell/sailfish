@@ -2,7 +2,6 @@ package redfishserver
 
 import (
 	"context"
-	"net/http"
 	"os"
 	"time"
 
@@ -49,14 +48,14 @@ func NewLoggingService(logger Logger, s Service) Service {
 	return &loggingService{logger, s}
 }
 
-func (s *loggingService) RedfishGet(ctx context.Context, r *http.Request) (ret interface{}, err error) {
+func (s *loggingService) RedfishGet(ctx context.Context, headers map[string]string, url string) (ret interface{}, err error) {
 	defer func(begin time.Time) {
 		s.logger.Log(
-			"method", r.Method,
-			"URL", r.URL.Path,
+			"method", "GET",
+			"URL", url,
 			"took", time.Since(begin),
 			"err", err,
 		)
 	}(time.Now())
-	return s.Service.RedfishGet(WithLogger(ctx, log.With(s.logger, "method", r.Method, "URL", r.URL.Path, "UUID", uuid.New())), r)
+	return s.Service.RedfishGet(WithLogger(ctx, log.With(s.logger, "method", "GET", "URL", url, "UUID", uuid.New())), headers, url)
 }

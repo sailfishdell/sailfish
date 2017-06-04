@@ -5,7 +5,6 @@ import (
 	"github.com/go-kit/kit/log"
 	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
 	"github.com/go-yaml/yaml"
-	"github.com/gorilla/mux"
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"io/ioutil"
@@ -79,8 +78,7 @@ func main() {
 		svc,
 	)
 
-	r := mux.NewRouter()
-	redfishserver.NewRedfishHandler(svc, r)
+	r := redfishserver.NewRedfishHandler(svc, logger)
 
 	http.Handle("/", r)
 	http.Handle("/metrics", promhttp.Handler())
