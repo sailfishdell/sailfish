@@ -10,7 +10,6 @@ TODO
 ====
     - authentication
     - authorization
-    - 6.1.4 - Media Types: Compression support using Accept-Encoding header
     - 6.1.5 - etags
         - SHALL support ETAG for GET of ManagerAccount
         - PUT/PATCH should include ETAG in HTTP If-Match/If-None-Match header
@@ -24,7 +23,6 @@ TODO
         - /redfish/v1/odata
         - /redfish/v1/$metadata
 
-    - The /redfish/v1 should either redirect to /redfish/v1/ or it should be treated identically
 
     - HTTP Request Headers:
         - Accept (shall) (rfc7231) "Indicates to the server what media type(s) this
@@ -52,6 +50,14 @@ TODO
 
     - HTTP Response Headers:
 
+
+Not likely to ever be implemented
+=================================
+    - 6.1.4 - Media Types: Compression support using Accept-Encoding header
+
+Done
+====
+    - The /redfish/v1 should either redirect to /redfish/v1/ or it should be treated identically
 
 placeholder note:
 Need to go over the notes in this blog post to make sure this server is up to snuff:

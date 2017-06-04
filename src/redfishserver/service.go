@@ -10,6 +10,8 @@ import (
 	"text/template"
 )
 
+const HTTP_HEADER_SERVER = "go-redfish/0.1"
+
 type RedfishService interface {
 	RedfishGet(ctx context.Context, r *http.Request) (interface{}, error)
 	RedfishPut(ctx context.Context, r *http.Request) ([]byte, error)
@@ -26,21 +28,25 @@ type serviceBackendConfig struct {
 	templates        *template.Template
 	loadConfig       func(bool)
 	backendFuncMap   template.FuncMap
-	getViewData      func(*http.Request, string, map[string]string) map[string]interface{}
+	getViewData      func(context.Context, *http.Request, string, map[string]string) map[string]interface{}
 	mapURLToTemplate func(*http.Request) (string, map[string]string, error)
+    postProcessTemplate func(context.Context, *http.Request, []byte, string, map[string]string)  map[string]string
 }
 
 type Config struct {
-	BackendFuncMap   template.FuncMap
-	GetViewData      func(*http.Request, string, map[string]string) map[string]interface{}
-	MapURLToTemplate func(*http.Request) (string, map[string]string, error)
+    // module-private data
+    InstanceData      interface{}
+	MapURLToTemplate  func(*http.Request) (string, map[string]string, error)
+	BackendFuncMap    template.FuncMap
+	GetViewData       func(context.Context, *http.Request, string, map[string]string) map[string]interface{}
+    PostProcessTemplate func(context.Context, *http.Request, []byte, string, map[string]string)  map[string]string
 }
 
 // right now macos doesn't support plugins, so main executable configures this
 // and passes it in. Later this will use plugin loading infrastructure
 func NewService(logger Logger, templatesDir string, backendConfig Config) RedfishService {
 	var err error
-	rh := &serviceBackendConfig{root: templatesDir, backendFuncMap: backendConfig.BackendFuncMap, getViewData: backendConfig.GetViewData, mapURLToTemplate: backendConfig.MapURLToTemplate}
+	rh := &serviceBackendConfig{root: templatesDir, backendFuncMap: backendConfig.BackendFuncMap, getViewData: backendConfig.GetViewData, mapURLToTemplate: backendConfig.MapURLToTemplate, postProcessTemplate: backendConfig.PostProcessTemplate}
 
 	rh.loadConfig = func(exitOnErr bool) {
 		templatePath := path.Join(templatesDir, "*.json")
@@ -105,27 +111,41 @@ func (rh *serviceBackendConfig) RedfishGet(ctx context.Context, r *http.Request)
 
 	buf := new(bytes.Buffer)
 
+	viewData := rh.getViewData(ctx, r, templateName, args)
+
 	if len(templateName) > 0 {
 		rh.templateLock.RLock()
-		defer rh.templateLock.RUnlock()
-
-		viewData := rh.getViewData(r, templateName, args)
-
 		rh.templates.ExecuteTemplate(buf, templateName, templateParams{ViewData: viewData, Args: args})
+		rh.templateLock.RUnlock()
 	}
 
-	// TODO: need a mechanism to return headers that the encoder will add
-	//       sketch: return a struct containing output plus funcs to set headers
+    output := buf.Bytes()
+
+    var headers map[string]string
+    headers = make(map[string]string)
+    headers["Server"] = HTTP_HEADER_SERVER
+    if rh.postProcessTemplate != nil {
+	    headers = rh.postProcessTemplate(ctx, r, output, templateName, args)
+    }
+
+    // need to evaluate all of the headers we'll need
 	// TODO: ETag -
 	// TODO: X-Auth-Token - (SHALL)
 	// TODO: Retry-After
-	// TODO: WWW-Authenticate - (SHALL)
+	// TODO: WWW-Authenticate - (SHALL) Used for 401 (Unauthorized) requests to indicate the authentication schemes that are usable
 	// TODO: Server
 	// TODO: Link
 
     return func(ctx context.Context, w http.ResponseWriter) error {
-            w.Header().Set("Server", "go-redfish/0.1")
-	        _, err := w.Write(buf.Bytes())
+            for k,v := range headers {
+                w.Header().Set(k,v)
+            }
+
+            //w.Header().Set("Access-Control-Allow-Origin", "*")
+            //w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+            //w.Header().Set("Access-Control-Allow-Headers", "Origin, Content-Type")
+
+	        _, err := w.Write(output)
             return err
     }, nil
 }
@@ -135,6 +155,7 @@ func (rh *serviceBackendConfig) RedfishPut(ctx context.Context, r *http.Request)
 }
 
 func (rh *serviceBackendConfig) RedfishPost(ctx context.Context, r *http.Request) ([]byte, error) {
+	// TODO: HTTP HEADER: Location - (CONDITIONAL SHALL) for POST to return where the object was created
 	return []byte(""), nil
 }
 

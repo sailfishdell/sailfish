@@ -2,17 +2,25 @@ package mockbackend
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/superchalupa/go-redfish/src/redfishserver"
 	"net/http"
 	"regexp"
 	"strings"
 	"text/template"
+    "context"
 )
 
 // Config This is the backend plugin configuration for this backend
 var Config redfishserver.Config = redfishserver.Config{BackendFuncMap: funcMap, GetViewData: getViewData, MapURLToTemplate: mapURLToTemplate}
 
+/**************************************************************************
+// Everything from here below is private to this module. The only interface
+// from the outside world into this module is the Config above
+**************************************************************************/
+
+// This is how we add new functions to the text/template parser, so we can do
+// some (minimally) more complicated processing directly inside the template
+// rather than inside code
 var funcMap = template.FuncMap{
 	"hello": func() string { return "HELLO WORLD" },
 }
@@ -33,7 +41,6 @@ func mapURLToTemplate(r *http.Request) (templateName string, args map[string]str
 
 	var systemRegexp = regexp.MustCompile("^/redfish/v1/Systems/([a-zA-Z0-9]+)")
 	if system := systemRegexp.FindSubmatch([]byte(r.URL.Path)); system != nil {
-		fmt.Printf("Found a system URL: %s\n", system[1])
 		templateName = "System_template.json"
 		args["System"] = string(system[1])
 	}
@@ -41,22 +48,16 @@ func mapURLToTemplate(r *http.Request) (templateName string, args map[string]str
 	return
 }
 
-type odataLink struct {
-	Name   string
-	Target string
-}
-
 var globalViewData interface{}
 
 func init() {
 	err := json.Unmarshal(initialMockupData, &globalViewData)
 	if err != nil {
-		fmt.Println("error:", err)
 		panic(err)
 	}
 }
 
-func getViewData(r *http.Request, templateName string, args map[string]string) (viewData map[string]interface{}) {
+func getViewData(ctx context.Context, r *http.Request, templateName string, args map[string]string) (viewData map[string]interface{}) {
 	url := r.URL.Path
 
 	viewData = make(map[string]interface{})

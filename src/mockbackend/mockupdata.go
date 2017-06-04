@@ -26,7 +26,44 @@ var initialMockupData = []byte(`{
             "PartNumber": "224071-J23",
             "Description": "Web Front End node",
             "UUID": "38947555-7742-3448-3784-823347823834",
-            "HostName": "web483"
+            "HostName": "web483",
+
+            "Status": {
+                "State": "Enabled",
+                "Health": "OK",
+                "HealthRollUp": "OK"
+            },
+    "IndicatorLED": "Off",
+    "PowerState": "On",
+    "Boot": {
+        "BootSourceOverrideEnabled": "Once",
+        "BootSourceOverrideTarget": "Pxe",
+        "BootSourceOverrideTarget@Redfish.AllowableValues": [
+            "None",
+            "Pxe",
+            "Cd",
+            "Usb",
+            "Hdd",
+            "BiosSetup",
+            "Utilities",
+            "Diags",
+            "SDCard",
+            "UefiTarget"
+        ],
+        "BootSourceOverrideMode": "UEFI",
+        "UefiTargetBootSourceOverride": "/0x31/0x33/0x01/0x01"
+    },
+    "TrustedModules": [
+        {
+            "FirmwareVersion": "1.13b",
+            "InterfaceType": "TPM1_2",
+            "Status": {
+                "State": "Enabled",
+                "Health": "OK"
+            }
+        }
+    ]
+
         },
         "dummy": {
             "name": "a dummy system"

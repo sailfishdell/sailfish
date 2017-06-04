@@ -17,11 +17,14 @@
     "UUID": "{{- .UUID -}}",
     "HostName": "{{- .HostName -}}",
 
+    {{- with .Status }}
     "Status": {
-        "State": "Enabled",
-        "Health": "OK",
-        "HealthRollUp": "OK"
+        "State": "{{- .State -}}",
+        "Health": "{{- .Health -}}",
+        "HealthRollUp": "{{- .HealthRollUp -}}"
     },
+    {{- end}}
+
     "IndicatorLED": "Off",
     "PowerState": "On",
     "Boot": {
