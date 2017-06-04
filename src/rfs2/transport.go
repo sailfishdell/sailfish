@@ -7,9 +7,18 @@ import (
 	"github.com/gorilla/mux"
 	"net/http"
     "encoding/json"
+    "errors"
 )
 
 const HTTP_HEADER_SERVER = "go-redfish/0.1"
+
+// errorer is implemented by all concrete response types that may contain
+// errors. It allows us to change the HTTP response code without needing to
+// trigger an endpoint (transport-level) error. For more information, read the
+// big comment in endpoints.go.
+type errorer interface {
+    error() error
+}
 
 func NewRedfishHandler(svc Service, logger log.Logger) (http.Handler) {
     r := mux.NewRouter()
@@ -77,7 +86,22 @@ func decodeRedfishRequest(_ context.Context, r *http.Request) (dec interface{}, 
 // probably could do something cool with channels and goroutines here so that
 // we dont buffer the entire response, but not worth the effort at this moment
 func encodeResponse(ctx context.Context, w http.ResponseWriter, response interface{}) error {
-    res := response.([]byte)
+    switch  response := response.(type) {
+        case errorer:
+            if response.error() != nil {
+                // Not a Go kit transport error, but a business-logic error.
+                // Provide those as HTTP errors.
+                encodeError(ctx, response.error(), w)
+                return nil
+            }
+        case []byte:
+            _, err := w.Write(response)
+            return err
+        default:
+            w.Header().Set("Content-Type", "application/json; charset=utf-8")
+            return json.NewEncoder(w).Encode(response)
+    }
+
     // if needed:
         //w.Header().Set("x-header-name", "header value")
 
@@ -93,10 +117,15 @@ func encodeResponse(ctx context.Context, w http.ResponseWriter, response interfa
     //w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
     //w.Header().Set("Access-Control-Allow-Headers", "Origin, Content-Type")
 
-    _, err := w.Write(res)
     // for when we switch to structured output
     // return json.NewEncoder(w).Encode(response)
-    return err
+
+    w.Header().Set("Content-Type", "application/json; charset=utf-8")
+    w.WriteHeader(http.StatusInternalServerError)
+    json.NewEncoder(w).Encode(map[string]interface{}{
+        "error": "encodeResponse got to the end without outputting a response",
+    })
+    return nil
 }
 
 func encodeError(_ context.Context, err error, w http.ResponseWriter) {
