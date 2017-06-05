@@ -1,4 +1,4 @@
-package mockbackend
+package mb2
 
 var initialMockupData = []byte(`{
     "root_links": [

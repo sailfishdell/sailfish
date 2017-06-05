@@ -1,9 +1,8 @@
-package mockbackend
+package mb2
 
 import (
 	"encoding/json"
-	"github.com/superchalupa/go-redfish/src/redfishserver"
-	"net/http"
+	redfishserver "github.com/superchalupa/go-redfish/src/rfs2"
 	"regexp"
 	"strings"
 	"text/template"
@@ -25,8 +24,7 @@ var funcMap = template.FuncMap{
 	"hello": func() string { return "HELLO WORLD" },
 }
 
-func mapURLToTemplate(r *http.Request) (templateName string, args map[string]string, err error) {
-	url := r.URL.Path
+func mapURLToTemplate(url string) (templateName string, args map[string]string, err error) {
 	args = make(map[string]string)
 
 	templateName = url + "/index.json"
@@ -40,7 +38,7 @@ func mapURLToTemplate(r *http.Request) (templateName string, args map[string]str
 	}
 
 	var systemRegexp = regexp.MustCompile("^/redfish/v1/Systems/([a-zA-Z0-9]+)")
-	if system := systemRegexp.FindSubmatch([]byte(r.URL.Path)); system != nil {
+	if system := systemRegexp.FindSubmatch([]byte(url)); system != nil {
 		templateName = "System_template.json"
 		args["System"] = string(system[1])
 	}
@@ -57,9 +55,7 @@ func init() {
 	}
 }
 
-func getViewData(ctx context.Context, r *http.Request, templateName string, args map[string]string) (viewData map[string]interface{}) {
-	url := r.URL.Path
-
+func getViewData(ctx context.Context, url string, templateName string, args map[string]string) (viewData map[string]interface{}) {
 	viewData = make(map[string]interface{})
 	for k, v := range globalViewData.(map[string]interface{}) {
 		viewData[k] = v

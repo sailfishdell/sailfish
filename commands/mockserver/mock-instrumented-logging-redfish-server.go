@@ -5,14 +5,14 @@ import (
 	"github.com/go-kit/kit/log"
 	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
 	"github.com/go-yaml/yaml"
-	"github.com/gorilla/mux"
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/superchalupa/go-redfish/src/mockbackend"
-	"github.com/superchalupa/go-redfish/src/redfishserver"
 	"io/ioutil"
 	"net/http"
 	"os"
+
+	"github.com/superchalupa/go-redfish/src/mb2"
+	"github.com/superchalupa/go-redfish/src/rfs2"
 )
 
 type AppConfig struct {
@@ -56,8 +56,8 @@ func main() {
 
 	logger = log.With(logger, "listen", *listen, "caller", log.DefaultCaller)
 
-	var svc redfishserver.RedfishService
-	var backend redfishserver.Config = mockbackend.Config
+	var svc redfishserver.Service
+	var backend redfishserver.Config = mb2.Config
 	svc = redfishserver.NewService(logger, appConfig.TemplatesDir, backend)
 	svc = redfishserver.NewLoggingService(logger, svc)
 
@@ -78,8 +78,7 @@ func main() {
 		svc,
 	)
 
-	r := mux.NewRouter()
-	redfishserver.NewRedfishHandler(svc, r)
+	r := redfishserver.NewRedfishHandler(svc, logger)
 
 	http.Handle("/", r)
 	http.Handle("/metrics", promhttp.Handler())

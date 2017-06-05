@@ -3,50 +3,28 @@ package redfishserver
 import (
 	"context"
 	"github.com/go-kit/kit/endpoint"
-	"net/http"
 )
 
 type Endpoints struct {
-    RedfishSessionServiceGetEndpoint  endpoint.Endpoint
+	RedfishRootGetEndpoint           endpoint.Endpoint
+	RedfishSessionServiceGetEndpoint endpoint.Endpoint
 }
 
-func makeRedfishGetEndpoint(s RedfishService) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(*http.Request)
-		resp, err := s.RedfishGet(ctx, req)
-		return resp, err
+func MakeServerEndpoints(s Service) Endpoints {
+	return Endpoints{
+		RedfishRootGetEndpoint: makeRedfishRootGetEndpoint(s),
 	}
 }
 
-func makeRedfishPutEndpoint(s RedfishService) endpoint.Endpoint {
+func makeRedfishRootGetEndpoint(s Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(*http.Request)
-		resp, err := s.RedfishPut(ctx, req)
-		return resp, err
+		req := request.(redfishGetRequest)
+		output, err := s.RedfishGet(ctx, req.url)
+		return output, err
 	}
 }
 
-func makeRedfishPostEndpoint(s RedfishService) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(*http.Request)
-		resp, err := s.RedfishPost(ctx, req)
-		return resp, err
-	}
+type redfishGetRequest struct {
+	headers map[string]string
+	url     string
 }
-
-func makeRedfishPatchEndpoint(s RedfishService) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(*http.Request)
-		resp, err := s.RedfishPatch(ctx, req)
-		return resp, err
-	}
-}
-
-func makeRedfishDeleteEndpoint(s RedfishService) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(*http.Request)
-		resp, err := s.RedfishDelete(ctx, req)
-		return resp, err
-	}
-}
-
