@@ -8,7 +8,11 @@ import (
 )
 
 // Config This is the backend plugin configuration for this backend
-var Config redfishserver.Config = redfishserver.Config{BackendFuncMap: funcMap, GetViewData: getViewData}
+var Config redfishserver.Config = redfishserver.Config{
+    BackendFuncMap: funcMap,
+    GetViewData: getViewData,
+    GetJSONOutput: getJSONOutput,
+}
 
 /**************************************************************************
 // Everything from here below is private to this module. The only interface
@@ -31,7 +35,7 @@ func init() {
 	}
 }
 
-func getViewData(ctx context.Context, templateName, url string, args map[string]string) (viewData map[string]interface{}) {
+func getViewData(ctx context.Context, templateName, url string, args map[string]string) (viewData map[string]interface{}, err error) {
 	viewData = make(map[string]interface{})
 	for k, v := range globalViewData.(map[string]interface{}) {
 		viewData[k] = v
@@ -41,5 +45,15 @@ func getViewData(ctx context.Context, templateName, url string, args map[string]
 	viewData["self_uri"] = url
 	viewData["odata_self_id"] = "\"@odata.id\": \"" + url + "\""
 
-	return viewData
+	return
+}
+
+func getJSONOutput(ctx context.Context, url string, args map[string]string) (output interface{}, err error) {
+    switch url {
+        case  "/redfish/":
+            output = make(map[string]string)
+            output.(map[string]string)["v1"] = "/redfish/v1/"
+    }
+
+    return
 }

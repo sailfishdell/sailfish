@@ -12,6 +12,7 @@ import (
 
 type Service interface {
 	TemplatedRedfishGet(ctx context.Context, templateName, url string, args map[string]string) (interface{}, error)
+	RawJSONRedfishGet(ctx context.Context, url string, args map[string]string) (interface{}, error)
 }
 
 // ServiceMiddleware is a chainable behavior modifier for Service.
@@ -19,8 +20,8 @@ type ServiceMiddleware func(Service) Service
 
 type Config struct {
 	BackendFuncMap      template.FuncMap
-	GetViewData         func(context.Context, string, string, map[string]string) map[string]interface{}
-	PostProcessTemplate func(context.Context, []byte, string, map[string]string) map[string]string
+	GetViewData         func(context.Context, string, string, map[string]string) (map[string]interface{}, error)
+	GetJSONOutput       func(context.Context, string, map[string]string) (interface{}, error)
 
 	// private fields
 	root         string
@@ -72,12 +73,24 @@ func (rh *Config) TemplatedRedfishGet(ctx context.Context, templateName, url str
     logger.Log("msg", "HELLO WORLD")
 
 	buf := new(bytes.Buffer)
-	viewData := rh.GetViewData(ctx, templateName, url, args)
+	viewData, err := rh.GetViewData(ctx, templateName, url, args)
+    if err != nil {
+        logger.Log("msg", "ERROR EARLY RETURN")
+        return nil, err
+    }
 
     rh.templateLock.RLock()
     rh.templates.ExecuteTemplate(buf, templateName, templateParams{ViewData: viewData, Args: args})
     rh.templateLock.RUnlock()
 
 	output := buf.Bytes()
-	return output, nil
+	return output, err
+}
+
+
+func (rh *Config) RawJSONRedfishGet(ctx context.Context, url string, args map[string]string) (interface{}, error) {
+	logger := RequestLogger(ctx)
+    logger.Log("msg", "HELLO WORLD: rawjson")
+
+	return rh.GetJSONOutput(ctx, url, args)
 }

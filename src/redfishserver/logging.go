@@ -65,3 +65,21 @@ func (s *loggingService) TemplatedRedfishGet(ctx context.Context, templateName, 
 	}(time.Now())
 	return s.Service.TemplatedRedfishGet(WithLogger(ctx, ctxlogger), templateName, url, args)
 }
+
+func (s *loggingService) RawJSONRedfishGet(ctx context.Context, url string, args map[string]string) (ret interface{}, err error) {
+    ctxlogger := log.With(s.logger, "method", "GET", "URL", url, "UUID", uuid.New())
+
+    thislogger := ctxlogger
+    for k,v := range args {
+        thislogger = log.With(thislogger, "arg_" + k, v )
+    }
+	defer func(begin time.Time) {
+		thislogger.Log(
+			"method", "GET",
+			"URL", url,
+			"took", time.Since(begin),
+			"err", err,
+		)
+	}(time.Now())
+	return s.Service.RawJSONRedfishGet(WithLogger(ctx, ctxlogger), url, args)
+}

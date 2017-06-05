@@ -29,3 +29,11 @@ func (s *instrumentingService) TemplatedRedfishGet(ctx context.Context, template
 	}(time.Now())
 	return s.Service.TemplatedRedfishGet(ctx, templateName, url, args)
 }
+
+func (s *instrumentingService) RawJSONRedfishGet(ctx context.Context, url string, args map[string]string) (interface{}, error) {
+	defer func(begin time.Time) {
+		s.requestCount.With("URL", url, "method", "GET").Add(1)
+		s.requestLatency.With("URL", url, "method", "GET").Observe(time.Since(begin).Seconds())
+	}(time.Now())
+	return s.Service.RawJSONRedfishGet(ctx, url, args)
+}
