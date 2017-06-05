@@ -11,8 +11,8 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/superchalupa/go-redfish/src/mb2"
-	"github.com/superchalupa/go-redfish/src/rfs2"
+	"github.com/superchalupa/go-redfish/src/mockbackend"
+	"github.com/superchalupa/go-redfish/src/redfishserver"
 )
 
 type AppConfig struct {
@@ -57,7 +57,7 @@ func main() {
 	logger = log.With(logger, "listen", *listen, "caller", log.DefaultCaller)
 
 	var svc redfishserver.Service
-	var backend redfishserver.Config = mb2.Config
+	var backend redfishserver.Config = mockbackend.Config
 	svc = redfishserver.NewService(logger, appConfig.TemplatesDir, backend)
 	svc = redfishserver.NewLoggingService(logger, svc)
 

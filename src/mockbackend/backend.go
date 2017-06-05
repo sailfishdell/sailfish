@@ -1,8 +1,8 @@
-package mb2
+package mockbackend
 
 import (
 	"encoding/json"
-	redfishserver "github.com/superchalupa/go-redfish/src/rfs2"
+	redfishserver "github.com/superchalupa/go-redfish/src/redfishserver"
 	"regexp"
 	"strings"
 	"text/template"
