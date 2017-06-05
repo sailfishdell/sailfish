@@ -30,10 +30,7 @@ func NewRedfishHandler(svc Service, logger log.Logger) http.Handler {
 		httptransport.ServerErrorEncoder(encodeError),
 	}
 
-	r.HandleFunc("/redfish/v1", func(res http.ResponseWriter, req *http.Request) {
-		res.Header().Set("Server", HTTP_HEADER_SERVER)
-		http.Redirect(res, req, req.URL.String()+"/", http.StatusPermanentRedirect) // HTTP 308 redirect
-	})
+	r.Handle("/redfish/v1", http.RedirectHandler("/redfish/v1/", 308))
 
 	r.Methods("GET").Path("/redfish/v1/").Handler(
 		httptransport.NewServer(
@@ -78,7 +75,7 @@ func decodeRedfishRequest(_ context.Context, r *http.Request) (dec interface{}, 
 	if ver := r.Header.Get("OData-Version"); ver != "" {
 		headers["OData-Version"] = ver
 	}
-	dec = redfishGetRequest{url: r.URL.Path}
+	dec = templatedRedfishGetRequest{url: r.URL.Path, args: mux.Vars(r) }
 	return dec, nil
 }
 

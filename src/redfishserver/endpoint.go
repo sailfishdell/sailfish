@@ -12,19 +12,20 @@ type Endpoints struct {
 
 func MakeServerEndpoints(s Service) Endpoints {
 	return Endpoints{
-		RedfishRootGetEndpoint: makeRedfishRootGetEndpoint(s),
+		RedfishRootGetEndpoint: makeTemplatedRedfishGetEndpoint(s, "Root.gojson"),
 	}
 }
 
-func makeRedfishRootGetEndpoint(s Service) endpoint.Endpoint {
+func makeTemplatedRedfishGetEndpoint(s Service, templateName string) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(redfishGetRequest)
-		output, err := s.RedfishGet(ctx, req.url)
+		req := request.(templatedRedfishGetRequest)
+		output, err := s.TemplatedRedfishGet(ctx, templateName, req.url, req.args)
 		return output, err
 	}
 }
 
-type redfishGetRequest struct {
+type templatedRedfishGetRequest struct {
 	headers map[string]string
 	url     string
+	args    map[string]string
 }

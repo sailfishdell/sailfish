@@ -11,7 +11,7 @@ import (
 )
 
 type Service interface {
-	RedfishGet(ctx context.Context, url string) (interface{}, error)
+	TemplatedRedfishGet(ctx context.Context, templateName, url string, args map[string]string) (interface{}, error)
 }
 
 // ServiceMiddleware is a chainable behavior modifier for Service.
@@ -41,7 +41,7 @@ func NewService(logger Logger, templatesDir string, rh Config) Service {
 
 	rh.root = templatesDir
 	rh.loadConfig = func(exitOnErr bool) {
-		templatePath := path.Join(templatesDir, "*.json")
+		templatePath := path.Join(templatesDir, "*json")
 		logger.Log("msg", "Loading templates from path", "path", templatePath)
 		tempTemplate := template.New("the template")
 		tempTemplate.Funcs(rh.BackendFuncMap)
@@ -68,24 +68,16 @@ type templateParams struct {
 	ViewData map[string]interface{}
 }
 
-func (rh *Config) RedfishGet(ctx context.Context, url string) (interface{}, error) {
+func (rh *Config) TemplatedRedfishGet(ctx context.Context, templateName, url string, args map[string]string) (interface{}, error) {
 	logger := RequestLogger(ctx)
-
-	templateName, args, err := rh.MapURLToTemplate(url)
-	if err != nil {
-		logger.Log("error", "Error getting mapping for URL", "url", url)
-		return nil, err
-	}
+    logger.Log("msg", "HELLO WORLD")
 
 	buf := new(bytes.Buffer)
-
 	viewData := rh.GetViewData(ctx, url, templateName, args)
 
-	if len(templateName) > 0 {
-		rh.templateLock.RLock()
-		rh.templates.ExecuteTemplate(buf, templateName, templateParams{ViewData: viewData, Args: args})
-		rh.templateLock.RUnlock()
-	}
+    rh.templateLock.RLock()
+    rh.templates.ExecuteTemplate(buf, templateName, templateParams{ViewData: viewData, Args: args})
+    rh.templateLock.RUnlock()
 
 	output := buf.Bytes()
 	return output, nil

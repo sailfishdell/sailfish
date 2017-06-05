@@ -22,10 +22,10 @@ func NewInstrumentingService(counter metrics.Counter, latency metrics.Histogram,
 	}
 }
 
-func (s *instrumentingService) RedfishGet(ctx context.Context, url string) (interface{}, error) {
+func (s *instrumentingService) TemplatedRedfishGet(ctx context.Context, templateName, url string, args map[string]string) (interface{}, error) {
 	defer func(begin time.Time) {
 		s.requestCount.With("URL", url, "method", "GET").Add(1)
 		s.requestLatency.With("URL", url, "method", "GET").Observe(time.Since(begin).Seconds())
 	}(time.Now())
-	return s.Service.RedfishGet(ctx, url)
+	return s.Service.TemplatedRedfishGet(ctx, templateName, url, args)
 }
