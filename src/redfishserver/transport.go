@@ -35,7 +35,15 @@ func NewRedfishHandler(svc Service, logger log.Logger) http.Handler {
 	r.Methods("GET").Path("/redfish/v1/").Handler(
 		httptransport.NewServer(
 			e.RedfishRootGetEndpoint,
-			decodeRedfishRequest,
+			decodeRedfishGetRequest,
+			encodeResponse,
+			options...,
+		))
+
+	r.Methods("GET").Path("/redfish/v1/Systems").Handler(
+		httptransport.NewServer(
+			e.RedfishSystemCollectionGetEndpoint,
+			decodeRedfishGetRequest,
 			encodeResponse,
 			options...,
 		))
@@ -63,7 +71,7 @@ func checkHeaders(header http.Header) (err error) {
 // we are basically tied to HTTP, so just pass the request down to the function
 // don't anticipate ever adding grpc or other support here, so this should be fine for now
 // if we do add, we'll have to simply re-work the function parameters.
-func decodeRedfishRequest(_ context.Context, r *http.Request) (dec interface{}, err error) {
+func decodeRedfishGetRequest(_ context.Context, r *http.Request) (dec interface{}, err error) {
 	// need to decode headers that we may need manually
 
 	err = checkHeaders(r.Header)

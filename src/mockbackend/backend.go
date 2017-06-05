@@ -3,14 +3,12 @@ package mockbackend
 import (
 	"encoding/json"
 	redfishserver "github.com/superchalupa/go-redfish/src/redfishserver"
-	"regexp"
-	"strings"
 	"text/template"
     "context"
 )
 
 // Config This is the backend plugin configuration for this backend
-var Config redfishserver.Config = redfishserver.Config{BackendFuncMap: funcMap, GetViewData: getViewData, MapURLToTemplate: mapURLToTemplate}
+var Config redfishserver.Config = redfishserver.Config{BackendFuncMap: funcMap, GetViewData: getViewData}
 
 /**************************************************************************
 // Everything from here below is private to this module. The only interface
@@ -24,28 +22,6 @@ var funcMap = template.FuncMap{
 	"hello": func() string { return "HELLO WORLD" },
 }
 
-func mapURLToTemplate(url string) (templateName string, args map[string]string, err error) {
-	args = make(map[string]string)
-
-	templateName = url + "/index.json"
-	templateName = strings.Replace(templateName, "//", "/", -1)
-	templateName = strings.Replace(templateName, "/", "_", -1)
-	if strings.HasPrefix(templateName, "_") {
-		templateName = templateName[1:]
-	}
-	if strings.HasPrefix(templateName, "redfish_v1_") {
-		templateName = templateName[len("redfish_v1_"):]
-	}
-
-	var systemRegexp = regexp.MustCompile("^/redfish/v1/Systems/([a-zA-Z0-9]+)")
-	if system := systemRegexp.FindSubmatch([]byte(url)); system != nil {
-		templateName = "System_template.json"
-		args["System"] = string(system[1])
-	}
-
-	return
-}
-
 var globalViewData interface{}
 
 func init() {
@@ -55,7 +31,7 @@ func init() {
 	}
 }
 
-func getViewData(ctx context.Context, url string, templateName string, args map[string]string) (viewData map[string]interface{}) {
+func getViewData(ctx context.Context, templateName, url string, args map[string]string) (viewData map[string]interface{}) {
 	viewData = make(map[string]interface{})
 	for k, v := range globalViewData.(map[string]interface{}) {
 		viewData[k] = v

@@ -18,7 +18,6 @@ type Service interface {
 type ServiceMiddleware func(Service) Service
 
 type Config struct {
-	MapURLToTemplate    func(string) (string, map[string]string, error)
 	BackendFuncMap      template.FuncMap
 	GetViewData         func(context.Context, string, string, map[string]string) map[string]interface{}
 	PostProcessTemplate func(context.Context, []byte, string, map[string]string) map[string]string
@@ -73,7 +72,7 @@ func (rh *Config) TemplatedRedfishGet(ctx context.Context, templateName, url str
     logger.Log("msg", "HELLO WORLD")
 
 	buf := new(bytes.Buffer)
-	viewData := rh.GetViewData(ctx, url, templateName, args)
+	viewData := rh.GetViewData(ctx, templateName, url, args)
 
     rh.templateLock.RLock()
     rh.templates.ExecuteTemplate(buf, templateName, templateParams{ViewData: viewData, Args: args})

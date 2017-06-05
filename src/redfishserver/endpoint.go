@@ -6,13 +6,14 @@ import (
 )
 
 type Endpoints struct {
-	RedfishRootGetEndpoint           endpoint.Endpoint
-	RedfishSessionServiceGetEndpoint endpoint.Endpoint
+	RedfishRootGetEndpoint              endpoint.Endpoint
+    RedfishSystemCollectionGetEndpoint  endpoint.Endpoint
 }
 
 func MakeServerEndpoints(s Service) Endpoints {
 	return Endpoints{
 		RedfishRootGetEndpoint: makeTemplatedRedfishGetEndpoint(s, "Root.gojson"),
+		RedfishSystemCollectionGetEndpoint: makeTemplatedRedfishGetEndpoint(s, "SystemCollection.gojson"),
 	}
 }
 
