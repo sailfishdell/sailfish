@@ -60,7 +60,7 @@ func (s *loggingService) RawJSONRedfishGet(ctx context.Context, pathTemplate, ur
 			"method", "GET",
 			"URL", url,
 			"PathTemplate", pathTemplate,
-			"took", time.Since(begin),
+			"business_logic_time", time.Since(begin),
 			"err", err,
 		)
 	}(time.Now())
