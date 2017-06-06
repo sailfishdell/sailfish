@@ -1,21 +1,21 @@
 package mockbackend
 
 import (
+	"context"
 	"encoding/json"
 	redfishserver "github.com/superchalupa/go-redfish/src/redfishserver"
 	"text/template"
-    "context"
 )
 
 type backendConfig struct {
-    templatesDir string
+	templatesDir string
 }
 
-func NewBackend( templatesDir string ) redfishserver.Config {
-    return  redfishserver.Config {
-        GetJSONOutput: getJSONOutput,
-        BackendUserdata: backendConfig{templatesDir: templatesDir},
-    }
+func NewBackend(templatesDir string) redfishserver.Config {
+	return redfishserver.Config{
+		GetJSONOutput:   getJSONOutput,
+		BackendUserdata: backendConfig{templatesDir: templatesDir},
+	}
 }
 
 /**************************************************************************
@@ -31,81 +31,84 @@ var funcMap = template.FuncMap{
 }
 
 var (
-    serviceV1RootJSON,
-    SystemCollectionJSON interface{}
-    )
+	serviceV1RootJSON,
+	SystemCollectionJSON interface{}
+)
 
 func init() {
-    var unmarshalJSONPairs = [] struct { global *interface{}; jsonText []byte }{
-        {global: &serviceV1RootJSON, jsonText: serviceV1RootText},
-        {global: &SystemCollectionJSON, jsonText: SystemCollectionText},
-    }
-    for i := range unmarshalJSONPairs {
-        err := json.Unmarshal(unmarshalJSONPairs[i].jsonText, unmarshalJSONPairs[i].global)
-        if err != nil {
-            panic(err)
-        }
-    }
+	var unmarshalJSONPairs = []struct {
+		global   *interface{}
+		jsonText []byte
+	}{
+		{global: &serviceV1RootJSON, jsonText: serviceV1RootText},
+		{global: &SystemCollectionJSON, jsonText: SystemCollectionText},
+	}
+	for i := range unmarshalJSONPairs {
+		err := json.Unmarshal(unmarshalJSONPairs[i].jsonText, unmarshalJSONPairs[i].global)
+		if err != nil {
+			panic(err)
+		}
+	}
 }
 
 func getJSONOutput(ctx context.Context, logger redfishserver.Logger, pathTemplate, url string, args map[string]string) (output interface{}, err error) {
-    switch pathTemplate {
-        case  "/redfish/":
-            output = make(map[string]string)
-            output.(map[string]string)["v1"] = "/redfish/v1/"
+	switch pathTemplate {
+	case "/redfish/":
+		output = make(map[string]string)
+		output.(map[string]string)["v1"] = "/redfish/v1/"
 
-        case  "/redfish/v1/":
-            return &serviceV1RootJSON, nil
+	case "/redfish/v1/":
+		return &serviceV1RootJSON, nil
 
-        case  "/redfish/v1/Systems":
-            return collapseCollection(SystemCollectionJSON.(map[string]interface{}))
+	case "/redfish/v1/Systems":
+		return collapseCollection(SystemCollectionJSON.(map[string]interface{}))
 
-        case  "/redfish/v1/Systems/{system}":
-            return getCollectionMember(SystemCollectionJSON.(map[string]interface{}), url)
+	case "/redfish/v1/Systems/{system}":
+		return getCollectionMember(SystemCollectionJSON.(map[string]interface{}), url)
 
-        default:
-            err = redfishserver.ErrNotFound
-    }
+	default:
+		err = redfishserver.ErrNotFound
+	}
 
-    return
+	return
 }
 
 // collapse the "Members": [ {...}, {...} ] so that only @odata.id appears in the output array
 func collapseCollection(inputJSON map[string]interface{}) (outputJSON interface{}, err error) {
-    var output map[string]interface{}
-    output = make(map[string]interface{})
+	var output map[string]interface{}
+	output = make(map[string]interface{})
 
-    // range over input, copying to output
-    for k,v := range inputJSON {
-        // if input is "Members", filter it
-        if k=="Members" {
-            // make new members array
-            var members []map[string]interface{}
-            for _, val := range v.([]interface{}) {
-                // pull out @odata.id from input and paste it into the output
-                id := val.(map[string]interface{})["@odata.id"]
-                members = append(members,  map[string]interface{}{"@odata.id": id})
-            }
-            output["Members"] = members
-        } else {
-            output[k] = v
-        }
-    }
+	// range over input, copying to output
+	for k, v := range inputJSON {
+		// if input is "Members", filter it
+		if k == "Members" {
+			// make new members array
+			var members []map[string]interface{}
+			for _, val := range v.([]interface{}) {
+				// pull out @odata.id from input and paste it into the output
+				id := val.(map[string]interface{})["@odata.id"]
+				members = append(members, map[string]interface{}{"@odata.id": id})
+			}
+			output["Members"] = members
+		} else {
+			output[k] = v
+		}
+	}
 
-    outputJSON = &output
-    return
+	outputJSON = &output
+	return
 }
 
 // collapse the "Members": [ {...}, {...} ] so that only @odata.id appears in the output array
 func getCollectionMember(inputJSON map[string]interface{}, filter string) (interface{}, error) {
-    // range over input, copying to output
-    members := inputJSON["Members"]
-    for _,v := range members.([]interface{}) {
-        id := v.(map[string]interface{})["@odata.id"].(string)
-        if id == filter {
-            return v, nil
-        }
-    }
+	// range over input, copying to output
+	members := inputJSON["Members"]
+	for _, v := range members.([]interface{}) {
+		id := v.(map[string]interface{})["@odata.id"].(string)
+		if id == filter {
+			return v, nil
+		}
+	}
 
-    return nil, redfishserver.ErrNotFound
+	return nil, redfishserver.ErrNotFound
 }

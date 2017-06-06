@@ -49,12 +49,12 @@ func NewLoggingService(logger Logger, s Service) Service {
 }
 
 func (s *loggingService) RawJSONRedfishGet(ctx context.Context, pathTemplate, url string, args map[string]string) (ret interface{}, err error) {
-    ctxlogger := log.With(s.logger, "method", "GET", "URL", url, "UUID", uuid.New())
+	ctxlogger := log.With(s.logger, "method", "GET", "URL", url, "UUID", uuid.New())
 
-    thislogger := ctxlogger
-    for k,v := range args {
-        thislogger = log.With(thislogger, "arg_" + k, v )
-    }
+	thislogger := ctxlogger
+	for k, v := range args {
+		thislogger = log.With(thislogger, "arg_"+k, v)
+	}
 	defer func(begin time.Time) {
 		thislogger.Log(
 			"method", "GET",

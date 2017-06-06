@@ -100,12 +100,12 @@ func decodeRedfishGetRequest(_ context.Context, r *http.Request) (dec interface{
 		headers["OData-Version"] = ver
 	}
 
-    route := mux.CurrentRoute(r)
-    pathTemplate, rerr := route.GetPathTemplate()
-    if rerr != nil {
-        pathTemplate, rerr = route.GetPathRegexp()
-    }
-	dec = templatedRedfishGetRequest{url: r.URL.Path, args: mux.Vars(r), pathTemplate: pathTemplate }
+	route := mux.CurrentRoute(r)
+	pathTemplate, rerr := route.GetPathTemplate()
+	if rerr != nil {
+		pathTemplate, rerr = route.GetPathRegexp()
+	}
+	dec = templatedRedfishGetRequest{url: r.URL.Path, args: mux.Vars(r), pathTemplate: pathTemplate}
 	return dec, nil
 }
 
@@ -128,13 +128,12 @@ func encodeResponse(ctx context.Context, w http.ResponseWriter, response interfa
 	//w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
 	//w.Header().Set("Access-Control-Allow-Headers", "Origin, Content-Type")
 
+	if e, ok := response.(errorer); ok && e.error() != nil {
+		encodeError(ctx, e.error(), w)
+		return nil
+	}
 
-    if e, ok := response.(errorer); ok && e.error() != nil {
-        encodeError(ctx, e.error(), w)
-        return nil
-    }
-
-    decoded := response.(templatedRedfishGetResponse)
+	decoded := response.(templatedRedfishGetResponse)
 
 	switch output := decoded.output.(type) {
 	case []byte:
@@ -142,8 +141,8 @@ func encodeResponse(ctx context.Context, w http.ResponseWriter, response interfa
 		return err
 	default:
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-        enc := json.NewEncoder(w)
-        enc.SetIndent("", "  ")
+		enc := json.NewEncoder(w)
+		enc.SetIndent("", "  ")
 		return enc.Encode(output)
 	}
 	// for when we switch to structured output
