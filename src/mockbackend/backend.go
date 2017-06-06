@@ -6,6 +6,7 @@ import (
 	redfishserver "github.com/superchalupa/go-redfish/src/redfishserver"
 	"text/template"
     "context"
+    "fmt"
 )
 
 type backendConfig struct {
@@ -59,10 +60,10 @@ func getJSONOutput(ctx context.Context, logger redfishserver.Logger, pathTemplat
             return &serviceV1RootJSON, nil
 
         case  "/redfish/v1/Systems":
-            return &SystemCollectionJSON, nil
+            return collapseCollection(SystemCollectionJSON.(map[string]interface{}))
 
         case  "/redfish/v1/Systems/{system}":
-            return &SystemCollectionJSON, nil
+            return getCollectionMember(SystemCollectionJSON.(map[string]interface{}), url)
 
         default:
             err = errors.New("no handler for URL: " + url)
@@ -71,3 +72,43 @@ func getJSONOutput(ctx context.Context, logger redfishserver.Logger, pathTemplat
     return
 }
 
+// collapse the "Members": [ {...}, {...} ] so that only @odata.id appears in the output array
+func collapseCollection(inputJSON map[string]interface{}) (outputJSON interface{}, err error) {
+    var output map[string]interface{}
+    output = make(map[string]interface{})
+
+    // range over input, copying to output
+    for k,v := range inputJSON {
+        // if input is "Members", filter it
+        if k=="Members" {
+            // make new members array
+            var members []map[string]interface{}
+            for _, val := range v.([]interface{}) {
+                // pull out @odata.id from input and paste it into the output
+                id := val.(map[string]interface{})["@odata.id"]
+                members = append(members,  map[string]interface{}{"@odata.id": id})
+            }
+            output["Members"] = members
+        } else {
+            output[k] = v
+        }
+    }
+
+    outputJSON = &output
+    return
+}
+
+// collapse the "Members": [ {...}, {...} ] so that only @odata.id appears in the output array
+func getCollectionMember(inputJSON map[string]interface{}, filter string) (interface{}, error) {
+    // range over input, copying to output
+    members := inputJSON["Members"]
+    for _,v := range members.([]interface{}) {
+        id := v.(map[string]interface{})["@odata.id"].(string)
+        fmt.Printf("MEMBER (%s)  filter(%s)\n", id, filter )
+        if id == filter {
+            return v, nil
+        }
+    }
+
+    return nil, errors.New("Not found")
+}
