@@ -1,0 +1,19 @@
+{
+    "@odata.type": "#Processor.v1_0_2.Processor",
+    "Id": "CPU",
+    "ProcessorType": "CPU",
+    "ProcessorArchitecture": "x86",
+    "InstructionSet": "x86-64",
+    "Manufacturer": "Intel(R) Corporation",
+    "Model": "Multi-Core Intel(R) Xeon(R) processor E5-1603",
+    "MaxSpeedMHz": 2800,
+    "TotalCores": 4,
+    "TotalThreads": 8,
+    "Status": {
+        "State": "Enabled",
+        "Health": "OK"
+    },
+    "@odata.context": "/redfish/v1/$metadata#Systems/Members/529QB9452R6/Processors/Members/$entity",
+    "@odata.id": "/redfish/v1/Systems/529QB9452R6/Processors/CPU",
+    "@Redfish.Copyright": "Copyright 2014-2016 Distributed Management Task Force, Inc. (DMTF). For the full DMTF copyright policy, see http://www.dmtf.org/about/policies/copyright."
+}

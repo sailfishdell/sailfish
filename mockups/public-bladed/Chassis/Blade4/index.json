@@ -1,0 +1,48 @@
+{
+    "@odata.type": "#Chassis.v1_2_0.Chassis",
+    "Id": "Blade4",
+    "Name": "Blade",
+    "ChassisType": "Blade",
+    "Manufacturer": "Contoso",
+    "Model": "SX1000",
+    "SKU": "6914260",
+    "SerialNumber": "529QB9453R6",
+    "PartNumber": "166480-S23",
+    "PowerState": "On",
+    "IndicatorLED": "Off",
+    "Status": {
+        "State": "Enabled",
+        "Health": "OK"
+    },
+    "Thermal": {
+        "@odata.id": "/redfish/v1/Chassis/Blade4/Thermal"
+    },
+    "Links": {
+        "ComputerSystems": [
+            {
+                "@odata.id": "/redfish/v1/Systems/529QB9453R6"
+            }
+        ],
+        "ManagedBy": [
+            {
+                "@odata.id": "/redfish/v1/Managers/Blade4BMC"
+            }
+        ],
+        "ContainedBy": {
+            "@odata.id": "/redfish/v1/Chassis/MultiBladeEncl"
+        },
+        "CooledBy": [
+            {
+                "@odata.id": "/redfish/v1/Chassis/MultiBladeEncl/Thermal#/Fans"
+            }
+        ],
+        "PoweredBy": [
+            {
+                "@odata.id": "/redfish/v1/Chassis/MultiBladeEncl/Power#/PowerSupplies"
+            }
+        ]
+    },
+    "@odata.context": "/redfish/v1/$metadata#Chassis/Members/$entity",
+    "@odata.id": "/redfish/v1/Chassis/Blade4",
+    "@Redfish.Copyright": "Copyright 2014-2016 Distributed Management Task Force, Inc. (DMTF). For the full DMTF copyright policy, see http://www.dmtf.org/about/policies/copyright."
+}

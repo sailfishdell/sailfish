@@ -1,0 +1,74 @@
+{
+	"name": "Bladed System",
+	"description": "This example represents an enclosure of \"blade servers\" that share infrastructure components, such as power supplies and fans. Depicting an enclosure containing four blade servers (a total of five \"Chassis\"), this mockup demonstrates the modeling of multiple chassis and systems managed from a single Redfish service.",
+	"navlinks": [{
+		"text": "Main",
+		"target": "main"
+	}, {
+		"text": "Systems",
+		"target": "Systems",
+		"navlinks": [{
+			"text": "529QB9450R6",
+			"target": "529QB9450R6"
+		}, {
+			"text": "529QB9451R6",
+			"target": "529QB9451R6"
+		}, {
+			"text": "529QB9452R6",
+			"target": "529QB9452R6"
+		}, {
+			"text": "529QB9453R6",
+			"target": "529QB9453R6"
+		}]
+	}, {
+		"text": "Chassis",
+		"target": "Chassis",
+		"navlinks": [{
+			"text": "Multi-blade Enclosure",
+			"target": "MultiBladeEncl"
+		}, {
+			"text": "Blade 1",
+			"target": "Blade1"
+		}, {
+			"text": "Blade 2",
+			"target": "Blade2"
+		}, {
+			"text": "Blade 3",
+			"target": "Blade3"
+		}, {
+			"text": "Blade 4",
+			"target": "Blade4"
+		}]
+	}, {
+		"text": "Managers",
+		"target": "Managers",
+		"navlinks": [{
+			"text": "Multi-blade Manager",
+			"target": "MultiBladeBMC"
+		}, {
+			"text": "Blade 1 Manager",
+			"target": "Blade1BMC"
+		}, {
+			"text": "Blade 2 Manager",
+			"target": "Blade2BMC"
+		}, {
+			"text": "Blade 3 Manager",
+			"target": "Blade3BMC"
+		}, {
+			"text": "Blade 4 Manager",
+			"target": "Blade4BMC"
+		}]
+	}, {
+		"text": "Task Service",
+		"target": "TaskService"
+	}, {
+		"text": "Session Service",
+		"target": "SessionService"
+	}, {
+		"target": "AccountService",
+		"text": "Account Service"
+	}, {
+		"target": "EventService",
+		"text": "Event Service"
+	}]
+}

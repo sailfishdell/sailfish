@@ -1,0 +1,48 @@
+{
+    "@odata.type": "#Chassis.v1_2_0.Chassis",
+    "Id": "MultiBladeEncl",
+    "Name": "Quad Blade Enclosure",
+    "ChassisType": "Enclosure",
+    "Manufacturer": "Contoso",
+    "Model": "QB6000",
+    "SKU": "6914255",
+    "SerialNumber": "528QB1654R1",
+    "PartNumber": "166472-S44",
+    "AssetTag": null,
+    "PowerState": "On",
+    "IndicatorLED": "Off",
+    "Status": {
+        "State": "Enabled",
+        "Health": "OK"
+    },
+    "Thermal": {
+        "@odata.id": "/redfish/v1/Chassis/MultiBladeEncl/Thermal"
+    },
+    "Power": {
+        "@odata.id": "/redfish/v1/Chassis/MultiBladeEncl/Power"
+    },
+    "Links": {
+        "ManagedBy": [
+            {
+                "@odata.id": "/redfish/v1/Managers/MultiBladeBMC"
+            }
+        ],
+        "Contains": [
+            {
+                "@odata.id": "/redfish/v1/Chassis/Blade1"
+            },
+            {
+                "@odata.id": "/redfish/v1/Chassis/Blade2"
+            },
+            {
+                "@odata.id": "/redfish/v1/Chassis/Blade3"
+            },
+            {
+                "@odata.id": "/redfish/v1/Chassis/Blade4"
+            }
+        ]
+    },
+    "@odata.context": "/redfish/v1/$metadata#Chassis/Members/$entity",
+    "@odata.id": "/redfish/v1/Chassis/MultiBladeEncl",
+    "@Redfish.Copyright": "Copyright 2014-2016 Distributed Management Task Force, Inc. (DMTF). For the full DMTF copyright policy, see http://www.dmtf.org/about/policies/copyright."
+}

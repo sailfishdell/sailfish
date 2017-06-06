@@ -1,0 +1,502 @@
+<!doctype html>
+<html>
+  <head>
+    <title></title>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="http://cdnjs.cloudflare.com/ajax/libs/highlight.js/8.3/styles/default.min.css">
+    <link rel="stylesheet" href="http://cdnjs.cloudflare.com/ajax/libs/highlight.js/8.3/styles/github.min.css">
+    <script type="text/javascript" src="http://cdnjs.cloudflare.com/ajax/libs/highlight.js/8.3/highlight.min.js"></script>
+    <style media="all">
+#dmtf .logo {
+  background: url("data:image/png;base64,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") no-repeat right center;
+  height: 133px;
+}
+#dmtf .preamble {
+  text-align: right;
+  font-weight: bold;
+}
+#dmtf h1 {
+  border: none;
+  margin-top: 5em;
+  margin-bottom: 2em;
+}
+#dmtf .wip {
+  margin-bottom: 2em;
+  position: relative;
+  padding: 0.5em;
+  font-weight: normal;
+  text-align: left;
+}
+#dmtf[data-status="Work in Progress"] .wip {
+  border: 2px ridge #eee;
+}
+#dmtf[data-status="Published"] .wip,
+#dmtf[data-status="Draft"] .wip {
+  color: #fff;
+  -webkit-user-select: none;
+     -moz-user-select: none;
+      -ms-user-select: none;
+          user-select: none;
+  cursor: default;
+}
+#dmtf[data-status="Published"] .wip a,
+#dmtf[data-status="Draft"] .wip a {
+  color: #fff;
+  cursor: default;
+}
+#dmtf .document {
+  font-weight: bold;
+}
+#dmtf .copyright {
+  page-break-before: always;
+  border: 1px solid #333;
+  padding: .5em;
+}
+#dmtf .copyright p:first-child {
+  margin-top: 0;
+}
+#dmtf .copyright p:last-child {
+  margin-bottom: 0;
+}
+#toc-header {
+  text-align: center;
+}
+#toc {
+  padding-left: 0;
+}
+#toc,
+#toc ul {
+  list-style-type: none;
+}
+#wrapper {
+  display: table-row-group;
+}
+body {
+  border-collapse: collapse;
+  font-size: 13px;
+  line-height: 1.4;
+  word-wrap: break-word;
+  color: #333;
+}
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-weight: bold;
+  margin-top: 1em;
+  margin-bottom: 16px;
+}
+h1 {
+  font-size: 2.25em;
+  line-height: 1.2;
+}
+h2 {
+  font-size: 1.75em;
+  line-height: 1.225;
+}
+h1,
+h2 {
+  border-bottom: 1px solid #eee;
+  padding-bottom: 0.3em;
+}
+h3 {
+  font-size: 1.5em;
+}
+h4 {
+  font-size: 1.25em;
+}
+h5 {
+  font-size: 1em;
+}
+h6 {
+  font-size: 1em;
+  color: #777;
+}
+table {
+  word-break: normal;
+  border-spacing: 0;
+  border-collapse: collapse;
+}
+table tr {
+  border-top: 1px solid #ccc;
+}
+table tr:nth-child(2n) {
+  background-color: #f8f8f8;
+}
+table th,
+table td {
+  padding: 6px 13px;
+  border: 1px solid #ddd;
+}
+a {
+  text-decoration: none;
+  color: #4183c4;
+}
+a:hover {
+  text-decoration: underline;
+}
+pre {
+  white-space: pre-wrap;
+  padding: 16px;
+  overflow: auto;
+  font-size: 85%;
+  line-height: 1.45;
+  background-color: #f7f7f7;
+  border-radius: 3px;
+}
+#footer,
+#last-footer-fix {
+  display: none;
+}
+p,
+ul > li,
+ol > li,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  position: relative;
+}
+.review {
+  padding-left: 30px;
+}
+.review .element-number {
+  position: absolute;
+  left: -30px;
+  top: 50%;
+  -webkit-transform: translateY(-50%);
+          transform: translateY(-50%);
+  width: 30px;
+  font-size: 10px;
+  font-weight: normal;
+  line-height: 18px;
+  color: #aaa;
+}
+.review table {
+  margin-left: -30px;
+}
+.review table tr {
+  border: none;
+}
+.review table tr > :first-child {
+  position: inherit;
+  width: 30px;
+  border: none;
+  padding: 0;
+  background-color: #fff;
+  vertical-align: middle;
+}
+.review table tr > :first-child .element-number {
+  position: inherit;
+}
+.review li .element-number {
+  left: -70px;
+}
+@media print {
+  .review {
+    padding-left: 0;
+  }
+  .review table {
+    margin-left: 0;
+  }
+  .review .element-number {
+    display: none;
+  }
+}
+@media print {
+  #toc-header,
+  #toc ~ h2 {
+    page-break-before: always;
+    -webkit-column-break-before: page;
+            break-before: page;
+  }
+  #toc ~ h2 ~ h2 {
+    page-break-before: auto;
+    -webkit-column-break-before: auto;
+            break-before: auto;
+  }
+  #last-footer-fix {
+    display: block !important;
+    page-break-before: always;
+    -webkit-column-break-before: page;
+            break-before: page;
+    text-align: center;
+    line-height: 37em;
+    height: 720pt;
+    border: none;
+  }
+  #last-footer-fix:after {
+    font-weight: bold;
+    content: "This page intentionally left blank";
+  }
+  #header {
+    display: table-header-group;
+    height: 4em;
+  }
+  #header:before {
+    content: 'DSP' attr(data-doc-number);
+  }
+  #header:after {
+    float: right;
+    content: attr(data-doc-title);
+  }
+  #footer {
+    text-align: center;
+    display: table-footer-group !important;
+  }
+  #footer > div {
+    border-top: .1em solid #444;
+    height: 4em;
+    margin-top: 3em;
+  }
+  #footer > div div {
+    margin: 0 auto;
+    width: 150pt;
+  }
+  #footer > div:before {
+    float: left;
+    content: "Version " attr(data-doc-version);
+  }
+  #footer > div:after {
+    float: right;
+    margin-top: -1.4em;
+    counter-increment: page;
+    content: counter(page);
+  }
+}
+
+</style>
+    <script type="text/javascript">
+if (window.location.protocol === 'file:' && !/pdf/.test(window.location.search)) {
+  document.addEventListener('toc', function() {
+    var a, el, elements, i, j, len, td;
+    document.querySelector('body').classList.toggle('review');
+    elements = document.querySelectorAll('h1 ~ p, h1 ~ ul > li, h1 ~ ol > li, h1 ~ table tr, h1, h1 ~ h2, h1 ~ h3, h1 ~ h4, h1 ~ h5, h1 ~ h6');
+    for (i = j = 0, len = elements.length; j < len; i = ++j) {
+      el = elements[i];
+      if (el.nodeName === 'TR') {
+        td = document.createElement('td');
+        el.insertBefore(td, el.firstChild);
+        el = td;
+      }
+      a = document.createElement('a');
+      a.textContent = "" + (++i);
+      a.className = 'element-number';
+      a.href = "#" + (a.id = "" + i);
+      el.appendChild(a);
+    }
+    return null;
+  });
+}
+
+var scrollToHash;
+
+window.onload = function() {
+  var $, _, block, counter, createItem, currentLevel, i, j, k, l, len, len1, len2, level, levelMap, num, oldToc, ref, tag, tagName, tags, toc, txt, ul;
+  $ = document.querySelectorAll.bind(document);
+  tags = ((function() {
+    var j, results;
+    results = [];
+    for (i = j = 2; j <= 6; i = ++j) {
+      results.push("h" + i);
+    }
+    return results;
+  })()).join(', ');
+  tags = $(tags);
+  currentLevel = 0;
+  toc = [];
+  levelMap = (function() {
+    var j, results;
+    results = [];
+    for (i = j = 2; j <= 6; i = ++j) {
+      results.push("H" + i);
+    }
+    return results;
+  })();
+  counter = new function() {
+    var j;
+    for (i = j = 2; j <= 6; i = ++j) {
+      this["H" + i] = 0;
+    }
+    return this;
+  };
+  ul = oldToc = $('#toc')[0];
+  createItem = function(href, txt) {
+    var anchor, li;
+    li = document.createElement('li');
+    anchor = document.createElement('a');
+    anchor.href = href;
+    anchor.textContent = txt;
+    li.appendChild(anchor);
+    return li;
+  };
+  while (ul.firstChild) {
+    ul.removeChild(ul.firstChild);
+  }
+  ul.setAttribute('id', 'toc');
+  ul.previousElementSibling.setAttribute('id', 'toc-header');
+  for (j = 0, len = tags.length; j < len; j++) {
+    tag = tags[j];
+    tagName = tag.tagName;
+    level = levelMap.indexOf(tagName.toUpperCase());
+    num = [];
+    if (level > currentLevel) {
+      toc.push(ul);
+      ul.appendChild(ul = document.createElement('ul'));
+    }
+    while (level < currentLevel) {
+      counter[levelMap[currentLevel]] = 0;
+      ul = toc.pop();
+      currentLevel--;
+    }
+    counter[levelMap[level]]++;
+    for (k = 0, len1 = levelMap.length; k < len1; k++) {
+      _ = levelMap[k];
+      num.push("" + counter[_]);
+      if (_ === tagName) {
+        break;
+      }
+    }
+    txt = [num.join('.'), tag.textContent];
+    ul.appendChild(createItem('#' + tag.getAttribute('id'), txt.join('. ')));
+    tag.removeChild(tag.lastChild);
+    tag.appendChild(document.createTextNode(txt.join(num.length === 1 ? '. ' : ' ')));
+    currentLevel = level;
+  }
+  document.dispatchEvent(new Event('toc'));
+  scrollToHash();
+  ref = $('pre code');
+  for (l = 0, len2 = ref.length; l < len2; l++) {
+    block = ref[l];
+    if (/lang-/.test(block.getAttribute('class'))) {
+      hljs.highlightBlock(block);
+    }
+  }
+  return null;
+};
+
+scrollToHash = function() {
+  var ref;
+  if (location.hash && !document.querySelector(':target')) {
+    return (ref = document.getElementById(location.hash.slice(1))) != null ? ref.scrollIntoView() : void 0;
+  }
+};
+
+window.onhashchange = scrollToHash;
+
+</script>
+  </head>
+  <body>
+    <div data-doc-title="Scalable Platforms Management API Mockup Readme" data-doc-number="2043" id="header"></div>
+    <div id="wrapper">
+      <div data-status="" id="dmtf">
+        <div class="preamble">
+          <div class="logo"></div>
+          <p>Document Identifier: DSP2043</p>
+          <p>Date: 2016-06-28</p>
+          <p>Version: 1.0.0</p>
+          
+        </div>
+        <h1>Scalable Platforms Management API Mockup Readme</h1>
+        <div class="wip">
+          <strong>Information for Work-in-Progress version:</strong>
+          <p><strong>IMPORTANT:</strong> This document is not a standard. It does not necessarily reflect the views of the DMTF or its members. Because this document is a Work in Progress, this document may still change, perhaps profoundly and without notice. This document is available for public review and comment until superseded.</p>
+          <p><strong>Provide any comments through the DMTF Feedback Portal:</strong> <a href="http://www.dmtf.org/standards/feedback">http://www.dmtf.org/standards/feedback</a></p>
+        </div>
+        <div class="document">
+          <p>Supersedes: None</p>
+          <p>Document Class: Informative</p>
+          <p>Document Status: </p>
+          <p>Document Language: en-US</p>
+        </div>
+        <div class="copyright">
+          <p>Copyright Notice</p>
+          <p>Copyright &copy; 2015-2016 Distributed Management Task Force, Inc. (DMTF). All rights reserved.
+          </p></div>
+          <p>DMTF is a not-for-profit association of industry members dedicated to promoting enterprise and systems management and interoperability. Members and non-members may reproduce DMTF specifications and documents, provided that correct attribution is given. As DMTF specifications may be revised from time to time, the particular version and release date should always be noted.</p>
+          <p>Implementation of certain elements of this standard or proposed standard may be subject to third party patent rights, including provisional patent rights (herein "patent rights"). DMTF makes no representations to users of the standard as to the existence of such rights, and is not responsible to recognize, disclose, or identify any or all such third party patent right, owners or claimants, nor for any incomplete or inaccurate identification or disclosure of such rights, owners or claimants. DMTF shall have no liability to any party, in any manner or circumstance, under any legal theory whatsoever, for failure to recognize, disclose, or identify any such third party patent rights, or for such party’s reliance on the standard or incorporation thereof in its product, protocols or testing procedures. DMTF shall have no liability to any party implementing such standard, whether such implementation is foreseeable or not, nor to any patent owner or claimant, and shall have no liability or responsibility for costs or losses incurred if a standard is withdrawn or modified after publication, and shall be indemnified and held harmless by any party implementing the standard from any and all claims of infringement by a patent owner for such implementations.</p>
+          <p>For information about patents held by third-parties which have notified the DMTF that, in their opinion, such patent may relate to or impact implementations of DMTF standards, visit <a href="http://www.dmtf.org/about/policies/disclosures.php">http://www.dmtf.org/about/policies/disclosures.php</a>.</p>
+          <p>This document’s normative language is English. Translation into other languages is permitted.</p>
+        </div>
+        <p id="toc-header">CONTENTS</p>
+        <ul id="toc"></ul>
+        <h1 id="foreword">Foreword</h1>
+<p>The following files are part of the Redfish Scalable Platforms Management API (&quot;Redfish&quot;) development effort</p>
+<ul>
+<li>Specification.md - this file is the main Redfish Scalable Platforms Management API Specification</li>
+<li>Whitepaper.md - this is intended to be a non-normative document helping those new to Redfish understand how to interact with the Redfish service and understand common functions and tasks.</li>
+<li>Readme2043.md - this document.</li>
+<li>Readme8010.md - Schema Readme</li>
+</ul>
+<p>These other components are part of the Redfish Scalable Platforms Management API development effort</p>
+<ul>
+<li>Mockup (DSP2043) - this is a mockup that can be used as sample of output from GETs from A Redfish service.  Informative in nature, it was used to develop the schema.  A person can set up an NGINX or similar server and configure it to output JSON format and then use this directory for demonstration purposes.</li>
+<li>Schema - this contains the Redfish Schema definitions.  These files are normative in nature and are normatively reference by the Redfish Specification.  There are two Schema formats - CSDL (OData Common Schema Definition Language format which is in XML) and JSON Schema.  These Schema defintions should be functionally equivalent, thus specifying the schema in two different languages.</li>
+</ul>
+<h2 id="redfish-mockups">Redfish Mockups</h2>
+<p>This archive contains a number of mockups of various Redfish service implementations.  They are intended to be a guide for learning about the Redfish Specification by showing typical examples of implementations.  These mockups are not prototypes and do not reflect any actual product or Redfish implementation.</p>
+<p>Many of these mockups are also used to populate the Redfish Resource Explorer, part of the Redfish Developer Hub located at: <a href="http://redfish.dmtf.org">http://redfish.dmtf.org</a></p>
+<h3 id="dsp2043-server-dsp2043-server-">DSP2043 Server (DSP2043-server)</h3>
+<p>This mockup provides an example of a 1U or 2U rack-mounted server typically deployed in large scale data centers.  In addition, the mockup is intended to be used as a base for &quot;Work in Progress&quot; mockups to demonstrate new features, schemas or properties currently under development within the SPMF.    </p>
+<h3 id="simple-rack-mounted-server-public-rackmount-">Simple Rack-mounted server (public-rackmount)</h3>
+<p>This illustration of a Redfish service implementation shows a typical rack-mount server, as commonly used in scale-out data centers. It depicts the types of information that can be expected, but does not represent an actual implementation.</p>
+<h3 id="bladed-server-public-bladed-">Bladed Server (public-bladed)</h3>
+<p>This example represents an enclosure of “blade servers” that share infrastructure components, such as power supplies and fans. Depicting an enclosure containing four blade servers (a total of five “Chassis”), this mockup demonstrates the modeling of multiple chassis and systems managed from a single Redfish service.</p>
+<h3 id="proposed-ocp-redfish-profile-proposed-ocp-profile-">Proposed OCP Redfish Profile (proposed-ocp-profile)</h3>
+<p>This draft example, for ongoing development,  represents a proposed minimal Redfish data model &quot;profile&quot; that meets the needs of the Open Compute Project’s Hardware Management requirements. This draft profile is intended to help define a list of required properties so that essential management-related tasks, as defined by OCP, can be performed on any Redfish implementation. </p>
+<h2 id="concepts">Concepts</h2>
+<p>Every URI represents a resource, which could be a service, a collection, an element or some other construct.  But in RESTful terms, these URIs point to resources and clients interact with Resources.  So when you see the term resource, you can think of it as what you get back when you access a URI.</p>
+<p>The resource format is defined by a Schema.  Each resource has a specific format that is specified in the Redfish Schema that the client can use to determine the semantics about the resource (though we try to make things as intuitive as possible).  The Schema is defined in OData&#39;s Schema format.</p>
+<p>All properties in the resource are intended to be used as JavaScript variables.  This should accelerate adoption and allow JavaScript web pages and enabled apps to use the data directly.  URIs are persistent across reboots but clients are expected to start at /redfish/v1 and do discovery of the URIs from there.  This is known as a &quot;hypermedia API&quot; approach.  Don&#39;t fixate on the URIs as URIs can be different between implementations.  Current state objects can be separate from desired state objects.
+The section below works better if you are actually doing the GETs</p>
+<h3 id="starting">Starting</h3>
+<p>All clients start at the base /redfish/v1 object.  Many items are broken down in arrays of references for scalable environments.  Links to other resources are in the &quot;links&quot; section.  You can see links to Systems, managers, the physical Chassis as well as services like Eventing, Tasks, Schema (meta data)). (Note – discovery of service endpoints will be done using UPNP’s SSDP but that’s not in the mockup).</p>
+<h3 id="versioning">Versioning</h3>
+<p>Redfish has two kinds of versioning - the version of the protocol and the version of the resource schema.  The version of the protocol is in the URI - that&#39;s why you should start at /redfish/v1.  It means you are accessing version one of the protocol.  Version 1 is the only one available now, but we needed to accommodate potential future versions.</p>
+<p>Each resource has a resource type definition. Resource types are defined in versioned namespaces. Each resource instance has the type represented using the OData type annotation &quot;@odata.type&quot;. The value of the type annotation is the URI of the resourcce type, including the versioned namespace.  So when you see &quot;@odata.type&quot; : &quot;#ServiceRoot.v1_0_0.ServiceRoot&quot;, you are dealing with a resource that adheres to the ServiceRoot type definition, defined in 1.0.0 version of the ServiceRoot schema.  The corresponding schema file would be located at /schema/v1/ServiceRoot in the Redfish schema repository. So the full URI for the type would be &quot;/schem/v1/ServiceRoot#ServiceRoot.v1_0_0.ServiceRoot. The schema file may contain other types used by in the resource type definition (for example, structured types and enums), which would have the same resource path but the fragment would describe a different type definition, typically within the same namespace.</p>
+<h3 id="references">References</h3>
+<p>When you see the links section, it will have a set of references to other resources in it.  URIs are either absolute or relative.  Absolute ones won’t have the IP address but will start with /redfish/v1.  If you have a plug in like the Chrome Advanced REST client, you can click on this to fill in the URI for your next GET.</p>
+<h3 id="main-objects">Main Objects</h3>
+<p>The &quot;main&quot; objects are Systems, Managers and Chassis.  These are all collections (see next heading).  We will dig into these resources in a minute, but it&#39;s good to know a bit about them.  Systems can have one or more managers (since some managers are redundant), and are in one chassis.   Managers are in a Chassis and can manage more than one system.  And Chassis can house more than one System and/or Managers.  Chassis can also have Chassis in them.  It is the chassis that houses sensors, fans and the like.  Systems have the CPU/Memory complex and devices and managers handle various management services but also have their own devices (like NICs).  This is just an overview, but looking at the base object you can see this right away.</p>
+<h3 id="collections">Collections</h3>
+<p>There are groups of similar resources returned as collections.  Examples of these in the Mockup include Systems, Managers, Chassis, LogEntries, Sessions, EventSubscriptions and more.</p>
+<p>So pick either Systems, Managers or Chassis and go down into it.  You will see this is a Collection. Collections may be paginated; collections with a property named &quot;@odata.nextLink&quot; are incomplete, and the client can use the URL-value of the property to retrieve the next portion of the collection from the service.</p>
+<p>Collection responses have a &quot;value&quot; property that contains a list of members, or links to members. Links to members are represented as JSON objects with a single &quot;@odata.id&quot; property containing the URI of the related resource.</p>
+<h3 id="current-configurations-vs-settings">Current Configurations vs Settings</h3>
+<p>There are basically two kinds of objects in Redfish - Current Configurations and Settings.  Most objects represent the current state of any given resource.  Occasionally, you&#39;ll see a property called &quot;Settings&quot; in the links section for a resource.  This link tells you where to do PUTs and PATCHes.  It represents the future state of the resource.  Some resources can handle changes to them right away, others may require a restart/reboot of the system or service.  &quot;Settings&quot; is used to let the client know what type of resource this is and where to make the changes.  If you see a Settings link, that&#39;s where to make the changes that will be picked up at the next reboot.  Examples of resources that need Settings are devices like NICs and Storage as well as BIOS.</p>
+<h3 id="common-properties">Common Properties</h3>
+<p>As you go through the model, you keep seeing some of the same properties.  You&#39;ll find Name and Modified in every resource.  These are required.  You&#39;ll also see Status as an embedded object and it has the same definition across all usages.  All of these are actually in a common part of the Schema and used by other Schema by reference.</p>
+<h3 id="actions">Actions</h3>
+<p>Not everything can be done easily using REST, so Redfish leverages OData Actions for procedural operations.  Things like &quot;push button&quot; on a System (which would reset the system or turn it off, depending on its setting) can&#39;t easily be represented in the System because the service has no idea what the state of the button is.</p>
+<p>So instead of having hidden properties that you could PUT/PATCH to, or complex state machines, we created Actions.  Actions are done with POSTs to the Resource (see the spec for specifics).  You can tell what actions are supported in any resource by looking for the &quot;Actions&quot; property.</p>
+<h3 id="redundancy">Redundancy</h3>
+<p>Go back to one of the Chassis and take a look at the fans by following the link to &quot;Thermal&quot; and you will see how Redfish shows redundancy.</p>
+<p>You will notice an array called &quot;Redundancy&quot;.  It shows the two fans in its set using the same values in the RelatedItem properties.  Redundancy has a common schema definition in Redfish and has other properties in it besides the members to show other important attributes about redundancy.  This is how the client can figure out which items belongs to which redundancy set since the @odata.id values are pointers to the redundancy set members.</p>
+<p>The value of the &quot;@odata.id&quot; property, though, doesn&#39;t have to be to a whole resource.  The value of this property will be of two formats: a JSON Pointer or an OData reference.</p>
+<ul>
+<li>In the case of a JSON Pointer, there will be a # in it that indicates where the resource stops and where the property pattern begins.  The schema will also have a reference to the property.  An example of a JSON Pointer value might be &quot;/redfish/v1/Chassis/1/Thermal#/Fans/0&quot;.</li>
+<li>In the case of an OData reference, there will not be a # in it.  The schema will have a definition of the property.  An example of a JSON Pointer value might be &quot;/redfish/v1/Chassis/1/Thermal/Fans/0&quot;.</li>
+</ul>
+<h3 id="relateditems">RelatedItems</h3>
+<p>If you&#39;re still in the &quot;Thermal&quot; resource, you can see that the Temperature array elements have a RelatedItem property with an &quot;@odata.id&quot; in it.  This is a reference to the sub-resource that this temperature sensor is measuring - perhaps a processor.  Like Redudancy links, the value may be to a sub-resource.  Thus a client can determine what is being measured by this temperature sensor.</p>
+<p>RelatedItem, while having a common schema definition, is situational dependent in it&#39;s usage.  But it always is used to show a relationship between two different resources or sub-resources.</p>
+<p>And like redundancy, the value of the &quot;@odata.id&quot; property doesn&#39;t have to be to a whole resource.</p>
+<h3 id="etags">ETags</h3>
+<p>ETags are used by browsers to optimize IO (caching).  They do an If-Match and if it matches, they don’t bother dragging the data.  We use them to determine if an object has changed.  Thus every ETag will change if a PUT is done or if a tool (like BIOS configuration at the console) takes place.  Thus any race condition on PUTs between Redfish and non-Redfish clients (as well as other Redfish clients) are always noticed.</p>
+<p>The problem is that this is a mock-up and not a real web service so you can&#39;t see the ETags work.</p>
+<h3 id="services">Services</h3>
+<p>Let&#39;s go back to root and take a look at some common services.  Tasks, Sessions, EventService and AccountService are all common services.  You can read more about them in the spec, but they should be fairly obvious.  Tasks contains a list of jobs that may have been started, usually as the result of Actions.</p>
+<h3 id="where-does-a-client-get-schema-definition-">Where does a client get schema definition?</h3>
+<p>Payloads contain a URL that the client can use to retrieve the schema for the service. That service schema file generally references other externally hosted schema files for common schema definitions. Types within a JSON payload are identified by a dereferenceable type URI.</p>
+<h2 id="enough-for-now">Enough for now</h2>
+<p>Hopefully the information will have been enough for now to get you up to speed and you can start perusing the mockup and reading the spec as well as the schema to get an idea of how all of this works.</p>
+
+        <div id="last-footer-fix"></div>
+      </div>
+      <div id="footer"><div data-doc-version="1.0.0"><div> </div></div></div>
+    </body>
+  </html>

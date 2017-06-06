@@ -1,0 +1,26 @@
+{
+    "@odata.type": "#LogEntryCollection.LogEntryCollection",
+    "Name": "Log Entry Collection",
+    "Members@odata.count": 1,
+    "Members": [
+        {
+            "@odata.id": "/redfish/v1/Managers/Blade3BMC/LogServices/Log/Entries/1",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Id": "1",
+            "Name": "Log Entry 1",
+            "EntryType": "Event",
+            "Severity": "Warning",
+            "Created": "2016-01-15T03:01",
+            "MessageId": "Event.1.0.TempWayTooHot",
+            "Message": "CPU temperature crossed Upper Non Critical Threshold",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Chassis/Blade3/Thermal"
+                }
+            }
+        }
+    ],
+    "@odata.context": "/redfish/v1/$metadata#Managers/Members/Blade3BMC/LogServices/Members/Log/Entries/$entity",
+    "@odata.id": "/redfish/v1/Managers/Blade3BMC/LogServices/Log/Entries",
+    "@Redfish.Copyright": "Copyright 2014-2016 Distributed Management Task Force, Inc. (DMTF). For the full DMTF copyright policy, see http://www.dmtf.org/about/policies/copyright."
+}

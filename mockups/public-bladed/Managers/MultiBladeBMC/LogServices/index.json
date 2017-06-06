@@ -1,0 +1,13 @@
+{
+    "@odata.type": "#LogServiceCollection.LogServiceCollection",
+    "Name": "Log Service Collection",
+    "Members@odata.count": 1,
+    "Members": [
+        {
+            "@odata.id": "/redfish/v1/Managers/MultiBladeBMC/LogServices/Log"
+        }
+    ],
+    "@odata.context": "/redfish/v1/$metadata#Managers/Members/MultiBladeBMC/LogServices/$entity",
+    "@odata.id": "/redfish/v1/Managers/MultiBladeBMC/LogServices",
+    "@Redfish.Copyright": "Copyright 2014-2016 Distributed Management Task Force, Inc. (DMTF). For the full DMTF copyright policy, see http://www.dmtf.org/about/policies/copyright."
+}

@@ -1,0 +1,18 @@
+{
+    "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+    "Id": "1",
+    "Name": "Log Entry 1",
+    "EntryType": "Event",
+    "Severity": "Critical",
+    "Created": "2016-01-10T18:02",
+    "MessageId": "Event.1.0.FanWayTooSlow",
+    "Message": "Fan 2 crossed Lower Fatal Threshold; fans are no longer redundant",
+    "Links": {
+        "OriginOfCondition": {
+            "@odata.id": "/redfish/v1/Chassis/MultiBladeEncl/Thermal"
+        }
+    },
+    "@odata.context": "/redfish/v1/$metadata#Managers/Members/MultiBladeBMC/LogServices/Members/Log/Entries/Members/$entity",
+    "@odata.id": "/redfish/v1/Managers/MultiBladeBMC/LogServices/Log/Entries/1",
+    "@Redfish.Copyright": "Copyright 2014-2016 Distributed Management Task Force, Inc. (DMTF). For the full DMTF copyright policy, see http://www.dmtf.org/about/policies/copyright."
+}
