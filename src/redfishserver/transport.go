@@ -112,23 +112,6 @@ func decodeRedfishGetRequest(_ context.Context, r *http.Request) (dec interface{
 // probably could do something cool with channels and goroutines here so that
 // we dont buffer the entire response, but not worth the effort at this moment
 func encodeResponse(ctx context.Context, w http.ResponseWriter, response interface{}) error {
-	switch response := response.(type) {
-	case errorer:
-		if response.error() != nil {
-			// Not a Go kit transport error, but a business-logic error.
-			// Provide those as HTTP errors.
-			encodeError(ctx, response.error(), w)
-			return nil
-		}
-	case []byte:
-		_, err := w.Write(response)
-		return err
-	default:
-		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-        enc := json.NewEncoder(w)
-        enc.SetIndent("", "  ")
-		return enc.Encode(response)
-	}
 
 	// if needed:
 	//w.Header().Set("x-header-name", "header value")
@@ -145,14 +128,27 @@ func encodeResponse(ctx context.Context, w http.ResponseWriter, response interfa
 	//w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
 	//w.Header().Set("Access-Control-Allow-Headers", "Origin, Content-Type")
 
-	// for when we switch to structured output
-	// return json.NewEncoder(w).Encode(response)
 
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(http.StatusInternalServerError)
-	json.NewEncoder(w).Encode(map[string]interface{}{
-		"error": "encodeResponse got to the end without outputting a response",
-	})
+    if e, ok := response.(errorer); ok && e.error() != nil {
+        encodeError(ctx, e.error(), w)
+        return nil
+    }
+
+    decoded := response.(templatedRedfishGetResponse)
+
+	switch output := decoded.output.(type) {
+	case []byte:
+		_, err := w.Write(output)
+		return err
+	default:
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+        enc := json.NewEncoder(w)
+        enc.SetIndent("", "  ")
+		return enc.Encode(output)
+	}
+	// for when we switch to structured output
+	// return json.NewEncoder(w).Encode(output)
+
 	return nil
 }
 

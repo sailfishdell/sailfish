@@ -1,12 +1,10 @@
 package mockbackend
 
 import (
-    "errors"
 	"encoding/json"
 	redfishserver "github.com/superchalupa/go-redfish/src/redfishserver"
 	"text/template"
     "context"
-    "fmt"
 )
 
 type backendConfig struct {
@@ -66,7 +64,7 @@ func getJSONOutput(ctx context.Context, logger redfishserver.Logger, pathTemplat
             return getCollectionMember(SystemCollectionJSON.(map[string]interface{}), url)
 
         default:
-            err = errors.New("no handler for URL: " + url)
+            err = redfishserver.ErrNotFound
     }
 
     return
@@ -104,11 +102,10 @@ func getCollectionMember(inputJSON map[string]interface{}, filter string) (inter
     members := inputJSON["Members"]
     for _,v := range members.([]interface{}) {
         id := v.(map[string]interface{})["@odata.id"].(string)
-        fmt.Printf("MEMBER (%s)  filter(%s)\n", id, filter )
         if id == filter {
             return v, nil
         }
     }
 
-    return nil, errors.New("Not found")
+    return nil, redfishserver.ErrNotFound
 }
