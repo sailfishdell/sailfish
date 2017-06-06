@@ -5,17 +5,47 @@ import (
 	"encoding/json"
 	redfishserver "github.com/superchalupa/go-redfish/src/redfishserver"
 	"text/template"
+    "io/ioutil"
+    "path"
 )
 
 type backendConfig struct {
 	templatesDir string
+	serviceV1RootJSON    interface{}
+	SystemCollectionJSON interface{}
 }
 
 func NewBackend(templatesDir string) redfishserver.Config {
-	return redfishserver.Config{
+    beCfg := backendConfig{ templatesDir: templatesDir }
+
+	cfg := redfishserver.Config{
 		GetJSONOutput:   getJSONOutput,
-		BackendUserdata: backendConfig{templatesDir: templatesDir},
+		BackendUserdata: beCfg,
 	}
+
+    loadData := func() {
+        var unmarshalJSONPairs = []struct {
+            global   *interface{}
+            filename string
+        }{
+            {global: &beCfg.serviceV1RootJSON, filename: "serviceV1Root.json"},
+        }
+        for i := range unmarshalJSONPairs {
+            fileContents, e := ioutil.ReadFile(path.Join(beCfg.templatesDir, "serviceV1Root.json"))
+            if e!=nil {
+                panic(e)
+            }
+
+            err := json.Unmarshal(fileContents, unmarshalJSONPairs[i].global)
+            if err != nil {
+                panic(err)
+            }
+        }
+    }
+
+    loadData()
+
+    return cfg
 }
 
 /**************************************************************************
@@ -31,7 +61,6 @@ var funcMap = template.FuncMap{
 }
 
 var (
-	serviceV1RootJSON,
 	SystemCollectionJSON interface{}
 )
 
@@ -40,7 +69,6 @@ func init() {
 		global   *interface{}
 		jsonText []byte
 	}{
-		{global: &serviceV1RootJSON, jsonText: serviceV1RootText},
 		{global: &SystemCollectionJSON, jsonText: SystemCollectionText},
 	}
 	for i := range unmarshalJSONPairs {
@@ -58,7 +86,7 @@ func getJSONOutput(ctx context.Context, logger redfishserver.Logger, pathTemplat
 		output.(map[string]string)["v1"] = "/redfish/v1/"
 
 	case "/redfish/v1/":
-		return &serviceV1RootJSON, nil
+		return &rh.BackendUserdata.(backendConfig).serviceV1RootJSON, nil
 
 	case "/redfish/v1/Systems":
 		return collapseCollection(SystemCollectionJSON.(map[string]interface{}))

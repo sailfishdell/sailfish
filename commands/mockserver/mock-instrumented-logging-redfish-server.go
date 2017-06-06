@@ -11,7 +11,6 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/superchalupa/go-redfish/src/mockbackend"
 	"github.com/superchalupa/go-redfish/src/redfishserver"
 )
 
@@ -57,8 +56,7 @@ func main() {
 	logger = log.With(logger, "listen", *listen, "caller", log.DefaultCaller)
 
 	var svc redfishserver.Service
-	var backend redfishserver.Config = mockbackend.NewBackend(appConfig.TemplatesDir)
-	svc = redfishserver.NewService(logger, backend)
+	svc = redfishserver.NewService(logger, appConfig.TemplatesDir)
 	svc = redfishserver.NewLoggingService(logger, svc)
 
 	fieldKeys := []string{"method", "URL"}
