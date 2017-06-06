@@ -21,7 +21,6 @@ type errorer interface {
 
 func NewRedfishHandler(svc Service, logger log.Logger) http.Handler {
 	r := mux.NewRouter()
-	e := MakeServerEndpoints(svc)
 	options := []httptransport.ServerOption{
 		httptransport.ServerAfter(httptransport.SetContentType("application/json;charset=utf-8")),
 		httptransport.ServerAfter(httptransport.SetResponseHeader("OData-Version", "4.0")),
@@ -31,20 +30,19 @@ func NewRedfishHandler(svc Service, logger log.Logger) http.Handler {
 	}
 
 	r.Handle("/redfish", http.RedirectHandler("/redfish/", 308))
+	r.Handle("/redfish/v1", http.RedirectHandler("/redfish/v1/", 308))
 
 	r.Methods("GET").Path("/redfish/").Handler(
 		httptransport.NewServer(
-			e.RedfishRootGetEndpoint,
+			makeRawJSONRedfishGetEndpoint(svc),
 			decodeRedfishGetRequest,
 			encodeResponse,
 			options...,
 		))
 
-	r.Handle("/redfish/v1", http.RedirectHandler("/redfish/v1/", 308))
-
 	r.Methods("GET").Path("/redfish/v1/").Handler(
 		httptransport.NewServer(
-			e.RedfishV1RootGetEndpoint,
+			makeRawJSONRedfishGetEndpoint(svc),
 			decodeRedfishGetRequest,
 			encodeResponse,
 			options...,
@@ -52,7 +50,15 @@ func NewRedfishHandler(svc Service, logger log.Logger) http.Handler {
 
 	r.Methods("GET").Path("/redfish/v1/Systems").Handler(
 		httptransport.NewServer(
-			e.RedfishSystemCollectionGetEndpoint,
+			makeRawJSONRedfishGetEndpoint(svc),
+			decodeRedfishGetRequest,
+			encodeResponse,
+			options...,
+		))
+
+	r.Methods("GET").Path("/redfish/v1/Systems/{system}").Handler(
+		httptransport.NewServer(
+			makeRawJSONRedfishGetEndpoint(svc),
 			decodeRedfishGetRequest,
 			encodeResponse,
 			options...,
@@ -93,7 +99,13 @@ func decodeRedfishGetRequest(_ context.Context, r *http.Request) (dec interface{
 	if ver := r.Header.Get("OData-Version"); ver != "" {
 		headers["OData-Version"] = ver
 	}
-	dec = templatedRedfishGetRequest{url: r.URL.Path, args: mux.Vars(r) }
+
+    route := mux.CurrentRoute(r)
+    pathTemplate, rerr := route.GetPathTemplate()
+    if rerr != nil {
+        pathTemplate, rerr = route.GetPathRegexp()
+    }
+	dec = templatedRedfishGetRequest{url: r.URL.Path, args: mux.Vars(r), pathTemplate: pathTemplate }
 	return dec, nil
 }
 
@@ -113,7 +125,9 @@ func encodeResponse(ctx context.Context, w http.ResponseWriter, response interfa
 		return err
 	default:
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		return json.NewEncoder(w).Encode(response)
+        enc := json.NewEncoder(w)
+        enc.SetIndent("", "  ")
+		return enc.Encode(response)
 	}
 
 	// if needed:

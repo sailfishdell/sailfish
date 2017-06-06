@@ -1,17 +1,22 @@
 package mockbackend
 
 import (
+    "errors"
 	"encoding/json"
 	redfishserver "github.com/superchalupa/go-redfish/src/redfishserver"
 	"text/template"
     "context"
 )
 
-// Config This is the backend plugin configuration for this backend
-var Config redfishserver.Config = redfishserver.Config{
-    BackendFuncMap: funcMap,
-    GetViewData: getViewData,
-    GetJSONOutput: getJSONOutput,
+type backendConfig struct {
+    templatesDir string
+}
+
+func NewBackend( templatesDir string ) redfishserver.Config {
+    return  redfishserver.Config {
+        GetJSONOutput: getJSONOutput,
+        BackendUserdata: backendConfig{templatesDir: templatesDir},
+    }
 }
 
 /**************************************************************************
@@ -26,34 +31,43 @@ var funcMap = template.FuncMap{
 	"hello": func() string { return "HELLO WORLD" },
 }
 
-var globalViewData interface{}
+var (
+    serviceV1RootJSON,
+    SystemCollectionJSON interface{}
+    )
 
 func init() {
-	err := json.Unmarshal(initialMockupData, &globalViewData)
-	if err != nil {
-		panic(err)
-	}
+    var unmarshalJSONPairs = [] struct { global *interface{}; jsonText []byte }{
+        {global: &serviceV1RootJSON, jsonText: serviceV1RootText},
+        {global: &SystemCollectionJSON, jsonText: SystemCollectionText},
+    }
+    for i := range unmarshalJSONPairs {
+        err := json.Unmarshal(unmarshalJSONPairs[i].jsonText, unmarshalJSONPairs[i].global)
+        if err != nil {
+            panic(err)
+        }
+    }
 }
 
-func getViewData(ctx context.Context, templateName, url string, args map[string]string) (viewData map[string]interface{}, err error) {
-	viewData = make(map[string]interface{})
-	for k, v := range globalViewData.(map[string]interface{}) {
-		viewData[k] = v
-	}
-
-	// standard static tags that are useful in the templates
-	viewData["self_uri"] = url
-	viewData["odata_self_id"] = "\"@odata.id\": \"" + url + "\""
-
-	return
-}
-
-func getJSONOutput(ctx context.Context, url string, args map[string]string) (output interface{}, err error) {
-    switch url {
+func getJSONOutput(ctx context.Context, logger redfishserver.Logger, pathTemplate, url string, args map[string]string) (output interface{}, err error) {
+    switch pathTemplate {
         case  "/redfish/":
             output = make(map[string]string)
             output.(map[string]string)["v1"] = "/redfish/v1/"
+
+        case  "/redfish/v1/":
+            return &serviceV1RootJSON, nil
+
+        case  "/redfish/v1/Systems":
+            return &SystemCollectionJSON, nil
+
+        case  "/redfish/v1/Systems/{system}":
+            return &SystemCollectionJSON, nil
+
+        default:
+            err = errors.New("no handler for URL: " + url)
     }
 
     return
 }
+

@@ -57,8 +57,8 @@ func main() {
 	logger = log.With(logger, "listen", *listen, "caller", log.DefaultCaller)
 
 	var svc redfishserver.Service
-	var backend redfishserver.Config = mockbackend.Config
-	svc = redfishserver.NewService(logger, appConfig.TemplatesDir, backend)
+	var backend redfishserver.Config = mockbackend.NewBackend(appConfig.TemplatesDir)
+	svc = redfishserver.NewService(logger, backend)
 	svc = redfishserver.NewLoggingService(logger, svc)
 
 	fieldKeys := []string{"method", "URL"}
