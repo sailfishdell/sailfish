@@ -7,10 +7,10 @@ import (
     "encoding/json"
 )
 
-func TestSpec(t *testing.T) {
+func TestSimpleJQL(t *testing.T) {
     // Only pass t into top-level Convey calls
     Convey("Given a JSON String with key1 and key2", t, func() {
-        str := `{ "key1": "value1", "key2": "value2" }`
+        str := `{ "key1": "value1", "key2": "value2", "array": [1,2,3,4] }`
 
         Convey("that we unmarshal into an interface{}", func() {
             var data interface{}
@@ -41,6 +41,50 @@ func TestSpec(t *testing.T) {
                 })
                 So(result, ShouldEqual, nil)
             })
+
+            Convey("We should get an error if we query by array", func() {
+                result, err := SimpleJQL(data, ".[4]")
+                Convey("we should get an error return", func() {
+                    So(err.Error(), ShouldEqual, "attempt to array index into a non-array")
+                })
+                So(result, ShouldEqual, nil)
+            })
+
+            Convey("We should get an error if we query array by non-numeric", func() {
+                result, err := SimpleJQL(data, ".[a]")
+                Convey("we should get an error return", func() {
+                    So(err.Error(), ShouldEqual, `strconv.Atoi: parsing "a": invalid syntax`)
+                })
+                So(result, ShouldEqual, nil)
+            })
+
+            Convey("if we query first array element, it should equal 1", func() {
+                result, err := SimpleJQL(data, ".array.[0]")
+                Convey("we should get an error return", func() {
+                    So(err, ShouldEqual, nil)
+                })
+                So(result.(float64), ShouldEqual, 1)
+            })
         })
     })
 }
+
+
+
+func TestQueriable(t *testing.T) {
+    // Only pass t into top-level Convey calls
+    Convey("Given a JSON String with key1 and key2", t, func() {
+        str := `{ "key1": "value1", "key2": "value2", "array": [1,2,3,4] }`
+
+        Convey("that we unmarshal into an interface{}", func() {
+            var data interface{}
+            err := json.Unmarshal([]byte(str), &data)
+            Convey("We should not get any error from the unmarshal", func() {
+                So(err, ShouldEqual, nil)
+            })
+
+
+        })
+    })
+}
+

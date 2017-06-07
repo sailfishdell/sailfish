@@ -1,6 +1,8 @@
 package redfishserver
 
 import (
+    "fmt"
+
 	"context"
 	"encoding/json"
 	"errors"
@@ -70,10 +72,12 @@ func (rh *Config) RawJSONRedfishGet(ctx context.Context, pathTemplate, url strin
 		return &rh.serviceV1RootJSON, nil
 
 	case "/redfish/v1/Systems":
-		return collapseCollection(rh.systemCollectionJSON.(map[string]interface{}))
+		return elideNestedOdataRefs(rh.systemCollectionJSON, true), nil
 
 	case "/redfish/v1/Systems/{system}":
-		return getCollectionMember(rh.systemCollectionJSON.(map[string]interface{}), url)
+		coll, _ := getCollectionMember(rh.systemCollectionJSON, url)
+		return elideNestedOdataRefs(coll, true), nil
+
 
 	default:
 		err = ErrNotFound
@@ -95,8 +99,7 @@ func SimpleJQL( jsonStruct interface{}, expression string ) (current interface{}
     for _, queryElem := range queryElems {
         if queryElem == "." { continue }
         // is query an array?
-        if len(queryElem)>3 && string(queryElem[0])=="[" && string(queryElem[len(queryElem)-1])=="]" {
-            
+        if len(queryElem)>=3 && string(queryElem[0])=="[" && string(queryElem[len(queryElem)-1])=="]" {
             // pull out requested index
             idx, err := strconv.Atoi(queryElem[1:len(queryElem)-1])
             if err != nil {
@@ -110,7 +113,7 @@ func SimpleJQL( jsonStruct interface{}, expression string ) (current interface{}
                 continue
             }
 
-            return nil, errors.New( queryElem + " is not an array, but trying to query like one.")
+            return nil, errors.New("attempt to array index into a non-array")
         }
         // try to type assert as map[string]interface{}
         if dict, ok := current.(map[string]interface{}); ok {
@@ -121,48 +124,61 @@ func SimpleJQL( jsonStruct interface{}, expression string ) (current interface{}
             }
             return nil, errors.New( queryElem + " no such element")
         } else {
-            return nil, errors.New( queryElem + " is not a map[string]" )
+            return nil, errors.New( "current element is not a map[string] and cannot be indexed" )
         }
     }
     return
 }
 
-// collapse the "Members": [ {...}, {...} ] so that only @odata.id appears in the output array
-func collapseCollection(inputJSON map[string]interface{}) (outputJSON interface{}, err error) {
-	var output map[string]interface{}
-	output = make(map[string]interface{})
-
-	// range over input, copying to output
-	for k, v := range inputJSON {
-		// if input is "Members", filter it
-		if k == "Members" {
-			// make new members array
-			var members []map[string]interface{}
-			for _, val := range v.([]interface{}) {
-				// pull out @odata.id from input and paste it into the output
-				id := val.(map[string]interface{})["@odata.id"]
-				members = append(members, map[string]interface{}{"@odata.id": id})
-			}
-			output["Members"] = members
-		} else {
-			output[k] = v
-		}
-	}
-
-	outputJSON = &output
-	return
+func getCollectionMember(inputJSON interface{}, filter string) (interface{}, error) {
+    // aggressively check types. bail if oddness
+    if inputmap, ok := inputJSON.(map[string]interface{}); ok {
+       if members, ok := inputmap["Members"]; ok {
+            if membersarray, ok := members.([]interface{}); ok {
+               for _, v := range membersarray {
+                    if submap, ok := v.(map[string]interface{}); ok {
+                        id := submap["@odata.id"]
+                        if idstr, ok := id.(string); ok {
+                            if idstr == filter {
+                                return submap, nil
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    return nil, ErrNotFound
 }
 
-// collapse the "Members": [ {...}, {...} ] so that only @odata.id appears in the output array
-func getCollectionMember(inputJSON map[string]interface{}, filter string) (interface{}, error) {
+//
+// should be able to build a $filter thingy on top of this at some point
+//
+func elideNestedOdataRefs(inputJSON interface{}, allowonce bool) (output interface{}) {
 	// range over input, copying to output
-	members := inputJSON["Members"]
-	for _, v := range members.([]interface{}) {
-		id := v.(map[string]interface{})["@odata.id"].(string)
-		if id == filter {
-			return v, nil
-		}
-	}
+    fmt.Printf("here we are\n")
+    switch nested := inputJSON.(type) {
+        case map[string]interface{}:
+            fmt.Printf("    its a map\n")
+            var output map[string]interface{}
+	        output = make(map[string]interface{})
+            if _, ok := nested["@odata.id"]; ok && (!allowonce) {
+                output["@odata.id"] = nested["@odata.id"]
+            } else {
+                for k, v := range nested {
+                    output[k] = elideNestedOdataRefs(v, false)
+                }
+            }
+            return output
 
-	return nil, ErrNotFound
+        case []interface{}:
+            var outputArr []interface{}
+            for _, mem  := range nested {
+                outputArr = append(outputArr, elideNestedOdataRefs(mem, false))
+            }
+            return outputArr
+
+        default:
+            return inputJSON
+    }
 }
