@@ -1,0 +1,43 @@
+{
+    "@odata.context": "/redfish/v1/$metadata#SoftwareInventory.SoftwareInventory",
+    "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/Installed-106012-00.00.06",
+    "@odata.type": "#SoftwareInventory.v1_0_0.SoftwareInventory",
+    "Description": "Represents Firmware Inventory",
+    "Id": "Installed-106012-00.00.06",
+    "Name": " Firmware",
+    "Oem": {
+        "EID_674": {
+            "@odata.type": "#EID_674_SoftwareInventory.v1_0_0.OemSoftwareInventory",
+            "ComponentId": "106012",
+            "FQDD": [
+                "Fan.Slot.3",
+                "Fan.Slot.4",
+                "Fan.Slot.8",
+                "Fan.Slot.9"
+            ],
+            "FQDD@odata.count": 4,
+            "InstallDate": "Unknown",
+            "RelatedItem": [
+                {
+                    "@odata.id": "/redfish/v1/Chassis/System.Chassis.1/Sensors/Fans/0x17||Fan.Slot.3"
+                },
+                {
+                    "@odata.id": "/redfish/v1/Chassis/System.Chassis.1/Sensors/Fans/0x17||Fan.Slot.4"
+                },
+                {
+                    "@odata.id": "/redfish/v1/Chassis/System.Chassis.1/Sensors/Fans/0x17||Fan.Slot.8"
+                },
+                {
+                    "@odata.id": "/redfish/v1/Chassis/System.Chassis.1/Sensors/Fans/0x17||Fan.Slot.9"
+                }
+            ],
+            "RelatedItem@odata.count": 4
+        }
+    },
+    "Status": {
+        "Health": "Ok",
+        "State": "Enabled"
+    },
+    "Updateable": true,
+    "Version": "00.00.06"
+}

@@ -1,0 +1,257 @@
+{
+    "@odata.context": "/redfish/v1/$metadata#LogEntryCollection.LogEntryCollection",
+    "@odata.id": "/redfish/v1/Managers/CMC.Integrated.1/Logs/FaultList",
+    "@odata.type": "#LogEntryCollection.LogEntryCollection",
+    "Description": "Providing additional health information for the devices which support rolled up health data",
+    "Members": [
+        {
+            "@odata.id": "/redfish/v1/Managers/CMC.Integrated.1/Logs/FaultList/Fault%230A200004%231",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Created": "2017-06-05T17:43:06+00:00",
+            "Description": "FaultList Entry Fan.Slot.1",
+            "EntryType": "Oem",
+            "Id": "Fault#0A200004#1",
+            "Links": {},
+            "Message": "Communication with Front Fan 1 is lost.",
+            "MessageArgs": [
+                "Front",
+                "1"
+            ],
+            "MessageArgs@odata.count": 2,
+            "MessageID": "FAN0032",
+            "Name": "FaultList Entry Fan.Slot.1",
+            "Oem": {
+                "Dell": {
+                    "@odata.type": "#DellLogEntry.v1_0_0.DellLogEntry",
+                    "FQDD": "Fan.Slot.1",
+                    "SubSystem": "Fan"
+                }
+            },
+            "OemRecordFormat": "Dell",
+            "Severity": "Critical"
+        },
+        {
+            "@odata.id": "/redfish/v1/Managers/CMC.Integrated.1/Logs/FaultList/Fault%230A200005%231",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Created": "2017-06-05T17:43:06+00:00",
+            "Description": "FaultList Entry Fan.Slot.2",
+            "EntryType": "Oem",
+            "Id": "Fault#0A200005#1",
+            "Links": {},
+            "Message": "Communication with Front Fan 2 is lost.",
+            "MessageArgs": [
+                "Front",
+                "2"
+            ],
+            "MessageArgs@odata.count": 2,
+            "MessageID": "FAN0032",
+            "Name": "FaultList Entry Fan.Slot.2",
+            "Oem": {
+                "Dell": {
+                    "@odata.type": "#DellLogEntry.v1_0_0.DellLogEntry",
+                    "FQDD": "Fan.Slot.2",
+                    "SubSystem": "Fan"
+                }
+            },
+            "OemRecordFormat": "Dell",
+            "Severity": "Critical"
+        },
+        {
+            "@odata.id": "/redfish/v1/Managers/CMC.Integrated.1/Logs/FaultList/Fault%230A200006%231",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Created": "2017-06-05T17:43:06+00:00",
+            "Description": "FaultList Entry Fan.Slot.5",
+            "EntryType": "Oem",
+            "Id": "Fault#0A200006#1",
+            "Links": {},
+            "Message": "Communication with Rear Fan 1 is lost.",
+            "MessageArgs": [
+                "Rear",
+                "1"
+            ],
+            "MessageArgs@odata.count": 2,
+            "MessageID": "FAN0032",
+            "Name": "FaultList Entry Fan.Slot.5",
+            "Oem": {
+                "Dell": {
+                    "@odata.type": "#DellLogEntry.v1_0_0.DellLogEntry",
+                    "FQDD": "Fan.Slot.5",
+                    "SubSystem": "Fan"
+                }
+            },
+            "OemRecordFormat": "Dell",
+            "Severity": "Critical"
+        },
+        {
+            "@odata.id": "/redfish/v1/Managers/CMC.Integrated.1/Logs/FaultList/Fault%230A200007%231",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Created": "2017-06-05T17:43:06+00:00",
+            "Description": "FaultList Entry Fan.Slot.6",
+            "EntryType": "Oem",
+            "Id": "Fault#0A200007#1",
+            "Links": {},
+            "Message": "Communication with Rear Fan 2 is lost.",
+            "MessageArgs": [
+                "Rear",
+                "2"
+            ],
+            "MessageArgs@odata.count": 2,
+            "MessageID": "FAN0032",
+            "Name": "FaultList Entry Fan.Slot.6",
+            "Oem": {
+                "Dell": {
+                    "@odata.type": "#DellLogEntry.v1_0_0.DellLogEntry",
+                    "FQDD": "Fan.Slot.6",
+                    "SubSystem": "Fan"
+                }
+            },
+            "OemRecordFormat": "Dell",
+            "Severity": "Critical"
+        },
+        {
+            "@odata.id": "/redfish/v1/Managers/CMC.Integrated.1/Logs/FaultList/Fault%230A200008%231",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Created": "2017-06-05T17:43:06+00:00",
+            "Description": "FaultList Entry Fan.Slot.7",
+            "EntryType": "Oem",
+            "Id": "Fault#0A200008#1",
+            "Links": {},
+            "Message": "Communication with Rear Fan 3 is lost.",
+            "MessageArgs": [
+                "Rear",
+                "3"
+            ],
+            "MessageArgs@odata.count": 2,
+            "MessageID": "FAN0032",
+            "Name": "FaultList Entry Fan.Slot.7",
+            "Oem": {
+                "Dell": {
+                    "@odata.type": "#DellLogEntry.v1_0_0.DellLogEntry",
+                    "FQDD": "Fan.Slot.7",
+                    "SubSystem": "Fan"
+                }
+            },
+            "OemRecordFormat": "Dell",
+            "Severity": "Critical"
+        },
+        {
+            "@odata.id": "/redfish/v1/Managers/CMC.Integrated.1/Logs/FaultList/Fault%230A200009%231",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Created": "2017-06-05T17:43:30+00:00",
+            "Description": "FaultList Entry system.chassis.1",
+            "EntryType": "Oem",
+            "Id": "Fault#0A200009#1",
+            "Links": {},
+            "Message": "Fan redundancy is lost.",
+            "MessageID": "RDU0002",
+            "Name": "FaultList Entry system.chassis.1",
+            "Oem": {
+                "Dell": {
+                    "@odata.type": "#DellLogEntry.v1_0_0.DellLogEntry",
+                    "FQDD": "system.chassis.1",
+                    "SubSystem": "Miscellaneous"
+                }
+            },
+            "OemRecordFormat": "Dell",
+            "Severity": "Critical"
+        },
+        {
+            "@odata.id": "/redfish/v1/Managers/CMC.Integrated.1/Logs/FaultList/Fault%230A20000A%233",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Created": "2017-06-05T17:45:00+00:00",
+            "Description": "FaultList Entry PSU.Slot.0",
+            "EntryType": "Oem",
+            "Id": "Fault#0A20000A#3",
+            "Links": {},
+            "Message": "Power supply 1 is present.",
+            "MessageArgs": [
+                "1"
+            ],
+            "MessageArgs@odata.count": 1,
+            "MessageID": "PSU0000",
+            "Name": "FaultList Entry PSU.Slot.0",
+            "Oem": {
+                "Dell": {
+                    "@odata.type": "#DellLogEntry.v1_0_0.DellLogEntry",
+                    "FQDD": "PSU.Slot.0",
+                    "SubSystem": "PowerSupply"
+                }
+            },
+            "OemRecordFormat": "Dell",
+            "Severity": "Ok"
+        },
+        {
+            "@odata.id": "/redfish/v1/Managers/CMC.Integrated.1/Logs/FaultList/Fault%230A20000B%233",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Created": "2017-06-05T17:45:01+00:00",
+            "Description": "FaultList Entry PSU.Slot.1",
+            "EntryType": "Oem",
+            "Id": "Fault#0A20000B#3",
+            "Links": {},
+            "Message": "Power supply 2 is present.",
+            "MessageArgs": [
+                "2"
+            ],
+            "MessageArgs@odata.count": 1,
+            "MessageID": "PSU0000",
+            "Name": "FaultList Entry PSU.Slot.1",
+            "Oem": {
+                "Dell": {
+                    "@odata.type": "#DellLogEntry.v1_0_0.DellLogEntry",
+                    "FQDD": "PSU.Slot.1",
+                    "SubSystem": "PowerSupply"
+                }
+            },
+            "OemRecordFormat": "Dell",
+            "Severity": "Ok"
+        },
+        {
+            "@odata.id": "/redfish/v1/Managers/CMC.Integrated.1/Logs/FaultList/Fault%230A20000C%233",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Created": "2017-06-05T17:45:01+00:00",
+            "Description": "FaultList Entry PSU.Slot.2",
+            "EntryType": "Oem",
+            "Id": "Fault#0A20000C#3",
+            "Links": {},
+            "Message": "Power supply 3 is present.",
+            "MessageArgs": [
+                "3"
+            ],
+            "MessageArgs@odata.count": 1,
+            "MessageID": "PSU0000",
+            "Name": "FaultList Entry PSU.Slot.2",
+            "Oem": {
+                "Dell": {
+                    "@odata.type": "#DellLogEntry.v1_0_0.DellLogEntry",
+                    "FQDD": "PSU.Slot.2",
+                    "SubSystem": "PowerSupply"
+                }
+            },
+            "OemRecordFormat": "Dell",
+            "Severity": "Ok"
+        },
+        {
+            "@odata.id": "/redfish/v1/Managers/CMC.Integrated.1/Logs/FaultList/Fault%230A20000D%231",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Created": "2017-06-06T07:49:45+00:00",
+            "Description": "FaultList Entry System.Chassis.1#CMC.Integrated.1#MSM",
+            "EntryType": "Oem",
+            "Id": "Fault#0A20000D#1",
+            "Links": {},
+            "Message": "Management services not running on CMC ~~1~.",
+            "MessageID": "CMC8709",
+            "Name": "FaultList Entry System.Chassis.1#CMC.Integrated.1#MSM",
+            "Oem": {
+                "Dell": {
+                    "@odata.type": "#DellLogEntry.v1_0_0.DellLogEntry",
+                    "FQDD": "System.Chassis.1#CMC.Integrated.1#MSM",
+                    "SubSystem": "CMC"
+                }
+            },
+            "OemRecordFormat": "Dell",
+            "Severity": "Critical"
+        }
+    ],
+    "Members@odata.count": 10,
+    "Name": "FaultList Entries Collection"
+}

@@ -1,0 +1,14 @@
+{
+    "@odata.context": "/redfish/v1/$metadata#DellSlotConfig.DellSlotConfig",
+    "@odata.id": "/redfish/v1/Chassis/System.Chassis.1/SlotConfigs/SlotConfig.2",
+    "@odata.type": "#DellSlotConfig.v1_0_0.DellSlotConfig",
+    "Columns": "4",
+    "Id": "SlotConfig.2",
+    "Location": "front",
+    "Name": "SlotConfig.2",
+    "Order": "LR",
+    "Orientation": "Vertical",
+    "ParentConfig": "",
+    "Rows": "1",
+    "Type": "Sled"
+}

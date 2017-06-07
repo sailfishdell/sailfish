@@ -1,0 +1,16 @@
+{
+    "@odata.context": "/redfish/v1/$metadata#ManagerCollection.ManagerCollection",
+    "@odata.id": "/redfish/v1/Managers",
+    "@odata.type": "#ManagerCollection.ManagerCollection",
+    "Description": "Collection of BMCs",
+    "Members": [
+        {
+            "@odata.id": "/redfish/v1/Managers/CMC.Integrated.1"
+        },
+        {
+            "@odata.id": "/redfish/v1/Managers/CMC.Integrated.2"
+        }
+    ],
+    "Members@odata.count": 2,
+    "Name": "ManagerInstancesCollection"
+}

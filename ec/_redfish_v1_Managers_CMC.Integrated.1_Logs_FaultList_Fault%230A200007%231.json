@@ -1,0 +1,26 @@
+{
+    "@odata.id": "/redfish/v1/Managers/CMC.Integrated.1/Logs/FaultList/Fault%230A200007%231",
+    "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+    "Created": "2017-06-05T17:43:06+00:00",
+    "Description": "FaultList Entry Fan.Slot.6",
+    "EntryType": "Oem",
+    "Id": "Fault#0A200007#1",
+    "Links": {},
+    "Message": "Communication with Rear Fan 2 is lost.",
+    "MessageArgs": [
+        "Rear",
+        "2"
+    ],
+    "MessageArgs@odata.count": 2,
+    "MessageID": "FAN0032",
+    "Name": "FaultList Entry Fan.Slot.6",
+    "Oem": {
+        "Dell": {
+            "@odata.type": "#DellLogEntry.v1_0_0.DellLogEntry",
+            "FQDD": "Fan.Slot.6",
+            "SubSystem": "Fan"
+        }
+    },
+    "OemRecordFormat": "Dell",
+    "Severity": "Critical"
+}

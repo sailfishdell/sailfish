@@ -1,0 +1,39 @@
+{
+    "@odata.context": "/redfish/v1/$metadata#SoftwareInventory.SoftwareInventory",
+    "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/Installed-104850-00.26.50",
+    "@odata.type": "#SoftwareInventory.v1_0_0.SoftwareInventory",
+    "Description": "Represents Firmware Inventory",
+    "Id": "Installed-104850-00.26.50",
+    "Name": "PSU Firmware",
+    "Oem": {
+        "EID_674": {
+            "@odata.type": "#EID_674_SoftwareInventory.v1_0_0.OemSoftwareInventory",
+            "ComponentId": "104850",
+            "FQDD": [
+                "PSU.Slot.1",
+                "PSU.Slot.2",
+                "PSU.Slot.3"
+            ],
+            "FQDD@odata.count": 3,
+            "InstallDate": "Unknown",
+            "RelatedItem": [
+                {
+                    "@odata.id": "/redfish/v1/Chassis/System.Chassis.1/Power/PowerSupplies/PSU.Slot.1"
+                },
+                {
+                    "@odata.id": "/redfish/v1/Chassis/System.Chassis.1/Power/PowerSupplies/PSU.Slot.2"
+                },
+                {
+                    "@odata.id": "/redfish/v1/Chassis/System.Chassis.1/Power/PowerSupplies/PSU.Slot.3"
+                }
+            ],
+            "RelatedItem@odata.count": 3
+        }
+    },
+    "Status": {
+        "Health": "Ok",
+        "State": "Enabled"
+    },
+    "Updateable": true,
+    "Version": "00.26.50"
+}

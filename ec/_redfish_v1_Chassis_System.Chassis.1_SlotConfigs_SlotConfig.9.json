@@ -1,0 +1,14 @@
+{
+    "@odata.context": "/redfish/v1/$metadata#DellSlotConfig.DellSlotConfig",
+    "@odata.id": "/redfish/v1/Chassis/System.Chassis.1/SlotConfigs/SlotConfig.9",
+    "@odata.type": "#DellSlotConfig.v1_0_0.DellSlotConfig",
+    "Columns": "2",
+    "Id": "SlotConfig.9",
+    "Location": "rear",
+    "Name": "SlotConfig.9",
+    "Order": "LR",
+    "Orientation": "Horizontal",
+    "ParentConfig": "",
+    "Rows": "1",
+    "Type": "IOM"
+}

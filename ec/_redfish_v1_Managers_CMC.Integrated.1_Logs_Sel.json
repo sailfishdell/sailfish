@@ -1,0 +1,27 @@
+{
+    "error": {
+        "@Message.ExtendedInfo": [
+            {
+                "Message": "Unable to perform the operation.",
+                "MessageArgs": [],
+                "MessageArgs@odata.count": 0,
+                "MessageId": "iDRAC.1.5.RAC964",
+                "RelatedProperties": [],
+                "RelatedProperties@odata.count": 0,
+                "Resolution": "Wait for some time before retrying the operation. If the issue persists, contact your service provider.",
+                "Severity": "Informational"
+            },
+            {
+                "Message": "The request failed due to an internal service error.  The service is still operational.",
+                "MessageArgs": [],
+                "MessageId": "Base.1.0.InternalError",
+                "RelatedProperties": [],
+                "RelatedProperties@odata.count": 0,
+                "Resolution": "Resubmit the request.  If the problem persists, consider resetting the service.",
+                "Severity": "Critical"
+            }
+        ],
+        "code": "Base.1.0.GeneralError",
+        "message": "A general error has occurred. See ExtendedInfo for more information"
+    }
+}

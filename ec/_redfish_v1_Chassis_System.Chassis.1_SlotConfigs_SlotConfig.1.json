@@ -1,0 +1,14 @@
+{
+    "@odata.context": "/redfish/v1/$metadata#DellSlotConfig.DellSlotConfig",
+    "@odata.id": "/redfish/v1/Chassis/System.Chassis.1/SlotConfigs/SlotConfig.1",
+    "@odata.type": "#DellSlotConfig.v1_0_0.DellSlotConfig",
+    "Columns": "2",
+    "Id": "SlotConfig.1",
+    "Location": "rear",
+    "Name": "SlotConfig.1",
+    "Order": "LR",
+    "Orientation": "Horizontal",
+    "ParentConfig": "",
+    "Rows": "1",
+    "Type": "CMC"
+}

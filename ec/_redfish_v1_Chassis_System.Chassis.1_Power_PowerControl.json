@@ -1,0 +1,150 @@
+{
+    "@odata.context": "/redfish/v1/$metadata#Power.PowerSystem.Chassis.1/Power/$entity",
+    "@odata.id": "/redfish/v1/Chassis/System.Chassis.1/Power/PowerControl",
+    "@odata.type": "#Power.v1_0_2.PowerControl",
+    "MemberId": "PowerControl",
+    "Name": "System Power Control",
+    "Oem": {
+        "EnergyConsumptionStartTime": "1971-04-13T16:12:27+0000",
+        "EnergyConsumptionkWh": 2,
+        "HeadroomWatts": 8884,
+        "PeakHeadroomWatts": 8593
+    },
+    "PowerAvailableWatts": 8884,
+    "PowerCapacityWatts": 0,
+    "PowerConsumedWatts": 116,
+    "PowerMetrics": {
+        "Oem": {
+            "MaxPeakWatts": 407,
+            "MaxPeakWattsTime": "2017-06-05T18:33:09+0000",
+            "MinPeakWatts": 0,
+            "MinPeakWattsTime": "2017-05-30T01:09:39+0000"
+        }
+    },
+    "RelatedItem": [
+        {
+            "@odata.id": "/redfish/v1/Chassis/CMC.Integrated.1"
+        },
+        {
+            "@odata.id": "/redfish/v1/Chassis/CMC.Integrated.2"
+        },
+        {
+            "@odata.id": "/redfish/v1/Chassis/IOM.Slot.A1"
+        },
+        {
+            "@odata.id": "/redfish/v1/Chassis/IOM.Slot.A1a"
+        },
+        {
+            "@odata.id": "/redfish/v1/Chassis/IOM.Slot.A1b"
+        },
+        {
+            "@odata.id": "/redfish/v1/Chassis/IOM.Slot.A2"
+        },
+        {
+            "@odata.id": "/redfish/v1/Chassis/IOM.Slot.A2a"
+        },
+        {
+            "@odata.id": "/redfish/v1/Chassis/IOM.Slot.A2b"
+        },
+        {
+            "@odata.id": "/redfish/v1/Chassis/IOM.Slot.B1"
+        },
+        {
+            "@odata.id": "/redfish/v1/Chassis/IOM.Slot.B1a"
+        },
+        {
+            "@odata.id": "/redfish/v1/Chassis/IOM.Slot.B1b"
+        },
+        {
+            "@odata.id": "/redfish/v1/Chassis/IOM.Slot.B2"
+        },
+        {
+            "@odata.id": "/redfish/v1/Chassis/IOM.Slot.B2a"
+        },
+        {
+            "@odata.id": "/redfish/v1/Chassis/IOM.Slot.B2b"
+        },
+        {
+            "@odata.id": "/redfish/v1/Chassis/IOM.Slot.C1"
+        },
+        {
+            "@odata.id": "/redfish/v1/Chassis/IOM.Slot.C2"
+        },
+        {
+            "@odata.id": "/redfish/v1/Chassis/System.Chassis.1"
+        },
+        {
+            "@odata.id": "/redfish/v1/Chassis/System.Modular.1"
+        },
+        {
+            "@odata.id": "/redfish/v1/Chassis/System.Modular.1a"
+        },
+        {
+            "@odata.id": "/redfish/v1/Chassis/System.Modular.1b"
+        },
+        {
+            "@odata.id": "/redfish/v1/Chassis/System.Modular.2"
+        },
+        {
+            "@odata.id": "/redfish/v1/Chassis/System.Modular.2a"
+        },
+        {
+            "@odata.id": "/redfish/v1/Chassis/System.Modular.2b"
+        },
+        {
+            "@odata.id": "/redfish/v1/Chassis/System.Modular.3"
+        },
+        {
+            "@odata.id": "/redfish/v1/Chassis/System.Modular.3a"
+        },
+        {
+            "@odata.id": "/redfish/v1/Chassis/System.Modular.3b"
+        },
+        {
+            "@odata.id": "/redfish/v1/Chassis/System.Modular.4"
+        },
+        {
+            "@odata.id": "/redfish/v1/Chassis/System.Modular.4a"
+        },
+        {
+            "@odata.id": "/redfish/v1/Chassis/System.Modular.4b"
+        },
+        {
+            "@odata.id": "/redfish/v1/Chassis/System.Modular.5"
+        },
+        {
+            "@odata.id": "/redfish/v1/Chassis/System.Modular.5a"
+        },
+        {
+            "@odata.id": "/redfish/v1/Chassis/System.Modular.5b"
+        },
+        {
+            "@odata.id": "/redfish/v1/Chassis/System.Modular.6"
+        },
+        {
+            "@odata.id": "/redfish/v1/Chassis/System.Modular.6a"
+        },
+        {
+            "@odata.id": "/redfish/v1/Chassis/System.Modular.6b"
+        },
+        {
+            "@odata.id": "/redfish/v1/Chassis/System.Modular.7"
+        },
+        {
+            "@odata.id": "/redfish/v1/Chassis/System.Modular.7a"
+        },
+        {
+            "@odata.id": "/redfish/v1/Chassis/System.Modular.7b"
+        },
+        {
+            "@odata.id": "/redfish/v1/Chassis/System.Modular.8"
+        },
+        {
+            "@odata.id": "/redfish/v1/Chassis/System.Modular.8a"
+        },
+        {
+            "@odata.id": "/redfish/v1/Chassis/System.Modular.8b"
+        }
+    ],
+    "RelatedItem@data.count": 41
+}

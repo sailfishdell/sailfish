@@ -1,0 +1,36 @@
+{
+    "@odata.context": "/redfish/v1/$metadata#DellSlotConfigsCollection.DellSlotConfigsCollection",
+    "@odata.id": "/redfish/v1/Chassis/System.Chassis.1/SlotConfigs",
+    "@odata.type": "#DellSlotConfigsCollection.DellSlotConfigsCollection",
+    "Members": [
+        {
+            "@odata.id": "/redfish/v1/Chassis/System.Chassis.1/SlotConfigs/SlotConfig.1"
+        },
+        {
+            "@odata.id": "/redfish/v1/Chassis/System.Chassis.1/SlotConfigs/SlotConfig.2"
+        },
+        {
+            "@odata.id": "/redfish/v1/Chassis/System.Chassis.1/SlotConfigs/SlotConfig.3"
+        },
+        {
+            "@odata.id": "/redfish/v1/Chassis/System.Chassis.1/SlotConfigs/SlotConfig.4"
+        },
+        {
+            "@odata.id": "/redfish/v1/Chassis/System.Chassis.1/SlotConfigs/SlotConfig.5"
+        },
+        {
+            "@odata.id": "/redfish/v1/Chassis/System.Chassis.1/SlotConfigs/SlotConfig.6"
+        },
+        {
+            "@odata.id": "/redfish/v1/Chassis/System.Chassis.1/SlotConfigs/SlotConfig.7"
+        },
+        {
+            "@odata.id": "/redfish/v1/Chassis/System.Chassis.1/SlotConfigs/SlotConfig.8"
+        },
+        {
+            "@odata.id": "/redfish/v1/Chassis/System.Chassis.1/SlotConfigs/SlotConfig.9"
+        }
+    ],
+    "Members@odata.count": 9,
+    "Name": "DellSlotConfigsCollection"
+}

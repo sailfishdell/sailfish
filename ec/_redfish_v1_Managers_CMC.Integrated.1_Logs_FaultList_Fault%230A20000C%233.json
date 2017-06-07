@@ -1,0 +1,25 @@
+{
+    "@odata.id": "/redfish/v1/Managers/CMC.Integrated.1/Logs/FaultList/Fault%230A20000C%233",
+    "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+    "Created": "2017-06-05T17:45:01+00:00",
+    "Description": "FaultList Entry PSU.Slot.2",
+    "EntryType": "Oem",
+    "Id": "Fault#0A20000C#3",
+    "Links": {},
+    "Message": "Power supply 3 is present.",
+    "MessageArgs": [
+        "3"
+    ],
+    "MessageArgs@odata.count": 1,
+    "MessageID": "PSU0000",
+    "Name": "FaultList Entry PSU.Slot.2",
+    "Oem": {
+        "Dell": {
+            "@odata.type": "#DellLogEntry.v1_0_0.DellLogEntry",
+            "FQDD": "PSU.Slot.2",
+            "SubSystem": "PowerSupply"
+        }
+    },
+    "OemRecordFormat": "Dell",
+    "Severity": "Ok"
+}

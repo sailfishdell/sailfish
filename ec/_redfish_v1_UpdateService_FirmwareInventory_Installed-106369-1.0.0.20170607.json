@@ -1,0 +1,35 @@
+{
+    "@odata.context": "/redfish/v1/$metadata#SoftwareInventory.SoftwareInventory",
+    "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/Installed-106369-1.0.0.20170607",
+    "@odata.type": "#SoftwareInventory.v1_0_0.SoftwareInventory",
+    "Description": "Represents Firmware Inventory",
+    "Id": "Installed-106369-1.0.0.20170607",
+    "Name": "EC Firmware",
+    "Oem": {
+        "EID_674": {
+            "@odata.type": "#EID_674_SoftwareInventory.v1_0_0.OemSoftwareInventory",
+            "ComponentId": "106369",
+            "FQDD": [
+                "CMC.Integrated.1",
+                "CMC.Integrated.2"
+            ],
+            "FQDD@odata.count": 2,
+            "InstallDate": "Tue Jun  6 04:12:44 2017",
+            "RelatedItem": [
+                {
+                    "@odata.id": "/redfish/v1/Managers/CMC.Integrated.1"
+                },
+                {
+                    "@odata.id": "/redfish/v1/Managers/CMC.Integrated.2"
+                }
+            ],
+            "RelatedItem@odata.count": 2
+        }
+    },
+    "Status": {
+        "Health": "Ok",
+        "State": "Enabled"
+    },
+    "Updateable": true,
+    "Version": "1.0.0.20170607"
+}

@@ -1,0 +1,21 @@
+{
+    "@odata.id": "/redfish/v1/Managers/CMC.Integrated.1/Logs/FaultList/Fault%230A20000D%231",
+    "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+    "Created": "2017-06-06T07:49:45+00:00",
+    "Description": "FaultList Entry System.Chassis.1#CMC.Integrated.1#MSM",
+    "EntryType": "Oem",
+    "Id": "Fault#0A20000D#1",
+    "Links": {},
+    "Message": "Management services not running on CMC ~~1~.",
+    "MessageID": "CMC8709",
+    "Name": "FaultList Entry System.Chassis.1#CMC.Integrated.1#MSM",
+    "Oem": {
+        "Dell": {
+            "@odata.type": "#DellLogEntry.v1_0_0.DellLogEntry",
+            "FQDD": "System.Chassis.1#CMC.Integrated.1#MSM",
+            "SubSystem": "CMC"
+        }
+    },
+    "OemRecordFormat": "Dell",
+    "Severity": "Critical"
+}

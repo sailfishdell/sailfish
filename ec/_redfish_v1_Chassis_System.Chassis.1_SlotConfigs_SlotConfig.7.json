@@ -1,0 +1,14 @@
+{
+    "@odata.context": "/redfish/v1/$metadata#DellSlotConfig.DellSlotConfig",
+    "@odata.id": "/redfish/v1/Chassis/System.Chassis.1/SlotConfigs/SlotConfig.7",
+    "@odata.type": "#DellSlotConfig.v1_0_0.DellSlotConfig",
+    "Columns": "1",
+    "Id": "SlotConfig.7",
+    "Location": "rear",
+    "Name": "SlotConfig.7",
+    "Order": "TB",
+    "Orientation": "Horizontal",
+    "ParentConfig": "",
+    "Rows": "2",
+    "Type": "IOM"
+}

@@ -1,0 +1,12 @@
+{
+    "@odata.context": "/redfish/v1/$metadata#Power.PowerSystem.Chassis.1/Power/$entity",
+    "@odata.id": "/redfish/v1/Chassis/System.Chassis.1/Power/PowerTrends-1/LastHour",
+    "@odata.type": "#Power.v1_0_2.PowerTrends",
+    "HistoryAverageWatts": 117,
+    "HistoryMaxWatts": 220,
+    "HistoryMaxWattsTime": "2017-06-06T07:48:56+0000",
+    "HistoryMinWatts": 110,
+    "HistoryMinWattsTime": "2017-06-06T08:12:18+0000",
+    "MemberId": "PowerHistogram",
+    "Name": "System Power History"
+}

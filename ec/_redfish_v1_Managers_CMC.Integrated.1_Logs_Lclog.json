@@ -1,0 +1,509 @@
+{
+    "@odata.context": "/redfish/v1/$metadata#LogEntryCollection.LogEntryCollection",
+    "@odata.id": "/redfish/v1/Managers/CMC.Integrated.1/Logs/Lclog",
+    "@odata.type": "#LogEntryCollection.LogEntryCollection",
+    "Description": "LC Logs for this manager",
+    "Members": [
+        {
+            "@odata.id": "/redfish/v1/Managers/CMC.Integrated.1/Logs/Lclog/20",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Created": "2017-06-05T17:45:01+00:00",
+            "Description": " Log Entry 20",
+            "EntryType": "Oem",
+            "Id": "20",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Sensors/PowerSupplies/PSU.Slot.2"
+                }
+            },
+            "Message": "Power supply 3 is present.",
+            "MessageArgs": [
+                "3"
+            ],
+            "MessageArgs@odata.count": 1,
+            "MessageID": "PSU0000",
+            "Name": " Log Entry 20",
+            "Oem": {
+                "Dell": {
+                    "@odata.type": "#DellLogEntry.v1_0_0.DellLogEntry",
+                    "Category": "System Health"
+                }
+            },
+            "OemRecordFormat": "Dell",
+            "Severity": "Ok"
+        },
+        {
+            "@odata.id": "/redfish/v1/Managers/CMC.Integrated.1/Logs/Lclog/19",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Created": "2017-06-05T17:45:01+00:00",
+            "Description": " Log Entry 19",
+            "EntryType": "Oem",
+            "Id": "19",
+            "Links": {},
+            "Message": "The previous log entry was repeated 1 times.",
+            "MessageArgs": [
+                "1"
+            ],
+            "MessageArgs@odata.count": 1,
+            "MessageID": "LOG007",
+            "Name": " Log Entry 19",
+            "Oem": {
+                "Dell": {
+                    "@odata.type": "#DellLogEntry.v1_0_0.DellLogEntry",
+                    "Category": "Audit"
+                }
+            },
+            "OemRecordFormat": "Dell",
+            "Severity": "Ok"
+        },
+        {
+            "@odata.id": "/redfish/v1/Managers/CMC.Integrated.1/Logs/Lclog/18",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Created": "2017-06-05T17:45:01+00:00",
+            "Description": " Log Entry 18",
+            "EntryType": "Oem",
+            "Id": "18",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Sensors/PowerSupplies/PSU.Slot.1"
+                }
+            },
+            "Message": "Power supply 2 is present.",
+            "MessageArgs": [
+                "2"
+            ],
+            "MessageArgs@odata.count": 1,
+            "MessageID": "PSU0000",
+            "Name": " Log Entry 18",
+            "Oem": {
+                "Dell": {
+                    "@odata.type": "#DellLogEntry.v1_0_0.DellLogEntry",
+                    "Category": "System Health"
+                }
+            },
+            "OemRecordFormat": "Dell",
+            "Severity": "Ok"
+        },
+        {
+            "@odata.id": "/redfish/v1/Managers/CMC.Integrated.1/Logs/Lclog/17",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Created": "2017-06-05T17:45:01+00:00",
+            "Description": " Log Entry 17",
+            "EntryType": "Oem",
+            "Id": "17",
+            "Links": {},
+            "Message": "The previous log entry was repeated 1 times.",
+            "MessageArgs": [
+                "1"
+            ],
+            "MessageArgs@odata.count": 1,
+            "MessageID": "LOG007",
+            "Name": " Log Entry 17",
+            "Oem": {
+                "Dell": {
+                    "@odata.type": "#DellLogEntry.v1_0_0.DellLogEntry",
+                    "Category": "Audit"
+                }
+            },
+            "OemRecordFormat": "Dell",
+            "Severity": "Ok"
+        },
+        {
+            "@odata.id": "/redfish/v1/Managers/CMC.Integrated.1/Logs/Lclog/16",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Created": "2017-06-05T17:45:00+00:00",
+            "Description": " Log Entry 16",
+            "EntryType": "Oem",
+            "Id": "16",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Sensors/PowerSupplies/PSU.Slot.0"
+                }
+            },
+            "Message": "Power supply 1 is present.",
+            "MessageArgs": [
+                "1"
+            ],
+            "MessageArgs@odata.count": 1,
+            "MessageID": "PSU0000",
+            "Name": " Log Entry 16",
+            "Oem": {
+                "Dell": {
+                    "@odata.type": "#DellLogEntry.v1_0_0.DellLogEntry",
+                    "Category": "System Health"
+                }
+            },
+            "OemRecordFormat": "Dell",
+            "Severity": "Ok"
+        },
+        {
+            "@odata.id": "/redfish/v1/Managers/CMC.Integrated.1/Logs/Lclog/15",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Created": "2017-06-05T17:44:47+00:00",
+            "Description": " Log Entry 15",
+            "EntryType": "Oem",
+            "Id": "15",
+            "Links": {},
+            "Message": "The sled is inserted in the sled slot System.Chassis.1#System.Modular.3.",
+            "MessageArgs": [
+                "System.Chassis.1#System.Modular.3"
+            ],
+            "MessageArgs@odata.count": 1,
+            "MessageID": "HWC1204",
+            "Name": " Log Entry 15",
+            "Oem": {
+                "Dell": {
+                    "@odata.type": "#DellLogEntry.v1_0_0.DellLogEntry",
+                    "Category": "System Health"
+                }
+            },
+            "OemRecordFormat": "Dell",
+            "Severity": "Ok"
+        },
+        {
+            "@odata.id": "/redfish/v1/Managers/CMC.Integrated.1/Logs/Lclog/14",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Created": "2017-06-05T17:44:47+00:00",
+            "Description": " Log Entry 14",
+            "EntryType": "Oem",
+            "Id": "14",
+            "Links": {},
+            "Message": "The sled is inserted in the sled slot System.Chassis.1#System.Modular.1.",
+            "MessageArgs": [
+                "System.Chassis.1#System.Modular.1"
+            ],
+            "MessageArgs@odata.count": 1,
+            "MessageID": "HWC1204",
+            "Name": " Log Entry 14",
+            "Oem": {
+                "Dell": {
+                    "@odata.type": "#DellLogEntry.v1_0_0.DellLogEntry",
+                    "Category": "System Health"
+                }
+            },
+            "OemRecordFormat": "Dell",
+            "Severity": "Ok"
+        },
+        {
+            "@odata.id": "/redfish/v1/Managers/CMC.Integrated.1/Logs/Lclog/13",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Created": "2017-06-05T17:44:36+00:00",
+            "Description": " Log Entry 13",
+            "EntryType": "Oem",
+            "Id": "13",
+            "Links": {},
+            "MessageID": "HWC8602",
+            "Name": " Log Entry 13",
+            "Oem": {
+                "Dell": {
+                    "@odata.type": "#DellLogEntry.v1_0_0.DellLogEntry",
+                    "Category": "System Health"
+                }
+            },
+            "OemRecordFormat": "Dell",
+            "Severity": "Ok"
+        },
+        {
+            "@odata.id": "/redfish/v1/Managers/CMC.Integrated.1/Logs/Lclog/12",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Created": "2017-06-05T17:44:11+00:00",
+            "Description": " Log Entry 12",
+            "EntryType": "Oem",
+            "Id": "12",
+            "Links": {},
+            "Message": "The Chassis Management Controller (CMC) cannot communicate with the factory cert control panel because of internal issues.",
+            "MessageArgs": [
+                "factory cert"
+            ],
+            "MessageArgs@odata.count": 1,
+            "MessageID": "HWC8504",
+            "Name": " Log Entry 12",
+            "Oem": {
+                "Dell": {
+                    "@odata.type": "#DellLogEntry.v1_0_0.DellLogEntry",
+                    "Category": "System Health"
+                }
+            },
+            "OemRecordFormat": "Dell",
+            "Severity": "Critical"
+        },
+        {
+            "@odata.id": "/redfish/v1/Managers/CMC.Integrated.1/Logs/Lclog/11",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Created": "2017-06-05T17:44:09+00:00",
+            "Description": " Log Entry 11",
+            "EntryType": "Oem",
+            "Id": "11",
+            "Links": {},
+            "Message": "The Chassis Management Controller (CMC) cannot communicate with the factory cert control panel because of internal issues.",
+            "MessageArgs": [
+                "factory cert"
+            ],
+            "MessageArgs@odata.count": 1,
+            "MessageID": "HWC8504",
+            "Name": " Log Entry 11",
+            "Oem": {
+                "Dell": {
+                    "@odata.type": "#DellLogEntry.v1_0_0.DellLogEntry",
+                    "Category": "System Health"
+                }
+            },
+            "OemRecordFormat": "Dell",
+            "Severity": "Critical"
+        },
+        {
+            "@odata.id": "/redfish/v1/Managers/CMC.Integrated.1/Logs/Lclog/10",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Created": "2017-06-05T17:44:02+00:00",
+            "Description": " Log Entry 10",
+            "EntryType": "Oem",
+            "Id": "10",
+            "Links": {},
+            "Message": "The Chassis Management Controller (CMC) cannot communicate with the factory cert control panel because of internal issues.",
+            "MessageArgs": [
+                "factory cert"
+            ],
+            "MessageArgs@odata.count": 1,
+            "MessageID": "HWC8504",
+            "Name": " Log Entry 10",
+            "Oem": {
+                "Dell": {
+                    "@odata.type": "#DellLogEntry.v1_0_0.DellLogEntry",
+                    "Category": "System Health"
+                }
+            },
+            "OemRecordFormat": "Dell",
+            "Severity": "Critical"
+        },
+        {
+            "@odata.id": "/redfish/v1/Managers/CMC.Integrated.1/Logs/Lclog/9",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Created": "2017-06-05T17:43:55+00:00",
+            "Description": " Log Entry 9",
+            "EntryType": "Oem",
+            "Id": "9",
+            "Links": {},
+            "Message": "The Chassis Management Controller (CMC) cannot communicate with the factory cert control panel because of internal issues.",
+            "MessageArgs": [
+                "factory cert"
+            ],
+            "MessageArgs@odata.count": 1,
+            "MessageID": "HWC8504",
+            "Name": " Log Entry 9",
+            "Oem": {
+                "Dell": {
+                    "@odata.type": "#DellLogEntry.v1_0_0.DellLogEntry",
+                    "Category": "System Health"
+                }
+            },
+            "OemRecordFormat": "Dell",
+            "Severity": "Critical"
+        },
+        {
+            "@odata.id": "/redfish/v1/Managers/CMC.Integrated.1/Logs/Lclog/8",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Created": "2017-06-05T17:43:30+00:00",
+            "Description": " Log Entry 8",
+            "EntryType": "Oem",
+            "Id": "8",
+            "Links": {},
+            "MessageID": "RDU0002",
+            "Name": " Log Entry 8",
+            "Oem": {
+                "Dell": {
+                    "@odata.type": "#DellLogEntry.v1_0_0.DellLogEntry",
+                    "Category": "System Health"
+                }
+            },
+            "OemRecordFormat": "Dell",
+            "Severity": "Critical"
+        },
+        {
+            "@odata.id": "/redfish/v1/Managers/CMC.Integrated.1/Logs/Lclog/7",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Created": "2017-06-05T17:43:06+00:00",
+            "Description": " Log Entry 7",
+            "EntryType": "Oem",
+            "Id": "7",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Sensors/Fans/0x17||Fan.Slot.7"
+                }
+            },
+            "Message": "Communication with Rear Fan 3 is lost.",
+            "MessageArgs": [
+                "Rear",
+                "3"
+            ],
+            "MessageArgs@odata.count": 2,
+            "MessageID": "FAN0032",
+            "Name": " Log Entry 7",
+            "Oem": {
+                "Dell": {
+                    "@odata.type": "#DellLogEntry.v1_0_0.DellLogEntry",
+                    "Category": "System Health"
+                }
+            },
+            "OemRecordFormat": "Dell",
+            "Severity": "Critical"
+        },
+        {
+            "@odata.id": "/redfish/v1/Managers/CMC.Integrated.1/Logs/Lclog/6",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Created": "2017-06-05T17:43:06+00:00",
+            "Description": " Log Entry 6",
+            "EntryType": "Oem",
+            "Id": "6",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Sensors/Fans/0x17||Fan.Slot.6"
+                }
+            },
+            "Message": "Communication with Rear Fan 2 is lost.",
+            "MessageArgs": [
+                "Rear",
+                "2"
+            ],
+            "MessageArgs@odata.count": 2,
+            "MessageID": "FAN0032",
+            "Name": " Log Entry 6",
+            "Oem": {
+                "Dell": {
+                    "@odata.type": "#DellLogEntry.v1_0_0.DellLogEntry",
+                    "Category": "System Health"
+                }
+            },
+            "OemRecordFormat": "Dell",
+            "Severity": "Critical"
+        },
+        {
+            "@odata.id": "/redfish/v1/Managers/CMC.Integrated.1/Logs/Lclog/5",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Created": "2017-06-05T17:43:06+00:00",
+            "Description": " Log Entry 5",
+            "EntryType": "Oem",
+            "Id": "5",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Sensors/Fans/0x17||Fan.Slot.5"
+                }
+            },
+            "Message": "Communication with Rear Fan 1 is lost.",
+            "MessageArgs": [
+                "Rear",
+                "1"
+            ],
+            "MessageArgs@odata.count": 2,
+            "MessageID": "FAN0032",
+            "Name": " Log Entry 5",
+            "Oem": {
+                "Dell": {
+                    "@odata.type": "#DellLogEntry.v1_0_0.DellLogEntry",
+                    "Category": "System Health"
+                }
+            },
+            "OemRecordFormat": "Dell",
+            "Severity": "Critical"
+        },
+        {
+            "@odata.id": "/redfish/v1/Managers/CMC.Integrated.1/Logs/Lclog/4",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Created": "2017-06-05T17:43:06+00:00",
+            "Description": " Log Entry 4",
+            "EntryType": "Oem",
+            "Id": "4",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Sensors/Fans/0x17||Fan.Slot.2"
+                }
+            },
+            "Message": "Communication with Front Fan 2 is lost.",
+            "MessageArgs": [
+                "Front",
+                "2"
+            ],
+            "MessageArgs@odata.count": 2,
+            "MessageID": "FAN0032",
+            "Name": " Log Entry 4",
+            "Oem": {
+                "Dell": {
+                    "@odata.type": "#DellLogEntry.v1_0_0.DellLogEntry",
+                    "Category": "System Health"
+                }
+            },
+            "OemRecordFormat": "Dell",
+            "Severity": "Critical"
+        },
+        {
+            "@odata.id": "/redfish/v1/Managers/CMC.Integrated.1/Logs/Lclog/3",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Created": "2017-06-05T17:43:06+00:00",
+            "Description": " Log Entry 3",
+            "EntryType": "Oem",
+            "Id": "3",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Sensors/Fans/0x17||Fan.Slot.1"
+                }
+            },
+            "Message": "Communication with Front Fan 1 is lost.",
+            "MessageArgs": [
+                "Front",
+                "1"
+            ],
+            "MessageArgs@odata.count": 2,
+            "MessageID": "FAN0032",
+            "Name": " Log Entry 3",
+            "Oem": {
+                "Dell": {
+                    "@odata.type": "#DellLogEntry.v1_0_0.DellLogEntry",
+                    "Category": "System Health"
+                }
+            },
+            "OemRecordFormat": "Dell",
+            "Severity": "Critical"
+        },
+        {
+            "@odata.id": "/redfish/v1/Managers/CMC.Integrated.1/Logs/Lclog/2",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Created": "2017-06-05T17:44:36+00:00",
+            "Description": " Log Entry 2",
+            "EntryType": "Oem",
+            "Id": "2",
+            "Links": {},
+            "Message": "The system recovered from Chassis Log file corruption.",
+            "MessageID": "LOG300",
+            "Name": " Log Entry 2",
+            "Oem": {
+                "Dell": {
+                    "@odata.type": "#DellLogEntry.v1_0_0.DellLogEntry",
+                    "Category": "Configuration"
+                }
+            },
+            "OemRecordFormat": "Dell",
+            "Severity": "Ok"
+        },
+        {
+            "@odata.id": "/redfish/v1/Managers/CMC.Integrated.1/Logs/Lclog/1",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Created": "2017-06-05T17:44:36+00:00",
+            "Description": " Log Entry 1",
+            "EntryType": "Oem",
+            "Id": "1",
+            "Links": {},
+            "Message": "The Chassis Log file was cleared.",
+            "MessageID": "LOG305",
+            "Name": " Log Entry 1",
+            "Oem": {
+                "Dell": {
+                    "@odata.type": "#DellLogEntry.v1_0_0.DellLogEntry",
+                    "Category": "Configuration"
+                }
+            },
+            "OemRecordFormat": "Dell",
+            "Severity": "Ok"
+        }
+    ],
+    "Members@odata.count": 20,
+    "Name": "Log Entry Collection"
+}

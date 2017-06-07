@@ -1,0 +1,9 @@
+{
+    "@odata.context": "/redfish/v1/$metadata#Chassis/Members/$entity",
+    "@odata.id": "/redfish/v1/Chassis/IOM.Slot.A1/IOMConfiguration",
+    "@odata.type": "#Chassis.v1_0_2.Chassis",
+    "Capabilities": null,
+    "Capabilities@odata.count": 0,
+    "IOMConfig_objects": null,
+    "Id": "IOM.Slot.A1"
+}

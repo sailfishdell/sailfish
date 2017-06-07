@@ -1,0 +1,11 @@
+{
+    "@odata.context": "/redfish/v1/$metadata#DellSlot.DellSlot",
+    "@odata.id": "/redfish/v1/Chassis/System.Chassis.1/Slots/SledSlot.4",
+    "@odata.type": "#DellSlot.v1_0_0.DellSlot",
+    "Config": "SlotConfig.2",
+    "Contains": "",
+    "Id": "SledSlot.4",
+    "Name": "SledSlot.4",
+    "Occupied": "False",
+    "SlotName": "unknown"
+}

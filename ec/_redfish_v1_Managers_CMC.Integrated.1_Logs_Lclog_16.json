@@ -1,0 +1,29 @@
+{
+    "@odata.context": "/redfish/v1/$metadata#LogEntry.LogEntry",
+    "@odata.id": "/redfish/v1/Managers/CMC.Integrated.1/Logs/Lclog/16",
+    "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+    "Created": "2017-06-05T17:45:00+00:00",
+    "Description": " Log Entry 16",
+    "EntryType": "Oem",
+    "Id": "16",
+    "Links": {
+        "OriginOfCondition": {
+            "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Sensors/PowerSupplies/PSU.Slot.0"
+        }
+    },
+    "Message": "Power supply 1 is present.",
+    "MessageArgs": [
+        "1"
+    ],
+    "MessageArgs@odata.count": 1,
+    "MessageID": "PSU0000",
+    "Name": " Log Entry 16",
+    "Oem": {
+        "Dell": {
+            "@odata.type": "#DellLogEntry.v1_0_0.DellLogEntry",
+            "Category": "System Health"
+        }
+    },
+    "OemRecordFormat": "Dell",
+    "Severity": "Ok"
+}

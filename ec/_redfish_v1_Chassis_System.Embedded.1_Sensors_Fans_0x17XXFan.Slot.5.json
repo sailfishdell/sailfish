@@ -1,0 +1,9 @@
+{
+    "error": {
+        "code": "5",
+        "message": {
+            "lang": "en-us",
+            "value": "not supported: Unknown URI format"
+        }
+    }
+}

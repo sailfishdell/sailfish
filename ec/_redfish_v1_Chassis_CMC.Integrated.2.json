@@ -1,0 +1,27 @@
+{
+    "@odata.context": "/redfish/v1/$metadata#Chassis/Members/$entity",
+    "@odata.id": "/redfish/v1/Chassis/CMC.Integrated.2",
+    "@odata.type": "#Chassis.v1_0_2.Chassis",
+    "AssetTag": null,
+    "ChassisType": "Module",
+    "Description": "",
+    "Id": "CMC.Integrated.2",
+    "IndicatorLED": null,
+    "Links": null,
+    "Manufacturer": "",
+    "Model": "unknown",
+    "Name": "CMC",
+    "Oem": {
+        "OemChassis": {
+            "@odata.id": "/redfish/v1/Chassis/CMC.Integrated.2/Attributes"
+        }
+    },
+    "PartNumber": null,
+    "SKU": null,
+    "SerialNumber": null,
+    "Status": {
+        "Health": "Ok",
+        "HealthRollup": "Ok",
+        "State": "StandbySpare"
+    }
+}

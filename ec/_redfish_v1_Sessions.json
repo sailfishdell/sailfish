@@ -1,0 +1,9 @@
+{
+    "error": {
+        "code": "1",
+        "message": {
+            "lang": "en-us",
+            "value": "failed: Request URI: /redfish/v1/Sessions is invalid"
+        }
+    }
+}

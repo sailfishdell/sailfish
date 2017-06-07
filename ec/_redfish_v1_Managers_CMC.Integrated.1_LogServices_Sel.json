@@ -1,0 +1,21 @@
+{
+    "@odata.context": "/redfish/v1/$metadata#LogService.LogService",
+    "@odata.id": "/redfish/v1/Managers/CMC.Integrated.1/LogServices/Sel",
+    "@odata.type": "#LogService.v1_0_2.LogService",
+    "Actions": {
+        "#LogService.ClearLog": {
+            "target": "/redfish/v1/Managers/CMC.Integrated.1/LogServices/Sel/Actions/LogService.ClearLog"
+        }
+    },
+    "DateTime": "2017-06-06T08:08:41+00:00",
+    "DateTimeLocalOffset": "+00:00",
+    "Description": "SEL Log Service",
+    "Entries": {
+        "@odata.id": "/redfish/v1/Managers/CMC.Integrated.1/Logs/Sel"
+    },
+    "Id": "SEL",
+    "MaxNumberOfRecords": 1024,
+    "Name": "SEL Log Service",
+    "OverWritePolicy": "WrapsWhenFull",
+    "ServiceEnabled": true
+}

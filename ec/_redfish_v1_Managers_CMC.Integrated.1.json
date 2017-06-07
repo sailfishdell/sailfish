@@ -1,0 +1,255 @@
+{
+    "@odata.context": "/redfish/v1/$metadata#Manager.Manager",
+    "@odata.id": "/redfish/v1/Managers/CMC.Integrated.1",
+    "@odata.type": "#Manager.v1_0_2.Manager",
+    "Actions": {
+        "#Manager.ForceFailover": {
+            "target": "/redfish/v1/Managers/CMC.Integrated.1/Actions/Manager.ForceFailover"
+        },
+        "#Manager.Reset": {
+            "ResetType@Redfish.AllowableValues": [
+                "GracefulRestart"
+            ],
+            "target": "/redfish/v1/Managers/CMC.Integrated.1/Actions/Manager.Reset"
+        },
+        "Oem": {
+            "DellManager.v1_0_0#DellManager.ResetToDefaults": {
+                "ResetType@Redfish.AllowableValues": [
+                    "ClearToShip",
+                    "Decommission",
+                    "ResetFactoryConfig",
+                    "ResetToEngineeringDefaults"
+                ],
+                "target": "/redfish/v1/Managers/CMC.Integrated.1/Actions/Oem/DellManager.ResetToDefaults"
+            },
+            "OemManager.v1_0_0#OemManager.ExportSystemConfiguration": {
+                "ExportFormat@Redfish.AllowableValues": [
+                    "XML",
+                    "JSON"
+                ],
+                "ExportUse@Redfish.AllowableValues": [
+                    "Default",
+                    "Clone",
+                    "Replace"
+                ],
+                "IncludeInExport@Redfish.AllowableValues": [
+                    "Default",
+                    "IncludeReadOnly",
+                    "IncludePasswordHashValues",
+                    "IncludeReadOnly,IncludePasswordHashValues"
+                ],
+                "ShareParameters": {
+                    "IgnoreCertificateWarning@Redfish.AllowableValues": [
+                        "Disabled",
+                        "Enabled"
+                    ],
+                    "ProxySupport@Redfish.AllowableValues": [
+                        "Disabled",
+                        "EnabledProxyDefault",
+                        "Enabled"
+                    ],
+                    "ProxyType@Redfish.AllowableValues": [
+                        "HTTP",
+                        "SOCKS4"
+                    ],
+                    "ShareParameters@Redfish.AllowableValues": [
+                        "IPAddress",
+                        "ShareName",
+                        "FileName",
+                        "UserName",
+                        "Password",
+                        "Workgroup",
+                        "ProxyServer",
+                        "ProxyUserName",
+                        "ProxyPassword",
+                        "ProxyPort"
+                    ],
+                    "ShareType@Redfish.AllowableValues": [
+                        "NFS",
+                        "CIFS",
+                        "HTTP",
+                        "HTTPS"
+                    ],
+                    "Target@Redfish.AllowableValues": [
+                        "ALL",
+                        "IDRAC",
+                        "BIOS",
+                        "NIC",
+                        "RAID"
+                    ]
+                },
+                "target": "/redfish/v1/Managers/CMC.Integrated.1/Actions/Oem/EID_674_Manager.ExportSystemConfiguration"
+            },
+            "OemManager.v1_0_0#OemManager.ImportSystemConfiguration": {
+                "HostPowerState@Redfish.AllowableValues": [
+                    "On",
+                    "Off"
+                ],
+                "ImportSystemConfiguration@Redfish.AllowableValues": [
+                    "TimeToWait",
+                    "ImportBuffer"
+                ],
+                "ShareParameters": {
+                    "IgnoreCertificateWarning@Redfish.AllowableValues": [
+                        "Disabled",
+                        "Enabled"
+                    ],
+                    "ProxySupport@Redfish.AllowableValues": [
+                        "Disabled",
+                        "EnabledProxyDefault",
+                        "Enabled"
+                    ],
+                    "ProxyType@Redfish.AllowableValues": [
+                        "HTTP",
+                        "SOCKS4"
+                    ],
+                    "ShareParameters@Redfish.AllowableValues": [
+                        "IPAddress",
+                        "ShareName",
+                        "FileName",
+                        "UserName",
+                        "Password",
+                        "Workgroup",
+                        "ProxyServer",
+                        "ProxyUserName",
+                        "ProxyPassword",
+                        "ProxyPort"
+                    ],
+                    "ShareType@Redfish.AllowableValues": [
+                        "NFS",
+                        "CIFS",
+                        "HTTP",
+                        "HTTPS"
+                    ],
+                    "Target@Redfish.AllowableValues": [
+                        "ALL",
+                        "IDRAC",
+                        "BIOS",
+                        "NIC",
+                        "RAID"
+                    ]
+                },
+                "ShutdownType@Redfish.AllowableValues": [
+                    "Graceful",
+                    "Forced",
+                    "NoReboot"
+                ],
+                "target": "/redfish/v1/Managers/CMC.Integrated.1/Actions/Oem/EID_674_Manager.ImportSystemConfiguration"
+            },
+            "OemManager.v1_0_0#OemManager.ImportSystemConfigurationPreview": {
+                "ImportSystemConfigurationPreview@Redfish.AllowableValues": [
+                    "ImportBuffer"
+                ],
+                "ShareParameters": {
+                    "IgnoreCertificateWarning@Redfish.AllowableValues": [
+                        "Disabled",
+                        "Enabled"
+                    ],
+                    "ProxySupport@Redfish.AllowableValues": [
+                        "Disabled",
+                        "EnabledProxyDefault",
+                        "Enabled"
+                    ],
+                    "ProxyType@Redfish.AllowableValues": [
+                        "HTTP",
+                        "SOCKS4"
+                    ],
+                    "ShareParameters@Redfish.AllowableValues": [
+                        "IPAddress",
+                        "ShareName",
+                        "FileName",
+                        "UserName",
+                        "Password",
+                        "Workgroup",
+                        "ProxyServer",
+                        "ProxyUserName",
+                        "ProxyPassword",
+                        "ProxyPort"
+                    ],
+                    "ShareType@Redfish.AllowableValues": [
+                        "NFS",
+                        "CIFS",
+                        "HTTP",
+                        "HTTPS"
+                    ],
+                    "Target@Redfish.AllowableValues": [
+                        "ALL"
+                    ]
+                },
+                "target": "/redfish/v1/Managers/CMC.Integrated.1/Actions/Oem/EID_674_Manager.ImportSystemConfigurationPreview"
+            }
+        }
+    },
+    "CommandShell": {
+        "ConnectTypesSupported": [],
+        "ConnectTypesSupported@odata.count": 0,
+        "MaxConcurrentSessions": 0,
+        "ServiceEnabled": false
+    },
+    "DateTime": "2017-06-06T08:07:20+00:00",
+    "DateTimeLocalOffset": "+00:00",
+    "Description": "BMC",
+    "FirmwareVersion": "1.0.0.20170607",
+    "GraphicalConsole": {
+        "ConnectTypesSupported": [],
+        "ConnectTypesSupported@odata.count": 0,
+        "MaxConcurrentSessions": 0,
+        "ServiceEnabled": false
+    },
+    "Id": "CMC.Integrated.1",
+    "Links": {
+        "ManagerForChassis": [
+            {
+                "@odata.id": "/redfish/v1/Chassis/System.Chassis.1"
+            }
+        ],
+        "ManagerForChassis@odata.count": 1
+    },
+    "LogServices": {
+        "@odata.id": "/redfish/v1/Managers/CMC.Integrated.1/LogServices"
+    },
+    "ManagerType": "BMC",
+    "Model": "unknown",
+    "Name": "Manager",
+    "Oem": {
+        "OemAttributes": {
+            "@odata.id": "/redfish/v1/Managers/CMC.Integrated.1/Attributes"
+        }
+    },
+    "Redundancy": [
+        {
+            "MaxNumSupported": 2,
+            "MinNumNeeded": 2,
+            "Mode": [
+                {
+                    "Member": "Failover"
+                }
+            ],
+            "Name": "ManagerRedundancy",
+            "RedundancySet": [
+                {
+                    "@odata.id": "/redfish/v1/Managers/CMC.Integrated.1"
+                },
+                {
+                    "@odata.id": "/redfish/v1/Managers/CMC.Integrated.2"
+                }
+            ],
+            "RedundancySet@odata.count": 2,
+            "Status": {
+                "Health": "Ok",
+                "State": "Enabled"
+            }
+        }
+    ],
+    "Redundancy@odata.count": 1,
+    "SerialConsole": {
+        "ConnectTypesSupported": [],
+        "ConnectTypesSupported@odata.count": 0,
+        "MaxConcurrentSessions": 0,
+        "ServiceEnabled": false
+    },
+    "Status": {
+        "Health": "Ok",
+        "State": "Enabled"
+    }
+}

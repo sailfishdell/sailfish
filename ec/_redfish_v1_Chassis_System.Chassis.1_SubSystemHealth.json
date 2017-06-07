@@ -1,0 +1,45 @@
+{
+    "@odata.context": "/redfish/v1/$metadata#Chassis/Members/$entity",
+    "@odata.id": "/redfish/v1/Chassis/System.Chassis.1/SubSystemHealth",
+    "@odata.type": "DellSubSystemHealth.v1_0_0.DellSubSystemHealth",
+    "Battery": {
+        "Status": {
+            "HealthRollup": "OK"
+        }
+    },
+    "CMC": {
+        "Status": {
+            "HealthRollup": "Critical"
+        }
+    },
+    "Fan": {
+        "Status": {
+            "HealthRollup": "OK"
+        }
+    },
+    "IOM": {
+        "Status": {
+            "HealthRollup": "OK"
+        }
+    },
+    "Miscellaneous": {
+        "Status": {
+            "HealthRollup": "OK"
+        }
+    },
+    "PowerSupply": {
+        "Status": {
+            "HealthRollup": "OK"
+        }
+    },
+    "SledSystem": {
+        "Status": {
+            "HealthRollup": "OK"
+        }
+    },
+    "Temperature": {
+        "Status": {
+            "HealthRollup": "OK"
+        }
+    }
+}

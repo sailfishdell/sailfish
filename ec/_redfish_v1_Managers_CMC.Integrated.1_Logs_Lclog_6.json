@@ -1,0 +1,30 @@
+{
+    "@odata.context": "/redfish/v1/$metadata#LogEntry.LogEntry",
+    "@odata.id": "/redfish/v1/Managers/CMC.Integrated.1/Logs/Lclog/6",
+    "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+    "Created": "2017-06-05T17:43:06+00:00",
+    "Description": " Log Entry 6",
+    "EntryType": "Oem",
+    "Id": "6",
+    "Links": {
+        "OriginOfCondition": {
+            "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Sensors/Fans/0x17||Fan.Slot.6"
+        }
+    },
+    "Message": "Communication with Rear Fan 2 is lost.",
+    "MessageArgs": [
+        "Rear",
+        "2"
+    ],
+    "MessageArgs@odata.count": 2,
+    "MessageID": "FAN0032",
+    "Name": " Log Entry 6",
+    "Oem": {
+        "Dell": {
+            "@odata.type": "#DellLogEntry.v1_0_0.DellLogEntry",
+            "Category": "System Health"
+        }
+    },
+    "OemRecordFormat": "Dell",
+    "Severity": "Critical"
+}

@@ -1,0 +1,31 @@
+{
+    "@odata.context": "/redfish/v1/$metadata#SoftwareInventory.SoftwareInventory",
+    "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/Installed-55000-1.5.0",
+    "@odata.type": "#SoftwareInventory.v1_0_0.SoftwareInventory",
+    "Description": "Represents Firmware Inventory",
+    "Id": "Installed-55000-1.5.0",
+    "Name": "FReD Firmware",
+    "Oem": {
+        "EID_674": {
+            "@odata.type": "#EID_674_SoftwareInventory.v1_0_0.OemSoftwareInventory",
+            "ComponentId": "55000",
+            "FQDD": [
+                "IOM.Slot.A1"
+            ],
+            "FQDD@odata.count": 1,
+            "InstallDate": "Unknown",
+            "RelatedItem": [
+                {
+                    "@odata.id": "/redfish/v1/Chassis/IOM.Slot.A1"
+                }
+            ],
+            "RelatedItem@odata.count": 1
+        }
+    },
+    "Status": {
+        "Health": "Ok",
+        "State": "Enabled"
+    },
+    "Updateable": true,
+    "Version": "1.5.0"
+}

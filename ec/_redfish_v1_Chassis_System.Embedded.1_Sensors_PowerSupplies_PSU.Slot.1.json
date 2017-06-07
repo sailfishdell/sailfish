@@ -1,0 +1,34 @@
+{
+    "error": {
+        "@Message.ExtendedInfo": [
+            {
+                "Message": "Unable to complete the operation because the resource ~~Sensors~ entered in not found.",
+                "MessageArgs": [
+                    "Sensors"
+                ],
+                "MessageArgs@odata.count": 1,
+                "MessageId": "iDRAC.1.5.SYS403",
+                "RelatedProperties": [],
+                "RelatedProperties@odata.count": 0,
+                "Resolution": "Enter the correct resource and retry the operation. For information about valid resource, see the Redfish Users Guide available on the support site.",
+                "Severity": "Informational"
+            },
+            {
+                "Message": "The resource at the URI Sensors was not found.",
+                "MessageArgs": [
+                    "Sensors"
+                ],
+                "MessageArgs@odata.count": 1,
+                "MessageId": "Base.1.0.ResourceMissingAtURI",
+                "RelatedProperties": [
+                    ""
+                ],
+                "RelatedProperties@odata.count": 1,
+                "Resolution": "Place a valid resource at thr URI or correct the URI and resubmit the request.",
+                "Severity": "Critical"
+            }
+        ],
+        "code": "Base.1.0.GeneralError",
+        "message": "A general error has occurred. See ExtendedInfo for more information"
+    }
+}

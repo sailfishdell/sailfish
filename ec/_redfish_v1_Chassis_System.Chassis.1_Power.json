@@ -1,0 +1,357 @@
+{
+    "@odata.context": "/redfish/v1/$metadata#Power.PowerSystem.Chassis.1/Power/$entity",
+    "@odata.id": "/redfish/v1/Chassis/System.Chassis.1/Power",
+    "@odata.type": "#Power.v1_0_2.Power",
+    "Description": "Power",
+    "MemberId": "Power",
+    "Name": "Power",
+    "Oem": {
+        "EID_674": {
+            "PowerSuppliesSummary": {
+                "Status": {
+                    "HealthRollup": "Ok"
+                }
+            }
+        }
+    },
+    "OemPower": {
+        "PowerTrends": [
+            {
+                "@odata.id": "/redfish/v1/Chassis/System.Chassis.1/Power/PowerTrends-1",
+                "MemberId": "PowerHistogram",
+                "Name": "System Power",
+                "histograms": [
+                    {
+                        "@odata.id": "/redfish/v1/Chassis/System.Chassis.1/Power/PowerTrends-1/LastWeek",
+                        "HistoryAverageWatts": 117,
+                        "HistoryMaxWatts": 220,
+                        "HistoryMaxWattsTime": "2017-06-06T07:48:56+0000",
+                        "HistoryMinWatts": 110,
+                        "HistoryMinWattsTime": "2017-06-06T08:12:18+0000",
+                        "MemberId": "PowerHistogram",
+                        "Name": "System Power History"
+                    },
+                    {
+                        "@odata.id": "/redfish/v1/Chassis/System.Chassis.1/Power/PowerTrends-1/LastDay",
+                        "HistoryAverageWatts": 117,
+                        "HistoryMaxWatts": 220,
+                        "HistoryMaxWattsTime": "2017-06-06T07:48:56+0000",
+                        "HistoryMinWatts": 110,
+                        "HistoryMinWattsTime": "2017-06-06T08:12:18+0000",
+                        "MemberId": "PowerHistogram",
+                        "Name": "System Power History"
+                    },
+                    {
+                        "@odata.id": "/redfish/v1/Chassis/System.Chassis.1/Power/PowerTrends-1/LastHour",
+                        "HistoryAverageWatts": 117,
+                        "HistoryMaxWatts": 220,
+                        "HistoryMaxWattsTime": "2017-06-06T07:48:56+0000",
+                        "HistoryMinWatts": 110,
+                        "HistoryMinWattsTime": "2017-06-06T08:12:18+0000",
+                        "MemberId": "PowerHistogram",
+                        "Name": "System Power History"
+                    }
+                ]
+            }
+        ],
+        "PowerTrends@odata.count": 1
+    },
+    "PowerControl": [
+        {
+            "@odata.id": "/redfish/v1/Chassis/System.Chassis.1/Power/PowerControl",
+            "MemberId": "PowerControl",
+            "Name": "System Power Control",
+            "Oem": {
+                "EnergyConsumptionStartTime": "1971-04-13T16:12:27+0000",
+                "EnergyConsumptionkWh": 2,
+                "HeadroomWatts": 8883,
+                "PeakHeadroomWatts": 8593
+            },
+            "PowerAvailableWatts": 8883,
+            "PowerCapacityWatts": 0,
+            "PowerConsumedWatts": 117,
+            "PowerMetrics": {
+                "Oem": {
+                    "MaxPeakWatts": 407,
+                    "MaxPeakWattsTime": "2017-06-05T18:33:09+0000",
+                    "MinPeakWatts": 0,
+                    "MinPeakWattsTime": "2017-05-30T01:09:39+0000"
+                }
+            },
+            "RelatedItem": [
+                {
+                    "@odata.id": "/redfish/v1/Chassis/CMC.Integrated.1"
+                },
+                {
+                    "@odata.id": "/redfish/v1/Chassis/CMC.Integrated.2"
+                },
+                {
+                    "@odata.id": "/redfish/v1/Chassis/IOM.Slot.A1"
+                },
+                {
+                    "@odata.id": "/redfish/v1/Chassis/IOM.Slot.A1a"
+                },
+                {
+                    "@odata.id": "/redfish/v1/Chassis/IOM.Slot.A1b"
+                },
+                {
+                    "@odata.id": "/redfish/v1/Chassis/IOM.Slot.A2"
+                },
+                {
+                    "@odata.id": "/redfish/v1/Chassis/IOM.Slot.A2a"
+                },
+                {
+                    "@odata.id": "/redfish/v1/Chassis/IOM.Slot.A2b"
+                },
+                {
+                    "@odata.id": "/redfish/v1/Chassis/IOM.Slot.B1"
+                },
+                {
+                    "@odata.id": "/redfish/v1/Chassis/IOM.Slot.B1a"
+                },
+                {
+                    "@odata.id": "/redfish/v1/Chassis/IOM.Slot.B1b"
+                },
+                {
+                    "@odata.id": "/redfish/v1/Chassis/IOM.Slot.B2"
+                },
+                {
+                    "@odata.id": "/redfish/v1/Chassis/IOM.Slot.B2a"
+                },
+                {
+                    "@odata.id": "/redfish/v1/Chassis/IOM.Slot.B2b"
+                },
+                {
+                    "@odata.id": "/redfish/v1/Chassis/IOM.Slot.C1"
+                },
+                {
+                    "@odata.id": "/redfish/v1/Chassis/IOM.Slot.C2"
+                },
+                {
+                    "@odata.id": "/redfish/v1/Chassis/System.Chassis.1"
+                },
+                {
+                    "@odata.id": "/redfish/v1/Chassis/System.Modular.1"
+                },
+                {
+                    "@odata.id": "/redfish/v1/Chassis/System.Modular.1a"
+                },
+                {
+                    "@odata.id": "/redfish/v1/Chassis/System.Modular.1b"
+                },
+                {
+                    "@odata.id": "/redfish/v1/Chassis/System.Modular.2"
+                },
+                {
+                    "@odata.id": "/redfish/v1/Chassis/System.Modular.2a"
+                },
+                {
+                    "@odata.id": "/redfish/v1/Chassis/System.Modular.2b"
+                },
+                {
+                    "@odata.id": "/redfish/v1/Chassis/System.Modular.3"
+                },
+                {
+                    "@odata.id": "/redfish/v1/Chassis/System.Modular.3a"
+                },
+                {
+                    "@odata.id": "/redfish/v1/Chassis/System.Modular.3b"
+                },
+                {
+                    "@odata.id": "/redfish/v1/Chassis/System.Modular.4"
+                },
+                {
+                    "@odata.id": "/redfish/v1/Chassis/System.Modular.4a"
+                },
+                {
+                    "@odata.id": "/redfish/v1/Chassis/System.Modular.4b"
+                },
+                {
+                    "@odata.id": "/redfish/v1/Chassis/System.Modular.5"
+                },
+                {
+                    "@odata.id": "/redfish/v1/Chassis/System.Modular.5a"
+                },
+                {
+                    "@odata.id": "/redfish/v1/Chassis/System.Modular.5b"
+                },
+                {
+                    "@odata.id": "/redfish/v1/Chassis/System.Modular.6"
+                },
+                {
+                    "@odata.id": "/redfish/v1/Chassis/System.Modular.6a"
+                },
+                {
+                    "@odata.id": "/redfish/v1/Chassis/System.Modular.6b"
+                },
+                {
+                    "@odata.id": "/redfish/v1/Chassis/System.Modular.7"
+                },
+                {
+                    "@odata.id": "/redfish/v1/Chassis/System.Modular.7a"
+                },
+                {
+                    "@odata.id": "/redfish/v1/Chassis/System.Modular.7b"
+                },
+                {
+                    "@odata.id": "/redfish/v1/Chassis/System.Modular.8"
+                },
+                {
+                    "@odata.id": "/redfish/v1/Chassis/System.Modular.8a"
+                },
+                {
+                    "@odata.id": "/redfish/v1/Chassis/System.Modular.8b"
+                }
+            ],
+            "RelatedItem@data.count": 41
+        }
+    ],
+    "PowerControl@odata.count": 1,
+    "PowerSupplies": [
+        {
+            "@odata.id": "/redfish/v1/Chassis/System.Chassis.1/Power/PowerSupplies/PSU.Slot.1",
+            "FirmwareVersion": "00.26.50",
+            "LineInputVoltage": 0,
+            "LineInputVoltageType": "AC",
+            "MemberId": "PSU.Slot.1",
+            "Name": "PWR SPLY,3000W,RDNT,ARTESYN   ",
+            "Oem": {
+                "Dell": {
+                    "@odata.type": "#DellPower.v1_0_0.DellPowerSupply",
+                    "ComponentID": "104850"
+                }
+            },
+            "PowerCapacityWatts": "3000",
+            "Redundancy": [
+                "non redundant"
+            ],
+            "Redundancy@odata.count": 1,
+            "Status": {
+                "Health": "OK",
+                "HealthRollup": "OK",
+                "State": "Enabled"
+            }
+        },
+        {
+            "@odata.id": "/redfish/v1/Chassis/System.Chassis.1/Power/PowerSupplies/PSU.Slot.2",
+            "FirmwareVersion": "00.26.50",
+            "LineInputVoltage": 0,
+            "LineInputVoltageType": "AC",
+            "MemberId": "PSU.Slot.2",
+            "Name": "PWR SPLY,3000W,RDNT,ARTESYN   ",
+            "Oem": {
+                "Dell": {
+                    "@odata.type": "#DellPower.v1_0_0.DellPowerSupply",
+                    "ComponentID": "104850"
+                }
+            },
+            "PowerCapacityWatts": "3000",
+            "Redundancy": [
+                "non redundant"
+            ],
+            "Redundancy@odata.count": 1,
+            "Status": {
+                "Health": "OK",
+                "HealthRollup": "OK",
+                "State": "Enabled"
+            }
+        },
+        {
+            "@odata.id": "/redfish/v1/Chassis/System.Chassis.1/Power/PowerSupplies/PSU.Slot.3",
+            "FirmwareVersion": "00.26.50",
+            "LineInputVoltage": 0,
+            "LineInputVoltageType": "AC",
+            "MemberId": "PSU.Slot.3",
+            "Name": "PWR SPLY,3000W,RDNT,ARTESYN   ",
+            "Oem": {
+                "Dell": {
+                    "@odata.type": "#DellPower.v1_0_0.DellPowerSupply",
+                    "ComponentID": "104850"
+                }
+            },
+            "PowerCapacityWatts": "3000",
+            "Redundancy": [
+                "non redundant"
+            ],
+            "Redundancy@odata.count": 1,
+            "Status": {
+                "Health": "OK",
+                "HealthRollup": "OK",
+                "State": "Enabled"
+            }
+        },
+        {
+            "@odata.id": "/redfish/v1/Chassis/System.Chassis.1/Power/PowerSupplies/PSU.Slot.4",
+            "FirmwareVersion": "",
+            "LineInputVoltage": 0,
+            "LineInputVoltageType": "AC",
+            "MemberId": "PSU.Slot.4",
+            "Name": "",
+            "Oem": {
+                "Dell": {
+                    "@odata.type": "#DellPower.v1_0_0.DellPowerSupply",
+                    "ComponentID": "0"
+                }
+            },
+            "PowerCapacityWatts": "0",
+            "Redundancy": [
+                "non redundant"
+            ],
+            "Redundancy@odata.count": 1,
+            "Status": {
+                "Health": "OK",
+                "HealthRollup": "OK",
+                "State": "Absent"
+            }
+        },
+        {
+            "@odata.id": "/redfish/v1/Chassis/System.Chassis.1/Power/PowerSupplies/PSU.Slot.5",
+            "FirmwareVersion": "",
+            "LineInputVoltage": 0,
+            "LineInputVoltageType": "AC",
+            "MemberId": "PSU.Slot.5",
+            "Name": "",
+            "Oem": {
+                "Dell": {
+                    "@odata.type": "#DellPower.v1_0_0.DellPowerSupply",
+                    "ComponentID": "0"
+                }
+            },
+            "PowerCapacityWatts": "0",
+            "Redundancy": [
+                "non redundant"
+            ],
+            "Redundancy@odata.count": 1,
+            "Status": {
+                "Health": "OK",
+                "HealthRollup": "OK",
+                "State": "Absent"
+            }
+        },
+        {
+            "@odata.id": "/redfish/v1/Chassis/System.Chassis.1/Power/PowerSupplies/PSU.Slot.6",
+            "FirmwareVersion": "",
+            "LineInputVoltage": 0,
+            "LineInputVoltageType": "AC",
+            "MemberId": "PSU.Slot.6",
+            "Name": "",
+            "Oem": {
+                "Dell": {
+                    "@odata.type": "#DellPower.v1_0_0.DellPowerSupply",
+                    "ComponentID": "0"
+                }
+            },
+            "PowerCapacityWatts": "0",
+            "Redundancy": [
+                "non redundant"
+            ],
+            "Redundancy@odata.count": 1,
+            "Status": {
+                "Health": "OK",
+                "HealthRollup": "OK",
+                "State": "Absent"
+            }
+        }
+    ],
+    "PowerSupplies@odata.count": 6
+}

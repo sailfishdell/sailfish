@@ -1,0 +1,14 @@
+{
+    "@odata.context": "/redfish/v1/$metadata#DellSlotConfig.DellSlotConfig",
+    "@odata.id": "/redfish/v1/Chassis/System.Chassis.1/SlotConfigs/SlotConfig.4",
+    "@odata.type": "#DellSlotConfig.v1_0_0.DellSlotConfig",
+    "Columns": "1",
+    "Id": "SlotConfig.4",
+    "Location": "rear",
+    "Name": "SlotConfig.4",
+    "Order": "TB",
+    "Orientation": "Vertical",
+    "ParentConfig": "",
+    "Rows": "4",
+    "Type": "Fan"
+}

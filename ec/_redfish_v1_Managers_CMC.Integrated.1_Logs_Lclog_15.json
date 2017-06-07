@@ -1,0 +1,25 @@
+{
+    "@odata.context": "/redfish/v1/$metadata#LogEntry.LogEntry",
+    "@odata.id": "/redfish/v1/Managers/CMC.Integrated.1/Logs/Lclog/15",
+    "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+    "Created": "2017-06-05T17:44:47+00:00",
+    "Description": " Log Entry 15",
+    "EntryType": "Oem",
+    "Id": "15",
+    "Links": {},
+    "Message": "The sled is inserted in the sled slot System.Chassis.1#System.Modular.3.",
+    "MessageArgs": [
+        "System.Chassis.1#System.Modular.3"
+    ],
+    "MessageArgs@odata.count": 1,
+    "MessageID": "HWC1204",
+    "Name": " Log Entry 15",
+    "Oem": {
+        "Dell": {
+            "@odata.type": "#DellLogEntry.v1_0_0.DellLogEntry",
+            "Category": "System Health"
+        }
+    },
+    "OemRecordFormat": "Dell",
+    "Severity": "Ok"
+}

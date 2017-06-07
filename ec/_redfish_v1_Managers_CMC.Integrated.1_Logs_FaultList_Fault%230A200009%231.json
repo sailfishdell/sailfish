@@ -1,0 +1,21 @@
+{
+    "@odata.id": "/redfish/v1/Managers/CMC.Integrated.1/Logs/FaultList/Fault%230A200009%231",
+    "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+    "Created": "2017-06-05T17:43:30+00:00",
+    "Description": "FaultList Entry system.chassis.1",
+    "EntryType": "Oem",
+    "Id": "Fault#0A200009#1",
+    "Links": {},
+    "Message": "Fan redundancy is lost.",
+    "MessageID": "RDU0002",
+    "Name": "FaultList Entry system.chassis.1",
+    "Oem": {
+        "Dell": {
+            "@odata.type": "#DellLogEntry.v1_0_0.DellLogEntry",
+            "FQDD": "system.chassis.1",
+            "SubSystem": "Miscellaneous"
+        }
+    },
+    "OemRecordFormat": "Dell",
+    "Severity": "Critical"
+}

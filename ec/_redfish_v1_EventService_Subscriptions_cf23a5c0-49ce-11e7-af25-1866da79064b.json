@@ -1,0 +1,15 @@
+{
+    "@odata.context": "",
+    "@odata.id": "",
+    "@odata.type": "#EventDestination.v1_0_2.EventDestination",
+    "Context": "MSMSubsc",
+    "Description": "Event Subscription Details",
+    "Destination": "https://[fde1:53ba:e9a0:de13:1a66:daff:fe76:3b5d]/api/AlertService/Events",
+    "EventTypes": [
+        "Alert"
+    ],
+    "EventTypes@odata.count": 1,
+    "Id": "cf23a5c0-49ce-11e7-af25-1866da79064b",
+    "Name": "EventSubscription cf23a5c0-49ce-11e7-af25-1866da79064b",
+    "Protocol": "Redfish"
+}

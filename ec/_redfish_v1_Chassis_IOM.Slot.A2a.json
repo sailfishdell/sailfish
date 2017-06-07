@@ -1,0 +1,31 @@
+{
+    "@odata.context": "/redfish/v1/$metadata#Chassis/Members/$entity",
+    "@odata.id": "/redfish/v1/Chassis/IOM.Slot.A2a",
+    "@odata.type": "#Chassis.v1_0_2.Chassis",
+    "AssetTag": "unknown",
+    "ChassisType": "Module",
+    "Description": "unknown",
+    "Id": "IOM.Slot.A2a",
+    "IndicatorLED": "BLINK-OFF",
+    "Links": null,
+    "Manufacturer": "Dell Inc.",
+    "Model": "unknown",
+    "Name": "unknown",
+    "Oem": {
+        "OemChassis": {
+            "@odata.id": "/redfish/v1/Chassis/IOM.Slot.A2a/Attributes"
+        },
+        "OemIOMConfiguration": {
+            "@odata.id": "/redfish/v1/Chassis/IOM.Slot.A2a/IOMConfiguration"
+        }
+    },
+    "PartNumber": "unknown",
+    "PowerState": "On",
+    "SKU": "",
+    "SerialNumber": "unknown",
+    "Status": {
+        "Health": "Ok",
+        "HealthRollup": "Ok",
+        "State": "Enabled"
+    }
+}

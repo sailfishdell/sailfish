@@ -1,0 +1,102 @@
+{
+    "@odata.context": "/redfish/v1/$metadata#DellSlotsCollection.DellSlotsCollection",
+    "@odata.id": "/redfish/v1/Chassis/System.Chassis.1/Slots",
+    "@odata.type": "#DellSlotsCollection.DellSlotsCollection",
+    "Members": [
+        {
+            "@odata.id": "/redfish/v1/Chassis/System.Chassis.1/Slots/CMCSlot.1"
+        },
+        {
+            "@odata.id": "/redfish/v1/Chassis/System.Chassis.1/Slots/CMCSlot.2"
+        },
+        {
+            "@odata.id": "/redfish/v1/Chassis/System.Chassis.1/Slots/SledSlot.1"
+        },
+        {
+            "@odata.id": "/redfish/v1/Chassis/System.Chassis.1/Slots/SledSlot.2"
+        },
+        {
+            "@odata.id": "/redfish/v1/Chassis/System.Chassis.1/Slots/SledSlot.3"
+        },
+        {
+            "@odata.id": "/redfish/v1/Chassis/System.Chassis.1/Slots/SledSlot.4"
+        },
+        {
+            "@odata.id": "/redfish/v1/Chassis/System.Chassis.1/Slots/SledSlot.5"
+        },
+        {
+            "@odata.id": "/redfish/v1/Chassis/System.Chassis.1/Slots/SledSlot.6"
+        },
+        {
+            "@odata.id": "/redfish/v1/Chassis/System.Chassis.1/Slots/SledSlot.7"
+        },
+        {
+            "@odata.id": "/redfish/v1/Chassis/System.Chassis.1/Slots/SledSlot.8"
+        },
+        {
+            "@odata.id": "/redfish/v1/Chassis/System.Chassis.1/Slots/IOMSlot.1"
+        },
+        {
+            "@odata.id": "/redfish/v1/Chassis/System.Chassis.1/Slots/IOMSlot.2"
+        },
+        {
+            "@odata.id": "/redfish/v1/Chassis/System.Chassis.1/Slots/IOMSlot.3"
+        },
+        {
+            "@odata.id": "/redfish/v1/Chassis/System.Chassis.1/Slots/IOMSlot.4"
+        },
+        {
+            "@odata.id": "/redfish/v1/Chassis/System.Chassis.1/Slots/IOMSlot.5"
+        },
+        {
+            "@odata.id": "/redfish/v1/Chassis/System.Chassis.1/Slots/IOMSlot.6"
+        },
+        {
+            "@odata.id": "/redfish/v1/Chassis/System.Chassis.1/Slots/PSUSlot.1"
+        },
+        {
+            "@odata.id": "/redfish/v1/Chassis/System.Chassis.1/Slots/PSUSlot.2"
+        },
+        {
+            "@odata.id": "/redfish/v1/Chassis/System.Chassis.1/Slots/PSUSlot.3"
+        },
+        {
+            "@odata.id": "/redfish/v1/Chassis/System.Chassis.1/Slots/PSUSlot.4"
+        },
+        {
+            "@odata.id": "/redfish/v1/Chassis/System.Chassis.1/Slots/PSUSlot.5"
+        },
+        {
+            "@odata.id": "/redfish/v1/Chassis/System.Chassis.1/Slots/PSUSlot.6"
+        },
+        {
+            "@odata.id": "/redfish/v1/Chassis/System.Chassis.1/Slots/FanSlot.1"
+        },
+        {
+            "@odata.id": "/redfish/v1/Chassis/System.Chassis.1/Slots/FanSlot.2"
+        },
+        {
+            "@odata.id": "/redfish/v1/Chassis/System.Chassis.1/Slots/FanSlot.3"
+        },
+        {
+            "@odata.id": "/redfish/v1/Chassis/System.Chassis.1/Slots/FanSlot.4"
+        },
+        {
+            "@odata.id": "/redfish/v1/Chassis/System.Chassis.1/Slots/FanSlot.5"
+        },
+        {
+            "@odata.id": "/redfish/v1/Chassis/System.Chassis.1/Slots/FanSlot.6"
+        },
+        {
+            "@odata.id": "/redfish/v1/Chassis/System.Chassis.1/Slots/FanSlot.7"
+        },
+        {
+            "@odata.id": "/redfish/v1/Chassis/System.Chassis.1/Slots/FanSlot.8"
+        },
+        {
+            "@odata.id": "/redfish/v1/Chassis/System.Chassis.1/Slots/FanSlot.9"
+        }
+    ],
+    "Members@odata.count": 31,
+    "Name": "DellSlotsCollection"
+}

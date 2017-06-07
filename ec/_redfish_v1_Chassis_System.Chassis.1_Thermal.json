@@ -1,0 +1,191 @@
+{
+    "@odata.context": "/redfish/v1/$metadata#Chassis/Members/System.Chassis.1/Thermal/$entity",
+    "@odata.id": "/redfish/v1/Chassis/System.Chassis.1/Thermal",
+    "@odata.type": "#Thermal.v1_0_2.Thermal",
+    "Description": "Represents the properties for Temperature and Cooling",
+    "Fans": [
+        {
+            "FanName": "Front Fan 1",
+            "MemberId": "Fan.Slot.1",
+            "Oem": {
+                "FirmwareVersion": "Unknown",
+                "GraphicsURI": "",
+                "HardwareVersion": "Unknown",
+                "Reading": null,
+                "ReadingUnits": null
+            },
+            "Reading": null,
+            "ReadingUnits": null,
+            "Status": {
+                "Health": "Critical",
+                "HealthRollup": "Critical",
+                "State": "Unknown"
+            }
+        },
+        {
+            "FanName": "Front Fan 2",
+            "MemberId": "Fan.Slot.2",
+            "Oem": {
+                "FirmwareVersion": "Unknown",
+                "GraphicsURI": "",
+                "HardwareVersion": "Unknown",
+                "Reading": null,
+                "ReadingUnits": null
+            },
+            "Reading": null,
+            "ReadingUnits": null,
+            "Status": {
+                "Health": "Critical",
+                "HealthRollup": "Critical",
+                "State": "Unknown"
+            }
+        },
+        {
+            "FanName": "Front Fan 3",
+            "MemberId": "Fan.Slot.3",
+            "Oem": {
+                "FirmwareVersion": "00.00.06",
+                "GraphicsURI": "",
+                "HardwareVersion": "0",
+                "Reading": null,
+                "ReadingUnits": null
+            },
+            "Reading": null,
+            "ReadingUnits": null,
+            "Status": {
+                "Health": "Ok",
+                "HealthRollup": "Ok",
+                "State": "On"
+            }
+        },
+        {
+            "FanName": "Front Fan 4",
+            "MemberId": "Fan.Slot.4",
+            "Oem": {
+                "FirmwareVersion": "00.00.06",
+                "GraphicsURI": "",
+                "HardwareVersion": "0",
+                "Reading": null,
+                "ReadingUnits": null
+            },
+            "Reading": null,
+            "ReadingUnits": null,
+            "Status": {
+                "Health": "Ok",
+                "HealthRollup": "Ok",
+                "State": "On"
+            }
+        },
+        {
+            "FanName": "Rear Fan 1",
+            "MemberId": "Fan.Slot.5",
+            "Oem": {
+                "FirmwareVersion": "Unknown",
+                "GraphicsURI": "",
+                "HardwareVersion": "Unknown",
+                "Reading": null,
+                "ReadingUnits": null
+            },
+            "Reading": null,
+            "ReadingUnits": null,
+            "Status": {
+                "Health": "Critical",
+                "HealthRollup": "Critical",
+                "State": "Unknown"
+            }
+        },
+        {
+            "FanName": "Rear Fan 2",
+            "MemberId": "Fan.Slot.6",
+            "Oem": {
+                "FirmwareVersion": "Unknown",
+                "GraphicsURI": "",
+                "HardwareVersion": "Unknown",
+                "Reading": null,
+                "ReadingUnits": null
+            },
+            "Reading": null,
+            "ReadingUnits": null,
+            "Status": {
+                "Health": "Critical",
+                "HealthRollup": "Critical",
+                "State": "Unknown"
+            }
+        },
+        {
+            "FanName": "Rear Fan 3",
+            "MemberId": "Fan.Slot.7",
+            "Oem": {
+                "FirmwareVersion": "Unknown",
+                "GraphicsURI": "",
+                "HardwareVersion": "Unknown",
+                "Reading": null,
+                "ReadingUnits": null
+            },
+            "Reading": null,
+            "ReadingUnits": null,
+            "Status": {
+                "Health": "Critical",
+                "HealthRollup": "Critical",
+                "State": "Unknown"
+            }
+        },
+        {
+            "FanName": "Rear Fan 4",
+            "MemberId": "Fan.Slot.8",
+            "Oem": {
+                "FirmwareVersion": "00.00.06",
+                "GraphicsURI": "",
+                "HardwareVersion": "0",
+                "Reading": null,
+                "ReadingUnits": null
+            },
+            "Reading": null,
+            "ReadingUnits": null,
+            "Status": {
+                "Health": "Ok",
+                "HealthRollup": "Ok",
+                "State": "On"
+            }
+        },
+        {
+            "FanName": "Rear Fan 5",
+            "MemberId": "Fan.Slot.9",
+            "Oem": {
+                "FirmwareVersion": "00.00.06",
+                "GraphicsURI": "",
+                "HardwareVersion": "0",
+                "Reading": null,
+                "ReadingUnits": null
+            },
+            "Reading": null,
+            "ReadingUnits": null,
+            "Status": {
+                "Health": "Ok",
+                "HealthRollup": "Ok",
+                "State": "On"
+            }
+        }
+    ],
+    "Fans@odata.count": 9,
+    "Id": "Thermal",
+    "Name": "Thermal",
+    "Oem": {
+        "EID_674": {
+            "FansSummary": {
+                "Status": {
+                    "HealthRollup": "Ok"
+                }
+            },
+            "TemperaturesSummary": {
+                "Status": {
+                    "HealthRollup": "Ok"
+                }
+            }
+        }
+    },
+    "Redundancy": [],
+    "Redundancy@odata.count": 0,
+    "Temperatures": [],
+    "Temperatures@odata.count": 0
+}

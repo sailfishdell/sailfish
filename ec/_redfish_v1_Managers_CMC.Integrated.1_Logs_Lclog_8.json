@@ -1,0 +1,20 @@
+{
+    "@odata.context": "/redfish/v1/$metadata#LogEntry.LogEntry",
+    "@odata.id": "/redfish/v1/Managers/CMC.Integrated.1/Logs/Lclog/8",
+    "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+    "Created": "2017-06-05T17:43:30+00:00",
+    "Description": " Log Entry 8",
+    "EntryType": "Oem",
+    "Id": "8",
+    "Links": {},
+    "MessageID": "RDU0002",
+    "Name": " Log Entry 8",
+    "Oem": {
+        "Dell": {
+            "@odata.type": "#DellLogEntry.v1_0_0.DellLogEntry",
+            "Category": "System Health"
+        }
+    },
+    "OemRecordFormat": "Dell",
+    "Severity": "Critical"
+}

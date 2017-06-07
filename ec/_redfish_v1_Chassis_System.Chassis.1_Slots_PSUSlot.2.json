@@ -1,0 +1,11 @@
+{
+    "@odata.context": "/redfish/v1/$metadata#DellSlot.DellSlot",
+    "@odata.id": "/redfish/v1/Chassis/System.Chassis.1/Slots/PSUSlot.2",
+    "@odata.type": "#DellSlot.v1_0_0.DellSlot",
+    "Config": "SlotConfig.6",
+    "Contains": "PSU.Slot.2",
+    "Id": "PSUSlot.2",
+    "Name": "PSUSlot.2",
+    "Occupied": "True",
+    "SlotName": "2"
+}

@@ -1,0 +1,57 @@
+{
+    "@odata.context": "/redfish/v1/$metadata#Chassis/Members/$entity",
+    "@odata.id": "/redfish/v1/Chassis/System.Chassis.1",
+    "@odata.type": "#Chassis.v1_0_2.Chassis",
+    "Actions": {
+        "#Chassis.Reset": {
+            "ResetType@Redfish.AllowableValues": [
+                "On",
+                "ForceOff",
+                "GracefulShutdown",
+                "GracefulRestart"
+            ],
+            "Target": "/redfish/v1/Chassis/System.Chassis.1/Actions/Chassis.Reset"
+        }
+    },
+    "AssetTag": "",
+    "ChassisType": "Enclosure",
+    "Description": "",
+    "Id": "System.Chassis.1",
+    "IndicatorLED": "Blink-2",
+    "Links": null,
+    "Manufacturer": "",
+    "Model": "POWEREDGE MX7000                ",
+    "Name": "Blade Chassis",
+    "Oem": {
+        "OemChassis": {
+            "@odata.id": "/redfish/v1/Chassis/System.Chassis.1/Attributes"
+        },
+        "OemIOMConfiguration": {
+            "@odata.id": "/redfish/v1/Chassis/System.Chassis.1/IOMConfiguration"
+        },
+        "SlotConfigs": {
+            "@odata.id": "/redfish/v1/Chassis/System.Chassis.1/SlotConfigs"
+        },
+        "Slots": {
+            "@odata.id": "/redfish/v1/Chassis/System.Chassis.1/Slots"
+        },
+        "SubSystemHealth": {
+            "@odata.id": "/redfish/v1/Chassis/System.Chassis.1/SubSystemHealth"
+        }
+    },
+    "PartNumber": "0XT50JX03",
+    "Power": {
+        "@odata.id": "/redfish/v1/Chassis/System.Chassis.1/Power"
+    },
+    "PowerState": "On",
+    "SKU": "UTECH17",
+    "SerialNumber": "              ",
+    "Status": {
+        "Health": "Ok",
+        "HealthRollup": "Ok",
+        "State": "Enabled"
+    },
+    "Thermal": {
+        "@odata.id": "/redfish/v1/Chassis/System.Chassis.1/Thermal"
+    }
+}

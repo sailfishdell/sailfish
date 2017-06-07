@@ -1,0 +1,25 @@
+{
+    "@odata.context": "/redfish/v1/$metadata#LogEntry.LogEntry",
+    "@odata.id": "/redfish/v1/Managers/CMC.Integrated.1/Logs/Lclog/17",
+    "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+    "Created": "2017-06-05T17:45:01+00:00",
+    "Description": " Log Entry 17",
+    "EntryType": "Oem",
+    "Id": "17",
+    "Links": {},
+    "Message": "The previous log entry was repeated 1 times.",
+    "MessageArgs": [
+        "1"
+    ],
+    "MessageArgs@odata.count": 1,
+    "MessageID": "LOG007",
+    "Name": " Log Entry 17",
+    "Oem": {
+        "Dell": {
+            "@odata.type": "#DellLogEntry.v1_0_0.DellLogEntry",
+            "Category": "Audit"
+        }
+    },
+    "OemRecordFormat": "Dell",
+    "Severity": "Ok"
+}

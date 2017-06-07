@@ -1,0 +1,25 @@
+{
+    "@odata.context": "/redfish/v1/$metadata#LogEntry.LogEntry",
+    "@odata.id": "/redfish/v1/Managers/CMC.Integrated.1/Logs/Lclog/9",
+    "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+    "Created": "2017-06-05T17:43:55+00:00",
+    "Description": " Log Entry 9",
+    "EntryType": "Oem",
+    "Id": "9",
+    "Links": {},
+    "Message": "The Chassis Management Controller (CMC) cannot communicate with the factory cert control panel because of internal issues.",
+    "MessageArgs": [
+        "factory cert"
+    ],
+    "MessageArgs@odata.count": 1,
+    "MessageID": "HWC8504",
+    "Name": " Log Entry 9",
+    "Oem": {
+        "Dell": {
+            "@odata.type": "#DellLogEntry.v1_0_0.DellLogEntry",
+            "Category": "System Health"
+        }
+    },
+    "OemRecordFormat": "Dell",
+    "Severity": "Critical"
+}

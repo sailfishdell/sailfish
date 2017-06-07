@@ -1,0 +1,21 @@
+{
+    "@odata.context": "/redfish/v1/$metadata#LogEntry.LogEntry",
+    "@odata.id": "/redfish/v1/Managers/CMC.Integrated.1/Logs/Lclog/1",
+    "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+    "Created": "2017-06-05T17:44:36+00:00",
+    "Description": " Log Entry 1",
+    "EntryType": "Oem",
+    "Id": "1",
+    "Links": {},
+    "Message": "The Chassis Log file was cleared.",
+    "MessageID": "LOG305",
+    "Name": " Log Entry 1",
+    "Oem": {
+        "Dell": {
+            "@odata.type": "#DellLogEntry.v1_0_0.DellLogEntry",
+            "Category": "Configuration"
+        }
+    },
+    "OemRecordFormat": "Dell",
+    "Severity": "Ok"
+}

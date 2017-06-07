@@ -1,0 +1,11 @@
+{
+    "@odata.context": "/redfish/v1/$metadata#DellSlot.DellSlot",
+    "@odata.id": "/redfish/v1/Chassis/System.Chassis.1/Slots/CMCSlot.1",
+    "@odata.type": "#DellSlot.v1_0_0.DellSlot",
+    "Config": "SlotConfig.1",
+    "Contains": "CMC.Integrated.1",
+    "Id": "CMCSlot.1",
+    "Name": "CMCSlot.1",
+    "Occupied": "True",
+    "SlotName": "1"
+}
