@@ -32,29 +32,29 @@ func NewRedfishHandler(svc Service, logger log.Logger) http.Handler {
 	r.Handle("/redfish", http.RedirectHandler("/redfish/", 308))
 	r.Handle("/redfish/v1", http.RedirectHandler("/redfish/v1/", 308))
 
-    var paths_get = [] struct{ path string }{
-        {"/redfish/"},
-        {"/redfish/v1/"},
-        {"/redfish/v1/Systems"},
-        {"/redfish/v1/Systems/{system}"},
-        {"/redfish/v1/Systems/{system}/BIOS"},
-        {"/redfish/v1/Systems/{system}/BIOS/Settings"},
-        {"/redfish/v1/Systems/{system}/EthernetInterfaces"},
-        {"/redfish/v1/Systems/{system}/LogServices"},
-        {"/redfish/v1/Systems/{system}/Memory"},
-        {"/redfish/v1/Systems/{system}/Processors"},
-        {"/redfish/v1/Systems/{system}/SimpleStorage"},
-        }
+	var paths_get = []struct{ path string }{
+		{"/redfish/"},
+		{"/redfish/v1/"},
+		{"/redfish/v1/Systems"},
+		{"/redfish/v1/Systems/{system}"},
+		{"/redfish/v1/Systems/{system}/BIOS"},
+		{"/redfish/v1/Systems/{system}/BIOS/Settings"},
+		{"/redfish/v1/Systems/{system}/EthernetInterfaces"},
+		{"/redfish/v1/Systems/{system}/LogServices"},
+		{"/redfish/v1/Systems/{system}/Memory"},
+		{"/redfish/v1/Systems/{system}/Processors"},
+		{"/redfish/v1/Systems/{system}/SimpleStorage"},
+	}
 
-    for _, path := range paths_get {
-        r.Methods("GET").Path(path.path).Handler(
-            httptransport.NewServer(
-                makeRawJSONRedfishGetEndpoint(svc),
-                decodeRedfishGetRequest,
-                encodeResponse,
-                options...,
-            ))
-    }
+	for _, path := range paths_get {
+		r.Methods("GET").Path(path.path).Handler(
+			httptransport.NewServer(
+				makeRawJSONRedfishGetEndpoint(svc),
+				decodeRedfishGetRequest,
+				encodeResponse,
+				options...,
+			))
+	}
 
 	return r
 }
