@@ -40,10 +40,19 @@ func NewRedfishHandler(svc Service, logger log.Logger) http.Handler {
 		{"/redfish/v1/Systems/{system}/BIOS"},
 		{"/redfish/v1/Systems/{system}/BIOS/Settings"},
 		{"/redfish/v1/Systems/{system}/EthernetInterfaces"},
+        {"/redfish/v1/Systems/{system}/EthernetInterfaces/{interfaceid}"},
+        {"/redfish/v1/Systems/{system}/EthernetInterfaces/{interfaceid}/VLANs"},
+        {"/redfish/v1/Systems/{system}/EthernetInterfaces/{interfaceid}/VLANs/{vlanid}"},
 		{"/redfish/v1/Systems/{system}/LogServices"},
+        {"/redfish/v1/Systems/{system}/LogServices/{logid}"},
+        {"/redfish/v1/Systems/{system}/LogServices/{logid}/Entries"},
+        {"/redfish/v1/Systems/{system}/LogServices/{logid}/Entries/{logentry}"},
 		{"/redfish/v1/Systems/{system}/Memory"},
+        {"/redfish/v1/Systems/{system}/Memory/{dimmid}"},
 		{"/redfish/v1/Systems/{system}/Processors"},
+        {"/redfish/v1/Systems/{system}/Processors/{cpuid}"},
 		{"/redfish/v1/Systems/{system}/SimpleStorage"},
+        {"/redfish/v1/Systems/{system}/SimpleStorage/{storageid}"},
 	}
 
 	for _, path := range paths_get {
