@@ -6,6 +6,8 @@ import (
 	"errors"
 	"io/ioutil"
 	"path"
+    "github.com/elgs/gosplitargs"
+    "strconv"
 )
 
 type Service interface {
@@ -78,6 +80,51 @@ func (rh *Config) RawJSONRedfishGet(ctx context.Context, pathTemplate, url strin
 	}
 
 	return
+}
+
+// implements a simple json query modeled after 'jq' command line utility
+//      .       return current 
+//      .NAME   return dictionary member "NAME" from current
+//      .[n]    return array element 'n'
+//
+// Chain them together to implement fun
+//
+func SimpleJQL( jsonStruct interface{}, expression string ) (current interface{}, err error){
+    queryElems, err := gosplitargs.SplitArgs(expression, "\\.", false)
+    current = jsonStruct
+    for _, queryElem := range queryElems {
+        if queryElem == "." { continue }
+        // is query an array?
+        if len(queryElem)>3 && string(queryElem[0])=="[" && string(queryElem[len(queryElem)-1])=="]" {
+            
+            // pull out requested index
+            idx, err := strconv.Atoi(queryElem[1:len(queryElem)-1])
+            if err != nil {
+                return nil, err
+            }
+            if arr, ok := current.([]interface{}); ok {
+                if idx >= len(arr) {
+                    return nil, errors.New( "requested array elem " + queryElem + " is out of bounds")
+                }
+                current = arr[idx]
+                continue
+            }
+
+            return nil, errors.New( queryElem + " is not an array, but trying to query like one.")
+        }
+        // try to type assert as map[string]interface{}
+        if dict, ok := current.(map[string]interface{}); ok {
+            // see if map contains the requested key
+            if  value, ok := dict[queryElem]; ok {
+                current = value
+                continue
+            }
+            return nil, errors.New( queryElem + " no such element")
+        } else {
+            return nil, errors.New( queryElem + " is not a map[string]" )
+        }
+    }
+    return
 }
 
 // collapse the "Members": [ {...}, {...} ] so that only @odata.id appears in the output array
