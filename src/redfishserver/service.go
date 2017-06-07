@@ -1,8 +1,6 @@
 package redfishserver
 
 import (
-    "fmt"
-
 	"context"
 	"encoding/json"
 	"errors"
@@ -10,10 +8,15 @@ import (
 	"path"
     "github.com/elgs/gosplitargs"
     "strconv"
+
+    "math/rand"
+    "bytes"
+    "fmt"
 )
 
 type Service interface {
 	RawJSONRedfishGet(ctx context.Context, pathTemplate, url string, args map[string]string) (interface{}, error)
+	Startup() (chan struct{})
 }
 
 // ServiceMiddleware is a chainable behavior modifier for Service.
@@ -59,9 +62,23 @@ var (
 	ErrNotFound = errors.New("not found")
 )
 
+type slowdata struct {}
+func (this slowdata) MarshalJSON() ([]byte, error) {
+    outstr := fmt.Sprintf(`{"msg": "LETS GO CRAZY %d TIMES"}`, rand.Uint32() )
+    buffer := bytes.NewBufferString(outstr)
+    return buffer.Bytes(), nil
+}
+
+func (rh *Config) Startup() (done chan struct{}){
+    // let's hook up some test data in service root for now to see how it would look
+    j := rh.serviceV1RootJSON.(map[string]interface{})
+    j["madness"] = slowdata{}
+
+    done = make(chan struct{}) 
+    return done
+}
+
 func (rh *Config) RawJSONRedfishGet(ctx context.Context, pathTemplate, url string, args map[string]string) (output interface{}, err error) {
-	//logger := RequestLogger(ctx)
-	//logger.Log("msg", "HELLO WORLD: rawjson")
 
 	switch pathTemplate {
 	case "/redfish/":
@@ -75,9 +92,20 @@ func (rh *Config) RawJSONRedfishGet(ctx context.Context, pathTemplate, url strin
 		return elideNestedOdataRefs(rh.systemCollectionJSON, true), nil
 
 	case "/redfish/v1/Systems/{system}":
-		coll, _ := getCollectionMember(rh.systemCollectionJSON, url)
-		return elideNestedOdataRefs(coll, true), nil
+		system, _ := getCollectionMember(rh.systemCollectionJSON, url)
+		return elideNestedOdataRefs(system, true), nil
 
+	case "/redfish/v1/Systems/{system}/BIOS":
+		system, _ := getCollectionMember(rh.systemCollectionJSON, "/redfish/v1/Systems/" + args["system"] )
+        bios, _ := SimpleJQL(system, "Bios")
+		output := elideNestedOdataRefs(bios, true)
+        return output, nil
+
+	case "/redfish/v1/Systems/{system}/BIOS/Settings":
+		system, _ := getCollectionMember(rh.systemCollectionJSON, "/redfish/v1/Systems/" + args["system"] )
+        bios, _ := SimpleJQL(system, "Bios.'@Redfish.Settings'.SettingsObject")
+		output := elideNestedOdataRefs(bios, true)
+        return output, nil
 
 	default:
 		err = ErrNotFound
@@ -86,7 +114,7 @@ func (rh *Config) RawJSONRedfishGet(ctx context.Context, pathTemplate, url strin
 	return
 }
 
-// implements a simple json query modeled after 'jq' command line utility
+// implements a simple json query modeled after 'jq' command line utility (reduced syntax!)
 //      .       return current 
 //      .NAME   return dictionary member "NAME" from current
 //      .[n]    return array element 'n'
@@ -156,10 +184,8 @@ func getCollectionMember(inputJSON interface{}, filter string) (interface{}, err
 //
 func elideNestedOdataRefs(inputJSON interface{}, allowonce bool) (output interface{}) {
 	// range over input, copying to output
-    fmt.Printf("here we are\n")
     switch nested := inputJSON.(type) {
         case map[string]interface{}:
-            fmt.Printf("    its a map\n")
             var output map[string]interface{}
 	        output = make(map[string]interface{})
             if _, ok := nested["@odata.id"]; ok && (!allowonce) {

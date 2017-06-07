@@ -43,7 +43,7 @@ func main() {
 	flag.Parse()
 
 	var logger log.Logger
-	logger = log.NewLogfmtLogger(os.Stderr)
+	logger = log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr))
 
 	appConfig, _ := loadConfig(*configFile)
 	if len(*listen) > 0 {
@@ -77,6 +77,9 @@ func main() {
 	)
 
 	r := redfishserver.NewRedfishHandler(svc, logger)
+
+    done := svc.Startup()
+    defer close(done)
 
 	http.Handle("/", r)
 	http.Handle("/metrics", promhttp.Handler())
