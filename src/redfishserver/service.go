@@ -2,16 +2,9 @@ package redfishserver
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"github.com/elgs/gosplitargs"
-	"io/ioutil"
-	"path"
 	"strconv"
-
-	"bytes"
-	"fmt"
-	"math/rand"
 )
 
 type Service interface {
@@ -27,56 +20,20 @@ type Config struct {
 	pickleDir            string
 	serviceV1RootJSON    interface{}
 	systemCollectionJSON interface{}
-}
 
-func NewService(logger Logger, pickleDir string) Service {
-	cfg := Config{logger: logger, pickleDir: pickleDir}
-
-	loadData := func() {
-		var unmarshalJSONPairs = []struct {
-			global   *interface{}
-			filename string
-		}{
-			{global: &cfg.serviceV1RootJSON, filename: "serviceV1Root.json"},
-			{global: &cfg.systemCollectionJSON, filename: "systemCollection.json"},
-		}
-		for i := range unmarshalJSONPairs {
-			fileContents, e := ioutil.ReadFile(path.Join(cfg.pickleDir, unmarshalJSONPairs[i].filename))
-			if e != nil {
-				panic(e)
-			}
-
-			err := json.Unmarshal(fileContents, unmarshalJSONPairs[i].global)
-			if err != nil {
-				panic(err)
-			}
-		}
-	}
-
-	loadData()
-
-	return &cfg
+    // lets put all the data here, eventually...
+    odata  map[string]interface{}
 }
 
 var (
 	ErrNotFound = errors.New("not found")
 )
 
-type slowdata struct{}
+func NewService(logger Logger, pickleDir string) Service {
+	cfg := Config{logger: logger, pickleDir: pickleDir}
 
-func (this slowdata) MarshalJSON() ([]byte, error) {
-	outstr := fmt.Sprintf(`{"msg": "LETS GO CRAZY %d TIMES"}`, rand.Uint32())
-	buffer := bytes.NewBufferString(outstr)
-	return buffer.Bytes(), nil
-}
-
-func (rh *Config) Startup() (done chan struct{}) {
-	// let's hook up some test data in service root for now to see how it would look
-	j := rh.serviceV1RootJSON.(map[string]interface{})
-	j["madness"] = slowdata{}
-
-	done = make(chan struct{})
-	return done
+    ingestStartupData(&cfg)
+	return &cfg
 }
 
 func (rh *Config) RawJSONRedfishGet(ctx context.Context, pathTemplate, url string, args map[string]string) (output interface{}, err error) {
@@ -107,6 +64,35 @@ func (rh *Config) RawJSONRedfishGet(ctx context.Context, pathTemplate, url strin
 		bios, _ := SimpleJQL(system, "Bios.'@Redfish.Settings'.SettingsObject")
 		output := elideNestedOdataRefs(bios, true)
 		return output, nil
+
+    case "/redfish/v1/Systems/{system}/EthernetInterfaces":
+		err = ErrNotFound
+    case "/redfish/v1/Systems/{system}/EthernetInterfaces/{interfaceid}":
+		err = ErrNotFound
+    case "/redfish/v1/Systems/{system}/EthernetInterfaces/{interfaceid}/VLANs":
+		err = ErrNotFound
+    case "/redfish/v1/Systems/{system}/EthernetInterfaces/{interfaceid}/VLANs/{vlanid}":
+		err = ErrNotFound
+    case "/redfish/v1/Systems/{system}/LogServices":
+		err = ErrNotFound
+    case "/redfish/v1/Systems/{system}/LogServices/{logid}":
+		err = ErrNotFound
+    case "/redfish/v1/Systems/{system}/LogServices/Log1/Entries":
+		err = ErrNotFound
+    case "/redfish/v1/Systems/{system}/LogServices/Log1/Entries/{logentry}":
+		err = ErrNotFound
+    case "/redfish/v1/Systems/{system}/Memory":
+		err = ErrNotFound
+    case "/redfish/v1/Systems/{system}/Memory/{dimmid}":
+		err = ErrNotFound
+    case "/redfish/v1/Systems/{system}/Processors":
+		err = ErrNotFound
+    case "/redfish/v1/Systems/{system}/Processors/{cpuid}":
+		err = ErrNotFound
+    case "/redfish/v1/Systems/{system}/SimpleStorage":
+		err = ErrNotFound
+    case "/redfish/v1/Systems/{system}/SimpleStorage/{storageid}":
+		err = ErrNotFound
 
 	default:
 		err = ErrNotFound
