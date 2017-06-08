@@ -5,6 +5,7 @@ import (
 	"errors"
 	"github.com/elgs/gosplitargs"
 	"strconv"
+    "strings"
 )
 
 type Service interface {
@@ -38,17 +39,24 @@ func NewService(logger Logger, pickleDir string) Service {
 
 func (rh *Config) RawJSONRedfishGet(ctx context.Context, pathTemplate, url string, args map[string]string) (output interface{}, err error) {
 
-	switch pathTemplate {
-	case "/redfish/":
+	switch {
+	case pathTemplate == "/redfish/":
 		output = make(map[string]string)
 		output.(map[string]string)["v1"] = "/redfish/v1/"
+        return output, nil
 
-	case "/redfish/v1/":
+	case pathTemplate == "/redfish/v1/":
 		return &rh.serviceV1RootJSON, nil
 
-	case "/redfish/v1/Systems":
-		return elideNestedOdataRefs(rh.systemCollectionJSON, true), nil
+	default:
+        noHashPath := strings.SplitN(pathTemplate, "#", 2)[0]
+        r,ok := rh.odata[noHashPath]
+        if ok { return r, nil } else {return nil, ErrNotFound}
 
+		//return elideNestedOdataRefs(rh.systemCollectionJSON, true), nil
+
+    }
+/*
 	case "/redfish/v1/Systems/{system}":
 		system, _ := getCollectionMember(rh.systemCollectionJSON, url)
 		return elideNestedOdataRefs(system, true), nil
@@ -97,6 +105,7 @@ func (rh *Config) RawJSONRedfishGet(ctx context.Context, pathTemplate, url strin
 	default:
 		err = ErrNotFound
 	}
+*/
 
 	return
 }

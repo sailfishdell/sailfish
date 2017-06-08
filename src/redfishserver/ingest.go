@@ -27,10 +27,11 @@ func ingestStartupData(cfg *Config) {
 
     cfg.odata = make(map[string]interface{})
 
-    err := ingest( "ec", "_redfish_v1.json", "/redfish/v1", cfg.odata )
+    err := ingest( filenameFromID_SPMF, "mockups/DSP2043-server/", "index.json", "/redfish/v1", cfg.odata )
+    //err := ingest( filenameFromID_ec, "ec", "_redfish_v1.json", "/redfish/v1", cfg.odata )
     if err != nil {
         panic(err)
-        }
+    }
 }
 
 func getOdata(pathname string, filename string, store interface{}) (interface{}, error) {
@@ -47,7 +48,7 @@ func getOdata(pathname string, filename string, store interface{}) (interface{},
     return store, nil
 }
 
-func ingest(basepath string, filename string, odataid string, odata map[string]interface{} ) error {
+func ingest(filenameFromID func(string) string, basepath string, filename string, odataid string, odata map[string]interface{} ) error {
     fmt.Printf("Ingesting file(%s) for @odata.id = %s\n", path.Join(basepath, filename), odataid)
 
     var submap map[string]interface{}
@@ -61,15 +62,20 @@ func ingest(basepath string, filename string, odataid string, odata map[string]i
     for _, id := range subids {
         // prevent loops, only import if not already imported
         if _, ok := odata[id]; !ok {
-            ingest(basepath, filenameFromID(id), id, odata)
-        } else {
-            fmt.Printf("  skipping already ingested %s\n", id)
+            ingest(filenameFromID, basepath, filenameFromID(id), id, odata)
         }
     }
     return nil
 }
 
-func filenameFromID(id string) string {
+func filenameFromID_SPMF(id string) string {
+    id = strings.SplitN(id, "#", 2)[0]
+    id = strings.Replace(id, "/redfish/v1/", "", -1)
+    // id = strings.Replace(id, "/", "_", -1)
+    return id + "/index.json"
+}
+
+func filenameFromID_ec(id string) string {
     id = strings.Replace(id, "|", "X", -1)
     id = strings.Replace(id, "/", "_", -1)
     return id + ".json"
