@@ -21,8 +21,8 @@ type Config struct {
 	serviceV1RootJSON    interface{}
 	systemCollectionJSON interface{}
 
-    // lets put all the data here, eventually...
-    odata  map[string]interface{}
+	// lets put all the data here, eventually...
+	odata map[string]interface{}
 }
 
 var (
@@ -32,7 +32,7 @@ var (
 func NewService(logger Logger, pickleDir string) Service {
 	cfg := Config{logger: logger, pickleDir: pickleDir}
 
-    ingestStartupData(&cfg)
+	ingestStartupData(&cfg)
 	return &cfg
 }
 
@@ -65,33 +65,33 @@ func (rh *Config) RawJSONRedfishGet(ctx context.Context, pathTemplate, url strin
 		output := elideNestedOdataRefs(bios, true)
 		return output, nil
 
-    case "/redfish/v1/Systems/{system}/EthernetInterfaces":
+	case "/redfish/v1/Systems/{system}/EthernetInterfaces":
 		err = ErrNotFound
-    case "/redfish/v1/Systems/{system}/EthernetInterfaces/{interfaceid}":
+	case "/redfish/v1/Systems/{system}/EthernetInterfaces/{interfaceid}":
 		err = ErrNotFound
-    case "/redfish/v1/Systems/{system}/EthernetInterfaces/{interfaceid}/VLANs":
+	case "/redfish/v1/Systems/{system}/EthernetInterfaces/{interfaceid}/VLANs":
 		err = ErrNotFound
-    case "/redfish/v1/Systems/{system}/EthernetInterfaces/{interfaceid}/VLANs/{vlanid}":
+	case "/redfish/v1/Systems/{system}/EthernetInterfaces/{interfaceid}/VLANs/{vlanid}":
 		err = ErrNotFound
-    case "/redfish/v1/Systems/{system}/LogServices":
+	case "/redfish/v1/Systems/{system}/LogServices":
 		err = ErrNotFound
-    case "/redfish/v1/Systems/{system}/LogServices/{logid}":
+	case "/redfish/v1/Systems/{system}/LogServices/{logid}":
 		err = ErrNotFound
-    case "/redfish/v1/Systems/{system}/LogServices/Log1/Entries":
+	case "/redfish/v1/Systems/{system}/LogServices/Log1/Entries":
 		err = ErrNotFound
-    case "/redfish/v1/Systems/{system}/LogServices/Log1/Entries/{logentry}":
+	case "/redfish/v1/Systems/{system}/LogServices/Log1/Entries/{logentry}":
 		err = ErrNotFound
-    case "/redfish/v1/Systems/{system}/Memory":
+	case "/redfish/v1/Systems/{system}/Memory":
 		err = ErrNotFound
-    case "/redfish/v1/Systems/{system}/Memory/{dimmid}":
+	case "/redfish/v1/Systems/{system}/Memory/{dimmid}":
 		err = ErrNotFound
-    case "/redfish/v1/Systems/{system}/Processors":
+	case "/redfish/v1/Systems/{system}/Processors":
 		err = ErrNotFound
-    case "/redfish/v1/Systems/{system}/Processors/{cpuid}":
+	case "/redfish/v1/Systems/{system}/Processors/{cpuid}":
 		err = ErrNotFound
-    case "/redfish/v1/Systems/{system}/SimpleStorage":
+	case "/redfish/v1/Systems/{system}/SimpleStorage":
 		err = ErrNotFound
-    case "/redfish/v1/Systems/{system}/SimpleStorage/{storageid}":
+	case "/redfish/v1/Systems/{system}/SimpleStorage/{storageid}":
 		err = ErrNotFound
 
 	default:

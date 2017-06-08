@@ -1,10 +1,10 @@
 package redfishserver
 
 import (
-    "fmt"
-    "bytes"
-    "math/rand"
-    )
+	"bytes"
+	"fmt"
+	"math/rand"
+)
 
 func (rh *Config) Startup() (done chan struct{}) {
 	// let's hook up some test data in service root for now to see how it would look
@@ -22,4 +22,3 @@ func (this slowdata) MarshalJSON() ([]byte, error) {
 	buffer := bytes.NewBufferString(outstr)
 	return buffer.Bytes(), nil
 }
-
