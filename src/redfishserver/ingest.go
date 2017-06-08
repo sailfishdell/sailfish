@@ -10,24 +10,9 @@ import (
 )
 
 func ingestStartupData(cfg *Config) {
-	// for backwards compat stuff until we switch to unified
-	var unmarshalJSONPairs = []struct {
-		global   *interface{}
-		filename string
-	}{
-		{global: &cfg.serviceV1RootJSON, filename: "serviceV1Root.json"},
-		{global: &cfg.systemCollectionJSON, filename: "systemCollection.json"},
-	}
-	for i := range unmarshalJSONPairs {
-        _, err := getOdata(cfg.pickleDir, unmarshalJSONPairs[i].filename, unmarshalJSONPairs[i].global)
-		if err != nil {
-			panic(err)
-		}
-	}
-
     cfg.odata = make(map[string]interface{})
 
-    err := ingest( filenameFromID_SPMF, "mockups/DSP2043-server/", "index.json", "/redfish/v1", cfg.odata )
+    err := ingest( filenameFromID_SPMF, "mockups/DSP2043-server/", "index.json", "/redfish/v1/", cfg.odata )
     //err := ingest( filenameFromID_ec, "ec", "_redfish_v1.json", "/redfish/v1", cfg.odata )
     if err != nil {
         panic(err)

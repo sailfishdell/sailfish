@@ -19,8 +19,6 @@ type ServiceMiddleware func(Service) Service
 type Config struct {
 	logger               Logger
 	pickleDir            string
-	serviceV1RootJSON    interface{}
-	systemCollectionJSON interface{}
 
 	// lets put all the data here, eventually...
 	odata map[string]interface{}
@@ -40,23 +38,21 @@ func NewService(logger Logger, pickleDir string) Service {
 func (rh *Config) RawJSONRedfishGet(ctx context.Context, pathTemplate, url string, args map[string]string) (output interface{}, err error) {
 
 	switch {
-	case pathTemplate == "/redfish/":
+	case url == "/redfish/":
 		output = make(map[string]string)
 		output.(map[string]string)["v1"] = "/redfish/v1/"
         return output, nil
 
-	case pathTemplate == "/redfish/v1/":
-		return &rh.serviceV1RootJSON, nil
-
 	default:
-        noHashPath := strings.SplitN(pathTemplate, "#", 2)[0]
+        noHashPath := strings.SplitN(url, "#", 2)[0]
         r,ok := rh.odata[noHashPath]
         if ok { return r, nil } else {return nil, ErrNotFound}
-
-		//return elideNestedOdataRefs(rh.systemCollectionJSON, true), nil
-
     }
+
+	return
+}
 /*
+		//return elideNestedOdataRefs(rh.systemCollectionJSON, true), nil
 	case "/redfish/v1/Systems/{system}":
 		system, _ := getCollectionMember(rh.systemCollectionJSON, url)
 		return elideNestedOdataRefs(system, true), nil
@@ -73,42 +69,11 @@ func (rh *Config) RawJSONRedfishGet(ctx context.Context, pathTemplate, url strin
 		output := elideNestedOdataRefs(bios, true)
 		return output, nil
 
-	case "/redfish/v1/Systems/{system}/EthernetInterfaces":
-		err = ErrNotFound
-	case "/redfish/v1/Systems/{system}/EthernetInterfaces/{interfaceid}":
-		err = ErrNotFound
-	case "/redfish/v1/Systems/{system}/EthernetInterfaces/{interfaceid}/VLANs":
-		err = ErrNotFound
-	case "/redfish/v1/Systems/{system}/EthernetInterfaces/{interfaceid}/VLANs/{vlanid}":
-		err = ErrNotFound
-	case "/redfish/v1/Systems/{system}/LogServices":
-		err = ErrNotFound
-	case "/redfish/v1/Systems/{system}/LogServices/{logid}":
-		err = ErrNotFound
-	case "/redfish/v1/Systems/{system}/LogServices/Log1/Entries":
-		err = ErrNotFound
-	case "/redfish/v1/Systems/{system}/LogServices/Log1/Entries/{logentry}":
-		err = ErrNotFound
-	case "/redfish/v1/Systems/{system}/Memory":
-		err = ErrNotFound
-	case "/redfish/v1/Systems/{system}/Memory/{dimmid}":
-		err = ErrNotFound
-	case "/redfish/v1/Systems/{system}/Processors":
-		err = ErrNotFound
-	case "/redfish/v1/Systems/{system}/Processors/{cpuid}":
-		err = ErrNotFound
-	case "/redfish/v1/Systems/{system}/SimpleStorage":
-		err = ErrNotFound
-	case "/redfish/v1/Systems/{system}/SimpleStorage/{storageid}":
-		err = ErrNotFound
-
 	default:
 		err = ErrNotFound
 	}
 */
 
-	return
-}
 
 // implements a simple json query modeled after 'jq' command line utility (reduced syntax!)
 //      .       return current

@@ -8,8 +8,8 @@ import (
 
 func (rh *Config) Startup() (done chan struct{}) {
 	// let's hook up some test data in service root for now to see how it would look
-	j := rh.serviceV1RootJSON.(map[string]interface{})
-	j["madness"] = slowdata{}
+//	j := rh.odata["/redfish/v1"].(map[string]interface{})
+//	j["madness"] = slowdata{}
 
 	done = make(chan struct{})
 	return done
