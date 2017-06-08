@@ -4,6 +4,9 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"path"
+    "strings"
+
+    "fmt"
 )
 
 func ingestStartupData(cfg *Config) {
@@ -16,27 +19,80 @@ func ingestStartupData(cfg *Config) {
 		{global: &cfg.systemCollectionJSON, filename: "systemCollection.json"},
 	}
 	for i := range unmarshalJSONPairs {
-		fileContents, e := ioutil.ReadFile(path.Join(cfg.pickleDir, unmarshalJSONPairs[i].filename))
-		if e != nil {
-			panic(e)
-		}
-
-		err := json.Unmarshal(fileContents, unmarshalJSONPairs[i].global)
+        _, err := getOdata(cfg.pickleDir, unmarshalJSONPairs[i].filename, unmarshalJSONPairs[i].global)
 		if err != nil {
 			panic(err)
 		}
 	}
-	/*
-	   startpath := "../ec/"
-	   startingpoint := "_redfish_v1.json"
-	       fileContents, e := ioutil.ReadFile(path.Join(cfg.pickleDir, unmarshalJSONPairs[i].filename))
-	       if e != nil {
-	           panic(e)
-	       }
 
-	       err := json.Unmarshal(fileContents, unmarshalJSONPairs[i].global)
-	       if err != nil {
-	           panic(err)
-	       }
-	*/
+    cfg.odata = make(map[string]interface{})
+
+    err := ingest( "ec", "_redfish_v1.json", "/redfish/v1", cfg.odata )
+    if err != nil {
+        panic(err)
+        }
+}
+
+func getOdata(pathname string, filename string, store interface{}) (interface{}, error) {
+    fileContents, err := ioutil.ReadFile(path.Join(pathname, filename))
+    if err != nil {
+        return nil, err
+    }
+
+    err = json.Unmarshal(fileContents, store)
+    if err != nil {
+        return nil, err
+    }
+
+    return store, nil
+}
+
+func ingest(basepath string, filename string, odataid string, odata map[string]interface{} ) error {
+    fmt.Printf("Ingesting file(%s) for @odata.id = %s\n", path.Join(basepath, filename), odataid)
+
+    var submap map[string]interface{}
+    _, err := getOdata(basepath, filename, &submap)
+    if err != nil {
+        fmt.Printf("  that failed... %s\n", err)
+        return err
+    }
+    odata[odataid] = submap
+    subids := getNestedOdataIds(odata[odataid], true)
+    for _, id := range subids {
+        // prevent loops, only import if not already imported
+        if _, ok := odata[id]; !ok {
+            ingest(basepath, filenameFromID(id), id, odata)
+        } else {
+            fmt.Printf("  skipping already ingested %s\n", id)
+        }
+    }
+    return nil
+}
+
+func filenameFromID(id string) string {
+    id = strings.Replace(id, "|", "X", -1)
+    id = strings.Replace(id, "/", "_", -1)
+    return id + ".json"
+}
+
+func getNestedOdataIds(inputJSON interface{}, allowonce bool) (output []string) {
+    var nestedIds []string
+
+	// range over input, copying to output
+	switch nested := inputJSON.(type) {
+        case map[string]interface{}:
+            if _, ok := nested["@odata.id"]; ok && (!allowonce) {
+                nestedIds = append(nestedIds, nested["@odata.id"].(string))
+            }
+
+            for _, v := range nested {
+                nestedIds = append(nestedIds, getNestedOdataIds(v, false)...)
+            }
+
+        case []interface{}:
+            for _, mem := range nested {
+                nestedIds = append(nestedIds, getNestedOdataIds(mem, false)...)
+            }
+    }
+    return nestedIds
 }
