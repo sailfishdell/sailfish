@@ -5,7 +5,7 @@ import (
 	"errors"
 	"github.com/elgs/gosplitargs"
 	"strconv"
-    "strings"
+	"strings"
 )
 
 type Service interface {
@@ -17,8 +17,8 @@ type Service interface {
 type ServiceMiddleware func(Service) Service
 
 type Config struct {
-	logger               Logger
-	pickleDir            string
+	logger    Logger
+	pickleDir string
 
 	// lets put all the data here, eventually...
 	odata map[string]interface{}
@@ -41,16 +41,21 @@ func (rh *Config) RawJSONRedfishGet(ctx context.Context, pathTemplate, url strin
 	case url == "/redfish/":
 		output = make(map[string]string)
 		output.(map[string]string)["v1"] = "/redfish/v1/"
-        return output, nil
+		return output, nil
 
 	default:
-        noHashPath := strings.SplitN(url, "#", 2)[0]
-        r,ok := rh.odata[noHashPath]
-        if ok { return r, nil } else {return nil, ErrNotFound}
-    }
+		noHashPath := strings.SplitN(url, "#", 2)[0]
+		r, ok := rh.odata[noHashPath]
+		if ok {
+			return r, nil
+		} else {
+			return nil, ErrNotFound
+		}
+	}
 
 	return
 }
+
 /*
 		//return elideNestedOdataRefs(rh.systemCollectionJSON, true), nil
 	case "/redfish/v1/Systems/{system}":
@@ -73,7 +78,6 @@ func (rh *Config) RawJSONRedfishGet(ctx context.Context, pathTemplate, url strin
 		err = ErrNotFound
 	}
 */
-
 
 // implements a simple json query modeled after 'jq' command line utility (reduced syntax!)
 //      .       return current

@@ -78,8 +78,8 @@ func main() {
 
 	r := redfishserver.NewRedfishHandler(svc, logger)
 
-    done := svc.Startup()
-    defer close(done)
+	done := svc.Startup()
+	defer close(done)
 
 	http.Handle("/", r)
 	http.Handle("/metrics", promhttp.Handler())

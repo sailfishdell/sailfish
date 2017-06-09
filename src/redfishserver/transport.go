@@ -32,13 +32,13 @@ func NewRedfishHandler(svc Service, logger log.Logger) http.Handler {
 	r.Handle("/redfish", http.RedirectHandler("/redfish/", 308))
 	r.Handle("/redfish/v1", http.RedirectHandler("/redfish/v1/", 308))
 
-    r.Methods("GET").PathPrefix("/redfish/").Handler(
-        httptransport.NewServer(
-            makeRawJSONRedfishGetEndpoint(svc),
-            decodeRedfishGetRequest,
-            encodeResponse,
-            options...,
-        ))
+	r.Methods("GET").PathPrefix("/redfish/").Handler(
+		httptransport.NewServer(
+			makeRawJSONRedfishGetEndpoint(svc),
+			decodeRedfishGetRequest,
+			encodeResponse,
+			options...,
+		))
 
 	return r
 }
