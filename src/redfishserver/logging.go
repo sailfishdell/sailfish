@@ -18,10 +18,10 @@ type loggingService struct {
 	Service
 }
 
-type loggingIdType int
+type loggingIDType int
 
 const (
-	loggerKey loggingIdType = iota
+	loggerKey loggingIDType = iota
 )
 
 // WithLogger returns a context which has a request-scoped logger
@@ -29,7 +29,7 @@ func WithLogger(ctx context.Context, logger Logger) context.Context {
 	return context.WithValue(ctx, loggerKey, logger)
 }
 
-// Logger returns a structured logger with as much context as possible
+// RequestLogger returns a structured logger with as much context as possible
 func RequestLogger(ctx context.Context) Logger {
 	var logger Logger = nil
 	if ctx != nil {

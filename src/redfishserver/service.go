@@ -36,7 +36,6 @@ func NewService(logger Logger, pickleDir string) Service {
 }
 
 func (rh *Config) RawJSONRedfishGet(ctx context.Context, pathTemplate, url string, args map[string]string) (output interface{}, err error) {
-
 	switch {
 	case url == "/redfish/":
 		output = make(map[string]string)
@@ -52,8 +51,6 @@ func (rh *Config) RawJSONRedfishGet(ctx context.Context, pathTemplate, url strin
 			return nil, ErrNotFound
 		}
 	}
-
-	return
 }
 
 /*

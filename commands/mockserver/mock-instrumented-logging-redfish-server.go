@@ -14,21 +14,21 @@ import (
 	"github.com/superchalupa/go-redfish/src/redfishserver"
 )
 
-type AppConfig struct {
-	Listen       string `yaml: listen`
-	TemplatesDir string `yaml: templatesDir`
+type appConfig struct {
+	Listen       string `yaml:"listen"`
+	TemplatesDir string `yaml:"templatesDir"`
 }
 
-func loadConfig(filename string) (AppConfig, error) {
+func loadConfig(filename string) (appConfig, error) {
 	bytes, err := ioutil.ReadFile(filename)
 	if err != nil {
-		return AppConfig{}, err
+		return appConfig{}, err
 	}
 
-	var config AppConfig
+	var config appConfig
 	err = yaml.Unmarshal(bytes, &config)
 	if err != nil {
-		return AppConfig{}, err
+		return appConfig{}, err
 	}
 
 	return config, nil
@@ -45,18 +45,18 @@ func main() {
 	var logger log.Logger
 	logger = log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr))
 
-	appConfig, _ := loadConfig(*configFile)
+	cfg, _ := loadConfig(*configFile)
 	if len(*listen) > 0 {
-		appConfig.Listen = *listen
+		cfg.Listen = *listen
 	}
 	if len(*templatesDir) > 0 {
-		appConfig.TemplatesDir = *templatesDir
+		cfg.TemplatesDir = *templatesDir
 	}
 
 	logger = log.With(logger, "listen", *listen, "caller", log.DefaultCaller)
 
 	var svc redfishserver.Service
-	svc = redfishserver.NewService(logger, appConfig.TemplatesDir)
+	svc = redfishserver.NewService(logger, cfg.TemplatesDir)
 	svc = redfishserver.NewLoggingService(logger, svc)
 
 	fieldKeys := []string{"method", "URL"}
@@ -84,6 +84,6 @@ func main() {
 	http.Handle("/", r)
 	http.Handle("/metrics", promhttp.Handler())
 
-	logger.Log("msg", "HTTP", "addr", appConfig.Listen)
-	logger.Log("err", http.ListenAndServe(appConfig.Listen, nil))
+	logger.Log("msg", "HTTP", "addr", cfg.Listen)
+	logger.Log("err", http.ListenAndServe(cfg.Listen, nil))
 }

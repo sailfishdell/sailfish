@@ -121,10 +121,6 @@ func encodeResponse(ctx context.Context, w http.ResponseWriter, response interfa
 		enc.SetIndent("", "  ")
 		return enc.Encode(output)
 	}
-	// for when we switch to structured output
-	// return json.NewEncoder(w).Encode(output)
-
-	return nil
 }
 
 func encodeError(_ context.Context, err error, w http.ResponseWriter) {
