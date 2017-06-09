@@ -3,7 +3,7 @@
 # list of tools
 # https://dominik.honnef.co/posts/2014/12/go-tools
 #
-# go get https://github.com/golang/tools
+# go get github.com/golang/tools
 # go get golang.org/cmd/gofmt
 # go get github.com/golang/lint/golint
 # go get github.com/kisielk/errcheck
@@ -16,17 +16,14 @@
 
 go fmt  \
     github.com/superchalupa/go-redfish/commands/mockserver  \
-    github.com/superchalupa/go-redfish/src/redfishserver/   \
-    github.com/superchalupa/go-redfish/src/mockbackend/
+    github.com/superchalupa/go-redfish/src/redfishserver/
 
 go vet  \
     github.com/superchalupa/go-redfish/commands/mockserver  \
-    github.com/superchalupa/go-redfish/src/redfishserver/   \
-    github.com/superchalupa/go-redfish/src/mockbackend/
+    github.com/superchalupa/go-redfish/src/redfishserver/
 
-golint commands/mockserver/  src/mockbackend/  src/redfishserver/
+golint commands/mockserver/  src/redfishserver/
 
 errcheck  \
     github.com/superchalupa/go-redfish/commands/mockserver  \
-    github.com/superchalupa/go-redfish/src/redfishserver/   \
-    github.com/superchalupa/go-redfish/src/mockbackend/
+    github.com/superchalupa/go-redfish/src/redfishserver/
