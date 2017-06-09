@@ -12,8 +12,8 @@ import (
 func ingestStartupData(cfg *config) {
 	cfg.odata = make(map[string]interface{})
 
-	err := ingest(filenameFromID_SPMF, "mockups/DSP2043-server/", "index.json", "/redfish/v1/", cfg.odata)
-	//err := ingest( filenameFromID_ec, "ec", "_redfish_v1.json", "/redfish/v1", cfg.odata )
+    err := ingest( filenameFromID_SPMF, "mockups/SPMF/DSP2043-server/", "index.json", "/redfish/v1/", cfg.odata )
+    //err := ingest( filenameFromID_ec, "mockups/EC", "_redfish_v1.json", "/redfish/v1/", cfg.odata )
 	if err != nil {
 		panic(err)
 	}
