@@ -9,7 +9,7 @@ import (
 	"net/http"
 )
 
-const HTTP_HEADER_SERVER = "go-redfish/0.1"
+const serverHTTPHeader = "go-redfish/0.1"
 
 // errorer is implemented by all concrete response types that may contain
 // errors. It allows us to change the HTTP response code without needing to
@@ -19,12 +19,13 @@ type errorer interface {
 	error() error
 }
 
+// NewRedfishHandler is a function to hook up the redfish service to an http handler, it returns a mux
 func NewRedfishHandler(svc Service, logger log.Logger) http.Handler {
 	r := mux.NewRouter()
 	options := []httptransport.ServerOption{
 		httptransport.ServerAfter(httptransport.SetContentType("application/json;charset=utf-8")),
 		httptransport.ServerAfter(httptransport.SetResponseHeader("OData-Version", "4.0")),
-		httptransport.ServerAfter(httptransport.SetResponseHeader("Server", HTTP_HEADER_SERVER)),
+		httptransport.ServerAfter(httptransport.SetResponseHeader("Server", serverHTTPHeader)),
 		httptransport.ServerErrorLogger(logger),
 		httptransport.ServerErrorEncoder(encodeError),
 	}

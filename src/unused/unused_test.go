@@ -20,7 +20,7 @@ func TestSimpleJQL(t *testing.T) {
 			})
 
 			Convey("we should get 'value1' back when we query .key1", func() {
-				result, err := SimpleJQL(data, ".key1")
+				result, err := simpleJQL(data, ".key1")
 				Convey("and we should not get any error", func() {
 					So(err, ShouldEqual, nil)
 				})
@@ -28,7 +28,7 @@ func TestSimpleJQL(t *testing.T) {
 			})
 
 			Convey("we should get 'value1' back when we query key1", func() {
-				result, err := SimpleJQL(data, ".key1")
+				result, err := simpleJQL(data, ".key1")
 				Convey("and we should not get any error", func() {
 					So(err, ShouldEqual, nil)
 				})
@@ -36,14 +36,14 @@ func TestSimpleJQL(t *testing.T) {
 			})
 
 			Convey("We should get 'value2' back when we query .key2", func() {
-				result, err := SimpleJQL(data, ".key2")
+				result, err := simpleJQL(data, ".key2")
 				Convey("and we should not get any error", func() {
 					So(err, ShouldEqual, nil)
 				})
 				So(result.(string), ShouldEqual, "value2")
 			})
 			Convey("We should get an error if we query a .nonexistent key", func() {
-				result, err := SimpleJQL(data, ".nonexistent")
+				result, err := simpleJQL(data, ".nonexistent")
 				Convey("we should get an error return", func() {
 					So(err.Error(), ShouldEqual, "nonexistent no such element")
 				})
@@ -51,7 +51,7 @@ func TestSimpleJQL(t *testing.T) {
 			})
 
 			Convey("We should get an error if we query by array", func() {
-				result, err := SimpleJQL(data, ".[4]")
+				result, err := simpleJQL(data, ".[4]")
 				Convey("we should get an error return", func() {
 					So(err.Error(), ShouldEqual, "attempt to array index into a non-array")
 				})
@@ -59,7 +59,7 @@ func TestSimpleJQL(t *testing.T) {
 			})
 
 			Convey("We should get an error if we query array by non-numeric", func() {
-				result, err := SimpleJQL(data, ".[a]")
+				result, err := simpleJQL(data, ".[a]")
 				Convey("we should get an error return", func() {
 					So(err.Error(), ShouldEqual, `strconv.Atoi: parsing "a": invalid syntax`)
 				})
@@ -67,7 +67,7 @@ func TestSimpleJQL(t *testing.T) {
 			})
 
 			Convey("if we query first array element, it should equal 1", func() {
-				result, err := SimpleJQL(data, ".array.[0]")
+				result, err := simpleJQL(data, ".array.[0]")
 				Convey("we should get an error return", func() {
 					So(err, ShouldEqual, nil)
 				})

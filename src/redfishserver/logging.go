@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 )
 
+// Logger interface cut/paste from go-kit logging interface so that we don't have to have this dep everywhere
 type Logger interface {
 	Log(keyvals ...interface{}) error
 }
@@ -31,7 +32,7 @@ func WithLogger(ctx context.Context, logger Logger) context.Context {
 
 // RequestLogger returns a structured logger with as much context as possible
 func RequestLogger(ctx context.Context) Logger {
-	var logger Logger = nil
+	var logger Logger
 	if ctx != nil {
 		if newLogger, ok := ctx.Value(loggerKey).(Logger); ok {
 			logger = newLogger
@@ -56,7 +57,8 @@ func (s *loggingService) RawJSONRedfishGet(ctx context.Context, pathTemplate, ur
 		thislogger = log.With(thislogger, "arg_"+k, v)
 	}
 	defer func(begin time.Time) {
-		thislogger.Log(
+		// no, we are not going to check logger error return
+		_ = thislogger.Log(
 			"method", "GET",
 			"URL", url,
 			"PathTemplate", pathTemplate,

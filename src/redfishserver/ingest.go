@@ -9,7 +9,7 @@ import (
 	"fmt"
 )
 
-func ingestStartupData(cfg *Config) {
+func ingestStartupData(cfg *config) {
 	cfg.odata = make(map[string]interface{})
 
 	err := ingest(filenameFromID_SPMF, "mockups/DSP2043-server/", "index.json", "/redfish/v1/", cfg.odata)
@@ -47,7 +47,10 @@ func ingest(filenameFromID func(string) string, basepath string, filename string
 	for _, id := range subids {
 		// prevent loops, only import if not already imported
 		if _, ok := odata[id]; !ok {
-			ingest(filenameFromID, basepath, filenameFromID(id), id, odata)
+			err := ingest(filenameFromID, basepath, filenameFromID(id), id, odata)
+			if err != nil {
+				return nil
+			}
 		}
 	}
 	return nil
