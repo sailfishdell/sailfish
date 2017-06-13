@@ -1,20 +1,36 @@
 #!/bin/sh
 
 set -e
-#set -x
+set -x
 
 scriptdir=$(cd $(dirname $0); pwd)
 
-BASE=http://localhost:8080
-URLS_NEW="$BASE/redfish/v1/"
-URLS=
+HOST=${HOST:-localhost}
+PORT=${PORT:-8080}
+BASE=http://${HOST}:${PORT}
+START_URL="/redfish/v1/"
 
-while [ "$URLS_NEW" != "$URLS" ]
+if [ -n "$TOKEN" ]; then
+    AUTH_HEADER="-H 'Authentication: bearer $TOKEN'"
+fi
+
+echo $START_URL | sort |uniq > URLS-to-visit.txt
+rm -f URLS-visited.txt
+
+while ! diff -u URLS-to-visit.txt URLS-visited.txt
 do
-    URLS="$URLS_NEW"
-    URLS_NEW=$(curl -s -L $URLS | jq -r 'recurse (.[]?) | objects | select(has("@odata.id")) | .["@odata.id"]' | sort | uniq | perl -n -e "print  \"$BASE\" . \$_" )
+    for url in $(cat URLS-to-visit.txt)
+    do
+        if grep -q "^${url}\$" URLS-visited.txt; then
+            continue
+        fi
+        curl $AUTH_HEADER -s -L ${BASE}${url} | jq -r 'recurse (.[]?) | objects | select(has("@odata.id")) | .["@odata.id"]' >> URLS-to-visit.txt
+        echo $url >> URLS-visited.txt
+    done
+    cat URLS-to-visit.txt | sort | uniq > URLS-to-visit-new.txt
+    mv URLS-to-visit-new.txt URLS-to-visit.txt
+    cat URLS-visited.txt | sort | uniq > URLS-visited-new.txt
+    mv URLS-visited-new.txt  URLS-visited.txt
 done
 
-#curl -s -L $URLS
-
-time curl -s -L -w"\nTotal request time: %{time_total} seconds\n" $URLS
+time curl $AUTH_HEADER -s -L -w"\nTotal request time: %{time_total} seconds\n" $(cat URLS-visited.txt | perl -n -e "print '${BASE}' . \$_" )
