@@ -8,6 +8,8 @@ import (
 
 // Startup - a function that should install all of the output filters and getters
 func (rh *config) Startup() (done chan struct{}) {
+	ingestStartupData(rh)
+
 	// let's hook up some test data in service root for now to see how it would look
 	j := rh.odata["/redfish/v1/"].(map[string]interface{})
 	j["madness"] = slowdata{}

@@ -32,9 +32,12 @@ var (
 // NewService is how we initialize the business logic
 func NewService(logger Logger, pickleDir string) Service {
 	cfg := config{logger: logger, pickleDir: pickleDir}
-
-	ingestStartupData(&cfg)
 	return &cfg
+}
+
+// Marhsaller interface is for objects that might want to do background stuff before the marshalling starts. After marshalling, MarshalJSON is the interface to get the data out
+type Marshaller interface {
+    StartMarshal(ctx context.Context, pathTemplate, url string, args map[string]string) error
 }
 
 func (rh *config) RawJSONRedfishGet(ctx context.Context, pathTemplate, url string, args map[string]string) (output interface{}, err error) {
@@ -47,9 +50,15 @@ func (rh *config) RawJSONRedfishGet(ctx context.Context, pathTemplate, url strin
 	default:
 		noHashPath := strings.SplitN(url, "#", 2)[0]
 		r, ok := rh.odata[noHashPath]
-		if ok {
-			return r, nil
+		if ! ok {
+		    return nil, ErrNotFound
 		}
-		return nil, ErrNotFound
+
+        switch r := r.(type) {
+            case Marshaller:
+                return r.StartMarshal(ctx, pathTemplate, url, args)
+        }
+
+        return r, nil
 	}
 }
