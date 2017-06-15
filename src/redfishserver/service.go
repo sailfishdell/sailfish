@@ -37,28 +37,20 @@ func NewService(logger Logger, pickleDir string) Service {
 
 // Marhsaller interface is for objects that might want to do background stuff before the marshalling starts. After marshalling, MarshalJSON is the interface to get the data out
 type Marshaller interface {
-    StartMarshal(ctx context.Context, pathTemplate, url string, args map[string]string) error
+    StartMarshal(ctx context.Context, pathTemplate, url string, args map[string]string) (interface{}, error)
 }
 
 func (rh *config) RawJSONRedfishGet(ctx context.Context, pathTemplate, url string, args map[string]string) (output interface{}, err error) {
-	switch {
-	case url == "/redfish/":
-		output = make(map[string]string)
-		output.(map[string]string)["v1"] = "/redfish/v1/"
-		return output, nil
+    noHashPath := strings.SplitN(url, "#", 2)[0]
+    r, ok := rh.odata[noHashPath]
+    if ! ok {
+        return nil, ErrNotFound
+    }
 
-	default:
-		noHashPath := strings.SplitN(url, "#", 2)[0]
-		r, ok := rh.odata[noHashPath]
-		if ! ok {
-		    return nil, ErrNotFound
-		}
+    switch r := r.(type) {
+        case Marshaller:
+            return r.StartMarshal(ctx, pathTemplate, url, args)
+    }
 
-        switch r := r.(type) {
-            case Marshaller:
-                return r.StartMarshal(ctx, pathTemplate, url, args)
-        }
-
-        return r, nil
-	}
+    return r, nil
 }

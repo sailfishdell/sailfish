@@ -2,20 +2,6 @@ package redfishserver
 
 import ()
 
-type OdataBase struct {
-	Type        string `json:"@odata.type"`
-	Context     string `json:"@odata.context"`
-	OdataID     string `json:"@odata.id"`
-}
-
-type ServiceRoot struct {
-    RedfishVersion string
-    UUID    string
-    Id      string
-    Name    string
-    OdataBase
-}
-
 type OdataCollection struct {
 	Name        string `json:"Name"`
 	Description string `json:"Description"`
