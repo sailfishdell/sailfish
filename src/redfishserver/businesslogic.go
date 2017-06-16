@@ -10,9 +10,10 @@ var _ = fmt.Println
 func (rh *config) Startup() (done chan struct{}) {
 	//ingestStartupData(rh)
 
-	// add the top level redfish version pointer
+	// add the top level redfish version pointer. This is always completely static
 	rh.odata["/redfish/"] = map[string]interface{}{"v1": "/redfish/v1/"}
 
+	// Manually add the redfish structure, since the structure itself is always going to be completely static
 	serviceRoot := rh.odata.AddServiceRoot()
 	rh.odata.AddSystemsCollection(serviceRoot)
 
@@ -42,8 +43,9 @@ func (odata OdataTree) AddSystemsCollection(sr *ServiceRoot) (systems *OdataColl
 	systems = &OdataCollection{
 		OdataType:    "#ComputerSystemCollection.ComputerSystemCollection",
 		OdataContext: "/redfish/v1/$metadata#Systems",
-		OdataID:      "/redfish/v1/Systems",
+		BaseOdataID:  BaseOdataID{OdataID: "/redfish/v1/Systems"},
 		Name:         "Computer System Collection",
+		Description:  "Computer System Collection",
 		Members:      []interface{}{},
 		Oem:          map[string]interface{}{},
 	}
