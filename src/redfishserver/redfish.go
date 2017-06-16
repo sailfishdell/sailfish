@@ -1,8 +1,8 @@
 package redfishserver
 
 import (
+	"encoding/json"
 	"github.com/fatih/structs"
-    "encoding/json"
 
 	"fmt"
 )
@@ -20,12 +20,12 @@ type ServiceRoot struct {
 	Services       map[string]interface{}
 	Collections    map[string]interface{}
 	Links          map[string]interface{}
-    OdataTree      *OdataTree
+	OdataTree      *OdataTree
 }
 
 func rename(m map[string]interface{}, from string, to string) {
-    m[to] = m[from]
-    delete(m, from)
+	m[to] = m[from]
+	delete(m, from)
 }
 
 // Function to marshal the serviceroot properly
@@ -34,44 +34,41 @@ func (s *ServiceRoot) MarshalJSON() ([]byte, error) {
 	delete(m, "Services")
 	delete(m, "Collections")
 	delete(m, "OdataTree")
-    for k, v := range(s.Services) {
-        m[k] = v
-    }
-    for k, v := range(s.Collections) {
-        m[k] = v
-    }
-    rename(m, "OdataType", "@odata.type")
-    rename(m, "OdataContext", "@odata.context")
-    rename(m, "OdataID", "@odata.id")
+	for k, v := range s.Services {
+		m[k] = v
+	}
+	for k, v := range s.Collections {
+		m[k] = v
+	}
+	rename(m, "OdataType", "@odata.type")
+	rename(m, "OdataContext", "@odata.context")
+	rename(m, "OdataID", "@odata.id")
 	return json.Marshal(m)
 }
 
-func (s *ServiceRoot)AddCollection(name string, c *OdataCollection) {
-    s.Collections[name] = c
-    (*s.OdataTree) [ c.OdataID ] = c
+func (s *ServiceRoot) AddCollection(name string, c *OdataCollection) {
+	s.Collections[name] = c
+	(*s.OdataTree)[c.OdataID] = c
 }
 
-
 type OdataCollection struct {
-	OdataType      string `json:"@odata.type"`
-	OdataContext   string `json:"@odata.context"`
-	OdataID        string `json:"@odata.id"`
+	OdataType    string `json:"@odata.type"`
+	OdataContext string `json:"@odata.context"`
+	OdataID      string `json:"@odata.id"`
 
 	Name        string `json:"Name"`
 	Description string `json:"Description"`
-	MemberCount int `json:"Members@odata.count"`
+	MemberCount int    `json:"Members@odata.count"`
 	Members     []interface{}
 	Oem         map[string]interface{} `json:"Oem,omitempty"`
 }
 
 // Function to marshal the serviceroot properly
 func (c *OdataCollection) MarshalJSON() ([]byte, error) {
-    type Alias OdataCollection
-    c.MemberCount = len(c.Members)
-	return json.Marshal( &struct { *Alias }{ Alias: (*Alias)(c) } )
+	type Alias OdataCollection
+	c.MemberCount = len(c.Members)
+	return json.Marshal(&struct{ *Alias }{Alias: (*Alias)(c)})
 }
-
-
 
 /*
 {
