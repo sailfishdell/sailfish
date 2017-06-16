@@ -2,6 +2,7 @@ package redfishserver
 
 import ()
 
+/*
 type OdataCollection struct {
 	Name        string `json:"Name"`
 	Description string `json:"Description"`
@@ -10,7 +11,7 @@ type OdataCollection struct {
 	Oem         map[string]interface{}
     OdataBase
 }
-
+*/
 
 /*
 func (OdataCollection) MarshalJSON() ([]byte, error) {
@@ -19,7 +20,6 @@ func (OdataCollection) MarshalJSON() ([]byte, error) {
 	return buffer.Bytes(), nil
 }
 */
-
 
 /*
 {
@@ -38,7 +38,6 @@ func (OdataCollection) MarshalJSON() ([]byte, error) {
     "@Redfish.Copyright": "Copyright 2014-2016 Distributed Management Task Force, Inc. (DMTF). For the full DMTF copyright policy, see http://www.dmtf.org/about/policies/copyright."
 }
 */
-
 
 /*
 {
