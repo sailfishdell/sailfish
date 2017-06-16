@@ -15,13 +15,15 @@ type Service interface {
 // ServiceMiddleware is a chainable behavior modifier for Service.
 type ServiceMiddleware func(Service) Service
 
+type OdataTree map[string]interface{}
+
 // Config is where we store the current service data
 type config struct {
 	logger    Logger
 	pickleDir string
 
 	// This holds all of our data
-	odata map[string]interface{}
+	odata OdataTree
 }
 
 var (
@@ -31,13 +33,8 @@ var (
 
 // NewService is how we initialize the business logic
 func NewService(logger Logger, pickleDir string) Service {
-	cfg := config{logger: logger, pickleDir: pickleDir, odata: map[string]interface{}{}}
+	cfg := config{logger: logger, pickleDir: pickleDir, odata: OdataTree{}}
 	return &cfg
-}
-
-// Marhsaller interface is for objects that might want to do background stuff before the marshalling starts. After marshalling, MarshalJSON is the interface to get the data out
-type Marshaller interface {
-	StartMarshal(ctx context.Context, pathTemplate, url string, args map[string]string) (interface{}, error)
 }
 
 func (rh *config) RawJSONRedfishGet(ctx context.Context, pathTemplate, url string, args map[string]string) (output interface{}, err error) {
@@ -45,11 +42,6 @@ func (rh *config) RawJSONRedfishGet(ctx context.Context, pathTemplate, url strin
 	r, ok := rh.odata[noHashPath]
 	if !ok {
 		return nil, ErrNotFound
-	}
-
-	switch r := r.(type) {
-	case Marshaller:
-		return r.StartMarshal(ctx, pathTemplate, url, args)
 	}
 
 	return r, nil
