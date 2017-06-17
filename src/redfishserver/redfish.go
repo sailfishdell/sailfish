@@ -76,3 +76,5 @@ func (c *OdataCollection) MarshalJSON() ([]byte, error) {
 	c.MemberCount = len(c.Members)
 	return json.Marshal(&struct{ *Alias }{Alias: (*Alias)(c)})
 }
+
+type OdataTree map[string]interface{}

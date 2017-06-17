@@ -15,8 +15,6 @@ type Service interface {
 // ServiceMiddleware is a chainable behavior modifier for Service.
 type ServiceMiddleware func(Service) Service
 
-type OdataTree map[string]interface{}
-
 // Config is where we store the current service data
 type config struct {
 	logger    Logger
