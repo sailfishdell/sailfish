@@ -22,7 +22,7 @@ fi
 echo $START_URL | sort |uniq > URLS-to-visit.txt
 rm -f URLS-visited.txt
 
-LOOPS=1
+LOOPS=0
 while ! diff -u URLS-to-visit.txt URLS-visited.txt
 do
     for url in $(cat URLS-to-visit.txt)

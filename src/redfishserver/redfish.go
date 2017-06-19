@@ -6,7 +6,7 @@ import (
 	"github.com/fatih/structs"
 
 	"fmt"
-	"reflect"
+	//"reflect"
 )
 
 var _ = fmt.Println
@@ -23,19 +23,45 @@ type OdataTree map[string]interface{}
 
 type OdataTreeInt interface {
 	Serialize(context.Context) (map[string]interface{}, error)
+	AddNode(string, OdataTreeInt)
+	GetBase() OdataTreeInt
+	GetWrapper() interface{}
 }
 
 type OdataBase struct {
 	OdataType    string `json:"@odata.type"`
 	OdataContext string `json:"@odata.context"`
 	OdataID      string `json:"@odata.id"`
-	Nodes        map[string]OdataBase
+	Nodes        map[string]OdataTreeInt
 	OdataTree    *OdataTree
 	wrapper      interface{}
 }
 
+func NewOdataBase(id, context, otype string, t *OdataTree, w interface{}) *OdataBase {
+	return &OdataBase{
+		OdataType:    otype,
+		OdataContext: context,
+		OdataID:      id,
+		Nodes:        map[string]OdataTreeInt{},
+		OdataTree:    t,
+		wrapper:      w,
+	}
+}
+
+func (o *OdataBase) AddNode(s string, p OdataTreeInt) {
+	o.Nodes[s] = p
+}
+
+func (o *OdataBase) GetBase() OdataTreeInt {
+	return o
+}
+
+func (o *OdataBase) GetWrapper() interface{} {
+	return o.wrapper
+}
+
 func (o *OdataBase) Serialize(ctx context.Context) (map[string]interface{}, error) {
-	fmt.Println("DEBUG: ", reflect.TypeOf(o.wrapper))
+	//fmt.Println("DEBUG: ", reflect.TypeOf(o.wrapper))
 	m := structs.Map(o.wrapper)
 
 	rename := func(base, from, to string) {
@@ -48,12 +74,10 @@ func (o *OdataBase) Serialize(ctx context.Context) (map[string]interface{}, erro
 	rename("OdataBase", "OdataID", "@odata.id")
 	delete(m, "OdataBase")
 
-	//	// collapse Collections to just the link to the collection
-	//	for k, v := range m.Nodes {
-	//		if id, ok := v.(*Nodes); ok {
-	//			m[k] = map[string]interface{}{"@odata.id": id.OdataID}
-	//		}
-	//	}
+	// collapse Collections to just the link to the collection
+	for k, v := range o.Nodes {
+		m[k] = map[string]interface{}{"@odata.id": v.GetBase().(*OdataBase).OdataID}
+	}
 
 	return m, nil
 }
@@ -64,4 +88,16 @@ type ServiceRoot struct {
 	Name           string
 	Description    string
 	*OdataBase
+}
+
+type Collection struct {
+	Name    string
+	Members []map[string]interface{}
+	*OdataBase
+}
+
+func (c *Collection) Serialize(ctx context.Context) (map[string]interface{}, error) {
+	m, err := c.OdataBase.Serialize(ctx)
+	m["Members@odata.count"] = len(c.Members)
+	return m, err
 }
