@@ -24,8 +24,7 @@ func (rh *config) Startup() (done chan struct{}) {
 		"/redfish/v1/$metadata#Systems",
 	)
     
-    _ = systems
-    //rh.odata.AddSystem(systems)
+    rh.odata.AddSystem(systems)
 
 	done = make(chan struct{})
 	return done
@@ -68,20 +67,19 @@ func (odata OdataTree) AddCollection(sr OdataTreeInt, nodeName, name, otype, id,
 	return ret
 }
 
-/*
-func (odata OdataTree) AddSystem() {
+func (odata OdataTree) AddSystem(c *Collection) {
+    id := "/redfish/v1/Systems/TEST"
 	ret := &System{
 		Name:    "TEST",
-		OdataBase: &OdataBase{
-			OdataType:    otype,
-			OdataID:      id,
-			OdataContext: ocontext,
-		},
 	}
-	ret.OdataBase.wrapper = ret
 
-	sr.AddNode(nodeName, ret)
-	odata[id] = ret
-	return ret
+	ret.OdataBase = NewOdataBase(
+		id,
+		"/redfish/v1/$metadata#ComputerSystem.ComputerSystem",
+		"#ComputerSystem.v1_1_0.ComputerSystem",
+		&odata,
+		ret,
+	)
+
+    c.Members = append(c.Members, map[string]interface{}{"@odata.id": id})
 }
-*/
