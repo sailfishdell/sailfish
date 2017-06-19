@@ -38,6 +38,7 @@ type OdataBase struct {
 }
 
 func NewOdataBase(id, context, otype string, t *OdataTree, w interface{}) *OdataBase {
+    (*t)[id] = w
 	return &OdataBase{
 		OdataType:    otype,
 		OdataContext: context,

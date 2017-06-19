@@ -15,7 +15,7 @@ func (rh *config) Startup() (done chan struct{}) {
 
 	// Manually add the redfish structure, since the structure itself is always going to be completely static
 	serviceRoot := rh.odata.NewServiceRoot()
-	rh.odata.AddCollection(
+	systems := rh.odata.AddCollection(
 		serviceRoot,
 		"Systems",
 		"System Collection",
@@ -23,6 +23,9 @@ func (rh *config) Startup() (done chan struct{}) {
 		"/redfish/v1/Systems",
 		"/redfish/v1/$metadata#Systems",
 	)
+    
+    _ = systems
+    //rh.odata.AddSystem(systems)
 
 	done = make(chan struct{})
 	return done
@@ -44,14 +47,31 @@ func (odata OdataTree) NewServiceRoot() OdataTreeInt {
 		ret,
 	)
 
-	odata["/redfish/v1/"] = ret
 	return ret
 }
 
-func (odata OdataTree) AddCollection(sr OdataTreeInt, nodeName, name, otype, id, ocontext string) OdataTreeInt {
+func (odata OdataTree) AddCollection(sr OdataTreeInt, nodeName, name, otype, id, ocontext string) *Collection {
 	ret := &Collection{
 		Name:    name,
 		Members: []map[string]interface{}{},
+	}
+
+	ret.OdataBase = NewOdataBase(
+		id,
+		ocontext,
+		otype,
+		&odata,
+		ret,
+	)
+
+	sr.AddNode(nodeName, ret)
+	return ret
+}
+
+/*
+func (odata OdataTree) AddSystem() {
+	ret := &System{
+		Name:    "TEST",
 		OdataBase: &OdataBase{
 			OdataType:    otype,
 			OdataID:      id,
@@ -64,3 +84,4 @@ func (odata OdataTree) AddCollection(sr OdataTreeInt, nodeName, name, otype, id,
 	odata[id] = ret
 	return ret
 }
+*/
