@@ -42,10 +42,10 @@ func (rh *config) RawJSONRedfishGet(ctx context.Context, pathTemplate, url strin
 		return nil, ErrNotFound
 	}
 
-    switch r := r.(type) {
-        case OdataTreeInt:
-            return r.Serialize(ctx)
-    }
+	switch r := r.(type) {
+	case OdataTreeInt:
+		return r.Serialize(ctx)
+	}
 
 	return r, nil
 }
