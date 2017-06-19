@@ -3,11 +3,52 @@ package redfishserver
 import (
 	"encoding/json"
 	"github.com/fatih/structs"
+    "context"
 
 	"fmt"
+    "reflect"
 )
 
 var _ = fmt.Println
+
+
+/*
+    tree node
+        serialize(query/filter/select)
+        Add node pointer
+        delete node pointer
+*/
+
+
+
+type OdataTreeInt interface{
+    Serialize(context.Context) (map[string]interface{}, error)
+}
+
+type OdataBase struct {
+	OdataType      string `json:"@odata.type"`
+	OdataContext   string `json:"@odata.context"`
+	OdataID        string `json:"@odata.id"`
+    wrapper interface{}
+}
+
+func (o *OdataBase) Serialize(ctx context.Context, ) (map[string]interface{}, error) {
+    fmt.Println("DEBUG: ", reflect.TypeOf(o.wrapper))
+	m := structs.Map(o.wrapper)
+	//rename(m, "OdataType", "@odata.type")
+	//rename(m, "OdataContext", "@odata.context")
+	//rename(m, "OdataID", "@odata.id")
+    return m, nil
+}
+
+
+type SR2 struct {
+	RedfishVersion string
+    *OdataBase
+}
+
+
+
 
 type ServiceRoot struct {
 	OdataType      string `json:"@odata.type"`
