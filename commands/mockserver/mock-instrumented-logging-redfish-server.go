@@ -8,8 +8,11 @@ import (
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"io/ioutil"
+	"net"
 	"net/http"
+	"net/http/fcgi"
 	"os"
+	"strings"
 
 	"github.com/superchalupa/go-redfish/src/redfishserver"
 )
@@ -53,7 +56,7 @@ func main() {
 		cfg.TemplatesDir = *templatesDir
 	}
 
-	logger = log.With(logger, "listen", *listen, "caller", log.DefaultCaller)
+	logger = log.With(logger, "listen", cfg.Listen, "caller", log.DefaultCaller)
 
 	var svc redfishserver.Service
 	svc = redfishserver.NewService(logger, cfg.TemplatesDir)
@@ -84,6 +87,37 @@ func main() {
 	http.Handle("/", r)
 	http.Handle("/metrics", promhttp.Handler())
 
-	logger.Log("msg", "HTTP", "addr", cfg.Listen)
-	logger.Log("err", http.ListenAndServe(cfg.Listen, nil))
+	var listener net.Listener
+	var err error
+	switch {
+	case strings.HasPrefix(cfg.Listen, "fcgi:") && strings.Contains(strings.TrimPrefix(cfg.Listen, "fcgi:"), ":"):
+		addr := strings.TrimPrefix(cfg.Listen, "fcgi:")
+		logger.Log("msg", "FCGI mode activated with tcp listener: "+addr)
+		listener, err = net.Listen("tcp", addr)
+
+	case strings.HasPrefix(cfg.Listen, "fcgi:") && strings.Contains(strings.TrimPrefix(cfg.Listen, "fcgi:"), "/"):
+		path := strings.TrimPrefix(cfg.Listen, "fcgi:")
+		logger.Log("msg", "FCGI mode activated with unix socket listener: "+path)
+		listener, err = net.Listen("unix", path)
+		defer os.Remove(path)
+
+	case strings.HasPrefix(cfg.Listen, "fcgi:"):
+		logger.Log("msg", "FCGI mode activated with stdin/stdout listener")
+		listener = nil
+
+	default:
+		logger.Log("msg", "HTTP", "addr", cfg.Listen)
+		logger.Log("err", http.ListenAndServe(cfg.Listen, nil))
+	}
+
+	if strings.HasPrefix(cfg.Listen, "fcgi:") {
+		if err != nil {
+			logger.Log("fatal", "Could not open listening connection", "err", err)
+			return
+		}
+		if listener != nil {
+			defer listener.Close()
+		}
+		logger.Log("err", fcgi.Serve(listener, r))
+	}
 }
