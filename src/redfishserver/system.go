@@ -22,3 +22,20 @@ type System struct {
 		HealthRollUp string
 	}
 }
+
+func (rh *config) AddSystem(odata OdataTree, c *Collection) {
+    id := makeFullyQualifiedV1(rh, "Systems/TEST")
+	ret := &System{
+		Name:    "TEST",
+	}
+
+	ret.OdataBase = NewOdataBase(
+		id,
+		makeFullyQualifiedV1(rh, "$metadata#ComputerSystem.ComputerSystem"),
+		"#ComputerSystem.v1_1_0.ComputerSystem",
+		&odata,
+		ret,
+	)
+
+    c.Members = append(c.Members, map[string]interface{}{"@odata.id": id})
+}

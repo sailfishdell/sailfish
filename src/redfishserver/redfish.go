@@ -102,3 +102,22 @@ func (c *Collection) Serialize(ctx context.Context) (map[string]interface{}, err
 	m["Members@odata.count"] = len(c.Members)
 	return m, err
 }
+
+
+func (odata OdataTree) AddCollection(sr OdataTreeInt, nodeName, name, otype, id, ocontext string) *Collection {
+	ret := &Collection{
+		Name:    name,
+		Members: []map[string]interface{}{},
+	}
+
+	ret.OdataBase = NewOdataBase(
+		id,
+		ocontext,
+		otype,
+		&odata,
+		ret,
+	)
+
+	sr.AddNode(nodeName, ret)
+	return ret
+}

@@ -15,7 +15,7 @@ else
     PROTO=http
 fi
 BASE=${PROTO}://${HOST}:${PORT}
-START_URL="/redfish/v1/"
+START_URL=${START_URL:-"/redfish/v1/"}
 
 AUTH_HEADER="foo: bar"
 if [ -n "$TOKEN" ]; then

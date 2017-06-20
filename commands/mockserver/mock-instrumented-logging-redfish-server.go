@@ -19,7 +19,6 @@ import (
 
 type appConfig struct {
 	Listen       string `yaml:"listen"`
-	TemplatesDir string `yaml:"templatesDir"`
 }
 
 func loadConfig(filename string) (appConfig, error) {
@@ -41,7 +40,7 @@ func main() {
 	var (
 		configFile   = flag.String("config", "app.yaml", "Application configuration file")
 		listen       = flag.String("listen", ":8080", "HTTP listen address")
-		templatesDir = flag.String("templates", "serve", "base path from which to serve redfish data templates")
+		baseUri     = flag.String("redfish_base_uri", "/redfish", "http base uri")
 	)
 	flag.Parse()
 
@@ -52,14 +51,11 @@ func main() {
 	if len(*listen) > 0 {
 		cfg.Listen = *listen
 	}
-	if len(*templatesDir) > 0 {
-		cfg.TemplatesDir = *templatesDir
-	}
 
 	logger = log.With(logger, "listen", cfg.Listen, "caller", log.DefaultCaller)
 
 	var svc redfishserver.Service
-	svc = redfishserver.NewService(logger, cfg.TemplatesDir)
+	svc = redfishserver.NewService(logger, *baseUri)
 	svc = redfishserver.NewLoggingService(logger, svc)
 
 	fieldKeys := []string{"method", "URL"}
@@ -79,7 +75,7 @@ func main() {
 		svc,
 	)
 
-	r := redfishserver.NewRedfishHandler(svc, logger)
+	r := redfishserver.NewRedfishHandler(svc, *baseUri, "v1", logger)
 
 	done := svc.Startup()
 	defer close(done)

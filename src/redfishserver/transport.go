@@ -20,7 +20,7 @@ type errorer interface {
 }
 
 // NewRedfishHandler is a function to hook up the redfish service to an http handler, it returns a mux
-func NewRedfishHandler(svc Service, logger log.Logger) http.Handler {
+func NewRedfishHandler(svc Service, baseURI string, verURI string, logger log.Logger) http.Handler {
 	r := mux.NewRouter()
 	options := []httptransport.ServerOption{
 		httptransport.ServerAfter(httptransport.SetContentType("application/json;charset=utf-8")),
@@ -30,10 +30,10 @@ func NewRedfishHandler(svc Service, logger log.Logger) http.Handler {
 		httptransport.ServerErrorEncoder(encodeError),
 	}
 
-	r.Handle("/redfish", http.RedirectHandler("/redfish/", 308))
-	r.Handle("/redfish/v1", http.RedirectHandler("/redfish/v1/", 308))
+	r.Handle(baseURI, http.RedirectHandler(baseURI + "/", 308))
+	r.Handle(baseURI + "/" + verURI, http.RedirectHandler(baseURI + "/" + verURI + "/", 308))
 
-	r.Methods("GET").PathPrefix("/redfish/").Handler(
+	r.Methods("GET").PathPrefix(baseURI + "/").Handler(
 		httptransport.NewServer(
 			makeRawJSONRedfishGetEndpoint(svc),
 			decodeRedfishGetRequest,
