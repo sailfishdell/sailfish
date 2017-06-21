@@ -6,6 +6,8 @@ set -x
 unset HTTP_PROXY HTTPS_PROXY http_proxy https_proxy
 
 scriptdir=$(cd $(dirname $0); pwd)
+outputdir=${1:-out/}
+skiplist=${2:-}
 
 HOST=${HOST:-localhost}
 PORT=${PORT:-8080}
@@ -22,34 +24,38 @@ if [ -n "$TOKEN" ]; then
     AUTH_HEADER="Authorization: Bearer $TOKEN"
 fi
 
-echo $START_URL | sort |uniq > URLS-to-visit.txt
-rm -f URLS-visited.txt
-rm -rf out/
-mkdir out
+rm -rf ${outputdir}/ && mkdir ${outputdir}
+echo $START_URL | sort |uniq > ${outputdir}/to-visit.txt
+
+# for information only
+echo ${BASE}${url} > ${outputdir}/url.txt
 
 LOOPS=0
-TRIEDONE=1
-while [ $TRIEDONE -eq 1 ]
+POTENTIALLY_GOT_MORE=1
+while [ $POTENTIALLY_GOT_MORE -eq 1 ]
 do
-    TRIEDONE=0
-    for url in $(cat URLS-to-visit.txt)
+    POTENTIALLY_GOT_MORE=0
+    for url in $(cat ${outputdir}/to-visit.txt)
     do
-        if grep -q "^${url}\$" URLS-visited.txt; then
+        if grep -q "^${url}\$" ${outputdir}/visited.txt ${outputdir}/errors.txt $skiplist; then
             continue
         fi
-        TRIEDONE=1
-        OUTFILE=out/$( echo -n ${url} | perl -p -e 's/[^a-zA-Z0-9]/_/g;' ).json
-        curl -H "$AUTH_HEADER" -s -L ${BASE}${url}  > $OUTFILE || continue
-        cat $OUTFILE | jq -r 'recurse (.[]?) | objects | select(has("@odata.id")) | .["@odata.id"]' >> URLS-to-visit.txt ||:
-        echo $url >> URLS-visited.txt
+        OUTFILE=${outputdir}/$( echo -n ${url} | perl -p -e 's/[^a-zA-Z0-9]/_/g;' ).json
+        if ! curl -f -H "$AUTH_HEADER" -s -L ${BASE}${url}  -o $OUTFILE ; then
+            echo $url >> ${outputdir}/errors.txt
+            continue
+        fi
+        cat $OUTFILE | jq -r 'recurse (.[]?) | objects | select(has("@odata.id")) | .["@odata.id"]' >> ${outputdir}/to-visit.txt ||:
+        POTENTIALLY_GOT_MORE=1
+        echo $url >> ${outputdir}/visited.txt
     done
-    cat URLS-to-visit.txt | sort | uniq > URLS-to-visit-new.txt
-    mv URLS-to-visit-new.txt URLS-to-visit.txt
-    cat URLS-visited.txt | sort | uniq > URLS-visited-new.txt
-    mv URLS-visited-new.txt  URLS-visited.txt
+    cat ${outputdir}/to-visit.txt | sort | uniq > ${outputdir}/to-visit-new.txt
+    mv ${outputdir}/to-visit-new.txt ${outputdir}/to-visit.txt
+    cat ${outputdir}/visited.txt | sort | uniq > ${outputdir}/visited-new.txt
+    mv ${outputdir}/visited-new.txt  ${outputdir}/visited.txt
     LOOPS=$(( LOOPS + 1 ))
 done
 
-time curl -H "$AUTH_HEADER" -s -L -w"\nTotal request time: %{time_total} seconds for url: %{url_effective}\n" $(cat URLS-visited.txt | perl -n -e "print '${BASE}' . \$_" ) | tee out/entire-tree.txt
+time curl -i -H "$AUTH_HEADER" -s -L -w"\nTotal request time: %{time_total} seconds for url: %{url_effective}\n" $(cat ${outputdir}/visited.txt | perl -n -e "print '${BASE}' . \$_" ) | tee ${outputdir}/entire-tree.txt
 
 echo "Took $LOOPS loops to collect the URL list"
