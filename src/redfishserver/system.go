@@ -24,9 +24,9 @@ type System struct {
 }
 
 func (rh *config) AddSystem(odata OdataTree, c *Collection) {
-    id := makeFullyQualifiedV1(rh, "Systems/TEST")
+	id := makeFullyQualifiedV1(rh, "Systems/TEST")
 	ret := &System{
-		Name:    "TEST",
+		Name: "TEST",
 	}
 
 	ret.OdataBase = NewOdataBase(
@@ -37,5 +37,5 @@ func (rh *config) AddSystem(odata OdataTree, c *Collection) {
 		ret,
 	)
 
-    c.Members = append(c.Members, map[string]interface{}{"@odata.id": id})
+	c.Members = append(c.Members, map[string]interface{}{"@odata.id": id})
 }

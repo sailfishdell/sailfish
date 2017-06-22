@@ -6,26 +6,16 @@ import (
 	"github.com/fatih/structs"
 
 	"fmt"
-	//"reflect"
 )
 
 var _ = fmt.Println
 var _ = json.Marshal
 
-/*
-   tree node
-       serialize(query/filter/select)
-       Add node pointer
-       delete node pointer
-*/
-
-type OdataTree map[string]interface{}
-
 type OdataTreeInt interface {
-	Serialize(context.Context) (map[string]interface{}, error)
 	AddNode(string, OdataTreeInt)
 	GetBase() OdataTreeInt
 	GetWrapper() interface{}
+	OdataSerializable
 }
 
 type OdataBase struct {
@@ -37,8 +27,8 @@ type OdataBase struct {
 	wrapper      interface{}
 }
 
-func NewOdataBase(id, context, otype string, t *OdataTree, w interface{}) *OdataBase {
-    (*t)[id] = w
+func NewOdataBase(id, context, otype string, t *OdataTree, w OdataSerializable) *OdataBase {
+	t.Set(id, w)
 	return &OdataBase{
 		OdataType:    otype,
 		OdataContext: context,
@@ -61,8 +51,7 @@ func (o *OdataBase) GetWrapper() interface{} {
 	return o.wrapper
 }
 
-func (o *OdataBase) Serialize(ctx context.Context) (map[string]interface{}, error) {
-	//fmt.Println("DEBUG: ", reflect.TypeOf(o.wrapper))
+func (o *OdataBase) OdataSerialize(ctx context.Context) (map[string]interface{}, error) {
 	m := structs.Map(o.wrapper)
 
 	rename := func(base, from, to string) {
@@ -97,12 +86,11 @@ type Collection struct {
 	*OdataBase
 }
 
-func (c *Collection) Serialize(ctx context.Context) (map[string]interface{}, error) {
-	m, err := c.OdataBase.Serialize(ctx)
+func (c *Collection) OdataSerialize(ctx context.Context) (map[string]interface{}, error) {
+	m, err := c.OdataBase.OdataSerialize(ctx)
 	m["Members@odata.count"] = len(c.Members)
 	return m, err
 }
-
 
 func (odata OdataTree) AddCollection(sr OdataTreeInt, nodeName, name, otype, id, ocontext string) *Collection {
 	ret := &Collection{

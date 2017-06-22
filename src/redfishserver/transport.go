@@ -30,8 +30,8 @@ func NewRedfishHandler(svc Service, baseURI string, verURI string, logger log.Lo
 		httptransport.ServerErrorEncoder(encodeError),
 	}
 
-	r.Handle(baseURI, http.RedirectHandler(baseURI + "/", 308))
-	r.Handle(baseURI + "/" + verURI, http.RedirectHandler(baseURI + "/" + verURI + "/", 308))
+	r.Handle(baseURI, http.RedirectHandler(baseURI+"/", 308))
+	r.Handle(baseURI+"/"+verURI, http.RedirectHandler(baseURI+"/"+verURI+"/", 308))
 
 	r.Methods("GET").PathPrefix(baseURI + "/").Handler(
 		httptransport.NewServer(
