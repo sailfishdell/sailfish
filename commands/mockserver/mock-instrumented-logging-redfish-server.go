@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"github.com/go-kit/kit/log"
 	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
 	"github.com/go-yaml/yaml"
@@ -12,13 +13,14 @@ import (
 	"net/http"
 	"net/http/fcgi"
 	"os"
+	"os/signal"
 	"strings"
 
 	"github.com/superchalupa/go-redfish/src/redfishserver"
 )
 
 type appConfig struct {
-	Listen       string `yaml:"listen"`
+	Listen []string `yaml:"listen"`
 }
 
 func loadConfig(filename string) (appConfig, error) {
@@ -36,20 +38,40 @@ func loadConfig(filename string) (appConfig, error) {
 	return config, nil
 }
 
+// Define a type named "strslice" as a slice of ints
+type strslice []string
+
+// Now, for our new type, implement the two methods of
+// the flag.Value interface...
+// The first method is String() string
+func (i *strslice) String() string {
+	return fmt.Sprintf("%v", *i)
+}
+
+// The second method is Set(value string) error
+func (i *strslice) Set(value string) error {
+	*i = append(*i, value)
+	return nil
+}
+
 func main() {
 	var (
-		configFile   = flag.String("config", "app.yaml", "Application configuration file")
-		listen       = flag.String("listen", ":8080", "HTTP listen address")
+		configFile  = flag.String("config", "app.yaml", "Application configuration file")
 		baseUri     = flag.String("redfish_base_uri", "/redfish", "http base uri")
+		listenAddrs strslice
 	)
+	flag.Var(&listenAddrs, "l", "Listen address.  Formats: (:nn, fcgi:ip:port, fcgi:/path)")
 	flag.Parse()
+
+	intr := make(chan os.Signal, 1)
+	signal.Notify(intr, os.Interrupt)
 
 	var logger log.Logger
 	logger = log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr))
 
 	cfg, _ := loadConfig(*configFile)
-	if len(*listen) > 0 {
-		cfg.Listen = *listen
+	if len(listenAddrs) > 0 {
+		cfg.Listen = listenAddrs
 	}
 
 	logger = log.With(logger, "listen", cfg.Listen, "caller", log.DefaultCaller)
@@ -83,37 +105,49 @@ func main() {
 	http.Handle("/", r)
 	http.Handle("/metrics", promhttp.Handler())
 
-	var listener net.Listener
-	var err error
-	switch {
-	case strings.HasPrefix(cfg.Listen, "fcgi:") && strings.Contains(strings.TrimPrefix(cfg.Listen, "fcgi:"), ":"):
-		addr := strings.TrimPrefix(cfg.Listen, "fcgi:")
-		logger.Log("msg", "FCGI mode activated with tcp listener: "+addr)
-		listener, err = net.Listen("tcp", addr)
+	for _, listen := range cfg.Listen {
+		var listener net.Listener
+		var err error
+		logger.Log("msg", "processing listen request for "+listen)
+		switch {
+		case strings.HasPrefix(listen, "fcgi:") && strings.Contains(strings.TrimPrefix(listen, "fcgi:"), ":"):
+			addr := strings.TrimPrefix(listen, "fcgi:")
+			logger.Log("msg", "FCGI mode activated with tcp listener: "+addr)
+			listener, err = net.Listen("tcp", addr)
 
-	case strings.HasPrefix(cfg.Listen, "fcgi:") && strings.Contains(strings.TrimPrefix(cfg.Listen, "fcgi:"), "/"):
-		path := strings.TrimPrefix(cfg.Listen, "fcgi:")
-		logger.Log("msg", "FCGI mode activated with unix socket listener: "+path)
-		listener, err = net.Listen("unix", path)
-		defer os.Remove(path)
+		case strings.HasPrefix(listen, "fcgi:") && strings.Contains(strings.TrimPrefix(listen, "fcgi:"), "/"):
+			path := strings.TrimPrefix(listen, "fcgi:")
+			logger.Log("msg", "FCGI mode activated with unix socket listener: "+path)
+			listener, err = net.Listen("unix", path)
+			defer os.Remove(path)
 
-	case strings.HasPrefix(cfg.Listen, "fcgi:"):
-		logger.Log("msg", "FCGI mode activated with stdin/stdout listener")
-		listener = nil
+		case strings.HasPrefix(listen, "fcgi:"):
+			logger.Log("msg", "FCGI mode activated with stdin/stdout listener")
+			listener = nil
 
-	default:
-		logger.Log("msg", "HTTP", "addr", cfg.Listen)
-		logger.Log("err", http.ListenAndServe(cfg.Listen, nil))
+		default:
+			go func(listen string) {
+				logger.Log("msg", "HTTP", "addr", listen)
+				logger.Log("err", http.ListenAndServe(listen, nil))
+			}(listen)
+		}
+
+		if strings.HasPrefix(listen, "fcgi:") {
+			if err != nil {
+				logger.Log("fatal", "Could not open listening connection", "err", err)
+				return
+			}
+			if listener != nil {
+				defer listener.Close()
+			}
+			go func(listener net.Listener) {
+				logger.Log("err", fcgi.Serve(listener, r))
+			}(listener)
+		}
 	}
 
-	if strings.HasPrefix(cfg.Listen, "fcgi:") {
-		if err != nil {
-			logger.Log("fatal", "Could not open listening connection", "err", err)
-			return
-		}
-		if listener != nil {
-			defer listener.Close()
-		}
-		logger.Log("err", fcgi.Serve(listener, r))
-	}
+	fmt.Printf("%v\n", listenAddrs)
+
+	<-intr
+
 }
