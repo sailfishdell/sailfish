@@ -2,19 +2,17 @@ package redfishserver
 
 import (
 	"context"
-	"encoding/json"
 	"github.com/fatih/structs"
-
-	"fmt"
 )
 
-var _ = fmt.Println
-var _ = json.Marshal
+type Wrapable interface {
+	GetWrapper() interface{}
+}
 
 type OdataTreeInt interface {
 	AddNode(string, OdataTreeInt)
 	GetBase() OdataTreeInt
-	GetWrapper() interface{}
+	Wrapable
 	OdataSerializable
 }
 
@@ -28,7 +26,7 @@ type OdataBase struct {
 }
 
 func NewOdataBase(id, context, otype string, t *OdataTree, w OdataSerializable) *OdataBase {
-	t.Set(id, w)
+	t.SetBody(id, w)
 	return &OdataBase{
 		OdataType:    otype,
 		OdataContext: context,

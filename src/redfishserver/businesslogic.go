@@ -25,7 +25,7 @@ func (rh *config) Startup() (done chan struct{}) {
 	//ingestStartupData(rh)
 
 	// add the top level redfish version pointer. This is always completely static
-	rh.odata.Set(rh.baseURI+"/", verRoot{v1: makeFullyQualifiedV1(rh, "")})
+	rh.odata.SetBody(rh.baseURI+"/", verRoot{v1: makeFullyQualifiedV1(rh, "")})
 
 	// Manually add the redfish structure, since the structure itself is always going to be completely static
 	serviceRoot := rh.NewServiceRoot(rh.odata)

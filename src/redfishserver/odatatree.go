@@ -8,8 +8,6 @@ import (
 /*
    tree node
        serialize(query/filter/select)
-       Add node pointer
-       delete node pointer
 */
 type OdataSerializable interface {
 	OdataSerialize(context.Context) (map[string]interface{}, error)
@@ -17,23 +15,37 @@ type OdataSerializable interface {
 
 //     map[ URI ] JSON DATA
 type OdataTree struct {
-	items map[string]OdataSerializable
+	bodies  map[string]OdataSerializable
+	headers map[string]OdataSerializable
 	sync.RWMutex
 }
 
 func NewOdataTree() OdataTree {
-	return OdataTree{items: make(map[string]OdataSerializable)}
+	return OdataTree{bodies: make(map[string]OdataSerializable)}
 }
 
-func (t OdataTree) Get(key string) (OdataSerializable, bool) {
+func (t OdataTree) GetBody(key string) (OdataSerializable, bool) {
 	t.RLock()
-	v, ok := t.items[key]
+	v, ok := t.bodies[key]
 	t.RUnlock()
 	return v, ok
 }
 
-func (t OdataTree) Set(key string, val OdataSerializable) {
+func (t OdataTree) SetBody(key string, val OdataSerializable) {
 	t.Lock()
-	t.items[key] = val
+	t.bodies[key] = val
+	t.Unlock()
+}
+
+func (t OdataTree) GetHeaders(key string) (OdataSerializable, bool) {
+	t.RLock()
+	v, ok := t.headers[key]
+	t.RUnlock()
+	return v, ok
+}
+
+func (t OdataTree) SetHeaders(key string, val OdataSerializable) {
+	t.Lock()
+	t.headers[key] = val
 	t.Unlock()
 }

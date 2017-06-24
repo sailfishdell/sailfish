@@ -38,7 +38,7 @@ func NewService(logger Logger, baseURI string) Service {
 
 func (rh *config) RawJSONRedfishGet(ctx context.Context, pathTemplate, url string, args map[string]string) (output interface{}, err error) {
 	noHashPath := strings.SplitN(url, "#", 2)[0]
-	r, ok := rh.odata.Get(noHashPath)
+	r, ok := rh.odata.GetBody(noHashPath)
 	if !ok {
 		return nil, ErrNotFound
 	}
