@@ -76,8 +76,7 @@ func main() {
 
 	logger = log.With(logger, "listen", cfg.Listen, "caller", log.DefaultCaller)
 
-	var svc redfishserver.Service
-	svc = redfishserver.NewService(logger, *baseUri)
+	svc := redfishserver.NewService(logger, *baseUri)
 	svc = redfishserver.NewLoggingService(logger, svc)
 
 	fieldKeys := []string{"method", "URL"}
@@ -110,26 +109,33 @@ func main() {
 		var err error
 		logger.Log("msg", "processing listen request for "+listen)
 		switch {
+        // FCGI listener on a TCP socket (usually should be specified as 127.0.0.1 for security)  fcgi:127.0.0.1:4040
 		case strings.HasPrefix(listen, "fcgi:") && strings.Contains(strings.TrimPrefix(listen, "fcgi:"), ":"):
 			addr := strings.TrimPrefix(listen, "fcgi:")
 			logger.Log("msg", "FCGI mode activated with tcp listener: "+addr)
 			listener, err = net.Listen("tcp", addr)
 
+        // FCGI listener on unix domain socket, specified as a path fcgi:/run/fcgi.sock
 		case strings.HasPrefix(listen, "fcgi:") && strings.Contains(strings.TrimPrefix(listen, "fcgi:"), "/"):
 			path := strings.TrimPrefix(listen, "fcgi:")
 			logger.Log("msg", "FCGI mode activated with unix socket listener: "+path)
 			listener, err = net.Listen("unix", path)
 			defer os.Remove(path)
 
+        // FCGI listener using stdin/stdout  fcgi:
 		case strings.HasPrefix(listen, "fcgi:"):
 			logger.Log("msg", "FCGI mode activated with stdin/stdout listener")
 			listener = nil
 
-		default:
+        // HTTP protocol listener
+		case strings.HasPrefix(listen, "http:"):
+			addr := strings.TrimPrefix(listen, "http:")
 			go func(listen string) {
-				logger.Log("msg", "HTTP", "addr", listen)
-				logger.Log("err", http.ListenAndServe(listen, nil))
+				logger.Log("msg", "HTTP", "addr", addr)
+				logger.Log("err", http.ListenAndServe(addr, nil))
 			}(listen)
+            // next listener, no need to do if() stuff below
+            continue
 		}
 
 		if strings.HasPrefix(listen, "fcgi:") {
