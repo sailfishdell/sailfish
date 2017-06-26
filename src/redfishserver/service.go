@@ -17,7 +17,6 @@ type ServiceMiddleware func(Service) Service
 
 // Config is where we store the current service data
 type config struct {
-	logger  Logger
 	baseURI string
 	verURI  string
 
@@ -31,8 +30,8 @@ var (
 )
 
 // NewService is how we initialize the business logic
-func NewService(logger Logger, baseURI string) Service {
-	cfg := config{logger: logger, baseURI: baseURI, verURI: "v1", odata: NewOdataTree()}
+func NewService(baseURI string) Service {
+	cfg := config{baseURI: baseURI, verURI: "v1", odata: NewOdataTree()}
 	return &cfg
 }
 
