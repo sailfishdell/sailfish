@@ -74,9 +74,9 @@ func main() {
 		cfg.Listen = listenAddrs
 	}
 
-	logger = log.With(logger, "listen", cfg.Listen, "caller", log.DefaultCaller)
+	logger = log.With(logger, "caller", log.DefaultCaller)
 
-	svc := redfishserver.NewService(logger, *baseUri)
+	svc := redfishserver.NewService(*baseUri)
 	svc = redfishserver.NewLoggingService(logger, svc)
 
 	fieldKeys := []string{"method", "URL"}
@@ -104,6 +104,8 @@ func main() {
 	http.Handle("/", r)
 	http.Handle("/metrics", promhttp.Handler())
 
+    servers := []*http.Server{}
+
 	for _, listen := range cfg.Listen {
 		var listener net.Listener
 		var err error
@@ -130,12 +132,29 @@ func main() {
         // HTTP protocol listener
 		case strings.HasPrefix(listen, "http:"):
 			addr := strings.TrimPrefix(listen, "http:")
+			logger.Log("msg", "HTTP listener starting on " + addr)
+            srv := &http.Server{Addr: addr}
+            servers = append(servers, srv)
 			go func(listen string) {
-				logger.Log("msg", "HTTP", "addr", addr)
-				logger.Log("err", http.ListenAndServe(addr, nil))
+				logger.Log("err", srv.ListenAndServe())
 			}(listen)
             // next listener, no need to do if() stuff below
             continue
+
+        // HTTPS protocol listener
+		case strings.HasPrefix(listen, "https:"):
+            // "https:[addr]:port,certfile,keyfile
+			addr := strings.TrimPrefix(listen, "https:")
+            details := strings.SplitN(addr, ",", 3)
+			logger.Log("msg", "HTTPS listener starting on " + details[0], "certfile", details[1], "keyfile", details[2])
+            srv := &http.Server{Addr: details[0]}
+            servers = append(servers, srv)
+			go func(listen string) {
+				logger.Log("err", srv.ListenAndServeTLS(details[1], details[2]))
+			}(listen)
+            // next listener, no need to do if() stuff below
+            continue
+
 		}
 
 		if strings.HasPrefix(listen, "fcgi:") {
@@ -155,5 +174,14 @@ func main() {
 	fmt.Printf("%v\n", listenAddrs)
 
 	<-intr
+	fmt.Printf("interrupted\n")
 
+    for _,srv := range(servers) {
+        logger.Log("msg", "shutting down listener: " + srv.Addr)
+        if err := srv.Shutdown(nil); err != nil {
+            logger.Log("server_error", err)
+        }
+    }
+
+	fmt.Printf("Bye!\n")
 }
