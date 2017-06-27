@@ -13,6 +13,7 @@ type Event interface {
 
 type EventStore interface {
 	GetEventsForGUID(guid guid) chan Event
+	AddEvents(newEvents []Event) error
 }
 
 type MemEventStore struct {

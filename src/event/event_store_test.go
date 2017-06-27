@@ -7,13 +7,8 @@ import (
 
 var _ = assert.Equal
 
-type MyEvent struct {
-	withGUID
-	withSequence
-}
-
 func TestEventStoreAdd(t *testing.T) {
-	testEvent := &MyEvent{withGUID: withGUID{GUID: guid("happy")}}
+	testEvent := &myEvent{withGUID: withGUID{GUID: guid("happy")}}
 	m := NewMemEventStore()
 	defer m.Shutdown()
 	m.AddEvents([]Event{testEvent})
@@ -33,11 +28,11 @@ func TestEventStoreAdd(t *testing.T) {
 }
 
 func TestEventStoreAddMultiple(t *testing.T) {
-	testEvent1 := &MyEvent{withGUID: withGUID{guid("happy")}}
-	testEvent2 := &MyEvent{withGUID: withGUID{guid("joy")}}
+	testEvent1 := &myEvent{withGUID: withGUID{guid("happy")}}
+	testEvent2 := &myEvent{withGUID: withGUID{guid("joy")}}
 	// test adding two events... negati
-	testEvent3 := &MyEvent{withGUID: withGUID{guid("dup")}}
-	testEvent4 := &MyEvent{
+	testEvent3 := &myEvent{withGUID: withGUID{guid("dup")}}
+	testEvent4 := &myEvent{
 		withGUID:     withGUID{guid("dup")},
 		withSequence: withSequence{1},
 	}
@@ -69,8 +64,8 @@ func TestEventStoreAddMultiple(t *testing.T) {
 
 func TestEventStoreAddMultipleWrongSeq(t *testing.T) {
 	// test adding two events with incorrect sequence
-	testEvent1 := &MyEvent{withGUID: withGUID{GUID: guid("dup")}}
-	testEvent2 := &MyEvent{withGUID: withGUID{GUID: guid("dup")}}
+	testEvent1 := &myEvent{withGUID: withGUID{GUID: guid("dup")}}
+	testEvent2 := &myEvent{withGUID: withGUID{GUID: guid("dup")}}
 	m := NewMemEventStore()
 	defer m.Shutdown()
 	m.AddEvents([]Event{testEvent1, testEvent2})
