@@ -82,7 +82,6 @@ func (rh *config) startup() {
             "Name": "Root Service",
             "RedfishVersion": "v1_0_2",
             "Systems": map[string]interface{}{"@odata.id": "/redfish/v1/Systems"},
-            "AccountService": map[string]interface{}{ "@odata.id": "/redfish/v1/Managers/CMC.Integrated.1/AccountService" },
             "Chassis": map[string]interface{}{ "@odata.id": "/redfish/v1/Chassis" },
             "EventService": map[string]interface{}{ "@odata.id": "/redfish/v1/EventService" },
             "JsonSchemas": map[string]interface{}{ "@odata.id": "/redfish/v1/JSONSchemas" },
@@ -94,6 +93,7 @@ func (rh *config) startup() {
             "Links": map[string]interface{}{
                 "Sessions": map[string]interface{}{ "@odata.id": "/redfish/v1/Sessions" },
             },
+            "AccountService": map[string]interface{}{ "@odata.id": "/redfish/v1/Managers/CMC.Integrated.1/AccountService" },
         })
     rh.createTreeCollectionLeaf(ctx, "/redfish/v1/Systems", map[string]interface{}{})
     rh.createTreeCollectionLeaf(ctx, "/redfish/v1/Chassis", map[string]interface{}{})
@@ -135,6 +135,9 @@ func (rh *config) startup() {
                 "Alert",
             },
         })
+    rh.createTreeCollectionLeaf(ctx, "/redfish/v1/JSONSchemas", map[string]interface{}{})
+    rh.createTreeCollectionLeaf(ctx, "/redfish/v1/Managers", map[string]interface{}{})
+    rh.createTreeCollectionLeaf(ctx, "/redfish/v1/Registries", map[string]interface{}{})
 }
 
 func (rh *config) createTreeLeaf(ctx context.Context, uri string, Properties map[string]interface{} ){
