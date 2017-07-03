@@ -169,6 +169,7 @@ func (c CreateOdataCollection) Handle(ctx context.Context, a *OdataAggregate) er
 
 	a.StoreEvent(OdataCreatedEvent,
 		&OdataCreatedData{
+            UUID:   c.UUID,
 			OdataURI:   c.OdataURI,
 			Properties: np,
 		},
