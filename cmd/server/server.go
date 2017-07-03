@@ -15,6 +15,7 @@ import (
 	"os"
 	"os/signal"
 	"strings"
+    "context"
 
 	eh "github.com/superchalupa/eventhorizon"
 	commandbus "github.com/superchalupa/eventhorizon/commandbus/local"
@@ -213,12 +214,28 @@ func main() {
 	<-intr
 	fmt.Printf("interrupted\n")
 
+    type Shutdowner interface {
+        Shutdown(context.Context) error
+    }
+
     for _,srv := range(servers) {
-        logger.Log("msg", "shutting down listener: " + srv.Addr)
-        if err := srv.Shutdown(nil); err != nil {
-            logger.Log("server_error", err)
-        }
+        // go 1.7 doesn't have Shutdown method on http server, so optionally cast
+        // the interface to see if it exists, then call it, if possible Can
+        // only do this with interfaces not concrete structs, so define a func
+        // taking needed interface and call it.
+        func (srv interface{}, addr string) {
+            fmt.Println("msg", "shutting down listener: " + addr)
+            if s, ok := srv.(Shutdowner); ok {
+                logger.Log("msg", "shutting down listener: " + addr)
+                if err := s.Shutdown(nil); err != nil {
+                    fmt.Println("server_error", err)
+                } else {
+                    fmt.Println("msg", "can't cleanly shutdown listener, it will ungracefully end: " + addr)
+                }
+            }
+        }(srv, srv.Addr)
     }
 
 	fmt.Printf("Bye!\n")
 }
+
