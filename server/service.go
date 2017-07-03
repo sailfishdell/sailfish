@@ -72,8 +72,69 @@ func (rh *config) RawJSONRedfishGet(ctx context.Context, pathTemplate, url strin
 func (rh *config) startup() {
     ctx := context.Background()
     rh.createTreeLeaf(ctx, "/redfish/", map[string]interface{}{"v1": "/redfish/v1/"})
-    rh.createTreeLeaf(ctx, "/redfish/v1/", map[string]interface{}{"Systems": "/redfish/v1/Systems"})
-    rh.createTreeCollectionLeaf(ctx, "/redfish/v1/Systems", map[string]interface{}{"Systems": "/redfish/v1/Systems"})
+    rh.createTreeLeaf(ctx, "/redfish/v1/",
+        map[string]interface{}{
+            "@odata.context": "/redfish/v1/$metadata#ServiceRoot",
+            "@odata.id": "/redfish/v1",
+            "@odata.type": "#ServiceRoot.v1_0_2.ServiceRoot",
+            "Description": "Root Service",
+            "Id": "RootService",
+            "Name": "Root Service",
+            "RedfishVersion": "v1_0_2",
+            "Systems": map[string]interface{}{"@odata.id": "/redfish/v1/Systems"},
+            "AccountService": map[string]interface{}{ "@odata.id": "/redfish/v1/Managers/CMC.Integrated.1/AccountService" },
+            "Chassis": map[string]interface{}{ "@odata.id": "/redfish/v1/Chassis" },
+            "EventService": map[string]interface{}{ "@odata.id": "/redfish/v1/EventService" },
+            "JsonSchemas": map[string]interface{}{ "@odata.id": "/redfish/v1/JSONSchemas" },
+            "Managers": map[string]interface{}{ "@odata.id": "/redfish/v1/Managers" },
+            "Registries": map[string]interface{}{ "@odata.id": "/redfish/v1/Registries" },
+            "SessionService": map[string]interface{}{ "@odata.id": "/redfish/v1/SessionService" },
+            "Tasks": map[string]interface{}{ "@odata.id": "/redfish/v1/TaskService" },
+            "UpdateService": map[string]interface{}{ "@odata.id": "/redfish/v1/UpdateService" },
+            "Links": map[string]interface{}{
+                "Sessions": map[string]interface{}{ "@odata.id": "/redfish/v1/Sessions" },
+            },
+        })
+    rh.createTreeCollectionLeaf(ctx, "/redfish/v1/Systems", map[string]interface{}{})
+    rh.createTreeCollectionLeaf(ctx, "/redfish/v1/Chassis", map[string]interface{}{})
+    rh.createTreeLeaf(ctx, "/redfish/v1/EventService",
+        map[string]interface{}{
+            "@odata.context": "/redfish/v1/$metadata#EventService",
+            "@odata.id": "/redfish/v1/EventService",
+            "@odata.type": "#EventService.v1_0_2.EventService",
+            "EventTypesForSubscription@odata.count": 5,
+            "Id": "EventService",
+            "Name": "Event Service",
+            "DeliveryRetryAttempts": 3,
+            "DeliveryRetryIntervalSeconds": 30,
+            "Description": "Event Service represents the properties for the service",
+            "Subscriptions": map[string]interface{}{ "@odata.id": "/redfish/v1/EventService/Subscriptions" },
+            "Status": map[string]interface{}{
+                "Health": "Ok",
+                "HealthRollup": "Ok",
+            },
+
+            "Actions": map[string]interface{}{
+                "#EventService.SubmitTestEvent": map[string]interface{}{
+                    "EventType@Redfish.AllowableValues": []string{
+                        "StatusChange",
+                        "ResourceUpdated",
+                        "ResourceAdded",
+                        "ResourceRemoved",
+                        "Alert",
+                    },
+                    "target": "/redfish/v1/EventService/Actions/EventService.SubmitTestEvent",
+                },
+            },
+
+            "EventTypesForSubscription": []string{
+                "StatusChange",
+                "ResourceUpdated",
+                "ResourceAdded",
+                "ResourceRemoved",
+                "Alert",
+            },
+        })
 }
 
 func (rh *config) createTreeLeaf(ctx context.Context, uri string, Properties map[string]interface{} ){
