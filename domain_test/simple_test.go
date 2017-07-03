@@ -101,28 +101,34 @@ func TestExample(t *testing.T) {
 	if err != nil {
 		fmt.Printf("could not find tree: %s\n", err.Error())
 	}
-	_, ok = rootRaw.(domain.OdataAggregate)
+	root, ok := rootRaw.(*domain.OdataItem)
+    fmt.Printf("\t(%s)--> %#v\n", ok, root)
+
+
 
 	fmt.Printf("/foo: %#v\n", tree.Tree["/foo"])
 	fooRaw, err := odataRepo.Find(ctx, tree.Tree["/foo"])
 	if err != nil {
 		fmt.Printf("could not find tree: %s\n", err.Error())
 	}
-	_, ok = fooRaw.(domain.OdataAggregate)
+	root, ok = fooRaw.(*domain.OdataItem)
+    fmt.Printf("\t(%s)--> %#v\n", ok, root)
 
 	fmt.Printf("/bar: %#v\n", tree.Tree["/bar"])
 	barRaw, err := odataRepo.Find(ctx, tree.Tree["/bar"])
 	if err != nil {
 		fmt.Printf("could not find tree: %s\n", err.Error())
 	}
-	_, ok = barRaw.(domain.OdataAggregate)
+	root, ok = barRaw.(*domain.OdataItem)
+    fmt.Printf("\t(%s)--> %#v\n", ok, root)
 
 	fmt.Printf("/baz: %#v\n", tree.Tree["/baz"])
 	bazRaw, err := odataRepo.Find(ctx, tree.Tree["/baz"])
 	if err != nil {
 		fmt.Printf("could not find tree: %s\n", err.Error())
 	}
-	_, ok = bazRaw.(domain.OdataAggregate)
+	root, ok = bazRaw.(*domain.OdataItem)
+    fmt.Printf("\t(%s)--> %#v\n", ok, root)
 
 	/*
 

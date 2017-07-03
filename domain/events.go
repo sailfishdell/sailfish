@@ -23,8 +23,8 @@ func init() {
 }
 
 type OdataCreatedData struct {
-	OdataURI   string
 	UUID       eh.UUID
+	OdataURI   string
 	Properties map[string]interface{}
 }
 
