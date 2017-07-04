@@ -35,7 +35,7 @@ func NewRedfishHandler(svc Service, baseURI string, verURI string, logger log.Lo
 
 	r.Methods("GET").PathPrefix(baseURI + "/").Handler(
 		httptransport.NewServer(
-			makeRawJSONRedfishGetEndpoint(svc),
+			makeOdataGetEndpoint(svc),
 			decodeRedfishGetRequest,
 			encodeResponse,
 			options...,
@@ -73,16 +73,13 @@ func decodeRedfishGetRequest(_ context.Context, r *http.Request) (dec interface{
 	}
 
 	headers := make(map[string]string)
-	if ver := r.Header.Get("OData-Version"); ver != "" {
-		headers["OData-Version"] = ver
-	}
+    for _, hn := range( []string{ "Odata-Version", "Authentication", "X-Auth-Token" } ) {
+	    if h := r.Header.Get(hn); h != "" {
+            headers[hn] = h
+        }
+    }
 
-	route := mux.CurrentRoute(r)
-	pathTemplate, rerr := route.GetPathTemplate()
-	if rerr != nil {
-		pathTemplate, rerr = route.GetPathRegexp()
-	}
-	dec = templatedRedfishGetRequest{url: r.URL.Path, args: mux.Vars(r), pathTemplate: pathTemplate}
+	dec = odataResourceGetRequest{headers: headers, url: r.URL.Path, args: mux.Vars(r), privileges: []string{}}
 	return dec, nil
 }
 
@@ -110,7 +107,7 @@ func encodeResponse(ctx context.Context, w http.ResponseWriter, response interfa
 		return nil
 	}
 
-	decoded := response.(templatedRedfishGetResponse)
+	decoded := response.(odataResourceGetResponse)
 
 	switch output := decoded.output.(type) {
 	case []byte:

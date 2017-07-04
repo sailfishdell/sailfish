@@ -141,6 +141,8 @@ func main() {
 		svc,
 	)
 
+	//svc = redfishserver.AddAuthFromBasic()
+
 	r := redfishserver.NewRedfishHandler(svc, *baseUri, "v1", logger)
 
 	http.Handle("/", r)

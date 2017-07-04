@@ -22,10 +22,10 @@ func NewInstrumentingService(counter metrics.Counter, latency metrics.Histogram,
 	}
 }
 
-func (s *instrumentingService) RawJSONRedfishGet(ctx context.Context, templatePath, url string, args map[string]string) (interface{}, error) {
+func (s *instrumentingService) GetOdataResource(ctx context.Context, url string, args map[string]string, privileges []string) (interface{}, error) {
 	defer func(begin time.Time) {
 		s.requestCount.With("URL", url, "method", "GET").Add(1)
 		s.requestLatency.With("URL", url, "method", "GET").Observe(time.Since(begin).Seconds())
 	}(time.Now())
-	return s.Service.RawJSONRedfishGet(ctx, templatePath, url, args)
+	return s.Service.GetOdataResource(ctx, url, args, privileges)
 }

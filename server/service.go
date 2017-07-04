@@ -15,7 +15,7 @@ import (
 
 // Service is the business logic for a redfish server
 type Service interface {
-	RawJSONRedfishGet(ctx context.Context, pathTemplate, url string, args map[string]string) (interface{}, error)
+	GetOdataResource(ctx context.Context, url string, args map[string]string, privileges []string) (interface{}, error)
 }
 
 // ServiceMiddleware is a chainable behavior modifier for Service.
@@ -46,7 +46,7 @@ func NewService(baseURI string, commandbus *commandbus.CommandBus, repo *repo.Re
 	return &cfg
 }
 
-func (rh *config) RawJSONRedfishGet(ctx context.Context, pathTemplate, url string, args map[string]string) (output interface{}, err error) {
+func (rh *config) GetOdataResource(ctx context.Context, url string, args map[string]string, privileges []string) (output interface{}, err error) {
 	noHashPath := strings.SplitN(url, "#", 2)[0]
 
 	rawTree, err := rh.odataRepo.Find(ctx, rh.treeID)
@@ -93,7 +93,7 @@ func (rh *config) startup() {
 			"Links": map[string]interface{}{
 				"Sessions": map[string]interface{}{"@odata.id": "/redfish/v1/Sessions"},
 			},
-			"AccountService": map[string]interface{}{"@odata.id": "/redfish/v1/Managers/CMC.Integrated.1/AccountService"},
+			"AccountService": map[string]interface{}{"@odata.id": "/redfish/v1/AccountService"},
 		})
 	rh.createTreeCollectionLeaf(ctx, "/redfish/v1/Systems", map[string]interface{}{})
 	rh.createTreeCollectionLeaf(ctx, "/redfish/v1/Chassis", map[string]interface{}{})
@@ -138,6 +138,28 @@ func (rh *config) startup() {
 	rh.createTreeCollectionLeaf(ctx, "/redfish/v1/JSONSchemas", map[string]interface{}{})
 	rh.createTreeCollectionLeaf(ctx, "/redfish/v1/Managers", map[string]interface{}{})
 	rh.createTreeCollectionLeaf(ctx, "/redfish/v1/Registries", map[string]interface{}{})
+	rh.createTreeLeaf(ctx, "/redfish/v1/AccountService",
+		map[string]interface{}{
+            "@odata.type": "#AccountService.v1_0_2.AccountService",
+            "Id": "AccountService",
+            "Name": "Account Service",
+            "Description": "Account Service",
+            "Status": map[string]interface{}{
+                "State": "Enabled",
+                "Health": "OK",
+            },
+        "ServiceEnabled": true,
+        "AuthFailureLoggingThreshold": 3,
+        "MinPasswordLength": 8,
+        "AccountLockoutThreshold": 5,
+        "AccountLockoutDuration": 30,
+        "AccountLockoutCounterResetAfter": 30,
+        "Accounts": map[string]interface{}{ "@odata.id": "/redfish/v1/AccountService/Accounts" },
+        "Roles": map[string]interface{}{ "@odata.id": "/redfish/v1/AccountService/Roles" },
+        "@odata.context": "/redfish/v1/$metadata#AccountService",
+        "@odata.id": "/redfish/v1/AccountService",
+        "@Redfish.Copyright": "Copyright 2014-2016 Distributed Management Task Force, Inc. (DMTF). For the full DMTF copyright policy, see http://www.dmtf.org/about/policies/copyright.",
+		})
 }
 
 func (rh *config) createTreeLeaf(ctx context.Context, uri string, Properties map[string]interface{}) {

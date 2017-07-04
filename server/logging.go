@@ -49,7 +49,7 @@ func NewLoggingService(logger Logger, s Service) Service {
 	return &loggingService{logger, s}
 }
 
-func (s *loggingService) RawJSONRedfishGet(ctx context.Context, pathTemplate, url string, args map[string]string) (ret interface{}, err error) {
+func (s *loggingService) GetOdataResource(ctx context.Context, url string, args map[string]string, privileges []string) (ret interface{}, err error) {
 	ctxlogger := log.With(s.logger, "method", "GET", "URL", url, "UUID", uuid.New())
 
 	thislogger := ctxlogger
@@ -61,10 +61,9 @@ func (s *loggingService) RawJSONRedfishGet(ctx context.Context, pathTemplate, ur
 		_ = thislogger.Log(
 			"method", "GET",
 			"URL", url,
-			"PathTemplate", pathTemplate,
 			"business_logic_time", time.Since(begin),
 			"err", err,
 		)
 	}(time.Now())
-	return s.Service.RawJSONRedfishGet(WithLogger(ctx, ctxlogger), pathTemplate, url, args)
+	return s.Service.GetOdataResource(WithLogger(ctx, ctxlogger), url, args, privileges)
 }
