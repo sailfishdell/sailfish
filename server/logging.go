@@ -2,9 +2,9 @@ package redfishserver
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"time"
-    "fmt"
 
 	"github.com/go-kit/kit/log"
 	"github.com/google/uuid"

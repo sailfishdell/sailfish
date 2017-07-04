@@ -2,12 +2,11 @@ package redfishserver
 
 import (
 	"context"
-    "fmt"
+	"fmt"
 	eh "github.com/superchalupa/eventhorizon"
 	commandbus "github.com/superchalupa/eventhorizon/commandbus/local"
 	repo "github.com/superchalupa/eventhorizon/repo/memory"
 )
-
 
 type basicAuthService struct {
 	Service
@@ -32,19 +31,19 @@ func NewBasicAuthService(s Service, commandbus *commandbus.CommandBus, repo *rep
 }
 
 func (s *basicAuthService) GetOdataResource(ctx context.Context, headers map[string]string, url string, args map[string]string, privileges []string) (ret interface{}, err error) {
-    // the only thing we do in this service is look up the username/password and verify, then look up role, then assign privileges based on role
-    var user, pass string
-    var ok bool
-    user, ok = headers["BASIC_user"]
-    if !ok {
-        goto out
-    }
-    pass, ok = headers["BASIC_pass"]
-    if !ok {
-        goto out
-    }
-    fmt.Printf("HEY! Got a really basic user: %s\n", user)
-    fmt.Printf("HEY! Got a really basic pass: %s\n", pass)
+	// the only thing we do in this service is look up the username/password and verify, then look up role, then assign privileges based on role
+	var user, pass string
+	var ok bool
+	user, ok = headers["BASIC_user"]
+	if !ok {
+		goto out
+	}
+	pass, ok = headers["BASIC_pass"]
+	if !ok {
+		goto out
+	}
+	fmt.Printf("HEY! Got a really basic user: %s\n", user)
+	fmt.Printf("HEY! Got a really basic pass: %s\n", pass)
 
 out:
 	return s.Service.GetOdataResource(ctx, headers, url, args, privileges)

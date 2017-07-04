@@ -17,10 +17,10 @@ func makeOdataGetEndpoint(s Service) endpoint.Endpoint {
 }
 
 type odataResourceGetRequest struct {
-	headers      map[string]string
-	url          string
-	args         map[string]string
-	privileges   []string
+	headers    map[string]string
+	url        string
+	args       map[string]string
+	privileges []string
 }
 
 type odataResourceGetResponse struct {
