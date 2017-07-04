@@ -1,8 +1,12 @@
 package main
 
 import (
+	"context"
+	"crypto/rand"
+	"crypto/rsa"
 	"flag"
 	"fmt"
+	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/go-kit/kit/log"
 	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
 	"github.com/go-yaml/yaml"
@@ -15,7 +19,7 @@ import (
 	"os"
 	"os/signal"
 	"strings"
-    "context"
+	"time"
 
 	eh "github.com/superchalupa/eventhorizon"
 	commandbus "github.com/superchalupa/eventhorizon/commandbus/local"
@@ -24,8 +28,8 @@ import (
 	eventpublisher "github.com/superchalupa/eventhorizon/publisher/local"
 	repo "github.com/superchalupa/eventhorizon/repo/memory"
 
-	redfishserver "github.com/superchalupa/go-rfs/server"
 	"github.com/superchalupa/go-rfs/domain"
+	redfishserver "github.com/superchalupa/go-rfs/server"
 )
 
 type appConfig struct {
@@ -83,9 +87,9 @@ func main() {
 		cfg.Listen = listenAddrs
 	}
 
-    ///
-    // setup DDD stuff
-    ///
+	///
+	// setup DDD stuff
+	///
 
 	// Create the event store.
 	eventStore := eventstore.NewEventStore()
@@ -111,9 +115,9 @@ func main() {
 		odataRepo,
 		treeID,
 	)
-    //
-    // Done with DDD
-    //
+	//
+	// Done with DDD
+	//
 
 	logger = log.With(logger, "caller", log.DefaultCaller)
 
@@ -142,56 +146,56 @@ func main() {
 	http.Handle("/", r)
 	http.Handle("/metrics", promhttp.Handler())
 
-    servers := []*http.Server{}
+	servers := []*http.Server{}
 
 	for _, listen := range cfg.Listen {
 		var listener net.Listener
 		var err error
 		logger.Log("msg", "processing listen request for "+listen)
 		switch {
-        // FCGI listener on a TCP socket (usually should be specified as 127.0.0.1 for security)  fcgi:127.0.0.1:4040
+		// FCGI listener on a TCP socket (usually should be specified as 127.0.0.1 for security)  fcgi:127.0.0.1:4040
 		case strings.HasPrefix(listen, "fcgi:") && strings.Contains(strings.TrimPrefix(listen, "fcgi:"), ":"):
 			addr := strings.TrimPrefix(listen, "fcgi:")
 			logger.Log("msg", "FCGI mode activated with tcp listener: "+addr)
 			listener, err = net.Listen("tcp", addr)
 
-        // FCGI listener on unix domain socket, specified as a path fcgi:/run/fcgi.sock
+			// FCGI listener on unix domain socket, specified as a path fcgi:/run/fcgi.sock
 		case strings.HasPrefix(listen, "fcgi:") && strings.Contains(strings.TrimPrefix(listen, "fcgi:"), "/"):
 			path := strings.TrimPrefix(listen, "fcgi:")
 			logger.Log("msg", "FCGI mode activated with unix socket listener: "+path)
 			listener, err = net.Listen("unix", path)
 			defer os.Remove(path)
 
-        // FCGI listener using stdin/stdout  fcgi:
+			// FCGI listener using stdin/stdout  fcgi:
 		case strings.HasPrefix(listen, "fcgi:"):
 			logger.Log("msg", "FCGI mode activated with stdin/stdout listener")
 			listener = nil
 
-        // HTTP protocol listener
+			// HTTP protocol listener
 		case strings.HasPrefix(listen, "http:"):
 			addr := strings.TrimPrefix(listen, "http:")
-			logger.Log("msg", "HTTP listener starting on " + addr)
-            srv := &http.Server{Addr: addr}
-            servers = append(servers, srv)
+			logger.Log("msg", "HTTP listener starting on "+addr)
+			srv := &http.Server{Addr: addr}
+			servers = append(servers, srv)
 			go func(listen string) {
 				logger.Log("err", srv.ListenAndServe())
 			}(listen)
-            // next listener, no need to do if() stuff below
-            continue
+			// next listener, no need to do if() stuff below
+			continue
 
-        // HTTPS protocol listener
+			// HTTPS protocol listener
 		case strings.HasPrefix(listen, "https:"):
-            // "https:[addr]:port,certfile,keyfile
+			// "https:[addr]:port,certfile,keyfile
 			addr := strings.TrimPrefix(listen, "https:")
-            details := strings.SplitN(addr, ",", 3)
-			logger.Log("msg", "HTTPS listener starting on " + details[0], "certfile", details[1], "keyfile", details[2])
-            srv := &http.Server{Addr: details[0]}
-            servers = append(servers, srv)
+			details := strings.SplitN(addr, ",", 3)
+			logger.Log("msg", "HTTPS listener starting on "+details[0], "certfile", details[1], "keyfile", details[2])
+			srv := &http.Server{Addr: details[0]}
+			servers = append(servers, srv)
 			go func(listen string) {
 				logger.Log("err", srv.ListenAndServeTLS(details[1], details[2]))
 			}(listen)
-            // next listener, no need to do if() stuff below
-            continue
+			// next listener, no need to do if() stuff below
+			continue
 
 		}
 
@@ -214,28 +218,59 @@ func main() {
 	<-intr
 	fmt.Printf("interrupted\n")
 
-    type Shutdowner interface {
-        Shutdown(context.Context) error
-    }
+	type Shutdowner interface {
+		Shutdown(context.Context) error
+	}
 
-    for _,srv := range(servers) {
-        // go 1.7 doesn't have Shutdown method on http server, so optionally cast
-        // the interface to see if it exists, then call it, if possible Can
-        // only do this with interfaces not concrete structs, so define a func
-        // taking needed interface and call it.
-        func (srv interface{}, addr string) {
-            fmt.Println("msg", "shutting down listener: " + addr)
-            if s, ok := srv.(Shutdowner); ok {
-                logger.Log("msg", "shutting down listener: " + addr)
-                if err := s.Shutdown(nil); err != nil {
-                    fmt.Println("server_error", err)
-                } else {
-                    fmt.Println("msg", "can't cleanly shutdown listener, it will ungracefully end: " + addr)
-                }
-            }
-        }(srv, srv.Addr)
-    }
+	for _, srv := range servers {
+		// go 1.7 doesn't have Shutdown method on http server, so optionally cast
+		// the interface to see if it exists, then call it, if possible Can
+		// only do this with interfaces not concrete structs, so define a func
+		// taking needed interface and call it.
+		func(srv interface{}, addr string) {
+			fmt.Println("msg", "shutting down listener: "+addr)
+			if s, ok := srv.(Shutdowner); ok {
+				logger.Log("msg", "shutting down listener: "+addr)
+				if err := s.Shutdown(nil); err != nil {
+					fmt.Println("server_error", err)
+				}
+			} else {
+				fmt.Println("msg", "can't cleanly shutdown listener, it will ungracefully end: "+addr)
+			}
+		}(srv, srv.Addr)
+	}
 
 	fmt.Printf("Bye!\n")
 }
 
+func genkeys() (pubkey rsa.PublicKey, privkey *rsa.PrivateKey, err error) {
+	reader := rand.Reader
+	bitSize := 2048
+	key, err := rsa.GenerateKey(reader, bitSize)
+	if err != nil {
+		return
+	}
+
+	pubkey = key.PublicKey
+	privkey = key
+	err = nil
+	return
+}
+
+func genToken() string {
+	// Create a new token object, specifying signing method and the claims
+	// you would like it to contain.
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"foo": "bar",
+		"nbf": time.Date(2015, 10, 10, 12, 0, 0, 0, time.UTC).Unix(),
+	})
+
+	// Sign and get the complete encoded token as a string using the secret
+	hmacSampleSecret := []byte("super secret")
+	tokenString, err := token.SignedString(hmacSampleSecret)
+	if err != nil {
+		return tokenString
+	}
+
+	return ""
+}
