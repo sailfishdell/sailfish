@@ -73,7 +73,14 @@ func decodeRedfishGetRequest(_ context.Context, r *http.Request) (dec interface{
 	}
 
 	headers := make(map[string]string)
-    for _, hn := range( []string{ "Odata-Version", "Authentication", "X-Auth-Token" } ) {
+
+    user, pass, ok := r.BasicAuth()
+    if ok {
+        headers["BASIC_user"] = user
+        headers["BASIC_pass"] = pass
+    }
+
+    for _, hn := range( []string{ "Odata-Version", "Authorization", "X-Auth-Token" } ) {
 	    if h := r.Header.Get(hn); h != "" {
             headers[hn] = h
         }

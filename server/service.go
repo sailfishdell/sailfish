@@ -15,7 +15,7 @@ import (
 
 // Service is the business logic for a redfish server
 type Service interface {
-	GetOdataResource(ctx context.Context, url string, args map[string]string, privileges []string) (interface{}, error)
+	GetOdataResource(ctx context.Context, headers map[string]string, url string, args map[string]string, privileges []string) (interface{}, error)
 }
 
 // ServiceMiddleware is a chainable behavior modifier for Service.
@@ -46,7 +46,7 @@ func NewService(baseURI string, commandbus *commandbus.CommandBus, repo *repo.Re
 	return &cfg
 }
 
-func (rh *config) GetOdataResource(ctx context.Context, url string, args map[string]string, privileges []string) (output interface{}, err error) {
+func (rh *config) GetOdataResource(ctx context.Context, headers map[string]string, url string, args map[string]string, privileges []string) (output interface{}, err error) {
 	noHashPath := strings.SplitN(url, "#", 2)[0]
 
 	rawTree, err := rh.odataRepo.Find(ctx, rh.treeID)

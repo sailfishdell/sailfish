@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"time"
+    "fmt"
 
 	"github.com/go-kit/kit/log"
 	"github.com/google/uuid"
@@ -49,21 +50,18 @@ func NewLoggingService(logger Logger, s Service) Service {
 	return &loggingService{logger, s}
 }
 
-func (s *loggingService) GetOdataResource(ctx context.Context, url string, args map[string]string, privileges []string) (ret interface{}, err error) {
+func (s *loggingService) GetOdataResource(ctx context.Context, headers map[string]string, url string, args map[string]string, privileges []string) (ret interface{}, err error) {
 	ctxlogger := log.With(s.logger, "method", "GET", "URL", url, "UUID", uuid.New())
 
-	thislogger := ctxlogger
-	for k, v := range args {
-		thislogger = log.With(thislogger, "arg_"+k, v)
-	}
 	defer func(begin time.Time) {
 		// no, we are not going to check logger error return
-		_ = thislogger.Log(
+		_ = ctxlogger.Log(
 			"method", "GET",
 			"URL", url,
 			"business_logic_time", time.Since(begin),
 			"err", err,
+			"args", fmt.Sprintf("%#v", args),
 		)
 	}(time.Now())
-	return s.Service.GetOdataResource(WithLogger(ctx, ctxlogger), url, args, privileges)
+	return s.Service.GetOdataResource(WithLogger(ctx, ctxlogger), headers, url, args, privileges)
 }

@@ -11,7 +11,7 @@ func makeOdataGetEndpoint(s Service) endpoint.Endpoint {
 		// TODO: need to add 2 level error return:
 		//      level 1: business logic errors that get mapped to HTTP transport errors
 		//      level 2: other errors that might need to involve circuit breakers tripping (client request timeouts inside business logic functions, for example)
-		output, err := s.GetOdataResource(ctx, req.url, req.args, req.privileges)
+		output, err := s.GetOdataResource(ctx, req.headers, req.url, req.args, req.privileges)
 		return odataResourceGetResponse{output: output, err: err}, nil
 	}
 }
