@@ -38,6 +38,8 @@ const (
 type CreateOdataResource struct {
 	UUID        eh.UUID
 	ResourceURI string
+	Type        string
+	Context     string
 	Properties  map[string]interface{}
 }
 
@@ -61,14 +63,26 @@ func (c CreateOdataResource) Handle(ctx context.Context, a *OdataResourceAggrega
 		)
 	}
 
-    if _, ok := c.Properties["@odata.id"]; !ok {
-		a.StoreEvent(OdataResourcePropertyAddedEvent,
-			&OdataResourcePropertyAddedData{
-				PropertyName:  "@odata.id",
-				PropertyValue: c.ResourceURI,
-			},
-		)
-    }
+	a.StoreEvent(OdataResourcePropertyAddedEvent,
+		&OdataResourcePropertyAddedData{
+			PropertyName:  "@odata.id",
+			PropertyValue: c.ResourceURI,
+		},
+	)
+
+	a.StoreEvent(OdataResourcePropertyAddedEvent,
+		&OdataResourcePropertyAddedData{
+			PropertyName:  "@odata.type",
+			PropertyValue: c.Type,
+		},
+	)
+
+	a.StoreEvent(OdataResourcePropertyAddedEvent,
+		&OdataResourcePropertyAddedData{
+			PropertyName:  "@odata.context",
+			PropertyValue: c.Context,
+		},
+	)
 
 	return nil
 }
@@ -169,6 +183,8 @@ func (c RemoveOdataResource) Handle(ctx context.Context, a *OdataResourceAggrega
 type CreateOdataResourceCollection struct {
 	UUID        eh.UUID
 	ResourceURI string
+	Type        string
+	Context     string
 	Properties  map[string]interface{}
 	Members     []string
 }
@@ -185,6 +201,8 @@ func (c CreateOdataResourceCollection) Handle(ctx context.Context, a *OdataResou
 		&OdataResourceCreatedData{
 			UUID:        c.UUID,
 			ResourceURI: c.ResourceURI,
+			Type:        c.Type,
+			Context:     c.Context,
 		},
 	)
 
@@ -206,7 +224,7 @@ func (c CreateOdataResourceCollection) Handle(ctx context.Context, a *OdataResou
 
 	nm := []map[string]interface{}{}
 	for _, v := range c.Members {
-        nm = append(nm,  map[string]interface{}{ "@odata.id": v })
+		nm = append(nm, map[string]interface{}{"@odata.id": v})
 	}
 
 	a.StoreEvent(OdataResourcePropertyAddedEvent,
@@ -216,21 +234,33 @@ func (c CreateOdataResourceCollection) Handle(ctx context.Context, a *OdataResou
 		},
 	)
 
-    if _, ok := c.Properties["@odata.id"]; !ok {
-		a.StoreEvent(OdataResourcePropertyAddedEvent,
-			&OdataResourcePropertyAddedData{
-				PropertyName:  "@odata.id",
-				PropertyValue: c.ResourceURI,
-			},
-		)
-    }
+	a.StoreEvent(OdataResourcePropertyAddedEvent,
+		&OdataResourcePropertyAddedData{
+			PropertyName:  "@odata.id",
+			PropertyValue: c.ResourceURI,
+		},
+	)
+
+	a.StoreEvent(OdataResourcePropertyAddedEvent,
+		&OdataResourcePropertyAddedData{
+			PropertyName:  "@odata.type",
+			PropertyValue: c.Type,
+		},
+	)
+
+	a.StoreEvent(OdataResourcePropertyAddedEvent,
+		&OdataResourcePropertyAddedData{
+			PropertyName:  "@odata.context",
+			PropertyValue: c.Context,
+		},
+	)
 
 	return nil
 }
 
 type AddOdataResourceCollectionMember struct {
-	UUID       eh.UUID
-	MemberURI  string
+	UUID      eh.UUID
+	MemberURI string
 }
 
 func (c AddOdataResourceCollectionMember) AggregateID() eh.UUID { return c.UUID }
@@ -242,7 +272,7 @@ func (c AddOdataResourceCollectionMember) CommandType() eh.CommandType {
 }
 func (c AddOdataResourceCollectionMember) Handle(ctx context.Context, a *OdataResourceAggregate) error {
 
-    nm := a.Properties["Members"].([]map[string]interface{})
+	nm := a.Properties["Members"].([]map[string]interface{})
 
 	a.StoreEvent(OdataResourcePropertyAddedEvent,
 		&OdataResourcePropertyAddedData{
@@ -262,7 +292,7 @@ func (c AddOdataResourceCollectionMember) Handle(ctx context.Context, a *OdataRe
 }
 
 type RemoveOdataResourceCollectionMember struct {
-	UUID       eh.UUID
+	UUID      eh.UUID
 	MemberURI string
 }
 

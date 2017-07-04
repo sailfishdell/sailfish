@@ -25,6 +25,8 @@ func init() {
 type OdataResourceCreatedData struct {
 	UUID        eh.UUID
 	ResourceURI string
+	Type        string
+	Context     string
 	Properties  map[string]interface{}
 }
 

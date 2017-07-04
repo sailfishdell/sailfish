@@ -18,6 +18,8 @@ SAGA:
     - when odataresourcecreated event happens, privileges saga goes and attaches privs. probably should look those up in a doc somewhere
     - read looks at privs
 
+METADATA
+    - should be able to dynamically create metadata uri from the events as we register odata resources
 
 OUTPUT:
     map [type] manglingfunction
