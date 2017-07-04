@@ -45,18 +45,30 @@ func (c CreateOdataResource) AggregateID() eh.UUID            { return c.UUID }
 func (c CreateOdataResource) AggregateType() eh.AggregateType { return OdataResourceAggregateType }
 func (c CreateOdataResource) CommandType() eh.CommandType     { return CreateOdataResourceCommand }
 func (c CreateOdataResource) Handle(ctx context.Context, a *OdataResourceAggregate) error {
-	np := map[string]interface{}{}
-	for k, v := range c.Properties {
-		np[k] = v
-	}
-
 	a.StoreEvent(OdataResourceCreatedEvent,
 		&OdataResourceCreatedData{
 			ResourceURI: c.ResourceURI,
-			Properties:  np,
 			UUID:        c.UUID,
 		},
 	)
+
+	for k, v := range c.Properties {
+		a.StoreEvent(OdataResourcePropertyAddedEvent,
+			&OdataResourcePropertyAddedData{
+				PropertyName:  k,
+				PropertyValue: v,
+			},
+		)
+	}
+
+    if _, ok := c.Properties["@odata.id"]; !ok {
+		a.StoreEvent(OdataResourcePropertyAddedEvent,
+			&OdataResourcePropertyAddedData{
+				PropertyName:  "@odata.id",
+				PropertyValue: c.ResourceURI,
+			},
+		)
+    }
 
 	return nil
 }
@@ -158,7 +170,7 @@ type CreateOdataResourceCollection struct {
 	UUID        eh.UUID
 	ResourceURI string
 	Properties  map[string]interface{}
-	Members     map[string]string
+	Members     []string
 }
 
 func (c CreateOdataResourceCollection) AggregateID() eh.UUID { return c.UUID }
@@ -169,44 +181,55 @@ func (c CreateOdataResourceCollection) CommandType() eh.CommandType {
 	return CreateOdataResourceCollectionCommand
 }
 func (c CreateOdataResourceCollection) Handle(ctx context.Context, a *OdataResourceAggregate) error {
-	np := map[string]interface{}{}
-	for k, v := range c.Properties {
-		np[k] = v
-	}
-
-	nm := map[string]string{}
-	for k, v := range c.Members {
-		nm[k] = v
-	}
-
 	a.StoreEvent(OdataResourceCreatedEvent,
 		&OdataResourceCreatedData{
 			UUID:        c.UUID,
 			ResourceURI: c.ResourceURI,
-			Properties:  np,
 		},
 	)
+
+	for k, v := range c.Properties {
+		a.StoreEvent(OdataResourcePropertyAddedEvent,
+			&OdataResourcePropertyAddedData{
+				PropertyName:  k,
+				PropertyValue: v,
+			},
+		)
+	}
 
 	a.StoreEvent(OdataResourcePropertyAddedEvent,
 		&OdataResourcePropertyAddedData{
 			PropertyName:  "Members@odata.count",
-			PropertyValue: "0",
+			PropertyValue: len(c.Members),
 		},
 	)
+
+	nm := []map[string]interface{}{}
+	for _, v := range c.Members {
+        nm = append(nm,  map[string]interface{}{ "@odata.id": v })
+	}
 
 	a.StoreEvent(OdataResourcePropertyAddedEvent,
 		&OdataResourcePropertyAddedData{
 			PropertyName:  "Members",
-			PropertyValue: []interface{}{},
+			PropertyValue: nm,
 		},
 	)
+
+    if _, ok := c.Properties["@odata.id"]; !ok {
+		a.StoreEvent(OdataResourcePropertyAddedEvent,
+			&OdataResourcePropertyAddedData{
+				PropertyName:  "@odata.id",
+				PropertyValue: c.ResourceURI,
+			},
+		)
+    }
 
 	return nil
 }
 
 type AddOdataResourceCollectionMember struct {
 	UUID       eh.UUID
-	MemberName string
 	MemberURI  string
 }
 
@@ -218,12 +241,29 @@ func (c AddOdataResourceCollectionMember) CommandType() eh.CommandType {
 	return AddOdataResourceCollectionMemberCommand
 }
 func (c AddOdataResourceCollectionMember) Handle(ctx context.Context, a *OdataResourceAggregate) error {
+
+    nm := a.Properties["Members"].([]map[string]interface{})
+
+	a.StoreEvent(OdataResourcePropertyAddedEvent,
+		&OdataResourcePropertyAddedData{
+			PropertyName:  "Members",
+			PropertyValue: append(nm, map[string]interface{}{"@odata.id": c.MemberURI}),
+		},
+	)
+
+	a.StoreEvent(OdataResourcePropertyAddedEvent,
+		&OdataResourcePropertyAddedData{
+			PropertyName:  "Members@odata.count",
+			PropertyValue: len(nm) + 1,
+		},
+	)
+
 	return nil
 }
 
 type RemoveOdataResourceCollectionMember struct {
 	UUID       eh.UUID
-	MemberName string
+	MemberURI string
 }
 
 func (c RemoveOdataResourceCollectionMember) AggregateID() eh.UUID { return c.UUID }

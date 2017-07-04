@@ -26,6 +26,7 @@ OUTPUT:
 
 QUESTION:
     how to figure out the CONFIGURE SELF problem?
+    I think that for this, just match username against the name property (if either doesn't match, no property)
 
 BASIC AUTH
     - look up against the accounts in account service

@@ -95,8 +95,6 @@ func (rh *config) startup() {
 			},
 			"AccountService": map[string]interface{}{"@odata.id": "/redfish/v1/AccountService"},
 		})
-	rh.createTreeCollectionLeaf(ctx, "/redfish/v1/Systems", map[string]interface{}{})
-	rh.createTreeCollectionLeaf(ctx, "/redfish/v1/Chassis", map[string]interface{}{})
 	rh.createTreeLeaf(ctx, "/redfish/v1/EventService",
 		map[string]interface{}{
 			"@odata.context":                        "/redfish/v1/$metadata#EventService",
@@ -135,9 +133,11 @@ func (rh *config) startup() {
 				"Alert",
 			},
 		})
-	rh.createTreeCollectionLeaf(ctx, "/redfish/v1/JSONSchemas", map[string]interface{}{})
-	rh.createTreeCollectionLeaf(ctx, "/redfish/v1/Managers", map[string]interface{}{})
-	rh.createTreeCollectionLeaf(ctx, "/redfish/v1/Registries", map[string]interface{}{})
+	rh.createTreeCollectionLeaf(ctx, "/redfish/v1/Systems", map[string]interface{}{}, []string{})
+	rh.createTreeCollectionLeaf(ctx, "/redfish/v1/Chassis", map[string]interface{}{}, []string{})
+	rh.createTreeCollectionLeaf(ctx, "/redfish/v1/JSONSchemas", map[string]interface{}{}, []string{})
+	rh.createTreeCollectionLeaf(ctx, "/redfish/v1/Managers", map[string]interface{}{}, []string{})
+	rh.createTreeCollectionLeaf(ctx, "/redfish/v1/Registries", map[string]interface{}{}, []string{})
 	rh.createTreeLeaf(ctx, "/redfish/v1/AccountService",
 		map[string]interface{}{
 			"@odata.type": "#AccountService.v1_0_2.AccountService",
@@ -160,6 +160,76 @@ func (rh *config) startup() {
 			"@odata.id":                       "/redfish/v1/AccountService",
 			"@Redfish.Copyright":              "Copyright 2014-2016 Distributed Management Task Force, Inc. (DMTF). For the full DMTF copyright policy, see http://www.dmtf.org/about/policies/copyright.",
 		})
+
+	rh.createTreeCollectionLeaf(ctx, "/redfish/v1/AccountService/Accounts",
+		map[string]interface{}{
+            "@odata.type": "#ManagerAccountCollection.ManagerAccountCollection",
+            "@odata.context": "/redfish/v1/$metadata#ManagerAccountCollection.ManagerAccountCollection",
+            "@odata.id": "/redfish/v1/AccountService/Accounts",
+            "@Redfish.Copyright": "Copyright 2014-2016 Distributed Management Task Force, Inc. (DMTF). For the full DMTF copyright policy, see http://www.dmtf.org/about/policies/copyright.",
+            "Name": "Accounts Collection",
+		},
+        []string{
+                "/redfish/v1/AccountService/Accounts/1",
+                "/redfish/v1/AccountService/Accounts/2",
+                "/redfish/v1/AccountService/Accounts/3",
+                "/redfish/v1/AccountService/Accounts/4",
+        })
+	rh.createTreeLeaf(ctx, "/redfish/v1/AccountService/Accounts/1",
+		map[string]interface{}{
+            "@odata.type": "#ManagerAccount.v1_0_2.ManagerAccount",
+            "@odata.context": "/redfish/v1/$metadata#ManagerAccount.ManagerAccount",
+            "@odata.id": "/redfish/v1/AccountService/Accounts/1",
+            "@Redfish.Copyright": "Copyright 2014-2016 Distributed Management Task Force, Inc. (DMTF). For the full DMTF copyright policy, see http://www.dmtf.org/about/policies/copyright.",
+            "Id": "1",
+            "Name": "User Account",
+            "Description": "User Account",
+            "Enabled": true,
+            "Password": nil,
+            "UserName": "Administrator",
+            "RoleId": "Admin",
+            "Locked": false,
+            "Links": map[string]interface{}{
+                "Role": map[string]interface{}{
+                    "@odata.id": "/redfish/v1/AccountService/Roles/Admin",
+                },
+            },
+        })
+	rh.createTreeCollectionLeaf(ctx, "/redfish/v1/AccountService/Roles",
+		map[string]interface{}{
+    "@odata.type": "#RoleCollection.RoleCollection",
+    "Name": "Roles Collection",
+    "@odata.context": "/redfish/v1/$metadata#Role.Role",
+    "@odata.id": "/redfish/v1/AccountService/Roles",
+    "@Redfish.Copyright": "Copyright 2014-2016 Distributed Management Task Force, Inc. (DMTF). For the full DMTF copyright policy, see http://www.dmtf.org/about/policies/copyright.",
+        },
+    []string{
+        "/redfish/v1/AccountService/Roles/ReadOnlyUser",
+        "/redfish/v1/AccountService/Roles/Operator",
+        "/redfish/v1/AccountService/Roles/Admin",
+    })
+	rh.createTreeLeaf(ctx, "/redfish/v1/AccountService/Roles/Admin",
+		map[string]interface{}{
+        "@odata.context": "/redfish/v1/$metadata#Role.Role",
+        "@odata.id": "/redfish/v1/AccountService/Roles/Admin",
+        "@Redfish.Copyright": "Copyright 2014-2016 Distributed Management Task Force, Inc. (DMTF). For the full DMTF copyright policy, see http://www.dmtf.org/about/policies/copyright.",
+        "@odata.type": "#Role.v1_0_2.Role",
+        "Id": "Admin",
+        "Name": "User Role",
+        "Description": "Admin User Role",
+        "IsPredefined": true,
+        "AssignedPrivileges": []string{
+            "Login",
+            "ConfigureManager",
+            "ConfigureUsers",
+            "ConfigureSelf",
+            "ConfigureComponents",
+        },
+        "OEMPrivileges": []string {
+            "OemClearLog",
+            "OemPowerControl",
+        },
+    })
 }
 
 func (rh *config) createTreeLeaf(ctx context.Context, uri string, Properties map[string]interface{}) {
@@ -167,7 +237,7 @@ func (rh *config) createTreeLeaf(ctx context.Context, uri string, Properties map
 	rh.cmdbus.HandleCommand(ctx, &domain.CreateOdataResource{UUID: uuid, ResourceURI: uri, Properties: Properties})
 }
 
-func (rh *config) createTreeCollectionLeaf(ctx context.Context, uri string, Properties map[string]interface{}) {
+func (rh *config) createTreeCollectionLeaf(ctx context.Context, uri string, Properties map[string]interface{}, Members []string ) {
 	uuid := eh.NewUUID()
-	rh.cmdbus.HandleCommand(ctx, &domain.CreateOdataResourceCollection{UUID: uuid, ResourceURI: uri, Properties: Properties, Members: map[string]string{}})
+	rh.cmdbus.HandleCommand(ctx, &domain.CreateOdataResourceCollection{UUID: uuid, ResourceURI: uri, Properties: Properties, Members: Members})
 }
