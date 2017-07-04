@@ -32,41 +32,41 @@ func Setup(
 	}
 
 	// Odata
-	handler.SetAggregate(OdataAggregateType, CreateOdataCommand)
-	handler.SetAggregate(OdataAggregateType, AddOdataPropertyCommand)
-	handler.SetAggregate(OdataAggregateType, UpdateOdataPropertyCommand)
-	handler.SetAggregate(OdataAggregateType, RemoveOdataPropertyCommand)
-	handler.SetAggregate(OdataAggregateType, RemoveOdataCommand)
+	handler.SetAggregate(OdataResourceAggregateType, CreateOdataResourceCommand)
+	handler.SetAggregate(OdataResourceAggregateType, AddOdataResourcePropertyCommand)
+	handler.SetAggregate(OdataResourceAggregateType, UpdateOdataResourcePropertyCommand)
+	handler.SetAggregate(OdataResourceAggregateType, RemoveOdataResourcePropertyCommand)
+	handler.SetAggregate(OdataResourceAggregateType, RemoveOdataResourceCommand)
 
-	// OdataCollection
-	handler.SetAggregate(OdataAggregateType, CreateOdataCollectionCommand)
-	handler.SetAggregate(OdataAggregateType, AddOdataCollectionMemberCommand)
-	handler.SetAggregate(OdataAggregateType, RemoveOdataCollectionMemberCommand)
+	// OdataResourceCollection
+	handler.SetAggregate(OdataResourceAggregateType, CreateOdataResourceCollectionCommand)
+	handler.SetAggregate(OdataResourceAggregateType, AddOdataResourceCollectionMemberCommand)
+	handler.SetAggregate(OdataResourceAggregateType, RemoveOdataResourceCollectionMemberCommand)
 
 	// Create the command bus and register the handler for the commands.
-	commandBus.SetHandler(handler, CreateOdataCommand)
-	commandBus.SetHandler(handler, AddOdataPropertyCommand)
-	commandBus.SetHandler(handler, UpdateOdataPropertyCommand)
-	commandBus.SetHandler(handler, RemoveOdataPropertyCommand)
-	commandBus.SetHandler(handler, RemoveOdataCommand)
+	commandBus.SetHandler(handler, CreateOdataResourceCommand)
+	commandBus.SetHandler(handler, AddOdataResourcePropertyCommand)
+	commandBus.SetHandler(handler, UpdateOdataResourcePropertyCommand)
+	commandBus.SetHandler(handler, RemoveOdataResourcePropertyCommand)
+	commandBus.SetHandler(handler, RemoveOdataResourceCommand)
 
-	commandBus.SetHandler(handler, CreateOdataCollectionCommand)
-	commandBus.SetHandler(handler, AddOdataCollectionMemberCommand)
-	commandBus.SetHandler(handler, RemoveOdataCollectionMemberCommand)
+	commandBus.SetHandler(handler, CreateOdataResourceCollectionCommand)
+	commandBus.SetHandler(handler, AddOdataResourceCollectionMemberCommand)
+	commandBus.SetHandler(handler, RemoveOdataResourceCollectionMemberCommand)
 
-	odataItemsProjector := projector.NewEventHandler(NewOdataProjector(), odataRepo)
-	odataItemsProjector.SetModel(func() interface{} { return &OdataItem{} })
-	eventBus.AddHandler(odataItemsProjector, OdataCreatedEvent)
-	eventBus.AddHandler(odataItemsProjector, OdataPropertyAddedEvent)
-	eventBus.AddHandler(odataItemsProjector, OdataPropertyUpdatedEvent)
-	eventBus.AddHandler(odataItemsProjector, OdataPropertyRemovedEvent)
-	eventBus.AddHandler(odataItemsProjector, OdataRemovedEvent)
+	odataResourceProjector := projector.NewEventHandler(NewOdataProjector(), odataRepo)
+	odataResourceProjector.SetModel(func() interface{} { return &OdataResource{} })
+	eventBus.AddHandler(odataResourceProjector, OdataResourceCreatedEvent)
+	eventBus.AddHandler(odataResourceProjector, OdataResourcePropertyAddedEvent)
+	eventBus.AddHandler(odataResourceProjector, OdataResourcePropertyUpdatedEvent)
+	eventBus.AddHandler(odataResourceProjector, OdataResourcePropertyRemovedEvent)
+	eventBus.AddHandler(odataResourceProjector, OdataResourceRemovedEvent)
 
 	// hook up tree rep
 	odataTreeProjector := NewOdataTreeProjector(odataRepo, treeID)
-	eventBus.AddHandler(odataTreeProjector, OdataCreatedEvent)
-	eventBus.AddHandler(odataTreeProjector, OdataPropertyAddedEvent)
-	eventBus.AddHandler(odataTreeProjector, OdataPropertyUpdatedEvent)
-	eventBus.AddHandler(odataTreeProjector, OdataPropertyRemovedEvent)
-	eventBus.AddHandler(odataTreeProjector, OdataRemovedEvent)
+	eventBus.AddHandler(odataTreeProjector, OdataResourceCreatedEvent)
+	eventBus.AddHandler(odataTreeProjector, OdataResourcePropertyAddedEvent)
+	eventBus.AddHandler(odataTreeProjector, OdataResourcePropertyUpdatedEvent)
+	eventBus.AddHandler(odataTreeProjector, OdataResourcePropertyRemovedEvent)
+	eventBus.AddHandler(odataTreeProjector, OdataResourceRemovedEvent)
 }

@@ -9,10 +9,10 @@ import (
 	"github.com/superchalupa/eventhorizon/eventhandler/projector"
 )
 
-type OdataItem struct {
-	ID         eh.UUID
-	OdataURI   string
-	Properties map[string]interface{}
+type OdataResource struct {
+	ID          eh.UUID
+	ResourceURI string
+	Properties  map[string]interface{}
 }
 
 type OdataProjector struct{}
@@ -24,35 +24,35 @@ func NewOdataProjector() *OdataProjector {
 func (o *OdataProjector) ProjectorType() projector.Type { return projector.Type("OdataProjector") }
 
 func (o *OdataProjector) Project(ctx context.Context, event eh.Event, model interface{}) (interface{}, error) {
-	item, ok := model.(*OdataItem)
+	item, ok := model.(*OdataResource)
 	if !ok {
 		return nil, errors.New("model is the wrong type")
 	}
 
 	switch event.EventType() {
-	case OdataCreatedEvent:
-		data, ok := event.Data().(*OdataCreatedData)
+	case OdataResourceCreatedEvent:
+		data, ok := event.Data().(*OdataResourceCreatedData)
 		if !ok {
 			return nil, errors.New("projector: invalid event data")
 		}
-		item.OdataURI = data.OdataURI
+		item.ResourceURI = data.ResourceURI
 		item.Properties = map[string]interface{}{}
 		for k, v := range data.Properties {
 			item.Properties[k] = v
 		}
-	case OdataPropertyAddedEvent:
-		if data, ok := event.Data().(*OdataPropertyAddedData); ok {
+	case OdataResourcePropertyAddedEvent:
+		if data, ok := event.Data().(*OdataResourcePropertyAddedData); ok {
 			item.Properties[data.PropertyName] = data.PropertyValue
 		}
-	case OdataPropertyUpdatedEvent:
-		if data, ok := event.Data().(*OdataPropertyUpdatedData); ok {
+	case OdataResourcePropertyUpdatedEvent:
+		if data, ok := event.Data().(*OdataResourcePropertyUpdatedData); ok {
 			item.Properties[data.PropertyName] = data.PropertyValue
 		}
-	case OdataPropertyRemovedEvent:
-		if data, ok := event.Data().(*OdataPropertyRemovedData); ok {
+	case OdataResourcePropertyRemovedEvent:
+		if data, ok := event.Data().(*OdataResourcePropertyRemovedData); ok {
 			delete(item.Properties, data.PropertyName)
 		}
-	case OdataRemovedEvent:
+	case OdataResourceRemovedEvent:
 		// no-op
 	default:
 		return nil, errors.New("Could not handle event: " + event.String())
@@ -105,11 +105,11 @@ func (t *OdataTreeProjector) HandleEvent(ctx context.Context, event eh.Event) er
 	var _ = tree
 
 	switch event.EventType() {
-	case OdataCreatedEvent:
-		if data, ok := event.Data().(*OdataCreatedData); ok {
-			tree.Tree[data.OdataURI] = data.UUID
+	case OdataResourceCreatedEvent:
+		if data, ok := event.Data().(*OdataResourceCreatedData); ok {
+			tree.Tree[data.ResourceURI] = data.UUID
 		}
-	case OdataRemovedEvent:
+	case OdataResourceRemovedEvent:
 		// TODO
 	}
 

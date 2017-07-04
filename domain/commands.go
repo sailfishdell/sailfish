@@ -11,70 +11,70 @@ var _ = fmt.Println
 
 func init() {
 	// odata
-	eh.RegisterCommand(func() eh.Command { return &CreateOdata{} })
-	eh.RegisterCommand(func() eh.Command { return &AddOdataProperty{} })
-	eh.RegisterCommand(func() eh.Command { return &UpdateOdataProperty{} })
-	eh.RegisterCommand(func() eh.Command { return &RemoveOdataProperty{} })
-	eh.RegisterCommand(func() eh.Command { return &RemoveOdata{} })
+	eh.RegisterCommand(func() eh.Command { return &CreateOdataResource{} })
+	eh.RegisterCommand(func() eh.Command { return &AddOdataResourceProperty{} })
+	eh.RegisterCommand(func() eh.Command { return &UpdateOdataResourceProperty{} })
+	eh.RegisterCommand(func() eh.Command { return &RemoveOdataResourceProperty{} })
+	eh.RegisterCommand(func() eh.Command { return &RemoveOdataResource{} })
 
 	// collections
-	eh.RegisterCommand(func() eh.Command { return &CreateOdataCollection{} })
-	eh.RegisterCommand(func() eh.Command { return &AddOdataCollectionMember{} })
-	eh.RegisterCommand(func() eh.Command { return &RemoveOdataCollectionMember{} })
+	eh.RegisterCommand(func() eh.Command { return &CreateOdataResourceCollection{} })
+	eh.RegisterCommand(func() eh.Command { return &AddOdataResourceCollectionMember{} })
+	eh.RegisterCommand(func() eh.Command { return &RemoveOdataResourceCollectionMember{} })
 }
 
 const (
-	CreateOdataCommand         eh.CommandType = "CreateOdata"
-	AddOdataPropertyCommand    eh.CommandType = "AddOdataProperty"
-	UpdateOdataPropertyCommand eh.CommandType = "UpdateOdataProperty"
-	RemoveOdataPropertyCommand eh.CommandType = "RemoveOdataProperty"
-	RemoveOdataCommand         eh.CommandType = "RemoveOdata"
+	CreateOdataResourceCommand         eh.CommandType = "CreateOdataResource"
+	AddOdataResourcePropertyCommand    eh.CommandType = "AddOdataResourceProperty"
+	UpdateOdataResourcePropertyCommand eh.CommandType = "UpdateOdataResourceProperty"
+	RemoveOdataResourcePropertyCommand eh.CommandType = "RemoveOdataResourceProperty"
+	RemoveOdataResourceCommand         eh.CommandType = "RemoveOdataResource"
 
-	CreateOdataCollectionCommand       eh.CommandType = "CreateOdataCollection"
-	AddOdataCollectionMemberCommand    eh.CommandType = "AddOdataCollectionMember"
-	RemoveOdataCollectionMemberCommand eh.CommandType = "RemoveOdataCollectionMember"
+	CreateOdataResourceCollectionCommand       eh.CommandType = "CreateOdataResourceCollection"
+	AddOdataResourceCollectionMemberCommand    eh.CommandType = "AddOdataResourceCollectionMember"
+	RemoveOdataResourceCollectionMemberCommand eh.CommandType = "RemoveOdataResourceCollectionMember"
 )
 
-type CreateOdata struct {
-	UUID       eh.UUID
-	OdataURI   string
-	Properties map[string]interface{}
+type CreateOdataResource struct {
+	UUID        eh.UUID
+	ResourceURI string
+	Properties  map[string]interface{}
 }
 
-func (c CreateOdata) AggregateID() eh.UUID            { return c.UUID }
-func (c CreateOdata) AggregateType() eh.AggregateType { return OdataAggregateType }
-func (c CreateOdata) CommandType() eh.CommandType     { return CreateOdataCommand }
-func (c CreateOdata) Handle(ctx context.Context, a *OdataAggregate) error {
+func (c CreateOdataResource) AggregateID() eh.UUID            { return c.UUID }
+func (c CreateOdataResource) AggregateType() eh.AggregateType { return OdataResourceAggregateType }
+func (c CreateOdataResource) CommandType() eh.CommandType     { return CreateOdataResourceCommand }
+func (c CreateOdataResource) Handle(ctx context.Context, a *OdataResourceAggregate) error {
 	np := map[string]interface{}{}
 	for k, v := range c.Properties {
 		np[k] = v
 	}
 
-	a.StoreEvent(OdataCreatedEvent,
-		&OdataCreatedData{
-			OdataURI:   c.OdataURI,
-			Properties: np,
-			UUID:       c.UUID,
+	a.StoreEvent(OdataResourceCreatedEvent,
+		&OdataResourceCreatedData{
+			ResourceURI: c.ResourceURI,
+			Properties:  np,
+			UUID:        c.UUID,
 		},
 	)
 
 	return nil
 }
 
-type AddOdataProperty struct {
+type AddOdataResourceProperty struct {
 	UUID          eh.UUID
 	PropertyName  string
 	PropertyValue interface{}
 }
 
-func (c AddOdataProperty) AggregateID() eh.UUID            { return c.UUID }
-func (c AddOdataProperty) AggregateType() eh.AggregateType { return OdataAggregateType }
-func (c AddOdataProperty) CommandType() eh.CommandType     { return AddOdataPropertyCommand }
-func (c AddOdataProperty) Handle(ctx context.Context, a *OdataAggregate) error {
+func (c AddOdataResourceProperty) AggregateID() eh.UUID            { return c.UUID }
+func (c AddOdataResourceProperty) AggregateType() eh.AggregateType { return OdataResourceAggregateType }
+func (c AddOdataResourceProperty) CommandType() eh.CommandType     { return AddOdataResourcePropertyCommand }
+func (c AddOdataResourceProperty) Handle(ctx context.Context, a *OdataResourceAggregate) error {
 	if _, ok := a.Properties[c.PropertyName]; !ok {
 
-		a.StoreEvent(OdataPropertyAddedEvent,
-			&OdataPropertyAddedData{
+		a.StoreEvent(OdataResourcePropertyAddedEvent,
+			&OdataResourcePropertyAddedData{
 				PropertyName:  c.PropertyName,
 				PropertyValue: c.PropertyValue,
 			},
@@ -86,20 +86,24 @@ func (c AddOdataProperty) Handle(ctx context.Context, a *OdataAggregate) error {
 	return errors.New("Property already exists")
 }
 
-type UpdateOdataProperty struct {
+type UpdateOdataResourceProperty struct {
 	UUID          eh.UUID
 	PropertyName  string
 	PropertyValue interface{}
 }
 
-func (c UpdateOdataProperty) AggregateID() eh.UUID            { return c.UUID }
-func (c UpdateOdataProperty) AggregateType() eh.AggregateType { return OdataAggregateType }
-func (c UpdateOdataProperty) CommandType() eh.CommandType     { return UpdateOdataPropertyCommand }
-func (c UpdateOdataProperty) Handle(ctx context.Context, a *OdataAggregate) error {
+func (c UpdateOdataResourceProperty) AggregateID() eh.UUID { return c.UUID }
+func (c UpdateOdataResourceProperty) AggregateType() eh.AggregateType {
+	return OdataResourceAggregateType
+}
+func (c UpdateOdataResourceProperty) CommandType() eh.CommandType {
+	return UpdateOdataResourcePropertyCommand
+}
+func (c UpdateOdataResourceProperty) Handle(ctx context.Context, a *OdataResourceAggregate) error {
 	if _, ok := a.Properties[c.PropertyName]; ok {
 
-		a.StoreEvent(OdataPropertyUpdatedEvent,
-			&OdataPropertyUpdatedData{
+		a.StoreEvent(OdataResourcePropertyUpdatedEvent,
+			&OdataResourcePropertyUpdatedData{
 				PropertyName:  c.PropertyName,
 				PropertyValue: c.PropertyValue,
 			},
@@ -111,19 +115,23 @@ func (c UpdateOdataProperty) Handle(ctx context.Context, a *OdataAggregate) erro
 	return errors.New("Property doesnt exist")
 }
 
-type RemoveOdataProperty struct {
+type RemoveOdataResourceProperty struct {
 	UUID         eh.UUID
 	PropertyName string
 }
 
-func (c RemoveOdataProperty) AggregateID() eh.UUID            { return c.UUID }
-func (c RemoveOdataProperty) AggregateType() eh.AggregateType { return OdataAggregateType }
-func (c RemoveOdataProperty) CommandType() eh.CommandType     { return RemoveOdataPropertyCommand }
-func (c RemoveOdataProperty) Handle(ctx context.Context, a *OdataAggregate) error {
+func (c RemoveOdataResourceProperty) AggregateID() eh.UUID { return c.UUID }
+func (c RemoveOdataResourceProperty) AggregateType() eh.AggregateType {
+	return OdataResourceAggregateType
+}
+func (c RemoveOdataResourceProperty) CommandType() eh.CommandType {
+	return RemoveOdataResourcePropertyCommand
+}
+func (c RemoveOdataResourceProperty) Handle(ctx context.Context, a *OdataResourceAggregate) error {
 	if _, ok := a.Properties[c.PropertyName]; ok {
 
-		a.StoreEvent(OdataPropertyRemovedEvent,
-			&OdataPropertyRemovedData{
+		a.StoreEvent(OdataResourcePropertyRemovedEvent,
+			&OdataResourcePropertyRemovedData{
 				PropertyName: c.PropertyName,
 			},
 		)
@@ -134,29 +142,33 @@ func (c RemoveOdataProperty) Handle(ctx context.Context, a *OdataAggregate) erro
 	return errors.New("Property doesnt exist")
 }
 
-type RemoveOdata struct {
+type RemoveOdataResource struct {
 	UUID eh.UUID
 }
 
-func (c RemoveOdata) AggregateID() eh.UUID            { return c.UUID }
-func (c RemoveOdata) AggregateType() eh.AggregateType { return OdataAggregateType }
-func (c RemoveOdata) CommandType() eh.CommandType     { return RemoveOdataCommand }
-func (c RemoveOdata) Handle(ctx context.Context, a *OdataAggregate) error {
-	a.StoreEvent(OdataRemovedEvent, nil)
+func (c RemoveOdataResource) AggregateID() eh.UUID            { return c.UUID }
+func (c RemoveOdataResource) AggregateType() eh.AggregateType { return OdataResourceAggregateType }
+func (c RemoveOdataResource) CommandType() eh.CommandType     { return RemoveOdataResourceCommand }
+func (c RemoveOdataResource) Handle(ctx context.Context, a *OdataResourceAggregate) error {
+	a.StoreEvent(OdataResourceRemovedEvent, nil)
 	return nil
 }
 
-type CreateOdataCollection struct {
-	UUID       eh.UUID
-	OdataURI   string
-	Properties map[string]interface{}
-	Members    map[string]string
+type CreateOdataResourceCollection struct {
+	UUID        eh.UUID
+	ResourceURI string
+	Properties  map[string]interface{}
+	Members     map[string]string
 }
 
-func (c CreateOdataCollection) AggregateID() eh.UUID            { return c.UUID }
-func (c CreateOdataCollection) AggregateType() eh.AggregateType { return OdataAggregateType }
-func (c CreateOdataCollection) CommandType() eh.CommandType     { return CreateOdataCollectionCommand }
-func (c CreateOdataCollection) Handle(ctx context.Context, a *OdataAggregate) error {
+func (c CreateOdataResourceCollection) AggregateID() eh.UUID { return c.UUID }
+func (c CreateOdataResourceCollection) AggregateType() eh.AggregateType {
+	return OdataResourceAggregateType
+}
+func (c CreateOdataResourceCollection) CommandType() eh.CommandType {
+	return CreateOdataResourceCollectionCommand
+}
+func (c CreateOdataResourceCollection) Handle(ctx context.Context, a *OdataResourceAggregate) error {
 	np := map[string]interface{}{}
 	for k, v := range c.Properties {
 		np[k] = v
@@ -167,23 +179,23 @@ func (c CreateOdataCollection) Handle(ctx context.Context, a *OdataAggregate) er
 		nm[k] = v
 	}
 
-	a.StoreEvent(OdataCreatedEvent,
-		&OdataCreatedData{
-            UUID:   c.UUID,
-			OdataURI:   c.OdataURI,
-			Properties: np,
+	a.StoreEvent(OdataResourceCreatedEvent,
+		&OdataResourceCreatedData{
+			UUID:        c.UUID,
+			ResourceURI: c.ResourceURI,
+			Properties:  np,
 		},
 	)
 
-	a.StoreEvent(OdataPropertyAddedEvent,
-		&OdataPropertyAddedData{
+	a.StoreEvent(OdataResourcePropertyAddedEvent,
+		&OdataResourcePropertyAddedData{
 			PropertyName:  "Members@odata.count",
 			PropertyValue: "0",
 		},
 	)
 
-	a.StoreEvent(OdataPropertyAddedEvent,
-		&OdataPropertyAddedData{
+	a.StoreEvent(OdataResourcePropertyAddedEvent,
+		&OdataResourcePropertyAddedData{
 			PropertyName:  "Members",
 			PropertyValue: []interface{}{},
 		},
@@ -192,29 +204,35 @@ func (c CreateOdataCollection) Handle(ctx context.Context, a *OdataAggregate) er
 	return nil
 }
 
-type AddOdataCollectionMember struct {
+type AddOdataResourceCollectionMember struct {
 	UUID       eh.UUID
 	MemberName string
 	MemberURI  string
 }
 
-func (c AddOdataCollectionMember) AggregateID() eh.UUID            { return c.UUID }
-func (c AddOdataCollectionMember) AggregateType() eh.AggregateType { return OdataAggregateType }
-func (c AddOdataCollectionMember) CommandType() eh.CommandType     { return AddOdataCollectionMemberCommand }
-func (c AddOdataCollectionMember) Handle(ctx context.Context, a *OdataAggregate) error {
+func (c AddOdataResourceCollectionMember) AggregateID() eh.UUID { return c.UUID }
+func (c AddOdataResourceCollectionMember) AggregateType() eh.AggregateType {
+	return OdataResourceAggregateType
+}
+func (c AddOdataResourceCollectionMember) CommandType() eh.CommandType {
+	return AddOdataResourceCollectionMemberCommand
+}
+func (c AddOdataResourceCollectionMember) Handle(ctx context.Context, a *OdataResourceAggregate) error {
 	return nil
 }
 
-type RemoveOdataCollectionMember struct {
+type RemoveOdataResourceCollectionMember struct {
 	UUID       eh.UUID
 	MemberName string
 }
 
-func (c RemoveOdataCollectionMember) AggregateID() eh.UUID            { return c.UUID }
-func (c RemoveOdataCollectionMember) AggregateType() eh.AggregateType { return OdataAggregateType }
-func (c RemoveOdataCollectionMember) CommandType() eh.CommandType {
-	return RemoveOdataCollectionMemberCommand
+func (c RemoveOdataResourceCollectionMember) AggregateID() eh.UUID { return c.UUID }
+func (c RemoveOdataResourceCollectionMember) AggregateType() eh.AggregateType {
+	return OdataResourceAggregateType
 }
-func (c RemoveOdataCollectionMember) Handle(ctx context.Context, a *OdataAggregate) error {
+func (c RemoveOdataResourceCollectionMember) CommandType() eh.CommandType {
+	return RemoveOdataResourceCollectionMemberCommand
+}
+func (c RemoveOdataResourceCollectionMember) Handle(ctx context.Context, a *OdataResourceAggregate) error {
 	return nil
 }

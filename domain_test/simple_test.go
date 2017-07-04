@@ -58,16 +58,16 @@ func TestExample(t *testing.T) {
 	obj4 := eh.NewUUID()
 
 	// Issue some invitations and responses. Error checking omitted here.
-	if err := commandBus.HandleCommand(ctx, &domain.CreateOdataCollection{UUID: obj1, OdataURI: "/", Properties: map[string]interface{}{}, Members: map[string]string{}}); err != nil {
+	if err := commandBus.HandleCommand(ctx, &domain.CreateOdataResourceCollection{UUID: obj1, OdataURI: "/", Properties: map[string]interface{}{}, Members: map[string]string{}}); err != nil {
 		log.Println("error:", err)
 	}
-	if err := commandBus.HandleCommand(ctx, &domain.CreateOdata{UUID: obj2, OdataURI: "/foo", Properties: map[string]interface{}{}}); err != nil {
+	if err := commandBus.HandleCommand(ctx, &domain.CreateOdataResource{UUID: obj2, OdataURI: "/foo", Properties: map[string]interface{}{}}); err != nil {
 		log.Println("error:", err)
 	}
-	if err := commandBus.HandleCommand(ctx, &domain.CreateOdata{UUID: obj3, OdataURI: "/bar", Properties: map[string]interface{}{}}); err != nil {
+	if err := commandBus.HandleCommand(ctx, &domain.CreateOdataResource{UUID: obj3, OdataURI: "/bar", Properties: map[string]interface{}{}}); err != nil {
 		log.Println("error:", err)
 	}
-	if err := commandBus.HandleCommand(ctx, &domain.CreateOdata{UUID: obj4, OdataURI: "/baz", Properties: map[string]interface{}{}}); err != nil {
+	if err := commandBus.HandleCommand(ctx, &domain.CreateOdataResource{UUID: obj4, OdataURI: "/baz", Properties: map[string]interface{}{}}); err != nil {
 		log.Println("error:", err)
 	}
 
@@ -102,9 +102,7 @@ func TestExample(t *testing.T) {
 		fmt.Printf("could not find tree: %s\n", err.Error())
 	}
 	root, ok := rootRaw.(*domain.OdataItem)
-    fmt.Printf("\t(%s)--> %#v\n", ok, root)
-
-
+	fmt.Printf("\t(%s)--> %#v\n", ok, root)
 
 	fmt.Printf("/foo: %#v\n", tree.Tree["/foo"])
 	fooRaw, err := odataRepo.Find(ctx, tree.Tree["/foo"])
@@ -112,7 +110,7 @@ func TestExample(t *testing.T) {
 		fmt.Printf("could not find tree: %s\n", err.Error())
 	}
 	root, ok = fooRaw.(*domain.OdataItem)
-    fmt.Printf("\t(%s)--> %#v\n", ok, root)
+	fmt.Printf("\t(%s)--> %#v\n", ok, root)
 
 	fmt.Printf("/bar: %#v\n", tree.Tree["/bar"])
 	barRaw, err := odataRepo.Find(ctx, tree.Tree["/bar"])
@@ -120,7 +118,7 @@ func TestExample(t *testing.T) {
 		fmt.Printf("could not find tree: %s\n", err.Error())
 	}
 	root, ok = barRaw.(*domain.OdataItem)
-    fmt.Printf("\t(%s)--> %#v\n", ok, root)
+	fmt.Printf("\t(%s)--> %#v\n", ok, root)
 
 	fmt.Printf("/baz: %#v\n", tree.Tree["/baz"])
 	bazRaw, err := odataRepo.Find(ctx, tree.Tree["/baz"])
@@ -128,7 +126,7 @@ func TestExample(t *testing.T) {
 		fmt.Printf("could not find tree: %s\n", err.Error())
 	}
 	root, ok = bazRaw.(*domain.OdataItem)
-    fmt.Printf("\t(%s)--> %#v\n", ok, root)
+	fmt.Printf("\t(%s)--> %#v\n", ok, root)
 
 	/*
 

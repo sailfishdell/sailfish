@@ -11,30 +11,30 @@ var _ = fmt.Println
 
 func init() {
 	eh.RegisterAggregate(func(id eh.UUID) eh.Aggregate {
-		return NewOdataAggregate(id)
+		return NewOdataResourceAggregate(id)
 	})
 }
 
-const OdataAggregateType eh.AggregateType = "Odata"
+const OdataResourceAggregateType eh.AggregateType = "Odata"
 
-type OdataAggregate struct {
+type OdataResourceAggregate struct {
 	// AggregateBase implements most of the eventhorizon.Aggregate interface.
 	*eh.AggregateBase
-	OdataURI   string
-	Properties map[string]interface{}
+	ResourceURI string
+	Properties  map[string]interface{}
 }
 
-func NewOdataAggregate(id eh.UUID) *OdataAggregate {
-	return &OdataAggregate{
-		AggregateBase: eh.NewAggregateBase(OdataAggregateType, id),
+func NewOdataResourceAggregate(id eh.UUID) *OdataResourceAggregate {
+	return &OdataResourceAggregate{
+		AggregateBase: eh.NewAggregateBase(OdataResourceAggregateType, id),
 	}
 }
 
 type OACmdHandler interface {
-	Handle(ctx context.Context, a *OdataAggregate) error
+	Handle(ctx context.Context, a *OdataResourceAggregate) error
 }
 
-func (a *OdataAggregate) HandleCommand(ctx context.Context, command eh.Command) error {
+func (a *OdataResourceAggregate) HandleCommand(ctx context.Context, command eh.Command) error {
 	switch command := command.(type) {
 	case OACmdHandler:
 		return command.Handle(ctx, a)
@@ -43,29 +43,29 @@ func (a *OdataAggregate) HandleCommand(ctx context.Context, command eh.Command) 
 	return nil
 }
 
-func (a *OdataAggregate) ApplyEvent(ctx context.Context, event eh.Event) error {
+func (a *OdataResourceAggregate) ApplyEvent(ctx context.Context, event eh.Event) error {
 	switch event.EventType() {
-	case OdataCreatedEvent:
-		if data, ok := event.Data().(*OdataCreatedData); ok {
-			a.OdataURI = data.OdataURI
+	case OdataResourceCreatedEvent:
+		if data, ok := event.Data().(*OdataResourceCreatedData); ok {
+			a.ResourceURI = data.ResourceURI
 			a.Properties = map[string]interface{}{}
 			for k, v := range data.Properties {
 				a.Properties[k] = v
 			}
 		}
-	case OdataPropertyAddedEvent:
-		if data, ok := event.Data().(*OdataPropertyAddedData); ok {
+	case OdataResourcePropertyAddedEvent:
+		if data, ok := event.Data().(*OdataResourcePropertyAddedData); ok {
 			a.Properties[data.PropertyName] = data.PropertyValue
 		}
-	case OdataPropertyUpdatedEvent:
-		if data, ok := event.Data().(*OdataPropertyUpdatedData); ok {
+	case OdataResourcePropertyUpdatedEvent:
+		if data, ok := event.Data().(*OdataResourcePropertyUpdatedData); ok {
 			a.Properties[data.PropertyName] = data.PropertyValue
 		}
-	case OdataPropertyRemovedEvent:
-		if data, ok := event.Data().(*OdataPropertyRemovedData); ok {
+	case OdataResourcePropertyRemovedEvent:
+		if data, ok := event.Data().(*OdataResourcePropertyRemovedData); ok {
 			delete(a.Properties, data.PropertyName)
 		}
-	case OdataRemovedEvent:
+	case OdataResourceRemovedEvent:
 		// no-op
 	}
 

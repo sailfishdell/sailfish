@@ -6,38 +6,38 @@ import (
 
 const (
 	// InviteCreatedEvent is when an invite is created.
-	OdataCreatedEvent         eh.EventType = "OdataCreated"
-	OdataPropertyAddedEvent   eh.EventType = "OdataPropertyAdded"
-	OdataPropertyUpdatedEvent eh.EventType = "OdataPropertyUpdated"
-	OdataPropertyRemovedEvent eh.EventType = "OdataPropertyRemoved"
-	OdataRemovedEvent         eh.EventType = "OdataRemoved"
+	OdataResourceCreatedEvent         eh.EventType = "OdataResourceCreated"
+	OdataResourcePropertyAddedEvent   eh.EventType = "OdataResourcePropertyAdded"
+	OdataResourcePropertyUpdatedEvent eh.EventType = "OdataResourcePropertyUpdated"
+	OdataResourcePropertyRemovedEvent eh.EventType = "OdataResourcePropertyRemoved"
+	OdataResourceRemovedEvent         eh.EventType = "OdataResourceRemoved"
 )
 
 func init() {
 	// Only the event for creating an invite has custom data.
-	eh.RegisterEventData(OdataCreatedEvent, func() eh.EventData { return &OdataCreatedData{} })
-	eh.RegisterEventData(OdataPropertyAddedEvent, func() eh.EventData { return &OdataPropertyAddedData{} })
-	eh.RegisterEventData(OdataPropertyUpdatedEvent, func() eh.EventData { return &OdataPropertyUpdatedData{} })
-	eh.RegisterEventData(OdataPropertyRemovedEvent, func() eh.EventData { return &OdataPropertyRemovedData{} })
-	// no event data for OdataRemovedEvent
+	eh.RegisterEventData(OdataResourceCreatedEvent, func() eh.EventData { return &OdataResourceCreatedData{} })
+	eh.RegisterEventData(OdataResourcePropertyAddedEvent, func() eh.EventData { return &OdataResourcePropertyAddedData{} })
+	eh.RegisterEventData(OdataResourcePropertyUpdatedEvent, func() eh.EventData { return &OdataResourcePropertyUpdatedData{} })
+	eh.RegisterEventData(OdataResourcePropertyRemovedEvent, func() eh.EventData { return &OdataResourcePropertyRemovedData{} })
+	// no event data for OdataResourceRemovedEvent
 }
 
-type OdataCreatedData struct {
-	UUID       eh.UUID
-	OdataURI   string
-	Properties map[string]interface{}
+type OdataResourceCreatedData struct {
+	UUID        eh.UUID
+	ResourceURI string
+	Properties  map[string]interface{}
 }
 
-type OdataPropertyAddedData struct {
+type OdataResourcePropertyAddedData struct {
 	PropertyName  string
 	PropertyValue interface{}
 }
 
-type OdataPropertyUpdatedData struct {
+type OdataResourcePropertyUpdatedData struct {
 	PropertyName  string
 	PropertyValue interface{}
 }
 
-type OdataPropertyRemovedData struct {
+type OdataResourcePropertyRemovedData struct {
 	PropertyName string
 }
