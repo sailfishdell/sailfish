@@ -4,9 +4,15 @@ import (
 	"context"
 	"errors"
 	"sync"
+    "strconv"
+    "fmt"
 
 	eh "github.com/superchalupa/eventhorizon"
 	"github.com/superchalupa/eventhorizon/eventhandler/projector"
+)
+
+var (
+	ErrNotFound = errors.New("Resource could not be found")
 )
 
 type OdataResource struct {
@@ -64,6 +70,57 @@ func (o *OdataProjector) Project(ctx context.Context, event eh.Event, model inte
 type OdataTree struct {
 	ID   eh.UUID
 	Tree map[string]eh.UUID
+}
+
+func (t *OdataTree)GetOdataResourceFromTree(ctx context.Context, repo eh.ReadRepo, resourceURI string)  (ret *OdataResource, err error) {
+    resource, err := repo.Find(ctx, t.Tree[resourceURI])
+    if err != nil {
+        return nil, ErrNotFound
+    }
+    ret, ok := resource.(*OdataResource)
+    if !ok {
+        return nil, ErrNotFound
+    }
+    return
+}
+
+func (tree *OdataTree) WalkOdataResourceTree(ctx context.Context, repo eh.ReadRepo, start *OdataResource, path... string) (ret *OdataResource, err error) {
+    var nextP, currentP interface{}
+    current := start
+    currentP = current.Properties
+    fmt.Printf("Walking\n")
+    for _, p := range(path) {
+        fmt.Printf("\tElement: %s\n", p)
+        switch currentP := currentP.(type) {
+        case map[string]interface{}:
+            nextP = currentP[p]
+            fmt.Printf("\t\tmap result: %s\n", nextP)
+        case []interface{}:
+            i, err := strconv.Atoi(p)
+            if err != nil {
+                return nil, errors.New("Next descent is an array, but have non-numeric index.")
+            }
+            nextP = currentP[i]
+            fmt.Printf("\t\tarray result: %s\n", nextP)
+        default:
+            fmt.Printf("\t\tOh My!\n")
+            return nil, errors.New("non-indexable element")
+        }
+        currentP = nextP
+
+        if p == "@odata.id" {
+            fmt.Printf("\t\twarp!\n")
+            current, err = tree.GetOdataResourceFromTree(ctx, repo, currentP.(string))
+            if err != nil {
+                return nil, err
+            }
+            currentP = current.Properties
+            continue
+        }
+    }
+
+    fmt.Printf("\t\tRETURN: %#v\n", current)
+    return current, nil
 }
 
 type OdataTreeProjector struct {

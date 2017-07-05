@@ -26,6 +26,11 @@ OUTPUT:
     When Get finds the resource, run it through the optional mangling function, if it exists
     Probably should have the generic output function be aware of per-property privileges
 
+REGISTRY:
+    - register URIs and mapping functions.
+        - Commands look up URI in registry and apply additional transforms/checks
+        - GET/PUT/PATCH/POST/etc use the registry to customize behaviours
+
 QUESTION:
     how to figure out the CONFIGURE SELF problem?
     I think that for this, just match username against the name property (if either doesn't match, no property)
@@ -51,6 +56,7 @@ PUT/PATCH/POST
             know how to read schema to see which fields should be updatable
             side effects outside the odata tree can hang off of the events
         - specific
+             (update this with REGISTRY idea, above)
             marshal json into a "Command"
             set up task object
             send command
