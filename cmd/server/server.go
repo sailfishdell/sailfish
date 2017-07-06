@@ -122,7 +122,7 @@ func main() {
 	logger = log.With(logger, "caller", log.DefaultCaller)
 
 	svc := redfishserver.NewService(*baseUri, commandBus, odataRepo, treeID)
-	svc = redfishserver.NewLoggingService(logger, svc)
+	svc = redfishserver.NewBasicAuthService(svc, commandBus, odataRepo, treeID, *baseUri)
 
 	fieldKeys := []string{"method", "URL"}
 	svc = redfishserver.NewInstrumentingService(
@@ -141,7 +141,7 @@ func main() {
 		svc,
 	)
 
-	svc = redfishserver.NewBasicAuthService(svc, commandBus, odataRepo, treeID, *baseUri)
+	svc = redfishserver.NewLoggingService(logger, svc)
 
 	r := redfishserver.NewRedfishHandler(svc, *baseUri, "v1", logger)
 
