@@ -19,7 +19,7 @@ fi
 BASE=${PROTO}://${HOST}:${PORT}
 START_URL=${START_URL:-"/redfish/v1/"}
 
-AUTH_HEADER="foo: bar"
+AUTH_HEADER=${AUTH_HEADER:-foo: bar}
 if [ -n "$TOKEN" ]; then
     AUTH_HEADER="Authorization: Bearer $TOKEN"
 fi
