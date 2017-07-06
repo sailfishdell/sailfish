@@ -1,4 +1,20 @@
 
+(from http://cqrs.nu/Faq/commands-and-events)
+What is an event?
+
+An event represents something that took place in the domain. They are always named with a past-participle verb, such as OrderConfirmed. It's not unusual, but not required, for an event to name an aggregate or entity that it relates to; let the domain language be your guide.
+
+Since an event represents something in the past, it can be considered a statement of fact and used to take decisions in other parts of the system.
+
+What is a command?
+
+People request changes to the domain by sending commands. They are named with a verb in the imperative mood plus and may include the aggregate type, for example ConfirmOrder. Unlike an event, a command is not a statement of fact; it's only a request, and thus may be refused. (A typical way to convey refusal is to throw an exception).
+
+
+
+thermald sends TempChangeEvent -> Odata
+
+
 thermald --emits--> TempChange (data0) --> odata processor --emits--> OdataPropertyUpdated(data) --> redfish server --> (1) update internal model  (2) send redfish events
 
 --> tempchange needs to be introspectable
