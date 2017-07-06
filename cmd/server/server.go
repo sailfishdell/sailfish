@@ -141,7 +141,7 @@ func main() {
 		svc,
 	)
 
-	svc = redfishserver.NewBasicAuthService(svc, commandBus, odataRepo, treeID)
+	svc = redfishserver.NewBasicAuthService(svc, commandBus, odataRepo, treeID, *baseUri)
 
 	r := redfishserver.NewRedfishHandler(svc, *baseUri, "v1", logger)
 

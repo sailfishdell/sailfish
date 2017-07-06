@@ -13,6 +13,8 @@ import (
 
 type basicAuthService struct {
 	Service
+	baseURI   string
+	verURI    string
 	treeID    eh.UUID
 	cmdbus    *commandbus.CommandBus
 	odataRepo *repo.Repo
@@ -29,8 +31,8 @@ type basicAuthService struct {
 // instantiate this service, tell it the URI of the account collection and role collection
 
 // NewBasicAuthService returns a new instance of a basicAuth Service.
-func NewBasicAuthService(s Service, commandbus *commandbus.CommandBus, repo *repo.Repo, id eh.UUID) Service {
-	return &basicAuthService{Service: s, cmdbus: commandbus, odataRepo: repo, treeID: id}
+func NewBasicAuthService(s Service, commandbus *commandbus.CommandBus, repo *repo.Repo, id eh.UUID, baseURI string) Service {
+	return &basicAuthService{Service: s, cmdbus: commandbus, odataRepo: repo, treeID: id, baseURI: baseURI, verURI: "v1"}
 }
 
 func (s *basicAuthService) getTree(ctx context.Context) (t *domain.OdataTree, err error) {
@@ -70,7 +72,7 @@ func (s *basicAuthService) GetOdataResource(ctx context.Context, headers map[str
 
     // start looking up user in auth service
     tree, err = s.getTree(ctx)
-    rootService, err = tree.GetOdataResourceFromTree(ctx, s.odataRepo, "/redfish/v1/")
+    rootService, err = tree.GetOdataResourceFromTree(ctx, s.odataRepo, s.baseURI + "/v1/")
 
     // Pull up the Accounts Collection
     accounts, err = tree.WalkOdataResourceTree(ctx, s.odataRepo, rootService, "AccountService", "@odata.id", "Accounts", "@odata.id")
