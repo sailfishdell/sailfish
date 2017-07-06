@@ -24,6 +24,8 @@ type ServiceMiddleware func(Service) Service
 var (
 	// ErrNotFound is returned when a request isnt present (404)
 	ErrNotFound = errors.New("not found")
+    ErrUnauthorized = errors.New("Unauthorized")  // 401... missing or bad authentication
+	ErrForbidden = errors.New("Forbidden")   // should be 403 (you are authenticated, but dont have permissions to this object)
 )
 
 // Config is where we store the current service data
@@ -76,8 +78,29 @@ func (rh *config) GetOdataResource(ctx context.Context, headers map[string]strin
 	}
 
 	// security privileges. Check to see if user has permissions on the object
+    // FIXME/TODO: SIMPLE IMPLEMENTATION... this needs to handle AND/OR combinations.
+    // Also need to consider purity. This could realistically be implemented as two additional Service wrappers:
+    //  1) a pre-call check that does the gross privilege check
+    //  2) a post-call check that filters the properties returned based on privs
+    getPrivs, ok := item.PrivilegeMap["GET"]
+    if ! ok {
+        return nil, ErrForbidden
+    }
 
-	return item.Properties, nil
+    getPrivsArr := getPrivs.([]string)
+
+    fmt.Printf("CHECK PRIVS\n\tUSER: %s\n\tRESOURCE: %s\n", privileges, getPrivsArr)
+
+    for _, myPriv := range(privileges) {
+        for _, itemPriv := range(getPrivsArr) {
+            if myPriv == itemPriv {
+                fmt.Printf("Found matching privs, granting access. userPriv(%s) == itemPriv(%s)\n", myPriv, itemPriv)
+                return item.Properties, nil
+            }
+        }
+    }
+
+    return nil, ErrForbidden
 }
 
 func (rh *config) startup() {

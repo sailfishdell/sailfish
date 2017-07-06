@@ -89,7 +89,7 @@ func Setup(
 	eventBus.AddHandler(odataTreeProjector, OdataResourceCreatedEvent)
 	eventBus.AddHandler(odataTreeProjector, OdataResourceRemovedEvent)
 
-	privilegeSaga := saga.NewEventHandler(NewPrivilegeSaga(), commandBus)
+	privilegeSaga := saga.NewEventHandler(NewPrivilegeSaga(odataRepo), commandBus)
 	eventBus.AddHandler(privilegeSaga, OdataResourceCreatedEvent)
 
 }

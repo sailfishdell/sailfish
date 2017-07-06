@@ -86,7 +86,7 @@ func (s *basicAuthService) GetOdataResource(ctx context.Context, headers map[str
 		goto out
 	}
 
-	// avoid panics by separating out
+	// avoid panics by separating out type assertion
 	memberList, ok = members.([]map[string]interface{})
 	if !ok {
 		goto out
@@ -113,10 +113,20 @@ func (s *basicAuthService) GetOdataResource(ctx context.Context, headers map[str
 			continue
 		}
 
-		fmt.Printf("\tAssigned the following Privileges: %s\n", privs)
 		for _, p := range privs.([]string) {
-			privileges = append(privileges, p)
+            // If the user has "ConfigureSelf", then append the special privilege that lets them configure their specific attributes
+            if p == "ConfigureSelf" {
+                // Add ConfigureSelf_%{USERNAME} property
+                // FIXME: check type assertion
+                privileges = append(privileges, "ConfigureSelf_" + memberUser.(string))
+            } else {
+                // otherwise just pass through the actual priv
+			    privileges = append(privileges, p)
+            }
 		}
+
+
+		fmt.Printf("\tAssigned the following Privileges: %s\n", privileges)
 	}
 
 out:
