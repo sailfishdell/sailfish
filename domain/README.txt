@@ -12,12 +12,8 @@ People request changes to the domain by sending commands. They are named with a 
 
 
 
-thermald sends TempChangeEvent -> Odata
+thermald sends TempChangeEvent -> Odata processor sends UpdateOdataProperty Command -> Resource emits OdataPropertyUpdated(data) --> redfish server --> (1) update internal model  (2) send redfish events
 
-
-thermald --emits--> TempChange (data0) --> odata processor --emits--> OdataPropertyUpdated(data) --> redfish server --> (1) update internal model  (2) send redfish events
-
---> tempchange needs to be introspectable
 
 # address the following
     - methods per odata resource
@@ -29,8 +25,8 @@ thermald --emits--> TempChange (data0) --> odata processor --emits--> OdataPrope
         - able to specify action endpoints and the allowable parameters so we can formulate a command. This probably ends up being a separate set of "ActionCommand" command/response pairs, but need to be able to automatically generate the (validated?) action command from the core infrastructure.
 
 
-SAGA:
-    - TODO: create odata resource must have required fields: id, context, type (DONE)
+PRIVILEGES
+    - (DONE) TODO: create odata resource must have required fields: id, context, type (DONE)
     - when odataresourcecreated event happens, privileges saga goes and attaches privs. Look these up in the Privilege Registry based on entity.
         - what we store in the projected data doesn't need to match exactly with Privilege Registry schema, it can be optimized for our local processing
     - SAME for permissions. Look up permissions (read/write ability for each property) in the schema and set them. Also probably need to look in dell extended area somewhere.
@@ -50,9 +46,10 @@ REGISTRY:
         - Commands look up URI in registry and apply additional transforms/checks
         - GET/PUT/PATCH/POST/etc use the registry to customize behaviours
 
-QUESTION:
-    how to figure out the CONFIGURE SELF problem?
-    I think that for this, just match username against the name property (if either doesn't match, no property)
+QUESTION (COMPLETE):
+    (DONE) how to figure out the CONFIGURE SELF problem?
+    (NOPE) I think that for this, just match username against the name property (if either doesn't match, no property)
+    (SOLUTION): When we set up login privs, if we see ConfigureSelf, change that to ConfigureSelf_${USERNAME}. When we attach privs to resources, if we see ConfigureSelf in the privilege map, change that to ConfigureSelf_${USERNAME}, based on the username listed in the resource.
 
 BASIC AUTH
     - look up against the accounts in account service
