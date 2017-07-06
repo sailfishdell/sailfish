@@ -71,7 +71,14 @@ func (rh *config) GetOdataResource(ctx context.Context, headers map[string]strin
 
 func (rh *config) startup() {
 	ctx := context.Background()
-	rh.createTreeLeaf(ctx, rh.baseURI+"/", "", "", map[string]interface{}{"v1": rh.makeFullyQualifiedV1("")})
+
+    // create version entry point. it's special in that it doesnt have @odata.* properties, so we'll remove them
+    // after creating the object
+	uuid := rh.createTreeLeaf(ctx, rh.baseURI+"/", "foo", "bar", map[string]interface{}{"v1": rh.makeFullyQualifiedV1("")})
+	rh.cmdbus.HandleCommand(ctx, &domain.RemoveOdataResourceProperty{UUID: uuid, PropertyName: "@odata.context"})
+	rh.cmdbus.HandleCommand(ctx, &domain.RemoveOdataResourceProperty{UUID: uuid, PropertyName: "@odata.id"})
+	rh.cmdbus.HandleCommand(ctx, &domain.RemoveOdataResourceProperty{UUID: uuid, PropertyName: "@odata.type"})
+
 	rh.createTreeLeaf(ctx, rh.makeFullyQualifiedV1(""),
 		"#ServiceRoot.v1_0_2.ServiceRoot",
 		rh.makeFullyQualifiedV1("$metadata#ServiceRoot"),
@@ -240,10 +247,11 @@ func (rh *config) startup() {
 		})
 }
 
-func (rh *config) createTreeLeaf(ctx context.Context, uri string, otype string, octx string, Properties map[string]interface{}) {
-	uuid := eh.NewUUID()
+func (rh *config) createTreeLeaf(ctx context.Context, uri string, otype string, octx string, Properties map[string]interface{}) (uuid eh.UUID) {
+	uuid = eh.NewUUID()
 	fmt.Printf("Creating URI %s\n", uri)
 	rh.cmdbus.HandleCommand(ctx, &domain.CreateOdataResource{UUID: uuid, ResourceURI: uri, Properties: Properties, Type: otype, Context: octx})
+    return
 }
 
 func (rh *config) createTreeCollectionLeaf(ctx context.Context, uri string, otype string, octx string, Properties map[string]interface{}, Members []string) {
