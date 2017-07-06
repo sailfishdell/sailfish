@@ -14,9 +14,12 @@ thermald --emits--> TempChange (data0) --> odata processor --emits--> OdataPrope
 
 
 SAGA:
-    - TODO: create odata resource must have required fields: id, context, type
-    - when odataresourcecreated event happens, privileges saga goes and attaches privs. probably should look those up in a doc somewhere
-    - read looks at privs
+    - TODO: create odata resource must have required fields: id, context, type (DONE)
+    - when odataresourcecreated event happens, privileges saga goes and attaches privs. Look these up in the Privilege Registry based on entity.
+        - what we store in the projected data doesn't need to match exactly with Privilege Registry schema, it can be optimized for our local processing
+    - SAME for permissions. Look up permissions (read/write ability for each property) in the schema and set them. Also probably need to look in dell extended area somewhere.
+    - write is only thing that cares about permissions
+    - both get and setters care about privileges
 
 METADATA
     - should be able to dynamically create metadata uri from the events as we register odata resources

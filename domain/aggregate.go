@@ -20,8 +20,12 @@ const OdataResourceAggregateType eh.AggregateType = "Odata"
 type OdataResourceAggregate struct {
 	// AggregateBase implements most of the eventhorizon.Aggregate interface.
 	*eh.AggregateBase
-	ResourceURI string
-	Properties  map[string]interface{}
+	ResourceURI  string
+	Properties   map[string]interface{}
+	PrivilegeMap map[string]interface{}
+	Permissions  map[string]interface{}
+	Headers      map[string]string
+	Methods      map[string]interface{}
 }
 
 func NewOdataResourceAggregate(id eh.UUID) *OdataResourceAggregate {
@@ -37,6 +41,7 @@ type OACmdHandler interface {
 func (a *OdataResourceAggregate) HandleCommand(ctx context.Context, command eh.Command) error {
 	switch command := command.(type) {
 	case OACmdHandler:
+        fmt.Printf("Handle command OdataResourceAggregate: %t\n", command)
 		return command.Handle(ctx, a)
 	}
 

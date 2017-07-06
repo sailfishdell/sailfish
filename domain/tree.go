@@ -16,9 +16,13 @@ var (
 )
 
 type OdataResource struct {
-	ID          eh.UUID
-	ResourceURI string
-	Properties  map[string]interface{}
+	ID           eh.UUID
+	ResourceURI  string
+	Properties   map[string]interface{}
+	PrivilegeMap map[string]interface{}
+	Permissions  map[string]interface{}
+	Headers      map[string]string
+	Methods      map[string]interface{}
 }
 
 type OdataProjector struct{}
@@ -46,6 +50,10 @@ func (o *OdataProjector) Project(ctx context.Context, event eh.Event, model inte
 		for k, v := range data.Properties {
 			item.Properties[k] = v
 		}
+		item.PrivilegeMap = map[string]interface{}{}
+		item.Permissions = map[string]interface{}{}
+		item.Headers = map[string]string{}
+		item.Methods = map[string]interface{}{}
 	case OdataResourcePropertyAddedEvent:
 		if data, ok := event.Data().(*OdataResourcePropertyAddedData); ok {
 			item.Properties[data.PropertyName] = data.PropertyValue
@@ -59,7 +67,31 @@ func (o *OdataProjector) Project(ctx context.Context, event eh.Event, model inte
 			delete(item.Properties, data.PropertyName)
 		}
 	case OdataResourceRemovedEvent:
-		// no-op
+		// TODO ?
+	case OdataResourcePrivilegesUpdatedEvent:
+		if data, ok := event.Data().(*OdataResourcePrivilegesUpdatedData); ok {
+			item.PrivilegeMap = data.Privileges
+		}
+	case OdataResourcePermissionsUpdatedEvent:
+		if data, ok := event.Data().(*OdataResourcePermissionsUpdatedData); ok {
+			item.Permissions = data.Permissions
+		}
+	case OdataResourceMethodsUpdatedEvent:
+		if data, ok := event.Data().(*OdataResourceMethodsUpdatedData); ok {
+			item.Methods = data.Methods
+		}
+	case OdataResourceHeaderAddedEvent:
+		if data, ok := event.Data().(*OdataResourceHeaderAddedData); ok {
+			item.Headers[data.HeaderName] = data.HeaderValue
+		}
+	case OdataResourceHeaderUpdatedEvent:
+		if data, ok := event.Data().(*OdataResourceHeaderUpdatedData); ok {
+			item.Headers[data.HeaderName] = data.HeaderValue
+		}
+	case OdataResourceHeaderRemovedEvent:
+		if data, ok := event.Data().(*OdataResourceHeaderRemovedData); ok {
+			delete(item.Headers, data.HeaderName)
+		}
 	default:
 		return nil, errors.New("Could not handle event: " + event.String())
 	}
@@ -164,10 +196,13 @@ func (t *OdataTreeProjector) HandleEvent(ctx context.Context, event eh.Event) er
 	switch event.EventType() {
 	case OdataResourceCreatedEvent:
 		if data, ok := event.Data().(*OdataResourceCreatedData); ok {
-			tree.Tree[data.ResourceURI] = data.UUID
+			tree.Tree[data.ResourceURI] = event.AggregateID()
 		}
 	case OdataResourceRemovedEvent:
 		// TODO
+		// 1) look up model using event.AggregateID()
+		// 2) look at the ResourceURI
+		// 3) delete item in tree hash for resourceuri
 	}
 
 	if err := t.repo.Save(ctx, t.treeID, tree); err != nil {

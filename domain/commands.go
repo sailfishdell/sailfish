@@ -33,6 +33,13 @@ const (
 	CreateOdataResourceCollectionCommand       eh.CommandType = "CreateOdataResourceCollection"
 	AddOdataResourceCollectionMemberCommand    eh.CommandType = "AddOdataResourceCollectionMember"
 	RemoveOdataResourceCollectionMemberCommand eh.CommandType = "RemoveOdataResourceCollectionMember"
+
+	UpdateOdataResourcePrivilegesCommand  eh.CommandType = "UpdateOdataResourcePrivileges"
+	UpdateOdataResourcePermissionsCommand eh.CommandType = "UpdateOdataResourcePermissions"
+	UpdateOdataResourceMethodsCommand     eh.CommandType = "UpdateOdataResourceMethods"
+	AddOdataResourceHeaderCommand         eh.CommandType = "AddOdataResourceHeader"
+	UpdateOdataResourceHeaderCommand      eh.CommandType = "UpdateOdataResourceHeader"
+	RemoveOdataResourceHeaderCommand      eh.CommandType = "RemoveOdataResourceHeader"
 )
 
 type CreateOdataResource struct {
@@ -47,10 +54,10 @@ func (c CreateOdataResource) AggregateID() eh.UUID            { return c.UUID }
 func (c CreateOdataResource) AggregateType() eh.AggregateType { return OdataResourceAggregateType }
 func (c CreateOdataResource) CommandType() eh.CommandType     { return CreateOdataResourceCommand }
 func (c CreateOdataResource) Handle(ctx context.Context, a *OdataResourceAggregate) error {
+    fmt.Printf("\tStoring EVENTS to create resource\n")
 	a.StoreEvent(OdataResourceCreatedEvent,
 		&OdataResourceCreatedData{
 			ResourceURI: c.ResourceURI,
-			UUID:        c.UUID,
 		},
 	)
 
@@ -199,7 +206,6 @@ func (c CreateOdataResourceCollection) CommandType() eh.CommandType {
 func (c CreateOdataResourceCollection) Handle(ctx context.Context, a *OdataResourceAggregate) error {
 	a.StoreEvent(OdataResourceCreatedEvent,
 		&OdataResourceCreatedData{
-			UUID:        c.UUID,
 			ResourceURI: c.ResourceURI,
 			Type:        c.Type,
 			Context:     c.Context,
@@ -304,5 +310,30 @@ func (c RemoveOdataResourceCollectionMember) CommandType() eh.CommandType {
 	return RemoveOdataResourceCollectionMemberCommand
 }
 func (c RemoveOdataResourceCollectionMember) Handle(ctx context.Context, a *OdataResourceAggregate) error {
+	// TODO
+	return nil
+}
+
+type UpdateOdataResourcePrivileges struct {
+	UUID       eh.UUID
+	Privileges map[string]interface{}
+}
+
+func (c UpdateOdataResourcePrivileges) AggregateID() eh.UUID { return c.UUID }
+func (c UpdateOdataResourcePrivileges) AggregateType() eh.AggregateType {
+	return OdataResourceAggregateType
+}
+func (c UpdateOdataResourcePrivileges) CommandType() eh.CommandType {
+	return UpdateOdataResourcePrivilegesCommand
+}
+func (c UpdateOdataResourcePrivileges) Handle(ctx context.Context, a *OdataResourceAggregate) error {
+    fmt.Printf("HANDLE UpdateOdataResourcePrivileges\n")
+	a.StoreEvent(OdataResourcePrivilegesUpdatedEvent,
+		&OdataResourcePrivilegesUpdatedData{
+			Privileges: c.Privileges,
+		},
+	)
+
+	// TODO
 	return nil
 }

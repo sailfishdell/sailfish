@@ -96,7 +96,9 @@ func main() {
 
 	// Create the event bus that distributes events.
 	eventBus := eventbus.NewEventBus()
+    //eventBus.SetHandlingStrategy( eh.AsyncEventHandlingStrategy )
 	eventPublisher := eventpublisher.NewEventPublisher()
+    //eventPublisher.SetHandlingStrategy( eh.AsyncEventHandlingStrategy )
 	eventBus.SetPublisher(eventPublisher)
 
 	// Create the command bus.

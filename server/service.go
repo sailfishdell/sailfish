@@ -49,31 +49,42 @@ func NewService(baseURI string, commandbus *commandbus.CommandBus, repo *repo.Re
 func (rh *config) GetOdataResource(ctx context.Context, headers map[string]string, url string, args map[string]string, privileges []string) (output interface{}, err error) {
 	noHashPath := strings.SplitN(url, "#", 2)[0]
 
+	// we have the tree ID, fetch an updated copy of the actual tree
+	// TODO: Locking? Should repo give us a copy? Need to test this.
 	rawTree, err := rh.odataRepo.Find(ctx, rh.treeID)
 	if err != nil {
 		fmt.Printf("could not find tree: %s\n", err.Error())
 		return nil, ErrNotFound
 	}
 
+	// repo gives us an interface{}, type assertion to get the object we need
 	tree, ok := rawTree.(*domain.OdataTree)
 	if !ok {
 		fmt.Printf("somehow it wasnt a tree! %s\n", err.Error())
 		return nil, ErrNotFound
 	}
 
+	// now that we have the tree, look up the actual URI in that tree to find
+	// the object UUID, then pull that from the repo
 	requested, err := rh.odataRepo.Find(ctx, tree.Tree[noHashPath])
 	if err != nil {
 		return nil, ErrNotFound
 	}
 	item, ok := requested.(*domain.OdataResource)
+	if !ok {
+		return nil, ErrNotFound // TODO: should be internal server error or some other such
+	}
+
+	// security privileges. Check to see if user has permissions on the object
+
 	return item.Properties, nil
 }
 
 func (rh *config) startup() {
 	ctx := context.Background()
 
-    // create version entry point. it's special in that it doesnt have @odata.* properties, so we'll remove them
-    // after creating the object
+	// create version entry point. it's special in that it doesnt have @odata.* properties, so we'll remove them
+	// after creating the object
 	uuid := rh.createTreeLeaf(ctx, rh.baseURI+"/", "foo", "bar", map[string]interface{}{"v1": rh.makeFullyQualifiedV1("")})
 	rh.cmdbus.HandleCommand(ctx, &domain.RemoveOdataResourceProperty{UUID: uuid, PropertyName: "@odata.context"})
 	rh.cmdbus.HandleCommand(ctx, &domain.RemoveOdataResourceProperty{UUID: uuid, PropertyName: "@odata.id"})
@@ -251,7 +262,7 @@ func (rh *config) createTreeLeaf(ctx context.Context, uri string, otype string, 
 	uuid = eh.NewUUID()
 	fmt.Printf("Creating URI %s\n", uri)
 	rh.cmdbus.HandleCommand(ctx, &domain.CreateOdataResource{UUID: uuid, ResourceURI: uri, Properties: Properties, Type: otype, Context: octx})
-    return
+	return
 }
 
 func (rh *config) createTreeCollectionLeaf(ctx context.Context, uri string, otype string, octx string, Properties map[string]interface{}, Members []string) {

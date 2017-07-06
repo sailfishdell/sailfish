@@ -86,7 +86,7 @@ func decodeRedfishGetRequest(_ context.Context, r *http.Request) (dec interface{
 		}
 	}
 
-	dec = odataResourceGetRequest{headers: headers, url: r.URL.Path, args: mux.Vars(r), privileges: []string{}}
+	dec = odataResourceGetRequest{headers: headers, url: r.URL.Path, args: mux.Vars(r), privileges: []string{"Unauthenticated"}}
 	return dec, nil
 }
 
