@@ -21,7 +21,11 @@ func NewPrivilegeSaga(odataRepo eh.ReadRepo) *PrivilegeSaga {
 
 func (s *PrivilegeSaga) SagaType() saga.Type { return PrivilegeSagaType }
 
-// RunSaga implements the Privilege handling. The final implementation of this will take the input, look up the entity in a privilegemap and emit commands to set the privileges on each new odataresource as it is created.
+// RunSaga implements the Privilege handling. The final implementation of this
+// will take the input invents (OdataResourceCreated), look up the entity in a
+// privilegemap and emit commands to set the privileges on each new
+// odataresource as it is created. For now, just implementing basic stuff so we
+// can demonstrate that it works.
 func (s *PrivilegeSaga) RunSaga(ctx context.Context, event eh.Event) []eh.Command {
 	switch event.EventType() {
 
@@ -50,10 +54,13 @@ func (s *PrivilegeSaga) RunSaga(ctx context.Context, event eh.Event) []eh.Comman
             }
 		}
 
-        // Strategy for ConfigureSelf. If the Privilege Map specifies ConfigureSelf as privilege, then set the actual privilege to ConfigureSelf_%{USERNAME}, where %{USERNAME} is the username property of that resource
-
-        // On login, set ConfigureSelf_${USERNAME} as a privilege based on username property
-
+        // Strategy for ConfigureSelf. If the Privilege Map specifies
+        // ConfigureSelf as privilege, then set the actual privilege to
+        // ConfigureSelf_%{USERNAME}, where %{USERNAME} is the username
+        // property of that resource
+        //
+        // On the other end (login), set ConfigureSelf_${USERNAME} as a
+        // privilege based on username property
 	}
 
 	return nil
