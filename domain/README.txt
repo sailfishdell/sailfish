@@ -12,12 +12,12 @@ People request changes to the domain by sending commands. They are named with a 
 
 
 
-thermald sends TempChangeEvent -> Odata processor sends UpdateOdataProperty Command -> Resource emits OdataPropertyUpdated(data) --> redfish server --> (1) update internal model  (2) send redfish events
+thermald sends TempChangeEvent -> redfish processor sends UpdateRedfishProperty Command -> Resource emits RedfishPropertyUpdated(data) --> redfish server --> (1) update internal model  (2) send redfish events
 
 
 # address the following
-    - methods per odata resource
-    - privileges per odata resource  (example: password property)
+    - methods per redfish resource
+    - privileges per redfish resource  (example: password property)
         - user with configureuser can update username
         - password can only be updated with configureself or system privilege
     - need to be able to extract metadata from entire tree
@@ -26,15 +26,15 @@ thermald sends TempChangeEvent -> Odata processor sends UpdateOdataProperty Comm
 
 
 PRIVILEGES
-    - (DONE) TODO: create odata resource must have required fields: id, context, type (DONE)
-    - when odataresourcecreated event happens, privileges saga goes and attaches privs. Look these up in the Privilege Registry based on entity.
+    - (DONE) TODO: create redfish resource must have required fields: id, context, type (DONE)
+    - when redfishresourcecreated event happens, privileges saga goes and attaches privs. Look these up in the Privilege Registry based on entity.
         - what we store in the projected data doesn't need to match exactly with Privilege Registry schema, it can be optimized for our local processing
     - SAME for permissions. Look up permissions (read/write ability for each property) in the schema and set them. Also probably need to look in dell extended area somewhere.
     - write is only thing that cares about permissions
     - both get and setters care about privileges
 
 METADATA
-    - should be able to dynamically create metadata uri from the events as we register odata resources
+    - should be able to dynamically create metadata uri from the events as we register redfish resources
 
 OUTPUT:
     map [type] manglingfunction
@@ -56,11 +56,11 @@ BASIC AUTH
     - look up role and then add privs
 
 LOGIN session
-    - logging in emits a create odata resource command
-    - logging out emits a remove odata resource command
+    - logging in emits a create redfish resource command
+    - logging out emits a remove redfish resource command
     - login creates a JWT token with privilege list
     - check the time against session timeout
-    - session timeout emits the remove odata resource command
+    - session timeout emits the remove redfish resource command
 
 PUT/PATCH/POST
     generic handler should check if-match or if-none-match headers
@@ -70,7 +70,7 @@ PUT/PATCH/POST
             operate directly on the aggregates. 
             Emit commands to update properties, 
             know how to read schema to see which fields should be updatable
-            side effects outside the odata tree can hang off of the events
+            side effects outside the redfish tree can hang off of the events
         - specific
              (update this with REGISTRY idea, above)
             marshal json into a "Command"
@@ -88,29 +88,29 @@ ETAGS
 
 
 Aggregates
-    Odata Resource
+    Redfish Resource
 
 Commands:
-    CreateOdataResource  -  odataURI
-    AddOdataResourceProperty
+    CreateRedfishResource  -  resourceURI
+    AddRedfishResourceProperty
         - "@odata.id"
         - Members:
-    UpdateOdataResourceProperty
-    RemoveOdataResourceProperty
+    UpdateRedfishResourceProperty
+    RemoveRedfishResourceProperty
     CreateCollection
     AddCollectionMember
     RemoveCollectionMember
 
 Events
-    OdataCreated
-    OdataPropertyAdded
-    OdataPropertyUpdated
-    OdataPropertyRemoved
+    RedfishCreated
+    RedfishPropertyAdded
+    RedfishPropertyUpdated
+    RedfishPropertyRemoved
 
 Exceptions:
-    OdataAlreadyExists
+    RedfishAlreadyExists
     PropertyAlreadyExists
     CollectionAlreadyExists
-    OdataDoesntExist
+    RedfishDoesntExist
     PropertyDoesntExist
     CollectionDoesntExist

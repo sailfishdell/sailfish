@@ -14,7 +14,7 @@ func Setup(
 	eventBus eh.EventBus,
 	eventPublisher eh.EventPublisher,
 	commandBus eh.CommandBus,
-	odataRepo eh.ReadWriteRepo,
+	redfishRepo eh.ReadWriteRepo,
 	treeID eh.UUID) {
 
 	// Add the logger as an observer.
@@ -32,64 +32,64 @@ func Setup(
 		log.Fatalf("could not create command handler: %s", err)
 	}
 
-	// Odata
-	handler.SetAggregate(OdataResourceAggregateType, CreateOdataResourceCommand)
-	handler.SetAggregate(OdataResourceAggregateType, AddOdataResourcePropertyCommand)
-	handler.SetAggregate(OdataResourceAggregateType, UpdateOdataResourcePropertyCommand)
-	handler.SetAggregate(OdataResourceAggregateType, RemoveOdataResourcePropertyCommand)
-	handler.SetAggregate(OdataResourceAggregateType, RemoveOdataResourceCommand)
+	// redfish
+	handler.SetAggregate(RedfishResourceAggregateType, CreateRedfishResourceCommand)
+	handler.SetAggregate(RedfishResourceAggregateType, AddRedfishResourcePropertyCommand)
+	handler.SetAggregate(RedfishResourceAggregateType, UpdateRedfishResourcePropertyCommand)
+	handler.SetAggregate(RedfishResourceAggregateType, RemoveRedfishResourcePropertyCommand)
+	handler.SetAggregate(RedfishResourceAggregateType, RemoveRedfishResourceCommand)
 
-	// OdataResourceCollection
-	handler.SetAggregate(OdataResourceAggregateType, CreateOdataResourceCollectionCommand)
-	handler.SetAggregate(OdataResourceAggregateType, AddOdataResourceCollectionMemberCommand)
-	handler.SetAggregate(OdataResourceAggregateType, RemoveOdataResourceCollectionMemberCommand)
+	// RedfishResourceCollection
+	handler.SetAggregate(RedfishResourceAggregateType, CreateRedfishResourceCollectionCommand)
+	handler.SetAggregate(RedfishResourceAggregateType, AddRedfishResourceCollectionMemberCommand)
+	handler.SetAggregate(RedfishResourceAggregateType, RemoveRedfishResourceCollectionMemberCommand)
 
-	handler.SetAggregate(OdataResourceAggregateType, UpdateOdataResourcePrivilegesCommand)
-	handler.SetAggregate(OdataResourceAggregateType, UpdateOdataResourcePermissionsCommand)
-	handler.SetAggregate(OdataResourceAggregateType, UpdateOdataResourceMethodsCommand)
-	handler.SetAggregate(OdataResourceAggregateType, AddOdataResourceHeaderCommand)
-	handler.SetAggregate(OdataResourceAggregateType, UpdateOdataResourceHeaderCommand)
-	handler.SetAggregate(OdataResourceAggregateType, RemoveOdataResourceHeaderCommand)
+	handler.SetAggregate(RedfishResourceAggregateType, UpdateRedfishResourcePrivilegesCommand)
+	handler.SetAggregate(RedfishResourceAggregateType, UpdateRedfishResourcePermissionsCommand)
+	handler.SetAggregate(RedfishResourceAggregateType, UpdateRedfishResourceMethodsCommand)
+	handler.SetAggregate(RedfishResourceAggregateType, AddRedfishResourceHeaderCommand)
+	handler.SetAggregate(RedfishResourceAggregateType, UpdateRedfishResourceHeaderCommand)
+	handler.SetAggregate(RedfishResourceAggregateType, RemoveRedfishResourceHeaderCommand)
 
 	// Create the command bus and register the handler for the commands.
     // WARNING: If you miss adding a handler for a command, then all command processesing stops when that command is emitted!
-	commandBus.SetHandler(handler, CreateOdataResourceCommand)
-	commandBus.SetHandler(handler, AddOdataResourcePropertyCommand)
-	commandBus.SetHandler(handler, UpdateOdataResourcePropertyCommand)
-	commandBus.SetHandler(handler, RemoveOdataResourcePropertyCommand)
-	commandBus.SetHandler(handler, RemoveOdataResourceCommand)
+	commandBus.SetHandler(handler, CreateRedfishResourceCommand)
+	commandBus.SetHandler(handler, AddRedfishResourcePropertyCommand)
+	commandBus.SetHandler(handler, UpdateRedfishResourcePropertyCommand)
+	commandBus.SetHandler(handler, RemoveRedfishResourcePropertyCommand)
+	commandBus.SetHandler(handler, RemoveRedfishResourceCommand)
 
-	commandBus.SetHandler(handler, CreateOdataResourceCollectionCommand)
-	commandBus.SetHandler(handler, AddOdataResourceCollectionMemberCommand)
-	commandBus.SetHandler(handler, RemoveOdataResourceCollectionMemberCommand)
+	commandBus.SetHandler(handler, CreateRedfishResourceCollectionCommand)
+	commandBus.SetHandler(handler, AddRedfishResourceCollectionMemberCommand)
+	commandBus.SetHandler(handler, RemoveRedfishResourceCollectionMemberCommand)
 
-	commandBus.SetHandler(handler, UpdateOdataResourcePrivilegesCommand)
-	commandBus.SetHandler(handler, UpdateOdataResourcePermissionsCommand)
-	commandBus.SetHandler(handler, UpdateOdataResourceMethodsCommand)
-	commandBus.SetHandler(handler, AddOdataResourceHeaderCommand)
-	commandBus.SetHandler(handler, UpdateOdataResourceHeaderCommand)
-	commandBus.SetHandler(handler, RemoveOdataResourceHeaderCommand)
+	commandBus.SetHandler(handler, UpdateRedfishResourcePrivilegesCommand)
+	commandBus.SetHandler(handler, UpdateRedfishResourcePermissionsCommand)
+	commandBus.SetHandler(handler, UpdateRedfishResourceMethodsCommand)
+	commandBus.SetHandler(handler, AddRedfishResourceHeaderCommand)
+	commandBus.SetHandler(handler, UpdateRedfishResourceHeaderCommand)
+	commandBus.SetHandler(handler, RemoveRedfishResourceHeaderCommand)
 
-	odataResourceProjector := projector.NewEventHandler(NewOdataProjector(), odataRepo)
-	odataResourceProjector.SetModel(func() interface{} { return &OdataResource{} })
-	eventBus.AddHandler(odataResourceProjector, OdataResourceCreatedEvent)
-	eventBus.AddHandler(odataResourceProjector, OdataResourcePropertyAddedEvent)
-	eventBus.AddHandler(odataResourceProjector, OdataResourcePropertyUpdatedEvent)
-	eventBus.AddHandler(odataResourceProjector, OdataResourcePropertyRemovedEvent)
-	eventBus.AddHandler(odataResourceProjector, OdataResourceRemovedEvent)
-	eventBus.AddHandler(odataResourceProjector, OdataResourcePrivilegesUpdatedEvent)
-	eventBus.AddHandler(odataResourceProjector, OdataResourcePermissionsUpdatedEvent)
-	eventBus.AddHandler(odataResourceProjector, OdataResourceMethodsUpdatedEvent)
-	eventBus.AddHandler(odataResourceProjector, OdataResourceHeaderAddedEvent)
-	eventBus.AddHandler(odataResourceProjector, OdataResourceHeaderUpdatedEvent)
-	eventBus.AddHandler(odataResourceProjector, OdataResourceHeaderRemovedEvent)
+	redfishResourceProjector := projector.NewEventHandler(NewRedfishProjector(), redfishRepo)
+	redfishResourceProjector.SetModel(func() interface{} { return &RedfishResource{} })
+	eventBus.AddHandler(redfishResourceProjector, RedfishResourceCreatedEvent)
+	eventBus.AddHandler(redfishResourceProjector, RedfishResourcePropertyAddedEvent)
+	eventBus.AddHandler(redfishResourceProjector, RedfishResourcePropertyUpdatedEvent)
+	eventBus.AddHandler(redfishResourceProjector, RedfishResourcePropertyRemovedEvent)
+	eventBus.AddHandler(redfishResourceProjector, RedfishResourceRemovedEvent)
+	eventBus.AddHandler(redfishResourceProjector, RedfishResourcePrivilegesUpdatedEvent)
+	eventBus.AddHandler(redfishResourceProjector, RedfishResourcePermissionsUpdatedEvent)
+	eventBus.AddHandler(redfishResourceProjector, RedfishResourceMethodsUpdatedEvent)
+	eventBus.AddHandler(redfishResourceProjector, RedfishResourceHeaderAddedEvent)
+	eventBus.AddHandler(redfishResourceProjector, RedfishResourceHeaderUpdatedEvent)
+	eventBus.AddHandler(redfishResourceProjector, RedfishResourceHeaderRemovedEvent)
 
 	// hook up tree rep
-	odataTreeProjector := NewOdataTreeProjector(odataRepo, treeID)
-	eventBus.AddHandler(odataTreeProjector, OdataResourceCreatedEvent)
-	eventBus.AddHandler(odataTreeProjector, OdataResourceRemovedEvent)
+	redfishTreeProjector := NewRedfishTreeProjector(redfishRepo, treeID)
+	eventBus.AddHandler(redfishTreeProjector, RedfishResourceCreatedEvent)
+	eventBus.AddHandler(redfishTreeProjector, RedfishResourceRemovedEvent)
 
-	privilegeSaga := saga.NewEventHandler(NewPrivilegeSaga(odataRepo), commandBus)
-	eventBus.AddHandler(privilegeSaga, OdataResourceCreatedEvent)
+	privilegeSaga := saga.NewEventHandler(NewPrivilegeSaga(redfishRepo), commandBus)
+	eventBus.AddHandler(privilegeSaga, RedfishResourceCreatedEvent)
 
 }

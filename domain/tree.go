@@ -15,7 +15,7 @@ var (
 	ErrNotFound = errors.New("Resource could not be found")
 )
 
-type OdataResource struct {
+type RedfishResource struct {
 	ID           eh.UUID
 	ResourceURI  string
 	Properties   map[string]interface{}
@@ -25,23 +25,23 @@ type OdataResource struct {
 	Methods      map[string]interface{}
 }
 
-type OdataProjector struct{}
+type RedfishProjector struct{}
 
-func NewOdataProjector() *OdataProjector {
-	return &OdataProjector{}
+func NewRedfishProjector() *RedfishProjector {
+	return &RedfishProjector{}
 }
 
-func (o *OdataProjector) ProjectorType() projector.Type { return projector.Type("OdataProjector") }
+func (o *RedfishProjector) ProjectorType() projector.Type { return projector.Type("RedfishProjector") }
 
-func (o *OdataProjector) Project(ctx context.Context, event eh.Event, model interface{}) (interface{}, error) {
-	item, ok := model.(*OdataResource)
+func (o *RedfishProjector) Project(ctx context.Context, event eh.Event, model interface{}) (interface{}, error) {
+	item, ok := model.(*RedfishResource)
 	if !ok {
 		return nil, errors.New("model is the wrong type")
 	}
 
 	switch event.EventType() {
-	case OdataResourceCreatedEvent:
-		data, ok := event.Data().(*OdataResourceCreatedData)
+	case RedfishResourceCreatedEvent:
+		data, ok := event.Data().(*RedfishResourceCreatedData)
 		if !ok {
 			return nil, errors.New("projector: invalid event data")
 		}
@@ -54,42 +54,42 @@ func (o *OdataProjector) Project(ctx context.Context, event eh.Event, model inte
 		item.Permissions = map[string]interface{}{}
 		item.Headers = map[string]string{}
 		item.Methods = map[string]interface{}{}
-	case OdataResourcePropertyAddedEvent:
-		if data, ok := event.Data().(*OdataResourcePropertyAddedData); ok {
+	case RedfishResourcePropertyAddedEvent:
+		if data, ok := event.Data().(*RedfishResourcePropertyAddedData); ok {
 			item.Properties[data.PropertyName] = data.PropertyValue
 		}
-	case OdataResourcePropertyUpdatedEvent:
-		if data, ok := event.Data().(*OdataResourcePropertyUpdatedData); ok {
+	case RedfishResourcePropertyUpdatedEvent:
+		if data, ok := event.Data().(*RedfishResourcePropertyUpdatedData); ok {
 			item.Properties[data.PropertyName] = data.PropertyValue
 		}
-	case OdataResourcePropertyRemovedEvent:
-		if data, ok := event.Data().(*OdataResourcePropertyRemovedData); ok {
+	case RedfishResourcePropertyRemovedEvent:
+		if data, ok := event.Data().(*RedfishResourcePropertyRemovedData); ok {
 			delete(item.Properties, data.PropertyName)
 		}
-	case OdataResourceRemovedEvent:
+	case RedfishResourceRemovedEvent:
 		// TODO ?
-	case OdataResourcePrivilegesUpdatedEvent:
-		if data, ok := event.Data().(*OdataResourcePrivilegesUpdatedData); ok {
+	case RedfishResourcePrivilegesUpdatedEvent:
+		if data, ok := event.Data().(*RedfishResourcePrivilegesUpdatedData); ok {
 			item.PrivilegeMap = data.Privileges
 		}
-	case OdataResourcePermissionsUpdatedEvent:
-		if data, ok := event.Data().(*OdataResourcePermissionsUpdatedData); ok {
+	case RedfishResourcePermissionsUpdatedEvent:
+		if data, ok := event.Data().(*RedfishResourcePermissionsUpdatedData); ok {
 			item.Permissions = data.Permissions
 		}
-	case OdataResourceMethodsUpdatedEvent:
-		if data, ok := event.Data().(*OdataResourceMethodsUpdatedData); ok {
+	case RedfishResourceMethodsUpdatedEvent:
+		if data, ok := event.Data().(*RedfishResourceMethodsUpdatedData); ok {
 			item.Methods = data.Methods
 		}
-	case OdataResourceHeaderAddedEvent:
-		if data, ok := event.Data().(*OdataResourceHeaderAddedData); ok {
+	case RedfishResourceHeaderAddedEvent:
+		if data, ok := event.Data().(*RedfishResourceHeaderAddedData); ok {
 			item.Headers[data.HeaderName] = data.HeaderValue
 		}
-	case OdataResourceHeaderUpdatedEvent:
-		if data, ok := event.Data().(*OdataResourceHeaderUpdatedData); ok {
+	case RedfishResourceHeaderUpdatedEvent:
+		if data, ok := event.Data().(*RedfishResourceHeaderUpdatedData); ok {
 			item.Headers[data.HeaderName] = data.HeaderValue
 		}
-	case OdataResourceHeaderRemovedEvent:
-		if data, ok := event.Data().(*OdataResourceHeaderRemovedData); ok {
+	case RedfishResourceHeaderRemovedEvent:
+		if data, ok := event.Data().(*RedfishResourceHeaderRemovedData); ok {
 			delete(item.Headers, data.HeaderName)
 		}
 	default:
@@ -99,24 +99,24 @@ func (o *OdataProjector) Project(ctx context.Context, event eh.Event, model inte
 	return item, nil
 }
 
-type OdataTree struct {
+type RedfishTree struct {
 	ID   eh.UUID
 	Tree map[string]eh.UUID
 }
 
-func (t *OdataTree) GetOdataResourceFromTree(ctx context.Context, repo eh.ReadRepo, resourceURI string) (ret *OdataResource, err error) {
+func (t *RedfishTree) GetRedfishResourceFromTree(ctx context.Context, repo eh.ReadRepo, resourceURI string) (ret *RedfishResource, err error) {
 	resource, err := repo.Find(ctx, t.Tree[resourceURI])
 	if err != nil {
 		return nil, ErrNotFound
 	}
-	ret, ok := resource.(*OdataResource)
+	ret, ok := resource.(*RedfishResource)
 	if !ok {
 		return nil, ErrNotFound
 	}
 	return
 }
 
-func (tree *OdataTree) WalkOdataResourceTree(ctx context.Context, repo eh.ReadRepo, start *OdataResource, path ...string) (ret *OdataResource, err error) {
+func (tree *RedfishTree) WalkRedfishResourceTree(ctx context.Context, repo eh.ReadRepo, start *RedfishResource, path ...string) (ret *RedfishResource, err error) {
 	var nextP, currentP interface{}
 	current := start
 	currentP = current.Properties
@@ -142,7 +142,7 @@ func (tree *OdataTree) WalkOdataResourceTree(ctx context.Context, repo eh.ReadRe
 
 		if p == "@odata.id" {
 			fmt.Printf("\t\twarp!\n")
-			current, err = tree.GetOdataResourceFromTree(ctx, repo, currentP.(string))
+			current, err = tree.GetRedfishResourceFromTree(ctx, repo, currentP.(string))
 			if err != nil {
 				return nil, err
 			}
@@ -155,37 +155,37 @@ func (tree *OdataTree) WalkOdataResourceTree(ctx context.Context, repo eh.ReadRe
 	return current, nil
 }
 
-type OdataTreeProjector struct {
+type RedfishTreeProjector struct {
 	repoMu sync.Mutex
 	repo   eh.ReadWriteRepo
 	treeID eh.UUID
 }
 
-func NewOdataTreeProjector(repo eh.ReadWriteRepo, treeID eh.UUID) *OdataTreeProjector {
-	return &OdataTreeProjector{
+func NewRedfishTreeProjector(repo eh.ReadWriteRepo, treeID eh.UUID) *RedfishTreeProjector {
+	return &RedfishTreeProjector{
 		treeID: treeID,
 		repo:   repo,
 	}
 }
 
 // HandlerType implements the HandlerType method of the EventHandler interface.
-func (p *OdataTreeProjector) HandlerType() eh.EventHandlerType {
-	return eh.EventHandlerType("OdataTreeProjector")
+func (p *RedfishTreeProjector) HandlerType() eh.EventHandlerType {
+	return eh.EventHandlerType("RedfishTreeProjector")
 }
 
-func (t *OdataTreeProjector) HandleEvent(ctx context.Context, event eh.Event) error {
+func (t *RedfishTreeProjector) HandleEvent(ctx context.Context, event eh.Event) error {
 	t.repoMu.Lock()
 	defer t.repoMu.Unlock()
 
 	// load tree
-	var tree *OdataTree
+	var tree *RedfishTree
 	m, err := t.repo.Find(ctx, t.treeID)
 	if rrErr, ok := err.(eh.RepoError); ok && rrErr.Err == eh.ErrModelNotFound {
-		tree = &OdataTree{ID: t.treeID, Tree: map[string]eh.UUID{}}
+		tree = &RedfishTree{ID: t.treeID, Tree: map[string]eh.UUID{}}
 	} else if err != nil {
 		return err
 	} else {
-		tree, ok = m.(*OdataTree)
+		tree, ok = m.(*RedfishTree)
 		if !ok {
 			return errors.New("got a model I can't handle")
 		}
@@ -194,11 +194,11 @@ func (t *OdataTreeProjector) HandleEvent(ctx context.Context, event eh.Event) er
 	var _ = tree
 
 	switch event.EventType() {
-	case OdataResourceCreatedEvent:
-		if data, ok := event.Data().(*OdataResourceCreatedData); ok {
+	case RedfishResourceCreatedEvent:
+		if data, ok := event.Data().(*RedfishResourceCreatedData); ok {
 			tree.Tree[data.ResourceURI] = event.AggregateID()
 		}
-	case OdataResourceRemovedEvent:
+	case RedfishResourceRemovedEvent:
 		// TODO
 		// 1) look up model using event.AggregateID()
 		// 2) look at the ResourceURI

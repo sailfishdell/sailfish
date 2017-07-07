@@ -11,38 +11,38 @@ var _ = fmt.Println
 
 func init() {
 	// odata
-	eh.RegisterCommand(func() eh.Command { return &CreateOdataResource{} })
-	eh.RegisterCommand(func() eh.Command { return &AddOdataResourceProperty{} })
-	eh.RegisterCommand(func() eh.Command { return &UpdateOdataResourceProperty{} })
-	eh.RegisterCommand(func() eh.Command { return &RemoveOdataResourceProperty{} })
-	eh.RegisterCommand(func() eh.Command { return &RemoveOdataResource{} })
+	eh.RegisterCommand(func() eh.Command { return &CreateRedfishResource{} })
+	eh.RegisterCommand(func() eh.Command { return &AddRedfishResourceProperty{} })
+	eh.RegisterCommand(func() eh.Command { return &UpdateRedfishResourceProperty{} })
+	eh.RegisterCommand(func() eh.Command { return &RemoveRedfishResourceProperty{} })
+	eh.RegisterCommand(func() eh.Command { return &RemoveRedfishResource{} })
 
 	// collections
-	eh.RegisterCommand(func() eh.Command { return &CreateOdataResourceCollection{} })
-	eh.RegisterCommand(func() eh.Command { return &AddOdataResourceCollectionMember{} })
-	eh.RegisterCommand(func() eh.Command { return &RemoveOdataResourceCollectionMember{} })
+	eh.RegisterCommand(func() eh.Command { return &CreateRedfishResourceCollection{} })
+	eh.RegisterCommand(func() eh.Command { return &AddRedfishResourceCollectionMember{} })
+	eh.RegisterCommand(func() eh.Command { return &RemoveRedfishResourceCollectionMember{} })
 }
 
 const (
-	CreateOdataResourceCommand         eh.CommandType = "CreateOdataResource"
-	AddOdataResourcePropertyCommand    eh.CommandType = "AddOdataResourceProperty"
-	UpdateOdataResourcePropertyCommand eh.CommandType = "UpdateOdataResourceProperty"
-	RemoveOdataResourcePropertyCommand eh.CommandType = "RemoveOdataResourceProperty"
-	RemoveOdataResourceCommand         eh.CommandType = "RemoveOdataResource"
+	CreateRedfishResourceCommand         eh.CommandType = "CreateRedfishResource"
+	AddRedfishResourcePropertyCommand    eh.CommandType = "AddRedfishResourceProperty"
+	UpdateRedfishResourcePropertyCommand eh.CommandType = "UpdateRedfishResourceProperty"
+	RemoveRedfishResourcePropertyCommand eh.CommandType = "RemoveRedfishResourceProperty"
+	RemoveRedfishResourceCommand         eh.CommandType = "RemoveRedfishResource"
 
-	CreateOdataResourceCollectionCommand       eh.CommandType = "CreateOdataResourceCollection"
-	AddOdataResourceCollectionMemberCommand    eh.CommandType = "AddOdataResourceCollectionMember"
-	RemoveOdataResourceCollectionMemberCommand eh.CommandType = "RemoveOdataResourceCollectionMember"
+	CreateRedfishResourceCollectionCommand       eh.CommandType = "CreateRedfishResourceCollection"
+	AddRedfishResourceCollectionMemberCommand    eh.CommandType = "AddRedfishResourceCollectionMember"
+	RemoveRedfishResourceCollectionMemberCommand eh.CommandType = "RemoveRedfishResourceCollectionMember"
 
-	UpdateOdataResourcePrivilegesCommand  eh.CommandType = "UpdateOdataResourcePrivileges"
-	UpdateOdataResourcePermissionsCommand eh.CommandType = "UpdateOdataResourcePermissions"
-	UpdateOdataResourceMethodsCommand     eh.CommandType = "UpdateOdataResourceMethods"
-	AddOdataResourceHeaderCommand         eh.CommandType = "AddOdataResourceHeader"
-	UpdateOdataResourceHeaderCommand      eh.CommandType = "UpdateOdataResourceHeader"
-	RemoveOdataResourceHeaderCommand      eh.CommandType = "RemoveOdataResourceHeader"
+	UpdateRedfishResourcePrivilegesCommand  eh.CommandType = "UpdateRedfishResourcePrivileges"
+	UpdateRedfishResourcePermissionsCommand eh.CommandType = "UpdateRedfishResourcePermissions"
+	UpdateRedfishResourceMethodsCommand     eh.CommandType = "UpdateRedfishResourceMethods"
+	AddRedfishResourceHeaderCommand         eh.CommandType = "AddRedfishResourceHeader"
+	UpdateRedfishResourceHeaderCommand      eh.CommandType = "UpdateRedfishResourceHeader"
+	RemoveRedfishResourceHeaderCommand      eh.CommandType = "RemoveRedfishResourceHeader"
 )
 
-type CreateOdataResource struct {
+type CreateRedfishResource struct {
 	UUID        eh.UUID
 	ResourceURI string
 	Type        string
@@ -50,42 +50,42 @@ type CreateOdataResource struct {
 	Properties  map[string]interface{}
 }
 
-func (c CreateOdataResource) AggregateID() eh.UUID            { return c.UUID }
-func (c CreateOdataResource) AggregateType() eh.AggregateType { return OdataResourceAggregateType }
-func (c CreateOdataResource) CommandType() eh.CommandType     { return CreateOdataResourceCommand }
-func (c CreateOdataResource) Handle(ctx context.Context, a *OdataResourceAggregate) error {
+func (c CreateRedfishResource) AggregateID() eh.UUID            { return c.UUID }
+func (c CreateRedfishResource) AggregateType() eh.AggregateType { return RedfishResourceAggregateType }
+func (c CreateRedfishResource) CommandType() eh.CommandType     { return CreateRedfishResourceCommand }
+func (c CreateRedfishResource) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
     fmt.Printf("\tStoring EVENTS to create resource\n")
-	a.StoreEvent(OdataResourceCreatedEvent,
-		&OdataResourceCreatedData{
+	a.StoreEvent(RedfishResourceCreatedEvent,
+		&RedfishResourceCreatedData{
 			ResourceURI: c.ResourceURI,
 		},
 	)
 
 	for k, v := range c.Properties {
-		a.StoreEvent(OdataResourcePropertyAddedEvent,
-			&OdataResourcePropertyAddedData{
+		a.StoreEvent(RedfishResourcePropertyAddedEvent,
+			&RedfishResourcePropertyAddedData{
 				PropertyName:  k,
 				PropertyValue: v,
 			},
 		)
 	}
 
-	a.StoreEvent(OdataResourcePropertyAddedEvent,
-		&OdataResourcePropertyAddedData{
+	a.StoreEvent(RedfishResourcePropertyAddedEvent,
+		&RedfishResourcePropertyAddedData{
 			PropertyName:  "@odata.id",
 			PropertyValue: c.ResourceURI,
 		},
 	)
 
-	a.StoreEvent(OdataResourcePropertyAddedEvent,
-		&OdataResourcePropertyAddedData{
+	a.StoreEvent(RedfishResourcePropertyAddedEvent,
+		&RedfishResourcePropertyAddedData{
 			PropertyName:  "@odata.type",
 			PropertyValue: c.Type,
 		},
 	)
 
-	a.StoreEvent(OdataResourcePropertyAddedEvent,
-		&OdataResourcePropertyAddedData{
+	a.StoreEvent(RedfishResourcePropertyAddedEvent,
+		&RedfishResourcePropertyAddedData{
 			PropertyName:  "@odata.context",
 			PropertyValue: c.Context,
 		},
@@ -94,20 +94,20 @@ func (c CreateOdataResource) Handle(ctx context.Context, a *OdataResourceAggrega
 	return nil
 }
 
-type AddOdataResourceProperty struct {
+type AddRedfishResourceProperty struct {
 	UUID          eh.UUID
 	PropertyName  string
 	PropertyValue interface{}
 }
 
-func (c AddOdataResourceProperty) AggregateID() eh.UUID            { return c.UUID }
-func (c AddOdataResourceProperty) AggregateType() eh.AggregateType { return OdataResourceAggregateType }
-func (c AddOdataResourceProperty) CommandType() eh.CommandType     { return AddOdataResourcePropertyCommand }
-func (c AddOdataResourceProperty) Handle(ctx context.Context, a *OdataResourceAggregate) error {
+func (c AddRedfishResourceProperty) AggregateID() eh.UUID            { return c.UUID }
+func (c AddRedfishResourceProperty) AggregateType() eh.AggregateType { return RedfishResourceAggregateType }
+func (c AddRedfishResourceProperty) CommandType() eh.CommandType     { return AddRedfishResourcePropertyCommand }
+func (c AddRedfishResourceProperty) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 	if _, ok := a.Properties[c.PropertyName]; !ok {
 
-		a.StoreEvent(OdataResourcePropertyAddedEvent,
-			&OdataResourcePropertyAddedData{
+		a.StoreEvent(RedfishResourcePropertyAddedEvent,
+			&RedfishResourcePropertyAddedData{
 				PropertyName:  c.PropertyName,
 				PropertyValue: c.PropertyValue,
 			},
@@ -119,24 +119,24 @@ func (c AddOdataResourceProperty) Handle(ctx context.Context, a *OdataResourceAg
 	return errors.New("Property already exists")
 }
 
-type UpdateOdataResourceProperty struct {
+type UpdateRedfishResourceProperty struct {
 	UUID          eh.UUID
 	PropertyName  string
 	PropertyValue interface{}
 }
 
-func (c UpdateOdataResourceProperty) AggregateID() eh.UUID { return c.UUID }
-func (c UpdateOdataResourceProperty) AggregateType() eh.AggregateType {
-	return OdataResourceAggregateType
+func (c UpdateRedfishResourceProperty) AggregateID() eh.UUID { return c.UUID }
+func (c UpdateRedfishResourceProperty) AggregateType() eh.AggregateType {
+	return RedfishResourceAggregateType
 }
-func (c UpdateOdataResourceProperty) CommandType() eh.CommandType {
-	return UpdateOdataResourcePropertyCommand
+func (c UpdateRedfishResourceProperty) CommandType() eh.CommandType {
+	return UpdateRedfishResourcePropertyCommand
 }
-func (c UpdateOdataResourceProperty) Handle(ctx context.Context, a *OdataResourceAggregate) error {
+func (c UpdateRedfishResourceProperty) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 	if _, ok := a.Properties[c.PropertyName]; ok {
 
-		a.StoreEvent(OdataResourcePropertyUpdatedEvent,
-			&OdataResourcePropertyUpdatedData{
+		a.StoreEvent(RedfishResourcePropertyUpdatedEvent,
+			&RedfishResourcePropertyUpdatedData{
 				PropertyName:  c.PropertyName,
 				PropertyValue: c.PropertyValue,
 			},
@@ -148,23 +148,23 @@ func (c UpdateOdataResourceProperty) Handle(ctx context.Context, a *OdataResourc
 	return errors.New("Property doesnt exist")
 }
 
-type RemoveOdataResourceProperty struct {
+type RemoveRedfishResourceProperty struct {
 	UUID         eh.UUID
 	PropertyName string
 }
 
-func (c RemoveOdataResourceProperty) AggregateID() eh.UUID { return c.UUID }
-func (c RemoveOdataResourceProperty) AggregateType() eh.AggregateType {
-	return OdataResourceAggregateType
+func (c RemoveRedfishResourceProperty) AggregateID() eh.UUID { return c.UUID }
+func (c RemoveRedfishResourceProperty) AggregateType() eh.AggregateType {
+	return RedfishResourceAggregateType
 }
-func (c RemoveOdataResourceProperty) CommandType() eh.CommandType {
-	return RemoveOdataResourcePropertyCommand
+func (c RemoveRedfishResourceProperty) CommandType() eh.CommandType {
+	return RemoveRedfishResourcePropertyCommand
 }
-func (c RemoveOdataResourceProperty) Handle(ctx context.Context, a *OdataResourceAggregate) error {
+func (c RemoveRedfishResourceProperty) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 	if _, ok := a.Properties[c.PropertyName]; ok {
 
-		a.StoreEvent(OdataResourcePropertyRemovedEvent,
-			&OdataResourcePropertyRemovedData{
+		a.StoreEvent(RedfishResourcePropertyRemovedEvent,
+			&RedfishResourcePropertyRemovedData{
 				PropertyName: c.PropertyName,
 			},
 		)
@@ -175,19 +175,19 @@ func (c RemoveOdataResourceProperty) Handle(ctx context.Context, a *OdataResourc
 	return errors.New("Property doesnt exist")
 }
 
-type RemoveOdataResource struct {
+type RemoveRedfishResource struct {
 	UUID eh.UUID
 }
 
-func (c RemoveOdataResource) AggregateID() eh.UUID            { return c.UUID }
-func (c RemoveOdataResource) AggregateType() eh.AggregateType { return OdataResourceAggregateType }
-func (c RemoveOdataResource) CommandType() eh.CommandType     { return RemoveOdataResourceCommand }
-func (c RemoveOdataResource) Handle(ctx context.Context, a *OdataResourceAggregate) error {
-	a.StoreEvent(OdataResourceRemovedEvent, nil)
+func (c RemoveRedfishResource) AggregateID() eh.UUID            { return c.UUID }
+func (c RemoveRedfishResource) AggregateType() eh.AggregateType { return RedfishResourceAggregateType }
+func (c RemoveRedfishResource) CommandType() eh.CommandType     { return RemoveRedfishResourceCommand }
+func (c RemoveRedfishResource) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
+	a.StoreEvent(RedfishResourceRemovedEvent, nil)
 	return nil
 }
 
-type CreateOdataResourceCollection struct {
+type CreateRedfishResourceCollection struct {
 	UUID        eh.UUID
 	ResourceURI string
 	Type        string
@@ -196,16 +196,16 @@ type CreateOdataResourceCollection struct {
 	Members     []string
 }
 
-func (c CreateOdataResourceCollection) AggregateID() eh.UUID { return c.UUID }
-func (c CreateOdataResourceCollection) AggregateType() eh.AggregateType {
-	return OdataResourceAggregateType
+func (c CreateRedfishResourceCollection) AggregateID() eh.UUID { return c.UUID }
+func (c CreateRedfishResourceCollection) AggregateType() eh.AggregateType {
+	return RedfishResourceAggregateType
 }
-func (c CreateOdataResourceCollection) CommandType() eh.CommandType {
-	return CreateOdataResourceCollectionCommand
+func (c CreateRedfishResourceCollection) CommandType() eh.CommandType {
+	return CreateRedfishResourceCollectionCommand
 }
-func (c CreateOdataResourceCollection) Handle(ctx context.Context, a *OdataResourceAggregate) error {
-	a.StoreEvent(OdataResourceCreatedEvent,
-		&OdataResourceCreatedData{
+func (c CreateRedfishResourceCollection) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
+	a.StoreEvent(RedfishResourceCreatedEvent,
+		&RedfishResourceCreatedData{
 			ResourceURI: c.ResourceURI,
 			Type:        c.Type,
 			Context:     c.Context,
@@ -213,16 +213,16 @@ func (c CreateOdataResourceCollection) Handle(ctx context.Context, a *OdataResou
 	)
 
 	for k, v := range c.Properties {
-		a.StoreEvent(OdataResourcePropertyAddedEvent,
-			&OdataResourcePropertyAddedData{
+		a.StoreEvent(RedfishResourcePropertyAddedEvent,
+			&RedfishResourcePropertyAddedData{
 				PropertyName:  k,
 				PropertyValue: v,
 			},
 		)
 	}
 
-	a.StoreEvent(OdataResourcePropertyAddedEvent,
-		&OdataResourcePropertyAddedData{
+	a.StoreEvent(RedfishResourcePropertyAddedEvent,
+		&RedfishResourcePropertyAddedData{
 			PropertyName:  "Members@odata.count",
 			PropertyValue: len(c.Members),
 		},
@@ -233,29 +233,29 @@ func (c CreateOdataResourceCollection) Handle(ctx context.Context, a *OdataResou
 		nm = append(nm, map[string]interface{}{"@odata.id": v})
 	}
 
-	a.StoreEvent(OdataResourcePropertyAddedEvent,
-		&OdataResourcePropertyAddedData{
+	a.StoreEvent(RedfishResourcePropertyAddedEvent,
+		&RedfishResourcePropertyAddedData{
 			PropertyName:  "Members",
 			PropertyValue: nm,
 		},
 	)
 
-	a.StoreEvent(OdataResourcePropertyAddedEvent,
-		&OdataResourcePropertyAddedData{
+	a.StoreEvent(RedfishResourcePropertyAddedEvent,
+		&RedfishResourcePropertyAddedData{
 			PropertyName:  "@odata.id",
 			PropertyValue: c.ResourceURI,
 		},
 	)
 
-	a.StoreEvent(OdataResourcePropertyAddedEvent,
-		&OdataResourcePropertyAddedData{
+	a.StoreEvent(RedfishResourcePropertyAddedEvent,
+		&RedfishResourcePropertyAddedData{
 			PropertyName:  "@odata.type",
 			PropertyValue: c.Type,
 		},
 	)
 
-	a.StoreEvent(OdataResourcePropertyAddedEvent,
-		&OdataResourcePropertyAddedData{
+	a.StoreEvent(RedfishResourcePropertyAddedEvent,
+		&RedfishResourcePropertyAddedData{
 			PropertyName:  "@odata.context",
 			PropertyValue: c.Context,
 		},
@@ -264,31 +264,31 @@ func (c CreateOdataResourceCollection) Handle(ctx context.Context, a *OdataResou
 	return nil
 }
 
-type AddOdataResourceCollectionMember struct {
+type AddRedfishResourceCollectionMember struct {
 	UUID      eh.UUID
 	MemberURI string
 }
 
-func (c AddOdataResourceCollectionMember) AggregateID() eh.UUID { return c.UUID }
-func (c AddOdataResourceCollectionMember) AggregateType() eh.AggregateType {
-	return OdataResourceAggregateType
+func (c AddRedfishResourceCollectionMember) AggregateID() eh.UUID { return c.UUID }
+func (c AddRedfishResourceCollectionMember) AggregateType() eh.AggregateType {
+	return RedfishResourceAggregateType
 }
-func (c AddOdataResourceCollectionMember) CommandType() eh.CommandType {
-	return AddOdataResourceCollectionMemberCommand
+func (c AddRedfishResourceCollectionMember) CommandType() eh.CommandType {
+	return AddRedfishResourceCollectionMemberCommand
 }
-func (c AddOdataResourceCollectionMember) Handle(ctx context.Context, a *OdataResourceAggregate) error {
+func (c AddRedfishResourceCollectionMember) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 
 	nm := a.Properties["Members"].([]map[string]interface{})
 
-	a.StoreEvent(OdataResourcePropertyAddedEvent,
-		&OdataResourcePropertyAddedData{
+	a.StoreEvent(RedfishResourcePropertyAddedEvent,
+		&RedfishResourcePropertyAddedData{
 			PropertyName:  "Members",
 			PropertyValue: append(nm, map[string]interface{}{"@odata.id": c.MemberURI}),
 		},
 	)
 
-	a.StoreEvent(OdataResourcePropertyAddedEvent,
-		&OdataResourcePropertyAddedData{
+	a.StoreEvent(RedfishResourcePropertyAddedEvent,
+		&RedfishResourcePropertyAddedData{
 			PropertyName:  "Members@odata.count",
 			PropertyValue: len(nm) + 1,
 		},
@@ -297,39 +297,39 @@ func (c AddOdataResourceCollectionMember) Handle(ctx context.Context, a *OdataRe
 	return nil
 }
 
-type RemoveOdataResourceCollectionMember struct {
+type RemoveRedfishResourceCollectionMember struct {
 	UUID      eh.UUID
 	MemberURI string
 }
 
-func (c RemoveOdataResourceCollectionMember) AggregateID() eh.UUID { return c.UUID }
-func (c RemoveOdataResourceCollectionMember) AggregateType() eh.AggregateType {
-	return OdataResourceAggregateType
+func (c RemoveRedfishResourceCollectionMember) AggregateID() eh.UUID { return c.UUID }
+func (c RemoveRedfishResourceCollectionMember) AggregateType() eh.AggregateType {
+	return RedfishResourceAggregateType
 }
-func (c RemoveOdataResourceCollectionMember) CommandType() eh.CommandType {
-	return RemoveOdataResourceCollectionMemberCommand
+func (c RemoveRedfishResourceCollectionMember) CommandType() eh.CommandType {
+	return RemoveRedfishResourceCollectionMemberCommand
 }
-func (c RemoveOdataResourceCollectionMember) Handle(ctx context.Context, a *OdataResourceAggregate) error {
+func (c RemoveRedfishResourceCollectionMember) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 	// TODO
 	return nil
 }
 
-type UpdateOdataResourcePrivileges struct {
+type UpdateRedfishResourcePrivileges struct {
 	UUID       eh.UUID
 	Privileges map[string]interface{}
 }
 
-func (c UpdateOdataResourcePrivileges) AggregateID() eh.UUID { return c.UUID }
-func (c UpdateOdataResourcePrivileges) AggregateType() eh.AggregateType {
-	return OdataResourceAggregateType
+func (c UpdateRedfishResourcePrivileges) AggregateID() eh.UUID { return c.UUID }
+func (c UpdateRedfishResourcePrivileges) AggregateType() eh.AggregateType {
+	return RedfishResourceAggregateType
 }
-func (c UpdateOdataResourcePrivileges) CommandType() eh.CommandType {
-	return UpdateOdataResourcePrivilegesCommand
+func (c UpdateRedfishResourcePrivileges) CommandType() eh.CommandType {
+	return UpdateRedfishResourcePrivilegesCommand
 }
-func (c UpdateOdataResourcePrivileges) Handle(ctx context.Context, a *OdataResourceAggregate) error {
-    fmt.Printf("HANDLE UpdateOdataResourcePrivileges\n")
-	a.StoreEvent(OdataResourcePrivilegesUpdatedEvent,
-		&OdataResourcePrivilegesUpdatedData{
+func (c UpdateRedfishResourcePrivileges) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
+    fmt.Printf("HANDLE UpdateRedfishResourcePrivileges\n")
+	a.StoreEvent(RedfishResourcePrivilegesUpdatedEvent,
+		&RedfishResourcePrivilegesUpdatedData{
 			Privileges: c.Privileges,
 		},
 	)

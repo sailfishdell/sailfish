@@ -11,13 +11,13 @@ var _ = fmt.Println
 
 func init() {
 	eh.RegisterAggregate(func(id eh.UUID) eh.Aggregate {
-		return NewOdataResourceAggregate(id)
+		return NewRedfishResourceAggregate(id)
 	})
 }
 
-const OdataResourceAggregateType eh.AggregateType = "Odata"
+const RedfishResourceAggregateType eh.AggregateType = "RedfishResource"
 
-type OdataResourceAggregate struct {
+type RedfishResourceAggregate struct {
 	// AggregateBase implements most of the eventhorizon.Aggregate interface.
 	*eh.AggregateBase
 	ResourceURI  string
@@ -28,49 +28,49 @@ type OdataResourceAggregate struct {
 	Methods      map[string]interface{}
 }
 
-func NewOdataResourceAggregate(id eh.UUID) *OdataResourceAggregate {
-	return &OdataResourceAggregate{
-		AggregateBase: eh.NewAggregateBase(OdataResourceAggregateType, id),
+func NewRedfishResourceAggregate(id eh.UUID) *RedfishResourceAggregate {
+	return &RedfishResourceAggregate{
+		AggregateBase: eh.NewAggregateBase(RedfishResourceAggregateType, id),
 	}
 }
 
-type OACmdHandler interface {
-	Handle(ctx context.Context, a *OdataResourceAggregate) error
+type RRCmdHandler interface {
+	Handle(ctx context.Context, a *RedfishResourceAggregate) error
 }
 
-func (a *OdataResourceAggregate) HandleCommand(ctx context.Context, command eh.Command) error {
+func (a *RedfishResourceAggregate) HandleCommand(ctx context.Context, command eh.Command) error {
 	switch command := command.(type) {
-	case OACmdHandler:
-        fmt.Printf("Handle command OdataResourceAggregate: %t\n", command)
+	case RRCmdHandler:
+        fmt.Printf("Handle command RedfishResourceAggregate: %t\n", command)
 		return command.Handle(ctx, a)
 	}
 
 	return nil
 }
 
-func (a *OdataResourceAggregate) ApplyEvent(ctx context.Context, event eh.Event) error {
+func (a *RedfishResourceAggregate) ApplyEvent(ctx context.Context, event eh.Event) error {
 	switch event.EventType() {
-	case OdataResourceCreatedEvent:
-		if data, ok := event.Data().(*OdataResourceCreatedData); ok {
+	case RedfishResourceCreatedEvent:
+		if data, ok := event.Data().(*RedfishResourceCreatedData); ok {
 			a.ResourceURI = data.ResourceURI
 			a.Properties = map[string]interface{}{}
 			for k, v := range data.Properties {
 				a.Properties[k] = v
 			}
 		}
-	case OdataResourcePropertyAddedEvent:
-		if data, ok := event.Data().(*OdataResourcePropertyAddedData); ok {
+	case RedfishResourcePropertyAddedEvent:
+		if data, ok := event.Data().(*RedfishResourcePropertyAddedData); ok {
 			a.Properties[data.PropertyName] = data.PropertyValue
 		}
-	case OdataResourcePropertyUpdatedEvent:
-		if data, ok := event.Data().(*OdataResourcePropertyUpdatedData); ok {
+	case RedfishResourcePropertyUpdatedEvent:
+		if data, ok := event.Data().(*RedfishResourcePropertyUpdatedData); ok {
 			a.Properties[data.PropertyName] = data.PropertyValue
 		}
-	case OdataResourcePropertyRemovedEvent:
-		if data, ok := event.Data().(*OdataResourcePropertyRemovedData); ok {
+	case RedfishResourcePropertyRemovedEvent:
+		if data, ok := event.Data().(*RedfishResourcePropertyRemovedData); ok {
 			delete(a.Properties, data.PropertyName)
 		}
-	case OdataResourceRemovedEvent:
+	case RedfishResourceRemovedEvent:
 		// no-op
 	}
 

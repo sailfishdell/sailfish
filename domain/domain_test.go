@@ -32,7 +32,7 @@ func TestExample(t *testing.T) {
 	commandBus := commandbus.NewCommandBus()
 
 	// Create the read repositories.
-	odataRepo := repo.NewRepo()
+	redfishRepo := repo.NewRepo()
 
 	// Setup the domain.
 	treeID := eh.NewUUID()
@@ -41,7 +41,7 @@ func TestExample(t *testing.T) {
 		eventBus,
 		eventPublisher,
 		commandBus,
-		odataRepo,
+		redfishRepo,
 		treeID,
 	)
 
@@ -57,73 +57,73 @@ func TestExample(t *testing.T) {
 	obj4 := eh.NewUUID()
 
 	// Issue some invitations and responses. Error checking omitted here.
-	if err := commandBus.HandleCommand(ctx, &CreateOdataResourceCollection{UUID: obj1, ResourceURI: "/", Properties: map[string]interface{}{}, Members: []string{}}); err != nil {
+	if err := commandBus.HandleCommand(ctx, &CreateRedfishResourceCollection{UUID: obj1, ResourceURI: "/", Properties: map[string]interface{}{}, Members: []string{}}); err != nil {
 		log.Println("error:", err)
 	}
-	if err := commandBus.HandleCommand(ctx, &CreateOdataResource{UUID: obj2, ResourceURI: "/foo", Properties: map[string]interface{}{}}); err != nil {
+	if err := commandBus.HandleCommand(ctx, &CreateRedfishResource{UUID: obj2, ResourceURI: "/foo", Properties: map[string]interface{}{}}); err != nil {
 		log.Println("error:", err)
 	}
-	if err := commandBus.HandleCommand(ctx, &CreateOdataResource{UUID: obj3, ResourceURI: "/bar", Properties: map[string]interface{}{}}); err != nil {
+	if err := commandBus.HandleCommand(ctx, &CreateRedfishResource{UUID: obj3, ResourceURI: "/bar", Properties: map[string]interface{}{}}); err != nil {
 		log.Println("error:", err)
 	}
-	if err := commandBus.HandleCommand(ctx, &CreateOdataResource{UUID: obj4, ResourceURI: "/baz", Properties: map[string]interface{}{}}); err != nil {
+	if err := commandBus.HandleCommand(ctx, &CreateRedfishResource{UUID: obj4, ResourceURI: "/baz", Properties: map[string]interface{}{}}); err != nil {
 		log.Println("error:", err)
 	}
 
 	fmt.Println("snooze")
-	if err := commandBus.HandleCommand(ctx, &AddOdataResourceProperty{UUID: obj1, PropertyName: "snooze", PropertyValue: "42"}); err != nil {
+	if err := commandBus.HandleCommand(ctx, &AddRedfishResourceProperty{UUID: obj1, PropertyName: "snooze", PropertyValue: "42"}); err != nil {
 		log.Println("error:", err)
 	}
 
 	fmt.Println("obj2_prop")
-	if err := commandBus.HandleCommand(ctx, &AddOdataResourceProperty{UUID: obj2, PropertyName: "obj2_prop", PropertyValue: "43"}); err != nil {
+	if err := commandBus.HandleCommand(ctx, &AddRedfishResourceProperty{UUID: obj2, PropertyName: "obj2_prop", PropertyValue: "43"}); err != nil {
 		log.Println("error:", err)
 	}
 
 	fmt.Println("obj3_prop")
-	if err := commandBus.HandleCommand(ctx, &AddOdataResourceProperty{UUID: obj3, PropertyName: "obj3_prop", PropertyValue: "44"}); err != nil {
+	if err := commandBus.HandleCommand(ctx, &AddRedfishResourceProperty{UUID: obj3, PropertyName: "obj3_prop", PropertyValue: "44"}); err != nil {
 		log.Println("error:", err)
 	}
 
-	rawTree, err := odataRepo.Find(ctx, treeID)
+	rawTree, err := redfishRepo.Find(ctx, treeID)
 	if err != nil {
 		fmt.Printf("could not find tree: %s\n", err.Error())
 	}
 
-	tree, ok := rawTree.(*OdataTree)
+	tree, ok := rawTree.(*RedfishTree)
 	if !ok {
 		fmt.Printf("somehow it wasnt a tree! %s\n", err.Error())
 	}
 
 	fmt.Printf("/: %#v\n", tree.Tree["/"])
-	rootRaw, err := odataRepo.Find(ctx, tree.Tree["/"])
+	rootRaw, err := redfishRepo.Find(ctx, tree.Tree["/"])
 	if err != nil {
 		fmt.Printf("could not find tree: %s\n", err.Error())
 	}
-	root, ok := rootRaw.(*OdataResource)
+	root, ok := rootRaw.(*RedfishResource)
 	fmt.Printf("\t(%s)--> %#v\n", ok, root)
 
 	fmt.Printf("/foo: %#v\n", tree.Tree["/foo"])
-	fooRaw, err := odataRepo.Find(ctx, tree.Tree["/foo"])
+	fooRaw, err := redfishRepo.Find(ctx, tree.Tree["/foo"])
 	if err != nil {
 		fmt.Printf("could not find tree: %s\n", err.Error())
 	}
-	root, ok = fooRaw.(*OdataResource)
+	root, ok = fooRaw.(*RedfishResource)
 	fmt.Printf("\t(%s)--> %#v\n", ok, root)
 
 	fmt.Printf("/bar: %#v\n", tree.Tree["/bar"])
-	barRaw, err := odataRepo.Find(ctx, tree.Tree["/bar"])
+	barRaw, err := redfishRepo.Find(ctx, tree.Tree["/bar"])
 	if err != nil {
 		fmt.Printf("could not find tree: %s\n", err.Error())
 	}
-	root, ok = barRaw.(*OdataResource)
+	root, ok = barRaw.(*RedfishResource)
 	fmt.Printf("\t(%s)--> %#v\n", ok, root)
 
 	fmt.Printf("/baz: %#v\n", tree.Tree["/baz"])
-	bazRaw, err := odataRepo.Find(ctx, tree.Tree["/baz"])
+	bazRaw, err := redfishRepo.Find(ctx, tree.Tree["/baz"])
 	if err != nil {
 		fmt.Printf("could not find tree: %s\n", err.Error())
 	}
-	root, ok = bazRaw.(*OdataResource)
+	root, ok = bazRaw.(*RedfishResource)
 	fmt.Printf("\t(%s)--> %#v\n", ok, root)
 }

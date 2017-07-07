@@ -35,11 +35,22 @@ func NewRedfishHandler(svc Service, baseURI string, verURI string, logger log.Lo
 
 	r.Methods("GET").PathPrefix(baseURI + "/").Handler(
 		httptransport.NewServer(
-			makeOdataGetEndpoint(svc),
+			makeRedfishGetEndpoint(svc),
 			decodeRedfishGetRequest,
 			encodeResponse,
 			options...,
 		))
+
+/*
+	r.Methods("POST").PathPrefix(baseURI + "/").Handler(
+		httptransport.NewServer(
+			makeRedfishGetEndpoint(svc),
+			decodeRedfishGetRequest,
+			encodeResponse,
+			options...,
+		))
+*/
+
 
 	return r
 }
@@ -86,7 +97,7 @@ func decodeRedfishGetRequest(_ context.Context, r *http.Request) (dec interface{
 		}
 	}
 
-	dec = odataResourceGetRequest{headers: headers, url: r.URL.Path, args: mux.Vars(r), privileges: []string{"Unauthenticated"}}
+	dec = redfishResourceGetRequest{headers: headers, url: r.URL.Path, args: mux.Vars(r), privileges: []string{"Unauthenticated"}}
 	return dec, nil
 }
 
@@ -114,7 +125,7 @@ func encodeResponse(ctx context.Context, w http.ResponseWriter, response interfa
 		return nil
 	}
 
-	decoded := response.(odataResourceGetResponse)
+	decoded := response.(redfishResourceGetResponse)
 
 	switch output := decoded.output.(type) {
 	case []byte:

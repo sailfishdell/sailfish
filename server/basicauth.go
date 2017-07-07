@@ -17,7 +17,7 @@ type basicAuthService struct {
 	verURI    string
 	treeID    eh.UUID
 	cmdbus    *commandbus.CommandBus
-	odataRepo *repo.Repo
+	redfishRepo *repo.Repo
 }
 
 // step 1: basic auth against pre-defined account collection/role collection
@@ -32,16 +32,16 @@ type basicAuthService struct {
 
 // NewBasicAuthService returns a new instance of a basicAuth Service.
 func NewBasicAuthService(s Service, commandbus *commandbus.CommandBus, repo *repo.Repo, id eh.UUID, baseURI string) Service {
-	return &basicAuthService{Service: s, cmdbus: commandbus, odataRepo: repo, treeID: id, baseURI: baseURI, verURI: "v1"}
+	return &basicAuthService{Service: s, cmdbus: commandbus, redfishRepo: repo, treeID: id, baseURI: baseURI, verURI: "v1"}
 }
 
-func (s *basicAuthService) getTree(ctx context.Context) (t *domain.OdataTree, err error) {
-	rawTree, err := s.odataRepo.Find(ctx, s.treeID)
+func (s *basicAuthService) getTree(ctx context.Context) (t *domain.RedfishTree, err error) {
+	rawTree, err := s.redfishRepo.Find(ctx, s.treeID)
 	if err != nil {
 		return nil, errors.New("could not find tree with ID: " + string(s.treeID) + " error is: " + err.Error())
 	}
 
-	t, ok := rawTree.(*domain.OdataTree)
+	t, ok := rawTree.(*domain.RedfishTree)
 	if !ok {
 		fmt.Printf("somehow it wasnt a tree! %s\n", err.Error())
 		return nil, errors.New("Data structure inconsistency, the tree object wasnt a tree!: " + string(s.treeID) + " error is: " + err.Error())
@@ -50,13 +50,13 @@ func (s *basicAuthService) getTree(ctx context.Context) (t *domain.OdataTree, er
 	return
 }
 
-func (s *basicAuthService) GetOdataResource(ctx context.Context, headers map[string]string, url string, args map[string]string, privileges []string) (ret interface{}, err error) {
+func (s *basicAuthService) GetRedfishResource(ctx context.Context, headers map[string]string, url string, args map[string]string, privileges []string) (ret interface{}, err error) {
 	// the only thing we do in this service is look up the username/password and verify, then look up role, then assign privileges based on role
 	var user, pass string
 	var ok bool
-	var tree *domain.OdataTree
-	var rootService *domain.OdataResource
-	var accounts *domain.OdataResource
+	var tree *domain.RedfishTree
+	var rootService *domain.RedfishResource
+	var accounts *domain.RedfishResource
 	var members interface{}
 	var memberList []map[string]interface{}
 
@@ -72,10 +72,10 @@ func (s *basicAuthService) GetOdataResource(ctx context.Context, headers map[str
 
 	// start looking up user in auth service
 	tree, err = s.getTree(ctx)
-	rootService, err = tree.GetOdataResourceFromTree(ctx, s.odataRepo, s.baseURI+"/v1/")
+	rootService, err = tree.GetRedfishResourceFromTree(ctx, s.redfishRepo, s.baseURI+"/v1/")
 
 	// Pull up the Accounts Collection
-	accounts, err = tree.WalkOdataResourceTree(ctx, s.odataRepo, rootService, "AccountService", "@odata.id", "Accounts", "@odata.id")
+	accounts, err = tree.WalkRedfishResourceTree(ctx, s.redfishRepo, rootService, "AccountService", "@odata.id", "Accounts", "@odata.id")
 	if err != nil {
 		goto out
 	}
@@ -93,7 +93,7 @@ func (s *basicAuthService) GetOdataResource(ctx context.Context, headers map[str
 	}
 
 	for _, m := range memberList {
-		a, _ := tree.GetOdataResourceFromTree(ctx, s.odataRepo, m["@odata.id"].(string))
+		a, _ := tree.GetRedfishResourceFromTree(ctx, s.redfishRepo, m["@odata.id"].(string))
 		if a == nil {
 			continue
 		}
@@ -107,7 +107,7 @@ func (s *basicAuthService) GetOdataResource(ctx context.Context, headers map[str
 		if memberUser != user {
 			continue
 		}
-		role, _ := tree.WalkOdataResourceTree(ctx, s.odataRepo, a, "Links", "Role", "@odata.id")
+		role, _ := tree.WalkRedfishResourceTree(ctx, s.redfishRepo, a, "Links", "Role", "@odata.id")
 		privs, ok := role.Properties["AssignedPrivileges"]
 		if !ok {
 			continue
@@ -130,5 +130,5 @@ func (s *basicAuthService) GetOdataResource(ctx context.Context, headers map[str
 	}
 
 out:
-	return s.Service.GetOdataResource(ctx, headers, url, args, privileges)
+	return s.Service.GetRedfishResource(ctx, headers, url, args, privileges)
 }

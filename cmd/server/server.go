@@ -105,7 +105,7 @@ func main() {
 	commandBus := commandbus.NewCommandBus()
 
 	// Create the read repositories.
-	odataRepo := repo.NewRepo()
+	redfishRepo := repo.NewRepo()
 
 	// Setup the domain.
 	treeID := eh.NewUUID()
@@ -114,7 +114,7 @@ func main() {
 		eventBus,
 		eventPublisher,
 		commandBus,
-		odataRepo,
+		redfishRepo,
 		treeID,
 	)
 	//
@@ -123,8 +123,8 @@ func main() {
 
 	logger = log.With(logger, "caller", log.DefaultCaller)
 
-	svc := redfishserver.NewService(*baseUri, commandBus, odataRepo, treeID)
-	svc = redfishserver.NewBasicAuthService(svc, commandBus, odataRepo, treeID, *baseUri)
+	svc := redfishserver.NewService(*baseUri, commandBus, redfishRepo, treeID)
+	svc = redfishserver.NewBasicAuthService(svc, commandBus, redfishRepo, treeID, *baseUri)
 
 	fieldKeys := []string{"method", "URL"}
 	svc = redfishserver.NewInstrumentingService(

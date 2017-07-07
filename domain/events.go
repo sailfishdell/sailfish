@@ -6,79 +6,79 @@ import (
 
 const (
 	// InviteCreatedEvent is when an invite is created.
-	OdataResourceCreatedEvent         eh.EventType = "OdataResourceCreated"
-	OdataResourcePropertyAddedEvent   eh.EventType = "OdataResourcePropertyAdded"
-	OdataResourcePropertyUpdatedEvent eh.EventType = "OdataResourcePropertyUpdated"
-	OdataResourcePropertyRemovedEvent eh.EventType = "OdataResourcePropertyRemoved"
-	OdataResourceRemovedEvent         eh.EventType = "OdataResourceRemoved"
+	RedfishResourceCreatedEvent         eh.EventType = "RedfishResourceCreated"
+	RedfishResourcePropertyAddedEvent   eh.EventType = "RedfishResourcePropertyAdded"
+	RedfishResourcePropertyUpdatedEvent eh.EventType = "RedfishResourcePropertyUpdated"
+	RedfishResourcePropertyRemovedEvent eh.EventType = "RedfishResourcePropertyRemoved"
+	RedfishResourceRemovedEvent         eh.EventType = "RedfishResourceRemoved"
 
 	// methods, privileges(from roles), and permissions(read/write). For now, only support wholesale update of object privileges
-	OdataResourcePrivilegesUpdatedEvent  eh.EventType = "OdataResourcePrivilegesUpdated"
-	OdataResourcePermissionsUpdatedEvent eh.EventType = "OdataResourcePermissionsUpdated"
-	OdataResourceMethodsUpdatedEvent     eh.EventType = "OdataResourceMethodsUpdated"
+	RedfishResourcePrivilegesUpdatedEvent  eh.EventType = "RedfishResourcePrivilegesUpdated"
+	RedfishResourcePermissionsUpdatedEvent eh.EventType = "RedfishResourcePermissionsUpdated"
+	RedfishResourceMethodsUpdatedEvent     eh.EventType = "RedfishResourceMethodsUpdated"
 
 	// granular header updates (Etags, probably)
-	OdataResourceHeaderAddedEvent   eh.EventType = "OdataResourceHeaderAdded"
-	OdataResourceHeaderUpdatedEvent eh.EventType = "OdataResourceHeaderUpdated"
-	OdataResourceHeaderRemovedEvent eh.EventType = "OdataResourceHeaderRemoved"
+	RedfishResourceHeaderAddedEvent   eh.EventType = "RedfishResourceHeaderAdded"
+	RedfishResourceHeaderUpdatedEvent eh.EventType = "RedfishResourceHeaderUpdated"
+	RedfishResourceHeaderRemovedEvent eh.EventType = "RedfishResourceHeaderRemoved"
 )
 
 func init() {
 	// Only the event for creating an invite has custom data.
-	eh.RegisterEventData(OdataResourceCreatedEvent, func() eh.EventData { return &OdataResourceCreatedData{} })
-	eh.RegisterEventData(OdataResourcePropertyAddedEvent, func() eh.EventData { return &OdataResourcePropertyAddedData{} })
-	eh.RegisterEventData(OdataResourcePropertyUpdatedEvent, func() eh.EventData { return &OdataResourcePropertyUpdatedData{} })
-	eh.RegisterEventData(OdataResourcePropertyRemovedEvent, func() eh.EventData { return &OdataResourcePropertyRemovedData{} })
-	// no event data for OdataResourceRemovedEvent
+	eh.RegisterEventData(RedfishResourceCreatedEvent, func() eh.EventData { return &RedfishResourceCreatedData{} })
+	eh.RegisterEventData(RedfishResourcePropertyAddedEvent, func() eh.EventData { return &RedfishResourcePropertyAddedData{} })
+	eh.RegisterEventData(RedfishResourcePropertyUpdatedEvent, func() eh.EventData { return &RedfishResourcePropertyUpdatedData{} })
+	eh.RegisterEventData(RedfishResourcePropertyRemovedEvent, func() eh.EventData { return &RedfishResourcePropertyRemovedData{} })
+	// no event data for RedfishResourceRemovedEvent
 
-	eh.RegisterEventData(OdataResourcePrivilegesUpdatedEvent, func() eh.EventData { return &OdataResourcePrivilegesUpdatedData{} })
-	eh.RegisterEventData(OdataResourcePermissionsUpdatedEvent, func() eh.EventData { return &OdataResourcePermissionsUpdatedData{} })
-	eh.RegisterEventData(OdataResourceMethodsUpdatedEvent, func() eh.EventData { return &OdataResourceMethodsUpdatedData{} })
+	eh.RegisterEventData(RedfishResourcePrivilegesUpdatedEvent, func() eh.EventData { return &RedfishResourcePrivilegesUpdatedData{} })
+	eh.RegisterEventData(RedfishResourcePermissionsUpdatedEvent, func() eh.EventData { return &RedfishResourcePermissionsUpdatedData{} })
+	eh.RegisterEventData(RedfishResourceMethodsUpdatedEvent, func() eh.EventData { return &RedfishResourceMethodsUpdatedData{} })
 
-	eh.RegisterEventData(OdataResourceHeaderAddedEvent, func() eh.EventData { return &OdataResourceHeaderAddedData{} })
-	eh.RegisterEventData(OdataResourceHeaderUpdatedEvent, func() eh.EventData { return &OdataResourceHeaderUpdatedData{} })
-	eh.RegisterEventData(OdataResourceHeaderRemovedEvent, func() eh.EventData { return &OdataResourceHeaderRemovedData{} })
+	eh.RegisterEventData(RedfishResourceHeaderAddedEvent, func() eh.EventData { return &RedfishResourceHeaderAddedData{} })
+	eh.RegisterEventData(RedfishResourceHeaderUpdatedEvent, func() eh.EventData { return &RedfishResourceHeaderUpdatedData{} })
+	eh.RegisterEventData(RedfishResourceHeaderRemovedEvent, func() eh.EventData { return &RedfishResourceHeaderRemovedData{} })
 }
 
-type OdataResourceCreatedData struct {
+type RedfishResourceCreatedData struct {
 	ResourceURI string
 	Type        string
 	Context     string
 	Properties  map[string]interface{}
 }
 
-type OdataResourcePropertyAddedData struct {
+type RedfishResourcePropertyAddedData struct {
 	PropertyName  string
 	PropertyValue interface{}
 }
 
-type OdataResourcePropertyUpdatedData struct {
+type RedfishResourcePropertyUpdatedData struct {
 	PropertyName  string
 	PropertyValue interface{}
 }
 
-type OdataResourcePropertyRemovedData struct {
+type RedfishResourcePropertyRemovedData struct {
 	PropertyName string
 }
 
-type OdataResourcePrivilegesUpdatedData struct {
+type RedfishResourcePrivilegesUpdatedData struct {
 	Privileges map[string]interface{}
 }
-type OdataResourcePermissionsUpdatedData struct {
+type RedfishResourcePermissionsUpdatedData struct {
 	Permissions map[string]interface{}
 }
-type OdataResourceMethodsUpdatedData struct {
+type RedfishResourceMethodsUpdatedData struct {
 	Methods map[string]interface{}
 }
 
-type OdataResourceHeaderAddedData struct {
+type RedfishResourceHeaderAddedData struct {
 	HeaderName  string
 	HeaderValue string
 }
-type OdataResourceHeaderUpdatedData struct {
+type RedfishResourceHeaderUpdatedData struct {
 	HeaderName  string
 	HeaderValue string
 }
-type OdataResourceHeaderRemovedData struct {
+type RedfishResourceHeaderRemovedData struct {
 	HeaderName string
 }

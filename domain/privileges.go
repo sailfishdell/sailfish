@@ -15,39 +15,39 @@ type PrivilegeSaga struct {
     repo    eh.ReadRepo
 }
 
-func NewPrivilegeSaga(odataRepo eh.ReadRepo) *PrivilegeSaga {
-	return &PrivilegeSaga{repo: odataRepo}
+func NewPrivilegeSaga(redfishRepo eh.ReadRepo) *PrivilegeSaga {
+	return &PrivilegeSaga{repo: redfishRepo}
 }
 
 func (s *PrivilegeSaga) SagaType() saga.Type { return PrivilegeSagaType }
 
 // RunSaga implements the Privilege handling. The final implementation of this
-// will take the input invents (OdataResourceCreated), look up the entity in a
+// will take the input invents (RedfishResourceCreated), look up the entity in a
 // privilegemap and emit commands to set the privileges on each new
-// odataresource as it is created. For now, just implementing basic stuff so we
+// redfishresource as it is created. For now, just implementing basic stuff so we
 // can demonstrate that it works.
 func (s *PrivilegeSaga) RunSaga(ctx context.Context, event eh.Event) []eh.Command {
 	switch event.EventType() {
 
-	case OdataResourceCreatedEvent:
+	case RedfishResourceCreatedEvent:
         fmt.Println("Adding privileges!")
 
         // look up and set "Unauthenticated" for /redfish/ and /redfish/v1/ and session login link.
         // FOR NOW, set Login for all others. This needs to be fleshed out more
-		if data, ok := event.Data().(*OdataResourceCreatedData); ok {
+		if data, ok := event.Data().(*RedfishResourceCreatedData); ok {
 			ResourceURI := data.ResourceURI
             if ResourceURI == "/redfish/" || ResourceURI == "/redfish/v1/" {
                 return []eh.Command{
-                    &UpdateOdataResourcePrivileges{
+                    &UpdateRedfishResourcePrivileges{
                         UUID:       event.AggregateID(),
                         Privileges: map[string]interface{}{"GET": []string{"Unauthenticated"}},
                     },
                 }
             } else {
                 return []eh.Command{
-                    &UpdateOdataResourcePrivileges{
+                    &UpdateRedfishResourcePrivileges{
                         UUID:       event.AggregateID(),
-                        Privileges: map[string]interface{}{"GET": []string{"ConfigManager"}},
+                        Privileges: map[string]interface{}{"GET": []string{"ConfigureManager"}},
                     },
                 }
 

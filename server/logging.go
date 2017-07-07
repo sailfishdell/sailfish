@@ -50,7 +50,7 @@ func NewLoggingService(logger Logger, s Service) Service {
 	return &loggingService{logger, s}
 }
 
-func (s *loggingService) GetOdataResource(ctx context.Context, headers map[string]string, url string, args map[string]string, privileges []string) (ret interface{}, err error) {
+func (s *loggingService) GetRedfishResource(ctx context.Context, headers map[string]string, url string, args map[string]string, privileges []string) (ret interface{}, err error) {
 	ctxlogger := log.With(s.logger, "method", "GET", "URL", url, "UUID", uuid.New())
 
 	defer func(begin time.Time) {
@@ -63,5 +63,5 @@ func (s *loggingService) GetOdataResource(ctx context.Context, headers map[strin
 			"args", fmt.Sprintf("%#v", args),
 		)
 	}(time.Now())
-	return s.Service.GetOdataResource(WithLogger(ctx, ctxlogger), headers, url, args, privileges)
+	return s.Service.GetRedfishResource(WithLogger(ctx, ctxlogger), headers, url, args, privileges)
 }

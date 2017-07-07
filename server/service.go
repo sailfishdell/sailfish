@@ -15,7 +15,7 @@ import (
 
 // Service is the business logic for a redfish server
 type Service interface {
-	GetOdataResource(ctx context.Context, headers map[string]string, url string, args map[string]string, privileges []string) (interface{}, error)
+	GetRedfishResource(ctx context.Context, headers map[string]string, url string, args map[string]string, privileges []string) (interface{}, error)
 }
 
 // ServiceMiddleware is a chainable behavior modifier for Service.
@@ -34,7 +34,7 @@ type config struct {
 	verURI    string
 	treeID    eh.UUID
 	cmdbus    *commandbus.CommandBus
-	odataRepo *repo.Repo
+	redfishRepo *repo.Repo
 }
 
 func (c *config) makeFullyQualifiedV1(path string) string {
@@ -43,24 +43,24 @@ func (c *config) makeFullyQualifiedV1(path string) string {
 
 // NewService is how we initialize the business logic
 func NewService(baseURI string, commandbus *commandbus.CommandBus, repo *repo.Repo, id eh.UUID) Service {
-	cfg := config{baseURI: baseURI, verURI: "v1", cmdbus: commandbus, odataRepo: repo, treeID: id}
+	cfg := config{baseURI: baseURI, verURI: "v1", cmdbus: commandbus, redfishRepo: repo, treeID: id}
 	go cfg.startup()
 	return &cfg
 }
 
-func (rh *config) GetOdataResource(ctx context.Context, headers map[string]string, url string, args map[string]string, privileges []string) (output interface{}, err error) {
+func (rh *config) GetRedfishResource(ctx context.Context, headers map[string]string, url string, args map[string]string, privileges []string) (output interface{}, err error) {
 	noHashPath := strings.SplitN(url, "#", 2)[0]
 
 	// we have the tree ID, fetch an updated copy of the actual tree
 	// TODO: Locking? Should repo give us a copy? Need to test this.
-	rawTree, err := rh.odataRepo.Find(ctx, rh.treeID)
+	rawTree, err := rh.redfishRepo.Find(ctx, rh.treeID)
 	if err != nil {
 		fmt.Printf("could not find tree: %s\n", err.Error())
 		return nil, ErrNotFound
 	}
 
 	// repo gives us an interface{}, type assertion to get the object we need
-	tree, ok := rawTree.(*domain.OdataTree)
+	tree, ok := rawTree.(*domain.RedfishTree)
 	if !ok {
 		fmt.Printf("somehow it wasnt a tree! %s\n", err.Error())
 		return nil, ErrNotFound
@@ -68,11 +68,11 @@ func (rh *config) GetOdataResource(ctx context.Context, headers map[string]strin
 
 	// now that we have the tree, look up the actual URI in that tree to find
 	// the object UUID, then pull that from the repo
-	requested, err := rh.odataRepo.Find(ctx, tree.Tree[noHashPath])
+	requested, err := rh.redfishRepo.Find(ctx, tree.Tree[noHashPath])
 	if err != nil {
 		return nil, ErrNotFound
 	}
-	item, ok := requested.(*domain.OdataResource)
+	item, ok := requested.(*domain.RedfishResource)
 	if !ok {
 		return nil, ErrNotFound // TODO: should be internal server error or some other such
 	}
@@ -109,9 +109,9 @@ func (rh *config) startup() {
 	// create version entry point. it's special in that it doesnt have @odata.* properties, so we'll remove them
 	// after creating the object
 	uuid := rh.createTreeLeaf(ctx, rh.baseURI+"/", "foo", "bar", map[string]interface{}{"v1": rh.makeFullyQualifiedV1("")})
-	rh.cmdbus.HandleCommand(ctx, &domain.RemoveOdataResourceProperty{UUID: uuid, PropertyName: "@odata.context"})
-	rh.cmdbus.HandleCommand(ctx, &domain.RemoveOdataResourceProperty{UUID: uuid, PropertyName: "@odata.id"})
-	rh.cmdbus.HandleCommand(ctx, &domain.RemoveOdataResourceProperty{UUID: uuid, PropertyName: "@odata.type"})
+	rh.cmdbus.HandleCommand(ctx, &domain.RemoveRedfishResourceProperty{UUID: uuid, PropertyName: "@odata.context"})
+	rh.cmdbus.HandleCommand(ctx, &domain.RemoveRedfishResourceProperty{UUID: uuid, PropertyName: "@odata.id"})
+	rh.cmdbus.HandleCommand(ctx, &domain.RemoveRedfishResourceProperty{UUID: uuid, PropertyName: "@odata.type"})
 
 	rh.createTreeLeaf(ctx, rh.makeFullyQualifiedV1(""),
 		"#ServiceRoot.v1_0_2.ServiceRoot",
@@ -284,11 +284,11 @@ func (rh *config) startup() {
 func (rh *config) createTreeLeaf(ctx context.Context, uri string, otype string, octx string, Properties map[string]interface{}) (uuid eh.UUID) {
 	uuid = eh.NewUUID()
 	fmt.Printf("Creating URI %s\n", uri)
-	rh.cmdbus.HandleCommand(ctx, &domain.CreateOdataResource{UUID: uuid, ResourceURI: uri, Properties: Properties, Type: otype, Context: octx})
+	rh.cmdbus.HandleCommand(ctx, &domain.CreateRedfishResource{UUID: uuid, ResourceURI: uri, Properties: Properties, Type: otype, Context: octx})
 	return
 }
 
 func (rh *config) createTreeCollectionLeaf(ctx context.Context, uri string, otype string, octx string, Properties map[string]interface{}, Members []string) {
 	uuid := eh.NewUUID()
-	rh.cmdbus.HandleCommand(ctx, &domain.CreateOdataResourceCollection{UUID: uuid, ResourceURI: uri, Properties: Properties, Members: Members, Type: otype, Context: octx})
+	rh.cmdbus.HandleCommand(ctx, &domain.CreateRedfishResourceCollection{UUID: uuid, ResourceURI: uri, Properties: Properties, Members: Members, Type: otype, Context: octx})
 }
