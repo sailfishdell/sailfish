@@ -2,7 +2,6 @@ package redfishserver
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	eh "github.com/superchalupa/eventhorizon"
 	commandbus "github.com/superchalupa/eventhorizon/commandbus/local"
@@ -35,21 +34,6 @@ func NewBasicAuthService(s Service, commandbus *commandbus.CommandBus, repo *rep
 	return &basicAuthService{Service: s, cmdbus: commandbus, redfishRepo: repo, treeID: id, baseURI: baseURI, verURI: "v1"}
 }
 
-func (s *basicAuthService) getTree(ctx context.Context) (t *domain.RedfishTree, err error) {
-	rawTree, err := s.redfishRepo.Find(ctx, s.treeID)
-	if err != nil {
-		return nil, errors.New("could not find tree with ID: " + string(s.treeID) + " error is: " + err.Error())
-	}
-
-	t, ok := rawTree.(*domain.RedfishTree)
-	if !ok {
-		fmt.Printf("somehow it wasnt a tree! %s\n", err.Error())
-		return nil, errors.New("Data structure inconsistency, the tree object wasnt a tree!: " + string(s.treeID) + " error is: " + err.Error())
-	}
-
-	return
-}
-
 func (s *basicAuthService) GetRedfishResource(ctx context.Context, headers map[string]string, url string, args map[string]string, privileges []string) (ret interface{}, err error) {
 	// the only thing we do in this service is look up the username/password and verify, then look up role, then assign privileges based on role
 	var user, pass string
@@ -71,8 +55,15 @@ func (s *basicAuthService) GetRedfishResource(ctx context.Context, headers map[s
 	var _ = pass
 
 	// start looking up user in auth service
-	tree, err = s.getTree(ctx)
+	tree, err = domain.GetTree(ctx, s.redfishRepo, s.treeID)
+    if err != nil {
+        goto out
+    }
+
 	rootService, err = tree.GetRedfishResourceFromTree(ctx, s.redfishRepo, s.baseURI+"/v1/")
+    if err != nil {
+        goto out
+    }
 
 	// Pull up the Accounts Collection
 	accounts, err = tree.WalkRedfishResourceTree(ctx, s.redfishRepo, rootService, "AccountService", "@odata.id", "Accounts", "@odata.id")

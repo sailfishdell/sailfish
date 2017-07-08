@@ -124,6 +124,11 @@ func main() {
 	logger = log.With(logger, "caller", log.DefaultCaller)
 
 	svc := redfishserver.NewService(*baseUri, commandBus, redfishRepo, treeID)
+    // Need this *before* the authentication, so that the authentication module
+    // will call this with the correct set of privileges
+	svc = redfishserver.NewPrivilegeEnforcingService(svc, commandBus, redfishRepo, treeID, *baseUri)
+    // Stack this *after* authorization so that it can get user info first and
+    // pass privileges
 	svc = redfishserver.NewBasicAuthService(svc, commandBus, redfishRepo, treeID, *baseUri)
 
 	fieldKeys := []string{"method", "URL"}

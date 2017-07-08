@@ -16,6 +16,13 @@ import (
 // Service is the business logic for a redfish server
 type Service interface {
 	GetRedfishResource(ctx context.Context, headers map[string]string, url string, args map[string]string, privileges []string) (interface{}, error)
+/*
+	PostRedfishResource(ctx context.Context, headers map[string]string, url string, args map[string]string, privileges []string) (interface{}, error)
+	PatchRedfishResource(ctx context.Context, headers map[string]string, url string, args map[string]string, privileges []string) (interface{}, error)
+	PutRedfishResource(ctx context.Context, headers map[string]string, url string, args map[string]string, privileges []string) (interface{}, error)
+	HeadRedfishResource(ctx context.Context, headers map[string]string, url string, args map[string]string, privileges []string) (interface{}, error)
+	DeleteRedfishResource(ctx context.Context, headers map[string]string, url string, args map[string]string, privileges []string) (interface{}, error)
+*/
 }
 
 // ServiceMiddleware is a chainable behavior modifier for Service.
@@ -53,15 +60,8 @@ func (rh *config) GetRedfishResource(ctx context.Context, headers map[string]str
 
 	// we have the tree ID, fetch an updated copy of the actual tree
 	// TODO: Locking? Should repo give us a copy? Need to test this.
-	rawTree, err := rh.redfishRepo.Find(ctx, rh.treeID)
+	tree, err := domain.GetTree(ctx, rh.redfishRepo, rh.treeID)
 	if err != nil {
-		fmt.Printf("could not find tree: %s\n", err.Error())
-		return nil, ErrNotFound
-	}
-
-	// repo gives us an interface{}, type assertion to get the object we need
-	tree, ok := rawTree.(*domain.RedfishTree)
-	if !ok {
 		fmt.Printf("somehow it wasnt a tree! %s\n", err.Error())
 		return nil, ErrNotFound
 	}
@@ -77,30 +77,7 @@ func (rh *config) GetRedfishResource(ctx context.Context, headers map[string]str
 		return nil, ErrNotFound // TODO: should be internal server error or some other such
 	}
 
-	// security privileges. Check to see if user has permissions on the object
-    // FIXME/TODO: SIMPLE IMPLEMENTATION... this needs to handle AND/OR combinations.
-    // Also need to consider purity. This could realistically be implemented as two additional Service wrappers:
-    //  1) a pre-call check that does the gross privilege check
-    //  2) a post-call check that filters the properties returned based on privs
-    getPrivs, ok := item.PrivilegeMap["GET"]
-    if ! ok {
-        return nil, ErrForbidden
-    }
-
-    getPrivsArr := getPrivs.([]string)
-
-    fmt.Printf("CHECK PRIVS\n\tUSER: %s\n\tRESOURCE: %s\n", privileges, getPrivsArr)
-
-    for _, myPriv := range(privileges) {
-        for _, itemPriv := range(getPrivsArr) {
-            if myPriv == itemPriv {
-                fmt.Printf("Found matching privs, granting access. userPriv(%s) == itemPriv(%s)\n", myPriv, itemPriv)
-                return item.Properties, nil
-            }
-        }
-    }
-
-    return nil, ErrForbidden
+    return item.Properties, nil
 }
 
 func (rh *config) startup() {

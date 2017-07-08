@@ -36,21 +36,18 @@ func NewRedfishHandler(svc Service, baseURI string, verURI string, logger log.Lo
 	r.Methods("GET").PathPrefix(baseURI + "/").Handler(
 		httptransport.NewServer(
 			makeRedfishGetEndpoint(svc),
-			decodeRedfishGetRequest,
+			decodeRequest,
 			encodeResponse,
 			options...,
 		))
 
-/*
 	r.Methods("POST").PathPrefix(baseURI + "/").Handler(
 		httptransport.NewServer(
-			makeRedfishGetEndpoint(svc),
-			decodeRedfishGetRequest,
+			makeRedfishPostEndpoint(svc),
+			decodeRequest,
 			encodeResponse,
 			options...,
 		))
-*/
-
 
 	return r
 }
@@ -75,7 +72,7 @@ func checkHeaders(header http.Header) (err error) {
 // we are basically tied to HTTP, so just pass the request down to the function
 // don't anticipate ever adding grpc or other support here, so this should be fine for now
 // if we do add, we'll have to simply re-work the function parameters.
-func decodeRedfishGetRequest(_ context.Context, r *http.Request) (dec interface{}, err error) {
+func decodeRequest(_ context.Context, r *http.Request) (dec interface{}, err error) {
 	// need to decode headers that we may need manually
 
 	err = checkHeaders(r.Header)
@@ -97,7 +94,7 @@ func decodeRedfishGetRequest(_ context.Context, r *http.Request) (dec interface{
 		}
 	}
 
-	dec = redfishResourceGetRequest{headers: headers, url: r.URL.Path, args: mux.Vars(r), privileges: []string{"Unauthenticated"}}
+	dec = redfishResourceRequest{headers: headers, url: r.URL.Path, args: mux.Vars(r), privileges: []string{"Unauthenticated"}, body: r.Body}
 	return dec, nil
 }
 
@@ -125,7 +122,7 @@ func encodeResponse(ctx context.Context, w http.ResponseWriter, response interfa
 		return nil
 	}
 
-	decoded := response.(redfishResourceGetResponse)
+	decoded := response.(redfishResourceResponse)
 
 	switch output := decoded.output.(type) {
 	case []byte:

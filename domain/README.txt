@@ -11,6 +11,15 @@ What is a command?
 People request changes to the domain by sending commands. They are named with a verb in the imperative mood plus and may include the aggregate type, for example ConfirmOrder. Unlike an event, a command is not a statement of fact; it's only a request, and thus may be refused. (A typical way to convey refusal is to throw an exception).
 
 
+PATCH/PUT/POST/DELETE
+    - thiscmd = eh.UUID()
+    - CommandHandleCommand( thiscmd, PostCommand, BodyData )
+        PostCommand RedfishAggregate command handler
+            - Generate add/update events
+            - generate event results event
+    - Poll on redfishtreeprojector
+        item.commandresults[thiscmd]
+
 
 thermald sends TempChangeEvent -> redfish processor sends UpdateRedfishProperty Command -> Resource emits RedfishPropertyUpdated(data) --> redfish server --> (1) update internal model  (2) send redfish events
 
