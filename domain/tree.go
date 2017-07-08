@@ -104,6 +104,22 @@ type RedfishTree struct {
 	Tree map[string]eh.UUID
 }
 
+// helper
+func GetTree(ctx context.Context, repo eh.ReadRepo, treeID eh.UUID ) (t *RedfishTree, err error) {
+	rawTree, err := repo.Find(ctx, treeID)
+	if err != nil {
+		return nil, errors.New("could not find tree with ID: " + string(treeID) + " error is: " + err.Error())
+	}
+
+	t, ok := rawTree.(*RedfishTree)
+	if !ok {
+		fmt.Printf("somehow it wasnt a tree! %s\n", err.Error())
+		return nil, errors.New("Data structure inconsistency, the tree object wasnt a tree!: " + string(treeID) + " error is: " + err.Error())
+	}
+
+	return
+}
+
 func (t *RedfishTree) GetRedfishResourceFromTree(ctx context.Context, repo eh.ReadRepo, resourceURI string) (ret *RedfishResource, err error) {
 	resource, err := repo.Find(ctx, t.Tree[resourceURI])
 	if err != nil {
