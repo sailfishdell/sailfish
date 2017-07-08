@@ -43,8 +43,8 @@ func NewRedfishHandler(svc Service, baseURI string, verURI string, logger log.Lo
 
 	r.Methods("POST").PathPrefix(baseURI + "/").Handler(
 		httptransport.NewServer(
-			makeRedfishPostEndpoint(svc),
-			decodeRequest,
+			makeRedfishHandlerEndpoint(svc),
+			passthroughRequest,
 			encodeResponse,
 			options...,
 		))
@@ -67,6 +67,15 @@ func checkHeaders(header http.Header) (err error) {
 	//                              specification."
 
 	return
+}
+
+func passthroughRequest(_ context.Context, r *http.Request) (dec interface{}, err error) {
+	err = checkHeaders(r.Header)
+	if err != nil {
+		return nil, err
+	}
+
+	return redfishRequest{r: r, privileges: []string{"Unauthenticated"}}, nil
 }
 
 // we are basically tied to HTTP, so just pass the request down to the function

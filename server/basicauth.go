@@ -3,6 +3,7 @@ package redfishserver
 import (
 	"context"
 	"fmt"
+    "net/http"
 	eh "github.com/superchalupa/eventhorizon"
 	commandbus "github.com/superchalupa/eventhorizon/commandbus/local"
 	repo "github.com/superchalupa/eventhorizon/repo/memory"
@@ -122,4 +123,9 @@ func (s *basicAuthService) GetRedfishResource(ctx context.Context, headers map[s
 
 out:
 	return s.Service.GetRedfishResource(ctx, headers, url, args, privileges)
+}
+
+
+func (s *basicAuthService) RedfishResourceHandler(ctx context.Context, r *http.Request, privileges []string) (ret interface{}, err error) {
+	return s.Service.RedfishResourceHandler(ctx, r, privileges)
 }

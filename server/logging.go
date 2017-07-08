@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"os"
 	"time"
+    "net/http"
 
+	"github.com/gorilla/mux"
 	"github.com/go-kit/kit/log"
 	"github.com/google/uuid"
 )
@@ -64,4 +66,20 @@ func (s *loggingService) GetRedfishResource(ctx context.Context, headers map[str
 		)
 	}(time.Now())
 	return s.Service.GetRedfishResource(WithLogger(ctx, ctxlogger), headers, url, args, privileges)
+}
+
+func (s *loggingService) RedfishResourceHandler(ctx context.Context, r *http.Request, privileges []string) (ret interface{}, err error) {
+	ctxlogger := log.With(s.logger, "method", r.Method, "URL", r.URL.Path, "UUID", uuid.New())
+
+	defer func(begin time.Time) {
+		// no, we are not going to check logger error return
+		_ = ctxlogger.Log(
+			"method", r.Method,
+			"URL", r.URL.Path,
+			"business_logic_time", time.Since(begin),
+			"err", err,
+			"args", fmt.Sprintf("%#v", mux.Vars(r)),
+		)
+	}(time.Now())
+	return s.Service.RedfishResourceHandler(WithLogger(ctx, ctxlogger), r, privileges)
 }

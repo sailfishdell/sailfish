@@ -3,6 +3,7 @@ package redfishserver
 import (
 	"context"
     "io"
+    "net/http"
 	"github.com/go-kit/kit/endpoint"
 )
 
@@ -17,7 +18,7 @@ func makeRedfishGetEndpoint(s Service) endpoint.Endpoint {
 	}
 }
 
-func makeRedfishPostEndpoint(s Service) endpoint.Endpoint {
+func makeRedfishHandlerEndpoint(s Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(redfishResourceRequest)
 		// TODO: need to add 2 level error return:
@@ -28,6 +29,10 @@ func makeRedfishPostEndpoint(s Service) endpoint.Endpoint {
 	}
 }
 
+type redfishRequest struct {
+	r      *http.Request
+	privileges []string
+}
 
 type redfishResourceRequest struct {
 	headers    map[string]string

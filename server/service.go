@@ -7,6 +7,7 @@ import (
 	commandbus "github.com/superchalupa/eventhorizon/commandbus/local"
 	repo "github.com/superchalupa/eventhorizon/repo/memory"
 	"strings"
+    "net/http"
 
 	"github.com/superchalupa/go-rfs/domain"
 
@@ -16,8 +17,9 @@ import (
 // Service is the business logic for a redfish server
 type Service interface {
 	GetRedfishResource(ctx context.Context, headers map[string]string, url string, args map[string]string, privileges []string) (interface{}, error)
+    RedfishResourceHandler(ctx context.Context, r *http.Request, privileges []string) (output interface{}, err error)
+
 /*
-	PostRedfishResource(ctx context.Context, headers map[string]string, url string, args map[string]string, privileges []string) (interface{}, error)
 	PatchRedfishResource(ctx context.Context, headers map[string]string, url string, args map[string]string, privileges []string) (interface{}, error)
 	PutRedfishResource(ctx context.Context, headers map[string]string, url string, args map[string]string, privileges []string) (interface{}, error)
 	HeadRedfishResource(ctx context.Context, headers map[string]string, url string, args map[string]string, privileges []string) (interface{}, error)
@@ -78,6 +80,33 @@ func (rh *config) GetRedfishResource(ctx context.Context, headers map[string]str
 	}
 
     return item.Properties, nil
+}
+
+func (rh *config) RedfishResourceHandler(ctx context.Context, r *http.Request, privileges []string) (output interface{}, err error) {
+	noHashPath := strings.SplitN(r.URL.Path, "#", 2)[0]
+
+	// we have the tree ID, fetch an updated copy of the actual tree
+	// TODO: Locking? Should repo give us a copy? Need to test this.
+	tree, err := domain.GetTree(ctx, rh.redfishRepo, rh.treeID)
+	if err != nil {
+		fmt.Printf("somehow it wasnt a tree! %s\n", err.Error())
+		return nil, ErrNotFound
+	}
+
+	// now that we have the tree, look up the actual URI in that tree to find
+	// the object UUID, then pull that from the repo
+	requested, err := rh.redfishRepo.Find(ctx, tree.Tree[noHashPath])
+	if err != nil {
+		return nil, ErrNotFound
+	}
+	item, ok := requested.(*domain.RedfishResource)
+	if !ok {
+		return nil, ErrNotFound // TODO: should be internal server error or some other such
+	}
+
+    var _ = item
+    return nil, ErrNotFound
+    //return item.Methods[method](ctx, body, headers, url, args, privileges)
 }
 
 func (rh *config) startup() {
