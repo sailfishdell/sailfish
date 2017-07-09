@@ -136,28 +136,22 @@ func (tree *RedfishTree) WalkRedfishResourceTree(ctx context.Context, repo eh.Re
 	var nextP, currentP interface{}
 	current := start
 	currentP = current.Properties
-	fmt.Printf("Walking\n")
 	for _, p := range path {
-		fmt.Printf("\tElement: %s\n", p)
 		switch currentP := currentP.(type) {
 		case map[string]interface{}:
 			nextP = currentP[p]
-			fmt.Printf("\t\tmap result: %s\n", nextP)
 		case []interface{}:
 			i, err := strconv.Atoi(p)
 			if err != nil {
 				return nil, errors.New("Next descent is an array, but have non-numeric index.")
 			}
 			nextP = currentP[i]
-			fmt.Printf("\t\tarray result: %s\n", nextP)
 		default:
-			fmt.Printf("\t\tOh My!\n")
 			return nil, errors.New("non-indexable element")
 		}
 		currentP = nextP
 
 		if p == "@odata.id" {
-			fmt.Printf("\t\twarp!\n")
 			current, err = tree.GetRedfishResourceFromTree(ctx, repo, currentP.(string))
 			if err != nil {
 				return nil, err
@@ -167,7 +161,6 @@ func (tree *RedfishTree) WalkRedfishResourceTree(ctx context.Context, repo eh.Re
 		}
 	}
 
-	fmt.Printf("\t\tRETURN: %#v\n", current)
 	return current, nil
 }
 
