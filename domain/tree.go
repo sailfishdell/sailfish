@@ -3,7 +3,6 @@ package domain
 import (
 	"context"
 	"errors"
-	"fmt"
 	"strconv"
 	"sync"
 
@@ -113,7 +112,6 @@ func GetTree(ctx context.Context, repo eh.ReadRepo, treeID eh.UUID ) (t *Redfish
 
 	t, ok := rawTree.(*RedfishTree)
 	if !ok {
-		fmt.Printf("somehow it wasnt a tree! %s\n", err.Error())
 		return nil, errors.New("Data structure inconsistency, the tree object wasnt a tree!: " + string(treeID) + " error is: " + err.Error())
 	}
 
