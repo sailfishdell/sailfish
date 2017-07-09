@@ -1,0 +1,25 @@
+{
+  "@Redfish.Copyright": "Copyright 2014-2016 Distributed Management Task Force, Inc. (DMTF). For the full DMTF copyright policy, see http://www.dmtf.org/about/policies/copyright.",
+  "@odata.context": "/redfish/v1/$metadata#AccountService",
+  "@odata.id": "/redfish/v1/AccountService",
+  "@odata.type": "#AccountService.v1_0_2.AccountService",
+  "AccountLockoutCounterResetAfter": 30,
+  "AccountLockoutDuration": 30,
+  "AccountLockoutThreshold": 5,
+  "Accounts": {
+    "@odata.id": "/redfish/v1/AccountService/Accounts"
+  },
+  "AuthFailureLoggingThreshold": 3,
+  "Description": "Account Service",
+  "Id": "AccountService",
+  "MinPasswordLength": 8,
+  "Name": "Account Service",
+  "Roles": {
+    "@odata.id": "/redfish/v1/AccountService/Roles"
+  },
+  "ServiceEnabled": true,
+  "Status": {
+    "Health": "OK",
+    "State": "Enabled"
+  }
+}

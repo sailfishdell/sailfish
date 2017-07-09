@@ -1,0 +1,257 @@
+HTTP/1.1 308 Permanent Redirect
+Location: /redfish/v1/
+Date: Tue, 04 Jul 2017 04:52:34 GMT
+Content-Length: 48
+Content-Type: text/html; charset=utf-8
+
+HTTP/1.1 200 OK
+Content-Type: application/json; charset=utf-8
+Odata-Version: 4.0
+Server: go-redfish/0.1
+Date: Tue, 04 Jul 2017 04:52:34 GMT
+Content-Length: 996
+
+{
+  "@odata.context": "/redfish/v1/$metadata#ServiceRoot",
+  "@odata.id": "/redfish/v1",
+  "@odata.type": "#ServiceRoot.v1_0_2.ServiceRoot",
+  "AccountService": {
+    "@odata.id": "/redfish/v1/AccountService"
+  },
+  "Chassis": {
+    "@odata.id": "/redfish/v1/Chassis"
+  },
+  "Description": "Root Service",
+  "EventService": {
+    "@odata.id": "/redfish/v1/EventService"
+  },
+  "Id": "RootService",
+  "JsonSchemas": {
+    "@odata.id": "/redfish/v1/JSONSchemas"
+  },
+  "Links": {
+    "Sessions": {
+      "@odata.id": "/redfish/v1/Sessions"
+    }
+  },
+  "Managers": {
+    "@odata.id": "/redfish/v1/Managers"
+  },
+  "Name": "Root Service",
+  "RedfishVersion": "v1_0_2",
+  "Registries": {
+    "@odata.id": "/redfish/v1/Registries"
+  },
+  "SessionService": {
+    "@odata.id": "/redfish/v1/SessionService"
+  },
+  "Systems": {
+    "@odata.id": "/redfish/v1/Systems"
+  },
+  "Tasks": {
+    "@odata.id": "/redfish/v1/TaskService"
+  },
+  "UpdateService": {
+    "@odata.id": "/redfish/v1/UpdateService"
+  }
+}
+
+Total request time: 0.006 seconds for url: http://localhost:8080/redfish/v1/
+HTTP/1.1 200 OK
+Content-Type: application/json; charset=utf-8
+Odata-Version: 4.0
+Server: go-redfish/0.1
+Date: Tue, 04 Jul 2017 04:52:34 GMT
+Content-Length: 996
+
+{
+  "@odata.context": "/redfish/v1/$metadata#ServiceRoot",
+  "@odata.id": "/redfish/v1",
+  "@odata.type": "#ServiceRoot.v1_0_2.ServiceRoot",
+  "AccountService": {
+    "@odata.id": "/redfish/v1/AccountService"
+  },
+  "Chassis": {
+    "@odata.id": "/redfish/v1/Chassis"
+  },
+  "Description": "Root Service",
+  "EventService": {
+    "@odata.id": "/redfish/v1/EventService"
+  },
+  "Id": "RootService",
+  "JsonSchemas": {
+    "@odata.id": "/redfish/v1/JSONSchemas"
+  },
+  "Links": {
+    "Sessions": {
+      "@odata.id": "/redfish/v1/Sessions"
+    }
+  },
+  "Managers": {
+    "@odata.id": "/redfish/v1/Managers"
+  },
+  "Name": "Root Service",
+  "RedfishVersion": "v1_0_2",
+  "Registries": {
+    "@odata.id": "/redfish/v1/Registries"
+  },
+  "SessionService": {
+    "@odata.id": "/redfish/v1/SessionService"
+  },
+  "Systems": {
+    "@odata.id": "/redfish/v1/Systems"
+  },
+  "Tasks": {
+    "@odata.id": "/redfish/v1/TaskService"
+  },
+  "UpdateService": {
+    "@odata.id": "/redfish/v1/UpdateService"
+  }
+}
+
+Total request time: 0.000 seconds for url: http://localhost:8080/redfish/v1/
+HTTP/1.1 200 OK
+Content-Type: application/json; charset=utf-8
+Odata-Version: 4.0
+Server: go-redfish/0.1
+Date: Tue, 04 Jul 2017 04:52:34 GMT
+Content-Length: 839
+
+{
+  "@Redfish.Copyright": "Copyright 2014-2016 Distributed Management Task Force, Inc. (DMTF). For the full DMTF copyright policy, see http://www.dmtf.org/about/policies/copyright.",
+  "@odata.context": "/redfish/v1/$metadata#AccountService",
+  "@odata.id": "/redfish/v1/AccountService",
+  "@odata.type": "#AccountService.v1_0_2.AccountService",
+  "AccountLockoutCounterResetAfter": 30,
+  "AccountLockoutDuration": 30,
+  "AccountLockoutThreshold": 5,
+  "Accounts": {
+    "@odata.id": "/redfish/v1/AccountService/Accounts"
+  },
+  "AuthFailureLoggingThreshold": 3,
+  "Description": "Account Service",
+  "Id": "AccountService",
+  "MinPasswordLength": 8,
+  "Name": "Account Service",
+  "Roles": {
+    "@odata.id": "/redfish/v1/AccountService/Roles"
+  },
+  "ServiceEnabled": true,
+  "Status": {
+    "Health": "OK",
+    "State": "Enabled"
+  }
+}
+
+Total request time: 0.000 seconds for url: http://localhost:8080/redfish/v1/AccountService
+HTTP/1.1 200 OK
+Content-Type: application/json; charset=utf-8
+Odata-Version: 4.0
+Server: go-redfish/0.1
+Date: Tue, 04 Jul 2017 04:52:34 GMT
+Content-Length: 50
+
+{
+  "Members": [],
+  "Members@odata.count": "0"
+}
+
+Total request time: 0.000 seconds for url: http://localhost:8080/redfish/v1/Chassis
+HTTP/1.1 200 OK
+Content-Type: application/json; charset=utf-8
+Odata-Version: 4.0
+Server: go-redfish/0.1
+Date: Tue, 04 Jul 2017 04:52:34 GMT
+Content-Length: 1002
+
+{
+  "@odata.context": "/redfish/v1/$metadata#EventService",
+  "@odata.id": "/redfish/v1/EventService",
+  "@odata.type": "#EventService.v1_0_2.EventService",
+  "Actions": {
+    "#EventService.SubmitTestEvent": {
+      "EventType@Redfish.AllowableValues": [
+        "StatusChange",
+        "ResourceUpdated",
+        "ResourceAdded",
+        "ResourceRemoved",
+        "Alert"
+      ],
+      "target": "/redfish/v1/EventService/Actions/EventService.SubmitTestEvent"
+    }
+  },
+  "DeliveryRetryAttempts": 3,
+  "DeliveryRetryIntervalSeconds": 30,
+  "Description": "Event Service represents the properties for the service",
+  "EventTypesForSubscription": [
+    "StatusChange",
+    "ResourceUpdated",
+    "ResourceAdded",
+    "ResourceRemoved",
+    "Alert"
+  ],
+  "EventTypesForSubscription@odata.count": 5,
+  "Id": "EventService",
+  "Name": "Event Service",
+  "Status": {
+    "Health": "Ok",
+    "HealthRollup": "Ok"
+  },
+  "Subscriptions": {
+    "@odata.id": "/redfish/v1/EventService/Subscriptions"
+  }
+}
+
+Total request time: 0.000 seconds for url: http://localhost:8080/redfish/v1/EventService
+HTTP/1.1 200 OK
+Content-Type: application/json; charset=utf-8
+Odata-Version: 4.0
+Server: go-redfish/0.1
+Date: Tue, 04 Jul 2017 04:52:34 GMT
+Content-Length: 50
+
+{
+  "Members": [],
+  "Members@odata.count": "0"
+}
+
+Total request time: 0.000 seconds for url: http://localhost:8080/redfish/v1/JSONSchemas
+HTTP/1.1 200 OK
+Content-Type: application/json; charset=utf-8
+Odata-Version: 4.0
+Server: go-redfish/0.1
+Date: Tue, 04 Jul 2017 04:52:34 GMT
+Content-Length: 50
+
+{
+  "Members": [],
+  "Members@odata.count": "0"
+}
+
+Total request time: 0.000 seconds for url: http://localhost:8080/redfish/v1/Managers
+HTTP/1.1 200 OK
+Content-Type: application/json; charset=utf-8
+Odata-Version: 4.0
+Server: go-redfish/0.1
+Date: Tue, 04 Jul 2017 04:52:34 GMT
+Content-Length: 50
+
+{
+  "Members": [],
+  "Members@odata.count": "0"
+}
+
+Total request time: 0.000 seconds for url: http://localhost:8080/redfish/v1/Registries
+HTTP/1.1 200 OK
+Content-Type: application/json; charset=utf-8
+Odata-Version: 4.0
+Server: go-redfish/0.1
+Date: Tue, 04 Jul 2017 04:52:34 GMT
+Content-Length: 50
+
+{
+  "Members": [],
+  "Members@odata.count": "0"
+}
+
+Total request time: 0.000 seconds for url: http://localhost:8080/redfish/v1/Systems
