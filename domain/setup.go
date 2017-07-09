@@ -46,13 +46,12 @@ func Setup(
 
 	handler.SetAggregate(RedfishResourceAggregateType, UpdateRedfishResourcePrivilegesCommand)
 	handler.SetAggregate(RedfishResourceAggregateType, UpdateRedfishResourcePermissionsCommand)
-	handler.SetAggregate(RedfishResourceAggregateType, UpdateRedfishResourceMethodsCommand)
 	handler.SetAggregate(RedfishResourceAggregateType, AddRedfishResourceHeaderCommand)
 	handler.SetAggregate(RedfishResourceAggregateType, UpdateRedfishResourceHeaderCommand)
 	handler.SetAggregate(RedfishResourceAggregateType, RemoveRedfishResourceHeaderCommand)
 
 	// Create the command bus and register the handler for the commands.
-    // WARNING: If you miss adding a handler for a command, then all command processesing stops when that command is emitted!
+	// WARNING: If you miss adding a handler for a command, then all command processesing stops when that command is emitted!
 	commandBus.SetHandler(handler, CreateRedfishResourceCommand)
 	commandBus.SetHandler(handler, AddRedfishResourcePropertyCommand)
 	commandBus.SetHandler(handler, UpdateRedfishResourcePropertyCommand)
@@ -65,7 +64,6 @@ func Setup(
 
 	commandBus.SetHandler(handler, UpdateRedfishResourcePrivilegesCommand)
 	commandBus.SetHandler(handler, UpdateRedfishResourcePermissionsCommand)
-	commandBus.SetHandler(handler, UpdateRedfishResourceMethodsCommand)
 	commandBus.SetHandler(handler, AddRedfishResourceHeaderCommand)
 	commandBus.SetHandler(handler, UpdateRedfishResourceHeaderCommand)
 	commandBus.SetHandler(handler, RemoveRedfishResourceHeaderCommand)
@@ -79,7 +77,6 @@ func Setup(
 	eventBus.AddHandler(redfishResourceProjector, RedfishResourceRemovedEvent)
 	eventBus.AddHandler(redfishResourceProjector, RedfishResourcePrivilegesUpdatedEvent)
 	eventBus.AddHandler(redfishResourceProjector, RedfishResourcePermissionsUpdatedEvent)
-	eventBus.AddHandler(redfishResourceProjector, RedfishResourceMethodsUpdatedEvent)
 	eventBus.AddHandler(redfishResourceProjector, RedfishResourceHeaderAddedEvent)
 	eventBus.AddHandler(redfishResourceProjector, RedfishResourceHeaderUpdatedEvent)
 	eventBus.AddHandler(redfishResourceProjector, RedfishResourceHeaderRemovedEvent)

@@ -33,6 +33,7 @@ func NewRedfishHandler(svc Service, baseURI string, verURI string, logger log.Lo
 	r.Handle(baseURI, http.RedirectHandler(baseURI+"/", 308))
 	r.Handle(baseURI+"/"+verURI, http.RedirectHandler(baseURI+"/"+verURI+"/", 308))
 
+	// READ SIDE STUFF
 	r.Methods("GET").PathPrefix(baseURI + "/").Handler(
 		httptransport.NewServer(
 			makeRedfishGetEndpoint(svc),
@@ -40,8 +41,39 @@ func NewRedfishHandler(svc Service, baseURI string, verURI string, logger log.Lo
 			encodeResponse,
 			options...,
 		))
+	/* not ready yet
+	r.Methods("HEAD").PathPrefix(baseURI + "/").Handler(
+		httptransport.NewServer(
+			makeRedfishHandlerEndpoint(svc),
+			passthroughRequest,
+			encodeResponse,
+			options...,
+		))
+	*/
 
+	// COMMAND SIDE STUFF
 	r.Methods("POST").PathPrefix(baseURI + "/").Handler(
+		httptransport.NewServer(
+			makeRedfishHandlerEndpoint(svc),
+			passthroughRequest,
+			encodeResponse,
+			options...,
+		))
+	r.Methods("PUT").PathPrefix(baseURI + "/").Handler(
+		httptransport.NewServer(
+			makeRedfishHandlerEndpoint(svc),
+			passthroughRequest,
+			encodeResponse,
+			options...,
+		))
+	r.Methods("PATCH").PathPrefix(baseURI + "/").Handler(
+		httptransport.NewServer(
+			makeRedfishHandlerEndpoint(svc),
+			passthroughRequest,
+			encodeResponse,
+			options...,
+		))
+	r.Methods("DELETE").PathPrefix(baseURI + "/").Handler(
 		httptransport.NewServer(
 			makeRedfishHandlerEndpoint(svc),
 			passthroughRequest,

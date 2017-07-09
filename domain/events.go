@@ -15,7 +15,6 @@ const (
 	// methods, privileges(from roles), and permissions(read/write). For now, only support wholesale update of object privileges
 	RedfishResourcePrivilegesUpdatedEvent  eh.EventType = "RedfishResourcePrivilegesUpdated"
 	RedfishResourcePermissionsUpdatedEvent eh.EventType = "RedfishResourcePermissionsUpdated"
-	RedfishResourceMethodsUpdatedEvent     eh.EventType = "RedfishResourceMethodsUpdated"
 
 	// granular header updates (Etags, probably)
 	RedfishResourceHeaderAddedEvent   eh.EventType = "RedfishResourceHeaderAdded"
@@ -33,7 +32,6 @@ func init() {
 
 	eh.RegisterEventData(RedfishResourcePrivilegesUpdatedEvent, func() eh.EventData { return &RedfishResourcePrivilegesUpdatedData{} })
 	eh.RegisterEventData(RedfishResourcePermissionsUpdatedEvent, func() eh.EventData { return &RedfishResourcePermissionsUpdatedData{} })
-	eh.RegisterEventData(RedfishResourceMethodsUpdatedEvent, func() eh.EventData { return &RedfishResourceMethodsUpdatedData{} })
 
 	eh.RegisterEventData(RedfishResourceHeaderAddedEvent, func() eh.EventData { return &RedfishResourceHeaderAddedData{} })
 	eh.RegisterEventData(RedfishResourceHeaderUpdatedEvent, func() eh.EventData { return &RedfishResourceHeaderUpdatedData{} })
@@ -66,9 +64,6 @@ type RedfishResourcePrivilegesUpdatedData struct {
 }
 type RedfishResourcePermissionsUpdatedData struct {
 	Permissions map[string]interface{}
-}
-type RedfishResourceMethodsUpdatedData struct {
-	Methods map[string]interface{}
 }
 
 type RedfishResourceHeaderAddedData struct {

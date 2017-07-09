@@ -6,8 +6,9 @@ import (
 	eh "github.com/superchalupa/eventhorizon"
 	commandbus "github.com/superchalupa/eventhorizon/commandbus/local"
 	repo "github.com/superchalupa/eventhorizon/repo/memory"
+	"net/http"
 	"strings"
-    "net/http"
+	"time"
 
 	"github.com/superchalupa/go-rfs/domain"
 
@@ -17,14 +18,7 @@ import (
 // Service is the business logic for a redfish server
 type Service interface {
 	GetRedfishResource(ctx context.Context, headers map[string]string, url string, args map[string]string, privileges []string) (interface{}, error)
-    RedfishResourceHandler(ctx context.Context, r *http.Request, privileges []string) (output interface{}, err error)
-
-/*
-	PatchRedfishResource(ctx context.Context, headers map[string]string, url string, args map[string]string, privileges []string) (interface{}, error)
-	PutRedfishResource(ctx context.Context, headers map[string]string, url string, args map[string]string, privileges []string) (interface{}, error)
-	HeadRedfishResource(ctx context.Context, headers map[string]string, url string, args map[string]string, privileges []string) (interface{}, error)
-	DeleteRedfishResource(ctx context.Context, headers map[string]string, url string, args map[string]string, privileges []string) (interface{}, error)
-*/
+	RedfishResourceHandler(ctx context.Context, r *http.Request, privileges []string) (output interface{}, err error)
 }
 
 // ServiceMiddleware is a chainable behavior modifier for Service.
@@ -32,17 +26,17 @@ type ServiceMiddleware func(Service) Service
 
 var (
 	// ErrNotFound is returned when a request isnt present (404)
-	ErrNotFound = errors.New("not found")
-    ErrUnauthorized = errors.New("Unauthorized")  // 401... missing or bad authentication
-	ErrForbidden = errors.New("Forbidden")   // should be 403 (you are authenticated, but dont have permissions to this object)
+	ErrNotFound     = errors.New("not found")
+	ErrUnauthorized = errors.New("Unauthorized") // 401... missing or bad authentication
+	ErrForbidden    = errors.New("Forbidden")    // should be 403 (you are authenticated, but dont have permissions to this object)
 )
 
 // Config is where we store the current service data
 type config struct {
-	baseURI   string
-	verURI    string
-	treeID    eh.UUID
-	cmdbus    *commandbus.CommandBus
+	baseURI     string
+	verURI      string
+	treeID      eh.UUID
+	cmdbus      *commandbus.CommandBus
 	redfishRepo *repo.Repo
 }
 
@@ -79,11 +73,14 @@ func (rh *config) GetRedfishResource(ctx context.Context, headers map[string]str
 		return nil, ErrNotFound // TODO: should be internal server error or some other such
 	}
 
-    return item.Properties, nil
+	return item.Properties, nil
 }
 
 func (rh *config) RedfishResourceHandler(ctx context.Context, r *http.Request, privileges []string) (output interface{}, err error) {
 	noHashPath := strings.SplitN(r.URL.Path, "#", 2)[0]
+	// for now, testing only, automatically cancel the command after 50ms
+	d := time.Now().Add(50 * time.Millisecond)
+	ctx, _ = context.WithDeadline(ctx, d)
 
 	// we have the tree ID, fetch an updated copy of the actual tree
 	// TODO: Locking? Should repo give us a copy? Need to test this.
@@ -93,20 +90,23 @@ func (rh *config) RedfishResourceHandler(ctx context.Context, r *http.Request, p
 		return nil, ErrNotFound
 	}
 
-	// now that we have the tree, look up the actual URI in that tree to find
-	// the object UUID, then pull that from the repo
-	requested, err := rh.redfishRepo.Find(ctx, tree.Tree[noHashPath])
-	if err != nil {
-		return nil, ErrNotFound
-	}
-	item, ok := requested.(*domain.RedfishResource)
-	if !ok {
-		return nil, ErrNotFound // TODO: should be internal server error or some other such
+	id := tree.Tree[noHashPath]
+	cmdUUID := eh.NewUUID()
+	var _ = id
+	var _ = cmdUUID
+	rh.cmdbus.HandleCommand(ctx, &domain.HandleHTTP{UUID: id, CommandID: cmdUUID, Request: r})
+
+	select {
+	case <-time.After(1 * time.Second):
+		// TODO: Here we could easily automatically create a JOB and return that.
+		return "JOB", nil
+	case <-ctx.Done():
+		// the requestor cancelled the http request to us. We can abandon
+		// returning results, but command will still be processed
+		return "COMMAND TIMEOUT", nil
 	}
 
-    var _ = item
-    return nil, ErrNotFound
-    //return item.Methods[method](ctx, body, headers, url, args, privileges)
+	return nil, nil
 }
 
 func (rh *config) startup() {

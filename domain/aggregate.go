@@ -25,7 +25,6 @@ type RedfishResourceAggregate struct {
 	PrivilegeMap map[string]interface{}
 	Permissions  map[string]interface{}
 	Headers      map[string]string
-	Methods      map[string]interface{}
 }
 
 func NewRedfishResourceAggregate(id eh.UUID) *RedfishResourceAggregate {
@@ -41,7 +40,7 @@ type RRCmdHandler interface {
 func (a *RedfishResourceAggregate) HandleCommand(ctx context.Context, command eh.Command) error {
 	switch command := command.(type) {
 	case RRCmdHandler:
-        fmt.Printf("Handle command RedfishResourceAggregate: %t\n", command)
+		fmt.Printf("Handle command RedfishResourceAggregate: %t\n", command)
 		return command.Handle(ctx, a)
 	}
 

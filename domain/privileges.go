@@ -2,7 +2,7 @@ package domain
 
 import (
 	"context"
-    "fmt"
+	"fmt"
 	eh "github.com/superchalupa/eventhorizon"
 	"github.com/superchalupa/eventhorizon/eventhandler/saga"
 )
@@ -12,7 +12,7 @@ var _ = fmt.Printf
 const PrivilegeSagaType saga.Type = "PrivilegeSaga"
 
 type PrivilegeSaga struct {
-    repo    eh.ReadRepo
+	repo eh.ReadRepo
 }
 
 func NewPrivilegeSaga(redfishRepo eh.ReadRepo) *PrivilegeSaga {
@@ -30,37 +30,37 @@ func (s *PrivilegeSaga) RunSaga(ctx context.Context, event eh.Event) []eh.Comman
 	switch event.EventType() {
 
 	case RedfishResourceCreatedEvent:
-        fmt.Println("Adding privileges!")
+		fmt.Println("Adding privileges!")
 
-        // look up and set "Unauthenticated" for /redfish/ and /redfish/v1/ and session login link.
-        // FOR NOW, set Login for all others. This needs to be fleshed out more
+		// look up and set "Unauthenticated" for /redfish/ and /redfish/v1/ and session login link.
+		// FOR NOW, set Login for all others. This needs to be fleshed out more
 		if data, ok := event.Data().(*RedfishResourceCreatedData); ok {
 			ResourceURI := data.ResourceURI
-            if ResourceURI == "/redfish/" || ResourceURI == "/redfish/v1/" {
-                return []eh.Command{
-                    &UpdateRedfishResourcePrivileges{
-                        UUID:       event.AggregateID(),
-                        Privileges: map[string]interface{}{"GET": []string{"Unauthenticated"}},
-                    },
-                }
-            } else {
-                return []eh.Command{
-                    &UpdateRedfishResourcePrivileges{
-                        UUID:       event.AggregateID(),
-                        Privileges: map[string]interface{}{"GET": []string{"ConfigureManager"}},
-                    },
-                }
+			if ResourceURI == "/redfish/" || ResourceURI == "/redfish/v1/" {
+				return []eh.Command{
+					&UpdateRedfishResourcePrivileges{
+						UUID:       event.AggregateID(),
+						Privileges: map[string]interface{}{"GET": []string{"Unauthenticated"}},
+					},
+				}
+			} else {
+				return []eh.Command{
+					&UpdateRedfishResourcePrivileges{
+						UUID:       event.AggregateID(),
+						Privileges: map[string]interface{}{"GET": []string{"ConfigureManager"}},
+					},
+				}
 
-            }
+			}
 		}
 
-        // Strategy for ConfigureSelf. If the Privilege Map specifies
-        // ConfigureSelf as privilege, then set the actual privilege to
-        // ConfigureSelf_%{USERNAME}, where %{USERNAME} is the username
-        // property of that resource
-        //
-        // On the other end (login), set ConfigureSelf_${USERNAME} as a
-        // privilege based on username property
+		// Strategy for ConfigureSelf. If the Privilege Map specifies
+		// ConfigureSelf as privilege, then set the actual privilege to
+		// ConfigureSelf_%{USERNAME}, where %{USERNAME} is the username
+		// property of that resource
+		//
+		// On the other end (login), set ConfigureSelf_${USERNAME} as a
+		// privilege based on username property
 	}
 
 	return nil

@@ -36,7 +36,6 @@ const (
 
 	UpdateRedfishResourcePrivilegesCommand  eh.CommandType = "UpdateRedfishResourcePrivileges"
 	UpdateRedfishResourcePermissionsCommand eh.CommandType = "UpdateRedfishResourcePermissions"
-	UpdateRedfishResourceMethodsCommand     eh.CommandType = "UpdateRedfishResourceMethods"
 	AddRedfishResourceHeaderCommand         eh.CommandType = "AddRedfishResourceHeader"
 	UpdateRedfishResourceHeaderCommand      eh.CommandType = "UpdateRedfishResourceHeader"
 	RemoveRedfishResourceHeaderCommand      eh.CommandType = "RemoveRedfishResourceHeader"
@@ -54,7 +53,7 @@ func (c CreateRedfishResource) AggregateID() eh.UUID            { return c.UUID 
 func (c CreateRedfishResource) AggregateType() eh.AggregateType { return RedfishResourceAggregateType }
 func (c CreateRedfishResource) CommandType() eh.CommandType     { return CreateRedfishResourceCommand }
 func (c CreateRedfishResource) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
-    fmt.Printf("\tStoring EVENTS to create resource\n")
+	fmt.Printf("\tStoring EVENTS to create resource\n")
 	a.StoreEvent(RedfishResourceCreatedEvent,
 		&RedfishResourceCreatedData{
 			ResourceURI: c.ResourceURI,
@@ -100,9 +99,13 @@ type AddRedfishResourceProperty struct {
 	PropertyValue interface{}
 }
 
-func (c AddRedfishResourceProperty) AggregateID() eh.UUID            { return c.UUID }
-func (c AddRedfishResourceProperty) AggregateType() eh.AggregateType { return RedfishResourceAggregateType }
-func (c AddRedfishResourceProperty) CommandType() eh.CommandType     { return AddRedfishResourcePropertyCommand }
+func (c AddRedfishResourceProperty) AggregateID() eh.UUID { return c.UUID }
+func (c AddRedfishResourceProperty) AggregateType() eh.AggregateType {
+	return RedfishResourceAggregateType
+}
+func (c AddRedfishResourceProperty) CommandType() eh.CommandType {
+	return AddRedfishResourcePropertyCommand
+}
 func (c AddRedfishResourceProperty) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 	if _, ok := a.Properties[c.PropertyName]; !ok {
 
@@ -327,7 +330,7 @@ func (c UpdateRedfishResourcePrivileges) CommandType() eh.CommandType {
 	return UpdateRedfishResourcePrivilegesCommand
 }
 func (c UpdateRedfishResourcePrivileges) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
-    fmt.Printf("HANDLE UpdateRedfishResourcePrivileges\n")
+	fmt.Printf("HANDLE UpdateRedfishResourcePrivileges\n")
 	a.StoreEvent(RedfishResourcePrivilegesUpdatedEvent,
 		&RedfishResourcePrivilegesUpdatedData{
 			Privileges: c.Privileges,

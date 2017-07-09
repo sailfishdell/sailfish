@@ -2,22 +2,22 @@ package redfishserver
 
 import (
 	"context"
+	"errors"
 	"fmt"
-    "net/http"
-    "errors"
 	eh "github.com/superchalupa/eventhorizon"
 	commandbus "github.com/superchalupa/eventhorizon/commandbus/local"
 	repo "github.com/superchalupa/eventhorizon/repo/memory"
+	"net/http"
 
 	"github.com/superchalupa/go-rfs/domain"
 )
 
 type basicAuthService struct {
 	Service
-	baseURI   string
-	verURI    string
-	treeID    eh.UUID
-	cmdbus    *commandbus.CommandBus
+	baseURI     string
+	verURI      string
+	treeID      eh.UUID
+	cmdbus      *commandbus.CommandBus
 	redfishRepo *repo.Repo
 }
 
@@ -36,18 +36,18 @@ func NewBasicAuthService(s Service, commandbus *commandbus.CommandBus, repo *rep
 	return &basicAuthService{Service: s, cmdbus: commandbus, redfishRepo: repo, treeID: id, baseURI: baseURI, verURI: "v1"}
 }
 
-func (s *basicAuthService) findUser(ctx context.Context, user string) (account *domain.RedfishResource, err error){
+func (s *basicAuthService) findUser(ctx context.Context, user string) (account *domain.RedfishResource, err error) {
 	// start looking up user in auth service
 	tree, err := domain.GetTree(ctx, s.redfishRepo, s.treeID)
-    if err != nil {
-        return nil, errors.New("Malformed tree")
-    }
+	if err != nil {
+		return nil, errors.New("Malformed tree")
+	}
 
-    // get the root service reference
+	// get the root service reference
 	rootService, err := tree.GetRedfishResourceFromTree(ctx, s.redfishRepo, s.baseURI+"/v1/")
-    if err != nil {
-        return nil, errors.New("Malformed tree root resource")
-    }
+	if err != nil {
+		return nil, errors.New("Malformed tree root resource")
+	}
 
 	// Pull up the Accounts Collection
 	accounts, err := tree.WalkRedfishResourceTree(ctx, s.redfishRepo, rootService, "AccountService", "@odata.id", "Accounts", "@odata.id")
@@ -82,65 +82,64 @@ func (s *basicAuthService) findUser(ctx context.Context, user string) (account *
 		if memberUser != user {
 			continue
 		}
-        return a, nil
-    }
-    return nil, errors.New("User not found")
+		return a, nil
+	}
+	return nil, errors.New("User not found")
 }
 
 func (s *basicAuthService) getPrivileges(ctx context.Context, account *domain.RedfishResource) (privileges []string) {
 	// start looking up user in auth service
 	tree, err := domain.GetTree(ctx, s.redfishRepo, s.treeID)
-    if err != nil {
-        return
-    }
+	if err != nil {
+		return
+	}
 
-    role, _ := tree.WalkRedfishResourceTree(ctx, s.redfishRepo, account, "Links", "Role", "@odata.id")
-    privs, ok := role.Properties["AssignedPrivileges"]
-    if !ok {
-        return
-    }
+	role, _ := tree.WalkRedfishResourceTree(ctx, s.redfishRepo, account, "Links", "Role", "@odata.id")
+	privs, ok := role.Properties["AssignedPrivileges"]
+	if !ok {
+		return
+	}
 
-    for _, p := range privs.([]string) {
-        // If the user has "ConfigureSelf", then append the special privilege that lets them configure their specific attributes
-        if p == "ConfigureSelf" {
-            // Add ConfigureSelf_%{USERNAME} property
-            privileges = append(privileges, "ConfigureSelf_" + account.Properties["UserName"].(string))
-        } else {
-            // otherwise just pass through the actual priv
-            privileges = append(privileges, p)
-        }
-    }
+	for _, p := range privs.([]string) {
+		// If the user has "ConfigureSelf", then append the special privilege that lets them configure their specific attributes
+		if p == "ConfigureSelf" {
+			// Add ConfigureSelf_%{USERNAME} property
+			privileges = append(privileges, "ConfigureSelf_"+account.Properties["UserName"].(string))
+		} else {
+			// otherwise just pass through the actual priv
+			privileges = append(privileges, p)
+		}
+	}
 
 	fmt.Printf("\tAssigned the following Privileges: %s\n", privileges)
-    return
+	return
 }
 
 func (s *basicAuthService) GetRedfishResource(ctx context.Context, headers map[string]string, url string, args map[string]string, privileges []string) (ret interface{}, err error) {
 	username, ok := headers["BASIC_user"]
-    // TODO: check password
+	// TODO: check password
 	if ok {
-        account, _ := s.findUser(ctx, username)
-        privileges = append(privileges, s.getPrivileges(ctx, account)...)
+		account, _ := s.findUser(ctx, username)
+		privileges = append(privileges, s.getPrivileges(ctx, account)...)
 	}
 
-    /*
-	pass, ok := headers["BASIC_pass"]
-	if !ok {
-		goto out
-	}
-	var _ = pass
-    */
+	/*
+		pass, ok := headers["BASIC_pass"]
+		if !ok {
+			goto out
+		}
+		var _ = pass
+	*/
 
 	return s.Service.GetRedfishResource(ctx, headers, url, args, privileges)
 }
 
-
 func (s *basicAuthService) RedfishResourceHandler(ctx context.Context, r *http.Request, privileges []string) (ret interface{}, err error) {
-    username, _, ok := r.BasicAuth()
-    // TODO: check password (it's the unnamed second parameter, above, from r.BasicAuth())
-    if ok {
-        account, _ := s.findUser(ctx, username)
-        privileges = append(privileges, s.getPrivileges(ctx, account)...)
-    }
+	username, _, ok := r.BasicAuth()
+	// TODO: check password (it's the unnamed second parameter, above, from r.BasicAuth())
+	if ok {
+		account, _ := s.findUser(ctx, username)
+		privileges = append(privileges, s.getPrivileges(ctx, account)...)
+	}
 	return s.Service.RedfishResourceHandler(ctx, r, privileges)
 }

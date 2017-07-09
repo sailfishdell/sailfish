@@ -2,9 +2,9 @@ package redfishserver
 
 import (
 	"context"
-    "io"
-    "net/http"
 	"github.com/go-kit/kit/endpoint"
+	"io"
+	"net/http"
 )
 
 func makeRedfishGetEndpoint(s Service) endpoint.Endpoint {
@@ -20,17 +20,17 @@ func makeRedfishGetEndpoint(s Service) endpoint.Endpoint {
 
 func makeRedfishHandlerEndpoint(s Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(redfishResourceRequest)
+		req := request.(redfishRequest)
 		// TODO: need to add 2 level error return:
 		//      level 1: business logic errors that get mapped to HTTP transport errors
 		//      level 2: other errors that might need to involve circuit breakers tripping (client request timeouts inside business logic functions, for example)
-		output, err := s.GetRedfishResource(ctx, req.headers, req.url, req.args, req.privileges)
+		output, err := s.RedfishResourceHandler(ctx, req.r, req.privileges)
 		return redfishResourceResponse{output: output, err: err}, nil
 	}
 }
 
 type redfishRequest struct {
-	r      *http.Request
+	r          *http.Request
 	privileges []string
 }
 
@@ -39,7 +39,7 @@ type redfishResourceRequest struct {
 	url        string
 	args       map[string]string
 	privileges []string
-    body       io.ReadCloser
+	body       io.ReadCloser
 }
 
 type redfishResourceResponse struct {

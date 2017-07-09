@@ -21,7 +21,6 @@ type RedfishResource struct {
 	PrivilegeMap map[string]interface{}
 	Permissions  map[string]interface{}
 	Headers      map[string]string
-	Methods      map[string]interface{}
 }
 
 type RedfishProjector struct{}
@@ -52,7 +51,6 @@ func (o *RedfishProjector) Project(ctx context.Context, event eh.Event, model in
 		item.PrivilegeMap = map[string]interface{}{}
 		item.Permissions = map[string]interface{}{}
 		item.Headers = map[string]string{}
-		item.Methods = map[string]interface{}{}
 	case RedfishResourcePropertyAddedEvent:
 		if data, ok := event.Data().(*RedfishResourcePropertyAddedData); ok {
 			item.Properties[data.PropertyName] = data.PropertyValue
@@ -74,10 +72,6 @@ func (o *RedfishProjector) Project(ctx context.Context, event eh.Event, model in
 	case RedfishResourcePermissionsUpdatedEvent:
 		if data, ok := event.Data().(*RedfishResourcePermissionsUpdatedData); ok {
 			item.Permissions = data.Permissions
-		}
-	case RedfishResourceMethodsUpdatedEvent:
-		if data, ok := event.Data().(*RedfishResourceMethodsUpdatedData); ok {
-			item.Methods = data.Methods
 		}
 	case RedfishResourceHeaderAddedEvent:
 		if data, ok := event.Data().(*RedfishResourceHeaderAddedData); ok {
@@ -104,7 +98,7 @@ type RedfishTree struct {
 }
 
 // helper
-func GetTree(ctx context.Context, repo eh.ReadRepo, treeID eh.UUID ) (t *RedfishTree, err error) {
+func GetTree(ctx context.Context, repo eh.ReadRepo, treeID eh.UUID) (t *RedfishTree, err error) {
 	rawTree, err := repo.Find(ctx, treeID)
 	if err != nil {
 		return nil, errors.New("could not find tree with ID: " + string(treeID) + " error is: " + err.Error())

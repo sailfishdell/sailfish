@@ -2,8 +2,8 @@ package redfishserver
 
 import (
 	"context"
+	"net/http"
 	"time"
-    "net/http"
 
 	"github.com/go-kit/kit/metrics"
 )

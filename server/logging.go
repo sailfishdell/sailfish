@@ -3,13 +3,13 @@ package redfishserver
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"os"
 	"time"
-    "net/http"
 
-	"github.com/gorilla/mux"
 	"github.com/go-kit/kit/log"
 	"github.com/google/uuid"
+	"github.com/gorilla/mux"
 )
 
 // Logger interface cut/paste from go-kit logging interface so that we don't have to have this dep everywhere
