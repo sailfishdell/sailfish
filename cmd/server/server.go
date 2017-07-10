@@ -96,9 +96,9 @@ func main() {
 
 	// Create the event bus that distributes events.
 	eventBus := eventbus.NewEventBus()
-    //eventBus.SetHandlingStrategy( eh.AsyncEventHandlingStrategy )
+	//eventBus.SetHandlingStrategy( eh.AsyncEventHandlingStrategy )
 	eventPublisher := eventpublisher.NewEventPublisher()
-    //eventPublisher.SetHandlingStrategy( eh.AsyncEventHandlingStrategy )
+	//eventPublisher.SetHandlingStrategy( eh.AsyncEventHandlingStrategy )
 	eventBus.SetPublisher(eventPublisher)
 
 	// Create the command bus.
@@ -109,7 +109,7 @@ func main() {
 
 	// Setup the domain.
 	treeID := eh.NewUUID()
-	domain.Setup(
+	waiter := domain.Setup(
 		eventStore,
 		eventBus,
 		eventPublisher,
@@ -123,12 +123,12 @@ func main() {
 
 	logger = log.With(logger, "caller", log.DefaultCaller)
 
-	svc := redfishserver.NewService(*baseUri, commandBus, redfishRepo, treeID)
-    // Need this *before* the authentication, so that the authentication module
-    // will call this with the correct set of privileges
-	svc = redfishserver.NewPrivilegeEnforcingService(svc, commandBus, redfishRepo, treeID, *baseUri)
-    // Stack this *after* authorization so that it can get user info first and
-    // pass privileges
+	svc := redfishserver.NewService(*baseUri, commandBus, redfishRepo, treeID, waiter)
+	// Need this *before* the authentication, so that the authentication module
+	// will call this with the correct set of privileges
+	svc = redfishserver.NewPrivilegeEnforcingService(svc, *baseUri, commandBus, redfishRepo, treeID)
+	// Stack this *after* authorization so that it can get user info first and
+	// pass privileges
 	svc = redfishserver.NewBasicAuthService(svc, commandBus, redfishRepo, treeID, *baseUri)
 
 	fieldKeys := []string{"method", "URL"}

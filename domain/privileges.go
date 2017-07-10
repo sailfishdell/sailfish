@@ -2,12 +2,9 @@ package domain
 
 import (
 	"context"
-	"fmt"
 	eh "github.com/superchalupa/eventhorizon"
 	"github.com/superchalupa/eventhorizon/eventhandler/saga"
 )
-
-var _ = fmt.Printf
 
 const PrivilegeSagaType saga.Type = "PrivilegeSaga"
 
@@ -30,8 +27,6 @@ func (s *PrivilegeSaga) RunSaga(ctx context.Context, event eh.Event) []eh.Comman
 	switch event.EventType() {
 
 	case RedfishResourceCreatedEvent:
-		fmt.Println("Adding privileges!")
-
 		// look up and set "Unauthenticated" for /redfish/ and /redfish/v1/ and session login link.
 		// FOR NOW, set Login for all others. This needs to be fleshed out more
 		if data, ok := event.Data().(*RedfishResourceCreatedData); ok {

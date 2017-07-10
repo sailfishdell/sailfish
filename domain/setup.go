@@ -6,6 +6,7 @@ import (
 	eh "github.com/superchalupa/eventhorizon"
 	"github.com/superchalupa/eventhorizon/eventhandler/projector"
 	"github.com/superchalupa/eventhorizon/eventhandler/saga"
+	"github.com/superchalupa/eventhorizon/utils"
 )
 
 // Setup configures the domain.
@@ -15,10 +16,12 @@ func Setup(
 	eventPublisher eh.EventPublisher,
 	commandBus eh.CommandBus,
 	redfishRepo eh.ReadWriteRepo,
-	treeID eh.UUID) {
+	treeID eh.UUID) (waiter *utils.EventWaiter) {
 
 	// Add the logger as an observer.
+	waiter = utils.NewEventWaiter()
 	eventPublisher.AddObserver(&Logger{})
+	eventPublisher.AddObserver(waiter)
 
 	// Create the aggregate repository.
 	repository, err := eh.NewEventSourcingRepository(eventStore, eventBus)
@@ -50,6 +53,9 @@ func Setup(
 	handler.SetAggregate(RedfishResourceAggregateType, UpdateRedfishResourceHeaderCommand)
 	handler.SetAggregate(RedfishResourceAggregateType, RemoveRedfishResourceHeaderCommand)
 
+	// HTTP commands...
+	handler.SetAggregate(RedfishResourceAggregateType, HandleHTTPCommand)
+
 	// Create the command bus and register the handler for the commands.
 	// WARNING: If you miss adding a handler for a command, then all command processesing stops when that command is emitted!
 	commandBus.SetHandler(handler, CreateRedfishResourceCommand)
@@ -68,6 +74,10 @@ func Setup(
 	commandBus.SetHandler(handler, UpdateRedfishResourceHeaderCommand)
 	commandBus.SetHandler(handler, RemoveRedfishResourceHeaderCommand)
 
+	// HTTP
+	commandBus.SetHandler(handler, HandleHTTPCommand)
+
+	// read side projector
 	redfishResourceProjector := projector.NewEventHandler(NewRedfishProjector(), redfishRepo)
 	redfishResourceProjector.SetModel(func() interface{} { return &RedfishResource{} })
 	eventBus.AddHandler(redfishResourceProjector, RedfishResourceCreatedEvent)
@@ -81,12 +91,15 @@ func Setup(
 	eventBus.AddHandler(redfishResourceProjector, RedfishResourceHeaderUpdatedEvent)
 	eventBus.AddHandler(redfishResourceProjector, RedfishResourceHeaderRemovedEvent)
 
-	// hook up tree rep
+	// hook up tree rep. this guy maintains the redfish dictionary that maps
+	// URIs to read side projector UUIDs
 	redfishTreeProjector := NewRedfishTreeProjector(redfishRepo, treeID)
 	eventBus.AddHandler(redfishTreeProjector, RedfishResourceCreatedEvent)
 	eventBus.AddHandler(redfishTreeProjector, RedfishResourceRemovedEvent)
 
+	// Hook up the saga that sets privileges on all redfish resources based on privilege map
 	privilegeSaga := saga.NewEventHandler(NewPrivilegeSaga(redfishRepo), commandBus)
 	eventBus.AddHandler(privilegeSaga, RedfishResourceCreatedEvent)
 
+	return
 }

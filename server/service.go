@@ -6,6 +6,7 @@ import (
 	eh "github.com/superchalupa/eventhorizon"
 	commandbus "github.com/superchalupa/eventhorizon/commandbus/local"
 	repo "github.com/superchalupa/eventhorizon/repo/memory"
+	"github.com/superchalupa/eventhorizon/utils"
 	"net/http"
 	"strings"
 	"time"
@@ -38,6 +39,7 @@ type config struct {
 	treeID      eh.UUID
 	cmdbus      *commandbus.CommandBus
 	redfishRepo *repo.Repo
+	waiter      *utils.EventWaiter
 }
 
 func (c *config) makeFullyQualifiedV1(path string) string {
@@ -45,8 +47,8 @@ func (c *config) makeFullyQualifiedV1(path string) string {
 }
 
 // NewService is how we initialize the business logic
-func NewService(baseURI string, commandbus *commandbus.CommandBus, repo *repo.Repo, id eh.UUID) Service {
-	cfg := config{baseURI: baseURI, verURI: "v1", cmdbus: commandbus, redfishRepo: repo, treeID: id}
+func NewService(baseURI string, commandbus *commandbus.CommandBus, repo *repo.Repo, id eh.UUID, w *utils.EventWaiter) Service {
+	cfg := config{baseURI: baseURI, verURI: "v1", cmdbus: commandbus, redfishRepo: repo, treeID: id, waiter: w}
 	go cfg.startup()
 	return &cfg
 }
@@ -58,7 +60,6 @@ func (rh *config) GetRedfishResource(ctx context.Context, headers map[string]str
 	// TODO: Locking? Should repo give us a copy? Need to test this.
 	tree, err := domain.GetTree(ctx, rh.redfishRepo, rh.treeID)
 	if err != nil {
-		fmt.Printf("somehow it wasnt a tree! %s\n", err.Error())
 		return nil, ErrNotFound
 	}
 
@@ -79,31 +80,49 @@ func (rh *config) GetRedfishResource(ctx context.Context, headers map[string]str
 func (rh *config) RedfishResourceHandler(ctx context.Context, r *http.Request, privileges []string) (output interface{}, err error) {
 	noHashPath := strings.SplitN(r.URL.Path, "#", 2)[0]
 	// for now, testing only, automatically cancel the command after 50ms
-	d := time.Now().Add(50 * time.Millisecond)
+	d := time.Now().Add(500 * time.Millisecond)
 	ctx, _ = context.WithDeadline(ctx, d)
 
 	// we have the tree ID, fetch an updated copy of the actual tree
 	// TODO: Locking? Should repo give us a copy? Need to test this.
 	tree, err := domain.GetTree(ctx, rh.redfishRepo, rh.treeID)
 	if err != nil {
-		fmt.Printf("somehow it wasnt a tree! %s\n", err.Error())
 		return nil, ErrNotFound
 	}
 
 	id := tree.Tree[noHashPath]
 	cmdUUID := eh.NewUUID()
-	var _ = id
-	var _ = cmdUUID
-	rh.cmdbus.HandleCommand(ctx, &domain.HandleHTTP{UUID: id, CommandID: cmdUUID, Request: r})
+
+	// we have to do this wait in a gorouting so that we avoid a race condition...
+	waitID, resultChan := rh.waiter.SetupWait(func(event eh.Event) bool {
+		if event.EventType() != domain.HTTPCmdProcessedEvent {
+			return false
+		}
+		if data, ok := event.Data().(*domain.HTTPCmdProcessedData); ok {
+			if data.CommandID == cmdUUID {
+				return true
+			}
+		}
+		return false
+	})
+
+	defer rh.waiter.CancelWait(waitID)
+
+	err = rh.cmdbus.HandleCommand(ctx, &domain.HandleHTTP{UUID: id, CommandID: cmdUUID, Request: r})
+	if err != nil {
+		return nil, err
+	}
 
 	select {
+	case event := <-resultChan:
+		return event.Data().(*domain.HTTPCmdProcessedData).Results, nil
 	case <-time.After(1 * time.Second):
 		// TODO: Here we could easily automatically create a JOB and return that.
 		return "JOB", nil
 	case <-ctx.Done():
 		// the requestor cancelled the http request to us. We can abandon
 		// returning results, but command will still be processed
-		return "COMMAND TIMEOUT", nil
+		return nil, errors.New("The context timed out or was canceled")
 	}
 
 	return nil, nil

@@ -3,11 +3,8 @@ package domain
 import (
 	"context"
 	"errors"
-	"fmt"
 	eh "github.com/superchalupa/eventhorizon"
 )
-
-var _ = fmt.Println
 
 func init() {
 	// odata
@@ -53,7 +50,6 @@ func (c CreateRedfishResource) AggregateID() eh.UUID            { return c.UUID 
 func (c CreateRedfishResource) AggregateType() eh.AggregateType { return RedfishResourceAggregateType }
 func (c CreateRedfishResource) CommandType() eh.CommandType     { return CreateRedfishResourceCommand }
 func (c CreateRedfishResource) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
-	fmt.Printf("\tStoring EVENTS to create resource\n")
 	a.StoreEvent(RedfishResourceCreatedEvent,
 		&RedfishResourceCreatedData{
 			ResourceURI: c.ResourceURI,
@@ -330,7 +326,6 @@ func (c UpdateRedfishResourcePrivileges) CommandType() eh.CommandType {
 	return UpdateRedfishResourcePrivilegesCommand
 }
 func (c UpdateRedfishResourcePrivileges) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
-	fmt.Printf("HANDLE UpdateRedfishResourcePrivileges\n")
 	a.StoreEvent(RedfishResourcePrivilegesUpdatedEvent,
 		&RedfishResourcePrivilegesUpdatedData{
 			Privileges: c.Privileges,

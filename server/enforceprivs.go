@@ -23,7 +23,7 @@ type privilegeEnforcingService struct {
 }
 
 // NewPrivilegeEnforcingService returns a new instance of a privilegeEnforcing Service.
-func NewPrivilegeEnforcingService(s Service, commandbus *commandbus.CommandBus, repo *repo.Repo, id eh.UUID, baseURI string) Service {
+func NewPrivilegeEnforcingService(s Service, baseURI string, commandbus *commandbus.CommandBus, repo *repo.Repo, id eh.UUID) Service {
 	return &privilegeEnforcingService{Service: s, cmdbus: commandbus, redfishRepo: repo, treeID: id, baseURI: baseURI, verURI: "v1"}
 }
 
@@ -34,7 +34,6 @@ func (s *privilegeEnforcingService) GetRedfishResource(ctx context.Context, head
 	// TODO: Locking? Should repo give us a copy? Need to test this.
 	tree, err := domain.GetTree(ctx, s.redfishRepo, s.treeID)
 	if err != nil {
-		fmt.Printf("somehow it wasnt a tree! %s\n", err.Error())
 		return nil, ErrNotFound
 	}
 
@@ -61,12 +60,12 @@ func (s *privilegeEnforcingService) GetRedfishResource(ctx context.Context, head
 
 	getPrivsArr := getPrivs.([]string)
 
-	fmt.Printf("CHECK PRIVS\n\tUSER: %s\n\tRESOURCE: %s\n", privileges, getPrivsArr)
+	//fmt.Printf("CHECK PRIVS\n\tUSER: %s\n\tRESOURCE: %s\n", privileges, getPrivsArr)
 
 	for _, myPriv := range privileges {
 		for _, itemPriv := range getPrivsArr {
 			if myPriv == itemPriv {
-				fmt.Printf("Found matching privs, granting access. userPriv(%s) == itemPriv(%s)\n", myPriv, itemPriv)
+				//fmt.Printf("Found matching privs, granting access. userPriv(%s) == itemPriv(%s)\n", myPriv, itemPriv)
 				return s.Service.GetRedfishResource(ctx, headers, url, args, privileges)
 			}
 		}

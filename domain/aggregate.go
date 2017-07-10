@@ -2,12 +2,9 @@ package domain
 
 import (
 	"context"
-	"fmt"
 
 	eh "github.com/superchalupa/eventhorizon"
 )
-
-var _ = fmt.Println
 
 func init() {
 	eh.RegisterAggregate(func(id eh.UUID) eh.Aggregate {
@@ -40,7 +37,6 @@ type RRCmdHandler interface {
 func (a *RedfishResourceAggregate) HandleCommand(ctx context.Context, command eh.Command) error {
 	switch command := command.(type) {
 	case RRCmdHandler:
-		fmt.Printf("Handle command RedfishResourceAggregate: %t\n", command)
 		return command.Handle(ctx, a)
 	}
 

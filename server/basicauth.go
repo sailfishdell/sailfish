@@ -111,7 +111,8 @@ func (s *basicAuthService) getPrivileges(ctx context.Context, account *domain.Re
 		}
 	}
 
-	fmt.Printf("\tAssigned the following Privileges: %s\n", privileges)
+	var _ = fmt.Printf
+	//fmt.Printf("Assigned the following Privileges: %s\n", privileges)
 	return
 }
 
