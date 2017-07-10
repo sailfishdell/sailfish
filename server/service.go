@@ -79,7 +79,7 @@ func (rh *config) GetRedfishResource(ctx context.Context, headers map[string]str
 
 func (rh *config) RedfishResourceHandler(ctx context.Context, r *http.Request, privileges []string) (output interface{}, err error) {
 	noHashPath := strings.SplitN(r.URL.Path, "#", 2)[0]
-	// for now, testing only, automatically cancel the command after 50ms
+	// for now, testing only, automatically cancel the command after 500ms
 	d := time.Now().Add(500 * time.Millisecond)
 	ctx, _ = context.WithDeadline(ctx, d)
 
@@ -90,10 +90,20 @@ func (rh *config) RedfishResourceHandler(ctx context.Context, r *http.Request, p
 		return nil, ErrNotFound
 	}
 
-	id := tree.Tree[noHashPath]
+	// now that we have the tree, look up the actual URI in that tree to find
+	// the object UUID, then pull that from the repo
+	requested, err := rh.redfishRepo.Find(ctx, tree.Tree[noHashPath])
+	if err != nil {
+		return nil, ErrNotFound
+	}
+	item, ok := requested.(*domain.RedfishResource)
+	if !ok {
+		return nil, ErrNotFound // TODO: should be internal server error or some other such
+	}
+
 	cmdUUID := eh.NewUUID()
 
-	// we have to do this wait in a gorouting so that we avoid a race condition...
+    // we send a command and then wait for a completion event. Set up the wait here.
 	waitID, resultChan := rh.waiter.SetupWait(func(event eh.Event) bool {
 		if event.EventType() != domain.HTTPCmdProcessedEvent {
 			return false
@@ -108,7 +118,14 @@ func (rh *config) RedfishResourceHandler(ctx context.Context, r *http.Request, p
 
 	defer rh.waiter.CancelWait(waitID)
 
-	err = rh.cmdbus.HandleCommand(ctx, &domain.HandleHTTP{UUID: id, CommandID: cmdUUID, Request: r})
+    // look up to see if there is a specific command
+    cmd, err := domain.LookupCommand(item, r, cmdUUID)
+    if err != nil {
+        return nil, err
+    }
+
+	err = rh.cmdbus.HandleCommand(ctx, cmd)
+	//err = rh.cmdbus.HandleCommand(ctx, &domain.HandleHTTP{UUID: id, CommandID: cmdUUID, Request: r})
 	if err != nil {
 		return nil, err
 	}

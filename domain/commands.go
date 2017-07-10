@@ -6,7 +6,7 @@ import (
 	eh "github.com/superchalupa/eventhorizon"
 )
 
-func init() {
+func SetupCommands() {
 	// odata
 	eh.RegisterCommand(func() eh.Command { return &CreateRedfishResource{} })
 	eh.RegisterCommand(func() eh.Command { return &AddRedfishResourceProperty{} })

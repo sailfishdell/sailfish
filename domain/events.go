@@ -22,7 +22,7 @@ const (
 	RedfishResourceHeaderRemovedEvent eh.EventType = "RedfishResourceHeaderRemoved"
 )
 
-func init() {
+func SetupEvents() {
 	// Only the event for creating an invite has custom data.
 	eh.RegisterEventData(RedfishResourceCreatedEvent, func() eh.EventData { return &RedfishResourceCreatedData{} })
 	eh.RegisterEventData(RedfishResourcePropertyAddedEvent, func() eh.EventData { return &RedfishResourcePropertyAddedData{} })

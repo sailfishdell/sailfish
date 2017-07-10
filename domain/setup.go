@@ -9,6 +9,8 @@ import (
 	"github.com/superchalupa/eventhorizon/utils"
 )
 
+var dynamicCommands []eh.CommandType = []eh.CommandType{}
+
 // Setup configures the domain.
 func Setup(
 	eventStore eh.EventStore,
@@ -17,6 +19,11 @@ func Setup(
 	commandBus eh.CommandBus,
 	redfishRepo eh.ReadWriteRepo,
 	treeID eh.UUID) (waiter *utils.EventWaiter) {
+
+    SetupAggregate()
+    SetupEvents()
+    SetupCommands()
+    SetupHTTP()
 
 	// Add the logger as an observer.
 	waiter = utils.NewEventWaiter()
@@ -55,6 +62,11 @@ func Setup(
 
 	// HTTP commands...
 	handler.SetAggregate(RedfishResourceAggregateType, HandleHTTPCommand)
+
+    for _,c := range(dynamicCommands) {
+	    handler.SetAggregate(RedfishResourceAggregateType, c)
+	    commandBus.SetHandler(handler, c)
+    }
 
 	// Create the command bus and register the handler for the commands.
 	// WARNING: If you miss adding a handler for a command, then all command processesing stops when that command is emitted!

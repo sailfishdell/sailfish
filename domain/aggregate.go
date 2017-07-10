@@ -6,7 +6,7 @@ import (
 	eh "github.com/superchalupa/eventhorizon"
 )
 
-func init() {
+func SetupAggregate() {
 	eh.RegisterAggregate(func(id eh.UUID) eh.Aggregate {
 		return NewRedfishResourceAggregate(id)
 	})
