@@ -11,33 +11,31 @@ import (
 
 var _ = fmt.Println
 
-// this needs to be a saga
-
-func init() {
+func SetupTestService() {
 	// COMMAND registration
-	eh.RegisterCommand(func() eh.Command { return &HandleAccountServicesPOST{} })
-	domain.RegisterDynamicCommand(HandleAccountServicesPOSTCommand)
+	eh.RegisterCommand(func() eh.Command { return &HandleTestServicesPOST{} })
+	domain.RegisterDynamicCommand(HandleTestServicesPOSTCommand)
 }
 
 const (
-	HandleAccountServicesPOSTCommand eh.CommandType = "POST:#AccountService.v1_0_2.AccountService"
+	HandleTestServicesPOSTCommand eh.CommandType = "POST:#TestService"
 )
 
-type HandleAccountServicesPOST struct {
+type HandleTestServicesPOST struct {
 	domain.HandleHTTP
 }
 
-type LoginRequest struct {
+type TestRequest struct {
     UserName    string
     Password    string
 }
 
-func (c HandleAccountServicesPOST) CommandType() eh.CommandType {
-	return HandleAccountServicesPOSTCommand
+func (c HandleTestServicesPOST) CommandType() eh.CommandType {
+	return HandleTestServicesPOSTCommand
 }
-func (c HandleAccountServicesPOST) Handle(ctx context.Context, a *domain.RedfishResourceAggregate) error {
+func (c HandleTestServicesPOST) Handle(ctx context.Context, a *domain.RedfishResourceAggregate) error {
     decoder := json.NewDecoder(c.HTTPRequest.Body)
-    var lr LoginRequest
+    var lr TestRequest
     err := decoder.Decode(&lr)
 
     if err == nil {

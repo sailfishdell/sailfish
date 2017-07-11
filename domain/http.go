@@ -20,17 +20,21 @@ type HTTPSaga struct {
 
 // can put URI, odata.type, or odata.context as key
 type HTTPSagaList struct {
-    sagaList map[string]HTTPSaga
+    sagaList map[string]*HTTPSaga
     commandBus eh.CommandBus
     repo eh.ReadRepo
 }
 
 func NewHTTPSagaList(commandbus eh.CommandBus, repo eh.ReadRepo) *HTTPSagaList {
     return &HTTPSagaList{
-            sagaList: map[string]HTTPSaga{},
+            sagaList: map[string]*HTTPSaga{},
             commandBus: commandbus,
             repo: repo,
         }
+}
+
+func (l *HTTPSagaList) RegisterNewSaga(match string, s *HTTPSaga) {
+    l.sagaList[match] = s
 }
 
 type HTTPCmdProcessedData struct {
@@ -76,6 +80,13 @@ func (l *HTTPSagaList) RunHTTPOperation(ctx context.Context, treeID, cmdID eh.UU
 			}
 		}
 	}
+
+    for _,s := range search {
+        if _, ok := l.sagaList[s]; !ok {
+            continue
+        }
+    }
+
 	return errors.New("Command not found")
 }
 
