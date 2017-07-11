@@ -17,10 +17,10 @@ import (
 )
 
 type Response struct {
-    // status code is for external users
-    StatusCode int
-    Headers    map[string]string
-    Output     interface{}
+	// status code is for external users
+	StatusCode int
+	Headers    map[string]string
+	Output     interface{}
 }
 
 // Service is the business logic for a redfish server
@@ -47,6 +47,7 @@ type config struct {
 	cmdbus      *commandbus.CommandBus
 	redfishRepo *repo.Repo
 	waiter      *utils.EventWaiter
+	httpsagas   *domain.HTTPSagaList
 }
 
 func (c *config) makeFullyQualifiedV1(path string) string {
@@ -55,12 +56,20 @@ func (c *config) makeFullyQualifiedV1(path string) string {
 
 // NewService is how we initialize the business logic
 func NewService(baseURI string, commandbus *commandbus.CommandBus, repo *repo.Repo, id eh.UUID, w *utils.EventWaiter) Service {
-	cfg := config{baseURI: baseURI, verURI: "v1", cmdbus: commandbus, redfishRepo: repo, treeID: id, waiter: w}
+	cfg := config{
+		baseURI:     baseURI,
+		verURI:      "v1",
+		cmdbus:      commandbus,
+		redfishRepo: repo,
+		treeID:      id,
+		waiter:      w,
+		httpsagas:   domain.NewHTTPSagaList(commandbus, repo),
+	}
 	go cfg.startup()
 	return &cfg
 }
 
-func (rh *config) GetRedfishResource(ctx context.Context, r *http.Request, privileges []string) (*Response, error){
+func (rh *config) GetRedfishResource(ctx context.Context, r *http.Request, privileges []string) (*Response, error) {
 	noHashPath := strings.SplitN(r.URL.Path, "#", 2)[0]
 
 	// we have the tree ID, fetch an updated copy of the actual tree
@@ -88,6 +97,8 @@ func (rh *config) RedfishResourceHandler(ctx context.Context, r *http.Request, p
 	// we shouldn't actually ever get a path with a hash, I don't think.
 	noHashPath := strings.SplitN(r.URL.Path, "#", 2)[0]
 
+	fmt.Printf("\n\nHAPPY\n\n")
+
 	// we have the tree ID, fetch an updated copy of the actual tree
 	// TODO: Locking? Should repo give us a copy? Need to test this.
 	tree, err := domain.GetTree(ctx, rh.redfishRepo, rh.treeID)
@@ -99,7 +110,7 @@ func (rh *config) RedfishResourceHandler(ctx context.Context, r *http.Request, p
 	// the object UUID, then pull that from the repo
 	requested, err := rh.redfishRepo.Find(ctx, tree.Tree[noHashPath])
 	if err != nil {
-        // it's ok if obj not found
+		// it's ok if obj not found
 		return &Response{StatusCode: http.StatusNotFound}, nil
 	}
 	item, ok := requested.(*domain.RedfishResource)
@@ -124,22 +135,17 @@ func (rh *config) RedfishResourceHandler(ctx context.Context, r *http.Request, p
 
 	defer rh.waiter.CancelWait(waitID)
 
+	// Check for single COMMAND that can be run
 	// look up to see if there is a specific command
-	cmd, err := domain.LookupCommand(rh.redfishRepo, rh.treeID, cmdUUID, item, r)
+	err = rh.httpsagas.RunHTTPOperation(ctx, rh.treeID, cmdUUID, item, r)
 	if err != nil {
 		return &Response{StatusCode: http.StatusMethodNotAllowed}, nil
 	}
 
-	err = rh.cmdbus.HandleCommand(ctx, cmd)
-	if err != nil {
-        // TODO: what to do here? Should we "accept" command and return event with data? (PROBABLY)
-		return &Response{StatusCode: http.StatusInternalServerError, Output: err.Error()}, err
-	}
-
 	select {
 	case event := <-resultChan:
-        d := event.Data().(*domain.HTTPCmdProcessedData)
-		return &Response{ Output: d.Results, StatusCode: d.StatusCode, Headers: d.Headers }, nil
+		d := event.Data().(*domain.HTTPCmdProcessedData)
+		return &Response{Output: d.Results, StatusCode: d.StatusCode, Headers: d.Headers}, nil
 	case <-time.After(1 * time.Second):
 		// TODO: Here we could easily automatically create a JOB and return that.
 		return &Response{StatusCode: http.StatusOK, Output: "JOB"}, nil
@@ -178,10 +184,34 @@ func (rh *config) startup() {
 			"Tasks":          map[string]interface{}{"@odata.id": rh.makeFullyQualifiedV1("TaskService")},
 			"UpdateService":  map[string]interface{}{"@odata.id": rh.makeFullyQualifiedV1("UpdateService")},
 			"Links": map[string]interface{}{
-				"Sessions": map[string]interface{}{"@odata.id": rh.makeFullyQualifiedV1("Sessions")},
+				"Sessions": map[string]interface{}{"@odata.id": rh.makeFullyQualifiedV1("SessionService/Sessions")},
 			},
 			"AccountService": map[string]interface{}{"@odata.id": rh.makeFullyQualifiedV1("AccountService")},
 		})
+	rh.createTreeLeaf(ctx, rh.makeFullyQualifiedV1("SessionService"),
+		"#SessionService.v1_0_2.SessionService",
+		rh.makeFullyQualifiedV1("$metadata#SessionService"),
+		map[string]interface{}{
+			"Id":          "SessionService",
+			"Name":        "Session Service",
+			"Description": "Session Service",
+			"Status": map[string]interface{}{
+				"State":  "Enabled",
+				"Health": "OK",
+			},
+			"ServiceEnabled": true,
+			"SessionTimeout": 30,
+			"Sessions": map[string]interface{}{
+				"@odata.id": rh.makeFullyQualifiedV1("SessionService/Sessions"),
+			},
+		})
+	rh.createTreeCollectionLeaf(ctx, rh.makeFullyQualifiedV1("SessionService/Sessions"),
+		"#SessionCollection.SessionCollection",
+		rh.makeFullyQualifiedV1("$metadata#SessionService/Sessions/$entity"),
+		map[string]interface{}{},
+		[]string{},
+	)
+
 	rh.createTreeLeaf(ctx, rh.makeFullyQualifiedV1("EventService"),
 		"#EventService.v1_0_2.EventService",
 		rh.makeFullyQualifiedV1("$metadata#EventService"),

@@ -8,11 +8,30 @@ import (
 
 	"fmt"
 )
+var _ = fmt.Println
 
 const (
 	// EVENTS
 	HTTPCmdProcessedEvent eh.EventType = "HTTPCmdProcessed"
 )
+
+type HTTPSaga struct {
+}
+
+// can put URI, odata.type, or odata.context as key
+type HTTPSagaList struct {
+    sagaList map[string]HTTPSaga
+    commandBus eh.CommandBus
+    repo eh.ReadRepo
+}
+
+func NewHTTPSagaList(commandbus eh.CommandBus, repo eh.ReadRepo) *HTTPSagaList {
+    return &HTTPSagaList{
+            sagaList: map[string]HTTPSaga{},
+            commandBus: commandbus,
+            repo: repo,
+        }
+}
 
 type HTTPCmdProcessedData struct {
 	CommandID eh.UUID
@@ -34,7 +53,7 @@ func SetupHTTP() {
 //      ${METHOD}@odata.id
 //      ${METHOD}@odata.type
 //      ${METHOD}@odata.context
-func LookupCommand(repo eh.ReadRepo, treeID, cmdID eh.UUID, resource *RedfishResource, r *http.Request) (eh.Command, error) {
+func (l *HTTPSagaList) RunHTTPOperation(ctx context.Context, treeID, cmdID eh.UUID, resource *RedfishResource, r *http.Request) (error) {
 	aggregateID := resource.Properties["@odata.id"].(string)
 	typ := resource.Properties["@odata.type"].(string)
 	context := resource.Properties["@odata.context"].(string)
@@ -48,20 +67,16 @@ func LookupCommand(repo eh.ReadRepo, treeID, cmdID eh.UUID, resource *RedfishRes
 	}
 
 	for _, s := range search {
-		fmt.Printf("Looking up command %s\n", s)
 		cmd, err := eh.CreateCommand(eh.CommandType(s))
-		fmt.Printf("\tcmd = %#v\n", cmd)
 		if err == nil {
 			cmdInit, ok := cmd.(Initializer)
-			fmt.Printf("OK: %s\n", ok)
 			if ok {
-				cmdInit.Initialize(repo, treeID, eh.UUID(aggregateID), cmdID, r)
-				fmt.Printf("\tINIT cmd = %#v\n", cmd)
-				return cmd, nil
+				cmdInit.Initialize(l.repo, treeID, eh.UUID(aggregateID), cmdID, r)
+                return l.commandBus.HandleCommand(ctx, cmd)
 			}
 		}
 	}
-	return nil, errors.New("Command not found")
+	return errors.New("Command not found")
 }
 
 const (

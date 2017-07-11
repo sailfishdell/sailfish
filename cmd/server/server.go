@@ -159,6 +159,28 @@ func main() {
 
 	servers := []*http.Server{}
 
+/*
+    var mySigningKey = []byte("secret")
+
+    var GetTokenHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request){
+        // Create the token 
+        token := jwt.New(jwt.SigningMethodHS256)
+        claims := token.Claims.(jwt.MapClaims)
+        claims["name"] = "FOO"
+        claims["exp"] = time.Now().Add(time.Hour * 24).Unix()
+        claims["Login"] = true
+        claims["Config_User"] = true
+        claims["Config_IDRAC"] = true
+
+        // Sign the token with our secret
+        tokenString, _ := token.SignedString(mySigningKey)
+
+        // Finally, write the token to the browser window 
+        w.Write([]byte(tokenString))
+    })
+	http.Handle("/get-token", getTokenHandler).Methods("GET")
+*/
+
 	for _, listen := range cfg.Listen {
 		var listener net.Listener
 		var err error

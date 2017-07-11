@@ -41,7 +41,7 @@ do
             continue
         fi
         OUTFILE=${outputdir}/$( echo -n ${url} | perl -p -e 's/[^a-zA-Z0-9]/_/g;' ).json
-        if ! curl -f -H "$AUTH_HEADER" -s -L ${BASE}${url}  -o $OUTFILE ; then
+        if ! curl -f -H "$AUTH_HEADER" -s ${CURL_OPTS} -L ${BASE}${url}  -o $OUTFILE ; then
             echo $url >> ${outputdir}/errors.txt
             continue
         fi
@@ -56,6 +56,6 @@ do
     LOOPS=$(( LOOPS + 1 ))
 done
 
-time curl -i -H "$AUTH_HEADER" -s -L -w"\nTotal request time: %{time_total} seconds for url: %{url_effective}\n" $(cat ${outputdir}/visited.txt | perl -n -e "print '${BASE}' . \$_" ) | tee ${outputdir}/entire-tree.txt
+time curl ${CURL_OPTS} -i -H "$AUTH_HEADER" -s -L -w"\nTotal request time: %{time_total} seconds for url: %{url_effective}\n" $(cat ${outputdir}/visited.txt | perl -n -e "print '${BASE}' . \$_" ) | tee ${outputdir}/entire-tree.txt
 
 echo "Took $LOOPS loops to collect the URL list"

@@ -11,6 +11,8 @@ import (
 
 var _ = fmt.Println
 
+// this needs to be a saga
+
 func init() {
 	// COMMAND registration
 	eh.RegisterCommand(func() eh.Command { return &HandleAccountServicesPOST{} })

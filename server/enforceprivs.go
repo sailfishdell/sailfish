@@ -2,13 +2,13 @@ package redfishserver
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	eh "github.com/superchalupa/eventhorizon"
 	commandbus "github.com/superchalupa/eventhorizon/commandbus/local"
 	repo "github.com/superchalupa/eventhorizon/repo/memory"
+	"net/http"
 	"strings"
-    "net/http"
-    "errors"
 
 	"github.com/superchalupa/go-rfs/domain"
 )
@@ -62,18 +62,18 @@ func (s *privilegeEnforcingService) RedfishResourceHandler(ctx context.Context, 
 
 	getPrivsArr := getPrivs.([]string)
 
-	//fmt.Printf("CHECK PRIVS\n\tUSER: %s\n\tRESOURCE: %s\n", privileges, getPrivsArr)
+	fmt.Printf("CHECK PRIVS\n\tUSER: %s\n\tRESOURCE: %s\n", privileges, getPrivsArr)
 
 	for _, myPriv := range privileges {
 		for _, itemPriv := range getPrivsArr {
 			if myPriv == itemPriv {
-				//fmt.Printf("Found matching privs, granting access. userPriv(%s) == itemPriv(%s)\n", myPriv, itemPriv)
+				fmt.Printf("Found matching privs, granting access. userPriv(%s) == itemPriv(%s)\n", myPriv, itemPriv)
 				return s.Service.RedfishResourceHandler(ctx, r, privileges)
 			}
 		}
 	}
 
-    return &Response{StatusCode: http.StatusForbidden}, nil
+	return &Response{StatusCode: http.StatusForbidden}, nil
 }
 
 func (s *privilegeEnforcingService) GetRedfishResource(ctx context.Context, r *http.Request, privileges []string) (resp *Response, err error) {
@@ -120,5 +120,5 @@ func (s *privilegeEnforcingService) GetRedfishResource(ctx context.Context, r *h
 		}
 	}
 
-    return &Response{StatusCode: http.StatusForbidden}, nil
+	return &Response{StatusCode: http.StatusForbidden}, nil
 }
