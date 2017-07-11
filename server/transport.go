@@ -111,7 +111,11 @@ func encodeResponse(ctx context.Context, w http.ResponseWriter, response interfa
 		w.Header().Set(k, v)
 	}
 
-	w.WriteHeader(decoded.StatusCode)
+    if decoded.StatusCode != 0 {
+	    w.WriteHeader(decoded.StatusCode)
+    } else {
+	    w.WriteHeader(http.StatusOK)
+    }
 
 	switch output := decoded.Output.(type) {
     // can add case here to handle streaming output, if needed
