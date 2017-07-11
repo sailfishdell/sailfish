@@ -29,7 +29,7 @@ func NewRedfishHandler(svc Service, baseURI string, verURI string, logger log.Lo
 	r.Methods("GET").PathPrefix(baseURI + "/").Handler(
 		httptransport.NewServer(
 			makeRedfishGetEndpoint(svc),
-			decodeRequest,
+			passthroughRequest,
 			encodeResponse,
 			options...,
 		))
@@ -102,63 +102,19 @@ func passthroughRequest(_ context.Context, r *http.Request) (dec interface{}, er
 	return redfishRequest{r: r, privileges: []string{"Unauthenticated"}}, nil
 }
 
-// we are basically tied to HTTP, so just pass the request down to the function
-// don't anticipate ever adding grpc or other support here, so this should be fine for now
-// if we do add, we'll have to simply re-work the function parameters.
-func decodeRequest(_ context.Context, r *http.Request) (dec interface{}, err error) {
-	// need to decode headers that we may need manually
-
-	err = checkHeaders(r.Header)
-	if err != nil {
-		return nil, err
-	}
-
-	headers := make(map[string]string)
-
-	user, pass, ok := r.BasicAuth()
-	if ok {
-		headers["BASIC_user"] = user
-		headers["BASIC_pass"] = pass
-	}
-
-	for _, hn := range []string{"Odata-Version", "Authorization", "X-Auth-Token"} {
-		if h := r.Header.Get(hn); h != "" {
-			headers[hn] = h
-		}
-	}
-
-	dec = redfishResourceRequest{headers: headers, url: r.URL.Path, args: mux.Vars(r), privileges: []string{"Unauthenticated"}, body: r.Body}
-	return dec, nil
-}
-
 // probably could do something cool with channels and goroutines here so that
 // we dont buffer the entire response, but not worth the effort at this moment
 func encodeResponse(ctx context.Context, w http.ResponseWriter, response interface{}) error {
+	decoded := response.(*Response)
 
-	// if needed:
-	//w.Header().Set("x-header-name", "header value")
-
-	// TODO: Cache-Control
-	// TODO: Max-Forwards (SHOULD)
-	// TODO: Access-Control-Allow-Origin (SHALL)
-	// TODO: Allow - (SHALL) - returns GET/PUT/POST/PATCH/DELETE/HEAD
-
-	// TODO: ETAG
-	// TODO: Link
-	// TODO: CORS headers
-	//w.Header().Set("Access-Control-Allow-Origin", "*")
-	//w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-	//w.Header().Set("Access-Control-Allow-Headers", "Origin, Content-Type")
-
-	decoded := response.(redfishResourceResponse)
-	responseHeaders := w.Header()
-	for k, v := range decoded.responseHeaders {
-		responseHeaders.Add(k, v)
+	for k, v := range decoded.Headers {
+		w.Header().Set(k, v)
 	}
 
-	w.WriteHeader(decoded.responseStatusCode)
+	w.WriteHeader(decoded.StatusCode)
 
-	switch output := decoded.output.(type) {
+	switch output := decoded.Output.(type) {
+    // can add case here to handle streaming output, if needed
 	case []byte:
 		_, err := w.Write(output)
 		return err

@@ -23,15 +23,15 @@ func NewInstrumentingService(counter metrics.Counter, latency metrics.Histogram,
 	}
 }
 
-func (s *instrumentingService) GetRedfishResource(ctx context.Context, headers map[string]string, url string, args map[string]string, privileges []string) (interface{}, error) {
+func (s *instrumentingService) GetRedfishResource(ctx context.Context, r *http.Request, privileges []string) (*Response, error) {
 	defer func(begin time.Time) {
-		s.requestCount.With("URL", url, "method", "GET").Add(1)
-		s.requestLatency.With("URL", url, "method", "GET").Observe(time.Since(begin).Seconds())
+		s.requestCount.With("URL", r.URL.Path, "method", r.Method).Add(1)
+		s.requestLatency.With("URL", r.URL.Path, "method", r.Method).Observe(time.Since(begin).Seconds())
 	}(time.Now())
-	return s.Service.GetRedfishResource(ctx, headers, url, args, privileges)
+	return s.Service.GetRedfishResource(ctx, r, privileges)
 }
 
-func (s *instrumentingService) RedfishResourceHandler(ctx context.Context, r *http.Request, privileges []string) (output interface{}, StatusCode int, responseHeaders map[string]string, err error) {
+func (s *instrumentingService) RedfishResourceHandler(ctx context.Context, r *http.Request, privileges []string) (*Response, error) {
 	defer func(begin time.Time) {
 		s.requestCount.With("URL", r.URL.Path, "method", r.Method).Add(1)
 		s.requestLatency.With("URL", r.URL.Path, "method", r.Method).Observe(time.Since(begin).Seconds())

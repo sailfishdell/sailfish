@@ -52,23 +52,7 @@ func NewLoggingService(logger Logger, s Service) Service {
 	return &loggingService{logger, s}
 }
 
-func (s *loggingService) GetRedfishResource(ctx context.Context, headers map[string]string, url string, args map[string]string, privileges []string) (ret interface{}, err error) {
-	ctxlogger := log.With(s.logger, "method", "GET", "URL", url, "UUID", uuid.New())
-
-	defer func(begin time.Time) {
-		// no, we are not going to check logger error return
-		_ = ctxlogger.Log(
-			"method", "GET",
-			"URL", url,
-			"business_logic_time", time.Since(begin),
-			"err", err,
-			"args", fmt.Sprintf("%#v", args),
-		)
-	}(time.Now())
-	return s.Service.GetRedfishResource(WithLogger(ctx, ctxlogger), headers, url, args, privileges)
-}
-
-func (s *loggingService) RedfishResourceHandler(ctx context.Context, r *http.Request, privileges []string) (output interface{}, StatusCode int, responseHeaders map[string]string, err error) {
+func (s *loggingService) GetRedfishResource(ctx context.Context, r *http.Request, privileges []string) (resp *Response, err error) {
 	ctxlogger := log.With(s.logger, "method", r.Method, "URL", r.URL.Path, "UUID", uuid.New())
 
 	defer func(begin time.Time) {
@@ -77,6 +61,24 @@ func (s *loggingService) RedfishResourceHandler(ctx context.Context, r *http.Req
 			"method", r.Method,
 			"URL", r.URL.Path,
 			"business_logic_time", time.Since(begin),
+			"StatusCode", resp.StatusCode,
+			"err", err,
+			"args", fmt.Sprintf("%#v", mux.Vars(r)),
+		)
+	}(time.Now())
+	return s.Service.GetRedfishResource(WithLogger(ctx, ctxlogger), r, privileges)
+}
+
+func (s *loggingService) RedfishResourceHandler(ctx context.Context, r *http.Request, privileges []string) (resp *Response, err error) {
+	ctxlogger := log.With(s.logger, "method", r.Method, "URL", r.URL.Path, "UUID", uuid.New())
+
+	defer func(begin time.Time) {
+		// no, we are not going to check logger error return
+		_ = ctxlogger.Log(
+			"method", r.Method,
+			"URL", r.URL.Path,
+			"business_logic_time", time.Since(begin),
+			"StatusCode", resp.StatusCode,
 			"err", err,
 			"args", fmt.Sprintf("%#v", mux.Vars(r)),
 		)

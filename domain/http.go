@@ -17,6 +17,8 @@ const (
 type HTTPCmdProcessedData struct {
 	CommandID eh.UUID
 	Results   map[string]interface{}
+    StatusCode int
+    Headers map[string]string
 }
 
 func SetupHTTP() {

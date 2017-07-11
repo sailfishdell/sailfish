@@ -42,7 +42,13 @@ func (s *PrivilegeSaga) RunSaga(ctx context.Context, event eh.Event) []eh.Comman
 				return []eh.Command{
 					&UpdateRedfishResourcePrivileges{
 						UUID:       event.AggregateID(),
-						Privileges: map[string]interface{}{"GET": []string{"ConfigureManager"}},
+						Privileges: map[string]interface{}{
+                            "GET": []string{"ConfigureManager"},
+                            "POST": []string{"ConfigureManager"},
+                            "PUT": []string{"ConfigureManager"},
+                            "PATCH": []string{"ConfigureManager"},
+                            "DELETE": []string{},
+                            },
 					},
 				}
 

@@ -116,26 +116,18 @@ func (s *basicAuthService) getPrivileges(ctx context.Context, account *domain.Re
 	return
 }
 
-func (s *basicAuthService) GetRedfishResource(ctx context.Context, headers map[string]string, url string, args map[string]string, privileges []string) (ret interface{}, err error) {
-	username, ok := headers["BASIC_user"]
-	// TODO: check password
+func (s *basicAuthService) GetRedfishResource(ctx context.Context, r *http.Request, privileges []string) (*Response, error) {
+	username, _, ok := r.BasicAuth()
+	// TODO: check password (it's the unnamed second parameter, above, from r.BasicAuth())
 	if ok {
 		account, _ := s.findUser(ctx, username)
 		privileges = append(privileges, s.getPrivileges(ctx, account)...)
 	}
 
-	/*
-		pass, ok := headers["BASIC_pass"]
-		if !ok {
-			goto out
-		}
-		var _ = pass
-	*/
-
-	return s.Service.GetRedfishResource(ctx, headers, url, args, privileges)
+	return s.Service.GetRedfishResource(ctx, r, privileges)
 }
 
-func (s *basicAuthService) RedfishResourceHandler(ctx context.Context, r *http.Request, privileges []string) (output interface{}, StatusCode int, responseHeaders map[string]string, err error) {
+func (s *basicAuthService) RedfishResourceHandler(ctx context.Context, r *http.Request, privileges []string) (*Response, error) {
 	username, _, ok := r.BasicAuth()
 	// TODO: check password (it's the unnamed second parameter, above, from r.BasicAuth())
 	if ok {
