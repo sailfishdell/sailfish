@@ -135,7 +135,7 @@ func (s *basicAuthService) GetRedfishResource(ctx context.Context, headers map[s
 	return s.Service.GetRedfishResource(ctx, headers, url, args, privileges)
 }
 
-func (s *basicAuthService) RedfishResourceHandler(ctx context.Context, r *http.Request, privileges []string) (ret interface{}, err error) {
+func (s *basicAuthService) RedfishResourceHandler(ctx context.Context, r *http.Request, privileges []string) (output interface{}, StatusCode int, responseHeaders map[string]string, err error) {
 	username, _, ok := r.BasicAuth()
 	// TODO: check password (it's the unnamed second parameter, above, from r.BasicAuth())
 	if ok {

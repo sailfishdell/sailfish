@@ -19,7 +19,7 @@ import (
 // Service is the business logic for a redfish server
 type Service interface {
 	GetRedfishResource(ctx context.Context, headers map[string]string, url string, args map[string]string, privileges []string) (interface{}, error)
-	RedfishResourceHandler(ctx context.Context, r *http.Request, privileges []string) (output interface{}, err error)
+	RedfishResourceHandler(ctx context.Context, r *http.Request, privileges []string) (output interface{}, StatusCode int, responseHeaders map[string]string, err error)
 }
 
 // ServiceMiddleware is a chainable behavior modifier for Service.
@@ -77,33 +77,31 @@ func (rh *config) GetRedfishResource(ctx context.Context, headers map[string]str
 	return item.Properties, nil
 }
 
-func (rh *config) RedfishResourceHandler(ctx context.Context, r *http.Request, privileges []string) (output interface{}, err error) {
+func (rh *config) RedfishResourceHandler(ctx context.Context, r *http.Request, privileges []string) (output interface{}, StatusCode int, responseHeaders map[string]string, err error) {
+	// we shouldn't actually ever get a path with a hash, I don't think.
 	noHashPath := strings.SplitN(r.URL.Path, "#", 2)[0]
-	// for now, testing only, automatically cancel the command after 500ms
-	d := time.Now().Add(500 * time.Millisecond)
-	ctx, _ = context.WithDeadline(ctx, d)
 
 	// we have the tree ID, fetch an updated copy of the actual tree
 	// TODO: Locking? Should repo give us a copy? Need to test this.
 	tree, err := domain.GetTree(ctx, rh.redfishRepo, rh.treeID)
 	if err != nil {
-		return nil, ErrNotFound
+		return nil, 0, nil, ErrNotFound
 	}
 
 	// now that we have the tree, look up the actual URI in that tree to find
 	// the object UUID, then pull that from the repo
 	requested, err := rh.redfishRepo.Find(ctx, tree.Tree[noHashPath])
 	if err != nil {
-		return nil, ErrNotFound
+		return nil, 0, nil, ErrNotFound
 	}
 	item, ok := requested.(*domain.RedfishResource)
 	if !ok {
-		return nil, ErrNotFound // TODO: should be internal server error or some other such
+		return nil, 0, nil, ErrNotFound // TODO: should be internal server error or some other such
 	}
 
 	cmdUUID := eh.NewUUID()
 
-    // we send a command and then wait for a completion event. Set up the wait here.
+	// we send a command and then wait for a completion event. Set up the wait here.
 	waitID, resultChan := rh.waiter.SetupWait(func(event eh.Event) bool {
 		if event.EventType() != domain.HTTPCmdProcessedEvent {
 			return false
@@ -118,31 +116,31 @@ func (rh *config) RedfishResourceHandler(ctx context.Context, r *http.Request, p
 
 	defer rh.waiter.CancelWait(waitID)
 
-    // look up to see if there is a specific command
-    cmd, err := domain.LookupCommand(item, r, cmdUUID)
-    if err != nil {
-        return nil, err
-    }
+	// look up to see if there is a specific command
+	cmd, err := domain.LookupCommand(rh.redfishRepo, rh.treeID, cmdUUID, item, r)
+	if err != nil {
+		return nil, 0, nil, err
+	}
 
 	err = rh.cmdbus.HandleCommand(ctx, cmd)
 	//err = rh.cmdbus.HandleCommand(ctx, &domain.HandleHTTP{UUID: id, CommandID: cmdUUID, Request: r})
 	if err != nil {
-		return nil, err
+		return nil, 0, nil, err
 	}
 
 	select {
 	case event := <-resultChan:
-		return event.Data().(*domain.HTTPCmdProcessedData).Results, nil
+		return event.Data().(*domain.HTTPCmdProcessedData).Results, 0, nil, nil
 	case <-time.After(1 * time.Second):
 		// TODO: Here we could easily automatically create a JOB and return that.
-		return "JOB", nil
+		return "JOB", 0, nil, nil
 	case <-ctx.Done():
 		// the requestor cancelled the http request to us. We can abandon
 		// returning results, but command will still be processed
-		return nil, errors.New("The context timed out or was canceled")
+		return nil, 0, nil, errors.New("The context timed out or was canceled")
 	}
 
-	return nil, nil
+	return nil, 0, nil, nil
 }
 
 func (rh *config) startup() {

@@ -24,7 +24,9 @@ func makeRedfishHandlerEndpoint(s Service) endpoint.Endpoint {
 		// TODO: need to add 2 level error return:
 		//      level 1: business logic errors that get mapped to HTTP transport errors
 		//      level 2: other errors that might need to involve circuit breakers tripping (client request timeouts inside business logic functions, for example)
-		output, err := s.RedfishResourceHandler(ctx, req.r, req.privileges)
+		output, statusCode, headers, err := s.RedfishResourceHandler(ctx, req.r, req.privileges)
+		var _ = statusCode
+		var _ = headers
 		return redfishResourceResponse{output: output, err: err}, nil
 	}
 }
@@ -43,8 +45,10 @@ type redfishResourceRequest struct {
 }
 
 type redfishResourceResponse struct {
-	output interface{}
-	err    error
+	output             interface{}
+	responseHeaders    map[string]string
+	responseStatusCode int
+	err                error
 }
 
 func (in redfishResourceResponse) error() (err error) {

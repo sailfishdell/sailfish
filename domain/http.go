@@ -1,12 +1,12 @@
 package domain
 
 import (
-    "errors"
 	"context"
+	"errors"
 	eh "github.com/superchalupa/eventhorizon"
 	"net/http"
 
-    "fmt"
+	"fmt"
 )
 
 const (
@@ -32,43 +32,34 @@ func SetupHTTP() {
 //      ${METHOD}@odata.id
 //      ${METHOD}@odata.type
 //      ${METHOD}@odata.context
-func LookupCommand(resource *RedfishResource, r *http.Request, cmdid eh.UUID) (eh.Command, error) {
-    id := resource.Properties["@odata.id"].(string)
-    typ := resource.Properties["@odata.type"].(string)
-    context := resource.Properties["@odata.context"].(string)
-    method := r.Method
+func LookupCommand(repo eh.ReadRepo, treeID, cmdID eh.UUID, resource *RedfishResource, r *http.Request) (eh.Command, error) {
+	aggregateID := resource.Properties["@odata.id"].(string)
+	typ := resource.Properties["@odata.type"].(string)
+	context := resource.Properties["@odata.context"].(string)
+	method := r.Method
 
-    search := []string{
-        method + ":" + id,
-        method + ":" + typ,
-        method + ":" + context,
-        "HandleHTTP",
-    }
+	search := []string{
+		method + ":" + aggregateID,
+		method + ":" + typ,
+		method + ":" + context,
+		"HandleHTTP",
+	}
 
-    for _, s := range(search) {
-        fmt.Printf("Looking up command %s\n", s)
-        cmd, err := eh.CreateCommand(eh.CommandType(s))
-        if err != nil {
-            fmt.Printf("\terr = %s\n", err.Error())
-        } else {
-            fmt.Printf("\tERR = NIL\n")
-            }
-        if cmd != nil {
-            fmt.Printf("\tcmd = %#v\n", cmd)
-        } else {
-            fmt.Printf("\tCMD = NIL\n")
-        }
-        if err == nil {
-            cmdInit, ok := cmd.(Initializer)
-            fmt.Printf("OK: %s\n", ok)
-            if ok {
-                cmdInit.Initialize(eh.UUID(id), cmdid, r)
-                fmt.Printf("\tINIT cmd = %#v\n", cmd)
-                return cmd, nil
-            }
-        }
-    }
-    return nil, errors.New("Command not found")
+	for _, s := range search {
+		fmt.Printf("Looking up command %s\n", s)
+		cmd, err := eh.CreateCommand(eh.CommandType(s))
+		fmt.Printf("\tcmd = %#v\n", cmd)
+		if err == nil {
+			cmdInit, ok := cmd.(Initializer)
+			fmt.Printf("OK: %s\n", ok)
+			if ok {
+				cmdInit.Initialize(repo, treeID, eh.UUID(aggregateID), cmdID, r)
+				fmt.Printf("\tINIT cmd = %#v\n", cmd)
+				return cmd, nil
+			}
+		}
+	}
+	return nil, errors.New("Command not found")
 }
 
 const (
@@ -76,19 +67,27 @@ const (
 )
 
 type HandleHTTP struct {
-	UUID      eh.UUID
-	CommandID eh.UUID
-	Request   *http.Request `eh:"optional"`
+	UUID        eh.UUID
+	CommandID   eh.UUID
+	HTTPRequest *http.Request `eh:"optional"`
+
+	// below is everything needed for command side to query the read side, if necessary.
+	// This should be done in only very limited circumstances
+	// also keep in mind that read side is only ***eventually*** consistent
+	ReadSide eh.ReadRepo
+	TreeID   eh.UUID
 }
 
-type Initializer interface{
-    Initialize(id eh.UUID, cmdid eh.UUID, r *http.Request)
+type Initializer interface {
+	Initialize(eh.ReadRepo, eh.UUID, eh.UUID, eh.UUID, *http.Request)
 }
 
-func (c *HandleHTTP) Initialize(id eh.UUID, cmdid eh.UUID, r *http.Request) {
-    c.UUID = id
-    c.CommandID = cmdid
-    c.Request = r
+func (c *HandleHTTP) Initialize(repo eh.ReadRepo, treeID, aggregateID, cmdid eh.UUID, r *http.Request) {
+	c.UUID = aggregateID
+	c.CommandID = cmdid
+	c.HTTPRequest = r
+	c.ReadSide = repo
+	c.TreeID = treeID
 }
 
 func (c HandleHTTP) AggregateID() eh.UUID            { return c.UUID }
@@ -96,9 +95,9 @@ func (c HandleHTTP) AggregateType() eh.AggregateType { return RedfishResourceAgg
 func (c HandleHTTP) CommandType() eh.CommandType     { return HandleHTTPCommand }
 func (c HandleHTTP) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 
-    // Store HTTPCmdProcessedEvent in order to signal to the command is done
-    // processing and to return the results that should be given back to the
-    // user.
+	// Store HTTPCmdProcessedEvent in order to signal to the command is done
+	// processing and to return the results that should be given back to the
+	// user.
 	a.StoreEvent(HTTPCmdProcessedEvent,
 		&HTTPCmdProcessedData{
 			CommandID: c.CommandID,

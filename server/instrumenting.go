@@ -31,7 +31,7 @@ func (s *instrumentingService) GetRedfishResource(ctx context.Context, headers m
 	return s.Service.GetRedfishResource(ctx, headers, url, args, privileges)
 }
 
-func (s *instrumentingService) RedfishResourceHandler(ctx context.Context, r *http.Request, privileges []string) (ret interface{}, err error) {
+func (s *instrumentingService) RedfishResourceHandler(ctx context.Context, r *http.Request, privileges []string) (output interface{}, StatusCode int, responseHeaders map[string]string, err error) {
 	defer func(begin time.Time) {
 		s.requestCount.With("URL", r.URL.Path, "method", r.Method).Add(1)
 		s.requestLatency.With("URL", r.URL.Path, "method", r.Method).Observe(time.Since(begin).Seconds())

@@ -68,7 +68,7 @@ func (s *loggingService) GetRedfishResource(ctx context.Context, headers map[str
 	return s.Service.GetRedfishResource(WithLogger(ctx, ctxlogger), headers, url, args, privileges)
 }
 
-func (s *loggingService) RedfishResourceHandler(ctx context.Context, r *http.Request, privileges []string) (ret interface{}, err error) {
+func (s *loggingService) RedfishResourceHandler(ctx context.Context, r *http.Request, privileges []string) (output interface{}, StatusCode int, responseHeaders map[string]string, err error) {
 	ctxlogger := log.With(s.logger, "method", r.Method, "URL", r.URL.Path, "UUID", uuid.New())
 
 	defer func(begin time.Time) {

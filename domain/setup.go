@@ -2,6 +2,7 @@ package domain
 
 import (
 	"log"
+	"sync"
 
 	eh "github.com/superchalupa/eventhorizon"
 	"github.com/superchalupa/eventhorizon/eventhandler/projector"
@@ -10,6 +11,13 @@ import (
 )
 
 var dynamicCommands []eh.CommandType = []eh.CommandType{}
+var dynamicCommandsMu sync.RWMutex
+
+func RegisterDynamicCommand(cmd eh.CommandType) {
+	dynamicCommandsMu.Lock()
+	dynamicCommands = append(dynamicCommands, cmd)
+	dynamicCommandsMu.Unlock()
+}
 
 // Setup configures the domain.
 func Setup(
@@ -20,10 +28,10 @@ func Setup(
 	redfishRepo eh.ReadWriteRepo,
 	treeID eh.UUID) (waiter *utils.EventWaiter) {
 
-    SetupAggregate()
-    SetupEvents()
-    SetupCommands()
-    SetupHTTP()
+	SetupAggregate()
+	SetupEvents()
+	SetupCommands()
+	SetupHTTP()
 
 	// Add the logger as an observer.
 	waiter = utils.NewEventWaiter()
@@ -63,10 +71,12 @@ func Setup(
 	// HTTP commands...
 	handler.SetAggregate(RedfishResourceAggregateType, HandleHTTPCommand)
 
-    for _,c := range(dynamicCommands) {
-	    handler.SetAggregate(RedfishResourceAggregateType, c)
-	    commandBus.SetHandler(handler, c)
-    }
+	dynamicCommandsMu.RLock()
+	for _, c := range dynamicCommands {
+		handler.SetAggregate(RedfishResourceAggregateType, c)
+		commandBus.SetHandler(handler, c)
+	}
+	dynamicCommandsMu.RUnlock()
 
 	// Create the command bus and register the handler for the commands.
 	// WARNING: If you miss adding a handler for a command, then all command processesing stops when that command is emitted!

@@ -30,6 +30,8 @@ import (
 
 	"github.com/superchalupa/go-rfs/domain"
 	redfishserver "github.com/superchalupa/go-rfs/server"
+
+	_ "github.com/superchalupa/go-rfs/stdredfish"
 )
 
 type appConfig struct {

@@ -11,14 +11,6 @@ import (
 
 const serverHTTPHeader = "go-redfish/0.1"
 
-// errorer is implemented by all concrete response types that may contain
-// errors. It allows us to change the HTTP response code without needing to
-// trigger an endpoint (transport-level) error. For more information, read the
-// big comment in endpoints.go.
-type errorer interface {
-	error() error
-}
-
 // NewRedfishHandler is a function to hook up the redfish service to an http handler, it returns a mux
 func NewRedfishHandler(svc Service, baseURI string, verURI string, logger log.Logger) http.Handler {
 	r := mux.NewRouter()
@@ -158,12 +150,13 @@ func encodeResponse(ctx context.Context, w http.ResponseWriter, response interfa
 	//w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
 	//w.Header().Set("Access-Control-Allow-Headers", "Origin, Content-Type")
 
-	if e, ok := response.(errorer); ok && e.error() != nil {
-		encodeError(ctx, e.error(), w)
-		return nil
+	decoded := response.(redfishResourceResponse)
+	responseHeaders := w.Header()
+	for k, v := range decoded.responseHeaders {
+		responseHeaders.Add(k, v)
 	}
 
-	decoded := response.(redfishResourceResponse)
+	w.WriteHeader(decoded.responseStatusCode)
 
 	switch output := decoded.output.(type) {
 	case []byte:
