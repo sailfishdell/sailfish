@@ -87,7 +87,6 @@ func (rh *config) GetRedfishResource(ctx context.Context, r *http.Request, privi
 func (rh *config) RedfishResourceHandler(ctx context.Context, r *http.Request, privileges []string) (*Response, error) {
 	// we shouldn't actually ever get a path with a hash, I don't think.
 	noHashPath := strings.SplitN(r.URL.Path, "#", 2)[0]
-    fmt.Printf("\nHAPPY\n")
 
 	// we have the tree ID, fetch an updated copy of the actual tree
 	// TODO: Locking? Should repo give us a copy? Need to test this.
