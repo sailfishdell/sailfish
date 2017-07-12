@@ -4,9 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	eh "github.com/superchalupa/eventhorizon"
-	commandbus "github.com/superchalupa/eventhorizon/commandbus/local"
-	repo "github.com/superchalupa/eventhorizon/repo/memory"
 	"net/http"
 	"strings"
 
@@ -17,16 +14,11 @@ var _ = fmt.Println
 
 type privilegeEnforcingService struct {
 	Service
-	baseURI     string
-	verURI      string
-	treeID      eh.UUID
-	cmdbus      *commandbus.CommandBus
-	redfishRepo *repo.Repo
 }
 
 // NewPrivilegeEnforcingService returns a new instance of a privilegeEnforcing Service.
-func NewPrivilegeEnforcingService(s Service, baseURI string, commandbus *commandbus.CommandBus, repo *repo.Repo, id eh.UUID) Service {
-	return &privilegeEnforcingService{Service: s, cmdbus: commandbus, redfishRepo: repo, treeID: id, baseURI: baseURI, verURI: "v1"}
+func NewPrivilegeEnforcingService(s Service) Service {
+	return &privilegeEnforcingService{Service: s}
 }
 
 func (s *privilegeEnforcingService) RedfishResourceHandler(ctx context.Context, r *http.Request, privileges []string) (resp *Response, err error) {
@@ -34,14 +26,14 @@ func (s *privilegeEnforcingService) RedfishResourceHandler(ctx context.Context, 
 
 	// we have the tree ID, fetch an updated copy of the actual tree
 	// TODO: Locking? Should repo give us a copy? Need to test this.
-	tree, err := domain.GetTree(ctx, s.redfishRepo, s.treeID)
+	tree, err := domain.GetTree(ctx, s.GetRepo(), s.GetTreeID())
 	if err != nil {
 		return &Response{StatusCode: http.StatusInternalServerError}, err
 	}
 
 	// now that we have the tree, look up the actual URI in that tree to find
 	// the object UUID, then pull that from the repo
-	requested, err := s.redfishRepo.Find(ctx, tree.Tree[noHashPath])
+	requested, err := s.GetRepo().Find(ctx, tree.Tree[noHashPath])
 	if err != nil {
 		return &Response{StatusCode: http.StatusNotFound}, nil
 	}
@@ -81,14 +73,14 @@ func (s *privilegeEnforcingService) GetRedfishResource(ctx context.Context, r *h
 
 	// we have the tree ID, fetch an updated copy of the actual tree
 	// TODO: Locking? Should repo give us a copy? Need to test this.
-	tree, err := domain.GetTree(ctx, s.redfishRepo, s.treeID)
+	tree, err := domain.GetTree(ctx, s.GetRepo(), s.GetTreeID())
 	if err != nil {
 		return &Response{StatusCode: http.StatusInternalServerError}, err
 	}
 
 	// now that we have the tree, look up the actual URI in that tree to find
 	// the object UUID, then pull that from the repo
-	requested, err := s.redfishRepo.Find(ctx, tree.Tree[noHashPath])
+	requested, err := s.GetRepo().Find(ctx, tree.Tree[noHashPath])
 	if err != nil {
 		return &Response{StatusCode: http.StatusNotFound}, nil
 	}

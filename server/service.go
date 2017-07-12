@@ -27,6 +27,15 @@ type Response struct {
 type Service interface {
 	GetRedfishResource(ctx context.Context, r *http.Request, privileges []string) (*Response, error)
 	RedfishResourceHandler(ctx context.Context, r *http.Request, privileges []string) (*Response, error)
+	MakeFullyQualifiedV1(string) string
+	GetBaseURI() string
+	GetTreeID() eh.UUID
+	GetCommandBus() *commandbus.CommandBus
+	GetEventHandler() eh.EventHandler
+	GetRepo() *repo.Repo
+	GetEventWaiter() *utils.EventWaiter
+	FindUser(ctx context.Context, user string) (account *domain.RedfishResource, err error)
+	GetPrivileges(ctx context.Context, account *domain.RedfishResource) (privileges []string)
 }
 
 // ServiceMiddleware is a chainable behavior modifier for Service.
@@ -39,8 +48,8 @@ var (
 	ErrForbidden    = errors.New("Forbidden")    // should be 403 (you are authenticated, but dont have permissions to this object)
 )
 
-// Config is where we store the current service data
-type config struct {
+// ServiceConfig is where we store the current service data
+type ServiceConfig struct {
 	baseURI      string
 	verURI       string
 	treeID       eh.UUID
@@ -51,13 +60,117 @@ type config struct {
 	httpsagas    *domain.HTTPSagaList
 }
 
-func (c *config) makeFullyQualifiedV1(path string) string {
+func (c *ServiceConfig) MakeFullyQualifiedV1(path string) string {
 	return c.baseURI + "/" + c.verURI + "/" + path
+}
+
+func (c *ServiceConfig) GetBaseURI() string {
+	return c.baseURI
+}
+
+func (c *ServiceConfig) GetTreeID() eh.UUID {
+	return c.treeID
+}
+
+func (c *ServiceConfig) GetCommandBus() *commandbus.CommandBus {
+	return c.cmdbus
+}
+
+func (c *ServiceConfig) GetEventHandler() eh.EventHandler {
+	return c.eventHandler
+}
+
+func (c *ServiceConfig) GetRepo() *repo.Repo {
+	return c.redfishRepo
+}
+
+func (c *ServiceConfig) GetEventWaiter() *utils.EventWaiter {
+	return c.waiter
+}
+
+func (s *ServiceConfig) FindUser(ctx context.Context, user string) (account *domain.RedfishResource, err error) {
+	// start looking up user in auth service
+	tree, err := domain.GetTree(ctx, s.GetRepo(), s.GetTreeID())
+	if err != nil {
+		return nil, errors.New("Malformed tree")
+	}
+
+	// get the root service reference
+	rootService, err := tree.GetRedfishResourceFromTree(ctx, s.GetRepo(), s.MakeFullyQualifiedV1(""))
+	if err != nil {
+		return nil, errors.New("Malformed tree root resource")
+	}
+
+	// Pull up the Accounts Collection
+	accounts, err := tree.WalkRedfishResourceTree(ctx, s.GetRepo(), rootService, "AccountService", "@odata.id", "Accounts", "@odata.id")
+	if err != nil {
+		return nil, errors.New("Malformed Account Service")
+	}
+
+	// Walk through all of the "Members" of the collection, which are links to individual accounts
+	members, ok := accounts.Properties["Members"]
+	if !ok {
+		return nil, errors.New("Malformed Account Collection")
+	}
+
+	// avoid panics by separating out type assertion
+	memberList, ok := members.([]map[string]interface{})
+	if !ok {
+		return nil, errors.New("Malformed Account Collection")
+	}
+
+	for _, m := range memberList {
+		a, _ := tree.GetRedfishResourceFromTree(ctx, s.GetRepo(), m["@odata.id"].(string))
+		if a == nil {
+			continue
+		}
+		if a.Properties == nil {
+			continue
+		}
+		memberUser, ok := a.Properties["UserName"]
+		if !ok {
+			continue
+		}
+		if memberUser != user {
+			continue
+		}
+		return a, nil
+	}
+	return nil, errors.New("User not found")
+}
+
+func (s *ServiceConfig) GetPrivileges(ctx context.Context, account *domain.RedfishResource) (privileges []string) {
+	// start looking up user in auth service
+	tree, err := domain.GetTree(ctx, s.GetRepo(), s.GetTreeID())
+	if err != nil {
+		return
+	}
+
+	role, _ := tree.WalkRedfishResourceTree(ctx, s.GetRepo(), account, "Links", "Role", "@odata.id")
+	privs, ok := role.Properties["AssignedPrivileges"]
+	if !ok {
+		return
+	}
+
+	for _, p := range privs.([]string) {
+		// If the user has "ConfigureSelf", then append the special privilege that lets them configure their specific attributes
+		if p == "ConfigureSelf" {
+			// Add ConfigureSelf_%{USERNAME} property
+			privileges = append(privileges, "ConfigureSelf_"+account.Properties["UserName"].(string))
+		} else {
+			// otherwise just pass through the actual priv
+			privileges = append(privileges, p)
+		}
+	}
+
+	var _ = fmt.Printf
+	//fmt.Printf("Assigned the following Privileges: %s\n", privileges)
+	return
 }
 
 // NewService is how we initialize the business logic
 func NewService(baseURI string, commandbus *commandbus.CommandBus, eventHandler eh.EventHandler, repo *repo.Repo, id eh.UUID, w *utils.EventWaiter) Service {
-	cfg := config{
+	cfg := ServiceConfig{
 		baseURI:      baseURI,
 		verURI:       "v1",
 		cmdbus:       commandbus,
@@ -71,7 +184,7 @@ func NewService(baseURI string, commandbus *commandbus.CommandBus, eventHandler 
 	return &cfg
 }
 
-func (rh *config) GetRedfishResource(ctx context.Context, r *http.Request, privileges []string) (*Response, error) {
+func (rh *ServiceConfig) GetRedfishResource(ctx context.Context, r *http.Request, privileges []string) (*Response, error) {
 	noHashPath := strings.SplitN(r.URL.Path, "#", 2)[0]
 
 	// we have the tree ID, fetch an updated copy of the actual tree
@@ -95,7 +208,7 @@ func (rh *config) GetRedfishResource(ctx context.Context, r *http.Request, privi
 	return &Response{StatusCode: http.StatusOK, Output: item.Properties, Headers: item.Headers}, nil
 }
 
-func (rh *config) RedfishResourceHandler(ctx context.Context, r *http.Request, privileges []string) (*Response, error) {
+func (rh *ServiceConfig) RedfishResourceHandler(ctx context.Context, r *http.Request, privileges []string) (*Response, error) {
 	// we shouldn't actually ever get a path with a hash, I don't think.
 	noHashPath := strings.SplitN(r.URL.Path, "#", 2)[0]
 
@@ -156,41 +269,41 @@ func (rh *config) RedfishResourceHandler(ctx context.Context, r *http.Request, p
 	}
 }
 
-func (rh *config) startup() {
+func (rh *ServiceConfig) startup() {
 	ctx := context.Background()
 
 	// create version entry point. it's special in that it doesnt have @odata.* properties, so we'll remove them
 	// after creating the object
-	uuid := rh.createTreeLeaf(ctx, rh.baseURI+"/", "foo", "bar", map[string]interface{}{"v1": rh.makeFullyQualifiedV1("")})
+	uuid := rh.createTreeLeaf(ctx, rh.baseURI+"/", "foo", "bar", map[string]interface{}{"v1": rh.MakeFullyQualifiedV1("")})
 	rh.cmdbus.HandleCommand(ctx, &domain.RemoveRedfishResourceProperty{UUID: uuid, PropertyName: "@odata.context"})
 	rh.cmdbus.HandleCommand(ctx, &domain.RemoveRedfishResourceProperty{UUID: uuid, PropertyName: "@odata.id"})
 	rh.cmdbus.HandleCommand(ctx, &domain.RemoveRedfishResourceProperty{UUID: uuid, PropertyName: "@odata.type"})
 
-	rh.createTreeLeaf(ctx, rh.makeFullyQualifiedV1(""),
+	rh.createTreeLeaf(ctx, rh.MakeFullyQualifiedV1(""),
 		"#ServiceRoot.v1_0_2.ServiceRoot",
-		rh.makeFullyQualifiedV1("$metadata#ServiceRoot"),
+		rh.MakeFullyQualifiedV1("$metadata#ServiceRoot"),
 		map[string]interface{}{
 			"Description":    "Root Service",
 			"Id":             "RootService",
 			"Name":           "Root Service",
 			"RedfishVersion": "v1_0_2",
-			"Systems":        map[string]interface{}{"@odata.id": rh.makeFullyQualifiedV1("Systems")},
-			"Chassis":        map[string]interface{}{"@odata.id": rh.makeFullyQualifiedV1("Chassis")},
-			"EventService":   map[string]interface{}{"@odata.id": rh.makeFullyQualifiedV1("EventService")},
-			"JsonSchemas":    map[string]interface{}{"@odata.id": rh.makeFullyQualifiedV1("JSONSchemas")},
-			"Managers":       map[string]interface{}{"@odata.id": rh.makeFullyQualifiedV1("Managers")},
-			"Registries":     map[string]interface{}{"@odata.id": rh.makeFullyQualifiedV1("Registries")},
-			"SessionService": map[string]interface{}{"@odata.id": rh.makeFullyQualifiedV1("SessionService")},
-			"Tasks":          map[string]interface{}{"@odata.id": rh.makeFullyQualifiedV1("TaskService")},
-			"UpdateService":  map[string]interface{}{"@odata.id": rh.makeFullyQualifiedV1("UpdateService")},
+			"Systems":        map[string]interface{}{"@odata.id": rh.MakeFullyQualifiedV1("Systems")},
+			"Chassis":        map[string]interface{}{"@odata.id": rh.MakeFullyQualifiedV1("Chassis")},
+			"EventService":   map[string]interface{}{"@odata.id": rh.MakeFullyQualifiedV1("EventService")},
+			"JsonSchemas":    map[string]interface{}{"@odata.id": rh.MakeFullyQualifiedV1("JSONSchemas")},
+			"Managers":       map[string]interface{}{"@odata.id": rh.MakeFullyQualifiedV1("Managers")},
+			"Registries":     map[string]interface{}{"@odata.id": rh.MakeFullyQualifiedV1("Registries")},
+			"SessionService": map[string]interface{}{"@odata.id": rh.MakeFullyQualifiedV1("SessionService")},
+			"Tasks":          map[string]interface{}{"@odata.id": rh.MakeFullyQualifiedV1("TaskService")},
+			"UpdateService":  map[string]interface{}{"@odata.id": rh.MakeFullyQualifiedV1("UpdateService")},
 			"Links": map[string]interface{}{
-				"Sessions": map[string]interface{}{"@odata.id": rh.makeFullyQualifiedV1("SessionService/Sessions")},
+				"Sessions": map[string]interface{}{"@odata.id": rh.MakeFullyQualifiedV1("SessionService/Sessions")},
 			},
-			"AccountService": map[string]interface{}{"@odata.id": rh.makeFullyQualifiedV1("AccountService")},
+			"AccountService": map[string]interface{}{"@odata.id": rh.MakeFullyQualifiedV1("AccountService")},
 		})
-	rh.createTreeLeaf(ctx, rh.makeFullyQualifiedV1("SessionService"),
+	rh.createTreeLeaf(ctx, rh.MakeFullyQualifiedV1("SessionService"),
 		"#SessionService.v1_0_2.SessionService",
-		rh.makeFullyQualifiedV1("$metadata#SessionService"),
+		rh.MakeFullyQualifiedV1("$metadata#SessionService"),
 		map[string]interface{}{
 			"Id":          "SessionService",
 			"Name":        "Session Service",
@@ -202,19 +315,19 @@ func (rh *config) startup() {
 			"ServiceEnabled": true,
 			"SessionTimeout": 30,
 			"Sessions": map[string]interface{}{
-				"@odata.id": rh.makeFullyQualifiedV1("SessionService/Sessions"),
+				"@odata.id": rh.MakeFullyQualifiedV1("SessionService/Sessions"),
 			},
 		})
-	rh.createTreeCollectionLeaf(ctx, rh.makeFullyQualifiedV1("SessionService/Sessions"),
+	rh.createTreeCollectionLeaf(ctx, rh.MakeFullyQualifiedV1("SessionService/Sessions"),
 		"#SessionCollection.SessionCollection",
-		rh.makeFullyQualifiedV1("$metadata#SessionService/Sessions/$entity"),
+		rh.MakeFullyQualifiedV1("$metadata#SessionService/Sessions/$entity"),
 		map[string]interface{}{},
 		[]string{},
 	)
 
-	rh.createTreeLeaf(ctx, rh.makeFullyQualifiedV1("EventService"),
+	rh.createTreeLeaf(ctx, rh.MakeFullyQualifiedV1("EventService"),
 		"#EventService.v1_0_2.EventService",
-		rh.makeFullyQualifiedV1("$metadata#EventService"),
+		rh.MakeFullyQualifiedV1("$metadata#EventService"),
 		map[string]interface{}{
 			"EventTypesForSubscription@odata.count": 5,
 			"Id":                           "EventService",
@@ -222,7 +335,7 @@ func (rh *config) startup() {
 			"DeliveryRetryAttempts":        3,
 			"DeliveryRetryIntervalSeconds": 30,
 			"Description":                  "Event Service represents the properties for the service",
-			"Subscriptions":                map[string]interface{}{"@odata.id": rh.makeFullyQualifiedV1("EventService/Subscriptions")},
+			"Subscriptions":                map[string]interface{}{"@odata.id": rh.MakeFullyQualifiedV1("EventService/Subscriptions")},
 			"Status": map[string]interface{}{
 				"Health":       "Ok",
 				"HealthRollup": "Ok",
@@ -237,7 +350,7 @@ func (rh *config) startup() {
 						"ResourceRemoved",
 						"Alert",
 					},
-					"target": rh.makeFullyQualifiedV1("EventService/Actions/EventService.SubmitTestEvent"),
+					"target": rh.MakeFullyQualifiedV1("EventService/Actions/EventService.SubmitTestEvent"),
 				},
 			},
 
@@ -249,14 +362,14 @@ func (rh *config) startup() {
 				"Alert",
 			},
 		})
-	rh.createTreeCollectionLeaf(ctx, rh.makeFullyQualifiedV1("Systems"), "#ComputerSystemCollection.ComputerSystemCollection", rh.makeFullyQualifiedV1("$metadata#Systems"), map[string]interface{}{}, []string{})
-	rh.createTreeCollectionLeaf(ctx, rh.makeFullyQualifiedV1("Chassis"), "#ChassisCollection.ChassisCollection", rh.makeFullyQualifiedV1("$metadata#ChassisCollection"), map[string]interface{}{}, []string{})
-	rh.createTreeCollectionLeaf(ctx, rh.makeFullyQualifiedV1("Managers"), "#ManagerCollection.ManagerCollection", rh.makeFullyQualifiedV1("$metadata#Managers"), map[string]interface{}{}, []string{})
-	rh.createTreeCollectionLeaf(ctx, rh.makeFullyQualifiedV1("JSONSchemas"), "#JsonSchemaFileCollection.JsonSchemaFileCollection", rh.makeFullyQualifiedV1("$metadata#JsonSchemaFileCollection.JsonSchemaFileCollection"), map[string]interface{}{}, []string{})
-	//rh.createTreeCollectionLeaf(ctx, rh.makeFullyQualifiedV1("Registries"), "unknown type", "unknown context", map[string]interface{}{}, []string{})
-	rh.createTreeLeaf(ctx, rh.makeFullyQualifiedV1("AccountService"),
+	rh.createTreeCollectionLeaf(ctx, rh.MakeFullyQualifiedV1("Systems"), "#ComputerSystemCollection.ComputerSystemCollection", rh.MakeFullyQualifiedV1("$metadata#Systems"), map[string]interface{}{}, []string{})
+	rh.createTreeCollectionLeaf(ctx, rh.MakeFullyQualifiedV1("Chassis"), "#ChassisCollection.ChassisCollection", rh.MakeFullyQualifiedV1("$metadata#ChassisCollection"), map[string]interface{}{}, []string{})
+	rh.createTreeCollectionLeaf(ctx, rh.MakeFullyQualifiedV1("Managers"), "#ManagerCollection.ManagerCollection", rh.MakeFullyQualifiedV1("$metadata#Managers"), map[string]interface{}{}, []string{})
+	rh.createTreeCollectionLeaf(ctx, rh.MakeFullyQualifiedV1("JSONSchemas"), "#JsonSchemaFileCollection.JsonSchemaFileCollection", rh.MakeFullyQualifiedV1("$metadata#JsonSchemaFileCollection.JsonSchemaFileCollection"), map[string]interface{}{}, []string{})
+	//rh.createTreeCollectionLeaf(ctx, rh.MakeFullyQualifiedV1("Registries"), "unknown type", "unknown context", map[string]interface{}{}, []string{})
+	rh.createTreeLeaf(ctx, rh.MakeFullyQualifiedV1("AccountService"),
 		"#AccountService.v1_0_2.AccountService",
-		rh.makeFullyQualifiedV1("$metadata#AccountService"),
+		rh.MakeFullyQualifiedV1("$metadata#AccountService"),
 		map[string]interface{}{
 			"@odata.type": "#AccountService.v1_0_2.AccountService",
 			"Id":          "AccountService",
@@ -272,36 +385,36 @@ func (rh *config) startup() {
 			"AccountLockoutThreshold":         5,
 			"AccountLockoutDuration":          30,
 			"AccountLockoutCounterResetAfter": 30,
-			"Accounts":                        map[string]interface{}{"@odata.id": rh.makeFullyQualifiedV1("AccountService/Accounts")},
-			"Roles":                           map[string]interface{}{"@odata.id": rh.makeFullyQualifiedV1("AccountService/Roles")},
-			"@odata.context":                  rh.makeFullyQualifiedV1("$metadata#AccountService"),
-			"@odata.id":                       rh.makeFullyQualifiedV1("AccountService"),
+			"Accounts":                        map[string]interface{}{"@odata.id": rh.MakeFullyQualifiedV1("AccountService/Accounts")},
+			"Roles":                           map[string]interface{}{"@odata.id": rh.MakeFullyQualifiedV1("AccountService/Roles")},
+			"@odata.context":                  rh.MakeFullyQualifiedV1("$metadata#AccountService"),
+			"@odata.id":                       rh.MakeFullyQualifiedV1("AccountService"),
 			"@Redfish.Copyright":              "Copyright 2014-2016 Distributed Management Task Force, Inc. (DMTF). For the full DMTF copyright policy, see http://www.dmtf.org/about/policies/copyright.",
 		})
 
-	rh.createTreeCollectionLeaf(ctx, rh.makeFullyQualifiedV1("AccountService/Accounts"),
+	rh.createTreeCollectionLeaf(ctx, rh.MakeFullyQualifiedV1("AccountService/Accounts"),
 		"#ManagerAccountCollection.ManagerAccountCollection",
-		rh.makeFullyQualifiedV1("$metadata#ManagerAccountCollection.ManagerAccountCollection"),
+		rh.MakeFullyQualifiedV1("$metadata#ManagerAccountCollection.ManagerAccountCollection"),
 		map[string]interface{}{
 			"@odata.type":        "#ManagerAccountCollection.ManagerAccountCollection",
-			"@odata.context":     rh.makeFullyQualifiedV1("$metadata#ManagerAccountCollection.ManagerAccountCollection"),
-			"@odata.id":          rh.makeFullyQualifiedV1("AccountService/Accounts"),
+			"@odata.context":     rh.MakeFullyQualifiedV1("$metadata#ManagerAccountCollection.ManagerAccountCollection"),
+			"@odata.id":          rh.MakeFullyQualifiedV1("AccountService/Accounts"),
 			"@Redfish.Copyright": "Copyright 2014-2016 Distributed Management Task Force, Inc. (DMTF). For the full DMTF copyright policy, see http://www.dmtf.org/about/policies/copyright.",
 			"Name":               "Accounts Collection",
 		},
 		[]string{
-			rh.makeFullyQualifiedV1("AccountService/Accounts/1"),
-			rh.makeFullyQualifiedV1("AccountService/Accounts/2"),
-			rh.makeFullyQualifiedV1("AccountService/Accounts/3"),
-			rh.makeFullyQualifiedV1("AccountService/Accounts/4"),
+			rh.MakeFullyQualifiedV1("AccountService/Accounts/1"),
+			rh.MakeFullyQualifiedV1("AccountService/Accounts/2"),
+			rh.MakeFullyQualifiedV1("AccountService/Accounts/3"),
+			rh.MakeFullyQualifiedV1("AccountService/Accounts/4"),
 		})
-	rh.createTreeLeaf(ctx, rh.makeFullyQualifiedV1("AccountService/Accounts/1"),
+	rh.createTreeLeaf(ctx, rh.MakeFullyQualifiedV1("AccountService/Accounts/1"),
 		"#ManagerAccount.v1_0_2.ManagerAccount",
-		rh.makeFullyQualifiedV1("$metadata#ManagerAccount.ManagerAccount"),
+		rh.MakeFullyQualifiedV1("$metadata#ManagerAccount.ManagerAccount"),
 		map[string]interface{}{
 			"@odata.type":        "#ManagerAccount.v1_0_2.ManagerAccount",
-			"@odata.context":     rh.makeFullyQualifiedV1("$metadata#ManagerAccount.ManagerAccount"),
-			"@odata.id":          rh.makeFullyQualifiedV1("AccountService/Accounts/1"),
+			"@odata.context":     rh.MakeFullyQualifiedV1("$metadata#ManagerAccount.ManagerAccount"),
+			"@odata.id":          rh.MakeFullyQualifiedV1("AccountService/Accounts/1"),
 			"@Redfish.Copyright": "Copyright 2014-2016 Distributed Management Task Force, Inc. (DMTF). For the full DMTF copyright policy, see http://www.dmtf.org/about/policies/copyright.",
 			"Id":                 "1",
 			"Name":               "User Account",
@@ -313,31 +426,31 @@ func (rh *config) startup() {
 			"Locked":             false,
 			"Links": map[string]interface{}{
 				"Role": map[string]interface{}{
-					"@odata.id": rh.makeFullyQualifiedV1("AccountService/Roles/Admin"),
+					"@odata.id": rh.MakeFullyQualifiedV1("AccountService/Roles/Admin"),
 				},
 			},
 		})
-	rh.createTreeCollectionLeaf(ctx, rh.makeFullyQualifiedV1("AccountService/Roles"),
+	rh.createTreeCollectionLeaf(ctx, rh.MakeFullyQualifiedV1("AccountService/Roles"),
 		"#RoleCollection.RoleCollection",
-		rh.makeFullyQualifiedV1("$metadata#Role.Role"),
+		rh.MakeFullyQualifiedV1("$metadata#Role.Role"),
 		map[string]interface{}{
 			"@odata.type":        "#RoleCollection.RoleCollection",
 			"Name":               "Roles Collection",
-			"@odata.context":     rh.makeFullyQualifiedV1("$metadata#Role.Role"),
-			"@odata.id":          rh.makeFullyQualifiedV1("AccountService/Roles"),
+			"@odata.context":     rh.MakeFullyQualifiedV1("$metadata#Role.Role"),
+			"@odata.id":          rh.MakeFullyQualifiedV1("AccountService/Roles"),
 			"@Redfish.Copyright": "Copyright 2014-2016 Distributed Management Task Force, Inc. (DMTF). For the full DMTF copyright policy, see http://www.dmtf.org/about/policies/copyright.",
 		},
 		[]string{
-			rh.makeFullyQualifiedV1("AccountService/Roles/ReadOnlyUser"),
-			rh.makeFullyQualifiedV1("AccountService/Roles/Operator"),
-			rh.makeFullyQualifiedV1("AccountService/Roles/Admin"),
+			rh.MakeFullyQualifiedV1("AccountService/Roles/ReadOnlyUser"),
+			rh.MakeFullyQualifiedV1("AccountService/Roles/Operator"),
+			rh.MakeFullyQualifiedV1("AccountService/Roles/Admin"),
 		})
-	rh.createTreeLeaf(ctx, rh.makeFullyQualifiedV1("AccountService/Roles/Admin"),
+	rh.createTreeLeaf(ctx, rh.MakeFullyQualifiedV1("AccountService/Roles/Admin"),
 		"#Role.v1_0_2.Role",
-		rh.makeFullyQualifiedV1("$metadata#Role.Role"),
+		rh.MakeFullyQualifiedV1("$metadata#Role.Role"),
 		map[string]interface{}{
-			"@odata.context":     rh.makeFullyQualifiedV1("$metadata#Role.Role"),
-			"@odata.id":          rh.makeFullyQualifiedV1("AccountService/Roles/Admin"),
+			"@odata.context":     rh.MakeFullyQualifiedV1("$metadata#Role.Role"),
+			"@odata.id":          rh.MakeFullyQualifiedV1("AccountService/Roles/Admin"),
 			"@Redfish.Copyright": "Copyright 2014-2016 Distributed Management Task Force, Inc. (DMTF). For the full DMTF copyright policy, see http://www.dmtf.org/about/policies/copyright.",
 			"@odata.type":        "#Role.v1_0_2.Role",
 			"Id":                 "Admin",
@@ -358,14 +471,14 @@ func (rh *config) startup() {
 		})
 }
 
-func (rh *config) createTreeLeaf(ctx context.Context, uri string, otype string, octx string, Properties map[string]interface{}) (uuid eh.UUID) {
+func (rh *ServiceConfig) createTreeLeaf(ctx context.Context, uri string, otype string, octx string, Properties map[string]interface{}) (uuid eh.UUID) {
 	uuid = eh.NewUUID()
 	fmt.Printf("Creating URI %s\n", uri)
 	rh.cmdbus.HandleCommand(ctx, &domain.CreateRedfishResource{UUID: uuid, ResourceURI: uri, Properties: Properties, Type: otype, Context: octx})
 	return
 }
 
-func (rh *config) createTreeCollectionLeaf(ctx context.Context, uri string, otype string, octx string, Properties map[string]interface{}, Members []string) {
+func (rh *ServiceConfig) createTreeCollectionLeaf(ctx context.Context, uri string, otype string, octx string, Properties map[string]interface{}, Members []string) {
 	uuid := eh.NewUUID()
 	rh.cmdbus.HandleCommand(ctx, &domain.CreateRedfishResourceCollection{UUID: uuid, ResourceURI: uri, Properties: Properties, Members: Members, Type: otype, Context: octx})
 }

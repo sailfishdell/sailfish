@@ -124,11 +124,11 @@ func main() {
 	svc := redfishserver.NewService(*baseUri, commandBus, eventBus, redfishRepo, treeID, waiter)
 	// Need this *before* the authentication, so that the authentication module
 	// will call this with the correct set of privileges
-	svc = redfishserver.NewPrivilegeEnforcingService(svc, *baseUri, commandBus, redfishRepo, treeID)
+	svc = redfishserver.NewPrivilegeEnforcingService(svc)
 	// Stack this *after* authorization so that it can get user info first and
 	// pass privileges
-	svc = redfishserver.NewBasicAuthService(svc, commandBus, redfishRepo, treeID, *baseUri)
-	svc = redfishserver.NewXAuthTokenService(svc, commandBus, redfishRepo, treeID, *baseUri)
+	svc = redfishserver.NewBasicAuthService(svc)
+	svc = redfishserver.NewXAuthTokenService(svc)
 
 	fieldKeys := []string{"method", "URL"}
 	svc = redfishserver.NewInstrumentingService(
