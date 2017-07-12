@@ -27,15 +27,7 @@ type Response struct {
 type Service interface {
 	GetRedfishResource(ctx context.Context, r *http.Request, privileges []string) (*Response, error)
 	RedfishResourceHandler(ctx context.Context, r *http.Request, privileges []string) (*Response, error)
-	MakeFullyQualifiedV1(string) string
-	GetBaseURI() string
-	GetTreeID() eh.UUID
-	GetCommandBus() *commandbus.CommandBus
-	GetEventHandler() eh.EventHandler
-	GetRepo() *repo.Repo
-	GetEventWaiter() *utils.EventWaiter
-	FindUser(ctx context.Context, user string) (account *domain.RedfishResource, err error)
-	GetPrivileges(ctx context.Context, account *domain.RedfishResource) (privileges []string)
+    domain.DDDFunctions
 }
 
 // ServiceMiddleware is a chainable behavior modifier for Service.
@@ -50,135 +42,15 @@ var (
 
 // ServiceConfig is where we store the current service data
 type ServiceConfig struct {
-	baseURI      string
-	verURI       string
-	treeID       eh.UUID
-	cmdbus       *commandbus.CommandBus
-	eventHandler eh.EventHandler
-	redfishRepo  *repo.Repo
-	waiter       *utils.EventWaiter
+    domain.DDDFunctions
 	httpsagas    *domain.HTTPSagaList
-}
-
-func (c *ServiceConfig) MakeFullyQualifiedV1(path string) string {
-	return c.baseURI + "/" + c.verURI + "/" + path
-}
-
-func (c *ServiceConfig) GetBaseURI() string {
-	return c.baseURI
-}
-
-func (c *ServiceConfig) GetTreeID() eh.UUID {
-	return c.treeID
-}
-
-func (c *ServiceConfig) GetCommandBus() *commandbus.CommandBus {
-	return c.cmdbus
-}
-
-func (c *ServiceConfig) GetEventHandler() eh.EventHandler {
-	return c.eventHandler
-}
-
-func (c *ServiceConfig) GetRepo() *repo.Repo {
-	return c.redfishRepo
-}
-
-func (c *ServiceConfig) GetEventWaiter() *utils.EventWaiter {
-	return c.waiter
-}
-
-func (s *ServiceConfig) FindUser(ctx context.Context, user string) (account *domain.RedfishResource, err error) {
-	// start looking up user in auth service
-	tree, err := domain.GetTree(ctx, s.GetRepo(), s.GetTreeID())
-	if err != nil {
-		return nil, errors.New("Malformed tree")
-	}
-
-	// get the root service reference
-	rootService, err := tree.GetRedfishResourceFromTree(ctx, s.GetRepo(), s.MakeFullyQualifiedV1(""))
-	if err != nil {
-		return nil, errors.New("Malformed tree root resource")
-	}
-
-	// Pull up the Accounts Collection
-	accounts, err := tree.WalkRedfishResourceTree(ctx, s.GetRepo(), rootService, "AccountService", "@odata.id", "Accounts", "@odata.id")
-	if err != nil {
-		return nil, errors.New("Malformed Account Service")
-	}
-
-	// Walk through all of the "Members" of the collection, which are links to individual accounts
-	members, ok := accounts.Properties["Members"]
-	if !ok {
-		return nil, errors.New("Malformed Account Collection")
-	}
-
-	// avoid panics by separating out type assertion
-	memberList, ok := members.([]map[string]interface{})
-	if !ok {
-		return nil, errors.New("Malformed Account Collection")
-	}
-
-	for _, m := range memberList {
-		a, _ := tree.GetRedfishResourceFromTree(ctx, s.GetRepo(), m["@odata.id"].(string))
-		if a == nil {
-			continue
-		}
-		if a.Properties == nil {
-			continue
-		}
-		memberUser, ok := a.Properties["UserName"]
-		if !ok {
-			continue
-		}
-		if memberUser != user {
-			continue
-		}
-		return a, nil
-	}
-	return nil, errors.New("User not found")
-}
-
-func (s *ServiceConfig) GetPrivileges(ctx context.Context, account *domain.RedfishResource) (privileges []string) {
-	// start looking up user in auth service
-	tree, err := domain.GetTree(ctx, s.GetRepo(), s.GetTreeID())
-	if err != nil {
-		return
-	}
-
-	role, _ := tree.WalkRedfishResourceTree(ctx, s.GetRepo(), account, "Links", "Role", "@odata.id")
-	privs, ok := role.Properties["AssignedPrivileges"]
-	if !ok {
-		return
-	}
-
-	for _, p := range privs.([]string) {
-		// If the user has "ConfigureSelf", then append the special privilege that lets them configure their specific attributes
-		if p == "ConfigureSelf" {
-			// Add ConfigureSelf_%{USERNAME} property
-			privileges = append(privileges, "ConfigureSelf_"+account.Properties["UserName"].(string))
-		} else {
-			// otherwise just pass through the actual priv
-			privileges = append(privileges, p)
-		}
-	}
-
-	var _ = fmt.Printf
-	//fmt.Printf("Assigned the following Privileges: %s\n", privileges)
-	return
 }
 
 // NewService is how we initialize the business logic
 func NewService(baseURI string, commandbus *commandbus.CommandBus, eventHandler eh.EventHandler, repo *repo.Repo, id eh.UUID, w *utils.EventWaiter) Service {
 	cfg := ServiceConfig{
-		baseURI:      baseURI,
-		verURI:       "v1",
-		cmdbus:       commandbus,
-		redfishRepo:  repo,
-		treeID:       id,
-		waiter:       w,
 		httpsagas:    domain.NewHTTPSagaList(commandbus, repo, eventHandler, baseURI),
-		eventHandler: eventHandler,
+        DDDFunctions: domain.NewBaseDDD(baseURI, commandbus, eventHandler, repo, id, w),
 	}
 	go cfg.startup()
 	return &cfg
@@ -189,14 +61,14 @@ func (rh *ServiceConfig) GetRedfishResource(ctx context.Context, r *http.Request
 
 	// we have the tree ID, fetch an updated copy of the actual tree
 	// TODO: Locking? Should repo give us a copy? Need to test this.
-	tree, err := domain.GetTree(ctx, rh.redfishRepo, rh.treeID)
+	tree, err := domain.GetTree(ctx, rh.GetRepo(), rh.GetTreeID())
 	if err != nil {
 		return &Response{StatusCode: http.StatusInternalServerError}, err
 	}
 
 	// now that we have the tree, look up the actual URI in that tree to find
 	// the object UUID, then pull that from the repo
-	requested, err := rh.redfishRepo.Find(ctx, tree.Tree[noHashPath])
+	requested, err := rh.GetRepo().Find(ctx, tree.Tree[noHashPath])
 	if err != nil {
 		return &Response{StatusCode: http.StatusNotFound}, nil
 	}
@@ -214,14 +86,14 @@ func (rh *ServiceConfig) RedfishResourceHandler(ctx context.Context, r *http.Req
 
 	// we have the tree ID, fetch an updated copy of the actual tree
 	// TODO: Locking? Should repo give us a copy? Need to test this.
-	tree, err := domain.GetTree(ctx, rh.redfishRepo, rh.treeID)
+	tree, err := domain.GetTree(ctx, rh.GetRepo(), rh.GetTreeID())
 	if err != nil {
 		return &Response{StatusCode: http.StatusInternalServerError}, err
 	}
 
 	// now that we have the tree, look up the actual URI in that tree to find
 	// the object UUID, then pull that from the repo
-	requested, err := rh.redfishRepo.Find(ctx, tree.Tree[noHashPath])
+	requested, err := rh.GetRepo().Find(ctx, tree.Tree[noHashPath])
 	if err != nil {
 		// it's ok if obj not found
 		return &Response{StatusCode: http.StatusNotFound}, nil
@@ -234,7 +106,7 @@ func (rh *ServiceConfig) RedfishResourceHandler(ctx context.Context, r *http.Req
 	cmdUUID := eh.NewUUID()
 
 	// we send a command and then wait for a completion event. Set up the wait here.
-	waitID, resultChan := rh.waiter.SetupWait(func(event eh.Event) bool {
+	waitID, resultChan := rh.GetEventWaiter().SetupWait(func(event eh.Event) bool {
 		if event.EventType() != domain.HTTPCmdProcessedEvent {
 			return false
 		}
@@ -246,11 +118,11 @@ func (rh *ServiceConfig) RedfishResourceHandler(ctx context.Context, r *http.Req
 		return false
 	})
 
-	defer rh.waiter.CancelWait(waitID)
+	defer rh.GetEventWaiter().CancelWait(waitID)
 
 	// Check for single COMMAND that can be run
 	// look up to see if there is a specific command
-	err = rh.httpsagas.RunHTTPOperation(ctx, rh.treeID, cmdUUID, item, r)
+	err = rh.httpsagas.RunHTTPOperation(ctx, rh.GetTreeID(), cmdUUID, item, r)
 	if err != nil {
 		return &Response{StatusCode: http.StatusMethodNotAllowed}, nil
 	}
@@ -274,10 +146,10 @@ func (rh *ServiceConfig) startup() {
 
 	// create version entry point. it's special in that it doesnt have @odata.* properties, so we'll remove them
 	// after creating the object
-	uuid := rh.createTreeLeaf(ctx, rh.baseURI+"/", "foo", "bar", map[string]interface{}{"v1": rh.MakeFullyQualifiedV1("")})
-	rh.cmdbus.HandleCommand(ctx, &domain.RemoveRedfishResourceProperty{UUID: uuid, PropertyName: "@odata.context"})
-	rh.cmdbus.HandleCommand(ctx, &domain.RemoveRedfishResourceProperty{UUID: uuid, PropertyName: "@odata.id"})
-	rh.cmdbus.HandleCommand(ctx, &domain.RemoveRedfishResourceProperty{UUID: uuid, PropertyName: "@odata.type"})
+	uuid := rh.createTreeLeaf(ctx, rh.GetBaseURI()+"/", "foo", "bar", map[string]interface{}{"v1": rh.MakeFullyQualifiedV1("")})
+	rh.GetCommandBus().HandleCommand(ctx, &domain.RemoveRedfishResourceProperty{UUID: uuid, PropertyName: "@odata.context"})
+	rh.GetCommandBus().HandleCommand(ctx, &domain.RemoveRedfishResourceProperty{UUID: uuid, PropertyName: "@odata.id"})
+	rh.GetCommandBus().HandleCommand(ctx, &domain.RemoveRedfishResourceProperty{UUID: uuid, PropertyName: "@odata.type"})
 
 	rh.createTreeLeaf(ctx, rh.MakeFullyQualifiedV1(""),
 		"#ServiceRoot.v1_0_2.ServiceRoot",
@@ -474,11 +346,11 @@ func (rh *ServiceConfig) startup() {
 func (rh *ServiceConfig) createTreeLeaf(ctx context.Context, uri string, otype string, octx string, Properties map[string]interface{}) (uuid eh.UUID) {
 	uuid = eh.NewUUID()
 	fmt.Printf("Creating URI %s\n", uri)
-	rh.cmdbus.HandleCommand(ctx, &domain.CreateRedfishResource{UUID: uuid, ResourceURI: uri, Properties: Properties, Type: otype, Context: octx})
+	rh.GetCommandBus().HandleCommand(ctx, &domain.CreateRedfishResource{UUID: uuid, ResourceURI: uri, Properties: Properties, Type: otype, Context: octx})
 	return
 }
 
 func (rh *ServiceConfig) createTreeCollectionLeaf(ctx context.Context, uri string, otype string, octx string, Properties map[string]interface{}, Members []string) {
 	uuid := eh.NewUUID()
-	rh.cmdbus.HandleCommand(ctx, &domain.CreateRedfishResourceCollection{UUID: uuid, ResourceURI: uri, Properties: Properties, Members: Members, Type: otype, Context: octx})
+	rh.GetCommandBus().HandleCommand(ctx, &domain.CreateRedfishResourceCollection{UUID: uuid, ResourceURI: uri, Properties: Properties, Members: Members, Type: otype, Context: octx})
 }
