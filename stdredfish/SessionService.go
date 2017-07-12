@@ -35,21 +35,20 @@ func SetupSessionService(s domain.SagaRegisterer, d domain.DDDFunctions) {
                 return nil
 			}
 
-			username := lr.UserName
-
             privileges := []string{}
-            account, err := domain.FindUser(ctx, d, username)
-            if err == nil {
-                // TODO: verify password
-                privileges = append(privileges, domain.GetPrivileges(ctx, d, account)...)
+            account, err := domain.FindUser(ctx, d, lr.UserName)
+            // TODO: verify password
+            if err != nil {
+                return errors.New("nonexistent user")
             }
+            privileges = append(privileges, domain.GetPrivileges(ctx, d, account)...)
 
 			token := jwt.New(jwt.SigningMethodHS256)
 			claims := make(jwt.MapClaims)
 			//claims["exp"] = time.Now().Add(time.Hour * time.Duration(1)).Unix()
 			claims["iat"] = time.Now().Unix()
 			claims["iss"] = "localhost"
-			claims["sub"] = username
+			claims["sub"] = lr.UserName
 			claims["privileges"] = privileges
 			token.Claims = claims
 			tokenString, err := token.SignedString([]byte("secret"))
@@ -64,7 +63,7 @@ func SetupSessionService(s domain.SagaRegisterer, d domain.DDDFunctions) {
 				"Id":             fmt.Sprintf("%s", uuid),
 				"Name":           "User Session",
 				"Description":    "User Session",
-				"UserName":       username,
+				"UserName":       lr.UserName,
 			}
 
 			// we have the tree ID, fetch an updated copy of the actual tree
@@ -98,7 +97,7 @@ func SetupSessionService(s domain.SagaRegisterer, d domain.DDDFunctions) {
 					Results:   retprops,
 					Headers: map[string]string{
 						"X-Token-Auth": tokenString,
-						"Location":     "/redfish/v1/SessionService/Sessions/1",
+						"Location":     sessionURI,
 					},
 				})
 
