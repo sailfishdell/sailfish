@@ -26,11 +26,11 @@ type HTTPSagaList struct {
 	eventhandler eh.EventHandler
 }
 
-type httpsagasetup func(SagaRegisterer, eh.EventHandler)
+type httpsagasetup func(SagaRegisterer, eh.EventHandler, string)
 
 var Httpsagas []httpsagasetup
 
-func NewHTTPSagaList(commandbus eh.CommandBus, repo eh.ReadRepo, ev eh.EventHandler) *HTTPSagaList {
+func NewHTTPSagaList(commandbus eh.CommandBus, repo eh.ReadRepo, ev eh.EventHandler, baseURI string) *HTTPSagaList {
 	l := HTTPSagaList{
 		sagaList:     map[string]HTTPSaga{},
 		commandBus:   commandbus,
@@ -39,17 +39,25 @@ func NewHTTPSagaList(commandbus eh.CommandBus, repo eh.ReadRepo, ev eh.EventHand
 	}
 
 	for _, s := range Httpsagas {
-		s(&l, ev)
+		s(&l, ev, baseURI)
 	}
 	return &l
 }
 
 type SagaRegisterer interface {
 	RegisterNewSaga(match string, f HTTPSaga)
+    GetCommandBus() eh.CommandBus
+    GetRepo() eh.ReadRepo
 }
 
 func (l *HTTPSagaList) RegisterNewSaga(match string, f HTTPSaga) {
 	l.sagaList[match] = f
+}
+func (l *HTTPSagaList) GetCommandBus() eh.CommandBus {
+	return l.commandBus
+}
+func (l *HTTPSagaList) GetRepo() eh.ReadRepo {
+	return l.repo
 }
 
 type HTTPCmdProcessedData struct {

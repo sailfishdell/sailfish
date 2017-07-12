@@ -4,7 +4,10 @@ import (
 	"context"
 	"errors"
 	eh "github.com/superchalupa/eventhorizon"
+    "fmt"
 )
+
+var _ = fmt.Printf
 
 func SetupCommands() {
 	// odata
@@ -277,19 +280,26 @@ func (c AddRedfishResourceCollectionMember) CommandType() eh.CommandType {
 }
 func (c AddRedfishResourceCollectionMember) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 
-	nm := a.Properties["Members"].([]map[string]interface{})
+    fmt.Printf("PROPERTIES: %#v\n", a.Properties)
+	nm, ok := a.Properties["Members"]
+    if !ok {
+        fmt.Printf("PROPERTIES: %#v\n", a.Properties)
+        return errors.New("Not a collection")
+    }
+
+    members := nm.([]map[string]interface{})
 
 	a.StoreEvent(RedfishResourcePropertyAddedEvent,
 		&RedfishResourcePropertyAddedData{
 			PropertyName:  "Members",
-			PropertyValue: append(nm, map[string]interface{}{"@odata.id": c.MemberURI}),
+			PropertyValue: append(members, map[string]interface{}{"@odata.id": c.MemberURI}),
 		},
 	)
 
 	a.StoreEvent(RedfishResourcePropertyAddedEvent,
 		&RedfishResourcePropertyAddedData{
 			PropertyName:  "Members@odata.count",
-			PropertyValue: len(nm) + 1,
+			PropertyValue: len(members) + 1,
 		},
 	)
 

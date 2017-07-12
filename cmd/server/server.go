@@ -128,6 +128,7 @@ func main() {
 	// Stack this *after* authorization so that it can get user info first and
 	// pass privileges
 	svc = redfishserver.NewBasicAuthService(svc, commandBus, redfishRepo, treeID, *baseUri)
+	svc = redfishserver.NewXAuthTokenService(svc, commandBus, redfishRepo, treeID, *baseUri)
 
 	fieldKeys := []string{"method", "URL"}
 	svc = redfishserver.NewInstrumentingService(

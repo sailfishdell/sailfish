@@ -64,7 +64,7 @@ func NewService(baseURI string, commandbus *commandbus.CommandBus, eventHandler 
 		redfishRepo:  repo,
 		treeID:       id,
 		waiter:       w,
-		httpsagas:    domain.NewHTTPSagaList(commandbus, repo, eventHandler),
+		httpsagas:    domain.NewHTTPSagaList(commandbus, repo, eventHandler, baseURI),
 		eventHandler: eventHandler,
 	}
 	go cfg.startup()
@@ -98,8 +98,6 @@ func (rh *config) GetRedfishResource(ctx context.Context, r *http.Request, privi
 func (rh *config) RedfishResourceHandler(ctx context.Context, r *http.Request, privileges []string) (*Response, error) {
 	// we shouldn't actually ever get a path with a hash, I don't think.
 	noHashPath := strings.SplitN(r.URL.Path, "#", 2)[0]
-
-	fmt.Printf("\n\nHAPPY\n\n")
 
 	// we have the tree ID, fetch an updated copy of the actual tree
 	// TODO: Locking? Should repo give us a copy? Need to test this.

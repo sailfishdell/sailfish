@@ -36,7 +36,7 @@ func NewBasicAuthService(s Service, commandbus *commandbus.CommandBus, repo *rep
 	return &basicAuthService{Service: s, cmdbus: commandbus, redfishRepo: repo, treeID: id, baseURI: baseURI, verURI: "v1"}
 }
 
-func (s *basicAuthService) findUser(ctx context.Context, user string) (account *domain.RedfishResource, err error) {
+func (s *basicAuthService) FindUser(ctx context.Context, user string) (account *domain.RedfishResource, err error) {
 	// start looking up user in auth service
 	tree, err := domain.GetTree(ctx, s.redfishRepo, s.treeID)
 	if err != nil {
@@ -87,7 +87,7 @@ func (s *basicAuthService) findUser(ctx context.Context, user string) (account *
 	return nil, errors.New("User not found")
 }
 
-func (s *basicAuthService) getPrivileges(ctx context.Context, account *domain.RedfishResource) (privileges []string) {
+func (s *basicAuthService) GetPrivileges(ctx context.Context, account *domain.RedfishResource) (privileges []string) {
 	// start looking up user in auth service
 	tree, err := domain.GetTree(ctx, s.redfishRepo, s.treeID)
 	if err != nil {
@@ -120,8 +120,8 @@ func (s *basicAuthService) GetRedfishResource(ctx context.Context, r *http.Reque
 	username, _, ok := r.BasicAuth()
 	// TODO: check password (it's the unnamed second parameter, above, from r.BasicAuth())
 	if ok {
-		account, _ := s.findUser(ctx, username)
-		privileges = append(privileges, s.getPrivileges(ctx, account)...)
+		account, _ := s.FindUser(ctx, username)
+		privileges = append(privileges, s.GetPrivileges(ctx, account)...)
 	}
 
 	return s.Service.GetRedfishResource(ctx, r, privileges)
@@ -131,8 +131,8 @@ func (s *basicAuthService) RedfishResourceHandler(ctx context.Context, r *http.R
 	username, _, ok := r.BasicAuth()
 	// TODO: check password (it's the unnamed second parameter, above, from r.BasicAuth())
 	if ok {
-		account, _ := s.findUser(ctx, username)
-		privileges = append(privileges, s.getPrivileges(ctx, account)...)
+		account, _ := s.FindUser(ctx, username)
+		privileges = append(privileges, s.GetPrivileges(ctx, account)...)
 	}
 	return s.Service.RedfishResourceHandler(ctx, r, privileges)
 }
