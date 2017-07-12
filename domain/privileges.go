@@ -1,6 +1,7 @@
 package domain
 
 import (
+    "strings"
 	"context"
 	eh "github.com/superchalupa/eventhorizon"
 	"github.com/superchalupa/eventhorizon/eventhandler/saga"
@@ -53,6 +54,21 @@ func (s *PrivilegeSaga) RunSaga(ctx context.Context, event eh.Event) []eh.Comman
 						},
 					},
 				}
+
+			} else if strings.HasPrefix(ResourceURI, "/redfish/v1/SessionService/Sessions/") {
+				return []eh.Command{
+					&UpdateRedfishResourcePrivileges{
+						UUID: event.AggregateID(),
+						Privileges: map[string]interface{}{
+							"GET":    []string{"ConfigureManager"},
+							"POST":   []string{"ConfigureManager"},
+							"PUT":    []string{"ConfigureManager"},
+							"PATCH":  []string{"ConfigureManager"},
+							"DELETE": []string{"ConfigureSelf", "ConfigureManager"},
+						},
+					},
+				}
+
 			} else {
 				return []eh.Command{
 					&UpdateRedfishResourcePrivileges{
