@@ -3,8 +3,8 @@ package domain
 import (
 	"context"
 	"errors"
+	"fmt"
 	eh "github.com/superchalupa/eventhorizon"
-    "fmt"
 )
 
 var _ = fmt.Printf
@@ -280,14 +280,14 @@ func (c AddRedfishResourceCollectionMember) CommandType() eh.CommandType {
 }
 func (c AddRedfishResourceCollectionMember) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 
-    fmt.Printf("PROPERTIES: %#v\n", a.Properties)
+	fmt.Printf("PROPERTIES: %#v\n", a.Properties)
 	nm, ok := a.Properties["Members"]
-    if !ok {
-        fmt.Printf("PROPERTIES: %#v\n", a.Properties)
-        return errors.New("Not a collection")
-    }
+	if !ok {
+		fmt.Printf("PROPERTIES: %#v\n", a.Properties)
+		return errors.New("Not a collection")
+	}
 
-    members := nm.([]map[string]interface{})
+	members := nm.([]map[string]interface{})
 
 	a.StoreEvent(RedfishResourcePropertyAddedEvent,
 		&RedfishResourcePropertyAddedData{

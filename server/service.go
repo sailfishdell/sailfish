@@ -27,7 +27,7 @@ type Response struct {
 type Service interface {
 	GetRedfishResource(ctx context.Context, r *http.Request, privileges []string) (*Response, error)
 	RedfishResourceHandler(ctx context.Context, r *http.Request, privileges []string) (*Response, error)
-    domain.DDDFunctions
+	domain.DDDFunctions
 }
 
 // ServiceMiddleware is a chainable behavior modifier for Service.
@@ -42,15 +42,15 @@ var (
 
 // ServiceConfig is where we store the current service data
 type ServiceConfig struct {
-    domain.DDDFunctions
-	httpsagas    *domain.HTTPSagaList
+	domain.DDDFunctions
+	httpsagas *domain.HTTPSagaList
 }
 
 // NewService is how we initialize the business logic
 func NewService(baseURI string, commandbus *commandbus.CommandBus, eventHandler eh.EventHandler, repo *repo.Repo, id eh.UUID, w *utils.EventWaiter) Service {
 	cfg := ServiceConfig{
 		httpsagas:    domain.NewHTTPSagaList(commandbus, repo, eventHandler, baseURI),
-        DDDFunctions: domain.NewBaseDDD(baseURI, commandbus, eventHandler, repo, id, w),
+		DDDFunctions: domain.NewBaseDDD(baseURI, commandbus, eventHandler, repo, id, w),
 	}
 	go cfg.startup()
 	return &cfg

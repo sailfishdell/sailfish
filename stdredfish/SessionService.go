@@ -3,7 +3,7 @@ package stdredfish
 import (
 	"context"
 	"encoding/json"
-    "errors"
+	"errors"
 	jwt "github.com/dgrijalva/jwt-go"
 	eh "github.com/superchalupa/eventhorizon"
 	"github.com/superchalupa/go-rfs/domain"
@@ -64,10 +64,14 @@ func SetupSessionService(s domain.SagaRegisterer, eventhandler eh.EventHandler, 
 			// we have the tree ID, fetch an updated copy of the actual tree
 			// TODO: Locking? Should repo give us a copy? Need to test this.
 			tree, err := domain.GetTree(ctx, s.GetRepo(), treeID)
-            if err != nil { return err }
+			if err != nil {
+				return err
+			}
 
-			sessionServiceID, ok := tree.Tree[baseURI + "/v1/SessionService/Sessions"]
-			if !ok { return errors.New("Couldn't get handle for session service") }
+			sessionServiceID, ok := tree.Tree[baseURI+"/v1/SessionService/Sessions"]
+			if !ok {
+				return errors.New("Couldn't get handle for session service")
+			}
 
 			s.GetCommandBus().HandleCommand(ctx, &domain.CreateRedfishResource{
 				UUID:        uuid,

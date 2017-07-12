@@ -22,7 +22,7 @@ type RedfishResourceAggregate struct {
 	PrivilegeMap map[string]interface{}
 	Permissions  map[string]interface{}
 	Headers      map[string]string
-    Private      map[string]interface{}
+	Private      map[string]interface{}
 }
 
 func NewRedfishResourceAggregate(id eh.UUID) *RedfishResourceAggregate {

@@ -2,8 +2,8 @@ package redfishserver
 
 import (
 	"context"
+	"github.com/superchalupa/go-rfs/domain"
 	"net/http"
-    "github.com/superchalupa/go-rfs/domain"
 )
 
 type basicAuthService struct {

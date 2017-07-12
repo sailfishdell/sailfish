@@ -46,8 +46,8 @@ func NewHTTPSagaList(commandbus eh.CommandBus, repo eh.ReadRepo, ev eh.EventHand
 
 type SagaRegisterer interface {
 	RegisterNewSaga(match string, f HTTPSaga)
-    GetCommandBus() eh.CommandBus
-    GetRepo() eh.ReadRepo
+	GetCommandBus() eh.CommandBus
+	GetRepo() eh.ReadRepo
 }
 
 func (l *HTTPSagaList) RegisterNewSaga(match string, f HTTPSaga) {

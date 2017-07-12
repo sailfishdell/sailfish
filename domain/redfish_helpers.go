@@ -1,9 +1,9 @@
 package domain
 
 import (
-    "errors"
-    "context"
-    "fmt"
+	"context"
+	"errors"
+	"fmt"
 	eh "github.com/superchalupa/eventhorizon"
 	"github.com/superchalupa/eventhorizon/utils"
 )
@@ -150,5 +150,3 @@ func GetPrivileges(ctx context.Context, s DDDFunctions, account *RedfishResource
 	//fmt.Printf("Assigned the following Privileges: %s\n", privileges)
 	return
 }
-
-
