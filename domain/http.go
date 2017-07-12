@@ -21,27 +21,23 @@ type HTTPSaga func(context.Context, eh.UUID, eh.UUID, *RedfishResource, *http.Re
 // can put URI, odata.type, or odata.context as key
 type HTTPSagaList struct {
 	sagaList     map[string]HTTPSaga
-	commandBus   eh.CommandBus
-	repo         eh.ReadRepo
-	eventhandler eh.EventHandler
+    DDDFunctions
 }
 
-type httpsagasetup func(SagaRegisterer, eh.EventHandler, string)
+type httpsagasetup func(SagaRegisterer, DDDFunctions)
 
 var Httpsagas []httpsagasetup
 
-func NewHTTPSagaList(commandbus eh.CommandBus, repo eh.ReadRepo, ev eh.EventHandler, baseURI string) *HTTPSagaList {
-	l := HTTPSagaList{
+func NewHTTPSagaList(d DDDFunctions) *HTTPSagaList {
+	sl := HTTPSagaList{
 		sagaList:     map[string]HTTPSaga{},
-		commandBus:   commandbus,
-		repo:         repo,
-		eventhandler: ev,
+        DDDFunctions: d,
 	}
 
 	for _, s := range Httpsagas {
-		s(&l, ev, baseURI)
+		s(&sl, d)
 	}
-	return &l
+	return &sl
 }
 
 type SagaRegisterer interface {
@@ -52,12 +48,6 @@ type SagaRegisterer interface {
 
 func (l *HTTPSagaList) RegisterNewSaga(match string, f HTTPSaga) {
 	l.sagaList[match] = f
-}
-func (l *HTTPSagaList) GetCommandBus() eh.CommandBus {
-	return l.commandBus
-}
-func (l *HTTPSagaList) GetRepo() eh.ReadRepo {
-	return l.repo
 }
 
 type HTTPCmdProcessedData struct {
@@ -105,8 +95,8 @@ func (l *HTTPSagaList) RunHTTPOperation(ctx context.Context, treeID, cmdID eh.UU
 		if err == nil {
 			cmdInit, ok := cmd.(Initializer)
 			if ok {
-				cmdInit.Initialize(l.repo, treeID, eh.UUID(aggregateID), cmdID, r)
-				return l.commandBus.HandleCommand(ctx, cmd)
+				cmdInit.Initialize(l.GetRepo(), treeID, eh.UUID(aggregateID), cmdID, r)
+				return l.GetCommandBus().HandleCommand(ctx, cmd)
 			}
 		}
 	}

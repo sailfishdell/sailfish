@@ -29,8 +29,10 @@ func (s *basicAuthService) GetRedfishResource(ctx context.Context, r *http.Reque
 	username, _, ok := r.BasicAuth()
 	// TODO: check password (it's the unnamed second parameter, above, from r.BasicAuth())
 	if ok {
-		account, _ := domain.FindUser(ctx, s, username)
-		privileges = append(privileges, domain.GetPrivileges(ctx, s, account)...)
+		account, err := domain.FindUser(ctx, s, username)
+        if err == nil {
+		    privileges = append(privileges, domain.GetPrivileges(ctx, s, account)...)
+        }
 	}
 
 	return s.Service.GetRedfishResource(ctx, r, privileges)
@@ -40,8 +42,10 @@ func (s *basicAuthService) RedfishResourceHandler(ctx context.Context, r *http.R
 	username, _, ok := r.BasicAuth()
 	// TODO: check password (it's the unnamed second parameter, above, from r.BasicAuth())
 	if ok {
-		account, _ := domain.FindUser(ctx, s, username)
-		privileges = append(privileges, domain.GetPrivileges(ctx, s, account)...)
+		account, err := domain.FindUser(ctx, s, username)
+        if err == nil {
+		    privileges = append(privileges, domain.GetPrivileges(ctx, s, account)...)
+        }
 	}
 	return s.Service.RedfishResourceHandler(ctx, r, privileges)
 }

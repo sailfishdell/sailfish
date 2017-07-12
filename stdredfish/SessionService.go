@@ -24,19 +24,25 @@ func init() {
 	domain.Httpsagas = append(domain.Httpsagas, SetupSessionService)
 }
 
-func SetupSessionService(s domain.SagaRegisterer, eventhandler eh.EventHandler, baseURI string) {
+func SetupSessionService(s domain.SagaRegisterer, d domain.DDDFunctions) {
 	s.RegisterNewSaga("POST:/redfish/v1/SessionService/Sessions",
 		func(ctx context.Context, treeID, cmdID eh.UUID, resource *domain.RedfishResource, r *http.Request) error {
 			decoder := json.NewDecoder(r.Body)
 			var lr LoginRequest
 			err := decoder.Decode(&lr)
 
-			if err == nil {
-				fmt.Printf("HAPPY: user(%s) pass(%s)\n", lr.UserName, lr.Password)
+			if err != nil {
+                return nil
 			}
 
-			username := "FRED"                                          // TODO: get actual user name
-			privileges := []string{"ConfigureManager", "ConfigureSelf"} // TODO: get actual user privs
+			username := lr.UserName
+
+            privileges := []string{}
+            account, err := domain.FindUser(ctx, d, username)
+            if err == nil {
+                // TODO: verify password
+                privileges = append(privileges, domain.GetPrivileges(ctx, d, account)...)
+            }
 
 			token := jwt.New(jwt.SigningMethodHS256)
 			claims := make(jwt.MapClaims)
@@ -49,12 +55,12 @@ func SetupSessionService(s domain.SagaRegisterer, eventhandler eh.EventHandler, 
 			tokenString, err := token.SignedString([]byte("secret"))
 
 			uuid := eh.NewUUID()
-			sessionURI := fmt.Sprintf("%s/v1/SessionService/Sessions/%s", baseURI, uuid)
+			sessionURI := fmt.Sprintf("%s/v1/SessionService/Sessions/%s", d.GetBaseURI(), uuid)
 
 			retprops := map[string]interface{}{
 				"@odata.type":    "#Session.v1_0_0.Session",
 				"@odata.id":      sessionURI,
-				"@odata.context": baseURI + "/v1/$metadata#Session.Session",
+				"@odata.context": d.MakeFullyQualifiedV1("$metadata#Session.Session"),
 				"Id":             fmt.Sprintf("%s", uuid),
 				"Name":           "User Session",
 				"Description":    "User Session",
@@ -68,7 +74,7 @@ func SetupSessionService(s domain.SagaRegisterer, eventhandler eh.EventHandler, 
 				return err
 			}
 
-			sessionServiceID, ok := tree.Tree[baseURI+"/v1/SessionService/Sessions"]
+			sessionServiceID, ok := tree.Tree[d.MakeFullyQualifiedV1("SessionService/Sessions")]
 			if !ok {
 				return errors.New("Couldn't get handle for session service")
 			}
@@ -77,13 +83,13 @@ func SetupSessionService(s domain.SagaRegisterer, eventhandler eh.EventHandler, 
 				UUID:        uuid,
 				ResourceURI: sessionURI,
 				Type:        "#Session.v1_0_0.Session",
-				Context:     baseURI + "/v1/$metadata#Session.Session",
+				Context:     d.MakeFullyQualifiedV1("$metadata#Session.Session"),
 				Properties:  retprops,
 			})
 
 			err = s.GetCommandBus().HandleCommand(ctx, &domain.AddRedfishResourceCollectionMember{UUID: eh.UUID(sessionServiceID), MemberURI: sessionURI})
 			if err != nil {
-				fmt.Printf("ERRROR: %s\n", err.Error())
+                return err
 			}
 
 			event := eh.NewEvent(domain.HTTPCmdProcessedEvent,
@@ -96,7 +102,7 @@ func SetupSessionService(s domain.SagaRegisterer, eventhandler eh.EventHandler, 
 					},
 				})
 
-			eventhandler.HandleEvent(ctx, event)
+			d.GetEventHandler().HandleEvent(ctx, event)
 
 			return nil
 		})

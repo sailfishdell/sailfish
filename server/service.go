@@ -48,10 +48,13 @@ type ServiceConfig struct {
 
 // NewService is how we initialize the business logic
 func NewService(baseURI string, commandbus *commandbus.CommandBus, eventHandler eh.EventHandler, repo *repo.Repo, id eh.UUID, w *utils.EventWaiter) Service {
+    d := domain.NewBaseDDD(baseURI, commandbus, eventHandler, repo, id, w)
+
 	cfg := ServiceConfig{
-		httpsagas:    domain.NewHTTPSagaList(commandbus, repo, eventHandler, baseURI),
-		DDDFunctions: domain.NewBaseDDD(baseURI, commandbus, eventHandler, repo, id, w),
+		httpsagas:    domain.NewHTTPSagaList(d),
+		DDDFunctions: d,
 	}
+
 	go cfg.startup()
 	return &cfg
 }
