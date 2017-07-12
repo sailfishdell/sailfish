@@ -2,9 +2,9 @@ package stdredfish
 
 import (
 	"context"
+	"encoding/json"
 	eh "github.com/superchalupa/eventhorizon"
 	"github.com/superchalupa/go-rfs/domain"
-    "encoding/json"
 
 	"fmt"
 )
@@ -26,34 +26,34 @@ type HandleTestServicesPOST struct {
 }
 
 type TestRequest struct {
-    UserName    string
-    Password    string
+	UserName string
+	Password string
 }
 
 func (c HandleTestServicesPOST) CommandType() eh.CommandType {
 	return HandleTestServicesPOSTCommand
 }
 func (c HandleTestServicesPOST) Handle(ctx context.Context, a *domain.RedfishResourceAggregate) error {
-    decoder := json.NewDecoder(c.HTTPRequest.Body)
-    var lr TestRequest
-    err := decoder.Decode(&lr)
+	decoder := json.NewDecoder(c.HTTPRequest.Body)
+	var lr TestRequest
+	err := decoder.Decode(&lr)
 
-    if err == nil {
-        fmt.Printf("HAPPY: user(%s) pass(%s)\n", lr.UserName, lr.Password)
-    }
+	if err == nil {
+		fmt.Printf("HAPPY: user(%s) pass(%s)\n", lr.UserName, lr.Password)
+	}
 
 	a.StoreEvent(domain.HTTPCmdProcessedEvent,
 		&domain.HTTPCmdProcessedData{
 			CommandID: c.CommandID,
-			Results:   map[string]interface{}{
-                "MSG": "HELLO WORLD SPECIAL",
-                "user": lr.UserName,
-                "pass": lr.Password,
-                },
-			Headers:   map[string]string{
-                "X-Token-Auth": "HELLO WORLD SPECIAL",
-                "Location": "/redfish/v1/SessionService/Sessions/1",
-                },
+			Results: map[string]interface{}{
+				"MSG":  "HELLO WORLD SPECIAL",
+				"user": lr.UserName,
+				"pass": lr.Password,
+			},
+			Headers: map[string]string{
+				"X-Token-Auth": "HELLO WORLD SPECIAL",
+				"Location":     "/redfish/v1/SessionService/Sessions/1",
+			},
 		},
 	)
 	return nil

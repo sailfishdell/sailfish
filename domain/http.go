@@ -8,6 +8,7 @@ import (
 
 	"fmt"
 )
+
 var _ = fmt.Println
 
 const (
@@ -15,33 +16,47 @@ const (
 	HTTPCmdProcessedEvent eh.EventType = "HTTPCmdProcessed"
 )
 
-type HTTPSaga struct {
-}
+type HTTPSaga func(context.Context, eh.UUID, eh.UUID, *RedfishResource, *http.Request) error
 
 // can put URI, odata.type, or odata.context as key
 type HTTPSagaList struct {
-    sagaList map[string]*HTTPSaga
-    commandBus eh.CommandBus
-    repo eh.ReadRepo
+	sagaList     map[string]HTTPSaga
+	commandBus   eh.CommandBus
+	repo         eh.ReadRepo
+	eventhandler eh.EventHandler
 }
 
-func NewHTTPSagaList(commandbus eh.CommandBus, repo eh.ReadRepo) *HTTPSagaList {
-    return &HTTPSagaList{
-            sagaList: map[string]*HTTPSaga{},
-            commandBus: commandbus,
-            repo: repo,
-        }
+type httpsagasetup func(SagaRegisterer, eh.EventHandler)
+
+var Httpsagas []httpsagasetup
+
+func NewHTTPSagaList(commandbus eh.CommandBus, repo eh.ReadRepo, ev eh.EventHandler) *HTTPSagaList {
+	l := HTTPSagaList{
+		sagaList:     map[string]HTTPSaga{},
+		commandBus:   commandbus,
+		repo:         repo,
+		eventhandler: ev,
+	}
+
+	for _, s := range Httpsagas {
+		s(&l, ev)
+	}
+	return &l
 }
 
-func (l *HTTPSagaList) RegisterNewSaga(match string, s *HTTPSaga) {
-    l.sagaList[match] = s
+type SagaRegisterer interface {
+	RegisterNewSaga(match string, f HTTPSaga)
+}
+
+func (l *HTTPSagaList) RegisterNewSaga(match string, f HTTPSaga) {
+	l.sagaList[match] = f
 }
 
 type HTTPCmdProcessedData struct {
-	CommandID eh.UUID
-	Results   map[string]interface{}
-    StatusCode int
-    Headers map[string]string
+	CommandID  eh.UUID
+	Results    map[string]interface{}
+	StatusCode int
+	Headers    map[string]string
 }
 
 func SetupHTTP() {
@@ -52,12 +67,12 @@ func SetupHTTP() {
 	eh.RegisterEventData(HTTPCmdProcessedEvent, func() eh.EventData { return &HTTPCmdProcessedData{} })
 }
 
-// LookupCommand will try to find a command for an http operation
+// RunHTTPOperation will try to find a command for an http operation
 // Search path:
 //      ${METHOD}@odata.id
 //      ${METHOD}@odata.type
 //      ${METHOD}@odata.context
-func (l *HTTPSagaList) RunHTTPOperation(ctx context.Context, treeID, cmdID eh.UUID, resource *RedfishResource, r *http.Request) (error) {
+func (l *HTTPSagaList) RunHTTPOperation(ctx context.Context, treeID, cmdID eh.UUID, resource *RedfishResource, r *http.Request) error {
 	aggregateID := resource.Properties["@odata.id"].(string)
 	typ := resource.Properties["@odata.type"].(string)
 	context := resource.Properties["@odata.context"].(string)
@@ -71,21 +86,22 @@ func (l *HTTPSagaList) RunHTTPOperation(ctx context.Context, treeID, cmdID eh.UU
 	}
 
 	for _, s := range search {
+		if f, ok := l.sagaList[s]; ok {
+			fmt.Printf("FOUND(%s)\n", s)
+			return f(ctx, treeID, cmdID, resource, r)
+		}
+	}
+
+	for _, s := range search {
 		cmd, err := eh.CreateCommand(eh.CommandType(s))
 		if err == nil {
 			cmdInit, ok := cmd.(Initializer)
 			if ok {
 				cmdInit.Initialize(l.repo, treeID, eh.UUID(aggregateID), cmdID, r)
-                return l.commandBus.HandleCommand(ctx, cmd)
+				return l.commandBus.HandleCommand(ctx, cmd)
 			}
 		}
 	}
-
-    for _,s := range search {
-        if _, ok := l.sagaList[s]; !ok {
-            continue
-        }
-    }
 
 	return errors.New("Command not found")
 }

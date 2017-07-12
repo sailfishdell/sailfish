@@ -41,13 +41,14 @@ var (
 
 // Config is where we store the current service data
 type config struct {
-	baseURI     string
-	verURI      string
-	treeID      eh.UUID
-	cmdbus      *commandbus.CommandBus
-	redfishRepo *repo.Repo
-	waiter      *utils.EventWaiter
-	httpsagas   *domain.HTTPSagaList
+	baseURI      string
+	verURI       string
+	treeID       eh.UUID
+	cmdbus       *commandbus.CommandBus
+	eventHandler eh.EventHandler
+	redfishRepo  *repo.Repo
+	waiter       *utils.EventWaiter
+	httpsagas    *domain.HTTPSagaList
 }
 
 func (c *config) makeFullyQualifiedV1(path string) string {
@@ -55,15 +56,16 @@ func (c *config) makeFullyQualifiedV1(path string) string {
 }
 
 // NewService is how we initialize the business logic
-func NewService(baseURI string, commandbus *commandbus.CommandBus, repo *repo.Repo, id eh.UUID, w *utils.EventWaiter) Service {
+func NewService(baseURI string, commandbus *commandbus.CommandBus, eventHandler eh.EventHandler, repo *repo.Repo, id eh.UUID, w *utils.EventWaiter) Service {
 	cfg := config{
-		baseURI:     baseURI,
-		verURI:      "v1",
-		cmdbus:      commandbus,
-		redfishRepo: repo,
-		treeID:      id,
-		waiter:      w,
-		httpsagas:   domain.NewHTTPSagaList(commandbus, repo),
+		baseURI:      baseURI,
+		verURI:       "v1",
+		cmdbus:       commandbus,
+		redfishRepo:  repo,
+		treeID:       id,
+		waiter:       w,
+		httpsagas:    domain.NewHTTPSagaList(commandbus, repo, eventHandler),
+		eventHandler: eventHandler,
 	}
 	go cfg.startup()
 	return &cfg

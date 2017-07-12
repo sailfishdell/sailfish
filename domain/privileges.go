@@ -10,8 +10,8 @@ const PrivilegeSagaType saga.Type = "PrivilegeSaga"
 
 type PrivilegeSaga struct {
 	repo eh.ReadRepo
-    // TODO: fix hardcoded /redfish references here
-    redfishStartURI string
+	// TODO: fix hardcoded /redfish references here
+	redfishStartURI string
 }
 
 func NewPrivilegeSaga(redfishRepo eh.ReadRepo) *PrivilegeSaga {
@@ -40,30 +40,30 @@ func (s *PrivilegeSaga) RunSaga(ctx context.Context, event eh.Event) []eh.Comman
 						Privileges: map[string]interface{}{"GET": []string{"Unauthenticated"}},
 					},
 				}
-            } else if ResourceURI == "/redfish/v1/SessionService/Sessions" {
+			} else if ResourceURI == "/redfish/v1/SessionService/Sessions" {
 				return []eh.Command{
 					&UpdateRedfishResourcePrivileges{
-						UUID:       event.AggregateID(),
+						UUID: event.AggregateID(),
 						Privileges: map[string]interface{}{
-                            "GET": []string{"ConfigureManager"},
-                            "POST": []string{"Unauthenticated"},
-                            "PUT": []string{"ConfigureManager"},
-                            "PATCH": []string{"ConfigureManager"},
-                            "DELETE": []string{"ConfigureSelf"},
-                        },
-                    },
-                }
+							"GET":    []string{"ConfigureManager"},
+							"POST":   []string{"Unauthenticated"},
+							"PUT":    []string{"ConfigureManager"},
+							"PATCH":  []string{"ConfigureManager"},
+							"DELETE": []string{"ConfigureSelf"},
+						},
+					},
+				}
 			} else {
 				return []eh.Command{
 					&UpdateRedfishResourcePrivileges{
-						UUID:       event.AggregateID(),
+						UUID: event.AggregateID(),
 						Privileges: map[string]interface{}{
-                            "GET": []string{"ConfigureManager"},
-                            "POST": []string{"ConfigureManager"},
-                            "PUT": []string{"ConfigureManager"},
-                            "PATCH": []string{"ConfigureManager"},
-                            "DELETE": []string{},
-                            },
+							"GET":    []string{"ConfigureManager"},
+							"POST":   []string{"ConfigureManager"},
+							"PUT":    []string{"ConfigureManager"},
+							"PATCH":  []string{"ConfigureManager"},
+							"DELETE": []string{},
+						},
 					},
 				}
 
