@@ -57,6 +57,8 @@ func NewService(d domain.DDDFunctions) Service {
 func (rh *ServiceConfig) GetRedfishResource(ctx context.Context, r *http.Request, privileges []string) (*Response, error) {
 	noHashPath := strings.SplitN(r.URL.Path, "#", 2)[0]
 
+    fmt.Printf("DEBUG: GetRedfishResource\n")
+
 	// we have the tree ID, fetch an updated copy of the actual tree
 	tree, err := domain.GetTree(ctx, rh.GetReadRepo(), rh.GetTreeID())
 	if err != nil {
@@ -82,6 +84,8 @@ func (rh *ServiceConfig) GetRedfishResource(ctx context.Context, r *http.Request
 func (rh *ServiceConfig) RedfishResourceHandler(ctx context.Context, r *http.Request, privileges []string) (*Response, error) {
 	// we shouldn't actually ever get a path with a hash, I don't think.
 	noHashPath := strings.SplitN(r.URL.Path, "#", 2)[0]
+
+    fmt.Printf("DEBUG: RedfishResourceHandler\n")
 
 	// we have the tree ID, fetch an updated copy of the actual tree
 	// TODO: Locking? Should repo give us a copy? Need to test this.

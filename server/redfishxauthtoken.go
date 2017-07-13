@@ -16,15 +16,9 @@ type xAuthTokenService struct {
 	Service
 }
 
-// step 1: basic auth against pre-defined account collection/role collection
-// step 2: Add session support
-//      -- POST handler to create session, which checks username/password and returns token. token should code the session id
+// TODO:
 //      -- in every request, reset timeout
 //      -- if timeout passes, delete session
-//      -- DELETE handler so user can manually end session
-// step 3: Add generic oauth support
-
-// instantiate this service, tell it the URI of the account collection and role collection
 
 // NewXAuthTokenService returns a new instance of a xAuthToken Service.
 func NewXAuthTokenService(s Service) Service {
@@ -37,12 +31,12 @@ type RedfishClaims struct {
 	jwt.StandardClaims
 }
 
-func (s *xAuthTokenService) GetRedfishResource(ctx context.Context, r *http.Request, privileges []string) (*Response, error) {
+func (s *xAuthTokenService) CheckXAuthToken(ctx context.Context, r *http.Request) (resp *Response, privileges []string) {
 	fmt.Printf("Looking for token\n")
 	xauthtoken := r.Header.Get("X-Auth-Token")
 	if xauthtoken != "" {
 		fmt.Printf("GOT A TOKEN\n")
-		token, _ := jwt.ParseWithClaims(xauthtoken, &RedfishClaims{}, func(token *jwt.Token) (interface{}, error) {
+		token, err := jwt.ParseWithClaims(xauthtoken, &RedfishClaims{}, func(token *jwt.Token) (interface{}, error) {
 			fmt.Printf("Decoded token: %s\n", token)
 			claims := token.Claims.(*RedfishClaims)
 			fmt.Printf("SESSION URI: %s\n", claims.SessionURI)
@@ -71,20 +65,48 @@ func (s *xAuthTokenService) GetRedfishResource(ctx context.Context, r *http.Requ
 			return nil, errors.New("No session")
 		})
 
+        if err != nil {
+            return &Response{StatusCode: http.StatusUnauthorized, Output: map[string]interface{}{"error": "X-Auth-Token parsing failed: " + err.Error()}}, nil
+        }
+
         if claims, ok := token.Claims.(*RedfishClaims); ok {
             fmt.Printf("Got a parsed token: %v\n", claims)
             if token.Valid {
                 fmt.Printf("It's valid!\n")
+                privileges = []string{}
+                privileges = append(privileges, "authorization-complete")
                 privileges = append(privileges, claims.Privileges...)
+                return
             } else {
-                fmt.Printf("It's INVALID, CANNOT USE!\n")
+                return &Response{StatusCode: http.StatusUnauthorized, Output: map[string]interface{}{"error": "X-Auth-Token failed validation: "}}, nil
             }
         }
 	}
 
+    return
+}
+
+
+func (s *xAuthTokenService) GetRedfishResource(ctx context.Context, r *http.Request, privileges []string) (*Response, error) {
+    response, basicAuthPrivs :=  s.CheckXAuthToken(ctx, r)
+    if response != nil {
+        return response, nil
+    }
+
+    if privileges != nil {
+	    privileges = append(privileges, basicAuthPrivs...)
+    }
 	return s.Service.GetRedfishResource(ctx, r, privileges)
 }
 
 func (s *xAuthTokenService) RedfishResourceHandler(ctx context.Context, r *http.Request, privileges []string) (*Response, error) {
+    response, basicAuthPrivs :=  s.CheckXAuthToken(ctx, r)
+    if response != nil {
+        return response, nil
+    }
+
+    if privileges != nil {
+	    privileges = append(privileges, basicAuthPrivs...)
+    }
 	return s.Service.RedfishResourceHandler(ctx, r, privileges)
 }
