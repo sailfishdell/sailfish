@@ -48,6 +48,8 @@ func Setup(ddd DDDFunctions) {
 
 	// RedfishResourceCollection
 	handler.SetAggregate(RedfishResourceAggregateType, CreateRedfishResourceCollectionCommand)
+	handler.SetAggregate(RedfishResourceAggregateType, AddRedfishResourceCollectionMemberCommand)
+	handler.SetAggregate(RedfishResourceAggregateType, RemoveRedfishResourceCollectionMemberCommand)
 
 	handler.SetAggregate(RedfishResourceAggregateType, UpdateRedfishResourcePrivilegesCommand)
 	handler.SetAggregate(RedfishResourceAggregateType, UpdateRedfishResourcePermissionsCommand)

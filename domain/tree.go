@@ -3,12 +3,15 @@ package domain
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strconv"
 	"sync"
 
 	eh "github.com/superchalupa/eventhorizon"
 	"github.com/superchalupa/eventhorizon/eventhandler/projector"
 )
+
+var _ = fmt.Printf
 
 var (
 	ErrNotFound = errors.New("Resource could not be found")
@@ -21,6 +24,7 @@ type RedfishResource struct {
 	PrivilegeMap map[string]interface{}
 	Permissions  map[string]interface{}
 	Headers      map[string]string
+	Private      map[string]interface{}
 }
 
 type RedfishProjector struct{}
@@ -43,26 +47,37 @@ func (o *RedfishProjector) Project(ctx context.Context, event eh.Event, model in
 		if !ok {
 			return nil, errors.New("projector: invalid event data")
 		}
+
 		item.ResourceURI = data.ResourceURI
 		item.Properties = map[string]interface{}{}
 		for k, v := range data.Properties {
 			item.Properties[k] = v
 		}
+		item.Private = map[string]interface{}{}
+		for k, v := range data.Private {
+			item.Private[k] = v
+		}
 		item.PrivilegeMap = map[string]interface{}{}
 		item.Permissions = map[string]interface{}{}
 		item.Headers = map[string]string{}
+
 	case RedfishResourcePropertiesUpdatedEvent:
 		if data, ok := event.Data().(*RedfishResourcePropertiesUpdatedData); ok {
 			for k, v := range data.Properties {
 				item.Properties[k] = v
 			}
+			for k, v := range data.Private {
+				item.Private[k] = v
+			}
 		}
+
 	case RedfishResourcePropertyRemovedEvent:
 		if data, ok := event.Data().(*RedfishResourcePropertyRemovedData); ok {
 			delete(item.Properties, data.PropertyName)
 		}
 	case RedfishResourceRemovedEvent:
-		// TODO ?
+		// no action...
+
 	case RedfishResourcePrivilegesUpdatedEvent:
 		if data, ok := event.Data().(*RedfishResourcePrivilegesUpdatedData); ok {
 			item.PrivilegeMap = data.Privileges

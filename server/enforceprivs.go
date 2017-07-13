@@ -28,14 +28,14 @@ func (s *privilegeEnforcingService) RedfishResourceHandler(ctx context.Context, 
 	// TODO: Locking? Should repo give us a copy? Need to test this.
 	tree, err := domain.GetTree(ctx, s.GetReadRepo(), s.GetTreeID())
 	if err != nil {
-		return &Response{StatusCode: http.StatusInternalServerError}, err
+		return &Response{StatusCode: http.StatusInternalServerError, Output: map[string]interface{}{"error": err.Error()}}, err
 	}
 
 	// now that we have the tree, look up the actual URI in that tree to find
 	// the object UUID, then pull that from the repo
 	requested, err := s.GetReadRepo().Find(ctx, tree.Tree[noHashPath])
 	if err != nil {
-		return &Response{StatusCode: http.StatusNotFound}, nil
+		return &Response{StatusCode: http.StatusNotFound, Output: map[string]interface{}{"error": err.Error()}}, nil
 	}
 	item, ok := requested.(*domain.RedfishResource)
 	if !ok {
@@ -49,17 +49,17 @@ func (s *privilegeEnforcingService) RedfishResourceHandler(ctx context.Context, 
 	//  2) a post-call check that filters the properties returned based on privs
 	getPrivs, ok := item.PrivilegeMap[r.Method]
 	if !ok {
-		return &Response{StatusCode: http.StatusForbidden}, nil
+		return &Response{StatusCode: http.StatusForbidden, Output: map[string]interface{}{"error": err.Error()}}, nil
 	}
 
 	getPrivsArr := getPrivs.([]string)
 
-	fmt.Printf("CHECK PRIVS\n\tUSER: %s\n\tRESOURCE: %s\n", privileges, getPrivsArr)
+	//fmt.Printf("CHECK PRIVS\n\tUSER: %s\n\tRESOURCE: %s\n", privileges, getPrivsArr)
 
 	for _, myPriv := range privileges {
 		for _, itemPriv := range getPrivsArr {
 			if myPriv == itemPriv {
-				fmt.Printf("Found matching privs, granting access. userPriv(%s) == itemPriv(%s)\n", myPriv, itemPriv)
+				//fmt.Printf("Found matching privs, granting access. userPriv(%s) == itemPriv(%s)\n", myPriv, itemPriv)
 				return s.Service.RedfishResourceHandler(ctx, r, privileges)
 			}
 		}

@@ -94,7 +94,7 @@ func SetupSessionService(s domain.SagaRegisterer, d domain.DDDFunctions) {
 				return errors.New("Couldn't get handle for session service")
 			}
 
-			s.GetCommandBus().HandleCommand(ctx, &domain.CreateRedfishResource{
+			err = s.GetCommandBus().HandleCommand(ctx, &domain.CreateRedfishResource{
 				UUID:        uuid,
 				ResourceURI: sessionURI,
 				Type:        "#Session.v1_0_0.Session",
@@ -102,8 +102,11 @@ func SetupSessionService(s domain.SagaRegisterer, d domain.DDDFunctions) {
 				Properties:  retprops,
 				Private:     map[string]interface{}{"token_secret": secret},
 			})
+			if err != nil {
+				return err
+			}
 
-			err = s.GetCommandBus().HandleCommand(ctx, &domain.AddRedfishResourceCollectionMember{UUID: eh.UUID(sessionServiceID), MemberURI: sessionURI})
+			err = s.GetCommandBus().HandleCommand(ctx, &domain.AddRedfishResourceCollectionMember{UUID: sessionServiceID, MemberURI: sessionURI})
 			if err != nil {
 				return err
 			}

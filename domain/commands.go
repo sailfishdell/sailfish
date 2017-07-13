@@ -53,30 +53,39 @@ func (c CreateRedfishResource) AggregateID() eh.UUID            { return c.UUID 
 func (c CreateRedfishResource) AggregateType() eh.AggregateType { return RedfishResourceAggregateType }
 func (c CreateRedfishResource) CommandType() eh.CommandType     { return CreateRedfishResourceCommand }
 func (c CreateRedfishResource) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
+	disallowed := []string{"@odata.id", "@odata.type", "@odata.context"}
+	np := map[string]interface{}{}
+
+AddProp:
+	for k, v := range c.Properties {
+		// filter out so that the @odata.{id,type,context} cannot be changed
+		// after creation
+		for _, d := range disallowed {
+			if k == d {
+				continue AddProp
+			}
+			np[k] = v
+		}
+	}
+	np["@odata.id"] = c.ResourceURI
+	np["@odata.type"] = c.Type
+	np["@odata.context"] = c.Context
+
 	a.StoreEvent(RedfishResourceCreatedEvent,
 		&RedfishResourceCreatedData{
 			ResourceURI: c.ResourceURI,
-			Properties: map[string]interface{}{
-				"@odata.id":      c.ResourceURI,
-				"@odata.type":    c.Type,
-				"@odata.context": c.Context,
-			},
+			Private:     c.Private,
+			Properties:  np,
 		},
 	)
 
-	c2 := UpdateRedfishResourceProperties{
-		UUID:       c.UUID,
-		Properties: c.Properties,
-		Private:    c.Private,
-	}
-	c2.Handle(ctx, a)
 	return nil
 }
 
 type UpdateRedfishResourceProperties struct {
 	UUID       eh.UUID
-	Properties map[string]interface{}
-	Private    map[string]interface{}
+	Properties map[string]interface{} `eh:"optional"`
+	Private    map[string]interface{} `eh:"optional"`
 }
 
 func (c UpdateRedfishResourceProperties) AggregateID() eh.UUID { return c.UUID }
@@ -105,7 +114,8 @@ AddProp:
 	// shallow copy Private
 	npriv := map[string]interface{}{}
 	for k, v := range c.Private {
-		if c.Private[k] != v {
+		chk, ok := c.Private[k]
+		if ok || chk != v {
 			npriv[k] = v
 		}
 	}
@@ -158,6 +168,7 @@ func (c RemoveRedfishResource) Handle(ctx context.Context, a *RedfishResourceAgg
 }
 
 type CreateRedfishResourceCollection struct {
+	UUID eh.UUID
 	CreateRedfishResource
 	Members []string
 }
@@ -195,10 +206,8 @@ func (c AddRedfishResourceCollectionMember) CommandType() eh.CommandType {
 	return AddRedfishResourceCollectionMemberCommand
 }
 func (c AddRedfishResourceCollectionMember) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
-	fmt.Printf("PROPERTIES: %#v\n", a.Properties)
 	nm, ok := a.Properties["Members"]
 	if !ok {
-		fmt.Printf("PROPERTIES: %#v\n", a.Properties)
 		return errors.New("Not a collection")
 	}
 

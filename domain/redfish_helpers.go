@@ -54,37 +54,20 @@ type baseDDD struct {
 	redfishRepo eh.ReadWriteRepo
 }
 
-type DDDFactoryOption func(*baseDDD)
-
 func BaseDDDFactory(baseURI, verURI string, f ...interface{}) DDDFunctions {
 	b := &baseDDD{
 		baseURI: baseURI,
 		verURI:  verURI,
 	}
 
-    runOptions := func(b *baseDDD) {
-        for _, f := range(f) {
-            o, ok := f.(DDDFactoryOption)
-            if ok {
-                o(b)
-            }
-        }
-    }
-
-    runOptions(b)
-
 	if b.eventStore == nil {
 		b.eventStore = eventstore.NewEventStore()
 	}
-
-    runOptions(b)
 
 	if b.eventBus == nil {
 		b.eventBus = eventbus.NewEventBus()
 		//eventBus.SetHandlingStrategy( eh.AsyncEventHandlingStrategy )
 	}
-
-    runOptions(b)
 
 	if b.eventPublisher == nil {
 		b.eventPublisher = eventpublisher.NewEventPublisher()
@@ -92,19 +75,13 @@ func BaseDDDFactory(baseURI, verURI string, f ...interface{}) DDDFunctions {
 		b.eventBus.SetPublisher(b.eventPublisher)
 	}
 
-    runOptions(b)
-
 	if b.cmdbus == nil {
 		b.cmdbus = commandbus.NewCommandBus()
 	}
 
-    runOptions(b)
-
 	if b.redfishRepo == nil {
 		b.redfishRepo = repo.NewRepo()
 	}
-
-    runOptions(b)
 
 	b.treeID = eh.NewUUID()
 
@@ -112,8 +89,6 @@ func BaseDDDFactory(baseURI, verURI string, f ...interface{}) DDDFunctions {
 		b.waiter = utils.NewEventWaiter()
 		b.eventPublisher.AddObserver(b.waiter)
 	}
-
-    runOptions(b)
 
 	return b
 }

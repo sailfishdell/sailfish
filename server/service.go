@@ -58,17 +58,16 @@ func (rh *ServiceConfig) GetRedfishResource(ctx context.Context, r *http.Request
 	noHashPath := strings.SplitN(r.URL.Path, "#", 2)[0]
 
 	// we have the tree ID, fetch an updated copy of the actual tree
-	// TODO: Locking? Should repo give us a copy? Need to test this.
 	tree, err := domain.GetTree(ctx, rh.GetReadRepo(), rh.GetTreeID())
 	if err != nil {
-		return &Response{StatusCode: http.StatusInternalServerError}, err
+		return &Response{StatusCode: http.StatusInternalServerError, Output: map[string]interface{}{"error": err.Error()}}, err
 	}
 
 	// now that we have the tree, look up the actual URI in that tree to find
 	// the object UUID, then pull that from the repo
 	requested, err := rh.GetReadRepo().Find(ctx, tree.Tree[noHashPath])
 	if err != nil {
-		return &Response{StatusCode: http.StatusNotFound}, nil
+		return &Response{StatusCode: http.StatusNotFound, Output: map[string]interface{}{"error": err.Error()}}, nil
 	}
 	item, ok := requested.(*domain.RedfishResource)
 	if !ok {
@@ -116,15 +115,17 @@ func (rh *ServiceConfig) RedfishResourceHandler(ctx context.Context, r *http.Req
 		return false
 	})
 
+	fmt.Printf("HI 1\n")
 	defer rh.GetEventWaiter().CancelWait(waitID)
 
 	// Check for single COMMAND that can be run
 	// look up to see if there is a specific command
 	err = rh.httpsagas.RunHTTPOperation(ctx, rh.GetTreeID(), cmdUUID, item, r)
 	if err != nil {
-		return &Response{StatusCode: http.StatusMethodNotAllowed}, nil
+		return &Response{StatusCode: http.StatusMethodNotAllowed, Output: map[string]interface{}{"error": err.Error()}}, nil
 	}
 
+	fmt.Printf("select\n")
 	select {
 	case event := <-resultChan:
 		d := event.Data().(*domain.HTTPCmdProcessedData)
@@ -343,20 +344,20 @@ func (rh *ServiceConfig) startup() {
 
 func (rh *ServiceConfig) createTreeLeaf(ctx context.Context, uri string, otype string, octx string, Properties map[string]interface{}) (uuid eh.UUID) {
 	uuid = eh.NewUUID()
-	fmt.Printf("Creating URI %s\n", uri)
-    c := &domain.CreateRedfishResource{UUID: uuid, ResourceURI: uri, Properties: Properties, Type: otype, Context: octx}
-	err := rh.GetCommandBus().HandleCommand(ctx, c )
-    if err != nil {
-        panic(err.Error())
-    }
+	fmt.Printf("Creating URI %s at %s\n", uri, uuid)
+	c := &domain.CreateRedfishResource{UUID: uuid, ResourceURI: uri, Properties: Properties, Type: otype, Context: octx}
+	err := rh.GetCommandBus().HandleCommand(ctx, c)
+	if err != nil {
+		panic(err.Error())
+	}
 	return
 }
 
 func (rh *ServiceConfig) createTreeCollectionLeaf(ctx context.Context, uri string, otype string, octx string, Properties map[string]interface{}, Members []string) {
 	uuid := eh.NewUUID()
-	fmt.Printf("Creating URI %s\n", uri)
-	err := rh.GetCommandBus().HandleCommand(ctx, &domain.CreateRedfishResourceCollection{CreateRedfishResource: domain.CreateRedfishResource{UUID: uuid, ResourceURI: uri, Properties: Properties, Type: otype, Context: octx}, Members: Members})
-    if err != nil {
-        panic(err.Error())
-    }
+	fmt.Printf("Creating URI %s at %s\n", uri, uuid)
+	err := rh.GetCommandBus().HandleCommand(ctx, &domain.CreateRedfishResourceCollection{CreateRedfishResource: domain.CreateRedfishResource{UUID: uuid, ResourceURI: uri, Properties: Properties, Type: otype, Context: octx}, Members: Members, UUID: uuid})
+	if err != nil {
+		panic(err.Error())
+	}
 }

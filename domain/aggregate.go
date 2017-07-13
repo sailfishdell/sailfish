@@ -53,6 +53,10 @@ func (a *RedfishResourceAggregate) ApplyEvent(ctx context.Context, event eh.Even
 			for k, v := range data.Properties {
 				a.Properties[k] = v
 			}
+			a.Private = map[string]interface{}{}
+			for k, v := range data.Private {
+				a.Private[k] = v
+			}
 		}
 	case RedfishResourcePropertiesUpdatedEvent:
 		if data, ok := event.Data().(*RedfishResourcePropertiesUpdatedData); ok {
