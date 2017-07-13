@@ -59,6 +59,9 @@ func SetupSessionService(s domain.SagaRegisterer, d domain.DDDFunctions) {
 			}
 			privileges = append(privileges, domain.GetPrivileges(ctx, d, account)...)
 
+			uuid := eh.NewUUID()
+			sessionURI := fmt.Sprintf("%s/v1/SessionService/Sessions/%s", d.GetBaseURI(), uuid)
+
 			token := jwt.New(jwt.SigningMethodHS256)
 			claims := make(jwt.MapClaims)
 			//claims["exp"] = time.Now().Add(time.Hour * time.Duration(1)).Unix()
@@ -66,12 +69,10 @@ func SetupSessionService(s domain.SagaRegisterer, d domain.DDDFunctions) {
 			claims["iss"] = "localhost"
 			claims["sub"] = lr.UserName
 			claims["privileges"] = privileges
+			claims["sessionuri"] = sessionURI
 			token.Claims = claims
 			secret := createRandSecret(24, characters)
 			tokenString, err := token.SignedString(secret)
-
-			uuid := eh.NewUUID()
-			sessionURI := fmt.Sprintf("%s/v1/SessionService/Sessions/%s", d.GetBaseURI(), uuid)
 
 			retprops := map[string]interface{}{
 				"@odata.type":    "#Session.v1_0_0.Session",
@@ -116,7 +117,7 @@ func SetupSessionService(s domain.SagaRegisterer, d domain.DDDFunctions) {
 					CommandID: cmdID,
 					Results:   retprops,
 					Headers: map[string]string{
-						"X-Token-Auth": tokenString,
+						"X-Auth-Token": tokenString,
 						"Location":     sessionURI,
 					},
 				})
