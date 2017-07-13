@@ -4,9 +4,6 @@ import (
 	"context"
 	"errors"
 	eh "github.com/superchalupa/eventhorizon"
-	commandbus "github.com/superchalupa/eventhorizon/commandbus/local"
-	repo "github.com/superchalupa/eventhorizon/repo/memory"
-	"github.com/superchalupa/eventhorizon/utils"
 	"net/http"
 	"strings"
 	"time"
@@ -47,9 +44,7 @@ type ServiceConfig struct {
 }
 
 // NewService is how we initialize the business logic
-func NewService(baseURI string, commandbus *commandbus.CommandBus, eventHandler eh.EventHandler, repo *repo.Repo, id eh.UUID, w *utils.EventWaiter) Service {
-    d := domain.NewBaseDDD(baseURI, commandbus, eventHandler, repo, id, w)
-
+func NewService(d domain.DDDFunctions) Service {
 	cfg := ServiceConfig{
 		httpsagas:    domain.NewHTTPSagaList(d),
 		DDDFunctions: d,
@@ -64,14 +59,14 @@ func (rh *ServiceConfig) GetRedfishResource(ctx context.Context, r *http.Request
 
 	// we have the tree ID, fetch an updated copy of the actual tree
 	// TODO: Locking? Should repo give us a copy? Need to test this.
-	tree, err := domain.GetTree(ctx, rh.GetRepo(), rh.GetTreeID())
+	tree, err := domain.GetTree(ctx, rh.GetReadRepo(), rh.GetTreeID())
 	if err != nil {
 		return &Response{StatusCode: http.StatusInternalServerError}, err
 	}
 
 	// now that we have the tree, look up the actual URI in that tree to find
 	// the object UUID, then pull that from the repo
-	requested, err := rh.GetRepo().Find(ctx, tree.Tree[noHashPath])
+	requested, err := rh.GetReadRepo().Find(ctx, tree.Tree[noHashPath])
 	if err != nil {
 		return &Response{StatusCode: http.StatusNotFound}, nil
 	}
@@ -89,14 +84,14 @@ func (rh *ServiceConfig) RedfishResourceHandler(ctx context.Context, r *http.Req
 
 	// we have the tree ID, fetch an updated copy of the actual tree
 	// TODO: Locking? Should repo give us a copy? Need to test this.
-	tree, err := domain.GetTree(ctx, rh.GetRepo(), rh.GetTreeID())
+	tree, err := domain.GetTree(ctx, rh.GetReadRepo(), rh.GetTreeID())
 	if err != nil {
 		return &Response{StatusCode: http.StatusInternalServerError}, err
 	}
 
 	// now that we have the tree, look up the actual URI in that tree to find
 	// the object UUID, then pull that from the repo
-	requested, err := rh.GetRepo().Find(ctx, tree.Tree[noHashPath])
+	requested, err := rh.GetReadRepo().Find(ctx, tree.Tree[noHashPath])
 	if err != nil {
 		// it's ok if obj not found
 		return &Response{StatusCode: http.StatusNotFound}, nil
@@ -349,11 +344,19 @@ func (rh *ServiceConfig) startup() {
 func (rh *ServiceConfig) createTreeLeaf(ctx context.Context, uri string, otype string, octx string, Properties map[string]interface{}) (uuid eh.UUID) {
 	uuid = eh.NewUUID()
 	fmt.Printf("Creating URI %s\n", uri)
-	rh.GetCommandBus().HandleCommand(ctx, &domain.CreateRedfishResource{UUID: uuid, ResourceURI: uri, Properties: Properties, Type: otype, Context: octx})
+    c := &domain.CreateRedfishResource{UUID: uuid, ResourceURI: uri, Properties: Properties, Type: otype, Context: octx}
+	err := rh.GetCommandBus().HandleCommand(ctx, c )
+    if err != nil {
+        panic(err.Error())
+    }
 	return
 }
 
 func (rh *ServiceConfig) createTreeCollectionLeaf(ctx context.Context, uri string, otype string, octx string, Properties map[string]interface{}, Members []string) {
 	uuid := eh.NewUUID()
-	rh.GetCommandBus().HandleCommand(ctx, &domain.CreateRedfishResourceCollection{UUID: uuid, ResourceURI: uri, Properties: Properties, Members: Members, Type: otype, Context: octx})
+	fmt.Printf("Creating URI %s\n", uri)
+	err := rh.GetCommandBus().HandleCommand(ctx, &domain.CreateRedfishResourceCollection{CreateRedfishResource: domain.CreateRedfishResource{UUID: uuid, ResourceURI: uri, Properties: Properties, Type: otype, Context: octx}, Members: Members})
+    if err != nil {
+        panic(err.Error())
+    }
 }

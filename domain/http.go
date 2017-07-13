@@ -20,8 +20,8 @@ type HTTPSaga func(context.Context, eh.UUID, eh.UUID, *RedfishResource, *http.Re
 
 // can put URI, odata.type, or odata.context as key
 type HTTPSagaList struct {
-	sagaList     map[string]HTTPSaga
-    DDDFunctions
+	sagaList map[string]HTTPSaga
+	DDDFunctions
 }
 
 type httpsagasetup func(SagaRegisterer, DDDFunctions)
@@ -31,7 +31,7 @@ var Httpsagas []httpsagasetup
 func NewHTTPSagaList(d DDDFunctions) *HTTPSagaList {
 	sl := HTTPSagaList{
 		sagaList:     map[string]HTTPSaga{},
-        DDDFunctions: d,
+		DDDFunctions: d,
 	}
 
 	for _, s := range Httpsagas {
@@ -43,7 +43,7 @@ func NewHTTPSagaList(d DDDFunctions) *HTTPSagaList {
 type SagaRegisterer interface {
 	RegisterNewSaga(match string, f HTTPSaga)
 	GetCommandBus() eh.CommandBus
-	GetRepo() eh.ReadRepo
+	GetReadRepo() eh.ReadRepo
 }
 
 func (l *HTTPSagaList) RegisterNewSaga(match string, f HTTPSaga) {
@@ -95,7 +95,7 @@ func (l *HTTPSagaList) RunHTTPOperation(ctx context.Context, treeID, cmdID eh.UU
 		if err == nil {
 			cmdInit, ok := cmd.(Initializer)
 			if ok {
-				cmdInit.Initialize(l.GetRepo(), treeID, eh.UUID(aggregateID), cmdID, r)
+				cmdInit.Initialize(l.GetReadRepo(), treeID, eh.UUID(aggregateID), cmdID, r)
 				return l.GetCommandBus().HandleCommand(ctx, cmd)
 			}
 		}

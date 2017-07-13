@@ -26,14 +26,14 @@ func (s *privilegeEnforcingService) RedfishResourceHandler(ctx context.Context, 
 
 	// we have the tree ID, fetch an updated copy of the actual tree
 	// TODO: Locking? Should repo give us a copy? Need to test this.
-	tree, err := domain.GetTree(ctx, s.GetRepo(), s.GetTreeID())
+	tree, err := domain.GetTree(ctx, s.GetReadRepo(), s.GetTreeID())
 	if err != nil {
 		return &Response{StatusCode: http.StatusInternalServerError}, err
 	}
 
 	// now that we have the tree, look up the actual URI in that tree to find
 	// the object UUID, then pull that from the repo
-	requested, err := s.GetRepo().Find(ctx, tree.Tree[noHashPath])
+	requested, err := s.GetReadRepo().Find(ctx, tree.Tree[noHashPath])
 	if err != nil {
 		return &Response{StatusCode: http.StatusNotFound}, nil
 	}
@@ -73,14 +73,14 @@ func (s *privilegeEnforcingService) GetRedfishResource(ctx context.Context, r *h
 
 	// we have the tree ID, fetch an updated copy of the actual tree
 	// TODO: Locking? Should repo give us a copy? Need to test this.
-	tree, err := domain.GetTree(ctx, s.GetRepo(), s.GetTreeID())
+	tree, err := domain.GetTree(ctx, s.GetReadRepo(), s.GetTreeID())
 	if err != nil {
 		return &Response{StatusCode: http.StatusInternalServerError}, err
 	}
 
 	// now that we have the tree, look up the actual URI in that tree to find
 	// the object UUID, then pull that from the repo
-	requested, err := s.GetRepo().Find(ctx, tree.Tree[noHashPath])
+	requested, err := s.GetReadRepo().Find(ctx, tree.Tree[noHashPath])
 	if err != nil {
 		return &Response{StatusCode: http.StatusNotFound}, nil
 	}

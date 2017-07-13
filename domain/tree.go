@@ -51,13 +51,11 @@ func (o *RedfishProjector) Project(ctx context.Context, event eh.Event, model in
 		item.PrivilegeMap = map[string]interface{}{}
 		item.Permissions = map[string]interface{}{}
 		item.Headers = map[string]string{}
-	case RedfishResourcePropertyAddedEvent:
-		if data, ok := event.Data().(*RedfishResourcePropertyAddedData); ok {
-			item.Properties[data.PropertyName] = data.PropertyValue
-		}
-	case RedfishResourcePropertyUpdatedEvent:
-		if data, ok := event.Data().(*RedfishResourcePropertyUpdatedData); ok {
-			item.Properties[data.PropertyName] = data.PropertyValue
+	case RedfishResourcePropertiesUpdatedEvent:
+		if data, ok := event.Data().(*RedfishResourcePropertiesUpdatedData); ok {
+			for k, v := range data.Properties {
+				item.Properties[k] = v
+			}
 		}
 	case RedfishResourcePropertyRemovedEvent:
 		if data, ok := event.Data().(*RedfishResourcePropertyRemovedData); ok {
@@ -73,13 +71,11 @@ func (o *RedfishProjector) Project(ctx context.Context, event eh.Event, model in
 		if data, ok := event.Data().(*RedfishResourcePermissionsUpdatedData); ok {
 			item.Permissions = data.Permissions
 		}
-	case RedfishResourceHeaderAddedEvent:
-		if data, ok := event.Data().(*RedfishResourceHeaderAddedData); ok {
-			item.Headers[data.HeaderName] = data.HeaderValue
-		}
-	case RedfishResourceHeaderUpdatedEvent:
-		if data, ok := event.Data().(*RedfishResourceHeaderUpdatedData); ok {
-			item.Headers[data.HeaderName] = data.HeaderValue
+	case RedfishResourceHeadersUpdatedEvent:
+		if data, ok := event.Data().(*RedfishResourceHeadersUpdatedData); ok {
+			for k, v := range data.Headers {
+				item.Headers[k] = v
+			}
 		}
 	case RedfishResourceHeaderRemovedEvent:
 		if data, ok := event.Data().(*RedfishResourceHeaderRemovedData); ok {
@@ -200,10 +196,13 @@ func (t *RedfishTreeProjector) HandleEvent(ctx context.Context, event eh.Event) 
 			tree.Tree[data.ResourceURI] = event.AggregateID()
 		}
 	case RedfishResourceRemovedEvent:
-		// TODO
-		// 1) look up model using event.AggregateID()
-		// 2) look at the ResourceURI
-		// 3) delete item in tree hash for resourceuri
+		for k, v := range tree.Tree {
+			if v == event.AggregateID() {
+				delete(tree.Tree, k)
+				// there can be only one
+				break
+			}
+		}
 	}
 
 	if err := t.repo.Save(ctx, t.treeID, tree); err != nil {

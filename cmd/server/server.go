@@ -17,13 +17,6 @@ import (
 	"os/signal"
 	"strings"
 
-	eh "github.com/superchalupa/eventhorizon"
-	commandbus "github.com/superchalupa/eventhorizon/commandbus/local"
-	eventbus "github.com/superchalupa/eventhorizon/eventbus/local"
-	eventstore "github.com/superchalupa/eventhorizon/eventstore/memory"
-	eventpublisher "github.com/superchalupa/eventhorizon/publisher/local"
-	repo "github.com/superchalupa/eventhorizon/repo/memory"
-
 	"github.com/superchalupa/go-rfs/domain"
 	redfishserver "github.com/superchalupa/go-rfs/server"
 
@@ -68,7 +61,7 @@ func (i *strslice) Set(value string) error {
 func main() {
 	var (
 		configFile  = flag.String("config", "app.yaml", "Application configuration file")
-		baseUri     = flag.String("redfish_base_uri", "/redfish", "http base uri")
+		baseURI     = flag.String("redfish_base_uri", "/redfish", "http base uri")
 		listenAddrs strslice
 	)
 	flag.Var(&listenAddrs, "l", "Listen address.  Formats: (:nn, fcgi:ip:port, fcgi:/path)")
@@ -88,40 +81,12 @@ func main() {
 	///
 	// setup DDD stuff
 	///
-
-	// Create the event store.
-	eventStore := eventstore.NewEventStore()
-
-	// Create the event bus that distributes events.
-	eventBus := eventbus.NewEventBus()
-	//eventBus.SetHandlingStrategy( eh.AsyncEventHandlingStrategy )
-	eventPublisher := eventpublisher.NewEventPublisher()
-	//eventPublisher.SetHandlingStrategy( eh.AsyncEventHandlingStrategy )
-	eventBus.SetPublisher(eventPublisher)
-
-	// Create the command bus.
-	commandBus := commandbus.NewCommandBus()
-
-	// Create the read repositories.
-	redfishRepo := repo.NewRepo()
-
-	// Setup the domain.
-	treeID := eh.NewUUID()
-	waiter := domain.Setup(
-		eventStore,
-		eventBus,
-		eventPublisher,
-		commandBus,
-		redfishRepo,
-		treeID,
-	)
-	//
-	// Done with DDD
-	//
+	ddd := domain.BaseDDDFactory(*baseURI, "v1")
+	domain.Setup(ddd)
 
 	logger = log.With(logger, "caller", log.DefaultCaller)
 
-	svc := redfishserver.NewService(*baseUri, commandBus, eventBus, redfishRepo, treeID, waiter)
+	svc := redfishserver.NewService(ddd)
 	// Need this *before* the authentication, so that the authentication module
 	// will call this with the correct set of privileges
 	svc = redfishserver.NewPrivilegeEnforcingService(svc)
@@ -149,7 +114,7 @@ func main() {
 
 	svc = redfishserver.NewLoggingService(logger, svc)
 
-	r := redfishserver.NewRedfishHandler(svc, *baseUri, "v1", logger)
+	r := redfishserver.NewRedfishHandler(svc, *baseURI, "v1", logger)
 
 	http.Handle("/", r)
 	http.Handle("/metrics", promhttp.Handler())

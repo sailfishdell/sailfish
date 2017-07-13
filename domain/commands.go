@@ -12,8 +12,7 @@ var _ = fmt.Printf
 func SetupCommands() {
 	// odata
 	eh.RegisterCommand(func() eh.Command { return &CreateRedfishResource{} })
-	eh.RegisterCommand(func() eh.Command { return &AddRedfishResourceProperty{} })
-	eh.RegisterCommand(func() eh.Command { return &UpdateRedfishResourceProperty{} })
+	eh.RegisterCommand(func() eh.Command { return &UpdateRedfishResourceProperties{} })
 	eh.RegisterCommand(func() eh.Command { return &RemoveRedfishResourceProperty{} })
 	eh.RegisterCommand(func() eh.Command { return &RemoveRedfishResource{} })
 
@@ -24,16 +23,16 @@ func SetupCommands() {
 }
 
 const (
-	CreateRedfishResourceCommand         eh.CommandType = "CreateRedfishResource"
-	AddRedfishResourcePropertyCommand    eh.CommandType = "AddRedfishResourceProperty"
-	UpdateRedfishResourcePropertyCommand eh.CommandType = "UpdateRedfishResourceProperty"
-	RemoveRedfishResourcePropertyCommand eh.CommandType = "RemoveRedfishResourceProperty"
-	RemoveRedfishResourceCommand         eh.CommandType = "RemoveRedfishResource"
+	CreateRedfishResourceCommand           eh.CommandType = "CreateRedfishResource"
+	UpdateRedfishResourcePropertiesCommand eh.CommandType = "UpdateRedfishResourceProperties"
+	RemoveRedfishResourcePropertyCommand   eh.CommandType = "RemoveRedfishResourceProperty"
+	RemoveRedfishResourceCommand           eh.CommandType = "RemoveRedfishResource"
 
 	CreateRedfishResourceCollectionCommand       eh.CommandType = "CreateRedfishResourceCollection"
 	AddRedfishResourceCollectionMemberCommand    eh.CommandType = "AddRedfishResourceCollectionMember"
 	RemoveRedfishResourceCollectionMemberCommand eh.CommandType = "RemoveRedfishResourceCollectionMember"
 
+	// TODO
 	UpdateRedfishResourcePrivilegesCommand  eh.CommandType = "UpdateRedfishResourcePrivileges"
 	UpdateRedfishResourcePermissionsCommand eh.CommandType = "UpdateRedfishResourcePermissions"
 	AddRedfishResourceHeaderCommand         eh.CommandType = "AddRedfishResourceHeader"
@@ -46,7 +45,8 @@ type CreateRedfishResource struct {
 	ResourceURI string
 	Type        string
 	Context     string
-	Properties  map[string]interface{}
+	Properties  map[string]interface{} `eh:"optional"`
+	Private     map[string]interface{} `eh:"optional"`
 }
 
 func (c CreateRedfishResource) AggregateID() eh.UUID            { return c.UUID }
@@ -56,98 +56,68 @@ func (c CreateRedfishResource) Handle(ctx context.Context, a *RedfishResourceAgg
 	a.StoreEvent(RedfishResourceCreatedEvent,
 		&RedfishResourceCreatedData{
 			ResourceURI: c.ResourceURI,
+			Properties: map[string]interface{}{
+				"@odata.id":      c.ResourceURI,
+				"@odata.type":    c.Type,
+				"@odata.context": c.Context,
+			},
 		},
 	)
 
+	c2 := UpdateRedfishResourceProperties{
+		UUID:       c.UUID,
+		Properties: c.Properties,
+		Private:    c.Private,
+	}
+	c2.Handle(ctx, a)
+	return nil
+}
+
+type UpdateRedfishResourceProperties struct {
+	UUID       eh.UUID
+	Properties map[string]interface{}
+	Private    map[string]interface{}
+}
+
+func (c UpdateRedfishResourceProperties) AggregateID() eh.UUID { return c.UUID }
+func (c UpdateRedfishResourceProperties) AggregateType() eh.AggregateType {
+	return RedfishResourceAggregateType
+}
+func (c UpdateRedfishResourceProperties) CommandType() eh.CommandType {
+	return UpdateRedfishResourcePropertiesCommand
+}
+func (c UpdateRedfishResourceProperties) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
+	disallowed := []string{"@odata.id", "@odata.type", "@odata.context"}
+	np := map[string]interface{}{}
+
+AddProp:
 	for k, v := range c.Properties {
-		a.StoreEvent(RedfishResourcePropertyAddedEvent,
-			&RedfishResourcePropertyAddedData{
-				PropertyName:  k,
-				PropertyValue: v,
-			},
-		)
+		// filter out so that the @odata.{id,type,context} cannot be changed
+		// after creation
+		for _, d := range disallowed {
+			if k == d {
+				continue AddProp
+			}
+			np[k] = v
+		}
 	}
 
-	a.StoreEvent(RedfishResourcePropertyAddedEvent,
-		&RedfishResourcePropertyAddedData{
-			PropertyName:  "@odata.id",
-			PropertyValue: c.ResourceURI,
-		},
-	)
+	// shallow copy Private
+	npriv := map[string]interface{}{}
+	for k, v := range c.Private {
+		if c.Private[k] != v {
+			npriv[k] = v
+		}
+	}
 
-	a.StoreEvent(RedfishResourcePropertyAddedEvent,
-		&RedfishResourcePropertyAddedData{
-			PropertyName:  "@odata.type",
-			PropertyValue: c.Type,
-		},
-	)
-
-	a.StoreEvent(RedfishResourcePropertyAddedEvent,
-		&RedfishResourcePropertyAddedData{
-			PropertyName:  "@odata.context",
-			PropertyValue: c.Context,
+	a.StoreEvent(RedfishResourcePropertiesUpdatedEvent,
+		&RedfishResourcePropertiesUpdatedData{
+			Properties: np,
+			Private:    npriv,
 		},
 	)
 
 	return nil
-}
-
-type AddRedfishResourceProperty struct {
-	UUID          eh.UUID
-	PropertyName  string
-	PropertyValue interface{}
-}
-
-func (c AddRedfishResourceProperty) AggregateID() eh.UUID { return c.UUID }
-func (c AddRedfishResourceProperty) AggregateType() eh.AggregateType {
-	return RedfishResourceAggregateType
-}
-func (c AddRedfishResourceProperty) CommandType() eh.CommandType {
-	return AddRedfishResourcePropertyCommand
-}
-func (c AddRedfishResourceProperty) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
-	if _, ok := a.Properties[c.PropertyName]; !ok {
-
-		a.StoreEvent(RedfishResourcePropertyAddedEvent,
-			&RedfishResourcePropertyAddedData{
-				PropertyName:  c.PropertyName,
-				PropertyValue: c.PropertyValue,
-			},
-		)
-
-		return nil
-	}
-	// TODO: Exception!
-	return errors.New("Property already exists")
-}
-
-type UpdateRedfishResourceProperty struct {
-	UUID          eh.UUID
-	PropertyName  string
-	PropertyValue interface{}
-}
-
-func (c UpdateRedfishResourceProperty) AggregateID() eh.UUID { return c.UUID }
-func (c UpdateRedfishResourceProperty) AggregateType() eh.AggregateType {
-	return RedfishResourceAggregateType
-}
-func (c UpdateRedfishResourceProperty) CommandType() eh.CommandType {
-	return UpdateRedfishResourcePropertyCommand
-}
-func (c UpdateRedfishResourceProperty) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
-	if _, ok := a.Properties[c.PropertyName]; ok {
-
-		a.StoreEvent(RedfishResourcePropertyUpdatedEvent,
-			&RedfishResourcePropertyUpdatedData{
-				PropertyName:  c.PropertyName,
-				PropertyValue: c.PropertyValue,
-			},
-		)
-
-		return nil
-	}
-	// TODO: Exception!
-	return errors.New("Property doesnt exist")
 }
 
 type RemoveRedfishResourceProperty struct {
@@ -164,7 +134,6 @@ func (c RemoveRedfishResourceProperty) CommandType() eh.CommandType {
 }
 func (c RemoveRedfishResourceProperty) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 	if _, ok := a.Properties[c.PropertyName]; ok {
-
 		a.StoreEvent(RedfishResourcePropertyRemovedEvent,
 			&RedfishResourcePropertyRemovedData{
 				PropertyName: c.PropertyName,
@@ -173,7 +142,6 @@ func (c RemoveRedfishResourceProperty) Handle(ctx context.Context, a *RedfishRes
 
 		return nil
 	}
-	// TODO: Exception!
 	return errors.New("Property doesnt exist")
 }
 
@@ -190,12 +158,8 @@ func (c RemoveRedfishResource) Handle(ctx context.Context, a *RedfishResourceAgg
 }
 
 type CreateRedfishResourceCollection struct {
-	UUID        eh.UUID
-	ResourceURI string
-	Type        string
-	Context     string
-	Properties  map[string]interface{}
-	Members     []string
+	CreateRedfishResource
+	Members []string
 }
 
 func (c CreateRedfishResourceCollection) AggregateID() eh.UUID { return c.UUID }
@@ -206,62 +170,14 @@ func (c CreateRedfishResourceCollection) CommandType() eh.CommandType {
 	return CreateRedfishResourceCollectionCommand
 }
 func (c CreateRedfishResourceCollection) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
-	a.StoreEvent(RedfishResourceCreatedEvent,
-		&RedfishResourceCreatedData{
-			ResourceURI: c.ResourceURI,
-			Type:        c.Type,
-			Context:     c.Context,
-		},
-	)
-
-	for k, v := range c.Properties {
-		a.StoreEvent(RedfishResourcePropertyAddedEvent,
-			&RedfishResourcePropertyAddedData{
-				PropertyName:  k,
-				PropertyValue: v,
-			},
-		)
-	}
-
-	a.StoreEvent(RedfishResourcePropertyAddedEvent,
-		&RedfishResourcePropertyAddedData{
-			PropertyName:  "Members@odata.count",
-			PropertyValue: len(c.Members),
-		},
-	)
-
 	nm := []map[string]interface{}{}
 	for _, v := range c.Members {
 		nm = append(nm, map[string]interface{}{"@odata.id": v})
 	}
 
-	a.StoreEvent(RedfishResourcePropertyAddedEvent,
-		&RedfishResourcePropertyAddedData{
-			PropertyName:  "Members",
-			PropertyValue: nm,
-		},
-	)
-
-	a.StoreEvent(RedfishResourcePropertyAddedEvent,
-		&RedfishResourcePropertyAddedData{
-			PropertyName:  "@odata.id",
-			PropertyValue: c.ResourceURI,
-		},
-	)
-
-	a.StoreEvent(RedfishResourcePropertyAddedEvent,
-		&RedfishResourcePropertyAddedData{
-			PropertyName:  "@odata.type",
-			PropertyValue: c.Type,
-		},
-	)
-
-	a.StoreEvent(RedfishResourcePropertyAddedEvent,
-		&RedfishResourcePropertyAddedData{
-			PropertyName:  "@odata.context",
-			PropertyValue: c.Context,
-		},
-	)
+	c.Properties["Members@odata.count"] = len(c.Members)
+	c.Properties["Members"] = nm
+	c.CreateRedfishResource.Handle(ctx, a)
 
 	return nil
 }
@@ -279,7 +195,6 @@ func (c AddRedfishResourceCollectionMember) CommandType() eh.CommandType {
 	return AddRedfishResourceCollectionMemberCommand
 }
 func (c AddRedfishResourceCollectionMember) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
-
 	fmt.Printf("PROPERTIES: %#v\n", a.Properties)
 	nm, ok := a.Properties["Members"]
 	if !ok {
@@ -289,17 +204,12 @@ func (c AddRedfishResourceCollectionMember) Handle(ctx context.Context, a *Redfi
 
 	members := nm.([]map[string]interface{})
 
-	a.StoreEvent(RedfishResourcePropertyAddedEvent,
-		&RedfishResourcePropertyAddedData{
-			PropertyName:  "Members",
-			PropertyValue: append(members, map[string]interface{}{"@odata.id": c.MemberURI}),
-		},
-	)
-
-	a.StoreEvent(RedfishResourcePropertyAddedEvent,
-		&RedfishResourcePropertyAddedData{
-			PropertyName:  "Members@odata.count",
-			PropertyValue: len(members) + 1,
+	a.StoreEvent(RedfishResourcePropertiesUpdatedEvent,
+		&RedfishResourcePropertiesUpdatedData{
+			Properties: map[string]interface{}{
+				"Members":             append(members, map[string]interface{}{"@odata.id": c.MemberURI}),
+				"Members@odata.count": len(members) + 1,
+			},
 		},
 	)
 

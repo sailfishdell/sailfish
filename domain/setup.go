@@ -7,7 +7,6 @@ import (
 	eh "github.com/superchalupa/eventhorizon"
 	"github.com/superchalupa/eventhorizon/eventhandler/projector"
 	"github.com/superchalupa/eventhorizon/eventhandler/saga"
-	"github.com/superchalupa/eventhorizon/utils"
 )
 
 var dynamicCommands []eh.CommandType = []eh.CommandType{}
@@ -20,26 +19,17 @@ func RegisterDynamicCommand(cmd eh.CommandType) {
 }
 
 // Setup configures the domain.
-func Setup(
-	eventStore eh.EventStore,
-	eventBus eh.EventBus,
-	eventPublisher eh.EventPublisher,
-	commandBus eh.CommandBus,
-	redfishRepo eh.ReadWriteRepo,
-	treeID eh.UUID) (waiter *utils.EventWaiter) {
-
+func Setup(ddd DDDFunctions) {
 	SetupAggregate()
 	SetupEvents()
 	SetupCommands()
 	SetupHTTP()
 
 	// Add the logger as an observer.
-	waiter = utils.NewEventWaiter()
-	eventPublisher.AddObserver(&Logger{})
-	eventPublisher.AddObserver(waiter)
+	ddd.GetEventPublisher().AddObserver(&Logger{})
 
 	// Create the aggregate repository.
-	repository, err := eh.NewEventSourcingRepository(eventStore, eventBus)
+	repository, err := eh.NewEventSourcingRepository(ddd.GetEventStore(), ddd.GetEventBus())
 	if err != nil {
 		log.Fatalf("could not create repository: %s", err)
 	}
@@ -52,15 +42,12 @@ func Setup(
 
 	// redfish
 	handler.SetAggregate(RedfishResourceAggregateType, CreateRedfishResourceCommand)
-	handler.SetAggregate(RedfishResourceAggregateType, AddRedfishResourcePropertyCommand)
-	handler.SetAggregate(RedfishResourceAggregateType, UpdateRedfishResourcePropertyCommand)
+	handler.SetAggregate(RedfishResourceAggregateType, UpdateRedfishResourcePropertiesCommand)
 	handler.SetAggregate(RedfishResourceAggregateType, RemoveRedfishResourcePropertyCommand)
 	handler.SetAggregate(RedfishResourceAggregateType, RemoveRedfishResourceCommand)
 
 	// RedfishResourceCollection
 	handler.SetAggregate(RedfishResourceAggregateType, CreateRedfishResourceCollectionCommand)
-	handler.SetAggregate(RedfishResourceAggregateType, AddRedfishResourceCollectionMemberCommand)
-	handler.SetAggregate(RedfishResourceAggregateType, RemoveRedfishResourceCollectionMemberCommand)
 
 	handler.SetAggregate(RedfishResourceAggregateType, UpdateRedfishResourcePrivilegesCommand)
 	handler.SetAggregate(RedfishResourceAggregateType, UpdateRedfishResourcePermissionsCommand)
@@ -74,54 +61,49 @@ func Setup(
 	dynamicCommandsMu.RLock()
 	for _, c := range dynamicCommands {
 		handler.SetAggregate(RedfishResourceAggregateType, c)
-		commandBus.SetHandler(handler, c)
+		ddd.GetCommandBus().SetHandler(handler, c)
 	}
 	dynamicCommandsMu.RUnlock()
 
 	// Create the command bus and register the handler for the commands.
 	// WARNING: If you miss adding a handler for a command, then all command processesing stops when that command is emitted!
-	commandBus.SetHandler(handler, CreateRedfishResourceCommand)
-	commandBus.SetHandler(handler, AddRedfishResourcePropertyCommand)
-	commandBus.SetHandler(handler, UpdateRedfishResourcePropertyCommand)
-	commandBus.SetHandler(handler, RemoveRedfishResourcePropertyCommand)
-	commandBus.SetHandler(handler, RemoveRedfishResourceCommand)
+	ddd.GetCommandBus().SetHandler(handler, CreateRedfishResourceCommand)
+	ddd.GetCommandBus().SetHandler(handler, UpdateRedfishResourcePropertiesCommand)
+	ddd.GetCommandBus().SetHandler(handler, RemoveRedfishResourcePropertyCommand)
+	ddd.GetCommandBus().SetHandler(handler, RemoveRedfishResourceCommand)
 
-	commandBus.SetHandler(handler, CreateRedfishResourceCollectionCommand)
-	commandBus.SetHandler(handler, AddRedfishResourceCollectionMemberCommand)
-	commandBus.SetHandler(handler, RemoveRedfishResourceCollectionMemberCommand)
+	ddd.GetCommandBus().SetHandler(handler, CreateRedfishResourceCollectionCommand)
+	ddd.GetCommandBus().SetHandler(handler, AddRedfishResourceCollectionMemberCommand)
+	ddd.GetCommandBus().SetHandler(handler, RemoveRedfishResourceCollectionMemberCommand)
 
-	commandBus.SetHandler(handler, UpdateRedfishResourcePrivilegesCommand)
-	commandBus.SetHandler(handler, UpdateRedfishResourcePermissionsCommand)
-	commandBus.SetHandler(handler, AddRedfishResourceHeaderCommand)
-	commandBus.SetHandler(handler, UpdateRedfishResourceHeaderCommand)
-	commandBus.SetHandler(handler, RemoveRedfishResourceHeaderCommand)
+	ddd.GetCommandBus().SetHandler(handler, UpdateRedfishResourcePrivilegesCommand)
+	ddd.GetCommandBus().SetHandler(handler, UpdateRedfishResourcePermissionsCommand)
+	ddd.GetCommandBus().SetHandler(handler, AddRedfishResourceHeaderCommand)
+	ddd.GetCommandBus().SetHandler(handler, UpdateRedfishResourceHeaderCommand)
+	ddd.GetCommandBus().SetHandler(handler, RemoveRedfishResourceHeaderCommand)
 
 	// HTTP
-	commandBus.SetHandler(handler, HandleHTTPCommand)
+	ddd.GetCommandBus().SetHandler(handler, HandleHTTPCommand)
 
 	// read side projector
-	redfishResourceProjector := projector.NewEventHandler(NewRedfishProjector(), redfishRepo)
+	redfishResourceProjector := projector.NewEventHandler(NewRedfishProjector(), ddd.GetReadWriteRepo())
 	redfishResourceProjector.SetModel(func() interface{} { return &RedfishResource{} })
-	eventBus.AddHandler(redfishResourceProjector, RedfishResourceCreatedEvent)
-	eventBus.AddHandler(redfishResourceProjector, RedfishResourcePropertyAddedEvent)
-	eventBus.AddHandler(redfishResourceProjector, RedfishResourcePropertyUpdatedEvent)
-	eventBus.AddHandler(redfishResourceProjector, RedfishResourcePropertyRemovedEvent)
-	eventBus.AddHandler(redfishResourceProjector, RedfishResourceRemovedEvent)
-	eventBus.AddHandler(redfishResourceProjector, RedfishResourcePrivilegesUpdatedEvent)
-	eventBus.AddHandler(redfishResourceProjector, RedfishResourcePermissionsUpdatedEvent)
-	eventBus.AddHandler(redfishResourceProjector, RedfishResourceHeaderAddedEvent)
-	eventBus.AddHandler(redfishResourceProjector, RedfishResourceHeaderUpdatedEvent)
-	eventBus.AddHandler(redfishResourceProjector, RedfishResourceHeaderRemovedEvent)
+	ddd.GetEventBus().AddHandler(redfishResourceProjector, RedfishResourceCreatedEvent)
+	ddd.GetEventBus().AddHandler(redfishResourceProjector, RedfishResourcePropertiesUpdatedEvent)
+	ddd.GetEventBus().AddHandler(redfishResourceProjector, RedfishResourcePropertyRemovedEvent)
+	ddd.GetEventBus().AddHandler(redfishResourceProjector, RedfishResourceRemovedEvent)
+	ddd.GetEventBus().AddHandler(redfishResourceProjector, RedfishResourcePrivilegesUpdatedEvent)
+	ddd.GetEventBus().AddHandler(redfishResourceProjector, RedfishResourcePermissionsUpdatedEvent)
+	ddd.GetEventBus().AddHandler(redfishResourceProjector, RedfishResourceHeadersUpdatedEvent)
+	ddd.GetEventBus().AddHandler(redfishResourceProjector, RedfishResourceHeaderRemovedEvent)
 
 	// hook up tree rep. this guy maintains the redfish dictionary that maps
 	// URIs to read side projector UUIDs
-	redfishTreeProjector := NewRedfishTreeProjector(redfishRepo, treeID)
-	eventBus.AddHandler(redfishTreeProjector, RedfishResourceCreatedEvent)
-	eventBus.AddHandler(redfishTreeProjector, RedfishResourceRemovedEvent)
+	redfishTreeProjector := NewRedfishTreeProjector(ddd.GetReadWriteRepo(), ddd.GetTreeID())
+	ddd.GetEventBus().AddHandler(redfishTreeProjector, RedfishResourceCreatedEvent)
+	ddd.GetEventBus().AddHandler(redfishTreeProjector, RedfishResourceRemovedEvent)
 
 	// Hook up the saga that sets privileges on all redfish resources based on privilege map
-	privilegeSaga := saga.NewEventHandler(NewPrivilegeSaga(redfishRepo), commandBus)
-	eventBus.AddHandler(privilegeSaga, RedfishResourceCreatedEvent)
-
-	return
+	privilegeSaga := saga.NewEventHandler(NewPrivilegeSaga(ddd.GetReadRepo()), ddd.GetCommandBus())
+	ddd.GetEventBus().AddHandler(privilegeSaga, RedfishResourceCreatedEvent)
 }

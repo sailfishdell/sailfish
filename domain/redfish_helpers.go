@@ -6,6 +6,12 @@ import (
 	"fmt"
 	eh "github.com/superchalupa/eventhorizon"
 	"github.com/superchalupa/eventhorizon/utils"
+
+	commandbus "github.com/superchalupa/eventhorizon/commandbus/local"
+	eventbus "github.com/superchalupa/eventhorizon/eventbus/local"
+	eventstore "github.com/superchalupa/eventhorizon/eventstore/memory"
+	eventpublisher "github.com/superchalupa/eventhorizon/publisher/local"
+	repo "github.com/superchalupa/eventhorizon/repo/memory"
 )
 
 var _ = fmt.Println
@@ -13,34 +19,107 @@ var _ = fmt.Println
 type DDDFunctions interface {
 	MakeFullyQualifiedV1(string) string
 	GetBaseURI() string
+
 	GetTreeID() eh.UUID
-	GetCommandBus() eh.CommandBus
+
+	GetEventStore() eh.EventStore
+	GetEventBus() eh.EventBus
 	GetEventHandler() eh.EventHandler
-	GetRepo() eh.ReadRepo
-	GetEventWaiter() *utils.EventWaiter
+	GetEventPublisher() eh.EventPublisher
+	GetEventWaiter() EventWaiter
+
+	GetCommandBus() eh.CommandBus
+	GetReadRepo() eh.ReadRepo
+	GetReadWriteRepo() eh.ReadWriteRepo
+}
+
+type EventWaiter interface {
+	SetupWait(match func(eh.Event) bool) (id eh.UUID, ch chan eh.Event)
+	CancelWait(id eh.UUID)
+	Notify(context.Context, eh.Event) error
 }
 
 type baseDDD struct {
-	baseURI      string
-	verURI       string
-	treeID       eh.UUID
-	cmdbus       eh.CommandBus
-	eventHandler eh.EventHandler
-	redfishRepo  eh.ReadRepo
-	waiter       *utils.EventWaiter
+	baseURI string
+	verURI  string
+
+	treeID eh.UUID
+
+	eventStore     eh.EventStore
+	eventBus       eh.EventBus
+	eventPublisher eh.EventPublisher
+	waiter         EventWaiter
+
+	cmdbus      eh.CommandBus
+	redfishRepo eh.ReadWriteRepo
 }
 
-// NewService is how we initialize the business logic
-func NewBaseDDD(baseURI string, commandbus eh.CommandBus, eventHandler eh.EventHandler, repo eh.ReadRepo, id eh.UUID, w *utils.EventWaiter) DDDFunctions {
-	return &baseDDD{
-		baseURI:      baseURI,
-		verURI:       "v1",
-		cmdbus:       commandbus,
-		redfishRepo:  repo,
-		treeID:       id,
-		waiter:       w,
-		eventHandler: eventHandler,
+type DDDFactoryOption func(*baseDDD)
+
+func BaseDDDFactory(baseURI, verURI string, f ...interface{}) DDDFunctions {
+	b := &baseDDD{
+		baseURI: baseURI,
+		verURI:  verURI,
 	}
+
+    runOptions := func(b *baseDDD) {
+        for _, f := range(f) {
+            o, ok := f.(DDDFactoryOption)
+            if ok {
+                o(b)
+            }
+        }
+    }
+
+    runOptions(b)
+
+	if b.eventStore == nil {
+		b.eventStore = eventstore.NewEventStore()
+	}
+
+    runOptions(b)
+
+	if b.eventBus == nil {
+		b.eventBus = eventbus.NewEventBus()
+		//eventBus.SetHandlingStrategy( eh.AsyncEventHandlingStrategy )
+	}
+
+    runOptions(b)
+
+	if b.eventPublisher == nil {
+		b.eventPublisher = eventpublisher.NewEventPublisher()
+		//eventPublisher.SetHandlingStrategy( eh.AsyncEventHandlingStrategy )
+		b.eventBus.SetPublisher(b.eventPublisher)
+	}
+
+    runOptions(b)
+
+	if b.cmdbus == nil {
+		b.cmdbus = commandbus.NewCommandBus()
+	}
+
+    runOptions(b)
+
+	if b.redfishRepo == nil {
+		b.redfishRepo = repo.NewRepo()
+	}
+
+    runOptions(b)
+
+	b.treeID = eh.NewUUID()
+
+	if b.waiter == nil {
+		b.waiter = utils.NewEventWaiter()
+		b.eventPublisher.AddObserver(b.waiter)
+	}
+
+    runOptions(b)
+
+	return b
+}
+
+func (c *baseDDD) GetEventStore() eh.EventStore {
+	return c.eventStore
 }
 
 func (c *baseDDD) MakeFullyQualifiedV1(path string) string {
@@ -59,33 +138,45 @@ func (c *baseDDD) GetCommandBus() eh.CommandBus {
 	return c.cmdbus
 }
 
-func (c *baseDDD) GetEventHandler() eh.EventHandler {
-	return c.eventHandler
+func (c *baseDDD) GetEventBus() eh.EventBus {
+	return c.eventBus
 }
 
-func (c *baseDDD) GetRepo() eh.ReadRepo {
+func (c *baseDDD) GetEventHandler() eh.EventHandler {
+	return c.eventBus.(eh.EventHandler)
+}
+
+func (c *baseDDD) GetReadRepo() eh.ReadRepo {
 	return c.redfishRepo
 }
 
-func (c *baseDDD) GetEventWaiter() *utils.EventWaiter {
+func (c *baseDDD) GetReadWriteRepo() eh.ReadWriteRepo {
+	return c.redfishRepo
+}
+
+func (c *baseDDD) GetEventWaiter() EventWaiter {
 	return c.waiter
+}
+
+func (c *baseDDD) GetEventPublisher() eh.EventPublisher {
+	return c.eventPublisher
 }
 
 func FindUser(ctx context.Context, s DDDFunctions, user string) (account *RedfishResource, err error) {
 	// start looking up user in auth service
-	tree, err := GetTree(ctx, s.GetRepo(), s.GetTreeID())
+	tree, err := GetTree(ctx, s.GetReadRepo(), s.GetTreeID())
 	if err != nil {
 		return nil, errors.New("Malformed tree")
 	}
 
 	// get the root service reference
-	rootService, err := tree.GetRedfishResourceFromTree(ctx, s.GetRepo(), s.MakeFullyQualifiedV1(""))
+	rootService, err := tree.GetRedfishResourceFromTree(ctx, s.GetReadRepo(), s.MakeFullyQualifiedV1(""))
 	if err != nil {
 		return nil, errors.New("Malformed tree root resource")
 	}
 
 	// Pull up the Accounts Collection
-	accounts, err := tree.WalkRedfishResourceTree(ctx, s.GetRepo(), rootService, "AccountService", "@odata.id", "Accounts", "@odata.id")
+	accounts, err := tree.WalkRedfishResourceTree(ctx, s.GetReadRepo(), rootService, "AccountService", "@odata.id", "Accounts", "@odata.id")
 	if err != nil {
 		return nil, errors.New("Malformed Account Service")
 	}
@@ -103,7 +194,7 @@ func FindUser(ctx context.Context, s DDDFunctions, user string) (account *Redfis
 	}
 
 	for _, m := range memberList {
-		a, _ := tree.GetRedfishResourceFromTree(ctx, s.GetRepo(), m["@odata.id"].(string))
+		a, _ := tree.GetRedfishResourceFromTree(ctx, s.GetReadRepo(), m["@odata.id"].(string))
 		if a == nil {
 			continue
 		}
@@ -124,12 +215,12 @@ func FindUser(ctx context.Context, s DDDFunctions, user string) (account *Redfis
 
 func GetPrivileges(ctx context.Context, s DDDFunctions, account *RedfishResource) (privileges []string) {
 	// start looking up user in auth service
-	tree, err := GetTree(ctx, s.GetRepo(), s.GetTreeID())
+	tree, err := GetTree(ctx, s.GetReadRepo(), s.GetTreeID())
 	if err != nil {
 		return
 	}
 
-	role, _ := tree.WalkRedfishResourceTree(ctx, s.GetRepo(), account, "Links", "Role", "@odata.id")
+	role, _ := tree.WalkRedfishResourceTree(ctx, s.GetReadRepo(), account, "Links", "Role", "@odata.id")
 	privs, ok := role.Properties["AssignedPrivileges"]
 	if !ok {
 		return

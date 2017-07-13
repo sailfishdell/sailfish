@@ -54,13 +54,11 @@ func (a *RedfishResourceAggregate) ApplyEvent(ctx context.Context, event eh.Even
 				a.Properties[k] = v
 			}
 		}
-	case RedfishResourcePropertyAddedEvent:
-		if data, ok := event.Data().(*RedfishResourcePropertyAddedData); ok {
-			a.Properties[data.PropertyName] = data.PropertyValue
-		}
-	case RedfishResourcePropertyUpdatedEvent:
-		if data, ok := event.Data().(*RedfishResourcePropertyUpdatedData); ok {
-			a.Properties[data.PropertyName] = data.PropertyValue
+	case RedfishResourcePropertiesUpdatedEvent:
+		if data, ok := event.Data().(*RedfishResourcePropertiesUpdatedData); ok {
+			for k, v := range data.Properties {
+				a.Properties[k] = v
+			}
 		}
 	case RedfishResourcePropertyRemovedEvent:
 		if data, ok := event.Data().(*RedfishResourcePropertyRemovedData); ok {

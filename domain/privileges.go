@@ -1,10 +1,10 @@
 package domain
 
 import (
-    "strings"
 	"context"
 	eh "github.com/superchalupa/eventhorizon"
 	"github.com/superchalupa/eventhorizon/eventhandler/saga"
+	"strings"
 )
 
 const PrivilegeSagaType saga.Type = "PrivilegeSaga"

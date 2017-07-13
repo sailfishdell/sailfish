@@ -7,6 +7,7 @@ import (
 	jwt "github.com/dgrijalva/jwt-go"
 	eh "github.com/superchalupa/eventhorizon"
 	"github.com/superchalupa/go-rfs/domain"
+	"math/rand"
 	"net/http"
 	"time"
 
@@ -24,6 +25,21 @@ func init() {
 	domain.Httpsagas = append(domain.Httpsagas, SetupSessionService)
 }
 
+// This is a fairly slow implementation, but should be good enough for our
+// purposes. This could be optimized to operate in about 1/5th of the time
+const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+var moduleRand *rand.Rand = rand.New(rand.NewSource(time.Now().UnixNano()))
+
+func createRandSecret(length int, characters string) []byte {
+	b := make([]byte, length)
+	charLen := len(characters)
+	for i := range b {
+		b[i] = characters[moduleRand.Intn(charLen)]
+	}
+	return b
+}
+
 func SetupSessionService(s domain.SagaRegisterer, d domain.DDDFunctions) {
 	s.RegisterNewSaga("POST:/redfish/v1/SessionService/Sessions",
 		func(ctx context.Context, treeID, cmdID eh.UUID, resource *domain.RedfishResource, r *http.Request) error {
@@ -32,16 +48,16 @@ func SetupSessionService(s domain.SagaRegisterer, d domain.DDDFunctions) {
 			err := decoder.Decode(&lr)
 
 			if err != nil {
-                return nil
+				return nil
 			}
 
-            privileges := []string{}
-            account, err := domain.FindUser(ctx, d, lr.UserName)
-            // TODO: verify password
-            if err != nil {
-                return errors.New("nonexistent user")
-            }
-            privileges = append(privileges, domain.GetPrivileges(ctx, d, account)...)
+			privileges := []string{}
+			account, err := domain.FindUser(ctx, d, lr.UserName)
+			// TODO: verify password
+			if err != nil {
+				return errors.New("nonexistent user")
+			}
+			privileges = append(privileges, domain.GetPrivileges(ctx, d, account)...)
 
 			token := jwt.New(jwt.SigningMethodHS256)
 			claims := make(jwt.MapClaims)
@@ -51,7 +67,8 @@ func SetupSessionService(s domain.SagaRegisterer, d domain.DDDFunctions) {
 			claims["sub"] = lr.UserName
 			claims["privileges"] = privileges
 			token.Claims = claims
-			tokenString, err := token.SignedString([]byte("secret"))
+			secret := createRandSecret(24, characters)
+			tokenString, err := token.SignedString(secret)
 
 			uuid := eh.NewUUID()
 			sessionURI := fmt.Sprintf("%s/v1/SessionService/Sessions/%s", d.GetBaseURI(), uuid)
@@ -67,8 +84,7 @@ func SetupSessionService(s domain.SagaRegisterer, d domain.DDDFunctions) {
 			}
 
 			// we have the tree ID, fetch an updated copy of the actual tree
-			// TODO: Locking? Should repo give us a copy? Need to test this.
-			tree, err := domain.GetTree(ctx, s.GetRepo(), treeID)
+			tree, err := domain.GetTree(ctx, s.GetReadRepo(), treeID)
 			if err != nil {
 				return err
 			}
@@ -84,11 +100,12 @@ func SetupSessionService(s domain.SagaRegisterer, d domain.DDDFunctions) {
 				Type:        "#Session.v1_0_0.Session",
 				Context:     d.MakeFullyQualifiedV1("$metadata#Session.Session"),
 				Properties:  retprops,
+				Private:     map[string]interface{}{"token_secret": secret},
 			})
 
 			err = s.GetCommandBus().HandleCommand(ctx, &domain.AddRedfishResourceCollectionMember{UUID: eh.UUID(sessionServiceID), MemberURI: sessionURI})
 			if err != nil {
-                return err
+				return err
 			}
 
 			event := eh.NewEvent(domain.HTTPCmdProcessedEvent,
@@ -110,7 +127,7 @@ func SetupSessionService(s domain.SagaRegisterer, d domain.DDDFunctions) {
 		func(ctx context.Context, treeID, cmdID eh.UUID, resource *domain.RedfishResource, r *http.Request) error {
 			// we have the tree ID, fetch an updated copy of the actual tree
 			// TODO: Locking? Should repo give us a copy? Need to test this.
-			tree, err := domain.GetTree(ctx, s.GetRepo(), treeID)
+			tree, err := domain.GetTree(ctx, s.GetReadRepo(), treeID)
 			if err != nil {
 				return err
 			}
@@ -120,17 +137,17 @@ func SetupSessionService(s domain.SagaRegisterer, d domain.DDDFunctions) {
 				return errors.New("Couldn't get handle for session service")
 			}
 
-			s.GetCommandBus().HandleCommand(ctx, &domain.RemoveRedfishResource{ UUID: sessionID })
+			s.GetCommandBus().HandleCommand(ctx, &domain.RemoveRedfishResource{UUID: sessionID})
 
 			event := eh.NewEvent(domain.HTTPCmdProcessedEvent,
 				&domain.HTTPCmdProcessedData{
 					CommandID: cmdID,
 					Results:   map[string]interface{}{"msg": "complete!"},
-					Headers: map[string]string{},
+					Headers:   map[string]string{},
 				})
 
 			d.GetEventHandler().HandleEvent(ctx, event)
 
-            return nil
-        })
+			return nil
+		})
 }
