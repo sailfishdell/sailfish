@@ -74,6 +74,8 @@ func (rh *ServiceConfig) GetRedfishResource(ctx context.Context, r *http.Request
 		return &Response{StatusCode: http.StatusInternalServerError}, errors.New("Expected a RedfishResource, but got something strange.")
 	}
 
+	fmt.Printf("DEBUG: PRIVATE: %s\n", item.Private)
+
 	return &Response{StatusCode: http.StatusOK, Output: item.Properties, Headers: item.Headers}, nil
 }
 
@@ -115,7 +117,6 @@ func (rh *ServiceConfig) RedfishResourceHandler(ctx context.Context, r *http.Req
 		return false
 	})
 
-	fmt.Printf("HI 1\n")
 	defer rh.GetEventWaiter().CancelWait(waitID)
 
 	// Check for single COMMAND that can be run
@@ -125,7 +126,6 @@ func (rh *ServiceConfig) RedfishResourceHandler(ctx context.Context, r *http.Req
 		return &Response{StatusCode: http.StatusMethodNotAllowed, Output: map[string]interface{}{"error": err.Error()}}, nil
 	}
 
-	fmt.Printf("select\n")
 	select {
 	case event := <-resultChan:
 		d := event.Data().(*domain.HTTPCmdProcessedData)
