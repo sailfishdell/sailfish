@@ -3,7 +3,7 @@ package domain
 import (
 	"context"
 
-	eh "github.com/superchalupa/eventhorizon"
+	eh "github.com/looplab/eventhorizon"
 )
 
 func SetupAggregate() {

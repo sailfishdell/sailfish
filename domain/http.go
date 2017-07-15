@@ -3,7 +3,7 @@ package domain
 import (
 	"context"
 	"errors"
-	eh "github.com/superchalupa/eventhorizon"
+	eh "github.com/looplab/eventhorizon"
 	"net/http"
 
 	"fmt"

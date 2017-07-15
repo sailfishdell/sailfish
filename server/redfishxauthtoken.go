@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"net/http"
 
-    "github.com/superchalupa/go-rfs/domain"
+    "github.com/superchalupa/go-redfish/domain"
 	jwt "github.com/dgrijalva/jwt-go"
 )
 

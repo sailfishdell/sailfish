@@ -2,8 +2,8 @@ package domain
 
 import (
 	"context"
-	eh "github.com/superchalupa/eventhorizon"
-	"github.com/superchalupa/eventhorizon/eventhandler/saga"
+	eh "github.com/looplab/eventhorizon"
+	"github.com/looplab/eventhorizon/eventhandler/saga"
 )
 
 const CollectionSagaType saga.Type = "CollectionSaga"

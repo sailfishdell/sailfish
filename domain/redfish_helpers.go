@@ -4,14 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	eh "github.com/superchalupa/eventhorizon"
-	"github.com/superchalupa/eventhorizon/utils"
+	eh "github.com/looplab/eventhorizon"
+	"github.com/looplab/eventhorizon/utils"
 
-	commandbus "github.com/superchalupa/eventhorizon/commandbus/local"
-	eventbus "github.com/superchalupa/eventhorizon/eventbus/local"
-	eventstore "github.com/superchalupa/eventhorizon/eventstore/memory"
-	eventpublisher "github.com/superchalupa/eventhorizon/publisher/local"
-	repo "github.com/superchalupa/eventhorizon/repo/memory"
+	commandbus "github.com/looplab/eventhorizon/commandbus/local"
+	eventbus "github.com/looplab/eventhorizon/eventbus/local"
+	eventstore "github.com/looplab/eventhorizon/eventstore/memory"
+	eventpublisher "github.com/looplab/eventhorizon/publisher/local"
+	repo "github.com/looplab/eventhorizon/repo/memory"
 )
 
 var _ = fmt.Println

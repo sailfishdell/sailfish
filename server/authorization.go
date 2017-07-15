@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/superchalupa/go-rfs/domain"
+	"github.com/superchalupa/go-redfish/domain"
 )
 
 var _ = fmt.Println

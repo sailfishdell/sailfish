@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"log"
 
-	eh "github.com/superchalupa/eventhorizon"
-	commandbus "github.com/superchalupa/eventhorizon/commandbus/local"
-	eventbus "github.com/superchalupa/eventhorizon/eventbus/local"
-	eventstore "github.com/superchalupa/eventhorizon/eventstore/memory"
-	eventpublisher "github.com/superchalupa/eventhorizon/publisher/local"
-	repo "github.com/superchalupa/eventhorizon/repo/memory"
+	eh "github.com/looplab/eventhorizon"
+	commandbus "github.com/looplab/eventhorizon/commandbus/local"
+	eventbus "github.com/looplab/eventhorizon/eventbus/local"
+	eventstore "github.com/looplab/eventhorizon/eventstore/memory"
+	eventpublisher "github.com/looplab/eventhorizon/publisher/local"
+	repo "github.com/looplab/eventhorizon/repo/memory"
 
 	"testing"
 )

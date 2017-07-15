@@ -3,12 +3,12 @@ package redfishserver
 import (
 	"context"
 	"errors"
-	eh "github.com/superchalupa/eventhorizon"
+	eh "github.com/looplab/eventhorizon"
 	"net/http"
 	"strings"
 	"time"
 
-	"github.com/superchalupa/go-rfs/domain"
+	"github.com/superchalupa/go-redfish/domain"
 
 	"fmt"
 )

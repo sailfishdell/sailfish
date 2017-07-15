@@ -4,7 +4,7 @@ import (
 	"context"
 	"log"
 
-	eh "github.com/superchalupa/eventhorizon"
+	eh "github.com/looplab/eventhorizon"
 )
 
 // Logger is a simple event handler for logging all events.

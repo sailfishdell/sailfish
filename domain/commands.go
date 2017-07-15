@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	eh "github.com/superchalupa/eventhorizon"
+	eh "github.com/looplab/eventhorizon"
 )
 
 var _ = fmt.Printf

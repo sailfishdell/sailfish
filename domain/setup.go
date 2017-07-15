@@ -4,9 +4,9 @@ import (
 	"log"
 	"sync"
 
-	eh "github.com/superchalupa/eventhorizon"
-	"github.com/superchalupa/eventhorizon/eventhandler/projector"
-	"github.com/superchalupa/eventhorizon/eventhandler/saga"
+	eh "github.com/looplab/eventhorizon"
+	"github.com/looplab/eventhorizon/eventhandler/projector"
+	"github.com/looplab/eventhorizon/eventhandler/saga"
 )
 
 var dynamicCommands []eh.CommandType = []eh.CommandType{}

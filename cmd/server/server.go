@@ -17,10 +17,10 @@ import (
 	"os/signal"
 	"strings"
 
-	"github.com/superchalupa/go-rfs/domain"
-	redfishserver "github.com/superchalupa/go-rfs/server"
+	"github.com/superchalupa/go-redfish/domain"
+	redfishserver "github.com/superchalupa/go-redfish/server"
 
-	_ "github.com/superchalupa/go-rfs/stdredfish"
+	_ "github.com/superchalupa/go-redfish/stdredfish"
 )
 
 type appConfig struct {

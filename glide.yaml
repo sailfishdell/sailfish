@@ -1,0 +1,41 @@
+package: github.com/superchalupa/go-rfs
+vcs: git
+repo: ssh://git@github.com/superchalupa/go-redfish
+
+import:
+- package: github.com/dgrijalva/jwt-go
+- package: github.com/go-kit/kit
+  subpackages:
+  - endpoint
+  - log
+  - metrics
+  - metrics/prometheus
+  - transport/http
+- package: github.com/go-yaml/yaml
+- package: github.com/google/uuid
+- package: github.com/gorilla/mux
+- package: github.com/looplab/eventhorizon
+  vcs: git
+  repo: ssh://git@github.com/superchalupa/eventhorizon
+  version: for-upstream
+  subpackages:
+  - commandbus/local
+  - eventbus/local
+  - eventhandler/projector
+  - eventhandler/saga
+  - eventstore/memory
+  - publisher/local
+  - repo/memory
+  - utils
+- package: github.com/prometheus/client_golang
+  subpackages:
+  - prometheus
+  - prometheus/promhttp
+- package: github.com/superchalupa/go-rfs
+  vcs: git
+  repo: ssh://git@github.com/superchalupa/go-redfish
+  version: v2
+  subpackages:
+  - domain
+  - server
+  - stdredfish

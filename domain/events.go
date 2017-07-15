@@ -1,7 +1,7 @@
 package domain
 
 import (
-	eh "github.com/superchalupa/eventhorizon"
+	eh "github.com/looplab/eventhorizon"
 )
 
 const (

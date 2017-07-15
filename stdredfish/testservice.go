@@ -3,8 +3,8 @@ package stdredfish
 import (
 	"context"
 	"encoding/json"
-	eh "github.com/superchalupa/eventhorizon"
-	"github.com/superchalupa/go-rfs/domain"
+	eh "github.com/looplab/eventhorizon"
+	"github.com/superchalupa/go-redfish/domain"
 
 	"fmt"
 )

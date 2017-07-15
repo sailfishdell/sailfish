@@ -2,7 +2,7 @@ package redfishserver
 
 import (
 	"context"
-	"github.com/superchalupa/go-rfs/domain"
+	"github.com/superchalupa/go-redfish/domain"
 	"net/http"
     "fmt"
 )

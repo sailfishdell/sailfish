@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"sync"
 
-	eh "github.com/superchalupa/eventhorizon"
-	"github.com/superchalupa/eventhorizon/eventhandler/projector"
+	eh "github.com/looplab/eventhorizon"
+	"github.com/looplab/eventhorizon/eventhandler/projector"
 )
 
 var _ = fmt.Printf
