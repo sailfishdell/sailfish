@@ -25,9 +25,6 @@ func Setup(ddd DDDFunctions) {
 	SetupCommands()
 	SetupHTTP()
 
-	// Add the logger as an observer.
-	ddd.GetEventPublisher().AddObserver(&Logger{})
-
 	// Create the aggregate repository.
 	repository, err := eh.NewEventSourcingRepository(ddd.GetEventStore(), ddd.GetEventBus())
 	if err != nil {
@@ -88,24 +85,10 @@ func Setup(ddd DDDFunctions) {
 	ddd.GetCommandBus().SetHandler(handler, HandleHTTPCommand)
 
 	// read side projector
-	redfishResourceProjector := projector.NewEventHandler(NewRedfishProjector(), ddd.GetReadWriteRepo())
-	redfishResourceProjector.SetModel(func() interface{} { return &RedfishResource{} })
-	ddd.GetEventBus().AddHandler(redfishResourceProjector, RedfishResourceCreatedEvent)
-	ddd.GetEventBus().AddHandler(redfishResourceProjector, RedfishResourcePropertiesUpdatedEvent)
-	ddd.GetEventBus().AddHandler(redfishResourceProjector, RedfishResourcePropertyRemovedEvent)
-	ddd.GetEventBus().AddHandler(redfishResourceProjector, RedfishResourceRemovedEvent)
-	ddd.GetEventBus().AddHandler(redfishResourceProjector, RedfishResourcePrivilegesUpdatedEvent)
-	ddd.GetEventBus().AddHandler(redfishResourceProjector, RedfishResourcePermissionsUpdatedEvent)
-	ddd.GetEventBus().AddHandler(redfishResourceProjector, RedfishResourceHeadersUpdatedEvent)
-	ddd.GetEventBus().AddHandler(redfishResourceProjector, RedfishResourceHeaderRemovedEvent)
+    SetupRedfishProjector(ddd)
+    SetupRedfishTreeProjector(ddd)
 
-	// hook up tree rep. this guy maintains the redfish dictionary that maps
-	// URIs to read side projector UUIDs
-	redfishTreeProjector := NewRedfishTreeProjector(ddd.GetReadWriteRepo(), ddd.GetTreeID())
-	ddd.GetEventBus().AddHandler(redfishTreeProjector, RedfishResourceCreatedEvent)
-	ddd.GetEventBus().AddHandler(redfishTreeProjector, RedfishResourceRemovedEvent)
+    // sagas
+    SetupPrivilegeSaga(ddd)
 
-	// Hook up the saga that sets privileges on all redfish resources based on privilege map
-	privilegeSaga := saga.NewEventHandler(NewPrivilegeSaga(ddd.GetReadRepo()), ddd.GetCommandBus())
-	ddd.GetEventBus().AddHandler(privilegeSaga, RedfishResourceCreatedEvent)
 }

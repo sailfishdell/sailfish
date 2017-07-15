@@ -40,8 +40,17 @@ const (
 	RemoveRedfishResourceHeaderCommand      eh.CommandType = "RemoveRedfishResourceHeader"
 )
 
-type CreateRedfishResource struct {
+type RedfishResourceAggregateBaseCommand struct {
 	UUID        eh.UUID
+}
+func (c RedfishResourceAggregateBaseCommand) AggregateID() eh.UUID { return c.UUID }
+func (c RedfishResourceAggregateBaseCommand) AggregateType() eh.AggregateType { return RedfishResourceAggregateType }
+
+
+
+
+type CreateRedfishResource struct {
+    RedfishResourceAggregateBaseCommand
 	ResourceURI string
 	Type        string
 	Context     string
@@ -49,8 +58,6 @@ type CreateRedfishResource struct {
 	Private     map[string]interface{} `eh:"optional"`
 }
 
-func (c CreateRedfishResource) AggregateID() eh.UUID            { return c.UUID }
-func (c CreateRedfishResource) AggregateType() eh.AggregateType { return RedfishResourceAggregateType }
 func (c CreateRedfishResource) CommandType() eh.CommandType     { return CreateRedfishResourceCommand }
 func (c CreateRedfishResource) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 	disallowed := []string{"@odata.id", "@odata.type", "@odata.context"}
@@ -82,16 +89,14 @@ AddProp:
 	return nil
 }
 
+
+// UNTESTED
 type UpdateRedfishResourceProperties struct {
-	UUID       eh.UUID
+    RedfishResourceAggregateBaseCommand
 	Properties map[string]interface{} `eh:"optional"`
 	Private    map[string]interface{} `eh:"optional"`
 }
 
-func (c UpdateRedfishResourceProperties) AggregateID() eh.UUID { return c.UUID }
-func (c UpdateRedfishResourceProperties) AggregateType() eh.AggregateType {
-	return RedfishResourceAggregateType
-}
 func (c UpdateRedfishResourceProperties) CommandType() eh.CommandType {
 	return UpdateRedfishResourcePropertiesCommand
 }
@@ -131,14 +136,10 @@ AddProp:
 }
 
 type RemoveRedfishResourceProperty struct {
-	UUID         eh.UUID
+    RedfishResourceAggregateBaseCommand
 	PropertyName string
 }
 
-func (c RemoveRedfishResourceProperty) AggregateID() eh.UUID { return c.UUID }
-func (c RemoveRedfishResourceProperty) AggregateType() eh.AggregateType {
-	return RedfishResourceAggregateType
-}
 func (c RemoveRedfishResourceProperty) CommandType() eh.CommandType {
 	return RemoveRedfishResourcePropertyCommand
 }
@@ -156,11 +157,9 @@ func (c RemoveRedfishResourceProperty) Handle(ctx context.Context, a *RedfishRes
 }
 
 type RemoveRedfishResource struct {
-	UUID eh.UUID
+    RedfishResourceAggregateBaseCommand
 }
 
-func (c RemoveRedfishResource) AggregateID() eh.UUID            { return c.UUID }
-func (c RemoveRedfishResource) AggregateType() eh.AggregateType { return RedfishResourceAggregateType }
 func (c RemoveRedfishResource) CommandType() eh.CommandType     { return RemoveRedfishResourceCommand }
 func (c RemoveRedfishResource) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 	a.StoreEvent(RedfishResourceRemovedEvent, nil)
@@ -194,14 +193,10 @@ func (c CreateRedfishResourceCollection) Handle(ctx context.Context, a *RedfishR
 }
 
 type AddRedfishResourceCollectionMember struct {
-	UUID      eh.UUID
+    RedfishResourceAggregateBaseCommand
 	MemberURI string
 }
 
-func (c AddRedfishResourceCollectionMember) AggregateID() eh.UUID { return c.UUID }
-func (c AddRedfishResourceCollectionMember) AggregateType() eh.AggregateType {
-	return RedfishResourceAggregateType
-}
 func (c AddRedfishResourceCollectionMember) CommandType() eh.CommandType {
 	return AddRedfishResourceCollectionMemberCommand
 }
@@ -226,14 +221,10 @@ func (c AddRedfishResourceCollectionMember) Handle(ctx context.Context, a *Redfi
 }
 
 type RemoveRedfishResourceCollectionMember struct {
-	UUID      eh.UUID
+    RedfishResourceAggregateBaseCommand
 	MemberURI string
 }
 
-func (c RemoveRedfishResourceCollectionMember) AggregateID() eh.UUID { return c.UUID }
-func (c RemoveRedfishResourceCollectionMember) AggregateType() eh.AggregateType {
-	return RedfishResourceAggregateType
-}
 func (c RemoveRedfishResourceCollectionMember) CommandType() eh.CommandType {
 	return RemoveRedfishResourceCollectionMemberCommand
 }
@@ -243,14 +234,10 @@ func (c RemoveRedfishResourceCollectionMember) Handle(ctx context.Context, a *Re
 }
 
 type UpdateRedfishResourcePrivileges struct {
-	UUID       eh.UUID
+    RedfishResourceAggregateBaseCommand
 	Privileges map[string]interface{}
 }
 
-func (c UpdateRedfishResourcePrivileges) AggregateID() eh.UUID { return c.UUID }
-func (c UpdateRedfishResourcePrivileges) AggregateType() eh.AggregateType {
-	return RedfishResourceAggregateType
-}
 func (c UpdateRedfishResourcePrivileges) CommandType() eh.CommandType {
 	return UpdateRedfishResourcePrivilegesCommand
 }

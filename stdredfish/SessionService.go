@@ -27,7 +27,7 @@ func init() {
 
 // This is a fairly slow implementation, but should be good enough for our
 // purposes. This could be optimized to operate in about 1/5th of the time
-const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890"
 
 var moduleRand *rand.Rand = rand.New(rand.NewSource(time.Now().UnixNano()))
 
@@ -96,10 +96,10 @@ func SetupSessionService(s domain.SagaRegisterer, d domain.DDDFunctions) {
 			}
 
 			err = s.GetCommandBus().HandleCommand(ctx, &domain.CreateRedfishResource{
-				UUID:        uuid,
-				ResourceURI: sessionURI,
-				Type:        "#Session.v1_0_0.Session",
-				Context:     d.MakeFullyQualifiedV1("$metadata#Session.Session"),
+				RedfishResourceAggregateBaseCommand: domain.RedfishResourceAggregateBaseCommand{UUID: uuid},
+				ResourceURI: retprops["@odata.id"].(string),
+				Type:        retprops["@odata.type"].(string),
+				Context:     retprops["@odata.context"].(string),
 				Properties:  retprops,
 				Private:     map[string]interface{}{"token_secret": secret},
 			})
@@ -107,7 +107,7 @@ func SetupSessionService(s domain.SagaRegisterer, d domain.DDDFunctions) {
 				return err
 			}
 
-			err = s.GetCommandBus().HandleCommand(ctx, &domain.AddRedfishResourceCollectionMember{UUID: sessionServiceID, MemberURI: sessionURI})
+			err = s.GetCommandBus().HandleCommand(ctx, &domain.AddRedfishResourceCollectionMember{RedfishResourceAggregateBaseCommand: domain.RedfishResourceAggregateBaseCommand{UUID: sessionServiceID}, MemberURI: sessionURI})
 			if err != nil {
 				return err
 			}
@@ -141,7 +141,7 @@ func SetupSessionService(s domain.SagaRegisterer, d domain.DDDFunctions) {
 				return errors.New("Couldn't get handle for session service")
 			}
 
-			s.GetCommandBus().HandleCommand(ctx, &domain.RemoveRedfishResource{UUID: sessionID})
+			s.GetCommandBus().HandleCommand(ctx, &domain.RemoveRedfishResource{RedfishResourceAggregateBaseCommand: domain.RedfishResourceAggregateBaseCommand{UUID: sessionID}})
 
 			event := eh.NewEvent(domain.HTTPCmdProcessedEvent,
 				&domain.HTTPCmdProcessedData{

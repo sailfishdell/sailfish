@@ -55,12 +55,12 @@ func (s *privilegeEnforcingService) IsAuthorized(ctx context.Context, r *http.Re
 
 	getPrivsArr := getPrivs.([]string)
 
-	fmt.Printf("CHECK PRIVS\n\tUSER: %s\n\tRESOURCE: %s\n", privileges, getPrivsArr)
+	//fmt.Printf("CHECK PRIVS\n\tUSER: %s\n\tRESOURCE: %s\n", privileges, getPrivsArr)
 
 	for _, myPriv := range privileges {
 		for _, itemPriv := range getPrivsArr {
 			if myPriv == itemPriv {
-				fmt.Printf("Found matching privs, granting access. userPriv(%s) == itemPriv(%s)\n", myPriv, itemPriv)
+				//fmt.Printf("Found matching privs, granting access. userPriv(%s) == itemPriv(%s)\n", myPriv, itemPriv)
 				return nil, true
 			}
 		}
@@ -87,7 +87,7 @@ func (s *privilegeEnforcingService) IsAuthorized(ctx context.Context, r *http.Re
 
 
 func (s *privilegeEnforcingService) RedfishResourceHandler(ctx context.Context, r *http.Request, privileges []string) (resp *Response, err error) {
-    fmt.Printf("CheckAuthorization privileges h\n")
+    //fmt.Printf("CheckAuthorization privileges h\n")
     response, authorized :=  s.IsAuthorized(ctx, r, privileges)
 
     if authorized {
@@ -99,15 +99,15 @@ func (s *privilegeEnforcingService) RedfishResourceHandler(ctx context.Context, 
 }
 
 func (s *privilegeEnforcingService) GetRedfishResource(ctx context.Context, r *http.Request, privileges []string) (resp *Response, err error) {
-    fmt.Printf("CheckAuthorization privileges\n")
+    //fmt.Printf("CheckAuthorization privileges\n")
     response, authorized :=  s.IsAuthorized(ctx, r, privileges)
 
     if authorized {
-        fmt.Printf("\tCongratulations, you are authorized\n")
+        //fmt.Printf("\tCongratulations, you are authorized\n")
 	    return s.Service.GetRedfishResource(ctx, r, privileges)
     }
 
-    fmt.Printf("\tGo away: %s\n", response)
+    //fmt.Printf("\tGo away: %s\n", response)
     // not returning an error because for middleware purposes, there is no error that requires circuit breaking or other.
 	return response, nil
 }

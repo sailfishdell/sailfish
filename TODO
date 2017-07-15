@@ -1,0 +1,15 @@
+
+Short term: Some things to work on:
+ - Session timeouts
+ - Automatic Collection management
+ - Implement a few Actions
+ - mirroring/proxying
+ - Password hashing in account
+ - privileges for properties
+ - Move SessionService tree setup into SessionService
+
+Medium term:
+ - get a real message bus hooked up
+ - maybe some CLI clients
+ - privilege mapping
+

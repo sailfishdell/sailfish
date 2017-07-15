@@ -57,8 +57,6 @@ func NewService(d domain.DDDFunctions) Service {
 func (rh *ServiceConfig) GetRedfishResource(ctx context.Context, r *http.Request, privileges []string) (*Response, error) {
 	noHashPath := strings.SplitN(r.URL.Path, "#", 2)[0]
 
-    fmt.Printf("DEBUG: GetRedfishResource\n")
-
 	// we have the tree ID, fetch an updated copy of the actual tree
 	tree, err := domain.GetTree(ctx, rh.GetReadRepo(), rh.GetTreeID())
 	if err != nil {
@@ -76,16 +74,12 @@ func (rh *ServiceConfig) GetRedfishResource(ctx context.Context, r *http.Request
 		return &Response{StatusCode: http.StatusInternalServerError}, errors.New("Expected a RedfishResource, but got something strange.")
 	}
 
-	fmt.Printf("DEBUG: PRIVATE: %s\n", item.Private)
-
 	return &Response{StatusCode: http.StatusOK, Output: item.Properties, Headers: item.Headers}, nil
 }
 
 func (rh *ServiceConfig) RedfishResourceHandler(ctx context.Context, r *http.Request, privileges []string) (*Response, error) {
 	// we shouldn't actually ever get a path with a hash, I don't think.
 	noHashPath := strings.SplitN(r.URL.Path, "#", 2)[0]
-
-    fmt.Printf("DEBUG: RedfishResourceHandler\n")
 
 	// we have the tree ID, fetch an updated copy of the actual tree
 	// TODO: Locking? Should repo give us a copy? Need to test this.
@@ -150,9 +144,9 @@ func (rh *ServiceConfig) startup() {
 	// create version entry point. it's special in that it doesnt have @odata.* properties, so we'll remove them
 	// after creating the object
 	uuid := rh.createTreeLeaf(ctx, rh.GetBaseURI()+"/", "foo", "bar", map[string]interface{}{"v1": rh.MakeFullyQualifiedV1("")})
-	rh.GetCommandBus().HandleCommand(ctx, &domain.RemoveRedfishResourceProperty{UUID: uuid, PropertyName: "@odata.context"})
-	rh.GetCommandBus().HandleCommand(ctx, &domain.RemoveRedfishResourceProperty{UUID: uuid, PropertyName: "@odata.id"})
-	rh.GetCommandBus().HandleCommand(ctx, &domain.RemoveRedfishResourceProperty{UUID: uuid, PropertyName: "@odata.type"})
+	rh.GetCommandBus().HandleCommand(ctx, &domain.RemoveRedfishResourceProperty{RedfishResourceAggregateBaseCommand: domain.RedfishResourceAggregateBaseCommand{UUID: uuid}, PropertyName: "@odata.context"})
+	rh.GetCommandBus().HandleCommand(ctx, &domain.RemoveRedfishResourceProperty{RedfishResourceAggregateBaseCommand: domain.RedfishResourceAggregateBaseCommand{UUID: uuid}, PropertyName: "@odata.id"})
+	rh.GetCommandBus().HandleCommand(ctx, &domain.RemoveRedfishResourceProperty{RedfishResourceAggregateBaseCommand: domain.RedfishResourceAggregateBaseCommand{UUID: uuid}, PropertyName: "@odata.type"})
 
 	rh.createTreeLeaf(ctx, rh.MakeFullyQualifiedV1(""),
 		"#ServiceRoot.v1_0_2.ServiceRoot",
@@ -349,7 +343,7 @@ func (rh *ServiceConfig) startup() {
 func (rh *ServiceConfig) createTreeLeaf(ctx context.Context, uri string, otype string, octx string, Properties map[string]interface{}) (uuid eh.UUID) {
 	uuid = eh.NewUUID()
 	fmt.Printf("Creating URI %s at %s\n", uri, uuid)
-	c := &domain.CreateRedfishResource{UUID: uuid, ResourceURI: uri, Properties: Properties, Type: otype, Context: octx}
+	c := &domain.CreateRedfishResource{RedfishResourceAggregateBaseCommand: domain.RedfishResourceAggregateBaseCommand{UUID: uuid}, ResourceURI: uri, Properties: Properties, Type: otype, Context: octx}
 	err := rh.GetCommandBus().HandleCommand(ctx, c)
 	if err != nil {
 		panic(err.Error())
@@ -360,7 +354,7 @@ func (rh *ServiceConfig) createTreeLeaf(ctx context.Context, uri string, otype s
 func (rh *ServiceConfig) createTreeCollectionLeaf(ctx context.Context, uri string, otype string, octx string, Properties map[string]interface{}, Members []string) {
 	uuid := eh.NewUUID()
 	fmt.Printf("Creating URI %s at %s\n", uri, uuid)
-	err := rh.GetCommandBus().HandleCommand(ctx, &domain.CreateRedfishResourceCollection{CreateRedfishResource: domain.CreateRedfishResource{UUID: uuid, ResourceURI: uri, Properties: Properties, Type: otype, Context: octx}, Members: Members, UUID: uuid})
+	err := rh.GetCommandBus().HandleCommand(ctx, &domain.CreateRedfishResourceCollection{CreateRedfishResource: domain.CreateRedfishResource{RedfishResourceAggregateBaseCommand: domain.RedfishResourceAggregateBaseCommand{UUID: uuid}, ResourceURI: uri, Properties: Properties, Type: otype, Context: octx}, Members: Members, UUID: uuid})
 	if err != nil {
 		panic(err.Error())
 	}

@@ -27,6 +27,19 @@ type RedfishResource struct {
 	Private      map[string]interface{}
 }
 
+func SetupRedfishProjector(ddd DDDFunctions) {
+	redfishResourceProjector := projector.NewEventHandler(NewRedfishProjector(), ddd.GetReadWriteRepo())
+	redfishResourceProjector.SetModel(func() interface{} { return &RedfishResource{} })
+	ddd.GetEventBus().AddHandler(redfishResourceProjector, RedfishResourceCreatedEvent)
+	ddd.GetEventBus().AddHandler(redfishResourceProjector, RedfishResourcePropertiesUpdatedEvent)
+	ddd.GetEventBus().AddHandler(redfishResourceProjector, RedfishResourcePropertyRemovedEvent)
+	ddd.GetEventBus().AddHandler(redfishResourceProjector, RedfishResourceRemovedEvent)
+	ddd.GetEventBus().AddHandler(redfishResourceProjector, RedfishResourcePrivilegesUpdatedEvent)
+	ddd.GetEventBus().AddHandler(redfishResourceProjector, RedfishResourcePermissionsUpdatedEvent)
+	ddd.GetEventBus().AddHandler(redfishResourceProjector, RedfishResourceHeadersUpdatedEvent)
+	ddd.GetEventBus().AddHandler(redfishResourceProjector, RedfishResourceHeaderRemovedEvent)
+}
+
 type RedfishProjector struct{}
 
 func NewRedfishProjector() *RedfishProjector {
@@ -101,6 +114,16 @@ func (o *RedfishProjector) Project(ctx context.Context, event eh.Event, model in
 	}
 
 	return item, nil
+}
+
+
+
+func SetupRedfishTreeProjector(ddd DDDFunctions) {
+	// hook up tree rep. this guy maintains the redfish dictionary that maps
+	// URIs to read side projector UUIDs
+	redfishTreeProjector := NewRedfishTreeProjector(ddd.GetReadWriteRepo(), ddd.GetTreeID())
+	ddd.GetEventBus().AddHandler(redfishTreeProjector, RedfishResourceCreatedEvent)
+	ddd.GetEventBus().AddHandler(redfishTreeProjector, RedfishResourceRemovedEvent)
 }
 
 type RedfishTree struct {

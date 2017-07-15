@@ -7,7 +7,9 @@ import (
 	"net/http"
 
     "github.com/superchalupa/go-redfish/domain"
+    eh "github.com/looplab/eventhorizon"
 	jwt "github.com/dgrijalva/jwt-go"
+	"github.com/superchalupa/go-rfs/domain"
 )
 
 var _ = fmt.Println
@@ -31,32 +33,44 @@ type RedfishClaims struct {
 	jwt.StandardClaims
 }
 
+const (
+        XAuthTokenRefreshEvent           eh.EventType = "XAuthTokenRefresh"
+)
+
+type XAuthTokenRefreshData struct {
+    SessionURI string
+}
+
+func init() {
+       eh.RegisterEventData(XAuthTokenRefreshEvent, func() eh.EventData { return &XAuthTokenRefreshData{} })
+}
+
 func (s *xAuthTokenService) CheckXAuthToken(ctx context.Context, r *http.Request) (resp *Response, privileges []string) {
-	fmt.Printf("Looking for token\n")
+	//fmt.Printf("Looking for token\n")
 	xauthtoken := r.Header.Get("X-Auth-Token")
 	if xauthtoken != "" {
-		fmt.Printf("GOT A TOKEN\n")
+		//fmt.Printf("GOT A TOKEN\n")
 		token, err := jwt.ParseWithClaims(xauthtoken, &RedfishClaims{}, func(token *jwt.Token) (interface{}, error) {
-			fmt.Printf("Decoded token: %s\n", token)
+			//fmt.Printf("Decoded token: %s\n", token)
 			claims := token.Claims.(*RedfishClaims)
-			fmt.Printf("SESSION URI: %s\n", claims.SessionURI)
-			fmt.Printf("PRIVILEGES: %s\n", claims.Privileges)
+			//fmt.Printf("SESSION URI: %s\n", claims.SessionURI)
+			//fmt.Printf("PRIVILEGES: %s\n", claims.Privileges)
 
 			// we have the tree ID, fetch an updated copy of the actual tree
 			tree, err := domain.GetTree(ctx, s.GetReadRepo(), s.GetTreeID())
 			if err != nil {
-                return nil, errors.New("couldnt get tree")
+				return nil, errors.New("couldnt get tree")
 			}
 
 			// now that we have the tree, look up the actual URI in that tree to find
 			// the object UUID, then pull that from the repo
 			requested, err := s.GetReadRepo().Find(ctx, tree.Tree[claims.SessionURI])
 			if err != nil {
-                return nil, errors.New("couldnt get session")
+				return nil, errors.New("couldnt get session")
 			}
 			item, ok := requested.(*domain.RedfishResource)
 			if !ok {
-                return nil, errors.New("couldnt type assert item")
+				return nil, errors.New("couldnt type assert item")
 			}
 
 			if secret, ok := item.Private["token_secret"]; ok {
@@ -65,48 +79,50 @@ func (s *xAuthTokenService) CheckXAuthToken(ctx context.Context, r *http.Request
 			return nil, errors.New("No session")
 		})
 
-        if err != nil {
-            return &Response{StatusCode: http.StatusUnauthorized, Output: map[string]interface{}{"error": "X-Auth-Token parsing failed: " + err.Error()}}, nil
-        }
+		if err != nil {
+			return &Response{StatusCode: http.StatusUnauthorized, Output: map[string]interface{}{"error": "X-Auth-Token parsing failed: " + err.Error()}}, nil
+		}
 
-        if claims, ok := token.Claims.(*RedfishClaims); ok {
-            fmt.Printf("Got a parsed token: %v\n", claims)
-            if token.Valid {
-                fmt.Printf("It's valid!\n")
-                privileges = []string{}
-                privileges = append(privileges, "authorization-complete")
-                privileges = append(privileges, claims.Privileges...)
-                return
-            } else {
-                return &Response{StatusCode: http.StatusUnauthorized, Output: map[string]interface{}{"error": "X-Auth-Token failed validation: "}}, nil
-            }
-        }
+		if claims, ok := token.Claims.(*RedfishClaims); ok {
+			//fmt.Printf("Got a parsed token: %v\n", claims)
+			if token.Valid {
+				//fmt.Printf("It's valid!\n")
+				privileges = []string{}
+				privileges = append(privileges, "authorization-complete")
+				privileges = append(privileges, claims.Privileges...)
+
+                domain.SendEvent(ctx, s, XAuthTokenRefreshEvent, &XAuthTokenRefreshData{SessionURI: claims.SessionURI})
+
+				return
+			} else {
+				return &Response{StatusCode: http.StatusUnauthorized, Output: map[string]interface{}{"error": "X-Auth-Token failed validation: "}}, nil
+			}
+		}
 	}
 
-    return
+	return
 }
 
-
 func (s *xAuthTokenService) GetRedfishResource(ctx context.Context, r *http.Request, privileges []string) (*Response, error) {
-    response, basicAuthPrivs :=  s.CheckXAuthToken(ctx, r)
-    if response != nil {
-        return response, nil
-    }
+	response, basicAuthPrivs := s.CheckXAuthToken(ctx, r)
+	if response != nil {
+		return response, nil
+	}
 
-    if privileges != nil {
-	    privileges = append(privileges, basicAuthPrivs...)
-    }
+	if privileges != nil {
+		privileges = append(privileges, basicAuthPrivs...)
+	}
 	return s.Service.GetRedfishResource(ctx, r, privileges)
 }
 
 func (s *xAuthTokenService) RedfishResourceHandler(ctx context.Context, r *http.Request, privileges []string) (*Response, error) {
-    response, basicAuthPrivs :=  s.CheckXAuthToken(ctx, r)
-    if response != nil {
-        return response, nil
-    }
+	response, basicAuthPrivs := s.CheckXAuthToken(ctx, r)
+	if response != nil {
+		return response, nil
+	}
 
-    if privileges != nil {
-	    privileges = append(privileges, basicAuthPrivs...)
-    }
+	if privileges != nil {
+		privileges = append(privileges, basicAuthPrivs...)
+	}
 	return s.Service.RedfishResourceHandler(ctx, r, privileges)
 }

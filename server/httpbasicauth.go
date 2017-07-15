@@ -7,6 +7,8 @@ import (
     "fmt"
 )
 
+var _ = fmt.Printf
+
 type basicAuthService struct {
 	Service
 }
@@ -17,17 +19,17 @@ func NewBasicAuthService(s Service) Service {
 }
 
 func (s *basicAuthService) CheckAuthentication(ctx context.Context, r *http.Request) (resp *Response, privileges []string) {
-    fmt.Printf("basicAuth CheckAuthentication\n")
+    //fmt.Printf("basicAuth CheckAuthentication\n")
 	username, _, ok := r.BasicAuth()
 	// TODO: check password (it's the unnamed second parameter, above, from r.BasicAuth())
 	if ok {
-        fmt.Printf("\tgot user: %s\n", username)
+        //fmt.Printf("\tgot user: %s\n", username)
 		account, err := domain.FindUser(ctx, s, username)
 		if err == nil {
             privileges = domain.GetPrivileges(ctx, s, account)
             privileges = append(privileges, "authorization-complete")
-            fmt.Printf("\tgot privs: %s\n", privileges)
-            fmt.Printf("\tCongratulations, you have successfully authenticated.\n")
+            //fmt.Printf("\tgot privs: %s\n", privileges)
+            //fmt.Printf("\tCongratulations, you have successfully authenticated.\n")
 		} else {
             // 401 - Unauthorized: The authentication credentials included with this request are missing or invalid.
             // This handles "Invalid" case... need to handle "missing" case

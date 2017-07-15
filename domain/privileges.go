@@ -9,6 +9,12 @@ import (
 
 const PrivilegeSagaType saga.Type = "PrivilegeSaga"
 
+func SetupPrivilegeSaga(ddd DDDFunctions) {
+	// Hook up the saga that sets privileges on all redfish resources based on privilege map
+	privilegeSaga := saga.NewEventHandler(NewPrivilegeSaga(ddd.GetReadRepo()), ddd.GetCommandBus())
+	ddd.GetEventBus().AddHandler(privilegeSaga, RedfishResourceCreatedEvent)
+}
+
 type PrivilegeSaga struct {
 	repo eh.ReadRepo
 	// TODO: fix hardcoded /redfish references here
@@ -37,14 +43,14 @@ func (s *PrivilegeSaga) RunSaga(ctx context.Context, event eh.Event) []eh.Comman
 			if ResourceURI == "/redfish/" || ResourceURI == "/redfish/v1/" {
 				return []eh.Command{
 					&UpdateRedfishResourcePrivileges{
-						UUID:       event.AggregateID(),
+						RedfishResourceAggregateBaseCommand: RedfishResourceAggregateBaseCommand{UUID: event.AggregateID()},
 						Privileges: map[string]interface{}{"GET": []string{"Unauthenticated"}},
 					},
 				}
 			} else if ResourceURI == "/redfish/v1/SessionService/Sessions" {
 				return []eh.Command{
 					&UpdateRedfishResourcePrivileges{
-						UUID: event.AggregateID(),
+						RedfishResourceAggregateBaseCommand: RedfishResourceAggregateBaseCommand{UUID: event.AggregateID()},
 						Privileges: map[string]interface{}{
 							"GET":    []string{"ConfigureManager"},
 							"POST":   []string{"Unauthenticated"},
@@ -58,7 +64,7 @@ func (s *PrivilegeSaga) RunSaga(ctx context.Context, event eh.Event) []eh.Comman
 			} else if strings.HasPrefix(ResourceURI, "/redfish/v1/SessionService/Sessions/") {
 				return []eh.Command{
 					&UpdateRedfishResourcePrivileges{
-						UUID: event.AggregateID(),
+						RedfishResourceAggregateBaseCommand: RedfishResourceAggregateBaseCommand{UUID: event.AggregateID()},
 						Privileges: map[string]interface{}{
 							"GET":    []string{"ConfigureManager"},
 							"POST":   []string{"ConfigureManager"},
@@ -72,7 +78,7 @@ func (s *PrivilegeSaga) RunSaga(ctx context.Context, event eh.Event) []eh.Comman
 			} else {
 				return []eh.Command{
 					&UpdateRedfishResourcePrivileges{
-						UUID: event.AggregateID(),
+						RedfishResourceAggregateBaseCommand: RedfishResourceAggregateBaseCommand{UUID: event.AggregateID()},
 						Privileges: map[string]interface{}{
 							"GET":    []string{"ConfigureManager"},
 							"POST":   []string{"ConfigureManager"},
