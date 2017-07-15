@@ -5,8 +5,6 @@ import (
 	"sync"
 
 	eh "github.com/looplab/eventhorizon"
-	"github.com/looplab/eventhorizon/eventhandler/projector"
-	"github.com/looplab/eventhorizon/eventhandler/saga"
 )
 
 var dynamicCommands []eh.CommandType = []eh.CommandType{}

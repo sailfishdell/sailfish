@@ -1,4 +1,4 @@
-package: github.com/superchalupa/go-rfs
+package: github.com/superchalupa/go-redfish
 vcs: git
 repo: ssh://git@github.com/superchalupa/go-redfish
 
@@ -31,11 +31,3 @@ import:
   subpackages:
   - prometheus
   - prometheus/promhttp
-- package: github.com/superchalupa/go-rfs
-  vcs: git
-  repo: ssh://git@github.com/superchalupa/go-redfish
-  version: v2
-  subpackages:
-  - domain
-  - server
-  - stdredfish

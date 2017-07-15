@@ -9,7 +9,6 @@ import (
     "github.com/superchalupa/go-redfish/domain"
     eh "github.com/looplab/eventhorizon"
 	jwt "github.com/dgrijalva/jwt-go"
-	"github.com/superchalupa/go-rfs/domain"
 )
 
 var _ = fmt.Println
