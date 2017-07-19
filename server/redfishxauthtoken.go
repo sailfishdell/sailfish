@@ -4,11 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	jwt "github.com/dgrijalva/jwt-go"
 	"net/http"
 
-    "github.com/superchalupa/go-redfish/domain"
-    eh "github.com/looplab/eventhorizon"
-	jwt "github.com/dgrijalva/jwt-go"
+	"github.com/superchalupa/go-redfish/domain"
+	"github.com/superchalupa/go-redfish/stdredfish"
 )
 
 var _ = fmt.Println
@@ -30,18 +30,6 @@ type RedfishClaims struct {
 	Privileges []string `json:"privileges"`
 	SessionURI string   `json:"sessionuri"`
 	jwt.StandardClaims
-}
-
-const (
-        XAuthTokenRefreshEvent           eh.EventType = "XAuthTokenRefresh"
-)
-
-type XAuthTokenRefreshData struct {
-    SessionURI string
-}
-
-func init() {
-       eh.RegisterEventData(XAuthTokenRefreshEvent, func() eh.EventData { return &XAuthTokenRefreshData{} })
 }
 
 func (s *xAuthTokenService) CheckXAuthToken(ctx context.Context, r *http.Request) (resp *Response, privileges []string) {
@@ -90,7 +78,7 @@ func (s *xAuthTokenService) CheckXAuthToken(ctx context.Context, r *http.Request
 				privileges = append(privileges, "authorization-complete")
 				privileges = append(privileges, claims.Privileges...)
 
-                domain.SendEvent(ctx, s, XAuthTokenRefreshEvent, &XAuthTokenRefreshData{SessionURI: claims.SessionURI})
+				domain.SendEvent(ctx, s, stdredfish.XAuthTokenRefreshEvent, &stdredfish.XAuthTokenRefreshData{SessionURI: claims.SessionURI})
 
 				return
 			} else {

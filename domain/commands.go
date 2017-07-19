@@ -41,16 +41,16 @@ const (
 )
 
 type RedfishResourceAggregateBaseCommand struct {
-	UUID        eh.UUID
+	UUID eh.UUID
 }
+
 func (c RedfishResourceAggregateBaseCommand) AggregateID() eh.UUID { return c.UUID }
-func (c RedfishResourceAggregateBaseCommand) AggregateType() eh.AggregateType { return RedfishResourceAggregateType }
-
-
-
+func (c RedfishResourceAggregateBaseCommand) AggregateType() eh.AggregateType {
+	return RedfishResourceAggregateType
+}
 
 type CreateRedfishResource struct {
-    RedfishResourceAggregateBaseCommand
+	RedfishResourceAggregateBaseCommand
 	ResourceURI string
 	Type        string
 	Context     string
@@ -58,7 +58,7 @@ type CreateRedfishResource struct {
 	Private     map[string]interface{} `eh:"optional"`
 }
 
-func (c CreateRedfishResource) CommandType() eh.CommandType     { return CreateRedfishResourceCommand }
+func (c CreateRedfishResource) CommandType() eh.CommandType { return CreateRedfishResourceCommand }
 func (c CreateRedfishResource) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 	disallowed := []string{"@odata.id", "@odata.type", "@odata.context"}
 	np := map[string]interface{}{}
@@ -89,10 +89,9 @@ AddProp:
 	return nil
 }
 
-
 // UNTESTED
 type UpdateRedfishResourceProperties struct {
-    RedfishResourceAggregateBaseCommand
+	RedfishResourceAggregateBaseCommand
 	Properties map[string]interface{} `eh:"optional"`
 	Private    map[string]interface{} `eh:"optional"`
 }
@@ -136,7 +135,7 @@ AddProp:
 }
 
 type RemoveRedfishResourceProperty struct {
-    RedfishResourceAggregateBaseCommand
+	RedfishResourceAggregateBaseCommand
 	PropertyName string
 }
 
@@ -157,10 +156,10 @@ func (c RemoveRedfishResourceProperty) Handle(ctx context.Context, a *RedfishRes
 }
 
 type RemoveRedfishResource struct {
-    RedfishResourceAggregateBaseCommand
+	RedfishResourceAggregateBaseCommand
 }
 
-func (c RemoveRedfishResource) CommandType() eh.CommandType     { return RemoveRedfishResourceCommand }
+func (c RemoveRedfishResource) CommandType() eh.CommandType { return RemoveRedfishResourceCommand }
 func (c RemoveRedfishResource) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 	a.StoreEvent(RedfishResourceRemovedEvent, nil)
 	return nil
@@ -193,7 +192,7 @@ func (c CreateRedfishResourceCollection) Handle(ctx context.Context, a *RedfishR
 }
 
 type AddRedfishResourceCollectionMember struct {
-    RedfishResourceAggregateBaseCommand
+	RedfishResourceAggregateBaseCommand
 	MemberURI string
 }
 
@@ -221,7 +220,7 @@ func (c AddRedfishResourceCollectionMember) Handle(ctx context.Context, a *Redfi
 }
 
 type RemoveRedfishResourceCollectionMember struct {
-    RedfishResourceAggregateBaseCommand
+	RedfishResourceAggregateBaseCommand
 	MemberURI string
 }
 
@@ -234,7 +233,7 @@ func (c RemoveRedfishResourceCollectionMember) Handle(ctx context.Context, a *Re
 }
 
 type UpdateRedfishResourcePrivileges struct {
-    RedfishResourceAggregateBaseCommand
+	RedfishResourceAggregateBaseCommand
 	Privileges map[string]interface{}
 }
 

@@ -83,10 +83,10 @@ func Setup(ddd DDDFunctions) {
 	ddd.GetCommandBus().SetHandler(handler, HandleHTTPCommand)
 
 	// read side projector
-    SetupRedfishProjector(ddd)
-    SetupRedfishTreeProjector(ddd)
+	SetupRedfishProjector(ddd)
+	SetupRedfishTreeProjector(ddd)
 
-    // sagas
-    SetupPrivilegeSaga(ddd)
+	// sagas
+	SetupPrivilegeSaga(ddd)
 
 }

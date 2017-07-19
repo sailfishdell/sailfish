@@ -116,8 +116,6 @@ func (o *RedfishProjector) Project(ctx context.Context, event eh.Event, model in
 	return item, nil
 }
 
-
-
 func SetupRedfishTreeProjector(ddd DDDFunctions) {
 	// hook up tree rep. this guy maintains the redfish dictionary that maps
 	// URIs to read side projector UUIDs

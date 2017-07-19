@@ -90,8 +90,8 @@ func BaseDDDFactory(baseURI, verURI string, f ...interface{}) DDDFunctions {
 		b.eventPublisher.AddObserver(b.waiter)
 	}
 
-    // Add the logger as an observer.
-    b.GetEventPublisher().AddObserver(&Logger{})
+	// Add the logger as an observer.
+	b.GetEventPublisher().AddObserver(&Logger{})
 
 	return b
 }
@@ -141,7 +141,7 @@ func (c *baseDDD) GetEventPublisher() eh.EventPublisher {
 }
 
 func SendEvent(ctx context.Context, d DDDFunctions, eventtype eh.EventType, eventData interface{}) {
-    d.GetEventHandler().HandleEvent(ctx, eh.NewEvent(eventtype, eventData))
+	d.GetEventHandler().HandleEvent(ctx, eh.NewEvent(eventtype, eventData))
 }
 
 func FindUser(ctx context.Context, s DDDFunctions, user string) (account *RedfishResource, err error) {

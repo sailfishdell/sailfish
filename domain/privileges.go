@@ -44,7 +44,7 @@ func (s *PrivilegeSaga) RunSaga(ctx context.Context, event eh.Event) []eh.Comman
 				return []eh.Command{
 					&UpdateRedfishResourcePrivileges{
 						RedfishResourceAggregateBaseCommand: RedfishResourceAggregateBaseCommand{UUID: event.AggregateID()},
-						Privileges: map[string]interface{}{"GET": []string{"Unauthenticated"}},
+						Privileges:                          map[string]interface{}{"GET": []string{"Unauthenticated"}},
 					},
 				}
 			} else if ResourceURI == "/redfish/v1/SessionService/Sessions" {

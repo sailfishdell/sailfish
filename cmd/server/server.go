@@ -5,10 +5,10 @@ import (
 	"flag"
 	"fmt"
 	"github.com/go-kit/kit/log"
-	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
 	"github.com/go-yaml/yaml"
-	stdprometheus "github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
+//	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
+//	stdprometheus "github.com/prometheus/client_golang/prometheus"
+//	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -20,6 +20,7 @@ import (
 	"github.com/superchalupa/go-redfish/domain"
 	redfishserver "github.com/superchalupa/go-redfish/server"
 
+    "net/http/pprof"
 	_ "github.com/superchalupa/go-redfish/stdredfish"
 )
 
@@ -86,38 +87,39 @@ func main() {
 
 	logger = log.With(logger, "caller", log.DefaultCaller)
 
+/*
+    // instrumentation setup
+	fieldKeys := []string{"method", "URL"}
+    count := kitprometheus.NewCounterFrom(stdprometheus.CounterOpts{
+        Namespace: "redfish",
+        Subsystem: "redfish_service",
+        Name:      "request_count",
+        Help:      "Number of requests received.",
+    }, fieldKeys)
+    lat := kitprometheus.NewSummaryFrom(stdprometheus.SummaryOpts{
+        Namespace: "redfish",
+        Subsystem: "redfish_service",
+        Name:      "request_latency_microseconds",
+        Help:      "Total duration of requests in microseconds.",
+    }, fieldKeys)
+*/
+
 	svc := redfishserver.NewService(ddd)
-	// Need this *before* the authentication, so that the authentication module
-	// will call this with the correct set of privileges
 	svc = redfishserver.NewPrivilegeEnforcingService(svc)
-	// Stack this *after* authorization so that it can get user info first and
-	// pass privileges
 	svc = redfishserver.NewBasicAuthService(svc)
 	svc = redfishserver.NewXAuthTokenService(svc)
-
-	fieldKeys := []string{"method", "URL"}
-	svc = redfishserver.NewInstrumentingService(
-		kitprometheus.NewCounterFrom(stdprometheus.CounterOpts{
-			Namespace: "redfish",
-			Subsystem: "redfish_service",
-			Name:      "request_count",
-			Help:      "Number of requests received.",
-		}, fieldKeys),
-		kitprometheus.NewSummaryFrom(stdprometheus.SummaryOpts{
-			Namespace: "redfish",
-			Subsystem: "redfish_service",
-			Name:      "request_latency_microseconds",
-			Help:      "Total duration of requests in microseconds.",
-		}, fieldKeys),
-		svc,
-	)
-
+//	svc = redfishserver.NewInstrumentingService(count, lat, svc)
 	svc = redfishserver.NewLoggingService(logger, svc)
 
 	r := redfishserver.NewRedfishHandler(svc, *baseURI, "v1", logger)
-
-	http.Handle("/", r)
-	http.Handle("/metrics", promhttp.Handler())
+    m := http.NewServeMux()
+	m.Handle("/", r)
+//	m.Handle("/metrics", promhttp.Handler())
+    m.Handle("/debug/pprof/", http.HandlerFunc(pprof.Index))
+    m.Handle("/debug/pprof/cmdline", http.HandlerFunc(pprof.Cmdline))
+    m.Handle("/debug/pprof/profile", http.HandlerFunc(pprof.Profile))
+    m.Handle("/debug/pprof/symbol", http.HandlerFunc(pprof.Symbol))
+    m.Handle("/debug/pprof/trace", http.HandlerFunc(pprof.Trace))
 
 	servers := []*http.Server{}
 
@@ -151,7 +153,7 @@ func main() {
 			srv := &http.Server{Addr: addr}
 			servers = append(servers, srv)
 			go func(listen string) {
-				logger.Log("err", srv.ListenAndServe())
+				logger.Log("err", http.ListenAndServe(addr, m))
 			}(listen)
 
 		case strings.HasPrefix(listen, "https:"):
@@ -177,7 +179,7 @@ func main() {
 				defer listener.Close()
 			}
 			go func(listener net.Listener) {
-				logger.Log("err", fcgi.Serve(listener, r))
+				logger.Log("err", fcgi.Serve(listener, m))
 			}(listener)
 		}
 	}

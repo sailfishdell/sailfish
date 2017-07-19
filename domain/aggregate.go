@@ -45,15 +45,15 @@ func (a *RedfishResourceAggregate) HandleCommand(ctx context.Context, command eh
 }
 
 type RREvtApplier interface {
-    ApplyToAggregate(context.Context, *RedfishResourceAggregate) error
+	ApplyToAggregate(context.Context, *RedfishResourceAggregate) error
 }
 
 func (a *RedfishResourceAggregate) ApplyEvent(ctx context.Context, event eh.Event) error {
-    d := event.Data()
-    switch d := d.(type) {
-        case RREvtApplier:
-            return d.ApplyToAggregate(ctx, a)
-    }
+	d := event.Data()
+	switch d := d.(type) {
+	case RREvtApplier:
+		return d.ApplyToAggregate(ctx, a)
+	}
 
 	switch event.EventType() {
 	case RedfishResourceCreatedEvent:

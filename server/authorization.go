@@ -21,7 +21,6 @@ func NewPrivilegeEnforcingService(s Service) Service {
 	return &privilegeEnforcingService{Service: s}
 }
 
-
 func (s *privilegeEnforcingService) IsAuthorized(ctx context.Context, r *http.Request, privileges []string) (resp *Response, authorized bool) {
 	noHashPath := strings.SplitN(r.URL.Path, "#", 2)[0]
 
@@ -66,48 +65,46 @@ func (s *privilegeEnforcingService) IsAuthorized(ctx context.Context, r *http.Re
 		}
 	}
 
-    // User has been denied authorization. Now figure out which error code to return
+	// User has been denied authorization. Now figure out which error code to return
 
-    // 401 - Unauthorized: The authentication credentials included with this request are missing or invalid.
-    // The "Invalid" case is handled in the respective basicauth or redfishxauthtoken classes earlier.
-    //
-    // Now, we check for "authorization-complete" privilege which would have been added earlier.
-    // If it is MISSING, then raise 401 - Unauthorized
-    // If it is PRESENT, then raise 403 - Forbidden
-    deniedStatus := http.StatusUnauthorized
-    for _,i := range(privileges) {
-        if i == "authorization-complete" {
-            deniedStatus = http.StatusForbidden
-        }
-    }
+	// 401 - Unauthorized: The authentication credentials included with this request are missing or invalid.
+	// The "Invalid" case is handled in the respective basicauth or redfishxauthtoken classes earlier.
+	//
+	// Now, we check for "authorization-complete" privilege which would have been added earlier.
+	// If it is MISSING, then raise 401 - Unauthorized
+	// If it is PRESENT, then raise 403 - Forbidden
+	deniedStatus := http.StatusUnauthorized
+	for _, i := range privileges {
+		if i == "authorization-complete" {
+			deniedStatus = http.StatusForbidden
+		}
+	}
 
 	return &Response{StatusCode: deniedStatus, Output: map[string]interface{}{"error": "Not authorized"}}, false
 }
 
-
-
 func (s *privilegeEnforcingService) RedfishResourceHandler(ctx context.Context, r *http.Request, privileges []string) (resp *Response, err error) {
-    //fmt.Printf("CheckAuthorization privileges h\n")
-    response, authorized :=  s.IsAuthorized(ctx, r, privileges)
+	//fmt.Printf("CheckAuthorization privileges h\n")
+	response, authorized := s.IsAuthorized(ctx, r, privileges)
 
-    if authorized {
-        return s.Service.RedfishResourceHandler(ctx, r, privileges)
-    }
+	if authorized {
+		return s.Service.RedfishResourceHandler(ctx, r, privileges)
+	}
 
-    // not returning an error because for middleware purposes, there is no error that requires circuit breaking or other.
+	// not returning an error because for middleware purposes, there is no error that requires circuit breaking or other.
 	return response, nil
 }
 
 func (s *privilegeEnforcingService) GetRedfishResource(ctx context.Context, r *http.Request, privileges []string) (resp *Response, err error) {
-    //fmt.Printf("CheckAuthorization privileges\n")
-    response, authorized :=  s.IsAuthorized(ctx, r, privileges)
+	//fmt.Printf("CheckAuthorization privileges\n")
+	response, authorized := s.IsAuthorized(ctx, r, privileges)
 
-    if authorized {
-        //fmt.Printf("\tCongratulations, you are authorized\n")
-	    return s.Service.GetRedfishResource(ctx, r, privileges)
-    }
+	if authorized {
+		//fmt.Printf("\tCongratulations, you are authorized\n")
+		return s.Service.GetRedfishResource(ctx, r, privileges)
+	}
 
-    //fmt.Printf("\tGo away: %s\n", response)
-    // not returning an error because for middleware purposes, there is no error that requires circuit breaking or other.
+	//fmt.Printf("\tGo away: %s\n", response)
+	// not returning an error because for middleware purposes, there is no error that requires circuit breaking or other.
 	return response, nil
 }
