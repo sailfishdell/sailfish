@@ -12,8 +12,9 @@ do
 done
 
 if [ -n "$X_AUTH_TOKEN" ]; then
-    echo "X_AUTH_TOKEN=$X_AUTH_TOKEN"
-    echo "AUTH_HEADER='X-Auth-Token: $X_AUTH_TOKEN'"
+    echo "export X_AUTH_TOKEN=$X_AUTH_TOKEN"
+    echo "export AUTH_HEADER='X-Auth-Token: $X_AUTH_TOKEN'"
 else
-    echo "X_AUTH_TOKEN="
+    echo "export X_AUTH_TOKEN="
+    echo "export AUTH_HEADER="
 fi
