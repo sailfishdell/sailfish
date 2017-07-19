@@ -1,0 +1,8 @@
+#!/bin/sh
+
+scriptdir=$(cd $(dirname $0); pwd)
+reporoot=${scriptdir}/../
+
+mkdir -p $reporoot/.git/hooks/
+
+ln -s ../../githooks/pre-commit $reporoot/.git/hooks/pre-commit
