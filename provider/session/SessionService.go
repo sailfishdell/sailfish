@@ -1,4 +1,4 @@
-package stdredfish
+package session
 
 import (
 	"context"

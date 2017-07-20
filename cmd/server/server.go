@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"github.com/go-kit/kit/log"
 	"github.com/go-yaml/yaml"
-//	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
-//	stdprometheus "github.com/prometheus/client_golang/prometheus"
-//	"github.com/prometheus/client_golang/prometheus/promhttp"
+	//	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
+	//	stdprometheus "github.com/prometheus/client_golang/prometheus"
+	//	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -20,8 +20,8 @@ import (
 	"github.com/superchalupa/go-redfish/domain"
 	redfishserver "github.com/superchalupa/go-redfish/server"
 
-    "net/http/pprof"
-	_ "github.com/superchalupa/go-redfish/stdredfish"
+	_ "github.com/superchalupa/go-redfish/provider/session"
+	"net/http/pprof"
 )
 
 type appConfig struct {
@@ -87,39 +87,39 @@ func main() {
 
 	logger = log.With(logger, "caller", log.DefaultCaller)
 
-/*
-    // instrumentation setup
-	fieldKeys := []string{"method", "URL"}
-    count := kitprometheus.NewCounterFrom(stdprometheus.CounterOpts{
-        Namespace: "redfish",
-        Subsystem: "redfish_service",
-        Name:      "request_count",
-        Help:      "Number of requests received.",
-    }, fieldKeys)
-    lat := kitprometheus.NewSummaryFrom(stdprometheus.SummaryOpts{
-        Namespace: "redfish",
-        Subsystem: "redfish_service",
-        Name:      "request_latency_microseconds",
-        Help:      "Total duration of requests in microseconds.",
-    }, fieldKeys)
-*/
+	/*
+	       // instrumentation setup
+	   	fieldKeys := []string{"method", "URL"}
+	       count := kitprometheus.NewCounterFrom(stdprometheus.CounterOpts{
+	           Namespace: "redfish",
+	           Subsystem: "redfish_service",
+	           Name:      "request_count",
+	           Help:      "Number of requests received.",
+	       }, fieldKeys)
+	       lat := kitprometheus.NewSummaryFrom(stdprometheus.SummaryOpts{
+	           Namespace: "redfish",
+	           Subsystem: "redfish_service",
+	           Name:      "request_latency_microseconds",
+	           Help:      "Total duration of requests in microseconds.",
+	       }, fieldKeys)
+	*/
 
 	svc := redfishserver.NewService(ddd)
 	svc = redfishserver.NewPrivilegeEnforcingService(svc)
 	svc = redfishserver.NewBasicAuthService(svc)
 	svc = redfishserver.NewXAuthTokenService(svc)
-//	svc = redfishserver.NewInstrumentingService(count, lat, svc)
+	//	svc = redfishserver.NewInstrumentingService(count, lat, svc)
 	svc = redfishserver.NewLoggingService(logger, svc)
 
 	r := redfishserver.NewRedfishHandler(svc, *baseURI, "v1", logger)
-    m := http.NewServeMux()
+	m := http.NewServeMux()
 	m.Handle("/", r)
-//	m.Handle("/metrics", promhttp.Handler())
-    m.Handle("/debug/pprof/", http.HandlerFunc(pprof.Index))
-    m.Handle("/debug/pprof/cmdline", http.HandlerFunc(pprof.Cmdline))
-    m.Handle("/debug/pprof/profile", http.HandlerFunc(pprof.Profile))
-    m.Handle("/debug/pprof/symbol", http.HandlerFunc(pprof.Symbol))
-    m.Handle("/debug/pprof/trace", http.HandlerFunc(pprof.Trace))
+	//	m.Handle("/metrics", promhttp.Handler())
+	m.Handle("/debug/pprof/", http.HandlerFunc(pprof.Index))
+	m.Handle("/debug/pprof/cmdline", http.HandlerFunc(pprof.Cmdline))
+	m.Handle("/debug/pprof/profile", http.HandlerFunc(pprof.Profile))
+	m.Handle("/debug/pprof/symbol", http.HandlerFunc(pprof.Symbol))
+	m.Handle("/debug/pprof/trace", http.HandlerFunc(pprof.Trace))
 
 	servers := []*http.Server{}
 
