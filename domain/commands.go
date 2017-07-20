@@ -205,7 +205,7 @@ func (c AddRedfishResourceCollectionMember) Handle(ctx context.Context, a *Redfi
 		return errors.New("Not a collection")
 	}
 
-	members := nm.([]map[string]interface{})
+	members := nm.([]interface{})
 
 	a.StoreEvent(RedfishResourcePropertiesUpdatedEvent,
 		&RedfishResourcePropertiesUpdatedData{

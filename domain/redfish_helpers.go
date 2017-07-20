@@ -166,16 +166,24 @@ func FindUser(ctx context.Context, s DDDFunctions, user string) (account *Redfis
 	// Walk through all of the "Members" of the collection, which are links to individual accounts
 	members, ok := accounts.Properties["Members"]
 	if !ok {
+		fmt.Printf("\n\nPANIC account doesn't have Members array!\nDUMP: %#v\n", accounts.Properties)
 		return nil, errors.New("Malformed Account Collection")
 	}
 
 	// avoid panics by separating out type assertion
-	memberList, ok := members.([]map[string]interface{})
+	memberList, ok := members.([]interface{})
 	if !ok {
+		fmt.Printf("\n\nPANIC account members array doesn't cleanly type assert!\nDUMP: %#v\n", accounts.Properties)
 		return nil, errors.New("Malformed Account Collection")
 	}
 
 	for _, m := range memberList {
+		m, ok := m.(map[string]interface{})
+		if !ok {
+			fmt.Printf("\n\nPANIC account members array doesn't cleanly type assert!\nDUMP: %#v\n", m)
+			return nil, errors.New("Malformed Account Collection")
+		}
+
 		a, _ := tree.GetRedfishResourceFromTree(ctx, s.GetReadRepo(), m["@odata.id"].(string))
 		if a == nil {
 			continue
@@ -190,6 +198,8 @@ func FindUser(ctx context.Context, s DDDFunctions, user string) (account *Redfis
 		if memberUser != user {
 			continue
 		}
+
+		fmt.Printf("GOT USER: %s\n", a)
 		return a, nil
 	}
 	return nil, errors.New("User not found")
@@ -208,7 +218,18 @@ func GetPrivileges(ctx context.Context, s DDDFunctions, account *RedfishResource
 		return
 	}
 
-	for _, p := range privs.([]string) {
+	privsArr, ok := privs.([]interface{})
+	if !ok {
+		fmt.Printf("Could not type assert to array: %#v\n", privsArr)
+		return
+	}
+
+	for _, p := range privsArr {
+		p, ok := p.(string)
+		if !ok {
+			fmt.Printf("Could not type assert to string: %#v\n", p)
+			continue
+		}
 		// If the user has "ConfigureSelf", then append the special privilege that lets them configure their specific attributes
 		if p == "ConfigureSelf" {
 			// Add ConfigureSelf_%{USERNAME} property

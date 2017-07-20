@@ -1,15 +1,22 @@
 
 Short term: Some things to work on:
- - Session timeouts
+ - Password hashing in account
  - Automatic Collection management
  - Implement a few Actions
- - mirroring/proxying
- - Password hashing in account
  - privileges for properties
  - Move SessionService tree setup into SessionService
+ - localhost interface to send commands
+ - Mirroring from http server
 
 Medium term:
  - get a real message bus hooked up
  - maybe some CLI clients
  - privilege mapping
 
+
+Implemented:
+    Mirroring: Initial ingest from filesystem (SPMF compatible file names)
+    Logins: Using the accounts and roles in the redfish tree
+        - basic auth
+        - sessions
+        - Session timeouts

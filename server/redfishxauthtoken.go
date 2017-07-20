@@ -8,7 +8,7 @@ import (
 	"net/http"
 
 	"github.com/superchalupa/go-redfish/domain"
-	"github.com/superchalupa/go-redfish/stdredfish"
+	"github.com/superchalupa/go-redfish/provider/session"
 )
 
 var _ = fmt.Println
@@ -78,7 +78,7 @@ func (s *xAuthTokenService) CheckXAuthToken(ctx context.Context, r *http.Request
 				privileges = append(privileges, "authorization-complete")
 				privileges = append(privileges, claims.Privileges...)
 
-				domain.SendEvent(ctx, s, stdredfish.XAuthTokenRefreshEvent, &stdredfish.XAuthTokenRefreshData{SessionURI: claims.SessionURI})
+				domain.SendEvent(ctx, s, session.XAuthTokenRefreshEvent, &session.XAuthTokenRefreshData{SessionURI: claims.SessionURI})
 
 				return
 			} else {
