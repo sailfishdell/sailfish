@@ -97,30 +97,15 @@ func SetupSessionService(s domain.SagaRegisterer, d domain.DDDFunctions) {
 				"UserName":       lr.UserName,
 			}
 
-			// we have the tree ID, fetch an updated copy of the actual tree
-			tree, err := domain.GetTree(ctx, s.GetReadRepo(), treeID)
-			if err != nil {
-				return err
-			}
-
-			sessionServiceID, ok := tree.Tree[d.MakeFullyQualifiedV1("SessionService/Sessions")]
-			if !ok {
-				return errors.New("Couldn't get handle for session service")
-			}
-
 			err = s.GetCommandBus().HandleCommand(ctx, &domain.CreateRedfishResource{
 				RedfishResourceAggregateBaseCommand: domain.RedfishResourceAggregateBaseCommand{UUID: sessionUUID},
-				ResourceURI:                         retprops["@odata.id"].(string),
-				Type:                                retprops["@odata.type"].(string),
-				Context:                             retprops["@odata.context"].(string),
-				Properties:                          retprops,
-				Private:                             map[string]interface{}{"token_secret": secret},
+				TreeID:      d.GetTreeID(),
+				ResourceURI: retprops["@odata.id"].(string),
+				Type:        retprops["@odata.type"].(string),
+				Context:     retprops["@odata.context"].(string),
+				Properties:  retprops,
+				Private:     map[string]interface{}{"token_secret": secret},
 			})
-			if err != nil {
-				return err
-			}
-
-			err = s.GetCommandBus().HandleCommand(ctx, &domain.AddRedfishResourceCollectionMember{RedfishResourceAggregateBaseCommand: domain.RedfishResourceAggregateBaseCommand{UUID: sessionServiceID}, MemberURI: sessionURI})
 			if err != nil {
 				return err
 			}
@@ -139,10 +124,11 @@ func SetupSessionService(s domain.SagaRegisterer, d domain.DDDFunctions) {
 			d.GetEventHandler().HandleEvent(ctx, event)
 
 			// set up a goroutine that will delete the session resource when it
-			// times out it would be much more efficient if we had one
-			// goroutine that just looped over all the session entries but this
-			// is easier to set up for now, and doesn't really prove to be
-			// terribly resource intensive until we get hundreds of sessions
+			// times out.
+			// it would be much more efficient if we had one goroutine that
+			// just looped over all the session entries but this is easier to
+			// set up for now, and doesn't really prove to be terribly resource
+			// intensive until we get hundreds of sessions
 			go func() {
 
 				// we send a command and then wait for a completion event. Set up the wait here.
@@ -160,15 +146,16 @@ func SetupSessionService(s domain.SagaRegisterer, d domain.DDDFunctions) {
 
 				defer d.GetEventWaiter().CancelWait(waitID)
 
+				// loop forever
 				for {
 					select {
+
 					// stay alive
 					case <-resultChan:
 						continue
 
 					// session times out, send command to delete
 					case <-time.After(30 * time.Second):
-						s.GetCommandBus().HandleCommand(ctx, &domain.RemoveRedfishResourceCollectionMember{RedfishResourceAggregateBaseCommand: domain.RedfishResourceAggregateBaseCommand{UUID: sessionServiceID}, MemberURI: sessionURI})
 						s.GetCommandBus().HandleCommand(ctx, &domain.RemoveRedfishResource{RedfishResourceAggregateBaseCommand: domain.RedfishResourceAggregateBaseCommand{UUID: sessionUUID}})
 						return //exit goroutine
 					}

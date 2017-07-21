@@ -94,6 +94,7 @@ func createTreeLeaf(ctx context.Context, d domain.DDDFunctions, uri string, Prop
 	uuid := eh.NewUUID()
 	fmt.Printf("Creating URI %s at %s\n", uri, uuid)
 	c := &domain.CreateRedfishResource{
+		TreeID: d.GetTreeID(),
 		RedfishResourceAggregateBaseCommand: domain.RedfishResourceAggregateBaseCommand{UUID: uuid},
 		ResourceURI:                         uri,
 		Properties:                          Properties,

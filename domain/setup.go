@@ -41,11 +41,6 @@ func Setup(ddd DDDFunctions) {
 	handler.SetAggregate(RedfishResourceAggregateType, RemoveRedfishResourcePropertyCommand)
 	handler.SetAggregate(RedfishResourceAggregateType, RemoveRedfishResourceCommand)
 
-	// RedfishResourceCollection
-	handler.SetAggregate(RedfishResourceAggregateType, CreateRedfishResourceCollectionCommand)
-	handler.SetAggregate(RedfishResourceAggregateType, AddRedfishResourceCollectionMemberCommand)
-	handler.SetAggregate(RedfishResourceAggregateType, RemoveRedfishResourceCollectionMemberCommand)
-
 	handler.SetAggregate(RedfishResourceAggregateType, UpdateRedfishResourcePrivilegesCommand)
 	handler.SetAggregate(RedfishResourceAggregateType, UpdateRedfishResourcePermissionsCommand)
 	handler.SetAggregate(RedfishResourceAggregateType, AddRedfishResourceHeaderCommand)
@@ -68,10 +63,6 @@ func Setup(ddd DDDFunctions) {
 	ddd.GetCommandBus().SetHandler(handler, UpdateRedfishResourcePropertiesCommand)
 	ddd.GetCommandBus().SetHandler(handler, RemoveRedfishResourcePropertyCommand)
 	ddd.GetCommandBus().SetHandler(handler, RemoveRedfishResourceCommand)
-
-	ddd.GetCommandBus().SetHandler(handler, CreateRedfishResourceCollectionCommand)
-	ddd.GetCommandBus().SetHandler(handler, AddRedfishResourceCollectionMemberCommand)
-	ddd.GetCommandBus().SetHandler(handler, RemoveRedfishResourceCollectionMemberCommand)
 
 	ddd.GetCommandBus().SetHandler(handler, UpdateRedfishResourcePrivilegesCommand)
 	ddd.GetCommandBus().SetHandler(handler, UpdateRedfishResourcePermissionsCommand)

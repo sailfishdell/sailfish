@@ -35,6 +35,7 @@ func SetupEvents() {
 }
 
 type RedfishResourceCreatedData struct {
+    TreeID      eh.UUID
 	ResourceURI string
 	Type        string
 	Context     string

@@ -15,11 +15,6 @@ func SetupCommands() {
 	eh.RegisterCommand(func() eh.Command { return &UpdateRedfishResourceProperties{} })
 	eh.RegisterCommand(func() eh.Command { return &RemoveRedfishResourceProperty{} })
 	eh.RegisterCommand(func() eh.Command { return &RemoveRedfishResource{} })
-
-	// collections
-	eh.RegisterCommand(func() eh.Command { return &CreateRedfishResourceCollection{} })
-	eh.RegisterCommand(func() eh.Command { return &AddRedfishResourceCollectionMember{} })
-	eh.RegisterCommand(func() eh.Command { return &RemoveRedfishResourceCollectionMember{} })
 }
 
 const (
@@ -27,10 +22,6 @@ const (
 	UpdateRedfishResourcePropertiesCommand eh.CommandType = "UpdateRedfishResourceProperties"
 	RemoveRedfishResourcePropertyCommand   eh.CommandType = "RemoveRedfishResourceProperty"
 	RemoveRedfishResourceCommand           eh.CommandType = "RemoveRedfishResource"
-
-	CreateRedfishResourceCollectionCommand       eh.CommandType = "CreateRedfishResourceCollection"
-	AddRedfishResourceCollectionMemberCommand    eh.CommandType = "AddRedfishResourceCollectionMember"
-	RemoveRedfishResourceCollectionMemberCommand eh.CommandType = "RemoveRedfishResourceCollectionMember"
 
 	// TODO
 	UpdateRedfishResourcePrivilegesCommand  eh.CommandType = "UpdateRedfishResourcePrivileges"
@@ -41,7 +32,7 @@ const (
 )
 
 type RedfishResourceAggregateBaseCommand struct {
-	UUID eh.UUID
+	UUID eh.UUID  // the uuid of the actual aggregate
 }
 
 func (c RedfishResourceAggregateBaseCommand) AggregateID() eh.UUID { return c.UUID }
@@ -51,6 +42,7 @@ func (c RedfishResourceAggregateBaseCommand) AggregateType() eh.AggregateType {
 
 type CreateRedfishResource struct {
 	RedfishResourceAggregateBaseCommand
+    TreeID      eh.UUID  // the uuid of the tree we'll be in
 	ResourceURI string
 	Type        string
 	Context     string
@@ -71,8 +63,8 @@ AddProp:
 			if k == d {
 				continue AddProp
 			}
-			np[k] = v
 		}
+        np[k] = v
 	}
 	np["@odata.id"] = c.ResourceURI
 	np["@odata.type"] = c.Type
@@ -80,6 +72,7 @@ AddProp:
 
 	a.StoreEvent(RedfishResourceCreatedEvent,
 		&RedfishResourceCreatedData{
+            TreeID:      c.TreeID,
 			ResourceURI: c.ResourceURI,
 			Private:     c.Private,
 			Properties:  np,
@@ -111,8 +104,12 @@ AddProp:
 			if k == d {
 				continue AddProp
 			}
-			np[k] = v
 		}
+        // dont need to update if it's already that value
+        oldv, ok := a.Properties[k]
+        if !ok || v!=oldv {
+		    np[k] = v
+        }
 	}
 
 	// shallow copy Private
@@ -165,72 +162,6 @@ func (c RemoveRedfishResource) Handle(ctx context.Context, a *RedfishResourceAgg
 	return nil
 }
 
-type CreateRedfishResourceCollection struct {
-	UUID eh.UUID
-	CreateRedfishResource
-	Members []string
-}
-
-func (c CreateRedfishResourceCollection) AggregateID() eh.UUID { return c.UUID }
-func (c CreateRedfishResourceCollection) AggregateType() eh.AggregateType {
-	return RedfishResourceAggregateType
-}
-func (c CreateRedfishResourceCollection) CommandType() eh.CommandType {
-	return CreateRedfishResourceCollectionCommand
-}
-func (c CreateRedfishResourceCollection) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
-	nm := []map[string]interface{}{}
-	for _, v := range c.Members {
-		nm = append(nm, map[string]interface{}{"@odata.id": v})
-	}
-
-	c.Properties["Members@odata.count"] = len(c.Members)
-	c.Properties["Members"] = nm
-	c.CreateRedfishResource.Handle(ctx, a)
-
-	return nil
-}
-
-type AddRedfishResourceCollectionMember struct {
-	RedfishResourceAggregateBaseCommand
-	MemberURI string
-}
-
-func (c AddRedfishResourceCollectionMember) CommandType() eh.CommandType {
-	return AddRedfishResourceCollectionMemberCommand
-}
-func (c AddRedfishResourceCollectionMember) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
-	nm, ok := a.Properties["Members"]
-	if !ok {
-		return errors.New("Not a collection")
-	}
-
-	members := nm.([]interface{})
-
-	a.StoreEvent(RedfishResourcePropertiesUpdatedEvent,
-		&RedfishResourcePropertiesUpdatedData{
-			Properties: map[string]interface{}{
-				"Members":             append(members, map[string]interface{}{"@odata.id": c.MemberURI}),
-				"Members@odata.count": len(members) + 1,
-			},
-		},
-	)
-
-	return nil
-}
-
-type RemoveRedfishResourceCollectionMember struct {
-	RedfishResourceAggregateBaseCommand
-	MemberURI string
-}
-
-func (c RemoveRedfishResourceCollectionMember) CommandType() eh.CommandType {
-	return RemoveRedfishResourceCollectionMemberCommand
-}
-func (c RemoveRedfishResourceCollectionMember) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
-	// TODO
-	return nil
-}
 
 type UpdateRedfishResourcePrivileges struct {
 	RedfishResourceAggregateBaseCommand
