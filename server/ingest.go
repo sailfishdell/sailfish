@@ -124,7 +124,11 @@ func getNestedOdataIds(inputJSON interface{}, allowonce bool) (output []string) 
 	switch nested := inputJSON.(type) {
 	case map[string]interface{}:
 		if _, ok := nested["@odata.id"]; ok && (!allowonce) {
-			nestedIds = append(nestedIds, nested["@odata.id"].(string))
+			uri, ok := nested["@odata.id"].(string)
+			if ok {
+				uri = strings.SplitN(uri, "#", 2)[0]
+				nestedIds = append(nestedIds, uri)
+			}
 		}
 
 		for _, v := range nested {
