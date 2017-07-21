@@ -3,7 +3,7 @@
 username=$1
 password=$2
 
-export X_AUTH_TOKEN=$(curl -v -D ./test http://localhost:8080/redfish/v1/SessionService/Sessions -X POST -d "{\"UserName\": \"${username}\", \"Password\": \"${password}\"}" 2>&1 | grep X-Auth-Token | cut -d: -f2 | perl -p -e 's/\r//g;')
+export X_AUTH_TOKEN=$(curl -v http://localhost:8080/redfish/v1/SessionService/Sessions -X POST -d "{\"UserName\": \"${username}\", \"Password\": \"${password}\"}" 2>&1 | grep X-Auth-Token | cut -d: -f2 | perl -p -e 's/\r//g;')
 
 for i in $X_AUTH_TOKEN
 do
