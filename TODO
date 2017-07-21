@@ -1,7 +1,7 @@
 
 Short term: Some things to work on:
- - Password hashing in account
  - Automatic Collection management
+ - Password hashing in account
  - Implement a few Actions
  - privileges for properties
  - Move SessionService tree setup into SessionService

@@ -51,7 +51,6 @@ func NewService(d domain.DDDFunctions) Service {
 		DDDFunctions: d,
 	}
 
-	go Ingest(NewSPMFIngester("template/SPMF"), d, "/redfish/v1/")
 	return &cfg
 }
 

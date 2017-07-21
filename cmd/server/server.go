@@ -104,6 +104,10 @@ func main() {
 	       }, fieldKeys)
 	*/
 
+	// ingest from our source
+	// Ingest will recursively ingest from the source
+	go redfishserver.Ingest(redfishserver.NewSPMFIngester("template/SPMF"), ddd, *baseURI+"/v1/")
+
 	svc := redfishserver.NewService(ddd)
 	svc = redfishserver.NewPrivilegeEnforcingService(svc)
 	svc = redfishserver.NewBasicAuthService(svc)

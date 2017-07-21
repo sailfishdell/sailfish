@@ -46,11 +46,6 @@ func Ingest(i Ingester, d domain.DDDFunctions, odataid string) error {
 	// get the odata tree
 	ctx := context.Background()
 	tree, err := domain.GetTree(ctx, d.GetReadRepo(), d.GetTreeID())
-	/*	if err != nil {
-			fmt.Printf("Could not get tree!\n")
-			return err
-		}
-	*/
 
 	idExists := func(id string) bool {
 		if tree == nil {
@@ -72,21 +67,20 @@ func Ingest(i Ingester, d domain.DDDFunctions, odataid string) error {
 		return err
 	}
 
+	err = nil
 	if idExists(odataid) {
-		fmt.Printf("Updating existing resource\n")
-		updateRedfishResource(ctx, d, tree.Tree[odataid], properties)
+		err = updateRedfishResource(ctx, d, tree.Tree[odataid], properties)
 	} else {
-		fmt.Printf("Creating new resource\n")
-		createTreeLeaf(ctx, d, odataid, properties)
+		err = createTreeLeaf(ctx, d, odataid, properties)
+	}
+	if err != nil {
+		return err
 	}
 
 	subids := getNestedOdataIds(properties, true)
-	fmt.Printf("Process subids: %s\n", subids)
 	for _, id := range subids {
-		fmt.Printf("\tid: %s\n", id)
 		// prevent loops, only import if not already imported
 		if !idExists(id) {
-			fmt.Printf("\tIngest\n")
 			err := Ingest(i, d, id)
 			if err != nil {
 				return err
@@ -96,8 +90,8 @@ func Ingest(i Ingester, d domain.DDDFunctions, odataid string) error {
 	return nil
 }
 
-func createTreeLeaf(ctx context.Context, d domain.DDDFunctions, uri string, Properties map[string]interface{}) (uuid eh.UUID) {
-	uuid = eh.NewUUID()
+func createTreeLeaf(ctx context.Context, d domain.DDDFunctions, uri string, Properties map[string]interface{}) error {
+	uuid := eh.NewUUID()
 	fmt.Printf("Creating URI %s at %s\n", uri, uuid)
 	c := &domain.CreateRedfishResource{
 		RedfishResourceAggregateBaseCommand: domain.RedfishResourceAggregateBaseCommand{UUID: uuid},
@@ -108,19 +102,19 @@ func createTreeLeaf(ctx context.Context, d domain.DDDFunctions, uri string, Prop
 	}
 	err := d.GetCommandBus().HandleCommand(ctx, c)
 	if err != nil {
-		panic(err.Error())
+		return err
 	}
-	return
+	return nil
 }
 
-func updateRedfishResource(ctx context.Context, d domain.DDDFunctions, uuid eh.UUID, Properties map[string]interface{}) {
+func updateRedfishResource(ctx context.Context, d domain.DDDFunctions, uuid eh.UUID, Properties map[string]interface{}) error {
 	fmt.Printf("updateRedfishResource: %s\n", Properties)
 	c := &domain.UpdateRedfishResourceProperties{RedfishResourceAggregateBaseCommand: domain.RedfishResourceAggregateBaseCommand{UUID: uuid}, Properties: Properties}
 	err := d.GetCommandBus().HandleCommand(ctx, c)
 	if err != nil {
-		panic(err.Error())
+		return err
 	}
-	return
+	return nil
 }
 
 func getNestedOdataIds(inputJSON interface{}, allowonce bool) (output []string) {
