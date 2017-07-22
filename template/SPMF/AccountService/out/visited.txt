@@ -1,9 +1,0 @@
-/redfish/v1
-/redfish/v1/
-/redfish/v1/AccountService
-/redfish/v1/Chassis
-/redfish/v1/EventService
-/redfish/v1/JSONSchemas
-/redfish/v1/Managers
-/redfish/v1/Registries
-/redfish/v1/Systems

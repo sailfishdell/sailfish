@@ -1,7 +1,0 @@
-/redfish/v1/SessionService
-/redfish/v1/Sessions
-/redfish/v1/TaskService
-/redfish/v1/UpdateService
-/redfish/v1/AccountService/Accounts
-/redfish/v1/AccountService/Roles
-/redfish/v1/EventService/Subscriptions
