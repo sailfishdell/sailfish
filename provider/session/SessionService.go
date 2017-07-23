@@ -7,6 +7,7 @@ import (
 	jwt "github.com/dgrijalva/jwt-go"
 	eh "github.com/looplab/eventhorizon"
 	"github.com/superchalupa/go-redfish/domain"
+	"github.com/superchalupa/go-redfish/provider"
 	"math/rand"
 	"net/http"
 	"time"
@@ -26,15 +27,12 @@ type XAuthTokenRefreshData struct {
 
 func init() {
 	eh.RegisterEventData(XAuthTokenRefreshEvent, func() eh.EventData { return &XAuthTokenRefreshData{} })
+	domain.Httpsagas = append(domain.Httpsagas, SetupSessionService)
 }
 
 type LoginRequest struct {
 	UserName string
 	Password string
-}
-
-func init() {
-	domain.Httpsagas = append(domain.Httpsagas, SetupSessionService)
 }
 
 // This is a fairly slow implementation, but should be good enough for our
@@ -52,9 +50,61 @@ func createRandSecret(length int, characters string) []byte {
 	return b
 }
 
-func SetupSessionService(s domain.SagaRegisterer, d domain.DDDFunctions) {
+func makeBackgroundDeleteSession(d domain.DDDFunctions, sessionURI string, sessionUUID eh.UUID) {
+	go func() {
+		// set up wait for token refresh
+		refreshID, refreshChan := d.GetEventWaiter().SetupWait(func(event eh.Event) bool {
+			if event.EventType() != XAuthTokenRefreshEvent {
+				return false
+			}
+			if data, ok := event.Data().(*XAuthTokenRefreshData); ok {
+				if data.SessionURI == sessionURI {
+					return true
+				}
+			}
+			return false
+		})
+
+		defer d.GetEventWaiter().CancelWait(refreshID)
+
+		// if token is deleted by user, also stop
+		deletedID, deletedChan := d.GetEventWaiter().SetupWait(func(event eh.Event) bool {
+			if event.EventType() != domain.RedfishResourceRemovedEvent {
+				return false
+			}
+			if event.AggregateID() == sessionUUID {
+				return true
+			}
+			return false
+		})
+
+		defer d.GetEventWaiter().CancelWait(deletedID)
+
+		// loop forever
+		ctx := context.Background()
+		for {
+			select {
+
+			case <-refreshChan:
+				continue // stayin' alive
+
+			case <-deletedChan:
+				return // somebody else deleted it
+
+			case <-time.After(30 * time.Second):
+				// session times out, send command to delete
+				d.GetCommandBus().HandleCommand(ctx, &domain.RemoveRedfishResource{RedfishResourceAggregateBaseCommand: domain.RedfishResourceAggregateBaseCommand{UUID: sessionUUID}})
+				return //exit goroutine
+			}
+		}
+	}()
+}
+
+func SetupSessionService(s domain.SagaRegisterer) {
+	s.RegisterNewHandler("DELETE:"+s.GetBaseURI()+"/v1/$metadata#Session.Session", provider.MakeStandardHTTPDelete(s))
+
 	// really don't need to have all these functions inline here, should split them out next
-	s.RegisterNewSaga("POST:/redfish/v1/SessionService/Sessions",
+	s.RegisterNewHandler("POST:"+s.GetBaseURI()+"/v1/SessionService/Sessions",
 		func(ctx context.Context, treeID, cmdID eh.UUID, resource *domain.RedfishResource, r *http.Request) error {
 			decoder := json.NewDecoder(r.Body)
 			var lr LoginRequest
@@ -65,15 +115,15 @@ func SetupSessionService(s domain.SagaRegisterer, d domain.DDDFunctions) {
 			}
 
 			privileges := []string{}
-			account, err := domain.FindUser(ctx, d, lr.UserName)
+			account, err := domain.FindUser(ctx, s, lr.UserName)
 			// TODO: verify password
 			if err != nil {
 				return errors.New("nonexistent user")
 			}
-			privileges = append(privileges, domain.GetPrivileges(ctx, d, account)...)
+			privileges = append(privileges, domain.GetPrivileges(ctx, s, account)...)
 
 			sessionUUID := eh.NewUUID()
-			sessionURI := fmt.Sprintf("%s/v1/SessionService/Sessions/%s", d.GetBaseURI(), sessionUUID)
+			sessionURI := fmt.Sprintf("%s/v1/SessionService/Sessions/%s", s.GetBaseURI(), sessionUUID)
 
 			token := jwt.New(jwt.SigningMethodHS256)
 			claims := make(jwt.MapClaims)
@@ -90,7 +140,7 @@ func SetupSessionService(s domain.SagaRegisterer, d domain.DDDFunctions) {
 			retprops := map[string]interface{}{
 				"@odata.type":    "#Session.v1_0_0.Session",
 				"@odata.id":      sessionURI,
-				"@odata.context": d.MakeFullyQualifiedV1("$metadata#Session.Session"),
+				"@odata.context": s.MakeFullyQualifiedV1("$metadata#Session.Session"),
 				"Id":             fmt.Sprintf("%s", sessionUUID),
 				"Name":           "User Session",
 				"Description":    "User Session",
@@ -99,7 +149,7 @@ func SetupSessionService(s domain.SagaRegisterer, d domain.DDDFunctions) {
 
 			err = s.GetCommandBus().HandleCommand(ctx, &domain.CreateRedfishResource{
 				RedfishResourceAggregateBaseCommand: domain.RedfishResourceAggregateBaseCommand{UUID: sessionUUID},
-				TreeID:      d.GetTreeID(),
+				TreeID:      s.GetTreeID(),
 				ResourceURI: retprops["@odata.id"].(string),
 				Type:        retprops["@odata.type"].(string),
 				Context:     retprops["@odata.context"].(string),
@@ -121,7 +171,7 @@ func SetupSessionService(s domain.SagaRegisterer, d domain.DDDFunctions) {
 					},
 				})
 
-			d.GetEventHandler().HandleEvent(ctx, event)
+			s.GetEventHandler().HandleEvent(ctx, event)
 
 			// set up a goroutine that will delete the session resource when it
 			// times out.
@@ -129,67 +179,9 @@ func SetupSessionService(s domain.SagaRegisterer, d domain.DDDFunctions) {
 			// just looped over all the session entries but this is easier to
 			// set up for now, and doesn't really prove to be terribly resource
 			// intensive until we get hundreds of sessions
-			go func() {
-
-				// we send a command and then wait for a completion event. Set up the wait here.
-				waitID, resultChan := d.GetEventWaiter().SetupWait(func(event eh.Event) bool {
-					if event.EventType() != XAuthTokenRefreshEvent {
-						return false
-					}
-					if data, ok := event.Data().(*XAuthTokenRefreshData); ok {
-						if data.SessionURI == sessionURI {
-							return true
-						}
-					}
-					return false
-				})
-
-				defer d.GetEventWaiter().CancelWait(waitID)
-
-				// loop forever
-				for {
-					select {
-
-					// stay alive
-					case <-resultChan:
-						continue
-
-					// session times out, send command to delete
-					case <-time.After(30 * time.Second):
-						s.GetCommandBus().HandleCommand(ctx, &domain.RemoveRedfishResource{RedfishResourceAggregateBaseCommand: domain.RedfishResourceAggregateBaseCommand{UUID: sessionUUID}})
-						return //exit goroutine
-					}
-				}
-			}()
+			makeBackgroundDeleteSession(s, sessionURI, sessionUUID)
 
 			return nil
 		})
 
-	s.RegisterNewSaga("DELETE:/redfish/v1/$metadata#Session.Session",
-		func(ctx context.Context, treeID, cmdID eh.UUID, resource *domain.RedfishResource, r *http.Request) error {
-			// we have the tree ID, fetch an updated copy of the actual tree
-			// TODO: Locking? Should repo give us a copy? Need to test this.
-			tree, err := domain.GetTree(ctx, s.GetReadRepo(), treeID)
-			if err != nil {
-				return err
-			}
-
-			sessionID, ok := tree.Tree[r.URL.Path]
-			if !ok {
-				return errors.New("Couldn't get handle for session service")
-			}
-
-			s.GetCommandBus().HandleCommand(ctx, &domain.RemoveRedfishResource{RedfishResourceAggregateBaseCommand: domain.RedfishResourceAggregateBaseCommand{UUID: sessionID}})
-
-			event := eh.NewEvent(domain.HTTPCmdProcessedEvent,
-				&domain.HTTPCmdProcessedData{
-					CommandID: cmdID,
-					Results:   map[string]interface{}{"msg": "complete!"},
-					Headers:   map[string]string{},
-				})
-
-			d.GetEventHandler().HandleEvent(ctx, event)
-
-			return nil
-		})
 }

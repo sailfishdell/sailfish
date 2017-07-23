@@ -106,7 +106,8 @@ func main() {
 
 	// ingest from our source
 	// Ingest will recursively ingest from the source
-	go redfishserver.Ingest(redfishserver.NewSPMFIngester("template/SPMF"), ddd, *baseURI+"/v1/")
+	ctx, cancel := context.WithCancel(context.Background())
+	go redfishserver.Ingest(ctx, redfishserver.NewSPMFIngester("template/SPMF"), ddd, *baseURI+"/v1/")
 
 	svc := redfishserver.NewService(ddd)
 	svc = redfishserver.NewPrivilegeEnforcingService(svc)
@@ -191,6 +192,7 @@ func main() {
 	fmt.Printf("%v\n", listenAddrs)
 
 	<-intr
+	cancel()
 	fmt.Printf("interrupted\n")
 
 	type Shutdowner interface {

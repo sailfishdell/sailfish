@@ -24,7 +24,7 @@ type HTTPSagaList struct {
 	DDDFunctions
 }
 
-type httpsagasetup func(SagaRegisterer, DDDFunctions)
+type httpsagasetup func(SagaRegisterer)
 
 var Httpsagas []httpsagasetup
 
@@ -35,18 +35,17 @@ func NewHTTPSagaList(d DDDFunctions) *HTTPSagaList {
 	}
 
 	for _, s := range Httpsagas {
-		s(&sl, d)
+		s(&sl)
 	}
 	return &sl
 }
 
 type SagaRegisterer interface {
-	RegisterNewSaga(match string, f HTTPSaga)
-	GetCommandBus() eh.CommandBus
-	GetReadRepo() eh.ReadRepo
+	RegisterNewHandler(match string, f HTTPSaga)
+	DDDFunctions
 }
 
-func (l *HTTPSagaList) RegisterNewSaga(match string, f HTTPSaga) {
+func (l *HTTPSagaList) RegisterNewHandler(match string, f HTTPSaga) {
 	l.sagaList[match] = f
 }
 

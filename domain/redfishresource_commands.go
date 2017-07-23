@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	eh "github.com/looplab/eventhorizon"
+	"reflect"
 )
 
 var _ = fmt.Printf
@@ -32,7 +33,7 @@ const (
 )
 
 type RedfishResourceAggregateBaseCommand struct {
-	UUID eh.UUID  // the uuid of the actual aggregate
+	UUID eh.UUID // the uuid of the actual aggregate
 }
 
 func (c RedfishResourceAggregateBaseCommand) AggregateID() eh.UUID { return c.UUID }
@@ -42,7 +43,7 @@ func (c RedfishResourceAggregateBaseCommand) AggregateType() eh.AggregateType {
 
 type CreateRedfishResource struct {
 	RedfishResourceAggregateBaseCommand
-    TreeID      eh.UUID  // the uuid of the tree we'll be in
+	TreeID      eh.UUID // the uuid of the tree we'll be in
 	ResourceURI string
 	Type        string
 	Context     string
@@ -64,7 +65,7 @@ AddProp:
 				continue AddProp
 			}
 		}
-        np[k] = v
+		np[k] = v
 	}
 	np["@odata.id"] = c.ResourceURI
 	np["@odata.type"] = c.Type
@@ -72,7 +73,7 @@ AddProp:
 
 	a.StoreEvent(RedfishResourceCreatedEvent,
 		&RedfishResourceCreatedData{
-            TreeID:      c.TreeID,
+			TreeID:      c.TreeID,
 			ResourceURI: c.ResourceURI,
 			Private:     c.Private,
 			Properties:  np,
@@ -105,11 +106,34 @@ AddProp:
 				continue AddProp
 			}
 		}
-        // dont need to update if it's already that value
-        oldv, ok := a.Properties[k]
-        if !ok || v!=oldv {
-		    np[k] = v
-        }
+		// dont need to update if it's already that value
+		oldv, ok := a.Properties[k]
+		if !ok {
+			// update event with new property if it doesnt already exist
+			np[k] = v
+			continue AddProp
+		}
+		if reflect.TypeOf(v) != reflect.TypeOf(oldv) {
+			// update event with new property if type is now different
+			np[k] = v
+			continue AddProp
+		}
+
+		switch oldv.(type) {
+		case []interface{}:
+			//if it's an array just punt for now
+			np[k] = v
+			continue AddProp
+		case map[string]interface{}:
+			//if it's a map just punt for now
+			np[k] = v
+			continue AddProp
+		case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, uintptr, string, bool, complex64, complex128:
+			if oldv != v {
+				np[k] = v
+				continue AddProp
+			}
+		}
 	}
 
 	// shallow copy Private
@@ -161,7 +185,6 @@ func (c RemoveRedfishResource) Handle(ctx context.Context, a *RedfishResourceAgg
 	a.StoreEvent(RedfishResourceRemovedEvent, nil)
 	return nil
 }
-
 
 type UpdateRedfishResourcePrivileges struct {
 	RedfishResourceAggregateBaseCommand

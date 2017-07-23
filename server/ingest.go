@@ -40,11 +40,10 @@ func (i spmfIngester) FromOdataID(odataid string) (f io.ReadCloser, err error) {
 // End SPMF Ingester
 //****************************************************************************
 
-func Ingest(i Ingester, d domain.DDDFunctions, odataid string) error {
+func Ingest(ctx context.Context, i Ingester, d domain.DDDFunctions, odataid string) error {
 	fmt.Printf("Ingesting @odata.id = %s\n", odataid)
 
 	// get the odata tree
-	ctx := context.Background()
 	tree, err := domain.GetTree(ctx, d.GetReadRepo(), d.GetTreeID())
 
 	idExists := func(id string) bool {
@@ -81,7 +80,7 @@ func Ingest(i Ingester, d domain.DDDFunctions, odataid string) error {
 	for _, id := range subids {
 		// prevent loops, only import if not already imported
 		if !idExists(id) {
-			err := Ingest(i, d, id)
+			err := Ingest(ctx, i, d, id)
 			if err != nil {
 				return err
 			}

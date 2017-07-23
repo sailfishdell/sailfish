@@ -21,6 +21,7 @@ func Setup(ddd DDDFunctions) {
 	SetupAggregate()
 	SetupEvents()
 	SetupCommands()
+	SetupCollectionSaga(ddd)
 	SetupHTTP()
 
 	// Create the aggregate repository.

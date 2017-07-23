@@ -17,7 +17,7 @@ const RedfishResourceAggregateType eh.AggregateType = "RedfishResource"
 type RedfishResourceAggregate struct {
 	// AggregateBase implements most of the eventhorizon.Aggregate interface.
 	*eh.AggregateBase
-    TreeID       eh.UUID
+	TreeID       eh.UUID
 	ResourceURI  string
 	Properties   map[string]interface{}
 	PrivilegeMap map[string]interface{}
