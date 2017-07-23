@@ -31,6 +31,9 @@ type DDDFunctions interface {
 	GetCommandBus() eh.CommandBus
 	GetReadRepo() eh.ReadRepo
 	GetReadWriteRepo() eh.ReadWriteRepo
+
+	GetAggregateCommandHandler() *eh.AggregateCommandHandler
+	GetEventSourcingRepository() *eh.EventSourcingRepository
 }
 
 type EventWaiter interface {
@@ -52,6 +55,10 @@ type baseDDD struct {
 
 	cmdbus      eh.CommandBus
 	redfishRepo eh.ReadWriteRepo
+
+	// structs, not interfaces
+	handler    *eh.AggregateCommandHandler
+	repository *eh.EventSourcingRepository
 }
 
 func BaseDDDFactory(baseURI, verURI string, f ...interface{}) DDDFunctions {
@@ -88,6 +95,19 @@ func BaseDDDFactory(baseURI, verURI string, f ...interface{}) DDDFunctions {
 	if b.waiter == nil {
 		b.waiter = utils.NewEventWaiter()
 		b.eventPublisher.AddObserver(b.waiter)
+	}
+
+	// Create the aggregate repository.
+	var err error
+	b.repository, err = eh.NewEventSourcingRepository(b.eventStore, b.eventBus)
+	if err != nil {
+		panic(err)
+	}
+
+	// Create the aggregate command handler.
+	b.handler, err = eh.NewAggregateCommandHandler(b.repository)
+	if err != nil {
+		panic(err)
 	}
 
 	// Add the logger as an observer.
@@ -138,6 +158,16 @@ func (c *baseDDD) GetEventWaiter() EventWaiter {
 
 func (c *baseDDD) GetEventPublisher() eh.EventPublisher {
 	return c.eventPublisher
+}
+
+// only use this in setup, probably
+func (c *baseDDD) GetAggregateCommandHandler() *eh.AggregateCommandHandler {
+	return c.handler
+}
+
+// only use this in setup, probably
+func (c *baseDDD) GetEventSourcingRepository() *eh.EventSourcingRepository {
+	return c.repository
 }
 
 func SendEvent(ctx context.Context, d DDDFunctions, eventtype eh.EventType, eventData interface{}) {

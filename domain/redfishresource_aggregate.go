@@ -6,7 +6,7 @@ import (
 	eh "github.com/looplab/eventhorizon"
 )
 
-func SetupAggregate() {
+func SetupAggregate(DDDFunctions) {
 	eh.RegisterAggregate(func(id eh.UUID) eh.Aggregate {
 		return NewRedfishResourceAggregate(id)
 	})

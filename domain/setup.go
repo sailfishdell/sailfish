@@ -1,7 +1,6 @@
 package domain
 
 import (
-	"log"
 	"sync"
 
 	eh "github.com/looplab/eventhorizon"
@@ -18,61 +17,11 @@ func RegisterDynamicCommand(cmd eh.CommandType) {
 
 // Setup configures the domain.
 func Setup(ddd DDDFunctions) {
-	SetupAggregate()
-	SetupEvents()
-	SetupCommands()
+	SetupAggregate(ddd)
+	SetupEvents(ddd)
+	SetupCommands(ddd)
 	SetupCollectionSaga(ddd)
-	SetupHTTP()
-
-	// Create the aggregate repository.
-	repository, err := eh.NewEventSourcingRepository(ddd.GetEventStore(), ddd.GetEventBus())
-	if err != nil {
-		log.Fatalf("could not create repository: %s", err)
-	}
-
-	// Create the aggregate command handler.
-	handler, err := eh.NewAggregateCommandHandler(repository)
-	if err != nil {
-		log.Fatalf("could not create command handler: %s", err)
-	}
-
-	// redfish
-	handler.SetAggregate(RedfishResourceAggregateType, CreateRedfishResourceCommand)
-	handler.SetAggregate(RedfishResourceAggregateType, UpdateRedfishResourcePropertiesCommand)
-	handler.SetAggregate(RedfishResourceAggregateType, RemoveRedfishResourcePropertyCommand)
-	handler.SetAggregate(RedfishResourceAggregateType, RemoveRedfishResourceCommand)
-
-	handler.SetAggregate(RedfishResourceAggregateType, UpdateRedfishResourcePrivilegesCommand)
-	handler.SetAggregate(RedfishResourceAggregateType, UpdateRedfishResourcePermissionsCommand)
-	handler.SetAggregate(RedfishResourceAggregateType, AddRedfishResourceHeaderCommand)
-	handler.SetAggregate(RedfishResourceAggregateType, UpdateRedfishResourceHeaderCommand)
-	handler.SetAggregate(RedfishResourceAggregateType, RemoveRedfishResourceHeaderCommand)
-
-	// HTTP commands...
-	handler.SetAggregate(RedfishResourceAggregateType, HandleHTTPCommand)
-
-	dynamicCommandsMu.RLock()
-	for _, c := range dynamicCommands {
-		handler.SetAggregate(RedfishResourceAggregateType, c)
-		ddd.GetCommandBus().SetHandler(handler, c)
-	}
-	dynamicCommandsMu.RUnlock()
-
-	// Create the command bus and register the handler for the commands.
-	// WARNING: If you miss adding a handler for a command, then all command processesing stops when that command is emitted!
-	ddd.GetCommandBus().SetHandler(handler, CreateRedfishResourceCommand)
-	ddd.GetCommandBus().SetHandler(handler, UpdateRedfishResourcePropertiesCommand)
-	ddd.GetCommandBus().SetHandler(handler, RemoveRedfishResourcePropertyCommand)
-	ddd.GetCommandBus().SetHandler(handler, RemoveRedfishResourceCommand)
-
-	ddd.GetCommandBus().SetHandler(handler, UpdateRedfishResourcePrivilegesCommand)
-	ddd.GetCommandBus().SetHandler(handler, UpdateRedfishResourcePermissionsCommand)
-	ddd.GetCommandBus().SetHandler(handler, AddRedfishResourceHeaderCommand)
-	ddd.GetCommandBus().SetHandler(handler, UpdateRedfishResourceHeaderCommand)
-	ddd.GetCommandBus().SetHandler(handler, RemoveRedfishResourceHeaderCommand)
-
-	// HTTP
-	ddd.GetCommandBus().SetHandler(handler, HandleHTTPCommand)
+	SetupHTTP(ddd)
 
 	// read side projector
 	SetupRedfishProjector(ddd)
@@ -80,5 +29,4 @@ func Setup(ddd DDDFunctions) {
 
 	// sagas
 	SetupPrivilegeSaga(ddd)
-
 }

@@ -56,19 +56,16 @@ type HTTPCmdProcessedData struct {
 	Headers    map[string]string
 }
 
-func SetupHTTP() {
-	// COMMAND registration
-	eh.RegisterCommand(func() eh.Command { return &HandleHTTP{} })
-
+func SetupHTTP(DDDFunctions) {
 	// EVENT registration
 	eh.RegisterEventData(HTTPCmdProcessedEvent, func() eh.EventData { return &HTTPCmdProcessedData{} })
 }
 
 // RunHTTPOperation will try to find a command for an http operation
 // Search path:
-//      ${METHOD}@odata.id
-//      ${METHOD}@odata.type
-//      ${METHOD}@odata.context
+//      ${HTTP_METHOD}:${odata.id}
+//      ${HTTP_METHOD}:${odata.type}
+//      ${HTTP_METHOD}:${odata.context}
 func (l *HTTPSagaList) RunHTTPOperation(ctx context.Context, treeID, cmdID eh.UUID, resource *RedfishResource, r *http.Request) error {
 	aggregateID := resource.Properties["@odata.id"].(string)
 	typ := resource.Properties["@odata.type"].(string)
@@ -84,67 +81,9 @@ func (l *HTTPSagaList) RunHTTPOperation(ctx context.Context, treeID, cmdID eh.UU
 
 	for _, s := range search {
 		if f, ok := l.sagaList[s]; ok {
-			fmt.Printf("FOUND(%s)\n", s)
 			return f(ctx, treeID, cmdID, resource, r)
 		}
 	}
 
-	for _, s := range search {
-		cmd, err := eh.CreateCommand(eh.CommandType(s))
-		if err == nil {
-			cmdInit, ok := cmd.(Initializer)
-			if ok {
-				cmdInit.Initialize(l.GetReadRepo(), treeID, eh.UUID(aggregateID), cmdID, r)
-				return l.GetCommandBus().HandleCommand(ctx, cmd)
-			}
-		}
-	}
-
 	return errors.New("Command not found")
-}
-
-const (
-	HandleHTTPCommand eh.CommandType = "HandleHTTP"
-)
-
-type HandleHTTP struct {
-	UUID        eh.UUID
-	CommandID   eh.UUID
-	HTTPRequest *http.Request `eh:"optional"`
-
-	// below is everything needed for command side to query the read side, if necessary.
-	// This should be done in only very limited circumstances
-	// also keep in mind that read side is only ***eventually*** consistent
-	ReadSide eh.ReadRepo
-	TreeID   eh.UUID
-}
-
-type Initializer interface {
-	Initialize(eh.ReadRepo, eh.UUID, eh.UUID, eh.UUID, *http.Request)
-}
-
-func (c *HandleHTTP) Initialize(repo eh.ReadRepo, treeID, aggregateID, cmdid eh.UUID, r *http.Request) {
-	c.UUID = aggregateID
-	c.CommandID = cmdid
-	c.HTTPRequest = r
-	c.ReadSide = repo
-	c.TreeID = treeID
-}
-
-func (c HandleHTTP) AggregateID() eh.UUID            { return c.UUID }
-func (c HandleHTTP) AggregateType() eh.AggregateType { return RedfishResourceAggregateType }
-func (c HandleHTTP) CommandType() eh.CommandType     { return HandleHTTPCommand }
-func (c HandleHTTP) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
-
-	// Store HTTPCmdProcessedEvent in order to signal to the command is done
-	// processing and to return the results that should be given back to the
-	// user.
-	a.StoreEvent(HTTPCmdProcessedEvent,
-		&HTTPCmdProcessedData{
-			CommandID: c.CommandID,
-			Results:   map[string]interface{}{"MSG": "HELLO WORLD"},
-		},
-	)
-
-	return nil
 }

@@ -10,12 +10,38 @@ import (
 
 var _ = fmt.Printf
 
-func SetupCommands() {
+func SetupCommands(d DDDFunctions) {
 	// odata
 	eh.RegisterCommand(func() eh.Command { return &CreateRedfishResource{} })
 	eh.RegisterCommand(func() eh.Command { return &UpdateRedfishResourceProperties{} })
 	eh.RegisterCommand(func() eh.Command { return &RemoveRedfishResourceProperty{} })
 	eh.RegisterCommand(func() eh.Command { return &RemoveRedfishResource{} })
+
+	eh.RegisterCommand(func() eh.Command { return &UpdateRedfishResourcePrivileges{} })
+
+	// redfish
+	d.GetAggregateCommandHandler().SetAggregate(RedfishResourceAggregateType, CreateRedfishResourceCommand)
+	d.GetAggregateCommandHandler().SetAggregate(RedfishResourceAggregateType, UpdateRedfishResourcePropertiesCommand)
+	d.GetAggregateCommandHandler().SetAggregate(RedfishResourceAggregateType, RemoveRedfishResourcePropertyCommand)
+	d.GetAggregateCommandHandler().SetAggregate(RedfishResourceAggregateType, RemoveRedfishResourceCommand)
+
+	d.GetAggregateCommandHandler().SetAggregate(RedfishResourceAggregateType, UpdateRedfishResourcePrivilegesCommand)
+
+	dynamicCommandsMu.RLock()
+	for _, c := range dynamicCommands {
+		d.GetAggregateCommandHandler().SetAggregate(RedfishResourceAggregateType, c)
+		d.GetCommandBus().SetHandler(d.GetAggregateCommandHandler(), c)
+	}
+	dynamicCommandsMu.RUnlock()
+
+	// Create the command bus and register the handler for the commands.
+	// WARNING: If you miss adding a handler for a command, then all command processesing stops when that command is emitted!
+	d.GetCommandBus().SetHandler(d.GetAggregateCommandHandler(), CreateRedfishResourceCommand)
+	d.GetCommandBus().SetHandler(d.GetAggregateCommandHandler(), UpdateRedfishResourcePropertiesCommand)
+	d.GetCommandBus().SetHandler(d.GetAggregateCommandHandler(), RemoveRedfishResourcePropertyCommand)
+	d.GetCommandBus().SetHandler(d.GetAggregateCommandHandler(), RemoveRedfishResourceCommand)
+
+	d.GetCommandBus().SetHandler(d.GetAggregateCommandHandler(), UpdateRedfishResourcePrivilegesCommand)
 }
 
 const (
@@ -25,11 +51,7 @@ const (
 	RemoveRedfishResourceCommand           eh.CommandType = "RemoveRedfishResource"
 
 	// TODO
-	UpdateRedfishResourcePrivilegesCommand  eh.CommandType = "UpdateRedfishResourcePrivileges"
-	UpdateRedfishResourcePermissionsCommand eh.CommandType = "UpdateRedfishResourcePermissions"
-	AddRedfishResourceHeaderCommand         eh.CommandType = "AddRedfishResourceHeader"
-	UpdateRedfishResourceHeaderCommand      eh.CommandType = "UpdateRedfishResourceHeader"
-	RemoveRedfishResourceHeaderCommand      eh.CommandType = "RemoveRedfishResourceHeader"
+	UpdateRedfishResourcePrivilegesCommand eh.CommandType = "UpdateRedfishResourcePrivileges"
 )
 
 type RedfishResourceAggregateBaseCommand struct {
