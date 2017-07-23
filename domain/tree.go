@@ -35,9 +35,6 @@ func SetupRedfishProjector(ddd DDDFunctions) {
 	ddd.GetEventBus().AddHandler(redfishResourceProjector, RedfishResourcePropertyRemovedEvent)
 	ddd.GetEventBus().AddHandler(redfishResourceProjector, RedfishResourceRemovedEvent)
 	ddd.GetEventBus().AddHandler(redfishResourceProjector, RedfishResourcePrivilegesUpdatedEvent)
-	ddd.GetEventBus().AddHandler(redfishResourceProjector, RedfishResourcePermissionsUpdatedEvent)
-	ddd.GetEventBus().AddHandler(redfishResourceProjector, RedfishResourceHeadersUpdatedEvent)
-	ddd.GetEventBus().AddHandler(redfishResourceProjector, RedfishResourceHeaderRemovedEvent)
 }
 
 type RedfishProjector struct{}
@@ -94,20 +91,6 @@ func (o *RedfishProjector) Project(ctx context.Context, event eh.Event, model in
 	case RedfishResourcePrivilegesUpdatedEvent:
 		if data, ok := event.Data().(*RedfishResourcePrivilegesUpdatedData); ok {
 			item.PrivilegeMap = data.Privileges
-		}
-	case RedfishResourcePermissionsUpdatedEvent:
-		if data, ok := event.Data().(*RedfishResourcePermissionsUpdatedData); ok {
-			item.Permissions = data.Permissions
-		}
-	case RedfishResourceHeadersUpdatedEvent:
-		if data, ok := event.Data().(*RedfishResourceHeadersUpdatedData); ok {
-			for k, v := range data.Headers {
-				item.Headers[k] = v
-			}
-		}
-	case RedfishResourceHeaderRemovedEvent:
-		if data, ok := event.Data().(*RedfishResourceHeaderRemovedData); ok {
-			delete(item.Headers, data.HeaderName)
 		}
 	default:
 		return nil, errors.New("Could not handle event: " + event.String())

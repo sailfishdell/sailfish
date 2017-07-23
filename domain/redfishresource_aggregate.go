@@ -46,41 +46,14 @@ func (a *RedfishResourceAggregate) HandleCommand(ctx context.Context, command eh
 }
 
 type RREvtApplier interface {
-	ApplyToAggregate(context.Context, *RedfishResourceAggregate) error
+	ApplyToAggregate(context.Context, *RedfishResourceAggregate, eh.Event) error
 }
 
 func (a *RedfishResourceAggregate) ApplyEvent(ctx context.Context, event eh.Event) error {
 	d := event.Data()
 	switch d := d.(type) {
 	case RREvtApplier:
-		return d.ApplyToAggregate(ctx, a)
-	}
-
-	switch event.EventType() {
-	case RedfishResourceCreatedEvent:
-		if data, ok := event.Data().(*RedfishResourceCreatedData); ok {
-			a.ResourceURI = data.ResourceURI
-			a.Properties = map[string]interface{}{}
-			for k, v := range data.Properties {
-				a.Properties[k] = v
-			}
-			a.Private = map[string]interface{}{}
-			for k, v := range data.Private {
-				a.Private[k] = v
-			}
-		}
-	case RedfishResourcePropertiesUpdatedEvent:
-		if data, ok := event.Data().(*RedfishResourcePropertiesUpdatedData); ok {
-			for k, v := range data.Properties {
-				a.Properties[k] = v
-			}
-		}
-	case RedfishResourcePropertyRemovedEvent:
-		if data, ok := event.Data().(*RedfishResourcePropertyRemovedData); ok {
-			delete(a.Properties, data.PropertyName)
-		}
-	case RedfishResourceRemovedEvent:
-		// no-op
+		return d.ApplyToAggregate(ctx, a, event)
 	}
 
 	return nil

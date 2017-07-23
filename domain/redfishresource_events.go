@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"context"
 	eh "github.com/looplab/eventhorizon"
 )
 
@@ -12,12 +13,7 @@ const (
 	RedfishResourceRemovedEvent           eh.EventType = "RedfishResourceRemoved"
 
 	// methods, privileges(from roles), and permissions(read/write). For now, only support wholesale update of object privileges
-	RedfishResourcePrivilegesUpdatedEvent  eh.EventType = "RedfishResourcePrivilegesUpdated"
-	RedfishResourcePermissionsUpdatedEvent eh.EventType = "RedfishResourcePermissionsUpdated"
-
-	// granular header updates (Etags, probably)
-	RedfishResourceHeadersUpdatedEvent eh.EventType = "RedfishResourceHeadersUpdated"
-	RedfishResourceHeaderRemovedEvent  eh.EventType = "RedfishResourceHeaderRemoved"
+	RedfishResourcePrivilegesUpdatedEvent eh.EventType = "RedfishResourcePrivilegesUpdated"
 )
 
 func SetupEvents(DDDFunctions) {
@@ -28,10 +24,6 @@ func SetupEvents(DDDFunctions) {
 	// no event data for RedfishResourceRemovedEvent
 
 	eh.RegisterEventData(RedfishResourcePrivilegesUpdatedEvent, func() eh.EventData { return &RedfishResourcePrivilegesUpdatedData{} })
-	eh.RegisterEventData(RedfishResourcePermissionsUpdatedEvent, func() eh.EventData { return &RedfishResourcePermissionsUpdatedData{} })
-
-	eh.RegisterEventData(RedfishResourceHeadersUpdatedEvent, func() eh.EventData { return &RedfishResourceHeadersUpdatedData{} })
-	eh.RegisterEventData(RedfishResourceHeaderRemovedEvent, func() eh.EventData { return &RedfishResourceHeaderRemovedData{} })
 }
 
 type RedfishResourceCreatedData struct {
@@ -43,25 +35,49 @@ type RedfishResourceCreatedData struct {
 	Private     map[string]interface{}
 }
 
+func (data RedfishResourceCreatedData) ApplyToAggregate(ctx context.Context, a *RedfishResourceAggregate, event eh.Event) error {
+	a.ResourceURI = data.ResourceURI
+	a.Properties = map[string]interface{}{}
+	for k, v := range data.Properties {
+		a.Properties[k] = v
+	}
+	a.Private = map[string]interface{}{}
+	for k, v := range data.Private {
+		a.Private[k] = v
+	}
+	a.PrivilegeMap = map[string]interface{}{}
+	return nil
+}
+
 type RedfishResourcePropertiesUpdatedData struct {
 	Properties map[string]interface{}
 	Private    map[string]interface{}
+}
+
+func (data RedfishResourcePropertiesUpdatedData) ApplyToAggregate(ctx context.Context, a *RedfishResourceAggregate, event eh.Event) error {
+	for k, v := range data.Properties {
+		a.Properties[k] = v
+	}
+	return nil
 }
 
 type RedfishResourcePropertyRemovedData struct {
 	PropertyName string
 }
 
+func (data RedfishResourcePropertyRemovedData) ApplyToAggregate(ctx context.Context, a *RedfishResourceAggregate, event eh.Event) error {
+	delete(a.Properties, data.PropertyName)
+	return nil
+}
+
 type RedfishResourcePrivilegesUpdatedData struct {
 	Privileges map[string]interface{}
 }
-type RedfishResourcePermissionsUpdatedData struct {
-	Permissions map[string]interface{}
-}
 
-type RedfishResourceHeadersUpdatedData struct {
-	Headers map[string]string
-}
-type RedfishResourceHeaderRemovedData struct {
-	HeaderName string
+func (data RedfishResourcePrivilegesUpdatedData) ApplyToAggregate(ctx context.Context, a *RedfishResourceAggregate, event eh.Event) error {
+	// no op for aggregate (only does anything on read side)
+	for k, v := range data.Privileges {
+		a.PrivilegeMap[k] = v
+	}
+	return nil
 }
