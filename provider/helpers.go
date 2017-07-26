@@ -8,22 +8,24 @@ import (
 	"net/http"
 )
 
+type RequestAdapter struct {
+	Handle func(ctx context.Context, r *http.Request, privileges []string, cmdid eh.UUID, tree *domain.RedfishTree, item *domain.RedfishResource) error
+}
+
+type ProviderRegisterer interface {
+	RegisterHandler(add string, adapter RequestAdapter)
+	domain.DDDFunctions
+}
+
 // standard handler if we are just going to send the standard RemoveRedfishResource on delete
-func MakeStandardHTTPDelete(d domain.DDDFunctions) func(context.Context, eh.UUID, eh.UUID, *domain.RedfishResource, *http.Request) error {
-	return func(ctx context.Context, treeID, cmdID eh.UUID, resource *domain.RedfishResource, r *http.Request) error {
-		// we have the tree ID, fetch an updated copy of the actual tree
-		// TODO: Locking? Should repo give us a copy? Need to test this.
-		tree, err := domain.GetTree(ctx, d.GetReadRepo(), treeID)
-		if err != nil {
-			return err
-		}
-
-		sessionID, ok := tree.Tree[r.URL.Path]
+func MakeStandardHTTPDelete(d domain.DDDFunctions) func(context.Context, *http.Request, []string, eh.UUID, *domain.RedfishTree, *domain.RedfishResource) error {
+	return func(ctx context.Context, r *http.Request, privileges []string, cmdID eh.UUID, tree *domain.RedfishTree, requested *domain.RedfishResource) error {
+		idToDelete, ok := tree.Tree[r.URL.Path]
 		if !ok {
-			return errors.New("Couldn't get handle for session service")
+			return errors.New("ID to delete doesn't appear to exist")
 		}
 
-		d.GetCommandBus().HandleCommand(ctx, &domain.RemoveRedfishResource{RedfishResourceAggregateBaseCommand: domain.RedfishResourceAggregateBaseCommand{UUID: sessionID}})
+		d.GetCommandBus().HandleCommand(ctx, &domain.RemoveRedfishResource{RedfishResourceAggregateBaseCommand: domain.RedfishResourceAggregateBaseCommand{UUID: idToDelete}})
 
 		event := eh.NewEvent(domain.HTTPCmdProcessedEvent,
 			&domain.HTTPCmdProcessedData{

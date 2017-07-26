@@ -20,7 +20,7 @@ import (
 	"github.com/superchalupa/go-redfish/domain"
 	redfishserver "github.com/superchalupa/go-redfish/server"
 
-	_ "github.com/superchalupa/go-redfish/provider/session"
+	"github.com/superchalupa/go-redfish/provider/session"
 	"net/http/pprof"
 )
 
@@ -110,6 +110,8 @@ func main() {
 	go redfishserver.Ingest(ctx, redfishserver.NewSPMFIngester("template/SPMF"), ddd, *baseURI+"/v1/")
 
 	svc := redfishserver.NewService(ddd)
+	session.SetupSessionService(svc)
+
 	svc = redfishserver.NewPrivilegeEnforcingService(svc)
 	svc = redfishserver.NewBasicAuthService(svc)
 	svc = redfishserver.NewXAuthTokenService(svc)

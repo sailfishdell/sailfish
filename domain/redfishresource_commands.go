@@ -27,13 +27,6 @@ func SetupCommands(d DDDFunctions) {
 
 	d.GetAggregateCommandHandler().SetAggregate(RedfishResourceAggregateType, UpdateRedfishResourcePrivilegesCommand)
 
-	dynamicCommandsMu.RLock()
-	for _, c := range dynamicCommands {
-		d.GetAggregateCommandHandler().SetAggregate(RedfishResourceAggregateType, c)
-		d.GetCommandBus().SetHandler(d.GetAggregateCommandHandler(), c)
-	}
-	dynamicCommandsMu.RUnlock()
-
 	// Create the command bus and register the handler for the commands.
 	// WARNING: If you miss adding a handler for a command, then all command processesing stops when that command is emitted!
 	d.GetCommandBus().SetHandler(d.GetAggregateCommandHandler(), CreateRedfishResourceCommand)
