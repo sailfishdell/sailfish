@@ -104,7 +104,6 @@ func makeBackgroundDeleteSession(d domain.DDDFunctions, sessionURI string, sessi
 }
 
 func SetupSessionService(s provider.ProviderRegisterer) {
-	fmt.Println("\nSETUP SESSION SERVICE\n\n")
 	eh.RegisterEventData(XAuthTokenRefreshEvent, func() eh.EventData { return &XAuthTokenRefreshData{} })
 
 	s.RegisterHandler(

@@ -1,13 +1,15 @@
 package provider
 
 import (
-    eh "github.com/looplab/eventhorizon"
+	eh "github.com/looplab/eventhorizon"
 )
 
-const (
-    ComputerSystemResetRequestEvent eh.EventType = "ComputerSystemResetRequest"
-)
+//
+// Reset Request
+//
+const ComputerSystemResetRequestEvent eh.EventType = "ComputerSystemResetRequest"
 
 type ComputerSystemResetRequestData struct {
-    ResetType   string
+	CorrelationID eh.UUID
+	ResetType     string
 }

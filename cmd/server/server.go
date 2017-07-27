@@ -20,6 +20,7 @@ import (
 	"github.com/superchalupa/go-redfish/domain"
 	redfishserver "github.com/superchalupa/go-redfish/server"
 
+	"github.com/superchalupa/go-redfish/provider/computersystem"
 	"github.com/superchalupa/go-redfish/provider/session"
 	"net/http/pprof"
 )
@@ -111,6 +112,7 @@ func main() {
 
 	svc := redfishserver.NewService(ddd)
 	session.SetupSessionService(svc)
+	computersystem.SetupActions(svc)
 
 	svc = redfishserver.NewPrivilegeEnforcingService(svc)
 	svc = redfishserver.NewBasicAuthService(svc)
