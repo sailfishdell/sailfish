@@ -58,8 +58,6 @@ func (s *loggingService) GetRedfishResource(ctx context.Context, r *http.Request
 	defer func(begin time.Time) {
 		// no, we are not going to check logger error return
 		_ = ctxlogger.Log(
-			"method", r.Method,
-			"URL", r.URL.Path,
 			"business_logic_time", time.Since(begin),
 			"StatusCode", resp.StatusCode,
 			"err", err,
@@ -75,8 +73,6 @@ func (s *loggingService) RedfishResourceHandler(ctx context.Context, r *http.Req
 	defer func(begin time.Time) {
 		// no, we are not going to check logger error return
 		_ = ctxlogger.Log(
-			"method", r.Method,
-			"URL", r.URL.Path,
 			"business_logic_time", time.Since(begin),
 			"StatusCode", resp.StatusCode,
 			"err", err,
