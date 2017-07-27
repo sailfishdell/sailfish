@@ -4,19 +4,53 @@ Short term: Some things to work on:
  - Password hashing in account
  - Implement a few Actions
  - privileges for properties
- - Move SessionService tree setup into SessionService
  - localhost interface to send commands
  - Mirroring from http server
+ - Need a "User" interface
+    - DisplayName() string
+    - UniqueName() string
+    - HasPrivilege(string) bool
+ - All of the Authentication/Authorization models populate User interface, change privileges []string parameters to service to user User.
+ - For command requests, use the session UUID instead of generating a new one
+
 
 Medium term:
+ - ResourceAggregate should do schema validation at create/modify time
+    - Add schema stuff directly to the aggregate?
  - get a real message bus hooked up
  - maybe some CLI clients
  - privilege mapping
 
+EventHorizon/CQRS/DDD has the following concepts:
+    - Saga: listens to Events and generates Commands
+    - Aggregate: listens to Commands and generates Events
+    - Projection: listens to events to create a read side
+
+Aggregate:
+    - Redfish Resource Aggregate
+        - Contains all of the business logic to maintain a self-consistent redfish resource
+        - Should do schema validation on ingress of data
+        - PATCH/PUT/POST/DELETE - standard handlers for schema-compliant operations
+        - This means that when we create the Redfish Resource Aggregate, we need to tell it everything it needs to know to control its own behavior
+        - race conditions on create vs being available externally? (ie. can somebody send a command to an object that is in process of being created?) We'll need to figure this, probably need a "ready for use" flag.
+
+Services:
+    - Need to have the concept of "external events" from the rest of the system. "Something happened"
+    - a service is a ???  (figure this out... :)
+        ? listen to events and generate commands for aggregates
+        ? listen for commands and generate events
+    Examples:
+    - System Service
+        - listen to "external events" - "discovered system"
+        - Do some logic to gather needed data (?)
+        - Emit commands: CreateRedfishResource
+        - set up actions?
+
 
 Implemented:
-    Mirroring: Initial ingest from filesystem (SPMF compatible file names)
-    Logins: Using the accounts and roles in the redfish tree
+ - Move SessionService tree setup into SessionService
+ - Mirroring: Initial ingest from filesystem (SPMF compatible file names)
+ - Logins: Using the accounts and roles in the redfish tree
         - basic auth
         - sessions
         - Session timeouts
