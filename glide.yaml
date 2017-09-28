@@ -16,8 +16,8 @@ import:
 - package: github.com/gorilla/mux
 - package: github.com/looplab/eventhorizon
   vcs: git
-  repo: ssh://git@github.com/superchalupa/eventhorizon
-  version: for-upstream
+  repo: https://superchalupa@github.com/superchalupa/eventhorizon
+  version: master
   subpackages:
   - commandbus/local
   - eventbus/local
