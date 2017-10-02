@@ -70,6 +70,11 @@ func (rh *ServiceConfig) GetRedfishResource(ctx context.Context, r *http.Request
 		return &Response{StatusCode: http.StatusInternalServerError, Output: map[string]interface{}{"error": err.Error()}}, err
 	}
 
+    // set up waiter for our http saga handshake first
+    // Send message to the HTTP saga to ensure that the object is completely up to date
+    // wait for event from the http saga that says the object is ready to go
+
+
 	// now that we have the tree, look up the actual URI in that tree to find
 	// the object UUID, then pull that from the repo
 	requested, err := rh.GetReadRepo().Find(ctx, tree.Tree[noHashPath])
@@ -80,6 +85,23 @@ func (rh *ServiceConfig) GetRedfishResource(ctx context.Context, r *http.Request
 	if !ok {
 		return &Response{StatusCode: http.StatusInternalServerError}, errors.New("Expected a RedfishResource, but got something strange.")
 	}
+
+    // Strip out metadata before sending out
+    var stripMeta func (i map[string] interface{})
+    stripMeta = func (i map[string] interface{}) {
+	    for k, v := range i {
+            if strings.HasSuffix(k, "@meta") {
+                delete(i, k)
+                continue
+            }
+            switch v2 := v.(type) {
+                case map[string]interface{}:
+                    stripMeta(v2)
+            }
+        }
+    }
+
+    stripMeta(item.Properties)
 
 	return &Response{StatusCode: http.StatusOK, Output: item.Properties, Headers: item.Headers}, nil
 }
@@ -150,12 +172,10 @@ func (rh *ServiceConfig) RedfishResourceHandler(ctx context.Context, r *http.Req
 			// however, we can do more substantial processing here, if we absolutely need to.
 			// for example, streaming would need to be handled here
 			err := f.Handle(ctx, r, privileges, cmdUUID, tree, item)
-			// if handle returns an error, let somebody else have a chance
-			if err != nil {
-				continue
+			// if handled successfully, drop out
+			if err == nil {
+			    goto waitForResponse
 			}
-
-			goto waitForResponse
 		}
 	}
 
