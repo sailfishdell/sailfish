@@ -3,6 +3,10 @@
     "Id": "RootService",
     "Name": "Root Service",
     "RedfishVersion": "1.0.2",
+
+    "TEST": "happy",
+    "TEST@meta": {},
+
     "UUID": "92384634-2938-2342-8820-489239905423",
     "Systems": {
         "@odata.id": "/redfish/v1/Systems"
