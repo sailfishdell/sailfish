@@ -1,42 +1,33 @@
-hash: 1be227f9d2099797a7102793a52f858ad678052fccea03aaf8d4a9282d77e7e1
-updated: 2017-07-15T01:45:59.473529538-05:00
+hash: 4d29e1022fb9081fa02804421354f1bc40ea66ef9796a970e7191b8b164431d9
+updated: 2017-09-20T16:43:31.753191429-05:00
 imports:
-- name: github.com/beorn7/perks
-  version: 4c0e84591b9aa9e6dcfdf3e020114cd81f89d5f9
-  subpackages:
-  - quantile
 - name: github.com/dgrijalva/jwt-go
-  version: a539ee1a749a2b895533f979515ac7e6e0f5b650
+  version: d2709f9f1f31ebcda9651b03077758c1f3a0018c
 - name: github.com/go-kit/kit
-  version: 978b294ad589ef7a251c4db402e5100272c65801
+  version: 0d313fb5fb3a94d87d61e6434785264e87a5d740
   subpackages:
   - endpoint
   - log
   - metrics
-  - metrics/internal/lv
   - metrics/prometheus
   - transport/http
 - name: github.com/go-logfmt/logfmt
   version: 390ab7935ee28ec6b286364bba9b4dd6410cb3d5
 - name: github.com/go-stack/stack
-  version: 54be5f394ed2c3e19dac9134a40a95ba5a017f7b
+  version: 817915b46b97fd7bb80e8ab6b69f01a53ac3eebf
 - name: github.com/go-yaml/yaml
-  version: 3b4ad1db5b2a649883ff3782f5f9f6fb52be71af
-- name: github.com/golang/protobuf
-  version: 0a4f71a498b7c4812f64969510bcb4eca251e33a
-  subpackages:
-  - proto
+  version: eb3733d160e74a9c7e442f435eb3bea458e1d19f
 - name: github.com/google/uuid
-  version: 1c6adf5cd133db09196c44ffae1f77ebf4da64aa
+  version: 7e072fc3a7be179aee6d3359e46015aa8c995314
 - name: github.com/gorilla/context
   version: 08b5f424b9271eedf6f9f0ce86cb9396ed337a42
 - name: github.com/gorilla/mux
-  version: ac112f7d75a0714af1bd86ab17749b31f7809640
+  version: 392c28fe23e1c45ddba891b0320b3b5df220beea
 - name: github.com/kr/logfmt
   version: b84e30acd515aadc4b783ad4ff83aff3299bdfe0
 - name: github.com/looplab/eventhorizon
   version: 7f3a706a1f88105c23b9e43b3dc5e4c9ad470503
-  repo: ssh://git@github.com/superchalupa/eventhorizon
+  repo: https://superchalupa@github.com/superchalupa/eventhorizon
   vcs: git
   subpackages:
   - commandbus/local
@@ -47,27 +38,9 @@ imports:
   - publisher/local
   - repo/memory
   - utils
-- name: github.com/matttproud/golang_protobuf_extensions
-  version: c12348ce28de40eed0136aa2b644d0ee0650e56c
-  subpackages:
-  - pbutil
 - name: github.com/prometheus/client_golang
-  version: 95b6848b5c5bb71e3f68cd512ae5a8153c35e41f
+  version: 50b3332fd63be43e38472600ec187ceec39d26d6
   subpackages:
   - prometheus
   - prometheus/promhttp
-- name: github.com/prometheus/client_model
-  version: 6f3806018612930941127f2a7c6c453ba2c527d2
-  subpackages:
-  - go
-- name: github.com/prometheus/common
-  version: 3e6a7635bac6573d43f49f97b47eb9bda195dba8
-  subpackages:
-  - expfmt
-  - internal/bitbucket.org/ww/goautoneg
-  - model
-- name: github.com/prometheus/procfs
-  version: e645f4e5aaa8506fc71d6edbc5c4ff02c04c46f2
-  subpackages:
-  - xfs
 testImports: []
