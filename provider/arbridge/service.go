@@ -2,9 +2,11 @@ package arbridge
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"net/http"
 
+	eh "github.com/looplab/eventhorizon"
 	"github.com/superchalupa/go-redfish/domain"
 
 	"fmt"
@@ -49,10 +51,27 @@ func NewService(d domain.DDDFunctions) Service {
 	return &cfg
 }
 
+type AREventData struct {
+	Name  string
+	Value string
+}
+
 func (rh *ServiceConfig) ResourceHandler(ctx context.Context, r *http.Request, privileges []string) (*Response, error) {
+
+	decoder := json.NewDecoder(r.Body)
+	var ev AREventData
+	err := decoder.Decode(&ev)
+
+	if err != nil {
+		return &Response{StatusCode: 500, Headers: map[string]string{}, Output: nil}, err
+	}
+
+	rh.GetEventHandler().HandleEvent(ctx, eh.NewEvent("AREvent", &ev))
+
 	return &Response{
-			StatusCode: 404,
+			StatusCode: 200,
 			Headers:    map[string]string{},
-			Output:     nil},
-		errors.New("Unimplemented")
+			Output:     "all happy",
+		},
+		nil
 }
