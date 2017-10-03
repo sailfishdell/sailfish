@@ -22,6 +22,7 @@ import (
 
 	"github.com/superchalupa/go-redfish/provider/computersystem"
 	"github.com/superchalupa/go-redfish/provider/session"
+	"github.com/superchalupa/go-redfish/provider/arbridge"
 	"net/http/pprof"
 )
 
@@ -123,6 +124,12 @@ func main() {
 	r := redfishserver.NewRedfishHandler(svc, *baseURI, "v1", logger)
 	m := http.NewServeMux()
 	m.Handle("/", r)
+
+    ar_svc := arbridge.NewService(ddd)
+    ar_svc =  arbridge.NewLoggingService(logger, ar_svc)
+	//	ar_svc = arbridge.NewInstrumentingService(count, lat, ar_svc)
+    m.Handle("/arbridge", arbridge.NewHandler(ar_svc, "", logger))
+
 	//	m.Handle("/metrics", promhttp.Handler())
 	m.Handle("/debug/pprof/", http.HandlerFunc(pprof.Index))
 	m.Handle("/debug/pprof/cmdline", http.HandlerFunc(pprof.Cmdline))
