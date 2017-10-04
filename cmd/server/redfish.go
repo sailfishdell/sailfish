@@ -178,7 +178,10 @@ func main() {
 			addr := strings.TrimPrefix(listen, "https:")
 			details := strings.SplitN(addr, ",", 3)
 			logger.Log("msg", "HTTPS listener starting on "+details[0], "certfile", details[1], "keyfile", details[2])
-			srv := &http.Server{Addr: details[0]}
+			srv := &http.Server{
+                Addr: details[0],
+                Handler:      m,
+                }
 			servers = append(servers, srv)
 			go func(listen string) {
 				logger.Log("err", srv.ListenAndServeTLS(details[1], details[2]))
