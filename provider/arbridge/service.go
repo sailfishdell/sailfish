@@ -49,6 +49,7 @@ func NewService(d domain.DDDFunctions) Service {
 	}
 
 	SetupARBridgeSaga(d)
+	SetupCommands(d)
 
 	return &cfg
 }

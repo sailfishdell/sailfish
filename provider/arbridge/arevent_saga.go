@@ -12,18 +12,17 @@ import (
 const ARBridgeSagaType saga.Type = "ARBridgeSaga"
 
 func SetupARBridgeSaga(ddd domain.DDDFunctions) {
-	privilegeSaga := saga.NewEventHandler(NewARBridgeSaga(ddd.GetReadRepo()), ddd.GetCommandBus())
+	privilegeSaga := saga.NewEventHandler(NewARBridgeSaga(ddd), ddd.GetCommandBus())
 	ddd.GetEventBus().AddHandler(privilegeSaga, "AREvent")
 }
 
 type ARBridgeSaga struct {
-	repo eh.ReadRepo
-	// TODO: fix hardcoded /redfish references here
 	redfishStartURI string
+	domain.DDDFunctions
 }
 
-func NewARBridgeSaga(redfishRepo eh.ReadRepo) *ARBridgeSaga {
-	return &ARBridgeSaga{repo: redfishRepo}
+func NewARBridgeSaga(ddd domain.DDDFunctions) *ARBridgeSaga {
+	return &ARBridgeSaga{DDDFunctions: ddd}
 }
 
 func (s *ARBridgeSaga) SagaType() saga.Type { return ARBridgeSagaType }
@@ -36,7 +35,27 @@ func (s *ARBridgeSaga) RunSaga(ctx context.Context, event eh.Event) []eh.Command
 		// FOR NOW, set Login for all others. This needs to be fleshed out more
 		if data, ok := event.Data().(*AREventData); ok {
 			fmt.Println("GOT AN EVENT: ", data)
-			return nil
+
+			// walk the redfish tree to see if anything matches this plugin.
+			// this is the slowest possible way to do this! But it's quick to
+			// implement, so we'll do it for now. Better would be to
+			// pre-process the tree so we could have a lookup table.
+			tree, err := domain.GetTree(ctx, s.GetReadRepo(), s.GetTreeID())
+			if err != nil {
+				fmt.Println("ERROR GETTING TREE: ", err)
+				return nil
+			}
+
+			var commands []eh.Command
+
+			for uri, uuid := range tree.Tree {
+				fmt.Printf("Send cmd to URI(%s)  UUID(%s)\n", uri, uuid)
+				commands = append(commands,
+					&ProcessAREvent{RedfishResourceAggregateBaseCommand: domain.RedfishResourceAggregateBaseCommand{UUID: uuid}, Name: data.Name, Value: data.Name},
+				)
+			}
+
+			return commands
 			/*            return []eh.Command{
 			              &UpdateRedfishResourcePrivileges{
 			                  RedfishResourceAggregateBaseCommand: RedfishResourceAggregateBaseCommand{UUID: event.AggregateID()},

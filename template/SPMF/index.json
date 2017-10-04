@@ -5,7 +5,10 @@
     "RedfishVersion": "1.0.2",
 
     "TEST": "happy",
-    "TEST@meta": {},
+    "TEST@meta": {
+        "plugin": "AR",
+        "data": "system.chassis.1#info.1#test"
+    },
 
     "UUID": "92384634-2938-2342-8820-489239905423",
     "Systems": {
