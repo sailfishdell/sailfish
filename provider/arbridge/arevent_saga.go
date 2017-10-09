@@ -51,7 +51,7 @@ func (s *ARBridgeSaga) RunSaga(ctx context.Context, event eh.Event) []eh.Command
 			for uri, uuid := range tree.Tree {
 				fmt.Printf("Send cmd to URI(%s)  UUID(%s)\n", uri, uuid)
 				commands = append(commands,
-					&ProcessAREvent{RedfishResourceAggregateBaseCommand: domain.RedfishResourceAggregateBaseCommand{UUID: uuid}, Name: data.Name, Value: data.Name},
+					&ProcessAREvent{RedfishResourceAggregateBaseCommand: domain.RedfishResourceAggregateBaseCommand{UUID: uuid}, Name: data.Name, Value: data.Value},
 				)
 			}
 
