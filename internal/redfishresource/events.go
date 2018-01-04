@@ -17,5 +17,5 @@ func init() {
 
 // RedfishResourceCreatedData is the event data for the RedfishResourceCreated event.
 type RedfishResourceCreatedData struct {
-	ID      int    `json:"id"     bson:"id"`
+	ID int `json:"id"     bson:"id"`
 }

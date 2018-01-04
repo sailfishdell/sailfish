@@ -10,12 +10,12 @@ const AggregateType = eh.AggregateType("RedfishResource")
 
 func init() {
 	eh.RegisterAggregate(func(id eh.UUID) eh.Aggregate {
-		return &RedfishResourceAggregate{ }
+		return &RedfishResourceAggregate{}
 	})
 }
 
 type RedfishResourceAggregate struct {
-    ID           eh.UUID
+	ID           eh.UUID
 	TreeID       eh.UUID
 	ResourceURI  string
 	Plugin       string
@@ -26,10 +26,10 @@ type RedfishResourceAggregate struct {
 }
 
 func (r *RedfishResourceAggregate) AggregateType() eh.AggregateType { return AggregateType }
-func (r *RedfishResourceAggregate) EntityID() eh.UUID { return r.ID }
+func (r *RedfishResourceAggregate) EntityID() eh.UUID               { return r.ID }
 
 func NewRedfishResourceAggregate(id eh.UUID) *RedfishResourceAggregate {
-	return &RedfishResourceAggregate{ }
+	return &RedfishResourceAggregate{}
 }
 
 // Two types of commands: HTTP commands, and Backend commands

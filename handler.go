@@ -20,6 +20,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/gorilla/mux"
 	eh "github.com/looplab/eventhorizon"
 	"github.com/looplab/eventhorizon/aggregatestore/model"
 	"github.com/looplab/eventhorizon/commandhandler/aggregate"
@@ -28,7 +29,7 @@ import (
 	eventpublisher "github.com/looplab/eventhorizon/publisher/local"
 	repo "github.com/looplab/eventhorizon/repo/memory"
 
-    domain "github.com/superchalupa/redfish/internal/redfishresource"
+	domain "github.com/superchalupa/redfish/internal/redfishresource"
 )
 
 // Handler is a http.Handler for the TodoMVC app.
@@ -78,21 +79,12 @@ func NewHandler() (*Handler, error) {
 	})
 
 	// Handle the API.
-	h := http.NewServeMux()
-	h.Handle("/api/events/", httputils.EventBusHandler(eventPublisher))
+	m := mux.NewRouter()
 
-	h.Handle("/api/test", httputils.CommandHandler(loggingHandler, domain.GETCommand))
-
-
-	// Simple HTTP request logging.
-	logger := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Println(r.Method, r.URL)
-		h.ServeHTTP(w, r)
-	})
+	m.PathPrefix("/redfish/").Handler(httputils.CommandHandler(loggingHandler, domain.GETCommand))
+	//m.Handle("/api/events/", httputils.EventBusHandler(eventPublisher))
 
 	return &Handler{
-		Handler:        logger,
-		CommandHandler: loggingHandler,
-		Repo:           repo,
+		Handler: m,
 	}, nil
 }
