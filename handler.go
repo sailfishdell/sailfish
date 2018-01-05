@@ -18,26 +18,22 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"net/http"
 
-	"github.com/gorilla/mux"
 	eh "github.com/looplab/eventhorizon"
 	"github.com/looplab/eventhorizon/aggregatestore/model"
 	"github.com/looplab/eventhorizon/commandhandler/aggregate"
 	eventbus "github.com/looplab/eventhorizon/eventbus/local"
-	"github.com/looplab/eventhorizon/httputils"
 	eventpublisher "github.com/looplab/eventhorizon/publisher/local"
 	repo "github.com/looplab/eventhorizon/repo/memory"
 
 	domain "github.com/superchalupa/redfish/internal/redfishresource"
 )
 
-// Handler is a http.Handler for the TodoMVC app.
-type Handler struct {
-	http.Handler
-
+type DomainObjects struct {
 	CommandHandler eh.CommandHandler
 	Repo           eh.ReadWriteRepo
+	EventBus       eh.EventBus
+	AggregateStore eh.AggregateStore
 }
 
 // Logger is a simple event handler for logging all events.
@@ -48,9 +44,9 @@ func (l *Logger) Notify(ctx context.Context, event eh.Event) {
 	log.Printf("EVENT %s", event)
 }
 
-// NewHandler sets up the full Event Horizon domain for the TodoMVC app and
+// SetupDDDFunctions sets up the full Event Horizon domain
 // returns a handler exposing some of the components.
-func NewHandler() (*Handler, error) {
+func SetupDomainObjects() (*DomainObjects, error) {
 	// Create the repository and wrap in a version repository.
 	repo := repo.NewRepo()
 
@@ -72,19 +68,10 @@ func NewHandler() (*Handler, error) {
 		return nil, fmt.Errorf("could not create command handler: %s", err)
 	}
 
-	// Create a tiny logging middleware for the command handler.
-	loggingHandler := eh.CommandHandlerFunc(func(ctx context.Context, cmd eh.Command) error {
-		log.Printf("CMD %#v", cmd)
-		return commandHandler.HandleCommand(ctx, cmd)
-	})
-
-	// Handle the API.
-	m := mux.NewRouter()
-
-	m.PathPrefix("/redfish/").Handler(httputils.CommandHandler(loggingHandler, domain.GETCommand))
-	//m.Handle("/api/events/", httputils.EventBusHandler(eventPublisher))
-
-	return &Handler{
-		Handler: m,
+	return &DomainObjects{
+		CommandHandler: commandHandler,
+		Repo:           repo,
+		EventBus:       eventBus,
+		AggregateStore: aggregateStore,
 	}, nil
 }
