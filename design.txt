@@ -1,0 +1,58 @@
+
+tree = map[string] eh.UUID
+    = map[ redfish URI ] = repo uuid
+
+type RedfishResourceAggregate struct {                              
+    // AggregateBase implements most of the eventhorizon.Aggregate interface.                                                           
+    *eh.AggregateBase             
+    TreeID       eh.UUID          
+    ResourceURI  string           
+    Properties   map[string]interface{}                             
+    PrivilegeMap map[string]interface{}                             
+    Permissions  map[string]interface{}                             
+    Headers      map[string]string
+    Private      map[string]interface{}                             
+
+    // Handler?
+}
+
+// POST, PUT, PATCH, DELETE, HEAD, OPTIONS(?)
+
+Properties
+==========
+map[ property_name ] = "property value"
+map[ property_name@meta ] = {
+    "plugin": "foobar" }
+    // getPlugin(plugin_name)
+
+
+COMMANDS
+========
+Overview: separate out "backend" commands and "http" commands. There are a set of commands to satisfy HTTP get/post/etc. There are also sets of commands/events that an external entity can use to create/maintain active redfish resources.
+
+The "backend" commands are relatively "static" in that they all operate on the aggregate and don't do special magic.
+
+CreateRedfishResource
+AddRedfishResourceProperties
+UpdateRedfishResourceProperties
+RemoveRedfishResourceProperties
+RemoveRedfishResource
+
+The http commands are all pluggable, with a default implementation. Need some more implementation to really work out how the pluggability works here. But right now, some sort of registry to plug in properties and how to get them.
+
+GET
+PUT
+PATCH
+POST
+DELETE
+HEAD
+OPTIONS
+
+
+
+SessionManager
+  CreateRedfishResource /SessionManager
+  CreateRedfishResource /SessionManager/Sessions
+
+ComputerSystem
+    ModelName -> 
