@@ -15,9 +15,11 @@
 package main
 
 import (
-	"context"
 	"fmt"
-	"log"
+	"net/http"
+	"context"
+	"encoding/json"
+	"io/ioutil"
 
 	eh "github.com/looplab/eventhorizon"
 	"github.com/looplab/eventhorizon/aggregatestore/model"
@@ -26,7 +28,7 @@ import (
 	eventpublisher "github.com/looplab/eventhorizon/publisher/local"
 	repo "github.com/looplab/eventhorizon/repo/memory"
 
-	domain "github.com/superchalupa/redfish/internal/redfishresource"
+	domain "github.com/superchalupa/go-redfish/internal/redfishresource"
 )
 
 type DomainObjects struct {
@@ -34,26 +36,23 @@ type DomainObjects struct {
 	Repo           eh.ReadWriteRepo
 	EventBus       eh.EventBus
 	AggregateStore eh.AggregateStore
-}
-
-// Logger is a simple event handler for logging all events.
-type Logger struct{}
-
-// Notify implements the Notify method of the EventObserver interface.
-func (l *Logger) Notify(ctx context.Context, event eh.Event) {
-	log.Printf("EVENT %s", event)
+	EventPublisher eh.EventPublisher
+	Tree           map[string]eh.UUID
 }
 
 // SetupDDDFunctions sets up the full Event Horizon domain
 // returns a handler exposing some of the components.
-func SetupDomainObjects() (*DomainObjects, error) {
+func NewDomainObjects() (*DomainObjects, error) {
+	d := DomainObjects{}
+
+	d.Tree = make(map[string]eh.UUID)
+
 	// Create the repository and wrap in a version repository.
 	repo := repo.NewRepo()
 
 	// Create the event bus that distributes events.
 	eventBus := eventbus.NewEventBus()
 	eventPublisher := eventpublisher.NewEventPublisher()
-	eventPublisher.AddObserver(&Logger{})
 	eventBus.SetPublisher(eventPublisher)
 
 	// Create the aggregate repository.
@@ -68,10 +67,71 @@ func SetupDomainObjects() (*DomainObjects, error) {
 		return nil, fmt.Errorf("could not create command handler: %s", err)
 	}
 
-	return &DomainObjects{
-		CommandHandler: commandHandler,
-		Repo:           repo,
-		EventBus:       eventBus,
-		AggregateStore: aggregateStore,
-	}, nil
+	d.CommandHandler = commandHandler
+	d.Repo = repo
+	d.EventBus = eventBus
+	d.AggregateStore = aggregateStore
+	d.EventPublisher = eventPublisher
+
+	return &d, nil
 }
+
+func (d *DomainObjects) RedfishHandlerFunc() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("HELLO WORLD\n"))
+	}
+}
+
+func (d *DomainObjects) ApiHandlerFunc() http.Handler {
+    fmt.Printf("ApiHandlerFunc()\n")
+    //commandHandler := d.CommandHandler
+    //commandType := domain.CreateRedfishResourceCommand
+
+	return CommandHandler(d.CommandHandler, domain.CreateRedfishResourceCommand)
+}
+
+// CommandHandler is a HTTP handler for eventhorizon.Commands. Commands must be
+// registered with eventhorizon.RegisterCommand(). It expects a POST with a JSON
+// body that will be unmarshalled into the command.
+func CommandHandler(commandHandler eh.CommandHandler, commandType eh.CommandType) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+        fmt.Printf("HI %s: %s\n", r.URL, commandType)
+
+		if r.Method != "POST" {
+			http.Error(w, "unsuported method: "+r.Method, http.StatusMethodNotAllowed)
+			return
+		}
+
+		cmd, err := eh.CreateCommand(commandType)
+		if err != nil {
+			http.Error(w, "could not create command: "+err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		b, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			http.Error(w, "could not read command: "+err.Error(), http.StatusBadRequest)
+			return
+		}
+		if err := json.Unmarshal(b, &cmd); err != nil {
+			http.Error(w, "could not decode command: "+err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		// NOTE: Use a new context when handling, else it will be cancelled with
+		// the HTTP request which will cause projectors etc to fail if they run
+		// async in goroutines past the request.
+		ctx := context.Background()
+		if err := commandHandler.HandleCommand(ctx, cmd); err != nil {
+			http.Error(w, "could not handle command: "+err.Error(), http.StatusBadRequest)
+			return
+		}
+
+        fmt.Printf("OK!\n")
+
+		w.WriteHeader(http.StatusOK)
+	})
+}
+
+

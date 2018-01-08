@@ -1,6 +1,7 @@
 package domain
 
 import (
+    "fmt"
 	"context"
 
 	eh "github.com/looplab/eventhorizon"
@@ -19,6 +20,7 @@ type RedfishResourceAggregate struct {
 	TreeID       eh.UUID
 	ResourceURI  string
 	Plugin       string
+    Properties   string
 	PrivilegeMap map[string]interface{}
 	Permissions  map[string]interface{}
 	Headers      map[string]string
@@ -29,6 +31,7 @@ func (r *RedfishResourceAggregate) AggregateType() eh.AggregateType { return Agg
 func (r *RedfishResourceAggregate) EntityID() eh.UUID               { return r.ID }
 
 func NewRedfishResourceAggregate(id eh.UUID) *RedfishResourceAggregate {
+    fmt.Printf("Hello from NewRedfishResourceAggregate\n")
 	return &RedfishResourceAggregate{}
 }
 
@@ -53,6 +56,7 @@ type RRCmdHandler interface {
 }
 
 func (a *RedfishResourceAggregate) HandleCommand(ctx context.Context, command eh.Command) error {
+    fmt.Printf("Hello from HandleCommand\n")
 	switch command := command.(type) {
 	case RRCmdHandler:
 		return command.Handle(ctx, a)
