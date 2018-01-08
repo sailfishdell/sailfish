@@ -23,6 +23,7 @@
 [[constraint]]
   branch = "master"
   name = "github.com/looplab/eventhorizon"
+  source = "github.com/superchalupa/eventhorizon"
 
 [[constraint]]
   branch = "master"
