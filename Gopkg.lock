@@ -18,40 +18,18 @@
   name = "github.com/looplab/eventhorizon"
   packages = [
     ".",
-    "aggregatestore/events",
     "aggregatestore/model",
     "commandhandler/aggregate",
     "eventbus/local",
-    "eventhandler/projector",
-    "examples/todomvc/internal/domain",
     "publisher/local",
-    "repo/memory",
-    "repo/mongodb"
+    "repo/memory"
   ]
   revision = "3c36fbfe59cd1dd788b26a2e37d6193aafda685f"
   source = "github.com/superchalupa/eventhorizon"
 
-[[projects]]
-  branch = "master"
-  name = "golang.org/x/net"
-  packages = ["context"]
-  revision = "42fe2e1c20de1054d3d30f82cc9fb5b41e2e3767"
-
-[[projects]]
-  branch = "v2"
-  name = "gopkg.in/mgo.v2"
-  packages = [
-    ".",
-    "bson",
-    "internal/json",
-    "internal/sasl",
-    "internal/scram"
-  ]
-  revision = "3f83fa5005286a7fe593b055f0d7771a7dce4655"
-
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "ab3533ba51a3049b6608559ab81b2d40711add3d8fd9913d7c36187ed0ebd3e3"
+  inputs-digest = "da69cb53817f2901805cb4760de38a2fc6325ad4103bcccbde3a352efd0c1a14"
   solver-name = "gps-cdcl"
   solver-version = 1

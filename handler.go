@@ -15,11 +15,11 @@
 package main
 
 import (
-	"fmt"
-	"net/http"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
+	"net/http"
 
 	eh "github.com/looplab/eventhorizon"
 	"github.com/looplab/eventhorizon/aggregatestore/model"
@@ -83,9 +83,9 @@ func (d *DomainObjects) RedfishHandlerFunc() http.HandlerFunc {
 }
 
 func (d *DomainObjects) ApiHandlerFunc() http.Handler {
-    fmt.Printf("ApiHandlerFunc()\n")
-    //commandHandler := d.CommandHandler
-    //commandType := domain.CreateRedfishResourceCommand
+	fmt.Printf("ApiHandlerFunc()\n")
+	//commandHandler := d.CommandHandler
+	//commandType := domain.CreateRedfishResourceCommand
 
 	return CommandHandler(d.CommandHandler, domain.CreateRedfishResourceCommand)
 }
@@ -96,7 +96,7 @@ func (d *DomainObjects) ApiHandlerFunc() http.Handler {
 func CommandHandler(commandHandler eh.CommandHandler, commandType eh.CommandType) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
-        fmt.Printf("HI %s: %s\n", r.URL, commandType)
+		fmt.Printf("HI %s: %s\n", r.URL, commandType)
 
 		if r.Method != "POST" {
 			http.Error(w, "unsuported method: "+r.Method, http.StatusMethodNotAllowed)
@@ -128,10 +128,8 @@ func CommandHandler(commandHandler eh.CommandHandler, commandType eh.CommandType
 			return
 		}
 
-        fmt.Printf("OK!\n")
+		fmt.Printf("OK!\n")
 
 		w.WriteHeader(http.StatusOK)
 	})
 }
-
-
