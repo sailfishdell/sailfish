@@ -31,8 +31,9 @@ func main() {
 	domainObjs.CommandHandler = loggingHandler
 
 	// set up some basic stuff
-	loggingHandler.HandleCommand(context.Background(), &domain.CreateRedfishResource{ID: eh.NewUUID(), ResourceURI: "/redfish"})
-	loggingHandler.HandleCommand(context.Background(), &domain.CreateRedfishResource{ID: eh.NewUUID(), ResourceURI: "/redfish/v1"})
+    rootID := eh.NewUUID()
+    domainObjs.Tree["/redfish/v1/"] = rootID
+	loggingHandler.HandleCommand(context.Background(), &domain.CreateRedfishResource{ID: rootID, ResourceURI: "/redfish/v1/"})
 
 	// Handle the API.
 	m := mux.NewRouter()
@@ -40,10 +41,10 @@ func main() {
 	m.Path("/redfish").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {http.Redirect(w, r, "/redfish/", 301)})
 	m.Path("/redfish/").HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.Write([]byte("{\n\t\"v1\": \"/redfish/v1/\"\n}\n")) })
 	m.Path("/redfish/v1").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {http.Redirect(w, r, "/redfish/v1/", 301)})
-	m.PathPrefix("/redfish/v1/").Handler(domainObjs.RedfishHandlerFunc())
 
-	m.PathPrefix("/api/createresource").Handler(CommandHandler(loggingHandler, domain.CreateRedfishResourceCommand))
-	m.PathPrefix("/api/removeresource").Handler(CommandHandler(loggingHandler, domain.RemoveRedfishResourceCommand))
+	m.PathPrefix("/redfish/v1/").Methods("GET").Handler(domainObjs.GetRedfishHandlerFunc())
+	m.PathPrefix("/api/createresource").Handler(domainObjs.CreateHandler())
+	m.PathPrefix("/api/removeresource").Handler(domainObjs.RemoveHandler())
 
 	// Simple HTTP request logging.
 	logger := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
