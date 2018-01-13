@@ -139,9 +139,7 @@ func (d *DomainObjects) RemoveHandler() http.Handler {
 // registered with eventhorizon.RegisterCommand(). It expects a POST with a JSON
 // body that will be unmarshalled into the command.
 func (d *DomainObjects) CreateHandler() http.Handler {
-
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
 		fmt.Printf("HI %s: %s\n", r.URL, domain.CreateRedfishResourceCommand)
 
 		cmd, err := makeCommand(w, r, domain.CreateRedfishResourceCommand)
@@ -170,23 +168,35 @@ func (d *DomainObjects) CreateHandler() http.Handler {
 	})
 }
 
-func (d *DomainObjects) GetRedfishHandlerFunc() http.HandlerFunc {
+type HTTPCmd interface {
+    SetCmdID(eh.UUID)
+    SetAggID(eh.UUID)
+    SetBody(*http.Request)
+}
+
+func (d *DomainObjects) RedfishHandlerFunc() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+        fmt.Printf("HAPPY\n")
 		aggID, ok := d.Tree[r.URL.Path]
 		if !ok {
 			http.Error(w, "Could not find URL: "+r.URL.Path, http.StatusNotFound)
 			return
 		}
 
-		cmd, err := eh.CreateCommand(domain.GETCommand)
+		cmd, err := eh.CreateCommand( eh.CommandType("RedfishResource:" + r.Method) )
 		if err != nil {
 			http.Error(w, "could not create command: "+err.Error(), http.StatusBadRequest)
 			return
 		}
-		c := cmd.(*domain.GET)
+
 		cmdId := eh.NewUUID()
-		c.ID = aggID
-		c.CmdID = cmdId
+
+        if t, ok := cmd.(HTTPCmd); ok {
+            fmt.Printf("IT's an HTTPCmd!\n")
+            t.SetCmdID(cmdId)
+            t.SetAggID(aggID)
+            t.SetBody(r)
+        }
 
 		l, err := d.EventWaiter.Listen(r.Context(), func(event eh.Event) bool {
 			if event.EventType() != domain.HTTPCmdProcessed {

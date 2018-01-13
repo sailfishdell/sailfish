@@ -38,11 +38,17 @@ func main() {
 	// Handle the API.
 	m := mux.NewRouter()
 
+    // per spec: redirect /redfish to /redfish/
 	m.Path("/redfish").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {http.Redirect(w, r, "/redfish/", 301)})
+    // per spec: hardcoded output for /redfish/ to list versions supported.
 	m.Path("/redfish/").HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.Write([]byte("{\n\t\"v1\": \"/redfish/v1/\"\n}\n")) })
+    // per spec: redirect /redfish/v1 to /redfish/v1/
 	m.Path("/redfish/v1").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {http.Redirect(w, r, "/redfish/v1/", 301)})
 
-	m.PathPrefix("/redfish/v1/").Methods("GET").Handler(domainObjs.GetRedfishHandlerFunc())
+    // generic handler for redfish output on most http verbs
+	m.PathPrefix("/redfish/v1/").Methods("GET", "PUT", "POST", "PATCH", "DELETE", "HEAD", "OPTIONS").Handler(domainObjs.RedfishHandlerFunc())
+
+    // backend command handling
 	m.PathPrefix("/api/createresource").Handler(domainObjs.CreateHandler())
 	m.PathPrefix("/api/removeresource").Handler(domainObjs.RemoveHandler())
 

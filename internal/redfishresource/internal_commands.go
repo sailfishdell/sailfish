@@ -26,6 +26,7 @@ var _ = eh.Command(&RemoveRedfishResource{})
 type CreateRedfishResource struct {
 	ID          eh.UUID `json:"id"`
 	ResourceURI string
+	Properties  map[string]interface{} `eh:"optional"`
 }
 
 func (c *CreateRedfishResource) AggregateType() eh.AggregateType { return AggregateType }
@@ -39,6 +40,10 @@ func (c *CreateRedfishResource) Handle(ctx context.Context, a *RedfishResourceAg
 	}
 	a.ID = c.ID
 	a.ResourceURI = c.ResourceURI
+
+	for k, v := range c.Properties {
+		a.Properties[k] = v
+	}
 
 	fmt.Printf("About to publish event\n")
 	a.eventBus.HandleEvent(ctx, eh.NewEvent(RedfishResourceCreated, &RedfishResourceCreatedData{}, time.Now()))
