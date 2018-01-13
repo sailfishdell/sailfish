@@ -40,6 +40,12 @@ func (c *CreateRedfishResource) Handle(ctx context.Context, a *RedfishResourceAg
 	}
 	a.ID = c.ID
 	a.ResourceURI = c.ResourceURI
+    a.Plugin = "DEFAULT"
+    a.Properties = map[string]interface{}{}
+    a.PrivilegeMap = map[string]interface{}{}
+    a.Permissions = map[string]interface{}{}
+    a.Headers = map[string]string{}
+    a.Private = map[string]interface{}{}
 
 	for k, v := range c.Properties {
 		a.Properties[k] = v
