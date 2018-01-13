@@ -36,6 +36,7 @@ var _ = eh.Command(&OPTIONS{})
 // HTTP GET Command
 type GET struct {
 	ID eh.UUID `json:"id"`
+    CmdID eh.UUID `json:"cmdid"`
 }
 
 func (c *GET) AggregateType() eh.AggregateType { return AggregateType }
@@ -45,6 +46,7 @@ func (c *GET) CommandType() eh.CommandType     { return GETCommand }
 // HTTP PUT Command
 type PUT struct {
 	ID   eh.UUID `json:"id"`
+    CmdID eh.UUID `json:"cmdid"`
 	Body map[string]interface{}
 }
 
@@ -55,6 +57,7 @@ func (c *PUT) CommandType() eh.CommandType     { return PUTCommand }
 // HTTP PATCH Command
 type PATCH struct {
 	ID   eh.UUID `json:"id"`
+    CmdID eh.UUID `json:"cmdid"`
 	Body map[string]interface{}
 }
 
@@ -65,6 +68,7 @@ func (c *PATCH) CommandType() eh.CommandType     { return PATCHCommand }
 // HTTP POST Command
 type POST struct {
 	ID   eh.UUID `json:"id"`
+    CmdID eh.UUID `json:"cmdid"`
 	Body map[string]interface{}
 }
 
@@ -75,6 +79,7 @@ func (c *POST) CommandType() eh.CommandType     { return POSTCommand }
 // HTTP DELETE Command
 type DELETE struct {
 	ID eh.UUID `json:"id"`
+    CmdID eh.UUID `json:"cmdid"`
 }
 
 func (c *DELETE) AggregateType() eh.AggregateType { return AggregateType }
@@ -84,6 +89,7 @@ func (c *DELETE) CommandType() eh.CommandType     { return DELETECommand }
 // HTTP HEAD Command
 type HEAD struct {
 	ID eh.UUID `json:"id"`
+    CmdID eh.UUID `json:"cmdid"`
 }
 
 func (c *HEAD) AggregateType() eh.AggregateType { return AggregateType }
@@ -93,6 +99,7 @@ func (c *HEAD) CommandType() eh.CommandType     { return HEADCommand }
 // HTTP OPTIONS Command
 type OPTIONS struct {
 	ID eh.UUID `json:"id"`
+    CmdID eh.UUID `json:"cmdid"`
 }
 
 func (c *OPTIONS) AggregateType() eh.AggregateType { return AggregateType }
