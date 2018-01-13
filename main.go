@@ -37,7 +37,11 @@ func main() {
 	// Handle the API.
 	m := mux.NewRouter()
 
-	m.PathPrefix("/redfish/").Handler(domainObjs.RedfishHandlerFunc())
+	m.Path("/redfish").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {http.Redirect(w, r, "/redfish/", 301)})
+	m.Path("/redfish/").HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.Write([]byte("{\n\t\"v1\": \"/redfish/v1/\"\n}\n")) })
+	m.Path("/redfish/v1").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {http.Redirect(w, r, "/redfish/v1/", 301)})
+	m.PathPrefix("/redfish/v1/").Handler(domainObjs.RedfishHandlerFunc())
+
 	m.PathPrefix("/api/createresource").Handler(CommandHandler(loggingHandler, domain.CreateRedfishResourceCommand))
 	m.PathPrefix("/api/removeresource").Handler(CommandHandler(loggingHandler, domain.RemoveRedfishResourceCommand))
 

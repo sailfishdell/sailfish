@@ -25,7 +25,7 @@ type RedfishResourceAggregate struct {
 	TreeID       eh.UUID
 	ResourceURI  string
 	Plugin       string
-	Properties   string
+	Properties   map[string]interface{}
 	PrivilegeMap map[string]interface{}
 	Permissions  map[string]interface{}
 	Headers      map[string]string
