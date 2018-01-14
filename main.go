@@ -30,8 +30,13 @@ func main() {
 
 	domainObjs.CommandHandler = loggingHandler
 
-	// set up some basic stuff
+    // generate uuid of root object
 	rootID := eh.NewUUID()
+
+    // Set up our standard extensions
+    domain.SetupSessionService(context.Background(), rootID, domainObjs.EventWaiter, domainObjs.CommandHandler)
+
+	// set up some basic stuff
 	domainObjs.Tree["/redfish/v1/"] = rootID
 	loggingHandler.HandleCommand(
 		context.Background(),
@@ -47,15 +52,15 @@ func main() {
 				"@odata.context":     "/redfish/v1/$metadata#ServiceRoot",
 				"@odata.id":          "/redfish/v1/",
 				"@Redfish.Copyright": "Copyright 2014-2016 Distributed Management Task Force, Inc. (DMTF). For the full DMTF copyright policy, see http://www.dmtf.org/about/policies/copyright.",
-				"SessionService":     map[string]interface{}{"@odata.id": "/redfish/v1/SessionService"},
-				"Systems":            map[string]interface{}{"@odata.id": "/redfish/v1/Systems"},
-				"Chassis":            map[string]interface{}{"@odata.id": "/redfish/v1/Chassis"},
-				"Managers":           map[string]interface{}{"@odata.id": "/redfish/v1/Managers"},
-				"Tasks":              map[string]interface{}{"@odata.id": "/redfish/v1/TaskService"},
-				"AccountService":     map[string]interface{}{"@odata.id": "/redfish/v1/AccountService"},
-				"EventService":       map[string]interface{}{"@odata.id": "/redfish/v1/EventService"},
-				"Links":              map[string]interface{}{"Sessions": map[string]interface{}{"@odata.id": "/redfish/v1/SessionService/Sessions"}},
-				"Oem":                map[string]interface{}{},
+//				"Systems":            map[string]interface{}{"@odata.id": "/redfish/v1/Systems"},
+//				"Chassis":            map[string]interface{}{"@odata.id": "/redfish/v1/Chassis"},
+//				"Managers":           map[string]interface{}{"@odata.id": "/redfish/v1/Managers"},
+//				"Tasks":              map[string]interface{}{"@odata.id": "/redfish/v1/TaskService"},
+//				"AccountService":     map[string]interface{}{"@odata.id": "/redfish/v1/AccountService"},
+//				"EventService":       map[string]interface{}{"@odata.id": "/redfish/v1/EventService"},
+//				"SessionService":     map[string]interface{}{"@odata.id": "/redfish/v1/SessionService"},
+//				"Links":              map[string]interface{}{"Sessions": map[string]interface{}{"@odata.id": "/redfish/v1/SessionService/Sessions"}},
+//				"Oem":                map[string]interface{}{},
 			},
 		},
 	)
