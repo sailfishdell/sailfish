@@ -52,7 +52,7 @@ func (c *GET) CommandType() eh.CommandType     { return GETCommand }
 func (c *GET) SetAggID(id eh.UUID)             { c.ID = id }
 func (c *GET) SetCmdID(id eh.UUID)             { c.CmdID = id }
 func (c *GET) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
-	fmt.Printf("HANDLE!\n")
+	fmt.Printf("HANDLE GET!\n")
 	data := &HTTPCmdProcessedData{
 		CommandID:  c.CmdID,
 		Results:    map[string]interface{}{},
@@ -83,7 +83,7 @@ func (c *POST) ParseHTTPRequest(r *http.Request) {
 	json.NewDecoder(r.Body).Decode(&c.Body)
 }
 func (c *POST) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
-	fmt.Printf("HANDLE!\n")
+	fmt.Printf("HANDLE POST!\n")
 	a.eventBus.HandleEvent(ctx, eh.NewEvent(HTTPCmdProcessed, &HTTPCmdProcessedData{
 		CommandID:  c.CmdID,
 		Results:    map[string]interface{}{"FOO": "BAR"},
@@ -109,7 +109,7 @@ func (c *PUT) ParseHTTPRequest(r *http.Request) {
 	json.NewDecoder(r.Body).Decode(&c.Body)
 }
 func (c *PUT) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
-	fmt.Printf("HANDLE!\n")
+	fmt.Printf("HANDLE PUT!\n")
 	a.eventBus.HandleEvent(ctx, eh.NewEvent(HTTPCmdProcessed, &HTTPCmdProcessedData{
 		CommandID:  c.CmdID,
 		Results:    map[string]interface{}{"FOO": "BAR"},
@@ -135,7 +135,7 @@ func (c *PATCH) ParseHTTPRequest(r *http.Request) {
 	json.NewDecoder(r.Body).Decode(&c.Body)
 }
 func (c *PATCH) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
-	fmt.Printf("HANDLE!\n")
+	fmt.Printf("HANDLE PATH!\n")
 	a.eventBus.HandleEvent(ctx, eh.NewEvent(HTTPCmdProcessed, &HTTPCmdProcessedData{
 		CommandID:  c.CmdID,
 		Results:    map[string]interface{}{"FOO": "BAR"},
@@ -157,7 +157,7 @@ func (c *DELETE) CommandType() eh.CommandType     { return DELETECommand }
 func (c *DELETE) SetAggID(id eh.UUID)             { c.ID = id }
 func (c *DELETE) SetCmdID(id eh.UUID)             { c.CmdID = id }
 func (c *DELETE) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
-	fmt.Printf("HANDLE!\n")
+	fmt.Printf("HANDLE DELETE!\n")
 	a.eventBus.HandleEvent(ctx, eh.NewEvent(HTTPCmdProcessed, &HTTPCmdProcessedData{
 		CommandID:  c.CmdID,
 		Results:    map[string]interface{}{"FOO": "BAR"},
@@ -179,7 +179,7 @@ func (c *HEAD) CommandType() eh.CommandType     { return HEADCommand }
 func (c *HEAD) SetAggID(id eh.UUID)             { c.ID = id }
 func (c *HEAD) SetCmdID(id eh.UUID)             { c.CmdID = id }
 func (c *HEAD) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
-	fmt.Printf("HANDLE!\n")
+	fmt.Printf("HANDLE HEAD!\n")
 	a.eventBus.HandleEvent(ctx, eh.NewEvent(HTTPCmdProcessed, &HTTPCmdProcessedData{
 		CommandID:  c.CmdID,
 		Results:    map[string]interface{}{"FOO": "BAR"},
@@ -201,7 +201,7 @@ func (c *OPTIONS) CommandType() eh.CommandType     { return OPTIONSCommand }
 func (c *OPTIONS) SetAggID(id eh.UUID)             { c.ID = id }
 func (c *OPTIONS) SetCmdID(id eh.UUID)             { c.CmdID = id }
 func (c *OPTIONS) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
-	fmt.Printf("HANDLE!\n")
+	fmt.Printf("HANDLE OPTIONS!\n")
 	a.eventBus.HandleEvent(ctx, eh.NewEvent(HTTPCmdProcessed, &HTTPCmdProcessedData{
 		CommandID:  c.CmdID,
 		Results:    map[string]interface{}{"FOO": "BAR"},

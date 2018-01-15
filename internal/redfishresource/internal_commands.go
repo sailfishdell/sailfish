@@ -43,8 +43,9 @@ func (c *CreateRedfishResource) AggregateID() eh.UUID            { return c.ID }
 func (c *CreateRedfishResource) CommandType() eh.CommandType     { return CreateRedfishResourceCommand }
 
 func (c *CreateRedfishResource) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
-	fmt.Printf("HANDLE!\n")
+	fmt.Printf("CreateRedfishResource (COMMAND)\n")
 	if a.ID != eh.UUID("") {
+		fmt.Printf("Aggregate already exists!\n")
 		return errors.New("Already created!")
 	}
 	a.ID = c.ID
@@ -60,7 +61,6 @@ func (c *CreateRedfishResource) Handle(ctx context.Context, a *RedfishResourceAg
 		a.Properties[k] = v
 	}
 
-	fmt.Printf("About to publish event\n")
 	a.eventBus.HandleEvent(ctx, eh.NewEvent(RedfishResourceCreated, &RedfishResourceCreatedData{
 		ID:          c.ID,
 		ResourceURI: c.ResourceURI,
@@ -79,7 +79,6 @@ func (c *RemoveRedfishResource) AggregateID() eh.UUID            { return c.ID }
 func (c *RemoveRedfishResource) CommandType() eh.CommandType     { return RemoveRedfishResourceCommand }
 
 func (c *RemoveRedfishResource) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
-	fmt.Printf("About to publish event\n")
 	a.eventBus.HandleEvent(ctx, eh.NewEvent(RedfishResourceRemoved, &RedfishResourceRemovedData{
 		ID:          c.ID,
 		ResourceURI: c.ResourceURI,
