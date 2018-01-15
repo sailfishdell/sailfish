@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"path"
 
 	eh "github.com/looplab/eventhorizon"
 	"github.com/looplab/eventhorizon/aggregatestore/model"
@@ -41,6 +42,7 @@ type DomainObjects struct {
 	AggregateStore eh.AggregateStore
 	EventPublisher eh.EventPublisher
 	Tree           map[string]eh.UUID
+	collections    []string
 }
 
 // SetupDDDFunctions sets up the full Event Horizon domain
@@ -84,19 +86,40 @@ func NewDomainObjects() (*DomainObjects, error) {
 func (d *DomainObjects) Notify(ctx context.Context, event eh.Event) {
 	if event.EventType() == domain.RedfishResourceCreated {
 		if data, ok := event.Data().(*domain.RedfishResourceCreatedData); ok {
-			fmt.Printf("Tree maintenance (CREATED) %s\n\t%s\n", event, data)
 			// TODO: handle conflicts
 			d.Tree[data.ResourceURI] = data.ID
+
+			fmt.Printf("New resource: %s\n", data.ResourceURI)
+
+			if data.Collection {
+				fmt.Printf("A new collection: %s\n", data.ResourceURI)
+				d.collections = append(d.collections, data.ResourceURI)
+			}
+
+			for _, v := range d.collections {
+				collectionToTest := path.Dir(data.ResourceURI)
+				fmt.Printf("check existing collections for %s = %s\n", collectionToTest, v)
+				if v == path.Dir(data.ResourceURI) {
+					fmt.Printf("\tWe got a match: add to collection command\n")
+					d.CommandHandler.HandleCommand(
+						context.Background(),
+						&domain.AddResourceToRedfishResourceCollection{
+							ID:          d.Tree[collectionToTest],
+							ResourceURI: data.ResourceURI,
+						},
+					)
+				}
+			}
 		}
+		return
 	}
 	if event.EventType() == domain.RedfishResourceRemoved {
 		if data, ok := event.Data().(*domain.RedfishResourceRemovedData); ok {
 			// TODO: remove from aggregatestore?
-			fmt.Printf("Tree maintenance (REMOVED) %s\n\t%s\n", event, data)
 			delete(d.Tree, data.ResourceURI)
 		}
+		return
 	}
-
 }
 
 func makeCommand(w http.ResponseWriter, r *http.Request, commandType eh.CommandType) (eh.Command, error) {
