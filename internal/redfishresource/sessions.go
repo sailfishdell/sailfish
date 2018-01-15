@@ -35,6 +35,7 @@ func SetupSessionService(ctx context.Context, rootID eh.UUID, ew *utils.EventWai
 			return
 		}
 
+		// Create SessionService aggregate
 		ch.HandleCommand(
 			context.Background(),
 			&CreateRedfishResource{
@@ -56,6 +57,40 @@ func SetupSessionService(ctx context.Context, rootID eh.UUID, ew *utils.EventWai
 					},
 					"@odata.context":     "/redfish/v1/$metadata#SessionService",
 					"@odata.id":          "/redfish/v1/SessionService",
+					"@Redfish.Copyright": "Copyright 2014-2016 Distributed Management Task Force, Inc. (DMTF). For the full DMTF copyright policy, see http://www.dmtf.org/about/policies/copyright.",
+				}})
+
+		// Create Sessions Collection
+		ch.HandleCommand(
+			context.Background(),
+			&CreateRedfishResource{
+				ID:          eh.NewUUID(),
+				ResourceURI: "/redfish/v1/SessionService/Sessions",
+				Collection:  true,
+				Properties: map[string]interface{}{
+					"@odata.type":         "#SessionCollection.SessionCollection",
+					"Name":                "Session Collection",
+					"Members@odata.count": 0,
+					"Members":             []map[string]interface{}{},
+					"@odata.context":      "/redfish/v1/$metadata#SessionService/Sessions/$entity",
+					"@Redfish.Copyright":  "Copyright 2014-2016 Distributed Management Task Force, Inc. (DMTF). For the full DMTF copyright policy, see http://www.dmtf.org/about/policies/copyright.",
+				}})
+
+		// Create Sessions Collection
+		ch.HandleCommand(
+			context.Background(),
+			&CreateRedfishResource{
+				ID:          eh.NewUUID(),
+				ResourceURI: "/redfish/v1/SessionService/Sessions/1234567890ABCDEF",
+				Properties: map[string]interface{}{
+					"@odata.type":        "#Session.v1_0_2.Session",
+					"Id":                 "1234567890ABCDEF",
+					"Name":               "User Session",
+					"Description":        "Manager User Session",
+					"UserName":           "Administrator",
+					"Oem":                map[string]interface{}{},
+					"@odata.context":     "/redfish/v1/$metadata#Session.Session",
+					"@odata.id":          "/redfish/v1/SessionService/Sessions/1234567890ABCDEF",
 					"@Redfish.Copyright": "Copyright 2014-2016 Distributed Management Task Force, Inc. (DMTF). For the full DMTF copyright policy, see http://www.dmtf.org/about/policies/copyright.",
 				}})
 
