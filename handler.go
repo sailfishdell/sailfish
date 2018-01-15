@@ -62,7 +62,7 @@ func NewDomainObjects() (*DomainObjects, error) {
 	d.EventPublisher.AddObserver(d.EventWaiter)
 
 	// Create the aggregate repository.
-    var err error
+	var err error
 	d.AggregateStore, err = model.NewAggregateStore(d.Repo)
 	if err != nil {
 		return nil, fmt.Errorf("could not create aggregate store: %s", err)
@@ -168,35 +168,59 @@ func (d *DomainObjects) CreateHandler() http.Handler {
 	})
 }
 
-type HTTPCmd interface {
-    SetCmdID(eh.UUID)
-    SetAggID(eh.UUID)
-    SetBody(*http.Request)
+type CmdIDSetter interface {
+	SetCmdID(eh.UUID)
+}
+type AggIDSetter interface {
+	SetAggID(eh.UUID)
+}
+type HTTPParse interface {
+	ParseHTTPRequest(*http.Request)
 }
 
 func (d *DomainObjects) RedfishHandlerFunc() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-        fmt.Printf("HAPPY\n")
+		fmt.Printf("HAPPY\n")
 		aggID, ok := d.Tree[r.URL.Path]
 		if !ok {
 			http.Error(w, "Could not find URL: "+r.URL.Path, http.StatusNotFound)
 			return
 		}
 
-		cmd, err := eh.CreateCommand( eh.CommandType("RedfishResource:" + r.Method) )
-		if err != nil {
-			http.Error(w, "could not create command: "+err.Error(), http.StatusBadRequest)
+		search := []eh.CommandType{
+			eh.CommandType("RedfishResource:" + r.Method),
+		}
+
+		agg, err := d.AggregateStore.Load(r.Context(), domain.AggregateType, aggID)
+		redfishResource, ok := agg.(*domain.RedfishResourceAggregate)
+		if ok {
+			search = append([]eh.CommandType{eh.CommandType(redfishResource.Plugin + ":" + r.Method)}, search...)
+		}
+
+		var cmd eh.Command
+		for _, cmdType := range search {
+			cmd, err = eh.CreateCommand(cmdType)
+			if err == nil {
+				break
+			}
+		}
+
+		if cmd == nil {
+			http.Error(w, "could not create command", http.StatusBadRequest)
 			return
 		}
 
 		cmdId := eh.NewUUID()
 
-        if t, ok := cmd.(HTTPCmd); ok {
-            fmt.Printf("IT's an HTTPCmd!\n")
-            t.SetCmdID(cmdId)
-            t.SetAggID(aggID)
-            t.SetBody(r)
-        }
+		if t, ok := cmd.(CmdIDSetter); ok {
+			t.SetCmdID(cmdId)
+		}
+		if t, ok := cmd.(AggIDSetter); ok {
+			t.SetAggID(aggID)
+		}
+		if t, ok := cmd.(HTTPParse); ok {
+			t.ParseHTTPRequest(r)
+		}
 
 		l, err := d.EventWaiter.Listen(r.Context(), func(event eh.Event) bool {
 			if event.EventType() != domain.HTTPCmdProcessed {
