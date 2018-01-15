@@ -61,6 +61,9 @@ func NewDomainObjects() (*DomainObjects, error) {
 	d.EventWaiter = utils.NewEventWaiter()
 	d.EventPublisher.AddObserver(d.EventWaiter)
 
+	// set up our built-in observer
+	d.EventPublisher.AddObserver(&d)
+
 	// Create the aggregate repository.
 	var err error
 	d.AggregateStore, err = model.NewAggregateStore(d.Repo)
@@ -75,6 +78,25 @@ func NewDomainObjects() (*DomainObjects, error) {
 	}
 
 	return &d, nil
+}
+
+// Notify implements the Notify method of the EventObserver interface.
+func (d *DomainObjects) Notify(ctx context.Context, event eh.Event) {
+	if event.EventType() == domain.RedfishResourceCreated {
+		if data, ok := event.Data().(*domain.RedfishResourceCreatedData); ok {
+			fmt.Printf("Tree maintenance (CREATED) %s\n\t%s\n", event, data)
+			// TODO: handle conflicts
+			d.Tree[data.ResourceURI] = data.ID
+		}
+	}
+	if event.EventType() == domain.RedfishResourceRemoved {
+		if data, ok := event.Data().(*domain.RedfishResourceRemovedData); ok {
+			// TODO: remove from aggregatestore?
+			fmt.Printf("Tree maintenance (REMOVED) %s\n\t%s\n", event, data)
+			delete(d.Tree, data.ResourceURI)
+		}
+	}
+
 }
 
 func makeCommand(w http.ResponseWriter, r *http.Request, commandType eh.CommandType) (eh.Command, error) {
@@ -108,28 +130,19 @@ func makeCommand(w http.ResponseWriter, r *http.Request, commandType eh.CommandT
 func (d *DomainObjects) RemoveHandler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
-		fmt.Printf("HI %s: %s\n", r.URL, domain.RemoveRedfishResourceCommand)
 		cmd, err := makeCommand(w, r, domain.RemoveRedfishResourceCommand)
 		if err != nil {
 			return
 		}
 
-		if c, ok := cmd.(*domain.CreateRedfishResource); ok {
-			// TODO: remove from aggregatestore?
-			delete(d.Tree, c.ResourceURI)
-
-			// NOTE: Use a new context when handling, else it will be cancelled with
-			// the HTTP request which will cause projectors etc to fail if they run
-			// async in goroutines past the request.
-			ctx := context.Background()
-			if err := d.CommandHandler.HandleCommand(ctx, cmd); err != nil {
-				http.Error(w, "could not handle command: "+err.Error(), http.StatusBadRequest)
-				return
-			}
-
+		// NOTE: Use a new context when handling, else it will be cancelled with
+		// the HTTP request which will cause projectors etc to fail if they run
+		// async in goroutines past the request.
+		ctx := context.Background()
+		if err := d.CommandHandler.HandleCommand(ctx, cmd); err != nil {
+			http.Error(w, "could not handle command: "+err.Error(), http.StatusBadRequest)
+			return
 		}
-
-		fmt.Printf("OK!\n")
 
 		w.WriteHeader(http.StatusOK)
 	})
@@ -140,29 +153,19 @@ func (d *DomainObjects) RemoveHandler() http.Handler {
 // body that will be unmarshalled into the command.
 func (d *DomainObjects) CreateHandler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Printf("HI %s: %s\n", r.URL, domain.CreateRedfishResourceCommand)
-
 		cmd, err := makeCommand(w, r, domain.CreateRedfishResourceCommand)
 		if err != nil {
 			return
 		}
 
-		if c, ok := cmd.(*domain.CreateRedfishResource); ok {
-			// TODO: handle conflicts
-			d.Tree[c.ResourceURI] = c.ID
-
-			// NOTE: Use a new context when handling, else it will be cancelled with
-			// the HTTP request which will cause projectors etc to fail if they run
-			// async in goroutines past the request.
-			ctx := context.Background()
-			if err := d.CommandHandler.HandleCommand(ctx, cmd); err != nil {
-				http.Error(w, "could not handle command: "+err.Error(), http.StatusBadRequest)
-				return
-			}
-
+		// NOTE: Use a new context when handling, else it will be cancelled with
+		// the HTTP request which will cause projectors etc to fail if they run
+		// async in goroutines past the request.
+		ctx := context.Background()
+		if err := d.CommandHandler.HandleCommand(ctx, cmd); err != nil {
+			http.Error(w, "could not handle command: "+err.Error(), http.StatusBadRequest)
+			return
 		}
-
-		fmt.Printf("OK, tree is now: %s\n", d.Tree)
 
 		w.WriteHeader(http.StatusOK)
 	})
@@ -182,7 +185,6 @@ type HTTPParser interface {
 // TODO: need to write middleware that would allow different types of encoding on output
 func (d *DomainObjects) RedfishHandlerFunc() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		fmt.Printf("HAPPY\n")
 		aggID, ok := d.Tree[r.URL.Path]
 		if !ok {
 			http.Error(w, "Could not find URL: "+r.URL.Path, http.StatusNotFound)
