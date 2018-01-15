@@ -14,14 +14,18 @@ func init() {
 	eh.RegisterCommand(func() eh.Command { return &CreateRedfishResourceProperties{} })
 	eh.RegisterCommand(func() eh.Command { return &UpdateRedfishResourceProperties{} })
 	eh.RegisterCommand(func() eh.Command { return &RemoveRedfishResourceProperties{} })
+	eh.RegisterCommand(func() eh.Command { return &AddResourceToRedfishResourceCollection{} })
+	eh.RegisterCommand(func() eh.Command { return &RemoveResourceFromRedfishResourceCollection{} })
 }
 
 const (
-	CreateRedfishResourceCommand           = eh.CommandType("RedfishResource:Create")
-	RemoveRedfishResourceCommand           = eh.CommandType("RedfishResource:Remove")
-	CreateRedfishResourcePropertiesCommand = eh.CommandType("RedfishResourceProperties:Create")
-	UpdateRedfishResourcePropertiesCommand = eh.CommandType("RedfishResourceProperties:Update")
-	RemoveRedfishResourcePropertiesCommand = eh.CommandType("RedfishResourceProperties:Remove")
+	CreateRedfishResourceCommand                       = eh.CommandType("RedfishResource:Create")
+	RemoveRedfishResourceCommand                       = eh.CommandType("RedfishResource:Remove")
+	CreateRedfishResourcePropertiesCommand             = eh.CommandType("RedfishResourceProperties:Create")
+	UpdateRedfishResourcePropertiesCommand             = eh.CommandType("RedfishResourceProperties:Update")
+	RemoveRedfishResourcePropertiesCommand             = eh.CommandType("RedfishResourceProperties:Remove")
+	AddResourceToRedfishResourceCollectionCommand      = eh.CommandType("RedfishResourceCollection:Add")
+	RemoveResourceFromRedfishResourceCollectionCommand = eh.CommandType("RedfishResourceCollection:Remove")
 )
 
 // Static type checking for commands to prevent runtime errors due to typos
@@ -30,12 +34,15 @@ var _ = eh.Command(&RemoveRedfishResource{})
 var _ = eh.Command(&CreateRedfishResourceProperties{})
 var _ = eh.Command(&UpdateRedfishResourceProperties{})
 var _ = eh.Command(&RemoveRedfishResourceProperties{})
+var _ = eh.Command(&AddResourceToRedfishResourceCollection{})
+var _ = eh.Command(&RemoveResourceFromRedfishResourceCollection{})
 
 // CreateRedfishResource Command
 type CreateRedfishResource struct {
 	ID          eh.UUID `json:"id"`
 	ResourceURI string
 	Properties  map[string]interface{} `eh:"optional"`
+	Collection  bool                   `eh:"optional"`
 }
 
 func (c *CreateRedfishResource) AggregateType() eh.AggregateType { return AggregateType }
@@ -64,6 +71,7 @@ func (c *CreateRedfishResource) Handle(ctx context.Context, a *RedfishResourceAg
 	a.eventBus.HandleEvent(ctx, eh.NewEvent(RedfishResourceCreated, &RedfishResourceCreatedData{
 		ID:          c.ID,
 		ResourceURI: c.ResourceURI,
+		Collection:  c.Collection,
 	}, time.Now()))
 	return nil
 }
@@ -128,5 +136,44 @@ func (c *RemoveRedfishResourceProperties) CommandType() eh.CommandType {
 	return RemoveRedfishResourcePropertiesCommand
 }
 func (c *RemoveRedfishResourceProperties) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
+	return nil
+}
+
+type AddResourceToRedfishResourceCollection struct {
+	ID          eh.UUID `json:"id"`
+	ResourceURI string  // resource to add to the collection
+}
+
+func (c *AddResourceToRedfishResourceCollection) AggregateType() eh.AggregateType {
+	return AggregateType
+}
+func (c *AddResourceToRedfishResourceCollection) AggregateID() eh.UUID { return c.ID }
+func (c *AddResourceToRedfishResourceCollection) CommandType() eh.CommandType {
+	return AddResourceToRedfishResourceCollectionCommand
+}
+func (c *AddResourceToRedfishResourceCollection) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
+	// TODO: send property updated event
+	if collection, ok := a.Properties["Members"]; ok {
+		if co, ok := collection.([]map[string]interface{}); ok {
+			a.Properties["Members"] = append(co, map[string]interface{}{"@odata.id": c.ResourceURI})
+			a.Properties["Members@odata.count"] = len(a.Properties["Members"].([]map[string]interface{}))
+		}
+	}
+	return nil
+}
+
+type RemoveResourceFromRedfishResourceCollection struct {
+	ID          eh.UUID `json:"id"`
+	ResourceURI string
+}
+
+func (c *RemoveResourceFromRedfishResourceCollection) AggregateType() eh.AggregateType {
+	return AggregateType
+}
+func (c *RemoveResourceFromRedfishResourceCollection) AggregateID() eh.UUID { return c.ID }
+func (c *RemoveResourceFromRedfishResourceCollection) CommandType() eh.CommandType {
+	return RemoveResourceFromRedfishResourceCollectionCommand
+}
+func (c *RemoveResourceFromRedfishResourceCollection) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 	return nil
 }

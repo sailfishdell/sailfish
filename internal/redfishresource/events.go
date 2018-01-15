@@ -24,6 +24,7 @@ func init() {
 type RedfishResourceCreatedData struct {
 	ID          eh.UUID `json:"id"     bson:"id"`
 	ResourceURI string
+	Collection  bool
 }
 
 // RedfishResourceRemovedData is the event data for the RedfishResourceRemoved event.
