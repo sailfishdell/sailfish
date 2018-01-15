@@ -41,9 +41,9 @@ var _ = eh.Command(&OPTIONS{})
 
 // HTTP GET Command
 type GET struct {
-	ID    eh.UUID `json:"id"`
-	CmdID eh.UUID `json:"cmdid"`
-	Headers  map[string]string `eh:"optional"`
+	ID      eh.UUID           `json:"id"`
+	CmdID   eh.UUID           `json:"cmdid"`
+	Headers map[string]string `eh:"optional"`
 }
 
 func (c *GET) AggregateType() eh.AggregateType { return AggregateType }
@@ -68,10 +68,10 @@ func (c *GET) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 
 // HTTP POST Command
 type POST struct {
-	ID    eh.UUID `json:"id"`
-	CmdID eh.UUID `json:"cmdid"`
-	Body  map[string]interface{}
-	Headers  map[string]string `eh:"optional"`
+	ID      eh.UUID `json:"id"`
+	CmdID   eh.UUID `json:"cmdid"`
+	Body    map[string]interface{}
+	Headers map[string]string `eh:"optional"`
 }
 
 func (c *POST) AggregateType() eh.AggregateType { return AggregateType }
@@ -144,7 +144,6 @@ func (c *PATCH) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 	}, time.Now()))
 	return nil
 }
-
 
 // HTTP DELETE Command
 type DELETE struct {
