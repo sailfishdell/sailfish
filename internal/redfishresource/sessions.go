@@ -11,20 +11,14 @@ import (
 func SetupSessionService(ctx context.Context, rootID eh.UUID, ew *utils.EventWaiter, ch eh.CommandHandler) {
 	fmt.Printf("SetupSessionService\n")
 	l, err := ew.Listen(ctx, func(event eh.Event) bool {
-		fmt.Printf("SetupSessionService MATCH event called: %s\n", event)
 		if event.EventType() != RedfishResourceCreated {
-			fmt.Printf("\tNOT IT\n")
 			return false
 		}
 		if data, ok := event.Data().(*RedfishResourceCreatedData); ok {
 			if data.ResourceURI == "/redfish/v1/" {
-				fmt.Printf("\tGOOOT IT\n")
 				return true
-			} else {
-				fmt.Printf("\tnot IT: %s\n", data.ResourceURI)
 			}
 		}
-		fmt.Printf("\tNOT IT -\n")
 		return false
 	})
 	if err != nil {
@@ -36,11 +30,34 @@ func SetupSessionService(ctx context.Context, rootID eh.UUID, ew *utils.EventWai
 		defer l.Close()
 
 		_, err := l.Wait(ctx)
-		fmt.Printf("GOT EVENT!\n")
 		if err != nil {
 			fmt.Printf("Error waiting for event: %s\n", err.Error())
 			return
 		}
+
+		ch.HandleCommand(
+			context.Background(),
+			&CreateRedfishResource{
+				ID:          eh.NewUUID(),
+				ResourceURI: "/redfish/v1/SessionService",
+				Properties: map[string]interface{}{
+					"@odata.type": "#SessionService.v1_0_2.SessionService",
+					"Id":          "SessionService",
+					"Name":        "Session Service",
+					"Description": "Session Service",
+					"Status": map[string]interface{}{
+						"State":  "Enabled",
+						"Health": "OK",
+					},
+					"ServiceEnabled": true,
+					"SessionTimeout": 30,
+					"Sessions": map[string]interface{}{
+						"@odata.id": "/redfish/v1/SessionService/Sessions",
+					},
+					"@odata.context":     "/redfish/v1/$metadata#SessionService",
+					"@odata.id":          "/redfish/v1/SessionService",
+					"@Redfish.Copyright": "Copyright 2014-2016 Distributed Management Task Force, Inc. (DMTF). For the full DMTF copyright policy, see http://www.dmtf.org/about/policies/copyright.",
+				}})
 
 		ch.HandleCommand(ctx,
 			&UpdateRedfishResourceProperties{
