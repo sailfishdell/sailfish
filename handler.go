@@ -174,10 +174,12 @@ type CmdIDSetter interface {
 type AggIDSetter interface {
 	SetAggID(eh.UUID)
 }
-type HTTPParse interface {
+type HTTPParser interface {
 	ParseHTTPRequest(*http.Request)
 }
 
+// TODO: need to write middleware to check x-auth-token header
+// TODO: need to write middleware that would allow different types of encoding on output
 func (d *DomainObjects) RedfishHandlerFunc() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		fmt.Printf("HAPPY\n")
@@ -218,7 +220,7 @@ func (d *DomainObjects) RedfishHandlerFunc() http.HandlerFunc {
 		if t, ok := cmd.(AggIDSetter); ok {
 			t.SetAggID(aggID)
 		}
-		if t, ok := cmd.(HTTPParse); ok {
+		if t, ok := cmd.(HTTPParser); ok {
 			t.ParseHTTPRequest(r)
 		}
 
