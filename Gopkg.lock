@@ -2,6 +2,12 @@
 
 
 [[projects]]
+  name = "github.com/dgrijalva/jwt-go"
+  packages = ["."]
+  revision = "dbeaa9332f19a944acb5736b4456cfcc02140e29"
+  version = "v3.1.0"
+
+[[projects]]
   name = "github.com/gorilla/context"
   packages = ["."]
   revision = "1ea25387ff6f684839d82767c1733ff4d4d15d0a"
@@ -22,7 +28,8 @@
     "commandhandler/aggregate",
     "eventbus/local",
     "publisher/local",
-    "repo/memory"
+    "repo/memory",
+    "utils"
   ]
   revision = "3c36fbfe59cd1dd788b26a2e37d6193aafda685f"
   source = "github.com/superchalupa/eventhorizon"
@@ -30,6 +37,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "da69cb53817f2901805cb4760de38a2fc6325ad4103bcccbde3a352efd0c1a14"
+  inputs-digest = "b66593a9b8e8fd32a4c2cd8d648e6eb7c573430736751be6ec62f98352fa8831"
   solver-name = "gps-cdcl"
   solver-version = 1
