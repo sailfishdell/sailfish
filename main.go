@@ -11,6 +11,7 @@ import (
 	eh "github.com/looplab/eventhorizon"
 
 	domain "github.com/superchalupa/go-redfish/internal/redfishresource"
+	"github.com/superchalupa/go-redfish/plugins/session"
 )
 
 func main() {
@@ -34,7 +35,7 @@ func main() {
 	rootID := eh.NewUUID()
 
 	// Set up our standard extensions
-	domain.SetupSessionService(context.Background(), rootID, domainObjs.EventWaiter, domainObjs.CommandHandler)
+	session.SetupSessionService(context.Background(), rootID, domainObjs.EventWaiter, domainObjs.CommandHandler, domainObjs.EventBus)
 
 	// set up some basic stuff
 	domainObjs.Tree["/redfish/v1/"] = rootID
@@ -99,7 +100,15 @@ func main() {
 		m.ServeHTTP(w, r)
 	})
 
-	log.Println(http.ListenAndServe(":8080", logger))
+	s := &http.Server{
+		Addr:           ":8080",
+		Handler:        logger,
+		ReadTimeout:    10 * time.Second,
+		WriteTimeout:   10 * time.Second,
+		MaxHeaderBytes: 1 << 20,
+	}
+
+	log.Println(s.ListenAndServe())
 }
 
 // Logger is a simple event handler for logging all events.

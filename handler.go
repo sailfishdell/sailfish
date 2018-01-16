@@ -201,7 +201,7 @@ type AggIDSetter interface {
 	SetAggID(eh.UUID)
 }
 type HTTPParser interface {
-	ParseHTTPRequest(*http.Request)
+	ParseHTTPRequest(*http.Request) error
 }
 
 // TODO: need to write middleware to check x-auth-token header
@@ -246,7 +246,11 @@ func (d *DomainObjects) RedfishHandlerFunc() http.HandlerFunc {
 			t.SetAggID(aggID)
 		}
 		if t, ok := cmd.(HTTPParser); ok {
-			t.ParseHTTPRequest(r)
+			err := t.ParseHTTPRequest(r)
+			if err != nil {
+				http.Error(w, "Problems parsing http request: "+err.Error(), http.StatusBadRequest)
+				return
+			}
 		}
 
 		l, err := d.EventWaiter.Listen(r.Context(), func(event eh.Event) bool {
@@ -285,6 +289,13 @@ func (d *DomainObjects) RedfishHandlerFunc() http.HandlerFunc {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
+
+		// set headers first
+		for k, v := range d.Headers {
+			w.Header().Add(k, v)
+		}
+
+		// and then encode response
 		enc := json.NewEncoder(w)
 		enc.SetIndent("", "  ")
 		enc.Encode(d.Results)

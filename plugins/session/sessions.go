@@ -1,20 +1,26 @@
-package domain
+package session
 
 import (
 	"context"
 	"fmt"
 
+	domain "github.com/superchalupa/go-redfish/internal/redfishresource"
+
 	eh "github.com/looplab/eventhorizon"
 	"github.com/looplab/eventhorizon/utils"
 )
 
-func SetupSessionService(ctx context.Context, rootID eh.UUID, ew *utils.EventWaiter, ch eh.CommandHandler) {
+func SetupSessionService(ctx context.Context, rootID eh.UUID, ew *utils.EventWaiter, ch eh.CommandHandler, eb eh.EventBus) {
 	fmt.Printf("SetupSessionService\n")
+
+	// register our command
+	eh.RegisterCommand(func() eh.Command { return &POST{eventBus: eb, commandHandler: ch} })
+
 	l, err := ew.Listen(ctx, func(event eh.Event) bool {
-		if event.EventType() != RedfishResourceCreated {
+		if event.EventType() != domain.RedfishResourceCreated {
 			return false
 		}
-		if data, ok := event.Data().(*RedfishResourceCreatedData); ok {
+		if data, ok := event.Data().(*domain.RedfishResourceCreatedData); ok {
 			if data.ResourceURI == "/redfish/v1/" {
 				return true
 			}
@@ -38,7 +44,7 @@ func SetupSessionService(ctx context.Context, rootID eh.UUID, ew *utils.EventWai
 		// Create SessionService aggregate
 		ch.HandleCommand(
 			context.Background(),
-			&CreateRedfishResource{
+			&domain.CreateRedfishResource{
 				ID:          eh.NewUUID(),
 				ResourceURI: "/redfish/v1/SessionService",
 				Properties: map[string]interface{}{
@@ -63,8 +69,9 @@ func SetupSessionService(ctx context.Context, rootID eh.UUID, ew *utils.EventWai
 		// Create Sessions Collection
 		ch.HandleCommand(
 			context.Background(),
-			&CreateRedfishResource{
+			&domain.CreateRedfishResource{
 				ID:          eh.NewUUID(),
+				Plugin:      "SessionService",
 				ResourceURI: "/redfish/v1/SessionService/Sessions",
 				Collection:  true,
 				Properties: map[string]interface{}{
@@ -79,7 +86,7 @@ func SetupSessionService(ctx context.Context, rootID eh.UUID, ew *utils.EventWai
 		// Create Sessions Collection
 		ch.HandleCommand(
 			context.Background(),
-			&CreateRedfishResource{
+			&domain.CreateRedfishResource{
 				ID:          eh.NewUUID(),
 				ResourceURI: "/redfish/v1/SessionService/Sessions/1234567890ABCDEF",
 				Properties: map[string]interface{}{
@@ -95,7 +102,7 @@ func SetupSessionService(ctx context.Context, rootID eh.UUID, ew *utils.EventWai
 				}})
 
 		ch.HandleCommand(ctx,
-			&UpdateRedfishResourceProperties{
+			&domain.UpdateRedfishResourceProperties{
 				ID: rootID,
 				Properties: map[string]interface{}{
 					"SessionService": map[string]interface{}{"@odata.id": "/redfish/v1/SessionService"},
