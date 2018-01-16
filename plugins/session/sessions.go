@@ -14,7 +14,7 @@ func SetupSessionService(ctx context.Context, rootID eh.UUID, ew *utils.EventWai
 	fmt.Printf("SetupSessionService\n")
 
 	// register our command
-	eh.RegisterCommand(func() eh.Command { return &POST{eventBus: eb, commandHandler: ch} })
+	eh.RegisterCommand(func() eh.Command { return &POST{eventBus: eb, commandHandler: ch, eventWaiter: ew} })
 
 	l, err := ew.Listen(ctx, func(event eh.Event) bool {
 		if event.EventType() != domain.RedfishResourceCreated {

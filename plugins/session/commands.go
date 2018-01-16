@@ -11,6 +11,7 @@ import (
 
 	jwt "github.com/dgrijalva/jwt-go"
 	eh "github.com/looplab/eventhorizon"
+	"github.com/looplab/eventhorizon/utils"
 	domain "github.com/superchalupa/go-redfish/internal/redfishresource"
 )
 
@@ -42,6 +43,7 @@ const (
 type POST struct {
 	eventBus       eh.EventBus
 	commandHandler eh.CommandHandler
+	eventWaiter    *utils.EventWaiter
 	ID             eh.UUID           `json:"id"`
 	CmdID          eh.UUID           `json:"cmdid"`
 	Headers        map[string]string `eh:"optional"`
@@ -124,5 +126,55 @@ func (c *POST) Handle(ctx context.Context, a *domain.RedfishResourceAggregate) e
 }
 
 func (c *POST) startSessionDeleteTimer(sessionUUID eh.UUID, sessionURI string) {
+	refreshListener, err := c.eventWaiter.Listen(context.Background(), func(event eh.Event) bool {
+		if event.EventType() != XAuthTokenRefreshEvent {
+			return false
+		}
+		if data, ok := event.Data().(*XAuthTokenRefreshData); ok {
+			if data.SessionURI == sessionURI {
+				return true
+			}
+		}
+		return false
+	})
+	if err != nil {
+        // no way to report error back! //TODO
+		return
+	}
+
+	deleteListener, err := c.eventWaiter.Listen(context.Background(), func(event eh.Event) bool {
+		if event.EventType() != domain.RedfishResourceRemoved {
+			return false
+		}
+		if data, ok := event.Data().(*domain.RedfishResourceRemovedData); ok {
+			if data.ResourceURI == sessionURI {
+				return true
+			}
+		}
+		return false
+	})
+	if err != nil {
+        // no way to report error back! //TODO
+		return
+	}
+
+	go func() {
+		defer deleteListener.Close()
+		defer refreshListener.Close()
+
+		// loop forever
+        ctx := context.Background()
+		for {
+			select {
+			case <-refreshListener.GetInbox():
+				continue // still alive for now! start over again...
+			case <-deleteListener.GetInbox():
+				return // it's gone, all done here
+			case <-time.After(5 * time.Second):
+				c.commandHandler.HandleCommand(ctx, &domain.RemoveRedfishResource{ID: sessionUUID, ResourceURI: sessionURI})
+				return //exit goroutine
+			}
+		}
+	}()
 	return
 }
