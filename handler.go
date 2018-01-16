@@ -17,7 +17,6 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -122,41 +121,31 @@ func (d *DomainObjects) Notify(ctx context.Context, event eh.Event) {
 	}
 }
 
-func makeCommand(w http.ResponseWriter, r *http.Request, commandType eh.CommandType) (eh.Command, error) {
-	if r.Method != "POST" {
-		http.Error(w, "unsuported method: "+r.Method, http.StatusMethodNotAllowed)
-		return nil, errors.New("unsupported method: " + r.Method)
-	}
-
-	cmd, err := eh.CreateCommand(commandType)
-	if err != nil {
-		http.Error(w, "could not create command: "+err.Error(), http.StatusBadRequest)
-		return nil, errors.New("could not create command: " + err.Error())
-	}
-
-	b, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		http.Error(w, "could not read command: "+err.Error(), http.StatusBadRequest)
-		return nil, errors.New("could not read command: " + err.Error())
-	}
-	if err := json.Unmarshal(b, &cmd); err != nil {
-		http.Error(w, "could not decode command: "+err.Error(), http.StatusBadRequest)
-		return nil, errors.New("could not decode command: " + err.Error())
-	}
-
-	return cmd, nil
-}
-
 // CommandHandler is a HTTP handler for eventhorizon.Commands. Commands must be
 // registered with eventhorizon.RegisterCommand(). It expects a POST with a JSON
 // body that will be unmarshalled into the command.
-func (d *DomainObjects) RemoveHandler() http.Handler {
+func (d *DomainObjects) MakeHandler(command eh.CommandType) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        if r.Method != "POST" {
+            http.Error(w, "unsuported method: "+r.Method, http.StatusMethodNotAllowed)
+            return
+        }
 
-		cmd, err := makeCommand(w, r, domain.RemoveRedfishResourceCommand)
-		if err != nil {
-			return
-		}
+        cmd, err := eh.CreateCommand(command)
+        if err != nil {
+            http.Error(w, "could not create command: "+err.Error(), http.StatusBadRequest)
+            return
+        }
+
+        b, err := ioutil.ReadAll(r.Body)
+        if err != nil {
+            http.Error(w, "could not read command: "+err.Error(), http.StatusBadRequest)
+            return
+        }
+        if err := json.Unmarshal(b, &cmd); err != nil {
+            http.Error(w, "could not decode command: "+err.Error(), http.StatusBadRequest)
+            return
+        }
 
 		// NOTE: Use a new context when handling, else it will be cancelled with
 		// the HTTP request which will cause projectors etc to fail if they run
@@ -171,28 +160,6 @@ func (d *DomainObjects) RemoveHandler() http.Handler {
 	})
 }
 
-// CommandHandler is a HTTP handler for eventhorizon.Commands. Commands must be
-// registered with eventhorizon.RegisterCommand(). It expects a POST with a JSON
-// body that will be unmarshalled into the command.
-func (d *DomainObjects) CreateHandler() http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		cmd, err := makeCommand(w, r, domain.CreateRedfishResourceCommand)
-		if err != nil {
-			return
-		}
-
-		// NOTE: Use a new context when handling, else it will be cancelled with
-		// the HTTP request which will cause projectors etc to fail if they run
-		// async in goroutines past the request.
-		ctx := context.Background()
-		if err := d.CommandHandler.HandleCommand(ctx, cmd); err != nil {
-			http.Error(w, "could not handle command: "+err.Error(), http.StatusBadRequest)
-			return
-		}
-
-		w.WriteHeader(http.StatusOK)
-	})
-}
 
 type CmdIDSetter interface {
 	SetCmdID(eh.UUID)
