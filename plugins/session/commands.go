@@ -180,7 +180,7 @@ func (c *POST) startSessionDeleteTimer(sessionUUID eh.UUID, sessionURI string) {
 				continue // still alive for now! start over again...
 			case <-deleteListener.Inbox():
 				return // it's gone, all done here
-			case <-time.After(5 * time.Second):
+			case <-time.After(30 * time.Second):
 				c.commandHandler.HandleCommand(ctx, &domain.RemoveRedfishResource{ID: sessionUUID, ResourceURI: sessionURI})
 				return //exit goroutine
 			}
