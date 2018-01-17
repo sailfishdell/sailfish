@@ -51,7 +51,10 @@ func (c *GET) AggregateID() eh.UUID            { return c.ID }
 func (c *GET) CommandType() eh.CommandType     { return GETCommand }
 func (c *GET) SetAggID(id eh.UUID)             { c.ID = id }
 func (c *GET) SetCmdID(id eh.UUID)             { c.CmdID = id }
-func (c *GET) SetUserDetails(u string, p []string) { fmt.Printf("Command for user: %s with Privs: %s\n", u, p) }
+func (c *GET) SetUserDetails(u string, p []string) string {
+	fmt.Printf("Command for user: %s with Privs: %s -- dont worry, checking master\n", u, p)
+    return "checkMaster"
+}
 func (c *GET) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 	fmt.Printf("HANDLE GET!\n")
 	data := &HTTPCmdProcessedData{

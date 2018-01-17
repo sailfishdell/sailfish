@@ -167,7 +167,12 @@ type AggIDSetter interface {
 	SetAggID(eh.UUID)
 }
 type UserDetailsSetter interface {
-	SetUserDetails(string, []string)
+	SetUserDetails(string, []string) string
+	// return codes:
+	//      "checkMaster" - command check passed, but also check master
+	//      "authorized"  - command check passed, go right ahead, no master check
+	//      "unauthorized" - failed auth check in command, no need to check further
+
 }
 type HTTPParser interface {
 	ParseHTTPRequest(*http.Request) error
@@ -177,6 +182,23 @@ type RedfishHandler struct {
 	UserName   string
 	Privileges []string
 	d          *DomainObjects
+}
+
+func (rh *RedfishHandler) IsAuthorized(userPrivs []string) (authorized string) {
+	authorized = "unauthorized"
+	if userPrivs == nil {
+		userPrivs = []string{}
+	}
+outer:
+	for _, p := range rh.Privileges {
+		for _, q := range userPrivs {
+			if p == q {
+				authorized = "authorized"
+				break outer
+			}
+		}
+	}
+	return
 }
 
 // TODO: need to write middleware to check x-auth-token header
@@ -195,6 +217,7 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	agg, err := rh.d.AggregateStore.Load(r.Context(), domain.AggregateType, aggID)
 	redfishResource, ok := agg.(*domain.RedfishResourceAggregate)
 	if ok {
+		// prepend: favor specific stuff to generic stuff
 		search = append([]eh.CommandType{eh.CommandType(redfishResource.Plugin + ":" + r.Method)}, search...)
 	}
 
@@ -216,12 +239,33 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if t, ok := cmd.(CmdIDSetter); ok {
 		t.SetCmdID(cmdId)
 	}
-	if t, ok := cmd.(UserDetailsSetter); ok {
-		t.SetUserDetails(rh.UserName, rh.Privileges)
-	}
 	if t, ok := cmd.(AggIDSetter); ok {
 		t.SetAggID(aggID)
 	}
+
+	// Choices: command can process Authorization, or we can process authorization, or both
+	// If command implements UserDetailsSetter interface, we'll go ahead and call that.
+	// Return code from command determines if we also check privs here
+	// if command does not implement userdetails setter, we always check privs here
+	authAction := "checkMaster"
+	var implementsAuthorization bool
+	if t, implementsAuthorization := cmd.(UserDetailsSetter); implementsAuthorization {
+		authAction = t.SetUserDetails(rh.UserName, rh.Privileges)
+	}
+	if !implementsAuthorization || authAction == "checkMaster" {
+		privsToCheck := redfishResource.PrivilegeMap[r.Method]
+		s, ok := privsToCheck.([]string)
+		if !ok {
+			s = []string{}
+		}
+		authAction = rh.IsAuthorized(s)
+	}
+
+	if authAction == "unauthorized" {
+		http.Error(w, "Not authorized to access this resource: ", http.StatusUnauthorized)
+		return
+	}
+
 	if t, ok := cmd.(HTTPParser); ok {
 		err := t.ParseHTTPRequest(r)
 		if err != nil {
