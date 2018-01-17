@@ -184,14 +184,17 @@ type RedfishHandler struct {
 	d          *DomainObjects
 }
 
-func (rh *RedfishHandler) IsAuthorized(userPrivs []string) (authorized string) {
+func (rh *RedfishHandler) IsAuthorized(requiredPrivs []string) (authorized string) {
 	authorized = "unauthorized"
-	if userPrivs == nil {
-		userPrivs = []string{}
+	if requiredPrivs == nil {
+		requiredPrivs = []string{}
 	}
+    fmt.Printf("\tloop start\n")
 outer:
 	for _, p := range rh.Privileges {
-		for _, q := range userPrivs {
+        fmt.Printf("\t  --> %s\n", p)
+		for _, q := range requiredPrivs {
+            fmt.Printf("\t\tCheck %s == %s\n", p, q)
 			if p == q {
 				authorized = "authorized"
 				break outer
@@ -204,6 +207,7 @@ outer:
 // TODO: need to write middleware to check x-auth-token header
 // TODO: need to write middleware that would allow different types of encoding on output
 func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+    // All operations have to be on URLs that exist, so look it up in the tree
 	aggID, ok := rh.d.Tree[r.URL.Path]
 	if !ok {
 		http.Error(w, "Could not find URL: "+r.URL.Path, http.StatusNotFound)
@@ -211,16 +215,20 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	search := []eh.CommandType{
-		eh.CommandType("RedfishResource:" + r.Method),
 	}
 
+    // load the aggregate for the URL we are operating on
 	agg, err := rh.d.AggregateStore.Load(r.Context(), domain.AggregateType, aggID)
 	redfishResource, ok := agg.(*domain.RedfishResourceAggregate)
 	if ok {
-		// prepend: favor specific stuff to generic stuff
-		search = append([]eh.CommandType{eh.CommandType(redfishResource.Plugin + ":" + r.Method)}, search...)
+		// prepend the plugins to the search path
+		search = append(search, eh.CommandType(redfishResource.ResourceURI + ":" + r.Method))
+		search = append(search, eh.CommandType(redfishResource.Properties["@odata.type"].(string) + ":" + r.Method))
+		search = append(search, eh.CommandType(redfishResource.Properties["@odata.context"].(string) + ":" + r.Method))
 	}
+    search = append(search, eh.CommandType("RedfishResource:" + r.Method))
 
+    // search through the commands until we find one that exists
 	var cmd eh.Command
 	for _, cmdType := range search {
 		cmd, err = eh.CreateCommand(cmdType)
@@ -229,41 +237,21 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+    // with a proper error if we couldnt create a command of any kind
 	if cmd == nil {
 		http.Error(w, "could not create command", http.StatusBadRequest)
 		return
 	}
 
+    // Each command needs a unique UUID. We'll use that to listen for the HTTPProcessed Event, which should have a matching UUID.
 	cmdId := eh.NewUUID()
 
+    // some optional interfaces that the commands might implement
 	if t, ok := cmd.(CmdIDSetter); ok {
 		t.SetCmdID(cmdId)
 	}
 	if t, ok := cmd.(AggIDSetter); ok {
 		t.SetAggID(aggID)
-	}
-
-	// Choices: command can process Authorization, or we can process authorization, or both
-	// If command implements UserDetailsSetter interface, we'll go ahead and call that.
-	// Return code from command determines if we also check privs here
-	// if command does not implement userdetails setter, we always check privs here
-	authAction := "checkMaster"
-	var implementsAuthorization bool
-	if t, implementsAuthorization := cmd.(UserDetailsSetter); implementsAuthorization {
-		authAction = t.SetUserDetails(rh.UserName, rh.Privileges)
-	}
-	if !implementsAuthorization || authAction == "checkMaster" {
-		privsToCheck := redfishResource.PrivilegeMap[r.Method]
-		s, ok := privsToCheck.([]string)
-		if !ok {
-			s = []string{}
-		}
-		authAction = rh.IsAuthorized(s)
-	}
-
-	if authAction == "unauthorized" {
-		http.Error(w, "Not authorized to access this resource: ", http.StatusUnauthorized)
-		return
 	}
 
 	if t, ok := cmd.(HTTPParser); ok {
@@ -274,6 +262,46 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// Choices: command can process Authorization, or we can process authorization, or both
+	// If command implements UserDetailsSetter interface, we'll go ahead and call that.
+	// Return code from command determines if we also check privs here
+	authAction := "checkMaster"
+	var implementsAuthorization bool
+	if t, implementsAuthorization := cmd.(UserDetailsSetter); implementsAuthorization {
+        fmt.Printf("UserDetailsSetter\n")
+		authAction = t.SetUserDetails(rh.UserName, rh.Privileges)
+        fmt.Printf("\tauthAction: %s\n", authAction)
+	}
+	// if command does not implement userdetails setter, we always check privs here
+	if !implementsAuthorization || authAction == "checkMaster" {
+        fmt.Printf("checkMaster\n")
+		privsToCheck := redfishResource.PrivilegeMap[r.Method]
+        fmt.Printf("\tprivsToCheck: %s\n", privsToCheck)
+
+        // convert Privileges from []interface{} to []string (way more code than there should be for something this simple)
+        var s []interface{}
+        var t []string
+		s, ok := privsToCheck.([]interface{})
+		if !ok {
+			s = []interface{}{}
+		}
+        for _, v := range s {
+            if a, ok := v.(string); ok {
+                t = append(t, a)
+            }
+        }
+        fmt.Printf("\tPrivs (s): %s\n", s)
+
+		authAction = rh.IsAuthorized(t)
+        fmt.Printf("\tauthAction: %s\n", authAction)
+	}
+
+	if authAction != "authorized" {
+		http.Error(w, "Not authorized to access this resource: ", http.StatusUnauthorized)
+		return
+	}
+
+    // to avoid races, set up our listener first
 	l, err := rh.d.EventWaiter.Listen(r.Context(), func(event eh.Event) bool {
 		if event.EventType() != domain.HTTPCmdProcessed {
 			return false

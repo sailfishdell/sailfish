@@ -20,4 +20,4 @@ curl http://localhost:8080/redfish/v1
 echo "/redfish/v1/"
 curl http://localhost:8080/redfish/v1/
 echo "/redfish/v1/test"
-curl http://localhost:8080/redfish/v1/test
+curl http://root:password@localhost:8080/redfish/v1/test
