@@ -50,9 +50,9 @@ func main() {
 			ID:          rootID,
 			ResourceURI: "/redfish/v1/",
 			Type:        "#ServiceRoot.v1_0_2.ServiceRoot",
-			Context:	 "/redfish/v1/$metadata#ServiceRoot",
-            // anybody can access
-            Privileges:                          map[string]interface{}{"GET": []string{"Unauthenticated"}},
+			Context:     "/redfish/v1/$metadata#ServiceRoot",
+			// anybody can access
+			Privileges: map[string]interface{}{"GET": []string{"Unauthenticated"}},
 			Properties: map[string]interface{}{
 				"Id":                 "RootService",
 				"Name":               "Root Service",

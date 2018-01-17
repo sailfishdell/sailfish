@@ -39,17 +39,17 @@ var _ = eh.Command(&RemoveResourceFromRedfishResourceCollection{})
 
 // CreateRedfishResource Command
 type CreateRedfishResource struct {
-	ID          eh.UUID                `json:"id"`
+	ID          eh.UUID `json:"id"`
 	ResourceURI string
-    Type        string
-    Context     string
-    Privileges  map[string]interface{}
+	Type        string
+	Context     string
+	Privileges  map[string]interface{}
 
-    // optional stuff
-	Plugin      string                 `eh:"optional"`
-	Properties  map[string]interface{} `eh:"optional"`
-	Private     map[string]interface{} `eh:"optional"`
-	Collection  bool                   `eh:"optional"`
+	// optional stuff
+	Plugin     string                 `eh:"optional"`
+	Properties map[string]interface{} `eh:"optional"`
+	Private    map[string]interface{} `eh:"optional"`
+	Collection bool                   `eh:"optional"`
 }
 
 func (c *CreateRedfishResource) AggregateType() eh.AggregateType { return AggregateType }
@@ -78,9 +78,9 @@ func (c *CreateRedfishResource) Handle(ctx context.Context, a *RedfishResourceAg
 		a.Properties[k] = v
 	}
 
-    a.Properties["@odata.id"] = c.ResourceURI
-    a.Properties["@odata.type"] = c.Type
-    a.Properties["@odata.context"] = c.Context
+	a.Properties["@odata.id"] = c.ResourceURI
+	a.Properties["@odata.type"] = c.Type
+	a.Properties["@odata.context"] = c.Context
 
 	for k, v := range c.Privileges {
 		a.PrivilegeMap[k] = v
