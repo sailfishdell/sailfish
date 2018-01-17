@@ -193,5 +193,29 @@ func (c *RemoveResourceFromRedfishResourceCollection) CommandType() eh.CommandTy
 	return RemoveResourceFromRedfishResourceCollectionCommand
 }
 func (c *RemoveResourceFromRedfishResourceCollection) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
+	// TODO: send property updated event
+	if collection, ok := a.Properties["Members"]; ok {
+		numToSlice := 0
+		fmt.Printf("Slicing %s\n", numToSlice)
+		if s, ok := collection.([]map[string]interface{}); ok {
+			// trundle through the members to see if we can find
+			fmt.Printf("\ttrundling...\n")
+			for i, v := range s {
+				fmt.Printf("\t  resource: %s\n", v)
+				if v["@odata.id"] == c.ResourceURI {
+					// move the ones to be removed to the end
+					fmt.Printf("\t REMOVE\n")
+					numToSlice = numToSlice + 1
+					s[len(s)-numToSlice], s[i] = s[i], s[len(s)-numToSlice]
+					break
+				}
+			}
+			a.Properties["Members"] = s[:len(s)-numToSlice]
+		}
+		a.Properties["Members@odata.count"] = len(a.Properties["Members"].([]map[string]interface{}))
+	}
+
+	fmt.Printf("Final score: %s\n", a.Properties["Members"])
+
 	return nil
 }
