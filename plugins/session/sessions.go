@@ -18,7 +18,7 @@ type AddUserDetails struct {
 func (a *AddUserDetails) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	// pretend to parse token! for now...
 	// TODO: actually parse the token
-	a.OnUserDetails("root", []string{"Admin"}).ServeHTTP(rw, req)
+	a.OnUserDetails("root", []string{"Admin", "Unauthenticated"}).ServeHTTP(rw, req)
 }
 
 func SetupSessionService(ctx context.Context, rootID eh.UUID, ew *utils.EventWaiter, ch eh.CommandHandler, eb eh.EventBus) (aud *AddUserDetails) {
@@ -61,8 +61,15 @@ func SetupSessionService(ctx context.Context, rootID eh.UUID, ew *utils.EventWai
 			&domain.CreateRedfishResource{
 				ID:          eh.NewUUID(),
 				ResourceURI: "/redfish/v1/SessionService",
-					Type: "#SessionService.v1_0_2.SessionService",
-					Context:     "/redfish/v1/$metadata#SessionService",
+				Type:        "#SessionService.v1_0_2.SessionService",
+				Context:     "/redfish/v1/$metadata#SessionService",
+				Privileges: map[string]interface{}{
+					"GET":    []string{"ConfigureManager"},
+					"POST":   []string{"ConfigureManager"},
+					"PUT":    []string{"ConfigureManager"},
+					"PATCH":  []string{"ConfigureManager"},
+					"DELETE": []string{},
+				},
 				Properties: map[string]interface{}{
 					"Id":          "SessionService",
 					"Name":        "Session Service",
@@ -86,31 +93,21 @@ func SetupSessionService(ctx context.Context, rootID eh.UUID, ew *utils.EventWai
 				ID:          eh.NewUUID(),
 				Plugin:      "SessionService",
 				ResourceURI: "/redfish/v1/SessionService/Sessions",
-					Type:         "#SessionCollection.SessionCollection",
-					Context:      "/redfish/v1/$metadata#SessionService/Sessions/$entity",
-				Collection:  true,
+				Type:        "#SessionCollection.SessionCollection",
+				Context:     "/redfish/v1/$metadata#SessionService/Sessions/$entity",
+				Privileges: map[string]interface{}{
+					"GET":    []string{"ConfigureManager"},
+					"POST":   []string{"Unauthenticated"},
+					"PUT":    []string{"ConfigureManager"},
+					"PATCH":  []string{"ConfigureManager"},
+					"DELETE": []string{"ConfigureSelf"},
+				},
+				Collection: true,
 				Properties: map[string]interface{}{
 					"Name":                "Session Collection",
 					"Members@odata.count": 0,
 					"Members":             []map[string]interface{}{},
 					"@Redfish.Copyright":  "Copyright 2014-2016 Distributed Management Task Force, Inc. (DMTF). For the full DMTF copyright policy, see http://www.dmtf.org/about/policies/copyright.",
-				}})
-
-		// Create Sessions Collection
-		ch.HandleCommand(
-			context.Background(),
-			&domain.CreateRedfishResource{
-				ID:          eh.NewUUID(),
-				ResourceURI: "/redfish/v1/SessionService/Sessions/1234567890ABCDEF",
-					Type:        "#Session.v1_0_2.Session",
-					Context:     "/redfish/v1/$metadata#Session.Session",
-				Properties: map[string]interface{}{
-					"Id":                 "1234567890ABCDEF",
-					"Name":               "User Session",
-					"Description":        "Manager User Session",
-					"UserName":           "Administrator",
-					"Oem":                map[string]interface{}{},
-					"@Redfish.Copyright": "Copyright 2014-2016 Distributed Management Task Force, Inc. (DMTF). For the full DMTF copyright policy, see http://www.dmtf.org/about/policies/copyright.",
 				}})
 
 		ch.HandleCommand(ctx,

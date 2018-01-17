@@ -107,8 +107,17 @@ func (c *POST) Handle(ctx context.Context, a *domain.RedfishResourceAggregate) e
 		&domain.CreateRedfishResource{
 			ID:          sessionUUID,
 			ResourceURI: retprops["@odata.id"].(string),
-			Properties:  retprops,
-			Private:     map[string]interface{}{"token_secret": secret},
+			Type:        retprops["@odata.type"].(string),
+			Context:     retprops["@odata.context"].(string),
+			Privileges: map[string]interface{}{
+				"GET":    []string{"ConfigureManager"},
+				"POST":   []string{"ConfigureManager"},
+				"PUT":    []string{"ConfigureManager"},
+				"PATCH":  []string{"ConfigureManager"},
+				"DELETE": []string{"ConfigureSelf", "ConfigureManager"},
+			},
+			Properties: retprops,
+			Private:    map[string]interface{}{"token_secret": secret},
 		})
 	if err != nil {
 		return err

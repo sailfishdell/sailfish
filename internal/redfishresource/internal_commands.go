@@ -40,10 +40,13 @@ var _ = eh.Command(&RemoveResourceFromRedfishResourceCollection{})
 // CreateRedfishResource Command
 type CreateRedfishResource struct {
 	ID          eh.UUID                `json:"id"`
-	Plugin      string                 `eh:"optional"`
 	ResourceURI string
     Type        string
     Context     string
+    Privileges  map[string]interface{}
+
+    // optional stuff
+	Plugin      string                 `eh:"optional"`
 	Properties  map[string]interface{} `eh:"optional"`
 	Private     map[string]interface{} `eh:"optional"`
 	Collection  bool                   `eh:"optional"`
@@ -63,7 +66,7 @@ func (c *CreateRedfishResource) Handle(ctx context.Context, a *RedfishResourceAg
 	a.ResourceURI = c.ResourceURI
 	a.Plugin = c.Plugin
 	if a.Plugin == "" {
-		a.Plugin = "DEFAULT"
+		a.Plugin = "RedfishResource"
 	}
 	a.Properties = map[string]interface{}{}
 	a.PrivilegeMap = map[string]interface{}{}
@@ -78,6 +81,10 @@ func (c *CreateRedfishResource) Handle(ctx context.Context, a *RedfishResourceAg
     a.Properties["@odata.id"] = c.ResourceURI
     a.Properties["@odata.type"] = c.Type
     a.Properties["@odata.context"] = c.Context
+
+	for k, v := range c.Privileges {
+		a.PrivilegeMap[k] = v
+	}
 
 	a.eventBus.HandleEvent(ctx, eh.NewEvent(RedfishResourceCreated, &RedfishResourceCreatedData{
 		ID:          c.ID,
