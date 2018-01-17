@@ -98,7 +98,7 @@ func (d *DomainObjects) Notify(ctx context.Context, event eh.Event) {
 			for _, v := range d.collections {
 				collectionToTest := path.Dir(data.ResourceURI)
 				fmt.Printf("check existing collections for %s = %s\n", collectionToTest, v)
-				if v == path.Dir(data.ResourceURI) {
+				if v == collectionToTest {
 					fmt.Printf("\tWe got a match: add to collection command\n")
 					d.CommandHandler.HandleCommand(
 						context.Background(),
@@ -114,6 +114,33 @@ func (d *DomainObjects) Notify(ctx context.Context, event eh.Event) {
 	}
 	if event.EventType() == domain.RedfishResourceRemoved {
 		if data, ok := event.Data().(*domain.RedfishResourceRemovedData); ok {
+			// Look to see if it is a member of a collection
+			for _, v := range d.collections {
+				collectionToTest := path.Dir(data.ResourceURI)
+				fmt.Printf("check existing collections for %s = %s\n", collectionToTest, v)
+				if v == collectionToTest {
+					fmt.Printf("\tWe got a match: remove from collection command\n")
+					d.CommandHandler.HandleCommand(
+						context.Background(),
+						&domain.RemoveResourceFromRedfishResourceCollection{
+							ID:          d.Tree[collectionToTest],
+							ResourceURI: data.ResourceURI,
+						},
+					)
+				}
+			}
+
+			// is this a collection? If so, remove it from our collections list
+			for i, c := range d.collections {
+				if c == data.ResourceURI {
+					fmt.Printf("Removing collection: %s\n", data.ResourceURI)
+					// swap the collection we found to the end
+					d.collections[len(d.collections)-1], d.collections[i] = d.collections[i], d.collections[len(d.collections)-1]
+					// then slice it off
+					d.collections = d.collections[:len(d.collections)-1]
+				}
+			}
+
 			// TODO: remove from aggregatestore?
 			delete(d.Tree, data.ResourceURI)
 		}
@@ -189,12 +216,12 @@ func (rh *RedfishHandler) IsAuthorized(requiredPrivs []string) (authorized strin
 	if requiredPrivs == nil {
 		requiredPrivs = []string{}
 	}
-    fmt.Printf("\tloop start\n")
+	fmt.Printf("\tloop start\n")
 outer:
 	for _, p := range rh.Privileges {
-        fmt.Printf("\t  --> %s\n", p)
+		fmt.Printf("\t  --> %s\n", p)
 		for _, q := range requiredPrivs {
-            fmt.Printf("\t\tCheck %s == %s\n", p, q)
+			fmt.Printf("\t\tCheck %s == %s\n", p, q)
 			if p == q {
 				authorized = "authorized"
 				break outer
@@ -207,28 +234,29 @@ outer:
 // TODO: need to write middleware to check x-auth-token header
 // TODO: need to write middleware that would allow different types of encoding on output
 func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-    // All operations have to be on URLs that exist, so look it up in the tree
+	// All operations have to be on URLs that exist, so look it up in the tree
 	aggID, ok := rh.d.Tree[r.URL.Path]
 	if !ok {
 		http.Error(w, "Could not find URL: "+r.URL.Path, http.StatusNotFound)
 		return
 	}
 
-	search := []eh.CommandType{
-	}
+	search := []eh.CommandType{}
 
-    // load the aggregate for the URL we are operating on
+	// load the aggregate for the URL we are operating on
 	agg, err := rh.d.AggregateStore.Load(r.Context(), domain.AggregateType, aggID)
 	redfishResource, ok := agg.(*domain.RedfishResourceAggregate)
 	if ok {
 		// prepend the plugins to the search path
-		search = append(search, eh.CommandType(redfishResource.ResourceURI + ":" + r.Method))
-		search = append(search, eh.CommandType(redfishResource.Properties["@odata.type"].(string) + ":" + r.Method))
-		search = append(search, eh.CommandType(redfishResource.Properties["@odata.context"].(string) + ":" + r.Method))
+		search = append(search, eh.CommandType(redfishResource.ResourceURI+":"+r.Method))
+		search = append(search, eh.CommandType(redfishResource.Properties["@odata.type"].(string)+":"+r.Method))
+		search = append(search, eh.CommandType(redfishResource.Properties["@odata.context"].(string)+":"+r.Method))
+		search = append(search, eh.CommandType(redfishResource.Plugin+":"+r.Method))
 	}
-    search = append(search, eh.CommandType("RedfishResource:" + r.Method))
+	search = append(search, eh.CommandType("RedfishResource:"+r.Method))
+	fmt.Printf("Search path: %s\n", search)
 
-    // search through the commands until we find one that exists
+	// search through the commands until we find one that exists
 	var cmd eh.Command
 	for _, cmdType := range search {
 		cmd, err = eh.CreateCommand(cmdType)
@@ -237,16 +265,16 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-    // with a proper error if we couldnt create a command of any kind
+	// with a proper error if we couldnt create a command of any kind
 	if cmd == nil {
 		http.Error(w, "could not create command", http.StatusBadRequest)
 		return
 	}
 
-    // Each command needs a unique UUID. We'll use that to listen for the HTTPProcessed Event, which should have a matching UUID.
+	// Each command needs a unique UUID. We'll use that to listen for the HTTPProcessed Event, which should have a matching UUID.
 	cmdId := eh.NewUUID()
 
-    // some optional interfaces that the commands might implement
+	// some optional interfaces that the commands might implement
 	if t, ok := cmd.(CmdIDSetter); ok {
 		t.SetCmdID(cmdId)
 	}
@@ -268,32 +296,34 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	authAction := "checkMaster"
 	var implementsAuthorization bool
 	if t, implementsAuthorization := cmd.(UserDetailsSetter); implementsAuthorization {
-        fmt.Printf("UserDetailsSetter\n")
+		fmt.Printf("UserDetailsSetter\n")
 		authAction = t.SetUserDetails(rh.UserName, rh.Privileges)
-        fmt.Printf("\tauthAction: %s\n", authAction)
+		fmt.Printf("\tauthAction: %s\n", authAction)
 	}
 	// if command does not implement userdetails setter, we always check privs here
 	if !implementsAuthorization || authAction == "checkMaster" {
-        fmt.Printf("checkMaster\n")
+		fmt.Printf("checkMaster\n")
 		privsToCheck := redfishResource.PrivilegeMap[r.Method]
-        fmt.Printf("\tprivsToCheck: %s\n", privsToCheck)
+		fmt.Printf("\tNEED PRIVS: %s\n", privsToCheck)
 
-        // convert Privileges from []interface{} to []string (way more code than there should be for something this simple)
-        var s []interface{}
-        var t []string
-		s, ok := privsToCheck.([]interface{})
-		if !ok {
-			s = []interface{}{}
+		// convert Privileges from []interface{} to []string (way more code than there should be for something this simple)
+		var t []string
+		switch typ := privsToCheck.(type) {
+		case []string:
+			t = append(t, privsToCheck.([]string)...)
+		case []interface{}:
+			for _, v := range privsToCheck.([]interface{}) {
+				if a, ok := v.(string); ok {
+					t = append(t, a)
+				}
+			}
+		default:
+			fmt.Printf("CRAZY PILLS: %s\n", typ)
 		}
-        for _, v := range s {
-            if a, ok := v.(string); ok {
-                t = append(t, a)
-            }
-        }
-        fmt.Printf("\tPrivs (s): %s\n", s)
+		fmt.Printf("\tNEED PRIVS (strings): %s\n", t)
 
 		authAction = rh.IsAuthorized(t)
-        fmt.Printf("\tauthAction: %s\n", authAction)
+		fmt.Printf("\tauthAction: %s\n", authAction)
 	}
 
 	if authAction != "authorized" {
@@ -301,7 +331,7 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-    // to avoid races, set up our listener first
+	// to avoid races, set up our listener first
 	l, err := rh.d.EventWaiter.Listen(r.Context(), func(event eh.Event) bool {
 		if event.EventType() != domain.HTTPCmdProcessed {
 			return false

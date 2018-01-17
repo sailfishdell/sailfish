@@ -10,9 +10,9 @@ import (
 
 	eh "github.com/looplab/eventhorizon"
 
-	domain "github.com/superchalupa/go-redfish/redfishresource"
-	"github.com/superchalupa/go-redfish/plugins/session"
 	"github.com/superchalupa/go-redfish/plugins/basicauth"
+	"github.com/superchalupa/go-redfish/plugins/session"
+	domain "github.com/superchalupa/go-redfish/redfishresource"
 )
 
 func main() {
@@ -43,8 +43,8 @@ func main() {
 	sessionServiceAuthorizer := session.NewService(context.Background(), rootID, domainObjs.EventWaiter, domainObjs.CommandHandler, domainObjs.EventBus)
 	sessionServiceAuthorizer.OnUserDetails = chainAuth
 	sessionServiceAuthorizer.WithoutUserDetails = BasicAuthAuthorizer
-    BasicAuthAuthorizer.OnUserDetails = chainAuth
-	BasicAuthAuthorizer.WithoutUserDetails = &RedfishHandler{UserName: "UNKNOWN", Privileges: []string{"Unauthenticated"}, d:domainObjs}
+	BasicAuthAuthorizer.OnUserDetails = chainAuth
+	BasicAuthAuthorizer.WithoutUserDetails = &RedfishHandler{UserName: "UNKNOWN", Privileges: []string{"Unauthenticated"}, d: domainObjs}
 
 	// set up some basic stuff
 	domainObjs.Tree["/redfish/v1/"] = rootID

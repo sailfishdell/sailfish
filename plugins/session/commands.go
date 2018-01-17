@@ -44,10 +44,11 @@ type POST struct {
 	eventBus       eh.EventBus
 	commandHandler eh.CommandHandler
 	eventWaiter    *utils.EventWaiter
-	ID             eh.UUID           `json:"id"`
-	CmdID          eh.UUID           `json:"cmdid"`
-	Headers        map[string]string `eh:"optional"`
-	LR             LoginRequest
+
+	ID      eh.UUID           `json:"id"`
+	CmdID   eh.UUID           `json:"cmdid"`
+	Headers map[string]string `eh:"optional"`
+	LR      LoginRequest
 }
 
 // Static type checking for commands to prevent runtime errors due to typos
@@ -87,7 +88,7 @@ func (c *POST) Handle(ctx context.Context, a *domain.RedfishResourceAggregate) e
 	claims["privileges"] = privileges
 	claims["sessionuri"] = sessionURI
 	token.Claims = claims
-	secret := createRandSecret(24, characters)
+	secret := SECRET
 	tokenString, err := token.SignedString(secret)
 
 	retprops := map[string]interface{}{
