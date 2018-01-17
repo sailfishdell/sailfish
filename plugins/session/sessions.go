@@ -61,8 +61,9 @@ func SetupSessionService(ctx context.Context, rootID eh.UUID, ew *utils.EventWai
 			&domain.CreateRedfishResource{
 				ID:          eh.NewUUID(),
 				ResourceURI: "/redfish/v1/SessionService",
+					Type: "#SessionService.v1_0_2.SessionService",
+					Context:     "/redfish/v1/$metadata#SessionService",
 				Properties: map[string]interface{}{
-					"@odata.type": "#SessionService.v1_0_2.SessionService",
 					"Id":          "SessionService",
 					"Name":        "Session Service",
 					"Description": "Session Service",
@@ -75,8 +76,6 @@ func SetupSessionService(ctx context.Context, rootID eh.UUID, ew *utils.EventWai
 					"Sessions": map[string]interface{}{
 						"@odata.id": "/redfish/v1/SessionService/Sessions",
 					},
-					"@odata.context":     "/redfish/v1/$metadata#SessionService",
-					"@odata.id":          "/redfish/v1/SessionService",
 					"@Redfish.Copyright": "Copyright 2014-2016 Distributed Management Task Force, Inc. (DMTF). For the full DMTF copyright policy, see http://www.dmtf.org/about/policies/copyright.",
 				}})
 
@@ -87,13 +86,13 @@ func SetupSessionService(ctx context.Context, rootID eh.UUID, ew *utils.EventWai
 				ID:          eh.NewUUID(),
 				Plugin:      "SessionService",
 				ResourceURI: "/redfish/v1/SessionService/Sessions",
+					Type:         "#SessionCollection.SessionCollection",
+					Context:      "/redfish/v1/$metadata#SessionService/Sessions/$entity",
 				Collection:  true,
 				Properties: map[string]interface{}{
-					"@odata.type":         "#SessionCollection.SessionCollection",
 					"Name":                "Session Collection",
 					"Members@odata.count": 0,
 					"Members":             []map[string]interface{}{},
-					"@odata.context":      "/redfish/v1/$metadata#SessionService/Sessions/$entity",
 					"@Redfish.Copyright":  "Copyright 2014-2016 Distributed Management Task Force, Inc. (DMTF). For the full DMTF copyright policy, see http://www.dmtf.org/about/policies/copyright.",
 				}})
 
@@ -103,15 +102,14 @@ func SetupSessionService(ctx context.Context, rootID eh.UUID, ew *utils.EventWai
 			&domain.CreateRedfishResource{
 				ID:          eh.NewUUID(),
 				ResourceURI: "/redfish/v1/SessionService/Sessions/1234567890ABCDEF",
+					Type:        "#Session.v1_0_2.Session",
+					Context:     "/redfish/v1/$metadata#Session.Session",
 				Properties: map[string]interface{}{
-					"@odata.type":        "#Session.v1_0_2.Session",
 					"Id":                 "1234567890ABCDEF",
 					"Name":               "User Session",
 					"Description":        "Manager User Session",
 					"UserName":           "Administrator",
 					"Oem":                map[string]interface{}{},
-					"@odata.context":     "/redfish/v1/$metadata#Session.Session",
-					"@odata.id":          "/redfish/v1/SessionService/Sessions/1234567890ABCDEF",
 					"@Redfish.Copyright": "Copyright 2014-2016 Distributed Management Task Force, Inc. (DMTF). For the full DMTF copyright policy, see http://www.dmtf.org/about/policies/copyright.",
 				}})
 

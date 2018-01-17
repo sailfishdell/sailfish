@@ -39,9 +39,11 @@ var _ = eh.Command(&RemoveResourceFromRedfishResourceCollection{})
 
 // CreateRedfishResource Command
 type CreateRedfishResource struct {
-	ID          eh.UUID `json:"id"`
-	ResourceURI string
+	ID          eh.UUID                `json:"id"`
 	Plugin      string                 `eh:"optional"`
+	ResourceURI string
+    Type        string
+    Context     string
 	Properties  map[string]interface{} `eh:"optional"`
 	Private     map[string]interface{} `eh:"optional"`
 	Collection  bool                   `eh:"optional"`
@@ -72,6 +74,10 @@ func (c *CreateRedfishResource) Handle(ctx context.Context, a *RedfishResourceAg
 	for k, v := range c.Properties {
 		a.Properties[k] = v
 	}
+
+    a.Properties["@odata.id"] = c.ResourceURI
+    a.Properties["@odata.type"] = c.Type
+    a.Properties["@odata.context"] = c.Context
 
 	a.eventBus.HandleEvent(ctx, eh.NewEvent(RedfishResourceCreated, &RedfishResourceCreatedData{
 		ID:          c.ID,
