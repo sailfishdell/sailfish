@@ -7,10 +7,12 @@ import (
 
 	domain "github.com/superchalupa/go-redfish/redfishresource"
 
+	jwt "github.com/dgrijalva/jwt-go"
 	eh "github.com/looplab/eventhorizon"
 	"github.com/looplab/eventhorizon/utils"
-        jwt "github.com/dgrijalva/jwt-go"
 )
+
+var SECRET []byte = []byte("happyhappyjoyjoy1234")
 
 type AddUserDetails struct {
 	OnUserDetails      func(userName string, privileges []string) http.Handler
@@ -29,20 +31,20 @@ func (a *AddUserDetails) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 
 	xauthtoken := req.Header.Get("X-Auth-Token")
 	if xauthtoken != "" {
-        fmt.Printf("GOT A TOKEN\n")
+		fmt.Printf("GOT A TOKEN\n")
 		token, _ := jwt.ParseWithClaims(xauthtoken, &RedfishClaims{}, func(token *jwt.Token) (interface{}, error) { return []byte("foobar"), nil })
 
-        if claims, ok := token.Claims.(*RedfishClaims); ok {
-            fmt.Printf("Got a parsed token: %v\n", claims)
-            if token.Valid {
-                userName = "ROOT"
-                privileges = append(privileges, "authorization-complete")
-                privileges = append(privileges, claims.Privileges...)
+		if claims, ok := token.Claims.(*RedfishClaims); ok {
+			fmt.Printf("Got a parsed token: %v\n", claims)
+			if token.Valid {
+				userName = "ROOT"
+				privileges = append(privileges, "authorization-complete")
+				privileges = append(privileges, claims.Privileges...)
 
-                //domain.SendEvent(ctx, s, session.XAuthTokenRefreshEvent, &session.XAuthTokenRefreshData{SessionURI: claims.SessionURI})
-                return
-            }
-        }
+				//domain.SendEvent(ctx, s, session.XAuthTokenRefreshEvent, &session.XAuthTokenRefreshData{SessionURI: claims.SessionURI})
+				return
+			}
+		}
 	}
 
 	if userName != "" && len(privileges) > 0 {
@@ -55,6 +57,8 @@ func (a *AddUserDetails) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 
 func NewService(ctx context.Context, rootID eh.UUID, ew *utils.EventWaiter, ch eh.CommandHandler, eb eh.EventBus) (aud *AddUserDetails) {
 	fmt.Printf("SetupSessionService\n")
+	// setup module secret
+	SECRET = createRandSecret(24, characters)
 
 	// register our command
 	eh.RegisterCommand(func() eh.Command { return &POST{eventBus: eb, commandHandler: ch, eventWaiter: ew} })
