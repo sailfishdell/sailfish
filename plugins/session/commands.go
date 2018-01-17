@@ -12,7 +12,7 @@ import (
 	jwt "github.com/dgrijalva/jwt-go"
 	eh "github.com/looplab/eventhorizon"
 	"github.com/looplab/eventhorizon/utils"
-	domain "github.com/superchalupa/go-redfish/internal/redfishresource"
+	domain "github.com/superchalupa/go-redfish/redfishresource"
 )
 
 type LoginRequest struct {

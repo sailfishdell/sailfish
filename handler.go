@@ -30,7 +30,7 @@ import (
 	repo "github.com/looplab/eventhorizon/repo/memory"
 	"github.com/looplab/eventhorizon/utils"
 
-	domain "github.com/superchalupa/go-redfish/internal/redfishresource"
+	domain "github.com/superchalupa/go-redfish/redfishresource"
 )
 
 type DomainObjects struct {

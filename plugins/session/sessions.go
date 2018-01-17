@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	domain "github.com/superchalupa/go-redfish/internal/redfishresource"
+	domain "github.com/superchalupa/go-redfish/redfishresource"
 
 	eh "github.com/looplab/eventhorizon"
 	"github.com/looplab/eventhorizon/utils"

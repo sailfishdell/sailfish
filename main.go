@@ -10,7 +10,7 @@ import (
 
 	eh "github.com/looplab/eventhorizon"
 
-	domain "github.com/superchalupa/go-redfish/internal/redfishresource"
+	domain "github.com/superchalupa/go-redfish/redfishresource"
 	"github.com/superchalupa/go-redfish/plugins/session"
 	"github.com/superchalupa/go-redfish/plugins/basicauth"
 )
