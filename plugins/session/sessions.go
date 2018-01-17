@@ -3,6 +3,7 @@ package session
 import (
 	"context"
 	"fmt"
+	"net/http"
 
 	domain "github.com/superchalupa/go-redfish/internal/redfishresource"
 
@@ -10,11 +11,24 @@ import (
 	"github.com/looplab/eventhorizon/utils"
 )
 
-func SetupSessionService(ctx context.Context, rootID eh.UUID, ew *utils.EventWaiter, ch eh.CommandHandler, eb eh.EventBus) {
+type AddUserDetails struct {
+	OnUserDetails func(userName string, privileges []string) http.Handler
+}
+
+func (a *AddUserDetails) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
+	// pretend to parse token! for now...
+	// TODO: actually parse the token
+	a.OnUserDetails("root", []string{"Admin"}).ServeHTTP(rw, req)
+}
+
+func SetupSessionService(ctx context.Context, rootID eh.UUID, ew *utils.EventWaiter, ch eh.CommandHandler, eb eh.EventBus) (aud *AddUserDetails) {
 	fmt.Printf("SetupSessionService\n")
 
 	// register our command
 	eh.RegisterCommand(func() eh.Command { return &POST{eventBus: eb, commandHandler: ch, eventWaiter: ew} })
+
+	// set up the return value since we already know it
+	aud = &AddUserDetails{}
 
 	l, err := ew.Listen(ctx, func(event eh.Event) bool {
 		if event.EventType() != domain.RedfishResourceCreated {
@@ -110,4 +124,6 @@ func SetupSessionService(ctx context.Context, rootID eh.UUID, ew *utils.EventWai
 				},
 			})
 	}()
+
+	return
 }

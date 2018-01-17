@@ -126,26 +126,26 @@ func (d *DomainObjects) Notify(ctx context.Context, event eh.Event) {
 // body that will be unmarshalled into the command.
 func (d *DomainObjects) MakeHandler(command eh.CommandType) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-        if r.Method != "POST" {
-            http.Error(w, "unsuported method: "+r.Method, http.StatusMethodNotAllowed)
-            return
-        }
+		if r.Method != "POST" {
+			http.Error(w, "unsuported method: "+r.Method, http.StatusMethodNotAllowed)
+			return
+		}
 
-        cmd, err := eh.CreateCommand(command)
-        if err != nil {
-            http.Error(w, "could not create command: "+err.Error(), http.StatusBadRequest)
-            return
-        }
+		cmd, err := eh.CreateCommand(command)
+		if err != nil {
+			http.Error(w, "could not create command: "+err.Error(), http.StatusBadRequest)
+			return
+		}
 
-        b, err := ioutil.ReadAll(r.Body)
-        if err != nil {
-            http.Error(w, "could not read command: "+err.Error(), http.StatusBadRequest)
-            return
-        }
-        if err := json.Unmarshal(b, &cmd); err != nil {
-            http.Error(w, "could not decode command: "+err.Error(), http.StatusBadRequest)
-            return
-        }
+		b, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			http.Error(w, "could not read command: "+err.Error(), http.StatusBadRequest)
+			return
+		}
+		if err := json.Unmarshal(b, &cmd); err != nil {
+			http.Error(w, "could not decode command: "+err.Error(), http.StatusBadRequest)
+			return
+		}
 
 		// NOTE: Use a new context when handling, else it will be cancelled with
 		// the HTTP request which will cause projectors etc to fail if they run
@@ -160,112 +160,121 @@ func (d *DomainObjects) MakeHandler(command eh.CommandType) http.Handler {
 	})
 }
 
-
 type CmdIDSetter interface {
 	SetCmdID(eh.UUID)
 }
 type AggIDSetter interface {
 	SetAggID(eh.UUID)
 }
+type UserDetailsSetter interface {
+	SetUserDetails(string, []string)
+}
 type HTTPParser interface {
 	ParseHTTPRequest(*http.Request) error
 }
 
+type RedfishHandler struct {
+	UserName   string
+	Privileges []string
+	d          *DomainObjects
+}
+
 // TODO: need to write middleware to check x-auth-token header
 // TODO: need to write middleware that would allow different types of encoding on output
-func (d *DomainObjects) RedfishHandlerFunc() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		aggID, ok := d.Tree[r.URL.Path]
-		if !ok {
-			http.Error(w, "Could not find URL: "+r.URL.Path, http.StatusNotFound)
-			return
-		}
-
-		search := []eh.CommandType{
-			eh.CommandType("RedfishResource:" + r.Method),
-		}
-
-		agg, err := d.AggregateStore.Load(r.Context(), domain.AggregateType, aggID)
-		redfishResource, ok := agg.(*domain.RedfishResourceAggregate)
-		if ok {
-			search = append([]eh.CommandType{eh.CommandType(redfishResource.Plugin + ":" + r.Method)}, search...)
-		}
-
-		var cmd eh.Command
-		for _, cmdType := range search {
-			cmd, err = eh.CreateCommand(cmdType)
-			if err == nil {
-				break
-			}
-		}
-
-		if cmd == nil {
-			http.Error(w, "could not create command", http.StatusBadRequest)
-			return
-		}
-
-		cmdId := eh.NewUUID()
-
-		if t, ok := cmd.(CmdIDSetter); ok {
-			t.SetCmdID(cmdId)
-		}
-		if t, ok := cmd.(AggIDSetter); ok {
-			t.SetAggID(aggID)
-		}
-		if t, ok := cmd.(HTTPParser); ok {
-			err := t.ParseHTTPRequest(r)
-			if err != nil {
-				http.Error(w, "Problems parsing http request: "+err.Error(), http.StatusBadRequest)
-				return
-			}
-		}
-
-		l, err := d.EventWaiter.Listen(r.Context(), func(event eh.Event) bool {
-			if event.EventType() != domain.HTTPCmdProcessed {
-				return false
-			}
-			if data, ok := event.Data().(*domain.HTTPCmdProcessedData); ok {
-				if data.CommandID == cmdId {
-					return true
-				}
-			}
-			return false
-		})
-		if err != nil {
-			http.Error(w, "could not create waiter"+err.Error(), http.StatusInternalServerError)
-			return
-		}
-		defer l.Close()
-
-		ctx := context.Background()
-		if err := d.CommandHandler.HandleCommand(ctx, cmd); err != nil {
-			http.Error(w, "could not handle command: "+err.Error(), http.StatusBadRequest)
-			return
-		}
-
-		event, err := l.Wait(r.Context())
-		if err != nil {
-			fmt.Printf("Error waiting for event: %s\n", err.Error())
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		d, ok := event.Data().(*domain.HTTPCmdProcessedData)
-		if !ok {
-			fmt.Printf("Error waiting for event: %s\n", err.Error())
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		// set headers first
-		for k, v := range d.Headers {
-			w.Header().Add(k, v)
-		}
-
-		// and then encode response
-		enc := json.NewEncoder(w)
-		enc.SetIndent("", "  ")
-		enc.Encode(d.Results)
+func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	aggID, ok := rh.d.Tree[r.URL.Path]
+	if !ok {
+		http.Error(w, "Could not find URL: "+r.URL.Path, http.StatusNotFound)
 		return
 	}
+
+	search := []eh.CommandType{
+		eh.CommandType("RedfishResource:" + r.Method),
+	}
+
+	agg, err := rh.d.AggregateStore.Load(r.Context(), domain.AggregateType, aggID)
+	redfishResource, ok := agg.(*domain.RedfishResourceAggregate)
+	if ok {
+		search = append([]eh.CommandType{eh.CommandType(redfishResource.Plugin + ":" + r.Method)}, search...)
+	}
+
+	var cmd eh.Command
+	for _, cmdType := range search {
+		cmd, err = eh.CreateCommand(cmdType)
+		if err == nil {
+			break
+		}
+	}
+
+	if cmd == nil {
+		http.Error(w, "could not create command", http.StatusBadRequest)
+		return
+	}
+
+	cmdId := eh.NewUUID()
+
+	if t, ok := cmd.(CmdIDSetter); ok {
+		t.SetCmdID(cmdId)
+	}
+	if t, ok := cmd.(UserDetailsSetter); ok {
+		t.SetUserDetails(rh.UserName, rh.Privileges)
+	}
+	if t, ok := cmd.(AggIDSetter); ok {
+		t.SetAggID(aggID)
+	}
+	if t, ok := cmd.(HTTPParser); ok {
+		err := t.ParseHTTPRequest(r)
+		if err != nil {
+			http.Error(w, "Problems parsing http request: "+err.Error(), http.StatusBadRequest)
+			return
+		}
+	}
+
+	l, err := rh.d.EventWaiter.Listen(r.Context(), func(event eh.Event) bool {
+		if event.EventType() != domain.HTTPCmdProcessed {
+			return false
+		}
+		if data, ok := event.Data().(*domain.HTTPCmdProcessedData); ok {
+			if data.CommandID == cmdId {
+				return true
+			}
+		}
+		return false
+	})
+	if err != nil {
+		http.Error(w, "could not create waiter"+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer l.Close()
+
+	ctx := context.Background()
+	if err := rh.d.CommandHandler.HandleCommand(ctx, cmd); err != nil {
+		http.Error(w, "could not handle command: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	event, err := l.Wait(r.Context())
+	if err != nil {
+		fmt.Printf("Error waiting for event: %s\n", err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	data, ok := event.Data().(*domain.HTTPCmdProcessedData)
+	if !ok {
+		fmt.Printf("Error waiting for event: %s\n", err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// set headers first
+	for k, v := range data.Headers {
+		w.Header().Add(k, v)
+	}
+
+	// and then encode response
+	enc := json.NewEncoder(w)
+	enc.SetIndent("", "  ")
+	enc.Encode(data.Results)
+	return
 }

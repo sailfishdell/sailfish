@@ -35,7 +35,12 @@ func main() {
 	rootID := eh.NewUUID()
 
 	// Set up our standard extensions
-	session.SetupSessionService(context.Background(), rootID, domainObjs.EventWaiter, domainObjs.CommandHandler, domainObjs.EventBus)
+	AddUserDetails := session.SetupSessionService(context.Background(), rootID, domainObjs.EventWaiter, domainObjs.CommandHandler, domainObjs.EventBus)
+	chainAuth := func(u string, p []string) http.Handler {
+		// set up a new handler object for each request
+		return &RedfishHandler{UserName: u, Privileges: p, d: domainObjs}
+	}
+	AddUserDetails.OnUserDetails = chainAuth
 
 	// set up some basic stuff
 	domainObjs.Tree["/redfish/v1/"] = rootID
@@ -53,18 +58,6 @@ func main() {
 				"@odata.context":     "/redfish/v1/$metadata#ServiceRoot",
 				"@odata.id":          "/redfish/v1/",
 				"@Redfish.Copyright": "Copyright 2014-2016 Distributed Management Task Force, Inc. (DMTF). For the full DMTF copyright policy, see http://www.dmtf.org/about/policies/copyright.",
-
-				// Things we have left to implement: (TODO)
-				//				"Systems":            map[string]interface{}{"@odata.id": "/redfish/v1/Systems"},
-				//				"Chassis":            map[string]interface{}{"@odata.id": "/redfish/v1/Chassis"},
-				//				"Managers":           map[string]interface{}{"@odata.id": "/redfish/v1/Managers"},
-				//				"Tasks":              map[string]interface{}{"@odata.id": "/redfish/v1/TaskService"},
-				//				"AccountService":     map[string]interface{}{"@odata.id": "/redfish/v1/AccountService"},
-				//				"EventService":       map[string]interface{}{"@odata.id": "/redfish/v1/EventService"},
-				//				"Oem":                map[string]interface{}{},
-				//      started:
-				//				"SessionService":     map[string]interface{}{"@odata.id": "/redfish/v1/SessionService"},
-				//				"Links":              map[string]interface{}{"Sessions": map[string]interface{}{"@odata.id": "/redfish/v1/SessionService/Sessions"}},
 			},
 		},
 	)
@@ -80,7 +73,8 @@ func main() {
 	m.Path("/redfish/v1").HandlerFunc(func(w http.ResponseWriter, r *http.Request) { http.Redirect(w, r, "/redfish/v1/", 301) })
 
 	// generic handler for redfish output on most http verbs
-	m.PathPrefix("/redfish/v1/").Methods("GET", "PUT", "POST", "PATCH", "DELETE", "HEAD", "OPTIONS").Handler(domainObjs.RedfishHandlerFunc())
+	// Note: this works by using the session service to get user details from token to pass up the stack using the embedded struct
+	m.PathPrefix("/redfish/v1/").Methods("GET", "PUT", "POST", "PATCH", "DELETE", "HEAD", "OPTIONS").Handler(AddUserDetails)
 
 	// backend command handling
 	m.PathPrefix("/api/createresource").Handler(domainObjs.MakeHandler(domain.CreateRedfishResourceCommand))

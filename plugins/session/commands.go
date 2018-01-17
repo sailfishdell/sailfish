@@ -138,7 +138,7 @@ func (c *POST) startSessionDeleteTimer(sessionUUID eh.UUID, sessionURI string) {
 		return false
 	})
 	if err != nil {
-        // no way to report error back! //TODO
+		// no way to report error back! //TODO
 		return
 	}
 
@@ -154,7 +154,7 @@ func (c *POST) startSessionDeleteTimer(sessionUUID eh.UUID, sessionURI string) {
 		return false
 	})
 	if err != nil {
-        // no way to report error back! //TODO
+		// no way to report error back! //TODO
 		return
 	}
 
@@ -163,7 +163,7 @@ func (c *POST) startSessionDeleteTimer(sessionUUID eh.UUID, sessionURI string) {
 		defer refreshListener.Close()
 
 		// loop forever
-        ctx := context.Background()
+		ctx := context.Background()
 		for {
 			select {
 			case <-refreshListener.GetInbox():
