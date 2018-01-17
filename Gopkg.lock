@@ -31,7 +31,7 @@
     "repo/memory",
     "utils"
   ]
-  revision = "1ef66c267b06267d3d1cc48d7ef39fbf7be75f43"
+  revision = "80582d55bf22ddcf52ce47c837f001a63c7b2221"
   source = "github.com/superchalupa/eventhorizon"
 
 [solve-meta]

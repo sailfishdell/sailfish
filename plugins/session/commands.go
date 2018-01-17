@@ -175,9 +175,9 @@ func (c *POST) startSessionDeleteTimer(sessionUUID eh.UUID, sessionURI string) {
 		ctx := context.Background()
 		for {
 			select {
-			case <-refreshListener.GetInbox():
+			case <-refreshListener.Inbox():
 				continue // still alive for now! start over again...
-			case <-deleteListener.GetInbox():
+			case <-deleteListener.Inbox():
 				return // it's gone, all done here
 			case <-time.After(5 * time.Second):
 				c.commandHandler.HandleCommand(ctx, &domain.RemoveRedfishResource{ID: sessionUUID, ResourceURI: sessionURI})

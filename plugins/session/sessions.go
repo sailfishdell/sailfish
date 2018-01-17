@@ -9,19 +9,51 @@ import (
 
 	eh "github.com/looplab/eventhorizon"
 	"github.com/looplab/eventhorizon/utils"
+        jwt "github.com/dgrijalva/jwt-go"
 )
 
 type AddUserDetails struct {
-	OnUserDetails func(userName string, privileges []string) http.Handler
+	OnUserDetails      func(userName string, privileges []string) http.Handler
+	WithoutUserDetails http.Handler
+}
+
+type RedfishClaims struct {
+	Privileges []string `json:"privileges"`
+	SessionURI string   `json:"sessionuri"`
+	jwt.StandardClaims
 }
 
 func (a *AddUserDetails) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
-	// pretend to parse token! for now...
-	// TODO: actually parse the token
-	a.OnUserDetails("root", []string{"Admin", "Unauthenticated"}).ServeHTTP(rw, req)
+	var userName string
+	var privileges []string
+
+	xauthtoken := req.Header.Get("X-Auth-Token")
+	if xauthtoken != "" {
+        fmt.Printf("GOT A TOKEN\n")
+		token, _ := jwt.ParseWithClaims(xauthtoken, &RedfishClaims{}, func(token *jwt.Token) (interface{}, error) { return []byte("foobar"), nil })
+
+        if claims, ok := token.Claims.(*RedfishClaims); ok {
+            fmt.Printf("Got a parsed token: %v\n", claims)
+            if token.Valid {
+                userName = "ROOT"
+                privileges = append(privileges, "authorization-complete")
+                privileges = append(privileges, claims.Privileges...)
+
+                //domain.SendEvent(ctx, s, session.XAuthTokenRefreshEvent, &session.XAuthTokenRefreshData{SessionURI: claims.SessionURI})
+                return
+            }
+        }
+	}
+
+	if userName != "" && len(privileges) > 0 {
+		a.OnUserDetails(userName, privileges).ServeHTTP(rw, req)
+	} else {
+		a.WithoutUserDetails.ServeHTTP(rw, req)
+	}
+	return
 }
 
-func SetupSessionService(ctx context.Context, rootID eh.UUID, ew *utils.EventWaiter, ch eh.CommandHandler, eb eh.EventBus) (aud *AddUserDetails) {
+func NewService(ctx context.Context, rootID eh.UUID, ew *utils.EventWaiter, ch eh.CommandHandler, eb eh.EventBus) (aud *AddUserDetails) {
 	fmt.Printf("SetupSessionService\n")
 
 	// register our command

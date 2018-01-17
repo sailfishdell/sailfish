@@ -12,6 +12,7 @@ import (
 
 	domain "github.com/superchalupa/go-redfish/internal/redfishresource"
 	"github.com/superchalupa/go-redfish/plugins/session"
+	"github.com/superchalupa/go-redfish/plugins/basicauth"
 )
 
 func main() {
@@ -35,12 +36,15 @@ func main() {
 	rootID := eh.NewUUID()
 
 	// Set up our standard extensions
-	AddUserDetails := session.SetupSessionService(context.Background(), rootID, domainObjs.EventWaiter, domainObjs.CommandHandler, domainObjs.EventBus)
 	chainAuth := func(u string, p []string) http.Handler {
-		// set up a new handler object for each request
 		return &RedfishHandler{UserName: u, Privileges: p, d: domainObjs}
 	}
-	AddUserDetails.OnUserDetails = chainAuth
+	BasicAuthAuthorizer := basicauth.NewService(context.Background())
+	sessionServiceAuthorizer := session.NewService(context.Background(), rootID, domainObjs.EventWaiter, domainObjs.CommandHandler, domainObjs.EventBus)
+	sessionServiceAuthorizer.OnUserDetails = chainAuth
+	sessionServiceAuthorizer.WithoutUserDetails = BasicAuthAuthorizer
+    BasicAuthAuthorizer.OnUserDetails = chainAuth
+	BasicAuthAuthorizer.WithoutUserDetails = &RedfishHandler{UserName: "UNKNOWN", Privileges: []string{"Unauthenticated"}, d:domainObjs}
 
 	// set up some basic stuff
 	domainObjs.Tree["/redfish/v1/"] = rootID
@@ -75,7 +79,7 @@ func main() {
 
 	// generic handler for redfish output on most http verbs
 	// Note: this works by using the session service to get user details from token to pass up the stack using the embedded struct
-	m.PathPrefix("/redfish/v1/").Methods("GET", "PUT", "POST", "PATCH", "DELETE", "HEAD", "OPTIONS").Handler(AddUserDetails)
+	m.PathPrefix("/redfish/v1/").Methods("GET", "PUT", "POST", "PATCH", "DELETE", "HEAD", "OPTIONS").Handler(sessionServiceAuthorizer)
 
 	// backend command handling
 	m.PathPrefix("/api/createresource").Handler(domainObjs.MakeHandler(domain.CreateRedfishResourceCommand))
