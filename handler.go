@@ -308,17 +308,17 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 		// convert Privileges from []interface{} to []string (way more code than there should be for something this simple)
 		var t []string
-		switch typ := privsToCheck.(type) {
+		switch privs := privsToCheck.(type) {
 		case []string:
-			t = append(t, privsToCheck.([]string)...)
+			t = append(t, privs...)
 		case []interface{}:
-			for _, v := range privsToCheck.([]interface{}) {
+			for _, v := range privs {
 				if a, ok := v.(string); ok {
 					t = append(t, a)
 				}
 			}
 		default:
-			fmt.Printf("CRAZY PILLS: %s\n", typ)
+			fmt.Printf("CRAZY PILLS: %T\n", privs)
 		}
 		fmt.Printf("\tNEED PRIVS (strings): %s\n", t)
 
