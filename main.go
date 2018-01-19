@@ -12,6 +12,7 @@ import (
 
 	"github.com/superchalupa/go-redfish/plugins/basicauth"
 	"github.com/superchalupa/go-redfish/plugins/session"
+	"github.com/superchalupa/go-redfish/plugins/stdcollections"
 	domain "github.com/superchalupa/go-redfish/redfishresource"
 )
 
@@ -66,6 +67,9 @@ func main() {
 			},
 		},
 	)
+
+    // system collection and others (requires root already present)
+    stdcollections.NewService(context.Background(), rootID, domainObjs.CommandHandler)
 
 	// Handle the API.
 	m := mux.NewRouter()

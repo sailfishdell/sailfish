@@ -86,6 +86,20 @@ func (c *CreateRedfishResource) Handle(ctx context.Context, a *RedfishResourceAg
 		a.PrivilegeMap[k] = v
 	}
 
+    // if command claims that this will be a collection, automatically set up the Members property
+    if c.Collection {
+        if _, ok := a.Properties["Members"]; !ok {
+            a.Properties["Members"] = []map[string]interface{}{}
+        } else {
+            switch a.Properties["Members"].(type) {
+            case []map[string]interface{}:
+            default:  // somehow got invalid type here, fix it up
+                a.Properties["Members"] = []map[string]interface{}{}
+            }
+        }
+        a.Properties["Members@odata.count"] = len(a.Properties["Members"].([]map[string]interface{}))
+    }
+
 	a.eventBus.HandleEvent(ctx, eh.NewEvent(RedfishResourceCreated, &RedfishResourceCreatedData{
 		ID:          c.ID,
 		ResourceURI: c.ResourceURI,
