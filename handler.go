@@ -370,6 +370,9 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// set headers first
+    w.Header().Set("Content-Type", "application/json; charset=utf-8")
+    w.Header().Set("OData-Version", "4.0")
+    w.Header().Set("Server", "go-redfish")
 	for k, v := range data.Headers {
 		w.Header().Add(k, v)
 	}
