@@ -48,12 +48,12 @@ func main() {
 	BasicAuthAuthorizer.WithoutUserDetails = &RedfishHandler{UserName: "UNKNOWN", Privileges: []string{"Unauthenticated"}, d: domainObjs}
 
 	// set up some basic stuff
-	domainObjs.Tree["/redfish/v1/"] = rootID
+	domainObjs.Tree["/redfish/v1"] = rootID
 	loggingHandler.HandleCommand(
 		context.Background(),
 		&domain.CreateRedfishResource{
 			ID:          rootID,
-			ResourceURI: "/redfish/v1/",
+			ResourceURI: "/redfish/v1",
 			Type:        "#ServiceRoot.v1_0_2.ServiceRoot",
 			Context:     "/redfish/v1/$metadata#ServiceRoot",
 			// anybody can access
@@ -63,7 +63,6 @@ func main() {
 				"Name":               "Root Service",
 				"RedfishVersion":     "1.0.2",
 				"UUID":               "92384634-2938-2342-8820-489239905423",
-				"@Redfish.Copyright": "Copyright 2014-2016 Distributed Management Task Force, Inc. (DMTF). For the full DMTF copyright policy, see http://www.dmtf.org/about/policies/copyright.",
 			},
 		},
 	)
@@ -79,7 +78,7 @@ func main() {
 	// per spec: hardcoded output for /redfish/ to list versions supported.
 	m.Path("/redfish/").HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.Write([]byte("{\n\t\"v1\": \"/redfish/v1/\"\n}\n")) })
 	// per spec: redirect /redfish/v1 to /redfish/v1/
-	m.Path("/redfish/v1").HandlerFunc(func(w http.ResponseWriter, r *http.Request) { http.Redirect(w, r, "/redfish/v1/", 301) })
+	m.Path("/redfish/v1/").HandlerFunc(func(w http.ResponseWriter, r *http.Request) { http.Redirect(w, r, "/redfish/v1", 301) })
 
     // some static files that we should generate at some point
 	m.Path("/redfish/v1/$metadata").HandlerFunc(func(w http.ResponseWriter, r *http.Request) { http.ServeFile(w, r, "redfish/v1/metadata.xml") })
@@ -87,7 +86,7 @@ func main() {
 
 	// generic handler for redfish output on most http verbs
 	// Note: this works by using the session service to get user details from token to pass up the stack using the embedded struct
-	m.PathPrefix("/redfish/v1/").Methods("GET", "PUT", "POST", "PATCH", "DELETE", "HEAD", "OPTIONS").Handler(sessionServiceAuthorizer)
+	m.PathPrefix("/redfish/v1").Methods("GET", "PUT", "POST", "PATCH", "DELETE", "HEAD", "OPTIONS").Handler(sessionServiceAuthorizer)
 
 	// backend command handling
 	m.PathPrefix("/api/createresource").Handler(domainObjs.MakeHandler(domain.CreateRedfishResourceCommand))

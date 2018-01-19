@@ -71,7 +71,7 @@ func NewService(ctx context.Context, rootID eh.UUID, ew *utils.EventWaiter, ch e
 			return false
 		}
 		if data, ok := event.Data().(*domain.RedfishResourceCreatedData); ok {
-			if data.ResourceURI == "/redfish/v1/" {
+			if data.ResourceURI == "/redfish/v1" {
 				return true
 			}
 		}
@@ -119,7 +119,6 @@ func NewService(ctx context.Context, rootID eh.UUID, ew *utils.EventWaiter, ch e
 					"Sessions": map[string]interface{}{
 						"@odata.id": "/redfish/v1/SessionService/Sessions",
 					},
-					"@Redfish.Copyright": "Copyright 2014-2016 Distributed Management Task Force, Inc. (DMTF). For the full DMTF copyright policy, see http://www.dmtf.org/about/policies/copyright.",
 				}})
 
 		// Create Sessions Collection
@@ -143,7 +142,6 @@ func NewService(ctx context.Context, rootID eh.UUID, ew *utils.EventWaiter, ch e
 					"Name":                "Session Collection",
 					"Members@odata.count": 0,
 					"Members":             []map[string]interface{}{},
-					"@Redfish.Copyright":  "Copyright 2014-2016 Distributed Management Task Force, Inc. (DMTF). For the full DMTF copyright policy, see http://www.dmtf.org/about/policies/copyright.",
 				}})
 
 		ch.HandleCommand(ctx,
