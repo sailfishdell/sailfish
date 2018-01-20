@@ -102,7 +102,7 @@ func NewService(ctx context.Context, rootID eh.UUID, ch eh.CommandHandler) {
 			context.Background(),
 			&domain.CreateRedfishResource{
 				ID:          eh.NewUUID(),
-				Collection: true,
+				Collection: false,
 
 				ResourceURI: "/redfish/v1/AccountService",
 				Type: "#AccountService.v1_0_2.AccountService",

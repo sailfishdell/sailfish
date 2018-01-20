@@ -98,7 +98,7 @@ func NewService(ctx context.Context, rootID eh.UUID, ew *utils.EventWaiter, ch e
 				ID:          eh.NewUUID(),
 				ResourceURI: "/redfish/v1/SessionService",
 				Type:        "#SessionService.v1_0_2.SessionService",
-				Context:     "/redfish/v1/$metadata#SessionService",
+				Context:     "/redfish/v1/$metadata#SessionService.SessionService",
 				Privileges: map[string]interface{}{
 					"GET":    []string{"ConfigureManager"},
 					"POST":   []string{"ConfigureManager"},
@@ -129,7 +129,7 @@ func NewService(ctx context.Context, rootID eh.UUID, ew *utils.EventWaiter, ch e
 				Plugin:      "SessionService",
 				ResourceURI: "/redfish/v1/SessionService/Sessions",
 				Type:        "#SessionCollection.SessionCollection",
-				Context:     "/redfish/v1/$metadata#SessionService/Sessions/$entity",
+				Context:     "/redfish/v1/$metadata#SessionCollection.SessionCollection",
 				Privileges: map[string]interface{}{
 					"GET":    []string{"ConfigureManager"},
 					"POST":   []string{"Unauthenticated"},
