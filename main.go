@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"github.com/gorilla/mux"
 	"log"
@@ -55,20 +56,20 @@ func main() {
 			ID:          rootID,
 			ResourceURI: "/redfish/v1",
 			Type:        "#ServiceRoot.v1_0_2.ServiceRoot",
-			Context:     "/redfish/v1/$metadata#ServiceRoot",
+			Context:     "/redfish/v1/$metadata#ServiceRoot.ServiceRoot",
 			// anybody can access
 			Privileges: map[string]interface{}{"GET": []string{"Unauthenticated"}},
 			Properties: map[string]interface{}{
-				"Id":                 "RootService",
-				"Name":               "Root Service",
-				"RedfishVersion":     "1.0.2",
-				"UUID":               "92384634-2938-2342-8820-489239905423",
+				"Id":             "RootService",
+				"Name":           "Root Service",
+				"RedfishVersion": "1.0.2",
+				"UUID":           "92384634-2938-2342-8820-489239905423",
 			},
 		},
 	)
 
-    // system collection and others (requires root already present)
-    stdcollections.NewService(context.Background(), rootID, domainObjs.CommandHandler)
+	// system collection and others (requires root already present)
+	stdcollections.NewService(context.Background(), rootID, domainObjs.CommandHandler)
 
 	// Handle the API.
 	m := mux.NewRouter()
@@ -80,7 +81,7 @@ func main() {
 	// per spec: redirect /redfish/v1 to /redfish/v1/
 	m.Path("/redfish/v1/").HandlerFunc(func(w http.ResponseWriter, r *http.Request) { http.Redirect(w, r, "/redfish/v1", 301) })
 
-    // some static files that we should generate at some point
+	// some static files that we should generate at some point
 	m.Path("/redfish/v1/$metadata").HandlerFunc(func(w http.ResponseWriter, r *http.Request) { http.ServeFile(w, r, "redfish/v1/metadata.xml") })
 	m.Path("/redfish/v1/odata").HandlerFunc(func(w http.ResponseWriter, r *http.Request) { http.ServeFile(w, r, "redfish/v1/odata.json") })
 
@@ -106,15 +107,40 @@ func main() {
 		m.ServeHTTP(w, r)
 	})
 
+	tlscfg := &tls.Config{
+		MinVersion:               tls.VersionTLS12,
+		CurvePreferences:         []tls.CurveID{tls.CurveP521, tls.CurveP384, tls.CurveP256},
+		PreferServerCipherSuites: true,
+		/*		CipherSuites: []uint16{
+				tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+				tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
+				tls.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,
+				tls.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,
+				tls.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,
+				tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+				tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+				tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
+				tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
+				tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,
+				tls.TLS_RSA_WITH_AES_256_GCM_SHA384,
+				tls.TLS_RSA_WITH_AES_256_CBC_SHA,
+			}, */
+	}
+
+	GenerateCA()
+	GenerateServerCert()
+
 	s := &http.Server{
-		Addr:           ":8080",
+		Addr:           ":8443",
 		Handler:        logger,
 		ReadTimeout:    10 * time.Second,
 		WriteTimeout:   10 * time.Second,
 		MaxHeaderBytes: 1 << 20,
+		TLSConfig:      tlscfg,
+		//TLSNextProto:   make(map[string]func(*http.Server, *tls.Conn, http.Handler), 0),
 	}
 
-	log.Println(s.ListenAndServe())
+	log.Println(s.ListenAndServeTLS("server.crt", "server.key"))
 }
 
 // Logger is a simple event handler for logging all events.
