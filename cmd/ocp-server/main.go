@@ -42,7 +42,7 @@ func main() {
 		return &RedfishHandler{UserName: u, Privileges: p, d: domainObjs}
 	}
 	BasicAuthAuthorizer := basicauth.NewService(context.Background())
-	sessionServiceAuthorizer := session.NewService(context.Background(), rootID, domainObjs.EventWaiter, domainObjs.CommandHandler, domainObjs.EventBus)
+	sessionServiceAuthorizer := session.NewService(context.Background(), rootID, domainObjs.EventWaiter, domainObjs.CommandHandler, domainObjs.EventBus, domainObjs)
 	sessionServiceAuthorizer.OnUserDetails = chainAuth
 	sessionServiceAuthorizer.WithoutUserDetails = BasicAuthAuthorizer
 	BasicAuthAuthorizer.OnUserDetails = chainAuth

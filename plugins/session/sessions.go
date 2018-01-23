@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+    "time"
 
 	domain "github.com/superchalupa/go-redfish/redfishresource"
 
@@ -14,12 +15,19 @@ import (
 
 var SECRET []byte = []byte("happyhappyjoyjoy1234")
 
+type IDGetter interface{
+    GetAggregateID(string) (eh.UUID, bool)
+}
+
 type AddUserDetails struct {
+    eb eh.EventBus
+    getter IDGetter
 	OnUserDetails      func(userName string, privileges []string) http.Handler
 	WithoutUserDetails http.Handler
 }
 
 type RedfishClaims struct {
+	UserName   string `json:"sub"`
 	Privileges []string `json:"privileges"`
 	SessionURI string   `json:"sessionuri"`
 	jwt.StandardClaims
@@ -32,30 +40,34 @@ func (a *AddUserDetails) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	xauthtoken := req.Header.Get("X-Auth-Token")
 	if xauthtoken != "" {
 		fmt.Printf("GOT A TOKEN\n")
-		token, _ := jwt.ParseWithClaims(xauthtoken, &RedfishClaims{}, func(token *jwt.Token) (interface{}, error) { return []byte("foobar"), nil })
+		token, _ := jwt.ParseWithClaims(xauthtoken, &RedfishClaims{}, func(token *jwt.Token) (interface{}, error) {
+            if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+                return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
+            }
+            return SECRET, nil
+        })
 
-		if claims, ok := token.Claims.(*RedfishClaims); ok {
-			fmt.Printf("Got a parsed token: %v\n", claims)
-			if token.Valid {
-				userName = "ROOT"
-				privileges = append(privileges, "authorization-complete")
-				privileges = append(privileges, claims.Privileges...)
-
-				//domain.SendEvent(ctx, s, session.XAuthTokenRefreshEvent, &session.XAuthTokenRefreshData{SessionURI: claims.SessionURI})
-				return
-			}
+		if claims, ok := token.Claims.(*RedfishClaims); ok && token.Valid{
+            if _, ok := a.getter.GetAggregateID(claims.SessionURI); ok {
+                fmt.Printf("\tSession is still there!\n")
+                userName = claims.UserName
+                privileges = claims.Privileges
+                a.eb.HandleEvent(context.Background(), eh.NewEvent(XAuthTokenRefreshEvent, XAuthTokenRefreshData{SessionURI: claims.SessionURI}, time.Now()) )
+            }
 		}
 	}
 
 	if userName != "" && len(privileges) > 0 {
+        fmt.Printf("Chain w/user details\n")
 		a.OnUserDetails(userName, privileges).ServeHTTP(rw, req)
 	} else {
+        fmt.Printf("Chain NO user details\n")
 		a.WithoutUserDetails.ServeHTTP(rw, req)
 	}
 	return
 }
 
-func NewService(ctx context.Context, rootID eh.UUID, ew *utils.EventWaiter, ch eh.CommandHandler, eb eh.EventBus) (aud *AddUserDetails) {
+func NewService(ctx context.Context, rootID eh.UUID, ew *utils.EventWaiter, ch eh.CommandHandler, eb eh.EventBus, g IDGetter) (aud *AddUserDetails) {
 	fmt.Printf("SetupSessionService\n")
 	// setup module secret
 	SECRET = createRandSecret(24, characters)
@@ -64,7 +76,7 @@ func NewService(ctx context.Context, rootID eh.UUID, ew *utils.EventWaiter, ch e
 	eh.RegisterCommand(func() eh.Command { return &POST{eventBus: eb, commandHandler: ch, eventWaiter: ew} })
 
 	// set up the return value since we already know it
-	aud = &AddUserDetails{}
+	aud = &AddUserDetails{eb: eb, getter: g}
 
 	l, err := ew.Listen(ctx, func(event eh.Event) bool {
 		if event.EventType() != domain.RedfishResourceCreated {

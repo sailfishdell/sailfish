@@ -81,6 +81,12 @@ func NewDomainObjects() (*DomainObjects, error) {
 	return &d, nil
 }
 
+func (d *DomainObjects) GetAggregateID(uri string) (eh.UUID, bool) {
+	// All operations have to be on URLs that exist, so look it up in the tree
+	aggID, ok := d.Tree[uri]
+    return aggID, ok
+}
+
 // Notify implements the Notify method of the EventObserver interface.
 func (d *DomainObjects) Notify(ctx context.Context, event eh.Event) {
 	if event.EventType() == domain.RedfishResourceCreated {
@@ -235,7 +241,7 @@ outer:
 // TODO: need to write middleware that would allow different types of encoding on output
 func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// All operations have to be on URLs that exist, so look it up in the tree
-	aggID, ok := rh.d.Tree[r.URL.Path]
+	aggID, ok := rh.d.GetAggregateID(r.URL.Path)
 	if !ok {
 		http.Error(w, "Could not find URL: "+r.URL.Path, http.StatusNotFound)
 		return

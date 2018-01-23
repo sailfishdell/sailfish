@@ -65,18 +65,36 @@ func (c *POST) ParseHTTPRequest(r *http.Request) error {
 }
 func (c *POST) Handle(ctx context.Context, a *domain.RedfishResourceAggregate) error {
 	fmt.Printf("SPECIAL CODE TO HANDLE SESSION SERVICE POST!!\n")
+	privileges := []string{} // no privs
 
-	// step 1: validate username/password (PUNT FOR NOW) // TODO: implement real pam here
-	if c.LR.UserName != "root" || c.LR.Password != "password" {
+	// hardcode some privileges for now
+	// step 1: validate username/password (PUNT FOR NOW)
+	// TODO: implement real pam here
+	if c.LR.UserName == "Administrator" && c.LR.Password == "password" {
+		privileges = []string{
+			"Unauthenticated", "tokenauth",
+			// per redfish spec
+			// TODO: Actually look up privileges
+			"Login", "ConfigureManager", "ConfigureUsers", "ConfigureComponents", "ConfigureSelf",
+		}
+	} else if c.LR.UserName == "Operator" && c.LR.Password == "password" {
+		privileges = []string{
+			"Unauthenticated", "tokenauth",
+			// TODO: Actually look up privileges
+			"Login", "ConfigureComponents", "ConfigureSelf",
+		}
+	} else if c.LR.UserName == "ReadOnly" && c.LR.Password == "password" {
+		privileges = []string{
+			"Unauthenticated", "tokenauth",
+			// TODO: Actually look up privileges
+			"Login", "ConfigureSelf",
+		}
+	} else {
 		return errors.New("Could not verify username/password")
 	}
 
-	// fake it for now
-	privileges := []string{"read", "write"}
-
 	// step 2: Generate new session
 	sessionUUID := eh.NewUUID()
-	// TODO: hardcoded /redfish/v1
 	sessionURI := fmt.Sprintf("/redfish/v1/SessionService/Sessions/%s", sessionUUID)
 
 	token := jwt.New(jwt.SigningMethodHS256)
@@ -94,13 +112,11 @@ func (c *POST) Handle(ctx context.Context, a *domain.RedfishResourceAggregate) e
 	retprops := map[string]interface{}{
 		"@odata.type": "#Session.v1_0_0.Session",
 		"@odata.id":   sessionURI,
-		// TODO: hardcoded /redfish/v1
 		"@odata.context": "/redfish/v1/$metadata#Session.Session",
 		"Id":             fmt.Sprintf("%s", sessionUUID),
 		"Name":           "User Session",
 		"Description":    "User Session",
 		"UserName":       c.LR.UserName,
-		"x-auth-token":   tokenString, // TODO: remove this, it's only for testing
 	}
 
 	err = c.commandHandler.HandleCommand(
