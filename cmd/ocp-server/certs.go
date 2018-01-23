@@ -19,13 +19,13 @@ func GenerateCA() {
 		SerialNumber: big.NewInt(1653),
 		Subject: pkix.Name{
 			// TODO: make these configurable
-			Organization: []string{"CA organization"},
-			Country:      []string{"CA country"},
-			Province:     []string{"CA province"},
-			Locality:     []string{"CA city"},
+			Organization:  []string{"CA organization"},
+			Country:       []string{"CA country"},
+			Province:      []string{"CA province"},
+			Locality:      []string{"CA city"},
 			StreetAddress: []string{"CA ADDRESS"},
 			PostalCode:    []string{"CA POSTAL_CODE"},
-			CommonName: "CA Cert common name",
+			CommonName:    "CA Cert common name",
 		},
 		NotBefore:             time.Now(),
 		NotAfter:              time.Now().AddDate(1, 0, 0), // 1 year validity enough?
