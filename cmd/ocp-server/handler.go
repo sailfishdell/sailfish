@@ -84,7 +84,7 @@ func NewDomainObjects() (*DomainObjects, error) {
 func (d *DomainObjects) GetAggregateID(uri string) (eh.UUID, bool) {
 	// All operations have to be on URLs that exist, so look it up in the tree
 	aggID, ok := d.Tree[uri]
-    return aggID, ok
+	return aggID, ok
 }
 
 // Notify implements the Notify method of the EventObserver interface.

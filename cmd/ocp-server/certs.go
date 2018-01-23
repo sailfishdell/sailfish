@@ -3,13 +3,13 @@ package main
 import (
 	"crypto/rand"
 	"crypto/rsa"
+	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
-    "crypto/tls"
-    "net"
 	"encoding/pem"
 	"log"
 	"math/big"
+	"net"
 	"os"
 	"time"
 )
@@ -18,17 +18,17 @@ func GenerateCA() {
 	ca := &x509.Certificate{
 		SerialNumber: big.NewInt(1653),
 		Subject: pkix.Name{
-            // TODO: make these configurable
-			Organization:  []string{"organization"},
-			Country:       []string{"country"},
-			Province:      []string{"province"},
-			Locality:      []string{"city"},
+			// TODO: make these configurable
+			Organization: []string{"organization"},
+			Country:      []string{"country"},
+			Province:     []string{"province"},
+			Locality:     []string{"city"},
 			//StreetAddress: []string{"ADDRESS"},
 			//PostalCode:    []string{"POSTAL_CODE"},
-            CommonName:    "CA Cert common name",
+			CommonName: "CA Cert common name",
 		},
 		NotBefore:             time.Now(),
-		NotAfter:              time.Now().AddDate(1, 0, 0),  // 1 year validity enough?
+		NotAfter:              time.Now().AddDate(1, 0, 0), // 1 year validity enough?
 		IsCA:                  true,
 		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth, x509.ExtKeyUsageServerAuth},
 		KeyUsage:              x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign,
@@ -70,22 +70,22 @@ func GenerateServerCert() {
 	cert := &x509.Certificate{
 		SerialNumber: big.NewInt(1658),
 		Subject: pkix.Name{
-			Organization:  []string{"org"},
-			Country:       []string{"country"},
-			Province:      []string{"province"},
-			Locality:      []string{"city"},
+			Organization: []string{"org"},
+			Country:      []string{"country"},
+			Province:     []string{"province"},
+			Locality:     []string{"city"},
 			//StreetAddress: []string{"ADDRESS"},
 			//PostalCode:    []string{"POSTAL_CODE"},
-            CommonName:    "localhost",
+			CommonName: "localhost",
 		},
 		NotBefore:    time.Now(),
-		NotAfter:     time.Now().AddDate(0, 0, 1),  //valid for 1 day for testing
+		NotAfter:     time.Now().AddDate(0, 0, 1), //valid for 1 day for testing
 		SubjectKeyId: []byte{1, 2, 3, 4, 6},
 		ExtKeyUsage:  []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth, x509.ExtKeyUsageServerAuth},
 		KeyUsage:     x509.KeyUsageDigitalSignature,
 	}
-    cert.DNSNames =    append(cert.DNSNames,  "localhost.localdomain", "localhost")
-    cert.IPAddresses = append(cert.IPAddresses,  net.ParseIP("127.0.0.1"))
+	cert.DNSNames = append(cert.DNSNames, "localhost.localdomain", "localhost")
+	cert.IPAddresses = append(cert.IPAddresses, net.ParseIP("127.0.0.1"))
 
 	priv, _ := rsa.GenerateKey(rand.Reader, 2048)
 	pub := &priv.PublicKey

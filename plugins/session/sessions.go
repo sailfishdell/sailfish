@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-    "time"
+	"time"
 
 	domain "github.com/superchalupa/go-redfish/redfishresource"
 
@@ -15,19 +15,19 @@ import (
 
 var SECRET []byte = []byte("happyhappyjoyjoy1234")
 
-type IDGetter interface{
-    GetAggregateID(string) (eh.UUID, bool)
+type IDGetter interface {
+	GetAggregateID(string) (eh.UUID, bool)
 }
 
 type AddUserDetails struct {
-    eb eh.EventBus
-    getter IDGetter
+	eb                 eh.EventBus
+	getter             IDGetter
 	OnUserDetails      func(userName string, privileges []string) http.Handler
 	WithoutUserDetails http.Handler
 }
 
 type RedfishClaims struct {
-	UserName   string `json:"sub"`
+	UserName   string   `json:"sub"`
 	Privileges []string `json:"privileges"`
 	SessionURI string   `json:"sessionuri"`
 	jwt.StandardClaims
@@ -41,27 +41,27 @@ func (a *AddUserDetails) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	if xauthtoken != "" {
 		fmt.Printf("GOT A TOKEN\n")
 		token, _ := jwt.ParseWithClaims(xauthtoken, &RedfishClaims{}, func(token *jwt.Token) (interface{}, error) {
-            if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-                return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
-            }
-            return SECRET, nil
-        })
+			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
+			}
+			return SECRET, nil
+		})
 
-		if claims, ok := token.Claims.(*RedfishClaims); ok && token.Valid{
-            if _, ok := a.getter.GetAggregateID(claims.SessionURI); ok {
-                fmt.Printf("\tSession is still there!\n")
-                userName = claims.UserName
-                privileges = claims.Privileges
-                a.eb.HandleEvent(context.Background(), eh.NewEvent(XAuthTokenRefreshEvent, XAuthTokenRefreshData{SessionURI: claims.SessionURI}, time.Now()) )
-            }
+		if claims, ok := token.Claims.(*RedfishClaims); ok && token.Valid {
+			if _, ok := a.getter.GetAggregateID(claims.SessionURI); ok {
+				fmt.Printf("\tSession is still there!\n")
+				userName = claims.UserName
+				privileges = claims.Privileges
+				a.eb.HandleEvent(context.Background(), eh.NewEvent(XAuthTokenRefreshEvent, XAuthTokenRefreshData{SessionURI: claims.SessionURI}, time.Now()))
+			}
 		}
 	}
 
 	if userName != "" && len(privileges) > 0 {
-        fmt.Printf("Chain w/user details\n")
+		fmt.Printf("Chain w/user details\n")
 		a.OnUserDetails(userName, privileges).ServeHTTP(rw, req)
 	} else {
-        fmt.Printf("Chain NO user details\n")
+		fmt.Printf("Chain NO user details\n")
 		a.WithoutUserDetails.ServeHTTP(rw, req)
 	}
 	return

@@ -110,8 +110,8 @@ func (c *POST) Handle(ctx context.Context, a *domain.RedfishResourceAggregate) e
 	tokenString, err := token.SignedString(secret)
 
 	retprops := map[string]interface{}{
-		"@odata.type": "#Session.v1_0_0.Session",
-		"@odata.id":   sessionURI,
+		"@odata.type":    "#Session.v1_0_0.Session",
+		"@odata.id":      sessionURI,
 		"@odata.context": "/redfish/v1/$metadata#Session.Session",
 		"Id":             fmt.Sprintf("%s", sessionUUID),
 		"Name":           "User Session",
