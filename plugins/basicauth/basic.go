@@ -13,30 +13,30 @@ type AddUserDetails struct {
 func (a *AddUserDetails) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	username, password, ok := req.BasicAuth()
 	if ok {
-        // TODO: Actually look up privileges
-        // hardcode some privileges for now
+		// TODO: Actually look up privileges
+		// hardcode some privileges for now
 		if username == "Administrator" && password == "password" {
-		    privileges := []string{
-                "Unauthenticated", "basicauth",
-                // per redfish spec
-                "Login", "ConfigureManager", "ConfigureUsers", "ConfigureComponents", "ConfigureSelf",
-                }
+			privileges := []string{
+				"Unauthenticated", "basicauth",
+				// per redfish spec
+				"Login", "ConfigureManager", "ConfigureUsers", "ConfigureComponents", "ConfigureSelf",
+			}
 			a.OnUserDetails(username, privileges).ServeHTTP(rw, req)
 			return
 		}
 		if username == "Operator" && password == "password" {
-		    privileges := []string{
-                "Unauthenticated", "basicauth",
-                "Login", "ConfigureComponents", "ConfigureSelf",
-                }
+			privileges := []string{
+				"Unauthenticated", "basicauth",
+				"Login", "ConfigureComponents", "ConfigureSelf",
+			}
 			a.OnUserDetails(username, privileges).ServeHTTP(rw, req)
 			return
 		}
 		if username == "ReadOnly" && password == "password" {
-		    privileges := []string{
-                "Unauthenticated", "basicauth",
-                "Login", "ConfigureSelf",
-                }
+			privileges := []string{
+				"Unauthenticated", "basicauth",
+				"Login", "ConfigureSelf",
+			}
 			a.OnUserDetails(username, privileges).ServeHTTP(rw, req)
 			return
 		}
