@@ -21,13 +21,13 @@ func init() {
 }
 
 const (
-	GETCommand     = eh.CommandType("RedfishResource:GET")
-	PUTCommand     = eh.CommandType("RedfishResource:PUT")
-	PATCHCommand   = eh.CommandType("RedfishResource:PATCH")
-	POSTCommand    = eh.CommandType("RedfishResource:POST")
-	DELETECommand  = eh.CommandType("RedfishResource:DELETE")
-	HEADCommand    = eh.CommandType("RedfishResource:HEAD")
-	OPTIONSCommand = eh.CommandType("RedfishResource:OPTIONS")
+	GETCommand     = eh.CommandType("http:RedfishResource:GET")
+	PUTCommand     = eh.CommandType("http:RedfishResource:PUT")
+	PATCHCommand   = eh.CommandType("http:RedfishResource:PATCH")
+	POSTCommand    = eh.CommandType("http:RedfishResource:POST")
+	DELETECommand  = eh.CommandType("http:RedfishResource:DELETE")
+	HEADCommand    = eh.CommandType("http:RedfishResource:HEAD")
+	OPTIONSCommand = eh.CommandType("http:RedfishResource:OPTIONS")
 )
 
 // Static type checking for commands to prevent runtime errors due to typos

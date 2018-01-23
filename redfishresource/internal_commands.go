@@ -19,13 +19,13 @@ func init() {
 }
 
 const (
-	CreateRedfishResourceCommand                       = eh.CommandType("RedfishResource:Create")
-	RemoveRedfishResourceCommand                       = eh.CommandType("RedfishResource:Remove")
-	CreateRedfishResourcePropertiesCommand             = eh.CommandType("RedfishResourceProperties:Create")
-	UpdateRedfishResourcePropertiesCommand             = eh.CommandType("RedfishResourceProperties:Update")
-	RemoveRedfishResourcePropertiesCommand             = eh.CommandType("RedfishResourceProperties:Remove")
-	AddResourceToRedfishResourceCollectionCommand      = eh.CommandType("RedfishResourceCollection:Add")
-	RemoveResourceFromRedfishResourceCollectionCommand = eh.CommandType("RedfishResourceCollection:Remove")
+	CreateRedfishResourceCommand                       = eh.CommandType("internal:RedfishResource:Create")
+	RemoveRedfishResourceCommand                       = eh.CommandType("internal:RedfishResource:Remove")
+	CreateRedfishResourcePropertiesCommand             = eh.CommandType("internal:RedfishResourceProperties:Create")
+	UpdateRedfishResourcePropertiesCommand             = eh.CommandType("internal:RedfishResourceProperties:Update")
+	RemoveRedfishResourcePropertiesCommand             = eh.CommandType("internal:RedfishResourceProperties:Remove")
+	AddResourceToRedfishResourceCollectionCommand      = eh.CommandType("internal:RedfishResourceCollection:Add")
+	RemoveResourceFromRedfishResourceCollectionCommand = eh.CommandType("internal:RedfishResourceCollection:Remove")
 )
 
 // Static type checking for commands to prevent runtime errors due to typos

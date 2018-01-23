@@ -253,7 +253,7 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		search = append(search, eh.CommandType(redfishResource.Properties["@odata.context"].(string)+":"+r.Method))
 		search = append(search, eh.CommandType(redfishResource.Plugin+":"+r.Method))
 	}
-	search = append(search, eh.CommandType("RedfishResource:"+r.Method))
+	search = append(search, eh.CommandType("http:RedfishResource:"+r.Method))
 	fmt.Printf("Search path: %s\n", search)
 
 	// search through the commands until we find one that exists
