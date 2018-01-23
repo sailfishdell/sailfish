@@ -4,10 +4,13 @@ set -e
 
 username=$1
 password=$2
+protocol=https
+host=localhost
+port=8443
 headersfile=$(mktemp /tmp/headers-XXXXXX)
 trap 'rm $headersfile' EXIT QUIT HUP INT ERR
 
-RESPONSE_HEADERS=$(curl -D${headersfile} http://localhost:8080/redfish/v1/SessionService/Sessions -X POST -d "{\"UserName\": \"${username}\", \"Password\": \"${password}\"}" 2>&1)
+RESPONSE_HEADERS=$(curl --cacert ./ca.crt -D${headersfile} ${protocol}://${host}:${port}/redfish/v1/SessionService/Sessions -X POST -d "{\"UserName\": \"${username}\", \"Password\": \"${password}\"}" 2>&1)
 X_AUTH_TOKEN=$(cat ${headersfile} | grep X-Auth-Token | cut -d: -f2 | perl -p -e 's/\r//g;')
 SESSION_URI=$(cat ${headersfile} | grep Location | cut -d: -f2 | perl -p -e 's/\r//g;')
 

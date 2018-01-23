@@ -10,19 +10,21 @@ outputdir=${1:-out/}
 skiplist=${2:-}
 
 HOST=${HOST:-localhost}
-PORT=${PORT:-8080}
+PORT=${PORT:-8443}
 if [ "${PORT}" = "443" -o "${PORT}" = "8443" ]; then
     PROTO=https
 else
     PROTO=http
 fi
 BASE=${PROTO}://${HOST}:${PORT}
-START_URL=${START_URL:-"/redfish/v1/"}
+START_URL=${START_URL:-"/redfish/v1"}
 
 AUTH_HEADER=${AUTH_HEADER:-foo: bar}
 if [ -n "$TOKEN" ]; then
     AUTH_HEADER="Authorization: Bearer $TOKEN"
 fi
+
+CURLCMD="curl --cacert ./ca.crt ${CURL_OPTS} -L"
 
 rm -rf ${outputdir}/ && mkdir ${outputdir}
 echo $START_URL | sort |uniq > ${outputdir}/to-visit.txt
@@ -41,7 +43,7 @@ do
             continue
         fi
         OUTFILE=${outputdir}/$( echo -n ${url} | perl -p -e 's/[^a-zA-Z0-9]/_/g;' ).json
-        if ! curl -f -H "$AUTH_HEADER" -s ${CURL_OPTS} -L ${BASE}${url}  -o $OUTFILE ; then
+        if ! $CURLCMD --fail -H "$AUTH_HEADER" --silent -L ${BASE}${url}  -o $OUTFILE ; then
             echo $url >> ${outputdir}/errors.txt
             continue
         fi
@@ -56,6 +58,6 @@ do
     LOOPS=$(( LOOPS + 1 ))
 done
 
-time curl ${CURL_OPTS} -i -H "$AUTH_HEADER" -s -L -w"\nTotal request time: %{time_total} seconds for url: %{url_effective}\n" $(cat ${outputdir}/visited.txt | perl -n -e "print '${BASE}' . \$_" ) | tee ${outputdir}/entire-tree.txt
+time $CURLCMD -i -H "$AUTH_HEADER" -s -L -w"\nTotal request time: %{time_total} seconds for url: %{url_effective}\n" $(cat ${outputdir}/visited.txt | perl -n -e "print '${BASE}' . \$_" ) | tee ${outputdir}/entire-tree.txt
 
 echo "Took $LOOPS loops to collect the URL list"
