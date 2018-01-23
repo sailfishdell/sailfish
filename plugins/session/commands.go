@@ -140,7 +140,7 @@ func (c *POST) Handle(ctx context.Context, a *domain.RedfishResourceAggregate) e
 		return err
 	}
 
-	c.startSessionDeleteTimer(sessionUUID, sessionURI)
+	c.startSessionDeleteTimer(sessionUUID, sessionURI, 30)
 
 	c.eventBus.HandleEvent(ctx, eh.NewEvent(domain.HTTPCmdProcessed, &domain.HTTPCmdProcessedData{
 		CommandID:  c.CmdID,
@@ -151,7 +151,10 @@ func (c *POST) Handle(ctx context.Context, a *domain.RedfishResourceAggregate) e
 	return nil
 }
 
-func (c *POST) startSessionDeleteTimer(sessionUUID eh.UUID, sessionURI string) {
+func (c *POST) startSessionDeleteTimer(sessionUUID eh.UUID, sessionURI string, timeout int) {
+    // all background stuff
+	ctx := context.Background()
+
 	refreshListener, err := c.eventWaiter.Listen(context.Background(), func(event eh.Event) bool {
         fmt.Printf("refreshListener Processing event %s\n", event.EventType())
 		if event.EventType() != XAuthTokenRefreshEvent {
@@ -170,7 +173,8 @@ func (c *POST) startSessionDeleteTimer(sessionUUID eh.UUID, sessionURI string) {
 		return false
 	})
 	if err != nil {
-		// no way to report error back! //TODO
+        // immediately expire session if we cannot create a listener
+		c.commandHandler.HandleCommand(ctx, &domain.RemoveRedfishResource{ID: sessionUUID, ResourceURI: sessionURI})
 		return
 	}
 
@@ -189,27 +193,30 @@ func (c *POST) startSessionDeleteTimer(sessionUUID eh.UUID, sessionURI string) {
 		return false
 	})
 	if err != nil {
-		// no way to report error back! //TODO
+        // immediately expire session if we cannot create a listener
+		c.commandHandler.HandleCommand(ctx, &domain.RemoveRedfishResource{ID: sessionUUID, ResourceURI: sessionURI})
+        refreshListener.Close()
 		return
 	}
 
+    // start a background task to delete session after expiry
 	go func() {
 		defer deleteListener.Close()
 		defer refreshListener.Close()
 
 		// loop forever
-		ctx := context.Background()
 		for {
 			select {
 			case <-refreshListener.Inbox():
 				continue // still alive for now! start over again...
 			case <-deleteListener.Inbox():
 				return // it's gone, all done here
-			case <-time.After(5 * time.Second):
+			case <-time.After(time.Duration(timeout) * time.Second):
 				c.commandHandler.HandleCommand(ctx, &domain.RemoveRedfishResource{ID: sessionUUID, ResourceURI: sessionURI})
 				return //exit goroutine
 			}
 		}
 	}()
+
 	return
 }
