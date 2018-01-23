@@ -89,6 +89,7 @@ func (d *DomainObjects) GetAggregateID(uri string) (eh.UUID, bool) {
 
 // Notify implements the Notify method of the EventObserver interface.
 func (d *DomainObjects) Notify(ctx context.Context, event eh.Event) {
+    fmt.Printf("Notify( event==%s )\n", event )
 	if event.EventType() == domain.RedfishResourceCreated {
 		if data, ok := event.Data().(*domain.RedfishResourceCreatedData); ok {
 			// TODO: handle conflicts

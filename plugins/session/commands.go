@@ -153,14 +153,20 @@ func (c *POST) Handle(ctx context.Context, a *domain.RedfishResourceAggregate) e
 
 func (c *POST) startSessionDeleteTimer(sessionUUID eh.UUID, sessionURI string) {
 	refreshListener, err := c.eventWaiter.Listen(context.Background(), func(event eh.Event) bool {
+        fmt.Printf("refreshListener Processing event %s\n", event.EventType())
 		if event.EventType() != XAuthTokenRefreshEvent {
+            fmt.Printf("\tnope\n")
 			return false
 		}
-		if data, ok := event.Data().(*XAuthTokenRefreshData); ok {
+		if data, ok := event.Data().(XAuthTokenRefreshData); ok {
+            fmt.Printf("\trefresh session: %s\n", data.SessionURI)
 			if data.SessionURI == sessionURI {
+                fmt.Printf("\tREFRESH\n")
 				return true
 			}
-		}
+		} else {
+            fmt.Printf("\tCAST FAILED\n")
+        }
 		return false
 	})
 	if err != nil {
@@ -169,10 +175,13 @@ func (c *POST) startSessionDeleteTimer(sessionUUID eh.UUID, sessionURI string) {
 	}
 
 	deleteListener, err := c.eventWaiter.Listen(context.Background(), func(event eh.Event) bool {
+        fmt.Printf("deleteListener Processing event %s\n", event.EventType())
 		if event.EventType() != domain.RedfishResourceRemoved {
+            fmt.Printf("\tnope\n")
 			return false
 		}
-		if data, ok := event.Data().(*domain.RedfishResourceRemovedData); ok {
+		if data, ok := event.Data().(domain.RedfishResourceRemovedData); ok {
+            fmt.Printf("\tdelete session: %s\n", data.ResourceURI)
 			if data.ResourceURI == sessionURI {
 				return true
 			}
@@ -196,7 +205,7 @@ func (c *POST) startSessionDeleteTimer(sessionUUID eh.UUID, sessionURI string) {
 				continue // still alive for now! start over again...
 			case <-deleteListener.Inbox():
 				return // it's gone, all done here
-			case <-time.After(30 * time.Second):
+			case <-time.After(5 * time.Second):
 				c.commandHandler.HandleCommand(ctx, &domain.RemoveRedfishResource{ID: sessionUUID, ResourceURI: sessionURI})
 				return //exit goroutine
 			}
