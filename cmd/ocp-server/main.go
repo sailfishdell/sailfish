@@ -90,8 +90,7 @@ func main() {
 	m.PathPrefix("/redfish/v1").Methods("GET", "PUT", "POST", "PATCH", "DELETE", "HEAD", "OPTIONS").Handler(sessionServiceAuthorizer)
 
 	// backend command handling
-	m.PathPrefix("/api/createresource").Handler(domainObjs.MakeHandler(domain.CreateRedfishResourceCommand))
-	m.PathPrefix("/api/removeresource").Handler(domainObjs.MakeHandler(domain.RemoveRedfishResourceCommand))
+	m.PathPrefix("/api/{command}").Handler(domainObjs.GetInternalCommandHandler())
 
 	// Simple HTTP request logging.
 	logger := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

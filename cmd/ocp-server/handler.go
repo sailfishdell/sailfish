@@ -22,6 +22,7 @@ import (
 	"net/http"
 	"path"
 
+	"github.com/gorilla/mux"
 	eh "github.com/looplab/eventhorizon"
 	"github.com/looplab/eventhorizon/aggregatestore/model"
 	"github.com/looplab/eventhorizon/commandhandler/aggregate"
@@ -89,7 +90,7 @@ func (d *DomainObjects) GetAggregateID(uri string) (eh.UUID, bool) {
 
 // Notify implements the Notify method of the EventObserver interface.
 func (d *DomainObjects) Notify(ctx context.Context, event eh.Event) {
-    fmt.Printf("Notify( event==%s )\n", event )
+	fmt.Printf("Notify( event==%s )\n", event)
 	if event.EventType() == domain.RedfishResourceCreated {
 		if data, ok := event.Data().(*domain.RedfishResourceCreatedData); ok {
 			// TODO: handle conflicts
@@ -158,14 +159,16 @@ func (d *DomainObjects) Notify(ctx context.Context, event eh.Event) {
 // CommandHandler is a HTTP handler for eventhorizon.Commands. Commands must be
 // registered with eventhorizon.RegisterCommand(). It expects a POST with a JSON
 // body that will be unmarshalled into the command.
-func (d *DomainObjects) MakeHandler(command eh.CommandType) http.Handler {
+func (d *DomainObjects) GetInternalCommandHandler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		vars := mux.Vars(r)
+
 		if r.Method != "POST" {
 			http.Error(w, "unsuported method: "+r.Method, http.StatusMethodNotAllowed)
 			return
 		}
 
-		cmd, err := eh.CreateCommand(command)
+		cmd, err := eh.CreateCommand(eh.CommandType("internal:" + vars["command"]))
 		if err != nil {
 			http.Error(w, "could not create command: "+err.Error(), http.StatusBadRequest)
 			return
