@@ -19,12 +19,12 @@ func GenerateCA() {
 		SerialNumber: big.NewInt(1653),
 		Subject: pkix.Name{
 			// TODO: make these configurable
-			Organization: []string{"organization"},
-			Country:      []string{"country"},
-			Province:     []string{"province"},
-			Locality:     []string{"city"},
-			//StreetAddress: []string{"ADDRESS"},
-			//PostalCode:    []string{"POSTAL_CODE"},
+			Organization: []string{"CA organization"},
+			Country:      []string{"CA country"},
+			Province:     []string{"CA province"},
+			Locality:     []string{"CA city"},
+			StreetAddress: []string{"CA ADDRESS"},
+			PostalCode:    []string{"CA POSTAL_CODE"},
 			CommonName: "CA Cert common name",
 		},
 		NotBefore:             time.Now(),
@@ -82,7 +82,7 @@ func GenerateServerCert() {
 		NotAfter:     time.Now().AddDate(0, 0, 1), //valid for 1 day for testing
 		SubjectKeyId: []byte{1, 2, 3, 4, 6},
 		ExtKeyUsage:  []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth, x509.ExtKeyUsageServerAuth},
-		KeyUsage:     x509.KeyUsageDigitalSignature,
+		KeyUsage:     x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment,
 	}
 	cert.DNSNames = append(cert.DNSNames, "localhost.localdomain", "localhost")
 	cert.IPAddresses = append(cert.IPAddresses, net.ParseIP("127.0.0.1"))
