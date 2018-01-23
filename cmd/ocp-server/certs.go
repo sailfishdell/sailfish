@@ -76,7 +76,7 @@ func GenerateServerCert() {
 			Locality:      []string{"city"},
 			//StreetAddress: []string{"ADDRESS"},
 			//PostalCode:    []string{"POSTAL_CODE"},
-            CommonName:    "127.0.0.1",
+            CommonName:    "localhost",
 		},
 		NotBefore:    time.Now(),
 		NotAfter:     time.Now().AddDate(0, 0, 1),  //valid for 1 day for testing
@@ -84,7 +84,7 @@ func GenerateServerCert() {
 		ExtKeyUsage:  []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth, x509.ExtKeyUsageServerAuth},
 		KeyUsage:     x509.KeyUsageDigitalSignature,
 	}
-    cert.DNSNames =    append(cert.DNSNames,  "ca.my.domain", "ca")
+    cert.DNSNames =    append(cert.DNSNames,  "localhost.localdomain", "localhost")
     cert.IPAddresses = append(cert.IPAddresses,  net.ParseIP("127.0.0.1"))
 
 	priv, _ := rsa.GenerateKey(rand.Reader, 2048)
