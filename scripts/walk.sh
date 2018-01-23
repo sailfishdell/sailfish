@@ -9,6 +9,10 @@ scriptdir=$(cd $(dirname $0); pwd)
 outputdir=${1:-out/}
 skiplist=${2:-}
 
+USER=${USER:-Administrator}
+PASS=${PASS:-password}
+eval $(scripts/login.sh $USER $PASS)
+
 HOST=${HOST:-localhost}
 PORT=${PORT:-8443}
 if [ "${PORT}" = "443" -o "${PORT}" = "8443" ]; then

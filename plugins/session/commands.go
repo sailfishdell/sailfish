@@ -152,40 +152,40 @@ func (c *POST) Handle(ctx context.Context, a *domain.RedfishResourceAggregate) e
 }
 
 func (c *POST) startSessionDeleteTimer(sessionUUID eh.UUID, sessionURI string, timeout int) {
-    // all background stuff
+	// all background stuff
 	ctx := context.Background()
 
 	refreshListener, err := c.eventWaiter.Listen(context.Background(), func(event eh.Event) bool {
-        fmt.Printf("refreshListener Processing event %s\n", event.EventType())
+		fmt.Printf("refreshListener Processing event %s\n", event.EventType())
 		if event.EventType() != XAuthTokenRefreshEvent {
-            fmt.Printf("\tnope\n")
+			fmt.Printf("\tnope\n")
 			return false
 		}
 		if data, ok := event.Data().(XAuthTokenRefreshData); ok {
-            fmt.Printf("\trefresh session: %s\n", data.SessionURI)
+			fmt.Printf("\trefresh session: %s\n", data.SessionURI)
 			if data.SessionURI == sessionURI {
-                fmt.Printf("\tREFRESH\n")
+				fmt.Printf("\tREFRESH\n")
 				return true
 			}
 		} else {
-            fmt.Printf("\tCAST FAILED\n")
-        }
+			fmt.Printf("\tCAST FAILED\n")
+		}
 		return false
 	})
 	if err != nil {
-        // immediately expire session if we cannot create a listener
+		// immediately expire session if we cannot create a listener
 		c.commandHandler.HandleCommand(ctx, &domain.RemoveRedfishResource{ID: sessionUUID, ResourceURI: sessionURI})
 		return
 	}
 
 	deleteListener, err := c.eventWaiter.Listen(context.Background(), func(event eh.Event) bool {
-        fmt.Printf("deleteListener Processing event %s\n", event.EventType())
+		fmt.Printf("deleteListener Processing event %s\n", event.EventType())
 		if event.EventType() != domain.RedfishResourceRemoved {
-            fmt.Printf("\tnope\n")
+			fmt.Printf("\tnope\n")
 			return false
 		}
 		if data, ok := event.Data().(domain.RedfishResourceRemovedData); ok {
-            fmt.Printf("\tdelete session: %s\n", data.ResourceURI)
+			fmt.Printf("\tdelete session: %s\n", data.ResourceURI)
 			if data.ResourceURI == sessionURI {
 				return true
 			}
@@ -193,13 +193,13 @@ func (c *POST) startSessionDeleteTimer(sessionUUID eh.UUID, sessionURI string, t
 		return false
 	})
 	if err != nil {
-        // immediately expire session if we cannot create a listener
+		// immediately expire session if we cannot create a listener
 		c.commandHandler.HandleCommand(ctx, &domain.RemoveRedfishResource{ID: sessionUUID, ResourceURI: sessionURI})
-        refreshListener.Close()
+		refreshListener.Close()
 		return
 	}
 
-    // start a background task to delete session after expiry
+	// start a background task to delete session after expiry
 	go func() {
 		defer deleteListener.Close()
 		defer refreshListener.Close()

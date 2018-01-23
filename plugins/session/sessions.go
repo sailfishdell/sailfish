@@ -67,16 +67,20 @@ func (a *AddUserDetails) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	return
 }
 
-func NewService(ctx context.Context, rootID eh.UUID, ew *utils.EventWaiter, ch eh.CommandHandler, eb eh.EventBus, g IDGetter) (aud *AddUserDetails) {
-	fmt.Printf("SetupSessionService\n")
+func NewService(eb eh.EventBus, g IDGetter) (aud *AddUserDetails) {
+	fmt.Printf("NewService - session\n")
+
+	// set up the return value since we already know it
+	return &AddUserDetails{eb: eb, getter: g}
+}
+
+func InitService(ctx context.Context, rootID eh.UUID, ew *utils.EventWaiter, ch eh.CommandHandler, eb eh.EventBus) {
+	fmt.Printf("InitService - session\n")
 	// setup module secret
 	SECRET = createRandSecret(24, characters)
 
 	// register our command
 	eh.RegisterCommand(func() eh.Command { return &POST{eventBus: eb, commandHandler: ch, eventWaiter: ew} })
-
-	// set up the return value since we already know it
-	aud = &AddUserDetails{eb: eb, getter: g}
 
 	l, err := ew.Listen(ctx, func(event eh.Event) bool {
 		if event.EventType() != domain.RedfishResourceCreated {
@@ -165,6 +169,4 @@ func NewService(ctx context.Context, rootID eh.UUID, ew *utils.EventWaiter, ch e
 				},
 			})
 	}()
-
-	return
 }

@@ -37,16 +37,30 @@ func main() {
 	// generate uuid of root object
 	rootID := eh.NewUUID()
 
-	// Set up our standard extensions
+	session.InitService(context.Background(), rootID, domainObjs.EventWaiter, domainObjs.CommandHandler, domainObjs.EventBus)
+
+	// Set up our standard extensions for authentication
 	chainAuth := func(u string, p []string) http.Handler {
 		return &RedfishHandler{UserName: u, Privileges: p, d: domainObjs}
 	}
-	BasicAuthAuthorizer := basicauth.NewService(context.Background())
-	sessionServiceAuthorizer := session.NewService(context.Background(), rootID, domainObjs.EventWaiter, domainObjs.CommandHandler, domainObjs.EventBus, domainObjs)
+	BasicAuthAuthorizer := basicauth.NewService()
+	sessionServiceAuthorizer := session.NewService(domainObjs.EventBus, domainObjs)
 	sessionServiceAuthorizer.OnUserDetails = chainAuth
 	sessionServiceAuthorizer.WithoutUserDetails = BasicAuthAuthorizer
 	BasicAuthAuthorizer.OnUserDetails = chainAuth
 	BasicAuthAuthorizer.WithoutUserDetails = &RedfishHandler{UserName: "UNKNOWN", Privileges: []string{"Unauthenticated"}, d: domainObjs}
+
+	// same thing for SSE
+	chainAuthSSE := func(u string, p []string) http.Handler {
+		return &SSEHandler{UserName: u, Privileges: p, d: domainObjs}
+	}
+
+	BasicAuthAuthorizerSSE := basicauth.NewService()
+	sessionServiceAuthorizerSSE := session.NewService(domainObjs.EventBus, domainObjs)
+	sessionServiceAuthorizerSSE.OnUserDetails = chainAuthSSE
+	sessionServiceAuthorizerSSE.WithoutUserDetails = BasicAuthAuthorizerSSE
+	BasicAuthAuthorizerSSE.OnUserDetails = chainAuthSSE
+	BasicAuthAuthorizerSSE.WithoutUserDetails = &SSEHandler{UserName: "UNKNOWN", Privileges: []string{"Unauthenticated"}, d: domainObjs}
 
 	// set up some basic stuff
 	domainObjs.Tree["/redfish/v1"] = rootID
@@ -88,6 +102,9 @@ func main() {
 	// generic handler for redfish output on most http verbs
 	// Note: this works by using the session service to get user details from token to pass up the stack using the embedded struct
 	m.PathPrefix("/redfish/v1").Methods("GET", "PUT", "POST", "PATCH", "DELETE", "HEAD", "OPTIONS").Handler(sessionServiceAuthorizer)
+
+	// SSE
+	m.PathPrefix("/events").Methods("GET").Handler(sessionServiceAuthorizerSSE)
 
 	// backend command handling
 	m.PathPrefix("/api/{command}").Handler(domainObjs.GetInternalCommandHandler())

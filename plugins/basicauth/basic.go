@@ -1,7 +1,6 @@
 package basicauth
 
 import (
-	"context"
 	"net/http"
 )
 
@@ -44,7 +43,7 @@ func (a *AddUserDetails) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	a.WithoutUserDetails.ServeHTTP(rw, req)
 }
 
-func NewService(ctx context.Context) (aud *AddUserDetails) {
+func NewService() (aud *AddUserDetails) {
 	aud = &AddUserDetails{}
 	return
 }
