@@ -30,7 +30,7 @@ Run the backend:
 go run cmd/ocp-server/*go
 ```
 
-Visit http://localhost:8080/redfish/v1
+Visit https://localhost:8443/redfish/v1
 
 To run the tests:
 ```bash
