@@ -147,10 +147,11 @@ func main() {
 	GenerateServerCert()
 
 	s := &http.Server{
-		Addr:           ":8443",
-		Handler:        logger,
-		ReadTimeout:    10 * time.Second,
-		WriteTimeout:   10 * time.Second,
+		Addr:        ":8443",
+		Handler:     logger,
+		ReadTimeout: 10 * time.Second,
+		// cannot use writetimeout if we are streaming
+		// WriteTimeout:   10 * time.Second,
 		MaxHeaderBytes: 1 << 20,
 		TLSConfig:      tlscfg,
 		//TLSNextProto:   make(map[string]func(*http.Server, *tls.Conn, http.Handler), 0),
