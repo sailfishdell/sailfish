@@ -15,11 +15,9 @@ $CURLCMD $URL/api/RedfishResource%3ACreate  -d '
         "ResourceURI":"/redfish/v1/test",
         "Type": "footype",
         "Context": "foocontext",
-        "Properties": { "Name": "TEST" },
+        "Properties": { "Name": "TEST", "testvalue": 42, "testvalue@meta": {"plugin": "command", "plugin_args": "foobar"} },
         "Privileges": { "GET": ["Unauthenticated"] }
     }'
-
-exit
 
 echo "/redfish"
 $CURLCMD $URL/redfish
