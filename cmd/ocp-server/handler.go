@@ -103,9 +103,9 @@ func (d *DomainObjects) Notify(ctx context.Context, event eh.Event) {
 				d.collections = append(d.collections, data.ResourceURI)
 			}
 
+			collectionToTest := path.Dir(data.ResourceURI)
+			fmt.Printf("Searching for a collection named %s in our list: %s\n", collectionToTest, d.collections)
 			for _, v := range d.collections {
-				collectionToTest := path.Dir(data.ResourceURI)
-				fmt.Printf("check for existing %s collection to add new member: %s\n", collectionToTest, v)
 				if v == collectionToTest {
 					fmt.Printf("\tWe got a match: add to collection command\n")
 					d.CommandHandler.HandleCommand(

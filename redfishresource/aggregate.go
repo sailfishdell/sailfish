@@ -66,3 +66,7 @@ func (a *RedfishResourceAggregate) HandleCommand(ctx context.Context, command eh
 
 	return nil
 }
+
+func (a *RedfishResourceAggregate) ProcessMeta(ctx context.Context) error {
+	return nil
+}

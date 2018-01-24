@@ -11,7 +11,6 @@ import (
 )
 
 func init() {
-	eh.RegisterCommand(func() eh.Command { return &GET{} })
 	eh.RegisterCommand(func() eh.Command { return &PUT{} })
 	eh.RegisterCommand(func() eh.Command { return &PATCH{} })
 	eh.RegisterCommand(func() eh.Command { return &POST{} })
@@ -21,7 +20,6 @@ func init() {
 }
 
 const (
-	GETCommand     = eh.CommandType("http:RedfishResource:GET")
 	PUTCommand     = eh.CommandType("http:RedfishResource:PUT")
 	PATCHCommand   = eh.CommandType("http:RedfishResource:PATCH")
 	POSTCommand    = eh.CommandType("http:RedfishResource:POST")
@@ -31,44 +29,12 @@ const (
 )
 
 // Static type checking for commands to prevent runtime errors due to typos
-var _ = eh.Command(&GET{})
 var _ = eh.Command(&PUT{})
 var _ = eh.Command(&PATCH{})
 var _ = eh.Command(&POST{})
 var _ = eh.Command(&DELETE{})
 var _ = eh.Command(&HEAD{})
 var _ = eh.Command(&OPTIONS{})
-
-// HTTP GET Command
-type GET struct {
-	ID      eh.UUID           `json:"id"`
-	CmdID   eh.UUID           `json:"cmdid"`
-	Headers map[string]string `eh:"optional"`
-}
-
-func (c *GET) AggregateType() eh.AggregateType { return AggregateType }
-func (c *GET) AggregateID() eh.UUID            { return c.ID }
-func (c *GET) CommandType() eh.CommandType     { return GETCommand }
-func (c *GET) SetAggID(id eh.UUID)             { c.ID = id }
-func (c *GET) SetCmdID(id eh.UUID)             { c.CmdID = id }
-func (c *GET) SetUserDetails(u string, p []string) string {
-	fmt.Printf("Command for user: %s with Privs: %s -- dont worry, checking master\n", u, p)
-	return "checkMaster"
-}
-func (c *GET) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
-	fmt.Printf("HANDLE GET!\n")
-	data := HTTPCmdProcessedData{
-		CommandID:  c.CmdID,
-		Results:    map[string]interface{}{},
-		StatusCode: 200,
-		Headers:    a.Headers,
-	}
-	for k, v := range a.Properties {
-		data.Results[k] = v
-	}
-	a.eventBus.HandleEvent(ctx, eh.NewEvent(HTTPCmdProcessed, data, time.Now()))
-	return nil
-}
 
 // HTTP POST Command
 type POST struct {
