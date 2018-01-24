@@ -1,5 +1,9 @@
 Things that need work:
 
+ - DBUS interface:
+    - need to hook current Tree into DBUS: allow sending the internal commands
+    - hook up signals via plugins
+
  - GET aggregate plugin support:
     - Need to filter out @meta from Properties
     - Need to load plugins for each property
