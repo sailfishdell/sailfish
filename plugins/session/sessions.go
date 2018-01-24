@@ -39,7 +39,6 @@ func (a *AddUserDetails) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 
 	xauthtoken := req.Header.Get("X-Auth-Token")
 	if xauthtoken != "" {
-		fmt.Printf("GOT A TOKEN\n")
 		token, _ := jwt.ParseWithClaims(xauthtoken, &RedfishClaims{}, func(token *jwt.Token) (interface{}, error) {
 			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 				return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
@@ -58,10 +57,10 @@ func (a *AddUserDetails) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	}
 
 	if userName != "" && len(privileges) > 0 {
-		fmt.Printf("Chain w/user details\n")
+		fmt.Printf("Chain to next handler with user details from TOKEN.\n")
 		a.OnUserDetails(userName, privileges).ServeHTTP(rw, req)
 	} else {
-		fmt.Printf("Chain NO user details\n")
+		fmt.Printf("No token present, chain to next authentication method.\n")
 		a.WithoutUserDetails.ServeHTTP(rw, req)
 	}
 	return
@@ -86,7 +85,7 @@ func InitService(ctx context.Context, rootID eh.UUID, ew *utils.EventWaiter, ch 
 		if event.EventType() != domain.RedfishResourceCreated {
 			return false
 		}
-		if data, ok := event.Data().(*domain.RedfishResourceCreatedData); ok {
+		if data, ok := event.Data().(domain.RedfishResourceCreatedData); ok {
 			if data.ResourceURI == "/redfish/v1" {
 				return true
 			}

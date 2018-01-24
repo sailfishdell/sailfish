@@ -1,0 +1,60 @@
+Things that need work:
+
+ - ETAGS support. Proposal:
+    - etags should be stored in the aggregate in the Headers map.
+    - Updates to the aggregate trigger update of etags
+
+ - Redfish compliant HTTP ERROR responses
+    - some generic boilerplate to do this?
+
+ - GET aggregate plugin support:
+    - Need to filter out @meta from Properties
+    - Need to load plugins for each property
+
+ - PUT/PATCH/POST support
+
+ - DELETE
+    - can return GET representation of the deleted object (optional per spec, lets try to do it)
+    - Need to return http 405 for undeletable, or when trying to delete a collection
+
+ - CERTIFICATE support:
+    - move certs to subdir
+    - Add net.InterfaceAddrs() - list of all local IP addresses - to the SAN list
+    - Get local hostname and add to SAN list
+    - Some sort of notification to regenerate the local SSL certificate if interfaces change?
+
+ - AccountService
+    - Interesting case: PAM? getent passwd? Automatically create? How to get privileges? (PAM, too?)
+    - Really ought to have strong support for oauth here. (so that redfish never needs to handle the actual password)
+
+ - Chassis
+
+ - schema support: should aggregate load the metadata/json schema and automatically populate? Should it validate?
+
+ - LINK Header
+
+ - Actions
+    - Implement a test OEM action for reference
+
+ - DELETE:
+    Need to implement a generic delete command. Useful for Sessions right now
+
+ - Common redfish resource properties
+    - Id
+    - Name
+    - Description
+    - Status
+    - Links
+    - Members
+    - RelatedItem
+    - Actions
+    - Oem
+
+ - Generic TASK Service
+
+ - implement for GET:
+    $filter
+    $top
+    $skip
+    $expand
+

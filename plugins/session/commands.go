@@ -71,24 +71,24 @@ func (c *POST) Handle(ctx context.Context, a *domain.RedfishResourceAggregate) e
 	// step 1: validate username/password (PUNT FOR NOW)
 	// TODO: implement real pam here
 	if c.LR.UserName == "Administrator" && c.LR.Password == "password" {
-		privileges = []string{
-			"Unauthenticated", "tokenauth",
+		privileges = append(privileges,
+			"Unauthenticated", "tokenauth", "ConfigureSelf_"+c.LR.UserName,
 			// per redfish spec
 			// TODO: Actually look up privileges
-			"Login", "ConfigureManager", "ConfigureUsers", "ConfigureComponents", "ConfigureSelf",
-		}
+			"Login", "ConfigureManager", "ConfigureUsers", "ConfigureComponents",
+		)
 	} else if c.LR.UserName == "Operator" && c.LR.Password == "password" {
-		privileges = []string{
-			"Unauthenticated", "tokenauth",
+		privileges = append(privileges,
+			"Unauthenticated", "tokenauth", "ConfigureSelf_"+c.LR.UserName,
 			// TODO: Actually look up privileges
-			"Login", "ConfigureComponents", "ConfigureSelf",
-		}
+			"Login", "ConfigureComponents",
+		)
 	} else if c.LR.UserName == "ReadOnly" && c.LR.Password == "password" {
-		privileges = []string{
-			"Unauthenticated", "tokenauth",
+		privileges = append(privileges,
+			"Unauthenticated", "tokenauth", "ConfigureSelf_"+c.LR.UserName,
 			// TODO: Actually look up privileges
-			"Login", "ConfigureSelf",
-		}
+			"Login",
+		)
 	} else {
 		return errors.New("Could not verify username/password")
 	}
@@ -131,7 +131,7 @@ func (c *POST) Handle(ctx context.Context, a *domain.RedfishResourceAggregate) e
 				"POST":   []string{"ConfigureManager"},
 				"PUT":    []string{"ConfigureManager"},
 				"PATCH":  []string{"ConfigureManager"},
-				"DELETE": []string{"ConfigureSelf", "ConfigureManager"},
+				"DELETE": []string{"ConfigureSelf_" + c.LR.UserName, "ConfigureManager"},
 			},
 			Properties: retprops,
 			Private:    map[string]interface{}{"token_secret": secret},
@@ -142,11 +142,14 @@ func (c *POST) Handle(ctx context.Context, a *domain.RedfishResourceAggregate) e
 
 	c.startSessionDeleteTimer(sessionUUID, sessionURI, 30)
 
-	c.eventBus.HandleEvent(ctx, eh.NewEvent(domain.HTTPCmdProcessed, &domain.HTTPCmdProcessedData{
+	c.eventBus.HandleEvent(ctx, eh.NewEvent(domain.HTTPCmdProcessed, domain.HTTPCmdProcessedData{
 		CommandID:  c.CmdID,
 		Results:    retprops,
 		StatusCode: 200,
-		Headers:    map[string]string{"X-Auth-Token": tokenString},
+		Headers: map[string]string{
+			"X-Auth-Token": tokenString,
+			"Location":     sessionURI,
+		},
 	}, time.Now()))
 	return nil
 }
@@ -156,19 +159,13 @@ func (c *POST) startSessionDeleteTimer(sessionUUID eh.UUID, sessionURI string, t
 	ctx := context.Background()
 
 	refreshListener, err := c.eventWaiter.Listen(context.Background(), func(event eh.Event) bool {
-		fmt.Printf("refreshListener Processing event %s\n", event.EventType())
 		if event.EventType() != XAuthTokenRefreshEvent {
-			fmt.Printf("\tnope\n")
 			return false
 		}
 		if data, ok := event.Data().(XAuthTokenRefreshData); ok {
-			fmt.Printf("\trefresh session: %s\n", data.SessionURI)
 			if data.SessionURI == sessionURI {
-				fmt.Printf("\tREFRESH\n")
 				return true
 			}
-		} else {
-			fmt.Printf("\tCAST FAILED\n")
 		}
 		return false
 	})
@@ -179,13 +176,10 @@ func (c *POST) startSessionDeleteTimer(sessionUUID eh.UUID, sessionURI string, t
 	}
 
 	deleteListener, err := c.eventWaiter.Listen(context.Background(), func(event eh.Event) bool {
-		fmt.Printf("deleteListener Processing event %s\n", event.EventType())
 		if event.EventType() != domain.RedfishResourceRemoved {
-			fmt.Printf("\tnope\n")
 			return false
 		}
 		if data, ok := event.Data().(domain.RedfishResourceRemovedData); ok {
-			fmt.Printf("\tdelete session: %s\n", data.ResourceURI)
 			if data.ResourceURI == sessionURI {
 				return true
 			}
@@ -208,10 +202,13 @@ func (c *POST) startSessionDeleteTimer(sessionUUID eh.UUID, sessionURI string, t
 		for {
 			select {
 			case <-refreshListener.Inbox():
+				fmt.Printf("REFRESH: %s\n", sessionURI)
 				continue // still alive for now! start over again...
 			case <-deleteListener.Inbox():
+				fmt.Printf("DELETED FROM UNDER US: %s\n", sessionURI)
 				return // it's gone, all done here
 			case <-time.After(time.Duration(timeout) * time.Second):
+				fmt.Printf("TIME IS UP: %s\n", sessionURI)
 				c.commandHandler.HandleCommand(ctx, &domain.RemoveRedfishResource{ID: sessionUUID, ResourceURI: sessionURI})
 				return //exit goroutine
 			}

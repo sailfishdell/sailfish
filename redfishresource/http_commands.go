@@ -57,11 +57,11 @@ func (c *GET) SetUserDetails(u string, p []string) string {
 }
 func (c *GET) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 	fmt.Printf("HANDLE GET!\n")
-	data := &HTTPCmdProcessedData{
+	data := HTTPCmdProcessedData{
 		CommandID:  c.CmdID,
 		Results:    map[string]interface{}{},
 		StatusCode: 200,
-		Headers:    map[string]string{"testheader": "foo"},
+		Headers:    a.Headers,
 	}
 	for k, v := range a.Properties {
 		data.Results[k] = v
@@ -88,7 +88,7 @@ func (c *POST) ParseHTTPRequest(r *http.Request) {
 }
 func (c *POST) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 	fmt.Printf("HANDLE POST!\n")
-	a.eventBus.HandleEvent(ctx, eh.NewEvent(HTTPCmdProcessed, &HTTPCmdProcessedData{
+	a.eventBus.HandleEvent(ctx, eh.NewEvent(HTTPCmdProcessed, HTTPCmdProcessedData{
 		CommandID:  c.CmdID,
 		Results:    map[string]interface{}{"FOO": "BAR"},
 		StatusCode: 200,
@@ -114,11 +114,11 @@ func (c *PUT) ParseHTTPRequest(r *http.Request) {
 }
 func (c *PUT) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 	fmt.Printf("HANDLE PUT!\n")
-	a.eventBus.HandleEvent(ctx, eh.NewEvent(HTTPCmdProcessed, &HTTPCmdProcessedData{
+	a.eventBus.HandleEvent(ctx, eh.NewEvent(HTTPCmdProcessed, HTTPCmdProcessedData{
 		CommandID:  c.CmdID,
-		Results:    map[string]interface{}{"FOO": "BAR"},
-		StatusCode: 200,
-		Headers:    map[string]string{"testheader": "foo"},
+		Results:    map[string]interface{}{"ERROR": "This method not yet implemented"},
+		StatusCode: 501, // Not implemented
+		Headers:    map[string]string{},
 	}, time.Now()))
 	return nil
 }
@@ -140,11 +140,11 @@ func (c *PATCH) ParseHTTPRequest(r *http.Request) {
 }
 func (c *PATCH) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 	fmt.Printf("HANDLE PATH!\n")
-	a.eventBus.HandleEvent(ctx, eh.NewEvent(HTTPCmdProcessed, &HTTPCmdProcessedData{
+	a.eventBus.HandleEvent(ctx, eh.NewEvent(HTTPCmdProcessed, HTTPCmdProcessedData{
 		CommandID:  c.CmdID,
-		Results:    map[string]interface{}{"FOO": "BAR"},
-		StatusCode: 200,
-		Headers:    map[string]string{"testheader": "foo"},
+		Results:    map[string]interface{}{"ERROR": "This method not yet implemented"},
+		StatusCode: 501, // Not implemented
+		Headers:    map[string]string{},
 	}, time.Now()))
 	return nil
 }
@@ -161,10 +161,21 @@ func (c *DELETE) CommandType() eh.CommandType     { return DELETECommand }
 func (c *DELETE) SetAggID(id eh.UUID)             { c.ID = id }
 func (c *DELETE) SetCmdID(id eh.UUID)             { c.CmdID = id }
 func (c *DELETE) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
-	fmt.Printf("HANDLE DELETE!\n")
-	a.eventBus.HandleEvent(ctx, eh.NewEvent(HTTPCmdProcessed, &HTTPCmdProcessedData{
+	// TODO: "Services may return a representation of the just deleted resource in the response body."
+	// - can create a new CMD for GET with an identical CMD ID. Is that cheating?
+
+	// TODO: return http 405 status for undeletable objects. right now we use privileges
+
+	// send event to trigger delete
+	a.eventBus.HandleEvent(ctx, eh.NewEvent(RedfishResourceRemoved, &RedfishResourceRemovedData{
+		ID:          c.ID,
+		ResourceURI: a.ResourceURI,
+	}, time.Now()))
+
+	// send http response
+	a.eventBus.HandleEvent(ctx, eh.NewEvent(HTTPCmdProcessed, HTTPCmdProcessedData{
 		CommandID:  c.CmdID,
-		Results:    map[string]interface{}{"FOO": "BAR"},
+		Results:    map[string]interface{}{},
 		StatusCode: 200,
 		Headers:    map[string]string{"testheader": "foo"},
 	}, time.Now()))
@@ -184,11 +195,11 @@ func (c *HEAD) SetAggID(id eh.UUID)             { c.ID = id }
 func (c *HEAD) SetCmdID(id eh.UUID)             { c.CmdID = id }
 func (c *HEAD) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 	fmt.Printf("HANDLE HEAD!\n")
-	a.eventBus.HandleEvent(ctx, eh.NewEvent(HTTPCmdProcessed, &HTTPCmdProcessedData{
+	a.eventBus.HandleEvent(ctx, eh.NewEvent(HTTPCmdProcessed, HTTPCmdProcessedData{
 		CommandID:  c.CmdID,
-		Results:    map[string]interface{}{"FOO": "BAR"},
-		StatusCode: 200,
-		Headers:    map[string]string{"testheader": "foo"},
+		Results:    map[string]interface{}{"ERROR": "This method not yet implemented"},
+		StatusCode: 501, // Not implemented
+		Headers:    map[string]string{},
 	}, time.Now()))
 	return nil
 }
@@ -206,11 +217,11 @@ func (c *OPTIONS) SetAggID(id eh.UUID)             { c.ID = id }
 func (c *OPTIONS) SetCmdID(id eh.UUID)             { c.CmdID = id }
 func (c *OPTIONS) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 	fmt.Printf("HANDLE OPTIONS!\n")
-	a.eventBus.HandleEvent(ctx, eh.NewEvent(HTTPCmdProcessed, &HTTPCmdProcessedData{
+	a.eventBus.HandleEvent(ctx, eh.NewEvent(HTTPCmdProcessed, HTTPCmdProcessedData{
 		CommandID:  c.CmdID,
-		Results:    map[string]interface{}{"FOO": "BAR"},
-		StatusCode: 200,
-		Headers:    map[string]string{"testheader": "foo"},
+		Results:    map[string]interface{}{"ERROR": "This method not yet implemented"},
+		StatusCode: 501, // Not implemented
+		Headers:    map[string]string{},
 	}, time.Now()))
 	return nil
 }

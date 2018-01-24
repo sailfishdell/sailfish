@@ -92,7 +92,7 @@ func (d *DomainObjects) GetAggregateID(uri string) (eh.UUID, bool) {
 func (d *DomainObjects) Notify(ctx context.Context, event eh.Event) {
 	fmt.Printf("Notify( event==%s )\n", event)
 	if event.EventType() == domain.RedfishResourceCreated {
-		if data, ok := event.Data().(*domain.RedfishResourceCreatedData); ok {
+		if data, ok := event.Data().(domain.RedfishResourceCreatedData); ok {
 			// TODO: handle conflicts
 			d.Tree[data.ResourceURI] = data.ID
 
@@ -121,7 +121,7 @@ func (d *DomainObjects) Notify(ctx context.Context, event eh.Event) {
 		return
 	}
 	if event.EventType() == domain.RedfishResourceRemoved {
-		if data, ok := event.Data().(*domain.RedfishResourceRemovedData); ok {
+		if data, ok := event.Data().(domain.RedfishResourceRemovedData); ok {
 			// Look to see if it is a member of a collection
 			for _, v := range d.collections {
 				collectionToTest := path.Dir(data.ResourceURI)
@@ -254,6 +254,7 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// load the aggregate for the URL we are operating on
 	agg, err := rh.d.AggregateStore.Load(r.Context(), domain.AggregateType, aggID)
+	// type assertion to get real aggregate
 	redfishResource, ok := agg.(*domain.RedfishResourceAggregate)
 	if ok {
 		// prepend the plugins to the search path
@@ -345,7 +346,7 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if event.EventType() != domain.HTTPCmdProcessed {
 			return false
 		}
-		if data, ok := event.Data().(*domain.HTTPCmdProcessedData); ok {
+		if data, ok := event.Data().(domain.HTTPCmdProcessedData); ok {
 			if data.CommandID == cmdId {
 				return true
 			}
@@ -371,7 +372,7 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	data, ok := event.Data().(*domain.HTTPCmdProcessedData)
+	data, ok := event.Data().(domain.HTTPCmdProcessedData)
 	if !ok {
 		fmt.Printf("Error waiting for event: %s\n", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)

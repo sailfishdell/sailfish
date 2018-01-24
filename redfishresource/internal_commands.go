@@ -86,21 +86,21 @@ func (c *CreateRedfishResource) Handle(ctx context.Context, a *RedfishResourceAg
 		a.PrivilegeMap[k] = v
 	}
 
-    // if command claims that this will be a collection, automatically set up the Members property
-    if c.Collection {
-        if _, ok := a.Properties["Members"]; !ok {
-            a.Properties["Members"] = []map[string]interface{}{}
-        } else {
-            switch a.Properties["Members"].(type) {
-            case []map[string]interface{}:
-            default:  // somehow got invalid type here, fix it up
-                a.Properties["Members"] = []map[string]interface{}{}
-            }
-        }
-        a.Properties["Members@odata.count"] = len(a.Properties["Members"].([]map[string]interface{}))
-    }
+	// if command claims that this will be a collection, automatically set up the Members property
+	if c.Collection {
+		if _, ok := a.Properties["Members"]; !ok {
+			a.Properties["Members"] = []map[string]interface{}{}
+		} else {
+			switch a.Properties["Members"].(type) {
+			case []map[string]interface{}:
+			default: // somehow got invalid type here, fix it up
+				a.Properties["Members"] = []map[string]interface{}{}
+			}
+		}
+		a.Properties["Members@odata.count"] = len(a.Properties["Members"].([]map[string]interface{}))
+	}
 
-	a.eventBus.HandleEvent(ctx, eh.NewEvent(RedfishResourceCreated, &RedfishResourceCreatedData{
+	a.eventBus.HandleEvent(ctx, eh.NewEvent(RedfishResourceCreated, RedfishResourceCreatedData{
 		ID:          c.ID,
 		ResourceURI: c.ResourceURI,
 		Collection:  c.Collection,
@@ -119,7 +119,7 @@ func (c *RemoveRedfishResource) AggregateID() eh.UUID            { return c.ID }
 func (c *RemoveRedfishResource) CommandType() eh.CommandType     { return RemoveRedfishResourceCommand }
 
 func (c *RemoveRedfishResource) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
-	a.eventBus.HandleEvent(ctx, eh.NewEvent(RedfishResourceRemoved, &RedfishResourceRemovedData{
+	a.eventBus.HandleEvent(ctx, eh.NewEvent(RedfishResourceRemoved, RedfishResourceRemovedData{
 		ID:          c.ID,
 		ResourceURI: c.ResourceURI,
 	}, time.Now()))
@@ -210,26 +210,20 @@ func (c *RemoveResourceFromRedfishResourceCollection) Handle(ctx context.Context
 	// TODO: send property updated event
 	if collection, ok := a.Properties["Members"]; ok {
 		numToSlice := 0
-		fmt.Printf("Slicing %s\n", numToSlice)
 		if s, ok := collection.([]map[string]interface{}); ok {
-			// trundle through the members to see if we can find
-			fmt.Printf("\ttrundling...\n")
 			for i, v := range s {
-				fmt.Printf("\t  resource: %s\n", v)
 				if v["@odata.id"] == c.ResourceURI {
 					// move the ones to be removed to the end
-					fmt.Printf("\t REMOVE\n")
 					numToSlice = numToSlice + 1
 					s[len(s)-numToSlice], s[i] = s[i], s[len(s)-numToSlice]
 					break
 				}
 			}
+			// and then slice off the end
 			a.Properties["Members"] = s[:len(s)-numToSlice]
 		}
 		a.Properties["Members@odata.count"] = len(a.Properties["Members"].([]map[string]interface{}))
 	}
-
-	fmt.Printf("Final score: %s\n", a.Properties["Members"])
 
 	return nil
 }
