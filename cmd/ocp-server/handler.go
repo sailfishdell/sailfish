@@ -450,7 +450,7 @@ func (rh *SSEHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 		data := event.Data()
 		d, err := json.Marshal(data)
-		fmt.Fprintf(w, "event: %s\n\n", d)
+		fmt.Fprintf(w, "data: %s\n\n", d)
 
 		flusher.Flush()
 	}
