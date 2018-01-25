@@ -37,7 +37,7 @@ func main() {
 	// generate uuid of root object
 	rootID := eh.NewUUID()
 
-	session.InitService(context.Background(), rootID, domainObjs.EventWaiter, domainObjs.CommandHandler, domainObjs.EventBus)
+	session.InitService(context.Background(), domainObjs.EventWaiter, domainObjs.CommandHandler, domainObjs.EventBus)
 
 	// Set up our standard extensions for authentication
 	chainAuth := func(u string, p []string) http.Handler {
@@ -63,7 +63,6 @@ func main() {
 	BasicAuthAuthorizerSSE.WithoutUserDetails = &SSEHandler{UserName: "UNKNOWN", Privileges: []string{"Unauthenticated"}, d: domainObjs}
 
 	// set up some basic stuff
-	domainObjs.Tree["/redfish/v1"] = rootID
 	loggingHandler.HandleCommand(
 		context.Background(),
 		&domain.CreateRedfishResource{

@@ -56,3 +56,21 @@ SessionManager
 
 ComputerSystem
     ModelName -> 
+
+// code centric or data centric?
+   - do we want to write go code that sets up event listeners and then udpates? Or can we do this with metadata definitions?
+   - even with data centric, we have to have code somewhere that does the updates. it's just (hopefully) well-parameterized code
+
+// Code centric example
+    1) create saga, which listens for events
+    2) saga listens to events and emits stream of UpdateRedfishResourceProperty commands
+    3) implicit: saga knows exactly the URL of which property to update on which resource
+
+// data centric example
+    1) CreateRedfishResource ... Properties[ "someproperty@meta": { "plugin": "runcmd" } ]
+    2) saga listens for Resource created events and trundles through the resource to find any plugins
+    3) need a nice way for saga to know if property ever disappears... probably need to listen for property updated
+    4) saga then listens for actual events and goes through its list
+
+// hmm... these two things end up looking very similar
+    -- create helpers to automatically figure out plugins? (ie. listen for resource created events and trundle through looking for relevant plugins)

@@ -11,9 +11,7 @@ import (
 func init() {
 	eh.RegisterCommand(func() eh.Command { return &CreateRedfishResource{} })
 	eh.RegisterCommand(func() eh.Command { return &RemoveRedfishResource{} })
-	eh.RegisterCommand(func() eh.Command { return &CreateRedfishResourceProperties{} })
 	eh.RegisterCommand(func() eh.Command { return &UpdateRedfishResourceProperties{} })
-	eh.RegisterCommand(func() eh.Command { return &RemoveRedfishResourceProperties{} })
 	eh.RegisterCommand(func() eh.Command { return &AddResourceToRedfishResourceCollection{} })
 	eh.RegisterCommand(func() eh.Command { return &RemoveResourceFromRedfishResourceCollection{} })
 }
@@ -21,9 +19,7 @@ func init() {
 const (
 	CreateRedfishResourceCommand                       = eh.CommandType("internal:RedfishResource:Create")
 	RemoveRedfishResourceCommand                       = eh.CommandType("internal:RedfishResource:Remove")
-	CreateRedfishResourcePropertiesCommand             = eh.CommandType("internal:RedfishResourceProperties:Create")
 	UpdateRedfishResourcePropertiesCommand             = eh.CommandType("internal:RedfishResourceProperties:Update")
-	RemoveRedfishResourcePropertiesCommand             = eh.CommandType("internal:RedfishResourceProperties:Remove")
 	AddResourceToRedfishResourceCollectionCommand      = eh.CommandType("internal:RedfishResourceCollection:Add")
 	RemoveResourceFromRedfishResourceCollectionCommand = eh.CommandType("internal:RedfishResourceCollection:Remove")
 )
@@ -31,9 +27,7 @@ const (
 // Static type checking for commands to prevent runtime errors due to typos
 var _ = eh.Command(&CreateRedfishResource{})
 var _ = eh.Command(&RemoveRedfishResource{})
-var _ = eh.Command(&CreateRedfishResourceProperties{})
 var _ = eh.Command(&UpdateRedfishResourceProperties{})
-var _ = eh.Command(&RemoveRedfishResourceProperties{})
 var _ = eh.Command(&AddResourceToRedfishResourceCollection{})
 var _ = eh.Command(&RemoveResourceFromRedfishResourceCollection{})
 
@@ -126,20 +120,6 @@ func (c *RemoveRedfishResource) Handle(ctx context.Context, a *RedfishResourceAg
 	return nil
 }
 
-type CreateRedfishResourceProperties struct {
-	ID         eh.UUID                `json:"id"`
-	Properties map[string]interface{} `eh:"optional"`
-}
-
-func (c *CreateRedfishResourceProperties) AggregateType() eh.AggregateType { return AggregateType }
-func (c *CreateRedfishResourceProperties) AggregateID() eh.UUID            { return c.ID }
-func (c *CreateRedfishResourceProperties) CommandType() eh.CommandType {
-	return CreateRedfishResourcePropertiesCommand
-}
-func (c *CreateRedfishResourceProperties) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
-	return nil
-}
-
 type UpdateRedfishResourceProperties struct {
 	ID         eh.UUID                `json:"id"`
 	Properties map[string]interface{} `eh:"optional"`
@@ -151,23 +131,11 @@ func (c *UpdateRedfishResourceProperties) CommandType() eh.CommandType {
 	return UpdateRedfishResourcePropertiesCommand
 }
 func (c *UpdateRedfishResourceProperties) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
+    // TODO: Filter out immutable properties: type, context, id...
+    // TODO: support JSON Pointer or similar format to do a better/more granular update of properties
 	for k, v := range c.Properties {
 		a.Properties[k] = v
 	}
-	return nil
-}
-
-type RemoveRedfishResourceProperties struct {
-	ID         eh.UUID                `json:"id"`
-	Properties map[string]interface{} `eh:"optional"`
-}
-
-func (c *RemoveRedfishResourceProperties) AggregateType() eh.AggregateType { return AggregateType }
-func (c *RemoveRedfishResourceProperties) AggregateID() eh.UUID            { return c.ID }
-func (c *RemoveRedfishResourceProperties) CommandType() eh.CommandType {
-	return RemoveRedfishResourcePropertiesCommand
-}
-func (c *RemoveRedfishResourceProperties) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 	return nil
 }
 

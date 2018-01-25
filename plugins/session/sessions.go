@@ -73,7 +73,7 @@ func NewService(eb eh.EventBus, g IDGetter) (aud *AddUserDetails) {
 	return &AddUserDetails{eb: eb, getter: g}
 }
 
-func InitService(ctx context.Context, rootID eh.UUID, ew *utils.EventWaiter, ch eh.CommandHandler, eb eh.EventBus) {
+func InitService(ctx context.Context, ew *utils.EventWaiter, ch eh.CommandHandler, eb eh.EventBus) {
 	fmt.Printf("InitService - session\n")
 	// setup module secret
 	SECRET = createRandSecret(24, characters)
@@ -81,6 +81,7 @@ func InitService(ctx context.Context, rootID eh.UUID, ew *utils.EventWaiter, ch 
 	// register our command
 	eh.RegisterCommand(func() eh.Command { return &POST{eventBus: eb, commandHandler: ch, eventWaiter: ew} })
 
+    // set up listener that will fire when it sees /redfish/v1 created
 	l, err := ew.Listen(ctx, func(event eh.Event) bool {
 		if event.EventType() != domain.RedfishResourceCreated {
 			return false
@@ -100,11 +101,14 @@ func InitService(ctx context.Context, rootID eh.UUID, ew *utils.EventWaiter, ch 
 	go func() {
 		defer l.Close()
 
-		_, err := l.Wait(ctx)
+		event, err := l.Wait(ctx)
 		if err != nil {
 			fmt.Printf("Error waiting for event: %s\n", err.Error())
 			return
 		}
+
+        // wait for /redfish/v1 to be created, then pull out the rootid so that we can modify it
+        rootID := event.Data().(domain.RedfishResourceCreatedData).ID
 
 		// Create SessionService aggregate
 		ch.HandleCommand(

@@ -2,6 +2,10 @@ package domain
 
 import (
 	"context"
+	"fmt"
+	"strings"
+	"sync"
+    "errors"
 
 	eh "github.com/looplab/eventhorizon"
 )
@@ -24,6 +28,7 @@ type RedfishResourceAggregate struct {
 	ResourceURI  string
 	Plugin       string
 	Properties   map[string]interface{}
+    PropertyPlugin map[string]interface{}
 	PrivilegeMap map[string]interface{}
 	Permissions  map[string]interface{}
 	Headers      map[string]string
@@ -68,5 +73,52 @@ func (a *RedfishResourceAggregate) HandleCommand(ctx context.Context, command eh
 }
 
 func (a *RedfishResourceAggregate) ProcessMeta(ctx context.Context) error {
+	//    wg sync.WaitGroup
+	for k, v := range a.Properties {
+		if !strings.HasSuffix(k, "@meta") {
+			continue
+		}
+
+		//        a.Properties[ k[:len(k)-5] ] =  InstantiatePlugin("test")
+		_ = v
+	}
+
 	return nil
+}
+
+// Type of plugin to register
+type PluginType string
+
+type Plugin interface {
+	UpdateAggregate(a *RedfishResourceAggregate) <-chan error
+	PluginType() PluginType
+}
+
+var plugins = make(map[PluginType]func() Plugin)
+var pluginsMu sync.RWMutex
+
+// RegisterPlugin registers an plugin factory for a type. The factory is
+// used to create concrete plugin types.
+//
+// An example would be:
+//     RegisterPlugin(func() Plugin { return &MyPlugin{} })
+func RegisterPlugin(factory func() Plugin) {
+	plugin := factory()
+	pluginType := plugin.PluginType()
+
+	pluginsMu.Lock()
+	defer pluginsMu.Unlock()
+	if _, ok := plugins[pluginType]; ok {
+		panic(fmt.Sprintf("eventhorizon: registering duplicate types for %q", pluginType))
+	}
+	plugins[pluginType] = factory
+}
+
+func InstantiatePlugin(pluginType PluginType) (Plugin, error) {
+	pluginsMu.RLock()
+	defer pluginsMu.RUnlock()
+	if factory, ok := plugins[pluginType]; ok {
+		return factory(), nil
+	}
+	return nil, errors.New("Plugin Type not registered")
 }
