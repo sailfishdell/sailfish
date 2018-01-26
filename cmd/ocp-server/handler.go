@@ -93,11 +93,12 @@ func (d *DomainObjects) Notify(ctx context.Context, event eh.Event) {
 	fmt.Printf("Notify( event==%s )\n", event)
 	if event.EventType() == domain.RedfishResourceCreated {
 		if data, ok := event.Data().(domain.RedfishResourceCreatedData); ok {
-			// TODO: handle conflicts
+			// TODO: handle conflicts (how?)
 			d.Tree[data.ResourceURI] = data.ID
 
 			fmt.Printf("New resource: %s\n", data.ResourceURI)
 
+            // TODO: need to split out auto collection management into a plugin
 			if data.Collection {
 				fmt.Printf("A new collection: %s\n", data.ResourceURI)
 				d.collections = append(d.collections, data.ResourceURI)

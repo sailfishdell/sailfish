@@ -1,4 +1,7 @@
-Things that need work:
+Things that need work: (-) TODO (*) DONE
+
+ - ACTIONS
+    - Implement a test OEM action for reference
 
  - DBUS interface:
     - need to hook current Tree into DBUS: allow sending the internal commands
@@ -9,9 +12,9 @@ Things that need work:
     - Need to load plugins for each property
 
  - implement for GET:
-    $filter
-    $top
     $skip
+    $top
+    $filter
     $expand
 
  - PUT/PATCH/POST support
@@ -25,11 +28,13 @@ Things that need work:
     - Need some generic domain redfish error helpers to handle generating JSON output and http error codes
 
  - DELETE
-    X DELETE Implemented
+    * DELETE Implemented
     - can return GET representation of the deleted object (optional per spec, lets try to do it)
     - Need to return http 405 for undeletable, or when trying to delete a collection
 
  - CERTIFICATE support:
+    * SSL support
+    * Automatically generate CA and Server Cert
     - move certs to subdir
     - Add net.InterfaceAddrs() - list of all local IP addresses - to the SAN list
     - Get local hostname and add to SAN list
@@ -41,12 +46,9 @@ Things that need work:
 
  - Chassis
 
- - schema support: should aggregate load the metadata/json schema and automatically populate? Should it validate?
+ - Schema support: should aggregate load the metadata/json schema and automatically populate? Should it validate?
 
  - LINK Header
-
- - Actions
-    - Implement a test OEM action for reference
 
  - Common redfish resource properties
     - Do we need to do some special handling for the following properties, which are all specified as standard redfish resource properties?
