@@ -3,7 +3,6 @@ package domain
 import (
 	"context"
 	"fmt"
-	"strings"
 	"sync"
     "errors"
 
@@ -74,13 +73,23 @@ func (a *RedfishResourceAggregate) HandleCommand(ctx context.Context, command eh
 
 func (a *RedfishResourceAggregate) ProcessMeta(ctx context.Context) error {
 	//    wg sync.WaitGroup
-	for k, v := range a.Properties {
-		if !strings.HasSuffix(k, "@meta") {
-			continue
-		}
-
-		//        a.Properties[ k[:len(k)-5] ] =  InstantiatePlugin("test")
-		_ = v
+    fmt.Printf("PROCESS META: %s\n", a.PropertyPlugin)
+	for _, v := range a.PropertyPlugin {
+        fmt.Printf("\tv: %s\n", v)
+        if  get, ok := v.(map[string]interface{})["GET"]; ok{
+            fmt.Printf("\tget: %s\n", get)
+            if plugin, ok := get.(map[string]interface{})["plugin"]; ok {
+                fmt.Printf("\tplugin: %s\n", plugin)
+                p, err := InstantiatePlugin( PluginType(plugin.(string)) )
+                if err == nil {
+                    fmt.Printf("UpdateAggregate\n")
+                    errCh := p.UpdateAggregate(a)
+                    <-errCh
+                } else {
+                    fmt.Printf("bummer: %s\n", plugins)
+                }
+            }
+        }
 	}
 
 	return nil

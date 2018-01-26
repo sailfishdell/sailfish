@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+    "strings"
 	eh "github.com/looplab/eventhorizon"
 	"time"
 )
@@ -62,27 +63,70 @@ func (c *CreateRedfishResource) Handle(ctx context.Context, a *RedfishResourceAg
 	if a.Plugin == "" {
 		a.Plugin = "RedfishResource"
 	}
+	a.PropertyPlugin = map[string]interface{}{}
 	a.Properties = map[string]interface{}{}
 	a.PrivilegeMap = map[string]interface{}{}
 	a.Permissions = map[string]interface{}{}
 	a.Headers = map[string]string{}
 	a.Private = map[string]interface{}{}
 
-	for k, v := range c.Properties {
-		a.Properties[k] = v
+	for k, v := range c.Privileges {
+		a.PrivilegeMap[k] = v
 	}
+
+    // ensure no collisions
+    delete(c.Properties, "@odata.id")
+    delete(c.Properties, "@odata.type")
+    delete(c.Properties, "@odata.context")
+
+    d := RedfishResourcePropertiesUpdatedData{
+                ID:          c.ID,
+                ResourceURI: a.ResourceURI,
+                PropertyNames: []string{},
+            }
+    e := RedfishResourcePropertyMetaUpdatedData{
+                ID:          c.ID,
+                ResourceURI: a.ResourceURI,
+                Meta: map[string]interface{}{},
+                }
+
+	for k, v := range c.Properties {
+        if strings.HasSuffix(k, "@meta") {
+            if a.PropertyPlugin[k] != v {
+                a.PropertyPlugin[k] = v
+                e.Meta[k] = v
+            }
+        } else {
+            if a.Properties[k] != v {
+                a.Properties[k] = v
+                d.PropertyNames = append(d.PropertyNames, k)
+            }
+        }
+	}
+
+    // send out event that it's created first
+	a.eventBus.HandleEvent(ctx, eh.NewEvent(RedfishResourceCreated, RedfishResourceCreatedData{
+		ID:          c.ID,
+		ResourceURI: c.ResourceURI,
+		Collection:  c.Collection,
+	}, time.Now()))
+
+    // then send out possible notifications about changes in the properties or meta
+    if len(d.PropertyNames) > 0 {
+        a.eventBus.HandleEvent(ctx, eh.NewEvent(RedfishResourcePropertiesUpdated, d, time.Now()))
+    }
+    if len(e.Meta) > 0 {
+        a.eventBus.HandleEvent(ctx, eh.NewEvent(RedfishResourcePropertyMetaUpdated, e, time.Now()))
+    }
 
 	a.Properties["@odata.id"] = c.ResourceURI
 	a.Properties["@odata.type"] = c.Type
 	a.Properties["@odata.context"] = c.Context
 
-	for k, v := range c.Privileges {
-		a.PrivilegeMap[k] = v
-	}
-
 	// if command claims that this will be a collection, automatically set up the Members property
 	if c.Collection {
 		if _, ok := a.Properties["Members"]; !ok {
+            // didn't previously exist, create it
 			a.Properties["Members"] = []map[string]interface{}{}
 		} else {
 			switch a.Properties["Members"].(type) {
@@ -93,12 +137,6 @@ func (c *CreateRedfishResource) Handle(ctx context.Context, a *RedfishResourceAg
 		}
 		a.Properties["Members@odata.count"] = len(a.Properties["Members"].([]map[string]interface{}))
 	}
-
-	a.eventBus.HandleEvent(ctx, eh.NewEvent(RedfishResourceCreated, RedfishResourceCreatedData{
-		ID:          c.ID,
-		ResourceURI: c.ResourceURI,
-		Collection:  c.Collection,
-	}, time.Now()))
 	return nil
 }
 
@@ -133,9 +171,39 @@ func (c *UpdateRedfishResourceProperties) CommandType() eh.CommandType {
 func (c *UpdateRedfishResourceProperties) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
     // TODO: Filter out immutable properties: type, context, id...
     // TODO: support JSON Pointer or similar format to do a better/more granular update of properties
+
+    d := RedfishResourcePropertiesUpdatedData{
+                ID:          c.ID,
+                ResourceURI: a.ResourceURI,
+                PropertyNames: []string{},
+            }
+    e := RedfishResourcePropertyMetaUpdatedData{
+                ID:          c.ID,
+                ResourceURI: a.ResourceURI,
+                Meta: map[string]interface{}{},
+                }
+
 	for k, v := range c.Properties {
-		a.Properties[k] = v
+        if strings.HasSuffix(k, "@meta") {
+            if a.PropertyPlugin[k] != v {
+                a.PropertyPlugin[k] = v
+                e.Meta[k] = v
+            }
+        } else {
+            if a.Properties[k] != v {
+                a.Properties[k] = v
+                d.PropertyNames = append(d.PropertyNames, k)
+            }
+        }
 	}
+
+    if len(d.PropertyNames) > 0 {
+        a.eventBus.HandleEvent(ctx, eh.NewEvent(RedfishResourcePropertiesUpdated, d, time.Now()))
+    }
+    if len(e.Meta) > 0 {
+        a.eventBus.HandleEvent(ctx, eh.NewEvent(RedfishResourcePropertyMetaUpdated, e, time.Now()))
+    }
+
 	return nil
 }
 

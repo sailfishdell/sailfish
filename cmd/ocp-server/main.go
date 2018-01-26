@@ -15,6 +15,9 @@ import (
 	"github.com/superchalupa/go-redfish/plugins/session"
 	"github.com/superchalupa/go-redfish/plugins/stdcollections"
 	domain "github.com/superchalupa/go-redfish/redfishresource"
+
+    // load plugins
+    _ "github.com/superchalupa/go-redfish/plugins/test"
 )
 
 func main() {

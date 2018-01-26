@@ -2,8 +2,6 @@ package domain
 
 import (
 	"context"
-	"fmt"
-	"strings"
 	"time"
 
 	eh "github.com/looplab/eventhorizon"
@@ -36,7 +34,6 @@ func (c *GET) SetUserDetails(u string, p []string) string {
 	return "checkMaster"
 }
 func (c *GET) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
-	fmt.Printf("HANDLE GET!\n")
 	data := HTTPCmdProcessedData{
 		CommandID:  c.CmdID,
 		Results:    map[string]interface{}{},
@@ -47,9 +44,7 @@ func (c *GET) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 	a.ProcessMeta(ctx)
 
 	for k, v := range a.Properties {
-		if !strings.HasSuffix(k, "@meta") {
-			data.Results[k] = v
-		}
+	    data.Results[k] = v
 	}
 	a.eventBus.HandleEvent(ctx, eh.NewEvent(HTTPCmdProcessed, data, time.Now()))
 	return nil

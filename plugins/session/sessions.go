@@ -48,7 +48,6 @@ func (a *AddUserDetails) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 
 		if claims, ok := token.Claims.(*RedfishClaims); ok && token.Valid {
 			if _, ok := a.getter.GetAggregateID(claims.SessionURI); ok {
-				fmt.Printf("\tSession is still there!\n")
 				userName = claims.UserName
 				privileges = claims.Privileges
 				a.eb.HandleEvent(context.Background(), eh.NewEvent(XAuthTokenRefreshEvent, XAuthTokenRefreshData{SessionURI: claims.SessionURI}, time.Now()))
@@ -67,14 +66,11 @@ func (a *AddUserDetails) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 }
 
 func NewService(eb eh.EventBus, g IDGetter) (aud *AddUserDetails) {
-	fmt.Printf("NewService - session\n")
-
 	// set up the return value since we already know it
 	return &AddUserDetails{eb: eb, getter: g}
 }
 
 func InitService(ctx context.Context, ew *utils.EventWaiter, ch eh.CommandHandler, eb eh.EventBus) {
-	fmt.Printf("InitService - session\n")
 	// setup module secret
 	SECRET = createRandSecret(24, characters)
 
