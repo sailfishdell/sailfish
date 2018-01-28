@@ -3,19 +3,24 @@ Things that need work: (-) TODO (*) DONE
  - ACTIONS
     - Implement a test OEM action for reference
 
+ - EVENTS
+    - implement a command to inject raw events into the system (internal command)
+
  - DBUS interface:
     - need to hook current Tree into DBUS: allow sending the internal commands
     - hook up signals via plugins
 
  - GET aggregate plugin support:
-    - Need to filter out @meta from Properties
-    - Need to load plugins for each property
+    * Need to filter out @meta from Properties
+    * Need to load plugins for each property
+    * Example plugin for replacement of values on GET (Strategy 3 in plugins/test/readme.txt)
+    - example plugin for processing event stream and replacing values (Strategy 1 in plugins/test/readme.txt)
 
  - implement for GET:
-    $skip
-    $top
-    $filter
-    $expand
+    - $skip
+    - $top
+    - $filter
+    - $expand
 
  - PUT/PATCH/POST support
 
@@ -52,15 +57,15 @@ Things that need work: (-) TODO (*) DONE
 
  - Common redfish resource properties
     - Do we need to do some special handling for the following properties, which are all specified as standard redfish resource properties?
-    - Id
-    - Name
-    - Description
-    - Status
-    - Links
-    - Members
-    - RelatedItem
-    - Actions
-    - Oem
+        - Id
+        - Name
+        - Description
+        - Status
+        - Links
+        - Members
+        - RelatedItem
+        - Actions
+        - Oem
 
  - Generic TASK Service
 

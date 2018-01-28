@@ -331,7 +331,7 @@ func (c *RemoveResourceFromRedfishResourceCollection) Handle(ctx context.Context
 					}
 				}
 				// and then slice off the end
-				collection = collection.([]interface{})[:len(s)-numToSlice]
+				s = s[:len(s)-numToSlice]
 			}
 		}
 

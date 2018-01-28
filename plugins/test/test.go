@@ -8,37 +8,30 @@ import (
 )
 
 /*
-   STRATEGY 1:
-   -- SAGA A: listen for meta updated events. maintain a list of matching plugin lists.
-   -- SAGA B: listen to events and emit commands - for events that are relevant to the plugin, traverse list of aggregates affected and emit commands to update the relevant aggregates
-
-
-   STRATEGY 2:
-   -- SAGA A: listen for events of interest and directly update the aggregate that you know should be updated (cmd: updateredfishresourceproperties)
-
-
-   STRATEGY 3:
-   -- Output plugin: grabs data when we ask to output it (least efficient way: discourage this for the most part.)
-
-   I think for many things it would be best if we tended towards strategy 1, because we could write more generic code
+   This is an example plugin that implements "strategy 3": it waits until a
+   GET request is called and then pretends to make a backend call to fill in
+   data. We add a small latency to prove that all the calls happen in
+   parallel.
 */
 
 var (
-	TestPlugin = domain.PluginType("test:plugin")
+	TestPlugin_Strategy3 = domain.PluginType("test:plugin")
 )
 
 func init() {
-	domain.RegisterPlugin(func() domain.Plugin { return &testplugin{} })
+	domain.RegisterPlugin(func() domain.Plugin { return &testplugin_strategy3{} })
 }
 
-type testplugin struct {
-}
+type testplugin_strategy3 struct{}
 
-func (t *testplugin) PluginType() domain.PluginType { return TestPlugin }
+func (t *testplugin_strategy3) PluginType() domain.PluginType { return TestPlugin_Strategy3 }
 
-func (t *testplugin) UpdateAggregate(a *domain.RedfishResourceAggregate, wg *sync.WaitGroup, property string) {
+func (t *testplugin_strategy3) UpdateAggregate(a *domain.RedfishResourceAggregate, wg *sync.WaitGroup, property string, method string) {
 	fmt.Printf("UPDATE AGGREGATE: %s\n", property)
 	defer wg.Done()
 
-	a.SetProperty(property, time.Now())
+	plugin := a.GetPropertyPlugin(property, method)
+	time.Sleep(1 * time.Second)
+
+	a.SetProperty(property, fmt.Sprintf("method(%s)  time(%s) args(%s)", method, time.Now(), plugin["args"]))
 }

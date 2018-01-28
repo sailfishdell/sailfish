@@ -21,9 +21,6 @@ type RedfishResourceAggregate struct {
 	// private
 	eventBus eh.EventBus
 
-	// coarse grained locking of the aggregate
-	sync.RWMutex
-
 	// public
 	ID          eh.UUID
 	ResourceURI string
@@ -36,6 +33,8 @@ type RedfishResourceAggregate struct {
 	propertyPluginMu sync.RWMutex
 	propertyPlugin   map[string]map[string]map[string]interface{}
 
+	// TODO: need accessor functions for all of these just like property stuff
+	// above so that everything can be properly locked
 	PrivilegeMap map[string]interface{}
 	Permissions  map[string]interface{}
 	Headers      map[string]string
@@ -123,6 +122,19 @@ func (r *RedfishResourceAggregate) RangeProperty(fn func(string, interface{})) {
 	}
 }
 
+func (r *RedfishResourceAggregate) GetPropertyPlugin(p string, m string) (ret map[string]interface{}) {
+	r.propertyPluginMu.RLock()
+	defer r.propertyPluginMu.RUnlock()
+	// propertyPlugin   map[string]map[string]map[string]interface{}
+	v, ok := r.propertyPlugin[p]
+	// v map[string]map[string]interface{}
+	if ok {
+		ret = v[m]
+		// ret  map[string]interface{}
+	}
+	return
+}
+
 func (agg *RedfishResourceAggregate) ProcessMeta(ctx context.Context, method string) error {
 	var wg sync.WaitGroup
 	fmt.Printf("PROCESS META: %T\n", agg.propertyPlugin)
@@ -155,10 +167,10 @@ func (agg *RedfishResourceAggregate) ProcessMeta(ctx context.Context, method str
 
 			// run all of the aggregate updates in parallel
 			wg.Add(1)
-			go p.UpdateAggregate(agg, &wg, name)
+			go p.UpdateAggregate(agg, &wg, name, method)
 
 		} else {
-			fmt.Printf("bummer: %s\n", plugins)
+			fmt.Printf("bummer, plugin(%s) not found\n", plugins)
 		}
 	}
 	wg.Wait()
@@ -170,7 +182,7 @@ func (agg *RedfishResourceAggregate) ProcessMeta(ctx context.Context, method str
 type PluginType string
 
 type Plugin interface {
-	UpdateAggregate(*RedfishResourceAggregate, *sync.WaitGroup, string)
+	UpdateAggregate(*RedfishResourceAggregate, *sync.WaitGroup, string, string)
 	PluginType() PluginType
 }
 

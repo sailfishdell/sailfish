@@ -2,7 +2,7 @@
 
 CURLCMD="curl --cacert ./ca.crt"
 prot=https
-user=root
+user=Administrator
 pass=password
 host=localhost
 port=8443
@@ -31,15 +31,28 @@ $CURLCMD $URL/api/RedfishResource%3ACreate  -d '
         "Context": "foocontext",
         "Privileges": { "GET": ["Unauthenticated"] },
         "Properties": {
-            "Name": "TEST",
-            "testvalue1": 42,
-            "testvalue1@meta": { "GET": {"plugin": "test:plugin", "args": "foobar1"} } ,
+            "testvalue1": 41,
+            "testvalue1@meta": {
+                "GET": {
+                    "plugin": "test:plugin",
+                    "args": "foobar1",
+                    "cache": {
+                        "min_age_ms": 10000,
+                        "current_age_ms": 0
+                    }
+                }
+            } ,
             "testvalue2": 42,
             "testvalue2@meta": { "GET": {"plugin": "test:plugin", "args": "foobar2"} } ,
-            "testvalue3": 42,
+            "testvalue3": 43,
             "testvalue3@meta": { "GET": {"plugin": "test:plugin", "args": "foobar3"} } ,
-            "testvalue4": 42,
-            "testvalue4@meta": { "GET": {"plugin": "test:plugin", "args": "foobar4"} } 
+            "testvalue4": 44,
+            "testvalue4@meta": { "GET": {"plugin": "test:plugin", "args": "foobar4"} },
+
+            "testvalue_invalid": 44,
+            "testvalue_invalid@meta": { "GET": {"plugin": "test:invalid_plugin", "args": "foobar_invalid"} },
+
+            "Name": "TEST"
         }
     }'
 
