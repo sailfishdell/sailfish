@@ -25,7 +25,6 @@ import (
 	domain "github.com/superchalupa/go-redfish/redfishresource"
 )
 
-
 type CmdIDSetter interface {
 	SetCmdID(eh.UUID)
 }
@@ -73,7 +72,7 @@ outer:
 // TODO: need to write middleware that would allow different types of encoding on output
 func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// All operations have to be on URLs that exist, so look it up in the tree
-	aggID, ok := rh.d.GetAggregateID(r.URL.Path)
+	aggID, ok := rh.d.GetAggregateIDOK(r.URL.Path)
 	if !ok {
 		http.Error(w, "Could not find URL: "+r.URL.Path, http.StatusNotFound)
 		return
@@ -88,8 +87,8 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if ok {
 		// prepend the plugins to the search path
 		search = append(search, eh.CommandType(redfishResource.ResourceURI+":"+r.Method))
-		search = append(search, eh.CommandType(redfishResource.Properties["@odata.type"].(string)+":"+r.Method))
-		search = append(search, eh.CommandType(redfishResource.Properties["@odata.context"].(string)+":"+r.Method))
+		search = append(search, eh.CommandType(redfishResource.GetProperty("@odata.type").(string)+":"+r.Method))
+		search = append(search, eh.CommandType(redfishResource.GetProperty("@odata.context").(string)+":"+r.Method))
 		search = append(search, eh.CommandType(redfishResource.Plugin+":"+r.Method))
 	}
 	search = append(search, eh.CommandType("http:RedfishResource:"+r.Method))

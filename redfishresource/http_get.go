@@ -34,18 +34,27 @@ func (c *GET) SetUserDetails(u string, p []string) string {
 	return "checkMaster"
 }
 func (c *GET) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
+	// set up the base response data
 	data := HTTPCmdProcessedData{
 		CommandID:  c.CmdID,
 		Results:    map[string]interface{}{},
 		StatusCode: 200,
 		Headers:    a.Headers,
 	}
+	// TODO: mutual exclusion
+	// need to think about this: there are threading concerns here if multiple
+	// threads call at the same time, same with the a.Properties access below.
+	// Probably need to have locking in the aggregate and some access functions
+	// to wrap it. Either that, *or* we need to set up a goroutine per
+	// aggregate to process data get/set.
 
-	a.ProcessMeta(ctx)
+	// tell the aggregate to process any metadata that it has. This can include
+	// sending commands to update itself.
+	a.ProcessMeta(ctx, "GET")
 
-	for k, v := range a.Properties {
-	    data.Results[k] = v
-	}
+	a.RangeProperty(func(k string, v interface{}) {
+		data.Results[k] = v
+	})
 	a.eventBus.HandleEvent(ctx, eh.NewEvent(HTTPCmdProcessed, data, time.Now()))
 	return nil
 }

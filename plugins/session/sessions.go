@@ -16,7 +16,7 @@ import (
 var SECRET []byte = []byte("happyhappyjoyjoy1234")
 
 type IDGetter interface {
-	GetAggregateID(string) (eh.UUID, bool)
+	HasAggregateID(string) bool
 }
 
 type AddUserDetails struct {
@@ -47,7 +47,7 @@ func (a *AddUserDetails) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		})
 
 		if claims, ok := token.Claims.(*RedfishClaims); ok && token.Valid {
-			if _, ok := a.getter.GetAggregateID(claims.SessionURI); ok {
+			if a.getter.HasAggregateID(claims.SessionURI) {
 				userName = claims.UserName
 				privileges = claims.Privileges
 				a.eb.HandleEvent(context.Background(), eh.NewEvent(XAuthTokenRefreshEvent, XAuthTokenRefreshData{SessionURI: claims.SessionURI}, time.Now()))
@@ -77,7 +77,7 @@ func InitService(ctx context.Context, ew *utils.EventWaiter, ch eh.CommandHandle
 	// register our command
 	eh.RegisterCommand(func() eh.Command { return &POST{eventBus: eb, commandHandler: ch, eventWaiter: ew} })
 
-    // set up listener that will fire when it sees /redfish/v1 created
+	// set up listener that will fire when it sees /redfish/v1 created
 	l, err := ew.Listen(ctx, func(event eh.Event) bool {
 		if event.EventType() != domain.RedfishResourceCreated {
 			return false
@@ -103,8 +103,8 @@ func InitService(ctx context.Context, ew *utils.EventWaiter, ch eh.CommandHandle
 			return
 		}
 
-        // wait for /redfish/v1 to be created, then pull out the rootid so that we can modify it
-        rootID := event.Data().(domain.RedfishResourceCreatedData).ID
+		// wait for /redfish/v1 to be created, then pull out the rootid so that we can modify it
+		rootID := event.Data().(domain.RedfishResourceCreatedData).ID
 
 		// Create SessionService aggregate
 		ch.HandleCommand(

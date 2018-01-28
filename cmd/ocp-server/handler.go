@@ -21,6 +21,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"path"
+	"sync"
 
 	"github.com/gorilla/mux"
 	eh "github.com/looplab/eventhorizon"
@@ -41,8 +42,12 @@ type DomainObjects struct {
 	EventWaiter    *utils.EventWaiter
 	AggregateStore eh.AggregateStore
 	EventPublisher eh.EventPublisher
-	Tree           map[string]eh.UUID
-	collections    []string
+
+	treeMu sync.RWMutex
+	Tree   map[string]eh.UUID
+
+	collectionsMu sync.RWMutex
+	collections   []string
 }
 
 // SetupDDDFunctions sets up the full Event Horizon domain
@@ -82,10 +87,36 @@ func NewDomainObjects() (*DomainObjects, error) {
 	return &d, nil
 }
 
-func (d *DomainObjects) GetAggregateID(uri string) (eh.UUID, bool) {
-	// All operations have to be on URLs that exist, so look it up in the tree
-	aggID, ok := d.Tree[uri]
-	return aggID, ok
+func (d *DomainObjects) HasAggregateID(uri string) bool {
+	d.treeMu.RLock()
+	defer d.treeMu.RUnlock()
+	_, ok := d.Tree[uri]
+	return ok
+}
+
+func (d *DomainObjects) GetAggregateID(uri string) eh.UUID {
+	d.treeMu.RLock()
+	defer d.treeMu.RUnlock()
+	return d.Tree[uri]
+}
+
+func (d *DomainObjects) GetAggregateIDOK(uri string) (id eh.UUID, ok bool) {
+	d.treeMu.RLock()
+	defer d.treeMu.RUnlock()
+	id, ok = d.Tree[uri]
+	return
+}
+
+func (d *DomainObjects) SetAggregateID(uri string, ID eh.UUID) {
+	d.treeMu.Lock()
+	defer d.treeMu.Unlock()
+	d.Tree[uri] = ID
+}
+
+func (d *DomainObjects) DeleteResource(uri string) {
+	d.treeMu.Lock()
+	defer d.treeMu.Unlock()
+	delete(d.Tree, uri)
 }
 
 // Notify implements the Notify method of the EventObserver interface.
@@ -94,30 +125,34 @@ func (d *DomainObjects) Notify(ctx context.Context, event eh.Event) {
 	if event.EventType() == domain.RedfishResourceCreated {
 		if data, ok := event.Data().(domain.RedfishResourceCreatedData); ok {
 			// TODO: handle conflicts (how?)
-			d.Tree[data.ResourceURI] = data.ID
+			d.SetAggregateID(data.ResourceURI, data.ID)
 
 			fmt.Printf("New resource: %s\n", data.ResourceURI)
 
-            // TODO: need to split out auto collection management into a plugin
+			// TODO: need to split out auto collection management into a plugin
 			if data.Collection {
 				fmt.Printf("A new collection: %s\n", data.ResourceURI)
+				d.collectionsMu.Lock()
 				d.collections = append(d.collections, data.ResourceURI)
+				d.collectionsMu.Unlock()
 			}
 
 			collectionToTest := path.Dir(data.ResourceURI)
 			fmt.Printf("Searching for a collection named %s in our list: %s\n", collectionToTest, d.collections)
+			d.collectionsMu.RLock()
 			for _, v := range d.collections {
 				if v == collectionToTest {
 					fmt.Printf("\tWe got a match: add to collection command\n")
 					d.CommandHandler.HandleCommand(
 						context.Background(),
 						&domain.AddResourceToRedfishResourceCollection{
-							ID:          d.Tree[collectionToTest],
+							ID:          d.GetAggregateID(collectionToTest),
 							ResourceURI: data.ResourceURI,
 						},
 					)
 				}
 			}
+			d.collectionsMu.RUnlock()
 		}
 		return
 	}
@@ -126,20 +161,23 @@ func (d *DomainObjects) Notify(ctx context.Context, event eh.Event) {
 			// Look to see if it is a member of a collection
 			collectionToTest := path.Dir(data.ResourceURI)
 			fmt.Printf("Searching for a collection named %s in our list: %s\n", collectionToTest, d.collections)
+			d.collectionsMu.RLock()
 			for _, v := range d.collections {
 				if v == collectionToTest {
 					fmt.Printf("\tWe got a match: remove from collection command\n")
 					d.CommandHandler.HandleCommand(
 						context.Background(),
 						&domain.RemoveResourceFromRedfishResourceCollection{
-							ID:          d.Tree[collectionToTest],
+							ID:          d.GetAggregateID(collectionToTest),
 							ResourceURI: data.ResourceURI,
 						},
 					)
 				}
 			}
+			d.collectionsMu.RUnlock()
 
 			// is this a collection? If so, remove it from our collections list
+			d.collectionsMu.Lock()
 			for i, c := range d.collections {
 				if c == data.ResourceURI {
 					fmt.Printf("Removing collection: %s\n", data.ResourceURI)
@@ -147,11 +185,13 @@ func (d *DomainObjects) Notify(ctx context.Context, event eh.Event) {
 					d.collections[len(d.collections)-1], d.collections[i] = d.collections[i], d.collections[len(d.collections)-1]
 					// then slice it off
 					d.collections = d.collections[:len(d.collections)-1]
+					break
 				}
 			}
+			d.collectionsMu.Unlock()
 
 			// TODO: remove from aggregatestore?
-			delete(d.Tree, data.ResourceURI)
+			d.DeleteResource(data.ResourceURI)
 		}
 		return
 	}
@@ -197,4 +237,3 @@ func (d *DomainObjects) GetInternalCommandHandler() http.Handler {
 		w.WriteHeader(http.StatusOK)
 	})
 }
-

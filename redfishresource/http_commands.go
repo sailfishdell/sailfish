@@ -11,10 +11,10 @@ import (
 )
 
 func init() {
-    // implemented
+	// implemented
 	eh.RegisterCommand(func() eh.Command { return &DELETE{} })
 
-    // TODO: not yet implemented
+	// TODO: not yet implemented
 	eh.RegisterCommand(func() eh.Command { return &PUT{} })
 	eh.RegisterCommand(func() eh.Command { return &PATCH{} })
 	eh.RegisterCommand(func() eh.Command { return &POST{} })
@@ -23,7 +23,7 @@ func init() {
 }
 
 const (
-	DELETECommand  = eh.CommandType("http:RedfishResource:DELETE")
+	DELETECommand = eh.CommandType("http:RedfishResource:DELETE")
 
 	PUTCommand     = eh.CommandType("http:RedfishResource:PUT")
 	PATCHCommand   = eh.CommandType("http:RedfishResource:PATCH")
@@ -40,7 +40,6 @@ var _ = eh.Command(&PATCH{})
 var _ = eh.Command(&POST{})
 var _ = eh.Command(&HEAD{})
 var _ = eh.Command(&OPTIONS{})
-
 
 // HTTP DELETE Command
 type DELETE struct {
@@ -100,7 +99,6 @@ func (c *PATCH) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 	}, time.Now()))
 	return nil
 }
-
 
 // HTTP POST Command
 type POST struct {

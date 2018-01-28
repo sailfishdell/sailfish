@@ -11,13 +11,15 @@ import (
 
 	eh "github.com/looplab/eventhorizon"
 
-	"github.com/superchalupa/go-redfish/plugins/basicauth"
-	"github.com/superchalupa/go-redfish/plugins/session"
-	"github.com/superchalupa/go-redfish/plugins/stdcollections"
 	domain "github.com/superchalupa/go-redfish/redfishresource"
 
-    // load plugins
-    _ "github.com/superchalupa/go-redfish/plugins/test"
+	// auth plugins
+	"github.com/superchalupa/go-redfish/plugins/basicauth"
+	"github.com/superchalupa/go-redfish/plugins/session"
+
+	// load plugins
+	"github.com/superchalupa/go-redfish/plugins/stdcollections"
+	_ "github.com/superchalupa/go-redfish/plugins/test"
 )
 
 func main() {

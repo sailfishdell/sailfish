@@ -2,9 +2,9 @@ package domain
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
-    "errors"
 
 	eh "github.com/looplab/eventhorizon"
 )
@@ -21,13 +21,21 @@ type RedfishResourceAggregate struct {
 	// private
 	eventBus eh.EventBus
 
+	// coarse grained locking of the aggregate
+	sync.RWMutex
+
 	// public
-	ID           eh.UUID
-	TreeID       eh.UUID
-	ResourceURI  string
-	Plugin       string
-	Properties   map[string]interface{}
-    PropertyPlugin map[string]interface{}
+	ID          eh.UUID
+	ResourceURI string
+	Plugin      string
+
+	propertiesMu sync.RWMutex
+	properties   map[string]interface{}
+
+	// "prop": {"method": { "plugin": "foo", "args": "bar"}}
+	propertyPluginMu sync.RWMutex
+	propertyPlugin   map[string]map[string]map[string]interface{}
+
 	PrivilegeMap map[string]interface{}
 	Permissions  map[string]interface{}
 	Headers      map[string]string
@@ -71,26 +79,89 @@ func (a *RedfishResourceAggregate) HandleCommand(ctx context.Context, command eh
 	return nil
 }
 
-func (a *RedfishResourceAggregate) ProcessMeta(ctx context.Context) error {
-	//    wg sync.WaitGroup
-    fmt.Printf("PROCESS META: %s\n", a.PropertyPlugin)
-	for _, v := range a.PropertyPlugin {
-        fmt.Printf("\tv: %s\n", v)
-        if  get, ok := v.(map[string]interface{})["GET"]; ok{
-            fmt.Printf("\tget: %s\n", get)
-            if plugin, ok := get.(map[string]interface{})["plugin"]; ok {
-                fmt.Printf("\tplugin: %s\n", plugin)
-                p, err := InstantiatePlugin( PluginType(plugin.(string)) )
-                if err == nil {
-                    fmt.Printf("UpdateAggregate\n")
-                    errCh := p.UpdateAggregate(a)
-                    <-errCh
-                } else {
-                    fmt.Printf("bummer: %s\n", plugins)
-                }
-            }
-        }
+func (r *RedfishResourceAggregate) InitProperties() {
+	r.properties = map[string]interface{}{}
+}
+
+func (r *RedfishResourceAggregate) HasProperty(p string) bool {
+	r.propertiesMu.RLock()
+	defer r.propertiesMu.RUnlock()
+	_, ok := r.properties[p]
+	return ok
+}
+
+func (r *RedfishResourceAggregate) GetProperty(p string) interface{} {
+	r.propertiesMu.RLock()
+	defer r.propertiesMu.RUnlock()
+	return r.properties[p]
+}
+
+func (r *RedfishResourceAggregate) SetProperty(p string, v interface{}) {
+	r.propertiesMu.Lock()
+	defer r.propertiesMu.Unlock()
+	r.properties[p] = v
+}
+
+func (r *RedfishResourceAggregate) DeleteProperty(p string) {
+	r.propertiesMu.Lock()
+	defer r.propertiesMu.Unlock()
+	delete(r.properties, p)
+}
+
+// MutateProperty will run the function over Properties holding the properties RW lock
+func (r *RedfishResourceAggregate) MutateProperty(mut func(map[string]interface{})) {
+	r.propertiesMu.Lock()
+	defer r.propertiesMu.Unlock()
+	mut(r.properties)
+}
+
+func (r *RedfishResourceAggregate) RangeProperty(fn func(string, interface{})) {
+	r.propertiesMu.RLock()
+	defer r.propertiesMu.RUnlock()
+	for k, v := range r.properties {
+		fn(k, v)
 	}
+}
+
+func (agg *RedfishResourceAggregate) ProcessMeta(ctx context.Context, method string) error {
+	var wg sync.WaitGroup
+	fmt.Printf("PROCESS META: %T\n", agg.propertyPlugin)
+	agg.propertyPluginMu.RLock()
+	defer agg.propertyPluginMu.RUnlock()
+	for name, v := range agg.propertyPlugin {
+		fmt.Printf("\tname(%s) = %s\n", name, v)
+
+		get, ok := v[method]
+		if !ok {
+			continue
+		}
+
+		fmt.Printf("\tget: %s\n", get)
+		plugin, ok := get["plugin"]
+		if !ok {
+			continue
+		}
+
+		pluginName, ok := plugin.(string)
+		if !ok {
+			continue
+		}
+
+		fmt.Printf("\tplugin: %s\n", pluginName)
+		p, err := InstantiatePlugin(PluginType(pluginName))
+
+		if err == nil {
+			fmt.Printf("call UpdateAggregate\n")
+
+			// run all of the aggregate updates in parallel
+			wg.Add(1)
+			go p.UpdateAggregate(agg, &wg, name)
+
+		} else {
+			fmt.Printf("bummer: %s\n", plugins)
+		}
+	}
+	wg.Wait()
 
 	return nil
 }
@@ -99,7 +170,7 @@ func (a *RedfishResourceAggregate) ProcessMeta(ctx context.Context) error {
 type PluginType string
 
 type Plugin interface {
-	UpdateAggregate(a *RedfishResourceAggregate) <-chan error
+	UpdateAggregate(*RedfishResourceAggregate, *sync.WaitGroup, string)
 	PluginType() PluginType
 }
 
