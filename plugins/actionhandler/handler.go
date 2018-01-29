@@ -1,9 +1,8 @@
-package test
+package actionhandler
 
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -18,11 +17,21 @@ func init() {
 
 func InitService(ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
 	eh.RegisterCommand(func() eh.Command { return &POST{eventBus: eb, eventWaiter: ew} })
+    eh.RegisterEventData(GenericActionEvent, func() eh.EventData { return &GenericActionEventData{} })
 }
 
 const (
-	POSTCommand = eh.CommandType("TestAction:POST")
+    GenericActionEvent  =  eh.EventType("GenericActionEvent")
+	POSTCommand = eh.CommandType("GenericActionHandler:POST")
 )
+
+type GenericActionEventData struct {
+    ID              eh.UUID  // id of aggregate
+    CmdID           eh.UUID
+    ResourceURI     string
+
+    ActionData      interface{}
+}
 
 // HTTP POST Command
 type POST struct {
@@ -34,11 +43,7 @@ type POST struct {
 	Headers map[string]string `eh:"optional"`
 
 	// make sure to make everything else optional or this will fail
-	TA TestAction `eh:"optional"`
-}
-
-type TestAction struct {
-	ActionType string
+	PostBody interface{} `eh:"optional"`
 }
 
 // Static type checking for commands to prevent runtime errors due to typos
@@ -50,17 +55,30 @@ func (c *POST) CommandType() eh.CommandType     { return POSTCommand }
 func (c *POST) SetAggID(id eh.UUID)             { c.ID = id }
 func (c *POST) SetCmdID(id eh.UUID)             { c.CmdID = id }
 func (c *POST) ParseHTTPRequest(r *http.Request) error {
-	json.NewDecoder(r.Body).Decode(&c.TA)
+	json.NewDecoder(r.Body).Decode(&c.PostBody)
 	return nil
 }
 func (c *POST) Handle(ctx context.Context, a *domain.RedfishResourceAggregate) error {
-	fmt.Printf("Action handler!!\n")
-
-	c.eventBus.HandleEvent(ctx, eh.NewEvent(domain.HTTPCmdProcessed, domain.HTTPCmdProcessedData{
-		CommandID:  c.CmdID,
-		Results:    map[string]interface{}{"happy": "joy"},
-		StatusCode: 200,
-		Headers:    map[string]string{},
+    // Action handler needs to send HTTP response
+	c.eventBus.HandleEvent(ctx, eh.NewEvent(GenericActionEvent, GenericActionEventData{
+        ID: c.ID,
+        CmdID: c.CmdID,
+        ResourceURI: a.ResourceURI,
+        ActionData:  c.PostBody,
 	}, time.Now()))
 	return nil
+}
+
+func MakeListener(uri string) func(eh.Event)(bool) {
+    return func(event eh.Event) bool {
+		if event.EventType() != GenericActionEvent {
+			return false
+		}
+		if data, ok := event.Data().(GenericActionEventData); ok {
+			if data.ResourceURI == uri {
+				return true
+			}
+		}
+		return false
+    }
 }

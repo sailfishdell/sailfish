@@ -73,18 +73,8 @@ $CURLCMD $URL/api/RedfishResource%3ACreate  -d '
 echo "/redfish/v1/test"
 $CURLCMD $URL/redfish/v1/test
 
-$CURLCMD $URL/api/RedfishResource%3ACreate  -d '
-    {
-        "ID": "49467bb4-5c1f-473b-af00-000000000002",
-        "ResourceURI":"/redfish/v1/Actions/Test",
-        "Type": "ActionType",
-        "Context": "ActionContext",
-        "Plugin": "TestAction",
-        "Privileges": { "POST": ["ConfigureManager"] },
-        "Properties": {}
-    }
-        '
 
+echo "Run a test action"
 echo "/redfish/v1/Actions/Test"
 $CURLCMD $URL/redfish/v1/Actions/Test -d '{"TestType": "FOO"}'
 
