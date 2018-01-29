@@ -136,8 +136,9 @@ func InitService(ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
 						"State":  "Enabled",
 						"Health": "OK",
 					},
-					"ServiceEnabled": true,
-					"SessionTimeout": 30,
+					"ServiceEnabled":      true,
+					"SessionTimeout":      30,
+					"SessionTimeout@meta": map[string]interface{}{"PATCH": map[string]interface{}{"allowed": true}},
 					"Sessions": map[string]interface{}{
 						"@odata.id": "/redfish/v1/SessionService/Sessions",
 					},

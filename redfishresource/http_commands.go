@@ -78,7 +78,8 @@ func (c *DELETE) Handle(ctx context.Context, a *RedfishResourceAggregate) error 
 type PATCH struct {
 	ID    eh.UUID `json:"id"`
 	CmdID eh.UUID `json:"cmdid"`
-	Body  map[string]interface{}
+
+	Body map[string]interface{} `eh:"optional"`
 }
 
 func (c *PATCH) AggregateType() eh.AggregateType { return AggregateType }
@@ -86,15 +87,33 @@ func (c *PATCH) AggregateID() eh.UUID            { return c.ID }
 func (c *PATCH) CommandType() eh.CommandType     { return PATCHCommand }
 func (c *PATCH) SetAggID(id eh.UUID)             { c.ID = id }
 func (c *PATCH) SetCmdID(id eh.UUID)             { c.CmdID = id }
-func (c *PATCH) ParseHTTPRequest(r *http.Request) {
+func (c *PATCH) ParseHTTPRequest(r *http.Request) error {
 	json.NewDecoder(r.Body).Decode(&c.Body)
+	return nil
 }
 func (c *PATCH) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
-	fmt.Printf("HANDLE PATH!\n")
+	fmt.Printf("HANDLE PATCH: %s\n", c.Body)
+
+	for k, v := range c.Body {
+		fmt.Printf("PATCH Property: %s\n", k)
+		fmt.Printf("\tmeta: %s\n", a.propertyPlugin)
+		p := a.GetPropertyPlugin(k, "PATCH")
+		if p == nil {
+			fmt.Printf("\tNo PATCH @meta...\n")
+			continue
+		}
+		if p["allowed"] == true {
+			// TODO: send event
+			a.SetProperty(k, v)
+			continue
+		}
+		fmt.Printf("\tnot allowed...\n")
+	}
+
 	a.eventBus.HandleEvent(ctx, eh.NewEvent(HTTPCmdProcessed, HTTPCmdProcessedData{
 		CommandID:  c.CmdID,
-		Results:    map[string]interface{}{"ERROR": "This method not yet implemented"},
-		StatusCode: 501, // Not implemented
+		Results:    map[string]interface{}{"message": "ok"},
+		StatusCode: 200,
 		Headers:    map[string]string{},
 	}, time.Now()))
 	return nil
@@ -112,8 +131,9 @@ func (c *POST) AggregateID() eh.UUID            { return c.ID }
 func (c *POST) CommandType() eh.CommandType     { return POSTCommand }
 func (c *POST) SetAggID(id eh.UUID)             { c.ID = id }
 func (c *POST) SetCmdID(id eh.UUID)             { c.CmdID = id }
-func (c *POST) ParseHTTPRequest(r *http.Request) {
+func (c *POST) ParseHTTPRequest(r *http.Request) error {
 	json.NewDecoder(r.Body).Decode(&c.Body)
+	return nil
 }
 func (c *POST) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 	fmt.Printf("HANDLE POST!\n")
@@ -138,8 +158,9 @@ func (c *PUT) AggregateID() eh.UUID            { return c.ID }
 func (c *PUT) CommandType() eh.CommandType     { return PUTCommand }
 func (c *PUT) SetAggID(id eh.UUID)             { c.ID = id }
 func (c *PUT) SetCmdID(id eh.UUID)             { c.CmdID = id }
-func (c *PUT) ParseHTTPRequest(r *http.Request) {
+func (c *PUT) ParseHTTPRequest(r *http.Request) error {
 	json.NewDecoder(r.Body).Decode(&c.Body)
+	return nil
 }
 func (c *PUT) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 	fmt.Printf("HANDLE PUT!\n")

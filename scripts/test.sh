@@ -78,3 +78,5 @@ echo "Run a test action"
 echo "/redfish/v1/Actions/Test"
 $CURLCMD $URL/redfish/v1/Actions/Test -d '{"TestType": "FOO"}'
 
+
+$CURLCMD $URL/redfish/v1/SessionService -XPATCH -d '{"SessionTimeout": 35}'

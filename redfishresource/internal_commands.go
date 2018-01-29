@@ -110,6 +110,7 @@ func (c *CreateRedfishResource) Handle(ctx context.Context, a *RedfishResourceAg
 			// make sure that the input is structured properly... skip it if not
 			_, ok := v.(map[string]interface{})
 			if !ok {
+				fmt.Printf("\tDidn't type assert correctly...\n")
 				continue
 			}
 
