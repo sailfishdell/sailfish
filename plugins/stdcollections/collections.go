@@ -96,6 +96,48 @@ func NewService(ctx context.Context, rootID eh.UUID, ch eh.CommandHandler) {
 			},
 		})
 
+	// Add Accounts collection
+	ch.HandleCommand(
+		context.Background(),
+		&domain.CreateRedfishResource{
+			ID:         eh.NewUUID(),
+			Collection: true,
+
+			ResourceURI: "/redfish/v1/AccountService/Accounts",
+			Type:        "#ManagerAccountCollection.ManagerAccountCollection",
+			Context:     "/redfish/v1/$metadata#ManagerAccountCollection.ManagerAccountCollection",
+			Privileges: map[string]interface{}{
+				"GET":    []string{"ConfigureManager"},
+				"POST":   []string{}, // Read Only
+				"PUT":    []string{}, // Read Only
+				"PATCH":  []string{}, // Read Only
+				"DELETE": []string{}, // can't be deleted
+			},
+			Properties: map[string]interface{}{
+				"Name": "Accounts Collection",
+			}})
+
+	// Add Roles collection
+	ch.HandleCommand(
+		context.Background(),
+		&domain.CreateRedfishResource{
+			ID:         eh.NewUUID(),
+			Collection: true,
+
+			ResourceURI: "/redfish/v1/AccountService/Roles",
+			Type:        "#RoleCollection.RoleCollection",
+			Context:     "/redfish/v1/$metadata#RoleCollection.RoleCollection",
+			Privileges: map[string]interface{}{
+				"GET":    []string{"ConfigureManager"},
+				"POST":   []string{}, // Read Only
+				"PUT":    []string{}, // Read Only
+				"PATCH":  []string{}, // Read Only
+				"DELETE": []string{}, // can't be deleted
+			},
+			Properties: map[string]interface{}{
+				"Name": "Roles Collection",
+			}})
+
 	// Create Computer System Collection
 	ch.HandleCommand(
 		context.Background(),
@@ -127,14 +169,12 @@ func NewService(ctx context.Context, rootID eh.UUID, ch eh.CommandHandler) {
 				"AccountLockoutThreshold":         5,
 				"AccountLockoutDuration":          30,
 				"AccountLockoutCounterResetAfter": 30,
-				/*
-				   "Accounts": {
-				       "@odata.id": "/redfish/v1/AccountService/Accounts",
+				   "Accounts": []map[string]string{
+				       {"@odata.id": "/redfish/v1/AccountService/Accounts"},
 				   },
-				   "Roles": {
-				       "@odata.id": "/redfish/v1/AccountService/Roles",
+				   "Roles": []map[string]string{
+				       {"@odata.id": "/redfish/v1/AccountService/Roles"},
 				   },
-				*/
 			}})
 
 	ch.HandleCommand(ctx,
@@ -144,4 +184,92 @@ func NewService(ctx context.Context, rootID eh.UUID, ch eh.CommandHandler) {
 				"AccountService": map[string]interface{}{"@odata.id": "/redfish/v1/AccountService"},
 			},
 		})
+
+    // add standard DMTF roles: Admin
+	ch.HandleCommand(
+		context.Background(),
+		&domain.CreateRedfishResource{
+			ID:         eh.NewUUID(),
+			Collection: false,
+
+			ResourceURI: "/redfish/v1/AccountService/Roles/Admin",
+			Type:        "#Role.v1_0_2.Role",
+			Context:     "/redfish/v1/$metadata#Role.Role",
+			Privileges: map[string]interface{}{
+				"GET":    []string{"ConfigureManager"},
+				"POST":   []string{}, // Read Only
+				"PUT":    []string{}, // Read Only
+				"PATCH":  []string{}, // Read Only
+				"DELETE": []string{}, // can't be deleted
+			},
+			Properties: map[string]interface{}{
+				"Name": "User Role",
+                "Id":   "Admin",
+                "Description": "Admin User Role",
+                "IsPredefined": true,
+                "AssignedPrivileges": []string{
+                    "Login",
+                    "ConfigureManager",
+                    "ConfigureUsers",
+                    "ConfigureSelf",
+                    "ConfigureComponents",
+                },
+			}})
+
+    // add standard DMTF roles: Operator
+	ch.HandleCommand(
+		context.Background(),
+		&domain.CreateRedfishResource{
+			ID:         eh.NewUUID(),
+			Collection: false,
+
+			ResourceURI: "/redfish/v1/AccountService/Roles/Operator",
+			Type:        "#Role.v1_0_2.Role",
+			Context:     "/redfish/v1/$metadata#Role.Role",
+			Privileges: map[string]interface{}{
+				"GET":    []string{"ConfigureManager"},
+				"POST":   []string{}, // Read Only
+				"PUT":    []string{}, // Read Only
+				"PATCH":  []string{}, // Read Only
+				"DELETE": []string{}, // can't be deleted
+			},
+			Properties: map[string]interface{}{
+				"Name": "User Role",
+                "Id":   "Operator",
+                "Description": "Operator User Role",
+                "IsPredefined": true,
+                "AssignedPrivileges": []string{
+                    "Login",
+                    "ConfigureSelf",
+                    "ConfigureComponents",
+                },
+			}})
+
+    // add standard DMTF roles: Read-only
+	ch.HandleCommand(
+		context.Background(),
+		&domain.CreateRedfishResource{
+			ID:         eh.NewUUID(),
+			Collection: false,
+
+			ResourceURI: "/redfish/v1/AccountService/Roles/ReadOnlyUser",
+			Type:        "#Role.v1_0_2.Role",
+			Context:     "/redfish/v1/$metadata#Role.Role",
+			Privileges: map[string]interface{}{
+				"GET":    []string{"ConfigureManager"},
+				"POST":   []string{}, // Read Only
+				"PUT":    []string{}, // Read Only
+				"PATCH":  []string{}, // Read Only
+				"DELETE": []string{}, // can't be deleted
+			},
+			Properties: map[string]interface{}{
+				"Name": "User Role",
+                "Id":   "ReadOnlyUser",
+                "Description": "ReadOnlyUser User Role",
+                "IsPredefined": true,
+                "AssignedPrivileges": []string{
+                    "Login",
+                },
+			}})
+
 }
