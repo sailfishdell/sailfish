@@ -30,7 +30,7 @@ import (
 func main() {
 	log.Println("starting backend")
 
-	domainObjs, _ := NewDomainObjects()
+	domainObjs, _ := domain.NewDomainObjects()
 	domainObjs.EventPublisher.AddObserver(&Logger{})
 
 	orighandler := domainObjs.CommandHandler
@@ -51,18 +51,18 @@ func main() {
 
 	// Set up our standard extensions for authentication
 	chainAuth := func(u string, p []string) http.Handler {
-		return &RedfishHandler{UserName: u, Privileges: p, d: domainObjs}
+		return domain.NewRedfishHandler(domainObjs, u, p)
 	}
 	BasicAuthAuthorizer := basicauth.NewService()
 	sessionServiceAuthorizer := session.NewService(domainObjs.EventBus, domainObjs)
 	sessionServiceAuthorizer.OnUserDetails = chainAuth
 	sessionServiceAuthorizer.WithoutUserDetails = BasicAuthAuthorizer
 	BasicAuthAuthorizer.OnUserDetails = chainAuth
-	BasicAuthAuthorizer.WithoutUserDetails = &RedfishHandler{UserName: "UNKNOWN", Privileges: []string{"Unauthenticated"}, d: domainObjs}
+	BasicAuthAuthorizer.WithoutUserDetails = domain.NewRedfishHandler(domainObjs, "UNKNOWN", []string{"Unauthenticated"})
 
 	// same thing for SSE
 	chainAuthSSE := func(u string, p []string) http.Handler {
-		return &SSEHandler{UserName: u, Privileges: p, d: domainObjs}
+		return domain.NewSSEHandler(domainObjs, u, p)
 	}
 
 	BasicAuthAuthorizerSSE := basicauth.NewService()
@@ -70,7 +70,7 @@ func main() {
 	sessionServiceAuthorizerSSE.OnUserDetails = chainAuthSSE
 	sessionServiceAuthorizerSSE.WithoutUserDetails = BasicAuthAuthorizerSSE
 	BasicAuthAuthorizerSSE.OnUserDetails = chainAuthSSE
-	BasicAuthAuthorizerSSE.WithoutUserDetails = &SSEHandler{UserName: "UNKNOWN", Privileges: []string{"Unauthenticated"}, d: domainObjs}
+	BasicAuthAuthorizerSSE.WithoutUserDetails = domain.NewSSEHandler(domainObjs, "UNKNOWN", []string{"Unauthenticated"})
 
 	// set up some basic stuff
 	loggingHandler.HandleCommand(

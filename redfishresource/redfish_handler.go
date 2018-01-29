@@ -1,18 +1,4 @@
-// Copyright (c) 2017 - Max Ekman <max@looplab.se>
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-package main
+package domain
 
 import (
 	"context"
@@ -21,8 +7,6 @@ import (
 	"net/http"
 
 	eh "github.com/looplab/eventhorizon"
-
-	domain "github.com/superchalupa/go-redfish/redfishresource"
 )
 
 type CmdIDSetter interface {
@@ -41,6 +25,10 @@ type UserDetailsSetter interface {
 }
 type HTTPParser interface {
 	ParseHTTPRequest(*http.Request) error
+}
+
+func NewRedfishHandler(dobjs *DomainObjects, u string, p []string) *RedfishHandler {
+    return &RedfishHandler{UserName: u, Privileges: p, d: dobjs}
 }
 
 type RedfishHandler struct {
@@ -78,9 +66,9 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	search := []eh.CommandType{}
 
 	// load the aggregate for the URL we are operating on
-	agg, err := rh.d.AggregateStore.Load(r.Context(), domain.AggregateType, aggID)
+	agg, err := rh.d.AggregateStore.Load(r.Context(), AggregateType, aggID)
 	// type assertion to get real aggregate
-	redfishResource, ok := agg.(*domain.RedfishResourceAggregate)
+	redfishResource, ok := agg.(*RedfishResourceAggregate)
 	if ok {
 		// prepend the plugins to the search path
 		search = append(search, eh.CommandType(redfishResource.ResourceURI+":"+r.Method))
@@ -160,10 +148,10 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// to avoid races, set up our listener first
 	l, err := rh.d.EventWaiter.Listen(r.Context(), func(event eh.Event) bool {
-		if event.EventType() != domain.HTTPCmdProcessed {
+		if event.EventType() != HTTPCmdProcessed {
 			return false
 		}
-		if data, ok := event.Data().(domain.HTTPCmdProcessedData); ok {
+		if data, ok := event.Data().(HTTPCmdProcessedData); ok {
 			if data.CommandID == cmdId {
 				return true
 			}
@@ -198,7 +186,7 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	data, ok := event.Data().(domain.HTTPCmdProcessedData)
+	data, ok := event.Data().(HTTPCmdProcessedData)
 	if !ok {
 		fmt.Printf("Error waiting for event: %s\n", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)

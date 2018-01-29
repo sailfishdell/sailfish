@@ -1,7 +1,8 @@
 Things that need work: (-) TODO (*) DONE
 
  - ACTIONS
-    - Implement a test OEM action for reference
+    * Implement a test OEM action for reference
+        - see scripts/test.sh, plugins/test_action/. These implement example action
 
  - EVENTS
     - implement a command to inject raw events into the system (internal command)

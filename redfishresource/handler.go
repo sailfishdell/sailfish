@@ -1,18 +1,4 @@
-// Copyright (c) 2017 - Max Ekman <max@looplab.se>
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-package main
+package domain
 
 import (
 	"context"
@@ -31,8 +17,6 @@ import (
 	eventpublisher "github.com/looplab/eventhorizon/publisher/local"
 	repo "github.com/looplab/eventhorizon/repo/memory"
 	"github.com/looplab/eventhorizon/utils"
-
-	domain "github.com/superchalupa/go-redfish/redfishresource"
 )
 
 type DomainObjects struct {
@@ -79,7 +63,7 @@ func NewDomainObjects() (*DomainObjects, error) {
 	}
 
 	// Create the aggregate command handler.
-	d.CommandHandler, err = aggregate.NewCommandHandler(domain.AggregateType, d.AggregateStore)
+	d.CommandHandler, err = aggregate.NewCommandHandler(AggregateType, d.AggregateStore)
 	if err != nil {
 		return nil, fmt.Errorf("could not create command handler: %s", err)
 	}
@@ -122,8 +106,8 @@ func (d *DomainObjects) DeleteResource(uri string) {
 // Notify implements the Notify method of the EventObserver interface.
 func (d *DomainObjects) Notify(ctx context.Context, event eh.Event) {
 	fmt.Printf("Notify( event==%s )\n", event)
-	if event.EventType() == domain.RedfishResourceCreated {
-		if data, ok := event.Data().(domain.RedfishResourceCreatedData); ok {
+	if event.EventType() == RedfishResourceCreated {
+		if data, ok := event.Data().(RedfishResourceCreatedData); ok {
 			// TODO: handle conflicts (how?)
 			d.SetAggregateID(data.ResourceURI, data.ID)
 
@@ -145,7 +129,7 @@ func (d *DomainObjects) Notify(ctx context.Context, event eh.Event) {
 					fmt.Printf("\tWe got a match: add to collection command\n")
 					d.CommandHandler.HandleCommand(
 						context.Background(),
-						&domain.AddResourceToRedfishResourceCollection{
+						&AddResourceToRedfishResourceCollection{
 							ID:          d.GetAggregateID(collectionToTest),
 							ResourceURI: data.ResourceURI,
 						},
@@ -156,8 +140,8 @@ func (d *DomainObjects) Notify(ctx context.Context, event eh.Event) {
 		}
 		return
 	}
-	if event.EventType() == domain.RedfishResourceRemoved {
-		if data, ok := event.Data().(domain.RedfishResourceRemovedData); ok {
+	if event.EventType() == RedfishResourceRemoved {
+		if data, ok := event.Data().(RedfishResourceRemovedData); ok {
 			// Look to see if it is a member of a collection
 			collectionToTest := path.Dir(data.ResourceURI)
 			fmt.Printf("Searching for a collection named %s in our list: %s\n", collectionToTest, d.collections)
@@ -167,7 +151,7 @@ func (d *DomainObjects) Notify(ctx context.Context, event eh.Event) {
 					fmt.Printf("\tWe got a match: remove from collection command\n")
 					d.CommandHandler.HandleCommand(
 						context.Background(),
-						&domain.RemoveResourceFromRedfishResourceCollection{
+						&RemoveResourceFromRedfishResourceCollection{
 							ID:          d.GetAggregateID(collectionToTest),
 							ResourceURI: data.ResourceURI,
 						},
