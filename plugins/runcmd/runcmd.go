@@ -37,12 +37,9 @@ func (t *runCmd) UpdateAggregate(ctx context.Context, a *domain.RedfishResourceA
     var args []string
     rawargs, ok := plugin["CMDARGS"]
     if ok {
-        fmt.Printf("Got rawargs, processing: %s\n", rawargs)
         for _, rs := range( rawargs.([]interface{}) ) {
-            fmt.Printf("\tprocessing rs = %T\n", rs)
             s, ok := rs.(string)
             if ok {
-                fmt.Printf("\tappending...")
                 args = append(args, s)
             }
         }
@@ -55,5 +52,5 @@ func (t *runCmd) UpdateAggregate(ctx context.Context, a *domain.RedfishResourceA
     }
 
     fmt.Printf("Ran command (%s) with args (%s) and got output = %s\n", cmd, args, out)
-    a.SetProperty(property, fmt.Sprintf("%s", bytes.Trim(out, " \n")))
+    a.SetProperty(property, fmt.Sprintf("%s", bytes.TrimSpace(out)))
 }

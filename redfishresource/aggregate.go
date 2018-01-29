@@ -162,16 +162,16 @@ func (agg *RedfishResourceAggregate) ProcessMeta(ctx context.Context, method str
 		fmt.Printf("\tplugin: %s\n", pluginName)
 		p, err := InstantiatePlugin(PluginType(pluginName))
 
-		if err == nil {
-			fmt.Printf("call UpdateAggregate\n")
+		if err != nil {
+			fmt.Printf("bummer, plugin(%s) not found: %s\n", plugins, err.Error())
+            continue
+        }
 
-			// run all of the aggregate updates in parallel
-			wg.Add(1)
-			go p.UpdateAggregate(ctx, agg, &wg, name, method)
-
-		} else {
-			fmt.Printf("bummer, plugin(%s) not found\n", plugins)
-		}
+        if aggPlug, ok := p.(AggregatePlugin); ok {
+            // run all of the aggregate updates in parallel
+            wg.Add(1)
+            go aggPlug.UpdateAggregate(ctx, agg, &wg, name, method)
+        }
 	}
 	wg.Wait()
 
@@ -182,8 +182,11 @@ func (agg *RedfishResourceAggregate) ProcessMeta(ctx context.Context, method str
 type PluginType string
 
 type Plugin interface {
-	UpdateAggregate(context.Context, *RedfishResourceAggregate, *sync.WaitGroup, string, string)
 	PluginType() PluginType
+}
+
+type AggregatePlugin interface {
+	UpdateAggregate(context.Context, *RedfishResourceAggregate, *sync.WaitGroup, string, string)
 }
 
 var plugins = make(map[PluginType]func() Plugin)
