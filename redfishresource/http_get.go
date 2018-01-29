@@ -20,9 +20,8 @@ var _ = eh.Command(&GET{})
 
 // HTTP GET Command
 type GET struct {
-	ID      eh.UUID           `json:"id"`
-	CmdID   eh.UUID           `json:"cmdid"`
-	Headers map[string]string `eh:"optional"`
+	ID    eh.UUID `json:"id"`
+	CmdID eh.UUID `json:"cmdid"`
 }
 
 func (c *GET) AggregateType() eh.AggregateType { return AggregateType }
