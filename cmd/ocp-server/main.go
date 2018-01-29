@@ -17,10 +17,10 @@ import (
 	"github.com/superchalupa/go-redfish/plugins/basicauth"
 	"github.com/superchalupa/go-redfish/plugins/session"
 
-	// load plugins
-	"github.com/superchalupa/go-redfish/plugins/stdcollections"
-	_ "github.com/superchalupa/go-redfish/plugins/test"
+	// load plugins (auto-register)
 	_ "github.com/superchalupa/go-redfish/plugins/runcmd"
+	_ "github.com/superchalupa/go-redfish/plugins/stdcollections"
+	_ "github.com/superchalupa/go-redfish/plugins/test"
 )
 
 func main() {
@@ -28,7 +28,6 @@ func main() {
 
 	domainObjs, _ := NewDomainObjects()
 	domainObjs.EventPublisher.AddObserver(&Logger{})
-	domain.RegisterRRA(domainObjs.EventBus)
 
 	orighandler := domainObjs.CommandHandler
 
@@ -40,10 +39,11 @@ func main() {
 
 	domainObjs.CommandHandler = loggingHandler
 
+	// This also initializes all of the plugins
+	domain.InitDomain(context.Background(), domainObjs.CommandHandler, domainObjs.EventBus, domainObjs.EventWaiter)
+
 	// generate uuid of root object
 	rootID := eh.NewUUID()
-
-	session.InitService(context.Background(), domainObjs.EventWaiter, domainObjs.CommandHandler, domainObjs.EventBus)
 
 	// Set up our standard extensions for authentication
 	chainAuth := func(u string, p []string) http.Handler {
@@ -86,9 +86,6 @@ func main() {
 			},
 		},
 	)
-
-	// system collection and others (requires root already present)
-	stdcollections.NewService(context.Background(), rootID, domainObjs.CommandHandler)
 
 	// Handle the API.
 	m := mux.NewRouter()

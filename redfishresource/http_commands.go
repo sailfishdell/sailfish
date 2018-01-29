@@ -69,7 +69,7 @@ func (c *DELETE) Handle(ctx context.Context, a *RedfishResourceAggregate) error 
 		CommandID:  c.CmdID,
 		Results:    map[string]interface{}{},
 		StatusCode: 200,
-		Headers:    map[string]string{"testheader": "foo"},
+		Headers:    map[string]string{},
 	}, time.Now()))
 	return nil
 }
@@ -102,10 +102,9 @@ func (c *PATCH) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 
 // HTTP POST Command
 type POST struct {
-	ID      eh.UUID `json:"id"`
-	CmdID   eh.UUID `json:"cmdid"`
-	Body    map[string]interface{}
-	Headers map[string]string `eh:"optional"`
+	ID    eh.UUID `json:"id"`
+	CmdID eh.UUID `json:"cmdid"`
+	Body  map[string]interface{}
 }
 
 func (c *POST) AggregateType() eh.AggregateType { return AggregateType }
@@ -122,7 +121,7 @@ func (c *POST) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 		CommandID:  c.CmdID,
 		Results:    map[string]interface{}{"FOO": "BAR"},
 		StatusCode: 200,
-		Headers:    map[string]string{"testheader": "foo"},
+		Headers:    map[string]string{},
 	}, time.Now()))
 	return nil
 }

@@ -13,6 +13,10 @@ import (
 	"github.com/looplab/eventhorizon/utils"
 )
 
+func init() {
+	domain.RegisterInitFN(InitService)
+}
+
 var SECRET []byte = []byte("happyhappyjoyjoy1234")
 
 type IDGetter interface {
@@ -70,9 +74,12 @@ func NewService(eb eh.EventBus, g IDGetter) (aud *AddUserDetails) {
 	return &AddUserDetails{eb: eb, getter: g}
 }
 
-func InitService(ctx context.Context, ew *utils.EventWaiter, ch eh.CommandHandler, eb eh.EventBus) {
+func InitService(ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
 	// setup module secret
 	SECRET = createRandSecret(24, characters)
+
+	// background context to use
+	ctx := context.Background()
 
 	// register our command
 	eh.RegisterCommand(func() eh.Command { return &POST{eventBus: eb, commandHandler: ch, eventWaiter: ew} })

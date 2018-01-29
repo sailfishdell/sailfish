@@ -2,11 +2,54 @@ package stdcollections
 
 import (
 	"context"
+	"fmt"
 
 	domain "github.com/superchalupa/go-redfish/redfishresource"
 
 	eh "github.com/looplab/eventhorizon"
+	"github.com/looplab/eventhorizon/utils"
 )
+
+func init() {
+	domain.RegisterInitFN(InitService)
+}
+
+// wait in a listener for the root service to be created, then extend it
+func InitService(ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
+	// background context to use
+	ctx := context.Background()
+
+	// set up listener that will fire when it sees /redfish/v1 created
+	l, err := ew.Listen(ctx, func(event eh.Event) bool {
+		if event.EventType() != domain.RedfishResourceCreated {
+			return false
+		}
+		if data, ok := event.Data().(domain.RedfishResourceCreatedData); ok {
+			if data.ResourceURI == "/redfish/v1" {
+				return true
+			}
+		}
+		return false
+	})
+	if err != nil {
+		return
+	}
+
+	// wait for the root object to be created, then enhance it. Oneshot for now.
+	go func() {
+		defer l.Close()
+
+		event, err := l.Wait(ctx)
+		if err != nil {
+			fmt.Printf("Error waiting for event: %s\n", err.Error())
+			return
+		}
+
+		// wait for /redfish/v1 to be created, then pull out the rootid so that we can modify it
+		rootID := event.Data().(domain.RedfishResourceCreatedData).ID
+		NewService(ctx, rootID, ch)
+	}()
+}
 
 func NewService(ctx context.Context, rootID eh.UUID, ch eh.CommandHandler) {
 	// Create Computer System Collection
@@ -169,12 +212,12 @@ func NewService(ctx context.Context, rootID eh.UUID, ch eh.CommandHandler) {
 				"AccountLockoutThreshold":         5,
 				"AccountLockoutDuration":          30,
 				"AccountLockoutCounterResetAfter": 30,
-				   "Accounts": []map[string]string{
-				       {"@odata.id": "/redfish/v1/AccountService/Accounts"},
-				   },
-				   "Roles": []map[string]string{
-				       {"@odata.id": "/redfish/v1/AccountService/Roles"},
-				   },
+				"Accounts": []map[string]string{
+					{"@odata.id": "/redfish/v1/AccountService/Accounts"},
+				},
+				"Roles": []map[string]string{
+					{"@odata.id": "/redfish/v1/AccountService/Roles"},
+				},
 			}})
 
 	ch.HandleCommand(ctx,
@@ -185,7 +228,7 @@ func NewService(ctx context.Context, rootID eh.UUID, ch eh.CommandHandler) {
 			},
 		})
 
-    // add standard DMTF roles: Admin
+	// add standard DMTF roles: Admin
 	ch.HandleCommand(
 		context.Background(),
 		&domain.CreateRedfishResource{
@@ -203,20 +246,20 @@ func NewService(ctx context.Context, rootID eh.UUID, ch eh.CommandHandler) {
 				"DELETE": []string{}, // can't be deleted
 			},
 			Properties: map[string]interface{}{
-				"Name": "User Role",
-                "Id":   "Admin",
-                "Description": "Admin User Role",
-                "IsPredefined": true,
-                "AssignedPrivileges": []string{
-                    "Login",
-                    "ConfigureManager",
-                    "ConfigureUsers",
-                    "ConfigureSelf",
-                    "ConfigureComponents",
-                },
+				"Name":         "User Role",
+				"Id":           "Admin",
+				"Description":  "Admin User Role",
+				"IsPredefined": true,
+				"AssignedPrivileges": []string{
+					"Login",
+					"ConfigureManager",
+					"ConfigureUsers",
+					"ConfigureSelf",
+					"ConfigureComponents",
+				},
 			}})
 
-    // add standard DMTF roles: Operator
+	// add standard DMTF roles: Operator
 	ch.HandleCommand(
 		context.Background(),
 		&domain.CreateRedfishResource{
@@ -234,18 +277,18 @@ func NewService(ctx context.Context, rootID eh.UUID, ch eh.CommandHandler) {
 				"DELETE": []string{}, // can't be deleted
 			},
 			Properties: map[string]interface{}{
-				"Name": "User Role",
-                "Id":   "Operator",
-                "Description": "Operator User Role",
-                "IsPredefined": true,
-                "AssignedPrivileges": []string{
-                    "Login",
-                    "ConfigureSelf",
-                    "ConfigureComponents",
-                },
+				"Name":         "User Role",
+				"Id":           "Operator",
+				"Description":  "Operator User Role",
+				"IsPredefined": true,
+				"AssignedPrivileges": []string{
+					"Login",
+					"ConfigureSelf",
+					"ConfigureComponents",
+				},
 			}})
 
-    // add standard DMTF roles: Read-only
+	// add standard DMTF roles: Read-only
 	ch.HandleCommand(
 		context.Background(),
 		&domain.CreateRedfishResource{
@@ -263,13 +306,13 @@ func NewService(ctx context.Context, rootID eh.UUID, ch eh.CommandHandler) {
 				"DELETE": []string{}, // can't be deleted
 			},
 			Properties: map[string]interface{}{
-				"Name": "User Role",
-                "Id":   "ReadOnlyUser",
-                "Description": "ReadOnlyUser User Role",
-                "IsPredefined": true,
-                "AssignedPrivileges": []string{
-                    "Login",
-                },
+				"Name":         "User Role",
+				"Id":           "ReadOnlyUser",
+				"Description":  "ReadOnlyUser User Role",
+				"IsPredefined": true,
+				"AssignedPrivileges": []string{
+					"Login",
+				},
 			}})
 
 }

@@ -2,16 +2,20 @@ package domain
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"sync"
 
 	eh "github.com/looplab/eventhorizon"
+	"github.com/looplab/eventhorizon/utils"
 )
 
 const AggregateType = eh.AggregateType("RedfishResource")
 
-func RegisterRRA(eb eh.EventBus) {
+func init() {
+	RegisterInitFN(RegisterRRA)
+}
+
+func RegisterRRA(ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
 	eh.RegisterAggregate(func(id eh.UUID) eh.Aggregate {
 		return &RedfishResourceAggregate{eventBus: eb}
 	})
@@ -164,56 +168,19 @@ func (agg *RedfishResourceAggregate) ProcessMeta(ctx context.Context, method str
 
 		if err != nil {
 			fmt.Printf("bummer, plugin(%s) not found: %s\n", plugins, err.Error())
-            continue
-        }
+			continue
+		}
 
-        if aggPlug, ok := p.(AggregatePlugin); ok {
-            // run all of the aggregate updates in parallel
-            wg.Add(1)
-            go aggPlug.UpdateAggregate(ctx, agg, &wg, name, method)
-        }
+		// AggregatePlugin has free range to operate on the entire aggregate
+		if aggPlug, ok := p.(AggregatePlugin); ok {
+			// run all of the aggregate updates in parallel
+			wg.Add(1)
+			go aggPlug.UpdateAggregate(ctx, agg, &wg, name, method)
+		}
+
+		// TODO: make a streamable plugin that operates on a single property
 	}
 	wg.Wait()
 
 	return nil
-}
-
-// Type of plugin to register
-type PluginType string
-
-type Plugin interface {
-	PluginType() PluginType
-}
-
-type AggregatePlugin interface {
-	UpdateAggregate(context.Context, *RedfishResourceAggregate, *sync.WaitGroup, string, string)
-}
-
-var plugins = make(map[PluginType]func() Plugin)
-var pluginsMu sync.RWMutex
-
-// RegisterPlugin registers an plugin factory for a type. The factory is
-// used to create concrete plugin types.
-//
-// An example would be:
-//     RegisterPlugin(func() Plugin { return &MyPlugin{} })
-func RegisterPlugin(factory func() Plugin) {
-	plugin := factory()
-	pluginType := plugin.PluginType()
-
-	pluginsMu.Lock()
-	defer pluginsMu.Unlock()
-	if _, ok := plugins[pluginType]; ok {
-		panic(fmt.Sprintf("eventhorizon: registering duplicate types for %q", pluginType))
-	}
-	plugins[pluginType] = factory
-}
-
-func InstantiatePlugin(pluginType PluginType) (Plugin, error) {
-	pluginsMu.RLock()
-	defer pluginsMu.RUnlock()
-	if factory, ok := plugins[pluginType]; ok {
-		return factory(), nil
-	}
-	return nil, errors.New("Plugin Type not registered")
 }

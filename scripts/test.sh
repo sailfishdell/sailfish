@@ -25,7 +25,7 @@ $CURLCMD $URL/redfish/v1/
 echo "Test internal command API"
 $CURLCMD $URL/api/RedfishResource%3ACreate  -d '
     {
-        "ID": "49467bb4-5c1f-473b-af00-5d4fa209f7bf",
+        "ID": "49467bb4-5c1f-473b-af00-000000000001",
         "ResourceURI":"/redfish/v1/test",
         "Type": "footype",
         "Context": "foocontext",
@@ -55,10 +55,36 @@ $CURLCMD $URL/api/RedfishResource%3ACreate  -d '
             "testvalue_invalid": 44,
             "testvalue_invalid@meta": { "GET": {"plugin": "test:invalid_plugin", "args": "foobar_invalid"} },
 
+            "Actions": {
+                "#Test.Action": {
+                    "target": "/redfish/v1/Actions/Test",
+                    "TestType@Redfish.AllowableValues": [
+                        "TEST1",
+                        "TEST2"
+                    ]
+                },
+                "Oem": {}
+            },
+
             "Name": "TEST"
         }
     }'
 
-
 echo "/redfish/v1/test"
 $CURLCMD $URL/redfish/v1/test
+
+$CURLCMD $URL/api/RedfishResource%3ACreate  -d '
+    {
+        "ID": "49467bb4-5c1f-473b-af00-000000000002",
+        "ResourceURI":"/redfish/v1/Actions/Test",
+        "Type": "ActionType",
+        "Context": "ActionContext",
+        "Plugin": "TestAction",
+        "Privileges": { "POST": ["ConfigureManager"] },
+        "Properties": {}
+    }
+        '
+
+echo "/redfish/v1/Actions/Test"
+$CURLCMD $URL/redfish/v1/Actions/Test -d '{"TestType": "FOO"}'
+
