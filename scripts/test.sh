@@ -47,7 +47,8 @@ $CURLCMD $URL/api/RedfishResource%3ACreate  -d '
             "testvalue2@meta": {
                 "GET": {
                     "plugin": "runcmd",
-                    "CMD": "/bin/date"
+                    "CMD": "/bin/date",
+                    "CMDARGS": ["+%Y-%m-%d %H:%M:%S"]
                 }
             },
 
