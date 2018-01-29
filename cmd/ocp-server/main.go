@@ -20,6 +20,7 @@ import (
 	// load plugins
 	"github.com/superchalupa/go-redfish/plugins/stdcollections"
 	_ "github.com/superchalupa/go-redfish/plugins/test"
+	_ "github.com/superchalupa/go-redfish/plugins/runcmd"
 )
 
 func main() {

@@ -167,7 +167,7 @@ func (agg *RedfishResourceAggregate) ProcessMeta(ctx context.Context, method str
 
 			// run all of the aggregate updates in parallel
 			wg.Add(1)
-			go p.UpdateAggregate(agg, &wg, name, method)
+			go p.UpdateAggregate(ctx, agg, &wg, name, method)
 
 		} else {
 			fmt.Printf("bummer, plugin(%s) not found\n", plugins)
@@ -182,7 +182,7 @@ func (agg *RedfishResourceAggregate) ProcessMeta(ctx context.Context, method str
 type PluginType string
 
 type Plugin interface {
-	UpdateAggregate(*RedfishResourceAggregate, *sync.WaitGroup, string, string)
+	UpdateAggregate(context.Context, *RedfishResourceAggregate, *sync.WaitGroup, string, string)
 	PluginType() PluginType
 }
 
