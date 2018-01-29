@@ -54,12 +54,9 @@ func (rh *RedfishHandler) IsAuthorized(requiredPrivs []string) (authorized strin
 	if requiredPrivs == nil {
 		requiredPrivs = []string{}
 	}
-	fmt.Printf("\tloop start\n")
 outer:
 	for _, p := range rh.Privileges {
-		fmt.Printf("\t  --> %s\n", p)
 		for _, q := range requiredPrivs {
-			fmt.Printf("\t\tCheck %s == %s\n", p, q)
 			if p == q {
 				authorized = "authorized"
 				break outer
@@ -118,14 +115,6 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	if t, ok := cmd.(AggIDSetter); ok {
 		t.SetAggID(aggID)
-	}
-
-	if t, ok := cmd.(HTTPParser); ok {
-		err := t.ParseHTTPRequest(r)
-		if err != nil {
-			http.Error(w, "Problems parsing http request: "+err.Error(), http.StatusBadRequest)
-			return
-		}
 	}
 
 	// Choices: command can process Authorization, or we can process authorization, or both
@@ -187,9 +176,18 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	defer l.Close()
 
+    // don't run parse until after privilege checks have been done
+	if t, ok := cmd.(HTTPParser); ok {
+		err := t.ParseHTTPRequest(r)
+		if err != nil {
+			http.Error(w, "Problems parsing http request: "+err.Error(), http.StatusBadRequest)
+			return
+		}
+	}
+
 	ctx := context.Background()
 	if err := rh.d.CommandHandler.HandleCommand(ctx, cmd); err != nil {
-		http.Error(w, "could not handle command: "+err.Error(), http.StatusBadRequest)
+		http.Error(w, "redfish handler could not handle command (type: "+string(cmd.CommandType())+"): "+err.Error(), http.StatusBadRequest)
 		return
 	}
 
