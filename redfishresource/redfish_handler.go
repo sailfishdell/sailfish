@@ -28,7 +28,7 @@ type HTTPParser interface {
 }
 
 func NewRedfishHandler(dobjs *DomainObjects, u string, p []string) *RedfishHandler {
-    return &RedfishHandler{UserName: u, Privileges: p, d: dobjs}
+	return &RedfishHandler{UserName: u, Privileges: p, d: dobjs}
 }
 
 type RedfishHandler struct {
@@ -164,7 +164,7 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	defer l.Close()
 
-    // don't run parse until after privilege checks have been done
+	// don't run parse until after privilege checks have been done
 	if t, ok := cmd.(HTTPParser); ok {
 		err := t.ParseHTTPRequest(r)
 		if err != nil {

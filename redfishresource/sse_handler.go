@@ -9,7 +9,7 @@ import (
 )
 
 func NewSSEHandler(dobjs *DomainObjects, u string, p []string) *SSEHandler {
-    return &SSEHandler{UserName: u, Privileges: p, d: dobjs}
+	return &SSEHandler{UserName: u, Privileges: p, d: dobjs}
 }
 
 type SSEHandler struct {

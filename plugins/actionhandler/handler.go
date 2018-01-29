@@ -17,26 +17,26 @@ func init() {
 
 func InitService(ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
 	eh.RegisterCommand(func() eh.Command { return &POST{eventBus: eb, eventWaiter: ew} })
-    eh.RegisterEventData(GenericActionEvent, func() eh.EventData { return &GenericActionEventData{} })
+	eh.RegisterEventData(GenericActionEvent, func() eh.EventData { return &GenericActionEventData{} })
 }
 
 const (
-    GenericActionEvent  =  eh.EventType("GenericActionEvent")
-	POSTCommand = eh.CommandType("GenericActionHandler:POST")
+	GenericActionEvent = eh.EventType("GenericActionEvent")
+	POSTCommand        = eh.CommandType("GenericActionHandler:POST")
 )
 
 type GenericActionEventData struct {
-    ID              eh.UUID  // id of aggregate
-    CmdID           eh.UUID
-    ResourceURI     string
+	ID          eh.UUID // id of aggregate
+	CmdID       eh.UUID
+	ResourceURI string
 
-    ActionData      interface{}
+	ActionData interface{}
 }
 
 // HTTP POST Command
 type POST struct {
-	eventBus       eh.EventBus
-    eventWaiter   *utils.EventWaiter
+	eventBus    eh.EventBus
+	eventWaiter *utils.EventWaiter
 
 	ID      eh.UUID           `json:"id"`
 	CmdID   eh.UUID           `json:"cmdid"`
@@ -59,18 +59,18 @@ func (c *POST) ParseHTTPRequest(r *http.Request) error {
 	return nil
 }
 func (c *POST) Handle(ctx context.Context, a *domain.RedfishResourceAggregate) error {
-    // Action handler needs to send HTTP response
+	// Action handler needs to send HTTP response
 	c.eventBus.HandleEvent(ctx, eh.NewEvent(GenericActionEvent, GenericActionEventData{
-        ID: c.ID,
-        CmdID: c.CmdID,
-        ResourceURI: a.ResourceURI,
-        ActionData:  c.PostBody,
+		ID:          c.ID,
+		CmdID:       c.CmdID,
+		ResourceURI: a.ResourceURI,
+		ActionData:  c.PostBody,
 	}, time.Now()))
 	return nil
 }
 
-func MakeListener(uri string) func(eh.Event)(bool) {
-    return func(event eh.Event) bool {
+func MakeListener(uri string) func(eh.Event) bool {
+	return func(event eh.Event) bool {
 		if event.EventType() != GenericActionEvent {
 			return false
 		}
@@ -80,5 +80,5 @@ func MakeListener(uri string) func(eh.Event)(bool) {
 			}
 		}
 		return false
-    }
+	}
 }
