@@ -1,4 +1,4 @@
-package main
+package cacert
 
 import (
 	"crypto/rand"

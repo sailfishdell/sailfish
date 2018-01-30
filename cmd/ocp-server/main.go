@@ -17,6 +17,9 @@ import (
 	"github.com/superchalupa/go-redfish/plugins/basicauth"
 	"github.com/superchalupa/go-redfish/plugins/session"
 
+	// cert gen
+	"github.com/superchalupa/go-redfish/plugins/cacert"
+
 	// load plugins (auto-register)
 	_ "github.com/superchalupa/go-redfish/plugins/actionhandler"
 	_ "github.com/superchalupa/go-redfish/plugins/runcmd"
@@ -149,8 +152,8 @@ func main() {
 			}, */
 	}
 
-	GenerateCA()
-	GenerateServerCert()
+	cacert.GenerateCA()
+	cacert.GenerateServerCert()
 
 	s := &http.Server{
 		Addr:        ":8443",
