@@ -152,22 +152,22 @@ func main() {
 			}, */
 	}
 
-    // Create CA cert, or load
-    ca, _ := tlscert.NewCert(
-        tlscert.CreateCA,
-        tlscert.ExpireInOneYear,
-        tlscert.Serialize("ca"))
+	// Create CA cert, or load
+	ca, _ := tlscert.NewCert(
+		tlscert.CreateCA,
+		tlscert.ExpireInOneYear,
+		tlscert.Serialize("ca"))
 
-    // create new server cert or load from disk
-    tlscert.NewCert(
-        tlscert.SignWithCA(ca),
-        tlscert.MakeServer,
-        tlscert.ExpireInOneYear,
-        tlscert.SetCommonName("localhost"),
-        tlscert.SetSubjectKeyId([]byte{1, 2, 3, 4, 6}),
-        tlscert.AddSANDNSName("localhost", "localhost.localdomain"),
-        tlscert.AddSANIPAddress("127.0.0.1"),
-        tlscert.Serialize("server"))
+	// create new server cert or load from disk
+	tlscert.NewCert(
+		tlscert.SignWithCA(ca),
+		tlscert.MakeServer,
+		tlscert.ExpireInOneYear,
+		tlscert.SetCommonName("localhost"),
+		tlscert.SetSubjectKeyId([]byte{1, 2, 3, 4, 6}),
+		tlscert.AddSANDNSName("localhost", "localhost.localdomain"),
+		tlscert.AddSANIPAddress("127.0.0.1"),
+		tlscert.Serialize("server"))
 
 	s := &http.Server{
 		Addr:        ":8443",

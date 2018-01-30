@@ -40,9 +40,7 @@ type RedfishResourceAggregate struct {
 	// TODO: need accessor functions for all of these just like property stuff
 	// above so that everything can be properly locked
 	PrivilegeMap map[string]interface{}
-	Permissions  map[string]interface{}
 	Headers      map[string]string
-	Private      map[string]interface{}
 }
 
 func (r *RedfishResourceAggregate) AggregateType() eh.AggregateType { return AggregateType }

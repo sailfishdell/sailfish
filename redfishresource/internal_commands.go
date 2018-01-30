@@ -72,9 +72,7 @@ func (c *CreateRedfishResource) Handle(ctx context.Context, a *RedfishResourceAg
 	a.InitProperties()
 
 	a.PrivilegeMap = map[string]interface{}{}
-	a.Permissions = map[string]interface{}{}
 	a.Headers = map[string]string{}
-	a.Private = map[string]interface{}{}
 
 	for k, v := range c.Privileges {
 		a.PrivilegeMap[k] = v
