@@ -1,5 +1,9 @@
 Things that need work: (-) TODO (*) DONE
 
+ - SSE support
+    - Implement second EventBus just for SSE external traffic
+    - Implement SAGA to bridge between the two busses
+
  - ACTIONS
     * Implement a test OEM action for reference
         - see scripts/test.sh, plugins/test_action/. These implement example action
@@ -24,6 +28,8 @@ Things that need work: (-) TODO (*) DONE
     - $expand
 
  - PUT/PATCH/POST support
+    * basic PATCH support controlled by @meta["PATCH"]["allowed"] = true
+    - Add validation plugin support
 
  - ETAGS support. Proposal:
     - etags should be stored in the aggregate in the Headers map.
