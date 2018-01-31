@@ -24,7 +24,6 @@ import (
 	_ "github.com/superchalupa/go-redfish/plugins/actionhandler"
 	_ "github.com/superchalupa/go-redfish/plugins/runcmd"
 	_ "github.com/superchalupa/go-redfish/plugins/stdcollections"
-
 	// Test plugins
 	_ "github.com/superchalupa/go-redfish/plugins/test"
 	_ "github.com/superchalupa/go-redfish/plugins/test_action"

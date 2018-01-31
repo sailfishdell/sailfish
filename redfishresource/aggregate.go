@@ -2,7 +2,9 @@ package domain
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"strings"
 	"sync"
 
 	eh "github.com/looplab/eventhorizon"
@@ -21,6 +23,54 @@ func RegisterRRA(ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
 	})
 }
 
+type RedfishResourceProperty struct {
+	//propertyMu   sync.Mutex
+	Value interface{}
+	Meta  map[string]interface{}
+}
+
+func (rrp RedfishResourceProperty) MarshalJSON() ([]byte, error) {
+	return json.Marshal(rrp.Value)
+}
+
+func (rrp *RedfishResourceProperty) Parse(thing interface{}) {
+	//var val interface{}
+	switch thing.(type) {
+	// TODO: add array parse
+	// case []interface{}:
+	//     rrp.Value = []RedfishResourceProperty{}
+	//     parse_array(rrp.Value.([]RedfishResourceProperty), thing.([]interface{}))
+	case map[string]interface{}:
+		rrp.Value = map[string]RedfishResourceProperty{}
+		parse_map(rrp.Value.(map[string]RedfishResourceProperty), thing.(map[string]interface{}))
+	default:
+		rrp.Value = thing
+	}
+	return
+}
+
+func parse_map(start map[string]RedfishResourceProperty, props map[string]interface{}) {
+	for k, v := range props {
+		if strings.HasSuffix(k, "@meta") {
+			name := k[:len(k)-5]
+			prop, ok := start[name]
+			if !ok {
+				prop = RedfishResourceProperty{}
+			}
+			prop.Meta = v.(map[string]interface{})
+			start[name] = prop
+		} else {
+			prop, ok := start[k]
+			if !ok {
+				prop = RedfishResourceProperty{}
+			}
+			prop.Parse(v)
+			start[k] = prop
+		}
+	}
+	return
+}
+
 type RedfishResourceAggregate struct {
 	// private
 	eventBus eh.EventBus
@@ -30,12 +80,8 @@ type RedfishResourceAggregate struct {
 	ResourceURI string
 	Plugin      string
 
-	propertiesMu sync.RWMutex
-	properties   map[string]interface{}
-
-	// "prop": {"method": { "plugin": "foo", "args": "bar"}}
-	propertyPluginMu sync.RWMutex
-	propertyPlugin   map[string]map[string]map[string]interface{}
+	newPropertiesMu sync.RWMutex
+	newProperties   map[string]RedfishResourceProperty
 
 	// TODO: need accessor functions for all of these just like property stuff
 	// above so that everything can be properly locked
@@ -80,105 +126,142 @@ func (a *RedfishResourceAggregate) HandleCommand(ctx context.Context, command eh
 	return nil
 }
 
-func (r *RedfishResourceAggregate) InitProperties() {
-	r.properties = map[string]interface{}{}
-}
-
-func (r *RedfishResourceAggregate) HasProperty(p string) bool {
-	r.propertiesMu.RLock()
-	defer r.propertiesMu.RUnlock()
-	_, ok := r.properties[p]
-	return ok
-}
-
 func (r *RedfishResourceAggregate) GetProperty(p string) interface{} {
-	r.propertiesMu.RLock()
-	defer r.propertiesMu.RUnlock()
-	return r.properties[p]
+	r.newPropertiesMu.RLock()
+	defer r.newPropertiesMu.RUnlock()
+	return r.newProperties[p].Value
 }
 
 func (r *RedfishResourceAggregate) SetProperty(p string, v interface{}) {
-	r.propertiesMu.Lock()
-	defer r.propertiesMu.Unlock()
-	r.properties[p] = v
+	r.newPropertiesMu.Lock()
+	defer r.newPropertiesMu.Unlock()
+	prop, ok := r.newProperties[p]
+	if !ok {
+		prop = RedfishResourceProperty{}
+	}
+	prop.Value = v
+	r.newProperties[p] = prop
 }
 
 func (r *RedfishResourceAggregate) DeleteProperty(p string) {
-	r.propertiesMu.Lock()
-	defer r.propertiesMu.Unlock()
-	delete(r.properties, p)
+	r.newPropertiesMu.Lock()
+	defer r.newPropertiesMu.Unlock()
+	delete(r.newProperties, p)
 }
 
-// MutateProperty will run the function over Properties holding the properties RW lock
-func (r *RedfishResourceAggregate) MutateProperty(mut func(map[string]interface{})) {
-	r.propertiesMu.Lock()
-	defer r.propertiesMu.Unlock()
-	mut(r.properties)
+func (r *RedfishResourceAggregate) EnsureCollection() {
+	r.newPropertiesMu.Lock()
+	defer r.newPropertiesMu.Unlock()
+	r.EnsureCollection_unlocked()
+	r.UpdateCollectionMemberCount_unlocked()
 }
 
-func (r *RedfishResourceAggregate) RangeProperty(fn func(string, interface{})) {
-	r.propertiesMu.RLock()
-	defer r.propertiesMu.RUnlock()
-	for k, v := range r.properties {
-		fn(k, v)
+func (r *RedfishResourceAggregate) EnsureCollection_unlocked() *RedfishResourceProperty {
+	members, ok := r.newProperties["Members"]
+	if !ok {
+		members = RedfishResourceProperty{Value: []map[string]RedfishResourceProperty{}}
+		r.newProperties["Members"] = members
 	}
+
+	if _, ok := members.Value.([]map[string]RedfishResourceProperty); !ok {
+		members = RedfishResourceProperty{Value: []map[string]RedfishResourceProperty{}}
+		r.newProperties["Members"] = members
+	}
+
+	return &members
 }
 
-func (r *RedfishResourceAggregate) GetPropertyPlugin(p string, m string) (ret map[string]interface{}) {
-	r.propertyPluginMu.RLock()
-	defer r.propertyPluginMu.RUnlock()
-	// propertyPlugin   map[string]map[string]map[string]interface{}
-	v, ok := r.propertyPlugin[p]
-	// v map[string]map[string]interface{}
-	if ok {
-		ret = v[m]
-		// ret  map[string]interface{}
+func (r *RedfishResourceAggregate) AddCollectionMember(uri string) {
+	r.newPropertiesMu.Lock()
+	defer r.newPropertiesMu.Unlock()
+	members := r.EnsureCollection_unlocked()
+	members.Value = append(members.Value.([]map[string]RedfishResourceProperty), map[string]RedfishResourceProperty{"@odata.id": RedfishResourceProperty{Value: uri}})
+	r.newProperties["Members"] = *members
+	r.UpdateCollectionMemberCount_unlocked()
+}
+
+func (r *RedfishResourceAggregate) RemoveCollectionMember(uri string) {
+	r.newPropertiesMu.Lock()
+	defer r.newPropertiesMu.Unlock()
+	members := r.EnsureCollection_unlocked()
+
+	arr, ok := members.Value.([]map[string]RedfishResourceProperty)
+	if !ok {
+		return
 	}
-	return
+
+	for i, v := range arr {
+		mem_uri, ok := v["@odata.id"].Value.(string)
+		if !ok || mem_uri != uri {
+			continue
+		}
+		arr[len(arr)-1], arr[i] = arr[i], arr[len(arr)-1]
+		break
+	}
+	members.Value = arr[:len(arr)-1]
+
+	r.newProperties["Members"] = *members
+	r.UpdateCollectionMemberCount_unlocked()
+}
+
+func (r *RedfishResourceAggregate) UpdateCollectionMemberCount() {
+	r.newPropertiesMu.Lock()
+	defer r.newPropertiesMu.Unlock()
+	r.UpdateCollectionMemberCount_unlocked()
+}
+
+func (r *RedfishResourceAggregate) UpdateCollectionMemberCount_unlocked() {
+	l := len(r.newProperties["Members"].Value.([]map[string]RedfishResourceProperty))
+	r.newProperties["Members@odata.count"] = RedfishResourceProperty{Value: l}
+}
+
+type PropertyUpdater interface {
+	UpdateValue(context.Context, *sync.WaitGroup, *RedfishResourceAggregate, string, *RedfishResourceProperty, map[string]interface{})
+}
+
+func (rrp *RedfishResourceProperty) Process(ctx context.Context, wg *sync.WaitGroup, agg *RedfishResourceAggregate, property, method string) {
+	defer wg.Done()
+	meta, ok := rrp.Meta[method]
+	if !ok {
+		return
+	}
+
+	meta_t, ok := meta.(map[string]interface{})
+	if !ok {
+		return
+	}
+
+	pluginName, ok := meta_t["plugin"]
+	if !ok {
+		return
+	}
+
+	fmt.Printf("PROCESS PROPERTY: %s\n", pluginName)
+	plugin, err := InstantiatePlugin(PluginType(pluginName.(string)))
+	if err != nil {
+		return
+	}
+
+	if plugin, ok := plugin.(PropertyUpdater); ok {
+		wg.Add(1)
+		plugin.UpdateValue(ctx, wg, agg, property, rrp, meta_t)
+	}
+
+	//TODO: recursively Process() any Values that are RedfishResourceProperty
+	// can do that here with a type switch
 }
 
 func (agg *RedfishResourceAggregate) ProcessMeta(ctx context.Context, method string) error {
 	var wg sync.WaitGroup
-	fmt.Printf("PROCESS META: %T\n", agg.propertyPlugin)
-	agg.propertyPluginMu.RLock()
-	defer agg.propertyPluginMu.RUnlock()
-	for name, v := range agg.propertyPlugin {
-		fmt.Printf("\tname(%s) = %s\n", name, v)
+	agg.newPropertiesMu.Lock()
+	defer agg.newPropertiesMu.Unlock()
 
-		get, ok := v[method]
-		if !ok {
-			continue
-		}
-
-		fmt.Printf("\tget: %s\n", get)
-		plugin, ok := get["plugin"]
-		if !ok {
-			continue
-		}
-
-		pluginName, ok := plugin.(string)
-		if !ok {
-			continue
-		}
-
-		fmt.Printf("\tplugin: %s\n", pluginName)
-		p, err := InstantiatePlugin(PluginType(pluginName))
-
-		if err != nil {
-			fmt.Printf("bummer, plugin(%s) not found: %s\n", plugins, err.Error())
-			continue
-		}
-
-		// AggregatePlugin has free range to operate on the entire aggregate
-		if aggPlug, ok := p.(AggregatePlugin); ok {
-			// run all of the aggregate updates in parallel
-			wg.Add(1)
-			go aggPlug.UpdateAggregate(ctx, agg, &wg, name, method)
-		}
-
-		// TODO: make a streamable plugin that operates on a single property
+	for property, v := range agg.newProperties {
+		wg.Add(1)
+		v.Process(ctx, &wg, agg, property, method)
+		agg.newProperties[property] = v
 	}
-	wg.Wait()
 
+	wg.Wait()
 	return nil
 }

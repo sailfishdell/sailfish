@@ -2,10 +2,10 @@ package domain
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	eh "github.com/looplab/eventhorizon"
-	"strings"
 	"time"
 )
 
@@ -65,12 +65,6 @@ func (c *CreateRedfishResource) Handle(ctx context.Context, a *RedfishResourceAg
 	if a.Plugin == "" {
 		a.Plugin = "RedfishResource"
 	}
-	a.propertyPluginMu.Lock() // write lock
-	defer a.propertyPluginMu.Unlock()
-	a.propertyPlugin = map[string]map[string]map[string]interface{}{}
-
-	a.InitProperties()
-
 	a.PrivilegeMap = map[string]interface{}{}
 	a.Headers = map[string]string{}
 
@@ -94,57 +88,13 @@ func (c *CreateRedfishResource) Handle(ctx context.Context, a *RedfishResourceAg
 		Meta:        map[string]interface{}{},
 	}
 
-	for k, v := range c.Properties {
-		// this is sort of a pain: need to get data from a
-		// map[string]interface{} into a
-		// map[string]map[string]map[string]interface{} by iterating through
-		// the whole dang thing and copying with the appropriate type
-		// assertions. skip stuff that isn't the correct type.
-		if strings.HasSuffix(k, "@meta") {
-			// strip off "@meta" so property name matches in both hashes
-			name := k[:len(k)-5]
-			fmt.Printf("Add to PropertyMap: %s = %s\n", name, v)
+	a.newPropertiesMu.Lock()
+	a.newProperties = map[string]RedfishResourceProperty{}
+	parse_map(a.newProperties, c.Properties)
+	a.newPropertiesMu.Unlock()
 
-			// make sure that the input is structured properly... skip it if not
-			_, ok := v.(map[string]interface{})
-			if !ok {
-				fmt.Printf("\tDidn't type assert correctly...\n")
-				continue
-			}
-
-			// iterate over all of the map values and cast...
-			fmt.Printf("\tcheck1 pass\n")
-			for k2, v2 := range v.(map[string]interface{}) {
-				_, ok = v2.(map[string]interface{})
-				if !ok {
-					fmt.Printf("Cleanse incorrect type: %s\n", v2)
-					continue
-				}
-
-				if _, ok := a.propertyPlugin[name]; !ok {
-					a.propertyPlugin[name] = map[string]map[string]interface{}{}
-				}
-				a.propertyPlugin[name][k2] = v2.(map[string]interface{})
-
-				if _, ok := e.Meta[name]; !ok {
-					e.Meta[name] = map[string]interface{}{}
-				}
-				e.Meta[name].(map[string]interface{})[k2] = v2
-			}
-
-			fmt.Printf("\tcheck2 pass: %s\n", v)
-
-		} else {
-			// atomically update properties: Add property to notification if
-			// it's changing (don't notify if no new property change)
-			a.MutateProperty(func(properties map[string]interface{}) {
-				if properties[k] != v {
-					properties[k] = v
-					d.PropertyNames = append(d.PropertyNames, k)
-				}
-			})
-		}
-	}
+	stuff, err := json.Marshal(a.newProperties)
+	fmt.Printf("\nDEBUG, parse_map(%s): %s\n\n", err, stuff)
 
 	a.SetProperty("@odata.id", c.ResourceURI)
 	a.SetProperty("@odata.type", c.Type)
@@ -152,35 +102,28 @@ func (c *CreateRedfishResource) Handle(ctx context.Context, a *RedfishResourceAg
 
 	// if command claims that this will be a collection, automatically set up the Members property
 	if c.Collection {
-		a.MutateProperty(func(properties map[string]interface{}) {
-			if _, ok := properties["Members"]; !ok {
-				// didn't previously exist, create it
-				properties["Members"] = []map[string]interface{}{}
-			} else {
-				switch properties["Members"].(type) {
-				case []map[string]interface{}:
-				default: // somehow got invalid type here, fix it up
-					properties["Members"] = []map[string]interface{}{}
-				}
-			}
-			properties["Members@odata.count"] = len(properties["Members"].([]map[string]interface{}))
-		})
+		a.EnsureCollection()
+	} else {
+		a.DeleteProperty("Members")
 	}
 
-	// send out event that it's created first
-	a.eventBus.HandleEvent(ctx, eh.NewEvent(RedfishResourceCreated, RedfishResourceCreatedData{
-		ID:          c.ID,
-		ResourceURI: c.ResourceURI,
-		Collection:  c.Collection,
-	}, time.Now()))
+	go func() {
+		time.Sleep(100 * time.Millisecond)
+		// send out event that it's created first
+		a.eventBus.HandleEvent(ctx, eh.NewEvent(RedfishResourceCreated, RedfishResourceCreatedData{
+			ID:          c.ID,
+			ResourceURI: c.ResourceURI,
+			Collection:  c.Collection,
+		}, time.Now()))
 
-	// then send out possible notifications about changes in the properties or meta
-	if len(d.PropertyNames) > 0 {
-		a.eventBus.HandleEvent(ctx, eh.NewEvent(RedfishResourcePropertiesUpdated, d, time.Now()))
-	}
-	if len(e.Meta) > 0 {
-		a.eventBus.HandleEvent(ctx, eh.NewEvent(RedfishResourcePropertyMetaUpdated, e, time.Now()))
-	}
+		// then send out possible notifications about changes in the properties or meta
+		if len(d.PropertyNames) > 0 {
+			a.eventBus.HandleEvent(ctx, eh.NewEvent(RedfishResourcePropertiesUpdated, d, time.Now()))
+		}
+		if len(e.Meta) > 0 {
+			a.eventBus.HandleEvent(ctx, eh.NewEvent(RedfishResourcePropertyMetaUpdated, e, time.Now()))
+		}
+	}()
 
 	return nil
 }
@@ -233,21 +176,9 @@ func (c *UpdateRedfishResourceProperties) Handle(ctx context.Context, a *Redfish
 		Meta:        map[string]interface{}{},
 	}
 
-	for k, v := range c.Properties {
-		if strings.HasSuffix(k, "@meta") {
-			//if a.PropertyPlugin[k] != v {
-			a.propertyPlugin[k] = v.(map[string]map[string]interface{})
-			e.Meta[k] = v
-			//}
-		} else {
-			a.MutateProperty(func(properties map[string]interface{}) {
-				if properties[k] != v {
-					properties[k] = v
-					d.PropertyNames = append(d.PropertyNames, k)
-				}
-			})
-		}
-	}
+	a.newPropertiesMu.Lock()
+	parse_map(a.newProperties, c.Properties)
+	a.newPropertiesMu.Unlock()
 
 	if len(d.PropertyNames) > 0 {
 		a.eventBus.HandleEvent(ctx, eh.NewEvent(RedfishResourcePropertiesUpdated, d, time.Now()))
@@ -272,22 +203,7 @@ func (c *AddResourceToRedfishResourceCollection) CommandType() eh.CommandType {
 	return AddResourceToRedfishResourceCollectionCommand
 }
 func (c *AddResourceToRedfishResourceCollection) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
-	// manipulate properties under lock, also update length of members under the same lock to ensure everything is consistent
-	a.MutateProperty(func(properties map[string]interface{}) {
-		if _, ok := properties["Members"]; !ok {
-			// didn't previously exist, create it
-			properties["Members"] = []map[string]interface{}{}
-		} else {
-			switch properties["Members"].(type) {
-			case []map[string]interface{}:
-			default: // somehow got invalid type here, fix it up
-				properties["Members"] = []map[string]interface{}{}
-			}
-		}
-		properties["Members"] = append(properties["Members"].([]map[string]interface{}), map[string]interface{}{"@odata.id": c.ResourceURI})
-		properties["Members@odata.count"] = len(properties["Members"].([]map[string]interface{}))
-	})
-
+	a.AddCollectionMember(c.ResourceURI)
 	return nil
 }
 
@@ -304,38 +220,6 @@ func (c *RemoveResourceFromRedfishResourceCollection) CommandType() eh.CommandTy
 	return RemoveResourceFromRedfishResourceCollectionCommand
 }
 func (c *RemoveResourceFromRedfishResourceCollection) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
-
-	// manipulate properties under lock, also update length of members under the same lock to ensure everything is consistent
-	a.MutateProperty(func(properties map[string]interface{}) {
-		if _, ok := properties["Members"]; !ok {
-			// didn't previously exist, create it
-			properties["Members"] = []map[string]interface{}{}
-		} else {
-			switch properties["Members"].(type) {
-			case []map[string]interface{}:
-			default: // somehow got invalid type here, fix it up
-				properties["Members"] = []map[string]interface{}{}
-			}
-		}
-
-		if collection, ok := properties["Members"]; ok {
-			numToSlice := 0
-			if s, ok := collection.([]map[string]interface{}); ok {
-				for i, v := range s {
-					if v["@odata.id"] == c.ResourceURI {
-						// move the ones to be removed to the end
-						numToSlice = numToSlice + 1
-						s[len(s)-numToSlice], s[i] = s[i], s[len(s)-numToSlice]
-						break
-					}
-				}
-				// and then slice off the end
-				s = s[:len(s)-numToSlice]
-			}
-		}
-
-		properties["Members@odata.count"] = len(properties["Members"].([]map[string]interface{}))
-	})
-
+	a.RemoveCollectionMember(c.ResourceURI)
 	return nil
 }

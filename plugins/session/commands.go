@@ -140,7 +140,7 @@ func (c *POST) Handle(ctx context.Context, a *domain.RedfishResourceAggregate) e
 		return err
 	}
 
-	c.startSessionDeleteTimer(sessionUUID, sessionURI, 30)
+	c.startSessionDeleteTimer(sessionUUID, sessionURI, 3)
 
 	c.eventBus.HandleEvent(ctx, eh.NewEvent(domain.HTTPCmdProcessed, domain.HTTPCmdProcessedData{
 		CommandID:  c.CmdID,

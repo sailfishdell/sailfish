@@ -2,6 +2,7 @@ package domain
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	eh "github.com/looplab/eventhorizon"
@@ -49,11 +50,14 @@ func (c *GET) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 
 	// tell the aggregate to process any metadata that it has. This can include
 	// sending commands to update itself.
+	fmt.Printf("PROCESS META START: %s\n", a)
 	a.ProcessMeta(ctx, "GET")
 
-	a.RangeProperty(func(k string, v interface{}) {
+	fmt.Printf("PROCESS META DONE: %s\n", a)
+	for k, v := range a.newProperties {
+		fmt.Printf("Set property(%s) == %s\n", k, v)
 		data.Results[k] = v
-	})
+	}
 	a.eventBus.HandleEvent(ctx, eh.NewEvent(HTTPCmdProcessed, data, time.Now()))
 	return nil
 }

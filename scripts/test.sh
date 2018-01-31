@@ -41,7 +41,7 @@ $CURLCMD $URL/api/RedfishResource%3ACreate  -d '
                         "current_age_ms": 0
                     }
                 }
-            } ,
+            },
 
             "testvalue2": 42,
             "testvalue2@meta": {
@@ -63,10 +63,12 @@ $CURLCMD $URL/api/RedfishResource%3ACreate  -d '
                         "TEST2"
                     ]
                 },
-                "Oem": {}
+                "Oem": {},
+                "Oem@meta": {"plugin": "nonexistent"}
             },
-
             "Name": "TEST"
+
+            
         }
     }'
 
@@ -80,3 +82,7 @@ $CURLCMD $URL/redfish/v1/Actions/Test -d '{"TestType": "FOO"}'
 
 
 $CURLCMD $URL/redfish/v1/SessionService -XPATCH -d '{"SessionTimeout": 35}'
+
+exit 1
+
+

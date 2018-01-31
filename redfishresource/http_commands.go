@@ -94,19 +94,8 @@ func (c *PATCH) ParseHTTPRequest(r *http.Request) error {
 func (c *PATCH) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 	fmt.Printf("HANDLE PATCH: %s\n", c.Body)
 
-	for k, v := range c.Body {
+	for k, _ := range c.Body {
 		fmt.Printf("PATCH Property: %s\n", k)
-		fmt.Printf("\tmeta: %s\n", a.propertyPlugin)
-		p := a.GetPropertyPlugin(k, "PATCH")
-		if p == nil {
-			fmt.Printf("\tNo PATCH @meta...\n")
-			continue
-		}
-		if p["allowed"] == true {
-			// TODO: send event
-			a.SetProperty(k, v)
-			continue
-		}
 		fmt.Printf("\tnot allowed...\n")
 	}
 

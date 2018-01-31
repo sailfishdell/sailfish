@@ -3,9 +3,10 @@ package test
 import (
 	"context"
 	"fmt"
-	domain "github.com/superchalupa/go-redfish/redfishresource"
 	"sync"
 	"time"
+
+	domain "github.com/superchalupa/go-redfish/redfishresource"
 )
 
 /*
@@ -27,12 +28,10 @@ type testplugin_strategy3 struct{}
 
 func (t *testplugin_strategy3) PluginType() domain.PluginType { return TestPlugin_Strategy3 }
 
-func (t *testplugin_strategy3) UpdateAggregate(ctx context.Context, a *domain.RedfishResourceAggregate, wg *sync.WaitGroup, property string, method string) {
-	fmt.Printf("UPDATE AGGREGATE: %s\n", property)
+func (t *testplugin_strategy3) UpdateValue(ctx context.Context, wg *sync.WaitGroup, agg *domain.RedfishResourceAggregate, property string, rrp *domain.RedfishResourceProperty, meta map[string]interface{}) {
+	fmt.Printf("UPDATE AGGREGATE: %s  (Old: %s)\n", property, rrp.Value)
 	defer wg.Done()
 
-	plugin := a.GetPropertyPlugin(property, method)
 	time.Sleep(1 * time.Second)
-
-	a.SetProperty(property, fmt.Sprintf("method(%s)  time(%s) args(%s)", method, time.Now(), plugin["args"]))
+	rrp.Value = fmt.Sprintf("time(%s) args(%s)", time.Now(), meta["args"])
 }
