@@ -35,6 +35,8 @@ Things that need work: (-) TODO (*) DONE
     - etags should be stored in the aggregate in the Headers map.
     - Updates to the aggregate trigger update of etags
 
+ - SupportedMethods support: have a way to return allowed methods in the header.
+
  - Redfish compliant HTTP ERROR responses
     - some generic boilerplate to do this?
     - Need some generic domain redfish error helpers to handle generating JSON output and http error codes

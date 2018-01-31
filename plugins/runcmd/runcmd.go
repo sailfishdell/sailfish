@@ -1,13 +1,13 @@
 package runcmd
 
 import (
-	//"bytes"
-	//"os/exec"
-
+	"bytes"
+	"os/exec"
 	"context"
 	"fmt"
-	domain "github.com/superchalupa/go-redfish/redfishresource"
 	"sync"
+
+	domain "github.com/superchalupa/go-redfish/redfishresource"
 )
 
 var (
@@ -22,37 +22,36 @@ type runCmd struct{}
 
 func (t *runCmd) PluginType() domain.PluginType { return RunCmdPlugin }
 
-func (t *runCmd) UpdateAggregate(ctx context.Context, a *domain.RedfishResourceAggregate, wg *sync.WaitGroup, property string, method string) {
-	fmt.Printf("RUNCMD UPDATE AGGREGATE: %s\n", property)
+
+func (t *runCmd) UpdateValue(ctx context.Context, wg *sync.WaitGroup, agg *domain.RedfishResourceAggregate, property string, rrp *domain.RedfishResourceProperty, meta map[string]interface{}) {
+	fmt.Printf("UPDATE AGGREGATE: %s  (Old: %s)\n", property, rrp.Value)
 	defer wg.Done()
 
-	/*
-		cmd, ok := plugin["CMD"].(string)
-		if !ok {
-			fmt.Printf("Misconfigured runcmd plugin: CMD not set\n")
-			return
-		}
+    cmd, ok := meta["CMD"].(string)
+    if !ok {
+        fmt.Printf("Misconfigured runcmd plugin: CMD not set\n")
+        return
+    }
 
-		// convert args to something we can pass to command
-		var args []string
-		rawargs, ok := plugin["CMDARGS"]
-		if ok {
-			for _, rs := range rawargs.([]interface{}) {
-				s, ok := rs.(string)
-				if ok {
-					// TODO: search and replace args with properties. For example %{name} should be replace with the name property
-					args = append(args, s)
-				}
-			}
-		}
+    // convert args to something we can pass to command
+    var args []string
+    rawargs, ok := meta["CMDARGS"]
+    if ok {
+        for _, rs := range rawargs.([]interface{}) {
+            s, ok := rs.(string)
+            if ok {
+                // TODO: search and replace args with properties. For example %{name} should be replace with the name property
+                args = append(args, s)
+            }
+        }
+    }
 
-		out, err := exec.CommandContext(ctx, cmd, args...).Output()
-		if err != nil {
-			fmt.Printf("Command execution failure: %s\n", err.Error())
-			return
-		}
+    out, err := exec.CommandContext(ctx, cmd, args...).Output()
+    if err != nil {
+        fmt.Printf("Command execution failure: %s\n", err.Error())
+        return
+    }
 
-		fmt.Printf("Ran command (%s) with args (%s) and got output = %s\n", cmd, args, out)
-		a.SetProperty(property, fmt.Sprintf("%s", bytes.TrimSpace(out)))
-	*/
+	fmt.Printf("Ran command (%s) with args (%s) and got output = %s\n", cmd, args, out)
+    rrp.Value = fmt.Sprintf("%s", bytes.TrimSpace(out))
 }
