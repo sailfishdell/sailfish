@@ -5,22 +5,24 @@ set -x
 
 unset HTTP_PROXY HTTPS_PROXY http_proxy https_proxy
 
+user=${user:-Administrator}
+pass=${pass:-password}
+host=${host:-localhost}
+port=${port:-8443}
+
 scriptdir=$(cd $(dirname $0); pwd)
 outputdir=${1:-out/}
 skiplist=${2:-}
 
-USER=${USER:-Administrator}
-PASS=${PASS:-password}
-eval $(scripts/login.sh $USER $PASS)
+eval $(scripts/login.sh $user $pass)
 
-HOST=${HOST:-localhost}
-PORT=${PORT:-8443}
-if [ "${PORT}" = "443" -o "${PORT}" = "8443" ]; then
-    PROTO=https
+host=${host:-localhost}
+if [ "${port}" = "443" -o "${port}" = "8443" ]; then
+    prot=${prot:-https}
 else
-    PROTO=http
+    prot=${prot:-http}
 fi
-BASE=${PROTO}://${HOST}:${PORT}
+BASE=${prot}://${host}:${port}
 START_URL=${START_URL:-"/redfish/v1"}
 
 AUTH_HEADER=${AUTH_HEADER:-foo: bar}
