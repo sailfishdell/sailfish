@@ -16,17 +16,19 @@ import (
 	"time"
 )
 
+type Option func(*mycert) error
+
 type mycert struct {
 	CA     *x509.Certificate
 	CApriv *rsa.PrivateKey
 	cert   *x509.Certificate
 	priv   *rsa.PrivateKey
+    fileBase string
 }
 
-func NewCert(options ...func(*mycert) error) (*mycert, error) {
+func NewCert(options ...Option) (*mycert, error) {
 	c := &mycert{
 		cert: &x509.Certificate{
-			SerialNumber: big.NewInt(1653),
 			Subject: pkix.Name{
 				Organization:  []string{},
 				Country:       []string{},
@@ -34,7 +36,6 @@ func NewCert(options ...func(*mycert) error) (*mycert, error) {
 				Locality:      []string{},
 				StreetAddress: []string{},
 				PostalCode:    []string{},
-				CommonName:    "CA Cert common name",
 			},
 			NotBefore:   time.Now(),
 			NotAfter:    time.Now().AddDate(0, 0, 1), // 1 day validity unless overridden
@@ -58,6 +59,13 @@ func NewCert(options ...func(*mycert) error) (*mycert, error) {
 	return c, nil
 }
 
+func SetBaseFilename(fn string) Option {
+	return func(c *mycert) error {
+		c.fileBase = fn
+		return nil
+	}
+}
+
 // to make this certificate a CA cert
 func CreateCA(c *mycert) error {
 	c.cert.IsCA = true
@@ -71,14 +79,21 @@ func MakeServer(c *mycert) error {
 	return nil
 }
 
-func NotBefore(nb time.Time) func(*mycert) error {
+func SetSerialNumber(serial int64) Option {
+	return func(c *mycert) error {
+		c.cert.SerialNumber = big.NewInt(serial)
+		return nil
+	}
+}
+
+func NotBefore(nb time.Time) Option {
 	return func(c *mycert) error {
 		c.cert.NotBefore = nb
 		return nil
 	}
 }
 
-func NotAfter(na time.Time) func(*mycert) error {
+func NotAfter(na time.Time) Option {
 	return func(c *mycert) error {
 		c.cert.NotAfter = na
 		return nil
@@ -95,104 +110,63 @@ func ExpireInOneDay(c *mycert) error {
 	return nil
 }
 
-func AddOrganization(org string) func(*mycert) error {
+func AddOrganization(org string) Option {
 	return func(c *mycert) error {
 		c.cert.Subject.Organization = append(c.cert.Subject.Organization, org)
 		return nil
 	}
 }
 
-func AddCountry(co string) func(*mycert) error {
+func AddCountry(co string) Option {
 	return func(c *mycert) error {
 		c.cert.Subject.Country = append(c.cert.Subject.Country, co)
 		return nil
 	}
 }
 
-func AddProvince(prov string) func(*mycert) error {
+func AddProvince(prov string) Option {
 	return func(c *mycert) error {
 		c.cert.Subject.Province = append(c.cert.Subject.Province, prov)
 		return nil
 	}
 }
 
-func AddLocality(loc string) func(*mycert) error {
+func AddLocality(loc string) Option {
 	return func(c *mycert) error {
 		c.cert.Subject.Locality = append(c.cert.Subject.Locality, loc)
 		return nil
 	}
 }
 
-func AddStreetAddress(addr string) func(*mycert) error {
+func AddStreetAddress(addr string) Option {
 	return func(c *mycert) error {
 		c.cert.Subject.StreetAddress = append(c.cert.Subject.StreetAddress, addr)
 		return nil
 	}
 }
 
-func AddPostalCode(post string) func(*mycert) error {
+func AddPostalCode(post string) Option {
 	return func(c *mycert) error {
 		c.cert.Subject.PostalCode = append(c.cert.Subject.PostalCode, post)
 		return nil
 	}
 }
 
-func SetCommonName(cn string) func(*mycert) error {
+func SetCommonName(cn string) Option {
 	return func(c *mycert) error {
 		c.cert.Subject.CommonName = cn
 		return nil
 	}
 }
 
-func SetSubjectKeyId(id []byte) func(*mycert) error {
+func SetSubjectKeyId(id []byte) Option {
 	return func(c *mycert) error {
 		c.cert.SubjectKeyId = id
 		return nil
 	}
 }
 
-func Serialize(file string) func(*mycert) error {
-	SAVE := func(cert *mycert) error {
-		pub := &cert.priv.PublicKey
-		cert_b, err := x509.CreateCertificate(rand.Reader, cert.cert, cert.CA, pub, cert.CApriv)
-		if err != nil {
-			log.Println("create certificate failed", err)
-			return errors.New("Certificate creation failed.")
-		}
-
-		// Public key
-		certOut, err := os.OpenFile(file+".crt", os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0664)
-		pem.Encode(certOut, &pem.Block{Type: "CERTIFICATE", Bytes: cert_b})
-		certOut.Close()
-
-		// Private key
-		keyOut, err := os.OpenFile(file+".key", os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
-		pem.Encode(keyOut, &pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(cert.priv)})
-		keyOut.Close()
-		return nil
-	}
-
-	fmt.Printf("Load existing %s.crt and %s.key\n", file, file)
-	catls, err := tls.LoadX509KeyPair(file+".crt", file+".key")
-	if err != nil {
-		fmt.Printf("\tNONEXISTENT: create from scratch\n")
-		return SAVE
-	}
-	ca, err := x509.ParseCertificate(catls.Certificate[0])
-	if err != nil {
-		fmt.Printf("\tPARSE ERROR: create from scratch\n")
-		return SAVE
-	}
-
-	return func(cert *mycert) error {
-		fmt.Printf("\tSet to saved keys\n")
-		cert.cert = ca
-		cert.priv = catls.PrivateKey.(*rsa.PrivateKey)
-		return nil
-	}
-}
-
-func SignWithCA(ca *mycert) func(*mycert) error {
+func SignWithCA(ca *mycert) Option {
 	return func(c *mycert) error {
 		c.CA = ca.cert
 		c.CApriv = ca.priv
@@ -200,7 +174,7 @@ func SignWithCA(ca *mycert) func(*mycert) error {
 	}
 }
 
-func AddSANDNSName(names ...string) func(*mycert) error {
+func AddSANDNSName(names ...string) Option {
 	return func(c *mycert) error {
 		for _, name := range names {
 			c.cert.DNSNames = append(c.cert.DNSNames, name)
@@ -209,7 +183,7 @@ func AddSANDNSName(names ...string) func(*mycert) error {
 	}
 }
 
-func AddSANIPAddress(ips ...string) func(*mycert) error {
+func AddSANIPAddress(ips ...string) Option {
 	return func(c *mycert) error {
 		for _, ip := range ips {
 			c.cert.IPAddresses = append(c.cert.IPAddresses, net.ParseIP(ip))
@@ -217,3 +191,55 @@ func AddSANIPAddress(ips ...string) func(*mycert) error {
 		return nil
 	}
 }
+
+func AddSANIP(ips ...net.IP) Option {
+	return func(c *mycert) error {
+		for _, ip := range ips {
+			c.cert.IPAddresses = append(c.cert.IPAddresses, ip)
+		}
+		return nil
+	}
+}
+
+func LoadIfExists() Option {
+	return func(cert *mycert) error {
+        fmt.Printf("Load existing %s.crt and %s.key\n", cert.fileBase, cert.fileBase )
+        catls, err := tls.LoadX509KeyPair(cert.fileBase +".crt",cert.fileBase +".key")
+        if err != nil {
+            fmt.Printf("\tNONEXISTENT: create from scratch\n")
+            return nil
+        }
+        ca, err := x509.ParseCertificate(catls.Certificate[0])
+        if err != nil {
+            fmt.Printf("\tPARSE ERROR: create from scratch\n")
+            return nil
+        }
+
+		fmt.Printf("\tSet to saved keys\n")
+		cert.cert = ca
+		cert.priv = catls.PrivateKey.(*rsa.PrivateKey)
+		return nil
+	}
+}
+
+
+func (cert *mycert) Serialize()  error {
+    pub := &cert.priv.PublicKey
+    cert_b, err := x509.CreateCertificate(rand.Reader, cert.cert, cert.CA, pub, cert.CApriv)
+    if err != nil {
+        log.Println("create certificate failed", err)
+        return errors.New("Certificate creation failed.")
+    }
+
+    // Public key
+    certOut, err := os.OpenFile(cert.fileBase+".crt", os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0664)
+    pem.Encode(certOut, &pem.Block{Type: "CERTIFICATE", Bytes: cert_b})
+    certOut.Close()
+
+    // Private key
+    keyOut, err := os.OpenFile(cert.fileBase+".key", os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
+    pem.Encode(keyOut, &pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(cert.priv)})
+    keyOut.Close()
+    return nil
+}
+

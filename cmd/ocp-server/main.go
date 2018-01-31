@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"time"
+    "net"
 
 	eh "github.com/looplab/eventhorizon"
 
@@ -155,18 +156,50 @@ func main() {
 	ca, _ := tlscert.NewCert(
 		tlscert.CreateCA,
 		tlscert.ExpireInOneYear,
-		tlscert.Serialize("ca"))
+        tlscert.SetCommonName("CA Cert common name"),
+        tlscert.SetSerialNumber(12345),
+		tlscert.SetBaseFilename("ca"),
+		tlscert.LoadIfExists(), // this should be last
+        )
+    ca.Serialize()
+
+    var Options []tlscert.Option
+    ifaces, _ := net.Interfaces()
+    for _, iface := range ifaces {
+        if iface.Flags&net.FlagUp == 0 {
+            continue // interface down
+        }
+        addrs, err := iface.Addrs()
+        if err != nil {
+            continue
+        }
+        for _, addr := range addrs {
+            var ip net.IP
+            switch v := addr.(type) {
+            case *net.IPNet:
+                ip = v.IP
+            case *net.IPAddr:
+                ip = v.IP
+            }
+            fmt.Printf("Adding local IP Address to server cert as SAN: %s\n", ip)
+            Options = append(Options, tlscert.AddSANIP(ip))
+        }
+    }
+
+    Options = append(Options, tlscert.SignWithCA(ca),)
+    Options = append(Options, tlscert.MakeServer,)
+    Options = append(Options, tlscert.ExpireInOneYear,)
+    Options = append(Options, tlscert.SetCommonName("localhost"),)
+    Options = append(Options, tlscert.SetSubjectKeyId([]byte{1, 2, 3, 4, 6}),)
+    Options = append(Options, tlscert.AddSANDNSName("localhost", "localhost.localdomain"),)
+    Options = append(Options, tlscert.AddSANIPAddress("127.0.0.1"),)
+    Options = append(Options, tlscert.SetSerialNumber(12346),)
+    Options = append(Options, tlscert.SetBaseFilename("server"),)
+    //Options = append(Options, tlscert.LoadIfExists()) // this should be last
 
 	// create new server cert or load from disk
-	tlscert.NewCert(
-		tlscert.SignWithCA(ca),
-		tlscert.MakeServer,
-		tlscert.ExpireInOneYear,
-		tlscert.SetCommonName("localhost"),
-		tlscert.SetSubjectKeyId([]byte{1, 2, 3, 4, 6}),
-		tlscert.AddSANDNSName("localhost", "localhost.localdomain"),
-		tlscert.AddSANIPAddress("127.0.0.1"),
-		tlscert.Serialize("server"))
+	serverCert, _ := tlscert.NewCert(Options...)
+    serverCert.Serialize()
 
 	s := &http.Server{
 		Addr:        ":8443",
