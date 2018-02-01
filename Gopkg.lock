@@ -40,9 +40,30 @@
   revision = "02aa8f82c5d8315077b69bec05706b9f85c2d5c9"
   source = "github.com/superchalupa/eventhorizon"
 
+[[projects]]
+  branch = "master"
+  name = "github.com/spacemonkeygo/openssl"
+  packages = [
+    ".",
+    "utils"
+  ]
+  revision = "666cd1440ae0ac0f8e8d210b35b935c218af670b"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/spacemonkeygo/spacelog"
+  packages = ["."]
+  revision = "081216856ee01315ad130cb9ccd5d2a40624c619"
+
+[[projects]]
+  branch = "master"
+  name = "golang.org/x/sys"
+  packages = ["unix"]
+  revision = "3dbebcf8efb6a5011a60c2b4591c1022a759af8a"
+
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "502c7ec9c469452b7c44a66b84e49b33a9d9c35d960fab0e4a999168d6a5574f"
+  inputs-digest = "05272f67602c43050f1f5a8d6f25dc85b51cc09f3f9aeb116704bf90c544192f"
   solver-name = "gps-cdcl"
   solver-version = 1

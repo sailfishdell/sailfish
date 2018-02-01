@@ -18,6 +18,9 @@ import (
 	"strings"
 	"time"
 
+    // space monkey (openssl wrapper for go)
+    "github.com/spacemonkeygo/openssl"
+
 	eh "github.com/looplab/eventhorizon"
 
 	domain "github.com/superchalupa/go-redfish/redfishresource"
@@ -328,6 +331,13 @@ func main() {
 				log.Println(s.ListenAndServeTLS("server.crt", "server.key"))
 			}(listen)
 
+		case strings.HasPrefix(listen, "spacemonkey:"):
+			// HTTPS protocol listener
+			// "https:[addr]:port,certfile,keyfile
+			log.Println("spacemonkey listener starting")
+			go func(listen string) {
+                log.Fatal(openssl.ListenAndServeTLS(":8443", "server.crt", "server.key", logger))
+			}(listen)
 		}
 
 		if strings.HasPrefix(listen, "fcgi:") {
