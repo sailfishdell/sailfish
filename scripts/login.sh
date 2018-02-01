@@ -2,6 +2,7 @@
 
 set -e
 
+unset HTTP_PROXY HTTPS_PROXY http_proxy https_proxy
 CURLCMD="curl --cacert ./ca.crt"
 prot=${prot:-https}
 user=${user:-Administrator}
