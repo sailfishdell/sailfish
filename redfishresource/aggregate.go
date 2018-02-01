@@ -37,14 +37,22 @@ func (rrp *RedfishResourceProperty) Parse(thing interface{}) {
 	//var val interface{}
 	switch thing.(type) {
 	// TODO: add array parse
-	// case []interface{}:
-	//     rrp.Value = []RedfishResourceProperty{}
-	//     parse_array(rrp.Value.([]RedfishResourceProperty), thing.([]interface{}))
+	case []interface{}:
+		rrp.Value = parse_array(thing.([]interface{}))
 	case map[string]interface{}:
 		rrp.Value = map[string]RedfishResourceProperty{}
 		parse_map(rrp.Value.(map[string]RedfishResourceProperty), thing.(map[string]interface{}))
 	default:
 		rrp.Value = thing
+	}
+	return
+}
+
+func parse_array(props []interface{}) (ret []RedfishResourceProperty) {
+	for _, v := range props {
+		prop := RedfishResourceProperty{}
+		prop.Parse(v)
+		ret = append(ret, prop)
 	}
 	return
 }
@@ -216,46 +224,63 @@ func (r *RedfishResourceAggregate) UpdateCollectionMemberCount_unlocked() {
 }
 
 type PropertyUpdater interface {
-	UpdateValue(context.Context, *sync.WaitGroup, *RedfishResourceAggregate, string, *RedfishResourceProperty, map[string]interface{})
+	DemandBasedUpdate(context.Context, *sync.WaitGroup, *RedfishResourceAggregate, string, *RedfishResourceProperty, map[string]interface{})
 }
 
 func (rrp *RedfishResourceProperty) Process(ctx context.Context, wg *sync.WaitGroup, agg *RedfishResourceAggregate, property, method string) {
 	defer wg.Done()
-	meta, ok := rrp.Meta[method]
-	if !ok {
-		return
+	// step 1: run the plugin to update rrp.Value based on the plugin.
+	// Step 2: see if the rrp.Value is a recursable map or array and recurse down it
+
+	// equivalent to do{}while(1) to run once
+	// if any of the intermediate steps fails, bail out on this part and continue by doing the next thing
+	for ok := true; ok; ok = false {
+		meta_t, ok := rrp.Meta[method].(map[string]interface{})
+		if !ok {
+			break
+		}
+
+		pluginName, ok := meta_t["plugin"]
+		if !ok {
+			break
+		}
+
+		plugin, err := InstantiatePlugin(PluginType(pluginName.(string)))
+		if err != nil {
+			break
+		}
+
+		if plugin, ok := plugin.(PropertyUpdater); ok {
+			fmt.Printf("PROCESS PROPERTY(%s) with plugin(%s)\n", property, pluginName)
+			wg.Add(1)
+			plugin.DemandBasedUpdate(ctx, wg, agg, property, rrp, meta_t)
+		}
 	}
 
-	meta_t, ok := meta.(map[string]interface{})
-	if !ok {
-		return
+	switch t := rrp.Value.(type) {
+	case map[string]RedfishResourceProperty:
+		for property, v := range t {
+			wg.Add(1)
+			v.Process(ctx, wg, agg, property, method)
+			t[property] = v
+		}
+	case []RedfishResourceProperty:
+		newArr := []RedfishResourceProperty{}
+		for _, v := range t {
+			wg.Add(1)
+			v.Process(ctx, wg, agg, property, method)
+			newArr = append(newArr, v)
+		}
+		rrp.Value = newArr
+	default:
 	}
-
-	pluginName, ok := meta_t["plugin"]
-	if !ok {
-		return
-	}
-
-	fmt.Printf("PROCESS PROPERTY: %s\n", pluginName)
-	plugin, err := InstantiatePlugin(PluginType(pluginName.(string)))
-	if err != nil {
-		return
-	}
-
-	if plugin, ok := plugin.(PropertyUpdater); ok {
-		wg.Add(1)
-		plugin.UpdateValue(ctx, wg, agg, property, rrp, meta_t)
-	}
-
-	//TODO: recursively Process() any Values that are RedfishResourceProperty
-	// can do that here with a type switch
 }
 
 func (agg *RedfishResourceAggregate) ProcessMeta(ctx context.Context, method string) error {
-	var wg sync.WaitGroup
 	agg.newPropertiesMu.Lock()
 	defer agg.newPropertiesMu.Unlock()
 
+	var wg sync.WaitGroup
 	for property, v := range agg.newProperties {
 		wg.Add(1)
 		v.Process(ctx, &wg, agg, property, method)

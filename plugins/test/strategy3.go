@@ -28,7 +28,7 @@ type testplugin_strategy3 struct{}
 
 func (t *testplugin_strategy3) PluginType() domain.PluginType { return TestPlugin_Strategy3 }
 
-func (t *testplugin_strategy3) UpdateValue(ctx context.Context, wg *sync.WaitGroup, agg *domain.RedfishResourceAggregate, property string, rrp *domain.RedfishResourceProperty, meta map[string]interface{}) {
+func (t *testplugin_strategy3) DemandBasedUpdate(ctx context.Context, wg *sync.WaitGroup, agg *domain.RedfishResourceAggregate, property string, rrp *domain.RedfishResourceProperty, meta map[string]interface{}) {
 	fmt.Printf("UPDATE AGGREGATE: %s  (Old: %s)\n", property, rrp.Value)
 	defer wg.Done()
 

@@ -36,7 +36,6 @@ $CURLCMD $URL/api/RedfishResource%3ACreate  -d '
         "Context": "foocontext",
         "Privileges": { "GET": ["Unauthenticated"] },
         "Properties": {
-            "testvalue1": 41,
             "testvalue1@meta": {
                 "GET": {
                     "plugin": "test:strategy3",
@@ -48,7 +47,6 @@ $CURLCMD $URL/api/RedfishResource%3ACreate  -d '
                 }
             },
 
-            "testvalue2": 42,
             "testvalue2@meta": {
                 "GET": {
                     "plugin": "runcmd",
@@ -56,6 +54,31 @@ $CURLCMD $URL/api/RedfishResource%3ACreate  -d '
                     "CMDARGS": ["+%Y-%m-%d %H:%M:%S"]
                 }
             },
+
+            "testvalue3": {
+                "testvalue_embed@meta": {
+                    "GET": {
+                        "plugin": "runcmd",
+                        "CMD": "/bin/date",
+                        "CMDARGS": ["+%Y-%m-%d %H:%M:%S"]
+                    }
+                }
+            },
+
+            "testarray": [
+                { "foobar@meta": {
+                    "GET": {
+                        "plugin": "runcmd",
+                        "CMD": "/bin/date",
+                        "CMDARGS": ["+%Y-%m-%d %H:%M:%S"]
+                    }}},
+                { "fofo@meta": {
+                    "GET": {
+                        "plugin": "runcmd",
+                        "CMD": "/bin/date",
+                        "CMDARGS": ["+%Y-%m-%d %H:%M:%S"]
+                    }}}
+            ],
 
             "testvalue_invalid": 44,
             "testvalue_invalid@meta": { "GET": {"plugin": "test:invalid_plugin", "args": "foobar_invalid"} },
@@ -72,22 +95,14 @@ $CURLCMD $URL/api/RedfishResource%3ACreate  -d '
                 "Oem@meta": {"plugin": "nonexistent"}
             },
             "Name": "TEST"
-
-            
         }
     }'
 
 echo "/redfish/v1/test"
 $CURLCMD $URL/redfish/v1/test
 
-
 echo "Run a test action"
 echo "/redfish/v1/Actions/Test"
 $CURLCMD $URL/redfish/v1/Actions/Test -d '{"TestType": "FOO"}'
 
-
 $CURLCMD $URL/redfish/v1/SessionService -XPATCH -d '{"SessionTimeout": 35}'
-
-exit 1
-
-

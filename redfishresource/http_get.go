@@ -2,7 +2,6 @@ package domain
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	eh "github.com/looplab/eventhorizon"
@@ -41,21 +40,10 @@ func (c *GET) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 		StatusCode: 200,
 		Headers:    a.Headers,
 	}
-	// TODO: mutual exclusion
-	// need to think about this: there are threading concerns here if multiple
-	// threads call at the same time, same with the a.Properties access below.
-	// Probably need to have locking in the aggregate and some access functions
-	// to wrap it. Either that, *or* we need to set up a goroutine per
-	// aggregate to process data get/set.
 
-	// tell the aggregate to process any metadata that it has. This can include
-	// sending commands to update itself.
-	fmt.Printf("PROCESS META START: %s\n", a)
 	a.ProcessMeta(ctx, "GET")
 
-	fmt.Printf("PROCESS META DONE: %s\n", a)
 	for k, v := range a.newProperties {
-		fmt.Printf("Set property(%s) == %s\n", k, v)
 		data.Results[k] = v
 	}
 	a.eventBus.HandleEvent(ctx, eh.NewEvent(HTTPCmdProcessed, data, time.Now()))
