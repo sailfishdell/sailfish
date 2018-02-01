@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"os/exec"
-	"sync"
 
 	domain "github.com/superchalupa/go-redfish/redfishresource"
 )
@@ -22,9 +21,15 @@ type runCmd struct{}
 
 func (t *runCmd) PluginType() domain.PluginType { return RunCmdPlugin }
 
-func (t *runCmd) DemandBasedUpdate(ctx context.Context, wg *sync.WaitGroup, agg *domain.RedfishResourceAggregate, property string, rrp *domain.RedfishResourceProperty, meta map[string]interface{}) {
-	fmt.Printf("UPDATE AGGREGATE: %s  (Old: %s)\n", property, rrp.Value)
-	defer wg.Done()
+func (t *runCmd) DemandBasedUpdate(
+        ctx context.Context,
+        agg *domain.RedfishResourceAggregate,
+        rrp *domain.RedfishResourceProperty,
+        method string,
+        meta map[string]interface{},
+        body interface{},
+    ){
+
 
 	cmd, ok := meta["CMD"].(string)
 	if !ok {

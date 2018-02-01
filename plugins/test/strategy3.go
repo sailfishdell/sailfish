@@ -3,7 +3,6 @@ package test
 import (
 	"context"
 	"fmt"
-	"sync"
 	"time"
 
 	domain "github.com/superchalupa/go-redfish/redfishresource"
@@ -28,10 +27,15 @@ type testplugin_strategy3 struct{}
 
 func (t *testplugin_strategy3) PluginType() domain.PluginType { return TestPlugin_Strategy3 }
 
-func (t *testplugin_strategy3) DemandBasedUpdate(ctx context.Context, wg *sync.WaitGroup, agg *domain.RedfishResourceAggregate, property string, rrp *domain.RedfishResourceProperty, meta map[string]interface{}) {
-	fmt.Printf("UPDATE AGGREGATE: %s  (Old: %s)\n", property, rrp.Value)
-	defer wg.Done()
-
+//     DemandBasedUpdate(context.Context, *RedfishResourceAggregate, *RedfishResourceProperty, string, map[string]interface{}, interface{})
+func (t *testplugin_strategy3) DemandBasedUpdate(
+        ctx context.Context,
+        agg *domain.RedfishResourceAggregate,
+        rrp *domain.RedfishResourceProperty,
+        method string,
+        meta map[string]interface{},
+        body interface{},
+    ) {
 	time.Sleep(1 * time.Second)
 	rrp.Value = fmt.Sprintf("time(%s) args(%s)", time.Now(), meta["args"])
 }

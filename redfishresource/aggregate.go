@@ -24,7 +24,6 @@ func RegisterRRA(ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
 }
 
 type RedfishResourceProperty struct {
-	//propertyMu   sync.Mutex
 	Value interface{}
 	Meta  map[string]interface{}
 }
@@ -224,10 +223,10 @@ func (r *RedfishResourceAggregate) UpdateCollectionMemberCount_unlocked() {
 }
 
 type PropertyUpdater interface {
-	DemandBasedUpdate(context.Context, *sync.WaitGroup, *RedfishResourceAggregate, string, *RedfishResourceProperty, map[string]interface{})
+	DemandBasedUpdate(context.Context, *RedfishResourceAggregate, *RedfishResourceProperty, string, map[string]interface{}, interface{})
 }
 
-func (rrp *RedfishResourceProperty) Process(ctx context.Context, wg *sync.WaitGroup, agg *RedfishResourceAggregate, property, method string) {
+func (rrp *RedfishResourceProperty) Process(ctx context.Context, wg *sync.WaitGroup, agg *RedfishResourceAggregate, property, method string, req interface{}) {
 	defer wg.Done()
 	// step 1: run the plugin to update rrp.Value based on the plugin.
 	// Step 2: see if the rrp.Value is a recursable map or array and recurse down it
@@ -240,53 +239,68 @@ func (rrp *RedfishResourceProperty) Process(ctx context.Context, wg *sync.WaitGr
 			break
 		}
 
-		pluginName, ok := meta_t["plugin"]
+		pluginName, ok := meta_t["plugin"].(string)
 		if !ok {
 			break
 		}
 
-		plugin, err := InstantiatePlugin(PluginType(pluginName.(string)))
+		plugin, err := InstantiatePlugin(PluginType(pluginName))
 		if err != nil {
 			break
 		}
 
 		if plugin, ok := plugin.(PropertyUpdater); ok {
 			fmt.Printf("PROCESS PROPERTY(%s) with plugin(%s)\n", property, pluginName)
-			wg.Add(1)
-			plugin.DemandBasedUpdate(ctx, wg, agg, property, rrp, meta_t)
+			plugin.DemandBasedUpdate(ctx, agg, rrp, method, meta_t, req)
 		}
 	}
 
 	switch t := rrp.Value.(type) {
 	case map[string]RedfishResourceProperty:
+        reqmap, _ := req.(map[string]interface{})
 		for property, v := range t {
+            reqitem, _ := reqmap[property]
 			wg.Add(1)
-			v.Process(ctx, wg, agg, property, method)
-			t[property] = v
+                // TODO: make this parallel
+			    v.Process(ctx, wg, agg, property, method, reqitem)
+			    t[property] = v
 		}
 	case []RedfishResourceProperty:
+        reqarr, _ := req.([]interface{})
 		newArr := []RedfishResourceProperty{}
-		for _, v := range t {
+		for index, v := range t {
+            var reqitem interface{} = nil
+            if index < len(reqarr) {
+                reqitem = reqarr[index]
+            }
 			wg.Add(1)
-			v.Process(ctx, wg, agg, property, method)
-			newArr = append(newArr, v)
+                // TODO: make this parallel
+			    v.Process(ctx, wg, agg, property, method, reqitem)
+			    newArr = append(newArr, v)
 		}
 		rrp.Value = newArr
 	default:
 	}
 }
 
-func (agg *RedfishResourceAggregate) ProcessMeta(ctx context.Context, method string) error {
+func (agg *RedfishResourceAggregate) ProcessMeta(ctx context.Context, method string, results map[string]interface{}, request map[string]interface{}) error {
 	agg.newPropertiesMu.Lock()
 	defer agg.newPropertiesMu.Unlock()
 
 	var wg sync.WaitGroup
 	for property, v := range agg.newProperties {
+        req, _ := request[property]
 		wg.Add(1)
-		v.Process(ctx, &wg, agg, property, method)
-		agg.newProperties[property] = v
+            // TODO: make this parallel
+		    v.Process(ctx, &wg, agg, property, method, req)
+		    agg.newProperties[property] = v
 	}
 
 	wg.Wait()
+
+    // after everything has settled, copy it out (still under lock)
+	for property, v := range agg.newProperties {
+        results[property] = v
+    }
 	return nil
 }

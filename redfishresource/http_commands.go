@@ -92,19 +92,18 @@ func (c *PATCH) ParseHTTPRequest(r *http.Request) error {
 	return nil
 }
 func (c *PATCH) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
-	fmt.Printf("HANDLE PATCH: %s\n", c.Body)
-
-	for k, _ := range c.Body {
-		fmt.Printf("PATCH Property: %s\n", k)
-		fmt.Printf("\tnot allowed...\n")
+	// set up the base response data
+	data := HTTPCmdProcessedData{
+		CommandID:  c.CmdID,
+		Results:    map[string]interface{}{},
+		StatusCode: 200,
 	}
 
-	a.eventBus.HandleEvent(ctx, eh.NewEvent(HTTPCmdProcessed, HTTPCmdProcessedData{
-		CommandID:  c.CmdID,
-		Results:    map[string]interface{}{"message": "ok"},
-		StatusCode: 200,
-		Headers:    map[string]string{},
-	}, time.Now()))
+    a.ProcessMeta(ctx, "PATCH", data.Results, c.Body)
+    // TODO: set error status code based on err from ProcessMeta
+    data.Headers = a.Headers
+
+	a.eventBus.HandleEvent(ctx, eh.NewEvent(HTTPCmdProcessed, data, time.Now()))
 	return nil
 }
 
