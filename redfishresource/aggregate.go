@@ -257,26 +257,26 @@ func (rrp *RedfishResourceProperty) Process(ctx context.Context, wg *sync.WaitGr
 
 	switch t := rrp.Value.(type) {
 	case map[string]RedfishResourceProperty:
-        reqmap, _ := req.(map[string]interface{})
+		reqmap, _ := req.(map[string]interface{})
 		for property, v := range t {
-            reqitem, _ := reqmap[property]
+			reqitem, _ := reqmap[property]
 			wg.Add(1)
-                // TODO: make this parallel
-			    v.Process(ctx, wg, agg, property, method, reqitem)
-			    t[property] = v
+			// TODO: make this parallel
+			v.Process(ctx, wg, agg, property, method, reqitem)
+			t[property] = v
 		}
 	case []RedfishResourceProperty:
-        reqarr, _ := req.([]interface{})
+		reqarr, _ := req.([]interface{})
 		newArr := []RedfishResourceProperty{}
 		for index, v := range t {
-            var reqitem interface{} = nil
-            if index < len(reqarr) {
-                reqitem = reqarr[index]
-            }
+			var reqitem interface{} = nil
+			if index < len(reqarr) {
+				reqitem = reqarr[index]
+			}
 			wg.Add(1)
-                // TODO: make this parallel
-			    v.Process(ctx, wg, agg, property, method, reqitem)
-			    newArr = append(newArr, v)
+			// TODO: make this parallel
+			v.Process(ctx, wg, agg, property, method, reqitem)
+			newArr = append(newArr, v)
 		}
 		rrp.Value = newArr
 	default:
@@ -289,18 +289,18 @@ func (agg *RedfishResourceAggregate) ProcessMeta(ctx context.Context, method str
 
 	var wg sync.WaitGroup
 	for property, v := range agg.newProperties {
-        req, _ := request[property]
+		req, _ := request[property]
 		wg.Add(1)
-            // TODO: make this parallel
-		    v.Process(ctx, &wg, agg, property, method, req)
-		    agg.newProperties[property] = v
+		// TODO: make this parallel
+		v.Process(ctx, &wg, agg, property, method, req)
+		agg.newProperties[property] = v
 	}
 
 	wg.Wait()
 
-    // after everything has settled, copy it out (still under lock)
+	// after everything has settled, copy it out (still under lock)
 	for property, v := range agg.newProperties {
-        results[property] = v
-    }
+		results[property] = v
+	}
 	return nil
 }

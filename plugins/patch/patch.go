@@ -19,13 +19,13 @@ type patch struct{}
 func (t *patch) PluginType() domain.PluginType { return PatchPlugin }
 
 func (t *patch) DemandBasedUpdate(
-        ctx context.Context,
-        agg *domain.RedfishResourceAggregate,
-        rrp *domain.RedfishResourceProperty,
-        method string,
-        meta map[string]interface{},
-        body interface{},
-    ){
+	ctx context.Context,
+	agg *domain.RedfishResourceAggregate,
+	rrp *domain.RedfishResourceProperty,
+	method string,
+	meta map[string]interface{},
+	body interface{},
+) {
 
 	rrp.Value = body
 }

@@ -39,11 +39,11 @@ func (c *GET) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 		Results:    map[string]interface{}{},
 		StatusCode: 200,
 	}
-    // TODO: Should be able to discern supported methods from the meta and return those
+	// TODO: Should be able to discern supported methods from the meta and return those
 
-    a.ProcessMeta(ctx, "GET", data.Results, map[string]interface{}{})
-    // TODO: set error status code based on err from ProcessMeta
-    data.Headers = a.Headers
+	a.ProcessMeta(ctx, "GET", data.Results, map[string]interface{}{})
+	// TODO: set error status code based on err from ProcessMeta
+	data.Headers = a.Headers
 
 	a.eventBus.HandleEvent(ctx, eh.NewEvent(HTTPCmdProcessed, data, time.Now()))
 	return nil

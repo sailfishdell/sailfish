@@ -23,9 +23,9 @@ import (
 
 	// load plugins (auto-register)
 	_ "github.com/superchalupa/go-redfish/plugins/actionhandler"
+	_ "github.com/superchalupa/go-redfish/plugins/patch"
 	_ "github.com/superchalupa/go-redfish/plugins/runcmd"
 	_ "github.com/superchalupa/go-redfish/plugins/stdcollections"
-	_ "github.com/superchalupa/go-redfish/plugins/patch"
 	// Test plugins
 	_ "github.com/superchalupa/go-redfish/plugins/test"
 	_ "github.com/superchalupa/go-redfish/plugins/test_action"

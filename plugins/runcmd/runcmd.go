@@ -22,14 +22,13 @@ type runCmd struct{}
 func (t *runCmd) PluginType() domain.PluginType { return RunCmdPlugin }
 
 func (t *runCmd) DemandBasedUpdate(
-        ctx context.Context,
-        agg *domain.RedfishResourceAggregate,
-        rrp *domain.RedfishResourceProperty,
-        method string,
-        meta map[string]interface{},
-        body interface{},
-    ){
-
+	ctx context.Context,
+	agg *domain.RedfishResourceAggregate,
+	rrp *domain.RedfishResourceProperty,
+	method string,
+	meta map[string]interface{},
+	body interface{},
+) {
 
 	cmd, ok := meta["CMD"].(string)
 	if !ok {

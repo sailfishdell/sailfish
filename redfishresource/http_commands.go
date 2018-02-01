@@ -99,9 +99,9 @@ func (c *PATCH) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 		StatusCode: 200,
 	}
 
-    a.ProcessMeta(ctx, "PATCH", data.Results, c.Body)
-    // TODO: set error status code based on err from ProcessMeta
-    data.Headers = a.Headers
+	a.ProcessMeta(ctx, "PATCH", data.Results, c.Body)
+	// TODO: set error status code based on err from ProcessMeta
+	data.Headers = a.Headers
 
 	a.eventBus.HandleEvent(ctx, eh.NewEvent(HTTPCmdProcessed, data, time.Now()))
 	return nil
