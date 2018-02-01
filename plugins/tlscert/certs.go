@@ -19,11 +19,11 @@ import (
 type Option func(*mycert) error
 
 type mycert struct {
-	CA     *x509.Certificate
-	CApriv *rsa.PrivateKey
-	cert   *x509.Certificate
-	priv   *rsa.PrivateKey
-    fileBase string
+	CA       *x509.Certificate
+	CApriv   *rsa.PrivateKey
+	cert     *x509.Certificate
+	priv     *rsa.PrivateKey
+	fileBase string
 }
 
 func NewCert(options ...Option) (*mycert, error) {
@@ -203,17 +203,17 @@ func AddSANIP(ips ...net.IP) Option {
 
 func LoadIfExists() Option {
 	return func(cert *mycert) error {
-        fmt.Printf("Load existing %s.crt and %s.key\n", cert.fileBase, cert.fileBase )
-        catls, err := tls.LoadX509KeyPair(cert.fileBase +".crt",cert.fileBase +".key")
-        if err != nil {
-            fmt.Printf("\tNONEXISTENT: create from scratch\n")
-            return nil
-        }
-        ca, err := x509.ParseCertificate(catls.Certificate[0])
-        if err != nil {
-            fmt.Printf("\tPARSE ERROR: create from scratch\n")
-            return nil
-        }
+		fmt.Printf("Load existing %s.crt and %s.key\n", cert.fileBase, cert.fileBase)
+		catls, err := tls.LoadX509KeyPair(cert.fileBase+".crt", cert.fileBase+".key")
+		if err != nil {
+			fmt.Printf("\tNONEXISTENT: create from scratch\n")
+			return nil
+		}
+		ca, err := x509.ParseCertificate(catls.Certificate[0])
+		if err != nil {
+			fmt.Printf("\tPARSE ERROR: create from scratch\n")
+			return nil
+		}
 
 		fmt.Printf("\tSet to saved keys\n")
 		cert.cert = ca
@@ -222,24 +222,22 @@ func LoadIfExists() Option {
 	}
 }
 
+func (cert *mycert) Serialize() error {
+	pub := &cert.priv.PublicKey
+	cert_b, err := x509.CreateCertificate(rand.Reader, cert.cert, cert.CA, pub, cert.CApriv)
+	if err != nil {
+		log.Println("create certificate failed", err)
+		return errors.New("Certificate creation failed.")
+	}
 
-func (cert *mycert) Serialize()  error {
-    pub := &cert.priv.PublicKey
-    cert_b, err := x509.CreateCertificate(rand.Reader, cert.cert, cert.CA, pub, cert.CApriv)
-    if err != nil {
-        log.Println("create certificate failed", err)
-        return errors.New("Certificate creation failed.")
-    }
+	// Public key
+	certOut, err := os.OpenFile(cert.fileBase+".crt", os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0664)
+	pem.Encode(certOut, &pem.Block{Type: "CERTIFICATE", Bytes: cert_b})
+	certOut.Close()
 
-    // Public key
-    certOut, err := os.OpenFile(cert.fileBase+".crt", os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0664)
-    pem.Encode(certOut, &pem.Block{Type: "CERTIFICATE", Bytes: cert_b})
-    certOut.Close()
-
-    // Private key
-    keyOut, err := os.OpenFile(cert.fileBase+".key", os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
-    pem.Encode(keyOut, &pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(cert.priv)})
-    keyOut.Close()
-    return nil
+	// Private key
+	keyOut, err := os.OpenFile(cert.fileBase+".key", os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
+	pem.Encode(keyOut, &pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(cert.priv)})
+	keyOut.Close()
+	return nil
 }
-
