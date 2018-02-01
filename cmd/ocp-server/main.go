@@ -314,7 +314,6 @@ func main() {
 			// HTTP protocol listener
 			addr := strings.TrimPrefix(listen, "http:")
 			log.Println("msg", "HTTP listener starting on "+addr)
-			s.Addr = addr
 			servers = append(servers, s)
 			go func(listen string) {
 				log.Println("err", http.ListenAndServe(addr, logger))
@@ -338,6 +337,7 @@ func main() {
 			go func(listen string) {
                 log.Fatal(openssl.ListenAndServeTLS(":8443", "server.crt", "server.key", logger))
 			}(listen)
+
 		}
 
 		if strings.HasPrefix(listen, "fcgi:") {
