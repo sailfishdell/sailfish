@@ -8,6 +8,12 @@
   version = "v3.1.0"
 
 [[projects]]
+  branch = "v2"
+  name = "github.com/go-yaml/yaml"
+  packages = ["."]
+  revision = "d670f9405373e636a5a2765eea47fac0c9bc91a4"
+
+[[projects]]
   name = "github.com/gorilla/context"
   packages = ["."]
   revision = "1ea25387ff6f684839d82767c1733ff4d4d15d0a"
@@ -37,6 +43,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "b66593a9b8e8fd32a4c2cd8d648e6eb7c573430736751be6ec62f98352fa8831"
+  inputs-digest = "502c7ec9c469452b7c44a66b84e49b33a9d9c35d960fab0e4a999168d6a5574f"
   solver-name = "gps-cdcl"
   solver-version = 1

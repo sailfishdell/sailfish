@@ -3,11 +3,19 @@ package main
 import (
 	"context"
 	"crypto/tls"
+	"flag"
 	"fmt"
+	"github.com/go-yaml/yaml"
 	"github.com/gorilla/mux"
+	"io/ioutil"
 	"log"
 	"net"
 	"net/http"
+	"net/http/fcgi"
+	"net/http/pprof"
+	"os"
+	"os/signal"
+	"strings"
 	"time"
 
 	eh "github.com/looplab/eventhorizon"
@@ -31,8 +39,59 @@ import (
 	_ "github.com/superchalupa/go-redfish/plugins/test_action"
 )
 
+// Define a type named "strslice" as a slice of strings
+type strslice []string
+
+// Now, for our new type, implement the two methods of
+// the flag.Value interface...
+// The first method is String() string
+func (i *strslice) String() string {
+	return fmt.Sprintf("%v", *i)
+}
+
+// The second method is Set(value string) error
+func (i *strslice) Set(value string) error {
+	*i = append(*i, value)
+	return nil
+}
+
+type appConfig struct {
+	Listen []string `yaml:"listen"`
+}
+
+func loadConfig(filename string) (appConfig, error) {
+	bytes, err := ioutil.ReadFile(filename)
+	if err != nil {
+		return appConfig{}, err
+	}
+
+	var config appConfig
+	err = yaml.Unmarshal(bytes, &config)
+	if err != nil {
+		return appConfig{}, err
+	}
+
+	return config, nil
+}
+
 func main() {
 	log.Println("starting backend")
+	var (
+		configFile  = flag.String("config", "app.yaml", "Application configuration file")
+		listenAddrs strslice
+	)
+	flag.Var(&listenAddrs, "l", "Listen address.  Formats: (:nn, fcgi:ip:port, fcgi:/path)")
+	flag.Parse()
+
+	intr := make(chan os.Signal, 1)
+	signal.Notify(intr, os.Interrupt)
+
+	cfg, _ := loadConfig(*configFile)
+	if len(listenAddrs) > 0 {
+		cfg.Listen = listenAddrs
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
 
 	domainObjs, _ := domain.NewDomainObjects()
 	domainObjs.EventPublisher.AddObserver(&Logger{})
@@ -48,7 +107,7 @@ func main() {
 	domainObjs.CommandHandler = loggingHandler
 
 	// This also initializes all of the plugins
-	domain.InitDomain(context.Background(), domainObjs.CommandHandler, domainObjs.EventBus, domainObjs.EventWaiter)
+	domain.InitDomain(ctx, domainObjs.CommandHandler, domainObjs.EventBus, domainObjs.EventWaiter)
 
 	// generate uuid of root object
 	rootID := eh.NewUUID()
@@ -78,7 +137,7 @@ func main() {
 
 	// set up some basic stuff
 	loggingHandler.HandleCommand(
-		context.Background(),
+		ctx,
 		&domain.CreateRedfishResource{
 			ID:          rootID,
 			ResourceURI: "/redfish/v1",
@@ -118,6 +177,13 @@ func main() {
 
 	// backend command handling
 	m.PathPrefix("/api/{command}").Handler(domainObjs.GetInternalCommandHandler())
+
+	// TODO: cli option to enable/disable
+	m.Handle("/debug/pprof/", http.HandlerFunc(pprof.Index))
+	m.Handle("/debug/pprof/cmdline", http.HandlerFunc(pprof.Cmdline))
+	m.Handle("/debug/pprof/profile", http.HandlerFunc(pprof.Profile))
+	m.Handle("/debug/pprof/symbol", http.HandlerFunc(pprof.Symbol))
+	m.Handle("/debug/pprof/trace", http.HandlerFunc(pprof.Trace))
 
 	// Simple HTTP request logging.
 	logger := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -213,7 +279,101 @@ func main() {
 		//TLSNextProto:   make(map[string]func(*http.Server, *tls.Conn, http.Handler), 0),
 	}
 
-	log.Println(s.ListenAndServeTLS("server.crt", "server.key"))
+	servers := []*http.Server{}
+	if len(cfg.Listen) == 0 {
+		log.Fatal("No listeners configured! Use the '-l' option to configure a listener!")
+	}
+
+	for _, listen := range cfg.Listen {
+		var listener net.Listener
+		var err error
+		log.Println("msg", "processing listen request for "+listen)
+		switch {
+		case strings.HasPrefix(listen, "fcgi:") && strings.Contains(strings.TrimPrefix(listen, "fcgi:"), ":"):
+			// FCGI listener on a TCP socket (usually should be specified as 127.0.0.1 for security)  fcgi:127.0.0.1:4040
+			addr := strings.TrimPrefix(listen, "fcgi:")
+			log.Println("msg", "FCGI mode activated with tcp listener: "+addr)
+			listener, err = net.Listen("tcp", addr)
+
+		case strings.HasPrefix(listen, "fcgi:") && strings.Contains(strings.TrimPrefix(listen, "fcgi:"), "/"):
+			// FCGI listener on unix domain socket, specified as a path fcgi:/run/fcgi.sock
+			path := strings.TrimPrefix(listen, "fcgi:")
+			log.Println("msg", "FCGI mode activated with unix socket listener: "+path)
+			listener, err = net.Listen("unix", path)
+			defer os.Remove(path)
+
+		case strings.HasPrefix(listen, "fcgi:"):
+			// FCGI listener using stdin/stdout  fcgi:
+			log.Println("msg", "FCGI mode activated with stdin/stdout listener")
+			listener = nil
+
+		case strings.HasPrefix(listen, "http:"):
+			// HTTP protocol listener
+			addr := strings.TrimPrefix(listen, "http:")
+			log.Println("msg", "HTTP listener starting on "+addr)
+			s.Addr = addr
+			servers = append(servers, s)
+			go func(listen string) {
+				log.Println("err", http.ListenAndServe(addr, logger))
+			}(listen)
+
+		case strings.HasPrefix(listen, "https:"):
+			// HTTPS protocol listener
+			// "https:[addr]:port,certfile,keyfile
+			addr := strings.TrimPrefix(listen, "https:")
+			log.Println("msg", "HTTPS listener starting on "+addr)
+			s.Addr = addr
+			servers = append(servers, s)
+			go func(listen string) {
+				log.Println(s.ListenAndServeTLS("server.crt", "server.key"))
+			}(listen)
+
+		}
+
+		if strings.HasPrefix(listen, "fcgi:") {
+			if err != nil {
+				log.Println("fatal", "Could not open listening connection", "err", err)
+				return
+			}
+			if listener != nil {
+				defer listener.Close()
+			}
+			go func(listener net.Listener) {
+				log.Println("err", fcgi.Serve(listener, m))
+			}(listener)
+		}
+	}
+
+	fmt.Printf("%v\n", listenAddrs)
+
+	<-intr
+	cancel()
+	fmt.Printf("interrupted\n")
+
+	type Shutdowner interface {
+		Shutdown(context.Context) error
+	}
+
+	for _, srv := range servers {
+		// go 1.7 doesn't have Shutdown method on http server, so optionally cast
+		// the interface to see if it exists, then call it, if possible Can
+		// only do this with interfaces not concrete structs, so define a func
+		// taking needed interface and call it.
+		func(srv interface{}, addr string) {
+			fmt.Println("msg", "shutting down listener: "+addr)
+			if s, ok := srv.(Shutdowner); ok {
+				log.Println("msg", "shutting down listener: "+addr)
+				if err := s.Shutdown(nil); err != nil {
+					fmt.Println("server_error", err)
+				}
+			} else {
+				fmt.Println("msg", "can't cleanly shutdown listener, it will ungracefully end: "+addr)
+			}
+		}(srv, srv.Addr)
+	}
+
+	fmt.Printf("Bye!\n")
+
 }
 
 // Logger is a simple event handler for logging all events.
