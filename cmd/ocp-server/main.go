@@ -5,8 +5,6 @@ import (
 	"crypto/tls"
 	"flag"
 	"fmt"
-	"github.com/go-yaml/yaml"
-	"github.com/gorilla/mux"
 	"io/ioutil"
 	"log"
 	"net"
@@ -16,14 +14,17 @@ import (
 	"os"
 	"os/signal"
 	"strings"
+	"sync"
 	"time"
 
-    // space monkey (openssl wrapper for go)
-    "github.com/spacemonkeygo/openssl"
+	"github.com/go-yaml/yaml"
+	"github.com/gorilla/mux"
 
 	eh "github.com/looplab/eventhorizon"
-
 	domain "github.com/superchalupa/go-redfish/redfishresource"
+
+	// space monkey (openssl wrapper for go)
+	"github.com/spacemonkeygo/openssl"
 
 	// auth plugins
 	"github.com/superchalupa/go-redfish/plugins/basicauth"
@@ -35,8 +36,10 @@ import (
 	// load plugins (auto-register)
 	_ "github.com/superchalupa/go-redfish/plugins/actionhandler"
 	_ "github.com/superchalupa/go-redfish/plugins/patch"
+	_ "github.com/superchalupa/go-redfish/plugins/rootservice"
 	_ "github.com/superchalupa/go-redfish/plugins/runcmd"
 	_ "github.com/superchalupa/go-redfish/plugins/stdcollections"
+
 	// Test plugins
 	_ "github.com/superchalupa/go-redfish/plugins/test"
 	_ "github.com/superchalupa/go-redfish/plugins/test_action"
@@ -86,36 +89,25 @@ func main() {
 	flag.Var(&listenAddrs, "l", "Listen address.  Formats: (:nn, fcgi:ip:port, fcgi:/path)")
 	flag.Parse()
 
-	intr := make(chan os.Signal, 1)
-	signal.Notify(intr, os.Interrupt)
-
 	cfg, _ := loadConfig(*configFile)
 	if len(listenAddrs) > 0 {
 		cfg.Listen = listenAddrs
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
+	intr := make(chan os.Signal, 1)
+	signal.Notify(intr, os.Interrupt)
 
 	domainObjs, _ := domain.NewDomainObjects()
 	domainObjs.EventPublisher.AddObserver(&Logger{})
-
-	orighandler := domainObjs.CommandHandler
-
-	// Create a tiny logging middleware for the command handler.
-	loggingHandler := eh.CommandHandlerFunc(func(ctx context.Context, cmd eh.Command) error {
-		log.Printf("CMD %#v", cmd)
-		return orighandler.HandleCommand(ctx, cmd)
-	})
-
-	domainObjs.CommandHandler = loggingHandler
+	domainObjs.CommandHandler = makeLoggingCmdHandler(domainObjs.CommandHandler)
 
 	// This also initializes all of the plugins
 	domain.InitDomain(ctx, domainObjs.CommandHandler, domainObjs.EventBus, domainObjs.EventWaiter)
 
-	// generate uuid of root object
-	rootID := eh.NewUUID()
-
 	// Set up our standard extensions for authentication
+	// the authentication plugin will explicitly pass username to the final handler using the chainAuth() function
+	// the authorization plugin will explicitly pass the privileges to the final handler using the chainAuth function
 	chainAuth := func(u string, p []string) http.Handler {
 		return domain.NewRedfishHandler(domainObjs, u, p)
 	}
@@ -130,32 +122,12 @@ func main() {
 	chainAuthSSE := func(u string, p []string) http.Handler {
 		return domain.NewSSEHandler(domainObjs, u, p)
 	}
-
 	BasicAuthAuthorizerSSE := basicauth.NewService()
 	sessionServiceAuthorizerSSE := session.NewService(domainObjs.EventBus, domainObjs)
 	sessionServiceAuthorizerSSE.OnUserDetails = chainAuthSSE
 	sessionServiceAuthorizerSSE.WithoutUserDetails = BasicAuthAuthorizerSSE
 	BasicAuthAuthorizerSSE.OnUserDetails = chainAuthSSE
 	BasicAuthAuthorizerSSE.WithoutUserDetails = domain.NewSSEHandler(domainObjs, "UNKNOWN", []string{"Unauthenticated"})
-
-	// set up some basic stuff
-	loggingHandler.HandleCommand(
-		ctx,
-		&domain.CreateRedfishResource{
-			ID:          rootID,
-			ResourceURI: "/redfish/v1",
-			Type:        "#ServiceRoot.v1_0_2.ServiceRoot",
-			Context:     "/redfish/v1/$metadata#ServiceRoot.ServiceRoot",
-			// anybody can access
-			Privileges: map[string]interface{}{"GET": []string{"Unauthenticated"}},
-			Properties: map[string]interface{}{
-				"Id":             "RootService",
-				"Name":           "Root Service",
-				"RedfishVersion": "1.0.2",
-				"UUID":           "92384634-2938-2342-8820-489239905423",
-			},
-		},
-	)
 
 	// Handle the API.
 	m := mux.NewRouter()
@@ -181,6 +153,7 @@ func main() {
 	// backend command handling
 	m.PathPrefix("/api/{command}").Handler(domainObjs.GetInternalCommandHandler())
 
+	// profiling stuff
 	// TODO: cli option to enable/disable
 	m.Handle("/debug/pprof/", http.HandlerFunc(pprof.Index))
 	m.Handle("/debug/pprof/cmdline", http.HandlerFunc(pprof.Cmdline))
@@ -203,9 +176,17 @@ func main() {
 	})
 
 	tlscfg := &tls.Config{
-		MinVersion:               tls.VersionTLS12,
-		CurvePreferences:         []tls.CurveID{tls.CurveP521, tls.CurveP384, tls.CurveP256},
-		PreferServerCipherSuites: true,
+		MinVersion: tls.VersionTLS12,
+		// TODO: cli option to enable/disable
+		// Secure, but way too slow
+		// CurvePreferences:         []tls.CurveID{tls.CurveP521, tls.CurveP384, tls.CurveP256},
+
+		// TODO: cli option to enable/disable
+		// Secure, but way too slow
+		// PreferServerCipherSuites: true,
+
+		// TODO: cli option to enable/disable
+		// Can't quite remember, but I think this breaks curl
 		/*		CipherSuites: []uint16{
 				tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
 				tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
@@ -222,7 +203,8 @@ func main() {
 			}, */
 	}
 
-	// Create CA cert, or load
+	// TODO: cli option to enable/disable and control cert options
+	// Create CA cert if it doesn't exist, or load one if it does
 	ca, _ := tlscert.NewCert(
 		tlscert.CreateCA,
 		tlscert.ExpireInOneYear,
@@ -233,7 +215,163 @@ func main() {
 	)
 	ca.Serialize()
 
+	// TODO: cli option to enable/disable and control cert options
+	// create new server cert unconditionally based on CA cert
 	var Options []tlscert.Option
+	Options = append(Options, tlscert.SignWithCA(ca))
+	Options = append(Options, tlscert.MakeServer)
+	Options = append(Options, tlscert.ExpireInOneYear)
+	Options = append(Options, tlscert.SetCommonName("localhost"))
+	Options = append(Options, tlscert.SetSubjectKeyId([]byte{1, 2, 3, 4, 6}))
+	Options = append(Options, tlscert.AddSANDNSName("localhost", "localhost.localdomain"))
+	Options = append(Options, tlscert.SetSerialNumber(12346))
+	Options = append(Options, tlscert.SetBaseFilename("server"))
+	iterInterfaceIPAddrs(func(ip net.IP) { Options = append(Options, tlscert.AddSANIP(ip)) })
+	serverCert, _ := tlscert.NewCert(Options...)
+	serverCert.Serialize()
+
+	servers := []*http.Server{}
+	var serversMu sync.Mutex
+	if len(cfg.Listen) == 0 {
+		log.Fatal("No listeners configured! Use the '-l' option to configure a listener!")
+	}
+
+	// And finally, start up all of the listeners that we have configured
+	for _, listen := range cfg.Listen {
+		switch {
+		case strings.HasPrefix(listen, "fcgi:") && strings.Contains(strings.TrimPrefix(listen, "fcgi:"), ":"):
+			// FCGI listener on a TCP socket (usually should be specified as 127.0.0.1 for security)  fcgi:127.0.0.1:4040
+			go func(addr string) {
+				listener, err := net.Listen("tcp", addr)
+				if err != nil {
+					log.Println("fatal", "Could not open listening connection", "err", err)
+					return
+				}
+				defer listener.Close()
+				log.Println("FCGI mode activated with tcp listener: " + addr)
+				log.Println(fcgi.Serve(listener, m))
+			}(strings.TrimPrefix(listen, "fcgi:"))
+
+		case strings.HasPrefix(listen, "fcgi:") && strings.Contains(strings.TrimPrefix(listen, "fcgi:"), "/"):
+			// FCGI listener on unix domain socket, specified as a path fcgi:/run/fcgi.sock
+			go func(path string) {
+				listener, err := net.Listen("unix", path)
+				if err != nil {
+					log.Println("fatal", "Could not open listening connection", "err", err)
+					return
+				}
+				defer listener.Close()
+				defer os.Remove(path)
+				log.Println("FCGI mode activated with unix socket listener: " + path)
+				log.Println(fcgi.Serve(listener, m))
+			}(strings.TrimPrefix(listen, "fcgi:"))
+
+		case strings.HasPrefix(listen, "fcgi:"):
+			// FCGI listener using stdin/stdout  fcgi:
+			go func() {
+				log.Println("FCGI mode activated with stdin/stdout listener")
+				log.Println(fcgi.Serve(nil, m))
+			}()
+
+		case strings.HasPrefix(listen, "http:"):
+			// HTTP protocol listener
+			// "https:[addr]:port
+			go func(addr string) {
+				log.Println("HTTP listener starting on " + addr)
+				s := &http.Server{
+					Addr:           addr,
+					Handler:        logger,
+					MaxHeaderBytes: 1 << 20,
+					ReadTimeout:    10 * time.Second,
+					// cannot use writetimeout if we are streaming
+					// WriteTimeout:   10 * time.Second,
+				}
+				serversMu.Lock()
+				servers = append(servers, s)
+				serversMu.Unlock()
+				log.Println(s.ListenAndServe())
+			}(strings.TrimPrefix(listen, "http:"))
+
+		case strings.HasPrefix(listen, "https:"):
+			// HTTPS protocol listener
+			// "https:[addr]:port,certfile,keyfile
+			go func(addr string) {
+				s := &http.Server{
+					Addr:           addr,
+					Handler:        logger,
+					MaxHeaderBytes: 1 << 20,
+					ReadTimeout:    10 * time.Second,
+					// cannot use writetimeout if we are streaming
+					// WriteTimeout:   10 * time.Second,
+					TLSConfig: tlscfg,
+					// can't remember why this doesn't work... TODO: reason this doesnt work
+					//TLSNextProto:   make(map[string]func(*http.Server, *tls.Conn, http.Handler), 0),
+				}
+				serversMu.Lock()
+				servers = append(servers, s)
+				serversMu.Unlock()
+				log.Println("HTTPS listener starting on " + addr)
+				log.Println(s.ListenAndServeTLS("server.crt", "server.key"))
+			}(strings.TrimPrefix(listen, "https:"))
+
+		case strings.HasPrefix(listen, "spacemonkey:"):
+			// HTTPS protocol listener
+			// "https:[addr]:port,certfile,keyfile
+			go func(addr string) {
+				log.Println("OPENSSL(spacemonkey) listener starting")
+				log.Fatal(openssl.ListenAndServeTLS(addr, "server.crt", "server.key", logger))
+			}(strings.TrimPrefix(listen, "spacemonkey:"))
+		}
+	}
+
+	fmt.Printf("%v\n", listenAddrs)
+
+	// wait until we get an interrupt (CTRL-C)
+	<-intr
+	cancel()
+	fmt.Printf("\ninterrupted\n")
+
+	type Shutdowner interface {
+		Shutdown(context.Context) error
+	}
+
+	for _, srv := range servers {
+		// go 1.7 doesn't have Shutdown method on http server, so optionally cast
+		// the interface to see if it exists, then call it, if possible Can
+		// only do this with interfaces not concrete structs, so define a func
+		// taking needed interface and call it.
+		func(srv interface{}, addr string) {
+			if s, ok := srv.(Shutdowner); ok {
+				log.Println("shutting down listener: " + addr)
+				if err := s.Shutdown(nil); err != nil {
+					log.Println("server_error", err)
+				}
+			} else {
+				log.Println("Can't cleanly shutdown listener, it will ungracefully end: " + addr)
+			}
+		}(srv, srv.Addr)
+	}
+
+	fmt.Printf("Bye!\n")
+}
+
+// Create a tiny logging middleware for the command handler.
+func makeLoggingCmdHandler(originalHandler eh.CommandHandler) eh.CommandHandler {
+	return eh.CommandHandlerFunc(func(ctx context.Context, cmd eh.Command) error {
+		log.Printf("CMD %#v", cmd)
+		return originalHandler.HandleCommand(ctx, cmd)
+	})
+}
+
+// Logger is a simple event handler for logging all events.
+type Logger struct{}
+
+// Notify implements the Notify method of the EventObserver interface.
+func (l *Logger) Notify(ctx context.Context, event eh.Event) {
+	log.Printf("EVENT %s", event)
+}
+
+func iterInterfaceIPAddrs(fn func(net.IP)) {
 	ifaces, _ := net.Interfaces()
 	for _, iface := range ifaces {
 		if iface.Flags&net.FlagUp == 0 {
@@ -252,144 +390,7 @@ func main() {
 				ip = v.IP
 			}
 			fmt.Printf("Adding local IP Address to server cert as SAN: %s\n", ip)
-			Options = append(Options, tlscert.AddSANIP(ip))
+			fn(ip)
 		}
 	}
-
-	Options = append(Options, tlscert.SignWithCA(ca))
-	Options = append(Options, tlscert.MakeServer)
-	Options = append(Options, tlscert.ExpireInOneYear)
-	Options = append(Options, tlscert.SetCommonName("localhost"))
-	Options = append(Options, tlscert.SetSubjectKeyId([]byte{1, 2, 3, 4, 6}))
-	Options = append(Options, tlscert.AddSANDNSName("localhost", "localhost.localdomain"))
-	Options = append(Options, tlscert.AddSANIPAddress("127.0.0.1"))
-	Options = append(Options, tlscert.SetSerialNumber(12346))
-	Options = append(Options, tlscert.SetBaseFilename("server"))
-	//Options = append(Options, tlscert.LoadIfExists()) // this should be last
-
-	// create new server cert or load from disk
-	serverCert, _ := tlscert.NewCert(Options...)
-	serverCert.Serialize()
-
-	s := &http.Server{
-		Addr:        ":8443",
-		Handler:     logger,
-		ReadTimeout: 10 * time.Second,
-		// cannot use writetimeout if we are streaming
-		// WriteTimeout:   10 * time.Second,
-		MaxHeaderBytes: 1 << 20,
-		TLSConfig:      tlscfg,
-		//TLSNextProto:   make(map[string]func(*http.Server, *tls.Conn, http.Handler), 0),
-	}
-
-	servers := []*http.Server{}
-	if len(cfg.Listen) == 0 {
-		log.Fatal("No listeners configured! Use the '-l' option to configure a listener!")
-	}
-
-	for _, listen := range cfg.Listen {
-		var listener net.Listener
-		var err error
-		log.Println("msg", "processing listen request for "+listen)
-		switch {
-		case strings.HasPrefix(listen, "fcgi:") && strings.Contains(strings.TrimPrefix(listen, "fcgi:"), ":"):
-			// FCGI listener on a TCP socket (usually should be specified as 127.0.0.1 for security)  fcgi:127.0.0.1:4040
-			addr := strings.TrimPrefix(listen, "fcgi:")
-			log.Println("msg", "FCGI mode activated with tcp listener: "+addr)
-			listener, err = net.Listen("tcp", addr)
-
-		case strings.HasPrefix(listen, "fcgi:") && strings.Contains(strings.TrimPrefix(listen, "fcgi:"), "/"):
-			// FCGI listener on unix domain socket, specified as a path fcgi:/run/fcgi.sock
-			path := strings.TrimPrefix(listen, "fcgi:")
-			log.Println("msg", "FCGI mode activated with unix socket listener: "+path)
-			listener, err = net.Listen("unix", path)
-			defer os.Remove(path)
-
-		case strings.HasPrefix(listen, "fcgi:"):
-			// FCGI listener using stdin/stdout  fcgi:
-			log.Println("msg", "FCGI mode activated with stdin/stdout listener")
-			listener = nil
-
-		case strings.HasPrefix(listen, "http:"):
-			// HTTP protocol listener
-			addr := strings.TrimPrefix(listen, "http:")
-			log.Println("msg", "HTTP listener starting on "+addr)
-			servers = append(servers, s)
-			go func(listen string) {
-				log.Println("err", http.ListenAndServe(addr, logger))
-			}(listen)
-
-		case strings.HasPrefix(listen, "https:"):
-			// HTTPS protocol listener
-			// "https:[addr]:port,certfile,keyfile
-			addr := strings.TrimPrefix(listen, "https:")
-			log.Println("msg", "HTTPS listener starting on "+addr)
-			s.Addr = addr
-			servers = append(servers, s)
-			go func(listen string) {
-				log.Println(s.ListenAndServeTLS("server.crt", "server.key"))
-			}(listen)
-
-		case strings.HasPrefix(listen, "spacemonkey:"):
-			// HTTPS protocol listener
-			// "https:[addr]:port,certfile,keyfile
-			log.Println("spacemonkey listener starting")
-			go func(listen string) {
-                log.Fatal(openssl.ListenAndServeTLS(":8443", "server.crt", "server.key", logger))
-			}(listen)
-
-		}
-
-		if strings.HasPrefix(listen, "fcgi:") {
-			if err != nil {
-				log.Println("fatal", "Could not open listening connection", "err", err)
-				return
-			}
-			if listener != nil {
-				defer listener.Close()
-			}
-			go func(listener net.Listener) {
-				log.Println("err", fcgi.Serve(listener, m))
-			}(listener)
-		}
-	}
-
-	fmt.Printf("%v\n", listenAddrs)
-
-	<-intr
-	cancel()
-	fmt.Printf("interrupted\n")
-
-	type Shutdowner interface {
-		Shutdown(context.Context) error
-	}
-
-	for _, srv := range servers {
-		// go 1.7 doesn't have Shutdown method on http server, so optionally cast
-		// the interface to see if it exists, then call it, if possible Can
-		// only do this with interfaces not concrete structs, so define a func
-		// taking needed interface and call it.
-		func(srv interface{}, addr string) {
-			fmt.Println("msg", "shutting down listener: "+addr)
-			if s, ok := srv.(Shutdowner); ok {
-				log.Println("msg", "shutting down listener: "+addr)
-				if err := s.Shutdown(nil); err != nil {
-					fmt.Println("server_error", err)
-				}
-			} else {
-				fmt.Println("msg", "can't cleanly shutdown listener, it will ungracefully end: "+addr)
-			}
-		}(srv, srv.Addr)
-	}
-
-	fmt.Printf("Bye!\n")
-
-}
-
-// Logger is a simple event handler for logging all events.
-type Logger struct{}
-
-// Notify implements the Notify method of the EventObserver interface.
-func (l *Logger) Notify(ctx context.Context, event eh.Event) {
-	log.Printf("EVENT %s", event)
 }

@@ -226,8 +226,7 @@ type PropertyUpdater interface {
 	DemandBasedUpdate(context.Context, *RedfishResourceAggregate, *RedfishResourceProperty, string, map[string]interface{}, interface{})
 }
 
-func (rrp *RedfishResourceProperty) Process(ctx context.Context, wg *sync.WaitGroup, agg *RedfishResourceAggregate, property, method string, req interface{}) {
-	defer wg.Done()
+func (rrp *RedfishResourceProperty) Process(ctx context.Context, agg *RedfishResourceAggregate, property, method string, req interface{}) {
 	// step 1: run the plugin to update rrp.Value based on the plugin.
 	// Step 2: see if the rrp.Value is a recursable map or array and recurse down it
 
@@ -257,27 +256,49 @@ func (rrp *RedfishResourceProperty) Process(ctx context.Context, wg *sync.WaitGr
 
 	switch t := rrp.Value.(type) {
 	case map[string]RedfishResourceProperty:
+        type result struct {
+            name   string
+            result RedfishResourceProperty
+        }
 		reqmap, _ := req.(map[string]interface{})
+        var promised []chan result
 		for property, v := range t {
-			reqitem, _ := reqmap[property]
-			wg.Add(1)
-			// TODO: make this parallel
-			v.Process(ctx, wg, agg, property, method, reqitem)
-			t[property] = v
+            resChan := make(chan result)
+            promised = append(promised, resChan)
+
+            go func(property string, v RedfishResourceProperty) {
+                reqitem, _ := reqmap[property]
+                // TODO: make this parallel
+                v.Process(ctx, agg, property, method, reqitem)
+                resChan <- result{property, v}
+            }(property, v)
 		}
+        for _, resChan := range promised {
+            res := <-resChan
+            t[res.name] = res.result
+        }
+
 	case []RedfishResourceProperty:
+        // spawn off parallel goroutines to process each member of the array
 		reqarr, _ := req.([]interface{})
-		newArr := []RedfishResourceProperty{}
+		var promised []chan RedfishResourceProperty
 		for index, v := range t {
-			var reqitem interface{} = nil
-			if index < len(reqarr) {
-				reqitem = reqarr[index]
-			}
-			wg.Add(1)
-			// TODO: make this parallel
-			v.Process(ctx, wg, agg, property, method, reqitem)
-			newArr = append(newArr, v)
+			resChan := make(chan RedfishResourceProperty)
+			promised = append(promised, resChan)
+            go func(index int, v RedfishResourceProperty) {
+                var reqitem interface{} = nil
+                if index < len(reqarr) {
+                    reqitem = reqarr[index]
+                }
+                v.Process(ctx, agg, property, method, reqitem)
+			    resChan <- v
+            }(index, v)
 		}
+		newArr := []RedfishResourceProperty{}
+        for _, resChan := range promised {
+            res := <-resChan
+            newArr = append(newArr, res)
+        }
 		rrp.Value = newArr
 	default:
 	}
@@ -287,20 +308,28 @@ func (agg *RedfishResourceAggregate) ProcessMeta(ctx context.Context, method str
 	agg.newPropertiesMu.Lock()
 	defer agg.newPropertiesMu.Unlock()
 
-	var wg sync.WaitGroup
-	for property, v := range agg.newProperties {
-		req, _ := request[property]
-		wg.Add(1)
-		// TODO: make this parallel
-		v.Process(ctx, &wg, agg, property, method, req)
-		agg.newProperties[property] = v
+	type result struct {
+		name   string
+		result RedfishResourceProperty
 	}
 
-	wg.Wait()
+	var promised []chan result
+	for property, v := range agg.newProperties {
+		resChan := make(chan result)
+		promised = append(promised, resChan)
+		go func(property string, v RedfishResourceProperty) {
+			req, _ := request[property]
+			v.Process(ctx, agg, property, method, req)
+			resChan <- result{name: property, result: v}
+		}(property, v)
+	}
 
 	// after everything has settled, copy it out (still under lock)
-	for property, v := range agg.newProperties {
-		results[property] = v
+	for _, resChan := range promised {
+		res := <-resChan
+		agg.newProperties[res.name] = res.result
+		results[res.name] = res.result
 	}
+
 	return nil
 }

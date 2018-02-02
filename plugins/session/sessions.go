@@ -60,10 +60,8 @@ func (a *AddUserDetails) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	}
 
 	if userName != "" && len(privileges) > 0 {
-		fmt.Printf("Chain to next handler with user details from TOKEN.\n")
 		a.OnUserDetails(userName, privileges).ServeHTTP(rw, req)
 	} else {
-		fmt.Printf("No token present, chain to next authentication method.\n")
 		a.WithoutUserDetails.ServeHTTP(rw, req)
 	}
 	return
@@ -106,7 +104,6 @@ func InitService(ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
 
 		event, err := l.Wait(ctx)
 		if err != nil {
-			fmt.Printf("Error waiting for event: %s\n", err.Error())
 			return
 		}
 

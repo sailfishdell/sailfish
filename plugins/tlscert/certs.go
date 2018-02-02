@@ -203,21 +203,21 @@ func AddSANIP(ips ...net.IP) Option {
 
 func LoadIfExists() Option {
 	return func(cert *mycert) error {
-		fmt.Printf("Load existing %s.crt and %s.key\n", cert.fileBase, cert.fileBase)
+		fmt.Printf("Try to load existing %s.crt and %s.key\n", cert.fileBase, cert.fileBase)
 		catls, err := tls.LoadX509KeyPair(cert.fileBase+".crt", cert.fileBase+".key")
 		if err != nil {
-			fmt.Printf("\tNONEXISTENT: create from scratch\n")
+			fmt.Printf("\tError loading, creating new keys from scratch. Error = %s\n", err.Error())
 			return nil
 		}
 		ca, err := x509.ParseCertificate(catls.Certificate[0])
 		if err != nil {
-			fmt.Printf("\tPARSE ERROR: create from scratch\n")
+			fmt.Printf("\tError parsing certificate, creating new keys from scratch. Erroro = %s\n", err.Error())
 			return nil
 		}
 
-		fmt.Printf("\tSet to saved keys\n")
 		cert.cert = ca
 		cert.priv = catls.PrivateKey.(*rsa.PrivateKey)
+		fmt.Printf("\tSuccessfully loaded keys\n")
 		return nil
 	}
 }

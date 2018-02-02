@@ -3,7 +3,6 @@ package domain
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	eh "github.com/looplab/eventhorizon"
@@ -77,7 +76,6 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		search = append(search, eh.CommandType(redfishResource.Plugin+":"+r.Method))
 	}
 	search = append(search, eh.CommandType("http:RedfishResource:"+r.Method))
-	fmt.Printf("Search path: %s\n", search)
 
 	// search through the commands until we find one that exists
 	var cmd eh.Command
@@ -111,15 +109,11 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	authAction := "checkMaster"
 	var implementsAuthorization bool
 	if t, implementsAuthorization := cmd.(UserDetailsSetter); implementsAuthorization {
-		fmt.Printf("UserDetailsSetter\n")
 		authAction = t.SetUserDetails(rh.UserName, rh.Privileges)
-		fmt.Printf("\tauthAction: %s\n", authAction)
 	}
 	// if command does not implement userdetails setter, we always check privs here
 	if !implementsAuthorization || authAction == "checkMaster" {
-		fmt.Printf("checkMaster\n")
 		privsToCheck := redfishResource.PrivilegeMap[r.Method]
-		fmt.Printf("\tNEED PRIVS: %s\n", privsToCheck)
 
 		// convert Privileges from []interface{} to []string (way more code than there should be for something this simple)
 		var t []string
@@ -133,12 +127,9 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 		default:
-			fmt.Printf("CRAZY PILLS: %T\n", privs)
 		}
-		fmt.Printf("\tNEED PRIVS (strings): %s\n", t)
 
 		authAction = rh.IsAuthorized(t)
-		fmt.Printf("\tauthAction: %s\n", authAction)
 	}
 
 	if authAction != "authorized" {
@@ -181,14 +172,12 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	event, err := l.Wait(r.Context())
 	if err != nil {
-		fmt.Printf("Error waiting for event: %s\n", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	data, ok := event.Data().(HTTPCmdProcessedData)
 	if !ok {
-		fmt.Printf("Error waiting for event: %s\n", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

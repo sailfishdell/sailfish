@@ -2,11 +2,11 @@ package domain
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
-	eh "github.com/looplab/eventhorizon"
 	"time"
+
+	eh "github.com/looplab/eventhorizon"
 )
 
 func init() {
@@ -54,9 +54,8 @@ func (c *CreateRedfishResource) AggregateID() eh.UUID            { return c.ID }
 func (c *CreateRedfishResource) CommandType() eh.CommandType     { return CreateRedfishResourceCommand }
 
 func (c *CreateRedfishResource) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
-	fmt.Printf("CreateRedfishResource (COMMAND)\n")
 	if a.ID != eh.UUID("") {
-		fmt.Printf("Aggregate already exists!\n")
+		fmt.Printf("CREATE COMMAND: Aggregate already exists!\n")
 		return errors.New("Already created!")
 	}
 	a.ID = c.ID
@@ -92,9 +91,6 @@ func (c *CreateRedfishResource) Handle(ctx context.Context, a *RedfishResourceAg
 	a.newProperties = map[string]RedfishResourceProperty{}
 	parse_map(a.newProperties, c.Properties)
 	a.newPropertiesMu.Unlock()
-
-	stuff, err := json.Marshal(a.newProperties)
-	fmt.Printf("\nDEBUG, parse_map(%s): %s\n\n", err, stuff)
 
 	a.SetProperty("@odata.id", c.ResourceURI)
 	a.SetProperty("@odata.type", c.Type)

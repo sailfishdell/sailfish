@@ -111,8 +111,6 @@ func (d *DomainObjects) Notify(ctx context.Context, event eh.Event) {
 			// TODO: handle conflicts (how?)
 			d.SetAggregateID(data.ResourceURI, data.ID)
 
-			fmt.Printf("New resource: %s\n", data.ResourceURI)
-
 			// TODO: need to split out auto collection management into a plugin
 			if data.Collection {
 				fmt.Printf("A new collection: %s\n", data.ResourceURI)
@@ -122,11 +120,10 @@ func (d *DomainObjects) Notify(ctx context.Context, event eh.Event) {
 			}
 
 			collectionToTest := path.Dir(data.ResourceURI)
-			fmt.Printf("Searching for a collection named %s in our list: %s\n", collectionToTest, d.collections)
 			d.collectionsMu.RLock()
 			for _, v := range d.collections {
 				if v == collectionToTest {
-					fmt.Printf("\tWe got a match: add to collection command\n")
+					fmt.Printf("Collection: ADD (%s) to collection (%s)\n", data.ResourceURI, v)
 					d.CommandHandler.HandleCommand(
 						context.Background(),
 						&AddResourceToRedfishResourceCollection{
@@ -144,11 +141,10 @@ func (d *DomainObjects) Notify(ctx context.Context, event eh.Event) {
 		if data, ok := event.Data().(RedfishResourceRemovedData); ok {
 			// Look to see if it is a member of a collection
 			collectionToTest := path.Dir(data.ResourceURI)
-			fmt.Printf("Searching for a collection named %s in our list: %s\n", collectionToTest, d.collections)
 			d.collectionsMu.RLock()
 			for _, v := range d.collections {
 				if v == collectionToTest {
-					fmt.Printf("\tWe got a match: remove from collection command\n")
+					fmt.Printf("Collection: REMOVE (%s) from collection (%s)\n", data.ResourceURI, v)
 					d.CommandHandler.HandleCommand(
 						context.Background(),
 						&RemoveResourceFromRedfishResourceCollection{
