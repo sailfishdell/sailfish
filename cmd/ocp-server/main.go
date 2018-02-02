@@ -14,6 +14,7 @@ import (
 	"os"
 	"os/signal"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/go-yaml/yaml"
@@ -230,6 +231,7 @@ func main() {
 	serverCert.Serialize()
 
 	servers := []*http.Server{}
+	var serversMu sync.Mutex
 	if len(cfg.Listen) == 0 {
 		log.Fatal("No listeners configured! Use the '-l' option to configure a listener!")
 	}
@@ -284,7 +286,9 @@ func main() {
 					// cannot use writetimeout if we are streaming
 					// WriteTimeout:   10 * time.Second,
 				}
+				serversMu.Lock()
 				servers = append(servers, s)
+				serversMu.Unlock()
 				log.Println(s.ListenAndServe())
 			}(strings.TrimPrefix(listen, "http:"))
 
@@ -303,7 +307,9 @@ func main() {
 					// can't remember why this doesn't work... TODO: reason this doesnt work
 					//TLSNextProto:   make(map[string]func(*http.Server, *tls.Conn, http.Handler), 0),
 				}
+				serversMu.Lock()
 				servers = append(servers, s)
+				serversMu.Unlock()
 				log.Println("HTTPS listener starting on " + addr)
 				log.Println(s.ListenAndServeTLS("server.crt", "server.key"))
 			}(strings.TrimPrefix(listen, "https:"))
