@@ -154,6 +154,10 @@ $CURLCMD $URL/api/RedfishResource%3ACreate  -d '
                 "Oem": {},
                 "Oem@meta": {"plugin": "nonexistent"}
             },
+
+
+            "DBUS@meta": { "GET": {"plugin": "dbus_property", "bus_name": "xyz.openbmc_project.Software.Version", "interface_name": "xyz.openbmc_project.Software.Version", "path": "/xyz/openbmc_project/software/14880bfa", "property": "Version"} },
+
             "Name": "TEST",
             "Name@meta": {"PATCH": {"plugin": "patch"}}
         }
