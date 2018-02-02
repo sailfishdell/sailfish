@@ -66,5 +66,5 @@ func (t *dbusProperty) DemandBasedUpdate(
         return
     }
 
-	rrp.Value = fmt.Sprintf("%s", variant.String())
+	rrp.Value = variant.Value()
 }
