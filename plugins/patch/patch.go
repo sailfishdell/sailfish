@@ -26,6 +26,5 @@ func (t *patch) DemandBasedUpdate(
 	meta map[string]interface{},
 	body interface{},
 ) {
-
 	rrp.Value = body
 }
