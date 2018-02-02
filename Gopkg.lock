@@ -48,6 +48,7 @@
     "utils"
   ]
   revision = "666cd1440ae0ac0f8e8d210b35b935c218af670b"
+  source = "github.com/superchalupa/openssl"
 
 [[projects]]
   branch = "master"
@@ -64,6 +65,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "05272f67602c43050f1f5a8d6f25dc85b51cc09f3f9aeb116704bf90c544192f"
+  inputs-digest = "54b712fe95f92f9c1549f6592c0759302eb74ed64dc9f4b5e3f602d162f42e17"
   solver-name = "gps-cdcl"
   solver-version = 1

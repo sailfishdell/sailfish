@@ -27,4 +27,9 @@
 
 [[constraint]]
   branch = "master"
+  name = "github.com/spacemonkeygo/openssl"
+  source = "github.com/superchalupa/openssl"
+
+[[constraint]]
+  branch = "master"
   name = "golang.org/x/net"
