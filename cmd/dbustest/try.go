@@ -1,14 +1,14 @@
 package main
 
 import (
-    "fmt"
-    "os"
-    "log"
+	"fmt"
+	"log"
+	"os"
 
-    "github.com/godbus/dbus"
+	"github.com/godbus/dbus"
 )
 
-var Object string = "xyz.openbmc_project.Software.Version"
+var BusName string = "xyz.openbmc_project.Software.Version"
 var Interface string = "xyz.openbmc_project.Software.Version"
 var Path dbus.ObjectPath = "/xyz/openbmc_project/software/14880bfa"
 var Properties []string = []string{"Purpose", "Version"}
@@ -20,13 +20,14 @@ func main() {
 		os.Exit(1)
 	}
 
-	bo := conn.Object(Object, Path)
+	busObject := conn.Object(BusName, Path)
 
-	variant, err := bo.GetProperty(Interface + "." + "Version")
-
-	if err != nil {
-		log.Fatalln("Error getting property:", err)
+	for _, p := range Properties {
+		variant, err := busObject.GetProperty(Interface + "." + p)
+		if err != nil {
+			log.Fatalln("Error getting property:", err)
+			continue
+		}
+		log.Println("Variant --->", variant.String())
 	}
-
-	log.Println("Variant --->", variant.String())
 }
