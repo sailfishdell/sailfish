@@ -14,6 +14,12 @@
   revision = "d670f9405373e636a5a2765eea47fac0c9bc91a4"
 
 [[projects]]
+  name = "github.com/godbus/dbus"
+  packages = ["."]
+  revision = "a389bdde4dd695d414e47b755e95e72b7826432c"
+  version = "v4.1.0"
+
+[[projects]]
   name = "github.com/gorilla/context"
   packages = ["."]
   revision = "1ea25387ff6f684839d82767c1733ff4d4d15d0a"
@@ -47,7 +53,7 @@
     ".",
     "utils"
   ]
-  revision = "666cd1440ae0ac0f8e8d210b35b935c218af670b"
+  revision = "8677598393bec713f53f09e01f1e015e98d6df73"
   source = "github.com/superchalupa/openssl"
 
 [[projects]]
@@ -60,11 +66,11 @@
   branch = "master"
   name = "golang.org/x/sys"
   packages = ["unix"]
-  revision = "3dbebcf8efb6a5011a60c2b4591c1022a759af8a"
+  revision = "37707fdb30a5b38865cfb95e5aab41707daec7fd"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "54b712fe95f92f9c1549f6592c0759302eb74ed64dc9f4b5e3f602d162f42e17"
+  inputs-digest = "398517c67b330d75768a1edf61d27ed575e7e30a2e7b6ec47fecbf3ea0544327"
   solver-name = "gps-cdcl"
   solver-version = 1
