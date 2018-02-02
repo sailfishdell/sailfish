@@ -64,16 +64,15 @@ func (c *POST) ParseHTTPRequest(r *http.Request) error {
 	return nil
 }
 func (c *POST) Handle(ctx context.Context, a *domain.RedfishResourceAggregate) error {
-	fmt.Printf("SPECIAL CODE TO HANDLE SESSION SERVICE POST!!\n")
 	privileges := []string{} // no privs
 
 	// hardcode some privileges for now
 	// step 1: validate username/password (PUNT FOR NOW)
 	// TODO: implement real pam here
+	// TODO: Look up the privileges
 	if c.LR.UserName == "Administrator" && c.LR.Password == "password" {
 		privileges = append(privileges,
 			"Unauthenticated", "tokenauth", "ConfigureSelf_"+c.LR.UserName,
-			// per redfish spec
 			// TODO: Actually look up privileges
 			"Login", "ConfigureManager", "ConfigureUsers", "ConfigureComponents",
 		)
@@ -202,13 +201,10 @@ func (c *POST) startSessionDeleteTimer(sessionUUID eh.UUID, sessionURI string, t
 		for {
 			select {
 			case <-refreshListener.Inbox():
-				fmt.Printf("REFRESH: %s\n", sessionURI)
 				continue // still alive for now! start over again...
 			case <-deleteListener.Inbox():
-				fmt.Printf("DELETED FROM UNDER US: %s\n", sessionURI)
 				return // it's gone, all done here
 			case <-time.After(time.Duration(timeout) * time.Second):
-				fmt.Printf("TIME IS UP: %s\n", sessionURI)
 				c.commandHandler.HandleCommand(ctx, &domain.RemoveRedfishResource{ID: sessionUUID, ResourceURI: sessionURI})
 				return //exit goroutine
 			}

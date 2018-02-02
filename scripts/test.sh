@@ -34,7 +34,7 @@ $CURLCMD $URL/api/RedfishResource%3ACreate  -d '
         "ResourceURI":"/redfish/v1/test",
         "Type": "footype",
         "Context": "foocontext",
-        "Privileges": { "GET": ["Unauthenticated"] },
+        "Privileges": { "GET": ["Unauthenticated"], "PATCH":["ConfigureManager"] },
         "Properties": {
             "testvalue1@meta": {
                 "GET": {
@@ -94,7 +94,8 @@ $CURLCMD $URL/api/RedfishResource%3ACreate  -d '
                 "Oem": {},
                 "Oem@meta": {"plugin": "nonexistent"}
             },
-            "Name": "TEST"
+            "Name": "TEST",
+            "Name@meta": {"PATCH": {"plugin": "patch"}}
         }
     }'
 
@@ -105,4 +106,5 @@ echo "Run a test action"
 echo "/redfish/v1/Actions/Test"
 $CURLCMD $URL/redfish/v1/Actions/Test -d '{"TestType": "FOO"}'
 
+$CURLCMD $URL/redfish/v1/test -XPATCH -d '{"Name": "FOOBar"}'
 $CURLCMD $URL/redfish/v1/SessionService -XPATCH -d '{"SessionTimeout": 35}'
