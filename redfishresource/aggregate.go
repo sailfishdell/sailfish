@@ -245,6 +245,7 @@ func (rrp *RedfishResourceProperty) Process(ctx context.Context, agg *RedfishRes
 
 		plugin, err := InstantiatePlugin(PluginType(pluginName))
 		if err != nil {
+			fmt.Printf("ORPHAN PROPERTY(%s) - could not load plugin(%s): %s\n", property, pluginName, err.Error())
 			break
 		}
 
@@ -256,49 +257,49 @@ func (rrp *RedfishResourceProperty) Process(ctx context.Context, agg *RedfishRes
 
 	switch t := rrp.Value.(type) {
 	case map[string]RedfishResourceProperty:
-        type result struct {
-            name   string
-            result RedfishResourceProperty
-        }
-		reqmap, _ := req.(map[string]interface{})
-        var promised []chan result
-		for property, v := range t {
-            resChan := make(chan result)
-            promised = append(promised, resChan)
-
-            go func(property string, v RedfishResourceProperty) {
-                reqitem, _ := reqmap[property]
-                // TODO: make this parallel
-                v.Process(ctx, agg, property, method, reqitem)
-                resChan <- result{property, v}
-            }(property, v)
+		type result struct {
+			name   string
+			result RedfishResourceProperty
 		}
-        for _, resChan := range promised {
-            res := <-resChan
-            t[res.name] = res.result
-        }
+		reqmap, _ := req.(map[string]interface{})
+		var promised []chan result
+		for property, v := range t {
+			resChan := make(chan result)
+			promised = append(promised, resChan)
+
+			go func(property string, v RedfishResourceProperty) {
+				reqitem, _ := reqmap[property]
+				// TODO: make this parallel
+				v.Process(ctx, agg, property, method, reqitem)
+				resChan <- result{property, v}
+			}(property, v)
+		}
+		for _, resChan := range promised {
+			res := <-resChan
+			t[res.name] = res.result
+		}
 
 	case []RedfishResourceProperty:
-        // spawn off parallel goroutines to process each member of the array
+		// spawn off parallel goroutines to process each member of the array
 		reqarr, _ := req.([]interface{})
 		var promised []chan RedfishResourceProperty
 		for index, v := range t {
 			resChan := make(chan RedfishResourceProperty)
 			promised = append(promised, resChan)
-            go func(index int, v RedfishResourceProperty) {
-                var reqitem interface{} = nil
-                if index < len(reqarr) {
-                    reqitem = reqarr[index]
-                }
-                v.Process(ctx, agg, property, method, reqitem)
-			    resChan <- v
-            }(index, v)
+			go func(index int, v RedfishResourceProperty) {
+				var reqitem interface{} = nil
+				if index < len(reqarr) {
+					reqitem = reqarr[index]
+				}
+				v.Process(ctx, agg, property, method, reqitem)
+				resChan <- v
+			}(index, v)
 		}
 		newArr := []RedfishResourceProperty{}
-        for _, resChan := range promised {
-            res := <-resChan
-            newArr = append(newArr, res)
-        }
+		for _, resChan := range promised {
+			res := <-resChan
+			newArr = append(newArr, res)
+		}
 		rrp.Value = newArr
 	default:
 	}
