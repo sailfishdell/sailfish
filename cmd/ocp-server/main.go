@@ -39,6 +39,7 @@ import (
 	_ "github.com/superchalupa/go-redfish/plugins/rootservice"
 	_ "github.com/superchalupa/go-redfish/plugins/runcmd"
 	_ "github.com/superchalupa/go-redfish/plugins/stdcollections"
+	_ "github.com/superchalupa/go-redfish/plugins/dbus"
 
 	// Test plugins
 	_ "github.com/superchalupa/go-redfish/plugins/test"
