@@ -49,8 +49,8 @@ Things that need work: (-) TODO (*) DONE
  - CERTIFICATE support:
     * SSL support
     * Automatically generate CA and Server Cert
+    * Add net.InterfaceAddrs() - list of all local IP addresses - to the SAN list
     - move certs to subdir
-    - Add net.InterfaceAddrs() - list of all local IP addresses - to the SAN list
     - Get local hostname and add to SAN list
     - Some sort of notification to regenerate the local SSL certificate if interfaces change?
 
