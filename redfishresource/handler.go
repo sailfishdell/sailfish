@@ -97,9 +97,15 @@ func (d *DomainObjects) SetAggregateID(uri string, ID eh.UUID) {
 	d.Tree[uri] = ID
 }
 
-func (d *DomainObjects) DeleteResource(uri string) {
+func (d *DomainObjects) DeleteResource(ctx context.Context, uri string) {
 	d.treeMu.Lock()
 	defer d.treeMu.Unlock()
+    if UUID, ok := d.Tree[uri]; ok {
+        as, ok := d.AggregateStore.(eh.WriteRepo)
+        if ok {
+            as.Remove(ctx, UUID)
+        }
+    }
 	delete(d.Tree, uri)
 }
 
@@ -171,7 +177,7 @@ func (d *DomainObjects) Notify(ctx context.Context, event eh.Event) {
 			d.collectionsMu.Unlock()
 
 			// TODO: remove from aggregatestore?
-			d.DeleteResource(data.ResourceURI)
+			d.DeleteResource(ctx, data.ResourceURI)
 		}
 		return
 	}
