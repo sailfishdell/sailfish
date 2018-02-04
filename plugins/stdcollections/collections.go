@@ -2,9 +2,10 @@ package stdcollections
 
 import (
 	"context"
-	"fmt"
 
 	domain "github.com/superchalupa/go-redfish/redfishresource"
+
+    plugins "github.com/superchalupa/go-redfish/plugins"
 
 	eh "github.com/looplab/eventhorizon"
 	"github.com/looplab/eventhorizon/utils"
@@ -19,36 +20,13 @@ func InitService(ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
 	// background context to use
 	ctx := context.Background()
 
-	// set up listener that will fire when it sees /redfish/v1 created
-	l, err := ew.Listen(ctx, func(event eh.Event) bool {
-		if event.EventType() != domain.RedfishResourceCreated {
-			return false
-		}
-		if data, ok := event.Data().(domain.RedfishResourceCreatedData); ok {
-			if data.ResourceURI == "/redfish/v1" {
-				return true
-			}
-		}
-		return false
-	})
-	if err != nil {
-		return
-	}
-
-	// wait for the root object to be created, then enhance it. Oneshot for now.
-	go func() {
-		defer l.Close()
-
-		event, err := l.Wait(ctx)
-		if err != nil {
-			fmt.Printf("Error waiting for event: %s\n", err.Error())
-			return
-		}
-
-		// wait for /redfish/v1 to be created, then pull out the rootid so that we can modify it
-		rootID := event.Data().(domain.RedfishResourceCreatedData).ID
-		NewService(ctx, rootID, ch)
-	}()
+    sp, err := plugins.NewEventStreamProcessor(ctx, ew, plugins.SelectEventResourceCreatedByURI("/redfish/v1"))
+    if err == nil  {
+        sp.RunOnce( func(event eh.Event) {
+		    rootID := event.Data().(domain.RedfishResourceCreatedData).ID
+		    NewService(ctx, rootID, ch)
+        })
+    }
 }
 
 func NewService(ctx context.Context, rootID eh.UUID, ch eh.CommandHandler) {
