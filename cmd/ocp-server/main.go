@@ -81,6 +81,10 @@ func loadConfig(filename string) (appConfig, error) {
 	return config, nil
 }
 
+type Shutdowner interface {
+	Shutdown(context.Context) error
+}
+
 func main() {
 	log.Println("starting backend")
 	var (
@@ -287,6 +291,7 @@ func main() {
 					// cannot use writetimeout if we are streaming
 					// WriteTimeout:   10 * time.Second,
 				}
+				ConnectToContext(ctx, s)
 				serversMu.Lock()
 				servers = append(servers, s)
 				serversMu.Unlock()
@@ -308,6 +313,7 @@ func main() {
 					// can't remember why this doesn't work... TODO: reason this doesnt work
 					//TLSNextProto:   make(map[string]func(*http.Server, *tls.Conn, http.Handler), 0),
 				}
+				ConnectToContext(ctx, s)
 				serversMu.Lock()
 				servers = append(servers, s)
 				serversMu.Unlock()
@@ -331,28 +337,6 @@ func main() {
 	<-intr
 	cancel()
 	fmt.Printf("\ninterrupted\n")
-
-	type Shutdowner interface {
-		Shutdown(context.Context) error
-	}
-
-	for _, srv := range servers {
-		// go 1.7 doesn't have Shutdown method on http server, so optionally cast
-		// the interface to see if it exists, then call it, if possible Can
-		// only do this with interfaces not concrete structs, so define a func
-		// taking needed interface and call it.
-		func(srv interface{}, addr string) {
-			if s, ok := srv.(Shutdowner); ok {
-				log.Println("shutting down listener: " + addr)
-				if err := s.Shutdown(nil); err != nil {
-					log.Println("server_error", err)
-				}
-			} else {
-				log.Println("Can't cleanly shutdown listener, it will ungracefully end: " + addr)
-			}
-		}(srv, srv.Addr)
-	}
-
 	fmt.Printf("Bye!\n")
 }
 
@@ -362,6 +346,17 @@ func makeLoggingCmdHandler(originalHandler eh.CommandHandler) eh.CommandHandler 
 		log.Printf("CMD %#v", cmd)
 		return originalHandler.HandleCommand(ctx, cmd)
 	})
+}
+
+func ConnectToContext(ctx context.Context, srv interface{}) {
+	if s, ok := srv.(Shutdowner); ok {
+		log.Println("Hooking up shutdown context.")
+		if err := s.Shutdown(ctx); err != nil {
+			log.Println("server_error", err)
+		}
+	} else {
+		log.Println("Can't cleanly shutdown listener, it will ungracefully end")
+	}
 }
 
 // Logger is a simple event handler for logging all events.
