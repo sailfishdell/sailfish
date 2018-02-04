@@ -26,5 +26,7 @@ func (t *patch) DemandBasedUpdate(
 	meta map[string]interface{},
 	body interface{},
 ) {
+	// wow, how can it be this simple?
+	// ... we need to add a way to add validation... so I guess it can't stay this simple for long.
 	rrp.Value = body
 }
