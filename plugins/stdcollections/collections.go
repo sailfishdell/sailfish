@@ -5,7 +5,7 @@ import (
 
 	domain "github.com/superchalupa/go-redfish/redfishresource"
 
-    plugins "github.com/superchalupa/go-redfish/plugins"
+	plugins "github.com/superchalupa/go-redfish/plugins"
 
 	eh "github.com/looplab/eventhorizon"
 	"github.com/looplab/eventhorizon/utils"
@@ -20,13 +20,13 @@ func InitService(ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
 	// background context to use
 	ctx := context.Background()
 
-    sp, err := plugins.NewEventStreamProcessor(ctx, ew, plugins.SelectEventResourceCreatedByURI("/redfish/v1"))
-    if err == nil  {
-        sp.RunOnce( func(event eh.Event) {
-		    rootID := event.Data().(domain.RedfishResourceCreatedData).ID
-		    NewService(ctx, rootID, ch)
-        })
-    }
+	sp, err := plugins.NewEventStreamProcessor(ctx, ew, plugins.SelectEventResourceCreatedByURI("/redfish/v1"))
+	if err == nil {
+		sp.RunOnce(func(event eh.Event) {
+			rootID := event.Data().(domain.RedfishResourceCreatedData).ID
+			NewService(ctx, rootID, ch)
+		})
+	}
 }
 
 func NewService(ctx context.Context, rootID eh.UUID, ch eh.CommandHandler) {
