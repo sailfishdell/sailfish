@@ -81,10 +81,6 @@ func loadConfig(filename string) (appConfig, error) {
 	return config, nil
 }
 
-type Shutdowner interface {
-	Shutdown(context.Context) error
-}
-
 func main() {
 	log.Println("starting backend")
 	var (
@@ -346,6 +342,10 @@ func makeLoggingCmdHandler(originalHandler eh.CommandHandler) eh.CommandHandler 
 		log.Printf("CMD %#v", cmd)
 		return originalHandler.HandleCommand(ctx, cmd)
 	})
+}
+
+type Shutdowner interface {
+	Shutdown(context.Context) error
 }
 
 func ConnectToContext(ctx context.Context, srv interface{}) {

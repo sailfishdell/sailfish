@@ -18,10 +18,10 @@ func init() {
 }
 
 // Example of creating a minimal tree object to recieve action requests. Doesn't need much more
-func CreateTestActionEndpoint(ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
+func CreateTestActionEndpoint(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
 	// Create SessionService aggregate
 	ch.HandleCommand(
-		context.Background(),
+		ctx,
 		&domain.CreateRedfishResource{
 			ID:          eh.NewUUID(),
 			ResourceURI: "/redfish/v1/Actions/Test",
@@ -37,9 +37,7 @@ func CreateTestActionEndpoint(ch eh.CommandHandler, eb eh.EventBus, ew *utils.Ev
 }
 
 // Here is the actual service that does the heavy lifting for the actions
-func InitService2(ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
-	ctx := context.Background()
-
+func InitService2(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
 	l, err := ew.Listen(ctx, ah.MakeListener("/redfish/v1/Actions/Test"))
 	if err != nil {
 		fmt.Printf("Error creating listener: %s\n", err.Error())
@@ -51,20 +49,18 @@ func InitService2(ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
 		defer l.Close()
 
 		for {
-			select {
-			case c := <-l.Inbox():
-				// process action
-				fmt.Printf("HAPPY\n")
+            c, err := l.Wait(ctx)
+            if err != nil {
+                fmt.Printf("Error waiting for event: %s\n", err.Error())
+                return
+            }
 
-				eb.HandleEvent(ctx, eh.NewEvent(domain.HTTPCmdProcessed, domain.HTTPCmdProcessedData{
-					CommandID:  c.Data().(ah.GenericActionEventData).CmdID,
-					Results:    map[string]interface{}{"happy": "joy"},
-					StatusCode: 200,
-					Headers:    map[string]string{},
-				}, time.Now()))
-
-				continue
-			}
+            eb.HandleEvent(ctx, eh.NewEvent(domain.HTTPCmdProcessed, domain.HTTPCmdProcessedData{
+                CommandID:  c.Data().(ah.GenericActionEventData).CmdID,
+                Results:    map[string]interface{}{"happy": "joy"},
+                StatusCode: 200,
+                Headers:    map[string]string{},
+            }, time.Now()))
 		}
 	}()
 }

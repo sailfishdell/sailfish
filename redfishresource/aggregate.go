@@ -17,7 +17,7 @@ func init() {
 	RegisterInitFN(RegisterRRA)
 }
 
-func RegisterRRA(ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
+func RegisterRRA(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
 	eh.RegisterAggregate(func(id eh.UUID) eh.Aggregate {
 		return &RedfishResourceAggregate{eventBus: eb}
 	})

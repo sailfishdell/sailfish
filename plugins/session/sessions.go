@@ -7,6 +7,7 @@ import (
 	"time"
 
 	domain "github.com/superchalupa/go-redfish/redfishresource"
+	plugins "github.com/superchalupa/go-redfish/plugins"
 
 	jwt "github.com/dgrijalva/jwt-go"
 	eh "github.com/looplab/eventhorizon"
@@ -72,105 +73,86 @@ func NewService(eb eh.EventBus, g IDGetter) (aud *AddUserDetails) {
 	return &AddUserDetails{eb: eb, getter: g}
 }
 
-func InitService(ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
+func InitService(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
 	// setup module secret
 	SECRET = createRandSecret(24, characters)
-
-	// background context to use
-	ctx := context.Background()
 
 	// register our command
 	eh.RegisterCommand(func() eh.Command { return &POST{eventBus: eb, commandHandler: ch, eventWaiter: ew} })
 
-	// set up listener that will fire when it sees /redfish/v1 created
-	l, err := ew.Listen(ctx, func(event eh.Event) bool {
-		if event.EventType() != domain.RedfishResourceCreated {
-			return false
-		}
-		if data, ok := event.Data().(domain.RedfishResourceCreatedData); ok {
-			if data.ResourceURI == "/redfish/v1" {
-				return true
-			}
-		}
-		return false
-	})
-	if err != nil {
-		return
-	}
 
-	// wait for the root object to be created, then enhance it. Oneshot for now.
-	go func() {
-		defer l.Close()
+    sp, err := plugins.NewEventStreamProcessor(ctx, ew, plugins.SelectEventResourceCreatedByURI("/redfish/v1"))
+    if err == nil  {
+        sp.RunOnce( func(event eh.Event) {
+            // wait for /redfish/v1 to be created, then pull out the rootid so that we can modify it
+            rootID := event.Data().(domain.RedfishResourceCreatedData).ID
+            AddSessionResource(ctx, rootID, ch)
+        })
+    }
+}
 
-		event, err := l.Wait(ctx)
-		if err != nil {
-			return
-		}
 
-		// wait for /redfish/v1 to be created, then pull out the rootid so that we can modify it
-		rootID := event.Data().(domain.RedfishResourceCreatedData).ID
+func AddSessionResource(ctx context.Context, rootID eh.UUID, ch eh.CommandHandler) {
+    // Create SessionService aggregate
+    ch.HandleCommand(
+        ctx,
+        &domain.CreateRedfishResource{
+            ID:          eh.NewUUID(),
+            ResourceURI: "/redfish/v1/SessionService",
+            Type:        "#SessionService.v1_0_2.SessionService",
+            Context:     "/redfish/v1/$metadata#SessionService.SessionService",
+            Privileges: map[string]interface{}{
+                "GET":    []string{"ConfigureManager"},
+                "POST":   []string{"ConfigureManager"},
+                "PUT":    []string{"ConfigureManager"},
+                "PATCH":  []string{"ConfigureManager"},
+                "DELETE": []string{},
+            },
+            Properties: map[string]interface{}{
+                "Id":          "SessionService",
+                "Name":        "Session Service",
+                "Description": "Session Service",
+                "Status": map[string]interface{}{
+                    "State":  "Enabled",
+                    "Health": "OK",
+                },
+                "ServiceEnabled":      true,
+                "SessionTimeout":      30,
+                "SessionTimeout@meta": map[string]interface{}{"PATCH": map[string]interface{}{"plugin": "patch"}},
+                "Sessions": map[string]interface{}{
+                    "@odata.id": "/redfish/v1/SessionService/Sessions",
+                },
+            }})
 
-		// Create SessionService aggregate
-		ch.HandleCommand(
-			context.Background(),
-			&domain.CreateRedfishResource{
-				ID:          eh.NewUUID(),
-				ResourceURI: "/redfish/v1/SessionService",
-				Type:        "#SessionService.v1_0_2.SessionService",
-				Context:     "/redfish/v1/$metadata#SessionService.SessionService",
-				Privileges: map[string]interface{}{
-					"GET":    []string{"ConfigureManager"},
-					"POST":   []string{"ConfigureManager"},
-					"PUT":    []string{"ConfigureManager"},
-					"PATCH":  []string{"ConfigureManager"},
-					"DELETE": []string{},
-				},
-				Properties: map[string]interface{}{
-					"Id":          "SessionService",
-					"Name":        "Session Service",
-					"Description": "Session Service",
-					"Status": map[string]interface{}{
-						"State":  "Enabled",
-						"Health": "OK",
-					},
-					"ServiceEnabled":      true,
-					"SessionTimeout":      30,
-					"SessionTimeout@meta": map[string]interface{}{"PATCH": map[string]interface{}{"plugin": "patch"}},
-					"Sessions": map[string]interface{}{
-						"@odata.id": "/redfish/v1/SessionService/Sessions",
-					},
-				}})
+    // Create Sessions Collection
+    ch.HandleCommand(
+        context.Background(),
+        &domain.CreateRedfishResource{
+            ID:          eh.NewUUID(),
+            Plugin:      "SessionService",
+            ResourceURI: "/redfish/v1/SessionService/Sessions",
+            Type:        "#SessionCollection.SessionCollection",
+            Context:     "/redfish/v1/$metadata#SessionCollection.SessionCollection",
+            Privileges: map[string]interface{}{
+                "GET":    []string{"ConfigureManager"},
+                "POST":   []string{"Unauthenticated"},
+                "PUT":    []string{"ConfigureManager"},
+                "PATCH":  []string{"ConfigureManager"},
+                "DELETE": []string{"ConfigureSelf"},
+            },
+            Collection: true,
+            Properties: map[string]interface{}{
+                "Name":                "Session Collection",
+                "Members@odata.count": 0,
+                "Members":             []map[string]interface{}{},
+            }})
 
-		// Create Sessions Collection
-		ch.HandleCommand(
-			context.Background(),
-			&domain.CreateRedfishResource{
-				ID:          eh.NewUUID(),
-				Plugin:      "SessionService",
-				ResourceURI: "/redfish/v1/SessionService/Sessions",
-				Type:        "#SessionCollection.SessionCollection",
-				Context:     "/redfish/v1/$metadata#SessionCollection.SessionCollection",
-				Privileges: map[string]interface{}{
-					"GET":    []string{"ConfigureManager"},
-					"POST":   []string{"Unauthenticated"},
-					"PUT":    []string{"ConfigureManager"},
-					"PATCH":  []string{"ConfigureManager"},
-					"DELETE": []string{"ConfigureSelf"},
-				},
-				Collection: true,
-				Properties: map[string]interface{}{
-					"Name":                "Session Collection",
-					"Members@odata.count": 0,
-					"Members":             []map[string]interface{}{},
-				}})
-
-		ch.HandleCommand(ctx,
-			&domain.UpdateRedfishResourceProperties{
-				ID: rootID,
-				Properties: map[string]interface{}{
-					"SessionService": map[string]interface{}{"@odata.id": "/redfish/v1/SessionService"},
-					"Links":          map[string]interface{}{"Sessions": map[string]interface{}{"@odata.id": "/redfish/v1/SessionService/Sessions"}},
-				},
-			})
-	}()
+    ch.HandleCommand(ctx,
+        &domain.UpdateRedfishResourceProperties{
+            ID: rootID,
+            Properties: map[string]interface{}{
+                "SessionService": map[string]interface{}{"@odata.id": "/redfish/v1/SessionService"},
+                "Links":          map[string]interface{}{"Sessions": map[string]interface{}{"@odata.id": "/redfish/v1/SessionService/Sessions"}},
+            },
+        })
 }

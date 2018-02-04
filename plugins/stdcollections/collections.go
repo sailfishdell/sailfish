@@ -16,10 +16,7 @@ func init() {
 }
 
 // wait in a listener for the root service to be created, then extend it
-func InitService(ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
-	// background context to use
-	ctx := context.Background()
-
+func InitService(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
 	sp, err := plugins.NewEventStreamProcessor(ctx, ew, plugins.SelectEventResourceCreatedByURI("/redfish/v1"))
 	if err == nil {
 		sp.RunOnce(func(event eh.Event) {
@@ -32,7 +29,7 @@ func InitService(ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
 func NewService(ctx context.Context, rootID eh.UUID, ch eh.CommandHandler) {
 	// Create Computer System Collection
 	ch.HandleCommand(
-		context.Background(),
+		ctx,
 		&domain.CreateRedfishResource{
 			ID:         eh.NewUUID(),
 			Collection: true,
@@ -61,7 +58,7 @@ func NewService(ctx context.Context, rootID eh.UUID, ch eh.CommandHandler) {
 
 	// Create Computer System Collection
 	ch.HandleCommand(
-		context.Background(),
+		ctx,
 		&domain.CreateRedfishResource{
 			ID:         eh.NewUUID(),
 			Collection: true,
@@ -90,7 +87,7 @@ func NewService(ctx context.Context, rootID eh.UUID, ch eh.CommandHandler) {
 
 	// Create Computer System Collection
 	ch.HandleCommand(
-		context.Background(),
+		ctx,
 		&domain.CreateRedfishResource{
 			ID:         eh.NewUUID(),
 			Collection: true,
@@ -119,7 +116,7 @@ func NewService(ctx context.Context, rootID eh.UUID, ch eh.CommandHandler) {
 
 	// Add Accounts collection
 	ch.HandleCommand(
-		context.Background(),
+		ctx,
 		&domain.CreateRedfishResource{
 			ID:         eh.NewUUID(),
 			Collection: true,
@@ -140,7 +137,7 @@ func NewService(ctx context.Context, rootID eh.UUID, ch eh.CommandHandler) {
 
 	// Add Roles collection
 	ch.HandleCommand(
-		context.Background(),
+		ctx,
 		&domain.CreateRedfishResource{
 			ID:         eh.NewUUID(),
 			Collection: true,
@@ -161,7 +158,7 @@ func NewService(ctx context.Context, rootID eh.UUID, ch eh.CommandHandler) {
 
 	// Create Computer System Collection
 	ch.HandleCommand(
-		context.Background(),
+		ctx,
 		&domain.CreateRedfishResource{
 			ID:         eh.NewUUID(),
 			Collection: false,
@@ -208,7 +205,7 @@ func NewService(ctx context.Context, rootID eh.UUID, ch eh.CommandHandler) {
 
 	// add standard DMTF roles: Admin
 	ch.HandleCommand(
-		context.Background(),
+		ctx,
 		&domain.CreateRedfishResource{
 			ID:         eh.NewUUID(),
 			Collection: false,
@@ -239,7 +236,7 @@ func NewService(ctx context.Context, rootID eh.UUID, ch eh.CommandHandler) {
 
 	// add standard DMTF roles: Operator
 	ch.HandleCommand(
-		context.Background(),
+		ctx,
 		&domain.CreateRedfishResource{
 			ID:         eh.NewUUID(),
 			Collection: false,
@@ -268,7 +265,7 @@ func NewService(ctx context.Context, rootID eh.UUID, ch eh.CommandHandler) {
 
 	// add standard DMTF roles: Read-only
 	ch.HandleCommand(
-		context.Background(),
+		ctx,
 		&domain.CreateRedfishResource{
 			ID:         eh.NewUUID(),
 			Collection: false,

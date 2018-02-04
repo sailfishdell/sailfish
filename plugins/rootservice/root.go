@@ -14,10 +14,7 @@ func init() {
 }
 
 // wait in a listener for the root service to be created, then extend it
-func InitService(ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
-	// background context to use
-	ctx := context.Background()
-
+func InitService(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
 	// set up some basic stuff
 	rootID := eh.NewUUID()
 	ch.HandleCommand(

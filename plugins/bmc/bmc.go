@@ -19,7 +19,10 @@ func InitService(ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
 	// background context to use
 	ctx := context.Background()
 
+    // step 1: Is this an actual openbmc?
 
+
+    // step 2: Add openbmc manager object after Managers collection has been created
     sp, err := plugins.NewEventStreamProcessor(ctx, ew, plugins.SelectEventResourceCreatedByURI("/redfish/v1/Managers"))
     if err == nil  {
         sp.RunOnce( func(event eh.Event) {
