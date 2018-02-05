@@ -57,7 +57,7 @@ func (d *privateStateStructure) RunOnce(fn func(eh.Event)) {
 
 		event, err := d.listener.Wait(d.ctx)
 		if err != nil {
-			fmt.Printf("Error waiting for event: %s\n", err.Error())
+			fmt.Printf("Shutting down listener: %s\n", err.Error())
 			return
 		}
 
@@ -73,7 +73,7 @@ func (d *privateStateStructure) RunForever(fn func(eh.Event)) {
 		for {
 			event, err := d.listener.Wait(d.ctx)
 			if err != nil {
-				fmt.Printf("Error waiting for event: %s\n", err.Error())
+				fmt.Printf("Shutting down listener: %s\n", err.Error())
 				return
 			}
 			fn(event)
@@ -84,6 +84,20 @@ func (d *privateStateStructure) RunForever(fn func(eh.Event)) {
 func CustomFilter(fn func(eh.Event) bool) func(p *privateStateStructure) error {
 	return func(p *privateStateStructure) error {
 		p.filterFn = fn
+		return nil
+	}
+}
+
+func AND(fnA, fnB func(eh.Event) bool) func(p *privateStateStructure) error {
+	return func(p *privateStateStructure) error {
+		p.filterFn = func(e eh.Event) bool { return fnA(e) && fnB(e) }
+		return nil
+	}
+}
+
+func OR(fnA, fnB func(eh.Event) bool) func(p *privateStateStructure) error {
+	return func(p *privateStateStructure) error {
+		p.filterFn = func(e eh.Event) bool { return fnA(e) || fnB(e) }
 		return nil
 	}
 }
@@ -113,6 +127,50 @@ func SelectEventResourceCreatedByURIPrefix(uri string) func(p *privateStateStruc
 			}
 			if data, ok := event.Data().(domain.RedfishResourceCreatedData); ok {
 				if strings.HasPrefix(data.ResourceURI, uri) {
+					// Only return true for immediate sub uris, not grandchildren
+					rest := strings.TrimPrefix(data.ResourceURI, uri)
+					if strings.Contains(rest, "/") {
+						return false
+					}
+					return true
+				}
+			}
+			return false
+		}
+		return nil
+	}
+}
+
+func SelectEventResourceRemovedByURI(uri string) func(p *privateStateStructure) error {
+	return func(p *privateStateStructure) error {
+		p.filterFn = func(event eh.Event) bool {
+			if event.EventType() != domain.RedfishResourceRemoved {
+				return false
+			}
+			if data, ok := event.Data().(domain.RedfishResourceRemovedData); ok {
+				if data.ResourceURI == uri {
+					return true
+				}
+			}
+			return false
+		}
+		return nil
+	}
+}
+
+func SelectEventResourceRemovedByURIPrefix(uri string) func(p *privateStateStructure) error {
+	return func(p *privateStateStructure) error {
+		p.filterFn = func(event eh.Event) bool {
+			if event.EventType() != domain.RedfishResourceRemoved {
+				return false
+			}
+			if data, ok := event.Data().(domain.RedfishResourceRemovedData); ok {
+				if strings.HasPrefix(data.ResourceURI, uri) {
+					// Only return true for immediate sub uris, not grandchildren
+					rest := strings.TrimPrefix(data.ResourceURI, uri)
+					if strings.Contains(rest, "/") {
+						return false
+					}
 					return true
 				}
 			}
