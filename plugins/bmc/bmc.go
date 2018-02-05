@@ -2,6 +2,8 @@ package bmc
 
 import (
 	"context"
+	"fmt"
+	"sync"
 	"time"
 
 	"github.com/superchalupa/go-redfish/plugins"
@@ -14,49 +16,99 @@ import (
 
 func init() {
 	domain.RegisterInitFN(InitService)
-	domain.RegisterInitFN(ResetActionHandler)
 }
 
 // OCP Profile Redfish BMC object
-//
+
+type service struct {
+	serviceMu sync.Mutex
+	systems   map[string]bool
+	chassis   map[string]bool
+}
+
+func NewService(ctx context.Context) (*service, error) {
+	return &service{
+		systems: map[string]bool{},
+		chassis: map[string]bool{},
+	}, nil
+}
 
 // wait in a listener for the root service to be created, then extend it
 func InitService(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
 	// step 1: Is this an actual openbmc?
+	// TODO: add test here
+
+	s, err := NewService(ctx)
+	if err != nil {
+		return
+	}
 
 	// step 2: Add openbmc manager object after Managers collection has been created
 	sp, err := plugins.NewEventStreamProcessor(ctx, ew, plugins.SelectEventResourceCreatedByURI("/redfish/v1/Managers"))
-	if err == nil {
-		sp.RunOnce(func(event eh.Event) {
-			NewService(ctx, ch)
-		})
+	if err != nil {
+		fmt.Printf("Failed to create event stream processor: %s\n", err.Error())
+		return
 	}
+	sp.RunOnce(func(event eh.Event) {
+		s.AddOBMCManagerResource(ctx, ch)
+	})
 
+	// we have a semi-collection of links ot systems and chassis we maintain, so add a event stream processor to keep those updated
 	sp, err = plugins.NewEventStreamProcessor(ctx, ew, plugins.SelectEventResourceCreatedByURIPrefix("/redfish/v1/Systems/"))
-	if err == nil {
-		sp.RunForever(func(event eh.Event) {
-			MaintainManagersForSystems(ctx, ch)
-		})
+	if err != nil {
+		fmt.Printf("Failed to create event stream processor: %s\n", err.Error())
+		return // todo: tear down all the prior event stream processors, too
 	}
+	sp.RunForever(func(event eh.Event) {
+		if data, ok := event.Data().(domain.RedfishResourceCreatedData); ok {
+			s.AddSystem(data.ResourceURI)
+		}
+	})
 
 	sp, err = plugins.NewEventStreamProcessor(ctx, ew, plugins.SelectEventResourceCreatedByURIPrefix("/redfish/v1/Chassis/"))
-	if err == nil {
-		sp.RunForever(func(event eh.Event) {
-			MaintainManagersForChassis(ctx, ch)
-		})
+	if err != nil {
+		fmt.Printf("Failed to create event stream processor: %s\n", err.Error())
+		return // todo: tear down all the prior event stream processors, too
 	}
+	sp.RunForever(func(event eh.Event) {
+		if data, ok := event.Data().(domain.RedfishResourceCreatedData); ok {
+			s.AddChassis(data.ResourceURI)
+		}
+	})
+
+	// stream processor for action events
+	sp, err = plugins.NewEventStreamProcessor(ctx, ew, plugins.CustomFilter(ah.SelectAction("/redfish/v1/bmc/Actions/Manager.Reset")))
+	if err != nil {
+		fmt.Printf("Failed to create event stream processor: %s\n", err.Error())
+		return // todo: tear down all the prior event stream processors, too
+	}
+	sp.RunForever(func(event eh.Event) {
+		// TODO: send dbus signal to reset
+		eb.HandleEvent(ctx, eh.NewEvent(domain.HTTPCmdProcessed, domain.HTTPCmdProcessedData{
+			CommandID:  event.Data().(ah.GenericActionEventData).CmdID,
+			Results:    map[string]interface{}{"RESET": "ok"},
+			StatusCode: 200,
+			Headers:    map[string]string{},
+		}, time.Now()))
+	})
 }
 
-func MaintainManagersForSystems(ctx context.Context, ch eh.CommandHandler) {
+// TODO: stream process for Chassis and Systems to add them to our MangerForServers and ManagerForChassis
+func (s *service) AddSystem(uri string) {
+	s.serviceMu.Lock()
+	defer s.serviceMu.Unlock()
+	fmt.Printf("DEBUG: ADDING SYSTEM(%s) to list: %s\n", uri, s.systems)
+	s.systems[uri] = true
 }
 
-func MaintainManagersForChassis(ctx context.Context, ch eh.CommandHandler) {
+func (s *service) AddChassis(uri string) {
+	s.serviceMu.Lock()
+	defer s.serviceMu.Unlock()
+	fmt.Printf("DEBUG: ADDING CHASSIS(%s) to list: %s\n", uri, s.chassis)
+	s.chassis[uri] = true
 }
 
-func NewService(ctx context.Context, ch eh.CommandHandler) {
-	// TODO: stream process for Chassis and Systems to add them to our MangerForServers and ManagerForChassis
-	// TODO: set up Action links
-
+func (s *service) AddOBMCManagerResource(ctx context.Context, ch eh.CommandHandler) {
 	ch.HandleCommand(
 		context.Background(),
 		&domain.CreateRedfishResource{
@@ -203,19 +255,4 @@ func NewService(ctx context.Context, ch eh.CommandHandler) {
 			Properties: map[string]interface{}{
 				"Name": "Ethernet Network Interface Collection",
 			}})
-}
-
-func ResetActionHandler(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
-	// step 2: Add openbmc manager object after Managers collection has been created
-	sp, err := plugins.NewEventStreamProcessor(ctx, ew, plugins.CustomFilter(ah.SelectAction("/redfish/v1/bmc/Actions/Manager.Reset")))
-	if err == nil {
-		sp.RunForever(func(event eh.Event) {
-			eb.HandleEvent(ctx, eh.NewEvent(domain.HTTPCmdProcessed, domain.HTTPCmdProcessedData{
-				CommandID:  event.Data().(ah.GenericActionEventData).CmdID,
-				Results:    map[string]interface{}{"RESET": "ok"},
-				StatusCode: 200,
-				Headers:    map[string]string{},
-			}, time.Now()))
-		})
-	}
 }
