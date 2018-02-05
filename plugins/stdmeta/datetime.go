@@ -3,7 +3,7 @@ package stdmeta
 import (
 	"context"
 	"fmt"
-    "time"
+	"time"
 
 	domain "github.com/superchalupa/go-redfish/redfishresource"
 )
@@ -28,6 +28,9 @@ func (t *dateTime) DemandBasedUpdate(
 	meta map[string]interface{},
 	body interface{},
 ) {
-    // TODO: do we need to add options here to format different ways? Do we need to be able to format specific times instead of just current time?
-	rrp.Value = fmt.Sprintf(time.Now().UTC().Format("2006-01-02T15:04:05Z07:00"))
+	// TODO: do we need to add options here to format different ways? Do we need to be able to format specific times instead of just current time?
+
+	// time.RFC3339
+	//rrp.Value = fmt.Sprintf(time.Now().UTC().Format("2006-01-02T15:04:05Z07:00"))
+	rrp.Value = fmt.Sprintf(time.Now().UTC().Format(time.RFC3339))
 }
