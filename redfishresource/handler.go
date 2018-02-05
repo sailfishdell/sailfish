@@ -131,7 +131,7 @@ func (d *DomainObjects) Notify(ctx context.Context, event eh.Event) {
 				if v == collectionToTest {
 					fmt.Printf("Collection: ADD (%s) to collection (%s)\n", data.ResourceURI, v)
 					d.CommandHandler.HandleCommand(
-						context.Background(),
+						ctx,
 						&AddResourceToRedfishResourceCollection{
 							ID:          d.GetAggregateID(collectionToTest),
 							ResourceURI: data.ResourceURI,
@@ -152,7 +152,7 @@ func (d *DomainObjects) Notify(ctx context.Context, event eh.Event) {
 				if v == collectionToTest {
 					fmt.Printf("Collection: REMOVE (%s) from collection (%s)\n", data.ResourceURI, v)
 					d.CommandHandler.HandleCommand(
-						context.Background(),
+						ctx,
 						&RemoveResourceFromRedfishResourceCollection{
 							ID:          d.GetAggregateID(collectionToTest),
 							ResourceURI: data.ResourceURI,
@@ -186,7 +186,7 @@ func (d *DomainObjects) Notify(ctx context.Context, event eh.Event) {
 // CommandHandler is a HTTP handler for eventhorizon.Commands. Commands must be
 // registered with eventhorizon.RegisterCommand(). It expects a POST with a JSON
 // body that will be unmarshalled into the command.
-func (d *DomainObjects) GetInternalCommandHandler() http.Handler {
+func (d *DomainObjects) GetInternalCommandHandler(backgroundCtx context.Context) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 
@@ -214,8 +214,7 @@ func (d *DomainObjects) GetInternalCommandHandler() http.Handler {
 		// NOTE: Use a new context when handling, else it will be cancelled with
 		// the HTTP request which will cause projectors etc to fail if they run
 		// async in goroutines past the request.
-		ctx := context.Background()
-		if err := d.CommandHandler.HandleCommand(ctx, cmd); err != nil {
+		if err := d.CommandHandler.HandleCommand(backgroundCtx, cmd); err != nil {
 			http.Error(w, "could not handle command: "+err.Error(), http.StatusBadRequest)
 			return
 		}

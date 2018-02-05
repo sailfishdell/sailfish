@@ -152,7 +152,7 @@ func main() {
 	m.PathPrefix("/events").Methods("GET").Handler(sessionServiceAuthorizerSSE)
 
 	// backend command handling
-	m.PathPrefix("/api/{command}").Handler(domainObjs.GetInternalCommandHandler())
+	m.PathPrefix("/api/{command}").Handler(domainObjs.GetInternalCommandHandler(ctx))
 
 	// profiling stuff
 	// TODO: cli option to enable/disable

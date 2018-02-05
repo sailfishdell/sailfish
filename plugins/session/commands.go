@@ -157,7 +157,7 @@ func (c *POST) startSessionDeleteTimer(sessionUUID eh.UUID, sessionURI string, t
 	// all background stuff
 	ctx := context.Background()
 
-	refreshListener, err := c.eventWaiter.Listen(context.Background(), func(event eh.Event) bool {
+	refreshListener, err := c.eventWaiter.Listen(ctx, func(event eh.Event) bool {
 		if event.EventType() != XAuthTokenRefreshEvent {
 			return false
 		}
@@ -174,7 +174,7 @@ func (c *POST) startSessionDeleteTimer(sessionUUID eh.UUID, sessionURI string, t
 		return
 	}
 
-	deleteListener, err := c.eventWaiter.Listen(context.Background(), func(event eh.Event) bool {
+	deleteListener, err := c.eventWaiter.Listen(ctx, func(event eh.Event) bool {
 		if event.EventType() != domain.RedfishResourceRemoved {
 			return false
 		}
