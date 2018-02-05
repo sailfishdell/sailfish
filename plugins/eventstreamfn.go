@@ -1,30 +1,31 @@
 package plugins
 
 import (
-    "context"
-    "fmt"
+	"context"
+	"fmt"
+	"strings"
 
-        domain "github.com/superchalupa/go-redfish/redfishresource"
+	domain "github.com/superchalupa/go-redfish/redfishresource"
 
-        eh "github.com/looplab/eventhorizon"
-            "github.com/looplab/eventhorizon/utils"
+	eh "github.com/looplab/eventhorizon"
+	"github.com/looplab/eventhorizon/utils"
 )
 
 type Options func(*privateStateStructure) error
 
 type privateStateStructure struct {
-    ctx context.Context
-    filterFn func(eh.Event) bool
-    listener *utils.EventListener
+	ctx      context.Context
+	filterFn func(eh.Event) bool
+	listener *utils.EventListener
 }
 
-func NewEventStreamProcessor(ctx context.Context, ew *utils.EventWaiter, options... Options) (d *privateStateStructure, err error) {
-    d = &privateStateStructure{
-        ctx: ctx,
-        // default filter is to process all events
-        filterFn: func(eh.Event) bool { return true },
-    }
-    err = nil
+func NewEventStreamProcessor(ctx context.Context, ew *utils.EventWaiter, options ...Options) (d *privateStateStructure, err error) {
+	d = &privateStateStructure{
+		ctx: ctx,
+		// default filter is to process all events
+		filterFn: func(eh.Event) bool { return true },
+	}
+	err = nil
 
 	for _, o := range options {
 		err := o(d)
@@ -43,10 +44,10 @@ func NewEventStreamProcessor(ctx context.Context, ew *utils.EventWaiter, options
 }
 
 func (d *privateStateStructure) Close() {
-    if d.listener != nil {
-        d.listener.Close()
-        d.listener = nil
-    }
+	if d.listener != nil {
+		d.listener.Close()
+		d.listener = nil
+	}
 }
 
 func (d *privateStateStructure) RunOnce(fn func(eh.Event)) {
@@ -69,30 +70,54 @@ func (d *privateStateStructure) RunForever(fn func(eh.Event)) {
 	go func() {
 		defer d.Close()
 
-        for {
-            event, err := d.listener.Wait(d.ctx)
-            if err != nil {
-                fmt.Printf("Error waiting for event: %s\n", err.Error())
-                return
-            }
-            fn(event)
-        }
+		for {
+			event, err := d.listener.Wait(d.ctx)
+			if err != nil {
+				fmt.Printf("Error waiting for event: %s\n", err.Error())
+				return
+			}
+			fn(event)
+		}
 	}()
 }
 
+func CustomFilter(fn func(eh.Event) bool) func(p *privateStateStructure) error {
+	return func(p *privateStateStructure) error {
+		p.filterFn = fn
+		return nil
+	}
+}
+
 func SelectEventResourceCreatedByURI(uri string) func(p *privateStateStructure) error {
-    return func(p *privateStateStructure) error {
-        p.filterFn = func(event eh.Event) bool {
-            if event.EventType() != domain.RedfishResourceCreated {
-                return false
-            }
-            if data, ok := event.Data().(domain.RedfishResourceCreatedData); ok {
-                if data.ResourceURI == uri {
-                    return true
-                }
-            }
-            return false
-        }
-        return nil
-    }
+	return func(p *privateStateStructure) error {
+		p.filterFn = func(event eh.Event) bool {
+			if event.EventType() != domain.RedfishResourceCreated {
+				return false
+			}
+			if data, ok := event.Data().(domain.RedfishResourceCreatedData); ok {
+				if data.ResourceURI == uri {
+					return true
+				}
+			}
+			return false
+		}
+		return nil
+	}
+}
+
+func SelectEventResourceCreatedByURIPrefix(uri string) func(p *privateStateStructure) error {
+	return func(p *privateStateStructure) error {
+		p.filterFn = func(event eh.Event) bool {
+			if event.EventType() != domain.RedfishResourceCreated {
+				return false
+			}
+			if data, ok := event.Data().(domain.RedfishResourceCreatedData); ok {
+				if strings.HasPrefix(data.ResourceURI, uri) {
+					return true
+				}
+			}
+			return false
+		}
+		return nil
+	}
 }
