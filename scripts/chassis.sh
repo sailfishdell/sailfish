@@ -52,6 +52,7 @@ $CURLCMD $URL/api/RedfishResource%3ACreate  -d '
     }'
 
 
+sleep 1
 echo "/redfish/v1/Chassis/A33"
 $CURLCMD $URL/redfish/v1/Chassis/A33
 
@@ -84,6 +85,7 @@ $CURLCMD $URL/api/RedfishResource%3ACreate  -d '
             }]}
     }'
 
+sleep 1
 echo "/redfish/v1/Chassis/A33/Power"
 $CURLCMD $URL/redfish/v1/Chassis/A33/Power
 
@@ -242,5 +244,6 @@ $CURLCMD $URL/api/RedfishResource%3ACreate  -d '
         }
     }'
 
+sleep 1
 echo "/redfish/v1/Chassis/A33/Thermal"
 $CURLCMD $URL/redfish/v1/Chassis/A33/Thermal
