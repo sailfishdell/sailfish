@@ -14,6 +14,10 @@ import (
 	ah "github.com/superchalupa/go-redfish/plugins/actionhandler"
 )
 
+var (
+    BmcPlugin = domain.PluginType("obmc_bmc")
+)
+
 func init() {
 	domain.RegisterInitFN(InitService)
 }
@@ -42,6 +46,9 @@ func InitService(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *
 	if err != nil {
 		return
 	}
+
+    // Singleton for bmc plugin
+    domain.RegisterPlugin(func() domain.Plugin { return s })
 
 	// step 2: Add openbmc manager object after Managers collection has been created
 	sp, err := plugins.NewEventStreamProcessor(ctx, ew, plugins.SelectEventResourceCreatedByURI("/redfish/v1/Managers"))
@@ -93,6 +100,45 @@ func InitService(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *
 	})
 }
 
+// satisfy the plugin interface so we can list ourselves as a plugin in our @meta
+func (s *service) PluginType() domain.PluginType { return BmcPlugin }
+
+func (s *service) DemandBasedUpdate(
+    ctx context.Context,
+    agg *domain.RedfishResourceAggregate,
+    rrp *domain.RedfishResourceProperty,
+    method string,
+    meta map[string]interface{},
+    body interface{},
+) {
+	s.serviceMu.Lock()
+	defer s.serviceMu.Unlock()
+
+    data, ok := meta["data"].(string)
+    if !ok {
+        fmt.Printf("Misconfigured obmc_bmc plugin: 'data' not set\n")
+        return
+    }
+
+    if data == "systems" {
+        list := []map[string]string{}
+        for k, _  := range s.systems {
+            list = append(list, map[string]string{"@odata.id": k})
+        }
+        list = append(list, map[string]string{"@odata.id": "/redfish/v1/Systems/"})
+        rrp.Value = list
+    }
+
+    if data == "chassis" {
+        list := []map[string]string{}
+        for k, _  := range s.chassis {
+            list = append(list, map[string]string{"@odata.id": k})
+        }
+        rrp.Value = list
+    }
+
+}
+
 // TODO: stream process for Chassis and Systems to add them to our MangerForServers and ManagerForChassis
 func (s *service) AddSystem(uri string) {
 	s.serviceMu.Lock()
@@ -142,12 +188,9 @@ func (s *service) AddOBMCManagerResource(ctx context.Context, ch eh.CommandHandl
 				"NetworkProtocol":    map[string]interface{}{"@odata.id": "/redfish/v1/Managers/bmc/NetworkProtocol"},
 				"EthernetInterfaces": map[string]interface{}{"@odata.id": "/redfish/v1/Managers/bmc/EthernetInterfaces"},
 				"Links": map[string]interface{}{
-					"ManagerForServers": []interface{}{
-						map[string]interface{}{"@odata.id": "/redfish/v1/Systems/"},
-					},
-					"ManagerForChassis": []interface{}{},
+					"ManagerForServers@meta": map[string]interface{}{"GET": map[string]interface{}{"plugin": "obmc_bmc", "data": "systems"}},
+					"ManagerForChassis@meta": map[string]interface{}{"GET": map[string]interface{}{"plugin": "obmc_bmc", "data": "chassis"}},
 					"ManagerInChassis":  map[string]interface{}{},
-					"Oem":               map[string]interface{}{},
 				},
 				"Actions": map[string]interface{}{
 					"#Manager.Reset": map[string]interface{}{
@@ -157,9 +200,7 @@ func (s *service) AddOBMCManagerResource(ctx context.Context, ch eh.CommandHandl
 							"GracefulRestart",
 						},
 					},
-					"Oem": map[string]interface{}{},
 				},
-				"Oem": map[string]interface{}{},
 			}})
 
 	// handle action for restart
