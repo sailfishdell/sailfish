@@ -36,8 +36,8 @@ import (
 	// load plugins (auto-register)
 	_ "github.com/superchalupa/go-redfish/plugins/actionhandler"
 	_ "github.com/superchalupa/go-redfish/plugins/rootservice"
-	_ "github.com/superchalupa/go-redfish/plugins/stdmeta"
 	_ "github.com/superchalupa/go-redfish/plugins/stdcollections"
+	_ "github.com/superchalupa/go-redfish/plugins/stdmeta"
 
 	// load openbmc plugins
 	_ "github.com/superchalupa/go-redfish/plugins/bmc"

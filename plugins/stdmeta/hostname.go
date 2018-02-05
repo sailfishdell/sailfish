@@ -2,7 +2,7 @@ package stdmeta
 
 import (
 	"context"
-    "os"
+	"os"
 
 	domain "github.com/superchalupa/go-redfish/redfishresource"
 )
@@ -27,8 +27,8 @@ func (t *hostname) DemandBasedUpdate(
 	meta map[string]interface{},
 	body interface{},
 ) {
-    hostname, err := os.Hostname()
-    if err == nil {
-	    rrp.Value = hostname
-    }
+	hostname, err := os.Hostname()
+	if err == nil {
+		rrp.Value = hostname
+	}
 }
