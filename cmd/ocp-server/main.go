@@ -35,11 +35,12 @@ import (
 
 	// load plugins (auto-register)
 	_ "github.com/superchalupa/go-redfish/plugins/actionhandler"
-	_ "github.com/superchalupa/go-redfish/plugins/dbus"
-	_ "github.com/superchalupa/go-redfish/plugins/patch"
 	_ "github.com/superchalupa/go-redfish/plugins/rootservice"
-	_ "github.com/superchalupa/go-redfish/plugins/runcmd"
+	_ "github.com/superchalupa/go-redfish/plugins/stdmeta"
 	_ "github.com/superchalupa/go-redfish/plugins/stdcollections"
+
+	// load openbmc plugins
+	_ "github.com/superchalupa/go-redfish/plugins/bmc"
 
 	// Test plugins
 	_ "github.com/superchalupa/go-redfish/plugins/test"
@@ -87,7 +88,7 @@ func main() {
 		configFile  = flag.String("config", "app.yaml", "Application configuration file")
 		listenAddrs strslice
 	)
-	flag.Var(&listenAddrs, "l", "Listen address.  Formats: (:nn, fcgi:ip:port, fcgi:/path)")
+	flag.Var(&listenAddrs, "l", "Listen address.  Formats: (http:[ip]:nn, fcgi:[ip]:port, fcgi:/path, https:[ip]:port, spacemonkey:[ip]:port)")
 	flag.Parse()
 
 	cfg, _ := loadConfig(*configFile)
@@ -287,7 +288,7 @@ func main() {
 					// cannot use writetimeout if we are streaming
 					// WriteTimeout:   10 * time.Second,
 				}
-				ConnectToContext(ctx, s)
+				ConnectToContext(ctx, s) // make sure when background context is cancelled, this server shuts down cleanly
 				serversMu.Lock()
 				servers = append(servers, s)
 				serversMu.Unlock()
@@ -309,7 +310,7 @@ func main() {
 					// can't remember why this doesn't work... TODO: reason this doesnt work
 					//TLSNextProto:   make(map[string]func(*http.Server, *tls.Conn, http.Handler), 0),
 				}
-				ConnectToContext(ctx, s)
+				ConnectToContext(ctx, s) // make sure when background context is cancelled, this server shuts down cleanly
 				serversMu.Lock()
 				servers = append(servers, s)
 				serversMu.Unlock()

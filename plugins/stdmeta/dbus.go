@@ -1,4 +1,4 @@
-package dbus
+package stdmeta
 
 import (
 	"context"

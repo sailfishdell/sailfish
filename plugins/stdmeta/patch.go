@@ -1,4 +1,4 @@
-package patch
+package stdmeta
 
 import (
 	"context"

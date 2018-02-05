@@ -38,7 +38,7 @@ func NewService(ctx context.Context, rootID eh.UUID, ch eh.CommandHandler) {
 			Type:        "#ComputerSystemCollection.ComputerSystemCollection",
 			Context:     "/redfish/v1/$metadata#ComputerSystemCollection.ComputerSystemCollection",
 			Privileges: map[string]interface{}{
-				"GET":    []string{"ConfigureManager"},
+				"GET":    []string{"Login"},
 				"POST":   []string{}, // Read Only
 				"PUT":    []string{}, // Read Only
 				"PATCH":  []string{}, // Read Only
@@ -67,7 +67,7 @@ func NewService(ctx context.Context, rootID eh.UUID, ch eh.CommandHandler) {
 			Type:        "#ChassisCollection.ChassisCollection",
 			Context:     "/redfish/v1/$metadata#ChassisCollection.ChassisCollection",
 			Privileges: map[string]interface{}{
-				"GET":    []string{"ConfigureManager"},
+				"GET":    []string{"Login"},
 				"POST":   []string{}, // Read Only
 				"PUT":    []string{}, // Read Only
 				"PATCH":  []string{}, // Read Only
@@ -96,7 +96,7 @@ func NewService(ctx context.Context, rootID eh.UUID, ch eh.CommandHandler) {
 			Type:        "#ManagerCollection.ManagerCollection",
 			Context:     "/redfish/v1/$metadata#ManagerCollection.ManagerCollection",
 			Privileges: map[string]interface{}{
-				"GET":    []string{"ConfigureManager"},
+				"GET":    []string{"Login"},
 				"POST":   []string{}, // Read Only
 				"PUT":    []string{}, // Read Only
 				"PATCH":  []string{}, // Read Only
@@ -125,7 +125,7 @@ func NewService(ctx context.Context, rootID eh.UUID, ch eh.CommandHandler) {
 			Type:        "#ManagerAccountCollection.ManagerAccountCollection",
 			Context:     "/redfish/v1/$metadata#ManagerAccountCollection.ManagerAccountCollection",
 			Privileges: map[string]interface{}{
-				"GET":    []string{"ConfigureManager"},
+				"GET":    []string{"Login"},
 				"POST":   []string{}, // Read Only
 				"PUT":    []string{}, // Read Only
 				"PATCH":  []string{}, // Read Only
@@ -146,7 +146,7 @@ func NewService(ctx context.Context, rootID eh.UUID, ch eh.CommandHandler) {
 			Type:        "#RoleCollection.RoleCollection",
 			Context:     "/redfish/v1/$metadata#RoleCollection.RoleCollection",
 			Privileges: map[string]interface{}{
-				"GET":    []string{"ConfigureManager"},
+				"GET":    []string{"Login"},
 				"POST":   []string{}, // Read Only
 				"PUT":    []string{}, // Read Only
 				"PATCH":  []string{}, // Read Only
@@ -167,8 +167,8 @@ func NewService(ctx context.Context, rootID eh.UUID, ch eh.CommandHandler) {
 			Type:        "#AccountService.v1_0_2.AccountService",
 			Context:     "/redfish/v1/$metadata#AccountService.AccountService",
 			Privileges: map[string]interface{}{
-				"GET":    []string{"ConfigureManager"},
-				"POST":   []string{}, // cannot create sub objects
+				"GET":    []string{"Login"},
+				"POST":   []string{"ConfigureManager"}, // cannot create sub objects
 				"PUT":    []string{"ConfigureManager"},
 				"PATCH":  []string{"ConfigureManager"},
 				"DELETE": []string{}, // can't be deleted
@@ -214,7 +214,7 @@ func NewService(ctx context.Context, rootID eh.UUID, ch eh.CommandHandler) {
 			Type:        "#Role.v1_0_2.Role",
 			Context:     "/redfish/v1/$metadata#Role.Role",
 			Privileges: map[string]interface{}{
-				"GET":    []string{"ConfigureManager"},
+				"GET":    []string{"Login"},
 				"POST":   []string{}, // Read Only
 				"PUT":    []string{}, // Read Only
 				"PATCH":  []string{}, // Read Only
@@ -245,7 +245,7 @@ func NewService(ctx context.Context, rootID eh.UUID, ch eh.CommandHandler) {
 			Type:        "#Role.v1_0_2.Role",
 			Context:     "/redfish/v1/$metadata#Role.Role",
 			Privileges: map[string]interface{}{
-				"GET":    []string{"ConfigureManager"},
+				"GET":    []string{"Login"},
 				"POST":   []string{}, // Read Only
 				"PUT":    []string{}, // Read Only
 				"PATCH":  []string{}, // Read Only
@@ -274,7 +274,7 @@ func NewService(ctx context.Context, rootID eh.UUID, ch eh.CommandHandler) {
 			Type:        "#Role.v1_0_2.Role",
 			Context:     "/redfish/v1/$metadata#Role.Role",
 			Privileges: map[string]interface{}{
-				"GET":    []string{"ConfigureManager"},
+				"GET":    []string{"Login"},
 				"POST":   []string{}, // Read Only
 				"PUT":    []string{}, // Read Only
 				"PATCH":  []string{}, // Read Only
