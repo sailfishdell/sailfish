@@ -28,6 +28,7 @@ type service struct {
 	serviceMu sync.Mutex
 	systems   map[string]bool
 	chassis   map[string]bool
+    mainchassis string
 }
 
 func NewService(ctx context.Context) (*service, error) {
@@ -47,7 +48,7 @@ func InitService(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *
 		return
 	}
 
-    // Singleton for bmc plugin
+    // Singleton for bmc plugin: we can pull data out of ourselves on GET/etc.
     domain.RegisterPlugin(func() domain.Plugin { return s })
 
 	// step 2: Add openbmc manager object after Managers collection has been created
@@ -82,6 +83,29 @@ func InitService(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *
 			s.AddChassis(data.ResourceURI)
 		}
 	})
+
+	sp, err = plugins.NewEventStreamProcessor(ctx, ew, plugins.SelectEventResourceRemovedByURIPrefix("/redfish/v1/Systems/"))
+	if err != nil {
+		fmt.Printf("Failed to create event stream processor: %s\n", err.Error())
+		return // todo: tear down all the prior event stream processors, too
+	}
+	sp.RunForever(func(event eh.Event) {
+		if data, ok := event.Data().(domain.RedfishResourceRemovedData); ok {
+			s.RemoveSystem(data.ResourceURI)
+		}
+	})
+
+	sp, err = plugins.NewEventStreamProcessor(ctx, ew, plugins.SelectEventResourceRemovedByURIPrefix("/redfish/v1/Chassis/"))
+	if err != nil {
+		fmt.Printf("Failed to create event stream processor: %s\n", err.Error())
+		return // todo: tear down all the prior event stream processors, too
+	}
+	sp.RunForever(func(event eh.Event) {
+		if data, ok := event.Data().(domain.RedfishResourceRemovedData); ok {
+			s.RemoveChassis(data.ResourceURI)
+		}
+	})
+
 
 	// stream processor for action events
 	sp, err = plugins.NewEventStreamProcessor(ctx, ew, plugins.CustomFilter(ah.SelectAction("/redfish/v1/bmc/Actions/Manager.Reset")))
@@ -127,6 +151,7 @@ func (s *service) DemandBasedUpdate(
         }
         list = append(list, map[string]string{"@odata.id": "/redfish/v1/Systems/"})
         rrp.Value = list
+        return
     }
 
     if data == "chassis" {
@@ -135,8 +160,15 @@ func (s *service) DemandBasedUpdate(
             list = append(list, map[string]string{"@odata.id": k})
         }
         rrp.Value = list
+        return
     }
 
+    if data == "mainchassis" {
+        rrp.Value = map[string]string{"@odata.id": s.mainchassis}
+        return
+    }
+
+    fmt.Printf("Misconfigured obmc_bmc plugin: 'data' set to something I don't know how to handle: %s\n", data)
 }
 
 // TODO: stream process for Chassis and Systems to add them to our MangerForServers and ManagerForChassis
@@ -147,11 +179,31 @@ func (s *service) AddSystem(uri string) {
 	s.systems[uri] = true
 }
 
+func (s *service) RemoveSystem(uri string) {
+	s.serviceMu.Lock()
+	defer s.serviceMu.Unlock()
+	fmt.Printf("DEBUG: REMOVING SYSTEM(%s) to list: %s\n", uri, s.systems)
+    delete(s.systems, uri)
+}
+
 func (s *service) AddChassis(uri string) {
 	s.serviceMu.Lock()
 	defer s.serviceMu.Unlock()
+    if s.mainchassis == "" {
+        s.mainchassis = uri
+    }
 	fmt.Printf("DEBUG: ADDING CHASSIS(%s) to list: %s\n", uri, s.chassis)
 	s.chassis[uri] = true
+}
+
+func (s *service) RemoveChassis(uri string) {
+	s.serviceMu.Lock()
+	defer s.serviceMu.Unlock()
+    if s.mainchassis == uri {
+        s.mainchassis = ""
+    }
+	fmt.Printf("DEBUG: REMOVING CHASSIS(%s) to list: %s\n", uri, s.chassis)
+    delete(s.chassis, uri)
 }
 
 func (s *service) AddOBMCManagerResource(ctx context.Context, ch eh.CommandHandler) {
@@ -190,7 +242,7 @@ func (s *service) AddOBMCManagerResource(ctx context.Context, ch eh.CommandHandl
 				"Links": map[string]interface{}{
 					"ManagerForServers@meta": map[string]interface{}{"GET": map[string]interface{}{"plugin": "obmc_bmc", "data": "systems"}},
 					"ManagerForChassis@meta": map[string]interface{}{"GET": map[string]interface{}{"plugin": "obmc_bmc", "data": "chassis"}},
-					"ManagerInChassis":  map[string]interface{}{},
+					"ManagerInChassis@meta":  map[string]interface{}{"GET": map[string]interface{}{"plugin": "obmc_bmc", "data": "mainchassis"}},
 				},
 				"Actions": map[string]interface{}{
 					"#Manager.Reset": map[string]interface{}{
