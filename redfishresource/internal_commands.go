@@ -153,8 +153,7 @@ func (c *UpdateRedfishResourceProperties) CommandType() eh.CommandType {
 	return UpdateRedfishResourcePropertiesCommand
 }
 func (c *UpdateRedfishResourceProperties) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
-	// TODO: Filter out immutable properties: type, context, id...
-	// TODO: support JSON Pointer or similar format to do a better/more granular update of properties
+	// TODO: Need to send property updated on update
 
 	// ensure no collisions with immutable properties
 	for _, p := range immutableProperties {

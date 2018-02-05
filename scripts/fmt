@@ -1,6 +1,6 @@
 #!/bin/sh
 
-for dir in  $(find cmd/* plugins/* redfishresource -type d)
+for dir in  $(find plugins cmd/* redfishresource -type d)
 do
     go fmt $dir/*.go
 done

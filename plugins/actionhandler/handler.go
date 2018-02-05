@@ -69,7 +69,7 @@ func (c *POST) Handle(ctx context.Context, a *domain.RedfishResourceAggregate) e
 	return nil
 }
 
-func MakeListener(uri string) func(eh.Event) bool {
+func SelectAction(uri string) func(eh.Event) bool {
 	return func(event eh.Event) bool {
 		if event.EventType() != GenericActionEvent {
 			return false
