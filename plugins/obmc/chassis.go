@@ -105,12 +105,12 @@ func (s *chassisService) AddOBMCChassisResource(ctx context.Context, ch eh.Comma
 					"Health": "OK",
 				},
 
-				//"Thermal": map[string]interface{}{ "@odata.id": "/redfish/v1/Chassis/A33/Thermal" },
-				//"Power": map[string]interface{}{ "@odata.id": "/redfish/v1/Chassis/A33/Power" },
+				"Thermal": map[string]interface{}{ "@odata.id": "/redfish/v1/Chassis/A33/Thermal" },
+				"Power": map[string]interface{}{ "@odata.id": "/redfish/v1/Chassis/A33/Power" },
 				"Links": map[string]interface{}{
 					"ComputerSystems": []map[string]interface{}{},
-					//"ManagedBy": [ map[string]interface{}{ "@odata.id": "/redfish/v1/Managers/bmc" } ],
-					//"ManagersInChassis": [ map[string]interface{}{ "@odata.id": "/redfish/v1/Managers/bmc" } ]
+					"ManagedBy": []map[string]interface{}{{ "@odata.id": "/redfish/v1/Managers/bmc" },},
+					"ManagersInChassis": [] map[string]interface{}{{ "@odata.id": "/redfish/v1/Managers/bmc" },},
 				},
 			}})
 
@@ -266,4 +266,44 @@ func (s *chassisService) AddOBMCChassisResource(ctx context.Context, ch eh.Comma
                 },
             },
 			}})
+
+
+	ch.HandleCommand(
+		context.Background(),
+		&domain.CreateRedfishResource{
+			ID:          eh.NewUUID(),
+			Collection:  false,
+			ResourceURI: "/redfish/v1/Chassis/A33/Power",
+			Type:        "#Power.v1_1_0.Power",
+			Context:     "/redfish/v1/$metadata#Power.Power",
+			Privileges: map[string]interface{}{
+				"GET":    []string{"Login"},
+				"POST":   []string{}, // cannot create sub objects
+				"PUT":    []string{"ConfigureManager"},
+				"PATCH":  []string{"ConfigureManager"},
+				"DELETE": []string{}, // can't be deleted
+			},
+			Properties: map[string]interface{}{
+                "Id": "Power",
+                "Name": "Power",
+                "PowerControl": []map[string]interface{}{
+                    map[string]interface{}{
+                        "@odata.id": "/redfish/v1/Chassis/A33/Power#/PowerControl/0",
+                        "MemberId": "0",
+                        "Name": "System Power Control",
+                        "PowerConsumedWatts": 224,
+                        "PowerCapacityWatts": 600,
+                        "PowerLimit": map[string]interface{}{
+                            "LimitInWatts": 450,
+                            "LimitException": "LogEventOnly",
+                            "CorrectionInMs": 1000,
+                        },
+                        "Status": map[string]interface{}{
+                            "State": "Enabled",
+                            "Health": "OK",
+                        },
+                    },
+                },
+            },
+        })
 }
