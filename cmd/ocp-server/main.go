@@ -40,9 +40,9 @@ import (
 	_ "github.com/superchalupa/go-redfish/plugins/stdmeta"
 
 	// load openbmc plugins
-	_ "github.com/superchalupa/go-redfish/plugins/bmc"
+	_ "github.com/superchalupa/go-redfish/plugins/obmc"
 
-	// Test plugins
+	// Test plugins (Take these out for a real server)
 	_ "github.com/superchalupa/go-redfish/plugins/test"
 	_ "github.com/superchalupa/go-redfish/plugins/test_action"
 )

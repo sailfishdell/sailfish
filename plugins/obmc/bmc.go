@@ -1,4 +1,4 @@
-package bmc
+package obmc
 
 import (
 	"context"
@@ -15,7 +15,7 @@ import (
 )
 
 var (
-    BmcPlugin = domain.PluginType("obmc_bmc")
+	BmcPlugin = domain.PluginType("obmc_bmc")
 )
 
 func init() {
@@ -25,10 +25,10 @@ func init() {
 // OCP Profile Redfish BMC object
 
 type service struct {
-	serviceMu sync.Mutex
-	systems   map[string]bool
-	chassis   map[string]bool
-    mainchassis string
+	serviceMu   sync.Mutex
+	systems     map[string]bool
+	chassis     map[string]bool
+	mainchassis string
 }
 
 func NewService(ctx context.Context) (*service, error) {
@@ -48,8 +48,8 @@ func InitService(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *
 		return
 	}
 
-    // Singleton for bmc plugin: we can pull data out of ourselves on GET/etc.
-    domain.RegisterPlugin(func() domain.Plugin { return s })
+	// Singleton for bmc plugin: we can pull data out of ourselves on GET/etc.
+	domain.RegisterPlugin(func() domain.Plugin { return s })
 
 	// step 2: Add openbmc manager object after Managers collection has been created
 	sp, err := plugins.NewEventStreamProcessor(ctx, ew, plugins.SelectEventResourceCreatedByURI("/redfish/v1/Managers"))
@@ -106,7 +106,6 @@ func InitService(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *
 		}
 	})
 
-
 	// stream processor for action events
 	sp, err = plugins.NewEventStreamProcessor(ctx, ew, plugins.CustomFilter(ah.SelectAction("/redfish/v1/bmc/Actions/Manager.Reset")))
 	if err != nil {
@@ -128,50 +127,50 @@ func InitService(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *
 func (s *service) PluginType() domain.PluginType { return BmcPlugin }
 
 func (s *service) DemandBasedUpdate(
-    ctx context.Context,
-    agg *domain.RedfishResourceAggregate,
-    rrp *domain.RedfishResourceProperty,
-    method string,
-    meta map[string]interface{},
-    body interface{},
+	ctx context.Context,
+	agg *domain.RedfishResourceAggregate,
+	rrp *domain.RedfishResourceProperty,
+	method string,
+	meta map[string]interface{},
+	body interface{},
 ) {
 	s.serviceMu.Lock()
 	defer s.serviceMu.Unlock()
 
-    data, ok := meta["data"].(string)
-    if !ok {
-        fmt.Printf("Misconfigured obmc_bmc plugin: 'data' not set\n")
-        return
-    }
+	data, ok := meta["data"].(string)
+	if !ok {
+		fmt.Printf("Misconfigured obmc_bmc plugin: 'data' not set\n")
+		return
+	}
 
-    if data == "systems" {
-        list := []map[string]string{}
-        for k, _  := range s.systems {
-            list = append(list, map[string]string{"@odata.id": k})
-        }
-        rrp.Value = list
-        return
-    }
+	if data == "systems" {
+		list := []map[string]string{}
+		for k, _ := range s.systems {
+			list = append(list, map[string]string{"@odata.id": k})
+		}
+		rrp.Value = list
+		return
+	}
 
-    if data == "chassis" {
-        list := []map[string]string{}
-        for k, _  := range s.chassis {
-            list = append(list, map[string]string{"@odata.id": k})
-        }
-        rrp.Value = list
-        return
-    }
+	if data == "chassis" {
+		list := []map[string]string{}
+		for k, _ := range s.chassis {
+			list = append(list, map[string]string{"@odata.id": k})
+		}
+		rrp.Value = list
+		return
+	}
 
-    if data == "mainchassis" {
-        if s.mainchassis != "" {
-            rrp.Value = map[string]string{"@odata.id": s.mainchassis}
-        } else {
-            rrp.Value = map[string]string{}
-        }
-        return
-    }
+	if data == "mainchassis" {
+		if s.mainchassis != "" {
+			rrp.Value = map[string]string{"@odata.id": s.mainchassis}
+		} else {
+			rrp.Value = map[string]string{}
+		}
+		return
+	}
 
-    fmt.Printf("Misconfigured obmc_bmc plugin: 'data' set to something I don't know how to handle: %s\n", data)
+	fmt.Printf("Misconfigured obmc_bmc plugin: 'data' set to something I don't know how to handle: %s\n", data)
 }
 
 // TODO: stream process for Chassis and Systems to add them to our MangerForServers and ManagerForChassis
@@ -186,15 +185,15 @@ func (s *service) RemoveSystem(uri string) {
 	s.serviceMu.Lock()
 	defer s.serviceMu.Unlock()
 	fmt.Printf("DEBUG: REMOVING SYSTEM(%s) to list: %s\n", uri, s.systems)
-    delete(s.systems, uri)
+	delete(s.systems, uri)
 }
 
 func (s *service) AddChassis(uri string) {
 	s.serviceMu.Lock()
 	defer s.serviceMu.Unlock()
-    if s.mainchassis == "" {
-        s.mainchassis = uri
-    }
+	if s.mainchassis == "" {
+		s.mainchassis = uri
+	}
 	fmt.Printf("DEBUG: ADDING CHASSIS(%s) to list: %s\n", uri, s.chassis)
 	s.chassis[uri] = true
 }
@@ -202,11 +201,11 @@ func (s *service) AddChassis(uri string) {
 func (s *service) RemoveChassis(uri string) {
 	s.serviceMu.Lock()
 	defer s.serviceMu.Unlock()
-    if s.mainchassis == uri {
-        s.mainchassis = ""
-    }
+	if s.mainchassis == uri {
+		s.mainchassis = ""
+	}
 	fmt.Printf("DEBUG: REMOVING CHASSIS(%s) to list: %s\n", uri, s.chassis)
-    delete(s.chassis, uri)
+	delete(s.chassis, uri)
 }
 
 func (s *service) AddOBMCManagerResource(ctx context.Context, ch eh.CommandHandler) {
@@ -245,8 +244,8 @@ func (s *service) AddOBMCManagerResource(ctx context.Context, ch eh.CommandHandl
 				"Links": map[string]interface{}{
 					"ManagerForServers@meta": map[string]interface{}{"GET": map[string]interface{}{"plugin": "obmc_bmc", "data": "systems"}},
 					"ManagerForChassis@meta": map[string]interface{}{"GET": map[string]interface{}{"plugin": "obmc_bmc", "data": "chassis"}},
-// Leave this out for now
-//					"ManagerInChassis@meta":  map[string]interface{}{"GET": map[string]interface{}{"plugin": "obmc_bmc", "data": "mainchassis"}},
+					// Leave this out for now
+					//					"ManagerInChassis@meta":  map[string]interface{}{"GET": map[string]interface{}{"plugin": "obmc_bmc", "data": "mainchassis"}},
 				},
 				"Actions": map[string]interface{}{
 					"#Manager.Reset": map[string]interface{}{
