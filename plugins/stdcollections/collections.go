@@ -2,6 +2,7 @@ package stdcollections
 
 import (
 	"context"
+    "time"
 
 	domain "github.com/superchalupa/go-redfish/redfishresource"
 
@@ -187,12 +188,8 @@ func NewService(ctx context.Context, rootID eh.UUID, ch eh.CommandHandler) {
 				"AccountLockoutThreshold":         5,
 				"AccountLockoutDuration":          30,
 				"AccountLockoutCounterResetAfter": 30,
-				"Accounts": []map[string]string{
-					{"@odata.id": "/redfish/v1/AccountService/Accounts"},
-				},
-				"Roles": []map[string]string{
-					{"@odata.id": "/redfish/v1/AccountService/Roles"},
-				},
+				"Accounts": map[string]string{"@odata.id": "/redfish/v1/AccountService/Accounts"},
+				"Roles": map[string]string{"@odata.id": "/redfish/v1/AccountService/Roles"},
 			}})
 
 	ch.HandleCommand(ctx,
@@ -202,6 +199,9 @@ func NewService(ctx context.Context, rootID eh.UUID, ch eh.CommandHandler) {
 				"AccountService": map[string]interface{}{"@odata.id": "/redfish/v1/AccountService"},
 			},
 		})
+
+    // give time between running command to create role collection and when we add roles
+    time.Sleep(10 * time.Millisecond)
 
 	// add standard DMTF roles: Admin
 	ch.HandleCommand(

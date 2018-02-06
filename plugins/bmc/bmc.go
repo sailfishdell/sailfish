@@ -149,7 +149,6 @@ func (s *service) DemandBasedUpdate(
         for k, _  := range s.systems {
             list = append(list, map[string]string{"@odata.id": k})
         }
-        list = append(list, map[string]string{"@odata.id": "/redfish/v1/Systems/"})
         rrp.Value = list
         return
     }
@@ -164,7 +163,11 @@ func (s *service) DemandBasedUpdate(
     }
 
     if data == "mainchassis" {
-        rrp.Value = map[string]string{"@odata.id": s.mainchassis}
+        if s.mainchassis != "" {
+            rrp.Value = map[string]string{"@odata.id": s.mainchassis}
+        } else {
+            rrp.Value = map[string]string{}
+        }
         return
     }
 
@@ -242,7 +245,8 @@ func (s *service) AddOBMCManagerResource(ctx context.Context, ch eh.CommandHandl
 				"Links": map[string]interface{}{
 					"ManagerForServers@meta": map[string]interface{}{"GET": map[string]interface{}{"plugin": "obmc_bmc", "data": "systems"}},
 					"ManagerForChassis@meta": map[string]interface{}{"GET": map[string]interface{}{"plugin": "obmc_bmc", "data": "chassis"}},
-					"ManagerInChassis@meta":  map[string]interface{}{"GET": map[string]interface{}{"plugin": "obmc_bmc", "data": "mainchassis"}},
+// Leave this out for now
+//					"ManagerInChassis@meta":  map[string]interface{}{"GET": map[string]interface{}{"plugin": "obmc_bmc", "data": "mainchassis"}},
 				},
 				"Actions": map[string]interface{}{
 					"#Manager.Reset": map[string]interface{}{

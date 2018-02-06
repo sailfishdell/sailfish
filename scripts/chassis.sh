@@ -44,7 +44,7 @@ $CURLCMD $URL/api/RedfishResource%3ACreate  -d '
             "Thermal": { "@odata.id": "/redfish/v1/Chassis/A33/Thermal" },
             "Power": { "@odata.id": "/redfish/v1/Chassis/A33/Power" },
             "Links": {
-                "ComputerSystems": [ { "@odata.id": "/redfish/v1/Systems/2M220100SL" } ],
+                "ComputerSystems": [],
                 "ManagedBy": [ { "@odata.id": "/redfish/v1/Managers/bmc" } ],
                 "ManagersInChassis": [ { "@odata.id": "/redfish/v1/Managers/bmc" } ]
             }
@@ -101,6 +101,7 @@ $CURLCMD $URL/api/RedfishResource%3ACreate  -d '
             "Name": "Thermal",
             "Temperatures": [
                 {
+                    "@odata.type": "#Thermal.v1_1_0.Thermal",
                     "@odata.id": "/redfish/v1/Chassis/A33/Thermal#/Temperatures/0",
                     "MemberId": "0",
                     "Name": "Inlet Temp",
