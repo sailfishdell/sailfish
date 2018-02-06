@@ -10,11 +10,10 @@ import (
 	"net"
 	"net/http"
 	"net/http/fcgi"
-	"net/http/pprof"
+	_ "net/http/pprof"
 	"os"
 	"os/signal"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/go-yaml/yaml"
@@ -155,14 +154,6 @@ func main() {
 	// backend command handling
 	m.PathPrefix("/api/{command}").Handler(domainObjs.GetInternalCommandHandler(ctx))
 
-	// profiling stuff
-	// TODO: cli option to enable/disable
-	m.Handle("/debug/pprof/", http.HandlerFunc(pprof.Index))
-	m.Handle("/debug/pprof/cmdline", http.HandlerFunc(pprof.Cmdline))
-	m.Handle("/debug/pprof/profile", http.HandlerFunc(pprof.Profile))
-	m.Handle("/debug/pprof/symbol", http.HandlerFunc(pprof.Symbol))
-	m.Handle("/debug/pprof/trace", http.HandlerFunc(pprof.Trace))
-
 	// Simple HTTP request logging.
 	logger := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer func(begin time.Time) {
@@ -232,8 +223,6 @@ func main() {
 	serverCert, _ := tlscert.NewCert(Options...)
 	serverCert.Serialize()
 
-	servers := []*http.Server{}
-	var serversMu sync.Mutex
 	if len(cfg.Listen) == 0 {
 		log.Fatal("No listeners configured! Use the '-l' option to configure a listener!")
 	}
@@ -241,6 +230,20 @@ func main() {
 	// And finally, start up all of the listeners that we have configured
 	for _, listen := range cfg.Listen {
 		switch {
+		case strings.HasPrefix(listen, "pprof:"):
+			pprofMux := http.DefaultServeMux
+			http.DefaultServeMux = http.NewServeMux()
+			go func(listen string) {
+				addr := strings.TrimPrefix(listen, "pprof:")
+				s := &http.Server{
+					Addr:    addr,
+					Handler: pprofMux,
+				}
+				ConnectToContext(ctx, s) // make sure when background context is cancelled, this server shuts down cleanly
+				log.Println("PPROF activated with tcp listener: " + addr)
+				s.ListenAndServe()
+			}(listen)
+
 		case strings.HasPrefix(listen, "fcgi:") && strings.Contains(strings.TrimPrefix(listen, "fcgi:"), ":"):
 			// FCGI listener on a TCP socket (usually should be specified as 127.0.0.1 for security)  fcgi:127.0.0.1:4040
 			go func(addr string) {
@@ -289,9 +292,6 @@ func main() {
 					// WriteTimeout:   10 * time.Second,
 				}
 				ConnectToContext(ctx, s) // make sure when background context is cancelled, this server shuts down cleanly
-				serversMu.Lock()
-				servers = append(servers, s)
-				serversMu.Unlock()
 				log.Println(s.ListenAndServe())
 			}(strings.TrimPrefix(listen, "http:"))
 
@@ -311,9 +311,6 @@ func main() {
 					//TLSNextProto:   make(map[string]func(*http.Server, *tls.Conn, http.Handler), 0),
 				}
 				ConnectToContext(ctx, s) // make sure when background context is cancelled, this server shuts down cleanly
-				serversMu.Lock()
-				servers = append(servers, s)
-				serversMu.Unlock()
 				log.Println("HTTPS listener starting on " + addr)
 				log.Println(s.ListenAndServeTLS("server.crt", "server.key"))
 			}(strings.TrimPrefix(listen, "https:"))
