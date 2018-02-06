@@ -113,4 +113,157 @@ func (s *chassisService) AddOBMCChassisResource(ctx context.Context, ch eh.Comma
 					//"ManagersInChassis": [ map[string]interface{}{ "@odata.id": "/redfish/v1/Managers/bmc" } ]
 				},
 			}})
+
+
+
+	ch.HandleCommand(
+		context.Background(),
+		&domain.CreateRedfishResource{
+			ID:          eh.NewUUID(),
+			Collection:  false,
+			ResourceURI: "/redfish/v1/Chassis/A33/Thermal",
+			Type:        "#Thermal.v1_1_0.Thermal",
+			Context:     "/redfish/v1/$metadata#Thermal.Thermal",
+			Privileges: map[string]interface{}{
+				"GET":    []string{"Login"},
+				"POST":   []string{}, // cannot create sub objects
+				"PUT":    []string{"ConfigureManager"},
+				"PATCH":  []string{"ConfigureManager"},
+				"DELETE": []string{}, // can't be deleted
+			},
+			Properties: map[string]interface{}{
+                "Id": "Thermal",
+                "Name": "Thermal",
+                "Temperatures": []map[string]interface{}{
+                map[string]interface{}{
+                    "@odata.type": "#Thermal.v1_1_0.Thermal",
+                    "@odata.id": "/redfish/v1/Chassis/A33/Thermal#/Temperatures/0",
+                    "MemberId": "0",
+                    "Name": "Inlet Temp",
+                    "SensorNumber": 42,
+                    "Status": map[string]interface{}{
+                        "State": "Enabled",
+                        "Health": "OK",
+                    },
+                    "ReadingCelsius": 25,
+                    "UpperThresholdNonCritical": 35,
+                    "UpperThresholdCritical": 40,
+                    "UpperThresholdFatal": 50,
+                    "MinReadingRange": 0,
+                    "MaxReadingRange": 200,
+                    "PhysicalContext": "Intake",
+                },
+                map[string]interface{}{
+                    "@odata.id": "/redfish/v1/Chassis/A33/Thermal#/Temperatures/1",
+                    "MemberId": "1",
+                    "Name": "Board Temp",
+                    "SensorNumber": 43,
+                    "Status": map[string]interface{}{
+                        "State": "Enabled",
+                        "Health": "OK",
+                    },
+                    "ReadingCelsius": 35,
+                    "UpperThresholdNonCritical": 30,
+                    "UpperThresholdCritical": 40,
+                    "UpperThresholdFatal": 50,
+                    "MinReadingRange": 0,
+                    "MaxReadingRange": 200,
+                    "PhysicalContext": "SystemBoard",
+                },
+                map[string]interface{}{
+                    "@odata.id": "/redfish/v1/Chassis/A33/Thermal#/Temperatures/2",
+                    "MemberId": "2",
+                    "Name": "CPU1 Temp",
+                    "SensorNumber": 44,
+                    "Status": map[string]interface{}{
+                        "State": "Enabled",
+                        "Health": "OK",
+                    },
+                    "ReadingCelsius": 45,
+                    "UpperThresholdNonCritical": 60,
+                    "UpperThresholdCritical": 82,
+                    "MinReadingRange": 0,
+                    "MaxReadingRange": 200,
+                    "PhysicalContext": "CPU",
+                },
+                map[string]interface{}{
+                    "@odata.id": "/redfish/v1/Chassis/A33/Thermal#/Temperatures/3",
+                    "MemberId": "3",
+                    "Name": "CPU2 Temp",
+                    "SensorNumber": 45,
+                    "Status": map[string]interface{}{
+                        "State": "Enabled",
+                        "Health": "OK",
+                    },
+                    "ReadingCelsius": 46,
+                    "UpperThresholdNonCritical": 60,
+                    "UpperThresholdCritical": 82,
+                    "MinReadingRange": 0,
+                    "MaxReadingRange": 200,
+                    "PhysicalContext": "CPU",
+                },
+            },
+            "Fans": []map[string]interface{}{
+                map[string]interface{}{
+                    "@odata.id": "/redfish/v1/Chassis/A33/Thermal#/Fans/0",
+                    "MemberId": "0",
+                    "Name": "BaseBoard System Fan 1",
+                    "PhysicalContext": "Backplane",
+                    "Status": map[string]interface{}{
+                        "State": "Enabled",
+                        "Health": "OK",
+                    },
+                    "Reading": 2100,
+                    "ReadingUnits": "RPM",
+                    "UpperThresholdNonCritical": 42,
+                    "UpperThresholdCritical": 4200,
+                    "UpperThresholdFatal": 42,
+                    "LowerThresholdNonCritical": 42,
+                    "LowerThresholdCritical": 5,
+                    "LowerThresholdFatal": 42,
+                    "MinReadingRange": 0,
+                    "MaxReadingRange": 5000,
+                    "Redundancy": []map[string]interface{}{ { "@odata.id": "/redfish/v1/Chassis/A33/Thermal#/Redundancy/0"}, },
+                },
+                map[string]interface{}{
+                    "@odata.id": "/redfish/v1/Chassis/A33/Thermal#/Fans/1",
+                    "MemberId": "1",
+                    "Name": "BaseBoard System Fan 2",
+                    "PhysicalContext": "Backplane",
+                    "Status": map[string]interface{}{
+                        "State": "Enabled",
+                        "Health": "OK",
+                    },
+                    "Reading": 2100,
+                    "ReadingUnits": "RPM",
+                    "UpperThresholdNonCritical": 42,
+                    "UpperThresholdCritical": 4200,
+                    "UpperThresholdFatal": 42,
+                    "LowerThresholdNonCritical": 42,
+                    "LowerThresholdCritical": 5,
+                    "LowerThresholdFatal": 42,
+                    "MinReadingRange": 0,
+                    "MaxReadingRange": 5000,
+                    "Redundancy": []map[string]interface{}{ {"@odata.id": "/redfish/v1/Chassis/A33/Thermal#/Redundancy/0"}, },
+                },
+            },
+            "Redundancy": []map[string]interface{}{
+                {
+                    "@odata.id": "/redfish/v1/Chassis/A33/Thermal#/Redundancy/0",
+                    "MemberId": "0",
+                    "Name": "BaseBoard System Fans",
+                    "RedundancySet": []map[string]interface{}{
+                        { "@odata.id": "/redfish/v1/Chassis/A33/Thermal#/Fans/0" },
+                        { "@odata.id": "/redfish/v1/Chassis/A33/Thermal#/Fans/1" },
+                    },
+                    "Mode": "N+m",
+                    "Status": map[string]interface{}{
+                        "State": "Enabled",
+                        "Health": "OK",
+                    },
+                    "MinNumNeeded": 1,
+                    "MaxNumSupported": 2,
+                },
+            },
+			}})
 }
