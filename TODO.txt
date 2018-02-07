@@ -1,5 +1,9 @@
 Things that need work: (-) TODO (*) DONE
 
+ - Dynamically generate metadata
+    - Need to dynamically generate the odata metadata endpoints based on what objects are actually present in-tree
+    - probably need to update createredfishresource to have a mandatory parameter specifying the schema
+
  - SSE support
     - Implement second EventBus just for SSE external traffic
     - Implement SAGA to bridge between the two busses
