@@ -145,7 +145,7 @@ func main() {
 	m.Path("/redfish/v1/odata").HandlerFunc(func(w http.ResponseWriter, r *http.Request) { http.ServeFile(w, r, "v1/odata.json") })
 
     // serve up the schema XML
-    m.PathPrefix("/schemas/v1/").Handler(http.StripPrefix("/schemas/v1/", http.FileServer(http.Dir("./schemas/v1/"))) )
+    m.PathPrefix("/schemas/v1/").Handler(http.StripPrefix("/schemas/v1/", http.FileServer(http.Dir("./v1/schemas/"))) )
 
 	// generic handler for redfish output on most http verbs
 	// Note: this works by using the session service to get user details from token to pass up the stack using the embedded struct
