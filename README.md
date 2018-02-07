@@ -42,3 +42,12 @@ go test ./...
 ## Where to start
 
 A good place to start looking is plugins/obmc/bmc.go. This is where we set up the BMC manager object, and it's pretty self contained and understandable.
+
+## Redfish Profile Validator
+
+This server passes the redfish profile validation suite. To run that, check out the validtor and run it with the included config file, like so. (paths assume that service validator tool is checked out as a peer directory to go-redfish)
+```bash
+git clone https://github.com/DMTF/Redfish-Service-Validator
+cd Redfish-Service-Validator
+python3 ./RedfishServiceValidator.py -c ../go-redfish/scripts/Redfish-Service-Validator.ini 
+```
