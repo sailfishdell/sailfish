@@ -3,6 +3,7 @@ package obmc
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"sync"
 	"time"
 
@@ -25,13 +26,20 @@ func init() {
 // OCP Profile Redfish BMC object
 
 type service struct {
-	serviceMu   sync.Mutex
+	serviceMu sync.Mutex
+
+	// Any struct field with tag "property" will automatically be made available in the @meta and will be updated in real time.
+	Name        string `property:"name"`
+	Description string `property:"description"`
+	Model       string `property:"model"`
+	Timezone    string `property:"timezone"`
+	Version     string `property:"version"`
 	systems     map[string]bool
 	chassis     map[string]bool
 	mainchassis string
 }
 
-func NewService(ctx context.Context) (*service, error) {
+func NewBMCService(ctx context.Context) (*service, error) {
 	return &service{
 		systems: map[string]bool{},
 		chassis: map[string]bool{},
@@ -43,11 +51,33 @@ func InitService(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *
 	// step 1: Is this an actual openbmc?
 	// TODO: add test here
 
-	s, err := NewService(ctx)
+	s, err := NewBMCService(ctx)
 	if err != nil {
 		return
 	}
+	s.Name = "OBMC"
+	s.Description = "The most open source BMC ever."
+	s.Model = "Michaels RAD BMC"
+	s.Timezone = "-05:00"
+	s.Version = "1.0.0"
+	SetupBMCServiceEventStreams(ctx, s, ch, eb, ew)
 
+	// initial implementation is one BMC, one Chassis, and one System. If we
+	// expand beyond that, we need to adjust stuff here.
+	chas, err := NewChassisService(ctx)
+	if err != nil {
+		return
+	}
+	InitChassisService(ctx, chas, ch, eb, ew)
+
+	system, err := NewSystemService(ctx)
+	if err != nil {
+		return
+	}
+	InitSystemService(ctx, system, ch, eb, ew)
+}
+
+func SetupBMCServiceEventStreams(ctx context.Context, s *service, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
 	// Singleton for bmc plugin: we can pull data out of ourselves on GET/etc.
 	domain.RegisterPlugin(func() domain.Plugin { return s })
 
@@ -138,11 +168,6 @@ func (s *service) DemandBasedUpdate(
 	defer s.serviceMu.Unlock()
 
 	data, ok := meta["data"].(string)
-	if !ok {
-		fmt.Printf("Misconfigured obmc_bmc plugin: 'data' not set\n")
-		return
-	}
-
 	if data == "systems" {
 		list := []map[string]string{}
 		for k, _ := range s.systems {
@@ -170,7 +195,24 @@ func (s *service) DemandBasedUpdate(
 		return
 	}
 
-	fmt.Printf("Misconfigured obmc_bmc plugin: 'data' set to something I don't know how to handle: %s\n", data)
+	// Generic ability to use reflection to pull data out of the BMC service
+	// object. Anything with a struct tag of "property" is accessible here, in
+	// realtime. If you set up a bakcground task to update, it will
+	// automatically update on GET
+	property, ok := meta["property"].(string)
+	if ok {
+		v := reflect.ValueOf(*s)
+		for i := 0; i < v.NumField(); i++ {
+			// Get the field, returns https://golang.org/pkg/reflect/#StructField
+			tag := v.Type().Field(i).Tag.Get("property")
+			if tag == property {
+				rrp.Value = v.Field(i).Interface()
+				return
+			}
+		}
+	}
+
+	fmt.Printf("Incorrect metadata in aggregate: neither 'data' nor 'property' set to something handleable")
 }
 
 // TODO: stream process for Chassis and Systems to add them to our MangerForServers and ManagerForChassis
@@ -225,22 +267,22 @@ func (s *service) AddOBMCManagerResource(ctx context.Context, ch eh.CommandHandl
 				"DELETE": []string{}, // can't be deleted
 			},
 			Properties: map[string]interface{}{
-				"Id":                    "bmc",
-				"Name":                  "Manager",
-				"ManagerType":           "BMC",
-				"Description":           "BMC",
-				"ServiceEntryPointUUID": eh.NewUUID(),
-				"UUID":                  eh.NewUUID(),
-				"Model":                 "CatfishBMC",
-				"DateTime@meta":         map[string]interface{}{"GET": map[string]interface{}{"plugin": "datetime"}},
-				"DateTimeLocalOffset":   "+06:00",
+				"Id":                       "bmc",
+				"Name@meta":                map[string]interface{}{"GET": map[string]interface{}{"plugin": "obmc_bmc", "property": "name"}},
+				"ManagerType":              "BMC",
+				"Description@meta":         map[string]interface{}{"GET": map[string]interface{}{"plugin": "obmc_bmc", "property": "description"}},
+				"ServiceEntryPointUUID":    eh.NewUUID(),
+				"UUID":                     eh.NewUUID(),
+				"Model@meta":               map[string]interface{}{"GET": map[string]interface{}{"plugin": "obmc_bmc", "property": "model"}},
+				"DateTime@meta":            map[string]interface{}{"GET": map[string]interface{}{"plugin": "datetime"}},
+				"DateTimeLocalOffset@meta": map[string]interface{}{"GET": map[string]interface{}{"plugin": "obmc_bmc", "property": "timezone"}},
 				"Status": map[string]interface{}{
 					"State":  "Enabled",
 					"Health": "OK",
 				},
-				"FirmwareVersion":    "1.00",
-				"NetworkProtocol":    map[string]interface{}{"@odata.id": "/redfish/v1/Managers/bmc/NetworkProtocol"},
-				"EthernetInterfaces": map[string]interface{}{"@odata.id": "/redfish/v1/Managers/bmc/EthernetInterfaces"},
+				"FirmwareVersion@meta": map[string]interface{}{"GET": map[string]interface{}{"plugin": "obmc_bmc", "property": "version"}},
+				"NetworkProtocol":      map[string]interface{}{"@odata.id": "/redfish/v1/Managers/bmc/NetworkProtocol"},
+				"EthernetInterfaces":   map[string]interface{}{"@odata.id": "/redfish/v1/Managers/bmc/EthernetInterfaces"},
 				"Links": map[string]interface{}{
 					"ManagerForServers@meta": map[string]interface{}{"GET": map[string]interface{}{"plugin": "obmc_bmc", "data": "systems"}},
 					"ManagerForChassis@meta": map[string]interface{}{"GET": map[string]interface{}{"plugin": "obmc_bmc", "data": "chassis"}},
