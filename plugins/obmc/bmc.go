@@ -25,7 +25,8 @@ func init() {
 
 // OCP Profile Redfish BMC object
 
-type service struct {
+type bmcService struct {
+    // be sure to lock if reading or writing any data in this object
 	serviceMu sync.Mutex
 
 	// Any struct field with tag "property" will automatically be made available in the @meta and will be updated in real time.
@@ -39,8 +40,8 @@ type service struct {
 	mainchassis string
 }
 
-func NewBMCService(ctx context.Context) (*service, error) {
-	return &service{
+func NewBMCService(ctx context.Context) (*bmcService, error) {
+	return &bmcService{
 		systems: map[string]bool{},
 		chassis: map[string]bool{},
 	}, nil
@@ -62,6 +63,10 @@ func InitService(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *
 	s.Version = "1.0.0"
 	SetupBMCServiceEventStreams(ctx, s, ch, eb, ew)
 
+	// Singleton for bmc plugin: we can pull data out of ourselves on GET/etc.
+    // after this point, the bmc object we just created is "live"
+	domain.RegisterPlugin(func() domain.Plugin { return s })
+
 	// initial implementation is one BMC, one Chassis, and one System. If we
 	// expand beyond that, we need to adjust stuff here.
 	chas, err := NewChassisService(ctx)
@@ -77,10 +82,7 @@ func InitService(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *
 	InitSystemService(ctx, system, ch, eb, ew)
 }
 
-func SetupBMCServiceEventStreams(ctx context.Context, s *service, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
-	// Singleton for bmc plugin: we can pull data out of ourselves on GET/etc.
-	domain.RegisterPlugin(func() domain.Plugin { return s })
-
+func SetupBMCServiceEventStreams(ctx context.Context, s *bmcService, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
 	// step 2: Add openbmc manager object after Managers collection has been created
 	sp, err := plugins.NewEventStreamProcessor(ctx, ew, plugins.SelectEventResourceCreatedByURI("/redfish/v1/Managers"))
 	if err != nil {
@@ -154,9 +156,9 @@ func SetupBMCServiceEventStreams(ctx context.Context, s *service, ch eh.CommandH
 }
 
 // satisfy the plugin interface so we can list ourselves as a plugin in our @meta
-func (s *service) PluginType() domain.PluginType { return BmcPlugin }
+func (s *bmcService) PluginType() domain.PluginType { return BmcPlugin }
 
-func (s *service) DemandBasedUpdate(
+func (s *bmcService) DemandBasedUpdate(
 	ctx context.Context,
 	agg *domain.RedfishResourceAggregate,
 	rrp *domain.RedfishResourceProperty,
@@ -216,21 +218,21 @@ func (s *service) DemandBasedUpdate(
 }
 
 // TODO: stream process for Chassis and Systems to add them to our MangerForServers and ManagerForChassis
-func (s *service) AddSystem(uri string) {
+func (s *bmcService) AddSystem(uri string) {
 	s.serviceMu.Lock()
 	defer s.serviceMu.Unlock()
 	fmt.Printf("DEBUG: ADDING SYSTEM(%s) to list: %s\n", uri, s.systems)
 	s.systems[uri] = true
 }
 
-func (s *service) RemoveSystem(uri string) {
+func (s *bmcService) RemoveSystem(uri string) {
 	s.serviceMu.Lock()
 	defer s.serviceMu.Unlock()
 	fmt.Printf("DEBUG: REMOVING SYSTEM(%s) to list: %s\n", uri, s.systems)
 	delete(s.systems, uri)
 }
 
-func (s *service) AddChassis(uri string) {
+func (s *bmcService) AddChassis(uri string) {
 	s.serviceMu.Lock()
 	defer s.serviceMu.Unlock()
 	if s.mainchassis == "" {
@@ -240,7 +242,7 @@ func (s *service) AddChassis(uri string) {
 	s.chassis[uri] = true
 }
 
-func (s *service) RemoveChassis(uri string) {
+func (s *bmcService) RemoveChassis(uri string) {
 	s.serviceMu.Lock()
 	defer s.serviceMu.Unlock()
 	if s.mainchassis == uri {
@@ -250,7 +252,7 @@ func (s *service) RemoveChassis(uri string) {
 	delete(s.chassis, uri)
 }
 
-func (s *service) AddOBMCManagerResource(ctx context.Context, ch eh.CommandHandler) {
+func (s *bmcService) AddOBMCManagerResource(ctx context.Context, ch eh.CommandHandler) {
 	ch.HandleCommand(
 		context.Background(),
 		&domain.CreateRedfishResource{
