@@ -1,4 +1,4 @@
-# redfish server (in progress... not really redfishy yet!)
+# redfish server (in progress... almost Redfish OCP Profile compliant)
 
 This server will eventually do redfish...
 
@@ -27,12 +27,18 @@ dep ensure
 
 Run the backend:
 ```bash
-go run cmd/ocp-server/*go
+go run cmd/ocp-server/main.go -l https::8443 -l pprof:localhost:6060
 ```
 
 Visit https://localhost:8443/redfish/v1
 
-To run the tests:
+This starts up a golang profiling endpoint on port 6060 at /debug/pprof for local debugging as well
+
+To run the (currently nonexistent) tests (need help here!):
 ```bash
 go test ./...
 ```
+
+## Where to start
+
+A good place to start looking is plugins/obmc/bmc.go. This is where we set up the BMC manager object, and it's pretty self contained and understandable.
