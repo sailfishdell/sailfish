@@ -7,11 +7,13 @@ Things that need work: (-) TODO (*) DONE
  - ACTIONS
     * Implement a test OEM action for reference
         - see scripts/test.sh, plugins/test_action/. These implement example action
+        - obmc now also implements reset action (test)
 
  - EVENTS
-    - implement a command to inject raw events into the system (internal command)
+    - implement an http endpoint to inject raw events into the system (internal command)
 
  - DBUS interface:
+    - hook base command processor into dbus
     - need to hook current Tree into DBUS: allow sending the internal commands
     - hook up signals via plugins
 
