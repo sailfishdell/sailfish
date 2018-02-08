@@ -88,7 +88,8 @@ func InitService(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *
 
 	// Singleton for bmc plugin: we can pull data out of ourselves on GET/etc.
     // after this point, the bmc object we just created is "live"
-	domain.RegisterPlugin(func() domain.Plugin { return &(s.protocol) })
+	domain.RegisterPlugin(func() domain.Plugin { return s })
+	domain.RegisterPlugin(func() domain.Plugin { return s.protocol })
 
 	// initial implementation is one BMC, one Chassis, and one System. If we
 	// expand beyond that, we need to adjust stuff here.
@@ -272,7 +273,6 @@ func (s *bmcService) RefreshProperty(
 	fmt.Printf("Incorrect metadata in aggregate: neither 'data' nor 'property' set to something handleable")
 }
 
-// TODO: stream process for Chassis and Systems to add them to our MangerForServers and ManagerForChassis
 func (s *bmcService) AddSystem(uri string) {
 	s.serviceMu.Lock()
 	defer s.serviceMu.Unlock()
