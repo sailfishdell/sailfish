@@ -28,7 +28,7 @@ type dbusProperty struct {
 
 func (t *dbusProperty) PluginType() domain.PluginType { return DbusPropertyPlugin }
 
-func (t *dbusProperty) DemandBasedUpdate(
+func (t *dbusProperty) RefreshProperty(
 	ctx context.Context,
 	agg *domain.RedfishResourceAggregate,
 	rrp *domain.RedfishResourceProperty,

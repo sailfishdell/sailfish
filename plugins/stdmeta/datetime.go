@@ -20,7 +20,7 @@ type dateTime struct{}
 
 func (t *dateTime) PluginType() domain.PluginType { return DateTimePlugin }
 
-func (t *dateTime) DemandBasedUpdate(
+func (t *dateTime) RefreshProperty(
 	ctx context.Context,
 	agg *domain.RedfishResourceAggregate,
 	rrp *domain.RedfishResourceProperty,

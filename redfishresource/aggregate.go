@@ -223,7 +223,7 @@ func (r *RedfishResourceAggregate) UpdateCollectionMemberCount_unlocked() {
 }
 
 type PropertyUpdater interface {
-	DemandBasedUpdate(context.Context, *RedfishResourceAggregate, *RedfishResourceProperty, string, map[string]interface{}, interface{})
+	RefreshProperty(context.Context, *RedfishResourceAggregate, *RedfishResourceProperty, string, map[string]interface{}, interface{})
 }
 
 func (rrp *RedfishResourceProperty) Process(ctx context.Context, agg *RedfishResourceAggregate, property, method string, req interface{}) {
@@ -251,7 +251,7 @@ func (rrp *RedfishResourceProperty) Process(ctx context.Context, agg *RedfishRes
 
 		if plugin, ok := plugin.(PropertyUpdater); ok {
 			fmt.Printf("PROCESS PROPERTY(%s) with plugin(%s)\n", property, pluginName)
-			plugin.DemandBasedUpdate(ctx, agg, rrp, method, meta_t, req)
+			plugin.RefreshProperty(ctx, agg, rrp, method, meta_t, req)
 		}
 	}
 
@@ -269,7 +269,6 @@ func (rrp *RedfishResourceProperty) Process(ctx context.Context, agg *RedfishRes
 
 			go func(property string, v RedfishResourceProperty) {
 				reqitem, _ := reqmap[property]
-				// TODO: make this parallel
 				v.Process(ctx, agg, property, method, reqitem)
 				resChan <- result{property, v}
 			}(property, v)

@@ -27,8 +27,8 @@ type testplugin_strategy3 struct{}
 
 func (t *testplugin_strategy3) PluginType() domain.PluginType { return TestPlugin_Strategy3 }
 
-//     DemandBasedUpdate(context.Context, *RedfishResourceAggregate, *RedfishResourceProperty, string, map[string]interface{}, interface{})
-func (t *testplugin_strategy3) DemandBasedUpdate(
+//     RefreshProperty(context.Context, *RedfishResourceAggregate, *RedfishResourceProperty, string, map[string]interface{}, interface{})
+func (t *testplugin_strategy3) RefreshProperty(
 	ctx context.Context,
 	agg *domain.RedfishResourceAggregate,
 	rrp *domain.RedfishResourceProperty,
