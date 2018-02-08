@@ -45,7 +45,7 @@ func InitSystemService(ctx context.Context, s *systemService, ch eh.CommandHandl
 // satisfy the plugin interface so we can list ourselves as a plugin in our @meta
 func (s *systemService) PluginType() domain.PluginType { return OBMC_SystemPlugin }
 
-func (s *systemService) DemandBasedUpdate(
+func (s *systemService) RefreshProperty(
 	ctx context.Context,
 	agg *domain.RedfishResourceAggregate,
 	rrp *domain.RedfishResourceProperty,

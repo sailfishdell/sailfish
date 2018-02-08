@@ -17,6 +17,7 @@ import (
 
 var (
 	BmcPlugin = domain.PluginType("obmc_bmc")
+	ProtocolPlugin = domain.PluginType("protocol")
 )
 
 func init() {
@@ -24,6 +25,13 @@ func init() {
 }
 
 // OCP Profile Redfish BMC object
+
+type protocolList map[string]protocol
+type protocol struct {
+    enabled bool
+    port    int
+    config map[string]interface{}
+}
 
 type bmcService struct {
     // be sure to lock if reading or writing any data in this object
@@ -35,6 +43,9 @@ type bmcService struct {
 	Model       string `property:"model"`
 	Timezone    string `property:"timezone"`
 	Version     string `property:"version"`
+
+    protocol    protocolList
+
 	systems     map[string]bool
 	chassis     map[string]bool
 	mainchassis string
@@ -61,11 +72,23 @@ func InitService(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *
 	s.Model = "Michaels RAD BMC"
 	s.Timezone = "-05:00"
 	s.Version = "1.0.0"
+
+    s.protocol = make(protocolList)
+    s.protocol["https"] = protocol{ enabled : true, port : 443 }
+    s.protocol["http"] = protocol{ enabled : false, port : 80 }
+    s.protocol["ipmi"] = protocol{ enabled : false, port : 623 }
+    s.protocol["ssh"] = protocol{ enabled : false, port : 22 }
+    s.protocol["snmp"] = protocol{ enabled : false, port : 161 }
+    s.protocol["ssdp"] = protocol{ enabled : false, port : 1900,
+        config: map[string]interface{}{ "NotifyMulticastIntervalSeconds": 600, "NotifyTTL": 5, "NotifyIPv6Scope": "Site" },
+        }
+    s.protocol["telnet"] = protocol{ enabled : false, port : 23 }
+
 	SetupBMCServiceEventStreams(ctx, s, ch, eb, ew)
 
 	// Singleton for bmc plugin: we can pull data out of ourselves on GET/etc.
     // after this point, the bmc object we just created is "live"
-	domain.RegisterPlugin(func() domain.Plugin { return s })
+	domain.RegisterPlugin(func() domain.Plugin { return &(s.protocol) })
 
 	// initial implementation is one BMC, one Chassis, and one System. If we
 	// expand beyond that, we need to adjust stuff here.
@@ -155,10 +178,42 @@ func SetupBMCServiceEventStreams(ctx context.Context, s *bmcService, ch eh.Comma
 	})
 }
 
+func (p protocolList) PluginType() domain.PluginType { return ProtocolPlugin }
+func (p protocolList) RefreshProperty(
+	ctx context.Context,
+	agg *domain.RedfishResourceAggregate,
+	rrp *domain.RedfishResourceProperty,
+	method string,
+	meta map[string]interface{},
+	body interface{},
+) {
+	fmt.Printf("protocol dump: %s\n", meta)
+	which, ok := meta["which"].(string)
+    if !ok {
+        fmt.Printf("\tbad which in meta: %s\n", meta)
+        return
+    }
+
+    prot, ok := p[which]
+    if  !ok {
+        fmt.Printf("\tbad which, no corresponding prot: %s\n", which)
+        return
+    }
+
+    rrp.Value =  map[string]interface{}{
+        "ProtocolEnabled": prot.enabled,
+	    "Port":            prot.port,
+    }
+
+    for k, v := range prot.config {
+        rrp.Value.(map[string]interface{})[k] = v
+    }
+}
+
 // satisfy the plugin interface so we can list ourselves as a plugin in our @meta
 func (s *bmcService) PluginType() domain.PluginType { return BmcPlugin }
 
-func (s *bmcService) DemandBasedUpdate(
+func (s *bmcService) RefreshProperty(
 	ctx context.Context,
 	agg *domain.RedfishResourceAggregate,
 	rrp *domain.RedfishResourceProperty,
@@ -343,37 +398,14 @@ func (s *bmcService) AddOBMCManagerResource(ctx context.Context, ch eh.CommandHa
 				},
 				"HostName@meta": map[string]interface{}{"GET": map[string]interface{}{"plugin": "hostname"}},
 				"FQDN":          "mymanager.mydomain.com",
-				"HTTP": map[string]interface{}{
-					"ProtocolEnabled": false,
-					"Port":            80,
-				},
-				"HTTPS": map[string]interface{}{
-					"ProtocolEnabled": true,
-					"Port":            443,
-				},
-				"IPMI": map[string]interface{}{
-					"ProtocolEnabled": false,
-					"Port":            623,
-				},
-				"SSH": map[string]interface{}{
-					"ProtocolEnabled": false,
-					"Port":            22,
-				},
-				"SNMP": map[string]interface{}{
-					"ProtocolEnabled": false,
-					"Port":            161,
-				},
-				"SSDP": map[string]interface{}{
-					"ProtocolEnabled": false,
-					"Port":            1900,
-					"NotifyMulticastIntervalSeconds": 600,
-					"NotifyTTL":                      5,
-					"NotifyIPv6Scope":                "Site",
-				},
-				"Telnet": map[string]interface{}{
-					"ProtocolEnabled": false,
-					"Port":            23,
-				},
+
+				"HTTPS@meta": map[string]interface{}{"GET": map[string]interface{}{"plugin": "protocol", "which": "https"}},
+				"HTTP@meta": map[string]interface{}{"GET": map[string]interface{}{"plugin": "protocol", "which": "http"}},
+				"IPMI@meta": map[string]interface{}{"GET": map[string]interface{}{"plugin": "protocol", "which": "ipmi"}},
+				"SSH@meta": map[string]interface{}{"GET": map[string]interface{}{"plugin": "protocol", "which": "ssh"}},
+				"SNMP@meta": map[string]interface{}{"GET": map[string]interface{}{"plugin": "protocol", "which": "snmp"}},
+				"SSDP@meta": map[string]interface{}{"GET": map[string]interface{}{"plugin": "protocol", "which": "ssdp"}},
+				"Telnet@meta": map[string]interface{}{"GET": map[string]interface{}{"plugin": "protocol", "which": "telnet"}},
 			}})
 
 	ch.HandleCommand(

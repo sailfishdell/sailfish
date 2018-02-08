@@ -19,7 +19,7 @@ type hostname struct{}
 
 func (t *hostname) PluginType() domain.PluginType { return HostnamePlugin }
 
-func (t *hostname) DemandBasedUpdate(
+func (t *hostname) RefreshProperty(
 	ctx context.Context,
 	agg *domain.RedfishResourceAggregate,
 	rrp *domain.RedfishResourceProperty,

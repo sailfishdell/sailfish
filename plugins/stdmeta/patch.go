@@ -18,7 +18,7 @@ type patch struct{}
 
 func (t *patch) PluginType() domain.PluginType { return PatchPlugin }
 
-func (t *patch) DemandBasedUpdate(
+func (t *patch) RefreshProperty(
 	ctx context.Context,
 	agg *domain.RedfishResourceAggregate,
 	rrp *domain.RedfishResourceProperty,

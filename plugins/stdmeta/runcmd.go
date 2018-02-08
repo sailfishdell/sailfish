@@ -21,7 +21,7 @@ type runCmd struct{}
 
 func (t *runCmd) PluginType() domain.PluginType { return RunCmdPlugin }
 
-func (t *runCmd) DemandBasedUpdate(
+func (t *runCmd) RefreshProperty(
 	ctx context.Context,
 	agg *domain.RedfishResourceAggregate,
 	rrp *domain.RedfishResourceProperty,
