@@ -3,6 +3,7 @@ package obmc
 import (
 	"context"
 	"fmt"
+	"os"
 	"reflect"
 	"sync"
 	"time"
@@ -10,13 +11,14 @@ import (
 	"github.com/superchalupa/go-redfish/plugins"
 	domain "github.com/superchalupa/go-redfish/redfishresource"
 
+	"github.com/godbus/dbus"
 	eh "github.com/looplab/eventhorizon"
 	"github.com/looplab/eventhorizon/utils"
 	ah "github.com/superchalupa/go-redfish/plugins/actionhandler"
 )
 
 var (
-	BmcPlugin = domain.PluginType("obmc_bmc")
+	BmcPlugin      = domain.PluginType("obmc_bmc")
 	ProtocolPlugin = domain.PluginType("protocol")
 )
 
@@ -28,13 +30,13 @@ func init() {
 
 type protocolList map[string]protocol
 type protocol struct {
-    enabled bool
-    port    int
-    config map[string]interface{}
+	enabled bool
+	port    int
+	config  map[string]interface{}
 }
 
 type bmcService struct {
-    // be sure to lock if reading or writing any data in this object
+	// be sure to lock if reading or writing any data in this object
 	serviceMu sync.Mutex
 
 	// Any struct field with tag "property" will automatically be made available in the @meta and will be updated in real time.
@@ -44,7 +46,7 @@ type bmcService struct {
 	Timezone    string `property:"timezone"`
 	Version     string `property:"version"`
 
-    protocol    protocolList
+	protocol protocolList
 
 	systems     map[string]bool
 	chassis     map[string]bool
@@ -53,9 +55,24 @@ type bmcService struct {
 
 func NewBMCService(ctx context.Context) (*bmcService, error) {
 	return &bmcService{
-		systems: map[string]bool{},
-		chassis: map[string]bool{},
-	}, nil
+		Name:        "OBMC",
+		Description: "The most open source BMC ever.",
+		Model:       "Michaels RAD BMC",
+		Timezone:    "-05:00",
+		Version:     "1.0.0",
+		systems:     map[string]bool{},
+		chassis:     map[string]bool{},
+		protocol: protocolList{
+			"https":  protocol{enabled: true, port: 443},
+			"http":   protocol{enabled: false, port: 80},
+			"ipmi":   protocol{enabled: false, port: 623},
+			"ssh":    protocol{enabled: false, port: 22},
+			"snmp":   protocol{enabled: false, port: 161},
+			"telnet": protocol{enabled: false, port: 23},
+			"ssdp": protocol{enabled: false, port: 1900,
+				config: map[string]interface{}{"NotifyMulticastIntervalSeconds": 600, "NotifyTTL": 5, "NotifyIPv6Scope": "Site"},
+			},
+		}}, nil
 }
 
 // wait in a listener for the root service to be created, then extend it
@@ -67,27 +84,11 @@ func InitService(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *
 	if err != nil {
 		return
 	}
-	s.Name = "OBMC"
-	s.Description = "The most open source BMC ever."
-	s.Model = "Michaels RAD BMC"
-	s.Timezone = "-05:00"
-	s.Version = "1.0.0"
-
-    s.protocol = make(protocolList)
-    s.protocol["https"] = protocol{ enabled : true, port : 443 }
-    s.protocol["http"] = protocol{ enabled : false, port : 80 }
-    s.protocol["ipmi"] = protocol{ enabled : false, port : 623 }
-    s.protocol["ssh"] = protocol{ enabled : false, port : 22 }
-    s.protocol["snmp"] = protocol{ enabled : false, port : 161 }
-    s.protocol["ssdp"] = protocol{ enabled : false, port : 1900,
-        config: map[string]interface{}{ "NotifyMulticastIntervalSeconds": 600, "NotifyTTL": 5, "NotifyIPv6Scope": "Site" },
-        }
-    s.protocol["telnet"] = protocol{ enabled : false, port : 23 }
-
 	SetupBMCServiceEventStreams(ctx, s, ch, eb, ew)
+	SetupBMCServiceDbusConnections(ctx, s, ch, eb, ew)
 
 	// Singleton for bmc plugin: we can pull data out of ourselves on GET/etc.
-    // after this point, the bmc object we just created is "live"
+	// after this point, the bmc object we just created is "live"
 	domain.RegisterPlugin(func() domain.Plugin { return s })
 	domain.RegisterPlugin(func() domain.Plugin { return s.protocol })
 
@@ -104,6 +105,21 @@ func InitService(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *
 		return
 	}
 	InitSystemService(ctx, system, ch, eb, ew)
+}
+
+func SetupBMCServiceDbusConnections(ctx context.Context, s *bmcService, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
+	/*    conn, err := dbus.SystemBus()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Cannot register dbus_property plugin, could not connect to System Bus: %s\n", err.Error())
+			return
+		}
+	    bus := "xyz.openbmc_project.Software.BMC.Updater"
+	    path :=  "/xyz/openbmc_project/software/13264da3"
+	    intfc := "xyz.openbmc_project.Software.Version"
+	    prop  := "Version"
+		busObject := t.conn.Object(bus, dbus.ObjectPath(path))
+		variant, err := busObject.GetProperty(intfc + "." + prop)
+	*/
 }
 
 func SetupBMCServiceEventStreams(ctx context.Context, s *bmcService, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
@@ -163,19 +179,47 @@ func SetupBMCServiceEventStreams(ctx context.Context, s *bmcService, ch eh.Comma
 	})
 
 	// stream processor for action events
-	sp, err = plugins.NewEventStreamProcessor(ctx, ew, plugins.CustomFilter(ah.SelectAction("/redfish/v1/bmc/Actions/Manager.Reset")))
+	sp, err = plugins.NewEventStreamProcessor(ctx, ew, plugins.CustomFilter(ah.SelectAction("/redfish/v1/Managers/bmc/Actions/Manager.Reset")))
 	if err != nil {
 		fmt.Printf("Failed to create event stream processor: %s\n", err.Error())
 		return // todo: tear down all the prior event stream processors, too
 	}
 	sp.RunForever(func(event eh.Event) {
-		// TODO: send dbus signal to reset
+		bus := "org.openbmc.control.Bmc"
+		path := "/org/openbmc/control/bmc0"
+		intfc := "org.openbmc.control.Bmc"
+
+		fmt.Printf("connect to system bus\n")
+		conn, err := dbus.SystemBus()
+		statusCode := 200
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Cannot connect to System Bus: %s\n", err.Error())
+			statusCode = 501
+		}
+		fmt.Printf("connect to %s path %s\n", bus, path)
+		busObject := conn.Object(bus, dbus.ObjectPath(path))
+
+		fmt.Printf("parse resetType: %s\n", event.Data())
+		ad := event.Data().(ah.GenericActionEventData)
+		resetType, _ := ad.ActionData.(map[string]interface{})["ResetType"]
+		call := "undefined"
+		if resetType == "ForceRestart" {
+			call = "coldReset"
+		}
+		if resetType == "GracefulRestart" {
+			call = "warmReset"
+		}
+
 		eb.HandleEvent(ctx, eh.NewEvent(domain.HTTPCmdProcessed, domain.HTTPCmdProcessedData{
 			CommandID:  event.Data().(ah.GenericActionEventData).CmdID,
 			Results:    map[string]interface{}{"RESET": "ok"},
-			StatusCode: 200,
+			StatusCode: statusCode,
 			Headers:    map[string]string{},
 		}, time.Now()))
+
+		fmt.Printf("make call\n")
+		busObject.Call(intfc+"."+call, 0).Store()
+		fmt.Printf("donecall\n")
 	})
 }
 
@@ -190,25 +234,25 @@ func (p protocolList) RefreshProperty(
 ) {
 	fmt.Printf("protocol dump: %s\n", meta)
 	which, ok := meta["which"].(string)
-    if !ok {
-        fmt.Printf("\tbad which in meta: %s\n", meta)
-        return
-    }
+	if !ok {
+		fmt.Printf("\tbad which in meta: %s\n", meta)
+		return
+	}
 
-    prot, ok := p[which]
-    if  !ok {
-        fmt.Printf("\tbad which, no corresponding prot: %s\n", which)
-        return
-    }
+	prot, ok := p[which]
+	if !ok {
+		fmt.Printf("\tbad which, no corresponding prot: %s\n", which)
+		return
+	}
 
-    rrp.Value =  map[string]interface{}{
-        "ProtocolEnabled": prot.enabled,
-	    "Port":            prot.port,
-    }
+	rrp.Value = map[string]interface{}{
+		"ProtocolEnabled": prot.enabled,
+		"Port":            prot.port,
+	}
 
-    for k, v := range prot.config {
-        rrp.Value.(map[string]interface{})[k] = v
-    }
+	for k, v := range prot.config {
+		rrp.Value.(map[string]interface{})[k] = v
+	}
 }
 
 // satisfy the plugin interface so we can list ourselves as a plugin in our @meta
@@ -362,7 +406,7 @@ func (s *bmcService) AddOBMCManagerResource(ctx context.Context, ch eh.CommandHa
 		ctx,
 		&domain.CreateRedfishResource{
 			ID:          eh.NewUUID(),
-			ResourceURI: "/redfish/v1/bmc/Actions/Manager.Reset",
+			ResourceURI: "/redfish/v1/Managers/bmc/Actions/Manager.Reset",
 			Type:        "Action",
 			Context:     "Action",
 			Plugin:      "GenericActionHandler",
@@ -399,12 +443,12 @@ func (s *bmcService) AddOBMCManagerResource(ctx context.Context, ch eh.CommandHa
 				"HostName@meta": map[string]interface{}{"GET": map[string]interface{}{"plugin": "hostname"}},
 				"FQDN":          "mymanager.mydomain.com",
 
-				"HTTPS@meta": map[string]interface{}{"GET": map[string]interface{}{"plugin": "protocol", "which": "https"}},
-				"HTTP@meta": map[string]interface{}{"GET": map[string]interface{}{"plugin": "protocol", "which": "http"}},
-				"IPMI@meta": map[string]interface{}{"GET": map[string]interface{}{"plugin": "protocol", "which": "ipmi"}},
-				"SSH@meta": map[string]interface{}{"GET": map[string]interface{}{"plugin": "protocol", "which": "ssh"}},
-				"SNMP@meta": map[string]interface{}{"GET": map[string]interface{}{"plugin": "protocol", "which": "snmp"}},
-				"SSDP@meta": map[string]interface{}{"GET": map[string]interface{}{"plugin": "protocol", "which": "ssdp"}},
+				"HTTPS@meta":  map[string]interface{}{"GET": map[string]interface{}{"plugin": "protocol", "which": "https"}},
+				"HTTP@meta":   map[string]interface{}{"GET": map[string]interface{}{"plugin": "protocol", "which": "http"}},
+				"IPMI@meta":   map[string]interface{}{"GET": map[string]interface{}{"plugin": "protocol", "which": "ipmi"}},
+				"SSH@meta":    map[string]interface{}{"GET": map[string]interface{}{"plugin": "protocol", "which": "ssh"}},
+				"SNMP@meta":   map[string]interface{}{"GET": map[string]interface{}{"plugin": "protocol", "which": "snmp"}},
+				"SSDP@meta":   map[string]interface{}{"GET": map[string]interface{}{"plugin": "protocol", "which": "ssdp"}},
 				"Telnet@meta": map[string]interface{}{"GET": map[string]interface{}{"plugin": "protocol", "which": "telnet"}},
 			}})
 
