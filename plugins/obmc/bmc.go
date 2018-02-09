@@ -213,6 +213,7 @@ func SetupBMCServiceEventStreams(ctx context.Context, s *bmcService, ch eh.Comma
 		if resetType == "GracefulRestart" {
 			call = "warmReset"
 		}
+		fmt.Printf("\tgot: %s\n", resetType)
 
 		// no way to cancel this based on context cancellation form original request.
 
