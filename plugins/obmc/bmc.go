@@ -20,6 +20,8 @@ import (
 var (
 	BmcPlugin      = domain.PluginType("obmc_bmc")
 	ProtocolPlugin = domain.PluginType("protocol")
+
+	DbusTimeout time.Duration = 1
 )
 
 func init() {
@@ -37,7 +39,7 @@ type protocol struct {
 
 type bmcService struct {
 	// be sure to lock if reading or writing any data in this object
-	serviceMu sync.Mutex
+	sync.Mutex
 
 	// Any struct field with tag "property" will automatically be made available in the @meta and will be updated in real time.
 	Name        string `property:"name"`
@@ -192,9 +194,11 @@ func SetupBMCServiceEventStreams(ctx context.Context, s *bmcService, ch eh.Comma
 		fmt.Printf("connect to system bus\n")
 		conn, err := dbus.SystemBus()
 		statusCode := 200
+		statusMessage := "OK"
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Cannot connect to System Bus: %s\n", err.Error())
 			statusCode = 501
+			statusMessage = "ERROR: Cannot attach to dbus system bus"
 		}
 		fmt.Printf("connect to %s path %s\n", bus, path)
 		busObject := conn.Object(bus, dbus.ObjectPath(path))
@@ -210,16 +214,29 @@ func SetupBMCServiceEventStreams(ctx context.Context, s *bmcService, ch eh.Comma
 			call = "warmReset"
 		}
 
+		// no way to cancel this based on context cancellation form original request.
+
+		fmt.Printf("make call\n")
+		callObj := busObject.Call(intfc+"."+call, 0)
+		select {
+		case <-callObj.Done:
+			fmt.Printf("donecall. err: %s\n", callObj.Err.Error())
+		case <-ctx.Done():
+			statusCode = 501
+			statusMessage = "Context cancelled."
+			// give up
+		case <-time.After(time.Duration(DbusTimeout) * time.Second):
+			statusCode = 501
+			statusMessage = "ERROR: Dbus call timed out"
+			// give up
+		}
+
 		eb.HandleEvent(ctx, eh.NewEvent(domain.HTTPCmdProcessed, domain.HTTPCmdProcessedData{
 			CommandID:  event.Data().(ah.GenericActionEventData).CmdID,
-			Results:    map[string]interface{}{"RESET": "ok"},
+			Results:    map[string]interface{}{"RESET": statusMessage},
 			StatusCode: statusCode,
 			Headers:    map[string]string{},
 		}, time.Now()))
-
-		fmt.Printf("make call\n")
-		busObject.Call(intfc+"."+call, 0).Store()
-		fmt.Printf("donecall\n")
 	})
 }
 
@@ -266,8 +283,8 @@ func (s *bmcService) RefreshProperty(
 	meta map[string]interface{},
 	body interface{},
 ) {
-	s.serviceMu.Lock()
-	defer s.serviceMu.Unlock()
+	s.Lock()
+	defer s.Unlock()
 
 	data, ok := meta["data"].(string)
 	if data == "systems" {
@@ -318,22 +335,22 @@ func (s *bmcService) RefreshProperty(
 }
 
 func (s *bmcService) AddSystem(uri string) {
-	s.serviceMu.Lock()
-	defer s.serviceMu.Unlock()
+	s.Lock()
+	defer s.Unlock()
 	fmt.Printf("DEBUG: ADDING SYSTEM(%s) to list: %s\n", uri, s.systems)
 	s.systems[uri] = true
 }
 
 func (s *bmcService) RemoveSystem(uri string) {
-	s.serviceMu.Lock()
-	defer s.serviceMu.Unlock()
+	s.Lock()
+	defer s.Unlock()
 	fmt.Printf("DEBUG: REMOVING SYSTEM(%s) to list: %s\n", uri, s.systems)
 	delete(s.systems, uri)
 }
 
 func (s *bmcService) AddChassis(uri string) {
-	s.serviceMu.Lock()
-	defer s.serviceMu.Unlock()
+	s.Lock()
+	defer s.Unlock()
 	if s.mainchassis == "" {
 		s.mainchassis = uri
 	}
@@ -342,8 +359,8 @@ func (s *bmcService) AddChassis(uri string) {
 }
 
 func (s *bmcService) RemoveChassis(uri string) {
-	s.serviceMu.Lock()
-	defer s.serviceMu.Unlock()
+	s.Lock()
+	defer s.Unlock()
 	if s.mainchassis == uri {
 		s.mainchassis = ""
 	}
