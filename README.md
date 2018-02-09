@@ -51,3 +51,19 @@ git clone https://github.com/DMTF/Redfish-Service-Validator
 cd Redfish-Service-Validator
 python3 ./RedfishServiceValidator.py -c ../go-redfish/scripts/Redfish-Service-Validator.ini 
 ```
+
+### Building for ARM
+
+You need to set up a few variables to point to your cross toolchain, and you'll need a cross go. Set the following variables. To run on aspeed or poleg, set GOARM=5, even though poleg is technically armv7
+
+```bash
+export PKG_CONFIG_PATH=.../path/to/cross/pkgconfig/pc/files/
+export PATH=.../cross/go/bin:.../cross/gcc/
+
+export GOARCH=arm
+export GOARM=5
+export GOOS=linux
+
+go build -o server.arm cmd/ocp-server/main.go
+```
+
