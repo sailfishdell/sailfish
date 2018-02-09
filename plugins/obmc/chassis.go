@@ -19,18 +19,31 @@ var (
 
 // OCP Profile Redfish chassis object
 
+type StdStatus struct {
+	State  string
+	Health string
+}
+
 type chassisService struct {
-	serviceMu sync.Mutex
+	sync.Mutex
+	thermalSensors thermalList
 }
 
 func NewChassisService(ctx context.Context) (*chassisService, error) {
-	return &chassisService{}, nil
+	return &chassisService{
+		thermalSensors: thermalList{
+			thermalSensor{},
+			thermalSensor{},
+			thermalSensor{},
+		},
+	}, nil
 }
 
 // wait in a listener for the root service to be created, then extend it
 func InitChassisService(ctx context.Context, s *chassisService, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
 	// Singleton for bmc plugin: we can pull data out of ourselves on GET/etc.
 	domain.RegisterPlugin(func() domain.Plugin { return s })
+	domain.RegisterPlugin(func() domain.Plugin { return s.thermalSensors })
 
 	// step 2: Add openbmc chassis object after Chassis collection has been created
 	sp, err := plugins.NewEventStreamProcessor(ctx, ew, plugins.SelectEventResourceCreatedByURI("/redfish/v1/Chassis"))
@@ -46,7 +59,7 @@ func InitChassisService(ctx context.Context, s *chassisService, ch eh.CommandHan
 // satisfy the plugin interface so we can list ourselves as a plugin in our @meta
 func (s *chassisService) PluginType() domain.PluginType { return OBMC_ChassisPlugin }
 
-func (s *chassisService) DemandBasedUpdate(
+func (s *chassisService) RefreshProperty(
 	ctx context.Context,
 	agg *domain.RedfishResourceAggregate,
 	rrp *domain.RedfishResourceProperty,
@@ -54,8 +67,8 @@ func (s *chassisService) DemandBasedUpdate(
 	meta map[string]interface{},
 	body interface{},
 ) {
-	s.serviceMu.Lock()
-	defer s.serviceMu.Unlock()
+	s.Lock()
+	defer s.Unlock()
 
 	rrp.Value = "NOT IMPLEMENTED YET"
 }
@@ -135,10 +148,9 @@ func (s *chassisService) AddOBMCChassisResource(ctx context.Context, ch eh.Comma
 						"UpperThresholdNonCritical": 35,
 						"UpperThresholdCritical":    40,
 						"UpperThresholdFatal":       50,
-						// Not part of temperature schema... these are for fans, looks like an errata in OCP profile
-						//"MinReadingRange": 0,
-						//"MaxReadingRange": 200,
-						"PhysicalContext": "Intake",
+						"MinReadingRangeTemp":       0,
+						"MaxReadingRangeTemp":       200,
+						"PhysicalContext":           "Intake",
 					},
 					map[string]interface{}{
 						"@odata.id":    "/redfish/v1/Chassis/A33/Thermal#/Temperatures/1",
