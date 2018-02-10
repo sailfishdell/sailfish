@@ -8,6 +8,13 @@ import (
 	"github.com/godbus/dbus"
 )
 
+// Get BMC UUID:
+//     resp = mapper.get_subtree( path=INVENTORY_ROOT, interfaces=[CHS_INTF_NAME])
+//          INVENTORY_ROOT = '/xyz/openbmc_project/inventory'
+//          CHS_INTF_NAME = 'xyz.openbmc_project.Common.UUID'
+// gets conn, path
+// use that
+
 var BusName string = "xyz.openbmc_project.Software.Version"
 var Interface string = "xyz.openbmc_project.Software.Version"
 var Path dbus.ObjectPath = "/xyz/openbmc_project/software/14880bfa"

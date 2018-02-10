@@ -19,11 +19,11 @@ import (
 type Option func(*mycert) error
 
 type mycert struct {
-	CA       *x509.Certificate
-	CApriv   *rsa.PrivateKey
-	cert     *x509.Certificate
-	priv     *rsa.PrivateKey
-	fileBase string
+	certCA     *x509.Certificate
+	certCApriv *rsa.PrivateKey
+	cert       *x509.Certificate
+	priv       *rsa.PrivateKey
+	fileBase   string
 }
 
 func NewCert(options ...Option) (*mycert, error) {
@@ -47,8 +47,8 @@ func NewCert(options ...Option) (*mycert, error) {
 	c.priv, _ = rsa.GenerateKey(rand.Reader, 2048)
 
 	// set it up as self-signed until user sets a CA
-	c.CApriv = c.priv
-	c.CA = c.cert
+	c.certCApriv = c.priv
+	c.certCA = c.cert
 
 	for _, o := range options {
 		err := o(c)
@@ -168,8 +168,8 @@ func SetSubjectKeyId(id []byte) Option {
 
 func SignWithCA(ca *mycert) Option {
 	return func(c *mycert) error {
-		c.CA = ca.cert
-		c.CApriv = ca.priv
+		c.certCA = ca.cert
+		c.certCApriv = ca.priv
 		return nil
 	}
 }
@@ -224,7 +224,7 @@ func LoadIfExists() Option {
 
 func (cert *mycert) Serialize() error {
 	pub := &cert.priv.PublicKey
-	cert_b, err := x509.CreateCertificate(rand.Reader, cert.cert, cert.CA, pub, cert.CApriv)
+	cert_b, err := x509.CreateCertificate(rand.Reader, cert.cert, cert.certCA, pub, cert.certCApriv)
 	if err != nil {
 		log.Println("create certificate failed", err)
 		return errors.New("Certificate creation failed.")
