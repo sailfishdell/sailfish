@@ -316,8 +316,8 @@ func main() {
 			}(strings.TrimPrefix(listen, "https:"))
 
 		case strings.HasPrefix(listen, "spacemonkey:"):
-            // openssl based https
-            go run_spacemonkey(strings.TrimPrefix(listen, "spacemonkey:"), logger)
+			// openssl based https
+			go run_spacemonkey(strings.TrimPrefix(listen, "spacemonkey:"), logger)
 		}
 	}
 

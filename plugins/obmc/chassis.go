@@ -33,33 +33,33 @@ func NewChassisService(ctx context.Context) (*chassisService, error) {
 	return &chassisService{
 		thermalSensors: thermalList{
 			thermalSensor{
-                redfish: thermalSensorRedfish{
-                    MemberId: "0",
-                    Name:         "Inlet Temp",
-                    SensorNumber: 42,
-                    ReadingCelsius:            25,
-                    UpperThresholdNonCritical: 35,
-                    UpperThresholdCritical:    40,
-                    UpperThresholdFatal:       50,
-                    MinReadingRangeTemp:       0,
-                    MaxReadingRangeTemp:       200,
-                    PhysicalContext:           "Intake",
-                },
-            },
+				redfish: thermalSensorRedfish{
+					MemberId:                  "0",
+					Name:                      "Inlet Temp",
+					SensorNumber:              42,
+					ReadingCelsius:            25,
+					UpperThresholdNonCritical: 35,
+					UpperThresholdCritical:    40,
+					UpperThresholdFatal:       50,
+					MinReadingRangeTemp:       0,
+					MaxReadingRangeTemp:       200,
+					PhysicalContext:           "Intake",
+				},
+			},
 			thermalSensor{
-                redfish: thermalSensorRedfish {
-                    MemberId: "1",
-                    Name:         "Random other Temp",
-                    SensorNumber: 53,
-                    ReadingCelsius:            26,
-                    UpperThresholdNonCritical: 35,
-                    UpperThresholdCritical:    40,
-                    UpperThresholdFatal:       50,
-                    MinReadingRangeTemp:       0,
-                    MaxReadingRangeTemp:       200,
-                    PhysicalContext:           "Other",
-                },
-            },
+				redfish: thermalSensorRedfish{
+					MemberId:                  "1",
+					Name:                      "Random other Temp",
+					SensorNumber:              53,
+					ReadingCelsius:            26,
+					UpperThresholdNonCritical: 35,
+					UpperThresholdCritical:    40,
+					UpperThresholdFatal:       50,
+					MinReadingRangeTemp:       0,
+					MaxReadingRangeTemp:       200,
+					PhysicalContext:           "Other",
+				},
+			},
 		},
 	}, nil
 }
@@ -156,8 +156,8 @@ func (s *chassisService) AddOBMCChassisResource(ctx context.Context, ch eh.Comma
 				"DELETE": []string{}, // can't be deleted
 			},
 			Properties: map[string]interface{}{
-				"Id":   "Thermal",
-				"Name": "Thermal",
+				"Id":                "Thermal",
+				"Name":              "Thermal",
 				"Temperatures@meta": map[string]interface{}{"GET": map[string]interface{}{"plugin": "obmc_thermal"}},
 				"Fans": []map[string]interface{}{
 					map[string]interface{}{
