@@ -50,13 +50,45 @@ func NewCert(options ...Option) (*mycert, error) {
 	c.certCApriv = c.priv
 	c.certCA = c.cert
 
+	c.ApplyOption(options...)
+	return c, nil
+}
+
+func Load(fileBase string) (c *mycert, err error) {
+	fmt.Printf("Try to load existing %s.crt and %s.key\n", fileBase, fileBase)
+	catls, err := tls.LoadX509KeyPair(fileBase+".crt", fileBase+".key")
+	if err != nil {
+		fmt.Printf("\tError loading, creating new keys from scratch. Error = %s\n", err.Error())
+		return
+	}
+	ca, err := x509.ParseCertificate(catls.Certificate[0])
+	if err != nil {
+		fmt.Printf("\tError parsing certificate, creating new keys from scratch. Erroro = %s\n", err.Error())
+		return
+	}
+
+	c = &mycert{
+		cert:     ca,
+		priv:     catls.PrivateKey.(*rsa.PrivateKey),
+		fileBase: fileBase,
+	}
+
+	// set it up as self-signed until user sets a CA
+	c.certCApriv = c.priv
+	c.certCA = c.cert
+
+	fmt.Printf("\tSuccessfully loaded keys\n")
+	return
+}
+
+func (c *mycert) ApplyOption(options ...Option) error {
 	for _, o := range options {
 		err := o(c)
 		if err != nil {
-			return nil, err
+			return err
 		}
 	}
-	return c, nil
+	return nil
 }
 
 func SetBaseFilename(fn string) Option {
@@ -197,27 +229,6 @@ func AddSANIP(ips ...net.IP) Option {
 		for _, ip := range ips {
 			c.cert.IPAddresses = append(c.cert.IPAddresses, ip)
 		}
-		return nil
-	}
-}
-
-func LoadIfExists() Option {
-	return func(cert *mycert) error {
-		fmt.Printf("Try to load existing %s.crt and %s.key\n", cert.fileBase, cert.fileBase)
-		catls, err := tls.LoadX509KeyPair(cert.fileBase+".crt", cert.fileBase+".key")
-		if err != nil {
-			fmt.Printf("\tError loading, creating new keys from scratch. Error = %s\n", err.Error())
-			return nil
-		}
-		ca, err := x509.ParseCertificate(catls.Certificate[0])
-		if err != nil {
-			fmt.Printf("\tError parsing certificate, creating new keys from scratch. Erroro = %s\n", err.Error())
-			return nil
-		}
-
-		cert.cert = ca
-		cert.priv = catls.PrivateKey.(*rsa.PrivateKey)
-		fmt.Printf("\tSuccessfully loaded keys\n")
 		return nil
 	}
 }

@@ -197,30 +197,32 @@ func main() {
 	}
 
 	// TODO: cli option to enable/disable and control cert options
-	// Create CA cert if it doesn't exist, or load one if it does
-	ca, _ := tlscert.NewCert(
-		tlscert.CreateCA,
-		tlscert.ExpireInOneYear,
-		tlscert.SetCommonName("CA Cert common name"),
-		tlscert.SetSerialNumber(12345),
-		tlscert.SetBaseFilename("ca"),
-		tlscert.LoadIfExists(), // this should be last
-	)
-	ca.Serialize()
+	// Load CA cert if it exists. Create CA cert if it doesn't.
+	ca, err := tlscert.Load("ca")
+	if err != nil {
+		ca, _ = tlscert.NewCert(
+			tlscert.CreateCA,
+			tlscert.ExpireInOneYear,
+			tlscert.SetCommonName("CA Cert common name"),
+			tlscert.SetSerialNumber(12345),
+			tlscert.SetBaseFilename("ca"),
+		)
+		ca.Serialize()
+	}
 
 	// TODO: cli option to enable/disable and control cert options
 	// create new server cert unconditionally based on CA cert
-	var Options []tlscert.Option
-	Options = append(Options, tlscert.SignWithCA(ca))
-	Options = append(Options, tlscert.MakeServer)
-	Options = append(Options, tlscert.ExpireInOneYear)
-	Options = append(Options, tlscert.SetCommonName("localhost"))
-	Options = append(Options, tlscert.SetSubjectKeyId([]byte{1, 2, 3, 4, 6}))
-	Options = append(Options, tlscert.AddSANDNSName("localhost", "localhost.localdomain"))
-	Options = append(Options, tlscert.SetSerialNumber(12346))
-	Options = append(Options, tlscert.SetBaseFilename("server"))
-	iterInterfaceIPAddrs(func(ip net.IP) { Options = append(Options, tlscert.AddSANIP(ip)) })
-	serverCert, _ := tlscert.NewCert(Options...)
+	serverCert, _ := tlscert.NewCert(
+		tlscert.SignWithCA(ca),
+		tlscert.MakeServer,
+		tlscert.ExpireInOneYear,
+		tlscert.SetCommonName("localhost"),
+		tlscert.SetSubjectKeyId([]byte{1, 2, 3, 4, 6}),
+		tlscert.AddSANDNSName("localhost", "localhost.localdomain"),
+		tlscert.SetSerialNumber(12346),
+		tlscert.SetBaseFilename("server"),
+	)
+	iterInterfaceIPAddrs(func(ip net.IP) { serverCert.ApplyOption(tlscert.AddSANIP(ip)) })
 	serverCert.Serialize()
 
 	if len(cfg.Listen) == 0 {
