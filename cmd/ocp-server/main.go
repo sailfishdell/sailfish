@@ -22,9 +22,6 @@ import (
 	eh "github.com/looplab/eventhorizon"
 	domain "github.com/superchalupa/go-redfish/redfishresource"
 
-	// space monkey (openssl wrapper for go)
-	"github.com/spacemonkeygo/openssl"
-
 	// auth plugins
 	"github.com/superchalupa/go-redfish/plugins/basicauth"
 	"github.com/superchalupa/go-redfish/plugins/session"
@@ -319,12 +316,8 @@ func main() {
 			}(strings.TrimPrefix(listen, "https:"))
 
 		case strings.HasPrefix(listen, "spacemonkey:"):
-			// HTTPS protocol listener
-			// "https:[addr]:port,certfile,keyfile
-			go func(addr string) {
-				log.Println("OPENSSL(spacemonkey) listener starting")
-				log.Fatal(openssl.ListenAndServeTLS(addr, "server.crt", "server.key", logger))
-			}(strings.TrimPrefix(listen, "spacemonkey:"))
+            // openssl based https
+            go run_spacemonkey(strings.TrimPrefix(listen, "spacemonkey:"), logger)
 		}
 	}
 
