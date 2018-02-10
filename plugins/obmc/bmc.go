@@ -219,17 +219,22 @@ func SetupBMCServiceEventStreams(ctx context.Context, s *bmcService, ch eh.Comma
 
 		fmt.Printf("make call\n")
 		callObj := busObject.Call(intfc+"."+call, 0)
-		select {
-		case <-callObj.Done:
-			fmt.Printf("donecall. err: %s\n", callObj.Err.Error())
-		case <-ctx.Done():
-			statusCode = 501
-			statusMessage = "Context cancelled."
-			// give up
-		case <-time.After(time.Duration(DbusTimeout) * time.Second):
-			statusCode = 501
-			statusMessage = "ERROR: Dbus call timed out"
-			// give up
+		if callObj.Err == nil {
+			select {
+			case <-callObj.Done:
+				fmt.Printf("donecall. err: %s\n", callObj.Err.Error())
+			case <-ctx.Done():
+				statusCode = 501
+				statusMessage = "Context cancelled."
+				// give up
+			case <-time.After(time.Duration(DbusTimeout) * time.Second):
+				statusCode = 501
+				statusMessage = "ERROR: Dbus call timed out"
+				// give up
+			}
+		} else {
+			StatusCode = 501
+			StatusMessage = callObj.Err.Error()
 		}
 
 		eb.HandleEvent(ctx, eh.NewEvent(domain.HTTPCmdProcessed, domain.HTTPCmdProcessedData{
