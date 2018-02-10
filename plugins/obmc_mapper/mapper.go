@@ -1,4 +1,4 @@
-package main
+package obmc_mapper
 
 import (
 	"context"
@@ -20,6 +20,8 @@ const (
 
 	getSubTreePaths string = MapperInterface + ".GetSubTreePaths"
 	getSubTree      string = MapperInterface + ".GetSubTree"
+	getObject       string = MapperInterface + ".GetObject"
+	getAncestors    string = MapperInterface + ".GetAncestors"
 
 	DbusTimeout = 10
 )
@@ -33,8 +35,20 @@ func New(conn *dbus.Conn) *mapper {
 	}
 }
 
-func (m *mapper) GetAncestors() {}
-func (m *mapper) GetObject()    {}
+func (m *mapper) GetAncestors(ctx context.Context, path string, intfcs ...string) ([]interface{}, error) {
+	// sas : path, array of interfaces
+	timedctx, cancel := context.WithTimeout(ctx, time.Duration(DbusTimeout))
+	defer cancel()
+	call, err := m.DbusCall(timedctx, dbus.Flags(0), getAncestors, path, intfcs)
+	return call.Body, err
+}
+func (m *mapper) GetObject(ctx context.Context, path string, intfcs ...string) ([]interface{}, error) {
+	// sas : path, array of interfaces
+	timedctx, cancel := context.WithTimeout(ctx, time.Duration(DbusTimeout))
+	defer cancel()
+	call, err := m.DbusCall(timedctx, dbus.Flags(0), getObject, path, intfcs)
+	return call.Body, err
+}
 
 func (m *mapper) GetSubTreePaths(ctx context.Context, path string, depth int, interfaces ...string) ([]interface{}, error) {
 	// sias : path, depth (0-unlimited), array of interfaces
