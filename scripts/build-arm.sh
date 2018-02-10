@@ -20,7 +20,7 @@ export GOARCH=arm
 export GOARM=5
 export GOOS=linux
 
-binaries="ocp-server dbustest"
+binaries=${binaries:-"ocp-server dbustest"}
 for pkg in $binaries
 do
     rm -f ${pkg}.${GOARCH}
