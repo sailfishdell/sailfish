@@ -2,6 +2,10 @@
 set -e
 set -x
 
+mybox=10.210.137.79
+prashanth=10.35.175.208
+DRB_List=${prashanth}
+
 YOCTO_SYSROOTS_BASE=${YOCTO_SYSROOTS_BASE:-~/openbmc/repo/build/tmp/sysroots}
 PLATFORM=evb-npcm750
 
@@ -16,20 +20,20 @@ export GOARCH=arm
 export GOARM=5
 export GOOS=linux
 
-binaries="ocp-server.arm"
-[ -n "${binaries}" ] || exit 1
-rm -f ${binaries}
-time go build -o ocp-server.arm "$@" github.com/superchalupa/go-redfish/cmd/ocp-server
+binaries="ocp-server dbustest"
+for pkg in $binaries
+do
+    rm -f ${pkg}.${GOARCH}
+    time go build -o ${pkg}.${GOARCH}   "$@" github.com/superchalupa/go-redfish/cmd/${pkg}
+done
 
-mybox=10.210.137.79
-prashanth=10.35.175.208
-tester=${prashanth}
-
-scp ${binaries} root@${mybox}:/tmp/
-scp ${binaries} root@${prashanth}:/tmp/
-ssh root@${tester} /tmp/server.arm ||:
-scp root@${tester}:~/ca.crt ./bmc-ca.crt
-
-# prashanth's BMC:
-# eth0      Link encap:Ethernet  HWaddr F4:8E:38:CF:13:56  
-#           inet addr:10.35.175.208  Bcast:10.35.175.255  Mask:255.255.254.0
+for box in ${DRB_List}
+do
+    for binary in ${binaries}
+    do
+        scp ${binary}.${GOARCH} root@${box}:/tmp/
+    done
+    if ssh root@${box} /tmp/ocp-server.${GOARCH}; then
+        scp root@${box}:~/ca.crt ./${box}-ca.crt
+    fi
+done
