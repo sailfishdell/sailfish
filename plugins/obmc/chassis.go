@@ -32,9 +32,34 @@ type chassisService struct {
 func NewChassisService(ctx context.Context) (*chassisService, error) {
 	return &chassisService{
 		thermalSensors: thermalList{
-			thermalSensor{},
-			thermalSensor{},
-			thermalSensor{},
+			thermalSensor{
+                redfish: thermalSensorRedfish{
+                    MemberId: "0",
+                    Name:         "Inlet Temp",
+                    SensorNumber: 42,
+                    ReadingCelsius:            25,
+                    UpperThresholdNonCritical: 35,
+                    UpperThresholdCritical:    40,
+                    UpperThresholdFatal:       50,
+                    MinReadingRangeTemp:       0,
+                    MaxReadingRangeTemp:       200,
+                    PhysicalContext:           "Intake",
+                },
+            },
+			thermalSensor{
+                redfish: thermalSensorRedfish {
+                    MemberId: "1",
+                    Name:         "Random other Temp",
+                    SensorNumber: 53,
+                    ReadingCelsius:            26,
+                    UpperThresholdNonCritical: 35,
+                    UpperThresholdCritical:    40,
+                    UpperThresholdFatal:       50,
+                    MinReadingRangeTemp:       0,
+                    MaxReadingRangeTemp:       200,
+                    PhysicalContext:           "Other",
+                },
+            },
 		},
 	}, nil
 }
@@ -133,78 +158,7 @@ func (s *chassisService) AddOBMCChassisResource(ctx context.Context, ch eh.Comma
 			Properties: map[string]interface{}{
 				"Id":   "Thermal",
 				"Name": "Thermal",
-				"Temperatures": []map[string]interface{}{
-					map[string]interface{}{
-						"@odata.type":  "#Thermal.v1_0_0.Temperature",
-						"@odata.id":    "/redfish/v1/Chassis/A33/Thermal#/Temperatures/0",
-						"MemberId":     "0",
-						"Name":         "Inlet Temp",
-						"SensorNumber": 42,
-						"Status": map[string]interface{}{
-							"State":  "Enabled",
-							"Health": "OK",
-						},
-						"ReadingCelsius":            25,
-						"UpperThresholdNonCritical": 35,
-						"UpperThresholdCritical":    40,
-						"UpperThresholdFatal":       50,
-						"MinReadingRangeTemp":       0,
-						"MaxReadingRangeTemp":       200,
-						"PhysicalContext":           "Intake",
-					},
-					map[string]interface{}{
-						"@odata.id":    "/redfish/v1/Chassis/A33/Thermal#/Temperatures/1",
-						"MemberId":     "1",
-						"Name":         "Board Temp",
-						"SensorNumber": 43,
-						"Status": map[string]interface{}{
-							"State":  "Enabled",
-							"Health": "OK",
-						},
-						"ReadingCelsius":            35,
-						"UpperThresholdNonCritical": 30,
-						"UpperThresholdCritical":    40,
-						"UpperThresholdFatal":       50,
-						// Not part of temperature schema... these are for fans, looks like an errata in OCP profile
-						//"MinReadingRange": 0,
-						//"MaxReadingRange": 200,
-						"PhysicalContext": "SystemBoard",
-					},
-					map[string]interface{}{
-						"@odata.id":    "/redfish/v1/Chassis/A33/Thermal#/Temperatures/2",
-						"MemberId":     "2",
-						"Name":         "CPU1 Temp",
-						"SensorNumber": 44,
-						"Status": map[string]interface{}{
-							"State":  "Enabled",
-							"Health": "OK",
-						},
-						"ReadingCelsius":            45,
-						"UpperThresholdNonCritical": 60,
-						"UpperThresholdCritical":    82,
-						// Not part of temperature schema... these are for fans, looks like an errata in OCP profile
-						//"MinReadingRange": 0,
-						//"MaxReadingRange": 200,
-						"PhysicalContext": "CPU",
-					},
-					map[string]interface{}{
-						"@odata.id":    "/redfish/v1/Chassis/A33/Thermal#/Temperatures/3",
-						"MemberId":     "3",
-						"Name":         "CPU2 Temp",
-						"SensorNumber": 45,
-						"Status": map[string]interface{}{
-							"State":  "Enabled",
-							"Health": "OK",
-						},
-						"ReadingCelsius":            46,
-						"UpperThresholdNonCritical": 60,
-						"UpperThresholdCritical":    82,
-						// Not part of temperature schema... these are for fans, looks like an errata in OCP profile
-						//"MinReadingRange": 0,
-						//"MaxReadingRange": 200,
-						"PhysicalContext": "CPU",
-					},
-				},
+				"Temperatures@meta": map[string]interface{}{"GET": map[string]interface{}{"plugin": "obmc_thermal"}},
 				"Fans": []map[string]interface{}{
 					map[string]interface{}{
 						"@odata.id":       "/redfish/v1/Chassis/A33/Thermal#/Fans/0",

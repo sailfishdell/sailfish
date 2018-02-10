@@ -10,19 +10,23 @@ var (
 	OBMC_ThermalPlugin = domain.PluginType("obmc_thermal")
 )
 
+type thermalSensorRedfish struct {
+        MemberId                  string
+        Name                      string
+        SensorNumber              int
+        Status                    StdStatus
+        ReadingCelsius            int
+        UpperThresholdNonCritical int
+        UpperThresholdCritical    int
+        UpperThresholdFatal       int
+        MinReadingRangeTemp       int
+        MaxReadingRangeTemp       int
+        PhysicalContext           string
+}
+
 type thermalList []thermalSensor
 type thermalSensor struct {
-	MemberId                  string
-	Name                      string
-	SensorNumber              int
-	Status                    StdStatus
-	ReadingCelsius            int
-	UpperThresholdNonCritical int
-	UpperThresholdCritical    int
-	UpperThresholdFatal       int
-	MinReadingRangeTemp       int
-	MaxReadingRangeTemp       int
-	PhysicalContext           string
+    redfish thermalSensorRedfish
 }
 
 // satisfy the plugin interface so we can list ourselves as a plugin in our @meta
@@ -36,5 +40,9 @@ func (s thermalList) RefreshProperty(
 	meta map[string]interface{},
 	body interface{},
 ) {
-	rrp.Value = "NOT IMPLEMENTED YET"
+    res := []thermalSensorRedfish{}
+    for _, t := range s {
+        res = append(res, t.redfish)
+    }
+	rrp.Value = res
 }
