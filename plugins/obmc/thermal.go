@@ -17,11 +17,11 @@ type thermalSensorRedfish struct {
 	SensorNumber              int
 	Status                    StdStatus
 	ReadingCelsius            float64
-	UpperThresholdNonCritical int
-	UpperThresholdCritical    int
-	UpperThresholdFatal       int
-	MinReadingRangeTemp       int
-	MaxReadingRangeTemp       int
+	UpperThresholdNonCritical float64
+	UpperThresholdCritical    float64
+	UpperThresholdFatal       float64
+	MinReadingRangeTemp       float64
+	MaxReadingRangeTemp       float64
 	PhysicalContext           string
 }
 

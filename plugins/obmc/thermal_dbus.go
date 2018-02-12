@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"path"
 	"time"
 
 	"github.com/godbus/dbus"
@@ -60,14 +61,14 @@ func (d *dbusThermalList) UpdateSensorList(ctx context.Context) {
 
 			// map[PATH]map[BUS][]interface
 			newList := map[string]map[string]*thermalSensorRedfish{}
-			for path, m1 := range dict {
+			for p, m1 := range dict {
 				for bus, _ := range m1 {
-					fmt.Printf("getting thermal for bus(%s)  path(%s)\n", bus, path)
+					fmt.Printf("getting thermal for bus(%s)  path(%s)\n", bus, p)
 					paths, ok := newList[bus]
 					if !ok {
 						paths = map[string]*thermalSensorRedfish{}
 					}
-					paths[path] = getThermal(ctx, conn, bus, path)
+					paths[p] = getThermal(ctx, conn, bus, p)
 					newList[bus] = paths
 				}
 			}
@@ -100,48 +101,64 @@ func (d *dbusThermalList) UpdateSensorList(ctx context.Context) {
 }
 
 const (
-	SensorValue = "xyz.openbmc_project.Sensor.Value"
+	SensorValue     = "xyz.openbmc_project.Sensor.Value"
+	SensorThreshold = "xyz.openbmc_project.Sensor.Threshold.Warning"
 )
 
-func getThermal(ctx context.Context, conn *dbus.Conn, bus string, path string) *thermalSensorRedfish {
-	busObject := conn.Object(bus, dbus.ObjectPath(path))
+func getThermal(ctx context.Context, conn *dbus.Conn, bus string, objectPath string) *thermalSensorRedfish {
+	busObject := conn.Object(bus, dbus.ObjectPath(objectPath))
 
-	scale, err := busObject.GetProperty(SensorValue + ".Scale")
-	if err != nil {
-		fmt.Printf("Error getting .Scale property for bus(%s) path(%s): %s\n", bus, path, err.Error())
-		return nil
-	}
 	unit, err := busObject.GetProperty(SensorValue + ".Unit")
 	if err != nil {
-		fmt.Printf("Error getting .Unit property for bus(%s) path(%s): %s\n", bus, path, err.Error())
+		fmt.Printf("Error getting .Unit property for bus(%s) path(%s): %s\n", bus, objectPath, err.Error())
 		return nil
 	}
-	value, err := busObject.GetProperty(SensorValue + ".Value")
-	if err != nil {
-		fmt.Printf("Error getting .Value property for bus(%s) path(%s): %s\n", bus, path, err.Error())
-		return nil
-	}
-
 	if unit.Value() != "xyz.openbmc_project.Sensor.Value.Unit.DegreesC" {
 		fmt.Printf("Don't know how to handle units: %s\n", unit)
 		return nil
 	}
 
+	scale, err := busObject.GetProperty(SensorValue + ".Scale")
+	if err != nil {
+		fmt.Printf("Error getting .Scale property for bus(%s) path(%s): %s\n", bus, objectPath, err.Error())
+		return nil
+	}
+	s, ok := scale.Value().(int64)
+	if !ok {
+		fmt.Printf("Type assert of scale to int failed.\n")
+		return nil
+	}
+
+	value, err := busObject.GetProperty(SensorValue + ".Value")
+	if err != nil {
+		fmt.Printf("Error getting .Value property for bus(%s) path(%s): %s\n", bus, objectPath, err.Error())
+		return nil
+	}
 	v, ok := value.Value().(int64)
 	if !ok {
 		fmt.Printf("Type assert of value to int failed: %T\n", value.Value())
 		return nil
 	}
 
-	s, ok := scale.Value().(int64)
-	if !ok {
-		fmt.Printf("Type assert of scale to int failed.\n")
-		return nil
+	// BOOL that says if we raise alarm if it goes above AlarmHigh
+	_, err = busObject.GetProperty(SensorThreshold + ".WarningAlarmHigh")
+	if err != nil {
+		fmt.Printf("Error getting .WarningAlarmHigh property for bus(%s) path(%s): %s\n", bus, objectPath, err.Error())
 	}
-	var readingCelcius float64 = float64(v) * math.Pow(10, float64(s))
 
+	UpperCriticalV, err := busObject.GetProperty(SensorThreshold + ".WarningHigh")
+	if err != nil {
+		fmt.Printf("Error getting .WarningHigh property for bus(%s) path(%s): %s\n", bus, objectPath, err.Error())
+	}
+	UpperCritical, ok := UpperCriticalV.Value().(int64)
+
+	var scaleMultiplier float64 = math.Pow(10, float64(s))
 	return &thermalSensorRedfish{
-		Name:           "dbus name",
-		ReadingCelsius: readingCelcius,
+		Name:                      path.Base(objectPath),
+		ReadingCelsius:            float64(v) * scaleMultiplier,
+		UpperThresholdNonCritical: float64(UpperCritical) * scaleMultiplier,
+		UpperThresholdCritical:    float64(UpperCritical) * scaleMultiplier,
+		UpperThresholdFatal:       float64(UpperCritical) * scaleMultiplier,
+		Status:                    StdStatus{State: "Enabled", Health: "OK"},
 	}
 }
