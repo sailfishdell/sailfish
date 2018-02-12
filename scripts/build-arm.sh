@@ -33,7 +33,6 @@ do
     do
         scp ${binary}.${GOARCH} root@${box}:/tmp/
     done
-    if ssh root@${box} /tmp/ocp-server.${GOARCH}; then
-        scp root@${box}:~/ca.crt ./${box}-ca.crt
-    fi
+    ssh root@${box} /tmp/ocp-server.${GOARCH} ||:
+    scp root@${box}:~/ca.crt ./${box}-ca.crt
 done
