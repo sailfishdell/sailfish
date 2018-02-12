@@ -10,6 +10,12 @@ pass=${pass:-password}
 host=${host:-localhost}
 port=${port:-8443}
 
+if [ "${host}" = "localhost" ]; then
+    cacert=${cacert:-./ca.crt}
+else
+    cacert=${cacert:-./${host}-ca.crt}
+fi
+
 scriptdir=$(cd $(dirname $0); pwd)
 outputdir=${1:-out/}
 skiplist=${2:-}
@@ -31,7 +37,7 @@ if [ -n "$TOKEN" ]; then
 fi
 
 timingarg="\nTotal request time: %{time_total} seconds for url: %{url_effective}\n"
-CURLCMD="curl --cacert ./ca.crt ${CURL_OPTS} -L "
+CURLCMD="curl --cacert ${cacert} ${CURL_OPTS} -L "
 
 rm -rf ${outputdir}/ && mkdir ${outputdir}
 echo $START_URL | sort |uniq > ${outputdir}/to-visit.txt

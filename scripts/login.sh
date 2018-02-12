@@ -3,7 +3,6 @@
 set -e
 
 unset HTTP_PROXY HTTPS_PROXY http_proxy https_proxy
-CURLCMD="curl --cacert ./ca.crt"
 prot=${prot:-https}
 user=${user:-Administrator}
 pass=${pass:-password}
@@ -11,6 +10,13 @@ host=${host:-localhost}
 port=${port:-8443}
 URL=$prot://$user:$pass@$host:$port
 
+if [ "${host}" = "localhost" ]; then
+    cacert=${cacert:-./ca.crt}
+else
+    cacert=${cacert:-./${host}-ca.crt}
+fi
+
+CURLCMD="curl --cacert ${cacert}"
 headersfile=$(mktemp /tmp/headers-XXXXXX)
 trap 'rm -f $headersfile' EXIT QUIT HUP INT ERR
 
