@@ -52,7 +52,9 @@ cd Redfish-Service-Validator
 python3 ./RedfishServiceValidator.py -c ../go-redfish/scripts/Redfish-Service-Validator.ini 
 ```
 
-### Building for ARM
+### Building for ARM with SPACEMONKEY (fast OpenSSL-based https support)
+
+You can cross build *without* spacemonkey easily just by setting GOARCH=arm and running the go build tool. This will result in a binary that doesn't support the spacemonkey listener. Spacemonkey reduces the overhead by half for SSL-based HTTPS sessions on ARMv7.
 
 You need to set up a few variables to point to your cross toolchain, and you'll need a cross go. Set the following variables. To run on aspeed or poleg, set GOARM=5, even though poleg is technically armv7
 
@@ -64,6 +66,6 @@ export GOARCH=arm
 export GOARM=5
 export GOOS=linux
 
-go build -o server.arm cmd/ocp-server/main.go
+go build -tags spacemonkey cmd/ocp-server/main.go
 ```
 
