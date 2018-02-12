@@ -8,7 +8,7 @@ import (
 	"os"
 
 	"github.com/godbus/dbus"
-	mapper "github.com/superchalupa/go-redfish/plugins/obmc_mapper"
+	mapper "github.com/superchalupa/go-redfish/plugins/dbus"
 )
 
 // Get BMC UUID:
@@ -71,7 +71,7 @@ func main() {
 	case "GetSubTreePaths":
 		GetSubTreePathsCMD.Parse(os.Args[2:])
 		ret, err = m.GetSubTreePaths(ctx, *GSTPpathPtr, *GSTPdepthPtr, interfaces...)
-        
+
 	case "GetObject":
 		GetObjectCMD.Parse(os.Args[2:])
 		ret, err = m.GetObject(ctx, *GOpathPtr, interfaces...)

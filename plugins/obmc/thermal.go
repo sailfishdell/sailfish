@@ -2,6 +2,7 @@ package obmc
 
 import (
 	"context"
+	"sync"
 
 	domain "github.com/superchalupa/go-redfish/redfishresource"
 )
@@ -15,7 +16,7 @@ type thermalSensorRedfish struct {
 	Name                      string
 	SensorNumber              int
 	Status                    StdStatus
-	ReadingCelsius            int
+	ReadingCelsius            float64
 	UpperThresholdNonCritical int
 	UpperThresholdCritical    int
 	UpperThresholdFatal       int
@@ -24,15 +25,40 @@ type thermalSensorRedfish struct {
 	PhysicalContext           string
 }
 
-type thermalList []thermalSensor
+type thermalList struct {
+	sync.RWMutex
+	sensors []*thermalSensor
+}
+
 type thermalSensor struct {
-	redfish thermalSensorRedfish
+	redfish *thermalSensorRedfish
+}
+
+func NewThermalList() *thermalList {
+	return &thermalList{
+		sensors: []*thermalSensor{
+			&thermalSensor{
+				redfish: &thermalSensorRedfish{
+					MemberId:                  "0",
+					Name:                      "Fake Temp Sensor",
+					SensorNumber:              42,
+					ReadingCelsius:            25.0,
+					UpperThresholdNonCritical: 35,
+					UpperThresholdCritical:    40,
+					UpperThresholdFatal:       50,
+					MinReadingRangeTemp:       0,
+					MaxReadingRangeTemp:       200,
+					PhysicalContext:           "Fake Intake",
+				},
+			},
+		},
+	}
 }
 
 // satisfy the plugin interface so we can list ourselves as a plugin in our @meta
-func (s thermalList) PluginType() domain.PluginType { return OBMC_ThermalPlugin }
+func (s *thermalList) PluginType() domain.PluginType { return OBMC_ThermalPlugin }
 
-func (s thermalList) RefreshProperty(
+func (s *thermalList) RefreshProperty(
 	ctx context.Context,
 	agg *domain.RedfishResourceAggregate,
 	rrp *domain.RedfishResourceProperty,
@@ -40,9 +66,14 @@ func (s thermalList) RefreshProperty(
 	meta map[string]interface{},
 	body interface{},
 ) {
+	s.RLock()
+	defer s.RUnlock()
+
+	// TODO: Pull the odata.id out of the agg we are passed to construct our sub-id
+
 	res := []thermalSensorRedfish{}
-	for _, t := range s {
-		res = append(res, t.redfish)
+	for _, t := range s.sensors {
+		res = append(res, *t.redfish)
 	}
 	rrp.Value = res
 }

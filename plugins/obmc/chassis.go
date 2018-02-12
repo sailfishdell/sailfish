@@ -25,42 +25,13 @@ type StdStatus struct {
 }
 
 type chassisService struct {
-	sync.Mutex
-	thermalSensors thermalList
+	sync.RWMutex
+	thermalSensors domain.Plugin
 }
 
 func NewChassisService(ctx context.Context) (*chassisService, error) {
 	return &chassisService{
-		thermalSensors: thermalList{
-			thermalSensor{
-				redfish: thermalSensorRedfish{
-					MemberId:                  "0",
-					Name:                      "Inlet Temp",
-					SensorNumber:              42,
-					ReadingCelsius:            25,
-					UpperThresholdNonCritical: 35,
-					UpperThresholdCritical:    40,
-					UpperThresholdFatal:       50,
-					MinReadingRangeTemp:       0,
-					MaxReadingRangeTemp:       200,
-					PhysicalContext:           "Intake",
-				},
-			},
-			thermalSensor{
-				redfish: thermalSensorRedfish{
-					MemberId:                  "1",
-					Name:                      "Random other Temp",
-					SensorNumber:              53,
-					ReadingCelsius:            26,
-					UpperThresholdNonCritical: 35,
-					UpperThresholdCritical:    40,
-					UpperThresholdFatal:       50,
-					MinReadingRangeTemp:       0,
-					MaxReadingRangeTemp:       200,
-					PhysicalContext:           "Other",
-				},
-			},
-		},
+		thermalSensors: NewDbusThermalList(ctx),
 	}, nil
 }
 

@@ -120,7 +120,7 @@ func SetupBMCServiceDbusConnections(ctx context.Context, s *bmcService, ch eh.Co
 	    intfc := "xyz.openbmc_project.Software.Version"
 	    prop  := "Version"
 		busObject := t.conn.Object(bus, dbus.ObjectPath(path))
-		variant, err := busObject.GetProperty(intfc + "." + prop)
+		variant, err := busObject.etProperty(intfc + "." + prop)
 	*/
 }
 
@@ -233,8 +233,8 @@ func SetupBMCServiceEventStreams(ctx context.Context, s *bmcService, ch eh.Comma
 				// give up
 			}
 		} else {
-			StatusCode = 501
-			StatusMessage = callObj.Err.Error()
+			statusCode = 501
+			statusMessage = callObj.Err.Error()
 		}
 
 		eb.HandleEvent(ctx, eh.NewEvent(domain.HTTPCmdProcessed, domain.HTTPCmdProcessedData{
