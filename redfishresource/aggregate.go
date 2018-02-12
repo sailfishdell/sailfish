@@ -222,7 +222,7 @@ func (r *RedfishResourceAggregate) UpdateCollectionMemberCount_unlocked() {
 	r.newProperties["Members@odata.count"] = RedfishResourceProperty{Value: l}
 }
 
-type PropertyUpdater interface {
+type PropertyRefresher interface {
 	RefreshProperty(context.Context, *RedfishResourceAggregate, *RedfishResourceProperty, string, map[string]interface{}, interface{})
 }
 
@@ -249,7 +249,7 @@ func (rrp *RedfishResourceProperty) Process(ctx context.Context, agg *RedfishRes
 			break
 		}
 
-		if plugin, ok := plugin.(PropertyUpdater); ok {
+		if plugin, ok := plugin.(PropertyRefresher); ok {
 			fmt.Printf("PROCESS PROPERTY(%s) with plugin(%s)\n", property, pluginName)
 			plugin.RefreshProperty(ctx, agg, rrp, method, meta_t, req)
 		}
