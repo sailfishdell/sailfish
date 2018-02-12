@@ -6,7 +6,7 @@ mybox=10.210.137.79
 prashanth=10.35.175.208
 DRB_List=${prashanth}
 
-YOCTO_SYSROOTS_BASE=${YOCTO_SYSROOTS_BASE:-~/openbmc/repo/build/tmp/sysroots}
+YOCTO_SYSROOTS_BASE=${YOCTO_SYSROOTS_BASE:-~/openbmc/build/tmp/sysroots}
 PLATFORM=evb-npcm750
 
 CROSS_PATH=${CROSS_PATH:-${YOCTO_SYSROOTS_BASE}/${PLATFORM}}
