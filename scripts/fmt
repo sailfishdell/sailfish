@@ -1,5 +1,8 @@
 #!/bin/sh
 
+scriptdir=$(cd $(dirname $0); pwd)
+cd $scriptdir/..
+
 for dir in  $(find plugins cmd/* redfishresource -type d)
 do
     go fmt $dir/*.go
