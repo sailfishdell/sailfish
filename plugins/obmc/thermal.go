@@ -2,6 +2,7 @@ package obmc
 
 import (
 	"context"
+	"fmt"
 	"sync"
 
 	domain "github.com/superchalupa/go-redfish/redfishresource"
@@ -12,7 +13,8 @@ var (
 )
 
 type thermalSensorRedfish struct {
-	MemberId                  string
+	OdataID                   string `json:"@odata.id"`
+	MemberID                  string
 	Name                      string
 	SensorNumber              int
 	Status                    StdStatus
@@ -35,24 +37,7 @@ type thermalSensor struct {
 }
 
 func NewThermalList() *thermalList {
-	return &thermalList{
-		sensors: []*thermalSensor{
-			&thermalSensor{
-				redfish: &thermalSensorRedfish{
-					MemberId:                  "0",
-					Name:                      "Fake Temp Sensor",
-					SensorNumber:              42,
-					ReadingCelsius:            25.0,
-					UpperThresholdNonCritical: 35,
-					UpperThresholdCritical:    40,
-					UpperThresholdFatal:       50,
-					MinReadingRangeTemp:       0,
-					MaxReadingRangeTemp:       200,
-					PhysicalContext:           "Fake Intake",
-				},
-			},
-		},
-	}
+	return &thermalList{}
 }
 
 // satisfy the plugin interface so we can list ourselves as a plugin in our @meta
@@ -72,8 +57,11 @@ func (s *thermalList) RefreshProperty(
 	// TODO: Pull the odata.id out of the agg we are passed to construct our sub-id
 
 	res := []thermalSensorRedfish{}
-	for _, t := range s.sensors {
+	for idx, t := range s.sensors {
 		res = append(res, *t.redfish)
+		idstr := fmt.Sprintf("%d", idx)
+		t.redfish.MemberID = fmt.Sprintf("%s", idstr)
+		t.redfish.OdataID = agg.ResourceURI + "#/Temperatures/" + idstr
 	}
 	rrp.Value = res
 }

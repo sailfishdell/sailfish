@@ -31,7 +31,7 @@ type chassisService struct {
 
 func NewChassisService(ctx context.Context) (*chassisService, error) {
 	return &chassisService{
-		thermalSensors: NewDbusThermalList(ctx),
+		thermalSensors: NewThermalListImpl(ctx),
 	}, nil
 }
 

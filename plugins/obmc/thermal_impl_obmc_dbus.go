@@ -1,3 +1,6 @@
+// Build tags: only build this for the openbmc build. Be sure to note the required blank line after.
+// +build openbmc
+
 package obmc
 
 import (
@@ -17,7 +20,7 @@ type dbusThermalList struct {
 	dbusSensors map[string]map[string]*thermalSensorRedfish
 }
 
-func NewDbusThermalList(ctx context.Context) *dbusThermalList {
+func NewThermalListImpl(ctx context.Context) *dbusThermalList {
 	ret := &dbusThermalList{
 		thermalList: NewThermalList(),
 	}

@@ -5,6 +5,10 @@ set -x
 mybox=10.210.137.79
 prashanth=10.35.175.208
 DRB_List=${prashanth}
+build_spacemonkey=${build_spacemonkey:-0}
+if [ "$build_spacemonkey" -ne 0 ]; then
+    BUILD_TAGS="$BUILD_TAGS spacemonkey"
+fi
 
 YOCTO_SYSROOTS_BASE=${YOCTO_SYSROOTS_BASE:-~/openbmc/build/tmp/sysroots}
 PLATFORM=evb-npcm750
@@ -20,12 +24,17 @@ export GOARCH=arm
 export GOARM=5
 export GOOS=linux
 
-binaries=${binaries:-"ocp-server mappercli"}
+binaries=${binaries:-"ocp-server"}
 for pkg in $binaries
 do
     rm -f ${pkg}.${GOARCH}
-    time go build -o ${pkg}.${GOARCH}   "$@" github.com/superchalupa/go-redfish/cmd/${pkg}
+    time go build -tags "$BUILD_TAGS openbmc" -o ${pkg}.${GOARCH}   "$@" github.com/superchalupa/go-redfish/cmd/${pkg}
 done
+
+# build mappercli
+pkg=mappercli
+rm -f ${pkg}.${GOARCH}
+time go build -tags "$BUILD_TAGS" -o ${pkg}.${GOARCH} "$@" github.com/superchalupa/go-redfish/cmd/${pkg}
 
 for box in ${DRB_List}
 do
