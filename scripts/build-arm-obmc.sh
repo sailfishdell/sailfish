@@ -2,9 +2,11 @@
 set -e
 set -x
 
-mybox=10.210.137.79
-prashanth=10.35.175.208
-DRB_List=${prashanth}
+scriptdir=$(cd $(dirname $0); pwd)
+cd $scriptdir/../
+
+[ -e test-machine.conf ] && . ./test-machine.conf
+
 build_spacemonkey=${build_spacemonkey:-0}
 if [ "$build_spacemonkey" -ne 0 ]; then
     BUILD_TAGS="$BUILD_TAGS spacemonkey"
@@ -36,7 +38,7 @@ pkg=mappercli
 rm -f ${pkg}.${GOARCH}
 time go build -tags "$BUILD_TAGS" -o ${pkg}.${GOARCH} "$@" github.com/superchalupa/go-redfish/cmd/${pkg}
 
-for box in ${DRB_List}
+for box in ${TEST_MACHINES}
 do
     for binary in ${binaries}
     do
