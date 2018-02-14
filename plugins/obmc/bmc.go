@@ -1,9 +1,12 @@
 package obmc
 
+// this file should define the BMC Manager object golang data structures where
+// we put all the data, plus the aggregate that pulls the data.  actual data
+// population should happen in an impl class. ie. no dbus calls in this file
+
 import (
 	"context"
 	"fmt"
-	"os"
 	"reflect"
 	"sync"
 	"time"
@@ -11,10 +14,8 @@ import (
 	"github.com/superchalupa/go-redfish/plugins"
 	domain "github.com/superchalupa/go-redfish/redfishresource"
 
-	"github.com/godbus/dbus"
 	eh "github.com/looplab/eventhorizon"
 	"github.com/looplab/eventhorizon/utils"
-	ah "github.com/superchalupa/go-redfish/plugins/actionhandler"
 )
 
 var (
@@ -23,10 +24,6 @@ var (
 
 	DbusTimeout time.Duration = 1
 )
-
-func init() {
-	domain.RegisterInitFN(InitService)
-}
 
 // OCP Profile Redfish BMC object
 
@@ -48,80 +45,20 @@ type bmcService struct {
 	Timezone    string `property:"timezone"`
 	Version     string `property:"version"`
 
-	protocol protocolList
+	Protocol protocolList
 
-	systems     map[string]bool
-	chassis     map[string]bool
-	mainchassis string
+	Systems     map[string]bool
+	Chassis     map[string]bool
+	Mainchassis string
 }
 
-func NewBMCService(ctx context.Context) (*bmcService, error) {
-	return &bmcService{
-		Name:        "OBMC",
-		Description: "The most open source BMC ever.",
-		Model:       "Michaels RAD BMC",
-		Timezone:    "-05:00",
-		Version:     "1.0.0",
-		systems:     map[string]bool{},
-		chassis:     map[string]bool{},
-		protocol: protocolList{
-			"https":  protocol{enabled: true, port: 443},
-			"http":   protocol{enabled: false, port: 80},
-			"ipmi":   protocol{enabled: false, port: 623},
-			"ssh":    protocol{enabled: false, port: 22},
-			"snmp":   protocol{enabled: false, port: 161},
-			"telnet": protocol{enabled: false, port: 23},
-			"ssdp": protocol{enabled: false, port: 1900,
-				config: map[string]interface{}{"NotifyMulticastIntervalSeconds": 600, "NotifyTTL": 5, "NotifyIPv6Scope": "Site"},
-			},
-		}}, nil
-}
-
-// wait in a listener for the root service to be created, then extend it
-func InitService(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
-	// step 1: Is this an actual openbmc?
-	// TODO: add test here
-
-	s, err := NewBMCService(ctx)
-	if err != nil {
-		return
+func NewBMCService(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) (*bmcService, error) {
+	s := &bmcService{
+		Systems: map[string]bool{},
+		Chassis: map[string]bool{},
 	}
 	SetupBMCServiceEventStreams(ctx, s, ch, eb, ew)
-	SetupBMCServiceDbusConnections(ctx, s, ch, eb, ew)
-
-	// Singleton for bmc plugin: we can pull data out of ourselves on GET/etc.
-	// after this point, the bmc object we just created is "live"
-	domain.RegisterPlugin(func() domain.Plugin { return s })
-	domain.RegisterPlugin(func() domain.Plugin { return s.protocol })
-
-	// initial implementation is one BMC, one Chassis, and one System. If we
-	// expand beyond that, we need to adjust stuff here.
-	chas, err := NewChassisService(ctx)
-	if err != nil {
-		return
-	}
-	InitChassisService(ctx, chas, ch, eb, ew)
-
-	system, err := NewSystemService(ctx)
-	if err != nil {
-		return
-	}
-	InitSystemService(ctx, system, ch, eb, ew)
-}
-
-func SetupBMCServiceDbusConnections(ctx context.Context, s *bmcService, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
-	/*    conn, err := dbus.SystemBus()
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Cannot register dbus_property plugin, could not connect to System Bus: %s\n", err.Error())
-			return
-		}
-	    bus := "xyz.openbmc_project.Software.BMC.Updater"
-	    path :=  "/xyz/openbmc_project/software/13264da3"
-	    intfc := "xyz.openbmc_project.Software.Version"
-	    prop  := "Version"
-		busObject := t.conn.Object(bus, dbus.ObjectPath(path))
-		variant, err := busObject.etProperty(intfc + "." + prop)
-	*/
+	return s, nil
 }
 
 func SetupBMCServiceEventStreams(ctx context.Context, s *bmcService, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
@@ -133,116 +70,6 @@ func SetupBMCServiceEventStreams(ctx context.Context, s *bmcService, ch eh.Comma
 	}
 	sp.RunOnce(func(event eh.Event) {
 		s.AddOBMCManagerResource(ctx, ch)
-	})
-
-	// we have a semi-collection of links ot systems and chassis we maintain, so add a event stream processor to keep those updated
-	sp, err = plugins.NewEventStreamProcessor(ctx, ew, plugins.SelectEventResourceCreatedByURIPrefix("/redfish/v1/Systems/"))
-	if err != nil {
-		fmt.Printf("Failed to create event stream processor: %s\n", err.Error())
-		return // todo: tear down all the prior event stream processors, too
-	}
-	sp.RunForever(func(event eh.Event) {
-		if data, ok := event.Data().(domain.RedfishResourceCreatedData); ok {
-			s.AddSystem(data.ResourceURI)
-		}
-	})
-
-	sp, err = plugins.NewEventStreamProcessor(ctx, ew, plugins.SelectEventResourceCreatedByURIPrefix("/redfish/v1/Chassis/"))
-	if err != nil {
-		fmt.Printf("Failed to create event stream processor: %s\n", err.Error())
-		return // todo: tear down all the prior event stream processors, too
-	}
-	sp.RunForever(func(event eh.Event) {
-		if data, ok := event.Data().(domain.RedfishResourceCreatedData); ok {
-			s.AddChassis(data.ResourceURI)
-		}
-	})
-
-	sp, err = plugins.NewEventStreamProcessor(ctx, ew, plugins.SelectEventResourceRemovedByURIPrefix("/redfish/v1/Systems/"))
-	if err != nil {
-		fmt.Printf("Failed to create event stream processor: %s\n", err.Error())
-		return // todo: tear down all the prior event stream processors, too
-	}
-	sp.RunForever(func(event eh.Event) {
-		if data, ok := event.Data().(domain.RedfishResourceRemovedData); ok {
-			s.RemoveSystem(data.ResourceURI)
-		}
-	})
-
-	sp, err = plugins.NewEventStreamProcessor(ctx, ew, plugins.SelectEventResourceRemovedByURIPrefix("/redfish/v1/Chassis/"))
-	if err != nil {
-		fmt.Printf("Failed to create event stream processor: %s\n", err.Error())
-		return // todo: tear down all the prior event stream processors, too
-	}
-	sp.RunForever(func(event eh.Event) {
-		if data, ok := event.Data().(domain.RedfishResourceRemovedData); ok {
-			s.RemoveChassis(data.ResourceURI)
-		}
-	})
-
-	// stream processor for action events
-	sp, err = plugins.NewEventStreamProcessor(ctx, ew, plugins.CustomFilter(ah.SelectAction("/redfish/v1/Managers/bmc/Actions/Manager.Reset")))
-	if err != nil {
-		fmt.Printf("Failed to create event stream processor: %s\n", err.Error())
-		return // todo: tear down all the prior event stream processors, too
-	}
-	sp.RunForever(func(event eh.Event) {
-		bus := "org.openbmc.control.Bmc"
-		path := "/org/openbmc/control/bmc0"
-		intfc := "org.openbmc.control.Bmc"
-
-		fmt.Printf("connect to system bus\n")
-		conn, err := dbus.SystemBus()
-		statusCode := 200
-		statusMessage := "OK"
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Cannot connect to System Bus: %s\n", err.Error())
-			statusCode = 501
-			statusMessage = "ERROR: Cannot attach to dbus system bus"
-		}
-		fmt.Printf("connect to %s path %s\n", bus, path)
-		busObject := conn.Object(bus, dbus.ObjectPath(path))
-
-		fmt.Printf("parse resetType: %s\n", event.Data())
-		ad := event.Data().(ah.GenericActionEventData)
-		resetType, _ := ad.ActionData.(map[string]interface{})["ResetType"]
-		call := "undefined"
-		if resetType == "ForceRestart" {
-			call = "coldReset"
-		}
-		if resetType == "GracefulRestart" {
-			call = "warmReset"
-		}
-		fmt.Printf("\tgot: %s\n", resetType)
-
-		// no way to cancel this based on context cancellation form original request.
-
-		fmt.Printf("make call\n")
-		callObj := busObject.Call(intfc+"."+call, 0)
-		if callObj.Err == nil {
-			select {
-			case <-callObj.Done:
-				fmt.Printf("donecall. err: %s\n", callObj.Err.Error())
-			case <-ctx.Done():
-				statusCode = 501
-				statusMessage = "Context cancelled."
-				// give up
-			case <-time.After(time.Duration(DbusTimeout) * time.Second):
-				statusCode = 501
-				statusMessage = "ERROR: Dbus call timed out"
-				// give up
-			}
-		} else {
-			statusCode = 501
-			statusMessage = callObj.Err.Error()
-		}
-
-		eb.HandleEvent(ctx, eh.NewEvent(domain.HTTPCmdProcessed, domain.HTTPCmdProcessedData{
-			CommandID:  event.Data().(ah.GenericActionEventData).CmdID,
-			Results:    map[string]interface{}{"RESET": statusMessage},
-			StatusCode: statusCode,
-			Headers:    map[string]string{},
-		}, time.Now()))
 	})
 }
 
@@ -295,7 +122,7 @@ func (s *bmcService) RefreshProperty(
 	data, ok := meta["data"].(string)
 	if data == "systems" {
 		list := []map[string]string{}
-		for k, _ := range s.systems {
+		for k, _ := range s.Systems {
 			list = append(list, map[string]string{"@odata.id": k})
 		}
 		rrp.Value = list
@@ -304,7 +131,7 @@ func (s *bmcService) RefreshProperty(
 
 	if data == "chassis" {
 		list := []map[string]string{}
-		for k, _ := range s.chassis {
+		for k, _ := range s.Chassis {
 			list = append(list, map[string]string{"@odata.id": k})
 		}
 		rrp.Value = list
@@ -312,8 +139,8 @@ func (s *bmcService) RefreshProperty(
 	}
 
 	if data == "mainchassis" {
-		if s.mainchassis != "" {
-			rrp.Value = map[string]string{"@odata.id": s.mainchassis}
+		if s.Mainchassis != "" {
+			rrp.Value = map[string]string{"@odata.id": s.Mainchassis}
 		} else {
 			rrp.Value = map[string]string{}
 		}
@@ -343,35 +170,35 @@ func (s *bmcService) RefreshProperty(
 func (s *bmcService) AddSystem(uri string) {
 	s.Lock()
 	defer s.Unlock()
-	fmt.Printf("DEBUG: ADDING SYSTEM(%s) to list: %s\n", uri, s.systems)
-	s.systems[uri] = true
+	fmt.Printf("DEBUG: ADDING SYSTEM(%s) to list: %s\n", uri, s.Systems)
+	s.Systems[uri] = true
 }
 
 func (s *bmcService) RemoveSystem(uri string) {
 	s.Lock()
 	defer s.Unlock()
-	fmt.Printf("DEBUG: REMOVING SYSTEM(%s) to list: %s\n", uri, s.systems)
-	delete(s.systems, uri)
+	fmt.Printf("DEBUG: REMOVING SYSTEM(%s) to list: %s\n", uri, s.Systems)
+	delete(s.Systems, uri)
 }
 
 func (s *bmcService) AddChassis(uri string) {
 	s.Lock()
 	defer s.Unlock()
-	if s.mainchassis == "" {
-		s.mainchassis = uri
+	if s.Mainchassis == "" {
+		s.Mainchassis = uri
 	}
-	fmt.Printf("DEBUG: ADDING CHASSIS(%s) to list: %s\n", uri, s.chassis)
-	s.chassis[uri] = true
+	fmt.Printf("DEBUG: ADDING CHASSIS(%s) to list: %s\n", uri, s.Chassis)
+	s.Chassis[uri] = true
 }
 
 func (s *bmcService) RemoveChassis(uri string) {
 	s.Lock()
 	defer s.Unlock()
-	if s.mainchassis == uri {
-		s.mainchassis = ""
+	if s.Mainchassis == uri {
+		s.Mainchassis = ""
 	}
-	fmt.Printf("DEBUG: REMOVING CHASSIS(%s) to list: %s\n", uri, s.chassis)
-	delete(s.chassis, uri)
+	fmt.Printf("DEBUG: REMOVING CHASSIS(%s) to list: %s\n", uri, s.Chassis)
+	delete(s.Chassis, uri)
 }
 
 func (s *bmcService) AddOBMCManagerResource(ctx context.Context, ch eh.CommandHandler) {

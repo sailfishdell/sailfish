@@ -9,14 +9,14 @@ import (
 	"time"
 )
 
-type dbusThermalList struct {
+type simulationThermalList struct {
 	*thermalList
 
-	dbusSensors map[string]map[string]*thermalSensorRedfish
+	simulationSensors map[string]map[string]*thermalSensorRedfish
 }
 
-func NewThermalListImpl(ctx context.Context) *dbusThermalList {
-	ret := &dbusThermalList{
+func NewThermalListImpl(ctx context.Context) *simulationThermalList {
+	ret := &simulationThermalList{
 		thermalList: NewThermalList(),
 	}
 
@@ -25,7 +25,8 @@ func NewThermalListImpl(ctx context.Context) *dbusThermalList {
 	return ret
 }
 
-func (d *dbusThermalList) UpdateSensorList(ctx context.Context) {
+func (d *simulationThermalList) UpdateSensorList(ctx context.Context) {
+gofunc:
 	for {
 		d.Lock()
 		d.sensors = []*thermalSensor{}
@@ -34,7 +35,7 @@ func (d *dbusThermalList) UpdateSensorList(ctx context.Context) {
 		// TODO: send redfish events when temps change
 		for sensor := 0; sensor < 100; sensor++ {
 			tsr := &thermalSensorRedfish{
-				Name:                      fmt.Sprintf("Fake Temp Sensor %s", sensor),
+				Name:                      fmt.Sprintf("Fake Temp Sensor %d", sensor),
 				SensorNumber:              42,
 				ReadingCelsius:            25.0,
 				UpperThresholdNonCritical: 35,
@@ -42,7 +43,7 @@ func (d *dbusThermalList) UpdateSensorList(ctx context.Context) {
 				UpperThresholdFatal:       50,
 				MinReadingRangeTemp:       0,
 				MaxReadingRangeTemp:       200,
-				PhysicalContext:           fmt.Sprintf("fake context %s", sensor),
+				PhysicalContext:           fmt.Sprintf("fake context %d", sensor),
 			}
 
 			d.sensors = append(d.sensors, &thermalSensor{redfish: tsr})
@@ -53,7 +54,7 @@ func (d *dbusThermalList) UpdateSensorList(ctx context.Context) {
 		select {
 		case <-ctx.Done():
 			fmt.Printf("Cancelling UpdateSensorList due to context cancellation.\n")
-			break
+			break gofunc
 		case <-time.After(10 * time.Second):
 			continue
 		}
