@@ -11,6 +11,12 @@ build_spacemonkey=${build_spacemonkey:-0}
 if [ "$build_spacemonkey" -ne 0 ]; then
     BUILD_TAGS="$BUILD_TAGS spacemonkey"
 fi
+build_simulation=${build_simulation:-0}
+if [ "$build_simulation" -ne 0 ]; then
+    BUILD_TAGS="$BUILD_TAGS simulation"
+else
+    BUILD_TAGS="$BUILD_TAGS openbmc"
+fi
 
 YOCTO_SYSROOTS_BASE=${YOCTO_SYSROOTS_BASE:-~/openbmc/build/tmp/sysroots}
 PLATFORM=evb-npcm750
@@ -30,7 +36,7 @@ binaries=${binaries:-"ocp-server"}
 for pkg in $binaries
 do
     rm -f ${pkg}.${GOARCH}
-    time go build -tags "$BUILD_TAGS openbmc" -o ${pkg}.${GOARCH}   "$@" github.com/superchalupa/go-redfish/cmd/${pkg}
+    time go build -tags "$BUILD_TAGS" -o ${pkg}.${GOARCH}   "$@" github.com/superchalupa/go-redfish/cmd/${pkg}
 done
 
 # build mappercli
