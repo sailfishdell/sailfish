@@ -83,31 +83,31 @@ $CURLCMD $URL/api/RedfishResource%3ACreate  -d '
                         "CMD": "/bin/date",
                         "CMDARGS": ["+%Y-%m-%d %H:%M:%S"]
                     }}},
-                {"foobar1@meta": {
+                {"foobar_sleep_1@meta": {
                     "GET": {
                         "plugin": "runcmd",
                         "CMD": "/bin/sleep",
                         "CMDARGS": ["1"]
                     }}},
-                {"foobar1@meta": {
+                {"foobar_sleep_2@meta": {
                     "GET": {
                         "plugin": "runcmd",
                         "CMD": "/bin/sleep",
                         "CMDARGS": ["1"]
                     }}},
-                {"foobar1@meta": {
+                {"foobar_sleep_3@meta": {
                     "GET": {
                         "plugin": "runcmd",
                         "CMD": "/bin/sleep",
                         "CMDARGS": ["1"]
                     }}},
-                {"foobar1@meta": {
+                {"foobar_sleep_4@meta": {
                     "GET": {
                         "plugin": "runcmd",
                         "CMD": "/bin/sleep",
                         "CMDARGS": ["1"]
                     }}},
-                { "foobar@meta": {
+                { "foobar_sleep_5@meta": {
                     "GET": {
                         "plugin": "runcmd",
                         "CMD": "/bin/sleep",
@@ -115,25 +115,25 @@ $CURLCMD $URL/api/RedfishResource%3ACreate  -d '
                     }}}
             ],
 
-            "foobar1@meta": {
+            "foobar_sleep_1@meta": {
                 "GET": {
                     "plugin": "runcmd",
                     "CMD": "/bin/sleep",
                     "CMDARGS": ["1"]
                 }},
-            "foobar2@meta": {
+            "foobar_sleep_2@meta": {
                 "GET": {
                     "plugin": "runcmd",
                     "CMD": "/bin/sleep",
                     "CMDARGS": ["1"]
                 }},
-            "foobar3@meta": {
+            "foobar_sleep_3@meta": {
                 "GET": {
                     "plugin": "runcmd",
                     "CMD": "/bin/sleep",
                     "CMDARGS": ["1"]
                 }},
-            "foobar4@meta": {
+            "foobar_sleep_4@meta": {
                 "GET": {
                     "plugin": "runcmd",
                     "CMD": "/bin/sleep",
