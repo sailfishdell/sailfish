@@ -30,9 +30,10 @@ Currently "openbmc" is the only implemented data source, but "simulation" is
 under development. Add the tag for the backend you want to the build, example
 below shows 'openbmc' build.
 
-Run the backend:
+Build and run the backend:
 ```bash
-go run -tags openbmc cmd/ocp-server/main.go -l https::8443 -l pprof:localhost:6060
+go build -tags openbmc github.com/superchalupa/go-redfish/cmd/ocp-server
+./ocp-server/main.go -l https::8443 -l pprof:localhost:6060
 ```
 
 Visit https://localhost:8443/redfish/v1
