@@ -22,11 +22,18 @@ func init() {
 	domain.RegisterInitFN(InitService)
 }
 
+const (
+	DbusTimeout time.Duration = 1
+)
+
 type simulationImplBmc struct {
 	*bmcService
 }
 
 func InitService(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
+	// initial implementation is one BMC, one Chassis, and one System. If we
+	// expand beyond that, we need to adjust stuff here.
+
 	bmcSvc, _ := NewBMCService(ctx, ch, eb, ew)
 	bmcSvc.Name = "OBMC simulation"
 	bmcSvc.Description = "The most open source BMC ever."
@@ -44,22 +51,18 @@ func InitService(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *
 			config: map[string]interface{}{"NotifyMulticastIntervalSeconds": 600, "NotifyTTL": 5, "NotifyIPv6Scope": "Site"},
 		}}
 
-	// initial implementation is one BMC, one Chassis, and one System. If we
-	// expand beyond that, we need to adjust stuff here.
-	chas, err := NewChassisService(ctx)
-	if err != nil {
-		return
-	}
-	InitChassisService(ctx, chas, ch, eb, ew)
+	chas, _ := NewChassisService(ctx)
+	CreateChassisStreamProcessors(ctx, chas, ch, eb, ew)
 
-	system, err := NewSystemService(ctx)
-	if err != nil {
-		return
-	}
-	InitSystemService(ctx, system, ch, eb, ew)
+	system, _ := NewSystemService(ctx)
+	CreateSystemStreamProcessors(ctx, system, ch, eb, ew)
+
 
 	domain.RegisterPlugin(func() domain.Plugin { return bmcSvc })
 	domain.RegisterPlugin(func() domain.Plugin { return bmcSvc.Protocol })
+    domain.RegisterPlugin(func() domain.Plugin { return chas })
+    domain.RegisterPlugin(func() domain.Plugin { return chas.thermalSensors })
+    domain.RegisterPlugin(func() domain.Plugin { return system })
 
 	// go ret.runbackgroundstuff(ctx)
 

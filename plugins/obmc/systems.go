@@ -27,10 +27,7 @@ func NewSystemService(ctx context.Context) (*systemService, error) {
 }
 
 // wait in a listener for the root service to be created, then extend it
-func InitSystemService(ctx context.Context, s *systemService, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
-	// Singleton for bmc plugin: we can pull data out of ourselves on GET/etc.
-	domain.RegisterPlugin(func() domain.Plugin { return s })
-
+func CreateSystemStreamProcessors(ctx context.Context, s *systemService, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
 	// step 2: Add openbmc System object after System collection has been created
 	sp, err := plugins.NewEventStreamProcessor(ctx, ew, plugins.SelectEventResourceCreatedByURI("/redfish/v1/System"))
 	if err != nil {

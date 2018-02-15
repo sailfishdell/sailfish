@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"reflect"
 	"sync"
-	"time"
 
 	"github.com/superchalupa/go-redfish/plugins"
 	domain "github.com/superchalupa/go-redfish/redfishresource"
@@ -18,11 +17,9 @@ import (
 	"github.com/looplab/eventhorizon/utils"
 )
 
-var (
+const (
 	BmcPlugin      = domain.PluginType("obmc_bmc")
 	ProtocolPlugin = domain.PluginType("protocol")
-
-	DbusTimeout time.Duration = 1
 )
 
 // OCP Profile Redfish BMC object

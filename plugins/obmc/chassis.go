@@ -36,11 +36,7 @@ func NewChassisService(ctx context.Context) (*chassisService, error) {
 }
 
 // wait in a listener for the root service to be created, then extend it
-func InitChassisService(ctx context.Context, s *chassisService, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
-	// Singleton for bmc plugin: we can pull data out of ourselves on GET/etc.
-	domain.RegisterPlugin(func() domain.Plugin { return s })
-	domain.RegisterPlugin(func() domain.Plugin { return s.thermalSensors })
-
+func CreateChassisStreamProcessors(ctx context.Context, s *chassisService, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
 	// step 2: Add openbmc chassis object after Chassis collection has been created
 	sp, err := plugins.NewEventStreamProcessor(ctx, ew, plugins.SelectEventResourceCreatedByURI("/redfish/v1/Chassis"))
 	if err != nil {
