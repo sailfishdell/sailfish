@@ -7,10 +7,14 @@ cd $scriptdir/../
 
 [ -e test-machine.conf ] && . ./test-machine.conf
 
+# set build_spacemonkey=1 in environment to enable spacemonkey build
 build_spacemonkey=${build_spacemonkey:-0}
 if [ "$build_spacemonkey" -ne 0 ]; then
     BUILD_TAGS="$BUILD_TAGS spacemonkey"
 fi
+
+# set build_simulation=1 in environment to build a simulation server,
+# otherwise, it will default to openbmc build
 build_simulation=${build_simulation:-0}
 if [ "$build_simulation" -ne 0 ]; then
     BUILD_TAGS="$BUILD_TAGS simulation"
@@ -18,14 +22,16 @@ else
     BUILD_TAGS="$BUILD_TAGS openbmc"
 fi
 
+# override the YOCTO_SYSROOTS_BASE to point to your openbmc build sysroot
 YOCTO_SYSROOTS_BASE=${YOCTO_SYSROOTS_BASE:-~/openbmc/build/tmp/sysroots}
-PLATFORM=evb-npcm750
+# override PLATFORM to match the directory under sysroots where your cross stuff is stored
+PLATFORM=${PLATFORM:-evb-npcm750}
 
 CROSS_PATH=${CROSS_PATH:-${YOCTO_SYSROOTS_BASE}/${PLATFORM}}
 CROSS_SYSROOT=${CROSS_SYSROOT:-${YOCTO_SYSROOTS_BASE}/x86_64-linux}
 export PKG_CONFIG_PATH=${CROSS_PATH}/usr/lib/pkgconfig/
 
-# sort of hardcoded to the yocto paths for this specific version, oh well
+# sort of hardcoded to the yocto paths for this specific version, oh well. works with openbmc 2.0
 export PATH=${CROSS_SYSROOT}/usr/lib/arm-openbmc-linux-gnueabi/go/bin/:${CROSS_SYSROOT}/usr/libexec/arm-openbmc-linux-gnueabi/gcc/arm-openbmc-linux-gnueabi/6.2.0/:${PATH}
 
 export GOARCH=arm
