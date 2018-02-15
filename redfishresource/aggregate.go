@@ -226,14 +226,21 @@ type PropertyRefresher interface {
 	RefreshProperty(context.Context, *RedfishResourceAggregate, *RedfishResourceProperty, string, map[string]interface{}, interface{})
 }
 
-func (rrp *RedfishResourceProperty) Process(ctx context.Context, agg *RedfishResourceAggregate, property, method string, req interface{}) {
+func (rrp *RedfishResourceProperty) Process(ctx context.Context, agg *RedfishResourceAggregate, property, method string, req interface{}) (ret RedfishResourceProperty) {
 	// step 1: run the plugin to update rrp.Value based on the plugin.
 	// Step 2: see if the rrp.Value is a recursable map or array and recurse down it
+
+    // set up return copy. We are not going to modify our source
+    ret = RedfishResourceProperty{ Meta: map[string]interface{}{} }
+    for k, v := range rrp.Meta {
+        ret.Meta[k] = v
+    }
+    ret.Value = rrp.Value
 
 	// equivalent to do{}while(1) to run once
 	// if any of the intermediate steps fails, bail out on this part and continue by doing the next thing
 	for ok := true; ok; ok = false {
-		meta_t, ok := rrp.Meta[method].(map[string]interface{})
+		meta_t, ok := ret.Meta[method].(map[string]interface{})
 		if !ok {
 			break
 		}
@@ -251,11 +258,11 @@ func (rrp *RedfishResourceProperty) Process(ctx context.Context, agg *RedfishRes
 
 		if plugin, ok := plugin.(PropertyRefresher); ok {
 			fmt.Printf("PROCESS PROPERTY(%s) with plugin(%s)\n", property, pluginName)
-			plugin.RefreshProperty(ctx, agg, rrp, method, meta_t, req)
+			plugin.RefreshProperty(ctx, agg, &ret, method, meta_t, req)
 		}
 	}
 
-	switch t := rrp.Value.(type) {
+	switch t := ret.Value.(type) {
 	case map[string]RedfishResourceProperty:
 		type result struct {
 			name   string
@@ -269,14 +276,16 @@ func (rrp *RedfishResourceProperty) Process(ctx context.Context, agg *RedfishRes
 
 			go func(property string, v RedfishResourceProperty) {
 				reqitem, _ := reqmap[property]
-				v.Process(ctx, agg, property, method, reqitem)
-				resChan <- result{property, v}
+				retProp := v.Process(ctx, agg, property, method, reqitem)
+				resChan <- result{property, retProp}
 			}(property, v)
 		}
+        newMap := map[string]RedfishResourceProperty{}
 		for _, resChan := range promised {
 			res := <-resChan
-			t[res.name] = res.result
+			newMap[res.name] = res.result
 		}
+        ret.Value = newMap
 
 	case []RedfishResourceProperty:
 		// spawn off parallel goroutines to process each member of the array
@@ -290,8 +299,8 @@ func (rrp *RedfishResourceProperty) Process(ctx context.Context, agg *RedfishRes
 				if index < len(reqarr) {
 					reqitem = reqarr[index]
 				}
-				v.Process(ctx, agg, property, method, reqitem)
-				resChan <- v
+				retProp := v.Process(ctx, agg, property, method, reqitem)
+				resChan <- retProp
 			}(index, v)
 		}
 		newArr := []RedfishResourceProperty{}
@@ -299,14 +308,19 @@ func (rrp *RedfishResourceProperty) Process(ctx context.Context, agg *RedfishRes
 			res := <-resChan
 			newArr = append(newArr, res)
 		}
-		rrp.Value = newArr
+        ret.Value = newArr
 	default:
 	}
+
+    return
 }
 
-func (agg *RedfishResourceAggregate) ProcessMeta(ctx context.Context, method string, results map[string]interface{}, request map[string]interface{}) error {
+func (agg *RedfishResourceAggregate) ProcessMeta(ctx context.Context, method string, request map[string]interface{}) (results map[string]interface{}, err error) {
 	agg.newPropertiesMu.Lock()
 	defer agg.newPropertiesMu.Unlock()
+
+    results = map[string]interface{}{}
+    err = nil
 
 	type result struct {
 		name   string
@@ -319,8 +333,8 @@ func (agg *RedfishResourceAggregate) ProcessMeta(ctx context.Context, method str
 		promised = append(promised, resChan)
 		go func(property string, v RedfishResourceProperty) {
 			req, _ := request[property]
-			v.Process(ctx, agg, property, method, req)
-			resChan <- result{name: property, result: v}
+			ret := v.Process(ctx, agg, property, method, req)
+			resChan <- result{name: property, result: ret}
 		}(property, v)
 	}
 
@@ -331,5 +345,5 @@ func (agg *RedfishResourceAggregate) ProcessMeta(ctx context.Context, method str
 		results[res.name] = res.result
 	}
 
-	return nil
+	return
 }

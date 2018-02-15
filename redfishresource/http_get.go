@@ -36,13 +36,14 @@ func (c *GET) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 	// set up the base response data
 	data := HTTPCmdProcessedData{
 		CommandID:  c.CmdID,
-		Results:    map[string]interface{}{},
 		StatusCode: 200,
 	}
 	// TODO: Should be able to discern supported methods from the meta and return those
 
-	a.ProcessMeta(ctx, "GET", data.Results, map[string]interface{}{})
+	data.Results, _ = a.ProcessMeta(ctx, "GET", map[string]interface{}{})
+
 	// TODO: set error status code based on err from ProcessMeta
+    // TODO: This is not thread safe: deep copy
 	data.Headers = a.Headers
 
 	a.eventBus.HandleEvent(ctx, eh.NewEvent(HTTPCmdProcessed, data, time.Now()))
