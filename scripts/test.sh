@@ -71,43 +71,43 @@ $CURLCMD $URL/api/RedfishResource%3ACreate  -d '
             },
 
             "testarray": [
-                { "foobar@meta": {
+                { "foobar_date@meta": {
                     "GET": {
                         "plugin": "runcmd",
                         "CMD": "/bin/date",
                         "CMDARGS": ["+%Y-%m-%d %H:%M:%S"]
                     }}},
-                { "fofo@meta": {
+                { "fofo_date@meta": {
                     "GET": {
                         "plugin": "runcmd",
                         "CMD": "/bin/date",
                         "CMDARGS": ["+%Y-%m-%d %H:%M:%S"]
                     }}},
-                {"foobar_sleep_1@meta": {
+                {"foobar_sleep_null_1@meta": {
                     "GET": {
                         "plugin": "runcmd",
                         "CMD": "/bin/sleep",
                         "CMDARGS": ["1"]
                     }}},
-                {"foobar_sleep_2@meta": {
+                {"foobar_sleep_null_2@meta": {
                     "GET": {
                         "plugin": "runcmd",
                         "CMD": "/bin/sleep",
                         "CMDARGS": ["1"]
                     }}},
-                {"foobar_sleep_3@meta": {
+                {"foobar_sleep_null_3@meta": {
                     "GET": {
                         "plugin": "runcmd",
                         "CMD": "/bin/sleep",
                         "CMDARGS": ["1"]
                     }}},
-                {"foobar_sleep_4@meta": {
+                {"foobar_sleep_null_4@meta": {
                     "GET": {
                         "plugin": "runcmd",
                         "CMD": "/bin/sleep",
                         "CMDARGS": ["1"]
                     }}},
-                { "foobar_sleep_5@meta": {
+                { "foobar_sleep_null_5@meta": {
                     "GET": {
                         "plugin": "runcmd",
                         "CMD": "/bin/sleep",
@@ -115,25 +115,25 @@ $CURLCMD $URL/api/RedfishResource%3ACreate  -d '
                     }}}
             ],
 
-            "foobar_sleep_1@meta": {
+            "foobar_sleep_null_1@meta": {
                 "GET": {
                     "plugin": "runcmd",
                     "CMD": "/bin/sleep",
                     "CMDARGS": ["1"]
                 }},
-            "foobar_sleep_2@meta": {
+            "foobar_sleep_null_2@meta": {
                 "GET": {
                     "plugin": "runcmd",
                     "CMD": "/bin/sleep",
                     "CMDARGS": ["1"]
                 }},
-            "foobar_sleep_3@meta": {
+            "foobar_sleep_null_3@meta": {
                 "GET": {
                     "plugin": "runcmd",
                     "CMD": "/bin/sleep",
                     "CMDARGS": ["1"]
                 }},
-            "foobar_sleep_4@meta": {
+            "foobar_sleep_null_4@meta": {
                 "GET": {
                     "plugin": "runcmd",
                     "CMD": "/bin/sleep",
