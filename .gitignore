@@ -1,5 +1,4 @@
 .DS_Store
-vendor
 
 # don't check in or complain about SSL keys
 ca.crt
