@@ -2,7 +2,7 @@
 
 This server will eventually do redfish...
 
-## Install/Compile
+## Checkout and Dependencies
 
 Prepare golang source structure and install necessary tools:
 
@@ -20,25 +20,47 @@ mkdir -p go/src/github.com/superchalupa/
 cd go/src/github.com/superchalupa
 git clone https://github.com/superchalupa/go-redfish
 cd go-redfish
-dep ensure
+# Not really necessary any more:
+# dep ensure
+# the vendor/ directory is now included in the tree, so this step can be skipped
 ```
 
 ## Usage
 
 First, you need to select which data source you'd like to compile for.
-Currently "openbmc" is the only implemented data source, but "simulation" is
-under development. Add the tag for the backend you want to the build, example
-below shows 'openbmc' build.
+Currently "openbmc" is the only implemented (real) data source, but
+"simulation" is under development and works. Add the tag for the backend you
+want to the build, example below shows 'openbmc' build.
 
-Build and run the backend:
+### Build and run the backend (OPENBMC build):
 ```bash
 go build -tags openbmc github.com/superchalupa/go-redfish/cmd/ocp-server
-./ocp-server/main.go -l https::8443 -l pprof:localhost:6060
+./ocp-server -l https::8443 -l pprof:localhost:6060
+```
+
+Visit https://localhost:8443/redfish/v1
+
+
+### Build and run the backend (SIMULATION build):
+```bash
+go build -tags simulation github.com/superchalupa/go-redfish/cmd/ocp-server
+./ocp-server -l https::8443 -l pprof:localhost:6060
 ```
 
 Visit https://localhost:8443/redfish/v1
 
 This starts up a golang profiling endpoint on port 6060 at /debug/pprof for local debugging as well
+
+### RUNNING the backend without building first
+
+Please read the previous two sections about tags! Example is for a simulation run:
+
+```bash
+go run -tags "simulation" cmd/ocp-server/main.go cmd/ocp-server/without-spacemonkey.go -l https::8443 -l pprof:localhost:6060
+```
+
+
+### Tests
 
 To run the (currently nonexistent) tests (need help here!):
 ```bash
