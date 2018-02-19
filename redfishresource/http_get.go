@@ -43,7 +43,7 @@ func (c *GET) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 	data.Results, _ = a.ProcessMeta(ctx, "GET", map[string]interface{}{})
 
 	// TODO: set error status code based on err from ProcessMeta
-    // TODO: This is not thread safe: deep copy
+	// TODO: This is not thread safe: deep copy
 	data.Headers = a.Headers
 
 	a.eventBus.HandleEvent(ctx, eh.NewEvent(HTTPCmdProcessed, data, time.Now()))

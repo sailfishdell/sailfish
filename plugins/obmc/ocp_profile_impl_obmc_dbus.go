@@ -6,16 +6,16 @@ package obmc
 import (
 	"context"
 	"fmt"
+	"os"
 	"time"
-    "os"
 
+	"github.com/godbus/dbus"
 	eh "github.com/looplab/eventhorizon"
 	"github.com/looplab/eventhorizon/utils"
-	domain "github.com/superchalupa/go-redfish/redfishresource"
-	ah "github.com/superchalupa/go-redfish/plugins/actionhandler"
 	"github.com/superchalupa/go-redfish/plugins"
-	"github.com/godbus/dbus"
+	ah "github.com/superchalupa/go-redfish/plugins/actionhandler"
 	mydbus "github.com/superchalupa/go-redfish/plugins/dbus"
+	domain "github.com/superchalupa/go-redfish/redfishresource"
 )
 
 func init() {
@@ -57,12 +57,11 @@ func InitService(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *
 	system, _ := NewSystemService(ctx)
 	CreateSystemStreamProcessors(ctx, system, ch, eb, ew)
 
-
 	domain.RegisterPlugin(func() domain.Plugin { return bmcSvc })
 	domain.RegisterPlugin(func() domain.Plugin { return bmcSvc.Protocol })
-    domain.RegisterPlugin(func() domain.Plugin { return chas })
-    domain.RegisterPlugin(func() domain.Plugin { return chas.thermalSensors })
-    domain.RegisterPlugin(func() domain.Plugin { return system })
+	domain.RegisterPlugin(func() domain.Plugin { return chas })
+	domain.RegisterPlugin(func() domain.Plugin { return chas.thermalSensors })
+	domain.RegisterPlugin(func() domain.Plugin { return system })
 
 	// go ret.runbackgroundstuff(ctx)
 

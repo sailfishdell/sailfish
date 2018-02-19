@@ -230,12 +230,12 @@ func (rrp *RedfishResourceProperty) Process(ctx context.Context, agg *RedfishRes
 	// step 1: run the plugin to update rrp.Value based on the plugin.
 	// Step 2: see if the rrp.Value is a recursable map or array and recurse down it
 
-    // set up return copy. We are not going to modify our source
-    ret = RedfishResourceProperty{ Meta: map[string]interface{}{} }
-    for k, v := range rrp.Meta {
-        ret.Meta[k] = v
-    }
-    ret.Value = rrp.Value
+	// set up return copy. We are not going to modify our source
+	ret = RedfishResourceProperty{Meta: map[string]interface{}{}}
+	for k, v := range rrp.Meta {
+		ret.Meta[k] = v
+	}
+	ret.Value = rrp.Value
 
 	// equivalent to do{}while(1) to run once
 	// if any of the intermediate steps fails, bail out on this part and continue by doing the next thing
@@ -280,12 +280,12 @@ func (rrp *RedfishResourceProperty) Process(ctx context.Context, agg *RedfishRes
 				resChan <- result{property, retProp}
 			}(property, v)
 		}
-        newMap := map[string]RedfishResourceProperty{}
+		newMap := map[string]RedfishResourceProperty{}
 		for _, resChan := range promised {
 			res := <-resChan
 			newMap[res.name] = res.result
 		}
-        ret.Value = newMap
+		ret.Value = newMap
 
 	case []RedfishResourceProperty:
 		// spawn off parallel goroutines to process each member of the array
@@ -308,19 +308,19 @@ func (rrp *RedfishResourceProperty) Process(ctx context.Context, agg *RedfishRes
 			res := <-resChan
 			newArr = append(newArr, res)
 		}
-        ret.Value = newArr
+		ret.Value = newArr
 	default:
 	}
 
-    return
+	return
 }
 
 func (agg *RedfishResourceAggregate) ProcessMeta(ctx context.Context, method string, request map[string]interface{}) (results map[string]interface{}, err error) {
 	agg.newPropertiesMu.Lock()
 	defer agg.newPropertiesMu.Unlock()
 
-    results = map[string]interface{}{}
-    err = nil
+	results = map[string]interface{}{}
+	err = nil
 
 	type result struct {
 		name   string

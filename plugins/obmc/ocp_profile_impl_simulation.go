@@ -23,7 +23,7 @@ func OCPProfileFactory(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus
 
 	// initial implementation is one BMC, one Chassis, and one System. If we
 	// expand beyond that, we need to adjust stuff here.
-    
+
 	bmcSvc, _ := NewBMCService(ctx, ch, eb, ew)
 	bmcSvc.Name = "OBMC simulation"
 	bmcSvc.Description = "The most open source BMC ever."
@@ -49,10 +49,9 @@ func OCPProfileFactory(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus
 
 	domain.RegisterPlugin(func() domain.Plugin { return bmcSvc })
 	domain.RegisterPlugin(func() domain.Plugin { return bmcSvc.Protocol })
-    domain.RegisterPlugin(func() domain.Plugin { return chas })
-    domain.RegisterPlugin(func() domain.Plugin { return chas.thermalSensors })
-    domain.RegisterPlugin(func() domain.Plugin { return system })
-
+	domain.RegisterPlugin(func() domain.Plugin { return chas })
+	domain.RegisterPlugin(func() domain.Plugin { return chas.thermalSensors })
+	domain.RegisterPlugin(func() domain.Plugin { return system })
 
 	// example:
 	// go ret.runbackgroundstuff(ctx)
