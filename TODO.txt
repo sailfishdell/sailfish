@@ -2,7 +2,7 @@ Things that need work: (-) TODO (*) DONE
 
  - Dynamically generate metadata
     - Need to dynamically generate the odata metadata endpoints based on what objects are actually present in-tree
-    - probably need to update createredfishresource to have a mandatory parameter specifying the schema
+        - probably need to update createredfishresource to have a mandatory parameter specifying the schema
 
  - SSE support
     - Implement second EventBus just for SSE external traffic
@@ -10,8 +10,8 @@ Things that need work: (-) TODO (*) DONE
 
  - ACTIONS
     * Implement a test OEM action for reference
+        * obmc now also implements reset action (test)
         - see scripts/test.sh, plugins/test_action/. These implement example action
-        - obmc now also implements reset action (test)
 
  - EVENTS
     - implement an http endpoint to inject raw events into the system (internal command)
@@ -32,6 +32,7 @@ Things that need work: (-) TODO (*) DONE
     - $top
     - $filter
     - $expand
+    - Most of these can be implemented by recursively processing in GetCommand. Basically, do GET as normal, then when we get the http command results back, process it. skip/top operate on collections. $expand recursively walk and send new GET commands to incorporate into the output
 
  - PUT/PATCH/POST support
     * basic PATCH support controlled by @meta["PATCH"]["allowed"] = true
