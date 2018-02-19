@@ -206,24 +206,30 @@ func main() {
 			tlscert.SetCommonName("CA Cert common name"),
 			tlscert.SetSerialNumber(12345),
 			tlscert.SetBaseFilename("ca"),
+			tlscert.GenRSA(4096),
+			tlscert.SelfSigned(),
 		)
 		ca.Serialize()
 	}
 
 	// TODO: cli option to enable/disable and control cert options
 	// create new server cert unconditionally based on CA cert
-	serverCert, _ := tlscert.NewCert(
-		tlscert.SignWithCA(ca),
-		tlscert.MakeServer,
-		tlscert.ExpireInOneYear,
-		tlscert.SetCommonName("localhost"),
-		tlscert.SetSubjectKeyId([]byte{1, 2, 3, 4, 6}),
-		tlscert.AddSANDNSName("localhost", "localhost.localdomain"),
-		tlscert.SetSerialNumber(12346),
-		tlscert.SetBaseFilename("server"),
-	)
-	iterInterfaceIPAddrs(func(ip net.IP) { serverCert.ApplyOption(tlscert.AddSANIP(ip)) })
-	serverCert.Serialize()
+	_, err = tlscert.Load("server")
+	if err != nil {
+		serverCert, _ := tlscert.NewCert(
+			tlscert.GenRSA(4096),
+			tlscert.SignWithCA(ca),
+			tlscert.MakeServer,
+			tlscert.ExpireInOneYear,
+			tlscert.SetCommonName("localhost"),
+			tlscert.SetSubjectKeyId([]byte{1, 2, 3, 4, 6}),
+			tlscert.AddSANDNSName("localhost", "localhost.localdomain"),
+			tlscert.SetSerialNumber(12346),
+			tlscert.SetBaseFilename("server"),
+		)
+		iterInterfaceIPAddrs(func(ip net.IP) { serverCert.ApplyOption(tlscert.AddSANIP(ip)) })
+		serverCert.Serialize()
+	}
 
 	if len(cfg.Listen) == 0 {
 		log.Fatal("No listeners configured! Use the '-l' option to configure a listener!")

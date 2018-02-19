@@ -44,12 +44,6 @@ func NewCert(options ...Option) (*mycert, error) {
 		},
 	}
 
-	c.priv, _ = rsa.GenerateKey(rand.Reader, 2048)
-
-	// set it up as self-signed until user sets a CA
-	c.certCApriv = c.priv
-	c.certCA = c.cert
-
 	c.ApplyOption(options...)
 	return c, nil
 }
@@ -72,10 +66,6 @@ func Load(fileBase string) (c *mycert, err error) {
 		priv:     catls.PrivateKey.(*rsa.PrivateKey),
 		fileBase: fileBase,
 	}
-
-	// set it up as self-signed until user sets a CA
-	c.certCApriv = c.priv
-	c.certCA = c.cert
 
 	fmt.Printf("\tSuccessfully loaded keys\n")
 	return
@@ -109,6 +99,22 @@ func CreateCA(c *mycert) error {
 func MakeServer(c *mycert) error {
 	c.cert.KeyUsage = c.cert.KeyUsage | x509.KeyUsageKeyEncipherment
 	return nil
+}
+
+func GenRSA(bits int) Option {
+	return func(c *mycert) error {
+		c.priv, _ = rsa.GenerateKey(rand.Reader, bits)
+		return nil
+	}
+}
+
+func SelfSigned() Option {
+	return func(c *mycert) error {
+		// set it up as self-signed until user sets a CA
+		c.certCApriv = c.priv
+		c.certCA = c.cert
+		return nil
+	}
 }
 
 func SetSerialNumber(serial int64) Option {
