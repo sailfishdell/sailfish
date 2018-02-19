@@ -8,7 +8,8 @@ user=${user:-Administrator}
 pass=${pass:-password}
 host=${host:-localhost}
 port=${port:-8443}
-URL=$prot://$user:$pass@$host:$port
+URL=$prot://$host:$port
+LOGIN_URI=${LOGIN_URI:-/redfish/v1/SessionService/Sessions}
 
 if [ "${host}" = "localhost" ]; then
     cacert=${cacert:-./ca.crt}
@@ -16,11 +17,11 @@ else
     cacert=${cacert:-./${host}-ca.crt}
 fi
 
-CURLCMD="curl --cacert ${cacert}"
+CURLCMD="curl --cacert ${cacert} ${CURL_OPTS} "
 headersfile=$(mktemp /tmp/headers-XXXXXX)
 trap 'rm -f $headersfile' EXIT QUIT HUP INT ERR
 
-RESPONSE_HEADERS=$($CURLCMD -D${headersfile} ${URL}/redfish/v1/SessionService/Sessions -X POST -d "{\"UserName\": \"${user}\", \"Password\": \"${pass}\"}" 2>&1)
+RESPONSE_HEADERS=$($CURLCMD -D${headersfile} ${URL}${LOGIN_URI} -X POST -d "{\"UserName\": \"${user}\", \"Password\": \"${pass}\"}" 2>&1)
 X_AUTH_TOKEN=$(cat ${headersfile} | grep -i x-auth-token | cut -d: -f2 | perl -p -e 's/\r//g;')
 SESSION_URI=$(cat ${headersfile} | grep -i location | cut -d: -f2 | perl -p -e 's/\r//g;')
 

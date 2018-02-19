@@ -21,5 +21,6 @@ RUN rmdir src; \
     GOPATH=$PWD CGO_ENABLED=0 GOOS=linux go build -a -installsuffix nocgo -o /app -tags simulation github.com/superchalupa/go-redfish/cmd/ocp-server
 
 FROM scratch
-COPY --from=builder /app ./
-ENTRYPOINT ["./app -l https::8443"]
+COPY --from=builder /go/v1 /app  /
+EXPOSE 443
+ENTRYPOINT ["/app"]
