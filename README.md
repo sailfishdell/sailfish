@@ -96,7 +96,7 @@ export GOARCH=arm
 export GOARM=5
 export GOOS=linux
 
-go build -tags spacemonkey cmd/ocp-server/main.go
+go build -tags spacemonkey github.com/superchalupa/go-redfish/cmd/ocp-server
 ```
 
 When running, activate the spacemonkey listener with the command line arg: -l spacemonkey:[addr]:[port]
