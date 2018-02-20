@@ -4,8 +4,8 @@ set -e
 
 unset HTTP_PROXY HTTPS_PROXY http_proxy https_proxy
 prot=${prot:-https}
-user=${user:-Administrator}
-pass=${pass:-password}
+user=${user:-${1:-Administrator}}
+pass=${pass:-${2:-password}}
 host=${host:-localhost}
 port=${port:-8443}
 URL=$prot://$host:$port
@@ -21,7 +21,7 @@ CURLCMD="curl --cacert ${cacert} ${CURL_OPTS} "
 headersfile=$(mktemp /tmp/headers-XXXXXX)
 trap 'rm -f $headersfile' EXIT QUIT HUP INT ERR
 
-RESPONSE_HEADERS=$($CURLCMD -D${headersfile} ${URL}${LOGIN_URI} -X POST -d "{\"UserName\": \"${user}\", \"Password\": \"${pass}\"}" 2>&1)
+RESPONSE_HEADERS=$($CURLCMD -H "Content-Type: application/json" -D${headersfile} ${URL}${LOGIN_URI} -X POST -d "{\"UserName\": \"${user}\", \"Password\": \"${pass}\"}" 2>&1)
 X_AUTH_TOKEN=$(cat ${headersfile} | grep -i x-auth-token | cut -d: -f2 | perl -p -e 's/\r//g;')
 SESSION_URI=$(cat ${headersfile} | grep -i location | cut -d: -f2 | perl -p -e 's/\r//g;')
 
