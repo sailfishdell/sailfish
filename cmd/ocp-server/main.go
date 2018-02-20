@@ -213,7 +213,7 @@ func main() {
 	}
 
 	// TODO: cli option to enable/disable and control cert options
-	// create new server cert unconditionally based on CA cert
+	// TODO: cli option to create new server cert unconditionally based on CA cert
 	_, err = tlscert.Load("server")
 	if err != nil {
 		serverCert, _ := tlscert.NewCert(
