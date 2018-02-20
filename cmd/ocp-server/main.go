@@ -262,7 +262,7 @@ func main() {
 				}
 				defer listener.Close()
 				log.Println("FCGI mode activated with tcp listener: " + addr)
-				log.Println(fcgi.Serve(listener, m))
+				log.Println(fcgi.Serve(listener, logger))
 			}(strings.TrimPrefix(listen, "fcgi:"))
 
 		case strings.HasPrefix(listen, "fcgi:") && strings.Contains(strings.TrimPrefix(listen, "fcgi:"), "/"):
@@ -276,14 +276,14 @@ func main() {
 				defer listener.Close()
 				defer os.Remove(path)
 				log.Println("FCGI mode activated with unix socket listener: " + path)
-				log.Println(fcgi.Serve(listener, m))
+				log.Println(fcgi.Serve(listener, logger))
 			}(strings.TrimPrefix(listen, "fcgi:"))
 
 		case strings.HasPrefix(listen, "fcgi:"):
 			// FCGI listener using stdin/stdout  fcgi:
 			go func() {
 				log.Println("FCGI mode activated with stdin/stdout listener")
-				log.Println(fcgi.Serve(nil, m))
+				log.Println(fcgi.Serve(nil, logger))
 			}()
 
 		case strings.HasPrefix(listen, "http:"):
