@@ -35,7 +35,7 @@ do
     do
         FN_concurrent=$(printf "%03d" $concurrent)
 
-        hey -c $concurrent -z ${test_time} -a ${user}:${pass} ${BASE}/$url > $outdir/bench-basicauth-c${FN_concurrent}-z${test_time}.txt 2>&1
+        hey -c $concurrent -z ${test_time} -a ${user}:${pass} ${BASE}$url > $outdir/bench-basicauth-c${FN_concurrent}-z${test_time}.txt 2>&1
         if [ -e STOP ]; then
             rm STOP
             exit 0
