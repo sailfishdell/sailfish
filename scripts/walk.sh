@@ -55,7 +55,7 @@ do
         if grep -q "^${url}\$" ${outputdir}/visited.txt ${outputdir}/errors.txt $skiplist; then
             continue
         fi
-        OUTFILE=${outputdir}/$( echo -n ${url} | perl -p -e 's/[^a-zA-Z0-9]/_/g;' ).json
+        OUTFILE=${outputdir}/$( echo -n ${url} | perl -p -e 's/[^a-zA-Z0-9.]/_/g;' ).json
         if ! $CURLCMD --fail -H "$AUTH_HEADER" --silent -L -w"$timingarg" ${BASE}${url}  -o $OUTFILE ; then
             echo $url >> ${outputdir}/errors.txt
             continue
