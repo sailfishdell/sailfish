@@ -45,6 +45,7 @@ type CreateRedfishResource struct {
 	// optional stuff
 	Plugin     string                 `eh:"optional"`
 	Properties map[string]interface{} `eh:"optional"`
+	Meta       map[string]interface{} `eh:"optional"`
 	Private    map[string]interface{} `eh:"optional"`
 	Collection bool                   `eh:"optional"`
 }
@@ -88,9 +89,10 @@ func (c *CreateRedfishResource) Handle(ctx context.Context, a *RedfishResourceAg
 	}
 
 	a.propertiesMu.Lock()
-
 	a.properties.Value = map[string]interface{}{}
 	a.properties.Parse(c.Properties)
+	a.properties.Meta = c.Meta
+	fmt.Printf("GOT META: %s\n", a.properties.Meta)
 	a.propertiesMu.Unlock()
 
 	a.SetProperty("@odata.id", c.ResourceURI)

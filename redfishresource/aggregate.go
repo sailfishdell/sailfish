@@ -261,6 +261,7 @@ type PropertyRefresher interface {
 }
 
 func (rrp *RedfishResourceProperty) Process(ctx context.Context, agg *RedfishResourceAggregate, property, method string, req interface{}) (ret RedfishResourceProperty) {
+	// The purpose of this function is to recursively process the resource property, calling any plugins that are specified in the meta data.
 	// step 1: run the plugin to update rrp.Value based on the plugin.
 	// Step 2: see if the rrp.Value is a recursable map or array and recurse down it
 
@@ -293,12 +294,17 @@ func (rrp *RedfishResourceProperty) Process(ctx context.Context, agg *RedfishRes
 		if plugin, ok := plugin.(PropertyRefresher); ok {
 			fmt.Printf("PROCESS PROPERTY(%s) with plugin(%s)\n", property, pluginName)
 			plugin.RefreshProperty(ctx, agg, &ret, method, meta_t, req)
+			fmt.Printf("\tAFTER PROCESS: %s\n", ret)
 		}
 	}
 
 	switch ret.Value.(type) {
 	case map[string]interface{}:
+		fmt.Printf("\tPROCESS AS MAP\n")
 
+		// somewhat complicated here, but not too bad: set up goroutines for
+		// each sub object and process in parallel. Collect results via array
+		// of channels.
 		type result struct {
 			name   string
 			result interface{}
@@ -308,13 +314,15 @@ func (rrp *RedfishResourceProperty) Process(ctx context.Context, agg *RedfishRes
 		for property, v := range ret.Value.(map[string]interface{}) {
 			resChan := make(chan result)
 			promised = append(promised, resChan)
-			if v, ok := v.(RedfishResourceProperty); ok {
+			if vrr, ok := v.(RedfishResourceProperty); ok {
+				fmt.Printf("\tProcess property(%s) as RedfishResourceProperty\n", property)
 				go func(property string, v RedfishResourceProperty) {
 					reqitem, _ := reqmap[property]
 					retProp := v.Process(ctx, agg, property, method, reqitem)
 					resChan <- result{property, retProp}
-				}(property, v)
+				}(property, vrr)
 			} else {
+				fmt.Printf("\tProcess property(%s) as dull value: %s\n", property, v)
 				go func(property string, v interface{}) {
 					resChan <- result{property, v}
 				}(property, v)
@@ -328,6 +336,7 @@ func (rrp *RedfishResourceProperty) Process(ctx context.Context, agg *RedfishRes
 		ret.Value = newMap
 
 	case []interface{}:
+		fmt.Printf("\tPROCESS AS ARRAY\n")
 
 		// spawn off parallel goroutines to process each member of the array
 		reqarr, _ := req.([]interface{})
@@ -350,6 +359,8 @@ func (rrp *RedfishResourceProperty) Process(ctx context.Context, agg *RedfishRes
 				}(property, v)
 			}
 		}
+
+		// collect all the results together after processing.
 		newArr := []interface{}{}
 		for _, resChan := range promised {
 			res := <-resChan
@@ -357,6 +368,7 @@ func (rrp *RedfishResourceProperty) Process(ctx context.Context, agg *RedfishRes
 		}
 		ret.Value = newArr
 	default:
+		fmt.Printf(" DEFAULT value type\n")
 	}
 
 	return
