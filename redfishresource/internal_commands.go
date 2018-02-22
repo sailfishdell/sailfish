@@ -87,10 +87,11 @@ func (c *CreateRedfishResource) Handle(ctx context.Context, a *RedfishResourceAg
 		Meta:        map[string]interface{}{},
 	}
 
-	a.newPropertiesMu.Lock()
-	a.newProperties = map[string]RedfishResourceProperty{}
-	parse_map(a.newProperties, c.Properties)
-	a.newPropertiesMu.Unlock()
+	a.propertiesMu.Lock()
+
+	a.properties.Value = map[string]interface{}{}
+	a.properties.Parse(c.Properties)
+	a.propertiesMu.Unlock()
 
 	a.SetProperty("@odata.id", c.ResourceURI)
 	a.SetProperty("@odata.type", c.Type)
@@ -171,9 +172,9 @@ func (c *UpdateRedfishResourceProperties) Handle(ctx context.Context, a *Redfish
 		Meta:        map[string]interface{}{},
 	}
 
-	a.newPropertiesMu.Lock()
-	parse_map(a.newProperties, c.Properties)
-	a.newPropertiesMu.Unlock()
+	a.propertiesMu.Lock()
+	a.properties.Parse(c.Properties)
+	a.propertiesMu.Unlock()
 
 	if len(d.PropertyNames) > 0 {
 		a.eventBus.HandleEvent(ctx, eh.NewEvent(RedfishResourcePropertiesUpdated, d, time.Now()))

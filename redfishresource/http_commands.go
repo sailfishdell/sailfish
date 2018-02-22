@@ -95,7 +95,6 @@ func (c *PATCH) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 	// set up the base response data
 	data := HTTPCmdProcessedData{
 		CommandID:  c.CmdID,
-		Results:    map[string]interface{}{},
 		StatusCode: 200,
 	}
 

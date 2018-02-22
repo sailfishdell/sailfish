@@ -56,7 +56,7 @@ type RedfishResourcePropertyMetaUpdatedData struct {
 
 type HTTPCmdProcessedData struct {
 	CommandID  eh.UUID
-	Results    map[string]interface{}
+	Results    interface{}
 	StatusCode int
 	Headers    map[string]string
 }
