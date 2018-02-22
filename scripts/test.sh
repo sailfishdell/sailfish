@@ -41,6 +41,9 @@ $CURLCMD $URL/api/RedfishResource%3ACreate  -d '
         "Context": "foocontext",
         "Privileges": { "GET": ["Unauthenticated"], "PATCH":["ConfigureManager"] },
         "Properties": {
+            "someproperty": "some literal value",
+
+
             "testvalue1@meta": {
                 "GET": {
                     "plugin": "test:strategy3",
@@ -155,7 +158,6 @@ $CURLCMD $URL/api/RedfishResource%3ACreate  -d '
                 "Oem@meta": {"plugin": "nonexistent"}
             },
 
-
             "DBUS@meta": { "GET": {"plugin": "dbus_property", "bus_name": "xyz.openbmc_project.Software.Version", "interface_name": "xyz.openbmc_project.Software.Version", "path": "/xyz/openbmc_project/software/14880bfa", "property": "Version"} },
 
             "Name": "TEST",
@@ -173,3 +175,23 @@ $CURLCMD $URL/redfish/v1/Actions/Test -d '{"TestType": "FOO"}'
 
 $CURLCMD $URL/redfish/v1/test -XPATCH -d '{"Name": "FOOBar"}'
 $CURLCMD $URL/redfish/v1/SessionService -XPATCH -d '{"SessionTimeout": 35}'
+
+
+echo "Test internal command API"
+$CURLCMD $URL/api/RedfishResource%3ACreate  -d '
+    {
+        "ID": "49467bb4-5c1f-473b-af00-000000000011",
+        "ResourceURI":"/redfish/v1/test2",
+        "Type": "footype2",
+        "Context": "foo2context",
+        "Privileges": { "GET": ["Unauthenticated"], "PATCH":["ConfigureManager"] },
+        "Properties": { "deleteme": "foobar" },
+        "Meta": { "GET": {"plugin": "test:fullProperty"}}
+    }'
+
+sleep 1
+echo "/redfish/v1/test"
+$CURLCMD $URL/redfish/v1/test2
+
+
+
