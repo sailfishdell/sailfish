@@ -24,12 +24,15 @@ func OCPProfileFactory(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus
 	// initial implementation is one BMC, one Chassis, and one System. If we
 	// expand beyond that, we need to adjust stuff here.
 
-	bmcSvc, _ := NewBMCService(ctx, ch, eb, ew)
+	bmcSvc, _ := NewBMCService()
+	bmcSvc.URIName = "OBMC"
 	bmcSvc.Name = "OBMC simulation"
 	bmcSvc.Description = "The most open source BMC ever."
 	bmcSvc.Model = "Michaels RAD BMC"
 	bmcSvc.Timezone = "-05:00"
 	bmcSvc.Version = "1.0.0"
+
+/*
 	bmcSvc.Protocol = protocolList{
 		"https":  protocol{enabled: true, port: 443},
 		"http":   protocol{enabled: false, port: 80},
@@ -40,6 +43,9 @@ func OCPProfileFactory(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus
 		"ssdp": protocol{enabled: false, port: 1900,
 			config: map[string]interface{}{"NotifyMulticastIntervalSeconds": 600, "NotifyTTL": 5, "NotifyIPv6Scope": "Site"},
 		}}
+*/
+
+    plugins.OnURICreated(ctx, ew, "/redfish/v1/Managers", func(){ bmcSvc.AddOBMCManagerResource(ctx, ch) })
 
 	chas, _ := NewChassisService(ctx)
 	CreateChassisStreamProcessors(ctx, chas, ch, eb, ew)
@@ -48,7 +54,7 @@ func OCPProfileFactory(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus
 	CreateSystemStreamProcessors(ctx, system, ch, eb, ew)
 
 	domain.RegisterPlugin(func() domain.Plugin { return bmcSvc })
-	domain.RegisterPlugin(func() domain.Plugin { return bmcSvc.Protocol })
+	//domain.RegisterPlugin(func() domain.Plugin { return bmcSvc.Protocol })
 	domain.RegisterPlugin(func() domain.Plugin { return chas })
 	domain.RegisterPlugin(func() domain.Plugin { return chas.thermalSensors })
 	domain.RegisterPlugin(func() domain.Plugin { return system })

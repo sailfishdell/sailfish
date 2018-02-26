@@ -9,6 +9,8 @@ import (
 	"time"
 )
 
+const NUM_SIMULATION_SENSORS=2
+
 type simulationThermalList struct {
 	*thermalList
 
@@ -33,7 +35,7 @@ gofunc:
 
 		// TODO: wiggle the sensors a little to simulate random temp changes
 		// TODO: send redfish events when temps change
-		for sensor := 0; sensor < 100; sensor++ {
+		for sensor := 0; sensor < NUM_SIMULATION_SENSORS; sensor++ {
 			tsr := &thermalSensorRedfish{
 				Name:                      fmt.Sprintf("Fake Temp Sensor %d", sensor),
 				SensorNumber:              42,

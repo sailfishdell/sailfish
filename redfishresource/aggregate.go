@@ -271,17 +271,20 @@ func (rrp *RedfishResourceProperty) Process(ctx context.Context, agg *RedfishRes
 		ret.Meta[k] = v
 	}
 	ret.Value = rrp.Value
+    fmt.Printf("DEBUG: meta: %s\n", ret.Meta)
 
 	// equivalent to do{}while(1) to run once
 	// if any of the intermediate steps fails, bail out on this part and continue by doing the next thing
 	for ok := true; ok; ok = false {
 		meta_t, ok := ret.Meta[method].(map[string]interface{})
 		if !ok {
+			fmt.Printf("no meta for %s\n", method)
 			break
 		}
 
 		pluginName, ok := meta_t["plugin"].(string)
 		if !ok {
+			fmt.Printf("no plugin name: %s\n", meta_t)
 			break
 		}
 
