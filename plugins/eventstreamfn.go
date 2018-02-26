@@ -179,3 +179,14 @@ func SelectEventResourceRemovedByURIPrefix(uri string) func(p *privateStateStruc
 		return nil
 	}
 }
+
+func OnURICreated(ctx context.Context, ew *utils.EventWaiter, uri string, f func()) {
+	sp, err := NewEventStreamProcessor(ctx, ew, SelectEventResourceCreatedByURI(uri))
+	if err != nil {
+		fmt.Printf("Failed to create event stream processor: %s\n", err.Error())
+		return
+	}
+	sp.RunOnce(func(event eh.Event) {
+        f()
+	})
+}
