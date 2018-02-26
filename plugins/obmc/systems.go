@@ -2,14 +2,11 @@ package obmc
 
 import (
 	"context"
-	"fmt"
 	"sync"
 
-	"github.com/superchalupa/go-redfish/plugins"
 	domain "github.com/superchalupa/go-redfish/redfishresource"
 
 	eh "github.com/looplab/eventhorizon"
-	"github.com/looplab/eventhorizon/utils"
 )
 
 var (
@@ -24,19 +21,6 @@ type systemService struct {
 
 func NewSystemService(ctx context.Context) (*systemService, error) {
 	return &systemService{}, nil
-}
-
-// wait in a listener for the root service to be created, then extend it
-func CreateSystemStreamProcessors(ctx context.Context, s *systemService, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
-	// step 2: Add openbmc System object after System collection has been created
-	sp, err := plugins.NewEventStreamProcessor(ctx, ew, plugins.SelectEventResourceCreatedByURI("/redfish/v1/System"))
-	if err != nil {
-		fmt.Printf("Failed to create event stream processor: %s\n", err.Error())
-		return
-	}
-	sp.RunOnce(func(event eh.Event) {
-		s.AddOBMCSystemResource(ctx, ch)
-	})
 }
 
 // satisfy the plugin interface so we can list ourselves as a plugin in our @meta

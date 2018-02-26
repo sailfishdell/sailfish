@@ -31,36 +31,19 @@ func OCPProfileFactory(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus
 	bmcSvc.Model = "Michaels RAD BMC"
 	bmcSvc.Timezone = "-05:00"
 	bmcSvc.Version = "1.0.0"
-
-/*
-	bmcSvc.Protocol = protocolList{
-		"https":  protocol{enabled: true, port: 443},
-		"http":   protocol{enabled: false, port: 80},
-		"ipmi":   protocol{enabled: false, port: 623},
-		"ssh":    protocol{enabled: false, port: 22},
-		"snmp":   protocol{enabled: false, port: 161},
-		"telnet": protocol{enabled: false, port: 23},
-		"ssdp": protocol{enabled: false, port: 1900,
-			config: map[string]interface{}{"NotifyMulticastIntervalSeconds": 600, "NotifyTTL": 5, "NotifyIPv6Scope": "Site"},
-		}}
-*/
-
     plugins.OnURICreated(ctx, ew, "/redfish/v1/Managers", func(){ bmcSvc.AddOBMCManagerResource(ctx, ch) })
 
 	chas, _ := NewChassisService(ctx)
-	CreateChassisStreamProcessors(ctx, chas, ch, eb, ew)
+    plugins.OnURICreated(ctx, ew, "/redfish/v1/Chassis", func(){ chas.AddOBMCChassisResource(ctx, ch) })
 
 	system, _ := NewSystemService(ctx)
-	CreateSystemStreamProcessors(ctx, system, ch, eb, ew)
+    plugins.OnURICreated(ctx, ew, "/redfish/v1/Systems", func(){ system.AddOBMCSystemResource(ctx, ch) })
 
 	domain.RegisterPlugin(func() domain.Plugin { return bmcSvc })
 	//domain.RegisterPlugin(func() domain.Plugin { return bmcSvc.Protocol })
 	domain.RegisterPlugin(func() domain.Plugin { return chas })
 	domain.RegisterPlugin(func() domain.Plugin { return chas.thermalSensors })
 	domain.RegisterPlugin(func() domain.Plugin { return system })
-
-	// example:
-	// go ret.runbackgroundstuff(ctx)
 
 	// stream processor for action events
 	sp, err := plugins.NewEventStreamProcessor(ctx, ew, plugins.CustomFilter(ah.SelectAction("/redfish/v1/Managers/bmc/Actions/Manager.Reset")))
@@ -79,3 +62,21 @@ func OCPProfileFactory(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus
 		}, time.Now()))
 	})
 }
+
+
+
+/*
+    save to put back later...
+
+	bmcSvc.Protocol = protocolList{
+		"https":  protocol{enabled: true, port: 443},
+		"http":   protocol{enabled: false, port: 80},
+		"ipmi":   protocol{enabled: false, port: 623},
+		"ssh":    protocol{enabled: false, port: 22},
+		"snmp":   protocol{enabled: false, port: 161},
+		"telnet": protocol{enabled: false, port: 23},
+		"ssdp": protocol{enabled: false, port: 1900,
+			config: map[string]interface{}{"NotifyMulticastIntervalSeconds": 600, "NotifyTTL": 5, "NotifyIPv6Scope": "Site"},
+		}}
+*/
+

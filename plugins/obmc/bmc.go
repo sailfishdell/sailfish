@@ -6,11 +6,10 @@ package obmc
 
 import (
 	"context"
-	"fmt"
-	"reflect"
 	"sync"
 
 	domain "github.com/superchalupa/go-redfish/redfishresource"
+	"github.com/superchalupa/go-redfish/plugins"
 
 	eh "github.com/looplab/eventhorizon"
 )
@@ -55,23 +54,7 @@ func (s *bmcService) RefreshProperty(
 	s.Lock()
 	defer s.Unlock()
 
-	// Generic ability to use reflection to pull data out of the BMC service
-	// object. Anything with a struct tag of "property" is accessible here, in
-	// realtime. If you set up a bakcground task to update, it will
-	// automatically update on GET
-	property, ok := meta["property"].(string)
-	if ok {
-		v := reflect.ValueOf(*s)
-		for i := 0; i < v.NumField(); i++ {
-			// Get the field, returns https://golang.org/pkg/reflect/#StructField
-			tag := v.Type().Field(i).Tag.Get("property")
-			if tag == property {
-				rrp.Value = v.Field(i).Interface()
-				return
-			}
-		}
-	}
-	fmt.Printf("Incorrect metadata in aggregate: neither 'data' nor 'property' set to something handleable")
+    plugins.RefreshProperty(ctx, *s, rrp, method, meta)
 }
 
 

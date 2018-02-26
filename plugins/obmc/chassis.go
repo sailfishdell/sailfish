@@ -2,15 +2,11 @@ package obmc
 
 import (
 	"context"
-	"fmt"
 	"sync"
 
-	"github.com/superchalupa/go-redfish/plugins"
 	domain "github.com/superchalupa/go-redfish/redfishresource"
 
 	eh "github.com/looplab/eventhorizon"
-	"github.com/looplab/eventhorizon/utils"
-	//	ah "github.com/superchalupa/go-redfish/plugins/actionhandler"
 )
 
 var (
@@ -35,18 +31,6 @@ func NewChassisService(ctx context.Context) (*chassisService, error) {
 	}, nil
 }
 
-// wait in a listener for the root service to be created, then extend it
-func CreateChassisStreamProcessors(ctx context.Context, s *chassisService, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
-	// step 2: Add openbmc chassis object after Chassis collection has been created
-	sp, err := plugins.NewEventStreamProcessor(ctx, ew, plugins.SelectEventResourceCreatedByURI("/redfish/v1/Chassis"))
-	if err != nil {
-		fmt.Printf("Failed to create event stream processor: %s\n", err.Error())
-		return
-	}
-	sp.RunOnce(func(event eh.Event) {
-		s.AddOBMCChassisResource(ctx, ch)
-	})
-}
 
 // satisfy the plugin interface so we can list ourselves as a plugin in our @meta
 func (s *chassisService) PluginType() domain.PluginType { return OBMC_ChassisPlugin }
