@@ -6,7 +6,6 @@ package obmc
 
 import (
 	"context"
-	"sync"
 
 	domain "github.com/superchalupa/go-redfish/redfishresource"
 	"github.com/superchalupa/go-redfish/plugins"
@@ -21,8 +20,8 @@ const (
 // OCP Profile Redfish BMC object
 
 type bmcService struct {
-	// be sure to lock if reading or writing any data in this object
-	sync.Mutex
+    *plugins.Service
+    id      eh.UUID
 
 	// Any struct field with tag "property" will automatically be made available in the @meta and will be updated in real time.
 	URIName        string `property:"uri_name"`
@@ -33,15 +32,29 @@ type bmcService struct {
 	Version     string `property:"version"`
 }
 
-func NewBMCService() (*bmcService, error) {
-	s := &bmcService{}
+type BMCOption func(*bmcService) error
+
+func NewBMCService(options... BMCOption) (*bmcService, error) {
+	s := &bmcService{
+        Service: plugins.NewService(plugins.PluginType(BmcPlugin)),
+        id: eh.NewUUID(),
+        }
+    s.ApplyOption(options...)
 	return s, nil
 }
 
-func (s *bmcService) GetOdataID() string { return "/redfish/v1/Managers/" + s.URIName }
+func (c *bmcService) ApplyOption(options ...BMCOption) error {
+    for _, o := range options {
+        err := o(c)
+        if err != nil {
+            return err
+        }
+    }
+    return nil
+}
 
-// satisfy the plugin interface so we can list ourselves as a plugin in our @meta
-func (s *bmcService) PluginType() domain.PluginType { return BmcPlugin }
+func (s *bmcService) GetUUID() eh.UUID { return s.id }
+func (s *bmcService) GetOdataID() string { return "/redfish/v1/Managers/" + s.URIName }
 
 func (s *bmcService) RefreshProperty(
 	ctx context.Context,
@@ -58,11 +71,11 @@ func (s *bmcService) RefreshProperty(
 }
 
 
-func (s *bmcService) AddOBMCManagerResource(ctx context.Context, ch eh.CommandHandler) {
+func (s *bmcService) AddResource(ctx context.Context, ch eh.CommandHandler) {
 	ch.HandleCommand(
 		context.Background(),
 		&domain.CreateRedfishResource{
-			ID:          eh.NewUUID(),
+			ID:          s.id,
 			Collection:  false,
 			ResourceURI: s.GetOdataID(),
 			Type:        "#Manager.v1_1_0.Manager",
