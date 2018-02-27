@@ -13,6 +13,10 @@ import (
 	"github.com/superchalupa/go-redfish/plugins"
 	ah "github.com/superchalupa/go-redfish/plugins/actionhandler"
 	domain "github.com/superchalupa/go-redfish/redfishresource"
+
+	"github.com/superchalupa/go-redfish/plugins/ocp/bmc"
+	"github.com/superchalupa/go-redfish/plugins/ocp/protocol"
+	"github.com/superchalupa/go-redfish/plugins/ocp/chassis"
 )
 
 func init() {
@@ -24,38 +28,48 @@ func OCPProfileFactory(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus
 	// initial implementation is one BMC, one Chassis, and one System. If we
 	// expand beyond that, we need to adjust stuff here.
 
-	bmcSvc, _ := NewBMCService()
+	bmcSvc, _ := bmc.NewBMCService()
 	bmcSvc.URIName = "OBMC"
 	bmcSvc.Name = "OBMC simulation"
 	bmcSvc.Description = "The most open source BMC ever."
 	bmcSvc.Model = "Michaels RAD BMC"
 	bmcSvc.Timezone = "-05:00"
 	bmcSvc.Version = "1.0.0"
-    plugins.OnURICreated(ctx, ew, "/redfish/v1/Managers", func(){ bmcSvc.AddResource(ctx, ch) })
+	plugins.OnURICreated(ctx, ew, "/redfish/v1/Managers", func() { bmcSvc.AddResource(ctx, ch) })
 
-    time.Sleep( 100 * time.Millisecond )
-    prot, _ := NewNetProtocols(
-        WithBMC(bmcSvc),
-        WithProtocol("HTTPS", true, 443, nil),
-        WithProtocol("HTTP", false, 80, nil),
-        WithProtocol("IPMI", false, 623, nil),
-        WithProtocol("SSH", false, 22, nil),
-        WithProtocol("SNMP", false, 161, nil),
-        WithProtocol("TELNET", false, 23, nil),
-        WithProtocol("SSDP", false, 1900, map[string]interface{}{"NotifyMulticastIntervalSeconds": 600, "NotifyTTL": 5, "NotifyIPv6Scope": "Site"},),
-        )
-    prot.AddResource(ctx, ch)
+	time.Sleep(300 * time.Millisecond)
+	prot, _ := protocol.NewNetProtocols(
+		protocol.WithBMC(bmcSvc),
+		protocol.WithProtocol("HTTPS", true, 443, nil),
+		protocol.WithProtocol("HTTP", false, 80, nil),
+		protocol.WithProtocol("IPMI", false, 623, nil),
+		protocol.WithProtocol("SSH", false, 22, nil),
+		protocol.WithProtocol("SNMP", false, 161, nil),
+		protocol.WithProtocol("TELNET", false, 23, nil),
+		protocol.WithProtocol("SSDP", false, 1900,
+			map[string]interface{}{"NotifyMulticastIntervalSeconds": 600, "NotifyTTL": 5, "NotifyIPv6Scope": "Site"}),
+	)
+	prot.AddResource(ctx, ch)
 
-	chas, _ := NewChassisService(ctx)
-    plugins.OnURICreated(ctx, ew, "/redfish/v1/Chassis", func(){ chas.AddOBMCChassisResource(ctx, ch) })
+	chas, _ := chassis.NewChassisService(ctx, chassis.ManagedBy(bmcSvc))
+	chas.URIName = "1"
+	chas.Name = "Catfish System Chassis"
+	chas.ChassisType = "RackMount"
+	chas.Manufacturer = "CatfishManufacturer"
+	chas.Model = "YellowCat1000"
+	chas.SerialNumber = "2M220100SL"
+	chas.SKU = "SKU"
+	chas.PartNumber = "Part1234"
+	chas.AssetTag = "CATFISHASSETTAG"
+	chas.AddResource(ctx, ch)
 
 	system, _ := NewSystemService(ctx)
-    plugins.OnURICreated(ctx, ew, "/redfish/v1/Systems", func(){ system.AddOBMCSystemResource(ctx, ch) })
+	system.AddOBMCSystemResource(ctx, ch)
 
 	domain.RegisterPlugin(func() domain.Plugin { return bmcSvc })
 	domain.RegisterPlugin(func() domain.Plugin { return prot })
 	domain.RegisterPlugin(func() domain.Plugin { return chas })
-	domain.RegisterPlugin(func() domain.Plugin { return chas.thermalSensors })
+	//domain.RegisterPlugin(func() domain.Plugin { return chas.thermalSensors })
 	domain.RegisterPlugin(func() domain.Plugin { return system })
 
 	// stream processor for action events

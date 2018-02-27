@@ -271,7 +271,7 @@ func (rrp *RedfishResourceProperty) Process(ctx context.Context, agg *RedfishRes
 		ret.Meta[k] = v
 	}
 	ret.Value = rrp.Value
-    fmt.Printf("DEBUG: meta: %s\n", ret.Meta)
+	fmt.Printf("DEBUG: meta: %s\n", ret.Meta)
 
 	// equivalent to do{}while(1) to run once
 	// if any of the intermediate steps fails, bail out on this part and continue by doing the next thing

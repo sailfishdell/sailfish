@@ -1,4 +1,4 @@
-package obmc
+package bmc
 
 // this file should define the BMC Manager object golang data structures where
 // we put all the data, plus the aggregate that pulls the data.  actual data
@@ -7,24 +7,24 @@ package obmc
 import (
 	"context"
 
-	domain "github.com/superchalupa/go-redfish/redfishresource"
 	"github.com/superchalupa/go-redfish/plugins"
+	domain "github.com/superchalupa/go-redfish/redfishresource"
 
 	eh "github.com/looplab/eventhorizon"
 )
 
 const (
-	BmcPlugin      = domain.PluginType("obmc_bmc")
+	BmcPlugin = domain.PluginType("obmc_bmc")
 )
 
 // OCP Profile Redfish BMC object
 
 type bmcService struct {
-    *plugins.Service
-    id      eh.UUID
+	*plugins.Service
+	id eh.UUID
 
 	// Any struct field with tag "property" will automatically be made available in the @meta and will be updated in real time.
-	URIName        string `property:"uri_name"`
+	URIName     string `property:"uri_name"`
 	Name        string `property:"name"`
 	Description string `property:"description"`
 	Model       string `property:"model"`
@@ -34,26 +34,26 @@ type bmcService struct {
 
 type BMCOption func(*bmcService) error
 
-func NewBMCService(options... BMCOption) (*bmcService, error) {
+func NewBMCService(options ...BMCOption) (*bmcService, error) {
 	s := &bmcService{
-        Service: plugins.NewService(plugins.PluginType(BmcPlugin)),
-        id: eh.NewUUID(),
-        }
-    s.ApplyOption(options...)
+		Service: plugins.NewService(plugins.PluginType(BmcPlugin)),
+		id:      eh.NewUUID(),
+	}
+	s.ApplyOption(options...)
 	return s, nil
 }
 
 func (c *bmcService) ApplyOption(options ...BMCOption) error {
-    for _, o := range options {
-        err := o(c)
-        if err != nil {
-            return err
-        }
-    }
-    return nil
+	for _, o := range options {
+		err := o(c)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
-func (s *bmcService) GetUUID() eh.UUID { return s.id }
+func (s *bmcService) GetUUID() eh.UUID   { return s.id }
 func (s *bmcService) GetOdataID() string { return "/redfish/v1/Managers/" + s.URIName }
 
 func (s *bmcService) RefreshProperty(
@@ -67,9 +67,8 @@ func (s *bmcService) RefreshProperty(
 	s.Lock()
 	defer s.Unlock()
 
-    plugins.RefreshProperty(ctx, *s, rrp, method, meta)
+	plugins.RefreshProperty(ctx, *s, rrp, method, meta)
 }
-
 
 func (s *bmcService) AddResource(ctx context.Context, ch eh.CommandHandler) {
 	ch.HandleCommand(
@@ -102,10 +101,10 @@ func (s *bmcService) AddResource(ctx context.Context, ch eh.CommandHandler) {
 					"Health": "OK",
 				},
 				"FirmwareVersion@meta": map[string]interface{}{"GET": map[string]interface{}{"plugin": string(s.PluginType()), "property": "version"}},
-				"Links": map[string]interface{}{},
+				"Links":                map[string]interface{}{},
 				"Actions": map[string]interface{}{
 					"#Manager.Reset": map[string]interface{}{
-						"target": "/redfish/v1/Managers/bmc/Actions/Manager.Reset",
+						"target": s.GetOdataID() + "/Actions/Manager.Reset",
 						"ResetType@Redfish.AllowableValues": []string{
 							"ForceRestart",
 							"GracefulRestart",
@@ -119,7 +118,7 @@ func (s *bmcService) AddResource(ctx context.Context, ch eh.CommandHandler) {
 		ctx,
 		&domain.CreateRedfishResource{
 			ID:          eh.NewUUID(),
-			ResourceURI: "/redfish/v1/Managers/bmc/Actions/Manager.Reset",
+			ResourceURI: s.GetOdataID() + "/Actions/Manager.Reset",
 			Type:        "Action",
 			Context:     "Action",
 			Plugin:      "GenericActionHandler",

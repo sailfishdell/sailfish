@@ -187,6 +187,6 @@ func OnURICreated(ctx context.Context, ew *utils.EventWaiter, uri string, f func
 		return
 	}
 	sp.RunOnce(func(event eh.Event) {
-        f()
+		f()
 	})
 }

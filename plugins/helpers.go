@@ -1,6 +1,6 @@
 package plugins
 
-import(
+import (
 	"context"
 	"fmt"
 	"reflect"
@@ -13,37 +13,37 @@ type Option func(*Service) error
 
 type Service struct {
 	sync.Mutex
-    pluginType domain.PluginType
+	pluginType domain.PluginType
 }
 
-func NewService(options... Option) *Service {
-    s := &Service{}
-    s.ApplyOption(options...)
-    return s
+func NewService(options ...Option) *Service {
+	s := &Service{}
+	s.ApplyOption(options...)
+	return s
 }
 
 func (c *Service) ApplyOption(options ...Option) error {
-    for _, o := range options {
-        err := o(c)
-        if err != nil {
-            return err
-        }
-    }
-    return nil
+	for _, o := range options {
+		err := o(c)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func PluginType(pt domain.PluginType) Option {
-    return func(s *Service) error {
-        s.pluginType = pt
-        return nil
-    }
+	return func(s *Service) error {
+		s.pluginType = pt
+		return nil
+	}
 }
 
 func (s *Service) PluginType() domain.PluginType { return s.pluginType }
 
 func RefreshProperty(
 	ctx context.Context,
-    s  interface{},
+	s interface{},
 	rrp *domain.RedfishResourceProperty,
 	method string,
 	meta map[string]interface{},

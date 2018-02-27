@@ -1,11 +1,11 @@
-package obmc
+package protocol
 
 import (
-    "context"
+	"context"
 
-	domain "github.com/superchalupa/go-redfish/redfishresource"
-	"github.com/superchalupa/go-redfish/plugins"
 	eh "github.com/looplab/eventhorizon"
+	"github.com/superchalupa/go-redfish/plugins"
+	domain "github.com/superchalupa/go-redfish/redfishresource"
 )
 
 const (
@@ -18,51 +18,56 @@ type protocol struct {
 	config  map[string]interface{}
 }
 
-type netProtocols struct {
-    *plugins.Service
-	bmc *bmcService
+type bmcInt interface {
+	GetOdataID() string
+	GetUUID() eh.UUID
+}
 
-    protocols map[string]protocol
+type netProtocols struct {
+	*plugins.Service
+	bmc bmcInt
+
+	protocols map[string]protocol
 }
 
 type ProtocolOption func(*netProtocols) error
 
-func NewNetProtocols(options... ProtocolOption) (*netProtocols, error) {
+func NewNetProtocols(options ...ProtocolOption) (*netProtocols, error) {
 	p := &netProtocols{
-        Service: plugins.NewService(plugins.PluginType(ProtocolPlugin)),
-        protocols: map[string]protocol{},
-        }
-    p.ApplyOption(options...)
-    return p, nil
+		Service:   plugins.NewService(plugins.PluginType(ProtocolPlugin)),
+		protocols: map[string]protocol{},
+	}
+	p.ApplyOption(options...)
+	return p, nil
 }
 
 func (p *netProtocols) ApplyOption(options ...ProtocolOption) error {
-    for _, o := range options {
-        err := o(p)
-        if err != nil {
-            return err
-        }
-    }
-    return nil
+	for _, o := range options {
+		err := o(p)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
-func WithBMC(b *bmcService) ProtocolOption {
-    return func(p *netProtocols) error {
-        p.bmc = b
-        return nil
-    }
+func WithBMC(b bmcInt) ProtocolOption {
+	return func(p *netProtocols) error {
+		p.bmc = b
+		return nil
+	}
 }
 
 func WithProtocol(name string, enabled bool, port int, config map[string]interface{}) ProtocolOption {
-    return func(p *netProtocols) error {
-        newP := protocol{enabled: enabled, port: port}
-        newP.config = map[string]interface{}{}
-        for k, v := range config {
-            newP.config[k] = v
-        }
-        p.protocols[name] = newP
-        return nil
-    }
+	return func(p *netProtocols) error {
+		newP := protocol{enabled: enabled, port: port}
+		newP.config = map[string]interface{}{}
+		for k, v := range config {
+			newP.config[k] = v
+		}
+		p.protocols[name] = newP
+		return nil
+	}
 }
 
 func (p *netProtocols) GetOdataID() string { return p.bmc.GetOdataID() + "/NetworkProtocol" }
@@ -74,15 +79,15 @@ func (p *netProtocols) RefreshProperty(
 	meta map[string]interface{},
 	body interface{},
 ) {
-    for k, v := range p.protocols {
-        tempProto := map[string]interface{}{}
-        tempProto["ProtocolEnabled"] = v.enabled
-        tempProto["Port"] = v.port
-        for configK, configV := range v.config {
-            tempProto[configK] = configV
-        }
-        rrp.Value.(map[string]interface{})[k] = tempProto
-    }
+	for k, v := range p.protocols {
+		tempProto := map[string]interface{}{}
+		tempProto["ProtocolEnabled"] = v.enabled
+		tempProto["Port"] = v.port
+		for configK, configV := range v.config {
+			tempProto[configK] = configV
+		}
+		rrp.Value.(map[string]interface{})[k] = tempProto
+	}
 }
 
 func (s *netProtocols) AddResource(ctx context.Context, ch eh.CommandHandler) {
@@ -101,7 +106,7 @@ func (s *netProtocols) AddResource(ctx context.Context, ch eh.CommandHandler) {
 				"PATCH":  []string{"ConfigureManager"},
 				"DELETE": []string{}, // can't be deleted
 			},
-            Meta: map[string]interface{}{"GET": map[string]interface{}{"plugin": string(s.PluginType()) }},
+			Meta: map[string]interface{}{"GET": map[string]interface{}{"plugin": string(s.PluginType())}},
 			Properties: map[string]interface{}{
 				"Id":          "NetworkProtocol",
 				"Name":        "Manager Network Protocol",
@@ -114,17 +119,14 @@ func (s *netProtocols) AddResource(ctx context.Context, ch eh.CommandHandler) {
 				"FQDN":          "mymanager.mydomain.com",
 			}})
 
-
 	ch.HandleCommand(ctx,
 		&domain.UpdateRedfishResourceProperties{
 			ID: s.bmc.GetUUID(),
 			Properties: map[string]interface{}{
-				"NetworkProtocol":      map[string]interface{}{"@odata.id": s.GetOdataID() },
+				"NetworkProtocol": map[string]interface{}{"@odata.id": s.GetOdataID()},
 			},
 		})
 }
-
-
 
 /*
 				"EthernetInterfaces":   map[string]interface{}{"@odata.id": "/redfish/v1/Managers/bmc/EthernetInterfaces"},
@@ -151,4 +153,3 @@ func (s *netProtocols) AddResource(ctx context.Context, ch eh.CommandHandler) {
 
 
 */
-

@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-const NUM_SIMULATION_SENSORS=2
+const NUM_SIMULATION_SENSORS = 2
 
 type simulationThermalList struct {
 	*thermalList

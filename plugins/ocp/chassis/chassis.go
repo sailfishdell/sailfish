@@ -1,9 +1,9 @@
-package obmc
+package chassis
 
 import (
 	"context"
-	"sync"
 
+	"github.com/superchalupa/go-redfish/plugins"
 	domain "github.com/superchalupa/go-redfish/redfishresource"
 
 	eh "github.com/looplab/eventhorizon"
@@ -15,25 +15,55 @@ var (
 
 // OCP Profile Redfish chassis object
 
-type StdStatus struct {
-	State  string
-	Health string
+type bmcInt interface {
+	GetOdataID() string
 }
 
 type chassisService struct {
-	sync.RWMutex
-	thermalSensors domain.Plugin
+	*plugins.Service
+	id  eh.UUID
+	bmc bmcInt
+
+	URIName      string `property:"uri_name"`
+	Name         string `property:"name"`
+	ChassisType  string `property:"chassis_type"`
+	Manufacturer string `property:"manufacturer"`
+	Model        string `property:"model"`
+	SerialNumber string `property:"serial_number"`
+	SKU          string `property:"sku"`
+	AssetTag     string `property:"asset_tag"`
+	PartNumber   string `property:"part_number"`
 }
 
-func NewChassisService(ctx context.Context) (*chassisService, error) {
-	return &chassisService{
-		thermalSensors: NewThermalListImpl(ctx),
-	}, nil
+type ChassisOption func(*chassisService) error
+
+func NewChassisService(ctx context.Context, options ...ChassisOption) (*chassisService, error) {
+	c := &chassisService{
+		Service:        plugins.NewService(plugins.PluginType(OBMC_ChassisPlugin)),
+	}
+
+	c.ApplyOption(options...)
+	return c, nil
 }
 
+func (c *chassisService) ApplyOption(options ...ChassisOption) error {
+	for _, o := range options {
+		err := o(c)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
 
-// satisfy the plugin interface so we can list ourselves as a plugin in our @meta
-func (s *chassisService) PluginType() domain.PluginType { return OBMC_ChassisPlugin }
+func ManagedBy(b bmcInt) ChassisOption {
+	return func(p *chassisService) error {
+		p.bmc = b
+		return nil
+	}
+}
+
+func (s *chassisService) GetOdataID() string { return "/redfish/v1/Chassis/" + s.URIName }
 
 func (s *chassisService) RefreshProperty(
 	ctx context.Context,
@@ -46,16 +76,16 @@ func (s *chassisService) RefreshProperty(
 	s.Lock()
 	defer s.Unlock()
 
-	rrp.Value = "NOT IMPLEMENTED YET"
+	plugins.RefreshProperty(ctx, *s, rrp, method, meta)
 }
 
-func (s *chassisService) AddOBMCChassisResource(ctx context.Context, ch eh.CommandHandler) {
+func (s *chassisService) AddResource(ctx context.Context, ch eh.CommandHandler) {
 	ch.HandleCommand(
 		context.Background(),
 		&domain.CreateRedfishResource{
 			ID:          eh.NewUUID(),
 			Collection:  false,
-			ResourceURI: "/redfish/v1/Chassis/A33",
+			ResourceURI: s.GetOdataID(),
 			Type:        "#Chassis.v1_2_0.Chassis",
 			Context:     "/redfish/v1/$metadata#Chassis.Chassis",
 			Privileges: map[string]interface{}{
@@ -66,28 +96,28 @@ func (s *chassisService) AddOBMCChassisResource(ctx context.Context, ch eh.Comma
 				"DELETE": []string{}, // can't be deleted
 			},
 			Properties: map[string]interface{}{
-				"Name":         "Catfish System Chassis",
-				"Id":           "A33",
-				"ChassisType":  "RackMount",
-				"Manufacturer": "CatfishManufacturer",
-				"Model":        "YellowCat1000",
-				"SerialNumber": "2M220100SL",
-				"SKU":          "",
-				"PartNumber":   "",
-				"AssetTag":     "CATFISHASSETTAG",
-				"IndicatorLED": "Lit",
-				"PowerState":   "On",
+				"Name@meta":         map[string]interface{}{"GET": map[string]interface{}{"plugin": string(s.PluginType()), "property": "name"}},
+				"Id":                s.URIName,
+				"ChassisType@meta":  map[string]interface{}{"GET": map[string]interface{}{"plugin": string(s.PluginType()), "property": "chassis_type"}},
+				"Manufacturer@meta": map[string]interface{}{"GET": map[string]interface{}{"plugin": string(s.PluginType()), "property": "manufacturer"}},
+				"Model@meta":        map[string]interface{}{"GET": map[string]interface{}{"plugin": string(s.PluginType()), "property": "model"}},
+				"SerialNumber@meta": map[string]interface{}{"GET": map[string]interface{}{"plugin": string(s.PluginType()), "property": "serial_number"}},
+				"SKU@meta":          map[string]interface{}{"GET": map[string]interface{}{"plugin": string(s.PluginType()), "property": "sku"}},
+				"PartNumber@meta":   map[string]interface{}{"GET": map[string]interface{}{"plugin": string(s.PluginType()), "property": "part_number"}},
+				"AssetTag@meta":     map[string]interface{}{"GET": map[string]interface{}{"plugin": string(s.PluginType()), "property": "asset_tag"}},
+				"IndicatorLED":      "Lit",
+				"PowerState":        "On",
 				"Status": map[string]interface{}{
 					"State":  "Enabled",
 					"Health": "OK",
 				},
 
-				"Thermal": map[string]interface{}{"@odata.id": "/redfish/v1/Chassis/A33/Thermal"},
-				"Power":   map[string]interface{}{"@odata.id": "/redfish/v1/Chassis/A33/Power"},
+				//"Thermal": map[string]interface{}{"@odata.id": "/redfish/v1/Chassis/A33/Thermal"},
+				//"Power":   map[string]interface{}{"@odata.id": "/redfish/v1/Chassis/A33/Power"},
 				"Links": map[string]interface{}{
 					"ComputerSystems":   []map[string]interface{}{},
-					"ManagedBy":         []map[string]interface{}{{"@odata.id": "/redfish/v1/Managers/bmc"}},
-					"ManagersInChassis": []map[string]interface{}{{"@odata.id": "/redfish/v1/Managers/bmc"}},
+					"ManagedBy":         []map[string]interface{}{{"@odata.id": s.bmc.GetOdataID()}},
+					"ManagersInChassis": []map[string]interface{}{{"@odata.id": s.bmc.GetOdataID()}},
 				},
 			}})
 
