@@ -19,34 +19,27 @@ type bmcInt interface {
 	GetOdataID() string
 }
 
-type chassisService struct {
+type service struct {
 	*plugins.Service
 	id  eh.UUID
 	bmc bmcInt
 
-	URIName      string `property:"uri_name"`
-	Name         string `property:"name"`
-	ChassisType  string `property:"chassis_type"`
-	Manufacturer string `property:"manufacturer"`
-	Model        string `property:"model"`
-	SerialNumber string `property:"serial_number"`
-	SKU          string `property:"sku"`
-	AssetTag     string `property:"asset_tag"`
-	PartNumber   string `property:"part_number"`
+	uriName string `property:"uri_name"`
 }
 
-type ChassisOption func(*chassisService) error
+type Option func(*service) error
 
-func NewChassisService(ctx context.Context, options ...ChassisOption) (*chassisService, error) {
-	c := &chassisService{
-		Service:        plugins.NewService(plugins.PluginType(OBMC_ChassisPlugin)),
+func NewChassisService(ctx context.Context, options ...Option) (*service, error) {
+	c := &service{
+		Service: plugins.NewService(plugins.PluginType(OBMC_ChassisPlugin)),
+		id:      eh.NewUUID(),
 	}
 
 	c.ApplyOption(options...)
 	return c, nil
 }
 
-func (c *chassisService) ApplyOption(options ...ChassisOption) error {
+func (c *service) ApplyOption(options ...Option) error {
 	for _, o := range options {
 		err := o(c)
 		if err != nil {
@@ -56,16 +49,26 @@ func (c *chassisService) ApplyOption(options ...ChassisOption) error {
 	return nil
 }
 
-func ManagedBy(b bmcInt) ChassisOption {
-	return func(p *chassisService) error {
+func WithURIName(uri string) Option {
+	return func(b *service) error {
+		if b.uriName != "" {
+			panic("Cannot reset URI Name once set")
+		}
+		b.uriName = uri
+		return nil
+	}
+}
+
+func ManagedBy(b bmcInt) Option {
+	return func(p *service) error {
 		p.bmc = b
 		return nil
 	}
 }
 
-func (s *chassisService) GetOdataID() string { return "/redfish/v1/Chassis/" + s.URIName }
+func (s *service) GetOdataID() string { return "/redfish/v1/Chassis/" + s.uriName }
 
-func (s *chassisService) RefreshProperty(
+func (s *service) RefreshProperty(
 	ctx context.Context,
 	agg *domain.RedfishResourceAggregate,
 	rrp *domain.RedfishResourceProperty,
@@ -74,16 +77,18 @@ func (s *chassisService) RefreshProperty(
 	body interface{},
 ) {
 	s.Lock()
-	defer s.Unlock()
-
-	plugins.RefreshProperty(ctx, *s, rrp, method, meta)
+	err := plugins.RefreshProperty(ctx, *s, rrp, meta)
+	s.Unlock()
+	if err != nil {
+		s.Service.RefreshProperty(ctx, agg, rrp, method, meta, body)
+	}
 }
 
-func (s *chassisService) AddResource(ctx context.Context, ch eh.CommandHandler) {
+func (s *service) AddResource(ctx context.Context, ch eh.CommandHandler) {
 	ch.HandleCommand(
 		context.Background(),
 		&domain.CreateRedfishResource{
-			ID:          eh.NewUUID(),
+			ID:          s.id,
 			Collection:  false,
 			ResourceURI: s.GetOdataID(),
 			Type:        "#Chassis.v1_2_0.Chassis",
@@ -97,7 +102,7 @@ func (s *chassisService) AddResource(ctx context.Context, ch eh.CommandHandler) 
 			},
 			Properties: map[string]interface{}{
 				"Name@meta":         map[string]interface{}{"GET": map[string]interface{}{"plugin": string(s.PluginType()), "property": "name"}},
-				"Id":                s.URIName,
+				"Id":                s.uriName,
 				"ChassisType@meta":  map[string]interface{}{"GET": map[string]interface{}{"plugin": string(s.PluginType()), "property": "chassis_type"}},
 				"Manufacturer@meta": map[string]interface{}{"GET": map[string]interface{}{"plugin": string(s.PluginType()), "property": "manufacturer"}},
 				"Model@meta":        map[string]interface{}{"GET": map[string]interface{}{"plugin": string(s.PluginType()), "property": "model"}},
@@ -112,14 +117,15 @@ func (s *chassisService) AddResource(ctx context.Context, ch eh.CommandHandler) 
 					"Health": "OK",
 				},
 
-				//"Thermal": map[string]interface{}{"@odata.id": "/redfish/v1/Chassis/A33/Thermal"},
-				//"Power":   map[string]interface{}{"@odata.id": "/redfish/v1/Chassis/A33/Power"},
 				"Links": map[string]interface{}{
 					"ComputerSystems":   []map[string]interface{}{},
 					"ManagedBy":         []map[string]interface{}{{"@odata.id": s.bmc.GetOdataID()}},
 					"ManagersInChassis": []map[string]interface{}{{"@odata.id": s.bmc.GetOdataID()}},
 				},
 			}})
+
+	//"Thermal": map[string]interface{}{"@odata.id": "/redfish/v1/Chassis/A33/Thermal"},
+	//"Power":   map[string]interface{}{"@odata.id": "/redfish/v1/Chassis/A33/Power"},
 
 	ch.HandleCommand(
 		context.Background(),

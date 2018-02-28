@@ -18,8 +18,8 @@ import (
 	domain "github.com/superchalupa/go-redfish/redfishresource"
 
 	"github.com/superchalupa/go-redfish/plugins/ocp/bmc"
-	"github.com/superchalupa/go-redfish/plugins/ocp/protocol"
 	"github.com/superchalupa/go-redfish/plugins/ocp/chassis"
+	"github.com/superchalupa/go-redfish/plugins/ocp/protocol"
 )
 
 func init() {
@@ -34,15 +34,20 @@ func InitService(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *
 	// initial implementation is one BMC, one Chassis, and one System. If we
 	// expand beyond that, we need to adjust stuff here.
 
-	bmcSvc, _ := bmc.NewBMCService()
-	bmcSvc.Name = "OBMC simulation"
-	bmcSvc.Description = "The most open source BMC ever."
-	bmcSvc.Model = "Michaels RAD BMC"
-	bmcSvc.Timezone = "-05:00"
-	bmcSvc.Version = "1.0.0"
+	bmcSvc, _ := bmc.NewBMCService(
+		bmc.WithURIName("OBMC"),
+	)
+
+	bmcSvc.Service.ApplyOption(
+		plugins.UpdateProperty("name", "OBMC Simulation"),
+		plugins.UpdateProperty("description", "The most open source BMC ever."),
+		plugins.UpdateProperty("model", "Michaels RAD BMC"),
+		plugins.UpdateProperty("timezone", "-05:00"),
+		plugins.UpdateProperty("version", "1.0.0"),
+	)
 	plugins.OnURICreated(ctx, ew, "/redfish/v1/Managers", func() { bmcSvc.AddResource(ctx, ch) })
 
-	time.Sleep(100 * time.Millisecond)
+	time.Sleep(300 * time.Millisecond)
 	prot, _ := protocol.NewNetProtocols(
 		protocol.WithBMC(bmcSvc),
 		protocol.WithProtocol("HTTPS", true, 443, nil),
@@ -51,20 +56,27 @@ func InitService(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *
 		protocol.WithProtocol("SSH", false, 22, nil),
 		protocol.WithProtocol("SNMP", false, 161, nil),
 		protocol.WithProtocol("TELNET", false, 23, nil),
-		protocol.WithProtocol("SSDP", false, 1900, map[string]interface{}{"NotifyMulticastIntervalSeconds": 600, "NotifyTTL": 5, "NotifyIPv6Scope": "Site"}),
+		protocol.WithProtocol("SSDP", false, 1900,
+			map[string]interface{}{"NotifyMulticastIntervalSeconds": 600, "NotifyTTL": 5, "NotifyIPv6Scope": "Site"}),
 	)
 	prot.AddResource(ctx, ch)
 
-	chas, _ := chassis.NewChassisService(ctx, chassis.ManagedBy(bmcSvc))
-	chas.URIName = "1"
-	chas.Name = "Catfish System Chassis"
-	chas.ChassisType = "RackMount"
-	chas.Manufacturer = "CatfishManufacturer"
-	chas.Model = "YellowCat1000"
-	chas.SerialNumber = "2M220100SL"
-	chas.SKU = "SKU"
-	chas.PartNumber = "Part1234"
-	chas.AssetTag = "CATFISHASSETTAG"
+	chas, _ := chassis.NewChassisService(
+		ctx,
+		chassis.ManagedBy(bmcSvc),
+		chassis.WithURIName("1"),
+	)
+	chas.Service.ApplyOption(
+		plugins.UpdateProperty("name", "Catfish System Chassis"),
+		plugins.UpdateProperty("chassis_type", "RackMount"),
+		plugins.UpdateProperty("model", "YellowCat1000"),
+		plugins.UpdateProperty("serial_number", "2M220100SL"),
+		plugins.UpdateProperty("sku", "The SKU"),
+		plugins.UpdateProperty("part_number", "Part2468"),
+		plugins.UpdateProperty("asset_tag", "CATFISHASSETTAG"),
+		plugins.UpdateProperty("chassis_type", "RackMount"),
+	)
+
 	chas.AddResource(ctx, ch)
 
 	system, _ := NewSystemService(ctx)
@@ -79,7 +91,7 @@ func InitService(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *
 	// go ret.runbackgroundstuff(ctx)
 
 	// stream processor for action events
-	sp, err := plugins.NewEventStreamProcessor(ctx, ew, plugins.CustomFilter(ah.SelectAction("/redfish/v1/Managers/bmc/Actions/Manager.Reset")))
+	sp, err := plugins.NewEventStreamProcessor(ctx, ew, plugins.CustomFilter(ah.SelectAction(bmcSvc.GetOdataID()+"/Actions/Manager.Reset")))
 	if err != nil {
 		fmt.Printf("Failed to create event stream processor: %s\n", err.Error())
 		return // todo: tear down all the prior event stream processors, too

@@ -24,12 +24,7 @@ type bmcService struct {
 	id eh.UUID
 
 	// Any struct field with tag "property" will automatically be made available in the @meta and will be updated in real time.
-	URIName     string `property:"uri_name"`
-	Name        string `property:"name"`
-	Description string `property:"description"`
-	Model       string `property:"model"`
-	Timezone    string `property:"timezone"`
-	Version     string `property:"version"`
+	uriName string
 }
 
 type BMCOption func(*bmcService) error
@@ -53,8 +48,18 @@ func (c *bmcService) ApplyOption(options ...BMCOption) error {
 	return nil
 }
 
+func WithURIName(uri string) BMCOption {
+	return func(b *bmcService) error {
+		if b.uriName != "" {
+			panic("Cannot reset URI Name once set")
+		}
+		b.uriName = uri
+		return nil
+	}
+}
+
 func (s *bmcService) GetUUID() eh.UUID   { return s.id }
-func (s *bmcService) GetOdataID() string { return "/redfish/v1/Managers/" + s.URIName }
+func (s *bmcService) GetOdataID() string { return "/redfish/v1/Managers/" + s.uriName }
 
 func (s *bmcService) RefreshProperty(
 	ctx context.Context,
@@ -65,9 +70,11 @@ func (s *bmcService) RefreshProperty(
 	body interface{},
 ) {
 	s.Lock()
-	defer s.Unlock()
-
-	plugins.RefreshProperty(ctx, *s, rrp, method, meta)
+	err := plugins.RefreshProperty(ctx, *s, rrp, meta)
+	s.Unlock()
+	if err != nil {
+		s.Service.RefreshProperty(ctx, agg, rrp, method, meta, body)
+	}
 }
 
 func (s *bmcService) AddResource(ctx context.Context, ch eh.CommandHandler) {
@@ -87,7 +94,7 @@ func (s *bmcService) AddResource(ctx context.Context, ch eh.CommandHandler) {
 				"DELETE": []string{}, // can't be deleted
 			},
 			Properties: map[string]interface{}{
-				"Id":                       s.URIName,
+				"Id":                       s.uriName,
 				"Name@meta":                map[string]interface{}{"GET": map[string]interface{}{"plugin": string(s.PluginType()), "property": "name"}},
 				"ManagerType":              "BMC",
 				"Description@meta":         map[string]interface{}{"GET": map[string]interface{}{"plugin": string(s.PluginType()), "property": "description"}},
