@@ -19,7 +19,7 @@ const (
 
 // OCP Profile Redfish BMC object
 
-type bmcService struct {
+type service struct {
 	*plugins.Service
 	id eh.UUID
 
@@ -27,10 +27,10 @@ type bmcService struct {
 	uriName string
 }
 
-type BMCOption func(*bmcService) error
+type Option func(*service) error
 
-func NewBMCService(options ...BMCOption) (*bmcService, error) {
-	s := &bmcService{
+func NewBMCService(options ...Option) (*service, error) {
+	s := &service{
 		Service: plugins.NewService(plugins.PluginType(BmcPlugin)),
 		id:      eh.NewUUID(),
 	}
@@ -38,7 +38,7 @@ func NewBMCService(options ...BMCOption) (*bmcService, error) {
 	return s, nil
 }
 
-func (c *bmcService) ApplyOption(options ...BMCOption) error {
+func (c *service) ApplyOption(options ...Option) error {
 	for _, o := range options {
 		err := o(c)
 		if err != nil {
@@ -48,8 +48,8 @@ func (c *bmcService) ApplyOption(options ...BMCOption) error {
 	return nil
 }
 
-func WithURIName(uri string) BMCOption {
-	return func(b *bmcService) error {
+func WithURIName(uri string) Option {
+	return func(b *service) error {
 		if b.uriName != "" {
 			panic("Cannot reset URI Name once set")
 		}
@@ -58,10 +58,10 @@ func WithURIName(uri string) BMCOption {
 	}
 }
 
-func (s *bmcService) GetUUID() eh.UUID   { return s.id }
-func (s *bmcService) GetOdataID() string { return "/redfish/v1/Managers/" + s.uriName }
+func (s *service) GetUUID() eh.UUID   { return s.id }
+func (s *service) GetOdataID() string { return "/redfish/v1/Managers/" + s.uriName }
 
-func (s *bmcService) RefreshProperty(
+func (s *service) RefreshProperty(
 	ctx context.Context,
 	agg *domain.RedfishResourceAggregate,
 	rrp *domain.RedfishResourceProperty,
@@ -77,7 +77,7 @@ func (s *bmcService) RefreshProperty(
 	}
 }
 
-func (s *bmcService) AddResource(ctx context.Context, ch eh.CommandHandler) {
+func (s *service) AddResource(ctx context.Context, ch eh.CommandHandler) {
 	ch.HandleCommand(
 		context.Background(),
 		&domain.CreateRedfishResource{
