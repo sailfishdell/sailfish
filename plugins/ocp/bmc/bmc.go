@@ -23,7 +23,7 @@ type service struct {
 	*plugins.Service
 }
 
-func NewBMCService(options ...interface{}) (*service, error) {
+func New(options ...interface{}) (*service, error) {
 	s := &service{
 		Service: plugins.NewService(plugins.PluginType(BmcPlugin)),
 	}

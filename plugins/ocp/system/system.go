@@ -18,7 +18,7 @@ type service struct {
 	*plugins.Service
 }
 
-func NewSystemService(options ...interface{}) (*service, error) {
+func New(options ...interface{}) (*service, error) {
 	s := &service{
 		Service: plugins.NewService(plugins.PluginType(OBMC_SystemPlugin)),
 	}

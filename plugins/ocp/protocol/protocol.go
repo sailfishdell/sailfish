@@ -30,7 +30,7 @@ type service struct {
 	protocols map[string]protocol
 }
 
-func NewNetProtocols(options ...interface{}) (*service, error) {
+func New(options ...interface{}) (*service, error) {
 	p := &service{
 		Service:   plugins.NewService(plugins.PluginType(ProtocolPlugin)),
 		protocols: map[string]protocol{},

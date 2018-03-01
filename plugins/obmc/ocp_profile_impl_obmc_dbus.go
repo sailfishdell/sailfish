@@ -20,6 +20,7 @@ import (
 	"github.com/superchalupa/go-redfish/plugins/ocp/bmc"
 	"github.com/superchalupa/go-redfish/plugins/ocp/chassis"
 	"github.com/superchalupa/go-redfish/plugins/ocp/protocol"
+	"github.com/superchalupa/go-redfish/plugins/ocp/system"
 )
 
 func init() {
@@ -34,7 +35,7 @@ func InitService(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *
 	// initial implementation is one BMC, one Chassis, and one System. If we
 	// expand beyond that, we need to adjust stuff here.
 
-	bmcSvc, _ := bmc.NewBMCService(
+	bmcSvc, _ := bmc.New(
 		bmc.WithUniqueName("OBMC"),
 		plugins.UpdateProperty("name", "OBMC Simulation"),
 		plugins.UpdateProperty("description", "The most open source BMC ever."),
@@ -43,7 +44,7 @@ func InitService(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *
 		plugins.UpdateProperty("version", "1.0.0"),
 	)
 
-	prot, _ := protocol.NewNetProtocols(
+	prot, _ := protocol.New(
 		protocol.WithBMC(bmcSvc),
 		protocol.WithProtocol("HTTPS", true, 443, nil),
 		protocol.WithProtocol("HTTP", false, 80, nil),
@@ -55,7 +56,7 @@ func InitService(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *
 			map[string]interface{}{"NotifyMulticastIntervalSeconds": 600, "NotifyTTL": 5, "NotifyIPv6Scope": "Site"}),
 	)
 
-	chas, _ := chassis.NewChassisService(
+	chas, _ := chassis.New(
 		chassis.ManagedBy(bmcSvc),
 		chassis.WithUniqueName("1"),
 		plugins.UpdateProperty("name", "Catfish System Chassis"),
@@ -69,7 +70,7 @@ func InitService(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *
 	)
 
 	// still to convert
-	system, _ := system.NewSystemService(
+	system, _ := system.New(
 		system.WithUniqueName("1"),
 		plugins.UpdateProperty("name", "Catfish System"),
 	)
