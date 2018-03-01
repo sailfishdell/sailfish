@@ -29,36 +29,20 @@ func NewChassisService(options ...interface{}) (*service, error) {
 		Service: plugins.NewService(plugins.PluginType(OBMC_ChassisPlugin)),
 	}
 
-    c.ApplyOption(plugins.UUID()) // set uuid property... (GetUUID())
+	c.ApplyOption(plugins.UUID()) // set uuid property... (GetUUID())
 	c.ApplyOption(options...)
-    c.ApplyOption(plugins.PropertyOnce("uri", "/redfish/v1/Chassis/" + c.GetProperty("unique_name").(string)))
+	c.ApplyOption(plugins.PropertyOnce("uri", "/redfish/v1/Chassis/"+c.GetProperty("unique_name").(string)))
 	return c, nil
 }
 
 func WithUniqueName(uri string) plugins.Option {
-    return plugins.PropertyOnce("unique_name", uri)
+	return plugins.PropertyOnce("unique_name", uri)
 }
 
 func ManagedBy(b bmcInt) Option {
 	return func(p *service) error {
 		p.bmc = b
 		return nil
-	}
-}
-
-func (s *service) RefreshProperty(
-	ctx context.Context,
-	agg *domain.RedfishResourceAggregate,
-	rrp *domain.RedfishResourceProperty,
-	method string,
-	meta map[string]interface{},
-	body interface{},
-) {
-	s.Lock()
-	err := plugins.RefreshProperty(ctx, *s, rrp, meta)
-	s.Unlock()
-	if err != nil {
-		s.Service.RefreshProperty(ctx, agg, rrp, method, meta, body)
 	}
 }
 

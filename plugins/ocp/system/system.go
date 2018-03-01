@@ -22,31 +22,14 @@ func NewSystemService(options ...interface{}) (*service, error) {
 	s := &service{
 		Service: plugins.NewService(plugins.PluginType(OBMC_SystemPlugin)),
 	}
-    s.ApplyOption(plugins.UUID())
+	s.ApplyOption(plugins.UUID())
 	s.ApplyOption(options...)
-    s.ApplyOption(plugins.PropertyOnce("uri", "/redfish/v1/Systems/" + s.GetProperty("unique_name").(string)))
+	s.ApplyOption(plugins.PropertyOnce("uri", "/redfish/v1/Systems/"+s.GetProperty("unique_name").(string)))
 	return s, nil
 }
 
 func WithUniqueName(uri string) plugins.Option {
-    return plugins.PropertyOnce("unique_name", uri)
-}
-
-func (s *service) RefreshProperty(
-	ctx context.Context,
-	agg *domain.RedfishResourceAggregate,
-	rrp *domain.RedfishResourceProperty,
-	method string,
-	meta map[string]interface{},
-	body interface{},
-) {
-	s.Lock()
-	defer s.Unlock()
-
-	err := plugins.RefreshProperty(ctx, *s, rrp, meta)
-	if err != nil {
-		s.Service.RefreshProperty_unlocked(ctx, agg, rrp, method, meta, body)
-	}
+	return plugins.PropertyOnce("unique_name", uri)
 }
 
 func (s *service) AddResource(ctx context.Context, ch eh.CommandHandler) {

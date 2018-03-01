@@ -79,12 +79,12 @@ func OCPProfileFactory(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus
 	domain.RegisterPlugin(func() domain.Plugin { return system })
 
 	// and now add everything to the URI tree
-    time.Sleep(250 * time.Millisecond)
-    bmcSvc.AddResource(ctx, ch)
-    time.Sleep(250 * time.Millisecond)
-    prot.AddResource(ctx, ch)
-    chas.AddResource(ctx, ch)
-    system.AddResource(ctx, ch)
+	time.Sleep(250 * time.Millisecond)
+	bmcSvc.AddResource(ctx, ch)
+	time.Sleep(250 * time.Millisecond)
+	prot.AddResource(ctx, ch)
+	chas.AddResource(ctx, ch)
+	system.AddResource(ctx, ch)
 
 	//plugins.OnURICreated(ctx, ew, "/redfish/v1/Managers", func() { bmcSvc.AddResource(ctx, ch) })
 	//plugins.OnURICreated(ctx, ew, bmcSvc.GetOdataID(), func() { prot.AddResource(ctx, ch) })

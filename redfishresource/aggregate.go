@@ -33,7 +33,7 @@ func (rrp RedfishResourceProperty) MarshalJSON() ([]byte, error) {
 }
 
 func (rrp *RedfishResourceProperty) Parse(thing interface{}) {
-	fmt.Printf("DEBUG PARSE: RRP(%s)  thing(%s)\n", rrp, thing)
+	//fmt.Printf("DEBUG PARSE: RRP(%s)  thing(%s)\n", rrp, thing)
 	switch thing.(type) {
 	case []interface{}:
 		if _, ok := rrp.Value.([]interface{}); !ok || rrp.Value == nil {
@@ -49,7 +49,7 @@ func (rrp *RedfishResourceProperty) Parse(thing interface{}) {
 	default:
 		rrp.Value = thing
 	}
-	fmt.Printf("DEBUG RETURNING: RRP(%s)\n", rrp)
+	//fmt.Printf("DEBUG RETURNING: RRP(%s)\n", rrp)
 	return
 }
 
@@ -271,20 +271,20 @@ func (rrp *RedfishResourceProperty) Process(ctx context.Context, agg *RedfishRes
 		ret.Meta[k] = v
 	}
 	ret.Value = rrp.Value
-	fmt.Printf("DEBUG: meta: %s\n", ret.Meta)
+	//fmt.Printf("DEBUG: meta: %s\n", ret.Meta)
 
 	// equivalent to do{}while(1) to run once
 	// if any of the intermediate steps fails, bail out on this part and continue by doing the next thing
 	for ok := true; ok; ok = false {
 		meta_t, ok := ret.Meta[method].(map[string]interface{})
 		if !ok {
-			fmt.Printf("no meta for %s\n", method)
+			//fmt.Printf("no meta for %s, see: %s (%s)\n", method, ret.Meta, ret.Value)
 			break
 		}
 
 		pluginName, ok := meta_t["plugin"].(string)
 		if !ok {
-			fmt.Printf("no plugin name: %s\n", meta_t)
+			//fmt.Printf("no plugin name: %s\n", meta_t)
 			break
 		}
 
@@ -295,15 +295,15 @@ func (rrp *RedfishResourceProperty) Process(ctx context.Context, agg *RedfishRes
 		}
 
 		if plugin, ok := plugin.(PropertyRefresher); ok {
-			fmt.Printf("PROCESS PROPERTY(%s) with plugin(%s)\n", property, pluginName)
+			//fmt.Printf("PROCESS PROPERTY(%s) with plugin(%s)\n", property, pluginName)
 			plugin.RefreshProperty(ctx, agg, &ret, method, meta_t, req)
-			fmt.Printf("\tAFTER PROCESS: %s\n", ret)
+			//fmt.Printf("\tAFTER PROCESS: %s\n", ret)
 		}
 	}
 
 	switch ret.Value.(type) {
 	case map[string]interface{}:
-		fmt.Printf("\tPROCESS AS MAP\n")
+		//fmt.Printf("\tPROCESS AS MAP\n")
 
 		// somewhat complicated here, but not too bad: set up goroutines for
 		// each sub object and process in parallel. Collect results via array
@@ -318,14 +318,14 @@ func (rrp *RedfishResourceProperty) Process(ctx context.Context, agg *RedfishRes
 			resChan := make(chan result)
 			promised = append(promised, resChan)
 			if vrr, ok := v.(RedfishResourceProperty); ok {
-				fmt.Printf("\tProcess property(%s) as RedfishResourceProperty\n", property)
+				//fmt.Printf("\tProcess property(%s) as RedfishResourceProperty\n", property)
 				go func(property string, v RedfishResourceProperty) {
 					reqitem, _ := reqmap[property]
 					retProp := v.Process(ctx, agg, property, method, reqitem)
 					resChan <- result{property, retProp}
 				}(property, vrr)
 			} else {
-				fmt.Printf("\tProcess property(%s) as dull value: %s\n", property, v)
+				//fmt.Printf("\tProcess property(%s) as dull value: %s\n", property, v)
 				go func(property string, v interface{}) {
 					resChan <- result{property, v}
 				}(property, v)
@@ -339,7 +339,7 @@ func (rrp *RedfishResourceProperty) Process(ctx context.Context, agg *RedfishRes
 		ret.Value = newMap
 
 	case []interface{}:
-		fmt.Printf("\tPROCESS AS ARRAY\n")
+		//fmt.Printf("\tPROCESS AS ARRAY\n")
 
 		// spawn off parallel goroutines to process each member of the array
 		reqarr, _ := req.([]interface{})
@@ -371,7 +371,7 @@ func (rrp *RedfishResourceProperty) Process(ctx context.Context, agg *RedfishRes
 		}
 		ret.Value = newArr
 	default:
-		fmt.Printf(" DEFAULT value type\n")
+		//fmt.Printf(" DEFAULT value type\n")
 	}
 
 	return

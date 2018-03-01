@@ -6,8 +6,8 @@ import (
 	"reflect"
 	"sync"
 
-	domain "github.com/superchalupa/go-redfish/redfishresource"
 	eh "github.com/looplab/eventhorizon"
+	domain "github.com/superchalupa/go-redfish/redfishresource"
 )
 
 type Option func(*Service) error
@@ -38,10 +38,13 @@ func (c *Service) ApplyOption(options ...Option) error {
 // runtime panic if upper layers dont set properties for id/uri
 func (s *Service) GetUUID() eh.UUID   { return s.properties["id"].(eh.UUID) }
 func (s *Service) GetOdataID() string { return s.properties["uri"].(string) }
-func (s *Service) PluginType() domain.PluginType { return s.properties["plugin_type"].(domain.PluginType) }
+func (s *Service) PluginType() domain.PluginType {
+	return s.properties["plugin_type"].(domain.PluginType)
+}
 
 // GetProperty will runtime panic if property doesn't exist
 func (s *Service) GetProperty(p string) interface{} { return s.properties[p] }
+
 // TODO: HasProperty() if needed (?)
 
 func (s *Service) RefreshProperty(
@@ -55,7 +58,7 @@ func (s *Service) RefreshProperty(
 	s.Lock()
 	defer s.Unlock()
 
-    s.RefreshProperty_unlocked(ctx, agg, rrp, method, meta, body)
+	s.RefreshProperty_unlocked(ctx, agg, rrp, method, meta, body)
 }
 
 func (s *Service) RefreshProperty_unlocked(
@@ -74,7 +77,6 @@ func (s *Service) RefreshProperty_unlocked(
 		}
 	}
 }
-
 
 func RefreshProperty(
 	ctx context.Context,
@@ -104,24 +106,36 @@ func UpdateProperty(p string, v interface{}) Option {
 	}
 }
 
+func (s *Service) MustProperty(name string) {
+	if _, ok := s.properties[name]; !ok {
+		panic("Required property is not set: " + name)
+	}
+}
+
 func PropertyOnce(p string, v interface{}) Option {
 	return func(s *Service) error {
 		if _, ok := s.properties[p]; ok {
 			panic("Property " + p + " can only be set once")
 		}
 		s.properties[p] = v
-        return nil
+		return nil
 	}
 }
 
 func URI(uri string) Option {
-    return UpdateProperty("uri", uri)
+	return UpdateProperty("uri", uri)
 }
 
 func UUID() Option {
-    return UpdateProperty("id", eh.NewUUID())
+	return UpdateProperty("id", eh.NewUUID())
 }
 
 func PluginType(pt domain.PluginType) Option {
-    return UpdateProperty("plugin_type", pt)
+	return UpdateProperty("plugin_type", pt)
+}
+
+func (s *Service) MetaReadOnlyProperty(name string) map[string]interface{} {
+	// should panic if property not there
+	s.MustProperty(name)
+	return map[string]interface{}{"GET": map[string]interface{}{"plugin": string(s.PluginType()), "property": name}}
 }

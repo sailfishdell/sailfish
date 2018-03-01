@@ -35,19 +35,14 @@ func InitService(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *
 	// expand beyond that, we need to adjust stuff here.
 
 	bmcSvc, _ := bmc.NewBMCService(
-		bmc.WithURIName("OBMC"),
-	)
-
-	bmcSvc.Service.ApplyOption(
+		bmc.WithUniqueName("OBMC"),
 		plugins.UpdateProperty("name", "OBMC Simulation"),
 		plugins.UpdateProperty("description", "The most open source BMC ever."),
 		plugins.UpdateProperty("model", "Michaels RAD BMC"),
 		plugins.UpdateProperty("timezone", "-05:00"),
 		plugins.UpdateProperty("version", "1.0.0"),
 	)
-	plugins.OnURICreated(ctx, ew, "/redfish/v1/Managers", func() { bmcSvc.AddResource(ctx, ch) })
 
-	time.Sleep(300 * time.Millisecond)
 	prot, _ := protocol.NewNetProtocols(
 		protocol.WithBMC(bmcSvc),
 		protocol.WithProtocol("HTTPS", true, 443, nil),
@@ -59,14 +54,10 @@ func InitService(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *
 		protocol.WithProtocol("SSDP", false, 1900,
 			map[string]interface{}{"NotifyMulticastIntervalSeconds": 600, "NotifyTTL": 5, "NotifyIPv6Scope": "Site"}),
 	)
-	prot.AddResource(ctx, ch)
 
 	chas, _ := chassis.NewChassisService(
-		ctx,
 		chassis.ManagedBy(bmcSvc),
-		chassis.WithURIName("1"),
-	)
-	chas.Service.ApplyOption(
+		chassis.WithUniqueName("1"),
 		plugins.UpdateProperty("name", "Catfish System Chassis"),
 		plugins.UpdateProperty("chassis_type", "RackMount"),
 		plugins.UpdateProperty("model", "YellowCat1000"),
@@ -77,16 +68,33 @@ func InitService(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *
 		plugins.UpdateProperty("chassis_type", "RackMount"),
 	)
 
-	chas.AddResource(ctx, ch)
+	// still to convert
+	system, _ := system.NewSystemService(
+		system.WithUniqueName("1"),
+		plugins.UpdateProperty("name", "Catfish System"),
+	)
 
-	system, _ := NewSystemService(ctx)
-	system.AddOBMCSystemResource(ctx, ch)
-
+	// register all of the plugins (do this first so we dont get any race
+	// conditions if somebody accesses the URIs before these plugins are
+	// registered
 	domain.RegisterPlugin(func() domain.Plugin { return bmcSvc })
 	domain.RegisterPlugin(func() domain.Plugin { return prot })
 	domain.RegisterPlugin(func() domain.Plugin { return chas })
 	//domain.RegisterPlugin(func() domain.Plugin { return chas.thermalSensors })
 	domain.RegisterPlugin(func() domain.Plugin { return system })
+
+	// and now add everything to the URI tree
+	time.Sleep(250 * time.Millisecond)
+	bmcSvc.AddResource(ctx, ch)
+	time.Sleep(250 * time.Millisecond)
+	prot.AddResource(ctx, ch)
+	chas.AddResource(ctx, ch)
+	system.AddResource(ctx, ch)
+
+	//plugins.OnURICreated(ctx, ew, "/redfish/v1/Managers", func() { bmcSvc.AddResource(ctx, ch) })
+	//plugins.OnURICreated(ctx, ew, bmcSvc.GetOdataID(), func() { prot.AddResource(ctx, ch) })
+	//plugins.OnURICreated(ctx, ew, "/redfish/v1/Chassis", func() { chas.AddResource(ctx, ch) })
+	//plugins.OnURICreated(ctx, ew, "/redfish/v1/System", func() { system.AddResource(ctx, ch) })
 
 	// go ret.runbackgroundstuff(ctx)
 

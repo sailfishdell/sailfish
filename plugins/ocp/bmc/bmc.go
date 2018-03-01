@@ -23,35 +23,18 @@ type service struct {
 	*plugins.Service
 }
 
-
 func NewBMCService(options ...interface{}) (*service, error) {
 	s := &service{
 		Service: plugins.NewService(plugins.PluginType(BmcPlugin)),
 	}
-    s.ApplyOption(plugins.UUID())
+	s.ApplyOption(plugins.UUID())
 	s.ApplyOption(options...)
-    s.ApplyOption(plugins.PropertyOnce("uri", "/redfish/v1/Managers/" + s.GetProperty("unique_name").(string)))
+	s.ApplyOption(plugins.PropertyOnce("uri", "/redfish/v1/Managers/"+s.GetProperty("unique_name").(string)))
 	return s, nil
 }
 
 func WithUniqueName(uri string) plugins.Option {
-    return plugins.PropertyOnce("unique_name", uri)
-}
-
-func (s *service) RefreshProperty(
-	ctx context.Context,
-	agg *domain.RedfishResourceAggregate,
-	rrp *domain.RedfishResourceProperty,
-	method string,
-	meta map[string]interface{},
-	body interface{},
-) {
-	s.Lock()
-	defer s.Unlock()
-	err := plugins.RefreshProperty(ctx, *s, rrp, meta)
-	if err != nil {
-		s.Service.RefreshProperty_unlocked(ctx, agg, rrp, method, meta, body)
-	}
+	return plugins.PropertyOnce("unique_name", uri)
 }
 
 func (s *service) AddResource(ctx context.Context, ch eh.CommandHandler) {
@@ -72,16 +55,16 @@ func (s *service) AddResource(ctx context.Context, ch eh.CommandHandler) {
 			},
 			Properties: map[string]interface{}{
 				"Id":                       s.GetProperty("unique_name"),
-				"Name@meta":                map[string]interface{}{"GET": map[string]interface{}{"plugin": string(s.PluginType()), "property": "name"}},
+				"Name@meta":                s.MetaReadOnlyProperty("name"),
 				"ManagerType":              "BMC",
-				"Description@meta":         map[string]interface{}{"GET": map[string]interface{}{"plugin": string(s.PluginType()), "property": "description"}},
-				"Model@meta":               map[string]interface{}{"GET": map[string]interface{}{"plugin": string(s.PluginType()), "property": "model"}},
+				"Description@meta":         s.MetaReadOnlyProperty("description"),
+				"Model@meta":               s.MetaReadOnlyProperty("model"),
 				"DateTime@meta":            map[string]interface{}{"GET": map[string]interface{}{"plugin": "datetime"}},
-				"DateTimeLocalOffset@meta": map[string]interface{}{"GET": map[string]interface{}{"plugin": string(s.PluginType()), "property": "timezone"}},
-				"FirmwareVersion@meta": map[string]interface{}{"GET": map[string]interface{}{"plugin": string(s.PluginType()), "property": "version"}},
-				"Links":                map[string]interface{}{},
+				"DateTimeLocalOffset@meta": s.MetaReadOnlyProperty("timezone"),
+				"FirmwareVersion@meta":     s.MetaReadOnlyProperty("version"),
+				"Links":                    map[string]interface{}{},
 
-                // Commented out until we figure out what these are supposed to be
+				// Commented out until we figure out what these are supposed to be
 				//"ServiceEntryPointUUID":    eh.NewUUID(),
 				//"UUID":                     eh.NewUUID(),
 
@@ -100,7 +83,8 @@ func (s *service) AddResource(ctx context.Context, ch eh.CommandHandler) {
 				},
 			}})
 
-	// handle action for restart
+	// The following redfish resource is created only for the purpose of being
+	// a 'receiver' for the action command specified above.
 	ch.HandleCommand(
 		ctx,
 		&domain.CreateRedfishResource{
