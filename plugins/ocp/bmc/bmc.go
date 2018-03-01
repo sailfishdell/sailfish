@@ -21,45 +21,22 @@ const (
 
 type service struct {
 	*plugins.Service
-	id eh.UUID
-
-	// Any struct field with tag "property" will automatically be made available in the @meta and will be updated in real time.
-	uriName string
 }
 
-type Option func(*service) error
 
-func NewBMCService(options ...Option) (*service, error) {
+func NewBMCService(options ...interface{}) (*service, error) {
 	s := &service{
 		Service: plugins.NewService(plugins.PluginType(BmcPlugin)),
-		id:      eh.NewUUID(),
 	}
+    s.ApplyOption(plugins.UUID())
 	s.ApplyOption(options...)
+    s.ApplyOption(plugins.PropertyOnce("uri", "/redfish/v1/Managers/" + s.GetProperty("unique_name").(string)))
 	return s, nil
 }
 
-func (c *service) ApplyOption(options ...Option) error {
-	for _, o := range options {
-		err := o(c)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
+func WithUniqueName(uri string) plugins.Option {
+    return plugins.PropertyOnce("unique_name", uri)
 }
-
-func WithURIName(uri string) Option {
-	return func(b *service) error {
-		if b.uriName != "" {
-			panic("Cannot reset URI Name once set")
-		}
-		b.uriName = uri
-		return nil
-	}
-}
-
-func (s *service) GetUUID() eh.UUID   { return s.id }
-func (s *service) GetOdataID() string { return "/redfish/v1/Managers/" + s.uriName }
 
 func (s *service) RefreshProperty(
 	ctx context.Context,
@@ -70,10 +47,10 @@ func (s *service) RefreshProperty(
 	body interface{},
 ) {
 	s.Lock()
+	defer s.Unlock()
 	err := plugins.RefreshProperty(ctx, *s, rrp, meta)
-	s.Unlock()
 	if err != nil {
-		s.Service.RefreshProperty(ctx, agg, rrp, method, meta, body)
+		s.Service.RefreshProperty_unlocked(ctx, agg, rrp, method, meta, body)
 	}
 }
 
@@ -81,7 +58,7 @@ func (s *service) AddResource(ctx context.Context, ch eh.CommandHandler) {
 	ch.HandleCommand(
 		context.Background(),
 		&domain.CreateRedfishResource{
-			ID:          s.id,
+			ID:          s.GetUUID(),
 			Collection:  false,
 			ResourceURI: s.GetOdataID(),
 			Type:        "#Manager.v1_1_0.Manager",
@@ -94,21 +71,24 @@ func (s *service) AddResource(ctx context.Context, ch eh.CommandHandler) {
 				"DELETE": []string{}, // can't be deleted
 			},
 			Properties: map[string]interface{}{
-				"Id":                       s.uriName,
+				"Id":                       s.GetProperty("unique_name"),
 				"Name@meta":                map[string]interface{}{"GET": map[string]interface{}{"plugin": string(s.PluginType()), "property": "name"}},
 				"ManagerType":              "BMC",
 				"Description@meta":         map[string]interface{}{"GET": map[string]interface{}{"plugin": string(s.PluginType()), "property": "description"}},
-				"ServiceEntryPointUUID":    eh.NewUUID(),
-				"UUID":                     eh.NewUUID(),
 				"Model@meta":               map[string]interface{}{"GET": map[string]interface{}{"plugin": string(s.PluginType()), "property": "model"}},
 				"DateTime@meta":            map[string]interface{}{"GET": map[string]interface{}{"plugin": "datetime"}},
 				"DateTimeLocalOffset@meta": map[string]interface{}{"GET": map[string]interface{}{"plugin": string(s.PluginType()), "property": "timezone"}},
+				"FirmwareVersion@meta": map[string]interface{}{"GET": map[string]interface{}{"plugin": string(s.PluginType()), "property": "version"}},
+				"Links":                map[string]interface{}{},
+
+                // Commented out until we figure out what these are supposed to be
+				//"ServiceEntryPointUUID":    eh.NewUUID(),
+				//"UUID":                     eh.NewUUID(),
+
 				"Status": map[string]interface{}{
 					"State":  "Enabled",
 					"Health": "OK",
 				},
-				"FirmwareVersion@meta": map[string]interface{}{"GET": map[string]interface{}{"plugin": string(s.PluginType()), "property": "version"}},
-				"Links":                map[string]interface{}{},
 				"Actions": map[string]interface{}{
 					"#Manager.Reset": map[string]interface{}{
 						"target": s.GetOdataID() + "/Actions/Manager.Reset",

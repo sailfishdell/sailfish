@@ -17,6 +17,7 @@ import (
 	"github.com/superchalupa/go-redfish/plugins/ocp/bmc"
 	"github.com/superchalupa/go-redfish/plugins/ocp/chassis"
 	"github.com/superchalupa/go-redfish/plugins/ocp/protocol"
+	"github.com/superchalupa/go-redfish/plugins/ocp/system"
 )
 
 func init() {
@@ -29,19 +30,14 @@ func OCPProfileFactory(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus
 	// expand beyond that, we need to adjust stuff here.
 
 	bmcSvc, _ := bmc.NewBMCService(
-		bmc.WithURIName("OBMC"),
-	)
-
-	bmcSvc.Service.ApplyOption(
+		bmc.WithUniqueName("OBMC"),
 		plugins.UpdateProperty("name", "OBMC Simulation"),
 		plugins.UpdateProperty("description", "The most open source BMC ever."),
 		plugins.UpdateProperty("model", "Michaels RAD BMC"),
 		plugins.UpdateProperty("timezone", "-05:00"),
 		plugins.UpdateProperty("version", "1.0.0"),
 	)
-	plugins.OnURICreated(ctx, ew, "/redfish/v1/Managers", func() { bmcSvc.AddResource(ctx, ch) })
 
-	time.Sleep(300 * time.Millisecond)
 	prot, _ := protocol.NewNetProtocols(
 		protocol.WithBMC(bmcSvc),
 		protocol.WithProtocol("HTTPS", true, 443, nil),
@@ -53,14 +49,10 @@ func OCPProfileFactory(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus
 		protocol.WithProtocol("SSDP", false, 1900,
 			map[string]interface{}{"NotifyMulticastIntervalSeconds": 600, "NotifyTTL": 5, "NotifyIPv6Scope": "Site"}),
 	)
-	prot.AddResource(ctx, ch)
 
 	chas, _ := chassis.NewChassisService(
-		ctx,
 		chassis.ManagedBy(bmcSvc),
-		chassis.WithURIName("1"),
-	)
-	chas.Service.ApplyOption(
+		chassis.WithUniqueName("1"),
 		plugins.UpdateProperty("name", "Catfish System Chassis"),
 		plugins.UpdateProperty("chassis_type", "RackMount"),
 		plugins.UpdateProperty("model", "YellowCat1000"),
@@ -71,19 +63,36 @@ func OCPProfileFactory(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus
 		plugins.UpdateProperty("chassis_type", "RackMount"),
 	)
 
-	chas.AddResource(ctx, ch)
+	// still to convert
+	system, _ := system.NewSystemService(
+		system.WithUniqueName("1"),
+		plugins.UpdateProperty("name", "Catfish System"),
+	)
 
-	system, _ := NewSystemService(ctx)
-	system.AddOBMCSystemResource(ctx, ch)
-
+	// register all of the plugins (do this first so we dont get any race
+	// conditions if somebody accesses the URIs before these plugins are
+	// registered
 	domain.RegisterPlugin(func() domain.Plugin { return bmcSvc })
 	domain.RegisterPlugin(func() domain.Plugin { return prot })
 	domain.RegisterPlugin(func() domain.Plugin { return chas })
 	//domain.RegisterPlugin(func() domain.Plugin { return chas.thermalSensors })
 	domain.RegisterPlugin(func() domain.Plugin { return system })
 
+	// and now add everything to the URI tree
+    time.Sleep(250 * time.Millisecond)
+    bmcSvc.AddResource(ctx, ch)
+    time.Sleep(250 * time.Millisecond)
+    prot.AddResource(ctx, ch)
+    chas.AddResource(ctx, ch)
+    system.AddResource(ctx, ch)
+
+	//plugins.OnURICreated(ctx, ew, "/redfish/v1/Managers", func() { bmcSvc.AddResource(ctx, ch) })
+	//plugins.OnURICreated(ctx, ew, bmcSvc.GetOdataID(), func() { prot.AddResource(ctx, ch) })
+	//plugins.OnURICreated(ctx, ew, "/redfish/v1/Chassis", func() { chas.AddResource(ctx, ch) })
+	//plugins.OnURICreated(ctx, ew, "/redfish/v1/System", func() { system.AddResource(ctx, ch) })
+
 	// stream processor for action events
-	sp, err := plugins.NewEventStreamProcessor(ctx, ew, plugins.CustomFilter(ah.SelectAction("/redfish/v1/Managers/bmc/Actions/Manager.Reset")))
+	sp, err := plugins.NewEventStreamProcessor(ctx, ew, plugins.CustomFilter(ah.SelectAction(bmcSvc.GetOdataID()+"/Actions/Manager.Reset")))
 	if err != nil {
 		fmt.Printf("Failed to create event stream processor: %s\n", err.Error())
 		return // todo: tear down all the prior event stream processors, too

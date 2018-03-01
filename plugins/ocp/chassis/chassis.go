@@ -21,42 +21,22 @@ type bmcInt interface {
 
 type service struct {
 	*plugins.Service
-	id  eh.UUID
 	bmc bmcInt
-
-	uriName string `property:"uri_name"`
 }
 
-type Option func(*service) error
-
-func NewChassisService(ctx context.Context, options ...Option) (*service, error) {
+func NewChassisService(options ...interface{}) (*service, error) {
 	c := &service{
 		Service: plugins.NewService(plugins.PluginType(OBMC_ChassisPlugin)),
-		id:      eh.NewUUID(),
 	}
 
+    c.ApplyOption(plugins.UUID()) // set uuid property... (GetUUID())
 	c.ApplyOption(options...)
+    c.ApplyOption(plugins.PropertyOnce("uri", "/redfish/v1/Chassis/" + c.GetProperty("unique_name").(string)))
 	return c, nil
 }
 
-func (c *service) ApplyOption(options ...Option) error {
-	for _, o := range options {
-		err := o(c)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func WithURIName(uri string) Option {
-	return func(b *service) error {
-		if b.uriName != "" {
-			panic("Cannot reset URI Name once set")
-		}
-		b.uriName = uri
-		return nil
-	}
+func WithUniqueName(uri string) plugins.Option {
+    return plugins.PropertyOnce("unique_name", uri)
 }
 
 func ManagedBy(b bmcInt) Option {
@@ -65,8 +45,6 @@ func ManagedBy(b bmcInt) Option {
 		return nil
 	}
 }
-
-func (s *service) GetOdataID() string { return "/redfish/v1/Chassis/" + s.uriName }
 
 func (s *service) RefreshProperty(
 	ctx context.Context,
@@ -88,7 +66,7 @@ func (s *service) AddResource(ctx context.Context, ch eh.CommandHandler) {
 	ch.HandleCommand(
 		context.Background(),
 		&domain.CreateRedfishResource{
-			ID:          s.id,
+			ID:          s.GetUUID(),
 			Collection:  false,
 			ResourceURI: s.GetOdataID(),
 			Type:        "#Chassis.v1_2_0.Chassis",
@@ -102,7 +80,7 @@ func (s *service) AddResource(ctx context.Context, ch eh.CommandHandler) {
 			},
 			Properties: map[string]interface{}{
 				"Name@meta":         map[string]interface{}{"GET": map[string]interface{}{"plugin": string(s.PluginType()), "property": "name"}},
-				"Id":                s.uriName,
+				"Id":                s.GetProperty("unique_name"),
 				"ChassisType@meta":  map[string]interface{}{"GET": map[string]interface{}{"plugin": string(s.PluginType()), "property": "chassis_type"}},
 				"Manufacturer@meta": map[string]interface{}{"GET": map[string]interface{}{"plugin": string(s.PluginType()), "property": "manufacturer"}},
 				"Model@meta":        map[string]interface{}{"GET": map[string]interface{}{"plugin": string(s.PluginType()), "property": "model"}},

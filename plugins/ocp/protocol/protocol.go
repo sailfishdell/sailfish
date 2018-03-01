@@ -23,17 +23,15 @@ type bmcInt interface {
 	GetUUID() eh.UUID
 }
 
-type netProtocols struct {
+type service struct {
 	*plugins.Service
 	bmc bmcInt
 
 	protocols map[string]protocol
 }
 
-type ProtocolOption func(*netProtocols) error
-
-func NewNetProtocols(options ...ProtocolOption) (*netProtocols, error) {
-	p := &netProtocols{
+func NewNetProtocols(options ...interface{}) (*service, error) {
+	p := &service{
 		Service:   plugins.NewService(plugins.PluginType(ProtocolPlugin)),
 		protocols: map[string]protocol{},
 	}
@@ -41,25 +39,15 @@ func NewNetProtocols(options ...ProtocolOption) (*netProtocols, error) {
 	return p, nil
 }
 
-func (p *netProtocols) ApplyOption(options ...ProtocolOption) error {
-	for _, o := range options {
-		err := o(p)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func WithBMC(b bmcInt) ProtocolOption {
-	return func(p *netProtocols) error {
+func WithBMC(b bmcInt) Option {
+	return func(p *service) error {
 		p.bmc = b
 		return nil
 	}
 }
 
-func WithProtocol(name string, enabled bool, port int, config map[string]interface{}) ProtocolOption {
-	return func(p *netProtocols) error {
+func WithProtocol(name string, enabled bool, port int, config map[string]interface{}) Option {
+	return func(p *service) error {
 		newP := protocol{enabled: enabled, port: port}
 		newP.config = map[string]interface{}{}
 		for k, v := range config {
@@ -70,8 +58,8 @@ func WithProtocol(name string, enabled bool, port int, config map[string]interfa
 	}
 }
 
-func (p *netProtocols) GetOdataID() string { return p.bmc.GetOdataID() + "/NetworkProtocol" }
-func (p *netProtocols) RefreshProperty(
+func (p *service) GetOdataID() string { return p.bmc.GetOdataID() + "/NetworkProtocol" }
+func (p *service) RefreshProperty(
 	ctx context.Context,
 	agg *domain.RedfishResourceAggregate,
 	rrp *domain.RedfishResourceProperty,
@@ -90,7 +78,7 @@ func (p *netProtocols) RefreshProperty(
 	}
 }
 
-func (s *netProtocols) AddResource(ctx context.Context, ch eh.CommandHandler) {
+func (s *service) AddResource(ctx context.Context, ch eh.CommandHandler) {
 	ch.HandleCommand(
 		context.Background(),
 		&domain.CreateRedfishResource{

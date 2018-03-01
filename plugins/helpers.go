@@ -7,13 +7,13 @@ import (
 	"sync"
 
 	domain "github.com/superchalupa/go-redfish/redfishresource"
+	eh "github.com/looplab/eventhorizon"
 )
 
-type Option func(interface{}) error
+type Option func(*Service) error
 
 type Service struct {
 	sync.Mutex
-	pluginType domain.PluginType
 	properties map[string]interface{}
 }
 
@@ -35,21 +35,14 @@ func (c *Service) ApplyOption(options ...Option) error {
 	return nil
 }
 
-func PluginType(pt domain.PluginType) Option {
-	return func(s interface{}) error {
-		s.(*Service).pluginType = pt
-		return nil
-	}
-}
+// runtime panic if upper layers dont set properties for id/uri
+func (s *Service) GetUUID() eh.UUID   { return s.properties["id"].(eh.UUID) }
+func (s *Service) GetOdataID() string { return s.properties["uri"].(string) }
+func (s *Service) PluginType() domain.PluginType { return s.properties["plugin_type"].(domain.PluginType) }
 
-func UpdateProperty(p string, v interface{}) Option {
-	return func(s interface{}) error {
-		s.(*Service).properties[p] = v
-		return nil
-	}
-}
-
-func (s *Service) PluginType() domain.PluginType { return s.pluginType }
+// GetProperty will runtime panic if property doesn't exist
+func (s *Service) GetProperty(p string) interface{} { return s.properties[p] }
+// TODO: HasProperty() if needed (?)
 
 func (s *Service) RefreshProperty(
 	ctx context.Context,
@@ -62,6 +55,17 @@ func (s *Service) RefreshProperty(
 	s.Lock()
 	defer s.Unlock()
 
+    s.RefreshProperty_unlocked(ctx, agg, rrp, method, meta, body)
+}
+
+func (s *Service) RefreshProperty_unlocked(
+	ctx context.Context,
+	agg *domain.RedfishResourceAggregate,
+	rrp *domain.RedfishResourceProperty,
+	method string,
+	meta map[string]interface{},
+	body interface{},
+) {
 	property, ok := meta["property"].(string)
 	if ok {
 		if p, ok := s.properties[property]; ok {
@@ -70,6 +74,7 @@ func (s *Service) RefreshProperty(
 		}
 	}
 }
+
 
 func RefreshProperty(
 	ctx context.Context,
@@ -90,4 +95,33 @@ func RefreshProperty(
 		}
 	}
 	return errors.New("Couldn't find property.")
+}
+
+func UpdateProperty(p string, v interface{}) Option {
+	return func(s *Service) error {
+		s.properties[p] = v
+		return nil
+	}
+}
+
+func PropertyOnce(p string, v interface{}) Option {
+	return func(s *Service) error {
+		if _, ok := s.properties[p]; ok {
+			panic("Property " + p + " can only be set once")
+		}
+		s.properties[p] = v
+        return nil
+	}
+}
+
+func URI(uri string) Option {
+    return UpdateProperty("uri", uri)
+}
+
+func UUID() Option {
+    return UpdateProperty("id", eh.NewUUID())
+}
+
+func PluginType(pt domain.PluginType) Option {
+    return UpdateProperty("plugin_type", pt)
 }

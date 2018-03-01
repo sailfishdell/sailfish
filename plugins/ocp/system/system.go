@@ -1,9 +1,9 @@
-package obmc
+package system
 
 import (
 	"context"
-	"sync"
 
+	"github.com/superchalupa/go-redfish/plugins"
 	domain "github.com/superchalupa/go-redfish/redfishresource"
 
 	eh "github.com/looplab/eventhorizon"
@@ -14,19 +14,25 @@ var (
 )
 
 // OCP Profile Redfish System object
-
-type systemService struct {
-	serviceMu sync.Mutex
+type service struct {
+	*plugins.Service
 }
 
-func NewSystemService(ctx context.Context) (*systemService, error) {
-	return &systemService{}, nil
+func NewSystemService(options ...interface{}) (*service, error) {
+	s := &service{
+		Service: plugins.NewService(plugins.PluginType(OBMC_SystemPlugin)),
+	}
+    s.ApplyOption(plugins.UUID())
+	s.ApplyOption(options...)
+    s.ApplyOption(plugins.PropertyOnce("uri", "/redfish/v1/Systems/" + s.GetProperty("unique_name").(string)))
+	return s, nil
 }
 
-// satisfy the plugin interface so we can list ourselves as a plugin in our @meta
-func (s *systemService) PluginType() domain.PluginType { return OBMC_SystemPlugin }
+func WithUniqueName(uri string) plugins.Option {
+    return plugins.PropertyOnce("unique_name", uri)
+}
 
-func (s *systemService) RefreshProperty(
+func (s *service) RefreshProperty(
 	ctx context.Context,
 	agg *domain.RedfishResourceAggregate,
 	rrp *domain.RedfishResourceProperty,
@@ -34,19 +40,22 @@ func (s *systemService) RefreshProperty(
 	meta map[string]interface{},
 	body interface{},
 ) {
-	s.serviceMu.Lock()
-	defer s.serviceMu.Unlock()
+	s.Lock()
+	defer s.Unlock()
 
-	rrp.Value = "NOT IMPLEMENTED YET"
+	err := plugins.RefreshProperty(ctx, *s, rrp, meta)
+	if err != nil {
+		s.Service.RefreshProperty_unlocked(ctx, agg, rrp, method, meta, body)
+	}
 }
 
-func (s *systemService) AddOBMCSystemResource(ctx context.Context, ch eh.CommandHandler) {
+func (s *service) AddResource(ctx context.Context, ch eh.CommandHandler) {
 	ch.HandleCommand(
 		context.Background(),
 		&domain.CreateRedfishResource{
-			ID:          eh.NewUUID(),
+			ID:          s.GetUUID(),
 			Collection:  false,
-			ResourceURI: "/redfish/v1/Systems/2M220100SL",
+			ResourceURI: s.GetOdataID(),
 			Type:        "#ComputerSystem.v1_1_0.ComputerSystem",
 			Context:     "/redfish/v1/$metadata#ComputerSystem.ComputerSystem",
 			Privileges: map[string]interface{}{
@@ -58,7 +67,7 @@ func (s *systemService) AddOBMCSystemResource(ctx context.Context, ch eh.Command
 			},
 			Properties: map[string]interface{}{
 				"Id":           "2M220100SL",
-				"Name":         "Catfish System",
+				"Name@meta":    map[string]interface{}{"GET": map[string]interface{}{"plugin": string(s.PluginType()), "property": "name"}},
 				"SystemType":   "Physical",
 				"AssetTag":     "CATFISHASSETTAG",
 				"Manufacturer": "CatfishManufacturer",
