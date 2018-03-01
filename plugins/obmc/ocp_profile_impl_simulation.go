@@ -11,7 +11,6 @@ import (
 	eh "github.com/looplab/eventhorizon"
 	"github.com/looplab/eventhorizon/utils"
 	"github.com/superchalupa/go-redfish/plugins"
-	ah "github.com/superchalupa/go-redfish/plugins/actionhandler"
 	domain "github.com/superchalupa/go-redfish/redfishresource"
 
 	"github.com/superchalupa/go-redfish/plugins/ocp/bmc"
@@ -25,7 +24,6 @@ func init() {
 }
 
 func OCPProfileFactory(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
-
 	// initial implementation is one BMC, one Chassis, and one System. If we
 	// expand beyond that, we need to adjust stuff here.
 
@@ -64,10 +62,22 @@ func OCPProfileFactory(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus
 		plugins.UpdateProperty("manufacturer", "Cat manufacturer"),
 	)
 
-	// still to convert
 	system, _ := system.New(
 		system.WithUniqueName("1"),
+		system.ManagedBy(bmcSvc),
+		system.InChassis(chas),
 		plugins.UpdateProperty("name", "Catfish System"),
+		plugins.UpdateProperty("system_type", "Physical"),
+		plugins.UpdateProperty("asset_tag", "CATFISHASSETTAG"),
+		plugins.UpdateProperty("manufacturer", "Cat manufacturer"),
+		plugins.UpdateProperty("model", "YellowCat1000"),
+		plugins.UpdateProperty("serial_number", "2M220100SL"),
+		plugins.UpdateProperty("sku", "The SKU"),
+		plugins.UpdateProperty("part_number", "Part2468"),
+		plugins.UpdateProperty("description", "Catfish Implementation Recipe of simple scale-out monolithic server"),
+		plugins.UpdateProperty("power_state", "On"),
+		plugins.UpdateProperty("bios_version", "X00.1.2.3.4(build-23)"),
+		plugins.UpdateProperty("led", "On"),
 	)
 
 	// register all of the plugins (do this first so we dont get any race
@@ -81,31 +91,14 @@ func OCPProfileFactory(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus
 
 	// and now add everything to the URI tree
 	time.Sleep(250 * time.Millisecond)
-	bmcSvc.AddResource(ctx, ch)
+	bmcSvc.AddResource(ctx, ch, eb, ew)
 	time.Sleep(250 * time.Millisecond)
 	prot.AddResource(ctx, ch)
 	chas.AddResource(ctx, ch)
 	system.AddResource(ctx, ch)
 
-	//plugins.OnURICreated(ctx, ew, "/redfish/v1/Managers", func() { bmcSvc.AddResource(ctx, ch) })
-	//plugins.OnURICreated(ctx, ew, bmcSvc.GetOdataID(), func() { prot.AddResource(ctx, ch) })
-	//plugins.OnURICreated(ctx, ew, "/redfish/v1/Chassis", func() { chas.AddResource(ctx, ch) })
-	//plugins.OnURICreated(ctx, ew, "/redfish/v1/System", func() { system.AddResource(ctx, ch) })
-
-	// stream processor for action events
-	sp, err := plugins.NewEventStreamProcessor(ctx, ew, plugins.CustomFilter(ah.SelectAction(bmcSvc.GetOdataID()+"/Actions/Manager.Reset")))
-	if err != nil {
-		fmt.Printf("Failed to create event stream processor: %s\n", err.Error())
-		return // todo: tear down all the prior event stream processors, too
-	}
-	sp.RunForever(func(event eh.Event) {
-		fmt.Printf("GOT ACTION EVENT!!!\n")
-
-		eb.HandleEvent(ctx, eh.NewEvent(domain.HTTPCmdProcessed, domain.HTTPCmdProcessedData{
-			CommandID:  event.Data().(ah.GenericActionEventData).CmdID,
-			Results:    map[string]interface{}{"RESET": "FAKE SIMULATED RESET"},
-			StatusCode: 200,
-			Headers:    map[string]string{},
-		}, time.Now()))
-	})
+	bmcSvc.ApplyOption(plugins.UpdateProperty("manager.reset", func(event eh.Event, res *domain.HTTPCmdProcessedData) {
+		fmt.Printf("Hello WORLD!\n\tGOT RESET EVENT\n")
+		res.Results = map[string]interface{}{"RESET": "FAKE SIMULATED RESET"}
+	}))
 }

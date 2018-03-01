@@ -6,11 +6,15 @@ package bmc
 
 import (
 	"context"
+	"fmt"
+	"time"
 
 	"github.com/superchalupa/go-redfish/plugins"
 	domain "github.com/superchalupa/go-redfish/redfishresource"
 
 	eh "github.com/looplab/eventhorizon"
+	"github.com/looplab/eventhorizon/utils"
+	ah "github.com/superchalupa/go-redfish/plugins/actionhandler"
 )
 
 const (
@@ -37,7 +41,7 @@ func WithUniqueName(uri string) plugins.Option {
 	return plugins.PropertyOnce("unique_name", uri)
 }
 
-func (s *service) AddResource(ctx context.Context, ch eh.CommandHandler) {
+func (s *service) AddResource(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
 	ch.HandleCommand(
 		context.Background(),
 		&domain.CreateRedfishResource{
@@ -99,4 +103,31 @@ func (s *service) AddResource(ctx context.Context, ch eh.CommandHandler) {
 			Properties: map[string]interface{}{},
 		},
 	)
+
+	// stream processor for action events
+	sp, err := plugins.NewEventStreamProcessor(ctx, ew, plugins.CustomFilter(ah.SelectAction(s.GetOdataID()+"/Actions/Manager.Reset")))
+	if err != nil {
+		fmt.Printf("Failed to create event stream processor: %s\n", err.Error())
+		return
+	}
+	sp.RunForever(func(event eh.Event) {
+		fmt.Printf("GOT ACTION EVENT!!!\n")
+
+		eventData := domain.HTTPCmdProcessedData{
+			CommandID:  event.Data().(ah.GenericActionEventData).CmdID,
+			Results:    map[string]interface{}{"msg": "Not Implemented"},
+			StatusCode: 500,
+			Headers:    map[string]string{},
+		}
+
+		handler := s.GetProperty("manager.reset")
+		if handler != nil {
+			if fn, ok := handler.(func(eh.Event, *domain.HTTPCmdProcessedData)); ok {
+				fn(event, &eventData)
+			}
+		}
+
+		responseEvent := eh.NewEvent(domain.HTTPCmdProcessed, eventData, time.Now())
+		eb.HandleEvent(ctx, responseEvent)
+	})
 }
