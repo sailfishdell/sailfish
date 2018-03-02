@@ -1,4 +1,4 @@
-package temp
+package thermal
 
 import (
 	"github.com/superchalupa/go-redfish/plugins"

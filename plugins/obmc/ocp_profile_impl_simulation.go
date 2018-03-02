@@ -17,6 +17,8 @@ import (
 	"github.com/superchalupa/go-redfish/plugins/ocp/chassis"
 	"github.com/superchalupa/go-redfish/plugins/ocp/protocol"
 	"github.com/superchalupa/go-redfish/plugins/ocp/system"
+	"github.com/superchalupa/go-redfish/plugins/ocp/thermal"
+	"github.com/superchalupa/go-redfish/plugins/ocp/thermal/temperatures"
 )
 
 func init() {
@@ -80,25 +82,67 @@ func OCPProfileFactory(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus
 		plugins.UpdateProperty("led", "On"),
 	)
 
+	therm, _ := thermal.New(
+		thermal.InChassis(chas),
+	)
+
+	temps, _ := temperatures.New(
+		temperatures.InThermal(therm),
+		temperatures.WithSensor("inlet", 
+            &temperatures.RedfishThermalSensor{
+                Name: "crappysens",
+                SensorNumber: 0,
+                ReadingCelsius: 22,
+                UpperThresholdNonCritical:100,
+                UpperThresholdCritical: 150,
+                UpperThresholdFatal: 200,
+                MinReadingRangeTemp: 0,
+                MaxReadingRangeTemp: 250,
+                PhysicalContext: "inlet",
+                },
+            ),
+		temperatures.WithSensor("ndc", 
+            &temperatures.RedfishThermalSensor{
+                Name: "crappysens",
+                SensorNumber: 1,
+                ReadingCelsius: 23,
+                UpperThresholdNonCritical:100,
+                UpperThresholdCritical: 150,
+                UpperThresholdFatal: 200,
+                MinReadingRangeTemp: 0,
+                MaxReadingRangeTemp: 250,
+                PhysicalContext: "ndc",
+                },
+            ),
+	)
+
 	// register all of the plugins (do this first so we dont get any race
 	// conditions if somebody accesses the URIs before these plugins are
 	// registered
 	domain.RegisterPlugin(func() domain.Plugin { return bmcSvc })
 	domain.RegisterPlugin(func() domain.Plugin { return prot })
 	domain.RegisterPlugin(func() domain.Plugin { return chas })
-	//domain.RegisterPlugin(func() domain.Plugin { return chas.thermalSensors })
 	domain.RegisterPlugin(func() domain.Plugin { return system })
+	domain.RegisterPlugin(func() domain.Plugin { return therm })
+	domain.RegisterPlugin(func() domain.Plugin { return temps })
 
 	// and now add everything to the URI tree
-	time.Sleep(250 * time.Millisecond)
+	time.Sleep(250 * time.Millisecond) // still a small race in events, so sleep needed for now
 	bmcSvc.AddResource(ctx, ch, eb, ew)
-	time.Sleep(250 * time.Millisecond)
+	time.Sleep(250 * time.Millisecond) // still a small race in events, so sleep needed for now
 	prot.AddResource(ctx, ch)
 	chas.AddResource(ctx, ch)
-	system.AddResource(ctx, ch)
+	system.AddResource(ctx, ch, eb, ew)
+	therm.AddResource(ctx, ch, eb, ew)
+	temps.AddResource(ctx, ch, eb, ew)
 
 	bmcSvc.ApplyOption(plugins.UpdateProperty("manager.reset", func(event eh.Event, res *domain.HTTPCmdProcessedData) {
 		fmt.Printf("Hello WORLD!\n\tGOT RESET EVENT\n")
 		res.Results = map[string]interface{}{"RESET": "FAKE SIMULATED RESET"}
+	}))
+
+	system.ApplyOption(plugins.UpdateProperty("computersystem.reset", func(event eh.Event, res *domain.HTTPCmdProcessedData) {
+		fmt.Printf("Hello WORLD!\n\tGOT RESET EVENT\n")
+		res.Results = map[string]interface{}{"RESET": "FAKE SIMULATED COMPUTER RESET"}
 	}))
 }

@@ -25,9 +25,11 @@ func NewService(options ...Option) *Service {
 	return s
 }
 
-func (c *Service) ApplyOption(options ...Option) error {
+func (s *Service) ApplyOption(options ...Option) error {
+    s.Lock()
+    defer s.Unlock()
 	for _, o := range options {
-		err := o(c)
+		err := o(s)
 		if err != nil {
 			return err
 		}
@@ -99,6 +101,7 @@ func RefreshProperty(
 	return errors.New("Couldn't find property.")
 }
 
+// Service is locked for Options in ApplyOption
 func UpdateProperty(p string, v interface{}) Option {
 	return func(s *Service) error {
 		s.properties[p] = v
@@ -106,12 +109,20 @@ func UpdateProperty(p string, v interface{}) Option {
 	}
 }
 
-func (s *Service) MustProperty(name string) {
-	if _, ok := s.properties[name]; !ok {
-		panic("Required property is not set: " + name)
-	}
+func (s *Service) MustProperty_unlocked(name string) (ret interface{}) {
+	ret, ok := s.properties[name]
+    if ok { return }
+	panic("Required property is not set: " + name)
 }
 
+
+func (s *Service) MustProperty(name string) interface{} {
+    s.Lock()
+    defer s.Unlock()
+    return s.MustProperty_unlocked(name)
+}
+
+// Service is locked for Options in ApplyOption
 func PropertyOnce(p string, v interface{}) Option {
 	return func(s *Service) error {
 		if _, ok := s.properties[p]; ok {
@@ -135,7 +146,9 @@ func PluginType(pt domain.PluginType) Option {
 }
 
 func (s *Service) MetaReadOnlyProperty(name string) map[string]interface{} {
+    s.Lock()
+    defer s.Unlock()
 	// should panic if property not there
-	s.MustProperty(name)
+	s.MustProperty_unlocked(name)
 	return map[string]interface{}{"GET": map[string]interface{}{"plugin": string(s.PluginType()), "property": name}}
 }
