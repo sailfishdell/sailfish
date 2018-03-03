@@ -8,6 +8,5 @@ import (
 )
 
 const (
-   DbusTimeout time.Duration = 1
+	DbusTimeout time.Duration = 1
 )
-

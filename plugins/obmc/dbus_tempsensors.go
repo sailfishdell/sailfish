@@ -16,7 +16,7 @@ import (
 )
 
 type Optioner interface {
-    ApplyOption(options ...interface{}) error
+	ApplyOption(options ...interface{}) error
 }
 
 func UpdateSensorList(ctx context.Context, temps Optioner) {
@@ -54,10 +54,10 @@ func UpdateSensorList(ctx context.Context, temps Optioner) {
 			for p, m1 := range dict {
 				for bus, _ := range m1 {
 					fmt.Printf("getting thermal for bus(%s)  path(%s)\n", bus, p)
-                    temps.ApplyOption(
-                        temperatures.WithSensor(
-                            fmt.Sprintf("%s#%s", bus, p),
-					        getThermal(ctx, conn, bus, p)))
+					temps.ApplyOption(
+						temperatures.WithSensor(
+							fmt.Sprintf("%s#%s", bus, p),
+							getThermal(ctx, conn, bus, p)))
 				}
 			}
 		}

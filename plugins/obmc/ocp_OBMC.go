@@ -90,8 +90,8 @@ func OCPProfileFactory(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus
 		temperatures.InThermal(therm),
 	)
 
-    // Start background processing to update sensor data every 10 seconds
-    go UpdateSensorList(ctx, temps)
+	// Start background processing to update sensor data every 10 seconds
+	go UpdateSensorList(ctx, temps)
 
 	// register all of the plugins (do this first so we dont get any race
 	// conditions if somebody accesses the URIs before these plugins are
