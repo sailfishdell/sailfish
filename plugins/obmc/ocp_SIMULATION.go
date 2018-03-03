@@ -18,6 +18,7 @@ import (
 	"github.com/superchalupa/go-redfish/plugins/ocp/protocol"
 	"github.com/superchalupa/go-redfish/plugins/ocp/system"
 	"github.com/superchalupa/go-redfish/plugins/ocp/thermal"
+	"github.com/superchalupa/go-redfish/plugins/ocp/thermal/fans"
 	"github.com/superchalupa/go-redfish/plugins/ocp/thermal/temperatures"
 )
 
@@ -90,7 +91,7 @@ func OCPProfileFactory(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus
 		temperatures.InThermal(therm),
 		temperatures.WithSensor("inlet",
 			&temperatures.RedfishThermalSensor{
-				Name:                      "crappysens",
+				Name:                      "inlet temp sensor",
 				SensorNumber:              0,
 				ReadingCelsius:            22,
 				UpperThresholdNonCritical: 100,
@@ -103,7 +104,7 @@ func OCPProfileFactory(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus
 		),
 		temperatures.WithSensor("ndc",
 			&temperatures.RedfishThermalSensor{
-				Name:                      "crappysens",
+				Name:                      "ndc temp sensor",
 				SensorNumber:              1,
 				ReadingCelsius:            23,
 				UpperThresholdNonCritical: 100,
@@ -112,6 +113,30 @@ func OCPProfileFactory(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus
 				MinReadingRangeTemp:       0,
 				MaxReadingRangeTemp:       250,
 				PhysicalContext:           "ndc",
+			},
+		),
+	)
+
+	fans, _ := fans.New(
+		fans.InThermal(therm),
+		fans.WithSensor("fan_X",
+			&fans.RedfishFan{
+				Name:            "inlet fan",
+				PhysicalContext: "inlet",
+
+				Reading:      2500,
+				ReadingUnits: "RPM",
+
+				UpperThresholdNonCritical: 3500,
+				UpperThresholdCritical:    3600,
+				UpperThresholdFatal:       3700,
+
+				LowerThresholdNonCritical: 1000,
+				LowerThresholdCritical:    900,
+				LowerThresholdFatal:       800,
+
+				MinReadingRange: 500,
+				MaxReadingRange: 5000,
 			},
 		),
 	)
@@ -125,6 +150,7 @@ func OCPProfileFactory(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus
 	domain.RegisterPlugin(func() domain.Plugin { return system })
 	domain.RegisterPlugin(func() domain.Plugin { return therm })
 	domain.RegisterPlugin(func() domain.Plugin { return temps })
+	domain.RegisterPlugin(func() domain.Plugin { return fans })
 
 	// and now add everything to the URI tree
 	time.Sleep(250 * time.Millisecond) // still a small race in events, so sleep needed for now
@@ -135,6 +161,7 @@ func OCPProfileFactory(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus
 	system.AddResource(ctx, ch, eb, ew)
 	therm.AddResource(ctx, ch, eb, ew)
 	temps.AddResource(ctx, ch, eb, ew)
+	fans.AddResource(ctx, ch, eb, ew)
 
 	bmcSvc.ApplyOption(plugins.UpdateProperty("manager.reset", func(event eh.Event, res *domain.HTTPCmdProcessedData) {
 		fmt.Printf("Hello WORLD!\n\tGOT RESET EVENT\n")
