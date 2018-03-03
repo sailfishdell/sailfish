@@ -6,30 +6,24 @@ package obmc
 import (
 	"context"
 	"fmt"
-	"os"
 	"time"
 
-	"github.com/godbus/dbus"
 	eh "github.com/looplab/eventhorizon"
 	"github.com/looplab/eventhorizon/utils"
 	"github.com/superchalupa/go-redfish/plugins"
-	ah "github.com/superchalupa/go-redfish/plugins/actionhandler"
-	mydbus "github.com/superchalupa/go-redfish/plugins/dbus"
 	domain "github.com/superchalupa/go-redfish/redfishresource"
 
 	"github.com/superchalupa/go-redfish/plugins/ocp/bmc"
 	"github.com/superchalupa/go-redfish/plugins/ocp/chassis"
 	"github.com/superchalupa/go-redfish/plugins/ocp/protocol"
 	"github.com/superchalupa/go-redfish/plugins/ocp/system"
+	"github.com/superchalupa/go-redfish/plugins/ocp/thermal"
+	"github.com/superchalupa/go-redfish/plugins/ocp/thermal/temperatures"
 )
 
 func init() {
 	domain.RegisterInitFN(OCPProfileFactory)
 }
-
-const (
-	DbusTimeout time.Duration = 1
-)
 
 func OCPProfileFactory(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
 	// initial implementation is one BMC, one Chassis, and one System. If we
@@ -88,68 +82,43 @@ func OCPProfileFactory(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus
 		plugins.UpdateProperty("led", "On"),
 	)
 
+	therm, _ := thermal.New(
+		thermal.InChassis(chas),
+	)
+
+	temps, _ := temperatures.New(
+		temperatures.InThermal(therm),
+	)
+
+    // Start background processing to update sensor data every 10 seconds
+    go UpdateSensorList(ctx, temps)
+
 	// register all of the plugins (do this first so we dont get any race
 	// conditions if somebody accesses the URIs before these plugins are
 	// registered
 	domain.RegisterPlugin(func() domain.Plugin { return bmcSvc })
 	domain.RegisterPlugin(func() domain.Plugin { return prot })
 	domain.RegisterPlugin(func() domain.Plugin { return chas })
-	//domain.RegisterPlugin(func() domain.Plugin { return chas.thermalSensors })
 	domain.RegisterPlugin(func() domain.Plugin { return system })
+	domain.RegisterPlugin(func() domain.Plugin { return therm })
+	domain.RegisterPlugin(func() domain.Plugin { return temps })
 
 	// and now add everything to the URI tree
-	time.Sleep(250 * time.Millisecond)
+	time.Sleep(250 * time.Millisecond) // still a small race in events, so sleep needed for now
 	bmcSvc.AddResource(ctx, ch, eb, ew)
-	time.Sleep(250 * time.Millisecond)
+	time.Sleep(250 * time.Millisecond) // still a small race in events, so sleep needed for now
 	prot.AddResource(ctx, ch)
 	chas.AddResource(ctx, ch)
-	system.AddResource(ctx, ch)
+	system.AddResource(ctx, ch, eb, ew)
+	therm.AddResource(ctx, ch, eb, ew)
+	temps.AddResource(ctx, ch, eb, ew)
 
 	bmcSvc.ApplyOption(plugins.UpdateProperty("manager.reset", func(event eh.Event, res *domain.HTTPCmdProcessedData) {
-		bus := "org.openbmc.control.Bmc"
-		path := "/org/openbmc/control/bmc0"
-		intfc := "org.openbmc.control.Bmc"
+		BMCReset(ctx, event, res, eb)
+	}))
 
-		fmt.Printf("parse resetType: %s\n", event.Data())
-		ad := event.Data().(ah.GenericActionEventData)
-		resetType, _ := ad.ActionData.(map[string]interface{})["ResetType"]
-		call := "undefined"
-		if resetType == "ForceRestart" {
-			call = "coldReset"
-		}
-		if resetType == "GracefulRestart" {
-			call = "warmReset"
-		}
-		fmt.Printf("\tgot: %s\n", resetType)
-		if call == "undefined" {
-			return
-		}
-
-		fmt.Printf("connect to system bus\n")
-		statusCode := 200
-		statusMessage := "OK"
-
-		conn, err := dbus.SystemBus()
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Cannot connect to System Bus: %s\n", err.Error())
-			statusCode = 501
-			statusMessage = "ERROR: Cannot attach to dbus system bus"
-		}
-
-		dh := mydbus.NewDbusHelper(conn, bus, path)
-		timedctx, cancel := context.WithTimeout(ctx, time.Duration(DbusTimeout))
-		defer cancel()
-		_, err = dh.DbusCall(timedctx, 0, intfc+"."+call)
-		if err != nil {
-			statusCode = 501
-			statusMessage = "Internal call failed"
-		}
-
-		eb.HandleEvent(ctx, eh.NewEvent(domain.HTTPCmdProcessed, domain.HTTPCmdProcessedData{
-			CommandID:  event.Data().(ah.GenericActionEventData).CmdID,
-			Results:    map[string]interface{}{"RESET": statusMessage},
-			StatusCode: statusCode,
-			Headers:    map[string]string{},
-		}, time.Now()))
+	system.ApplyOption(plugins.UpdateProperty("computersystem.reset", func(event eh.Event, res *domain.HTTPCmdProcessedData) {
+		fmt.Printf("Hello WORLD!\n\tGOT RESET EVENT\n")
+		res.Results = map[string]interface{}{"RESET": "FAKE SIMULATED COMPUTER RESET"}
 	}))
 }

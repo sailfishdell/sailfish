@@ -12,25 +12,14 @@ import (
 
 	"github.com/godbus/dbus"
 	mapper "github.com/superchalupa/go-redfish/plugins/dbus"
+	"github.com/superchalupa/go-redfish/plugins/ocp/thermal/temperatures"
 )
 
-type dbusThermalList struct {
-	*thermalList
-
-	dbusSensors map[string]map[string]*thermalSensorRedfish
+type Optioner interface {
+    ApplyOption(options ...interface{}) error
 }
 
-func NewThermalListImpl(ctx context.Context) *dbusThermalList {
-	ret := &dbusThermalList{
-		thermalList: NewThermalList(),
-	}
-
-	go ret.UpdateSensorList(ctx)
-
-	return ret
-}
-
-func (d *dbusThermalList) UpdateSensorList(ctx context.Context) {
+func UpdateSensorList(ctx context.Context, temps Optioner) {
 	var conn *dbus.Conn
 	var err error
 	for {
@@ -62,34 +51,15 @@ func (d *dbusThermalList) UpdateSensorList(ctx context.Context) {
 				break
 			}
 
-			// map[PATH]map[BUS][]interface
-			newList := map[string]map[string]*thermalSensorRedfish{}
 			for p, m1 := range dict {
 				for bus, _ := range m1 {
 					fmt.Printf("getting thermal for bus(%s)  path(%s)\n", bus, p)
-					paths, ok := newList[bus]
-					if !ok {
-						paths = map[string]*thermalSensorRedfish{}
-					}
-					paths[p] = getThermal(ctx, conn, bus, p)
-					newList[bus] = paths
+                    temps.ApplyOption(
+                        temperatures.WithSensor(
+                            fmt.Sprintf("%s#%s", bus, p),
+					        getThermal(ctx, conn, bus, p)))
 				}
 			}
-
-			fmt.Printf("New thermals: %s\n", newList)
-
-			d.Lock()
-			d.dbusSensors = newList
-			d.sensors = []*thermalSensor{}
-
-			// dbusSensors map[string]map[string]*thermalSensorRedfish
-			for _, d1 := range d.dbusSensors {
-				for _, tsr := range d1 {
-					d.sensors = append(d.sensors, &thermalSensor{redfish: tsr})
-				}
-			}
-
-			d.Unlock()
 		}
 
 		// sleep for 10 seconds, or until context is cancelled
@@ -108,7 +78,7 @@ const (
 	SensorThreshold = "xyz.openbmc_project.Sensor.Threshold.Warning"
 )
 
-func getThermal(ctx context.Context, conn *dbus.Conn, bus string, objectPath string) *thermalSensorRedfish {
+func getThermal(ctx context.Context, conn *dbus.Conn, bus string, objectPath string) *temperatures.RedfishThermalSensor {
 	busObject := conn.Object(bus, dbus.ObjectPath(objectPath))
 
 	unit, err := busObject.GetProperty(SensorValue + ".Unit")
@@ -156,12 +126,12 @@ func getThermal(ctx context.Context, conn *dbus.Conn, bus string, objectPath str
 	UpperCritical, ok := UpperCriticalV.Value().(int64)
 
 	var scaleMultiplier float64 = math.Pow(10, float64(s))
-	return &thermalSensorRedfish{
+	return &temperatures.RedfishThermalSensor{
 		Name:                      path.Base(objectPath),
 		ReadingCelsius:            float64(v) * scaleMultiplier,
 		UpperThresholdNonCritical: float64(UpperCritical) * scaleMultiplier,
 		UpperThresholdCritical:    float64(UpperCritical) * scaleMultiplier,
 		UpperThresholdFatal:       float64(UpperCritical) * scaleMultiplier,
-		Status:                    StdStatus{State: "Enabled", Health: "OK"},
+		//Status:                    StdStatus{State: "Enabled", Health: "OK"},
 	}
 }

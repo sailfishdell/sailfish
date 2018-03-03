@@ -88,32 +88,32 @@ func OCPProfileFactory(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus
 
 	temps, _ := temperatures.New(
 		temperatures.InThermal(therm),
-		temperatures.WithSensor("inlet", 
-            &temperatures.RedfishThermalSensor{
-                Name: "crappysens",
-                SensorNumber: 0,
-                ReadingCelsius: 22,
-                UpperThresholdNonCritical:100,
-                UpperThresholdCritical: 150,
-                UpperThresholdFatal: 200,
-                MinReadingRangeTemp: 0,
-                MaxReadingRangeTemp: 250,
-                PhysicalContext: "inlet",
-                },
-            ),
-		temperatures.WithSensor("ndc", 
-            &temperatures.RedfishThermalSensor{
-                Name: "crappysens",
-                SensorNumber: 1,
-                ReadingCelsius: 23,
-                UpperThresholdNonCritical:100,
-                UpperThresholdCritical: 150,
-                UpperThresholdFatal: 200,
-                MinReadingRangeTemp: 0,
-                MaxReadingRangeTemp: 250,
-                PhysicalContext: "ndc",
-                },
-            ),
+		temperatures.WithSensor("inlet",
+			&temperatures.RedfishThermalSensor{
+				Name:                      "crappysens",
+				SensorNumber:              0,
+				ReadingCelsius:            22,
+				UpperThresholdNonCritical: 100,
+				UpperThresholdCritical:    150,
+				UpperThresholdFatal:       200,
+				MinReadingRangeTemp:       0,
+				MaxReadingRangeTemp:       250,
+				PhysicalContext:           "inlet",
+			},
+		),
+		temperatures.WithSensor("ndc",
+			&temperatures.RedfishThermalSensor{
+				Name:                      "crappysens",
+				SensorNumber:              1,
+				ReadingCelsius:            23,
+				UpperThresholdNonCritical: 100,
+				UpperThresholdCritical:    150,
+				UpperThresholdFatal:       200,
+				MinReadingRangeTemp:       0,
+				MaxReadingRangeTemp:       250,
+				PhysicalContext:           "ndc",
+			},
+		),
 	)
 
 	// register all of the plugins (do this first so we dont get any race
@@ -138,7 +138,7 @@ func OCPProfileFactory(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus
 
 	bmcSvc.ApplyOption(plugins.UpdateProperty("manager.reset", func(event eh.Event, res *domain.HTTPCmdProcessedData) {
 		fmt.Printf("Hello WORLD!\n\tGOT RESET EVENT\n")
-		res.Results = map[string]interface{}{"RESET": "FAKE SIMULATED RESET"}
+		res.Results = map[string]interface{}{"RESET": "FAKE SIMULATED BMC RESET"}
 	}))
 
 	system.ApplyOption(plugins.UpdateProperty("computersystem.reset", func(event eh.Event, res *domain.HTTPCmdProcessedData) {

@@ -2,7 +2,7 @@ package temperatures
 
 import (
 	"context"
-    "fmt"
+	"fmt"
 
 	"github.com/superchalupa/go-redfish/plugins"
 	domain "github.com/superchalupa/go-redfish/redfishresource"
@@ -16,10 +16,10 @@ const (
 )
 
 type RedfishThermalSensor struct {
-	OdataID                   string `json:"@odata.id"`
-	MemberID                  string
-	Name                      string
-	SensorNumber              int
+	OdataID      string `json:"@odata.id"`
+	MemberID     string
+	Name         string
+	SensorNumber int
 	// Status                    StdStatus
 	ReadingCelsius            float64
 	UpperThresholdNonCritical float64
@@ -31,16 +31,16 @@ type RedfishThermalSensor struct {
 }
 
 func (s *RedfishThermalSensor) SetOdataID(id string) {
-    s.OdataID = id
+	s.OdataID = id
 }
 
 func (s *RedfishThermalSensor) SetMemberID(id string) {
-    s.MemberID = id
+	s.MemberID = id
 }
 
 type sensorInt interface {
-    SetOdataID(string)
-    SetMemberID(string)
+	SetOdataID(string)
+	SetMemberID(string)
 }
 
 type odataInt interface {
@@ -50,14 +50,14 @@ type odataInt interface {
 
 type service struct {
 	*plugins.Service
-	therm odataInt
+	therm   odataInt
 	sensors map[string]sensorInt
 }
 
 func New(options ...interface{}) (*service, error) {
 	p := &service{
 		Service: plugins.NewService(plugins.PluginType(TemperaturesPlugin)),
-        sensors: map[string]sensorInt{},
+		sensors: map[string]sensorInt{},
 	}
 	p.ApplyOption(options...)
 	return p, nil
@@ -71,10 +71,12 @@ func InThermal(b odataInt) Option {
 }
 
 func WithSensor(name string, sensor sensorInt) Option {
-    return func(s *service) error {
-        s.sensors[name] = sensor
-        return nil
-    }
+	return func(s *service) error {
+        s.Lock()
+        defer s.Unlock()
+		s.sensors[name] = sensor
+		return nil
+	}
 }
 
 func (s *service) RefreshProperty(
@@ -89,15 +91,15 @@ func (s *service) RefreshProperty(
 	defer s.Unlock()
 
 	res := []sensorInt{}
-    var idx = 0
+	var idx = 0
 	for _, v := range s.sensors {
-        // make a copy so we can move on with life after we return (reduce locking issues)
-        // TODO: does this actually work?
-        var s sensorInt = v
-        s.SetOdataID(fmt.Sprintf("%s/%s/%d", agg.ResourceURI, "#/Temperatures", idx))
-        s.SetMemberID(fmt.Sprintf("%d", idx))
+		// make a copy so we can move on with life after we return (reduce locking issues)
+		// TODO: does this actually work?
+		var s sensorInt = v
+		s.SetOdataID(fmt.Sprintf("%s/%s/%d", agg.ResourceURI, "#/Temperatures", idx))
+		s.SetMemberID(fmt.Sprintf("%d", idx))
 		res = append(res, s)
-        idx++
+		idx++
 	}
 	rrp.Value = res
 }
