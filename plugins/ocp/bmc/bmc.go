@@ -41,6 +41,26 @@ func WithUniqueName(uri string) plugins.Option {
 	return plugins.PropertyOnce("unique_name", uri)
 }
 
+func ManagerForServer(uri string) Option {
+	return func(s *service) error {
+		serversList, ok := s.GetPropertyOkUnlocked("bmc_manager_for_servers")
+		if !ok {
+			serversList = []string{}
+		}
+		sl, ok := serversList.([]string)
+		if !ok {
+			sl = []string{}
+		}
+		sl = append(sl, uri)
+		s.UpdatePropertyUnlocked("bmc_manager_for_servers", serversList)
+		return nil
+	}
+}
+
+func (s *service) ManagerForServer(uri string) {
+	s.ApplyOption(ManagerForServer(uri))
+}
+
 func (s *service) AddResource(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
 	ch.HandleCommand(
 		context.Background(),

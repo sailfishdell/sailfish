@@ -36,7 +36,7 @@ func New(options ...interface{}) (*service, error) {
 func InChassis(b odataInt) Option {
 	return func(p *service) error {
 		p.chas = b
-		p.ApplyOption(plugins.PropertyOnce("uri", p.chas.GetOdataID()+"/Thermal"))
+		p.PropertyOnceUnlocked("uri", p.chas.GetOdataID()+"/Thermal")
 		return nil
 	}
 }

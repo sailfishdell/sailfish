@@ -1,0 +1,12 @@
+Known incomplete:
+    - /redfish/v1/Systems/1/LogServices
+    - Generic Status Object
+    - /redfish/v1/Chassis/1/Power
+    - /redfish/v1/Chassis/1/Thermal  redundancy options - probably simple addition
+
+    - /redfish/v1/Managers/bmc
+        # ManagerForServers
+        # ManagerForChassis
+        # ManagerInChassis
+        # EthernetInterface
+

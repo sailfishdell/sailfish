@@ -72,8 +72,6 @@ func InThermal(b odataInt) Option {
 
 func WithSensor(name string, sensor sensorInt) Option {
 	return func(s *service) error {
-		s.Lock()
-		defer s.Unlock()
 		s.sensors[name] = sensor
 		return nil
 	}

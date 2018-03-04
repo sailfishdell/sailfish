@@ -117,7 +117,7 @@ func OCPProfileFactory(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus
 		),
 	)
 
-	fans, _ := fans.New(
+	fanObj, _ := fans.New(
 		fans.InThermal(therm),
 		fans.WithSensor("fan_X",
 			&fans.RedfishFan{
@@ -150,7 +150,7 @@ func OCPProfileFactory(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus
 	domain.RegisterPlugin(func() domain.Plugin { return system })
 	domain.RegisterPlugin(func() domain.Plugin { return therm })
 	domain.RegisterPlugin(func() domain.Plugin { return temps })
-	domain.RegisterPlugin(func() domain.Plugin { return fans })
+	domain.RegisterPlugin(func() domain.Plugin { return fanObj })
 
 	// and now add everything to the URI tree
 	time.Sleep(250 * time.Millisecond) // still a small race in events, so sleep needed for now
@@ -161,7 +161,7 @@ func OCPProfileFactory(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus
 	system.AddResource(ctx, ch, eb, ew)
 	therm.AddResource(ctx, ch, eb, ew)
 	temps.AddResource(ctx, ch, eb, ew)
-	fans.AddResource(ctx, ch, eb, ew)
+	fanObj.AddResource(ctx, ch, eb, ew)
 
 	bmcSvc.ApplyOption(plugins.UpdateProperty("manager.reset", func(event eh.Event, res *domain.HTTPCmdProcessedData) {
 		fmt.Printf("Hello WORLD!\n\tGOT RESET EVENT\n")

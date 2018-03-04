@@ -13,7 +13,7 @@ import (
 type Option func(*Service) error
 
 type Service struct {
-	sync.Mutex
+	sync.RWMutex
 	properties map[string]interface{}
 }
 
@@ -38,14 +38,21 @@ func (s *Service) ApplyOption(options ...Option) error {
 }
 
 // runtime panic if upper layers dont set properties for id/uri
-func (s *Service) GetUUID() eh.UUID   { return s.properties["id"].(eh.UUID) }
-func (s *Service) GetOdataID() string { return s.properties["uri"].(string) }
+func (s *Service) GetUUID() eh.UUID { s.RLock(); defer s.RUnlock(); return s.properties["id"].(eh.UUID) }
+func (s *Service) GetOdataID() string {
+	s.RLock()
+	defer s.RUnlock()
+	return s.properties["uri"].(string)
+}
 func (s *Service) PluginType() domain.PluginType {
+	s.RLock()
+	defer s.RUnlock()
 	return s.properties["plugin_type"].(domain.PluginType)
 }
 
-// GetProperty will runtime panic if property doesn't exist
-func (s *Service) GetProperty(p string) interface{} { return s.properties[p] }
+func (s *Service) PluginTypeUnlocked() domain.PluginType {
+	return s.properties["plugin_type"].(domain.PluginType)
+}
 
 // TODO: HasProperty() if needed (?)
 
@@ -101,15 +108,34 @@ func RefreshProperty(
 	return errors.New("Couldn't find property.")
 }
 
-// Service is locked for Options in ApplyOption
-func UpdateProperty(p string, v interface{}) Option {
-	return func(s *Service) error {
-		s.properties[p] = v
-		return nil
-	}
+func (s *Service) GetProperty(p string) interface{} {
+	s.RLock()
+	defer s.RUnlock()
+	return s.properties[p]
+}
+func (s *Service) GetPropertyOk(p string) (ret interface{}, ok bool) {
+	s.RLock()
+	defer s.RUnlock()
+	ret, ok = s.properties[p]
+	return
+}
+func (s *Service) UpdateProperty(p string, i interface{}) {
+	s.Lock()
+	defer s.Unlock()
+	s.properties[p] = i
 }
 
-func (s *Service) MustProperty_unlocked(name string) (ret interface{}) {
+func (s *Service) GetPropertyUnlocked(p string) interface{} { return s.properties[p] }
+func (s *Service) GetPropertyOkUnlocked(p string) (ret interface{}, ok bool) {
+	ret, ok = s.properties[p]
+	return
+}
+func (s *Service) UpdatePropertyUnlocked(p string, i interface{}) { s.properties[p] = i }
+
+// MustProperty is equivalent to GetProperty with the exception that it will
+// panic if the property has not already been set. Use for mandatory properties.
+// This is the unlocked version of this function.
+func (s *Service) MustPropertyUnlocked(name string) (ret interface{}) {
 	ret, ok := s.properties[name]
 	if ok {
 		return
@@ -117,10 +143,43 @@ func (s *Service) MustProperty_unlocked(name string) (ret interface{}) {
 	panic("Required property is not set: " + name)
 }
 
+// MustProperty is equivalent to GetProperty with the exception that it will
+// panic if the property has not already been set. Use for mandatory properties.
 func (s *Service) MustProperty(name string) interface{} {
+	s.RLock()
+	defer s.RUnlock()
+	return s.MustPropertyUnlocked(name)
+}
+
+func (s *Service) PropertyOnce(p string, v interface{}) {
 	s.Lock()
 	defer s.Unlock()
-	return s.MustProperty_unlocked(name)
+	if _, ok := s.properties[p]; ok {
+		panic("Property " + p + " can only be set once")
+	}
+	s.properties[p] = v
+}
+
+func (s *Service) PropertyOnceUnlocked(p string, v interface{}) {
+	if _, ok := s.properties[p]; ok {
+		panic("Property " + p + " can only be set once")
+	}
+	s.properties[p] = v
+}
+
+//
+//  Options: these are construction-time functional options that can be passed
+//  to the constructor, or after construction, you can pass them with
+//  ApplyOptions
+//
+
+// UpdateProperty is a functional optioin to set  and option at construction time or update the value after using ApplyOption.
+// Service is locked for Options in ApplyOption
+func UpdateProperty(p string, v interface{}) Option {
+	return func(s *Service) error {
+		s.properties[p] = v
+		return nil
+	}
 }
 
 // Service is locked for Options in ApplyOption
@@ -150,6 +209,6 @@ func (s *Service) MetaReadOnlyProperty(name string) map[string]interface{} {
 	s.Lock()
 	defer s.Unlock()
 	// should panic if property not there
-	s.MustProperty_unlocked(name)
-	return map[string]interface{}{"GET": map[string]interface{}{"plugin": string(s.PluginType()), "property": name}}
+	s.MustPropertyUnlocked(name)
+	return map[string]interface{}{"GET": map[string]interface{}{"plugin": string(s.PluginTypeUnlocked()), "property": name}}
 }

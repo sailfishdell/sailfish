@@ -18,6 +18,7 @@ import (
 	"github.com/superchalupa/go-redfish/plugins/ocp/protocol"
 	"github.com/superchalupa/go-redfish/plugins/ocp/system"
 	"github.com/superchalupa/go-redfish/plugins/ocp/thermal"
+	"github.com/superchalupa/go-redfish/plugins/ocp/thermal/fans"
 	"github.com/superchalupa/go-redfish/plugins/ocp/thermal/temperatures"
 )
 
@@ -90,8 +91,13 @@ func OCPProfileFactory(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus
 		temperatures.InThermal(therm),
 	)
 
+	fanObj, _ := fans.New(
+		fans.InThermal(therm),
+	)
+
 	// Start background processing to update sensor data every 10 seconds
 	go UpdateSensorList(ctx, temps)
+	go UpdateFans(ctx, fanObj)
 
 	// register all of the plugins (do this first so we dont get any race
 	// conditions if somebody accesses the URIs before these plugins are
@@ -102,6 +108,7 @@ func OCPProfileFactory(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus
 	domain.RegisterPlugin(func() domain.Plugin { return system })
 	domain.RegisterPlugin(func() domain.Plugin { return therm })
 	domain.RegisterPlugin(func() domain.Plugin { return temps })
+	domain.RegisterPlugin(func() domain.Plugin { return fanObj })
 
 	// and now add everything to the URI tree
 	time.Sleep(250 * time.Millisecond) // still a small race in events, so sleep needed for now
@@ -112,6 +119,7 @@ func OCPProfileFactory(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus
 	system.AddResource(ctx, ch, eb, ew)
 	therm.AddResource(ctx, ch, eb, ew)
 	temps.AddResource(ctx, ch, eb, ew)
+	fanObj.AddResource(ctx, ch, eb, ew)
 
 	bmcSvc.ApplyOption(plugins.UpdateProperty("manager.reset", func(event eh.Event, res *domain.HTTPCmdProcessedData) {
 		BMCReset(ctx, event, res, eb)

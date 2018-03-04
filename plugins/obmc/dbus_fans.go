@@ -12,19 +12,10 @@ import (
 
 	"github.com/godbus/dbus"
 	mapper "github.com/superchalupa/go-redfish/plugins/dbus"
-	"github.com/superchalupa/go-redfish/plugins/ocp/thermal/temperatures"
+	"github.com/superchalupa/go-redfish/plugins/ocp/thermal/fans"
 )
 
-type Optioner interface {
-	ApplyOption(options ...interface{}) error
-}
-
-const (
-	SensorValue     = "xyz.openbmc_project.Sensor.Value"
-	SensorThreshold = "xyz.openbmc_project.Sensor.Threshold.Warning"
-)
-
-func UpdateSensorList(ctx context.Context, temps Optioner) {
+func UpdateFans(ctx context.Context, fanInt Optioner) {
 	var conn *dbus.Conn
 	var err error
 	for {
@@ -40,7 +31,7 @@ func UpdateSensorList(ctx context.Context, temps Optioner) {
 				}
 			}
 			m := mapper.New(conn)
-			ret, err := m.GetSubTree(ctx, "/xyz/openbmc_project/sensors/temperature", 0, "xyz.openbmc_project.Sensor.Value")
+			ret, err := m.GetSubTree(ctx, DbusPathFan, 0, DbusInterfaceSensorValue)
 			if err != nil {
 				fmt.Printf("Mapper call failed: %s\n", err.Error())
 				break
@@ -59,10 +50,10 @@ func UpdateSensorList(ctx context.Context, temps Optioner) {
 			for p, m1 := range dict {
 				for bus, _ := range m1 {
 					fmt.Printf("getting thermal for bus(%s)  path(%s)\n", bus, p)
-					temps.ApplyOption(
-						temperatures.WithSensor(
+					fanInt.ApplyOption(
+						fans.WithSensor(
 							fmt.Sprintf("%s#%s", bus, p),
-							getThermal(ctx, conn, bus, p)))
+							getFan(ctx, conn, bus, p)))
 				}
 			}
 		}
@@ -78,7 +69,7 @@ func UpdateSensorList(ctx context.Context, temps Optioner) {
 	}
 }
 
-func getThermal(ctx context.Context, conn *dbus.Conn, bus string, objectPath string) *temperatures.RedfishThermalSensor {
+func getFan(ctx context.Context, conn *dbus.Conn, bus string, objectPath string) *fans.RedfishFan {
 	busObject := conn.Object(bus, dbus.ObjectPath(objectPath))
 
 	unit, err := busObject.GetProperty(SensorValue + ".Unit")
@@ -86,7 +77,7 @@ func getThermal(ctx context.Context, conn *dbus.Conn, bus string, objectPath str
 		fmt.Printf("Error getting .Unit property for bus(%s) path(%s): %s\n", bus, objectPath, err.Error())
 		return nil
 	}
-	if unit.Value() != "xyz.openbmc_project.Sensor.Value.Unit.DegreesC" {
+	if unit.Value() != DbusUnitRPMValue {
 		fmt.Printf("Don't know how to handle units: %s\n", unit)
 		return nil
 	}
@@ -113,25 +104,27 @@ func getThermal(ctx context.Context, conn *dbus.Conn, bus string, objectPath str
 		return nil
 	}
 
-	// BOOL that says if we raise alarm if it goes above AlarmHigh
-	_, err = busObject.GetProperty(SensorThreshold + ".WarningAlarmHigh")
-	if err != nil {
-		fmt.Printf("Error getting .WarningAlarmHigh property for bus(%s) path(%s): %s\n", bus, objectPath, err.Error())
-	}
+	/*
+		// BOOL that says if we raise alarm if it goes above AlarmHigh
+		_, err = busObject.GetProperty(SensorThreshold + ".WarningAlarmHigh")
+		if err != nil {
+			fmt.Printf("Error getting .WarningAlarmHigh property for bus(%s) path(%s): %s\n", bus, objectPath, err.Error())
+		}
 
-	UpperCriticalV, err := busObject.GetProperty(SensorThreshold + ".WarningHigh")
-	if err != nil {
-		fmt.Printf("Error getting .WarningHigh property for bus(%s) path(%s): %s\n", bus, objectPath, err.Error())
-	}
-	UpperCritical, ok := UpperCriticalV.Value().(int64)
+		UpperCriticalV, err := busObject.GetProperty(SensorThreshold + ".WarningHigh")
+		if err != nil {
+			fmt.Printf("Error getting .WarningHigh property for bus(%s) path(%s): %s\n", bus, objectPath, err.Error())
+		}
+		UpperCritical, ok := UpperCriticalV.Value().(int64)
+	*/
 
 	var scaleMultiplier float64 = math.Pow(10, float64(s))
-	return &temperatures.RedfishThermalSensor{
-		Name:                      path.Base(objectPath),
-		ReadingCelsius:            float64(v) * scaleMultiplier,
-		UpperThresholdNonCritical: float64(UpperCritical) * scaleMultiplier,
-		UpperThresholdCritical:    float64(UpperCritical) * scaleMultiplier,
-		UpperThresholdFatal:       float64(UpperCritical) * scaleMultiplier,
+	return &fans.RedfishFan{
+		Name:    path.Base(objectPath),
+		Reading: float64(v) * scaleMultiplier,
+		//UpperThresholdNonCritical: float64(UpperCritical) * scaleMultiplier,
+		//UpperThresholdCritical:    float64(UpperCritical) * scaleMultiplier,
+		//UpperThresholdFatal:       float64(UpperCritical) * scaleMultiplier,
 		//Status:                    StdStatus{State: "Enabled", Health: "OK"},
 	}
 }

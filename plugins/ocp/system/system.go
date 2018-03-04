@@ -43,7 +43,12 @@ func WithUniqueName(uri string) plugins.Option {
 	return plugins.PropertyOnce("unique_name", uri)
 }
 
-func ManagedBy(b odataInt) Option {
+type managerer interface {
+	odataInt
+	ManagerForServer(uri string)
+}
+
+func ManagedBy(b managerer) Option {
 	return func(p *service) error {
 		p.bmc = b
 		return nil
