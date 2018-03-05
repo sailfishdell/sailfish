@@ -31,12 +31,14 @@ func New(options ...interface{}) (*service, error) {
 	s := &service{
 		Service: plugins.NewService(plugins.PluginType(BmcPlugin)),
 	}
-	s.ApplyOption(plugins.UUID())
-	s.ApplyOption(options...)
-	s.ApplyOption(plugins.PropertyOnce("uri", "/redfish/v1/Managers/"+s.GetProperty("unique_name").(string)))
+    // valid for consumer of this class to use without setting these, so put in a default
 	s.UpdatePropertyUnlocked("bmc_manager_for_servers", []map[string]string{})
 	s.UpdatePropertyUnlocked("bmc_manager_for_chassis", []map[string]string{})
 	s.UpdatePropertyUnlocked("in_chassis", map[string]string{})
+
+	s.ApplyOption(plugins.UUID())
+	s.ApplyOption(options...)
+	s.ApplyOption(plugins.PropertyOnce("uri", "/redfish/v1/Managers/"+s.GetProperty("unique_name").(string)))
 	return s, nil
 }
 
