@@ -3,7 +3,4 @@
 scriptdir=$(cd $(dirname $0); pwd)
 cd $scriptdir/..
 
-for dir in  $(find plugins cmd/* redfishresource -type d)
-do
-    go fmt $dir/*.go
-done
+find  plugins cmd redfishresource -name \*.go -type f -exec go fmt {} \;
