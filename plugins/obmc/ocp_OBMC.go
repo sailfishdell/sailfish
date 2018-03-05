@@ -52,7 +52,8 @@ func OCPProfileFactory(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus
 	)
 
 	chas, _ := chassis.New(
-		chassis.ManagedBy(bmcSvc),
+		chassis.AddManagedBy(bmcSvc),
+		chassis.AddManagerInChassis(bmcSvc),
 		chassis.WithUniqueName("1"),
 		plugins.UpdateProperty("name", "Catfish System Chassis"),
 		plugins.UpdateProperty("chassis_type", "RackMount"),
@@ -64,6 +65,9 @@ func OCPProfileFactory(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus
 		plugins.UpdateProperty("chassis_type", "RackMount"),
 		plugins.UpdateProperty("manufacturer", "Cat manufacturer"),
 	)
+
+	bmcSvc.InChassis(chas)
+	bmcSvc.AddManagerForChassis(chas)
 
 	system, _ := system.New(
 		system.WithUniqueName("1"),
@@ -81,7 +85,11 @@ func OCPProfileFactory(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus
 		plugins.UpdateProperty("power_state", "On"),
 		plugins.UpdateProperty("bios_version", "X00.1.2.3.4(build-23)"),
 		plugins.UpdateProperty("led", "On"),
+		plugins.UpdateProperty("system_hostname", "CatfishHostname"),
 	)
+
+	bmcSvc.AddManagerForServer(system)
+	chas.AddComputerSystem(system)
 
 	therm, _ := thermal.New(
 		thermal.InChassis(chas),

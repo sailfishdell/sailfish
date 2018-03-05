@@ -46,6 +46,52 @@ func ManagedBy(b bmcInt) Option {
 	}
 }
 
+type odataObj interface {
+	GetOdataID() string
+}
+
+// no locking because it's an Option, loc
+func manageOdataIDList(name string, obj odataObj) Option {
+	return func(s *service) error {
+		serversList, ok := s.GetPropertyOkUnlocked(name)
+		if !ok {
+			serversList = []map[string]string{}
+		}
+		sl, ok := serversList.([]map[string]string)
+		if !ok {
+			sl = []map[string]string{}
+		}
+		sl = append(sl, map[string]string{"@odata.id": obj.GetOdataID()})
+
+		s.UpdatePropertyUnlocked(name, sl)
+		return nil
+	}
+}
+
+func AddManagedBy(obj odataObj) Option {
+	return manageOdataIDList("managed_by", obj)
+}
+
+func (s *service) AddManagedBy(obj odataObj) {
+	s.ApplyOption(AddManagedBy(obj))
+}
+
+func AddManagerInChassis(obj odataObj) Option {
+	return manageOdataIDList("managers_in_chassis", obj)
+}
+
+func (s *service) AddManagerInChassis(obj odataObj) {
+	s.ApplyOption(AddManagerInChassis(obj))
+}
+
+func AddComputerSystem(obj odataObj) Option {
+	return manageOdataIDList("computer_systems", obj)
+}
+
+func (s *service) AddComputerSystem(obj odataObj) {
+	s.ApplyOption(AddComputerSystem(obj))
+}
+
 func (s *service) AddResource(ctx context.Context, ch eh.CommandHandler) {
 	ch.HandleCommand(
 		context.Background(),
@@ -80,9 +126,9 @@ func (s *service) AddResource(ctx context.Context, ch eh.CommandHandler) {
 				},
 
 				"Links": map[string]interface{}{
-					"ComputerSystems":   []map[string]interface{}{},
-					"ManagedBy":         []map[string]interface{}{{"@odata.id": s.bmc.GetOdataID()}},
-					"ManagersInChassis": []map[string]interface{}{{"@odata.id": s.bmc.GetOdataID()}},
+					"ComputerSystems@meta":   s.MetaReadOnlyProperty("computer_systems"),
+					"ManagedBy@meta":         s.MetaReadOnlyProperty("managed_by"),
+					"ManagersInChassis@meta": s.MetaReadOnlyProperty("managers_in_chassis"),
 				},
 			}})
 }

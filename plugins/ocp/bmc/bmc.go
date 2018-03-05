@@ -34,6 +34,9 @@ func New(options ...interface{}) (*service, error) {
 	s.ApplyOption(plugins.UUID())
 	s.ApplyOption(options...)
 	s.ApplyOption(plugins.PropertyOnce("uri", "/redfish/v1/Managers/"+s.GetProperty("unique_name").(string)))
+	s.UpdatePropertyUnlocked("bmc_manager_for_servers", []map[string]string{})
+	s.UpdatePropertyUnlocked("bmc_manager_for_chassis", []map[string]string{})
+	s.UpdatePropertyUnlocked("in_chassis", map[string]string{})
 	return s, nil
 }
 
@@ -41,24 +44,53 @@ func WithUniqueName(uri string) plugins.Option {
 	return plugins.PropertyOnce("unique_name", uri)
 }
 
-func ManagerForServer(uri string) Option {
+type odataObj interface {
+	GetOdataID() string
+}
+
+// no locking because it's an Option, loc
+func manageOdataIDList(name string, obj odataObj) Option {
 	return func(s *service) error {
-		serversList, ok := s.GetPropertyOkUnlocked("bmc_manager_for_servers")
+		serversList, ok := s.GetPropertyOkUnlocked(name)
 		if !ok {
-			serversList = []string{}
+			serversList = []map[string]string{}
 		}
-		sl, ok := serversList.([]string)
+		sl, ok := serversList.([]map[string]string)
 		if !ok {
-			sl = []string{}
+			sl = []map[string]string{}
 		}
-		sl = append(sl, uri)
-		s.UpdatePropertyUnlocked("bmc_manager_for_servers", serversList)
+		sl = append(sl, map[string]string{"@odata.id": obj.GetOdataID()})
+
+		s.UpdatePropertyUnlocked(name, sl)
 		return nil
 	}
 }
 
-func (s *service) ManagerForServer(uri string) {
-	s.ApplyOption(ManagerForServer(uri))
+func AddManagerForChassis(obj odataObj) Option {
+	return manageOdataIDList("bmc_manager_for_chassis", obj)
+}
+
+func (s *service) AddManagerForChassis(obj odataObj) {
+	s.ApplyOption(AddManagerForChassis(obj))
+}
+
+func AddManagerForServer(obj odataObj) Option {
+	return manageOdataIDList("bmc_manager_for_servers", obj)
+}
+
+func (s *service) AddManagerForServer(obj odataObj) {
+	s.ApplyOption(AddManagerForServer(obj))
+}
+
+func InChassis(obj odataObj) Option {
+	return func(s *service) error {
+		s.UpdatePropertyUnlocked("in_chassis", map[string]string{"@odata.id": obj.GetOdataID()})
+		return nil
+	}
+}
+
+func (s *service) InChassis(obj odataObj) {
+	s.ApplyOption(InChassis(obj))
 }
 
 func (s *service) AddResource(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
@@ -86,7 +118,11 @@ func (s *service) AddResource(ctx context.Context, ch eh.CommandHandler, eb eh.E
 				"DateTime@meta":            map[string]interface{}{"GET": map[string]interface{}{"plugin": "datetime"}},
 				"DateTimeLocalOffset@meta": s.MetaReadOnlyProperty("timezone"),
 				"FirmwareVersion@meta":     s.MetaReadOnlyProperty("version"),
-				"Links":                    map[string]interface{}{},
+				"Links": map[string]interface{}{
+					"ManagerForServers@meta": s.MetaReadOnlyProperty("bmc_manager_for_servers"),
+					"ManagerForChassis@meta": s.MetaReadOnlyProperty("bmc_manager_for_chassis"),
+					"ManagerInChassis@meta":  s.MetaReadOnlyProperty("in_chassis"),
+				},
 
 				// Commented out until we figure out what these are supposed to be
 				//"ServiceEntryPointUUID":    eh.NewUUID(),

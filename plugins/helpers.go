@@ -38,23 +38,26 @@ func (s *Service) ApplyOption(options ...Option) error {
 }
 
 // runtime panic if upper layers dont set properties for id/uri
-func (s *Service) GetUUID() eh.UUID { s.RLock(); defer s.RUnlock(); return s.properties["id"].(eh.UUID) }
+func (s *Service) GetUUID() eh.UUID {
+	s.RLock()
+	defer s.RUnlock()
+	return s.properties["id"].(eh.UUID)
+}
+
+func (s *Service) GetOdataIDUnlocked() string { return s.properties["uri"].(string) }
 func (s *Service) GetOdataID() string {
 	s.RLock()
 	defer s.RUnlock()
 	return s.properties["uri"].(string)
+}
+func (s *Service) PluginTypeUnlocked() domain.PluginType {
+	return s.properties["plugin_type"].(domain.PluginType)
 }
 func (s *Service) PluginType() domain.PluginType {
 	s.RLock()
 	defer s.RUnlock()
 	return s.properties["plugin_type"].(domain.PluginType)
 }
-
-func (s *Service) PluginTypeUnlocked() domain.PluginType {
-	return s.properties["plugin_type"].(domain.PluginType)
-}
-
-// TODO: HasProperty() if needed (?)
 
 func (s *Service) RefreshProperty(
 	ctx context.Context,

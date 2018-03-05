@@ -43,12 +43,7 @@ func WithUniqueName(uri string) plugins.Option {
 	return plugins.PropertyOnce("unique_name", uri)
 }
 
-type managerer interface {
-	odataInt
-	ManagerForServer(uri string)
-}
-
-func ManagedBy(b managerer) Option {
+func ManagedBy(b odataInt) Option {
 	return func(p *service) error {
 		p.bmc = b
 		return nil
@@ -92,8 +87,7 @@ func (s *service) AddResource(ctx context.Context, ch eh.CommandHandler, eb eh.E
 				"PowerState@meta":   s.MetaReadOnlyProperty("power_state"),
 				"BiosVersion@meta":  s.MetaReadOnlyProperty("bios_version"),
 				"IndicatorLED@meta": s.MetaReadOnlyProperty("led"),
-
-				"HostName@meta": map[string]interface{}{"GET": map[string]interface{}{"plugin": "hostname"}},
+				"HostName@meta":     s.MetaReadOnlyProperty("system_hostname"),
 
 				"Links": map[string]interface{}{
 					"Chassis": []map[string]interface{}{

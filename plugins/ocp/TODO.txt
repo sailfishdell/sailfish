@@ -1,12 +1,21 @@
+Good:
+    - /redfish/v1
+    - /redfish/v1/Systems
+    - /redfish/v1/Systems/1
+    - /redfish/v1/Chassis
+    - /redfish/v1/Chassis/1
+    - /redfish/v1/Chassis/1/Thermal
+    - /redfish/v1/Managers
+    - /redfish/v1/Managers/OBMC
+    - /redfish/v1/Managers/OBMC/NetworkProtocol
+
 Known incomplete:
     - /redfish/v1/Systems/1/LogServices
-    - Generic Status Object
+    - /redfish/v1/Managers/OBMC/EthernetInterface
     - /redfish/v1/Chassis/1/Power
     - /redfish/v1/Chassis/1/Thermal  redundancy options - probably simple addition
+    - Generic Status Object
 
-    - /redfish/v1/Managers/bmc
-        # ManagerForServers
-        # ManagerForChassis
-        # ManagerInChassis
-        # EthernetInterface
-
+Todo:
+    redo session service along lines of ocp stuff to get the values into a struct that we use
+    add a patch notification callback, along the lines of what was done for action callbacks
