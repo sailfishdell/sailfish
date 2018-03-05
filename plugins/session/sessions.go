@@ -14,10 +14,6 @@ import (
 	"github.com/looplab/eventhorizon/utils"
 )
 
-func init() {
-	domain.RegisterInitFN(InitService)
-}
-
 var SECRET []byte = []byte("happyhappyjoyjoy1234")
 
 type IDGetter interface {

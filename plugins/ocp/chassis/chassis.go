@@ -109,15 +109,15 @@ func (s *service) AddResource(ctx context.Context, ch eh.CommandHandler) {
 				"DELETE": []string{}, // can't be deleted
 			},
 			Properties: map[string]interface{}{
-				"Name@meta":         s.MetaReadOnlyProperty("name"),
+				"Name@meta":         s.Meta(plugins.PropGET("name")),
 				"Id":                s.GetProperty("unique_name"),
-				"ChassisType@meta":  s.MetaReadOnlyProperty("chassis_type"),
-				"Manufacturer@meta": s.MetaReadOnlyProperty("manufacturer"),
-				"Model@meta":        s.MetaReadOnlyProperty("model"),
-				"SerialNumber@meta": s.MetaReadOnlyProperty("serial_number"),
-				"SKU@meta":          s.MetaReadOnlyProperty("sku"),
-				"PartNumber@meta":   s.MetaReadOnlyProperty("part_number"),
-				"AssetTag@meta":     s.MetaReadOnlyProperty("asset_tag"),
+				"ChassisType@meta":  s.Meta(plugins.PropGET("chassis_type")),
+				"Manufacturer@meta": s.Meta(plugins.PropGET("manufacturer")),
+				"Model@meta":        s.Meta(plugins.PropGET("model")),
+				"SerialNumber@meta": s.Meta(plugins.PropGET("serial_number")),
+				"SKU@meta":          s.Meta(plugins.PropGET("sku")),
+				"PartNumber@meta":   s.Meta(plugins.PropGET("part_number")),
+				"AssetTag@meta":     s.Meta(plugins.PropGET("asset_tag")),
 				"IndicatorLED":      "Lit",
 				"PowerState":        "On",
 				"Status": map[string]interface{}{
@@ -126,9 +126,9 @@ func (s *service) AddResource(ctx context.Context, ch eh.CommandHandler) {
 				},
 
 				"Links": map[string]interface{}{
-					"ComputerSystems@meta":   s.MetaReadOnlyProperty("computer_systems"),
-					"ManagedBy@meta":         s.MetaReadOnlyProperty("managed_by"),
-					"ManagersInChassis@meta": s.MetaReadOnlyProperty("managers_in_chassis"),
+					"ComputerSystems@meta":   s.Meta(plugins.PropGET("computer_systems")),
+					"ManagedBy@meta":         s.Meta(plugins.PropGET("managed_by")),
+					"ManagersInChassis@meta": s.Meta(plugins.PropGET("managers_in_chassis")),
 				},
 			}})
 }

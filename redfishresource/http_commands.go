@@ -58,6 +58,8 @@ func (c *DELETE) Handle(ctx context.Context, a *RedfishResourceAggregate) error 
 
 	// TODO: return http 405 status for undeletable objects. right now we use privileges
 
+	_, _ = a.ProcessMeta(ctx, "DELETE", map[string]interface{}{})
+
 	// send event to trigger delete
 	a.eventBus.HandleEvent(ctx, eh.NewEvent(RedfishResourceRemoved, &RedfishResourceRemovedData{
 		ID:          c.ID,

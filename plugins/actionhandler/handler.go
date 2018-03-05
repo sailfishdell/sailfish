@@ -11,10 +11,6 @@ import (
 	domain "github.com/superchalupa/go-redfish/redfishresource"
 )
 
-func init() {
-	domain.RegisterInitFN(InitService)
-}
-
 func InitService(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
 	eh.RegisterCommand(func() eh.Command { return &POST{eventBus: eb, eventWaiter: ew} })
 	eh.RegisterEventData(GenericActionEvent, func() eh.EventData { return &GenericActionEventData{} })

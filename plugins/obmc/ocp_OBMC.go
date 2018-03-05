@@ -22,11 +22,7 @@ import (
 	"github.com/superchalupa/go-redfish/plugins/ocp/thermal/temperatures"
 )
 
-func init() {
-	domain.RegisterInitFN(OCPProfileFactory)
-}
-
-func OCPProfileFactory(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
+func InitOCP(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
 	// initial implementation is one BMC, one Chassis, and one System. If we
 	// expand beyond that, we need to adjust stuff here.
 

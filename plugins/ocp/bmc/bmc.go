@@ -111,17 +111,17 @@ func (s *service) AddResource(ctx context.Context, ch eh.CommandHandler, eb eh.E
 			},
 			Properties: map[string]interface{}{
 				"Id":                       s.GetProperty("unique_name"),
-				"Name@meta":                s.MetaReadOnlyProperty("name"),
+				"Name@meta":                s.Meta(plugins.PropGET("name")),
 				"ManagerType":              "BMC",
-				"Description@meta":         s.MetaReadOnlyProperty("description"),
-				"Model@meta":               s.MetaReadOnlyProperty("model"),
+				"Description@meta":         s.Meta(plugins.PropGET("description")),
+				"Model@meta":               s.Meta(plugins.PropGET("model")),
 				"DateTime@meta":            map[string]interface{}{"GET": map[string]interface{}{"plugin": "datetime"}},
-				"DateTimeLocalOffset@meta": s.MetaReadOnlyProperty("timezone"),
-				"FirmwareVersion@meta":     s.MetaReadOnlyProperty("version"),
+				"DateTimeLocalOffset@meta": s.Meta(plugins.PropGET("timezone")),
+				"FirmwareVersion@meta":     s.Meta(plugins.PropGET("version")),
 				"Links": map[string]interface{}{
-					"ManagerForServers@meta": s.MetaReadOnlyProperty("bmc_manager_for_servers"),
-					"ManagerForChassis@meta": s.MetaReadOnlyProperty("bmc_manager_for_chassis"),
-					"ManagerInChassis@meta":  s.MetaReadOnlyProperty("in_chassis"),
+					"ManagerForServers@meta": s.Meta(plugins.PropGET("bmc_manager_for_servers")),
+					"ManagerForChassis@meta": s.Meta(plugins.PropGET("bmc_manager_for_chassis")),
+					"ManagerInChassis@meta":  s.Meta(plugins.PropGET("in_chassis")),
 				},
 
 				// Commented out until we figure out what these are supposed to be

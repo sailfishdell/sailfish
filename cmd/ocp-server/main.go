@@ -30,17 +30,16 @@ import (
 	"github.com/superchalupa/go-redfish/plugins/tlscert"
 
 	// load plugins (auto-register)
-	_ "github.com/superchalupa/go-redfish/plugins/actionhandler"
-	_ "github.com/superchalupa/go-redfish/plugins/rootservice"
-	_ "github.com/superchalupa/go-redfish/plugins/stdcollections"
+	"github.com/superchalupa/go-redfish/plugins/actionhandler"
+	"github.com/superchalupa/go-redfish/plugins/rootservice"
+	"github.com/superchalupa/go-redfish/plugins/stdcollections"
 	_ "github.com/superchalupa/go-redfish/plugins/stdmeta"
 
 	// load openbmc plugins
-	_ "github.com/superchalupa/go-redfish/plugins/obmc"
+	"github.com/superchalupa/go-redfish/plugins/obmc"
 
 	// Test plugins (Take these out for a real server)
 	_ "github.com/superchalupa/go-redfish/plugins/test"
-	_ "github.com/superchalupa/go-redfish/plugins/test_action"
 )
 
 // Define a type named "strslice" as a slice of strings
@@ -102,6 +101,11 @@ func main() {
 
 	// This also initializes all of the plugins
 	domain.InitDomain(ctx, domainObjs.CommandHandler, domainObjs.EventBus, domainObjs.EventWaiter)
+	rootservice.InitService(ctx, domainObjs.CommandHandler, domainObjs.EventBus, domainObjs.EventWaiter)
+	stdcollections.InitService(ctx, domainObjs.CommandHandler, domainObjs.EventBus, domainObjs.EventWaiter)
+	actionhandler.InitService(ctx, domainObjs.CommandHandler, domainObjs.EventBus, domainObjs.EventWaiter)
+	session.InitService(ctx, domainObjs.CommandHandler, domainObjs.EventBus, domainObjs.EventWaiter)
+	obmc.InitOCP(ctx, domainObjs.CommandHandler, domainObjs.EventBus, domainObjs.EventWaiter)
 
 	// Set up our standard extensions for authentication
 	// the authentication plugin will explicitly pass username to the final handler using the chainAuth() function

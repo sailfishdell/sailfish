@@ -12,10 +12,6 @@ import (
 	"github.com/looplab/eventhorizon/utils"
 )
 
-func init() {
-	domain.RegisterInitFN(InitService)
-}
-
 // wait in a listener for the root service to be created, then extend it
 func InitService(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
 	sp, err := plugins.NewEventStreamProcessor(ctx, ew, plugins.SelectEventResourceCreatedByURI("/redfish/v1"))

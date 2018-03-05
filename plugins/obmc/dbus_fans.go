@@ -49,7 +49,7 @@ func UpdateFans(ctx context.Context, fanInt Optioner) {
 
 			for p, m1 := range dict {
 				for bus, _ := range m1 {
-					fmt.Printf("getting thermal for bus(%s)  path(%s)\n", bus, p)
+					fmt.Printf("getting fans for bus(%s)  path(%s)\n", bus, p)
 					fanInt.ApplyOption(
 						fans.WithSensor(
 							fmt.Sprintf("%s#%s", bus, p),
