@@ -8,7 +8,7 @@ import (
 	"os"
 
 	"github.com/godbus/dbus"
-	mapper "github.com/superchalupa/go-redfish/plugins/dbus"
+	mapper "github.com/superchalupa/go-redfish/src/dbus"
 )
 
 // Get BMC UUID:

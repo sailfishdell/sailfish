@@ -1,3 +1,18 @@
+# design
+    - meant to be *able* to be a "do everything" webserver for openbmc
+    - first focus is on redfish, modular to be able to add other services
+    - Want to have the development speed of python with the speed and resource usage of a compiled language
+
+
+
+
+
+
+
+
+
+
+
 
 tree = map[string] eh.UUID
     = map[ redfish URI ] = repo uuid

@@ -20,26 +20,26 @@ import (
 	"github.com/gorilla/mux"
 
 	eh "github.com/looplab/eventhorizon"
-	domain "github.com/superchalupa/go-redfish/redfishresource"
+	domain "github.com/superchalupa/go-redfish/src/redfishresource"
 
 	// auth plugins
-	"github.com/superchalupa/go-redfish/plugins/basicauth"
-	"github.com/superchalupa/go-redfish/plugins/session"
+	"github.com/superchalupa/go-redfish/src/basicauth"
+	"github.com/superchalupa/go-redfish/src/session"
 
 	// cert gen
-	"github.com/superchalupa/go-redfish/plugins/tlscert"
+	"github.com/superchalupa/go-redfish/src/tlscert"
 
 	// load plugins (auto-register)
-	"github.com/superchalupa/go-redfish/plugins/actionhandler"
-	"github.com/superchalupa/go-redfish/plugins/rootservice"
-	"github.com/superchalupa/go-redfish/plugins/stdcollections"
-	_ "github.com/superchalupa/go-redfish/plugins/stdmeta"
+	"github.com/superchalupa/go-redfish/src/actionhandler"
+	"github.com/superchalupa/go-redfish/src/rootservice"
+	"github.com/superchalupa/go-redfish/src/stdcollections"
+	_ "github.com/superchalupa/go-redfish/src/stdmeta"
 
 	// load openbmc plugins
-	"github.com/superchalupa/go-redfish/plugins/obmc"
+	"github.com/superchalupa/go-redfish/src/obmc"
 
 	// Test plugins (Take these out for a real server)
-	_ "github.com/superchalupa/go-redfish/plugins/test"
+	_ "github.com/superchalupa/go-redfish/src/test"
 )
 
 // Define a type named "strslice" as a slice of strings

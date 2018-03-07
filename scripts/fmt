@@ -3,4 +3,4 @@
 scriptdir=$(cd $(dirname $0); pwd)
 cd $scriptdir/..
 
-find  plugins cmd redfishresource -name \*.go -type f -exec go fmt {} \;
+find  src cmd -name \*.go -type f -exec go fmt {} \;

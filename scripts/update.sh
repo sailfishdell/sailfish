@@ -23,7 +23,3 @@ $CURLCMD $URL/api/RedfishResourceProperties%3AUpdate  -d '
         "ResourceURI":"/redfish/v1/test",
         "Properties": { "NEWTHING": "NEWVALUE" }
     }'
-
-
-
-
