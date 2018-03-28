@@ -22,9 +22,6 @@ import (
 	eh "github.com/looplab/eventhorizon"
 	domain "github.com/superchalupa/go-redfish/src/redfishresource"
 
-	// auth plugins
-	"github.com/superchalupa/go-redfish/src/basicauth"
-
 	// cert gen
 	"github.com/superchalupa/go-redfish/src/tlscert"
 
@@ -104,7 +101,7 @@ func main() {
 	stdcollections.InitService(ctx, domainObjs.CommandHandler, domainObjs.EventBus, domainObjs.EventWaiter)
 	actionhandler.InitService(ctx, domainObjs.CommandHandler, domainObjs.EventBus, domainObjs.EventWaiter)
 
-	sessionServiceAuthorizer := obmc.InitOCP(ctx, domainObjs.CommandHandler, domainObjs.EventBus, domainObjs.EventWaiter)
+	sessionServiceAuthorizer, BasicAuthAuthorizer := obmc.InitOCP(ctx, domainObjs.CommandHandler, domainObjs.EventBus, domainObjs.EventWaiter)
 
 	// Set up our standard extensions for authentication
 	// the authentication plugin will explicitly pass username to the final handler using the chainAuth() function
@@ -112,17 +109,11 @@ func main() {
 	chainAuth := func(u string, p []string) http.Handler {
 		return domain.NewRedfishHandler(domainObjs, u, p)
 	}
-	BasicAuthAuthorizer := basicauth.NewService()
-	BasicAuthAuthorizer.OnUserDetails = chainAuth
-	BasicAuthAuthorizer.WithoutUserDetails = domain.NewRedfishHandler(domainObjs, "UNKNOWN", []string{"Unauthenticated"})
 
 	// same thing for SSE
 	chainAuthSSE := func(u string, p []string) http.Handler {
 		return domain.NewSSEHandler(domainObjs, u, p)
 	}
-	BasicAuthAuthorizerSSE := basicauth.NewService()
-	BasicAuthAuthorizerSSE.OnUserDetails = chainAuthSSE
-	BasicAuthAuthorizerSSE.WithoutUserDetails = domain.NewSSEHandler(domainObjs, "UNKNOWN", []string{"Unauthenticated"})
 
 	// Handle the API.
 	m := mux.NewRouter()
@@ -144,12 +135,12 @@ func main() {
 	// generic handler for redfish output on most http verbs
 	// Note: this works by using the session service to get user details from token to pass up the stack using the embedded struct
 	m.PathPrefix("/redfish/v1").Methods("GET", "PUT", "POST", "PATCH", "DELETE", "HEAD", "OPTIONS").HandlerFunc(
-		sessionServiceAuthorizer.MakeHandlerFunc(domainObjs.EventBus, domainObjs, chainAuth, BasicAuthAuthorizer),
+		sessionServiceAuthorizer.MakeHandlerFunc(domainObjs.EventBus, domainObjs, chainAuth, BasicAuthAuthorizer.MakeHandlerFunc(chainAuth, domain.NewRedfishHandler(domainObjs, "UNKNOWN", []string{"Unauthenticated"}))),
 	)
 
 	// SSE
 	m.PathPrefix("/events").Methods("GET").HandlerFunc(
-		sessionServiceAuthorizer.MakeHandlerFunc(domainObjs.EventBus, domainObjs, chainAuthSSE, BasicAuthAuthorizerSSE),
+		sessionServiceAuthorizer.MakeHandlerFunc(domainObjs.EventBus, domainObjs, chainAuthSSE, BasicAuthAuthorizer.MakeHandlerFunc(chainAuthSSE, domain.NewSSEHandler(domainObjs, "UNKNOWN", []string{"Unauthenticated"}))),
 	)
 
 	// backend command handling

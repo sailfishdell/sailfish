@@ -12,6 +12,7 @@ import (
 	domain "github.com/superchalupa/go-redfish/src/redfishresource"
 
 	plugins "github.com/superchalupa/go-redfish/src/ocp"
+	"github.com/superchalupa/go-redfish/src/ocp/basicauth"
 	"github.com/superchalupa/go-redfish/src/ocp/bmc"
 	"github.com/superchalupa/go-redfish/src/ocp/chassis"
 	"github.com/superchalupa/go-redfish/src/ocp/protocol"
@@ -23,7 +24,7 @@ import (
 	"github.com/superchalupa/go-redfish/src/ocp/thermal/temperatures"
 )
 
-func InitOCP(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) *session.Service {
+func InitOCP(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) (*session.Service, *basicauth.Service) {
 	// initial implementation is one BMC, one Chassis, and one System. If we
 	// expand beyond that, we need to adjust stuff here.
 
@@ -34,6 +35,7 @@ func InitOCP(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *util
 	sessionSvc, _ := session.New(
 		session.Root(rootSvc),
 	)
+	basicAuthSvc, _ := basicauth.New()
 
 	bmcSvc, _ := bmc.New(
 		bmc.WithUniqueName("OBMC"),
@@ -117,6 +119,7 @@ func InitOCP(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *util
 	// registered
 	domain.RegisterPlugin(func() domain.Plugin { return rootSvc })
 	domain.RegisterPlugin(func() domain.Plugin { return sessionSvc })
+	domain.RegisterPlugin(func() domain.Plugin { return basicAuthSvc })
 	domain.RegisterPlugin(func() domain.Plugin { return bmcSvc })
 	domain.RegisterPlugin(func() domain.Plugin { return prot })
 	domain.RegisterPlugin(func() domain.Plugin { return chas })
@@ -128,6 +131,7 @@ func InitOCP(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *util
 	// and now add everything to the URI tree
 	rootSvc.AddResource(ctx, ch, eb, ew)
 	sessionSvc.AddResource(ctx, ch, eb, ew)
+	basicAuthSvc.AddResource(ctx, ch, eb, ew)
 	bmcSvc.AddResource(ctx, ch, eb, ew)
 	prot.AddResource(ctx, ch)
 	chas.AddResource(ctx, ch)
@@ -145,5 +149,5 @@ func InitOCP(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *util
 		res.Results = map[string]interface{}{"RESET": "FAKE SIMULATED COMPUTER RESET"}
 	}))
 
-	return sessionSvc
+	return sessionSvc, basicAuthSvc
 }
