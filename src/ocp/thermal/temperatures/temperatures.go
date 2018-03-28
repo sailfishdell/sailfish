@@ -77,13 +77,12 @@ func WithSensor(name string, sensor sensorInt) Option {
 	}
 }
 
-func (s *service) RefreshProperty(
+func (s *service) PropertyGet(
 	ctx context.Context,
 	agg *domain.RedfishResourceAggregate,
 	rrp *domain.RedfishResourceProperty,
 	method string,
 	meta map[string]interface{},
-	body interface{},
 ) {
 	s.Lock()
 	defer s.Unlock()

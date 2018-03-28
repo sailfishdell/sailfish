@@ -19,13 +19,12 @@ type hostname struct{}
 
 func (t *hostname) PluginType() domain.PluginType { return HostnamePlugin }
 
-func (t *hostname) RefreshProperty(
+func (t *hostname) PropertyGet(
 	ctx context.Context,
 	agg *domain.RedfishResourceAggregate,
 	rrp *domain.RedfishResourceProperty,
 	method string,
 	meta map[string]interface{},
-	body interface{},
 ) {
 	hostname, err := os.Hostname()
 	if err == nil {

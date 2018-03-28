@@ -97,7 +97,7 @@ func (s *service) InChassis(obj odataObj) {
 
 func (s *service) AddResource(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
 	ch.HandleCommand(
-		context.Background(),
+		ctx,
 		&domain.CreateRedfishResource{
 			ID:          s.GetUUID(),
 			Collection:  false,

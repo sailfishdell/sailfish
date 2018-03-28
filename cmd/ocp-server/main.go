@@ -31,7 +31,6 @@ import (
 
 	// load plugins (auto-register)
 	"github.com/superchalupa/go-redfish/src/actionhandler"
-	"github.com/superchalupa/go-redfish/src/rootservice"
 	"github.com/superchalupa/go-redfish/src/stdcollections"
 	_ "github.com/superchalupa/go-redfish/src/stdmeta"
 
@@ -101,11 +100,12 @@ func main() {
 
 	// This also initializes all of the plugins
 	domain.InitDomain(ctx, domainObjs.CommandHandler, domainObjs.EventBus, domainObjs.EventWaiter)
+
+	// These three all set up a waiter for the root service to appear, so init root service after.
 	stdcollections.InitService(ctx, domainObjs.CommandHandler, domainObjs.EventBus, domainObjs.EventWaiter)
 	actionhandler.InitService(ctx, domainObjs.CommandHandler, domainObjs.EventBus, domainObjs.EventWaiter)
 	session.InitService(ctx, domainObjs.CommandHandler, domainObjs.EventBus, domainObjs.EventWaiter)
 
-	rootservice.InitService(ctx, domainObjs.CommandHandler, domainObjs.EventBus, domainObjs.EventWaiter)
 	obmc.InitOCP(ctx, domainObjs.CommandHandler, domainObjs.EventBus, domainObjs.EventWaiter)
 
 	// Set up our standard extensions for authentication

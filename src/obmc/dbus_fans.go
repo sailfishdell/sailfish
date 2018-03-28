@@ -11,8 +11,8 @@ import (
 	"time"
 
 	"github.com/godbus/dbus"
-	mapper "github.com/superchalupa/go-redfish/plugins/dbus"
-	"github.com/superchalupa/go-redfish/plugins/ocp/thermal/fans"
+	mapper "github.com/superchalupa/go-redfish/src/dbus"
+	"github.com/superchalupa/go-redfish/src/ocp/thermal/fans"
 )
 
 func UpdateFans(ctx context.Context, fanInt Optioner) {

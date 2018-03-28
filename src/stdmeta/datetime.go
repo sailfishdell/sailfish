@@ -20,13 +20,12 @@ type dateTime struct{}
 
 func (t *dateTime) PluginType() domain.PluginType { return DateTimePlugin }
 
-func (t *dateTime) RefreshProperty(
+func (t *dateTime) PropertyGet(
 	ctx context.Context,
 	agg *domain.RedfishResourceAggregate,
 	rrp *domain.RedfishResourceProperty,
 	method string,
 	meta map[string]interface{},
-	body interface{},
 ) {
 	// TODO: do we need to add options here to format different ways? Do we need to be able to format specific times instead of just current time?
 

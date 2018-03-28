@@ -11,8 +11,8 @@ import (
 	"time"
 
 	"github.com/godbus/dbus"
-	mapper "github.com/superchalupa/go-redfish/plugins/dbus"
-	"github.com/superchalupa/go-redfish/plugins/ocp/thermal/temperatures"
+	mapper "github.com/superchalupa/go-redfish/src/dbus"
+	"github.com/superchalupa/go-redfish/src/ocp/thermal/temperatures"
 )
 
 type Optioner interface {

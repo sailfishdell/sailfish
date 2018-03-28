@@ -23,13 +23,12 @@ type testplugin_full_property struct{}
 
 func (t *testplugin_full_property) PluginType() domain.PluginType { return TestPlugin_FullProperty }
 
-func (t *testplugin_full_property) RefreshProperty(
+func (t *testplugin_full_property) PropertyGet(
 	ctx context.Context,
 	agg *domain.RedfishResourceAggregate,
 	rrp *domain.RedfishResourceProperty,
 	method string,
 	meta map[string]interface{},
-	body interface{},
 ) {
 	v, ok := rrp.Value.(map[string]interface{})
 	if !ok {

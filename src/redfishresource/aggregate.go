@@ -256,11 +256,14 @@ func (r *RedfishResourceAggregate) UpdateCollectionMemberCount_unlocked() {
 	m["Members@odata.count"] = RedfishResourceProperty{Value: l}
 }
 
-type PropertyRefresher interface {
-	RefreshProperty(context.Context, *RedfishResourceAggregate, *RedfishResourceProperty, string, map[string]interface{}, interface{})
+type PropertyGetter interface {
+	PropertyGet(context.Context, *RedfishResourceAggregate, *RedfishResourceProperty, string, map[string]interface{})
+}
+type PropertyPatcher interface {
+	PropertyPatch(context.Context, *RedfishResourceAggregate, *RedfishResourceProperty, string, map[string]interface{}, interface{}, bool)
 }
 
-func (rrp *RedfishResourceProperty) Process(ctx context.Context, agg *RedfishResourceAggregate, property, method string, req interface{}) (ret RedfishResourceProperty) {
+func (rrp *RedfishResourceProperty) Process(ctx context.Context, agg *RedfishResourceAggregate, property, method string, req interface{}, present bool) (ret RedfishResourceProperty) {
 	// The purpose of this function is to recursively process the resource property, calling any plugins that are specified in the meta data.
 	// step 1: run the plugin to update rrp.Value based on the plugin.
 	// Step 2: see if the rrp.Value is a recursable map or array and recurse down it
@@ -271,7 +274,6 @@ func (rrp *RedfishResourceProperty) Process(ctx context.Context, agg *RedfishRes
 		ret.Meta[k] = v
 	}
 	ret.Value = rrp.Value
-	//fmt.Printf("DEBUG: meta: %s\n", ret.Meta)
 
 	// equivalent to do{}while(1) to run once
 	// if any of the intermediate steps fails, bail out on this part and continue by doing the next thing
@@ -294,17 +296,20 @@ func (rrp *RedfishResourceProperty) Process(ctx context.Context, agg *RedfishRes
 			break
 		}
 
-		if plugin, ok := plugin.(PropertyRefresher); ok {
-			//fmt.Printf("PROCESS PROPERTY(%s) with plugin(%s)\n", property, pluginName)
-			plugin.RefreshProperty(ctx, agg, &ret, method, meta_t, req)
-			//fmt.Printf("\tAFTER PROCESS: %s\n", ret)
+		switch method {
+		case "GET":
+			if plugin, ok := plugin.(PropertyGetter); ok {
+				plugin.PropertyGet(ctx, agg, &ret, method, meta_t)
+			}
+		case "PATCH":
+			if plugin, ok := plugin.(PropertyPatcher); ok {
+				plugin.PropertyPatch(ctx, agg, &ret, method, meta_t, req, present)
+			}
 		}
 	}
 
 	switch ret.Value.(type) {
 	case map[string]interface{}:
-		//fmt.Printf("\tPROCESS AS MAP\n")
-
 		// somewhat complicated here, but not too bad: set up goroutines for
 		// each sub object and process in parallel. Collect results via array
 		// of channels.
@@ -320,8 +325,8 @@ func (rrp *RedfishResourceProperty) Process(ctx context.Context, agg *RedfishRes
 			if vrr, ok := v.(RedfishResourceProperty); ok {
 				//fmt.Printf("\tProcess property(%s) as RedfishResourceProperty\n", property)
 				go func(property string, v RedfishResourceProperty) {
-					reqitem, _ := reqmap[property]
-					retProp := v.Process(ctx, agg, property, method, reqitem)
+					reqitem, ok := reqmap[property]
+					retProp := v.Process(ctx, agg, property, method, reqitem, ok)
 					resChan <- result{property, retProp}
 				}(property, vrr)
 			} else {
@@ -339,8 +344,6 @@ func (rrp *RedfishResourceProperty) Process(ctx context.Context, agg *RedfishRes
 		ret.Value = newMap
 
 	case []interface{}:
-		//fmt.Printf("\tPROCESS AS ARRAY\n")
-
 		// spawn off parallel goroutines to process each member of the array
 		reqarr, _ := req.([]interface{})
 		var promised []chan interface{}
@@ -350,10 +353,12 @@ func (rrp *RedfishResourceProperty) Process(ctx context.Context, agg *RedfishRes
 			if v, ok := v.(RedfishResourceProperty); ok {
 				go func(index int, v RedfishResourceProperty) {
 					var reqitem interface{} = nil
+					var ok bool = false
 					if index < len(reqarr) {
 						reqitem = reqarr[index]
+						ok = true
 					}
-					retProp := v.Process(ctx, agg, property, method, reqitem)
+					retProp := v.Process(ctx, agg, property, method, reqitem, ok)
 					resChan <- retProp
 				}(index, v)
 			} else {
@@ -381,7 +386,7 @@ func (agg *RedfishResourceAggregate) ProcessMeta(ctx context.Context, method str
 	agg.propertiesMu.Lock()
 	defer agg.propertiesMu.Unlock()
 
-	results = agg.properties.Process(ctx, agg, "", method, request)
+	results = agg.properties.Process(ctx, agg, "", method, request, true)
 	agg.properties = results.(RedfishResourceProperty)
 
 	return

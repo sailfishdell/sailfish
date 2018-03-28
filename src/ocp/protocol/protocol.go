@@ -59,13 +59,12 @@ func WithProtocol(name string, enabled bool, port int, config map[string]interfa
 }
 
 func (p *service) GetOdataID() string { return p.bmc.GetOdataID() + "/NetworkProtocol" }
-func (p *service) RefreshProperty(
+func (p *service) PropertyGet(
 	ctx context.Context,
 	agg *domain.RedfishResourceAggregate,
 	rrp *domain.RedfishResourceProperty,
 	method string,
 	meta map[string]interface{},
-	body interface{},
 ) {
 	for k, v := range p.protocols {
 		tempProto := map[string]interface{}{}

@@ -28,13 +28,12 @@ type dbusProperty struct {
 
 func (t *dbusProperty) PluginType() domain.PluginType { return DbusPropertyPlugin }
 
-func (t *dbusProperty) RefreshProperty(
+func (t *dbusProperty) PropertyGet(
 	ctx context.Context,
 	agg *domain.RedfishResourceAggregate,
 	rrp *domain.RedfishResourceProperty,
 	method string,
 	meta map[string]interface{},
-	body interface{},
 ) {
 
 	// morally equivalent to do{}while(0)

@@ -18,7 +18,7 @@ type patch struct{}
 
 func (t *patch) PluginType() domain.PluginType { return PatchPlugin }
 
-func (t *patch) RefreshProperty(
+func (t *patch) PropertyPatch(
 	ctx context.Context,
 	agg *domain.RedfishResourceAggregate,
 	rrp *domain.RedfishResourceProperty,
@@ -28,5 +28,6 @@ func (t *patch) RefreshProperty(
 ) {
 	// wow, how can it be this simple?
 	// ... we need to add a way to add validation... so I guess it can't stay this simple for long.
+
 	rrp.Value = body
 }

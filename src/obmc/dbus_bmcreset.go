@@ -11,7 +11,7 @@ import (
 
 	"github.com/godbus/dbus"
 	eh "github.com/looplab/eventhorizon"
-	mydbus "github.com/superchalupa/go-redfish/plugins/dbus"
+	mydbus "github.com/superchalupa/go-redfish/src/dbus"
 	ah "github.com/superchalupa/go-redfish/src/actionhandler"
 	domain "github.com/superchalupa/go-redfish/src/redfishresource"
 )

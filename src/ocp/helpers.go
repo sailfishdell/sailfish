@@ -2,8 +2,6 @@ package plugins
 
 import (
 	"context"
-	"errors"
-	"reflect"
 	"sync"
 
 	eh "github.com/looplab/eventhorizon"
@@ -59,27 +57,13 @@ func (s *Service) PluginType() domain.PluginType {
 	return s.properties["plugin_type"].(domain.PluginType)
 }
 
-func (s *Service) RefreshProperty(
+// already locked at aggregate level when we get here
+func (s *Service) PropertyGet(
 	ctx context.Context,
 	agg *domain.RedfishResourceAggregate,
 	rrp *domain.RedfishResourceProperty,
 	method string,
 	meta map[string]interface{},
-	body interface{},
-) {
-	s.Lock()
-	defer s.Unlock()
-
-	s.RefreshProperty_unlocked(ctx, agg, rrp, method, meta, body)
-}
-
-func (s *Service) RefreshProperty_unlocked(
-	ctx context.Context,
-	agg *domain.RedfishResourceAggregate,
-	rrp *domain.RedfishResourceProperty,
-	method string,
-	meta map[string]interface{},
-	body interface{},
 ) {
 	property, ok := meta["property"].(string)
 	if ok {
@@ -90,26 +74,27 @@ func (s *Service) RefreshProperty_unlocked(
 	}
 }
 
-func RefreshProperty(
+// already locked at aggregate level when we get here
+func (s *Service) PropertyPatch(
 	ctx context.Context,
-	s interface{},
+	agg *domain.RedfishResourceAggregate,
 	rrp *domain.RedfishResourceProperty,
+	method string,
 	meta map[string]interface{},
-) error {
-	property, ok := meta["property"].(string)
-	if ok {
-		v := reflect.ValueOf(s)
-		for i := 0; i < v.NumField(); i++ {
-			// Get the field, returns https://golang.org/pkg/reflect/#StructField
-			tag := v.Type().Field(i).Tag.Get("property")
-			if tag == property {
-				rrp.Value = v.Field(i).Interface()
-				return nil
-			}
+	body interface{},
+	present bool,
+) {
+	if present {
+		rrp.Value = body
+		if property, ok := meta["property"].(string); ok {
+			s.properties[property] = body
 		}
 	}
-	return errors.New("Couldn't find property.")
 }
+
+//
+//  PropertyGet vs GetProperty is confusing. Ooops. Should fix this naming snafu soon.
+//
 
 func (s *Service) GetProperty(p string) interface{} {
 	s.RLock()
@@ -176,7 +161,7 @@ func (s *Service) PropertyOnceUnlocked(p string, v interface{}) {
 //  ApplyOptions
 //
 
-// UpdateProperty is a functional optioin to set  and option at construction time or update the value after using ApplyOption.
+// UpdateProperty is a functional option to set an option at construction time or update the value after using ApplyOption.
 // Service is locked for Options in ApplyOption
 func UpdateProperty(p string, v interface{}) Option {
 	return func(s *Service) error {
@@ -236,6 +221,14 @@ func PropGET(name string) MetaOption {
 	return func(s *Service, m MetaInt) error {
 		s.MustPropertyUnlocked(name)
 		m["GET"] = map[string]interface{}{"plugin": string(s.PluginTypeUnlocked()), "property": name}
+		return nil
+	}
+}
+
+func PropPATCH(name string) MetaOption {
+	return func(s *Service, m MetaInt) error {
+		s.MustPropertyUnlocked(name)
+		m["PATCH"] = map[string]interface{}{"plugin": string(s.PluginTypeUnlocked()), "property": name}
 		return nil
 	}
 }

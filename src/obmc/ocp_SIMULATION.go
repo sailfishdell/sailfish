@@ -15,6 +15,7 @@ import (
 	"github.com/superchalupa/go-redfish/src/ocp/bmc"
 	"github.com/superchalupa/go-redfish/src/ocp/chassis"
 	"github.com/superchalupa/go-redfish/src/ocp/protocol"
+	"github.com/superchalupa/go-redfish/src/ocp/root"
 	"github.com/superchalupa/go-redfish/src/ocp/system"
 	"github.com/superchalupa/go-redfish/src/ocp/thermal"
 	"github.com/superchalupa/go-redfish/src/ocp/thermal/fans"
@@ -24,6 +25,10 @@ import (
 func InitOCP(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
 	// initial implementation is one BMC, one Chassis, and one System. If we
 	// expand beyond that, we need to adjust stuff here.
+
+	rootSvc, _ := root.New(
+		plugins.UpdateProperty("test", "test property"),
+	)
 
 	bmcSvc, _ := bmc.New(
 		bmc.WithUniqueName("OBMC"),
@@ -147,6 +152,7 @@ func InitOCP(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *util
 	// register all of the plugins (do this first so we dont get any race
 	// conditions if somebody accesses the URIs before these plugins are
 	// registered
+	domain.RegisterPlugin(func() domain.Plugin { return rootSvc })
 	domain.RegisterPlugin(func() domain.Plugin { return bmcSvc })
 	domain.RegisterPlugin(func() domain.Plugin { return prot })
 	domain.RegisterPlugin(func() domain.Plugin { return chas })
@@ -156,6 +162,7 @@ func InitOCP(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *util
 	domain.RegisterPlugin(func() domain.Plugin { return fanObj })
 
 	// and now add everything to the URI tree
+	rootSvc.AddResource(ctx, ch, eb, ew)
 	bmcSvc.AddResource(ctx, ch, eb, ew)
 	prot.AddResource(ctx, ch)
 	chas.AddResource(ctx, ch)
