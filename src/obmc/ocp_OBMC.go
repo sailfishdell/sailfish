@@ -16,18 +16,23 @@ import (
 	"github.com/superchalupa/go-redfish/src/ocp/chassis"
 	"github.com/superchalupa/go-redfish/src/ocp/protocol"
 	"github.com/superchalupa/go-redfish/src/ocp/root"
+	"github.com/superchalupa/go-redfish/src/ocp/session"
 	"github.com/superchalupa/go-redfish/src/ocp/system"
 	"github.com/superchalupa/go-redfish/src/ocp/thermal"
 	"github.com/superchalupa/go-redfish/src/ocp/thermal/fans"
 	"github.com/superchalupa/go-redfish/src/ocp/thermal/temperatures"
 )
 
-func InitOCP(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
+func InitOCP(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) *session.Service {
 	// initial implementation is one BMC, one Chassis, and one System. If we
 	// expand beyond that, we need to adjust stuff here.
 
 	rootSvc, _ := root.New(
 		plugins.UpdateProperty("test", "test property"),
+	)
+
+	sessionSvc, _ := session.New(
+		session.Root(rootSvc),
 	)
 
 	bmcSvc, _ := bmc.New(
@@ -111,6 +116,7 @@ func InitOCP(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *util
 	// conditions if somebody accesses the URIs before these plugins are
 	// registered
 	domain.RegisterPlugin(func() domain.Plugin { return rootSvc })
+	domain.RegisterPlugin(func() domain.Plugin { return sessionSvc })
 	domain.RegisterPlugin(func() domain.Plugin { return bmcSvc })
 	domain.RegisterPlugin(func() domain.Plugin { return prot })
 	domain.RegisterPlugin(func() domain.Plugin { return chas })
@@ -121,6 +127,7 @@ func InitOCP(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *util
 
 	// and now add everything to the URI tree
 	rootSvc.AddResource(ctx, ch, eb, ew)
+	sessionSvc.AddResource(ctx, ch, eb, ew)
 	bmcSvc.AddResource(ctx, ch, eb, ew)
 	prot.AddResource(ctx, ch)
 	chas.AddResource(ctx, ch)
@@ -137,4 +144,6 @@ func InitOCP(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *util
 		fmt.Printf("Hello WORLD!\n\tGOT RESET EVENT\n")
 		res.Results = map[string]interface{}{"RESET": "FAKE SIMULATED COMPUTER RESET"}
 	}))
+
+	return sessionSvc
 }

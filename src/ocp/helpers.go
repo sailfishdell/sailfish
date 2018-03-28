@@ -84,11 +84,19 @@ func (s *Service) PropertyPatch(
 	body interface{},
 	present bool,
 ) {
-	if present {
-		rrp.Value = body
-		if property, ok := meta["property"].(string); ok {
-			s.properties[property] = body
+	property, ok := meta["property"].(string)
+	if present && ok {
+		// validator function can coerce type, act as a notification callback, or enforce constraints
+		validator, ok := s.properties[property+"@meta.validator"]
+		if ok {
+			if vFN, ok := validator.(func(*domain.RedfishResourceProperty, interface{})); ok {
+				vFN(rrp, body)
+				return
+			}
 		}
+
+		s.properties[property] = body
+		rrp.Value = body
 	}
 }
 

@@ -41,7 +41,7 @@ const (
 
 // HTTP POST Command
 type POST struct {
-	eventBus       eh.EventBus
+	service        *Service
 	commandHandler eh.CommandHandler
 	eventWaiter    *utils.EventWaiter
 
@@ -139,9 +139,9 @@ func (c *POST) Handle(ctx context.Context, a *domain.RedfishResourceAggregate) e
 		return err
 	}
 
-	c.startSessionDeleteTimer(sessionUUID, sessionURI, 3)
+	c.startSessionDeleteTimer(sessionUUID, sessionURI, c.service.GetProperty("session_timeout").(int))
 
-	c.eventBus.PublishEvent(ctx, eh.NewEvent(domain.HTTPCmdProcessed, domain.HTTPCmdProcessedData{
+	a.PublishEvent(eh.NewEvent(domain.HTTPCmdProcessed, domain.HTTPCmdProcessedData{
 		CommandID:  c.CmdID,
 		Results:    retprops,
 		StatusCode: 200,
