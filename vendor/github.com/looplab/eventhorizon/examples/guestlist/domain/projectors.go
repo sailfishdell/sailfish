@@ -1,4 +1,4 @@
-// Copyright (c) 2014 - Max Ekman <max@looplab.se>
+// Copyright (c) 2014 - The Event Horizon authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -130,11 +130,6 @@ func NewGuestListProjector(repo eh.ReadWriteRepo, eventID eh.UUID) *GuestListPro
 		eventID: eventID,
 	}
 	return p
-}
-
-// HandlerType implements the HandlerType method of the EventHandler interface.
-func (p *GuestListProjector) HandlerType() eh.EventHandlerType {
-	return eh.EventHandlerType("GuestListProjector")
 }
 
 // HandleEvent implements the HandleEvent method of the EventHandler interface.

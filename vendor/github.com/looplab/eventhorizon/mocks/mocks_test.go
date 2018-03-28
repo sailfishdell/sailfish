@@ -1,4 +1,4 @@
-// Copyright (c) 2017 - Max Ekman <max@looplab.se>
+// Copyright (c) 2017 - The Event Horizon authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,6 +23,9 @@ import (
 
 func TestMockContext(t *testing.T) {
 	ctx := WithContextOne(context.Background(), "string")
+	if val, ok := ContextOne(ctx); !ok || val != "string" {
+		t.Error("the context value should exist")
+	}
 	vals := eh.MarshalContext(ctx)
 	ctx = eh.UnmarshalContext(vals)
 	if val, ok := ContextOne(ctx); !ok || val != "string" {

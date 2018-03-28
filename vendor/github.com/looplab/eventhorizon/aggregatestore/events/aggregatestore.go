@@ -1,4 +1,4 @@
-// Copyright (c) 2014 - Max Ekman <max@looplab.se>
+// Copyright (c) 2014 - The Event Horizon authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -150,7 +150,7 @@ func (r *AggregateStore) Save(ctx context.Context, agg eh.Aggregate) error {
 	}
 
 	for _, e := range events {
-		if err := r.bus.HandleEvent(ctx, e); err != nil {
+		if err := r.bus.PublishEvent(ctx, e); err != nil {
 			return err
 		}
 	}

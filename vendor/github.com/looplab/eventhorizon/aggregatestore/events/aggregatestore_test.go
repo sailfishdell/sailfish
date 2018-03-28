@@ -1,4 +1,4 @@
-// Copyright (c) 2014 - Max Ekman <max@looplab.se>
+// Copyright (c) 2014 - The Event Horizon authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -208,7 +208,7 @@ func TestAggregateStore_SaveEvents(t *testing.T) {
 	}
 	agg.err = nil
 
-	// Aggregate error.
+	// Bus error.
 	event1 = agg.StoreEvent(mocks.EventType, &mocks.EventData{Content: "event"}, timestamp)
 	bus.Err = errors.New("bus error")
 	err = store.Save(ctx, agg)

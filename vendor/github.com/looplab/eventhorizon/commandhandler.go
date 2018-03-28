@@ -1,4 +1,4 @@
-// Copyright (c) 2014 - Max Ekman <max@looplab.se>
+// Copyright (c) 2014 - The Event Horizon authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -29,4 +29,18 @@ type CommandHandlerFunc func(context.Context, Command) error
 // HandleCommand implements the HandleCommand method of the CommandHandler.
 func (h CommandHandlerFunc) HandleCommand(ctx context.Context, cmd Command) error {
 	return h(ctx, cmd)
+}
+
+// CommandHandlerMiddleware is a function that middlewares can implement to be
+// able to chain.
+type CommandHandlerMiddleware func(CommandHandler) CommandHandler
+
+// UseCommandHandlerMiddleware wraps a CommandHandler in one or more middleware.
+func UseCommandHandlerMiddleware(h CommandHandler, middleware ...CommandHandlerMiddleware) CommandHandler {
+	// Apply in reverse order.
+	for i := len(middleware) - 1; i >= 0; i-- {
+		m := middleware[i]
+		h = m(h)
+	}
+	return h
 }

@@ -56,7 +56,7 @@ func (c *POST) ParseHTTPRequest(r *http.Request) error {
 }
 func (c *POST) Handle(ctx context.Context, a *domain.RedfishResourceAggregate) error {
 	// Action handler needs to send HTTP response
-	c.eventBus.HandleEvent(ctx, eh.NewEvent(GenericActionEvent, GenericActionEventData{
+	c.eventBus.PublishEvent(ctx, eh.NewEvent(GenericActionEvent, GenericActionEventData{
 		ID:          c.ID,
 		CmdID:       c.CmdID,
 		ResourceURI: a.ResourceURI,

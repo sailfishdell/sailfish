@@ -46,6 +46,6 @@ func (c *GET) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 	// TODO: This is not thread safe: deep copy
 	data.Headers = a.Headers
 
-	a.eventBus.HandleEvent(ctx, eh.NewEvent(HTTPCmdProcessed, data, time.Now()))
+	a.eventBus.PublishEvent(ctx, eh.NewEvent(HTTPCmdProcessed, data, time.Now()))
 	return nil
 }

@@ -23,13 +23,9 @@
 [[constraint]]
   branch = "master"
   name = "github.com/looplab/eventhorizon"
-  source = "github.com/superchalupa/eventhorizon"
+  #source = "github.com/superchalupa/eventhorizon"
 
 [[constraint]]
   branch = "master"
   name = "github.com/spacemonkeygo/openssl"
   source = "github.com/superchalupa/openssl"
-
-[[constraint]]
-  branch = "master"
-  name = "golang.org/x/net"

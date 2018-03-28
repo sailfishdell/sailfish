@@ -1,4 +1,4 @@
-// Copyright (c) 2014 - Max Ekman <max@looplab.se>
+// Copyright (c) 2014 - The Event Horizon authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,47 +14,16 @@
 
 package eventhorizon
 
-import "context"
-
-// EventHandler is a handler of events.
-// Only one handler of the same type will receive an event.
-type EventHandler interface {
-	// HandleEvent handles an event.
-	HandleEvent(context.Context, Event) error
-
-	// HandlerType returns the type of the handler.
-	HandlerType() EventHandlerType
-}
-
-// EventHandlerType is the type of an event handler. Used to serve only handle
-// an event by one handler of each type.
-type EventHandlerType string
+import (
+	"context"
+)
 
 // EventBus is an event handler that handles events with the correct subhandlers
 // after which it publishes the event using the publisher.
 type EventBus interface {
-	EventHandler
-
-	// AddHandler adds a handler for an event.
-	AddHandler(EventHandler, EventType)
-
-	// SetPublisher sets the publisher to use for publishing the event after all
-	// handlers have been run.
-	SetPublisher(EventPublisher)
-}
-
-// EventPublisher is a publisher of events to observers.
-type EventPublisher interface {
-	// PublishEvent publishes the event to all observers.
 	PublishEvent(context.Context, Event) error
 
-	// AddObserver adds an observer.
-	AddObserver(EventObserver)
-}
-
-// EventObserver is an observer of events.
-// All observers will receive an event.
-type EventObserver interface {
-	// Notify is notifed about an event.
-	Notify(context.Context, Event)
+	// AddHandler adds a handler for an event. Panics if either the matcher
+	// or handler is nil.
+	AddHandler(EventMatcher, EventHandler)
 }

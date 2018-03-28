@@ -1,4 +1,4 @@
-// Copyright (c) 2014 - Max Ekman <max@looplab.se>
+// Copyright (c) 2014 - The Event Horizon authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -25,7 +25,6 @@ import (
 	"github.com/looplab/eventhorizon/commandhandler/bus"
 	eventbus "github.com/looplab/eventhorizon/eventbus/local"
 	eventstore "github.com/looplab/eventhorizon/eventstore/memory"
-	eventpublisher "github.com/looplab/eventhorizon/publisher/local"
 	repo "github.com/looplab/eventhorizon/repo/memory"
 
 	"github.com/looplab/eventhorizon/examples/guestlist/domain"
@@ -37,8 +36,6 @@ func Example() {
 
 	// Create the event bus that distributes events.
 	eventBus := eventbus.NewEventBus()
-	eventPublisher := eventpublisher.NewEventPublisher()
-	eventBus.SetPublisher(eventPublisher)
 
 	// Create the command bus.
 	commandBus := bus.NewCommandHandler()
@@ -52,7 +49,6 @@ func Example() {
 	domain.Setup(
 		eventStore,
 		eventBus,
-		eventPublisher,
 		commandBus,
 		invitationRepo, guestListRepo,
 		eventID,

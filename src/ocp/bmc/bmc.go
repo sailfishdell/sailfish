@@ -186,6 +186,6 @@ func (s *service) AddResource(ctx context.Context, ch eh.CommandHandler, eb eh.E
 		}
 
 		responseEvent := eh.NewEvent(domain.HTTPCmdProcessed, eventData, time.Now())
-		eb.HandleEvent(ctx, responseEvent)
+		eb.PublishEvent(ctx, responseEvent)
 	})
 }

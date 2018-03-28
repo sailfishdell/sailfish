@@ -1,4 +1,4 @@
-// Copyright (c) 2016 - Max Ekman <max@looplab.se>
+// Copyright (c) 2016 - The Event Horizon authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -64,10 +64,4 @@ func (h *EventHandler) HandleEvent(ctx context.Context, event eh.Event) error {
 	}
 
 	return nil
-}
-
-// HandlerType implements the HandlerType method of the EventHandler
-// interface.
-func (h *EventHandler) HandlerType() eh.EventHandlerType {
-	return eh.EventHandlerType(h.saga.SagaType())
 }

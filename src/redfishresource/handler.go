@@ -47,7 +47,7 @@ func NewDomainObjects() (*DomainObjects, error) {
 	// Create the event bus that distributes events.
 	d.EventBus = eventbus.NewEventBus()
 	d.EventPublisher = eventpublisher.NewEventPublisher()
-	d.EventBus.SetPublisher(d.EventPublisher)
+	d.EventBus.AddHandler(eh.MatchAny(), d.EventPublisher)
 
 	d.EventWaiter = utils.NewEventWaiter()
 	d.EventPublisher.AddObserver(d.EventWaiter)
@@ -57,7 +57,7 @@ func NewDomainObjects() (*DomainObjects, error) {
 
 	// Create the aggregate repository.
 	var err error
-	d.AggregateStore, err = model.NewAggregateStore(d.Repo)
+	d.AggregateStore, err = model.NewAggregateStore(d.Repo, d.EventBus)
 	if err != nil {
 		return nil, fmt.Errorf("could not create aggregate store: %s", err)
 	}

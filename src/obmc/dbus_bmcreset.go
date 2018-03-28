@@ -56,7 +56,7 @@ func BMCReset(ctx context.Context, event eh.Event, res *domain.HTTPCmdProcessedD
 		statusMessage = "Internal call failed"
 	}
 
-	eb.HandleEvent(ctx, eh.NewEvent(domain.HTTPCmdProcessed, domain.HTTPCmdProcessedData{
+	eb.PublishEvent(ctx, eh.NewEvent(domain.HTTPCmdProcessed, domain.HTTPCmdProcessedData{
 		CommandID:  event.Data().(ah.GenericActionEventData).CmdID,
 		Results:    map[string]interface{}{"RESET": statusMessage},
 		StatusCode: statusCode,

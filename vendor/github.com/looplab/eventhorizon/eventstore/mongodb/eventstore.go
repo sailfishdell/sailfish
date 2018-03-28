@@ -1,4 +1,4 @@
-// Copyright (c) 2015 - Max Ekman <max@looplab.se>
+// Copyright (c) 2015 - The Event Horizon authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,8 +20,8 @@ import (
 	"fmt"
 	"time"
 
-	"gopkg.in/mgo.v2"
-	"gopkg.in/mgo.v2/bson"
+	"github.com/globalsign/mgo"
+	"github.com/globalsign/mgo/bson"
 
 	eh "github.com/looplab/eventhorizon"
 )
@@ -276,7 +276,7 @@ func (s *EventStore) RenameEvent(ctx context.Context, from, to eh.EventType) err
 	return nil
 }
 
-// Clear clears the event storge.
+// Clear clears the event storage.
 func (s *EventStore) Clear(ctx context.Context) error {
 	if err := s.session.DB(s.dbName(ctx)).C("events").DropCollection(); err != nil {
 		return eh.EventStoreError{

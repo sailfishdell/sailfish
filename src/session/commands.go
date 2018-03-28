@@ -141,7 +141,7 @@ func (c *POST) Handle(ctx context.Context, a *domain.RedfishResourceAggregate) e
 
 	c.startSessionDeleteTimer(sessionUUID, sessionURI, 3)
 
-	c.eventBus.HandleEvent(ctx, eh.NewEvent(domain.HTTPCmdProcessed, domain.HTTPCmdProcessedData{
+	c.eventBus.PublishEvent(ctx, eh.NewEvent(domain.HTTPCmdProcessed, domain.HTTPCmdProcessedData{
 		CommandID:  c.CmdID,
 		Results:    retprops,
 		StatusCode: 200,

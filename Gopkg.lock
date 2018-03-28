@@ -4,14 +4,14 @@
 [[projects]]
   name = "github.com/dgrijalva/jwt-go"
   packages = ["."]
-  revision = "dbeaa9332f19a944acb5736b4456cfcc02140e29"
-  version = "v3.1.0"
+  revision = "06ea1031745cb8b3dab3f6a236daf2b0aa468b7e"
+  version = "v3.2.0"
 
 [[projects]]
-  branch = "v2"
   name = "github.com/go-yaml/yaml"
   packages = ["."]
-  revision = "d670f9405373e636a5a2765eea47fac0c9bc91a4"
+  revision = "86f5ed62f8a0ee96bd888d2efdfd6d4fb100a4eb"
+  version = "v2.2.0"
 
 [[projects]]
   name = "github.com/godbus/dbus"
@@ -43,8 +43,7 @@
     "repo/memory",
     "utils"
   ]
-  revision = "02aa8f82c5d8315077b69bec05706b9f85c2d5c9"
-  source = "github.com/superchalupa/eventhorizon"
+  revision = "e1bbbab3e2ce284a7e8059400f7ab72800493e3c"
 
 [[projects]]
   branch = "master"
@@ -66,11 +65,11 @@
   branch = "master"
   name = "golang.org/x/sys"
   packages = ["unix"]
-  revision = "37707fdb30a5b38865cfb95e5aab41707daec7fd"
+  revision = "13d03a9a82fba647c21a0ef8fba44a795d0f0835"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "398517c67b330d75768a1edf61d27ed575e7e30a2e7b6ec47fecbf3ea0544327"
+  inputs-digest = "9e3badbcd2f8ef15b9b98186f4ef034785a010cd08b09c12eb87c071b6a0864b"
   solver-name = "gps-cdcl"
   solver-version = 1

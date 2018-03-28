@@ -1,4 +1,4 @@
-// Copyright (c) 2014 - Max Ekman <max@looplab.se>
+// Copyright (c) 2014 - The Event Horizon authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,6 +21,8 @@ import (
 	eh "github.com/looplab/eventhorizon"
 )
 
+var _ = eh.EventPublisher(&EventPublisher{})
+
 // EventPublisher is an event publisher that notifies registered EventHandlers
 // of published events. It will use the SimpleEventHandlingStrategy by default.
 type EventPublisher struct {
@@ -36,9 +38,9 @@ func NewEventPublisher() *EventPublisher {
 	return b
 }
 
-// PublishEvent implements the PublishEvent method of the eventhorizon.EventPublisher
+// HandleEvent implements the HandleEvent method of the eventhorizon.EventPublisher
 // interface.
-func (b *EventPublisher) PublishEvent(ctx context.Context, event eh.Event) error {
+func (b *EventPublisher) HandleEvent(ctx context.Context, event eh.Event) error {
 	b.observersMu.RLock()
 	defer b.observersMu.RUnlock()
 

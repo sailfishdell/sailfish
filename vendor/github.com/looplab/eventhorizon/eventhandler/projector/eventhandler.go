@@ -1,4 +1,4 @@
-// Copyright (c) 2017 - Max Ekman <max@looplab.se>
+// Copyright (c) 2017 - The Event Horizon authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -141,11 +141,6 @@ func (h *EventHandler) HandleEvent(ctx context.Context, event eh.Event) error {
 	}
 
 	return nil
-}
-
-// HandlerType implements the HandlerType method of the EventHandler interface.
-func (h *EventHandler) HandlerType() eh.EventHandlerType {
-	return eh.EventHandlerType(h.projector.ProjectorType())
 }
 
 // SetEntityFactory sets a factory function that creates concrete entity types.

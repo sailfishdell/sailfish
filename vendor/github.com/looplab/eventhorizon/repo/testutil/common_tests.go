@@ -1,4 +1,4 @@
-// Copyright (c) 2014 - Max Ekman <max@looplab.se>
+// Copyright (c) 2014 - The Event Horizon authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -48,7 +48,7 @@ func RepoCommonTests(t *testing.T, ctx context.Context, repo eh.ReadWriteRepo) {
 	// Save model without ID.
 	entityMissingID := &mocks.Model{
 		Content:   "entity1",
-		CreatedAt: time.Now().Round(time.Millisecond),
+		CreatedAt: time.Date(2009, time.November, 10, 23, 0, 0, 0, time.UTC),
 	}
 	err = repo.Save(ctx, entityMissingID)
 	if rrErr, ok := err.(eh.RepoError); !ok || rrErr.BaseErr != eh.ErrMissingEntityID {
@@ -59,7 +59,7 @@ func RepoCommonTests(t *testing.T, ctx context.Context, repo eh.ReadWriteRepo) {
 	entity1 := &mocks.Model{
 		ID:        eh.NewUUID(),
 		Content:   "entity1",
-		CreatedAt: time.Now().Round(time.Millisecond),
+		CreatedAt: time.Date(2009, time.November, 10, 23, 0, 0, 0, time.UTC),
 	}
 	if err = repo.Save(ctx, entity1); err != nil {
 		t.Error("there should be no error:", err)
@@ -88,7 +88,7 @@ func RepoCommonTests(t *testing.T, ctx context.Context, repo eh.ReadWriteRepo) {
 	entity1Alt := &mocks.Model{
 		ID:        entity1.ID,
 		Content:   "entity1Alt",
-		CreatedAt: time.Now().Round(time.Millisecond),
+		CreatedAt: time.Date(2009, time.November, 10, 23, 0, 0, 0, time.UTC),
 	}
 	if err = repo.Save(ctx, entity1Alt); err != nil {
 		t.Error("there should be no error:", err)
@@ -105,7 +105,7 @@ func RepoCommonTests(t *testing.T, ctx context.Context, repo eh.ReadWriteRepo) {
 	entity2 := &mocks.Model{
 		ID:        eh.NewUUID(),
 		Content:   "entity2",
-		CreatedAt: time.Now().Round(time.Millisecond),
+		CreatedAt: time.Date(2009, time.November, 10, 23, 0, 0, 0, time.UTC),
 	}
 	if err = repo.Save(ctx, entity2); err != nil {
 		t.Error("there should be no error:", err)

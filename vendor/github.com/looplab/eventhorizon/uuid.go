@@ -1,4 +1,4 @@
-// Copyright (c) 2014 - Max Ekman <max@looplab.se>
+// Copyright (c) 2014 - The Event Horizon authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -62,6 +62,10 @@ func NewUUID() UUID {
 //     ParseUUID("urn:uuid:6ba7b814-9dad-11d1-80b4-00c04fd430c8")
 //
 func ParseUUID(s string) (UUID, error) {
+	if s == "" {
+		return UUID(""), nil
+	}
+
 	md := re.FindStringSubmatch(s)
 	if md == nil {
 		return "", errors.New("Invalid UUID string")

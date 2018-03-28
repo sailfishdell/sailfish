@@ -51,7 +51,7 @@ func (a *AddUserDetails) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 			if a.getter.HasAggregateID(claims.SessionURI) {
 				userName = claims.UserName
 				privileges = claims.Privileges
-				a.eb.HandleEvent(context.Background(), eh.NewEvent(XAuthTokenRefreshEvent, XAuthTokenRefreshData{SessionURI: claims.SessionURI}, time.Now()))
+				a.eb.PublishEvent(context.Background(), eh.NewEvent(XAuthTokenRefreshEvent, XAuthTokenRefreshData{SessionURI: claims.SessionURI}, time.Now()))
 			}
 		}
 	}

@@ -1,4 +1,4 @@
-// Copyright (c) 2014 - Max Ekman <max@looplab.se>
+// Copyright (c) 2014 - The Event Horizon authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -70,9 +70,5 @@ func (h *CommandHandler) HandleCommand(ctx context.Context, cmd eh.Command) erro
 		return err
 	}
 
-	if err = h.store.Save(ctx, a); err != nil {
-		return err
-	}
-
-	return nil
+	return h.store.Save(ctx, a)
 }

@@ -1,4 +1,4 @@
-// Copyright (c) 2017 - Max Ekman <max@looplab.se>
+// Copyright (c) 2017 - The Event Horizon authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ import (
 )
 
 func TestCommandHandler(t *testing.T) {
-	h := mocks.NewEventHandler("testHandler")
+	h := mocks.NewEventHandler()
 	cron := NewEventHandler(h)
 
 	timestamp := time.Date(2009, time.November, 10, 23, 0, 0, 0, time.UTC)
