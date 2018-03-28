@@ -61,13 +61,13 @@ func (c *DELETE) Handle(ctx context.Context, a *RedfishResourceAggregate) error 
 	_, _ = a.ProcessMeta(ctx, "DELETE", map[string]interface{}{})
 
 	// send event to trigger delete
-	a.eventBus.PublishEvent(ctx, eh.NewEvent(RedfishResourceRemoved, &RedfishResourceRemovedData{
+	a.PublishEvent(eh.NewEvent(RedfishResourceRemoved, &RedfishResourceRemovedData{
 		ID:          c.ID,
 		ResourceURI: a.ResourceURI,
 	}, time.Now()))
 
 	// send http response
-	a.eventBus.PublishEvent(ctx, eh.NewEvent(HTTPCmdProcessed, HTTPCmdProcessedData{
+	a.PublishEvent(eh.NewEvent(HTTPCmdProcessed, HTTPCmdProcessedData{
 		CommandID:  c.CmdID,
 		Results:    map[string]interface{}{},
 		StatusCode: 200,
@@ -105,7 +105,7 @@ func (c *PATCH) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 	// TODO: This is not thread safe: deep copy
 	data.Headers = a.Headers
 
-	a.eventBus.PublishEvent(ctx, eh.NewEvent(HTTPCmdProcessed, data, time.Now()))
+	a.PublishEvent(eh.NewEvent(HTTPCmdProcessed, data, time.Now()))
 	return nil
 }
 
@@ -127,7 +127,7 @@ func (c *POST) ParseHTTPRequest(r *http.Request) error {
 }
 func (c *POST) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 	fmt.Printf("HANDLE POST!\n")
-	a.eventBus.PublishEvent(ctx, eh.NewEvent(HTTPCmdProcessed, HTTPCmdProcessedData{
+	a.PublishEvent(eh.NewEvent(HTTPCmdProcessed, HTTPCmdProcessedData{
 		CommandID:  c.CmdID,
 		Results:    map[string]interface{}{"FOO": "BAR"},
 		StatusCode: 200,
@@ -154,7 +154,7 @@ func (c *PUT) ParseHTTPRequest(r *http.Request) error {
 }
 func (c *PUT) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 	fmt.Printf("HANDLE PUT!\n")
-	a.eventBus.PublishEvent(ctx, eh.NewEvent(HTTPCmdProcessed, HTTPCmdProcessedData{
+	a.PublishEvent(eh.NewEvent(HTTPCmdProcessed, HTTPCmdProcessedData{
 		CommandID:  c.CmdID,
 		Results:    map[string]interface{}{"ERROR": "This method not yet implemented"},
 		StatusCode: 501, // Not implemented
@@ -176,7 +176,7 @@ func (c *HEAD) SetAggID(id eh.UUID)             { c.ID = id }
 func (c *HEAD) SetCmdID(id eh.UUID)             { c.CmdID = id }
 func (c *HEAD) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 	fmt.Printf("HANDLE HEAD!\n")
-	a.eventBus.PublishEvent(ctx, eh.NewEvent(HTTPCmdProcessed, HTTPCmdProcessedData{
+	a.PublishEvent(eh.NewEvent(HTTPCmdProcessed, HTTPCmdProcessedData{
 		CommandID:  c.CmdID,
 		Results:    map[string]interface{}{"ERROR": "This method not yet implemented"},
 		StatusCode: 501, // Not implemented
@@ -198,7 +198,7 @@ func (c *OPTIONS) SetAggID(id eh.UUID)             { c.ID = id }
 func (c *OPTIONS) SetCmdID(id eh.UUID)             { c.CmdID = id }
 func (c *OPTIONS) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 	fmt.Printf("HANDLE OPTIONS!\n")
-	a.eventBus.PublishEvent(ctx, eh.NewEvent(HTTPCmdProcessed, HTTPCmdProcessedData{
+	a.PublishEvent(eh.NewEvent(HTTPCmdProcessed, HTTPCmdProcessedData{
 		CommandID:  c.CmdID,
 		Results:    map[string]interface{}{"ERROR": "This method not yet implemented"},
 		StatusCode: 501, // Not implemented

@@ -8,6 +8,7 @@ import (
 	"sync"
 
 	eh "github.com/looplab/eventhorizon"
+	"github.com/looplab/eventhorizon/aggregatestore/model"
 	"github.com/looplab/eventhorizon/utils"
 )
 
@@ -19,7 +20,7 @@ func init() {
 
 func RegisterRRA(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
 	eh.RegisterAggregate(func(id eh.UUID) eh.Aggregate {
-		return &RedfishResourceAggregate{eventBus: eb}
+		return &RedfishResourceAggregate{}
 	})
 }
 
@@ -85,8 +86,7 @@ func parse_map(start map[string]interface{}, props map[string]interface{}) {
 }
 
 type RedfishResourceAggregate struct {
-	// private
-	eventBus eh.EventBus
+	model.SliceEventPublisher
 
 	// public
 	ID          eh.UUID

@@ -6,7 +6,6 @@ package obmc
 import (
 	"context"
 	"fmt"
-	"time"
 
 	eh "github.com/looplab/eventhorizon"
 	"github.com/looplab/eventhorizon/utils"
@@ -157,9 +156,7 @@ func InitOCP(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *util
 	domain.RegisterPlugin(func() domain.Plugin { return fanObj })
 
 	// and now add everything to the URI tree
-	time.Sleep(250 * time.Millisecond) // still a small race in events, so sleep needed for now
 	bmcSvc.AddResource(ctx, ch, eb, ew)
-	time.Sleep(250 * time.Millisecond) // still a small race in events, so sleep needed for now
 	prot.AddResource(ctx, ch)
 	chas.AddResource(ctx, ch)
 	system.AddResource(ctx, ch, eb, ew)

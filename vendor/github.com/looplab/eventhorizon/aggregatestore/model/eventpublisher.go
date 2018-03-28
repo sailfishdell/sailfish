@@ -36,5 +36,7 @@ func (a *SliceEventPublisher) PublishEvent(e eh.Event) {
 
 // EventsToPublish implements the EventsToPublish method of the EventPublisher interface.
 func (a *SliceEventPublisher) EventsToPublish() []eh.Event {
-	return *a
+    retval := *a
+    *a = nil
+	return retval
 }

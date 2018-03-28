@@ -101,10 +101,11 @@ func main() {
 
 	// This also initializes all of the plugins
 	domain.InitDomain(ctx, domainObjs.CommandHandler, domainObjs.EventBus, domainObjs.EventWaiter)
-	rootservice.InitService(ctx, domainObjs.CommandHandler, domainObjs.EventBus, domainObjs.EventWaiter)
 	stdcollections.InitService(ctx, domainObjs.CommandHandler, domainObjs.EventBus, domainObjs.EventWaiter)
 	actionhandler.InitService(ctx, domainObjs.CommandHandler, domainObjs.EventBus, domainObjs.EventWaiter)
 	session.InitService(ctx, domainObjs.CommandHandler, domainObjs.EventBus, domainObjs.EventWaiter)
+
+	rootservice.InitService(ctx, domainObjs.CommandHandler, domainObjs.EventBus, domainObjs.EventWaiter)
 	obmc.InitOCP(ctx, domainObjs.CommandHandler, domainObjs.EventBus, domainObjs.EventWaiter)
 
 	// Set up our standard extensions for authentication

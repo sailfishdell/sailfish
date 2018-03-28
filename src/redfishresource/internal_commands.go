@@ -106,23 +106,20 @@ func (c *CreateRedfishResource) Handle(ctx context.Context, a *RedfishResourceAg
 		a.DeleteProperty("Members")
 	}
 
-	go func() {
-		time.Sleep(100 * time.Millisecond)
-		// send out event that it's created first
-		a.eventBus.PublishEvent(ctx, eh.NewEvent(RedfishResourceCreated, RedfishResourceCreatedData{
-			ID:          c.ID,
-			ResourceURI: c.ResourceURI,
-			Collection:  c.Collection,
-		}, time.Now()))
+	// send out event that it's created first
+	a.PublishEvent(eh.NewEvent(RedfishResourceCreated, RedfishResourceCreatedData{
+		ID:          c.ID,
+		ResourceURI: c.ResourceURI,
+		Collection:  c.Collection,
+	}, time.Now()))
 
-		// then send out possible notifications about changes in the properties or meta
-		if len(d.PropertyNames) > 0 {
-			a.eventBus.PublishEvent(ctx, eh.NewEvent(RedfishResourcePropertiesUpdated, d, time.Now()))
-		}
-		if len(e.Meta) > 0 {
-			a.eventBus.PublishEvent(ctx, eh.NewEvent(RedfishResourcePropertyMetaUpdated, e, time.Now()))
-		}
-	}()
+	// then send out possible notifications about changes in the properties or meta
+	if len(d.PropertyNames) > 0 {
+		a.PublishEvent(eh.NewEvent(RedfishResourcePropertiesUpdated, d, time.Now()))
+	}
+	if len(e.Meta) > 0 {
+		a.PublishEvent(eh.NewEvent(RedfishResourcePropertyMetaUpdated, e, time.Now()))
+	}
 
 	return nil
 }
@@ -138,7 +135,7 @@ func (c *RemoveRedfishResource) AggregateID() eh.UUID            { return c.ID }
 func (c *RemoveRedfishResource) CommandType() eh.CommandType     { return RemoveRedfishResourceCommand }
 
 func (c *RemoveRedfishResource) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
-	a.eventBus.PublishEvent(ctx, eh.NewEvent(RedfishResourceRemoved, RedfishResourceRemovedData{
+	a.PublishEvent(eh.NewEvent(RedfishResourceRemoved, RedfishResourceRemovedData{
 		ID:          c.ID,
 		ResourceURI: c.ResourceURI,
 	}, time.Now()))
@@ -179,10 +176,10 @@ func (c *UpdateRedfishResourceProperties) Handle(ctx context.Context, a *Redfish
 	a.propertiesMu.Unlock()
 
 	if len(d.PropertyNames) > 0 {
-		a.eventBus.PublishEvent(ctx, eh.NewEvent(RedfishResourcePropertiesUpdated, d, time.Now()))
+		a.PublishEvent(eh.NewEvent(RedfishResourcePropertiesUpdated, d, time.Now()))
 	}
 	if len(e.Meta) > 0 {
-		a.eventBus.PublishEvent(ctx, eh.NewEvent(RedfishResourcePropertyMetaUpdated, e, time.Now()))
+		a.PublishEvent(eh.NewEvent(RedfishResourcePropertyMetaUpdated, e, time.Now()))
 	}
 
 	return nil
