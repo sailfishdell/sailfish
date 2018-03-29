@@ -1,6 +1,5 @@
 listen: 
     - https::8443
-    - http::8080
 
 session:
     timeout: 9
