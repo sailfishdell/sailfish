@@ -8,12 +8,6 @@
   version = "v3.2.0"
 
 [[projects]]
-  name = "github.com/go-yaml/yaml"
-  packages = ["."]
-  revision = "86f5ed62f8a0ee96bd888d2efdfd6d4fb100a4eb"
-  version = "v2.2.0"
-
-[[projects]]
   name = "github.com/godbus/dbus"
   packages = ["."]
   revision = "a389bdde4dd695d414e47b755e95e72b7826432c"
@@ -62,6 +56,12 @@
   revision = "081216856ee01315ad130cb9ccd5d2a40624c619"
 
 [[projects]]
+  name = "github.com/spf13/pflag"
+  packages = ["."]
+  revision = "e57e3eeb33f795204c1ca35f56c44f83227c6e66"
+  version = "v1.0.0"
+
+[[projects]]
   branch = "master"
   name = "golang.org/x/sys"
   packages = ["unix"]
@@ -70,6 +70,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "9e3badbcd2f8ef15b9b98186f4ef034785a010cd08b09c12eb87c071b6a0864b"
+  inputs-digest = "43cdaca6bfc0c798e33c72265c6d3deb99913f4c7b02a5f0262397c16c334e49"
   solver-name = "gps-cdcl"
   solver-version = 1

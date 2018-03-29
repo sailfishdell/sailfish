@@ -107,7 +107,7 @@ func (s *service) AddResource(ctx context.Context, ch eh.CommandHandler, eb eh.E
 			Privileges: map[string]interface{}{
 				"GET":    []string{"Login"},
 				"POST":   []string{}, // cannot create sub objects
-				"PUT":    []string{"ConfigureManager"},
+				"PUT":    []string{},
 				"PATCH":  []string{"ConfigureManager"},
 				"DELETE": []string{}, // can't be deleted
 			},
@@ -118,7 +118,7 @@ func (s *service) AddResource(ctx context.Context, ch eh.CommandHandler, eb eh.E
 				"Description@meta":         s.Meta(plugins.PropGET("description")),
 				"Model@meta":               s.Meta(plugins.PropGET("model")),
 				"DateTime@meta":            map[string]interface{}{"GET": map[string]interface{}{"plugin": "datetime"}},
-				"DateTimeLocalOffset@meta": s.Meta(plugins.PropGET("timezone")),
+				"DateTimeLocalOffset@meta": s.Meta(plugins.PropGET("timezone"), plugins.PropPATCH("timezone")),
 				"FirmwareVersion@meta":     s.Meta(plugins.PropGET("version")),
 				"Links": map[string]interface{}{
 					"ManagerForServers@meta": s.Meta(plugins.PropGET("bmc_manager_for_servers")),

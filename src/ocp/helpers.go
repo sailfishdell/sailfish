@@ -19,6 +19,7 @@ func NewService(options ...Option) *Service {
 	s := &Service{
 		properties: map[string]interface{}{},
 	}
+
 	s.ApplyOption(options...)
 	return s
 }
@@ -86,18 +87,44 @@ func (s *Service) PropertyPatch(
 ) {
 	property, ok := meta["property"].(string)
 	if present && ok {
-		// validator function can coerce type, act as a notification callback, or enforce constraints
 		validator, ok := s.properties[property+"@meta.validator"]
 		if ok {
 			if vFN, ok := validator.(func(*domain.RedfishResourceProperty, interface{})); ok {
 				vFN(rrp, body)
-				return
 			}
 		}
 
-		s.properties[property] = body
-		rrp.Value = body
+		// either of above nested if()'s fail, we end up here:
+		if !ok {
+			// validator function can coerce type, act as a notification callback, or enforce constraints
+			s.properties[property] = body
+			rrp.Value = body
+		}
+
+		// notify anybody that cares
+		callback, ok := s.properties[property+"@meta.callback"]
+		if ok {
+			if cb, ok := callback.([]func(*domain.RedfishResourceProperty)); ok {
+				for _, fn := range cb {
+					fn(rrp)
+				}
+			}
+		}
 	}
+}
+
+// the observer will be called after the property is set from the web interface
+func (s *Service) AddPropertyObserver(property string, fn func(*domain.RedfishResourceProperty)) {
+	cbListInt, ok := s.properties[property+"@meta.callback"]
+	if !ok {
+		cbListInt = []func(*domain.RedfishResourceProperty){}
+	}
+	cbList, ok := cbListInt.([]func(*domain.RedfishResourceProperty))
+	if !ok {
+		cbListInt = []func(*domain.RedfishResourceProperty){}
+	}
+	cbList = append(cbList, fn)
+	s.properties[property+"@meta.callback"] = cbList
 }
 
 //

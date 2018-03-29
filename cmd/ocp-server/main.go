@@ -3,9 +3,7 @@ package main
 import (
 	"context"
 	"crypto/tls"
-	"flag"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net"
 	"net/http"
@@ -16,7 +14,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-yaml/yaml"
+	flag "github.com/spf13/pflag"
+
 	"github.com/gorilla/mux"
 
 	eh "github.com/looplab/eventhorizon"
@@ -37,54 +36,11 @@ import (
 	_ "github.com/superchalupa/go-redfish/src/test"
 )
 
-// Define a type named "strslice" as a slice of strings
-type strslice []string
-
-// Now, for our new type, implement the two methods of
-// the flag.Value interface...
-// The first method is String() string
-func (i *strslice) String() string {
-	return fmt.Sprintf("%v", *i)
-}
-
-// The second method is Set(value string) error
-func (i *strslice) Set(value string) error {
-	*i = append(*i, value)
-	return nil
-}
-
-type appConfig struct {
-	Listen []string `yaml:"listen"`
-}
-
-func loadConfig(filename string) (appConfig, error) {
-	bytes, err := ioutil.ReadFile(filename)
-	if err != nil {
-		return appConfig{}, err
-	}
-
-	var config appConfig
-	err = yaml.Unmarshal(bytes, &config)
-	if err != nil {
-		return appConfig{}, err
-	}
-
-	return config, nil
-}
-
 func main() {
 	log.Println("starting backend")
-	var (
-		configFile  = flag.String("config", "app.yaml", "Application configuration file")
-		listenAddrs strslice
-	)
-	flag.Var(&listenAddrs, "l", "Listen address.  Formats: (http:[ip]:nn, fcgi:[ip]:port, fcgi:/path, https:[ip]:port, spacemonkey:[ip]:port)")
+	var listenAddrs []string
+	flag.StringSliceVarP(&listenAddrs, "listen", "l", []string{"https::8443"}, "Listen address.  Formats: (http:[ip]:nn, fcgi:[ip]:port, fcgi:/path, https:[ip]:port, spacemonkey:[ip]:port)")
 	flag.Parse()
-
-	cfg, _ := loadConfig(*configFile)
-	if len(listenAddrs) > 0 {
-		cfg.Listen = listenAddrs
-	}
 
 	ctx, cancel := context.WithCancel(context.Background())
 	intr := make(chan os.Signal, 1)
@@ -223,12 +179,12 @@ func main() {
 		serverCert.Serialize()
 	}
 
-	if len(cfg.Listen) == 0 {
+	if len(listenAddrs) == 0 {
 		log.Fatal("No listeners configured! Use the '-l' option to configure a listener!")
 	}
 
 	// And finally, start up all of the listeners that we have configured
-	for _, listen := range cfg.Listen {
+	for _, listen := range listenAddrs {
 		switch {
 		case strings.HasPrefix(listen, "pprof:"):
 			pprofMux := http.DefaultServeMux

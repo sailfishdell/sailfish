@@ -104,7 +104,7 @@ func (s *service) AddResource(ctx context.Context, ch eh.CommandHandler) {
 			Privileges: map[string]interface{}{
 				"GET":    []string{"Login"},
 				"POST":   []string{}, // cannot create sub objects
-				"PUT":    []string{"ConfigureManager"},
+				"PUT":    []string{},
 				"PATCH":  []string{"ConfigureManager"},
 				"DELETE": []string{}, // can't be deleted
 			},

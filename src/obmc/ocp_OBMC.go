@@ -34,6 +34,7 @@ func InitOCP(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *util
 
 	sessionSvc, _ := session.New(
 		session.Root(rootSvc),
+		plugins.UpdateProperty("session_timeout", 23),
 	)
 	basicAuthSvc, _ := basicauth.New()
 
