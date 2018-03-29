@@ -7,11 +7,12 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/fsnotify/fsnotify"
+	"github.com/spf13/viper"
+
 	eh "github.com/looplab/eventhorizon"
 	"github.com/looplab/eventhorizon/utils"
 	domain "github.com/superchalupa/go-redfish/src/redfishresource"
-
-	"github.com/spf13/viper"
 
 	plugins "github.com/superchalupa/go-redfish/src/ocp"
 	"github.com/superchalupa/go-redfish/src/ocp/basicauth"
@@ -36,16 +37,12 @@ func InitOCP(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *util
 
 	sessionSvc, _ := session.New(
 		session.Root(rootSvc),
-		plugins.UpdateProperty("session_timeout", viper.GetInt("session.timeout")),
 	)
 	basicAuthSvc, _ := basicauth.New()
 
 	bmcSvc, _ := bmc.New(
 		bmc.WithUniqueName("OBMC"),
 	)
-	for _, k := range []string{"name", "description", "model", "timezone", "version"} {
-		bmcSvc.ApplyOption(plugins.UpdateProperty(k, viper.Get("managers.OBMC."+k)))
-	}
 
 	prot, _ := protocol.New(
 		protocol.WithBMC(bmcSvc),
@@ -64,12 +61,6 @@ func InitOCP(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *util
 		chassis.AddManagerInChassis(bmcSvc),
 		chassis.WithUniqueName("1"),
 	)
-	for _, k := range []string{
-		"name", "chassis_type", "model",
-		"serial_number", "sku", "part_number",
-		"asset_tag", "chassis_type", "manufacturer"} {
-		chas.ApplyOption(plugins.UpdateProperty(k, viper.Get("chassis.1."+k)))
-	}
 
 	bmcSvc.InChassis(chas)
 	bmcSvc.AddManagerForChassis(chas)
@@ -79,13 +70,6 @@ func InitOCP(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *util
 		system.ManagedBy(bmcSvc),
 		system.InChassis(chas),
 	)
-	for _, k := range []string{
-		"name", "system_type", "asset_tag", "manufacturer",
-		"model", "serial_number", "sku", "The SKU", "part_number",
-		"description", "power_state", "bios_version", "led", "system_hostname",
-	} {
-		system.ApplyOption(plugins.UpdateProperty(k, viper.Get("systems.1."+k)))
-	}
 
 	bmcSvc.AddManagerForServer(system)
 	chas.AddComputerSystem(system)
@@ -105,6 +89,34 @@ func InitOCP(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *util
 	// Start background processing to update sensor data every 10 seconds
 	go UpdateSensorList(ctx, temps)
 	go UpdateFans(ctx, fanObj)
+
+	// VIPER Config:
+	// pull the config from the YAML file to populate some static config options
+	pullViperConfig := func() {
+		sessionSvc.ApplyOption(plugins.UpdateProperty("session_timeout", viper.GetInt("session.timeout")))
+		for _, k := range []string{"name", "description", "model", "timezone", "version"} {
+			bmcSvc.ApplyOption(plugins.UpdateProperty(k, viper.Get("managers.OBMC."+k)))
+		}
+		for _, k := range []string{
+			"name", "chassis_type", "model",
+			"serial_number", "sku", "part_number",
+			"asset_tag", "chassis_type", "manufacturer"} {
+			chas.ApplyOption(plugins.UpdateProperty(k, viper.Get("chassis.1."+k)))
+		}
+		for _, k := range []string{
+			"name", "system_type", "asset_tag", "manufacturer",
+			"model", "serial_number", "sku", "The SKU", "part_number",
+			"description", "power_state", "bios_version", "led", "system_hostname",
+		} {
+			system.ApplyOption(plugins.UpdateProperty(k, viper.Get("systems.1."+k)))
+		}
+	}
+	pullViperConfig()
+	viper.OnConfigChange(func(e fsnotify.Event) {
+		fmt.Println("Config file changed:", e.Name)
+		pullViperConfig()
+	})
+	viper.WatchConfig()
 
 	// register all of the plugins (do this first so we dont get any race
 	// conditions if somebody accesses the URIs before these plugins are
