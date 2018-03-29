@@ -40,14 +40,12 @@ func (s *service) AddResource(ctx context.Context, ch eh.CommandHandler, eb eh.E
 			Context:     "/redfish/v1/$metadata#ServiceRoot.ServiceRoot",
 
 			Privileges: map[string]interface{}{
-				"GET":   []string{"Unauthenticated"},
-				"PATCH": []string{"Unauthenticated", "ConfigureManager"}, // for testing
+				"GET": []string{"Unauthenticated"},
 			},
 			Properties: map[string]interface{}{
 				"Id":             "RootService",
 				"Name":           "Root Service",
 				"RedfishVersion": "1.0.2",
 				"UUID":           s.GetUUID(),
-				"TEST@meta":      s.Meta(plugins.PropGET("test"), plugins.PropPATCH("test")),
 			}})
 }
