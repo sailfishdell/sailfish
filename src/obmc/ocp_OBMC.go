@@ -11,6 +11,8 @@ import (
 	"github.com/looplab/eventhorizon/utils"
 	domain "github.com/superchalupa/go-redfish/src/redfishresource"
 
+	"github.com/spf13/viper"
+
 	plugins "github.com/superchalupa/go-redfish/src/ocp"
 	"github.com/superchalupa/go-redfish/src/ocp/basicauth"
 	"github.com/superchalupa/go-redfish/src/ocp/bmc"
@@ -34,18 +36,16 @@ func InitOCP(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *util
 
 	sessionSvc, _ := session.New(
 		session.Root(rootSvc),
-		plugins.UpdateProperty("session_timeout", 23),
+		plugins.UpdateProperty("session_timeout", viper.GetInt("session.timeout")),
 	)
 	basicAuthSvc, _ := basicauth.New()
 
 	bmcSvc, _ := bmc.New(
 		bmc.WithUniqueName("OBMC"),
-		plugins.UpdateProperty("name", "OBMC Simulation"),
-		plugins.UpdateProperty("description", "The most open source BMC ever."),
-		plugins.UpdateProperty("model", "Michaels RAD BMC"),
-		plugins.UpdateProperty("timezone", "-05:00"),
-		plugins.UpdateProperty("version", "1.0.0"),
 	)
+	for _, k := range []string{"name", "description", "model", "timezone", "version"} {
+		bmcSvc.ApplyOption(plugins.UpdateProperty(k, viper.Get("managers.OBMC."+k)))
+	}
 
 	prot, _ := protocol.New(
 		protocol.WithBMC(bmcSvc),
@@ -63,16 +63,13 @@ func InitOCP(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *util
 		chassis.AddManagedBy(bmcSvc),
 		chassis.AddManagerInChassis(bmcSvc),
 		chassis.WithUniqueName("1"),
-		plugins.UpdateProperty("name", "Catfish System Chassis"),
-		plugins.UpdateProperty("chassis_type", "RackMount"),
-		plugins.UpdateProperty("model", "YellowCat1000"),
-		plugins.UpdateProperty("serial_number", "2M220100SL"),
-		plugins.UpdateProperty("sku", "The SKU"),
-		plugins.UpdateProperty("part_number", "Part2468"),
-		plugins.UpdateProperty("asset_tag", "CATFISHASSETTAG"),
-		plugins.UpdateProperty("chassis_type", "RackMount"),
-		plugins.UpdateProperty("manufacturer", "Cat manufacturer"),
 	)
+	for _, k := range []string{
+		"name", "chassis_type", "model",
+		"serial_number", "sku", "part_number",
+		"asset_tag", "chassis_type", "manufacturer"} {
+		chas.ApplyOption(plugins.UpdateProperty(k, viper.Get("chassis.1."+k)))
+	}
 
 	bmcSvc.InChassis(chas)
 	bmcSvc.AddManagerForChassis(chas)
@@ -81,20 +78,14 @@ func InitOCP(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *util
 		system.WithUniqueName("1"),
 		system.ManagedBy(bmcSvc),
 		system.InChassis(chas),
-		plugins.UpdateProperty("name", "Catfish System"),
-		plugins.UpdateProperty("system_type", "Physical"),
-		plugins.UpdateProperty("asset_tag", "CATFISHASSETTAG"),
-		plugins.UpdateProperty("manufacturer", "Cat manufacturer"),
-		plugins.UpdateProperty("model", "YellowCat1000"),
-		plugins.UpdateProperty("serial_number", "2M220100SL"),
-		plugins.UpdateProperty("sku", "The SKU"),
-		plugins.UpdateProperty("part_number", "Part2468"),
-		plugins.UpdateProperty("description", "Catfish Implementation Recipe of simple scale-out monolithic server"),
-		plugins.UpdateProperty("power_state", "On"),
-		plugins.UpdateProperty("bios_version", "X00.1.2.3.4(build-23)"),
-		plugins.UpdateProperty("led", "On"),
-		plugins.UpdateProperty("system_hostname", "CatfishHostname"),
 	)
+	for _, k := range []string{
+		"name", "system_type", "asset_tag", "manufacturer",
+		"model", "serial_number", "sku", "The SKU", "part_number",
+		"description", "power_state", "bios_version", "led", "system_hostname",
+	} {
+		system.ApplyOption(plugins.UpdateProperty(k, viper.Get("systems.1."+k)))
+	}
 
 	bmcSvc.AddManagerForServer(system)
 	chas.AddComputerSystem(system)

@@ -1,0 +1,43 @@
+listen: 
+    - https::8443
+    - http::8080
+
+session:
+    timeout: 9
+
+managers:
+    OBMC:
+        name: "OBMC Simulation"
+        description: "The most open source BMC ever."
+        model: "RADICAL BMC"
+        timezone: "-05:00"
+        version: "1.0.1"
+
+chassis:
+    1:
+        name: "Catfish System Happy Chassis"
+        chassis_type: "RackMount"
+        model: "YellowCat2000"
+        serial_number: "2M220100SM"
+        sku: "The SKU"
+        part_number: "Part24680"
+        asset_tag: "CATFISHASSETTAG"
+        chassis_type: "RackMount"
+        manufacturer: "Cat manufacturer"
+
+systems:
+    1:
+        name: "Catfish System"
+        system_type: "Physical"
+        asset_tag: "CATFISHASSETTAG"
+        manufacturer: "Cat manufacturer"
+        model: "YellowCat1000"
+        serial_number: "2M220100SL"
+        sku: "The SKU"
+        part_number: "Part2468"
+        description: "Catfish Implementation Recipe of simple scale-out monolithic server"
+        power_state: "On"
+        bios_version: "X00.1.2.3.4(build-23)"
+        led: "On"
+        system_hostname: "CatfishHostname"
+

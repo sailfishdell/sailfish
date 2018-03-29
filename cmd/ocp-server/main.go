@@ -14,7 +14,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/sirupsen/logrus"
 	flag "github.com/spf13/pflag"
+	"github.com/spf13/viper"
 
 	"github.com/gorilla/mux"
 
@@ -38,9 +40,32 @@ import (
 
 func main() {
 	log.Println("starting backend")
-	var listenAddrs []string
-	flag.StringSliceVarP(&listenAddrs, "listen", "l", []string{"https::8443"}, "Listen address.  Formats: (http:[ip]:nn, fcgi:[ip]:port, fcgi:/path, https:[ip]:port, spacemonkey:[ip]:port)")
+
+	flag.StringSliceP("listen", "l", []string{}, "Listen address.  Formats: (http:[ip]:nn, fcgi:[ip]:port, fcgi:/path, https:[ip]:port, spacemonkey:[ip]:port)")
+
+	if err := viper.BindPFlags(flag.CommandLine); err != nil {
+		logrus.WithError(err).Fatal("Couldn't bind flags")
+	}
+	// Environment variables
+	viper.SetEnvPrefix("RF")
+	viper.AutomaticEnv()
+
+	// Configuration file
+	viper.SetConfigName("redfish")
+	viper.AddConfigPath(".")
+	viper.AddConfigPath("/etc/")
+	if err := viper.ReadInConfig(); err != nil {
+		logrus.WithError(err).Warning("Couldn't read configuration file")
+	}
+
+	// Defaults
+	viper.SetDefault("listen", []string{"https::8443", "http::8080"})
+	viper.SetDefault("session.timeout", 10)
+
 	flag.Parse()
+
+	var listenAddrs []string = viper.GetStringSlice("listen")
+	fmt.Printf("\n\nDEBUG listenaddrs %s\n\n", listenAddrs)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	intr := make(chan os.Signal, 1)
