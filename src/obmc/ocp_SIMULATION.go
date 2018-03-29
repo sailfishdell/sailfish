@@ -31,9 +31,7 @@ func InitOCP(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *util
 	// initial implementation is one BMC, one Chassis, and one System. If we
 	// expand beyond that, we need to adjust stuff here.
 
-	rootSvc, _ := root.New(
-		plugins.UpdateProperty("test", "test property"),
-	)
+	rootSvc, _ := root.New()
 
 	sessionSvc, _ := session.New(
 		session.Root(rootSvc),
@@ -136,6 +134,7 @@ func InitOCP(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *util
 	// pull the config from the YAML file to populate some static config options
 	pullViperConfig := func() {
 		sessionSvc.ApplyOption(plugins.UpdateProperty("session_timeout", viper.GetInt("session.timeout")))
+
 		for _, k := range []string{"name", "description", "model", "timezone", "version"} {
 			bmcSvc.ApplyOption(plugins.UpdateProperty(k, viper.Get("managers.OBMC."+k)))
 		}
