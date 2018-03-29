@@ -104,9 +104,9 @@ func (s *Service) PropertyPatch(
 		// notify anybody that cares
 		callback, ok := s.properties[property+"@meta.callback"]
 		if ok {
-			if cb, ok := callback.([]func(*domain.RedfishResourceProperty)); ok {
+			if cb, ok := callback.([]func(interface{})); ok {
 				for _, fn := range cb {
-					fn(rrp)
+					fn(rrp.Value)
 				}
 			}
 		}
@@ -114,14 +114,14 @@ func (s *Service) PropertyPatch(
 }
 
 // the observer will be called after the property is set from the web interface
-func (s *Service) AddPropertyObserver(property string, fn func(*domain.RedfishResourceProperty)) {
+func (s *Service) AddPropertyObserver(property string, fn func(interface{})) {
 	cbListInt, ok := s.properties[property+"@meta.callback"]
 	if !ok {
-		cbListInt = []func(*domain.RedfishResourceProperty){}
+		cbListInt = []func(interface{}){}
 	}
-	cbList, ok := cbListInt.([]func(*domain.RedfishResourceProperty))
+	cbList, ok := cbListInt.([]func(interface{}))
 	if !ok {
-		cbListInt = []func(*domain.RedfishResourceProperty){}
+		cbListInt = []func(interface{}){}
 	}
 	cbList = append(cbList, fn)
 	s.properties[property+"@meta.callback"] = cbList

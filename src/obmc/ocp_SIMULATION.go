@@ -9,6 +9,9 @@ import (
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/spf13/viper"
+	"io/ioutil"
+	// "github.com/go-yaml/yaml"
+	yaml "gopkg.in/yaml.v2"
 
 	eh "github.com/looplab/eventhorizon"
 	"github.com/looplab/eventhorizon/utils"
@@ -158,6 +161,24 @@ func InitOCP(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *util
 		pullViperConfig()
 	})
 	viper.WatchConfig()
+
+	dumpMu = sync.Mutex
+	dumpViperConfig := func() {
+		dumpMu.Lock()
+		defer dumpMu.Unlock()
+
+		var config map[string]interface{}
+		viper.Unmarshal(&config)
+
+		output, _ := yaml.Marshal(config)
+		_ = ioutil.WriteFile("output.yaml", output, 0644)
+	}
+
+	sessionSvc.AddPropertyObserver("session_timeout", func(newval interface{}) {
+		fmt.Printf("\nSESSION TIMEOUT CHANGED\n\n")
+		viper.Set("session.timeout", newval.(int))
+		dumpViperConfig()
+	})
 
 	// register all of the plugins (do this first so we dont get any race
 	// conditions if somebody accesses the URIs before these plugins are
