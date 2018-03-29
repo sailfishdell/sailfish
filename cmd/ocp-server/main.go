@@ -59,7 +59,7 @@ func main() {
 	}
 
 	// Defaults
-	viper.SetDefault("listen", []string{"https::8443", "http::8080"})
+	viper.SetDefault("listen", []string{"https::8443"})
 	viper.SetDefault("session.timeout", 10)
 
 	flag.Parse()
