@@ -60,7 +60,7 @@
     "repo/memory",
     "utils"
   ]
-  revision = "e1bbbab3e2ce284a7e8059400f7ab72800493e3c"
+  revision = "7067a22f516dcb562ca72e89ce83b974e71e30ab"
 
 [[projects]]
   name = "github.com/magiconair/properties"
@@ -148,7 +148,7 @@
     "unix",
     "windows"
   ]
-  revision = "13d03a9a82fba647c21a0ef8fba44a795d0f0835"
+  revision = "378d26f46672a356c46195c28f61bdb4c0a781dd"
 
 [[projects]]
   name = "golang.org/x/text"
@@ -172,6 +172,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "dab6721eeae0af2ca47c701763f401b4abce11e47b1576ac5c29850e61ed6c73"
+  inputs-digest = "cba532e7f847454d224137d8faeb1e29aaea7d19602dc2da35a31190510ccbae"
   solver-name = "gps-cdcl"
   solver-version = 1
