@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
-	"log"
 	"net"
 	"net/http"
 	"net/http/fcgi"
@@ -12,15 +11,15 @@ import (
 	"os"
 	"os/signal"
 	"strings"
+	"sync"
 	"time"
 
-	"github.com/sirupsen/logrus"
+	"github.com/fsnotify/fsnotify"
 	flag "github.com/spf13/pflag"
 	"github.com/spf13/viper"
 
 	"github.com/gorilla/mux"
 
-	eh "github.com/looplab/eventhorizon"
 	domain "github.com/superchalupa/go-redfish/src/redfishresource"
 
 	// cert gen
@@ -39,41 +38,40 @@ import (
 )
 
 func main() {
-	log.Println("starting backend")
-
 	flag.StringSliceP("listen", "l", []string{}, "Listen address.  Formats: (http:[ip]:nn, fcgi:[ip]:port, fcgi:/path, https:[ip]:port, spacemonkey:[ip]:port)")
 
-	if err := viper.BindPFlags(flag.CommandLine); err != nil {
-		logrus.WithError(err).Fatal("Couldn't bind flags")
+	var cfgMgrMu sync.Mutex
+	cfgMgr := viper.New()
+	if err := cfgMgr.BindPFlags(flag.CommandLine); err != nil {
+		fmt.Fprintf(os.Stderr, "Could not bind viper flags: %s\n", err)
 	}
 	// Environment variables
-	viper.SetEnvPrefix("RF")
-	viper.AutomaticEnv()
+	cfgMgr.SetEnvPrefix("RF")
+	cfgMgr.AutomaticEnv()
 
 	// Configuration file
-	viper.SetConfigName("redfish")
-	viper.AddConfigPath(".")
-	viper.AddConfigPath("/etc/")
-	if err := viper.ReadInConfig(); err != nil {
-		logrus.WithError(err).Warning("Couldn't read configuration file")
+	cfgMgr.SetConfigName("redfish")
+	cfgMgr.AddConfigPath(".")
+	cfgMgr.AddConfigPath("/etc/")
+	if err := cfgMgr.ReadInConfig(); err != nil {
+		fmt.Fprintf(os.Stderr, "Could not read config file: %s\n", err)
 	}
 
 	// Defaults
-	viper.SetDefault("listen", []string{"https::8443"})
-	viper.SetDefault("session.timeout", 10)
+	cfgMgr.SetDefault("listen", []string{"https::8443"})
+	cfgMgr.SetDefault("session.timeout", 10)
 
 	flag.Parse()
-
-	var listenAddrs []string = viper.GetStringSlice("listen")
-	fmt.Printf("\n\nDEBUG listenaddrs %s\n\n", listenAddrs)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	intr := make(chan os.Signal, 1)
 	signal.Notify(intr, os.Interrupt)
 
+	logger := initializeApplicationLogging(cfgMgr)
+
 	domainObjs, _ := domain.NewDomainObjects()
-	domainObjs.EventPublisher.AddObserver(&Logger{})
-	domainObjs.CommandHandler = makeLoggingCmdHandler(domainObjs.CommandHandler)
+	domainObjs.EventPublisher.AddObserver(logger)
+	domainObjs.CommandHandler = logger.makeLoggingCmdHandler(domainObjs.CommandHandler)
 
 	// This also initializes all of the plugins
 	domain.InitDomain(ctx, domainObjs.CommandHandler, domainObjs.EventBus, domainObjs.EventWaiter)
@@ -82,22 +80,23 @@ func main() {
 	stdcollections.InitService(ctx, domainObjs.CommandHandler, domainObjs.EventBus, domainObjs.EventWaiter)
 	actionhandler.InitService(ctx, domainObjs.CommandHandler, domainObjs.EventBus, domainObjs.EventWaiter)
 
-	sessionServiceAuthorizer, BasicAuthAuthorizer := obmc.InitOCP(ctx, domainObjs.CommandHandler, domainObjs.EventBus, domainObjs.EventWaiter)
+	// TODO: cleanup retrun of InitOCP, probably make a service object out of it
+	sessionServiceAuthorizer, BasicAuthAuthorizer, configChangeHandler := obmc.InitOCP(ctx, cfgMgr, &cfgMgrMu, domainObjs.CommandHandler, domainObjs.EventBus, domainObjs.EventWaiter)
 
-	// Set up our standard extensions for authentication
-	// the authentication plugin will explicitly pass username to the final handler using the chainAuth() function
-	// the authorization plugin will explicitly pass the privileges to the final handler using the chainAuth function
-	chainAuth := func(u string, p []string) http.Handler {
-		return domain.NewRedfishHandler(domainObjs, u, p)
-	}
-
-	// same thing for SSE
-	chainAuthSSE := func(u string, p []string) http.Handler {
-		return domain.NewSSEHandler(domainObjs, u, p)
-	}
+	cfgMgr.OnConfigChange(func(e fsnotify.Event) {
+		cfgMgrMu.Lock()
+		defer cfgMgrMu.Unlock()
+		fmt.Println("CONFIG file changed:", e.Name)
+		for _, fn := range logger.ConfigChangeHooks {
+			fn()
+		}
+		configChangeHandler()
+	})
+	cfgMgr.WatchConfig()
 
 	// Handle the API.
 	m := mux.NewRouter()
+	loggingHttpHandler := logger.makeLoggingHttpHandler(m)
 
 	// per spec: redirect /redfish to /redfish/
 	m.Path("/redfish").HandlerFunc(func(w http.ResponseWriter, r *http.Request) { http.Redirect(w, r, "/redfish/", 301) })
@@ -115,31 +114,17 @@ func main() {
 
 	// generic handler for redfish output on most http verbs
 	// Note: this works by using the session service to get user details from token to pass up the stack using the embedded struct
+	chainAuth := func(u string, p []string) http.Handler { return domain.NewRedfishHandler(domainObjs, u, p) }
 	m.PathPrefix("/redfish/v1").Methods("GET", "PUT", "POST", "PATCH", "DELETE", "HEAD", "OPTIONS").HandlerFunc(
-		sessionServiceAuthorizer.MakeHandlerFunc(domainObjs.EventBus, domainObjs, chainAuth, BasicAuthAuthorizer.MakeHandlerFunc(chainAuth, domain.NewRedfishHandler(domainObjs, "UNKNOWN", []string{"Unauthenticated"}))),
-	)
+		sessionServiceAuthorizer.MakeHandlerFunc(domainObjs.EventBus, domainObjs, chainAuth, BasicAuthAuthorizer.MakeHandlerFunc(chainAuth, chainAuth("UNKNOWN", []string{"Unauthenticated"}))))
 
 	// SSE
+	chainAuthSSE := func(u string, p []string) http.Handler { return domain.NewSSEHandler(domainObjs, u, p) }
 	m.PathPrefix("/events").Methods("GET").HandlerFunc(
-		sessionServiceAuthorizer.MakeHandlerFunc(domainObjs.EventBus, domainObjs, chainAuthSSE, BasicAuthAuthorizer.MakeHandlerFunc(chainAuthSSE, domain.NewSSEHandler(domainObjs, "UNKNOWN", []string{"Unauthenticated"}))),
-	)
+		sessionServiceAuthorizer.MakeHandlerFunc(domainObjs.EventBus, domainObjs, chainAuthSSE, BasicAuthAuthorizer.MakeHandlerFunc(chainAuthSSE, chainAuth("UNKNOWN", []string{"Unauthenticated"}))))
 
 	// backend command handling
 	m.PathPrefix("/api/{command}").Handler(domainObjs.GetInternalCommandHandler(ctx))
-
-	// Simple HTTP request logging.
-	logger := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		defer func(begin time.Time) {
-			log.Println(
-				"source", r.RemoteAddr,
-				"method", r.Method,
-				"url", r.URL,
-				"business_logic_time", time.Since(begin),
-				"args", fmt.Sprintf("%#v", mux.Vars(r)),
-			)
-		}(time.Now())
-		m.ServeHTTP(w, r)
-	})
 
 	tlscfg := &tls.Config{
 		MinVersion: tls.VersionTLS12,
@@ -204,12 +189,12 @@ func main() {
 		serverCert.Serialize()
 	}
 
-	if len(listenAddrs) == 0 {
-		log.Fatal("No listeners configured! Use the '-l' option to configure a listener!")
+	if len(cfgMgr.GetStringSlice("listen")) == 0 {
+		fmt.Fprintf(os.Stderr, "No listeners configured! Use the '-l' option to configure a listener!")
 	}
 
 	// And finally, start up all of the listeners that we have configured
-	for _, listen := range listenAddrs {
+	for _, listen := range cfgMgr.GetStringSlice("listen") {
 		switch {
 		case strings.HasPrefix(listen, "pprof:"):
 			pprofMux := http.DefaultServeMux
@@ -220,8 +205,8 @@ func main() {
 					Addr:    addr,
 					Handler: pprofMux,
 				}
-				ConnectToContext(ctx, s) // make sure when background context is cancelled, this server shuts down cleanly
-				log.Println("PPROF activated with tcp listener: " + addr)
+				ConnectToContext(ctx, logger, s) // make sure when background context is cancelled, this server shuts down cleanly
+				logger.Info("PPROF activated with tcp listener: " + addr)
 				s.ListenAndServe()
 			}(listen)
 
@@ -230,12 +215,12 @@ func main() {
 			go func(addr string) {
 				listener, err := net.Listen("tcp", addr)
 				if err != nil {
-					log.Println("fatal", "Could not open listening connection", "err", err)
+					logger.Crit("fatal", "Could not open listening connection", "err", err)
 					return
 				}
 				defer listener.Close()
-				log.Println("FCGI mode activated with tcp listener: " + addr)
-				log.Println(fcgi.Serve(listener, logger))
+				logger.Info("FCGI mode activated with tcp listener: " + addr)
+				logger.Info("Server exited", "err", fcgi.Serve(listener, loggingHttpHandler))
 			}(strings.TrimPrefix(listen, "fcgi:"))
 
 		case strings.HasPrefix(listen, "fcgi:") && strings.Contains(strings.TrimPrefix(listen, "fcgi:"), "/"):
@@ -243,37 +228,37 @@ func main() {
 			go func(path string) {
 				listener, err := net.Listen("unix", path)
 				if err != nil {
-					log.Println("fatal", "Could not open listening connection", "err", err)
+					logger.Crit("fatal", "Could not open listening connection", "err", err)
 					return
 				}
 				defer listener.Close()
 				defer os.Remove(path)
-				log.Println("FCGI mode activated with unix socket listener: " + path)
-				log.Println(fcgi.Serve(listener, logger))
+				logger.Info("FCGI mode activated with unix socket listener: " + path)
+				logger.Info("Server exited", "err", fcgi.Serve(listener, loggingHttpHandler))
 			}(strings.TrimPrefix(listen, "fcgi:"))
 
 		case strings.HasPrefix(listen, "fcgi:"):
 			// FCGI listener using stdin/stdout  fcgi:
 			go func() {
-				log.Println("FCGI mode activated with stdin/stdout listener")
-				log.Println(fcgi.Serve(nil, logger))
+				logger.Info("FCGI mode activated with stdin/stdout listener")
+				logger.Info("Server exited", "err", fcgi.Serve(nil, loggingHttpHandler))
 			}()
 
 		case strings.HasPrefix(listen, "http:"):
 			// HTTP protocol listener
 			// "https:[addr]:port
 			go func(addr string) {
-				log.Println("HTTP listener starting on " + addr)
+				logger.Info("HTTP listener starting on " + addr)
 				s := &http.Server{
 					Addr:           addr,
-					Handler:        logger,
+					Handler:        loggingHttpHandler,
 					MaxHeaderBytes: 1 << 20,
 					ReadTimeout:    10 * time.Second,
 					// cannot use writetimeout if we are streaming
 					// WriteTimeout:   10 * time.Second,
 				}
-				ConnectToContext(ctx, s) // make sure when background context is cancelled, this server shuts down cleanly
-				log.Println(s.ListenAndServe())
+				ConnectToContext(ctx, logger, s) // make sure when background context is cancelled, this server shuts down cleanly
+				logger.Info("Server exited", "err", s.ListenAndServe())
 			}(strings.TrimPrefix(listen, "http:"))
 
 		case strings.HasPrefix(listen, "https:"):
@@ -282,7 +267,7 @@ func main() {
 			go func(addr string) {
 				s := &http.Server{
 					Addr:           addr,
-					Handler:        logger,
+					Handler:        loggingHttpHandler,
 					MaxHeaderBytes: 1 << 20,
 					ReadTimeout:    10 * time.Second,
 					// cannot use writetimeout if we are streaming
@@ -291,18 +276,18 @@ func main() {
 					// can't remember why this doesn't work... TODO: reason this doesnt work
 					//TLSNextProto:   make(map[string]func(*http.Server, *tls.Conn, http.Handler), 0),
 				}
-				ConnectToContext(ctx, s) // make sure when background context is cancelled, this server shuts down cleanly
-				log.Println("HTTPS listener starting on " + addr)
-				log.Println(s.ListenAndServeTLS("server.crt", "server.key"))
+				ConnectToContext(ctx, logger, s) // make sure when background context is cancelled, this server shuts down cleanly
+				logger.Info("HTTPS listener starting on " + addr)
+				logger.Info("Server exited", "err", s.ListenAndServeTLS("server.crt", "server.key"))
 			}(strings.TrimPrefix(listen, "https:"))
 
 		case strings.HasPrefix(listen, "spacemonkey:"):
 			// openssl based https
-			go run_spacemonkey(strings.TrimPrefix(listen, "spacemonkey:"), logger)
+			go run_spacemonkey(strings.TrimPrefix(listen, "spacemonkey:"), loggingHttpHandler)
 		}
 	}
 
-	fmt.Printf("%v\n", listenAddrs)
+	fmt.Printf("%v\n", cfgMgr.GetStringSlice("listen"))
 
 	// wait until we get an interrupt (CTRL-C)
 	<-intr
@@ -311,35 +296,19 @@ func main() {
 	fmt.Printf("Bye!\n")
 }
 
-// Create a tiny logging middleware for the command handler.
-func makeLoggingCmdHandler(originalHandler eh.CommandHandler) eh.CommandHandler {
-	return eh.CommandHandlerFunc(func(ctx context.Context, cmd eh.Command) error {
-		log.Printf("CMD %#v", cmd)
-		return originalHandler.HandleCommand(ctx, cmd)
-	})
-}
-
 type Shutdowner interface {
 	Shutdown(context.Context) error
 }
 
-func ConnectToContext(ctx context.Context, srv interface{}) {
+func ConnectToContext(ctx context.Context, logger Logger, srv interface{}) {
 	if s, ok := srv.(Shutdowner); ok {
-		log.Println("Hooking up shutdown context.")
+		logger.Info("Hooking up shutdown context.")
 		if err := s.Shutdown(ctx); err != nil {
-			log.Println("server_error", err)
+			logger.Info("server_error", err)
 		}
 	} else {
-		log.Println("Can't cleanly shutdown listener, it will ungracefully end")
+		logger.Info("Can't cleanly shutdown listener, it will ungracefully end")
 	}
-}
-
-// Logger is a simple event handler for logging all events.
-type Logger struct{}
-
-// Notify implements the Notify method of the EventObserver interface.
-func (l *Logger) Notify(ctx context.Context, event eh.Event) {
-	log.Printf("EVENT %s", event)
 }
 
 func iterInterfaceIPAddrs(fn func(net.IP)) {

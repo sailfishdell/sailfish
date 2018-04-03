@@ -6,8 +6,8 @@ package obmc
 import (
 	"context"
 	"fmt"
+	"sync"
 
-	"github.com/fsnotify/fsnotify"
 	"github.com/spf13/viper"
 	"io/ioutil"
 	// "github.com/go-yaml/yaml"
@@ -30,9 +30,9 @@ import (
 	"github.com/superchalupa/go-redfish/src/ocp/thermal/temperatures"
 )
 
-func InitOCP(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) (*session.Service, *basicauth.Service) {
-	// initial implementation is one BMC, one Chassis, and one System. If we
-	// expand beyond that, we need to adjust stuff here.
+func InitOCP(ctx context.Context, cfgMgr *viper.Viper, viperMu *sync.Mutex, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) (*session.Service, *basicauth.Service, func()) {
+	// initial implementation is one BMC, one Chassis, and one System.
+	// Yes, this function is somewhat long, however there really isn't any logic here. If we start getting logic, this needs to be split.
 
 	rootSvc, _ := root.New()
 
@@ -47,14 +47,6 @@ func InitOCP(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *util
 
 	prot, _ := protocol.New(
 		protocol.WithBMC(bmcSvc),
-		protocol.WithProtocol("HTTPS", true, 443, nil),
-		protocol.WithProtocol("HTTP", false, 80, nil),
-		protocol.WithProtocol("IPMI", false, 623, nil),
-		protocol.WithProtocol("SSH", false, 22, nil),
-		protocol.WithProtocol("SNMP", false, 161, nil),
-		protocol.WithProtocol("TELNET", false, 23, nil),
-		protocol.WithProtocol("SSDP", false, 1900,
-			map[string]interface{}{"NotifyMulticastIntervalSeconds": 600, "NotifyTTL": 5, "NotifyIPv6Scope": "Site"}),
 	)
 
 	chas, _ := chassis.New(
@@ -136,47 +128,76 @@ func InitOCP(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *util
 	// VIPER Config:
 	// pull the config from the YAML file to populate some static config options
 	pullViperConfig := func() {
-		sessionSvc.ApplyOption(plugins.UpdateProperty("session_timeout", viper.GetInt("session.timeout")))
+		fmt.Printf("\n\nDEBUG: proto: %s\n\n", cfgMgr.GetStringMapString("managers.OBMC.proto"))
+
+		sessionSvc.ApplyOption(plugins.UpdateProperty("session_timeout", cfgMgr.GetInt("session.timeout")))
 
 		for _, k := range []string{"name", "description", "model", "timezone", "version"} {
-			bmcSvc.ApplyOption(plugins.UpdateProperty(k, viper.Get("managers.OBMC."+k)))
+			bmcSvc.ApplyOption(plugins.UpdateProperty(k, cfgMgr.Get("managers.OBMC."+k)))
 		}
+
+		for k, _ := range cfgMgr.GetStringMapString("managers.OBMC.proto") {
+			protocolOptions := map[string]interface{}{}
+
+			options := cfgMgr.GetStringMap("managers.OBMC.proto." + k)
+			fmt.Printf("DEBUG: options = %s\n\n", options)
+			opts, ok := options["options"].(map[string]interface{})
+			if ok {
+				for _, vv := range opts {
+					v, ok := vv.(map[string]interface{})
+					if ok {
+						protocolOptions[v["name"].(string)] = v["value"]
+					}
+				}
+			}
+
+			// TODO: better error checks on type assertions...
+			prot.ApplyOption(protocol.WithProtocol(
+				options["name"].(string),
+				options["enabled"].(bool),
+				options["port"].(int),
+				protocolOptions))
+		}
+
 		for _, k := range []string{
 			"name", "chassis_type", "model",
 			"serial_number", "sku", "part_number",
 			"asset_tag", "chassis_type", "manufacturer"} {
-			chas.ApplyOption(plugins.UpdateProperty(k, viper.Get("chassis.1."+k)))
+			chas.ApplyOption(plugins.UpdateProperty(k, cfgMgr.Get("chassis.1."+k)))
 		}
 		for _, k := range []string{
 			"name", "system_type", "asset_tag", "manufacturer",
 			"model", "serial_number", "sku", "The SKU", "part_number",
 			"description", "power_state", "bios_version", "led", "system_hostname",
 		} {
-			system.ApplyOption(plugins.UpdateProperty(k, viper.Get("systems.1."+k)))
+			system.ApplyOption(plugins.UpdateProperty(k, cfgMgr.Get("systems.1."+k)))
 		}
 	}
 	pullViperConfig()
-	viper.OnConfigChange(func(e fsnotify.Event) {
-		fmt.Println("Config file changed:", e.Name)
-		pullViperConfig()
-	})
-	viper.WatchConfig()
 
-	dumpMu = sync.Mutex
+	cfgMgr.SetDefault("main.dumpConfigChanges.filename", "redfish-changed.yaml")
+	cfgMgr.SetDefault("main.dumpConfigChanges.enabled", "true")
 	dumpViperConfig := func() {
-		dumpMu.Lock()
-		defer dumpMu.Unlock()
+		viperMu.Lock()
+		defer viperMu.Unlock()
 
+		dumpFileName := cfgMgr.GetString("main.dumpConfigChanges.filename")
+		enabled := cfgMgr.GetBool("main.dumpConfigChanges.enabled")
+		if !enabled {
+			return
+		}
+
+		// TODO: change this to a streaming write (reduce mem usage)
 		var config map[string]interface{}
-		viper.Unmarshal(&config)
-
+		cfgMgr.Unmarshal(&config)
 		output, _ := yaml.Marshal(config)
-		_ = ioutil.WriteFile("output.yaml", output, 0644)
+		_ = ioutil.WriteFile(dumpFileName, output, 0644)
 	}
 
 	sessionSvc.AddPropertyObserver("session_timeout", func(newval interface{}) {
-		fmt.Printf("\nSESSION TIMEOUT CHANGED\n\n")
-		viper.Set("session.timeout", newval.(int))
+		viperMu.Lock()
+		cfgMgr.Set("session.timeout", newval.(int))
+		viperMu.Unlock()
 		dumpViperConfig()
 	})
 
@@ -216,5 +237,5 @@ func InitOCP(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *util
 		res.Results = map[string]interface{}{"RESET": "FAKE SIMULATED COMPUTER RESET"}
 	}))
 
-	return sessionSvc, basicAuthSvc
+	return sessionSvc, basicAuthSvc, pullViperConfig
 }
