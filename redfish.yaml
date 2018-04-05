@@ -1,7 +1,12 @@
 main:
-    logLevel: "debug"
-    logEnableStderr: true
-    logToFile: "./out.log"
+    log:
+        # debug, info, warn, error, crit
+        Level: "warn"
+        EnableStderr: true
+        FileName: "./out.log"
+        ModulesToEnable:
+            - name: "http"
+              level: "info"
     dumpConfigChanges:
         enabled: true
         filename: "redfish-out2.yaml"
@@ -20,32 +25,25 @@ managers:
         timezone: "-05:00"
         version: "1.0.1"
         proto:
-            1:
-                name: "HTTP"
-                port: 80
-                enabled: false
-            2:
-                name: "HTTPS"
-                port: 8443
-                enabled: true
-            3:
-                name: "fakePROTO"
-                port: 0000
-                enabled: false
-            4:
-                name: "SSDP"
-                port: 1900
-                enabled: false
-                options:
-                    1:
-                        name: "NotifyMulticastIntervalSeconds"
-                        value: 600
-                    2:
-                        name: "NotifyTTL"
-                        value: 5
-                    3:
-                        name: "NotifyIPv6Scope"
-                        value: "Site"
+            - name: "HTTP"
+              port: 80
+              enabled: false
+            - name: "HTTPS"
+              port: 8443
+              enabled: true
+            - name: "fakePROTO"
+              port: 0000
+              enabled: false
+            - name: "SSDP"
+              port: 1900
+              enabled: false
+              options:
+                    - name: "NotifyMulticastIntervalSeconds"
+                      value: 600
+                    - name: "NotifyTTL"
+                      value: 5
+                    - name: "NotifyIPv6Scope"
+                      value: "Site"
 
 chassis:
     1:

@@ -3,7 +3,6 @@ package domain
 import (
 	"context"
 	"errors"
-	"fmt"
 	"time"
 
 	eh "github.com/looplab/eventhorizon"
@@ -55,8 +54,11 @@ func (c *CreateRedfishResource) AggregateID() eh.UUID            { return c.ID }
 func (c *CreateRedfishResource) CommandType() eh.CommandType     { return CreateRedfishResourceCommand }
 
 func (c *CreateRedfishResource) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
+	requestLogger := ContextLogger(ctx, "internal_commands")
+	requestLogger.Info("CreateRedfishResource", "META", a.properties.Meta)
+
 	if a.ID != eh.UUID("") {
-		fmt.Printf("CREATE COMMAND: Aggregate already exists!\n")
+		requestLogger.Error("Aggregate already exists!", "command", "CreateRedfishResource", "UUID", a.ID, "URI", a.ResourceURI, "request_URI", c.ResourceURI)
 		return errors.New("Already created!")
 	}
 	a.ID = c.ID
@@ -92,7 +94,6 @@ func (c *CreateRedfishResource) Handle(ctx context.Context, a *RedfishResourceAg
 	a.properties.Value = map[string]interface{}{}
 	a.properties.Parse(c.Properties)
 	a.properties.Meta = c.Meta
-	fmt.Printf("GOT META: %s\n", a.properties.Meta)
 	a.propertiesMu.Unlock()
 
 	a.SetProperty("@odata.id", c.ResourceURI)

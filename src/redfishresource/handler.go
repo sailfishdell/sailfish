@@ -111,7 +111,8 @@ func (d *DomainObjects) DeleteResource(ctx context.Context, uri string) {
 
 // Notify implements the Notify method of the EventObserver interface.
 func (d *DomainObjects) Notify(ctx context.Context, event eh.Event) {
-	fmt.Printf("Notify( event==%s )\n", event)
+	logger := ContextLogger(ctx, "domain")
+	logger.Debug("process event", "event", event)
 	if event.EventType() == RedfishResourceCreated {
 		if data, ok := event.Data().(RedfishResourceCreatedData); ok {
 			// TODO: handle conflicts (how?)
@@ -119,7 +120,7 @@ func (d *DomainObjects) Notify(ctx context.Context, event eh.Event) {
 
 			// TODO: need to split out auto collection management into a plugin
 			if data.Collection {
-				fmt.Printf("A new collection: %s\n", data.ResourceURI)
+				logger.Debug("New collection", "collection_name", data.ResourceURI)
 				d.collectionsMu.Lock()
 				d.collections = append(d.collections, data.ResourceURI)
 				d.collectionsMu.Unlock()
@@ -129,7 +130,7 @@ func (d *DomainObjects) Notify(ctx context.Context, event eh.Event) {
 			d.collectionsMu.RLock()
 			for _, v := range d.collections {
 				if v == collectionToTest {
-					fmt.Printf("Collection: ADD (%s) to collection (%s)\n", data.ResourceURI, v)
+					logger.Debug("Add member to collection", "collection_name", v, "new_uri", data.ResourceURI)
 					d.CommandHandler.HandleCommand(
 						ctx,
 						&AddResourceToRedfishResourceCollection{
@@ -150,7 +151,7 @@ func (d *DomainObjects) Notify(ctx context.Context, event eh.Event) {
 			d.collectionsMu.RLock()
 			for _, v := range d.collections {
 				if v == collectionToTest {
-					fmt.Printf("Collection: REMOVE (%s) from collection (%s)\n", data.ResourceURI, v)
+					logger.Debug("Remove member from collection", "collection_name", v, "new_uri", data.ResourceURI)
 					d.CommandHandler.HandleCommand(
 						ctx,
 						&RemoveResourceFromRedfishResourceCollection{
@@ -166,7 +167,7 @@ func (d *DomainObjects) Notify(ctx context.Context, event eh.Event) {
 			d.collectionsMu.Lock()
 			for i, c := range d.collections {
 				if c == data.ResourceURI {
-					fmt.Printf("Removing collection: %s\n", data.ResourceURI)
+					logger.Debug("Remove collection", "collection_name", data.ResourceURI)
 					// swap the collection we found to the end
 					d.collections[len(d.collections)-1], d.collections[i] = d.collections[i], d.collections[len(d.collections)-1]
 					// then slice it off

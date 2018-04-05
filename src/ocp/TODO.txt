@@ -18,4 +18,3 @@ Known incomplete:
 
 Todo:
     redo session service along lines of ocp stuff to get the values into a struct that we use
-    add a patch notification callback, along the lines of what was done for action callbacks

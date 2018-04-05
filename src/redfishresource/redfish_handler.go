@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	eh "github.com/looplab/eventhorizon"
+	log "github.com/superchalupa/go-redfish/src/log"
 )
 
 type CmdIDSetter interface {
@@ -26,14 +27,15 @@ type HTTPParser interface {
 	ParseHTTPRequest(*http.Request) error
 }
 
-func NewRedfishHandler(dobjs *DomainObjects, u string, p []string) *RedfishHandler {
-	return &RedfishHandler{UserName: u, Privileges: p, d: dobjs}
+func NewRedfishHandler(dobjs *DomainObjects, logger log.Logger, u string, p []string) *RedfishHandler {
+	return &RedfishHandler{UserName: u, Privileges: p, d: dobjs, logger: logger}
 }
 
 type RedfishHandler struct {
 	UserName   string
 	Privileges []string
 	d          *DomainObjects
+	logger     log.Logger
 }
 
 func (rh *RedfishHandler) IsAuthorized(requiredPrivs []string) (authorized string) {
@@ -55,6 +57,12 @@ outer:
 
 // TODO: need to write middleware that would allow different types of encoding on output
 func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	// Each command needs a unique UUID. We'll use that to listen for the HTTPProcessed Event, which should have a matching UUID.
+	cmdId := eh.NewUUID()
+	reqCtx := WithRequestId(r.Context(), cmdId)
+	requestLogger := ContextLogger(reqCtx, "redfish_handler")
+	requestLogger.Info("test")
+
 	// All operations have to be on URLs that exist, so look it up in the tree
 	aggID, ok := rh.d.GetAggregateIDOK(r.URL.Path)
 	if !ok {
@@ -65,7 +73,7 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	search := []eh.CommandType{}
 
 	// load the aggregate for the URL we are operating on
-	agg, err := rh.d.AggregateStore.Load(r.Context(), AggregateType, aggID)
+	agg, err := rh.d.AggregateStore.Load(reqCtx, AggregateType, aggID)
 	// type assertion to get real aggregate
 	redfishResource, ok := agg.(*RedfishResourceAggregate)
 	if ok {
@@ -91,9 +99,6 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "could not create command", http.StatusBadRequest)
 		return
 	}
-
-	// Each command needs a unique UUID. We'll use that to listen for the HTTPProcessed Event, which should have a matching UUID.
-	cmdId := eh.NewUUID()
 
 	// some optional interfaces that the commands might implement
 	if t, ok := cmd.(CmdIDSetter); ok {
@@ -138,7 +143,7 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// to avoid races, set up our listener first
-	l, err := rh.d.EventWaiter.Listen(r.Context(), func(event eh.Event) bool {
+	l, err := rh.d.EventWaiter.Listen(reqCtx, func(event eh.Event) bool {
 		if event.EventType() != HTTPCmdProcessed {
 			return false
 		}
@@ -164,13 +169,13 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	ctx := context.Background()
+	ctx := WithRequestId(context.Background(), cmdId)
 	if err := rh.d.CommandHandler.HandleCommand(ctx, cmd); err != nil {
 		http.Error(w, "redfish handler could not handle command (type: "+string(cmd.CommandType())+"): "+err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	event, err := l.Wait(r.Context())
+	event, err := l.Wait(reqCtx)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

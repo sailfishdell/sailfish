@@ -80,17 +80,16 @@ func main() {
 	stdcollections.InitService(ctx, domainObjs.CommandHandler, domainObjs.EventBus, domainObjs.EventWaiter)
 	actionhandler.InitService(ctx, domainObjs.CommandHandler, domainObjs.EventBus, domainObjs.EventWaiter)
 
-	// TODO: cleanup retrun of InitOCP, probably make a service object out of it
-	sessionServiceAuthorizer, BasicAuthAuthorizer, configChangeHandler := obmc.InitOCP(ctx, cfgMgr, &cfgMgrMu, domainObjs.CommandHandler, domainObjs.EventBus, domainObjs.EventWaiter)
+	ocp := obmc.New(ctx, logger, cfgMgr, &cfgMgrMu, domainObjs.CommandHandler, domainObjs.EventBus, domainObjs.EventWaiter)
 
 	cfgMgr.OnConfigChange(func(e fsnotify.Event) {
 		cfgMgrMu.Lock()
 		defer cfgMgrMu.Unlock()
-		fmt.Println("CONFIG file changed:", e.Name)
+		logger.Info("CONFIG file changed", "config_file", e.Name)
 		for _, fn := range logger.ConfigChangeHooks {
 			fn()
 		}
-		configChangeHandler()
+		ocp.ConfigChangeHandler()
 	})
 	cfgMgr.WatchConfig()
 
@@ -114,14 +113,14 @@ func main() {
 
 	// generic handler for redfish output on most http verbs
 	// Note: this works by using the session service to get user details from token to pass up the stack using the embedded struct
-	chainAuth := func(u string, p []string) http.Handler { return domain.NewRedfishHandler(domainObjs, u, p) }
+	chainAuth := func(u string, p []string) http.Handler { return domain.NewRedfishHandler(domainObjs, logger, u, p) }
 	m.PathPrefix("/redfish/v1").Methods("GET", "PUT", "POST", "PATCH", "DELETE", "HEAD", "OPTIONS").HandlerFunc(
-		sessionServiceAuthorizer.MakeHandlerFunc(domainObjs.EventBus, domainObjs, chainAuth, BasicAuthAuthorizer.MakeHandlerFunc(chainAuth, chainAuth("UNKNOWN", []string{"Unauthenticated"}))))
+		ocp.GetSessionSvc().MakeHandlerFunc(domainObjs.EventBus, domainObjs, chainAuth, ocp.GetBasicAuthSvc().MakeHandlerFunc(chainAuth, chainAuth("UNKNOWN", []string{"Unauthenticated"}))))
 
 	// SSE
-	chainAuthSSE := func(u string, p []string) http.Handler { return domain.NewSSEHandler(domainObjs, u, p) }
+	chainAuthSSE := func(u string, p []string) http.Handler { return domain.NewSSEHandler(domainObjs, logger, u, p) }
 	m.PathPrefix("/events").Methods("GET").HandlerFunc(
-		sessionServiceAuthorizer.MakeHandlerFunc(domainObjs.EventBus, domainObjs, chainAuthSSE, BasicAuthAuthorizer.MakeHandlerFunc(chainAuthSSE, chainAuth("UNKNOWN", []string{"Unauthenticated"}))))
+		ocp.GetSessionSvc().MakeHandlerFunc(domainObjs.EventBus, domainObjs, chainAuthSSE, ocp.GetBasicAuthSvc().MakeHandlerFunc(chainAuthSSE, chainAuth("UNKNOWN", []string{"Unauthenticated"}))))
 
 	// backend command handling
 	m.PathPrefix("/api/{command}").Handler(domainObjs.GetInternalCommandHandler(ctx))

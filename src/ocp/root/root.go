@@ -14,12 +14,12 @@ const (
 	RootPlugin = domain.PluginType("obmc_root")
 )
 
-type service struct {
+type Service struct {
 	*plugins.Service
 }
 
-func New(options ...interface{}) (*service, error) {
-	s := &service{
+func New(options ...interface{}) (*Service, error) {
+	s := &Service{
 		Service: plugins.NewService(plugins.PluginType(RootPlugin)),
 	}
 
@@ -28,7 +28,7 @@ func New(options ...interface{}) (*service, error) {
 	return s, nil
 }
 
-func (s *service) AddResource(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
+func (s *Service) AddResource(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
 	ch.HandleCommand(
 		ctx,
 		&domain.CreateRedfishResource{

@@ -6,16 +6,18 @@ import (
 	"net/http"
 
 	eh "github.com/looplab/eventhorizon"
+	log "github.com/superchalupa/go-redfish/src/log"
 )
 
-func NewSSEHandler(dobjs *DomainObjects, u string, p []string) *SSEHandler {
-	return &SSEHandler{UserName: u, Privileges: p, d: dobjs}
+func NewSSEHandler(dobjs *DomainObjects, logger log.Logger, u string, p []string) *SSEHandler {
+	return &SSEHandler{UserName: u, Privileges: p, d: dobjs, logger: logger}
 }
 
 type SSEHandler struct {
 	UserName   string
 	Privileges []string
 	d          *DomainObjects
+	logger     log.Logger
 }
 
 func (rh *SSEHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
