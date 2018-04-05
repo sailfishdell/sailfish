@@ -19,6 +19,7 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/gorilla/mux"
+	log "github.com/superchalupa/go-redfish/src/log"
 
 	domain "github.com/superchalupa/go-redfish/src/redfishresource"
 
@@ -184,7 +185,7 @@ func main() {
 			tlscert.SetSerialNumber(12346),
 			tlscert.SetBaseFilename("server"),
 		)
-		iterInterfaceIPAddrs(func(ip net.IP) { serverCert.ApplyOption(tlscert.AddSANIP(ip)) })
+		iterInterfaceIPAddrs(logger, func(ip net.IP) { serverCert.ApplyOption(tlscert.AddSANIP(ip)) })
 		serverCert.Serialize()
 	}
 
@@ -286,13 +287,12 @@ func main() {
 		}
 	}
 
-	fmt.Printf("%v\n", cfgMgr.GetStringSlice("listen"))
+	logger.Debug("Listening", "module", "main", "addresses", fmt.Sprintf("%v\n", cfgMgr.GetStringSlice("listen")))
 
 	// wait until we get an interrupt (CTRL-C)
 	<-intr
 	cancel()
-	fmt.Printf("\ninterrupted\n")
-	fmt.Printf("Bye!\n")
+	logger.Warn("Bye!", "module", "main")
 }
 
 type Shutdowner interface {
@@ -310,7 +310,7 @@ func ConnectToContext(ctx context.Context, logger Logger, srv interface{}) {
 	}
 }
 
-func iterInterfaceIPAddrs(fn func(net.IP)) {
+func iterInterfaceIPAddrs(logger log.Logger, fn func(net.IP)) {
 	ifaces, _ := net.Interfaces()
 	for _, iface := range ifaces {
 		if iface.Flags&net.FlagUp == 0 {
@@ -328,7 +328,7 @@ func iterInterfaceIPAddrs(fn func(net.IP)) {
 			case *net.IPAddr:
 				ip = v.IP
 			}
-			fmt.Printf("Adding local IP Address to server cert as SAN: %s\n", ip)
+			logger.Debug("Adding local IP Address to server cert as SAN", "ip", ip, "module", "main")
 			fn(ip)
 		}
 	}

@@ -7,6 +7,8 @@ main:
         ModulesToEnable:
             - name: "http"
               level: "info"
+            - name: "main"
+              level: "debug"
     dumpConfigChanges:
         enabled: true
         filename: "redfish-out2.yaml"

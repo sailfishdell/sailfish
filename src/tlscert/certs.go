@@ -8,12 +8,12 @@ import (
 	"crypto/x509/pkix"
 	"encoding/pem"
 	"errors"
-	"fmt"
-	"log"
 	"math/big"
 	"net"
 	"os"
 	"time"
+
+	"github.com/superchalupa/go-redfish/src/log"
 )
 
 type Option func(*mycert) error
@@ -49,15 +49,16 @@ func NewCert(options ...Option) (*mycert, error) {
 }
 
 func Load(fileBase string) (c *mycert, err error) {
-	fmt.Printf("Try to load existing %s.crt and %s.key\n", fileBase, fileBase)
+	logger := log.MustLogger("tlscert")
+	logger.Info("Try to load existing Certificate Authority and Server Key", "CRT", fileBase+".crt", "KEY", fileBase+".key")
 	catls, err := tls.LoadX509KeyPair(fileBase+".crt", fileBase+".key")
 	if err != nil {
-		fmt.Printf("\tError loading, creating new keys from scratch. Error = %s\n", err.Error())
+		logger.Error("Error loading, creating new keys from scratch", "err", err)
 		return
 	}
 	ca, err := x509.ParseCertificate(catls.Certificate[0])
 	if err != nil {
-		fmt.Printf("\tError parsing certificate, creating new keys from scratch. Erroro = %s\n", err.Error())
+		logger.Error("Error parsing certificate, creating new keys from scratch", "err", err)
 		return
 	}
 
@@ -67,7 +68,7 @@ func Load(fileBase string) (c *mycert, err error) {
 		fileBase: fileBase,
 	}
 
-	fmt.Printf("\tSuccessfully loaded keys\n")
+	logger.Info("Successfully loaded keys")
 	return
 }
 
@@ -243,7 +244,7 @@ func (cert *mycert) Serialize() error {
 	pub := &cert.priv.PublicKey
 	cert_b, err := x509.CreateCertificate(rand.Reader, cert.cert, cert.certCA, pub, cert.certCApriv)
 	if err != nil {
-		log.Println("create certificate failed", err)
+		log.MustLogger("tlscert").Error("create certificate failed", "err", err)
 		return errors.New("Certificate creation failed.")
 	}
 
