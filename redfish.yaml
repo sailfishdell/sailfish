@@ -9,6 +9,8 @@ main:
               level: "info"
             - name: "main"
               level: "debug"
+            - name: "tlscert"
+              level: "info"
     dumpConfigChanges:
         enabled: true
         filename: "redfish-out2.yaml"

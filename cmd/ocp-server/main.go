@@ -156,7 +156,7 @@ func main() {
 
 	// TODO: cli option to enable/disable and control cert options
 	// Load CA cert if it exists. Create CA cert if it doesn't.
-	ca, err := tlscert.Load("ca")
+	ca, err := tlscert.Load(tlscert.SetBaseFilename("ca"), tlscert.WithLogger(logger))
 	if err != nil {
 		ca, _ = tlscert.NewCert(
 			tlscert.CreateCA,
@@ -166,13 +166,14 @@ func main() {
 			tlscert.SetBaseFilename("ca"),
 			tlscert.GenRSA(4096),
 			tlscert.SelfSigned(),
+			tlscert.WithLogger(logger),
 		)
 		ca.Serialize()
 	}
 
 	// TODO: cli option to enable/disable and control cert options
 	// TODO: cli option to create new server cert unconditionally based on CA cert
-	_, err = tlscert.Load("server")
+	_, err = tlscert.Load(tlscert.SetBaseFilename("server"), tlscert.WithLogger(logger))
 	if err != nil {
 		serverCert, _ := tlscert.NewCert(
 			tlscert.GenRSA(4096),
@@ -184,6 +185,7 @@ func main() {
 			tlscert.AddSANDNSName("localhost", "localhost.localdomain"),
 			tlscert.SetSerialNumber(12346),
 			tlscert.SetBaseFilename("server"),
+			tlscert.WithLogger(logger),
 		)
 		iterInterfaceIPAddrs(logger, func(ip net.IP) { serverCert.ApplyOption(tlscert.AddSANIP(ip)) })
 		serverCert.Serialize()

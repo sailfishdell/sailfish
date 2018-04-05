@@ -24,6 +24,7 @@ type mycert struct {
 	cert       *x509.Certificate
 	priv       *rsa.PrivateKey
 	fileBase   string
+	_logger    log.Logger
 }
 
 func NewCert(options ...Option) (*mycert, error) {
@@ -48,27 +49,36 @@ func NewCert(options ...Option) (*mycert, error) {
 	return c, nil
 }
 
-func Load(fileBase string) (c *mycert, err error) {
-	logger := log.MustLogger("tlscert")
-	logger.Info("Try to load existing Certificate Authority and Server Key", "CRT", fileBase+".crt", "KEY", fileBase+".key")
-	catls, err := tls.LoadX509KeyPair(fileBase+".crt", fileBase+".key")
+func (c *mycert) logger() log.Logger {
+	if c._logger == nil {
+		c._logger = log.MustLogger("tlscert")
+	}
+	return c._logger
+}
+
+func Load(options ...Option) (c *mycert, err error) {
+	c = &mycert{}
+	c.ApplyOption(options...)
+	if c.fileBase == "" {
+		panic("Key base file path not set.")
+	}
+
+	c.logger().Debug("Try to load existing Key Pair", "CRT", c.fileBase+".crt", "KEY", c.fileBase+".key")
+
+	catls, err := tls.LoadX509KeyPair(c.fileBase+".crt", c.fileBase+".key")
 	if err != nil {
-		logger.Error("Error loading, creating new keys from scratch", "err", err)
+		c.logger().Error("Error loading, creating new keys from scratch", "err", err)
 		return
 	}
-	ca, err := x509.ParseCertificate(catls.Certificate[0])
+	c.cert, err = x509.ParseCertificate(catls.Certificate[0])
 	if err != nil {
-		logger.Error("Error parsing certificate, creating new keys from scratch", "err", err)
+		c.logger().Error("Error parsing certificate, creating new keys from scratch", "err", err)
 		return
 	}
 
-	c = &mycert{
-		cert:     ca,
-		priv:     catls.PrivateKey.(*rsa.PrivateKey),
-		fileBase: fileBase,
-	}
+	c.priv = catls.PrivateKey.(*rsa.PrivateKey)
 
-	logger.Info("Successfully loaded keys")
+	c.logger().Info("Successfully loaded key", "filebase", c.fileBase)
 	return
 }
 
@@ -80,6 +90,13 @@ func (c *mycert) ApplyOption(options ...Option) error {
 		}
 	}
 	return nil
+}
+
+func WithLogger(logger log.Logger) Option {
+	return func(c *mycert) error {
+		c._logger = logger.New("module", "tlscert")
+		return nil
+	}
 }
 
 func SetBaseFilename(fn string) Option {
@@ -244,7 +261,7 @@ func (cert *mycert) Serialize() error {
 	pub := &cert.priv.PublicKey
 	cert_b, err := x509.CreateCertificate(rand.Reader, cert.cert, cert.certCA, pub, cert.certCApriv)
 	if err != nil {
-		log.MustLogger("tlscert").Error("create certificate failed", "err", err)
+		cert.logger().Error("create certificate failed", "err", err)
 		return errors.New("Certificate creation failed.")
 	}
 
