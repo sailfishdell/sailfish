@@ -21,5 +21,5 @@ echo
 set +x
 for b in ${binaries}
 do
-    echo -e "BUILD SUCCES. binary ready: $(basename $b)"
+    echo -e "BUILD SUCCESS. binary ready: $(basename $b)"
 done
