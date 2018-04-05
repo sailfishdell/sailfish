@@ -8,7 +8,6 @@ import (
 	"sync"
 
 	eh "github.com/looplab/eventhorizon"
-	"github.com/looplab/eventhorizon/aggregatestore/model"
 	"github.com/looplab/eventhorizon/utils"
 )
 
@@ -86,7 +85,8 @@ func parse_map(start map[string]interface{}, props map[string]interface{}) {
 }
 
 type RedfishResourceAggregate struct {
-	model.SliceEventPublisher
+	events   []eh.Event
+	eventsMu sync.RWMutex
 
 	// public
 	ID          eh.UUID
@@ -100,6 +100,30 @@ type RedfishResourceAggregate struct {
 	// above so that everything can be properly locked
 	PrivilegeMap map[string]interface{}
 	Headers      map[string]string
+}
+
+// PublishEvent registers an event to be published after the aggregate
+// has been successfully saved.
+func (a *RedfishResourceAggregate) PublishEvent(e eh.Event) {
+	a.eventsMu.Lock()
+	defer a.eventsMu.Unlock()
+	a.events = append(a.events, e)
+}
+
+// EventsToPublish implements the EventsToPublish method of the EventPublisher interface.
+func (a *RedfishResourceAggregate) EventsToPublish() []eh.Event {
+	a.eventsMu.RLock()
+	defer a.eventsMu.RUnlock()
+	retArr := make([]eh.Event, len(a.events))
+	copy(retArr, a.events)
+	return retArr
+}
+
+// ClearEvents implements the ClearEvents method of the EventPublisher interface.
+func (a *RedfishResourceAggregate) ClearEvents() {
+	a.eventsMu.Lock()
+	defer a.eventsMu.Unlock()
+	a.events = []eh.Event{}
 }
 
 func (r *RedfishResourceAggregate) AggregateType() eh.AggregateType { return AggregateType }
