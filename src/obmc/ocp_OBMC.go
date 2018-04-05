@@ -17,6 +17,7 @@ import (
 	"github.com/looplab/eventhorizon/utils"
 	domain "github.com/superchalupa/go-redfish/src/redfishresource"
 
+	"github.com/superchalupa/go-redfish/src/log"
 	plugins "github.com/superchalupa/go-redfish/src/ocp"
 	"github.com/superchalupa/go-redfish/src/ocp/basicauth"
 	"github.com/superchalupa/go-redfish/src/ocp/bmc"
@@ -30,22 +31,40 @@ import (
 	"github.com/superchalupa/go-redfish/src/ocp/thermal/temperatures"
 )
 
-func InitOCP(ctx context.Context, cfgMgr *viper.Viper, viperMu *sync.Mutex, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) (*session.Service, *basicauth.Service, func()) {
+type ocp struct {
+	rootSvc             *root.Service
+	sessionSvc          *session.Service
+	basicAuthSvc        *basicauth.Service
+	configChangeHandler func()
+	logger              log.Logger
+}
+
+func (o *ocp) GetSessionSvc() *session.Service     { return o.sessionSvc }
+func (o *ocp) GetBasicAuthSvc() *basicauth.Service { return o.basicAuthSvc }
+func (o *ocp) ConfigChangeHandler()                { o.configChangeHandler() }
+
+func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *sync.Mutex, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) *ocp {
 	// initial implementation is one BMC, one Chassis, and one System.
 	// Yes, this function is somewhat long, however there really isn't any logic here. If we start getting logic, this needs to be split.
 
-	rootSvc, _ := root.New()
+	logger = logger.New("module", "ocp_SIMULATION")
+	self := &ocp{
+		logger: logger,
+	}
 
-	sessionSvc, _ := session.New(
-		session.Root(rootSvc),
+	self.rootSvc, _ = root.New()
+
+	self.sessionSvc, _ = session.New(
+		session.Root(self.rootSvc),
 	)
-	basicAuthSvc, _ := basicauth.New()
+
+	self.basicAuthSvc, _ = basicauth.New()
 
 	bmcSvc, _ := bmc.New(
 		bmc.WithUniqueName("OBMC"),
 	)
 
-	prot, _ := protocol.New(
+	protocolSvc, _ := protocol.New(
 		protocol.WithBMC(bmcSvc),
 	)
 
@@ -85,36 +104,66 @@ func InitOCP(ctx context.Context, cfgMgr *viper.Viper, viperMu *sync.Mutex, ch e
 
 	// VIPER Config:
 	// pull the config from the YAML file to populate some static config options
-	pullViperConfig := func() {
-		fmt.Printf("\n\nDEBUG: proto: %s\n\n", cfgMgr.GetStringMapString("managers.OBMC.proto"))
+	self.configChangeHandler = func() {
+		logger.Info("Re-applying configuration from config file.")
 
-		sessionSvc.ApplyOption(plugins.UpdateProperty("session_timeout", cfgMgr.GetInt("session.timeout")))
+		self.sessionSvc.ApplyOption(plugins.UpdateProperty("session_timeout", cfgMgr.GetInt("session.timeout")))
 
 		for _, k := range []string{"name", "description", "model", "timezone", "version"} {
 			bmcSvc.ApplyOption(plugins.UpdateProperty(k, cfgMgr.Get("managers.OBMC."+k)))
 		}
 
-		for k, _ := range cfgMgr.GetStringMapString("managers.OBMC.proto") {
-			protocolOptions := map[string]interface{}{}
+		for _, m := range cfgMgr.Get("managers.OBMC.proto").([]interface{}) {
+			logger.Debug("Applying protocol", "raw", m, "type", fmt.Sprintf("%T", m))
+			options := map[string]interface{}{}
 
-			options := cfgMgr.GetStringMap("managers.OBMC.proto." + k)
-			fmt.Printf("DEBUG: options = %s\n\n", options)
-			opts, ok := options["options"].(map[string]interface{})
-			if ok {
-				for _, vv := range opts {
-					v, ok := vv.(map[string]interface{})
-					if ok {
-						protocolOptions[v["name"].(string)] = v["value"]
-					}
+			prot, ok := m.(map[interface{}]interface{})
+			logger.Debug("type assert prot", "prot", prot, "ok", ok, "type", fmt.Sprintf("%T", prot))
+			if !ok {
+				continue
+			}
+
+			name, ok := prot["name"].(string)
+			logger.Debug("type assert name", "name", name, "ok", ok)
+			if !ok {
+				continue
+			}
+
+			enabled, ok := prot["enabled"].(bool)
+			logger.Debug("type assert enabled", "enabled", enabled, "ok", ok)
+			if !ok {
+				continue
+			}
+
+			port, ok := prot["port"].(int)
+			logger.Debug("type assert port", "port", port, "ok", ok)
+			if !ok {
+				continue
+			}
+
+			opts, ok := prot["options"].([]interface{})
+			logger.Debug("type assert options", "options", opts, "ok", ok)
+			if !ok {
+				opts = []interface{}{}
+			}
+
+			for _, m := range opts {
+				o := m.(map[interface{}]interface{})
+				name, ok := o["name"].(string)
+				if !ok {
+					continue
 				}
+				value, ok := o["value"]
+				if !ok {
+					continue
+				}
+
+				options[name] = value
 			}
 
 			// TODO: better error checks on type assertions...
-			prot.ApplyOption(protocol.WithProtocol(
-				options["name"].(string),
-				options["enabled"].(bool),
-				options["port"].(int),
-				protocolOptions))
+			logger.Info("Add protocol", "protocol", name, "enabled", enabled, "port", port, "options", options)
+			protocolSvc.ApplyOption(protocol.WithProtocol(name, enabled, port, options))
 		}
 
 		for _, k := range []string{
@@ -131,7 +180,7 @@ func InitOCP(ctx context.Context, cfgMgr *viper.Viper, viperMu *sync.Mutex, ch e
 			system.ApplyOption(plugins.UpdateProperty(k, cfgMgr.Get("systems.1."+k)))
 		}
 	}
-	pullViperConfig()
+	self.ConfigChangeHandler()
 
 	cfgMgr.SetDefault("main.dumpConfigChanges.filename", "redfish-changed.yaml")
 	cfgMgr.SetDefault("main.dumpConfigChanges.enabled", "true")
@@ -152,7 +201,7 @@ func InitOCP(ctx context.Context, cfgMgr *viper.Viper, viperMu *sync.Mutex, ch e
 		_ = ioutil.WriteFile(dumpFileName, output, 0644)
 	}
 
-	sessionSvc.AddPropertyObserver("session_timeout", func(newval interface{}) {
+	self.sessionSvc.AddPropertyObserver("session_timeout", func(newval interface{}) {
 		viperMu.Lock()
 		cfgMgr.Set("session.timeout", newval.(int))
 		viperMu.Unlock()
@@ -162,11 +211,11 @@ func InitOCP(ctx context.Context, cfgMgr *viper.Viper, viperMu *sync.Mutex, ch e
 	// register all of the plugins (do this first so we dont get any race
 	// conditions if somebody accesses the URIs before these plugins are
 	// registered
-	domain.RegisterPlugin(func() domain.Plugin { return rootSvc })
-	domain.RegisterPlugin(func() domain.Plugin { return sessionSvc })
-	domain.RegisterPlugin(func() domain.Plugin { return basicAuthSvc })
+	domain.RegisterPlugin(func() domain.Plugin { return self.rootSvc })
+	domain.RegisterPlugin(func() domain.Plugin { return self.sessionSvc })
+	domain.RegisterPlugin(func() domain.Plugin { return self.basicAuthSvc })
 	domain.RegisterPlugin(func() domain.Plugin { return bmcSvc })
-	domain.RegisterPlugin(func() domain.Plugin { return prot })
+	domain.RegisterPlugin(func() domain.Plugin { return protocolSvc })
 	domain.RegisterPlugin(func() domain.Plugin { return chas })
 	domain.RegisterPlugin(func() domain.Plugin { return system })
 	domain.RegisterPlugin(func() domain.Plugin { return therm })
@@ -174,11 +223,11 @@ func InitOCP(ctx context.Context, cfgMgr *viper.Viper, viperMu *sync.Mutex, ch e
 	domain.RegisterPlugin(func() domain.Plugin { return fanObj })
 
 	// and now add everything to the URI tree
-	rootSvc.AddResource(ctx, ch, eb, ew)
-	sessionSvc.AddResource(ctx, ch, eb, ew)
-	basicAuthSvc.AddResource(ctx, ch, eb, ew)
+	self.rootSvc.AddResource(ctx, ch, eb, ew)
+	self.sessionSvc.AddResource(ctx, ch, eb, ew)
+	self.basicAuthSvc.AddResource(ctx, ch, eb, ew)
 	bmcSvc.AddResource(ctx, ch, eb, ew)
-	prot.AddResource(ctx, ch)
+	protocolSvc.AddResource(ctx, ch)
 	chas.AddResource(ctx, ch)
 	system.AddResource(ctx, ch, eb, ew)
 	therm.AddResource(ctx, ch, eb, ew)
@@ -190,9 +239,9 @@ func InitOCP(ctx context.Context, cfgMgr *viper.Viper, viperMu *sync.Mutex, ch e
 	}))
 
 	system.ApplyOption(plugins.UpdateProperty("computersystem.reset", func(event eh.Event, res *domain.HTTPCmdProcessedData) {
-		fmt.Printf("Hello WORLD!\n\tGOT RESET EVENT\n")
+		self.logger.Crit("Hello WORLD!\n\tGOT RESET EVENT\n")
 		res.Results = map[string]interface{}{"RESET": "FAKE SIMULATED COMPUTER RESET"}
 	}))
 
-	return sessionSvc, basicAuthSvc, pullViperConfig
+	return self
 }

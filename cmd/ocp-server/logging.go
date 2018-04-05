@@ -94,7 +94,7 @@ func (logger *MyLogger) setupLogHandlersFromConfig(cfg *viper.Viper) {
 	// optionally log to file, if enabled on CLI or in config
 	// TODO: add cli option
 	fileHandler := log.DiscardHandler()
-	if path := cfg.GetString("FileName"); path != "" {
+	if path := cfg.GetString("main.log.FileName"); path != "" {
 		fileHandler = log.Must.FileHandler(path, log.LogfmtFormat())
 	}
 
