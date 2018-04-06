@@ -1,16 +1,46 @@
 main:
     log:
         # debug, info, warn, error, crit
-        Level: "warn"
+        Level: "debug"
         EnableStderr: true
         FileName: "./out.log"
         ModulesToEnable:
+            - name: "internal_commands"
+              level: "info"
+
+            - name: "sse_handler"
+              level: "info"
+
+            - name: "aggregate"
+              level: "info"
+
+            - name: "domain"
+              level: "info"
+
             - name: "http"
               level: "info"
+
             - name: "main"
               level: "debug"
+
             - name: "tlscert"
               level: "info"
+
+            - name: "bmc_reset"
+              level: "info"
+
+            - name: "dbus_fans"
+              level: "info"
+
+            - name: "dbus_tempsensors"
+              level: "info"
+
+            - name: "eventstream"
+              level: "info"
+
+            - name: "ocp_bmc"
+              level: "info"
+
     dumpConfigChanges:
         enabled: true
         filename: "redfish-out2.yaml"

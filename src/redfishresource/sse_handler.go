@@ -21,20 +21,24 @@ type SSEHandler struct {
 }
 
 func (rh *SSEHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	fmt.Printf("SSE SERVICE\n")
+	requestId := eh.NewUUID()
+	ctx := WithRequestId(r.Context(), requestId)
+	requestLogger := ContextLogger(ctx, "sse_handler")
 
 	flusher, ok := w.(http.Flusher)
 	if !ok {
+		requestLogger.Crit("Streaming is not supported by the underlying http handler.")
 		http.Error(w, "Streaming unsupported!", http.StatusInternalServerError)
 		return
 	}
 
 	// TODO: need to worry about privileges: probably should do the privilege checks in the Listener
 	// to avoid races, set up our listener first
-	l, err := rh.d.EventWaiter.Listen(r.Context(), func(event eh.Event) bool {
+	l, err := rh.d.EventWaiter.Listen(ctx, func(event eh.Event) bool {
 		return true
 	})
 	if err != nil {
+		requestLogger.Crit("Could not create an event waiter.", "err", err)
 		http.Error(w, "could not create waiter"+err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -52,18 +56,16 @@ func (rh *SSEHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	notify := w.(http.CloseNotifier).CloseNotify()
 	go func() {
 		<-notify
-		fmt.Printf("CLOSED SSE SESSION\n")
+		requestLogger.Debug("http session closed, closing down context")
 		l.Close()
 	}()
 
-	fmt.Fprintf(w, "TEST: 123\n\n")
 	flusher.Flush()
 
 	for {
-		event, err := l.Wait(r.Context())
-		fmt.Printf("GOT EVENT: %s\n", event)
+		event, err := l.Wait(ctx)
 		if err != nil {
-			fmt.Printf("ERROR: %s\n", err.Error())
+			requestLogger.Error("Wait exited", "err", err)
 			break
 		}
 
@@ -74,5 +76,5 @@ func (rh *SSEHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		flusher.Flush()
 	}
 
-	fmt.Printf("CLOSED\n")
+	requestLogger.Debug("Closed session")
 }

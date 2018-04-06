@@ -112,7 +112,7 @@ func (d *DomainObjects) DeleteResource(ctx context.Context, uri string) {
 // Notify implements the Notify method of the EventObserver interface.
 func (d *DomainObjects) Notify(ctx context.Context, event eh.Event) {
 	logger := ContextLogger(ctx, "domain")
-	logger.Debug("process event", "event", event)
+	//logger.Debug("Processing event", "event", event)
 	if event.EventType() == RedfishResourceCreated {
 		if data, ok := event.Data().(RedfishResourceCreatedData); ok {
 			// TODO: handle conflicts (how?)

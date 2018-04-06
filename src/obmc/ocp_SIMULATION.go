@@ -156,35 +156,33 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		}
 
 		for _, m := range cfgMgr.Get("managers.OBMC.proto").([]interface{}) {
-			logger.Debug("Applying protocol", "raw", m, "type", fmt.Sprintf("%T", m))
 			options := map[string]interface{}{}
 
 			prot, ok := m.(map[interface{}]interface{})
-			logger.Debug("type assert prot", "prot", prot, "ok", ok, "type", fmt.Sprintf("%T", prot))
 			if !ok {
+				logger.Debug("type assert failure - prot", "prot", prot, "ok", ok, "type", fmt.Sprintf("%T", prot), "raw", m)
 				continue
 			}
 
 			name, ok := prot["name"].(string)
-			logger.Debug("type assert name", "name", name, "ok", ok)
 			if !ok {
+				logger.Debug("type assert failure - name", "name", name, "ok", ok)
 				continue
 			}
 
 			enabled, ok := prot["enabled"].(bool)
-			logger.Debug("type assert enabled", "enabled", enabled, "ok", ok)
 			if !ok {
+				logger.Debug("type assert failure - enabled", "enabled", enabled, "ok", ok)
 				continue
 			}
 
 			port, ok := prot["port"].(int)
-			logger.Debug("type assert port", "port", port, "ok", ok)
 			if !ok {
+				logger.Debug("type assert failure - port", "port", port, "ok", ok)
 				continue
 			}
 
 			opts, ok := prot["options"].([]interface{})
-			logger.Debug("type assert options", "options", opts, "ok", ok)
 			if !ok {
 				opts = []interface{}{}
 			}
@@ -204,7 +202,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			}
 
 			// TODO: better error checks on type assertions...
-			logger.Info("Add protocol", "protocol", name, "enabled", enabled, "port", port, "options", options)
+			logger.Debug("Add protocol", "protocol", name, "enabled", enabled, "port", port, "options", options)
 			protocolSvc.ApplyOption(protocol.WithProtocol(name, enabled, port, options))
 		}
 

@@ -3,7 +3,6 @@ package domain
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"strings"
 	"sync"
 
@@ -33,7 +32,6 @@ func (rrp RedfishResourceProperty) MarshalJSON() ([]byte, error) {
 }
 
 func (rrp *RedfishResourceProperty) Parse(thing interface{}) {
-	//fmt.Printf("DEBUG PARSE: RRP(%s)  thing(%s)\n", rrp, thing)
 	switch thing.(type) {
 	case []interface{}:
 		if _, ok := rrp.Value.([]interface{}); !ok || rrp.Value == nil {
@@ -49,7 +47,6 @@ func (rrp *RedfishResourceProperty) Parse(thing interface{}) {
 	default:
 		rrp.Value = thing
 	}
-	//fmt.Printf("DEBUG RETURNING: RRP(%s)\n", rrp)
 	return
 }
 
@@ -304,19 +301,17 @@ func (rrp *RedfishResourceProperty) Process(ctx context.Context, agg *RedfishRes
 	for ok := true; ok; ok = false {
 		meta_t, ok := ret.Meta[method].(map[string]interface{})
 		if !ok {
-			//fmt.Printf("no meta for %s, see: %s (%s)\n", method, ret.Meta, ret.Value)
 			break
 		}
 
 		pluginName, ok := meta_t["plugin"].(string)
 		if !ok {
-			//fmt.Printf("no plugin name: %s\n", meta_t)
 			break
 		}
 
 		plugin, err := InstantiatePlugin(PluginType(pluginName))
 		if err != nil {
-			fmt.Printf("ORPHAN PROPERTY(%s) - could not load plugin(%s): %s\n", property, pluginName, err.Error())
+			ContextLogger(ctx, "aggregate").Warn("Orphan property, could not load plugin", "property", property, "plugin", pluginName, "err", err)
 			break
 		}
 
@@ -347,14 +342,12 @@ func (rrp *RedfishResourceProperty) Process(ctx context.Context, agg *RedfishRes
 			resChan := make(chan result)
 			promised = append(promised, resChan)
 			if vrr, ok := v.(RedfishResourceProperty); ok {
-				//fmt.Printf("\tProcess property(%s) as RedfishResourceProperty\n", property)
 				go func(property string, v RedfishResourceProperty) {
 					reqitem, ok := reqmap[property]
 					retProp := v.Process(ctx, agg, property, method, reqitem, ok)
 					resChan <- result{property, retProp}
 				}(property, vrr)
 			} else {
-				//fmt.Printf("\tProcess property(%s) as dull value: %s\n", property, v)
 				go func(property string, v interface{}) {
 					resChan <- result{property, v}
 				}(property, v)
@@ -399,8 +392,6 @@ func (rrp *RedfishResourceProperty) Process(ctx context.Context, agg *RedfishRes
 			newArr = append(newArr, res)
 		}
 		ret.Value = newArr
-	default:
-		//fmt.Printf(" DEFAULT value type\n")
 	}
 
 	return

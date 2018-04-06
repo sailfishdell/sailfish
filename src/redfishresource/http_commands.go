@@ -3,7 +3,6 @@ package domain
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -126,7 +125,6 @@ func (c *POST) ParseHTTPRequest(r *http.Request) error {
 	return nil
 }
 func (c *POST) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
-	fmt.Printf("HANDLE POST!\n")
 	a.PublishEvent(eh.NewEvent(HTTPCmdProcessed, HTTPCmdProcessedData{
 		CommandID:  c.CmdID,
 		Results:    map[string]interface{}{"FOO": "BAR"},
@@ -153,7 +151,6 @@ func (c *PUT) ParseHTTPRequest(r *http.Request) error {
 	return nil
 }
 func (c *PUT) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
-	fmt.Printf("HANDLE PUT!\n")
 	a.PublishEvent(eh.NewEvent(HTTPCmdProcessed, HTTPCmdProcessedData{
 		CommandID:  c.CmdID,
 		Results:    map[string]interface{}{"ERROR": "This method not yet implemented"},
@@ -175,7 +172,6 @@ func (c *HEAD) CommandType() eh.CommandType     { return HEADCommand }
 func (c *HEAD) SetAggID(id eh.UUID)             { c.ID = id }
 func (c *HEAD) SetCmdID(id eh.UUID)             { c.CmdID = id }
 func (c *HEAD) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
-	fmt.Printf("HANDLE HEAD!\n")
 	a.PublishEvent(eh.NewEvent(HTTPCmdProcessed, HTTPCmdProcessedData{
 		CommandID:  c.CmdID,
 		Results:    map[string]interface{}{"ERROR": "This method not yet implemented"},
@@ -197,7 +193,6 @@ func (c *OPTIONS) CommandType() eh.CommandType     { return OPTIONSCommand }
 func (c *OPTIONS) SetAggID(id eh.UUID)             { c.ID = id }
 func (c *OPTIONS) SetCmdID(id eh.UUID)             { c.CmdID = id }
 func (c *OPTIONS) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
-	fmt.Printf("HANDLE OPTIONS!\n")
 	a.PublishEvent(eh.NewEvent(HTTPCmdProcessed, HTTPCmdProcessedData{
 		CommandID:  c.CmdID,
 		Results:    map[string]interface{}{"ERROR": "This method not yet implemented"},

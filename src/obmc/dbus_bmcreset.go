@@ -5,23 +5,24 @@ package obmc
 
 import (
 	"context"
-	"fmt"
-	"os"
 	"time"
 
 	"github.com/godbus/dbus"
 	eh "github.com/looplab/eventhorizon"
 	ah "github.com/superchalupa/go-redfish/src/actionhandler"
 	mydbus "github.com/superchalupa/go-redfish/src/dbus"
+	"github.com/superchalupa/go-redfish/src/log"
 	domain "github.com/superchalupa/go-redfish/src/redfishresource"
 )
 
 func BMCReset(ctx context.Context, event eh.Event, res *domain.HTTPCmdProcessedData, eb eh.EventBus) {
+	logger := log.MustLogger("bmc_reset")
+
 	bus := "org.openbmc.control.Bmc"
 	path := "/org/openbmc/control/bmc0"
 	intfc := "org.openbmc.control.Bmc"
 
-	fmt.Printf("parse resetType: %s\n", event.Data())
+	logger.Debug("resetType raw", "event", event.Data())
 	ad := event.Data().(ah.GenericActionEventData)
 	resetType, _ := ad.ActionData.(map[string]interface{})["ResetType"]
 	call := "undefined"
@@ -31,18 +32,17 @@ func BMCReset(ctx context.Context, event eh.Event, res *domain.HTTPCmdProcessedD
 	if resetType == "GracefulRestart" {
 		call = "warmReset"
 	}
-	fmt.Printf("\tgot: %s\n", resetType)
+	logger.Info("Parsed reset type", "resetType", resetType)
 	if call == "undefined" {
 		return
 	}
 
-	fmt.Printf("connect to system bus\n")
 	statusCode := 200
 	statusMessage := "OK"
 
 	conn, err := dbus.SystemBus()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Cannot connect to System Bus: %s\n", err.Error())
+		logger.Error("Cannot connect to System Bus", "err", err)
 		statusCode = 501
 		statusMessage = "ERROR: Cannot attach to dbus system bus"
 	}

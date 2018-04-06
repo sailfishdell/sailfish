@@ -12,12 +12,14 @@ import (
 
 	"github.com/godbus/dbus"
 	mapper "github.com/superchalupa/go-redfish/src/dbus"
+	"github.com/superchalupa/go-redfish/src/log"
 	"github.com/superchalupa/go-redfish/src/ocp/thermal/fans"
 )
 
 func UpdateFans(ctx context.Context, fanInt Optioner) {
 	var conn *dbus.Conn
 	var err error
+	logger := log.MustLogger("dbus_fans")
 	for {
 		// do{}while(0) equivalent so that we can skip the rest on errors
 		// (break), but still hit the outside loop end to check for context
@@ -26,30 +28,30 @@ func UpdateFans(ctx context.Context, fanInt Optioner) {
 			if conn == nil {
 				conn, err = dbus.SystemBus()
 				if err != nil {
-					fmt.Printf("Could not connect to system bus: %s\n", err)
+					logger.Error("Could not connect to system bus", "err", err)
 					break
 				}
 			}
 			m := mapper.New(conn)
 			ret, err := m.GetSubTree(ctx, DbusPathFan, 0, DbusInterfaceSensorValue)
 			if err != nil {
-				fmt.Printf("Mapper call failed: %s\n", err.Error())
+				logger.Error("Mapper call failed", "err", err)
 				break
 			}
 			if len(ret) == 0 {
-				fmt.Printf("empty array?")
+				logger.Error("empty array?")
 				break
 			}
 			arr_0 := ret[0]
 			dict, ok := arr_0.(map[string]map[string][]string)
 			if !ok {
-				fmt.Printf("type assert failed: %T\n", arr_0)
+				logger.Debug("type assert failed", "type", fmt.Sprintf("%T", arr_0))
 				break
 			}
 
 			for p, m1 := range dict {
 				for bus, _ := range m1 {
-					fmt.Printf("getting fans for bus(%s)  path(%s)\n", bus, p)
+					logger.Debug("getting fans", "bus", bus, "path", p)
 					fanInt.ApplyOption(
 						fans.WithSensor(
 							fmt.Sprintf("%s#%s", bus, p),
@@ -61,7 +63,7 @@ func UpdateFans(ctx context.Context, fanInt Optioner) {
 		// sleep for 10 seconds, or until context is cancelled
 		select {
 		case <-ctx.Done():
-			fmt.Printf("Cancelling UpdateSensorList due to context cancellation.\n")
+			logger.Info("Cancelling UpdateSensorList due to context cancellation.")
 			break
 		case <-time.After(10 * time.Second):
 			continue
@@ -70,37 +72,38 @@ func UpdateFans(ctx context.Context, fanInt Optioner) {
 }
 
 func getFan(ctx context.Context, conn *dbus.Conn, bus string, objectPath string) *fans.RedfishFan {
+	logger := log.MustLogger("dbus_fans")
 	busObject := conn.Object(bus, dbus.ObjectPath(objectPath))
 
 	unit, err := busObject.GetProperty(SensorValue + ".Unit")
 	if err != nil {
-		fmt.Printf("Error getting .Unit property for bus(%s) path(%s): %s\n", bus, objectPath, err.Error())
+		logger.Error("Error getting .Unit property", "bus", bus, "path", objectPath, "err", err)
 		return nil
 	}
 	if unit.Value() != DbusUnitRPMValue {
-		fmt.Printf("Don't know how to handle units: %s\n", unit)
+		logger.Error("Don't know how to handle units.", "unit", unit, "bus", bus, "path", objectPath)
 		return nil
 	}
 
 	scale, err := busObject.GetProperty(SensorValue + ".Scale")
 	if err != nil {
-		fmt.Printf("Error getting .Scale property for bus(%s) path(%s): %s\n", bus, objectPath, err.Error())
+		logger.Error("Error getting .Scale property", "bus", bus, "path", objectPath, "err", err)
 		return nil
 	}
 	s, ok := scale.Value().(int64)
 	if !ok {
-		fmt.Printf("Type assert of scale to int failed.\n")
+		logger.Error("Type assert of scale to int failed.", "raw", scale.Value(), "bus", bus, "path", objectPath)
 		return nil
 	}
 
 	value, err := busObject.GetProperty(SensorValue + ".Value")
 	if err != nil {
-		fmt.Printf("Error getting .Value property for bus(%s) path(%s): %s\n", bus, objectPath, err.Error())
+		logger.Error("Error getting .Value property", "bus", bus, "path", objectPath, "err", err)
 		return nil
 	}
 	v, ok := value.Value().(int64)
 	if !ok {
-		fmt.Printf("Type assert of value to int failed: %T\n", value.Value())
+		logger.Error("Type assert of value to int failed", "bus", bus, "path", objectPath, "err", err, "raw", value.Value())
 		return nil
 	}
 
@@ -108,12 +111,12 @@ func getFan(ctx context.Context, conn *dbus.Conn, bus string, objectPath string)
 		// BOOL that says if we raise alarm if it goes above AlarmHigh
 		_, err = busObject.GetProperty(SensorThreshold + ".WarningAlarmHigh")
 		if err != nil {
-			fmt.Printf("Error getting .WarningAlarmHigh property for bus(%s) path(%s): %s\n", bus, objectPath, err.Error())
+		    logger.Error("Error getting .WarningAlarmHigh property", "bus", bus, "path", objectPath, "err", err)
 		}
 
 		UpperCriticalV, err := busObject.GetProperty(SensorThreshold + ".WarningHigh")
 		if err != nil {
-			fmt.Printf("Error getting .WarningHigh property for bus(%s) path(%s): %s\n", bus, objectPath, err.Error())
+		    logger.Error("Error getting .WarningHigh property", "bus", bus, "path", objectPath, "err", err)
 		}
 		UpperCritical, ok := UpperCriticalV.Value().(int64)
 	*/

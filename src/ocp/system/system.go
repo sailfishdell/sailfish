@@ -2,9 +2,9 @@ package system
 
 import (
 	"context"
-	"fmt"
 	"time"
 
+	"github.com/superchalupa/go-redfish/src/log"
 	plugins "github.com/superchalupa/go-redfish/src/ocp"
 	domain "github.com/superchalupa/go-redfish/src/redfishresource"
 
@@ -159,11 +159,11 @@ func (s *service) AddResource(ctx context.Context, ch eh.CommandHandler, eb eh.E
 	// stream processor for action events
 	sp, err := plugins.NewEventStreamProcessor(ctx, ew, plugins.CustomFilter(ah.SelectAction(s.GetOdataID()+"/Actions/ComputerSystem.Reset")))
 	if err != nil {
-		fmt.Printf("Failed to create event stream processor: %s\n", err.Error())
+		log.MustLogger("ocp_system").Error("Failed to create event stream processor", "err", err)
 		return
 	}
 	sp.RunForever(func(event eh.Event) {
-		fmt.Printf("GOT ACTION EVENT!!!\n")
+		log.MustLogger("ocp_bmc").Info("Got action event", "event", event)
 
 		eventData := domain.HTTPCmdProcessedData{
 			CommandID:  event.Data().(ah.GenericActionEventData).CmdID,

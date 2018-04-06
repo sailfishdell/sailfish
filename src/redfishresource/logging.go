@@ -14,10 +14,6 @@ const (
 	sessionIdKey
 )
 
-func init() {
-	// a fallback/root logger for events without context
-}
-
 // WithRequestId returns a context with embedded request ID
 func WithRequestId(ctx context.Context, requestId eh.UUID) context.Context {
 	return context.WithValue(ctx, requestIdKey, requestId)
@@ -29,15 +25,17 @@ func WithSessionId(ctx context.Context, sessionId eh.UUID) context.Context {
 }
 
 // Logger returns a zap logger with as much context as possible
-func ContextLogger(ctx context.Context, module string) log.Logger {
+func ContextLogger(ctx context.Context, module string, opts ...interface{}) log.Logger {
 	newLogger := log.MustLogger(module)
 	if ctx != nil {
-		if ctxRqId, ok := ctx.Value(requestIdKey).(string); ok {
-			newLogger = newLogger.New("requestId", ctxRqId)
-		}
-		if ctxSessionId, ok := ctx.Value(sessionIdKey).(string); ok {
-			newLogger = newLogger.New("sessionId", ctxSessionId)
-		}
+		ctxRqId := ctx.Value(requestIdKey)
+		newLogger = newLogger.New("requestId", ctxRqId)
+
+		ctxSessionId := ctx.Value(sessionIdKey)
+		newLogger = newLogger.New("sessionId", ctxSessionId)
+	}
+	if len(opts) > 0 {
+		newLogger = newLogger.New(opts...)
 	}
 	return newLogger
 }

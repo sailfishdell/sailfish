@@ -2,9 +2,9 @@ package plugins
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
+	"github.com/superchalupa/go-redfish/src/log"
 	domain "github.com/superchalupa/go-redfish/src/redfishresource"
 
 	eh "github.com/looplab/eventhorizon"
@@ -57,7 +57,7 @@ func (d *privateStateStructure) RunOnce(fn func(eh.Event)) {
 
 		event, err := d.listener.Wait(d.ctx)
 		if err != nil {
-			fmt.Printf("Shutting down listener: %s\n", err.Error())
+			log.MustLogger("eventstream").Info("Shutting down listener", "err", err)
 			return
 		}
 
@@ -73,7 +73,7 @@ func (d *privateStateStructure) RunForever(fn func(eh.Event)) {
 		for {
 			event, err := d.listener.Wait(d.ctx)
 			if err != nil {
-				fmt.Printf("Shutting down listener: %s\n", err.Error())
+				log.MustLogger("eventstream").Info("Shutting down listener", "err", err)
 				return
 			}
 			fn(event)
@@ -183,7 +183,7 @@ func SelectEventResourceRemovedByURIPrefix(uri string) func(p *privateStateStruc
 func OnURICreated(ctx context.Context, ew *utils.EventWaiter, uri string, f func()) {
 	sp, err := NewEventStreamProcessor(ctx, ew, SelectEventResourceCreatedByURI(uri))
 	if err != nil {
-		fmt.Printf("Failed to create event stream processor: %s\n", err.Error())
+		log.MustLogger("eventstream").Error("Failed to create event stream processor", "err", err)
 		return
 	}
 	sp.RunOnce(func(event eh.Event) {
