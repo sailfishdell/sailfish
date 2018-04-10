@@ -178,7 +178,7 @@ func main() {
 			tlscert.MakeServer,
 			tlscert.ExpireInOneYear,
 			tlscert.SetCommonName("localhost"),
-			tlscert.SetSubjectKeyId([]byte{1, 2, 3, 4, 6}),
+			tlscert.SetSubjectKeyID([]byte{1, 2, 3, 4, 6}),
 			tlscert.AddSANDNSName("localhost", "localhost.localdomain"),
 			tlscert.SetSerialNumber(12346),
 			tlscert.SetBaseFilename("server"),

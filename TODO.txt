@@ -25,7 +25,7 @@ Things that need work: (-) TODO (*) DONE
     * Need to filter out @meta from Properties
     * Need to load plugins for each property
     * Example plugin for replacement of values on GET (Strategy 3 in plugins/test/readme.txt)
-    - example plugin for processing event stream and replacing values (Strategy 1 in plugins/test/readme.txt)
+    * example plugin for processing event stream and replacing values (Strategy 1 in plugins/test/readme.txt)
 
  - implement for GET:
     - $skip
