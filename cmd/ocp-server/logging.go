@@ -15,9 +15,7 @@ import (
 	eh "github.com/looplab/eventhorizon"
 )
 
-type Logger = mylog.Logger
-
-// MyLogger is a simple event handler for logging all events.
+// MyLogger is a centralized point for application logging that we will pass throughout the system
 type MyLogger struct {
 	log.Logger
 	ConfigChangeHooks []func()
@@ -34,19 +32,14 @@ func initializeApplicationLogging(cfg *viper.Viper) *MyLogger {
 	return logger
 }
 
-func NewLogger(ctx ...interface{}) Logger {
-	return &MyLogger{
-		Logger: log.New(ctx...),
-	}
-}
-
-func (l *MyLogger) New(ctx ...interface{}) Logger {
+// New is the logger constructor which initializes an instance
+func (l *MyLogger) New(ctx ...interface{}) mylog.Logger {
 	return &MyLogger{
 		Logger: l.Logger.New(ctx...),
 	}
 }
 
-func (l *MyLogger) makeLoggingHttpHandler(m http.Handler) http.HandlerFunc {
+func (l *MyLogger) makeLoggingHTTPHandler(m http.Handler) http.HandlerFunc {
 	// Simple HTTP request logging.
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer func(begin time.Time) {
@@ -77,7 +70,7 @@ func (l *MyLogger) Notify(ctx context.Context, event eh.Event) {
 	l.Debug("Processed Event", "EVENT", event)
 }
 
-func (logger *MyLogger) setupLogHandlersFromConfig(cfg *viper.Viper) {
+func (l *MyLogger) setupLogHandlersFromConfig(cfg *viper.Viper) {
 	loglvl, err := log.LvlFromString(cfg.GetString("main.log.level"))
 	if err != nil {
 		log.Warn("Could not get desired main.log.level from configuration, falling back to default 'Info' level.", "error", err.Error(), "default", log.LvlInfo.String(), "got", cfg.GetString("main.log.level"))
@@ -111,19 +104,19 @@ func (logger *MyLogger) setupLogHandlersFromConfig(cfg *viper.Viper) {
 	for _, m := range modulesToEnable {
 		module, ok := m.(map[interface{}]interface{})
 		if !ok {
-			logger.Warn("type assertion failure for - module", "module", module, "ok", ok, "type", fmt.Sprintf("%T", module))
+			l.Warn("type assertion failure for - module", "module", module, "ok", ok, "type", fmt.Sprintf("%T", module))
 			continue
 		}
 
 		name, ok := module["name"].(string)
 		if !ok {
-			logger.Warn("type assertion failure for - name", "name", name, "ok", ok, "raw", module["name"])
+			l.Warn("type assertion failure for - name", "name", name, "ok", ok, "raw", module["name"])
 			continue
 		}
 
 		level, ok := module["level"].(string)
 		if !ok {
-			logger.Warn("type assertion failure for - level", "level", level, "ok", ok, "raw", module["level"])
+			l.Warn("type assertion failure for - level", "level", level, "ok", ok, "raw", module["level"])
 			continue
 		}
 
@@ -139,7 +132,7 @@ func (logger *MyLogger) setupLogHandlersFromConfig(cfg *viper.Viper) {
 	// set up pipe to log to all of our configured outputs
 	// first check gross log level and log if high enough, then check individual module list
 	//
-	logger.SetHandler(
+	l.SetHandler(
 		log.CallerFuncHandler(
 			log.CallerFileHandler(
 				log.FilterHandler(func(r *log.Record) bool {
