@@ -59,7 +59,7 @@ outer:
 func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Each command needs a unique UUID. We'll use that to listen for the HTTPProcessed Event, which should have a matching UUID.
 	cmdId := eh.NewUUID()
-	reqCtx := WithRequestId(r.Context(), cmdId)
+	reqCtx := WithRequestID(r.Context(), cmdId)
 
 	// All operations have to be on URLs that exist, so look it up in the tree
 	aggID, ok := rh.d.GetAggregateIDOK(r.URL.Path)
@@ -167,7 +167,7 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	ctx := WithRequestId(context.Background(), cmdId)
+	ctx := WithRequestID(context.Background(), cmdId)
 	if err := rh.d.CommandHandler.HandleCommand(ctx, cmd); err != nil {
 		http.Error(w, "redfish handler could not handle command (type: "+string(cmd.CommandType())+"): "+err.Error(), http.StatusBadRequest)
 		return

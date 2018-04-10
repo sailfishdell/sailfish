@@ -7,32 +7,32 @@ import (
 	"github.com/superchalupa/go-redfish/src/log"
 )
 
-type requestIdType int
+type requestIDType int
 
 const (
-	requestIdKey requestIdType = iota
-	sessionIdKey
+	requestIDKey requestIDType = iota
+	sessionIDKey
 )
 
-// WithRequestId returns a context with embedded request ID
-func WithRequestId(ctx context.Context, requestId eh.UUID) context.Context {
-	return context.WithValue(ctx, requestIdKey, requestId)
+// WithRequestID returns a context with embedded request ID
+func WithRequestID(ctx context.Context, requestID eh.UUID) context.Context {
+	return context.WithValue(ctx, requestIDKey, requestID)
 }
 
-// WithSessionId returns a context with embedded request ID
-func WithSessionId(ctx context.Context, sessionId eh.UUID) context.Context {
-	return context.WithValue(ctx, sessionIdKey, sessionId)
+// WithSessionID returns a context with embedded request ID
+func WithSessionID(ctx context.Context, sessionID eh.UUID) context.Context {
+	return context.WithValue(ctx, sessionIDKey, sessionID)
 }
 
-// Logger returns a zap logger with as much context as possible
+// ContextLogger returns a logger and adds as much info as possible obtained from the context
 func ContextLogger(ctx context.Context, module string, opts ...interface{}) log.Logger {
 	newLogger := log.MustLogger(module)
 	if ctx != nil {
-		ctxRqId := ctx.Value(requestIdKey)
-		newLogger = newLogger.New("requestId", ctxRqId)
+		ctxRqID := ctx.Value(requestIDKey)
+		newLogger = newLogger.New("requestID", ctxRqID)
 
-		ctxSessionId := ctx.Value(sessionIdKey)
-		newLogger = newLogger.New("sessionId", ctxSessionId)
+		ctxSessionID := ctx.Value(sessionIDKey)
+		newLogger = newLogger.New("sessionID", ctxSessionID)
 	}
 	if len(opts) > 0 {
 		newLogger = newLogger.New(opts...)

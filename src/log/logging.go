@@ -4,6 +4,7 @@ import (
 	"errors"
 )
 
+// Logger type is a lowest-common-denominator logging interface that can be adapted to work with many different logging subsystems
 type Logger interface {
 	// New returns a new Logger that has this logger's context plus the given context
 	New(ctx ...interface{}) Logger
@@ -19,9 +20,11 @@ type Logger interface {
 	//Lazy()
 }
 
-// don't use this. set it up in app, but ignore after
+// GlobalLogger is for the application main() to set up as a base
+// TODO: this should be unexported and a helper function set up to set this
 var GlobalLogger Logger
 
+// MustLogger will return a logger or will panic
 func MustLogger(module string) Logger {
 	if GlobalLogger == nil {
 		panic("Global Logger is not set up, cannot return logger.")
@@ -29,9 +32,10 @@ func MustLogger(module string) Logger {
 	return GlobalLogger.New("module", module)
 }
 
+// GetLogger returns a logger or an error
 func GetLogger(module string) (Logger, error) {
 	if GlobalLogger == nil {
-		return nil, errors.New("Global Logger is not set up, cannot return logger.")
+		return nil, errors.New("global Logger is not set up, cannot return logger")
 	}
 
 	return GlobalLogger.New("module", module), nil

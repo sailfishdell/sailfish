@@ -22,7 +22,7 @@ type SSEHandler struct {
 
 func (rh *SSEHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	requestId := eh.NewUUID()
-	ctx := WithRequestId(r.Context(), requestId)
+	ctx := WithRequestID(r.Context(), requestId)
 	requestLogger := ContextLogger(ctx, "sse_handler")
 
 	flusher, ok := w.(http.Flusher)
