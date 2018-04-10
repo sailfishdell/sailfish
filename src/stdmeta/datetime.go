@@ -2,7 +2,6 @@ package stdmeta
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	domain "github.com/superchalupa/go-redfish/src/redfishresource"
@@ -31,5 +30,5 @@ func (t *dateTime) PropertyGet(
 
 	// time.RFC3339
 	//rrp.Value = fmt.Sprintf(time.Now().UTC().Format("2006-01-02T15:04:05Z07:00"))
-	rrp.Value = fmt.Sprintf(time.Now().UTC().Format(time.RFC3339))
+	rrp.Value = time.Now().UTC().Format(time.RFC3339)
 }
