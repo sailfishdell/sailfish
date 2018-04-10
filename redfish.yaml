@@ -41,6 +41,9 @@ main:
             - name: "ocp_bmc"
               level: "info"
 
+            - name: "ocp_SIMULATION"
+              level: "debug"
+
     dumpConfigChanges:
         enabled: true
         filename: "redfish-out2.yaml"
