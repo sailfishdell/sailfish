@@ -7,7 +7,7 @@ import (
 )
 
 var (
-	PatchPlugin = domain.PluginType("patch")
+	patchPlugin = domain.PluginType("patch")
 )
 
 func init() {
@@ -16,7 +16,7 @@ func init() {
 
 type patch struct{}
 
-func (t *patch) PluginType() domain.PluginType { return PatchPlugin }
+func (t *patch) PluginType() domain.PluginType { return patchPlugin }
 
 func (t *patch) PropertyPatch(
 	ctx context.Context,

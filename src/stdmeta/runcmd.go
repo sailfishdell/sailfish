@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	RunCmdPlugin = domain.PluginType("runcmd")
+	runCmdPlugin = domain.PluginType("runcmd")
 )
 
 func init() {
@@ -19,7 +19,7 @@ func init() {
 
 type runCmd struct{}
 
-func (t *runCmd) PluginType() domain.PluginType { return RunCmdPlugin }
+func (t *runCmd) PluginType() domain.PluginType { return runCmdPlugin }
 
 func (t *runCmd) PropertyGet(
 	ctx context.Context,

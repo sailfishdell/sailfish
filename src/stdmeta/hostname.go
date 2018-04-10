@@ -8,7 +8,7 @@ import (
 )
 
 var (
-	HostnamePlugin = domain.PluginType("hostname")
+	hostnamePlugin = domain.PluginType("hostname")
 )
 
 func init() {
@@ -17,7 +17,7 @@ func init() {
 
 type hostname struct{}
 
-func (t *hostname) PluginType() domain.PluginType { return HostnamePlugin }
+func (t *hostname) PluginType() domain.PluginType { return hostnamePlugin }
 
 func (t *hostname) PropertyGet(
 	ctx context.Context,

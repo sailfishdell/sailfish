@@ -8,7 +8,7 @@ import (
 )
 
 var (
-	DateTimePlugin = domain.PluginType("datetime")
+	dateTimePlugin = domain.PluginType("datetime")
 )
 
 func init() {
@@ -17,7 +17,7 @@ func init() {
 
 type dateTime struct{}
 
-func (t *dateTime) PluginType() domain.PluginType { return DateTimePlugin }
+func (t *dateTime) PluginType() domain.PluginType { return dateTimePlugin }
 
 func (t *dateTime) PropertyGet(
 	ctx context.Context,

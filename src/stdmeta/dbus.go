@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	DbusPropertyPlugin = domain.PluginType("dbus_property")
+	dbusPropertyPlugin = domain.PluginType("dbus_property")
 )
 
 func init() {
@@ -26,7 +26,7 @@ type dbusProperty struct {
 	conn *dbus.Conn
 }
 
-func (t *dbusProperty) PluginType() domain.PluginType { return DbusPropertyPlugin }
+func (t *dbusProperty) PluginType() domain.PluginType { return dbusPropertyPlugin }
 
 func (t *dbusProperty) PropertyGet(
 	ctx context.Context,
