@@ -33,9 +33,6 @@ import (
 
 	// load openbmc plugins
 	"github.com/superchalupa/go-redfish/src/obmc"
-
-	// Test plugins (Take these out for a real server)
-	_ "github.com/superchalupa/go-redfish/src/test"
 )
 
 func main() {

@@ -43,18 +43,6 @@ $CURLCMD $URL/api/RedfishResource%3ACreate  -d '
         "Properties": {
             "someproperty": "some literal value",
 
-
-            "testvalue1@meta": {
-                "GET": {
-                    "plugin": "test:strategy3",
-                    "args": "foobar1",
-                    "cache": {
-                        "min_age_ms": 10000,
-                        "current_age_ms": 0
-                    }
-                }
-            },
-
             "testvalue2@meta": {
                 "GET": {
                     "plugin": "runcmd",
