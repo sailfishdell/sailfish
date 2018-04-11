@@ -86,7 +86,7 @@ func New(options ...interface{}) (*Service, error) {
 	s.UpdatePropertyUnlocked("session_timeout", 30)
 	s.UpdatePropertyUnlocked("session_timeout@meta.validator",
 		func(rrp *domain.RedfishResourceProperty, body interface{}) {
-            // already locked when we are called
+			// already locked when we are called
 
 			//todo: better validation here.
 			bodyFloat, ok := body.(float64)

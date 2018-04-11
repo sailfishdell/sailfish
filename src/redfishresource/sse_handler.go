@@ -9,10 +9,12 @@ import (
 	log "github.com/superchalupa/go-redfish/src/log"
 )
 
+// NewSSEHandler constructs a new SSEHandler with the given username and privileges.
 func NewSSEHandler(dobjs *DomainObjects, logger log.Logger, u string, p []string) *SSEHandler {
 	return &SSEHandler{UserName: u, Privileges: p, d: dobjs, logger: logger}
 }
 
+// SSEHandler struct holds authentication/authorization data as well as the domain variables
 type SSEHandler struct {
 	UserName   string
 	Privileges []string
@@ -21,8 +23,8 @@ type SSEHandler struct {
 }
 
 func (rh *SSEHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	requestId := eh.NewUUID()
-	ctx := WithRequestID(r.Context(), requestId)
+	requestID := eh.NewUUID()
+	ctx := WithRequestID(r.Context(), requestID)
 	requestLogger := ContextLogger(ctx, "sse_handler")
 
 	flusher, ok := w.(http.Flusher)

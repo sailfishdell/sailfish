@@ -9,12 +9,17 @@ import (
 	log "github.com/superchalupa/go-redfish/src/log"
 )
 
+// CmdIDSetter interface is for commands that can take a given command id
 type CmdIDSetter interface {
 	SetCmdID(eh.UUID)
 }
+
+// AggIDSetter interface is for commands that run against a given aggregate
 type AggIDSetter interface {
 	SetAggID(eh.UUID)
 }
+
+// UserDetailsSetter is the interface that commands should implement to tell the handler if they handle authorization or std code should do it.
 type UserDetailsSetter interface {
 	SetUserDetails(string, []string) string
 	// return codes:
@@ -23,14 +28,18 @@ type UserDetailsSetter interface {
 	//      "unauthorized" - failed auth check in command, no need to check further
 
 }
+
+// HTTPParser is the interface for commands that want to do their own http body parsing
 type HTTPParser interface {
 	ParseHTTPRequest(*http.Request) error
 }
 
+// NewRedfishHandler is the constructor that returns a new RedfishHandler object.
 func NewRedfishHandler(dobjs *DomainObjects, logger log.Logger, u string, p []string) *RedfishHandler {
 	return &RedfishHandler{UserName: u, Privileges: p, d: dobjs, logger: logger}
 }
 
+// RedfishHandler is the container object that holds authorization information as well as domain objects.
 type RedfishHandler struct {
 	UserName   string
 	Privileges []string
@@ -38,7 +47,7 @@ type RedfishHandler struct {
 	logger     log.Logger
 }
 
-func (rh *RedfishHandler) IsAuthorized(requiredPrivs []string) (authorized string) {
+func (rh *RedfishHandler) isAuthorized(requiredPrivs []string) (authorized string) {
 	authorized = "unauthorized"
 	if requiredPrivs == nil {
 		requiredPrivs = []string{}
@@ -58,8 +67,8 @@ outer:
 // TODO: need to write middleware that would allow different types of encoding on output
 func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Each command needs a unique UUID. We'll use that to listen for the HTTPProcessed Event, which should have a matching UUID.
-	cmdId := eh.NewUUID()
-	reqCtx := WithRequestID(r.Context(), cmdId)
+	cmdID := eh.NewUUID()
+	reqCtx := WithRequestID(r.Context(), cmdID)
 
 	// All operations have to be on URLs that exist, so look it up in the tree
 	aggID, ok := rh.d.GetAggregateIDOK(r.URL.Path)
@@ -100,7 +109,7 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// some optional interfaces that the commands might implement
 	if t, ok := cmd.(CmdIDSetter); ok {
-		t.SetCmdID(cmdId)
+		t.SetCmdID(cmdID)
 	}
 	if t, ok := cmd.(AggIDSetter); ok {
 		t.SetAggID(aggID)
@@ -132,7 +141,7 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		default:
 		}
 
-		authAction = rh.IsAuthorized(t)
+		authAction = rh.isAuthorized(t)
 	}
 
 	if authAction != "authorized" {
@@ -146,7 +155,7 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return false
 		}
 		if data, ok := event.Data().(HTTPCmdProcessedData); ok {
-			if data.CommandID == cmdId {
+			if data.CommandID == cmdID {
 				return true
 			}
 		}
@@ -167,7 +176,7 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	ctx := WithRequestID(context.Background(), cmdId)
+	ctx := WithRequestID(context.Background(), cmdID)
 	if err := rh.d.CommandHandler.HandleCommand(ctx, cmd); err != nil {
 		http.Error(w, "redfish handler could not handle command (type: "+string(cmd.CommandType())+"): "+err.Error(), http.StatusBadRequest)
 		return

@@ -11,18 +11,18 @@ import (
 	"github.com/looplab/eventhorizon/utils"
 )
 
-// wait in a listener for the root service to be created, then extend it
+// InitService starts a listener for the root service to be created, then extend root service
 func InitService(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
 	sp, err := plugins.NewEventStreamProcessor(ctx, ew, plugins.SelectEventResourceCreatedByURI("/redfish/v1"))
 	if err == nil {
 		sp.RunOnce(func(event eh.Event) {
 			rootID := event.Data().(domain.RedfishResourceCreatedData).ID
-			NewService(ctx, rootID, ch)
+			newService(ctx, rootID, ch)
 		})
 	}
 }
 
-func NewService(ctx context.Context, rootID eh.UUID, ch eh.CommandHandler) {
+func newService(ctx context.Context, rootID eh.UUID, ch eh.CommandHandler) {
 	// Create Computer System Collection
 	ch.HandleCommand(
 		ctx,
