@@ -153,7 +153,6 @@ $CURLCMD $URL/api/RedfishResource%3ACreate  -d '
         }
     }'
 
-sleep 1
 echo "/redfish/v1/test"
 $CURLCMD $URL/redfish/v1/test
 
@@ -177,7 +176,6 @@ $CURLCMD $URL/api/RedfishResource%3ACreate  -d '
         "Meta": { "GET": {"plugin": "test:fullProperty"}}
     }'
 
-sleep 1
 echo "/redfish/v1/test"
 $CURLCMD $URL/redfish/v1/test2
 
