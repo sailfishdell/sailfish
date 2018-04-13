@@ -60,7 +60,7 @@ do
             echo $url >> ${outputdir}/errors.txt
             continue
         fi
-        cat $OUTFILE | jq -r 'recurse (.[]?) | objects | select(has("@odata.id")) | .["@odata.id"]' >> ${outputdir}/to-visit.txt ||:
+        cat $OUTFILE | jq -r 'recurse (.[]?) | objects | select(has("@odata.id")) | .["@odata.id"]' | perl -p -i -e 's/(\/#.*)//' | perl -p -i -e 's/(#.*)//' >> ${outputdir}/to-visit.txt ||:
         POTENTIALLY_GOT_MORE=1
         echo $url >> ${outputdir}/visited.txt
     done
