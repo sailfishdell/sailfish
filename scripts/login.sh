@@ -20,7 +20,7 @@ CURLCMD="curl --cacert ${cacert} ${CURL_OPTS} "
 headersfile=$(mktemp /tmp/headers-XXXXXX)
 trap 'rm -f $headersfile' EXIT QUIT HUP INT ERR
 
-LOGIN_URI=${LOGIN_URI:-$($CURLCMD -H "Content-Type: application/json" -D${headersfile} ${URL}/redfish/v1 | jq -r '.Links.Sessions[]' )}
+LOGIN_URI=${LOGIN_URI:-$($CURLCMD -s -H "Content-Type: application/json" -D${headersfile} ${URL}/redfish/v1 | jq -r '.Links.Sessions[]' )}
 
 RESPONSE_HEADERS=$($CURLCMD -H "Content-Type: application/json" -D${headersfile} ${URL}${LOGIN_URI} -X POST -d "{\"UserName\": \"${user}\", \"Password\": \"${pass}\"}" 2>&1)
 X_AUTH_TOKEN=$(cat ${headersfile} | grep -i x-auth-token | cut -d: -f2 | perl -p -e 's/\r//g;')
