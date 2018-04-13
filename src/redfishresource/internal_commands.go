@@ -49,8 +49,11 @@ type CreateRedfishResource struct {
 	Collection bool                   `eh:"optional"`
 }
 
+// AggregateType satisfies base Aggregate interface
 func (c *CreateRedfishResource) AggregateType() eh.AggregateType { return AggregateType }
+// AggregateID satisfies base Aggregate interface
 func (c *CreateRedfishResource) AggregateID() eh.UUID            { return c.ID }
+// CommandType satisfies base Command interface
 func (c *CreateRedfishResource) CommandType() eh.CommandType     { return CreateRedfishResourceCommand }
 
 func (c *CreateRedfishResource) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
@@ -131,8 +134,11 @@ type RemoveRedfishResource struct {
 	ResourceURI string
 }
 
+// AggregateType satisfies base Aggregate interface
 func (c *RemoveRedfishResource) AggregateType() eh.AggregateType { return AggregateType }
+// AggregateID satisfies base Aggregate interface
 func (c *RemoveRedfishResource) AggregateID() eh.UUID            { return c.ID }
+// CommandType satisfies base Command interface
 func (c *RemoveRedfishResource) CommandType() eh.CommandType     { return RemoveRedfishResourceCommand }
 
 func (c *RemoveRedfishResource) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
@@ -148,8 +154,11 @@ type UpdateRedfishResourceProperties struct {
 	Properties map[string]interface{} `eh:"optional"`
 }
 
+// AggregateType satisfies base Aggregate interface
 func (c *UpdateRedfishResourceProperties) AggregateType() eh.AggregateType { return AggregateType }
+// AggregateID satisfies base Aggregate interface
 func (c *UpdateRedfishResourceProperties) AggregateID() eh.UUID            { return c.ID }
+// CommandType satisfies base Command interface
 func (c *UpdateRedfishResourceProperties) CommandType() eh.CommandType {
 	return UpdateRedfishResourcePropertiesCommand
 }
@@ -191,10 +200,13 @@ type AddResourceToRedfishResourceCollection struct {
 	ResourceURI string  // resource to add to the collection
 }
 
+// AggregateType satisfies base Aggregate interface
 func (c *AddResourceToRedfishResourceCollection) AggregateType() eh.AggregateType {
 	return AggregateType
 }
+// AggregateID satisfies base Aggregate interface
 func (c *AddResourceToRedfishResourceCollection) AggregateID() eh.UUID { return c.ID }
+// CommandType satisfies base Command interface
 func (c *AddResourceToRedfishResourceCollection) CommandType() eh.CommandType {
 	return AddResourceToRedfishResourceCollectionCommand
 }
@@ -208,10 +220,13 @@ type RemoveResourceFromRedfishResourceCollection struct {
 	ResourceURI string
 }
 
+// AggregateType satisfies base Aggregate interface
 func (c *RemoveResourceFromRedfishResourceCollection) AggregateType() eh.AggregateType {
 	return AggregateType
 }
+// AggregateID satisfies base Aggregate interface
 func (c *RemoveResourceFromRedfishResourceCollection) AggregateID() eh.UUID { return c.ID }
+// CommandType satisfies base Command interface
 func (c *RemoveResourceFromRedfishResourceCollection) CommandType() eh.CommandType {
 	return RemoveResourceFromRedfishResourceCollectionCommand
 }
