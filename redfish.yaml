@@ -3,56 +3,59 @@ main:
         # debug, info, warn, error, crit
         Level: "warn"
         EnableStderr: true
-        FileName: "./out.log"
+        #FileName: "./out.log"
         ModulesToEnable:
+            - name: "idrac_mv"
+              level: "warn"
+
             - name: "internal_commands"
-              level: "info"
+              level: "warn"
 
             - name: "sse_handler"
-              level: "info"
+              level: "warn"
 
             - name: "aggregate"
-              level: "info"
+              level: "warn"
 
             - name: "domain"
-              level: "info"
+              level: "warn"
 
             - name: "http"
-              level: "info"
+              level: "warn"
 
             - name: "main"
-              level: "debug"
+              level: "warn"
 
             - name: "tlscert"
-              level: "info"
+              level: "warn"
 
             - name: "bmc_reset"
-              level: "info"
+              level: "warn"
 
             - name: "dbus_fans"
-              level: "info"
+              level: "warn"
 
             - name: "dbus_tempsensors"
-              level: "info"
+              level: "warn"
 
             - name: "eventstream"
-              level: "info"
+              level: "warn"
 
             - name: "ocp_bmc"
-              level: "info"
+              level: "warn"
 
             - name: "ocp_SIMULATION"
               level: "debug"
 
     dumpConfigChanges:
-        enabled: true
+        enabled: false
         filename: "redfish-out2.yaml"
 
 listen: 
     - https::8443
 
 session:
-    timeout: 7
+    timeout: 60
 
 managers:
     OBMC:
