@@ -32,7 +32,6 @@ func (t *dbusProperty) PropertyGet(
 	ctx context.Context,
 	agg *domain.RedfishResourceAggregate,
 	rrp *domain.RedfishResourceProperty,
-	method string,
 	meta map[string]interface{},
 ) {
 

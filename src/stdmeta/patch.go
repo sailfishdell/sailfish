@@ -22,7 +22,6 @@ func (t *patch) PropertyPatch(
 	ctx context.Context,
 	agg *domain.RedfishResourceAggregate,
 	rrp *domain.RedfishResourceProperty,
-	method string,
 	meta map[string]interface{},
 	body interface{},
 ) {

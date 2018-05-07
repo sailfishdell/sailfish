@@ -25,7 +25,6 @@ func (t *runCmd) PropertyGet(
 	ctx context.Context,
 	agg *domain.RedfishResourceAggregate,
 	rrp *domain.RedfishResourceProperty,
-	method string,
 	meta map[string]interface{},
 ) {
 

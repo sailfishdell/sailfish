@@ -40,7 +40,7 @@ func (c *GET) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 	}
 	// TODO: Should be able to discern supported methods from the meta and return those
 
-	data.Results, _ = a.ProcessMeta(ctx, "GET", map[string]interface{}{})
+	data.Results, _ = a.ProcessMeta(ctx, "GET", nil)
 
 	// TODO: set error status code based on err from ProcessMeta
 	// TODO: This is not thread safe: deep copy

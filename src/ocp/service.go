@@ -63,7 +63,6 @@ func (s *Service) PropertyGet(
 	ctx context.Context,
 	agg *domain.RedfishResourceAggregate,
 	rrp *domain.RedfishResourceProperty,
-	method string,
 	meta map[string]interface{},
 ) {
 	// but lock the actual service anyways, because we need to exclude anybody mucking with the backend directly. (side eye at you, viper)
@@ -84,7 +83,6 @@ func (s *Service) PropertyPatch(
 	ctx context.Context,
 	agg *domain.RedfishResourceAggregate,
 	rrp *domain.RedfishResourceProperty,
-	method string,
 	meta map[string]interface{},
 	body interface{},
 	present bool,

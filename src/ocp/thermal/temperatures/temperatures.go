@@ -81,7 +81,6 @@ func (s *service) PropertyGet(
 	ctx context.Context,
 	agg *domain.RedfishResourceAggregate,
 	rrp *domain.RedfishResourceProperty,
-	method string,
 	meta map[string]interface{},
 ) {
 	s.Lock()

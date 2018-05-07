@@ -278,10 +278,10 @@ func (r *RedfishResourceAggregate) UpdateCollectionMemberCount_unlocked() {
 }
 
 type PropertyGetter interface {
-	PropertyGet(context.Context, *RedfishResourceAggregate, *RedfishResourceProperty, string, map[string]interface{})
+	PropertyGet(context.Context, *RedfishResourceAggregate, *RedfishResourceProperty, map[string]interface{})
 }
 type PropertyPatcher interface {
-	PropertyPatch(context.Context, *RedfishResourceAggregate, *RedfishResourceProperty, string, map[string]interface{}, interface{}, bool)
+	PropertyPatch(context.Context, *RedfishResourceAggregate, *RedfishResourceProperty, map[string]interface{}, interface{}, bool)
 }
 
 func (rrp *RedfishResourceProperty) Process(ctx context.Context, agg *RedfishResourceAggregate, property, method string, req interface{}, present bool) (ret RedfishResourceProperty) {
@@ -318,11 +318,11 @@ func (rrp *RedfishResourceProperty) Process(ctx context.Context, agg *RedfishRes
 		switch method {
 		case "GET":
 			if plugin, ok := plugin.(PropertyGetter); ok {
-				plugin.PropertyGet(ctx, agg, &ret, method, meta_t)
+				plugin.PropertyGet(ctx, agg, &ret, meta_t)
 			}
 		case "PATCH":
 			if plugin, ok := plugin.(PropertyPatcher); ok {
-				plugin.PropertyPatch(ctx, agg, &ret, method, meta_t, req, present)
+				plugin.PropertyPatch(ctx, agg, &ret, meta_t, req, present)
 			}
 		}
 	}
