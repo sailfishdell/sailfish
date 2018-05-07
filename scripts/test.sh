@@ -179,5 +179,11 @@ $CURLCMD $URL/api/RedfishResource%3ACreate  -d '
 echo "/redfish/v1/test"
 $CURLCMD $URL/redfish/v1/test2
 
-
+echo "Test internal event-injection command API"
+$CURLCMD $URL/api/Event%3AInject  -d '
+    {
+        "ID": "49467bb4-5c1f-473b-a000-000000000011",
+        "name":"AttributeUpdated",
+        "data": {  "FQDD": "system.embedded.1", "Group": "another_group", "Index": "1", "Name": "foo", "Value": "'$RANDOM'" }
+    }'
 
