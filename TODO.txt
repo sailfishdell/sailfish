@@ -1,5 +1,9 @@
 Things that need work: (-) TODO (*) DONE
 
+ - Systemd socket activation support
+ - systemd service file
+ - split the handlers for internal redfishresource aggregate commands and the "official" redfish handler
+
  - Dynamically generate metadata
     - Need to dynamically generate the odata metadata endpoints based on what objects are actually present in-tree
         - probably need to update createredfishresource to have a mandatory parameter specifying the schema
