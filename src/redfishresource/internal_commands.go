@@ -6,6 +6,7 @@ import (
 	"time"
 
 	eh "github.com/looplab/eventhorizon"
+	"github.com/mitchellh/mapstructure"
 )
 
 func init() {
@@ -14,6 +15,7 @@ func init() {
 	eh.RegisterCommand(func() eh.Command { return &UpdateRedfishResourceProperties{} })
 	eh.RegisterCommand(func() eh.Command { return &AddResourceToRedfishResourceCollection{} })
 	eh.RegisterCommand(func() eh.Command { return &RemoveResourceFromRedfishResourceCollection{} })
+	eh.RegisterCommand(func() eh.Command { return &InjectEvent{} })
 }
 
 const (
@@ -22,6 +24,7 @@ const (
 	UpdateRedfishResourcePropertiesCommand             = eh.CommandType("internal:RedfishResourceProperties:Update")
 	AddResourceToRedfishResourceCollectionCommand      = eh.CommandType("internal:RedfishResourceCollection:Add")
 	RemoveResourceFromRedfishResourceCollectionCommand = eh.CommandType("internal:RedfishResourceCollection:Remove")
+	InjectEventCommand                                 = eh.CommandType("internal:Event:Inject")
 )
 
 // Static type checking for commands to prevent runtime errors due to typos
@@ -30,6 +33,7 @@ var _ = eh.Command(&RemoveRedfishResource{})
 var _ = eh.Command(&UpdateRedfishResourceProperties{})
 var _ = eh.Command(&AddResourceToRedfishResourceCollection{})
 var _ = eh.Command(&RemoveResourceFromRedfishResourceCollection{})
+var _ = eh.Command(&InjectEvent{})
 
 var immutableProperties = []string{"@odata.id", "@odata.type", "@odata.context"}
 
@@ -51,10 +55,12 @@ type CreateRedfishResource struct {
 
 // AggregateType satisfies base Aggregate interface
 func (c *CreateRedfishResource) AggregateType() eh.AggregateType { return AggregateType }
+
 // AggregateID satisfies base Aggregate interface
-func (c *CreateRedfishResource) AggregateID() eh.UUID            { return c.ID }
+func (c *CreateRedfishResource) AggregateID() eh.UUID { return c.ID }
+
 // CommandType satisfies base Command interface
-func (c *CreateRedfishResource) CommandType() eh.CommandType     { return CreateRedfishResourceCommand }
+func (c *CreateRedfishResource) CommandType() eh.CommandType { return CreateRedfishResourceCommand }
 
 func (c *CreateRedfishResource) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 	requestLogger := ContextLogger(ctx, "internal_commands")
@@ -136,10 +142,12 @@ type RemoveRedfishResource struct {
 
 // AggregateType satisfies base Aggregate interface
 func (c *RemoveRedfishResource) AggregateType() eh.AggregateType { return AggregateType }
+
 // AggregateID satisfies base Aggregate interface
-func (c *RemoveRedfishResource) AggregateID() eh.UUID            { return c.ID }
+func (c *RemoveRedfishResource) AggregateID() eh.UUID { return c.ID }
+
 // CommandType satisfies base Command interface
-func (c *RemoveRedfishResource) CommandType() eh.CommandType     { return RemoveRedfishResourceCommand }
+func (c *RemoveRedfishResource) CommandType() eh.CommandType { return RemoveRedfishResourceCommand }
 
 func (c *RemoveRedfishResource) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 	a.PublishEvent(eh.NewEvent(RedfishResourceRemoved, RedfishResourceRemovedData{
@@ -156,8 +164,10 @@ type UpdateRedfishResourceProperties struct {
 
 // AggregateType satisfies base Aggregate interface
 func (c *UpdateRedfishResourceProperties) AggregateType() eh.AggregateType { return AggregateType }
+
 // AggregateID satisfies base Aggregate interface
-func (c *UpdateRedfishResourceProperties) AggregateID() eh.UUID            { return c.ID }
+func (c *UpdateRedfishResourceProperties) AggregateID() eh.UUID { return c.ID }
+
 // CommandType satisfies base Command interface
 func (c *UpdateRedfishResourceProperties) CommandType() eh.CommandType {
 	return UpdateRedfishResourcePropertiesCommand
@@ -204,8 +214,10 @@ type AddResourceToRedfishResourceCollection struct {
 func (c *AddResourceToRedfishResourceCollection) AggregateType() eh.AggregateType {
 	return AggregateType
 }
+
 // AggregateID satisfies base Aggregate interface
 func (c *AddResourceToRedfishResourceCollection) AggregateID() eh.UUID { return c.ID }
+
 // CommandType satisfies base Command interface
 func (c *AddResourceToRedfishResourceCollection) CommandType() eh.CommandType {
 	return AddResourceToRedfishResourceCollectionCommand
@@ -224,13 +236,53 @@ type RemoveResourceFromRedfishResourceCollection struct {
 func (c *RemoveResourceFromRedfishResourceCollection) AggregateType() eh.AggregateType {
 	return AggregateType
 }
+
 // AggregateID satisfies base Aggregate interface
 func (c *RemoveResourceFromRedfishResourceCollection) AggregateID() eh.UUID { return c.ID }
+
 // CommandType satisfies base Command interface
 func (c *RemoveResourceFromRedfishResourceCollection) CommandType() eh.CommandType {
 	return RemoveResourceFromRedfishResourceCollectionCommand
 }
 func (c *RemoveResourceFromRedfishResourceCollection) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 	a.RemoveCollectionMember(c.ResourceURI)
+	return nil
+}
+
+type InjectEvent struct {
+	ID        eh.UUID                `json:"id"`
+	Name      eh.EventType           `json:"name"`
+	EventData map[string]interface{} `json:"data"`
+}
+
+// AggregateType satisfies base Aggregate interface
+func (c *InjectEvent) AggregateType() eh.AggregateType { return AggregateType }
+
+// AggregateID satisfies base Aggregate interface
+func (c *InjectEvent) AggregateID() eh.UUID { return c.ID }
+
+// CommandType satisfies base Command interface
+func (c *InjectEvent) CommandType() eh.CommandType {
+	return InjectEventCommand
+}
+
+func (c *InjectEvent) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
+	requestLogger := ContextLogger(ctx, "internal_commands")
+
+	a.ID = eh.UUID("49467bb4-5c1f-473b-0000-00000000000f")
+
+	data, err := eh.CreateEventData(c.Name)
+	if err != nil {
+		requestLogger.Warn("InjectEvent - Could not find event type", "event name", c.Name, "error", err)
+		return err
+	}
+
+	err = mapstructure.Decode(c.EventData, &data)
+	if err != nil {
+		requestLogger.Warn("InjectEvent - could not decode event data", "error", err)
+		return err
+	}
+
+	a.PublishEvent(eh.NewEvent(c.Name, data, time.Now()))
 	return nil
 }
