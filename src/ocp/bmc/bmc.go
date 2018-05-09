@@ -46,6 +46,10 @@ func WithUniqueName(uri string) plugins.Option {
 	return plugins.PropertyOnce("unique_name", uri)
 }
 
+func (s *service) GetUniqueName() string {
+	return s.GetProperty("unique_name").(string)
+}
+
 type odataObj interface {
 	GetOdataID() string
 }

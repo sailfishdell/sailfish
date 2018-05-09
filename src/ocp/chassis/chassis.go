@@ -39,6 +39,10 @@ func WithUniqueName(uri string) plugins.Option {
 	return plugins.PropertyOnce("unique_name", uri)
 }
 
+func (s *service) GetUniqueName() string {
+	return s.GetProperty("unique_name").(string)
+}
+
 func ManagedBy(b bmcInt) Option {
 	return func(p *service) error {
 		p.bmc = b

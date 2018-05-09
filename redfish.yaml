@@ -58,7 +58,7 @@ session:
     timeout: 60
 
 managers:
-    OBMC:
+    System.Manager.1:
         name: "OBMC Simulation"
         description: "The most open source BMC ever."
         model: "RADICAL BMC"
@@ -86,7 +86,7 @@ managers:
                       value: "Site"
 
 chassis:
-    1:
+    Chassis.Embedded.1:
         name: "Catfish System Happy Chassis"
         chassis_type: "RackMount"
         model: "YellowCat2000"
@@ -98,7 +98,7 @@ chassis:
         manufacturer: "Cat manufacturer"
 
 systems:
-    1:
+    System.Embedded.1:
         name: "Catfish System"
         system_type: "Physical"
         asset_tag: "CATFISHASSETTAG"

@@ -71,14 +71,14 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	chas, _ := chassis.New(
 		chassis.AddManagedBy(bmcSvc),
 		chassis.AddManagerInChassis(bmcSvc),
-		chassis.WithUniqueName("1"),
+		chassis.WithUniqueName("Chassis.Embedded.1"),
 	)
 
 	bmcSvc.InChassis(chas)
 	bmcSvc.AddManagerForChassis(chas)
 
 	system, _ := system.New(
-		system.WithUniqueName("1"),
+		system.WithUniqueName("System.Embedded.1"),
 		system.ManagedBy(bmcSvc),
 		system.InChassis(chas),
 	)
@@ -152,10 +152,10 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		self.sessionSvc.ApplyOption(plugins.UpdateProperty("session_timeout", cfgMgr.GetInt("session.timeout")))
 
 		for _, k := range []string{"name", "description", "model", "timezone", "version"} {
-			bmcSvc.ApplyOption(plugins.UpdateProperty(k, cfgMgr.Get("managers.OBMC."+k)))
+			bmcSvc.ApplyOption(plugins.UpdateProperty(k, cfgMgr.Get("managers."+bmcSvc.GetUniqueName()+"."+k)))
 		}
 
-		for _, m := range cfgMgr.Get("managers.OBMC.proto").([]interface{}) {
+		for _, m := range cfgMgr.Get("managers." + bmcSvc.GetUniqueName() + ".proto").([]interface{}) {
 			options := map[string]interface{}{}
 
 			prot, ok := m.(map[interface{}]interface{})
@@ -210,14 +210,14 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			"name", "chassis_type", "model",
 			"serial_number", "sku", "part_number",
 			"asset_tag", "chassis_type", "manufacturer"} {
-			chas.ApplyOption(plugins.UpdateProperty(k, cfgMgr.Get("chassis.1."+k)))
+			chas.ApplyOption(plugins.UpdateProperty(k, cfgMgr.Get("chassis."+chas.GetUniqueName()+"."+k)))
 		}
 		for _, k := range []string{
 			"name", "system_type", "asset_tag", "manufacturer",
 			"model", "serial_number", "sku", "The SKU", "part_number",
 			"description", "power_state", "bios_version", "led", "system_hostname",
 		} {
-			system.ApplyOption(plugins.UpdateProperty(k, cfgMgr.Get("systems.1."+k)))
+			system.ApplyOption(plugins.UpdateProperty(k, cfgMgr.Get("systems."+system.GetUniqueName()+"."+k)))
 		}
 	}
 	self.ConfigChangeHandler()
