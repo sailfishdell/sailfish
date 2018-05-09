@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"sync"
+    "time"
 
 	"github.com/spf13/viper"
 	"io/ioutil"
@@ -55,6 +56,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	}
 
 	self.rootSvc, _ = root.New()
+    time.Sleep(1)
 
 	self.sessionSvc, _ = session.New(
 		session.Root(self.rootSvc),
@@ -63,7 +65,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	self.basicAuthSvc, _ = basicauth.New()
 
 	bmcSvc, _ := bmc.New(
-		bmc.WithUniqueName("OBMC"),
+		bmc.WithUniqueName("System.Manager.1"),
 	)
 
 	protocolSvc, _ := protocol.New(
