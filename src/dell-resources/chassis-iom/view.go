@@ -27,8 +27,9 @@ func (s *service) AddView(ctx context.Context, ch eh.CommandHandler, eb eh.Event
 				"DELETE": []string{}, // can't be deleted
 			},
 			Properties: map[string]interface{}{
-				"Id":             s.GetProperty("unique_name"),
+				"Id":             s.GetUniqueName(),
 				"ManagedBy@meta": s.Meta(plugins.PropGET("managed_by")),
+	             // TODO: "ManagedBy@odata.count": 1
 
 				"SKU":          "",
 				"PowerState":   "On",
@@ -51,10 +52,10 @@ func (s *service) AddView(ctx context.Context, ch eh.CommandHandler, eb eh.Event
 						"ServiceTag":           "",
 						"InstPowerConsumption": 24,
 						"OemChassis": map[string]interface{}{
-							"@odata.id": "/redfish/v1/Chassis/IOM.Slot.C1/Attributes",
+							"@odata.id": "/redfish/v1/Chassis/" + s.GetUniqueName() + "/Attributes",
 						},
 						"OemIOMConfiguration": map[string]interface{}{
-							"@odata.id": "/redfish/v1/Chassis/IOM.Slot.C1/IOMConfiguration",
+							"@odata.id": "/redfish/v1/Chassis/" + s.GetUniqueName() + "/IOMConfiguration",
 						},
 					},
 				},
@@ -66,36 +67,24 @@ func (s *service) AddView(ctx context.Context, ch eh.CommandHandler, eb eh.Event
 							"GracefulShutdown",
 							"GracefulRestart",
 						},
-						"target": "/redfish/v1/Chassis/IOM.Slot.C1/Actions/Chassis.Reset",
+						"target": "/redfish/v1/Chassis/" + s.GetUniqueName() + "/Actions/Chassis.Reset",
 					},
 					"Oem": map[string]interface{}{
 						"DellChassis.v1_0_0#DellChassis.ResetPeakPowerConsumption": map[string]interface{}{
-							"target": "/redfish/v1/Chassis/IOM.Slot.C1/Actions/Oem/DellChassis.ResetPeakPowerConsumption",
+							"target": "/redfish/v1/Chassis/" + s.GetUniqueName() + "/Actions/Oem/DellChassis.ResetPeakPowerConsumption",
 						},
 						"#DellChassis.v1_0_0.VirtualReseat": map[string]interface{}{
-							"target": "/redfish/v1/Chassis/IOM.Slot.C1/Actions/Oem/DellChassis.VirtualReseat",
+							"target": "/redfish/v1/Chassis/" + s.GetUniqueName() + "/Actions/Oem/DellChassis.VirtualReseat",
 						},
 						"#DellChassis.v1_0_0.ResetPeakPowerConsumption": map[string]interface{}{
-							"target": "/redfish/v1/Chassis/IOM.Slot.C1/Actions/Oem/DellChassis.ResetPeakPowerConsumption",
+							"target": "/redfish/v1/Chassis/" + s.GetUniqueName() + "/Actions/Oem/DellChassis.ResetPeakPowerConsumption",
 						},
 						"DellChassis.v1_0_0#DellChassis.VirtualReseat": map[string]interface{}{
-							"target": "/redfish/v1/Chassis/IOM.Slot.C1/Actions/Oem/DellChassis.VirtualReseat",
+							"target": "/redfish/v1/Chassis/" + s.GetUniqueName() + "/Actions/Oem/DellChassis.VirtualReseat",
 						},
 					},
 				},
 			}})
 
-	/*
-	   {
-	        "Links": {
-	             "ManagedBy": [
-	                  {
-	                       "@odata.id": "/redfish/v1/Managers/CMC.Integrated.1"
-	                  }
-	             ],
-	             "ManagedBy@odata.count": 1
-	        },
-	   }
-	*/
 
 }
