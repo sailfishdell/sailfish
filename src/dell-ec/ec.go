@@ -5,6 +5,7 @@ package obmc
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
@@ -80,44 +81,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		AddView(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter)
 	}
 
-	iomList := []foo{}
-	for _, iomName := range []string{
-		"IOM.Slot.A1",
-		"IOM.Slot.A1a",
-		"IOM.Slot.A1b",
-		"IOM.Slot.A2",
-		"IOM.Slot.A2a",
-		"IOM.Slot.A2b",
-		"IOM.Slot.B1",
-		"IOM.Slot.B1a",
-		"IOM.Slot.B1b",
-		"IOM.Slot.B2",
-		"IOM.Slot.B2a",
-		"IOM.Slot.B2b",
-		"IOM.Slot.C1",
-		"IOM.Slot.C2",
-	} {
-		iom, _ := iom_chassis.New(
-			ec_manager.WithUniqueName(iomName),
-		)
-
-		iomAttrSvc, _ := attr_res.New(
-			attr_res.BaseResource(iom),
-			attr_res.WithURI("/redfish/v1/Chassis/"+iomName+"/Attributes"),
-			attr_res.WithUniqueName(iomName+".Attributes"),
-		)
-
-		iomAttrProp, _ := attr_prop.New(
-			attr_prop.BaseResource(iomAttrSvc),
-			attr_prop.WithAttribute("test", "1", iomName, "a"),
-			attr_prop.WithFQDD(iomName),
-		)
-
-		iomList = append(iomList, iom)
-		iomList = append(iomList, iomAttrSvc)
-		iomList = append(iomList, iomAttrProp)
-	}
-
 	// VIPER Config:
 	// pull the config from the YAML file to populate some static config options
 	self.configChangeHandler = func() {
@@ -165,10 +128,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	domain.RegisterPlugin(func() domain.Plugin { return bmcAttrSvc })
 	domain.RegisterPlugin(func() domain.Plugin { return bmcAttrProp })
 
-	for _, iom := range iomList {
-		domain.RegisterPlugin(func() domain.Plugin { return iom })
-	}
-
 	// and now add everything to the URI tree
 	self.rootSvc.AddResource(ctx, ch, eb, ew)
 	time.Sleep(1)
@@ -181,9 +140,48 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	bmcAttrProp.AddView(ctx, ch, eb, ew)
 	bmcAttrProp.AddController(ctx, ch, eb, ew)
 
-	for _, iom := range iomList {
+	for idx, iomName := range []string{
+		"IOM.Slot.A1",
+		"IOM.Slot.A1a",
+		"IOM.Slot.A1b",
+		"IOM.Slot.A2",
+		"IOM.Slot.A2a",
+		"IOM.Slot.A2b",
+		"IOM.Slot.B1",
+		"IOM.Slot.B1a",
+		"IOM.Slot.B1b",
+		"IOM.Slot.B2",
+		"IOM.Slot.B2a",
+		"IOM.Slot.B2b",
+		"IOM.Slot.C1",
+		"IOM.Slot.C2",
+	} {
+		iom, _ := iom_chassis.New(
+			ec_manager.WithUniqueName(iomName),
+		)
+		domain.RegisterPlugin(func() domain.Plugin { return iom })
 		iom.AddView(ctx, ch, eb, ew)
 		iom.AddController(ctx, ch, eb, ew)
+
+		iomAttrSvc, _ := attr_res.New(
+			attr_res.BaseResource(iom),
+			attr_res.WithURI("/redfish/v1/Chassis/"+iomName+"/Attributes"),
+			attr_res.WithUniqueName(iomName+".Attributes"),
+		)
+		domain.RegisterPlugin(func() domain.Plugin { return iomAttrSvc })
+		iomAttrSvc.AddView(ctx, ch, eb, ew)
+		iomAttrSvc.AddController(ctx, ch, eb, ew)
+
+		iomAttrProp, _ := attr_prop.New(
+			attr_prop.BaseResource(iomAttrSvc),
+			attr_prop.WithAttribute("test", "1", "A", "foo"),
+			attr_prop.WithAttribute("test", "1", "B", "foo"),
+			attr_prop.WithAttribute("test", fmt.Sprintf("%v", idx), iomName, "a"),
+			attr_prop.WithFQDD(iomName),
+		)
+		domain.RegisterPlugin(func() domain.Plugin { return iomAttrProp })
+		iomAttrProp.AddView(ctx, ch, eb, ew)
+		iomAttrProp.AddController(ctx, ch, eb, ew)
 	}
 
 	return self

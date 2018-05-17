@@ -1,7 +1,7 @@
 package iom_chassis
 
 import (
-    "fmt"
+	"fmt"
 
 	plugins "github.com/superchalupa/go-redfish/src/ocp"
 	domain "github.com/superchalupa/go-redfish/src/redfishresource"
