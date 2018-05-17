@@ -32,7 +32,7 @@ import (
 	_ "github.com/superchalupa/go-redfish/src/stdmeta"
 
 	// load idrac plugins
-	idrac "github.com/superchalupa/go-redfish/src/idrac-controller"
+	idrac "github.com/superchalupa/go-redfish/src/dell-ec"
 )
 
 func main() {

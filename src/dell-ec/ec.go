@@ -23,9 +23,9 @@ import (
 	"github.com/superchalupa/go-redfish/src/ocp/root"
 	"github.com/superchalupa/go-redfish/src/ocp/session"
 
-	"github.com/superchalupa/go-redfish/src/dell-resources/ec_manager"
 	attr_prop "github.com/superchalupa/go-redfish/src/dell-resources/attribute-property"
 	attr_res "github.com/superchalupa/go-redfish/src/dell-resources/attribute-resource"
+	"github.com/superchalupa/go-redfish/src/dell-resources/ec_manager"
 )
 
 type ocp struct {

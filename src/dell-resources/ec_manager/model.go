@@ -1,7 +1,7 @@
 package ec_manager
 
 import (
-    "fmt"
+	"fmt"
 
 	plugins "github.com/superchalupa/go-redfish/src/ocp"
 	domain "github.com/superchalupa/go-redfish/src/redfishresource"
@@ -22,7 +22,7 @@ func New(options ...interface{}) (*service, error) {
 
 	s.ApplyOption(plugins.UUID())
 
-    // user supplied options
+	// user supplied options
 	s.ApplyOption(options...)
 
 	s.ApplyOption(plugins.PluginType(domain.PluginType("attribute property: " + fmt.Sprintf("%v", s.GetProperty("id")))))
@@ -46,7 +46,7 @@ type odataObj interface {
 func manageOdataIDList(name string, obj odataObj) Option {
 	return func(s *service) error {
 
-        // TODO: need to update @odata.count property, too
+		// TODO: need to update @odata.count property, too
 
 		serversList, ok := s.GetPropertyOkUnlocked(name)
 		if !ok {

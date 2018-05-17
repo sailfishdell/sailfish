@@ -1,6 +1,8 @@
 package attribute_property
 
 import (
+	"fmt"
+
 	plugins "github.com/superchalupa/go-redfish/src/ocp"
 	domain "github.com/superchalupa/go-redfish/src/redfishresource"
 
@@ -16,19 +18,20 @@ type service struct {
 	*plugins.Service
 	baseResource odataInt
 	fqdd         []string
-	//          group      index      attribute   value
+	//         group      index      attribute  value
 	attributes map[string]map[string]map[string]interface{}
 }
 
 func New(options ...interface{}) (*service, error) {
-	p := &service{
-		// TODO: fix
-		Service:    plugins.NewService(plugins.PluginType(domain.PluginType("TODO:FIXME:unique-per-instance-thingy"))),
+	s := &service{
+		Service:    plugins.NewService(),
 		attributes: map[string]map[string]map[string]interface{}{},
 		fqdd:       []string{},
 	}
-	p.ApplyOption(options...)
-	return p, nil
+	s.ApplyOption(plugins.UUID())
+	s.ApplyOption(options...)
+	s.ApplyOption(plugins.PluginType(domain.PluginType("attribute property: " + fmt.Sprintf("%v", s.GetProperty("id")))))
+	return s, nil
 }
 
 func BaseResource(b odataInt) Option {
@@ -45,6 +48,9 @@ func WithFQDD(fqdd string) Option {
 	}
 }
 
+//
+// Use this to add an attribute or to update an attribute
+//
 func WithAttribute(group, gindex, name string, value interface{}) Option {
 	return func(s *service) error {
 		groupMap, ok := s.attributes[group]
