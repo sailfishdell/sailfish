@@ -157,7 +157,8 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		"IOM.Slot.C2",
 	} {
 		iom, _ := iom_chassis.New(
-			ec_manager.WithUniqueName(iomName),
+			iom_chassis.WithUniqueName(iomName),
+			iom_chassis.AddManagedBy(cmc_integrated_1_svc),
 		)
 		domain.RegisterPlugin(func() domain.Plugin { return iom })
 		iom.AddView(ctx, ch, eb, ew)

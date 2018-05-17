@@ -29,3 +29,33 @@ func WithUniqueName(uri string) plugins.Option {
 func (s *service) GetUniqueName() string {
 	return s.GetProperty("unique_name").(string)
 }
+
+type odataObj interface {
+	GetOdataID() string
+}
+
+func AddManagedBy(obj odataObj) Option {
+	return manageOdataIDList("managed_by", obj)
+}
+
+func (s *service) AddManagedBy(obj odataObj) {
+	s.ApplyOption(AddManagedBy(obj))
+}
+
+// no locking because it's an Option, loc
+func manageOdataIDList(name string, obj odataObj) Option {
+	return func(s *service) error {
+		serversList, ok := s.GetPropertyOkUnlocked(name)
+		if !ok {
+			serversList = []map[string]string{}
+		}
+		sl, ok := serversList.([]map[string]string)
+		if !ok {
+			sl = []map[string]string{}
+		}
+		sl = append(sl, map[string]string{"@odata.id": obj.GetOdataID()})
+
+		s.UpdatePropertyUnlocked(name, sl)
+		return nil
+	}
+}
