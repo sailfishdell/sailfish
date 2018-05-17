@@ -25,8 +25,8 @@ import (
 
 	attr_prop "github.com/superchalupa/go-redfish/src/dell-resources/attribute-property"
 	attr_res "github.com/superchalupa/go-redfish/src/dell-resources/attribute-resource"
-	"github.com/superchalupa/go-redfish/src/dell-resources/ec_manager"
 	"github.com/superchalupa/go-redfish/src/dell-resources/chassis-iom"
+	"github.com/superchalupa/go-redfish/src/dell-resources/ec_manager"
 )
 
 type ocp struct {
@@ -74,10 +74,49 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		attr_prop.WithFQDD("CMC.Integrated.1"),
 	)
 
-    // one iom for now
-    chassis_iom, _ := iom_chassis.New(
-		ec_manager.WithUniqueName("CMC.Integrated.1"),
-    )
+	type foo interface {
+		domain.Plugin
+		AddController(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter)
+		AddView(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter)
+	}
+
+	iomList := []foo{}
+	for _, iomName := range []string{
+		"IOM.Slot.A1",
+		"IOM.Slot.A1a",
+		"IOM.Slot.A1b",
+		"IOM.Slot.A2",
+		"IOM.Slot.A2a",
+		"IOM.Slot.A2b",
+		"IOM.Slot.B1",
+		"IOM.Slot.B1a",
+		"IOM.Slot.B1b",
+		"IOM.Slot.B2",
+		"IOM.Slot.B2a",
+		"IOM.Slot.B2b",
+		"IOM.Slot.C1",
+		"IOM.Slot.C2",
+	} {
+		iom, _ := iom_chassis.New(
+			ec_manager.WithUniqueName(iomName),
+		)
+
+		iomAttrSvc, _ := attr_res.New(
+			attr_res.BaseResource(iom),
+			attr_res.WithURI("/redfish/v1/Chassis/"+iomName+"/Attributes"),
+			attr_res.WithUniqueName(iomName+".Attributes"),
+		)
+
+		iomAttrProp, _ := attr_prop.New(
+			attr_prop.BaseResource(iomAttrSvc),
+			attr_prop.WithAttribute("test", "1", iomName, "a"),
+			attr_prop.WithFQDD(iomName),
+		)
+
+		iomList = append(iomList, iom)
+		iomList = append(iomList, iomAttrSvc)
+		iomList = append(iomList, iomAttrProp)
+	}
 
 	// VIPER Config:
 	// pull the config from the YAML file to populate some static config options
@@ -125,7 +164,10 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	domain.RegisterPlugin(func() domain.Plugin { return cmc_integrated_1_svc })
 	domain.RegisterPlugin(func() domain.Plugin { return bmcAttrSvc })
 	domain.RegisterPlugin(func() domain.Plugin { return bmcAttrProp })
-	domain.RegisterPlugin(func() domain.Plugin { return chassis_iom })
+
+	for _, iom := range iomList {
+		domain.RegisterPlugin(func() domain.Plugin { return iom })
+	}
 
 	// and now add everything to the URI tree
 	self.rootSvc.AddResource(ctx, ch, eb, ew)
@@ -139,8 +181,10 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	bmcAttrProp.AddView(ctx, ch, eb, ew)
 	bmcAttrProp.AddController(ctx, ch, eb, ew)
 
-	chassis_iom.AddView(ctx, ch, eb, ew)
-	chassis_iom.AddController(ctx, ch, eb, ew)
+	for _, iom := range iomList {
+		iom.AddView(ctx, ch, eb, ew)
+		iom.AddController(ctx, ch, eb, ew)
+	}
 
 	return self
 }

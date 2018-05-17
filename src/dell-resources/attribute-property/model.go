@@ -3,6 +3,7 @@ package attribute_property
 import (
 	"fmt"
 
+	"github.com/superchalupa/go-redfish/src/log"
 	plugins "github.com/superchalupa/go-redfish/src/ocp"
 	domain "github.com/superchalupa/go-redfish/src/redfishresource"
 
@@ -30,7 +31,9 @@ func New(options ...interface{}) (*service, error) {
 	}
 	s.ApplyOption(plugins.UUID())
 	s.ApplyOption(options...)
-	s.ApplyOption(plugins.PluginType(domain.PluginType("attribute property: " + fmt.Sprintf("%v", s.GetProperty("id")))))
+	pluginType := domain.PluginType("attribute property: " + fmt.Sprintf("%v", s.GetProperty("id")))
+	s.ApplyOption(plugins.PluginType(pluginType))
+	log.MustLogger("attribute").Error("Created plugin", "plugin", pluginType)
 	return s, nil
 }
 

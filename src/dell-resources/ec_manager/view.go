@@ -50,10 +50,6 @@ func (s *service) AddResource(ctx context.Context, ch eh.CommandHandler, eb eh.E
 					"ManagerInChassis@meta":  s.Meta(plugins.PropGET("in_chassis")),
 				},
 
-				// Commented out until we figure out what these are supposed to be
-				//"ServiceEntryPointUUID":    eh.NewUUID(),
-				//"UUID":                     eh.NewUUID(),
-
 				"Status": map[string]interface{}{
 					"HealthRollup": "OK",
 					"State":        "StandbySpare",
