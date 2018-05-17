@@ -3,7 +3,6 @@ package attribute_property
 import (
 	"fmt"
 
-	"github.com/superchalupa/go-redfish/src/log"
 	plugins "github.com/superchalupa/go-redfish/src/ocp"
 	domain "github.com/superchalupa/go-redfish/src/redfishresource"
 
@@ -33,7 +32,6 @@ func New(options ...interface{}) (*service, error) {
 	s.ApplyOption(options...)
 	pluginType := domain.PluginType("attribute property: " + fmt.Sprintf("%v", s.GetProperty("id")))
 	s.ApplyOption(plugins.PluginType(pluginType))
-	log.MustLogger("attribute").Error("Created plugin", "plugin", pluginType)
 	return s, nil
 }
 
@@ -45,8 +43,8 @@ func BaseResource(b odataInt) Option {
 }
 
 func WithFQDD(fqdd string) Option {
-	return func(p *service) error {
-		p.fqdd = append(p.fqdd, fqdd)
+	return func(s *service) error {
+		s.fqdd = append(s.fqdd, fqdd)
 		return nil
 	}
 }
