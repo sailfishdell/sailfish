@@ -19,6 +19,6 @@ $CURLCMD $URL/api/Event%3AInject  -d '
     {
         "ID": "49467bb4-5c1f-473b-a000-000000000011",
         "name":"AttributeUpdated",
-        "data": {  "FQDD": "system.embedded.1", "Group": "another_group", "Index": "1", "Name": "foo", "Value": "'$RANDOM'" }
+        "data": {  "FQDD": "CMC.Integrated.1", "Group": "another_group", "Index": "1", "Name": "foo", "Value": "'$RANDOM'" }
     }'
 

@@ -1,4 +1,4 @@
-package attribute
+package attribute_property
 
 import (
 	"context"
@@ -44,7 +44,7 @@ func (s *service) AddController(ctx context.Context, ch eh.CommandHandler, eb eh
 	})
 }
 
-func SelectAttributeUpdate(fqdd string) func(eh.Event) bool {
+func SelectAttributeUpdate(fqdd []string) func(eh.Event) bool {
 	return func(event eh.Event) bool {
 		log.MustLogger("idrac_mv").Debug("Checking event", "event", event)
 		if event.EventType() != AttributeUpdated {
@@ -52,9 +52,11 @@ func SelectAttributeUpdate(fqdd string) func(eh.Event) bool {
 			return false
 		}
 		if data, ok := event.Data().(*AttributeUpdatedData); ok {
-			if data.FQDD == fqdd {
-				log.MustLogger("idrac_mv").Debug("FQDD MATCH")
-				return true
+			for _, testFQDD := range fqdd {
+				if data.FQDD == testFQDD {
+					log.MustLogger("idrac_mv").Debug("FQDD MATCH")
+					return true
+				}
 			}
 			log.MustLogger("idrac_mv").Debug("FQDD FAIL")
 			return false

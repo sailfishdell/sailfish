@@ -1,4 +1,4 @@
-package attribute
+package attribute_property
 
 import (
 	plugins "github.com/superchalupa/go-redfish/src/ocp"
@@ -15,7 +15,7 @@ type odataInt interface {
 type service struct {
 	*plugins.Service
 	baseResource odataInt
-	fqdd         string
+	fqdd         []string
 	//          group      index      attribute   value
 	attributes map[string]map[string]map[string]interface{}
 }
@@ -25,15 +25,22 @@ func New(options ...interface{}) (*service, error) {
 		// TODO: fix
 		Service:    plugins.NewService(plugins.PluginType(domain.PluginType("TODO:FIXME:unique-per-instance-thingy"))),
 		attributes: map[string]map[string]map[string]interface{}{},
+		fqdd:       []string{},
 	}
 	p.ApplyOption(options...)
 	return p, nil
 }
 
-func InResource(b odataInt, fqdd string) Option {
+func BaseResource(b odataInt) Option {
 	return func(p *service) error {
 		p.baseResource = b
-		p.fqdd = fqdd
+		return nil
+	}
+}
+
+func WithFQDD(fqdd string) Option {
+	return func(p *service) error {
+		p.fqdd = append(p.fqdd, fqdd)
 		return nil
 	}
 }
@@ -57,4 +64,3 @@ func WithAttribute(group, gindex, name string, value interface{}) Option {
 		return nil
 	}
 }
-

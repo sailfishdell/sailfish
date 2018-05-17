@@ -14,7 +14,7 @@ binaries=${binaries:-$(find cmd/* -type d)}
 
 for cmd in ${binaries}
 do
-    go build -tags simulation "$@" github.com/superchalupa/go-redfish/$cmd
+    go build -tags "simulation $TAGS" "$@" github.com/superchalupa/go-redfish/$cmd
 done
 echo
 

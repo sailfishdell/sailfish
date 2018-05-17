@@ -1,4 +1,4 @@
-package attribute
+package attribute_property
 
 import (
 	"context"
