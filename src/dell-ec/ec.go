@@ -26,6 +26,7 @@ import (
 	attr_prop "github.com/superchalupa/go-redfish/src/dell-resources/attribute-property"
 	attr_res "github.com/superchalupa/go-redfish/src/dell-resources/attribute-resource"
 	"github.com/superchalupa/go-redfish/src/dell-resources/ec_manager"
+	"github.com/superchalupa/go-redfish/src/dell-resources/chassis-iom"
 )
 
 type ocp struct {
@@ -73,13 +74,16 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		attr_prop.WithFQDD("CMC.Integrated.1"),
 	)
 
+    // one iom for now
+    chassis_iom, _ := iom_chassis.New(
+		ec_manager.WithUniqueName("CMC.Integrated.1"),
+    )
+
 	// VIPER Config:
 	// pull the config from the YAML file to populate some static config options
 	self.configChangeHandler = func() {
 		logger.Info("Re-applying configuration from config file.")
-
 		self.sessionSvc.ApplyOption(plugins.UpdateProperty("session_timeout", cfgMgr.GetInt("session.timeout")))
-
 		for _, k := range []string{"name", "description", "model", "timezone", "version"} {
 			cmc_integrated_1_svc.ApplyOption(plugins.UpdateProperty(k, cfgMgr.Get("managers."+cmc_integrated_1_svc.GetUniqueName()+"."+k)))
 		}
@@ -121,6 +125,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	domain.RegisterPlugin(func() domain.Plugin { return cmc_integrated_1_svc })
 	domain.RegisterPlugin(func() domain.Plugin { return bmcAttrSvc })
 	domain.RegisterPlugin(func() domain.Plugin { return bmcAttrProp })
+	domain.RegisterPlugin(func() domain.Plugin { return chassis_iom })
 
 	// and now add everything to the URI tree
 	self.rootSvc.AddResource(ctx, ch, eb, ew)
@@ -133,6 +138,9 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	bmcAttrSvc.AddView(ctx, ch, eb, ew)
 	bmcAttrProp.AddView(ctx, ch, eb, ew)
 	bmcAttrProp.AddController(ctx, ch, eb, ew)
+
+	chassis_iom.AddView(ctx, ch, eb, ew)
+	chassis_iom.AddController(ctx, ch, eb, ew)
 
 	return self
 }
