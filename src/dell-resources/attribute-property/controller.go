@@ -35,7 +35,7 @@ func (s *service) AddController(ctx context.Context, ch eh.CommandHandler, eb eh
 		return
 	}
 	sp.RunForever(func(event eh.Event) {
-		log.MustLogger("idrac_mv").Info("Got action event", "event", event)
+		log.MustLogger("idrac_mv").Info("Updating model attribute", "event", event)
 		if data, ok := event.Data().(*AttributeUpdatedData); ok {
 			s.ApplyOption(WithAttribute(data.Group, data.Index, data.Name, data.Value))
 		} else {
@@ -46,19 +46,15 @@ func (s *service) AddController(ctx context.Context, ch eh.CommandHandler, eb eh
 
 func SelectAttributeUpdate(fqdd []string) func(eh.Event) bool {
 	return func(event eh.Event) bool {
-		log.MustLogger("idrac_mv").Debug("Checking event", "event", event)
 		if event.EventType() != AttributeUpdated {
-			log.MustLogger("idrac_mv").Debug("no match: type")
 			return false
 		}
 		if data, ok := event.Data().(*AttributeUpdatedData); ok {
 			for _, testFQDD := range fqdd {
 				if data.FQDD == testFQDD {
-					log.MustLogger("idrac_mv").Debug("FQDD MATCH")
 					return true
 				}
 			}
-			log.MustLogger("idrac_mv").Debug("FQDD FAIL")
 			return false
 		}
 		log.MustLogger("idrac_mv").Debug("TYPE ASSERT FAIL!", "data", fmt.Sprintf("%#v", event.Data()))

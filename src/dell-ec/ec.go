@@ -52,28 +52,43 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	}
 
 	self.rootSvc, _ = root.New()
+	domain.RegisterPlugin(func() domain.Plugin { return self.rootSvc })
+	self.rootSvc.AddResource(ctx, ch, eb, ew)
+	time.Sleep(1)
 
 	self.sessionSvc, _ = session.New(
 		session.Root(self.rootSvc),
 	)
+	domain.RegisterPlugin(func() domain.Plugin { return self.sessionSvc })
+	self.sessionSvc.AddResource(ctx, ch, eb, ew)
 
 	self.basicAuthSvc, _ = basicauth.New()
+	domain.RegisterPlugin(func() domain.Plugin { return self.basicAuthSvc })
+	self.basicAuthSvc.AddResource(ctx, ch, eb, ew)
 
 	cmc_integrated_1_svc, _ := ec_manager.New(
 		ec_manager.WithUniqueName("CMC.Integrated.1"),
 	)
+	domain.RegisterPlugin(func() domain.Plugin { return cmc_integrated_1_svc })
+	cmc_integrated_1_svc.AddView(ctx, ch, eb, ew)
+	cmc_integrated_1_svc.AddController(ctx, ch, eb, ew)
 
 	bmcAttrSvc, _ := attr_res.New(
 		attr_res.BaseResource(cmc_integrated_1_svc),
 		attr_res.WithURI("/redfish/v1/Managers/CMC.Integrated.1/Attributes"),
 		attr_res.WithUniqueName("CMC.Integrated.1.Attributes"),
 	)
+	domain.RegisterPlugin(func() domain.Plugin { return bmcAttrSvc })
+	bmcAttrSvc.AddView(ctx, ch, eb, ew)
 
 	bmcAttrProp, _ := attr_prop.New(
 		attr_prop.BaseResource(bmcAttrSvc),
 		attr_prop.WithAttribute("test", "1", "A", "foo"),
 		attr_prop.WithFQDD("CMC.Integrated.1"),
 	)
+	domain.RegisterPlugin(func() domain.Plugin { return bmcAttrProp })
+	bmcAttrProp.AddView(ctx, ch, eb, ew)
+	bmcAttrProp.AddController(ctx, ch, eb, ew)
 
 	type foo interface {
 		domain.Plugin
@@ -118,27 +133,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		dumpViperConfig()
 	})
 
-	// register all of the plugins (do this first so we dont get any race
-	// conditions if somebody accesses the URIs before these plugins are
-	// registered
-	domain.RegisterPlugin(func() domain.Plugin { return self.rootSvc })
-	domain.RegisterPlugin(func() domain.Plugin { return self.sessionSvc })
-	domain.RegisterPlugin(func() domain.Plugin { return self.basicAuthSvc })
-	domain.RegisterPlugin(func() domain.Plugin { return cmc_integrated_1_svc })
-	domain.RegisterPlugin(func() domain.Plugin { return bmcAttrSvc })
-	domain.RegisterPlugin(func() domain.Plugin { return bmcAttrProp })
-
-	// and now add everything to the URI tree
-	self.rootSvc.AddResource(ctx, ch, eb, ew)
-	time.Sleep(1)
-	self.sessionSvc.AddResource(ctx, ch, eb, ew)
-	self.basicAuthSvc.AddResource(ctx, ch, eb, ew)
-
-	logger.Info("adding cmc resources")
-	cmc_integrated_1_svc.AddResource(ctx, ch, eb, ew)
-	bmcAttrSvc.AddView(ctx, ch, eb, ew)
-	bmcAttrProp.AddView(ctx, ch, eb, ew)
-	bmcAttrProp.AddController(ctx, ch, eb, ew)
 
 	for idx, iomName := range []string{
 		"IOM.Slot.A1",

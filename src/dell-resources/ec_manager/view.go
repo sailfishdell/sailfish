@@ -17,7 +17,7 @@ import (
 	ah "github.com/superchalupa/go-redfish/src/actionhandler"
 )
 
-func (s *service) AddResource(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
+func (s *service) AddView(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
 	ch.HandleCommand(
 		ctx,
 		&domain.CreateRedfishResource{
@@ -35,13 +35,13 @@ func (s *service) AddResource(ctx context.Context, ch eh.CommandHandler, eb eh.E
 			},
 			Properties: map[string]interface{}{
 				"Id":                       s.GetProperty("unique_name"),
-				"Name@meta":                s.Meta(plugins.PropGET("name")),
+				"Name@meta":                s.Meta(plugins.PropGETOptional("name")),
 				"ManagerType":              "BMC",
-				"Description@meta":         s.Meta(plugins.PropGET("description")),
-				"Model@meta":               s.Meta(plugins.PropGET("model")),
+				"Description@meta":         s.Meta(plugins.PropGETOptional("description")),
+				"Model@meta":               s.Meta(plugins.PropGETOptional("model")),
 				"DateTime@meta":            map[string]interface{}{"GET": map[string]interface{}{"plugin": "datetime"}},
-				"DateTimeLocalOffset@meta": s.Meta(plugins.PropGET("timezone"), plugins.PropPATCH("timezone")),
-				"FirmwareVersion@meta":     s.Meta(plugins.PropGET("version")),
+				"DateTimeLocalOffset@meta": s.Meta(plugins.PropGETOptional("timezone"), plugins.PropPATCHOptional("timezone")),
+				"FirmwareVersion@meta":     s.Meta(plugins.PropGETOptional("version")),
 				"Links": map[string]interface{}{
 					"ManagerForServers@meta": s.Meta(plugins.PropGET("bmc_manager_for_servers")),
 					// TODO: Need standard method to count arrays
@@ -308,20 +308,22 @@ func (s *service) AddResource(ctx context.Context, ch eh.CommandHandler, eb eh.E
 
 			}})
 
+    logger, _ := log.GetLogger("Managers/CMC.Integrated.1")
+
 	CreateAction(ctx, ch, eb, ew,
-		"cmc.integrated.1",
+		logger,
 		s.GetOdataID()+"/Actions/Manager.Reset",
 		"manager.reset",
 		s)
 
 	CreateAction(ctx, ch, eb, ew,
-		"cmc.integrated.1",
+		logger,
 		s.GetOdataID()+"/Actions/Oem/DellManager.ResetToDefaults",
 		"manager.resettodefaults",
 		s)
 
 	CreateAction(ctx, ch, eb, ew,
-		"cmc.integrated.1",
+		logger,
 		s.GetOdataID()+"/Actions/Manager.ForceFailover",
 		"manager.forcefailover",
 		s)
@@ -332,7 +334,7 @@ type prop interface {
 }
 
 func CreateAction(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter,
-	logModule string,
+	logger log.Logger,
 	uri string,
 	property string,
 	s prop,
@@ -357,12 +359,10 @@ func CreateAction(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew 
 	// stream processor for action events
 	sp, err := plugins.NewEventStreamProcessor(ctx, ew, plugins.CustomFilter(ah.SelectAction(uri)))
 	if err != nil {
-		log.MustLogger(logModule).Error("Failed to create event stream processor", "err", err)
+		logger.Error("Failed to create event stream processor", "err", err)
 		return
 	}
 	sp.RunForever(func(event eh.Event) {
-		log.MustLogger(logModule).Info("Got action event", "event", event)
-
 		eventData := domain.HTTPCmdProcessedData{
 			CommandID:  event.Data().(ah.GenericActionEventData).CmdID,
 			Results:    map[string]interface{}{"msg": "Not Implemented"},
@@ -375,6 +375,8 @@ func CreateAction(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew 
 			if fn, ok := handler.(func(eh.Event, *domain.HTTPCmdProcessedData)); ok {
 				fn(event, &eventData)
 			}
+		} else {
+			logger.Warn("UNHANDLED action event: no function handler set up for this event.", "event", event)
 		}
 
 		responseEvent := eh.NewEvent(domain.HTTPCmdProcessed, eventData, time.Now())

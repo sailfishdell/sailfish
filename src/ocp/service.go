@@ -266,9 +266,23 @@ func PropGET(name string) MetaOption {
 	}
 }
 
+func PropGETOptional(name string) MetaOption {
+	return func(s *Service, m MetaInt) error {
+		m["GET"] = map[string]interface{}{"plugin": string(s.PluginTypeUnlocked()), "property": name}
+		return nil
+	}
+}
+
 func PropPATCH(name string) MetaOption {
 	return func(s *Service, m MetaInt) error {
 		s.MustPropertyUnlocked(name)
+		m["PATCH"] = map[string]interface{}{"plugin": string(s.PluginTypeUnlocked()), "property": name}
+		return nil
+	}
+}
+
+func PropPATCHOptional(name string) MetaOption {
+	return func(s *Service, m MetaInt) error {
 		m["PATCH"] = map[string]interface{}{"plugin": string(s.PluginTypeUnlocked()), "property": name}
 		return nil
 	}
