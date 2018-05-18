@@ -29,7 +29,7 @@ func (s *service) AddView(ctx context.Context, ch eh.CommandHandler, eb eh.Event
 			Properties: map[string]interface{}{
 				"Id":             s.GetUniqueName(),
 				"ManagedBy@meta": s.Meta(plugins.PropGET("managed_by")),
-	             // TODO: "ManagedBy@odata.count": 1
+				// TODO: "ManagedBy@odata.count": 1
 
 				"SKU":          "",
 				"PowerState":   "On",
@@ -85,6 +85,5 @@ func (s *service) AddView(ctx context.Context, ch eh.CommandHandler, eb eh.Event
 					},
 				},
 			}})
-
 
 }
