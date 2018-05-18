@@ -96,38 +96,6 @@ func (s *service) AddResource(ctx context.Context, ch eh.CommandHandler, eb eh.E
 					"ServiceEnabled":                    false,
 				},
 
-				"Actions": map[string]interface{}{
-					"#Manager.Reset": map[string]interface{}{
-						"target": s.GetOdataID() + "/Actions/Manager.Reset",
-						"ResetType@Redfish.AllowableValues": []string{
-							"GracefulRestart",
-						},
-					},
-					"Oem": map[string]interface{}{
-						"DellManager.v1_0_0#DellManager.ResetToDefaults": map[string]interface{}{
-							"ResetType@Redfish.AllowableValues": []string{
-								"ClearToShip",
-								"Decommission",
-								"ResetFactoryConfig",
-								"ResetToEngineeringDefaults",
-							},
-							"target": "/redfish/v1/Managers/CMC.Integrated.1/Actions/Oem/DellManager.ResetToDefaults",
-						},
-						"#Manager.ForceFailover": map[string]interface{}{
-							"target": "/redfish/v1/Managers/CMC.Integrated.1/Actions/Manager.ForceFailover",
-						},
-						"#DellManager.v1_0_0.DellManager.ResetToDefaults": map[string]interface{}{
-							"ResetType@Redfish.AllowableValues": []string{
-								"ClearToShip",
-								"Decommission",
-								"ResetFactoryConfig",
-								"ResetToEngineeringDefaults",
-							},
-							"target": "/redfish/v1/Managers/CMC.Integrated.1/Actions/Oem/DellManager.ResetToDefaults",
-						},
-					},
-				},
-
 				"LogServices": map[string]interface{}{
 					"@odata.id": "/redfish/v1/Managers/CMC.Integrated.1/LogServices",
 				},
@@ -149,9 +117,32 @@ func (s *service) AddResource(ctx context.Context, ch eh.CommandHandler, eb eh.E
 					},
 				},
 
+				"Actions": map[string]interface{}{
+					"#Manager.Reset": map[string]interface{}{
+						"target": s.GetOdataID() + "/Actions/Manager.Reset",
+						"ResetType@Redfish.AllowableValues": []string{
+							"GracefulRestart",
+						},
+					},
+					"Oem": map[string]interface{}{
+						"DellManager.v1_0_0#DellManager.ResetToDefaults": map[string]interface{}{
+							"ResetType@Redfish.AllowableValues": []string{
+								"ClearToShip",
+								"Decommission",
+								"ResetFactoryConfig",
+								"ResetToEngineeringDefaults",
+							},
+							"target": "/redfish/v1/Managers/CMC.Integrated.1/Actions/Oem/DellManager.ResetToDefaults",
+						},
+						"#Manager.ForceFailover": map[string]interface{}{
+							"target": "/redfish/v1/Managers/CMC.Integrated.1/Actions/Manager.ForceFailover",
+						},
+					},
+				},
+
 				/*
 					******************************************************
-					 DISABLED FOR NOW
+					 DISABLED FOR NOW because the output is mangled by dumplogs
 					******************************************************
 									   "Actions": {
 									        "Oem": {
@@ -317,13 +308,42 @@ func (s *service) AddResource(ctx context.Context, ch eh.CommandHandler, eb eh.E
 
 			}})
 
+	CreateAction(ctx, ch, eb, ew,
+		"cmc.integrated.1",
+		s.GetOdataID()+"/Actions/Manager.Reset",
+		"manager.reset",
+		s)
+
+	CreateAction(ctx, ch, eb, ew,
+		"cmc.integrated.1",
+		s.GetOdataID()+"/Actions/Oem/DellManager.ResetToDefaults",
+		"manager.resettodefaults",
+		s)
+
+	CreateAction(ctx, ch, eb, ew,
+		"cmc.integrated.1",
+		s.GetOdataID()+"/Actions/Manager.ForceFailover",
+		"manager.forcefailover",
+		s)
+}
+
+type prop interface {
+	GetProperty(string) interface{}
+}
+
+func CreateAction(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter,
+	logModule string,
+	uri string,
+	property string,
+	s prop,
+) {
 	// The following redfish resource is created only for the purpose of being
 	// a 'receiver' for the action command specified above.
 	ch.HandleCommand(
 		ctx,
 		&domain.CreateRedfishResource{
 			ID:          eh.NewUUID(),
-			ResourceURI: s.GetOdataID() + "/Actions/Manager.Reset",
+			ResourceURI: uri,
 			Type:        "Action",
 			Context:     "Action",
 			Plugin:      "GenericActionHandler",
@@ -335,13 +355,13 @@ func (s *service) AddResource(ctx context.Context, ch eh.CommandHandler, eb eh.E
 	)
 
 	// stream processor for action events
-	sp, err := plugins.NewEventStreamProcessor(ctx, ew, plugins.CustomFilter(ah.SelectAction(s.GetOdataID()+"/Actions/Manager.Reset")))
+	sp, err := plugins.NewEventStreamProcessor(ctx, ew, plugins.CustomFilter(ah.SelectAction(uri)))
 	if err != nil {
-		log.MustLogger("ocp_bmc").Error("Failed to create event stream processor", "err", err)
+		log.MustLogger(logModule).Error("Failed to create event stream processor", "err", err)
 		return
 	}
 	sp.RunForever(func(event eh.Event) {
-		log.MustLogger("ocp_bmc").Info("Got action event", "event", event)
+		log.MustLogger(logModule).Info("Got action event", "event", event)
 
 		eventData := domain.HTTPCmdProcessedData{
 			CommandID:  event.Data().(ah.GenericActionEventData).CmdID,
@@ -350,7 +370,7 @@ func (s *service) AddResource(ctx context.Context, ch eh.CommandHandler, eb eh.E
 			Headers:    map[string]string{},
 		}
 
-		handler := s.GetProperty("manager.reset")
+		handler := s.GetProperty(property)
 		if handler != nil {
 			if fn, ok := handler.(func(eh.Event, *domain.HTTPCmdProcessedData)); ok {
 				fn(event, &eventData)
