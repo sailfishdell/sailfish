@@ -23,15 +23,20 @@ func RegisterRRA(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *
 }
 
 type RedfishResourceProperty struct {
+	sync.Mutex
 	Value interface{}
 	Meta  map[string]interface{}
 }
 
 func (rrp RedfishResourceProperty) MarshalJSON() ([]byte, error) {
+	rrp.Lock()
+	defer rrp.Unlock()
 	return json.Marshal(rrp.Value)
 }
 
 func (rrp *RedfishResourceProperty) Parse(thing interface{}) {
+	rrp.Lock()
+	defer rrp.Unlock()
 	switch thing.(type) {
 	case []interface{}:
 		if _, ok := rrp.Value.([]interface{}); !ok || rrp.Value == nil {
@@ -285,9 +290,8 @@ type PropertyPatcher interface {
 }
 
 func (rrp *RedfishResourceProperty) Process(ctx context.Context, agg *RedfishResourceAggregate, property, method string, req interface{}, present bool) (ret RedfishResourceProperty) {
-	// The purpose of this function is to recursively process the resource property, calling any plugins that are specified in the meta data.
-	// step 1: run the plugin to update rrp.Value based on the plugin.
-	// Step 2: see if the rrp.Value is a recursable map or array and recurse down it
+	rrp.Lock()
+	defer rrp.Unlock()
 
 	// set up return copy. We are not going to modify our source
 	ret = RedfishResourceProperty{Meta: map[string]interface{}{}}
@@ -295,6 +299,13 @@ func (rrp *RedfishResourceProperty) Process(ctx context.Context, agg *RedfishRes
 		ret.Meta[k] = v
 	}
 	ret.Value = rrp.Value
+
+	ret.Lock()
+	defer ret.Unlock()
+
+	// The purpose of this function is to recursively process the resource property, calling any plugins that are specified in the meta data.
+	// step 1: run the plugin to update rrp.Value based on the plugin.
+	// Step 2: see if the rrp.Value is a recursable map or array and recurse down it
 
 	// equivalent to do{}while(1) to run once
 	// if any of the intermediate steps fails, bail out on this part and continue by doing the next thing
@@ -402,7 +413,6 @@ func (agg *RedfishResourceAggregate) ProcessMeta(ctx context.Context, method str
 	defer agg.propertiesMu.Unlock()
 
 	results = agg.properties.Process(ctx, agg, "", method, request, true)
-	agg.properties = results.(RedfishResourceProperty)
 
 	return
 }
