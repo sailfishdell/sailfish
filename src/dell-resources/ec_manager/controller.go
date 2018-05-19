@@ -36,7 +36,6 @@ func (s *service) AddController(ctx context.Context, ch eh.CommandHandler, eb eh
 		return
 	}
 	sp.RunForever(func(event eh.Event) {
-		log.MustLogger("Managers/CMC.Integrated.1").Info("Got action event", "event", event)
 		if data, ok := event.Data().(*attr_prop.AttributeUpdatedData); ok {
 			s.armappingsMu.RLock()
 			defer s.armappingsMu.RUnlock()
@@ -54,7 +53,8 @@ func (s *service) AddController(ctx context.Context, ch eh.CommandHandler, eb eh
 					continue
 				}
 
-				s.UpdateProperty(mapping.property, data.Value)
+				log.MustLogger("Managers/CMC.Integrated.1").Info("Updating Model", "mapping", mapping, "data", data)
+				s.UpdateProperty(mapping.Property, data.Value)
 			}
 		} else {
 			log.MustLogger("Managers/CMC.Integrated.1").Warn("Should never happen: got an invalid event in the event handler")

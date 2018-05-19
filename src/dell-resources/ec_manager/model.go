@@ -8,7 +8,7 @@ import (
 )
 
 type mapping struct {
-	property string
+	Property string
 	FQDD     string
 	Group    string
 	Index    string

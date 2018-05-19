@@ -52,7 +52,7 @@ func (s *service) AddView(ctx context.Context, ch eh.CommandHandler, eb eh.Event
 
 				"Status": map[string]interface{}{
 					"HealthRollup": "OK",
-					"State@meta":        s.Meta(plugins.PropGETOptional("health_state")),
+					"State@meta":   s.Meta(plugins.PropGETOptional("health_state")),
 					"Health":       "OK",
 				},
 
@@ -62,7 +62,7 @@ func (s *service) AddView(ctx context.Context, ch eh.CommandHandler, eb eh.Event
 						"@odata.type": "#Redundancy.v1_0_2.Redundancy",
 						"Status": map[string]interface{}{
 							"HealthRollup": "OK",
-							"State":        s.Meta(plugins.PropGETOptional("redundancy_health_state")),
+							"State@meta":   s.Meta(plugins.PropGETOptional("redundancy_health_state")),
 							"Health":       "OK",
 						},
 						"RedundancySet": []map[string]interface{}{
@@ -77,9 +77,9 @@ func (s *service) AddView(ctx context.Context, ch eh.CommandHandler, eb eh.Event
 						"RedundancySet@odata.count": 2,
 						"@odata.id":                 "/redfish/v1/Managers/CMC.Integrated.1#Redundancy",
 						"@odata.context":            "/redfish/v1/$metadata#Redundancy.Redundancy",
-						"Mode@meta":                      s.Meta(plugins.PropGETOptional("redundancy_mode")),
-						"MinNumNeeded@meta":              s.Meta(plugins.PropGETOptional("redundancy_min")),
-						"MaxNumSupported@meta":           s.Meta(plugins.PropGETOptional("redundancy_max")),
+						"Mode@meta":                 s.Meta(plugins.PropGETOptional("redundancy_mode")),
+						"MinNumNeeded@meta":         s.Meta(plugins.PropGETOptional("redundancy_min")),
+						"MaxNumSupported@meta":      s.Meta(plugins.PropGETOptional("redundancy_max")),
 					},
 				},
 				"SerialConsole": map[string]interface{}{
