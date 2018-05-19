@@ -54,4 +54,17 @@ mappings:
     Managers/CMC.Integrated.1:
         - {property: "name", FQDD: "CMC.Integrated.1", Group: "Info", Index: "1", Name: "Name" }
         - {property: "description", FQDD: "CMC.Integrated.1", Group: "Info", Index: "1", Name: "Description" }
+        - {property: "health_state", FQDD: "CMC.Integrated.1", Group: "Info", Index: "1", Name: "State" }
+        - {property: "firmware_version", FQDD: "CMC.Integrated.1", Group: "FWInventory", Index: "1", Name: "Version" }
+
+          #"Redundancy.1.Mode": "Failover",
+        - {property: "redundancy_mode", FQDD: "CMC.Integrated.1", Group: "Redundancy", Index: "1", Name: "Mode" }
+          #"Redundancy.1.State": "StandbySpare",
+        - {property: "redundancy_health_state", FQDD: "CMC.Integrated.1", Group: "Redundancy", Index: "1", Name: "State" }
+          #"Redundancy.1.MinNumNeeded": 2,
+        - {property: "redundancy_min", FQDD: "CMC.Integrated.1", Group: "Redundancy", Index: "1", Name: "MinNumNeeded" }
+          #"Redundancy.1.MaxNumSupported": 2,
+        - {property: "redundancy_max", FQDD: "CMC.Integrated.1", Group: "Redundancy", Index: "1", Name: "MaxNumSupported" }
+
+        #- {property: "", FQDD: "CMC.Integrated.1", Group: "", Index: "", Name: "" }
 

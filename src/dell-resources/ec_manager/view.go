@@ -41,7 +41,7 @@ func (s *service) AddView(ctx context.Context, ch eh.CommandHandler, eb eh.Event
 				"Model@meta":               s.Meta(plugins.PropGETOptional("model")),
 				"DateTime@meta":            map[string]interface{}{"GET": map[string]interface{}{"plugin": "datetime"}},
 				"DateTimeLocalOffset@meta": s.Meta(plugins.PropGETOptional("timezone"), plugins.PropPATCHOptional("timezone")),
-				"FirmwareVersion@meta":     s.Meta(plugins.PropGETOptional("version")),
+				"FirmwareVersion@meta":     s.Meta(plugins.PropGETOptional("firmware_version")),
 				"Links": map[string]interface{}{
 					"ManagerForServers@meta": s.Meta(plugins.PropGET("bmc_manager_for_servers")),
 					// TODO: Need standard method to count arrays
@@ -52,7 +52,7 @@ func (s *service) AddView(ctx context.Context, ch eh.CommandHandler, eb eh.Event
 
 				"Status": map[string]interface{}{
 					"HealthRollup": "OK",
-					"State":        "StandbySpare",
+					"State@meta":        s.Meta(plugins.PropGETOptional("health_state")),
 					"Health":       "OK",
 				},
 
@@ -62,7 +62,7 @@ func (s *service) AddView(ctx context.Context, ch eh.CommandHandler, eb eh.Event
 						"@odata.type": "#Redundancy.v1_0_2.Redundancy",
 						"Status": map[string]interface{}{
 							"HealthRollup": "OK",
-							"State":        "StandbySpare",
+							"State":        s.Meta(plugins.PropGETOptional("redundancy_health_state")),
 							"Health":       "OK",
 						},
 						"RedundancySet": []map[string]interface{}{
@@ -75,11 +75,11 @@ func (s *service) AddView(ctx context.Context, ch eh.CommandHandler, eb eh.Event
 						},
 						"Name": "ManagerRedundancy",
 						"RedundancySet@odata.count": 2,
-						"@odata.id":                 "/redfish/v1/Managers/CMC.Integrated.1/Redundancy",
+						"@odata.id":                 "/redfish/v1/Managers/CMC.Integrated.1#Redundancy",
 						"@odata.context":            "/redfish/v1/$metadata#Redundancy.Redundancy",
-						"Mode":                      "Failover",
-						"MinNumNeeded":              2,
-						"MaxNumSupported":           2,
+						"Mode@meta":                      s.Meta(plugins.PropGETOptional("redundancy_mode")),
+						"MinNumNeeded@meta":              s.Meta(plugins.PropGETOptional("redundancy_min")),
+						"MaxNumSupported@meta":           s.Meta(plugins.PropGETOptional("redundancy_max")),
 					},
 				},
 				"SerialConsole": map[string]interface{}{
