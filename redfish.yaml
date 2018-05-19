@@ -8,6 +8,9 @@ main:
             - name: "idrac_mv"
               level: "warn"
 
+            - name: "Managers/CMC.Integrated.1"
+              level: "info"
+
             - name: "internal_commands"
               level: "warn"
 
@@ -32,23 +35,11 @@ main:
             - name: "bmc_reset"
               level: "warn"
 
-            - name: "dbus_fans"
-              level: "warn"
-
-            - name: "dbus_tempsensors"
-              level: "warn"
-
             - name: "eventstream"
               level: "warn"
 
-            - name: "ocp_bmc"
-              level: "warn"
-
-            - name: "ocp_SIMULATION"
-              level: "debug"
-
     dumpConfigChanges:
-        enabled: false
+        enabled: true
         filename: "redfish-out2.yaml"
 
 listen: 
@@ -57,59 +48,10 @@ listen:
 session:
     timeout: 60
 
-managers:
-    System.Manager.1:
-        name: "OBMC Simulation"
-        description: "The most open source BMC ever."
-        model: "RADICAL BMC"
-        timezone: "-05:00"
-        version: "1.0.1"
-        proto:
-            - name: "HTTP"
-              port: 80
-              enabled: false
-            - name: "HTTPS"
-              port: 8443
-              enabled: true
-            - name: "fakePROTO"
-              port: 0000
-              enabled: false
-            - name: "SSDP"
-              port: 1900
-              enabled: false
-              options:
-                    - name: "NotifyMulticastIntervalSeconds"
-                      value: 600
-                    - name: "NotifyTTL"
-                      value: 5
-                    - name: "NotifyIPv6Scope"
-                      value: "Site"
 
-chassis:
-    Chassis.Embedded.1:
-        name: "Catfish System Happy Chassis"
-        chassis_type: "RackMount"
-        model: "YellowCat2000"
-        serial_number: "2M220100SM"
-        sku: "The SKU"
-        part_number: "Part24680"
-        asset_tag: "CATFISHASSETTAG"
-        chassis_type: "RackMount"
-        manufacturer: "Cat manufacturer"
-
-systems:
-    System.Embedded.1:
-        name: "Catfish System"
-        system_type: "Physical"
-        asset_tag: "CATFISHASSETTAG"
-        manufacturer: "Cat manufacturer"
-        model: "YellowCat1000"
-        serial_number: "2M220100SL"
-        sku: "The SKU"
-        part_number: "Part2468"
-        description: "Catfish Implementation Recipe of simple scale-out monolithic server"
-        power_state: "On"
-        bios_version: "X00.1.2.3.4(build-23)"
-        led: "On"
-        system_hostname: "CatfishHostname"
+mappings:
+    # map AR entries to back end model
+    Managers/CMC.Integrated.1:
+        - {property: "name", FQDD: "CMC.Integrated.1", Group: "Info", Index: "1", Name: "Name" }
+        - {property: "description", FQDD: "CMC.Integrated.1", Group: "Info", Index: "1", Name: "Description" }
 

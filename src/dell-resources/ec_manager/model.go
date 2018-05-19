@@ -1,19 +1,30 @@
 package ec_manager
 
 import (
-	"fmt"
+	"sync"
 
 	plugins "github.com/superchalupa/go-redfish/src/ocp"
 	domain "github.com/superchalupa/go-redfish/src/redfishresource"
 )
 
+type mapping struct {
+	property string
+	FQDD     string
+	Group    string
+	Index    string
+	Name     string
+}
+
 type service struct {
 	*plugins.Service
+	armappingsMu sync.RWMutex
+	armappings   []mapping
 }
 
 func New(options ...interface{}) (*service, error) {
 	s := &service{
-		Service: plugins.NewService(),
+		Service:    plugins.NewService(),
+		armappings: []mapping{},
 	}
 	// valid for consumer of this class to use without setting these, so put in a default
 	s.UpdatePropertyUnlocked("bmc_manager_for_servers", []map[string]string{})
@@ -25,7 +36,7 @@ func New(options ...interface{}) (*service, error) {
 	// user supplied options
 	s.ApplyOption(options...)
 
-	s.ApplyOption(plugins.PluginType(domain.PluginType("attribute property: " + fmt.Sprintf("%v", s.GetProperty("id")))))
+	s.ApplyOption(plugins.PluginType(domain.PluginType("Managers/" + s.GetProperty("unique_name").(string))))
 	s.ApplyOption(plugins.PropertyOnce("uri", "/redfish/v1/Managers/"+s.GetProperty("unique_name").(string)))
 	return s, nil
 }

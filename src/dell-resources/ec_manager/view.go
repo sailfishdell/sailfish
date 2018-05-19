@@ -308,7 +308,7 @@ func (s *service) AddView(ctx context.Context, ch eh.CommandHandler, eb eh.Event
 
 			}})
 
-    logger, _ := log.GetLogger("Managers/CMC.Integrated.1")
+	logger, _ := log.GetLogger("Managers/CMC.Integrated.1")
 
 	CreateAction(ctx, ch, eb, ew,
 		logger,

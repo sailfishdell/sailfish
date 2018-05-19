@@ -5,7 +5,6 @@ package obmc
 
 import (
 	"context"
-	"fmt"
 	"sync"
 	"time"
 
@@ -83,58 +82,13 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 
 	bmcAttrProp, _ := attr_prop.New(
 		attr_prop.BaseResource(bmcAttrSvc),
-		attr_prop.WithAttribute("test", "1", "A", "foo"),
 		attr_prop.WithFQDD("CMC.Integrated.1"),
 	)
 	domain.RegisterPlugin(func() domain.Plugin { return bmcAttrProp })
 	bmcAttrProp.AddView(ctx, ch, eb, ew)
 	bmcAttrProp.AddController(ctx, ch, eb, ew)
 
-	type foo interface {
-		domain.Plugin
-		AddController(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter)
-		AddView(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter)
-	}
-
-	// VIPER Config:
-	// pull the config from the YAML file to populate some static config options
-	self.configChangeHandler = func() {
-		logger.Info("Re-applying configuration from config file.")
-		self.sessionSvc.ApplyOption(plugins.UpdateProperty("session_timeout", cfgMgr.GetInt("session.timeout")))
-		for _, k := range []string{"name", "description", "model", "timezone", "version"} {
-			cmc_integrated_1_svc.ApplyOption(plugins.UpdateProperty(k, cfgMgr.Get("managers."+cmc_integrated_1_svc.GetUniqueName()+"."+k)))
-		}
-	}
-	self.ConfigChangeHandler()
-
-	cfgMgr.SetDefault("main.dumpConfigChanges.filename", "redfish-changed.yaml")
-	cfgMgr.SetDefault("main.dumpConfigChanges.enabled", "true")
-	dumpViperConfig := func() {
-		viperMu.Lock()
-		defer viperMu.Unlock()
-
-		dumpFileName := cfgMgr.GetString("main.dumpConfigChanges.filename")
-		enabled := cfgMgr.GetBool("main.dumpConfigChanges.enabled")
-		if !enabled {
-			return
-		}
-
-		// TODO: change this to a streaming write (reduce mem usage)
-		var config map[string]interface{}
-		cfgMgr.Unmarshal(&config)
-		output, _ := yaml.Marshal(config)
-		_ = ioutil.WriteFile(dumpFileName, output, 0644)
-	}
-
-	self.sessionSvc.AddPropertyObserver("session_timeout", func(newval interface{}) {
-		viperMu.Lock()
-		cfgMgr.Set("session.timeout", newval.(int))
-		viperMu.Unlock()
-		dumpViperConfig()
-	})
-
-
-	for idx, iomName := range []string{
+	for _, iomName := range []string{
 		"IOM.Slot.A1",
 		"IOM.Slot.A1a",
 		"IOM.Slot.A1b",
@@ -169,15 +123,48 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 
 		iomAttrProp, _ := attr_prop.New(
 			attr_prop.BaseResource(iomAttrSvc),
-			attr_prop.WithAttribute("test", "1", "A", "foo"),
-			attr_prop.WithAttribute("test", "1", "B", "foo"),
-			attr_prop.WithAttribute("test", fmt.Sprintf("%v", idx), iomName, "a"),
 			attr_prop.WithFQDD(iomName),
 		)
 		domain.RegisterPlugin(func() domain.Plugin { return iomAttrProp })
 		iomAttrProp.AddView(ctx, ch, eb, ew)
 		iomAttrProp.AddController(ctx, ch, eb, ew)
 	}
+
+	// VIPER Config:
+	// pull the config from the YAML file to populate some static config options
+	self.configChangeHandler = func() {
+		logger.Info("Re-applying configuration from config file.")
+		self.sessionSvc.ApplyOption(plugins.UpdateProperty("session_timeout", cfgMgr.GetInt("session.timeout")))
+
+		cmc_integrated_1_svc.UpdateMappings(cfgMgr, "Managers/CMC.Integrated.1")
+	}
+	self.ConfigChangeHandler()
+
+	cfgMgr.SetDefault("main.dumpConfigChanges.filename", "redfish-changed.yaml")
+	cfgMgr.SetDefault("main.dumpConfigChanges.enabled", "true")
+	dumpViperConfig := func() {
+		viperMu.Lock()
+		defer viperMu.Unlock()
+
+		dumpFileName := cfgMgr.GetString("main.dumpConfigChanges.filename")
+		enabled := cfgMgr.GetBool("main.dumpConfigChanges.enabled")
+		if !enabled {
+			return
+		}
+
+		// TODO: change this to a streaming write (reduce mem usage)
+		var config map[string]interface{}
+		cfgMgr.Unmarshal(&config)
+		output, _ := yaml.Marshal(config)
+		_ = ioutil.WriteFile(dumpFileName, output, 0644)
+	}
+
+	self.sessionSvc.AddPropertyObserver("session_timeout", func(newval interface{}) {
+		viperMu.Lock()
+		cfgMgr.Set("session.timeout", newval.(int))
+		viperMu.Unlock()
+		dumpViperConfig()
+	})
 
 	return self
 }
