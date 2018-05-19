@@ -57,15 +57,15 @@ func (s *service) AddView(ctx context.Context, ch eh.CommandHandler, eb eh.Event
 				},
 
 				"Redundancy@odata.count": 1,
-				"Redundancy": []map[string]interface{}{
-					{
+				"Redundancy": []interface{}{
+					map[string]interface{}{
 						"@odata.type": "#Redundancy.v1_0_2.Redundancy",
 						"Status": map[string]interface{}{
 							"HealthRollup": "OK",
 							"State@meta":   s.Meta(plugins.PropGETOptional("redundancy_health_state")),
 							"Health":       "OK",
 						},
-						"RedundancySet": []map[string]interface{}{
+						"RedundancySet": []interface{}{
 							map[string]interface{}{
 								"@odata.id": "/redfish/v1/Managers/CMC.Integrated.1",
 							},
@@ -85,14 +85,14 @@ func (s *service) AddView(ctx context.Context, ch eh.CommandHandler, eb eh.Event
 				"SerialConsole": map[string]interface{}{
 					"ConnectTypesSupported@odata.count": 0,
 					"MaxConcurrentSessions":             0,
-					"ConnectTypesSupported":             []map[string]interface{}{},
+					"ConnectTypesSupported":             []interface{}{},
 					"ServiceEnabled":                    false,
 				},
 
 				"CommandShell": map[string]interface{}{
 					"ConnectTypesSupported@odata.count": 0,
 					"MaxConcurrentSessions":             0,
-					"ConnectTypesSupported":             []map[string]interface{}{},
+					"ConnectTypesSupported":             []interface{}{},
 					"ServiceEnabled":                    false,
 				},
 
@@ -103,7 +103,7 @@ func (s *service) AddView(ctx context.Context, ch eh.CommandHandler, eb eh.Event
 				"GraphicalConsole": map[string]interface{}{
 					"ConnectTypesSupported@odata.count": 0,
 					"MaxConcurrentSessions":             0,
-					"ConnectTypesSupported":             []map[string]interface{}{},
+					"ConnectTypesSupported":             []interface{}{},
 					"ServiceEnabled":                    false,
 				},
 
