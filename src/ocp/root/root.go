@@ -32,7 +32,7 @@ func (s *Service) AddResource(ctx context.Context, ch eh.CommandHandler, eb eh.E
 	ch.HandleCommand(
 		ctx,
 		&domain.CreateRedfishResource{
-			ID:         s.GetUUID(),
+			ID:         plugins.GetUUID(s),
 			Collection: false,
 
 			ResourceURI: "/redfish/v1",
@@ -46,6 +46,6 @@ func (s *Service) AddResource(ctx context.Context, ch eh.CommandHandler, eb eh.E
 				"Id":             "RootService",
 				"Name":           "Root Service",
 				"RedfishVersion": "1.0.2",
-				"UUID":           s.GetUUID(),
+				"UUID":           plugins.GetUUID(s),
 			}})
 }

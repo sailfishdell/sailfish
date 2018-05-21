@@ -45,7 +45,7 @@ func (s *service) GetUniqueName() string {
 }
 
 type odataObj interface {
-	GetOdataID() string
+	GetProperty(string) interface{}
 }
 
 // no locking because it's an Option
@@ -62,7 +62,7 @@ func manageOdataIDList(name string, obj odataObj) Option {
 		if !ok {
 			sl = []map[string]string{}
 		}
-		sl = append(sl, map[string]string{"@odata.id": obj.GetOdataID()})
+		sl = append(sl, map[string]string{"@odata.id": plugins.GetOdataID(obj)})
 
 		s.UpdatePropertyUnlocked(name, sl)
 		return nil
@@ -87,7 +87,7 @@ func (s *service) AddManagerForServer(obj odataObj) {
 
 func InChassis(obj odataObj) Option {
 	return func(s *service) error {
-		s.UpdatePropertyUnlocked("in_chassis", map[string]string{"@odata.id": obj.GetOdataID()})
+		s.UpdatePropertyUnlocked("in_chassis", map[string]string{"@odata.id": plugins.GetOdataID(obj)})
 		return nil
 	}
 }

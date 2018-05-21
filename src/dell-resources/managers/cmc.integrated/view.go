@@ -21,9 +21,9 @@ func (s *service) AddView(ctx context.Context, ch eh.CommandHandler, eb eh.Event
 	ch.HandleCommand(
 		ctx,
 		&domain.CreateRedfishResource{
-			ID:          s.GetUUID(),
+			ID:          plugins.GetUUID(s),
 			Collection:  false,
-			ResourceURI: s.GetOdataID(),
+			ResourceURI: plugins.GetOdataID(s),
 			Type:        "#Manager.v1_0_2.Manager",
 			Context:     "/redfish/v1/$metadata#Manager.Manager",
 			Privileges: map[string]interface{}{
@@ -119,7 +119,7 @@ func (s *service) AddView(ctx context.Context, ch eh.CommandHandler, eb eh.Event
 
 				"Actions": map[string]interface{}{
 					"#Manager.Reset": map[string]interface{}{
-						"target": s.GetOdataID() + "/Actions/Manager.Reset",
+						"target": plugins.GetOdataID(s) + "/Actions/Manager.Reset",
 						"ResetType@Redfish.AllowableValues": []string{
 							"GracefulRestart",
 						},
@@ -312,19 +312,19 @@ func (s *service) AddView(ctx context.Context, ch eh.CommandHandler, eb eh.Event
 
 	CreateAction(ctx, ch, eb, ew,
 		logger,
-		s.GetOdataID()+"/Actions/Manager.Reset",
+		plugins.GetOdataID(s)+"/Actions/Manager.Reset",
 		"manager.reset",
 		s)
 
 	CreateAction(ctx, ch, eb, ew,
 		logger,
-		s.GetOdataID()+"/Actions/Oem/DellManager.ResetToDefaults",
+		plugins.GetOdataID(s)+"/Actions/Oem/DellManager.ResetToDefaults",
 		"manager.resettodefaults",
 		s)
 
 	CreateAction(ctx, ch, eb, ew,
 		logger,
-		s.GetOdataID()+"/Actions/Manager.ForceFailover",
+		plugins.GetOdataID(s)+"/Actions/Manager.ForceFailover",
 		"manager.forcefailover",
 		s)
 }

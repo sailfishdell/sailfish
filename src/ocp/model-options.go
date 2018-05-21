@@ -2,53 +2,12 @@ package plugins
 
 import (
 	"context"
-	"sync"
 
 	eh "github.com/looplab/eventhorizon"
 	domain "github.com/superchalupa/go-redfish/src/redfishresource"
 )
 
-type Option func(*Service) error
 
-type Service struct {
-	sync.RWMutex
-	properties map[string]interface{}
-}
-
-func NewService(options ...Option) *Service {
-	s := &Service{
-		properties: map[string]interface{}{},
-	}
-
-	s.ApplyOption(options...)
-	return s
-}
-
-func (s *Service) ApplyOption(options ...Option) error {
-	s.Lock()
-	defer s.Unlock()
-	for _, o := range options {
-		err := o(s)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-// runtime panic if upper layers dont set properties for id/uri
-func (s *Service) GetUUID() eh.UUID {
-	s.RLock()
-	defer s.RUnlock()
-	return s.properties["id"].(eh.UUID)
-}
-
-func (s *Service) GetOdataIDUnlocked() string { return s.properties["uri"].(string) }
-func (s *Service) GetOdataID() string {
-	s.RLock()
-	defer s.RUnlock()
-	return s.properties["uri"].(string)
-}
 func (s *Service) PluginTypeUnlocked() domain.PluginType {
 	return s.properties["plugin_type"].(domain.PluginType)
 }
@@ -136,30 +95,6 @@ func (s *Service) AddPropertyObserver(property string, fn func(interface{})) {
 //
 //  PropertyGet vs GetProperty is confusing. Ooops. Should fix this naming snafu soon.
 //
-
-func (s *Service) GetProperty(p string) interface{} {
-	s.RLock()
-	defer s.RUnlock()
-	return s.properties[p]
-}
-func (s *Service) GetPropertyOk(p string) (ret interface{}, ok bool) {
-	s.RLock()
-	defer s.RUnlock()
-	ret, ok = s.properties[p]
-	return
-}
-func (s *Service) UpdateProperty(p string, i interface{}) {
-	s.Lock()
-	defer s.Unlock()
-	s.properties[p] = i
-}
-
-func (s *Service) GetPropertyUnlocked(p string) interface{} { return s.properties[p] }
-func (s *Service) GetPropertyOkUnlocked(p string) (ret interface{}, ok bool) {
-	ret, ok = s.properties[p]
-	return
-}
-func (s *Service) UpdatePropertyUnlocked(p string, i interface{}) { s.properties[p] = i }
 
 // MustProperty is equivalent to GetProperty with the exception that it will
 // panic if the property has not already been set. Use for mandatory properties.

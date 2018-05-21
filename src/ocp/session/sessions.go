@@ -25,7 +25,7 @@ const (
 )
 
 type uuidObj interface {
-	GetUUID() eh.UUID
+    GetProperty(string) interface{}
 }
 
 type Service struct {
@@ -174,7 +174,7 @@ func (s *Service) AddResource(ctx context.Context, ch eh.CommandHandler, eb eh.E
 
 	ch.HandleCommand(ctx,
 		&domain.UpdateRedfishResourceProperties{
-			ID: s.root.GetUUID(),
+			ID: plugins.GetUUID(s.root),
 			Properties: map[string]interface{}{
 				"SessionService": map[string]interface{}{"@odata.id": "/redfish/v1/SessionService"},
 				"Links":          map[string]interface{}{"Sessions": map[string]interface{}{"@odata.id": "/redfish/v1/SessionService/Sessions"}},

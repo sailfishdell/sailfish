@@ -5,13 +5,10 @@ import (
 
 	plugins "github.com/superchalupa/go-redfish/src/ocp"
 	domain "github.com/superchalupa/go-redfish/src/redfishresource"
-
-	eh "github.com/looplab/eventhorizon"
 )
 
 type odataInt interface {
-	GetOdataID() string
-	GetUUID() eh.UUID
+    GetProperty(string) interface{}
 }
 
 type service struct {

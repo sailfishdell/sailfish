@@ -14,9 +14,9 @@ func AddView(s *plugins.Service, ctx context.Context, ch eh.CommandHandler, eb e
 	ch.HandleCommand(
 		ctx,
 		&domain.CreateRedfishResource{
-			ID:          s.GetUUID(),
+			ID:          plugins.GetUUID(s),
 			Collection:  false,
-			ResourceURI: s.GetOdataID(),
+			ResourceURI: plugins.GetOdataID(s),
 			Type:        "#Chassis.v1_0_2.Chassis",
 			Context:     "/redfish/v1/$metadata#ChassisCollection.ChassisCollection/Members/$entity",
 			Privileges: map[string]interface{}{

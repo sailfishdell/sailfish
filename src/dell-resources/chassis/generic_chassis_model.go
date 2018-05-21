@@ -22,7 +22,7 @@ func WithUniqueName(uri string) plugins.Option {
 }
 
 type odataObj interface {
-	GetOdataID() string
+    GetProperty(string) interface{}
 }
 
 func AddManagedBy(obj odataObj) plugins.Option {
@@ -40,7 +40,7 @@ func manageOdataIDList(name string, obj odataObj) plugins.Option {
 		if !ok {
 			sl = []map[string]string{}
 		}
-		sl = append(sl, map[string]string{"@odata.id": obj.GetOdataID()})
+		sl = append(sl, map[string]string{"@odata.id": plugins.GetOdataID(obj)})
 
 		s.UpdatePropertyUnlocked(name, sl)
 		return nil
