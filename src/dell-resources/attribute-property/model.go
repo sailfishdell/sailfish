@@ -8,7 +8,7 @@ import (
 )
 
 type odataInt interface {
-    GetProperty(string) interface{}
+	GetProperty(string) interface{}
 }
 
 type service struct {

@@ -25,7 +25,7 @@ const (
 )
 
 type uuidObj interface {
-    GetProperty(string) interface{}
+	GetProperty(string) interface{}
 }
 
 type Service struct {

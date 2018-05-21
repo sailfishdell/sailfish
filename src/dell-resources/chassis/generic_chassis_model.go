@@ -22,7 +22,7 @@ func WithUniqueName(uri string) plugins.Option {
 }
 
 type odataObj interface {
-    GetProperty(string) interface{}
+	GetProperty(string) interface{}
 }
 
 func AddManagedBy(obj odataObj) plugins.Option {
