@@ -51,7 +51,6 @@ func (d *privateStateStructure) Close() {
 }
 
 func (d *privateStateStructure) RunOnce(fn func(eh.Event)) {
-	// wait for the root object to be created, then enhance it. Oneshot for now.
 	go func() {
 		defer d.Close()
 
@@ -66,7 +65,6 @@ func (d *privateStateStructure) RunOnce(fn func(eh.Event)) {
 }
 
 func (d *privateStateStructure) RunForever(fn func(eh.Event)) {
-	// wait for the root object to be created, then enhance it. Oneshot for now.
 	go func() {
 		defer d.Close()
 
