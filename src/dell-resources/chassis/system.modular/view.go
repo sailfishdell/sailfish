@@ -1,4 +1,4 @@
-package iom_chassis
+package sled_chassis
 
 import (
 	"context"
@@ -27,63 +27,55 @@ func AddView(s *plugins.Service, ctx context.Context, ch eh.CommandHandler, eb e
 				"DELETE": []string{}, // can't be deleted
 			},
 			Properties: map[string]interface{}{
-				"Id":             s.GetProperty("unique_name").(string),
-				"ManagedBy@meta": s.Meta(plugins.PropGET("managed_by")),
+				"Id": s.GetProperty("unique_name").(string),
+				"Links": map[string]interface{}{
+					"ManagedBy@meta": s.Meta(plugins.PropGET("managed_by")),
+				},
 				// TODO: "ManagedBy@odata.count": 1
 
-				"SKU":          "",
-				"PowerState":   "On",
-				"Description":  "PowerEdge MX5000s SAS Switch",
-				"AssetTag":     "",
-				"SerialNumber": "CNFCP007BH000S",
-				"PartNumber":   "0PG5NRX30",
-				"Name":         "PowerEdge MX5000s SAS",
-				"ChassisType":  "Module",
-				"IndicatorLED": "Lit",
-				"Model":        "PowerEdge MX5000s SAS",
-				"Manufacturer": "Dell EMC",
+				"SKU@meta":        s.Meta(plugins.PropGET("service_tag")),
+				"PowerState@meta": s.Meta(plugins.PropGET("power_state")),
+
+				"Description":  "",
+				"SerialNumber": "",
 				"Status": map[string]interface{}{
 					"HealthRollup": "OK",
 					"State":        "Enabled",
 					"Health":       "OK",
 				},
+				"PartNumber":   "",
+				"Name":         "",
+				"ChassisType":  "Sled",
+				"Model":        "PowerEdge MX740c",
+				"Manufacturer": "",
 				"Oem": map[string]interface{}{
-					"Dell": map[string]interface{}{
-						"ServiceTag":           "",
-						"InstPowerConsumption": 24,
-						"OemChassis": map[string]interface{}{
-							"@odata.id": "/redfish/v1/Chassis/" + s.GetProperty("unique_name").(string) + "/Attributes",
-						},
-						"OemIOMConfiguration": map[string]interface{}{
-							"@odata.id": "/redfish/v1/Chassis/" + s.GetProperty("unique_name").(string) + "/IOMConfiguration",
-						},
+					"OemChassis": map[string]interface{}{
+						"@odata.id": "/redfish/v1/Chassis/System.Modular.1/Attributes",
 					},
 				},
-
 				"Actions": map[string]interface{}{
-					"#Chassis.Reset": map[string]interface{}{
-						"ResetType@Redfish.AllowableValues": []string{
-							"On",
-							"GracefulShutdown",
-							"GracefulRestart",
-						},
-						"target": "/redfish/v1/Chassis/" + s.GetProperty("unique_name").(string) + "/Actions/Chassis.Reset",
-					},
 					"Oem": map[string]interface{}{
-						"DellChassis.v1_0_0#DellChassis.ResetPeakPowerConsumption": map[string]interface{}{
-							"target": "/redfish/v1/Chassis/" + s.GetProperty("unique_name").(string) + "/Actions/Oem/DellChassis.ResetPeakPowerConsumption",
+						"#DellChassis.v1_0_0#DellChassis.PeripheralMapping": map[string]interface{}{
+							"MappingType@Redfish.AllowableValues": []string{
+								"Accept",
+								"Clear",
+							},
+							"target": "/redfish/v1/Chassis/System.Modular.1/Actions/Oem/DellChassis.PeripheralMapping",
+						},
+						"#Chassis.VirtualReseat": map[string]interface{}{
+							"target": "/redfish/v1/Chassis/System.Modular.1/Actions/Chassis.VirtualReseat",
+						},
+						"#DellChassis.v1_0_0.PeripheralMapping": map[string]interface{}{
+							"MappingType@Redfish.AllowableValues": []string{
+								"Accept",
+								"Clear",
+							},
+							"target": "/redfish/v1/Chassis/System.Modular.1/Actions/Oem/DellChassis.PeripheralMapping",
 						},
 						"#DellChassis.v1_0_0.VirtualReseat": map[string]interface{}{
-							"target": "/redfish/v1/Chassis/" + s.GetProperty("unique_name").(string) + "/Actions/Oem/DellChassis.VirtualReseat",
-						},
-						"#DellChassis.v1_0_0.ResetPeakPowerConsumption": map[string]interface{}{
-							"target": "/redfish/v1/Chassis/" + s.GetProperty("unique_name").(string) + "/Actions/Oem/DellChassis.ResetPeakPowerConsumption",
-						},
-						"DellChassis.v1_0_0#DellChassis.VirtualReseat": map[string]interface{}{
-							"target": "/redfish/v1/Chassis/" + s.GetProperty("unique_name").(string) + "/Actions/Oem/DellChassis.VirtualReseat",
+							"target": "/redfish/v1/Chassis/System.Modular.1/Actions/Oem/DellChassis.VirtualReseat",
 						},
 					},
 				},
 			}})
-
 }

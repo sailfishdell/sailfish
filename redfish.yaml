@@ -14,6 +14,9 @@ main:
             - name: "Managers/CMC.Integrated.2"
               level: "info"
 
+            - name: "Chassis/System.Modular"
+              level: "info"
+
             - name: "internal_commands"
               level: "warn"
 
@@ -73,3 +76,100 @@ mappings:
         - {Property: "redundancy_health_state", FQDD: "CMC.Integrated.2", Group: "Redundancy", Index: "1", Name: "State" }
         - {Property: "redundancy_min", FQDD: "CMC.Integrated.2", Group: "Redundancy", Index: "1", Name: "MinNumNeeded" }
         - {Property: "redundancy_max", FQDD: "CMC.Integrated.2", Group: "Redundancy", Index: "1", Name: "MaxNumSupported" }
+
+    Chassis/System.Modular.1:
+        - {Property: "service_tag", FQDD: "System.Modular.1", Group: "Info", Index: "1", Name: "ServiceTag" }
+        - {Property: "power_state", FQDD: "System.Modular.1", Group: "Info", Index: "1", Name: "PowerState" }
+
+    Chassis/System.Modular.1a:
+        - {Property: "service_tag", FQDD: "System.Modular.1a", Group: "Info", Index: "1", Name: "ServiceTag" }
+        - {Property: "power_state", FQDD: "System.Modular.1a", Group: "Info", Index: "1", Name: "PowerState" }
+
+    Chassis/System.Modular.1b:
+        - {Property: "service_tag", FQDD: "System.Modular.1b", Group: "Info", Index: "1", Name: "ServiceTag" }
+        - {Property: "power_state", FQDD: "System.Modular.1b", Group: "Info", Index: "1", Name: "PowerState" }
+
+    Chassis/System.Modular.2:
+        - {Property: "service_tag", FQDD: "System.Modular.2", Group: "Info", Index: "1", Name: "ServiceTag" }
+        - {Property: "power_state", FQDD: "System.Modular.2", Group: "Info", Index: "1", Name: "PowerState" }
+
+    Chassis/System.Modular.2a:
+        - {Property: "service_tag", FQDD: "System.Modular.2a", Group: "Info", Index: "1", Name: "ServiceTag" }
+        - {Property: "power_state", FQDD: "System.Modular.2a", Group: "Info", Index: "1", Name: "PowerState" }
+
+    Chassis/System.Modular.2b:
+        - {Property: "service_tag", FQDD: "System.Modular.2b", Group: "Info", Index: "1", Name: "ServiceTag" }
+        - {Property: "power_state", FQDD: "System.Modular.2b", Group: "Info", Index: "1", Name: "PowerState" }
+
+    Chassis/System.Modular.3:
+        - {Property: "service_tag", FQDD: "System.Modular.3", Group: "Info", Index: "1", Name: "ServiceTag" }
+        - {Property: "power_state", FQDD: "System.Modular.3", Group: "Info", Index: "1", Name: "PowerState" }
+
+    Chassis/System.Modular.3a:
+        - {Property: "service_tag", FQDD: "System.Modular.3a", Group: "Info", Index: "1", Name: "ServiceTag" }
+        - {Property: "power_state", FQDD: "System.Modular.3a", Group: "Info", Index: "1", Name: "PowerState" }
+
+    Chassis/System.Modular.3b:
+        - {Property: "service_tag", FQDD: "System.Modular.3b", Group: "Info", Index: "1", Name: "ServiceTag" }
+        - {Property: "power_state", FQDD: "System.Modular.3b", Group: "Info", Index: "1", Name: "PowerState" }
+
+    Chassis/System.Modular.4:
+        - {Property: "service_tag", FQDD: "System.Modular.4", Group: "Info", Index: "1", Name: "ServiceTag" }
+        - {Property: "power_state", FQDD: "System.Modular.4", Group: "Info", Index: "1", Name: "PowerState" }
+
+    Chassis/System.Modular.4a:
+        - {Property: "service_tag", FQDD: "System.Modular.4a", Group: "Info", Index: "1", Name: "ServiceTag" }
+        - {Property: "power_state", FQDD: "System.Modular.4a", Group: "Info", Index: "1", Name: "PowerState" }
+
+    Chassis/System.Modular.4b:
+        - {Property: "service_tag", FQDD: "System.Modular.4b", Group: "Info", Index: "1", Name: "ServiceTag" }
+        - {Property: "power_state", FQDD: "System.Modular.4b", Group: "Info", Index: "1", Name: "PowerState" }
+
+    Chassis/System.Modular.5:
+        - {Property: "service_tag", FQDD: "System.Modular.5", Group: "Info", Index: "1", Name: "ServiceTag" }
+        - {Property: "power_state", FQDD: "System.Modular.5", Group: "Info", Index: "1", Name: "PowerState" }
+
+    Chassis/System.Modular.5a:
+        - {Property: "service_tag", FQDD: "System.Modular.5a", Group: "Info", Index: "1", Name: "ServiceTag" }
+        - {Property: "power_state", FQDD: "System.Modular.5a", Group: "Info", Index: "1", Name: "PowerState" }
+
+    Chassis/System.Modular.5b:
+        - {Property: "service_tag", FQDD: "System.Modular.5b", Group: "Info", Index: "1", Name: "ServiceTag" }
+        - {Property: "power_state", FQDD: "System.Modular.5b", Group: "Info", Index: "1", Name: "PowerState" }
+
+    Chassis/System.Modular.6:
+        - {Property: "service_tag", FQDD: "System.Modular.6", Group: "Info", Index: "1", Name: "ServiceTag" }
+        - {Property: "power_state", FQDD: "System.Modular.6", Group: "Info", Index: "1", Name: "PowerState" }
+
+    Chassis/System.Modular.6a:
+        - {Property: "service_tag", FQDD: "System.Modular.6a", Group: "Info", Index: "1", Name: "ServiceTag" }
+        - {Property: "power_state", FQDD: "System.Modular.6a", Group: "Info", Index: "1", Name: "PowerState" }
+
+    Chassis/System.Modular.6b:
+        - {Property: "service_tag", FQDD: "System.Modular.6b", Group: "Info", Index: "1", Name: "ServiceTag" }
+        - {Property: "power_state", FQDD: "System.Modular.6b", Group: "Info", Index: "1", Name: "PowerState" }
+
+    Chassis/System.Modular.7:
+        - {Property: "service_tag", FQDD: "System.Modular.7", Group: "Info", Index: "1", Name: "ServiceTag" }
+        - {Property: "power_state", FQDD: "System.Modular.7", Group: "Info", Index: "1", Name: "PowerState" }
+
+    Chassis/System.Modular.7a:
+        - {Property: "service_tag", FQDD: "System.Modular.7a", Group: "Info", Index: "1", Name: "ServiceTag" }
+        - {Property: "power_state", FQDD: "System.Modular.7a", Group: "Info", Index: "1", Name: "PowerState" }
+
+    Chassis/System.Modular.7b:
+        - {Property: "service_tag", FQDD: "System.Modular.7b", Group: "Info", Index: "1", Name: "ServiceTag" }
+        - {Property: "power_state", FQDD: "System.Modular.7b", Group: "Info", Index: "1", Name: "PowerState" }
+
+    Chassis/System.Modular.8:
+        - {Property: "service_tag", FQDD: "System.Modular.8", Group: "Info", Index: "1", Name: "ServiceTag" }
+        - {Property: "power_state", FQDD: "System.Modular.8", Group: "Info", Index: "1", Name: "PowerState" }
+
+    Chassis/System.Modular.8a:
+        - {Property: "service_tag", FQDD: "System.Modular.8a", Group: "Info", Index: "1", Name: "ServiceTag" }
+        - {Property: "power_state", FQDD: "System.Modular.8a", Group: "Info", Index: "1", Name: "PowerState" }
+
+    Chassis/System.Modular.8b:
+        - {Property: "service_tag", FQDD: "System.Modular.8b", Group: "Info", Index: "1", Name: "ServiceTag" }
+        - {Property: "power_state", FQDD: "System.Modular.8b", Group: "Info", Index: "1", Name: "PowerState" }
+

@@ -5,6 +5,7 @@ import ()
 type MetaInt map[string]interface{}
 type MetaOption func(*Service, MetaInt) error
 
+// TODO: this doesnt' need to be a method on *service. It could just take as parameter.
 func (s *Service) Meta(options ...MetaOption) (ret map[string]interface{}) {
 	s.RLock()
 	defer s.RUnlock()
