@@ -1,18 +1,26 @@
 package plugins
 
 import (
+	domain "github.com/superchalupa/go-redfish/src/redfishresource"
 	"sync"
 )
 
-type Option func(*Service) error
+type Option func(*Model) error
 
-type Service struct {
+// backwards compatible name
+type Service = Model
+
+func NewService(options ...Option) *Model {
+	return NewModel(options...)
+}
+
+type Model struct {
 	sync.RWMutex
 	properties map[string]interface{}
 }
 
-func NewService(options ...Option) *Service {
-	s := &Service{
+func NewModel(options ...Option) *Model {
+	s := &Model{
 		properties: map[string]interface{}{},
 	}
 
@@ -20,7 +28,7 @@ func NewService(options ...Option) *Service {
 	return s
 }
 
-func (s *Service) ApplyOption(options ...Option) error {
+func (s *Model) ApplyOption(options ...Option) error {
 	s.Lock()
 	defer s.Unlock()
 	for _, o := range options {
@@ -32,28 +40,34 @@ func (s *Service) ApplyOption(options ...Option) error {
 	return nil
 }
 
-func (s *Service) GetProperty(p string) interface{} {
+func (s *Model) GetProperty(p string) interface{} {
 	s.RLock()
 	defer s.RUnlock()
 	return s.properties[p]
 }
-func (s *Service) GetPropertyOk(p string) (ret interface{}, ok bool) {
+func (s *Model) GetPropertyOk(p string) (ret interface{}, ok bool) {
 	s.RLock()
 	defer s.RUnlock()
 	ret, ok = s.properties[p]
 	return
 }
-func (s *Service) UpdateProperty(p string, i interface{}) {
+func (s *Model) UpdateProperty(p string, i interface{}) {
 	s.Lock()
 	defer s.Unlock()
 	s.properties[p] = i
 }
 
-func (s *Service) GetPropertyUnlocked(p string) interface{} { return s.properties[p] }
-func (s *Service) GetPropertyOkUnlocked(p string) (ret interface{}, ok bool) {
+func (s *Model) GetPropertyUnlocked(p string) interface{} { return s.properties[p] }
+func (s *Model) GetPropertyOkUnlocked(p string) (ret interface{}, ok bool) {
 	ret, ok = s.properties[p]
 	return
 }
-func (s *Service) UpdatePropertyUnlocked(p string, i interface{}) { s.properties[p] = i }
+func (s *Model) UpdatePropertyUnlocked(p string, i interface{}) { s.properties[p] = i }
 
+func (s *Model) PluginType() domain.PluginType {
+	return s.GetProperty("plugin_type").(domain.PluginType)
+}
 
+func (s *Model) PluginTypeUnlocked() domain.PluginType {
+	return s.GetPropertyUnlocked("plugin_type").(domain.PluginType)
+}
