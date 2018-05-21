@@ -1,7 +1,7 @@
 main:
     log:
         # debug, info, warn, error, crit
-        Level: "warn"
+        Level: "debug"
         EnableStderr: true
         #FileName: "./out.log"
         ModulesToEnable:
@@ -9,9 +9,6 @@ main:
               level: "warn"
 
             - name: "Managers/CMC.Integrated.1"
-              level: "info"
-
-            - name: "Managers/CMC.Integrated.2"
               level: "info"
 
             - name: "internal_commands"
@@ -46,8 +43,9 @@ main:
         filename: "redfish-out2.yaml"
 
 listen: 
-    - https::8443
     - http::8080
+    - spacemonkey::8443
+    - https::9443
 
 session:
     timeout: 60
@@ -64,12 +62,4 @@ mappings:
         - {Property: "redundancy_min", FQDD: "CMC.Integrated.1", Group: "Redundancy", Index: "1", Name: "MinNumNeeded" }
         - {Property: "redundancy_max", FQDD: "CMC.Integrated.1", Group: "Redundancy", Index: "1", Name: "MaxNumSupported" }
 
-    Managers/CMC.Integrated.2:
-        - {Property: "name", FQDD: "CMC.Integrated.2", Group: "Info", Index: "1", Name: "Name" }
-        - {Property: "description", FQDD: "CMC.Integrated.2", Group: "Info", Index: "1", Name: "Description" }
-        - {Property: "health_state", FQDD: "CMC.Integrated.2", Group: "Info", Index: "1", Name: "State" }
-        - {Property: "firmware_version", FQDD: "CMC.Integrated.2", Group: "FWInventory", Index: "1", Name: "Version" }
-        - {Property: "redundancy_mode", FQDD: "CMC.Integrated.2", Group: "Redundancy", Index: "1", Name: "Mode" }
-        - {Property: "redundancy_health_state", FQDD: "CMC.Integrated.2", Group: "Redundancy", Index: "1", Name: "State" }
-        - {Property: "redundancy_min", FQDD: "CMC.Integrated.2", Group: "Redundancy", Index: "1", Name: "MinNumNeeded" }
-        - {Property: "redundancy_max", FQDD: "CMC.Integrated.2", Group: "Redundancy", Index: "1", Name: "MaxNumSupported" }
+        #- {Property: "", FQDD: "CMC.Integrated.1", Group: "", Index: "", Name: "" }

@@ -25,8 +25,11 @@ import (
 
 	attr_prop "github.com/superchalupa/go-redfish/src/dell-resources/attribute-property"
 	attr_res "github.com/superchalupa/go-redfish/src/dell-resources/attribute-resource"
-	"github.com/superchalupa/go-redfish/src/dell-resources/chassis-iom"
-	"github.com/superchalupa/go-redfish/src/dell-resources/ec_manager"
+
+	"github.com/superchalupa/go-redfish/src/dell-resources"
+	"github.com/superchalupa/go-redfish/src/dell-resources/chassis"
+	"github.com/superchalupa/go-redfish/src/dell-resources/chassis/iom.slot"
+	"github.com/superchalupa/go-redfish/src/dell-resources/managers/cmc.integrated"
 )
 
 type ocp struct {
@@ -70,7 +73,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	)
 	domain.RegisterPlugin(func() domain.Plugin { return cmc_integrated_1_svc })
 	cmc_integrated_1_svc.AddView(ctx, ch, eb, ew)
-	cmc_integrated_1_svc.AddController(ctx, ch, eb, ew)
+	update1Fn, _ := generic_dell_resource.AddController(ctx, logger.New("module", "Managers/CMC.Integrated.1"), cmc_integrated_1_svc.Service, "Managers/CMC.Integrated.1", ch, eb, ew)
 
 	bmcAttrSvc, _ := attr_res.New(
 		attr_res.BaseResource(cmc_integrated_1_svc),
@@ -88,6 +91,29 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	bmcAttrProp.AddView(ctx, ch, eb, ew)
 	bmcAttrProp.AddController(ctx, ch, eb, ew)
 
+	cmc_integrated_2_svc, _ := ec_manager.New(
+		ec_manager.WithUniqueName("CMC.Integrated.2"),
+	)
+	domain.RegisterPlugin(func() domain.Plugin { return cmc_integrated_2_svc })
+	cmc_integrated_2_svc.AddView(ctx, ch, eb, ew)
+	update2Fn, _ := generic_dell_resource.AddController(ctx, logger.New("module", "Managers/CMC.Integrated.2"), cmc_integrated_2_svc.Service, "Managers/CMC.Integrated.2", ch, eb, ew)
+
+	bmcAttr2Svc, _ := attr_res.New(
+		attr_res.BaseResource(cmc_integrated_2_svc),
+		attr_res.WithURI("/redfish/v1/Managers/CMC.Integrated.2/Attributes"),
+		attr_res.WithUniqueName("CMC.Integrated.2.Attributes"),
+	)
+	domain.RegisterPlugin(func() domain.Plugin { return bmcAttr2Svc })
+	bmcAttr2Svc.AddView(ctx, ch, eb, ew)
+
+	bmcAttr2Prop, _ := attr_prop.New(
+		attr_prop.BaseResource(bmcAttr2Svc),
+		attr_prop.WithFQDD("CMC.Integrated.2"),
+	)
+	domain.RegisterPlugin(func() domain.Plugin { return bmcAttr2Prop })
+	bmcAttr2Prop.AddView(ctx, ch, eb, ew)
+	bmcAttr2Prop.AddController(ctx, ch, eb, ew)
+
 	for _, iomName := range []string{
 		"IOM.Slot.A1",
 		"IOM.Slot.A1a",
@@ -104,13 +130,12 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		"IOM.Slot.C1",
 		"IOM.Slot.C2",
 	} {
-		iom, _ := iom_chassis.New(
-			iom_chassis.WithUniqueName(iomName),
-			iom_chassis.AddManagedBy(cmc_integrated_1_svc),
+		iom, _ := generic_chassis.New(
+			generic_chassis.WithUniqueName(iomName),
+			generic_chassis.AddManagedBy(cmc_integrated_1_svc),
 		)
 		domain.RegisterPlugin(func() domain.Plugin { return iom })
-		iom.AddView(ctx, ch, eb, ew)
-		iom.AddController(ctx, ch, eb, ew)
+		iom_chassis.AddView(iom, ctx, ch, eb, ew)
 
 		iomAttrSvc, _ := attr_res.New(
 			attr_res.BaseResource(iom),
@@ -136,7 +161,8 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		logger.Info("Re-applying configuration from config file.")
 		self.sessionSvc.ApplyOption(plugins.UpdateProperty("session_timeout", cfgMgr.GetInt("session.timeout")))
 
-		cmc_integrated_1_svc.UpdateMappings(cfgMgr, "Managers/CMC.Integrated.1")
+		update1Fn(cfgMgr)
+		update2Fn(cfgMgr)
 	}
 	self.ConfigChangeHandler()
 

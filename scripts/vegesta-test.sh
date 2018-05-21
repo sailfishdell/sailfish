@@ -36,11 +36,15 @@ else
 fi
 BASE=${prot}://${host}:${port}
 
-AUTH_HEADER=${AUTH_HEADER:-}
-if [ -n "$TOKEN" ]; then
-    AUTH_HEADER="Authorization: Bearer $TOKEN"
+if [ -z "$AUTH_HEADER" ]; then
+    if [ -n "$TOKEN" ]; then
+        AUTH_HEADER="Authorization: Bearer $TOKEN"
+    elif [ -n "$X_AUTH_TOKEN" ]; then
+        export AUTH_HEADER="X-Auth-Token: $X_AUTH_TOKEN"
+    else
+        eval $(scripts/login.sh $user $pass)
+    fi
 fi
-
 
 echo "Running vegeta"
 

@@ -1,8 +1,6 @@
 package ec_manager
 
 import (
-	"sync"
-
 	plugins "github.com/superchalupa/go-redfish/src/ocp"
 	domain "github.com/superchalupa/go-redfish/src/redfishresource"
 )
@@ -17,14 +15,11 @@ type mapping struct {
 
 type service struct {
 	*plugins.Service
-	armappingsMu sync.RWMutex
-	armappings   []mapping
 }
 
 func New(options ...interface{}) (*service, error) {
 	s := &service{
-		Service:    plugins.NewService(),
-		armappings: []mapping{},
+		Service: plugins.NewService(),
 	}
 	// valid for consumer of this class to use without setting these, so put in a default
 	s.UpdatePropertyUnlocked("bmc_manager_for_servers", []map[string]string{})

@@ -161,7 +161,7 @@ func main() {
 			tlscert.SetCommonName("CA Cert common name"),
 			tlscert.SetSerialNumber(12345),
 			tlscert.SetBaseFilename("ca"),
-			tlscert.GenRSA(4096),
+			tlscert.GenRSA(2048),
 			tlscert.SelfSigned(),
 			tlscert.WithLogger(logger),
 		)
@@ -173,7 +173,7 @@ func main() {
 	_, err = tlscert.Load(tlscert.SetBaseFilename("server"), tlscert.WithLogger(logger))
 	if err != nil {
 		serverCert, _ := tlscert.NewCert(
-			tlscert.GenRSA(4096),
+			tlscert.GenRSA(2048),
 			tlscert.SignWithCA(ca),
 			tlscert.MakeServer,
 			tlscert.ExpireInOneYear,

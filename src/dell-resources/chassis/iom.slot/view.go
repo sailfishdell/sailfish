@@ -10,7 +10,7 @@ import (
 	"github.com/looplab/eventhorizon/utils"
 )
 
-func (s *service) AddView(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
+func AddView(s *plugins.Service, ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
 	ch.HandleCommand(
 		ctx,
 		&domain.CreateRedfishResource{
@@ -27,7 +27,7 @@ func (s *service) AddView(ctx context.Context, ch eh.CommandHandler, eb eh.Event
 				"DELETE": []string{}, // can't be deleted
 			},
 			Properties: map[string]interface{}{
-				"Id":             s.GetUniqueName(),
+				"Id":             s.GetProperty("unique_name").(string),
 				"ManagedBy@meta": s.Meta(plugins.PropGET("managed_by")),
 				// TODO: "ManagedBy@odata.count": 1
 
@@ -52,10 +52,10 @@ func (s *service) AddView(ctx context.Context, ch eh.CommandHandler, eb eh.Event
 						"ServiceTag":           "",
 						"InstPowerConsumption": 24,
 						"OemChassis": map[string]interface{}{
-							"@odata.id": "/redfish/v1/Chassis/" + s.GetUniqueName() + "/Attributes",
+							"@odata.id": "/redfish/v1/Chassis/" + s.GetProperty("unique_name").(string) + "/Attributes",
 						},
 						"OemIOMConfiguration": map[string]interface{}{
-							"@odata.id": "/redfish/v1/Chassis/" + s.GetUniqueName() + "/IOMConfiguration",
+							"@odata.id": "/redfish/v1/Chassis/" + s.GetProperty("unique_name").(string) + "/IOMConfiguration",
 						},
 					},
 				},
@@ -67,20 +67,20 @@ func (s *service) AddView(ctx context.Context, ch eh.CommandHandler, eb eh.Event
 							"GracefulShutdown",
 							"GracefulRestart",
 						},
-						"target": "/redfish/v1/Chassis/" + s.GetUniqueName() + "/Actions/Chassis.Reset",
+						"target": "/redfish/v1/Chassis/" + s.GetProperty("unique_name").(string) + "/Actions/Chassis.Reset",
 					},
 					"Oem": map[string]interface{}{
 						"DellChassis.v1_0_0#DellChassis.ResetPeakPowerConsumption": map[string]interface{}{
-							"target": "/redfish/v1/Chassis/" + s.GetUniqueName() + "/Actions/Oem/DellChassis.ResetPeakPowerConsumption",
+							"target": "/redfish/v1/Chassis/" + s.GetProperty("unique_name").(string) + "/Actions/Oem/DellChassis.ResetPeakPowerConsumption",
 						},
 						"#DellChassis.v1_0_0.VirtualReseat": map[string]interface{}{
-							"target": "/redfish/v1/Chassis/" + s.GetUniqueName() + "/Actions/Oem/DellChassis.VirtualReseat",
+							"target": "/redfish/v1/Chassis/" + s.GetProperty("unique_name").(string) + "/Actions/Oem/DellChassis.VirtualReseat",
 						},
 						"#DellChassis.v1_0_0.ResetPeakPowerConsumption": map[string]interface{}{
-							"target": "/redfish/v1/Chassis/" + s.GetUniqueName() + "/Actions/Oem/DellChassis.ResetPeakPowerConsumption",
+							"target": "/redfish/v1/Chassis/" + s.GetProperty("unique_name").(string) + "/Actions/Oem/DellChassis.ResetPeakPowerConsumption",
 						},
 						"DellChassis.v1_0_0#DellChassis.VirtualReseat": map[string]interface{}{
-							"target": "/redfish/v1/Chassis/" + s.GetUniqueName() + "/Actions/Oem/DellChassis.VirtualReseat",
+							"target": "/redfish/v1/Chassis/" + s.GetProperty("unique_name").(string) + "/Actions/Oem/DellChassis.VirtualReseat",
 						},
 					},
 				},

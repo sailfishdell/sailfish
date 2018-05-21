@@ -20,8 +20,6 @@ scriptdir=$(cd $(dirname $0); pwd)
 outputdir=${1:-out/}
 skiplist=${2:-}
 
-eval $(scripts/login.sh $user $pass)
-
 host=${host:-localhost}
 if [ "${port}" = "443" -o "${port}" = "8443" ]; then
     prot=${prot:-https}
@@ -31,9 +29,14 @@ fi
 BASE=${prot}://${host}:${port}
 START_URL=${START_URL:-"/redfish/v1"}
 
-AUTH_HEADER=${AUTH_HEADER:-}
-if [ -n "$TOKEN" ]; then
-    AUTH_HEADER="Authorization: Bearer $TOKEN"
+if [ -z "$AUTH_HEADER" ]; then
+    if [ -n "$TOKEN" ]; then
+        AUTH_HEADER="Authorization: Bearer $TOKEN"
+    elif [ -n "$X_AUTH_TOKEN" ]; then
+        export AUTH_HEADER="X-Auth-Token: $X_AUTH_TOKEN"
+    else
+        eval $(scripts/login.sh $user $pass)
+    fi
 fi
 
 timingarg="\nTotal request time: %{time_total} seconds for url: %{url_effective}\n"
