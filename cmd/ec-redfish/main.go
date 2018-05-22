@@ -120,7 +120,7 @@ func main() {
 	// SSE
 	chainAuthSSE := func(u string, p []string) http.Handler { return domain.NewSSEHandler(domainObjs, logger, u, p) }
 	m.PathPrefix("/events").Methods("GET").HandlerFunc(
-		idrac_mvc.GetSessionSvc().MakeHandlerFunc(domainObjs.EventBus, domainObjs, chainAuthSSE, basicauth.MakeHandlerFunc(chainAuthSSE, chainAuth("UNKNOWN", []string{"Unauthenticated"}))))
+		idrac_mvc.GetSessionSvc().MakeHandlerFunc(domainObjs.EventBus, domainObjs, chainAuthSSE, basicauth.MakeHandlerFunc(chainAuthSSE, chainAuthSSE("UNKNOWN", []string{"Unauthenticated"}))))
 
 	// backend command handling
 	m.PathPrefix("/api/{command}").Handler(domainObjs.GetInternalCommandHandler(ctx))
