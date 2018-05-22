@@ -26,6 +26,7 @@ func (rh *SSEHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	requestID := eh.NewUUID()
 	ctx := WithRequestID(r.Context(), requestID)
 	requestLogger := ContextLogger(ctx, "sse_handler")
+	requestLogger.Info("Trying to start SSE Stream for request.")
 
 	flusher, ok := w.(http.Flusher)
 	if !ok {
