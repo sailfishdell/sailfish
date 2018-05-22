@@ -27,6 +27,7 @@ import (
 
 	"github.com/superchalupa/go-redfish/src/dell-resources"
 	"github.com/superchalupa/go-redfish/src/dell-resources/chassis"
+	"github.com/superchalupa/go-redfish/src/dell-resources/chassis/cmc.integrated"
 	"github.com/superchalupa/go-redfish/src/dell-resources/chassis/iom.slot"
 	"github.com/superchalupa/go-redfish/src/dell-resources/chassis/system.modular"
 	"github.com/superchalupa/go-redfish/src/dell-resources/managers/cmc.integrated"
@@ -66,11 +67,14 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		"CMC.Integrated.1",
 		"CMC.Integrated.2",
 	} {
+		//************************
+		// Create MANAGER objects for CMC.Integrated
+		//************************
+		mgrLogger := logger.New("module", "Managers/"+mgrName, "module", "Managers/CMC.Integrated")
 		cmc_integrated_svc, _ := ec_manager.New(
 			ec_manager.WithUniqueName(mgrName),
 		)
 		managers = append(managers, cmc_integrated_svc)
-		mgrLogger := logger.New("module", "Managers/"+mgrName, "module", "Managers/CMC.Integrated")
 		domain.RegisterPlugin(func() domain.Plugin { return cmc_integrated_svc })
 		ec_manager.AddView(ctx, mgrLogger, cmc_integrated_svc, ch, eb, ew)
 		updateFn, _ := generic_dell_resource.AddController(ctx, mgrLogger, cmc_integrated_svc, "Managers/"+mgrName, ch, eb, ew)
@@ -91,6 +95,45 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		domain.RegisterPlugin(func() domain.Plugin { return bmcAttrProp })
 		bmcAttrProp.AddView(ctx, ch, eb, ew)
 		bmcAttrProp.AddController(ctx, ch, eb, ew)
+
+		//************************
+		// Create CHASSIS objects for CMC.Integrated
+		//************************
+		chasLogger := logger.New("module", "Chassis/"+mgrName, "module", "Chassis/CMC.Integrated")
+		mgr_svc, _ := generic_chassis.New(
+			ec_manager.WithUniqueName(mgrName),
+			model.UpdateProperty("asset_tag", ""),
+			model.UpdateProperty("serial", ""),
+			model.UpdateProperty("part_number", ""),
+			model.UpdateProperty("chassis_type", ""),
+			model.UpdateProperty("model", ""),
+			model.UpdateProperty("manufacturer", ""),
+			model.UpdateProperty("name", ""),
+		)
+		domain.RegisterPlugin(func() domain.Plugin { return mgr_svc })
+		cmc_chassis.AddView(ctx, chasLogger, mgr_svc, ch, eb, ew)
+		// NOTE: looks like we can use the same mapping to model as manager object
+		chasUpdateFn, _ := generic_dell_resource.AddController(ctx, chasLogger, mgr_svc, "Managers/"+mgrName, ch, eb, ew)
+		updateFns = append(updateFns, chasUpdateFn)
+
+		mgrAttrSvc, _ := attr_res.New(
+			attr_res.BaseResource(mgr_svc),
+			attr_res.WithURI("/redfish/v1/Chassis/"+mgrName+"/Attributes"),
+			attr_res.WithUniqueName(mgrName+".Attributes"),
+		)
+		domain.RegisterPlugin(func() domain.Plugin { return mgrAttrSvc })
+		mgrAttrSvc.AddView(ctx, ch, eb, ew)
+
+		// TODO: would be nice if we could re-use the underlying model between the manager and chassis object
+		//       should be do-able if we modify BaseResource() to be AttachToResource(), and make the underlying data
+		//       an array
+		mgrAttrProp, _ := attr_prop.New(
+			attr_prop.BaseResource(mgrAttrSvc),
+			attr_prop.WithFQDD(mgrName),
+		)
+		domain.RegisterPlugin(func() domain.Plugin { return mgrAttrProp })
+		mgrAttrProp.AddView(ctx, ch, eb, ew)
+		mgrAttrProp.AddController(ctx, ch, eb, ew)
 	}
 
 	for _, iomName := range []string{
@@ -101,6 +144,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		"IOM.Slot.C1",
 		"IOM.Slot.C2",
 	} {
+		iomLogger := logger.New("module", "Chassis/"+iomName, "module", "Chassis/IOM.Slot")
 		iom, _ := generic_chassis.New(
 			generic_chassis.WithUniqueName(iomName),
 			generic_chassis.AddManagedBy(managers[0]),
@@ -118,7 +162,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			model.UpdateProperty("manufacturer", ""),
 		)
 		domain.RegisterPlugin(func() domain.Plugin { return iom })
-		iomLogger := logger.New("module", "Chassis/"+iomName, "module", "Chassis/IOM.Slot")
 		iom_chassis.AddView(ctx, iomLogger, iom, ch, eb, ew)
 
 		updateFn, _ := generic_dell_resource.AddController(ctx,
@@ -154,17 +197,20 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		"System.Modular.7", "System.Modular.7a", "System.Modular.7b",
 		"System.Modular.8", "System.Modular.8a", "System.Modular.8b",
 	} {
+		sledLogger := logger.New("module", "Chassis/System.Modular", "module", "Chassis/"+sledName)
 		sled, _ := generic_chassis.New(
 			generic_chassis.WithUniqueName(sledName),
 			generic_chassis.AddManagedBy(managers[0]),
 			model.UpdateProperty("service_tag", ""),
 			model.UpdateProperty("power_state", ""),
+			model.UpdateProperty("chassis_type", ""),
+			model.UpdateProperty("model", ""),
+			model.UpdateProperty("manufacturer", ""),
+			model.UpdateProperty("serial", ""),
 		)
 		domain.RegisterPlugin(func() domain.Plugin { return sled })
 		sled_chassis.AddView(sled, ctx, ch, eb, ew)
-		updateFn, _ := generic_dell_resource.AddController(ctx,
-			logger.New("module", "Chassis/System.Modular", "module", "Chassis/"+sledName),
-			sled, "Chassis/"+sledName, ch, eb, ew)
+		updateFn, _ := generic_dell_resource.AddController(ctx, sledLogger, sled, "Chassis/"+sledName, ch, eb, ew)
 		updateFns = append(updateFns, updateFn)
 
 		sledAttrSvc, _ := attr_res.New(

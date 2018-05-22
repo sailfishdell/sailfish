@@ -28,29 +28,30 @@ func AddView(s *model.Service, ctx context.Context, ch eh.CommandHandler, eb eh.
 			},
 			Properties: map[string]interface{}{
 				"Id": s.GetProperty("unique_name").(string),
+
+				"SKU@meta":          s.Meta(model.PropGET("service_tag")),
+				"PowerState@meta":   s.Meta(model.PropGET("power_state")),
+				"ChassisType@meta":  s.Meta(model.PropGET("chassis_type")),
+				"Model@meta":        s.Meta(model.PropGET("model")),
+				"Manufacturer@meta": s.Meta(model.PropGET("manufacturer")),
+				"SerialNumber":      s.Meta(model.PropGET("serial")),
+
 				"Links": map[string]interface{}{
+					// TODO: "ManagedBy@odata.count": 1
 					"ManagedBy@meta": s.Meta(model.PropGET("managed_by")),
 				},
-				// TODO: "ManagedBy@odata.count": 1
 
-				"SKU@meta":        s.Meta(model.PropGET("service_tag")),
-				"PowerState@meta": s.Meta(model.PropGET("power_state")),
-
-				"Description":  "",
-				"SerialNumber": "",
+				"Description": "",
 				"Status": map[string]interface{}{
 					"HealthRollup": "OK",
 					"State":        "Enabled",
 					"Health":       "OK",
 				},
-				"PartNumber":   "",
-				"Name":         "",
-				"ChassisType":  "Sled",
-				"Model":        "PowerEdge MX740c",
-				"Manufacturer": "",
+				"PartNumber": "",
+				"Name":       "",
 				"Oem": map[string]interface{}{
 					"OemChassis": map[string]interface{}{
-						"@odata.id": "/redfish/v1/Chassis/System.Modular.1/Attributes",
+						"@odata.id": "/redfish/v1/Chassis/" + s.GetProperty("unique_name").(string) + "/Attributes",
 					},
 				},
 				"Actions": map[string]interface{}{
@@ -60,20 +61,20 @@ func AddView(s *model.Service, ctx context.Context, ch eh.CommandHandler, eb eh.
 								"Accept",
 								"Clear",
 							},
-							"target": "/redfish/v1/Chassis/System.Modular.1/Actions/Oem/DellChassis.PeripheralMapping",
+							"target": "/redfish/v1/Chassis/" + s.GetProperty("unique_name").(string) + "/Actions/Oem/DellChassis.PeripheralMapping",
 						},
 						"#Chassis.VirtualReseat": map[string]interface{}{
-							"target": "/redfish/v1/Chassis/System.Modular.1/Actions/Chassis.VirtualReseat",
+							"target": "/redfish/v1/Chassis/" + s.GetProperty("unique_name").(string) + "/Actions/Chassis.VirtualReseat",
 						},
 						"#DellChassis.v1_0_0.PeripheralMapping": map[string]interface{}{
 							"MappingType@Redfish.AllowableValues": []string{
 								"Accept",
 								"Clear",
 							},
-							"target": "/redfish/v1/Chassis/System.Modular.1/Actions/Oem/DellChassis.PeripheralMapping",
+							"target": "/redfish/v1/Chassis/" + s.GetProperty("unique_name").(string) + "/Actions/Oem/DellChassis.PeripheralMapping",
 						},
 						"#DellChassis.v1_0_0.VirtualReseat": map[string]interface{}{
-							"target": "/redfish/v1/Chassis/System.Modular.1/Actions/Oem/DellChassis.VirtualReseat",
+							"target": "/redfish/v1/Chassis/" + s.GetProperty("unique_name").(string) + "/Actions/Oem/DellChassis.VirtualReseat",
 						},
 					},
 				},
