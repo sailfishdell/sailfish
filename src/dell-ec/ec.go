@@ -39,13 +39,10 @@ type ocp struct {
 	logger              log.Logger
 }
 
-func (o *ocp) GetSessionSvc() *session.Service     { return o.sessionSvc }
-func (o *ocp) ConfigChangeHandler()                { o.configChangeHandler() }
+func (o *ocp) GetSessionSvc() *session.Service { return o.sessionSvc }
+func (o *ocp) ConfigChangeHandler()            { o.configChangeHandler() }
 
 func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *sync.Mutex, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) *ocp {
-	// initial implementation is one BMC, one Chassis, and one System.
-	// Yes, this function is somewhat long, however there really isn't any logic here. If we start getting logic, this needs to be split.
-
 	logger = logger.New("module", "ec")
 	self := &ocp{
 		logger: logger,
@@ -64,76 +61,70 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	domain.RegisterPlugin(func() domain.Plugin { return self.sessionSvc })
 	self.sessionSvc.AddResource(ctx, ch, eb, ew)
 
-	cmc_integrated_1_svc, _ := ec_manager.New(
-		ec_manager.WithUniqueName("CMC.Integrated.1"),
-	)
-	domain.RegisterPlugin(func() domain.Plugin { return cmc_integrated_1_svc })
-	cmc_integrated_1_svc.AddView(ctx, ch, eb, ew)
-	update1Fn, _ := generic_dell_resource.AddController(ctx, logger.New("module", "Managers/CMC.Integrated.1"), cmc_integrated_1_svc.Service, "Managers/CMC.Integrated.1", ch, eb, ew)
-	updateFns = append(updateFns, update1Fn)
+	var managers []*model.Model
+	for _, mgrName := range []string{
+		"CMC.Integrated.1",
+		"CMC.Integrated.2",
+	} {
+		cmc_integrated_svc, _ := ec_manager.New(
+			ec_manager.WithUniqueName(mgrName),
+		)
+		managers = append(managers, cmc_integrated_svc)
+		domain.RegisterPlugin(func() domain.Plugin { return cmc_integrated_svc })
+		ec_manager.AddView(ctx, cmc_integrated_svc, ch, eb, ew)
+		updateFn, _ := generic_dell_resource.AddController(ctx,
+			logger.New("module", "Managers/"+mgrName, "module", "Managers/CMC.Integrated"),
+			cmc_integrated_svc, "Managers/"+mgrName, ch, eb, ew)
+		updateFns = append(updateFns, updateFn)
 
-	bmcAttrSvc, _ := attr_res.New(
-		attr_res.BaseResource(cmc_integrated_1_svc),
-		attr_res.WithURI("/redfish/v1/Managers/CMC.Integrated.1/Attributes"),
-		attr_res.WithUniqueName("CMC.Integrated.1.Attributes"),
-	)
-	domain.RegisterPlugin(func() domain.Plugin { return bmcAttrSvc })
-	bmcAttrSvc.AddView(ctx, ch, eb, ew)
+		bmcAttrSvc, _ := attr_res.New(
+			attr_res.BaseResource(cmc_integrated_svc),
+			attr_res.WithURI("/redfish/v1/Managers/"+mgrName+"/Attributes"),
+			attr_res.WithUniqueName(mgrName+".Attributes"),
+		)
+		domain.RegisterPlugin(func() domain.Plugin { return bmcAttrSvc })
+		bmcAttrSvc.AddView(ctx, ch, eb, ew)
 
-	bmcAttrProp, _ := attr_prop.New(
-		attr_prop.BaseResource(bmcAttrSvc),
-		attr_prop.WithFQDD("CMC.Integrated.1"),
-	)
-	domain.RegisterPlugin(func() domain.Plugin { return bmcAttrProp })
-	bmcAttrProp.AddView(ctx, ch, eb, ew)
-	bmcAttrProp.AddController(ctx, ch, eb, ew)
-
-	cmc_integrated_2_svc, _ := ec_manager.New(
-		ec_manager.WithUniqueName("CMC.Integrated.2"),
-	)
-	domain.RegisterPlugin(func() domain.Plugin { return cmc_integrated_2_svc })
-	cmc_integrated_2_svc.AddView(ctx, ch, eb, ew)
-	update2Fn, _ := generic_dell_resource.AddController(ctx, logger.New("module", "Managers/CMC.Integrated.2"), cmc_integrated_2_svc.Service, "Managers/CMC.Integrated.2", ch, eb, ew)
-	updateFns = append(updateFns, update2Fn)
-
-	bmcAttr2Svc, _ := attr_res.New(
-		attr_res.BaseResource(cmc_integrated_2_svc),
-		attr_res.WithURI("/redfish/v1/Managers/CMC.Integrated.2/Attributes"),
-		attr_res.WithUniqueName("CMC.Integrated.2.Attributes"),
-	)
-	domain.RegisterPlugin(func() domain.Plugin { return bmcAttr2Svc })
-	bmcAttr2Svc.AddView(ctx, ch, eb, ew)
-
-	bmcAttr2Prop, _ := attr_prop.New(
-		attr_prop.BaseResource(bmcAttr2Svc),
-		attr_prop.WithFQDD("CMC.Integrated.2"),
-	)
-	domain.RegisterPlugin(func() domain.Plugin { return bmcAttr2Prop })
-	bmcAttr2Prop.AddView(ctx, ch, eb, ew)
-	bmcAttr2Prop.AddController(ctx, ch, eb, ew)
+		bmcAttrProp, _ := attr_prop.New(
+			attr_prop.BaseResource(bmcAttrSvc),
+			attr_prop.WithFQDD(mgrName),
+		)
+		domain.RegisterPlugin(func() domain.Plugin { return bmcAttrProp })
+		bmcAttrProp.AddView(ctx, ch, eb, ew)
+		bmcAttrProp.AddController(ctx, ch, eb, ew)
+	}
 
 	for _, iomName := range []string{
-		"IOM.Slot.A1",
-		"IOM.Slot.A1a",
-		"IOM.Slot.A1b",
-		"IOM.Slot.A2",
-		"IOM.Slot.A2a",
-		"IOM.Slot.A2b",
-		"IOM.Slot.B1",
-		"IOM.Slot.B1a",
-		"IOM.Slot.B1b",
-		"IOM.Slot.B2",
-		"IOM.Slot.B2a",
-		"IOM.Slot.B2b",
+		"IOM.Slot.A1", "IOM.Slot.A1a", "IOM.Slot.A1b",
+		"IOM.Slot.A2", "IOM.Slot.A2a", "IOM.Slot.A2b",
+		"IOM.Slot.B1", "IOM.Slot.B1a", "IOM.Slot.B1b",
+		"IOM.Slot.B2", "IOM.Slot.B2a", "IOM.Slot.B2b",
 		"IOM.Slot.C1",
 		"IOM.Slot.C2",
 	} {
 		iom, _ := generic_chassis.New(
 			generic_chassis.WithUniqueName(iomName),
-			generic_chassis.AddManagedBy(cmc_integrated_1_svc),
+			generic_chassis.AddManagedBy(managers[0]),
+
+			// TODO: maybe the mapper could add these automatically?
+			model.UpdateProperty("service_tag", ""),
+			model.UpdateProperty("asset_tag", ""),
+			model.UpdateProperty("description", ""),
+			model.UpdateProperty("power_state", ""),
+			model.UpdateProperty("serial", ""),
+			model.UpdateProperty("part_number", ""),
+			model.UpdateProperty("chassis_type", ""),
+			model.UpdateProperty("model", ""),
+			model.UpdateProperty("name", ""),
+			model.UpdateProperty("manufacturer", ""),
 		)
 		domain.RegisterPlugin(func() domain.Plugin { return iom })
 		iom_chassis.AddView(ctx, iom, ch, eb, ew)
+
+		updateFn, _ := generic_dell_resource.AddController(ctx,
+			logger.New("module", "Chassis/"+iomName, "module", "Chassis/IOM.Slot"),
+			iom, "Managers/"+iomName, ch, eb, ew)
+		updateFns = append(updateFns, updateFn)
 
 		iomAttrSvc, _ := attr_res.New(
 			attr_res.BaseResource(iom),
@@ -154,40 +145,26 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	}
 
 	for _, sledName := range []string{
-		"System.Modular.1",
-		"System.Modular.1a",
-		"System.Modular.1b",
-		"System.Modular.2",
-		"System.Modular.2a",
-		"System.Modular.2b",
-		"System.Modular.3",
-		"System.Modular.3a",
-		"System.Modular.3b",
-		"System.Modular.4",
-		"System.Modular.4a",
-		"System.Modular.4b",
-		"System.Modular.5",
-		"System.Modular.5a",
-		"System.Modular.5b",
-		"System.Modular.6",
-		"System.Modular.6a",
-		"System.Modular.6b",
-		"System.Modular.7",
-		"System.Modular.7a",
-		"System.Modular.7b",
-		"System.Modular.8",
-		"System.Modular.8a",
-		"System.Modular.8b",
+		"System.Modular.1", "System.Modular.1a", "System.Modular.1b",
+		"System.Modular.2", "System.Modular.2a", "System.Modular.2b",
+		"System.Modular.3", "System.Modular.3a", "System.Modular.3b",
+		"System.Modular.4", "System.Modular.4a", "System.Modular.4b",
+		"System.Modular.5", "System.Modular.5a", "System.Modular.5b",
+		"System.Modular.6", "System.Modular.6a", "System.Modular.6b",
+		"System.Modular.7", "System.Modular.7a", "System.Modular.7b",
+		"System.Modular.8", "System.Modular.8a", "System.Modular.8b",
 	} {
 		sled, _ := generic_chassis.New(
 			generic_chassis.WithUniqueName(sledName),
-			generic_chassis.AddManagedBy(cmc_integrated_1_svc),
+			generic_chassis.AddManagedBy(managers[0]),
 			model.UpdateProperty("service_tag", ""),
 			model.UpdateProperty("power_state", ""),
 		)
 		domain.RegisterPlugin(func() domain.Plugin { return sled })
 		sled_chassis.AddView(sled, ctx, ch, eb, ew)
-		updateFn, _ := generic_dell_resource.AddController(ctx, logger.New("module", "Chassis/System.Modular", "module", "Chassis/"+sledName), sled, "Chassis/"+sledName, ch, eb, ew)
+		updateFn, _ := generic_dell_resource.AddController(ctx,
+			logger.New("module", "Chassis/System.Modular", "module", "Chassis/"+sledName),
+			sled, "Chassis/"+sledName, ch, eb, ew)
 		updateFns = append(updateFns, updateFn)
 
 		sledAttrSvc, _ := attr_res.New(

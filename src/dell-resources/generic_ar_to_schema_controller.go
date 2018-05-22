@@ -11,8 +11,8 @@ import (
 	"github.com/superchalupa/go-redfish/src/log"
 
 	attr_prop "github.com/superchalupa/go-redfish/src/dell-resources/attribute-property"
-	"github.com/superchalupa/go-redfish/src/ocp/model"
 	"github.com/superchalupa/go-redfish/src/ocp/event"
+	"github.com/superchalupa/go-redfish/src/ocp/model"
 )
 
 type mapping struct {

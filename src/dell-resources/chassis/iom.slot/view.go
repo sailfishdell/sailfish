@@ -29,19 +29,20 @@ func AddView(ctx context.Context, s *model.Service, ch eh.CommandHandler, eb eh.
 			Properties: map[string]interface{}{
 				"Id":             s.GetProperty("unique_name").(string),
 				"ManagedBy@meta": s.Meta(model.PropGET("managed_by")),
-				// TODO: "ManagedBy@odata.count": 1
+				// TODO: "ManagedBy@odata.count": 1  (need some infrastructure for this)
+
+				"AssetTag@meta":     s.Meta(model.PropGET("asset_tag")),
+				"Description@meta":  s.Meta(model.PropGET("description")),
+				"PowerState@meta":   s.Meta(model.PropGET("power_state")),
+				"SerialNumber@meta": s.Meta(model.PropGET("serial")),
+				"PartNumber@meta":   s.Meta(model.PropGET("part_number")),
+				"ChassisType@meta":  s.Meta(model.PropGET("chassis_type")),
+				"Model@meta":        s.Meta(model.PropGET("model")),
+				"Name@meta":         s.Meta(model.PropGET("name")),
+				"Manufacturer@meta": s.Meta(model.PropGET("manufacturer")),
 
 				"SKU":          "",
-				"PowerState":   "On",
-				"Description":  "PowerEdge MX5000s SAS Switch",
-				"AssetTag":     "",
-				"SerialNumber": "CNFCP007BH000S",
-				"PartNumber":   "0PG5NRX30",
-				"Name":         "PowerEdge MX5000s SAS",
-				"ChassisType":  "Module",
 				"IndicatorLED": "Lit",
-				"Model":        "PowerEdge MX5000s SAS",
-				"Manufacturer": "Dell EMC",
 				"Status": map[string]interface{}{
 					"HealthRollup": "OK",
 					"State":        "Enabled",
@@ -49,7 +50,7 @@ func AddView(ctx context.Context, s *model.Service, ch eh.CommandHandler, eb eh.
 				},
 				"Oem": map[string]interface{}{
 					"Dell": map[string]interface{}{
-						"ServiceTag":           "",
+						"ServiceTag@meta":      s.Meta(model.PropGET("service_tag")),
 						"InstPowerConsumption": 24,
 						"OemChassis": map[string]interface{}{
 							"@odata.id": "/redfish/v1/Chassis/" + s.GetProperty("unique_name").(string) + "/Attributes",
@@ -76,14 +77,7 @@ func AddView(ctx context.Context, s *model.Service, ch eh.CommandHandler, eb eh.
 						"#DellChassis.v1_0_0.VirtualReseat": map[string]interface{}{
 							"target": "/redfish/v1/Chassis/" + s.GetProperty("unique_name").(string) + "/Actions/Oem/DellChassis.VirtualReseat",
 						},
-						"#DellChassis.v1_0_0.ResetPeakPowerConsumption": map[string]interface{}{
-							"target": "/redfish/v1/Chassis/" + s.GetProperty("unique_name").(string) + "/Actions/Oem/DellChassis.ResetPeakPowerConsumption",
-						},
-						"DellChassis.v1_0_0#DellChassis.VirtualReseat": map[string]interface{}{
-							"target": "/redfish/v1/Chassis/" + s.GetProperty("unique_name").(string) + "/Actions/Oem/DellChassis.VirtualReseat",
-						},
 					},
 				},
 			}})
-
 }

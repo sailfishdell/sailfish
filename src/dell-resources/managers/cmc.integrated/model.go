@@ -13,14 +13,9 @@ type mapping struct {
 	Name     string
 }
 
-type service struct {
-	*model.Service
-}
+func New(options ...model.Option) (*model.Model, error) {
+	s := model.NewModel()
 
-func New(options ...interface{}) (*service, error) {
-	s := &service{
-		Service: model.NewService(),
-	}
 	// valid for consumer of this class to use without setting these, so put in a default
 	s.UpdatePropertyUnlocked("bmc_manager_for_servers", []map[string]string{})
 	s.UpdatePropertyUnlocked("bmc_manager_for_chassis", []map[string]string{})
@@ -40,17 +35,13 @@ func WithUniqueName(uri string) model.Option {
 	return model.PropertyOnce("unique_name", uri)
 }
 
-func (s *service) GetUniqueName() string {
-	return s.GetProperty("unique_name").(string)
-}
-
 type odataObj interface {
 	GetProperty(string) interface{}
 }
 
 // no locking because it's an Option
-func manageOdataIDList(name string, obj odataObj) Option {
-	return func(s *service) error {
+func manageOdataIDList(name string, obj odataObj) model.Option {
+	return func(s *model.Model) error {
 
 		// TODO: need to update @odata.count property, too
 
@@ -69,29 +60,17 @@ func manageOdataIDList(name string, obj odataObj) Option {
 	}
 }
 
-func AddManagerForChassis(obj odataObj) Option {
+func AddManagerForChassis(obj odataObj) model.Option {
 	return manageOdataIDList("bmc_manager_for_chassis", obj)
 }
 
-func (s *service) AddManagerForChassis(obj odataObj) {
-	s.ApplyOption(AddManagerForChassis(obj))
-}
-
-func AddManagerForServer(obj odataObj) Option {
+func AddManagerForServer(obj odataObj) model.Option {
 	return manageOdataIDList("bmc_manager_for_servers", obj)
 }
 
-func (s *service) AddManagerForServer(obj odataObj) {
-	s.ApplyOption(AddManagerForServer(obj))
-}
-
-func InChassis(obj odataObj) Option {
-	return func(s *service) error {
+func InChassis(obj odataObj) model.Option {
+	return func(s *model.Model) error {
 		s.UpdatePropertyUnlocked("in_chassis", map[string]string{"@odata.id": model.GetOdataID(obj)})
 		return nil
 	}
-}
-
-func (s *service) InChassis(obj odataObj) {
-	s.ApplyOption(InChassis(obj))
 }
