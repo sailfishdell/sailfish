@@ -6,10 +6,8 @@ package ec_manager
 
 import (
 	"context"
-	"time"
 
 	"github.com/superchalupa/go-redfish/src/log"
-	"github.com/superchalupa/go-redfish/src/ocp/event"
 	"github.com/superchalupa/go-redfish/src/ocp/model"
 	domain "github.com/superchalupa/go-redfish/src/redfishresource"
 
@@ -18,7 +16,7 @@ import (
 	ah "github.com/superchalupa/go-redfish/src/actionhandler"
 )
 
-func AddView(ctx context.Context, s *model.Model, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
+func AddView(ctx context.Context, logger log.Logger, s *model.Model, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
 	ch.HandleCommand(
 		ctx,
 		&domain.CreateRedfishResource{
@@ -35,7 +33,7 @@ func AddView(ctx context.Context, s *model.Model, ch eh.CommandHandler, eb eh.Ev
 				"DELETE": []string{}, // can't be deleted
 			},
 			Properties: map[string]interface{}{
-				"Id":                       s.GetProperty("unique_name"),
+				"Id":                       s.GetProperty("unique_name").(string),
 				"Name@meta":                s.Meta(model.PropGETOptional("name")),
 				"ManagerType":              "BMC",
 				"Description@meta":         s.Meta(model.PropGETOptional("description")),
@@ -309,78 +307,21 @@ func AddView(ctx context.Context, s *model.Model, ch eh.CommandHandler, eb eh.Ev
 
 			}})
 
-	logger, _ := log.GetLogger("Managers/CMC.Integrated.1")
-
-	CreateAction(ctx, ch, eb, ew,
+	ah.CreateAction(ctx, ch, eb, ew,
 		logger,
 		model.GetOdataID(s)+"/Actions/Manager.Reset",
 		"manager.reset",
 		s)
 
-	CreateAction(ctx, ch, eb, ew,
+	ah.CreateAction(ctx, ch, eb, ew,
 		logger,
 		model.GetOdataID(s)+"/Actions/Oem/DellManager.ResetToDefaults",
 		"manager.resettodefaults",
 		s)
 
-	CreateAction(ctx, ch, eb, ew,
+	ah.CreateAction(ctx, ch, eb, ew,
 		logger,
 		model.GetOdataID(s)+"/Actions/Manager.ForceFailover",
 		"manager.forcefailover",
 		s)
-}
-
-type prop interface {
-	GetProperty(string) interface{}
-}
-
-func CreateAction(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter,
-	logger log.Logger,
-	uri string,
-	property string,
-	s prop,
-) {
-	// The following redfish resource is created only for the purpose of being
-	// a 'receiver' for the action command specified above.
-	ch.HandleCommand(
-		ctx,
-		&domain.CreateRedfishResource{
-			ID:          eh.NewUUID(),
-			ResourceURI: uri,
-			Type:        "Action",
-			Context:     "Action",
-			Plugin:      "GenericActionHandler",
-			Privileges: map[string]interface{}{
-				"POST": []string{"ConfigureManager"},
-			},
-			Properties: map[string]interface{}{},
-		},
-	)
-
-	// stream processor for action events
-	sp, err := event.NewEventStreamProcessor(ctx, ew, event.CustomFilter(ah.SelectAction(uri)))
-	if err != nil {
-		logger.Error("Failed to create event stream processor", "err", err)
-		return
-	}
-	sp.RunForever(func(event eh.Event) {
-		eventData := domain.HTTPCmdProcessedData{
-			CommandID:  event.Data().(ah.GenericActionEventData).CmdID,
-			Results:    map[string]interface{}{"msg": "Not Implemented"},
-			StatusCode: 500,
-			Headers:    map[string]string{},
-		}
-
-		handler := s.GetProperty(property)
-		if handler != nil {
-			if fn, ok := handler.(func(eh.Event, *domain.HTTPCmdProcessedData)); ok {
-				fn(event, &eventData)
-			}
-		} else {
-			logger.Warn("UNHANDLED action event: no function handler set up for this event.", "event", event)
-		}
-
-		responseEvent := eh.NewEvent(domain.HTTPCmdProcessed, eventData, time.Now())
-		eb.PublishEvent(ctx, responseEvent)
-	})
 }

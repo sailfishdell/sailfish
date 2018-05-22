@@ -3,14 +3,16 @@ package iom_chassis
 import (
 	"context"
 
+	"github.com/superchalupa/go-redfish/src/log"
 	"github.com/superchalupa/go-redfish/src/ocp/model"
 	domain "github.com/superchalupa/go-redfish/src/redfishresource"
 
 	eh "github.com/looplab/eventhorizon"
 	"github.com/looplab/eventhorizon/utils"
+	ah "github.com/superchalupa/go-redfish/src/actionhandler"
 )
 
-func AddView(ctx context.Context, s *model.Service, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
+func AddView(ctx context.Context, logger log.Logger, s *model.Service, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
 	ch.HandleCommand(
 		ctx,
 		&domain.CreateRedfishResource{
@@ -27,9 +29,7 @@ func AddView(ctx context.Context, s *model.Service, ch eh.CommandHandler, eb eh.
 				"DELETE": []string{}, // can't be deleted
 			},
 			Properties: map[string]interface{}{
-				"Id":             s.GetProperty("unique_name").(string),
-				"ManagedBy@meta": s.Meta(model.PropGET("managed_by")),
-				// TODO: "ManagedBy@odata.count": 1  (need some infrastructure for this)
+				"Id": s.GetProperty("unique_name").(string),
 
 				"AssetTag@meta":     s.Meta(model.PropGET("asset_tag")),
 				"Description@meta":  s.Meta(model.PropGET("description")),
@@ -40,6 +40,9 @@ func AddView(ctx context.Context, s *model.Service, ch eh.CommandHandler, eb eh.
 				"Model@meta":        s.Meta(model.PropGET("model")),
 				"Name@meta":         s.Meta(model.PropGET("name")),
 				"Manufacturer@meta": s.Meta(model.PropGET("manufacturer")),
+
+				// TODO: "ManagedBy@odata.count": 1  (need some infrastructure for this)
+				"ManagedBy@meta": s.Meta(model.PropGET("managed_by")),
 
 				"SKU":          "",
 				"IndicatorLED": "Lit",
@@ -80,4 +83,22 @@ func AddView(ctx context.Context, s *model.Service, ch eh.CommandHandler, eb eh.
 					},
 				},
 			}})
+
+	ah.CreateAction(ctx, ch, eb, ew,
+		logger,
+		model.GetOdataID(s)+"/Actions/Chassis.Reset",
+		"chassis.reset",
+		s)
+
+	ah.CreateAction(ctx, ch, eb, ew,
+		logger,
+		model.GetOdataID(s)+"/Actions/Oem/DellChassis.ResetPeakPowerConsumption",
+		"chassis.reset_peak_power_consumption",
+		s)
+
+	ah.CreateAction(ctx, ch, eb, ew,
+		logger,
+		model.GetOdataID(s)+"/Actions/Oem/DellChassis.VirtualReseat",
+		"chassis.virtual_reseat",
+		s)
 }

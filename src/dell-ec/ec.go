@@ -70,11 +70,10 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			ec_manager.WithUniqueName(mgrName),
 		)
 		managers = append(managers, cmc_integrated_svc)
+		mgrLogger := logger.New("module", "Managers/"+mgrName, "module", "Managers/CMC.Integrated")
 		domain.RegisterPlugin(func() domain.Plugin { return cmc_integrated_svc })
-		ec_manager.AddView(ctx, cmc_integrated_svc, ch, eb, ew)
-		updateFn, _ := generic_dell_resource.AddController(ctx,
-			logger.New("module", "Managers/"+mgrName, "module", "Managers/CMC.Integrated"),
-			cmc_integrated_svc, "Managers/"+mgrName, ch, eb, ew)
+		ec_manager.AddView(ctx, mgrLogger, cmc_integrated_svc, ch, eb, ew)
+		updateFn, _ := generic_dell_resource.AddController(ctx, mgrLogger, cmc_integrated_svc, "Managers/"+mgrName, ch, eb, ew)
 		updateFns = append(updateFns, updateFn)
 
 		bmcAttrSvc, _ := attr_res.New(
@@ -119,7 +118,8 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			model.UpdateProperty("manufacturer", ""),
 		)
 		domain.RegisterPlugin(func() domain.Plugin { return iom })
-		iom_chassis.AddView(ctx, iom, ch, eb, ew)
+		iomLogger := logger.New("module", "Chassis/"+iomName, "module", "Chassis/IOM.Slot")
+		iom_chassis.AddView(ctx, iomLogger, iom, ch, eb, ew)
 
 		updateFn, _ := generic_dell_resource.AddController(ctx,
 			logger.New("module", "Chassis/"+iomName, "module", "Chassis/IOM.Slot"),

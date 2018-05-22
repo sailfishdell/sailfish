@@ -8,6 +8,8 @@ import (
 
 	eh "github.com/looplab/eventhorizon"
 	"github.com/looplab/eventhorizon/utils"
+	"github.com/superchalupa/go-redfish/src/log"
+	"github.com/superchalupa/go-redfish/src/ocp/event"
 	domain "github.com/superchalupa/go-redfish/src/redfishresource"
 )
 
@@ -77,4 +79,59 @@ func SelectAction(uri string) func(eh.Event) bool {
 		}
 		return false
 	}
+}
+
+type prop interface {
+	GetProperty(string) interface{}
+}
+
+func CreateAction(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter,
+	logger log.Logger,
+	uri string,
+	property string,
+	s prop,
+) {
+	// The following redfish resource is created only for the purpose of being
+	// a 'receiver' for the action command specified above.
+	ch.HandleCommand(
+		ctx,
+		&domain.CreateRedfishResource{
+			ID:          eh.NewUUID(),
+			ResourceURI: uri,
+			Type:        "Action",
+			Context:     "Action",
+			Plugin:      "GenericActionHandler",
+			Privileges: map[string]interface{}{
+				"POST": []string{"ConfigureManager"},
+			},
+			Properties: map[string]interface{}{},
+		},
+	)
+
+	// stream processor for action events
+	sp, err := event.NewEventStreamProcessor(ctx, ew, event.CustomFilter(SelectAction(uri)))
+	if err != nil {
+		logger.Error("Failed to create event stream processor", "err", err)
+		return
+	}
+	sp.RunForever(func(event eh.Event) {
+		eventData := domain.HTTPCmdProcessedData{
+			CommandID:  event.Data().(GenericActionEventData).CmdID,
+			Results:    map[string]interface{}{"msg": "Not Implemented"},
+			StatusCode: 500,
+			Headers:    map[string]string{},
+		}
+
+		handler := s.GetProperty(property)
+		if handler != nil {
+			if fn, ok := handler.(func(eh.Event, *domain.HTTPCmdProcessedData)); ok {
+				fn(event, &eventData)
+			}
+		} else {
+			logger.Warn("UNHANDLED action event: no function handler set up for this event.", "event", event)
+		}
+
+		responseEvent := eh.NewEvent(domain.HTTPCmdProcessed, eventData, time.Now())
+		eb.PublishEvent(ctx, responseEvent)
+	})
 }
