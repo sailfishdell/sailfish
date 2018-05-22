@@ -1,7 +1,7 @@
 package ec_manager
 
 import (
-	plugins "github.com/superchalupa/go-redfish/src/ocp"
+	"github.com/superchalupa/go-redfish/src/ocp/model"
 	domain "github.com/superchalupa/go-redfish/src/redfishresource"
 )
 
@@ -14,30 +14,30 @@ type mapping struct {
 }
 
 type service struct {
-	*plugins.Service
+	*model.Service
 }
 
 func New(options ...interface{}) (*service, error) {
 	s := &service{
-		Service: plugins.NewService(),
+		Service: model.NewService(),
 	}
 	// valid for consumer of this class to use without setting these, so put in a default
 	s.UpdatePropertyUnlocked("bmc_manager_for_servers", []map[string]string{})
 	s.UpdatePropertyUnlocked("bmc_manager_for_chassis", []map[string]string{})
 	s.UpdatePropertyUnlocked("in_chassis", map[string]string{})
 
-	s.ApplyOption(plugins.UUID())
+	s.ApplyOption(model.UUID())
 
 	// user supplied options
 	s.ApplyOption(options...)
 
-	s.ApplyOption(plugins.PluginType(domain.PluginType("Managers/" + s.GetProperty("unique_name").(string))))
-	s.ApplyOption(plugins.PropertyOnce("uri", "/redfish/v1/Managers/"+s.GetProperty("unique_name").(string)))
+	s.ApplyOption(model.PluginType(domain.PluginType("Managers/" + s.GetProperty("unique_name").(string))))
+	s.ApplyOption(model.PropertyOnce("uri", "/redfish/v1/Managers/"+s.GetProperty("unique_name").(string)))
 	return s, nil
 }
 
-func WithUniqueName(uri string) plugins.Option {
-	return plugins.PropertyOnce("unique_name", uri)
+func WithUniqueName(uri string) model.Option {
+	return model.PropertyOnce("unique_name", uri)
 }
 
 func (s *service) GetUniqueName() string {
@@ -62,7 +62,7 @@ func manageOdataIDList(name string, obj odataObj) Option {
 		if !ok {
 			sl = []map[string]string{}
 		}
-		sl = append(sl, map[string]string{"@odata.id": plugins.GetOdataID(obj)})
+		sl = append(sl, map[string]string{"@odata.id": model.GetOdataID(obj)})
 
 		s.UpdatePropertyUnlocked(name, sl)
 		return nil
@@ -87,7 +87,7 @@ func (s *service) AddManagerForServer(obj odataObj) {
 
 func InChassis(obj odataObj) Option {
 	return func(s *service) error {
-		s.UpdatePropertyUnlocked("in_chassis", map[string]string{"@odata.id": plugins.GetOdataID(obj)})
+		s.UpdatePropertyUnlocked("in_chassis", map[string]string{"@odata.id": model.GetOdataID(obj)})
 		return nil
 	}
 }

@@ -9,7 +9,8 @@ import (
 	"time"
 
 	"github.com/superchalupa/go-redfish/src/log"
-	plugins "github.com/superchalupa/go-redfish/src/ocp"
+	"github.com/superchalupa/go-redfish/src/ocp/model"
+	"github.com/superchalupa/go-redfish/src/ocp/event"
 	domain "github.com/superchalupa/go-redfish/src/redfishresource"
 
 	eh "github.com/looplab/eventhorizon"
@@ -21,9 +22,9 @@ func (s *service) AddView(ctx context.Context, ch eh.CommandHandler, eb eh.Event
 	ch.HandleCommand(
 		ctx,
 		&domain.CreateRedfishResource{
-			ID:          plugins.GetUUID(s),
+			ID:          model.GetUUID(s),
 			Collection:  false,
-			ResourceURI: plugins.GetOdataID(s),
+			ResourceURI: model.GetOdataID(s),
 			Type:        "#Manager.v1_0_2.Manager",
 			Context:     "/redfish/v1/$metadata#Manager.Manager",
 			Privileges: map[string]interface{}{
@@ -35,24 +36,24 @@ func (s *service) AddView(ctx context.Context, ch eh.CommandHandler, eb eh.Event
 			},
 			Properties: map[string]interface{}{
 				"Id":                       s.GetProperty("unique_name"),
-				"Name@meta":                s.Meta(plugins.PropGETOptional("name")),
+				"Name@meta":                s.Meta(model.PropGETOptional("name")),
 				"ManagerType":              "BMC",
-				"Description@meta":         s.Meta(plugins.PropGETOptional("description")),
-				"Model@meta":               s.Meta(plugins.PropGETOptional("model")),
+				"Description@meta":         s.Meta(model.PropGETOptional("description")),
+				"Model@meta":               s.Meta(model.PropGETOptional("model")),
 				"DateTime@meta":            map[string]interface{}{"GET": map[string]interface{}{"plugin": "datetime"}},
-				"DateTimeLocalOffset@meta": s.Meta(plugins.PropGETOptional("timezone"), plugins.PropPATCHOptional("timezone")),
-				"FirmwareVersion@meta":     s.Meta(plugins.PropGETOptional("firmware_version")),
+				"DateTimeLocalOffset@meta": s.Meta(model.PropGETOptional("timezone"), model.PropPATCHOptional("timezone")),
+				"FirmwareVersion@meta":     s.Meta(model.PropGETOptional("firmware_version")),
 				"Links": map[string]interface{}{
-					"ManagerForServers@meta": s.Meta(plugins.PropGET("bmc_manager_for_servers")),
+					"ManagerForServers@meta": s.Meta(model.PropGET("bmc_manager_for_servers")),
 					// TODO: Need standard method to count arrays
 					// "ManagerForChassis@odata.count": 1,
-					"ManagerForChassis@meta": s.Meta(plugins.PropGET("bmc_manager_for_chassis")),
-					"ManagerInChassis@meta":  s.Meta(plugins.PropGET("in_chassis")),
+					"ManagerForChassis@meta": s.Meta(model.PropGET("bmc_manager_for_chassis")),
+					"ManagerInChassis@meta":  s.Meta(model.PropGET("in_chassis")),
 				},
 
 				"Status": map[string]interface{}{
 					"HealthRollup": "OK",
-					"State@meta":   s.Meta(plugins.PropGETOptional("health_state")),
+					"State@meta":   s.Meta(model.PropGETOptional("health_state")),
 					"Health":       "OK",
 				},
 
@@ -62,7 +63,7 @@ func (s *service) AddView(ctx context.Context, ch eh.CommandHandler, eb eh.Event
 						"@odata.type": "#Redundancy.v1_0_2.Redundancy",
 						"Status": map[string]interface{}{
 							"HealthRollup": "OK",
-							"State@meta":   s.Meta(plugins.PropGETOptional("redundancy_health_state")),
+							"State@meta":   s.Meta(model.PropGETOptional("redundancy_health_state")),
 							"Health":       "OK",
 						},
 						"RedundancySet": []interface{}{
@@ -77,9 +78,9 @@ func (s *service) AddView(ctx context.Context, ch eh.CommandHandler, eb eh.Event
 						"RedundancySet@odata.count": 2,
 						"@odata.id":                 "/redfish/v1/Managers/CMC.Integrated.1#Redundancy",
 						"@odata.context":            "/redfish/v1/$metadata#Redundancy.Redundancy",
-						"Mode@meta":                 s.Meta(plugins.PropGETOptional("redundancy_mode")),
-						"MinNumNeeded@meta":         s.Meta(plugins.PropGETOptional("redundancy_min")),
-						"MaxNumSupported@meta":      s.Meta(plugins.PropGETOptional("redundancy_max")),
+						"Mode@meta":                 s.Meta(model.PropGETOptional("redundancy_mode")),
+						"MinNumNeeded@meta":         s.Meta(model.PropGETOptional("redundancy_min")),
+						"MaxNumSupported@meta":      s.Meta(model.PropGETOptional("redundancy_max")),
 					},
 				},
 				"SerialConsole": map[string]interface{}{
@@ -119,7 +120,7 @@ func (s *service) AddView(ctx context.Context, ch eh.CommandHandler, eb eh.Event
 
 				"Actions": map[string]interface{}{
 					"#Manager.Reset": map[string]interface{}{
-						"target": plugins.GetOdataID(s) + "/Actions/Manager.Reset",
+						"target": model.GetOdataID(s) + "/Actions/Manager.Reset",
 						"ResetType@Redfish.AllowableValues": []string{
 							"GracefulRestart",
 						},
@@ -312,19 +313,19 @@ func (s *service) AddView(ctx context.Context, ch eh.CommandHandler, eb eh.Event
 
 	CreateAction(ctx, ch, eb, ew,
 		logger,
-		plugins.GetOdataID(s)+"/Actions/Manager.Reset",
+		model.GetOdataID(s)+"/Actions/Manager.Reset",
 		"manager.reset",
 		s)
 
 	CreateAction(ctx, ch, eb, ew,
 		logger,
-		plugins.GetOdataID(s)+"/Actions/Oem/DellManager.ResetToDefaults",
+		model.GetOdataID(s)+"/Actions/Oem/DellManager.ResetToDefaults",
 		"manager.resettodefaults",
 		s)
 
 	CreateAction(ctx, ch, eb, ew,
 		logger,
-		plugins.GetOdataID(s)+"/Actions/Manager.ForceFailover",
+		model.GetOdataID(s)+"/Actions/Manager.ForceFailover",
 		"manager.forcefailover",
 		s)
 }
@@ -357,7 +358,7 @@ func CreateAction(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew 
 	)
 
 	// stream processor for action events
-	sp, err := plugins.NewEventStreamProcessor(ctx, ew, plugins.CustomFilter(ah.SelectAction(uri)))
+	sp, err := event.NewEventStreamProcessor(ctx, ew, event.CustomFilter(ah.SelectAction(uri)))
 	if err != nil {
 		logger.Error("Failed to create event stream processor", "err", err)
 		return

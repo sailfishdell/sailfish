@@ -3,7 +3,7 @@ package attribute_property
 import (
 	"fmt"
 
-	plugins "github.com/superchalupa/go-redfish/src/ocp"
+	"github.com/superchalupa/go-redfish/src/ocp/model"
 	domain "github.com/superchalupa/go-redfish/src/redfishresource"
 )
 
@@ -12,7 +12,7 @@ type odataInt interface {
 }
 
 type service struct {
-	*plugins.Service
+	*model.Service
 	baseResource odataInt
 	fqdd         []string
 	//         group      index      attribute  value
@@ -21,14 +21,14 @@ type service struct {
 
 func New(options ...interface{}) (*service, error) {
 	s := &service{
-		Service:    plugins.NewService(),
+		Service:    model.NewService(),
 		attributes: map[string]map[string]map[string]interface{}{},
 		fqdd:       []string{},
 	}
-	s.ApplyOption(plugins.UUID())
+	s.ApplyOption(model.UUID())
 	s.ApplyOption(options...)
 	pluginType := domain.PluginType("attribute property: " + fmt.Sprintf("%v", s.GetProperty("id")))
-	s.ApplyOption(plugins.PluginType(pluginType))
+	s.ApplyOption(model.PluginType(pluginType))
 	return s, nil
 }
 

@@ -1,7 +1,7 @@
 package session
 
 import (
-	plugins "github.com/superchalupa/go-redfish/src/ocp"
+	"github.com/superchalupa/go-redfish/src/ocp/model"
 )
 
 type Option func(*Service) error
@@ -17,7 +17,7 @@ func (s *Service) ApplyOption(options ...interface{}) error {
 		switch o := o.(type) {
 		case Option:
 			err = o(s)
-		case plugins.Option:
+		case model.Option:
 			err = o(s.Service)
 		default:
 			panic("Got the wrong kind of option.")

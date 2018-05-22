@@ -1,7 +1,7 @@
 package ec_manager
 
 import (
-	plugins "github.com/superchalupa/go-redfish/src/ocp"
+	"github.com/superchalupa/go-redfish/src/ocp/model"
 )
 
 type Option func(*service) error
@@ -17,7 +17,7 @@ func (s *service) ApplyOption(options ...interface{}) error {
 		switch o := o.(type) {
 		case Option:
 			err = o(s)
-		case plugins.Option:
+		case model.Option:
 			err = o(s.Service)
 		default:
 			panic("Got the wrong kind of option.")

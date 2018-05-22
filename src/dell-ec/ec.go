@@ -18,8 +18,7 @@ import (
 	domain "github.com/superchalupa/go-redfish/src/redfishresource"
 
 	"github.com/superchalupa/go-redfish/src/log"
-	plugins "github.com/superchalupa/go-redfish/src/ocp"
-	"github.com/superchalupa/go-redfish/src/ocp/basicauth"
+	"github.com/superchalupa/go-redfish/src/ocp/model"
 	"github.com/superchalupa/go-redfish/src/ocp/root"
 	"github.com/superchalupa/go-redfish/src/ocp/session"
 
@@ -36,13 +35,11 @@ import (
 type ocp struct {
 	rootSvc             *root.Service
 	sessionSvc          *session.Service
-	basicAuthSvc        *basicauth.Service
 	configChangeHandler func()
 	logger              log.Logger
 }
 
 func (o *ocp) GetSessionSvc() *session.Service     { return o.sessionSvc }
-func (o *ocp) GetBasicAuthSvc() *basicauth.Service { return o.basicAuthSvc }
 func (o *ocp) ConfigChangeHandler()                { o.configChangeHandler() }
 
 func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *sync.Mutex, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) *ocp {
@@ -58,7 +55,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 
 	self.rootSvc, _ = root.New()
 	domain.RegisterPlugin(func() domain.Plugin { return self.rootSvc })
-	self.rootSvc.AddResource(ctx, ch, eb, ew)
+	root.AddView(ctx, self.rootSvc, ch, eb, ew)
 	time.Sleep(1)
 
 	self.sessionSvc, _ = session.New(
@@ -66,10 +63,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	)
 	domain.RegisterPlugin(func() domain.Plugin { return self.sessionSvc })
 	self.sessionSvc.AddResource(ctx, ch, eb, ew)
-
-	self.basicAuthSvc, _ = basicauth.New()
-	domain.RegisterPlugin(func() domain.Plugin { return self.basicAuthSvc })
-	self.basicAuthSvc.AddResource(ctx, ch, eb, ew)
 
 	cmc_integrated_1_svc, _ := ec_manager.New(
 		ec_manager.WithUniqueName("CMC.Integrated.1"),
@@ -140,7 +133,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			generic_chassis.AddManagedBy(cmc_integrated_1_svc),
 		)
 		domain.RegisterPlugin(func() domain.Plugin { return iom })
-		iom_chassis.AddView(iom, ctx, ch, eb, ew)
+		iom_chassis.AddView(ctx, iom, ch, eb, ew)
 
 		iomAttrSvc, _ := attr_res.New(
 			attr_res.BaseResource(iom),
@@ -189,8 +182,8 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		sled, _ := generic_chassis.New(
 			generic_chassis.WithUniqueName(sledName),
 			generic_chassis.AddManagedBy(cmc_integrated_1_svc),
-			plugins.UpdateProperty("service_tag", ""),
-			plugins.UpdateProperty("power_state", ""),
+			model.UpdateProperty("service_tag", ""),
+			model.UpdateProperty("power_state", ""),
 		)
 		domain.RegisterPlugin(func() domain.Plugin { return sled })
 		sled_chassis.AddView(sled, ctx, ch, eb, ew)
@@ -219,7 +212,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	// pull the config from the YAML file to populate some static config options
 	self.configChangeHandler = func() {
 		logger.Info("Re-applying configuration from config file.")
-		self.sessionSvc.ApplyOption(plugins.UpdateProperty("session_timeout", cfgMgr.GetInt("session.timeout")))
+		self.sessionSvc.ApplyOption(model.UpdateProperty("session_timeout", cfgMgr.GetInt("session.timeout")))
 
 		for _, fn := range updateFns {
 			fn(cfgMgr)

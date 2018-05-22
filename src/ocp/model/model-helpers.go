@@ -1,4 +1,4 @@
-package plugins
+package model
 
 import (
 	eh "github.com/looplab/eventhorizon"

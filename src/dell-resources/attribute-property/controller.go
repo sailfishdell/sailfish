@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/superchalupa/go-redfish/src/log"
-	plugins "github.com/superchalupa/go-redfish/src/ocp"
+	"github.com/superchalupa/go-redfish/src/ocp/event"
 
 	eh "github.com/looplab/eventhorizon"
 	"github.com/looplab/eventhorizon/utils"
@@ -29,7 +29,7 @@ type AttributeUpdatedData struct {
 
 func (s *service) AddController(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
 	// stream processor for action events
-	sp, err := plugins.NewEventStreamProcessor(ctx, ew, plugins.CustomFilter(SelectAttributeUpdate(s.fqdd)))
+	sp, err := event.NewEventStreamProcessor(ctx, ew, event.CustomFilter(SelectAttributeUpdate(s.fqdd)))
 	if err != nil {
 		log.MustLogger("idrac_mv").Error("Failed to create event stream processor", "err", err)
 		return

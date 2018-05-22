@@ -11,7 +11,8 @@ import (
 	"github.com/superchalupa/go-redfish/src/log"
 
 	attr_prop "github.com/superchalupa/go-redfish/src/dell-resources/attribute-property"
-	plugins "github.com/superchalupa/go-redfish/src/ocp"
+	"github.com/superchalupa/go-redfish/src/ocp/model"
+	"github.com/superchalupa/go-redfish/src/ocp/event"
 )
 
 type mapping struct {
@@ -22,12 +23,12 @@ type mapping struct {
 	Name     string
 }
 
-func AddController(ctx context.Context, logger log.Logger, s *plugins.Service, name string, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) (func(*viper.Viper), error) {
+func AddController(ctx context.Context, logger log.Logger, s *model.Service, name string, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) (func(*viper.Viper), error) {
 	mappings := []mapping{}
 	mappingsMu := sync.RWMutex{}
 
 	// stream processor for action events
-	sp, err := plugins.NewEventStreamProcessor(ctx, ew, plugins.CustomFilter(SelectAttributeUpdate()))
+	sp, err := event.NewEventStreamProcessor(ctx, ew, event.CustomFilter(SelectAttributeUpdate()))
 	if err != nil {
 		logger.Error("Failed to create event stream processor", "err", err)
 		return nil, err

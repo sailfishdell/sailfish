@@ -3,7 +3,7 @@ package attribute_resource
 import (
 	"context"
 
-	plugins "github.com/superchalupa/go-redfish/src/ocp"
+	"github.com/superchalupa/go-redfish/src/ocp/model"
 	domain "github.com/superchalupa/go-redfish/src/redfishresource"
 
 	eh "github.com/looplab/eventhorizon"
@@ -14,9 +14,9 @@ func (s *service) AddView(ctx context.Context, ch eh.CommandHandler, eb eh.Event
 	ch.HandleCommand(
 		context.Background(),
 		&domain.CreateRedfishResource{
-			ID:          plugins.GetUUID(s),
+			ID:          model.GetUUID(s),
 			Collection:  false,
-			ResourceURI: plugins.GetOdataID(s),
+			ResourceURI: model.GetOdataID(s),
 			Type:        "#OemAttributes.v1_0_0.OemAttributes",
 			Context:     "/redfish/v1/$metadata#OemAttributes.OemAttributes",
 

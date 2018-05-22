@@ -3,7 +3,7 @@ package root
 import (
 	"context"
 
-	plugins "github.com/superchalupa/go-redfish/src/ocp"
+	"github.com/superchalupa/go-redfish/src/ocp/model"
 	domain "github.com/superchalupa/go-redfish/src/redfishresource"
 
 	eh "github.com/looplab/eventhorizon"
@@ -14,25 +14,21 @@ const (
 	RootPlugin = domain.PluginType("obmc_root")
 )
 
-type Service struct {
-	*plugins.Service
-}
+type Service = model.Model
 
-func New(options ...interface{}) (*Service, error) {
-	s := &Service{
-		Service: plugins.NewService(plugins.PluginType(RootPlugin)),
-	}
+func New(options ...model.Option) (*model.Model, error) {
+	s := model.NewModel(model.PluginType(RootPlugin))
 
-	s.ApplyOption(plugins.UUID())
+	s.ApplyOption(model.UUID())
 	s.ApplyOption(options...)
 	return s, nil
 }
 
-func (s *Service) AddResource(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
+func AddView(ctx context.Context, s *model.Model, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
 	ch.HandleCommand(
 		ctx,
 		&domain.CreateRedfishResource{
-			ID:         plugins.GetUUID(s),
+			ID:         model.GetUUID(s),
 			Collection: false,
 
 			ResourceURI: "/redfish/v1",
@@ -46,6 +42,6 @@ func (s *Service) AddResource(ctx context.Context, ch eh.CommandHandler, eb eh.E
 				"Id":             "RootService",
 				"Name":           "Root Service",
 				"RedfishVersion": "1.0.2",
-				"UUID":           plugins.GetUUID(s),
+				"UUID":           model.GetUUID(s),
 			}})
 }

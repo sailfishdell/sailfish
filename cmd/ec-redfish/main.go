@@ -33,6 +33,8 @@ import (
 
 	// load idrac plugins
 	idrac "github.com/superchalupa/go-redfish/src/dell-ec"
+
+	"github.com/superchalupa/go-redfish/src/ocp/basicauth"
 )
 
 func main() {
@@ -113,12 +115,12 @@ func main() {
 	// Note: this works by using the session service to get user details from token to pass up the stack using the embedded struct
 	chainAuth := func(u string, p []string) http.Handler { return domain.NewRedfishHandler(domainObjs, logger, u, p) }
 	m.PathPrefix("/redfish/v1").Methods("GET", "PUT", "POST", "PATCH", "DELETE", "HEAD", "OPTIONS").HandlerFunc(
-		idrac_mvc.GetSessionSvc().MakeHandlerFunc(domainObjs.EventBus, domainObjs, chainAuth, idrac_mvc.GetBasicAuthSvc().MakeHandlerFunc(chainAuth, chainAuth("UNKNOWN", []string{"Unauthenticated"}))))
+		idrac_mvc.GetSessionSvc().MakeHandlerFunc(domainObjs.EventBus, domainObjs, chainAuth, basicauth.MakeHandlerFunc(chainAuth, chainAuth("UNKNOWN", []string{"Unauthenticated"}))))
 
 	// SSE
 	chainAuthSSE := func(u string, p []string) http.Handler { return domain.NewSSEHandler(domainObjs, logger, u, p) }
 	m.PathPrefix("/events").Methods("GET").HandlerFunc(
-		idrac_mvc.GetSessionSvc().MakeHandlerFunc(domainObjs.EventBus, domainObjs, chainAuthSSE, idrac_mvc.GetBasicAuthSvc().MakeHandlerFunc(chainAuthSSE, chainAuth("UNKNOWN", []string{"Unauthenticated"}))))
+		idrac_mvc.GetSessionSvc().MakeHandlerFunc(domainObjs.EventBus, domainObjs, chainAuthSSE, basicauth.MakeHandlerFunc(chainAuthSSE, chainAuth("UNKNOWN", []string{"Unauthenticated"}))))
 
 	// backend command handling
 	m.PathPrefix("/api/{command}").Handler(domainObjs.GetInternalCommandHandler(ctx))

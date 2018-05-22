@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	plugins "github.com/superchalupa/go-redfish/src/ocp"
+	"github.com/superchalupa/go-redfish/src/ocp/model"
 	domain "github.com/superchalupa/go-redfish/src/redfishresource"
 
 	jwt "github.com/dgrijalva/jwt-go"
@@ -29,7 +29,7 @@ type uuidObj interface {
 }
 
 type Service struct {
-	*plugins.Service
+	*model.Service
 	root uuidObj
 }
 
@@ -79,7 +79,7 @@ func (a *Service) MakeHandlerFunc(eb eh.EventBus, getter IDGetter, withUser func
 
 func New(options ...interface{}) (*Service, error) {
 	s := &Service{
-		Service: plugins.NewService(plugins.PluginType(SessionPlugin)),
+		Service: model.NewService(model.PluginType(SessionPlugin)),
 	}
 
 	// defaults
@@ -97,7 +97,7 @@ func New(options ...interface{}) (*Service, error) {
 			}
 		})
 
-	s.ApplyOption(plugins.UUID())
+	s.ApplyOption(model.UUID())
 	s.ApplyOption(options...)
 	return s, nil
 }
@@ -141,8 +141,8 @@ func (s *Service) AddResource(ctx context.Context, ch eh.CommandHandler, eb eh.E
 				},
 				"ServiceEnabled": true,
 				"SessionTimeout@meta": s.Meta(
-					plugins.PropGET("session_timeout"),
-					plugins.PropPATCH("session_timeout"),
+					model.PropGET("session_timeout"),
+					model.PropPATCH("session_timeout"),
 				),
 				"Sessions": map[string]interface{}{
 					"@odata.id": "/redfish/v1/SessionService/Sessions",
@@ -174,7 +174,7 @@ func (s *Service) AddResource(ctx context.Context, ch eh.CommandHandler, eb eh.E
 
 	ch.HandleCommand(ctx,
 		&domain.UpdateRedfishResourceProperties{
-			ID: plugins.GetUUID(s.root),
+			ID: model.GetUUID(s.root),
 			Properties: map[string]interface{}{
 				"SessionService": map[string]interface{}{"@odata.id": "/redfish/v1/SessionService"},
 				"Links":          map[string]interface{}{"Sessions": map[string]interface{}{"@odata.id": "/redfish/v1/SessionService/Sessions"}},

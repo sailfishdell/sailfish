@@ -3,7 +3,7 @@ package attribute_property
 import (
 	"context"
 
-	plugins "github.com/superchalupa/go-redfish/src/ocp"
+	"github.com/superchalupa/go-redfish/src/ocp/model"
 	domain "github.com/superchalupa/go-redfish/src/redfishresource"
 
 	eh "github.com/looplab/eventhorizon"
@@ -33,7 +33,7 @@ func (s *service) PropertyGet(
 func (s *service) AddView(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
 	ch.HandleCommand(ctx,
 		&domain.UpdateRedfishResourceProperties{
-			ID: plugins.GetUUID(s.baseResource),
+			ID: model.GetUUID(s.baseResource),
 			Properties: map[string]interface{}{
 				"Attributes@meta": map[string]interface{}{"GET": map[string]interface{}{"plugin": string(s.PluginType())}},
 			},

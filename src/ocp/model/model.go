@@ -1,4 +1,4 @@
-package plugins
+package model
 
 import (
 	domain "github.com/superchalupa/go-redfish/src/redfishresource"

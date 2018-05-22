@@ -3,20 +3,20 @@ package iom_chassis
 import (
 	"context"
 
-	plugins "github.com/superchalupa/go-redfish/src/ocp"
+	"github.com/superchalupa/go-redfish/src/ocp/model"
 	domain "github.com/superchalupa/go-redfish/src/redfishresource"
 
 	eh "github.com/looplab/eventhorizon"
 	"github.com/looplab/eventhorizon/utils"
 )
 
-func AddView(s *plugins.Service, ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
+func AddView(ctx context.Context, s *model.Service, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
 	ch.HandleCommand(
 		ctx,
 		&domain.CreateRedfishResource{
-			ID:          plugins.GetUUID(s),
+			ID:          model.GetUUID(s),
 			Collection:  false,
-			ResourceURI: plugins.GetOdataID(s),
+			ResourceURI: model.GetOdataID(s),
 			Type:        "#Chassis.v1_0_2.Chassis",
 			Context:     "/redfish/v1/$metadata#ChassisCollection.ChassisCollection/Members/$entity",
 			Privileges: map[string]interface{}{
@@ -28,7 +28,7 @@ func AddView(s *plugins.Service, ctx context.Context, ch eh.CommandHandler, eb e
 			},
 			Properties: map[string]interface{}{
 				"Id":             s.GetProperty("unique_name").(string),
-				"ManagedBy@meta": s.Meta(plugins.PropGET("managed_by")),
+				"ManagedBy@meta": s.Meta(model.PropGET("managed_by")),
 				// TODO: "ManagedBy@odata.count": 1
 
 				"SKU":          "",
