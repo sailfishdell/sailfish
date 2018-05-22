@@ -14,6 +14,9 @@ main:
             - name: "Chassis/System.Modular"
               level: "info"
 
+            - name: "Chassis/IOM.Slot"
+              level: "info"
+
             - name: "internal_commands"
               level: "warn"
 
