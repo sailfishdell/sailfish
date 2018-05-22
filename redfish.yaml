@@ -1,14 +1,23 @@
 main:
     log:
         # debug, info, warn, error, crit
-        Level: "warn"
+        Level: "debug"
         EnableStderr: true
         #FileName: "./out.log"
         ModulesToEnable:
             - name: "ec"
               level: "warn"
 
+            # all of the loggers below support a heirarchical arrangement where
+            # you can turn on debugging for all modules with (eg.)
+            # "Managers/CMC.Integrated", and you can selectively enable
+            # debugging for a single module by adding the full fqdd, eg.
+            # "Managers/CMC.Integrated.1". For the template config, we only
+            # specify the top levels
             - name: "Managers/CMC.Integrated"
+              level: "info"
+
+            - name: "Chassis/CMC.Integrated"
               level: "info"
 
             - name: "Chassis/System.Modular"
@@ -63,6 +72,12 @@ mappings:
         - {Property: "name",                    FQDD: "CMC.Integrated.1", Group: "Info", Index: "1", Name: "Name" }
         - {Property: "description",             FQDD: "CMC.Integrated.1", Group: "Info", Index: "1", Name: "Description" }
         - {Property: "health_state",            FQDD: "CMC.Integrated.1", Group: "Info", Index: "1", Name: "State" }
+        - {Property: "asset_tag",               FQDD: "CMC.Integrated.1", Group: "Info", Index: "1", Name: "AssetTag" }
+        - {Property: "serial",                  FQDD: "CMC.Integrated.1", Group: "Info", Index: "1", Name: "SerialNumber" }
+        - {Property: "part_number",             FQDD: "CMC.Integrated.1", Group: "Info", Index: "1", Name: "PartNumber" }
+        - {Property: "chassis_type",            FQDD: "CMC.Integrated.1", Group: "Info", Index: "1", Name: "ChassisType" }
+        - {Property: "model",                   FQDD: "CMC.Integrated.1", Group: "Info", Index: "1", Name: "Model" }
+        - {Property: "manufacturer",            FQDD: "CMC.Integrated.1", Group: "Info", Index: "1", Name: "Manufacturer" }
         - {Property: "redundancy_mode",         FQDD: "CMC.Integrated.1", Group: "Redundancy", Index: "1", Name: "Mode" }
         - {Property: "redundancy_health_state", FQDD: "CMC.Integrated.1", Group: "Redundancy", Index: "1", Name: "State" }
         - {Property: "redundancy_min",          FQDD: "CMC.Integrated.1", Group: "Redundancy", Index: "1", Name: "MinNumNeeded" }
@@ -73,6 +88,12 @@ mappings:
         - {Property: "name",                    FQDD: "CMC.Integrated.2", Group: "Info", Index: "1", Name: "Name" }
         - {Property: "description",             FQDD: "CMC.Integrated.2", Group: "Info", Index: "1", Name: "Description" }
         - {Property: "health_state",            FQDD: "CMC.Integrated.2", Group: "Info", Index: "1", Name: "State" }
+        - {Property: "asset_tag",               FQDD: "CMC.Integrated.2", Group: "Info", Index: "1", Name: "AssetTag" }
+        - {Property: "serial",                  FQDD: "CMC.Integrated.2", Group: "Info", Index: "1", Name: "SerialNumber" }
+        - {Property: "part_number",             FQDD: "CMC.Integrated.2", Group: "Info", Index: "1", Name: "PartNumber" }
+        - {Property: "chassis_type",            FQDD: "CMC.Integrated.2", Group: "Info", Index: "1", Name: "ChassisType" }
+        - {Property: "model",                   FQDD: "CMC.Integrated.2", Group: "Info", Index: "1", Name: "Model" }
+        - {Property: "manufacturer",            FQDD: "CMC.Integrated.2", Group: "Info", Index: "1", Name: "Manufacturer" }
         - {Property: "redundancy_mode",         FQDD: "CMC.Integrated.2", Group: "Redundancy", Index: "1", Name: "Mode" }
         - {Property: "redundancy_health_state", FQDD: "CMC.Integrated.2", Group: "Redundancy", Index: "1", Name: "State" }
         - {Property: "redundancy_min",          FQDD: "CMC.Integrated.2", Group: "Redundancy", Index: "1", Name: "MinNumNeeded" }
