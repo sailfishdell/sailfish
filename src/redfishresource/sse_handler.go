@@ -72,8 +72,18 @@ func (rh *SSEHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 
-		data := event.Data()
-		d, err := json.Marshal(data)
+		d, err := json.Marshal(
+            &struct {
+                Name string   `json:"name"`
+                Data interface{}   `json:"data"`
+            } {
+                Name: string(event.EventType()),
+                Data: event.Data(),
+            },
+            )
+        if err != nil {
+			requestLogger.Error("MARSHAL SSE FAILED", "err", err, "data", event.Data(), "event", event)
+        }
 		fmt.Fprintf(w, "data: %s\n\n", d)
 
 		flusher.Flush()
