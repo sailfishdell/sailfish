@@ -56,10 +56,10 @@ func AddView(ctx context.Context, logger log.Logger, s *model.Service, ch eh.Com
 						"ServiceTag@meta":      s.Meta(model.PropGET("service_tag")),
 						"InstPowerConsumption": 24,
 						"OemChassis": map[string]interface{}{
-							"@odata.id": "/redfish/v1/Chassis/" + s.GetProperty("unique_name").(string) + "/Attributes",
+							"@odata.id": model.GetOdataID(s) + "/Attributes",
 						},
 						"OemIOMConfiguration": map[string]interface{}{
-							"@odata.id": "/redfish/v1/Chassis/" + s.GetProperty("unique_name").(string) + "/IOMConfiguration",
+							"@odata.id": model.GetOdataID(s) + "/IOMConfiguration",
 						},
 					},
 				},
@@ -71,14 +71,14 @@ func AddView(ctx context.Context, logger log.Logger, s *model.Service, ch eh.Com
 							"GracefulShutdown",
 							"GracefulRestart",
 						},
-						"target": "/redfish/v1/Chassis/" + s.GetProperty("unique_name").(string) + "/Actions/Chassis.Reset",
+						"target": model.GetOdataID(s) + "/Actions/Chassis.Reset",
 					},
 					"Oem": map[string]interface{}{
 						"DellChassis.v1_0_0#DellChassis.ResetPeakPowerConsumption": map[string]interface{}{
-							"target": "/redfish/v1/Chassis/" + s.GetProperty("unique_name").(string) + "/Actions/Oem/DellChassis.ResetPeakPowerConsumption",
+							"target": model.GetOdataID(s) + "/Actions/Oem/DellChassis.ResetPeakPowerConsumption",
 						},
 						"#DellChassis.v1_0_0.VirtualReseat": map[string]interface{}{
-							"target": "/redfish/v1/Chassis/" + s.GetProperty("unique_name").(string) + "/Actions/Oem/DellChassis.VirtualReseat",
+							"target": model.GetOdataID(s) + "/Actions/Oem/DellChassis.VirtualReseat",
 						},
 					},
 				},

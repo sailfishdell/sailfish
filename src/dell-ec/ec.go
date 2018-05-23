@@ -30,6 +30,7 @@ import (
 	"github.com/superchalupa/go-redfish/src/dell-resources/chassis/cmc.integrated"
 	"github.com/superchalupa/go-redfish/src/dell-resources/chassis/iom.slot"
 	"github.com/superchalupa/go-redfish/src/dell-resources/chassis/system.modular"
+	"github.com/superchalupa/go-redfish/src/dell-resources/chassis/system.chassis"
 	"github.com/superchalupa/go-redfish/src/dell-resources/managers/cmc.integrated"
 )
 
@@ -73,6 +74,16 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		mgrLogger := logger.New("module", "Managers/"+mgrName, "module", "Managers/CMC.Integrated")
 		cmc_integrated_svc, _ := ec_manager.New(
 			ec_manager.WithUniqueName(mgrName),
+            model.UpdateProperty("name", ""),
+            model.UpdateProperty("description", ""),
+            model.UpdateProperty("model", ""),
+            model.UpdateProperty("timezone", ""),
+            model.UpdateProperty("firmware_version", ""),
+            model.UpdateProperty("health_state", ""),
+            model.UpdateProperty("redundancy_health_state", ""),
+            model.UpdateProperty("redundancy_mode", ""),
+            model.UpdateProperty("redundancy_min", ""),
+            model.UpdateProperty("redundancy_max", ""),
 		)
 		managers = append(managers, cmc_integrated_svc)
 		domain.RegisterPlugin(func() domain.Plugin { return cmc_integrated_svc })
@@ -135,6 +146,32 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		mgrAttrProp.AddView(ctx, ch, eb, ew)
 		mgrAttrProp.AddController(ctx, ch, eb, ew)
 	}
+
+
+    // ********************
+    // System.Chassis.1
+    // ********************
+    chasName := "System.Chassis.1"
+	chasLogger := logger.New("module", "Chassis/"+chasName, "module", "Chassis/System.Chassis")
+    chasSvc, _ := generic_chassis.New(
+        ec_manager.WithUniqueName(chasName),
+		generic_chassis.AddManagedBy(managers[0]),
+        model.UpdateProperty("asset_tag", ""),
+        model.UpdateProperty("serial", ""),
+        model.UpdateProperty("part_number", ""),
+        model.UpdateProperty("chassis_type", ""),
+        model.UpdateProperty("model", ""),
+        model.UpdateProperty("manufacturer", ""),
+        model.UpdateProperty("name", ""),
+        model.UpdateProperty("description", ""),
+        model.UpdateProperty("power_state", ""),
+    )
+    domain.RegisterPlugin(func() domain.Plugin { return chasSvc })
+    system_chassis.AddView(ctx, chasLogger, chasSvc, ch, eb, ew)
+    chasUpdateFn, _ := generic_dell_resource.AddController(ctx, chasLogger, chasSvc, "Chassis/"+chasName, ch, eb, ew)
+    updateFns = append(updateFns, chasUpdateFn)
+
+
 
 	for _, iomName := range []string{
 		"IOM.Slot.A1", "IOM.Slot.A1a", "IOM.Slot.A1b",

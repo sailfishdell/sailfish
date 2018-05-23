@@ -51,7 +51,7 @@ func AddView(s *model.Service, ctx context.Context, ch eh.CommandHandler, eb eh.
 				"Name":       "",
 				"Oem": map[string]interface{}{
 					"OemChassis": map[string]interface{}{
-						"@odata.id": "/redfish/v1/Chassis/" + s.GetProperty("unique_name").(string) + "/Attributes",
+						"@odata.id": model.GetOdataID(s) + "/Attributes",
 					},
 				},
 				"Actions": map[string]interface{}{
@@ -61,20 +61,20 @@ func AddView(s *model.Service, ctx context.Context, ch eh.CommandHandler, eb eh.
 								"Accept",
 								"Clear",
 							},
-							"target": "/redfish/v1/Chassis/" + s.GetProperty("unique_name").(string) + "/Actions/Oem/DellChassis.PeripheralMapping",
+							"target": model.GetOdataID(s) + "/Actions/Oem/DellChassis.PeripheralMapping",
 						},
 						"#Chassis.VirtualReseat": map[string]interface{}{
-							"target": "/redfish/v1/Chassis/" + s.GetProperty("unique_name").(string) + "/Actions/Chassis.VirtualReseat",
+							"target": model.GetOdataID(s) + "/Actions/Chassis.VirtualReseat",
 						},
 						"#DellChassis.v1_0_0.PeripheralMapping": map[string]interface{}{
 							"MappingType@Redfish.AllowableValues": []string{
 								"Accept",
 								"Clear",
 							},
-							"target": "/redfish/v1/Chassis/" + s.GetProperty("unique_name").(string) + "/Actions/Oem/DellChassis.PeripheralMapping",
+							"target": model.GetOdataID(s) + "/Actions/Oem/DellChassis.PeripheralMapping",
 						},
 						"#DellChassis.v1_0_0.VirtualReseat": map[string]interface{}{
-							"target": "/redfish/v1/Chassis/" + s.GetProperty("unique_name").(string) + "/Actions/Oem/DellChassis.VirtualReseat",
+							"target": model.GetOdataID(s) + "/Actions/Oem/DellChassis.VirtualReseat",
 						},
 					},
 				},

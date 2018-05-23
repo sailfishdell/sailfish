@@ -47,7 +47,7 @@ func AddView(ctx context.Context, logger log.Logger, s *model.Service, ch eh.Com
 				"IndicatorLED": "Lit",
 				"Oem": map[string]interface{}{
 					"OemChassis": map[string]interface{}{
-						"@odata.id": "/redfish/v1/Chassis/" + s.GetProperty("unique_name").(string) + "/Attributes",
+						"@odata.id": model.GetOdataID(s) + "/Attributes",
 					},
 				},
 			}})
