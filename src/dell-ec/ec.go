@@ -29,20 +29,22 @@ import (
 	"github.com/superchalupa/go-redfish/src/dell-resources/chassis"
 	"github.com/superchalupa/go-redfish/src/dell-resources/chassis/cmc.integrated"
 	"github.com/superchalupa/go-redfish/src/dell-resources/chassis/iom.slot"
-	"github.com/superchalupa/go-redfish/src/dell-resources/chassis/system.modular"
 	"github.com/superchalupa/go-redfish/src/dell-resources/chassis/system.chassis"
+	"github.com/superchalupa/go-redfish/src/dell-resources/chassis/system.chassis/power"
+	"github.com/superchalupa/go-redfish/src/dell-resources/chassis/system.chassis/power/powersupply"
+	"github.com/superchalupa/go-redfish/src/dell-resources/chassis/system.modular"
 	"github.com/superchalupa/go-redfish/src/dell-resources/managers/cmc.integrated"
 )
 
 type ocp struct {
-	rootSvc             *root.Service
-	sessionSvc          *session.Service
+	rootModel           *root.Service
+	sessionModel        *session.Service
 	configChangeHandler func()
 	logger              log.Logger
 }
 
-func (o *ocp) GetSessionSvc() *session.Service { return o.sessionSvc }
-func (o *ocp) ConfigChangeHandler()            { o.configChangeHandler() }
+func (o *ocp) GetSessionModel() *session.Service { return o.sessionModel }
+func (o *ocp) ConfigChangeHandler()              { o.configChangeHandler() }
 
 func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *sync.Mutex, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) *ocp {
 	logger = logger.New("module", "ec")
@@ -52,66 +54,89 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 
 	updateFns := []func(*viper.Viper){}
 
-	self.rootSvc, _ = root.New()
-	domain.RegisterPlugin(func() domain.Plugin { return self.rootSvc })
-	root.AddView(ctx, self.rootSvc, ch, eb, ew)
+	//
+	// Create the (empty) model behind the /redfish/v1 service root. Nothing interesting here
+	//
+	self.rootModel, _ = root.New()
+	domain.RegisterPlugin(func() domain.Plugin { return self.rootModel })
+	root.AddView(ctx, self.rootModel, ch, eb, ew)
+
+	//
+	// temporary workaround: we create /redfish/v1/{Chassis,Managers,Systems,Accounts}, etc in the background and that can race, so stop here for a sec.
+	//
 	time.Sleep(1)
 
-	self.sessionSvc, _ = session.New(
-		session.Root(self.rootSvc),
+	//
+	// Create the /redfish/v1/Sessions model and handler
+	//
+	self.sessionModel, _ = session.New(
+		session.Root(self.rootModel),
 	)
-	domain.RegisterPlugin(func() domain.Plugin { return self.sessionSvc })
-	self.sessionSvc.AddResource(ctx, ch, eb, ew)
+	domain.RegisterPlugin(func() domain.Plugin { return self.sessionModel })
+	self.sessionModel.AddResource(ctx, ch, eb, ew)
 
+	//
+	// Loop to create similarly named manager objects and the things attached there.
+	//
 	var managers []*model.Model
 	for _, mgrName := range []string{
 		"CMC.Integrated.1",
 		"CMC.Integrated.2",
 	} {
-		//************************
-		// Create MANAGER objects for CMC.Integrated
-		//************************
+		//*********************************************************************
+		// Create MANAGER objects for CMC.Integrated.N
+		//*********************************************************************
 		mgrLogger := logger.New("module", "Managers/"+mgrName, "module", "Managers/CMC.Integrated")
-		cmc_integrated_svc, _ := ec_manager.New(
+		cmcIntegratedModel, _ := ec_manager.New(
 			ec_manager.WithUniqueName(mgrName),
-            model.UpdateProperty("name", ""),
-            model.UpdateProperty("description", ""),
-            model.UpdateProperty("model", ""),
-            model.UpdateProperty("timezone", ""),
-            model.UpdateProperty("firmware_version", ""),
-            model.UpdateProperty("health_state", ""),
-            model.UpdateProperty("redundancy_health_state", ""),
-            model.UpdateProperty("redundancy_mode", ""),
-            model.UpdateProperty("redundancy_min", ""),
-            model.UpdateProperty("redundancy_max", ""),
+			model.UpdateProperty("name", ""),
+			model.UpdateProperty("description", ""),
+			model.UpdateProperty("model", ""),
+			model.UpdateProperty("timezone", ""),
+			model.UpdateProperty("firmware_version", ""),
+			model.UpdateProperty("health_state", ""),
+			model.UpdateProperty("redundancy_health_state", ""),
+			model.UpdateProperty("redundancy_mode", ""),
+			model.UpdateProperty("redundancy_min", ""),
+			model.UpdateProperty("redundancy_max", ""),
 		)
-		managers = append(managers, cmc_integrated_svc)
-		domain.RegisterPlugin(func() domain.Plugin { return cmc_integrated_svc })
-		ec_manager.AddView(ctx, mgrLogger, cmc_integrated_svc, ch, eb, ew)
-		updateFn, _ := generic_dell_resource.AddController(ctx, mgrLogger, cmc_integrated_svc, "Managers/"+mgrName, ch, eb, ew)
+		managers = append(managers, cmcIntegratedModel)
+		domain.RegisterPlugin(func() domain.Plugin { return cmcIntegratedModel })
+		ec_manager.AddView(ctx, mgrLogger, cmcIntegratedModel, ch, eb, ew)
+		updateFn, _ := generic_dell_resource.AddController(ctx, mgrLogger, cmcIntegratedModel, "Managers/"+mgrName, ch, eb, ew)
 		updateFns = append(updateFns, updateFn)
 
-		bmcAttrSvc, _ := attr_res.New(
-			attr_res.BaseResource(cmc_integrated_svc),
+		//
+		// Create the .../Attributes URI
+		//
+		bmcAttrModel, _ := attr_res.New(
+			attr_res.BaseResource(cmcIntegratedModel),
 			attr_res.WithURI("/redfish/v1/Managers/"+mgrName+"/Attributes"),
 			attr_res.WithUniqueName(mgrName+".Attributes"),
 		)
-		domain.RegisterPlugin(func() domain.Plugin { return bmcAttrSvc })
-		bmcAttrSvc.AddView(ctx, ch, eb, ew)
+		domain.RegisterPlugin(func() domain.Plugin { return bmcAttrModel })
+		bmcAttrModel.AddView(ctx, ch, eb, ew)
 
+		//
+		// Attach the actual AR attributes there
+		//
 		bmcAttrProp, _ := attr_prop.New(
-			attr_prop.BaseResource(bmcAttrSvc),
+			attr_prop.BaseResource(bmcAttrModel),
 			attr_prop.WithFQDD(mgrName),
 		)
 		domain.RegisterPlugin(func() domain.Plugin { return bmcAttrProp })
 		bmcAttrProp.AddView(ctx, ch, eb, ew)
+		//
+		// This controller listens for AttributeUpdated messages and filters
+		// them into the property list above if they match fqdd.
+		//
 		bmcAttrProp.AddController(ctx, ch, eb, ew)
 
-		//************************
-		// Create CHASSIS objects for CMC.Integrated
-		//************************
+		//*********************************************************************
+		// Create CHASSIS objects for CMC.Integrated.N
+		//*********************************************************************
 		chasLogger := logger.New("module", "Chassis/"+mgrName, "module", "Chassis/CMC.Integrated")
-		mgr_svc, _ := generic_chassis.New(
+		mgrModel, _ := generic_chassis.New(
 			ec_manager.WithUniqueName(mgrName),
 			model.UpdateProperty("asset_tag", ""),
 			model.UpdateProperty("serial", ""),
@@ -121,25 +146,25 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			model.UpdateProperty("manufacturer", ""),
 			model.UpdateProperty("name", ""),
 		)
-		domain.RegisterPlugin(func() domain.Plugin { return mgr_svc })
-		cmc_chassis.AddView(ctx, chasLogger, mgr_svc, ch, eb, ew)
+		domain.RegisterPlugin(func() domain.Plugin { return mgrModel })
+		cmc_chassis.AddView(ctx, chasLogger, mgrModel, ch, eb, ew)
 		// NOTE: looks like we can use the same mapping to model as manager object
-		chasUpdateFn, _ := generic_dell_resource.AddController(ctx, chasLogger, mgr_svc, "Managers/"+mgrName, ch, eb, ew)
+		chasUpdateFn, _ := generic_dell_resource.AddController(ctx, chasLogger, mgrModel, "Managers/"+mgrName, ch, eb, ew)
 		updateFns = append(updateFns, chasUpdateFn)
 
-		mgrAttrSvc, _ := attr_res.New(
-			attr_res.BaseResource(mgr_svc),
+		mgrAttrModel, _ := attr_res.New(
+			attr_res.BaseResource(mgrModel),
 			attr_res.WithURI("/redfish/v1/Chassis/"+mgrName+"/Attributes"),
 			attr_res.WithUniqueName(mgrName+".Attributes"),
 		)
-		domain.RegisterPlugin(func() domain.Plugin { return mgrAttrSvc })
-		mgrAttrSvc.AddView(ctx, ch, eb, ew)
+		domain.RegisterPlugin(func() domain.Plugin { return mgrAttrModel })
+		mgrAttrModel.AddView(ctx, ch, eb, ew)
 
 		// TODO: would be nice if we could re-use the underlying model between the manager and chassis object
 		//       should be do-able if we modify BaseResource() to be AttachToResource(), and make the underlying data
 		//       an array
 		mgrAttrProp, _ := attr_prop.New(
-			attr_prop.BaseResource(mgrAttrSvc),
+			attr_prop.BaseResource(mgrAttrModel),
 			attr_prop.WithFQDD(mgrName),
 		)
 		domain.RegisterPlugin(func() domain.Plugin { return mgrAttrProp })
@@ -147,32 +172,90 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		mgrAttrProp.AddController(ctx, ch, eb, ew)
 	}
 
-
-    // ********************
-    // System.Chassis.1
-    // ********************
-    chasName := "System.Chassis.1"
+	// ************************************************************************
+	// CHASSIS System.Chassis.1
+	// ************************************************************************
+	chasName := "System.Chassis.1"
 	chasLogger := logger.New("module", "Chassis/"+chasName, "module", "Chassis/System.Chassis")
-    chasSvc, _ := generic_chassis.New(
-        ec_manager.WithUniqueName(chasName),
+	chasModel, _ := generic_chassis.New(
+		ec_manager.WithUniqueName(chasName),
 		generic_chassis.AddManagedBy(managers[0]),
-        model.UpdateProperty("asset_tag", ""),
-        model.UpdateProperty("serial", ""),
-        model.UpdateProperty("part_number", ""),
-        model.UpdateProperty("chassis_type", ""),
-        model.UpdateProperty("model", ""),
-        model.UpdateProperty("manufacturer", ""),
-        model.UpdateProperty("name", ""),
-        model.UpdateProperty("description", ""),
-        model.UpdateProperty("power_state", ""),
-    )
-    domain.RegisterPlugin(func() domain.Plugin { return chasSvc })
-    system_chassis.AddView(ctx, chasLogger, chasSvc, ch, eb, ew)
-    chasUpdateFn, _ := generic_dell_resource.AddController(ctx, chasLogger, chasSvc, "Chassis/"+chasName, ch, eb, ew)
-    updateFns = append(updateFns, chasUpdateFn)
+		model.UpdateProperty("asset_tag", ""),
+		model.UpdateProperty("serial", ""),
+		model.UpdateProperty("part_number", ""),
+		model.UpdateProperty("chassis_type", ""),
+		model.UpdateProperty("model", ""),
+		model.UpdateProperty("manufacturer", ""),
+		model.UpdateProperty("name", ""),
+		model.UpdateProperty("description", ""),
+		model.UpdateProperty("power_state", ""),
+	)
+	domain.RegisterPlugin(func() domain.Plugin { return chasModel })
+	system_chassis.AddView(ctx, chasLogger, chasModel, ch, eb, ew)
+	chasUpdateFn, _ := generic_dell_resource.AddController(ctx, chasLogger, chasModel, "Chassis/"+chasName, ch, eb, ew)
+	updateFns = append(updateFns, chasUpdateFn)
 
+	chasAttrModel, _ := attr_res.New(
+		attr_res.BaseResource(chasModel),
+		attr_res.WithURI("/redfish/v1/Chassis/"+chasName+"/Attributes"),
+		attr_res.WithUniqueName(chasName+".Attributes"),
+	)
+	domain.RegisterPlugin(func() domain.Plugin { return chasAttrModel })
+	chasAttrModel.AddView(ctx, ch, eb, ew)
 
+	// TODO: would be nice if we could re-use the underlying model between the manager and chassis object
+	//       should be do-able if we modify BaseResource() to be AttachToResource(), and make the underlying data
+	//       an array
+	chasAttrProp, _ := attr_prop.New(
+		attr_prop.BaseResource(chasAttrModel),
+		attr_prop.WithFQDD(chasName),
+	)
+	domain.RegisterPlugin(func() domain.Plugin { return chasAttrProp })
+	chasAttrProp.AddView(ctx, ch, eb, ew)
+	chasAttrProp.AddController(ctx, ch, eb, ew)
 
+	//*********************************************************************
+	// Create Power objects for System.Chassis.1
+	//*********************************************************************
+	powerLogger := chasLogger.New("module", "power")
+
+	powerModel := model.NewModel(
+		ec_manager.WithUniqueName("Power"),
+		model.UpdateProperty("power_supply_views", []interface{}{}),
+		model.UUID(),
+		model.PluginType(domain.PluginType("Power")),
+		model.PropertyOnce("uri", "/redfish/v1/Chassis/"+chasName+"/Power"),
+	)
+	domain.RegisterPlugin(func() domain.Plugin { return powerModel })
+	power.AddView(ctx, powerLogger, powerModel, ch, eb, ew)
+
+	psus := []interface{}{}
+	for _, psuName := range []string{
+		"PSU.Slot.1", "PSU.Slot.2", "PSU.Slot.3",
+		"PSU.Slot.4", "PSU.Slot.5", "PSU.Slot.6",
+	} {
+		psModel := model.NewModel(
+			model.UUID(),
+			model.PropertyOnce("uri", "/redfish/v1/Chassis/"+chasName+"/Power/PowerSupplies/"+psuName),
+			model.PluginType(domain.PluginType("PowerSupply:"+psuName)),
+			model.UpdateProperty("unique_id", psuName),
+			model.UpdateProperty("capacity_watts", "3000"),
+			model.UpdateProperty("name", psuName),
+		)
+		domain.RegisterPlugin(func() domain.Plugin { return psModel })
+		psu := powersupply.GetViewFragment(ctx, powerLogger, psModel, ch, eb, ew)
+		p := domain.RedfishResourceProperty{}
+		p.Parse(psu)
+		psus = append(psus, p)
+	}
+	p := domain.RedfishResourceProperty{Value: psus}
+	// p.Parse(psus)
+	powerModel.ApplyOption(model.UpdateProperty("power_supply_views", p))
+	powerLogger.Info("Updating view with psu list", "power_supply_views", p, "raw", psus)
+
+	// ************************************************************************
+	// CHASSIS IOM.Slot
+	// ************************************************************************
 	for _, iomName := range []string{
 		"IOM.Slot.A1", "IOM.Slot.A1a", "IOM.Slot.A1b",
 		"IOM.Slot.A2", "IOM.Slot.A2a", "IOM.Slot.A2b",
@@ -272,7 +355,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	// pull the config from the YAML file to populate some static config options
 	self.configChangeHandler = func() {
 		logger.Info("Re-applying configuration from config file.")
-		self.sessionSvc.ApplyOption(model.UpdateProperty("session_timeout", cfgMgr.GetInt("session.timeout")))
+		self.sessionModel.ApplyOption(model.UpdateProperty("session_timeout", cfgMgr.GetInt("session.timeout")))
 
 		for _, fn := range updateFns {
 			fn(cfgMgr)
@@ -299,7 +382,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		_ = ioutil.WriteFile(dumpFileName, output, 0644)
 	}
 
-	self.sessionSvc.AddPropertyObserver("session_timeout", func(newval interface{}) {
+	self.sessionModel.AddPropertyObserver("session_timeout", func(newval interface{}) {
 		viperMu.Lock()
 		cfgMgr.Set("session.timeout", newval.(int))
 		viperMu.Unlock()

@@ -33,9 +33,9 @@ func AddView(ctx context.Context, logger log.Logger, s *model.Model, ch eh.Comma
 				"DELETE": []string{}, // can't be deleted
 			},
 			Properties: map[string]interface{}{
-				"Id":                       s.GetProperty("unique_name").(string),
-				"Name@meta":                s.Meta(model.PropGET("name")),
-                // TODO: is this in AR somewhere?
+				"Id":        s.GetProperty("unique_name").(string),
+				"Name@meta": s.Meta(model.PropGET("name")),
+				// TODO: is this in AR somewhere?
 				"ManagerType":              "BMC",
 				"Description@meta":         s.Meta(model.PropGET("description")),
 				"Model@meta":               s.Meta(model.PropGET("model")),
@@ -97,7 +97,7 @@ func AddView(ctx context.Context, logger log.Logger, s *model.Model, ch eh.Comma
 				},
 
 				"LogServices": map[string]interface{}{
-					"@odata.id": model.GetOdataID(s) +  "/LogServices",
+					"@odata.id": model.GetOdataID(s) + "/LogServices",
 				},
 
 				"GraphicalConsole": map[string]interface{}{
@@ -110,10 +110,10 @@ func AddView(ctx context.Context, logger log.Logger, s *model.Model, ch eh.Comma
 				"Oem": map[string]interface{}{
 					"@odata.type": "#DellManager.v1_0_0.DellManager",
 					"OemAttributes": map[string]interface{}{
-						"@odata.id": model.GetOdataID(s) +  "/Attributes",
+						"@odata.id": model.GetOdataID(s) + "/Attributes",
 					},
 					"CertificateService": map[string]interface{}{
-						"@odata.id": model.GetOdataID(s) +  "/CertificateService",
+						"@odata.id": model.GetOdataID(s) + "/CertificateService",
 					},
 				},
 
@@ -132,10 +132,10 @@ func AddView(ctx context.Context, logger log.Logger, s *model.Model, ch eh.Comma
 								"ResetFactoryConfig",
 								"ResetToEngineeringDefaults",
 							},
-							"target": model.GetOdataID(s) +  "/Actions/Oem/DellManager.ResetToDefaults",
+							"target": model.GetOdataID(s) + "/Actions/Oem/DellManager.ResetToDefaults",
 						},
 						"#Manager.ForceFailover": map[string]interface{}{
-							"target": model.GetOdataID(s) +  "/Actions/Manager.ForceFailover",
+							"target": model.GetOdataID(s) + "/Actions/Manager.ForceFailover",
 						},
 					},
 				},

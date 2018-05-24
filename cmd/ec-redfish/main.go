@@ -115,12 +115,12 @@ func main() {
 	// Note: this works by using the session service to get user details from token to pass up the stack using the embedded struct
 	chainAuth := func(u string, p []string) http.Handler { return domain.NewRedfishHandler(domainObjs, logger, u, p) }
 	m.PathPrefix("/redfish/v1").Methods("GET", "PUT", "POST", "PATCH", "DELETE", "HEAD", "OPTIONS").HandlerFunc(
-		idrac_mvc.GetSessionSvc().MakeHandlerFunc(domainObjs.EventBus, domainObjs, chainAuth, basicauth.MakeHandlerFunc(chainAuth, chainAuth("UNKNOWN", []string{"Unauthenticated"}))))
+		idrac_mvc.GetSessionModel().MakeHandlerFunc(domainObjs.EventBus, domainObjs, chainAuth, basicauth.MakeHandlerFunc(chainAuth, chainAuth("UNKNOWN", []string{"Unauthenticated"}))))
 
 	// SSE
 	chainAuthSSE := func(u string, p []string) http.Handler { return domain.NewSSEHandler(domainObjs, logger, u, p) }
 	m.PathPrefix("/events").Methods("GET").HandlerFunc(
-		idrac_mvc.GetSessionSvc().MakeHandlerFunc(domainObjs.EventBus, domainObjs, chainAuthSSE, basicauth.MakeHandlerFunc(chainAuthSSE, chainAuthSSE("UNKNOWN", []string{"Unauthenticated"}))))
+		idrac_mvc.GetSessionModel().MakeHandlerFunc(domainObjs.EventBus, domainObjs, chainAuthSSE, basicauth.MakeHandlerFunc(chainAuthSSE, chainAuthSSE("UNKNOWN", []string{"Unauthenticated"}))))
 
 	// backend command handling
 	m.PathPrefix("/api/{command}").Handler(domainObjs.GetInternalCommandHandler(ctx))
@@ -289,6 +289,7 @@ func main() {
 	}
 
 	logger.Debug("Listening", "module", "main", "addresses", fmt.Sprintf("%v\n", cfgMgr.GetStringSlice("listen")))
+	SdNotify("READY=1")
 
 	// wait until we get an interrupt (CTRL-C)
 	<-intr

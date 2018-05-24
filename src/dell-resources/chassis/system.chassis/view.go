@@ -29,7 +29,7 @@ func AddView(ctx context.Context, logger log.Logger, s *model.Service, ch eh.Com
 				"DELETE": []string{}, // can't be deleted
 			},
 			Properties: map[string]interface{}{
-				"Id": s.GetProperty("unique_name").(string),
+				"Id":                s.GetProperty("unique_name").(string),
 				"SerialNumber@meta": s.Meta(model.PropGET("serial")),
 				"ChassisType@meta":  s.Meta(model.PropGET("chassis_type")),
 				"Model@meta":        s.Meta(model.PropGET("model")),
@@ -40,59 +40,57 @@ func AddView(ctx context.Context, logger log.Logger, s *model.Service, ch eh.Com
 				"Description@meta":  s.Meta(model.PropGET("description")),
 				"PowerState@meta":   s.Meta(model.PropGET("power_state")),
 
+				"IndicatorLED": "Lit",
+				"SKU":          "PT00033",
 
-                "IndicatorLED": "Lit",
-                "SKU": "PT00033",
+				"Links": map[string]interface{}{
+					"ManagedBy@meta": s.Meta(model.PropGET("managed_by")),
+				},
 
-                 "Links": map[string]interface{}{
-                    "ManagedBy@meta": s.Meta(model.PropGET("managed_by")),
-                 },
+				"Status": map[string]interface{}{
+					"HealthRollup": "OK",
+					"State":        "Enabled",
+					"Health":       "OK",
+				},
 
-                 "Status": map[string]interface{}{
-                      "HealthRollup": "OK",
-                      "State": "Enabled",
-                      "Health": "OK",
-                 },
+				"Power":   map[string]interface{}{"@odata.id": model.GetOdataID(s) + "/Power"},
+				"Thermal": map[string]interface{}{"@odata.id": model.GetOdataID(s) + "/Thermal"},
+				"Oem": map[string]interface{}{
+					"Dell": map[string]interface{}{
+						"SubSystemHealth": map[string]interface{}{
+							"@odata.id": model.GetOdataID(s) + "/SubSystemHealth",
+						},
+						"Slots": map[string]interface{}{
+							"@odata.id": model.GetOdataID(s) + "/Slots",
+						},
+						"SlotConfigs": map[string]interface{}{
+							"@odata.id": model.GetOdataID(s) + "/SlotConfigs",
+						},
+						"OemChassis": map[string]interface{}{
+							"@odata.id": model.GetOdataID(s) + "/Attributes",
+						},
+					},
+				},
 
-                 "Power": map[string]interface{}{ "@odata.id": model.GetOdataID(s) + "/Power" },
-                 "Thermal": map[string]interface{}{ "@odata.id": model.GetOdataID(s) + "/Thermal" },
-                 "Oem": map[string]interface{}{
-                      "Dell": map[string]interface{}{
-                           "SubSystemHealth": map[string]interface{}{
-                                "@odata.id": model.GetOdataID(s) + "/SubSystemHealth",
-                           },
-                           "Slots": map[string]interface{}{
-                                "@odata.id": model.GetOdataID(s) + "/Slots",
-                           },
-                           "SlotConfigs": map[string]interface{}{
-                                "@odata.id": model.GetOdataID(s) + "/SlotConfigs",
-                           },
-                           "OemChassis": map[string]interface{}{
-                                "@odata.id": model.GetOdataID(s) + "/Attributes",
-                           },
-                      },
-                 },
-
-                 "Actions": map[string]interface{}{
-                      "#Chassis.Reset": map[string]interface{}{
-                           "ResetType@Redfish.AllowableValues": []string{
-                                "On",
-                                "ForceOff",
-                                "GracefulShutdown",
-                                "GracefulRestart",
-                           },
-                           "target": model.GetOdataID(s) + "/Actions/Chassis.Reset",
-                      },
-                      "Oem": map[string]interface{}{
-                           "#MSMConfigBackupURI": map[string]interface{}{
-                                "target": model.GetOdataID(s) + "/Actions/Oem/MSMConfigBackup",
-                           },
-                           "#DellChassis.v1_0_0.MSMConfigBackup": map[string]interface{}{
-                                "target": model.GetOdataID(s) + "/Actions/Oem/DellChassis.MSMConfigBackup",
-                           },
-                      },
-                 },
-
+				"Actions": map[string]interface{}{
+					"#Chassis.Reset": map[string]interface{}{
+						"ResetType@Redfish.AllowableValues": []string{
+							"On",
+							"ForceOff",
+							"GracefulShutdown",
+							"GracefulRestart",
+						},
+						"target": model.GetOdataID(s) + "/Actions/Chassis.Reset",
+					},
+					"Oem": map[string]interface{}{
+						"#MSMConfigBackupURI": map[string]interface{}{
+							"target": model.GetOdataID(s) + "/Actions/Oem/MSMConfigBackup",
+						},
+						"#DellChassis.v1_0_0.MSMConfigBackup": map[string]interface{}{
+							"target": model.GetOdataID(s) + "/Actions/Oem/DellChassis.MSMConfigBackup",
+						},
+					},
+				},
 			}})
 
 	ah.CreateAction(ctx, ch, eb, ew,
