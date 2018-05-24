@@ -26,6 +26,9 @@ main:
             - name: "Chassis/IOM.Slot"
               level: "info"
 
+            - name: "power"
+              level: "info"
+
             - name: "internal_commands"
               level: "warn"
 
