@@ -32,6 +32,10 @@ func New(options ...interface{}) (*service, error) {
 	return s, nil
 }
 
+func (s *service) GetModel() *model.Model {
+	return s.Service
+}
+
 func BaseResource(b odataInt) Option {
 	return func(p *service) error {
 		p.baseResource = b

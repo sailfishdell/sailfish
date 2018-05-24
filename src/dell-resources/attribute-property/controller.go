@@ -12,9 +12,9 @@ import (
 )
 
 const (
-	AttributeUpdated eh.EventType = "AttributeUpdated"
-	AttributeUpdateRequest eh.EventType = "AttributeUpdateRequest"
-	AttributeGetCurrentValueRequest eh.EventType = "AttributeUpdateRequest"
+	AttributeUpdated                eh.EventType = "AttributeUpdated"
+	AttributeUpdateRequest          eh.EventType = "AttributeUpdateRequest"
+	AttributeGetCurrentValueRequest eh.EventType = "AttributeGetCurrentValueRequest"
 )
 
 func init() {
@@ -23,17 +23,17 @@ func init() {
 }
 
 type AttributeUpdatedData struct {
-    ReqID eh.UUID
+	ReqID eh.UUID
 	FQDD  string
 	Group string
 	Index string
 	Name  string
 	Value interface{}
-    Error string
+	Error string
 }
 
 type AttributeUpdateRequestData struct {
-    ReqID eh.UUID
+	ReqID eh.UUID
 	FQDD  string
 	Group string
 	Index string
@@ -47,7 +47,6 @@ type AttributeGetCurrentValueRequestData struct {
 	Index string
 	Name  string
 }
-
 
 func (s *service) AddController(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
 	// stream processor for action events

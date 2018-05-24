@@ -3,6 +3,7 @@ package generic_dell_resource
 import (
 	"context"
 	"sync"
+	"time"
 
 	"github.com/spf13/viper"
 
@@ -74,6 +75,8 @@ func AddController(ctx context.Context, logger log.Logger, s *model.Service, nam
 			logger.Warn("unamrshal failed", "err", err)
 		}
 		logger.Info("updating mappings", "mappings", mappings)
+
+		go requestUpdates(ctx, logger, eb, mappings, &mappingsMu)
 	}, nil
 }
 
@@ -83,5 +86,21 @@ func SelectAttributeUpdate() func(eh.Event) bool {
 			return true
 		}
 		return false
+	}
+}
+
+func requestUpdates(ctx context.Context, logger log.Logger, eb eh.EventBus, mappings []mapping, mappingsMu *sync.RWMutex) {
+	for {
+		time.Sleep(120 * time.Second)
+		for _, m := range mappings {
+			logger.Crit("SENDING ATTRIBUTE REQUEST", "mapping", m)
+			data := attr_prop.AttributeGetCurrentValueRequestData{
+				FQDD:  m.FQDD,
+				Group: m.Group,
+				Index: m.Index,
+				Name:  m.Name,
+			}
+			eb.PublishEvent(ctx, eh.NewEvent(attr_prop.AttributeGetCurrentValueRequest, data, time.Now()))
+		}
 	}
 }
