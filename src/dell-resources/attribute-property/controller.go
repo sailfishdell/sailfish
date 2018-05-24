@@ -13,19 +13,41 @@ import (
 
 const (
 	AttributeUpdated eh.EventType = "AttributeUpdated"
+	AttributeUpdateRequest eh.EventType = "AttributeUpdateRequest"
+	AttributeGetCurrentValueRequest eh.EventType = "AttributeUpdateRequest"
 )
 
 func init() {
 	eh.RegisterEventData(AttributeUpdated, func() eh.EventData { return &AttributeUpdatedData{} })
+	eh.RegisterEventData(AttributeUpdateRequest, func() eh.EventData { return &AttributeUpdateRequestData{} })
 }
 
 type AttributeUpdatedData struct {
+    ReqID eh.UUID
+	FQDD  string
+	Group string
+	Index string
+	Name  string
+	Value interface{}
+    Error string
+}
+
+type AttributeUpdateRequestData struct {
+    ReqID eh.UUID
 	FQDD  string
 	Group string
 	Index string
 	Name  string
 	Value interface{}
 }
+
+type AttributeGetCurrentValueRequestData struct {
+	FQDD  string
+	Group string
+	Index string
+	Name  string
+}
+
 
 func (s *service) AddController(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
 	// stream processor for action events
