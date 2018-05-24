@@ -234,19 +234,31 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		"PSU.Slot.1", "PSU.Slot.2", "PSU.Slot.3",
 		"PSU.Slot.4", "PSU.Slot.5", "PSU.Slot.6",
 	} {
+		// note we don't AddView for this one because we already have this in our view
+		psuAttrProp, _ := attr_prop.New(
+			attr_prop.WithFQDD(psuName),
+		)
+		domain.RegisterPlugin(func() domain.Plugin { return psuAttrProp })
+		psuAttrProp.AddController(ctx, ch, eb, ew)
+
 		psModel := model.NewModel(
 			model.UUID(),
 			model.PropertyOnce("uri", "/redfish/v1/Chassis/"+chasName+"/Power/PowerSupplies/"+psuName),
 			model.PluginType(domain.PluginType("PowerSupply:"+psuName)),
 			model.UpdateProperty("unique_id", psuName),
-			model.UpdateProperty("capacity_watts", "3000"),
 			model.UpdateProperty("name", psuName),
+			model.UpdateProperty("capacity_watts", ""),
+			model.UpdateProperty("line_input_voltage", ""),
+			model.UpdateProperty("firmware_version", ""),
+			model.UpdateProperty("component_id", ""),
+			model.UpdateProperty("input_current", ""),
 		)
 		domain.RegisterPlugin(func() domain.Plugin { return psModel })
-		psu := powersupply.GetViewFragment(ctx, powerLogger, psModel, ch, eb, ew)
+		psu := powersupply.GetViewFragment(ctx, powerLogger, psModel, psuAttrProp.GetModel(), ch, eb, ew)
 		p := domain.RedfishResourceProperty{}
 		p.Parse(psu)
 		psus = append(psus, p)
+
 	}
 	p := domain.RedfishResourceProperty{Value: psus}
 	// p.Parse(psus)
