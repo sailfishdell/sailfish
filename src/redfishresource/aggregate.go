@@ -3,6 +3,7 @@ package domain
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"strings"
 	"sync"
 
@@ -336,6 +337,9 @@ func (rrp *RedfishResourceProperty) Process(ctx context.Context, agg *RedfishRes
 				plugin.PropertyPatch(ctx, agg, &ret, meta_t, req, present)
 			}
 		}
+
+		ContextLogger(ctx, "aggregate").Debug("GOT Property", "ret", ret, "TYPE", fmt.Sprintf("%T", ret), "ret.Value.TYPE", fmt.Sprintf("%T", ret.Value))
+
 	}
 
 	switch ret.Value.(type) {
@@ -403,6 +407,14 @@ func (rrp *RedfishResourceProperty) Process(ctx context.Context, agg *RedfishRes
 			newArr = append(newArr, res)
 		}
 		ret.Value = newArr
+
+	case RedfishResourceProperty:
+		v := ret.Value.(RedfishResourceProperty)
+		ret.Value = v.Process(ctx, agg, property, method, req, true)
+
+	default:
+		ContextLogger(ctx, "aggregate").Debug("CANT HANDLE", "ret", ret, "VALUE TYPE", fmt.Sprintf("%T", ret.Value))
+
 	}
 
 	return
