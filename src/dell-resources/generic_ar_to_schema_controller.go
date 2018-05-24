@@ -65,6 +65,10 @@ func AddController(ctx context.Context, logger log.Logger, s *model.Service, nam
 		defer mappingsMu.Unlock()
 
 		k := cfg.Sub("mappings")
+		if k == nil {
+			logger.Warn("missing config file section: 'mappings'")
+			return
+		}
 		err := k.UnmarshalKey(name, &mappings)
 		if err != nil {
 			logger.Warn("unamrshal failed", "err", err)
