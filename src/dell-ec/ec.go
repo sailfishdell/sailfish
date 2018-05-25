@@ -269,7 +269,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 
 	}
 	p := domain.RedfishResourceProperty{Value: psus}
-	// p.Parse(psus)
 	powerModel.ApplyOption(model.UpdateProperty("power_supply_views", p))
 	powerLogger.Info("Updating view with psu list", "power_supply_views", p, "raw", psus)
 
@@ -329,7 +328,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		fan_views = append(fan_views, p)
 	}
 
-	fanView := domain.RedfishResourceProperty{Value: psus}
+	fanView := domain.RedfishResourceProperty{Value: fan_views}
 	thermalModel.ApplyOption(model.UpdateProperty("fan_views", fanView))
 
 	// ************************************************************************
