@@ -32,6 +32,8 @@ import (
 	"github.com/superchalupa/go-redfish/src/dell-resources/chassis/system.chassis"
 	"github.com/superchalupa/go-redfish/src/dell-resources/chassis/system.chassis/power"
 	"github.com/superchalupa/go-redfish/src/dell-resources/chassis/system.chassis/power/powersupply"
+	"github.com/superchalupa/go-redfish/src/dell-resources/chassis/system.chassis/thermal"
+	"github.com/superchalupa/go-redfish/src/dell-resources/chassis/system.chassis/thermal/fans"
 	"github.com/superchalupa/go-redfish/src/dell-resources/chassis/system.modular"
 	"github.com/superchalupa/go-redfish/src/dell-resources/managers/cmc.integrated"
 )
@@ -223,7 +225,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		ec_manager.WithUniqueName("Power"),
 		model.UpdateProperty("power_supply_views", []interface{}{}),
 		model.UUID(),
-		model.PluginType(domain.PluginType("Power")),
+		model.PluginType(domain.PluginType("Power:"+chasName)),
 		model.PropertyOnce("uri", "/redfish/v1/Chassis/"+chasName+"/Power"),
 	)
 	domain.RegisterPlugin(func() domain.Plugin { return powerModel })
@@ -270,6 +272,65 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	// p.Parse(psus)
 	powerModel.ApplyOption(model.UpdateProperty("power_supply_views", p))
 	powerLogger.Info("Updating view with psu list", "power_supply_views", p, "raw", psus)
+
+	//*********************************************************************
+	// Create Thermal objects for System.Chassis.1
+	//*********************************************************************
+	thermalLogger := chasLogger.New("module", "thermal")
+
+	thermalModel := model.NewModel(
+		ec_manager.WithUniqueName("Thermal"),
+		model.UpdateProperty("fan_views", []interface{}{}),
+		model.UpdateProperty("thermal_views", []interface{}{}),
+		model.UUID(),
+		model.PluginType(domain.PluginType("Thermal:"+chasName)),
+		model.PropertyOnce("uri", "/redfish/v1/Chassis/"+chasName+"/Thermal"),
+	)
+	domain.RegisterPlugin(func() domain.Plugin { return thermalModel })
+	thermal.AddView(ctx, thermalLogger, thermalModel, ch, eb, ew)
+
+	fan_views := []interface{}{}
+	for _, fanName := range []string{
+		"Fan.Slot.1", "Fan.Slot.2", "Fan.Slot.3",
+		"Fan.Slot.4", "Fan.Slot.5", "Fan.Slot.6",
+		"Fan.Slot.7", "Fan.Slot.8", "Fan.Slot.9",
+	} {
+		// note we don't AddView for this one because we already have this in our view
+		fanAttrProp, _ := attr_prop.New(
+			attr_prop.WithFQDD(fanName),
+		)
+		domain.RegisterPlugin(func() domain.Plugin { return fanAttrProp })
+		fanAttrProp.AddController(ctx, ch, eb, ew)
+
+		psModel := model.NewModel(
+			model.UUID(),
+			model.PropertyOnce("uri", "/redfish/v1/Chassis/"+chasName+"/Sensors/Fans/"+fanName),
+			model.PluginType(domain.PluginType("Fans:"+fanName)),
+			model.UpdateProperty("unique_id", fanName),
+			model.UpdateProperty("name", "UNSET"),
+			model.UpdateProperty("firmware_version", "UNSET"),
+			model.UpdateProperty("hardware_version", "UNSET"),
+			model.UpdateProperty("reading", "UNSET"),
+			model.UpdateProperty("reading_units", "UNSET"),
+			model.UpdateProperty("oem_reading", "UNSET"),
+			model.UpdateProperty("oem_reading_units", "UNSET"),
+			model.UpdateProperty("graphics_uri", "UNSET"),
+		)
+		domain.RegisterPlugin(func() domain.Plugin { return psModel })
+		fan := fans.AddView(ctx, thermalLogger, psModel, fanAttrProp.GetModel(), ch, eb, ew)
+
+		updateFn, _ := generic_dell_resource.AddController(ctx,
+			logger.New("module", "Chassis/"+chasName+"/Sensors/Fans/"+fanName, "module", "Chassis/"+chasName+"/Sensors/Fans/Fan.Slot"),
+			psModel, "Fan/"+fanName, ch, eb, ew)
+		updateFns = append(updateFns, updateFn)
+
+		p := domain.RedfishResourceProperty{}
+		p.Parse(fan)
+		fan_views = append(fan_views, p)
+	}
+
+	fanView := domain.RedfishResourceProperty{Value: psus}
+	thermalModel.ApplyOption(model.UpdateProperty("fan_views", fanView))
 
 	// ************************************************************************
 	// CHASSIS IOM.Slot
