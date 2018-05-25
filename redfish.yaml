@@ -70,6 +70,34 @@ session:
 
 mappings:
     # map AR entries to back end model
+    PSU/PSU.Slot.1:
+        - {Property: "firmware_version",    FQDD: "PSU.Slot.1", Group: "Info", Index: "1", Name: "FirmwareVersion" }
+        - {Property: "capacity_watts",      FQDD: "PSU.Slot.1", Group: "Info", Index: "1", Name: "Capacity" }
+        - {Property: "component_id",        FQDD: "PSU.Slot.1", Group: "Info", Index: "1", Name: "ComponentID" }
+        # looks like these are not in AR
+        #- {Property: "line_input_voltage",  FQDD: "PSU.Slot.1", Group: "Info", Index: "1", Name: "TODO" }
+        #- {Property: "input_current",       FQDD: "PSU.Slot.1", Group: "Info", Index: "1", Name: "TODO" }
+    PSU/PSU.Slot.2:
+        - {Property: "firmware_version",    FQDD: "PSU.Slot.2", Group: "Info", Index: "1", Name: "FirmwareVersion" }
+        - {Property: "capacity_watts",      FQDD: "PSU.Slot.2", Group: "Info", Index: "1", Name: "Capacity" }
+        - {Property: "component_id",        FQDD: "PSU.Slot.2", Group: "Info", Index: "1", Name: "ComponentID" }
+    PSU/PSU.Slot.3:
+        - {Property: "firmware_version",    FQDD: "PSU.Slot.3", Group: "Info", Index: "1", Name: "FirmwareVersion" }
+        - {Property: "capacity_watts",      FQDD: "PSU.Slot.3", Group: "Info", Index: "1", Name: "Capacity" }
+        - {Property: "component_id",        FQDD: "PSU.Slot.3", Group: "Info", Index: "1", Name: "ComponentID" }
+    PSU/PSU.Slot.4:
+        - {Property: "firmware_version",    FQDD: "PSU.Slot.4", Group: "Info", Index: "1", Name: "FirmwareVersion" }
+        - {Property: "capacity_watts",      FQDD: "PSU.Slot.4", Group: "Info", Index: "1", Name: "Capacity" }
+        - {Property: "component_id",        FQDD: "PSU.Slot.4", Group: "Info", Index: "1", Name: "ComponentID" }
+    PSU/PSU.Slot.5:
+        - {Property: "firmware_version",    FQDD: "PSU.Slot.5", Group: "Info", Index: "1", Name: "FirmwareVersion" }
+        - {Property: "capacity_watts",      FQDD: "PSU.Slot.5", Group: "Info", Index: "1", Name: "Capacity" }
+        - {Property: "component_id",        FQDD: "PSU.Slot.5", Group: "Info", Index: "1", Name: "ComponentID" }
+    PSU/PSU.Slot.6:
+        - {Property: "firmware_version",    FQDD: "PSU.Slot.6", Group: "Info", Index: "1", Name: "FirmwareVersion" }
+        - {Property: "capacity_watts",      FQDD: "PSU.Slot.6", Group: "Info", Index: "1", Name: "Capacity" }
+        - {Property: "component_id",        FQDD: "PSU.Slot.6", Group: "Info", Index: "1", Name: "ComponentID" }
+
     Managers/CMC.Integrated.1:
         - {Property: "firmware_version",        FQDD: "CMC.Integrated.1", Group: "FWInventory", Index: "1", Name: "Version" }
         - {Property: "name",                    FQDD: "CMC.Integrated.1", Group: "Info", Index: "1", Name: "Name" }

@@ -247,14 +247,20 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			model.PluginType(domain.PluginType("PowerSupply:"+psuName)),
 			model.UpdateProperty("unique_id", psuName),
 			model.UpdateProperty("name", psuName),
-			model.UpdateProperty("capacity_watts", ""),
+			model.UpdateProperty("capacity_watts", "INVALID"),
+			model.UpdateProperty("firmware_version", "NOT INVENTORIED"),
+			model.UpdateProperty("component_id", "INVALID"),
 			model.UpdateProperty("line_input_voltage", ""),
-			model.UpdateProperty("firmware_version", ""),
-			model.UpdateProperty("component_id", ""),
 			model.UpdateProperty("input_current", ""),
 		)
 		domain.RegisterPlugin(func() domain.Plugin { return psModel })
-		psu := powersupply.GetViewFragment(ctx, powerLogger, psModel, psuAttrProp.GetModel(), ch, eb, ew)
+		psu := powersupply.AddView(ctx, powerLogger, psModel, psuAttrProp.GetModel(), ch, eb, ew)
+
+		updateFn, _ := generic_dell_resource.AddController(ctx,
+			logger.New("module", "Chassis/"+chasName+"/Power/PowerSupplies/"+psuName, "module", "Chassis/"+chasName+"/Power/PowerSupplies/PSU.Slot"),
+			psModel, "PSU/"+psuName, ch, eb, ew)
+		updateFns = append(updateFns, updateFn)
+
 		p := domain.RedfishResourceProperty{}
 		p.Parse(psu)
 		psus = append(psus, p)
