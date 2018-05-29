@@ -37,23 +37,9 @@ func PropGET(name string) MetaOption {
 	}
 }
 
-func PropGETOptional(name string) MetaOption {
-	return func(s *View, m MetaInt) error {
-		m["GET"] = map[string]interface{}{"plugin": string(s.PluginType()), "property": name}
-		return nil
-	}
-}
-
 func PropPATCH(name string) MetaOption {
 	return func(s *View, m MetaInt) error {
 		model.MustPropertyUnlocked(s.model, name)
-		m["PATCH"] = map[string]interface{}{"plugin": string(s.PluginType()), "property": name}
-		return nil
-	}
-}
-
-func PropPATCHOptional(name string) MetaOption {
-	return func(s *View, m MetaInt) error {
 		m["PATCH"] = map[string]interface{}{"plugin": string(s.PluginType()), "property": name}
 		return nil
 	}
