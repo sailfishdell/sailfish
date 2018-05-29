@@ -26,6 +26,7 @@ import (
 	attr_res "github.com/superchalupa/go-redfish/src/dell-resources/attribute-resource"
 
 	"github.com/superchalupa/go-redfish/src/dell-resources"
+	"github.com/superchalupa/go-redfish/src/dell-resources/test"
 	"github.com/superchalupa/go-redfish/src/dell-resources/chassis"
 	"github.com/superchalupa/go-redfish/src/dell-resources/chassis/cmc.integrated"
 	"github.com/superchalupa/go-redfish/src/dell-resources/chassis/iom.slot"
@@ -76,6 +77,16 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	)
 	domain.RegisterPlugin(func() domain.Plugin { return self.sessionModel })
 	self.sessionModel.AddResource(ctx, ch, eb, ew)
+
+    testLogger := logger.New("module", "TEST")
+    testModel := model.NewModel(
+        model.UpdateProperty("unique_name", "un"),
+        model.UpdateProperty("name", "n"),
+        model.UpdateProperty("description", "d"),
+        model.UpdateProperty("model", "m"),
+    )
+    testView := test.AddView( ctx, testLogger, testModel, ch, eb, ew )
+    _ = testView  // avoid unused variable warning
 
 	//
 	// Loop to create similarly named manager objects and the things attached there.
