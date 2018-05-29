@@ -166,42 +166,6 @@ func (a *RedfishResourceAggregate) HandleCommand(ctx context.Context, command eh
 	return nil
 }
 
-func (r *RedfishResourceAggregate) GetProperty(p string) (ret interface{}) {
-	r.propertiesMu.RLock()
-	defer r.propertiesMu.RUnlock()
-
-	v := r.properties.Value.(map[string]interface{})
-	rrp, ok := v[p].(RedfishResourceProperty)
-
-	if ok {
-		return rrp.Value
-	}
-	return nil
-}
-
-func (r *RedfishResourceAggregate) SetProperty(p string, n interface{}) {
-	r.propertiesMu.Lock()
-	defer r.propertiesMu.Unlock()
-
-	// new hotness
-	v := r.properties.Value.(map[string]interface{})
-	rrp, ok := v[p].(RedfishResourceProperty)
-	if !ok {
-		rrp = RedfishResourceProperty{}
-	}
-	rrp.Value = n
-	v[p] = rrp
-}
-
-func (r *RedfishResourceAggregate) DeleteProperty(p string) {
-	r.propertiesMu.Lock()
-	defer r.propertiesMu.Unlock()
-
-	// new hotness
-	v := r.properties.Value.(map[string]interface{})
-	delete(v, p)
-}
-
 func (r *RedfishResourceAggregate) EnsureCollection() {
 	r.propertiesMu.Lock()
 	defer r.propertiesMu.Unlock()
