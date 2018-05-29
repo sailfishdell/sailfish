@@ -100,20 +100,20 @@ func (c *CreateRedfishResource) Handle(ctx context.Context, a *RedfishResourceAg
 	}
 
 	a.propertiesMu.Lock()
-	a.properties.Value = map[string]interface{}{}
+	v := map[string]interface{}{}
+	a.properties.Value = v
 	a.properties.Parse(c.Properties)
 	a.properties.Meta = c.Meta
-	a.propertiesMu.Unlock()
 
-	a.SetProperty("@odata.id", c.ResourceURI)
-	a.SetProperty("@odata.type", c.Type)
-	a.SetProperty("@odata.context", c.Context)
+	v["@odata.id"] = RedfishResourceProperty{Value: c.ResourceURI}
+	v["@odata.type"] = RedfishResourceProperty{Value: c.Type}
+	v["@odata.context"] = RedfishResourceProperty{Value: c.Context}
+
+	a.propertiesMu.Unlock()
 
 	// if command claims that this will be a collection, automatically set up the Members property
 	if c.Collection {
 		a.EnsureCollection()
-	} else {
-		a.DeleteProperty("Members")
 	}
 
 	// send out event that it's created first
