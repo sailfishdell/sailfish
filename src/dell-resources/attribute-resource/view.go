@@ -24,7 +24,7 @@ func (s *service) AddView(ctx context.Context, ch eh.CommandHandler, eb eh.Event
 				"GET":    []string{"Login"},
 				"POST":   []string{}, // cannot create sub objects
 				"PUT":    []string{},
-				"PATCH":  []string{},
+				"PATCH":  []string{"ConfigureManager"},
 				"DELETE": []string{}, // can't be deleted
 			},
 			Properties: map[string]interface{}{
