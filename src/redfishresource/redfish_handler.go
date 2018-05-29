@@ -86,8 +86,6 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if ok {
 		// prepend the plugins to the search path
 		search = append(search, eh.CommandType(redfishResource.ResourceURI+":"+r.Method))
-		search = append(search, eh.CommandType(redfishResource.GetProperty("@odata.type").(string)+":"+r.Method))
-		search = append(search, eh.CommandType(redfishResource.GetProperty("@odata.context").(string)+":"+r.Method))
 		search = append(search, eh.CommandType(redfishResource.Plugin+":"+r.Method))
 	}
 	search = append(search, eh.CommandType("http:RedfishResource:"+r.Method))
