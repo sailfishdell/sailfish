@@ -58,7 +58,7 @@ func (rrp *RedfishResourceProperty) Parse(thing interface{}) {
 
 func parse_array(props []interface{}) (ret []interface{}) {
 	for _, v := range props {
-		prop := RedfishResourceProperty{}
+		prop := &RedfishResourceProperty{}
 		prop.Parse(v)
 		ret = append(ret, prop)
 	}
@@ -69,16 +69,16 @@ func parse_map(start map[string]interface{}, props map[string]interface{}) {
 	for k, v := range props {
 		if strings.HasSuffix(k, "@meta") {
 			name := k[:len(k)-5]
-			prop, ok := start[name].(RedfishResourceProperty)
+			prop, ok := start[name].(*RedfishResourceProperty)
 			if !ok {
-				prop = RedfishResourceProperty{}
+				prop = &RedfishResourceProperty{}
 			}
 			prop.Meta = v.(map[string]interface{})
 			start[name] = prop
 		} else {
-			prop, ok := start[k].(RedfishResourceProperty)
+			prop, ok := start[k].(*RedfishResourceProperty)
 			if !ok {
-				prop = RedfishResourceProperty{}
+				prop = &RedfishResourceProperty{}
 			}
 			prop.Parse(v)
 			start[k] = prop
@@ -180,27 +180,27 @@ func (r *RedfishResourceAggregate) EnsureCollection_unlocked() *RedfishResourceP
 		props = r.properties.Value.(map[string]interface{})
 	}
 
-	membersRRP, ok := props["Members"].(RedfishResourceProperty)
+	membersRRP, ok := props["Members"].(*RedfishResourceProperty)
 	if !ok {
-		props["Members"] = RedfishResourceProperty{Value: []map[string]interface{}{}}
-		membersRRP = props["Members"].(RedfishResourceProperty)
+		props["Members"] = &RedfishResourceProperty{Value: []map[string]interface{}{}}
+		membersRRP = props["Members"].(*RedfishResourceProperty)
 	}
 
 	if _, ok := membersRRP.Value.([]map[string]interface{}); !ok {
-		props["Members"] = RedfishResourceProperty{Value: []map[string]interface{}{}}
-		membersRRP = props["Members"].(RedfishResourceProperty)
+		props["Members"] = &RedfishResourceProperty{Value: []map[string]interface{}{}}
+		membersRRP = props["Members"].(*RedfishResourceProperty)
 	}
 
-	return &membersRRP
+	return membersRRP
 }
 
 func (r *RedfishResourceAggregate) AddCollectionMember(uri string) {
 	r.propertiesMu.Lock()
 	defer r.propertiesMu.Unlock()
 	members := r.EnsureCollection_unlocked()
-	members.Value = append(members.Value.([]map[string]interface{}), map[string]interface{}{"@odata.id": RedfishResourceProperty{Value: uri}})
+	members.Value = append(members.Value.([]map[string]interface{}), map[string]interface{}{"@odata.id": &RedfishResourceProperty{Value: uri}})
 	m := r.properties.Value.(map[string]interface{})
-	m["Members"] = *members
+	m["Members"] = members
 	r.UpdateCollectionMemberCount_unlocked()
 }
 
@@ -215,7 +215,7 @@ func (r *RedfishResourceAggregate) RemoveCollectionMember(uri string) {
 	}
 
 	for i, v := range arr {
-		rrp, ok := v["@odata.id"].(RedfishResourceProperty)
+		rrp, ok := v["@odata.id"].(*RedfishResourceProperty)
 		if !ok {
 			continue
 		}
@@ -227,10 +227,16 @@ func (r *RedfishResourceAggregate) RemoveCollectionMember(uri string) {
 		arr[len(arr)-1], arr[i] = arr[i], arr[len(arr)-1]
 		break
 	}
-	members.Value = arr[:len(arr)-1]
+
+	l := len(arr) - 1
+	if l > 0 {
+		members.Value = arr[:l]
+	} else {
+		members.Value = []map[string]interface{}{}
+	}
 
 	m := r.properties.Value.(map[string]interface{})
-	m["Members"] = *members
+	m["Members"] = members
 	r.UpdateCollectionMemberCount_unlocked()
 }
 
@@ -244,7 +250,7 @@ func (r *RedfishResourceAggregate) UpdateCollectionMemberCount_unlocked() {
 	members := r.EnsureCollection_unlocked()
 	l := len(members.Value.([]map[string]interface{}))
 	m := r.properties.Value.(map[string]interface{})
-	m["Members@odata.count"] = RedfishResourceProperty{Value: l}
+	m["Members@odata.count"] = &RedfishResourceProperty{Value: l}
 }
 
 type PropertyGetter interface {
@@ -254,19 +260,9 @@ type PropertyPatcher interface {
 	PropertyPatch(context.Context, *RedfishResourceAggregate, *RedfishResourceProperty, map[string]interface{}, interface{}, bool)
 }
 
-func (rrp *RedfishResourceProperty) Process(ctx context.Context, agg *RedfishResourceAggregate, property, method string, req interface{}, present bool) (ret RedfishResourceProperty) {
+func (rrp *RedfishResourceProperty) Process(ctx context.Context, agg *RedfishResourceAggregate, property, method string, req interface{}, present bool) {
 	rrp.Lock()
 	defer rrp.Unlock()
-
-	// set up return copy. We are not going to modify our source
-	ret = RedfishResourceProperty{Meta: map[string]interface{}{}}
-	for k, v := range rrp.Meta {
-		ret.Meta[k] = v
-	}
-	ret.Value = rrp.Value
-
-	ret.Lock()
-	defer ret.Unlock()
 
 	// The purpose of this function is to recursively process the resource property, calling any plugins that are specified in the meta data.
 	// step 1: run the plugin to update rrp.Value based on the plugin.
@@ -275,7 +271,7 @@ func (rrp *RedfishResourceProperty) Process(ctx context.Context, agg *RedfishRes
 	// equivalent to do{}while(1) to run once
 	// if any of the intermediate steps fails, bail out on this part and continue by doing the next thing
 	for ok := true; ok; ok = false {
-		meta_t, ok := ret.Meta[method].(map[string]interface{})
+		meta_t, ok := rrp.Meta[method].(map[string]interface{})
 		if !ok {
 			break
 		}
@@ -291,95 +287,87 @@ func (rrp *RedfishResourceProperty) Process(ctx context.Context, agg *RedfishRes
 			break
 		}
 
+		ContextLogger(ctx, "aggregate").Debug("getting property", "method", method, "value", fmt.Sprintf("%v", rrp.Value))
 		switch method {
 		case "GET":
+			ContextLogger(ctx, "aggregate").Debug("getting property: GET", "method", method, "value", fmt.Sprintf("%v", rrp.Value))
 			if plugin, ok := plugin.(PropertyGetter); ok {
-				plugin.PropertyGet(ctx, agg, &ret, meta_t)
+				ContextLogger(ctx, "aggregate").Debug("getting property: GET - type assert success", "method", method, "value", fmt.Sprintf("%v", rrp.Value))
+				plugin.PropertyGet(ctx, agg, rrp, meta_t)
+				ContextLogger(ctx, "aggregate").Debug("AFTER getting property: GET - type assert success", "method", method, "value", fmt.Sprintf("%v", rrp.Value))
 			}
 		case "PATCH":
+			ContextLogger(ctx, "aggregate").Debug("getting property: PATCH", "method", method, "value", fmt.Sprintf("%v", rrp.Value))
 			if plugin, ok := plugin.(PropertyPatcher); ok {
-				plugin.PropertyPatch(ctx, agg, &ret, meta_t, req, present)
+				ContextLogger(ctx, "aggregate").Debug("getting property: PATCH - type assert success", "method", method, "value", fmt.Sprintf("%v", rrp.Value))
+				plugin.PropertyPatch(ctx, agg, rrp, meta_t, req, present)
+				ContextLogger(ctx, "aggregate").Debug("AFTER getting property: PATCH - type assert success", "method", method, "value", fmt.Sprintf("%v", rrp.Value))
 			}
 		}
 
-		ContextLogger(ctx, "aggregate").Debug("GOT Property", "ret", ret, "TYPE", fmt.Sprintf("%T", ret), "ret.Value.TYPE", fmt.Sprintf("%T", ret.Value))
+		ContextLogger(ctx, "aggregate").Debug("GOT Property", "rrp", rrp, "TYPE", fmt.Sprintf("%T", rrp), "rrp.Value.TYPE", fmt.Sprintf("%T", rrp.Value))
 
 	}
 
-	switch ret.Value.(type) {
+	switch t := rrp.Value.(type) {
 	case map[string]interface{}:
-		// somewhat complicated here, but not too bad: set up goroutines for
-		// each sub object and process in parallel. Collect results via array
-		// of channels.
-		type result struct {
-			name   string
-			result interface{}
-		}
-		reqmap, _ := req.(map[string]interface{})
-		var promised []chan result
-		for property, v := range ret.Value.(map[string]interface{}) {
-			resChan := make(chan result)
-			promised = append(promised, resChan)
-			if vrr, ok := v.(RedfishResourceProperty); ok {
-				go func(property string, v RedfishResourceProperty) {
-					reqitem, ok := reqmap[property]
-					retProp := v.Process(ctx, agg, property, method, reqitem, ok)
-					resChan <- result{property, retProp}
+		ContextLogger(ctx, "aggregate").Debug("Handle MAP", "rrp", rrp, "TYPE", fmt.Sprintf("%T", t))
+		var wg sync.WaitGroup
+		for property, v := range t {
+			if vrr, ok := v.(*RedfishResourceProperty); ok {
+				wg.Add(1)
+				go func(property string, v *RedfishResourceProperty) {
+					defer wg.Done()
+					reqmap, ok := req.(map[string]interface{})
+					var reqitem interface{}
+					if ok {
+						reqitem, ok = reqmap[property]
+					}
+					v.Process(ctx, agg, property, method, reqitem, ok)
 				}(property, vrr)
-			} else {
-				go func(property string, v interface{}) {
-					resChan <- result{property, v}
-				}(property, v)
 			}
 		}
-		newMap := map[string]interface{}{}
-		for _, resChan := range promised {
-			res := <-resChan
-			newMap[res.name] = res.result
-		}
-		ret.Value = newMap
+		wg.Wait()
+		ContextLogger(ctx, "aggregate").Debug("DONE Handle MAP", "rrp", rrp, "TYPE", fmt.Sprintf("%T", rrp.Value))
 
 	case []interface{}:
+		ContextLogger(ctx, "aggregate").Debug("Handle ARRAY", "rrp", rrp, "TYPE", fmt.Sprintf("%T", rrp.Value))
 		// spawn off parallel goroutines to process each member of the array
-		reqarr, _ := req.([]interface{})
-		var promised []chan interface{}
-		for index, v := range ret.Value.([]interface{}) {
-			resChan := make(chan interface{})
-			promised = append(promised, resChan)
-			if v, ok := v.(RedfishResourceProperty); ok {
-				go func(index int, v RedfishResourceProperty) {
+		var wg sync.WaitGroup
+		for index, v := range rrp.Value.([]interface{}) {
+			if v, ok := v.(*RedfishResourceProperty); ok {
+				wg.Add(1)
+				go func(index int, v *RedfishResourceProperty) {
+					defer wg.Done()
 					var reqitem interface{} = nil
 					var ok bool = false
-					if index < len(reqarr) {
-						reqitem = reqarr[index]
-						ok = true
+					reqarr, ok := req.([]interface{})
+					if ok {
+						if index < len(reqarr) {
+							reqitem = reqarr[index]
+							ok = true
+						}
 					}
-					retProp := v.Process(ctx, agg, property, method, reqitem, ok)
-					resChan <- retProp
+					v.Process(ctx, agg, property, method, reqitem, ok)
 				}(index, v)
-			} else {
-				go func(property string, v interface{}) {
-					resChan <- v
-				}(property, v)
 			}
 		}
+		wg.Wait()
+		ContextLogger(ctx, "aggregate").Debug("DONE Handle ARRAY", "rrp", rrp, "TYPE", fmt.Sprintf("%T", rrp.Value))
 
-		// collect all the results together after processing.
-		newArr := []interface{}{}
-		for _, resChan := range promised {
-			res := <-resChan
-			newArr = append(newArr, res)
+	case *RedfishResourceProperty:
+		ContextLogger(ctx, "aggregate").Debug("Handle single", "rrp", rrp, "TYPE", fmt.Sprintf("%T", rrp.Value))
+		if v, ok := rrp.Value.(*RedfishResourceProperty); ok {
+			v.Process(ctx, agg, property, method, req, true)
 		}
-		ret.Value = newArr
-
-	case RedfishResourceProperty:
-		v := ret.Value.(RedfishResourceProperty)
-		ret.Value = v.Process(ctx, agg, property, method, req, true)
+		ContextLogger(ctx, "aggregate").Debug("DONE Handle single", "rrp", rrp, "TYPE", fmt.Sprintf("%T", rrp.Value))
 
 	default:
-		ContextLogger(ctx, "aggregate").Debug("CANT HANDLE", "ret", ret, "VALUE TYPE", fmt.Sprintf("%T", ret.Value))
+		ContextLogger(ctx, "aggregate").Debug("CANT HANDLE", "rrp", rrp, "TYPE", fmt.Sprintf("%T", rrp.Value))
 
 	}
+
+	ContextLogger(ctx, "aggregate").Debug("ALL DONE: GOT Property", "rrp", rrp, "TYPE", fmt.Sprintf("%T", rrp.Value), "Value", fmt.Sprintf("%+v", rrp.Value))
 
 	return
 }
@@ -388,7 +376,12 @@ func (agg *RedfishResourceAggregate) ProcessMeta(ctx context.Context, method str
 	agg.propertiesMu.Lock()
 	defer agg.propertiesMu.Unlock()
 
-	results = agg.properties.Process(ctx, agg, "", method, request, true)
+	agg.properties.Process(ctx, agg, "", method, request, true)
 
-	return
+	var dst RedfishResourceProperty
+	Copy(&dst, &agg.properties)
+
+	ContextLogger(ctx, "aggregate").Warn("ProcessMeta DONE", "dst", dst, "agg", agg)
+
+	return dst, nil
 }

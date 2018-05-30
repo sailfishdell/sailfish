@@ -105,9 +105,9 @@ func (c *CreateRedfishResource) Handle(ctx context.Context, a *RedfishResourceAg
 	a.properties.Parse(c.Properties)
 	a.properties.Meta = c.Meta
 
-	v["@odata.id"] = RedfishResourceProperty{Value: c.ResourceURI}
-	v["@odata.type"] = RedfishResourceProperty{Value: c.Type}
-	v["@odata.context"] = RedfishResourceProperty{Value: c.Context}
+	v["@odata.id"] = &RedfishResourceProperty{Value: c.ResourceURI}
+	v["@odata.type"] = &RedfishResourceProperty{Value: c.Type}
+	v["@odata.context"] = &RedfishResourceProperty{Value: c.Context}
 
 	a.propertiesMu.Unlock()
 
