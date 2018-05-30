@@ -105,8 +105,9 @@ func (c *ARMappingController) ConfigChangedFn(ctx context.Context, cfg *viper.Vi
 //
 func (c *ARMappingController) requestUpdates(ctx context.Context) {
 	for {
+        time.Sleep(120 * time.Second)
 		for _, m := range c.mappings {
-			c.logger.Crit("SENDING ATTRIBUTE REQUEST", "mapping", m)
+			c.logger.Info("SENDING ATTRIBUTE REQUEST", "mapping", m)
 			data := attr_prop.AttributeGetCurrentValueRequestData{
 				FQDD:  m.FQDD,
 				Group: m.Group,
@@ -115,7 +116,6 @@ func (c *ARMappingController) requestUpdates(ctx context.Context) {
 			}
 			c.eb.PublishEvent(ctx, eh.NewEvent(attr_prop.AttributeGetCurrentValueRequest, data, time.Now()))
 		}
-		break
 	}
 }
 
