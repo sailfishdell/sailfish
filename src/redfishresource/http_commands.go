@@ -99,6 +99,9 @@ func (c *PATCH) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 		StatusCode: 200,
 	}
 
+	// prime cache. Probably need to consider a better way of doing this. (perhaps time based check?) TODO
+	a.ProcessMeta(ctx, "GET", nil)
+
 	data.Results, _ = a.ProcessMeta(ctx, "PATCH", c.Body)
 	// TODO: set error status code based on err from ProcessMeta
 	// TODO: This is not thread safe: deep copy

@@ -26,7 +26,6 @@ import (
 	attr_res "github.com/superchalupa/go-redfish/src/dell-resources/attribute-resource"
 
 	"github.com/superchalupa/go-redfish/src/dell-resources"
-	"github.com/superchalupa/go-redfish/src/dell-resources/test"
 	"github.com/superchalupa/go-redfish/src/dell-resources/chassis"
 	"github.com/superchalupa/go-redfish/src/dell-resources/chassis/cmc.integrated"
 	"github.com/superchalupa/go-redfish/src/dell-resources/chassis/iom.slot"
@@ -37,6 +36,7 @@ import (
 	"github.com/superchalupa/go-redfish/src/dell-resources/chassis/system.chassis/thermal/fans"
 	"github.com/superchalupa/go-redfish/src/dell-resources/chassis/system.modular"
 	"github.com/superchalupa/go-redfish/src/dell-resources/managers/cmc.integrated"
+	"github.com/superchalupa/go-redfish/src/dell-resources/test"
 )
 
 type ocp struct {
@@ -55,7 +55,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		logger: logger,
 	}
 
-	updateFns := []func(*viper.Viper){}
+	updateFns := []func(context.Context, *viper.Viper){}
 
 	//
 	// Create the (empty) model behind the /redfish/v1 service root. Nothing interesting here
@@ -78,15 +78,22 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	domain.RegisterPlugin(func() domain.Plugin { return self.sessionModel })
 	self.sessionModel.AddResource(ctx, ch, eb, ew)
 
-    testLogger := logger.New("module", "TEST")
-    testModel := model.NewModel(
-        model.UpdateProperty("unique_name", "un"),
-        model.UpdateProperty("name", "n"),
-        model.UpdateProperty("description", "d"),
-        model.UpdateProperty("model", "m"),
-    )
-    testView := test.AddView( ctx, testLogger, testModel, ch, eb, ew )
-    _ = testView  // avoid unused variable warning
+	// construction order:
+	//   1) model
+	//   2) controller(s) - pass model by args
+	//   3) views - pass models and controllers by args
+	//
+	testLogger := logger.New("module", "TEST")
+	testModel := model.NewModel(
+		model.UpdateProperty("unique_name", "un"),
+		model.UpdateProperty("name", "n"),
+		model.UpdateProperty("description", "d"),
+		model.UpdateProperty("model", "m"),
+	)
+	testController, _ := dell_resource.NewARMappingController(ctx, testLogger, testModel, "test/testview", ch, eb, ew)
+	testView := test.NewView(ctx, testLogger, testModel, testController, ch)
+	updateFns = append(updateFns, testController.ConfigChangedFn)
+	_ = testView // avoid unused variable warning
 
 	//
 	// Loop to create similarly named manager objects and the things attached there.
@@ -116,8 +123,8 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		managers = append(managers, cmcIntegratedModel)
 		domain.RegisterPlugin(func() domain.Plugin { return cmcIntegratedModel })
 		ec_manager.AddView(ctx, mgrLogger, cmcIntegratedModel, ch, eb, ew)
-		updateFn, _ := generic_dell_resource.AddController(ctx, mgrLogger, cmcIntegratedModel, "Managers/"+mgrName, ch, eb, ew)
-		updateFns = append(updateFns, updateFn)
+		mgrController, _ := dell_resource.NewARMappingController(ctx, mgrLogger, cmcIntegratedModel, "Managers/"+mgrName, ch, eb, ew)
+		updateFns = append(updateFns, mgrController.ConfigChangedFn)
 
 		//
 		// Create the .../Attributes URI
@@ -162,8 +169,8 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		domain.RegisterPlugin(func() domain.Plugin { return mgrModel })
 		cmc_chassis.AddView(ctx, chasLogger, mgrModel, ch, eb, ew)
 		// NOTE: looks like we can use the same mapping to model as manager object
-		chasUpdateFn, _ := generic_dell_resource.AddController(ctx, chasLogger, mgrModel, "Managers/"+mgrName, ch, eb, ew)
-		updateFns = append(updateFns, chasUpdateFn)
+		chasController, _ := dell_resource.NewARMappingController(ctx, chasLogger, mgrModel, "Managers/"+mgrName, ch, eb, ew)
+		updateFns = append(updateFns, chasController.ConfigChangedFn)
 
 		mgrAttrModel, _ := attr_res.New(
 			attr_res.BaseResource(mgrModel),
@@ -205,8 +212,8 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	)
 	domain.RegisterPlugin(func() domain.Plugin { return chasModel })
 	system_chassis.AddView(ctx, chasLogger, chasModel, ch, eb, ew)
-	chasUpdateFn, _ := generic_dell_resource.AddController(ctx, chasLogger, chasModel, "Chassis/"+chasName, ch, eb, ew)
-	updateFns = append(updateFns, chasUpdateFn)
+	chasController, _ := dell_resource.NewARMappingController(ctx, chasLogger, chasModel, "Chassis/"+chasName, ch, eb, ew)
+	updateFns = append(updateFns, chasController.ConfigChangedFn)
 
 	chasAttrModel, _ := attr_res.New(
 		attr_res.BaseResource(chasModel),
@@ -269,17 +276,17 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		domain.RegisterPlugin(func() domain.Plugin { return psModel })
 		psu := powersupply.AddView(ctx, powerLogger, psModel, psuAttrProp.GetModel(), ch, eb, ew)
 
-		updateFn, _ := generic_dell_resource.AddController(ctx,
+		psuController, _ := dell_resource.NewARMappingController(ctx,
 			logger.New("module", "Chassis/"+chasName+"/Power/PowerSupplies/"+psuName, "module", "Chassis/"+chasName+"/Power/PowerSupplies/PSU.Slot"),
 			psModel, "PSU/"+psuName, ch, eb, ew)
-		updateFns = append(updateFns, updateFn)
+		updateFns = append(updateFns, psuController.ConfigChangedFn)
 
-		p := domain.RedfishResourceProperty{}
+		p := &domain.RedfishResourceProperty{}
 		p.Parse(psu)
 		psus = append(psus, p)
 
 	}
-	p := domain.RedfishResourceProperty{Value: psus}
+	p := &domain.RedfishResourceProperty{Value: psus}
 	powerModel.ApplyOption(model.UpdateProperty("power_supply_views", p))
 	powerLogger.Info("Updating view with psu list", "power_supply_views", p, "raw", psus)
 
@@ -329,17 +336,17 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		domain.RegisterPlugin(func() domain.Plugin { return psModel })
 		fan := fans.AddView(ctx, thermalLogger, psModel, fanAttrProp.GetModel(), ch, eb, ew)
 
-		updateFn, _ := generic_dell_resource.AddController(ctx,
+		fanController, _ := dell_resource.NewARMappingController(ctx,
 			logger.New("module", "Chassis/"+chasName+"/Sensors/Fans/"+fanName, "module", "Chassis/"+chasName+"/Sensors/Fans/Fan.Slot"),
 			psModel, "Fan/"+fanName, ch, eb, ew)
-		updateFns = append(updateFns, updateFn)
+		updateFns = append(updateFns, fanController.ConfigChangedFn)
 
-		p := domain.RedfishResourceProperty{}
+		p := &domain.RedfishResourceProperty{}
 		p.Parse(fan)
 		fan_views = append(fan_views, p)
 	}
 
-	fanView := domain.RedfishResourceProperty{Value: fan_views}
+	fanView := &domain.RedfishResourceProperty{Value: fan_views}
 	thermalModel.ApplyOption(model.UpdateProperty("fan_views", fanView))
 
 	// ************************************************************************
@@ -373,10 +380,10 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		domain.RegisterPlugin(func() domain.Plugin { return iom })
 		iom_chassis.AddView(ctx, iomLogger, iom, ch, eb, ew)
 
-		updateFn, _ := generic_dell_resource.AddController(ctx,
+		iomController, _ := dell_resource.NewARMappingController(ctx,
 			logger.New("module", "Chassis/"+iomName, "module", "Chassis/IOM.Slot"),
 			iom, "Managers/"+iomName, ch, eb, ew)
-		updateFns = append(updateFns, updateFn)
+		updateFns = append(updateFns, iomController.ConfigChangedFn)
 
 		iomAttrSvc, _ := attr_res.New(
 			attr_res.BaseResource(iom),
@@ -419,8 +426,8 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		)
 		domain.RegisterPlugin(func() domain.Plugin { return sled })
 		sled_chassis.AddView(sled, ctx, ch, eb, ew)
-		updateFn, _ := generic_dell_resource.AddController(ctx, sledLogger, sled, "Chassis/"+sledName, ch, eb, ew)
-		updateFns = append(updateFns, updateFn)
+		sledController, _ := dell_resource.NewARMappingController(ctx, sledLogger, sled, "Chassis/"+sledName, ch, eb, ew)
+		updateFns = append(updateFns, sledController.ConfigChangedFn)
 
 		sledAttrSvc, _ := attr_res.New(
 			attr_res.BaseResource(sled),
@@ -447,7 +454,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		self.sessionModel.ApplyOption(model.UpdateProperty("session_timeout", cfgMgr.GetInt("session.timeout")))
 
 		for _, fn := range updateFns {
-			fn(cfgMgr)
+			fn(ctx, cfgMgr)
 		}
 	}
 	self.ConfigChangeHandler()

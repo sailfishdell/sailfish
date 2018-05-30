@@ -1,4 +1,4 @@
-package generic_dell_resource
+package dell_resource
 
 import (
 	"context"
@@ -24,9 +24,22 @@ type mapping struct {
 	Name     string
 }
 
-func AddController(ctx context.Context, logger log.Logger, s *model.Service, name string, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) (func(*viper.Viper), error) {
-	mappings := []mapping{}
-	mappingsMu := sync.RWMutex{}
+type ARMappingController struct {
+	mappings   []mapping
+	mappingsMu sync.RWMutex
+	logger     log.Logger
+	name       string
+
+	eb eh.EventBus
+}
+
+func NewARMappingController(ctx context.Context, logger log.Logger, m *model.Model, name string, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) (*ARMappingController, error) {
+	c := &ARMappingController{
+		mappings: []mapping{},
+		name:     name,
+		logger:   logger,
+		eb:       eb,
+	}
 
 	// stream processor for action events
 	sp, err := event.NewEventStreamProcessor(ctx, ew, event.CustomFilter(SelectAttributeUpdate()))
@@ -36,10 +49,10 @@ func AddController(ctx context.Context, logger log.Logger, s *model.Service, nam
 	}
 	sp.RunForever(func(event eh.Event) {
 		if data, ok := event.Data().(*attr_prop.AttributeUpdatedData); ok {
-			mappingsMu.RLock()
-			defer mappingsMu.RUnlock()
+			c.mappingsMu.RLock()
+			defer c.mappingsMu.RUnlock()
 			logger.Debug("Process Event", "data", data)
-			for _, mapping := range mappings {
+			for _, mapping := range c.mappings {
 				if data.FQDD != mapping.FQDD {
 					continue
 				}
@@ -54,30 +67,56 @@ func AddController(ctx context.Context, logger log.Logger, s *model.Service, nam
 				}
 
 				logger.Info("Updating Model", "mapping", mapping, "data", data)
-				s.UpdateProperty(mapping.Property, data.Value)
+				m.UpdateProperty(mapping.Property, data.Value)
 			}
 		} else {
 			logger.Warn("Should never happen: got an invalid event in the event handler")
 		}
 	})
 
-	return func(cfg *viper.Viper) {
-		mappingsMu.Lock()
-		defer mappingsMu.Unlock()
+	return c, nil
+}
 
-		k := cfg.Sub("mappings")
-		if k == nil {
-			logger.Warn("missing config file section: 'mappings'")
-			return
-		}
-		err := k.UnmarshalKey(name, &mappings)
-		if err != nil {
-			logger.Warn("unamrshal failed", "err", err)
-		}
-		logger.Info("updating mappings", "mappings", mappings)
+func (c *ARMappingController) UpdateProperty(property string, value interface{}) {
+	c.logger.Crit("GOT IT!")
+}
 
-		go requestUpdates(ctx, logger, eb, mappings, &mappingsMu)
-	}, nil
+// this is the function that viper will call whenever the configuration changes at runtime
+func (c *ARMappingController) ConfigChangedFn(ctx context.Context, cfg *viper.Viper) {
+	c.mappingsMu.Lock()
+	defer c.mappingsMu.Unlock()
+
+	k := cfg.Sub("mappings")
+	if k == nil {
+		c.logger.Warn("missing config file section: 'mappings'")
+		return
+	}
+	err := k.UnmarshalKey(c.name, &c.mappings)
+	if err != nil {
+		c.logger.Warn("unamrshal failed", "err", err)
+	}
+	c.logger.Info("updating mappings", "mappings", c.mappings)
+
+	go c.requestUpdates(ctx)
+}
+
+//
+// background thread that sends messages to the data pump to ask for startup values
+//
+func (c *ARMappingController) requestUpdates(ctx context.Context) {
+	for {
+		for _, m := range c.mappings {
+			c.logger.Crit("SENDING ATTRIBUTE REQUEST", "mapping", m)
+			data := attr_prop.AttributeGetCurrentValueRequestData{
+				FQDD:  m.FQDD,
+				Group: m.Group,
+				Index: m.Index,
+				Name:  m.Name,
+			}
+			c.eb.PublishEvent(ctx, eh.NewEvent(attr_prop.AttributeGetCurrentValueRequest, data, time.Now()))
+		}
+		break
+	}
 }
 
 func SelectAttributeUpdate() func(eh.Event) bool {
@@ -86,21 +125,5 @@ func SelectAttributeUpdate() func(eh.Event) bool {
 			return true
 		}
 		return false
-	}
-}
-
-func requestUpdates(ctx context.Context, logger log.Logger, eb eh.EventBus, mappings []mapping, mappingsMu *sync.RWMutex) {
-	for {
-		time.Sleep(120 * time.Second)
-		for _, m := range mappings {
-			logger.Crit("SENDING ATTRIBUTE REQUEST", "mapping", m)
-			data := attr_prop.AttributeGetCurrentValueRequestData{
-				FQDD:  m.FQDD,
-				Group: m.Group,
-				Index: m.Index,
-				Name:  m.Name,
-			}
-			eb.PublishEvent(ctx, eh.NewEvent(attr_prop.AttributeGetCurrentValueRequest, data, time.Now()))
-		}
 	}
 }

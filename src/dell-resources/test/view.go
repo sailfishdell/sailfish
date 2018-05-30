@@ -7,20 +7,20 @@ package test
 import (
 	"context"
 
+	"github.com/superchalupa/go-redfish/src/dell-resources"
 	"github.com/superchalupa/go-redfish/src/log"
 	"github.com/superchalupa/go-redfish/src/ocp/model"
 	"github.com/superchalupa/go-redfish/src/ocp/view"
 	domain "github.com/superchalupa/go-redfish/src/redfishresource"
 
 	eh "github.com/looplab/eventhorizon"
-	"github.com/looplab/eventhorizon/utils"
 )
 
 type foo struct {
 	*view.View
 }
 
-func AddView(ctx context.Context, logger log.Logger, s *model.Model, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) *foo {
+func NewView(ctx context.Context, logger log.Logger, s *model.Model, c *dell_resource.ARMappingController, ch eh.CommandHandler) *foo {
 
 	v := &foo{
 		View: view.NewView(

@@ -1,10 +1,13 @@
 main:
     log:
         # debug, info, warn, error, crit
-        Level: "debug"
+        Level: "warn"
         EnableStderr: true
         #FileName: "./out.log"
         ModulesToEnable:
+            - name: "PATCH"
+              level: "debug"
+
             - name: "ec"
               level: "warn"
 
