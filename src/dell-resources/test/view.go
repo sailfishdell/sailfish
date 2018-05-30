@@ -7,10 +7,10 @@ package test
 import (
 	"context"
 
-	"github.com/superchalupa/go-redfish/src/dell-resources"
 	"github.com/superchalupa/go-redfish/src/log"
 	"github.com/superchalupa/go-redfish/src/ocp/model"
 	"github.com/superchalupa/go-redfish/src/ocp/view"
+	"github.com/superchalupa/go-redfish/src/dell-resources/ar_mapper"
 	domain "github.com/superchalupa/go-redfish/src/redfishresource"
 
 	eh "github.com/looplab/eventhorizon"
@@ -20,12 +20,13 @@ type foo struct {
 	*view.View
 }
 
-func NewView(ctx context.Context, logger log.Logger, s *model.Model, c *dell_resource.ARMappingController, ch eh.CommandHandler) *foo {
+func NewView(ctx context.Context, logger log.Logger, s *model.Model, c *ar_mapper.ARMappingController, ch eh.CommandHandler) *foo {
 
 	v := &foo{
 		View: view.NewView(
 			view.MakeUUID(),
 			view.WithModel(s),
+            view.WithNamedController("ar_mapper", c),
 		),
 	}
 
@@ -50,7 +51,7 @@ func NewView(ctx context.Context, logger log.Logger, s *model.Model, c *dell_res
 				"Id":               s.GetProperty("unique_name").(string),
 				"Name@meta":        v.Meta(view.PropGET("name")),
 				"Description@meta": v.Meta(view.PropGET("description")),
-				"Model@meta":       v.Meta(view.PropGET("model"), view.PropPATCH("model")),
+				"Model@meta":       v.Meta(view.PropGET("model"), view.PropPATCH("model", "ar_mapper")),
 			}})
 
 	return v

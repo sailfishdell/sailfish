@@ -2,6 +2,7 @@ package view
 
 import (
 	"sync"
+    "context"
 
 	eh "github.com/looplab/eventhorizon"
 	"github.com/superchalupa/go-redfish/src/ocp/model"
@@ -11,7 +12,7 @@ import (
 type Option func(*View) error
 
 type controller interface {
-    UpdatePropertyRequest(property string, value interface{}) (interface{}, error)
+    UpdateRequest(ctx context.Context, property string, value interface{}) (interface{}, error)
 }
 
 type View struct {

@@ -59,7 +59,7 @@ func (s *View) PropertyPatch(
 	if present {
 		property, ok := meta["property"].(string)
 		if ok {
-			newval, err := controller.UpdatePropertyRequest(property, body)
+			newval, err := controller.UpdateRequest(ctx, property, body)
             if err == nil {
 			    rrp.Value = newval
             }

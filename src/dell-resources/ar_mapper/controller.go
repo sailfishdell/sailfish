@@ -1,4 +1,4 @@
-package dell_resource
+package ar_mapper
 
 import (
 	"context"
@@ -77,8 +77,29 @@ func NewARMappingController(ctx context.Context, logger log.Logger, m *model.Mod
 	return c, nil
 }
 
-func (c *ARMappingController) UpdateProperty(property string, value interface{}) {
-	c.logger.Crit("GOT IT!")
+func (c *ARMappingController) UpdateRequest(ctx context.Context, property string, value interface{}) (interface{}, error) {
+    for _, mapping := range c.mappings {
+        if property != mapping.Property {
+            continue
+        }
+
+        c.logger.Info("Sending Update Request", "mapping", mapping, "value", value)
+        reqUUID:= eh.NewUUID()
+
+        data := attr_prop.AttributeUpdateRequestData{
+            ReqID: reqUUID,
+            FQDD:  mapping.FQDD,
+            Group: mapping.Group,
+            Index: mapping.Index,
+            Name:  mapping.Name,
+            Value: value,
+        }
+        c.eb.PublishEvent(ctx, eh.NewEvent(attr_prop.AttributeUpdateRequest, data, time.Now()))
+
+        // TODO: wait for event to come back matching request
+    }
+
+    return value, nil
 }
 
 // this is the function that viper will call whenever the configuration changes at runtime

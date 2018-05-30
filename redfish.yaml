@@ -72,6 +72,9 @@ session:
     timeout: 60
 
 mappings:
+    test/testview:
+        - {Property: "model",                    FQDD: "CMC.Integrated.1", Group: "Info", Index: "1", Name: "Name" }
+
     # map AR entries to back end model
     PSU/PSU.Slot.1:
         - {Property: "firmware_version",    FQDD: "PSU.Slot.1", Group: "Info", Index: "1", Name: "FirmwareVersion" }

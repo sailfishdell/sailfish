@@ -25,7 +25,7 @@ import (
 	attr_prop "github.com/superchalupa/go-redfish/src/dell-resources/attribute-property"
 	attr_res "github.com/superchalupa/go-redfish/src/dell-resources/attribute-resource"
 
-	"github.com/superchalupa/go-redfish/src/dell-resources"
+	"github.com/superchalupa/go-redfish/src/dell-resources/ar_mapper"
 	"github.com/superchalupa/go-redfish/src/dell-resources/chassis"
 	"github.com/superchalupa/go-redfish/src/dell-resources/chassis/cmc.integrated"
 	"github.com/superchalupa/go-redfish/src/dell-resources/chassis/iom.slot"
@@ -90,7 +90,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		model.UpdateProperty("description", "d"),
 		model.UpdateProperty("model", "m"),
 	)
-	testController, _ := dell_resource.NewARMappingController(ctx, testLogger, testModel, "test/testview", ch, eb, ew)
+	testController, _ := ar_mapper.NewARMappingController(ctx, testLogger, testModel, "test/testview", ch, eb, ew)
 	testView := test.NewView(ctx, testLogger, testModel, testController, ch)
 	updateFns = append(updateFns, testController.ConfigChangedFn)
 	_ = testView // avoid unused variable warning
@@ -123,7 +123,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		managers = append(managers, cmcIntegratedModel)
 		domain.RegisterPlugin(func() domain.Plugin { return cmcIntegratedModel })
 		ec_manager.AddView(ctx, mgrLogger, cmcIntegratedModel, ch, eb, ew)
-		mgrController, _ := dell_resource.NewARMappingController(ctx, mgrLogger, cmcIntegratedModel, "Managers/"+mgrName, ch, eb, ew)
+		mgrController, _ := ar_mapper.NewARMappingController(ctx, mgrLogger, cmcIntegratedModel, "Managers/"+mgrName, ch, eb, ew)
 		updateFns = append(updateFns, mgrController.ConfigChangedFn)
 
 		//
@@ -169,7 +169,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		domain.RegisterPlugin(func() domain.Plugin { return mgrModel })
 		cmc_chassis.AddView(ctx, chasLogger, mgrModel, ch, eb, ew)
 		// NOTE: looks like we can use the same mapping to model as manager object
-		chasController, _ := dell_resource.NewARMappingController(ctx, chasLogger, mgrModel, "Managers/"+mgrName, ch, eb, ew)
+		chasController, _ := ar_mapper.NewARMappingController(ctx, chasLogger, mgrModel, "Managers/"+mgrName, ch, eb, ew)
 		updateFns = append(updateFns, chasController.ConfigChangedFn)
 
 		mgrAttrModel, _ := attr_res.New(
@@ -212,7 +212,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	)
 	domain.RegisterPlugin(func() domain.Plugin { return chasModel })
 	system_chassis.AddView(ctx, chasLogger, chasModel, ch, eb, ew)
-	chasController, _ := dell_resource.NewARMappingController(ctx, chasLogger, chasModel, "Chassis/"+chasName, ch, eb, ew)
+	chasController, _ := ar_mapper.NewARMappingController(ctx, chasLogger, chasModel, "Chassis/"+chasName, ch, eb, ew)
 	updateFns = append(updateFns, chasController.ConfigChangedFn)
 
 	chasAttrModel, _ := attr_res.New(
@@ -276,7 +276,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		domain.RegisterPlugin(func() domain.Plugin { return psModel })
 		psu := powersupply.AddView(ctx, powerLogger, psModel, psuAttrProp.GetModel(), ch, eb, ew)
 
-		psuController, _ := dell_resource.NewARMappingController(ctx,
+		psuController, _ := ar_mapper.NewARMappingController(ctx,
 			logger.New("module", "Chassis/"+chasName+"/Power/PowerSupplies/"+psuName, "module", "Chassis/"+chasName+"/Power/PowerSupplies/PSU.Slot"),
 			psModel, "PSU/"+psuName, ch, eb, ew)
 		updateFns = append(updateFns, psuController.ConfigChangedFn)
@@ -336,7 +336,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		domain.RegisterPlugin(func() domain.Plugin { return psModel })
 		fan := fans.AddView(ctx, thermalLogger, psModel, fanAttrProp.GetModel(), ch, eb, ew)
 
-		fanController, _ := dell_resource.NewARMappingController(ctx,
+		fanController, _ := ar_mapper.NewARMappingController(ctx,
 			logger.New("module", "Chassis/"+chasName+"/Sensors/Fans/"+fanName, "module", "Chassis/"+chasName+"/Sensors/Fans/Fan.Slot"),
 			psModel, "Fan/"+fanName, ch, eb, ew)
 		updateFns = append(updateFns, fanController.ConfigChangedFn)
@@ -380,7 +380,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		domain.RegisterPlugin(func() domain.Plugin { return iom })
 		iom_chassis.AddView(ctx, iomLogger, iom, ch, eb, ew)
 
-		iomController, _ := dell_resource.NewARMappingController(ctx,
+		iomController, _ := ar_mapper.NewARMappingController(ctx,
 			logger.New("module", "Chassis/"+iomName, "module", "Chassis/IOM.Slot"),
 			iom, "Managers/"+iomName, ch, eb, ew)
 		updateFns = append(updateFns, iomController.ConfigChangedFn)
@@ -426,7 +426,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		)
 		domain.RegisterPlugin(func() domain.Plugin { return sled })
 		sled_chassis.AddView(sled, ctx, ch, eb, ew)
-		sledController, _ := dell_resource.NewARMappingController(ctx, sledLogger, sled, "Chassis/"+sledName, ch, eb, ew)
+		sledController, _ := ar_mapper.NewARMappingController(ctx, sledLogger, sled, "Chassis/"+sledName, ch, eb, ew)
 		updateFns = append(updateFns, sledController.ConfigChangedFn)
 
 		sledAttrSvc, _ := attr_res.New(
