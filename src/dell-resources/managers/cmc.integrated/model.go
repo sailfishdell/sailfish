@@ -2,16 +2,7 @@ package ec_manager
 
 import (
 	"github.com/superchalupa/go-redfish/src/ocp/model"
-	domain "github.com/superchalupa/go-redfish/src/redfishresource"
 )
-
-type mapping struct {
-	Property string
-	FQDD     string
-	Group    string
-	Index    string
-	Name     string
-}
 
 func New(options ...model.Option) (*model.Model, error) {
 	s := model.NewModel()
@@ -21,13 +12,10 @@ func New(options ...model.Option) (*model.Model, error) {
 	s.UpdatePropertyUnlocked("bmc_manager_for_chassis", []map[string]string{})
 	s.UpdatePropertyUnlocked("in_chassis", map[string]string{})
 
-	s.ApplyOption(model.UUID())
-
 	// user supplied options
 	s.ApplyOption(options...)
 
-	s.ApplyOption(model.PluginType(domain.PluginType("Managers/" + s.GetProperty("unique_name").(string))))
-	s.ApplyOption(model.PropertyOnce("uri", "/redfish/v1/Managers/"+s.GetProperty("unique_name").(string)))
+    s.ApplyOption(model.PropertyOnce("uri", "/redfish/v1/Managers/"+s.GetProperty("unique_name").(string)))
 	return s, nil
 }
 

@@ -121,9 +121,8 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			model.UpdateProperty("redundancy_max", ""),
 		)
 		managers = append(managers, cmcIntegratedModel)
-		domain.RegisterPlugin(func() domain.Plugin { return cmcIntegratedModel })
-		ec_manager.AddView(ctx, mgrLogger, cmcIntegratedModel, ch, eb, ew)
 		mgrController, _ := ar_mapper.NewARMappingController(ctx, mgrLogger, cmcIntegratedModel, "Managers/"+mgrName, ch, eb, ew)
+		ec_manager.AddView(ctx, mgrLogger, cmcIntegratedModel, mgrController, ch, eb, ew)
 		updateFns = append(updateFns, mgrController.ConfigChangedFn)
 
 		//

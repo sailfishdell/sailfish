@@ -9,20 +9,40 @@ import (
 
 	"github.com/superchalupa/go-redfish/src/log"
 	"github.com/superchalupa/go-redfish/src/ocp/model"
+	"github.com/superchalupa/go-redfish/src/ocp/view"
 	domain "github.com/superchalupa/go-redfish/src/redfishresource"
+	"github.com/superchalupa/go-redfish/src/dell-resources/ar_mapper"
 
 	eh "github.com/looplab/eventhorizon"
 	"github.com/looplab/eventhorizon/utils"
 	ah "github.com/superchalupa/go-redfish/src/actionhandler"
 )
 
-func AddView(ctx context.Context, logger log.Logger, s *model.Model, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
+type foo struct {
+	*view.View
+}
+
+func AddView(ctx context.Context, logger log.Logger, s *model.Model, c *ar_mapper.ARMappingController, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) *foo {
+
+	v := &foo{
+		View: view.NewView(
+			view.WithUniqueName(s.GetProperty("unique_name").(string)),
+			view.MakeUUID(),
+			view.WithModel(s),
+            view.WithNamedController("ar_mapper", c),
+		),
+	}
+
+	domain.RegisterPlugin(func() domain.Plugin { return v })
+
+    uri := "/redfish/v1/Managers/"+s.GetProperty("unique_name").(string)
+
 	ch.HandleCommand(
 		ctx,
 		&domain.CreateRedfishResource{
-			ID:          model.GetUUID(s),
+			ID:          v.GetUUID(),
 			Collection:  false,
-			ResourceURI: model.GetOdataID(s),
+			ResourceURI: uri,
 			Type:        "#Manager.v1_0_2.Manager",
 			Context:     "/redfish/v1/$metadata#Manager.Manager",
 			Privileges: map[string]interface{}{
@@ -34,25 +54,25 @@ func AddView(ctx context.Context, logger log.Logger, s *model.Model, ch eh.Comma
 			},
 			Properties: map[string]interface{}{
 				"Id":        s.GetProperty("unique_name").(string),
-				"Name@meta": s.Meta(model.PropGET("name")),
+				"Name@meta": v.Meta(view.PropGET("name")),
 				// TODO: is this in AR somewhere?
 				"ManagerType":              "BMC",
-				"Description@meta":         s.Meta(model.PropGET("description")),
-				"Model@meta":               s.Meta(model.PropGET("model")),
+				"Description@meta":         v.Meta(view.PropGET("description")),
+				"Model@meta":               v.Meta(view.PropGET("model")),
 				"DateTime@meta":            map[string]interface{}{"GET": map[string]interface{}{"plugin": "datetime"}},
-				"DateTimeLocalOffset@meta": s.Meta(model.PropGET("timezone")),
-				"FirmwareVersion@meta":     s.Meta(model.PropGET("firmware_version")),
+				"DateTimeLocalOffset@meta": v.Meta(view.PropGET("timezone")),
+				"FirmwareVersion@meta":     v.Meta(view.PropGET("firmware_version")),
 				"Links": map[string]interface{}{
-					"ManagerForServers@meta": s.Meta(model.PropGET("bmc_manager_for_servers")),
+					"ManagerForServers@meta": v.Meta(view.PropGET("bmc_manager_for_servers")),
 					// TODO: Need standard method to count arrays
 					// "ManagerForChassis@odata.count": 1,
-					"ManagerForChassis@meta": s.Meta(model.PropGET("bmc_manager_for_chassis")),
-					"ManagerInChassis@meta":  s.Meta(model.PropGET("in_chassis")),
+					"ManagerForChassis@meta": v.Meta(view.PropGET("bmc_manager_for_chassis")),
+					"ManagerInChassis@meta":  v.Meta(view.PropGET("in_chassis")),
 				},
 
 				"Status": map[string]interface{}{
 					"HealthRollup": "OK",
-					"State@meta":   s.Meta(model.PropGET("health_state")),
+					"State@meta":   v.Meta(view.PropGET("health_state")),
 					"Health":       "OK",
 				},
 
@@ -62,7 +82,7 @@ func AddView(ctx context.Context, logger log.Logger, s *model.Model, ch eh.Comma
 						"@odata.type": "#Redundancy.v1_0_2.Redundancy",
 						"Status": map[string]interface{}{
 							"HealthRollup": "OK",
-							"State@meta":   s.Meta(model.PropGET("redundancy_health_state")),
+							"State@meta":   v.Meta(view.PropGET("redundancy_health_state")),
 							"Health":       "OK",
 						},
 						"RedundancySet": []interface{}{
@@ -77,9 +97,9 @@ func AddView(ctx context.Context, logger log.Logger, s *model.Model, ch eh.Comma
 						"RedundancySet@odata.count": 2,
 						"@odata.id":                 "/redfish/v1/Managers/CMC.Integrated.1#Redundancy",
 						"@odata.context":            "/redfish/v1/$metadata#Redundancy.Redundancy",
-						"Mode@meta":                 s.Meta(model.PropGET("redundancy_mode")),
-						"MinNumNeeded@meta":         s.Meta(model.PropGET("redundancy_min")),
-						"MaxNumSupported@meta":      s.Meta(model.PropGET("redundancy_max")),
+						"Mode@meta":                 v.Meta(view.PropGET("redundancy_mode")),
+						"MinNumNeeded@meta":         v.Meta(view.PropGET("redundancy_min")),
+						"MaxNumSupported@meta":      v.Meta(view.PropGET("redundancy_max")),
 					},
 				},
 				"SerialConsole": map[string]interface{}{
@@ -97,7 +117,7 @@ func AddView(ctx context.Context, logger log.Logger, s *model.Model, ch eh.Comma
 				},
 
 				"LogServices": map[string]interface{}{
-					"@odata.id": model.GetOdataID(s) + "/LogServices",
+					"@odata.id": uri + "/LogServices",
 				},
 
 				"GraphicalConsole": map[string]interface{}{
@@ -110,16 +130,16 @@ func AddView(ctx context.Context, logger log.Logger, s *model.Model, ch eh.Comma
 				"Oem": map[string]interface{}{
 					"@odata.type": "#DellManager.v1_0_0.DellManager",
 					"OemAttributes": map[string]interface{}{
-						"@odata.id": model.GetOdataID(s) + "/Attributes",
+						"@odata.id": uri + "/Attributes",
 					},
 					"CertificateService": map[string]interface{}{
-						"@odata.id": model.GetOdataID(s) + "/CertificateService",
+						"@odata.id": uri + "/CertificateService",
 					},
 				},
 
 				"Actions": map[string]interface{}{
 					"#Manager.Reset": map[string]interface{}{
-						"target": model.GetOdataID(s) + "/Actions/Manager.Reset",
+						"target": uri + "/Actions/Manager.Reset",
 						"ResetType@Redfish.AllowableValues": []string{
 							"GracefulRestart",
 						},
@@ -132,10 +152,10 @@ func AddView(ctx context.Context, logger log.Logger, s *model.Model, ch eh.Comma
 								"ResetFactoryConfig",
 								"ResetToEngineeringDefaults",
 							},
-							"target": model.GetOdataID(s) + "/Actions/Oem/DellManager.ResetToDefaults",
+							"target": uri + "/Actions/Oem/DellManager.ResetToDefaults",
 						},
 						"#Manager.ForceFailover": map[string]interface{}{
-							"target": model.GetOdataID(s) + "/Actions/Manager.ForceFailover",
+							"target": uri + "/Actions/Manager.ForceFailover",
 						},
 					},
 				},
@@ -150,7 +170,7 @@ func AddView(ctx context.Context, logger log.Logger, s *model.Model, ch eh.Comma
 									                  "ImportSystemConfigurationPreview@Redfish.AllowableValues": [
 									                       "ImportBuffer"
 									                  ],
-									                  "target": model.GetOdataID(s) +  "/Actions/Oem/EID_674_Manager.ImportSystemConfigurationPreview",
+									                  "target": uri +  "/Actions/Oem/EID_674_Manager.ImportSystemConfigurationPreview",
 									                  "ShareParameters": {
 									                       "ProxySupport XXXXXX
 									                            "Disabled",
@@ -193,7 +213,7 @@ func AddView(ctx context.Context, logger log.Logger, s *model.Model, ch eh.Comma
 									                       "On",
 									                       "Off"
 									                  ],
-									                  "target": model.GetOdataID(s) +  "/Actions/Oem/EID_674_Manager.ImportSystemConfiguration",
+									                  "target": uri +  "/Actions/Oem/EID_674_Manager.ImportSystemConfiguration",
 									                  "ShutdownType@Redfish.AllowableValues": [
 									                       "Graceful",
 									                       "Forced",
@@ -251,7 +271,7 @@ func AddView(ctx context.Context, logger log.Logger, s *model.Model, ch eh.Comma
 									                       "IncludePasswordHashValues XXXXXX
 									                       "IncludeReadOnly,IncludePasswordHashValues XXXXXX
 									                  ],
-									                  "target": model.GetOdataID(s) +  "/Actions/Oem/EID_674_Manager.ExportSystemConfiguration",
+									                  "target": uri +  "/Actions/Oem/EID_674_Manager.ExportSystemConfiguration",
 									                  "ShareParameters": {
 									                       "ProxySupport XXXXXX
 									                            "Disabled",
@@ -310,19 +330,21 @@ func AddView(ctx context.Context, logger log.Logger, s *model.Model, ch eh.Comma
 
 	ah.CreateAction(ctx, ch, eb, ew,
 		logger,
-		model.GetOdataID(s)+"/Actions/Manager.Reset",
+		uri +"/Actions/Manager.Reset",
 		"manager.reset",
 		s)
 
 	ah.CreateAction(ctx, ch, eb, ew,
 		logger,
-		model.GetOdataID(s)+"/Actions/Oem/DellManager.ResetToDefaults",
+		uri +"/Actions/Oem/DellManager.ResetToDefaults",
 		"manager.resettodefaults",
 		s)
 
 	ah.CreateAction(ctx, ch, eb, ew,
 		logger,
-		model.GetOdataID(s)+"/Actions/Manager.ForceFailover",
+		uri +"/Actions/Manager.ForceFailover",
 		"manager.forcefailover",
 		s)
+
+    return v
 }
