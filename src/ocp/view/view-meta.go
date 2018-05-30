@@ -37,10 +37,10 @@ func PropGET(name string) MetaOption {
 	}
 }
 
-func PropPATCH(name string) MetaOption {
+func PropPATCH(name string, controller string) MetaOption {
 	return func(s *View, m MetaInt) error {
 		model.MustPropertyUnlocked(s.model, name)
-		m["PATCH"] = map[string]interface{}{"plugin": string(s.PluginType()), "property": name}
+		m["PATCH"] = map[string]interface{}{"plugin": string(s.PluginType()), "property": name, "controller": controller}
 		return nil
 	}
 }

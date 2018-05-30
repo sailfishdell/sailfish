@@ -42,21 +42,28 @@ func (s *View) PropertyPatch(
 	s.Lock()
 	defer s.Unlock()
 
-	log.MustLogger("PATCH").Debug("PATCH", "body", body, "present", present, "meta", meta, "rrp", rrp)
+	log.MustLogger("PATCH").Debug("PATCH START", "body", body, "present", present, "meta", meta, "rrp", rrp)
+
+	controllerName, ok := meta["controller"].(string)
+    if !ok {
+	    log.MustLogger("PATCH").Debug("metadata is missing the controller name", "meta", meta)
+        return
+    }
+
+    controller, ok := s.controllers[controllerName]
+    if !ok {
+	    log.MustLogger("PATCH").Debug("metadata specifies a nonexistent controller name", "meta", meta)
+        return
+    }
 
 	if present {
 		property, ok := meta["property"].(string)
 		if ok {
-			s.model.UpdateProperty(property, body)
-			rrp.Value = body
-		}
-	} else {
-		property, ok := meta["property"].(string)
-		if ok {
-			if p, ok := s.model.GetPropertyOk(property); ok {
-				rrp.Value = p
-				return
-			}
+			newval, err := controller.UpdatePropertyRequest(property, body)
+            if err == nil {
+			    rrp.Value = newval
+            }
+            return
 		}
 	}
 }

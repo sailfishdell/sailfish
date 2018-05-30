@@ -18,3 +18,10 @@ func MakeUUID() Option {
 		return nil
 	}
 }
+
+func WithNamedController(name string, c controller) Option {
+	return func(s *View) error {
+		s.controllers[name] = c
+		return nil
+	}
+}

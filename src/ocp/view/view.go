@@ -10,15 +10,22 @@ import (
 
 type Option func(*View) error
 
+type controller interface {
+    UpdatePropertyRequest(property string, value interface{}) (interface{}, error)
+}
+
 type View struct {
 	sync.RWMutex
 	model        *model.Model
 	viewInstance domain.PluginType
 	uuid         eh.UUID
+    controllers  map[string]controller
 }
 
 func NewView(options ...Option) *View {
-	s := &View{}
+	s := &View{
+        controllers: map[string]controller{},
+    }
 
 	s.ApplyOption(options...)
 	return s
