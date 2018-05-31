@@ -5,19 +5,34 @@ import (
 
 	"github.com/superchalupa/go-redfish/src/log"
 	"github.com/superchalupa/go-redfish/src/ocp/model"
+	"github.com/superchalupa/go-redfish/src/ocp/view"
 	domain "github.com/superchalupa/go-redfish/src/redfishresource"
+	"github.com/superchalupa/go-redfish/src/dell-resources/ar_mapper"
 
 	eh "github.com/looplab/eventhorizon"
 	"github.com/looplab/eventhorizon/utils"
 )
 
-func AddView(ctx context.Context, logger log.Logger, s *model.Service, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
+
+func AddView(ctx context.Context, logger log.Logger, s *model.Model, c *ar_mapper.ARMappingController, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) *view.View {
+
+	v := view.NewView(
+		view.WithUniqueName("Chassis/" + s.GetProperty("unique_name").(string)),
+		view.MakeUUID(),
+		view.WithModel(s),
+		view.WithNamedController("ar_mapper", c),
+	)
+
+	domain.RegisterPlugin(func() domain.Plugin { return v })
+
+	uri := "/redfish/v1/Chassis/" + s.GetProperty("unique_name").(string)
+
 	ch.HandleCommand(
 		ctx,
 		&domain.CreateRedfishResource{
-			ID:          model.GetUUID(s),
+			ID:          v.GetUUID(),
 			Collection:  false,
-			ResourceURI: model.GetOdataID(s),
+			ResourceURI: uri,
 			Type:        "#Chassis.v1_0_2.Chassis",
 			Context:     "/redfish/v1/$metadata#ChassisCollection.ChassisCollection/Members/$entity",
 			Privileges: map[string]interface{}{
@@ -29,13 +44,13 @@ func AddView(ctx context.Context, logger log.Logger, s *model.Service, ch eh.Com
 			},
 			Properties: map[string]interface{}{
 				"Id":                s.GetProperty("unique_name").(string),
-				"AssetTag@meta":     s.Meta(model.PropGET("asset_tag")),
-				"SerialNumber@meta": s.Meta(model.PropGET("serial")),
-				"PartNumber@meta":   s.Meta(model.PropGET("part_number")),
-				"ChassisType@meta":  s.Meta(model.PropGET("chassis_type")),
-				"Model@meta":        s.Meta(model.PropGET("model")),
-				"Manufacturer@meta": s.Meta(model.PropGET("manufacturer")),
-				"Name@meta":         s.Meta(model.PropGET("name")),
+				"AssetTag@meta":     v.Meta(view.PropGET("asset_tag"), view.PropPATCH("asset_tag", "ar_mapper")),
+				"SerialNumber@meta": v.Meta(view.PropGET("serial")),
+				"PartNumber@meta":   v.Meta(view.PropGET("part_number")),
+				"ChassisType@meta":  v.Meta(view.PropGET("chassis_type")),
+				"Model@meta":        v.Meta(view.PropGET("model")),
+				"Manufacturer@meta": v.Meta(view.PropGET("manufacturer")),
+				"Name@meta":         v.Meta(view.PropGET("name")),
 				"SKU":               "",
 				"Description":       "An instance of Chassis Management Controller",
 				"Links":             map[string]interface{}{},
@@ -47,8 +62,10 @@ func AddView(ctx context.Context, logger log.Logger, s *model.Service, ch eh.Com
 				"IndicatorLED": "Lit",
 				"Oem": map[string]interface{}{
 					"OemChassis": map[string]interface{}{
-						"@odata.id": model.GetOdataID(s) + "/Attributes",
+						"@odata.id": uri + "/Attributes",
 					},
 				},
 			}})
+
+    return v
 }

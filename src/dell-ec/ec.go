@@ -127,25 +127,25 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		// also handles patch from redfish
 		mgrController, _ := ar_mapper.NewARMappingController(ctx, mgrLogger, cmcIntegratedModel, "Managers/"+mgrName, ch, eb, ew)
 
+		// This controller will populate 'attributes' property with AR entries matching this FQDD ('mgrName')
+		mgrArdump, _ := attr_prop.NewController(ctx, cmcIntegratedModel, []string{mgrName}, ch, eb, ew)
+
 		// let the controller re-read its mappings when config file changes... nifty
 		updateFns = append(updateFns, mgrController.ConfigChangedFn)
 
 		// add the actual view
 		ec_manager.AddView(ctx, mgrLogger, cmcIntegratedModel, mgrController, ch, eb, ew)
 
-		// This controller will populate 'attributes' property with AR entries matching this FQDD ('mgrName')
-		ardump, _ := attr_prop.NewController(ctx, cmcIntegratedModel, []string{mgrName}, ch, eb, ew)
-
 		// Create the .../Attributes URI. Attributes are stored in the attributes property
-		v := attr_prop.NewView(ctx, cmcIntegratedModel, ardump)
-		uuid := attr_res.AddView(ctx, "/redfish/v1/Managers/"+mgrName+"/Attributes", mgrName+".Attributes", ch, eb, ew)
-		attr_prop.EnhanceExistingUUID(ctx, v, ch, uuid)
+		v := attr_prop.NewView(ctx, cmcIntegratedModel, mgrArdump)
+		mgrUUID := attr_res.AddView(ctx, "/redfish/v1/Managers/"+mgrName+"/Attributes", mgrName+".Attributes", ch, eb, ew)
+		attr_prop.EnhanceExistingUUID(ctx, v, ch, mgrUUID)
 
 		//*********************************************************************
 		// Create CHASSIS objects for CMC.Integrated.N
 		//*********************************************************************
 		chasLogger := logger.New("module", "Chassis/"+mgrName, "module", "Chassis/CMC.Integrated")
-		mgrModel, _ := generic_chassis.New(
+		chasModel, _ := generic_chassis.New(
 			ec_manager.WithUniqueName(mgrName),
 			model.UpdateProperty("asset_tag", ""),
 			model.UpdateProperty("serial", ""),
@@ -154,31 +154,22 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			model.UpdateProperty("model", ""),
 			model.UpdateProperty("manufacturer", ""),
 			model.UpdateProperty("name", ""),
+			model.UpdateProperty("attributes", map[string]map[string]map[string]interface{}{}),
 		)
-		domain.RegisterPlugin(func() domain.Plugin { return mgrModel })
-		cmc_chassis.AddView(ctx, chasLogger, mgrModel, ch, eb, ew)
-		// NOTE: looks like we can use the same mapping to model as manager object
-		chasController, _ := ar_mapper.NewARMappingController(ctx, chasLogger, mgrModel, "Managers/"+mgrName, ch, eb, ew)
+		// This controller will populate 'attributes' property with AR entries matching this FQDD ('mgrName')
+		chasArdump, _ := attr_prop.NewController(ctx, chasModel, []string{mgrName}, ch, eb, ew)
+
+		// the controller is what updates the model when ar entries change,
+		// also handles patch from redfish
+		chasController, _ := ar_mapper.NewARMappingController(ctx, chasLogger, chasModel, "Managers/"+mgrName, ch, eb, ew)
 		updateFns = append(updateFns, chasController.ConfigChangedFn)
 
-		/*
-			mgrAttrModel, _ := attr_res.New(
-				attr_res.BaseResource(mgrModel),
-				attr_res.WithURI("/redfish/v1/Chassis/"+mgrName+"/Attributes"),
-				attr_res.WithUniqueName(mgrName+".Attributes"),
-			)
-			domain.RegisterPlugin(func() domain.Plugin { return mgrAttrModel })
-			mgrAttrModel.AddView(ctx, ch, eb, ew)
+		cmc_chassis.AddView(ctx, chasLogger, chasModel, chasController, ch, eb, ew)
 
-				mgrAttrProp, _ := attr_prop.New(
-					attr_prop.BaseResource(mgrAttrModel),
-					attr_prop.WithFQDD(mgrName),
-				)
-				domain.RegisterPlugin(func() domain.Plugin { return mgrAttrProp })
-				mgrAttrProp.AddView(ctx, ch, eb, ew)
-				mgrAttrProp.AddController(ctx, ch, eb, ew)
-		*/
-
+		// Create the .../Attributes URI. Attributes are stored in the attributes property
+		v2 := attr_prop.NewView(ctx, chasModel, chasArdump)
+		chasUUID := attr_res.AddView(ctx, "/redfish/v1/Chassis/"+mgrName+"/Attributes", mgrName+".Attributes", ch, eb, ew)
+		attr_prop.EnhanceExistingUUID(ctx, v2, ch, chasUUID)
 	}
 
 	// ************************************************************************
