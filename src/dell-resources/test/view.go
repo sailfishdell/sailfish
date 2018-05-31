@@ -6,8 +6,8 @@ package test
 
 import (
 	"context"
+    "fmt"
 
-	"github.com/superchalupa/go-redfish/src/log"
 	"github.com/superchalupa/go-redfish/src/ocp/model"
 	"github.com/superchalupa/go-redfish/src/ocp/view"
 	"github.com/superchalupa/go-redfish/src/dell-resources/ar_mapper"
@@ -16,19 +16,14 @@ import (
 	eh "github.com/looplab/eventhorizon"
 )
 
-type foo struct {
-	*view.View
-}
+func NewView(ctx context.Context, s *model.Model, c *ar_mapper.ARMappingController, ch eh.CommandHandler) *view.View {
 
-func NewView(ctx context.Context, logger log.Logger, s *model.Model, c *ar_mapper.ARMappingController, ch eh.CommandHandler) *foo {
-
-	v := &foo{
-		View: view.NewView(
+	v := view.NewView(
 			view.MakeUUID(),
 			view.WithModel(s),
             view.WithNamedController("ar_mapper", c),
-		),
-	}
+            view.WithUniqueName( fmt.Sprintf("%v", eh.NewUUID()) ),
+		)
 
 	domain.RegisterPlugin(func() domain.Plugin { return v })
 
