@@ -18,6 +18,13 @@ func (s *View) PropertyGet(
 	rrp *domain.RedfishResourceProperty,
 	meta map[string]interface{},
 ) {
+	if s.get != nil {
+		err := s.get(s, ctx, agg, rrp, meta)
+		if err == nil {
+			return
+		}
+	}
+
 	// but lock the actual service anyways, because we need to exclude anybody mucking with the backend directly. (side eye at you, viper)
 	s.RLock()
 	defer s.RUnlock()
@@ -45,25 +52,25 @@ func (s *View) PropertyPatch(
 	log.MustLogger("PATCH").Debug("PATCH START", "body", body, "present", present, "meta", meta, "rrp", rrp)
 
 	controllerName, ok := meta["controller"].(string)
-    if !ok {
-	    log.MustLogger("PATCH").Debug("metadata is missing the controller name", "meta", meta)
-        return
-    }
+	if !ok {
+		log.MustLogger("PATCH").Debug("metadata is missing the controller name", "meta", meta)
+		return
+	}
 
-    controller, ok := s.controllers[controllerName]
-    if !ok {
-	    log.MustLogger("PATCH").Debug("metadata specifies a nonexistent controller name", "meta", meta)
-        return
-    }
+	controller, ok := s.controllers[controllerName]
+	if !ok {
+		log.MustLogger("PATCH").Debug("metadata specifies a nonexistent controller name", "meta", meta)
+		return
+	}
 
 	if present {
 		property, ok := meta["property"].(string)
 		if ok {
 			newval, err := controller.UpdateRequest(ctx, property, body)
-            if err == nil {
-			    rrp.Value = newval
-            }
-            return
+			if err == nil {
+				rrp.Value = newval
+			}
+			return
 		}
 	}
 }

@@ -27,6 +27,20 @@ func MakeUUID() Option {
 	}
 }
 
+func WithGET(g getint) Option {
+	return func(s *View) error {
+		s.get = g
+		return nil
+	}
+}
+
+func WithPATCH(g patchint) Option {
+	return func(s *View) error {
+		s.patch = g
+		return nil
+	}
+}
+
 func WithNamedController(name string, c controller) Option {
 	return func(s *View) error {
 		s.controllers[name] = c
