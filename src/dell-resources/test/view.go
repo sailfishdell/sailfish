@@ -6,11 +6,11 @@ package test
 
 import (
 	"context"
-    "fmt"
+	"fmt"
 
+	"github.com/superchalupa/go-redfish/src/dell-resources/ar_mapper"
 	"github.com/superchalupa/go-redfish/src/ocp/model"
 	"github.com/superchalupa/go-redfish/src/ocp/view"
-	"github.com/superchalupa/go-redfish/src/dell-resources/ar_mapper"
 	domain "github.com/superchalupa/go-redfish/src/redfishresource"
 
 	eh "github.com/looplab/eventhorizon"
@@ -19,11 +19,11 @@ import (
 func NewView(ctx context.Context, s *model.Model, c *ar_mapper.ARMappingController, ch eh.CommandHandler) *view.View {
 
 	v := view.NewView(
-			view.MakeUUID(),
-			view.WithModel(s),
-            view.WithNamedController("ar_mapper", c),
-            view.WithUniqueName( fmt.Sprintf("%v", eh.NewUUID()) ),
-		)
+		view.MakeUUID(),
+		view.WithModel(s),
+		view.WithNamedController("ar_mapper", c),
+		view.WithUniqueName(fmt.Sprintf("%v", eh.NewUUID())),
+	)
 
 	domain.RegisterPlugin(func() domain.Plugin { return v })
 
