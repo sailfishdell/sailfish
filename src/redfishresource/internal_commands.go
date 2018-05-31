@@ -252,7 +252,7 @@ func (c *RemoveResourceFromRedfishResourceCollection) Handle(ctx context.Context
 type InjectEvent struct {
 	ID         eh.UUID                  `json:"id"`
 	Name       eh.EventType             `json:"name"`
-	EventData  map[string]interface{}   `json:"data"`
+	EventData  map[string]interface{}   `json:"data" eh:"optional"`
 	EventArray []map[string]interface{} `json:"event_array" eh:"optional"`
 }
 
@@ -272,19 +272,21 @@ func (c *InjectEvent) Handle(ctx context.Context, a *RedfishResourceAggregate) e
 
 	a.ID = eh.UUID("49467bb4-5c1f-473b-0000-00000000000f")
 
-	data, err := eh.CreateEventData(c.Name)
-	if err != nil {
-		requestLogger.Warn("InjectEvent - Could not find event type", "event name", c.Name, "error", err)
-		return err
-	}
+	if c.EventData != nil {
+		data, err := eh.CreateEventData(c.Name)
+		if err != nil {
+			requestLogger.Warn("InjectEvent - Could not find event type", "event name", c.Name, "error", err)
+			return err
+		}
 
-	err = mapstructure.Decode(c.EventData, &data)
-	if err != nil {
-		requestLogger.Warn("InjectEvent - could not decode event data", "error", err)
-		return err
-	}
+		err = mapstructure.Decode(c.EventData, &data)
+		if err != nil {
+			requestLogger.Warn("InjectEvent - could not decode event data", "error", err)
+			return err
+		}
 
-	a.PublishEvent(eh.NewEvent(c.Name, data, time.Now()))
+		a.PublishEvent(eh.NewEvent(c.Name, data, time.Now()))
+	}
 
 	for _, eventData := range c.EventArray {
 		data, err := eh.CreateEventData(c.Name)
