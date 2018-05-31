@@ -2,70 +2,74 @@ package attribute_property
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"strings"
+	"time"
 
 	"github.com/superchalupa/go-redfish/src/log"
 	"github.com/superchalupa/go-redfish/src/ocp/event"
+	"github.com/superchalupa/go-redfish/src/ocp/model"
 
 	eh "github.com/looplab/eventhorizon"
 	"github.com/looplab/eventhorizon/utils"
 )
 
-const (
-	AttributeUpdated                eh.EventType = "AttributeUpdated"
-	AttributeUpdateRequest          eh.EventType = "AttributeUpdateRequest"
-	AttributeGetCurrentValueRequest eh.EventType = "AttributeGetCurrentValueRequest"
-)
-
-func init() {
-	eh.RegisterEventData(AttributeUpdated, func() eh.EventData { return &AttributeUpdatedData{} })
-	eh.RegisterEventData(AttributeUpdateRequest, func() eh.EventData { return &AttributeUpdateRequestData{} })
+type ARDump struct {
+	fqdds []string
+	eb    eh.EventBus
 }
 
-type AttributeUpdatedData struct {
-	ReqID eh.UUID
-	FQDD  string
-	Group string
-	Index string
-	Name  string
-	Value interface{}
-	Error string
-}
+func NewController(ctx context.Context, m *model.Model, fqdds []string, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) (*ARDump, error) {
+	c := &ARDump{
+		fqdds: fqdds,
+		eb:    eb,
+	}
 
-type AttributeUpdateRequestData struct {
-	ReqID eh.UUID
-	FQDD  string
-	Group string
-	Index string
-	Name  string
-	Value interface{}
-}
-
-type AttributeGetCurrentValueRequestData struct {
-	FQDD  string
-	Group string
-	Index string
-	Name  string
-}
-
-func (s *service) AddController(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
 	// stream processor for action events
-	sp, err := event.NewEventStreamProcessor(ctx, ew, event.CustomFilter(SelectAttributeUpdate(s.fqdd)))
+	sp, err := event.NewEventStreamProcessor(ctx, ew, event.CustomFilter(selectAttributeUpdate(fqdds)))
 	if err != nil {
-		log.MustLogger("idrac_mv").Error("Failed to create event stream processor", "err", err)
-		return
+		log.MustLogger("ARDump_Controller").Error("Failed to create event stream processor", "err", err)
+		return nil, errors.New("Failed to create stream processor")
 	}
 	sp.RunForever(func(event eh.Event) {
-		log.MustLogger("idrac_mv").Info("Updating model attribute", "event", event)
+		log.MustLogger("ARDump_Controller").Info("Updating model attribute", "event", event)
 		if data, ok := event.Data().(*AttributeUpdatedData); ok {
-			s.ApplyOption(WithAttribute(data.Group, data.Index, data.Name, data.Value))
+			m.ApplyOption(WithAttribute(data.Group, data.Index, data.Name, data.Value))
 		} else {
-			log.MustLogger("idrac_mv").Warn("Should never happen: got an invalid event in the event handler")
+			log.MustLogger("ARDump_Controller").Warn("Should never happen: got an invalid event in the event handler")
 		}
 	})
+
+	return c, nil
 }
 
-func SelectAttributeUpdate(fqdd []string) func(eh.Event) bool {
+func (d *ARDump) UpdateRequest(ctx context.Context, property string, value interface{}) (interface{}, error) {
+	log.MustLogger("ARDump_Controller").Debug("UpdateRequest", "property", property, "value", value)
+
+	for k, v := range value.(map[string]interface{}) {
+		stuff := strings.Split(k, ".")
+		reqUUID := eh.NewUUID()
+
+		// TODO: validate
+		//  - validate that the requested member is in this list
+		//  - validate that it is writable
+		//  - validate that user has perms
+		//
+		data := AttributeUpdateRequestData{
+			ReqID: reqUUID,
+			FQDD:  d.fqdds[0],
+			Group: stuff[0],
+			Index: stuff[1],
+			Name:  stuff[2],
+			Value: v,
+		}
+		d.eb.PublishEvent(ctx, eh.NewEvent(AttributeUpdateRequest, data, time.Now()))
+	}
+	return nil, nil
+}
+
+func selectAttributeUpdate(fqdd []string) func(eh.Event) bool {
 	return func(event eh.Event) bool {
 		if event.EventType() != AttributeUpdated {
 			return false
@@ -78,7 +82,7 @@ func SelectAttributeUpdate(fqdd []string) func(eh.Event) bool {
 			}
 			return false
 		}
-		log.MustLogger("idrac_mv").Debug("TYPE ASSERT FAIL!", "data", fmt.Sprintf("%#v", event.Data()))
+		log.MustLogger("ARDump_Controller").Debug("TYPE ASSERT FAIL!", "data", fmt.Sprintf("%#v", event.Data()))
 		return false
 	}
 }

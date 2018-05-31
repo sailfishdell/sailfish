@@ -7,35 +7,29 @@ package ec_manager
 import (
 	"context"
 
+	"github.com/superchalupa/go-redfish/src/dell-resources/ar_mapper"
 	"github.com/superchalupa/go-redfish/src/log"
 	"github.com/superchalupa/go-redfish/src/ocp/model"
 	"github.com/superchalupa/go-redfish/src/ocp/view"
 	domain "github.com/superchalupa/go-redfish/src/redfishresource"
-	"github.com/superchalupa/go-redfish/src/dell-resources/ar_mapper"
 
 	eh "github.com/looplab/eventhorizon"
 	"github.com/looplab/eventhorizon/utils"
 	ah "github.com/superchalupa/go-redfish/src/actionhandler"
 )
 
-type foo struct {
-	*view.View
-}
+func AddView(ctx context.Context, logger log.Logger, s *model.Model, c *ar_mapper.ARMappingController, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) *view.View {
 
-func AddView(ctx context.Context, logger log.Logger, s *model.Model, c *ar_mapper.ARMappingController, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) *foo {
-
-	v := &foo{
-		View: view.NewView(
-			view.WithUniqueName(s.GetProperty("unique_name").(string)),
-			view.MakeUUID(),
-			view.WithModel(s),
-            view.WithNamedController("ar_mapper", c),
-		),
-	}
+	v := view.NewView(
+		view.WithUniqueName(s.GetProperty("unique_name").(string)),
+		view.MakeUUID(),
+		view.WithModel(s),
+		view.WithNamedController("ar_mapper", c),
+	)
 
 	domain.RegisterPlugin(func() domain.Plugin { return v })
 
-    uri := "/redfish/v1/Managers/"+s.GetProperty("unique_name").(string)
+	uri := "/redfish/v1/Managers/" + s.GetProperty("unique_name").(string)
 
 	ch.HandleCommand(
 		ctx,
@@ -330,21 +324,21 @@ func AddView(ctx context.Context, logger log.Logger, s *model.Model, c *ar_mappe
 
 	ah.CreateAction(ctx, ch, eb, ew,
 		logger,
-		uri +"/Actions/Manager.Reset",
+		uri+"/Actions/Manager.Reset",
 		"manager.reset",
 		s)
 
 	ah.CreateAction(ctx, ch, eb, ew,
 		logger,
-		uri +"/Actions/Oem/DellManager.ResetToDefaults",
+		uri+"/Actions/Oem/DellManager.ResetToDefaults",
 		"manager.resettodefaults",
 		s)
 
 	ah.CreateAction(ctx, ch, eb, ew,
 		logger,
-		uri +"/Actions/Manager.ForceFailover",
+		uri+"/Actions/Manager.ForceFailover",
 		"manager.forcefailover",
 		s)
 
-    return v
+	return v
 }

@@ -31,9 +31,9 @@ import (
 	"github.com/superchalupa/go-redfish/src/dell-resources/chassis/iom.slot"
 	"github.com/superchalupa/go-redfish/src/dell-resources/chassis/system.chassis"
 	"github.com/superchalupa/go-redfish/src/dell-resources/chassis/system.chassis/power"
-	"github.com/superchalupa/go-redfish/src/dell-resources/chassis/system.chassis/power/powersupply"
+	//	"github.com/superchalupa/go-redfish/src/dell-resources/chassis/system.chassis/power/powersupply"
 	"github.com/superchalupa/go-redfish/src/dell-resources/chassis/system.chassis/thermal"
-	"github.com/superchalupa/go-redfish/src/dell-resources/chassis/system.chassis/thermal/fans"
+	//	"github.com/superchalupa/go-redfish/src/dell-resources/chassis/system.chassis/thermal/fans"
 	"github.com/superchalupa/go-redfish/src/dell-resources/chassis/system.modular"
 	"github.com/superchalupa/go-redfish/src/dell-resources/managers/cmc.integrated"
 	"github.com/superchalupa/go-redfish/src/dell-resources/test"
@@ -91,9 +91,8 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		model.UpdateProperty("model", "m"),
 	)
 	testController, _ := ar_mapper.NewARMappingController(ctx, testLogger, testModel, "test/testview", ch, eb, ew)
-	testView := test.NewView(ctx, testLogger, testModel, testController, ch)
 	updateFns = append(updateFns, testController.ConfigChangedFn)
-	_ = testView // avoid unused variable warning
+	test.NewView(ctx, testModel, testController, ch)
 
 	//
 	// Loop to create similarly named manager objects and the things attached there.
@@ -109,47 +108,38 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		mgrLogger := logger.New("module", "Managers/"+mgrName, "module", "Managers/CMC.Integrated")
 		cmcIntegratedModel, _ := ec_manager.New(
 			ec_manager.WithUniqueName(mgrName),
-			model.UpdateProperty("name", ""),
-			model.UpdateProperty("description", ""),
-			model.UpdateProperty("model", ""),
-			model.UpdateProperty("timezone", ""),
-			model.UpdateProperty("firmware_version", ""),
-			model.UpdateProperty("health_state", ""),
-			model.UpdateProperty("redundancy_health_state", ""),
-			model.UpdateProperty("redundancy_mode", ""),
-			model.UpdateProperty("redundancy_min", ""),
-			model.UpdateProperty("redundancy_max", ""),
+			model.UpdateProperty("name", nil),
+			model.UpdateProperty("description", nil),
+			model.UpdateProperty("model", nil),
+			model.UpdateProperty("timezone", nil),
+			model.UpdateProperty("firmware_version", nil),
+			model.UpdateProperty("health_state", nil),
+			model.UpdateProperty("redundancy_health_state", nil),
+			model.UpdateProperty("redundancy_mode", nil),
+			model.UpdateProperty("redundancy_min", nil),
+			model.UpdateProperty("redundancy_max", nil),
+			model.UpdateProperty("attributes", map[string]map[string]map[string]interface{}{}),
 		)
+		// save managers because we use these later
 		managers = append(managers, cmcIntegratedModel)
+
+		// the controller is what updates the model when ar entries change,
+		// also handles patch from redfish
 		mgrController, _ := ar_mapper.NewARMappingController(ctx, mgrLogger, cmcIntegratedModel, "Managers/"+mgrName, ch, eb, ew)
-		ec_manager.AddView(ctx, mgrLogger, cmcIntegratedModel, mgrController, ch, eb, ew)
+
+		// let the controller re-read its mappings when config file changes... nifty
 		updateFns = append(updateFns, mgrController.ConfigChangedFn)
 
-		//
-		// Create the .../Attributes URI
-		//
-		bmcAttrModel, _ := attr_res.New(
-			attr_res.BaseResource(cmcIntegratedModel),
-			attr_res.WithURI("/redfish/v1/Managers/"+mgrName+"/Attributes"),
-			attr_res.WithUniqueName(mgrName+".Attributes"),
-		)
-		domain.RegisterPlugin(func() domain.Plugin { return bmcAttrModel })
-		bmcAttrModel.AddView(ctx, ch, eb, ew)
+		// add the actual view
+		ec_manager.AddView(ctx, mgrLogger, cmcIntegratedModel, mgrController, ch, eb, ew)
 
-		//
-		// Attach the actual AR attributes there
-		//
-		bmcAttrProp, _ := attr_prop.New(
-			attr_prop.BaseResource(bmcAttrModel),
-			attr_prop.WithFQDD(mgrName),
-		)
-		domain.RegisterPlugin(func() domain.Plugin { return bmcAttrProp })
-		bmcAttrProp.AddView(ctx, ch, eb, ew)
-		//
-		// This controller listens for AttributeUpdated messages and filters
-		// them into the property list above if they match fqdd.
-		//
-		bmcAttrProp.AddController(ctx, ch, eb, ew)
+		// This controller will populate 'attributes' property with AR entries matching this FQDD ('mgrName')
+		ardump, _ := attr_prop.NewController(ctx, cmcIntegratedModel, []string{mgrName}, ch, eb, ew)
+
+		// Create the .../Attributes URI. Attributes are stored in the attributes property
+		v := attr_prop.NewView(ctx, cmcIntegratedModel, ardump)
+		uuid := attr_res.AddView(ctx, "/redfish/v1/Managers/"+mgrName+"/Attributes", mgrName+".Attributes", ch, eb, ew)
+		attr_prop.EnhanceExistingUUID(ctx, v, ch, uuid)
 
 		//*********************************************************************
 		// Create CHASSIS objects for CMC.Integrated.N
@@ -171,24 +161,24 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		chasController, _ := ar_mapper.NewARMappingController(ctx, chasLogger, mgrModel, "Managers/"+mgrName, ch, eb, ew)
 		updateFns = append(updateFns, chasController.ConfigChangedFn)
 
-		mgrAttrModel, _ := attr_res.New(
-			attr_res.BaseResource(mgrModel),
-			attr_res.WithURI("/redfish/v1/Chassis/"+mgrName+"/Attributes"),
-			attr_res.WithUniqueName(mgrName+".Attributes"),
-		)
-		domain.RegisterPlugin(func() domain.Plugin { return mgrAttrModel })
-		mgrAttrModel.AddView(ctx, ch, eb, ew)
+		/*
+			mgrAttrModel, _ := attr_res.New(
+				attr_res.BaseResource(mgrModel),
+				attr_res.WithURI("/redfish/v1/Chassis/"+mgrName+"/Attributes"),
+				attr_res.WithUniqueName(mgrName+".Attributes"),
+			)
+			domain.RegisterPlugin(func() domain.Plugin { return mgrAttrModel })
+			mgrAttrModel.AddView(ctx, ch, eb, ew)
 
-		// TODO: would be nice if we could re-use the underlying model between the manager and chassis object
-		//       should be do-able if we modify BaseResource() to be AttachToResource(), and make the underlying data
-		//       an array
-		mgrAttrProp, _ := attr_prop.New(
-			attr_prop.BaseResource(mgrAttrModel),
-			attr_prop.WithFQDD(mgrName),
-		)
-		domain.RegisterPlugin(func() domain.Plugin { return mgrAttrProp })
-		mgrAttrProp.AddView(ctx, ch, eb, ew)
-		mgrAttrProp.AddController(ctx, ch, eb, ew)
+				mgrAttrProp, _ := attr_prop.New(
+					attr_prop.BaseResource(mgrAttrModel),
+					attr_prop.WithFQDD(mgrName),
+				)
+				domain.RegisterPlugin(func() domain.Plugin { return mgrAttrProp })
+				mgrAttrProp.AddView(ctx, ch, eb, ew)
+				mgrAttrProp.AddController(ctx, ch, eb, ew)
+		*/
+
 	}
 
 	// ************************************************************************
@@ -214,24 +204,23 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	chasController, _ := ar_mapper.NewARMappingController(ctx, chasLogger, chasModel, "Chassis/"+chasName, ch, eb, ew)
 	updateFns = append(updateFns, chasController.ConfigChangedFn)
 
-	chasAttrModel, _ := attr_res.New(
-		attr_res.BaseResource(chasModel),
-		attr_res.WithURI("/redfish/v1/Chassis/"+chasName+"/Attributes"),
-		attr_res.WithUniqueName(chasName+".Attributes"),
-	)
-	domain.RegisterPlugin(func() domain.Plugin { return chasAttrModel })
-	chasAttrModel.AddView(ctx, ch, eb, ew)
+	/*
+		chasAttrModel, _ := attr_res.New(
+			attr_res.BaseResource(chasModel),
+			attr_res.WithURI("/redfish/v1/Chassis/"+chasName+"/Attributes"),
+			attr_res.WithUniqueName(chasName+".Attributes"),
+		)
+		domain.RegisterPlugin(func() domain.Plugin { return chasAttrModel })
+		chasAttrModel.AddView(ctx, ch, eb, ew)
 
-	// TODO: would be nice if we could re-use the underlying model between the manager and chassis object
-	//       should be do-able if we modify BaseResource() to be AttachToResource(), and make the underlying data
-	//       an array
-	chasAttrProp, _ := attr_prop.New(
-		attr_prop.BaseResource(chasAttrModel),
-		attr_prop.WithFQDD(chasName),
-	)
-	domain.RegisterPlugin(func() domain.Plugin { return chasAttrProp })
-	chasAttrProp.AddView(ctx, ch, eb, ew)
-	chasAttrProp.AddController(ctx, ch, eb, ew)
+			chasAttrProp, _ := attr_prop.New(
+				attr_prop.BaseResource(chasAttrModel),
+				attr_prop.WithFQDD(chasName),
+			)
+			domain.RegisterPlugin(func() domain.Plugin { return chasAttrProp })
+			chasAttrProp.AddView(ctx, ch, eb, ew)
+			chasAttrProp.AddController(ctx, ch, eb, ew)
+	*/
 
 	//*********************************************************************
 	// Create Power objects for System.Chassis.1
@@ -248,46 +237,48 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	domain.RegisterPlugin(func() domain.Plugin { return powerModel })
 	power.AddView(ctx, powerLogger, powerModel, ch, eb, ew)
 
-	psus := []interface{}{}
-	for _, psuName := range []string{
-		"PSU.Slot.1", "PSU.Slot.2", "PSU.Slot.3",
-		"PSU.Slot.4", "PSU.Slot.5", "PSU.Slot.6",
-	} {
-		// note we don't AddView for this one because we already have this in our view
-		psuAttrProp, _ := attr_prop.New(
-			attr_prop.WithFQDD(psuName),
-		)
-		domain.RegisterPlugin(func() domain.Plugin { return psuAttrProp })
-		psuAttrProp.AddController(ctx, ch, eb, ew)
+	/*
+		psus := []interface{}{}
+		for _, psuName := range []string{
+			"PSU.Slot.1", "PSU.Slot.2", "PSU.Slot.3",
+			"PSU.Slot.4", "PSU.Slot.5", "PSU.Slot.6",
+		} {
+			// note we don't AddView for this one because we already have this in our view
+			psuAttrProp, _ := attr_prop.New(
+				attr_prop.WithFQDD(psuName),
+			)
+			domain.RegisterPlugin(func() domain.Plugin { return psuAttrProp })
+			psuAttrProp.AddController(ctx, ch, eb, ew)
 
-		psModel := model.NewModel(
-			model.UUID(),
-			model.PropertyOnce("uri", "/redfish/v1/Chassis/"+chasName+"/Power/PowerSupplies/"+psuName),
-			model.PluginType(domain.PluginType("PowerSupply:"+psuName)),
-			model.UpdateProperty("unique_id", psuName),
-			model.UpdateProperty("name", psuName),
-			model.UpdateProperty("capacity_watts", "INVALID"),
-			model.UpdateProperty("firmware_version", "NOT INVENTORIED"),
-			model.UpdateProperty("component_id", "INVALID"),
-			model.UpdateProperty("line_input_voltage", ""),
-			model.UpdateProperty("input_current", ""),
-		)
-		domain.RegisterPlugin(func() domain.Plugin { return psModel })
-		psu := powersupply.AddView(ctx, powerLogger, psModel, psuAttrProp.GetModel(), ch, eb, ew)
+			psModel := model.NewModel(
+				model.UUID(),
+				model.PropertyOnce("uri", "/redfish/v1/Chassis/"+chasName+"/Power/PowerSupplies/"+psuName),
+				model.PluginType(domain.PluginType("PowerSupply:"+psuName)),
+				model.UpdateProperty("unique_id", psuName),
+				model.UpdateProperty("name", psuName),
+				model.UpdateProperty("capacity_watts", "INVALID"),
+				model.UpdateProperty("firmware_version", "NOT INVENTORIED"),
+				model.UpdateProperty("component_id", "INVALID"),
+				model.UpdateProperty("line_input_voltage", ""),
+				model.UpdateProperty("input_current", ""),
+			)
+			domain.RegisterPlugin(func() domain.Plugin { return psModel })
+			psu := powersupply.AddView(ctx, powerLogger, psModel, psuAttrProp.GetModel(), ch, eb, ew)
 
-		psuController, _ := ar_mapper.NewARMappingController(ctx,
-			logger.New("module", "Chassis/"+chasName+"/Power/PowerSupplies/"+psuName, "module", "Chassis/"+chasName+"/Power/PowerSupplies/PSU.Slot"),
-			psModel, "PSU/"+psuName, ch, eb, ew)
-		updateFns = append(updateFns, psuController.ConfigChangedFn)
+			psuController, _ := ar_mapper.NewARMappingController(ctx,
+				logger.New("module", "Chassis/"+chasName+"/Power/PowerSupplies/"+psuName, "module", "Chassis/"+chasName+"/Power/PowerSupplies/PSU.Slot"),
+				psModel, "PSU/"+psuName, ch, eb, ew)
+			updateFns = append(updateFns, psuController.ConfigChangedFn)
 
-		p := &domain.RedfishResourceProperty{}
-		p.Parse(psu)
-		psus = append(psus, p)
+			p := &domain.RedfishResourceProperty{}
+			p.Parse(psu)
+			psus = append(psus, p)
 
-	}
-	p := &domain.RedfishResourceProperty{Value: psus}
-	powerModel.ApplyOption(model.UpdateProperty("power_supply_views", p))
-	powerLogger.Info("Updating view with psu list", "power_supply_views", p, "raw", psus)
+		}
+		p := &domain.RedfishResourceProperty{Value: psus}
+		powerModel.ApplyOption(model.UpdateProperty("power_supply_views", p))
+		powerLogger.Info("Updating view with psu list", "power_supply_views", p, "raw", psus)
+	*/
 
 	//*********************************************************************
 	// Create Thermal objects for System.Chassis.1
@@ -305,48 +296,51 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	domain.RegisterPlugin(func() domain.Plugin { return thermalModel })
 	thermal.AddView(ctx, thermalLogger, thermalModel, ch, eb, ew)
 
-	fan_views := []interface{}{}
-	for _, fanName := range []string{
-		"Fan.Slot.1", "Fan.Slot.2", "Fan.Slot.3",
-		"Fan.Slot.4", "Fan.Slot.5", "Fan.Slot.6",
-		"Fan.Slot.7", "Fan.Slot.8", "Fan.Slot.9",
-	} {
-		// note we don't AddView for this one because we already have this in our view
-		fanAttrProp, _ := attr_prop.New(
-			attr_prop.WithFQDD(fanName),
-		)
-		domain.RegisterPlugin(func() domain.Plugin { return fanAttrProp })
-		fanAttrProp.AddController(ctx, ch, eb, ew)
+	/*
+		fan_views := []interface{}{}
+		for _, fanName := range []string{
+			"Fan.Slot.1", "Fan.Slot.2", "Fan.Slot.3",
+			"Fan.Slot.4", "Fan.Slot.5", "Fan.Slot.6",
+			"Fan.Slot.7", "Fan.Slot.8", "Fan.Slot.9",
+		} {
 
-		psModel := model.NewModel(
-			model.UUID(),
-			model.PropertyOnce("uri", "/redfish/v1/Chassis/"+chasName+"/Sensors/Fans/"+fanName),
-			model.PluginType(domain.PluginType("Fans:"+fanName)),
-			model.UpdateProperty("unique_id", fanName),
-			model.UpdateProperty("name", "UNSET"),
-			model.UpdateProperty("firmware_version", "UNSET"),
-			model.UpdateProperty("hardware_version", "UNSET"),
-			model.UpdateProperty("reading", "UNSET"),
-			model.UpdateProperty("reading_units", "UNSET"),
-			model.UpdateProperty("oem_reading", "UNSET"),
-			model.UpdateProperty("oem_reading_units", "UNSET"),
-			model.UpdateProperty("graphics_uri", "UNSET"),
-		)
-		domain.RegisterPlugin(func() domain.Plugin { return psModel })
-		fan := fans.AddView(ctx, thermalLogger, psModel, fanAttrProp.GetModel(), ch, eb, ew)
+			// note we don't AddView for this one because we already have this in our view
+			fanAttrProp, _ := attr_prop.New(
+				attr_prop.WithFQDD(fanName),
+			)
+			domain.RegisterPlugin(func() domain.Plugin { return fanAttrProp })
+			fanAttrProp.AddController(ctx, ch, eb, ew)
 
-		fanController, _ := ar_mapper.NewARMappingController(ctx,
-			logger.New("module", "Chassis/"+chasName+"/Sensors/Fans/"+fanName, "module", "Chassis/"+chasName+"/Sensors/Fans/Fan.Slot"),
-			psModel, "Fan/"+fanName, ch, eb, ew)
-		updateFns = append(updateFns, fanController.ConfigChangedFn)
+			psModel := model.NewModel(
+				model.UUID(),
+				model.PropertyOnce("uri", "/redfish/v1/Chassis/"+chasName+"/Sensors/Fans/"+fanName),
+				model.PluginType(domain.PluginType("Fans:"+fanName)),
+				model.UpdateProperty("unique_id", fanName),
+				model.UpdateProperty("name", "UNSET"),
+				model.UpdateProperty("firmware_version", "UNSET"),
+				model.UpdateProperty("hardware_version", "UNSET"),
+				model.UpdateProperty("reading", "UNSET"),
+				model.UpdateProperty("reading_units", "UNSET"),
+				model.UpdateProperty("oem_reading", "UNSET"),
+				model.UpdateProperty("oem_reading_units", "UNSET"),
+				model.UpdateProperty("graphics_uri", "UNSET"),
+			)
+			domain.RegisterPlugin(func() domain.Plugin { return psModel })
+			fan := fans.AddView(ctx, thermalLogger, psModel, fanAttrProp.GetModel(), ch, eb, ew)
 
-		p := &domain.RedfishResourceProperty{}
-		p.Parse(fan)
-		fan_views = append(fan_views, p)
-	}
+			fanController, _ := ar_mapper.NewARMappingController(ctx,
+				logger.New("module", "Chassis/"+chasName+"/Sensors/Fans/"+fanName, "module", "Chassis/"+chasName+"/Sensors/Fans/Fan.Slot"),
+				psModel, "Fan/"+fanName, ch, eb, ew)
+			updateFns = append(updateFns, fanController.ConfigChangedFn)
 
-	fanView := &domain.RedfishResourceProperty{Value: fan_views}
-	thermalModel.ApplyOption(model.UpdateProperty("fan_views", fanView))
+			p := &domain.RedfishResourceProperty{}
+			p.Parse(fan)
+			fan_views = append(fan_views, p)
+		}
+
+		fanView := &domain.RedfishResourceProperty{Value: fan_views}
+		thermalModel.ApplyOption(model.UpdateProperty("fan_views", fanView))
+	*/
 
 	// ************************************************************************
 	// CHASSIS IOM.Slot
@@ -384,22 +378,25 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			iom, "Managers/"+iomName, ch, eb, ew)
 		updateFns = append(updateFns, iomController.ConfigChangedFn)
 
-		iomAttrSvc, _ := attr_res.New(
-			attr_res.BaseResource(iom),
-			attr_res.WithURI("/redfish/v1/Chassis/"+iomName+"/Attributes"),
-			attr_res.WithUniqueName(iomName+".Attributes"),
-		)
-		domain.RegisterPlugin(func() domain.Plugin { return iomAttrSvc })
-		iomAttrSvc.AddView(ctx, ch, eb, ew)
-		iomAttrSvc.AddController(ctx, ch, eb, ew)
+		/*
+			iomAttrSvc, _ := attr_res.New(
+				attr_res.BaseResource(iom),
+				attr_res.WithURI("/redfish/v1/Chassis/"+iomName+"/Attributes"),
+				attr_res.WithUniqueName(iomName+".Attributes"),
+			)
+			domain.RegisterPlugin(func() domain.Plugin { return iomAttrSvc })
+			iomAttrSvc.AddView(ctx, ch, eb, ew)
+			iomAttrSvc.AddController(ctx, ch, eb, ew)
 
-		iomAttrProp, _ := attr_prop.New(
-			attr_prop.BaseResource(iomAttrSvc),
-			attr_prop.WithFQDD(iomName),
-		)
-		domain.RegisterPlugin(func() domain.Plugin { return iomAttrProp })
-		iomAttrProp.AddView(ctx, ch, eb, ew)
-		iomAttrProp.AddController(ctx, ch, eb, ew)
+				iomAttrProp, _ := attr_prop.New(
+					attr_prop.BaseResource(iomAttrSvc),
+					attr_prop.WithFQDD(iomName),
+				)
+				domain.RegisterPlugin(func() domain.Plugin { return iomAttrProp })
+				iomAttrProp.AddView(ctx, ch, eb, ew)
+				iomAttrProp.AddController(ctx, ch, eb, ew)
+		*/
+
 	}
 
 	for _, sledName := range []string{
@@ -428,22 +425,25 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		sledController, _ := ar_mapper.NewARMappingController(ctx, sledLogger, sled, "Chassis/"+sledName, ch, eb, ew)
 		updateFns = append(updateFns, sledController.ConfigChangedFn)
 
-		sledAttrSvc, _ := attr_res.New(
-			attr_res.BaseResource(sled),
-			attr_res.WithURI("/redfish/v1/Chassis/"+sledName+"/Attributes"),
-			attr_res.WithUniqueName(sledName+".Attributes"),
-		)
-		domain.RegisterPlugin(func() domain.Plugin { return sledAttrSvc })
-		sledAttrSvc.AddView(ctx, ch, eb, ew)
-		sledAttrSvc.AddController(ctx, ch, eb, ew)
+		/*
+			sledAttrSvc, _ := attr_res.New(
+				attr_res.BaseResource(sled),
+				attr_res.WithURI("/redfish/v1/Chassis/"+sledName+"/Attributes"),
+				attr_res.WithUniqueName(sledName+".Attributes"),
+			)
+			domain.RegisterPlugin(func() domain.Plugin { return sledAttrSvc })
+			sledAttrSvc.AddView(ctx, ch, eb, ew)
+			sledAttrSvc.AddController(ctx, ch, eb, ew)
 
-		sledAttrProp, _ := attr_prop.New(
-			attr_prop.BaseResource(sledAttrSvc),
-			attr_prop.WithFQDD(sledName),
-		)
-		domain.RegisterPlugin(func() domain.Plugin { return sledAttrProp })
-		sledAttrProp.AddView(ctx, ch, eb, ew)
-		sledAttrProp.AddController(ctx, ch, eb, ew)
+				sledAttrProp, _ := attr_prop.New(
+					attr_prop.BaseResource(sledAttrSvc),
+					attr_prop.WithFQDD(sledName),
+				)
+				domain.RegisterPlugin(func() domain.Plugin { return sledAttrProp })
+				sledAttrProp.AddView(ctx, ch, eb, ew)
+				sledAttrProp.AddController(ctx, ch, eb, ew)
+		*/
+
 	}
 
 	// VIPER Config:

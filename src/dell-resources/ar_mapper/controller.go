@@ -78,28 +78,28 @@ func NewARMappingController(ctx context.Context, logger log.Logger, m *model.Mod
 }
 
 func (c *ARMappingController) UpdateRequest(ctx context.Context, property string, value interface{}) (interface{}, error) {
-    for _, mapping := range c.mappings {
-        if property != mapping.Property {
-            continue
-        }
+	for _, mapping := range c.mappings {
+		if property != mapping.Property {
+			continue
+		}
 
-        c.logger.Info("Sending Update Request", "mapping", mapping, "value", value)
-        reqUUID:= eh.NewUUID()
+		c.logger.Info("Sending Update Request", "mapping", mapping, "value", value)
+		reqUUID := eh.NewUUID()
 
-        data := attr_prop.AttributeUpdateRequestData{
-            ReqID: reqUUID,
-            FQDD:  mapping.FQDD,
-            Group: mapping.Group,
-            Index: mapping.Index,
-            Name:  mapping.Name,
-            Value: value,
-        }
-        c.eb.PublishEvent(ctx, eh.NewEvent(attr_prop.AttributeUpdateRequest, data, time.Now()))
+		data := attr_prop.AttributeUpdateRequestData{
+			ReqID: reqUUID,
+			FQDD:  mapping.FQDD,
+			Group: mapping.Group,
+			Index: mapping.Index,
+			Name:  mapping.Name,
+			Value: value,
+		}
+		c.eb.PublishEvent(ctx, eh.NewEvent(attr_prop.AttributeUpdateRequest, data, time.Now()))
 
-        // TODO: wait for event to come back matching request
-    }
+		// TODO: wait for event to come back matching request
+	}
 
-    return value, nil
+	return value, nil
 }
 
 // this is the function that viper will call whenever the configuration changes at runtime
@@ -126,7 +126,7 @@ func (c *ARMappingController) ConfigChangedFn(ctx context.Context, cfg *viper.Vi
 //
 func (c *ARMappingController) requestUpdates(ctx context.Context) {
 	for {
-        time.Sleep(120 * time.Second)
+		time.Sleep(120 * time.Second)
 		for _, m := range c.mappings {
 			c.logger.Info("SENDING ATTRIBUTE REQUEST", "mapping", m)
 			data := attr_prop.AttributeGetCurrentValueRequestData{

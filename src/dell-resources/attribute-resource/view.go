@@ -3,20 +3,21 @@ package attribute_resource
 import (
 	"context"
 
-	"github.com/superchalupa/go-redfish/src/ocp/model"
 	domain "github.com/superchalupa/go-redfish/src/redfishresource"
 
 	eh "github.com/looplab/eventhorizon"
 	"github.com/looplab/eventhorizon/utils"
 )
 
-func (s *service) AddView(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
+func AddView(ctx context.Context, uri, id string, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) (ret eh.UUID) {
+	ret = eh.NewUUID()
+
 	ch.HandleCommand(
 		context.Background(),
 		&domain.CreateRedfishResource{
-			ID:          model.GetUUID(s),
+			ID:          ret,
 			Collection:  false,
-			ResourceURI: model.GetOdataID(s),
+			ResourceURI: uri,
 			Type:        "#OemAttributes.v1_0_0.OemAttributes",
 			Context:     "/redfish/v1/$metadata#OemAttributes.OemAttributes",
 
@@ -28,9 +29,11 @@ func (s *service) AddView(ctx context.Context, ch eh.CommandHandler, eb eh.Event
 				"DELETE": []string{}, // can't be deleted
 			},
 			Properties: map[string]interface{}{
-				"Id":                s.GetProperty("unique_name"),
+				"Id":                id,
 				"Name":              "Oem Attributes",
 				"Description":       "This is the manufacturer/provider specific list of attributes.",
 				"AttributeRegistry": "ManagerAttributeRegistry.v1_0_0",
 			}})
+
+	return
 }
