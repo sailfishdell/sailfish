@@ -250,7 +250,7 @@ func (c *RemoveResourceFromRedfishResourceCollection) Handle(ctx context.Context
 }
 
 type InjectEvent struct {
-	ID         eh.UUID                  `json:"id"`
+	ID         eh.UUID                  `json:"id" eh:"optional"`
 	Name       eh.EventType             `json:"name"`
 	EventData  map[string]interface{}   `json:"data" eh:"optional"`
 	EventArray []map[string]interface{} `json:"event_array" eh:"optional"`
