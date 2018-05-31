@@ -166,52 +166,48 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 
 		cmc_chassis.AddView(ctx, chasLogger, chasModel, chasController, ch, eb, ew)
 
-		// Create the .../Attributes URI. Attributes are stored in the attributes property
+		// Create the .../Attributes URI. Attributes are stored in the attributes property of the chasModel
 		v2 := attr_prop.NewView(ctx, chasModel, chasArdump)
 		chasUUID := attr_res.AddView(ctx, "/redfish/v1/Chassis/"+mgrName+"/Attributes", mgrName+".Attributes", ch, eb, ew)
 		attr_prop.EnhanceExistingUUID(ctx, v2, ch, chasUUID)
 	}
 
-	// ************************************************************************
-	// CHASSIS System.Chassis.1
-	// ************************************************************************
-	chasName := "System.Chassis.1"
-	chasLogger := logger.New("module", "Chassis/"+chasName, "module", "Chassis/System.Chassis")
-	chasModel, _ := generic_chassis.New(
-		ec_manager.WithUniqueName(chasName),
-		generic_chassis.AddManagedBy(managers[0]),
-		model.UpdateProperty("asset_tag", ""),
-		model.UpdateProperty("serial", ""),
-		model.UpdateProperty("part_number", ""),
-		model.UpdateProperty("chassis_type", ""),
-		model.UpdateProperty("model", ""),
-		model.UpdateProperty("manufacturer", ""),
-		model.UpdateProperty("name", ""),
-		model.UpdateProperty("description", ""),
-		model.UpdateProperty("power_state", ""),
-	)
-	domain.RegisterPlugin(func() domain.Plugin { return chasModel })
-	system_chassis.AddView(ctx, chasLogger, chasModel, ch, eb, ew)
-	chasController, _ := ar_mapper.NewARMappingController(ctx, chasLogger, chasModel, "Chassis/"+chasName, ch, eb, ew)
-	updateFns = append(updateFns, chasController.ConfigChangedFn)
+    chasName := "System.Chassis.1"
+    chasLogger := logger.New("module", "Chassis/"+chasName, "module", "Chassis/System.Chassis")
+    {
+        // ************************************************************************
+        // CHASSIS System.Chassis.1
+        // ************************************************************************
+        chasModel, _ := generic_chassis.New(
+            ec_manager.WithUniqueName(chasName),
+            generic_chassis.AddManagedBy(managers[0]),
+            model.UpdateProperty("asset_tag", ""),
+            model.UpdateProperty("serial", ""),
+            model.UpdateProperty("part_number", ""),
+            model.UpdateProperty("chassis_type", ""),
+            model.UpdateProperty("model", ""),
+            model.UpdateProperty("manufacturer", ""),
+            model.UpdateProperty("name", ""),
+            model.UpdateProperty("description", ""),
+            model.UpdateProperty("power_state", ""),
+			model.UpdateProperty("attributes", map[string]map[string]map[string]interface{}{}),
+        )
+        // This controller will populate 'attributes' property with AR entries matching this FQDD ('chasName')
+        chasArdump, _ := attr_prop.NewController(ctx, chasModel, []string{chasName}, ch, eb, ew)
 
-	/*
-		chasAttrModel, _ := attr_res.New(
-			attr_res.BaseResource(chasModel),
-			attr_res.WithURI("/redfish/v1/Chassis/"+chasName+"/Attributes"),
-			attr_res.WithUniqueName(chasName+".Attributes"),
-		)
-		domain.RegisterPlugin(func() domain.Plugin { return chasAttrModel })
-		chasAttrModel.AddView(ctx, ch, eb, ew)
+        // the controller is what updates the model when ar entries change,
+        // also handles patch from redfish
+        chasController, _ := ar_mapper.NewARMappingController(ctx, chasLogger, chasModel, "Chassis/"+chasName, ch, eb, ew)
+        updateFns = append(updateFns, chasController.ConfigChangedFn)
 
-			chasAttrProp, _ := attr_prop.New(
-				attr_prop.BaseResource(chasAttrModel),
-				attr_prop.WithFQDD(chasName),
-			)
-			domain.RegisterPlugin(func() domain.Plugin { return chasAttrProp })
-			chasAttrProp.AddView(ctx, ch, eb, ew)
-			chasAttrProp.AddController(ctx, ch, eb, ew)
-	*/
+        system_chassis.AddView(ctx, chasLogger, chasModel, chasController, ch, eb, ew)
+
+        // Create the .../Attributes URI. Attributes are stored in the attributes property of the chasModel
+        v2 := attr_prop.NewView(ctx, chasModel, chasArdump)
+        chasUUID := attr_res.AddView(ctx, "/redfish/v1/Chassis/"+chasName+"/Attributes", chasName+".Attributes", ch, eb, ew)
+        attr_prop.EnhanceExistingUUID(ctx, v2, ch, chasUUID)
+    }
+
 
 	//*********************************************************************
 	// Create Power objects for System.Chassis.1
