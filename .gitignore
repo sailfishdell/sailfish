@@ -1,7 +1,7 @@
 .DS_Store
 
 # don't check in or complain about SSL keys
-ca.crt
+*ca.crt
 ca.key
 server.crt
 server.key
