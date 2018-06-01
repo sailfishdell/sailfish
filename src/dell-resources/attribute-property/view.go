@@ -12,19 +12,26 @@ import (
 	eh "github.com/looplab/eventhorizon"
 )
 
-func get(
-	v *view.View,
+func formatAttributeDump(
 	ctx context.Context,
+	v *view.View,
+	m *model.Model,
 	agg *domain.RedfishResourceAggregate,
 	rrp *domain.RedfishResourceProperty,
 	meta map[string]interface{},
 ) error {
 
-	if p, ok := meta["property"]; !ok || p != "attributes" {
+	p, ok := meta["property"]
+	if !ok {
 		return errors.New("fallback")
 	}
 
-	attributes, ok := v.GetModel("default").GetProperty("attributes").(map[string]map[string]map[string]interface{})
+	prop, ok := p.(string)
+	if !ok {
+		return errors.New("fallback")
+	}
+
+	attributes, ok := v.GetModel("default").GetProperty(prop).(map[string]map[string]map[string]interface{})
 	if !ok {
 		return errors.New("attributes not setup properly")
 	}
@@ -46,7 +53,7 @@ func NewView(ctx context.Context, s *model.Model, c *ARDump) *view.View {
 	v := view.NewView(
 		view.MakeUUID(),
 		view.WithModel(s),
-		view.WithGET(get),
+		view.WithFormatter("attributeFormatter", formatAttributeDump),
 		view.WithNamedController("ar_dump", c),
 		view.WithUniqueName(fmt.Sprintf("%v", eh.NewUUID())),
 	)
@@ -60,7 +67,7 @@ func EnhanceExistingUUID(ctx context.Context, v *view.View, ch eh.CommandHandler
 		&domain.UpdateRedfishResourceProperties{
 			ID: baseUUID,
 			Properties: map[string]interface{}{
-				"Attributes@meta": v.Meta(view.PropGET("attributes"), view.PropPATCH("attributes", "ar_dump")),
+				"Attributes@meta": v.Meta(view.GETProperty("attributes"), view.GETFormatter("attributeFormatter"), view.GETModel("default"), view.PropPATCH("attributes", "ar_dump")),
 			},
 		})
 }

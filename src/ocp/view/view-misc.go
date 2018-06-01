@@ -4,12 +4,9 @@ import (
 	"context"
 
 	"github.com/superchalupa/go-redfish/src/log"
+	"github.com/superchalupa/go-redfish/src/ocp/model"
 	domain "github.com/superchalupa/go-redfish/src/redfishresource"
 )
-
-//
-//  PropertyGet vs GetProperty is confusing. Ooops. Should fix this naming snafu soon.
-//
 
 // already locked at aggregate level when we get here
 func (s *View) PropertyGet(
@@ -18,24 +15,60 @@ func (s *View) PropertyGet(
 	rrp *domain.RedfishResourceProperty,
 	meta map[string]interface{},
 ) {
-	if s.get != nil {
-		err := s.get(s, ctx, agg, rrp, meta)
-		if err == nil {
-			return
-		}
-	}
-
-	// but lock the actual service anyways, because we need to exclude anybody mucking with the backend directly. (side eye at you, viper)
+	// but lock the actual service anyways, because we need to exclude anybody
+	// mucking with the backend directly. (side eye at you, viper)
 	s.RLock()
 	defer s.RUnlock()
 
-	property, ok := meta["property"].(string)
-	if ok {
-		if p, ok := s.model.GetPropertyOk(property); ok {
-			rrp.Value = p
-			return
+	modelRaw, ok := meta["model"]
+	if !ok {
+		modelRaw = "default"
+	}
+
+	modelName, ok := modelRaw.(string)
+	if !ok {
+		modelName = "default"
+	}
+
+	modelObj := s.GetModel(modelName)
+	if modelObj == nil {
+		log.MustLogger("GET").Debug("metadata specifies a nonexistent model name", "meta", meta)
+		return
+	}
+
+	formatterRaw, ok := meta["formatter"]
+	if !ok {
+		formatterRaw = "default"
+	}
+
+	formatterName, ok := formatterRaw.(string)
+	if !ok {
+		formatterName = "default"
+	}
+
+	formatterFn, ok := s.outputFormatters[formatterName]
+	if !ok {
+		// default "raw" formatter
+		formatterFn = func(
+			ctx context.Context,
+			v *View,
+			m *model.Model,
+			agg *domain.RedfishResourceAggregate,
+			rrp *domain.RedfishResourceProperty,
+			meta map[string]interface{},
+		) error {
+			property, ok := meta["property"].(string)
+			if ok {
+				if p, ok := m.GetPropertyOk(property); ok {
+					rrp.Value = p
+					return nil
+				}
+			}
+			return nil
 		}
 	}
+
+	formatterFn(ctx, s, modelObj, agg, rrp, meta)
 }
 
 func (s *View) PropertyPatch(

@@ -1,8 +1,6 @@
 package view
 
-import (
-	"github.com/superchalupa/go-redfish/src/ocp/model"
-)
+import ()
 
 type MetaInt map[string]interface{}
 type MetaOption func(*View, MetaInt) error
@@ -29,9 +27,69 @@ func (m MetaInt) ApplyOption(s *View, options ...MetaOption) error {
 	return nil
 }
 
+func GETFormatter(formatterName string) MetaOption {
+	return func(s *View, m MetaInt) error {
+		getRaw, ok := m["GET"]
+		if !ok {
+			getRaw = map[string]interface{}{}
+		}
+
+		get, ok := getRaw.(map[string]interface{})
+		if !ok {
+			get = map[string]interface{}{}
+		}
+
+		get["plugin"] = string(s.PluginType())
+		get["formatter"] = formatterName
+
+		m["GET"] = get
+		return nil
+	}
+}
+
+func GETModel(model string) MetaOption {
+	return func(s *View, m MetaInt) error {
+		getRaw, ok := m["GET"]
+		if !ok {
+			getRaw = map[string]interface{}{}
+		}
+
+		get, ok := getRaw.(map[string]interface{})
+		if !ok {
+			get = map[string]interface{}{}
+		}
+
+		get["plugin"] = string(s.PluginType())
+		get["model"] = model
+
+		m["GET"] = get
+		return nil
+	}
+}
+
+func GETProperty(property string) MetaOption {
+	return func(s *View, m MetaInt) error {
+		getRaw, ok := m["GET"]
+		if !ok {
+			getRaw = map[string]interface{}{}
+		}
+
+		get, ok := getRaw.(map[string]interface{})
+		if !ok {
+			get = map[string]interface{}{}
+		}
+
+		get["plugin"] = string(s.PluginType())
+		get["property"] = property
+
+		m["GET"] = get
+		return nil
+	}
+}
+
+// default model, default formatter
 func PropGET(name string) MetaOption {
 	return func(s *View, m MetaInt) error {
-		model.MustPropertyUnlocked(s.model, name)
 		m["GET"] = map[string]interface{}{"plugin": string(s.PluginType()), "property": name}
 		return nil
 	}
@@ -39,7 +97,6 @@ func PropGET(name string) MetaOption {
 
 func PropPATCH(name string, controller string) MetaOption {
 	return func(s *View, m MetaInt) error {
-		model.MustPropertyUnlocked(s.model, name)
 		m["PATCH"] = map[string]interface{}{"plugin": string(s.PluginType()), "property": name, "controller": controller}
 		return nil
 	}

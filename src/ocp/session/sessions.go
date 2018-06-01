@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/superchalupa/go-redfish/src/ocp/model"
+	"github.com/superchalupa/go-redfish/src/ocp/view"
 	domain "github.com/superchalupa/go-redfish/src/redfishresource"
 
 	jwt "github.com/dgrijalva/jwt-go"
@@ -24,15 +25,6 @@ const (
 	SessionPlugin = domain.PluginType("obmc_session")
 )
 
-type uuidObj interface {
-	GetProperty(string) interface{}
-}
-
-type Service struct {
-	*model.Service
-	root uuidObj
-}
-
 type RedfishClaims struct {
 	UserName   string   `json:"sub"`
 	Privileges []string `json:"privileges"`
@@ -45,7 +37,7 @@ func init() {
 	SECRET = createRandSecret(24, characters)
 }
 
-func (a *Service) MakeHandlerFunc(eb eh.EventBus, getter IDGetter, withUser func(string, []string) http.Handler, chain http.Handler) http.HandlerFunc {
+func MakeHandlerFunc(eb eh.EventBus, getter IDGetter, withUser func(string, []string) http.Handler, chain http.Handler) http.HandlerFunc {
 	return func(rw http.ResponseWriter, req *http.Request) {
 		var userName string
 		var privileges []string
@@ -77,50 +69,25 @@ func (a *Service) MakeHandlerFunc(eb eh.EventBus, getter IDGetter, withUser func
 	}
 }
 
-func New(options ...interface{}) (*Service, error) {
-	s := &Service{
-		Service: model.NewService(model.PluginType(SessionPlugin)),
-	}
+func CreateSessionService(ctx context.Context, rootID eh.UUID, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) (sessionModel *model.Model) {
+	sessionModel = model.NewService(
+		model.UpdateProperty("session_timeout", 30),
+	)
 
-	// defaults
-	s.UpdatePropertyUnlocked("session_timeout", 30)
-	s.UpdatePropertyUnlocked("session_timeout@meta.validator",
-		func(rrp *domain.RedfishResourceProperty, body interface{}) {
-			// already locked when we are called
+	v := view.NewView(
+		view.MakeUUID(),
+		view.WithModel(sessionModel),
+		view.WithUniqueName(fmt.Sprintf("%v", eh.NewUUID())),
+	)
 
-			//todo: better validation here.
-			bodyFloat, ok := body.(float64)
-			if ok {
-				newval := int(bodyFloat)
-				s.UpdatePropertyUnlocked("session_timeout", newval)
-				rrp.Value = newval
-			}
-		})
-
-	s.ApplyOption(model.UUID())
-	s.ApplyOption(options...)
-	return s, nil
-}
-
-func Root(obj uuidObj) Option {
-	return func(s *Service) error {
-		s.root = obj
-		return nil
-	}
-}
-
-func (s *Service) Root(obj uuidObj) {
-	s.ApplyOption(Root(obj))
-}
-
-func (s *Service) AddResource(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
-	eh.RegisterCommand(func() eh.Command { return &POST{service: s, commandHandler: ch, eventWaiter: ew} })
+	eh.RegisterCommand(func() eh.Command { return &POST{model: sessionModel, commandHandler: ch, eventWaiter: ew} })
+	domain.RegisterPlugin(func() domain.Plugin { return v })
 
 	// Create SessionService aggregate
 	ch.HandleCommand(
 		ctx,
 		&domain.CreateRedfishResource{
-			ID:          eh.NewUUID(),
+			ID:          v.GetUUID(),
 			ResourceURI: "/redfish/v1/SessionService",
 			Type:        "#SessionService.v1_0_2.SessionService",
 			Context:     "/redfish/v1/$metadata#SessionService.SessionService",
@@ -140,9 +107,9 @@ func (s *Service) AddResource(ctx context.Context, ch eh.CommandHandler, eb eh.E
 					"Health": "OK",
 				},
 				"ServiceEnabled": true,
-				"SessionTimeout@meta": s.Meta(
-					model.PropGET("session_timeout"),
-					model.PropPATCH("session_timeout"),
+				"SessionTimeout@meta": v.Meta(
+					view.PropGET("session_timeout"),
+					//					view.PropPATCH("session_timeout"),
 				),
 				"Sessions": map[string]interface{}{
 					"@odata.id": "/redfish/v1/SessionService/Sessions",
@@ -174,10 +141,12 @@ func (s *Service) AddResource(ctx context.Context, ch eh.CommandHandler, eb eh.E
 
 	ch.HandleCommand(ctx,
 		&domain.UpdateRedfishResourceProperties{
-			ID: model.GetUUID(s.root),
+			ID: rootID,
 			Properties: map[string]interface{}{
 				"SessionService": map[string]interface{}{"@odata.id": "/redfish/v1/SessionService"},
 				"Links":          map[string]interface{}{"Sessions": map[string]interface{}{"@odata.id": "/redfish/v1/SessionService/Sessions"}},
 			},
 		})
+
+	return
 }

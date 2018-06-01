@@ -3,8 +3,10 @@ package power
 import (
 	"context"
 
+	"github.com/superchalupa/go-redfish/src/dell-resources/ar_mapper"
 	"github.com/superchalupa/go-redfish/src/log"
 	"github.com/superchalupa/go-redfish/src/ocp/model"
+	"github.com/superchalupa/go-redfish/src/ocp/view"
 	domain "github.com/superchalupa/go-redfish/src/redfishresource"
 
 	eh "github.com/looplab/eventhorizon"
@@ -15,13 +17,25 @@ import (
 //       "PowerTrends@odata.count": 7,
 // because powertrends is not an array.
 
-func AddView(ctx context.Context, logger log.Logger, s *model.Service, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
+func AddView(ctx context.Context, logger log.Logger, s *model.Model, c *ar_mapper.ARMappingController, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) *view.View {
+
+	v := view.NewView(
+		view.WithUniqueName("Chassis/"+s.GetProperty("unique_name").(string)+"/Power"),
+		view.MakeUUID(),
+		view.WithModel(s),
+		view.WithNamedController("ar_mapper", c),
+	)
+
+	domain.RegisterPlugin(func() domain.Plugin { return v })
+
+	uri := "/redfish/v1/Chassis/" + s.GetProperty("unique_name").(string) + "/Power"
+
 	ch.HandleCommand(
 		ctx,
 		&domain.CreateRedfishResource{
-			ID:          model.GetUUID(s),
+			ID:          v.GetUUID(),
 			Collection:  false,
-			ResourceURI: model.GetOdataID(s),
+			ResourceURI: uri,
 			Type:        "#Power.v1_0_2.Power",
 			Context:     "/redfish/v1/$metadata#Power.PowerSystem.Chassis.1/Power/$entity",
 			Privileges: map[string]interface{}{
@@ -36,7 +50,7 @@ func AddView(ctx context.Context, logger log.Logger, s *model.Service, ch eh.Com
 				"Description": "Power",
 				"Name":        "Power",
 				// TODO: "PowerSupplies@odata.count": 6,
-				"PowerSupplies@meta": s.Meta(model.PropGET("power_supply_views")),
+				"PowerSupplies@meta": v.Meta(view.PropGET("power_supply_views")),
 
 				"Oem": map[string]interface{}{
 					"OemPower": map[string]interface{}{
@@ -59,4 +73,6 @@ func AddView(ctx context.Context, logger log.Logger, s *model.Service, ch eh.Com
 					},
 				},
 			}})
+
+	return v
 }

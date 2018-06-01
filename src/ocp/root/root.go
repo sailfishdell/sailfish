@@ -14,8 +14,6 @@ const (
 	RootPlugin = domain.PluginType("obmc_root")
 )
 
-type Service = model.Model
-
 func New(options ...model.Option) (*model.Model, error) {
 	s := model.NewModel(model.PluginType(RootPlugin))
 

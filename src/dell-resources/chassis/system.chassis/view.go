@@ -3,11 +3,11 @@ package system_chassis
 import (
 	"context"
 
+	"github.com/superchalupa/go-redfish/src/dell-resources/ar_mapper"
 	"github.com/superchalupa/go-redfish/src/log"
 	"github.com/superchalupa/go-redfish/src/ocp/model"
 	"github.com/superchalupa/go-redfish/src/ocp/view"
 	domain "github.com/superchalupa/go-redfish/src/redfishresource"
-	"github.com/superchalupa/go-redfish/src/dell-resources/ar_mapper"
 
 	eh "github.com/looplab/eventhorizon"
 	"github.com/looplab/eventhorizon/utils"
@@ -17,7 +17,7 @@ import (
 func AddView(ctx context.Context, logger log.Logger, s *model.Model, c *ar_mapper.ARMappingController, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) *view.View {
 
 	v := view.NewView(
-		view.WithUniqueName("Chassis/" + s.GetProperty("unique_name").(string)),
+		view.WithUniqueName("Chassis/"+s.GetProperty("unique_name").(string)),
 		view.MakeUUID(),
 		view.WithModel(s),
 		view.WithNamedController("ar_mapper", c),
@@ -125,5 +125,5 @@ func AddView(ctx context.Context, logger log.Logger, s *model.Model, c *ar_mappe
 		"chassis_msm_config_backup",
 		s)
 
-    return v
+	return v
 }

@@ -15,37 +15,29 @@ type controller interface {
 	UpdateRequest(ctx context.Context, property string, value interface{}) (interface{}, error)
 }
 
-type getint func(
-	v *View,
+type formatter func(
 	ctx context.Context,
+	v *View,
+	m *model.Model,
 	agg *domain.RedfishResourceAggregate,
 	rrp *domain.RedfishResourceProperty,
 	meta map[string]interface{},
 ) error
 
-type patchint func(
-	v *View,
-	ctx context.Context,
-	agg *domain.RedfishResourceAggregate,
-	rrp *domain.RedfishResourceProperty,
-	meta map[string]interface{},
-	body interface{},
-	present bool,
-)
-
 type View struct {
 	sync.RWMutex
-	model        *model.Model
-	viewInstance domain.PluginType
-	uuid         eh.UUID
-	controllers  map[string]controller
-	get          getint
-	patch        patchint
+	viewInstance     domain.PluginType
+	uuid             eh.UUID
+	controllers      map[string]controller
+	models           map[string]*model.Model
+	outputFormatters map[string]formatter
 }
 
 func NewView(options ...Option) *View {
 	s := &View{
-		controllers: map[string]controller{},
+		controllers:      map[string]controller{},
+		models:           map[string]*model.Model{},
+		outputFormatters: map[string]formatter{},
 	}
 
 	s.ApplyOption(options...)
@@ -79,7 +71,7 @@ func (s *View) GetModel(name string) *model.Model {
 	s.RLock()
 	defer s.RUnlock()
 
-	return s.model
+	return s.models[name]
 }
 
 func (s *View) GetController(name string) controller {

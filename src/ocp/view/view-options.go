@@ -15,7 +15,14 @@ func WithUniqueName(name string) Option {
 
 func WithModel(m *model.Model) Option {
 	return func(s *View) error {
-		s.model = m
+		s.models["default"] = m
+		return nil
+	}
+}
+
+func WithNamedModel(name string, m *model.Model) Option {
+	return func(s *View) error {
+		s.models[name] = m
 		return nil
 	}
 }
@@ -27,16 +34,9 @@ func MakeUUID() Option {
 	}
 }
 
-func WithGET(g getint) Option {
+func WithFormatter(name string, g formatter) Option {
 	return func(s *View) error {
-		s.get = g
-		return nil
-	}
-}
-
-func WithPATCH(g patchint) Option {
-	return func(s *View) error {
-		s.patch = g
+		s.outputFormatters[name] = g
 		return nil
 	}
 }

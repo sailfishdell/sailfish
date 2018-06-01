@@ -12,6 +12,7 @@ import (
 	jwt "github.com/dgrijalva/jwt-go"
 	eh "github.com/looplab/eventhorizon"
 	"github.com/looplab/eventhorizon/utils"
+	"github.com/superchalupa/go-redfish/src/ocp/model"
 	domain "github.com/superchalupa/go-redfish/src/redfishresource"
 )
 
@@ -41,7 +42,7 @@ const (
 
 // HTTP POST Command
 type POST struct {
-	service        *Service
+	model          *model.Model
 	commandHandler eh.CommandHandler
 	eventWaiter    *utils.EventWaiter
 
@@ -139,7 +140,7 @@ func (c *POST) Handle(ctx context.Context, a *domain.RedfishResourceAggregate) e
 		return err
 	}
 
-	c.startSessionDeleteTimer(sessionUUID, sessionURI, c.service.GetProperty("session_timeout").(int))
+	c.startSessionDeleteTimer(sessionUUID, sessionURI, c.model.GetProperty("session_timeout").(int))
 
 	a.PublishEvent(eh.NewEvent(domain.HTTPCmdProcessed, domain.HTTPCmdProcessedData{
 		CommandID:  c.CmdID,

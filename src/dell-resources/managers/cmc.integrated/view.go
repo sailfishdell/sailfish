@@ -21,7 +21,7 @@ import (
 func AddView(ctx context.Context, logger log.Logger, s *model.Model, c *ar_mapper.ARMappingController, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) *view.View {
 
 	v := view.NewView(
-		view.WithUniqueName("Manager/" + s.GetProperty("unique_name").(string)),
+		view.WithUniqueName("Manager/"+s.GetProperty("unique_name").(string)),
 		view.MakeUUID(),
 		view.WithModel(s),
 		view.WithNamedController("ar_mapper", c),
