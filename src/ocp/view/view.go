@@ -26,7 +26,8 @@ type formatter func(
 
 type View struct {
 	sync.RWMutex
-	viewInstance     domain.PluginType
+	pluginType       domain.PluginType
+	viewURI          string
 	uuid             eh.UUID
 	controllers      map[string]controller
 	models           map[string]*model.Model
@@ -35,6 +36,7 @@ type View struct {
 
 func NewView(options ...Option) *View {
 	s := &View{
+        uuid:             eh.NewUUID(),
 		controllers:      map[string]controller{},
 		models:           map[string]*model.Model{},
 		outputFormatters: map[string]formatter{},
@@ -57,26 +59,30 @@ func (s *View) ApplyOption(options ...Option) error {
 }
 
 func (s *View) PluginType() domain.PluginType {
-	return s.viewInstance
+	return s.pluginType
 }
 
 func (s *View) GetUUID() eh.UUID {
 	s.RLock()
 	defer s.RUnlock()
-	id := s.uuid
-	return id
+	return s.uuid
 }
+
+func (s *View) GetURI() string {
+	s.RLock()
+	defer s.RUnlock()
+	return s.viewURI
+}
+
 
 func (s *View) GetModel(name string) *model.Model {
 	s.RLock()
 	defer s.RUnlock()
-
 	return s.models[name]
 }
 
 func (s *View) GetController(name string) controller {
 	s.RLock()
 	defer s.RUnlock()
-
 	return s.controllers[name]
 }

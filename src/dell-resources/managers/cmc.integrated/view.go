@@ -20,16 +20,15 @@ import (
 
 func AddView(ctx context.Context, logger log.Logger, s *model.Model, c *ar_mapper.ARMappingController, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) *view.View {
 
+	uri := "/redfish/v1/Managers/" + s.GetProperty("unique_name").(string)
+
 	v := view.NewView(
-		view.WithUniqueName("Manager/"+s.GetProperty("unique_name").(string)),
-		view.MakeUUID(),
-		view.WithModel(s),
-		view.WithNamedController("ar_mapper", c),
+		view.WithURI(uri),
+		view.WithModel("default", s),
+		view.WithController("ar_mapper", c),
 	)
 
 	domain.RegisterPlugin(func() domain.Plugin { return v })
-
-	uri := "/redfish/v1/Managers/" + s.GetProperty("unique_name").(string)
 
 	ch.HandleCommand(
 		ctx,

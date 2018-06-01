@@ -17,25 +17,22 @@ import (
 //       "PowerTrends@odata.count": 7,
 // because powertrends is not an array.
 
-func AddView(ctx context.Context, logger log.Logger, s *model.Model, c *ar_mapper.ARMappingController, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) *view.View {
+func AddView(ctx context.Context, logger log.Logger, chasName string, s *model.Model, c *ar_mapper.ARMappingController, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) *view.View {
 
 	v := view.NewView(
-		view.WithUniqueName("Chassis/"+s.GetProperty("unique_name").(string)+"/Power"),
-		view.MakeUUID(),
-		view.WithModel(s),
-		view.WithNamedController("ar_mapper", c),
+		view.WithURI("/redfish/v1/Chassis/" + chasName + "/Power"),
+		view.WithModel("default", s),
+		view.WithController("ar_mapper", c),
 	)
 
 	domain.RegisterPlugin(func() domain.Plugin { return v })
-
-	uri := "/redfish/v1/Chassis/" + s.GetProperty("unique_name").(string) + "/Power"
 
 	ch.HandleCommand(
 		ctx,
 		&domain.CreateRedfishResource{
 			ID:          v.GetUUID(),
 			Collection:  false,
-			ResourceURI: uri,
+			ResourceURI: v.GetURI(),
 			Type:        "#Power.v1_0_2.Power",
 			Context:     "/redfish/v1/$metadata#Power.PowerSystem.Chassis.1/Power/$entity",
 			Privileges: map[string]interface{}{

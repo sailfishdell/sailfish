@@ -18,26 +18,24 @@ import (
 // PSU.Slot.N objects both as PowerSupplies/PSU.Slot.N as well as in the main
 // Power object.
 
-func NewView(ctx context.Context, logger log.Logger, s *model.Model, attributeView *view.View, c *ar_mapper.ARMappingController, d *attr_prop.ARDump, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) (*view.View, map[string]interface{}) {
+func NewView(ctx context.Context, logger log.Logger, chasName, psuName string, s *model.Model, attributeView *view.View, c *ar_mapper.ARMappingController, d *attr_prop.ARDump, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) (*view.View, map[string]interface{}) {
 
 	v := view.NewView(
-		view.WithUniqueName("Chassis/"+s.GetProperty("unique_name").(string)+"/Power"),
-		view.MakeUUID(),
-		view.WithModel(s),
-		view.WithNamedController("ar_mapper", c),
-		view.WithNamedController("ar_dumper", d),
+		view.WithURI("/redfish/v1/Chassis/" + chasName + "/Power/" + psuName),
+		view.WithModel("default", s),
+		view.WithController("ar_mapper", c),
+		view.WithController("ar_dumper", d),
+		view.WithFormatter("attributeFormatter", attr_prop.FormatAttributeDump),
 	)
 
 	domain.RegisterPlugin(func() domain.Plugin { return v })
-
-	uri := "/redfish/v1/Chassis/" + s.GetProperty("unique_name").(string) + "/Power"
 
 	ch.HandleCommand(
 		ctx,
 		&domain.CreateRedfishResource{
 			ID:          v.GetUUID(),
 			Collection:  false,
-			ResourceURI: uri,
+			ResourceURI: v.GetURI(),
 			Type:        "#Power.v1_0_2.Power",
 			Context:     "/redfish/v1/$metadata#Power.PowerSystem.Chassis.1/Power/$entity",
 			Privileges: map[string]interface{}{
@@ -47,10 +45,10 @@ func NewView(ctx context.Context, logger log.Logger, s *model.Model, attributeVi
 				"PATCH":  []string{"ConfigureManager"},
 				"DELETE": []string{}, // can't be deleted
 			},
-			Properties: GetViewFragment(v, attributeView, uri),
+			Properties: GetViewFragment(v, attributeView, v.GetURI()),
 		})
 
-	return v, GetViewFragment(v, attributeView, uri)
+	return v, GetViewFragment(v, attributeView, v.GetURI())
 }
 
 //
@@ -78,7 +76,7 @@ func GetViewFragment(regularView *view.View, attributesView *view.View, uri stri
 				"@odata.type":       "#DellPower.v1_0_0.DellPowerSupply",
 				"ComponentID@meta":  regularView.Meta(view.PropGET("component_id")),
 				"InputCurrent@meta": regularView.Meta(view.PropGET("input_current")),
-				"Attributes@meta":   attributesView.Meta(view.PropGET("attributes"), view.PropPATCH("attributes", "ar_dump")),
+				"Attributes@meta":   attributesView.Meta(view.GETProperty("attributes"), view.GETFormatter("attributeFormatter"), view.GETModel("default"), view.PropPATCH("attributes", "ar_dump")),
 			},
 		},
 	}

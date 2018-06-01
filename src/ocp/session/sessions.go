@@ -75,9 +75,8 @@ func CreateSessionService(ctx context.Context, rootID eh.UUID, ch eh.CommandHand
 	)
 
 	v := view.NewView(
-		view.MakeUUID(),
-		view.WithModel(sessionModel),
-		view.WithUniqueName(fmt.Sprintf("%v", eh.NewUUID())),
+		view.WithModel("default", sessionModel),
+		view.WithURI("/redfish/v1/SessionService"),
 	)
 
 	eh.RegisterCommand(func() eh.Command { return &POST{model: sessionModel, commandHandler: ch, eventWaiter: ew} })
@@ -88,7 +87,7 @@ func CreateSessionService(ctx context.Context, rootID eh.UUID, ch eh.CommandHand
 		ctx,
 		&domain.CreateRedfishResource{
 			ID:          v.GetUUID(),
-			ResourceURI: "/redfish/v1/SessionService",
+			ResourceURI: v.GetURI(),
 			Type:        "#SessionService.v1_0_2.SessionService",
 			Context:     "/redfish/v1/$metadata#SessionService.SessionService",
 			Privileges: map[string]interface{}{

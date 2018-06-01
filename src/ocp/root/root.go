@@ -3,7 +3,7 @@ package root
 import (
 	"context"
 
-	"github.com/superchalupa/go-redfish/src/ocp/model"
+	"github.com/superchalupa/go-redfish/src/ocp/view"
 	domain "github.com/superchalupa/go-redfish/src/redfishresource"
 
 	eh "github.com/looplab/eventhorizon"
@@ -14,22 +14,22 @@ const (
 	RootPlugin = domain.PluginType("obmc_root")
 )
 
-func New(options ...model.Option) (*model.Model, error) {
-	s := model.NewModel(model.PluginType(RootPlugin))
+func AddView(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) (v *view.View) {
+    // so simple we don't need a model at all here
 
-	s.ApplyOption(model.UUID())
-	s.ApplyOption(options...)
-	return s, nil
-}
+	v = view.NewView(
+		view.WithURI("/redfish/v1"),
+	)
 
-func AddView(ctx context.Context, s *model.Model, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
+	domain.RegisterPlugin(func() domain.Plugin { return v })
+
 	ch.HandleCommand(
 		ctx,
 		&domain.CreateRedfishResource{
-			ID:         model.GetUUID(s),
+			ID:         v.GetUUID(),
 			Collection: false,
 
-			ResourceURI: "/redfish/v1",
+			ResourceURI: v.GetURI(),
 			Type:        "#ServiceRoot.v1_0_2.ServiceRoot",
 			Context:     "/redfish/v1/$metadata#ServiceRoot.ServiceRoot",
 
@@ -40,6 +40,7 @@ func AddView(ctx context.Context, s *model.Model, ch eh.CommandHandler, eb eh.Ev
 				"Id":             "RootService",
 				"Name":           "Root Service",
 				"RedfishVersion": "1.0.2",
-				"UUID":           model.GetUUID(s),
 			}})
+
+    return
 }

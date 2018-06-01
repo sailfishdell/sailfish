@@ -16,22 +16,20 @@ import (
 func AddView(ctx context.Context, logger log.Logger, s *model.Model, c *ar_mapper.ARMappingController, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) *view.View {
 
 	v := view.NewView(
-		view.WithUniqueName("Chassis/"+s.GetProperty("unique_name").(string)),
-		view.MakeUUID(),
-		view.WithModel(s),
-		view.WithNamedController("ar_mapper", c),
+		view.WithURI("/redfish/v1/Chassis/" + s.GetProperty("unique_name").(string)),
+		view.WithModel("default", s),
+		view.WithController("ar_mapper", c),
 	)
 
 	domain.RegisterPlugin(func() domain.Plugin { return v })
 
-	uri := "/redfish/v1/Chassis/" + s.GetProperty("unique_name").(string)
 
 	ch.HandleCommand(
 		ctx,
 		&domain.CreateRedfishResource{
 			ID:          v.GetUUID(),
 			Collection:  false,
-			ResourceURI: uri,
+			ResourceURI: v.GetURI(),
 			Type:        "#Chassis.v1_0_2.Chassis",
 			Context:     "/redfish/v1/$metadata#ChassisCollection.ChassisCollection/Members/$entity",
 			Privileges: map[string]interface{}{
@@ -61,7 +59,7 @@ func AddView(ctx context.Context, logger log.Logger, s *model.Model, c *ar_mappe
 				"IndicatorLED": "Lit",
 				"Oem": map[string]interface{}{
 					"OemChassis": map[string]interface{}{
-						"@odata.id": uri + "/Attributes",
+						"@odata.id": v.GetURI() + "/Attributes",
 					},
 				},
 			}})

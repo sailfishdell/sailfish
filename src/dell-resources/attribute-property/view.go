@@ -12,7 +12,7 @@ import (
 	eh "github.com/looplab/eventhorizon"
 )
 
-func formatAttributeDump(
+func FormatAttributeDump(
 	ctx context.Context,
 	v *view.View,
 	m *model.Model,
@@ -51,11 +51,12 @@ func formatAttributeDump(
 
 func NewView(ctx context.Context, s *model.Model, c *ARDump) *view.View {
 	v := view.NewView(
-		view.MakeUUID(),
-		view.WithModel(s),
-		view.WithFormatter("attributeFormatter", formatAttributeDump),
-		view.WithNamedController("ar_dump", c),
-		view.WithUniqueName(fmt.Sprintf("%v", eh.NewUUID())),
+		view.WithModel("default", s),
+		view.WithFormatter("attributeFormatter", FormatAttributeDump),
+		view.WithController("ar_dump", c),
+
+        // fake uri
+        view.WithURI(fmt.Sprintf("%v", eh.NewUUID())),
 	)
 
 	domain.RegisterPlugin(func() domain.Plugin { return v })

@@ -10,7 +10,6 @@ import (
 
 	"github.com/spf13/viper"
 	"io/ioutil"
-	// "github.com/go-yaml/yaml"
 	yaml "gopkg.in/yaml.v2"
 
 	eh "github.com/looplab/eventhorizon"
@@ -19,6 +18,7 @@ import (
 
 	"github.com/superchalupa/go-redfish/src/log"
 	"github.com/superchalupa/go-redfish/src/ocp/model"
+	"github.com/superchalupa/go-redfish/src/ocp/view"
 	"github.com/superchalupa/go-redfish/src/ocp/root"
 	"github.com/superchalupa/go-redfish/src/ocp/session"
 
@@ -67,9 +67,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	//
 	// Create the (empty) model behind the /redfish/v1 service root. Nothing interesting here
 	//
-	self.rootModel, _ = root.New()
-	domain.RegisterPlugin(func() domain.Plugin { return self.rootModel })
-	root.AddView(ctx, self.rootModel, ch, eb, ew)
+	rootView := root.AddView(ctx, ch, eb, ew)
 
 	//
 	// temporary workaround: we create /redfish/v1/{Chassis,Managers,Systems,Accounts}, etc in the background and that can race, so stop here for a sec.
@@ -79,7 +77,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	//
 	// Create the /redfish/v1/Sessions model and handler
 	//
-	self.sessionModel = session.CreateSessionService(ctx, model.GetUUID(self.rootModel), ch, eb, ew)
+	self.sessionModel = session.CreateSessionService(ctx, rootView.GetUUID(), ch, eb, ew)
 
 	// construction order:
 	//   1) model
@@ -100,7 +98,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	//
 	// Loop to create similarly named manager objects and the things attached there.
 	//
-	var managers []*model.Model
+	var managers []*view.View
 	for _, mgrName := range []string{
 		"CMC.Integrated.1",
 		"CMC.Integrated.2",
@@ -123,21 +121,21 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			model.UpdateProperty("redundancy_max", nil),
 			model.UpdateProperty("attributes", map[string]map[string]map[string]interface{}{}),
 		)
-		// save managers because we use these later
-		managers = append(managers, cmcIntegratedModel)
-
 		// the controller is what updates the model when ar entries change,
 		// also handles patch from redfish
-		mgrController, _ := ar_mapper.NewARMappingController(ctx, mgrLogger, cmcIntegratedModel, "Managers/"+mgrName, ch, eb, ew)
+		mgrARMappingController, _ := ar_mapper.NewARMappingController(ctx, mgrLogger, cmcIntegratedModel, "Managers/"+mgrName, ch, eb, ew)
 
 		// This controller will populate 'attributes' property with AR entries matching this FQDD ('mgrName')
 		mgrArdump, _ := attr_prop.NewController(ctx, cmcIntegratedModel, []string{mgrName}, ch, eb, ew)
 
 		// let the controller re-read its mappings when config file changes... nifty
-		updateFns = append(updateFns, mgrController.ConfigChangedFn)
+		updateFns = append(updateFns, mgrARMappingController.ConfigChangedFn)
 
 		// add the actual view
-		ec_manager.AddView(ctx, mgrLogger, cmcIntegratedModel, mgrController, ch, eb, ew)
+		mgrView := ec_manager.AddView(ctx, mgrLogger, cmcIntegratedModel, mgrARMappingController, ch, eb, ew)
+
+		// need these views later to get the URI/UUID
+		managers = append(managers, mgrView)
 
 		// Create the .../Attributes URI. Attributes are stored in the attributes property
 		v := attr_prop.NewView(ctx, cmcIntegratedModel, mgrArdump)
@@ -186,7 +184,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		// ************************************************************************
 		chasModel, _ := generic_chassis.New(
 			ec_manager.WithUniqueName(chasName),
-			generic_chassis.AddManagedBy(managers[0]),
+			generic_chassis.AddManagedBy(managers[0].GetURI()),
 			model.UpdateProperty("asset_tag", ""),
 			model.UpdateProperty("serial", ""),
 			model.UpdateProperty("part_number", ""),
@@ -229,14 +227,13 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	// the controller is what updates the model when ar entries change,
 	// also handles patch from redfish
 	powerController, _ := ar_mapper.NewARMappingController(ctx, powerLogger, powerModel, "Chassis/"+chasName+"/Power", ch, eb, ew)
-	power.AddView(ctx, powerLogger, powerModel, powerController, ch, eb, ew)
+	power.AddView(ctx, powerLogger, chasName, powerModel, powerController, ch, eb, ew)
 
 	psus := []interface{}{}
 	for _, psuName := range []string{
 		"PSU.Slot.1", "PSU.Slot.2", "PSU.Slot.3",
 		"PSU.Slot.4", "PSU.Slot.5", "PSU.Slot.6",
 	} {
-		//model.PropertyOnce("uri", "/redfish/v1/Chassis/"+chasName+"/Power/PowerSupplies/"+psuName),
 		psuLogger := powerLogger.New("module", "Chassis/System.Chassis/Power/PowerSupply")
 
 		psuModel := model.NewModel(
@@ -261,7 +258,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		updateFns = append(updateFns, psuController.ConfigChangedFn)
 
 		attributeView := attr_prop.NewView(ctx, psuModel, psuARdump)
-		_, psu := powersupply.NewView(ctx, psuLogger, psuModel, attributeView, psuController, psuARdump, ch, eb, ew)
+		_, psu := powersupply.NewView(ctx, psuLogger, chasName, psuName, psuModel, attributeView, psuController, psuARdump, ch, eb, ew)
 
 		p := &domain.RedfishResourceProperty{}
 		p.Parse(psu)
@@ -270,6 +267,8 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	p := &domain.RedfishResourceProperty{Value: psus}
 	powerModel.ApplyOption(model.UpdateProperty("power_supply_views", p))
 	powerLogger.Info("Updating view with psu list", "power_supply_views", p, "raw", psus)
+
+
 	/*
 
 		//*********************************************************************
@@ -348,7 +347,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			iomLogger := logger.New("module", "Chassis/"+iomName, "module", "Chassis/IOM.Slot")
 			iom, _ := generic_chassis.New(
 				generic_chassis.WithUniqueName(iomName),
-				generic_chassis.AddManagedBy(managers[0]),
+				generic_chassis.AddManagedBy(managers[0].GetURI()),
 
 				// TODO: maybe the mapper could add these automatically?
 				model.UpdateProperty("service_tag", ""),
@@ -404,7 +403,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			sledLogger := logger.New("module", "Chassis/System.Modular", "module", "Chassis/"+sledName)
 			sled, _ := generic_chassis.New(
 				generic_chassis.WithUniqueName(sledName),
-				generic_chassis.AddManagedBy(managers[0]),
+				generic_chassis.AddManagedBy(managers[0].GetURI()),
 				model.UpdateProperty("service_tag", ""),
 				model.UpdateProperty("power_state", ""),
 				model.UpdateProperty("chassis_type", ""),

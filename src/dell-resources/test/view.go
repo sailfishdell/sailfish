@@ -6,7 +6,6 @@ package test
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/superchalupa/go-redfish/src/dell-resources/ar_mapper"
 	"github.com/superchalupa/go-redfish/src/ocp/model"
@@ -19,10 +18,9 @@ import (
 func NewView(ctx context.Context, s *model.Model, c *ar_mapper.ARMappingController, ch eh.CommandHandler) *view.View {
 
 	v := view.NewView(
-		view.MakeUUID(),
-		view.WithModel(s),
-		view.WithNamedController("ar_mapper", c),
-		view.WithUniqueName(fmt.Sprintf("%v", eh.NewUUID())),
+		view.WithModel("default", s),
+		view.WithController("ar_mapper", c),
+		view.WithURI("/redfish/v1/testview"),
 	)
 
 	domain.RegisterPlugin(func() domain.Plugin { return v })
@@ -32,7 +30,7 @@ func NewView(ctx context.Context, s *model.Model, c *ar_mapper.ARMappingControll
 		&domain.CreateRedfishResource{
 			ID:          v.GetUUID(),
 			Collection:  false,
-			ResourceURI: "/redfish/v1/testview",
+			ResourceURI: v.GetURI(),
 			Type:        "#Manager.v1_0_2.Manager",
 			Context:     "/redfish/v1/$metadata#Manager.Manager",
 			Privileges: map[string]interface{}{

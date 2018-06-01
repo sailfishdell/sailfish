@@ -28,7 +28,7 @@ type odataObj interface {
 }
 
 // no locking because it's an Option
-func manageOdataIDList(name string, obj odataObj) model.Option {
+func manageOdataIDList(name string, odataID string) model.Option {
 	return func(s *model.Model) error {
 
 		// TODO: need to update @odata.count property, too
@@ -41,24 +41,24 @@ func manageOdataIDList(name string, obj odataObj) model.Option {
 		if !ok {
 			sl = []map[string]string{}
 		}
-		sl = append(sl, map[string]string{"@odata.id": model.GetOdataID(obj)})
+		sl = append(sl, map[string]string{"@odata.id": odataID})
 
 		s.UpdatePropertyUnlocked(name, sl)
 		return nil
 	}
 }
 
-func AddManagerForChassis(obj odataObj) model.Option {
+func AddManagerForChassis(obj string) model.Option {
 	return manageOdataIDList("bmc_manager_for_chassis", obj)
 }
 
-func AddManagerForServer(obj odataObj) model.Option {
+func AddManagerForServer(obj string) model.Option {
 	return manageOdataIDList("bmc_manager_for_servers", obj)
 }
 
-func InChassis(obj odataObj) model.Option {
+func InChassis(obj string) model.Option {
 	return func(s *model.Model) error {
-		s.UpdatePropertyUnlocked("in_chassis", map[string]string{"@odata.id": model.GetOdataID(obj)})
+		s.UpdatePropertyUnlocked("in_chassis", map[string]string{"@odata.id": obj})
 		return nil
 	}
 }
