@@ -2,19 +2,11 @@
 
 set -e
 
-unset HTTP_PROXY HTTPS_PROXY http_proxy https_proxy
-prot=${prot:-https}
-user=${user:-${1:-Administrator}}
-pass=${pass:-${2:-password}}
-host=${host:-localhost}
-port=${port:-8443}
+scriptdir=$(cd $(dirname $0); pwd)
+. ${scriptdir}/common-vars.sh
+
 URL=$prot://$host:$port
 
-if [ "${host}" = "localhost" ]; then
-    cacert=${cacert:-./ca.crt}
-else
-    cacert=${cacert:-./${host}-ca.crt}
-fi
 
 CURLCMD="curl --cacert ${cacert} ${CURL_OPTS} "
 headersfile=$(mktemp /tmp/headers-XXXXXX)
