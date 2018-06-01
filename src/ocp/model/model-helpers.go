@@ -1,7 +1,6 @@
 package model
 
-import (
-)
+import ()
 
 type propgetterokunlocked interface {
 	GetPropertyOkUnlocked(string) (interface{}, bool)

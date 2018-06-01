@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/spf13/viper"
-	"io/ioutil"
 	yaml "gopkg.in/yaml.v2"
+	"io/ioutil"
 
 	eh "github.com/looplab/eventhorizon"
 	"github.com/looplab/eventhorizon/utils"
@@ -18,9 +18,9 @@ import (
 
 	"github.com/superchalupa/go-redfish/src/log"
 	"github.com/superchalupa/go-redfish/src/ocp/model"
-	"github.com/superchalupa/go-redfish/src/ocp/view"
 	"github.com/superchalupa/go-redfish/src/ocp/root"
 	"github.com/superchalupa/go-redfish/src/ocp/session"
+	"github.com/superchalupa/go-redfish/src/ocp/view"
 
 	attr_prop "github.com/superchalupa/go-redfish/src/dell-resources/attribute-property"
 	attr_res "github.com/superchalupa/go-redfish/src/dell-resources/attribute-resource"
@@ -28,7 +28,7 @@ import (
 	"github.com/superchalupa/go-redfish/src/dell-resources/ar_mapper"
 	"github.com/superchalupa/go-redfish/src/dell-resources/chassis"
 	"github.com/superchalupa/go-redfish/src/dell-resources/chassis/cmc.integrated"
-	//	"github.com/superchalupa/go-redfish/src/dell-resources/chassis/iom.slot"
+	"github.com/superchalupa/go-redfish/src/dell-resources/chassis/iom.slot"
 	"github.com/superchalupa/go-redfish/src/dell-resources/chassis/system.chassis"
 	"github.com/superchalupa/go-redfish/src/dell-resources/chassis/system.chassis/power"
 	"github.com/superchalupa/go-redfish/src/dell-resources/chassis/system.chassis/power/powersupply"
@@ -83,7 +83,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	//   1) model
 	//   2) controller(s) - pass model by args
 	//   3) views - pass models and controllers by args
-    //   4) aggregate - pass view
+	//   4) aggregate - pass view
 	//
 	testLogger := logger.New("module", "TEST")
 	testModel := model.NewModel(
@@ -272,47 +272,46 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	}
 	powerModel.ApplyOption(model.UpdateProperty("power_supply_views", &domain.RedfishResourceProperty{Value: psu_views}))
 
-
-    //*********************************************************************
-    // Create Thermal objects for System.Chassis.1
-    //*********************************************************************
+	//*********************************************************************
+	// Create Thermal objects for System.Chassis.1
+	//*********************************************************************
 	thermalLogger := chasLogger.New("module", "Chassis/System.Chassis/Thermal")
 
-    thermalModel := model.NewModel(
-        ec_manager.WithUniqueName("Thermal"),
-        model.UpdateProperty("fan_views", []interface{}{}),
-        model.UpdateProperty("thermal_views", []interface{}{}),
-    )
+	thermalModel := model.NewModel(
+		ec_manager.WithUniqueName("Thermal"),
+		model.UpdateProperty("fan_views", []interface{}{}),
+		model.UpdateProperty("thermal_views", []interface{}{}),
+	)
 	// the controller is what updates the model when ar entries change,
 	// also handles patch from redfish
 	thermalARMapper, _ := ar_mapper.NewARMappingController(ctx, thermalLogger, thermalModel, "Chassis/"+chasName+"/Thermal", ch, eb, ew)
 
-    thermalView := view.NewView(
-        view.WithURI("/redfish/v1/Chassis/" + chasName + "/Thermal"),
-        view.WithModel("default", thermalModel),
-        view.WithController("ar_mapper", thermalARMapper),
-        )
-    domain.RegisterPlugin(func() domain.Plugin { return thermalView })
-    thermal.AddView(ctx, thermalLogger, thermalView, ch, eb, ew)
+	thermalView := view.NewView(
+		view.WithURI("/redfish/v1/Chassis/"+chasName+"/Thermal"),
+		view.WithModel("default", thermalModel),
+		view.WithController("ar_mapper", thermalARMapper),
+	)
+	domain.RegisterPlugin(func() domain.Plugin { return thermalView })
+	thermal.AddView(ctx, thermalLogger, thermalView, ch, eb, ew)
 
-    fan_views := []interface{}{}
-    for _, fanName := range []string{
-        "Fan.Slot.1", "Fan.Slot.2", "Fan.Slot.3",
-        "Fan.Slot.4", "Fan.Slot.5", "Fan.Slot.6",
-        "Fan.Slot.7", "Fan.Slot.8", "Fan.Slot.9",
-    } {
-		fanLogger := powerLogger.New("module", "Chassis/System.Chassis/Thermal/Fan")
+	fan_views := []interface{}{}
+	for _, fanName := range []string{
+		"Fan.Slot.1", "Fan.Slot.2", "Fan.Slot.3",
+		"Fan.Slot.4", "Fan.Slot.5", "Fan.Slot.6",
+		"Fan.Slot.7", "Fan.Slot.8", "Fan.Slot.9",
+	} {
+		fanLogger := chasLogger.New("module", "Chassis/System.Chassis/Thermal/Fan")
 
 		fanModel := model.NewModel(
-            model.UpdateProperty("unique_id", fanName),
-            model.UpdateProperty("name", "UNSET"),
-            model.UpdateProperty("firmware_version", "UNSET"),
-            model.UpdateProperty("hardware_version", "UNSET"),
-            model.UpdateProperty("reading", "UNSET"),
-            model.UpdateProperty("reading_units", "UNSET"),
-            model.UpdateProperty("oem_reading", "UNSET"),
-            model.UpdateProperty("oem_reading_units", "UNSET"),
-            model.UpdateProperty("graphics_uri", "UNSET"),
+			model.UpdateProperty("unique_id", fanName),
+			model.UpdateProperty("name", "UNSET"),
+			model.UpdateProperty("firmware_version", "UNSET"),
+			model.UpdateProperty("hardware_version", "UNSET"),
+			model.UpdateProperty("reading", "UNSET"),
+			model.UpdateProperty("reading_units", "UNSET"),
+			model.UpdateProperty("oem_reading", "UNSET"),
+			model.UpdateProperty("oem_reading_units", "UNSET"),
+			model.UpdateProperty("graphics_uri", "UNSET"),
 			model.UpdateProperty("attributes", map[string]map[string]map[string]interface{}{}),
 		)
 		// the controller is what updates the model when ar entries change,
@@ -325,82 +324,71 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		// let the controller re-read its mappings when config file changes... nifty
 		updateFns = append(updateFns, fanController.ConfigChangedFn)
 
-        v := view.NewView(
-            view.WithURI("/redfish/v1/Chassis/"+chasName+"/Sensors/Fans/"+fanName),
-            view.WithModel("default", fanModel),
-            view.WithController("ar_mapper", fanController),
-            view.WithController("ar_dumper", fanARdump),
-            view.WithFormatter("attributeFormatter", attr_prop.FormatAttributeDump),
-        )
-        domain.RegisterPlugin(func() domain.Plugin { return v })
+		v := view.NewView(
+			view.WithURI("/redfish/v1/Chassis/"+chasName+"/Sensors/Fans/"+fanName),
+			view.WithModel("default", fanModel),
+			view.WithController("ar_mapper", fanController),
+			view.WithController("ar_dumper", fanARdump),
+			view.WithFormatter("attributeFormatter", attr_prop.FormatAttributeDump),
+		)
+		domain.RegisterPlugin(func() domain.Plugin { return v })
 		fanFragment := fans.AddView(ctx, fanLogger, v, ch, eb, ew)
 
 		p := &domain.RedfishResourceProperty{}
 		p.Parse(fanFragment)
 		fan_views = append(fan_views, p)
 	}
-    thermalModel.ApplyOption(model.UpdateProperty("fan_views", &domain.RedfishResourceProperty{Value: fan_views}))
+	thermalModel.ApplyOption(model.UpdateProperty("fan_views", &domain.RedfishResourceProperty{Value: fan_views}))
 
+	// ************************************************************************
+	// CHASSIS IOM.Slot
+	// ************************************************************************
+	for _, iomName := range []string{
+		"IOM.Slot.A1", "IOM.Slot.A1a", "IOM.Slot.A1b",
+		"IOM.Slot.A2", "IOM.Slot.A2a", "IOM.Slot.A2b",
+		"IOM.Slot.B1", "IOM.Slot.B1a", "IOM.Slot.B1b",
+		"IOM.Slot.B2", "IOM.Slot.B2a", "IOM.Slot.B2b",
+		"IOM.Slot.C1",
+		"IOM.Slot.C2",
+	} {
+		iomLogger := logger.New("module", "Chassis/"+iomName, "module", "Chassis/IOM.Slot")
+		iomModel, _ := generic_chassis.New(
+			generic_chassis.WithUniqueName(iomName),
+			generic_chassis.AddManagedBy(managers[0].GetURI()),
+			model.UpdateProperty("service_tag", ""),
+			model.UpdateProperty("asset_tag", ""),
+			model.UpdateProperty("description", ""),
+			model.UpdateProperty("power_state", ""),
+			model.UpdateProperty("serial", ""),
+			model.UpdateProperty("part_number", ""),
+			model.UpdateProperty("chassis_type", ""),
+			model.UpdateProperty("model", ""),
+			model.UpdateProperty("name", ""),
+			model.UpdateProperty("manufacturer", ""),
+		)
+		// the controller is what updates the model when ar entries change,
+		// also handles patch from redfish
+		iomController, _ := ar_mapper.NewARMappingController(ctx, iomLogger, iomModel, "Mangaers/"+iomName, ch, eb, ew)
+		updateFns = append(updateFns, iomController.ConfigChangedFn)
 
+		// This controller will populate 'attributes' property with AR entries matching this FQDD ('iomName')
+		iomARdump, _ := attr_prop.NewController(ctx, iomModel, []string{iomName}, ch, eb, ew)
 
+		iomView := view.NewView(
+			view.WithURI("/redfish/v1/Chassis/"+iomName),
+			view.WithModel("default", iomModel),
+			view.WithController("ar_mapper", iomController),
+			view.WithController("ar_dumper", iomARdump),
+			view.WithFormatter("attributeFormatter", attr_prop.FormatAttributeDump),
+		)
+		domain.RegisterPlugin(func() domain.Plugin { return iomView })
+		iom_chassis.AddAggregate(ctx, iomLogger, iomView, ch, eb, ew)
 
-
-	/*
-		// ************************************************************************
-		// CHASSIS IOM.Slot
-		// ************************************************************************
-		for _, iomName := range []string{
-			"IOM.Slot.A1", "IOM.Slot.A1a", "IOM.Slot.A1b",
-			"IOM.Slot.A2", "IOM.Slot.A2a", "IOM.Slot.A2b",
-			"IOM.Slot.B1", "IOM.Slot.B1a", "IOM.Slot.B1b",
-			"IOM.Slot.B2", "IOM.Slot.B2a", "IOM.Slot.B2b",
-			"IOM.Slot.C1",
-			"IOM.Slot.C2",
-		} {
-			iomLogger := logger.New("module", "Chassis/"+iomName, "module", "Chassis/IOM.Slot")
-			iom, _ := generic_chassis.New(
-				generic_chassis.WithUniqueName(iomName),
-				generic_chassis.AddManagedBy(managers[0].GetURI()),
-
-				// TODO: maybe the mapper could add these automatically?
-				model.UpdateProperty("service_tag", ""),
-				model.UpdateProperty("asset_tag", ""),
-				model.UpdateProperty("description", ""),
-				model.UpdateProperty("power_state", ""),
-				model.UpdateProperty("serial", ""),
-				model.UpdateProperty("part_number", ""),
-				model.UpdateProperty("chassis_type", ""),
-				model.UpdateProperty("model", ""),
-				model.UpdateProperty("name", ""),
-				model.UpdateProperty("manufacturer", ""),
-			)
-			domain.RegisterPlugin(func() domain.Plugin { return iom })
-			iom_chassis.AddView(ctx, iomLogger, iom, ch, eb, ew)
-
-			iomController, _ := ar_mapper.NewARMappingController(ctx,
-				logger.New("module", "Chassis/"+iomName, "module", "Chassis/IOM.Slot"),
-				iom, "Managers/"+iomName, ch, eb, ew)
-			updateFns = append(updateFns, iomController.ConfigChangedFn)
-
-				iomAttrSvc, _ := attr_res.New(
-					attr_res.BaseResource(iom),
-					attr_res.WithURI("/redfish/v1/Chassis/"+iomName+"/Attributes"),
-					attr_res.WithUniqueName(iomName+".Attributes"),
-				)
-				domain.RegisterPlugin(func() domain.Plugin { return iomAttrSvc })
-				iomAttrSvc.AddView(ctx, ch, eb, ew)
-				iomAttrSvc.AddController(ctx, ch, eb, ew)
-
-					iomAttrProp, _ := attr_prop.New(
-						attr_prop.BaseResource(iomAttrSvc),
-						attr_prop.WithFQDD(iomName),
-					)
-					domain.RegisterPlugin(func() domain.Plugin { return iomAttrProp })
-					iomAttrProp.AddView(ctx, ch, eb, ew)
-					iomAttrProp.AddController(ctx, ch, eb, ew)
-
-		}
-	*/
+		// Create the .../Attributes URI. Attributes are stored in the attributes property of the iomModel
+		v2 := attr_prop.NewView(ctx, iomModel, iomARdump)
+		iom := attr_res.AddView(ctx, "/redfish/v1/Chassis/"+iomName+"/Attributes", iomName+".Attributes", ch, eb, ew)
+		attr_prop.EnhanceExistingUUID(ctx, v2, ch, iom)
+	}
 
 	/*
 		for _, sledName := range []string{

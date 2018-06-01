@@ -15,7 +15,7 @@ const (
 )
 
 func AddView(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) (v *view.View) {
-    // so simple we don't need a model at all here
+	// so simple we don't need a model at all here
 
 	v = view.NewView(
 		view.WithURI("/redfish/v1"),
@@ -42,5 +42,5 @@ func AddView(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *util
 				"RedfishVersion": "1.0.2",
 			}})
 
-    return
+	return
 }

@@ -36,7 +36,7 @@ type View struct {
 
 func NewView(options ...Option) *View {
 	s := &View{
-        uuid:             eh.NewUUID(),
+		uuid:             eh.NewUUID(),
 		controllers:      map[string]controller{},
 		models:           map[string]*model.Model{},
 		outputFormatters: map[string]formatter{},
@@ -73,7 +73,6 @@ func (s *View) GetURI() string {
 	defer s.RUnlock()
 	return s.viewURI
 }
-
 
 func (s *View) GetModel(name string) *model.Model {
 	s.RLock()

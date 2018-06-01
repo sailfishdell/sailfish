@@ -55,8 +55,8 @@ func NewView(ctx context.Context, s *model.Model, c *ARDump) *view.View {
 		view.WithFormatter("attributeFormatter", FormatAttributeDump),
 		view.WithController("ar_dump", c),
 
-        // fake uri
-        view.WithURI(fmt.Sprintf("%v", eh.NewUUID())),
+		// fake uri
+		view.WithURI(fmt.Sprintf("%v", eh.NewUUID())),
 	)
 
 	domain.RegisterPlugin(func() domain.Plugin { return v })

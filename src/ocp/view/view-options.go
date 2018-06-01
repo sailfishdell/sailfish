@@ -8,7 +8,7 @@ import (
 func WithURI(name string) Option {
 	return func(s *View) error {
 		s.pluginType = domain.PluginType(name)
-		s.viewURI   = name
+		s.viewURI = name
 		return nil
 	}
 }

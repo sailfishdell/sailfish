@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/superchalupa/go-redfish/src/log"
-	"github.com/superchalupa/go-redfish/src/ocp/model"
+	"github.com/superchalupa/go-redfish/src/ocp/view"
 	domain "github.com/superchalupa/go-redfish/src/redfishresource"
 
 	eh "github.com/looplab/eventhorizon"
@@ -12,13 +12,13 @@ import (
 	ah "github.com/superchalupa/go-redfish/src/actionhandler"
 )
 
-func AddView(ctx context.Context, logger log.Logger, s *model.Service, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
+func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
 	ch.HandleCommand(
 		ctx,
 		&domain.CreateRedfishResource{
-			ID:          model.GetUUID(s),
+			ID:          v.GetUUID(),
 			Collection:  false,
-			ResourceURI: model.GetOdataID(s),
+			ResourceURI: v.GetURI(),
 			Type:        "#Chassis.v1_0_2.Chassis",
 			Context:     "/redfish/v1/$metadata#ChassisCollection.ChassisCollection/Members/$entity",
 			Privileges: map[string]interface{}{
@@ -29,20 +29,19 @@ func AddView(ctx context.Context, logger log.Logger, s *model.Service, ch eh.Com
 				"DELETE": []string{}, // can't be deleted
 			},
 			Properties: map[string]interface{}{
-				"Id": s.GetProperty("unique_name").(string),
-
-				"AssetTag@meta":     s.Meta(model.PropGET("asset_tag")),
-				"Description@meta":  s.Meta(model.PropGET("description")),
-				"PowerState@meta":   s.Meta(model.PropGET("power_state")),
-				"SerialNumber@meta": s.Meta(model.PropGET("serial")),
-				"PartNumber@meta":   s.Meta(model.PropGET("part_number")),
-				"ChassisType@meta":  s.Meta(model.PropGET("chassis_type")),
-				"Model@meta":        s.Meta(model.PropGET("model")),
-				"Name@meta":         s.Meta(model.PropGET("name")),
-				"Manufacturer@meta": s.Meta(model.PropGET("manufacturer")),
+				"Id":                v.Meta(view.PropGET("unique_name")),
+				"AssetTag@meta":     v.Meta(view.PropGET("asset_tag")),
+				"Description@meta":  v.Meta(view.PropGET("description")),
+				"PowerState@meta":   v.Meta(view.PropGET("power_state")),
+				"SerialNumber@meta": v.Meta(view.PropGET("serial")),
+				"PartNumber@meta":   v.Meta(view.PropGET("part_number")),
+				"ChassisType@meta":  v.Meta(view.PropGET("chassis_type")),
+				"Model@meta":        v.Meta(view.PropGET("model")),
+				"Name@meta":         v.Meta(view.PropGET("name")),
+				"Manufacturer@meta": v.Meta(view.PropGET("manufacturer")),
 
 				// TODO: "ManagedBy@odata.count": 1  (need some infrastructure for this)
-				"ManagedBy@meta": s.Meta(model.PropGET("managed_by")),
+				"ManagedBy@meta": v.Meta(view.PropGET("managed_by")),
 
 				"SKU":          "",
 				"IndicatorLED": "Lit",
@@ -53,13 +52,13 @@ func AddView(ctx context.Context, logger log.Logger, s *model.Service, ch eh.Com
 				},
 				"Oem": map[string]interface{}{
 					"Dell": map[string]interface{}{
-						"ServiceTag@meta":      s.Meta(model.PropGET("service_tag")),
+						"ServiceTag@meta":      v.Meta(view.PropGET("service_tag")),
 						"InstPowerConsumption": 24,
 						"OemChassis": map[string]interface{}{
-							"@odata.id": model.GetOdataID(s) + "/Attributes",
+							"@odata.id": v.GetURI() + "/Attributes",
 						},
 						"OemIOMConfiguration": map[string]interface{}{
-							"@odata.id": model.GetOdataID(s) + "/IOMConfiguration",
+							"@odata.id": v.GetURI() + "/IOMConfiguration",
 						},
 					},
 				},
@@ -71,14 +70,14 @@ func AddView(ctx context.Context, logger log.Logger, s *model.Service, ch eh.Com
 							"GracefulShutdown",
 							"GracefulRestart",
 						},
-						"target": model.GetOdataID(s) + "/Actions/Chassis.Reset",
+						"target": v.GetURI() + "/Actions/Chassis.Reset",
 					},
 					"Oem": map[string]interface{}{
 						"DellChassis.v1_0_0#DellChassis.ResetPeakPowerConsumption": map[string]interface{}{
-							"target": model.GetOdataID(s) + "/Actions/Oem/DellChassis.ResetPeakPowerConsumption",
+							"target": v.GetURI() + "/Actions/Oem/DellChassis.ResetPeakPowerConsumption",
 						},
 						"#DellChassis.v1_0_0.VirtualReseat": map[string]interface{}{
-							"target": model.GetOdataID(s) + "/Actions/Oem/DellChassis.VirtualReseat",
+							"target": v.GetURI() + "/Actions/Oem/DellChassis.VirtualReseat",
 						},
 					},
 				},
@@ -86,19 +85,19 @@ func AddView(ctx context.Context, logger log.Logger, s *model.Service, ch eh.Com
 
 	ah.CreateAction(ctx, ch, eb, ew,
 		logger,
-		model.GetOdataID(s)+"/Actions/Chassis.Reset",
+		v.GetURI()+"/Actions/Chassis.Reset",
 		"chassis.reset",
-		s)
+		v.GetModel("default"))
 
 	ah.CreateAction(ctx, ch, eb, ew,
 		logger,
-		model.GetOdataID(s)+"/Actions/Oem/DellChassis.ResetPeakPowerConsumption",
+		v.GetURI()+"/Actions/Oem/DellChassis.ResetPeakPowerConsumption",
 		"chassis.reset_peak_power_consumption",
-		s)
+		v.GetModel("default"))
 
 	ah.CreateAction(ctx, ch, eb, ew,
 		logger,
-		model.GetOdataID(s)+"/Actions/Oem/DellChassis.VirtualReseat",
+		v.GetURI()+"/Actions/Oem/DellChassis.VirtualReseat",
 		"chassis.virtual_reseat",
-		s)
+		v.GetModel("default"))
 }
