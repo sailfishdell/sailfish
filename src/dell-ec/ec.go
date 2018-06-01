@@ -34,7 +34,7 @@ import (
 	"github.com/superchalupa/go-redfish/src/dell-resources/chassis/system.chassis/power/powersupply"
 	"github.com/superchalupa/go-redfish/src/dell-resources/chassis/system.chassis/thermal"
 	"github.com/superchalupa/go-redfish/src/dell-resources/chassis/system.chassis/thermal/fans"
-	//	"github.com/superchalupa/go-redfish/src/dell-resources/chassis/system.modular"
+	"github.com/superchalupa/go-redfish/src/dell-resources/chassis/system.modular"
 	"github.com/superchalupa/go-redfish/src/dell-resources/managers/cmc.integrated"
 	"github.com/superchalupa/go-redfish/src/dell-resources/test"
 )
@@ -390,52 +390,48 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		attr_prop.EnhanceExistingUUID(ctx, v2, ch, iom)
 	}
 
-	/*
-		for _, sledName := range []string{
-			"System.Modular.1", "System.Modular.1a", "System.Modular.1b",
-			"System.Modular.2", "System.Modular.2a", "System.Modular.2b",
-			"System.Modular.3", "System.Modular.3a", "System.Modular.3b",
-			"System.Modular.4", "System.Modular.4a", "System.Modular.4b",
-			"System.Modular.5", "System.Modular.5a", "System.Modular.5b",
-			"System.Modular.6", "System.Modular.6a", "System.Modular.6b",
-			"System.Modular.7", "System.Modular.7a", "System.Modular.7b",
-			"System.Modular.8", "System.Modular.8a", "System.Modular.8b",
-		} {
-			sledLogger := logger.New("module", "Chassis/System.Modular", "module", "Chassis/"+sledName)
-			sled, _ := generic_chassis.New(
-				generic_chassis.WithUniqueName(sledName),
-				generic_chassis.AddManagedBy(managers[0].GetURI()),
-				model.UpdateProperty("service_tag", ""),
-				model.UpdateProperty("power_state", ""),
-				model.UpdateProperty("chassis_type", ""),
-				model.UpdateProperty("model", ""),
-				model.UpdateProperty("manufacturer", ""),
-				model.UpdateProperty("serial", ""),
-			)
-			domain.RegisterPlugin(func() domain.Plugin { return sled })
-			sled_chassis.AddView(sled, ctx, ch, eb, ew)
-			sledController, _ := ar_mapper.NewARMappingController(ctx, sledLogger, sled, "Chassis/"+sledName, ch, eb, ew)
-			updateFns = append(updateFns, sledController.ConfigChangedFn)
+	for _, sledName := range []string{
+		"System.Modular.1", "System.Modular.1a", "System.Modular.1b",
+		"System.Modular.2", "System.Modular.2a", "System.Modular.2b",
+		"System.Modular.3", "System.Modular.3a", "System.Modular.3b",
+		"System.Modular.4", "System.Modular.4a", "System.Modular.4b",
+		"System.Modular.5", "System.Modular.5a", "System.Modular.5b",
+		"System.Modular.6", "System.Modular.6a", "System.Modular.6b",
+		"System.Modular.7", "System.Modular.7a", "System.Modular.7b",
+		"System.Modular.8", "System.Modular.8a", "System.Modular.8b",
+	} {
+		sledLogger := logger.New("module", "Chassis/System.Modular", "module", "Chassis/"+sledName)
+		sledModel, _ := generic_chassis.New(
+			generic_chassis.WithUniqueName(sledName),
+			generic_chassis.AddManagedBy(managers[0].GetURI()),
+			model.UpdateProperty("service_tag", ""),
+			model.UpdateProperty("power_state", ""),
+			model.UpdateProperty("chassis_type", ""),
+			model.UpdateProperty("model", ""),
+			model.UpdateProperty("manufacturer", ""),
+			model.UpdateProperty("serial", ""),
+		)
+		sledController, _ := ar_mapper.NewARMappingController(ctx, sledLogger, sledModel, "Chassis/"+sledName, ch, eb, ew)
+		updateFns = append(updateFns, sledController.ConfigChangedFn)
 
-				sledAttrSvc, _ := attr_res.New(
-					attr_res.BaseResource(sled),
-					attr_res.WithURI("/redfish/v1/Chassis/"+sledName+"/Attributes"),
-					attr_res.WithUniqueName(sledName+".Attributes"),
-				)
-				domain.RegisterPlugin(func() domain.Plugin { return sledAttrSvc })
-				sledAttrSvc.AddView(ctx, ch, eb, ew)
-				sledAttrSvc.AddController(ctx, ch, eb, ew)
+		// This controller will populate 'attributes' property with AR entries matching this FQDD ('sledName')
+		sledARdump, _ := attr_prop.NewController(ctx, sledModel, []string{sledName}, ch, eb, ew)
 
-					sledAttrProp, _ := attr_prop.New(
-						attr_prop.BaseResource(sledAttrSvc),
-						attr_prop.WithFQDD(sledName),
-					)
-					domain.RegisterPlugin(func() domain.Plugin { return sledAttrProp })
-					sledAttrProp.AddView(ctx, ch, eb, ew)
-					sledAttrProp.AddController(ctx, ch, eb, ew)
+		sledView := view.NewView(
+			view.WithURI("/redfish/v1/Chassis/"+sledName),
+			view.WithModel("default", sledModel),
+			view.WithController("ar_mapper", sledController),
+			view.WithController("ar_dumper", sledARdump),
+			view.WithFormatter("attributeFormatter", attr_prop.FormatAttributeDump),
+		)
+		domain.RegisterPlugin(func() domain.Plugin { return sledView })
+		sled_chassis.AddAggregate(ctx, sledLogger, sledView, ch, eb, ew)
 
-		}
-	*/
+		// Create the .../Attributes URI. Attributes are stored in the attributes property of the sledModel
+		v2 := attr_prop.NewView(ctx, sledModel, sledARdump)
+		sled := attr_res.AddView(ctx, "/redfish/v1/Chassis/"+sledName+"/Attributes", sledName+".Attributes", ch, eb, ew)
+		attr_prop.EnhanceExistingUUID(ctx, v2, ch, sled)
+	}
 
 	// VIPER Config:
 	// pull the config from the YAML file to populate some static config options
