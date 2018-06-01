@@ -30,6 +30,9 @@ main:
               level: "info"
 
             - name: "Chassis/System.Chassis/Power"
+              level: "info"
+
+            - name: "Chassis/System.Chassis/Thermal"
               level: "debug"
 
             - name: "internal_commands"

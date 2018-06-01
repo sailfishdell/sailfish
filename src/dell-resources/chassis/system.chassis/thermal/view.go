@@ -4,20 +4,20 @@ import (
 	"context"
 
 	"github.com/superchalupa/go-redfish/src/log"
-	"github.com/superchalupa/go-redfish/src/ocp/model"
+	"github.com/superchalupa/go-redfish/src/ocp/view"
 	domain "github.com/superchalupa/go-redfish/src/redfishresource"
 
 	eh "github.com/looplab/eventhorizon"
 	"github.com/looplab/eventhorizon/utils"
 )
 
-func AddView(ctx context.Context, logger log.Logger, s *model.Service, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
+func AddView(ctx context.Context, logger log.Logger, v *view.View, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
 	ch.HandleCommand(
 		ctx,
 		&domain.CreateRedfishResource{
-			ID:          model.GetUUID(s),
+			ID:          v.GetUUID(),
 			Collection:  false,
-			ResourceURI: model.GetOdataID(s),
+			ResourceURI: v.GetURI(),
 			Type:        "#Thermal.v1_0_2.Thermal",
 			Context:     "/redfish/v1/$metadata#Thermal.Thermal",
 			Privileges: map[string]interface{}{
@@ -32,9 +32,9 @@ func AddView(ctx context.Context, logger log.Logger, s *model.Service, ch eh.Com
 				"Name":        "Thermal",
 				"Description": "Represents the properties for Temperature and Cooling",
 				// TODO: "Fans@odata.count": 9,
-				"Fans@meta": s.Meta(model.PropGET("fan_views")),
+				"Fans@meta": v.Meta(view.PropGET("fan_views")),
 				// TODO: "Temperatures@odata.count": ...
-				"Temperatures@meta": s.Meta(model.PropGET("thermal_views")),
+				"Temperatures@meta": v.Meta(view.PropGET("thermal_views")),
 
 				"Oem": map[string]interface{}{
 					"EID_674": map[string]interface{}{

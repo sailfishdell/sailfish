@@ -45,20 +45,20 @@ func NewView(ctx context.Context, logger log.Logger, chasName, psuName string, s
 				"PATCH":  []string{"ConfigureManager"},
 				"DELETE": []string{}, // can't be deleted
 			},
-			Properties: GetViewFragment(v, attributeView, v.GetURI()),
+			Properties: GetViewFragment(v, attributeView),
 		})
 
-	return v, GetViewFragment(v, attributeView, v.GetURI())
+	return v, GetViewFragment(v, attributeView)
 }
 
 //
 // this view fragment can be attached elsewhere in the tree
 //
-func GetViewFragment(regularView *view.View, attributesView *view.View, uri string) map[string]interface{} {
+func GetViewFragment(regularView *view.View, attributesView *view.View) map[string]interface{} {
 	return map[string]interface{}{
 		"@odata.type":             "#Power.v1_0_2.PowerSupply",
 		"@odata.context":          "/redfish/v1/$metadata#Power.PowerSystem.Chassis.1/Power/$entity",
-		"@odata.id":               uri,
+		"@odata.id":               regularView.GetURI(),
 		"Name@meta":               regularView.Meta(view.PropGET("name")),
 		"MemberId@meta":           regularView.Meta(view.PropGET("unique_id")),
 		"PowerCapacityWatts@meta": regularView.Meta(view.PropGET("capacity_watts")),

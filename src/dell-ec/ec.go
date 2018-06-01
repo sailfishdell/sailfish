@@ -32,8 +32,8 @@ import (
 	"github.com/superchalupa/go-redfish/src/dell-resources/chassis/system.chassis"
 	"github.com/superchalupa/go-redfish/src/dell-resources/chassis/system.chassis/power"
 	"github.com/superchalupa/go-redfish/src/dell-resources/chassis/system.chassis/power/powersupply"
-	//	"github.com/superchalupa/go-redfish/src/dell-resources/chassis/system.chassis/thermal"
-	//	"github.com/superchalupa/go-redfish/src/dell-resources/chassis/system.chassis/thermal/fans"
+	"github.com/superchalupa/go-redfish/src/dell-resources/chassis/system.chassis/thermal"
+	"github.com/superchalupa/go-redfish/src/dell-resources/chassis/system.chassis/thermal/fans"
 	//	"github.com/superchalupa/go-redfish/src/dell-resources/chassis/system.modular"
 	"github.com/superchalupa/go-redfish/src/dell-resources/managers/cmc.integrated"
 	"github.com/superchalupa/go-redfish/src/dell-resources/test"
@@ -222,14 +222,13 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	powerModel := model.NewModel(
 		ec_manager.WithUniqueName("Power"),
 		model.UpdateProperty("power_supply_views", []interface{}{}),
-		model.UpdateProperty("attributes", map[string]map[string]map[string]interface{}{}),
 	)
 	// the controller is what updates the model when ar entries change,
 	// also handles patch from redfish
 	powerController, _ := ar_mapper.NewARMappingController(ctx, powerLogger, powerModel, "Chassis/"+chasName+"/Power", ch, eb, ew)
 	power.AddView(ctx, powerLogger, chasName, powerModel, powerController, ch, eb, ew)
 
-	psus := []interface{}{}
+	psu_views := []interface{}{}
 	for _, psuName := range []string{
 		"PSU.Slot.1", "PSU.Slot.2", "PSU.Slot.3",
 		"PSU.Slot.4", "PSU.Slot.5", "PSU.Slot.6",
@@ -262,75 +261,82 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 
 		p := &domain.RedfishResourceProperty{}
 		p.Parse(psu)
-		psus = append(psus, p)
+		psu_views = append(psu_views, p)
 	}
-	p := &domain.RedfishResourceProperty{Value: psus}
-	powerModel.ApplyOption(model.UpdateProperty("power_supply_views", p))
-	powerLogger.Info("Updating view with psu list", "power_supply_views", p, "raw", psus)
+	powerModel.ApplyOption(model.UpdateProperty("power_supply_views", &domain.RedfishResourceProperty{Value: psu_views}))
 
 
-	/*
+    //*********************************************************************
+    // Create Thermal objects for System.Chassis.1
+    //*********************************************************************
+	thermalLogger := chasLogger.New("module", "Chassis/System.Chassis/Thermal")
 
-		//*********************************************************************
-		// Create Thermal objects for System.Chassis.1
-		//*********************************************************************
-		thermalLogger := chasLogger.New("module", "thermal")
+    thermalModel := model.NewModel(
+        ec_manager.WithUniqueName("Thermal"),
+        model.UpdateProperty("fan_views", []interface{}{}),
+        model.UpdateProperty("thermal_views", []interface{}{}),
+    )
+	// the controller is what updates the model when ar entries change,
+	// also handles patch from redfish
+	thermalARMapper, _ := ar_mapper.NewARMappingController(ctx, thermalLogger, thermalModel, "Chassis/"+chasName+"/Thermal", ch, eb, ew)
 
-		thermalModel := model.NewModel(
-			ec_manager.WithUniqueName("Thermal"),
-			model.UpdateProperty("fan_views", []interface{}{}),
-			model.UpdateProperty("thermal_views", []interface{}{}),
-			model.UUID(),
-			model.PluginType(domain.PluginType("Thermal:"+chasName)),
-			model.PropertyOnce("uri", "/redfish/v1/Chassis/"+chasName+"/Thermal"),
+    thermalView := view.NewView(
+        view.WithURI("/redfish/v1/Chassis/" + chasName + "/Thermal"),
+        view.WithModel("default", thermalModel),
+        view.WithController("ar_mapper", thermalARMapper),
+        )
+    domain.RegisterPlugin(func() domain.Plugin { return v })
+    thermal.AddView(ctx, thermalLogger, thermalView, ch, eb, ew)
+
+    fan_views := []interface{}{}
+    for _, fanName := range []string{
+        "Fan.Slot.1", "Fan.Slot.2", "Fan.Slot.3",
+        "Fan.Slot.4", "Fan.Slot.5", "Fan.Slot.6",
+        "Fan.Slot.7", "Fan.Slot.8", "Fan.Slot.9",
+    } {
+		fanLogger := powerLogger.New("module", "Chassis/System.Chassis/Thermal/Fan")
+
+		fanModel := model.NewModel(
+            model.UpdateProperty("unique_id", fanName),
+            model.UpdateProperty("name", "UNSET"),
+            model.UpdateProperty("firmware_version", "UNSET"),
+            model.UpdateProperty("hardware_version", "UNSET"),
+            model.UpdateProperty("reading", "UNSET"),
+            model.UpdateProperty("reading_units", "UNSET"),
+            model.UpdateProperty("oem_reading", "UNSET"),
+            model.UpdateProperty("oem_reading_units", "UNSET"),
+            model.UpdateProperty("graphics_uri", "UNSET"),
+			model.UpdateProperty("attributes", map[string]map[string]map[string]interface{}{}),
 		)
-		domain.RegisterPlugin(func() domain.Plugin { return thermalModel })
-		thermal.AddView(ctx, thermalLogger, thermalModel, ch, eb, ew)
+		// the controller is what updates the model when ar entries change,
+		// also handles patch from redfish
+		fanController, _ := ar_mapper.NewARMappingController(ctx, fanLogger, fanModel, "Fans/"+fanName, ch, eb, ew)
 
-			fan_views := []interface{}{}
-			for _, fanName := range []string{
-				"Fan.Slot.1", "Fan.Slot.2", "Fan.Slot.3",
-				"Fan.Slot.4", "Fan.Slot.5", "Fan.Slot.6",
-				"Fan.Slot.7", "Fan.Slot.8", "Fan.Slot.9",
-			} {
+		// This controller will populate 'attributes' property with AR entries matching this FQDD ('fanName')
+		fanARdump, _ := attr_prop.NewController(ctx, fanModel, []string{fanName}, ch, eb, ew)
 
-				// note we don't AddView for this one because we already have this in our view
-				fanAttrProp, _ := attr_prop.New(
-					attr_prop.WithFQDD(fanName),
-				)
-				domain.RegisterPlugin(func() domain.Plugin { return fanAttrProp })
-				fanAttrProp.AddController(ctx, ch, eb, ew)
+		// let the controller re-read its mappings when config file changes... nifty
+		updateFns = append(updateFns, fanController.ConfigChangedFn)
 
-				psModel := model.NewModel(
-					model.UUID(),
-					model.PropertyOnce("uri", "/redfish/v1/Chassis/"+chasName+"/Sensors/Fans/"+fanName),
-					model.PluginType(domain.PluginType("Fans:"+fanName)),
-					model.UpdateProperty("unique_id", fanName),
-					model.UpdateProperty("name", "UNSET"),
-					model.UpdateProperty("firmware_version", "UNSET"),
-					model.UpdateProperty("hardware_version", "UNSET"),
-					model.UpdateProperty("reading", "UNSET"),
-					model.UpdateProperty("reading_units", "UNSET"),
-					model.UpdateProperty("oem_reading", "UNSET"),
-					model.UpdateProperty("oem_reading_units", "UNSET"),
-					model.UpdateProperty("graphics_uri", "UNSET"),
-				)
-				domain.RegisterPlugin(func() domain.Plugin { return psModel })
-				fan := fans.AddView(ctx, thermalLogger, psModel, fanAttrProp.GetModel(), ch, eb, ew)
+        v := view.NewView(
+            view.WithURI("/redfish/v1/Chassis/"+chasName+"/Sensors/Fans/"+fanName),
+            view.WithModel("default", fanModel),
+            view.WithController("ar_mapper", fanController),
+            view.WithController("ar_dumper", fanARdump),
+            view.WithFormatter("attributeFormatter", attr_prop.FormatAttributeDump),
+        )
+        domain.RegisterPlugin(func() domain.Plugin { return v })
+		fanFragment := fans.AddView(ctx, fanLogger, v, ch, eb, ew)
 
-				fanController, _ := ar_mapper.NewARMappingController(ctx,
-					logger.New("module", "Chassis/"+chasName+"/Sensors/Fans/"+fanName, "module", "Chassis/"+chasName+"/Sensors/Fans/Fan.Slot"),
-					psModel, "Fan/"+fanName, ch, eb, ew)
-				updateFns = append(updateFns, fanController.ConfigChangedFn)
+		p := &domain.RedfishResourceProperty{}
+		p.Parse(fanFragment)
+		fan_views = append(fan_views, p)
+	}
+    thermalModel.ApplyOption(model.UpdateProperty("fan_views", &domain.RedfishResourceProperty{Value: fan_views}))
 
-				p := &domain.RedfishResourceProperty{}
-				p.Parse(fan)
-				fan_views = append(fan_views, p)
-			}
 
-			fanView := &domain.RedfishResourceProperty{Value: fan_views}
-			thermalModel.ApplyOption(model.UpdateProperty("fan_views", fanView))
-	*/
+
+
 
 	/*
 		// ************************************************************************

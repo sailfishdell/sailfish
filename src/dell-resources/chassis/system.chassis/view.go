@@ -16,10 +16,8 @@ import (
 
 func AddView(ctx context.Context, logger log.Logger, s *model.Model, c *ar_mapper.ARMappingController, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) *view.View {
 
-	uri := "/redfish/v1/Chassis/" + s.GetProperty("unique_name").(string)
-
 	v := view.NewView(
-		view.WithURI(uri),
+		view.WithURI("/redfish/v1/Chassis/" + s.GetProperty("unique_name").(string)),
 		view.WithModel("default", s),
 		view.WithController("ar_mapper", c),
 	)
@@ -42,16 +40,16 @@ func AddView(ctx context.Context, logger log.Logger, s *model.Model, c *ar_mappe
 				"DELETE": []string{}, // can't be deleted
 			},
 			Properties: map[string]interface{}{
-				"Id":                s.GetProperty("unique_name").(string),
-				"SerialNumber@meta": v.Meta(view.PropGET("serial")),
-				"ChassisType@meta":  v.Meta(view.PropGET("chassis_type")),
-				"Model@meta":        v.Meta(view.PropGET("model")),
-				"Manufacturer@meta": v.Meta(view.PropGET("manufacturer")),
-				"PartNumber@meta":   v.Meta(view.PropGET("part_number")),
-				"Name@meta":         v.Meta(view.PropGET("name")),
-				"AssetTag@meta":     v.Meta(view.PropGET("asset_tag")),
-				"Description@meta":  v.Meta(view.PropGET("description")),
-				"PowerState@meta":   v.Meta(view.PropGET("power_state")),
+				"Id":                v.Meta(view.GETProperty("unique_name"), view.GETModel("default")),
+				"SerialNumber@meta": v.Meta(view.GETProperty("serial"), view.GETModel("default")),
+				"ChassisType@meta":  v.Meta(view.GETProperty("chassis_type"), view.GETModel("default")),
+				"Model@meta":        v.Meta(view.GETProperty("model"), view.GETModel("default")),
+				"Manufacturer@meta": v.Meta(view.GETProperty("manufacturer"), view.GETModel("default")),
+				"PartNumber@meta":   v.Meta(view.GETProperty("part_number"), view.GETModel("default")),
+				"Name@meta":         v.Meta(view.GETProperty("name"), view.GETModel("default")),
+				"AssetTag@meta":     v.Meta(view.GETProperty("asset_tag"), view.GETModel("default")),
+				"Description@meta":  v.Meta(view.GETProperty("description"), view.GETModel("default")),
+				"PowerState@meta":   v.Meta(view.GETProperty("power_state"), view.GETModel("default")),
 
 				"IndicatorLED": "Lit",
 				"SKU":          "PT00033",
