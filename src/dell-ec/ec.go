@@ -72,7 +72,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	//
 	// temporary workaround: we create /redfish/v1/{Chassis,Managers,Systems,Accounts}, etc in the background and that can race, so stop here for a sec.
 	//
-	time.Sleep(1)
+	time.Sleep(100 * time.Millisecond)
 
 	//
 	// Create the /redfish/v1/Sessions model and handler
@@ -83,6 +83,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	//   1) model
 	//   2) controller(s) - pass model by args
 	//   3) views - pass models and controllers by args
+    //   4) aggregate - pass view
 	//
 	testLogger := logger.New("module", "TEST")
 	testModel := model.NewModel(
@@ -93,7 +94,13 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	)
 	testController, _ := ar_mapper.NewARMappingController(ctx, testLogger, testModel, "test/testview", ch, eb, ew)
 	updateFns = append(updateFns, testController.ConfigChangedFn)
-	test.NewView(ctx, testModel, testController, ch)
+	testView := view.NewView(
+		view.WithModel("default", testModel),
+		view.WithController("ar_mapper", testController),
+		view.WithURI("/redfish/v1/testview"),
+	)
+	domain.RegisterPlugin(func() domain.Plugin { return testView })
+	test.AddAggregate(ctx, testView, ch)
 
 	//
 	// Loop to create similarly named manager objects and the things attached there.
@@ -285,7 +292,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
         view.WithModel("default", thermalModel),
         view.WithController("ar_mapper", thermalARMapper),
         )
-    domain.RegisterPlugin(func() domain.Plugin { return v })
+    domain.RegisterPlugin(func() domain.Plugin { return thermalView })
     thermal.AddView(ctx, thermalLogger, thermalView, ch, eb, ew)
 
     fan_views := []interface{}{}

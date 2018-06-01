@@ -7,24 +7,13 @@ package test
 import (
 	"context"
 
-	"github.com/superchalupa/go-redfish/src/dell-resources/ar_mapper"
-	"github.com/superchalupa/go-redfish/src/ocp/model"
 	"github.com/superchalupa/go-redfish/src/ocp/view"
 	domain "github.com/superchalupa/go-redfish/src/redfishresource"
 
 	eh "github.com/looplab/eventhorizon"
 )
 
-func NewView(ctx context.Context, s *model.Model, c *ar_mapper.ARMappingController, ch eh.CommandHandler) *view.View {
-
-	v := view.NewView(
-		view.WithModel("default", s),
-		view.WithController("ar_mapper", c),
-		view.WithURI("/redfish/v1/testview"),
-	)
-
-	domain.RegisterPlugin(func() domain.Plugin { return v })
-
+func AddAggregate(ctx context.Context, v *view.View, ch eh.CommandHandler) *view.View {
 	ch.HandleCommand(
 		ctx,
 		&domain.CreateRedfishResource{
@@ -41,7 +30,7 @@ func NewView(ctx context.Context, s *model.Model, c *ar_mapper.ARMappingControll
 				"DELETE": []string{}, // can't be deleted
 			},
 			Properties: map[string]interface{}{
-				"Id":               s.GetProperty("unique_name").(string),
+				"Id":               v.Meta(view.PropGET("unique_name")),
 				"Name@meta":        v.Meta(view.PropGET("name")),
 				"Description@meta": v.Meta(view.PropGET("description")),
 				"Model@meta":       v.Meta(view.PropGET("model"), view.PropPATCH("model", "ar_mapper")),
