@@ -3,30 +3,18 @@ package power
 import (
 	"context"
 
-	"github.com/superchalupa/go-redfish/src/dell-resources/ar_mapper"
 	"github.com/superchalupa/go-redfish/src/log"
-	"github.com/superchalupa/go-redfish/src/ocp/model"
 	"github.com/superchalupa/go-redfish/src/ocp/view"
 	domain "github.com/superchalupa/go-redfish/src/redfishresource"
 
 	eh "github.com/looplab/eventhorizon"
-	"github.com/looplab/eventhorizon/utils"
 )
 
 // TODO: current odatalite stack has this as part of output, but that seems completely wrong:
 //       "PowerTrends@odata.count": 7,
 // because powertrends is not an array.
 
-func AddView(ctx context.Context, logger log.Logger, chasName string, s *model.Model, c *ar_mapper.ARMappingController, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) *view.View {
-
-	v := view.New(
-		view.WithURI("/redfish/v1/Chassis/"+chasName+"/Power"),
-		view.WithModel("default", s),
-		view.WithController("ar_mapper", c),
-	)
-
-	domain.RegisterPlugin(func() domain.Plugin { return v })
-
+func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.CommandHandler) {
 	ch.HandleCommand(
 		ctx,
 		&domain.CreateRedfishResource{
@@ -70,6 +58,4 @@ func AddView(ctx context.Context, logger log.Logger, chasName string, s *model.M
 					},
 				},
 			}})
-
-	return v
 }

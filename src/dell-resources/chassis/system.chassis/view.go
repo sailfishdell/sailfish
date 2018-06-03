@@ -3,9 +3,7 @@ package system_chassis
 import (
 	"context"
 
-	"github.com/superchalupa/go-redfish/src/dell-resources/ar_mapper"
 	"github.com/superchalupa/go-redfish/src/log"
-	"github.com/superchalupa/go-redfish/src/ocp/model"
 	"github.com/superchalupa/go-redfish/src/ocp/view"
 	domain "github.com/superchalupa/go-redfish/src/redfishresource"
 
@@ -14,16 +12,7 @@ import (
 	ah "github.com/superchalupa/go-redfish/src/actionhandler"
 )
 
-func AddView(ctx context.Context, logger log.Logger, s *model.Model, c *ar_mapper.ARMappingController, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) *view.View {
-
-	v := view.New(
-		view.WithURI("/redfish/v1/Chassis/"+s.GetProperty("unique_name").(string)),
-		view.WithModel("default", s),
-		view.WithController("ar_mapper", c),
-	)
-
-	domain.RegisterPlugin(func() domain.Plugin { return v })
-
+func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
 	ch.HandleCommand(
 		ctx,
 		&domain.CreateRedfishResource{
@@ -40,7 +29,7 @@ func AddView(ctx context.Context, logger log.Logger, s *model.Model, c *ar_mappe
 				"DELETE": []string{}, // can't be deleted
 			},
 			Properties: map[string]interface{}{
-				"Id":                v.Meta(view.GETProperty("unique_name"), view.GETModel("default")),
+				"Id@meta":           v.Meta(view.GETProperty("unique_name"), view.GETModel("default")),
 				"SerialNumber@meta": v.Meta(view.GETProperty("serial"), view.GETModel("default")),
 				"ChassisType@meta":  v.Meta(view.GETProperty("chassis_type"), view.GETModel("default")),
 				"Model@meta":        v.Meta(view.GETProperty("model"), view.GETModel("default")),
@@ -108,19 +97,17 @@ func AddView(ctx context.Context, logger log.Logger, s *model.Model, c *ar_mappe
 		logger,
 		v.GetURI()+"/Actions/Chassis.Reset",
 		"chassis.reset",
-		s)
+		v.GetModel("default"))
 
 	ah.CreateAction(ctx, ch, eb, ew,
 		logger,
 		v.GetURI()+"/Actions/Oem/MSMConfigBackup",
 		"msm_config_backup",
-		s)
+		v.GetModel("default"))
 
 	ah.CreateAction(ctx, ch, eb, ew,
 		logger,
 		v.GetURI()+"/Actions/Oem/DellChassis.MSMConfigBackup",
 		"chassis_msm_config_backup",
-		s)
-
-	return v
+		v.GetModel("default"))
 }

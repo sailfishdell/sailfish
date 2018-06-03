@@ -1,4 +1,4 @@
-package attribute_property
+package attributes
 
 import (
 	"github.com/superchalupa/go-redfish/src/ocp/model"

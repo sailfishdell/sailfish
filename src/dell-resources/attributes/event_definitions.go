@@ -1,4 +1,4 @@
-package attribute_property
+package attributes
 
 import (
 	eh "github.com/looplab/eventhorizon"

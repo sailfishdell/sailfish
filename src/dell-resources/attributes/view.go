@@ -1,9 +1,8 @@
-package attribute_property
+package attributes
 
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"github.com/superchalupa/go-redfish/src/ocp/model"
 	"github.com/superchalupa/go-redfish/src/ocp/view"
@@ -49,21 +48,7 @@ func FormatAttributeDump(
 	return nil
 }
 
-func NewView(ctx context.Context, s *model.Model, c *ARDump) *view.View {
-	v := view.New(
-		view.WithModel("default", s),
-		view.WithFormatter("attributeFormatter", FormatAttributeDump),
-		view.WithController("ar_dump", c),
-
-		// fake uri
-		view.WithURI(fmt.Sprintf("%v", eh.NewUUID())),
-	)
-
-	domain.RegisterPlugin(func() domain.Plugin { return v })
-	return v
-}
-
-func EnhanceExistingUUID(ctx context.Context, v *view.View, ch eh.CommandHandler, baseUUID eh.UUID) {
+func EnhanceAggregate(ctx context.Context, v *view.View, ch eh.CommandHandler, baseUUID eh.UUID) {
 	ch.HandleCommand(ctx,
 		&domain.UpdateRedfishResourceProperties{
 			ID: baseUUID,
@@ -71,4 +56,34 @@ func EnhanceExistingUUID(ctx context.Context, v *view.View, ch eh.CommandHandler
 				"Attributes@meta": v.Meta(view.GETProperty("attributes"), view.GETFormatter("attributeFormatter"), view.GETModel("default"), view.PropPATCH("attributes", "ar_dump")),
 			},
 		})
+}
+
+func AddAggregate(ctx context.Context, v *view.View, uri string, ch eh.CommandHandler) (ret eh.UUID) {
+	ret = eh.NewUUID()
+
+	ch.HandleCommand(
+		context.Background(),
+		&domain.CreateRedfishResource{
+			ID:          ret,
+			Collection:  false,
+			ResourceURI: uri,
+			Type:        "#OemAttributes.v1_0_0.OemAttributes",
+			Context:     "/redfish/v1/$metadata#OemAttributes.OemAttributes",
+
+			Privileges: map[string]interface{}{
+				"GET":    []string{"Login"},
+				"POST":   []string{}, // cannot create sub objects
+				"PUT":    []string{},
+				"PATCH":  []string{"ConfigureManager"},
+				"DELETE": []string{}, // can't be deleted
+			},
+			Properties: map[string]interface{}{
+				"Id":                v.Meta(view.GETProperty("unique_name"), view.GETModel("Default")),
+				"Name":              "Oem Attributes",
+				"Description":       "This is the manufacturer/provider specific list of attributes.",
+				"AttributeRegistry": "ManagerAttributeRegistry.v1_0_0",
+				"Attributes@meta":   v.Meta(view.GETProperty("attributes"), view.GETFormatter("attributeFormatter"), view.GETModel("default"), view.PropPATCH("attributes", "ar_dump")),
+			}})
+
+	return
 }

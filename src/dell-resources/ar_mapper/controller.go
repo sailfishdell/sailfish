@@ -11,7 +11,7 @@ import (
 	"github.com/looplab/eventhorizon/utils"
 	"github.com/superchalupa/go-redfish/src/log"
 
-	attr_prop "github.com/superchalupa/go-redfish/src/dell-resources/attribute-property"
+	"github.com/superchalupa/go-redfish/src/dell-resources/attributes"
 	"github.com/superchalupa/go-redfish/src/ocp/event"
 	"github.com/superchalupa/go-redfish/src/ocp/model"
 )
@@ -42,13 +42,13 @@ func New(ctx context.Context, logger log.Logger, m *model.Model, name string, ch
 	}
 
 	// stream processor for action events
-	sp, err := event.NewEventStreamProcessor(ctx, ew, event.CustomFilter(SelectAttributeUpdate()))
+	sp, err := event.NewEventStreamProcessor(ctx, ew, event.CustomFilter(selectAttributeUpdate()))
 	if err != nil {
 		logger.Error("Failed to create event stream processor", "err", err)
 		return nil, err
 	}
 	sp.RunForever(func(event eh.Event) {
-		if data, ok := event.Data().(*attr_prop.AttributeUpdatedData); ok {
+		if data, ok := event.Data().(*attributes.AttributeUpdatedData); ok {
 			c.mappingsMu.RLock()
 			defer c.mappingsMu.RUnlock()
 			logger.Debug("Process Event", "data", data)
@@ -86,7 +86,7 @@ func (c *ARMappingController) UpdateRequest(ctx context.Context, property string
 		c.logger.Info("Sending Update Request", "mapping", mapping, "value", value)
 		reqUUID := eh.NewUUID()
 
-		data := attr_prop.AttributeUpdateRequestData{
+		data := attributes.AttributeUpdateRequestData{
 			ReqID: reqUUID,
 			FQDD:  mapping.FQDD,
 			Group: mapping.Group,
@@ -94,7 +94,7 @@ func (c *ARMappingController) UpdateRequest(ctx context.Context, property string
 			Name:  mapping.Name,
 			Value: value,
 		}
-		c.eb.PublishEvent(ctx, eh.NewEvent(attr_prop.AttributeUpdateRequest, data, time.Now()))
+		c.eb.PublishEvent(ctx, eh.NewEvent(attributes.AttributeUpdateRequest, data, time.Now()))
 
 		// TODO: wait for event to come back matching request
 	}
@@ -132,20 +132,20 @@ func (c *ARMappingController) initialStartupBootstrap(ctx context.Context) {
 		time.Sleep(120 * time.Second)
 		for _, m := range c.mappings {
 			c.logger.Info("SENDING ATTRIBUTE REQUEST", "mapping", m)
-			data := attr_prop.AttributeGetCurrentValueRequestData{
+			data := attributes.AttributeGetCurrentValueRequestData{
 				FQDD:  m.FQDD,
 				Group: m.Group,
 				Index: m.Index,
 				Name:  m.Name,
 			}
-			c.eb.PublishEvent(ctx, eh.NewEvent(attr_prop.AttributeGetCurrentValueRequest, data, time.Now()))
+			c.eb.PublishEvent(ctx, eh.NewEvent(attributes.AttributeGetCurrentValueRequest, data, time.Now()))
 		}
 	}
 }
 
-func SelectAttributeUpdate() func(eh.Event) bool {
+func selectAttributeUpdate() func(eh.Event) bool {
 	return func(event eh.Event) bool {
-		if event.EventType() == attr_prop.AttributeUpdated {
+		if event.EventType() == attributes.AttributeUpdated {
 			return true
 		}
 		return false

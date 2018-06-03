@@ -8,14 +8,13 @@ import (
 	domain "github.com/superchalupa/go-redfish/src/redfishresource"
 
 	eh "github.com/looplab/eventhorizon"
-	"github.com/looplab/eventhorizon/utils"
 )
 
 // So... this class is set up in a somewhat interesting way to support having
 // Fan.Slot.N objects both as PowerSupplies/PSU.Slot.N as well as in the main
 // Power object.
 
-func AddView(ctx context.Context, logger log.Logger, v *view.View, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) map[string]interface{} {
+func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.CommandHandler) map[string]interface{} {
 	ch.HandleCommand(
 		ctx,
 		&domain.CreateRedfishResource{

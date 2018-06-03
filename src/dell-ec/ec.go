@@ -22,12 +22,10 @@ import (
 	"github.com/superchalupa/go-redfish/src/ocp/stdcollections"
 	"github.com/superchalupa/go-redfish/src/ocp/view"
 
-	attr_prop "github.com/superchalupa/go-redfish/src/dell-resources/attribute-property"
-	attr_res "github.com/superchalupa/go-redfish/src/dell-resources/attribute-resource"
-
 	"github.com/superchalupa/go-redfish/src/dell-resources/ar_mapper"
+	"github.com/superchalupa/go-redfish/src/dell-resources/attributes"
 	"github.com/superchalupa/go-redfish/src/dell-resources/chassis"
-	"github.com/superchalupa/go-redfish/src/dell-resources/chassis/cmc.integrated"
+	chasCMCIntegrated "github.com/superchalupa/go-redfish/src/dell-resources/chassis/cmc.integrated"
 	"github.com/superchalupa/go-redfish/src/dell-resources/chassis/iom.slot"
 	"github.com/superchalupa/go-redfish/src/dell-resources/chassis/system.chassis"
 	"github.com/superchalupa/go-redfish/src/dell-resources/chassis/system.chassis/power"
@@ -130,55 +128,10 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		"CMC.Integrated.2",
 	} {
 		//*********************************************************************
-		//  /redfish/v1/Managers/CMC.Integrated.N
+		// /redfish/v1/Managers/CMC.Integrated
 		//*********************************************************************
 		mgrLogger := mgrLogger.New("module", "Managers/"+mgrName, "module", "Managers/CMC.Integrated")
-		mdl, _ := mgrCMCIntegrated.New(
-			mgrCMCIntegrated.WithUniqueName(mgrName),
-			model.UpdateProperty("name", nil),
-			model.UpdateProperty("description", nil),
-			model.UpdateProperty("model", nil),
-			model.UpdateProperty("timezone", nil),
-			model.UpdateProperty("firmware_version", nil),
-			model.UpdateProperty("health_state", nil),
-			model.UpdateProperty("redundancy_health_state", nil),
-			model.UpdateProperty("redundancy_mode", nil),
-			model.UpdateProperty("redundancy_min", nil),
-			model.UpdateProperty("redundancy_max", nil),
-			model.UpdateProperty("attributes", map[string]map[string]map[string]interface{}{}),
-		)
-		// AR -> model properties and Redfish PATCH -> AR
-		armapper, _ := ar_mapper.New(ctx, mgrLogger, mdl, "Managers/"+mgrName, ch, eb, ew)
-
-		// populate 'attributes' property with AR entries matching this FQDD ('mgrName')
-		ardumper, _ := attr_prop.NewController(ctx, mdl, []string{mgrName}, ch, eb, ew)
-
-		// let the controller re-read its mappings when config file changes... nifty
-		updateFns = append(updateFns, armapper.ConfigChangedFn)
-
-		// add the actual view
-		vw := view.New(
-			view.WithURI("/redfish/v1/Managers/"+mgrName),
-			view.WithModel("default", mdl),
-			view.WithController("ar_mapper", armapper),
-		)
-		domain.RegisterPlugin(func() domain.Plugin { return vw })
-
-		mgrView := mgrCMCIntegrated.AddAggregate(ctx, mgrLogger, vw, ch, eb, ew)
-
-		// need these views later to get the URI/UUID
-		managers = append(managers, mgrView)
-
-		// Create the .../Attributes URI. Attributes are stored in the attributes property
-		v := attr_prop.NewView(ctx, mdl, ardumper)
-		mgrUUID := attr_res.AddView(ctx, "/redfish/v1/Managers/"+mgrName+"/Attributes", mgrName+".Attributes", ch, eb, ew)
-		attr_prop.EnhanceExistingUUID(ctx, v, ch, mgrUUID)
-
-		//*********************************************************************
-		// Create CHASSIS objects for CMC.Integrated.N
-		//*********************************************************************
-		chasLogger := logger.New("module", "Chassis/"+mgrName, "module", "Chassis/CMC.Integrated")
-		chasModel, _ := generic_chassis.New(
+		mdl, _ := generic_chassis.New(
 			mgrCMCIntegrated.WithUniqueName(mgrName),
 			model.UpdateProperty("asset_tag", ""),
 			model.UpdateProperty("serial", ""),
@@ -191,21 +144,61 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		)
 		// the controller is what updates the model when ar entries change,
 		// also handles patch from redfish
-		chasController, _ := ar_mapper.New(ctx, chasLogger, chasModel, "Managers/"+mgrName, ch, eb, ew)
+		armapper, _ := ar_mapper.New(ctx, mgrLogger, mdl, "Managers/"+mgrName, ch, eb, ew)
+		updateFns = append(updateFns, armapper.ConfigChangedFn)
 
 		// This controller will populate 'attributes' property with AR entries matching this FQDD ('mgrName')
-		chasArdump, _ := attr_prop.NewController(ctx, chasModel, []string{mgrName}, ch, eb, ew)
+		ardumper, _ := attributes.NewController(ctx, mdl, []string{mgrName}, ch, eb, ew)
 
-		// let the controller re-read its mappings when config file changes... nifty
-		updateFns = append(updateFns, chasController.ConfigChangedFn)
+		vw := view.New(
+			view.WithURI("/redfish/v1/Managers/"+mgrName),
+			view.WithModel("default", mdl),
+			view.WithController("ar_mapper", armapper),
+			view.WithController("ar_dump", ardumper),
+			view.WithFormatter("attributeFormatter", attributes.FormatAttributeDump),
+		)
+		domain.RegisterPlugin(func() domain.Plugin { return vw })
+		managers = append(managers, vw)
 
 		// add the aggregate to the view tree
-		cmc_chassis.AddView(ctx, chasLogger, chasModel, chasController, ch, eb, ew)
+		mgrCMCIntegrated.AddAggregate(ctx, mgrLogger, vw, ch, eb, ew)
+		attributes.AddAggregate(ctx, vw, "/redfish/v1/Managers/"+mgrName+"/Attributes", ch)
 
-		// Create the .../Attributes URI. Attributes are stored in the attributes property of the chasModel
-		v2 := attr_prop.NewView(ctx, chasModel, chasArdump)
-		chasUUID := attr_res.AddView(ctx, "/redfish/v1/Chassis/"+mgrName+"/Attributes", mgrName+".Attributes", ch, eb, ew)
-		attr_prop.EnhanceExistingUUID(ctx, v2, ch, chasUUID)
+		//*********************************************************************
+		// Create CHASSIS objects for CMC.Integrated.N
+		//*********************************************************************
+		chasLogger := logger.New("module", "Chassis/"+mgrName, "module", "Chassis/CMC.Integrated")
+		chasModel, _ := mgrCMCIntegrated.New(
+			mgrCMCIntegrated.WithUniqueName(mgrName),
+			model.UpdateProperty("asset_tag", ""),
+			model.UpdateProperty("serial", ""),
+			model.UpdateProperty("part_number", ""),
+			model.UpdateProperty("chassis_type", ""),
+			model.UpdateProperty("model", ""),
+			model.UpdateProperty("manufacturer", ""),
+			model.UpdateProperty("name", ""),
+			model.UpdateProperty("attributes", map[string]map[string]map[string]interface{}{}),
+		)
+		// the controller is what updates the model when ar entries change,
+		// also handles patch from redfish
+		armapper, _ = ar_mapper.New(ctx, chasLogger, chasModel, "Managers/"+mgrName, ch, eb, ew)
+		updateFns = append(updateFns, armapper.ConfigChangedFn)
+
+		// This controller will populate 'attributes' property with AR entries matching this FQDD ('mgrName')
+		ardumper, _ = attributes.NewController(ctx, chasModel, []string{mgrName}, ch, eb, ew)
+
+		vw = view.New(
+			view.WithURI("/redfish/v1/Chassis/"+mgrName),
+			view.WithModel("default", chasModel),
+			view.WithController("ar_mapper", armapper),
+			view.WithController("ar_dump", ardumper),
+			view.WithFormatter("attributeFormatter", attributes.FormatAttributeDump),
+		)
+		domain.RegisterPlugin(func() domain.Plugin { return vw })
+
+		// add the aggregate to the view tree
+		chasCMCIntegrated.AddAggregate(ctx, chasLogger, vw, ch)
+		attributes.AddAggregate(ctx, vw, "/redfish/v1/Chassis/"+mgrName+"/Attributes", ch)
 	}
 
 	chasName := "System.Chassis.1"
@@ -215,7 +208,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		// CHASSIS System.Chassis.1
 		// ************************************************************************
 		chasModel, _ := generic_chassis.New(
-			mgrCMCIntegrated.WithUniqueName(chasName),
+			generic_chassis.WithUniqueName(chasName),
 			generic_chassis.AddManagedBy(managers[0].GetURI()),
 			model.UpdateProperty("asset_tag", ""),
 			model.UpdateProperty("serial", ""),
@@ -230,20 +223,24 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		)
 		// the controller is what updates the model when ar entries change,
 		// also handles patch from redfish
-		chasController, _ := ar_mapper.New(ctx, chasLogger, chasModel, "Chassis/"+chasName, ch, eb, ew)
+		armapper, _ := ar_mapper.New(ctx, chasLogger, chasModel, "Chassis/"+chasName, ch, eb, ew)
+		updateFns = append(updateFns, armapper.ConfigChangedFn)
 
 		// This controller will populate 'attributes' property with AR entries matching this FQDD ('chasName')
-		chasArdump, _ := attr_prop.NewController(ctx, chasModel, []string{chasName}, ch, eb, ew)
+		ardumper, _ := attributes.NewController(ctx, chasModel, []string{chasName}, ch, eb, ew)
 
-		// let the controller re-read its mappings when config file changes... nifty
-		updateFns = append(updateFns, chasController.ConfigChangedFn)
-
-		system_chassis.AddView(ctx, chasLogger, chasModel, chasController, ch, eb, ew)
+		vw := view.New(
+			view.WithURI("/redfish/v1/Chassis/"+chasName),
+			view.WithModel("default", chasModel),
+			view.WithController("ar_mapper", armapper),
+			view.WithController("ar_dump", ardumper),
+			view.WithFormatter("attributeFormatter", attributes.FormatAttributeDump),
+		)
+		domain.RegisterPlugin(func() domain.Plugin { return vw })
 
 		// Create the .../Attributes URI. Attributes are stored in the attributes property of the chasModel
-		v2 := attr_prop.NewView(ctx, chasModel, chasArdump)
-		chasUUID := attr_res.AddView(ctx, "/redfish/v1/Chassis/"+chasName+"/Attributes", chasName+".Attributes", ch, eb, ew)
-		attr_prop.EnhanceExistingUUID(ctx, v2, ch, chasUUID)
+		system_chassis.AddAggregate(ctx, chasLogger, vw, ch, eb, ew)
+		attributes.AddAggregate(ctx, vw, "/redfish/v1/Chassis/"+chasName+"/Attributes", ch)
 	}
 
 	//*********************************************************************
@@ -257,8 +254,15 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	)
 	// the controller is what updates the model when ar entries change,
 	// also handles patch from redfish
-	powerController, _ := ar_mapper.New(ctx, powerLogger, powerModel, "Chassis/"+chasName+"/Power", ch, eb, ew)
-	power.AddView(ctx, powerLogger, chasName, powerModel, powerController, ch, eb, ew)
+	armapper, _ := ar_mapper.New(ctx, powerLogger, powerModel, "Chassis/"+chasName+"/Power", ch, eb, ew)
+
+	vw := view.New(
+		view.WithURI("/redfish/v1/Chassis/"+chasName+"/Power"),
+		view.WithModel("default", powerModel),
+		view.WithController("ar_mapper", armapper),
+	)
+	domain.RegisterPlugin(func() domain.Plugin { return vw })
+	power.AddAggregate(ctx, powerLogger, vw, ch)
 
 	psu_views := []interface{}{}
 	for _, psuName := range []string{
@@ -280,16 +284,22 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		)
 		// the controller is what updates the model when ar entries change,
 		// also handles patch from redfish
-		psuController, _ := ar_mapper.New(ctx, psuLogger, psuModel, "PowerSupply/"+psuName, ch, eb, ew)
+		armapper, _ := ar_mapper.New(ctx, psuLogger, psuModel, "PowerSupply/"+psuName, ch, eb, ew)
+		updateFns = append(updateFns, armapper.ConfigChangedFn)
 
 		// This controller will populate 'attributes' property with AR entries matching this FQDD ('psuName')
-		psuARdump, _ := attr_prop.NewController(ctx, psuModel, []string{psuName}, ch, eb, ew)
+		ardumper, _ := attributes.NewController(ctx, psuModel, []string{psuName}, ch, eb, ew)
 
-		// let the controller re-read its mappings when config file changes... nifty
-		updateFns = append(updateFns, psuController.ConfigChangedFn)
+		vw := view.New(
+			view.WithURI("/redfish/v1/Chassis/"+chasName+"/Power"+psuName),
+			view.WithModel("default", powerModel),
+			view.WithController("ar_mapper", armapper),
+			view.WithController("ar_dumper", ardumper),
+			view.WithFormatter("attributeFormatter", attributes.FormatAttributeDump),
+		)
+		domain.RegisterPlugin(func() domain.Plugin { return vw })
 
-		attributeView := attr_prop.NewView(ctx, psuModel, psuARdump)
-		_, psu := powersupply.NewView(ctx, psuLogger, chasName, psuName, psuModel, attributeView, psuController, psuARdump, ch, eb, ew)
+		psu := powersupply.AddAggregate(ctx, psuLogger, vw, ch)
 
 		p := &domain.RedfishResourceProperty{}
 		p.Parse(psu)
@@ -309,15 +319,16 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	)
 	// the controller is what updates the model when ar entries change,
 	// also handles patch from redfish
-	thermalARMapper, _ := ar_mapper.New(ctx, thermalLogger, thermalModel, "Chassis/"+chasName+"/Thermal", ch, eb, ew)
+	armapper, _ = ar_mapper.New(ctx, thermalLogger, thermalModel, "Chassis/"+chasName+"/Thermal", ch, eb, ew)
+	updateFns = append(updateFns, armapper.ConfigChangedFn)
 
 	thermalView := view.New(
 		view.WithURI("/redfish/v1/Chassis/"+chasName+"/Thermal"),
 		view.WithModel("default", thermalModel),
-		view.WithController("ar_mapper", thermalARMapper),
+		view.WithController("ar_mapper", armapper),
 	)
 	domain.RegisterPlugin(func() domain.Plugin { return thermalView })
-	thermal.AddView(ctx, thermalLogger, thermalView, ch, eb, ew)
+	thermal.AddAggregate(ctx, thermalLogger, thermalView, ch)
 
 	fan_views := []interface{}{}
 	for _, fanName := range []string{
@@ -325,7 +336,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		"Fan.Slot.4", "Fan.Slot.5", "Fan.Slot.6",
 		"Fan.Slot.7", "Fan.Slot.8", "Fan.Slot.9",
 	} {
-		fanLogger := chasLogger.New("module", "Chassis/System.Chassis/Thermal/Fan")
+		fanLogger := thermalLogger.New("module", "Chassis/System.Chassis/Thermal/Fan")
 
 		fanModel := model.New(
 			model.UpdateProperty("unique_id", fanName),
@@ -341,23 +352,21 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		)
 		// the controller is what updates the model when ar entries change,
 		// also handles patch from redfish
-		fanController, _ := ar_mapper.New(ctx, fanLogger, fanModel, "Fans/"+fanName, ch, eb, ew)
+		armapper, _ := ar_mapper.New(ctx, fanLogger, fanModel, "Fans/"+fanName, ch, eb, ew)
+		updateFns = append(updateFns, armapper.ConfigChangedFn)
 
 		// This controller will populate 'attributes' property with AR entries matching this FQDD ('fanName')
-		fanARdump, _ := attr_prop.NewController(ctx, fanModel, []string{fanName}, ch, eb, ew)
-
-		// let the controller re-read its mappings when config file changes... nifty
-		updateFns = append(updateFns, fanController.ConfigChangedFn)
+		ardump, _ := attributes.NewController(ctx, fanModel, []string{fanName}, ch, eb, ew)
 
 		v := view.New(
 			view.WithURI("/redfish/v1/Chassis/"+chasName+"/Sensors/Fans/"+fanName),
 			view.WithModel("default", fanModel),
-			view.WithController("ar_mapper", fanController),
-			view.WithController("ar_dumper", fanARdump),
-			view.WithFormatter("attributeFormatter", attr_prop.FormatAttributeDump),
+			view.WithController("ar_mapper", armapper),
+			view.WithController("ar_dumper", ardump),
+			view.WithFormatter("attributeFormatter", attributes.FormatAttributeDump),
 		)
 		domain.RegisterPlugin(func() domain.Plugin { return v })
-		fanFragment := fans.AddView(ctx, fanLogger, v, ch, eb, ew)
+		fanFragment := fans.AddAggregate(ctx, fanLogger, v, ch)
 
 		p := &domain.RedfishResourceProperty{}
 		p.Parse(fanFragment)
@@ -376,7 +385,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		"IOM.Slot.C1",
 		"IOM.Slot.C2",
 	} {
-		iomLogger := logger.New("module", "Chassis/"+iomName, "module", "Chassis/IOM.Slot")
+		iomLogger := chasLogger.New("module", "Chassis/"+iomName, "module", "Chassis/IOM.Slot")
 		iomModel, _ := generic_chassis.New(
 			generic_chassis.WithUniqueName(iomName),
 			generic_chassis.AddManagedBy(managers[0].GetURI()),
@@ -393,26 +402,22 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		)
 		// the controller is what updates the model when ar entries change,
 		// also handles patch from redfish
-		iomController, _ := ar_mapper.New(ctx, iomLogger, iomModel, "Mangaers/"+iomName, ch, eb, ew)
-		updateFns = append(updateFns, iomController.ConfigChangedFn)
+		armapper, _ := ar_mapper.New(ctx, iomLogger, iomModel, "Mangaers/"+iomName, ch, eb, ew)
+		updateFns = append(updateFns, armapper.ConfigChangedFn)
 
 		// This controller will populate 'attributes' property with AR entries matching this FQDD ('iomName')
-		iomARdump, _ := attr_prop.NewController(ctx, iomModel, []string{iomName}, ch, eb, ew)
+		ardumper, _ := attributes.NewController(ctx, iomModel, []string{iomName}, ch, eb, ew)
 
 		iomView := view.New(
 			view.WithURI("/redfish/v1/Chassis/"+iomName),
 			view.WithModel("default", iomModel),
-			view.WithController("ar_mapper", iomController),
-			view.WithController("ar_dumper", iomARdump),
-			view.WithFormatter("attributeFormatter", attr_prop.FormatAttributeDump),
+			view.WithController("ar_mapper", armapper),
+			view.WithController("ar_dumper", ardumper),
+			view.WithFormatter("attributeFormatter", attributes.FormatAttributeDump),
 		)
 		domain.RegisterPlugin(func() domain.Plugin { return iomView })
 		iom_chassis.AddAggregate(ctx, iomLogger, iomView, ch, eb, ew)
-
-		// Create the .../Attributes URI. Attributes are stored in the attributes property of the iomModel
-		v2 := attr_prop.NewView(ctx, iomModel, iomARdump)
-		iom := attr_res.AddView(ctx, "/redfish/v1/Chassis/"+iomName+"/Attributes", iomName+".Attributes", ch, eb, ew)
-		attr_prop.EnhanceExistingUUID(ctx, v2, ch, iom)
+		attributes.AddAggregate(ctx, iomView, "/redfish/v1/Chassis/"+iomName+"/Attributes", ch)
 	}
 
 	for _, sledName := range []string{
@@ -425,7 +430,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		"System.Modular.7", "System.Modular.7a", "System.Modular.7b",
 		"System.Modular.8", "System.Modular.8a", "System.Modular.8b",
 	} {
-		sledLogger := logger.New("module", "Chassis/System.Modular", "module", "Chassis/"+sledName)
+		sledLogger := chasLogger.New("module", "Chassis/System.Modular", "module", "Chassis/"+sledName)
 		sledModel, _ := generic_chassis.New(
 			generic_chassis.WithUniqueName(sledName),
 			generic_chassis.AddManagedBy(managers[0].GetURI()),
@@ -436,26 +441,22 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			model.UpdateProperty("manufacturer", ""),
 			model.UpdateProperty("serial", ""),
 		)
-		sledController, _ := ar_mapper.New(ctx, sledLogger, sledModel, "Chassis/"+sledName, ch, eb, ew)
-		updateFns = append(updateFns, sledController.ConfigChangedFn)
+		armapper, _ := ar_mapper.New(ctx, sledLogger, sledModel, "Chassis/"+sledName, ch, eb, ew)
+		updateFns = append(updateFns, armapper.ConfigChangedFn)
 
 		// This controller will populate 'attributes' property with AR entries matching this FQDD ('sledName')
-		sledARdump, _ := attr_prop.NewController(ctx, sledModel, []string{sledName}, ch, eb, ew)
+		ardumper, _ := attributes.NewController(ctx, sledModel, []string{sledName}, ch, eb, ew)
 
 		sledView := view.New(
 			view.WithURI("/redfish/v1/Chassis/"+sledName),
 			view.WithModel("default", sledModel),
-			view.WithController("ar_mapper", sledController),
-			view.WithController("ar_dumper", sledARdump),
-			view.WithFormatter("attributeFormatter", attr_prop.FormatAttributeDump),
+			view.WithController("ar_mapper", armapper),
+			view.WithController("ar_dumper", ardumper),
+			view.WithFormatter("attributeFormatter", attributes.FormatAttributeDump),
 		)
 		domain.RegisterPlugin(func() domain.Plugin { return sledView })
 		sled_chassis.AddAggregate(ctx, sledLogger, sledView, ch, eb, ew)
-
-		// Create the .../Attributes URI. Attributes are stored in the attributes property of the sledModel
-		v2 := attr_prop.NewView(ctx, sledModel, sledARdump)
-		sled := attr_res.AddView(ctx, "/redfish/v1/Chassis/"+sledName+"/Attributes", sledName+".Attributes", ch, eb, ew)
-		attr_prop.EnhanceExistingUUID(ctx, v2, ch, sled)
+		attributes.AddAggregate(ctx, sledView, "/redfish/v1/Chassis/"+sledName+"/Attributes", ch)
 	}
 
 	// VIPER Config:

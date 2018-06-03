@@ -1,28 +1,16 @@
-package cmc_chassis
+package cmc_integrated
 
 import (
 	"context"
 
-	"github.com/superchalupa/go-redfish/src/dell-resources/ar_mapper"
 	"github.com/superchalupa/go-redfish/src/log"
-	"github.com/superchalupa/go-redfish/src/ocp/model"
 	"github.com/superchalupa/go-redfish/src/ocp/view"
 	domain "github.com/superchalupa/go-redfish/src/redfishresource"
 
 	eh "github.com/looplab/eventhorizon"
-	"github.com/looplab/eventhorizon/utils"
 )
 
-func AddView(ctx context.Context, logger log.Logger, s *model.Model, c *ar_mapper.ARMappingController, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) *view.View {
-
-	v := view.New(
-		view.WithURI("/redfish/v1/Chassis/"+s.GetProperty("unique_name").(string)),
-		view.WithModel("default", s),
-		view.WithController("ar_mapper", c),
-	)
-
-	domain.RegisterPlugin(func() domain.Plugin { return v })
-
+func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.CommandHandler) {
 	ch.HandleCommand(
 		ctx,
 		&domain.CreateRedfishResource{
@@ -39,7 +27,7 @@ func AddView(ctx context.Context, logger log.Logger, s *model.Model, c *ar_mappe
 				"DELETE": []string{}, // can't be deleted
 			},
 			Properties: map[string]interface{}{
-				"Id":                s.GetProperty("unique_name").(string),
+				"Id@meta":           v.Meta(view.PropGET("unique_name")),
 				"AssetTag@meta":     v.Meta(view.PropGET("asset_tag"), view.PropPATCH("asset_tag", "ar_mapper")),
 				"SerialNumber@meta": v.Meta(view.PropGET("serial")),
 				"PartNumber@meta":   v.Meta(view.PropGET("part_number")),
@@ -62,6 +50,4 @@ func AddView(ctx context.Context, logger log.Logger, s *model.Model, c *ar_mappe
 					},
 				},
 			}})
-
-	return v
 }
