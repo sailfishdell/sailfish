@@ -1,4 +1,4 @@
-package ec_manager
+package cmc_integrated
 
 // this file should define the BMC Manager object golang data structures where
 // we put all the data, plus the aggregate that pulls the data.  actual data
@@ -7,9 +7,7 @@ package ec_manager
 import (
 	"context"
 
-	"github.com/superchalupa/go-redfish/src/dell-resources/ar_mapper"
 	"github.com/superchalupa/go-redfish/src/log"
-	"github.com/superchalupa/go-redfish/src/ocp/model"
 	"github.com/superchalupa/go-redfish/src/ocp/view"
 	domain "github.com/superchalupa/go-redfish/src/redfishresource"
 
@@ -18,24 +16,13 @@ import (
 	ah "github.com/superchalupa/go-redfish/src/actionhandler"
 )
 
-func AddView(ctx context.Context, logger log.Logger, s *model.Model, c *ar_mapper.ARMappingController, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) *view.View {
-
-	uri := "/redfish/v1/Managers/" + s.GetProperty("unique_name").(string)
-
-	v := view.NewView(
-		view.WithURI(uri),
-		view.WithModel("default", s),
-		view.WithController("ar_mapper", c),
-	)
-
-	domain.RegisterPlugin(func() domain.Plugin { return v })
-
+func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) *view.View {
 	ch.HandleCommand(
 		ctx,
 		&domain.CreateRedfishResource{
 			ID:          v.GetUUID(),
 			Collection:  false,
-			ResourceURI: uri,
+			ResourceURI: v.GetURI(),
 			Type:        "#Manager.v1_0_2.Manager",
 			Context:     "/redfish/v1/$metadata#Manager.Manager",
 			Privileges: map[string]interface{}{
@@ -46,7 +33,7 @@ func AddView(ctx context.Context, logger log.Logger, s *model.Model, c *ar_mappe
 				"DELETE": []string{}, // can't be deleted
 			},
 			Properties: map[string]interface{}{
-				"Id":        s.GetProperty("unique_name").(string),
+				"Id":        v.Meta(view.PropGET("unique_name")),
 				"Name@meta": v.Meta(view.PropGET("name")),
 				// TODO: is this in AR somewhere?
 				"ManagerType":              "BMC",
@@ -110,7 +97,7 @@ func AddView(ctx context.Context, logger log.Logger, s *model.Model, c *ar_mappe
 				},
 
 				"LogServices": map[string]interface{}{
-					"@odata.id": uri + "/LogServices",
+					"@odata.id": v.GetURI() + "/LogServices",
 				},
 
 				"GraphicalConsole": map[string]interface{}{
@@ -123,16 +110,16 @@ func AddView(ctx context.Context, logger log.Logger, s *model.Model, c *ar_mappe
 				"Oem": map[string]interface{}{
 					"@odata.type": "#DellManager.v1_0_0.DellManager",
 					"OemAttributes": map[string]interface{}{
-						"@odata.id": uri + "/Attributes",
+						"@odata.id": v.GetURI() + "/Attributes",
 					},
 					"CertificateService": map[string]interface{}{
-						"@odata.id": uri + "/CertificateService",
+						"@odata.id": v.GetURI() + "/CertificateService",
 					},
 				},
 
 				"Actions": map[string]interface{}{
 					"#Manager.Reset": map[string]interface{}{
-						"target": uri + "/Actions/Manager.Reset",
+						"target": v.GetURI() + "/Actions/Manager.Reset",
 						"ResetType@Redfish.AllowableValues": []string{
 							"GracefulRestart",
 						},
@@ -145,10 +132,10 @@ func AddView(ctx context.Context, logger log.Logger, s *model.Model, c *ar_mappe
 								"ResetFactoryConfig",
 								"ResetToEngineeringDefaults",
 							},
-							"target": uri + "/Actions/Oem/DellManager.ResetToDefaults",
+							"target": v.GetURI() + "/Actions/Oem/DellManager.ResetToDefaults",
 						},
 						"#Manager.ForceFailover": map[string]interface{}{
-							"target": uri + "/Actions/Manager.ForceFailover",
+							"target": v.GetURI() + "/Actions/Manager.ForceFailover",
 						},
 					},
 				},
@@ -163,7 +150,7 @@ func AddView(ctx context.Context, logger log.Logger, s *model.Model, c *ar_mappe
 									                  "ImportSystemConfigurationPreview@Redfish.AllowableValues": [
 									                       "ImportBuffer"
 									                  ],
-									                  "target": uri +  "/Actions/Oem/EID_674_Manager.ImportSystemConfigurationPreview",
+									                  "target": v.GetURI() +  "/Actions/Oem/EID_674_Manager.ImportSystemConfigurationPreview",
 									                  "ShareParameters": {
 									                       "ProxySupport XXXXXX
 									                            "Disabled",
@@ -206,7 +193,7 @@ func AddView(ctx context.Context, logger log.Logger, s *model.Model, c *ar_mappe
 									                       "On",
 									                       "Off"
 									                  ],
-									                  "target": uri +  "/Actions/Oem/EID_674_Manager.ImportSystemConfiguration",
+									                  "target": v.GetURI() +  "/Actions/Oem/EID_674_Manager.ImportSystemConfiguration",
 									                  "ShutdownType@Redfish.AllowableValues": [
 									                       "Graceful",
 									                       "Forced",
@@ -264,7 +251,7 @@ func AddView(ctx context.Context, logger log.Logger, s *model.Model, c *ar_mappe
 									                       "IncludePasswordHashValues XXXXXX
 									                       "IncludeReadOnly,IncludePasswordHashValues XXXXXX
 									                  ],
-									                  "target": uri +  "/Actions/Oem/EID_674_Manager.ExportSystemConfiguration",
+									                  "target": v.GetURI() +  "/Actions/Oem/EID_674_Manager.ExportSystemConfiguration",
 									                  "ShareParameters": {
 									                       "ProxySupport XXXXXX
 									                            "Disabled",
@@ -323,21 +310,21 @@ func AddView(ctx context.Context, logger log.Logger, s *model.Model, c *ar_mappe
 
 	ah.CreateAction(ctx, ch, eb, ew,
 		logger,
-		uri+"/Actions/Manager.Reset",
+		v.GetURI()+"/Actions/Manager.Reset",
 		"manager.reset",
-		s)
+		v.GetModel("default"))
 
 	ah.CreateAction(ctx, ch, eb, ew,
 		logger,
-		uri+"/Actions/Oem/DellManager.ResetToDefaults",
+		v.GetURI()+"/Actions/Oem/DellManager.ResetToDefaults",
 		"manager.resettodefaults",
-		s)
+		v.GetModel("default"))
 
 	ah.CreateAction(ctx, ch, eb, ew,
 		logger,
-		uri+"/Actions/Manager.ForceFailover",
+		v.GetURI()+"/Actions/Manager.ForceFailover",
 		"manager.forcefailover",
-		s)
+		v.GetModel("default"))
 
 	return v
 }

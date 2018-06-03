@@ -3,26 +3,11 @@ package stdcollections
 import (
 	"context"
 
-	domain "github.com/superchalupa/go-redfish/src/redfishresource"
-
-	"github.com/superchalupa/go-redfish/src/ocp/event"
-
 	eh "github.com/looplab/eventhorizon"
-	"github.com/looplab/eventhorizon/utils"
+	domain "github.com/superchalupa/go-redfish/src/redfishresource"
 )
 
-// InitService starts a listener for the root service to be created, then extend root service
-func InitService(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
-	sp, err := event.NewEventStreamProcessor(ctx, ew, event.SelectEventResourceCreatedByURI("/redfish/v1"))
-	if err == nil {
-		sp.RunOnce(func(event eh.Event) {
-			rootID := event.Data().(domain.RedfishResourceCreatedData).ID
-			newService(ctx, rootID, ch)
-		})
-	}
-}
-
-func newService(ctx context.Context, rootID eh.UUID, ch eh.CommandHandler) {
+func AddAggregate(ctx context.Context, rootID eh.UUID, rootURI string, ch eh.CommandHandler) {
 	// Create Computer System Collection
 	ch.HandleCommand(
 		ctx,
@@ -30,9 +15,9 @@ func newService(ctx context.Context, rootID eh.UUID, ch eh.CommandHandler) {
 			ID:         eh.NewUUID(),
 			Collection: true,
 
-			ResourceURI: "/redfish/v1/Systems",
+			ResourceURI: rootURI + "/Systems",
 			Type:        "#ComputerSystemCollection.ComputerSystemCollection",
-			Context:     "/redfish/v1/$metadata#ComputerSystemCollection.ComputerSystemCollection",
+			Context:     rootURI + "/$metadata#ComputerSystemCollection.ComputerSystemCollection",
 			Privileges: map[string]interface{}{
 				"GET":    []string{"Login"},
 				"POST":   []string{}, // Read Only
@@ -48,7 +33,7 @@ func newService(ctx context.Context, rootID eh.UUID, ch eh.CommandHandler) {
 		&domain.UpdateRedfishResourceProperties{
 			ID: rootID,
 			Properties: map[string]interface{}{
-				"Systems": map[string]interface{}{"@odata.id": "/redfish/v1/Systems"},
+				"Systems": map[string]interface{}{"@odata.id": rootURI + "/Systems"},
 			},
 		})
 
@@ -59,9 +44,9 @@ func newService(ctx context.Context, rootID eh.UUID, ch eh.CommandHandler) {
 			ID:         eh.NewUUID(),
 			Collection: true,
 
-			ResourceURI: "/redfish/v1/Chassis",
+			ResourceURI: rootURI + "/Chassis",
 			Type:        "#ChassisCollection.ChassisCollection",
-			Context:     "/redfish/v1/$metadata#ChassisCollection.ChassisCollection",
+			Context:     rootURI + "/$metadata#ChassisCollection.ChassisCollection",
 			Privileges: map[string]interface{}{
 				"GET":    []string{"Login"},
 				"POST":   []string{}, // Read Only
@@ -77,7 +62,7 @@ func newService(ctx context.Context, rootID eh.UUID, ch eh.CommandHandler) {
 		&domain.UpdateRedfishResourceProperties{
 			ID: rootID,
 			Properties: map[string]interface{}{
-				"Chassis": map[string]interface{}{"@odata.id": "/redfish/v1/Chassis"},
+				"Chassis": map[string]interface{}{"@odata.id": rootURI + "/Chassis"},
 			},
 		})
 
@@ -88,9 +73,9 @@ func newService(ctx context.Context, rootID eh.UUID, ch eh.CommandHandler) {
 			ID:         eh.NewUUID(),
 			Collection: true,
 
-			ResourceURI: "/redfish/v1/Managers",
+			ResourceURI: rootURI + "/Managers",
 			Type:        "#ManagerCollection.ManagerCollection",
-			Context:     "/redfish/v1/$metadata#ManagerCollection.ManagerCollection",
+			Context:     rootURI + "/$metadata#ManagerCollection.ManagerCollection",
 			Privileges: map[string]interface{}{
 				"GET":    []string{"Login"},
 				"POST":   []string{}, // Read Only
@@ -106,7 +91,7 @@ func newService(ctx context.Context, rootID eh.UUID, ch eh.CommandHandler) {
 		&domain.UpdateRedfishResourceProperties{
 			ID: rootID,
 			Properties: map[string]interface{}{
-				"Managers": map[string]interface{}{"@odata.id": "/redfish/v1/Managers"},
+				"Managers": map[string]interface{}{"@odata.id": rootURI + "/Managers"},
 			},
 		})
 
@@ -117,9 +102,9 @@ func newService(ctx context.Context, rootID eh.UUID, ch eh.CommandHandler) {
 			ID:         eh.NewUUID(),
 			Collection: true,
 
-			ResourceURI: "/redfish/v1/AccountService/Accounts",
+			ResourceURI: rootURI + "/AccountService/Accounts",
 			Type:        "#ManagerAccountCollection.ManagerAccountCollection",
-			Context:     "/redfish/v1/$metadata#ManagerAccountCollection.ManagerAccountCollection",
+			Context:     rootURI + "/$metadata#ManagerAccountCollection.ManagerAccountCollection",
 			Privileges: map[string]interface{}{
 				"GET":    []string{"Login"},
 				"POST":   []string{}, // Read Only
@@ -138,9 +123,9 @@ func newService(ctx context.Context, rootID eh.UUID, ch eh.CommandHandler) {
 			ID:         eh.NewUUID(),
 			Collection: true,
 
-			ResourceURI: "/redfish/v1/AccountService/Roles",
+			ResourceURI: rootURI + "/AccountService/Roles",
 			Type:        "#RoleCollection.RoleCollection",
-			Context:     "/redfish/v1/$metadata#RoleCollection.RoleCollection",
+			Context:     rootURI + "/$metadata#RoleCollection.RoleCollection",
 			Privileges: map[string]interface{}{
 				"GET":    []string{"Login"},
 				"POST":   []string{}, // Read Only
@@ -159,9 +144,9 @@ func newService(ctx context.Context, rootID eh.UUID, ch eh.CommandHandler) {
 			ID:         eh.NewUUID(),
 			Collection: false,
 
-			ResourceURI: "/redfish/v1/AccountService",
+			ResourceURI: rootURI + "/AccountService",
 			Type:        "#AccountService.v1_0_2.AccountService",
-			Context:     "/redfish/v1/$metadata#AccountService.AccountService",
+			Context:     rootURI + "/$metadata#AccountService.AccountService",
 			Privileges: map[string]interface{}{
 				"GET":    []string{"Login"},
 				"POST":   []string{"ConfigureManager"}, // cannot create sub objects
@@ -183,15 +168,15 @@ func newService(ctx context.Context, rootID eh.UUID, ch eh.CommandHandler) {
 				"AccountLockoutThreshold":         5,
 				"AccountLockoutDuration":          30,
 				"AccountLockoutCounterResetAfter": 30,
-				"Accounts":                        map[string]string{"@odata.id": "/redfish/v1/AccountService/Accounts"},
-				"Roles":                           map[string]string{"@odata.id": "/redfish/v1/AccountService/Roles"},
+				"Accounts":                        map[string]string{"@odata.id": rootURI + "/AccountService/Accounts"},
+				"Roles":                           map[string]string{"@odata.id": rootURI + "/AccountService/Roles"},
 			}})
 
 	ch.HandleCommand(ctx,
 		&domain.UpdateRedfishResourceProperties{
 			ID: rootID,
 			Properties: map[string]interface{}{
-				"AccountService": map[string]interface{}{"@odata.id": "/redfish/v1/AccountService"},
+				"AccountService": map[string]interface{}{"@odata.id": rootURI + "/AccountService"},
 			},
 		})
 
@@ -202,9 +187,9 @@ func newService(ctx context.Context, rootID eh.UUID, ch eh.CommandHandler) {
 			ID:         eh.NewUUID(),
 			Collection: false,
 
-			ResourceURI: "/redfish/v1/AccountService/Roles/Admin",
+			ResourceURI: rootURI + "/AccountService/Roles/Admin",
 			Type:        "#Role.v1_0_2.Role",
-			Context:     "/redfish/v1/$metadata#Role.Role",
+			Context:     rootURI + "/$metadata#Role.Role",
 			Privileges: map[string]interface{}{
 				"GET":    []string{"Login"},
 				"POST":   []string{}, // Read Only
@@ -233,9 +218,9 @@ func newService(ctx context.Context, rootID eh.UUID, ch eh.CommandHandler) {
 			ID:         eh.NewUUID(),
 			Collection: false,
 
-			ResourceURI: "/redfish/v1/AccountService/Roles/Operator",
+			ResourceURI: rootURI + "/AccountService/Roles/Operator",
 			Type:        "#Role.v1_0_2.Role",
-			Context:     "/redfish/v1/$metadata#Role.Role",
+			Context:     rootURI + "/$metadata#Role.Role",
 			Privileges: map[string]interface{}{
 				"GET":    []string{"Login"},
 				"POST":   []string{}, // Read Only
@@ -262,9 +247,9 @@ func newService(ctx context.Context, rootID eh.UUID, ch eh.CommandHandler) {
 			ID:         eh.NewUUID(),
 			Collection: false,
 
-			ResourceURI: "/redfish/v1/AccountService/Roles/ReadOnlyUser",
+			ResourceURI: rootURI + "/AccountService/Roles/ReadOnlyUser",
 			Type:        "#Role.v1_0_2.Role",
-			Context:     "/redfish/v1/$metadata#Role.Role",
+			Context:     rootURI + "/$metadata#Role.Role",
 			Privileges: map[string]interface{}{
 				"GET":    []string{"Login"},
 				"POST":   []string{}, // Read Only

@@ -50,7 +50,7 @@ func FormatAttributeDump(
 }
 
 func NewView(ctx context.Context, s *model.Model, c *ARDump) *view.View {
-	v := view.NewView(
+	v := view.New(
 		view.WithModel("default", s),
 		view.WithFormatter("attributeFormatter", FormatAttributeDump),
 		view.WithController("ar_dump", c),

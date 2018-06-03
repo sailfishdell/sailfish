@@ -10,7 +10,7 @@ import (
 // Use this to add an attribute or to update an attribute
 //
 func WithAttribute(group, gindex, name string, value interface{}) model.Option {
-	return func(s *model.Service) error {
+	return func(s *model.Model) error {
 		var attributes map[string]map[string]map[string]interface{}
 
 		attributesRaw, ok := s.GetPropertyOkUnlocked("attributes")

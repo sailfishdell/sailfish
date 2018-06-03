@@ -33,7 +33,7 @@ main:
               level: "info"
 
             - name: "Chassis/System.Chassis/Thermal"
-              level: "debug"
+              level: "info"
 
             - name: "internal_commands"
               level: "warn"

@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/superchalupa/go-redfish/src/ocp/model"
 	"github.com/superchalupa/go-redfish/src/ocp/view"
 	domain "github.com/superchalupa/go-redfish/src/redfishresource"
 
@@ -69,18 +68,10 @@ func MakeHandlerFunc(eb eh.EventBus, getter IDGetter, withUser func(string, []st
 	}
 }
 
-func CreateSessionService(ctx context.Context, rootID eh.UUID, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) (sessionModel *model.Model) {
-	sessionModel = model.NewService(
-		model.UpdateProperty("session_timeout", 30),
-	)
+func AddAggregate(ctx context.Context, v *view.View, rootID eh.UUID, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
 
-	v := view.NewView(
-		view.WithModel("default", sessionModel),
-		view.WithURI("/redfish/v1/SessionService"),
-	)
-
-	eh.RegisterCommand(func() eh.Command { return &POST{model: sessionModel, commandHandler: ch, eventWaiter: ew} })
-	domain.RegisterPlugin(func() domain.Plugin { return v })
+	// somewhat of a violation of how i want to structure all this, but it's the best option for now
+	eh.RegisterCommand(func() eh.Command { return &POST{model: v.GetModel("default"), commandHandler: ch, eventWaiter: ew} })
 
 	// Create SessionService aggregate
 	ch.HandleCommand(

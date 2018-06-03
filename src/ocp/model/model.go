@@ -7,19 +7,12 @@ import (
 
 type Option func(*Model) error
 
-// backwards compatible name
-type Service = Model
-
-func NewService(options ...Option) *Model {
-	return NewModel(options...)
-}
-
 type Model struct {
 	sync.RWMutex
 	properties map[string]interface{}
 }
 
-func NewModel(options ...Option) *Model {
+func New(options ...Option) *Model {
 	s := &Model{
 		properties: map[string]interface{}{},
 	}

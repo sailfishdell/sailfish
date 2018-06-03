@@ -12,17 +12,17 @@ import (
 //
 
 // UpdateProperty is a functional option to set an option at construction time or update the value after using ApplyOption.
-// Service is locked for Options in ApplyOption
+// Model is locked for Options in ApplyOption
 func UpdateProperty(p string, v interface{}) Option {
-	return func(s *Service) error {
+	return func(s *Model) error {
 		s.properties[p] = v
 		return nil
 	}
 }
 
-// Service is locked for Options in ApplyOption
+// Model is locked for Options in ApplyOption
 func PropertyOnce(p string, v interface{}) Option {
-	return func(s *Service) error {
+	return func(s *Model) error {
 		if _, ok := s.properties[p]; ok {
 			panic("Property " + p + " can only be set once")
 		}

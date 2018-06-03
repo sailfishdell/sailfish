@@ -19,7 +19,7 @@ import (
 
 func AddView(ctx context.Context, logger log.Logger, chasName string, s *model.Model, c *ar_mapper.ARMappingController, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) *view.View {
 
-	v := view.NewView(
+	v := view.New(
 		view.WithURI("/redfish/v1/Chassis/"+chasName+"/Power"),
 		view.WithModel("default", s),
 		view.WithController("ar_mapper", c),

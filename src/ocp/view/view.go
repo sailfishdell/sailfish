@@ -24,6 +24,8 @@ type formatter func(
 	meta map[string]interface{},
 ) error
 
+type action func()
+
 type View struct {
 	sync.RWMutex
 	pluginType       domain.PluginType
@@ -32,14 +34,16 @@ type View struct {
 	controllers      map[string]controller
 	models           map[string]*model.Model
 	outputFormatters map[string]formatter
+	actions          map[string]action
 }
 
-func NewView(options ...Option) *View {
+func New(options ...Option) *View {
 	s := &View{
 		uuid:             eh.NewUUID(),
 		controllers:      map[string]controller{},
 		models:           map[string]*model.Model{},
 		outputFormatters: map[string]formatter{},
+		actions:          map[string]action{},
 	}
 
 	s.ApplyOption(options...)

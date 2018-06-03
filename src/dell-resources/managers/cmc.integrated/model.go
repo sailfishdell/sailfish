@@ -1,11 +1,11 @@
-package ec_manager
+package cmc_integrated
 
 import (
 	"github.com/superchalupa/go-redfish/src/ocp/model"
 )
 
 func New(options ...model.Option) (*model.Model, error) {
-	s := model.NewModel()
+	s := model.New()
 
 	// valid for consumer of this class to use without setting these, so put in a default
 	s.UpdatePropertyUnlocked("bmc_manager_for_servers", []map[string]string{})

@@ -5,7 +5,7 @@ import (
 )
 
 func New(options ...model.Option) (*model.Model, error) {
-	s := model.NewModel()
+	s := model.New()
 	s.ApplyOption(options...)
 	return s, nil
 }

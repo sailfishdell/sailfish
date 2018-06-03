@@ -3,26 +3,18 @@ package root
 import (
 	"context"
 
-	"github.com/superchalupa/go-redfish/src/ocp/view"
 	domain "github.com/superchalupa/go-redfish/src/redfishresource"
 
 	eh "github.com/looplab/eventhorizon"
 	"github.com/looplab/eventhorizon/utils"
 )
 
-const (
-	RootPlugin = domain.PluginType("obmc_root")
-)
+type view interface {
+	GetUUID() eh.UUID
+	GetURI() string
+}
 
-func AddView(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) (v *view.View) {
-	// so simple we don't need a model at all here
-
-	v = view.NewView(
-		view.WithURI("/redfish/v1"),
-	)
-
-	domain.RegisterPlugin(func() domain.Plugin { return v })
-
+func AddAggregate(ctx context.Context, v view, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
 	ch.HandleCommand(
 		ctx,
 		&domain.CreateRedfishResource{

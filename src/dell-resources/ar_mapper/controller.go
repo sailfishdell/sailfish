@@ -33,7 +33,7 @@ type ARMappingController struct {
 	eb eh.EventBus
 }
 
-func NewARMappingController(ctx context.Context, logger log.Logger, m *model.Model, name string, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) (*ARMappingController, error) {
+func New(ctx context.Context, logger log.Logger, m *model.Model, name string, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) (*ARMappingController, error) {
 	c := &ARMappingController{
 		mappings: []mapping{},
 		name:     name,
@@ -118,13 +118,13 @@ func (c *ARMappingController) ConfigChangedFn(ctx context.Context, cfg *viper.Vi
 	}
 	c.logger.Info("updating mappings", "mappings", c.mappings)
 
-	go c.requestUpdates(ctx)
+	go c.initialStartupBootstrap(ctx)
 }
 
 //
 // background thread that sends messages to the data pump to ask for startup values
 //
-func (c *ARMappingController) requestUpdates(ctx context.Context) {
+func (c *ARMappingController) initialStartupBootstrap(ctx context.Context) {
 	// bypass for now
 	return
 
