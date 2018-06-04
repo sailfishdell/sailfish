@@ -62,6 +62,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	// No Logger
 	// No Model
 	// No Controllers
+    // View created so we have a place to hold the aggregate UUID and URI
 	rootView := view.New(
 		view.WithURI("/redfish/v1"),
 	)
@@ -84,11 +85,11 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		model.UpdateProperty("description", "description"),
 		model.UpdateProperty("model", "model"),
 	)
-	testController, _ := ar_mapper.New(ctx, testLogger, testModel, "test/testview", ch, eb, ew)
-	updateFns = append(updateFns, testController.ConfigChangedFn)
+	armapper, _ := ar_mapper.New(ctx, testLogger, testModel, "test/testview", ch, eb, ew)
+	updateFns = append(updateFns, armapper.ConfigChangedFn)
 	testView := view.New(
 		view.WithModel("default", testModel),
-		view.WithController("ar_mapper", testController),
+		view.WithController("ar_mapper", armapper),
 		view.WithURI(rootView.GetURI() + "/testview"),
 	)
 	domain.RegisterPlugin(func() domain.Plugin { return testView })
@@ -110,10 +111,11 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		model.UpdateProperty("session_timeout", 30))
 	// the controller is what updates the model when ar entries change, also
 	// handles patch from redfish
-	sessionARMappingController, _ := ar_mapper.New(ctx, sessionLogger, sessionModel, "SessionService", ch, eb, ew)
+	armapper, _ = ar_mapper.New(ctx, sessionLogger, sessionModel, "SessionService", ch, eb, ew)
+	updateFns = append(updateFns, armapper.ConfigChangedFn)
 	sessionView := view.New(
 		view.WithModel("default", sessionModel),
-		view.WithController("ar_mapper", sessionARMappingController),
+		view.WithController("ar_mapper", armapper),
 		view.WithURI(rootView.GetURI()+"/SessionService"))
 	domain.RegisterPlugin(func() domain.Plugin { return sessionView })
 	session.AddAggregate(ctx, sessionView, rootView.GetUUID(), ch, eb, ew)
@@ -254,7 +256,8 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	)
 	// the controller is what updates the model when ar entries change,
 	// also handles patch from redfish
-	armapper, _ := ar_mapper.New(ctx, powerLogger, powerModel, "Chassis/"+chasName+"/Power", ch, eb, ew)
+	armapper, _ = ar_mapper.New(ctx, powerLogger, powerModel, "Chassis/"+chasName+"/Power", ch, eb, ew)
+	updateFns = append(updateFns, armapper.ConfigChangedFn)
 
 	vw := view.New(
 		view.WithURI(rootView.GetURI() + "/Chassis/"+chasName+"/Power"),
@@ -356,13 +359,13 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		updateFns = append(updateFns, armapper.ConfigChangedFn)
 
 		// This controller will populate 'attributes' property with AR entries matching this FQDD ('fanName')
-		ardump, _ := attributes.NewController(ctx, fanModel, []string{fanName}, ch, eb, ew)
+		ardumper, _ := attributes.NewController(ctx, fanModel, []string{fanName}, ch, eb, ew)
 
 		v := view.New(
 			view.WithURI(rootView.GetURI() + "/Chassis/"+chasName+"/Sensors/Fans/"+fanName),
 			view.WithModel("default", fanModel),
 			view.WithController("ar_mapper", armapper),
-			view.WithController("ar_dumper", ardump),
+			view.WithController("ar_dumper", ardumper),
 			view.WithFormatter("attributeFormatter", attributes.FormatAttributeDump),
 		)
 		domain.RegisterPlugin(func() domain.Plugin { return v })
