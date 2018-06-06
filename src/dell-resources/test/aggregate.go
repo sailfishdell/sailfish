@@ -30,7 +30,7 @@ func AddAggregate(ctx context.Context, v *view.View, ch eh.CommandHandler) *view
 				"DELETE": []string{}, // can't be deleted
 			},
 			Properties: map[string]interface{}{
-				"Id":               v.Meta(view.PropGET("unique_name")),
+				"Id@meta":          v.Meta(view.PropGET("unique_name")),
 				"Name@meta":        v.Meta(view.PropGET("name")),
 				"Description@meta": v.Meta(view.PropGET("description")),
 				"Model@meta":       v.Meta(view.PropGET("model"), view.PropPATCH("model", "ar_mapper")),

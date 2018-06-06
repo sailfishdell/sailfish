@@ -24,7 +24,6 @@ import (
 
 	"github.com/superchalupa/go-redfish/src/dell-resources/ar_mapper"
 	"github.com/superchalupa/go-redfish/src/dell-resources/attributes"
-	"github.com/superchalupa/go-redfish/src/dell-resources/chassis"
 	chasCMCIntegrated "github.com/superchalupa/go-redfish/src/dell-resources/chassis/cmc.integrated"
 	"github.com/superchalupa/go-redfish/src/dell-resources/chassis/iom.slot"
 	"github.com/superchalupa/go-redfish/src/dell-resources/chassis/system.chassis"
@@ -62,7 +61,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	// No Logger
 	// No Model
 	// No Controllers
-    // View created so we have a place to hold the aggregate UUID and URI
+	// View created so we have a place to hold the aggregate UUID and URI
 	rootView := view.New(
 		view.WithURI("/redfish/v1"),
 	)
@@ -90,7 +89,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	testView := view.New(
 		view.WithModel("default", testModel),
 		view.WithController("ar_mapper", armapper),
-		view.WithURI(rootView.GetURI() + "/testview"),
+		view.WithURI(rootView.GetURI()+"/testview"),
 	)
 	domain.RegisterPlugin(func() domain.Plugin { return testView })
 	test.AddAggregate(ctx, testView, ch)
@@ -133,7 +132,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		// /redfish/v1/Managers/CMC.Integrated
 		//*********************************************************************
 		mgrLogger := mgrLogger.New("module", "Managers/"+mgrName, "module", "Managers/CMC.Integrated")
-		mdl, _ := generic_chassis.New(
+		mdl := model.New(
 			mgrCMCIntegrated.WithUniqueName(mgrName),
 			model.UpdateProperty("asset_tag", ""),
 			model.UpdateProperty("serial", ""),
@@ -153,7 +152,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		ardumper, _ := attributes.NewController(ctx, mdl, []string{mgrName}, ch, eb, ew)
 
 		vw := view.New(
-			view.WithURI(rootView.GetURI() + "/Managers/"+mgrName),
+			view.WithURI(rootView.GetURI()+"/Managers/"+mgrName),
 			view.WithModel("default", mdl),
 			view.WithController("ar_mapper", armapper),
 			view.WithController("ar_dump", ardumper),
@@ -164,7 +163,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 
 		// add the aggregate to the view tree
 		mgrCMCIntegrated.AddAggregate(ctx, mgrLogger, vw, ch, eb, ew)
-		attributes.AddAggregate(ctx, vw, rootView.GetURI() + "/Managers/"+mgrName+"/Attributes", ch)
+		attributes.AddAggregate(ctx, vw, rootView.GetURI()+"/Managers/"+mgrName+"/Attributes", ch)
 
 		//*********************************************************************
 		// Create CHASSIS objects for CMC.Integrated.N
@@ -190,7 +189,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		ardumper, _ = attributes.NewController(ctx, chasModel, []string{mgrName}, ch, eb, ew)
 
 		vw = view.New(
-			view.WithURI(rootView.GetURI() + "/Chassis/"+mgrName),
+			view.WithURI(rootView.GetURI()+"/Chassis/"+mgrName),
 			view.WithModel("default", chasModel),
 			view.WithController("ar_mapper", armapper),
 			view.WithController("ar_dump", ardumper),
@@ -200,7 +199,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 
 		// add the aggregate to the view tree
 		chasCMCIntegrated.AddAggregate(ctx, chasLogger, vw, ch)
-		attributes.AddAggregate(ctx, vw, rootView.GetURI() + "/Chassis/"+mgrName+"/Attributes", ch)
+		attributes.AddAggregate(ctx, vw, rootView.GetURI()+"/Chassis/"+mgrName+"/Attributes", ch)
 	}
 
 	chasName := "System.Chassis.1"
@@ -209,9 +208,9 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		// ************************************************************************
 		// CHASSIS System.Chassis.1
 		// ************************************************************************
-		chasModel, _ := generic_chassis.New(
-			generic_chassis.WithUniqueName(chasName),
-			generic_chassis.AddManagedBy(managers[0].GetURI()),
+		chasModel := model.New(
+			model.UpdateProperty("unique_name", chasName),
+			model.UpdateProperty("managed_by", []map[string]string{{"@odata.id": managers[0].GetURI()}}),
 			model.UpdateProperty("asset_tag", ""),
 			model.UpdateProperty("serial", ""),
 			model.UpdateProperty("part_number", ""),
@@ -232,7 +231,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		ardumper, _ := attributes.NewController(ctx, chasModel, []string{chasName}, ch, eb, ew)
 
 		vw := view.New(
-			view.WithURI(rootView.GetURI() + "/Chassis/"+chasName),
+			view.WithURI(rootView.GetURI()+"/Chassis/"+chasName),
 			view.WithModel("default", chasModel),
 			view.WithController("ar_mapper", armapper),
 			view.WithController("ar_dump", ardumper),
@@ -242,7 +241,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 
 		// Create the .../Attributes URI. Attributes are stored in the attributes property of the chasModel
 		system_chassis.AddAggregate(ctx, chasLogger, vw, ch, eb, ew)
-		attributes.AddAggregate(ctx, vw, rootView.GetURI() + "/Chassis/"+chasName+"/Attributes", ch)
+		attributes.AddAggregate(ctx, vw, rootView.GetURI()+"/Chassis/"+chasName+"/Attributes", ch)
 	}
 
 	//*********************************************************************
@@ -260,7 +259,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	updateFns = append(updateFns, armapper.ConfigChangedFn)
 
 	vw := view.New(
-		view.WithURI(rootView.GetURI() + "/Chassis/"+chasName+"/Power"),
+		view.WithURI(rootView.GetURI()+"/Chassis/"+chasName+"/Power"),
 		view.WithModel("default", powerModel),
 		view.WithController("ar_mapper", armapper),
 	)
@@ -294,7 +293,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		ardumper, _ := attributes.NewController(ctx, psuModel, []string{psuName}, ch, eb, ew)
 
 		vw := view.New(
-			view.WithURI(rootView.GetURI() + "/Chassis/"+chasName+"/Power"+psuName),
+			view.WithURI(rootView.GetURI()+"/Chassis/"+chasName+"/Power/PowerSupplies/"+psuName),
 			view.WithModel("default", powerModel),
 			view.WithController("ar_mapper", armapper),
 			view.WithController("ar_dumper", ardumper),
@@ -326,7 +325,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	updateFns = append(updateFns, armapper.ConfigChangedFn)
 
 	thermalView := view.New(
-		view.WithURI(rootView.GetURI() + "/Chassis/"+chasName+"/Thermal"),
+		view.WithURI(rootView.GetURI()+"/Chassis/"+chasName+"/Thermal"),
 		view.WithModel("default", thermalModel),
 		view.WithController("ar_mapper", armapper),
 	)
@@ -362,7 +361,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		ardumper, _ := attributes.NewController(ctx, fanModel, []string{fanName}, ch, eb, ew)
 
 		v := view.New(
-			view.WithURI(rootView.GetURI() + "/Chassis/"+chasName+"/Sensors/Fans/"+fanName),
+			view.WithURI(rootView.GetURI()+"/Chassis/"+chasName+"/Sensors/Fans/"+fanName),
 			view.WithModel("default", fanModel),
 			view.WithController("ar_mapper", armapper),
 			view.WithController("ar_dumper", ardumper),
@@ -389,9 +388,9 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		"IOM.Slot.C2",
 	} {
 		iomLogger := chasLogger.New("module", "Chassis/"+iomName, "module", "Chassis/IOM.Slot")
-		iomModel, _ := generic_chassis.New(
-			generic_chassis.WithUniqueName(iomName),
-			generic_chassis.AddManagedBy(managers[0].GetURI()),
+		iomModel := model.New(
+			model.UpdateProperty("unique_name", iomName),
+			model.UpdateProperty("managed_by", []map[string]string{{"@odata.id": managers[0].GetURI()}}),
 			model.UpdateProperty("service_tag", ""),
 			model.UpdateProperty("asset_tag", ""),
 			model.UpdateProperty("description", ""),
@@ -412,7 +411,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		ardumper, _ := attributes.NewController(ctx, iomModel, []string{iomName}, ch, eb, ew)
 
 		iomView := view.New(
-			view.WithURI(rootView.GetURI() + "/Chassis/"+iomName),
+			view.WithURI(rootView.GetURI()+"/Chassis/"+iomName),
 			view.WithModel("default", iomModel),
 			view.WithController("ar_mapper", armapper),
 			view.WithController("ar_dumper", ardumper),
@@ -420,7 +419,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		)
 		domain.RegisterPlugin(func() domain.Plugin { return iomView })
 		iom_chassis.AddAggregate(ctx, iomLogger, iomView, ch, eb, ew)
-		attributes.AddAggregate(ctx, iomView, rootView.GetURI() + "/Chassis/"+iomName+"/Attributes", ch)
+		attributes.AddAggregate(ctx, iomView, rootView.GetURI()+"/Chassis/"+iomName+"/Attributes", ch)
 	}
 
 	for _, sledName := range []string{
@@ -434,9 +433,9 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		"System.Modular.8", "System.Modular.8a", "System.Modular.8b",
 	} {
 		sledLogger := chasLogger.New("module", "Chassis/System.Modular", "module", "Chassis/"+sledName)
-		sledModel, _ := generic_chassis.New(
-			generic_chassis.WithUniqueName(sledName),
-			generic_chassis.AddManagedBy(managers[0].GetURI()),
+		sledModel := model.New(
+			model.UpdateProperty("unique_name", sledName),
+			model.UpdateProperty("managed_by", []map[string]string{{"@odata.id": managers[0].GetURI()}}),
 			model.UpdateProperty("service_tag", ""),
 			model.UpdateProperty("power_state", ""),
 			model.UpdateProperty("chassis_type", ""),
@@ -451,7 +450,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		ardumper, _ := attributes.NewController(ctx, sledModel, []string{sledName}, ch, eb, ew)
 
 		sledView := view.New(
-			view.WithURI(rootView.GetURI() + "/Chassis/"+sledName),
+			view.WithURI(rootView.GetURI()+"/Chassis/"+sledName),
 			view.WithModel("default", sledModel),
 			view.WithController("ar_mapper", armapper),
 			view.WithController("ar_dumper", ardumper),
@@ -459,8 +458,28 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		)
 		domain.RegisterPlugin(func() domain.Plugin { return sledView })
 		sled_chassis.AddAggregate(ctx, sledLogger, sledView, ch, eb, ew)
-		attributes.AddAggregate(ctx, sledView, rootView.GetURI() + "/Chassis/"+sledName+"/Attributes", ch)
+		attributes.AddAggregate(ctx, sledView, rootView.GetURI()+"/Chassis/"+sledName+"/Attributes", ch)
 	}
+
+	// Software inventory
+	invModels := map[string]*model.Model{}
+	for _, invName := range []string{
+		"PSU.Slot.1", "PSU.Slot.2", "PSU.Slot.3",
+		"PSU.Slot.4", "PSU.Slot.5", "PSU.Slot.6",
+	} {
+		invLogger := logger.New("module", "UpdateService")
+		invModel := model.New(
+			model.UpdateProperty("unique_name", invName),
+		)
+		armapper, _ := ar_mapper.New(ctx, invLogger, invModel, "UpdateService/"+invName, ch, eb, ew)
+		updateFns = append(updateFns, armapper.ConfigChangedFn)
+		invModels[invName] = invModel
+	}
+
+	// we get mappings of inventory for each of the above
+	// Have controller set bitmask for full inventory received
+	// once we get property notification that full inventory is done, run through all of them and create swinventory maps (scratch?)
+	// attach those swinventory maps to swinventory models, views
 
 	// VIPER Config:
 	// pull the config from the YAML file to populate some static config options

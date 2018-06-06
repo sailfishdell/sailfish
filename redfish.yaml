@@ -11,6 +11,9 @@ main:
             - name: "ec"
               level: "warn"
 
+            - name: "testview"
+              level: "debug"
+
             # all of the loggers below support a heirarchical arrangement where
             # you can turn on debugging for all modules with (eg.)
             # "Managers/CMC.Integrated", and you can selectively enable
