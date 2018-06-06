@@ -6,7 +6,7 @@ type propgetterokunlocked interface {
 	GetPropertyOkUnlocked(string) (interface{}, bool)
 }
 
-// MustProperty is equivalent to GetProperty with the exception that it will
+// MustPropertyUnlocked is equivalent to GetProperty with the exception that it will
 // panic if the property has not already been set. Use for mandatory properties.
 // This is the unlocked version of this function.
 func MustPropertyUnlocked(s propgetterokunlocked, name string) (ret interface{}) {
