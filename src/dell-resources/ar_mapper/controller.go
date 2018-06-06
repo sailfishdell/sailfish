@@ -29,16 +29,18 @@ type ARMappingController struct {
 	mappingsMu sync.RWMutex
 	logger     log.Logger
 	name       string
+	mdl        *model.Model
 
 	eb eh.EventBus
 }
 
-func New(ctx context.Context, logger log.Logger, m *model.Model, name string, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) (*ARMappingController, error) {
+func New(ctx context.Context, logger log.Logger, m *model.Model, name string, fqdd string, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) (*ARMappingController, error) {
 	c := &ARMappingController{
 		mappings: []mapping{},
 		name:     name,
 		logger:   logger,
 		eb:       eb,
+		mdl:      m,
 	}
 
 	// stream processor for action events
@@ -53,7 +55,7 @@ func New(ctx context.Context, logger log.Logger, m *model.Model, name string, ch
 			defer c.mappingsMu.RUnlock()
 			logger.Debug("Process Event", "data", data)
 			for _, mapping := range c.mappings {
-				if data.FQDD != mapping.FQDD {
+				if data.Name != mapping.Name {
 					continue
 				}
 				if data.Group != mapping.Group {
@@ -62,11 +64,22 @@ func New(ctx context.Context, logger log.Logger, m *model.Model, name string, ch
 				if data.Index != mapping.Index {
 					continue
 				}
-				if data.Name != mapping.Name {
-					continue
+				if data.FQDD != mapping.FQDD {
+					// Check for FQDD wildcard
+					// mapping FQDD field equal to "{FQDD}" means use wildcard match
+					if mapping.FQDD != "{FQDD}" {
+						logger.Info("mismatch fqdd, BUT NOT WILDCARD", "data.fqdd", data.FQDD, "mapping.fqdd", mapping.FQDD, "fqdd", fqdd)
+						continue
+					}
+
+					// and in that case, check against the fqdd passed in instead
+					if data.FQDD != fqdd {
+						logger.Info("mismatch fqdd, BUT data.FQDD != fqdd", "data.fqdd", data.FQDD, "mapping.fqdd", mapping.FQDD, "fqdd", fqdd)
+						continue
+					}
 				}
 
-				logger.Info("Updating Model", "mapping", mapping, "data", data)
+				logger.Info("Updating Model", "mapping", mapping, "property", mapping.Property, "data", data)
 				m.UpdateProperty(mapping.Property, data.Value)
 			}
 		} else {
@@ -118,7 +131,17 @@ func (c *ARMappingController) ConfigChangedFn(ctx context.Context, cfg *viper.Vi
 	}
 	c.logger.Info("updating mappings", "mappings", c.mappings)
 
+	c.createModelProperties(ctx)
 	go c.initialStartupBootstrap(ctx)
+}
+
+func (c *ARMappingController) createModelProperties(ctx context.Context) {
+	for _, m := range c.mappings {
+		if _, ok := c.mdl.GetPropertyOkUnlocked(m.Property); !ok {
+			c.logger.Info("Model property does not exist, creating: "+m.Property, "property", m.Property, "FQDD", m.FQDD)
+			c.mdl.UpdateProperty(m.Property, nil)
+		}
+	}
 }
 
 //

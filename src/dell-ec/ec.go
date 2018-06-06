@@ -82,9 +82,9 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		model.UpdateProperty("unique_name", "test_unique_name"),
 		model.UpdateProperty("name", "name"),
 		model.UpdateProperty("description", "description"),
-		model.UpdateProperty("model", "model"),
 	)
-	armapper, _ := ar_mapper.New(ctx, testLogger, testModel, "test/testview", ch, eb, ew)
+
+	armapper, _ := ar_mapper.New(ctx, testLogger, testModel, "test/testview", "CMC.Integrated.1", ch, eb, ew)
 	updateFns = append(updateFns, armapper.ConfigChangedFn)
 	testView := view.New(
 		view.WithModel("default", testModel),
@@ -110,7 +110,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		model.UpdateProperty("session_timeout", 30))
 	// the controller is what updates the model when ar entries change, also
 	// handles patch from redfish
-	armapper, _ = ar_mapper.New(ctx, sessionLogger, sessionModel, "SessionService", ch, eb, ew)
+	armapper, _ = ar_mapper.New(ctx, sessionLogger, sessionModel, "SessionService", "", ch, eb, ew)
 	updateFns = append(updateFns, armapper.ConfigChangedFn)
 	sessionView := view.New(
 		view.WithModel("default", sessionModel),
@@ -134,18 +134,11 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		mgrLogger := mgrLogger.New("module", "Managers/"+mgrName, "module", "Managers/CMC.Integrated")
 		mdl := model.New(
 			mgrCMCIntegrated.WithUniqueName(mgrName),
-			model.UpdateProperty("asset_tag", ""),
-			model.UpdateProperty("serial", ""),
-			model.UpdateProperty("part_number", ""),
-			model.UpdateProperty("chassis_type", ""),
-			model.UpdateProperty("model", ""),
-			model.UpdateProperty("manufacturer", ""),
-			model.UpdateProperty("name", ""),
 			model.UpdateProperty("attributes", map[string]map[string]map[string]interface{}{}),
 		)
 		// the controller is what updates the model when ar entries change,
 		// also handles patch from redfish
-		armapper, _ := ar_mapper.New(ctx, mgrLogger, mdl, "Managers/"+mgrName, ch, eb, ew)
+		armapper, _ := ar_mapper.New(ctx, mgrLogger, mdl, "Managers/CMC.Integrated", mgrName, ch, eb, ew)
 		updateFns = append(updateFns, armapper.ConfigChangedFn)
 
 		// This controller will populate 'attributes' property with AR entries matching this FQDD ('mgrName')
@@ -171,18 +164,11 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		chasLogger := logger.New("module", "Chassis/"+mgrName, "module", "Chassis/CMC.Integrated")
 		chasModel, _ := mgrCMCIntegrated.New(
 			mgrCMCIntegrated.WithUniqueName(mgrName),
-			model.UpdateProperty("asset_tag", ""),
-			model.UpdateProperty("serial", ""),
-			model.UpdateProperty("part_number", ""),
-			model.UpdateProperty("chassis_type", ""),
-			model.UpdateProperty("model", ""),
-			model.UpdateProperty("manufacturer", ""),
-			model.UpdateProperty("name", ""),
 			model.UpdateProperty("attributes", map[string]map[string]map[string]interface{}{}),
 		)
 		// the controller is what updates the model when ar entries change,
-		// also handles patch from redfish
-		armapper, _ = ar_mapper.New(ctx, chasLogger, chasModel, "Managers/"+mgrName, ch, eb, ew)
+		// also handles patch from redfish... re-use the same mappings from Managers
+		armapper, _ = ar_mapper.New(ctx, chasLogger, chasModel, "Managers/CMC.Integrated", mgrName, ch, eb, ew)
 		updateFns = append(updateFns, armapper.ConfigChangedFn)
 
 		// This controller will populate 'attributes' property with AR entries matching this FQDD ('mgrName')
@@ -211,20 +197,11 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		chasModel := model.New(
 			model.UpdateProperty("unique_name", chasName),
 			model.UpdateProperty("managed_by", []map[string]string{{"@odata.id": managers[0].GetURI()}}),
-			model.UpdateProperty("asset_tag", ""),
-			model.UpdateProperty("serial", ""),
-			model.UpdateProperty("part_number", ""),
-			model.UpdateProperty("chassis_type", ""),
-			model.UpdateProperty("model", ""),
-			model.UpdateProperty("manufacturer", ""),
-			model.UpdateProperty("name", ""),
-			model.UpdateProperty("description", ""),
-			model.UpdateProperty("power_state", ""),
 			model.UpdateProperty("attributes", map[string]map[string]map[string]interface{}{}),
 		)
 		// the controller is what updates the model when ar entries change,
 		// also handles patch from redfish
-		armapper, _ := ar_mapper.New(ctx, chasLogger, chasModel, "Chassis/"+chasName, ch, eb, ew)
+		armapper, _ := ar_mapper.New(ctx, chasLogger, chasModel, "Chassis/System.Chassis", chasName, ch, eb, ew)
 		updateFns = append(updateFns, armapper.ConfigChangedFn)
 
 		// This controller will populate 'attributes' property with AR entries matching this FQDD ('chasName')
@@ -255,7 +232,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	)
 	// the controller is what updates the model when ar entries change,
 	// also handles patch from redfish
-	armapper, _ = ar_mapper.New(ctx, powerLogger, powerModel, "Chassis/"+chasName+"/Power", ch, eb, ew)
+	armapper, _ = ar_mapper.New(ctx, powerLogger, powerModel, "Chassis/System.Chassis/Power", chasName, ch, eb, ew)
 	updateFns = append(updateFns, armapper.ConfigChangedFn)
 
 	vw := view.New(
@@ -277,16 +254,11 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			model.UpdateProperty("unique_name", psuName),
 			model.UpdateProperty("unique_id", psuName),
 			model.UpdateProperty("name", psuName),
-			model.UpdateProperty("capacity_watts", "INVALID"),
-			model.UpdateProperty("firmware_version", "NOT INVENTORIED"),
-			model.UpdateProperty("component_id", "INVALID"),
-			model.UpdateProperty("line_input_voltage", ""),
-			model.UpdateProperty("input_current", ""),
 			model.UpdateProperty("attributes", map[string]map[string]map[string]interface{}{}),
 		)
 		// the controller is what updates the model when ar entries change,
 		// also handles patch from redfish
-		armapper, _ := ar_mapper.New(ctx, psuLogger, psuModel, "PowerSupply/"+psuName, ch, eb, ew)
+		armapper, _ := ar_mapper.New(ctx, psuLogger, psuModel, "PowerSupply/PSU.Slot", psuName, ch, eb, ew)
 		updateFns = append(updateFns, armapper.ConfigChangedFn)
 
 		// This controller will populate 'attributes' property with AR entries matching this FQDD ('psuName')
@@ -321,7 +293,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	)
 	// the controller is what updates the model when ar entries change,
 	// also handles patch from redfish
-	armapper, _ = ar_mapper.New(ctx, thermalLogger, thermalModel, "Chassis/"+chasName+"/Thermal", ch, eb, ew)
+	armapper, _ = ar_mapper.New(ctx, thermalLogger, thermalModel, "Chassis/System.Chassis/Thermal", chasName, ch, eb, ew)
 	updateFns = append(updateFns, armapper.ConfigChangedFn)
 
 	thermalView := view.New(
@@ -342,19 +314,11 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 
 		fanModel := model.New(
 			model.UpdateProperty("unique_id", fanName),
-			model.UpdateProperty("name", "UNSET"),
-			model.UpdateProperty("firmware_version", "UNSET"),
-			model.UpdateProperty("hardware_version", "UNSET"),
-			model.UpdateProperty("reading", "UNSET"),
-			model.UpdateProperty("reading_units", "UNSET"),
-			model.UpdateProperty("oem_reading", "UNSET"),
-			model.UpdateProperty("oem_reading_units", "UNSET"),
-			model.UpdateProperty("graphics_uri", "UNSET"),
 			model.UpdateProperty("attributes", map[string]map[string]map[string]interface{}{}),
 		)
 		// the controller is what updates the model when ar entries change,
 		// also handles patch from redfish
-		armapper, _ := ar_mapper.New(ctx, fanLogger, fanModel, "Fans/"+fanName, ch, eb, ew)
+		armapper, _ := ar_mapper.New(ctx, fanLogger, fanModel, "Fans/Fan.Slot", fanName, ch, eb, ew)
 		updateFns = append(updateFns, armapper.ConfigChangedFn)
 
 		// This controller will populate 'attributes' property with AR entries matching this FQDD ('fanName')
@@ -391,20 +355,10 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		iomModel := model.New(
 			model.UpdateProperty("unique_name", iomName),
 			model.UpdateProperty("managed_by", []map[string]string{{"@odata.id": managers[0].GetURI()}}),
-			model.UpdateProperty("service_tag", ""),
-			model.UpdateProperty("asset_tag", ""),
-			model.UpdateProperty("description", ""),
-			model.UpdateProperty("power_state", ""),
-			model.UpdateProperty("serial", ""),
-			model.UpdateProperty("part_number", ""),
-			model.UpdateProperty("chassis_type", ""),
-			model.UpdateProperty("model", ""),
-			model.UpdateProperty("name", ""),
-			model.UpdateProperty("manufacturer", ""),
 		)
 		// the controller is what updates the model when ar entries change,
 		// also handles patch from redfish
-		armapper, _ := ar_mapper.New(ctx, iomLogger, iomModel, "Mangaers/"+iomName, ch, eb, ew)
+		armapper, _ := ar_mapper.New(ctx, iomLogger, iomModel, "Chassis/IOM.Slot", iomName, ch, eb, ew)
 		updateFns = append(updateFns, armapper.ConfigChangedFn)
 
 		// This controller will populate 'attributes' property with AR entries matching this FQDD ('iomName')
@@ -436,14 +390,8 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		sledModel := model.New(
 			model.UpdateProperty("unique_name", sledName),
 			model.UpdateProperty("managed_by", []map[string]string{{"@odata.id": managers[0].GetURI()}}),
-			model.UpdateProperty("service_tag", ""),
-			model.UpdateProperty("power_state", ""),
-			model.UpdateProperty("chassis_type", ""),
-			model.UpdateProperty("model", ""),
-			model.UpdateProperty("manufacturer", ""),
-			model.UpdateProperty("serial", ""),
 		)
-		armapper, _ := ar_mapper.New(ctx, sledLogger, sledModel, "Chassis/"+sledName, ch, eb, ew)
+		armapper, _ := ar_mapper.New(ctx, sledLogger, sledModel, "Chassis/System.Modular", sledName, ch, eb, ew)
 		updateFns = append(updateFns, armapper.ConfigChangedFn)
 
 		// This controller will populate 'attributes' property with AR entries matching this FQDD ('sledName')
@@ -471,7 +419,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		invModel := model.New(
 			model.UpdateProperty("unique_name", invName),
 		)
-		armapper, _ := ar_mapper.New(ctx, invLogger, invModel, "UpdateService/"+invName, ch, eb, ew)
+		armapper, _ := ar_mapper.New(ctx, invLogger, invModel, "UpdateService", "", ch, eb, ew)
 		updateFns = append(updateFns, armapper.ConfigChangedFn)
 		invModels[invName] = invModel
 	}

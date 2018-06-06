@@ -3,17 +3,9 @@ main:
         # debug, info, warn, error, crit
         Level: "warn"
         EnableStderr: true
+        # uncomment to log to a file
         #FileName: "./out.log"
         ModulesToEnable:
-            - name: "PATCH"
-              level: "debug"
-
-            - name: "ec"
-              level: "warn"
-
-            - name: "testview"
-              level: "debug"
-
             # all of the loggers below support a heirarchical arrangement where
             # you can turn on debugging for all modules with (eg.)
             # "Managers/CMC.Integrated", and you can selectively enable
@@ -24,19 +16,29 @@ main:
               level: "info"
 
             - name: "Chassis/CMC.Integrated"
-              level: "info"
+              level: "warn"
 
             - name: "Chassis/System.Modular"
-              level: "info"
+              level: "warn"
 
             - name: "Chassis/IOM.Slot"
-              level: "info"
+              level: "warn"
 
             - name: "Chassis/System.Chassis/Power"
-              level: "info"
+              level: "warn"
 
             - name: "Chassis/System.Chassis/Thermal"
-              level: "info"
+              level: "warn"
+
+            # The loggers below are the remaining, non-heirarchical loggers
+            - name: "PATCH"
+              level: "debug"
+
+            - name: "ec"
+              level: "warn"
+
+            - name: "testview"
+              level: "warn"
 
             - name: "internal_commands"
               level: "warn"
@@ -79,403 +81,75 @@ session:
 
 mappings:
     test/testview:
-        - {Property: "model",                    FQDD: "CMC.Integrated.1", Group: "Info", Index: "1", Name: "Name" }
+        - {Property: "model",                    FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Name" }
+    #    - {Property: "model",                    FQDD: "CMC.Integrated.1", Group: "Info", Index: "1", Name: "Name" }
 
     # map AR entries to back end model
-    PSU/PSU.Slot.1:
-        - {Property: "firmware_version",    FQDD: "PSU.Slot.1", Group: "Info", Index: "1", Name: "FirmwareVersion" }
-        - {Property: "capacity_watts",      FQDD: "PSU.Slot.1", Group: "Info", Index: "1", Name: "Capacity" }
-        - {Property: "component_id",        FQDD: "PSU.Slot.1", Group: "Info", Index: "1", Name: "ComponentID" }
+    PSU/PSU.Slot:
+        - {Property: "firmware_version",    FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "FirmwareVersion" }
+        - {Property: "capacity_watts",      FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Capacity" }
+        - {Property: "component_id",        FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "ComponentID" }
         # looks like these are not in AR
         #- {Property: "line_input_voltage",  FQDD: "PSU.Slot.1", Group: "Info", Index: "1", Name: "TODO" }
         #- {Property: "input_current",       FQDD: "PSU.Slot.1", Group: "Info", Index: "1", Name: "TODO" }
-    PSU/PSU.Slot.2:
-        - {Property: "firmware_version",    FQDD: "PSU.Slot.2", Group: "Info", Index: "1", Name: "FirmwareVersion" }
-        - {Property: "capacity_watts",      FQDD: "PSU.Slot.2", Group: "Info", Index: "1", Name: "Capacity" }
-        - {Property: "component_id",        FQDD: "PSU.Slot.2", Group: "Info", Index: "1", Name: "ComponentID" }
-    PSU/PSU.Slot.3:
-        - {Property: "firmware_version",    FQDD: "PSU.Slot.3", Group: "Info", Index: "1", Name: "FirmwareVersion" }
-        - {Property: "capacity_watts",      FQDD: "PSU.Slot.3", Group: "Info", Index: "1", Name: "Capacity" }
-        - {Property: "component_id",        FQDD: "PSU.Slot.3", Group: "Info", Index: "1", Name: "ComponentID" }
-    PSU/PSU.Slot.4:
-        - {Property: "firmware_version",    FQDD: "PSU.Slot.4", Group: "Info", Index: "1", Name: "FirmwareVersion" }
-        - {Property: "capacity_watts",      FQDD: "PSU.Slot.4", Group: "Info", Index: "1", Name: "Capacity" }
-        - {Property: "component_id",        FQDD: "PSU.Slot.4", Group: "Info", Index: "1", Name: "ComponentID" }
-    PSU/PSU.Slot.5:
-        - {Property: "firmware_version",    FQDD: "PSU.Slot.5", Group: "Info", Index: "1", Name: "FirmwareVersion" }
-        - {Property: "capacity_watts",      FQDD: "PSU.Slot.5", Group: "Info", Index: "1", Name: "Capacity" }
-        - {Property: "component_id",        FQDD: "PSU.Slot.5", Group: "Info", Index: "1", Name: "ComponentID" }
-    PSU/PSU.Slot.6:
-        - {Property: "firmware_version",    FQDD: "PSU.Slot.6", Group: "Info", Index: "1", Name: "FirmwareVersion" }
-        - {Property: "capacity_watts",      FQDD: "PSU.Slot.6", Group: "Info", Index: "1", Name: "Capacity" }
-        - {Property: "component_id",        FQDD: "PSU.Slot.6", Group: "Info", Index: "1", Name: "ComponentID" }
+        #
+    Managers/CMC.Integrated:
+        - {Property: "firmware_version",        FQDD: "{FQDD}", Group: "FWInventory", Index: "1", Name: "Version" }
+        - {Property: "name",                    FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Name" }
+        - {Property: "description",             FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Description" }
+        - {Property: "health_state",            FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "State" }
+        - {Property: "asset_tag",               FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "AssetTag" }
+        - {Property: "serial",                  FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "SerialNumber" }
+        - {Property: "part_number",             FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "PartNumber" }
+        - {Property: "chassis_type",            FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "ChassisType" }
+        - {Property: "model",                   FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Model" }
+        - {Property: "manufacturer",            FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Manufacturer" }
+        - {Property: "redundancy_mode",         FQDD: "{FQDD}", Group: "Redundancy", Index: "1", Name: "Mode" }
+        - {Property: "redundancy_health_state", FQDD: "{FQDD}", Group: "Redundancy", Index: "1", Name: "State" }
+        - {Property: "redundancy_min",          FQDD: "{FQDD}", Group: "Redundancy", Index: "1", Name: "MinNumNeeded" }
+        - {Property: "redundancy_max",          FQDD: "{FQDD}", Group: "Redundancy", Index: "1", Name: "MaxNumSupported" }
 
-    Managers/CMC.Integrated.1:
-        - {Property: "firmware_version",        FQDD: "CMC.Integrated.1", Group: "FWInventory", Index: "1", Name: "Version" }
-        - {Property: "name",                    FQDD: "CMC.Integrated.1", Group: "Info", Index: "1", Name: "Name" }
-        - {Property: "description",             FQDD: "CMC.Integrated.1", Group: "Info", Index: "1", Name: "Description" }
-        - {Property: "health_state",            FQDD: "CMC.Integrated.1", Group: "Info", Index: "1", Name: "State" }
-        - {Property: "asset_tag",               FQDD: "CMC.Integrated.1", Group: "Info", Index: "1", Name: "AssetTag" }
-        - {Property: "serial",                  FQDD: "CMC.Integrated.1", Group: "Info", Index: "1", Name: "SerialNumber" }
-        - {Property: "part_number",             FQDD: "CMC.Integrated.1", Group: "Info", Index: "1", Name: "PartNumber" }
-        - {Property: "chassis_type",            FQDD: "CMC.Integrated.1", Group: "Info", Index: "1", Name: "ChassisType" }
-        - {Property: "model",                   FQDD: "CMC.Integrated.1", Group: "Info", Index: "1", Name: "Model" }
-        - {Property: "manufacturer",            FQDD: "CMC.Integrated.1", Group: "Info", Index: "1", Name: "Manufacturer" }
-        - {Property: "redundancy_mode",         FQDD: "CMC.Integrated.1", Group: "Redundancy", Index: "1", Name: "Mode" }
-        - {Property: "redundancy_health_state", FQDD: "CMC.Integrated.1", Group: "Redundancy", Index: "1", Name: "State" }
-        - {Property: "redundancy_min",          FQDD: "CMC.Integrated.1", Group: "Redundancy", Index: "1", Name: "MinNumNeeded" }
-        - {Property: "redundancy_max",          FQDD: "CMC.Integrated.1", Group: "Redundancy", Index: "1", Name: "MaxNumSupported" }
+    Chassis/IOM.Slot:
+        - {Property: "asset_tag",    FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "AssetTag" }
+        - {Property: "description",  FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Description" }
+        - {Property: "power_state",  FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "PowerState" }
+        - {Property: "serial",       FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "SerialNumber" }
+        - {Property: "part_number",  FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "PartNumber" }
+        - {Property: "chassis_type", FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "ChassisType" }
+        - {Property: "model",        FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Model" }
+        - {Property: "name",         FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Name" }
+        - {Property: "manufacturer", FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Manufacturer" }
+        - {Property: "service_tag",  FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "ServiceTag" }
 
-    Managers/CMC.Integrated.2:
-        - {Property: "firmware_version",        FQDD: "CMC.Integrated.2", Group: "FWInventory", Index: "1", Name: "Version" }
-        - {Property: "name",                    FQDD: "CMC.Integrated.2", Group: "Info", Index: "1", Name: "Name" }
-        - {Property: "description",             FQDD: "CMC.Integrated.2", Group: "Info", Index: "1", Name: "Description" }
-        - {Property: "health_state",            FQDD: "CMC.Integrated.2", Group: "Info", Index: "1", Name: "State" }
-        - {Property: "asset_tag",               FQDD: "CMC.Integrated.2", Group: "Info", Index: "1", Name: "AssetTag" }
-        - {Property: "serial",                  FQDD: "CMC.Integrated.2", Group: "Info", Index: "1", Name: "SerialNumber" }
-        - {Property: "part_number",             FQDD: "CMC.Integrated.2", Group: "Info", Index: "1", Name: "PartNumber" }
-        - {Property: "chassis_type",            FQDD: "CMC.Integrated.2", Group: "Info", Index: "1", Name: "ChassisType" }
-        - {Property: "model",                   FQDD: "CMC.Integrated.2", Group: "Info", Index: "1", Name: "Model" }
-        - {Property: "manufacturer",            FQDD: "CMC.Integrated.2", Group: "Info", Index: "1", Name: "Manufacturer" }
-        - {Property: "redundancy_mode",         FQDD: "CMC.Integrated.2", Group: "Redundancy", Index: "1", Name: "Mode" }
-        - {Property: "redundancy_health_state", FQDD: "CMC.Integrated.2", Group: "Redundancy", Index: "1", Name: "State" }
-        - {Property: "redundancy_min",          FQDD: "CMC.Integrated.2", Group: "Redundancy", Index: "1", Name: "MinNumNeeded" }
-        - {Property: "redundancy_max",          FQDD: "CMC.Integrated.2", Group: "Redundancy", Index: "1", Name: "MaxNumSupported" }
+    Chassis/System.Chassis:
+        # no mappings for now: placeholder
 
+    Chassis/System.Modular:
+        - {Property: "service_tag",  FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "ServiceTag" }
+        - {Property: "power_state",  FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "PowerState" }
+        - {Property: "chassis_type", FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "ChassisType" }
+        - {Property: "model",        FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Model" }
+        - {Property: "manufacturer", FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Manufacturer" }
+        - {Property: "serial",       FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "SerialNumber" }
 
-    Chassis/IOM.Slot.A1:
-        - {Property: "asset_tag",    FQDD: "IOM.Slot.A1", Group: "Info", Index: "1", Name: "AssetTag" }
-        - {Property: "description",  FQDD: "IOM.Slot.A1", Group: "Info", Index: "1", Name: "Description" }
-        - {Property: "power_state",  FQDD: "IOM.Slot.A1", Group: "Info", Index: "1", Name: "PowerState" }
-        - {Property: "serial",       FQDD: "IOM.Slot.A1", Group: "Info", Index: "1", Name: "SerialNumber" }
-        - {Property: "part_number",  FQDD: "IOM.Slot.A1", Group: "Info", Index: "1", Name: "PartNumber" }
-        - {Property: "chassis_type", FQDD: "IOM.Slot.A1", Group: "Info", Index: "1", Name: "ChassisType" }
-        - {Property: "model",        FQDD: "IOM.Slot.A1", Group: "Info", Index: "1", Name: "Model" }
-        - {Property: "name",         FQDD: "IOM.Slot.A1", Group: "Info", Index: "1", Name: "Name" }
-        - {Property: "manufacturer", FQDD: "IOM.Slot.A1", Group: "Info", Index: "1", Name: "Manufacturer" }
-        - {Property: "service_tag",  FQDD: "IOM.Slot.A1", Group: "Info", Index: "1", Name: "ServiceTag" }
+    Chassis/System.Chassis/Power:
+        # no mappings for now: placeholder
 
+    Chassis/System.Chassis/Thermal:
+        # no mappings for now: placeholder
 
-    Chassis/IOM.Slot.A1a:
-        - {Property: "asset_tag",    FQDD: "IOM.Slot.A1a", Group: "Info", Index: "1", Name: "AssetTag" }
-        - {Property: "description",  FQDD: "IOM.Slot.A1a", Group: "Info", Index: "1", Name: "Description" }
-        - {Property: "power_state",  FQDD: "IOM.Slot.A1a", Group: "Info", Index: "1", Name: "PowerState" }
-        - {Property: "serial",       FQDD: "IOM.Slot.A1a", Group: "Info", Index: "1", Name: "SerialNumber" }
-        - {Property: "part_number",  FQDD: "IOM.Slot.A1a", Group: "Info", Index: "1", Name: "PartNumber" }
-        - {Property: "chassis_type", FQDD: "IOM.Slot.A1a", Group: "Info", Index: "1", Name: "ChassisType" }
-        - {Property: "model",        FQDD: "IOM.Slot.A1a", Group: "Info", Index: "1", Name: "Model" }
-        - {Property: "name",         FQDD: "IOM.Slot.A1a", Group: "Info", Index: "1", Name: "Name" }
-        - {Property: "manufacturer", FQDD: "IOM.Slot.A1a", Group: "Info", Index: "1", Name: "Manufacturer" }
-        - {Property: "service_tag",  FQDD: "IOM.Slot.A1a", Group: "Info", Index: "1", Name: "ServiceTag" }
+    PowerSupply/PSU.Slot:
+        # no mappings for now: placeholder
 
+    Fans/Fan.Slot:
+        # no mappings for now: placeholder
+        
+    Chassis/IOM.Slot:
+        # no mappings for now: placeholder
+        
+    Chassis/System.Modular:
+        # no mappings for now: placeholder
 
-    Chassis/IOM.Slot.A1b:
-        - {Property: "asset_tag",    FQDD: "IOM.Slot.A1b", Group: "Info", Index: "1", Name: "AssetTag" }
-        - {Property: "description",  FQDD: "IOM.Slot.A1b", Group: "Info", Index: "1", Name: "Description" }
-        - {Property: "power_state",  FQDD: "IOM.Slot.A1b", Group: "Info", Index: "1", Name: "PowerState" }
-        - {Property: "serial",       FQDD: "IOM.Slot.A1b", Group: "Info", Index: "1", Name: "SerialNumber" }
-        - {Property: "part_number",  FQDD: "IOM.Slot.A1b", Group: "Info", Index: "1", Name: "PartNumber" }
-        - {Property: "chassis_type", FQDD: "IOM.Slot.A1b", Group: "Info", Index: "1", Name: "ChassisType" }
-        - {Property: "model",        FQDD: "IOM.Slot.A1b", Group: "Info", Index: "1", Name: "Model" }
-        - {Property: "name",         FQDD: "IOM.Slot.A1b", Group: "Info", Index: "1", Name: "Name" }
-        - {Property: "manufacturer", FQDD: "IOM.Slot.A1b", Group: "Info", Index: "1", Name: "Manufacturer" }
-        - {Property: "service_tag",  FQDD: "IOM.Slot.A1b", Group: "Info", Index: "1", Name: "ServiceTag" }
-
-
-    Chassis/IOM.Slot.A2:
-        - {Property: "asset_tag",    FQDD: "IOM.Slot.A2", Group: "Info", Index: "1", Name: "AssetTag" }
-        - {Property: "description",  FQDD: "IOM.Slot.A2", Group: "Info", Index: "1", Name: "Description" }
-        - {Property: "power_state",  FQDD: "IOM.Slot.A2", Group: "Info", Index: "1", Name: "PowerState" }
-        - {Property: "serial",       FQDD: "IOM.Slot.A2", Group: "Info", Index: "1", Name: "SerialNumber" }
-        - {Property: "part_number",  FQDD: "IOM.Slot.A2", Group: "Info", Index: "1", Name: "PartNumber" }
-        - {Property: "chassis_type", FQDD: "IOM.Slot.A2", Group: "Info", Index: "1", Name: "ChassisType" }
-        - {Property: "model",        FQDD: "IOM.Slot.A2", Group: "Info", Index: "1", Name: "Model" }
-        - {Property: "name",         FQDD: "IOM.Slot.A2", Group: "Info", Index: "1", Name: "Name" }
-        - {Property: "manufacturer", FQDD: "IOM.Slot.A2", Group: "Info", Index: "1", Name: "Manufacturer" }
-        - {Property: "service_tag",  FQDD: "IOM.Slot.A2", Group: "Info", Index: "1", Name: "ServiceTag" }
-
-
-    Chassis/IOM.Slot.A2a:
-        - {Property: "asset_tag",    FQDD: "IOM.Slot.A2a", Group: "Info", Index: "1", Name: "AssetTag" }
-        - {Property: "description",  FQDD: "IOM.Slot.A2a", Group: "Info", Index: "1", Name: "Description" }
-        - {Property: "power_state",  FQDD: "IOM.Slot.A2a", Group: "Info", Index: "1", Name: "PowerState" }
-        - {Property: "serial",       FQDD: "IOM.Slot.A2a", Group: "Info", Index: "1", Name: "SerialNumber" }
-        - {Property: "part_number",  FQDD: "IOM.Slot.A2a", Group: "Info", Index: "1", Name: "PartNumber" }
-        - {Property: "chassis_type", FQDD: "IOM.Slot.A2a", Group: "Info", Index: "1", Name: "ChassisType" }
-        - {Property: "model",        FQDD: "IOM.Slot.A2a", Group: "Info", Index: "1", Name: "Model" }
-        - {Property: "name",         FQDD: "IOM.Slot.A2a", Group: "Info", Index: "1", Name: "Name" }
-        - {Property: "manufacturer", FQDD: "IOM.Slot.A2a", Group: "Info", Index: "1", Name: "Manufacturer" }
-        - {Property: "service_tag",  FQDD: "IOM.Slot.A2a", Group: "Info", Index: "1", Name: "ServiceTag" }
-
-
-    Chassis/IOM.Slot.A2b:
-        - {Property: "asset_tag",    FQDD: "IOM.Slot.A2b", Group: "Info", Index: "1", Name: "AssetTag" }
-        - {Property: "description",  FQDD: "IOM.Slot.A2b", Group: "Info", Index: "1", Name: "Description" }
-        - {Property: "power_state",  FQDD: "IOM.Slot.A2b", Group: "Info", Index: "1", Name: "PowerState" }
-        - {Property: "serial",       FQDD: "IOM.Slot.A2b", Group: "Info", Index: "1", Name: "SerialNumber" }
-        - {Property: "part_number",  FQDD: "IOM.Slot.A2b", Group: "Info", Index: "1", Name: "PartNumber" }
-        - {Property: "chassis_type", FQDD: "IOM.Slot.A2b", Group: "Info", Index: "1", Name: "ChassisType" }
-        - {Property: "model",        FQDD: "IOM.Slot.A2b", Group: "Info", Index: "1", Name: "Model" }
-        - {Property: "name",         FQDD: "IOM.Slot.A2b", Group: "Info", Index: "1", Name: "Name" }
-        - {Property: "manufacturer", FQDD: "IOM.Slot.A2b", Group: "Info", Index: "1", Name: "Manufacturer" }
-        - {Property: "service_tag",  FQDD: "IOM.Slot.A2b", Group: "Info", Index: "1", Name: "ServiceTag" }
-
-
-    Chassis/IOM.Slot.B1:
-        - {Property: "asset_tag",    FQDD: "IOM.Slot.B1", Group: "Info", Index: "1", Name: "AssetTag" }
-        - {Property: "description",  FQDD: "IOM.Slot.B1", Group: "Info", Index: "1", Name: "Description" }
-        - {Property: "power_state",  FQDD: "IOM.Slot.B1", Group: "Info", Index: "1", Name: "PowerState" }
-        - {Property: "serial",       FQDD: "IOM.Slot.B1", Group: "Info", Index: "1", Name: "SerialNumber" }
-        - {Property: "part_number",  FQDD: "IOM.Slot.B1", Group: "Info", Index: "1", Name: "PartNumber" }
-        - {Property: "chassis_type", FQDD: "IOM.Slot.B1", Group: "Info", Index: "1", Name: "ChassisType" }
-        - {Property: "model",        FQDD: "IOM.Slot.B1", Group: "Info", Index: "1", Name: "Model" }
-        - {Property: "name",         FQDD: "IOM.Slot.B1", Group: "Info", Index: "1", Name: "Name" }
-        - {Property: "manufacturer", FQDD: "IOM.Slot.B1", Group: "Info", Index: "1", Name: "Manufacturer" }
-        - {Property: "service_tag",  FQDD: "IOM.Slot.B1", Group: "Info", Index: "1", Name: "ServiceTag" }
-
-
-    Chassis/IOM.Slot.B1a:
-        - {Property: "asset_tag",    FQDD: "IOM.Slot.B1a", Group: "Info", Index: "1", Name: "AssetTag" }
-        - {Property: "description",  FQDD: "IOM.Slot.B1a", Group: "Info", Index: "1", Name: "Description" }
-        - {Property: "power_state",  FQDD: "IOM.Slot.B1a", Group: "Info", Index: "1", Name: "PowerState" }
-        - {Property: "serial",       FQDD: "IOM.Slot.B1a", Group: "Info", Index: "1", Name: "SerialNumber" }
-        - {Property: "part_number",  FQDD: "IOM.Slot.B1a", Group: "Info", Index: "1", Name: "PartNumber" }
-        - {Property: "chassis_type", FQDD: "IOM.Slot.B1a", Group: "Info", Index: "1", Name: "ChassisType" }
-        - {Property: "model",        FQDD: "IOM.Slot.B1a", Group: "Info", Index: "1", Name: "Model" }
-        - {Property: "name",         FQDD: "IOM.Slot.B1a", Group: "Info", Index: "1", Name: "Name" }
-        - {Property: "manufacturer", FQDD: "IOM.Slot.B1a", Group: "Info", Index: "1", Name: "Manufacturer" }
-        - {Property: "service_tag",  FQDD: "IOM.Slot.B1a", Group: "Info", Index: "1", Name: "ServiceTag" }
-
-
-    Chassis/IOM.Slot.B1b:
-        - {Property: "asset_tag",    FQDD: "IOM.Slot.B1b", Group: "Info", Index: "1", Name: "AssetTag" }
-        - {Property: "description",  FQDD: "IOM.Slot.B1b", Group: "Info", Index: "1", Name: "Description" }
-        - {Property: "power_state",  FQDD: "IOM.Slot.B1b", Group: "Info", Index: "1", Name: "PowerState" }
-        - {Property: "serial",       FQDD: "IOM.Slot.B1b", Group: "Info", Index: "1", Name: "SerialNumber" }
-        - {Property: "part_number",  FQDD: "IOM.Slot.B1b", Group: "Info", Index: "1", Name: "PartNumber" }
-        - {Property: "chassis_type", FQDD: "IOM.Slot.B1b", Group: "Info", Index: "1", Name: "ChassisType" }
-        - {Property: "model",        FQDD: "IOM.Slot.B1b", Group: "Info", Index: "1", Name: "Model" }
-        - {Property: "name",         FQDD: "IOM.Slot.B1b", Group: "Info", Index: "1", Name: "Name" }
-        - {Property: "manufacturer", FQDD: "IOM.Slot.B1b", Group: "Info", Index: "1", Name: "Manufacturer" }
-        - {Property: "service_tag",  FQDD: "IOM.Slot.B1b", Group: "Info", Index: "1", Name: "ServiceTag" }
-
-
-    Chassis/IOM.Slot.C1:
-        - {Property: "asset_tag",    FQDD: "IOM.Slot.C1", Group: "Info", Index: "1", Name: "AssetTag" }
-        - {Property: "description",  FQDD: "IOM.Slot.C1", Group: "Info", Index: "1", Name: "Description" }
-        - {Property: "power_state",  FQDD: "IOM.Slot.C1", Group: "Info", Index: "1", Name: "PowerState" }
-        - {Property: "serial",       FQDD: "IOM.Slot.C1", Group: "Info", Index: "1", Name: "SerialNumber" }
-        - {Property: "part_number",  FQDD: "IOM.Slot.C1", Group: "Info", Index: "1", Name: "PartNumber" }
-        - {Property: "chassis_type", FQDD: "IOM.Slot.C1", Group: "Info", Index: "1", Name: "ChassisType" }
-        - {Property: "model",        FQDD: "IOM.Slot.C1", Group: "Info", Index: "1", Name: "Model" }
-        - {Property: "name",         FQDD: "IOM.Slot.C1", Group: "Info", Index: "1", Name: "Name" }
-        - {Property: "manufacturer", FQDD: "IOM.Slot.C1", Group: "Info", Index: "1", Name: "Manufacturer" }
-        - {Property: "service_tag",  FQDD: "IOM.Slot.C1", Group: "Info", Index: "1", Name: "ServiceTag" }
-
-
-    Chassis/IOM.Slot.C2:
-        - {Property: "asset_tag",    FQDD: "IOM.Slot.C2", Group: "Info", Index: "1", Name: "AssetTag" }
-        - {Property: "description",  FQDD: "IOM.Slot.C2", Group: "Info", Index: "1", Name: "Description" }
-        - {Property: "power_state",  FQDD: "IOM.Slot.C2", Group: "Info", Index: "1", Name: "PowerState" }
-        - {Property: "serial",       FQDD: "IOM.Slot.C2", Group: "Info", Index: "1", Name: "SerialNumber" }
-        - {Property: "part_number",  FQDD: "IOM.Slot.C2", Group: "Info", Index: "1", Name: "PartNumber" }
-        - {Property: "chassis_type", FQDD: "IOM.Slot.C2", Group: "Info", Index: "1", Name: "ChassisType" }
-        - {Property: "model",        FQDD: "IOM.Slot.C2", Group: "Info", Index: "1", Name: "Model" }
-        - {Property: "name",         FQDD: "IOM.Slot.C2", Group: "Info", Index: "1", Name: "Name" }
-        - {Property: "manufacturer", FQDD: "IOM.Slot.C2", Group: "Info", Index: "1", Name: "Manufacturer" }
-        - {Property: "service_tag",  FQDD: "IOM.Slot.C2", Group: "Info", Index: "1", Name: "ServiceTag" }
-
-
-    Chassis/System.Modular.1:
-        - {Property: "service_tag",  FQDD: "System.Modular.1", Group: "Info", Index: "1", Name: "ServiceTag" }
-        - {Property: "power_state",  FQDD: "System.Modular.1", Group: "Info", Index: "1", Name: "PowerState" }
-        - {Property: "chassis_type", FQDD: "System.Modular.1", Group: "Info", Index: "1", Name: "ChassisType" }
-        - {Property: "model",        FQDD: "System.Modular.1", Group: "Info", Index: "1", Name: "Model" }
-        - {Property: "manufacturer", FQDD: "System.Modular.1", Group: "Info", Index: "1", Name: "Manufacturer" }
-        - {Property: "serial",       FQDD: "System.Modular.1", Group: "Info", Index: "1", Name: "SerialNumber" }
-
-    Chassis/System.Modular.1a:
-        - {Property: "service_tag",  FQDD: "System.Modular.1a", Group: "Info", Index: "1", Name: "ServiceTag" }
-        - {Property: "power_state",  FQDD: "System.Modular.1a", Group: "Info", Index: "1", Name: "PowerState" }
-        - {Property: "chassis_type", FQDD: "System.Modular.1a", Group: "Info", Index: "1", Name: "ChassisType" }
-        - {Property: "model",        FQDD: "System.Modular.1a", Group: "Info", Index: "1", Name: "Model" }
-        - {Property: "manufacturer", FQDD: "System.Modular.1a", Group: "Info", Index: "1", Name: "Manufacturer" }
-        - {Property: "serial",       FQDD: "System.Modular.1a", Group: "Info", Index: "1", Name: "SerialNumber" }
-
-    Chassis/System.Modular.1b:
-        - {Property: "service_tag",  FQDD: "System.Modular.1b", Group: "Info", Index: "1", Name: "ServiceTag" }
-        - {Property: "power_state",  FQDD: "System.Modular.1b", Group: "Info", Index: "1", Name: "PowerState" }
-        - {Property: "chassis_type", FQDD: "System.Modular.1b", Group: "Info", Index: "1", Name: "ChassisType" }
-        - {Property: "model",        FQDD: "System.Modular.1b", Group: "Info", Index: "1", Name: "Model" }
-        - {Property: "manufacturer", FQDD: "System.Modular.1b", Group: "Info", Index: "1", Name: "Manufacturer" }
-        - {Property: "serial",       FQDD: "System.Modular.1b", Group: "Info", Index: "1", Name: "SerialNumber" }
-
-    Chassis/System.Modular.2:
-        - {Property: "service_tag",  FQDD: "System.Modular.2", Group: "Info", Index: "1", Name: "ServiceTag" }
-        - {Property: "power_state",  FQDD: "System.Modular.2", Group: "Info", Index: "1", Name: "PowerState" }
-        - {Property: "chassis_type", FQDD: "System.Modular.2", Group: "Info", Index: "1", Name: "ChassisType" }
-        - {Property: "model",        FQDD: "System.Modular.2", Group: "Info", Index: "1", Name: "Model" }
-        - {Property: "manufacturer", FQDD: "System.Modular.2", Group: "Info", Index: "1", Name: "Manufacturer" }
-        - {Property: "serial",       FQDD: "System.Modular.2", Group: "Info", Index: "1", Name: "SerialNumber" }
-
-    Chassis/System.Modular.2a:
-        - {Property: "service_tag",  FQDD: "System.Modular.2a", Group: "Info", Index: "1", Name: "ServiceTag" }
-        - {Property: "power_state",  FQDD: "System.Modular.2a", Group: "Info", Index: "1", Name: "PowerState" }
-        - {Property: "chassis_type", FQDD: "System.Modular.2a", Group: "Info", Index: "1", Name: "ChassisType" }
-        - {Property: "model",        FQDD: "System.Modular.2a", Group: "Info", Index: "1", Name: "Model" }
-        - {Property: "manufacturer", FQDD: "System.Modular.2a", Group: "Info", Index: "1", Name: "Manufacturer" }
-        - {Property: "serial",       FQDD: "System.Modular.2a", Group: "Info", Index: "1", Name: "SerialNumber" }
-
-    Chassis/System.Modular.2b:
-        - {Property: "service_tag",  FQDD: "System.Modular.2b", Group: "Info", Index: "1", Name: "ServiceTag" }
-        - {Property: "power_state",  FQDD: "System.Modular.2b", Group: "Info", Index: "1", Name: "PowerState" }
-        - {Property: "chassis_type", FQDD: "System.Modular.2b", Group: "Info", Index: "1", Name: "ChassisType" }
-        - {Property: "model",        FQDD: "System.Modular.2b", Group: "Info", Index: "1", Name: "Model" }
-        - {Property: "manufacturer", FQDD: "System.Modular.2b", Group: "Info", Index: "1", Name: "Manufacturer" }
-        - {Property: "serial",       FQDD: "System.Modular.2b", Group: "Info", Index: "1", Name: "SerialNumber" }
-
-    Chassis/System.Modular.3:
-        - {Property: "service_tag",  FQDD: "System.Modular.3", Group: "Info", Index: "1", Name: "ServiceTag" }
-        - {Property: "power_state",  FQDD: "System.Modular.3", Group: "Info", Index: "1", Name: "PowerState" }
-        - {Property: "chassis_type", FQDD: "System.Modular.3", Group: "Info", Index: "1", Name: "ChassisType" }
-        - {Property: "model",        FQDD: "System.Modular.3", Group: "Info", Index: "1", Name: "Model" }
-        - {Property: "manufacturer", FQDD: "System.Modular.3", Group: "Info", Index: "1", Name: "Manufacturer" }
-        - {Property: "serial",       FQDD: "System.Modular.3", Group: "Info", Index: "1", Name: "SerialNumber" }
-
-    Chassis/System.Modular.3a:
-        - {Property: "service_tag",  FQDD: "System.Modular.3a", Group: "Info", Index: "1", Name: "ServiceTag" }
-        - {Property: "power_state",  FQDD: "System.Modular.3a", Group: "Info", Index: "1", Name: "PowerState" }
-        - {Property: "chassis_type", FQDD: "System.Modular.3a", Group: "Info", Index: "1", Name: "ChassisType" }
-        - {Property: "model",        FQDD: "System.Modular.3a", Group: "Info", Index: "1", Name: "Model" }
-        - {Property: "manufacturer", FQDD: "System.Modular.3a", Group: "Info", Index: "1", Name: "Manufacturer" }
-        - {Property: "serial",       FQDD: "System.Modular.3a", Group: "Info", Index: "1", Name: "SerialNumber" }
-
-    Chassis/System.Modular.3b:
-        - {Property: "service_tag",  FQDD: "System.Modular.3b", Group: "Info", Index: "1", Name: "ServiceTag" }
-        - {Property: "power_state",  FQDD: "System.Modular.3b", Group: "Info", Index: "1", Name: "PowerState" }
-        - {Property: "chassis_type", FQDD: "System.Modular.3b", Group: "Info", Index: "1", Name: "ChassisType" }
-        - {Property: "model",        FQDD: "System.Modular.3b", Group: "Info", Index: "1", Name: "Model" }
-        - {Property: "manufacturer", FQDD: "System.Modular.3b", Group: "Info", Index: "1", Name: "Manufacturer" }
-        - {Property: "serial",       FQDD: "System.Modular.3b", Group: "Info", Index: "1", Name: "SerialNumber" }
-
-    Chassis/System.Modular.4:
-        - {Property: "service_tag",  FQDD: "System.Modular.4", Group: "Info", Index: "1", Name: "ServiceTag" }
-        - {Property: "power_state",  FQDD: "System.Modular.4", Group: "Info", Index: "1", Name: "PowerState" }
-        - {Property: "chassis_type", FQDD: "System.Modular.4", Group: "Info", Index: "1", Name: "ChassisType" }
-        - {Property: "model",        FQDD: "System.Modular.4", Group: "Info", Index: "1", Name: "Model" }
-        - {Property: "manufacturer", FQDD: "System.Modular.4", Group: "Info", Index: "1", Name: "Manufacturer" }
-        - {Property: "serial",       FQDD: "System.Modular.4", Group: "Info", Index: "1", Name: "SerialNumber" }
-
-    Chassis/System.Modular.4a:
-        - {Property: "service_tag",  FQDD: "System.Modular.4a", Group: "Info", Index: "1", Name: "ServiceTag" }
-        - {Property: "power_state",  FQDD: "System.Modular.4a", Group: "Info", Index: "1", Name: "PowerState" }
-        - {Property: "chassis_type", FQDD: "System.Modular.4a", Group: "Info", Index: "1", Name: "ChassisType" }
-        - {Property: "model",        FQDD: "System.Modular.4a", Group: "Info", Index: "1", Name: "Model" }
-        - {Property: "manufacturer", FQDD: "System.Modular.4a", Group: "Info", Index: "1", Name: "Manufacturer" }
-        - {Property: "serial",       FQDD: "System.Modular.4a", Group: "Info", Index: "1", Name: "SerialNumber" }
-
-    Chassis/System.Modular.4b:
-        - {Property: "service_tag",  FQDD: "System.Modular.4b", Group: "Info", Index: "1", Name: "ServiceTag" }
-        - {Property: "power_state",  FQDD: "System.Modular.4b", Group: "Info", Index: "1", Name: "PowerState" }
-        - {Property: "chassis_type", FQDD: "System.Modular.4b", Group: "Info", Index: "1", Name: "ChassisType" }
-        - {Property: "model",        FQDD: "System.Modular.4b", Group: "Info", Index: "1", Name: "Model" }
-        - {Property: "manufacturer", FQDD: "System.Modular.4b", Group: "Info", Index: "1", Name: "Manufacturer" }
-        - {Property: "serial",       FQDD: "System.Modular.4b", Group: "Info", Index: "1", Name: "SerialNumber" }
-
-    Chassis/System.Modular.5:
-        - {Property: "service_tag",  FQDD: "System.Modular.5", Group: "Info", Index: "1", Name: "ServiceTag" }
-        - {Property: "power_state",  FQDD: "System.Modular.5", Group: "Info", Index: "1", Name: "PowerState" }
-        - {Property: "chassis_type", FQDD: "System.Modular.5", Group: "Info", Index: "1", Name: "ChassisType" }
-        - {Property: "model",        FQDD: "System.Modular.5", Group: "Info", Index: "1", Name: "Model" }
-        - {Property: "manufacturer", FQDD: "System.Modular.5", Group: "Info", Index: "1", Name: "Manufacturer" }
-        - {Property: "serial",       FQDD: "System.Modular.5", Group: "Info", Index: "1", Name: "SerialNumber" }
-
-    Chassis/System.Modular.5a:
-        - {Property: "service_tag",  FQDD: "System.Modular.5a", Group: "Info", Index: "1", Name: "ServiceTag" }
-        - {Property: "power_state",  FQDD: "System.Modular.5a", Group: "Info", Index: "1", Name: "PowerState" }
-        - {Property: "chassis_type", FQDD: "System.Modular.5a", Group: "Info", Index: "1", Name: "ChassisType" }
-        - {Property: "model",        FQDD: "System.Modular.5a", Group: "Info", Index: "1", Name: "Model" }
-        - {Property: "manufacturer", FQDD: "System.Modular.5a", Group: "Info", Index: "1", Name: "Manufacturer" }
-        - {Property: "serial",       FQDD: "System.Modular.5a", Group: "Info", Index: "1", Name: "SerialNumber" }
-
-    Chassis/System.Modular.5b:
-        - {Property: "service_tag",  FQDD: "System.Modular.5b", Group: "Info", Index: "1", Name: "ServiceTag" }
-        - {Property: "power_state",  FQDD: "System.Modular.5b", Group: "Info", Index: "1", Name: "PowerState" }
-        - {Property: "chassis_type", FQDD: "System.Modular.5b", Group: "Info", Index: "1", Name: "ChassisType" }
-        - {Property: "model",        FQDD: "System.Modular.5b", Group: "Info", Index: "1", Name: "Model" }
-        - {Property: "manufacturer", FQDD: "System.Modular.5b", Group: "Info", Index: "1", Name: "Manufacturer" }
-        - {Property: "serial",       FQDD: "System.Modular.5b", Group: "Info", Index: "1", Name: "SerialNumber" }
-
-    Chassis/System.Modular.6:
-        - {Property: "service_tag",  FQDD: "System.Modular.6", Group: "Info", Index: "1", Name: "ServiceTag" }
-        - {Property: "power_state",  FQDD: "System.Modular.6", Group: "Info", Index: "1", Name: "PowerState" }
-        - {Property: "chassis_type", FQDD: "System.Modular.6", Group: "Info", Index: "1", Name: "ChassisType" }
-        - {Property: "model",        FQDD: "System.Modular.6", Group: "Info", Index: "1", Name: "Model" }
-        - {Property: "manufacturer", FQDD: "System.Modular.6", Group: "Info", Index: "1", Name: "Manufacturer" }
-        - {Property: "serial",       FQDD: "System.Modular.6", Group: "Info", Index: "1", Name: "SerialNumber" }
-
-    Chassis/System.Modular.6a:
-        - {Property: "service_tag",  FQDD: "System.Modular.6a", Group: "Info", Index: "1", Name: "ServiceTag" }
-        - {Property: "power_state",  FQDD: "System.Modular.6a", Group: "Info", Index: "1", Name: "PowerState" }
-        - {Property: "chassis_type", FQDD: "System.Modular.6a", Group: "Info", Index: "1", Name: "ChassisType" }
-        - {Property: "model",        FQDD: "System.Modular.6a", Group: "Info", Index: "1", Name: "Model" }
-        - {Property: "manufacturer", FQDD: "System.Modular.6a", Group: "Info", Index: "1", Name: "Manufacturer" }
-        - {Property: "serial",       FQDD: "System.Modular.6a", Group: "Info", Index: "1", Name: "SerialNumber" }
-
-    Chassis/System.Modular.6b:
-        - {Property: "service_tag",  FQDD: "System.Modular.6b", Group: "Info", Index: "1", Name: "ServiceTag" }
-        - {Property: "power_state",  FQDD: "System.Modular.6b", Group: "Info", Index: "1", Name: "PowerState" }
-        - {Property: "chassis_type", FQDD: "System.Modular.6b", Group: "Info", Index: "1", Name: "ChassisType" }
-        - {Property: "model",        FQDD: "System.Modular.6b", Group: "Info", Index: "1", Name: "Model" }
-        - {Property: "manufacturer", FQDD: "System.Modular.6b", Group: "Info", Index: "1", Name: "Manufacturer" }
-        - {Property: "serial",       FQDD: "System.Modular.6b", Group: "Info", Index: "1", Name: "SerialNumber" }
-
-    Chassis/System.Modular.7:
-        - {Property: "service_tag",  FQDD: "System.Modular.7", Group: "Info", Index: "1", Name: "ServiceTag" }
-        - {Property: "power_state",  FQDD: "System.Modular.7", Group: "Info", Index: "1", Name: "PowerState" }
-        - {Property: "chassis_type", FQDD: "System.Modular.7", Group: "Info", Index: "1", Name: "ChassisType" }
-        - {Property: "model",        FQDD: "System.Modular.7", Group: "Info", Index: "1", Name: "Model" }
-        - {Property: "manufacturer", FQDD: "System.Modular.7", Group: "Info", Index: "1", Name: "Manufacturer" }
-        - {Property: "serial",       FQDD: "System.Modular.7", Group: "Info", Index: "1", Name: "SerialNumber" }
-
-    Chassis/System.Modular.7a:
-        - {Property: "service_tag",  FQDD: "System.Modular.7a", Group: "Info", Index: "1", Name: "ServiceTag" }
-        - {Property: "power_state",  FQDD: "System.Modular.7a", Group: "Info", Index: "1", Name: "PowerState" }
-        - {Property: "chassis_type", FQDD: "System.Modular.7a", Group: "Info", Index: "1", Name: "ChassisType" }
-        - {Property: "model",        FQDD: "System.Modular.7a", Group: "Info", Index: "1", Name: "Model" }
-        - {Property: "manufacturer", FQDD: "System.Modular.7a", Group: "Info", Index: "1", Name: "Manufacturer" }
-        - {Property: "serial",       FQDD: "System.Modular.7a", Group: "Info", Index: "1", Name: "SerialNumber" }
-
-    Chassis/System.Modular.7b:
-        - {Property: "service_tag",  FQDD: "System.Modular.7b", Group: "Info", Index: "1", Name: "ServiceTag" }
-        - {Property: "power_state",  FQDD: "System.Modular.7b", Group: "Info", Index: "1", Name: "PowerState" }
-        - {Property: "chassis_type", FQDD: "System.Modular.7b", Group: "Info", Index: "1", Name: "ChassisType" }
-        - {Property: "model",        FQDD: "System.Modular.7b", Group: "Info", Index: "1", Name: "Model" }
-        - {Property: "manufacturer", FQDD: "System.Modular.7b", Group: "Info", Index: "1", Name: "Manufacturer" }
-        - {Property: "serial",       FQDD: "System.Modular.7b", Group: "Info", Index: "1", Name: "SerialNumber" }
-
-    Chassis/System.Modular.8:
-        - {Property: "service_tag",  FQDD: "System.Modular.8", Group: "Info", Index: "1", Name: "ServiceTag" }
-        - {Property: "power_state",  FQDD: "System.Modular.8", Group: "Info", Index: "1", Name: "PowerState" }
-        - {Property: "chassis_type", FQDD: "System.Modular.8", Group: "Info", Index: "1", Name: "ChassisType" }
-        - {Property: "model",        FQDD: "System.Modular.8", Group: "Info", Index: "1", Name: "Model" }
-        - {Property: "manufacturer", FQDD: "System.Modular.8", Group: "Info", Index: "1", Name: "Manufacturer" }
-        - {Property: "serial",       FQDD: "System.Modular.8", Group: "Info", Index: "1", Name: "SerialNumber" }
-
-    Chassis/System.Modular.8a:
-        - {Property: "service_tag",  FQDD: "System.Modular.8a", Group: "Info", Index: "1", Name: "ServiceTag" }
-        - {Property: "power_state",  FQDD: "System.Modular.8a", Group: "Info", Index: "1", Name: "PowerState" }
-        - {Property: "chassis_type", FQDD: "System.Modular.8a", Group: "Info", Index: "1", Name: "ChassisType" }
-        - {Property: "model",        FQDD: "System.Modular.8a", Group: "Info", Index: "1", Name: "Model" }
-        - {Property: "manufacturer", FQDD: "System.Modular.8a", Group: "Info", Index: "1", Name: "Manufacturer" }
-        - {Property: "serial",       FQDD: "System.Modular.8a", Group: "Info", Index: "1", Name: "SerialNumber" }
-
-    Chassis/System.Modular.8b:
-        - {Property: "service_tag",  FQDD: "System.Modular.8b", Group: "Info", Index: "1", Name: "ServiceTag" }
-        - {Property: "power_state",  FQDD: "System.Modular.8b", Group: "Info", Index: "1", Name: "PowerState" }
-        - {Property: "chassis_type", FQDD: "System.Modular.8b", Group: "Info", Index: "1", Name: "ChassisType" }
-        - {Property: "model",        FQDD: "System.Modular.8b", Group: "Info", Index: "1", Name: "Model" }
-        - {Property: "manufacturer", FQDD: "System.Modular.8b", Group: "Info", Index: "1", Name: "Manufacturer" }
-        - {Property: "serial",       FQDD: "System.Modular.8b", Group: "Info", Index: "1", Name: "SerialNumber" }
-
+    UpdateService:
+        # no mappings for now: placeholder
 
