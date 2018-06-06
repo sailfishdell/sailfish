@@ -29,7 +29,7 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 				"DELETE": []string{}, // can't be deleted
 			},
 			Properties: map[string]interface{}{
-				"Id":                v.Meta(view.PropGET("unique_name")),
+				"Id@meta":           v.Meta(view.PropGET("unique_name")),
 				"AssetTag@meta":     v.Meta(view.PropGET("asset_tag")),
 				"Description@meta":  v.Meta(view.PropGET("description")),
 				"PowerState@meta":   v.Meta(view.PropGET("power_state")),

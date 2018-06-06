@@ -33,7 +33,7 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 				"DELETE": []string{}, // can't be deleted
 			},
 			Properties: map[string]interface{}{
-				"Id":        v.Meta(view.PropGET("unique_name")),
+				"Id@meta":   v.Meta(view.PropGET("unique_name")),
 				"Name@meta": v.Meta(view.PropGET("name")),
 				// TODO: is this in AR somewhere?
 				"ManagerType":              "BMC",
