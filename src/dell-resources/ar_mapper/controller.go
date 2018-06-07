@@ -64,17 +64,17 @@ func New(ctx context.Context, logger log.Logger, m *model.Model, name string, fq
 				if data.Index != mapping.Index {
 					continue
 				}
+				// check for direct fqdd match first
 				if data.FQDD != mapping.FQDD {
 					// Check for FQDD wildcard
 					// mapping FQDD field equal to "{FQDD}" means use wildcard match
 					if mapping.FQDD != "{FQDD}" {
-						logger.Info("mismatch fqdd, BUT NOT WILDCARD", "data.fqdd", data.FQDD, "mapping.fqdd", mapping.FQDD, "fqdd", fqdd)
+						// fqdd doesn't match and it's not a wildcard, so done
 						continue
 					}
 
-					// and in that case, check against the fqdd passed in instead
+					// if we get here, fqdd is wildcard, check against our passed in fqdd
 					if data.FQDD != fqdd {
-						logger.Info("mismatch fqdd, BUT data.FQDD != fqdd", "data.fqdd", data.FQDD, "mapping.fqdd", mapping.FQDD, "fqdd", fqdd)
 						continue
 					}
 				}
