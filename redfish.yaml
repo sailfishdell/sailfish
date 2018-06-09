@@ -13,7 +13,7 @@ main:
             # "Managers/CMC.Integrated.1". For the template config, we only
             # specify the top levels
             - name: "Managers/CMC.Integrated"
-              level: "info"
+              level: "warn"
 
             - name: "Chassis/CMC.Integrated"
               level: "warn"
@@ -67,11 +67,18 @@ main:
             - name: "eventstream"
               level: "warn"
 
+            - name: "observer"
+              level: "debug"
+
+            - name: "firmware/inventory"
+              level: "info"
+
+
     dumpConfigChanges:
         enabled: true
         filename: "redfish-out2.yaml"
 
-listen: 
+listen:
     - http::8080
     - https::8443
     - spacemonkey::9443
@@ -82,7 +89,31 @@ session:
 mappings:
     test/testview:
         - {Property: "model",                    FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Name" }
-    #    - {Property: "model",                    FQDD: "CMC.Integrated.1", Group: "Info", Index: "1", Name: "Name" }
+
+    firmware/inventory:
+        - {Property: "device_class",     FQDD: "{FQDD}", Group: "FWInventory", Index: "1", Name: "DeviceClass" }
+        - {Property: "description",      FQDD: "{FQDD}", Group: "FWInventory", Index: "1", Name: "Description"}
+        - {Property: "device_context",   FQDD: "{FQDD}", Group: "FWInventory", Index: "1", Name: "DeviceContext" }
+        - {Property: "device_instance",  FQDD: "{FQDD}", Group: "FWInventory", Index: "1", Name: "DeviceInstance" }
+        - {Property: "fqdd",             FQDD: "{FQDD}", Group: "FWInventory", Index: "1", Name: "FQDD" }
+        - {Property: "name",             FQDD: "{FQDD}", Group: "FWInventory", Index: "1", Name: "Name" }
+        - {Property: "install_date",     FQDD: "{FQDD}", Group: "FWInventory", Index: "1", Name: "InstallDate" }
+        - {Property: "updateable",       FQDD: "{FQDD}", Group: "FWInventory", Index: "1", Name: "Updateable" }
+        - {Property: "version",          FQDD: "{FQDD}", Group: "FWInventory", Index: "1", Name: "Version" }
+        - {Property: "version_sequence", FQDD: "{FQDD}", Group: "FWInventory", Index: "1", Name: "VersionSequence" }
+
+    fpga_inventory:
+        - {Property: "device_class",     FQDD: "{FQDD}", Group: "FWInventory", Index: "1", Name: "DeviceClass" }
+        - {Property: "description",      FQDD: "{FQDD}", Group: "FWInventory", Index: "1", Name: "Description"}
+        - {Property: "device_context",   FQDD: "{FQDD}", Group: "FWInventory", Index: "1", Name: "DeviceContext" }
+        - {Property: "device_instance",  FQDD: "{FQDD}", Group: "FWInventory", Index: "1", Name: "DeviceInstance" }
+        - {Property: "fqdd",             FQDD: "{FQDD}", Group: "FWInventory", Index: "1", Name: "FQDD" }
+        - {Property: "name",             FQDD: "{FQDD}", Group: "FWInventory", Index: "1", Name: "Name" }
+        - {Property: "label",            FQDD: "{FQDD}", Group: "FWInventory", Index: "1", Name: "Label" }
+        - {Property: "install_date",     FQDD: "{FQDD}", Group: "FWInventory", Index: "1", Name: "InstallDate" }
+        - {Property: "updateable",       FQDD: "{FQDD}", Group: "FWInventory", Index: "1", Name: "Updateable" }
+        - {Property: "version",          FQDD: "{FQDD}", Group: "FWInventory", Index: "1", Name: "Version" }
+        - {Property: "version_sequence", FQDD: "{FQDD}", Group: "FWInventory", Index: "1", Name: "VersionSequence" }
 
     # map AR entries to back end model
     PSU/PSU.Slot:
@@ -143,10 +174,10 @@ mappings:
 
     Fans/Fan.Slot:
         # no mappings for now: placeholder
-        
+
     Chassis/IOM.Slot:
         # no mappings for now: placeholder
-        
+
     Chassis/System.Modular:
         # no mappings for now: placeholder
 

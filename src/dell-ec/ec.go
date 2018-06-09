@@ -42,18 +42,12 @@ type ocp struct {
 
 func (o *ocp) ConfigChangeHandler() { o.configChangeHandler() }
 
-func makeUndef(name ...string) (ret []model.Option) {
-	for _, n := range name {
-		ret = append(ret, model.UpdateProperty(n, nil))
-	}
-	return
-}
-
 func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *sync.Mutex, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) *ocp {
 	logger = logger.New("module", "ec")
 	self := &ocp{}
 
 	updateFns := []func(context.Context, *viper.Viper){}
+	swinvViews := []*view.View{}
 
 	//
 	// Create the (empty) model behind the /redfish/v1 service root. Nothing interesting here
@@ -136,10 +130,15 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			mgrCMCIntegrated.WithUniqueName(mgrName),
 			model.UpdateProperty("attributes", map[string]map[string]map[string]interface{}{}),
 		)
+
 		// the controller is what updates the model when ar entries change,
 		// also handles patch from redfish
+		fwmapper, _ := ar_mapper.New(ctx, mgrLogger.New("module", "firmware/inventory"), mdl, "firmware/inventory", mgrName, ch, eb, ew)
+		// need to have a separate model to hold fpga ver
+		//fpgamapper, _ := ar_mapper.New(ctx, mgrLogger, mdl, "fpga_inventory", mgrName, ch, eb, ew)
 		armapper, _ := ar_mapper.New(ctx, mgrLogger, mdl, "Managers/CMC.Integrated", mgrName, ch, eb, ew)
 		updateFns = append(updateFns, armapper.ConfigChangedFn)
+		updateFns = append(updateFns, fwmapper.ConfigChangedFn)
 
 		// This controller will populate 'attributes' property with AR entries matching this FQDD ('mgrName')
 		ardumper, _ := attributes.NewController(ctx, mdl, []string{mgrName}, ch, eb, ew)
@@ -147,12 +146,15 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		vw := view.New(
 			view.WithURI(rootView.GetURI()+"/Managers/"+mgrName),
 			view.WithModel("default", mdl),
+			view.WithModel("swinv", mdl), // common name for swinv model, shared in this case
 			view.WithController("ar_mapper", armapper),
 			view.WithController("ar_dump", ardumper),
+			view.WithController("fw_mapper", fwmapper),
 			view.WithFormatter("attributeFormatter", attributes.FormatAttributeDump),
 		)
 		domain.RegisterPlugin(func() domain.Plugin { return vw })
 		managers = append(managers, vw)
+		swinvViews = append(swinvViews, vw)
 
 		// add the aggregate to the view tree
 		mgrCMCIntegrated.AddAggregate(ctx, mgrLogger, vw, ch, eb, ew)
@@ -424,10 +426,57 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		invModels[invName] = invModel
 	}
 
-	// we get mappings of inventory for each of the above
-	// Have controller set bitmask for full inventory received
-	// once we get property notification that full inventory is done, run through all of them and create swinventory maps (scratch?)
-	// attach those swinventory maps to swinventory models, views
+	sw := map[string]map[string]*model.Model{}
+	swMu := sync.Mutex{}
+
+	obsLogger := logger.New("module", "observer")
+	fn := func(mdl *model.Model, property string, oldValue, newValue interface{}) {
+		// model is locked when we enter observer
+		obsLogger.Debug("MODEL POPERTY CHANGE", "model", mdl, "property", property, "oldValue", oldValue, "newValue", newValue)
+
+		classRaw, ok := mdl.GetPropertyOkUnlocked("device_class")
+		if !ok || classRaw == nil {
+			obsLogger.Debug("DID NOT GET device_class raw")
+			return
+		}
+
+		class, ok := classRaw.(string)
+		if !ok {
+			obsLogger.Debug("DID NOT GET class string")
+			return
+		}
+
+		versionRaw, ok := mdl.GetPropertyOkUnlocked("version")
+		if !ok || versionRaw == nil {
+			obsLogger.Debug("DID NOT GET version raw")
+			return
+		}
+
+		version, ok := versionRaw.(string)
+		if !ok {
+			obsLogger.Debug("DID NOT GET version string")
+			return
+		}
+
+		obsLogger.Info("GOT FULL SWVERSION INFO", "model", mdl, "property", property, "oldValue", oldValue, "newValue", newValue)
+		swMu.Lock()
+		defer swMu.Unlock()
+		ver, ok := sw[class]
+		if !ok {
+			ver = map[string]*model.Model{}
+		}
+		ver[version] = mdl
+		sw[class] = ver
+
+		// TODO: delete any old copies of this model in the tree
+	}
+
+	// Set up observers for each swinv model
+	for _, swinvView := range swinvViews {
+		// going to assume each view has swinv model at 'swinv'
+		mdl := swinvView.GetModel("swinv")
+		mdl.AddObserver("swinv", fn)
+	}
 
 	// VIPER Config:
 	// pull the config from the YAML file to populate some static config options
@@ -460,21 +509,16 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		_ = ioutil.WriteFile(dumpFileName, output, 0644)
 	}
 
-	// Well, until observer stuff re-implemented, this can't be triggered, so
-	// let's keep it around to remind us to reimplement it but keep compiler
-	// happy
-	_ = dumpViperConfig
-
-	/*
-	   // TODO: reimplement observer pattern on the model
-	   //
-	   //	sessionModel.AddPropertyObserver("session_timeout", func(newval interface{}) {
-	   //		viperMu.Lock()
-	   //		cfgMgr.Set("session.timeout", newval.(int))
-	   //		viperMu.Unlock()
-	   //		dumpViperConfig()
-	   //	})
-	*/
+	sessObsLogger := logger.New("module", "observer")
+	sessionModel.AddObserver("viper", func(m *model.Model, property string, oldValue, newValue interface{}) {
+		sessObsLogger.Info("Session variable changed", "model", m, "property", property, "oldValue", oldValue, "newValue", newValue)
+		if property == "session_timeout" {
+			viperMu.Lock()
+			cfgMgr.Set("session.timeout", newValue.(int))
+			viperMu.Unlock()
+			dumpViperConfig()
+		}
+	})
 
 	return self
 }
