@@ -15,14 +15,14 @@ type Observer func(m *Model, property string, oldValue, newValue interface{})
 type Model struct {
 	sync.RWMutex
 	properties map[string]interface{}
-	observers  []Observer
+	observers  map[string]Observer
 }
 
 // New is the constructor for a model
 func New(options ...Option) *Model {
 	s := &Model{
 		properties: map[string]interface{}{},
-		observers:  []Observer{},
+		observers:  map[string]Observer{},
 	}
 
 	s.ApplyOption(options...)
@@ -41,6 +41,12 @@ func (s *Model) ApplyOption(options ...Option) error {
 		}
 	}
 	return nil
+}
+
+func (s *Model) AddObserver(name string, ob Observer) {
+	s.Lock()
+	defer s.Unlock()
+	s.observers[name] = ob
 }
 
 // UpdatePropertyUnlocked is used to change properties. It will also notify any
