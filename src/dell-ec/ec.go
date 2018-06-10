@@ -34,6 +34,7 @@ import (
 	"github.com/superchalupa/go-redfish/src/dell-resources/chassis/system.modular"
 	mgrCMCIntegrated "github.com/superchalupa/go-redfish/src/dell-resources/managers/cmc.integrated"
 	"github.com/superchalupa/go-redfish/src/dell-resources/test"
+	"github.com/superchalupa/go-redfish/src/dell-resources/update_service"
 )
 
 type ocp struct {
@@ -424,6 +425,27 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		armapper, _ := ar_mapper.New(ctx, invLogger, invModel, "UpdateService", "", ch, eb, ew)
 		updateFns = append(updateFns, armapper.ConfigChangedFn)
 		invModels[invName] = invModel
+	}
+
+	{
+		updsvcLogger := logger.New("module", "UpdateService")
+		mdl := model.New()
+
+		// the controller is what updates the model when ar entries change,
+		// also handles patch from redfish
+		armapper, _ := ar_mapper.New(ctx, updsvcLogger, mdl, "update_service", "", ch, eb, ew)
+		updateFns = append(updateFns, armapper.ConfigChangedFn)
+
+		vw := view.New(
+			view.WithURI(rootView.GetURI()+"/UpdateService"),
+			view.WithModel("default", mdl),
+			view.WithController("ar_mapper", armapper),
+		)
+		domain.RegisterPlugin(func() domain.Plugin { return vw })
+
+		// add the aggregate to the view tree
+		update_service.AddAggregate(ctx, vw, ch)
+		update_service.EnhanceAggregate(ctx, vw, rootView.GetUUID(), ch)
 	}
 
 	sw := map[string]map[string]*model.Model{}
