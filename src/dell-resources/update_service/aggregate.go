@@ -13,17 +13,17 @@ import (
 	eh "github.com/looplab/eventhorizon"
 )
 
-func EnhanceAggregate(ctx context.Context, v *view.View, baseUUID eh.UUID, ch eh.CommandHandler) {
+func EnhanceAggregate(ctx context.Context, v *view.View, baseView *view.View, ch eh.CommandHandler) {
 	ch.HandleCommand(ctx,
 		&domain.UpdateRedfishResourceProperties{
-			ID: baseUUID,
+			ID: baseView.GetUUID(),
 			Properties: map[string]interface{}{
 				"UpdateService": map[string]interface{}{"@odata.id": v.GetURI()},
 			},
 		})
 }
 
-func AddAggregate(ctx context.Context, v *view.View, ch eh.CommandHandler) *view.View {
+func AddAggregate(ctx context.Context, root *view.View, v *view.View, ch eh.CommandHandler) *view.View {
 	ch.HandleCommand(
 		ctx,
 		&domain.CreateRedfishResource{
@@ -31,7 +31,7 @@ func AddAggregate(ctx context.Context, v *view.View, ch eh.CommandHandler) *view
 			Collection:  false,
 			ResourceURI: v.GetURI(),
 			Type:        "#UpdateService.v1_0_0.UpdateService",
-			Context:     "/redfish/v1/$metadata#UpdateService.UpdateService",
+			Context:     root.GetURI() + "/metadata#UpdateService.UpdateService",
 			Privileges: map[string]interface{}{
 				"GET":    []string{"Login"},
 				"POST":   []string{}, // cannot create sub objects
@@ -50,24 +50,46 @@ func AddAggregate(ctx context.Context, v *view.View, ch eh.CommandHandler) *view
 				},
 
 				"FirmwareInventory": map[string]interface{}{
-					"@odata.id": "/redfish/v1/UpdateService/FirmwareInventory",
+					"@odata.id": v.GetURI() + "/FirmwareInventory",
 				},
 				"Actions": map[string]interface{}{
 					"Oem": map[string]interface{}{
 						"#DellUpdateService.v1_0_0.DellUpdateService.Reset": map[string]interface{}{
-							"target": "/redfish/v1/UpdateService/Actions/Oem/DellUpdateService.Reset",
+							"target": v.GetURI() + "/Actions/Oem/DellUpdateService.Reset",
 						},
 						"UpdateService.v1_0_0#EID_674_UpdateService.Reset": map[string]interface{}{
-							"target": "/redfish/v1/UpdateService/Actions/Oem/EID_674_UpdateService.Reset",
+							"target": v.GetURI() + "/Actions/Oem/EID_674_UpdateService.Reset",
 						},
 						"#DellUpdateService.v1_0_0.DellUpdateService.Syncup": map[string]interface{}{
-							"target": "/redfish/v1/UpdateService/Actions/Oem/DellUpdateService.Syncup",
+							"target": v.GetURI() + "/Actions/Oem/DellUpdateService.Syncup",
 						},
 						"UpdateService.v1_0_0#EID_674_UpdateService.Syncup": map[string]interface{}{
-							"target": "/redfish/v1/UpdateService/Actions/Oem/EID_674_UpdateService.Syncup",
+							"target": v.GetURI() + "/Actions/Oem/EID_674_UpdateService.Syncup",
 						},
 					},
 				},
+			}})
+
+	// Create Firmware Inventory Collection
+	ch.HandleCommand(
+		ctx,
+		&domain.CreateRedfishResource{
+			ID:         eh.NewUUID(),
+			Collection: true,
+
+			ResourceURI: v.GetURI() + "/FirmwareInventory",
+			Type:        "#SoftwareInventoryCollection.SoftwareInventoryCollection",
+			Context:     root.GetURI() + "/$metadata#SoftwareInventoryCollection.SoftwareInventoryCollection",
+			Privileges: map[string]interface{}{
+				"GET":    []string{"Login"},
+				"POST":   []string{}, // Read Only
+				"PUT":    []string{}, // Read Only
+				"PATCH":  []string{}, // Read Only
+				"DELETE": []string{}, // can't be deleted
+			},
+			Properties: map[string]interface{}{
+				"Name":        "Firmware Inventory Collection",
+				"Description": "Collection of Firmware Inventory",
 			}})
 
 	return v

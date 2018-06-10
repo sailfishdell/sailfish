@@ -444,8 +444,8 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		domain.RegisterPlugin(func() domain.Plugin { return vw })
 
 		// add the aggregate to the view tree
-		update_service.AddAggregate(ctx, vw, ch)
-		update_service.EnhanceAggregate(ctx, vw, rootView.GetUUID(), ch)
+		update_service.AddAggregate(ctx, rootView, vw, ch)
+		update_service.EnhanceAggregate(ctx, vw, rootView, ch)
 	}
 
 	sw := map[string]map[string]*model.Model{}
