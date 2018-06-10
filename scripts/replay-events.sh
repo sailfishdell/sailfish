@@ -11,4 +11,4 @@ if [ -z "$1" ]; then
     exit 1
 fi
 
-cat $1 | while read line ; do $CURLCMD $BASE/api/Event%3AInject -d  "$line"; done
+cat $1 | while read line ; do $CURLCMD -f $BASE/api/Event%3AInject -d  "$line"; done
