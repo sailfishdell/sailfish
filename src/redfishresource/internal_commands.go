@@ -288,6 +288,7 @@ func (c *InjectEvent) Handle(ctx context.Context, a *RedfishResourceAggregate) e
 		a.PublishEvent(eh.NewEvent(c.Name, data, time.Now()))
 	}
 
+	requestLogger.Info("InjectEvent - GOT ARRAY", "number", len(c.EventArray), "event name", c.Name)
 	for _, eventData := range c.EventArray {
 		data, err := eh.CreateEventData(c.Name)
 		if err != nil {
@@ -301,6 +302,7 @@ func (c *InjectEvent) Handle(ctx context.Context, a *RedfishResourceAggregate) e
 			return err
 		}
 
+		requestLogger.Info("InjectEvent - publishing", "event name", c.Name)
 		a.PublishEvent(eh.NewEvent(c.Name, data, time.Now()))
 	}
 
