@@ -47,8 +47,8 @@ func GetViewFragment(v *view.View) map[string]interface{} {
 		"ReadingUnits@meta": v.Meta(view.PropGET("reading_units")),
 		"Reading@meta":      v.Meta(view.PropGET("reading")),
 		"Status": map[string]interface{}{
-			"HealthRollup": "OK",
-			"Health":       "OK",
+			"HealthRollup": "TEST_VALUE",
+			"Health":       "TEST_VALUE",
 		},
 		"Oem": map[string]interface{}{
 			"ReadingUnits@meta":    v.Meta(view.PropGET("oem_reading_units")),

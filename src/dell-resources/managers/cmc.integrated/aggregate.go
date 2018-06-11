@@ -51,9 +51,9 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 				},
 
 				"Status": map[string]interface{}{
-					"HealthRollup": "OK",
+					"HealthRollup": "TEST_VALUE",
 					"State@meta":   v.Meta(view.PropGET("health_state")),
-					"Health":       "OK",
+					"Health":       "TEST_VALUE",
 				},
 
 				"Redundancy@odata.count": 1,
@@ -61,9 +61,9 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 					map[string]interface{}{
 						"@odata.type": "#Redundancy.v1_0_2.Redundancy",
 						"Status": map[string]interface{}{
-							"HealthRollup": "OK",
+							"HealthRollup": "TEST_VALUE",
 							"State@meta":   v.Meta(view.PropGET("redundancy_health_state")),
-							"Health":       "OK",
+							"Health":       "TEST_VALUE",
 						},
 						"RedundancySet": []interface{}{
 							map[string]interface{}{
@@ -83,15 +83,15 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 					},
 				},
 				"SerialConsole": map[string]interface{}{
-					"ConnectTypesSupported@odata.count": 0,
-					"MaxConcurrentSessions":             0,
+					"ConnectTypesSupported@odata.count": "TEST_VALUE",
+					"MaxConcurrentSessions":             "TEST_VALUE",
 					"ConnectTypesSupported":             []interface{}{},
 					"ServiceEnabled":                    false,
 				},
 
 				"CommandShell": map[string]interface{}{
-					"ConnectTypesSupported@odata.count": 0,
-					"MaxConcurrentSessions":             0,
+					"ConnectTypesSupported@odata.count": "TEST_VALUE",
+					"MaxConcurrentSessions":             "TEST_VALUE",
 					"ConnectTypesSupported":             []interface{}{},
 					"ServiceEnabled":                    false,
 				},
@@ -101,8 +101,8 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 				},
 
 				"GraphicalConsole": map[string]interface{}{
-					"ConnectTypesSupported@odata.count": 0,
-					"MaxConcurrentSessions":             0,
+					"ConnectTypesSupported@odata.count": "TEST_VALUE",
+					"MaxConcurrentSessions":             "TEST_VALUE",
 					"ConnectTypesSupported":             []interface{}{},
 					"ServiceEnabled":                    false,
 				},
@@ -137,175 +137,173 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 						"#Manager.ForceFailover": map[string]interface{}{
 							"target": v.GetURI() + "/Actions/Manager.ForceFailover",
 						},
+						"#DellManager.v1_0_0.DellManager.ResetToDefaults": map[string]interface{}{
+							"ResetType@Redfish.AllowableValues": []string{
+								"ClearToShip",
+								"Decommission",
+								"ResetFactoryConfig",
+								"ResetToEngineeringDefaults",
+							},
+							"target": v.GetURI() + "/Actions/Oem/DellManager.ResetToDefaults",
+						},
+						"OemManager.v1_0_0#OemManager.ExportSystemConfiguration": map[string]interface{}{
+							"ExportFormat@Redfish.AllowableValues": []string{
+								"XML",
+								"JSON",
+							},
+							"ExportUse@Redfish.AllowableValues": []string{
+								"Default",
+								"Clone",
+								"Replace",
+							},
+							"OemManager.v1_0_0#OemManager.ExportSystemConfiguration": []string{
+								"Default",
+								"IncludeReadOnly",
+								"IncludePasswordHashValues",
+								"IncludeReadOnly,IncludePasswordHashValues",
+							},
+							"ShareParameters": map[string]interface{}{
+								"IgnoreCertificateWarning@Redfish.AllowableValues": []string{
+									"Disabled",
+									"Enabled",
+								},
+								"ProxySupport@Redfish.AllowableValues": []string{
+									"Disabled",
+									"EnabledProxyDefault",
+									"Enabled",
+								},
+								"ProxyType@Redfish.AllowableValues": []string{
+									"HTTP",
+									"SOCKS4",
+								},
+								"ShareParameters@Redfish.AllowableValues": []string{
+									"IPAddress",
+									"ShareName",
+									"FileName",
+									"UserName",
+									"Password",
+									"Workgroup",
+									"ProxyServer",
+									"ProxyUserName",
+									"ProxyPassword",
+									"ProxyPort",
+								},
+								"ShareType@Redfish.AllowableValues": []string{
+									"NFS",
+									"CIFS",
+									"HTTP",
+									"HTTPS",
+								},
+								"Target@Redfish.AllowableValues": []string{
+									"ALL",
+									"IDRAC",
+									"BIOS",
+									"NIC",
+									"RAID",
+								},
+							},
+							"target": v.GetURI() + "/Actions/Oem/EID_674_Manager.ExportSystemConfiguration",
+						},
+						"OemManager.v1_0_0#OemManager.ImportSystemConfiguration": map[string]interface{}{
+							"HostPowerState@Redfish.AllowableValues": []string{
+								"On",
+								"Off",
+							},
+							"ImportSystemConfiguration@Redfish.AllowableValues": []string{
+								"TimeToWait",
+								"ImportBuffer",
+							},
+							"ShareParameters": map[string]interface{}{
+								"IgnoreCertificateWarning@Redfish.AllowableValues": []string{
+									"Disabled",
+									"Enabled",
+								},
+								"ProxySupport@Redfish.AllowableValues": []string{
+									"Disabled",
+									"EnabledProxyDefault",
+									"Enabled",
+								},
+								"ProxyType@Redfish.AllowableValues": []string{
+									"HTTP",
+									"SOCKS4",
+								},
+								"ShareParameters@Redfish.AllowableValues": []string{
+									"IPAddress",
+									"ShareName",
+									"FileName",
+									"UserName",
+									"Password",
+									"Workgroup",
+									"ProxyServer",
+									"ProxyUserName",
+									"ProxyPassword",
+									"ProxyPort",
+								},
+								"ShareType@Redfish.AllowableValues": []string{
+									"NFS",
+									"CIFS",
+									"HTTP",
+									"HTTPS",
+								},
+								"Target@Redfish.AllowableValues": []string{
+									"ALL",
+									"IDRAC",
+									"BIOS",
+									"NIC",
+									"RAID",
+								},
+							},
+							"ShutdownType@Redfish.AllowableValues": []string{
+								"Graceful",
+								"Forced",
+								"NoReboot",
+							},
+							"target": v.GetURI() + "/Actions/Oem/EID_674_Manager.ImportSystemConfiguration",
+						},
+						"OemManager.v1_0_0#OemManager.ImportSystemConfigurationPreview": map[string]interface{}{
+							"ImportSystemConfigurationPreview@Redfish.AllowableVaues": []string{
+								"ImportBuffer",
+							},
+							"ShareParameters": map[string]interface{}{
+								"IgnoreCertificateWarning@Redfish.AllowableValues": []string{
+									"Disabled",
+									"Enabled",
+								},
+								"ProxySupport@Redfish.AllowableValues": []string{
+									"Disabled",
+									"EnabledProxyDefault",
+									"Enabled",
+								},
+								"ProxyType@Redfish.AllowableValues": []string{
+									"HTTP",
+									"SOCKS4",
+								},
+								"ShareParameters@Redfish.AllowableValues": []string{
+									"IPAddress",
+									"ShareName",
+									"FileName",
+									"UserName",
+									"Password",
+									"Workgroup",
+									"ProxyServer",
+									"ProxyUserName",
+									"ProxyPassword",
+									"ProxyPort",
+								},
+								"ShareType@Redfish.AllowableValues": []string{
+									"NFS",
+									"CIFS",
+									"HTTP",
+									"HTTPS",
+								},
+								"Target@Redfish.AllowableValues": []string{
+									"ALL",
+								},
+							},
+							"target": v.GetURI() + "/Actions/Oem/EID_674_Manager.ImportSystemConfigurationPreview",
+						},
 					},
 				},
-
-				/*
-					******************************************************
-					 DISABLED FOR NOW because the output is mangled by dumplogs
-					******************************************************
-									   "Actions": {
-									        "Oem": {
-									                       "OemManager.v1_0_0#OemManager.ImportSystemConfigurationPreview": {
-									                  "ImportSystemConfigurationPreview@Redfish.AllowableValues": [
-									                       "ImportBuffer"
-									                  ],
-									                  "target": v.GetURI() +  "/Actions/Oem/EID_674_Manager.ImportSystemConfigurationPreview",
-									                  "ShareParameters": {
-									                       "ProxySupport XXXXXX
-									                            "Disabled",
-									                            "EnabledProxyDefault XXXXXX
-									                            "Enabled"
-									                       ],
-									                       "IgnoreCertificateWarning@Redfish.AllowableValues": [
-									                            "Disabled",
-									                            "Enabled"
-									                       ],
-									                       "ProxyType XXXXXX
-									                            "HTTP",
-									                            "SOCKS4"
-									                       ],
-									                       "ShareType@Redfish.AllowableValues": [
-									                            "NFS",
-									                            "CIFS",
-									                            "HTTP",
-									                            "HTTPS"
-									                       ],
-									                       "Target@Redfish.AllowableValues": [
-									                            "ALL"
-									                       ],
-									                       "ShareParameters@Redfish.AllowableValues": [
-									                            "IPAddress XXXXXX
-									                            "ShareName",
-									                            "FileName",
-									                            "UserName",
-									                            "Password XXXXXX
-									                            "Workgroup XXXXXX
-									                            "ProxyServer XXXXXX
-									                            "ProxyUserName XXXXXX
-									                            "ProxyPassword XXXXXX
-									                            "ProxyPort XXXXXX
-									                       ]
-									                  }
-									             },
-									             "OemManager.v1_0_0#OemManager.ImportSystemConfiguration": {
-									                  "HostPowerState@Redfish.AllowableValues": [
-									                       "On",
-									                       "Off"
-									                  ],
-									                  "target": v.GetURI() +  "/Actions/Oem/EID_674_Manager.ImportSystemConfiguration",
-									                  "ShutdownType@Redfish.AllowableValues": [
-									                       "Graceful",
-									                       "Forced",
-									                       "NoReboot"
-									                  ],
-									                  "ShareParameters": {
-									                       "ProxySupport XXXXXX
-									                            "Disabled",
-									                            "EnabledProxyDefault XXXXXX
-									                            "Enabled"
-									                       ],
-									                       "IgnoreCertificateWarning@Redfish.AllowableValues": [
-									                            "Disabled",
-									                            "Enabled"
-									                       ],
-									                       "ProxyType XXXXXX
-									                            "HTTP",
-									                            "SOCKS4"
-									                       ],
-									                       "ShareType@Redfish.AllowableValues": [
-									                            "NFS",
-									                            "CIFS",
-									                            "HTTP",
-									                            "HTTPS"
-									                       ],
-									                       "Target@Redfish.AllowableValues": [
-									                            "ALL",
-									                            "IDRAC",
-									                            "BIOS",
-									                            "NIC",
-									                            "RAID"
-									                       ],
-									                       "ShareParameters@Redfish.AllowableValues": [
-									                            "IPAddress XXXXXX
-									                            "ShareName",
-									                            "FileName",
-									                            "UserName",
-									                            "Password XXXXXX
-									                            "Workgroup XXXXXX
-									                            "ProxyServer XXXXXX
-									                            "ProxyUserName XXXXXX
-									                            "ProxyPassword XXXXXX
-									                            "ProxyPort XXXXXX
-									                       ]
-									                  },
-									                  "ImportSystemConfiguration@Redfish.AllowableValues": [
-									                       "TimeToWait",
-									                       "ImportBuffer"
-									                  ]
-									             },
-									             "OemManager.v1_0_0#OemManager.ExportSystemConfiguration": {
-									                  "IncludeInExport@Redfish.AllowableValues": [
-									                       "Default",
-									                       "IncludeReadOnly",
-									                       "IncludePasswordHashValues XXXXXX
-									                       "IncludeReadOnly,IncludePasswordHashValues XXXXXX
-									                  ],
-									                  "target": v.GetURI() +  "/Actions/Oem/EID_674_Manager.ExportSystemConfiguration",
-									                  "ShareParameters": {
-									                       "ProxySupport XXXXXX
-									                            "Disabled",
-									                            "EnabledProxyDefault XXXXXX
-									                            "Enabled"
-									                       ],
-									                       "IgnoreCertificateWarning@Redfish.AllowableValues": [
-									                            "Disabled",
-									                            "Enabled"
-									                       ],
-									                       "ProxyType XXXXXX
-									                            "HTTP",
-									                            "SOCKS4"
-									                       ],
-									                       "ShareType@Redfish.AllowableValues": [
-									                            "NFS",
-									                            "CIFS",
-									                            "HTTP",
-									                            "HTTPS"
-									                       ],
-									                       "Target@Redfish.AllowableValues": [
-									                            "ALL",
-									                            "IDRAC",
-									                            "BIOS",
-									                            "NIC",
-									                            "RAID"
-									                       ],
-									                       "ShareParameters@Redfish.AllowableValues": [
-									                            "IPAddress XXXXXX
-									                            "ShareName",
-									                            "FileName",
-									                            "UserName",
-									                            "Password XXXXXX
-									                            "Workgroup XXXXXX
-									                            "ProxyServer XXXXXX
-									                            "ProxyUserName XXXXXX
-									                            "ProxyPassword XXXXXX
-									                            "ProxyPort XXXXXX
-									                       ]
-									                  },
-									                  "ExportUse@Redfish.AllowableValues": [
-									                       "Default",
-									                       "Clone",
-									                       "Replace"
-									                  ],
-									                  "ExportFormat@Redfish.AllowableValues": [
-									                       "XML",
-									                       "JSON"
-									                  ]
-									             }
-									        },
-									   },
-				*/
-
 			}})
 
 	ah.CreateAction(ctx, ch, eb, ew,
@@ -326,5 +324,23 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 		"manager.forcefailover",
 		v.GetModel("default"))
 
+        ah.CreateAction(ctx, ch, eb, ew,
+                logger,
+                v.GetURI()+"/Actions/Oem/EID_674_Manager.ExportSystemConfiguration",
+                "manager.exportsystemconfiguration",
+                v.GetModel("default"))
+
+        ah.CreateAction(ctx, ch, eb, ew,
+               logger,
+               v.GetURI()+"/Actions/Oem/EID_674_Manager.ImportSystemConfiguration",
+               "manager.importsystemconfiguration",
+               v.GetModel("default"))
+
+        ah.CreateAction(ctx, ch, eb, ew,
+               logger,
+               v.GetURI()+"/Actions/Oem/EID_674_Manager.ImportSystemConfigurationPreview",
+               "manager.importsystemconfigurationpreview",
+               v.GetModel("default"))
+               
 	return v
 }

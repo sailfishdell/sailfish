@@ -35,15 +35,15 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 				"Model@meta":        v.Meta(view.PropGET("model")),
 				"Manufacturer@meta": v.Meta(view.PropGET("manufacturer")),
 				"Name@meta":         v.Meta(view.PropGET("name")),
-				"SKU":               "",
+				"SKU":               "TEST_VALUE",
 				"Description":       "An instance of Chassis Management Controller",
 				"Links":             map[string]interface{}{},
 				"Status": map[string]interface{}{
-					"HealthRollup": "OK",
-					"State":        "StandbySpare",
-					"Health":       "OK",
+					"HealthRollup": "TEST_VALUE",
+					"State":        "TEST_VALUE",
+					"Health":       "TEST_VALUE",
 				},
-				"IndicatorLED": "Lit",
+				"IndicatorLED": "TEST_VALUE",
 				"Oem": map[string]interface{}{
 					"OemChassis": map[string]interface{}{
 						"@odata.id": v.GetURI() + "/Attributes",

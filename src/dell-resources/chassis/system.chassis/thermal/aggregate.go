@@ -30,26 +30,28 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 				"Id":          "Thermal",
 				"Name":        "Thermal",
 				"Description": "Represents the properties for Temperature and Cooling",
-				// TODO: "Fans@odata.count": 9,
 				"Fans@meta": v.Meta(view.PropGET("fan_views")),
-				// TODO: "Temperatures@odata.count": ...
+                                "Fans@odata.count": "TEST_VALUE",
 				"Temperatures@meta": v.Meta(view.PropGET("thermal_views")),
-
+                                "Temperatures@odata.count": "TEST_VALUE",
 				"Oem": map[string]interface{}{
 					"EID_674": map[string]interface{}{
 						"FansSummary": map[string]interface{}{
 							"Status": map[string]interface{}{
-								"HealthRollup": "OK",
-								"Health":       "OK",
+								"HealthRollup": "TEST_VALUE",
+								"Health":       "TEST_VALUE",
 							},
 						},
 						"TemperaturesSummary": map[string]interface{}{
 							"Status": map[string]interface{}{
-								"HealthRollup": "OK",
-								"Health":       "OK",
+								"HealthRollup": "TEST_VALUE",
+								"Health":       "TEST_VALUE",
 							},
 						},
 					},
 				},
+                                //"Redundancy@meta": v.Meta(view.PropGET("redundancy_views")), 
+                                "Redundancy": "TEST_VALUE", 
+                                "Redundancy@odata.count": "TEST_VALUE",
 			}})
 }

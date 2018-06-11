@@ -40,8 +40,10 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 				"Name@meta":         v.Meta(view.PropGET("name")),
 				"Manufacturer@meta": v.Meta(view.PropGET("manufacturer")),
 
-				// TODO: "ManagedBy@odata.count": 1  (need some infrastructure for this)
-				"ManagedBy@meta": v.Meta(view.PropGET("managed_by")),
+				"Links": map[string]interface{}{
+					// TODO: "ManagedBy@odata.count": 1  (need some infrastructure for this)
+					"ManagedBy@meta": v.Meta(view.PropGET("managed_by")),
+				},
 
 				"SKU":          "",
 				"IndicatorLED": "Lit",
@@ -53,7 +55,7 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 				"Oem": map[string]interface{}{
 					"Dell": map[string]interface{}{
 						"ServiceTag@meta":      v.Meta(view.PropGET("service_tag")),
-						"InstPowerConsumption": 24,
+						"InstPowerConsumption": "TEST_VALUE",
 						"OemChassis": map[string]interface{}{
 							"@odata.id": v.GetURI() + "/Attributes",
 						},
@@ -73,10 +75,16 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 						"target": v.GetURI() + "/Actions/Chassis.Reset",
 					},
 					"Oem": map[string]interface{}{
-						"DellChassis.v1_0_0#DellChassis.ResetPeakPowerConsumption": map[string]interface{}{
+						"#DellChassis.v1_0_0.ResetPeakPowerConsumption": map[string]interface{}{
 							"target": v.GetURI() + "/Actions/Oem/DellChassis.ResetPeakPowerConsumption",
 						},
 						"#DellChassis.v1_0_0.VirtualReseat": map[string]interface{}{
+							"target": v.GetURI() + "/Actions/Oem/DellChassis.VirtualReseat",
+						},
+						"DellChassis.v1_0_0#DellChassis.ResetPeakPowerConsumption": map[string]interface{}{
+							"target": v.GetURI() + "/Actions/Oem/DellChassis.ResetPeakPowerConsumption",
+						},
+						"DellChassis.v1_0_0#DellChassis.VirtualReseat": map[string]interface{}{
 							"target": v.GetURI() + "/Actions/Oem/DellChassis.VirtualReseat",
 						},
 					},

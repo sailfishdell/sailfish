@@ -37,18 +37,18 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 				"SerialNumber":      v.Meta(view.PropGET("serial")),
 
 				"Links": map[string]interface{}{
-					// TODO: "ManagedBy@odata.count": 1
 					"ManagedBy@meta": v.Meta(view.PropGET("managed_by")),
+                                        "ManagedBy@odata.count": "TEST_VALUE",
 				},
 
-				"Description": "",
+				"Description": "TEST_VALUE",
 				"Status": map[string]interface{}{
-					"HealthRollup": "OK",
-					"State":        "Enabled",
-					"Health":       "OK",
+					"HealthRollup": "TEST_VALUE",
+					"State":        "TEST_VALUE",
+					"Health":       "TEST_VALUE",
 				},
-				"PartNumber": "",
-				"Name":       "",
+				"PartNumber": "TEST_VALUE",
+				"Name":       "TEST_VALUE",
 				"Oem": map[string]interface{}{
 					"OemChassis": map[string]interface{}{
 						"@odata.id": v.GetURI() + "/Attributes",
@@ -80,3 +80,4 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 				},
 			}})
 }
+

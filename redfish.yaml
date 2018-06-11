@@ -142,6 +142,8 @@ mappings:
         - {Property: "redundancy_min",          FQDD: "{FQDD}", Group: "Redundancy", Index: "1", Name: "MinNumNeeded" }
         - {Property: "redundancy_max",          FQDD: "{FQDD}", Group: "Redundancy", Index: "1", Name: "MaxNumSupported" }
 
+
+
     Chassis/IOM.Slot:
         - {Property: "asset_tag",    FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "AssetTag" }
         - {Property: "description",  FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Description" }
