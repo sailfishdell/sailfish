@@ -27,13 +27,13 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 				"DELETE": []string{}, // can't be deleted
 			},
 			Properties: map[string]interface{}{
-				"Id":          "Thermal",
-				"Name":        "Thermal",
-				"Description": "Represents the properties for Temperature and Cooling",
-				"Fans@meta": v.Meta(view.PropGET("fan_views")),
-                                "Fans@odata.count": "TEST_VALUE",
-				"Temperatures@meta": v.Meta(view.PropGET("thermal_views")),
-                                "Temperatures@odata.count": "TEST_VALUE",
+				"Id":                       "Thermal",
+				"Name":                     "Thermal",
+				"Description":              "Represents the properties for Temperature and Cooling",
+				"Fans@meta":                v.Meta(view.PropGET("fan_views")),
+				"Fans@odata.count":         "TEST_VALUE",
+				"Temperatures@meta":        v.Meta(view.PropGET("thermal_views")),
+				"Temperatures@odata.count": "TEST_VALUE",
 				"Oem": map[string]interface{}{
 					"EID_674": map[string]interface{}{
 						"FansSummary": map[string]interface{}{
@@ -50,8 +50,8 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 						},
 					},
 				},
-                                //"Redundancy@meta": v.Meta(view.PropGET("redundancy_views")), 
-                                "Redundancy": "TEST_VALUE", 
-                                "Redundancy@odata.count": "TEST_VALUE",
+				//"Redundancy@meta": v.Meta(view.PropGET("redundancy_views")),
+				"Redundancy":             "TEST_VALUE",
+				"Redundancy@odata.count": "TEST_VALUE",
 			}})
 }

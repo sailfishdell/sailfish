@@ -324,23 +324,23 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 		"manager.forcefailover",
 		v.GetModel("default"))
 
-        ah.CreateAction(ctx, ch, eb, ew,
-                logger,
-                v.GetURI()+"/Actions/Oem/EID_674_Manager.ExportSystemConfiguration",
-                "manager.exportsystemconfiguration",
-                v.GetModel("default"))
+	ah.CreateAction(ctx, ch, eb, ew,
+		logger,
+		v.GetURI()+"/Actions/Oem/EID_674_Manager.ExportSystemConfiguration",
+		"manager.exportsystemconfiguration",
+		v.GetModel("default"))
 
-        ah.CreateAction(ctx, ch, eb, ew,
-               logger,
-               v.GetURI()+"/Actions/Oem/EID_674_Manager.ImportSystemConfiguration",
-               "manager.importsystemconfiguration",
-               v.GetModel("default"))
+	ah.CreateAction(ctx, ch, eb, ew,
+		logger,
+		v.GetURI()+"/Actions/Oem/EID_674_Manager.ImportSystemConfiguration",
+		"manager.importsystemconfiguration",
+		v.GetModel("default"))
 
-        ah.CreateAction(ctx, ch, eb, ew,
-               logger,
-               v.GetURI()+"/Actions/Oem/EID_674_Manager.ImportSystemConfigurationPreview",
-               "manager.importsystemconfigurationpreview",
-               v.GetModel("default"))
-               
+	ah.CreateAction(ctx, ch, eb, ew,
+		logger,
+		v.GetURI()+"/Actions/Oem/EID_674_Manager.ImportSystemConfigurationPreview",
+		"manager.importsystemconfigurationpreview",
+		v.GetModel("default"))
+
 	return v
 }

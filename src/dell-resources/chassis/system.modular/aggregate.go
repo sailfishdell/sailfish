@@ -37,8 +37,8 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 				"SerialNumber":      v.Meta(view.PropGET("serial")),
 
 				"Links": map[string]interface{}{
-					"ManagedBy@meta": v.Meta(view.PropGET("managed_by")),
-                                        "ManagedBy@odata.count": "TEST_VALUE",
+					"ManagedBy@meta":        v.Meta(view.PropGET("managed_by")),
+					"ManagedBy@odata.count": "TEST_VALUE",
 				},
 
 				"Description": "TEST_VALUE",
@@ -80,4 +80,3 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 				},
 			}})
 }
-
