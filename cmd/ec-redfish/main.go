@@ -31,7 +31,8 @@ import (
 	_ "github.com/superchalupa/go-redfish/src/stdmeta"
 
 	// load idrac plugins
-	idrac "github.com/superchalupa/go-redfish/src/dell-ec"
+	"github.com/superchalupa/go-redfish/src/dell-ec"
+	"github.com/superchalupa/go-redfish/src/openbmc"
 
 	"github.com/superchalupa/go-redfish/src/ocp/basicauth"
 	"github.com/superchalupa/go-redfish/src/ocp/session"
@@ -79,7 +80,19 @@ func main() {
 	// These three all set up a waiter for the root service to appear, so init root service after.
 	actionhandler.InitService(ctx, domainObjs.CommandHandler, domainObjs.EventBus, domainObjs.EventWaiter)
 
-	idrac_mvc := idrac.New(ctx, logger, cfgMgr, &cfgMgrMu, domainObjs.CommandHandler, domainObjs.EventBus, domainObjs.EventWaiter)
+	type configHandler interface {
+		ConfigChangeHandler()
+	}
+
+	var impl configHandler
+
+	switch cfgMgr.Get("main.server_name") {
+	case "dell_ec":
+		impl = dell_ec.New(ctx, logger, cfgMgr, &cfgMgrMu, domainObjs.CommandHandler, domainObjs.EventBus, domainObjs.EventWaiter)
+	case "openbmc":
+		impl = openbmc.New(ctx, logger, cfgMgr, &cfgMgrMu, domainObjs.CommandHandler, domainObjs.EventBus, domainObjs.EventWaiter)
+	default:
+	}
 
 	cfgMgr.OnConfigChange(func(e fsnotify.Event) {
 		cfgMgrMu.Lock()
@@ -88,7 +101,7 @@ func main() {
 		for _, fn := range logger.ConfigChangeHooks {
 			fn()
 		}
-		idrac_mvc.ConfigChangeHandler()
+		impl.ConfigChangeHandler()
 	})
 	cfgMgr.WatchConfig()
 

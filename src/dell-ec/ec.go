@@ -1,7 +1,7 @@
 // Build tags: only build this for the simulation build. Be sure to note the required blank line after.
 // +build ec
 
-package obmc
+package dell_ec
 
 import (
 	"context"
@@ -21,6 +21,7 @@ import (
 	"github.com/superchalupa/go-redfish/src/ocp/session"
 	"github.com/superchalupa/go-redfish/src/ocp/stdcollections"
 	"github.com/superchalupa/go-redfish/src/ocp/view"
+	"github.com/superchalupa/go-redfish/src/ocp/test_aggregate"
 
 	"github.com/superchalupa/go-redfish/src/dell-resources/ar_mapper"
 	"github.com/superchalupa/go-redfish/src/dell-resources/attributes"
@@ -33,7 +34,6 @@ import (
 	"github.com/superchalupa/go-redfish/src/dell-resources/chassis/system.chassis/thermal/fans"
 	"github.com/superchalupa/go-redfish/src/dell-resources/chassis/system.modular"
 	mgrCMCIntegrated "github.com/superchalupa/go-redfish/src/dell-resources/managers/cmc.integrated"
-	"github.com/superchalupa/go-redfish/src/dell-resources/test"
 	"github.com/superchalupa/go-redfish/src/dell-resources/update_service"
 )
 

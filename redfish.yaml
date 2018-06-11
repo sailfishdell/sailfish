@@ -1,4 +1,6 @@
 main:
+    #server_name: "dell_ec"
+    server_name: "openbmc"
     log:
         # debug, info, warn, error, crit
         Level: "warn"
