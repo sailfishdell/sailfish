@@ -34,7 +34,13 @@ main:
 
             # The loggers below are the remaining, non-heirarchical loggers
             - name: "PATCH"
-              level: "debug"
+              level: "warn"
+
+            - name: "GET"
+              level: "warn"
+
+            - name: "property_process"
+              level: "warn"
 
             - name: "ec"
               level: "warn"
@@ -70,7 +76,7 @@ main:
               level: "warn"
 
             - name: "observer"
-              level: "debug"
+              level: "warn"
 
             - name: "firmware/inventory"
               level: "info"
