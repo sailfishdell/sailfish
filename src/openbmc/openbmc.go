@@ -17,10 +17,8 @@ import (
 	"github.com/superchalupa/go-redfish/src/ocp/root"
 	"github.com/superchalupa/go-redfish/src/ocp/session"
 	"github.com/superchalupa/go-redfish/src/ocp/stdcollections"
-	"github.com/superchalupa/go-redfish/src/ocp/view"
 	"github.com/superchalupa/go-redfish/src/ocp/test_aggregate"
-
-	"github.com/superchalupa/go-redfish/src/dell-resources/ar_mapper"
+	"github.com/superchalupa/go-redfish/src/ocp/view"
 )
 
 type ocp struct {
@@ -57,18 +55,15 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	//   3) views - pass models and controllers by args
 	//   4) aggregate - pass view
 	//
-	testLogger := logger.New("module", "testview")
+	//testLogger := logger.New("module", "testview")
 	testModel := model.New(
 		model.UpdateProperty("unique_name", "test_unique_name"),
 		model.UpdateProperty("name", "name"),
 		model.UpdateProperty("description", "description"),
 	)
 
-	armapper, _ := ar_mapper.New(ctx, testLogger, testModel, "test/testview", "CMC.Integrated.1", ch, eb, ew)
-	updateFns = append(updateFns, armapper.ConfigChangedFn)
 	testView := view.New(
 		view.WithModel("default", testModel),
-		view.WithController("ar_mapper", armapper),
 		view.WithURI(rootView.GetURI()+"/testview"),
 	)
 	domain.RegisterPlugin(func() domain.Plugin { return testView })
@@ -85,16 +80,13 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	// /redfish/v1/Sessions
 	//*********************************************************************
 	//
-	sessionLogger := logger.New("module", "SessionService")
+	//sessionLogger := logger.New("module", "SessionService")
 	sessionModel := model.New(
 		model.UpdateProperty("session_timeout", 30))
 	// the controller is what updates the model when ar entries change, also
 	// handles patch from redfish
-	armapper, _ = ar_mapper.New(ctx, sessionLogger, sessionModel, "SessionService", "", ch, eb, ew)
-	updateFns = append(updateFns, armapper.ConfigChangedFn)
 	sessionView := view.New(
 		view.WithModel("default", sessionModel),
-		view.WithController("ar_mapper", armapper),
 		view.WithURI(rootView.GetURI()+"/SessionService"))
 	domain.RegisterPlugin(func() domain.Plugin { return sessionView })
 	session.AddAggregate(ctx, sessionView, rootView.GetUUID(), ch, eb, ew)
