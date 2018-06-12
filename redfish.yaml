@@ -79,6 +79,9 @@ main:
               level: "warn"
 
             - name: "firmware/inventory"
+              level: "warn"
+
+            - name: "Registries"
               level: "info"
 
 
@@ -194,3 +197,15 @@ mappings:
     UpdateService:
         # no mappings for now: placeholder
 
+    Registries:
+        # placeholder
+
+    Registries/BaseMessages:
+        - {Property: "registry_name",  Value: "Base Message Registry File" }
+        - {Property: "registry_type",  Value: "Base.1.3.8" }
+
+    Registries/Messages:
+        # placeholder
+
+    Registries/ManagerAttributeRegistry:
+        - {Property: "registry_type",  Value: 29 }
