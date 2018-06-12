@@ -20,8 +20,8 @@ import (
 	"github.com/superchalupa/go-redfish/src/ocp/root"
 	"github.com/superchalupa/go-redfish/src/ocp/session"
 	"github.com/superchalupa/go-redfish/src/ocp/stdcollections"
-	"github.com/superchalupa/go-redfish/src/ocp/view"
 	"github.com/superchalupa/go-redfish/src/ocp/test_aggregate"
+	"github.com/superchalupa/go-redfish/src/ocp/view"
 
 	"github.com/superchalupa/go-redfish/src/dell-resources/ar_mapper"
 	"github.com/superchalupa/go-redfish/src/dell-resources/attributes"
@@ -119,6 +119,11 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	//
 	mgrLogger := logger.New("module", "Managers")
 	var managers []*view.View
+	mgrRedundancyMdl := model.New(
+		model.UpdateProperty("health", "red TEST health"),
+		model.UpdateProperty("state", "red TEST state"),
+		model.UpdateProperty("health_rollup", "red TEST"),
+	)
 	for _, mgrName := range []string{
 		"CMC.Integrated.1",
 		"CMC.Integrated.2",
@@ -130,6 +135,11 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		mdl := model.New(
 			mgrCMCIntegrated.WithUniqueName(mgrName),
 			model.UpdateProperty("attributes", map[string]map[string]map[string]interface{}{}),
+
+			// manually add health properties until we get a mapper to automatically manage these
+			model.UpdateProperty("health", "TEST health"),
+			model.UpdateProperty("state", "TEST state"),
+			model.UpdateProperty("health_rollup", "TEST"),
 		)
 
 		// the controller is what updates the model when ar entries change,
@@ -146,13 +156,16 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 
 		vw := view.New(
 			view.WithURI(rootView.GetURI()+"/Managers/"+mgrName),
+			view.WithModel("redundancy_health", mgrRedundancyMdl), // health info in default model
+			view.WithModel("health", mdl),                         // health info in default model
+			view.WithModel("swinv", mdl),                          // common name for swinv model, shared in this case
 			view.WithModel("default", mdl),
-			view.WithModel("swinv", mdl), // common name for swinv model, shared in this case
 			view.WithController("ar_mapper", armapper),
 			view.WithController("ar_dump", ardumper),
 			view.WithController("fw_mapper", fwmapper),
 			view.WithFormatter("attributeFormatter", attributes.FormatAttributeDump),
 		)
+
 		domain.RegisterPlugin(func() domain.Plugin { return vw })
 		managers = append(managers, vw)
 		swinvViews = append(swinvViews, vw)
@@ -177,18 +190,18 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		// This controller will populate 'attributes' property with AR entries matching this FQDD ('mgrName')
 		ardumper, _ = attributes.NewController(ctx, chasModel, []string{mgrName}, ch, eb, ew)
 
-		vw = view.New(
+		vw2 := view.New(
 			view.WithURI(rootView.GetURI()+"/Chassis/"+mgrName),
 			view.WithModel("default", chasModel),
 			view.WithController("ar_mapper", armapper),
 			view.WithController("ar_dump", ardumper),
 			view.WithFormatter("attributeFormatter", attributes.FormatAttributeDump),
 		)
-		domain.RegisterPlugin(func() domain.Plugin { return vw })
+		domain.RegisterPlugin(func() domain.Plugin { return vw2 })
 
 		// add the aggregate to the view tree
-		chasCMCIntegrated.AddAggregate(ctx, chasLogger, vw, ch)
-		attributes.AddAggregate(ctx, vw, rootView.GetURI()+"/Chassis/"+mgrName+"/Attributes", ch)
+		chasCMCIntegrated.AddAggregate(ctx, chasLogger, vw2, ch)
+		attributes.AddAggregate(ctx, vw2, rootView.GetURI()+"/Chassis/"+mgrName+"/Attributes", ch)
 	}
 
 	chasName := "System.Chassis.1"
@@ -448,7 +461,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		update_service.EnhanceAggregate(ctx, vw, rootView, ch)
 	}
 
-	sw := map[string]map[string]*model.Model{}
+	sw := map[string]map[string][]*model.Model{}
 	swMu := sync.Mutex{}
 
 	obsLogger := logger.New("module", "observer")
@@ -483,12 +496,21 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		obsLogger.Info("GOT FULL SWVERSION INFO", "model", mdl, "property", property, "oldValue", oldValue, "newValue", newValue)
 		swMu.Lock()
 		defer swMu.Unlock()
-		ver, ok := sw[class]
+
+		verMap, ok := sw[class]
 		if !ok {
-			ver = map[string]*model.Model{}
+			verMap = map[string][]*model.Model{}
+			sw[class] = verMap
 		}
-		ver[version] = mdl
-		sw[class] = ver
+
+		mdlArray, ok := verMap[version]
+		if !ok {
+			mdlArray = []*model.Model{}
+			verMap[version] = mdlArray
+		}
+
+		mdlArray = append(mdlArray, mdl)
+		verMap[version] = mdlArray
 
 		// TODO: delete any old copies of this model in the tree
 	}
