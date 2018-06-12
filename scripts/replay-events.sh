@@ -3,6 +3,9 @@
 set -e
 set -x
 
+# new default 8080 port for this for speed
+port=${port:-8080}
+
 scriptdir=$(cd $(dirname $0); pwd)
 . ${scriptdir}/common-vars.sh
 
