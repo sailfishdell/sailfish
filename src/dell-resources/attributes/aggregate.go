@@ -78,7 +78,7 @@ func AddAggregate(ctx context.Context, v *view.View, uri string, ch eh.CommandHa
 				"DELETE": []string{}, // can't be deleted
 			},
 			Properties: map[string]interface{}{
-				"Id":                v.Meta(view.GETProperty("unique_name"), view.GETModel("Default")),
+				"Id":                v.Meta(view.GETProperty("unique_name"), view.GETModel("default")),
 				"Name":              "Oem Attributes",
 				"Description":       "This is the manufacturer/provider specific list of attributes.",
 				"AttributeRegistry": "ManagerAttributeRegistry.v1_0_0",
