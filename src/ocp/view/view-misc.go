@@ -32,7 +32,7 @@ func (s *View) PropertyGet(
 
 	modelObj := s.GetModel(modelName)
 	if modelObj == nil {
-		log.MustLogger("GET").Debug("metadata specifies a nonexistent model name", "meta", meta)
+		log.MustLogger("GET").Debug("metadata specifies a nonexistent model name", "meta", meta, "view", s)
 		return
 	}
 
