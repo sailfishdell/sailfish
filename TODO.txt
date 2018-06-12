@@ -15,10 +15,10 @@ Things that need work: (-) TODO (*) DONE
  - ACTIONS
     * Implement a test OEM action for reference
         * obmc now also implements reset action (test)
-        - see scripts/test.sh, plugins/test_action/. These implement example action
+        * see scripts/test.sh, plugins/test_action/. These implement example action
 
  - EVENTS
-    - implement an http endpoint to inject raw events into the system (internal command)
+    * implement an http endpoint to inject raw events into the system (internal command)
 
  - DBUS interface:
     - hook base command processor into dbus
