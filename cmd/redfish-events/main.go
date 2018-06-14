@@ -10,9 +10,7 @@ import (
 	"github.com/fsnotify/fsnotify"
 	flag "github.com/spf13/pflag"
 	"github.com/spf13/viper"
-
-//	log "github.com/superchalupa/go-redfish/src/log"
-
+	//	log "github.com/superchalupa/go-redfish/src/log"
 )
 
 func main() {
@@ -34,7 +32,7 @@ func main() {
 	}
 
 	// Defaults
-    // put any viper config defaults here, none yet, use this as an example
+	// put any viper config defaults here, none yet, use this as an example
 	// cfgMgr.SetDefault("session.timeout", 10)
 
 	flag.Parse()
@@ -45,11 +43,9 @@ func main() {
 
 	logger := initializeApplicationLogging(cfgMgr)
 
-
 	type configHandler interface {
 		ConfigChangeHandler()
 	}
-
 
 	cfgMgr.OnConfigChange(func(e fsnotify.Event) {
 		cfgMgrMu.Lock()
@@ -58,16 +54,14 @@ func main() {
 		for _, fn := range logger.ConfigChangeHooks {
 			fn()
 		}
-		 // you should put a hook here to re-run config handling for any sub modules....
-         // even better: have sub modules use their own viper config
+		// you should put a hook here to re-run config handling for any sub modules....
+		// even better: have sub modules use their own viper config
 	})
 	cfgMgr.WatchConfig()
 
-
-    // Put our code here!
-    _ = ctx // eliminate unused var warning on ctx since we will definitely use it later
-    fmt.Println("Hello world")
-
+	// Put our code here!
+	_ = ctx // eliminate unused var warning on ctx since we will definitely use it later
+	fmt.Println("Hello world")
 
 	logger.Debug("Hello world")
 	SdNotify("READY=1")

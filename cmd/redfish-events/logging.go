@@ -33,7 +33,6 @@ func (l *MyLogger) New(ctx ...interface{}) mylog.Logger {
 	}
 }
 
-
 func (l *MyLogger) setupLogHandlersFromConfig(cfg *viper.Viper) {
 	loglvl, err := log.LvlFromString(cfg.GetString("main.log.level"))
 	if err != nil {
