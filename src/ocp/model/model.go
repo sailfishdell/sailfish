@@ -16,6 +16,7 @@ type Model struct {
 	sync.RWMutex
 	properties map[string]interface{}
 	observers  map[string]Observer
+	in_notify  bool
 }
 
 // New is the constructor for a model
@@ -23,6 +24,7 @@ func New(options ...Option) *Model {
 	s := &Model{
 		properties: map[string]interface{}{},
 		observers:  map[string]Observer{},
+		in_notify:  false,
 	}
 
 	s.ApplyOption(options...)
@@ -54,9 +56,13 @@ func (s *Model) AddObserver(name string, ob Observer) {
 func (s *Model) UpdatePropertyUnlocked(p string, i interface{}) {
 	old, _ := s.properties[p]
 	s.properties[p] = i
-	for _, fn := range s.observers {
-		fn(s, p, old, i)
+	if !s.in_notify {
+		s.in_notify = true
+		for _, fn := range s.observers {
+			fn(s, p, old, i)
+		}
 	}
+	s.in_notify = false
 }
 
 // UpdateProperty is used to change properties. It will also notify any
