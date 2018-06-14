@@ -38,6 +38,7 @@ import (
 	"github.com/superchalupa/go-redfish/src/dell-resources/registries"
 	"github.com/superchalupa/go-redfish/src/dell-resources/registries/registry"
 	"github.com/superchalupa/go-redfish/src/dell-resources/update_service"
+	"github.com/superchalupa/go-redfish/src/dell-resources/update_service/firmware_inventory"
 )
 
 type ocp struct {
@@ -503,14 +504,19 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	}
 
 	sw := map[string]map[string][]*model.Model{}
+	inv := map[string]*view.View{}
 	swMu := sync.Mutex{}
 
+	// Purpose of this function is to make a list of all of the firmware
+	// inventory models and then create a reverse-mapping for the updateservice
+	// firmwareinventory
+	//
 	obsLogger := logger.New("module", "observer")
 	fn := func(mdl *model.Model, property string, oldValue, newValue interface{}) {
 		// model is locked when we enter observer
 		obsLogger.Debug("MODEL POPERTY CHANGE", "model", mdl, "property", property, "oldValue", oldValue, "newValue", newValue)
 
-		classRaw, ok := mdl.GetPropertyOkUnlocked("device_class")
+		classRaw, ok := mdl.GetPropertyOkUnlocked("fw_device_class")
 		if !ok || classRaw == nil {
 			obsLogger.Debug("DID NOT GET device_class raw")
 			return
@@ -522,7 +528,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			return
 		}
 
-		versionRaw, ok := mdl.GetPropertyOkUnlocked("version")
+		versionRaw, ok := mdl.GetPropertyOkUnlocked("fw_version")
 		if !ok || versionRaw == nil {
 			obsLogger.Debug("DID NOT GET version raw")
 			return
@@ -534,7 +540,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			return
 		}
 
-		obsLogger.Info("GOT FULL SWVERSION INFO", "model", mdl, "property", property, "oldValue", oldValue, "newValue", newValue)
 		swMu.Lock()
 		defer swMu.Unlock()
 
@@ -550,8 +555,53 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			verMap[version] = mdlArray
 		}
 
-		mdlArray = append(mdlArray, mdl)
-		verMap[version] = mdlArray
+		skip := false
+		for _, m := range mdlArray {
+			if m == mdl {
+				skip = true
+			}
+		}
+
+		if !skip {
+			mdlArray = append(mdlArray, mdl)
+			verMap[version] = mdlArray
+		}
+
+		obsLogger.Info("GOT FULL SWVERSION INFO", "model", mdl, "property", property, "oldValue", oldValue, "newValue", newValue, "mdlArray", mdlArray)
+
+		comp_ver_tuple := class + "-" + version
+
+		invview, ok := inv[comp_ver_tuple]
+		if !ok {
+			invmdl := model.New(
+				model.UpdateProperty("fw_id", "Installed-"+comp_ver_tuple),
+			)
+
+			invview = view.New(
+				view.WithURI(rootView.GetURI()+"/UpdateService/FirmwareInventory/Installed-"+comp_ver_tuple),
+				view.WithModel("swinv", mdl),
+				view.WithModel("firm", invmdl),
+			)
+			inv[comp_ver_tuple] = invview
+			domain.RegisterPlugin(func() domain.Plugin { return invview })
+			firmware_inventory.AddAggregate(ctx, rootView, invview, ch)
+		}
+
+		fqdd_list := []string{}
+		for _, m := range mdlArray {
+			var fqdd interface{}
+			if m != mdl {
+				fqdd, ok = m.GetPropertyOk("fw_fqdd")
+			} else {
+				fqdd, ok = m.GetPropertyOkUnlocked("fw_fqdd")
+			}
+			if ok {
+				fqdd_list = append(fqdd_list, fqdd.(string))
+			}
+		}
+
+		invview.GetModel("firm").UpdateProperty("fw_fqdd", fqdd_list)
+		invview.GetModel("firm").UpdateProperty("fw_related", "happy")
 
 		// TODO: delete any old copies of this model in the tree
 	}

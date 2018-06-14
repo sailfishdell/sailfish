@@ -19,7 +19,6 @@ func FormatAttributeDump(
 	rrp *domain.RedfishResourceProperty,
 	meta map[string]interface{},
 ) error {
-
 	p, ok := meta["property"]
 	if !ok {
 		return errors.New("fallback")
@@ -30,7 +29,7 @@ func FormatAttributeDump(
 		return errors.New("fallback")
 	}
 
-	attributes, ok := v.GetModel("default").GetProperty(prop).(map[string]map[string]map[string]interface{})
+	attributes, ok := m.GetProperty(prop).(map[string]map[string]map[string]interface{})
 	if !ok {
 		return errors.New("attributes not setup properly")
 	}
