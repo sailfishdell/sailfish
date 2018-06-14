@@ -102,16 +102,16 @@ mappings:
         - {Property: "model",                    FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Name" }
 
     firmware/inventory:
-        - {Property: "device_class",     FQDD: "{FQDD}", Group: "FWInventory", Index: "1", Name: "DeviceClass" }
-        - {Property: "description",      FQDD: "{FQDD}", Group: "FWInventory", Index: "1", Name: "Description"}
-        - {Property: "device_context",   FQDD: "{FQDD}", Group: "FWInventory", Index: "1", Name: "DeviceContext" }
-        - {Property: "device_instance",  FQDD: "{FQDD}", Group: "FWInventory", Index: "1", Name: "DeviceInstance" }
-        - {Property: "fqdd",             FQDD: "{FQDD}", Group: "FWInventory", Index: "1", Name: "FQDD" }
-        - {Property: "name",             FQDD: "{FQDD}", Group: "FWInventory", Index: "1", Name: "Name" }
-        - {Property: "install_date",     FQDD: "{FQDD}", Group: "FWInventory", Index: "1", Name: "InstallDate" }
-        - {Property: "updateable",       FQDD: "{FQDD}", Group: "FWInventory", Index: "1", Name: "Updateable" }
-        - {Property: "version",          FQDD: "{FQDD}", Group: "FWInventory", Index: "1", Name: "Version" }
-        - {Property: "version_sequence", FQDD: "{FQDD}", Group: "FWInventory", Index: "1", Name: "VersionSequence" }
+        - {Property: "fw_device_class",     FQDD: "{FQDD}", Group: "FWInventory", Index: "1", Name: "DeviceClass" }
+        - {Property: "fw_description",      FQDD: "{FQDD}", Group: "FWInventory", Index: "1", Name: "Description"}
+        - {Property: "fw_device_context",   FQDD: "{FQDD}", Group: "FWInventory", Index: "1", Name: "DeviceContext" }
+        - {Property: "fw_device_instance",  FQDD: "{FQDD}", Group: "FWInventory", Index: "1", Name: "DeviceInstance" }
+        - {Property: "fw_fqdd",             FQDD: "{FQDD}", Group: "FWInventory", Index: "1", Name: "FQDD" }
+        - {Property: "fw_name",             FQDD: "{FQDD}", Group: "FWInventory", Index: "1", Name: "Name" }
+        - {Property: "fw_install_date",     FQDD: "{FQDD}", Group: "FWInventory", Index: "1", Name: "InstallDate" }
+        - {Property: "fw_updateable",       FQDD: "{FQDD}", Group: "FWInventory", Index: "1", Name: "Updateable" }
+        - {Property: "fw_version",          FQDD: "{FQDD}", Group: "FWInventory", Index: "1", Name: "Version" }
+        - {Property: "fw_version_sequence", FQDD: "{FQDD}", Group: "FWInventory", Index: "1", Name: "VersionSequence" }
 
     fpga_inventory:
         - {Property: "device_class",     FQDD: "{FQDD}", Group: "FWInventory", Index: "1", Name: "DeviceClass" }
