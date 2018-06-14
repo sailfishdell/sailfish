@@ -19,6 +19,7 @@ import (
 	"github.com/superchalupa/go-redfish/src/ocp/model"
 	"github.com/superchalupa/go-redfish/src/ocp/root"
 	"github.com/superchalupa/go-redfish/src/ocp/session"
+	"github.com/superchalupa/go-redfish/src/ocp/static_mapper"
 	"github.com/superchalupa/go-redfish/src/ocp/stdcollections"
 	"github.com/superchalupa/go-redfish/src/ocp/test_aggregate"
 	"github.com/superchalupa/go-redfish/src/ocp/view"
@@ -34,6 +35,8 @@ import (
 	"github.com/superchalupa/go-redfish/src/dell-resources/chassis/system.chassis/thermal/fans"
 	"github.com/superchalupa/go-redfish/src/dell-resources/chassis/system.modular"
 	mgrCMCIntegrated "github.com/superchalupa/go-redfish/src/dell-resources/managers/cmc.integrated"
+	"github.com/superchalupa/go-redfish/src/dell-resources/registries"
+	"github.com/superchalupa/go-redfish/src/dell-resources/registries/registry"
 	"github.com/superchalupa/go-redfish/src/dell-resources/update_service"
 )
 
@@ -113,6 +116,44 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		view.WithURI(rootView.GetURI()+"/SessionService"))
 	domain.RegisterPlugin(func() domain.Plugin { return sessionView })
 	session.AddAggregate(ctx, sessionView, rootView.GetUUID(), ch, eb, ew)
+
+	//*********************************************************************
+	// /redfish/v1/Registries
+	//*********************************************************************
+	registryLogger := logger.New("module", "Registries")
+	registryModel := model.New()
+
+	// static config controller, initlize values based on yaml config
+	staticMapper, _ := static_mapper.New(ctx, registryLogger, registryModel, "Registries")
+	updateFns = append(updateFns, staticMapper.ConfigChangedFn)
+
+	registryView := view.New(
+		view.WithURI(rootView.GetURI()+"/Registries"),
+		view.WithModel("default", registryModel),
+	)
+	domain.RegisterPlugin(func() domain.Plugin { return registryView })
+	registries.AddAggregate(ctx, registryLogger, registryView, ch, eb, ew)
+
+	registry_views := []interface{}{}
+	for _, registryNames := range []string{
+		"Messages", "BaseMessages", "ManagerAttributeRegistry",
+	} {
+		regModel := model.New(
+			model.UpdateProperty("registry_id", registryNames),
+		)
+
+		// static config controller, initlize values based on yaml config
+		staticMapper, _ := static_mapper.New(ctx, registryLogger, regModel, "Registries/"+registryNames)
+		updateFns = append(updateFns, staticMapper.ConfigChangedFn)
+
+		rv := view.New(
+			view.WithURI(rootView.GetURI()+"/Registries/"+registryNames),
+			view.WithModel("default", regModel),
+		)
+		domain.RegisterPlugin(func() domain.Plugin { return rv })
+		registry.AddAggregate(ctx, registryLogger, rv, ch, eb, ew)
+	}
+	registryModel.ApplyOption(model.UpdateProperty("registry_views", &domain.RedfishResourceProperty{Value: registry_views}))
 
 	//
 	// Loop to create similarly named manager objects and the things attached there.
