@@ -15,7 +15,6 @@ type staticValMapping struct {
 }
 
 type staticValMappingController struct {
-	mappings []staticValMapping
 	logger   log.Logger
 	name     string
 	mdl      *model.Model
@@ -23,7 +22,6 @@ type staticValMappingController struct {
 
 func New(ctx context.Context, logger log.Logger, m *model.Model, name string) (*staticValMappingController, error) {
 	c := &staticValMappingController{
-		mappings: []staticValMapping{},
 		name:     name,
 		logger:   logger,
 		mdl:      m,
