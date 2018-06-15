@@ -6,7 +6,6 @@ package cmc_integrated
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/superchalupa/go-redfish/src/log"
 	"github.com/superchalupa/go-redfish/src/ocp/health"
@@ -285,8 +284,6 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 	health.GetHealthFragment(v, "redundancy_health", redundancy)
 	properties["Redundancy"] = []interface{}{redundancy}
 	properties["Redundancy@odata.count"] = len(properties["Redundancy"].([]interface{}))
-
-	fmt.Printf("\n\nConstructing aggregate with references to VIEW: %#v\n\n", v)
 
 	ch.HandleCommand(
 		ctx,
