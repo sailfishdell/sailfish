@@ -1,6 +1,3 @@
-// Build tags: only build this for the simulation build. Be sure to note the required blank line after.
-// +build ec
-
 package dell_ec
 
 import (
