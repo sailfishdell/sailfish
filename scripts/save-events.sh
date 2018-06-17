@@ -6,4 +6,6 @@ set -x
 scriptdir=$(cd $(dirname $0); pwd)
 . ${scriptdir}/common-vars.sh
 
-$CURLCMD -s $BASE/events | perl -n -e 'print unless /^\s*$/' | cut -d: -f2- | tee -a event-list.json
+outname=${1:-event-list.json}
+
+$CURLCMD -s $BASE/events | perl -n -e 'print unless /^\s*$/' | cut -d: -f2- | perl -p -i -e 's/^\s*//;g' tee -a $outname
