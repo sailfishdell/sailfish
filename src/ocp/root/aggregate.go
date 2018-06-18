@@ -6,7 +6,6 @@ import (
 	domain "github.com/superchalupa/go-redfish/src/redfishresource"
 
 	eh "github.com/looplab/eventhorizon"
-	"github.com/looplab/eventhorizon/utils"
 )
 
 type view interface {
@@ -14,7 +13,7 @@ type view interface {
 	GetURI() string
 }
 
-func AddAggregate(ctx context.Context, v view, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
+func AddAggregate(ctx context.Context, v view, ch eh.CommandHandler, eb eh.EventBus) {
 	ch.HandleCommand(
 		ctx,
 		&domain.CreateRedfishResource{

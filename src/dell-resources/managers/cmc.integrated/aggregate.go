@@ -17,7 +17,11 @@ import (
 	ah "github.com/superchalupa/go-redfish/src/actionhandler"
 )
 
-func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) *view.View {
+type waiter interface {
+	Listen(context.Context, func(eh.Event) bool) (*utils.EventListener, error)
+}
+
+func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.CommandHandler, eb eh.EventBus, ew waiter) *view.View {
 
 	properties := map[string]interface{}{
 		"Id@meta":   v.Meta(view.PropGET("unique_name")),

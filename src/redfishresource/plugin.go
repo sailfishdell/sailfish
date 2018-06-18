@@ -7,20 +7,19 @@ import (
 	"sync"
 
 	eh "github.com/looplab/eventhorizon"
-	"github.com/looplab/eventhorizon/utils"
 )
 
-var needsInit []func(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter)
+var needsInit []func(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew waiter)
 var needsInitMu sync.Mutex
 
-func InitDomain(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
+func InitDomain(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew waiter) {
 	for _, f := range needsInit {
 		f(ctx, ch, eb, ew)
 	}
 }
 
 // use this function in any plugin to register that it needs to be initialized with domain objects
-func RegisterInitFN(fn func(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter)) {
+func RegisterInitFN(fn func(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew waiter)) {
 	needsInitMu.Lock()
 	defer needsInitMu.Unlock()
 	needsInit = append(needsInit, fn)

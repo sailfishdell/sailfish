@@ -42,9 +42,13 @@ type ocp struct {
 	configChangeHandler func()
 }
 
+type waiter interface {
+	Listen(context.Context, func(eh.Event) bool) (*utils.EventListener, error)
+}
+
 func (o *ocp) ConfigChangeHandler() { o.configChangeHandler() }
 
-func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *sync.Mutex, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) *ocp {
+func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *sync.Mutex, ch eh.CommandHandler, eb eh.EventBus, ew waiter) *ocp {
 	logger = logger.New("module", "ec")
 	self := &ocp{}
 
@@ -62,7 +66,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		view.WithURI("/redfish/v1"),
 	)
 	domain.RegisterPlugin(func() domain.Plugin { return rootView })
-	root.AddAggregate(ctx, rootView, ch, eb, ew)
+	root.AddAggregate(ctx, rootView, ch, eb)
 
 	//*********************************************************************
 	//  /redfish/v1/testview - a proof of concept test view and example
@@ -130,7 +134,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		view.WithModel("default", registryModel),
 	)
 	domain.RegisterPlugin(func() domain.Plugin { return registryView })
-	registries.AddAggregate(ctx, registryLogger, registryView, ch, eb, ew)
+	registries.AddAggregate(ctx, registryLogger, registryView, ch, eb)
 
 	registry_views := []interface{}{}
 	for _, registryNames := range []string{
@@ -149,7 +153,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			view.WithModel("default", regModel),
 		)
 		domain.RegisterPlugin(func() domain.Plugin { return rv })
-		registry.AddAggregate(ctx, registryLogger, rv, ch, eb, ew)
+		registry.AddAggregate(ctx, registryLogger, rv, ch, eb)
 	}
 	registryModel.ApplyOption(model.UpdateProperty("registry_views", &domain.RedfishResourceProperty{Value: registry_views}))
 
@@ -193,7 +197,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		// This controller will populate 'attributes' property with AR entries matching this FQDD ('mgrName')
 		ardumper, _ := attributes.NewController(ctx, mdl, []string{mgrName}, ch, eb, ew)
 
-		vw := view.New(
+		mgrCmcVw := view.New(
 			view.WithURI(rootView.GetURI()+"/Managers/"+mgrName),
 			view.WithModel("redundancy_health", mgrRedundancyMdl), // health info in default model
 			view.WithModel("health", mdl),                         // health info in default model
@@ -205,13 +209,13 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			view.WithFormatter("attributeFormatter", attributes.FormatAttributeDump),
 		)
 
-		domain.RegisterPlugin(func() domain.Plugin { return vw })
-		managers = append(managers, vw)
-		swinvViews = append(swinvViews, vw)
+		domain.RegisterPlugin(func() domain.Plugin { return mgrCmcVw })
+		managers = append(managers, mgrCmcVw)
+		swinvViews = append(swinvViews, mgrCmcVw)
 
 		// add the aggregate to the view tree
-		mgrCMCIntegrated.AddAggregate(ctx, mgrLogger, vw, ch, eb, ew)
-		attributes.AddAggregate(ctx, vw, rootView.GetURI()+"/Managers/"+mgrName+"/Attributes", ch)
+		mgrCMCIntegrated.AddAggregate(ctx, mgrLogger, mgrCmcVw, ch, eb, ew)
+		attributes.AddAggregate(ctx, mgrCmcVw, rootView.GetURI()+"/Managers/"+mgrName+"/Attributes", ch)
 
 		//*********************************************************************
 		// Create CHASSIS objects for CMC.Integrated.N
@@ -229,26 +233,27 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		// This controller will populate 'attributes' property with AR entries matching this FQDD ('mgrName')
 		ardumper, _ = attributes.NewController(ctx, chasModel, []string{mgrName}, ch, eb, ew)
 
-		vw2 := view.New(
+		chasCmcVw := view.New(
 			view.WithURI(rootView.GetURI()+"/Chassis/"+mgrName),
 			view.WithModel("default", chasModel),
 			view.WithController("ar_mapper", armapper),
 			view.WithController("ar_dump", ardumper),
 			view.WithFormatter("attributeFormatter", attributes.FormatAttributeDump),
 		)
-		domain.RegisterPlugin(func() domain.Plugin { return vw2 })
+		domain.RegisterPlugin(func() domain.Plugin { return chasCmcVw })
 
 		// add the aggregate to the view tree
-		chasCMCIntegrated.AddAggregate(ctx, chasLogger, vw2, ch)
-		attributes.AddAggregate(ctx, vw2, rootView.GetURI()+"/Chassis/"+mgrName+"/Attributes", ch)
+		chasCMCIntegrated.AddAggregate(ctx, chasLogger, chasCmcVw, ch)
+		attributes.AddAggregate(ctx, chasCmcVw, rootView.GetURI()+"/Chassis/"+mgrName+"/Attributes", ch)
 	}
 
-	chasName := "System.Chassis.1"
-	chasLogger := logger.New("module", "Chassis/"+chasName, "module", "Chassis/System.Chassis")
+	chasLogger := logger.New("module", "Chassis")
 	{
 		// ************************************************************************
 		// CHASSIS System.Chassis.1
 		// ************************************************************************
+		chasName := "System.Chassis.1"
+		sysChasLogger := chasLogger.New("module", "Chassis/"+chasName, "module", "Chassis/System.Chassis")
 		chasModel := model.New(
 			model.UpdateProperty("unique_name", chasName),
 			model.UpdateProperty("managed_by", []map[string]string{{"@odata.id": managers[0].GetURI()}}),
@@ -256,144 +261,155 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		)
 		// the controller is what updates the model when ar entries change,
 		// also handles patch from redfish
-		armapper, _ := ar_mapper.New(ctx, chasLogger, chasModel, "Chassis/System.Chassis", chasName, ch, eb, ew)
+		armapper, _ := ar_mapper.New(ctx, sysChasLogger, chasModel, "Chassis/System.Chassis", chasName, ch, eb, ew)
 		updateFns = append(updateFns, armapper.ConfigChangedFn)
 
 		// This controller will populate 'attributes' property with AR entries matching this FQDD ('chasName')
 		ardumper, _ := attributes.NewController(ctx, chasModel, []string{chasName}, ch, eb, ew)
 
-		vw := view.New(
+		sysChasVw := view.New(
 			view.WithURI(rootView.GetURI()+"/Chassis/"+chasName),
 			view.WithModel("default", chasModel),
 			view.WithController("ar_mapper", armapper),
 			view.WithController("ar_dump", ardumper),
 			view.WithFormatter("attributeFormatter", attributes.FormatAttributeDump),
 		)
-		domain.RegisterPlugin(func() domain.Plugin { return vw })
+		domain.RegisterPlugin(func() domain.Plugin { return sysChasVw })
 
 		// Create the .../Attributes URI. Attributes are stored in the attributes property of the chasModel
-		system_chassis.AddAggregate(ctx, chasLogger, vw, ch, eb, ew)
-		attributes.AddAggregate(ctx, vw, rootView.GetURI()+"/Chassis/"+chasName+"/Attributes", ch)
-	}
+		system_chassis.AddAggregate(ctx, sysChasLogger, sysChasVw, ch, eb, ew)
+		attributes.AddAggregate(ctx, sysChasVw, rootView.GetURI()+"/Chassis/"+chasName+"/Attributes", ch)
 
-	//*********************************************************************
-	// Create Power objects for System.Chassis.1
-	//*********************************************************************
-	powerLogger := chasLogger.New("module", "Chassis/System.Chassis/Power")
+		//*********************************************************************
+		// Create Power objects for System.Chassis.1
+		//*********************************************************************
+		powerLogger := sysChasLogger.New("module", "Chassis/System.Chassis/Power")
 
-	powerModel := model.New(
-		mgrCMCIntegrated.WithUniqueName("Power"),
-		model.UpdateProperty("power_supply_views", []interface{}{}),
-	)
-	// the controller is what updates the model when ar entries change,
-	// also handles patch from redfish
-	armapper, _ = ar_mapper.New(ctx, powerLogger, powerModel, "Chassis/System.Chassis/Power", chasName, ch, eb, ew)
-	updateFns = append(updateFns, armapper.ConfigChangedFn)
-
-	vw := view.New(
-		view.WithURI(rootView.GetURI()+"/Chassis/"+chasName+"/Power"),
-		view.WithModel("default", powerModel),
-		view.WithController("ar_mapper", armapper),
-	)
-	domain.RegisterPlugin(func() domain.Plugin { return vw })
-	power.AddAggregate(ctx, powerLogger, vw, ch)
-
-	psu_views := []interface{}{}
-	for _, psuName := range []string{
-		"PSU.Slot.1", "PSU.Slot.2", "PSU.Slot.3",
-		"PSU.Slot.4", "PSU.Slot.5", "PSU.Slot.6",
-	} {
-		psuLogger := powerLogger.New("module", "Chassis/System.Chassis/Power/PowerSupply")
-
-		psuModel := model.New(
-			model.UpdateProperty("unique_name", psuName),
-			model.UpdateProperty("unique_id", psuName),
-			model.UpdateProperty("name", psuName),
-			model.UpdateProperty("attributes", map[string]map[string]map[string]interface{}{}),
+		powerModel := model.New(
+			mgrCMCIntegrated.WithUniqueName("Power"),
+			model.UpdateProperty("power_supply_views", []interface{}{}),
 		)
 		// the controller is what updates the model when ar entries change,
 		// also handles patch from redfish
-		armapper, _ := ar_mapper.New(ctx, psuLogger, psuModel, "PowerSupply/PSU.Slot", psuName, ch, eb, ew)
+		armapper, _ = ar_mapper.New(ctx, powerLogger, powerModel, "Chassis/System.Chassis/Power", chasName, ch, eb, ew)
 		updateFns = append(updateFns, armapper.ConfigChangedFn)
 
-		// This controller will populate 'attributes' property with AR entries matching this FQDD ('psuName')
-		ardumper, _ := attributes.NewController(ctx, psuModel, []string{psuName}, ch, eb, ew)
-
-		vw := view.New(
-			view.WithURI(rootView.GetURI()+"/Chassis/"+chasName+"/Power/PowerSupplies/"+psuName),
+		sysChasPwrVw := view.New(
+			view.WithURI(rootView.GetURI()+"/Chassis/"+chasName+"/Power"),
 			view.WithModel("default", powerModel),
 			view.WithController("ar_mapper", armapper),
-			view.WithController("ar_dumper", ardumper),
-			view.WithFormatter("attributeFormatter", attributes.FormatAttributeDump),
 		)
-		domain.RegisterPlugin(func() domain.Plugin { return vw })
+		domain.RegisterPlugin(func() domain.Plugin { return sysChasPwrVw })
+		power.AddAggregate(ctx, powerLogger, sysChasPwrVw, ch)
 
-		psu := powersupply.AddAggregate(ctx, psuLogger, vw, ch)
+		psu_views := []interface{}{}
+		for _, psuName := range []string{
+			"PSU.Slot.1", "PSU.Slot.2", "PSU.Slot.3",
+			"PSU.Slot.4", "PSU.Slot.5", "PSU.Slot.6",
+		} {
+			psuLogger := powerLogger.New("module", "Chassis/System.Chassis/Power/PowerSupply")
 
-		p := &domain.RedfishResourceProperty{}
-		p.Parse(psu)
-		psu_views = append(psu_views, p)
-	}
-	powerModel.ApplyOption(model.UpdateProperty("power_supply_views", &domain.RedfishResourceProperty{Value: psu_views}))
+			psuModel := model.New(
+				model.UpdateProperty("unique_name", psuName),
+				model.UpdateProperty("unique_id", psuName),
+				model.UpdateProperty("name", psuName),
+				model.UpdateProperty("attributes", map[string]map[string]map[string]interface{}{}),
+			)
+			fwmapper, _ := ar_mapper.New(ctx, psuLogger.New("module", "firmware/inventory"), psuModel, "firmware/inventory", psuName, ch, eb, ew)
+			// the controller is what updates the model when ar entries change,
+			// also handles patch from redfish
+			armapper, _ := ar_mapper.New(ctx, psuLogger, psuModel, "PowerSupply/PSU.Slot", psuName, ch, eb, ew)
+			updateFns = append(updateFns, armapper.ConfigChangedFn)
+			updateFns = append(updateFns, fwmapper.ConfigChangedFn)
 
-	//*********************************************************************
-	// Create Thermal objects for System.Chassis.1
-	//*********************************************************************
-	thermalLogger := chasLogger.New("module", "Chassis/System.Chassis/Thermal")
+			// This controller will populate 'attributes' property with AR entries matching this FQDD ('psuName')
+			ardumper, _ := attributes.NewController(ctx, psuModel, []string{psuName}, ch, eb, ew)
 
-	thermalModel := model.New(
-		mgrCMCIntegrated.WithUniqueName("Thermal"),
-		model.UpdateProperty("fan_views", []interface{}{}),
-		model.UpdateProperty("thermal_views", []interface{}{}),
-	)
-	// the controller is what updates the model when ar entries change,
-	// also handles patch from redfish
-	armapper, _ = ar_mapper.New(ctx, thermalLogger, thermalModel, "Chassis/System.Chassis/Thermal", chasName, ch, eb, ew)
-	updateFns = append(updateFns, armapper.ConfigChangedFn)
+			sysChasPwrPsuVw := view.New(
+				view.WithURI(rootView.GetURI()+"/Chassis/"+chasName+"/Power/PowerSupplies/"+psuName),
+				view.WithModel("default", powerModel),
+				view.WithModel("swinv", powerModel),
+				view.WithController("ar_mapper", armapper),
+				view.WithController("ar_dumper", ardumper),
+				view.WithController("fw_mapper", fwmapper),
+				view.WithFormatter("attributeFormatter", attributes.FormatAttributeDump),
+			)
+			domain.RegisterPlugin(func() domain.Plugin { return sysChasPwrPsuVw })
+			swinvViews = append(swinvViews, sysChasPwrPsuVw)
 
-	thermalView := view.New(
-		view.WithURI(rootView.GetURI()+"/Chassis/"+chasName+"/Thermal"),
-		view.WithModel("default", thermalModel),
-		view.WithController("ar_mapper", armapper),
-	)
-	domain.RegisterPlugin(func() domain.Plugin { return thermalView })
-	thermal.AddAggregate(ctx, thermalLogger, thermalView, ch)
+			psu := powersupply.AddAggregate(ctx, psuLogger, sysChasPwrPsuVw, ch)
 
-	fan_views := []interface{}{}
-	for _, fanName := range []string{
-		"Fan.Slot.1", "Fan.Slot.2", "Fan.Slot.3",
-		"Fan.Slot.4", "Fan.Slot.5", "Fan.Slot.6",
-		"Fan.Slot.7", "Fan.Slot.8", "Fan.Slot.9",
-	} {
-		fanLogger := thermalLogger.New("module", "Chassis/System.Chassis/Thermal/Fan")
+			p := &domain.RedfishResourceProperty{}
+			p.Parse(psu)
+			psu_views = append(psu_views, p)
+		}
+		powerModel.ApplyOption(model.UpdateProperty("power_supply_views", &domain.RedfishResourceProperty{Value: psu_views}))
 
-		fanModel := model.New(
-			model.UpdateProperty("unique_id", fanName),
-			model.UpdateProperty("attributes", map[string]map[string]map[string]interface{}{}),
+		//*********************************************************************
+		// Create Thermal objects for System.Chassis.1
+		//*********************************************************************
+		thermalLogger := sysChasLogger.New("module", "Chassis/System.Chassis/Thermal")
+
+		thermalModel := model.New(
+			mgrCMCIntegrated.WithUniqueName("Thermal"),
+			model.UpdateProperty("fan_views", []interface{}{}),
+			model.UpdateProperty("thermal_views", []interface{}{}),
 		)
 		// the controller is what updates the model when ar entries change,
 		// also handles patch from redfish
-		armapper, _ := ar_mapper.New(ctx, fanLogger, fanModel, "Fans/Fan.Slot", fanName, ch, eb, ew)
+		armapper, _ = ar_mapper.New(ctx, thermalLogger, thermalModel, "Chassis/System.Chassis/Thermal", chasName, ch, eb, ew)
 		updateFns = append(updateFns, armapper.ConfigChangedFn)
 
-		// This controller will populate 'attributes' property with AR entries matching this FQDD ('fanName')
-		ardumper, _ := attributes.NewController(ctx, fanModel, []string{fanName}, ch, eb, ew)
-
-		v := view.New(
-			view.WithURI(rootView.GetURI()+"/Chassis/"+chasName+"/Sensors/Fans/"+fanName),
-			view.WithModel("default", fanModel),
+		thermalView := view.New(
+			view.WithURI(rootView.GetURI()+"/Chassis/"+chasName+"/Thermal"),
+			view.WithModel("default", thermalModel),
 			view.WithController("ar_mapper", armapper),
-			view.WithController("ar_dumper", ardumper),
-			view.WithFormatter("attributeFormatter", attributes.FormatAttributeDump),
 		)
-		domain.RegisterPlugin(func() domain.Plugin { return v })
-		fanFragment := fans.AddAggregate(ctx, fanLogger, v, ch)
+		domain.RegisterPlugin(func() domain.Plugin { return thermalView })
+		thermal.AddAggregate(ctx, thermalLogger, thermalView, ch)
 
-		p := &domain.RedfishResourceProperty{}
-		p.Parse(fanFragment)
-		fan_views = append(fan_views, p)
+		fan_views := []interface{}{}
+		for _, fanName := range []string{
+			"Fan.Slot.1", "Fan.Slot.2", "Fan.Slot.3",
+			"Fan.Slot.4", "Fan.Slot.5", "Fan.Slot.6",
+			"Fan.Slot.7", "Fan.Slot.8", "Fan.Slot.9",
+		} {
+			fanLogger := thermalLogger.New("module", "Chassis/System.Chassis/Thermal/Fan")
+
+			fanModel := model.New(
+				model.UpdateProperty("unique_id", fanName),
+				model.UpdateProperty("attributes", map[string]map[string]map[string]interface{}{}),
+			)
+			fwmapper, _ := ar_mapper.New(ctx, fanLogger.New("module", "firmware/inventory"), fanModel, "firmware/inventory", fanName, ch, eb, ew)
+			updateFns = append(updateFns, fwmapper.ConfigChangedFn)
+			// the controller is what updates the model when ar entries change,
+			// also handles patch from redfish
+			armapper, _ := ar_mapper.New(ctx, fanLogger, fanModel, "Fans/Fan.Slot", fanName, ch, eb, ew)
+			updateFns = append(updateFns, armapper.ConfigChangedFn)
+
+			// This controller will populate 'attributes' property with AR entries matching this FQDD ('fanName')
+			ardumper, _ := attributes.NewController(ctx, fanModel, []string{fanName}, ch, eb, ew)
+
+			v := view.New(
+				view.WithURI(rootView.GetURI()+"/Chassis/"+chasName+"/Sensors/Fans/"+fanName),
+				view.WithModel("default", fanModel),
+				view.WithModel("swinv", fanModel),
+				view.WithController("ar_mapper", armapper),
+				view.WithController("ar_dumper", ardumper),
+				view.WithController("fw_mapper", fwmapper),
+				view.WithFormatter("attributeFormatter", attributes.FormatAttributeDump),
+			)
+			domain.RegisterPlugin(func() domain.Plugin { return v })
+			swinvViews = append(swinvViews, v)
+
+			fanFragment := fans.AddAggregate(ctx, fanLogger, v, ch)
+
+			p := &domain.RedfishResourceProperty{}
+			p.Parse(fanFragment)
+			fan_views = append(fan_views, p)
+		}
+		thermalModel.ApplyOption(model.UpdateProperty("fan_views", &domain.RedfishResourceProperty{Value: fan_views}))
 	}
-	thermalModel.ApplyOption(model.UpdateProperty("fan_views", &domain.RedfishResourceProperty{Value: fan_views}))
 
 	// ************************************************************************
 	// CHASSIS IOM.Slot
@@ -411,6 +427,8 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			model.UpdateProperty("unique_name", iomName),
 			model.UpdateProperty("managed_by", []map[string]string{{"@odata.id": managers[0].GetURI()}}),
 		)
+		fwmapper, _ := ar_mapper.New(ctx, iomLogger.New("module", "firmware/inventory"), iomModel, "firmware/inventory", iomName, ch, eb, ew)
+		updateFns = append(updateFns, fwmapper.ConfigChangedFn)
 		// the controller is what updates the model when ar entries change,
 		// also handles patch from redfish
 		armapper, _ := ar_mapper.New(ctx, iomLogger, iomModel, "Chassis/IOM.Slot", iomName, ch, eb, ew)
@@ -422,11 +440,13 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		iomView := view.New(
 			view.WithURI(rootView.GetURI()+"/Chassis/"+iomName),
 			view.WithModel("default", iomModel),
+			view.WithModel("swinv", iomModel),
 			view.WithController("ar_mapper", armapper),
 			view.WithController("ar_dumper", ardumper),
 			view.WithFormatter("attributeFormatter", attributes.FormatAttributeDump),
 		)
 		domain.RegisterPlugin(func() domain.Plugin { return iomView })
+		swinvViews = append(swinvViews, iomView)
 		iom_chassis.AddAggregate(ctx, iomLogger, iomView, ch, eb, ew)
 		attributes.AddAggregate(ctx, iomView, rootView.GetURI()+"/Chassis/"+iomName+"/Attributes", ch)
 	}
@@ -460,23 +480,8 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			view.WithFormatter("attributeFormatter", attributes.FormatAttributeDump),
 		)
 		domain.RegisterPlugin(func() domain.Plugin { return sledView })
-		sled_chassis.AddAggregate(ctx, sledLogger, sledView, ch, eb, ew)
+		sled_chassis.AddAggregate(ctx, sledLogger, sledView, ch, eb)
 		attributes.AddAggregate(ctx, sledView, rootView.GetURI()+"/Chassis/"+sledName+"/Attributes", ch)
-	}
-
-	// Software inventory
-	invModels := map[string]*model.Model{}
-	for _, invName := range []string{
-		"PSU.Slot.1", "PSU.Slot.2", "PSU.Slot.3",
-		"PSU.Slot.4", "PSU.Slot.5", "PSU.Slot.6",
-	} {
-		invLogger := logger.New("module", "UpdateService")
-		invModel := model.New(
-			model.UpdateProperty("unique_name", invName),
-		)
-		armapper, _ := ar_mapper.New(ctx, invLogger, invModel, "UpdateService", "", ch, eb, ew)
-		updateFns = append(updateFns, armapper.ConfigChangedFn)
-		invModels[invName] = invModel
 	}
 
 	{
@@ -488,30 +493,43 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		armapper, _ := ar_mapper.New(ctx, updsvcLogger, mdl, "update_service", "", ch, eb, ew)
 		updateFns = append(updateFns, armapper.ConfigChangedFn)
 
-		vw := view.New(
+		updSvcVw := view.New(
 			view.WithURI(rootView.GetURI()+"/UpdateService"),
 			view.WithModel("default", mdl),
 			view.WithController("ar_mapper", armapper),
 		)
-		domain.RegisterPlugin(func() domain.Plugin { return vw })
+		domain.RegisterPlugin(func() domain.Plugin { return updSvcVw })
 
 		// add the aggregate to the view tree
-		update_service.AddAggregate(ctx, rootView, vw, ch)
-		update_service.EnhanceAggregate(ctx, vw, rootView, ch)
+		update_service.AddAggregate(ctx, rootView, updSvcVw, ch)
+		update_service.EnhanceAggregate(ctx, updSvcVw, rootView, ch)
 	}
 
-	sw := map[string]map[string][]*model.Model{}
+	//
+	// Software Inventory
+	//
 	inv := map[string]*view.View{}
+	model2View := map[*model.Model]*view.View{}
 	swMu := sync.Mutex{}
 
 	// Purpose of this function is to make a list of all of the firmware
 	// inventory models and then create a reverse-mapping for the updateservice
 	// firmwareinventory
 	//
+	// TODO: "QuickSync.Chassis.1"
+	// TODO: "LCD.Chassis.1"
+	// TODO: "ControlPanel.Chassis.1"
+	// TODO: "CMC.Integrated.1" / "FPGAFWInventory"
+	// TODO: "CMC.Integrated.2" / "FPGAFWInventory"
+	//
+	// DONE: "Fan.Slot.1"
+	// DONE: "IOM.Slot.A1a"
+	// DONE: "PSU.Slot.1"
+	// DONE: "CMC.Integrated.1"
+
 	obsLogger := logger.New("module", "observer")
 	fn := func(mdl *model.Model, property string, oldValue, newValue interface{}) {
-		// model is locked when we enter observer
-		obsLogger.Debug("MODEL POPERTY CHANGE", "model", mdl, "property", property, "oldValue", oldValue, "newValue", newValue)
+		obsLogger.Info("observer entered", "model", mdl, "property", property, "oldValue", oldValue, "newValue", newValue)
 
 		classRaw, ok := mdl.GetPropertyOkUnlocked("fw_device_class")
 		if !ok || classRaw == nil {
@@ -520,7 +538,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		}
 
 		class, ok := classRaw.(string)
-		if !ok {
+		if !ok || class == "" {
 			obsLogger.Debug("DID NOT GET class string")
 			return
 		}
@@ -532,44 +550,38 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		}
 
 		version, ok := versionRaw.(string)
-		if !ok {
+		if !ok || version == "" {
 			obsLogger.Debug("DID NOT GET version string")
+			return
+		}
+
+		fqddRaw, ok := mdl.GetPropertyOkUnlocked("fw_fqdd")
+		if !ok || fqddRaw == nil {
+			obsLogger.Debug("DID NOT GET fqdd raw")
+			return
+		}
+
+		fqdd, ok := fqddRaw.(string)
+		if !ok || fqdd == "" {
+			obsLogger.Debug("DID NOT GET fqdd string")
 			return
 		}
 
 		swMu.Lock()
 		defer swMu.Unlock()
 
-		verMap, ok := sw[class]
-		if !ok {
-			verMap = map[string][]*model.Model{}
-			sw[class] = verMap
-		}
-
-		mdlArray, ok := verMap[version]
-		if !ok {
-			mdlArray = []*model.Model{}
-			verMap[version] = mdlArray
-		}
-
-		skip := false
-		for _, m := range mdlArray {
-			if m == mdl {
-				skip = true
-			}
-		}
-
-		if !skip {
-			mdlArray = append(mdlArray, mdl)
-			verMap[version] = mdlArray
-		}
-
-		obsLogger.Info("GOT FULL SWVERSION INFO", "model", mdl, "property", property, "oldValue", oldValue, "newValue", newValue, "mdlArray", mdlArray)
+		obsLogger.Info("GOT FULL SWVERSION INFO", "model", mdl, "property", property, "oldValue", oldValue, "newValue", newValue)
 
 		comp_ver_tuple := class + "-" + version
 
+		fw_fqdd_list := []string{fqdd}
+		fw_related_list := []map[string]interface{}{}
+
 		invview, ok := inv[comp_ver_tuple]
 		if !ok {
+			// didn't previously have a view/model for this version/componentid, so make one
+			//
+			obsLogger.Info("No previous view, creating a new view.", "tuple", comp_ver_tuple)
 			invmdl := model.New(
 				model.UpdateProperty("fw_id", "Installed-"+comp_ver_tuple),
 			)
@@ -582,32 +594,81 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			inv[comp_ver_tuple] = invview
 			domain.RegisterPlugin(func() domain.Plugin { return invview })
 			firmware_inventory.AddAggregate(ctx, rootView, invview, ch)
+
+			fw_related_list = append(fw_related_list, map[string]interface{}{"@odata.id": model2View[mdl].GetURI()})
+		} else {
+			obsLogger.Info("UPDATING previous view.", "tuple", comp_ver_tuple)
+
+			// we have an existing view/model, so add our uniqueness to theirs
+			firm_mdl := invview.GetModel("firm")
+			if firm_mdl == nil {
+				obsLogger.Info("Programming error: got an inventory view that doesn't have a 'firm' model. Should not be able to happen.", "tuple", comp_ver_tuple)
+				return
+			}
+
+			raw_fqdd_list, ok := firm_mdl.GetPropertyOk("fw_fqdd_list")
+			if !ok {
+				raw_fqdd_list = []string{fqdd}
+			}
+			fw_fqdd_list, ok = raw_fqdd_list.([]string)
+			if !ok {
+				fw_fqdd_list = []string{fqdd}
+			}
+			obsLogger.Info("PREVIOUS FQDD LIST.", "fw_fqdd_list", fw_fqdd_list)
+
+			add := true
+			for _, m := range fw_fqdd_list {
+				if m == fqdd {
+					add = false
+					break
+				}
+			}
+			if add {
+				fw_fqdd_list = append(fw_fqdd_list, fqdd)
+			}
+
+			raw_related_list, ok := firm_mdl.GetPropertyOk("fw_related_list")
+			if !ok {
+				raw_related_list = []map[string]interface{}{}
+			}
+
+			fw_related_list, ok = raw_related_list.([]map[string]interface{})
+			if !ok {
+				fw_related_list = []map[string]interface{}{}
+			}
+
+			obsLogger.Info("PREVIOUS related LIST.", "fw_related_list", fw_related_list)
+
+			add = true
+			for _, m := range fw_related_list {
+				if m["@odata.id"] == model2View[mdl].GetURI() {
+					add = false
+					break
+				}
+			}
+			if add {
+				fw_related_list = append(fw_related_list, map[string]interface{}{"@odata.id": model2View[mdl].GetURI()})
+			}
 		}
 
-		fqdd_list := []string{}
-		for _, m := range mdlArray {
-			var fqdd interface{}
-			if m != mdl {
-				fqdd, ok = m.GetPropertyOk("fw_fqdd")
-			} else {
-				fqdd, ok = m.GetPropertyOkUnlocked("fw_fqdd")
-			}
-			if ok {
-				fqdd_list = append(fqdd_list, fqdd.(string))
-			}
-		}
+		firm_mdl := invview.GetModel("firm")
+		firm_mdl.ApplyOption(
+			model.UpdateProperty("fw_fqdd_list", fw_fqdd_list),
+			model.UpdateProperty("fw_related_list", fw_related_list),
+		)
 
-		invview.GetModel("firm").UpdateProperty("fw_fqdd", fqdd_list)
-		invview.GetModel("firm").UpdateProperty("fw_related", "happy")
+		obsLogger.Info("updated inventory view", "invview", invview, "fw_fqdd_list", fw_fqdd_list, "fw_related_list", fw_related_list)
 
 		// TODO: delete any old copies of this model in the tree
 	}
 
 	// Set up observers for each swinv model
+	obsLogger.Info("Setting up observers", "swinvviews", swinvViews)
 	for _, swinvView := range swinvViews {
 		// going to assume each view has swinv model at 'swinv'
 		mdl := swinvView.GetModel("swinv")
 		mdl.AddObserver("swinv", fn)
+		model2View[mdl] = swinvView
 	}
 
 	// VIPER Config:

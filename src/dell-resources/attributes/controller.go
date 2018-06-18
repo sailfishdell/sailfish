@@ -20,7 +20,11 @@ type ARDump struct {
 	eb    eh.EventBus
 }
 
-func NewController(ctx context.Context, m *model.Model, fqdds []string, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) (*ARDump, error) {
+type waiter interface {
+	Listen(context.Context, func(eh.Event) bool) (*utils.EventListener, error)
+}
+
+func NewController(ctx context.Context, m *model.Model, fqdds []string, ch eh.CommandHandler, eb eh.EventBus, ew waiter) (*ARDump, error) {
 	c := &ARDump{
 		fqdds: fqdds,
 		eb:    eb,

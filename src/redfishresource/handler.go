@@ -19,11 +19,16 @@ import (
 	"github.com/looplab/eventhorizon/utils"
 )
 
+type waiter interface {
+	Listen(context.Context, func(eh.Event) bool) (*utils.EventListener, error)
+	Notify(context.Context, eh.Event)
+}
+
 type DomainObjects struct {
 	CommandHandler eh.CommandHandler
 	Repo           eh.ReadWriteRepo
 	EventBus       eh.EventBus
-	EventWaiter    *utils.EventWaiter
+	EventWaiter    waiter
 	AggregateStore eh.AggregateStore
 	EventPublisher eh.EventPublisher
 

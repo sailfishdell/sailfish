@@ -27,7 +27,11 @@ type ocp struct {
 
 func (o *ocp) ConfigChangeHandler() { o.configChangeHandler() }
 
-func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *sync.Mutex, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) *ocp {
+type waiter interface {
+	Listen(context.Context, func(eh.Event) bool) (*utils.EventListener, error)
+}
+
+func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *sync.Mutex, ch eh.CommandHandler, eb eh.EventBus, ew waiter) *ocp {
 	logger = logger.New("module", "ec")
 	self := &ocp{}
 
@@ -44,7 +48,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		view.WithURI("/redfish/v1"),
 	)
 	domain.RegisterPlugin(func() domain.Plugin { return rootView })
-	root.AddAggregate(ctx, rootView, ch, eb, ew)
+	root.AddAggregate(ctx, rootView, ch, eb)
 
 	//*********************************************************************
 	//  /redfish/v1/testview - a proof of concept test view and example

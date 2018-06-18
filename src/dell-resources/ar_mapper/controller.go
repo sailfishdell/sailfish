@@ -9,9 +9,9 @@ import (
 
 	eh "github.com/looplab/eventhorizon"
 	"github.com/looplab/eventhorizon/utils"
-	"github.com/superchalupa/go-redfish/src/log"
 
 	"github.com/superchalupa/go-redfish/src/dell-resources/attributes"
+	"github.com/superchalupa/go-redfish/src/log"
 	"github.com/superchalupa/go-redfish/src/ocp/event"
 	"github.com/superchalupa/go-redfish/src/ocp/model"
 )
@@ -24,6 +24,10 @@ type mapping struct {
 	Name     string
 }
 
+type waiter interface {
+	Listen(context.Context, func(eh.Event) bool) (*utils.EventListener, error)
+}
+
 type ARMappingController struct {
 	mappings   []mapping
 	mappingsMu sync.RWMutex
@@ -34,7 +38,7 @@ type ARMappingController struct {
 	eb eh.EventBus
 }
 
-func New(ctx context.Context, logger log.Logger, m *model.Model, name string, fqdd string, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) (*ARMappingController, error) {
+func New(ctx context.Context, logger log.Logger, m *model.Model, name string, fqdd string, ch eh.CommandHandler, eb eh.EventBus, ew waiter) (*ARMappingController, error) {
 	c := &ARMappingController{
 		mappings: []mapping{},
 		name:     name,

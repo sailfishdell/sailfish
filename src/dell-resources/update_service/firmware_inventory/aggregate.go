@@ -48,8 +48,8 @@ func AddAggregate(ctx context.Context, root *view.View, v *view.View, ch eh.Comm
 						"@odata.type": "#EID_674_SoftwareInventory.v1_0_0.OemSoftwareInventory",
 						//"RelatedItem@odata.count": 4,
 						//"FQDD@odata.count": 4,
-						"FQDD@meta":        v.Meta(view.GETProperty("fw_fqdd"), view.GETModel("firm")),
-						"RelatedItem@meta": v.Meta(view.GETProperty("fw_related"), view.GETModel("firm")),
+						"FQDD@meta":        v.Meta(view.GETProperty("fw_fqdd_list"), view.GETModel("firm")),
+						"RelatedItem@meta": v.Meta(view.GETProperty("fw_related_list"), view.GETModel("firm")),
 					},
 				},
 			}})

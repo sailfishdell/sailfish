@@ -40,11 +40,15 @@ const (
 	POSTCommand = eh.CommandType("SessionService:POST")
 )
 
+type waiter interface {
+	Listen(context.Context, func(eh.Event) bool) (*utils.EventListener, error)
+}
+
 // HTTP POST Command
 type POST struct {
 	model          *model.Model
 	commandHandler eh.CommandHandler
-	eventWaiter    *utils.EventWaiter
+	eventWaiter    waiter
 
 	ID      eh.UUID           `json:"id"`
 	CmdID   eh.UUID           `json:"cmdid"`

@@ -13,13 +13,22 @@ import (
 
 type Options func(*privateStateStructure) error
 
+type listener interface {
+	Wait(context.Context) (eh.Event, error)
+	Close()
+}
+
+type waiter interface {
+	Listen(context.Context, func(eh.Event) bool) (*utils.EventListener, error)
+}
+
 type privateStateStructure struct {
 	ctx      context.Context
 	filterFn func(eh.Event) bool
-	listener *utils.EventListener
+	listener listener
 }
 
-func NewEventStreamProcessor(ctx context.Context, ew *utils.EventWaiter, options ...Options) (d *privateStateStructure, err error) {
+func NewEventStreamProcessor(ctx context.Context, ew waiter, options ...Options) (d *privateStateStructure, err error) {
 	d = &privateStateStructure{
 		ctx: ctx,
 		// default filter is to process all events
@@ -178,7 +187,7 @@ func SelectEventResourceRemovedByURIPrefix(uri string) func(p *privateStateStruc
 	}
 }
 
-func OnURICreated(ctx context.Context, ew *utils.EventWaiter, uri string, f func()) {
+func OnURICreated(ctx context.Context, ew waiter, uri string, f func()) {
 	sp, err := NewEventStreamProcessor(ctx, ew, SelectEventResourceCreatedByURI(uri))
 	if err != nil {
 		log.MustLogger("eventstream").Error("Failed to create event stream processor", "err", err)

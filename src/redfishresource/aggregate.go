@@ -5,7 +5,6 @@ import (
 	"sync"
 
 	eh "github.com/looplab/eventhorizon"
-	"github.com/looplab/eventhorizon/utils"
 )
 
 const AggregateType = eh.AggregateType("RedfishResource")
@@ -14,7 +13,7 @@ func init() {
 	RegisterInitFN(RegisterRRA)
 }
 
-func RegisterRRA(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
+func RegisterRRA(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew waiter) {
 	eh.RegisterAggregate(func(id eh.UUID) eh.Aggregate {
 		return &RedfishResourceAggregate{}
 	})

@@ -13,7 +13,11 @@ import (
 	domain "github.com/superchalupa/go-redfish/src/redfishresource"
 )
 
-func InitService(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
+type waiter interface {
+	Listen(context.Context, func(eh.Event) bool) (*utils.EventListener, error)
+}
+
+func InitService(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew waiter) {
 	eh.RegisterCommand(func() eh.Command { return &POST{eventBus: eb, eventWaiter: ew} })
 	eh.RegisterEventData(GenericActionEvent, func() eh.EventData { return &GenericActionEventData{} })
 }
@@ -34,7 +38,7 @@ type GenericActionEventData struct {
 // HTTP POST Command
 type POST struct {
 	eventBus    eh.EventBus
-	eventWaiter *utils.EventWaiter
+	eventWaiter waiter
 
 	ID      eh.UUID           `json:"id"`
 	CmdID   eh.UUID           `json:"cmdid"`
@@ -85,7 +89,7 @@ type prop interface {
 	GetProperty(string) interface{}
 }
 
-func CreateAction(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter,
+func CreateAction(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew waiter,
 	logger log.Logger,
 	uri string,
 	property string,

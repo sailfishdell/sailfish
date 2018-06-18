@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"net/http/fcgi"
 	_ "net/http/pprof"
 	"os"
 	"os/signal"
@@ -39,7 +38,7 @@ import (
 )
 
 func main() {
-	flag.StringSliceP("listen", "l", []string{}, "Listen address.  Formats: (http:[ip]:nn, fcgi:[ip]:port, fcgi:/path, https:[ip]:port, spacemonkey:[ip]:port)")
+	flag.StringSliceP("listen", "l", []string{}, "Listen address.  Formats: (http:[ip]:nn, https:[ip]:port)")
 
 	var cfgMgrMu sync.Mutex
 	cfgMgr := viper.New()
@@ -65,8 +64,6 @@ func main() {
 	flag.Parse()
 
 	ctx, cancel := context.WithCancel(context.Background())
-	intr := make(chan os.Signal, 1)
-	signal.Notify(intr, os.Interrupt)
 
 	logger := initializeApplicationLogging(cfgMgr)
 
@@ -206,97 +203,57 @@ func main() {
 		fmt.Fprintf(os.Stderr, "No listeners configured! Use the '-l' option to configure a listener!")
 	}
 
+	logger.Info("Starting services: ", "services", cfgMgr.GetStringSlice("listen"))
+
 	// And finally, start up all of the listeners that we have configured
 	for _, listen := range cfgMgr.GetStringSlice("listen") {
 		switch {
 		case strings.HasPrefix(listen, "pprof:"):
 			pprofMux := http.DefaultServeMux
 			http.DefaultServeMux = http.NewServeMux()
-			go func(listen string) {
-				addr := strings.TrimPrefix(listen, "pprof:")
-				s := &http.Server{
-					Addr:    addr,
-					Handler: pprofMux,
-				}
-				connectToContext(ctx, logger, s) // make sure when background context is cancelled, this server shuts down cleanly
-				logger.Info("PPROF activated with tcp listener: " + addr)
-				s.ListenAndServe()
-			}(listen)
-
-		case strings.HasPrefix(listen, "fcgi:") && strings.Contains(strings.TrimPrefix(listen, "fcgi:"), ":"):
-			// FCGI listener on a TCP socket (usually should be specified as 127.0.0.1 for security)  fcgi:127.0.0.1:4040
-			go func(addr string) {
-				listener, err := net.Listen("tcp", addr)
-				if err != nil {
-					logger.Crit("fatal", "Could not open listening connection", "err", err)
-					return
-				}
-				defer listener.Close()
-				logger.Info("FCGI mode activated with tcp listener: " + addr)
-				logger.Info("Server exited", "err", fcgi.Serve(listener, loggingHTTPHandler))
-			}(strings.TrimPrefix(listen, "fcgi:"))
-
-		case strings.HasPrefix(listen, "fcgi:") && strings.Contains(strings.TrimPrefix(listen, "fcgi:"), "/"):
-			// FCGI listener on unix domain socket, specified as a path fcgi:/run/fcgi.sock
-			go func(path string) {
-				listener, err := net.Listen("unix", path)
-				if err != nil {
-					logger.Crit("fatal", "Could not open listening connection", "err", err)
-					return
-				}
-				defer listener.Close()
-				defer os.Remove(path)
-				logger.Info("FCGI mode activated with unix socket listener: " + path)
-				logger.Info("Server exited", "err", fcgi.Serve(listener, loggingHTTPHandler))
-			}(strings.TrimPrefix(listen, "fcgi:"))
-
-		case strings.HasPrefix(listen, "fcgi:"):
-			// FCGI listener using stdin/stdout  fcgi:
-			go func() {
-				logger.Info("FCGI mode activated with stdin/stdout listener")
-				logger.Info("Server exited", "err", fcgi.Serve(nil, loggingHTTPHandler))
-			}()
+			addr := strings.TrimPrefix(listen, "pprof:")
+			s := &http.Server{
+				Addr:    addr,
+				Handler: pprofMux,
+			}
+			logger.Info("PPROF activated with tcp listener: " + addr)
+			go s.ListenAndServe()
+			go handleShutdown(ctx, logger, s)
 
 		case strings.HasPrefix(listen, "http:"):
 			// HTTP protocol listener
 			// "https:[addr]:port
-			go func(addr string) {
-				logger.Info("HTTP listener starting on " + addr)
-				s := &http.Server{
-					Addr:           addr,
-					Handler:        loggingHTTPHandler,
-					MaxHeaderBytes: 1 << 20,
-					ReadTimeout:    10 * time.Second,
-					// cannot use writetimeout if we are streaming
-					// WriteTimeout:   10 * time.Second,
-				}
-				connectToContext(ctx, logger, s) // make sure when background context is cancelled, this server shuts down cleanly
-				logger.Info("Server exited", "err", s.ListenAndServe())
-			}(strings.TrimPrefix(listen, "http:"))
+			addr := strings.TrimPrefix(listen, "http:")
+			logger.Info("HTTP listener starting on " + addr)
+			s := &http.Server{
+				Addr:           addr,
+				Handler:        loggingHTTPHandler,
+				MaxHeaderBytes: 1 << 20,
+				ReadTimeout:    10 * time.Second,
+				// cannot use writetimeout if we are streaming
+				// WriteTimeout:   10 * time.Second,
+			}
+			go func() { logger.Info("Server exited", "err", s.ListenAndServe()) }()
+			go handleShutdown(ctx, logger, s)
 
 		case strings.HasPrefix(listen, "https:"):
 			// HTTPS protocol listener
 			// "https:[addr]:port,certfile,keyfile
-			go func(addr string) {
-				s := &http.Server{
-					Addr:           addr,
-					Handler:        loggingHTTPHandler,
-					MaxHeaderBytes: 1 << 20,
-					ReadTimeout:    10 * time.Second,
-					// cannot use writetimeout if we are streaming
-					// WriteTimeout:   10 * time.Second,
-					TLSConfig: tlscfg,
-					// can't remember why this doesn't work... TODO: reason this doesnt work
-					//TLSNextProto:   make(map[string]func(*http.Server, *tls.Conn, http.Handler), 0),
-				}
-				connectToContext(ctx, logger, s) // make sure when background context is cancelled, this server shuts down cleanly
-				logger.Info("HTTPS listener starting on " + addr)
-				logger.Info("Server exited", "err", s.ListenAndServeTLS("server.crt", "server.key"))
-			}(strings.TrimPrefix(listen, "https:"))
-
-		case strings.HasPrefix(listen, "spacemonkey:"):
-			// openssl based https
-			go runSpaceMonkey(strings.TrimPrefix(listen, "spacemonkey:"), loggingHTTPHandler)
+			addr := strings.TrimPrefix(listen, "https:")
+			s := &http.Server{
+				Addr:           addr,
+				Handler:        loggingHTTPHandler,
+				MaxHeaderBytes: 1 << 20,
+				ReadTimeout:    10 * time.Second,
+				// cannot use writetimeout if we are streaming
+				// WriteTimeout:   10 * time.Second,
+				TLSConfig: tlscfg,
+				// can't remember why this doesn't work... TODO: reason this doesnt work
+				//TLSNextProto:   make(map[string]func(*http.Server, *tls.Conn, http.Handler), 0),
+			}
+			logger.Info("HTTPS listener starting on " + addr)
+			go func() { logger.Info("Server exited", "err", s.ListenAndServeTLS("server.crt", "server.key")) }()
+			go handleShutdown(ctx, logger, s)
 		}
 	}
 
@@ -304,7 +261,10 @@ func main() {
 	SdNotify("READY=1")
 
 	// wait until we get an interrupt (CTRL-C)
+	intr := make(chan os.Signal, 1)
+	signal.Notify(intr, os.Interrupt)
 	<-intr
+	logger.Crit("INTERRUPTED, Cancelling...")
 	cancel()
 	logger.Warn("Bye!", "module", "main")
 }
@@ -313,14 +273,22 @@ type shutdowner interface {
 	Shutdown(context.Context) error
 }
 
-func connectToContext(ctx context.Context, logger log.Logger, srv interface{}) {
-	if s, ok := srv.(shutdowner); ok {
-		logger.Info("Hooking up shutdown context.")
-		if err := s.Shutdown(ctx); err != nil {
-			logger.Info("server_error", err)
-		}
-	} else {
+func handleShutdown(ctx context.Context, logger log.Logger, srv interface{}) error {
+	s, ok := srv.(shutdowner)
+	if !ok {
 		logger.Info("Can't cleanly shutdown listener, it will ungracefully end")
+		return nil
+	}
+
+	for {
+		select {
+		case <-ctx.Done():
+			logger.Info("shutdown server.")
+			if err := s.Shutdown(ctx); err != nil {
+				logger.Info("server_error", err)
+			}
+			return ctx.Err()
+		}
 	}
 }
 

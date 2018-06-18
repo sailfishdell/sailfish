@@ -11,7 +11,6 @@ import (
 
 	jwt "github.com/dgrijalva/jwt-go"
 	eh "github.com/looplab/eventhorizon"
-	"github.com/looplab/eventhorizon/utils"
 )
 
 var SECRET []byte = []byte("happyhappyjoyjoy1234")
@@ -68,7 +67,7 @@ func MakeHandlerFunc(eb eh.EventBus, getter IDGetter, withUser func(string, []st
 	}
 }
 
-func AddAggregate(ctx context.Context, v *view.View, rootID eh.UUID, ch eh.CommandHandler, eb eh.EventBus, ew *utils.EventWaiter) {
+func AddAggregate(ctx context.Context, v *view.View, rootID eh.UUID, ch eh.CommandHandler, eb eh.EventBus, ew waiter) {
 
 	// somewhat of a violation of how i want to structure all this, but it's the best option for now
 	eh.RegisterCommand(func() eh.Command { return &POST{model: v.GetModel("default"), commandHandler: ch, eventWaiter: ew} })
