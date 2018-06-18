@@ -11,7 +11,7 @@ import (
 
 	jwt "github.com/dgrijalva/jwt-go"
 	eh "github.com/looplab/eventhorizon"
-	"github.com/looplab/eventhorizon/utils"
+	"github.com/superchalupa/go-redfish/src/eventwaiter"
 	"github.com/superchalupa/go-redfish/src/ocp/model"
 	domain "github.com/superchalupa/go-redfish/src/redfishresource"
 )
@@ -41,7 +41,7 @@ const (
 )
 
 type waiter interface {
-	Listen(context.Context, func(eh.Event) bool) (*utils.EventListener, error)
+	Listen(context.Context, func(eh.Event) bool) (*eventwaiter.EventListener, error)
 }
 
 // HTTP POST Command

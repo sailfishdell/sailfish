@@ -8,12 +8,13 @@ import (
 	"github.com/spf13/viper"
 
 	eh "github.com/looplab/eventhorizon"
-	"github.com/looplab/eventhorizon/utils"
 
-	"github.com/superchalupa/go-redfish/src/dell-resources/attributes"
+	"github.com/superchalupa/go-redfish/src/eventwaiter"
 	"github.com/superchalupa/go-redfish/src/log"
 	"github.com/superchalupa/go-redfish/src/ocp/event"
 	"github.com/superchalupa/go-redfish/src/ocp/model"
+
+	"github.com/superchalupa/go-redfish/src/dell-resources/attributes"
 )
 
 type mapping struct {
@@ -25,7 +26,7 @@ type mapping struct {
 }
 
 type waiter interface {
-	Listen(context.Context, func(eh.Event) bool) (*utils.EventListener, error)
+	Listen(context.Context, func(eh.Event) bool) (*eventwaiter.EventListener, error)
 }
 
 type ARMappingController struct {

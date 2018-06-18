@@ -7,14 +7,14 @@ import (
 	"time"
 
 	eh "github.com/looplab/eventhorizon"
-	"github.com/looplab/eventhorizon/utils"
+	"github.com/superchalupa/go-redfish/src/eventwaiter"
 	"github.com/superchalupa/go-redfish/src/log"
 	"github.com/superchalupa/go-redfish/src/ocp/event"
 	domain "github.com/superchalupa/go-redfish/src/redfishresource"
 )
 
 type waiter interface {
-	Listen(context.Context, func(eh.Event) bool) (*utils.EventListener, error)
+	Listen(context.Context, func(eh.Event) bool) (*eventwaiter.EventListener, error)
 }
 
 func InitService(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew waiter) {

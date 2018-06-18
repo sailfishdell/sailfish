@@ -7,12 +7,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/superchalupa/go-redfish/src/eventwaiter"
 	"github.com/superchalupa/go-redfish/src/log"
 	"github.com/superchalupa/go-redfish/src/ocp/event"
 	"github.com/superchalupa/go-redfish/src/ocp/model"
 
 	eh "github.com/looplab/eventhorizon"
-	"github.com/looplab/eventhorizon/utils"
 )
 
 type ARDump struct {
@@ -21,7 +21,7 @@ type ARDump struct {
 }
 
 type waiter interface {
-	Listen(context.Context, func(eh.Event) bool) (*utils.EventListener, error)
+	Listen(context.Context, func(eh.Event) bool) (*eventwaiter.EventListener, error)
 }
 
 func NewController(ctx context.Context, m *model.Model, fqdds []string, ch eh.CommandHandler, eb eh.EventBus, ew waiter) (*ARDump, error) {

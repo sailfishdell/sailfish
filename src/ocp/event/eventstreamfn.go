@@ -4,11 +4,11 @@ import (
 	"context"
 	"strings"
 
+	"github.com/superchalupa/go-redfish/src/eventwaiter"
 	"github.com/superchalupa/go-redfish/src/log"
 	domain "github.com/superchalupa/go-redfish/src/redfishresource"
 
 	eh "github.com/looplab/eventhorizon"
-	"github.com/looplab/eventhorizon/utils"
 )
 
 type Options func(*privateStateStructure) error
@@ -19,7 +19,7 @@ type listener interface {
 }
 
 type waiter interface {
-	Listen(context.Context, func(eh.Event) bool) (*utils.EventListener, error)
+	Listen(context.Context, func(eh.Event) bool) (*eventwaiter.EventListener, error)
 }
 
 type privateStateStructure struct {

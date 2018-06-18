@@ -1,4 +1,6 @@
 // Copyright (c) 2017 - The Event Horizon authors.
+// modifications Copyright (c) 2018 - Dell EMC
+//  - don't drop events
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,7 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package utils
+package eventwaiter
 
 import (
 	"context"

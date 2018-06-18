@@ -16,11 +16,12 @@ import (
 	eventbus "github.com/looplab/eventhorizon/eventbus/local"
 	eventpublisher "github.com/looplab/eventhorizon/publisher/local"
 	repo "github.com/looplab/eventhorizon/repo/memory"
-	"github.com/looplab/eventhorizon/utils"
+
+	"github.com/superchalupa/go-redfish/src/eventwaiter"
 )
 
 type waiter interface {
-	Listen(context.Context, func(eh.Event) bool) (*utils.EventListener, error)
+	Listen(context.Context, func(eh.Event) bool) (*eventwaiter.EventListener, error)
 	Notify(context.Context, eh.Event)
 }
 
@@ -54,7 +55,7 @@ func NewDomainObjects() (*DomainObjects, error) {
 	d.EventPublisher = eventpublisher.NewEventPublisher()
 	d.EventBus.AddHandler(eh.MatchAny(), d.EventPublisher)
 
-	d.EventWaiter = utils.NewEventWaiter()
+	d.EventWaiter = eventwaiter.NewEventWaiter()
 	d.EventPublisher.AddObserver(d.EventWaiter)
 
 	// set up our built-in observer
