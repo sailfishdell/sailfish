@@ -15,6 +15,7 @@ import (
 
 	eh "github.com/looplab/eventhorizon"
 	ah "github.com/superchalupa/go-redfish/src/actionhandler"
+	ah2 "github.com/superchalupa/go-redfish/src/actionhandler2"
 )
 
 type waiter interface {
@@ -306,6 +307,8 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 			},
 			Properties: properties,
 		})
+
+	ah2.CreateAction(ctx, logger, "manager.reset", v.GetURI()+"/Actions/Manager.Reset", v, ch, eb)
 
 	ah.CreateAction(ctx, ch, eb, ew,
 		logger,

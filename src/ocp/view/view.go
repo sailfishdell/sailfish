@@ -19,12 +19,11 @@ type formatter func(
 	ctx context.Context,
 	v *View,
 	m *model.Model,
-	agg *domain.RedfishResourceAggregate,
 	rrp *domain.RedfishResourceProperty,
 	meta map[string]interface{},
 ) error
 
-type action func()
+type Action func(context.Context, eh.Event, *domain.HTTPCmdProcessedData) error
 
 type View struct {
 	sync.RWMutex
@@ -34,7 +33,7 @@ type View struct {
 	controllers      map[string]controller
 	models           map[string]*model.Model
 	outputFormatters map[string]formatter
-	actions          map[string]action
+	actions          map[string]Action
 }
 
 func New(options ...Option) *View {
@@ -43,7 +42,7 @@ func New(options ...Option) *View {
 		controllers:      map[string]controller{},
 		models:           map[string]*model.Model{},
 		outputFormatters: map[string]formatter{},
-		actions:          map[string]action{},
+		actions:          map[string]Action{},
 	}
 
 	s.ApplyOption(options...)
@@ -88,4 +87,10 @@ func (s *View) GetController(name string) controller {
 	s.RLock()
 	defer s.RUnlock()
 	return s.controllers[name]
+}
+
+func (s *View) GetAction(name string) Action {
+	s.RLock()
+	defer s.RUnlock()
+	return s.actions[name]
 }

@@ -53,7 +53,6 @@ func (s *View) PropertyGet(
 			ctx context.Context,
 			v *View,
 			m *model.Model,
-			agg *domain.RedfishResourceAggregate,
 			rrp *domain.RedfishResourceProperty,
 			meta map[string]interface{},
 		) error {
@@ -68,7 +67,7 @@ func (s *View) PropertyGet(
 		}
 	}
 
-	formatterFn(ctx, s, modelObj, agg, rrp, meta)
+	formatterFn(ctx, s, modelObj, rrp, meta)
 }
 
 func (s *View) PropertyPatch(

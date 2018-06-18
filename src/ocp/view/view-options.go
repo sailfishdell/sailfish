@@ -33,3 +33,10 @@ func WithController(name string, c controller) Option {
 		return nil
 	}
 }
+
+func WithAction(name string, a Action) Option {
+	return func(s *View) error {
+		s.actions[name] = a
+		return nil
+	}
+}

@@ -15,7 +15,6 @@ func FormatAttributeDump(
 	ctx context.Context,
 	v *view.View,
 	m *model.Model,
-	agg *domain.RedfishResourceAggregate,
 	rrp *domain.RedfishResourceProperty,
 	meta map[string]interface{},
 ) error {
