@@ -34,7 +34,7 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 				"Id":          "Power",
 				"Description": "Power",
 				"Name":        "Power",
-				// TODO: "PowerSupplies@odata.count": 6,
+				"PowerSupplies@odata.count": "TEST_VALUE",
 				"PowerSupplies@meta": v.Meta(view.PropGET("power_supply_views")),
 
 				"Oem": map[string]interface{}{
@@ -44,15 +44,15 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 							"@odata.context": "/redfish/v1/$metadata#Power.PowerSystem.Chassis.1/Power/$entity",
 							"@odata.type":    "#DellPower.v1_0_0.DellPowerTrends",
 							"Name":           "System Power",
-							"histograms":     []interface{}{},
+							"histograms":     []interface{}{"TEST_VALUE",},
+                            "histograms@odata.count": "TEST_VALUE",
 							"MemberId":       "PowerHistogram",
-							// TODO: "histograms@odata.count": 3
 						},
 					},
 					"EID_674": map[string]interface{}{
 						"PowerSuppliesSummary": map[string]interface{}{
 							"Status": map[string]interface{}{
-								"HealthRollup": "OK",
+								"HealthRollup": "TEST_VALUE",
 							},
 						},
 					},
