@@ -97,21 +97,7 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 				},
 			}})
 
-	ah.CreateAction(ctx, ch, eb, ew,
-		logger,
-		v.GetURI()+"/Actions/Chassis.Reset",
-		"chassis.reset",
-		v.GetModel("default"))
-
-	ah.CreateAction(ctx, ch, eb, ew,
-		logger,
-		v.GetURI()+"/Actions/Oem/MSMConfigBackup",
-		"msm_config_backup",
-		v.GetModel("default"))
-
-	ah.CreateAction(ctx, ch, eb, ew,
-		logger,
-		v.GetURI()+"/Actions/Oem/DellChassis.MSMConfigBackup",
-		"chassis_msm_config_backup",
-		v.GetModel("default"))
+	ah.CreateViewAction(ctx, logger, "chassis.reset", v.GetURI()+"/Actions/Chassis.Reset", v, ch, eb)
+	ah.CreateViewAction(ctx, logger, "msm_config_backup", v.GetURI()+"/Actions/Oem/MSMConfigBackup", v, ch, eb)
+	ah.CreateViewAction(ctx, logger, "chassis_msm_config_backup", v.GetURI()+"/Actions/Oem/DellChassis.MSMConfigBackup", v, ch, eb)
 }

@@ -206,6 +206,14 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			view.WithController("ar_mapper", armapper),
 			view.WithController("ar_dump", ardumper),
 			view.WithController("fw_mapper", fwmapper),
+
+			view.WithAction("manager.reset", bmcReset),
+			view.WithAction("manager.resettodefaults", bmcResetToDefaults),
+			view.WithAction("manager.forcefailover", bmcForceFailover),
+			view.WithAction("manager.exportsystemconfiguration", exportSystemConfiguration),
+			view.WithAction("manager.importsystemconfiguration", importSystemConfiguration),
+			view.WithAction("manager.importsystemconfigurationpreview", importSystemConfigurationPreview),
+
 			view.WithFormatter("attributeFormatter", attributes.FormatAttributeDump),
 		)
 

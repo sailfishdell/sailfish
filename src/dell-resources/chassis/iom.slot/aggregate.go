@@ -95,21 +95,7 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 				},
 			}})
 
-	ah.CreateAction(ctx, ch, eb, ew,
-		logger,
-		v.GetURI()+"/Actions/Chassis.Reset",
-		"chassis.reset",
-		v.GetModel("default"))
-
-	ah.CreateAction(ctx, ch, eb, ew,
-		logger,
-		v.GetURI()+"/Actions/Oem/DellChassis.ResetPeakPowerConsumption",
-		"chassis.reset_peak_power_consumption",
-		v.GetModel("default"))
-
-	ah.CreateAction(ctx, ch, eb, ew,
-		logger,
-		v.GetURI()+"/Actions/Oem/DellChassis.VirtualReseat",
-		"chassis.virtual_reseat",
-		v.GetModel("default"))
+	ah.CreateViewAction(ctx, logger, "chassis.reset", v.GetURI()+"/Actions/Chassis.Reset", v, ch, eb)
+	ah.CreateViewAction(ctx, logger, "chassis.reset_peak_power_consumption", v.GetURI()+"/Actions/Oem/DellChassis.ResetPeakPowerConsumption", v, ch, eb)
+	ah.CreateViewAction(ctx, logger, "chassis.virtual_reseat", v.GetURI()+"/Actions/Oem/DellChassis.VirtualReseat", v, ch, eb)
 }
