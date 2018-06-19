@@ -15,7 +15,6 @@ import (
 
 	eh "github.com/looplab/eventhorizon"
 	ah "github.com/superchalupa/go-redfish/src/actionhandler"
-	ah2 "github.com/superchalupa/go-redfish/src/actionhandler2"
 )
 
 type waiter interface {
@@ -308,43 +307,12 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 			Properties: properties,
 		})
 
-	ah2.CreateAction(ctx, logger, "manager.reset", v.GetURI()+"/Actions/Manager.Reset", v, ch, eb)
-
-	ah.CreateAction(ctx, ch, eb, ew,
-		logger,
-		v.GetURI()+"/Actions/Manager.Reset",
-		"manager.reset",
-		v.GetModel("default"))
-
-	ah.CreateAction(ctx, ch, eb, ew,
-		logger,
-		v.GetURI()+"/Actions/Oem/DellManager.ResetToDefaults",
-		"manager.resettodefaults",
-		v.GetModel("default"))
-
-	ah.CreateAction(ctx, ch, eb, ew,
-		logger,
-		v.GetURI()+"/Actions/Manager.ForceFailover",
-		"manager.forcefailover",
-		v.GetModel("default"))
-
-	ah.CreateAction(ctx, ch, eb, ew,
-		logger,
-		v.GetURI()+"/Actions/Oem/EID_674_Manager.ExportSystemConfiguration",
-		"manager.exportsystemconfiguration",
-		v.GetModel("default"))
-
-	ah.CreateAction(ctx, ch, eb, ew,
-		logger,
-		v.GetURI()+"/Actions/Oem/EID_674_Manager.ImportSystemConfiguration",
-		"manager.importsystemconfiguration",
-		v.GetModel("default"))
-
-	ah.CreateAction(ctx, ch, eb, ew,
-		logger,
-		v.GetURI()+"/Actions/Oem/EID_674_Manager.ImportSystemConfigurationPreview",
-		"manager.importsystemconfigurationpreview",
-		v.GetModel("default"))
+	ah.CreateViewAction(ctx, logger, "manager.reset", v.GetURI()+"/Actions/Manager.Reset", v, ch, eb)
+	ah.CreateViewAction(ctx, logger, "manager.resettodefaults", v.GetURI()+"/Actions/Oem/DellManager.ResetToDefaults", v, ch, eb)
+	ah.CreateViewAction(ctx, logger, "manager.forcefailover", v.GetURI()+"/Actions/Manager.ForceFailover", v, ch, eb)
+	ah.CreateViewAction(ctx, logger, "manager.exportsystemconfiguration", v.GetURI()+"/Actions/Oem/EID_674_Manager.ExportSystemConfiguration", v, ch, eb)
+	ah.CreateViewAction(ctx, logger, "manager.importsystemconfiguration", v.GetURI()+"/Actions/Oem/EID_674_Manager.ImportSystemConfiguration", v, ch, eb)
+	ah.CreateViewAction(ctx, logger, "manager.importsystemconfigurationpreview", v.GetURI()+"/Actions/Oem/EID_674_Manager.ImportSystemConfigurationPreview", v, ch, eb)
 
 	return v
 }

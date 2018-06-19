@@ -7,9 +7,12 @@ import (
 	"time"
 
 	eh "github.com/looplab/eventhorizon"
+	eventpublisher "github.com/looplab/eventhorizon/publisher/local"
+
 	"github.com/superchalupa/go-redfish/src/eventwaiter"
 	"github.com/superchalupa/go-redfish/src/log"
 	"github.com/superchalupa/go-redfish/src/ocp/event"
+	"github.com/superchalupa/go-redfish/src/ocp/view"
 	domain "github.com/superchalupa/go-redfish/src/redfishresource"
 )
 
@@ -89,19 +92,31 @@ type prop interface {
 	GetProperty(string) interface{}
 }
 
-func CreateAction(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew waiter,
+type handler func(context.Context, eh.Event, *domain.HTTPCmdProcessedData) error
+
+type actionrunner interface {
+	GetAction(string) view.Action
+}
+
+func CreateViewAction(
+	ctx context.Context,
 	logger log.Logger,
-	uri string,
-	property string,
-	s prop,
+	action string,
+	actionURI string,
+	vw actionrunner,
+	ch eh.CommandHandler,
+	eb eh.EventBus,
 ) {
+
+	logger.Crit("CREATING ACTION", "action", action, "actionURI", actionURI)
+
 	// The following redfish resource is created only for the purpose of being
 	// a 'receiver' for the action command specified above.
 	ch.HandleCommand(
 		ctx,
 		&domain.CreateRedfishResource{
 			ID:          eh.NewUUID(),
-			ResourceURI: uri,
+			ResourceURI: actionURI,
 			Type:        "Action",
 			Context:     "Action",
 			Plugin:      "GenericActionHandler",
@@ -112,8 +127,13 @@ func CreateAction(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew 
 		},
 	)
 
+	EventPublisher := eventpublisher.NewEventPublisher()
+	eb.AddHandler(eh.MatchAny(), EventPublisher)
+	EventWaiter := eventwaiter.NewEventWaiter()
+	EventPublisher.AddObserver(EventWaiter)
+
 	// stream processor for action events
-	sp, err := event.NewEventStreamProcessor(ctx, ew, event.CustomFilter(SelectAction(uri)))
+	sp, err := event.NewEventStreamProcessor(ctx, EventWaiter, event.CustomFilter(SelectAction(actionURI)))
 	if err != nil {
 		logger.Error("Failed to create event stream processor", "err", err)
 		return
@@ -126,11 +146,11 @@ func CreateAction(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew 
 			Headers:    map[string]string{},
 		}
 
-		handler := s.GetProperty(property)
+		logger.Crit("Action running!")
+		handler := vw.GetAction(action)
+		logger.Crit("handler", "handler", handler)
 		if handler != nil {
-			if fn, ok := handler.(func(eh.Event, *domain.HTTPCmdProcessedData)); ok {
-				fn(event, &eventData)
-			}
+			handler(ctx, event, &eventData)
 		} else {
 			logger.Warn("UNHANDLED action event: no function handler set up for this event.", "event", event)
 		}

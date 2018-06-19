@@ -6,7 +6,7 @@ main:
         Level: "warn"
         EnableStderr: true
         # uncomment to log to a file
-        #FileName: "./out.log"
+        FileName: "./out.log"
         ModulesToEnable:
             # all of the loggers below support a heirarchical arrangement where
             # you can turn on debugging for all modules with (eg.)
@@ -82,7 +82,7 @@ main:
               level: "warn"
 
             - name: "Registries"
-              level: "info"
+              level: "warn"
 
 
     dumpConfigChanges:
@@ -92,7 +92,6 @@ main:
 listen:
     - http::8080
     - https::8443
-    - spacemonkey::9443
 
 session:
     timeout: 60
