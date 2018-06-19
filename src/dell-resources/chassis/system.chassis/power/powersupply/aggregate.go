@@ -49,8 +49,8 @@ func getViewFragment(v *view.View) map[string]interface{} {
 		"PowerCapacityWatts@meta": v.Meta(view.PropGET("capacity_watts")),
 		"LineInputVoltage@meta":   v.Meta(view.PropGET("line_input_voltage")),
 		"FirmwareVersion@meta":    v.Meta(view.PropGET("firmware_version")),
-        "Redundancy": []interface{}{"TEST_VALUE",},
-        "Redundancy@odata.count": "TEST_VALUE", 
+		"Redundancy":              []interface{}{"TEST_VALUE"},
+		"Redundancy@odata.count":  "TEST_VALUE",
 
 		"Status": map[string]interface{}{
 			"HealthRollup": "TEST_VALUE",
