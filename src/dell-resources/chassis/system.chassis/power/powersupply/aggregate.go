@@ -21,7 +21,7 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 			ID:          v.GetUUID(),
 			Collection:  false,
 			ResourceURI: v.GetURI(),
-			Type:        "#Power.v1_0_2.Power",
+			Type:        "#Power.v1_0_2.PowerSupply",
 			Context:     "/redfish/v1/$metadata#Power.PowerSystem.Chassis.1/Power/$entity",
 			Privileges: map[string]interface{}{
 				"GET":    []string{"Login"},
@@ -49,11 +49,13 @@ func getViewFragment(v *view.View) map[string]interface{} {
 		"PowerCapacityWatts@meta": v.Meta(view.PropGET("capacity_watts")),
 		"LineInputVoltage@meta":   v.Meta(view.PropGET("line_input_voltage")),
 		"FirmwareVersion@meta":    v.Meta(view.PropGET("firmware_version")),
+        "Redundancy": []interface{}{"TEST_VALUE",},
+        "Redundancy@odata.count": "TEST_VALUE", 
 
 		"Status": map[string]interface{}{
-			"HealthRollup": "OK",
-			"State":        "Enabled",
-			"Health":       "OK",
+			"HealthRollup": "TEST_VALUE",
+			"State":        "TEST_VALUE",
+			"Health":       "TEST_VALUE",
 		},
 
 		"Oem": map[string]interface{}{
