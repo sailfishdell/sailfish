@@ -15,16 +15,16 @@ type staticValMapping struct {
 }
 
 type staticValMappingController struct {
-	logger   log.Logger
-	name     string
-	mdl      *model.Model
+	logger log.Logger
+	name   string
+	mdl    *model.Model
 }
 
 func New(ctx context.Context, logger log.Logger, m *model.Model, name string) (*staticValMappingController, error) {
 	c := &staticValMappingController{
-		name:     name,
-		logger:   logger,
-		mdl:      m,
+		name:   name,
+		logger: logger,
+		mdl:    m,
 	}
 
 	return c, nil
