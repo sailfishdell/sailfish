@@ -7,9 +7,12 @@ import (
 	"time"
 
 	eh "github.com/looplab/eventhorizon"
+	eventpublisher "github.com/looplab/eventhorizon/publisher/local"
+
 	"github.com/superchalupa/go-redfish/src/eventwaiter"
 	"github.com/superchalupa/go-redfish/src/log"
 	"github.com/superchalupa/go-redfish/src/ocp/event"
+	"github.com/superchalupa/go-redfish/src/ocp/view"
 	domain "github.com/superchalupa/go-redfish/src/redfishresource"
 )
 
@@ -131,6 +134,74 @@ func CreateAction(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew 
 			if fn, ok := handler.(func(eh.Event, *domain.HTTPCmdProcessedData)); ok {
 				fn(event, &eventData)
 			}
+		} else {
+			logger.Warn("UNHANDLED action event: no function handler set up for this event.", "event", event)
+		}
+
+		responseEvent := eh.NewEvent(domain.HTTPCmdProcessed, eventData, time.Now())
+		eb.PublishEvent(ctx, responseEvent)
+	})
+}
+
+type handler func(context.Context, eh.Event, *domain.HTTPCmdProcessedData) error
+
+type actionrunner interface {
+	GetAction(string) view.Action
+}
+
+func CreateViewAction(
+	ctx context.Context,
+	logger log.Logger,
+	action string,
+	actionURI string,
+	vw actionrunner,
+	ch eh.CommandHandler,
+	eb eh.EventBus,
+) {
+
+	logger.Crit("CREATING ACTION", "action", action, "actionURI", actionURI)
+
+	// The following redfish resource is created only for the purpose of being
+	// a 'receiver' for the action command specified above.
+	ch.HandleCommand(
+		ctx,
+		&domain.CreateRedfishResource{
+			ID:          eh.NewUUID(),
+			ResourceURI: actionURI,
+			Type:        "Action",
+			Context:     "Action",
+			Plugin:      "GenericActionHandler",
+			Privileges: map[string]interface{}{
+				"POST": []string{"ConfigureManager"},
+			},
+			Properties: map[string]interface{}{},
+		},
+	)
+
+	EventPublisher := eventpublisher.NewEventPublisher()
+	eb.AddHandler(eh.MatchAny(), EventPublisher)
+	EventWaiter := eventwaiter.NewEventWaiter()
+	EventPublisher.AddObserver(EventWaiter)
+
+	// stream processor for action events
+	sp, err := event.NewEventStreamProcessor(ctx, EventWaiter, event.CustomFilter(SelectAction(actionURI)))
+	if err != nil {
+		logger.Error("Failed to create event stream processor", "err", err)
+		return
+	}
+	sp.RunForever(func(event eh.Event) {
+		eventData := domain.HTTPCmdProcessedData{
+			CommandID:  event.Data().(GenericActionEventData).CmdID,
+			Results:    map[string]interface{}{"msg": "Not Implemented"},
+			StatusCode: 500,
+			Headers:    map[string]string{},
+		}
+
+		logger.Crit("Action running!")
+		handler := vw.GetAction(action)
+		logger.Crit("handler", "handler", handler)
+		if handler != nil {
+			handler(ctx, event, &eventData)
 		} else {
 			logger.Warn("UNHANDLED action event: no function handler set up for this event.", "event", event)
 		}
