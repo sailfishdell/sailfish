@@ -13,6 +13,7 @@ import (
 
 	"github.com/superchalupa/go-redfish/src/eventwaiter"
 	"github.com/superchalupa/go-redfish/src/log"
+	"github.com/superchalupa/go-redfish/src/ocp/eventservice"
 	"github.com/superchalupa/go-redfish/src/ocp/model"
 	"github.com/superchalupa/go-redfish/src/ocp/root"
 	"github.com/superchalupa/go-redfish/src/ocp/session"
@@ -36,6 +37,8 @@ import (
 	"github.com/superchalupa/go-redfish/src/dell-resources/registries/registry"
 	"github.com/superchalupa/go-redfish/src/dell-resources/update_service"
 	"github.com/superchalupa/go-redfish/src/dell-resources/update_service/firmware_inventory"
+
+	ah "github.com/superchalupa/go-redfish/src/actionhandler"
 )
 
 type ocp struct {
@@ -118,6 +121,24 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		view.WithURI(rootView.GetURI()+"/SessionService"))
 	domain.RegisterPlugin(func() domain.Plugin { return sessionView })
 	session.AddAggregate(ctx, sessionView, rootView.GetUUID(), ch, eb, ew)
+
+	//*********************************************************************
+	// /redfish/v1/EventService
+	//*********************************************************************
+	esLogger := logger.New("module", "EventService")
+	esModel := model.New(
+		model.UpdateProperty("delivery_retry_attempts", 3),
+		model.UpdateProperty("delivery_retry_interval_seconds", 60),
+	)
+
+	// TODO: need to set up an AR mapper for the model configurable properties above
+	esView := view.New(
+		view.WithModel("default", esModel),
+		view.WithURI(rootView.GetURI()+"/EventService"),
+		ah.WithAction(ctx, esLogger, "submit.test.event", "/Actions/EventService.SubmitTestEvent", submitTestEvent, ch, eb),
+	)
+	domain.RegisterPlugin(func() domain.Plugin { return esView })
+	eventservice.AddAggregate(ctx, esLogger, esView, rootView.GetUUID(), ch, eb)
 
 	//*********************************************************************
 	// /redfish/v1/Registries
@@ -207,12 +228,13 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			view.WithController("ar_dump", ardumper),
 			view.WithController("fw_mapper", fwmapper),
 
-			view.WithAction("manager.reset", bmcReset),
-			view.WithAction("manager.resettodefaults", bmcResetToDefaults),
-			view.WithAction("manager.forcefailover", bmcForceFailover),
-			view.WithAction("manager.exportsystemconfiguration", exportSystemConfiguration),
-			view.WithAction("manager.importsystemconfiguration", importSystemConfiguration),
-			view.WithAction("manager.importsystemconfigurationpreview", importSystemConfigurationPreview),
+			ah.WithAction(ctx, mgrLogger, "manager.reset", "/Actions/ManagerReset", bmcReset, ch, eb),
+			ah.WithAction(ctx, mgrLogger, "manager.resettodefaults", "/Actions/ResetToDefaults", bmcResetToDefaults, ch, eb),
+
+			ah.WithAction(ctx, mgrLogger, "manager.forcefailover", "/Actions/ForceFailover", bmcForceFailover, ch, eb),
+			ah.WithAction(ctx, mgrLogger, "manager.exportsystemconfig", "/Actions/ExportSystemConfig", exportSystemConfiguration, ch, eb),
+			ah.WithAction(ctx, mgrLogger, "manager.importsystemconfig", "/Actions/ImportSystemConfig", importSystemConfiguration, ch, eb),
+			ah.WithAction(ctx, mgrLogger, "manager.importsystemconfigpreview", "/Actions/ImportSystemConfigPreview", importSystemConfigurationPreview, ch, eb),
 
 			view.WithFormatter("attributeFormatter", attributes.FormatAttributeDump),
 		)
@@ -222,7 +244,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		swinvViews = append(swinvViews, mgrCmcVw)
 
 		// add the aggregate to the view tree
-		mgrCMCIntegrated.AddAggregate(ctx, mgrLogger, mgrCmcVw, ch, eb, ew)
+		mgrCMCIntegrated.AddAggregate(ctx, mgrLogger, mgrCmcVw, ch)
 		attributes.AddAggregate(ctx, mgrCmcVw, rootView.GetURI()+"/Managers/"+mgrName+"/Attributes", ch)
 
 		//*********************************************************************

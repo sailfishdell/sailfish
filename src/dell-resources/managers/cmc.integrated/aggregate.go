@@ -14,14 +14,13 @@ import (
 	domain "github.com/superchalupa/go-redfish/src/redfishresource"
 
 	eh "github.com/looplab/eventhorizon"
-	ah "github.com/superchalupa/go-redfish/src/actionhandler"
 )
 
 type waiter interface {
 	Listen(context.Context, func(eh.Event) bool) (*eventwaiter.EventListener, error)
 }
 
-func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.CommandHandler, eb eh.EventBus, ew waiter) *view.View {
+func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.CommandHandler) *view.View {
 
 	properties := map[string]interface{}{
 		"Id@meta":   v.Meta(view.PropGET("unique_name")),
@@ -78,7 +77,7 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 
 		"Actions": map[string]interface{}{
 			"#Manager.Reset": map[string]interface{}{
-				"target": v.GetURI() + "/Actions/Manager.Reset",
+				"target": v.GetActionURI("manager.reset"),
 				"ResetType@Redfish.AllowableValues": []string{
 					"GracefulRestart",
 				},
@@ -91,10 +90,10 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 						"ResetFactoryConfig",
 						"ResetToEngineeringDefaults",
 					},
-					"target": v.GetURI() + "/Actions/Oem/DellManager.ResetToDefaults",
+					"target": v.GetActionURI("manager.resettodefaults"),
 				},
 				"#Manager.ForceFailover": map[string]interface{}{
-					"target": v.GetURI() + "/Actions/Manager.ForceFailover",
+					"target": v.GetActionURI("manager.forcefailover"),
 				},
 				"#DellManager.v1_0_0.DellManager.ResetToDefaults": map[string]interface{}{
 					"ResetType@Redfish.AllowableValues": []string{
@@ -103,7 +102,7 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 						"ResetFactoryConfig",
 						"ResetToEngineeringDefaults",
 					},
-					"target": v.GetURI() + "/Actions/Oem/DellManager.ResetToDefaults",
+					"target": v.GetActionURI("manager.resettodefaults"),
 				},
 				"OemManager.v1_0_0#OemManager.ExportSystemConfiguration": map[string]interface{}{
 					"ExportFormat@Redfish.AllowableValues": []string{
@@ -161,7 +160,7 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 							"RAID",
 						},
 					},
-					"target": v.GetURI() + "/Actions/Oem/EID_674_Manager.ExportSystemConfiguration",
+					"target": v.GetActionURI("manager.exportsystemconfig"),
 				},
 				"OemManager.v1_0_0#OemManager.ImportSystemConfiguration": map[string]interface{}{
 					"HostPowerState@Redfish.AllowableValues": []string{
@@ -217,7 +216,7 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 						"Forced",
 						"NoReboot",
 					},
-					"target": v.GetURI() + "/Actions/Oem/EID_674_Manager.ImportSystemConfiguration",
+					"target": v.GetActionURI("manager.importsystemconfig"),
 				},
 				"OemManager.v1_0_0#OemManager.ImportSystemConfigurationPreview": map[string]interface{}{
 					"ImportSystemConfigurationPreview@Redfish.AllowableVaues": []string{
@@ -259,7 +258,7 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 							"ALL",
 						},
 					},
-					"target": v.GetURI() + "/Actions/Oem/EID_674_Manager.ImportSystemConfigurationPreview",
+					"target": v.GetActionURI("manager.importsystemconfigpreview"),
 				},
 			},
 		},
@@ -306,13 +305,6 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 			},
 			Properties: properties,
 		})
-
-	ah.CreateViewAction(ctx, logger, "manager.reset", v.GetURI()+"/Actions/Manager.Reset", v, ch, eb)
-	ah.CreateViewAction(ctx, logger, "manager.resettodefaults", v.GetURI()+"/Actions/Oem/DellManager.ResetToDefaults", v, ch, eb)
-	ah.CreateViewAction(ctx, logger, "manager.forcefailover", v.GetURI()+"/Actions/Manager.ForceFailover", v, ch, eb)
-	ah.CreateViewAction(ctx, logger, "manager.exportsystemconfiguration", v.GetURI()+"/Actions/Oem/EID_674_Manager.ExportSystemConfiguration", v, ch, eb)
-	ah.CreateViewAction(ctx, logger, "manager.importsystemconfiguration", v.GetURI()+"/Actions/Oem/EID_674_Manager.ImportSystemConfiguration", v, ch, eb)
-	ah.CreateViewAction(ctx, logger, "manager.importsystemconfigurationpreview", v.GetURI()+"/Actions/Oem/EID_674_Manager.ImportSystemConfigurationPreview", v, ch, eb)
 
 	return v
 }
