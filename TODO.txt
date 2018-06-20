@@ -1,12 +1,16 @@
 Things that need work: (-) TODO (*) DONE
 
  - Schema Meta builder
+ - Event server (separate binary to POST redfish events)
+ - Redfish SSE server
+
+ * EventService (partial) - base eventservice resource is in. POST handling to create new subscription is not.
+ - EventService Subscriptions
+ * Test Submit Event API
+
  - Fix HTTPs apis to allow specifying api: server
  - re-add spacemonkey
  - Systemd socket activation support
- - Test Submit Event API
- - Event server
- - SSE server
  - eventwaiter interface - stop passing *ew around everywhere, use interface instead
     -- accept interfaces, return objects
 
@@ -21,24 +25,10 @@ Things that need work: (-) TODO (*) DONE
     - Implement second EventBus just for SSE external traffic
     - Implement SAGA to bridge between the two busses
 
- - ACTIONS
-    * Implement a test OEM action for reference
-        * obmc now also implements reset action (test)
-        * see scripts/test.sh, plugins/test_action/. These implement example action
-
- - EVENTS
-    * implement an http endpoint to inject raw events into the system (internal command)
-
  - DBUS interface:
     - hook base command processor into dbus
     - need to hook current Tree into DBUS: allow sending the internal commands
     - hook up signals via plugins
-
- - GET aggregate plugin support:
-    * Need to filter out @meta from Properties
-    * Need to load plugins for each property
-    * Example plugin for replacement of values on GET (Strategy 3 in plugins/test/readme.txt)
-    * example plugin for processing event stream and replacing values (Strategy 1 in plugins/test/readme.txt)
 
  - implement for GET:
     - $skip
@@ -97,4 +87,23 @@ Things that need work: (-) TODO (*) DONE
         - Oem
 
  - Generic TASK Service
+
+
+==================
+= Completed tasks
+==================
+
+ - EVENTS
+    * implement an http endpoint to inject raw events into the system (internal command)
+
+ - GET aggregate plugin support:
+    * Need to filter out @meta from Properties
+    * Need to load plugins for each property
+    * Example plugin for replacement of values on GET (Strategy 3 in plugins/test/readme.txt)
+    * example plugin for processing event stream and replacing values (Strategy 1 in plugins/test/readme.txt)
+
+ - ACTIONS
+    * Implement a test OEM action for reference
+        * obmc now also implements reset action (test)
+        * see scripts/test.sh, plugins/test_action/. These implement example action
 
