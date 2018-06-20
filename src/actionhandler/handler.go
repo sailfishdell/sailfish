@@ -159,3 +159,13 @@ func CreateViewAction(
 		eb.PublishEvent(ctx, responseEvent)
 	})
 }
+
+func WithAction(ctx context.Context, logger log.Logger, name string, uriSuffix string, a view.Action, ch eh.CommandHandler, eb eh.EventBus) view.Option {
+	return func(s *view.View) error {
+		uri := s.GetURIUnlocked() + uriSuffix
+		s.SetActionUnlocked(name, a)
+		s.SetActionURIUnlocked(name, uri)
+		CreateViewAction(ctx, logger, name, uri, s, ch, eb)
+		return nil
+	}
+}
