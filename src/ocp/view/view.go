@@ -34,6 +34,7 @@ type View struct {
 	models           map[string]*model.Model
 	outputFormatters map[string]formatter
 	actions          map[string]Action
+	actionURI        map[string]string
 }
 
 func New(options ...Option) *View {
@@ -43,6 +44,7 @@ func New(options ...Option) *View {
 		models:           map[string]*model.Model{},
 		outputFormatters: map[string]formatter{},
 		actions:          map[string]Action{},
+		actionURI:        map[string]string{},
 	}
 
 	s.ApplyOption(options...)
@@ -71,10 +73,14 @@ func (s *View) GetUUID() eh.UUID {
 	return s.uuid
 }
 
+func (s *View) GetURIUnlocked() string {
+	return s.viewURI
+}
+
 func (s *View) GetURI() string {
 	s.RLock()
 	defer s.RUnlock()
-	return s.viewURI
+	return s.GetURIUnlocked()
 }
 
 func (s *View) GetModel(name string) *model.Model {
@@ -93,4 +99,18 @@ func (s *View) GetAction(name string) Action {
 	s.RLock()
 	defer s.RUnlock()
 	return s.actions[name]
+}
+
+func (s *View) GetActionURI(name string) string {
+	s.RLock()
+	defer s.RUnlock()
+	return s.actionURI[name]
+}
+
+func (v *View) SetActionURIUnlocked(name string, URI string) {
+	v.actionURI[name] = URI
+}
+
+func (v *View) SetActionUnlocked(name string, a Action) {
+	v.actions[name] = a
 }
