@@ -135,7 +135,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	esView := view.New(
 		view.WithModel("default", esModel),
 		view.WithURI(rootView.GetURI()+"/EventService"),
-		ah.WithAction(ctx, esLogger, "submit.test.event", "/Actions/EventService.SubmitTestEvent", submitTestEvent, ch, eb),
+		ah.WithAction(ctx, esLogger, "submit.test.event", "/Actions/EventService.SubmitTestEvent", MakeSubmitTestEvent(eb), ch, eb),
 	)
 	domain.RegisterPlugin(func() domain.Plugin { return esView })
 	eventservice.AddAggregate(ctx, esLogger, esView, rootView.GetUUID(), ch, eb)
