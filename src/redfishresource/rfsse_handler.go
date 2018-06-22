@@ -7,7 +7,6 @@ import (
 
 	eh "github.com/looplab/eventhorizon"
 	log "github.com/superchalupa/go-redfish/src/log"
-	"github.com/superchalupa/go-redfish/src/ocp/eventservice"
 )
 
 // NewRedfishSSEHandler constructs a new RedfishSSEHandler with the given username and privileges.
@@ -39,9 +38,9 @@ func (rh *RedfishSSEHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// TODO: need to worry about privileges: probably should do the privilege checks in the Listener
 	// to avoid races, set up our listener first
 	l, err := rh.d.EventWaiter.Listen(ctx, func(event eh.Event) bool {
-         if event.EventType() != eventservice.RedfishEvent {
+//         if event.EventType() != eventservice.RedfishEvent {
             return false
-         }
+ //        }
 		return true
 	})
 	if err != nil {
