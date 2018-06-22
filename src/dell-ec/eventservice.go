@@ -6,7 +6,9 @@ import (
     "fmt"
     "time"
 
+    "github.com/mitchellh/mapstructure"
 	eh "github.com/looplab/eventhorizon"
+
 	domain "github.com/superchalupa/go-redfish/src/redfishresource"
     ah "github.com/superchalupa/go-redfish/src/actionhandler"
 )
@@ -40,11 +42,21 @@ func MakeSubmitTestEvent(eb eh.EventBus) func(context.Context, eh.Event, *domain
             return errors.New("Didnt get the right kind of event")
         }
 
+        redfishEvent := &RedfishEventData{}
+        mapstructure.Decode( data.ActionData, redfishEvent )
+
+        // Require EventType and EventID or else we bail
+        if redfishEvent.EventType == "" || redfishEvent.EventId == "" {
+            retData.Results = map[string]interface{}{"error": "Bad request"}
+            retData.StatusCode = 400
+            return errors.New("Did not get a valid redfish event to publish")
+        }
+
         // need to publish here.
-        responseEvent := eh.NewEvent(RedfishEvent, data.ActionData, time.Now())
+        responseEvent := eh.NewEvent(RedfishEvent, redfishEvent, time.Now())
         eb.PublishEvent(ctx, responseEvent)
 
-        retData.Results = data.ActionData
+        retData.Results = redfishEvent
         retData.StatusCode = 200
         return nil
     }
