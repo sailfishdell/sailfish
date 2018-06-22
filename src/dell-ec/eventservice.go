@@ -11,26 +11,9 @@ import (
 
 	domain "github.com/superchalupa/go-redfish/src/redfishresource"
     ah "github.com/superchalupa/go-redfish/src/actionhandler"
+
+    "github.com/superchalupa/go-redfish/src/ocp/eventservice"
 )
-
-const (
-	RedfishEvent = eh.EventType("RedfishEvent")
-)
-
-func InitService(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew waiter) {
-	eh.RegisterEventData(RedfishEvent, func() eh.EventData { return &RedfishEventData{} })
-}
-
-type RedfishEventData struct {
-    EventType string
-    EventId   string
-    EventTimestamp  string
-    Severity string
-    Message  string
-    MessageId string
-    MessageArgs []string
-    OriginOfCondition string
-}
 
 func MakeSubmitTestEvent(eb eh.EventBus) func(context.Context, eh.Event, *domain.HTTPCmdProcessedData) error {
     return func (ctx context.Context, event eh.Event, retData *domain.HTTPCmdProcessedData) error {
@@ -42,7 +25,7 @@ func MakeSubmitTestEvent(eb eh.EventBus) func(context.Context, eh.Event, *domain
             return errors.New("Didnt get the right kind of event")
         }
 
-        redfishEvent := &RedfishEventData{}
+        redfishEvent := &eventservice.RedfishEventData{}
         mapstructure.Decode( data.ActionData, redfishEvent )
 
         // Require EventType and EventID or else we bail
@@ -53,7 +36,7 @@ func MakeSubmitTestEvent(eb eh.EventBus) func(context.Context, eh.Event, *domain
         }
 
         // need to publish here.
-        responseEvent := eh.NewEvent(RedfishEvent, redfishEvent, time.Now())
+        responseEvent := eh.NewEvent(eventservice.RedfishEvent, redfishEvent, time.Now())
         eb.PublishEvent(ctx, responseEvent)
 
         retData.Results = redfishEvent
