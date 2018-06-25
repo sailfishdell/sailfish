@@ -5,20 +5,56 @@ import (
 )
 
 const (
-	RedfishEvent = eh.EventType("RedfishEvent")
+	RedfishEvent         = eh.EventType("RedfishEvent")
+	ExternalRedfishEvent = eh.EventType("ExternalRedfishEvent")
 )
 
 type RedfishEventData struct {
-    EventType string
-    EventId   string
-    EventTimestamp  string
-    Severity string
-    Message  string
-    MessageId string
-    MessageArgs []string
-    OriginOfCondition map[string]interface{}
+	EventType         string
+	EventId           string
+	EventTimestamp    string
+	Severity          string
+	Message           string
+	MessageId         string
+	MessageArgs       []string
+	OriginOfCondition map[string]interface{}
 }
 
+type ExternalRedfishEventData struct {
+	Id      int
+	Context string `json:"@odata.context"`
+	Type    string `json:"@odata.type"`
+	Name    string
+	Events  []*RedfishEventData
+	// The SSE endpoint will need to add the Context parameter on a per subscriber basis
+}
+
+/*
+// Redfish events design
+
+The redfish event service spec says, "The value of the "Id" property should be
+a positive integer value and should be generated in a sequential manner."
+
+This is slightly problematic because many places in the code might be
+generating redfish events. Instead of having a counter that we must lock, what
+we'll do is have an event listener that listens for RedfishEvent and generates
+ExternalRedfishEvent. This will be a single threaded listener so it can create a
+monotonically increasing counter.
+
+We'll create this event stream processor with the event service.
+
+So, in general, any part of the code can PublishEvent(RedfishEvent...), and the
+event service stream processor will consume it and emit an output event.
+
+Views can do the following:
+    - Set up a "observer" on all of its models
+    - When a model change happens, "ProcessMeta" on the aggregate, and then
+      check the resulting object. We will mark which fields generate
+      ResourceUpdated events in the @meta, and when we process the meta, we can
+      leave litter behind to tell us if something changed.
+
+
+*/
 
 // SSE Example, for reference
 /*

@@ -139,6 +139,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	)
 	domain.RegisterPlugin(func() domain.Plugin { return esView })
 	eventservice.AddAggregate(ctx, esLogger, esView, rootView.GetUUID(), ch, eb)
+	eventservice.PublishRedfishEvents(ctx, eb, ew)
 
 	//*********************************************************************
 	// /redfish/v1/Registries
