@@ -28,8 +28,8 @@ func FormatAttributeDump(
 		return errors.New("fallback")
 	}
 
-    m.Lock()
-    defer m.Unlock()
+	m.Lock()
+	defer m.Unlock()
 	attributes, ok := m.GetPropertyUnlocked(prop).(map[string]map[string]map[string]interface{})
 	if !ok {
 		return errors.New("attributes not setup properly")
