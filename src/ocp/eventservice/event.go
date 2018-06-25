@@ -10,18 +10,18 @@ const (
 )
 
 type RedfishEventData struct {
-	EventType         string
-	EventId           string
-	EventTimestamp    string
-	Severity          string
-	Message           string
-	MessageId         string
-	MessageArgs       []string
-	OriginOfCondition map[string]interface{}
+	EventType         string                 `json:",omitempty"`
+	EventId           string                 `json:",omitempty"`
+	EventTimestamp    string                 `json:",omitempty"`
+	Severity          string                 `json:",omitempty"`
+	Message           string                 `json:",omitempty"`
+	MessageId         string                 `json:",omitempty"`
+	MessageArgs       []string               `json:",omitempty"`
+	OriginOfCondition map[string]interface{} `json:",omitempty"`
 }
 
 type ExternalRedfishEventData struct {
-	Id      int
+	Id      int    `json:",string"`
 	Context string `json:"@odata.context"`
 	Type    string `json:"@odata.type"`
 	Name    string

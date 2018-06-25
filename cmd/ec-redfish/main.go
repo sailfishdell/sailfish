@@ -20,6 +20,8 @@ import (
 	"github.com/gorilla/mux"
 	log "github.com/superchalupa/go-redfish/src/log"
 
+	"github.com/superchalupa/go-redfish/src/http_redfish_sse"
+	"github.com/superchalupa/go-redfish/src/http_sse"
 	domain "github.com/superchalupa/go-redfish/src/redfishresource"
 
 	// cert gen
@@ -110,7 +112,7 @@ func main() {
 	m.Path("/redfish").HandlerFunc(func(w http.ResponseWriter, r *http.Request) { http.Redirect(w, r, "/redfish/", 301) })
 	// per spec: hardcoded output for /redfish/ to list versions supported.
 	m.Path("/redfish/").HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.Write([]byte("{\n\t\"v1\": \"/redfish/v1/\"\n}\n")) })
-	// per spec: redirect /redfish/v1 to /redfish/v1/
+	// per spec: redirect /redfish/v1/ to /redfish/v1
 	m.Path("/redfish/v1/").HandlerFunc(func(w http.ResponseWriter, r *http.Request) { http.Redirect(w, r, "/redfish/v1", 301) })
 
 	// some static files that we should generate at some point
@@ -127,9 +129,16 @@ func main() {
 		session.MakeHandlerFunc(domainObjs.EventBus, domainObjs, chainAuth, basicauth.MakeHandlerFunc(chainAuth, chainAuth("UNKNOWN", []string{"Unauthenticated"}))))
 
 	// SSE
-	chainAuthSSE := func(u string, p []string) http.Handler { return domain.NewSSEHandler(domainObjs, logger, u, p) }
+	chainAuthSSE := func(u string, p []string) http.Handler { return http_sse.NewSSEHandler(domainObjs, logger, u, p) }
 	m.PathPrefix("/events").Methods("GET").HandlerFunc(
 		session.MakeHandlerFunc(domainObjs.EventBus, domainObjs, chainAuthSSE, basicauth.MakeHandlerFunc(chainAuthSSE, chainAuthSSE("UNKNOWN", []string{"Unauthenticated"}))))
+
+	// Redfish SSE
+	chainAuthRFSSE := func(u string, p []string) http.Handler {
+		return http_redfish_sse.NewRedfishSSEHandler(domainObjs, logger, u, p)
+	}
+	m.PathPrefix("/redfish_events").Methods("GET").HandlerFunc(
+		session.MakeHandlerFunc(domainObjs.EventBus, domainObjs, chainAuthRFSSE, basicauth.MakeHandlerFunc(chainAuthRFSSE, chainAuthRFSSE("UNKNOWN", []string{"Unauthenticated"}))))
 
 	// backend command handling
 	m.PathPrefix("/api/{command}").Handler(domainObjs.GetInternalCommandHandler(ctx))

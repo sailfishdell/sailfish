@@ -1,4 +1,4 @@
-package domain
+package http_sse
 
 import (
 	"encoding/json"
@@ -7,10 +7,11 @@ import (
 
 	eh "github.com/looplab/eventhorizon"
 	log "github.com/superchalupa/go-redfish/src/log"
+	domain "github.com/superchalupa/go-redfish/src/redfishresource"
 )
 
 // NewSSEHandler constructs a new SSEHandler with the given username and privileges.
-func NewSSEHandler(dobjs *DomainObjects, logger log.Logger, u string, p []string) *SSEHandler {
+func NewSSEHandler(dobjs *domain.DomainObjects, logger log.Logger, u string, p []string) *SSEHandler {
 	return &SSEHandler{UserName: u, Privileges: p, d: dobjs, logger: logger}
 }
 
@@ -18,14 +19,14 @@ func NewSSEHandler(dobjs *DomainObjects, logger log.Logger, u string, p []string
 type SSEHandler struct {
 	UserName   string
 	Privileges []string
-	d          *DomainObjects
+	d          *domain.DomainObjects
 	logger     log.Logger
 }
 
 func (rh *SSEHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	requestID := eh.NewUUID()
-	ctx := WithRequestID(r.Context(), requestID)
-	requestLogger := ContextLogger(ctx, "sse_handler")
+	ctx := domain.WithRequestID(r.Context(), requestID)
+	requestLogger := domain.ContextLogger(ctx, "sse_handler")
 	requestLogger.Info("Trying to start SSE Stream for request.")
 
 	flusher, ok := w.(http.Flusher)
