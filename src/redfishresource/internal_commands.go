@@ -272,34 +272,23 @@ func (c *InjectEvent) Handle(ctx context.Context, a *RedfishResourceAggregate) e
 
 	a.ID = eh.UUID("49467bb4-5c1f-473b-0000-00000000000f")
 
-	if c.EventData != nil {
+    eventList := []map[string]interface{}{}
+    eventList = append(eventList, c.EventData)
+    eventList = append(eventList, c.EventArray...)
+
+	requestLogger.Info("InjectEvent - event list", "number of events", len(eventList), "event name", c.Name)
+	for _, eventData := range eventList {
 		data, err := eh.CreateEventData(c.Name)
 		if err != nil {
-			requestLogger.Warn("InjectEvent - Could not find event type", "event name", c.Name, "error", err)
-			return err
-		}
-
-		err = mapstructure.Decode(c.EventData, &data)
-		if err != nil {
-			requestLogger.Warn("InjectEvent - could not decode event data", "error", err)
-			return err
-		}
-
-		a.PublishEvent(eh.NewEvent(c.Name, data, time.Now()))
-	}
-
-	requestLogger.Info("InjectEvent - GOT ARRAY", "number", len(c.EventArray), "event name", c.Name)
-	for _, eventData := range c.EventArray {
-		data, err := eh.CreateEventData(c.Name)
-		if err != nil {
-			requestLogger.Warn("InjectEvent - Could not find event type", "event name", c.Name, "error", err)
-			return err
+			requestLogger.Warn("InjectEvent - event type not registered: injecting raw event.", "event name", c.Name, "error", err)
+		    a.PublishEvent(eh.NewEvent(c.Name, eventData, time.Now()))
+			continue
 		}
 
 		err = mapstructure.Decode(eventData, &data)
 		if err != nil {
 			requestLogger.Warn("InjectEvent - could not decode event data", "error", err)
-			return err
+			continue
 		}
 
 		requestLogger.Info("InjectEvent - publishing", "event name", c.Name)
