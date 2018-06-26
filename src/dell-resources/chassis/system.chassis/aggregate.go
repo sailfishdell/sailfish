@@ -9,7 +9,6 @@ import (
 	domain "github.com/superchalupa/go-redfish/src/redfishresource"
 
 	eh "github.com/looplab/eventhorizon"
-	//ah "github.com/superchalupa/go-redfish/src/actionhandler"
 )
 
 type waiter interface {
