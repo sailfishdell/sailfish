@@ -80,10 +80,10 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 					},
 					"Oem": map[string]interface{}{
 						"#DellChassis.v1_0_0.ResetPeakPowerConsumption": map[string]interface{}{
-                                                        "target": v.GetActionURI("iom.resetpeakpowerconsumption"),
+							"target": v.GetActionURI("iom.resetpeakpowerconsumption"),
 						},
 						"#DellChassis.v1_0_0.VirtualReseat": map[string]interface{}{
-                                                        "target": v.GetActionURI("iom.virtualreseat"),
+							"target": v.GetActionURI("iom.virtualreseat"),
 						},
 						"DellChassis.v1_0_0#DellChassis.ResetPeakPowerConsumption": map[string]interface{}{
 							"target": v.GetActionURI("iom.resetpeakpowerconsumption"),

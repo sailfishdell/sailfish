@@ -1,14 +1,12 @@
 package dell_ec
 
 import (
-        "context"
-        "fmt"
+	"context"
+	"fmt"
 
-        eh "github.com/looplab/eventhorizon"
-        domain "github.com/superchalupa/go-redfish/src/redfishresource"
+	eh "github.com/looplab/eventhorizon"
+	domain "github.com/superchalupa/go-redfish/src/redfishresource"
 )
-
-
 
 func updateReset(ctx context.Context, event eh.Event, retData *domain.HTTPCmdProcessedData) error {
 	fmt.Printf("\n\nUPDATE RESET\n\n")
@@ -37,6 +35,3 @@ func updateEID674Syncup(ctx context.Context, event eh.Event, retData *domain.HTT
 	retData.StatusCode = 200
 	return nil
 }
-
-
-

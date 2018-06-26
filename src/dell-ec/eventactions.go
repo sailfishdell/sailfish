@@ -1,11 +1,11 @@
 package dell_ec
 
 import (
-        "context"
-        "fmt"
+	"context"
+	"fmt"
 
-        eh "github.com/looplab/eventhorizon"
-        domain "github.com/superchalupa/go-redfish/src/redfishresource"
+	eh "github.com/looplab/eventhorizon"
+	domain "github.com/superchalupa/go-redfish/src/redfishresource"
 )
 
 func submitTestEvent(ctx context.Context, event eh.Event, retData *domain.HTTPCmdProcessedData) error {

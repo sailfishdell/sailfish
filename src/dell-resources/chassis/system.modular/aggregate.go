@@ -60,20 +60,20 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 								"Accept",
 								"Clear",
 							},
-                                                        "target": v.GetActionURI("chassis.peripheralmapping"),
+							"target": v.GetActionURI("chassis.peripheralmapping"),
 						},
 						"#Chassis.VirtualReseat": map[string]interface{}{
-                                                        "target": v.GetActionURI("sledvirtualreseat"),
+							"target": v.GetActionURI("sledvirtualreseat"),
 						},
 						"#DellChassis.v1_0_0.PeripheralMapping": map[string]interface{}{
 							"MappingType@Redfish.AllowableValues": []string{
 								"Accept",
 								"Clear",
 							},
-                                                        "target": v.GetActionURI("chassis.peripiheralmapping"),
+							"target": v.GetActionURI("chassis.peripiheralmapping"),
 						},
 						"#DellChassis.v1_0_0.VirtualReseat": map[string]interface{}{
-                                                        "target": v.GetActionURI("chassis.sledvirtualreseat"),
+							"target": v.GetActionURI("chassis.sledvirtualreseat"),
 						},
 					},
 				},

@@ -84,14 +84,14 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 							"GracefulShutdown",
 							"GracefulRestart",
 						},
-                                                "target": v.GetActionURI("chassis.reset"),
+						"target": v.GetActionURI("chassis.reset"),
 					},
 					"Oem": map[string]interface{}{
 						"#MSMConfigBackupURI": map[string]interface{}{
-                                                        "target": v.GetActionURI("msmconfigbackup"),
+							"target": v.GetActionURI("msmconfigbackup"),
 						},
 						"#DellChassis.v1_0_0.MSMConfigBackup": map[string]interface{}{
-                                                        "target": v.GetActionURI("chassis.msmconfigbackup"),
+							"target": v.GetActionURI("chassis.msmconfigbackup"),
 						},
 					},
 				},

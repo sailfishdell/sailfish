@@ -55,16 +55,16 @@ func AddAggregate(ctx context.Context, root *view.View, v *view.View, ch eh.Comm
 				"Actions": map[string]interface{}{
 					"Oem": map[string]interface{}{
 						"#DellUpdateService.v1_0_0.DellUpdateService.Reset": map[string]interface{}{
-                                                        "target": v.GetActionURI("update.reset"),
+							"target": v.GetActionURI("update.reset"),
 						},
 						"UpdateService.v1_0_0#EID_674_UpdateService.Reset": map[string]interface{}{
-                                                        "target": v.GetActionURI("update.eid674.reset"),
+							"target": v.GetActionURI("update.eid674.reset"),
 						},
 						"#DellUpdateService.v1_0_0.DellUpdateService.Syncup": map[string]interface{}{
-                                                        "target": v.GetActionURI("update.syncup"),
+							"target": v.GetActionURI("update.syncup"),
 						},
 						"UpdateService.v1_0_0#EID_674_UpdateService.Syncup": map[string]interface{}{
-                                                        "target": v.GetActionURI("update.eid674.syncup"),
+							"target": v.GetActionURI("update.eid674.syncup"),
 						},
 					},
 				},
