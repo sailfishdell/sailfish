@@ -187,9 +187,6 @@ mappings:
     Fans/Fan.Slot:
         # no mappings for now: placeholder
 
-    Chassis/IOM.Slot:
-        # no mappings for now: placeholder
-
     Chassis/System.Modular:
         # no mappings for now: placeholder
 
