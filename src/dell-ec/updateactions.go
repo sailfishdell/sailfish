@@ -1,4 +1,5 @@
-package dell_ec                                                                                                                        
+package dell_ec
+
 import (
         "context"
         "fmt"
