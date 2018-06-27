@@ -55,6 +55,7 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 				},
 				"Actions": map[string]interface{}{
 					"Oem": map[string]interface{}{
+						// TODO: Remove per JIT-66996
 						"#DellChassis.v1_0_0#DellChassis.PeripheralMapping": map[string]interface{}{
 							"MappingType@Redfish.AllowableValues": []string{
 								"Accept",

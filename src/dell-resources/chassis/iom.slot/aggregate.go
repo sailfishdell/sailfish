@@ -75,7 +75,7 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 							"GracefulShutdown",
 							"GracefulRestart",
 						},
-						"target": v.GetURI() + "/Actions/Chassis.Reset",
+						"target": v.GetActionURI("iom.chassis.reset"),
 					},
 					"Oem": map[string]interface{}{
 						"#DellChassis.v1_0_0.ResetPeakPowerConsumption": map[string]interface{}{
@@ -84,9 +84,11 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 						"#DellChassis.v1_0_0.VirtualReseat": map[string]interface{}{
 							"target": v.GetActionURI("iom.virtualreseat"),
 						},
+						// TODO: Remove per JIT-66996
 						"DellChassis.v1_0_0#DellChassis.ResetPeakPowerConsumption": map[string]interface{}{
 							"target": v.GetActionURI("iom.resetpeakpowerconsumption"),
 						},
+						// TODO: Remove per JIT-66996
 						"DellChassis.v1_0_0#DellChassis.VirtualReseat": map[string]interface{}{
 							"target": v.GetActionURI("iom.virtualreseat"),
 						},

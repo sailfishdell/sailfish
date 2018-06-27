@@ -454,6 +454,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			view.WithController("ar_mapper", armapper),
 			view.WithController("ar_dumper", ardumper),
 			view.WithFormatter("attributeFormatter", attributes.FormatAttributeDump),
+			ah.WithAction(ctx, iomLogger, "iom.chassis.reset", "/Actions/Chassis.Reset", iomChassisReset, ch, eb),
 			ah.WithAction(ctx, iomLogger, "iom.resetpeakpowerconsumption", "/Actions/Oem/DellChassis.ResetPeakPowerConsumption", iomResetPeakPowerConsumption, ch, eb),
 			ah.WithAction(ctx, iomLogger, "iom.virtualreseat", "/Actions/Oem/DellChassis.VirtualReseat", iomVirtualReseat, ch, eb),
 		)
