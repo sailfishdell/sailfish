@@ -23,8 +23,8 @@ func MakeSubmitTestEvent(eb eh.EventBus) func(context.Context, eh.Event, *domain
 			return errors.New("Didnt get the right kind of event")
 		}
 
-		redfishEvent := &RedfishEventData{}
-		mapstructure.Decode(data.ActionData, redfishEvent)
+		redfishEvent := RedfishEventData{}
+		mapstructure.Decode(data.ActionData, &redfishEvent)
 
 		// Require EventType and EventID or else we bail
 		if redfishEvent.EventType == "" || redfishEvent.EventId == "" {

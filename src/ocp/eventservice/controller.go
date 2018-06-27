@@ -9,9 +9,11 @@ import (
 
 	"github.com/superchalupa/go-redfish/src/eventwaiter"
 	"github.com/superchalupa/go-redfish/src/log"
+	domain "github.com/superchalupa/go-redfish/src/redfishresource"
 )
 
 const MaxEventsQueued = 10
+const QueueTime = 100 * time.Millisecond
 
 type waiter interface {
 	Listen(context.Context, func(eh.Event) bool) (*eventwaiter.EventListener, error)
@@ -42,10 +44,10 @@ func PublishRedfishEvents(ctx context.Context, eb eh.EventBus) error {
 		for {
 			select {
 			case event := <-inbox:
-				log.MustLogger("event_service").Info("Got internal redfish event", "event", event)
-				if data, ok := event.Data().(*RedfishEventData); ok {
-					// Queue up the event
-					eventQ = append(eventQ, data)
+				log.MustLogger("event_service").Info("Got event", "event", event)
+				switch data := event.Data().(type) {
+				case RedfishEventData:
+					eventQ = append(eventQ, &data)
 
 					if len(eventQ) > MaxEventsQueued {
 						log.MustLogger("event_service").Warn("Full queue: sending now.", "id", id)
@@ -60,9 +62,26 @@ func PublishRedfishEvents(ctx context.Context, eb eh.EventBus) error {
 
 					} else {
 						// otherwise, start up timer to send the events in a bit
-						timer.Reset(4 * time.Second)
+						timer.Reset(QueueTime)
 					}
-				} else {
+
+				case domain.RedfishResourceCreatedData:
+					eventData := RedfishEventData{
+						EventType:         "ResourceCreated",
+						OriginOfCondition: map[string]interface{}{"@odata.id": data.ResourceURI},
+					}
+
+					eb.PublishEvent(ctx, eh.NewEvent(RedfishEvent, eventData, time.Now()))
+
+				case domain.RedfishResourceRemovedData:
+					eventData := RedfishEventData{
+						EventType:         "ResourceRemoved",
+						OriginOfCondition: map[string]interface{}{"@odata.id": data.ResourceURI},
+					}
+
+					eb.PublishEvent(ctx, eh.NewEvent(RedfishEvent, eventData, time.Now()))
+
+				default:
 					log.MustLogger("event_service").Warn("Should never happen: got an invalid event in the event handler")
 				}
 
@@ -74,6 +93,7 @@ func PublishRedfishEvents(ctx context.Context, eb eh.EventBus) error {
 			case <-ctx.Done():
 				return
 			}
+
 		}
 	}()
 
@@ -93,7 +113,9 @@ func sendEvents(ctx context.Context, id int, events []*RedfishEventData, eb eh.E
 }
 
 func selectRedfishEvent(event eh.Event) bool {
-	if event.EventType() != RedfishEvent {
+	if event.EventType() != RedfishEvent &&
+		event.EventType() != domain.RedfishResourceCreated &&
+		event.EventType() != domain.RedfishResourceRemoved {
 		return false
 	}
 	return true
