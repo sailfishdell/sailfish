@@ -60,7 +60,7 @@ func (c *DELETE) Handle(ctx context.Context, a *RedfishResourceAggregate) error 
 	_, _ = a.ProcessMeta(ctx, "DELETE", map[string]interface{}{})
 
 	// send event to trigger delete
-	a.PublishEvent(eh.NewEvent(RedfishResourceRemoved, &RedfishResourceRemovedData{
+	a.PublishEvent(eh.NewEvent(RedfishResourceRemoved, RedfishResourceRemovedData{
 		ID:          c.ID,
 		ResourceURI: a.ResourceURI,
 	}, time.Now()))

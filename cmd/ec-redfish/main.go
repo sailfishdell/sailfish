@@ -300,7 +300,7 @@ func handleShutdown(ctx context.Context, logger log.Logger, srv interface{}) err
 		case <-ctx.Done():
 			logger.Info("shutdown server.")
 			if err := s.Shutdown(ctx); err != nil {
-				logger.Info("server_error", err)
+				logger.Info("server_error", "err", err)
 			}
 			return ctx.Err()
 		}

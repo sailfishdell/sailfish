@@ -1,6 +1,7 @@
 package http_redfish_sse
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -36,9 +37,9 @@ func (rh *RedfishSSEHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	context := r.URL.Query().Get("context")
+	rfSubContext := r.URL.Query().Get("context")
 
-	requestLogger.Info("Trying to start RedfishSSE Stream for request.", "context", context)
+	requestLogger.Info("Trying to start RedfishSSE Stream for request.", "context", rfSubContext)
 
 	l, err := rh.d.EventWaiter.Listen(ctx, func(event eh.Event) bool {
 		if event.EventType() != eventservice.ExternalRedfishEvent {
@@ -71,11 +72,18 @@ func (rh *RedfishSSEHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	flusher.Flush()
 
-    view := eventservice.CreateSubscription(ctx, requestLogger, rh.d.CommandHandler, rh.d.EventBus)
-    _ = view
+	sub := eventservice.Subscription{
+		Protocol:    "SSE",
+		Destination: "",
+		EventTypes:  []string{"ResourceUpdated", "ResourceCreated", "ResourceRemoved", "Alert", "StateChanged"},
+		Context:     rfSubContext,
+	}
+	sseContext, cancel := context.WithCancel(ctx)
+	view := eventservice.CreateSubscription(sseContext, requestLogger, sub, cancel, rh.d.CommandHandler, rh.d.EventBus)
+	_ = view
 
 	for {
-		event, err := l.Wait(ctx)
+		event, err := l.Wait(sseContext)
 		if err != nil {
 			requestLogger.Error("Wait exited", "err", err)
 			break
@@ -93,7 +101,7 @@ func (rh *RedfishSSEHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				Context string `json:",omitempty"`
 			}{
 				ExternalRedfishEventData: evt,
-				Context:                  context,
+				Context:                  rfSubContext,
 			},
 			"data: ", "    ",
 		)

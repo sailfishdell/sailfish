@@ -118,7 +118,7 @@ func (d *DomainObjects) DeleteResource(ctx context.Context, uri string) {
 // Notify implements the Notify method of the EventObserver interface.
 func (d *DomainObjects) Notify(ctx context.Context, event eh.Event) {
 	logger := ContextLogger(ctx, "domain")
-	//logger.Debug("Processing event", "event", event)
+	logger.Debug("Processing event", "event", event)
 	if event.EventType() == RedfishResourceCreated {
 		if data, ok := event.Data().(RedfishResourceCreatedData); ok {
 			// TODO: handle conflicts (how?)
@@ -153,6 +153,7 @@ func (d *DomainObjects) Notify(ctx context.Context, event eh.Event) {
 	if event.EventType() == RedfishResourceRemoved {
 		if data, ok := event.Data().(RedfishResourceRemovedData); ok {
 			// Look to see if it is a member of a collection
+			logger.Debug("Delete", "event", event)
 			collectionToTest := path.Dir(data.ResourceURI)
 			d.collectionsMu.RLock()
 			for _, v := range d.collections {
@@ -184,6 +185,7 @@ func (d *DomainObjects) Notify(ctx context.Context, event eh.Event) {
 			d.collectionsMu.Unlock()
 
 			// TODO: remove from aggregatestore?
+			logger.Debug("Delete Resource", "URI", data.ResourceURI)
 			d.DeleteResource(ctx, data.ResourceURI)
 		}
 		return
