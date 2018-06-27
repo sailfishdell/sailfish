@@ -37,6 +37,7 @@ import (
 
 	"github.com/superchalupa/go-redfish/src/ocp/basicauth"
 	"github.com/superchalupa/go-redfish/src/ocp/session"
+	"github.com/superchalupa/go-redfish/src/dell-resources/dellauth"
 )
 
 func main() {
@@ -125,8 +126,13 @@ func main() {
 	// generic handler for redfish output on most http verbs
 	// Note: this works by using the session service to get user details from token to pass up the stack using the embedded struct
 	chainAuth := func(u string, p []string) http.Handler { return domain.NewRedfishHandler(domainObjs, logger, u, p) }
-	m.PathPrefix("/redfish/v1").Methods("GET", "PUT", "POST", "PATCH", "DELETE", "HEAD", "OPTIONS").HandlerFunc(
-		session.MakeHandlerFunc(domainObjs.EventBus, domainObjs, chainAuth, basicauth.MakeHandlerFunc(chainAuth, chainAuth("UNKNOWN", []string{"Unauthenticated"}))))
+
+    handlerFunc := dellauth.MakeHandlerFunc(chainAuth,
+        session.MakeHandlerFunc(domainObjs.EventBus, domainObjs, chainAuth,
+            basicauth.MakeHandlerFunc(chainAuth,
+                chainAuth("UNKNOWN", []string{"Unauthenticated"}))))
+                
+	m.PathPrefix("/redfish/v1").Methods("GET", "PUT", "POST", "PATCH", "DELETE", "HEAD", "OPTIONS").HandlerFunc(handlerFunc)
 
 	// SSE
 	chainAuthSSE := func(u string, p []string) http.Handler { return http_sse.NewSSEHandler(domainObjs, logger, u, p) }
