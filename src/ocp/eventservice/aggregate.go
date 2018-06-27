@@ -12,7 +12,6 @@ import (
 )
 
 func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, rootID eh.UUID, ch eh.CommandHandler, eb eh.EventBus) {
-
 	// Create SessionService aggregate
 	ch.HandleCommand(
 		ctx,
@@ -29,8 +28,9 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, rootID e
 				"DELETE": []string{},
 			},
 			Properties: map[string]interface{}{
-				"Id":   "EventService",
-				"Name": "Event Service",
+				"Id":                 "EventService",
+				"Name":               "Event Service",
+				"ServerSentEventUri": "/redfish_events",
 				"Status": map[string]interface{}{
 					"State":  "Enabled",
 					"Health": "OK",
@@ -73,6 +73,8 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, rootID e
 			ResourceURI: v.GetURI() + "/Subscriptions",
 			Type:        "#EventDestinationCollection.EventDestinationCollection",
 			Context:     "/redfish/v1/$metadata#EventDestinationCollection.EventDestinationCollection",
+			// Plugin is how we find the POST command handler
+			Plugin: "EventService",
 			Privileges: map[string]interface{}{
 				"GET":    []string{"ConfigureManager"},
 				"POST":   []string{"ConfigureManager"},

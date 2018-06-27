@@ -40,8 +40,6 @@ func (rh *RedfishSSEHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	requestLogger.Info("Trying to start RedfishSSE Stream for request.", "context", context)
 
-	// TODO: need to worry about privileges: probably should do the privilege checks in the Listener
-	// to avoid races, set up our listener first
 	l, err := rh.d.EventWaiter.Listen(ctx, func(event eh.Event) bool {
 		if event.EventType() != eventservice.ExternalRedfishEvent {
 			return false
@@ -72,6 +70,9 @@ func (rh *RedfishSSEHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	flusher.Flush()
+
+    view := eventservice.CreateSubscription(ctx, requestLogger, rh.d.CommandHandler, rh.d.EventBus)
+    _ = view
 
 	for {
 		event, err := l.Wait(ctx)

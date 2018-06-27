@@ -32,6 +32,7 @@ import (
 	"github.com/superchalupa/go-redfish/src/dell-resources/chassis/system.chassis/thermal"
 	"github.com/superchalupa/go-redfish/src/dell-resources/chassis/system.chassis/thermal/fans"
 	"github.com/superchalupa/go-redfish/src/dell-resources/chassis/system.modular"
+	_ "github.com/superchalupa/go-redfish/src/dell-resources/dm_event"
 	mgrCMCIntegrated "github.com/superchalupa/go-redfish/src/dell-resources/managers/cmc.integrated"
 	"github.com/superchalupa/go-redfish/src/dell-resources/registries"
 	"github.com/superchalupa/go-redfish/src/dell-resources/registries/registry"
@@ -68,7 +69,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	rootView := view.New(
 		view.WithURI("/redfish/v1"),
 	)
-	domain.RegisterPlugin(func() domain.Plugin { return rootView })
 	root.AddAggregate(ctx, rootView, ch, eb)
 
 	//*********************************************************************
@@ -94,7 +94,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		view.WithController("ar_mapper", armapper),
 		view.WithURI(rootView.GetURI()+"/testview"),
 	)
-	domain.RegisterPlugin(func() domain.Plugin { return testView })
 	test.AddAggregate(ctx, testView, ch)
 
 	//*********************************************************************
@@ -119,27 +118,13 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		view.WithModel("default", sessionModel),
 		view.WithController("ar_mapper", armapper),
 		view.WithURI(rootView.GetURI()+"/SessionService"))
-	domain.RegisterPlugin(func() domain.Plugin { return sessionView })
 	session.AddAggregate(ctx, sessionView, rootView.GetUUID(), ch, eb, ew)
 
 	//*********************************************************************
 	// /redfish/v1/EventService
 	//*********************************************************************
-	esLogger := logger.New("module", "EventService")
-	esModel := model.New(
-		model.UpdateProperty("delivery_retry_attempts", 3),
-		model.UpdateProperty("delivery_retry_interval_seconds", 60),
-	)
-
-	// TODO: need to set up an AR mapper for the model configurable properties above
-	esView := view.New(
-		view.WithModel("default", esModel),
-		view.WithURI(rootView.GetURI()+"/EventService"),
-		ah.WithAction(ctx, esLogger, "submit.test.event", "/Actions/EventService.SubmitTestEvent", MakeSubmitTestEvent(eb), ch, eb),
-	)
-	domain.RegisterPlugin(func() domain.Plugin { return esView })
-	eventservice.AddAggregate(ctx, esLogger, esView, rootView.GetUUID(), ch, eb)
-	eventservice.PublishRedfishEvents(ctx, eb, ew)
+	eventservice.StartEventService(ctx, logger, rootView, ch, eb)
+	// TODO: hook up view returned to a controller to set values in model
 
 	//*********************************************************************
 	// /redfish/v1/Registries
@@ -155,7 +140,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		view.WithURI(rootView.GetURI()+"/Registries"),
 		view.WithModel("default", registryModel),
 	)
-	domain.RegisterPlugin(func() domain.Plugin { return registryView })
 	registries.AddAggregate(ctx, registryLogger, registryView, ch, eb)
 
 	registry_views := []interface{}{}
@@ -174,7 +158,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			view.WithURI(rootView.GetURI()+"/Registries/"+registryNames),
 			view.WithModel("default", regModel),
 		)
-		domain.RegisterPlugin(func() domain.Plugin { return rv })
 		registry.AddAggregate(ctx, registryLogger, rv, ch, eb)
 	}
 	registryModel.ApplyOption(model.UpdateProperty("registry_views", &domain.RedfishResourceProperty{Value: registry_views}))
@@ -240,7 +223,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			view.WithFormatter("attributeFormatter", attributes.FormatAttributeDump),
 		)
 
-		domain.RegisterPlugin(func() domain.Plugin { return mgrCmcVw })
 		managers = append(managers, mgrCmcVw)
 		swinvViews = append(swinvViews, mgrCmcVw)
 
@@ -271,7 +253,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			view.WithController("ar_dump", ardumper),
 			view.WithFormatter("attributeFormatter", attributes.FormatAttributeDump),
 		)
-		domain.RegisterPlugin(func() domain.Plugin { return chasCmcVw })
 
 		// add the aggregate to the view tree
 		chasCMCIntegrated.AddAggregate(ctx, chasLogger, chasCmcVw, ch)
@@ -305,7 +286,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			view.WithController("ar_dump", ardumper),
 			view.WithFormatter("attributeFormatter", attributes.FormatAttributeDump),
 		)
-		domain.RegisterPlugin(func() domain.Plugin { return sysChasVw })
 
 		// Create the .../Attributes URI. Attributes are stored in the attributes property of the chasModel
 		system_chassis.AddAggregate(ctx, sysChasLogger, sysChasVw, ch, eb, ew)
@@ -330,7 +310,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			view.WithModel("default", powerModel),
 			view.WithController("ar_mapper", armapper),
 		)
-		domain.RegisterPlugin(func() domain.Plugin { return sysChasPwrVw })
 		power.AddAggregate(ctx, powerLogger, sysChasPwrVw, ch)
 
 		psu_views := []interface{}{}
@@ -365,7 +344,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 				view.WithController("fw_mapper", fwmapper),
 				view.WithFormatter("attributeFormatter", attributes.FormatAttributeDump),
 			)
-			domain.RegisterPlugin(func() domain.Plugin { return sysChasPwrPsuVw })
 			swinvViews = append(swinvViews, sysChasPwrPsuVw)
 
 			psu := powersupply.AddAggregate(ctx, psuLogger, sysChasPwrPsuVw, ch)
@@ -396,7 +374,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			view.WithModel("default", thermalModel),
 			view.WithController("ar_mapper", armapper),
 		)
-		domain.RegisterPlugin(func() domain.Plugin { return thermalView })
 		thermal.AddAggregate(ctx, thermalLogger, thermalView, ch)
 
 		fan_views := []interface{}{}
@@ -430,7 +407,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 				view.WithController("fw_mapper", fwmapper),
 				view.WithFormatter("attributeFormatter", attributes.FormatAttributeDump),
 			)
-			domain.RegisterPlugin(func() domain.Plugin { return v })
 			swinvViews = append(swinvViews, v)
 
 			fanFragment := fans.AddAggregate(ctx, fanLogger, v, ch)
@@ -476,7 +452,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			view.WithController("ar_dumper", ardumper),
 			view.WithFormatter("attributeFormatter", attributes.FormatAttributeDump),
 		)
-		domain.RegisterPlugin(func() domain.Plugin { return iomView })
 		swinvViews = append(swinvViews, iomView)
 		iom_chassis.AddAggregate(ctx, iomLogger, iomView, ch, eb, ew)
 		attributes.AddAggregate(ctx, iomView, rootView.GetURI()+"/Chassis/"+iomName+"/Attributes", ch)
@@ -510,7 +485,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			view.WithController("ar_dumper", ardumper),
 			view.WithFormatter("attributeFormatter", attributes.FormatAttributeDump),
 		)
-		domain.RegisterPlugin(func() domain.Plugin { return sledView })
 		sled_chassis.AddAggregate(ctx, sledLogger, sledView, ch, eb)
 		attributes.AddAggregate(ctx, sledView, rootView.GetURI()+"/Chassis/"+sledName+"/Attributes", ch)
 	}
@@ -529,7 +503,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			view.WithModel("default", mdl),
 			view.WithController("ar_mapper", armapper),
 		)
-		domain.RegisterPlugin(func() domain.Plugin { return updSvcVw })
 
 		// add the aggregate to the view tree
 		update_service.AddAggregate(ctx, rootView, updSvcVw, ch)
@@ -623,7 +596,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 				view.WithModel("firm", invmdl),
 			)
 			inv[comp_ver_tuple] = invview
-			domain.RegisterPlugin(func() domain.Plugin { return invview })
 			firmware_inventory.AddAggregate(ctx, rootView, invview, ch)
 
 			fw_related_list = append(fw_related_list, map[string]interface{}{"@odata.id": model2View[mdl].GetURI()})

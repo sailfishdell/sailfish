@@ -9,7 +9,6 @@ import (
 	"io/ioutil"
 
 	eh "github.com/looplab/eventhorizon"
-	domain "github.com/superchalupa/go-redfish/src/redfishresource"
 
 	"github.com/superchalupa/go-redfish/src/eventwaiter"
 	"github.com/superchalupa/go-redfish/src/log"
@@ -47,7 +46,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	rootView := view.New(
 		view.WithURI("/redfish/v1"),
 	)
-	domain.RegisterPlugin(func() domain.Plugin { return rootView })
 	root.AddAggregate(ctx, rootView, ch, eb)
 
 	//*********************************************************************
@@ -70,7 +68,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		view.WithModel("default", testModel),
 		view.WithURI(rootView.GetURI()+"/testview"),
 	)
-	domain.RegisterPlugin(func() domain.Plugin { return testView })
 	test.AddAggregate(ctx, testView, ch)
 
 	//*********************************************************************
@@ -92,7 +89,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	sessionView := view.New(
 		view.WithModel("default", sessionModel),
 		view.WithURI(rootView.GetURI()+"/SessionService"))
-	domain.RegisterPlugin(func() domain.Plugin { return sessionView })
 	session.AddAggregate(ctx, sessionView, rootView.GetUUID(), ch, eb, ew)
 
 	// VIPER Config:

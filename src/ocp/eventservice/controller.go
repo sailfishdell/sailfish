@@ -5,6 +5,7 @@ import (
 	"time"
 
 	eh "github.com/looplab/eventhorizon"
+	eventpublisher "github.com/looplab/eventhorizon/publisher/local"
 
 	"github.com/superchalupa/go-redfish/src/eventwaiter"
 	"github.com/superchalupa/go-redfish/src/log"
@@ -16,12 +17,21 @@ type waiter interface {
 	Listen(context.Context, func(eh.Event) bool) (*eventwaiter.EventListener, error)
 }
 
-func PublishRedfishEvents(ctx context.Context, eb eh.EventBus, ew waiter) error {
-	// stream processor for action events
+// PublishRedfishEvents starts a background goroutine to collage internal
+// redfish events for external consumption
+func PublishRedfishEvents(ctx context.Context, eb eh.EventBus) error {
 
-	listener, err := ew.Listen(ctx, selectRedfishEvent)
-	_ = err // TODO: error handling
+	EventPublisher := eventpublisher.NewEventPublisher()
+	eb.AddHandler(eh.MatchAny(), EventPublisher)
+	EventWaiter := eventwaiter.NewEventWaiter()
+	EventPublisher.AddObserver(EventWaiter)
 
+	listener, err := EventWaiter.Listen(ctx, selectRedfishEvent)
+	if err != nil {
+		return err
+	}
+
+	// background task to collate internal redfish events and publish
 	go func() {
 		defer listener.Close()
 		inbox := listener.Inbox()

@@ -64,3 +64,9 @@ func InstantiatePlugin(pluginType PluginType) (Plugin, error) {
 	}
 	return nil, errors.New("Plugin Type not registered")
 }
+
+func UnregisterPlugin(pluginType PluginType) {
+	pluginsMu.RLock()
+	defer pluginsMu.RUnlock()
+    delete(plugins, pluginType)
+}

@@ -272,16 +272,16 @@ func (c *InjectEvent) Handle(ctx context.Context, a *RedfishResourceAggregate) e
 
 	a.ID = eh.UUID("49467bb4-5c1f-473b-0000-00000000000f")
 
-    eventList := []map[string]interface{}{}
-    eventList = append(eventList, c.EventData)
-    eventList = append(eventList, c.EventArray...)
+	eventList := []map[string]interface{}{}
+	eventList = append(eventList, c.EventData)
+	eventList = append(eventList, c.EventArray...)
 
 	requestLogger.Info("InjectEvent - event list", "number of events", len(eventList), "event name", c.Name)
 	for _, eventData := range eventList {
 		data, err := eh.CreateEventData(c.Name)
 		if err != nil {
 			requestLogger.Warn("InjectEvent - event type not registered: injecting raw event.", "event name", c.Name, "error", err)
-		    a.PublishEvent(eh.NewEvent(c.Name, eventData, time.Now()))
+			a.PublishEvent(eh.NewEvent(c.Name, eventData, time.Now()))
 			continue
 		}
 

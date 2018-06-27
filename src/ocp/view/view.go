@@ -48,7 +48,12 @@ func New(options ...Option) *View {
 	}
 
 	s.ApplyOption(options...)
+    domain.RegisterPlugin(func() domain.Plugin { return s })
 	return s
+}
+
+func (s *View) Close() {
+    domain.UnregisterPlugin(s.pluginType)
 }
 
 func (s *View) ApplyOption(options ...Option) error {
