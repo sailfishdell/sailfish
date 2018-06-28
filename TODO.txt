@@ -1,29 +1,32 @@
 Things that need work: (-) TODO (*) DONE
 
- - Schema Meta builder
- - Event server (separate binary to POST redfish events)
- - Redfish SSE server
 
- * EventService (partial) - base eventservice resource is in. POST handling to create new subscription is not.
- - EventService Subscriptions
- * Test Submit Event API
+ - Schema Meta builder
+
+ - Event Service:
+    * EventService (redfish URI) - done
+    * Test Submit Event API
+    * EventService Subscriptions - create/remove
+    * Redfish SSE server
+        * create subscription on attach
+        * delete subscription on end
+        * force session to end on delete of subscrioption
+    - Event server (separate binary to POST redfish events)
 
  - Fix HTTPs apis to allow specifying api: server
  - re-add spacemonkey
- - Systemd socket activation support
- - eventwaiter interface - stop passing *ew around everywhere, use interface instead
+ - Systemd
+    - service file
+    - socket activation support
+
+ * eventwaiter interface - stop passing *ew around everywhere, use interface instead
     -- accept interfaces, return objects
 
- - systemd service file
  - split the handlers for internal redfishresource aggregate commands and the "official" redfish handler
 
  - Dynamically generate metadata
     - Need to dynamically generate the odata metadata endpoints based on what objects are actually present in-tree
         - probably need to update createredfishresource to have a mandatory parameter specifying the schema
-
- - SSE support
-    - Implement second EventBus just for SSE external traffic
-    - Implement SAGA to bridge between the two busses
 
  - DBUS interface:
     - hook base command processor into dbus
@@ -107,3 +110,4 @@ Things that need work: (-) TODO (*) DONE
         * obmc now also implements reset action (test)
         * see scripts/test.sh, plugins/test_action/. These implement example action
 
+ * Figure out if event data should be pointer or struct - (should be a struct)

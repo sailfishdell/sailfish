@@ -37,6 +37,7 @@ import (
 
 	"github.com/superchalupa/go-redfish/src/dell-resources/dellauth"
 	"github.com/superchalupa/go-redfish/src/ocp/basicauth"
+	"github.com/superchalupa/go-redfish/src/ocp/eventservice"
 	"github.com/superchalupa/go-redfish/src/ocp/session"
 )
 
@@ -79,6 +80,7 @@ func main() {
 
 	// These three all set up a waiter for the root service to appear, so init root service after.
 	actionhandler.InitService(ctx, domainObjs.CommandHandler, domainObjs.EventBus, domainObjs.EventWaiter)
+	eventservice.InitService(ctx, domainObjs.CommandHandler, domainObjs.EventBus)
 
 	type configHandler interface {
 		ConfigChangeHandler()

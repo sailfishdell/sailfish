@@ -123,8 +123,8 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	//*********************************************************************
 	// /redfish/v1/EventService
 	//*********************************************************************
-	eventservice.StartEventService(ctx, logger, rootView, ch, eb)
-	// TODO: hook up view returned to a controller to set values in model
+	eventservice.StartEventService(ctx, logger, rootView)
+	// TODO: this guy returns a view we can use if we want to hook up a controller
 
 	//*********************************************************************
 	// /redfish/v1/Registries
@@ -221,6 +221,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			ah.WithAction(ctx, mgrLogger, "manager.importsystemconfigpreview", "/Actions/ImportSystemConfigPreview", importSystemConfigurationPreview, ch, eb),
 
 			view.WithFormatter("attributeFormatter", attributes.FormatAttributeDump),
+			eventservice.PublishResourceUpdatedEventsForModel(ctx, "default", eb),
 		)
 
 		managers = append(managers, mgrCmcVw)

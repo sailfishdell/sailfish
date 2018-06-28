@@ -20,9 +20,26 @@ type viewer interface {
 	GetURI() string
 }
 
+var StartEventService func(context.Context, log.Logger, viewer) *view.View
+var CreateSubscription func(context.Context, log.Logger, Subscription, func()) *view.View
+
+func InitService(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus) {
+	EventPublisher := eventpublisher.NewEventPublisher()
+	eb.AddHandler(eh.MatchAny(), EventPublisher)
+	EventWaiter := eventwaiter.NewEventWaiter()
+	EventPublisher.AddObserver(EventWaiter)
+
+	StartEventService = func(ctx context.Context, logger log.Logger, rootView viewer) *view.View {
+		return startEventService(ctx, logger, rootView, ch, eb)
+	}
+	CreateSubscription = func(ctx context.Context, logger log.Logger, sub Subscription, cancel func()) *view.View {
+		return createSubscription(ctx, logger, sub, cancel, ch, EventWaiter)
+	}
+}
+
 // StartEventService will create a model, view, and controller for the eventservice, then start a goroutine to publish events
 //      If you want to save settings, hook up a mapper to the "default" view returned
-func StartEventService(ctx context.Context, logger log.Logger, rootView viewer, ch eh.CommandHandler, eb eh.EventBus) *view.View {
+func startEventService(ctx context.Context, logger log.Logger, rootView viewer, ch eh.CommandHandler, eb eh.EventBus) *view.View {
 	esLogger := logger.New("module", "EventService")
 
 	esModel := model.New(
@@ -46,7 +63,7 @@ func StartEventService(ctx context.Context, logger log.Logger, rootView viewer, 
 
 // CreateSubscription will create a model, view, and controller for the subscription
 //      If you want to save settings, hook up a mapper to the "default" view returned
-func CreateSubscription(ctx context.Context, logger log.Logger, sub Subscription, cancel func(), ch eh.CommandHandler, eb eh.EventBus) *view.View {
+func createSubscription(ctx context.Context, logger log.Logger, sub Subscription, cancel func(), ch eh.CommandHandler, EventWaiter waiter) *view.View {
 	uuid := eh.NewUUID()
 	uri := fmt.Sprintf("/redfish/v1/EventService/Subscriptions/%s", uuid)
 
@@ -73,12 +90,6 @@ func CreateSubscription(ctx context.Context, logger log.Logger, sub Subscription
 		"EventTypes@meta":  subView.Meta(view.GETProperty("event_types"), view.GETModel("default")),
 		"Context@meta":     subView.Meta(view.GETProperty("context"), view.GETModel("default")),
 	}
-
-	// TODO: these leak!
-	EventPublisher := eventpublisher.NewEventPublisher()
-	eb.AddHandler(eh.MatchAny(), EventPublisher)
-	EventWaiter := eventwaiter.NewEventWaiter()
-	EventPublisher.AddObserver(EventWaiter)
 
 	// set up listener for the delete event
 	listener, err := EventWaiter.Listen(ctx,

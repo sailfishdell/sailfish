@@ -79,7 +79,7 @@ func (rh *RedfishSSEHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		Context:     rfSubContext,
 	}
 	sseContext, cancel := context.WithCancel(ctx)
-	view := eventservice.CreateSubscription(sseContext, requestLogger, sub, cancel, rh.d.CommandHandler, rh.d.EventBus)
+	view := eventservice.CreateSubscription(sseContext, requestLogger, sub, cancel)
 	_ = view
 
 	for {

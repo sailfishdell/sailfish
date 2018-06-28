@@ -2,6 +2,7 @@ package eventservice
 
 import (
 	"context"
+	"reflect"
 	"time"
 
 	eh "github.com/looplab/eventhorizon"
@@ -9,6 +10,8 @@ import (
 
 	"github.com/superchalupa/go-redfish/src/eventwaiter"
 	"github.com/superchalupa/go-redfish/src/log"
+	"github.com/superchalupa/go-redfish/src/ocp/model"
+	"github.com/superchalupa/go-redfish/src/ocp/view"
 	domain "github.com/superchalupa/go-redfish/src/redfishresource"
 )
 
@@ -17,6 +20,16 @@ const QueueTime = 100 * time.Millisecond
 
 type waiter interface {
 	Listen(context.Context, func(eh.Event) bool) (*eventwaiter.EventListener, error)
+}
+
+func PublishResourceUpdatedEventsForModel(ctx context.Context, modelName string, eb eh.EventBus) view.Option {
+	return view.WatchModel("default", func(v *view.View, m *model.Model, property string) {
+		eventData := RedfishEventData{
+			EventType:         "ResourceUpdated",
+			OriginOfCondition: map[string]interface{}{"@odata.id": v.GetURI()},
+		}
+		eb.PublishEvent(ctx, eh.NewEvent(RedfishEvent, eventData, time.Now()))
+	})
 }
 
 // PublishRedfishEvents starts a background goroutine to collage internal
@@ -47,7 +60,17 @@ func PublishRedfishEvents(ctx context.Context, eb eh.EventBus) error {
 				log.MustLogger("event_service").Info("Got event", "event", event)
 				switch data := event.Data().(type) {
 				case RedfishEventData:
-					eventQ = append(eventQ, &data)
+					// mitigate duplicate messages
+					found := false
+					for _, evt := range eventQ {
+						if reflect.DeepEqual(*evt, data) {
+							found = true
+						}
+					}
+
+					if !found {
+						eventQ = append(eventQ, &data)
+					}
 
 					if len(eventQ) > MaxEventsQueued {
 						log.MustLogger("event_service").Warn("Full queue: sending now.", "id", id)
