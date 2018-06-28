@@ -33,6 +33,7 @@ import (
 
 	// load idrac plugins
 	"github.com/superchalupa/go-redfish/src/dell-ec"
+	"github.com/superchalupa/go-redfish/src/mockup"
 	"github.com/superchalupa/go-redfish/src/openbmc"
 
 	"github.com/superchalupa/go-redfish/src/dell-resources/dellauth"
@@ -93,6 +94,8 @@ func main() {
 		impl = dell_ec.New(ctx, logger, cfgMgr, &cfgMgrMu, domainObjs.CommandHandler, domainObjs.EventBus, domainObjs.EventWaiter)
 	case "openbmc":
 		impl = openbmc.New(ctx, logger, cfgMgr, &cfgMgrMu, domainObjs.CommandHandler, domainObjs.EventBus, domainObjs.EventWaiter)
+	case "mockup":
+		impl = mockup.New(ctx, logger, cfgMgr, &cfgMgrMu, domainObjs.CommandHandler, domainObjs.EventBus, domainObjs.EventWaiter)
 	default:
 	}
 
