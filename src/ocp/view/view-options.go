@@ -40,3 +40,14 @@ func WithAction(name string, a Action) Option {
 		return nil
 	}
 }
+
+func WatchModel(name string, fn func(*View, *model.Model, string)) Option {
+	return func(s *View) error {
+		if m, ok := s.models[name]; ok {
+			m.AddObserver(s.GetURIUnlocked(), func(m *model.Model, property string, oldValue, newValue interface{}) {
+				fn(s, m, property)
+			})
+		}
+		return nil
+	}
+}
