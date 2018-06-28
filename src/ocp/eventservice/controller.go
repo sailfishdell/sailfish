@@ -2,6 +2,7 @@ package eventservice
 
 import (
 	"context"
+	"reflect"
 	"time"
 
 	eh "github.com/looplab/eventhorizon"
@@ -47,7 +48,17 @@ func PublishRedfishEvents(ctx context.Context, eb eh.EventBus) error {
 				log.MustLogger("event_service").Info("Got event", "event", event)
 				switch data := event.Data().(type) {
 				case RedfishEventData:
-					eventQ = append(eventQ, &data)
+					// mitigate duplicate messages
+					found := false
+					for _, evt := range eventQ {
+						if reflect.DeepEqual(*evt, data) {
+							found = true
+						}
+					}
+
+					if !found {
+						eventQ = append(eventQ, &data)
+					}
 
 					if len(eventQ) > MaxEventsQueued {
 						log.MustLogger("event_service").Warn("Full queue: sending now.", "id", id)
