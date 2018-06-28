@@ -221,6 +221,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			ah.WithAction(ctx, mgrLogger, "manager.importsystemconfigpreview", "/Actions/ImportSystemConfigPreview", importSystemConfigurationPreview, ch, eb),
 
 			view.WithFormatter("attributeFormatter", attributes.FormatAttributeDump),
+			eventservice.PublishResourceUpdatedEventsForModel(ctx, "default", eb),
 		)
 
 		managers = append(managers, mgrCmcVw)

@@ -10,6 +10,8 @@ import (
 
 	"github.com/superchalupa/go-redfish/src/eventwaiter"
 	"github.com/superchalupa/go-redfish/src/log"
+	"github.com/superchalupa/go-redfish/src/ocp/model"
+	"github.com/superchalupa/go-redfish/src/ocp/view"
 	domain "github.com/superchalupa/go-redfish/src/redfishresource"
 )
 
@@ -18,6 +20,16 @@ const QueueTime = 100 * time.Millisecond
 
 type waiter interface {
 	Listen(context.Context, func(eh.Event) bool) (*eventwaiter.EventListener, error)
+}
+
+func PublishResourceUpdatedEventsForModel(ctx context.Context, modelName string, eb eh.EventBus) view.Option {
+	return view.WatchModel("default", func(v *view.View, m *model.Model, property string) {
+		eventData := RedfishEventData{
+			EventType:         "ResourceUpdated",
+			OriginOfCondition: map[string]interface{}{"@odata.id": v.GetURI()},
+		}
+		eb.PublishEvent(ctx, eh.NewEvent(RedfishEvent, eventData, time.Now()))
+	})
 }
 
 // PublishRedfishEvents starts a background goroutine to collage internal
