@@ -54,6 +54,9 @@ main:
             - name: "sse_handler"
               level: "warn"
 
+            - name: "redfish_sse_handler"
+              level: "warn"
+
             - name: "aggregate"
               level: "warn"
 
@@ -83,6 +86,12 @@ main:
 
             - name: "Registries"
               level: "warn"
+
+            - name: "submit_event"
+              level: "warn"
+
+            - name: "event_service"
+              level: "debug"
 
 
     dumpConfigChanges:
