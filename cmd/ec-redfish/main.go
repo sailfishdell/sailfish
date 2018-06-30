@@ -18,6 +18,9 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/gorilla/mux"
+
+	eh "github.com/looplab/eventhorizon"
+
 	log "github.com/superchalupa/go-redfish/src/log"
 
 	"github.com/superchalupa/go-redfish/src/http_redfish_sse"
@@ -32,15 +35,19 @@ import (
 	_ "github.com/superchalupa/go-redfish/src/stdmeta"
 
 	// load idrac plugins
-	"github.com/superchalupa/go-redfish/src/dell-ec"
-	"github.com/superchalupa/go-redfish/src/mockup"
-	"github.com/superchalupa/go-redfish/src/openbmc"
 
 	"github.com/superchalupa/go-redfish/src/dell-resources/dellauth"
 	"github.com/superchalupa/go-redfish/src/ocp/basicauth"
 	"github.com/superchalupa/go-redfish/src/ocp/eventservice"
 	"github.com/superchalupa/go-redfish/src/ocp/session"
 )
+
+var implementations map[string]func(
+    ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *sync.Mutex, ch eh.CommandHandler, eb eh.EventBus) Implementation
+
+type Implementation interface {
+    ConfigChangeHandler()
+}
 
 func main() {
 	flag.StringSliceP("listen", "l", []string{}, "Listen address.  Formats: (http:[ip]:nn, https:[ip]:port)")
@@ -65,6 +72,7 @@ func main() {
 	// Defaults
 	cfgMgr.SetDefault("listen", []string{"https::8443"})
 	cfgMgr.SetDefault("session.timeout", 10)
+	cfgMgr.SetDefault("main.server_name", "mockup")
 
 	flag.Parse()
 
@@ -88,16 +96,13 @@ func main() {
 	}
 
 	var impl configHandler
+    fmt.Printf("Implementations: %#v", implementations)
+    implFn, ok := implementations[cfgMgr.GetString("main.server_name")]
+    if !ok {
+        panic("could not load requested implementation: " + cfgMgr.GetString("main.server_name"))
+    }
 
-	switch cfgMgr.Get("main.server_name") {
-	case "dell_ec":
-		impl = dell_ec.New(ctx, logger, cfgMgr, &cfgMgrMu, domainObjs.CommandHandler, domainObjs.EventBus, domainObjs.EventWaiter)
-	case "openbmc":
-		impl = openbmc.New(ctx, logger, cfgMgr, &cfgMgrMu, domainObjs.CommandHandler, domainObjs.EventBus, domainObjs.EventWaiter)
-	case "mockup":
-		impl = mockup.New(ctx, logger, cfgMgr, &cfgMgrMu, domainObjs.CommandHandler, domainObjs.EventBus, domainObjs.EventWaiter)
-	default:
-	}
+    impl = implFn(ctx, logger, cfgMgr, &cfgMgrMu, domainObjs.CommandHandler, domainObjs.EventBus)
 
 	cfgMgr.OnConfigChange(func(e fsnotify.Event) {
 		cfgMgrMu.Lock()
