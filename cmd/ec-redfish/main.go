@@ -78,7 +78,7 @@ func main() {
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	logger := initializeApplicationLogging(cfgMgr)
+	logger := initializeApplicationLogging()
 
 	domainObjs, _ := domain.NewDomainObjects()
 	domainObjs.EventPublisher.AddObserver(logger)

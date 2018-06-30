@@ -1,0 +1,102 @@
+# Logging levels: 
+# debug, info, warn, error, crit
+#
+logs:
+    - Level: "warn"
+      PrintFile: true
+      PrintFunction: true
+
+    - FileName: "./http-access.log"
+      PrintFile: true
+      PrintFunction: true
+      ModulesToEnable:
+        - name: "http"
+          level: "info"
+
+    - FileName: "./debug.log"
+      PrintFile: true
+      PrintFunction: true
+      ModulesToEnable:
+        # all of the loggers below support a heirarchical arrangement where
+        # you can turn on debugging for all modules with (eg.)
+        # "Managers/CMC.Integrated", and you can selectively enable
+        # debugging for a single module by adding the full fqdd, eg.
+        # "Managers/CMC.Integrated.1". For the template config, we only
+        # specify the top levels
+        - name: "Managers/CMC.Integrated"
+          level: "warn"
+
+        - name: "Chassis/CMC.Integrated"
+          level: "warn"
+
+        - name: "Chassis/System.Modular"
+          level: "warn"
+
+        - name: "Chassis/IOM.Slot"
+          level: "warn"
+
+        - name: "Chassis/System.Chassis/Power"
+          level: "warn"
+
+        - name: "Chassis/System.Chassis/Thermal"
+          level: "warn"
+
+        # The loggers below are the remaining, non-heirarchical loggers
+        - name: "PATCH"
+          level: "warn"
+
+        - name: "GET"
+          level: "debug"
+
+        - name: "property_process"
+          level: "warn"
+
+        - name: "ec"
+          level: "warn"
+
+        - name: "testview"
+          level: "warn"
+
+        - name: "internal_commands"
+          level: "debug"
+
+        - name: "sse_handler"
+          level: "debug"
+
+        - name: "redfish_sse_handler"
+          level: "debug"
+
+        - name: "aggregate"
+          level: "debug"
+
+        - name: "domain"
+          level: "debug"
+
+        - name: "main"
+          level: "warn"
+
+        - name: "tlscert"
+          level: "warn"
+
+        - name: "bmc_reset"
+          level: "warn"
+
+        - name: "eventstream"
+          level: "debug"
+
+        - name: "observer"
+          level: "debug"
+
+        - name: "firmware/inventory"
+          level: "warn"
+
+        - name: "Registries"
+          level: "warn"
+
+        - name: "submit_event"
+          level: "warn"
+
+        - name: "event_service"
+          level: "debug"
+
+

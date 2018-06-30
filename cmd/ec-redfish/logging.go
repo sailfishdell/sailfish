@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"sync"
 	"time"
 
+	"github.com/fsnotify/fsnotify"
 	"github.com/gorilla/mux"
 	log "github.com/inconshreveable/log15"
 	"github.com/spf13/viper"
@@ -18,17 +20,40 @@ import (
 // MyLogger is a centralized point for application logging that we will pass throughout the system
 type MyLogger struct {
 	log.Logger
-	ConfigChangeHooks []func()
 }
 
-func initializeApplicationLogging(cfg *viper.Viper) *MyLogger {
+func initializeApplicationLogging() *MyLogger {
+
+	cfg := viper.New()
+	cfgMu := sync.Mutex{}
+
+	// Environment variables
+	cfg.SetEnvPrefix("RFLOGGING")
+	cfg.AutomaticEnv()
+
+	// Configuration file
+	cfg.SetConfigName("redfish-logging")
+	cfg.AddConfigPath(".")
+	cfg.AddConfigPath("/etc/")
+	if err := cfg.ReadInConfig(); err != nil {
+		fmt.Fprintf(os.Stderr, "Could not read config file: %s\n", err)
+	}
+
 	logger := &MyLogger{
 		Logger: log.New(),
 	}
-	logger.ConfigChangeHooks = append(logger.ConfigChangeHooks, func() { logger.setupLogHandlersFromConfig(cfg) })
 	logger.setupLogHandlersFromConfig(cfg)
 
 	mylog.GlobalLogger = logger
+
+	cfg.OnConfigChange(func(e fsnotify.Event) {
+		cfgMu.Lock()
+		defer cfgMu.Unlock()
+		logger.Info("CONFIG file changed", "config_file", e.Name)
+		logger.setupLogHandlersFromConfig(cfg)
+	})
+	cfg.WatchConfig()
+
 	return logger
 }
 
@@ -70,92 +95,110 @@ func (l *MyLogger) Notify(ctx context.Context, event eh.Event) {
 	l.Debug("Processed Event", "EVENT", event)
 }
 
+type LoggingConfig struct {
+	Level           string
+	FileName        string
+	EnableStderr    bool
+	PrintFunction   bool
+	PrintFile       bool
+	ModulesToEnable []map[string]string
+}
+
 func (l *MyLogger) setupLogHandlersFromConfig(cfg *viper.Viper) {
-	loglvl, err := log.LvlFromString(cfg.GetString("main.log.level"))
+
+	LogConfig := []LoggingConfig{}
+
+	err := cfg.UnmarshalKey("logs", &LogConfig)
 	if err != nil {
-		log.Warn("Could not get desired main.log.level from configuration, falling back to default 'Info' level.", "error", err.Error(), "default", log.LvlInfo.String(), "got", cfg.GetString("main.log.level"))
-		loglvl = log.LvlInfo
+		log.Crit("Could not unmarshal logs key", "err", err)
 	}
 
-	// optionally log to stderr, if enabled on CLI or in config
-	// TODO: add cli option
-	stderrHandler := log.DiscardHandler()
-	if cfg.GetBool("main.log.EnableStderr") {
-		stderrHandler = log.StreamHandler(os.Stderr, log.TerminalFormat())
-	}
-
-	// optionally log to file, if enabled on CLI or in config
-	// TODO: add cli option
-	fileHandler := log.DiscardHandler()
-	if path := cfg.GetString("main.log.FileName"); path != "" {
-		fileHandler = log.Must.FileHandler(path, log.LogfmtFormat())
-	}
-
-	outputHandler := log.MultiHandler(stderrHandler, fileHandler)
-
-	// check for modules to enable
-	moduleDebug := map[string]log.Lvl{}
-
-	modulesToEnable, ok := cfg.Get("main.log.ModulesToEnable").([]interface{})
-	if !ok {
-		modulesToEnable = []interface{}{}
-	}
-
-	for _, m := range modulesToEnable {
-		module, ok := m.(map[interface{}]interface{})
-		if !ok {
-			l.Warn("type assertion failure for - module", "module", module, "ok", ok, "type", fmt.Sprintf("%T", module))
-			continue
+	topLevelHandlers := []log.Handler{}
+	for _, logcfg := range LogConfig {
+		var outputHandler log.Handler
+		switch path := logcfg.FileName; path {
+		case "":
+			fallthrough
+		case "/dev/stderr":
+			outputHandler = log.StreamHandler(os.Stderr, log.TerminalFormat())
+		case "/dev/stdout":
+			outputHandler = log.StreamHandler(os.Stdout, log.TerminalFormat())
+		default:
+			outputHandler = log.Must.FileHandler(path, log.LogfmtFormat())
 		}
 
-		name, ok := module["name"].(string)
-		if !ok {
-			l.Warn("type assertion failure for - name", "name", name, "ok", ok, "raw", module["name"])
-			continue
+		if logcfg.PrintFile {
+			outputHandler = log.CallerFileHandler(outputHandler)
+		}
+		if logcfg.PrintFunction {
+			outputHandler = log.CallerFuncHandler(outputHandler)
 		}
 
-		level, ok := module["level"].(string)
-		if !ok {
-			l.Warn("type assertion failure for - level", "level", level, "ok", ok, "raw", module["level"])
-			continue
+		wrappedOut := newOrHandler(outputHandler)
+
+		handlers := []log.Handler{}
+
+		loglvl, err := log.LvlFromString(logcfg.Level)
+		if err == nil {
+			handlers = append(handlers, log.LvlFilterHandler(loglvl, wrappedOut))
 		}
 
-		loglvl, err := log.LvlFromString(level)
-		if err != nil {
-			continue
+		for _, m := range logcfg.ModulesToEnable {
+			name, ok := m["name"]
+			if !ok {
+				l.Warn("Nonexistent name for config", "m", m)
+				continue
+			}
+			handler := log.MatchFilterHandler("module", name, wrappedOut)
+
+			level, ok := m["level"]
+			if ok {
+				loglvl, err := log.LvlFromString(level)
+				if err == nil {
+					handler = log.LvlFilterHandler(loglvl, handler)
+				} else {
+					l.Warn("Could not parse level for config", "m", m)
+				}
+			} else {
+				l.Warn("Nonexistent level for config", "m", m)
+			}
+
+			handlers = append(handlers, handler)
 		}
 
-		moduleDebug[name] = loglvl
+		topLevelHandlers = append(topLevelHandlers, wrappedOut.ORHandler(handlers...))
 	}
 
-	//
-	// set up pipe to log to all of our configured outputs
-	// first check gross log level and log if high enough, then check individual module list
-	//
-	l.SetHandler(
-		log.CallerFuncHandler(
-			log.CallerFileHandler(
-				log.FilterHandler(func(r *log.Record) bool {
-					// check gross level first for speed for now. when we grow ability to supress on module basis, then move this to the end.
-					if r.Lvl <= loglvl {
-						return true
-					}
+	l.SetHandler(log.MultiHandler(topLevelHandlers...))
+}
 
-					for i := 0; i < len(r.Ctx); i += 2 {
-						if r.Ctx[i] == "module" {
-							module, ok := r.Ctx[i+1].(string)
-							if !ok {
-								continue
-							}
+type orhandler struct {
+	producedOutput bool
+	outputHandler  log.Handler
+}
 
-							if moduleLvl, ok := moduleDebug[module]; ok {
-								if r.Lvl <= moduleLvl {
-									return true
-								}
-							}
-						}
-					}
-					return false
-				}, outputHandler),
-			)))
+func newOrHandler(out log.Handler) *orhandler {
+	o := &orhandler{
+		producedOutput: false,
+		outputHandler:  out,
+	}
+	return o
+}
+
+func (o *orhandler) Log(r *log.Record) error {
+	o.producedOutput = true
+	return o.outputHandler.Log(r)
+}
+
+func (o *orhandler) ORHandler(in ...log.Handler) log.Handler {
+	return log.FuncHandler(func(r *log.Record) error {
+		o.producedOutput = false
+		for _, h := range in {
+			h.Log(r)
+			if o.producedOutput {
+				return nil
+			}
+		}
+		return nil
+	})
 }
