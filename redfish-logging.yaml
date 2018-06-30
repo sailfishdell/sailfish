@@ -1,19 +1,49 @@
 # Logging levels: 
 # debug, info, warn, error, crit
 #
+# The 'logs' config is an ARRAY of output configurations. Below are the valid configuration options for each config.
+#
+# Enabled: disable or enable this specific logger entirely.
+#       DEFAULT: disabled/false
+#
+# FileName: Specify "FileName" to send log output from that config to a file.
+#       DEFAULT: /dev/stderr
+#
+# Level: will globally enable all logs at the specified level or higher. Leave this out to specify on a module by module basis
+#       DEFAULT: (none) - no filtering, all logs output
+#
+# PrintFile: append the file name and line number of the location where the log function was called
+#       DEFAULT: false
+#
+# PrintFunction: append the name of the function that called the log function
+#       DEFAULT: false
+#
+# ModulesToEnable is an ARRAY
+#   give 'name' to specify the name of a 'module', to show all output from all log statements tagged with that module (regardless of the global log level setting)
+#   give 'level' to filter the module output to the specified log level and higher.
+#
 logs:
-    - Level: "warn"
+    # everything to log to stderr
+    - Enabled: true
+      Level: "warn"
       PrintFile: true
       PrintFunction: true
+      ModulesToEnable:
+        - name: "http"
+          level: "debug"
 
-    - FileName: "./http-access.log"
+    # log all web server accesses
+    - Enabled: true
+      FileName: "./http-access.log"
       PrintFile: true
       PrintFunction: true
       ModulesToEnable:
         - name: "http"
           level: "info"
 
-    - FileName: "./debug.log"
+    # log stuff on a module by module basis to FILE
+    - Enabled: false
+      FileName: "./debug.log"
       PrintFile: true
       PrintFunction: true
       ModulesToEnable:

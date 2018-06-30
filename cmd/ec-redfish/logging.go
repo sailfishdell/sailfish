@@ -96,6 +96,7 @@ func (l *MyLogger) Notify(ctx context.Context, event eh.Event) {
 }
 
 type LoggingConfig struct {
+    Enabled         bool
 	Level           string
 	FileName        string
 	EnableStderr    bool
@@ -115,6 +116,10 @@ func (l *MyLogger) setupLogHandlersFromConfig(cfg *viper.Viper) {
 
 	topLevelHandlers := []log.Handler{}
 	for _, logcfg := range LogConfig {
+        if ! logcfg.Enabled {
+            continue
+        }
+
 		var outputHandler log.Handler
 		switch path := logcfg.FileName; path {
 		case "":
