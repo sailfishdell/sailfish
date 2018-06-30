@@ -1,3 +1,5 @@
+// +build !skip_mockup
+
 package main
 
 import (

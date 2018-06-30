@@ -1,3 +1,5 @@
+// +build !skip_openbmc
+
 package main
 
 import (

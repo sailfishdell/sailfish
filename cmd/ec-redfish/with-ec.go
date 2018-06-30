@@ -1,3 +1,5 @@
+// +build !skip_ec
+
 package main
 
 import (
