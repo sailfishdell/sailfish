@@ -1,6 +1,6 @@
 main:
-    server_name: "mockup"
-    #server_name: "openbmc"
+    server_name: "dell_ec"
+    #options: "openbmc" | "dell_ec" | "mockup"
 
     dumpConfigChanges:
         enabled: true
