@@ -54,7 +54,7 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 				"Status": map[string]interface{}{
 					"HealthRollup": "OK",
 					"State":        "Enabled",
-					"Health":       "OK",
+					"Health@meta":       v.Meta(view.PropGET("health")),
 				},
 				"Oem": map[string]interface{}{
 					"Dell": map[string]interface{}{

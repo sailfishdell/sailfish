@@ -38,6 +38,7 @@ import (
 	"github.com/superchalupa/go-redfish/src/dell-resources/registries/registry"
 	"github.com/superchalupa/go-redfish/src/dell-resources/update_service"
 	"github.com/superchalupa/go-redfish/src/dell-resources/update_service/firmware_inventory"
+	"github.com/superchalupa/go-redfish/src/dell-resources/health_mapper"
 
 	ah "github.com/superchalupa/go-redfish/src/actionhandler"
 )
@@ -58,6 +59,8 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 
 	updateFns := []func(context.Context, *viper.Viper){}
 	swinvViews := []*view.View{}
+
+    health_mapper.Setup(ctx, ch, eb)
 
 	//
 	// Create the (empty) model behind the /redfish/v1 service root. Nothing interesting here
@@ -441,6 +444,9 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		// also handles patch from redfish
 		armapper, _ := ar_mapper.New(ctx, iomLogger, iomModel, "Chassis/IOM.Slot", iomName, ch, eb, ew)
 		updateFns = append(updateFns, armapper.ConfigChangedFn)
+
+        //HEALTH
+        health_mapper.New(iomLogger, iomModel, "health", "System.Chassis.1#SubSystem.1#" + iomName)
 
 		// This controller will populate 'attributes' property with AR entries matching this FQDD ('iomName')
 		ardumper, _ := attributes.NewController(ctx, iomModel, []string{iomName}, ch, eb, ew)
