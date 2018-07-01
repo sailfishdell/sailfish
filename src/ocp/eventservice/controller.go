@@ -73,7 +73,7 @@ func PublishRedfishEvents(ctx context.Context, eb eh.EventBus) error {
 					}
 
 					if len(eventQ) > MaxEventsQueued {
-						log.MustLogger("event_service").Warn("Full queue: sending now.", "id", id)
+						log.MustLogger("event_service").Info("Full queue: sending now.", "id", id)
 						// if queue has max number of events, send them now
 						sendEvents(ctx, id, eventQ, eb)
 						if !timer.Stop() {

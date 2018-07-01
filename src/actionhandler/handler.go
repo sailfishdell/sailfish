@@ -108,7 +108,7 @@ func CreateViewAction(
 	eb eh.EventBus,
 ) {
 
-	logger.Crit("CREATING ACTION", "action", action, "actionURI", actionURI)
+	logger.Info("CREATING ACTION", "action", action, "actionURI", actionURI)
 
 	// The following redfish resource is created only for the purpose of being
 	// a 'receiver' for the action command specified above.

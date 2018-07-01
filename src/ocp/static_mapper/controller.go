@@ -32,7 +32,6 @@ func New(ctx context.Context, logger log.Logger, m *model.Model, name string) (*
 
 // this is the function that viper will call whenever the configuration changes at runtime
 func (c *staticValMappingController) ConfigChangedFn(ctx context.Context, cfg *viper.Viper) {
-
 	mappings := []staticValMapping{}
 
 	k := cfg.Sub("mappings")
@@ -40,8 +39,6 @@ func (c *staticValMappingController) ConfigChangedFn(ctx context.Context, cfg *v
 		c.logger.Warn("missing config file section: 'mappings'")
 		return
 	}
-
-	c.logger.Warn("unmarshaling", "name", c.name)
 
 	err := k.UnmarshalKey(c.name, &mappings)
 	if err != nil {
