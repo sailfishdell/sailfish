@@ -7111,4 +7111,3 @@
 {"name":"HealthEvent","data":{"FQDD":"System.Chassis.1#SubSystem.1#IOM.Slot.A2","Health":"Absent"}}
 {"name":"HealthEvent","data":{"FQDD":"System.Chassis.1#SubSystem.1#IOM.Slot.A2a","Health":"Absent"}}
 {"name":"HealthEvent","data":{"FQDD":"System.Chassis.1#SubSystem.1#IOM.Slot.A2b","Health":"Absent"}}
-{"name":"HealthEvent","data":{"FQDD":"System.Chassis.1#SubS
