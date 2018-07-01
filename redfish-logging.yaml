@@ -23,14 +23,11 @@
 #   give 'level' to filter the module output to the specified log level and higher.
 #
 logs:
-    # everything to log to stderr
+    # Log warnings and Crit to stderr (everything else to log file, below)
     - Enabled: true
       Level: "warn"
       PrintFile: true
       PrintFunction: true
-      ModulesToEnable:
-        - name: "http"
-          level: "debug"
 
     # log all web server accesses
     - Enabled: true
@@ -41,7 +38,7 @@ logs:
         - name: "http"
           level: "info"
 
-    # log stuff on a module by module basis to FILE
+    # (DISABLED) log stuff on a module by module basis to FILE
     - Enabled: false
       FileName: "./debug.log"
       PrintFile: true
