@@ -5,18 +5,14 @@ import (
 )
 
 const (
-	DMEvent = eh.EventType("DataManagerEvent")
+	HealthEvent = eh.EventType("HealthEvent")
 )
 
-func disabled_init() {
-	eh.RegisterEventData(DMEvent, func() eh.EventData {
-		return &DMEventData{}
-	})
+func init() {
+	eh.RegisterEventData(HealthEvent, func() eh.EventData { return &HealthEventData{} })
 }
 
-type Generic map[string]interface{}
-
-type DMEventData struct {
-	FQDD string
-	*Generic
+type HealthEventData struct {
+    FQDD string
+    Health string
 }
