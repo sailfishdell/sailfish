@@ -268,7 +268,7 @@ func (c *InjectEvent) CommandType() eh.CommandType {
 }
 
 func (c *InjectEvent) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
-	requestLogger := ContextLogger(ctx, "internal_commands")
+	requestLogger := ContextLogger(ctx, "internal_commands").New("module", "inject_event")
 
 	a.ID = eh.UUID("49467bb4-5c1f-473b-0000-00000000000f")
 
@@ -276,22 +276,22 @@ func (c *InjectEvent) Handle(ctx context.Context, a *RedfishResourceAggregate) e
 	eventList = append(eventList, c.EventData)
 	eventList = append(eventList, c.EventArray...)
 
-	requestLogger.Info("InjectEvent - event list", "number of events", len(eventList), "event name", c.Name)
+	requestLogger.Debug("InjectEvent - event list", "number of events", len(eventList), "event name", c.Name)
 	for _, eventData := range eventList {
 		data, err := eh.CreateEventData(c.Name)
 		if err != nil {
-			requestLogger.Warn("InjectEvent - event type not registered: injecting raw event.", "event name", c.Name, "error", err)
+			requestLogger.Info("InjectEvent - event type not registered: injecting raw event.", "event name", c.Name, "error", err)
 			a.PublishEvent(eh.NewEvent(c.Name, eventData, time.Now()))
 			continue
 		}
 
 		err = mapstructure.Decode(eventData, &data)
 		if err != nil {
-			requestLogger.Warn("InjectEvent - could not decode event data", "error", err)
+			requestLogger.Warn("InjectEvent - could not decode event data, skipping event", "error", err)
 			continue
 		}
 
-		requestLogger.Info("InjectEvent - publishing", "event name", c.Name)
+		requestLogger.Info("InjectEvent - publishing", "event name", c.Name, "event_data", data)
 		a.PublishEvent(eh.NewEvent(c.Name, data, time.Now()))
 	}
 
