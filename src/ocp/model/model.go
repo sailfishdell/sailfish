@@ -56,6 +56,11 @@ func (s *Model) AddObserver(name string, ob Observer) {
 func (s *Model) UpdatePropertyUnlocked(p string, i interface{}) {
 	old, _ := s.properties[p]
 	s.properties[p] = i
+
+	// Avoid recursive calls to observers: if an observer does a model update,
+	// we don't call out to observers again. The model is locked the entire
+	// time, so outside entities looking at the model will always see the
+	// entire set of updates at once
 	if !s.in_notify {
 		s.in_notify = true
 		for _, fn := range s.observers {
