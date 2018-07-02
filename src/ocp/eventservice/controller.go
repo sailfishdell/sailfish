@@ -15,8 +15,8 @@ import (
 	domain "github.com/superchalupa/go-redfish/src/redfishresource"
 )
 
-const MaxEventsQueued = 10
-const QueueTime = 100 * time.Millisecond
+const defaultMaxEventsToQueue = 10
+const defaultQueueTimeMs = 100 * time.Millisecond
 
 type waiter interface {
 	Listen(context.Context, func(eh.Event) bool) (*eventwaiter.EventListener, error)
@@ -32,9 +32,13 @@ func PublishResourceUpdatedEventsForModel(ctx context.Context, modelName string,
 	})
 }
 
+type propertygetter interface {
+	GetPropertyOk(string) (interface{}, bool)
+}
+
 // PublishRedfishEvents starts a background goroutine to collage internal
 // redfish events for external consumption
-func PublishRedfishEvents(ctx context.Context, eb eh.EventBus) error {
+func PublishRedfishEvents(ctx context.Context, m propertygetter, eb eh.EventBus) error {
 
 	EventPublisher := eventpublisher.NewEventPublisher()
 	eb.AddHandler(eh.MatchAny(), EventPublisher)
@@ -72,7 +76,32 @@ func PublishRedfishEvents(ctx context.Context, eb eh.EventBus) error {
 						eventQ = append(eventQ, &data)
 					}
 
-					if len(eventQ) > MaxEventsQueued {
+					var QueueTime time.Duration = -1 * time.Millisecond
+
+					if ms, ok := m.GetPropertyOk("max_milliseconds_to_queue"); ok {
+						var msInt int
+						if msInt, ok = ms.(int); !ok {
+							msInt = -1
+						}
+						QueueTime = time.Duration(msInt) * time.Millisecond
+					}
+
+					if QueueTime < 0 {
+						QueueTime = defaultQueueTimeMs
+					}
+
+					var maxE int = -1
+					if maxEventsToQueue, ok := m.GetPropertyOk("max_events_to_queue"); ok {
+						if maxE, ok = maxEventsToQueue.(int); !ok {
+							maxE = -1
+						}
+					}
+
+					if maxE < 0 {
+						maxE = defaultMaxEventsToQueue
+					}
+
+					if len(eventQ) > maxE {
 						log.MustLogger("event_service").Info("Full queue: sending now.", "id", id)
 						// if queue has max number of events, send them now
 						sendEvents(ctx, id, eventQ, eb)

@@ -10,12 +10,15 @@ import (
 
 	eh "github.com/looplab/eventhorizon"
 
+	"github.com/superchalupa/go-redfish/src/actionhandler"
 	"github.com/superchalupa/go-redfish/src/eventwaiter"
 	"github.com/superchalupa/go-redfish/src/log"
+	"github.com/superchalupa/go-redfish/src/ocp/eventservice"
 	"github.com/superchalupa/go-redfish/src/ocp/model"
 	"github.com/superchalupa/go-redfish/src/ocp/root"
 	"github.com/superchalupa/go-redfish/src/ocp/session"
 	"github.com/superchalupa/go-redfish/src/ocp/stdcollections"
+	"github.com/superchalupa/go-redfish/src/ocp/telemetryservice"
 	"github.com/superchalupa/go-redfish/src/ocp/test_aggregate"
 	"github.com/superchalupa/go-redfish/src/ocp/view"
 )
@@ -35,6 +38,10 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	self := &ocp{}
 
 	updateFns := []func(context.Context, *viper.Viper){}
+
+	actionhandler.Setup(ctx, ch, eb, ew)
+	eventservice.Setup(ctx, ch, eb)
+	telemetryservice.Setup(ctx, ch, eb)
 
 	//
 	// Create the (empty) model behind the /redfish/v1 service root. Nothing interesting here
@@ -67,6 +74,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	testView := view.New(
 		view.WithModel("default", testModel),
 		view.WithURI(rootView.GetURI()+"/testview"),
+		eventservice.PublishResourceUpdatedEventsForModel(ctx, "default", eb),
 	)
 	test.AddAggregate(ctx, testView, ch)
 
@@ -88,8 +96,17 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	// handles patch from redfish
 	sessionView := view.New(
 		view.WithModel("default", sessionModel),
-		view.WithURI(rootView.GetURI()+"/SessionService"))
+		view.WithURI(rootView.GetURI()+"/SessionService"),
+		eventservice.PublishResourceUpdatedEventsForModel(ctx, "default", eb),
+	)
 	session.AddAggregate(ctx, sessionView, rootView.GetUUID(), ch, eb, ew)
+
+	//*********************************************************************
+	// /redfish/v1/EventService
+	// /redfish/v1/TelemetryService
+	//*********************************************************************
+	eventservice.StartEventService(ctx, logger, rootView)
+	telemetryservice.StartTelemetryService(ctx, logger, rootView)
 
 	// VIPER Config:
 	// pull the config from the YAML file to populate some static config options

@@ -10,6 +10,7 @@ import (
 
 	eh "github.com/looplab/eventhorizon"
 
+	"github.com/superchalupa/go-redfish/src/actionhandler"
 	"github.com/superchalupa/go-redfish/src/eventwaiter"
 	"github.com/superchalupa/go-redfish/src/log"
 	"github.com/superchalupa/go-redfish/src/ocp/eventservice"
@@ -17,6 +18,7 @@ import (
 	"github.com/superchalupa/go-redfish/src/ocp/root"
 	"github.com/superchalupa/go-redfish/src/ocp/session"
 	"github.com/superchalupa/go-redfish/src/ocp/stdcollections"
+	"github.com/superchalupa/go-redfish/src/ocp/telemetryservice"
 	"github.com/superchalupa/go-redfish/src/ocp/view"
 )
 
@@ -35,6 +37,10 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	self := &ocp{}
 
 	updateFns := []func(context.Context, *viper.Viper){}
+
+	actionhandler.Setup(ctx, ch, eb, ew)
+	eventservice.Setup(ctx, ch, eb)
+	telemetryservice.Setup(ctx, ch, eb)
 
 	//
 	// Create the (empty) model behind the /redfish/v1 service root. Nothing interesting here
@@ -71,8 +77,10 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 
 	//*********************************************************************
 	// /redfish/v1/EventService
+	// /redfish/v1/TelemetryService
 	//*********************************************************************
 	eventservice.StartEventService(ctx, logger, rootView)
+	telemetryservice.StartTelemetryService(ctx, logger, rootView)
 
 	// VIPER Config:
 	// pull the config from the YAML file to populate some static config options

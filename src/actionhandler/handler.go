@@ -20,7 +20,7 @@ type waiter interface {
 	Listen(context.Context, func(eh.Event) bool) (*eventwaiter.EventListener, error)
 }
 
-func InitService(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew waiter) {
+func Setup(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew waiter) {
 	eh.RegisterCommand(func() eh.Command { return &POST{eventBus: eb, eventWaiter: ew} })
 	eh.RegisterEventData(GenericActionEvent, func() eh.EventData { return &GenericActionEventData{} })
 }
@@ -127,6 +127,7 @@ func CreateViewAction(
 		},
 	)
 
+	// TODO: this leaks if URI is removed.
 	EventPublisher := eventpublisher.NewEventPublisher()
 	eb.AddHandler(eh.MatchAny(), EventPublisher)
 	EventWaiter := eventwaiter.NewEventWaiter()

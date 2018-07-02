@@ -31,14 +31,12 @@ import (
 	"github.com/superchalupa/go-redfish/src/tlscert"
 
 	// load plugins (auto-register)
-	"github.com/superchalupa/go-redfish/src/actionhandler"
 	_ "github.com/superchalupa/go-redfish/src/stdmeta"
 
 	// load idrac plugins
 
 	"github.com/superchalupa/go-redfish/src/dell-resources/dellauth"
 	"github.com/superchalupa/go-redfish/src/ocp/basicauth"
-	"github.com/superchalupa/go-redfish/src/ocp/eventservice"
 	"github.com/superchalupa/go-redfish/src/ocp/session"
 )
 
@@ -87,10 +85,6 @@ func main() {
 
 	// This also initializes all of the plugins
 	domain.InitDomain(ctx, domainObjs.CommandHandler, domainObjs.EventBus, domainObjs.EventWaiter)
-
-	// These three all set up a waiter for the root service to appear, so init root service after.
-	actionhandler.InitService(ctx, domainObjs.CommandHandler, domainObjs.EventBus, domainObjs.EventWaiter)
-	eventservice.InitService(ctx, domainObjs.CommandHandler, domainObjs.EventBus)
 
 	type configHandler interface {
 		ConfigChangeHandler()

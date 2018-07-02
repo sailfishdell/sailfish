@@ -23,7 +23,7 @@ type viewer interface {
 var StartEventService func(context.Context, log.Logger, viewer) *view.View
 var CreateSubscription func(context.Context, log.Logger, Subscription, func()) *view.View
 
-func InitService(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus) {
+func Setup(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus) {
 	EventPublisher := eventpublisher.NewEventPublisher()
 	eb.AddHandler(eh.MatchAny(), EventPublisher)
 	EventWaiter := eventwaiter.NewEventWaiter()
@@ -43,6 +43,8 @@ func startEventService(ctx context.Context, logger log.Logger, rootView viewer, 
 	esLogger := logger.New("module", "EventService")
 
 	esModel := model.New(
+		model.UpdateProperty("max_milliseconds_to_queue", 500),
+		model.UpdateProperty("max_events_to_queue", 20),
 		model.UpdateProperty("delivery_retry_attempts", 3),
 		model.UpdateProperty("delivery_retry_interval_seconds", 60),
 	)
@@ -56,7 +58,7 @@ func startEventService(ctx context.Context, logger log.Logger, rootView viewer, 
 	// The Plugin: "EventService" property on the Subscriptions endpoint is how we know to run this command
 	eh.RegisterCommand(func() eh.Command { return &POST{model: esView.GetModel("default"), ch: ch, eb: eb} })
 	AddAggregate(ctx, esLogger, esView, rootView.GetUUID(), ch, eb)
-	PublishRedfishEvents(ctx, eb)
+	PublishRedfishEvents(ctx, esModel, eb)
 
 	return esView
 }

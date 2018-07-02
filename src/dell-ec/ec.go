@@ -11,6 +11,7 @@ import (
 	eh "github.com/looplab/eventhorizon"
 	domain "github.com/superchalupa/go-redfish/src/redfishresource"
 
+	"github.com/superchalupa/go-redfish/src/actionhandler"
 	"github.com/superchalupa/go-redfish/src/eventwaiter"
 	"github.com/superchalupa/go-redfish/src/log"
 	"github.com/superchalupa/go-redfish/src/ocp/eventservice"
@@ -19,6 +20,7 @@ import (
 	"github.com/superchalupa/go-redfish/src/ocp/session"
 	"github.com/superchalupa/go-redfish/src/ocp/static_mapper"
 	"github.com/superchalupa/go-redfish/src/ocp/stdcollections"
+	"github.com/superchalupa/go-redfish/src/ocp/telemetryservice"
 	"github.com/superchalupa/go-redfish/src/ocp/test_aggregate"
 	"github.com/superchalupa/go-redfish/src/ocp/view"
 
@@ -32,7 +34,6 @@ import (
 	"github.com/superchalupa/go-redfish/src/dell-resources/chassis/system.chassis/thermal"
 	"github.com/superchalupa/go-redfish/src/dell-resources/chassis/system.chassis/thermal/fans"
 	"github.com/superchalupa/go-redfish/src/dell-resources/chassis/system.modular"
-	_ "github.com/superchalupa/go-redfish/src/dell-resources/dm_event"
 	"github.com/superchalupa/go-redfish/src/dell-resources/fan_controller"
 	"github.com/superchalupa/go-redfish/src/dell-resources/health_mapper"
 	mgrCMCIntegrated "github.com/superchalupa/go-redfish/src/dell-resources/managers/cmc.integrated"
@@ -61,6 +62,10 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	updateFns := []func(context.Context, *viper.Viper){}
 	swinvViews := []*view.View{}
 
+	// These three all set up a waiter for the root service to appear, so init root service after.
+	actionhandler.Setup(ctx, ch, eb, ew)
+	eventservice.Setup(ctx, ch, eb)
+	telemetryservice.Setup(ctx, ch, eb)
 	health_mapper.Setup(ctx, ch, eb)
 	fan_controller.Setup(ctx, ch, eb)
 
@@ -130,8 +135,10 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 
 	//*********************************************************************
 	// /redfish/v1/EventService
+	// /redfish/v1/TelemetryService
 	//*********************************************************************
 	eventservice.StartEventService(ctx, logger, rootView)
+	telemetryservice.StartTelemetryService(ctx, logger, rootView)
 	// TODO: this guy returns a view we can use if we want to hook up a controller
 
 	//*********************************************************************
