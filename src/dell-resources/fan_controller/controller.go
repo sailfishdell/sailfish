@@ -61,23 +61,34 @@ func new(ctx context.Context, logger log.Logger, m *model.Model, fqdd string, ch
 
 			logger.Warn("Fan controller: Process Event", "data", data)
 
-			if fanpwm, ok := datamap["fanpwm"]; ok {
-				m.UpdateProperty("fanpwm", fanpwm)
+			thp, ok := datamap["thp_fan_data_object"]
+			if !ok {
+				return
 			}
-			if numrotors, ok := datamap["numrotors"]; ok {
-				m.UpdateProperty("numrotors", numrotors)
-			}
-			if rotor1rpm, ok := datamap["rotor1rpm"]; ok {
-				m.UpdateProperty("rotor1rpm", rotor1rpm)
-			}
-			if rotor2rpm, ok := datamap["rotor2rpm"]; ok {
-				m.UpdateProperty("rotor2rpm", rotor2rpm)
-			}
-			if warningThreshold, ok := datamap["warningThreshold"]; ok {
-				m.UpdateProperty("warningThreshold", warningThreshold)
-			}
-			if criticalThreshold, ok := datamap["criticalThreshold"]; ok {
-				m.UpdateProperty("criticalThreshold", criticalThreshold)
+
+			dataobj := thp.(map[string]interface{})
+			if ok {
+				if fanhealth, ok := dataobj["fanhealth"]; ok {
+					m.UpdateProperty("dm_fanhealth", fanhealth)
+				}
+				if fanpwm, ok := dataobj["fanpwm"]; ok {
+					m.UpdateProperty("fanpwm", fanpwm)
+				}
+				if numrotors, ok := dataobj["numrotors"]; ok {
+					m.UpdateProperty("numrotors", numrotors)
+				}
+				if rotor1rpm, ok := dataobj["rotor1rpm"]; ok {
+					m.UpdateProperty("rotor1rpm", rotor1rpm)
+				}
+				if rotor2rpm, ok := dataobj["rotor2rpm"]; ok {
+					m.UpdateProperty("rotor2rpm", rotor2rpm)
+				}
+				if warningThreshold, ok := dataobj["warningThreshold"]; ok {
+					m.UpdateProperty("warningThreshold", warningThreshold)
+				}
+				if criticalThreshold, ok := dataobj["criticalThreshold"]; ok {
+					m.UpdateProperty("criticalThreshold", criticalThreshold)
+				}
 			}
 
 			/*

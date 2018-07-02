@@ -38,17 +38,24 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 
 func GetViewFragment(v *view.View) map[string]interface{} {
 	return map[string]interface{}{
-		"@odata.type":       "#Thermal.v1_0_2.Fan",
-		"@odata.context":    "/redfish/v1/$metadata#Thermal.Thermal",
-		"@odata.id":         v.GetURI(),
-		"Description":       "Represents the properties for Fan and Cooling",
-		"FanName@meta":      v.Meta(view.PropGET("name")),
-		"MemberId@meta":     v.Meta(view.PropGET("unique_id")),
+		"@odata.type":    "#Thermal.v1_0_2.Fan",
+		"@odata.context": "/redfish/v1/$metadata#Thermal.Thermal",
+		"@odata.id":      v.GetURI(),
+		"Description":    "Represents the properties for Fan and Cooling",
+		"FanName@meta":   v.Meta(view.PropGET("name")),
+		"MemberId@meta":  v.Meta(view.PropGET("unique_id")),
+
+		// TODO: Henry - fan_controller now populates sensor readings, but don't have units in that data. where are they/
 		"ReadingUnits@meta": v.Meta(view.PropGET("reading_units")),
-		"Reading@meta":      v.Meta(view.PropGET("reading")),
+		// TODO: Henry - putting the fan pwm in here for now to prove it's
+		// working. Fixup to match odatalite. Also need to fix pump because
+		// it's not formatting this properly
+		"Reading@meta": v.Meta(view.PropGET("fanpwm")),
+
+		// TODO: Henry - fan_controller has a health status as part of the fan object. probably need to interpret that and drop into model
 		"Status": map[string]interface{}{
 			"HealthRollup": "TEST_VALUE",
-			"Health":       "TEST_VALUE",
+			"Health@meta":  v.Meta(view.PropGET("health")),
 		},
 		"Oem": map[string]interface{}{
 			"ReadingUnits@meta":    v.Meta(view.PropGET("oem_reading_units")),
