@@ -33,12 +33,13 @@ import (
 	"github.com/superchalupa/go-redfish/src/dell-resources/chassis/system.chassis/thermal/fans"
 	"github.com/superchalupa/go-redfish/src/dell-resources/chassis/system.modular"
 	_ "github.com/superchalupa/go-redfish/src/dell-resources/dm_event"
+	"github.com/superchalupa/go-redfish/src/dell-resources/fan_controller"
+	"github.com/superchalupa/go-redfish/src/dell-resources/health_mapper"
 	mgrCMCIntegrated "github.com/superchalupa/go-redfish/src/dell-resources/managers/cmc.integrated"
 	"github.com/superchalupa/go-redfish/src/dell-resources/registries"
 	"github.com/superchalupa/go-redfish/src/dell-resources/registries/registry"
 	"github.com/superchalupa/go-redfish/src/dell-resources/update_service"
 	"github.com/superchalupa/go-redfish/src/dell-resources/update_service/firmware_inventory"
-	"github.com/superchalupa/go-redfish/src/dell-resources/health_mapper"
 
 	ah "github.com/superchalupa/go-redfish/src/actionhandler"
 )
@@ -60,7 +61,8 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	updateFns := []func(context.Context, *viper.Viper){}
 	swinvViews := []*view.View{}
 
-    health_mapper.Setup(ctx, ch, eb)
+	health_mapper.Setup(ctx, ch, eb)
+	fan_controller.Setup(ctx, ch, eb)
 
 	//
 	// Create the (empty) model behind the /redfish/v1 service root. Nothing interesting here
@@ -96,6 +98,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		view.WithModel("default", testModel),
 		view.WithController("ar_mapper", armapper),
 		view.WithURI(rootView.GetURI()+"/testview"),
+		eventservice.PublishResourceUpdatedEventsForModel(ctx, "default", eb),
 	)
 	test.AddAggregate(ctx, testView, ch)
 
@@ -120,7 +123,9 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	sessionView := view.New(
 		view.WithModel("default", sessionModel),
 		view.WithController("ar_mapper", armapper),
-		view.WithURI(rootView.GetURI()+"/SessionService"))
+		view.WithURI(rootView.GetURI()+"/SessionService"),
+		eventservice.PublishResourceUpdatedEventsForModel(ctx, "default", eb),
+	)
 	session.AddAggregate(ctx, sessionView, rootView.GetUUID(), ch, eb, ew)
 
 	//*********************************************************************
@@ -164,21 +169,21 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		registry.AddAggregate(ctx, registryLogger, rv, ch, eb)
 	}
 	registryModel.ApplyOption(model.UpdateProperty("registry_views", &domain.RedfishResourceProperty{Value: registry_views}))
-    
-    //HEALTH
-    // The following model maps a bunch of health related stuff that can be tracked once at a global level.
-    // we can add this model to the views that need to expose it
-    globalHealthModel := model.New()
+
+	//HEALTH
+	// The following model maps a bunch of health related stuff that can be tracked once at a global level.
+	// we can add this model to the views that need to expose it
+	globalHealthModel := model.New()
 	healthLogger := logger.New("module", "health_rollup")
-    health_mapper.New(healthLogger, globalHealthModel, "fan_rollup", "System.Chassis.1#SubSystem.1#Fan")
-    health_mapper.New(healthLogger, globalHealthModel, "temperature_rollup", "System.Chassis.1#SubSystem.1#Temperature")
-    health_mapper.New(healthLogger, globalHealthModel, "mm_rollup", "System.Chassis.1#SubSystem.1#MM")
-    health_mapper.New(healthLogger, globalHealthModel, "sled_rollup", "System.Chassis.1#SubSystem.1#SledSystem")
-    health_mapper.New(healthLogger, globalHealthModel, "psu_rollup", "System.Chassis.1#SubSystem.1#PowerSupply")
-    health_mapper.New(healthLogger, globalHealthModel, "cmc_rollup", "System.Chassis.1#SubSystem.1#CMC")
-    health_mapper.New(healthLogger, globalHealthModel, "misc_rollup", "System.Chassis.1#SubSystem.1#Miscellaneous")
-    health_mapper.New(healthLogger, globalHealthModel, "battery_rollup", "System.Chassis.1#SubSystem.1#Battery")
-    health_mapper.New(healthLogger, globalHealthModel, "iom_rollup", "System.Chassis.1#SubSystem.1#IOMSubsystem")
+	health_mapper.New(healthLogger, globalHealthModel, "fan_rollup", "System.Chassis.1#SubSystem.1#Fan")
+	health_mapper.New(healthLogger, globalHealthModel, "temperature_rollup", "System.Chassis.1#SubSystem.1#Temperature")
+	health_mapper.New(healthLogger, globalHealthModel, "mm_rollup", "System.Chassis.1#SubSystem.1#MM")
+	health_mapper.New(healthLogger, globalHealthModel, "sled_rollup", "System.Chassis.1#SubSystem.1#SledSystem")
+	health_mapper.New(healthLogger, globalHealthModel, "psu_rollup", "System.Chassis.1#SubSystem.1#PowerSupply")
+	health_mapper.New(healthLogger, globalHealthModel, "cmc_rollup", "System.Chassis.1#SubSystem.1#CMC")
+	health_mapper.New(healthLogger, globalHealthModel, "misc_rollup", "System.Chassis.1#SubSystem.1#Miscellaneous")
+	health_mapper.New(healthLogger, globalHealthModel, "battery_rollup", "System.Chassis.1#SubSystem.1#Battery")
+	health_mapper.New(healthLogger, globalHealthModel, "iom_rollup", "System.Chassis.1#SubSystem.1#IOMSubsystem")
 
 	//
 	// Loop to create similarly named manager objects and the things attached there.
@@ -271,6 +276,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			view.WithController("ar_mapper", armapper),
 			view.WithController("ar_dump", ardumper),
 			view.WithFormatter("attributeFormatter", attributes.FormatAttributeDump),
+			eventservice.PublishResourceUpdatedEventsForModel(ctx, "default", eb),
 		)
 
 		// add the aggregate to the view tree
@@ -307,6 +313,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			ah.WithAction(ctx, sysChasLogger, "chassis.reset", "/Actions/Chassis.Reset", chassisReset, ch, eb),
 			ah.WithAction(ctx, sysChasLogger, "msmconfigbackup", "/Actions/Oem/MSMConfigBackup", msmConfigBackup, ch, eb),
 			ah.WithAction(ctx, sysChasLogger, "chassis.msmconfigbackup", "/Actions/Oem/DellChassis.MSMConfigBackup", chassisMSMConfigBackup, ch, eb),
+			eventservice.PublishResourceUpdatedEventsForModel(ctx, "default", eb),
 		)
 
 		// Create the .../Attributes URI. Attributes are stored in the attributes property of the chasModel
@@ -331,6 +338,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			view.WithURI(rootView.GetURI()+"/Chassis/"+chasName+"/Power"),
 			view.WithModel("default", powerModel),
 			view.WithController("ar_mapper", armapper),
+			eventservice.PublishResourceUpdatedEventsForModel(ctx, "default", eb),
 		)
 		power.AddAggregate(ctx, powerLogger, sysChasPwrVw, ch)
 
@@ -365,6 +373,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 				view.WithController("ar_dumper", ardumper),
 				view.WithController("fw_mapper", fwmapper),
 				view.WithFormatter("attributeFormatter", attributes.FormatAttributeDump),
+				eventservice.PublishResourceUpdatedEventsForModel(ctx, "default", eb),
 			)
 			swinvViews = append(swinvViews, sysChasPwrPsuVw)
 
@@ -395,6 +404,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			view.WithURI(rootView.GetURI()+"/Chassis/"+chasName+"/Thermal"),
 			view.WithModel("default", thermalModel),
 			view.WithController("ar_mapper", armapper),
+			eventservice.PublishResourceUpdatedEventsForModel(ctx, "default", eb),
 		)
 		thermal.AddAggregate(ctx, thermalLogger, thermalView, ch)
 
@@ -417,6 +427,8 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			armapper, _ := ar_mapper.New(ctx, fanLogger, fanModel, "Fans/Fan.Slot", fanName, ch, eb, ew)
 			updateFns = append(updateFns, armapper.ConfigChangedFn)
 
+			fan_controller.New(fanLogger, fanModel, "System.Chassis.1#"+fanName)
+
 			// This controller will populate 'attributes' property with AR entries matching this FQDD ('fanName')
 			ardumper, _ := attributes.NewController(ctx, fanModel, []string{fanName}, ch, eb, ew)
 
@@ -428,6 +440,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 				view.WithController("ar_dumper", ardumper),
 				view.WithController("fw_mapper", fwmapper),
 				view.WithFormatter("attributeFormatter", attributes.FormatAttributeDump),
+				eventservice.PublishResourceUpdatedEventsForModel(ctx, "default", eb),
 			)
 			swinvViews = append(swinvViews, v)
 
@@ -466,8 +479,8 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		// This controller will populate 'attributes' property with AR entries matching this FQDD ('iomName')
 		ardumper, _ := attributes.NewController(ctx, iomModel, []string{iomName}, ch, eb, ew)
 
-        //HEALTH
-        health_mapper.New(iomLogger, iomModel, "health", "System.Chassis.1#SubSystem.1#" + iomName)
+		//HEALTH
+		health_mapper.New(iomLogger, iomModel, "health", "System.Chassis.1#SubSystem.1#"+iomName)
 
 		iomView := view.New(
 			view.WithURI(rootView.GetURI()+"/Chassis/"+iomName),
@@ -479,6 +492,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			ah.WithAction(ctx, iomLogger, "iom.chassis.reset", "/Actions/Chassis.Reset", iomChassisReset, ch, eb),
 			ah.WithAction(ctx, iomLogger, "iom.resetpeakpowerconsumption", "/Actions/Oem/DellChassis.ResetPeakPowerConsumption", iomResetPeakPowerConsumption, ch, eb),
 			ah.WithAction(ctx, iomLogger, "iom.virtualreseat", "/Actions/Oem/DellChassis.VirtualReseat", iomVirtualReseat, ch, eb),
+			eventservice.PublishResourceUpdatedEventsForModel(ctx, "default", eb),
 		)
 		swinvViews = append(swinvViews, iomView)
 		iom_chassis.AddAggregate(ctx, iomLogger, iomView, ch, eb, ew)
@@ -506,8 +520,8 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		// This controller will populate 'attributes' property with AR entries matching this FQDD ('sledName')
 		ardumper, _ := attributes.NewController(ctx, sledModel, []string{sledName}, ch, eb, ew)
 
-        //HEALTH
-        health_mapper.New(sledLogger, sledModel, "health", "System.Chassis.1#SubSystem.1#" + sledName)
+		//HEALTH
+		health_mapper.New(sledLogger, sledModel, "health", "System.Chassis.1#SubSystem.1#"+sledName)
 
 		sledView := view.New(
 			view.WithURI(rootView.GetURI()+"/Chassis/"+sledName),
@@ -518,6 +532,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			ah.WithAction(ctx, sledLogger, "chassis.peripheralmapping", "/Actions/Oem/DellChassis.PeripheralMapping", chassisPeripheralMapping, ch, eb),
 			ah.WithAction(ctx, sledLogger, "sledvirtualreseat", "/Actions/Chassis.VirtualReseat", sledVirtualReseat, ch, eb),
 			ah.WithAction(ctx, sledLogger, "chassis.sledvirtualreseat", "/Actions/Oem/DellChassis.VirtualReseat", chassisSledVirtualReseat, ch, eb),
+			eventservice.PublishResourceUpdatedEventsForModel(ctx, "default", eb),
 		)
 		sled_chassis.AddAggregate(ctx, sledLogger, sledView, ch, eb)
 		attributes.AddAggregate(ctx, sledView, rootView.GetURI()+"/Chassis/"+sledName+"/Attributes", ch)
@@ -540,6 +555,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			ah.WithAction(ctx, updsvcLogger, "update.eid674.reset", "/Actions/Oem/EID_674_UpdateService.Reset", updateEID674Reset, ch, eb),
 			ah.WithAction(ctx, updsvcLogger, "update.syncup", "/Actions/Oem/DellUpdateService.Syncup", updateSyncup, ch, eb),
 			ah.WithAction(ctx, updsvcLogger, "update.eid674.syncup", "/Actions/Oem/EID_674_UpdateService.Syncup", updateEID674Syncup, ch, eb),
+			eventservice.PublishResourceUpdatedEventsForModel(ctx, "default", eb),
 		)
 
 		// add the aggregate to the view tree
@@ -632,6 +648,8 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 				view.WithURI(rootView.GetURI()+"/UpdateService/FirmwareInventory/Installed-"+comp_ver_tuple),
 				view.WithModel("swinv", mdl),
 				view.WithModel("firm", invmdl),
+				eventservice.PublishResourceUpdatedEventsForModel(ctx, "swinv", eb),
+				eventservice.PublishResourceUpdatedEventsForModel(ctx, "firm", eb),
 			)
 			inv[comp_ver_tuple] = invview
 			firmware_inventory.AddAggregate(ctx, rootView, invview, ch)
