@@ -164,6 +164,21 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		registry.AddAggregate(ctx, registryLogger, rv, ch, eb)
 	}
 	registryModel.ApplyOption(model.UpdateProperty("registry_views", &domain.RedfishResourceProperty{Value: registry_views}))
+    
+    //HEALTH
+    // The following model maps a bunch of health related stuff that can be tracked once at a global level.
+    // we can add this model to the views that need to expose it
+    globalHealthModel := model.New()
+	healthLogger := logger.New("module", "health_rollup")
+    health_mapper.New(healthLogger, globalHealthModel, "fan_rollup", "System.Chassis.1#SubSystem.1#Fan")
+    health_mapper.New(healthLogger, globalHealthModel, "temperature_rollup", "System.Chassis.1#SubSystem.1#Temperature")
+    health_mapper.New(healthLogger, globalHealthModel, "mm_rollup", "System.Chassis.1#SubSystem.1#MM")
+    health_mapper.New(healthLogger, globalHealthModel, "sled_rollup", "System.Chassis.1#SubSystem.1#SledSystem")
+    health_mapper.New(healthLogger, globalHealthModel, "psu_rollup", "System.Chassis.1#SubSystem.1#PowerSupply")
+    health_mapper.New(healthLogger, globalHealthModel, "cmc_rollup", "System.Chassis.1#SubSystem.1#CMC")
+    health_mapper.New(healthLogger, globalHealthModel, "misc_rollup", "System.Chassis.1#SubSystem.1#Miscellaneous")
+    health_mapper.New(healthLogger, globalHealthModel, "battery_rollup", "System.Chassis.1#SubSystem.1#Battery")
+    health_mapper.New(healthLogger, globalHealthModel, "iom_rollup", "System.Chassis.1#SubSystem.1#IOMSubsystem")
 
 	//
 	// Loop to create similarly named manager objects and the things attached there.
@@ -445,11 +460,11 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		armapper, _ := ar_mapper.New(ctx, iomLogger, iomModel, "Chassis/IOM.Slot", iomName, ch, eb, ew)
 		updateFns = append(updateFns, armapper.ConfigChangedFn)
 
-        //HEALTH
-        health_mapper.New(iomLogger, iomModel, "health", "System.Chassis.1#SubSystem.1#" + iomName)
-
 		// This controller will populate 'attributes' property with AR entries matching this FQDD ('iomName')
 		ardumper, _ := attributes.NewController(ctx, iomModel, []string{iomName}, ch, eb, ew)
+
+        //HEALTH
+        health_mapper.New(iomLogger, iomModel, "health", "System.Chassis.1#SubSystem.1#" + iomName)
 
 		iomView := view.New(
 			view.WithURI(rootView.GetURI()+"/Chassis/"+iomName),
@@ -484,6 +499,9 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 
 		// This controller will populate 'attributes' property with AR entries matching this FQDD ('sledName')
 		ardumper, _ := attributes.NewController(ctx, sledModel, []string{sledName}, ch, eb, ew)
+
+        //HEALTH
+        health_mapper.New(sledLogger, sledModel, "health", "System.Chassis.1#SubSystem.1#" + sledName)
 
 		sledView := view.New(
 			view.WithURI(rootView.GetURI()+"/Chassis/"+sledName),

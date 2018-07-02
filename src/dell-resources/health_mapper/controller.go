@@ -40,7 +40,7 @@ func new(ctx context.Context, logger log.Logger, m *model.Model, property string
 
 
 	// stream processor for action events
-	sp, err := event.NewEventStreamProcessor(ctx, ew, event.CustomFilter(selectAttributeUpdate()))
+	sp, err := event.NewEventStreamProcessor(ctx, ew, event.CustomFilter(SelectHealthEvent()))
 	if err != nil {
 		logger.Error("Failed to create event stream processor", "err", err)
 		return err
@@ -61,7 +61,7 @@ func new(ctx context.Context, logger log.Logger, m *model.Model, property string
 }
 
 
-func selectAttributeUpdate() func(eh.Event) bool {
+func SelectHealthEvent() func(eh.Event) bool {
 	return func(event eh.Event) bool {
 		if event.EventType() == dm_event.HealthEvent {
 			return true
