@@ -5,26 +5,24 @@ import (
 )
 
 const (
-	HealthEvent = eh.EventType("HealthEvent")
+	HealthEvent      = eh.EventType("HealthEvent")
 	DataManagerEvent = eh.EventType("DataManagerEvent")
 )
 
 func init() {
 	eh.RegisterEventData(HealthEvent, func() eh.EventData { return &HealthEventData{} })
-	eh.RegisterEventData(DataManagerEvent, func() eh.EventData { 
-        var f DataManagerEventData
-        return f
-        })
+	eh.RegisterEventData(DataManagerEvent, func() eh.EventData {
+		var f DataManagerEventData
+		return f
+	})
 }
 
 type HealthEventData struct {
-    FQDD string
-    Health string
+	FQDD   string
+	Health string
 }
 
 type DataManagerEventData interface{}
-
-
 
 /*
 type DataManagerEventData struct {
