@@ -61,7 +61,12 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, rootID e
 					},
 					"Oem": map[string]interface{}{},
 				},
-				"Oem": map[string]interface{}{},
+				"Oem": map[string]interface{}{
+					"go-redfish": map[string]interface{}{
+						"max_milliseconds_to_queue@meta": v.Meta(view.PropGET("max_milliseconds_to_queue")),
+						"max_events_to_queue@meta":       v.Meta(view.PropGET("max_events_to_queue")),
+					},
+				},
 			}})
 
 	// Create Sessions Collection
