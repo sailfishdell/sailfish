@@ -55,25 +55,26 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 				},
 				"Actions": map[string]interface{}{
 					"Oem": map[string]interface{}{
+						// TODO: Remove per JIT-66996
 						"#DellChassis.v1_0_0#DellChassis.PeripheralMapping": map[string]interface{}{
 							"MappingType@Redfish.AllowableValues": []string{
 								"Accept",
 								"Clear",
 							},
-							"target": v.GetURI() + "/Actions/Oem/DellChassis.PeripheralMapping",
+							"target": v.GetActionURI("chassis.peripheralmapping"),
 						},
 						"#Chassis.VirtualReseat": map[string]interface{}{
-							"target": v.GetURI() + "/Actions/Chassis.VirtualReseat",
+							"target": v.GetActionURI("sledvirtualreseat"),
 						},
 						"#DellChassis.v1_0_0.PeripheralMapping": map[string]interface{}{
 							"MappingType@Redfish.AllowableValues": []string{
 								"Accept",
 								"Clear",
 							},
-							"target": v.GetURI() + "/Actions/Oem/DellChassis.PeripheralMapping",
+							"target": v.GetActionURI("chassis.peripiheralmapping"),
 						},
 						"#DellChassis.v1_0_0.VirtualReseat": map[string]interface{}{
-							"target": v.GetURI() + "/Actions/Oem/DellChassis.VirtualReseat",
+							"target": v.GetActionURI("chassis.sledvirtualreseat"),
 						},
 					},
 				},

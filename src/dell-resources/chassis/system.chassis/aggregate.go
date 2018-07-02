@@ -9,7 +9,6 @@ import (
 	domain "github.com/superchalupa/go-redfish/src/redfishresource"
 
 	eh "github.com/looplab/eventhorizon"
-	ah "github.com/superchalupa/go-redfish/src/actionhandler"
 )
 
 type waiter interface {
@@ -84,20 +83,17 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 							"GracefulShutdown",
 							"GracefulRestart",
 						},
-						"target": v.GetURI() + "/Actions/Chassis.Reset",
+						"target": v.GetActionURI("chassis.reset"),
 					},
 					"Oem": map[string]interface{}{
 						"#MSMConfigBackupURI": map[string]interface{}{
-							"target": v.GetURI() + "/Actions/Oem/MSMConfigBackup",
+							"target": v.GetActionURI("msmconfigbackup"),
 						},
 						"#DellChassis.v1_0_0.MSMConfigBackup": map[string]interface{}{
-							"target": v.GetURI() + "/Actions/Oem/DellChassis.MSMConfigBackup",
+							"target": v.GetActionURI("chassis.msmconfigbackup"),
 						},
 					},
 				},
 			}})
 
-	ah.CreateViewAction(ctx, logger, "chassis.reset", v.GetURI()+"/Actions/Chassis.Reset", v, ch, eb)
-	ah.CreateViewAction(ctx, logger, "msm_config_backup", v.GetURI()+"/Actions/Oem/MSMConfigBackup", v, ch, eb)
-	ah.CreateViewAction(ctx, logger, "chassis_msm_config_backup", v.GetURI()+"/Actions/Oem/DellChassis.MSMConfigBackup", v, ch, eb)
 }

@@ -9,7 +9,6 @@ import (
 	domain "github.com/superchalupa/go-redfish/src/redfishresource"
 
 	eh "github.com/looplab/eventhorizon"
-	ah "github.com/superchalupa/go-redfish/src/actionhandler"
 )
 
 type waiter interface {
@@ -76,26 +75,25 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 							"GracefulShutdown",
 							"GracefulRestart",
 						},
-						"target": v.GetURI() + "/Actions/Chassis.Reset",
+						"target": v.GetActionURI("iom.chassis.reset"),
 					},
 					"Oem": map[string]interface{}{
 						"#DellChassis.v1_0_0.ResetPeakPowerConsumption": map[string]interface{}{
-							"target": v.GetURI() + "/Actions/Oem/DellChassis.ResetPeakPowerConsumption",
+							"target": v.GetActionURI("iom.resetpeakpowerconsumption"),
 						},
 						"#DellChassis.v1_0_0.VirtualReseat": map[string]interface{}{
-							"target": v.GetURI() + "/Actions/Oem/DellChassis.VirtualReseat",
+							"target": v.GetActionURI("iom.virtualreseat"),
 						},
+						// TODO: Remove per JIT-66996
 						"DellChassis.v1_0_0#DellChassis.ResetPeakPowerConsumption": map[string]interface{}{
-							"target": v.GetURI() + "/Actions/Oem/DellChassis.ResetPeakPowerConsumption",
+							"target": v.GetActionURI("iom.resetpeakpowerconsumption"),
 						},
+						// TODO: Remove per JIT-66996
 						"DellChassis.v1_0_0#DellChassis.VirtualReseat": map[string]interface{}{
-							"target": v.GetURI() + "/Actions/Oem/DellChassis.VirtualReseat",
+							"target": v.GetActionURI("iom.virtualreseat"),
 						},
 					},
 				},
 			}})
 
-	ah.CreateViewAction(ctx, logger, "chassis.reset", v.GetURI()+"/Actions/Chassis.Reset", v, ch, eb)
-	ah.CreateViewAction(ctx, logger, "chassis.reset_peak_power_consumption", v.GetURI()+"/Actions/Oem/DellChassis.ResetPeakPowerConsumption", v, ch, eb)
-	ah.CreateViewAction(ctx, logger, "chassis.virtual_reseat", v.GetURI()+"/Actions/Oem/DellChassis.VirtualReseat", v, ch, eb)
 }

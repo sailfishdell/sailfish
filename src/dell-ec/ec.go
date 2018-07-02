@@ -304,6 +304,9 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			view.WithController("ar_mapper", armapper),
 			view.WithController("ar_dump", ardumper),
 			view.WithFormatter("attributeFormatter", attributes.FormatAttributeDump),
+			ah.WithAction(ctx, sysChasLogger, "chassis.reset", "/Actions/Chassis.Reset", chassisReset, ch, eb),
+			ah.WithAction(ctx, sysChasLogger, "msmconfigbackup", "/Actions/Oem/MSMConfigBackup", msmConfigBackup, ch, eb),
+			ah.WithAction(ctx, sysChasLogger, "chassis.msmconfigbackup", "/Actions/Oem/DellChassis.MSMConfigBackup", chassisMSMConfigBackup, ch, eb),
 		)
 
 		// Create the .../Attributes URI. Attributes are stored in the attributes property of the chasModel
@@ -473,6 +476,9 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			view.WithController("ar_mapper", armapper),
 			view.WithController("ar_dumper", ardumper),
 			view.WithFormatter("attributeFormatter", attributes.FormatAttributeDump),
+			ah.WithAction(ctx, iomLogger, "iom.chassis.reset", "/Actions/Chassis.Reset", iomChassisReset, ch, eb),
+			ah.WithAction(ctx, iomLogger, "iom.resetpeakpowerconsumption", "/Actions/Oem/DellChassis.ResetPeakPowerConsumption", iomResetPeakPowerConsumption, ch, eb),
+			ah.WithAction(ctx, iomLogger, "iom.virtualreseat", "/Actions/Oem/DellChassis.VirtualReseat", iomVirtualReseat, ch, eb),
 		)
 		swinvViews = append(swinvViews, iomView)
 		iom_chassis.AddAggregate(ctx, iomLogger, iomView, ch, eb, ew)
@@ -509,6 +515,9 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			view.WithController("ar_mapper", armapper),
 			view.WithController("ar_dumper", ardumper),
 			view.WithFormatter("attributeFormatter", attributes.FormatAttributeDump),
+			ah.WithAction(ctx, sledLogger, "chassis.peripheralmapping", "/Actions/Oem/DellChassis.PeripheralMapping", chassisPeripheralMapping, ch, eb),
+			ah.WithAction(ctx, sledLogger, "sledvirtualreseat", "/Actions/Chassis.VirtualReseat", sledVirtualReseat, ch, eb),
+			ah.WithAction(ctx, sledLogger, "chassis.sledvirtualreseat", "/Actions/Oem/DellChassis.VirtualReseat", chassisSledVirtualReseat, ch, eb),
 		)
 		sled_chassis.AddAggregate(ctx, sledLogger, sledView, ch, eb)
 		attributes.AddAggregate(ctx, sledView, rootView.GetURI()+"/Chassis/"+sledName+"/Attributes", ch)
@@ -527,6 +536,10 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			view.WithURI(rootView.GetURI()+"/UpdateService"),
 			view.WithModel("default", mdl),
 			view.WithController("ar_mapper", armapper),
+			ah.WithAction(ctx, updsvcLogger, "update.reset", "/Actions/Oem/DellUpdateService.Reset", updateReset, ch, eb),
+			ah.WithAction(ctx, updsvcLogger, "update.eid674.reset", "/Actions/Oem/EID_674_UpdateService.Reset", updateEID674Reset, ch, eb),
+			ah.WithAction(ctx, updsvcLogger, "update.syncup", "/Actions/Oem/DellUpdateService.Syncup", updateSyncup, ch, eb),
+			ah.WithAction(ctx, updsvcLogger, "update.eid674.syncup", "/Actions/Oem/EID_674_UpdateService.Syncup", updateEID674Syncup, ch, eb),
 		)
 
 		// add the aggregate to the view tree

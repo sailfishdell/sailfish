@@ -83,6 +83,7 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 				},
 			},
 			"Oem": map[string]interface{}{
+				// TODO: Remove per JIT-66996
 				"DellManager.v1_0_0#DellManager.ResetToDefaults": map[string]interface{}{
 					"ResetType@Redfish.AllowableValues": []string{
 						"ClearToShip",
