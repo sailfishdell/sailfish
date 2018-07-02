@@ -73,6 +73,10 @@ func (rh *SSEHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 
+		if event == nil {
+			continue
+		}
+
 		d, err := json.Marshal(
 			&struct {
 				Name string      `json:"name"`
