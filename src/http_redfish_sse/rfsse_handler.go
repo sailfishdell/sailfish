@@ -89,28 +89,36 @@ func (rh *RedfishSSEHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 
-		evt, ok := event.Data().(eventservice.ExternalRedfishEventData)
-		if !ok {
-			requestLogger.Error("Got wrong event data type")
-			continue
-		}
+		if evt, ok := event.Data().(eventservice.ExternalRedfishEventData); ok {
+			// Handle redfish events
+			d, err := json.MarshalIndent(
+				&struct {
+					eventservice.ExternalRedfishEventData
+					Context string `json:",omitempty"`
+				}{
+					ExternalRedfishEventData: evt,
+					Context:                  rfSubContext,
+				},
+				"data: ", "    ",
+			)
 
-		d, err := json.MarshalIndent(
-			&struct {
-				eventservice.ExternalRedfishEventData
-				Context string `json:",omitempty"`
-			}{
-				ExternalRedfishEventData: evt,
-				Context:                  rfSubContext,
-			},
-			"data: ", "    ",
-		)
-
-		if err != nil {
-			requestLogger.Error("MARSHAL SSE FAILED", "err", err, "data", event.Data(), "event", event)
+			if err != nil {
+				requestLogger.Error("MARSHAL SSE (event) FAILED", "err", err, "data", event.Data(), "event", event)
+				return
+			}
+			fmt.Fprintf(w, "id: %d\n", evt.Id)
+			fmt.Fprintf(w, "data: %s\n\n", d)
+		} else {
+			// Handle metric reports
+			// sucks that we have to handle these two separately, but for now have to do it this way
+			// TODO: find a better way to unify these
+			d, err := json.MarshalIndent(event.Data(), "data: ", "    ")
+			if err != nil {
+				requestLogger.Error("MARSHAL SSE (metric report) FAILED", "err", err, "data", event.Data(), "event", event)
+				return
+			}
+			fmt.Fprintf(w, "data: %s\n\n", d)
 		}
-		fmt.Fprintf(w, "id: %d\n", evt.Id)
-		fmt.Fprintf(w, "data: %s\n\n", d)
 
 		flusher.Flush()
 	}
