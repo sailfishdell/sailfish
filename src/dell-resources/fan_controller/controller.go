@@ -68,6 +68,7 @@ func new(ctx context.Context, logger log.Logger, m *model.Model, fqdd string, ch
 
 			dataobj := thp.(map[string]interface{})
 			if ok {
+				m.StopNotifications()
 				if fanhealth, ok := dataobj["fanhealth"]; ok {
 					m.UpdateProperty("dm_fanhealth", fanhealth)
 				}
@@ -89,6 +90,8 @@ func new(ctx context.Context, logger log.Logger, m *model.Model, fqdd string, ch
 				if criticalThreshold, ok := dataobj["criticalThreshold"]; ok {
 					m.UpdateProperty("criticalThreshold", criticalThreshold)
 				}
+				m.StartNotifications()
+				m.NotifyObservers()
 			}
 
 			/*

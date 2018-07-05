@@ -27,11 +27,10 @@ var cliCfgFile string
 var cliCfg *viper.Viper
 
 var rootCmd = &cobra.Command{
-        Use:   "redfish",
-        Short: "A redfish HTTP server",
-        Long: `Go-redfish is an HTTP server that implements the redfish protocol and is intended to be run in an embedded system.`,
-    }
-
+	Use:   "redfish",
+	Short: "A redfish HTTP server",
+	Long:  `Go-redfish is an HTTP server that implements the redfish protocol and is intended to be run in an embedded system.`,
+}
 
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
@@ -53,7 +52,7 @@ func init() {
 
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
-    cliCfg = viper.New()
+	cliCfg = viper.New()
 
 	if cliCfgFile != "" {
 		// Use config file from the flag.

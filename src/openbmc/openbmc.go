@@ -140,12 +140,20 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	}
 
 	sessObsLogger := logger.New("module", "observer")
-	sessionModel.AddObserver("viper", func(m *model.Model, property string, oldValue, newValue interface{}) {
-		sessObsLogger.Info("Session variable changed", "model", m, "property", property, "oldValue", oldValue, "newValue", newValue)
-		if property == "session_timeout" {
-			viperMu.Lock()
-			cfgMgr.Set("session.timeout", newValue.(int))
-			viperMu.Unlock()
+	sessionModel.AddObserver("viper", func(m *model.Model, updates []model.Update) {
+		sessObsLogger.Info("Session variable changed", "model", m, "updates", updates)
+		changed := false
+		for _, up := range updates {
+			if up.Property == "session_timeout" {
+				if n, ok := up.NewValue.(int); ok {
+					viperMu.Lock()
+					cfgMgr.Set("session.timeout", n)
+					viperMu.Unlock()
+					changed = true
+				}
+			}
+		}
+		if changed {
 			dumpViperConfig()
 		}
 	})

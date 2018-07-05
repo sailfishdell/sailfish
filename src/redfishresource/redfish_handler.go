@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"sync"
 
 	eh "github.com/looplab/eventhorizon"
 	log "github.com/superchalupa/go-redfish/src/log"
@@ -195,6 +196,24 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
+	}
+
+	// try to lock the results while we encode
+	switch d := data.Results.(type) {
+	case sync.RWMutex:
+		rh.logger.Warn("Type assert to RWMutex", "uri", r.URL.Path, "method", r.Method)
+		d.RLock()
+		defer d.RUnlock()
+	case sync.Mutex:
+		rh.logger.Warn("Type assert to Mutex", "uri", r.URL.Path, "method", r.Method)
+		d.Lock()
+		defer d.Unlock()
+	case RedfishResourceProperty:
+		// rh.logger.Warn("Type assert to RedfishResourceProperty", "uri", r.URL.Path, "method", r.Method)
+		d.Lock()
+		defer d.Unlock()
+	default:
+		rh.logger.Debug("Could not type assert results lockable type", "uri", r.URL.Path, "method", r.Method)
 	}
 
 	// set headers first

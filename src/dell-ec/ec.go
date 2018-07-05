@@ -593,8 +593,8 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	// DONE: "CMC.Integrated.1"
 
 	obsLogger := logger.New("module", "observer")
-	fn := func(mdl *model.Model, property string, oldValue, newValue interface{}) {
-		obsLogger.Info("observer entered", "model", mdl, "property", property, "oldValue", oldValue, "newValue", newValue)
+	fn := func(mdl *model.Model, property string, newValue interface{}) {
+		obsLogger.Info("observer entered", "model", mdl, "property", property, "newValue", newValue)
 
 		classRaw, ok := mdl.GetPropertyOkUnlocked("fw_device_class")
 		if !ok || classRaw == nil {
@@ -635,7 +635,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		swMu.Lock()
 		defer swMu.Unlock()
 
-		obsLogger.Info("GOT FULL SWVERSION INFO", "model", mdl, "property", property, "oldValue", oldValue, "newValue", newValue)
+		obsLogger.Info("GOT FULL SWVERSION INFO", "model", mdl, "property", property, "newValue", newValue)
 
 		comp_ver_tuple := class + "-" + version
 
@@ -728,12 +728,18 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		// TODO: delete any old copies of this model in the tree
 	}
 
+	fn2 := func(mdl *model.Model, updates []model.Update) {
+		for _, up := range updates {
+			fn(mdl, up.Property, up.NewValue)
+		}
+	}
+
 	// Set up observers for each swinv model
 	obsLogger.Info("Setting up observers", "swinvviews", swinvViews)
 	for _, swinvView := range swinvViews {
 		// going to assume each view has swinv model at 'swinv'
 		mdl := swinvView.GetModel("swinv")
-		mdl.AddObserver("swinv", fn)
+		mdl.AddObserver("swinv", fn2)
 		model2View[mdl] = swinvView
 	}
 
@@ -769,15 +775,22 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	}
 
 	sessObsLogger := logger.New("module", "observer")
-	sessionModel.AddObserver("viper", func(m *model.Model, property string, oldValue, newValue interface{}) {
-		sessObsLogger.Info("Session variable changed", "model", m, "property", property, "oldValue", oldValue, "newValue", newValue)
-		if property == "session_timeout" {
-			viperMu.Lock()
-			cfgMgr.Set("session.timeout", newValue.(int))
-			viperMu.Unlock()
+	sessionModel.AddObserver("viper", func(m *model.Model, updates []model.Update) {
+		sessObsLogger.Info("Session variable changed", "model", m, "updates", updates)
+		changed := false
+		for _, up := range updates {
+			if up.Property == "session_timeout" {
+				if n, ok := up.NewValue.(int); ok {
+					viperMu.Lock()
+					cfgMgr.Set("session.timeout", n)
+					viperMu.Unlock()
+					changed = true
+				}
+			}
+		}
+		if changed {
 			dumpViperConfig()
 		}
 	})
-
 	return self
 }

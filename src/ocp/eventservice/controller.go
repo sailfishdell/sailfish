@@ -23,7 +23,7 @@ type waiter interface {
 }
 
 func PublishResourceUpdatedEventsForModel(ctx context.Context, modelName string, eb eh.EventBus) view.Option {
-	return view.WatchModel("default", func(v *view.View, m *model.Model, property string) {
+	return view.WatchModel("default", func(v *view.View, m *model.Model, updates []model.Update) {
 		eventData := RedfishEventData{
 			EventType:         "ResourceUpdated",
 			OriginOfCondition: map[string]interface{}{"@odata.id": v.GetURI()},

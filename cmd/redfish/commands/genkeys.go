@@ -15,14 +15,14 @@
 package commands
 
 import (
+	"fmt"
 	"net"
-    "fmt"
-    "os"
+	"os"
 
 	"github.com/spf13/cobra"
 
-	"github.com/superchalupa/go-redfish/src/tlscert"
 	"github.com/superchalupa/go-redfish/src/log"
+	"github.com/superchalupa/go-redfish/src/tlscert"
 )
 
 func init() {
@@ -33,9 +33,9 @@ func init() {
 var genkeysCmd = &cobra.Command{
 	Use:   "genkeys",
 	Short: "Generate SSL keys",
-	Long: `The genkeys command will generate SSL server keys for the redfish server to use.`,
+	Long:  `The genkeys command will generate SSL server keys for the redfish server to use.`,
 	Run: func(cmd *cobra.Command, args []string) {
-        fmt.Fprintf(os.Stderr, "Generating CA certificate\n")
+		fmt.Fprintf(os.Stderr, "Generating CA certificate\n")
 
 		ca, _ := tlscert.NewCert(
 			tlscert.CreateCA,
@@ -49,7 +49,7 @@ var genkeysCmd = &cobra.Command{
 		)
 		ca.Serialize()
 
-        fmt.Fprintf(os.Stderr, "Generating Server certificate\n")
+		fmt.Fprintf(os.Stderr, "Generating Server certificate\n")
 
 		serverCert, _ := tlscert.NewCert(
 			tlscert.GenRSA(2048),

@@ -13,12 +13,11 @@ import (
 
 // an adapter that hooks in log15
 
-
 // MyLogger is a centralized point for application logging that we will pass throughout the system
 type MyLogger struct {
 	log.Logger
-    logCfg *viper.Viper
-    logCfgMu sync.Mutex
+	logCfg   *viper.Viper
+	logCfgMu sync.Mutex
 }
 
 // New is the logger constructor which initializes an instance
@@ -31,9 +30,9 @@ func (l *MyLogger) New(ctx ...interface{}) mylog.Logger {
 func InitializeApplicationLogging(logCfgFile string) (logger *MyLogger) {
 
 	logger = &MyLogger{
-		Logger: log.New(),
-        logCfg: viper.New(),
-	    logCfgMu: sync.Mutex{},
+		Logger:   log.New(),
+		logCfg:   viper.New(),
+		logCfgMu: sync.Mutex{},
 	}
 
 	// Environment variables
@@ -41,19 +40,19 @@ func InitializeApplicationLogging(logCfgFile string) (logger *MyLogger) {
 	logger.logCfg.AutomaticEnv()
 
 	// Configuration file
-    if logCfgFile != "" {
-        logger.logCfg.SetConfigFile(logCfgFile)
-    } else {
-        logger.logCfg.SetConfigName("redfish-logging")
-        logger.logCfg.AddConfigPath(".")
-        logger.logCfg.AddConfigPath("/etc/")
-    }
+	if logCfgFile != "" {
+		logger.logCfg.SetConfigFile(logCfgFile)
+	} else {
+		logger.logCfg.SetConfigName("redfish-logging")
+		logger.logCfg.AddConfigPath(".")
+		logger.logCfg.AddConfigPath("/etc/")
+	}
 
 	if err := logger.logCfg.ReadInConfig(); err == nil {
-        fmt.Println("Using config file:", logger.logCfg.ConfigFileUsed())
+		fmt.Println("Using config file:", logger.logCfg.ConfigFileUsed())
 	} else {
 		fmt.Fprintf(os.Stderr, "Could not read config file: %s\n", err)
-    }
+	}
 
 	setupLogHandlersFromConfig(logger)
 
@@ -67,7 +66,7 @@ func InitializeApplicationLogging(logCfgFile string) (logger *MyLogger) {
 	})
 	logger.logCfg.WatchConfig()
 
-    return
+	return
 }
 
 type LoggingConfig struct {
@@ -88,15 +87,15 @@ func setupLogHandlersFromConfig(l *MyLogger) {
 		log.Crit("Could not unmarshal logs key", "err", err)
 	}
 
-    if len(LogConfig) == 0 {
-        log.Crit("Setting default config")
-        LogConfig = []LoggingConfig{ {
-            Enabled: true,
-            Level: "info",
-            PrintFunction: true,
-            PrintFile: true,
-            } }
-    }
+	if len(LogConfig) == 0 {
+		log.Crit("Setting default config")
+		LogConfig = []LoggingConfig{{
+			Enabled:       true,
+			Level:         "info",
+			PrintFunction: true,
+			PrintFile:     true,
+		}}
+	}
 
 	topLevelHandlers := []log.Handler{}
 	for _, onecfg := range LogConfig {
