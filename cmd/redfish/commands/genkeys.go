@@ -35,10 +35,7 @@ var genkeysCmd = &cobra.Command{
 	Short: "Generate SSL keys",
 	Long: `The genkeys command will generate SSL server keys for the redfish server to use.`,
 	Run: func(cmd *cobra.Command, args []string) {
-
-        fmt.Fprintf(os.Stderr, "TEST123\n")
-        newLogger := logger.New("module", "happy")
-        fmt.Fprintf(os.Stderr, "TEST999\n")
+        fmt.Fprintf(os.Stderr, "Generating CA certificate\n")
 
 		ca, _ := tlscert.NewCert(
 			tlscert.CreateCA,
@@ -48,10 +45,11 @@ var genkeysCmd = &cobra.Command{
 			tlscert.SetBaseFilename("ca"),
 			tlscert.GenRSA(2048),
 			tlscert.SelfSigned(),
-			tlscert.WithLogger(newLogger),
+			tlscert.WithLogger(logger),
 		)
 		ca.Serialize()
 
+        fmt.Fprintf(os.Stderr, "Generating Server certificate\n")
 
 		serverCert, _ := tlscert.NewCert(
 			tlscert.GenRSA(2048),
