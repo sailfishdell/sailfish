@@ -45,6 +45,7 @@ func new(ctx context.Context, logger log.Logger, m *model.Model, fqdd string, ch
 		if data, ok := event.Data().(*dm_event.FanEventData); ok {
 			logger.Debug("Process Event", "data", data)
 			if data.ObjectHeader.FQDD == fqdd {
+				m.StopNotifications()
 				m.UpdateProperty("Fanwpm", data.Fanpwm)
 				m.UpdateProperty("Key", data.Key)
 				m.UpdateProperty("FanName", data.FanName)
@@ -59,6 +60,8 @@ func new(ctx context.Context, logger log.Logger, m *model.Model, fqdd string, ch
 				m.UpdateProperty("Rotor2rpm", data.Rotor2rpm)
 				m.UpdateProperty("Rotor1rpm", data.Rotor1rpm)
 				m.UpdateProperty("FanStateMask", data.FanStateMask)
+				m.StartNotifications()
+				m.NotifyObservers()
 			}
 		} else {
 			logger.Warn("Should never happen: got an invalid event in the event handler")
