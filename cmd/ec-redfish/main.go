@@ -188,7 +188,7 @@ func main() {
 			tlscert.SetCommonName("CA Cert common name"),
 			tlscert.SetSerialNumber(12345),
 			tlscert.SetBaseFilename("ca"),
-			tlscert.GenRSA(2048),
+			tlscert.GenRSA(1024),
 			tlscert.SelfSigned(),
 			tlscert.WithLogger(logger),
 		)
@@ -200,7 +200,7 @@ func main() {
 	_, err = tlscert.Load(tlscert.SetBaseFilename("server"), tlscert.WithLogger(logger))
 	if err != nil {
 		serverCert, _ := tlscert.NewCert(
-			tlscert.GenRSA(2048),
+			tlscert.GenRSA(1024),
 			tlscert.SignWithCA(ca),
 			tlscert.MakeServer,
 			tlscert.ExpireInOneYear,
@@ -270,6 +270,11 @@ func main() {
 			logger.Info("HTTPS listener starting on " + addr)
 			go func() { logger.Info("Server exited", "err", s.ListenAndServeTLS("server.crt", "server.key")) }()
 			go handleShutdown(ctx, logger, s)
+		case strings.HasPrefix(listen, "spacemonkey:"):
+			addr := strings.TrimPrefix(listen, "spacemonkey:")
+			logger.Info("SPACEMONKEY listener starting on " + addr)
+			go runSpaceMonkey(addr, loggingHTTPHandler)
+
 		}
 	}
 
