@@ -61,6 +61,12 @@
   version = "v2.13"
 
 [[projects]]
+  name = "github.com/inconshreveable/mousetrap"
+  packages = ["."]
+  revision = "76626ae9c91c4f2a10f34cad8ce83ea42c93bb75"
+  version = "v1.0"
+
+[[projects]]
   branch = "master"
   name = "github.com/looplab/eventhorizon"
   packages = [
@@ -68,9 +74,9 @@
     "aggregatestore/model",
     "commandhandler/aggregate",
     "eventbus/local",
+    "mocks",
     "publisher/local",
-    "repo/memory",
-    "utils"
+    "repo/memory"
   ]
   revision = "7067a22f516dcb562ca72e89ce83b974e71e30ab"
 
@@ -91,6 +97,12 @@
   packages = ["."]
   revision = "0360b2af4f38e8d38c7fce2a9f4e702702d73a39"
   version = "v0.0.3"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/mitchellh/go-homedir"
+  packages = ["."]
+  revision = "3864e76763d94a6df2f9960b16a20a33da9f9a66"
 
 [[projects]]
   branch = "master"
@@ -136,6 +148,12 @@
   version = "v1.2.0"
 
 [[projects]]
+  name = "github.com/spf13/cobra"
+  packages = ["."]
+  revision = "ef82de70bb3f60c65fb8eebacbb2d122ef517385"
+  version = "v0.0.3"
+
+[[projects]]
   branch = "master"
   name = "github.com/spf13/jwalterweatherman"
   packages = ["."]
@@ -155,17 +173,8 @@
 
 [[projects]]
   branch = "master"
-  name = "golang.org/x/crypto"
-  packages = ["ssh/terminal"]
-  revision = "88942b9c40a4c9d203b82b3731787b672d6e809b"
-
-[[projects]]
-  branch = "master"
   name = "golang.org/x/sys"
-  packages = [
-    "unix",
-    "windows"
-  ]
+  packages = ["unix"]
   revision = "378d26f46672a356c46195c28f61bdb4c0a781dd"
 
 [[projects]]
@@ -190,6 +199,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "8f0b4743c30ea0c3ce1dce5e7c31082f0508019116f8fc400cd8f2ed6f7415f7"
+  inputs-digest = "369f9d4011e8de04eb2aef9f8322016fc81fb419f6417bdc64cf54881bfe1114"
   solver-name = "gps-cdcl"
   solver-version = 1
