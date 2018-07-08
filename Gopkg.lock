@@ -2,6 +2,12 @@
 
 
 [[projects]]
+  branch = "master"
+  name = "github.com/Knetic/govaluate"
+  packages = ["."]
+  revision = "9aa49832a739dcd78a5542ff189fb82c3e423116"
+
+[[projects]]
   name = "github.com/dgrijalva/jwt-go"
   packages = ["."]
   revision = "06ea1031745cb8b3dab3f6a236daf2b0aa468b7e"
@@ -199,6 +205,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "369f9d4011e8de04eb2aef9f8322016fc81fb419f6417bdc64cf54881bfe1114"
+  inputs-digest = "24118bcc53effcf2346e79b27bc19737813debf84e7b93d9865237f49c7771bd"
   solver-name = "gps-cdcl"
   solver-version = 1
