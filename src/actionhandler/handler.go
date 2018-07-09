@@ -65,7 +65,7 @@ func (c *POST) ParseHTTPRequest(r *http.Request) error {
 }
 func (c *POST) Handle(ctx context.Context, a *domain.RedfishResourceAggregate) error {
 	// Action handler needs to send HTTP response
-	c.eventBus.PublishEvent(ctx, eh.NewEvent(GenericActionEvent, GenericActionEventData{
+	c.eventBus.PublishEvent(ctx, eh.NewEvent(GenericActionEvent, &GenericActionEventData{
 		ID:          c.ID,
 		CmdID:       c.CmdID,
 		ResourceURI: a.ResourceURI,
@@ -79,7 +79,7 @@ func SelectAction(uri string) func(eh.Event) bool {
 		if event.EventType() != GenericActionEvent {
 			return false
 		}
-		if data, ok := event.Data().(GenericActionEventData); ok {
+		if data, ok := event.Data().(*GenericActionEventData); ok {
 			if data.ResourceURI == uri {
 				return true
 			}
@@ -140,8 +140,8 @@ func CreateViewAction(
 		return
 	}
 	sp.RunForever(func(event eh.Event) {
-		eventData := domain.HTTPCmdProcessedData{
-			CommandID:  event.Data().(GenericActionEventData).CmdID,
+		eventData := &domain.HTTPCmdProcessedData{
+			CommandID:  event.Data().(*GenericActionEventData).CmdID,
 			Results:    map[string]interface{}{"msg": "Not Implemented"},
 			StatusCode: 500,
 			Headers:    map[string]string{},
@@ -151,7 +151,7 @@ func CreateViewAction(
 		handler := vw.GetAction(action)
 		logger.Crit("handler", "handler", handler)
 		if handler != nil {
-			handler(ctx, event, &eventData)
+			handler(ctx, event, eventData)
 		} else {
 			logger.Warn("UNHANDLED action event: no function handler set up for this event.", "event", event)
 		}

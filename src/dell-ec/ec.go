@@ -23,6 +23,8 @@ import (
 	"github.com/superchalupa/go-redfish/src/ocp/telemetryservice"
 	"github.com/superchalupa/go-redfish/src/ocp/test_aggregate"
 	"github.com/superchalupa/go-redfish/src/ocp/view"
+	"github.com/superchalupa/go-redfish/src/ocp/event"
+	"github.com/superchalupa/go-redfish/src/ocp/awesome_mapper"
 
 	"github.com/superchalupa/go-redfish/src/dell-resources/ar_mapper"
 	"github.com/superchalupa/go-redfish/src/dell-resources/attributes"
@@ -68,6 +70,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	telemetryservice.Setup(ctx, ch, eb)
 	health_mapper.Setup(ctx, ch, eb)
 	fan_controller.Setup(ctx, ch, eb)
+    event.Setup(ctx, ch, eb)
 
 	//
 	// Create the (empty) model behind the /redfish/v1 service root. Nothing interesting here
@@ -96,6 +99,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		model.UpdateProperty("name", "name"),
 		model.UpdateProperty("description", "description"),
 	)
+    awesome_mapper.New(ctx, testLogger, cfgMgr, testModel, "testcontroller", map[string]interface{}{"fqdd": "System.Modular.1"})
 
 	armapper, _ := ar_mapper.New(ctx, testLogger, testModel, "test/testview", "CMC.Integrated.1", ch, eb, ew)
 	updateFns = append(updateFns, armapper.ConfigChangedFn)

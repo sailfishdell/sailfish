@@ -17,14 +17,14 @@ func MakeSubmitTestEvent(eb eh.EventBus) func(context.Context, eh.Event, *domain
 	return func(ctx context.Context, event eh.Event, retData *domain.HTTPCmdProcessedData) error {
 		domain.ContextLogger(ctx, "submit_event").Debug("got test event", "event_data", event.Data())
 
-		data, ok := event.Data().(ah.GenericActionEventData)
+		data, ok := event.Data().(*ah.GenericActionEventData)
 		if !ok {
 			domain.ContextLogger(ctx, "submit_event").Crit("type assert failed", "event_data", event.Data(), "Type", fmt.Sprintf("%T", event.Data()))
 			return errors.New("Didnt get the right kind of event")
 		}
 
-		redfishEvent := RedfishEventData{}
-		mapstructure.Decode(data.ActionData, &redfishEvent)
+		redfishEvent := &RedfishEventData{}
+		mapstructure.Decode(data.ActionData, redfishEvent)
 
 		// Require EventType and EventID or else we bail
 		if redfishEvent.EventType == "" || redfishEvent.EventId == "" {

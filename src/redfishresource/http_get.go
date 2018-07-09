@@ -34,7 +34,7 @@ func (c *GET) SetUserDetails(u string, p []string) string {
 }
 func (c *GET) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 	// set up the base response data
-	data := HTTPCmdProcessedData{
+	data := &HTTPCmdProcessedData{
 		CommandID:  c.CmdID,
 		StatusCode: 200,
 	}

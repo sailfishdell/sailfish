@@ -146,7 +146,7 @@ func (c *POST) Handle(ctx context.Context, a *domain.RedfishResourceAggregate) e
 
 	c.startSessionDeleteTimer(sessionUUID, sessionURI, c.model.GetProperty("session_timeout").(int))
 
-	a.PublishEvent(eh.NewEvent(domain.HTTPCmdProcessed, domain.HTTPCmdProcessedData{
+	a.PublishEvent(eh.NewEvent(domain.HTTPCmdProcessed, &domain.HTTPCmdProcessedData{
 		CommandID:  c.CmdID,
 		Results:    retprops,
 		StatusCode: 200,
@@ -166,7 +166,7 @@ func (c *POST) startSessionDeleteTimer(sessionUUID eh.UUID, sessionURI string, t
 		if event.EventType() != XAuthTokenRefreshEvent {
 			return false
 		}
-		if data, ok := event.Data().(XAuthTokenRefreshData); ok {
+		if data, ok := event.Data().(*XAuthTokenRefreshData); ok {
 			if data.SessionURI == sessionURI {
 				return true
 			}
@@ -183,7 +183,7 @@ func (c *POST) startSessionDeleteTimer(sessionUUID eh.UUID, sessionURI string, t
 		if event.EventType() != domain.RedfishResourceRemoved {
 			return false
 		}
-		if data, ok := event.Data().(domain.RedfishResourceRemovedData); ok {
+		if data, ok := event.Data().(*domain.RedfishResourceRemovedData); ok {
 			if data.ResourceURI == sessionURI {
 				return true
 			}

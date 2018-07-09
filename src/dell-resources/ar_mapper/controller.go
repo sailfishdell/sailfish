@@ -104,7 +104,7 @@ func (c *ARMappingController) UpdateRequest(ctx context.Context, property string
 		c.logger.Info("Sending Update Request", "mapping", mapping, "value", value)
 		reqUUID := eh.NewUUID()
 
-		data := attributes.AttributeUpdateRequestData{
+		data := &attributes.AttributeUpdateRequestData{
 			ReqID: reqUUID,
 			FQDD:  mapping.FQDD,
 			Group: mapping.Group,
@@ -160,7 +160,7 @@ func (c *ARMappingController) initialStartupBootstrap(ctx context.Context) {
 		time.Sleep(120 * time.Second)
 		for _, m := range c.mappings {
 			c.logger.Info("SENDING ATTRIBUTE REQUEST", "mapping", m)
-			data := attributes.AttributeGetCurrentValueRequestData{
+			data := &attributes.AttributeGetCurrentValueRequestData{
 				FQDD:  m.FQDD,
 				Group: m.Group,
 				Index: m.Index,

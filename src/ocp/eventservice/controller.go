@@ -4,6 +4,7 @@ import (
 	"context"
 	"reflect"
 	"time"
+    "fmt"
 
 	eh "github.com/looplab/eventhorizon"
 	eventpublisher "github.com/looplab/eventhorizon/publisher/local"
@@ -24,7 +25,7 @@ type waiter interface {
 
 func PublishResourceUpdatedEventsForModel(ctx context.Context, modelName string, eb eh.EventBus) view.Option {
 	return view.WatchModel("default", func(v *view.View, m *model.Model, updates []model.Update) {
-		eventData := RedfishEventData{
+		eventData := &RedfishEventData{
 			EventType:         "ResourceUpdated",
 			OriginOfCondition: map[string]interface{}{"@odata.id": v.GetURI()},
 		}
@@ -63,7 +64,7 @@ func PublishRedfishEvents(ctx context.Context, m propertygetter, eb eh.EventBus)
 			case event := <-inbox:
 				log.MustLogger("event_service").Info("Got event", "event", event)
 				switch data := event.Data().(type) {
-				case RedfishEventData:
+				case *RedfishEventData:
 					// mitigate duplicate messages
 					found := false
 					for _, evt := range eventQ {
@@ -73,7 +74,7 @@ func PublishRedfishEvents(ctx context.Context, m propertygetter, eb eh.EventBus)
 					}
 
 					if !found {
-						eventQ = append(eventQ, &data)
+						eventQ = append(eventQ, data)
 					}
 
 					var QueueTime time.Duration = -1 * time.Millisecond
@@ -117,16 +118,16 @@ func PublishRedfishEvents(ctx context.Context, m propertygetter, eb eh.EventBus)
 						timer.Reset(QueueTime)
 					}
 
-				case domain.RedfishResourceCreatedData:
-					eventData := RedfishEventData{
+				case *domain.RedfishResourceCreatedData:
+					eventData := &RedfishEventData{
 						EventType:         "ResourceCreated",
 						OriginOfCondition: map[string]interface{}{"@odata.id": data.ResourceURI},
 					}
 
 					eb.PublishEvent(ctx, eh.NewEvent(RedfishEvent, eventData, time.Now()))
 
-				case domain.RedfishResourceRemovedData:
-					eventData := RedfishEventData{
+				case *domain.RedfishResourceRemovedData:
+					eventData := &RedfishEventData{
 						EventType:         "ResourceRemoved",
 						OriginOfCondition: map[string]interface{}{"@odata.id": data.ResourceURI},
 					}
@@ -134,7 +135,7 @@ func PublishRedfishEvents(ctx context.Context, m propertygetter, eb eh.EventBus)
 					eb.PublishEvent(ctx, eh.NewEvent(RedfishEvent, eventData, time.Now()))
 
 				default:
-					log.MustLogger("event_service").Warn("Should never happen: got an invalid event in the event handler")
+					log.MustLogger("event_service").Warn("Should never happen: got an invalid event in the event handler", "data", data, "deets", fmt.Sprintf("%T", data))
 				}
 
 			case <-timer.C:
@@ -153,7 +154,7 @@ func PublishRedfishEvents(ctx context.Context, m propertygetter, eb eh.EventBus)
 }
 
 func sendEvents(ctx context.Context, id int, events []*RedfishEventData, eb eh.EventBus) {
-	data := ExternalRedfishEventData{
+	data := &ExternalRedfishEventData{
 		Id:      id,
 		Context: "/redfish/v1/$metadata#Event.Event",
 		Name:    "Event Array",

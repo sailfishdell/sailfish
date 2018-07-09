@@ -158,7 +158,7 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if event.EventType() != HTTPCmdProcessed {
 			return false
 		}
-		if data, ok := event.Data().(HTTPCmdProcessedData); ok {
+		if data, ok := event.Data().(*HTTPCmdProcessedData); ok {
 			if data.CommandID == cmdID {
 				return true
 			}
@@ -192,7 +192,7 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	data, ok := event.Data().(HTTPCmdProcessedData)
+	data, ok := event.Data().(*HTTPCmdProcessedData)
 	if !ok {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

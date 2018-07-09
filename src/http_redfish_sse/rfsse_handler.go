@@ -89,11 +89,11 @@ func (rh *RedfishSSEHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 
-		if evt, ok := event.Data().(eventservice.ExternalRedfishEventData); ok {
+		if evt, ok := event.Data().(*eventservice.ExternalRedfishEventData); ok {
 			// Handle redfish events
 			d, err := json.MarshalIndent(
 				&struct {
-					eventservice.ExternalRedfishEventData
+					*eventservice.ExternalRedfishEventData
 					Context string `json:",omitempty"`
 				}{
 					ExternalRedfishEventData: evt,

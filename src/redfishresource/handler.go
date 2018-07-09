@@ -120,7 +120,7 @@ func (d *DomainObjects) Notify(ctx context.Context, event eh.Event) {
 	logger := ContextLogger(ctx, "domain")
 	logger.Debug("Processing event", "event", event)
 	if event.EventType() == RedfishResourceCreated {
-		if data, ok := event.Data().(RedfishResourceCreatedData); ok {
+		if data, ok := event.Data().(*RedfishResourceCreatedData); ok {
 			// TODO: handle conflicts (how?)
 			d.SetAggregateID(data.ResourceURI, data.ID)
 
@@ -151,7 +151,7 @@ func (d *DomainObjects) Notify(ctx context.Context, event eh.Event) {
 		return
 	}
 	if event.EventType() == RedfishResourceRemoved {
-		if data, ok := event.Data().(RedfishResourceRemovedData); ok {
+		if data, ok := event.Data().(*RedfishResourceRemovedData); ok {
 			// Look to see if it is a member of a collection
 			logger.Debug("Delete", "event", event)
 			collectionToTest := path.Dir(data.ResourceURI)

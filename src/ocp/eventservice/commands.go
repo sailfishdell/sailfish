@@ -49,7 +49,7 @@ func (c *POST) ParseHTTPRequest(r *http.Request) error {
 func (c *POST) Handle(ctx context.Context, a *domain.RedfishResourceAggregate) error {
 	view := CreateSubscription(ctx, domain.ContextLogger(ctx, "eventservice"), c.Sub, func() {})
 
-	a.PublishEvent(eh.NewEvent(domain.HTTPCmdProcessed, domain.HTTPCmdProcessedData{
+	a.PublishEvent(eh.NewEvent(domain.HTTPCmdProcessed, &domain.HTTPCmdProcessedData{
 		CommandID:  c.CmdID,
 		Results:    map[string]interface{}{"msg": "subscription created successfully"},
 		StatusCode: 200,

@@ -88,12 +88,12 @@ func (c *CreateRedfishResource) Handle(ctx context.Context, a *RedfishResourceAg
 		delete(c.Properties, p)
 	}
 
-	d := RedfishResourcePropertiesUpdatedData{
+	d := &RedfishResourcePropertiesUpdatedData{
 		ID:            c.ID,
 		ResourceURI:   a.ResourceURI,
 		PropertyNames: []string{},
 	}
-	e := RedfishResourcePropertyMetaUpdatedData{
+	e := &RedfishResourcePropertyMetaUpdatedData{
 		ID:          c.ID,
 		ResourceURI: a.ResourceURI,
 		Meta:        map[string]interface{}{},
@@ -117,7 +117,7 @@ func (c *CreateRedfishResource) Handle(ctx context.Context, a *RedfishResourceAg
 	}
 
 	// send out event that it's created first
-	a.PublishEvent(eh.NewEvent(RedfishResourceCreated, RedfishResourceCreatedData{
+	a.PublishEvent(eh.NewEvent(RedfishResourceCreated, &RedfishResourceCreatedData{
 		ID:          c.ID,
 		ResourceURI: c.ResourceURI,
 		Collection:  c.Collection,
@@ -150,7 +150,7 @@ func (c *RemoveRedfishResource) AggregateID() eh.UUID { return c.ID }
 func (c *RemoveRedfishResource) CommandType() eh.CommandType { return RemoveRedfishResourceCommand }
 
 func (c *RemoveRedfishResource) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
-	a.PublishEvent(eh.NewEvent(RedfishResourceRemoved, RedfishResourceRemovedData{
+	a.PublishEvent(eh.NewEvent(RedfishResourceRemoved, &RedfishResourceRemovedData{
 		ID:          c.ID,
 		ResourceURI: c.ResourceURI,
 	}, time.Now()))
@@ -180,12 +180,12 @@ func (c *UpdateRedfishResourceProperties) Handle(ctx context.Context, a *Redfish
 		delete(c.Properties, p)
 	}
 
-	d := RedfishResourcePropertiesUpdatedData{
+	d := &RedfishResourcePropertiesUpdatedData{
 		ID:            c.ID,
 		ResourceURI:   a.ResourceURI,
 		PropertyNames: []string{},
 	}
-	e := RedfishResourcePropertyMetaUpdatedData{
+	e := &RedfishResourcePropertyMetaUpdatedData{
 		ID:          c.ID,
 		ResourceURI: a.ResourceURI,
 		Meta:        map[string]interface{}{},
@@ -287,7 +287,7 @@ func (c *InjectEvent) Handle(ctx context.Context, a *RedfishResourceAggregate) e
 
 		err = mapstructure.Decode(eventData, &data)
 		if err != nil {
-			requestLogger.Warn("InjectEvent - could not decode event data, skipping event", "error", err)
+			requestLogger.Warn("InjectEvent - could not decode event data, skipping event", "error", err, "raw-eventdata", eventData, "dest-event", data)
 			continue
 		}
 

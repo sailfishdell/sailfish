@@ -60,13 +60,13 @@ func (c *DELETE) Handle(ctx context.Context, a *RedfishResourceAggregate) error 
 	_, _ = a.ProcessMeta(ctx, "DELETE", map[string]interface{}{})
 
 	// send event to trigger delete
-	a.PublishEvent(eh.NewEvent(RedfishResourceRemoved, RedfishResourceRemovedData{
+	a.PublishEvent(eh.NewEvent(RedfishResourceRemoved, &RedfishResourceRemovedData{
 		ID:          c.ID,
 		ResourceURI: a.ResourceURI,
 	}, time.Now()))
 
 	// send http response
-	a.PublishEvent(eh.NewEvent(HTTPCmdProcessed, HTTPCmdProcessedData{
+	a.PublishEvent(eh.NewEvent(HTTPCmdProcessed, &HTTPCmdProcessedData{
 		CommandID:  c.CmdID,
 		Results:    map[string]interface{}{},
 		StatusCode: 200,
@@ -94,7 +94,7 @@ func (c *PATCH) ParseHTTPRequest(r *http.Request) error {
 }
 func (c *PATCH) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 	// set up the base response data
-	data := HTTPCmdProcessedData{
+	data := &HTTPCmdProcessedData{
 		CommandID:  c.CmdID,
 		StatusCode: 200,
 	}
@@ -128,7 +128,7 @@ func (c *POST) ParseHTTPRequest(r *http.Request) error {
 	return nil
 }
 func (c *POST) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
-	a.PublishEvent(eh.NewEvent(HTTPCmdProcessed, HTTPCmdProcessedData{
+	a.PublishEvent(eh.NewEvent(HTTPCmdProcessed, &HTTPCmdProcessedData{
 		CommandID:  c.CmdID,
 		Results:    map[string]interface{}{"FOO": "BAR"},
 		StatusCode: 200,
@@ -154,7 +154,7 @@ func (c *PUT) ParseHTTPRequest(r *http.Request) error {
 	return nil
 }
 func (c *PUT) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
-	a.PublishEvent(eh.NewEvent(HTTPCmdProcessed, HTTPCmdProcessedData{
+	a.PublishEvent(eh.NewEvent(HTTPCmdProcessed, &HTTPCmdProcessedData{
 		CommandID:  c.CmdID,
 		Results:    map[string]interface{}{"ERROR": "This method not yet implemented"},
 		StatusCode: 501, // Not implemented
@@ -175,7 +175,7 @@ func (c *HEAD) CommandType() eh.CommandType     { return HEADCommand }
 func (c *HEAD) SetAggID(id eh.UUID)             { c.ID = id }
 func (c *HEAD) SetCmdID(id eh.UUID)             { c.CmdID = id }
 func (c *HEAD) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
-	a.PublishEvent(eh.NewEvent(HTTPCmdProcessed, HTTPCmdProcessedData{
+	a.PublishEvent(eh.NewEvent(HTTPCmdProcessed, &HTTPCmdProcessedData{
 		CommandID:  c.CmdID,
 		Results:    map[string]interface{}{"ERROR": "This method not yet implemented"},
 		StatusCode: 501, // Not implemented
@@ -196,7 +196,7 @@ func (c *OPTIONS) CommandType() eh.CommandType     { return OPTIONSCommand }
 func (c *OPTIONS) SetAggID(id eh.UUID)             { c.ID = id }
 func (c *OPTIONS) SetCmdID(id eh.UUID)             { c.CmdID = id }
 func (c *OPTIONS) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
-	a.PublishEvent(eh.NewEvent(HTTPCmdProcessed, HTTPCmdProcessedData{
+	a.PublishEvent(eh.NewEvent(HTTPCmdProcessed, &HTTPCmdProcessedData{
 		CommandID:  c.CmdID,
 		Results:    map[string]interface{}{"ERROR": "This method not yet implemented"},
 		StatusCode: 501, // Not implemented

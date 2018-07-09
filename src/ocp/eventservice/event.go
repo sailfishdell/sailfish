@@ -9,6 +9,11 @@ const (
 	ExternalRedfishEvent = eh.EventType("ExternalRedfishEvent")
 )
 
+func init() {
+	eh.RegisterEventData(RedfishEvent, func() eh.EventData { return &RedfishEventData{} })
+	eh.RegisterEventData(ExternalRedfishEvent, func() eh.EventData { return &ExternalRedfishEventData{} })
+}
+
 type RedfishEventData struct {
 	EventType         string                 `json:",omitempty"`
 	EventId           string                 `json:",omitempty"`

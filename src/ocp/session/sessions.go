@@ -53,7 +53,7 @@ func MakeHandlerFunc(eb eh.EventBus, getter IDGetter, withUser func(string, []st
 				if getter.HasAggregateID(claims.SessionURI) {
 					userName = claims.UserName
 					privileges = claims.Privileges
-					eb.PublishEvent(context.Background(), eh.NewEvent(XAuthTokenRefreshEvent, XAuthTokenRefreshData{SessionURI: claims.SessionURI}, time.Now()))
+					eb.PublishEvent(context.Background(), eh.NewEvent(XAuthTokenRefreshEvent, &XAuthTokenRefreshData{SessionURI: claims.SessionURI}, time.Now()))
 				}
 			}
 		}

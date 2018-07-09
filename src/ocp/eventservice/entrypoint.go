@@ -99,7 +99,7 @@ func createSubscription(ctx context.Context, logger log.Logger, sub Subscription
 			if event.EventType() != domain.RedfishResourceRemoved {
 				return false
 			}
-			if data, ok := event.Data().(domain.RedfishResourceRemovedData); ok {
+			if data, ok := event.Data().(*domain.RedfishResourceRemovedData); ok {
 				if data.ResourceURI == uri {
 					return true
 				}

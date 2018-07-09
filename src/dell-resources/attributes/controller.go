@@ -60,7 +60,7 @@ func (d *ARDump) UpdateRequest(ctx context.Context, property string, value inter
 		//  - validate that it is writable
 		//  - validate that user has perms
 		//
-		data := AttributeUpdateRequestData{
+		data := &AttributeUpdateRequestData{
 			ReqID: reqUUID,
 			FQDD:  d.fqdds[0],
 			Group: stuff[0],

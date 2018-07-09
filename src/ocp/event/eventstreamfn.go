@@ -2,13 +2,14 @@ package event
 
 import (
 	"context"
-	"strings"
+    "fmt"
+
+    "github.com/Knetic/govaluate"
+	"github.com/superchalupa/go-redfish/src/log"
+	eh "github.com/looplab/eventhorizon"
+	eventpublisher "github.com/looplab/eventhorizon/publisher/local"
 
 	"github.com/superchalupa/go-redfish/src/eventwaiter"
-	"github.com/superchalupa/go-redfish/src/log"
-	domain "github.com/superchalupa/go-redfish/src/redfishresource"
-
-	eh "github.com/looplab/eventhorizon"
 )
 
 type Options func(*privateStateStructure) error
@@ -26,13 +27,27 @@ type privateStateStructure struct {
 	ctx      context.Context
 	filterFn func(eh.Event) bool
 	listener listener
+    logger   log.Logger
+}
+
+var NewESP func(ctx context.Context, options ...Options) (d *privateStateStructure, err error)
+
+func Setup(ch eh.CommandHandler, eb eh.EventBus) {
+	EventPublisher := eventpublisher.NewEventPublisher()
+	eb.AddHandler(eh.MatchAny(), EventPublisher)
+	EventWaiter := eventwaiter.NewEventWaiter()
+	EventPublisher.AddObserver(EventWaiter)
+
+    NewESP = func(ctx context.Context, options ...Options) (d *privateStateStructure, err error) {
+        return NewEventStreamProcessor(ctx, EventWaiter, options...)
+    }
 }
 
 func NewEventStreamProcessor(ctx context.Context, ew waiter, options ...Options) (d *privateStateStructure, err error) {
 	d = &privateStateStructure{
 		ctx: ctx,
-		// default filter is to process all events
-		filterFn: func(eh.Event) bool { return true },
+		// default filter is to process no events
+		filterFn: func(eh.Event) bool { return false },
 	}
 	err = nil
 
@@ -43,7 +58,6 @@ func NewEventStreamProcessor(ctx context.Context, ew waiter, options ...Options)
 		}
 	}
 
-	// set up listener that will fire when it sees /redfish/v1 created
 	d.listener, err = ew.Listen(ctx, d.filterFn)
 	if err != nil {
 		return
@@ -57,20 +71,6 @@ func (d *privateStateStructure) Close() {
 		d.listener.Close()
 		d.listener = nil
 	}
-}
-
-func (d *privateStateStructure) RunOnce(fn func(eh.Event)) {
-	go func() {
-		defer d.Close()
-
-		event, err := d.listener.Wait(d.ctx)
-		if err != nil {
-			log.MustLogger("eventstream").Info("Shutting down listener", "err", err)
-			return
-		}
-
-		fn(event)
-	}()
 }
 
 func (d *privateStateStructure) RunForever(fn func(eh.Event)) {
@@ -95,105 +95,37 @@ func CustomFilter(fn func(eh.Event) bool) func(p *privateStateStructure) error {
 	}
 }
 
-func AND(fnA, fnB func(eh.Event) bool) func(p *privateStateStructure) error {
+func ExpressionFilter(logger log.Logger, expr string, parameters map[string]interface{}, functions map[string]govaluate.ExpressionFunction) func(p *privateStateStructure) error {
 	return func(p *privateStateStructure) error {
-		p.filterFn = func(e eh.Event) bool { return fnA(e) && fnB(e) }
+        functions["string"] = func(args ...interface{}) (interface{}, error) {
+                return fmt.Sprint(args[0]), nil
+            }
+
+        expression, err := govaluate.NewEvaluableExpressionWithFunctions(expr, functions)
+        if err != nil {
+            logger.Crit("Expression construction (lexing) failed.", "expression", expr)
+            return err
+        }
+
+        fn := func(ev eh.Event)bool { 
+            parameters["type"] = string(ev.EventType())
+            parameters["data"] = ev.Data()
+            parameters["event"] = ev
+            result, err := expression.Evaluate(parameters)
+            if err == nil  {
+                if ret, ok := result.(bool); ok {
+                    return ret
+                }
+                // LOG ERRROR: expression didn't return BOOL
+                logger.Error("Expression did not return a bool.", "expression", expr, "parsed", expression.String())
+            }
+            // LOG ERRROR: expression evaluation failed
+            logger.Crit("Expression evaluation failed.", "expression", expr, "parsed", expression.String())
+            return  false
+        }
+
+		p.filterFn = fn
 		return nil
 	}
 }
 
-func OR(fnA, fnB func(eh.Event) bool) func(p *privateStateStructure) error {
-	return func(p *privateStateStructure) error {
-		p.filterFn = func(e eh.Event) bool { return fnA(e) || fnB(e) }
-		return nil
-	}
-}
-
-func SelectEventResourceCreatedByURI(uri string) func(p *privateStateStructure) error {
-	return func(p *privateStateStructure) error {
-		p.filterFn = func(event eh.Event) bool {
-			if event.EventType() != domain.RedfishResourceCreated {
-				return false
-			}
-			if data, ok := event.Data().(domain.RedfishResourceCreatedData); ok {
-				if data.ResourceURI == uri {
-					return true
-				}
-			}
-			return false
-		}
-		return nil
-	}
-}
-
-func SelectEventResourceCreatedByURIPrefix(uri string) func(p *privateStateStructure) error {
-	return func(p *privateStateStructure) error {
-		p.filterFn = func(event eh.Event) bool {
-			if event.EventType() != domain.RedfishResourceCreated {
-				return false
-			}
-			if data, ok := event.Data().(domain.RedfishResourceCreatedData); ok {
-				if strings.HasPrefix(data.ResourceURI, uri) {
-					// Only return true for immediate sub uris, not grandchildren
-					rest := strings.TrimPrefix(data.ResourceURI, uri)
-					if strings.Contains(rest, "/") {
-						return false
-					}
-					return true
-				}
-			}
-			return false
-		}
-		return nil
-	}
-}
-
-func SelectEventResourceRemovedByURI(uri string) func(p *privateStateStructure) error {
-	return func(p *privateStateStructure) error {
-		p.filterFn = func(event eh.Event) bool {
-			if event.EventType() != domain.RedfishResourceRemoved {
-				return false
-			}
-			if data, ok := event.Data().(domain.RedfishResourceRemovedData); ok {
-				if data.ResourceURI == uri {
-					return true
-				}
-			}
-			return false
-		}
-		return nil
-	}
-}
-
-func SelectEventResourceRemovedByURIPrefix(uri string) func(p *privateStateStructure) error {
-	return func(p *privateStateStructure) error {
-		p.filterFn = func(event eh.Event) bool {
-			if event.EventType() != domain.RedfishResourceRemoved {
-				return false
-			}
-			if data, ok := event.Data().(domain.RedfishResourceRemovedData); ok {
-				if strings.HasPrefix(data.ResourceURI, uri) {
-					// Only return true for immediate sub uris, not grandchildren
-					rest := strings.TrimPrefix(data.ResourceURI, uri)
-					if strings.Contains(rest, "/") {
-						return false
-					}
-					return true
-				}
-			}
-			return false
-		}
-		return nil
-	}
-}
-
-func OnURICreated(ctx context.Context, ew waiter, uri string, f func()) {
-	sp, err := NewEventStreamProcessor(ctx, ew, SelectEventResourceCreatedByURI(uri))
-	if err != nil {
-		log.MustLogger("eventstream").Error("Failed to create event stream processor", "err", err)
-		return
-	}
-	sp.RunOnce(func(event eh.Event) {
-		f()
-	})
-}
