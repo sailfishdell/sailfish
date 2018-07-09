@@ -120,7 +120,7 @@ func ExpressionFilter(logger log.Logger, expr string, parameters map[string]inte
 				logger.Error("Expression did not return a bool.", "expression", expr, "parsed", expression.String())
 			}
 			// LOG ERRROR: expression evaluation failed
-			logger.Crit("Expression evaluation failed.", "expression", expr, "parsed", expression.String())
+			logger.Crit("Expression evaluation failed.", "expression", expr, "parsed", expression.String(), "err", err, "data", ev.Data())
 			return false
 		}
 
