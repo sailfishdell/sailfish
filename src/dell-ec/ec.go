@@ -70,7 +70,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	telemetryservice.Setup(ctx, ch, eb)
 	health_mapper.Setup(ctx, ch, eb)
 	fan_controller.Setup(ctx, ch, eb)
-    event.Setup(ctx, ch, eb)
+    event.Setup(ch, eb)
 
 	//
 	// Create the (empty) model behind the /redfish/v1 service root. Nothing interesting here

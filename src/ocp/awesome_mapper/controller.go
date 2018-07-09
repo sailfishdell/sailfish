@@ -41,15 +41,13 @@ func New(ctx context.Context, logger log.Logger, cfg *viper.Viper, m *model.Mode
     try := c[0]
 
 	// stream processor for action events
-	sp, err := event.NewESP(event.ExpressionFilter(logger, try.Select, parameters, map[string]govaluate.ExpressionFunction{}))
+	sp, err := event.NewESP(ctx, event.ExpressionFilter(logger, try.Select, parameters, map[string]govaluate.ExpressionFunction{}))
 	if err != nil {
 		logger.Error("Failed to create event stream processor", "err", err, "select-string", try.Select)
 		return err
 	}
 	sp.RunForever(func(event eh.Event) {
         logger.Crit("GOT AN EVENT", "event", event)
-        for _, m := range {
-        }
 	})
 
 	return nil
