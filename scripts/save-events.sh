@@ -8,4 +8,4 @@ scriptdir=$(cd $(dirname $0); pwd)
 
 outname=${1:-event-list.json}
 
-$CURLCMD -s $BASE/events | perl -n -e 'print unless /^\s*$/' | cut -d: -f2- | perl -p -i -e 's/^\s*//;g' | tee -a $outname
+$CURLCMD --no-buffer -s $BASE/events | perl -n -e 'print if /^data:/' | cut -d: -f2- | perl -p -i -e 's/^\s*//;g' | grep -v RedfishEvent | tee -a $outname
