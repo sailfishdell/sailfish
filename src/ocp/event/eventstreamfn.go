@@ -2,12 +2,12 @@ package event
 
 import (
 	"context"
-    "fmt"
+	"fmt"
 
-    "github.com/Knetic/govaluate"
-	"github.com/superchalupa/go-redfish/src/log"
+	"github.com/Knetic/govaluate"
 	eh "github.com/looplab/eventhorizon"
 	eventpublisher "github.com/looplab/eventhorizon/publisher/local"
+	"github.com/superchalupa/go-redfish/src/log"
 
 	"github.com/superchalupa/go-redfish/src/eventwaiter"
 )
@@ -27,7 +27,7 @@ type privateStateStructure struct {
 	ctx      context.Context
 	filterFn func(eh.Event) bool
 	listener listener
-    logger   log.Logger
+	logger   log.Logger
 }
 
 var NewESP func(ctx context.Context, options ...Options) (d *privateStateStructure, err error)
@@ -38,9 +38,9 @@ func Setup(ch eh.CommandHandler, eb eh.EventBus) {
 	EventWaiter := eventwaiter.NewEventWaiter()
 	EventPublisher.AddObserver(EventWaiter)
 
-    NewESP = func(ctx context.Context, options ...Options) (d *privateStateStructure, err error) {
-        return NewEventStreamProcessor(ctx, EventWaiter, options...)
-    }
+	NewESP = func(ctx context.Context, options ...Options) (d *privateStateStructure, err error) {
+		return NewEventStreamProcessor(ctx, EventWaiter, options...)
+	}
 }
 
 func NewEventStreamProcessor(ctx context.Context, ew waiter, options ...Options) (d *privateStateStructure, err error) {
@@ -97,35 +97,34 @@ func CustomFilter(fn func(eh.Event) bool) func(p *privateStateStructure) error {
 
 func ExpressionFilter(logger log.Logger, expr string, parameters map[string]interface{}, functions map[string]govaluate.ExpressionFunction) func(p *privateStateStructure) error {
 	return func(p *privateStateStructure) error {
-        functions["string"] = func(args ...interface{}) (interface{}, error) {
-                return fmt.Sprint(args[0]), nil
-            }
+		functions["string"] = func(args ...interface{}) (interface{}, error) {
+			return fmt.Sprint(args[0]), nil
+		}
 
-        expression, err := govaluate.NewEvaluableExpressionWithFunctions(expr, functions)
-        if err != nil {
-            logger.Crit("Expression construction (lexing) failed.", "expression", expr)
-            return err
-        }
+		expression, err := govaluate.NewEvaluableExpressionWithFunctions(expr, functions)
+		if err != nil {
+			logger.Crit("Expression construction (lexing) failed.", "expression", expr)
+			return err
+		}
 
-        fn := func(ev eh.Event)bool { 
-            parameters["type"] = string(ev.EventType())
-            parameters["data"] = ev.Data()
-            parameters["event"] = ev
-            result, err := expression.Evaluate(parameters)
-            if err == nil  {
-                if ret, ok := result.(bool); ok {
-                    return ret
-                }
-                // LOG ERRROR: expression didn't return BOOL
-                logger.Error("Expression did not return a bool.", "expression", expr, "parsed", expression.String())
-            }
-            // LOG ERRROR: expression evaluation failed
-            logger.Crit("Expression evaluation failed.", "expression", expr, "parsed", expression.String())
-            return  false
-        }
+		fn := func(ev eh.Event) bool {
+			parameters["type"] = string(ev.EventType())
+			parameters["data"] = ev.Data()
+			parameters["event"] = ev
+			result, err := expression.Evaluate(parameters)
+			if err == nil {
+				if ret, ok := result.(bool); ok {
+					return ret
+				}
+				// LOG ERRROR: expression didn't return BOOL
+				logger.Error("Expression did not return a bool.", "expression", expr, "parsed", expression.String())
+			}
+			// LOG ERRROR: expression evaluation failed
+			logger.Crit("Expression evaluation failed.", "expression", expr, "parsed", expression.String())
+			return false
+		}
 
 		p.filterFn = fn
 		return nil
 	}
 }
-

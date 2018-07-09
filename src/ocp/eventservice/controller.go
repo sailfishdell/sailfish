@@ -2,9 +2,9 @@ package eventservice
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"time"
-    "fmt"
 
 	eh "github.com/looplab/eventhorizon"
 	eventpublisher "github.com/looplab/eventhorizon/publisher/local"

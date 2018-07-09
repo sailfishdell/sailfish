@@ -1,11 +1,11 @@
 package awesome_mapper
 
 import (
-    "context"
-    "errors"
+	"context"
+	"errors"
 
+	"github.com/Knetic/govaluate"
 	"github.com/spf13/viper"
-    "github.com/Knetic/govaluate"
 
 	eh "github.com/looplab/eventhorizon"
 
@@ -15,16 +15,16 @@ import (
 )
 
 type mapping struct {
-	Property   string
-	Query string
+	Property string
+	Query    string
 }
 
 type MappingEntry struct {
-    Select      string
-    ModelUpdate []mapping
+	Select      string
+	ModelUpdate []mapping
 }
 
-func New(ctx context.Context, logger log.Logger, cfg *viper.Viper, m *model.Model, name string, parameters map[string]interface{}) (error) {
+func New(ctx context.Context, logger log.Logger, cfg *viper.Viper, m *model.Model, name string, parameters map[string]interface{}) error {
 	c := []MappingEntry{}
 
 	k := cfg.Sub("mappings")
@@ -38,7 +38,7 @@ func New(ctx context.Context, logger log.Logger, cfg *viper.Viper, m *model.Mode
 	}
 	logger.Warn("updated mappings", "mappings", c)
 
-    try := c[0]
+	try := c[0]
 
 	// stream processor for action events
 	sp, err := event.NewESP(ctx, event.ExpressionFilter(logger, try.Select, parameters, map[string]govaluate.ExpressionFunction{}))
@@ -47,7 +47,7 @@ func New(ctx context.Context, logger log.Logger, cfg *viper.Viper, m *model.Mode
 		return err
 	}
 	sp.RunForever(func(event eh.Event) {
-        logger.Crit("GOT AN EVENT", "event", event)
+		logger.Crit("GOT AN EVENT", "event", event)
 	})
 
 	return nil
