@@ -36,8 +36,6 @@ import (
 	"github.com/superchalupa/go-redfish/src/dell-resources/chassis/system.chassis/thermal"
 	"github.com/superchalupa/go-redfish/src/dell-resources/chassis/system.chassis/thermal/fans"
 	"github.com/superchalupa/go-redfish/src/dell-resources/chassis/system.modular"
-	"github.com/superchalupa/go-redfish/src/dell-resources/fan_controller"
-	"github.com/superchalupa/go-redfish/src/dell-resources/health_mapper"
 	mgrCMCIntegrated "github.com/superchalupa/go-redfish/src/dell-resources/managers/cmc.integrated"
 	"github.com/superchalupa/go-redfish/src/dell-resources/registries"
 	"github.com/superchalupa/go-redfish/src/dell-resources/registries/registry"
@@ -68,8 +66,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	actionhandler.Setup(ctx, ch, eb, ew)
 	eventservice.Setup(ctx, ch, eb)
 	telemetryservice.Setup(ctx, ch, eb)
-	health_mapper.Setup(ctx, ch, eb)
-	fan_controller.Setup(ctx, ch, eb)
 	event.Setup(ch, eb)
 
 	//
@@ -99,7 +95,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		model.UpdateProperty("name", "name"),
 		model.UpdateProperty("description", "description"),
 	)
-	awesome_mapper.New(ctx, testLogger, cfgMgr, testModel, "testcontroller", map[string]interface{}{"fqdd": "System.Modular.1"})
+	awesome_mapper.New(ctx, testLogger, cfgMgr, testModel, "testmodel", map[string]interface{}{"fqdd": "System.Modular.1"})
 
 	armapper, _ := ar_mapper.New(ctx, testLogger, testModel, "test/testview", "CMC.Integrated.1", ch, eb, ew)
 	updateFns = append(updateFns, armapper.ConfigChangedFn)
@@ -186,15 +182,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	// we can add this model to the views that need to expose it
 	globalHealthModel := model.New()
 	healthLogger := logger.New("module", "health_rollup")
-	health_mapper.New(healthLogger, globalHealthModel, "fan_rollup", "System.Chassis.1#SubSystem.1#Fan")
-	health_mapper.New(healthLogger, globalHealthModel, "temperature_rollup", "System.Chassis.1#SubSystem.1#Temperature")
-	health_mapper.New(healthLogger, globalHealthModel, "mm_rollup", "System.Chassis.1#SubSystem.1#MM")
-	health_mapper.New(healthLogger, globalHealthModel, "sled_rollup", "System.Chassis.1#SubSystem.1#SledSystem")
-	health_mapper.New(healthLogger, globalHealthModel, "psu_rollup", "System.Chassis.1#SubSystem.1#PowerSupply")
-	health_mapper.New(healthLogger, globalHealthModel, "cmc_rollup", "System.Chassis.1#SubSystem.1#CMC")
-	health_mapper.New(healthLogger, globalHealthModel, "misc_rollup", "System.Chassis.1#SubSystem.1#Miscellaneous")
-	health_mapper.New(healthLogger, globalHealthModel, "battery_rollup", "System.Chassis.1#SubSystem.1#Battery")
-	health_mapper.New(healthLogger, globalHealthModel, "iom_rollup", "System.Chassis.1#SubSystem.1#IOMSubsystem")
+	awesome_mapper.New(ctx, healthLogger, cfgMgr, globalHealthModel, "global_health", map[string]interface{}{})
 
 	//
 	// Loop to create similarly named manager objects and the things attached there.
@@ -438,7 +426,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			armapper, _ := ar_mapper.New(ctx, fanLogger, fanModel, "Fans/Fan.Slot", fanName, ch, eb, ew)
 			updateFns = append(updateFns, armapper.ConfigChangedFn)
 
-			fan_controller.New(fanLogger, fanModel, "System.Chassis.1#"+fanName)
+			awesome_mapper.New(ctx, fanLogger, cfgMgr, fanModel, "fan", map[string]interface{}{"fqdd": "System.Chassis.1#" + fanName})
 
 			// This controller will populate 'attributes' property with AR entries matching this FQDD ('fanName')
 			ardumper, _ := attributes.NewController(ctx, fanModel, []string{fanName}, ch, eb, ew)
@@ -491,7 +479,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		ardumper, _ := attributes.NewController(ctx, iomModel, []string{iomName}, ch, eb, ew)
 
 		//HEALTH
-		health_mapper.New(iomLogger, iomModel, "health", "System.Chassis.1#SubSystem.1#"+iomName)
+		awesome_mapper.New(ctx, iomLogger, cfgMgr, iomModel, "health", map[string]interface{}{"fqdd": "System.Chassis.1#SubSystem.1#" + iomName})
 
 		iomView := view.New(
 			view.WithURI(rootView.GetURI()+"/Chassis/"+iomName),
@@ -532,7 +520,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		ardumper, _ := attributes.NewController(ctx, sledModel, []string{sledName}, ch, eb, ew)
 
 		//HEALTH
-		health_mapper.New(sledLogger, sledModel, "health", "System.Chassis.1#SubSystem.1#"+sledName)
+		awesome_mapper.New(ctx, sledLogger, cfgMgr, sledModel, "health", map[string]interface{}{"fqdd": "System.Chassis.1#SubSystem.1#" + sledName})
 
 		sledView := view.New(
 			view.WithURI(rootView.GetURI()+"/Chassis/"+sledName),

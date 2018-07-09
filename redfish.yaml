@@ -2,16 +2,51 @@ main:
     server_name: "dell_ec"
     #options: "openbmc" | "dell_ec" | "mockup"
 
-    dumpConfigChanges:
-        enabled: true
-        filename: "redfish-out2.yaml"
-
 listen:
     - http::8080
     - https::8443
 
 session:
     timeout: 60
+
+
+awesome_mapper:
+    testmodel:
+        - { Select: "type == 'AttributeUpdated' && data.FQDD == fqdd && data.Group == 'Info' && data.Index == '1' && data.Name == 'IndicatorLED'",
+            ModelUpdate: [ {Property: "indicator_led", Query: "data.Value" } ] }
+
+    fan:
+        - { Select: "type == 'FanEvent' && data.ObjectHeader.FQDD == fqdd",
+            ModelUpdate: [
+                {Property: "fanwpm", Query: "data.Fanpwm" },
+                {Property: "key", Query: "data.Key" },
+                {Property: "fanname", Query: "data.Fanname" },
+                {Property: "Fanpwm_int", Query: "data.Fanpwm_int" },
+                {Property: "VendorName", Query: "data.VendorName" },
+                {Property: "WarningThreshold", Query: "data.WarningThreshold" },
+                {Property: "DeviceName", Query: "data.DeviceName" },
+                {Property: "TachName", Query: "data.TachName" },
+                {Property: "CriticalThreshold", Query: "data.CriticalThreshold" },
+                {Property: "Fanhealth", Query: "data.Fanhealth" },
+                {Property: "Numrotors", Query: "data.Numrotors" },
+                {Property: "Rotor2rpm", Query: "data.Rotor2rpm" },
+                {Property: "Rotor1rpm", Query: "data.Rotor1rpm" },
+                {Property: "FanStateMask", Query: "data.FanStateMask" }]}
+
+    health:
+        - { Select: "type == 'HealthEvent' && data.FQDD == fqdd", ModelUpdate: [ {Property: "health", Query: "data.Health" } ] }
+
+    global_health:
+        - { Select: "type == 'HealthEvent' && data.FQDD == 'System.Chassis.1#SubSystem.1#Fan'", ModelUpdate: [ {Property: "fan_rollup", Query: "data.Health" } ] }
+        - { Select: "type == 'HealthEvent' && data.FQDD == 'System.Chassis.1#SubSystem.1#Temperature'", ModelUpdate: [ {Property: "temperature_rollup", Query: "data.Health" } ] }
+        - { Select: "type == 'HealthEvent' && data.FQDD == 'System.Chassis.1#SubSystem.1#MM'", ModelUpdate: [ {Property: "mm_rollup", Query: "data.Health" } ] }
+        - { Select: "type == 'HealthEvent' && data.FQDD == 'System.Chassis.1#SubSystem.1#SledSystem'", modelupdate: [ {Property: "sled_rollup", Query: "data.Health" } ] }
+        - { Select: "type == 'HealthEvent' && data.FQDD == 'System.Chassis.1#SubSystem.1#PowerSupply'", ModelUpdate: [ {Property: "psu_rollup", Query: "data.Health" } ] }
+        - { Select: "type == 'HealthEvent' && data.FQDD == 'System.Chassis.1#SubSystem.1#CMC'", ModelUpdate: [ {Property: "cmc_rollup", Query: "data.Health" } ] }
+        - { Select: "type == 'HealthEvent' && data.FQDD == 'System.Chassis.1#SubSystem.1#Miscellaneous'", ModelUpdate: [ {Property: "misc_rollup", Query: "data.Health" } ] }
+        - { Select: "type == 'HealthEvent' && data.FQDD == 'System.Chassis.1#SubSystem.1#Battery'", ModelUpdate: [ {Property: "battery_rollup", Query: "data.Health" } ] }
+        - { Select: "type == 'HealthEvent' && data.FQDD == 'System.Chassis.1#SubSystem.1#IOMSubsystem'", ModelUpdate: [ {Property: "iom_rollup", Query: "data.Health" } ] }
+
 
 mappings:
     test/testview:
