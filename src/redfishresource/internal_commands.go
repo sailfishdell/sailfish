@@ -291,7 +291,7 @@ func (c *InjectEvent) Handle(ctx context.Context, a *RedfishResourceAggregate) e
 			continue
 		}
 
-		requestLogger.Info("InjectEvent - publishing", "event name", c.Name, "event_data", data)
+		requestLogger.Debug("InjectEvent - publishing", "event name", c.Name, "event_data", data)
 		a.PublishEvent(eh.NewEvent(c.Name, data, time.Now()))
 	}
 

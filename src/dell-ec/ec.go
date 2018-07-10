@@ -42,6 +42,9 @@ import (
 	"github.com/superchalupa/go-redfish/src/dell-resources/update_service"
 	"github.com/superchalupa/go-redfish/src/dell-resources/update_service/firmware_inventory"
 
+	// register all the DM events that are not otherwise pulled in
+	_ "github.com/superchalupa/go-redfish/src/dell-resources/dm_event"
+
 	ah "github.com/superchalupa/go-redfish/src/actionhandler"
 )
 
