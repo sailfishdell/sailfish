@@ -5,66 +5,54 @@ set -e
 unset HTTP_PROXY HTTPS_PROXY http_proxy https_proxy
 
 scriptdir=$(cd $(dirname $0); pwd)
+. ${scriptdir}/common-vars.sh
+
+outputdir=${1:-out/}
 skiplist=${2:-}
 
-tempdir=$(mktemp -d ./output-XXXXXX)
-trap 'rm -rf $tempdir' EXIT
 
-. $scriptdir/walk.sh $tempdir
+if [ ! -e $outputdir/to-visit.txt ]; then
+    tempdir=$(mktemp -d ./output-XXXXXX)
+    trap 'rm -rf $tempdir' EXIT
 
-# reset outputdir because walk stomps
-outputdir=${1:-out/}
+    . $scriptdir/walk.sh $tempdir
+    outputdir=${1:-out/}
 
-user=${user:-Administrator}
-pass=${pass:-password}
-host=${host:-localhost}
-port=${port:-8443}
+    mkdir -p $outputdir/
+    cp $tempdir/to-visit.txt $outputdir/to-visit.txt
 
-if [ "${host}" = "localhost" ]; then
-    cacert=${cacert:-./ca.crt}
-else
-    cacert=${cacert:-./${host}-ca.crt}
+    rm -rf $tempdir
 fi
 
-#eval $(scripts/login.sh $user $pass)
+rm -rf $outputdir/{token,basic}
+mkdir -p $outputdir $outputdir/token $outputdir/basic
+cat $outputdir/to-visit.txt | perl -p -i -e "s|^|GET ${BASE}|" > $outputdir/vegeta-targets.txt
+cat $outputdir/to-visit.txt | perl -p -i -e "s|^|GET ${prot}://${user}:${pass}\@${host}:${port}|" > $outputdir/basic/vegeta-targets.txt
 
-host=${host:-localhost}
-if [ "${port}" = "443" -o "${port}" = "8443" ]; then
-    prot=${prot:-https}
+set_auth_header
+
+if [ -n "${cacert_file}" ] ;then
+    cert_opt="-root-certs $cacert_file"
 else
-    prot=${prot:-http}
-fi
-BASE=${prot}://${host}:${port}
-
-if [ -z "$AUTH_HEADER" ]; then
-    if [ -n "$TOKEN" ]; then
-        AUTH_HEADER="Authorization: Bearer $TOKEN"
-    elif [ -n "$X_AUTH_TOKEN" ]; then
-        export AUTH_HEADER="X-Auth-Token: $X_AUTH_TOKEN"
-    else
-        eval $(scripts/login.sh $user $pass)
-    fi
+    cert_opt="-insecure"
 fi
 
 echo "Running vegeta"
 
 time=10s
-mkdir -p $outputdir $outputdir/token $outputdir/basic
-cat $tempdir/to-visit.txt | perl -p -i -e "s|^|GET ${BASE}|" > $outputdir/vegeta-targets.txt
-cat $tempdir/to-visit.txt | perl -p -i -e "s|^|GET ${prot}://${user}:${pass}\@${host}:${port}|" > $outputdir/basic/vegeta-targets.txt
 
-for i in $(seq 10 10 1000) ; do 
+for i in $(seq 30 ) $(seq 40 10 100) ; do
     index=$(printf "%03d" $i)
-    vegeta attack -targets $outputdir/vegeta-targets.txt -output $outputdir/token/results-rate-${index}.bin -header "$AUTH_HEADER" -duration=${time} -root-certs $cacert -rate $i
+    vegeta attack -targets $outputdir/vegeta-targets.txt -output $outputdir/token/results-rate-${index}.bin -header "$AUTH_HEADER" -duration=${time} $cert_opt -rate $i
 
     cat $outputdir/token/results-rate-${index}.bin | vegeta report -reporter text > $outputdir/token/report-r${index}-text.txt
     cat $outputdir/token/results-rate-${index}.bin | vegeta report -reporter plot > $outputdir/token/report-r${index}-plot.html
-    cat $outputdir/token/results-rate-${index}.bin | vegeta report -reporter='hist[0,2ms,4ms,6ms,8ms,10ms,20ms,30ms,40ms,60ms,80ms,100ms]' > $outputdir/token/report-r${index}-hist.txt
+    cat $outputdir/token/results-rate-${index}.bin | vegeta report -reporter='hist[0,2ms,4ms,6ms,8ms,10ms,20ms,30ms,40ms,60ms,80ms,100ms,200ms,400ms,800ms,1600ms,3200ms,6400ms]' > $outputdir/token/report-r${index}-hist.txt
 
-    vegeta attack -targets $outputdir/basic/vegeta-targets.txt -output $outputdir/basic/results-rate-${index}.bin -duration=${time} -root-certs $cacert -rate $i
+    vegeta attack -targets $outputdir/basic/vegeta-targets.txt -output $outputdir/basic/results-rate-${index}.bin -duration=${time} $cert_opt -rate $i
     cat $outputdir/basic/results-rate-${index}.bin | vegeta report -reporter text > $outputdir/basic/report-r${index}-text.txt
     cat $outputdir/basic/results-rate-${index}.bin | vegeta report -reporter plot > $outputdir/basic/report-r${index}-plot.html
-    cat $outputdir/basic/results-rate-${index}.bin | vegeta report -reporter='hist[0,2ms,4ms,6ms,8ms,10ms,20ms,30ms,40ms,60ms,80ms,100ms]' > $outputdir/basic/report-r${index}-hist.txt
+    cat $outputdir/basic/results-rate-${index}.bin | vegeta report -reporter='hist[0,2ms,4ms,6ms,8ms,10ms,20ms,30ms,40ms,60ms,80ms,100ms,200ms,400ms,800ms,1600ms,3200ms,6400ms]' > $outputdir/basic/report-r${index}-hist.txt
 
     cat  $outputdir/token/report-r${index}-text.txt  $outputdir/basic/report-r${index}-text.txt
 done

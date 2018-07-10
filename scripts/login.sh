@@ -8,7 +8,7 @@ scriptdir=$(cd $(dirname $0); pwd)
 URL=$prot://$host:$port
 
 
-CURLCMD="curl --cacert ${cacert} ${CURL_OPTS} "
+CURLCMD="curl ${cacert} ${CURL_OPTS} "
 headersfile=$(mktemp /tmp/headers-XXXXXX)
 trap 'rm -f $headersfile' EXIT QUIT HUP INT ERR
 
