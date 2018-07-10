@@ -74,7 +74,7 @@ outer:
 				}
 				val, err := query.expr.Evaluate(parameters)
 				if err != nil {
-					logger.Error("Expression failed to evaluate", "query.expr", query.expr, "parameters", parameters)
+					logger.Error("Expression failed to evaluate", "query.expr", query.expr, "parameters", parameters, "err", err)
 					continue
 				}
 				mdl.UpdateProperty(query.Property, val)
