@@ -76,11 +76,11 @@ outer:
 				}
                 query.exprMu.Lock()
 				val, err := query.expr.Evaluate(parameters)
-                query.exprMu.Unlock()
 				if err != nil {
 					logger.Error("Expression failed to evaluate", "query.expr", query.expr, "parameters", parameters, "err", err)
 					continue
 				}
+                query.exprMu.Unlock()
 				mdl.UpdateProperty(query.Property, val)
 			}
 			mdl.StartNotifications()
