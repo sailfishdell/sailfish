@@ -3,6 +3,7 @@ package event
 import (
 	"context"
 	"fmt"
+    "sync"
 
 	"github.com/Knetic/govaluate"
 	eh "github.com/looplab/eventhorizon"
@@ -106,12 +107,15 @@ func ExpressionFilter(logger log.Logger, expr string, parameters map[string]inte
 			logger.Crit("Expression construction (lexing) failed.", "expression", expr)
 			return err
 		}
+        expressionMu := sync.Mutex{}
 
 		fn := func(ev eh.Event) bool {
 			parameters["type"] = string(ev.EventType())
 			parameters["data"] = ev.Data()
 			parameters["event"] = ev
+            expressionMu.Lock()
 			result, err := expression.Evaluate(parameters)
+            expressionMu.Unlock()
 			if err == nil {
 				if ret, ok := result.(bool); ok {
 					return ret

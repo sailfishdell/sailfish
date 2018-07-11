@@ -3,6 +3,7 @@ package awesome_mapper
 import (
 	"context"
 	"errors"
+    "sync"
 
 	"github.com/Knetic/govaluate"
 	"github.com/spf13/viper"
@@ -22,6 +23,7 @@ type mapping struct {
 	Property string
 	Query    string
 	expr     Evaluable
+    exprMu   sync.Mutex
 }
 
 type MappingEntry struct {
@@ -72,7 +74,9 @@ outer:
 					logger.Crit("query is nil, that can't happen", "loopvar", loopvar)
 					continue
 				}
+                query.exprMu.Lock()
 				val, err := query.expr.Evaluate(parameters)
+                query.exprMu.Unlock()
 				if err != nil {
 					logger.Error("Expression failed to evaluate", "query.expr", query.expr, "parameters", parameters, "err", err)
 					continue
