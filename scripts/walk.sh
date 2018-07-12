@@ -46,6 +46,6 @@ do
 done
 
 timingarg="\nTotal PIPELINED request time (for this subrequest): %{time_total} seconds for url: %{url_effective}\n"
-time $CURLCMD -i -H "$AUTH_HEADER" -w"$timingarg" -s $(cat ${outputdir}/visited.txt | perl -n -e "print '${BASE}' . \$_" ) | tee ${outputdir}/entire-tree.txt
+time $CURLCMD --fail -i -H "$AUTH_HEADER" -w"$timingarg" -s $(cat ${outputdir}/visited.txt | perl -n -e "print '${BASE}' . \$_" ) | tee ${outputdir}/entire-tree.txt
 
 echo "Took $LOOPS loops to collect the URL list"

@@ -35,7 +35,7 @@ fi
 START_URL=${START_URL:-"/redfish/v1"}
 
 timingarg="\nTotal request time: %{time_total} seconds for url: %{url_effective}\n"
-CURLCMD="curl --noproxy '*' ${cacert} ${CURL_OPTS} -L "
+CURLCMD="curl --fail --noproxy '*' ${cacert} ${CURL_OPTS} -L "
 
 set_auth_header() {
     if [ -z "$AUTH_HEADER" ]; then
