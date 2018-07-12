@@ -76,7 +76,7 @@ outer:
                 expr, err := govaluate.NewEvaluableExpressionFromTokens(query.expr)
 				val, err := expr.Evaluate(parameters)
 				if err != nil {
-					logger.Error("Expression failed to evaluate", "query.expr", query.expr, "parameters", parameters, "err", err)
+					logger.Error("Expression failed to evaluate", "query.Query", query.Query, "parameters", parameters, "err", err)
 					continue
 				}
 				mdl.UpdateProperty(query.Property, val)
