@@ -66,6 +66,11 @@ outer:
 			continue
 		}
 
+        expressionParameters := map[string]interface{}{}
+        for k,v := range parameters {
+            expressionParameters[k] = v
+        }
+
 		sp.RunForever(func(event eh.Event) {
 			mdl.StopNotifications()
 			for _, query := range loopvar.ModelUpdate {
@@ -74,10 +79,14 @@ outer:
 					continue
 				}
 
+			    expressionParameters["type"] = string(event.EventType())
+			    expressionParameters["data"] = event.Data()
+			    expressionParameters["event"] = event
+
 				expr, err := govaluate.NewEvaluableExpressionFromTokens(query.expr)
-				val, err := expr.Evaluate(parameters)
+				val, err := expr.Evaluate(expressionParameters)
 				if err != nil {
-					logger.Error("Expression failed to evaluate", "query.Query", query.Query, "parameters", parameters, "err", err)
+					logger.Error("Expression failed to evaluate", "query.Query", query.Query, "parameters", expressionParameters, "err", err)
 					continue
 				}
 				mdl.UpdateProperty(query.Property, val)
