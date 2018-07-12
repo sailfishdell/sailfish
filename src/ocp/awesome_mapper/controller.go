@@ -3,7 +3,6 @@ package awesome_mapper
 import (
 	"context"
 	"errors"
-    "sync"
 
 	"github.com/Knetic/govaluate"
 	"github.com/spf13/viper"
@@ -22,8 +21,7 @@ type Evaluable interface {
 type mapping struct {
 	Property string
 	Query    string
-	expr     Evaluable
-    exprMu   sync.Mutex
+	expr     []govaluate.ExpressionToken
 }
 
 type MappingEntry struct {
@@ -53,11 +51,12 @@ outer:
 	for _, entry := range c {
 		loopvar := entry
 		for _, query := range loopvar.ModelUpdate {
-			query.expr, err = govaluate.NewEvaluableExpressionWithFunctions(query.Query, functions)
+			expr, err := govaluate.NewEvaluableExpressionWithFunctions(query.Query, functions)
 			if err != nil {
 				logger.Crit("Query construction failed", "query", query.Query, "err", err)
 				continue outer
 			}
+            query.expr = expr.Tokens()
 		}
 
 		// stream processor for action events
@@ -74,13 +73,12 @@ outer:
 					logger.Crit("query is nil, that can't happen", "loopvar", loopvar)
 					continue
 				}
-                query.exprMu.Lock()
-				val, err := query.expr.Evaluate(parameters)
+                expr, err := govaluate.NewEvaluableExpressionFromTokens(query.expr)
+				val, err := expr.Evaluate(parameters)
 				if err != nil {
 					logger.Error("Expression failed to evaluate", "query.expr", query.expr, "parameters", parameters, "err", err)
 					continue
 				}
-                query.exprMu.Unlock()
 				mdl.UpdateProperty(query.Property, val)
 			}
 			mdl.StartNotifications()
