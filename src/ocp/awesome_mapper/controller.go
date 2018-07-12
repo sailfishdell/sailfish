@@ -56,11 +56,17 @@ outer:
 				logger.Crit("Query construction failed", "query", query.Query, "err", err)
 				continue outer
 			}
-            query.expr = expr.Tokens()
+			query.expr = expr.Tokens()
+		}
+
+		// need separate parameters for each instance to avoid races, make copies.
+		myParameters := map[string]interface{}{}
+		for k, v := range parameters {
+			myParameters[k] = v
 		}
 
 		// stream processor for action events
-		sp, err := event.NewESP(ctx, event.ExpressionFilter(logger, loopvar.Select, parameters, functions))
+		sp, err := event.NewESP(ctx, event.ExpressionFilter(logger, loopvar.Select, myParameters, functions))
 		if err != nil {
 			logger.Error("Failed to create event stream processor", "err", err, "select-string", loopvar.Select)
 			continue
@@ -73,8 +79,9 @@ outer:
 					logger.Crit("query is nil, that can't happen", "loopvar", loopvar)
 					continue
 				}
-                expr, err := govaluate.NewEvaluableExpressionFromTokens(query.expr)
-				val, err := expr.Evaluate(parameters)
+
+				expr, err := govaluate.NewEvaluableExpressionFromTokens(query.expr)
+				val, err := expr.Evaluate(myParameters)
 				if err != nil {
 					logger.Error("Expression failed to evaluate", "query.Query", query.Query, "parameters", parameters, "err", err)
 					continue
