@@ -5,9 +5,10 @@ main:
 listen:
     - http::8080
     - https::8443
+    - pprof::9080
 
 session:
-    timeout: 60
+    timeout: 600
 
 
 awesome_mapper:
