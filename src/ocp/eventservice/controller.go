@@ -29,7 +29,7 @@ func PublishResourceUpdatedEventsForModel(ctx context.Context, modelName string,
 			EventType:         "ResourceUpdated",
 			OriginOfCondition: map[string]interface{}{"@odata.id": v.GetURI()},
 		}
-		eb.PublishEvent(ctx, eh.NewEvent(RedfishEvent, eventData, time.Now()))
+		go eb.PublishEvent(ctx, eh.NewEvent(RedfishEvent, eventData, time.Now()))
 	})
 }
 
