@@ -30,7 +30,7 @@ logs:
       PrintFunction: true
 
     # log all web server accesses
-    - Enabled: true
+    - Enabled: false
       FileName: "./http-access.log"
       PrintFile: true
       PrintFunction: true
