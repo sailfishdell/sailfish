@@ -1,5 +1,6 @@
 #!/bin/sh
 
+set -x
 set -e
 
 unset HTTP_PROXY HTTPS_PROXY http_proxy https_proxy
