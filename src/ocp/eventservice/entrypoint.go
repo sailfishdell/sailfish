@@ -1,8 +1,12 @@
 package eventservice
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
+	"net/http"
+	"time"
 
 	eh "github.com/looplab/eventhorizon"
 	eventpublisher "github.com/looplab/eventhorizon/publisher/local"
@@ -20,6 +24,8 @@ type viewer interface {
 	GetURI() string
 }
 
+const WorkQueueLen = 10
+
 var StartEventService func(context.Context, log.Logger, viewer) *view.View
 var CreateSubscription func(context.Context, log.Logger, Subscription, func()) *view.View
 
@@ -29,11 +35,13 @@ func Setup(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus) {
 	EventWaiter := eventwaiter.NewEventWaiter()
 	EventPublisher.AddObserver(EventWaiter)
 
+	jobChan := CreateWorkers(100, 6)
+
 	StartEventService = func(ctx context.Context, logger log.Logger, rootView viewer) *view.View {
 		return startEventService(ctx, logger, rootView, ch, eb)
 	}
 	CreateSubscription = func(ctx context.Context, logger log.Logger, sub Subscription, cancel func()) *view.View {
-		return createSubscription(ctx, logger, sub, cancel, ch, EventWaiter)
+		return createSubscription(ctx, logger, sub, cancel, ch, EventWaiter, jobChan)
 	}
 }
 
@@ -65,7 +73,7 @@ func startEventService(ctx context.Context, logger log.Logger, rootView viewer, 
 
 // CreateSubscription will create a model, view, and controller for the subscription
 //      If you want to save settings, hook up a mapper to the "default" view returned
-func createSubscription(ctx context.Context, logger log.Logger, sub Subscription, cancel func(), ch eh.CommandHandler, EventWaiter waiter) *view.View {
+func createSubscription(ctx context.Context, logger log.Logger, sub Subscription, cancel func(), ch eh.CommandHandler, EventWaiter waiter, jobchan chan Job) *view.View {
 	uuid := eh.NewUUID()
 	uri := fmt.Sprintf("/redfish/v1/EventService/Subscriptions/%s", uuid)
 
@@ -88,7 +96,7 @@ func createSubscription(ctx context.Context, logger log.Logger, sub Subscription
 		"Id":               fmt.Sprintf("%s", uuid),
 		"Protocol@meta":    subView.Meta(view.GETProperty("protocol"), view.GETModel("default")),
 		"Name@meta":        subView.Meta(view.GETProperty("name"), view.GETModel("default")),
-		"Destination@meta": subView.Meta(view.GETProperty("destination"), view.GETModel("default")),
+		"Destination@meta": subView.Meta(view.GETProperty("destination"), view.GETModel("default"), view.PropPATCH("session_timeout", "default")),
 		"EventTypes@meta":  subView.Meta(view.GETProperty("event_types"), view.GETModel("default")),
 		"Context@meta":     subView.Meta(view.GETProperty("context"), view.GETModel("default")),
 	}
@@ -96,7 +104,13 @@ func createSubscription(ctx context.Context, logger log.Logger, sub Subscription
 	// set up listener for the delete event
 	listener, err := EventWaiter.Listen(ctx,
 		func(event eh.Event) bool {
-			if event.EventType() != domain.RedfishResourceRemoved {
+			t := event.EventType()
+			// TODO: will need to add metric reports here
+			// TODO: also need to add the whole event coalescing here as well
+			if t == ExternalRedfishEvent {
+				return true
+			}
+			if t != domain.RedfishResourceRemoved {
 				return false
 			}
 			if data, ok := event.Data().(*domain.RedfishResourceRemovedData); ok {
@@ -122,11 +136,32 @@ func createSubscription(ctx context.Context, logger log.Logger, sub Subscription
 		for {
 			select {
 			case event := <-inbox:
-				log.MustLogger("event_service").Info("Got internal redfish event", "event", event)
-				cancel()
-				return
+				log.MustLogger("event_service").Debug("Got internal redfish event", "event", event)
+				switch typ := event.EventType(); typ {
+				case domain.RedfishResourceRemoved:
+					log.MustLogger("event_service").Info("Cancelling subscription", "uri", uri)
+					cancel()
+				case ExternalRedfishEvent:
+					log.MustLogger("event_service").Info(" redfish event processing")
+					rawdata := event.Data()
+					_, ok := rawdata.(*ExternalRedfishEventData)
+					if !ok {
+						log.MustLogger("event_service").Info("Impossible: got ExternalRedfishEvent that doesn't have ExternalRedfishEventData", "rawdata", rawdata)
+						continue
+					}
+					if esModel.GetProperty("protocol") != "Redfish" {
+						log.MustLogger("event_service").Info("Not Redfish Protocol")
+						continue
+					}
+					context := esModel.GetProperty("context")
+					if dest, ok := esModel.GetProperty("destination").(string); ok {
+						log.MustLogger("event_service").Info("Send to destination", "dest", dest)
+						jobchan <- makePOST(dest, event, context)
+					}
+				}
 
 			case <-ctx.Done():
+				log.MustLogger("event_service").Info("context is done")
 				return
 			}
 		}
@@ -151,4 +186,38 @@ func createSubscription(ctx context.Context, logger log.Logger, sub Subscription
 		})
 
 	return subView
+}
+
+func makePOST(dest string, event eh.Event, context interface{}) func() {
+	return func() {
+		log.MustLogger("event_service").Info("POST!", "dest", dest, "event", event)
+
+		evt, ok := event.Data().(*ExternalRedfishEventData)
+		if !ok {
+			log.MustLogger("event_service").Warn("ERROR type asserting to external redfish evetn")
+			return
+		}
+		d, err := json.Marshal(
+			&struct {
+				*ExternalRedfishEventData
+				Context interface{} `json:",omitempty"`
+			}{
+				ExternalRedfishEventData: evt,
+				Context:                  context,
+			},
+		)
+
+		// TODO: should be able to configure timeout
+		client := &http.Client{
+			Timeout: time.Second * 1,
+		}
+		req, err := http.NewRequest("POST", dest, bytes.NewBuffer(d))
+		req.Header.Add("OData-Version", "4.0")
+		resp, err := client.Do(req)
+		if err != nil {
+			log.MustLogger("event_service").Warn("ERROR POSTING", "err", err)
+			return
+		}
+		resp.Body.Close()
+	}
 }
