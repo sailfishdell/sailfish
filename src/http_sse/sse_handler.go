@@ -29,6 +29,8 @@ func (rh *SSEHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	requestLogger := domain.ContextLogger(ctx, "sse_handler")
 	requestLogger.Info("Trying to start SSE Stream for request.")
 
+	defer r.Body.Close()
+
 	flusher, ok := w.(http.Flusher)
 	if !ok {
 		requestLogger.Crit("Streaming is not supported by the underlying http handler.")
