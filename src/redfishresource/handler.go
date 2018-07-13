@@ -215,6 +215,8 @@ func (d *DomainObjects) GetInternalCommandHandler(backgroundCtx context.Context)
 			http.Error(w, "could not read command: "+err.Error(), http.StatusBadRequest)
 			return
 		}
+		r.Body.Close()
+
 		if err := json.Unmarshal(b, &cmd); err != nil {
 			http.Error(w, "could not decode command: "+err.Error(), http.StatusBadRequest)
 			return
