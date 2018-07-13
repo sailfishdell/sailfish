@@ -3,7 +3,6 @@ package eventservice
 import (
 	"context"
 	"fmt"
-	"reflect"
 	"time"
 
 	eh "github.com/looplab/eventhorizon"
@@ -29,7 +28,7 @@ func PublishResourceUpdatedEventsForModel(ctx context.Context, modelName string,
 			EventType:         "ResourceUpdated",
 			OriginOfCondition: map[string]interface{}{"@odata.id": v.GetURI()},
 		}
-		go eb.PublishEvent(ctx, eh.NewEvent(RedfishEvent, eventData, time.Now()))
+		eb.PublishEvent(ctx, eh.NewEvent(RedfishEvent, eventData, time.Now()))
 	})
 }
 
@@ -59,6 +58,7 @@ func PublishRedfishEvents(ctx context.Context, m propertygetter, eb eh.EventBus)
 		timer := time.NewTimer(10 * time.Second)
 		timer.Stop()
 		id := 0
+		var maxE int = defaultMaxEventsToQueue
 		for {
 			select {
 			case event := <-inbox:
@@ -68,16 +68,27 @@ func PublishRedfishEvents(ctx context.Context, m propertygetter, eb eh.EventBus)
 					// mitigate duplicate messages
 					found := false
 					for _, evt := range eventQ {
-						if reflect.DeepEqual(*evt, data) {
+						if data.EventType == "ResourceUpdated"  &&
+                           evt.EventType == data.EventType  &&
+                           evt.OriginOfCondition["@odata.id"] == data.OriginOfCondition["@odata.id"] {
+				            log.MustLogger("event_service").Debug("duplicate")
 							found = true
 						}
 					}
 
-					if !found {
+                    if found {
+                        continue
+                    } else {
 						eventQ = append(eventQ, data)
 					}
 
 					var QueueTime time.Duration = -1 * time.Millisecond
+
+                    if maxEventsToQueue, ok := m.GetPropertyOk("max_events_to_queue"); ok {
+                        if maxE, ok = maxEventsToQueue.(int); !ok {
+                            maxE = defaultMaxEventsToQueue
+                        }
+                    }
 
 					if ms, ok := m.GetPropertyOk("max_milliseconds_to_queue"); ok {
 						var msInt int
@@ -89,17 +100,6 @@ func PublishRedfishEvents(ctx context.Context, m propertygetter, eb eh.EventBus)
 
 					if QueueTime < 0 {
 						QueueTime = defaultQueueTimeMs
-					}
-
-					var maxE int = -1
-					if maxEventsToQueue, ok := m.GetPropertyOk("max_events_to_queue"); ok {
-						if maxE, ok = maxEventsToQueue.(int); !ok {
-							maxE = -1
-						}
-					}
-
-					if maxE < 0 {
-						maxE = defaultMaxEventsToQueue
 					}
 
 					if len(eventQ) > maxE {
@@ -146,7 +146,6 @@ func PublishRedfishEvents(ctx context.Context, m propertygetter, eb eh.EventBus)
 			case <-ctx.Done():
 				return
 			}
-
 		}
 	}()
 
