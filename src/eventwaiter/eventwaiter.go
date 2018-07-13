@@ -65,9 +65,9 @@ func (w *EventWaiter) run() {
 // Notify implements the eventhorizon.EventObserver.Notify method which forwards
 // events to the waiters so that they can match the events.
 func (w *EventWaiter) Notify(ctx context.Context, event eh.Event) {
-    go func() {
-	    w.inbox <- event
-    }()
+	go func() {
+		w.inbox <- event
+	}()
 }
 
 // Listen waits unil the match function returns true for an event, or the context

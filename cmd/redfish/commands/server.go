@@ -24,7 +24,7 @@ import (
 var serverCmd = &cobra.Command{
 	Use:   "server",
 	Short: "Run the redfish HTTP server",
-	Long: `Starts up a daemon that will serve redfish requests over HTTP`,
+	Long:  `Starts up a daemon that will serve redfish requests over HTTP`,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("server called")
 	},

@@ -66,10 +66,10 @@ outer:
 			continue
 		}
 
-        expressionParameters := map[string]interface{}{}
-        for k,v := range parameters {
-            expressionParameters[k] = v
-        }
+		expressionParameters := map[string]interface{}{}
+		for k, v := range parameters {
+			expressionParameters[k] = v
+		}
 
 		sp.RunForever(func(event eh.Event) {
 			mdl.StopNotifications()
@@ -79,9 +79,9 @@ outer:
 					continue
 				}
 
-			    expressionParameters["type"] = string(event.EventType())
-			    expressionParameters["data"] = event.Data()
-			    expressionParameters["event"] = event
+				expressionParameters["type"] = string(event.EventType())
+				expressionParameters["data"] = event.Data()
+				expressionParameters["event"] = event
 
 				expr, err := govaluate.NewEvaluableExpressionFromTokens(query.expr)
 				val, err := expr.Evaluate(expressionParameters)
