@@ -161,7 +161,7 @@ func setupLogHandlersFromConfig(l *MyLogger) {
 }
 
 type orhandler struct {
-    outMu   sync.RWMutex
+	outMu          sync.RWMutex
 	producedOutput bool
 	outputHandler  log.Handler
 }
@@ -175,25 +175,25 @@ func newOrHandler(out log.Handler) *orhandler {
 }
 
 func (o *orhandler) Log(r *log.Record) error {
-    o.outMu.Lock()
+	o.outMu.Lock()
 	o.producedOutput = true
-    o.outMu.Unlock()
+	o.outMu.Unlock()
 	return o.outputHandler.Log(r)
 }
 
 func (o *orhandler) ORHandler(in ...log.Handler) log.Handler {
 	return log.FuncHandler(func(r *log.Record) error {
-        o.outMu.Lock()
+		o.outMu.Lock()
 		o.producedOutput = false
-        o.outMu.Unlock()
+		o.outMu.Unlock()
 		for _, h := range in {
 			h.Log(r)
-            o.outMu.RLock()
+			o.outMu.RLock()
 			if o.producedOutput {
-                o.outMu.RUnlock()
+				o.outMu.RUnlock()
 				return nil
 			}
-            o.outMu.RUnlock()
+			o.outMu.RUnlock()
 		}
 		return nil
 	})
