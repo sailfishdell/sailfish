@@ -20,7 +20,7 @@ awesome_mapper:
             ModelUpdate: [
                 {Property: "fanwpm", Query: "data.Fanpwm" },
                 {Property: "key", Query: "data.Key" },
-                {Property: "fanname", Query: "data.Fanname" },
+                {Property: "fanname", Query: "data.FanName" },
                 {Property: "Fanpwm_int", Query: "data.Fanpwm_int" },
                 {Property: "VendorName", Query: "data.VendorName" },
                 {Property: "WarningThreshold", Query: "data.WarningThreshold" },
