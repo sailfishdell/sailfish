@@ -172,6 +172,7 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	defer l.Close()
 
 	// don't run parse until after privilege checks have been done
+	defer r.Body.Close()
 	if t, ok := cmd.(HTTPParser); ok {
 		err := t.ParseHTTPRequest(r)
 		if err != nil {

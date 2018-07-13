@@ -63,6 +63,7 @@ func (rh *RedfishSSEHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Connection", "keep-alive")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 
+	defer r.Body.Close()
 	notify := w.(http.CloseNotifier).CloseNotify()
 	go func() {
 		<-notify
@@ -106,12 +107,13 @@ func (rh *RedfishSSEHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				requestLogger.Error("MARSHAL SSE (event) FAILED", "err", err, "data", event.Data(), "event", event)
 				return
 			}
+			// TODO: we should encode to output rather than buffering internally in a string
 			fmt.Fprintf(w, "id: %d\n", evt.Id)
 			fmt.Fprintf(w, "data: %s\n\n", d)
 		} else {
 			// Handle metric reports
-			// sucks that we have to handle these two separately, but for now have to do it this way
 			// TODO: find a better way to unify these
+			// sucks that we have to handle these two separately, but for now have to do it this way
 			d, err := json.MarshalIndent(event.Data(), "data: ", "    ")
 			if err != nil {
 				requestLogger.Error("MARSHAL SSE (metric report) FAILED", "err", err, "data", event.Data(), "event", event)
