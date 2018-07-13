@@ -68,27 +68,27 @@ func PublishRedfishEvents(ctx context.Context, m propertygetter, eb eh.EventBus)
 					// mitigate duplicate messages
 					found := false
 					for _, evt := range eventQ {
-						if data.EventType == "ResourceUpdated"  &&
-                           evt.EventType == data.EventType  &&
-                           evt.OriginOfCondition["@odata.id"] == data.OriginOfCondition["@odata.id"] {
-				            log.MustLogger("event_service").Debug("duplicate")
+						if data.EventType == "ResourceUpdated" &&
+							evt.EventType == data.EventType &&
+							evt.OriginOfCondition["@odata.id"] == data.OriginOfCondition["@odata.id"] {
+							log.MustLogger("event_service").Debug("duplicate")
 							found = true
 						}
 					}
 
-                    if found {
-                        continue
-                    } else {
+					if found {
+						continue
+					} else {
 						eventQ = append(eventQ, data)
 					}
 
 					var QueueTime time.Duration = -1 * time.Millisecond
 
-                    if maxEventsToQueue, ok := m.GetPropertyOk("max_events_to_queue"); ok {
-                        if maxE, ok = maxEventsToQueue.(int); !ok {
-                            maxE = defaultMaxEventsToQueue
-                        }
-                    }
+					if maxEventsToQueue, ok := m.GetPropertyOk("max_events_to_queue"); ok {
+						if maxE, ok = maxEventsToQueue.(int); !ok {
+							maxE = defaultMaxEventsToQueue
+						}
+					}
 
 					if ms, ok := m.GetPropertyOk("max_milliseconds_to_queue"); ok {
 						var msInt int
