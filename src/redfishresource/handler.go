@@ -211,6 +211,7 @@ func (d *DomainObjects) GetInternalCommandHandler(backgroundCtx context.Context)
 		}
 
 		b, err := ioutil.ReadAll(r.Body)
+		r.Body.Close()
 		if err != nil {
 			http.Error(w, "could not read command: "+err.Error(), http.StatusBadRequest)
 			return
