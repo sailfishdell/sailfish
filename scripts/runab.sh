@@ -24,7 +24,7 @@ set_auth_header
 
 echo "Running ab"
 numreqs=${numreqs:-1000}
-timelimit=10
+timelimit=${timelimit:-10}
 
 for i in $(seq 30 ) $(seq 40 10 100) ; do
     index=$(printf "%03d" $i)
