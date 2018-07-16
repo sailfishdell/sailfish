@@ -156,7 +156,10 @@ func createSubscription(ctx context.Context, logger log.Logger, sub Subscription
 					context := esModel.GetProperty("context")
 					if dest, ok := esModel.GetProperty("destination").(string); ok {
 						log.MustLogger("event_service").Info("Send to destination", "dest", dest)
-						jobchan <- makePOST(dest, event, context)
+                        select {
+                        case jobchan <- makePOST(dest, event, context):
+                        default:  // drop the POST if the queue is full
+                        }
 					}
 				}
 
