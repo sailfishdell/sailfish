@@ -38,8 +38,8 @@ func (c *GET) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 	// TODO: Should be able to discern supported methods from the meta and return those
 
     a.propertiesMu.RLock()
-    defer a.propertiesMu.RUnlock()
 	data.Results, _ = ProcessGET(ctx, a.properties)
+    a.propertiesMu.RUnlock()
 
 	// TODO: set error status code based on err from ProcessGET
 	data.Headers = a.Headers
