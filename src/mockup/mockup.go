@@ -38,7 +38,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 
 	updateFns := []func(context.Context, *viper.Viper){}
 
-	actionhandler.Setup(ctx, ch, eb, ew)
+	actionhandler.Setup(ctx, ch, eb)
 	eventservice.Setup(ctx, ch, eb)
 	telemetryservice.Setup(ctx, ch, eb)
 
@@ -73,7 +73,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	sessionView := view.New(
 		view.WithModel("default", sessionModel),
 		view.WithURI(rootView.GetURI()+"/SessionService"))
-	session.AddAggregate(ctx, sessionView, rootView.GetUUID(), ch, eb, ew)
+	session.AddAggregate(ctx, sessionView, rootView.GetUUID(), ch, eb)
 
 	//*********************************************************************
 	// /redfish/v1/EventService

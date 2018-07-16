@@ -60,7 +60,7 @@ outer:
 		}
 
 		// stream processor for action events
-		sp, err := event.NewESP(ctx, event.ExpressionFilter(logger, loopvar.Select, parameters, functions))
+		sp, err := event.NewESP(ctx, event.ExpressionFilter(logger, loopvar.Select, parameters, functions), event.SetListenerName("awesome_mapper"))
 		if err != nil {
 			logger.Error("Failed to create event stream processor", "err", err, "select-string", loopvar.Select)
 			continue

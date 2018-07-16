@@ -179,6 +179,8 @@ func (c *POST) startSessionDeleteTimer(sessionUUID eh.UUID, sessionURI string, t
 		return
 	}
 
+    refreshListener.Name = "refresh listener"
+
 	deleteListener, err := c.eventWaiter.Listen(ctx, func(event eh.Event) bool {
 		if event.EventType() != domain.RedfishResourceRemoved {
 			return false
@@ -196,6 +198,8 @@ func (c *POST) startSessionDeleteTimer(sessionUUID eh.UUID, sessionURI string, t
 		refreshListener.Close()
 		return
 	}
+
+    deleteListener.Name = "delete listener"
 
 	// start a background task to delete session after expiry
 	go func() {

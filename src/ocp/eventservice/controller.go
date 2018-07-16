@@ -42,13 +42,15 @@ func PublishRedfishEvents(ctx context.Context, m propertygetter, eb eh.EventBus)
 
 	EventPublisher := eventpublisher.NewEventPublisher()
 	eb.AddHandler(eh.MatchAny(), EventPublisher)
-	EventWaiter := eventwaiter.NewEventWaiter()
+	EventWaiter := eventwaiter.NewEventWaiter(eventwaiter.SetName("Event Service Publisher"))
 	EventPublisher.AddObserver(EventWaiter)
 
 	listener, err := EventWaiter.Listen(ctx, selectRedfishEvent)
 	if err != nil {
 		return err
 	}
+
+    listener.Name = "event service listener"
 
 	// background task to collate internal redfish events and publish
 	go func() {

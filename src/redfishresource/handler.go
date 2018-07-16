@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"path"
 	"sync"
+    "time"
 
 	"github.com/gorilla/mux"
 	eh "github.com/looplab/eventhorizon"
@@ -60,7 +61,7 @@ func NewDomainObjects() (*DomainObjects, error) {
 	d.EventPublisher = eventpublisher.NewEventPublisher()
 	d.EventBus.AddHandler(eh.MatchAny(), d.EventPublisher)
 
-	d.EventWaiter = eventwaiter.NewEventWaiter()
+	d.EventWaiter = eventwaiter.NewEventWaiter(eventwaiter.SetName("Main"))
 	d.EventPublisher.AddObserver(d.EventWaiter)
 
     // specific event bus to handle returns from http
@@ -69,7 +70,7 @@ func NewDomainObjects() (*DomainObjects, error) {
 	d.HTTPResultsBus.AddHandler(eh.MatchEvent(HTTPCmdProcessed), d.HTTPPublisher)
 
     // hook up http waiter to the other bus for back compat
-	d.HTTPWaiter = eventwaiter.NewEventWaiter()
+	d.HTTPWaiter = eventwaiter.NewEventWaiter(eventwaiter.SetName("HTTP"))
     d.EventPublisher.AddObserver(d.HTTPWaiter)
     d.HTTPPublisher.AddObserver(d.HTTPWaiter)
 
@@ -216,6 +217,8 @@ func (d *DomainObjects) Notify(ctx context.Context, event eh.Event) {
 // registered with eventhorizon.RegisterCommand(). It expects a POST with a JSON
 // body that will be unmarshalled into the command.
 func (d *DomainObjects) GetInternalCommandHandler(backgroundCtx context.Context) http.Handler {
+
+
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 
@@ -243,6 +246,27 @@ func (d *DomainObjects) GetInternalCommandHandler(backgroundCtx context.Context)
 			return
 		}
 
+	// to avoid races, set up our listener first
+	cmdID := eh.NewUUID()
+	reqCtx := WithRequestID(r.Context(), cmdID)
+	l, err := d.HTTPWaiter.Listen(reqCtx, func(event eh.Event) bool {
+		if event.EventType() != HTTPCmdProcessed {
+			return false
+		}
+		if data, ok := event.Data().(*HTTPCmdProcessedData); ok {
+			if data.CommandID == cmdID {
+				return true
+			}
+		}
+		return false
+	})
+	if err != nil {
+		http.Error(w, "could not create waiter"+err.Error(), http.StatusInternalServerError)
+		return
+	}
+    l.Name = "Redfish HTTP Listener"
+	defer l.Close()
+
 		// NOTE: Use a new context when handling, else it will be cancelled with
 		// the HTTP request which will cause projectors etc to fail if they run
 		// async in goroutines past the request.
@@ -250,6 +274,16 @@ func (d *DomainObjects) GetInternalCommandHandler(backgroundCtx context.Context)
 			http.Error(w, "could not handle command: "+err.Error(), http.StatusBadRequest)
 			return
 		}
+
+
+    // send ourselves a message and wait for it to clear out the pipes
+	data := &HTTPCmdProcessedData{
+		CommandID:  cmdID,
+		StatusCode: 200,
+	}
+	d.EventBus.PublishEvent(reqCtx, eh.NewEvent(HTTPCmdProcessed, data, time.Now()))
+
+	_, _ = l.Wait(reqCtx)
 
 		w.WriteHeader(http.StatusOK)
 	})

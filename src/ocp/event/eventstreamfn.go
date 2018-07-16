@@ -26,7 +26,8 @@ type waiter interface {
 type privateStateStructure struct {
 	ctx      context.Context
 	filterFn func(eh.Event) bool
-	listener listener
+	listener *eventwaiter.EventListener
+    listenerName string
 	logger   log.Logger
 }
 
@@ -35,7 +36,7 @@ var NewESP func(ctx context.Context, options ...Options) (d *privateStateStructu
 func Setup(ch eh.CommandHandler, eb eh.EventBus) {
 	EventPublisher := eventpublisher.NewEventPublisher()
 	eb.AddHandler(eh.MatchAny(), EventPublisher)
-	EventWaiter := eventwaiter.NewEventWaiter()
+	EventWaiter := eventwaiter.NewEventWaiter(eventwaiter.SetName("generic eventstream"))
 	EventPublisher.AddObserver(EventWaiter)
 
 	NewESP = func(ctx context.Context, options ...Options) (d *privateStateStructure, err error) {
@@ -48,6 +49,7 @@ func NewEventStreamProcessor(ctx context.Context, ew waiter, options ...Options)
 		ctx: ctx,
 		// default filter is to process no events
 		filterFn: func(eh.Event) bool { return false },
+        listenerName: "SET ME!",
 	}
 	err = nil
 
@@ -62,6 +64,8 @@ func NewEventStreamProcessor(ctx context.Context, ew waiter, options ...Options)
 	if err != nil {
 		return
 	}
+
+    d.listener.Name = d.listenerName
 
 	return
 }
@@ -86,6 +90,13 @@ func (d *privateStateStructure) RunForever(fn func(eh.Event)) {
 			fn(event)
 		}
 	}()
+}
+
+func SetListenerName(name string) func(p *privateStateStructure) error {
+	return func(p *privateStateStructure) error {
+		p.listenerName = name
+		return nil
+	}
 }
 
 func CustomFilter(fn func(eh.Event) bool) func(p *privateStateStructure) error {

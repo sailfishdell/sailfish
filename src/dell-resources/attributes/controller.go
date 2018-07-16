@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/superchalupa/go-redfish/src/eventwaiter"
 	"github.com/superchalupa/go-redfish/src/log"
 	"github.com/superchalupa/go-redfish/src/ocp/event"
 	"github.com/superchalupa/go-redfish/src/ocp/model"
@@ -20,18 +19,15 @@ type ARDump struct {
 	eb    eh.EventBus
 }
 
-type waiter interface {
-	Listen(context.Context, func(eh.Event) bool) (*eventwaiter.EventListener, error)
-}
 
-func NewController(ctx context.Context, m *model.Model, fqdds []string, ch eh.CommandHandler, eb eh.EventBus, ew waiter) (*ARDump, error) {
+func NewController(ctx context.Context, m *model.Model, fqdds []string, ch eh.CommandHandler, eb eh.EventBus) (*ARDump, error) {
 	c := &ARDump{
 		fqdds: fqdds,
 		eb:    eb,
 	}
 
 	// stream processor for action events
-	sp, err := event.NewEventStreamProcessor(ctx, ew, event.CustomFilter(selectAttributeUpdate(fqdds)))
+	sp, err := event.NewESP(ctx, event.CustomFilter(selectAttributeUpdate(fqdds)), event.SetListenerName("attributes"))
 	if err != nil {
 		log.MustLogger("ARDump_Controller").Error("Failed to create event stream processor", "err", err)
 		return nil, errors.New("Failed to create stream processor")

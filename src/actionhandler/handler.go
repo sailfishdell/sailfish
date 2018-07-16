@@ -7,21 +7,15 @@ import (
 	"time"
 
 	eh "github.com/looplab/eventhorizon"
-	eventpublisher "github.com/looplab/eventhorizon/publisher/local"
 
-	"github.com/superchalupa/go-redfish/src/eventwaiter"
 	"github.com/superchalupa/go-redfish/src/log"
 	"github.com/superchalupa/go-redfish/src/ocp/event"
 	"github.com/superchalupa/go-redfish/src/ocp/view"
 	domain "github.com/superchalupa/go-redfish/src/redfishresource"
 )
 
-type waiter interface {
-	Listen(context.Context, func(eh.Event) bool) (*eventwaiter.EventListener, error)
-}
-
-func Setup(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew waiter) {
-	eh.RegisterCommand(func() eh.Command { return &POST{eventBus: eb, eventWaiter: ew} })
+func Setup(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus) {
+	eh.RegisterCommand(func() eh.Command { return &POST{eventBus: eb} })
 	eh.RegisterEventData(GenericActionEvent, func() eh.EventData { return &GenericActionEventData{} })
 }
 
@@ -41,7 +35,6 @@ type GenericActionEventData struct {
 // HTTP POST Command
 type POST struct {
 	eventBus    eh.EventBus
-	eventWaiter waiter
 
 	ID      eh.UUID           `json:"id"`
 	CmdID   eh.UUID           `json:"cmdid"`
@@ -127,14 +120,8 @@ func CreateViewAction(
 		},
 	)
 
-	// TODO: this leaks if URI is removed.
-	EventPublisher := eventpublisher.NewEventPublisher()
-	eb.AddHandler(eh.MatchAny(), EventPublisher)
-	EventWaiter := eventwaiter.NewEventWaiter()
-	EventPublisher.AddObserver(EventWaiter)
-
 	// stream processor for action events
-	sp, err := event.NewEventStreamProcessor(ctx, EventWaiter, event.CustomFilter(SelectAction(actionURI)))
+	sp, err := event.NewESP(ctx, event.CustomFilter(SelectAction(actionURI)), event.SetListenerName("actionhandler"))
 	if err != nil {
 		logger.Error("Failed to create event stream processor", "err", err)
 		return

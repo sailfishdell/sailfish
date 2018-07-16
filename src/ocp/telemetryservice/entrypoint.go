@@ -23,7 +23,7 @@ var StartTelemetryService func(context.Context, log.Logger, viewer) *view.View
 func Setup(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus) {
 	EventPublisher := eventpublisher.NewEventPublisher()
 	eb.AddHandler(eh.MatchAny(), EventPublisher)
-	EventWaiter := eventwaiter.NewEventWaiter()
+	EventWaiter := eventwaiter.NewEventWaiter(eventwaiter.SetName("Telemetry Service"))
 	EventPublisher.AddObserver(EventWaiter)
 
 	StartTelemetryService = func(ctx context.Context, logger log.Logger, rootView viewer) *view.View {

@@ -26,7 +26,7 @@ import (
 )
 
 func TestEventWaiter(t *testing.T) {
-	w := NewEventWaiter()
+	w := NewEventWaiter(SetName("TEST"))
 
 	// Event should match when waiting.
 	timestamp := time.Date(2009, time.November, 10, 23, 0, 0, 0, time.UTC)

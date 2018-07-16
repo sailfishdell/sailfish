@@ -18,26 +18,50 @@ package eventwaiter
 
 import (
 	"context"
+    "fmt"
 
 	eh "github.com/looplab/eventhorizon"
 )
 
 // EventWaiter waits for certain events to match a criteria.
 type EventWaiter struct {
+    name    string
 	inbox      chan eh.Event
 	register   chan *EventListener
 	unregister chan *EventListener
 }
 
+type Option func(e *EventWaiter) error
+
 // NewEventWaiter returns a new EventWaiter.
-func NewEventWaiter() *EventWaiter {
+func NewEventWaiter(o ...Option) *EventWaiter {
 	w := EventWaiter{
 		inbox:      make(chan eh.Event, 200),
 		register:   make(chan *EventListener),
 		unregister: make(chan *EventListener),
 	}
+
+    w.ApplyOption(o...)
+
 	go w.run()
 	return &w
+}
+
+func SetName(name string) Option {
+    return func(w *EventWaiter) error {
+        w.name = name
+        return nil
+    }
+}
+
+func (w *EventWaiter) ApplyOption(options ...Option) error {
+    for _, o := range options {
+		err := o(w)
+		if err != nil {
+			return err
+		}
+    }
+    return nil
 }
 
 func (w *EventWaiter) run() {
@@ -55,6 +79,9 @@ func (w *EventWaiter) run() {
 		case event := <-w.inbox:
 			for _, l := range listeners {
 				if l.match(event) {
+                    if len(l.inbox) > (cap(l.inbox)*3/4) {
+                        fmt.Printf("LISTENER(%s) nearing capacity: %d of %d\n", l.Name, len(l.inbox), cap(l.inbox))                
+                    }
 					l.inbox <- event
 				}
 			}
@@ -65,6 +92,9 @@ func (w *EventWaiter) run() {
 // Notify implements the eventhorizon.EventObserver.Notify method which forwards
 // events to the waiters so that they can match the events.
 func (w *EventWaiter) Notify(ctx context.Context, event eh.Event) {
+    if len(w.inbox) > (cap(w.inbox)*3/4) {
+        fmt.Printf("INBOX(%s) nearing capacity: %d of %d\n", w.name, len(w.inbox), cap(w.inbox))                
+    }
     w.inbox <- event
 }
 
@@ -73,8 +103,9 @@ func (w *EventWaiter) Notify(ctx context.Context, event eh.Event) {
 // interesting events by analysing the event data.
 func (w *EventWaiter) Listen(ctx context.Context, match func(eh.Event) bool) (*EventListener, error) {
 	l := &EventListener{
+        Name:   "unnamed",
 		id:         eh.NewUUID(),
-		inbox:      make(chan eh.Event, 200),
+		inbox:      make(chan eh.Event, 1000),
 		match:      match,
 		unregister: w.unregister,
 	}
@@ -86,6 +117,7 @@ func (w *EventWaiter) Listen(ctx context.Context, match func(eh.Event) bool) (*E
 
 // EventListener receives events from an EventWaiter.
 type EventListener struct {
+    Name       string
 	id         eh.UUID
 	inbox      chan eh.Event
 	match      func(eh.Event) bool

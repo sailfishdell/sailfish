@@ -6,8 +6,10 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/superchalupa/go-redfish/src/eventwaiter"
 	"github.com/superchalupa/go-redfish/src/ocp/view"
 	domain "github.com/superchalupa/go-redfish/src/redfishresource"
+    eventpublisher "github.com/looplab/eventhorizon/publisher/local"
 
 	jwt "github.com/dgrijalva/jwt-go"
 	eh "github.com/looplab/eventhorizon"
@@ -67,10 +69,14 @@ func MakeHandlerFunc(eb eh.EventBus, getter IDGetter, withUser func(string, []st
 	}
 }
 
-func AddAggregate(ctx context.Context, v *view.View, rootID eh.UUID, ch eh.CommandHandler, eb eh.EventBus, ew waiter) {
+func AddAggregate(ctx context.Context, v *view.View, rootID eh.UUID, ch eh.CommandHandler, eb eh.EventBus) {
 
 	// somewhat of a violation of how i want to structure all this, but it's the best option for now
-	eh.RegisterCommand(func() eh.Command { return &POST{model: v.GetModel("default"), commandHandler: ch, eventWaiter: ew} })
+	EventPublisher := eventpublisher.NewEventPublisher()
+	eb.AddHandler(eh.MatchAny(), EventPublisher)
+	EventWaiter := eventwaiter.NewEventWaiter(eventwaiter.SetName("Session Service"))
+	EventPublisher.AddObserver(EventWaiter)
+	eh.RegisterCommand(func() eh.Command { return &POST{model: v.GetModel("default"), commandHandler: ch, eventWaiter: EventWaiter} })
 
 	// Create SessionService aggregate
 	ch.HandleCommand(
@@ -98,7 +104,7 @@ func AddAggregate(ctx context.Context, v *view.View, rootID eh.UUID, ch eh.Comma
 				"ServiceEnabled": true,
 				"SessionTimeout@meta": v.Meta(
 					view.PropGET("session_timeout"),
-					//					view.PropPATCH("session_timeout"),
+					view.PropPATCH("session_timeout", "default"),
 				),
 				"Sessions": map[string]interface{}{
 					"@odata.id": "/redfish/v1/SessionService/Sessions",

@@ -9,7 +9,6 @@ import (
 
 	eh "github.com/looplab/eventhorizon"
 
-	"github.com/superchalupa/go-redfish/src/eventwaiter"
 	"github.com/superchalupa/go-redfish/src/log"
 	"github.com/superchalupa/go-redfish/src/ocp/event"
 	"github.com/superchalupa/go-redfish/src/ocp/model"
@@ -25,10 +24,6 @@ type mapping struct {
 	Name     string
 }
 
-type waiter interface {
-	Listen(context.Context, func(eh.Event) bool) (*eventwaiter.EventListener, error)
-}
-
 type ARMappingController struct {
 	mappings   []mapping
 	mappingsMu sync.RWMutex
@@ -39,7 +34,7 @@ type ARMappingController struct {
 	eb eh.EventBus
 }
 
-func New(ctx context.Context, logger log.Logger, m *model.Model, name string, fqdd string, ch eh.CommandHandler, eb eh.EventBus, ew waiter) (*ARMappingController, error) {
+func New(ctx context.Context, logger log.Logger, m *model.Model, name string, fqdd string, ch eh.CommandHandler, eb eh.EventBus) (*ARMappingController, error) {
 	c := &ARMappingController{
 		mappings: []mapping{},
 		name:     name,
@@ -49,7 +44,7 @@ func New(ctx context.Context, logger log.Logger, m *model.Model, name string, fq
 	}
 
 	// stream processor for action events
-	sp, err := event.NewEventStreamProcessor(ctx, ew, event.CustomFilter(selectAttributeUpdate()))
+	sp, err := event.NewESP(ctx, event.CustomFilter(selectAttributeUpdate()), event.SetListenerName("ar_mapper"))
 	if err != nil {
 		logger.Error("Failed to create event stream processor", "err", err)
 		return nil, err

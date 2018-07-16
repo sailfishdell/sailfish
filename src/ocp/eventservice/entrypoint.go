@@ -32,7 +32,7 @@ var CreateSubscription func(context.Context, log.Logger, Subscription, func()) *
 func Setup(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus) {
 	EventPublisher := eventpublisher.NewEventPublisher()
 	eb.AddHandler(eh.MatchAny(), EventPublisher)
-	EventWaiter := eventwaiter.NewEventWaiter()
+	EventWaiter := eventwaiter.NewEventWaiter(eventwaiter.SetName("Event Service"))
 	EventPublisher.AddObserver(EventWaiter)
 
 	jobChan := CreateWorkers(100, 6)
