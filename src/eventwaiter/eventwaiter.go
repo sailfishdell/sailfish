@@ -32,7 +32,7 @@ type EventWaiter struct {
 // NewEventWaiter returns a new EventWaiter.
 func NewEventWaiter() *EventWaiter {
 	w := EventWaiter{
-		inbox:      make(chan eh.Event, 20),
+		inbox:      make(chan eh.Event, 200),
 		register:   make(chan *EventListener),
 		unregister: make(chan *EventListener),
 	}
@@ -74,7 +74,7 @@ func (w *EventWaiter) Notify(ctx context.Context, event eh.Event) {
 func (w *EventWaiter) Listen(ctx context.Context, match func(eh.Event) bool) (*EventListener, error) {
 	l := &EventListener{
 		id:         eh.NewUUID(),
-		inbox:      make(chan eh.Event, 60),
+		inbox:      make(chan eh.Event, 200),
 		match:      match,
 		unregister: w.unregister,
 	}
