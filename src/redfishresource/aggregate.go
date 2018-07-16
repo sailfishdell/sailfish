@@ -191,17 +191,3 @@ func (r *RedfishResourceAggregate) UpdateCollectionMemberCount_unlocked() {
 	m := r.properties.Value.(map[string]interface{})
 	m["Members@odata.count"] = &RedfishResourceProperty{Value: l}
 }
-
-func (agg *RedfishResourceAggregate) ProcessMeta(ctx context.Context, method string, request map[string]interface{}) (results interface{}, err error) {
-	agg.propertiesMu.Lock()
-	defer agg.propertiesMu.Unlock()
-
-	agg.properties.Process(ctx, agg, "", method, request, true)
-
-	var dst RedfishResourceProperty
-	Copy(&dst, &agg.properties)
-
-	ContextLogger(ctx, "aggregate").Info("ProcessMeta DONE", "dst", dst, "agg", agg)
-
-	return dst, nil
-}

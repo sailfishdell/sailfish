@@ -7,10 +7,6 @@ import (
 	eh "github.com/looplab/eventhorizon"
 )
 
-func init() {
-	eh.RegisterCommand(func() eh.Command { return &GET{} })
-}
-
 const (
 	GETCommand = eh.CommandType("http:RedfishResource:GET")
 )
@@ -22,6 +18,7 @@ var _ = eh.Command(&GET{})
 type GET struct {
 	ID    eh.UUID `json:"id"`
 	CmdID eh.UUID `json:"cmdid"`
+    HTTPEventBus eh.EventBus
 }
 
 func (c *GET) AggregateType() eh.AggregateType { return AggregateType }
@@ -44,9 +41,9 @@ func (c *GET) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
     defer a.propertiesMu.RUnlock()
 	data.Results, _ = ProcessGET(ctx, a.properties)
 
-	// TODO: set error status code based on err from ProcessMeta
+	// TODO: set error status code based on err from ProcessGET
 	data.Headers = a.Headers
 
-	a.PublishEvent(eh.NewEvent(HTTPCmdProcessed, data, time.Now()))
+	c.HTTPEventBus.PublishEvent(ctx, eh.NewEvent(HTTPCmdProcessed, data, time.Now()))
 	return nil
 }

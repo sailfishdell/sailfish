@@ -54,10 +54,9 @@ func (c *DELETE) SetCmdID(id eh.UUID)             { c.CmdID = id }
 func (c *DELETE) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 	// TODO: "Services may return a representation of the just deleted resource in the response body."
 	// - can create a new CMD for GET with an identical CMD ID. Is that cheating?
-
 	// TODO: return http 405 status for undeletable objects. right now we use privileges
 
-	_, _ = a.ProcessMeta(ctx, "DELETE", map[string]interface{}{})
+	//data.Results, _ = ProcessDELETE(ctx, a.properties, c.Body)
 
 	// send event to trigger delete
 	a.PublishEvent(eh.NewEvent(RedfishResourceRemoved, &RedfishResourceRemovedData{
@@ -99,11 +98,9 @@ func (c *PATCH) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 		StatusCode: 200,
 	}
 
-	// prime cache. Probably need to consider a better way of doing this. (perhaps time based check?) TODO
-	a.ProcessMeta(ctx, "GET", nil)
+	data.Results, _ = ProcessPATCH(ctx, a.properties, c.Body)
 
-	data.Results, _ = a.ProcessMeta(ctx, "PATCH", c.Body)
-	// TODO: set error status code based on err from ProcessMeta
+	// TODO: set error status code based on err from ProcessPATCH
 	// TODO: This is not thread safe: deep copy
 	data.Headers = a.Headers
 
