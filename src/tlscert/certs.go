@@ -2,7 +2,9 @@ package tlscert
 
 import (
 	"crypto/rand"
+	"crypto/elliptic"
 	"crypto/rsa"
+	"crypto/ecdsa"
 	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
@@ -12,6 +14,7 @@ import (
 	"net"
 	"os"
 	"time"
+"fmt"
 
 	"github.com/superchalupa/go-redfish/src/log"
 )
@@ -21,9 +24,9 @@ type Option func(*mycert) error
 
 type mycert struct {
 	certCA     *x509.Certificate
-	certCApriv *rsa.PrivateKey
+	certCApriv interface{}
 	cert       *x509.Certificate
-	priv       *rsa.PrivateKey
+	priv       interface{}
 	fileBase   string
 	_logger    log.Logger
 }
@@ -79,7 +82,12 @@ func Load(options ...Option) (c *mycert, err error) {
 		return
 	}
 
-	c.priv = catls.PrivateKey.(*rsa.PrivateKey)
+    switch k := catls.PrivateKey.(type) {
+    case *rsa.PrivateKey:
+	    c.priv = k
+    case *ecdsa.PrivateKey:
+	    c.priv = k
+    }
 
 	c.logger().Info("Successfully loaded key", "filebase", c.fileBase)
 	return
@@ -130,6 +138,14 @@ func MakeServer(c *mycert) error {
 func GenRSA(bits int) Option {
 	return func(c *mycert) error {
 		c.priv, _ = rsa.GenerateKey(rand.Reader, bits)
+		return nil
+	}
+}
+
+// GenECDSA is an option to specify that the certificate should use an RSA key with the specified number of bits
+func GenECDSA(curve elliptic.Curve) Option { // elliptic.P224()
+	return func(c *mycert) error {
+		c.priv, _ = ecdsa.GenerateKey(curve, rand.Reader)
 		return nil
 	}
 }
@@ -283,9 +299,36 @@ func AddSANIP(ips ...net.IP) Option {
 	}
 }
 
+func publicKey(priv interface{}) interface{} {
+    switch k := priv.(type) {
+    case *rsa.PrivateKey:
+        return &k.PublicKey
+    case *ecdsa.PrivateKey:
+        return &k.PublicKey
+    default:
+        return nil
+    }
+}
+
+func pemBlockForKey(priv interface{}) *pem.Block {
+    switch k := priv.(type) {
+    case *rsa.PrivateKey:
+        return &pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(k)}
+    case *ecdsa.PrivateKey:
+        b, err := x509.MarshalECPrivateKey(k)
+        if err != nil {
+            fmt.Fprintf(os.Stderr, "Unable to marshal ECDSA private key: %v", err)
+            os.Exit(2)
+        }
+        return &pem.Block{Type: "EC PRIVATE KEY", Bytes: b}
+    default:
+        return nil
+    }
+}
+
 // Serialize will write the cert to files corresponding to the base filename with .crt appended (public key) and .key appended (private key).
 func (c *mycert) Serialize() error {
-	pub := &c.priv.PublicKey
+	pub := publicKey(c.priv)
 	certB, err := x509.CreateCertificate(rand.Reader, c.cert, c.certCA, pub, c.certCApriv)
 	if err != nil {
 		c.logger().Error("create certificate failed", "err", err)
@@ -299,7 +342,7 @@ func (c *mycert) Serialize() error {
 
 	// Private key
 	keyOut, err := os.OpenFile(c.fileBase+".key", os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
-	pem.Encode(keyOut, &pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(c.priv)})
+	pem.Encode(keyOut, pemBlockForKey(c.priv))
 	keyOut.Close()
 	return nil
 }
