@@ -50,7 +50,7 @@ func PublishRedfishEvents(ctx context.Context, m propertygetter, eb eh.EventBus)
 		return err
 	}
 
-    listener.Name = "event service listener"
+	listener.Name = "event service listener"
 
 	// background task to collate internal redfish events and publish
 	go func() {
