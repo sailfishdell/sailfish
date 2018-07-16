@@ -48,24 +48,18 @@ func (a *RedfishResourceAggregate) PublishEvent(e eh.Event) {
 
 // EventsToPublish implements the EventsToPublish method of the EventPublisher interface.
 func (a *RedfishResourceAggregate) EventsToPublish() []eh.Event {
-	a.propertiesMu.Lock()
-	defer a.propertiesMu.Unlock()
-
 	a.eventsMu.RLock()
-	defer a.eventsMu.RUnlock()
 	retArr := make([]eh.Event, len(a.events))
 	copy(retArr, a.events)
+	a.eventsMu.RUnlock()
 	return retArr
 }
 
 // ClearEvents implements the ClearEvents method of the EventPublisher interface.
 func (a *RedfishResourceAggregate) ClearEvents() {
-	a.propertiesMu.Lock()
-	defer a.propertiesMu.Unlock()
-
 	a.eventsMu.Lock()
-	defer a.eventsMu.Unlock()
 	a.events = []eh.Event{}
+	a.eventsMu.Unlock()
 }
 
 func (r *RedfishResourceAggregate) AggregateType() eh.AggregateType { return AggregateType }
