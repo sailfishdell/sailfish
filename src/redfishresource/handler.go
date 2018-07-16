@@ -33,6 +33,11 @@ type DomainObjects struct {
 	AggregateStore eh.AggregateStore
 	EventPublisher eh.EventPublisher
 
+    // for http returns
+	HTTPResultsBus eh.EventBus
+	HTTPPublisher  eh.EventPublisher
+	HTTPWaiter     waiter
+
 	treeMu sync.RWMutex
 	Tree   map[string]eh.UUID
 
@@ -57,6 +62,21 @@ func NewDomainObjects() (*DomainObjects, error) {
 
 	d.EventWaiter = eventwaiter.NewEventWaiter()
 	d.EventPublisher.AddObserver(d.EventWaiter)
+
+    // specific event bus to handle returns from http
+	d.HTTPResultsBus = eventbus.NewEventBus()
+	d.HTTPPublisher = eventpublisher.NewEventPublisher()
+	d.HTTPResultsBus.AddHandler(eh.MatchEvent(HTTPCmdProcessed), d.HTTPPublisher)
+
+    // hook up http waiter to the other bus for back compat
+	d.HTTPWaiter = eventwaiter.NewEventWaiter()
+    d.EventPublisher.AddObserver(d.HTTPWaiter)
+    d.HTTPPublisher.AddObserver(d.HTTPWaiter)
+
+    // set up commands so that they can directly publish to http bus
+	eh.RegisterCommand(func() eh.Command { return &GET{
+        HTTPEventBus: d.HTTPResultsBus,
+    } })
 
 	// set up our built-in observer
 	d.EventPublisher.AddObserver(&d)
