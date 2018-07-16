@@ -219,9 +219,12 @@ func (d *DomainObjects) Notify(ctx context.Context, event eh.Event) {
 // registered with eventhorizon.RegisterCommand(). It expects a POST with a JSON
 // body that will be unmarshalled into the command.
 func (d *DomainObjects) GetInternalCommandHandler(backgroundCtx context.Context) http.Handler {
+    m := sync.Mutex{}
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
+        m.Lock()
+        defer m.Unlock()
 
 		if r.Method != "POST" {
 			http.Error(w, "unsuported method: "+r.Method, http.StatusMethodNotAllowed)
