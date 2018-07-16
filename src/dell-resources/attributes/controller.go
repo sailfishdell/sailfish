@@ -19,7 +19,6 @@ type ARDump struct {
 	eb    eh.EventBus
 }
 
-
 func NewController(ctx context.Context, m *model.Model, fqdds []string, ch eh.CommandHandler, eb eh.EventBus) (*ARDump, error) {
 	c := &ARDump{
 		fqdds: fqdds,

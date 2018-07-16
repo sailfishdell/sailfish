@@ -49,7 +49,7 @@ func (rh *SSEHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-    l.Name = "SSE Listener"
+	l.Name = "SSE Listener"
 
 	w.Header().Add("Strict-Transport-Security", "max-age=63072000; includeSubDomains") // for A+ SSL Labs score
 	//w.Header().Set("Content-Type", "application/json; charset=utf-8")

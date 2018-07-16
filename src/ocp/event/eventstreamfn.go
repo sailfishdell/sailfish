@@ -24,11 +24,11 @@ type waiter interface {
 }
 
 type privateStateStructure struct {
-	ctx      context.Context
-	filterFn func(eh.Event) bool
-	listener *eventwaiter.EventListener
-    listenerName string
-	logger   log.Logger
+	ctx          context.Context
+	filterFn     func(eh.Event) bool
+	listener     *eventwaiter.EventListener
+	listenerName string
+	logger       log.Logger
 }
 
 var NewESP func(ctx context.Context, options ...Options) (d *privateStateStructure, err error)
@@ -48,8 +48,8 @@ func NewEventStreamProcessor(ctx context.Context, ew waiter, options ...Options)
 	d = &privateStateStructure{
 		ctx: ctx,
 		// default filter is to process no events
-		filterFn: func(eh.Event) bool { return false },
-        listenerName: "SET ME!",
+		filterFn:     func(eh.Event) bool { return false },
+		listenerName: "SET ME!",
 	}
 	err = nil
 
@@ -65,7 +65,7 @@ func NewEventStreamProcessor(ctx context.Context, ew waiter, options ...Options)
 		return
 	}
 
-    d.listener.Name = d.listenerName
+	d.listener.Name = d.listenerName
 
 	return
 }

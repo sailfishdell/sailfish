@@ -16,9 +16,9 @@ var _ = eh.Command(&GET{})
 
 // HTTP GET Command
 type GET struct {
-	ID    eh.UUID `json:"id"`
-	CmdID eh.UUID `json:"cmdid"`
-    HTTPEventBus eh.EventBus
+	ID           eh.UUID `json:"id"`
+	CmdID        eh.UUID `json:"cmdid"`
+	HTTPEventBus eh.EventBus
 }
 
 func (c *GET) AggregateType() eh.AggregateType { return AggregateType }
@@ -37,9 +37,9 @@ func (c *GET) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 	}
 	// TODO: Should be able to discern supported methods from the meta and return those
 
-    a.propertiesMu.RLock()
+	a.propertiesMu.RLock()
 	data.Results, _ = ProcessGET(ctx, a.properties)
-    a.propertiesMu.RUnlock()
+	a.propertiesMu.RUnlock()
 
 	// TODO: set error status code based on err from ProcessGET
 	data.Headers = a.Headers

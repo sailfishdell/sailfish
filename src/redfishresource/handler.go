@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"path"
 	"sync"
-    "time"
+	"time"
 
 	"github.com/gorilla/mux"
 	eh "github.com/looplab/eventhorizon"
@@ -34,7 +34,7 @@ type DomainObjects struct {
 	AggregateStore eh.AggregateStore
 	EventPublisher eh.EventPublisher
 
-    // for http returns
+	// for http returns
 	HTTPResultsBus eh.EventBus
 	HTTPPublisher  eh.EventPublisher
 	HTTPWaiter     waiter
@@ -64,20 +64,22 @@ func NewDomainObjects() (*DomainObjects, error) {
 	d.EventWaiter = eventwaiter.NewEventWaiter(eventwaiter.SetName("Main"))
 	d.EventPublisher.AddObserver(d.EventWaiter)
 
-    // specific event bus to handle returns from http
+	// specific event bus to handle returns from http
 	d.HTTPResultsBus = eventbus.NewEventBus()
 	d.HTTPPublisher = eventpublisher.NewEventPublisher()
 	d.HTTPResultsBus.AddHandler(eh.MatchEvent(HTTPCmdProcessed), d.HTTPPublisher)
 
-    // hook up http waiter to the other bus for back compat
+	// hook up http waiter to the other bus for back compat
 	d.HTTPWaiter = eventwaiter.NewEventWaiter(eventwaiter.SetName("HTTP"))
-    d.EventPublisher.AddObserver(d.HTTPWaiter)
-    d.HTTPPublisher.AddObserver(d.HTTPWaiter)
+	d.EventPublisher.AddObserver(d.HTTPWaiter)
+	d.HTTPPublisher.AddObserver(d.HTTPWaiter)
 
-    // set up commands so that they can directly publish to http bus
-	eh.RegisterCommand(func() eh.Command { return &GET{
-        HTTPEventBus: d.HTTPResultsBus,
-    } })
+	// set up commands so that they can directly publish to http bus
+	eh.RegisterCommand(func() eh.Command {
+		return &GET{
+			HTTPEventBus: d.HTTPResultsBus,
+		}
+	})
 
 	// set up our built-in observer
 	d.EventPublisher.AddObserver(&d)
@@ -218,7 +220,6 @@ func (d *DomainObjects) Notify(ctx context.Context, event eh.Event) {
 // body that will be unmarshalled into the command.
 func (d *DomainObjects) GetInternalCommandHandler(backgroundCtx context.Context) http.Handler {
 
-
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 
@@ -246,26 +247,26 @@ func (d *DomainObjects) GetInternalCommandHandler(backgroundCtx context.Context)
 			return
 		}
 
-	// to avoid races, set up our listener first
-	cmdID := eh.NewUUID()
-	reqCtx := WithRequestID(r.Context(), cmdID)
-	l, err := d.HTTPWaiter.Listen(reqCtx, func(event eh.Event) bool {
-		if event.EventType() != HTTPCmdProcessed {
-			return false
-		}
-		if data, ok := event.Data().(*HTTPCmdProcessedData); ok {
-			if data.CommandID == cmdID {
-				return true
+		// to avoid races, set up our listener first
+		cmdID := eh.NewUUID()
+		reqCtx := WithRequestID(r.Context(), cmdID)
+		l, err := d.HTTPWaiter.Listen(reqCtx, func(event eh.Event) bool {
+			if event.EventType() != HTTPCmdProcessed {
+				return false
 			}
+			if data, ok := event.Data().(*HTTPCmdProcessedData); ok {
+				if data.CommandID == cmdID {
+					return true
+				}
+			}
+			return false
+		})
+		if err != nil {
+			http.Error(w, "could not create waiter"+err.Error(), http.StatusInternalServerError)
+			return
 		}
-		return false
-	})
-	if err != nil {
-		http.Error(w, "could not create waiter"+err.Error(), http.StatusInternalServerError)
-		return
-	}
-    l.Name = "Redfish HTTP Listener"
-	defer l.Close()
+		l.Name = "Redfish HTTP Listener"
+		defer l.Close()
 
 		// NOTE: Use a new context when handling, else it will be cancelled with
 		// the HTTP request which will cause projectors etc to fail if they run
@@ -275,15 +276,14 @@ func (d *DomainObjects) GetInternalCommandHandler(backgroundCtx context.Context)
 			return
 		}
 
+		// send ourselves a message and wait for it to clear out the pipes
+		data := &HTTPCmdProcessedData{
+			CommandID:  cmdID,
+			StatusCode: 200,
+		}
+		d.EventBus.PublishEvent(reqCtx, eh.NewEvent(HTTPCmdProcessed, data, time.Now()))
 
-    // send ourselves a message and wait for it to clear out the pipes
-	data := &HTTPCmdProcessedData{
-		CommandID:  cmdID,
-		StatusCode: 200,
-	}
-	d.EventBus.PublishEvent(reqCtx, eh.NewEvent(HTTPCmdProcessed, data, time.Now()))
-
-	_, _ = l.Wait(reqCtx)
+		_, _ = l.Wait(reqCtx)
 
 		w.WriteHeader(http.StatusOK)
 	})

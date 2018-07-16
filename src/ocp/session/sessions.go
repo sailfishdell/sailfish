@@ -6,10 +6,10 @@ import (
 	"net/http"
 	"time"
 
+	eventpublisher "github.com/looplab/eventhorizon/publisher/local"
 	"github.com/superchalupa/go-redfish/src/eventwaiter"
 	"github.com/superchalupa/go-redfish/src/ocp/view"
 	domain "github.com/superchalupa/go-redfish/src/redfishresource"
-    eventpublisher "github.com/looplab/eventhorizon/publisher/local"
 
 	jwt "github.com/dgrijalva/jwt-go"
 	eh "github.com/looplab/eventhorizon"
@@ -76,7 +76,9 @@ func AddAggregate(ctx context.Context, v *view.View, rootID eh.UUID, ch eh.Comma
 	eb.AddHandler(eh.MatchAny(), EventPublisher)
 	EventWaiter := eventwaiter.NewEventWaiter(eventwaiter.SetName("Session Service"))
 	EventPublisher.AddObserver(EventWaiter)
-	eh.RegisterCommand(func() eh.Command { return &POST{model: v.GetModel("default"), commandHandler: ch, eventWaiter: EventWaiter} })
+	eh.RegisterCommand(func() eh.Command {
+		return &POST{model: v.GetModel("default"), commandHandler: ch, eventWaiter: EventWaiter}
+	})
 
 	// Create SessionService aggregate
 	ch.HandleCommand(

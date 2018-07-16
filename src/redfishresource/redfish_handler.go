@@ -70,12 +70,12 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	cmdID := eh.NewUUID()
 	reqCtx := WithRequestID(r.Context(), cmdID)
 
-    /*
-	rh.logger.Debug("In ServeHTTP")
-	for name, headers := range r.Header {
-		rh.logger.Debug("HTTP Header", "name", name, "headers", headers)
-	}
-    */
+	/*
+		rh.logger.Debug("In ServeHTTP")
+		for name, headers := range r.Header {
+			rh.logger.Debug("HTTP Header", "name", name, "headers", headers)
+		}
+	*/
 
 	// All operations have to be on URLs that exist, so look it up in the tree
 	aggID, ok := rh.d.GetAggregateIDOK(r.URL.Path)
@@ -170,7 +170,7 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "could not create waiter"+err.Error(), http.StatusInternalServerError)
 		return
 	}
-    l.Name = "Redfish HTTP Listener"
+	l.Name = "Redfish HTTP Listener"
 	defer l.Close()
 
 	// don't run parse until after privilege checks have been done

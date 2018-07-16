@@ -34,7 +34,7 @@ type GenericActionEventData struct {
 
 // HTTP POST Command
 type POST struct {
-	eventBus    eh.EventBus
+	eventBus eh.EventBus
 
 	ID      eh.UUID           `json:"id"`
 	CmdID   eh.UUID           `json:"cmdid"`
