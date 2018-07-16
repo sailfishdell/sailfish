@@ -40,10 +40,11 @@ func (c *GET) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 	}
 	// TODO: Should be able to discern supported methods from the meta and return those
 
-	data.Results, _ = a.ProcessMeta(ctx, "GET", nil)
+    a.propertiesMu.RLock()
+    defer a.propertiesMu.RUnlock()
+	data.Results, _ = ProcessGET(ctx, a.properties)
 
 	// TODO: set error status code based on err from ProcessMeta
-	// TODO: This is not thread safe: deep copy
 	data.Headers = a.Headers
 
 	a.PublishEvent(eh.NewEvent(HTTPCmdProcessed, data, time.Now()))
