@@ -15,6 +15,15 @@ type encOpts struct {
 	process processFn
 }
 
+func ProcessPATCH(ctx context.Context, prop RedfishResourceProperty, request map[string]interface{}) (results interface{}, err error) {
+	opts := encOpts{
+		request: request,
+		process: PATCHfn,
+	}
+
+	return parseRecursive(ctx, reflect.ValueOf(prop), opts)
+}
+
 func ProcessGET(ctx context.Context, prop RedfishResourceProperty) (results interface{}, err error) {
 	opts := encOpts{
 		request: nil,
