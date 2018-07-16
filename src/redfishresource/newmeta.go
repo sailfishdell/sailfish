@@ -77,6 +77,28 @@ func parseRecursive(ctx context.Context, val reflect.Value, e encOpts) (interfac
         }
         wg.Wait()
         return ret.Interface(), nil
+
+    case reflect.Slice:
+
+        var ret reflect.Value
+        elemType := val.Type().Elem()
+        arraytype := reflect.SliceOf(elemType)
+        ret = reflect.MakeSlice(arraytype, val.Len(), val.Cap())
+
+        wg := sync.WaitGroup{}
+        for i:=0; i< val.Len(); i++ {
+            wg.Add(1)
+            go func(k int) {
+                sliceVal := val.Index(k)
+                parsed, _ := parseRecursive(ctx, reflect.ValueOf(sliceVal.Interface()), e)
+                ret.Index(k).Set(reflect.ValueOf(parsed))
+                wg.Done()
+            }(i)
+        }
+        wg.Wait()
+        return ret.Interface(), nil
+
+
     }
 
     return val.Interface(), nil
@@ -88,6 +110,14 @@ type NewPropGetter interface {
 type CompatPropGetter interface {
 	PropertyGet(context.Context, *RedfishResourceAggregate, *RedfishResourceProperty, map[string]interface{})
 }
+
+type NewPropPatcher interface {
+	PropertyPatch(context.Context, RedfishResourceProperty, map[string]interface{}, map[string]interface{}) (interface{}, error)
+}
+type CompatPropPatcher interface {
+	PropertyPatch(context.Context, *RedfishResourceAggregate, *RedfishResourceProperty, map[string]interface{})
+}
+
 
 func GETfn(ctx context.Context, rrp RedfishResourceProperty, opts encOpts) (interface{}, error) {
 	meta_t, ok := rrp.Meta["GET"].(map[string]interface{})
@@ -116,6 +146,39 @@ func GETfn(ctx context.Context, rrp RedfishResourceProperty, opts encOpts) (inte
         defer ContextLogger(ctx, "property_process").Debug("AFTER getting property: GET - type assert success", "value", fmt.Sprintf("%v", rrp.Value))
         tempRRP := &RedfishResourceProperty{ Value: rrp.Value, Meta: rrp.Meta }
         plugin.PropertyGet(ctx, nil, tempRRP, meta_t)
+        return tempRRP.Value, nil
+    }
+    return nil, errors.New("foobar")
+}
+
+
+func PATCHfn(ctx context.Context, rrp RedfishResourceProperty, opts encOpts) (interface{}, error) {
+	meta_t, ok := rrp.Meta["PATCH"].(map[string]interface{})
+	if !ok {
+		return nil, errors.New("No PATCH")
+	}
+
+	pluginName, ok := meta_t["plugin"].(string)
+	if !ok {
+		return nil, errors.New("No plugin in PATCH")
+	}
+
+	plugin, err := InstantiatePlugin(PluginType(pluginName))
+	if err != nil {
+		return nil, errors.New("No plugin named(" + pluginName + ") for PATCH")
+	}
+
+    ContextLogger(ctx, "property_process").Debug("getting property: PATCH", "value", fmt.Sprintf("%v", rrp.Value))
+    if plugin, ok := plugin.(NewPropPatcher); ok {
+        ContextLogger(ctx, "property_process").Debug("getting property: PATCH - type assert success", "value", fmt.Sprintf("%v", rrp.Value))
+        defer ContextLogger(ctx, "property_process").Debug("AFTER getting property: PATCH - type assert success", "value", fmt.Sprintf("%v", rrp.Value))
+        return plugin.PropertyPatch(ctx, rrp, opts.request, meta_t)
+    }
+    if plugin, ok := plugin.(CompatPropPatcher); ok {
+        ContextLogger(ctx, "property_process").Debug("getting property: PATCH - type assert success", "value", fmt.Sprintf("%v", rrp.Value))
+        defer ContextLogger(ctx, "property_process").Debug("AFTER getting property: PATCH - type assert success", "value", fmt.Sprintf("%v", rrp.Value))
+        tempRRP := &RedfishResourceProperty{ Value: rrp.Value, Meta: rrp.Meta }
+        plugin.PropertyPatch(ctx, nil, tempRRP, meta_t)
         return tempRRP.Value, nil
     }
     return nil, errors.New("foobar")
