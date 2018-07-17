@@ -21,7 +21,8 @@ func ProcessPATCH(ctx context.Context, prop RedfishResourceProperty, request map
 		process: PATCHfn,
 	}
 
-	return parseRecursive(ctx, reflect.ValueOf(prop), opts)
+	val, err := parseRecursive(ctx, reflect.ValueOf(prop), opts)
+    return val.Interface(), err
 }
 
 func ProcessGET(ctx context.Context, prop RedfishResourceProperty) (results interface{}, err error) {
@@ -30,14 +31,15 @@ func ProcessGET(ctx context.Context, prop RedfishResourceProperty) (results inte
 		process: GETfn,
 	}
 
-	return parseRecursive(ctx, reflect.ValueOf(prop), opts)
+	val, err := parseRecursive(ctx, reflect.ValueOf(prop), opts)
+    return val.Interface(), err
 }
 
 type Marshaler interface {
-	DOMETA(context.Context, encOpts) (interface{}, error)
+	DOMETA(context.Context, encOpts) (reflect.Value, error)
 }
 
-func (rrp RedfishResourceProperty) DOMETA(ctx context.Context, e encOpts) (results interface{}, err error) {
+func (rrp RedfishResourceProperty) DOMETA(ctx context.Context, e encOpts) (results reflect.Value, err error) {
 	res, err := e.process(ctx, rrp, e)
 	if err == nil {
 		return parseRecursive(ctx, reflect.ValueOf(res), e)
@@ -48,18 +50,17 @@ func (rrp RedfishResourceProperty) DOMETA(ctx context.Context, e encOpts) (resul
 
 var marshalerType = reflect.TypeOf(new(Marshaler)).Elem()
 
-func parseRecursive(ctx context.Context, val reflect.Value, e encOpts) (interface{}, error) {
+func parseRecursive(ctx context.Context, val reflect.Value, e encOpts) (reflect.Value, error) {
 	if !val.IsValid() {
-		return nil, errors.New("not a valid type")
+		return reflect.Value{}, errors.New("not a valid type")
 	}
 
-	if val.IsValid() && val.Type().Implements(marshalerType) {
+	if val.Type().Implements(marshalerType) {
 		m, ok := val.Interface().(Marshaler)
 		if !ok {
-			return nil, errors.New("ugh")
+			return reflect.Value{}, errors.New("ugh")
 		}
-		r, err := m.DOMETA(ctx, e)
-		return r, err
+		return m.DOMETA(ctx, e)
 	}
 
 	switch k := val.Kind(); k {
@@ -77,15 +78,17 @@ func parseRecursive(ctx context.Context, val reflect.Value, e encOpts) (interfac
 			wg.Add(1)
 			go func(k reflect.Value) {
 				mapVal := val.MapIndex(k).Interface()
-				parsed, _ := parseRecursive(ctx, reflect.ValueOf(mapVal), e)
-				m.Lock()
-				ret.SetMapIndex(k, reflect.ValueOf(parsed))
-				m.Unlock()
+				parsed, err := parseRecursive(ctx, reflect.ValueOf(mapVal), e)
+                if err == nil {
+                    m.Lock()
+                    ret.SetMapIndex(k, parsed)
+                    m.Unlock()
+                }
 				wg.Done()
 			}(k)
 		}
 		wg.Wait()
-		return ret.Interface(), nil
+		return ret, nil
 
 	case reflect.Slice:
 
@@ -99,17 +102,19 @@ func parseRecursive(ctx context.Context, val reflect.Value, e encOpts) (interfac
 			wg.Add(1)
 			go func(k int) {
 				sliceVal := val.Index(k)
-				parsed, _ := parseRecursive(ctx, reflect.ValueOf(sliceVal.Interface()), e)
-				ret.Index(k).Set(reflect.ValueOf(parsed))
+				parsed, err := parseRecursive(ctx, reflect.ValueOf(sliceVal.Interface()), e)
+                if err == nil {
+				    ret.Index(k).Set(parsed)
+                }
 				wg.Done()
 			}(i)
 		}
 		wg.Wait()
-		return ret.Interface(), nil
+		return ret, nil
 
 	}
 
-	return val.Interface(), nil
+	return val, nil
 }
 
 type NewPropGetter interface {
