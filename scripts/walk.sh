@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 set -e
 set -x
@@ -14,6 +14,22 @@ skiplist=${2:-}
 timingarg="\nTotal request time: %{time_total} seconds for url: %{url_effective}\n"
 
 rm -rf ${outputdir}/ && mkdir ${outputdir}
+LOGFILE=$outputdir/script-output.txt
+exec 1> >(exec -a 'LOGGING TEE' tee $LOGFILE) 2>&1
+TEEPID=$!
+
+cleanup() {
+    # close FDs to ensure tee finishes
+    exec 1>&0 2>&1
+    if [ -n "$TEEPID" ];then
+        while ps --pid $TEEPID > /dev/null 2>&1
+        do
+            sleep 1
+        done
+    fi
+}
+trap 'cleanup' EXIT
+
 echo $START_URL | sort |uniq > ${outputdir}/to-visit.txt
 
 # for information only
