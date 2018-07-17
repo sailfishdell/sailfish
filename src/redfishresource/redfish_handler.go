@@ -213,7 +213,7 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// and then encode response
 	enc := json.NewEncoder(w)
-	enc.SetIndent("", "  ")
+	// enc.SetIndent("", "  ")
 	enc.Encode(data.Results)
 	return
 }
