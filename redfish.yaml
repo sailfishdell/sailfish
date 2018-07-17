@@ -12,10 +12,6 @@ session:
 
 
 awesome_mapper:
-    testmodel:
-        - { Select: "type == 'AttributeUpdated' && data.FQDD == fqdd && data.Group == 'Info' && data.Index == '1' && data.Name == 'IndicatorLED'",
-            ModelUpdate: [ {Property: "indicator_led", Query: "data.Value" } ] }
-
     fan:
         - { Select: "type == 'FanEvent' && data.ObjectHeader.FQDD == fqdd",
             ModelUpdate: [
