@@ -22,7 +22,7 @@ func ProcessPATCH(ctx context.Context, prop RedfishResourceProperty, request map
 	}
 
 	val, err := parseRecursive(ctx, reflect.ValueOf(prop), opts)
-    return val.Interface(), err
+	return val.Interface(), err
 }
 
 func ProcessGET(ctx context.Context, prop RedfishResourceProperty) (results interface{}, err error) {
@@ -32,7 +32,7 @@ func ProcessGET(ctx context.Context, prop RedfishResourceProperty) (results inte
 	}
 
 	val, err := parseRecursive(ctx, reflect.ValueOf(prop), opts)
-    return val.Interface(), err
+	return val.Interface(), err
 }
 
 type Marshaler interface {
@@ -79,11 +79,11 @@ func parseRecursive(ctx context.Context, val reflect.Value, e encOpts) (reflect.
 			go func(k reflect.Value) {
 				mapVal := val.MapIndex(k).Interface()
 				parsed, err := parseRecursive(ctx, reflect.ValueOf(mapVal), e)
-                if err == nil {
-                    m.Lock()
-                    ret.SetMapIndex(k, parsed)
-                    m.Unlock()
-                }
+				if err == nil {
+					m.Lock()
+					ret.SetMapIndex(k, parsed)
+					m.Unlock()
+				}
 				wg.Done()
 			}(k)
 		}
@@ -103,9 +103,9 @@ func parseRecursive(ctx context.Context, val reflect.Value, e encOpts) (reflect.
 			go func(k int) {
 				sliceVal := val.Index(k)
 				parsed, err := parseRecursive(ctx, reflect.ValueOf(sliceVal.Interface()), e)
-                if err == nil {
-				    ret.Index(k).Set(parsed)
-                }
+				if err == nil {
+					ret.Index(k).Set(parsed)
+				}
 				wg.Done()
 			}(i)
 		}

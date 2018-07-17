@@ -155,28 +155,39 @@ func main() {
 		MinVersion: tls.VersionTLS12,
 		// TODO: cli option to enable/disable
 		// Secure, but way too slow
-		// CurvePreferences:         []tls.CurveID{tls.CurveP521, tls.CurveP384, tls.CurveP256},
+		CurvePreferences: []tls.CurveID{tls.CurveP256, tls.X25519, tls.CurveP384, tls.CurveP521},
 
 		// TODO: cli option to enable/disable
 		// Secure, but way too slow
-		// PreferServerCipherSuites: true,
+		PreferServerCipherSuites: true,
 
 		// TODO: cli option to enable/disable
 		// Can't quite remember, but I think this breaks curl
-		/*		CipherSuites: []uint16{
-				tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
-				tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
-				tls.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,
-				tls.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,
-				tls.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,
-				tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
-				tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
-				tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
-				tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
-				tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,
-				tls.TLS_RSA_WITH_AES_256_GCM_SHA384,
-				tls.TLS_RSA_WITH_AES_256_CBC_SHA,
-			}, */
+		CipherSuites: []uint16{
+			tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305, // Go 1.8 only
+			tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,   // Go 1.8 only
+			tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+			tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+
+			/*
+			   tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+			   tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
+			   tls.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,
+			   tls.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,
+			   tls.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,
+			   tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+			   tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+			   tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
+			   tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
+			   tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,
+			   tls.TLS_RSA_WITH_AES_256_GCM_SHA384,
+			   tls.TLS_RSA_WITH_AES_256_CBC_SHA,
+			   tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,
+			   tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,
+			*/
+		},
 	}
 
 	// TODO: cli option to enable/disable and control cert options
