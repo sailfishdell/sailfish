@@ -13,6 +13,7 @@ import (
 	"github.com/superchalupa/go-redfish/src/actionhandler"
 	"github.com/superchalupa/go-redfish/src/eventwaiter"
 	"github.com/superchalupa/go-redfish/src/log"
+	"github.com/superchalupa/go-redfish/src/ocp/event"
 	"github.com/superchalupa/go-redfish/src/ocp/eventservice"
 	"github.com/superchalupa/go-redfish/src/ocp/model"
 	"github.com/superchalupa/go-redfish/src/ocp/root"
@@ -41,6 +42,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	actionhandler.Setup(ctx, ch, eb)
 	eventservice.Setup(ctx, ch, eb)
 	telemetryservice.Setup(ctx, ch, eb)
+	event.Setup(ch, eb)
 
 	//
 	// Create the (empty) model behind the /redfish/v1 service root. Nothing interesting here
