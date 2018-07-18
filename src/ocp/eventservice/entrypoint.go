@@ -143,12 +143,7 @@ func createSubscription(ctx context.Context, logger log.Logger, sub Subscription
 					cancel()
 				case ExternalRedfishEvent:
 					log.MustLogger("event_service").Info(" redfish event processing")
-					rawdata := event.Data()
-					_, ok := rawdata.(*ExternalRedfishEventData)
-					if !ok {
-						log.MustLogger("event_service").Info("Impossible: got ExternalRedfishEvent that doesn't have ExternalRedfishEventData", "rawdata", rawdata)
-						continue
-					}
+					// NOTE: we don't actually check to ensure that this is an actual ExternalRedfishEventData specifically because Metric Reports don't currently go through like this.
 					if esModel.GetProperty("protocol") != "Redfish" {
 						log.MustLogger("event_service").Info("Not Redfish Protocol")
 						continue
@@ -195,20 +190,22 @@ func makePOST(dest string, event eh.Event, context interface{}) func() {
 	return func() {
 		log.MustLogger("event_service").Info("POST!", "dest", dest, "event", event)
 
-		evt, ok := event.Data().(*ExternalRedfishEventData)
-		if !ok {
-			log.MustLogger("event_service").Warn("ERROR type asserting to external redfish evetn")
-			return
+		evt := event.Data()
+		var d []byte
+		var err error
+		if _, ok := evt.(*ExternalRedfishEventData); ok {
+			d, err = json.Marshal(
+				&struct {
+					*ExternalRedfishEventData
+					Context interface{} `json:",omitempty"`
+				}{
+					ExternalRedfishEventData: evt.(*ExternalRedfishEventData),
+					Context:                  context,
+				},
+			)
+		} else {
+			d, err = json.Marshal(evt)
 		}
-		d, err := json.Marshal(
-			&struct {
-				*ExternalRedfishEventData
-				Context interface{} `json:",omitempty"`
-			}{
-				ExternalRedfishEventData: evt,
-				Context:                  context,
-			},
-		)
 
 		// TODO: should be able to configure timeout
 		client := &http.Client{
