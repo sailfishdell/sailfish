@@ -50,7 +50,7 @@ savetop() {
     SSHPID=$!
 }
 
-for i in $(seq 30 ) $(seq 40 10 100) ; do
+for i in $(seq 30 ) $(seq 40 10 120) ; do
     index=$(printf "%03d" $i)
     outfile=${outputdir}/results-c${index}-r${numreqs}
 
