@@ -61,7 +61,7 @@ time=10s
 
 savetop() {
     echo "Starting TOP for vegeta run. RATE: $index" > $1
-    ssh root@${host} 'top -b -d1 -o %MEM' >> $1 &
+    ssh root@${host} 'top -b -d1 -o %CPU' >> $1 &
     SSHPID=$!
 }
 
