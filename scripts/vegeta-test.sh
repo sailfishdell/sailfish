@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 set -x
 set -e
@@ -65,7 +65,7 @@ savetop() {
     SSHPID=$!
 }
 
-for i in $(seq 30 ) $(seq 40 10 100) ; do
+for i in $(seq 30 ) $(seq 40 10 200) ; do
     index=$(printf "%03d" $i)
 
     if [ ${runtoken} == 1 ]; then
