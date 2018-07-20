@@ -5,15 +5,16 @@ set -x
 
 scriptdir=$(cd $(dirname $0); pwd)
 
-if [ -z "${ECHOST}" -o -z "${IDRACHOST}" ]; then
+if [ -z "${ECHOST}" -a -z "${IDRACHOST}" ]; then
     echo "need to set host variables"
-    exit 1
+#    exit 1
 fi
 
 # FOR EC ODATALITE TESTING ONLY: set TOKEN to 'oauthtest token' output and this script will set and unset as appropriate to benchark each stack
 
 export CURL_OPTS=-k
 export prot=https
+export sqliteuri=${sqliteuri:-/redfish/v1/Chassis/System.Embedded.1/PCIeDevice/3-0}
 
 # run TOP and save results during each run
 export profile=1
@@ -27,41 +28,46 @@ export runtoken=1
 ####################
 # go-redfish tests
 ####################
-export user=Administrator
-export pass=password
-host=$ECHOST TOKEN= port=8443 ${scriptdir}/walk.sh        bench-go-https-walk
-host=$ECHOST TOKEN= port=8443 ${scriptdir}/runab.sh       bench-go-https-ab
-host=$ECHOST TOKEN= port=8443 ${scriptdir}/vegeta-test.sh bench-go-https-vegeta
-
+if [ -n "$ECHOST" ]; then
+    export user=Administrator
+    export pass=password
+    host=$ECHOST TOKEN= port=8443 ${scriptdir}/walk.sh        bench-go-https-walk
+    host=$ECHOST TOKEN= port=8443 ${scriptdir}/runab.sh       bench-go-https-ab
+    host=$ECHOST TOKEN= port=8443 ${scriptdir}/vegeta-test.sh bench-go-https-vegeta
+fi
 
 ####################
 # odatalite tests
 ####################
-export user=root
-export pass=calvin
-# used by ab:
-export uri=/redfish/v1/Managers/iDRAC.Embedded.1
-host=$IDRACHOST port=443 ${scriptdir}/walk.sh        bench-odatalite-walk
-host=$IDRACHOST port=443 ${scriptdir}/runab.sh       bench-odatalite-OLD-ab
-host=$IDRACHOST port=443 ${scriptdir}/vegeta-test.sh bench-odatalite-vegeta
+if [ -n "$IDRACHOST" ]; then
+    export user=root
+    export pass=calvin
+    # used by ab:
+    export uri=/redfish/v1/Managers/iDRAC.Embedded.1
+    host=$IDRACHOST port=443 ${scriptdir}/walk.sh        bench-odatalite-walk
+    host=$IDRACHOST port=443 ${scriptdir}/runab.sh       bench-odatalite-OLD-ab
+    host=$IDRACHOST port=443 ${scriptdir}/vegeta-test.sh bench-odatalite-vegeta
 
-# this uri is using the new sqlite
-export uri=/redfish/v1/Chassis/System.Embedded.1/PCIeDevice/94-0 
-host=$IDRACHOST port=443 ${scriptdir}/runab.sh       bench-odatalite-NEW-ab
+    # this uri is using the new sqlite
+    export uri=${sqliteuri}
+    host=$IDRACHOST port=443 ${scriptdir}/runab.sh       bench-odatalite-NEW-ab
 
-# select out the new sqlite URIs for specific bench by vegeta
-mkdir bench-odatalite-NEW-vegeta ||:
-grep PCIeDevice bench-odatalite-vegeta/to-visit.txt > bench-odatalite-NEW-vegeta/to-visit.txt
-host=$IDRACHOST port=443 ${scriptdir}/vegeta-test.sh bench-odatalite-NEW-vegeta
+    # select out the new sqlite URIs for specific bench by vegeta
+    mkdir bench-odatalite-NEW-vegeta ||:
+    grep PCIeDevice bench-odatalite-vegeta/to-visit.txt > bench-odatalite-NEW-vegeta/to-visit.txt
+    host=$IDRACHOST port=443 ${scriptdir}/vegeta-test.sh bench-odatalite-NEW-vegeta
+fi
 
 
 # extract timings
 for i in bench-go-https-walk bench-odatalite-walk; do
+    [ -e $i ] || continue
     grep ^Total ${i}/script-output.txt  | sort | grep PIPELINE > ${i}/WALK-TIMING-pipelined.txt
     grep ^Total ${i}/script-output.txt  | sort | grep -v PIPELINE > ${i}/WALK-TIMING-individual.txt
 done
 
 for i in bench-go-https-ab bench-odatalite-OLD-ab bench-odatalite-NEW-ab ; do
+    [ -e $i ] || continue
     grep ^Total: ${i}/results-c*-r1000-token.txt  > ${i}/LATENCIES-token.txt
     grep ^Total: ${i}/results-c*-r1000-basic.txt  > ${i}/LATENCIES-basic.txt
     grep ^Request ${i}/results-c*-r1000-token.txt  > ${i}/RPS-token.txt
@@ -69,6 +75,7 @@ for i in bench-go-https-ab bench-odatalite-OLD-ab bench-odatalite-NEW-ab ; do
 done
 
 for i in bench-go-https-vegeta bench-odatalite-vegeta  bench-odatalite-NEW-vegeta; do
+    [ -e $i ] || continue
     grep ^Latencies ${i}/basic/report-r*-text.txt > ${i}/LATENCIES-basic.txt
     grep ^Latencies ${i}/token/report-r*-text.txt > ${i}/LATENCIES-token.txt
     grep ^Success ${i}/basic/report-r*-text.txt > ${i}/SUCCESSRATE-basic.txt
