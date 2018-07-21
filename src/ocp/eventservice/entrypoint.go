@@ -31,7 +31,7 @@ var CreateSubscription func(context.Context, log.Logger, Subscription, func()) *
 
 func Setup(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus) {
 	EventPublisher := eventpublisher.NewEventPublisher()
-	eb.AddHandler(eh.MatchAny(), EventPublisher)
+	eb.AddHandler(eh.MatchAnyEventOf(ExternalRedfishEvent, domain.RedfishResourceRemoved), EventPublisher)
 	EventWaiter := eventwaiter.NewEventWaiter(eventwaiter.SetName("Event Service"))
 	EventPublisher.AddObserver(EventWaiter)
 
@@ -102,6 +102,7 @@ func createSubscription(ctx context.Context, logger log.Logger, sub Subscription
 	}
 
 	// set up listener for the delete event
+    // INFO: this listener will only ever get domain.RedfishResourceRemoved or ExternalRedfishEvent
 	listener, err := EventWaiter.Listen(ctx,
 		func(event eh.Event) bool {
 			t := event.EventType()

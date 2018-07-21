@@ -41,10 +41,12 @@ type propertygetter interface {
 func PublishRedfishEvents(ctx context.Context, m propertygetter, eb eh.EventBus) error {
 
 	EventPublisher := eventpublisher.NewEventPublisher()
-	eb.AddHandler(eh.MatchAny(), EventPublisher)
+	eb.AddHandler(eh.MatchAnyEventOf(RedfishEvent, domain.RedfishResourceCreated, domain.RedfishResourceRemoved), EventPublisher)
 	EventWaiter := eventwaiter.NewEventWaiter(eventwaiter.SetName("Event Service Publisher"))
 	EventPublisher.AddObserver(EventWaiter)
 
+    // INFO: the publisher only sends RedfishEvent, domain.RedfishResourceCreated, domain.RedfishResourceRemoved)
+    //  because of MatchAnyEventOf
 	listener, err := EventWaiter.Listen(ctx, selectRedfishEvent)
 	if err != nil {
 		return err
