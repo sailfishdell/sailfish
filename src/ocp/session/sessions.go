@@ -73,7 +73,7 @@ func AddAggregate(ctx context.Context, v *view.View, rootID eh.UUID, ch eh.Comma
 
 	// somewhat of a violation of how i want to structure all this, but it's the best option for now
 	EventPublisher := eventpublisher.NewEventPublisher()
-	eb.AddHandler(eh.MatchAny(), EventPublisher)
+	eb.AddHandler(eh.MatchEvent(XAuthTokenRefreshEvent), EventPublisher)
 	EventWaiter := eventwaiter.NewEventWaiter(eventwaiter.SetName("Session Service"))
 	EventPublisher.AddObserver(EventWaiter)
 	eh.RegisterCommand(func() eh.Command {

@@ -162,6 +162,7 @@ func (c *POST) startSessionDeleteTimer(sessionUUID eh.UUID, sessionURI string, t
 	// all background stuff
 	ctx := context.Background()
 
+    // INFO: This event waiter is set up to *ONLY* get XAuthTokenRefreshEvents
 	refreshListener, err := c.eventWaiter.Listen(ctx, func(event eh.Event) bool {
 		if event.EventType() != XAuthTokenRefreshEvent {
 			return false
