@@ -102,7 +102,7 @@ func createSubscription(ctx context.Context, logger log.Logger, sub Subscription
 	}
 
 	// set up listener for the delete event
-    // INFO: this listener will only ever get domain.RedfishResourceRemoved or ExternalRedfishEvent
+	// INFO: this listener will only ever get domain.RedfishResourceRemoved or ExternalRedfishEvent
 	listener, err := EventWaiter.Listen(ctx,
 		func(event eh.Event) bool {
 			t := event.EventType()
