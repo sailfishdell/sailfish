@@ -237,7 +237,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			view.WithController("ar_dump", ardumper),
 			view.WithController("fw_mapper", fwmapper),
 
-			ah.WithAction(ctx, mgrLogger, "manager.reset", "/Actions/ManagerReset", bmcReset, ch, eb),
+			ah.WithAction(ctx, mgrLogger, "manager.reset", "/Actions/ManagerReset", makePumpHandledAction("ManagerReset", 30, eb), ch, eb),
 			ah.WithAction(ctx, mgrLogger, "manager.resettodefaults", "/Actions/ResetToDefaults", bmcResetToDefaults, ch, eb),
 
 			ah.WithAction(ctx, mgrLogger, "manager.forcefailover", "/Actions/ForceFailover", bmcForceFailover, ch, eb),
