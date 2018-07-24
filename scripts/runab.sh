@@ -40,7 +40,11 @@ set_auth_header
 echo "Running ab"
 numreqs=${numreqs:-1000}
 timelimit=${timelimit:-10}
-
+single_step_rps_start=1
+single_step_rps_end=30
+ten_step_rps_start=40
+ten_step_rps_end=200
+rps=${rps:-"$(seq $single_step_rps_start $single_step_rps_end) $(seq $ten_step_rps_start 10 $ten_step_rps_end)"}
 
 # to save CPU TOP information, you have to have SSH access to the box and already copied your ssh key. use "ssh-copy-id root@IP" to copy your key.
 # on idrac, you also have to disable the avocent NSS module by mount binding /etc/nsswitch.conf and removing avct from passwd line
@@ -50,7 +54,7 @@ savetop() {
     SSHPID=$!
 }
 
-for i in $(seq 30 ) $(seq 40 10 120) ; do
+for i in ${rps} ; do
     index=$(printf "%03d" $i)
     outfile=${outputdir}/results-c${index}-r${numreqs}
 

@@ -38,7 +38,7 @@ if [ ! -e $outputdir/to-visit.txt ]; then
     rm -rf $tempdir
 fi
 
-rm -rf $outputdir/{token,basic}
+rm -rf $outputdir/{token,basic} ||:
 mkdir -p $outputdir $outputdir/token $outputdir/basic
 LOGFILE=$outputdir/script-output.txt
 exec 1> >(exec -a 'LOGGING TEE' tee $LOGFILE) 2>&1
@@ -58,6 +58,11 @@ fi
 echo "Running vegeta"
 
 time=10s
+single_step_rps_start=1
+single_step_rps_end=30
+ten_step_rps_start=40
+ten_step_rps_end=200
+rps=${rps:-"$(seq $single_step_rps_start $single_step_rps_end) $(seq $ten_step_rps_start 10 $ten_step_rps_end)"}
 
 savetop() {
     echo "Starting TOP for vegeta run. RATE: $index" > $1
@@ -65,7 +70,7 @@ savetop() {
     SSHPID=$!
 }
 
-for i in $(seq 30 ) $(seq 40 10 200) ; do
+for i in $rps ; do
     index=$(printf "%03d" $i)
 
     if [ ${runtoken} == 1 ]; then
