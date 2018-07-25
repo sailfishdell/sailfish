@@ -71,8 +71,8 @@ host=$ECHOST port=443 ${scriptdir}/runab.sh           ${out}/go-apache-ab
 
 export user=root
 export pass=calvin
-host=$ECHOST port=443 ${scriptdir}/walk.sh        ${out}/odatalite-walk
-host=$ECHOST port=443 ${scriptdir}/vegeta-test.sh ${out}/odatalite-vegeta
+runbasic=0 host=$ECHOST port=443 ${scriptdir}/walk.sh        ${out}/odatalite-walk
+runbasic=0 host=$ECHOST port=443 ${scriptdir}/vegeta-test.sh ${out}/odatalite-vegeta
 uri=${odataliteuri} \
-host=$ECHOST port=443 ${scriptdir}/runhey.sh      ${out}/odatalite-hey
-host=$ECHOST port=443 ${scriptdir}/runab.sh       ${out}/odatalite-ab
+runbasic=0 host=$ECHOST port=443 ${scriptdir}/runhey.sh      ${out}/odatalite-hey
+runbasic=0 host=$ECHOST port=443 ${scriptdir}/runab.sh       ${out}/odatalite-ab
