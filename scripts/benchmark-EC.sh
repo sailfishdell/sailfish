@@ -19,6 +19,7 @@ fi
 export CURL_OPTS=-k
 export prot=https
 export goapacheuri=${goapacheuri:-/redfish/v1/Managers/CMC.Integrated.1/Attributes}
+export odataliteuri=${goapacheuri:-/redfish/v1/Managers/CMC.Integrated.1}
 
 # run TOP and save results during each run
 export profile=1
@@ -71,5 +72,7 @@ host=$ECHOST port=443 ${scriptdir}/runab.sh           ${out}/go-apache-ab
 export user=root
 export pass=calvin
 host=$ECHOST port=443 ${scriptdir}/walk.sh        ${out}/odatalite-walk
-host=$ECHOST port=443 ${scriptdir}/runab.sh       ${out}/odatalite-ab
 host=$ECHOST port=443 ${scriptdir}/vegeta-test.sh ${out}/odatalite-vegeta
+uri=${odataliteuri} \
+host=$ECHOST port=443 ${scriptdir}/runhey.sh      ${out}/odatalite-hey
+host=$ECHOST port=443 ${scriptdir}/runab.sh       ${out}/odatalite-ab
