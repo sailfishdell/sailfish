@@ -11,6 +11,7 @@ outputdir=${1:-out/}
 uri=${uri:-/redfish/v1/Managers/CMC.Integrated.1/Attributes}
 runtoken=${runtoken:-1}
 runbasic=${runbasic:-0}
+BASIC_AUTH_HEADER=$(perl -MMIME::Base64 -e 'print "Authorization: Basic " . encode_base64("'$user':'$pass'")')
 
 if [ -z "${outputdir}" ]; then
     echo Error: Need to set output directory
@@ -37,7 +38,7 @@ trap 'cleanup' EXIT
 
 set_auth_header
 
-echo "Running ab"
+echo "Running hey"
 numreqs=${numreqs:-1000}
 timelimit=${timelimit:-10}
 single_step_rps_start=1
@@ -66,7 +67,7 @@ for i in ${rps} ; do
     sleep 1
     if [ "${runbasic}" = "1" ]; then
         [ "${profile}" == 1 ] && savetop ${outfile}-basic-CPU.txt
-        hey -c ${i} -z ${timelimit}s -a ${user}:${pass}  ${BASE}${uri} | tee ${outfile}-basic.txt
+        hey -c ${i} -z ${timelimit}s -H "${BASIC_AUTH_HEADER}"  ${BASE}${uri} | tee ${outfile}-basic.txt
         [ -n "$SSHPID" ] && kill $SSHPID ||:
     fi
     sleep 1
