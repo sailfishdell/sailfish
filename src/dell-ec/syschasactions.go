@@ -8,12 +8,12 @@ import (
 	domain "github.com/superchalupa/go-redfish/src/redfishresource"
 )
 
-func chassisReset(ctx context.Context, event eh.Event, retData *domain.HTTPCmdProcessedData) error {
+/*func chassisReset(ctx context.Context, event eh.Event, retData *domain.HTTPCmdProcessedData) error {
 	fmt.Printf("\n\nCHASSIS RESET\n\n")
 	retData.Results = map[string]interface{}{"msg": "CHASSIS RESET!"}
 	retData.StatusCode = 200
 	return nil
-}
+}*/
 
 func msmConfigBackup(ctx context.Context, event eh.Event, retData *domain.HTTPCmdProcessedData) error {
 	fmt.Printf("\n\nMSM CONFIG BACKUP\n\n")

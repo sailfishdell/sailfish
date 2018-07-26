@@ -1,6 +1,6 @@
 package dell_ec
 
-import (
+/*import (
 	"context"
 	"fmt"
 
@@ -27,4 +27,4 @@ func chassisSledVirtualReseat(ctx context.Context, event eh.Event, retData *doma
 	retData.Results = map[string]interface{}{"msg": "CHASSIS SLED VIRTUAL RESEAT!"}
 	retData.StatusCode = 200
 	return nil
-}
+}*/

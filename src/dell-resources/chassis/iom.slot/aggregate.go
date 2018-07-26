@@ -39,21 +39,21 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 				"Manufacturer@meta": v.Meta(view.PropGET("manufacturer")),
 
 				"Links": map[string]interface{}{
-					// TODO: "ManagedBy@odata.count": 1  (need some infrastructure for this)
-					"ManagedBy@meta": v.Meta(view.PropGET("managed_by")),
+					"ManagedBy@meta":             v.Meta(view.PropGET("managed_by")),
+					"ManagedBy@odata.count@meta": v.Meta(view.PropGET("managed_by_count")),
 				},
 
-				"SKU":          "",
-				"IndicatorLED": "Lit",
+				"SKU@meta":          v.Meta(view.PropGET("service_tag")),
+				"IndicatorLED@meta": v.Meta(view.PropGET("indicator_led")),
 				"Status": map[string]interface{}{
-					"HealthRollup": "OK",
-					"State":        "Enabled",
-					"Health@meta":  v.Meta(view.PropGET("health")),
+					"HealthRollup@meta": v.Meta(view.PropGET("health_rollup")), //smil call?
+					"State":             "Enabled",                             //hard coded
+					"Health@meta":       v.Meta(view.PropGET("health")),        //smil call?
 				},
 				"Oem": map[string]interface{}{
 					"Dell": map[string]interface{}{
-						"ServiceTag@meta":      v.Meta(view.PropGET("service_tag")),
-						"InstPowerConsumption": "TEST_VALUE",
+						"ServiceTag@meta":           v.Meta(view.PropGET("service_tag")),
+						"InstPowerConsumption@meta": v.Meta(view.PropGET("inst_power_consumption")), //smil call?
 						"OemChassis": map[string]interface{}{
 							"@odata.id": v.GetURI() + "/Attributes",
 						},

@@ -23,35 +23,37 @@ type waiter interface {
 func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.CommandHandler) *view.View {
 
 	properties := map[string]interface{}{
-		"Id@meta":   v.Meta(view.PropGET("unique_name")),
-		"Name@meta": v.Meta(view.PropGET("name")),
+		"Id@meta": v.Meta(view.PropGET("unique_name")),
+		//"Name@meta": v.Meta(view.PropGET("name")),
+		"Name": "Manager", //hardcoded in odatalite
 		// TODO: is this in AR somewhere?
-		"ManagerType":              "BMC",
-		"Description@meta":         v.Meta(view.PropGET("description")),
+		"ManagerType": "BMC", //hardcoded in odatalite
+		//"Description@meta":         v.Meta(view.PropGET("description")),
+		"Description":              "BMC", //hardcoded in odatalite
 		"Model@meta":               v.Meta(view.PropGET("model")),
-		"DateTime@meta":            map[string]interface{}{"GET": map[string]interface{}{"plugin": "datetime"}},
-		"DateTimeLocalOffset@meta": v.Meta(view.PropGET("timezone")),
+		"DateTime@meta":            map[string]interface{}{"GET": map[string]interface{}{"plugin": "datetime"}}, //taken from local system clock (WORK ON THIS)
+		"DateTimeLocalOffset@meta": v.Meta(view.PropGET("timezone")),                                            //taken from local system clock
 		"FirmwareVersion@meta":     v.Meta(view.PropGET("firmware_version")),
 		"Links": map[string]interface{}{
-			"ManagerForServers@meta": v.Meta(view.PropGET("bmc_manager_for_servers")),
-			// TODO: Need standard method to count arrays
+			//"ManagerForServers@meta": v.Meta(view.PropGET("bmc_manager_for_servers")), // not in odatalite json?
 			// "ManagerForChassis@odata.count": 1,
-			"ManagerForChassis@meta": v.Meta(view.PropGET("bmc_manager_for_chassis")),
-			"ManagerInChassis@meta":  v.Meta(view.PropGET("in_chassis")),
+			"ManagerForChassis@meta":             v.Meta(view.PropGET("manager_for_chassis")),
+			"ManagerForChassis@odata.count@meta": v.Meta(view.PropGET("manager_for_chassis_count")),
+			//"ManagerInChassis@meta":  v.Meta(view.PropGET("in_chassis")), //not in odatalite json?
 		},
 
 		"SerialConsole": map[string]interface{}{
-			"ConnectTypesSupported@odata.count": "TEST_VALUE",
-			"MaxConcurrentSessions":             "TEST_VALUE",
-			"ConnectTypesSupported":             []interface{}{},
-			"ServiceEnabled":                    false,
+			"ConnectTypesSupported@odata.count@meta": v.Meta(view.PropGET("connect_types_supported_count")),
+			"MaxConcurrentSessions":                  0,
+			"ConnectTypesSupported@meta":             v.Meta(view.PropGET("connect_types_supported")),
+			"ServiceEnabled":                         false,
 		},
 
 		"CommandShell": map[string]interface{}{
-			"ConnectTypesSupported@odata.count": "TEST_VALUE",
-			"MaxConcurrentSessions":             "TEST_VALUE",
-			"ConnectTypesSupported":             []interface{}{},
-			"ServiceEnabled":                    false,
+			"ConnectTypesSupported@odata.count@meta": v.Meta(view.PropGET("connect_types_supported_count")),
+			"MaxConcurrentSessions":                  0,
+			"ConnectTypesSupported@meta":             v.Meta(view.PropGET("connect_types_supported")),
+			"ServiceEnabled":                         false,
 		},
 
 		"LogServices": map[string]interface{}{
@@ -59,10 +61,10 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 		},
 
 		"GraphicalConsole": map[string]interface{}{
-			"ConnectTypesSupported@odata.count": "TEST_VALUE",
-			"MaxConcurrentSessions":             "TEST_VALUE",
-			"ConnectTypesSupported":             []interface{}{},
-			"ServiceEnabled":                    false,
+			"ConnectTypesSupported@odata.count@meta": v.Meta(view.PropGET("connect_types_supported_count")),
+			"MaxConcurrentSessions":                  0,
+			"ConnectTypesSupported@meta":             v.Meta(view.PropGET("connect_types_supported")),
+			"ServiceEnabled":                         false,
 		},
 
 		"Oem": map[string]interface{}{
@@ -277,7 +279,7 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 			},
 		},
 		"Name": "ManagerRedundancy",
-		"RedundancySet@odata.count": 2,
+		"RedundancySet@odata.count": 2, //is supposed to be length of redundancy set
 		"@odata.id":                 "/redfish/v1/Managers/CMC.Integrated.1#Redundancy",
 		"@odata.context":            "/redfish/v1/$metadata#Redundancy.Redundancy",
 		"Mode@meta":                 v.Meta(view.PropGET("redundancy_mode")),
