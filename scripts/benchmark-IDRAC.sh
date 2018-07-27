@@ -45,7 +45,7 @@ export pass=calvin
 export uri=/redfish/v1/Managers/iDRAC.Embedded.1
 host=$IDRACHOST port=443 ${scriptdir}/walk.sh        ${out}/odatalite-walk
 host=$IDRACHOST port=443 ${scriptdir}/runab.sh       ${out}/odatalite-OLD-ab
-host=$IDRACHOST port=443 ${scriptdir}/vegeta-test.sh ${out}/odatalite-ALL-vegeta
+host=$IDRACHOST port=443 ${scriptdir}/runvegeta.sh ${out}/odatalite-ALL-vegeta
 
 # this uri is using the new sqlite
 uri=${sqliteuri}    \
@@ -54,7 +54,7 @@ host=$IDRACHOST port=443 ${scriptdir}/runab.sh       ${out}/odatalite-NEW-ab
 # select out the new sqlite URIs for specific bench by vegeta
 mkdir ${out}/odatalite-NEW-vegeta ||:
 grep PCIeDevice ${out}/odatalite-ALL-vegeta/to-visit.txt > ${out}/odatalite-NEW-vegeta/to-visit.txt
-host=$IDRACHOST port=443 ${scriptdir}/vegeta-test.sh ${out}/odatalite-NEW-vegeta
+host=$IDRACHOST port=443 ${scriptdir}/runvegeta.sh ${out}/odatalite-NEW-vegeta
 
 
 ####################
@@ -63,15 +63,16 @@ host=$IDRACHOST port=443 ${scriptdir}/vegeta-test.sh ${out}/odatalite-NEW-vegeta
 export user=Administrator
 export pass=password
 host=$IDRACHOST TOKEN= port=8443 ${scriptdir}/walk.sh        ${out}/go-https-walk
-host=$IDRACHOST TOKEN= port=8443 ${scriptdir}/vegeta-test.sh ${out}/go-https-vegeta
+host=$IDRACHOST TOKEN= port=8443 ${scriptdir}/runvegeta.sh ${out}/go-https-vegeta
 host=$IDRACHOST TOKEN= port=8443 ${scriptdir}/runhey.sh      ${out}/go-https-hey
 host=$IDRACHOST TOKEN= port=8443 ${scriptdir}/runab.sh       ${out}/go-https-ab
 
-
 # test go-redfish through apache
+export AUTH_HEADER="Authorization: Bearer teapot"
 mkdir -p ${out}/go-apache-vegeta
+export uri=/redfish/v1/Managers/CMC.Integrated.1
 grep /Attributes ${out}/go-https-vegeta/to-visit.txt > ${out}/go-apache-vegeta/to-visit.txt
-host=$IDRACHOST port=2443 ${scriptdir}/vegeta-test.sh     ${out}/go-apache-vegeta
+host=$IDRACHOST port=2443 ${scriptdir}/runvegeta.sh     ${out}/go-apache-vegeta
 host=$IDRACHOST port=2443 ${scriptdir}/runhey.sh          ${out}/go-apache-hey
 host=$IDRACHOST port=2443 ${scriptdir}/runab.sh           ${out}/go-apache-ab
 
