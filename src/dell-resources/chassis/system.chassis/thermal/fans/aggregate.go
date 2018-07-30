@@ -44,14 +44,14 @@ func GetViewFragment(v *view.View) map[string]interface{} {
 		"Description":    "Represents the properties for Fan and Cooling",
 		"FanName@meta":   v.Meta(view.PropGET("name")),
 		"MemberId@meta":  v.Meta(view.PropGET("unique_id")),
-		"ReadingUnits":   "RPM",
-		"Reading@meta":   v.Meta(view.PropGET("rpm")),
+		"ReadingUnits":		"RPM",
+		"Reading@meta": v.Meta(view.PropGET("rpm")),
 		"Status": map[string]interface{}{
 			"HealthRollup@meta": v.Meta(view.PropGET("health")),
-			"Health@meta":       v.Meta(view.PropGET("health")),
+			"Health@meta":  v.Meta(view.PropGET("health")),
 		},
 		"Oem": map[string]interface{}{
-			"ReadingUnits":         "Percent",
+			"ReadingUnits":    "Percent",
 			"Reading@meta":         v.Meta(view.PropGET("Fanpwm_int")),
 			"FirmwareVersion@meta": v.Meta(view.PropGET("firmware_version")),
 			"HardwareVersion@meta": v.Meta(view.PropGET("hardware_version")),
