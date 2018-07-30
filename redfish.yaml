@@ -15,7 +15,7 @@ awesome_mapper:
     fan:
         - { Select: "type == 'FanEvent' && data.ObjectHeader.FQDD == fqdd",
             ModelUpdate: [
-                {Property: "fanwpm", Query: "data.Fanpwm" },
+                {Property: "fanpwm", Query: "data.Fanpwm" },
                 {Property: "key", Query: "data.Key" },
                 {Property: "fanname", Query: "data.FanName" },
                 {Property: "Fanpwm_int", Query: "data.Fanpwm_int" },
@@ -28,6 +28,7 @@ awesome_mapper:
                 {Property: "Numrotors", Query: "data.Numrotors" },
                 {Property: "Rotor2rpm", Query: "data.Rotor2rpm" },
                 {Property: "Rotor1rpm", Query: "data.Rotor1rpm" },
+                {Property: "rpm", Query: "(data.Rotor1rpm+data.Rotor2rpm)/2" },
                 {Property: "FanStateMask", Query: "data.FanStateMask" }]}
 
     health:
@@ -153,6 +154,10 @@ mappings:
 
     Fans/Fan.Slot:
         - {Property: "health",    FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "FanHealth" }
+        - {Property: "firmware_version",    FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "FirmwareVersion" }
+        - {Property: "hardware_version",    FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "HardwareVersion" }
+        - {Property: "graphics_uri",    FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "GraphicsURI" }
+        - {Property: "name",    FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "FanName" }
 
     Chassis/System.Modular:
         # no mappings for now: placeholder

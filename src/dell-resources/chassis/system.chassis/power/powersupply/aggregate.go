@@ -53,9 +53,9 @@ func getViewFragment(v *view.View) map[string]interface{} {
 		"Redundancy@odata.count":  "TEST_VALUE",
 
 		"Status": map[string]interface{}{
-			"HealthRollup": "TEST_VALUE",
+			"HealthRollup@meta": v.Meta(view.GETProperty("psu_rollup"), view.GETModel("global_health")),
 			"State":        "TEST_VALUE",
-			"Health":       "TEST_VALUE",
+			"Health@meta":       v.Meta(view.PropGET("health")),
 		},
 
 		"Oem": map[string]interface{}{
