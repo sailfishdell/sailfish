@@ -47,7 +47,7 @@ mkdir bench ||:
 export user=Administrator
 export pass=password
 host=$ECHOST TOKEN= port=8443 ${scriptdir}/walk.sh        ${out}/go-https-walk
-host=$ECHOST TOKEN= port=8443 ${scriptdir}/vegeta-test.sh ${out}/go-https-vegeta
+host=$ECHOST TOKEN= port=8443 ${scriptdir}/runvegeta.sh ${out}/go-https-vegeta
 host=$ECHOST TOKEN= port=8443 ${scriptdir}/runhey.sh      ${out}/go-https-hey
 host=$ECHOST TOKEN= port=8443 ${scriptdir}/runab.sh       ${out}/go-https-ab
 
@@ -55,13 +55,13 @@ host=$ECHOST TOKEN= port=8443 ${scriptdir}/runab.sh       ${out}/go-https-ab
 # apparently incopatible with the new certs
 #host=$ECHOST TOKEN= port=9443 ${scriptdir}/walk.sh        ${out}/go-openssl-walk
 #host=$ECHOST TOKEN= port=9443 ${scriptdir}/runab.sh       ${out}/go-openssl-ab
-#host=$ECHOST TOKEN= port=9443 ${scriptdir}/vegeta-test.sh ${out}/go-openssl-vegeta
+#host=$ECHOST TOKEN= port=9443 ${scriptdir}/runvegeta.sh ${out}/go-openssl-vegeta
 #host=$ECHOST TOKEN= port=9443 ${scriptdir}/runhey.sh      ${out}/go-openssl-hey
 
 # test go-redfish through apache
 mkdir -p ${out}/go-apache-vegeta
 grep /Attributes ${out}/go-https-vegeta/to-visit.txt > ${out}/go-apache-vegeta/to-visit.txt
-host=$ECHOST port=443 ${scriptdir}/vegeta-test.sh     ${out}/go-apache-vegeta
+host=$ECHOST port=443 ${scriptdir}/runvegeta.sh     ${out}/go-apache-vegeta
 
 uri=${goapacheuri} \
 host=$ECHOST port=443 ${scriptdir}/runhey.sh          ${out}/go-apache-hey
@@ -72,7 +72,7 @@ host=$ECHOST port=443 ${scriptdir}/runab.sh           ${out}/go-apache-ab
 export user=root
 export pass=calvin
 runbasic=0 host=$ECHOST port=443 ${scriptdir}/walk.sh        ${out}/odatalite-walk
-runbasic=0 host=$ECHOST port=443 ${scriptdir}/vegeta-test.sh ${out}/odatalite-vegeta
+runbasic=0 host=$ECHOST port=443 ${scriptdir}/runvegeta.sh ${out}/odatalite-vegeta
 uri=${odataliteuri} \
 runbasic=0 host=$ECHOST port=443 ${scriptdir}/runhey.sh      ${out}/odatalite-hey
 runbasic=0 host=$ECHOST port=443 ${scriptdir}/runab.sh       ${out}/odatalite-ab

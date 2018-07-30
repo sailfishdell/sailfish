@@ -93,7 +93,22 @@ for i in $rps ; do
         cat $outputdir/basic/results-rate-${index}.bin | vegeta report -reporter='hist[0,2ms,4ms,6ms,8ms,10ms,20ms,30ms,40ms,60ms,80ms,100ms,200ms,400ms,800ms,1600ms,3200ms,6400ms]' > $outputdir/basic/report-r${index}-hist.txt
     fi
 
-    cat  $outputdir/token/report-r${index}-text.txt  $outputdir/basic/report-r${index}-text.txt ||:
+    cat  $outputdir/*/report-r${index}-text.txt ||:
 done
 
+for i in {token,basic}; do
+    [ -d ${outputdir}/$i ] || continue
+    grep ^Latencies ${outputdir}/${i}/report-r*-text.txt > ${outputdir}/LATENCIES-${i}.txt ||:
+    grep ^Success ${outputdir}/${i}/report-r*-text.txt > ${outputdir}/SUCCESSRATE-${i}.txt ||:
+    grep ^%Cpu ${outputdir}/${i}/results-c*-r1000-CPU.txt  > ${outputdir}/TOTALCPU-${i}.txt ||:
+done
+
+# close FDs to ensure tee finishes
+exec 1>&0 2>&1
+if [ -n "$logging_tee_pid" ];then
+    while ps --pid $logging_tee_pid > /dev/null 2>&1
+    do
+        sleep 1
+    done
+fi
 

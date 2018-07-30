@@ -17,8 +17,8 @@ if [ -z "${outputdir}" ]; then
     exit 1
 fi
 
-rm -rf ${outputdir}
-mkdir -p $outputdir
+rm -rf $outputdir/{token,basic} ||:
+mkdir -p $outputdir $outputdir/token $outputdir/basic
 LOGFILE=$outputdir/script-output.txt
 exec 1> >(exec -a 'LOGGING TEE' tee $LOGFILE) 2>&1
 TEEPID=$!
@@ -56,21 +56,30 @@ savetop() {
 
 for i in ${rps} ; do
     index=$(printf "%03d" $i)
-    outfile=${outputdir}/results-c${index}-r${numreqs}
 
     if [ "${runtoken}" = "1" ]; then
-        [ "${profile}" == 1 ] && savetop ${outfile}-token-CPU.txt
-        ab -t ${timelimit} -c $i -n ${numreqs} -k -g ${outfile}-token.plot -e ${outfile}-token.csv  -H "$AUTH_HEADER" -H "content-type: application/json" ${BASE}${uri} | tee ${outfile}-token.txt
+        outfile=${outputdir}/token/results-c${index}-r${numreqs}
+        [ "${profile}" == 1 ] && savetop ${outfile}-CPU.txt
+        ab -t ${timelimit} -c $i -n ${numreqs} -k -g ${outfile}.plot -e ${outfile}.csv  -H "$AUTH_HEADER" -H "content-type: application/json" ${BASE}${uri} | tee ${outfile}.txt
         [ -n "$SSHPID" ] && kill $SSHPID ||:
     fi
     sleep 1
     if [ "${runbasic}" = "1" ]; then
-        [ "${profile}" == 1 ] && savetop ${outfile}-basic-CPU.txt
-        ab -t ${timelimit} -c $i -n ${numreqs} -k -g ${outfile}-basic.plot -e ${outfile}-basic.csv -A ${user}:${pass}  -H "content-type: application/json" ${BASE}${uri} | tee ${outfile}-basic.txt
+        outfile=${outputdir}/basic/results-c${index}-r${numreqs}
+        [ "${profile}" == 1 ] && savetop ${outfile}-CPU.txt
+        ab -t ${timelimit} -c $i -n ${numreqs} -k -g ${outfile}.plot -e ${outfile}.csv -A ${user}:${pass}  -H "content-type: application/json" ${BASE}${uri} | tee ${outfile}.txt
         [ -n "$SSHPID" ] && kill $SSHPID ||:
     fi
     sleep 1
 done
+
+for i in {token,basic}; do
+    [ -d ${outputdir}/$i ] || continue
+    grep ^Total: ${outputdir}/${i}/results-c*-r1000.txt   > ${outputdir}/LATENCIES-${i}.txt ||:
+    grep ^Request ${outputdir}/${i}/results-c*-r1000.txt  > ${outputdir}/RPS-${i}.txt ||:
+    grep ^%Cpu ${outputdir}/${i}/results-c*-r1000-CPU.txt  > ${outputdir}/TOTALCPU-${i}.txt ||:
+done
+
 
 # close FDs to ensure tee finishes
 exec 1>&0 2>&1

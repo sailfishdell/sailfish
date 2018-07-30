@@ -3,7 +3,6 @@ package domain
 import (
 	"context"
 	"errors"
-	"fmt"
 	"reflect"
 	"sync"
 )
@@ -147,13 +146,13 @@ func GETfn(ctx context.Context, rrp RedfishResourceProperty, opts encOpts) (inte
 		return nil, errors.New("No plugin named(" + pluginName + ") for GET")
 	}
 
-	ContextLogger(ctx, "property_process").Debug("getting property: GET", "value", fmt.Sprintf("%v", rrp.Value))
+	// ContextLogger(ctx, "property_process").Debug("getting property: GET", "value", fmt.Sprintf("%v", rrp.Value))
 	if plugin, ok := plugin.(NewPropGetter); ok {
-		defer ContextLogger(ctx, "property_process").Debug("AFTER getting property: GET - type assert success", "value", fmt.Sprintf("%v", rrp.Value))
+		// defer ContextLogger(ctx, "property_process").Debug("AFTER getting property: GET - type assert success", "value", fmt.Sprintf("%v", rrp.Value))
 		return plugin.PropertyGet(ctx, rrp, meta_t)
 	}
 	if plugin, ok := plugin.(CompatPropGetter); ok {
-		defer ContextLogger(ctx, "property_process").Debug("AFTER getting property: GET - type assert success", "value", fmt.Sprintf("%v", rrp.Value))
+		// defer ContextLogger(ctx, "property_process").Debug("AFTER getting property: GET - type assert success", "value", fmt.Sprintf("%v", rrp.Value))
 		tempRRP := &RedfishResourceProperty{Value: rrp.Value, Meta: rrp.Meta}
 		plugin.PropertyGet(ctx, nil, tempRRP, meta_t)
 		return tempRRP.Value, nil
@@ -177,13 +176,13 @@ func PATCHfn(ctx context.Context, rrp RedfishResourceProperty, opts encOpts) (in
 		return nil, errors.New("No plugin named(" + pluginName + ") for PATCH")
 	}
 
-	ContextLogger(ctx, "property_process").Debug("getting property: PATCH", "value", fmt.Sprintf("%v", rrp.Value))
+	// ContextLogger(ctx, "property_process").Debug("getting property: PATCH", "value", fmt.Sprintf("%v", rrp.Value))
 	if plugin, ok := plugin.(NewPropPatcher); ok {
-		defer ContextLogger(ctx, "property_process").Debug("AFTER getting property: PATCH - type assert success", "value", fmt.Sprintf("%v", rrp.Value))
+		// defer ContextLogger(ctx, "property_process").Debug("AFTER getting property: PATCH - type assert success", "value", fmt.Sprintf("%v", rrp.Value))
 		return plugin.PropertyPatch(ctx, rrp, opts.request, meta_t)
 	}
 	if plugin, ok := plugin.(CompatPropPatcher); ok {
-		defer ContextLogger(ctx, "property_process").Debug("AFTER getting property: PATCH - type assert success", "value", fmt.Sprintf("%v", rrp.Value))
+		// defer ContextLogger(ctx, "property_process").Debug("AFTER getting property: PATCH - type assert success", "value", fmt.Sprintf("%v", rrp.Value))
 		tempRRP := &RedfishResourceProperty{Value: rrp.Value, Meta: rrp.Meta}
 		plugin.PropertyPatch(ctx, nil, tempRRP, meta_t)
 		return tempRRP.Value, nil
