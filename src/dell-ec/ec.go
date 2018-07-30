@@ -237,7 +237,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			view.WithModel("redundancy_health", mgrRedundancyMdl), // health info in default model
 			view.WithModel("health", mdl),                         // health info in default model
 			view.WithModel("global_health", globalHealthModel),
-			view.WithModel("swinv", mdl), // common name for swinv model, shared in this case
+			view.WithModel("swinv", mdl),                          // common name for swinv model, shared in this case
 			view.WithModel("default", mdl),
 			view.WithModel("etag", mdl),
 			view.WithController("ar_mapper", armapper),

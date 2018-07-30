@@ -156,6 +156,9 @@ mappings:
         - {Property: "graphics_uri",    FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "GraphicsURI" }
         - {Property: "name",    FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "FanName" }
 
+    Chassis/System.Modular:
+        # no mappings for now: placeholder
+
     UpdateService:
         # no mappings for now: placeholder
 
