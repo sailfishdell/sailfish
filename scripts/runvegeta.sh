@@ -100,7 +100,7 @@ for i in {token,basic}; do
     [ -d ${outputdir}/$i ] || continue
     grep ^Latencies ${outputdir}/${i}/report-r*-text.txt > ${outputdir}/LATENCIES-${i}.txt ||:
     grep ^Success ${outputdir}/${i}/report-r*-text.txt > ${outputdir}/SUCCESSRATE-${i}.txt ||:
-    grep ^%Cpu ${outputdir}/${i}/results-c*-r1000-CPU.txt  > ${outputdir}/TOTALCPU-${i}.txt ||:
+    grep ^%Cpu ${outputdir}/${i}/results-r*-CPU.txt  > ${outputdir}/TOTALCPU-${i}.txt ||:
 done
 
 # close FDs to ensure tee finishes
