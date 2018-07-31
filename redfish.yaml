@@ -88,12 +88,15 @@ mappings:
         - {Property: "name",                    FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Name" }
         - {Property: "description",             FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Description" }
         - {Property: "health_state",            FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "State" }
-        - {Property: "asset_tag",               FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "AssetTag" }
-        - {Property: "serial",                  FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "SerialNumber" }
-        - {Property: "part_number",             FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "PartNumber" }
+        - {Property: "asset_tag",               FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "AssetTag" } #not listed in attributes.txt
+        - {Property: "sku",                     FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "SKU" } #not listed in attributes.txt
+        - {Property: "serial",                  FQDD: "System.Chassis.1", Group: "Info", Index: "1", Name: "SerialNumber" }
+        - {Property: "part_number",             FQDD: "System.Chassis.1", Group: "Info", Index: "1", Name: "PartNumber" }
         - {Property: "chassis_type",            FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "ChassisType" }
         - {Property: "model",                   FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Model" }
         - {Property: "manufacturer",            FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Manufacturer" }
+        - {Property: "description",             FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Description" }
+        - {Property: "indicator_led",           FQDD: "System.Chassis.1", Group: "Info", Index: "1", Name: "IndicatorLED" }
         - {Property: "redundancy_mode",         FQDD: "{FQDD}", Group: "Redundancy", Index: "1", Name: "Mode" }
         - {Property: "redundancy_health_state", FQDD: "{FQDD}", Group: "Redundancy", Index: "1", Name: "State" }
         - {Property: "redundancy_min",          FQDD: "{FQDD}", Group: "Redundancy", Index: "1", Name: "MinNumNeeded" }
@@ -112,9 +115,20 @@ mappings:
         - {Property: "name",         FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Name" }
         - {Property: "manufacturer", FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Manufacturer" }
         - {Property: "service_tag",  FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "ServiceTag" }
+        - {Property: "indicator_led", FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "IndicatorLED"}
 
     Chassis/System.Chassis:
-        # no mappings for now: placeholder
+        - {Property: "asset_tag",    FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "AssetTag" }
+        - {Property: "description",  FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Description" }
+        - {Property: "power_state",  FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "PowerState" }
+        - {Property: "serial",       FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "SerialNumber" }
+        - {Property: "part_number",  FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "PartNumber" }
+        - {Property: "chassis_type", FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "ChassisType" }
+        - {Property: "model",        FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Model" }
+        - {Property: "name",         FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Name" }
+        - {Property: "manufacturer", FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Manufacturer" }
+        - {Property: "service_tag",  FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "ServiceTag" }
+        - {Property: "indicator_led", FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "IndicatorLED"}
 
     Chassis/System.Modular:
         - {Property: "service_tag",  FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "ServiceTag" }
@@ -123,6 +137,10 @@ mappings:
         - {Property: "model",        FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Model" }
         - {Property: "manufacturer", FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Manufacturer" }
         - {Property: "serial",       FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "SerialNumber" }
+        - {Property: "description",  FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Description" }
+        - {Property: "part_number",  FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "PartNumber" }
+        - {Property: "name",         FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Name" }
+
 
     Chassis/System.Chassis/Power:
         # no mappings for now: placeholder

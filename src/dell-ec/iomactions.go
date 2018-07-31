@@ -1,6 +1,6 @@
 package dell_ec
 
-import (
+/*import (
 	"context"
 	"fmt"
 
@@ -27,4 +27,4 @@ func iomVirtualReseat(ctx context.Context, event eh.Event, retData *domain.HTTPC
 	retData.Results = map[string]interface{}{"msg": "IOM VIRTUAL RESEAT!"}
 	retData.StatusCode = 200
 	return nil
-}
+}*/

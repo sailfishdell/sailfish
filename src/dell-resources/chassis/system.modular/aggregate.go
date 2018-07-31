@@ -33,21 +33,21 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 				"ChassisType@meta":  v.Meta(view.PropGET("chassis_type")),
 				"Model@meta":        v.Meta(view.PropGET("model")),
 				"Manufacturer@meta": v.Meta(view.PropGET("manufacturer")),
-				"SerialNumber":      v.Meta(view.PropGET("serial")),
+				"SerialNumber@meta": v.Meta(view.PropGET("serial")),
 
 				"Links": map[string]interface{}{
-					"ManagedBy@meta":        v.Meta(view.PropGET("managed_by")),
-					"ManagedBy@odata.count": "TEST_VALUE",
+					"ManagedBy@meta":             v.Meta(view.PropGET("managed_by")),
+					"ManagedBy@odata.count@meta": v.Meta(view.PropGET("managed_by_count")),
 				},
 
-				"Description": "TEST_VALUE",
+				"Description": v.Meta(view.PropGET("description")),
 				"Status": map[string]interface{}{
-					"HealthRollup": "TEST_VALUE",
-					"State":        "TEST_VALUE",
-					"Health":       "TEST_VALUE",
+					"HealthRollup@meta": v.Meta(view.PropGET("health_rollup")), //smil call?
+					"State":             "Enabled",                             //hardcoded
+					"Health@meta":       v.Meta(view.PropGET("health")),        //smil call?
 				},
-				"PartNumber": "TEST_VALUE",
-				"Name":       "TEST_VALUE",
+				"PartNumber@meta": v.Meta(view.PropGET("part_number")),
+				"Name@meta":       v.Meta(view.PropGET("name")),
 				"Oem": map[string]interface{}{
 					"OemChassis": map[string]interface{}{
 						"@odata.id": v.GetURI() + "/Attributes",

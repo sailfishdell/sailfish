@@ -28,22 +28,22 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 			},
 			Properties: map[string]interface{}{
 				"Id@meta":           v.Meta(view.PropGET("unique_name")),
-				"AssetTag@meta":     v.Meta(view.PropGET("asset_tag"), view.PropPATCH("asset_tag", "ar_mapper")),
-				"SerialNumber@meta": v.Meta(view.PropGET("serial")),
-				"PartNumber@meta":   v.Meta(view.PropGET("part_number")),
+				"AssetTag@meta":     v.Meta(view.PropGET("asset_tag"), view.PropPATCH("asset_tag", "ar_mapper")), //hardcoded null in odatalite
+				"SerialNumber@meta": v.Meta(view.PropGET("serial")),                                              //uses sys.chas.1 ar value
+				"PartNumber@meta":   v.Meta(view.PropGET("part_number")),                                         //uses sys.chas.1 ar value
 				"ChassisType@meta":  v.Meta(view.PropGET("chassis_type")),
 				"Model@meta":        v.Meta(view.PropGET("model")),
 				"Manufacturer@meta": v.Meta(view.PropGET("manufacturer")),
 				"Name@meta":         v.Meta(view.PropGET("name")),
-				"SKU":               "TEST_VALUE",
-				"Description":       "An instance of Chassis Management Controller",
+				"SKU@meta":          v.Meta(view.PropGET("sku"), view.PropPATCH("sku", "ar_mapper")), //hardcoded null in odatalite
+				"Description@meta":  v.Meta(view.PropGET("description")),
 				"Links":             map[string]interface{}{},
 				"Status": map[string]interface{}{
-					"HealthRollup": "TEST_VALUE",
-					"State":        "TEST_VALUE",
-					"Health":       "TEST_VALUE",
+					"HealthRollup@meta": v.Meta(view.PropGET("health_rollup")), //smil call?
+					"State@meta":        v.Meta(view.PropGET("health_state")),
+					"Health@meta":       v.Meta(view.PropGET("health")), //smil call?
 				},
-				"IndicatorLED": "TEST_VALUE",
+				"IndicatorLED@meta": v.Meta(view.PropGET("indicator_led")), //uses sys.chas.1 ar value
 				"Oem": map[string]interface{}{
 					"OemChassis": map[string]interface{}{
 						"@odata.id": v.GetURI() + "/Attributes",

@@ -38,17 +38,18 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 				"Description@meta":  v.Meta(view.GETProperty("description"), view.GETModel("default")),
 				"PowerState@meta":   v.Meta(view.GETProperty("power_state"), view.GETModel("default")),
 
-				"IndicatorLED": "Lit",
-				"SKU":          "PT00033",
+				"IndicatorLED@meta": v.Meta(view.GETProperty("indicator_led"), view.GETModel("default")),
+				"SKU@meta":          v.Meta(view.GETProperty("service_tag"), view.GETModel("default")),
 
 				"Links": map[string]interface{}{
-					"ManagedBy@meta": v.Meta(view.PropGET("managed_by")),
+					"ManagedBy@meta":             v.Meta(view.PropGET("managed_by")),
+					"ManagedBy@odata.count@meta": v.Meta(view.PropGET("managed_by_count")),
 				},
 
 				"Status": map[string]interface{}{
-					"HealthRollup": "OK",
-					"State":        "Enabled",
-					"Health":       "OK",
+					"HealthRollup@meta": v.Meta(view.PropGET("health_rollup")), //smil call?
+					"State":             "Enabled",                             //hardcoded
+					"Health@meta":       v.Meta(view.PropGET("health")),        //smil call?
 				},
 
 				"Power":   map[string]interface{}{"@odata.id": v.GetURI() + "/Power"},
