@@ -214,9 +214,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			model.UpdateProperty("connect_types_supported", connectTypesSupported),
 			model.UpdateProperty("connect_types_supported_count", len(connectTypesSupported)),
 
-			//model.UpdateProperty("manager_for_chassis", managerForChassis),
-			//model.UpdateProperty("manager_for_chassis_count", len(managerForChassis)),
-
 			// manually add health properties until we get a mapper to automatically manage these
 			model.UpdateProperty("health", "TEST health"), //smil call?
 			model.UpdateProperty("state", "TEST state"),   //from CMC.Integrated.1#Info.1#State
@@ -240,7 +237,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			view.WithModel("redundancy_health", mgrRedundancyMdl), // health info in default model
 			view.WithModel("health", mdl),                         // health info in default model
 			view.WithModel("global_health", globalHealthModel),
-			view.WithModel("swinv", mdl),                          // common name for swinv model, shared in this case
+			view.WithModel("swinv", mdl), // common name for swinv model, shared in this case
 			view.WithModel("default", mdl),
 			view.WithController("ar_mapper", armapper),
 			view.WithController("ar_dump", ardumper),
@@ -279,6 +276,8 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 
 		// This controller will populate 'attributes' property with AR entries matching this FQDD ('mgrName')
 		ardumper, _ = attributes.NewController(ctx, chasModel, []string{mgrName}, ch, eb)
+
+		awesome_mapper.New(ctx, chasLogger, cfgMgr, chasModel, "health", map[string]interface{}{"fqdd": "System.Chassis.1#SubSystem.1#CMC"})
 
 		chasCmcVw := view.New(
 			view.WithURI(rootView.GetURI()+"/Chassis/"+mgrName),
@@ -543,8 +542,8 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			model.UpdateProperty("managed_by", managedBy),
 			model.UpdateProperty("managed_by_count", len(managedBy)),
 		)
-                fwmapper, _ := ar_mapper.New(ctx, sledLogger.New("module", "firmware/inventory"), sledModel, "firmware/inventory", sledName, ch, eb)
-                updateFns = append(updateFns, fwmapper.ConfigChangedFn)
+		fwmapper, _ := ar_mapper.New(ctx, sledLogger.New("module", "firmware/inventory"), sledModel, "firmware/inventory", sledName, ch, eb)
+		updateFns = append(updateFns, fwmapper.ConfigChangedFn)
 		armapper, _ := ar_mapper.New(ctx, sledLogger, sledModel, "Chassis/System.Modular", sledName, ch, eb)
 		updateFns = append(updateFns, armapper.ConfigChangedFn)
 
@@ -557,7 +556,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		sledView := view.New(
 			view.WithURI(rootView.GetURI()+"/Chassis/"+sledName),
 			view.WithModel("default", sledModel),
-                        view.WithModel("swinv", sledModel),
+			view.WithModel("swinv", sledModel),
 			view.WithModel("global_health", globalHealthModel),
 			view.WithController("ar_mapper", armapper),
 			view.WithController("ar_dumper", ardumper),

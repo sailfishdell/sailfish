@@ -21,4 +21,3 @@ func updateEID674Reset(ctx context.Context, event eh.Event, retData *domain.HTTP
 	retData.StatusCode = 200
 	return nil
 }
-

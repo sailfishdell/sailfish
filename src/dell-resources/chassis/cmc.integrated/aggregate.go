@@ -28,14 +28,14 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 			},
 			Properties: map[string]interface{}{
 				"Id@meta":           v.Meta(view.PropGET("unique_name")),
-				//"AssetTag@meta":     v.Meta(view.PropGET("asset_tag")), //, view.PropPATCH("asset_tag", "ar_mapper")),
-				"SerialNumber@meta": v.Meta(view.PropGET("serial")), //uses sys.chas.1 ar value
+				"AssetTag":          nil,
+				"SerialNumber@meta": v.Meta(view.PropGET("serial")),      //uses sys.chas.1 ar value
 				"PartNumber@meta":   v.Meta(view.PropGET("part_number")), //uses sys.chas.1 ar value
 				"ChassisType@meta":  v.Meta(view.PropGET("chassis_type")),
 				"Model@meta":        v.Meta(view.PropGET("model")),
 				"Manufacturer@meta": v.Meta(view.PropGET("manufacturer")),
 				"Name@meta":         v.Meta(view.PropGET("name")),
-				//"SKU@meta":          v.Meta(view.PropGET("sku")), //, view.PropPATCH("sku", "ar_mapper")),
+				"SKU":               nil,
 				"Description@meta":  v.Meta(view.PropGET("description")),
 				"Links":             map[string]interface{}{},
 				"Status": map[string]interface{}{
