@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"strconv"
 
 	eh "github.com/looplab/eventhorizon"
 	log "github.com/superchalupa/go-redfish/src/log"
@@ -194,6 +195,16 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if r.Method == "GET" {
+		// $top, $skip, $filter
+		data = handleCollectionQueryOptions(r, data)
+		data = handleExpand(r, data)
+		data = handleSelect(r, data)
+
+		// TODO: Implementation shall return the 501, Not Implemented, status code for any query parameters starting with "$" that are not supported, and should return an extended error indicating the requested query parameter(s) not supported for this resource.
+		// Implementation: for loop over the query parameters and check for anything unexpected
+	}
+
 	// set headers first
 	w.Header().Add("Strict-Transport-Security", "max-age=63072000; includeSubDomains") // for A+ SSL Labs score
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
@@ -204,9 +215,47 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add(k, v)
 	}
 
-	// and then encode response
-	enc := json.NewEncoder(w)
-	// enc.SetIndent("", "  ")
-	enc.Encode(data.Results)
+	/*
+	       // START
+	       // STREAMING ENCODE TO OUTPUT (not possible to get content length)
+	   	// and then encode response
+	   	enc := json.NewEncoder(w)
+	   	// enc.SetIndent("", "  ")
+	   	enc.Encode(data.Results)
+	       // END
+	*/
+
+	// START:
+	// uses more ram: encode to buffer first, get length, then send
+	// This  lets 'ab' (apachebench) properly do keepalives
+	b, err := json.Marshal(data.Results)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Connection", "keep-alive")
+	w.Header().Set("Content-Length", strconv.Itoa(len(b)))
+	w.Write(b)
+	// END
+
 	return
+}
+
+func handleExpand(r *http.Request, d *HTTPCmdProcessedData) *HTTPCmdProcessedData {
+	//expand = r.URL.Query().Get("$expand")
+	return d
+}
+
+func handleSelect(r *http.Request, d *HTTPCmdProcessedData) *HTTPCmdProcessedData {
+	//sel = r.URL.Query().Get("$select")
+	return d
+}
+
+func handleCollectionQueryOptions(r *http.Request, d *HTTPCmdProcessedData) *HTTPCmdProcessedData {
+	// the following query parameters affect how we return collections:
+	//skip = r.URL.Query().Get("$skip")
+	//top = r.URL.Query().Get("$top")
+	//filter = r.URL.Query().Get("$filter")
+
+	return d
 }
