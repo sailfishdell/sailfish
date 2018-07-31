@@ -12,6 +12,7 @@ func TestParsing(t *testing.T) {
 		input    RedfishResourceProperty
 		expected interface{}
 	}{
+		{"test nil", RedfishResourceProperty{Value: nil}, nil},
 		{"test string 1", RedfishResourceProperty{Value: "happy"}, "happy"},
 		{"test int 1", RedfishResourceProperty{Value: 42}, 42},
 		{"test string 2", RedfishResourceProperty{Value: "joy"}, "joy"},
@@ -22,6 +23,9 @@ func TestParsing(t *testing.T) {
 		{"test recursion 1",
 			RedfishResourceProperty{Value: map[string]interface{}{"happy": RedfishResourceProperty{Value: "joy"}}},
 			map[string]interface{}{"happy": "joy"}},
+		{"test nil map value 1",
+			RedfishResourceProperty{Value: map[string]interface{}{"happy": nil}},
+			map[string]interface{}{"happy": nil}},
 	}
 	for _, subtest := range tests {
 		t.Run(subtest.testname, func(t *testing.T) {
