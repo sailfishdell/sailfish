@@ -15,7 +15,7 @@ awesome_mapper:
     fan:
         - { Select: "type == 'FanEvent' && data.ObjectHeader.FQDD == fqdd",
             ModelUpdate: [
-                {Property: "fanwpm", Query: "data.Fanpwm" },
+                {Property: "fanpwm", Query: "data.Fanpwm" },
                 {Property: "key", Query: "data.Key" },
                 {Property: "fanname", Query: "data.FanName" },
                 {Property: "Fanpwm_int", Query: "data.Fanpwm_int" },
@@ -28,6 +28,7 @@ awesome_mapper:
                 {Property: "Numrotors", Query: "data.Numrotors" },
                 {Property: "Rotor2rpm", Query: "data.Rotor2rpm" },
                 {Property: "Rotor1rpm", Query: "data.Rotor1rpm" },
+                {Property: "rpm", Query: "(data.Rotor1rpm+data.Rotor2rpm)/2" },
                 {Property: "FanStateMask", Query: "data.FanStateMask" }]}
 
     health:
@@ -48,6 +49,17 @@ awesome_mapper:
 mappings:
     test/testview:
         - {Property: "model",                    FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Name" }
+
+    Chassis/System.Modular:
+        - {Property: "description",  FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Description" }
+        - {Property: "service_tag",  FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "ServiceTag" }
+        - {Property: "power_state",  FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "PowerState" }
+        - {Property: "chassis_type", FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "ChassisType" }
+        - {Property: "model",        FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Model" }
+        - {Property: "manufacturer", FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Manufacturer" }
+        - {Property: "serial",       FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "SerialNumber" }
+        - {Property: "part_number",  FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "PartNumber" }
+        - {Property: "name",         FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Name" }
 
     firmware/inventory:
         - {Property: "fw_device_class",     FQDD: "{FQDD}", Group: "FWInventory", Index: "1", Name: "DeviceClass" }
@@ -102,8 +114,6 @@ mappings:
         - {Property: "redundancy_min",          FQDD: "{FQDD}", Group: "Redundancy", Index: "1", Name: "MinNumNeeded" }
         - {Property: "redundancy_max",          FQDD: "{FQDD}", Group: "Redundancy", Index: "1", Name: "MaxNumSupported" }
 
-
-
     Chassis/IOM.Slot:
         - {Property: "asset_tag",    FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "AssetTag" }
         - {Property: "description",  FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Description" }
@@ -130,18 +140,6 @@ mappings:
         - {Property: "service_tag",  FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "ServiceTag" }
         - {Property: "indicator_led", FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "IndicatorLED"}
 
-    Chassis/System.Modular:
-        - {Property: "service_tag",  FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "ServiceTag" }
-        - {Property: "power_state",  FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "PowerState" }
-        - {Property: "chassis_type", FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "ChassisType" }
-        - {Property: "model",        FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Model" }
-        - {Property: "manufacturer", FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Manufacturer" }
-        - {Property: "serial",       FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "SerialNumber" }
-        - {Property: "description",  FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Description" }
-        - {Property: "part_number",  FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "PartNumber" }
-        - {Property: "name",         FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Name" }
-
-
     Chassis/System.Chassis/Power:
         # no mappings for now: placeholder
 
@@ -153,9 +151,10 @@ mappings:
 
     Fans/Fan.Slot:
         - {Property: "health",    FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "FanHealth" }
-
-    Chassis/System.Modular:
-        # no mappings for now: placeholder
+        - {Property: "firmware_version",    FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "FirmwareVersion" }
+        - {Property: "hardware_version",    FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "HardwareVersion" }
+        - {Property: "graphics_uri",    FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "GraphicsURI" }
+        - {Property: "name",    FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "FanName" }
 
     UpdateService:
         # no mappings for now: placeholder

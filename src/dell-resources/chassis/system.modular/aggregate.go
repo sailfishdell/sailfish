@@ -27,27 +27,27 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 				"DELETE": []string{}, // can't be deleted
 			},
 			Properties: map[string]interface{}{
-				"Id@meta":           v.Meta(view.PropGET("unique_name")),
-				"SKU@meta":          v.Meta(view.PropGET("service_tag")),
-				"PowerState@meta":   v.Meta(view.PropGET("power_state")),
-				"ChassisType@meta":  v.Meta(view.PropGET("chassis_type")),
-				"Model@meta":        v.Meta(view.PropGET("model")),
-				"Manufacturer@meta": v.Meta(view.PropGET("manufacturer")),
-				"SerialNumber@meta": v.Meta(view.PropGET("serial")),
+				"Id@meta":           v.Meta(view.GETProperty("unique_name"), view.GETModel("default")),
+				"SKU@meta":          v.Meta(view.GETProperty("service_tag"), view.GETModel("default")),
+				"PowerState@meta":   v.Meta(view.GETProperty("power_state"), view.GETModel("default")),
+				"ChassisType@meta":  v.Meta(view.GETProperty("chassis_type"), view.GETModel("default")),
+				"Model@meta":        v.Meta(view.GETProperty("model"), view.GETModel("default")),
+				"Manufacturer@meta": v.Meta(view.GETProperty("manufacturer"), view.GETModel("default")),
+				"SerialNumber@meta": v.Meta(view.GETProperty("serial"), view.GETModel("default")),
+				"Description@meta":  v.Meta(view.GETProperty("description"), view.GETModel("default")),
 
 				"Links": map[string]interface{}{
-					"ManagedBy@meta":             v.Meta(view.PropGET("managed_by")),
-					"ManagedBy@odata.count@meta": v.Meta(view.PropGET("managed_by_count")),
+					"ManagedBy@meta":             v.Meta(view.GETProperty("managed_by"), view.GETModel("default")),
+					"ManagedBy@odata.count@meta": v.Meta(view.GETProperty("managed_by_count")),
 				},
 
-				"Description": v.Meta(view.PropGET("description")),
 				"Status": map[string]interface{}{
-					"HealthRollup@meta": v.Meta(view.PropGET("health_rollup")), //smil call?
-					"State":             "Enabled",                             //hardcoded
-					"Health@meta":       v.Meta(view.PropGET("health")),        //smil call?
+					"HealthRollup@meta": v.Meta(view.GETProperty("sled_rollup"), view.GETModel("global_health")),
+					"State":             "Enabled", //hardcoded
+					"Health@meta":       v.Meta(view.PropGET("health")),
 				},
-				"PartNumber@meta": v.Meta(view.PropGET("part_number")),
-				"Name@meta":       v.Meta(view.PropGET("name")),
+				"PartNumber@meta": v.Meta(view.GETProperty("part_number"), view.GETModel("default")),
+				"Name@meta":       v.Meta(view.GETProperty("name"), view.GETModel("default")),
 				"Oem": map[string]interface{}{
 					"OemChassis": map[string]interface{}{
 						"@odata.id": v.GetURI() + "/Attributes",

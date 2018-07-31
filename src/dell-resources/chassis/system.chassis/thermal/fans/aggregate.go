@@ -44,22 +44,15 @@ func GetViewFragment(v *view.View) map[string]interface{} {
 		"Description":    "Represents the properties for Fan and Cooling",
 		"FanName@meta":   v.Meta(view.PropGET("name")),
 		"MemberId@meta":  v.Meta(view.PropGET("unique_id")),
-
-		// TODO: Henry - fan_controller now populates sensor readings, but don't have units in that data. where are they/
-		"ReadingUnits@meta": v.Meta(view.PropGET("reading_units")),
-		// TODO: Henry - putting the fan pwm in here for now to prove it's
-		// working. Fixup to match odatalite. Also need to fix pump because
-		// it's not formatting this properly
-		"Reading@meta": v.Meta(view.PropGET("fanpwm")),
-
-		// TODO: Henry - fan_controller has a health status as part of the fan object. probably need to interpret that and drop into model
+		"ReadingUnits":   "RPM",
+		"Reading@meta":   v.Meta(view.PropGET("rpm")),
 		"Status": map[string]interface{}{
-			"HealthRollup": "TEST_VALUE",
-			"Health@meta":  v.Meta(view.PropGET("health")),
+			"HealthRollup@meta": v.Meta(view.PropGET("health")),
+			"Health@meta":       v.Meta(view.PropGET("health")),
 		},
 		"Oem": map[string]interface{}{
-			"ReadingUnits@meta":    v.Meta(view.PropGET("oem_reading_units")),
-			"Reading@meta":         v.Meta(view.PropGET("oem_reading")),
+			"ReadingUnits":         "Percent",
+			"Reading@meta":         v.Meta(view.PropGET("Fanpwm_int")),
 			"FirmwareVersion@meta": v.Meta(view.PropGET("firmware_version")),
 			"HardwareVersion@meta": v.Meta(view.PropGET("hardware_version")),
 			"GraphicsURI@meta":     v.Meta(view.PropGET("graphics_uri")),

@@ -21,17 +21,3 @@ func updateEID674Reset(ctx context.Context, event eh.Event, retData *domain.HTTP
 	retData.StatusCode = 200
 	return nil
 }
-
-/*func updateSyncup(ctx context.Context, event eh.Event, retData *domain.HTTPCmdProcessedData) error {
-	fmt.Printf("\n\nUPDATE SYNCUP\n\n")
-	retData.Results = map[string]interface{}{"msg": "UPDATE SYNCUP!"}
-	retData.StatusCode = 200
-	return nil
-}
-
-func updateEID674Syncup(ctx context.Context, event eh.Event, retData *domain.HTTPCmdProcessedData) error {
-	fmt.Printf("\n\nUPDATE EID 674 SYNCUP\n\n")
-	retData.Results = map[string]interface{}{"msg": "UPDATE EID 674 SYNCUP!"}
-	retData.StatusCode = 200
-	return nil
-}*/

@@ -214,9 +214,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			model.UpdateProperty("connect_types_supported", connectTypesSupported),
 			model.UpdateProperty("connect_types_supported_count", len(connectTypesSupported)),
 
-			//model.UpdateProperty("manager_for_chassis", managerForChassis),
-			//model.UpdateProperty("manager_for_chassis_count", len(managerForChassis)),
-
 			// manually add health properties until we get a mapper to automatically manage these
 			model.UpdateProperty("health", "TEST health"), //smil call?
 			model.UpdateProperty("state", "TEST state"),   //from CMC.Integrated.1#Info.1#State
@@ -239,7 +236,8 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			view.WithURI(rootView.GetURI()+"/Managers/"+mgrName),
 			view.WithModel("redundancy_health", mgrRedundancyMdl), // health info in default model
 			view.WithModel("health", mdl),                         // health info in default model
-			view.WithModel("swinv", mdl),                          // common name for swinv model, shared in this case
+			view.WithModel("global_health", globalHealthModel),
+			view.WithModel("swinv", mdl), // common name for swinv model, shared in this case
 			view.WithModel("default", mdl),
 			view.WithController("ar_mapper", armapper),
 			view.WithController("ar_dump", ardumper),
@@ -279,9 +277,12 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		// This controller will populate 'attributes' property with AR entries matching this FQDD ('mgrName')
 		ardumper, _ = attributes.NewController(ctx, chasModel, []string{mgrName}, ch, eb)
 
+		awesome_mapper.New(ctx, chasLogger, cfgMgr, chasModel, "health", map[string]interface{}{"fqdd": "System.Chassis.1#SubSystem.1#CMC"})
+
 		chasCmcVw := view.New(
 			view.WithURI(rootView.GetURI()+"/Chassis/"+mgrName),
 			view.WithModel("default", chasModel),
+			view.WithModel("global_health", globalHealthModel),
 			view.WithController("ar_mapper", armapper),
 			view.WithController("ar_dump", ardumper),
 			view.WithFormatter("attributeFormatter", attributes.FormatAttributeDump),
@@ -318,6 +319,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		sysChasVw := view.New(
 			view.WithURI(rootView.GetURI()+"/Chassis/"+chasName),
 			view.WithModel("default", chasModel),
+			view.WithModel("global_health", globalHealthModel),
 			view.WithController("ar_mapper", armapper),
 			view.WithController("ar_dump", ardumper),
 			view.WithFormatter("attributeFormatter", attributes.FormatAttributeDump),
@@ -354,6 +356,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		sysChasPwrVw := view.New(
 			view.WithURI(rootView.GetURI()+"/Chassis/"+chasName+"/Power"),
 			view.WithModel("default", powerModel),
+			view.WithModel("global_health", globalHealthModel),
 			view.WithController("ar_mapper", armapper),
 			eventservice.PublishResourceUpdatedEventsForModel(ctx, "default", eb),
 		)
@@ -386,6 +389,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 				view.WithURI(rootView.GetURI()+"/Chassis/"+chasName+"/Power/PowerSupplies/"+psuName),
 				view.WithModel("default", powerModel),
 				view.WithModel("swinv", powerModel),
+				view.WithModel("global_health", globalHealthModel),
 				view.WithController("ar_mapper", armapper),
 				view.WithController("ar_dumper", ardumper),
 				view.WithController("fw_mapper", fwmapper),
@@ -420,6 +424,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		thermalView := view.New(
 			view.WithURI(rootView.GetURI()+"/Chassis/"+chasName+"/Thermal"),
 			view.WithModel("default", thermalModel),
+			view.WithModel("global_health", globalHealthModel),
 			view.WithController("ar_mapper", armapper),
 			eventservice.PublishResourceUpdatedEventsForModel(ctx, "default", eb),
 		)
@@ -453,6 +458,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 				view.WithURI(rootView.GetURI()+"/Chassis/"+chasName+"/Sensors/Fans/"+fanName),
 				view.WithModel("default", fanModel),
 				view.WithModel("swinv", fanModel),
+				view.WithModel("global_health", globalHealthModel),
 				view.WithController("ar_mapper", armapper),
 				view.WithController("ar_dumper", ardumper),
 				view.WithController("fw_mapper", fwmapper),
@@ -505,6 +511,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			view.WithURI(rootView.GetURI()+"/Chassis/"+iomName),
 			view.WithModel("default", iomModel),
 			view.WithModel("swinv", iomModel),
+			view.WithModel("global_health", globalHealthModel),
 			view.WithController("ar_mapper", armapper),
 			view.WithController("ar_dumper", ardumper),
 			view.WithFormatter("attributeFormatter", attributes.FormatAttributeDump),
@@ -528,13 +535,15 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		"System.Modular.7", "System.Modular.7a", "System.Modular.7b",
 		"System.Modular.8", "System.Modular.8a", "System.Modular.8b",
 	} {
-		sledLogger := chasLogger.New("module", "Chassis/System.Modular", "module", "Chassis/"+sledName)
+		sledLogger := chasLogger.New("module", "Chassis/"+sledName, "module", "Chassis/System.Modular")
 		managedBy := []map[string]string{{"@odata.id": managers[0].GetURI()}}
 		sledModel := model.New(
 			model.UpdateProperty("unique_name", sledName),
 			model.UpdateProperty("managed_by", managedBy),
 			model.UpdateProperty("managed_by_count", len(managedBy)),
 		)
+		fwmapper, _ := ar_mapper.New(ctx, sledLogger.New("module", "firmware/inventory"), sledModel, "firmware/inventory", sledName, ch, eb)
+		updateFns = append(updateFns, fwmapper.ConfigChangedFn)
 		armapper, _ := ar_mapper.New(ctx, sledLogger, sledModel, "Chassis/System.Modular", sledName, ch, eb)
 		updateFns = append(updateFns, armapper.ConfigChangedFn)
 
@@ -547,6 +556,8 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		sledView := view.New(
 			view.WithURI(rootView.GetURI()+"/Chassis/"+sledName),
 			view.WithModel("default", sledModel),
+			view.WithModel("swinv", sledModel),
+			view.WithModel("global_health", globalHealthModel),
 			view.WithController("ar_mapper", armapper),
 			view.WithController("ar_dumper", ardumper),
 			view.WithFormatter("attributeFormatter", attributes.FormatAttributeDump),
