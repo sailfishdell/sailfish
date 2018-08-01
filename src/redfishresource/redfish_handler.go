@@ -258,7 +258,7 @@ func addEtag(w http.ResponseWriter, d *HTTPCmdProcessedData) *HTTPCmdProcessedDa
 
 	etagStr, ok := etag.(string)
 	if ok {
-		w.Header().Add("Etag", "W/"+etagStr)
+		w.Header().Add("Etag", etagStr)
 	}
 
 	return d
