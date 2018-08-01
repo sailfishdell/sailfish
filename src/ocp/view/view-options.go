@@ -1,6 +1,8 @@
 package view
 
 import (
+	"strconv"
+
 	"github.com/superchalupa/go-redfish/src/ocp/model"
 	domain "github.com/superchalupa/go-redfish/src/redfishresource"
 )
@@ -50,4 +52,14 @@ func WatchModel(name string, fn func(*View, *model.Model, []model.Update)) Optio
 		}
 		return nil
 	}
+}
+
+func UpdateEtag(modelName string, includedProps []string) Option {
+	etag := 1
+	return WatchModel(modelName, func(v *View, m *model.Model, updates []model.Update) {
+		// TODO: scan updates to see if it's one of the includedProps
+		//      For now, do the simple things.
+		etag++
+		m.UpdatePropertyUnlocked("etag", "W/genid-"+strconv.Itoa(etag))
+	})
 }
