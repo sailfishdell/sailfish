@@ -27,6 +27,7 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 				"DELETE": []string{}, // can't be deleted
 			},
 			Properties: map[string]interface{}{
+				"@odata.etag@meta":  v.Meta(view.GETProperty("etag"), view.GETModel("etag")),
 				"Id@meta":           v.Meta(view.PropGET("unique_name")),
 				"AssetTag":          nil,
 				"SerialNumber@meta": v.Meta(view.PropGET("serial")),      //uses sys.chas.1 ar value

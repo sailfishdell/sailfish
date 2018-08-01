@@ -59,8 +59,10 @@ func startEventService(ctx context.Context, logger log.Logger, rootView viewer, 
 
 	esView := view.New(
 		view.WithModel("default", esModel),
+		view.WithModel("etag", esModel),
 		view.WithURI(rootView.GetURI()+"/EventService"),
 		ah.WithAction(ctx, esLogger, "submit.test.event", "/Actions/EventService.SubmitTestEvent", MakeSubmitTestEvent(eb), ch, eb),
+		view.UpdateEtag("etag", []string{"max_milliseconds_to_queue", "max_events_to_queue", "delivery_retry_attempts", "delivery_retry_interval_seconds"}),
 	)
 
 	// The Plugin: "EventService" property on the Subscriptions endpoint is how we know to run this command

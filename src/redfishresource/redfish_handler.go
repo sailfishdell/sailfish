@@ -215,7 +215,7 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add(k, v)
 	}
 
-    addEtag(w, data)
+	addEtag(w, data)
 
 	/*
 	       // START
@@ -244,24 +244,24 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func addEtag(w http.ResponseWriter, d *HTTPCmdProcessedData) *HTTPCmdProcessedData {
-    res, ok := d.Results.(map[string]interface{})
-    if !ok {
-        // no way it has an etag, return
-        return d
-    }
+	res, ok := d.Results.(map[string]interface{})
+	if !ok {
+		// no way it has an etag, return
+		return d
+	}
 
-    etag, ok := res["@odata.etag"]
-    if !ok {
-        // no etag
-        return d
-    }
+	etag, ok := res["@odata.etag"]
+	if !ok {
+		// no etag
+		return d
+	}
 
-    etagStr, ok := etag.(string)
-    if ok {
-	    w.Header().Add("Etag", "W/" + etagStr )
-    }
+	etagStr, ok := etag.(string)
+	if ok {
+		w.Header().Add("Etag", "W/"+etagStr)
+	}
 
-    return d
+	return d
 }
 
 func handleExpand(r *http.Request, d *HTTPCmdProcessedData) *HTTPCmdProcessedData {

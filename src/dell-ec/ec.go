@@ -239,9 +239,11 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			view.WithModel("global_health", globalHealthModel),
 			view.WithModel("swinv", mdl), // common name for swinv model, shared in this case
 			view.WithModel("default", mdl),
+			view.WithModel("etag", mdl),
 			view.WithController("ar_mapper", armapper),
 			view.WithController("ar_dump", ardumper),
 			view.WithController("fw_mapper", fwmapper),
+			view.UpdateEtag("etag", []string{}),
 
 			ah.WithAction(ctx, mgrLogger, "manager.reset", "/Actions/Manager.Reset", makePumpHandledAction("ManagerReset", 30, eb), ch, eb),
 			ah.WithAction(ctx, mgrLogger, "manager.resettodefaults", "/Actions/Oem/DellManager.ResetToDefaults", makePumpHandledAction("ManagerResetToDefaults", 30, eb), ch, eb),
@@ -282,11 +284,13 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		chasCmcVw := view.New(
 			view.WithURI(rootView.GetURI()+"/Chassis/"+mgrName),
 			view.WithModel("default", chasModel),
+			view.WithModel("etag", mdl),
 			view.WithModel("global_health", globalHealthModel),
 			view.WithController("ar_mapper", armapper),
 			view.WithController("ar_dump", ardumper),
 			view.WithFormatter("attributeFormatter", attributes.FormatAttributeDump),
 			eventservice.PublishResourceUpdatedEventsForModel(ctx, "default", eb),
+			view.UpdateEtag("etag", []string{}),
 		)
 
 		// add the aggregate to the view tree

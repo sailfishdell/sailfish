@@ -24,7 +24,7 @@ func ProcessPATCH(ctx context.Context, prop RedfishResourceProperty, request map
 	val, err := parseRecursive(ctx, reflect.ValueOf(prop), opts)
 	if val.IsValid() {
 		return val.Interface(), err
-    }
+	}
 	return nil, err
 }
 
