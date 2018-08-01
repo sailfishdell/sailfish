@@ -31,7 +31,7 @@ func AddAggregate(ctx context.Context, v view, ch eh.CommandHandler, eb eh.Event
 				"Id":             "RootService",
 				"Name":           "Root Service",
 				"RedfishVersion": "1.0.2",
-                "@odata.etag":    "abc123",
+				"@odata.etag":    "abc123",
 			}})
 
 	return
