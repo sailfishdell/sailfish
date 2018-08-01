@@ -21,9 +21,9 @@ type waiter interface {
 }
 
 func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.CommandHandler) *view.View {
-
 	properties := map[string]interface{}{
-		"Id@meta": v.Meta(view.PropGET("unique_name")),
+		"@odata.etag@meta": v.Meta(view.GETProperty("etag"), view.GETModel("etag")),
+		"Id@meta":          v.Meta(view.PropGET("unique_name")),
 		//"Name@meta": v.Meta(view.PropGET("name")),
 		"Name": "Manager", //hardcoded in odatalite
 		// TODO: is this in AR somewhere?

@@ -28,6 +28,7 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, rootID e
 				"DELETE": []string{},
 			},
 			Properties: map[string]interface{}{
+				"@odata.etag@meta":   v.Meta(view.GETProperty("etag"), view.GETModel("etag")),
 				"Id":                 "EventService",
 				"Name":               "Event Service",
 				"ServerSentEventUri": "/redfish_events",
