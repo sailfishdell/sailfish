@@ -130,7 +130,7 @@ func main() {
 	chainAuth := func(u string, p []string) http.Handler { return domain.NewRedfishHandler(domainObjs, logger, u, p) }
 
 	handlerFunc := dellauth.MakeHandlerFunc(chainAuth,
-		session.MakeHandlerFunc(domainObjs.EventBus, domainObjs, chainAuth,
+		session.MakeHandlerFunc(logger, domainObjs.EventBus, domainObjs, chainAuth,
 			basicauth.MakeHandlerFunc(chainAuth,
 				chainAuth("UNKNOWN", []string{"Unauthenticated"}))))
 
@@ -139,14 +139,14 @@ func main() {
 	// SSE
 	chainAuthSSE := func(u string, p []string) http.Handler { return http_sse.NewSSEHandler(domainObjs, logger, u, p) }
 	m.PathPrefix("/events").Methods("GET").HandlerFunc(
-		session.MakeHandlerFunc(domainObjs.EventBus, domainObjs, chainAuthSSE, basicauth.MakeHandlerFunc(chainAuthSSE, chainAuthSSE("UNKNOWN", []string{"Unauthenticated"}))))
+		session.MakeHandlerFunc(logger, domainObjs.EventBus, domainObjs, chainAuthSSE, basicauth.MakeHandlerFunc(chainAuthSSE, chainAuthSSE("UNKNOWN", []string{"Unauthenticated"}))))
 
 	// Redfish SSE
 	chainAuthRFSSE := func(u string, p []string) http.Handler {
 		return http_redfish_sse.NewRedfishSSEHandler(domainObjs, logger, u, p)
 	}
 	m.PathPrefix("/redfish_events").Methods("GET").HandlerFunc(
-		session.MakeHandlerFunc(domainObjs.EventBus, domainObjs, chainAuthRFSSE, basicauth.MakeHandlerFunc(chainAuthRFSSE, chainAuthRFSSE("UNKNOWN", []string{"Unauthenticated"}))))
+		session.MakeHandlerFunc(logger, domainObjs.EventBus, domainObjs, chainAuthRFSSE, basicauth.MakeHandlerFunc(chainAuthRFSSE, chainAuthRFSSE("UNKNOWN", []string{"Unauthenticated"}))))
 
 	// backend command handling
 	m.PathPrefix("/api/{command}").Handler(domainObjs.GetInternalCommandHandler(ctx))

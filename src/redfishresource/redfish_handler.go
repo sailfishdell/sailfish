@@ -215,6 +215,8 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add(k, v)
 	}
 
+    addEtag(w, data)
+
 	/*
 	       // START
 	       // STREAMING ENCODE TO OUTPUT (not possible to get content length)
@@ -239,6 +241,27 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// END
 
 	return
+}
+
+func addEtag(w http.ResponseWriter, d *HTTPCmdProcessedData) *HTTPCmdProcessedData {
+    res, ok := d.Results.(map[string]interface{})
+    if !ok {
+        // no way it has an etag, return
+        return d
+    }
+
+    etag, ok := res["@odata.etag"]
+    if !ok {
+        // no etag
+        return d
+    }
+
+    etagStr, ok := etag.(string)
+    if ok {
+	    w.Header().Add("Etag", "W/" + etagStr )
+    }
+
+    return d
 }
 
 func handleExpand(r *http.Request, d *HTTPCmdProcessedData) *HTTPCmdProcessedData {

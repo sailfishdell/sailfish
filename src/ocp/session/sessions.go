@@ -8,6 +8,7 @@ import (
 
 	eventpublisher "github.com/looplab/eventhorizon/publisher/local"
 	"github.com/superchalupa/go-redfish/src/eventwaiter"
+	"github.com/superchalupa/go-redfish/src/log"
 	"github.com/superchalupa/go-redfish/src/ocp/view"
 	domain "github.com/superchalupa/go-redfish/src/redfishresource"
 
@@ -37,25 +38,56 @@ func init() {
 	SECRET = createRandSecret(24, characters)
 }
 
-func MakeHandlerFunc(eb eh.EventBus, getter IDGetter, withUser func(string, []string) http.Handler, chain http.Handler) http.HandlerFunc {
+type cacheItem struct {
+	token      string
+	username   string
+	privileges []string
+	sessionuri string
+}
+
+func MakeHandlerFunc(logger log.Logger, eb eh.EventBus, getter IDGetter, withUser func(string, []string) http.Handler, chain http.Handler) http.HandlerFunc {
+	tokenCache := []cacheItem{}
+	handlerlog := logger.New("module", "session")
+	handlerlog.Crit("Creating x-auth-token based session handler.")
 	return func(rw http.ResponseWriter, req *http.Request) {
 		var userName string
 		var privileges []string
 
 		xauthtoken := req.Header.Get("X-Auth-Token")
 		if xauthtoken != "" {
-			token, _ := jwt.ParseWithClaims(xauthtoken, &RedfishClaims{}, func(token *jwt.Token) (interface{}, error) {
-				if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-					return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
+			// check cache before doing expensive parse
+			foundCache := false
+			for _, i := range tokenCache {
+				if i.token == xauthtoken && getter.HasAggregateID(i.sessionuri) {
+					// comment out unused logs in the hotpath, uncomment to debug if needed
+					//handlerlog.Debug("Cache Hit", "token", xauthtoken)
+					userName = i.username
+					privileges = i.privileges
+					foundCache = true
 				}
-				return SECRET, nil
-			})
+			}
 
-			if claims, ok := token.Claims.(*RedfishClaims); ok && token.Valid {
-				if getter.HasAggregateID(claims.SessionURI) {
-					userName = claims.UserName
-					privileges = claims.Privileges
-					eb.PublishEvent(context.Background(), eh.NewEvent(XAuthTokenRefreshEvent, &XAuthTokenRefreshData{SessionURI: claims.SessionURI}, time.Now()))
+			if !foundCache {
+				token, _ := jwt.ParseWithClaims(xauthtoken, &RedfishClaims{}, func(token *jwt.Token) (interface{}, error) {
+					if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+						return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
+					}
+					return SECRET, nil
+				})
+
+				if claims, ok := token.Claims.(*RedfishClaims); ok && token.Valid {
+					if getter.HasAggregateID(claims.SessionURI) {
+						userName = claims.UserName
+						privileges = claims.Privileges
+						eb.PublishEvent(context.Background(), eh.NewEvent(XAuthTokenRefreshEvent, &XAuthTokenRefreshData{SessionURI: claims.SessionURI}, time.Now()))
+
+						//handlerlog.Debug("Add cache item", "token", xauthtoken)
+						tokenCache = append(tokenCache, cacheItem{sessionuri: claims.SessionURI, username: userName, privileges: claims.Privileges, token: xauthtoken})
+						if len(tokenCache) > 4 {
+							//handlerlog.Debug("trim cache", "cache", tokenCache)
+							tokenCache = tokenCache[1:]
+						}
+					}
 				}
 			}
 		}
