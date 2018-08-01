@@ -143,7 +143,7 @@ func PublishRedfishEvents(ctx context.Context, m propertygetter, eb eh.EventBus)
 				}
 
 			case <-timer.C:
-				log.MustLogger("event_service").Warn("times up: sending now.", "id", id)
+				log.MustLogger("event_service").Info("times up: sending now.", "id", id)
 				sendEvents(ctx, id, eventQ, eb)
 				eventQ = []*RedfishEventData{}
 				id = id + 1
