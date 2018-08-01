@@ -2,6 +2,7 @@ package lcl
 
 import (
 	"context"
+	"fmt"
 
 	eh "github.com/looplab/eventhorizon"
 	eventpublisher "github.com/looplab/eventhorizon/publisher/local"
@@ -11,7 +12,7 @@ import (
 	"github.com/superchalupa/go-redfish/src/log"
 	"github.com/superchalupa/go-redfish/src/ocp/view"
 	domain "github.com/superchalupa/go-redfish/src/redfishresource"
-    mgrCMCIntegrated "github.com/superchalupa/go-redfish/src/dell-resources/managers/cmc.integrated"
+	//mgrCMCIntegrated "github.com/superchalupa/go-redfish/src/dell-resources/managers/cmc.integrated"
 )
 
 type viewer interface {
@@ -47,38 +48,25 @@ func (l *LCLService) StartService(ctx context.Context, logger log.Logger, rootVi
 	// COLLECTION MEMBER AGGREGATE: /redfish/v1/Managers/CMC.Integrated.1/Logs/Lclog/66.json
 	//
 	// SKIP FOR NOW (implement after LCL done) __redfish__v1__Managers__CMC.Integrated.1__Logs__FaultList.json
+	lcLogUri := rootView.GetURI() + "/Logs/Lclog"
 
 	lclLogger := logger.New("module", "LCL")
 
-    lclView := view.New(
-		view.WithURI(rootView.GetURI() + "/LogServices"),
+	lclView := view.New(
+		view.WithURI(lcLogUri),
 		//ah.WithAction(ctx, lclLogger, "clear.logs", "/Actions/..fixme...", MakeClearLog(eb), ch, eb),
 	)
 
-    mgrCMCIntegrated.AddAggregate(ctx, lclLogger, lclView, l.ch)
-
-	// AddAggregate( LogServices ...)
-	// AddAggregate( LogServices/Lclog ...)
-	// AddAggregate( Logs ...)
+	AddAggregate(ctx, lclLogger, lclView, rootView.GetUUID(), l.ch, l.eb)
 
 	// Start up goroutine that listens for log-specific events and creates log aggregates
-	l.manageLcLogs(ctx, lclLogger)
+	l.manageLcLogs(ctx, lclLogger, lcLogUri)
 
 	return lclView
 }
 
 // manageLcLogs starts a background process to create new log entreis
-func (l *LCLService) manageLcLogs(ctx context.Context, logger log.Logger) {
-
-	// individual log entry to add
-	retprops := map[string]interface{}{
-		"@odata.id":      "/LogServices",
-		"@odata.type":    "#EventDestination.v1_2_0.EventDestination",
-		"@odata.context": "/redfish/v1/$metadata#EventDestination.EventDestination",
-		"Context@meta":   nil,
-		"Id":             nil,
-        "Description":    nil,
-	}
+func (l *LCLService) manageLcLogs(ctx context.Context, logger log.Logger, logUri string) {
 
 	// set up listener for the delete event
 	// INFO: this listener will only ever get
@@ -86,6 +74,9 @@ func (l *LCLService) manageLcLogs(ctx context.Context, logger log.Logger) {
 		func(event eh.Event) bool {
 			t := event.EventType()
 			if t == LogEvent {
+				if event.Data().(*LogEventData).MessageID == "" {
+					return false
+				}
 				return true
 			}
 			return false
@@ -102,16 +93,23 @@ func (l *LCLService) manageLcLogs(ctx context.Context, logger log.Logger) {
 		for {
 			select {
 			case event := <-inbox:
-				logger.Debug("Got internal redfish event", "event", event)
+				uuid := eh.NewUUID()
+				uri := fmt.Sprintf("%s/%s", logUri, uuid)
+
+				logger.Info("Got internal redfish event", "event", event)
+				logger.Warn("uuid is ", "uuid", uuid)
+				logger.Warn("uri is ", "uri", uri)
+
 				switch typ := event.EventType(); typ {
 				case LogEvent:
+					logEntry := event.Data().(*LogEventData)
 					l.ch.HandleCommand(
 						ctx,
 						&domain.CreateRedfishResource{
-							ID:          "", //event.Data().(*LogEventData).Id, // fixme uuid
-							ResourceURI: retprops["@odata.id"].(string),
-							Type:        retprops["@odata.type"].(string),
-							Context:     retprops["@odata.context"].(string),
+							ID:          uuid,
+							ResourceURI: uri,
+							Type:        "#LogServiceCollection.LogServiceCollection",
+							Context:     "/redfish/v1/$metadata#LogServiceCollection.LogServiceCollection",
 							Privileges: map[string]interface{}{
 								"GET":    []string{"ConfigureManager"},
 								"POST":   []string{},
@@ -119,8 +117,18 @@ func (l *LCLService) manageLcLogs(ctx context.Context, logger log.Logger) {
 								"PATCH":  []string{"ConfigureManager"},
 								"DELETE": []string{"ConfigureManager"},
 							},
-							Properties: retprops,
-						})
+							Properties: map[string]interface{}{
+								"Description": logEntry.Description,
+								"Name":        logEntry.Name,
+								"EntryType":   logEntry.EntryType,
+								"Id":          logEntry.Id,
+								"MessageArgs": logEntry.MessageArgs,
+								"Message":     logEntry.Message,
+								"MessageID":   logEntry.MessageID,
+								"Category":    logEntry.Category,
+								"Severity":    logEntry.Severity,
+								"Action":      logEntry.Action,
+							}})
 				}
 
 			case <-ctx.Done():
