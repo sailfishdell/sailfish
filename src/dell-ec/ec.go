@@ -36,6 +36,7 @@ import (
 	"github.com/superchalupa/go-redfish/src/dell-resources/chassis/system.chassis/thermal"
 	"github.com/superchalupa/go-redfish/src/dell-resources/chassis/system.chassis/thermal/fans"
 	"github.com/superchalupa/go-redfish/src/dell-resources/chassis/system.modular"
+	"github.com/superchalupa/go-redfish/src/dell-resources/lcl"
 	mgrCMCIntegrated "github.com/superchalupa/go-redfish/src/dell-resources/managers/cmc.integrated"
 	"github.com/superchalupa/go-redfish/src/dell-resources/registries"
 	"github.com/superchalupa/go-redfish/src/dell-resources/registries/registry"
@@ -70,6 +71,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	eventservice.Setup(ctx, ch, eb)
 	telemetryservice.Setup(ctx, ch, eb)
 	event.Setup(ch, eb)
+	logServices := lcl.New(ch, eb)
 
 	//
 	// Create the (empty) model behind the /redfish/v1 service root. Nothing interesting here
@@ -297,6 +299,9 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		chasCMCIntegrated.AddAggregate(ctx, chasLogger, chasCmcVw, ch)
 		attributes.AddAggregate(ctx, chasCmcVw, rootView.GetURI()+"/Chassis/"+mgrName+"/Attributes", ch)
 	}
+
+	// start log service here: it attaches to cmc.integrated.1
+	logServices.StartService(ctx, logger, managers[0])
 
 	chasLogger := logger.New("module", "Chassis")
 	{

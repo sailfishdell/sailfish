@@ -56,10 +56,6 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 			"ServiceEnabled":                         false,
 		},
 
-		"LogServices": map[string]interface{}{
-			"@odata.id": v.GetURI() + "/LogServices",
-		},
-
 		"GraphicalConsole": map[string]interface{}{
 			"ConnectTypesSupported@odata.count@meta": v.Meta(view.PropGET("connect_types_supported_count")),
 			"MaxConcurrentSessions":                  0,
