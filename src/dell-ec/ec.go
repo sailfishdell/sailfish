@@ -388,7 +388,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			psuModel := model.New(
 				model.UpdateProperty("unique_name", psuName),
 				model.UpdateProperty("unique_id", psuName),
-				model.UpdateProperty("name", psuName),
 				model.UpdateProperty("attributes", map[string]map[string]map[string]interface{}{}),
 			)
 			fwmapper, _ := ar_mapper.New(ctx, psuLogger.New("module", "firmware/inventory"), psuModel, "firmware/inventory", psuName, ch, eb)
@@ -403,8 +402,8 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 
 			sysChasPwrPsuVw := view.New(
 				view.WithURI(rootView.GetURI()+"/Chassis/"+chasName+"/Power/PowerSupplies/"+psuName),
-				view.WithModel("default", powerModel),
-				view.WithModel("swinv", powerModel),
+				view.WithModel("default", psuModel),
+				view.WithModel("swinv", psuModel),
 				view.WithModel("global_health", globalHealthModel),
 				view.WithController("ar_mapper", armapper),
 				view.WithController("ar_dumper", ardumper),
