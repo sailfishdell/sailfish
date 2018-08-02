@@ -63,6 +63,7 @@ func MakeHandlerFunc(logger log.Logger, eb eh.EventBus, getter IDGetter, withUse
 					//handlerlog.Debug("Cache Hit", "token", xauthtoken)
 					userName = i.username
 					privileges = i.privileges
+					eb.PublishEvent(context.Background(), eh.NewEvent(XAuthTokenRefreshEvent, &XAuthTokenRefreshData{SessionURI: i.sessionuri}, time.Now()))
 					foundCache = true
 				}
 			}
