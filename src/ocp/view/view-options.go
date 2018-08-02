@@ -60,6 +60,6 @@ func UpdateEtag(modelName string, includedProps []string) Option {
 		// TODO: scan updates to see if it's one of the includedProps
 		//      For now, do the simple things.
 		etag++
-		m.UpdatePropertyUnlocked("etag", `W/"genid-"`+strconv.Itoa(etag)+`"`)
+		m.UpdatePropertyUnlocked("etag", `W/"genid-`+strconv.Itoa(etag)+`"`)
 	})
 }
