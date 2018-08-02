@@ -91,10 +91,21 @@ mappings:
 
     # map AR entries to back end model
     PSU/PSU.Slot:
-        - {Property: "name",             FQDD: "{FQDD}", Group: "FWInventory", Index: "1", Name: "Name" }
+        - {Property: "capacity",    FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Capacity" }
+        - {Property: "component_id",    FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "ComponentID" }
+        - {Property: "eff_capacity",    FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "EffCapacity" }
         - {Property: "firmware_version",    FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "FirmwareVersion" }
-        - {Property: "capacity_watts",      FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Capacity" }
-        - {Property: "component_id",        FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "ComponentID" }
+        - {Property: "graphics_uri",    FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "GraphicsURI" }
+        - {Property: "hardware_version",    FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "HardwareVersion" }
+        - {Property: "input_voltage_type",    FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "InputVoltageType" }
+        - {Property: "name",    FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Name" }
+        - {Property: "part_number",    FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "PartNumber" }
+        - {Property: "redundancy",    FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Redundancy" }
+        - {Property: "serial_number",    FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "SerialNumber" }
+        - {Property: "state",    FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "State" }
+        - {Property: "state_str",    FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "StateStr" }
+        - {Property: "psOn",    FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "psOn" }
+
         # looks like these are not in AR
         #- {Property: "line_input_voltage",  FQDD: "PSU.Slot.1", Group: "Info", Index: "1", Name: "TODO" }
         #- {Property: "input_current",       FQDD: "PSU.Slot.1", Group: "Info", Index: "1", Name: "TODO" }
