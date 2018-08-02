@@ -3,7 +3,6 @@ package domain
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"strconv"
 
@@ -294,20 +293,20 @@ func getResourceEtag(ctx context.Context, agg *RedfishResourceAggregate) string 
 		etagprocessedintf, _ := ProcessGET(ctx, *t)
 		etagstr, ok = etagprocessedintf.(string)
 		if !ok {
-			fmt.Printf("@odata.etag not a string: %T - %#v\n", etagprocessedintf, etagprocessedintf)
+			//fmt.Printf("@odata.etag not a string: %T - %#v\n", etagprocessedintf, etagprocessedintf)
 			return ""
 		}
-		fmt.Printf("processed RedfishResourceProperty to string! yay\n")
+		//fmt.Printf("processed RedfishResourceProperty to string! yay\n")
 
 	case string:
 		etagstr = t
-		fmt.Printf("direct string")
+		//fmt.Printf("direct string")
 
 	default:
-		fmt.Printf("unknown @odata.etag: %T - %#v\n", t, t)
+		//fmt.Printf("unknown @odata.etag: %T - %#v\n", t, t)
 	}
 
-	fmt.Printf("GOT ETAG: '%s'\n", etagstr)
+	//fmt.Printf("GOT ETAG: '%s'\n", etagstr)
 	return etagstr
 }
 
