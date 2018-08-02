@@ -47,20 +47,20 @@ func getViewFragment(v *view.View) map[string]interface{} {
 		"Name@meta":               v.Meta(view.PropGET("name")),
 		"MemberId@meta":           v.Meta(view.PropGET("unique_id")),
 		"PowerCapacityWatts@meta": v.Meta(view.PropGET("capacity_watts")),
-		"LineInputVoltage@meta":   v.Meta(view.PropGET("line_input_voltage")),
+		"LineInputVoltage@meta":   v.Meta(view.PropGET("line_input_voltage")), //TODO
 		"FirmwareVersion@meta":    v.Meta(view.PropGET("firmware_version")),
 
 		"Status": map[string]interface{}{
 			"HealthRollup@meta": v.Meta(view.GETProperty("psu_rollup"), view.GETModel("global_health")),
-			"State":             "TEST_VALUE",
-			"Health@meta":       v.Meta(view.PropGET("health")),
+			"State@meta":        v.Meta(view.PropGET("state")),
+			"Health@meta":       v.Meta(view.GETProperty("psu_rollup"), view.GETModel("global_health")),
 		},
 
 		"Oem": map[string]interface{}{
 			"Dell": map[string]interface{}{
 				"@odata.type":       "#DellPower.v1_0_0.DellPowerSupply",
 				"ComponentID@meta":  v.Meta(view.PropGET("component_id")),
-				"InputCurrent@meta": v.Meta(view.PropGET("input_current")),
+				"InputCurrent@meta": v.Meta(view.PropGET("input_current")), //TODO
 				"Attributes@meta":   v.Meta(view.GETProperty("attributes"), view.GETFormatter("attributeFormatter"), view.GETModel("default"), view.PropPATCH("attributes", "ar_dump")),
 			},
 		},

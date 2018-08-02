@@ -363,6 +363,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			mgrCMCIntegrated.WithUniqueName("Power"),
 			model.UpdateProperty("power_supply_views", []interface{}{}),
 			model.UpdateProperty("power_control_views", []interface{}{}),
+			model.UpdateProperty("histogram_views", []interface{}{}),
 		)
 		// the controller is what updates the model when ar entries change,
 		// also handles patch from redfish
@@ -421,8 +422,9 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		}
 		powerModel.ApplyOption(model.UpdateProperty("power_supply_views", &domain.RedfishResourceProperty{Value: psu_views}))
 		powerModel.ApplyOption(model.UpdateProperty("power_supply_views_count", len(psu_views)))
-		/*
+
                 pwrCtrl_views := []interface{}{}
+		/*
 		pwrCtrlLogger := sysChasLogger.New("module", "Chassis/System.Chassis/Power/PowerControl")
                 pwrCtrlModel := model.New()
                 armapper, _ = ar_mapper.New(ctx, pwrCtrlLogger, powerModel, "Chassis/System.Chassis/Power", chasName, ch, eb)
@@ -437,9 +439,16 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		p := &domain.RedfishResourceProperty{}
                 p.Parse(psu)
                 pwrCtrl_views = append(pwrCtrl_views, p)
+		*/
 		powerModel.ApplyOption(model.UpdateProperty("power_control_views", &domain.RedfishResourceProperty{Value: pwrCtrl_views}))
                 powerModel.ApplyOption(model.UpdateProperty("power_control_views_count", len(pwrCtrl_views)))
+
+		histogram_views := []interface{}{}
+		/*
+			TODO: histogram model/view/controller
 		*/
+		powerModel.ApplyOption(model.UpdateProperty("histogram_views", &domain.RedfishResourceProperty{Value: histogram_views}))
+		powerModel.ApplyOption(model.UpdateProperty("histogram_views_count", len(histogram_views)))
 
 		//*********************************************************************
 		// Create Thermal objects for System.Chassis.1
