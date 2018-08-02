@@ -28,8 +28,8 @@ type RedfishResourceAggregate struct {
 	ResourceURI string
 	Plugin      string
 
-	propertiesMu sync.RWMutex
-	properties   RedfishResourceProperty
+	PropertiesMu sync.RWMutex
+	Properties   RedfishResourceProperty
 
 	// TODO: need accessor functions for all of these just like property stuff
 	// above so that everything can be properly locked
@@ -62,8 +62,8 @@ func (a *RedfishResourceAggregate) ClearEvents() {
 	a.eventsMu.Unlock()
 }
 
-func (r *RedfishResourceAggregate) AggregateType() eh.AggregateType { return AggregateType }
-func (r *RedfishResourceAggregate) EntityID() eh.UUID               { return r.ID }
+func (r RedfishResourceAggregate) AggregateType() eh.AggregateType { return AggregateType }
+func (r RedfishResourceAggregate) EntityID() eh.UUID               { return r.ID }
 
 func NewRedfishResourceAggregate(id eh.UUID) *RedfishResourceAggregate {
 	return &RedfishResourceAggregate{}
@@ -100,17 +100,17 @@ func (a *RedfishResourceAggregate) HandleCommand(ctx context.Context, command eh
 }
 
 func (r *RedfishResourceAggregate) EnsureCollection() {
-	r.propertiesMu.Lock()
-	defer r.propertiesMu.Unlock()
+	r.PropertiesMu.Lock()
+	defer r.PropertiesMu.Unlock()
 	r.EnsureCollection_unlocked()
 	r.UpdateCollectionMemberCount_unlocked()
 }
 
 func (r *RedfishResourceAggregate) EnsureCollection_unlocked() *RedfishResourceProperty {
-	props, ok := r.properties.Value.(map[string]interface{})
+	props, ok := r.Properties.Value.(map[string]interface{})
 	if !ok {
-		r.properties.Value = map[string]interface{}{}
-		props = r.properties.Value.(map[string]interface{})
+		r.Properties.Value = map[string]interface{}{}
+		props = r.Properties.Value.(map[string]interface{})
 	}
 
 	membersRRP, ok := props["Members"].(*RedfishResourceProperty)
@@ -128,18 +128,18 @@ func (r *RedfishResourceAggregate) EnsureCollection_unlocked() *RedfishResourceP
 }
 
 func (r *RedfishResourceAggregate) AddCollectionMember(uri string) {
-	r.propertiesMu.Lock()
-	defer r.propertiesMu.Unlock()
+	r.PropertiesMu.Lock()
+	defer r.PropertiesMu.Unlock()
 	members := r.EnsureCollection_unlocked()
 	members.Value = append(members.Value.([]map[string]interface{}), map[string]interface{}{"@odata.id": &RedfishResourceProperty{Value: uri}})
-	m := r.properties.Value.(map[string]interface{})
+	m := r.Properties.Value.(map[string]interface{})
 	m["Members"] = members
 	r.UpdateCollectionMemberCount_unlocked()
 }
 
 func (r *RedfishResourceAggregate) RemoveCollectionMember(uri string) {
-	r.propertiesMu.Lock()
-	defer r.propertiesMu.Unlock()
+	r.PropertiesMu.Lock()
+	defer r.PropertiesMu.Unlock()
 	members := r.EnsureCollection_unlocked()
 
 	arr, ok := members.Value.([]map[string]interface{})
@@ -168,20 +168,20 @@ func (r *RedfishResourceAggregate) RemoveCollectionMember(uri string) {
 		members.Value = []map[string]interface{}{}
 	}
 
-	m := r.properties.Value.(map[string]interface{})
+	m := r.Properties.Value.(map[string]interface{})
 	m["Members"] = members
 	r.UpdateCollectionMemberCount_unlocked()
 }
 
 func (r *RedfishResourceAggregate) UpdateCollectionMemberCount() {
-	r.propertiesMu.Lock()
-	defer r.propertiesMu.Unlock()
+	r.PropertiesMu.Lock()
+	defer r.PropertiesMu.Unlock()
 	r.UpdateCollectionMemberCount_unlocked()
 }
 
 func (r *RedfishResourceAggregate) UpdateCollectionMemberCount_unlocked() {
 	members := r.EnsureCollection_unlocked()
 	l := len(members.Value.([]map[string]interface{}))
-	m := r.properties.Value.(map[string]interface{})
+	m := r.Properties.Value.(map[string]interface{})
 	m["Members@odata.count"] = &RedfishResourceProperty{Value: l}
 }
