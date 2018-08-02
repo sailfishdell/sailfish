@@ -40,13 +40,13 @@ func AddAggregate(ctx context.Context, root *view.View, v *view.View, ch eh.Comm
 				"DELETE": []string{}, // can't be deleted
 			},
 			Properties: map[string]interface{}{
-				"ServiceEnabled": true,
+				"ServiceEnabled": true, //TODO
 				"Id":             "UpdateService",
 				"Name":           "Update Service",
 				"Description":    "Represents the properties for the Update Service",
 				"Status": map[string]interface{}{
-					"State":  "Enabled",
-					"Health": "OK",
+					"State":  "Enabled", //TODO
+					"Health": "OK", //TODO
 				},
 
 				"FirmwareInventory": map[string]interface{}{
