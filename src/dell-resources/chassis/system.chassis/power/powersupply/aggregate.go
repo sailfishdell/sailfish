@@ -40,7 +40,7 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 // this view fragment can be attached elsewhere in the tree
 //
 func getViewFragment(v *view.View) map[string]interface{} {
-	return map[string]interface{}{
+	properties :=  map[string]interface{}{
 		"@odata.type":             "#Power.v1_0_2.PowerSupply",
 		"@odata.context":          "/redfish/v1/$metadata#Power.PowerSystem.Chassis.1/Power/$entity",
 		"@odata.id":               v.GetURI(),
@@ -49,8 +49,6 @@ func getViewFragment(v *view.View) map[string]interface{} {
 		"PowerCapacityWatts@meta": v.Meta(view.PropGET("capacity_watts")),
 		"LineInputVoltage@meta":   v.Meta(view.PropGET("line_input_voltage")),
 		"FirmwareVersion@meta":    v.Meta(view.PropGET("firmware_version")),
-		"Redundancy":              []interface{}{"TEST_VALUE"},
-		"Redundancy@odata.count":  "TEST_VALUE",
 
 		"Status": map[string]interface{}{
 			"HealthRollup@meta": v.Meta(view.GETProperty("psu_rollup"), view.GETModel("global_health")),
@@ -67,4 +65,9 @@ func getViewFragment(v *view.View) map[string]interface{} {
 			},
 		},
 	}
+
+	properties["Redundancy"] = []interface{}{}
+	properties["Redundancy@odata.count"] = len(properties["Redundancy"].([]interface{}))
+
+	return properties
 }
