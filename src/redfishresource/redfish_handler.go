@@ -3,6 +3,7 @@ package domain
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -148,6 +149,33 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// for intial implementation of etags, we will check etags right here. we may need to move this around later. For example, the command might need to handle it
+	// TODO: this all has to happen after the privilege check
+	if match := r.Header.Get("If-None-Match"); match != "" {
+		//fmt.Printf("GOT If-None-Match: '%s'\n", match)
+		e := getResourceEtag(reqCtx, redfishResource)
+		//fmt.Printf("\tetag: '%s'\n", e)
+		if e != "" {
+			if match == e {
+				w.WriteHeader(http.StatusNotModified)
+				return
+			}
+		}
+	}
+
+	// TODO: If-Match must be able to match comma separated list
+	if match := r.Header.Get("If-Match"); match != "" {
+		//fmt.Printf("GOT If-Match: '%s'\n", match)
+		e := getResourceEtag(reqCtx, redfishResource)
+		//fmt.Printf("\tetag: '%s'\n", e)
+		if e != "" {
+			if match != e {
+				w.WriteHeader(http.StatusRequestedRangeNotSatisfiable)
+				return
+			}
+		}
+	}
+
 	// to avoid races, set up our listener first
 	l, err := rh.d.HTTPWaiter.Listen(reqCtx, func(event eh.Event) bool {
 		if event.EventType() != HTTPCmdProcessed {
@@ -241,6 +269,46 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// END
 
 	return
+}
+
+func getResourceEtag(ctx context.Context, agg *RedfishResourceAggregate) string {
+	//fmt.Printf("get etag\n")
+
+	v := agg.Properties.Value
+	m, ok := v.(map[string]interface{})
+	if !ok {
+		//fmt.Printf("not a map[string]interface{}\n")
+		return ""
+	}
+
+	etagintf, ok := m["@odata.etag"]
+	if !ok {
+		//fmt.Printf("no @odata.etag\n")
+		return ""
+	}
+
+	var etagstr string
+
+	switch t := etagintf.(type) {
+	case *RedfishResourceProperty:
+		etagprocessedintf, _ := ProcessGET(ctx, *t)
+		etagstr, ok = etagprocessedintf.(string)
+		if !ok {
+			fmt.Printf("@odata.etag not a string: %T - %#v\n", etagprocessedintf, etagprocessedintf)
+			return ""
+		}
+		fmt.Printf("processed RedfishResourceProperty to string! yay\n")
+
+	case string:
+		etagstr = t
+		fmt.Printf("direct string")
+
+	default:
+		fmt.Printf("unknown @odata.etag: %T - %#v\n", t, t)
+	}
+
+	fmt.Printf("GOT ETAG: '%s'\n", etagstr)
+	return etagstr
 }
 
 func addEtag(w http.ResponseWriter, d *HTTPCmdProcessedData) *HTTPCmdProcessedData {

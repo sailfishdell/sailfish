@@ -56,7 +56,7 @@ func (c *DELETE) Handle(ctx context.Context, a *RedfishResourceAggregate) error 
 	// - can create a new CMD for GET with an identical CMD ID. Is that cheating?
 	// TODO: return http 405 status for undeletable objects. right now we use privileges
 
-	//data.Results, _ = ProcessDELETE(ctx, a.properties, c.Body)
+	//data.Results, _ = ProcessDELETE(ctx, a.Properties, c.Body)
 
 	// send event to trigger delete
 	a.PublishEvent(eh.NewEvent(RedfishResourceRemoved, &RedfishResourceRemovedData{
@@ -98,7 +98,9 @@ func (c *PATCH) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 		StatusCode: 200,
 	}
 
-	data.Results, _ = ProcessPATCH(ctx, a.properties, c.Body)
+	a.PropertiesMu.Lock()
+	data.Results, _ = ProcessPATCH(ctx, a.Properties, c.Body)
+	a.PropertiesMu.Unlock()
 
 	// TODO: set error status code based on err from ProcessPATCH
 	// TODO: This is not thread safe: deep copy

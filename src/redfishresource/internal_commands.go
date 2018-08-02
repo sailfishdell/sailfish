@@ -64,7 +64,7 @@ func (c *CreateRedfishResource) CommandType() eh.CommandType { return CreateRedf
 
 func (c *CreateRedfishResource) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 	requestLogger := ContextLogger(ctx, "internal_commands")
-	requestLogger.Info("CreateRedfishResource", "META", a.properties.Meta)
+	requestLogger.Info("CreateRedfishResource", "META", a.Properties.Meta)
 
 	if a.ID != eh.UUID("") {
 		requestLogger.Error("Aggregate already exists!", "command", "CreateRedfishResource", "UUID", a.ID, "URI", a.ResourceURI, "request_URI", c.ResourceURI)
@@ -99,17 +99,17 @@ func (c *CreateRedfishResource) Handle(ctx context.Context, a *RedfishResourceAg
 		Meta:        map[string]interface{}{},
 	}
 
-	a.propertiesMu.Lock()
+	a.PropertiesMu.Lock()
 	v := map[string]interface{}{}
-	a.properties.Value = v
-	a.properties.Parse(c.Properties)
-	a.properties.Meta = c.Meta
+	a.Properties.Value = v
+	a.Properties.Parse(c.Properties)
+	a.Properties.Meta = c.Meta
 
 	v["@odata.id"] = &RedfishResourceProperty{Value: c.ResourceURI}
 	v["@odata.type"] = &RedfishResourceProperty{Value: c.Type}
 	v["@odata.context"] = &RedfishResourceProperty{Value: c.Context}
 
-	a.propertiesMu.Unlock()
+	a.PropertiesMu.Unlock()
 
 	// if command claims that this will be a collection, automatically set up the Members property
 	if c.Collection {
@@ -191,9 +191,9 @@ func (c *UpdateRedfishResourceProperties) Handle(ctx context.Context, a *Redfish
 		Meta:        map[string]interface{}{},
 	}
 
-	a.propertiesMu.Lock()
-	a.properties.Parse(c.Properties)
-	a.propertiesMu.Unlock()
+	a.PropertiesMu.Lock()
+	a.Properties.Parse(c.Properties)
+	a.PropertiesMu.Unlock()
 
 	if len(d.PropertyNames) > 0 {
 		a.PublishEvent(eh.NewEvent(RedfishResourcePropertiesUpdated, d, time.Now()))
