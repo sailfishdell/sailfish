@@ -34,9 +34,10 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 				"Id":          "Power",
 				"Description": "Power",
 				"Name":        "Power",
-				"PowerSupplies@odata.count": "TEST_VALUE",
+				"PowerSupplies@odata.count@meta": v.Meta(view.PropGET("power_supply_views_count")),
 				"PowerSupplies@meta":        v.Meta(view.PropGET("power_supply_views")),
-
+				"PowerControl@odata.count@meta": v.Meta(view.PropGET("power_control_views_count")),
+                                "PowerControl@meta":        v.Meta(view.PropGET("power_control_views")),
 				"Oem": map[string]interface{}{
 					"OemPower": map[string]interface{}{
 						"PowerTrends": map[string]interface{}{
