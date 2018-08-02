@@ -31,27 +31,26 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 				"Name":                     "Thermal",
 				"Description":              "Represents the properties for Temperature and Cooling",
 				"Fans@meta":                v.Meta(view.PropGET("fan_views")),
-				"Fans@odata.count":         "TEST_VALUE",
+				"Fans@odata.count@meta":         v.Meta(view.PropGET("fan_views_count")),
 				"Temperatures@meta":        v.Meta(view.PropGET("thermal_views")),
-				"Temperatures@odata.count": "TEST_VALUE",
+				"Temperatures@odata.count@meta": v.Meta(view.PropGET("thermal_views_count")),
 				"Oem": map[string]interface{}{
 					"EID_674": map[string]interface{}{
 						"FansSummary": map[string]interface{}{
 							"Status": map[string]interface{}{
 								"HealthRollup@meta": v.Meta(view.GETProperty("fan_rollup"), view.GETModel("global_health")),
-								"Health@meta":       v.Meta(view.PropGET("health")),
+								"Health@meta":       v.Meta(view.GETProperty("fan_rollup"), view.GETModel("global_health")),
 							},
 						},
 						"TemperaturesSummary": map[string]interface{}{
 							"Status": map[string]interface{}{
 								"HealthRollup@meta": v.Meta(view.GETProperty("temperature_rollup"), view.GETModel("global_health")),
-								"Health@meta":       v.Meta(view.PropGET("health")),
+								"Health@meta":       v.Meta(view.GETProperty("temperature_rollup"), view.GETModel("global_health")),
 							},
 						},
 					},
 				},
-				//"Redundancy@meta": v.Meta(view.PropGET("redundancy_views")),
-				"Redundancy":             "TEST_VALUE",
-				"Redundancy@odata.count": "TEST_VALUE",
+				"Redundancy@meta":             v.Meta(view.PropGET("redundancy_views")),
+				"Redundancy@odata.count@meta": v.Meta(view.PropGET("redundancy_views_count")),
 			}})
 }

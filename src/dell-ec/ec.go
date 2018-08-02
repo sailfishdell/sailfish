@@ -459,6 +459,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			mgrCMCIntegrated.WithUniqueName("Thermal"),
 			model.UpdateProperty("fan_views", []interface{}{}),
 			model.UpdateProperty("thermal_views", []interface{}{}),
+			model.UpdateProperty("redundancy_views", []interface{}{}),
 		)
 		// the controller is what updates the model when ar entries change,
 		// also handles patch from redfish
@@ -518,6 +519,16 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			fan_views = append(fan_views, p)
 		}
 		thermalModel.ApplyOption(model.UpdateProperty("fan_views", &domain.RedfishResourceProperty{Value: fan_views}))
+		thermalModel.ApplyOption(model.UpdateProperty("fan_views_count", len(fan_views)))
+
+		thermal_views := []interface{}{}
+		thermalModel.ApplyOption(model.UpdateProperty("thermal_views", &domain.RedfishResourceProperty{Value: thermal_views}))
+                thermalModel.ApplyOption(model.UpdateProperty("thermal_views_count", len(thermal_views)))
+
+		redundancy_views := []interface{}{}
+                thermalModel.ApplyOption(model.UpdateProperty("redundancy_views", &domain.RedfishResourceProperty{Value: redundancy_views}))
+                thermalModel.ApplyOption(model.UpdateProperty("redundancy_views_count", len(redundancy_views)))
+
 	}
 
 	// ************************************************************************
