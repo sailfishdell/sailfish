@@ -23,7 +23,7 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
                                 "PowerSupplies@odata.count@meta": v.Meta(view.PropGET("power_supply_views_count")),
                                 "PowerSupplies@meta":        v.Meta(view.PropGET("power_supply_views")),
                                 "PowerControl@odata.count@meta": v.Meta(view.PropGET("power_control_views_count")),
-                                "PowerControl@meta":        v.Meta(view.PropGET("power_control_views")),
+                                "PowerControl@meta":        v.Meta(view.PropGET("power_control_views")), //TODO
                                 "Oem": map[string]interface{}{
                                         "OemPower": map[string]interface{}{
                                                 "PowerTrends": map[string]interface{}{
@@ -31,7 +31,7 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
                                                         "@odata.context":         "/redfish/v1/$metadata#Power.PowerSystem.Chassis.1/Power/$entity",
                                                         "@odata.type":            "#DellPower.v1_0_0.DellPowerTrends",
                                                         "Name":                   "System Power",
-                                                        "histograms@meta":        v.Meta(view.PropGET("histogram_views")),
+                                                        "histograms@meta":        v.Meta(view.PropGET("histogram_views")), //TODO
                                                         "histograms@odata.count@meta": v.Meta(view.PropGET("histogram_views_count")),
                                                         "MemberId":               "PowerHistogram",
                                                 },

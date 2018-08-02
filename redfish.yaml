@@ -91,7 +91,7 @@ mappings:
 
     # map AR entries to back end model
     PSU/PSU.Slot:
-        - {Property: "capacity",    FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Capacity" }
+        - {Property: "capacity_watts",    FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Capacity" }
         - {Property: "component_id",    FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "ComponentID" }
         - {Property: "eff_capacity",    FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "EffCapacity" }
         - {Property: "firmware_version",    FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "FirmwareVersion" }
