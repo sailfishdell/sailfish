@@ -51,7 +51,7 @@ rps=${rps:-"$(seq $single_step_rps_start $single_step_rps_end) $(seq $ten_step_r
 # to save CPU TOP information, you have to have SSH access to the box and already copied your ssh key. use "ssh-copy-id root@IP" to copy your key.
 # on idrac, you also have to disable the avocent NSS module by mount binding /etc/nsswitch.conf and removing avct from passwd line
 savetop() {
-    echo "Starting TOP for apachebench run. RATE: $index" > $1
+    echo "Starting TOP for hey run. RATE: $index" > $1
     ssh root@${host} 'top -b -d1 -o %CPU' >> $1 &
     SSHPID=$!
 }
