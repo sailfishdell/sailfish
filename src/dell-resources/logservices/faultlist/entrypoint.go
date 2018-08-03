@@ -86,11 +86,7 @@ func (f *FaultListService) manageLcLogs(ctx context.Context, logger log.Logger, 
 			case event := <-inbox:
 				uuid := eh.NewUUID()
 				uri := fmt.Sprintf("%s/%s", logUri, uuid)
-
 				logger.Info("Got internal redfish event", "event", event)
-				logger.Warn("uuid is ", "uuid", uuid)
-				logger.Warn("uri is ", "uri", uri)
-
 				switch typ := event.EventType(); typ {
 				case FaultEntryAdd:
 					faultEntry := event.Data().(*FaultEntryAddData)
