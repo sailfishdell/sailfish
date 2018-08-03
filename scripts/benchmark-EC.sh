@@ -59,6 +59,8 @@ host=$ECHOST TOKEN= port=8443 ${scriptdir}/runab.sh       ${out}/go-https-ab
 #host=$ECHOST TOKEN= port=9443 ${scriptdir}/runhey.sh      ${out}/go-openssl-hey
 
 # test go-redfish through apache
+host=$ECHOST port=443 ${scriptdir}/walk.sh        ${out}/go-apache-walk
+
 mkdir -p ${out}/go-apache-vegeta
 grep /Attributes ${out}/go-https-vegeta/to-visit.txt > ${out}/go-apache-vegeta/to-visit.txt
 host=$ECHOST port=443 ${scriptdir}/runvegeta.sh     ${out}/go-apache-vegeta
