@@ -75,7 +75,7 @@ for i in $rps ; do
 
     if [ ${runtoken} == 1 ]; then
         [ "${profile}" == 1 ] && savetop $outputdir/token/results-r${index}-CPU.txt
-        vegeta attack -targets $outputdir/vegeta-targets.txt -output $outputdir/token/results-rate-${index}.bin -header "$AUTH_HEADER" -duration=${time} $cert_opt -rate $i
+        vegeta attack ${VEGETA_OPTS} -targets $outputdir/vegeta-targets.txt -output $outputdir/token/results-rate-${index}.bin -header "$AUTH_HEADER" -duration=${time} $cert_opt -rate $i
         [ -n "$SSHPID" ] && kill $SSHPID ||:
 
         cat $outputdir/token/results-rate-${index}.bin | vegeta report -reporter text > $outputdir/token/report-r${index}-text.txt
@@ -85,7 +85,7 @@ for i in $rps ; do
 
     if [ ${runbasic} == 1 ]; then
         [ "${profile}" == 1 ] && savetop $outputdir/basic/results-r${index}-CPU.txt
-        vegeta attack -targets $outputdir/basic/vegeta-targets.txt -output $outputdir/basic/results-rate-${index}.bin -duration=${time} $cert_opt -rate $i
+        vegeta attack ${VEGETA_OPTS} -targets $outputdir/basic/vegeta-targets.txt -output $outputdir/basic/results-rate-${index}.bin -duration=${time} $cert_opt -rate $i
         [ -n "$SSHPID" ] && kill $SSHPID ||:
 
         cat $outputdir/basic/results-rate-${index}.bin | vegeta report -reporter text > $outputdir/basic/report-r${index}-text.txt
