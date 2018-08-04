@@ -31,11 +31,6 @@ Things that need work: (-) TODO (*) DONE
  - PUT/PATCH/POST support
     * basic PATCH support controlled by @meta["PATCH"]["allowed"] = true
     - Add validation plugin support
-
- - ETAGS support. Proposal:
-    - etags should be stored in the aggregate in the Headers map.
-    - Updates to the aggregate trigger update of etags
-
  - SupportedMethods support: have a way to return allowed methods in the header.
 
  - Redfish compliant HTTP ERROR responses
@@ -113,3 +108,9 @@ Things that need work: (-) TODO (*) DONE
  * eventwaiter interface - stop passing *ew around everywhere, use interface instead
     -- accept interfaces, return objects
 
+ * ETAGS support.
+    * etags are stored as a property per redfish spec, "@odata.etag".
+    * the handler will scan all aggregates that we serialize out for an instance of @odata.etag property, and set the HTTP Etag header, if present
+    * The redfish handler will, check the If-Match and If-None-Match HTTP headers
+    * Have standard model support: etags can be pulled from a model
+    * Have a standard view option to help update model etag generation id on updates
