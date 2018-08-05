@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"net/url"
 	"strconv"
 
 	eh "github.com/looplab/eventhorizon"
@@ -334,7 +335,7 @@ func addEtag(w http.ResponseWriter, d *HTTPCmdProcessedData) *HTTPCmdProcessedDa
 func handleCollectionQueryOptions(r *http.Request, d *HTTPCmdProcessedData) *HTTPCmdProcessedData {
 	// the following query parameters affect how we return collections:
 	skip := r.URL.Query().Get("$skip")
-	//top = r.URL.Query().Get("$top")
+	top := r.URL.Query().Get("$top")
 	//filter = r.URL.Query().Get("$filter")
 
 	res, ok := d.Results.(map[string]interface{})
@@ -353,12 +354,32 @@ func handleCollectionQueryOptions(r *http.Request, d *HTTPCmdProcessedData) *HTT
 		return d
 	}
 
+	var skipI int
 	if skip != "" {
 		skipI, err := strconv.Atoi(skip)
 		// TODO: http error on invalid skip request
 		if err == nil && skipI > 0 {
+			// slice off the number we are supposed to skip from the beginning
 			membersArr = membersArr[skipI:]
 			res["Members"] = membersArr
+		}
+	}
+
+	if top != "" {
+		topI, err := strconv.Atoi(top)
+		// TODO: http error on invalid top request
+		if err == nil && topI > 0 && topI < len(membersArr) {
+			// top means return exactly that many (or fewer), so slice off the end
+			membersArr = membersArr[:topI]
+			res["Members"] = membersArr
+
+			// since we sliced off the end, add a nextlink user can follow to
+			// get the rest (per redfish spec)
+			// we'll be nice and preserve all the original query options
+			q := r.URL.Query()
+			q.Set("$skip", strconv.Itoa(skipI+topI))
+			nextlink := url.URL{Path: r.URL.Path, RawQuery: q.Encode()}
+			res["Members@odata.nextlink"] = nextlink.String()
 		}
 	}
 
