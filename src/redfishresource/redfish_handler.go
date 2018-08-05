@@ -331,6 +331,40 @@ func addEtag(w http.ResponseWriter, d *HTTPCmdProcessedData) *HTTPCmdProcessedDa
 	return d
 }
 
+func handleCollectionQueryOptions(r *http.Request, d *HTTPCmdProcessedData) *HTTPCmdProcessedData {
+	// the following query parameters affect how we return collections:
+	skip := r.URL.Query().Get("$skip")
+	//top = r.URL.Query().Get("$top")
+	//filter = r.URL.Query().Get("$filter")
+
+	res, ok := d.Results.(map[string]interface{})
+	if !ok {
+		// can't be a collection if it's not a map[string]interface{} (or, rather, we can't handle it here and would need to completely re-do this with introspection.)
+		return d
+	}
+
+	members, ok := res["Members"]
+	if !ok {
+		return d
+	}
+
+	membersArr, ok := members.([]map[string]interface{})
+	if !ok {
+		return d
+	}
+
+	if skip != "" {
+		skipI, err := strconv.Atoi(skip)
+		// TODO: http error on invalid skip request
+		if err == nil && skipI > 0 {
+			membersArr = membersArr[skipI:]
+			res["Members"] = membersArr
+		}
+	}
+
+	return d
+}
+
 func handleExpand(r *http.Request, d *HTTPCmdProcessedData) *HTTPCmdProcessedData {
 	//expand = r.URL.Query().Get("$expand")
 	return d
@@ -338,14 +372,5 @@ func handleExpand(r *http.Request, d *HTTPCmdProcessedData) *HTTPCmdProcessedDat
 
 func handleSelect(r *http.Request, d *HTTPCmdProcessedData) *HTTPCmdProcessedData {
 	//sel = r.URL.Query().Get("$select")
-	return d
-}
-
-func handleCollectionQueryOptions(r *http.Request, d *HTTPCmdProcessedData) *HTTPCmdProcessedData {
-	// the following query parameters affect how we return collections:
-	//skip = r.URL.Query().Get("$skip")
-	//top = r.URL.Query().Get("$top")
-	//filter = r.URL.Query().Get("$filter")
-
 	return d
 }
