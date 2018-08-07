@@ -42,6 +42,7 @@ import (
 	mgrCMCIntegrated "github.com/superchalupa/go-redfish/src/dell-resources/managers/cmc.integrated"
 	"github.com/superchalupa/go-redfish/src/dell-resources/registries"
 	"github.com/superchalupa/go-redfish/src/dell-resources/registries/registry"
+	"github.com/superchalupa/go-redfish/src/dell-resources/slots"
 	"github.com/superchalupa/go-redfish/src/dell-resources/update_service"
 	"github.com/superchalupa/go-redfish/src/dell-resources/update_service/firmware_inventory"
 
@@ -75,6 +76,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	event.Setup(ch, eb)
 	logSvc := lcl.New(ch, eb)
 	faultSvc := faultlist.New(ch, eb)
+	slotSvc := slot.New(ch, eb)
 
 	//
 	// Create the (empty) model behind the /redfish/v1 service root. Nothing interesting here
@@ -423,25 +425,25 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		powerModel.ApplyOption(model.UpdateProperty("power_supply_views", &domain.RedfishResourceProperty{Value: psu_views}))
 		powerModel.ApplyOption(model.UpdateProperty("power_supply_views_count", len(psu_views)))
 
-                pwrCtrl_views := []interface{}{}
+		pwrCtrl_views := []interface{}{}
 		/*
-		pwrCtrlLogger := sysChasLogger.New("module", "Chassis/System.Chassis/Power/PowerControl")
-                pwrCtrlModel := model.New()
-                armapper, _ = ar_mapper.New(ctx, pwrCtrlLogger, powerModel, "Chassis/System.Chassis/Power", chasName, ch, eb)
-                updateFns = append(updateFns, armapper.ConfigChangedFn)
-                sysChasPwrCtrlVw := view.New(
-                        view.WithURI(rootView.GetURI()+"/Chassis/"+chasName+"/Power/PowerControl"),
-                        view.WithModel("default", pwrCtrlModel),
-                        view.WithController("ar_mapper", armapper),
-                        eventservice.PublishResourceUpdatedEventsForModel(ctx, "default", eb),
-                )
-                pwrCtrl := powercontrol.AddAggregate(ctx, pwrCtrlLogger, sysChasPwrCtrlVw, ch)
-		p := &domain.RedfishResourceProperty{}
-                p.Parse(psu)
-                pwrCtrl_views = append(pwrCtrl_views, p)
+				pwrCtrlLogger := sysChasLogger.New("module", "Chassis/System.Chassis/Power/PowerControl")
+		                pwrCtrlModel := model.New()
+		                armapper, _ = ar_mapper.New(ctx, pwrCtrlLogger, powerModel, "Chassis/System.Chassis/Power", chasName, ch, eb)
+		                updateFns = append(updateFns, armapper.ConfigChangedFn)
+		                sysChasPwrCtrlVw := view.New(
+		                        view.WithURI(rootView.GetURI()+"/Chassis/"+chasName+"/Power/PowerControl"),
+		                        view.WithModel("default", pwrCtrlModel),
+		                        view.WithController("ar_mapper", armapper),
+		                        eventservice.PublishResourceUpdatedEventsForModel(ctx, "default", eb),
+		                )
+		                pwrCtrl := powercontrol.AddAggregate(ctx, pwrCtrlLogger, sysChasPwrCtrlVw, ch)
+				p := &domain.RedfishResourceProperty{}
+		                p.Parse(psu)
+		                pwrCtrl_views = append(pwrCtrl_views, p)
 		*/
 		powerModel.ApplyOption(model.UpdateProperty("power_control_views", &domain.RedfishResourceProperty{Value: pwrCtrl_views}))
-                powerModel.ApplyOption(model.UpdateProperty("power_control_views_count", len(pwrCtrl_views)))
+		powerModel.ApplyOption(model.UpdateProperty("power_control_views_count", len(pwrCtrl_views)))
 
 		histogram_views := []interface{}{}
 		/*
@@ -523,11 +525,14 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 
 		thermal_views := []interface{}{}
 		thermalModel.ApplyOption(model.UpdateProperty("thermal_views", &domain.RedfishResourceProperty{Value: thermal_views}))
-                thermalModel.ApplyOption(model.UpdateProperty("thermal_views_count", len(thermal_views)))
+		thermalModel.ApplyOption(model.UpdateProperty("thermal_views_count", len(thermal_views)))
 
 		redundancy_views := []interface{}{}
-                thermalModel.ApplyOption(model.UpdateProperty("redundancy_views", &domain.RedfishResourceProperty{Value: redundancy_views}))
-                thermalModel.ApplyOption(model.UpdateProperty("redundancy_views_count", len(redundancy_views)))
+		thermalModel.ApplyOption(model.UpdateProperty("redundancy_views", &domain.RedfishResourceProperty{Value: redundancy_views}))
+		thermalModel.ApplyOption(model.UpdateProperty("redundancy_views_count", len(redundancy_views)))
+
+		/*  Slots */
+		slotSvc.StartService(ctx, logger, sysChasVw)
 
 	}
 
