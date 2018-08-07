@@ -27,12 +27,12 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 				"DELETE": []string{}, // can't be deleted
 			},
 			Properties: map[string]interface{}{
-				"Id":                       "Thermal",
-				"Name":                     "Thermal",
-				"Description":              "Represents the properties for Temperature and Cooling",
-				"Fans@meta":                v.Meta(view.PropGET("fan_views")),
+				"Id":                            "Thermal",
+				"Name":                          "Thermal",
+				"Description":                   "Represents the properties for Temperature and Cooling",
+				"Fans@meta":                     v.Meta(view.PropGET("fan_views")),
 				"Fans@odata.count@meta":         v.Meta(view.PropGET("fan_views_count")),
-				"Temperatures@meta":        v.Meta(view.PropGET("thermal_views")),
+				"Temperatures@meta":             v.Meta(view.PropGET("thermal_views")),
 				"Temperatures@odata.count@meta": v.Meta(view.PropGET("thermal_views_count")),
 				"Oem": map[string]interface{}{
 					"EID_674": map[string]interface{}{
