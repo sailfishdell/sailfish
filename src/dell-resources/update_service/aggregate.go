@@ -46,7 +46,7 @@ func AddAggregate(ctx context.Context, root *view.View, v *view.View, ch eh.Comm
 				"Description":    "Represents the properties for the Update Service",
 				"Status": map[string]interface{}{
 					"State":  "Enabled", //TODO
-					"Health": "OK", //TODO
+					"Health": "OK",      //TODO
 				},
 
 				"FirmwareInventory": map[string]interface{}{

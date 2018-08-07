@@ -40,7 +40,7 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 // this view fragment can be attached elsewhere in the tree
 //
 func getViewFragment(v *view.View) map[string]interface{} {
-	properties :=  map[string]interface{}{
+	properties := map[string]interface{}{
 		"@odata.type":             "#Power.v1_0_2.PowerSupply",
 		"@odata.context":          "/redfish/v1/$metadata#Power.PowerSystem.Chassis.1/Power/$entity",
 		"@odata.id":               v.GetURI(),

@@ -33,37 +33,37 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 }
 
 func getViewFragment(v *view.View) map[string]interface{} {
-	properties :=  map[string]interface{}{
-		"@odata.type":             "#Power.v1_0_2.PowerControl",
-		"@odata.context":          "/redfish/v1/$metadata#Power.PowerSystem.Chassis.1/Power/$entity",
-		"@odata.id":               v.GetURI(),
-		"Name@meta":               v.Meta(view.PropGET("name")),
-		"MemberId@meta":           v.Meta(view.PropGET("unique_id")),
-                "PowerAvailableWatts@meta": v.Meta(view.PropGET("available_watts")),
-		"PowerCapacityWatts@meta": v.Meta(view.PropGET("capacity_watts")),
-                "PowerConsumedWatts@meta": v.Meta(view.PropGET("consumed_watts")),
+	properties := map[string]interface{}{
+		"@odata.type":              "#Power.v1_0_2.PowerControl",
+		"@odata.context":           "/redfish/v1/$metadata#Power.PowerSystem.Chassis.1/Power/$entity",
+		"@odata.id":                v.GetURI(),
+		"Name@meta":                v.Meta(view.PropGET("name")),
+		"MemberId@meta":            v.Meta(view.PropGET("unique_id")),
+		"PowerAvailableWatts@meta": v.Meta(view.PropGET("available_watts")),
+		"PowerCapacityWatts@meta":  v.Meta(view.PropGET("capacity_watts")),
+		"PowerConsumedWatts@meta":  v.Meta(view.PropGET("consumed_watts")),
 
 		"Oem": map[string]interface{}{
-		    "EnergyConsumptionStartTime": null,
-		    "EnergyConsumptionkWh": null,
-		    "HeadroomWatts": null,
-		    "MaxPeakWatts": null,
-		    "MaxPeakWattsTime": null,
-		    "MinPeakWatts": null,
-		    "MinPeakWattsTime": null,
-		    "PeakHeadroomWatts": null,
+			"EnergyConsumptionStartTime": null,
+			"EnergyConsumptionkWh":       null,
+			"HeadroomWatts":              null,
+			"MaxPeakWatts":               null,
+			"MaxPeakWattsTime":           null,
+			"MinPeakWatts":               null,
+			"MinPeakWattsTime":           null,
+			"PeakHeadroomWatts":          null,
 		},
 		"PowerLimit": map[string]interface{}{
-		    "LimitInWatts": "",
+			"LimitInWatts": "",
 		},
 		"PowerMetrics": map[string]interface{}{
-		    "AverageConsumedWatts": 0,
-		    "IntervalInMin": 0,
-		    "MaxConsumedWatts": 0,
-		    "MinConsumedWatts": 0,
+			"AverageConsumedWatts": 0,
+			"IntervalInMin":        0,
+			"MaxConsumedWatts":     0,
+			"MinConsumedWatts":     0,
 		},
-		"RelatedItem@meta": v.Meta(view.PropGET("related_item")),
-		"RelatedItem@odata.count@meta": v.Meta(view.PropGET(related_item_count)), 
+		"RelatedItem@meta":             v.Meta(view.PropGET("related_item")),
+		"RelatedItem@odata.count@meta": v.Meta(view.PropGET(related_item_count)),
 	}
 
 	return properties

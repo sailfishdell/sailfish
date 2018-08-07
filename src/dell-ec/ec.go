@@ -427,20 +427,20 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 
 		pwrCtrl_views := []interface{}{}
 		/*
-				pwrCtrlLogger := sysChasLogger.New("module", "Chassis/System.Chassis/Power/PowerControl")
-		                pwrCtrlModel := model.New()
-		                armapper, _ = ar_mapper.New(ctx, pwrCtrlLogger, powerModel, "Chassis/System.Chassis/Power", chasName, ch, eb)
-		                updateFns = append(updateFns, armapper.ConfigChangedFn)
-		                sysChasPwrCtrlVw := view.New(
-		                        view.WithURI(rootView.GetURI()+"/Chassis/"+chasName+"/Power/PowerControl"),
-		                        view.WithModel("default", pwrCtrlModel),
-		                        view.WithController("ar_mapper", armapper),
-		                        eventservice.PublishResourceUpdatedEventsForModel(ctx, "default", eb),
-		                )
-		                pwrCtrl := powercontrol.AddAggregate(ctx, pwrCtrlLogger, sysChasPwrCtrlVw, ch)
-				p := &domain.RedfishResourceProperty{}
-		                p.Parse(psu)
-		                pwrCtrl_views = append(pwrCtrl_views, p)
+					pwrCtrlLogger := sysChasLogger.New("module", "Chassis/System.Chassis/Power/PowerControl")
+			                pwrCtrlModel := model.New()
+			                armapper, _ = ar_mapper.New(ctx, pwrCtrlLogger, powerModel, "Chassis/System.Chassis/Power", chasName, ch, eb)
+			                updateFns = append(updateFns, armapper.ConfigChangedFn)
+			                sysChasPwrCtrlVw := view.New(
+			                        view.WithURI(rootView.GetURI()+"/Chassis/"+chasName+"/Power/PowerControl"),
+			                        view.WithModel("default", pwrCtrlModel),
+			                        view.WithController("ar_mapper", armapper),
+			                        eventservice.PublishResourceUpdatedEventsForModel(ctx, "default", eb),
+			                )
+			                pwrCtrl := powercontrol.AddAggregate(ctx, pwrCtrlLogger, sysChasPwrCtrlVw, ch)
+					p := &domain.RedfishResourceProperty{}
+			                p.Parse(psu)
+			                pwrCtrl_views = append(pwrCtrl_views, p)
 		*/
 		powerModel.ApplyOption(model.UpdateProperty("power_control_views", &domain.RedfishResourceProperty{Value: pwrCtrl_views}))
 		powerModel.ApplyOption(model.UpdateProperty("power_control_views_count", len(pwrCtrl_views)))
