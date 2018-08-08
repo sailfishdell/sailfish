@@ -3,6 +3,7 @@ package slot
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	eh "github.com/looplab/eventhorizon"
 	eventpublisher "github.com/looplab/eventhorizon/publisher/local"
@@ -11,6 +12,11 @@ import (
 	"github.com/superchalupa/go-redfish/src/log"
 	"github.com/superchalupa/go-redfish/src/ocp/view"
 	domain "github.com/superchalupa/go-redfish/src/redfishresource"
+
+        "github.com/superchalupa/go-redfish/src/ocp/model"
+	"github.com/superchalupa/go-redfish/src/ocp/awesome_mapper"
+        "github.com/spf13/viper"
+
 )
 
 type viewer interface {
@@ -32,6 +38,8 @@ func New(ch eh.CommandHandler, eb eh.EventBus) *SlotService {
 	EventPublisher.AddObserver(EventWaiter)
 	ss := make(map[string]interface{})
 
+	
+
 	return &SlotService{
 		ch:    ch,
 		eb:    eb,
@@ -41,26 +49,33 @@ func New(ch eh.CommandHandler, eb eh.EventBus) *SlotService {
 }
 
 // StartService will create a model, view, and controller for the eventservice, then start a goroutine to publish events
-func (l *SlotService) StartService(ctx context.Context, logger log.Logger, rootView viewer) *view.View {
+func (l *SlotService) StartService(ctx context.Context, logger log.Logger, rootView viewer, cfgMgr *viper.Viper) *view.View {
+
+	//TODO: Move model and view creation out of manageSlots to fix duplicates panic
+
 	slotUri := rootView.GetURI() + "/Slots"
 
 	slotLogger := logger.New("module", "slot")
 
+	//slotModel := model.New()
+
 	slotView := view.New(
 		view.WithURI(slotUri),
+		//view.WithModel("default", slotModel),
 		//ah.WithAction(ctx, slotLogger, "clear.logs", "/Actions/..fixme...", MakeClearLog(eb), ch, eb),
 	)
 
 	AddAggregate(ctx, slotLogger, slotView, rootView.GetUUID(), l.ch, l.eb)
 
 	// Start up goroutine that listens for log-specific events and creates log aggregates
-	l.manageSlots(ctx, slotLogger, slotUri)
+	//l.manageSlots(ctx, slotLogger, slotUri, slotView, slotModel, cfgMgr)
+        l.manageSlots(ctx, slotLogger, slotUri, cfgMgr)
 
 	return slotView
 }
 
 // starts a background process to create new log entries
-func (l *SlotService) manageSlots(ctx context.Context, logger log.Logger, logUri string) {
+func (l *SlotService) manageSlots(ctx context.Context, logger log.Logger, logUri string, cfgMgr *viper.Viper) {
 
 	// set up listener for the delete event
 	// INFO: this listener will only ever get
@@ -93,11 +108,21 @@ func (l *SlotService) manageSlots(ctx context.Context, logger log.Logger, logUri
 					SlotEntry := event.Data().(*SlotEventData)
 					uuid := eh.NewUUID()
 					uri := fmt.Sprintf("%s/%s", logUri, SlotEntry.Id)
+					s := strings.Split(SlotEntry.Id, ".")
+					group, index := s[0], s[1]
 					oldUuid, ok := l.slots[uri].(eh.UUID)
 					if ok {
 						// remove any old slot info at the same URI
 						l.ch.HandleCommand(ctx, &domain.RemoveRedfishResource{ID: oldUuid, ResourceURI: uri})
 					}
+					slotModel := model.New()
+                                        
+					awesome_mapper.New(ctx, logger, cfgMgr, slotModel, "slots", map[string]interface{}{"group": group, "index": index})
+
+					slotView := view.New(
+						view.WithURI(uri),
+                        			view.WithModel("default", slotModel),
+					)
 
 					// update the UUID for this slot
 					l.slots[uri] = uuid
@@ -117,12 +142,12 @@ func (l *SlotService) manageSlots(ctx context.Context, logger log.Logger, logUri
 								"DELETE": []string{"ConfigureManager"},
 							},
 							Properties: map[string]interface{}{
-								"Config":   SlotEntry.Config,
-								"Contains": SlotEntry.Contains,
-								"Id":       SlotEntry.Id,
-								"Name":     SlotEntry.Name,
-								"Occupied": SlotEntry.Occupied,
-								"SlotName": SlotEntry.SlotName,
+								"Config@meta": slotView.Meta(view.PropGET("config")),
+								"Contains@meta": slotView.Meta(view.PropGET("contains")),
+								"Id": SlotEntry.Id,
+								"Name@meta": slotView.Meta(view.PropGET("name")),
+								"Occupied@meta": slotView.Meta(view.PropGET("occupied")),
+								"SlotName@meta": slotView.Meta(view.PropGET("slot_name")),
 							}})
 				}
 

@@ -13,10 +13,5 @@ func init() {
 }
 
 type SlotEventData struct {
-	Config   string
-	Contains string
 	Id       string
-	Name     string
-	Occupied string
-	SlotName string
 }
