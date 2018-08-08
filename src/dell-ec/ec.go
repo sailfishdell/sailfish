@@ -568,7 +568,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		awesome_mapper.New(ctx, iomLogger, cfgMgr, iomModel, "health", map[string]interface{}{"fqdd": "System.Chassis.1#SubSystem.1#" + iomName})
 
 		//INST POWER CONSUMPTION
-		awesome_mapper.New(ctx, iomLogger, cfgMgr, iomModel, "iom", map[string]interface{}{"fqdd": "System.Chassis.1#SubSystem.1#" + iomName})
+		awesome_mapper.New(ctx, iomLogger, cfgMgr, iomModel, "iom", map[string]interface{}{"fqdd": iomName})
 
 		iomView := view.New(
 			view.WithURI(rootView.GetURI()+"/Chassis/"+iomName),

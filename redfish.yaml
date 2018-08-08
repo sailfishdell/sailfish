@@ -32,7 +32,7 @@ awesome_mapper:
                 {Property: "FanStateMask", Query: "data.FanStateMask" }]}
 
     iom:
-        - { Select: "type == 'IomEvent' && data.FQDD = fqdd", ModelUpdate: [ {Property: "instantaneous_power", Query: "data.instantaneous_power" } ] }
+        - { Select: "type == 'AttributeUpdated' && data.FQDD == fqdd && data.Name == 'InstantaneousPower'", ModelUpdate: [ {Property: "instantaneous_power", Query: "data.Value" } ] }
 
     health:
         - { Select: "type == 'HealthEvent' && data.FQDD == fqdd", ModelUpdate: [ {Property: "health", Query: "data.Health" } ] }
