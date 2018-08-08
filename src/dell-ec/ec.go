@@ -532,7 +532,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		thermalModel.ApplyOption(model.UpdateProperty("redundancy_views_count", len(redundancy_views)))
 
 		/*  Slots */
-		slotSvc.StartService(ctx, logger, sysChasVw)
+		slotSvc.StartService(ctx, logger, sysChasVw, cfgMgr)
 
 	}
 
