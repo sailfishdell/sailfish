@@ -51,24 +51,17 @@ func New(ch eh.CommandHandler, eb eh.EventBus) *SlotService {
 // StartService will create a model, view, and controller for the eventservice, then start a goroutine to publish events
 func (l *SlotService) StartService(ctx context.Context, logger log.Logger, rootView viewer, cfgMgr *viper.Viper) *view.View {
 
-	//TODO: Move model and view creation out of manageSlots to fix duplicates panic
-
 	slotUri := rootView.GetURI() + "/Slots"
-
 	slotLogger := logger.New("module", "slot")
-
-	//slotModel := model.New()
 
 	slotView := view.New(
 		view.WithURI(slotUri),
-		//view.WithModel("default", slotModel),
 		//ah.WithAction(ctx, slotLogger, "clear.logs", "/Actions/..fixme...", MakeClearLog(eb), ch, eb),
 	)
 
 	AddAggregate(ctx, slotLogger, slotView, rootView.GetUUID(), l.ch, l.eb)
 
 	// Start up goroutine that listens for log-specific events and creates log aggregates
-	//l.manageSlots(ctx, slotLogger, slotUri, slotView, slotModel, cfgMgr)
         l.manageSlots(ctx, slotLogger, slotUri, cfgMgr)
 
 	return slotView
@@ -110,13 +103,16 @@ func (l *SlotService) manageSlots(ctx context.Context, logger log.Logger, logUri
 					uri := fmt.Sprintf("%s/%s", logUri, SlotEntry.Id)
 					s := strings.Split(SlotEntry.Id, ".")
 					group, index := s[0], s[1]
+					
 					oldUuid, ok := l.slots[uri].(eh.UUID)
 					if ok {
-						// remove any old slot info at the same URI
-						l.ch.HandleCommand(ctx, &domain.RemoveRedfishResource{ID: oldUuid, ResourceURI: uri})
+					    // early out if the same slot already exists (same URI)
+					    logger.Warn("slot already created, early out", "uuid", oldUuid)
+					    break
 					}
-					slotModel := model.New()
-                                        
+
+
+					slotModel := model.New()                                        
 					awesome_mapper.New(ctx, logger, cfgMgr, slotModel, "slots", map[string]interface{}{"group": group, "index": index})
 
 					slotView := view.New(
