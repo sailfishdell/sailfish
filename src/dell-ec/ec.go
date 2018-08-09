@@ -43,6 +43,7 @@ import (
 	"github.com/superchalupa/go-redfish/src/dell-resources/registries"
 	"github.com/superchalupa/go-redfish/src/dell-resources/registries/registry"
 	"github.com/superchalupa/go-redfish/src/dell-resources/slots"
+	"github.com/superchalupa/go-redfish/src/dell-resources/slots/slotconfig"
 	"github.com/superchalupa/go-redfish/src/dell-resources/update_service"
 	"github.com/superchalupa/go-redfish/src/dell-resources/update_service/firmware_inventory"
 
@@ -77,6 +78,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	logSvc := lcl.New(ch, eb)
 	faultSvc := faultlist.New(ch, eb)
 	slotSvc := slot.New(ch, eb)
+	slotconfigSvc := slotconfig.New(ch, eb)
 
 	//
 	// Create the (empty) model behind the /redfish/v1 service root. Nothing interesting here
@@ -533,6 +535,9 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 
 		/*  Slots */
 		slotSvc.StartService(ctx, logger, sysChasVw, cfgMgr)
+
+		/* Slot config */
+		slotconfigSvc.StartService(ctx, logger, sysChasVw, cfgMgr)
 
 	}
 
