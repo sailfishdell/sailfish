@@ -172,6 +172,13 @@ mappings:
         - {Property: "service_tag",  FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "ServiceTag" }
         - {Property: "indicator_led", FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "IndicatorLED"}
 
+    Chassis/Slots:
+        - {Property: "config", FQDD: "System.Chassis.1", Group: "{group}", Index: "{index}", Name: "Config" }
+        - {Property: "contains", FQDD: "System.Chassis.1", Group: "{group}", Index: "{index}", Name: "Contains" }
+        - {Property: "name", FQDD: "System.Chassis.1", Group: "{group}", Index: "{index}", Name: "Name" }
+        - {Property: "occupied", FQDD: "System.Chassis.1", Group: "{group}", Index: "{index}", Name: "Occupied" }
+        - {Property: "slot_name", FQDD: "System.Chassis.1", Group: "{group}", Index: "{index}", Name: "SlotName" }
+
     Chassis/System.Chassis/Power:
         # no mappings for now: placeholder
 
