@@ -173,11 +173,21 @@ mappings:
         - {Property: "indicator_led", FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "IndicatorLED"}
 
     Chassis/Slots:
-        - {Property: "config", FQDD: "System.Chassis.1", Group: "{group}", Index: "{index}", Name: "Config" }
-        - {Property: "contains", FQDD: "System.Chassis.1", Group: "{group}", Index: "{index}", Name: "Contains" }
-        - {Property: "name", FQDD: "System.Chassis.1", Group: "{group}", Index: "{index}", Name: "Name" }
-        - {Property: "occupied", FQDD: "System.Chassis.1", Group: "{group}", Index: "{index}", Name: "Occupied" }
-        - {Property: "slot_name", FQDD: "System.Chassis.1", Group: "{group}", Index: "{index}", Name: "SlotName" }
+        - {Property: "config", FQDD: "System.Chassis.1", Group: "{GROUP}", Index: "{INDEX}", Name: "Config" }
+        - {Property: "contains", FQDD: "System.Chassis.1", Group: "{GROUP}", Index: "{INDEX}", Name: "Contains" }
+        - {Property: "name", FQDD: "System.Chassis.1", Group: "{GROUP}", Index: "{INDEX}", Name: "Name" }
+        - {Property: "occupied", FQDD: "System.Chassis.1", Group: "{GROUP}", Index: "{INDEX}", Name: "Occupied" }
+        - {Property: "slot_name", FQDD: "System.Chassis.1", Group: "{GROUP}", Index: "{INDEX}", Name: "SlotName" }
+
+    Chassis/SlotConfigs:
+        - {Property: "columns", FQDD: "{ANY}", Group: "{GROUP}", Index: "{INDEX}", Name: "Columns" }
+        - {Property: "location", FQDD: "{ANY}", Group: "{GROUP}", Index: "{INDEX}", Name: "Location" }
+        - {Property: "name", FQDD: "{ANY}", Group: "{GROUP}", Index: "{INDEX}", Name: "Name" }
+        - {Property: "order", FQDD: "{ANY}", Group: "{GROUP}", Index: "{INDEX}", Name: "Order" }
+        - {Property: "orientation", FQDD: "{ANY}", Group: "{GROUP}", Index: "{INDEX}", Name: "Orientation" }
+        - {Property: "parentConfig", FQDD: "{ANY}", Group: "{GROUP}", Index: "{INDEX}", Name: "ParentConfig" }
+        - {Property: "rows", FQDD: "{ANY}", Group: "{GROUP}", Index: "{INDEX}", Name: "Rows" }
+        - {Property: "type", FQDD: "{ANY}", Group: "{GROUP}", Index: "{INDEX}", Name: "Type" }
 
     Chassis/System.Chassis/Power:
         # no mappings for now: placeholder

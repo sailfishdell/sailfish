@@ -5,7 +5,7 @@ import (
 )
 
 const (
-	SlotConfigAddEvent eh.EventType = "SlotConfigAddEvent"
+	SlotConfigAddEvent eh.EventType = "SlotConfigEvent"
 )
 
 func init() {

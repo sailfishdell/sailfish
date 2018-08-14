@@ -10,12 +10,14 @@ import (
 
 	"github.com/superchalupa/go-redfish/src/eventwaiter"
 	"github.com/superchalupa/go-redfish/src/log"
-	"github.com/superchalupa/go-redfish/src/ocp/awesome_mapper"
+	//"github.com/superchalupa/go-redfish/src/ocp/awesome_mapper"
+        "github.com/superchalupa/go-redfish/src/dell-resources/ar_mapper"
 	"github.com/superchalupa/go-redfish/src/ocp/model"
 	"github.com/superchalupa/go-redfish/src/ocp/view"
 	domain "github.com/superchalupa/go-redfish/src/redfishresource"
 
 	"github.com/spf13/viper"
+	
 )
 
 type viewer interface {
@@ -46,7 +48,7 @@ func New(ch eh.CommandHandler, eb eh.EventBus) *SlotConfigService {
 }
 
 // StartService will create a model, view, and controller for the eventservice, then start a goroutine to publish events
-func (l *SlotConfigService) StartService(ctx context.Context, logger log.Logger, rootView viewer, cfgMgr *viper.Viper) *view.View {
+func (l *SlotConfigService) StartService(ctx context.Context, logger log.Logger, rootView viewer, cfgMgr *viper.Viper, updateFns []func(context.Context, *viper.Viper), ch eh.CommandHandler, eb eh.EventBus) *view.View {
 	sCfgUri := rootView.GetURI() + "/SlotConfigs"
 	sCfgLog := logger.New("module", "slot")
 
@@ -58,13 +60,13 @@ func (l *SlotConfigService) StartService(ctx context.Context, logger log.Logger,
 	AddAggregate(ctx, sCfgLog, sCfgView, rootView.GetUUID(), l.ch, l.eb)
 
 	// Start up goroutine that listens for log-specific events and creates log aggregates
-	l.manageSlots(ctx, sCfgLog, sCfgUri, cfgMgr)
+	l.manageSlots(ctx, sCfgLog, sCfgUri, cfgMgr, updateFns, ch, eb)
 
 	return sCfgView
 }
 
 // starts a background process to create new log entries
-func (l *SlotConfigService) manageSlots(ctx context.Context, logger log.Logger, cfgUri string, cfgMgr *viper.Viper) {
+func (l *SlotConfigService) manageSlots(ctx context.Context, logger log.Logger, cfgUri string, cfgMgr *viper.Viper, updateFns []func(context.Context, *viper.Viper), ch eh.CommandHandler, eb eh.EventBus) {
 
 	// set up listener for the delete event
 	// INFO: this listener will only ever get
@@ -108,8 +110,16 @@ func (l *SlotConfigService) manageSlots(ctx context.Context, logger log.Logger, 
 					}
 
 					sCfgModel := model.New()
-					awesome_mapper.New(ctx, logger, cfgMgr, sCfgModel, "slotconfig", map[string]interface{}{"group": group, "index": index})
-					slotView := view.New(view.WithModel("default", sCfgModel), view.WithURI(uri))
+					//awesome_mapper.New(ctx, logger, cfgMgr, sCfgModel, "slotconfig", map[string]interface{}{"group": group, "index": index})
+
+					armapper, _ := ar_mapper.New(ctx, logger, sCfgModel, "Chassis/SlotConfigs", group, index, "", ch, eb)
+                                        updateFns = append(updateFns, armapper.ConfigChangedFn)
+
+					slotView := view.New(
+						view.WithModel("default", sCfgModel), 
+						view.WithURI(uri),
+						view.WithController("ar_mapper", armapper),
+					)
 
 					// update the UUID for this slot
 					l.slots[uri] = uuid

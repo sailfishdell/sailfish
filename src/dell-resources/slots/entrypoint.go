@@ -13,9 +13,10 @@ import (
 	"github.com/superchalupa/go-redfish/src/ocp/view"
 	domain "github.com/superchalupa/go-redfish/src/redfishresource"
 
-	"github.com/spf13/viper"
-	"github.com/superchalupa/go-redfish/src/ocp/awesome_mapper"
 	"github.com/superchalupa/go-redfish/src/ocp/model"
+	//"github.com/superchalupa/go-redfish/src/ocp/awesome_mapper"
+	"github.com/spf13/viper"
+	"github.com/superchalupa/go-redfish/src/dell-resources/ar_mapper"
 )
 
 type viewer interface {
@@ -46,7 +47,7 @@ func New(ch eh.CommandHandler, eb eh.EventBus) *SlotService {
 }
 
 // StartService will create a model, view, and controller for the eventservice, then start a goroutine to publish events
-func (l *SlotService) StartService(ctx context.Context, logger log.Logger, rootView viewer, cfgMgr *viper.Viper) *view.View {
+func (l *SlotService) StartService(ctx context.Context, logger log.Logger, rootView viewer, cfgMgr *viper.Viper, updateFns []func(context.Context, *viper.Viper), ch eh.CommandHandler, eb eh.EventBus) *view.View {
 
 	slotUri := rootView.GetURI() + "/Slots"
 	slotLogger := logger.New("module", "slot")
@@ -59,13 +60,13 @@ func (l *SlotService) StartService(ctx context.Context, logger log.Logger, rootV
 	AddAggregate(ctx, slotLogger, slotView, rootView.GetUUID(), l.ch, l.eb)
 
 	// Start up goroutine that listens for log-specific events and creates log aggregates
-	l.manageSlots(ctx, slotLogger, slotUri, cfgMgr)
+	l.manageSlots(ctx, slotLogger, slotUri, cfgMgr, updateFns, ch, eb)
 
 	return slotView
 }
 
 // starts a background process to create new log entries
-func (l *SlotService) manageSlots(ctx context.Context, logger log.Logger, logUri string, cfgMgr *viper.Viper) {
+func (l *SlotService) manageSlots(ctx context.Context, logger log.Logger, logUri string, cfgMgr *viper.Viper, updateFns []func(context.Context, *viper.Viper), ch eh.CommandHandler, eb eh.EventBus) {
 
 	// set up listener for the delete event
 	// INFO: this listener will only ever get
@@ -109,11 +110,14 @@ func (l *SlotService) manageSlots(ctx context.Context, logger log.Logger, logUri
 					}
 
 					slotModel := model.New()
-					awesome_mapper.New(ctx, logger, cfgMgr, slotModel, "slots", map[string]interface{}{"group": group, "index": index})
+					//awesome_mapper.New(ctx, logger, cfgMgr, slotModel, "slots", map[string]interface{}{"group": group, "index": index})
 
+					armapper, _ := ar_mapper.New(ctx, logger, slotModel, "Chassis/Slots", group, index, "", ch, eb)
+					updateFns = append(updateFns, armapper.ConfigChangedFn)
 					slotView := view.New(
 						view.WithURI(uri),
 						view.WithModel("default", slotModel),
+						view.WithController("ar_mapper", armapper),
 					)
 
 					// update the UUID for this slot

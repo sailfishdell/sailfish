@@ -31,14 +31,14 @@ type ARMappingController struct {
 	name       string
 	mdl        *model.Model
 
-	requestedFQDD  string
-	requestedGroup string
-	requestedIndex string
+        requestedFQDD  string
+        requestedGroup string
+        requestedIndex string
 
 	eb eh.EventBus
 }
 
-func New(ctx context.Context, logger log.Logger, m *model.Model, name string, fqdd string, ch eh.CommandHandler, eb eh.EventBus) (*ARMappingController, error) {
+func New(ctx context.Context, logger log.Logger, m *model.Model, name string, fqdd string, group string, index string, ch eh.CommandHandler, eb eh.EventBus) (*ARMappingController, error) {
 	c := &ARMappingController{
 		mappings:       []mapping{},
 		name:           name,
@@ -46,8 +46,8 @@ func New(ctx context.Context, logger log.Logger, m *model.Model, name string, fq
 		eb:             eb,
 		mdl:            m,
 		requestedFQDD:  fqdd,
-		requestedGroup: "",
-		requestedIndex: "",
+		requestedGroup: group,
+		requestedIndex:	index,
 	}
 
 	// stream processor for action events
@@ -59,17 +59,39 @@ func New(ctx context.Context, logger log.Logger, m *model.Model, name string, fq
 	go sp.RunForever(func(event eh.Event) {
 		fn := func(data *attributes.AttributeUpdatedData) {
 			for _, mapping := range c.mappings {
-				if data.FQDD != mapping.FQDD {
+				if data.Name != mapping.Name {
 					continue
 				}
 				if data.Group != mapping.Group {
-					continue
+					// Check for group wildcard
+					if mapping.Group != "{GROUP}" {
+						continue
+					}
+					if data.Group != group {
+						continue
+					}
 				}
 				if data.Index != mapping.Index {
-					continue
+					// Check for index wildcard
+					if mapping.Index != "{INDEX}" {
+						continue
+					}
+					if data.Index != index {
+						continue
+					}
 				}
-				if data.Name != mapping.Name {
-					continue
+				// check for direct fqdd match first
+				if data.FQDD != mapping.FQDD {
+					// Check for FQDD wildcard
+					// mapping FQDD field equal to "{FQDD}" means use wildcard match
+					if mapping.FQDD == "{FQDD}" {
+						// if we get here, fqdd is wildcard, check against our passed in fqdd
+						if data.FQDD != fqdd {
+							continue
+						}
+					} else if mapping.FQDD != "{ANY}" {
+						continue;
+					}
 				}
 
 				logger.Info("Updating Model", "mapping", mapping, "property", mapping.Property, "data", data)
@@ -130,7 +152,7 @@ func (c *ARMappingController) ConfigChangedFn(ctx context.Context, cfg *viper.Vi
 	}
 	err := k.UnmarshalKey(c.name, &c.mappings)
 	if err != nil {
-		c.logger.Warn("unamrshal failed", "err", err)
+		c.logger.Warn("unmarshal failed", "err", err)
 	}
 
 	for i, m := range c.mappings {

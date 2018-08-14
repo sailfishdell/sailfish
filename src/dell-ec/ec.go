@@ -432,7 +432,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		/*
 					pwrCtrlLogger := sysChasLogger.New("module", "Chassis/System.Chassis/Power/PowerControl")
 			                pwrCtrlModel := model.New()
-			                armapper, _ = ar_mapper.New(ctx, pwrCtrlLogger, powerModel, "Chassis/System.Chassis/Power", chasName, ch, eb)
+			                armapper, _ = ar_mapper.New(ctx, pwrCtrlLogger, powerModel, "Chassis/System.Chassis/Power", "", "", chasName, ch, eb)
 			                updateFns = append(updateFns, armapper.ConfigChangedFn)
 			                sysChasPwrCtrlVw := view.New(
 			                        view.WithURI(rootView.GetURI()+"/Chassis/"+chasName+"/Power/PowerControl"),
@@ -491,11 +491,11 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 				model.UpdateProperty("unique_id", fanName),
 				model.UpdateProperty("attributes", map[string]map[string]map[string]interface{}{}),
 			)
-			fwmapper, _ := ar_mapper.New(ctx, fanLogger.New("module", "firmware/inventory"), fanModel, "firmware/inventory", fanName, ch, eb)
+			fwmapper, _ := ar_mapper.New(ctx, fanLogger.New("module", "firmware/inventory"), fanModel, "firmware/inventory", "", "", fanName, ch, eb)
 			updateFns = append(updateFns, fwmapper.ConfigChangedFn)
 			// the controller is what updates the model when ar entries change,
 			// also handles patch from redfish
-			armapper, _ := ar_mapper.New(ctx, fanLogger, fanModel, "Fans/Fan.Slot", fanName, ch, eb)
+			armapper, _ := ar_mapper.New(ctx, fanLogger, fanModel, "Fans/Fan.Slot", "", "", fanName, ch, eb)
 			updateFns = append(updateFns, armapper.ConfigChangedFn)
 
 			awesome_mapper.New(ctx, fanLogger, cfgMgr, fanModel, "fan", map[string]interface{}{"fqdd": "System.Chassis.1#" + fanName})
@@ -534,10 +534,10 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		thermalModel.ApplyOption(model.UpdateProperty("redundancy_views_count", len(redundancy_views)))
 
 		/*  Slots */
-		slotSvc.StartService(ctx, logger, sysChasVw, cfgMgr)
+		slotSvc.StartService(ctx, logger, sysChasVw, cfgMgr, updateFns, ch, eb)
 
 		/* Slot config */
-		slotconfigSvc.StartService(ctx, logger, sysChasVw, cfgMgr)
+		slotconfigSvc.StartService(ctx, logger, sysChasVw, cfgMgr, updateFns, ch, eb)
 
 	}
 
@@ -559,11 +559,11 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			model.UpdateProperty("managed_by", managedBy),
 			model.UpdateProperty("managed_by_count", len(managedBy)),
 		)
-		fwmapper, _ := ar_mapper.New(ctx, iomLogger.New("module", "firmware/inventory"), iomModel, "firmware/inventory", iomName, ch, eb)
+		fwmapper, _ := ar_mapper.New(ctx, iomLogger.New("module", "firmware/inventory"), iomModel, "firmware/inventory", "", "", iomName, ch, eb)
 		updateFns = append(updateFns, fwmapper.ConfigChangedFn)
 		// the controller is what updates the model when ar entries change,
 		// also handles patch from redfish
-		armapper, _ := ar_mapper.New(ctx, iomLogger, iomModel, "Chassis/IOM.Slot", iomName, ch, eb)
+		armapper, _ := ar_mapper.New(ctx, iomLogger, iomModel, "Chassis/IOM.Slot", "", "", iomName, ch, eb)
 		updateFns = append(updateFns, armapper.ConfigChangedFn)
 
 		// This controller will populate 'attributes' property with AR entries matching this FQDD ('iomName')
@@ -610,7 +610,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			model.UpdateProperty("managed_by", managedBy),
 			model.UpdateProperty("managed_by_count", len(managedBy)),
 		)
-		fwmapper, _ := ar_mapper.New(ctx, sledLogger.New("module", "firmware/inventory"), sledModel, "firmware/inventory", sledName, ch, eb)
+		fwmapper, _ := ar_mapper.New(ctx, sledLogger.New("module", "firmware/inventory"), sledModel, "firmware/inventory", "", "", sledName, ch, eb)
 		updateFns = append(updateFns, fwmapper.ConfigChangedFn)
 
 		armapper := arService.NewMapping(sledLogger, "Chassis/"+sledName, "Chassis/System.Modular", sledModel, map[string]string{"FQDD": sledName})
