@@ -24,6 +24,7 @@ type mapping struct {
 	Property string
 	Query    string
 	expr     []govaluate.ExpressionToken
+	Default  interface{}
 }
 
 type MappingEntry struct {
@@ -52,6 +53,7 @@ func New(ctx context.Context, logger log.Logger, cfg *viper.Viper, mdl *model.Mo
 outer:
 	for _, entry := range c {
 		loopvar := entry
+		mdl.StopNotifications()
 		for _, query := range loopvar.ModelUpdate {
 			expr, err := govaluate.NewEvaluableExpressionWithFunctions(query.Query, functions)
 			if err != nil {
@@ -59,7 +61,12 @@ outer:
 				continue outer
 			}
 			query.expr = expr.Tokens()
+			if query.Default != nil {
+				mdl.UpdateProperty(query.Property, query.Default)
+			}
 		}
+		mdl.StartNotifications()
+		mdl.NotifyObservers()
 
 		// stream processor for action events
 		sp, err := event.NewESP(ctx, event.ExpressionFilter(logger, loopvar.Select, parameters, functions), event.SetListenerName("awesome_mapper"))
