@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 
 	eh "github.com/looplab/eventhorizon"
 	log "github.com/superchalupa/go-redfish/src/log"
@@ -392,6 +393,60 @@ func handleExpand(r *http.Request, d *HTTPCmdProcessedData) *HTTPCmdProcessedDat
 }
 
 func handleSelect(r *http.Request, d *HTTPCmdProcessedData) *HTTPCmdProcessedData {
-	//sel = r.URL.Query().Get("$select")
+	q := r.URL.Query()
+	selAry, ok := q["$select"]
+	if !ok {
+		return d
+	}
+
+	selectQuery := [][]string{}
+	for _, i := range selAry {
+		selectQuery = append(selectQuery, strings.Split(i, "/"))
+	}
+
+	res, ok := d.Results.(map[string]interface{})
+	if !ok {
+		return d
+	}
+
+	trimSelect(res, selectQuery)
+
 	return d
+}
+
+func trimSelect(r interface{}, selAry [][]string) {
+	res, ok := r.(map[string]interface{})
+	if !ok {
+		return
+	}
+
+	for k, _ := range res {
+		found := false
+		if strings.HasPrefix(k, "@") {
+			found = true
+		}
+		if !found {
+			for _, n := range selAry {
+				if k == n[0] {
+					found = true
+					if len(n) <= 1 {
+						break
+					}
+
+					newQuery := [][]string{}
+					for _, n := range selAry {
+						if k == n[0] {
+							newQuery = append(newQuery, n[1:])
+						}
+					}
+					trimSelect(res[k], newQuery)
+				}
+			}
+		}
+		if !found {
+			delete(res, k)
+		}
+	}
+
+	return
 }
