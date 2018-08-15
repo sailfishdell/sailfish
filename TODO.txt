@@ -2,7 +2,11 @@ Things that need work: (-) TODO (*) DONE
 
  - Schema Meta builder
 
- - Event Service Server for legacy POST
+ - Event Service Server for legacy POST/PATCH/PUT
+ - Support PATCH for generic (no-code update to allow patching resource that were created with curl)
+ - PUT/PATCH/POST support
+    * basic PATCH support controlled by @meta["PATCH"]["allowed"] = true
+    - Add validation plugin support
 
  - Fix HTTPs apis to allow specifying api: server
  - re-add spacemonkey
@@ -22,15 +26,10 @@ Things that need work: (-) TODO (*) DONE
     - hook up signals via plugins
 
  - implement for GET:
-    - $skip
-    - $top
     - $filter
     - $expand
     - Most of these can be implemented by recursively processing in GetCommand. Basically, do GET as normal, then when we get the http command results back, process it. skip/top operate on collections. $expand recursively walk and send new GET commands to incorporate into the output
 
- - PUT/PATCH/POST support
-    * basic PATCH support controlled by @meta["PATCH"]["allowed"] = true
-    - Add validation plugin support
  - SupportedMethods support: have a way to return allowed methods in the header.
 
  - Redfish compliant HTTP ERROR responses
@@ -78,6 +77,11 @@ Things that need work: (-) TODO (*) DONE
 ==================
 = Completed tasks
 ==================
+
+ * implement for GET:
+    * $skip
+    * $top
+    * $select
 
  * EVENTS
     * implement an http endpoint to inject raw events into the system (internal command)
