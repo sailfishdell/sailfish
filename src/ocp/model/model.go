@@ -38,6 +38,13 @@ func New(options ...Option) *Model {
 	return s
 }
 
+// UnderLock lets you run a function under the model lock.
+func (s *Model) UnderLock(fn func()) {
+	s.Lock()
+	defer s.Unlock()
+	fn()
+}
+
 // ApplyOption is run with all of the options given by the constructor, but can
 // also be used after construction to apply options
 func (s *Model) ApplyOption(options ...Option) error {
