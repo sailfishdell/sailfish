@@ -3,6 +3,7 @@ package event
 import (
 	"context"
 	"fmt"
+	"sync"
 
 	"github.com/Knetic/govaluate"
 	eh "github.com/looplab/eventhorizon"
@@ -119,11 +120,14 @@ func ExpressionFilter(logger log.Logger, expr string, parameters map[string]inte
 		}
 
 		// make a copy of the incoming parameters because maps are pass-by-reference and we'll race with caller
+		expressionMu := sync.Mutex{}
 		expressionParameters := map[string]interface{}{}
 		for k, v := range parameters {
 			expressionParameters[k] = v
 		}
 		fn := func(ev eh.Event) bool {
+			expressionMu.Lock()
+			defer expressionMu.Unlock()
 			expressionParameters["type"] = string(ev.EventType())
 			expressionParameters["data"] = ev.Data()
 			expressionParameters["event"] = ev
