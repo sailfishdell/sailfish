@@ -43,7 +43,7 @@ func New(ctx context.Context, logger log.Logger, cfg *viper.Viper, mdl *model.Mo
 	if err != nil {
 		logger.Warn("unmarshal failed", "err", err)
 	}
-	logger.Warn("updated mappings", "mappings", c)
+	logger.Info("updated mappings", "mappings", c)
 
 	functions := map[string]govaluate.ExpressionFunction{}
 
