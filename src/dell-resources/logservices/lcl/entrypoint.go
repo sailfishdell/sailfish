@@ -90,7 +90,7 @@ func (l *LCLService) manageLcLogs(ctx context.Context, logger log.Logger, logUri
 
 	go func() {
 		defer listener.Close()
-	    lclogs := []eh.UUID{}
+		lclogs := []eh.UUID{}
 
 		inbox := listener.Inbox()
 		for {
