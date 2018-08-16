@@ -65,6 +65,8 @@ func (l *LCLService) StartService(ctx context.Context, logger log.Logger, rootVi
 	return lclView
 }
 
+const MAX_LOGS = 10
+
 // manageLcLogs starts a background process to create new log entreis
 func (l *LCLService) manageLcLogs(ctx context.Context, logger log.Logger, logUri string) {
 
@@ -88,6 +90,7 @@ func (l *LCLService) manageLcLogs(ctx context.Context, logger log.Logger, logUri
 
 	go func() {
 		defer listener.Close()
+	    lclogs := []eh.UUID{}
 
 		inbox := listener.Inbox()
 		for {
@@ -95,9 +98,10 @@ func (l *LCLService) manageLcLogs(ctx context.Context, logger log.Logger, logUri
 			case event := <-inbox:
 				uuid := eh.NewUUID()
 				uri := fmt.Sprintf("%s/%s", logUri, uuid)
-				logger.Info("Got internal redfish event", "event", event)
+				logger.Info("Processing logevent", "event", event)
 				switch typ := event.EventType(); typ {
 				case LogEvent:
+					lclogs = append(lclogs, uuid)
 					logEntry := event.Data().(*LogEventData)
 					l.ch.HandleCommand(
 						ctx,
@@ -130,6 +134,13 @@ func (l *LCLService) manageLcLogs(ctx context.Context, logger log.Logger, logUri
 			case <-ctx.Done():
 				logger.Info("context is done")
 				return
+			}
+
+			for len(lclogs) > MAX_LOGS {
+				logger.Info("too many logs, trimming", "len", len(lclogs))
+				toDelete := lclogs[0]
+				lclogs = lclogs[1:]
+				l.ch.HandleCommand(ctx, &domain.RemoveRedfishResource{ID: toDelete, ResourceURI: fmt.Sprintf("%s/%s", logUri, toDelete)})
 			}
 		}
 	}()
