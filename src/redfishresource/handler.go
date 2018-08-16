@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"path"
 	"sync"
-	"time"
 
 	"github.com/gorilla/mux"
 	eh "github.com/looplab/eventhorizon"
@@ -250,27 +249,6 @@ func (d *DomainObjects) GetInternalCommandHandler(backgroundCtx context.Context)
 			return
 		}
 
-		// to avoid races, set up our listener first
-		cmdID := eh.NewUUID()
-		reqCtx := WithRequestID(r.Context(), cmdID)
-		l, err := d.HTTPWaiter.Listen(reqCtx, func(event eh.Event) bool {
-			if event.EventType() != HTTPCmdProcessed {
-				return false
-			}
-			if data, ok := event.Data().(*HTTPCmdProcessedData); ok {
-				if data.CommandID == cmdID {
-					return true
-				}
-			}
-			return false
-		})
-		if err != nil {
-			http.Error(w, "could not create waiter"+err.Error(), http.StatusInternalServerError)
-			return
-		}
-		l.Name = "Redfish HTTP Listener"
-		defer l.Close()
-
 		// NOTE: Use a new context when handling, else it will be cancelled with
 		// the HTTP request which will cause projectors etc to fail if they run
 		// async in goroutines past the request.
@@ -278,15 +256,6 @@ func (d *DomainObjects) GetInternalCommandHandler(backgroundCtx context.Context)
 			http.Error(w, "could not handle command: "+err.Error(), http.StatusBadRequest)
 			return
 		}
-
-		// send ourselves a message and wait for it to clear out the pipes
-		data := &HTTPCmdProcessedData{
-			CommandID:  cmdID,
-			StatusCode: 200,
-		}
-		d.EventBus.PublishEvent(reqCtx, eh.NewEvent(HTTPCmdProcessed, data, time.Now()))
-
-		_, _ = l.Wait(reqCtx)
 
 		w.WriteHeader(http.StatusOK)
 	})
