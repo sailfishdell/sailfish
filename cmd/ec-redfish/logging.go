@@ -37,6 +37,8 @@ func initializeApplicationLogging() *MyLogger {
 	cfg.AddConfigPath("/etc/")
 	if err := cfg.ReadInConfig(); err != nil {
 		fmt.Fprintf(os.Stderr, "Could not read config file: %s\n", err)
+	} else {
+		fmt.Println("CMD Using config file:", cfg.ConfigFileUsed())
 	}
 
 	logger := &MyLogger{
