@@ -49,7 +49,7 @@ func InitializeApplicationLogging(logCfgFile string) (logger *MyLogger) {
 	}
 
 	if err := logger.logCfg.ReadInConfig(); err == nil {
-		fmt.Println("Using config file:", logger.logCfg.ConfigFileUsed())
+		fmt.Println("log15adapter Using config file:", logger.logCfg.ConfigFileUsed())
 	} else {
 		fmt.Fprintf(os.Stderr, "Could not read config file: %s\n", err)
 	}
