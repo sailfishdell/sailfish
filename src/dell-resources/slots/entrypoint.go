@@ -13,10 +13,9 @@ import (
 	"github.com/superchalupa/go-redfish/src/ocp/view"
 	domain "github.com/superchalupa/go-redfish/src/redfishresource"
 
-        "github.com/superchalupa/go-redfish/src/ocp/model"
+	"github.com/spf13/viper"
 	"github.com/superchalupa/go-redfish/src/ocp/awesome_mapper"
-        "github.com/spf13/viper"
-
+	"github.com/superchalupa/go-redfish/src/ocp/model"
 )
 
 type viewer interface {
@@ -37,8 +36,6 @@ func New(ch eh.CommandHandler, eb eh.EventBus) *SlotService {
 	EventWaiter := eventwaiter.NewEventWaiter(eventwaiter.SetName("Slot Event Service"))
 	EventPublisher.AddObserver(EventWaiter)
 	ss := make(map[string]interface{})
-
-	
 
 	return &SlotService{
 		ch:    ch,
@@ -62,7 +59,7 @@ func (l *SlotService) StartService(ctx context.Context, logger log.Logger, rootV
 	AddAggregate(ctx, slotLogger, slotView, rootView.GetUUID(), l.ch, l.eb)
 
 	// Start up goroutine that listens for log-specific events and creates log aggregates
-        l.manageSlots(ctx, slotLogger, slotUri, cfgMgr)
+	l.manageSlots(ctx, slotLogger, slotUri, cfgMgr)
 
 	return slotView
 }
@@ -103,21 +100,20 @@ func (l *SlotService) manageSlots(ctx context.Context, logger log.Logger, logUri
 					uri := fmt.Sprintf("%s/%s", logUri, SlotEntry.Id)
 					s := strings.Split(SlotEntry.Id, ".")
 					group, index := s[0], s[1]
-					
+
 					oldUuid, ok := l.slots[uri].(eh.UUID)
 					if ok {
-					    // early out if the same slot already exists (same URI)
-					    logger.Warn("slot already created, early out", "uuid", oldUuid)
-					    break
+						// early out if the same slot already exists (same URI)
+						logger.Warn("slot already created, early out", "uuid", oldUuid)
+						break
 					}
 
-
-					slotModel := model.New()                                        
+					slotModel := model.New()
 					awesome_mapper.New(ctx, logger, cfgMgr, slotModel, "slots", map[string]interface{}{"group": group, "index": index})
 
 					slotView := view.New(
 						view.WithURI(uri),
-                        			view.WithModel("default", slotModel),
+						view.WithModel("default", slotModel),
 					)
 
 					// update the UUID for this slot
@@ -138,10 +134,10 @@ func (l *SlotService) manageSlots(ctx context.Context, logger log.Logger, logUri
 								"DELETE": []string{"ConfigureManager"},
 							},
 							Properties: map[string]interface{}{
-								"Config@meta": slotView.Meta(view.PropGET("config")),
+								"Config@meta":   slotView.Meta(view.PropGET("config")),
 								"Contains@meta": slotView.Meta(view.PropGET("contains")),
-								"Id": SlotEntry.Id,
-								"Name@meta": slotView.Meta(view.PropGET("name")),
+								"Id":            SlotEntry.Id,
+								"Name@meta":     slotView.Meta(view.PropGET("name")),
 								"Occupied@meta": slotView.Meta(view.PropGET("occupied")),
 								"SlotName@meta": slotView.Meta(view.PropGET("slot_name")),
 							}})

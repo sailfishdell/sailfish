@@ -66,7 +66,6 @@ func (l *SlotConfigService) StartService(ctx context.Context, logger log.Logger,
 // starts a background process to create new log entries
 func (l *SlotConfigService) manageSlots(ctx context.Context, logger log.Logger, cfgUri string, cfgMgr *viper.Viper) {
 
-
 	// set up listener for the delete event
 	// INFO: this listener will only ever get
 	listener, err := l.ew.Listen(ctx,

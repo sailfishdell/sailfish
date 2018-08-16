@@ -403,8 +403,8 @@ func handleSelect(r *http.Request, d *HTTPCmdProcessedData) *HTTPCmdProcessedDat
 	for _, i := range selAry {
 		selectQuery = append(selectQuery, strings.Split(i, "/"))
 
-        // WORKAROUND FOR BROKEN MSM
-		selectQuery = append(selectQuery, strings.Split("Attributes/" + i, "/"))
+		// WORKAROUND FOR BROKEN MSM
+		selectQuery = append(selectQuery, strings.Split("Attributes/"+i, "/"))
 	}
 
 	res, ok := d.Results.(map[string]interface{})

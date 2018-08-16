@@ -13,5 +13,5 @@ func init() {
 }
 
 type SlotEventData struct {
-	Id       string
+	Id string
 }
