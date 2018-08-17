@@ -92,12 +92,12 @@ host=$IDRACHOST port=443 ${scriptdir}/runab.sh       ${out}/odatalite-NEW-ab
 
 # select out the new sqlite URIs for specific bench by vegeta
 mkdir -p ${out}/odatalite-NEW-vegeta ||:
-grep PCIeDevice ${out}/odatalite-ALL-vegeta/to-visit.txt > ${out}/odatalite-NEW-vegeta/to-visit.txt
+cat ${out}/odatalite-walk/errors.txt ${out}/odatalite-walk/to-visit.txt | sort | uniq -u | grep -v /redfish/v1/SessionService/Sessions/ | grep PCIeDevice  > ${out}/odatalite-NEW-vegeta/to-visit.txt  ||:
 host=$IDRACHOST port=443 ${scriptdir}/runvegeta.sh ${out}/odatalite-NEW-vegeta
 
 # select out the new CIM URIs for specific bench by vegeta
 mkdir -p ${out}/odatalite-CIM-vegeta ||:
-grep /redfish/v1/Dell ${out}/odatalite-ALL-vegeta/to-visit.txt > ${out}/odatalite-CIM-vegeta/to-visit.txt
+cat ${out}/odatalite-walk/errors.txt ${out}/odatalite-walk/to-visit.txt | sort | uniq -u | grep -v /redfish/v1/SessionService/Sessions/ | grep /redfish/v1/Dell  > ${out}/odatalite-CIM-vegeta/to-visit.txt  ||:
 host=$IDRACHOST port=443 ${scriptdir}/runvegeta.sh ${out}/odatalite-CIM-vegeta
 
 # re-use walk data for vegeta
