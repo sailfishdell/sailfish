@@ -65,7 +65,7 @@ func (l *LCLService) StartService(ctx context.Context, logger log.Logger, rootVi
 	return lclView
 }
 
-const MAX_LOGS = 10
+const MAX_LOGS = 100
 
 // manageLcLogs starts a background process to create new log entreis
 func (l *LCLService) manageLcLogs(ctx context.Context, logger log.Logger, logUri string) {
