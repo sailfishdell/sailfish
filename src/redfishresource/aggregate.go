@@ -41,25 +41,22 @@ type RedfishResourceAggregate struct {
 // has been successfully saved.
 func (a *RedfishResourceAggregate) PublishEvent(e eh.Event) {
 	a.eventsMu.Lock()
-	defer a.eventsMu.Unlock()
-
 	a.events = append(a.events, e)
+	a.eventsMu.Unlock()
 }
 
 // EventsToPublish implements the EventsToPublish method of the EventPublisher interface.
-func (a *RedfishResourceAggregate) EventsToPublish() []eh.Event {
-	a.eventsMu.RLock()
-	retArr := make([]eh.Event, len(a.events))
-	copy(retArr, a.events)
-	a.eventsMu.RUnlock()
-	return retArr
+func (a *RedfishResourceAggregate) EventsToPublish() (ret []eh.Event) {
+	a.eventsMu.Lock()
+	ret = a.events
+	a.events = []eh.Event{}
+	a.eventsMu.Unlock()
+	return
 }
 
 // ClearEvents implements the ClearEvents method of the EventPublisher interface.
+// no-op for now so we can avoid a race. EventsToPublish does a clear, so redundant here
 func (a *RedfishResourceAggregate) ClearEvents() {
-	a.eventsMu.Lock()
-	a.events = []eh.Event{}
-	a.eventsMu.Unlock()
 }
 
 func (r RedfishResourceAggregate) AggregateType() eh.AggregateType { return AggregateType }
@@ -147,6 +144,8 @@ func (r *RedfishResourceAggregate) RemoveCollectionMember(uri string) {
 		return
 	}
 
+	found := false
+
 	for i, v := range arr {
 		rrp, ok := v["@odata.id"].(*RedfishResourceProperty)
 		if !ok {
@@ -157,8 +156,14 @@ func (r *RedfishResourceAggregate) RemoveCollectionMember(uri string) {
 		if !ok || mem_uri != uri {
 			continue
 		}
+
+		found = true
 		arr[len(arr)-1], arr[i] = arr[i], arr[len(arr)-1]
 		break
+	}
+
+	if !found {
+		return
 	}
 
 	l := len(arr) - 1
