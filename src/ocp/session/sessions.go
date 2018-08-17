@@ -69,24 +69,26 @@ func MakeHandlerFunc(logger log.Logger, eb eh.EventBus, getter IDGetter, withUse
 			}
 
 			if !foundCache {
-				token, _ := jwt.ParseWithClaims(xauthtoken, &RedfishClaims{}, func(token *jwt.Token) (interface{}, error) {
+				token, err := jwt.ParseWithClaims(xauthtoken, &RedfishClaims{}, func(token *jwt.Token) (interface{}, error) {
 					if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 						return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
 					}
 					return SECRET, nil
 				})
 
-				if claims, ok := token.Claims.(*RedfishClaims); ok && token.Valid {
-					if getter.HasAggregateID(claims.SessionURI) {
-						userName = claims.UserName
-						privileges = claims.Privileges
-						eb.PublishEvent(context.Background(), eh.NewEvent(XAuthTokenRefreshEvent, &XAuthTokenRefreshData{SessionURI: claims.SessionURI}, time.Now()))
+				if err != nil && token != nil {
+					if claims, ok := token.Claims.(*RedfishClaims); ok && token.Valid {
+						if getter.HasAggregateID(claims.SessionURI) {
+							userName = claims.UserName
+							privileges = claims.Privileges
+							eb.PublishEvent(context.Background(), eh.NewEvent(XAuthTokenRefreshEvent, &XAuthTokenRefreshData{SessionURI: claims.SessionURI}, time.Now()))
 
-						//handlerlog.Debug("Add cache item", "token", xauthtoken)
-						tokenCache = append(tokenCache, cacheItem{sessionuri: claims.SessionURI, username: userName, privileges: claims.Privileges, token: xauthtoken})
-						if len(tokenCache) > 4 {
-							//handlerlog.Debug("trim cache", "cache", tokenCache)
-							tokenCache = tokenCache[1:]
+							//handlerlog.Debug("Add cache item", "token", xauthtoken)
+							tokenCache = append(tokenCache, cacheItem{sessionuri: claims.SessionURI, username: userName, privileges: claims.Privileges, token: xauthtoken})
+							if len(tokenCache) > 4 {
+								//handlerlog.Debug("trim cache", "cache", tokenCache)
+								tokenCache = tokenCache[1:]
+							}
 						}
 					}
 				}
