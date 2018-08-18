@@ -76,7 +76,7 @@ func MakeHandlerFunc(logger log.Logger, eb eh.EventBus, getter IDGetter, withUse
 					return SECRET, nil
 				})
 
-				if err != nil && token != nil {
+				if err == nil && token != nil {
 					if claims, ok := token.Claims.(*RedfishClaims); ok && token.Valid {
 						if getter.HasAggregateID(claims.SessionURI) {
 							userName = claims.UserName
