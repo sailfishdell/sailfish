@@ -79,6 +79,7 @@ for i in $rps ; do
         [ -n "$SSHPID" ] && kill $SSHPID ||:
 
         cat $outputdir/token/results-rate-${index}.bin | vegeta report -reporter text > $outputdir/token/report-r${index}-text.txt
+        cat $outputdir/token/results-rate-${index}.bin | vegeta report -reporter json > $outputdir/token/report-r${index}.json
         cat $outputdir/token/results-rate-${index}.bin | vegeta report -reporter plot > $outputdir/token/report-r${index}-plot.html
         cat $outputdir/token/results-rate-${index}.bin | vegeta report -reporter='hist[0,2ms,4ms,6ms,8ms,10ms,20ms,30ms,40ms,60ms,80ms,100ms,200ms,400ms,800ms,1600ms,3200ms,6400ms]' > $outputdir/token/report-r${index}-hist.txt
     fi
@@ -89,6 +90,7 @@ for i in $rps ; do
         [ -n "$SSHPID" ] && kill $SSHPID ||:
 
         cat $outputdir/basic/results-rate-${index}.bin | vegeta report -reporter text > $outputdir/basic/report-r${index}-text.txt
+        cat $outputdir/basic/results-rate-${index}.bin | vegeta report -reporter json > $outputdir/basic/report-r${index}.json
         cat $outputdir/basic/results-rate-${index}.bin | vegeta report -reporter plot > $outputdir/basic/report-r${index}-plot.html
         cat $outputdir/basic/results-rate-${index}.bin | vegeta report -reporter='hist[0,2ms,4ms,6ms,8ms,10ms,20ms,30ms,40ms,60ms,80ms,100ms,200ms,400ms,800ms,1600ms,3200ms,6400ms]' > $outputdir/basic/report-r${index}-hist.txt
     fi
@@ -100,7 +102,41 @@ for i in {token,basic}; do
     [ -d ${outputdir}/$i ] || continue
     grep ^Latencies ${outputdir}/${i}/report-r*-text.txt > ${outputdir}/LATENCIES-${i}.txt ||:
     grep ^Success ${outputdir}/${i}/report-r*-text.txt > ${outputdir}/SUCCESSRATE-${i}.txt ||:
-    grep ^%Cpu ${outputdir}/${i}/results-r*-CPU.txt  > ${outputdir}/TOTALCPU-${i}.txt ||:
+
+    # CPU 'top' measurements. The first and last measurement aren't full
+    # measurements, so the stuff below throws out first and last measurement
+    for j in $(find ${outputdir}/${i} -name *-CPU.txt | sort); do
+        grep ^%Cpu $j | head -n-1 | tail -n+2 | perl -p -i -e "s#^#${j}: #";
+    done  > ${outputdir}/TOTALCPU-${i}.txt ||:
+
+
+    ##################
+    # CSV and PLOT
+    ##################
+
+    # CPU 'top' measurements. The first and last measurement aren't full
+    # measurements, so the stuff below throws out first and last measurement
+    # then it averages all the measurements for each concurrency level
+    for j in $(find ${outputdir}/${i} -name *-CPU.txt | sort); do
+        concurrent=$(basename ${j}  | sort | cut -d- -f2 | perl -p -i -e 's/^r//; s/^0+//;')
+
+        sum=0
+        count=0
+        average=$(grep ^%Cpu $j | head -n-1 | tail -n+2 |
+        while read line
+        do
+            idle=$(echo $line | cut -d, -f4 | awk '{print $1}')
+            sum=$( echo $idle + $sum | bc -l)
+            count=$(( count + 1 ))
+            echo "100 - ( $sum / $count )" | bc -l
+        done | tail -n1 )
+        echo $concurrent, $average
+
+    done  > ${outputdir}/TOTALCPU-${i}.csv ||:
+
+    cat $scriptdir/plot/cpu.plot | perl -p -i -e "s#BASE#${outputdir}/TOTALCPU-${i}#g;" > ${outputdir}/cpu.plot
+    gnuplot ${outputdir}/cpu.plot ||:
+
 done
 
 # close FDs to ensure tee finishes
