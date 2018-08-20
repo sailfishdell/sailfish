@@ -77,16 +77,71 @@ for i in {token,basic}; do
     [ -d ${outputdir}/$i ] || continue
     grep ^Total: ${outputdir}/${i}/results-c*-r1000.txt   > ${outputdir}/LATENCIES-${i}.txt ||:
     grep ^Request ${outputdir}/${i}/results-c*-r1000.txt  > ${outputdir}/RPS-${i}.txt ||:
-    grep ^%Cpu ${outputdir}/${i}/results-c*-r1000-CPU.txt  > ${outputdir}/TOTALCPU-${i}.txt ||:
+
+    # CPU 'top' measurements. The first and last measurement aren't full
+    # measurements, so the stuff below throws out first and last measurement
+    for j in $(find ${outputdir}/${i} -name *-CPU.txt | sort); do
+        grep ^%Cpu $j | head -n-1 | tail -n+2 | perl -p -i -e "s#^#${j}: #";
+    done  > ${outputdir}/TOTALCPU-${i}.txt ||:
+
+
+    ##################
+    # CSV and PLOT
+    ##################
+
+    # CPU 'top' measurements. The first and last measurement aren't full
+    # measurements, so the stuff below throws out first and last measurement
+    # then it averages all the measurements for each concurrency level
+    for j in $(find ${outputdir}/${i} -name *-CPU.txt | sort); do
+        concurrent=$(basename ${j}  | sort | cut -d- -f2 | perl -p -i -e 's/^c//; s/^0+//;')
+
+        sum=0
+        count=0
+        average=$(grep ^%Cpu $j | head -n-1 | tail -n+2 |
+        while read line
+        do
+            idle=$(echo $line | cut -d, -f4 | awk '{print $1}')
+            sum=$( echo $idle + $sum | bc -l)
+            count=$(( count + 1 ))
+            echo "100 - ( $sum / $count )" | bc -l
+        done | tail -n1 )
+        echo $concurrent, $average
+
+    done  > ${outputdir}/TOTALCPU-${i}.csv ||:
+
+    cat $scriptdir/plot/cpu.plot | perl -p -i -e "s#BASE#${outputdir}/TOTALCPU-${i}#g;" > ${outputdir}/TOTALCPU-${i}.plot
+    gnuplot ${outputdir}/TOTALCPU-${i}.plot ||:
+
+    ##
+    # graph requests per second
+    ##
+    >  ${outputdir}/RPS-${i}.csv
+    for j in $(find ${outputdir}/${i} -name results-*.txt | grep -v CPU | sort); do
+        concurrent=$(basename ${j}  | sort | cut -d- -f2 | perl -p -i -e 's/^c//; s/^0+//;')
+        RPS=$(cat $j | grep ^Requests | cut -d: -f2 | awk '{print $1}')
+        echo "$concurrent, $RPS" >> ${outputdir}/RPS-${i}.csv
+    done
+    cat $scriptdir/plot/ab-rps.plot | perl -p -i -e "s#BASE#${outputdir}/RPS-${i}#g;" > ${outputdir}/RPS-${i}.plot
+    gnuplot ${outputdir}/RPS-${i}.plot ||:
+
+    >  ${outputdir}/LATENCIES-${i}.csv
+    for j in $(find ${outputdir}/${i} -name results-*.txt | grep -v CPU | sort); do
+        concurrent=$(basename ${j}  | sort | cut -d- -f2 | perl -p -i -e 's/^c//; s/^0+//;')
+        MIN=$(cat $j | grep ^Total: | cut -d: -f2 | awk '{print $1}')
+        MEAN=$(cat $j | grep ^Total: | cut -d: -f2 | awk '{print $2}')
+        MEDIAN=$(cat $j | grep ^Total: | cut -d: -f2 | awk '{print $4}')
+        MAX=$(cat $j | grep ^Total: | cut -d: -f2 | awk '{print $5}')
+        echo "$concurrent, $MIN, $MEAN, $MEDIAN, $MAX" >> ${outputdir}/LATENCIES-${i}.csv
+    done
+    cat $scriptdir/plot/ab-lats.plot | perl -p -i -e "s#BASE#${outputdir}/LATENCIES-${i}#g;" > ${outputdir}/LATENCIES-${i}.plot
+    gnuplot ${outputdir}/LATENCIES-${i}.plot ||:
+
 done
 
 
 # close FDs to ensure tee finishes
 exec 1>&0 2>&1
 if [ -n "$logging_tee_pid" ];then
-    while ps --pid $logging_tee_pid > /dev/null 2>&1
-    do
-        sleep 1
-    done
+    kill $logging_tee_pid
 fi
 
