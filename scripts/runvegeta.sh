@@ -74,7 +74,7 @@ for i in $rps ; do
     index=$(printf "%03d" $i)
 
     if [ ${runtoken} == 1 ]; then
-        [ "${profile}" == 1 ] && savetop $outputdir/token/results-r${index}-CPU.txt
+        [ "${profile}" == 1 ] && savetop $outputdir/token/report-r${index}-CPU.txt
         vegeta attack ${VEGETA_OPTS} -targets $outputdir/vegeta-targets.txt -output $outputdir/token/results-rate-${index}.bin -header "$AUTH_HEADER" -duration=${time} $cert_opt -rate $i
         [ -n "$SSHPID" ] && kill $SSHPID ||:
 
@@ -85,7 +85,7 @@ for i in $rps ; do
     fi
 
     if [ ${runbasic} == 1 ]; then
-        [ "${profile}" == 1 ] && savetop $outputdir/basic/results-r${index}-CPU.txt
+        [ "${profile}" == 1 ] && savetop $outputdir/basic/report-r${index}-CPU.txt
         vegeta attack ${VEGETA_OPTS} -targets $outputdir/basic/vegeta-targets.txt -output $outputdir/basic/results-rate-${index}.bin -duration=${time} $cert_opt -rate $i
         [ -n "$SSHPID" ] && kill $SSHPID ||:
 
@@ -98,7 +98,14 @@ for i in $rps ; do
     cat  $outputdir/*/report-r${index}-text.txt ||:
 done
 
-for i in {token,basic}; do
+processdirs=
+if [ ${runbasic} -eq 1 ]; then
+    processdirs="$processdirs basic"
+fi
+if [ ${runtoken} -eq 1 ]; then
+    processdirs="$processdirs token"
+fi
+for i in $processdirs; do
     [ -d ${outputdir}/$i ] || continue
     grep ^Latencies ${outputdir}/${i}/report-r*-text.txt > ${outputdir}/LATENCIES-${i}.txt ||:
     grep ^Success ${outputdir}/${i}/report-r*-text.txt > ${outputdir}/SUCCESSRATE-${i}.txt ||:
@@ -136,6 +143,30 @@ for i in {token,basic}; do
 
     cat $scriptdir/plot/cpu.plot | perl -p -i -e "s#BASE#${outputdir}/TOTALCPU-${i}#g;" > ${outputdir}/cpu.plot
     gnuplot ${outputdir}/cpu.plot ||:
+
+
+    > ${outputdir}/LATENCIES-${i}.csv
+    for j in $(find ${outputdir}/${i} -name report*.json | sort); do
+        concurrent=$(basename ${j} .json  | sort | cut -d- -f2 | perl -p -i -e 's/^r//; s/^0+//;')
+        MEAN=$(cat $j | jq '."latencies"."mean" / 1000000')
+        P50=$(cat $j | jq '."latencies"."50th" / 1000000')
+        P95=$(cat $j | jq '."latencies"."95th" / 1000000')
+        P99=$(cat $j | jq '."latencies"."99th" / 1000000')
+        MAX=$(cat $j | jq '."latencies"."max" / 1000000')
+
+        DUR=$(cat $j | jq '."duration" / 1000000 ')
+        WAIT=$(cat $j | jq '."wait" / 1000000 ')
+        NUMREQ=$(cat $j | jq '."requests"')
+
+        RPS=$(echo "$NUMREQ / (( $WAIT + $DUR ) / 1000 )" | bc -l)
+
+        echo "$concurrent, $MEAN, $P50, $P95, $P99, $MAX, $RPS" >> ${outputdir}/LATENCIES-${i}.csv
+    done
+    cat $scriptdir/plot/vegeta-lats.plot | perl -p -i -e "s#BASE#${outputdir}/LATENCIES-${i}#g;" > ${outputdir}/LATENCIES-${i}.plot
+    gnuplot ${outputdir}/LATENCIES-${i}.plot ||:
+
+    cat $scriptdir/plot/vegeta-rps.plot | perl -p -i -e "s#BASE#${outputdir}#g; s#WHICH#${i}#g;" > ${outputdir}/RPS-${i}.plot
+    gnuplot ${outputdir}/RPS-${i}.plot ||:
 
 done
 

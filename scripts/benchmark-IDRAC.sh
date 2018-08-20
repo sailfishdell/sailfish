@@ -81,7 +81,7 @@ export user=root
 export pass=calvin
 export uri=/redfish/v1/Managers/iDRAC.Embedded.1
 
-export rps="$(seq 1 2 50) $(seq 50 10 250)"
+export rps="$(seq 1 2 50) $(seq 50 10 120)"
 
 host=$IDRACHOST port=443 ${scriptdir}/walk.sh        ${out}/odatalite-walk
 
@@ -114,7 +114,7 @@ export pass=calvin
 export uri=/redfish/v1/Managers/CMC.Integrated.1
 
 # sailfish behind apache goes over 100
-export rps="$(seq 1 2 50) $(seq 50 10 250)"
+export rps="$(seq 1 2 50) $(seq 50 10 120)"
 
 # we are using apache, so we need a valid token for apache fcgi auth. manually set it
 # because this token expires, lets refresh for every bench
@@ -130,6 +130,8 @@ prot=https host=$IDRACHOST port=2443 ${scriptdir}/runvegeta.sh   ${out}/sailfish
 eval $(CURL_OPTS=-k host=$IDRACHOST port=443  user=root pass=calvin ./scripts/login.sh root calvin)
 prot=https host=$IDRACHOST port=2443 ${scriptdir}/runhey.sh      ${out}/sailfish-apache-hey
 
+# ab doesn't do anything interesting above 100 concurrent
+export rps="$(seq 1 2 50) $(seq 50 10 100)"
 eval $(CURL_OPTS=-k host=$IDRACHOST port=443  user=root pass=calvin ./scripts/login.sh root calvin)
 prot=https host=$IDRACHOST port=2443 ${scriptdir}/runab.sh       ${out}/sailfish-apache-ab
 
@@ -153,8 +155,20 @@ host=$IDRACHOST port=8443 ${scriptdir}/walk.sh      ${out}/sailfish-https-walk
 mkdir -p ${out}/sailfish-https-vegeta ||:
 cat ${out}/sailfish-https-walk/errors.txt ${out}/sailfish-https-walk/to-visit.txt | sort | uniq -u | grep -v /redfish/v1/SessionService/Sessions/  > ${out}/sailfish-https-vegeta/to-visit.txt  ||:
 host=$IDRACHOST port=8443 ${scriptdir}/runvegeta.sh ${out}/sailfish-https-vegeta
+
+export rps="$(seq 1 2 50) $(seq 50 10 150)"
 host=$IDRACHOST port=8443 ${scriptdir}/runhey.sh    ${out}/sailfish-https-hey
+
+# ab doesn't do anything interesting above 100 concurrent
+export rps="$(seq 1 2 50) $(seq 50 10 100)"
 host=$IDRACHOST port=8443 ${scriptdir}/runab.sh     ${out}/sailfish-https-ab
+
+##########################
+# END
+##########################
+mkdir -p ${out}/plot ||:
+cp -a ${scriptdir}/plot/*.plot ${out}/plot/.
+(cd ${out}; cat plot/compare*plot | gnuplot)
 
 ##########################
 # END

@@ -88,6 +88,9 @@ mkdir -p ${out}/sailfish-https-vegeta ||:
 cat ${out}/sailfish-https-walk/errors.txt ${out}/sailfish-https-walk/to-visit.txt | sort | uniq -u | grep -v /redfish/v1/SessionService/Sessions/  > ${out}/sailfish-https-vegeta/to-visit.txt  ||:
 host=$IDRACHOST port=8443 ${scriptdir}/runvegeta.sh ${out}/sailfish-https-vegeta
 host=$IDRACHOST port=8443 ${scriptdir}/runhey.sh    ${out}/sailfish-https-hey
+
+# ab doesn't do anything interesting above 100 concurrent
+export rps="$(seq 1 2 50) $(seq 50 10 100)"
 host=$IDRACHOST port=8443 ${scriptdir}/runab.sh     ${out}/sailfish-https-ab
 
 ##########################

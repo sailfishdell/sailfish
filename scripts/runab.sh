@@ -109,8 +109,8 @@ for i in {token,basic}; do
 
     done  > ${outputdir}/TOTALCPU-${i}.csv ||:
 
-    cat $scriptdir/plot/cpu.plot | perl -p -i -e "s#BASE#${outputdir}/TOTALCPU-${i}#g;" > ${outputdir}/cpu.plot
-    gnuplot ${outputdir}/cpu.plot ||:
+    cat $scriptdir/plot/cpu.plot | perl -p -i -e "s#BASE#${outputdir}/TOTALCPU-${i}#g;" > ${outputdir}/TOTALCPU-${i}.plot
+    gnuplot ${outputdir}/TOTALCPU-${i}.plot ||:
 
     ##
     # graph requests per second

@@ -81,7 +81,7 @@ export user=root
 export pass=calvin
 export uri=/redfish/v1/Managers/iDRAC.Embedded.1
 
-export rps="$(seq 1 2 50) $(seq 50 10 250)"
+export rps="$(seq 1 2 50) $(seq 50 10 120)"
 
 host=$IDRACHOST port=443 ${scriptdir}/walk.sh        ${out}/odatalite-walk
 

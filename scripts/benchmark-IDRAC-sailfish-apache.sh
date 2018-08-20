@@ -81,7 +81,7 @@ export pass=calvin
 export uri=/redfish/v1/Managers/CMC.Integrated.1
 
 # sailfish behind apache goes over 100
-export rps="$(seq 1 2 50) $(seq 50 10 250)"
+export rps="$(seq 1 2 50) $(seq 50 10 120)"
 
 # we are using apache, so we need a valid token for apache fcgi auth. manually set it
 # because this token expires, lets refresh for every bench
