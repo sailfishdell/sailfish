@@ -1,7 +1,7 @@
 set term svg
 set output "ab-LATENCIES.svg"
 set xlabel "concurrent requests"
-set ylabel "Latency"
+set ylabel "Median Latency"
 set autoscale
 plot  \
     "odatalite-ab/LATENCIES-token.csv"  using 1:4 title "odatalite" with lines,  \
