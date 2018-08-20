@@ -1,8 +1,9 @@
 set term svg
-set output "vegeta-CPU.svg"
+set output "vegeta-CPU-0-40.svg"
 set xlabel "concurrent requests"
 set ylabel "Total CPU utilization"
-set autoscale
+set xrange [0:40]
+set yrange [0:100]
 plot \
     "odatalite-vegeta/TOTALCPU-token.csv"  using 1:2 title "odatalite" with lines,  \
     "sailfish-apache-vegeta/TOTALCPU-token.csv"  using 1:2 title "sailfish-apache" with lines,  \
