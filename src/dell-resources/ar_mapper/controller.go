@@ -31,16 +31,23 @@ type ARMappingController struct {
 	name       string
 	mdl        *model.Model
 
+	requestedFQDD  string
+	requestedGroup string
+	requestedIndex string
+
 	eb eh.EventBus
 }
 
 func New(ctx context.Context, logger log.Logger, m *model.Model, name string, fqdd string, ch eh.CommandHandler, eb eh.EventBus) (*ARMappingController, error) {
 	c := &ARMappingController{
-		mappings: []mapping{},
-		name:     name,
-		logger:   logger,
-		eb:       eb,
-		mdl:      m,
+		mappings:       []mapping{},
+		name:           name,
+		logger:         logger,
+		eb:             eb,
+		mdl:            m,
+		requestedFQDD:  fqdd,
+		requestedGroup: "",
+		requestedIndex: "",
 	}
 
 	// stream processor for action events
@@ -53,9 +60,9 @@ func New(ctx context.Context, logger log.Logger, m *model.Model, name string, fq
 		if data, ok := event.Data().(*attributes.AttributeUpdatedData); ok {
 			c.mappingsMu.RLock()
 			defer c.mappingsMu.RUnlock()
-			logger.Debug("Process Event", "data", data)
+			logger.Debug("AR Mapper Process Event", "data", data)
 			for _, mapping := range c.mappings {
-				if data.Name != mapping.Name {
+				if data.FQDD != mapping.FQDD {
 					continue
 				}
 				if data.Group != mapping.Group {
@@ -64,19 +71,8 @@ func New(ctx context.Context, logger log.Logger, m *model.Model, name string, fq
 				if data.Index != mapping.Index {
 					continue
 				}
-				// check for direct fqdd match first
-				if data.FQDD != mapping.FQDD {
-					// Check for FQDD wildcard
-					// mapping FQDD field equal to "{FQDD}" means use wildcard match
-					if mapping.FQDD != "{FQDD}" {
-						// fqdd doesn't match and it's not a wildcard, so done
-						continue
-					}
-
-					// if we get here, fqdd is wildcard, check against our passed in fqdd
-					if data.FQDD != fqdd {
-						continue
-					}
+				if data.Name != mapping.Name {
+					continue
 				}
 
 				logger.Info("Updating Model", "mapping", mapping, "property", mapping.Property, "data", data)
@@ -129,8 +125,23 @@ func (c *ARMappingController) ConfigChangedFn(ctx context.Context, cfg *viper.Vi
 	if err != nil {
 		c.logger.Warn("unamrshal failed", "err", err)
 	}
-	c.logger.Info("updating mappings", "mappings", c.mappings)
 
+	for i, m := range c.mappings {
+		if m.FQDD == "{FQDD}" {
+			c.mappings[i].FQDD = c.requestedFQDD
+			c.logger.Debug("Replacing {FQDD} with real fqdd", "fqdd", m.FQDD)
+		}
+		if m.Group == "{GROUP}" {
+			c.mappings[i].Group = c.requestedGroup
+			c.logger.Debug("Replacing {GROUP} with real group", "group", m.Group)
+		}
+		if m.Index == "{INDEX}" {
+			c.mappings[i].Index = c.requestedIndex
+			c.logger.Debug("Replacing {INDEX} with real index", "index", m.Index)
+		}
+	}
+
+	c.logger.Info("updating mappings", "mappings", c.mappings)
 	c.createModelProperties(ctx)
 	go c.initialStartupBootstrap(ctx)
 }
