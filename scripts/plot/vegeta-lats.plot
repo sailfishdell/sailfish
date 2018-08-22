@@ -1,6 +1,6 @@
 set term svg
 set output "BASE.svg"
-set xlabel "concurrent requests"
+set xlabel "Requests/Second Rate"
 set ylabel "Latency"
 plot  \
     "BASE.csv" using 1:2 title "MEAN" with lines, \

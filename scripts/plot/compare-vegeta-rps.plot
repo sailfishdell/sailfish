@@ -1,6 +1,6 @@
 set term svg
 set output "vegeta-RPS.svg"
-set xlabel "Requested rate"
+set xlabel "Requests/Second Rate"
 set ylabel "Actual rate"
 set autoscale
 plot \

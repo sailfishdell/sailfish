@@ -1,6 +1,6 @@
 set term svg
 set output "ab-CPU.svg"
-set xlabel "concurrent requests"
+set xlabel "Number of concurrent requests"
 set ylabel "Total CPU utilization"
 set autoscale
 plot \

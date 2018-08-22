@@ -1,6 +1,6 @@
 set term svg
 set output "vegeta-MEDIAN-LATENCY.svg"
-set xlabel "Requested rate"
+set xlabel "Requests/Second Rate"
 set ylabel "Median Latency"
 set autoscale
 plot \

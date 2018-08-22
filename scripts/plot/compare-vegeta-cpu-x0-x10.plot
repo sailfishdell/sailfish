@@ -1,6 +1,6 @@
 set term svg
 set output "vegeta-CPU-0-10.svg"
-set xlabel "concurrent requests"
+set xlabel "Requests/Second Rate"
 set ylabel "Total CPU utilization"
 set xrange [0:10]
 set yrange [0:100]

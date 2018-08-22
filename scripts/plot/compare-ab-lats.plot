@@ -1,6 +1,6 @@
 set term svg
 set output "ab-LATENCIES.svg"
-set xlabel "concurrent requests"
+set xlabel "Number of concurrent requests"
 set ylabel "Median Latency"
 set autoscale
 plot  \
