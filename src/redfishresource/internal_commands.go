@@ -249,6 +249,21 @@ func (c *RemoveResourceFromRedfishResourceCollection) Handle(ctx context.Context
 	return nil
 }
 
+// gross layering violation, but to avoid import cycles, moved the events here for now
+type AttributeArrayUpdatedData struct {
+	Attributes []AttributeUpdatedData
+}
+
+type AttributeUpdatedData struct {
+	ReqID eh.UUID
+	FQDD  string
+	Group string
+	Index string
+	Name  string
+	Value interface{}
+	Error string
+}
+
 type InjectEvent struct {
 	ID         eh.UUID                  `json:"id" eh:"optional"`
 	Name       eh.EventType             `json:"name"`
@@ -276,23 +291,43 @@ func (c *InjectEvent) Handle(ctx context.Context, a *RedfishResourceAggregate) e
 	eventList = append(eventList, c.EventData)
 	eventList = append(eventList, c.EventArray...)
 
-	requestLogger.Debug("InjectEvent - event list", "number of events", len(eventList), "event name", c.Name)
-	for _, eventData := range eventList {
-		data, err := eh.CreateEventData(c.Name)
-		if err != nil {
-			requestLogger.Info("InjectEvent - event type not registered: injecting raw event.", "event name", c.Name, "error", err)
-			a.PublishEvent(eh.NewEvent(c.Name, eventData, time.Now()))
-			continue
+	if c.Name != "AttributeUpdated" {
+		requestLogger.Debug("InjectEvent - event list", "number of events", len(eventList), "event name", c.Name)
+		for _, eventData := range eventList {
+			data, err := eh.CreateEventData(c.Name)
+			if err != nil {
+				requestLogger.Info("InjectEvent - event type not registered: injecting raw event.", "event name", c.Name, "error", err)
+				a.PublishEvent(eh.NewEvent(c.Name, eventData, time.Now()))
+				continue
+			}
+
+			err = mapstructure.Decode(eventData, &data)
+			if err != nil {
+				requestLogger.Warn("InjectEvent - could not decode event data, skipping event", "error", err, "raw-eventdata", eventData, "dest-event", data)
+				continue
+			}
+
+			requestLogger.Debug("InjectEvent - publishing", "event name", c.Name, "event_data", data)
+			a.PublishEvent(eh.NewEvent(c.Name, data, time.Now()))
+		}
+	} else {
+		requestLogger.Debug("InjectEvent - special case for attributes")
+
+		data := &AttributeArrayUpdatedData{
+			Attributes: make([]AttributeUpdatedData, len(eventList)),
 		}
 
-		err = mapstructure.Decode(eventData, &data)
-		if err != nil {
-			requestLogger.Warn("InjectEvent - could not decode event data, skipping event", "error", err, "raw-eventdata", eventData, "dest-event", data)
-			continue
+		for i, eventData := range eventList {
+			singleEvent := AttributeUpdatedData{}
+			err := mapstructure.Decode(eventData, &singleEvent)
+			if err != nil {
+				requestLogger.Warn("InjectEvent - could not decode event data, skipping event", "error", err, "raw-eventdata", eventData, "dest-event", singleEvent)
+				continue
+			}
+			data.Attributes[i] = singleEvent
 		}
 
-		requestLogger.Debug("InjectEvent - publishing", "event name", c.Name, "event_data", data)
-		a.PublishEvent(eh.NewEvent(c.Name, data, time.Now()))
+		a.PublishEvent(eh.NewEvent("AttributeArrayUpdated", data, time.Now()))
 	}
 
 	return nil

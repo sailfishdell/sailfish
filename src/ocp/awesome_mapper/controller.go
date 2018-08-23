@@ -9,6 +9,8 @@ import (
 
 	eh "github.com/looplab/eventhorizon"
 
+	domain "github.com/superchalupa/go-redfish/src/redfishresource"
+
 	"github.com/superchalupa/go-redfish/src/log"
 	"github.com/superchalupa/go-redfish/src/ocp/event"
 	"github.com/superchalupa/go-redfish/src/ocp/model"
@@ -72,27 +74,36 @@ outer:
 		}
 
 		sp.RunForever(func(event eh.Event) {
-			mdl.StopNotifications()
-			for _, query := range loopvar.ModelUpdate {
-				if query.expr == nil {
-					logger.Crit("query is nil, that can't happen", "loopvar", loopvar)
-					continue
-				}
+			fn := func(event eh.Event) {
+				mdl.StopNotifications()
+				for _, query := range loopvar.ModelUpdate {
+					if query.expr == nil {
+						logger.Crit("query is nil, that can't happen", "loopvar", loopvar)
+						continue
+					}
 
-				expressionParameters["type"] = string(event.EventType())
-				expressionParameters["data"] = event.Data()
-				expressionParameters["event"] = event
+					expressionParameters["type"] = string(event.EventType())
+					expressionParameters["data"] = event.Data()
+					expressionParameters["event"] = event
 
-				expr, err := govaluate.NewEvaluableExpressionFromTokens(query.expr)
-				val, err := expr.Evaluate(expressionParameters)
-				if err != nil {
-					logger.Error("Expression failed to evaluate", "query.Query", query.Query, "parameters", expressionParameters, "err", err)
-					continue
+					expr, err := govaluate.NewEvaluableExpressionFromTokens(query.expr)
+					val, err := expr.Evaluate(expressionParameters)
+					if err != nil {
+						logger.Error("Expression failed to evaluate", "query.Query", query.Query, "parameters", expressionParameters, "err", err)
+						continue
+					}
+					mdl.UpdateProperty(query.Property, val)
 				}
-				mdl.UpdateProperty(query.Property, val)
+				mdl.StartNotifications()
+				mdl.NotifyObservers()
 			}
-			mdl.StartNotifications()
-			mdl.NotifyObservers()
+			if arr, ok := event.Data().(*domain.AttributeArrayUpdatedData); ok {
+				for _, data := range arr.Attributes {
+					fn(eh.NewEvent("AttributeUpdated", data, event.Timestamp()))
+				}
+			} else {
+				fn(event)
+			}
 		})
 	}
 

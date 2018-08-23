@@ -57,10 +57,7 @@ func New(ctx context.Context, logger log.Logger, m *model.Model, name string, fq
 		return nil, err
 	}
 	sp.RunForever(func(event eh.Event) {
-		if data, ok := event.Data().(*attributes.AttributeUpdatedData); ok {
-			c.mappingsMu.RLock()
-			defer c.mappingsMu.RUnlock()
-			logger.Debug("AR Mapper Process Event", "data", data)
+		fn := func(data *attributes.AttributeUpdatedData) {
 			for _, mapping := range c.mappings {
 				if data.FQDD != mapping.FQDD {
 					continue
@@ -78,6 +75,14 @@ func New(ctx context.Context, logger log.Logger, m *model.Model, name string, fq
 				logger.Info("Updating Model", "mapping", mapping, "property", mapping.Property, "data", data)
 				m.UpdateProperty(mapping.Property, data.Value)
 			}
+		}
+
+		if arr, ok := event.Data().(*attributes.AttributeArrayUpdatedData); ok {
+			for _, data := range arr.Attributes {
+				fn(&data)
+			}
+		} else if data, ok := event.Data().(*attributes.AttributeUpdatedData); ok {
+			fn(data)
 		} else {
 			logger.Warn("Should never happen: got an invalid event in the event handler")
 		}
@@ -180,6 +185,9 @@ func (c *ARMappingController) initialStartupBootstrap(ctx context.Context) {
 func selectAttributeUpdate() func(eh.Event) bool {
 	return func(event eh.Event) bool {
 		if event.EventType() == attributes.AttributeUpdated {
+			return true
+		}
+		if event.EventType() == attributes.AttributeArrayUpdated {
 			return true
 		}
 		return false
