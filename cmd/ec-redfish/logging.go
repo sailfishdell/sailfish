@@ -87,7 +87,7 @@ func (l *MyLogger) makeLoggingHTTPHandler(m http.Handler) http.HandlerFunc {
 // Create a tiny logging middleware for the command handler.
 func (l *MyLogger) makeLoggingCmdHandler(originalHandler eh.CommandHandler) eh.CommandHandler {
 	return eh.CommandHandlerFunc(func(ctx context.Context, cmd eh.Command) error {
-		l.Debug("Executed Command", "CMD", fmt.Sprintf("%v", cmd))
+		l.Debug("Executed Command", "Type", cmd.CommandType(), "CMD", fmt.Sprintf("%v", cmd))
 		return originalHandler.HandleCommand(ctx, cmd)
 	})
 }
