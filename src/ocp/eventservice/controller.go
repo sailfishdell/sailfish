@@ -28,7 +28,7 @@ func PublishResourceUpdatedEventsForModel(ctx context.Context, modelName string,
 			EventType:         "ResourceUpdated",
 			OriginOfCondition: map[string]interface{}{"@odata.id": v.GetURI()},
 		}
-		eb.PublishEvent(ctx, eh.NewEvent(RedfishEvent, eventData, time.Now()))
+		go eb.PublishEvent(ctx, eh.NewEvent(RedfishEvent, eventData, time.Now()))
 	})
 }
 
@@ -128,7 +128,7 @@ func PublishRedfishEvents(ctx context.Context, m propertygetter, eb eh.EventBus)
 						OriginOfCondition: map[string]interface{}{"@odata.id": data.ResourceURI},
 					}
 
-					eb.PublishEvent(ctx, eh.NewEvent(RedfishEvent, eventData, time.Now()))
+					go eb.PublishEvent(ctx, eh.NewEvent(RedfishEvent, eventData, time.Now()))
 
 				case *domain.RedfishResourceRemovedData:
 					eventData := &RedfishEventData{
@@ -136,7 +136,7 @@ func PublishRedfishEvents(ctx context.Context, m propertygetter, eb eh.EventBus)
 						OriginOfCondition: map[string]interface{}{"@odata.id": data.ResourceURI},
 					}
 
-					eb.PublishEvent(ctx, eh.NewEvent(RedfishEvent, eventData, time.Now()))
+					go eb.PublishEvent(ctx, eh.NewEvent(RedfishEvent, eventData, time.Now()))
 
 				default:
 					log.MustLogger("event_service").Warn("Should never happen: got an invalid event in the event handler", "data", data, "deets", fmt.Sprintf("%T", data))
