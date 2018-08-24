@@ -1,7 +1,6 @@
 // Copyright (c) 2017 - The Event Horizon authors.
 // modifications Copyright (c) 2018 - Dell EMC
 //  - don't drop events
-//  - major rewrite - get rid of two levels of channels because we weren't getting backpressure and things deadlock when listeners are slow
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,16 +19,16 @@ package eventwaiter
 import (
 	"context"
 	"fmt"
-	"sync"
 
 	eh "github.com/looplab/eventhorizon"
 )
 
 // EventWaiter waits for certain events to match a criteria.
 type EventWaiter struct {
-	name        string
-	listeners   map[eh.UUID]*EventListener
-	listenersMu sync.RWMutex
+	name       string
+	inbox      chan eh.Event
+	register   chan *EventListener
+	unregister chan *EventListener
 }
 
 type Option func(e *EventWaiter) error
@@ -37,11 +36,14 @@ type Option func(e *EventWaiter) error
 // NewEventWaiter returns a new EventWaiter.
 func NewEventWaiter(o ...Option) *EventWaiter {
 	w := EventWaiter{
-		listeners: make(map[eh.UUID]*EventListener),
+		inbox:      make(chan eh.Event, 200),
+		register:   make(chan *EventListener),
+		unregister: make(chan *EventListener),
 	}
 
 	w.ApplyOption(o...)
 
+	go w.run()
 	return &w
 }
 
@@ -62,52 +64,64 @@ func (w *EventWaiter) ApplyOption(options ...Option) error {
 	return nil
 }
 
-// Notify implements the eventhorizon.EventObserver.Notify method which forwards
-// events to the waiters so that they can match the events.
-func (w *EventWaiter) Notify(ctx context.Context, event eh.Event) {
-	w.listenersMu.RLock()
-	defer w.listenersMu.RUnlock()
-	for _, l := range w.listeners {
-		if l.match(event) {
-			if len(l.inbox) > (cap(l.inbox) * 3 / 4) {
-				fmt.Printf("LISTENER(%s) nearing capacity: %d of %d\n", l.Name, len(l.inbox), cap(l.inbox))
+func (w *EventWaiter) run() {
+	listeners := map[eh.UUID]*EventListener{}
+	for {
+		select {
+		case l := <-w.register:
+			listeners[l.id] = l
+		case l := <-w.unregister:
+			// Check for existence to avoid closing channel twice.
+			if _, ok := listeners[l.id]; ok {
+				delete(listeners, l.id)
+				close(l.inbox)
 			}
-			l.inbox <- event
+		case event := <-w.inbox:
+			for _, l := range listeners {
+				if l.match(event) {
+					if len(l.inbox) > (cap(l.inbox) * 3 / 4) {
+						fmt.Printf("LISTENER(%s) nearing capacity: %d of %d\n", l.Name, len(l.inbox), cap(l.inbox))
+					}
+					l.inbox <- event
+				}
+			}
 		}
 	}
 }
 
-// EventListener receives events from an EventWaiter.
-type EventListener struct {
-	Name  string
-	id    eh.UUID
-	inbox chan eh.Event
-	match func(eh.Event) bool
-	done  func()
+// Notify implements the eventhorizon.EventObserver.Notify method which forwards
+// events to the waiters so that they can match the events.
+func (w *EventWaiter) Notify(ctx context.Context, event eh.Event) {
+	if len(w.inbox) > (cap(w.inbox) * 3 / 4) {
+		fmt.Printf("INBOX(%s) nearing capacity: %d of %d\n", w.name, len(w.inbox), cap(w.inbox))
+	}
+	w.inbox <- event
 }
 
 // Listen waits unil the match function returns true for an event, or the context
 // deadline expires. The match function can be used to filter or otherwise select
 // interesting events by analysing the event data.
 func (w *EventWaiter) Listen(ctx context.Context, match func(eh.Event) bool) (*EventListener, error) {
-	id := eh.NewUUID()
 	l := &EventListener{
-		Name:  "unnamed",
-		id:    id,
-		inbox: make(chan eh.Event, 1000),
-		match: match,
-		done: func() {
-			w.listenersMu.Lock()
-			delete(w.listeners, id)
-			w.listenersMu.Unlock()
-		},
+		Name:       "unnamed",
+		id:         eh.NewUUID(),
+		inbox:      make(chan eh.Event, 1000),
+		match:      match,
+		unregister: w.unregister,
 	}
-
-	w.listenersMu.Lock()
-	w.listeners[id] = l
-	w.listenersMu.Unlock()
+	// Register us to the in-flight listeners.
+	w.register <- l
 
 	return l, nil
+}
+
+// EventListener receives events from an EventWaiter.
+type EventListener struct {
+	Name       string
+	id         eh.UUID
+	inbox      chan eh.Event
+	match      func(eh.Event) bool
+	unregister chan *EventListener
 }
 
 // Wait waits for the event to arrive.
@@ -127,6 +141,5 @@ func (l *EventListener) Inbox() <-chan eh.Event {
 
 // Close stops listening for more events.
 func (l *EventListener) Close() {
-	l.done()
-	close(l.inbox)
+	l.unregister <- l
 }
