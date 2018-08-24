@@ -138,19 +138,16 @@ func CreateViewAction(
 		handler := vw.GetAction(action)
 		logger.Crit("handler", "handler", handler)
 
-		if handler == nil {
-			logger.Warn("UNHANDLED action event: no function handler set up for this event.", "event", event)
-			responseEvent := eh.NewEvent(domain.HTTPCmdProcessed, eventData, time.Now())
-			eb.PublishEvent(ctx, responseEvent)
-			return
-		}
-
 		// only send out our pre-canned response if no handler exists (above), or if handler sets the event status code to 0
 		// for example, if data pump is going to directly send an httpcmdprocessed.
-		handler(ctx, event, eventData)
+        if handler != nil {
+		    handler(ctx, event, eventData)
+        } else {
+			logger.Warn("UNHANDLED action event: no function handler set up for this event.", "event", event)
+        }
 		if eventData.StatusCode != 0 {
 			responseEvent := eh.NewEvent(domain.HTTPCmdProcessed, eventData, time.Now())
-			eb.PublishEvent(ctx, responseEvent)
+			go eb.PublishEvent(ctx, responseEvent)
 		}
 	})
 }
