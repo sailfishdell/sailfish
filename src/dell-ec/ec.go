@@ -80,6 +80,8 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	slotSvc := slot.New(ch, eb)
 	slotconfigSvc := slotconfig.New(ch, eb)
 
+    domain.StartInjectService(eb)
+
 	//
 	// Create the (empty) model behind the /redfish/v1 service root. Nothing interesting here
 	//
