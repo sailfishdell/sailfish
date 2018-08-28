@@ -333,8 +333,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		)
 		// the controller is what updates the model when ar entries change,
 		// also handles patch from redfish
-		armapper, _ := ar_mapper.New(ctx, sysChasLogger, chasModel, "Chassis/System.Chassis", chasName, ch, eb)
-		updateFns = append(updateFns, armapper.ConfigChangedFn)
+		armapper = arService.NewMapping(sysChasLogger, "Chassis/"+chasName, "Chassis/System.Chassis", chasModel, map[string]string{"FQDD": chasName})
 
 		// This controller will populate 'attributes' property with AR entries matching this FQDD ('chasName')
 		ardumper, _ := attributes.NewController(ctx, chasModel, []string{chasName}, ch, eb)
@@ -375,8 +374,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		)
 		// the controller is what updates the model when ar entries change,
 		// also handles patch from redfish
-		armapper, _ = ar_mapper.New(ctx, powerLogger, powerModel, "Chassis/System.Chassis/Power", chasName, ch, eb)
-		updateFns = append(updateFns, armapper.ConfigChangedFn)
+		armapper = arService.NewMapping(powerLogger, "Chassis/"+chasName+"/Power", "Chassis/System.Chassis/Power", powerModel, map[string]string{"FQDD": chasName})
 
 		sysChasPwrVw := view.New(
 			view.WithURI(rootView.GetURI()+"/Chassis/"+chasName+"/Power"),
@@ -399,12 +397,11 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 				model.UpdateProperty("unique_id", psuName),
 				model.UpdateProperty("attributes", map[string]map[string]map[string]interface{}{}),
 			)
-			fwmapper, _ := ar_mapper.New(ctx, psuLogger.New("module", "firmware/inventory"), psuModel, "firmware/inventory", psuName, ch, eb)
+			fwmapper := arService.NewMapping(psuLogger.New("module", "firmware/inventory"), "firmware_Chassis/"+chasName+"/Power/PowerSupplies/"+psuName, "firmware/inventory", psuModel, map[string]string{"FQDD": psuName})
+
 			// the controller is what updates the model when ar entries change,
 			// also handles patch from redfish
-			armapper, _ := ar_mapper.New(ctx, psuLogger, psuModel, "PSU/PSU.Slot", psuName, ch, eb)
-			updateFns = append(updateFns, armapper.ConfigChangedFn)
-			updateFns = append(updateFns, fwmapper.ConfigChangedFn)
+			armapper := arService.NewMapping(psuLogger, "Chassis/"+chasName+"/Power/PowerSupplies/"+psuName, "PSU/PSU.Slot", psuModel, map[string]string{"FQDD": psuName})
 
 			// This controller will populate 'attributes' property with AR entries matching this FQDD ('psuName')
 			ardumper, _ := attributes.NewController(ctx, psuModel, []string{psuName}, ch, eb)
@@ -471,8 +468,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		)
 		// the controller is what updates the model when ar entries change,
 		// also handles patch from redfish
-		armapper, _ = ar_mapper.New(ctx, thermalLogger, thermalModel, "Chassis/System.Chassis/Thermal", chasName, ch, eb)
-		updateFns = append(updateFns, armapper.ConfigChangedFn)
+		armapper := arService.NewMapping(thermalLogger, "Chassis/"+chasName+"/Thermal", "Chassis/System.Chassis/Thermal", thermalModel, map[string]string{"FQDD": chasName})
 
 		thermalView := view.New(
 			view.WithURI(rootView.GetURI()+"/Chassis/"+chasName+"/Thermal"),
