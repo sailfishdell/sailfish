@@ -4,13 +4,13 @@ import (
 	"context"
 	"crypto/elliptic"
 	"crypto/tls"
-    "runtime/debug"
 	"fmt"
 	"net"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
 	"os/signal"
+	"runtime/debug"
 	"strings"
 	"sync"
 	"time"
@@ -351,11 +351,11 @@ func iterInterfaceIPAddrs(logger log.Logger, fn func(net.IP)) {
 }
 
 func init() {
-    go func() {
-        t := time.Tick(time.Second)
-        for {
-            <-t
-           debug.FreeOSMemory()
-        }
-    }()
+	go func() {
+		t := time.Tick(time.Second)
+		for {
+			<-t
+			debug.FreeOSMemory()
+		}
+	}()
 }

@@ -283,14 +283,15 @@ func (c *InjectEvent) CommandType() eh.CommandType {
 }
 
 var injectChan chan eh.Event
+
 func StartInjectService(eb eh.EventBus) {
-    injectChan = make(chan eh.Event, 1000)
-    go func() {
-        for {
-            event := <- injectChan
-            eb.PublishEvent(context.Background(), event)
-        }
-    }()
+	injectChan = make(chan eh.Event, 1000)
+	go func() {
+		for {
+			event := <-injectChan
+			eb.PublishEvent(context.Background(), event)
+		}
+	}()
 }
 
 func (c *InjectEvent) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
@@ -308,7 +309,7 @@ func (c *InjectEvent) Handle(ctx context.Context, a *RedfishResourceAggregate) e
 			data, err := eh.CreateEventData(c.Name)
 			if err != nil {
 				requestLogger.Info("InjectEvent - event type not registered: injecting raw event.", "event name", c.Name, "error", err)
-                injectChan <- eh.NewEvent(c.Name, eventData, time.Now())
+				injectChan <- eh.NewEvent(c.Name, eventData, time.Now())
 				continue
 			}
 
@@ -319,7 +320,7 @@ func (c *InjectEvent) Handle(ctx context.Context, a *RedfishResourceAggregate) e
 			}
 
 			requestLogger.Debug("InjectEvent - publishing", "event name", c.Name, "event_data", data)
-            injectChan <- eh.NewEvent(c.Name, data, time.Now())
+			injectChan <- eh.NewEvent(c.Name, data, time.Now())
 		}
 	} else {
 		requestLogger.Debug("InjectEvent - special case for attributes")
@@ -338,7 +339,7 @@ func (c *InjectEvent) Handle(ctx context.Context, a *RedfishResourceAggregate) e
 			data.Attributes[i] = singleEvent
 		}
 
-        injectChan <- eh.NewEvent("AttributeArrayUpdated", data, time.Now())
+		injectChan <- eh.NewEvent("AttributeArrayUpdated", data, time.Now())
 	}
 
 	return nil
