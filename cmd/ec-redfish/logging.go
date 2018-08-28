@@ -156,7 +156,7 @@ func (l *MyLogger) setupLogHandlersFromConfig(cfg *viper.Viper) {
 				l.Warn("Nonexistent name for config", "m", m)
 				continue
 			}
-			handler := log.MatchFilterHandler("module", name, wrappedOut)
+			handler := MatchFilterHandler("module", name, wrappedOut)
 
 			level, ok := m["level"]
 			if ok {
@@ -216,4 +216,35 @@ func (o *orhandler) ORHandler(in ...log.Handler) log.Handler {
 		}
 		return nil
 	})
+}
+
+// MatchFilterHandler returns a Handler that only writes records
+// to the wrapped Handler if the given key in the logged
+// context matches the value. For example, to only log records
+// from your ui package:
+//
+//    log.MatchFilterHandler("pkg", "app/ui", log.StdoutHandler)
+//
+func MatchFilterHandler(key string, value interface{}, h log.Handler) log.Handler {
+	return log.FilterHandler(func(r *log.Record) (pass bool) {
+		switch key {
+		case r.KeyNames.Lvl:
+			return r.Lvl == value
+		case r.KeyNames.Time:
+			return r.Time == value
+		case r.KeyNames.Msg:
+			return r.Msg == value
+		}
+
+		found := false
+		for i := 0; i < len(r.Ctx); i += 2 {
+			if r.Ctx[i] == key {
+				found = r.Ctx[i+1] == value
+				if found {
+					break
+				}
+			}
+		}
+		return found
+	}, h)
 }
