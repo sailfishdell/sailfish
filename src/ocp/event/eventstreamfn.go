@@ -107,6 +107,20 @@ func CustomFilter(fn func(eh.Event) bool) func(p *privateStateStructure) error {
 	}
 }
 
+func MatchAnyEvent(eventType ...eh.EventType) func(p *privateStateStructure) error {
+	return func(p *privateStateStructure) error {
+		p.filterFn = func(event eh.Event) bool {
+			for _, evt := range eventType {
+				if event.EventType() == evt {
+					return true
+				}
+			}
+			return false
+		}
+		return nil
+	}
+}
+
 func ExpressionFilter(logger log.Logger, expr string, parameters map[string]interface{}, functions map[string]govaluate.ExpressionFunction) func(p *privateStateStructure) error {
 	return func(p *privateStateStructure) error {
 		functions["string"] = func(args ...interface{}) (interface{}, error) {
