@@ -141,8 +141,8 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		model.UpdateProperty("session_timeout", 30))
 	// the controller is what updates the model when ar entries change, also
 	// handles patch from redfish
-	armapper, _ := ar_mapper.New(ctx, sessionLogger, sessionModel, "SessionService", "", ch, eb)
-	updateFns = append(updateFns, armapper.ConfigChangedFn)
+	armapper := arService.NewMapping(sessionLogger, "SessionService", "SessionService", sessionModel, map[string]string{})
+
 	sessionView := view.New(
 		view.WithModel("default", sessionModel),
 		view.WithController("ar_mapper", armapper),
@@ -237,12 +237,11 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 
 		// the controller is what updates the model when ar entries change,
 		// also handles patch from redfish
-		fwmapper, _ := ar_mapper.New(ctx, mgrLogger.New("module", "firmware/inventory"), mdl, "firmware/inventory", mgrName, ch, eb)
+		fwmapper := arService.NewMapping(mgrLogger.New("module", "firmware/inventory"), "fwmapper_Managers/"+mgrName, "firmware/inventory", mdl, map[string]string{"FQDD": mgrName})
+
 		// need to have a separate model to hold fpga ver
 		//fpgamapper, _ := ar_mapper.New(ctx, mgrLogger, mdl, "fpga_inventory", mgrName, ch, eb)
-		armapper, _ := ar_mapper.New(ctx, mgrLogger, mdl, "Managers/CMC.Integrated", mgrName, ch, eb)
-		updateFns = append(updateFns, armapper.ConfigChangedFn)
-		updateFns = append(updateFns, fwmapper.ConfigChangedFn)
+		armapper := arService.NewMapping(mgrLogger, "Managers/"+mgrName, "Managers/CMC.Integrated", mdl, map[string]string{"FQDD": mgrName})
 
 		// This controller will populate 'attributes' property with AR entries matching this FQDD ('mgrName')
 		ardumper, _ := attributes.NewController(ctx, mdl, []string{mgrName}, ch, eb)
@@ -290,8 +289,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		)
 		// the controller is what updates the model when ar entries change,
 		// also handles patch from redfish... re-use the same mappings from Managers
-		armapper, _ = ar_mapper.New(ctx, chasLogger, chasModel, "Managers/CMC.Integrated", mgrName, ch, eb)
-		updateFns = append(updateFns, armapper.ConfigChangedFn)
+		armapper = arService.NewMapping(chasLogger, "Chassis/"+mgrName, "Managers/CMC.Integrated", chasModel, map[string]string{"FQDD": mgrName})
 
 		// This controller will populate 'attributes' property with AR entries matching this FQDD ('mgrName')
 		ardumper, _ = attributes.NewController(ctx, chasModel, []string{mgrName}, ch, eb)
@@ -618,8 +616,8 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		)
 		fwmapper, _ := ar_mapper.New(ctx, sledLogger.New("module", "firmware/inventory"), sledModel, "firmware/inventory", sledName, ch, eb)
 		updateFns = append(updateFns, fwmapper.ConfigChangedFn)
-		armapper, _ := ar_mapper.New(ctx, sledLogger, sledModel, "Chassis/System.Modular", sledName, ch, eb)
-		updateFns = append(updateFns, armapper.ConfigChangedFn)
+
+		armapper := arService.NewMapping(sledLogger, "Chassis/"+sledName, "Chassis/System.Modular", sledModel, map[string]string{"FQDD": sledName})
 
 		// This controller will populate 'attributes' property with AR entries matching this FQDD ('sledName')
 		ardumper, _ := attributes.NewController(ctx, sledModel, []string{sledName}, ch, eb)
@@ -650,8 +648,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 
 		// the controller is what updates the model when ar entries change,
 		// also handles patch from redfish
-		armapper, _ := ar_mapper.New(ctx, updsvcLogger, mdl, "update_service", "", ch, eb)
-		updateFns = append(updateFns, armapper.ConfigChangedFn)
+		armapper := arService.NewMapping(updsvcLogger, "Chassis", "update_service", mdl, map[string]string{})
 
 		updSvcVw := view.New(
 			view.WithURI(rootView.GetURI()+"/UpdateService"),
