@@ -20,7 +20,7 @@ func makePumpHandledAction(name string, maxtimeout int, eb eh.EventBus) func(con
 	EventPublisher := eventpublisher.NewEventPublisher()
 
 	// TODO: fix MatchAny
-	eb.AddHandler(eh.MatchAny(), EventPublisher)
+	eb.AddHandler(eh.MatchEvent(domain.HTTPCmdProcessed), EventPublisher)
 	EventWaiter := eventwaiter.NewEventWaiter(eventwaiter.SetName("Action Timeout Publisher"))
 	EventPublisher.AddObserver(EventWaiter)
 
