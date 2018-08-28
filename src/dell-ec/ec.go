@@ -27,6 +27,7 @@ import (
 	"github.com/superchalupa/go-redfish/src/ocp/view"
 
 	"github.com/superchalupa/go-redfish/src/dell-resources/ar_mapper"
+	"github.com/superchalupa/go-redfish/src/dell-resources/ar_mapper2"
 	"github.com/superchalupa/go-redfish/src/dell-resources/attributes"
 	chasCMCIntegrated "github.com/superchalupa/go-redfish/src/dell-resources/chassis/cmc.integrated"
 	"github.com/superchalupa/go-redfish/src/dell-resources/chassis/iom.slot"
@@ -80,7 +81,10 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	slotSvc := slot.New(ch, eb)
 	slotconfigSvc := slotconfig.New(ch, eb)
 
-    domain.StartInjectService(eb)
+	domain.StartInjectService(eb)
+
+	arService, _ := ar_mapper2.StartService(ctx, logger, eb)
+	updateFns = append(updateFns, arService.ConfigChangedFn)
 
 	//
 	// Create the (empty) model behind the /redfish/v1 service root. Nothing interesting here
@@ -111,11 +115,11 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	)
 	awesome_mapper.New(ctx, testLogger, cfgMgr, testModel, "testmodel", map[string]interface{}{"fqdd": "System.Modular.1"})
 
-	armapper, _ := ar_mapper.New(ctx, testLogger, testModel, "test/testview", "CMC.Integrated.1", ch, eb)
-	updateFns = append(updateFns, armapper.ConfigChangedFn)
+	ar2mapper := arService.NewMapping(testLogger, "test123", "test/testview", testModel, map[string]string{"FQDD": "happy"})
+
 	testView := view.New(
 		view.WithModel("default", testModel),
-		view.WithController("ar_mapper", armapper),
+		view.WithController("ar_mapper", ar2mapper),
 		view.WithURI(rootView.GetURI()+"/testview"),
 		eventservice.PublishResourceUpdatedEventsForModel(ctx, "default", eb),
 	)
@@ -137,7 +141,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		model.UpdateProperty("session_timeout", 30))
 	// the controller is what updates the model when ar entries change, also
 	// handles patch from redfish
-	armapper, _ = ar_mapper.New(ctx, sessionLogger, sessionModel, "SessionService", "", ch, eb)
+	armapper, _ := ar_mapper.New(ctx, sessionLogger, sessionModel, "SessionService", "", ch, eb)
 	updateFns = append(updateFns, armapper.ConfigChangedFn)
 	sessionView := view.New(
 		view.WithModel("default", sessionModel),
