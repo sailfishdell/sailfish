@@ -110,8 +110,10 @@ func (c *ARMappingController) UpdateRequest(ctx context.Context, property string
 		}
 		c.eb.PublishEvent(ctx, eh.NewEvent(attributes.AttributeUpdateRequest, data, time.Now()))
 
-		// TODO: wait for event to come back matching request
+		break
 	}
+
+	// TODO: wait for event to come back matching request
 
 	return value, nil
 }
