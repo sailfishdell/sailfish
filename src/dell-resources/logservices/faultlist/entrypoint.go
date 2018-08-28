@@ -27,7 +27,7 @@ type FaultListService struct {
 func New(ch eh.CommandHandler, eb eh.EventBus) *FaultListService {
 	EventPublisher := eventpublisher.NewEventPublisher()
 	eb.AddHandler(eh.MatchAnyEventOf(FaultEntryAdd), EventPublisher)
-	EventWaiter := eventwaiter.NewEventWaiter(eventwaiter.SetName("Event Service"))
+	EventWaiter := eventwaiter.NewEventWaiter(eventwaiter.SetName("FaultList Service"))
 	EventPublisher.AddObserver(EventWaiter)
 
 	return &FaultListService{
