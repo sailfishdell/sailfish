@@ -165,7 +165,7 @@ func sendEvents(ctx context.Context, id int, events []*RedfishEventData, eb eh.E
 		Events:  events,
 	}
 
-	eb.PublishEvent(ctx, eh.NewEvent(ExternalRedfishEvent, data, time.Now()))
+	go eb.PublishEvent(ctx, eh.NewEvent(ExternalRedfishEvent, data, time.Now()))
 }
 
 func selectRedfishEvent(event eh.Event) bool {
