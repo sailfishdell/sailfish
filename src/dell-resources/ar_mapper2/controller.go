@@ -67,7 +67,7 @@ func StartService(ctx context.Context, logger log.Logger, eb eh.EventBus) (*ARSe
 		logger.Error("Failed to create event stream processor", "err", err)
 		return nil, err
 	}
-	sp.RunForever(func(event eh.Event) {
+	go sp.RunForever(func(event eh.Event) {
 		logger.Debug("processing event", "event", event)
 
 		fn := func(data *attributes.AttributeUpdatedData) {

@@ -31,7 +31,7 @@ func NewController(ctx context.Context, m *model.Model, fqdds []string, ch eh.Co
 		log.MustLogger("ARDump_Controller").Error("Failed to create event stream processor", "err", err)
 		return nil, errors.New("Failed to create stream processor")
 	}
-	sp.RunForever(func(event eh.Event) {
+	go sp.RunForever(func(event eh.Event) {
 		log.MustLogger("ARDump_Controller").Info("Updating model attribute", "event", event)
 		if data, ok := event.Data().(*AttributeUpdatedData); ok {
 			m.ApplyOption(WithAttribute(data.Group, data.Index, data.Name, data.Value))

@@ -79,18 +79,16 @@ func (d *privateStateStructure) Close() {
 }
 
 func (d *privateStateStructure) RunForever(fn func(eh.Event)) {
-	go func() {
-		defer d.Close()
+	defer d.Close()
 
-		for {
-			event, err := d.listener.Wait(d.ctx)
-			if err != nil {
-				log.MustLogger("eventstream").Info("Shutting down listener", "err", err)
-				return
-			}
-			fn(event)
+	for {
+		event, err := d.listener.Wait(d.ctx)
+		if err != nil {
+			log.MustLogger("eventstream").Info("Shutting down listener", "err", err)
+			return
 		}
-	}()
+		fn(event)
+	}
 }
 
 func SetListenerName(name string) func(p *privateStateStructure) error {

@@ -126,7 +126,7 @@ func CreateViewAction(
 		logger.Error("Failed to create event stream processor", "err", err)
 		return
 	}
-	sp.RunForever(func(event eh.Event) {
+	go sp.RunForever(func(event eh.Event) {
 		eventData := &domain.HTTPCmdProcessedData{
 			CommandID:  event.Data().(*GenericActionEventData).CmdID,
 			Results:    map[string]interface{}{"msg": "Not Implemented"},

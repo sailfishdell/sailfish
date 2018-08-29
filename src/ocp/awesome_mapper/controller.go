@@ -73,7 +73,7 @@ outer:
 			expressionParameters[k] = v
 		}
 
-		sp.RunForever(func(event eh.Event) {
+		go sp.RunForever(func(event eh.Event) {
 			fn := func(event eh.Event) {
 				mdl.StopNotifications()
 				for _, query := range loopvar.ModelUpdate {

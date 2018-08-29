@@ -56,7 +56,7 @@ func New(ctx context.Context, logger log.Logger, m *model.Model, name string, fq
 		logger.Error("Failed to create event stream processor", "err", err)
 		return nil, err
 	}
-	sp.RunForever(func(event eh.Event) {
+	go sp.RunForever(func(event eh.Event) {
 		fn := func(data *attributes.AttributeUpdatedData) {
 			for _, mapping := range c.mappings {
 				if data.FQDD != mapping.FQDD {
