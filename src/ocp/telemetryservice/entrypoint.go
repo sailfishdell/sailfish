@@ -4,10 +4,8 @@ import (
 	"context"
 
 	eh "github.com/looplab/eventhorizon"
-	eventpublisher "github.com/looplab/eventhorizon/publisher/local"
 
 	ah "github.com/superchalupa/go-redfish/src/actionhandler"
-	"github.com/superchalupa/go-redfish/src/eventwaiter"
 	"github.com/superchalupa/go-redfish/src/log"
 	"github.com/superchalupa/go-redfish/src/ocp/model"
 	"github.com/superchalupa/go-redfish/src/ocp/view"
@@ -21,11 +19,6 @@ type viewer interface {
 var StartTelemetryService func(context.Context, log.Logger, viewer) *view.View
 
 func Setup(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus) {
-	EventPublisher := eventpublisher.NewEventPublisher()
-	eb.AddHandler(eh.MatchAny(), EventPublisher)
-	EventWaiter := eventwaiter.NewEventWaiter(eventwaiter.SetName("Telemetry Service"))
-	EventPublisher.AddObserver(EventWaiter)
-
 	StartTelemetryService = func(ctx context.Context, logger log.Logger, rootView viewer) *view.View {
 		return startTelemetryService(ctx, logger, rootView, ch, eb)
 	}
@@ -45,7 +38,7 @@ func startTelemetryService(ctx context.Context, logger log.Logger, rootView view
 	)
 
 	// The Plugin: "TelemetryService" property on the Subscriptions endpoint is how we know to run this command
-	AddAggregate(ctx, tsLogger, tsView, rootView.GetUUID(), ch, eb)
+	AddAggregate(ctx, tsLogger, tsView, rootView.GetUUID(), ch)
 
 	return tsView
 }
