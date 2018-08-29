@@ -8,7 +8,9 @@ import (
 	"github.com/spf13/viper"
 
 	eh "github.com/looplab/eventhorizon"
+	eventpublisher "github.com/looplab/eventhorizon/publisher/local"
 
+	"github.com/superchalupa/go-redfish/src/eventwaiter"
 	"github.com/superchalupa/go-redfish/src/log"
 	"github.com/superchalupa/go-redfish/src/ocp/event"
 	"github.com/superchalupa/go-redfish/src/ocp/model"
@@ -55,6 +57,12 @@ type update struct {
 
 func StartService(ctx context.Context, logger log.Logger, eb eh.EventBus) (*ARService, error) {
 	logger = logger.New("module", "ar2")
+
+	EventPublisher := eventpublisher.NewEventPublisher()
+	eb.AddHandler(eh.MatchAnyEventOf(attributes.AttributeUpdated, attributes.AttributeArrayUpdated), EventPublisher)
+	EventWaiter := eventwaiter.NewEventWaiter(eventwaiter.SetName("AR Mapper"))
+	EventPublisher.AddObserver(EventWaiter)
+
 	arservice := &ARService{
 		eb:            eb,
 		logger:        logger,
@@ -62,7 +70,7 @@ func StartService(ctx context.Context, logger log.Logger, eb eh.EventBus) (*ARSe
 		hash:          make(map[string][]update),
 	}
 
-	sp, err := event.NewESP(ctx, event.MatchAnyEvent(attributes.AttributeUpdated, attributes.AttributeArrayUpdated), event.SetListenerName("ar_service"))
+	sp, err := event.NewEventStreamProcessor(ctx, EventWaiter, event.MatchAnyEvent(attributes.AttributeUpdated, attributes.AttributeArrayUpdated), event.SetListenerName("ar_service"))
 	if err != nil {
 		logger.Error("Failed to create event stream processor", "err", err)
 		return nil, err
