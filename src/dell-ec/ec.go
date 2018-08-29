@@ -685,6 +685,9 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	// DONE: "CMC.Integrated.1"
 
 	obsLogger := logger.New("module", "observer")
+    // IMPORTANT: this function is called with the model lock held! You can't
+    // call any functions on the model that take the model lock, or it will
+    // deadlock.
 	fn := func(mdl *model.Model, property string, newValue interface{}) {
 		obsLogger.Info("observer entered", "model", mdl, "property", property, "newValue", newValue)
 
@@ -747,8 +750,10 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 				view.WithURI(rootView.GetURI()+"/UpdateService/FirmwareInventory/Installed-"+comp_ver_tuple),
 				view.WithModel("swinv", mdl),
 				view.WithModel("firm", invmdl),
-				eventservice.PublishResourceUpdatedEventsForModel(ctx, "swinv", eb),
 				eventservice.PublishResourceUpdatedEventsForModel(ctx, "firm", eb),
+// TODO: oops, can't set up this observer without deadlocking
+// need to figure this one out. This deadlocks taking the lock to add observer
+//				eventservice.PublishResourceUpdatedEventsForModel(ctx, "swinv", eb),
 			)
 			inv[comp_ver_tuple] = invview
 			firmware_inventory.AddAggregate(ctx, rootView, invview, ch)
