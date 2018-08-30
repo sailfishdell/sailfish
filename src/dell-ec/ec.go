@@ -750,7 +750,9 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 				view.WithURI(rootView.GetURI()+"/UpdateService/FirmwareInventory/Installed-"+comp_ver_tuple),
 				view.WithModel("swinv", mdl),
 				view.WithModel("firm", invmdl),
-				eventservice.PublishResourceUpdatedEventsForModel(ctx, "firm", eb),
+				// TODO: oops, no clue why, but this deadlocks for some insane reason
+				//eventservice.PublishResourceUpdatedEventsForModel(ctx, "firm", eb),
+
 				// TODO: oops, can't set up this observer without deadlocking
 				// need to figure this one out. This deadlocks taking the lock to add observer
 				//				eventservice.PublishResourceUpdatedEventsForModel(ctx, "swinv", eb),
