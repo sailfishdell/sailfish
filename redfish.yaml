@@ -80,6 +80,7 @@ mappings:
         - {Property: "serial",       FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "SerialNumber" }
         - {Property: "part_number",  FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "PartNumber" }
         - {Property: "name",         FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Name" }
+        - {Property: "sled_profile", FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "SledProfile" }
 
     firmware/inventory:
         - {Property: "fw_device_class",     FQDD: "{FQDD}", Group: "FWInventory", Index: "1", Name: "DeviceClass" }
@@ -173,11 +174,11 @@ mappings:
         - {Property: "indicator_led", FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "IndicatorLED"}
 
     Chassis/Slots:
-        - {Property: "config", FQDD: "System.Chassis.1", Group: "{GROUP}", Index: "{INDEX}", Name: "Config" }
-        - {Property: "contains", FQDD: "System.Chassis.1", Group: "{GROUP}", Index: "{INDEX}", Name: "Contains" }
-        - {Property: "name", FQDD: "System.Chassis.1", Group: "{GROUP}", Index: "{INDEX}", Name: "Name" }
-        - {Property: "occupied", FQDD: "System.Chassis.1", Group: "{GROUP}", Index: "{INDEX}", Name: "Occupied" }
-        - {Property: "slot_name", FQDD: "System.Chassis.1", Group: "{GROUP}", Index: "{INDEX}", Name: "SlotName" }
+        - {Property: "slot_config", FQDD: "System.Chassis.1", Group: "{GROUP}", Index: "{INDEX}", Name: "Config" }
+        - {Property: "slot_contains", FQDD: "System.Chassis.1", Group: "{GROUP}", Index: "{INDEX}", Name: "Contains" }
+        - {Property: "slot_name", FQDD: "System.Chassis.1", Group: "{GROUP}", Index: "{INDEX}", Name: "Name" }
+        - {Property: "slot_occupied", FQDD: "System.Chassis.1", Group: "{GROUP}", Index: "{INDEX}", Name: "Occupied" }
+        - {Property: "slot_slotname", FQDD: "System.Chassis.1", Group: "{GROUP}", Index: "{INDEX}", Name: "SlotName" }
 
     Chassis/SlotConfigs:
         - {Property: "columns", FQDD: "{ANY}", Group: "{GROUP}", Index: "{INDEX}", Name: "Columns" }
@@ -190,7 +191,15 @@ mappings:
         - {Property: "type", FQDD: "{ANY}", Group: "{GROUP}", Index: "{INDEX}", Name: "Type" }
 
     Chassis/System.Chassis/Power:
-        # no mappings for now: placeholder
+        - {Property: "capacity_watts", FQDD: "System.Chassis.1", Group: "ChassisPower", Index: "1", Name: "SystemInputMaxPowerCapacity" }
+        - {Property: "energy_consumption_start_time", FQDD: "System.Chassis.1", Group: "SystemPwrMonn", Index: "1", Name: "AccumulativeStartEnergy"}
+        - {Property: "min_peak_watts", FQDD:"System.Chassis.1", Group: "SystemPwrMon", Index: "1", Name: "MinPowerWatts" }
+        - {Property: "min_peak_watts_time", FQDD:"System.Chassis.1", Group: "SystemPwrMon", Index: "1", Name: "MinPowerTimeStr" }
+        - {Property: "max_peak_watts", FQDD:"Systme.Chassis.1", Group: "SystemPwrMon", Index: "1", Name: "PeakPowerWatts" }
+        - {Property: "max_peak_watts_time", FQDD:"Systme.Chassis.1", Group: "SystemPwrMon", Index: "1", Name: "PeakPowerTimeStr" }
+        - {Property: "energy_consumption", FQDD: "System.Chassis.1", Group: "SystemPwrMon", Index: "1", Name: "AccumulativePower" }
+        - {Property: "limit_in_watts", FQDD: "System.Chassis.1", Group: "ChassisPower", Index: "1", Name: "PowerCapValue" }
+        - {Property: "cumulative_power_time", FQDD: "System.Chassis.1", Group: "SystemPwrMon", Index: "1", Name: "CumulativePowerStartTimeStr" } 
 
     Chassis/System.Chassis/Thermal:
         # no mappings for now: placeholder

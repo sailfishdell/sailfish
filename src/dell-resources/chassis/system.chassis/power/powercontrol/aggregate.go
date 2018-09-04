@@ -2,6 +2,7 @@ package powercontrol
 
 import (
 	"context"
+	//"strconv"
 
 	"github.com/superchalupa/go-redfish/src/log"
 	"github.com/superchalupa/go-redfish/src/ocp/view"
@@ -37,24 +38,23 @@ func getViewFragment(v *view.View) map[string]interface{} {
 		"@odata.type":              "#Power.v1_0_2.PowerControl",
 		"@odata.context":           "/redfish/v1/$metadata#Power.PowerSystem.Chassis.1/Power/$entity",
 		"@odata.id":                v.GetURI(),
-		"Name@meta":                v.Meta(view.PropGET("name")),
-		"MemberId@meta":            v.Meta(view.PropGET("unique_id")),
-		"PowerAvailableWatts@meta": v.Meta(view.PropGET("available_watts")),
+		"Name":                     "System Power Control",
+		"MemberId":                 "PowerControl",
+		"PowerAvailableWatts@meta": v.Meta(view.PropGET("available_watts")), // TODO
 		"PowerCapacityWatts@meta":  v.Meta(view.PropGET("capacity_watts")),
-		"PowerConsumedWatts@meta":  v.Meta(view.PropGET("consumed_watts")),
+		"PowerConsumedWatts@meta":  v.Meta(view.PropGET("consumed_watts")), // TODO
 
 		"Oem": map[string]interface{}{
-			"EnergyConsumptionStartTime": null,
-			"EnergyConsumptionkWh":       null,
-			"HeadroomWatts":              null,
-			"MaxPeakWatts":               null,
-			"MaxPeakWattsTime":           null,
-			"MinPeakWatts":               null,
-			"MinPeakWattsTime":           null,
-			"PeakHeadroomWatts":          null,
+			"EnergyConsumptionStartTime@meta": v.Meta(view.PropGET("energy_consumption_start_time")),
+			"HeadroomWatts@meta":              v.Meta(view.PropGET("headroom_watts")), // TODO
+			"MaxPeakWatts@meta":               v.Meta(view.PropGET("max_peak_watts")),
+			"MaxPeakWattsTime@meta":           v.Meta(view.PropGET("max_peak_watts_time")),
+			"MinPeakWatts@meta":               v.Meta(view.PropGET("min_peak_watts")),
+			"MinPeakWattsTime@meta":           v.Meta(view.PropGET("min_peak_watts_time")),
+			"PeakHeadroomWatts@meta":          v.Meta(view.PropGET("peak_headroom_watts")), // TODO
 		},
 		"PowerLimit": map[string]interface{}{
-			"LimitInWatts": "",
+			"LimitInWatts@meta": v.Meta(view.PropGET("limit_in_watts")),
 		},
 		"PowerMetrics": map[string]interface{}{
 			"AverageConsumedWatts": 0,
@@ -63,8 +63,20 @@ func getViewFragment(v *view.View) map[string]interface{} {
 			"MinConsumedWatts":     0,
 		},
 		"RelatedItem@meta":             v.Meta(view.PropGET("related_item")),
-		"RelatedItem@odata.count@meta": v.Meta(view.PropGET(related_item_count)),
+		"RelatedItem@odata.count@meta": v.Meta(view.PropGET("related_item_count")),
 	}
+
+	// TODO: fix this
+	/*ec := map[string]interface{}{
+		    "ec@meta" : v.Meta(view.PropGET("energy_consumption")),
+		}
+
+		if ec["ec@meta"] != nil {
+		    ec_i, _:= strconv.Atoi(ec["ec@meta"].(string))
+		    properties["Oem"].(map[string]interface{})["EnergyConsumptionkWh"] = ec_i/1000
+		} else {
+	            properties["Oem"].(map[string]interface{})["EnergyConsumptionkWh"] = 0
+		}*/
 
 	return properties
 }

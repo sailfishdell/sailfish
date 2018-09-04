@@ -30,6 +30,7 @@ func AddAggregate(ctx context.Context, v view, ch eh.CommandHandler, eb eh.Event
 			Properties: map[string]interface{}{
 				"Id":             "RootService",
 				"Name":           "Root Service",
+				"Description":    "Root Service",
 				"RedfishVersion": "1.0.2",
 				"@odata.etag":    `W/"abc123"`,
 			}})
