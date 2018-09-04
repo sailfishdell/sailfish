@@ -36,7 +36,7 @@ type Option func(e *EventWaiter) error
 // NewEventWaiter returns a new EventWaiter.
 func NewEventWaiter(o ...Option) *EventWaiter {
 	w := EventWaiter{
-		inbox:      make(chan eh.Event, 200),
+		inbox:      make(chan eh.Event, 100),
 		register:   make(chan *EventListener),
 		unregister: make(chan *EventListener),
 	}
@@ -92,9 +92,6 @@ func (w *EventWaiter) run() {
 // Notify implements the eventhorizon.EventObserver.Notify method which forwards
 // events to the waiters so that they can match the events.
 func (w *EventWaiter) Notify(ctx context.Context, event eh.Event) {
-	if len(w.inbox) > (cap(w.inbox) * 3 / 4) {
-		fmt.Printf("INBOX(%s) nearing capacity: %d of %d\n", w.name, len(w.inbox), cap(w.inbox))
-	}
 	w.inbox <- event
 }
 
@@ -105,7 +102,7 @@ func (w *EventWaiter) Listen(ctx context.Context, match func(eh.Event) bool) (*E
 	l := &EventListener{
 		Name:       "unnamed",
 		id:         eh.NewUUID(),
-		inbox:      make(chan eh.Event, 1000),
+		inbox:      make(chan eh.Event, 10),
 		match:      match,
 		unregister: w.unregister,
 	}
