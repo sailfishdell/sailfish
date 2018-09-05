@@ -18,7 +18,6 @@ package eventwaiter
 
 import (
 	"context"
-	"fmt"
 
 	eh "github.com/looplab/eventhorizon"
 )
@@ -79,9 +78,6 @@ func (w *EventWaiter) run() {
 		case event := <-w.inbox:
 			for _, l := range listeners {
 				if l.match(event) {
-					if len(l.inbox) > (cap(l.inbox) * 3 / 4) {
-						fmt.Printf("LISTENER(%s) nearing capacity: %d of %d\n", l.Name, len(l.inbox), cap(l.inbox))
-					}
 					l.inbox <- event
 				}
 			}
