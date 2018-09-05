@@ -104,7 +104,7 @@ func (l *SlotService) manageSlots(ctx context.Context, logger log.Logger, logUri
 					oldUuid, ok := l.slots[uri].(eh.UUID)
 					if ok {
 						// early out if the same slot already exists (same URI)
-						logger.Warn("slot already created, early out", "uuid", oldUuid)
+						logger.Info("slot already created, early out", "uuid", oldUuid)
 						break
 					}
 
