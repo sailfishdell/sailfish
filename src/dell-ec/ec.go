@@ -232,6 +232,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		//managerForChassis := []map[string]string{{"@odata.id": rootView.GetURI()+"/Chassis/System.Chassis.1"}} //sysChasVw.GetURI()
 		mdl := model.New(
 			mgrCMCIntegrated.WithUniqueName(mgrName),
+			model.UpdateProperty("unique_name_attr", mgrName+".Attributes"),
 			model.UpdateProperty("attributes", map[string]map[string]map[string]interface{}{}),
 
 			model.UpdateProperty("connect_types_supported", connectTypesSupported),
@@ -295,6 +296,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		chasLogger := logger.New("module", "Chassis/"+mgrName, "module", "Chassis/CMC.Integrated")
 		chasModel, _ := mgrCMCIntegrated.New(
 			mgrCMCIntegrated.WithUniqueName(mgrName),
+			model.UpdateProperty("unique_name_attr", mgrName+".Attributes"),
 			model.UpdateProperty("attributes", map[string]map[string]map[string]interface{}{}),
 		)
 		// the controller is what updates the model when ar entries change,
@@ -342,6 +344,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		managedBy := []map[string]string{{"@odata.id": managers[0].GetURI()}}
 		chasModel := model.New(
 			model.UpdateProperty("unique_name", chasName),
+			model.UpdateProperty("unique_name_attr", chasName+".Attributes"),
 			model.UpdateProperty("managed_by", managedBy),
 			model.UpdateProperty("managed_by_count", len(managedBy)),
 			model.UpdateProperty("attributes", map[string]map[string]map[string]interface{}{}),
@@ -410,6 +413,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 
 			psuModel := model.New(
 				model.UpdateProperty("unique_name", psuName),
+				model.UpdateProperty("unique_name_attr", psuName+".Attributes"),
 				model.UpdateProperty("unique_id", psuName),
 				model.UpdateProperty("attributes", map[string]map[string]map[string]interface{}{}),
 			)
@@ -542,6 +546,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 
 			fanModel := model.New(
 				model.UpdateProperty("unique_id", fanName),
+				model.UpdateProperty("unique_name_attr", fanName+".Attributes"),
 				model.UpdateProperty("attributes", map[string]map[string]map[string]interface{}{}),
 			)
 			fwmapper := arService.NewMapping(fanLogger.New("module", "firmware/inventory"),  "firmware_Chassis/"+chasName+"/Thermal/Fan/"+fanName, "firmware/inventory", fanModel, map[string]string{"FQDD":fanName})
@@ -642,6 +647,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		managedBy := []map[string]string{{"@odata.id": managers[0].GetURI()}}
 		iomModel := model.New(
 			model.UpdateProperty("unique_name", iomName),
+			model.UpdateProperty("unique_name_attr", iomName+".Attributes"),
 			model.UpdateProperty("managed_by", managedBy),
 			model.UpdateProperty("managed_by_count", len(managedBy)),
 		)
@@ -693,6 +699,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		managedBy := []map[string]string{{"@odata.id": managers[0].GetURI()}}
 		sledModel := model.New(
 			model.UpdateProperty("unique_name", sledName),
+			model.UpdateProperty("unique_name_attr", sledName+".Attributes"),
 			model.UpdateProperty("managed_by", managedBy),
 			model.UpdateProperty("managed_by_count", len(managedBy)),
 		)
