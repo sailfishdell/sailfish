@@ -7,6 +7,6 @@ ca.key
 server.crt
 server.key
 
-# ingmore artifacts from running locally
+# ignore artifacts from running locally
 ec-redfish
 http-access.log
