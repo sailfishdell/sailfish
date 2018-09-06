@@ -67,17 +67,7 @@ func getViewFragment(v *view.View) map[string]interface{} {
 		"RelatedItem@odata.count@meta": v.Meta(view.PropGET("related_item_count")),
 	}
 
-	// TODO: fix this
-	/*ec := map[string]interface{}{
-		    "ec@meta" : v.Meta(view.PropGET("energy_consumption")),
-		}
-
-		if ec["ec@meta"] != nil {
-		    ec_i, _:= strconv.Atoi(ec["ec@meta"].(string))
-		    properties["Oem"].(map[string]interface{})["EnergyConsumptionkWh"] = ec_i/1000
-		} else {
-	            properties["Oem"].(map[string]interface{})["EnergyConsumptionkWh"] = 0
-		}*/
+	//properties["Oem"].(map[string]interface{})["EnergyConsumptionkWh"]
 
 	return properties
 }

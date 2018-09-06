@@ -11,6 +11,17 @@ session:
     timeout: 600
 
 
+# TODO: certain attributes are inputs to if statements for the "actual" property, ie System.Chassis.1#ChassisPower.1#ChassisPowerStatus.1:
+#     if(chassis_power_value == CHASSIS_STANDBY_POWER_STATE_EC)
+#        ChassisObject[CHASSIS_POWERSTATE_KEY] = "Off";
+#     else if(chassis_power_value == CHASSIS_POWER_ON_STATE_EC)
+#        ChassisObject[CHASSIS_POWERSTATE_KEY] = "On";
+#     else if(chassis_power_value == CHASSIS_POWERING_ON_STATE_EC)
+#        ChassisObject[CHASSIS_POWERSTATE_KEY] = "PoweringOn";
+#     else if(chassis_power_value == CHASSIS_POWERING_OFF_STATE_EC)
+#        ChassisObject[CHASSIS_POWERSTATE_KEY] = "PoweringOff";
+# move these attributes to awesome_mapper and add the if selection
+
 awesome_mapper:
     fan:
         - { Select: "type == 'FanEvent' && data.ObjectHeader.FQDD == fqdd",
@@ -149,7 +160,7 @@ mappings:
     Chassis/System.Chassis:
         - {Property: "asset_tag",    FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "AssetTag" }
         - {Property: "description",  FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Description" }
-        - {Property: "power_state",  FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "PowerState" }
+        - {Property: "power_state",  FQDD: "{FQDD}", Group: "ChassisPower", Index: "1", Name: "ChassisPowerStatus.1" }
         - {Property: "serial",       FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "SerialNumber" }
         - {Property: "part_number",  FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "PartNumber" }
         - {Property: "chassis_type", FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "ChassisType" }

@@ -27,7 +27,7 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 				"DELETE": []string{}, // can't be deleted
 			},
 			Properties: map[string]interface{}{
-				"SubSystems@meta": v.Meta(view.PropGET("subsystems")),
+				"SubSystems@meta": v.Meta(view.PropGET("subsystems")), //TODO: this is formatted slightly differently than odatalite, need to dynamically add properties that are map[string]interface{}{map[string]string} for each health rollup that isn't "absent"
 			},
 		},
 	)

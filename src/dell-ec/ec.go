@@ -599,7 +599,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		subSysHealths := map[string]string{}
 		subSysHealthsMap := map[string]interface{}{}
 
-		// TODO: replace this with all healths that are not "absent" 
+		// TODO: replace this with all healths that are not "absent", use awesome_mapper? or implement perpetual event capture like slots/slotconfig for health events?
 		subSysHealths["Battery"] = "OK"
 
 		subSysHealthLogger := sysChasLogger.New("module", "Chassis/System.Chassis/SubSystemHealth")

@@ -12,7 +12,7 @@ import (
 
 // TODO: current odatalite stack has this as part of output, but that seems completely wrong:
 //       "PowerTrends@odata.count": 7,
-// because powertrends is not an array.
+// because powertrends is not an array. (7 = # of keys in powertrends, probably not intentional)
 
 func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.CommandHandler) {
 
@@ -23,11 +23,11 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 		"PowerSupplies@odata.count@meta": v.Meta(view.PropGET("power_supply_views_count")),
 		"PowerSupplies@meta":             v.Meta(view.PropGET("power_supply_views")),
 		"PowerControl@odata.count@meta":  v.Meta(view.PropGET("power_control_views_count")),
-		"PowerControl@meta":              v.Meta(view.PropGET("power_control_views")), //TODO
+		"PowerControl@meta":              v.Meta(view.PropGET("power_control_views")),
 		"Oem": map[string]interface{}{
 			"OemPower": map[string]interface{}{
 				"PowerTrends@meta": v.Meta(view.PropGET("power_trend_views")),
-				"PowerTrends@odata.count@meta": v.Meta(view.PropGET("power_trend_count")),
+				"PowerTrends@odata.count@meta": v.Meta(view.PropGET("power_trend_count")), // gets # of elements in power trend array instead of # of keys in first power trend array element
 			},
 			"EID_674": map[string]interface{}{
 				"PowerSuppliesSummary": map[string]interface{}{
