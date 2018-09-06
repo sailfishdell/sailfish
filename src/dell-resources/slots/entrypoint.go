@@ -138,8 +138,10 @@ func (l *SlotService) manageSlots(ctx context.Context, logger log.Logger, logUri
 						"Name@meta":     slotView.Meta(view.PropGET("slot_name")),
 						"Occupied@meta": slotView.Meta(view.PropGET("slot_occupied")),
 						"SlotName@meta": slotView.Meta(view.PropGET("slot_slotname")),
+						"SledProfile@meta": slotView.Meta(view.PropGET("slot_profile")),
 					}
 
+					// TODO: add to awesome mapper probably
 					/*if strings.Contains(SlotEntry.Id, "SledSlot") {
 											if properties["Contains@meta"] != nil {
 											    sled_key := properties["Contains@meta"].(string)

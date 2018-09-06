@@ -31,7 +31,7 @@ func AddAggregate(ctx context.Context, v *view.View, baseUri string, ch eh.Comma
 				"Id":                             "CertificateService",
 				"Name":                           "Certificate Service",
 				"Description":                    "Represents the properties of Certificate Service",
-				"CertificateSigningRequest@meta": v.Meta(view.PropGET("certificate_signing_request")),
+				"CertificateSigningRequest@meta": v.Meta(view.PropGET("certificate_signing_request")), //TODO
 				"Actions": map[string]interface{}{
 					"#DellCertificateService.GenerateCSR": map[string]interface{}{
 						"target": v.GetActionURI("certificates.generatecsr"),
