@@ -3,7 +3,6 @@ package attributes
 import (
 	"context"
 	"errors"
-	"fmt"
 	"strings"
 	"time"
 
@@ -92,7 +91,6 @@ func selectAttributeUpdate(fqdd []string) func(eh.Event) bool {
 				return false
 			}
 		}
-		log.MustLogger("ARDump_Controller").Debug("TYPE ASSERT FAIL!", "data", fmt.Sprintf("%#v", event.Data()))
 		return false
 	}
 }
