@@ -289,7 +289,7 @@ func StartInjectService(eb eh.EventBus) {
 	go func() {
 		for {
 			event := <-injectChan
-			eb.PublishEvent(context.Background(), event)
+			eb.PublishEvent(context.Background(), event) // in a goroutine (comment for grep purposes)
 		}
 	}()
 }
