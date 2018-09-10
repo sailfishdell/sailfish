@@ -2,6 +2,8 @@ package view
 
 import (
 	"context"
+	"errors"
+	"fmt"
 
 	"github.com/superchalupa/go-redfish/src/log"
 	"github.com/superchalupa/go-redfish/src/ocp/model"
@@ -72,38 +74,37 @@ func (s *View) PropertyGet(
 
 func (s *View) PropertyPatch(
 	ctx context.Context,
-	agg *domain.RedfishResourceAggregate,
-	rrp *domain.RedfishResourceProperty,
-	meta map[string]interface{},
+	rrp domain.RedfishResourceProperty,
 	body interface{},
-	present bool,
-) {
+	meta map[string]interface{},
+) (interface{}, error) {
+
 	s.Lock()
 	defer s.Unlock()
 
-	log.MustLogger("PATCH").Debug("PATCH START", "body", body, "present", present, "meta", meta, "rrp", rrp)
+	log.MustLogger("PATCH").Debug("PATCH START", "body", body, "meta", meta, "rrp", rrp)
 
 	controllerName, ok := meta["controller"].(string)
 	if !ok {
 		log.MustLogger("PATCH").Debug("metadata is missing the controller name", "meta", meta)
-		return
+		return nil, errors.New(fmt.Sprintf("metadata is missing the controller name: %v\n", meta))
 	}
 
 	controller, ok := s.controllers[controllerName]
 	if !ok {
 		log.MustLogger("PATCH").Debug("metadata specifies a nonexistent controller name", "meta", meta)
-		return
+		return nil, errors.New(fmt.Sprintf("metadata specifies a nonexistent controller name: %v\n", meta))
 	}
 
-	if present {
-		property, ok := meta["property"].(string)
-		if ok {
-			newval, err := controller.UpdateRequest(ctx, property, body)
-			log.MustLogger("PATCH").Debug("update request", "newval", newval, "err", err)
-			if err == nil {
-				rrp.Value = newval
-			}
-			return
+	property, ok := meta["property"].(string)
+	if ok {
+		newval, err := controller.UpdateRequest(ctx, property, body)
+		log.MustLogger("PATCH").Debug("update request", "newval", newval, "err", err)
+		if err == nil {
+			return newval, nil
 		}
+		return nil, errors.New("Error updating")
 	}
+
+	return nil, errors.New("Error updating: no property specified")
 }
