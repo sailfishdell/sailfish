@@ -2,8 +2,10 @@ package ar_mapper2
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/spf13/viper"
 
@@ -97,6 +99,10 @@ func StartService(ctx context.Context, logger log.Logger, eb eh.EventBus) (*ARSe
 			}
 		} else if data, ok := event.Data().(*attributes.AttributeUpdatedData); ok {
 			fn(data)
+		} else if arr, ok := event.Data().([]*attributes.AttributeUpdatedData); ok {
+			for _, data := range arr {
+				fn(data)
+			}
 		} else {
 			logger.Warn("Should never happen: got an invalid event in the event handler")
 		}
@@ -106,9 +112,11 @@ func StartService(ctx context.Context, logger log.Logger, eb eh.EventBus) (*ARSe
 	return arservice, nil
 }
 
+// used by individual mappings to keep track of the mapping name for PUT/PATCH/POST, etc.
 type breadcrumb struct {
 	ars         *ARService
 	mappingName string
+	logger      log.Logger
 }
 
 func (ars *ARService) NewMapping(logger log.Logger, mappingName, cfgsection string, m *model.Model, fgin map[string]string) breadcrumb {
@@ -126,12 +134,39 @@ func (ars *ARService) NewMapping(logger log.Logger, mappingName, cfgsection stri
 	ars.modelmappings[mappingName] = mm
 	ars.mappingsMu.Unlock()
 
-	return breadcrumb{ars: ars, mappingName: mappingName}
+	return breadcrumb{ars: ars, mappingName: mappingName, logger: logger}
 }
 
 func (b breadcrumb) UpdateRequest(ctx context.Context, property string, value interface{}) (interface{}, error) {
-	// TODO: (copy from ar_mapper and modify)
-	return nil, nil
+	b.logger.Info("UpdateRequest", "property", property, "mappingName", b.mappingName)
+	mappings, ok := b.ars.modelmappings[b.mappingName]
+	if !ok {
+		return nil, errors.New("Could not find mapping: " + b.mappingName)
+	}
+
+	for _, mapping := range mappings.mappings {
+		if property != mapping.Property {
+			continue
+		}
+
+		mappings.logger.Info("Sending Update Request", "mapping", mapping, "value", value)
+		reqUUID := eh.NewUUID()
+
+		data := &attributes.AttributeUpdateRequestData{
+			ReqID: reqUUID,
+			FQDD:  mapping.FQDD,
+			Group: mapping.Group,
+			Index: mapping.Index,
+			Name:  mapping.Name,
+			Value: value,
+		}
+		b.ars.eb.PublishEvent(ctx, eh.NewEvent(attributes.AttributeUpdateRequest, data, time.Now()))
+
+		break
+	}
+	// TODO: wait for event to come back matching request (maybe?)
+
+	return value, nil
 }
 
 // this is the function that viper will call whenever the configuration changes at runtime
