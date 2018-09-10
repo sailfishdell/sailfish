@@ -10,7 +10,7 @@ import (
 	eh "github.com/looplab/eventhorizon"
 )
 
-func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.CommandHandler, eb eh.EventBus) {
+func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, rootID eh.UUID, ch eh.CommandHandler, eb eh.EventBus) {
 	ch.HandleCommand(
 		ctx,
 		&domain.CreateRedfishResource{
@@ -30,4 +30,13 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 				"Description": "Registry Repository",
 				"Name":        "Registry File Collection",
 			}})
+
+	ch.HandleCommand(ctx,
+		&domain.UpdateRedfishResourceProperties{
+			ID: rootID,
+			Properties: map[string]interface{}{
+				"Registries": map[string]interface{}{"@odata.id": "/redfish/v1/Registries"},
+			},
+		})
+
 }

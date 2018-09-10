@@ -10,6 +10,9 @@ import (
 
 	eh "github.com/looplab/eventhorizon"
 	log "github.com/superchalupa/go-redfish/src/log"
+
+	"regexp"
+
 )
 
 // CmdIDSetter interface is for commands that can take a given command id
@@ -417,6 +420,7 @@ func handleSelect(r *http.Request, d *HTTPCmdProcessedData) *HTTPCmdProcessedDat
 	return d
 }
 
+//TODO: regex still matches more than it should be matching
 func trimSelect(r interface{}, selAry [][]string) {
 	res, ok := r.(map[string]interface{})
 	if !ok {
@@ -430,7 +434,12 @@ func trimSelect(r interface{}, selAry [][]string) {
 		}
 		if !found {
 			for _, n := range selAry {
-				if k == n[0] {
+				if len(n[0]) == 0 {
+					// let's not try to select nothing
+					continue
+				}
+				re := regexp.MustCompile(strings.Replace(n[0], "*", ".*", -1))
+				if re.MatchString(k) {
 					found = true
 					if len(n) <= 1 {
 						break

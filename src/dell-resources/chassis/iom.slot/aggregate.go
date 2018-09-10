@@ -53,7 +53,7 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 				"Oem": map[string]interface{}{
 					"Dell": map[string]interface{}{
 						"ServiceTag@meta":           v.Meta(view.PropGET("service_tag")),
-						"InstPowerConsumption@meta": v.Meta(view.PropGET("instantaneous_power")), //TODO
+						"InstPowerConsumption@meta": v.Meta(view.PropGET("Instantaneous_Power")),
 						"OemChassis": map[string]interface{}{
 							"@odata.id": v.GetURI() + "/Attributes",
 						},

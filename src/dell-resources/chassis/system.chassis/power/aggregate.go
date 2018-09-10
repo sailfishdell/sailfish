@@ -12,7 +12,7 @@ import (
 
 // TODO: current odatalite stack has this as part of output, but that seems completely wrong:
 //       "PowerTrends@odata.count": 7,
-// because powertrends is not an array.
+// because powertrends is not an array. (7 = # of keys in powertrends, probably not intentional)
 
 func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.CommandHandler) {
 
@@ -23,18 +23,11 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 		"PowerSupplies@odata.count@meta": v.Meta(view.PropGET("power_supply_views_count")),
 		"PowerSupplies@meta":             v.Meta(view.PropGET("power_supply_views")),
 		"PowerControl@odata.count@meta":  v.Meta(view.PropGET("power_control_views_count")),
-		"PowerControl@meta":              v.Meta(view.PropGET("power_control_views")), //TODO
+		"PowerControl@meta":              v.Meta(view.PropGET("power_control_views")),
 		"Oem": map[string]interface{}{
 			"OemPower": map[string]interface{}{
-				"PowerTrends": map[string]interface{}{
-					"@odata.id":                   "/redfish/v1/Chassis/System.Chassis.1/Power/PowerTrends-1",
-					"@odata.context":              "/redfish/v1/$metadata#Power.PowerSystem.Chassis.1/Power/$entity",
-					"@odata.type":                 "#DellPower.v1_0_0.DellPowerTrends",
-					"Name":                        "System Power",
-					"histograms@meta":             v.Meta(view.PropGET("histogram_views")), //TODO
-					"histograms@odata.count@meta": v.Meta(view.PropGET("histogram_views_count")),
-					"MemberId":                    "PowerHistogram",
-				},
+				"PowerTrends@meta": v.Meta(view.PropGET("power_trend_views")),
+				"PowerTrends@odata.count@meta": v.Meta(view.PropGET("power_trend_count")), // gets # of elements in power trend array instead of # of keys in first power trend array element
 			},
 			"EID_674": map[string]interface{}{
 				"PowerSuppliesSummary": map[string]interface{}{
@@ -45,7 +38,7 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 			},
 		},
 	}
-	properties["Oem"].(map[string]interface{})["OemPower"].(map[string]interface{})["PowerTrends@odata.count"] = len(properties["Oem"].(map[string]interface{})["OemPower"].(map[string]interface{})["PowerTrends"].(map[string]interface{}))
+	//properties["Oem"].(map[string]interface{})["OemPower"].(map[string]interface{})["PowerTrends@odata.count"] = len(properties["Oem"].(map[string]interface{})["OemPower"].(map[string]interface{})["PowerTrends"].(map[string]interface{}))
 
 	ch.HandleCommand(
 		ctx,

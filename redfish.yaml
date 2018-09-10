@@ -11,6 +11,17 @@ session:
     timeout: 600
 
 
+# TODO: certain attributes are inputs to if statements for the "actual" property, ie System.Chassis.1#ChassisPower.1#ChassisPowerStatus.1:
+#     if(chassis_power_value == CHASSIS_STANDBY_POWER_STATE_EC)
+#        ChassisObject[CHASSIS_POWERSTATE_KEY] = "Off";
+#     else if(chassis_power_value == CHASSIS_POWER_ON_STATE_EC)
+#        ChassisObject[CHASSIS_POWERSTATE_KEY] = "On";
+#     else if(chassis_power_value == CHASSIS_POWERING_ON_STATE_EC)
+#        ChassisObject[CHASSIS_POWERSTATE_KEY] = "PoweringOn";
+#     else if(chassis_power_value == CHASSIS_POWERING_OFF_STATE_EC)
+#        ChassisObject[CHASSIS_POWERSTATE_KEY] = "PoweringOff";
+# move these attributes to awesome_mapper and add the if selection
+
 awesome_mapper:
     fan:
         - { Select: "type == 'FanEvent' && data.ObjectHeader.FQDD == fqdd",
@@ -32,14 +43,10 @@ awesome_mapper:
                 {Property: "FanStateMask", Query: "data.FanStateMask" }]}
 
     iom:
-        - { Select: "type == 'AttributeUpdated' && data.FQDD == fqdd && data.Name == 'InstantaneousPower'", ModelUpdate: [ {Property: "instantaneous_power", Query: "data.Value" } ] }
+        - { Select: "type == 'AttributeUpdated' && data.FQDD == fqdd && data.Name == 'InstantaneousPower'", ModelUpdate: [ {Property: "Instantaneous_Power", Query: "data.Value", Default: 0} ] }
 
-    slots:
-        - { Select: "type == 'AttributeUpdated' && data.FQDD == 'System.Chassis.1' && data.Group == group && data.Index == index && data.Name == 'Config'", ModelUpdate: [ {Property: "config", Query: "data.Value" } ] }
-        - { Select: "type == 'AttributeUpdated' && data.FQDD == 'System.Chassis.1' && data.Group == group && data.Index == index && data.Name == 'Contains'", ModelUpdate: [ {Property: "contains", Query: "data.Value" } ] }
-        - { Select: "type == 'AttributeUpdated' && data.FQDD == 'System.Chassis.1' && data.Group == group && data.Index == index && data.Name == 'Name'", ModelUpdate: [ {Property: "name", Query: "data.Value" } ] }
-        - { Select: "type == 'AttributeUpdated' && data.FQDD == 'System.Chassis.1' && data.Group == group && data.Index == index && data.Name == 'Occupied'", ModelUpdate: [ {Property: "occupied", Query: "data.Value" } ] }
-        - { Select: "type == 'AttributeUpdated' && data.FQDD == 'System.Chassis.1' && data.Group == group && data.Index == index && data.Name == 'SlotName'", ModelUpdate: [ {Property: "slot_name", Query: "data.Value" } ] }
+    power:
+        - { Select: "type == 'AttributeUpdated' && data.FQDD == 'System.Chassis.1' && data.Group == 'SystemPwrMon' && data.Index == '1' && data.Name == 'AccumulativePower'", ModelUpdate: [ {Property: "Energy_Consumption_kWh", Query: "(data.Value)/1000", Default: 0 } ] }
 
     health:
         - { Select: "type == 'HealthEvent' && data.FQDD == fqdd", ModelUpdate: [ {Property: "health", Query: "data.Health" } ] }
@@ -54,16 +61,6 @@ awesome_mapper:
         - { Select: "type == 'HealthEvent' && data.FQDD == 'System.Chassis.1#SubSystem.1#Miscellaneous'", ModelUpdate: [ {Property: "misc_rollup", Query: "data.Health" } ] }
         - { Select: "type == 'HealthEvent' && data.FQDD == 'System.Chassis.1#SubSystem.1#Battery'", ModelUpdate: [ {Property: "battery_rollup", Query: "data.Health" } ] }
         - { Select: "type == 'HealthEvent' && data.FQDD == 'System.Chassis.1#SubSystem.1#IOMSubsystem'", ModelUpdate: [ {Property: "iom_rollup", Query: "data.Health" } ] }
-
-    slotconfig:
-        - { Select: "type == 'AttributeUpdated' && data.FQDD == 'System.Chassis.1' && data.Group == group && data.Index == index && data.Name == 'Columns'", ModelUpdate: [ {Property: "columns", Query: "data.Value" } ] }
-        - { Select: "type == 'AttributeUpdated' && data.FQDD == 'System.Chassis.1' && data.Group == group && data.Index == index && data.Name == 'Location'", ModelUpdate: [ {Property: "location", Query: "data.Value" } ] }
-        - { Select: "type == 'AttributeUpdated' && data.FQDD == 'System.Chassis.1' && data.Group == group && data.Index == index && data.Name == 'Name'", ModelUpdate: [ {Property: "name", Query: "data.Value" } ] }
-        - { Select: "type == 'AttributeUpdated' && data.FQDD == 'System.Chassis.1' && data.Group == group && data.Index == index && data.Name == 'Order'", ModelUpdate: [ {Property: "order", Query: "data.Value" } ] }
-        - { Select: "type == 'AttributeUpdated' && data.FQDD == 'System.Chassis.1' && data.Group == group && data.Index == index && data.Name == 'Orientation'", ModelUpdate: [ {Property: "orientation", Query: "data.Value" } ] }
-        - { Select: "type == 'AttributeUpdated' && data.FQDD == 'System.Chassis.1' && data.Group == group && data.Index == index && data.Name == 'ParentConfig'", ModelUpdate: [ {Property: "parentConfig", Query: "data.Value" } ] }
-        - { Select: "type == 'AttributeUpdated' && data.FQDD == 'System.Chassis.1' && data.Group == group && data.Index == index && data.Name == 'Rows'", ModelUpdate: [ {Property: "rows", Query: "data.Value" } ] }
-        - { Select: "type == 'AttributeUpdated' && data.FQDD == 'System.Chassis.1' && data.Group == group && data.Index == index && data.Name == 'Type'", ModelUpdate: [ {Property: "type", Query: "data.Value" } ] }
 
 
 mappings:
@@ -80,6 +77,7 @@ mappings:
         - {Property: "serial",       FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "SerialNumber" }
         - {Property: "part_number",  FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "PartNumber" }
         - {Property: "name",         FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Name" }
+        - {Property: "sled_profile", FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "SledProfile" }
 
     firmware/inventory:
         - {Property: "fw_device_class",     FQDD: "{FQDD}", Group: "FWInventory", Index: "1", Name: "DeviceClass" }
@@ -162,7 +160,7 @@ mappings:
     Chassis/System.Chassis:
         - {Property: "asset_tag",    FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "AssetTag" }
         - {Property: "description",  FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Description" }
-        - {Property: "power_state",  FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "PowerState" }
+        - {Property: "power_state",  FQDD: "{FQDD}", Group: "ChassisPower", Index: "1", Name: "ChassisPowerStatus.1" }
         - {Property: "serial",       FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "SerialNumber" }
         - {Property: "part_number",  FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "PartNumber" }
         - {Property: "chassis_type", FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "ChassisType" }
@@ -173,14 +171,31 @@ mappings:
         - {Property: "indicator_led", FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "IndicatorLED"}
 
     Chassis/Slots:
-        - {Property: "config", FQDD: "System.Chassis.1", Group: "{group}", Index: "{index}", Name: "Config" }
-        - {Property: "contains", FQDD: "System.Chassis.1", Group: "{group}", Index: "{index}", Name: "Contains" }
-        - {Property: "name", FQDD: "System.Chassis.1", Group: "{group}", Index: "{index}", Name: "Name" }
-        - {Property: "occupied", FQDD: "System.Chassis.1", Group: "{group}", Index: "{index}", Name: "Occupied" }
-        - {Property: "slot_name", FQDD: "System.Chassis.1", Group: "{group}", Index: "{index}", Name: "SlotName" }
+        - {Property: "slot_config", FQDD: "System.Chassis.1", Group: "{GROUP}", Index: "{INDEX}", Name: "Config" }
+        - {Property: "slot_contains", FQDD: "System.Chassis.1", Group: "{GROUP}", Index: "{INDEX}", Name: "Contains" }
+        - {Property: "slot_name", FQDD: "System.Chassis.1", Group: "{GROUP}", Index: "{INDEX}", Name: "Name" }
+        - {Property: "slot_occupied", FQDD: "System.Chassis.1", Group: "{GROUP}", Index: "{INDEX}", Name: "Occupied" }
+        - {Property: "slot_slotname", FQDD: "System.Chassis.1", Group: "{GROUP}", Index: "{INDEX}", Name: "SlotName" }
+
+    Chassis/SlotConfigs:
+        - {Property: "columns", FQDD: "{ANY}", Group: "{GROUP}", Index: "{INDEX}", Name: "Columns" }
+        - {Property: "location", FQDD: "{ANY}", Group: "{GROUP}", Index: "{INDEX}", Name: "Location" }
+        - {Property: "name", FQDD: "{ANY}", Group: "{GROUP}", Index: "{INDEX}", Name: "Name" }
+        - {Property: "order", FQDD: "{ANY}", Group: "{GROUP}", Index: "{INDEX}", Name: "Order" }
+        - {Property: "orientation", FQDD: "{ANY}", Group: "{GROUP}", Index: "{INDEX}", Name: "Orientation" }
+        - {Property: "parentConfig", FQDD: "{ANY}", Group: "{GROUP}", Index: "{INDEX}", Name: "ParentConfig" }
+        - {Property: "rows", FQDD: "{ANY}", Group: "{GROUP}", Index: "{INDEX}", Name: "Rows" }
+        - {Property: "type", FQDD: "{ANY}", Group: "{GROUP}", Index: "{INDEX}", Name: "Type" }
 
     Chassis/System.Chassis/Power:
-        # no mappings for now: placeholder
+        - {Property: "capacity_watts", FQDD: "System.Chassis.1", Group: "ChassisPower", Index: "1", Name: "SystemInputMaxPowerCapacity" }
+        - {Property: "energy_consumption_start_time", FQDD: "System.Chassis.1", Group: "SystemPwrMonn", Index: "1", Name: "AccumulativeStartEnergy"}
+        - {Property: "min_peak_watts", FQDD:"System.Chassis.1", Group: "SystemPwrMon", Index: "1", Name: "MinPowerWatts" }
+        - {Property: "min_peak_watts_time", FQDD:"System.Chassis.1", Group: "SystemPwrMon", Index: "1", Name: "MinPowerTimeStr" }
+        - {Property: "max_peak_watts", FQDD:"Systme.Chassis.1", Group: "SystemPwrMon", Index: "1", Name: "PeakPowerWatts" }
+        - {Property: "max_peak_watts_time", FQDD:"Systme.Chassis.1", Group: "SystemPwrMon", Index: "1", Name: "PeakPowerTimeStr" }
+        - {Property: "limit_in_watts", FQDD: "System.Chassis.1", Group: "ChassisPower", Index: "1", Name: "PowerCapValue" }
+        - {Property: "cumulative_power_time", FQDD: "System.Chassis.1", Group: "SystemPwrMon", Index: "1", Name: "CumulativePowerStartTimeStr" } 
 
     Chassis/System.Chassis/Thermal:
         # no mappings for now: placeholder

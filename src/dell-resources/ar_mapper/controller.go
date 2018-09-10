@@ -34,20 +34,22 @@ type ARMappingController struct {
 	requestedFQDD  string
 	requestedGroup string
 	requestedIndex string
+	requestedName  string
 
 	eb eh.EventBus
 }
 
-func New(ctx context.Context, logger log.Logger, m *model.Model, name string, fqdd string, ch eh.CommandHandler, eb eh.EventBus) (*ARMappingController, error) {
+func New(ctx context.Context, logger log.Logger, m *model.Model, name string, inputs map[string]string, ch eh.CommandHandler, eb eh.EventBus) (*ARMappingController, error) {
 	c := &ARMappingController{
 		mappings:       []mapping{},
 		name:           name,
 		logger:         logger,
 		eb:             eb,
 		mdl:            m,
-		requestedFQDD:  fqdd,
-		requestedGroup: "",
-		requestedIndex: "",
+		requestedFQDD:  inputs["FQDD"],
+		requestedGroup: inputs["Group"],
+		requestedIndex: inputs["Index"],
+		requestedName:  inputs["Name"],
 	}
 
 	// stream processor for action events
@@ -59,7 +61,7 @@ func New(ctx context.Context, logger log.Logger, m *model.Model, name string, fq
 	go sp.RunForever(func(event eh.Event) {
 		fn := func(data *attributes.AttributeUpdatedData) {
 			for _, mapping := range c.mappings {
-				if data.FQDD != mapping.FQDD {
+				if data.Name != mapping.Name {
 					continue
 				}
 				if data.Group != mapping.Group {
@@ -68,8 +70,11 @@ func New(ctx context.Context, logger log.Logger, m *model.Model, name string, fq
 				if data.Index != mapping.Index {
 					continue
 				}
-				if data.Name != mapping.Name {
-					continue
+				// check for direct fqdd match first
+				if data.FQDD != mapping.FQDD {
+					if mapping.FQDD != "{ANY}" {
+						continue
+					}
 				}
 
 				logger.Info("Updating Model", "mapping", mapping, "property", mapping.Property, "data", data)
@@ -130,21 +135,26 @@ func (c *ARMappingController) ConfigChangedFn(ctx context.Context, cfg *viper.Vi
 	}
 	err := k.UnmarshalKey(c.name, &c.mappings)
 	if err != nil {
-		c.logger.Warn("unamrshal failed", "err", err)
+		c.logger.Warn("unmarshal failed", "err", err)
 	}
 
 	for i, m := range c.mappings {
 		if m.FQDD == "{FQDD}" {
 			c.mappings[i].FQDD = c.requestedFQDD
-			c.logger.Debug("Replacing {FQDD} with real fqdd", "fqdd", m.FQDD)
+			c.logger.Debug("Replacing {FQDD} with real fqdd", "fqdd", c.requestedFQDD)
 		}
 		if m.Group == "{GROUP}" {
 			c.mappings[i].Group = c.requestedGroup
-			c.logger.Debug("Replacing {GROUP} with real group", "group", m.Group)
+			c.logger.Debug("Replacing {GROUP} with real group", "group", c.requestedGroup)
 		}
 		if m.Index == "{INDEX}" {
 			c.mappings[i].Index = c.requestedIndex
-			c.logger.Debug("Replacing {INDEX} with real index", "index", m.Index)
+			c.logger.Debug("Replacing {INDEX} with real index", "index", c.requestedIndex)
+		}
+		if m.Name == "{NAME}" {
+			c.mappings[i].Name = c.requestedName
+			c.logger.Debug("Replacing {NAME} with real name", "name", c.requestedName)
+
 		}
 	}
 

@@ -13,9 +13,12 @@ import (
 	"github.com/superchalupa/go-redfish/src/ocp/view"
 	domain "github.com/superchalupa/go-redfish/src/redfishresource"
 
-	"github.com/spf13/viper"
-	"github.com/superchalupa/go-redfish/src/ocp/awesome_mapper"
 	"github.com/superchalupa/go-redfish/src/ocp/model"
+	//"github.com/superchalupa/go-redfish/src/ocp/awesome_mapper"
+	"github.com/spf13/viper"
+	"github.com/superchalupa/go-redfish/src/dell-resources/ar_mapper"
+
+	"github.com/superchalupa/go-redfish/src/dell-resources/component"
 )
 
 type viewer interface {
@@ -32,7 +35,7 @@ type SlotService struct {
 
 func New(ch eh.CommandHandler, eb eh.EventBus) *SlotService {
 	EventPublisher := eventpublisher.NewEventPublisher()
-	eb.AddHandler(eh.MatchAnyEventOf(SlotEvent), EventPublisher)
+	eb.AddHandler(eh.MatchAnyEventOf(component.ComponentEvent), EventPublisher)
 	EventWaiter := eventwaiter.NewEventWaiter(eventwaiter.SetName("Slot Event Service"))
 	EventPublisher.AddObserver(EventWaiter)
 	ss := make(map[string]interface{})
@@ -46,7 +49,7 @@ func New(ch eh.CommandHandler, eb eh.EventBus) *SlotService {
 }
 
 // StartService will create a model, view, and controller for the eventservice, then start a goroutine to publish events
-func (l *SlotService) StartService(ctx context.Context, logger log.Logger, rootView viewer, cfgMgr *viper.Viper) *view.View {
+func (l *SlotService) StartService(ctx context.Context, logger log.Logger, rootView viewer, cfgMgr *viper.Viper, updateFns []func(context.Context, *viper.Viper), ch eh.CommandHandler, eb eh.EventBus) *view.View {
 
 	slotUri := rootView.GetURI() + "/Slots"
 	slotLogger := logger.New("module", "slot")
@@ -59,21 +62,21 @@ func (l *SlotService) StartService(ctx context.Context, logger log.Logger, rootV
 	AddAggregate(ctx, slotLogger, slotView, rootView.GetUUID(), l.ch, l.eb)
 
 	// Start up goroutine that listens for log-specific events and creates log aggregates
-	l.manageSlots(ctx, slotLogger, slotUri, cfgMgr)
+	l.manageSlots(ctx, slotLogger, slotUri, cfgMgr, updateFns, ch, eb)
 
 	return slotView
 }
 
 // starts a background process to create new log entries
-func (l *SlotService) manageSlots(ctx context.Context, logger log.Logger, logUri string, cfgMgr *viper.Viper) {
+func (l *SlotService) manageSlots(ctx context.Context, logger log.Logger, logUri string, cfgMgr *viper.Viper, updateFns []func(context.Context, *viper.Viper), ch eh.CommandHandler, eb eh.EventBus) {
 
 	// set up listener for the delete event
 	// INFO: this listener will only ever get
 	listener, err := l.ew.Listen(ctx,
 		func(event eh.Event) bool {
 			t := event.EventType()
-			if t == SlotEvent {
-				if event.Data().(*SlotEventData).Id == "" {
+			if t == component.ComponentEvent {
+				if event.Data().(*component.ComponentEventData).Id == "" {
 					return false
 				}
 				return true
@@ -92,10 +95,14 @@ func (l *SlotService) manageSlots(ctx context.Context, logger log.Logger, logUri
 		for {
 			select {
 			case event := <-inbox:
-				logger.Info("Got internal redfish slot event", "event", event)
+				logger.Info("Got internal redfish component event", "event", event)
 				switch typ := event.EventType(); typ {
-				case SlotEvent:
-					SlotEntry := event.Data().(*SlotEventData)
+				case component.ComponentEvent:
+					SlotEntry := event.Data().(*component.ComponentEventData)
+					if SlotEntry.Type != "Slot" {
+						break
+					}
+
 					uuid := eh.NewUUID()
 					uri := fmt.Sprintf("%s/%s", logUri, SlotEntry.Id)
 					s := strings.Split(SlotEntry.Id, ".")
@@ -109,15 +116,42 @@ func (l *SlotService) manageSlots(ctx context.Context, logger log.Logger, logUri
 					}
 
 					slotModel := model.New()
-					awesome_mapper.New(ctx, logger, cfgMgr, slotModel, "slots", map[string]interface{}{"group": group, "index": index})
+					//awesome_mapper.New(ctx, logger, cfgMgr, slotModel, "slots", map[string]interface{}{"group": group, "index": index})
+
+					armapper, _ := ar_mapper.New(ctx, logger, slotModel, "Chassis/Slots", map[string]string{"Group":group, "Index":index, "FQDD":""}, ch, eb)
+					updateFns = append(updateFns, armapper.ConfigChangedFn)
+					armapper.ConfigChangedFn(context.Background(), cfgMgr)
 
 					slotView := view.New(
 						view.WithURI(uri),
 						view.WithModel("default", slotModel),
+						view.WithController("ar_mapper", armapper),
 					)
 
 					// update the UUID for this slot
 					l.slots[uri] = uuid
+
+					properties := map[string]interface{}{
+						"Config@meta":   slotView.Meta(view.PropGET("slot_config")),
+						"Contains@meta": slotView.Meta(view.PropGET("slot_contains")),
+						"Id":            SlotEntry.Id,
+						"Name@meta":     slotView.Meta(view.PropGET("slot_name")),
+						"Occupied@meta": slotView.Meta(view.PropGET("slot_occupied")),
+						"SlotName@meta": slotView.Meta(view.PropGET("slot_slotname")),
+					}
+
+					/*if strings.Contains(SlotEntry.Id, "SledSlot") {
+											if properties["Contains@meta"] != nil {
+											    sled_key := properties["Contains@meta"].(string)
+											    //properties["SledProfile"] = (sled_key)#Info.1#SledProfile <- How to do this?
+											    sledmapper, _ := ar_mapper.New(ctx, logger, slotModel, "Chassis/System.Modular", map[string]string{"Group":"", "Index":"", "FQDD":sled_key}, ch, eb)
+											    updateFns = append(updateFns, sledmapper.ConfigChangedFn)
+					                                                    slotView.ApplyOption(view.WithController("sled_mapper", sledmapper))
+											    properties["SledProfile"] = slotView.Meta(view.PropGET("sled_profile"))
+											} else {
+											    properties["SledProfile"] = nil
+											}
+										}*/
 
 					l.ch.HandleCommand(
 						ctx,
@@ -133,14 +167,8 @@ func (l *SlotService) manageSlots(ctx context.Context, logger log.Logger, logUri
 								"PATCH":  []string{"ConfigureManager"},
 								"DELETE": []string{"ConfigureManager"},
 							},
-							Properties: map[string]interface{}{
-								"Config@meta":   slotView.Meta(view.PropGET("config")),
-								"Contains@meta": slotView.Meta(view.PropGET("contains")),
-								"Id":            SlotEntry.Id,
-								"Name@meta":     slotView.Meta(view.PropGET("name")),
-								"Occupied@meta": slotView.Meta(view.PropGET("occupied")),
-								"SlotName@meta": slotView.Meta(view.PropGET("slot_name")),
-							}})
+							Properties: properties,
+						})
 				}
 
 			case <-ctx.Done():
