@@ -31,7 +31,7 @@ func AddAggregate(ctx context.Context, v *view.View, ch eh.CommandHandler) *view
 			},
 			Properties: map[string]interface{}{
 				"Id@meta":          v.Meta(view.PropGET("unique_name")),
-				"Name@meta":        v.Meta(view.PropGET("name")),
+				"Name@meta":        v.Meta(view.PropGET("name"), view.PropPATCH("name", "ar_mapper")),
 				"Description@meta": v.Meta(view.PropGET("description")),
 				"Model@meta":       v.Meta(view.PropGET("model"), view.PropPATCH("model", "ar_mapper")),
 			}})
