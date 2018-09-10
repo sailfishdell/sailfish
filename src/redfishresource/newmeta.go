@@ -3,19 +3,20 @@ package domain
 import (
 	"context"
 	"errors"
+	"fmt"
 	"reflect"
 	"sync"
-	//"fmt"
 )
 
 type processFn func(context.Context, RedfishResourceProperty, encOpts) (interface{}, error)
 
 type encOpts struct {
-	request map[string]interface{}
+	request interface{}
+	present bool
 	process processFn
 }
 
-func ProcessPATCH(ctx context.Context, prop RedfishResourceProperty, request map[string]interface{}) (results interface{}, err error) {
+func ProcessPATCH(ctx context.Context, prop RedfishResourceProperty, request interface{}) (results interface{}, err error) {
 	opts := encOpts{
 		request: request,
 		process: PATCHfn,
@@ -82,12 +83,22 @@ func parseRecursive(ctx context.Context, val reflect.Value, e encOpts) (reflect.
 		for _, k := range val.MapKeys() {
 			wg.Add(1)
 			go func(k reflect.Value) {
+				newEncOpts := encOpts{
+					request: e.request,
+					present: e.present,
+					process: e.process,
+				}
+
+				// if e.request has any data, pull out the matching mapval
+				requestBody, ok := newEncOpts.request.(map[string]interface{})
+				newEncOpts.present = ok
+				if newEncOpts.present {
+					newEncOpts.request, newEncOpts.present = requestBody[k.Interface().(string)]
+				}
+
 				mapVal := val.MapIndex(k).Interface()
-				parsed, err := parseRecursive(ctx, reflect.ValueOf(mapVal), e)
+				parsed, err := parseRecursive(ctx, reflect.ValueOf(mapVal), newEncOpts)
 				_ = err // supress unused var error
-				//if err != nil {
-				//fmt.Printf("map parseRecursive returned key: %s error: %s for val: %#v  parsed: %#v\n", k, err.Error(), mapVal, parsed)
-				//}
 
 				if !parsed.IsValid() {
 					// SetMapIndex will *delete* the indexed entry if you pass a nil!
@@ -115,12 +126,11 @@ func parseRecursive(ctx context.Context, val reflect.Value, e encOpts) (reflect.
 		for i := 0; i < val.Len(); i++ {
 			wg.Add(1)
 			go func(k int) {
+				//TODO: for PATCH, no clue how we map an array of body elements to an array here! Punting for now
+
 				sliceVal := val.Index(k)
 				parsed, err := parseRecursive(ctx, reflect.ValueOf(sliceVal.Interface()), e)
 				_ = err // supress unused var error
-				//if err != nil {
-				//fmt.Printf("slice parseRecursive returned error: %s for val: %#v\n", err.Error(), sliceVal)
-				//}
 				ret.Index(k).Set(parsed)
 				wg.Done()
 			}(i)
@@ -143,7 +153,7 @@ type CompatPropGetter interface {
 }
 
 type NewPropPatcher interface {
-	PropertyPatch(context.Context, RedfishResourceProperty, map[string]interface{}, map[string]interface{}) (interface{}, error)
+	PropertyPatch(context.Context, RedfishResourceProperty, interface{}, map[string]interface{}) (interface{}, error)
 }
 type CompatPropPatcher interface {
 	PropertyPatch(context.Context, *RedfishResourceAggregate, *RedfishResourceProperty, map[string]interface{})
@@ -180,28 +190,37 @@ func GETfn(ctx context.Context, rrp RedfishResourceProperty, opts encOpts) (inte
 }
 
 func PATCHfn(ctx context.Context, rrp RedfishResourceProperty, opts encOpts) (interface{}, error) {
+	ContextLogger(ctx, "property_process").Debug("PATCHfn", "opts", opts, "rrp", rrp)
+	if !opts.present {
+		ContextLogger(ctx, "property_process").Debug("NOT PRESENT")
+		return GETfn(ctx, rrp, opts)
+	}
+
 	meta_t, ok := rrp.Meta["PATCH"].(map[string]interface{})
 	if !ok {
-		return rrp.Value, errors.New("No PATCH")
+		ContextLogger(ctx, "property_process").Debug("No PATCH meta", "meta", meta_t)
+		return GETfn(ctx, rrp, opts)
 	}
 
 	pluginName, ok := meta_t["plugin"].(string)
 	if !ok {
-		return rrp.Value, errors.New("No plugin in PATCH")
+		ContextLogger(ctx, "property_process").Debug("No pluginname in patch meta", "meta", meta_t)
+		return GETfn(ctx, rrp, opts)
 	}
 
 	plugin, err := InstantiatePlugin(PluginType(pluginName))
 	if err != nil {
-		return rrp.Value, errors.New("No plugin named(" + pluginName + ") for PATCH")
+		ContextLogger(ctx, "property_process").Debug("No such pluginname", "pluginName", pluginName)
+		return GETfn(ctx, rrp, opts)
 	}
 
-	// ContextLogger(ctx, "property_process").Debug("getting property: PATCH", "value", fmt.Sprintf("%v", rrp.Value))
+	ContextLogger(ctx, "property_process").Debug("getting property: PATCH", "value", fmt.Sprintf("%v", rrp.Value), "plugin", plugin)
 	if plugin, ok := plugin.(NewPropPatcher); ok {
-		// defer ContextLogger(ctx, "property_process").Debug("AFTER getting property: PATCH - type assert success", "value", fmt.Sprintf("%v", rrp.Value))
+		defer ContextLogger(ctx, "property_process").Debug("AFTER getting property: PATCH - type assert success", "value", fmt.Sprintf("%v", rrp.Value))
 		return plugin.PropertyPatch(ctx, rrp, opts.request, meta_t)
 	}
 	if plugin, ok := plugin.(CompatPropPatcher); ok {
-		// defer ContextLogger(ctx, "property_process").Debug("AFTER getting property: PATCH - type assert success", "value", fmt.Sprintf("%v", rrp.Value))
+		defer ContextLogger(ctx, "property_process").Debug("AFTER getting property: PATCH - type assert success", "value", fmt.Sprintf("%v", rrp.Value))
 		tempRRP := &RedfishResourceProperty{Value: rrp.Value, Meta: rrp.Meta}
 		plugin.PropertyPatch(ctx, nil, tempRRP, meta_t)
 		return tempRRP.Value, nil
