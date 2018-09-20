@@ -14,6 +14,9 @@ import (
 	"github.com/superchalupa/sailfish/src/log"
 	"github.com/superchalupa/sailfish/src/ocp/event"
 	"github.com/superchalupa/sailfish/src/ocp/model"
+	domain "github.com/superchalupa/go-redfish/src/redfishresource"
+
+	"fmt"
 )
 
 type Evaluable interface {

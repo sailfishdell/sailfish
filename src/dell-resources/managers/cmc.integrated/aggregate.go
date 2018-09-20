@@ -31,8 +31,8 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 		//"Description@meta":         v.Meta(view.PropGET("description")),
 		"Description":              "BMC", //hardcoded in odatalite
 		"Model@meta":               v.Meta(view.PropGET("model")),
-		"DateTime@meta":            map[string]interface{}{"GET": map[string]interface{}{"plugin": "datetime"}}, //taken from local system clock (WORK ON THIS)
-		"DateTimeLocalOffset@meta": v.Meta(view.PropGET("timezone")),                                            //taken from local system clock
+		"DateTime@meta":            map[string]interface{}{"GET": map[string]interface{}{"plugin": "datetime"}},
+		"DateTimeLocalOffset@meta": map[string]interface{}{"GET": map[string]interface{}{"plugin": "datetimezone"}},
 		"FirmwareVersion@meta":     v.Meta(view.PropGET("firmware_version")),
 		"Links": map[string]interface{}{
 			//"ManagerForServers@meta": v.Meta(view.PropGET("bmc_manager_for_servers")), // not in odatalite json?
@@ -75,6 +75,12 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 			"CertificateService": map[string]interface{}{
 				"@odata.id": v.GetURI() + "/CertificateService",
 			},
+		},
+
+		"Status": map[string]interface{}{
+			"Health@meta": v.Meta(view.PropGET("health")),
+			"HealthRollup@meta": v.Meta(view.PropGET("health")),
+			"State@meta": v.Meta(view.PropGET("health_state")),
 		},
 
 		"Actions": map[string]interface{}{
@@ -267,29 +273,8 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 		},
 	}
 
-	// TODO: move this out
-	redundancy := map[string]interface{}{
-		"@odata.type": "#Redundancy.v1_0_2.Redundancy",
-		"RedundancySet": []interface{}{
-			map[string]interface{}{
-				"@odata.id": "/redfish/v1/Managers/CMC.Integrated.1",
-			},
-			map[string]interface{}{
-				"@odata.id": "/redfish/v1/Managers/CMC.Integrated.2",
-			},
-		},
-		"Name": "ManagerRedundancy",
-		"RedundancySet@odata.count": 2, //is supposed to be length of redundancy set
-		"@odata.id":                 "/redfish/v1/Managers/CMC.Integrated.1#Redundancy",
-		"@odata.context":            "/redfish/v1/$metadata#Redundancy.Redundancy",
-		"Mode@meta":                 v.Meta(view.PropGET("redundancy_mode")),
-		"MinNumNeeded@meta":         v.Meta(view.PropGET("redundancy_min")),
-		"MaxNumSupported@meta":      v.Meta(view.PropGET("redundancy_max")),
-	}
-	health.GetHealthFragment(v, "health", properties)
-	health.GetHealthFragment(v, "redundancy_health", redundancy)
-	properties["Redundancy"] = []interface{}{redundancy}
-	properties["Redundancy@odata.count"] = len(properties["Redundancy"].([]interface{}))
+	properties["Redundancy@meta"] = v.Meta(view.PropGET("redundancy_views"))
+	properties["Redundancy@odata.count@meta"] = v.Meta(view.PropGET("redundancy_views_count"))
 
 	ch.HandleCommand(
 		ctx,

@@ -51,9 +51,9 @@ func getViewFragment(v *view.View) map[string]interface{} {
 		"FirmwareVersion@meta":    v.Meta(view.PropGET("firmware_version")),
 
 		"Status": map[string]interface{}{
-			"HealthRollup@meta": v.Meta(view.GETProperty("psu_rollup"), view.GETModel("global_health")),
+			"HealthRollup@meta": v.Meta(view.PropGET("health")),
 			"State@meta":        v.Meta(view.PropGET("state")),
-			"Health@meta":       v.Meta(view.GETProperty("psu_rollup"), view.GETModel("global_health")),
+			"Health@meta":       v.Meta(view.PropGET("health")),
 		},
 
 		"Oem": map[string]interface{}{
