@@ -38,9 +38,9 @@ import (
 	"github.com/superchalupa/go-redfish/src/dell-resources/chassis/system.chassis/power/powertrends"
 
 	"github.com/superchalupa/go-redfish/src/dell-resources/certificateservices"
+	"github.com/superchalupa/go-redfish/src/dell-resources/chassis/system.chassis/subsystemhealth"
 	"github.com/superchalupa/go-redfish/src/dell-resources/chassis/system.chassis/thermal"
 	"github.com/superchalupa/go-redfish/src/dell-resources/chassis/system.chassis/thermal/fans"
-	"github.com/superchalupa/go-redfish/src/dell-resources/chassis/system.chassis/subsystemhealth"
 	"github.com/superchalupa/go-redfish/src/dell-resources/chassis/system.modular"
 	"github.com/superchalupa/go-redfish/src/dell-resources/logservices"
 	"github.com/superchalupa/go-redfish/src/dell-resources/logservices/faultlist"
@@ -450,7 +450,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 
 		pwrCtrl_views := []interface{}{}
 		pwrCtrlLogger := sysChasLogger.New("module", "Chassis/System.Chassis/Power/PowerControl")
-		
+
 		armapper = arService.NewMapping(pwrCtrlLogger, "Chassis/"+chasName+"/Power/PowerControl", "Chassis/System.Chassis/Power", pwrCtrlModel, map[string]string{"FQDD": chasName})
 
 		// Power consumption in kwh
@@ -492,11 +492,11 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		trend_views = append(trend_views, p)
 
 		histogram_views := []interface{}{}
-                for _, trend := range []string{
-                        "LastWeek", "LastDay", "LastHour",
-                } {
+		for _, trend := range []string{
+			"LastWeek", "LastDay", "LastHour",
+		} {
 			trendModel := model.New()
-			armapper := arService.NewMapping(pwrTrendLogger, "Chassis/"+chasName+"/Power/PowerTrends-1/"+trend, "Chassis/System.Chassis/Power", trendModel, map[string]string{"FQDD":chasName})
+			armapper := arService.NewMapping(pwrTrendLogger, "Chassis/"+chasName+"/Power/PowerTrends-1/"+trend, "Chassis/System.Chassis/Power", trendModel, map[string]string{"FQDD": chasName})
 			trendView := view.New(
 				view.WithURI(rootView.GetURI()+"/Chassis/"+chasName+"/Power/PowerTrends-1/"+trend),
 				view.WithModel("default", trendModel),
@@ -511,7 +511,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 
 		pwrTrendModel.ApplyOption(model.UpdateProperty("histograms", &domain.RedfishResourceProperty{Value: histogram_views}))
 		pwrTrendModel.ApplyOption(model.UpdateProperty("histograms_count", len(histogram_views)))
-
 
 		powerModel.ApplyOption(model.UpdateProperty("power_trend_views", &domain.RedfishResourceProperty{Value: trend_views}))
 		powerModel.ApplyOption(model.UpdateProperty("power_trend_count", len(trend_views)))
@@ -553,10 +552,10 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 				model.UpdateProperty("unique_name_attr", fanName+".Attributes"),
 				model.UpdateProperty("attributes", map[string]map[string]map[string]interface{}{}),
 			)
-			fwmapper := arService.NewMapping(fanLogger.New("module", "firmware/inventory"),  "firmware_Chassis/"+chasName+"/Thermal/Fan/"+fanName, "firmware/inventory", fanModel, map[string]string{"FQDD":fanName})
+			fwmapper := arService.NewMapping(fanLogger.New("module", "firmware/inventory"), "firmware_Chassis/"+chasName+"/Thermal/Fan/"+fanName, "firmware/inventory", fanModel, map[string]string{"FQDD": fanName})
 			// the controller is what updates the model when ar entries change,
 			// also handles patch from redfish
-			armapper := arService.NewMapping(fanLogger, "Chassis/"+chasName+"/Thermal/Fan/"+fanName, "Fans/Fan.Slot", fanModel, map[string]string{"FQDD":fanName})
+			armapper := arService.NewMapping(fanLogger, "Chassis/"+chasName+"/Thermal/Fan/"+fanName, "Fans/Fan.Slot", fanModel, map[string]string{"FQDD": fanName})
 
 			awesome_mapper.New(ctx, fanLogger, cfgMgr, fanModel, "fan", map[string]interface{}{"fqdd": "System.Chassis.1#" + fanName})
 
@@ -593,9 +592,9 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		thermalModel.ApplyOption(model.UpdateProperty("redundancy_views", &domain.RedfishResourceProperty{Value: redundancy_views}))
 		thermalModel.ApplyOption(model.UpdateProperty("redundancy_views_count", len(redundancy_views)))
 
-	        //*********************************************************************
-                // Create SubSystemHealth for System.Chassis.1
-                //*********************************************************************
+		//*********************************************************************
+		// Create SubSystemHealth for System.Chassis.1
+		//*********************************************************************
 		subSysHealths := map[string]string{}
 		subSysHealthsMap := map[string]interface{}{}
 
@@ -603,28 +602,26 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		subSysHealths["Battery"] = "OK"
 
 		subSysHealthLogger := sysChasLogger.New("module", "Chassis/System.Chassis/SubSystemHealth")
-                subSysHealthModel := model.New(
-		)
+		subSysHealthModel := model.New()
 
 		armapper = arService.NewMapping(subSysHealthLogger, "Chassis/"+chasName+"/SubSystemHealth", "Chassis/SubSystemHealths", subSysHealthModel, map[string]string{})
 
-                subSysHealthView := view.New(
-                        view.WithURI(rootView.GetURI()+"/Chassis/"+chasName+"/SubSystemHealth"),
-                        view.WithModel("default", subSysHealthModel),
+		subSysHealthView := view.New(
+			view.WithURI(rootView.GetURI()+"/Chassis/"+chasName+"/SubSystemHealth"),
+			view.WithModel("default", subSysHealthModel),
 			view.WithController("ar_mapper", armapper),
-                )
+		)
 
 		subsystemhealth.AddAggregate(ctx, subSysHealthLogger, subSysHealthView, ch, eb)
 
 		for key, value := range subSysHealths {
-                        subSysHealthsMap[key] = map[string]interface{}{
-                                "Status":  map[string]string{
-                                        "HealthRollup": value,
-                                },
-                        }
-                }
-                subSysHealthModel.ApplyOption(model.UpdateProperty("subsystems", &domain.RedfishResourceProperty{Value: subSysHealthsMap}))
-
+			subSysHealthsMap[key] = map[string]interface{}{
+				"Status": map[string]string{
+					"HealthRollup": value,
+				},
+			}
+		}
+		subSysHealthModel.ApplyOption(model.UpdateProperty("subsystems", &domain.RedfishResourceProperty{Value: subSysHealthsMap}))
 
 		/*  Slots */
 		//slotSvc.StartService(ctx, logger, sysChasVw, cfgMgr, arService)
@@ -655,10 +652,10 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			model.UpdateProperty("managed_by", managedBy),
 			model.UpdateProperty("managed_by_count", len(managedBy)),
 		)
-		fwmapper := arService.NewMapping(iomLogger.New("module", "firmware/inventory"), "firmware_Chassis/"+iomName, "firmware/inventory", iomModel, map[string]string{"FQDD":iomName})
+		fwmapper := arService.NewMapping(iomLogger.New("module", "firmware/inventory"), "firmware_Chassis/"+iomName, "firmware/inventory", iomModel, map[string]string{"FQDD": iomName})
 		// the controller is what updates the model when ar entries change,
 		// also handles patch from redfish
-		armapper := arService.NewMapping(iomLogger, "Chassis/"+iomName, "Chassis/IOM.Slot", iomModel, map[string]string{"FQDD":iomName})
+		armapper := arService.NewMapping(iomLogger, "Chassis/"+iomName, "Chassis/IOM.Slot", iomModel, map[string]string{"FQDD": iomName})
 
 		// This controller will populate 'attributes' property with AR entries matching this FQDD ('iomName')
 		ardumper, _ := attributes.NewController(ctx, iomModel, []string{iomName}, ch, eb)
@@ -707,7 +704,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			model.UpdateProperty("managed_by", managedBy),
 			model.UpdateProperty("managed_by_count", len(managedBy)),
 		)
-		fwmapper := arService.NewMapping(sledLogger.New("module", "firmware/inventory"), "firmware_Chassis/"+sledName, "firmware/inventory", sledModel, map[string]string{"FQDD":sledName})
+		fwmapper := arService.NewMapping(sledLogger.New("module", "firmware/inventory"), "firmware_Chassis/"+sledName, "firmware/inventory", sledModel, map[string]string{"FQDD": sledName})
 
 		armapper := arService.NewMapping(sledLogger, "Chassis/"+sledName, "Chassis/System.Modular", sledModel, map[string]string{"FQDD": sledName})
 

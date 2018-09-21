@@ -12,7 +12,6 @@ import (
 	log "github.com/superchalupa/go-redfish/src/log"
 
 	"regexp"
-
 )
 
 // CmdIDSetter interface is for commands that can take a given command id

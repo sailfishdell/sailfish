@@ -117,7 +117,7 @@ func (l *SlotConfigService) manageSlots(ctx context.Context, logger log.Logger, 
 					sCfgModel := model.New()
 					//awesome_mapper.New(ctx, logger, cfgMgr, sCfgModel, "slotconfig", map[string]interface{}{"group": group, "index": index})
 
-					armapper, _ := ar_mapper.New(ctx, logger, sCfgModel, "Chassis/SlotConfigs", map[string]string{"Group":group, "Index":index, "FQDD":""}, ch, eb)
+					armapper, _ := ar_mapper.New(ctx, logger, sCfgModel, "Chassis/SlotConfigs", map[string]string{"Group": group, "Index": index, "FQDD": ""}, ch, eb)
 					updateFns = append(updateFns, armapper.ConfigChangedFn)
 					armapper.ConfigChangedFn(context.Background(), cfgMgr)
 

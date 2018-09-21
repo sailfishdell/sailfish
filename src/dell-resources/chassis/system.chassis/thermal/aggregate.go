@@ -32,7 +32,7 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 				"Description":                   "Represents the properties for Temperature and Cooling",
 				"Fans@meta":                     v.Meta(view.PropGET("fan_views")),
 				"Fans@odata.count@meta":         v.Meta(view.PropGET("fan_views_count")),
-				"Temperatures@meta":             v.Meta(view.PropGET("thermal_views")), //TODO: fix this in ec.go
+				"Temperatures@meta":             v.Meta(view.PropGET("thermal_views")),       //TODO: fix this in ec.go
 				"Temperatures@odata.count@meta": v.Meta(view.PropGET("thermal_views_count")), //TODO
 				"Oem": map[string]interface{}{
 					"EID_674": map[string]interface{}{
@@ -50,7 +50,7 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 						},
 					},
 				},
-				"Redundancy@meta":             v.Meta(view.PropGET("redundancy_views")), //TODO: should something be here? this is empty in odatalite...
+				"Redundancy@meta":             v.Meta(view.PropGET("redundancy_views")),       //TODO: should something be here? this is empty in odatalite...
 				"Redundancy@odata.count@meta": v.Meta(view.PropGET("redundancy_views_count")), //TODO
 			}})
 }
