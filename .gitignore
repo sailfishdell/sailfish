@@ -10,3 +10,4 @@ server.key
 # ignore artifacts from running locally
 ec-redfish
 http-access.log
+cscope.out
