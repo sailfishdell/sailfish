@@ -140,11 +140,11 @@ func CreateViewAction(
 
 		// only send out our pre-canned response if no handler exists (above), or if handler sets the event status code to 0
 		// for example, if data pump is going to directly send an httpcmdprocessed.
-        	if handler != nil {
-		    handler(ctx, event, eventData)
-        	} else {
+		if handler != nil {
+			handler(ctx, event, eventData)
+		} else {
 			logger.Warn("UNHANDLED action event: no function handler set up for this event.", "event", event)
-        	}
+		}
 		if eventData.StatusCode != 0 {
 			responseEvent := eh.NewEvent(domain.HTTPCmdProcessed, eventData, time.Now())
 			go eb.PublishEvent(ctx, responseEvent)

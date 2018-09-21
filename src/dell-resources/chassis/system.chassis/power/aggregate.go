@@ -26,7 +26,7 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 		"PowerControl@meta":              v.Meta(view.PropGET("power_control_views")),
 		"Oem": map[string]interface{}{
 			"OemPower": map[string]interface{}{
-				"PowerTrends@meta": v.Meta(view.PropGET("power_trend_views")),
+				"PowerTrends@meta":             v.Meta(view.PropGET("power_trend_views")),
 				"PowerTrends@odata.count@meta": v.Meta(view.PropGET("power_trend_count")), // gets # of elements in power trend array instead of # of keys in first power trend array element
 			},
 			"EID_674": map[string]interface{}{

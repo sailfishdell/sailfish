@@ -35,27 +35,26 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, member b
 // this view fragment can be attached elsewhere in the tree
 func getViewFragment(v *view.View, member bool) map[string]interface{} {
 	properties := map[string]interface{}{
-		"@odata.context":          "/redfish/v1/$metadata#Power.PowerSystem.Chassis.1/Power/$entity",
-		"@odata.id":               v.GetURI(),
-		"Name":                    "System Power",
-		"MemberId":                "PowerHistogram",
+		"@odata.context": "/redfish/v1/$metadata#Power.PowerSystem.Chassis.1/Power/$entity",
+		"@odata.id":      v.GetURI(),
+		"Name":           "System Power",
+		"MemberId":       "PowerHistogram",
 	}
 
 	if member == true {
 		properties["Name"] = "System Power History"
 		properties["@odata.type"] = "#DellPower.v1_0_0.DellPowerTrend"
-		properties["HistoryAverageWatts@meta"] = v.Meta(view.PropGET("history_average_watts")) //TODO
-		properties["HistoryMaxWatts@meta"] = v.Meta(view.PropGET("history_max_watts")) //TODO
+		properties["HistoryAverageWatts@meta"] = v.Meta(view.PropGET("history_average_watts"))  //TODO
+		properties["HistoryMaxWatts@meta"] = v.Meta(view.PropGET("history_max_watts"))          //TODO
 		properties["HistoryMaxWattsTime@meta"] = v.Meta(view.PropGET("history_max_watts_time")) //TODO
-		properties["HistoryMinWatts@meta"] = v.Meta(view.PropGET("history_min_watts")) //TODO
+		properties["HistoryMinWatts@meta"] = v.Meta(view.PropGET("history_min_watts"))          //TODO
 		properties["HistoryMinWattsTime@meta"] = v.Meta(view.PropGET("history_min_watts_time")) //TODO
 	} else {
 		properties["Name"] = "System Power"
 		properties["@odata.type"] = "#DellPower.v1_0_0.DellPowerTrends"
 		properties["histograms@meta"] = v.Meta(view.PropGET("histograms"))
-		properties["histograms@odata.count@meta"] = v.Meta(view.PropGET("histograms_count")) 
+		properties["histograms@odata.count@meta"] = v.Meta(view.PropGET("histograms_count"))
 	}
 
 	return properties
 }
-

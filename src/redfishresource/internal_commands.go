@@ -283,6 +283,7 @@ func (c *InjectEvent) CommandType() eh.CommandType {
 }
 
 var injectChan chan eh.Event
+
 func StartInjectService(eb eh.EventBus) {
 	injectChan = make(chan eh.Event, 1000)
 	go func() {
