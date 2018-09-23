@@ -60,5 +60,9 @@ void go_thread_locking_callback(int mode, int n, const char *file,
 		pthread_mutex_unlock(&goopenssl_locks[n]);
 	}
 }
+
+unsigned long go_thread_id_callback(void) {
+    return (unsigned long)pthread_self();
+}
 */
 import "C"

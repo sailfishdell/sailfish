@@ -17,7 +17,7 @@ import (
 	eventpublisher "github.com/looplab/eventhorizon/publisher/local"
 	repo "github.com/looplab/eventhorizon/repo/memory"
 
-	"github.com/superchalupa/go-redfish/src/eventwaiter"
+	"github.com/superchalupa/sailfish/src/eventwaiter"
 )
 
 type waiter interface {

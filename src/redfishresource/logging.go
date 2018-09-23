@@ -4,7 +4,7 @@ import (
 	"context"
 
 	eh "github.com/looplab/eventhorizon"
-	"github.com/superchalupa/go-redfish/src/log"
+	"github.com/superchalupa/sailfish/src/log"
 )
 
 type requestIDType int

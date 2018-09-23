@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	eh "github.com/looplab/eventhorizon"
-	log "github.com/superchalupa/go-redfish/src/log"
+	log "github.com/superchalupa/sailfish/src/log"
 
 	"regexp"
 )

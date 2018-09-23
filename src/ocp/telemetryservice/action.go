@@ -8,9 +8,9 @@ import (
 
 	eh "github.com/looplab/eventhorizon"
 
-	ah "github.com/superchalupa/go-redfish/src/actionhandler"
-	"github.com/superchalupa/go-redfish/src/ocp/eventservice"
-	domain "github.com/superchalupa/go-redfish/src/redfishresource"
+	ah "github.com/superchalupa/sailfish/src/actionhandler"
+	"github.com/superchalupa/sailfish/src/ocp/eventservice"
+	domain "github.com/superchalupa/sailfish/src/redfishresource"
 )
 
 func MakeSubmitTestMetricReport(eb eh.EventBus) func(context.Context, eh.Event, *domain.HTTPCmdProcessedData) error {

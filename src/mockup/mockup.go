@@ -10,17 +10,17 @@ import (
 
 	eh "github.com/looplab/eventhorizon"
 
-	"github.com/superchalupa/go-redfish/src/actionhandler"
-	"github.com/superchalupa/go-redfish/src/eventwaiter"
-	"github.com/superchalupa/go-redfish/src/log"
-	"github.com/superchalupa/go-redfish/src/ocp/event"
-	"github.com/superchalupa/go-redfish/src/ocp/eventservice"
-	"github.com/superchalupa/go-redfish/src/ocp/model"
-	"github.com/superchalupa/go-redfish/src/ocp/root"
-	"github.com/superchalupa/go-redfish/src/ocp/session"
-	"github.com/superchalupa/go-redfish/src/ocp/stdcollections"
-	"github.com/superchalupa/go-redfish/src/ocp/telemetryservice"
-	"github.com/superchalupa/go-redfish/src/ocp/view"
+	"github.com/superchalupa/sailfish/src/actionhandler"
+	"github.com/superchalupa/sailfish/src/eventwaiter"
+	"github.com/superchalupa/sailfish/src/log"
+	"github.com/superchalupa/sailfish/src/ocp/event"
+	"github.com/superchalupa/sailfish/src/ocp/eventservice"
+	"github.com/superchalupa/sailfish/src/ocp/model"
+	"github.com/superchalupa/sailfish/src/ocp/root"
+	"github.com/superchalupa/sailfish/src/ocp/session"
+	"github.com/superchalupa/sailfish/src/ocp/stdcollections"
+	"github.com/superchalupa/sailfish/src/ocp/telemetryservice"
+	"github.com/superchalupa/sailfish/src/ocp/view"
 )
 
 type ocp struct {

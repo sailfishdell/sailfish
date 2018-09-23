@@ -6,8 +6,8 @@ import (
 	"net/http"
 
 	eh "github.com/looplab/eventhorizon"
-	log "github.com/superchalupa/go-redfish/src/log"
-	domain "github.com/superchalupa/go-redfish/src/redfishresource"
+	log "github.com/superchalupa/sailfish/src/log"
+	domain "github.com/superchalupa/sailfish/src/redfishresource"
 )
 
 // NewSSEHandler constructs a new SSEHandler with the given username and privileges.

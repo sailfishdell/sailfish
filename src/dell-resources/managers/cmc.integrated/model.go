@@ -1,7 +1,7 @@
 package cmc_integrated
 
 import (
-	"github.com/superchalupa/go-redfish/src/ocp/model"
+	"github.com/superchalupa/sailfish/src/ocp/model"
 )
 
 func New(options ...model.Option) (*model.Model, error) {

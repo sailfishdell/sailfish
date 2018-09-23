@@ -33,9 +33,69 @@
  */
 extern int go_init_locks();
 extern void go_thread_locking_callback(int, int, const char*, int);
+extern unsigned long go_thread_id_callback();
 static int go_write_bio_puts(BIO *b, const char *str) {
 	return go_write_bio_write(b, (char*)str, (int)strlen(str));
 }
+
+/*
+ ************************************************
+ * v1.1.1 and later implementation
+ ************************************************
+ */
+#if OPENSSL_VERSION_NUMBER >= 0x1010100fL
+
+const int X_ED25519_SUPPORT = 1;
+int X_EVP_PKEY_ED25519 = EVP_PKEY_ED25519;
+
+int X_EVP_DigestSignInit(EVP_MD_CTX *ctx, EVP_PKEY_CTX **pctx,
+		const EVP_MD *type, ENGINE *e, EVP_PKEY *pkey){
+	return EVP_DigestSignInit(ctx, pctx, type, e, pkey);
+}
+
+int X_EVP_DigestSign(EVP_MD_CTX *ctx, unsigned char *sigret,
+		size_t *siglen, const unsigned char *tbs, size_t tbslen) {
+	return EVP_DigestSign(ctx, sigret, siglen, tbs, tbslen);
+}
+
+
+int X_EVP_DigestVerifyInit(EVP_MD_CTX *ctx, EVP_PKEY_CTX **pctx,
+		const EVP_MD *type, ENGINE *e, EVP_PKEY *pkey){
+	return EVP_DigestVerifyInit(ctx, pctx, type, e, pkey);
+}
+
+int X_EVP_DigestVerify(EVP_MD_CTX *ctx, const unsigned char *sigret,
+		size_t siglen, const unsigned char *tbs, size_t tbslen){
+	return EVP_DigestVerify(ctx, sigret, siglen, tbs, tbslen);
+}
+
+#else
+
+const int X_ED25519_SUPPORT = 0;
+int X_EVP_PKEY_ED25519 = EVP_PKEY_NONE;
+
+int X_EVP_DigestSignInit(EVP_MD_CTX *ctx, EVP_PKEY_CTX **pctx,
+		const EVP_MD *type, ENGINE *e, EVP_PKEY *pkey){
+	return 0;
+}
+
+int X_EVP_DigestSign(EVP_MD_CTX *ctx, unsigned char *sigret,
+		size_t *siglen, const unsigned char *tbs, size_t tbslen) {
+	return 0;
+}
+
+
+int X_EVP_DigestVerifyInit(EVP_MD_CTX *ctx, EVP_PKEY_CTX **pctx,
+		const EVP_MD *type, ENGINE *e, EVP_PKEY *pkey){
+	return 0;
+}
+
+int X_EVP_DigestVerify(EVP_MD_CTX *ctx, const unsigned char *sigret,
+		size_t siglen, const unsigned char *tbs, size_t tbslen){
+	return 0;
+}
+
+#endif
 
 /*
  ************************************************
@@ -162,8 +222,6 @@ int X_PEM_write_bio_PrivateKey_traditional(BIO *bio, EVP_PKEY *key, const EVP_CI
 
 #endif
 
-
-
 /*
  ************************************************
  * v1.0.X implementation
@@ -254,11 +312,9 @@ const EVP_MD *X_EVP_dss1() {
 	return EVP_dss1();
 }
 
-#if 0
 const EVP_MD *X_EVP_sha() {
 	return EVP_sha();
 }
-#endif
 
 int X_EVP_CIPHER_CTX_encrypting(const EVP_CIPHER_CTX *ctx) {
 	return ctx->encrypt;
@@ -310,8 +366,6 @@ int X_PEM_write_bio_PrivateKey_traditional(BIO *bio, EVP_PKEY *key, const EVP_CI
 
 #endif
 
-
-
 /*
  ************************************************
  * common implementation
@@ -327,14 +381,13 @@ int X_shim_init() {
 	SSL_library_init();
 	OpenSSL_add_all_algorithms();
 	//
-	// Set up OPENSSL thread safety callbacks.  We only set the locking
-	// callback because the default id callback implementation is good
-	// enough for us.
+	// Set up OPENSSL thread safety callbacks.
 	rc = go_init_locks();
 	if (rc != 0) {
 		return rc;
 	}
 	CRYPTO_set_locking_callback(go_thread_locking_callback);
+	CRYPTO_set_id_callback(go_thread_id_callback);
 
 	rc = x_bio_init_methods();
 	if (rc != 0) {
@@ -549,6 +602,10 @@ const EVP_MD *X_EVP_md5() {
 	return EVP_md5();
 }
 
+const EVP_MD *X_EVP_md4() {
+	return EVP_md4();
+}
+
 const EVP_MD *X_EVP_ripemd160() {
 	return EVP_ripemd160();
 }
@@ -666,6 +723,12 @@ int X_EVP_CIPHER_CTX_iv_length(EVP_CIPHER_CTX *ctx) {
     return EVP_CIPHER_CTX_iv_length(ctx);
 }
 
+void X_EVP_CIPHER_CTX_set_padding(EVP_CIPHER_CTX *ctx, int padding) {
+    //openssl always returns 1 for set_padding
+    //hence return value is not checked
+    EVP_CIPHER_CTX_set_padding(ctx, padding);
+}
+
 const EVP_CIPHER *X_EVP_CIPHER_CTX_cipher(EVP_CIPHER_CTX *ctx) {
     return EVP_CIPHER_CTX_cipher(ctx);
 }
@@ -696,4 +759,12 @@ int X_sk_X509_num(STACK_OF(X509) *sk) {
 
 X509 *X_sk_X509_value(STACK_OF(X509)* sk, int i) {
    return sk_X509_value(sk, i);
+}
+
+long X_X509_get_version(const X509 *x) {
+	return X509_get_version(x);
+}
+
+int X_X509_set_version(X509 *x, long version) {
+	return X509_set_version(x, version);
 }

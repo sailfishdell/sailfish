@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"os/exec"
 
-	domain "github.com/superchalupa/go-redfish/src/redfishresource"
+	domain "github.com/superchalupa/sailfish/src/redfishresource"
 )
 
 var (

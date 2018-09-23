@@ -5,10 +5,10 @@ import (
 
 	eh "github.com/looplab/eventhorizon"
 
-	ah "github.com/superchalupa/go-redfish/src/actionhandler"
-	"github.com/superchalupa/go-redfish/src/log"
-	"github.com/superchalupa/go-redfish/src/ocp/model"
-	"github.com/superchalupa/go-redfish/src/ocp/view"
+	ah "github.com/superchalupa/sailfish/src/actionhandler"
+	"github.com/superchalupa/sailfish/src/log"
+	"github.com/superchalupa/sailfish/src/ocp/model"
+	"github.com/superchalupa/sailfish/src/ocp/view"
 )
 
 type viewer interface {

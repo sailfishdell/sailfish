@@ -4,7 +4,7 @@ import (
 	"context"
 
 	eh "github.com/looplab/eventhorizon"
-	domain "github.com/superchalupa/go-redfish/src/redfishresource"
+	domain "github.com/superchalupa/sailfish/src/redfishresource"
 )
 
 func AddAggregate(ctx context.Context, rootID eh.UUID, rootURI string, ch eh.CommandHandler) {

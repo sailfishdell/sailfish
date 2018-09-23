@@ -10,10 +10,10 @@ import (
 	eventpublisher "github.com/looplab/eventhorizon/publisher/local"
 	"github.com/spf13/viper"
 
-	"github.com/superchalupa/go-redfish/src/mockup"
+	"github.com/superchalupa/sailfish/src/mockup"
 
-	"github.com/superchalupa/go-redfish/src/eventwaiter"
-	log "github.com/superchalupa/go-redfish/src/log"
+	"github.com/superchalupa/sailfish/src/eventwaiter"
+	log "github.com/superchalupa/sailfish/src/log"
 )
 
 func init() {

@@ -16,7 +16,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/superchalupa/go-redfish/src/log"
+	"github.com/superchalupa/sailfish/src/log"
 )
 
 // Option is the type for functional options to the constructor NewCert or to reset runtime options in a cert via ApplyOption()

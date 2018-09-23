@@ -6,7 +6,7 @@ import (
 
 	log "github.com/inconshreveable/log15"
 	"github.com/spf13/viper"
-	mylog "github.com/superchalupa/go-redfish/src/log"
+	mylog "github.com/superchalupa/sailfish/src/log"
 )
 
 // MyLogger is a centralized point for application logging that we will pass throughout the system

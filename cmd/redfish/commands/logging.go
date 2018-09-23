@@ -2,7 +2,7 @@ package commands
 
 import (
 	"github.com/spf13/cobra"
-	adapt "github.com/superchalupa/go-redfish/src/log15adapter"
+	adapt "github.com/superchalupa/sailfish/src/log15adapter"
 )
 
 var logCfgFile string

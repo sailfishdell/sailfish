@@ -3,8 +3,8 @@ package view
 import (
 	"strconv"
 
-	"github.com/superchalupa/go-redfish/src/ocp/model"
-	domain "github.com/superchalupa/go-redfish/src/redfishresource"
+	"github.com/superchalupa/sailfish/src/ocp/model"
+	domain "github.com/superchalupa/sailfish/src/redfishresource"
 )
 
 func WithURI(name string) Option {

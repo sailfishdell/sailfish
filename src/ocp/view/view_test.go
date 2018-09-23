@@ -5,9 +5,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"testing"
 
-	"github.com/superchalupa/go-redfish/src/log15adapter"
-	"github.com/superchalupa/go-redfish/src/ocp/model"
-	domain "github.com/superchalupa/go-redfish/src/redfishresource"
+	"github.com/superchalupa/sailfish/src/log15adapter"
+	"github.com/superchalupa/sailfish/src/ocp/model"
+	domain "github.com/superchalupa/sailfish/src/redfishresource"
 )
 
 func init() {

@@ -5,9 +5,9 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/superchalupa/go-redfish/src/log"
-	"github.com/superchalupa/go-redfish/src/ocp/model"
-	domain "github.com/superchalupa/go-redfish/src/redfishresource"
+	"github.com/superchalupa/sailfish/src/log"
+	"github.com/superchalupa/sailfish/src/ocp/model"
+	domain "github.com/superchalupa/sailfish/src/redfishresource"
 )
 
 // already locked at aggregate level when we get here

@@ -3,10 +3,10 @@ package slot
 import (
 	"context"
 
-	"github.com/superchalupa/go-redfish/src/ocp/view"
+	"github.com/superchalupa/sailfish/src/ocp/view"
 
-	"github.com/superchalupa/go-redfish/src/log"
-	domain "github.com/superchalupa/go-redfish/src/redfishresource"
+	"github.com/superchalupa/sailfish/src/log"
+	domain "github.com/superchalupa/sailfish/src/redfishresource"
 
 	eh "github.com/looplab/eventhorizon"
 )

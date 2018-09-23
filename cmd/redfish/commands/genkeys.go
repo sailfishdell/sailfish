@@ -21,8 +21,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/superchalupa/go-redfish/src/log"
-	"github.com/superchalupa/go-redfish/src/tlscert"
+	"github.com/superchalupa/sailfish/src/log"
+	"github.com/superchalupa/sailfish/src/tlscert"
 )
 
 func init() {

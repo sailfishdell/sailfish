@@ -8,11 +8,11 @@ import (
 	eh "github.com/looplab/eventhorizon"
 	eventpublisher "github.com/looplab/eventhorizon/publisher/local"
 
-	"github.com/superchalupa/go-redfish/src/eventwaiter"
-	"github.com/superchalupa/go-redfish/src/log"
-	"github.com/superchalupa/go-redfish/src/ocp/model"
-	"github.com/superchalupa/go-redfish/src/ocp/view"
-	domain "github.com/superchalupa/go-redfish/src/redfishresource"
+	"github.com/superchalupa/sailfish/src/eventwaiter"
+	"github.com/superchalupa/sailfish/src/log"
+	"github.com/superchalupa/sailfish/src/ocp/model"
+	"github.com/superchalupa/sailfish/src/ocp/view"
+	domain "github.com/superchalupa/sailfish/src/redfishresource"
 )
 
 const defaultMaxEventsToQueue = 50

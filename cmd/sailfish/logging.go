@@ -12,7 +12,7 @@ import (
 	"github.com/gorilla/mux"
 	log "github.com/inconshreveable/log15"
 	"github.com/spf13/viper"
-	mylog "github.com/superchalupa/go-redfish/src/log"
+	mylog "github.com/superchalupa/sailfish/src/log"
 
 	eh "github.com/looplab/eventhorizon"
 )

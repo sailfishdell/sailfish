@@ -1,7 +1,7 @@
 package attributes
 
 import (
-	"github.com/superchalupa/go-redfish/src/ocp/model"
+	"github.com/superchalupa/sailfish/src/ocp/model"
 )
 
 // we can attributes to any model
