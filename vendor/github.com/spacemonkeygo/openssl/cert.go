@@ -31,6 +31,7 @@ type EVP_MD int
 const (
 	EVP_NULL      EVP_MD = iota
 	EVP_MD5       EVP_MD = iota
+	EVP_MD4       EVP_MD = iota
 	EVP_SHA       EVP_MD = iota
 	EVP_SHA1      EVP_MD = iota
 	EVP_DSS       EVP_MD = iota
@@ -41,6 +42,16 @@ const (
 	EVP_SHA256    EVP_MD = iota
 	EVP_SHA384    EVP_MD = iota
 	EVP_SHA512    EVP_MD = iota
+)
+
+// X509_Version represents a version on an x509 certificate.
+type X509_Version int
+
+// Specify constants for x509 versions because the standard states that they
+// are represented internally as one lower than the common version name.
+const (
+	X509_V1 X509_Version = 0
+	X509_V3 X509_Version = 2
 )
 
 type Certificate struct {
@@ -277,8 +288,8 @@ func getDigestFunction(digest EVP_MD) (md *C.EVP_MD) {
 		md = C.X_EVP_md_null()
 	case EVP_MD5:
 		md = C.X_EVP_md5()
-//	case EVP_SHA:
-//		md = C.X_EVP_sha()
+	case EVP_SHA:
+		md = C.X_EVP_sha()
 	case EVP_SHA1:
 		md = C.X_EVP_sha1()
 	case EVP_DSS:
@@ -387,4 +398,18 @@ func (c *Certificate) GetSerialNumberHex() (serial string) {
 	C.BN_free(bignum)
 	C.X_OPENSSL_free(unsafe.Pointer(hex))
 	return
+}
+
+// GetVersion returns the X509 version of the certificate.
+func (c *Certificate) GetVersion() X509_Version {
+	return X509_Version(C.X_X509_get_version(c.x))
+}
+
+// SetVersion sets the X509 version of the certificate.
+func (c *Certificate) SetVersion(version X509_Version) error {
+	cvers := C.long(version)
+	if C.X_X509_set_version(c.x, cvers) != 1 {
+		return errors.New("failed to set certificate version")
+	}
+	return nil
 }

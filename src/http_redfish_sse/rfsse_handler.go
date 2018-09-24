@@ -7,9 +7,9 @@ import (
 	"net/http"
 
 	eh "github.com/looplab/eventhorizon"
-	log "github.com/superchalupa/go-redfish/src/log"
-	"github.com/superchalupa/go-redfish/src/ocp/eventservice"
-	domain "github.com/superchalupa/go-redfish/src/redfishresource"
+	log "github.com/superchalupa/sailfish/src/log"
+	"github.com/superchalupa/sailfish/src/ocp/eventservice"
+	domain "github.com/superchalupa/sailfish/src/redfishresource"
 )
 
 // NewRedfishSSEHandler constructs a new RedfishSSEHandler with the given username and privileges.

@@ -9,11 +9,11 @@ import (
 
 	eh "github.com/looplab/eventhorizon"
 
-	domain "github.com/superchalupa/go-redfish/src/redfishresource"
+	domain "github.com/superchalupa/sailfish/src/redfishresource"
 
-	"github.com/superchalupa/go-redfish/src/log"
-	"github.com/superchalupa/go-redfish/src/ocp/event"
-	"github.com/superchalupa/go-redfish/src/ocp/model"
+	"github.com/superchalupa/sailfish/src/log"
+	"github.com/superchalupa/sailfish/src/ocp/event"
+	"github.com/superchalupa/sailfish/src/ocp/model"
 )
 
 type Evaluable interface {

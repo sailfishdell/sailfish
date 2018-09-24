@@ -23,23 +23,23 @@ import (
 
 	eh "github.com/looplab/eventhorizon"
 
-	log "github.com/superchalupa/go-redfish/src/log"
+	log "github.com/superchalupa/sailfish/src/log"
 
-	"github.com/superchalupa/go-redfish/src/http_redfish_sse"
-	"github.com/superchalupa/go-redfish/src/http_sse"
-	domain "github.com/superchalupa/go-redfish/src/redfishresource"
+	"github.com/superchalupa/sailfish/src/http_redfish_sse"
+	"github.com/superchalupa/sailfish/src/http_sse"
+	domain "github.com/superchalupa/sailfish/src/redfishresource"
 
 	// cert gen
-	"github.com/superchalupa/go-redfish/src/tlscert"
+	"github.com/superchalupa/sailfish/src/tlscert"
 
 	// load plugins (auto-register)
-	_ "github.com/superchalupa/go-redfish/src/stdmeta"
+	_ "github.com/superchalupa/sailfish/src/stdmeta"
 
 	// load idrac plugins
 
-	"github.com/superchalupa/go-redfish/src/dell-resources/dellauth"
-	"github.com/superchalupa/go-redfish/src/ocp/basicauth"
-	"github.com/superchalupa/go-redfish/src/ocp/session"
+	"github.com/superchalupa/sailfish/src/dell-resources/dellauth"
+	"github.com/superchalupa/sailfish/src/ocp/basicauth"
+	"github.com/superchalupa/sailfish/src/ocp/session"
 )
 
 type implementationFn func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *sync.Mutex, ch eh.CommandHandler, eb eh.EventBus) Implementation

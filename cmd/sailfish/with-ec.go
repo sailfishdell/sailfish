@@ -9,9 +9,9 @@ import (
 	eh "github.com/looplab/eventhorizon"
 	"github.com/spf13/viper"
 
-	"github.com/superchalupa/go-redfish/src/dell-ec"
+	"github.com/superchalupa/sailfish/src/dell-ec"
 
-	log "github.com/superchalupa/go-redfish/src/log"
+	log "github.com/superchalupa/sailfish/src/log"
 )
 
 func init() {

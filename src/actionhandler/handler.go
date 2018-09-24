@@ -8,10 +8,10 @@ import (
 
 	eh "github.com/looplab/eventhorizon"
 
-	"github.com/superchalupa/go-redfish/src/log"
-	"github.com/superchalupa/go-redfish/src/ocp/event"
-	"github.com/superchalupa/go-redfish/src/ocp/view"
-	domain "github.com/superchalupa/go-redfish/src/redfishresource"
+	"github.com/superchalupa/sailfish/src/log"
+	"github.com/superchalupa/sailfish/src/ocp/event"
+	"github.com/superchalupa/sailfish/src/ocp/view"
+	domain "github.com/superchalupa/sailfish/src/redfishresource"
 )
 
 func Setup(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus) {

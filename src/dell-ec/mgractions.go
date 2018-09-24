@@ -8,9 +8,9 @@ import (
 	eh "github.com/looplab/eventhorizon"
 	eventpublisher "github.com/looplab/eventhorizon/publisher/local"
 
-	ah "github.com/superchalupa/go-redfish/src/actionhandler"
-	"github.com/superchalupa/go-redfish/src/eventwaiter"
-	domain "github.com/superchalupa/go-redfish/src/redfishresource"
+	ah "github.com/superchalupa/sailfish/src/actionhandler"
+	"github.com/superchalupa/sailfish/src/eventwaiter"
+	domain "github.com/superchalupa/sailfish/src/redfishresource"
 )
 
 // TODO: need a logger

@@ -8,9 +8,9 @@ import (
 	"github.com/Knetic/govaluate"
 	eh "github.com/looplab/eventhorizon"
 	eventpublisher "github.com/looplab/eventhorizon/publisher/local"
-	"github.com/superchalupa/go-redfish/src/log"
+	"github.com/superchalupa/sailfish/src/log"
 
-	"github.com/superchalupa/go-redfish/src/eventwaiter"
+	"github.com/superchalupa/sailfish/src/eventwaiter"
 )
 
 type Options func(*privateStateStructure) error

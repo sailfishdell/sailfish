@@ -5,8 +5,8 @@ import (
 	"sync"
 
 	eh "github.com/looplab/eventhorizon"
-	"github.com/superchalupa/go-redfish/src/ocp/model"
-	domain "github.com/superchalupa/go-redfish/src/redfishresource"
+	"github.com/superchalupa/sailfish/src/ocp/model"
+	domain "github.com/superchalupa/sailfish/src/redfishresource"
 )
 
 type Option func(*View) error

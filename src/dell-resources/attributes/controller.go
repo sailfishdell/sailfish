@@ -6,9 +6,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/superchalupa/go-redfish/src/log"
-	"github.com/superchalupa/go-redfish/src/ocp/event"
-	"github.com/superchalupa/go-redfish/src/ocp/model"
+	"github.com/superchalupa/sailfish/src/log"
+	"github.com/superchalupa/sailfish/src/ocp/event"
+	"github.com/superchalupa/sailfish/src/ocp/model"
 
 	eh "github.com/looplab/eventhorizon"
 )

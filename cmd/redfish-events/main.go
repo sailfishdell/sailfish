@@ -10,7 +10,7 @@ import (
 	"github.com/fsnotify/fsnotify"
 	flag "github.com/spf13/pflag"
 	"github.com/spf13/viper"
-	//	log "github.com/superchalupa/go-redfish/src/log"
+	//	log "github.com/superchalupa/sailfish/src/log"
 )
 
 func main() {

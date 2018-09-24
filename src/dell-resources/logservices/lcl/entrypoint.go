@@ -7,12 +7,12 @@ import (
 	eh "github.com/looplab/eventhorizon"
 	eventpublisher "github.com/looplab/eventhorizon/publisher/local"
 
-	//ah "github.com/superchalupa/go-redfish/src/actionhandler"
-	"github.com/superchalupa/go-redfish/src/eventwaiter"
-	"github.com/superchalupa/go-redfish/src/log"
-	"github.com/superchalupa/go-redfish/src/ocp/view"
-	domain "github.com/superchalupa/go-redfish/src/redfishresource"
-	//mgrCMCIntegrated "github.com/superchalupa/go-redfish/src/dell-resources/managers/cmc.integrated"
+	//ah "github.com/superchalupa/sailfish/src/actionhandler"
+	"github.com/superchalupa/sailfish/src/eventwaiter"
+	"github.com/superchalupa/sailfish/src/log"
+	"github.com/superchalupa/sailfish/src/ocp/view"
+	domain "github.com/superchalupa/sailfish/src/redfishresource"
+	//mgrCMCIntegrated "github.com/superchalupa/sailfish/src/dell-resources/managers/cmc.integrated"
 )
 
 type viewer interface {

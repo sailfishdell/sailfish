@@ -3,7 +3,7 @@ package helpers
 // this is a terrible, horrible, no-good name for a package. Lets fix it.
 
 import (
-	"github.com/superchalupa/go-redfish/src/ocp/model"
+	"github.com/superchalupa/sailfish/src/ocp/model"
 )
 
 // no locking because it's an Option, loc

@@ -12,12 +12,12 @@ import (
 	eh "github.com/looplab/eventhorizon"
 	eventpublisher "github.com/looplab/eventhorizon/publisher/local"
 
-	"github.com/superchalupa/go-redfish/src/eventwaiter"
-	"github.com/superchalupa/go-redfish/src/log"
-	"github.com/superchalupa/go-redfish/src/ocp/event"
-	"github.com/superchalupa/go-redfish/src/ocp/model"
+	"github.com/superchalupa/sailfish/src/eventwaiter"
+	"github.com/superchalupa/sailfish/src/log"
+	"github.com/superchalupa/sailfish/src/ocp/event"
+	"github.com/superchalupa/sailfish/src/ocp/model"
 
-	"github.com/superchalupa/go-redfish/src/dell-resources/attributes"
+	"github.com/superchalupa/sailfish/src/dell-resources/attributes"
 )
 
 // what we read from redfish.yaml

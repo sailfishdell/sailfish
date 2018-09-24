@@ -9,8 +9,8 @@ import (
 	eh "github.com/looplab/eventhorizon"
 	"github.com/mitchellh/mapstructure"
 
-	ah "github.com/superchalupa/go-redfish/src/actionhandler"
-	domain "github.com/superchalupa/go-redfish/src/redfishresource"
+	ah "github.com/superchalupa/sailfish/src/actionhandler"
+	domain "github.com/superchalupa/sailfish/src/redfishresource"
 )
 
 func MakeSubmitTestEvent(eb eh.EventBus) func(context.Context, eh.Event, *domain.HTTPCmdProcessedData) error {

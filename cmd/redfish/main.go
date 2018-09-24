@@ -1,6 +1,6 @@
 package main
 
-import "github.com/superchalupa/go-redfish/cmd/redfish/commands"
+import "github.com/superchalupa/sailfish/cmd/redfish/commands"
 
 func main() {
 	commands.Execute()
