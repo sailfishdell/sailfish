@@ -22,12 +22,18 @@ import (
 	eh "github.com/looplab/eventhorizon"
 )
 
+type listener interface {
+    GetID() eh.UUID
+    processEvent(event eh.Event)
+    closeInbox()
+}
+
 // EventWaiter waits for certain events to match a criteria.
 type EventWaiter struct {
 	name       string
 	inbox      chan eh.Event
-	register   chan *EventListener
-	unregister chan *EventListener
+	register   chan listener
+	unregister chan listener
 }
 
 type Option func(e *EventWaiter) error
@@ -36,8 +42,8 @@ type Option func(e *EventWaiter) error
 func NewEventWaiter(o ...Option) *EventWaiter {
 	w := EventWaiter{
 		inbox:      make(chan eh.Event, 100),
-		register:   make(chan *EventListener),
-		unregister: make(chan *EventListener),
+		register:   make(chan listener),
+		unregister: make(chan listener),
 	}
 
 	w.ApplyOption(o...)
@@ -64,23 +70,21 @@ func (w *EventWaiter) ApplyOption(options ...Option) error {
 }
 
 func (w *EventWaiter) run() {
-	listeners := map[eh.UUID]*EventListener{}
+	listeners := map[eh.UUID]listener{}
 	for {
 		select {
 		case l := <-w.register:
-			listeners[l.id] = l
+			listeners[l.GetID()] = l
 		case l := <-w.unregister:
 			// Check for existence to avoid closing channel twice.
-			if _, ok := listeners[l.id]; ok {
-				delete(listeners, l.id)
-				close(l.inbox)
+			if _, ok := listeners[l.GetID()]; ok {
+				delete(listeners, l.GetID())
+                l.closeInbox()
 			}
 		case event := <-w.inbox:
-			for _, l := range listeners {
-				if l.match(event) {
-					l.inbox <- event
-				}
-			}
+            for _, l := range listeners {
+                l.processEvent(event)
+            }
 		}
 	}
 }
@@ -98,29 +102,62 @@ func (w *EventWaiter) Listen(ctx context.Context, match func(eh.Event) bool) (*E
 	l := &EventListener{
 		Name:       "unnamed",
 		id:         eh.NewUUID(),
-		inbox:      make(chan eh.Event, 100),
+		singleEventInbox:      make(chan eh.Event, 100),
 		match:      match,
 		unregister: w.unregister,
 	}
-	// Register us to the in-flight listeners.
-	w.register <- l
+
+    w.RegisterListener(l)
 
 	return l, nil
+}
+
+func (w *EventWaiter) RegisterListener(l listener) {
+	w.register <- l
 }
 
 // EventListener receives events from an EventWaiter.
 type EventListener struct {
 	Name       string
 	id         eh.UUID
-	inbox      chan eh.Event
+	singleEventInbox      chan eh.Event
 	match      func(eh.Event) bool
-	unregister chan *EventListener
+	unregister chan listener
+    eventType  *eh.EventType
+}
+
+func (l *EventListener) SetSingleEventType(t eh.EventType) {
+    l.eventType = &t
+}
+
+func (l *EventListener) GetID() eh.UUID { return l.id }
+
+func (l *EventListener) processEvent(event eh.Event) {
+    t := event.EventType()
+    if l.eventType != nil && *l.eventType != t {
+        // early return
+        return
+    }
+
+    eventDataArray, ok := event.Data().([]eh.EventData)
+    if ok {
+        for _, data := range eventDataArray {
+            oneEvent := eh.NewEvent(t, data, event.Timestamp())
+            if l.match(oneEvent) {
+                l.singleEventInbox <- oneEvent
+            }
+        }
+    } else {
+        if l.match(event) {
+            l.singleEventInbox <- event
+        }
+    }
 }
 
 // Wait waits for the event to arrive.
 func (l *EventListener) Wait(ctx context.Context) (eh.Event, error) {
 	select {
-	case event := <-l.inbox:
+	case event := <-l.singleEventInbox:
 		return event, nil
 	case <-ctx.Done():
 		return nil, ctx.Err()
@@ -129,10 +166,15 @@ func (l *EventListener) Wait(ctx context.Context) (eh.Event, error) {
 
 // Inbox returns the channel that events will be delivered on so that you can integrate into your own select() if needed.
 func (l *EventListener) Inbox() <-chan eh.Event {
-	return l.inbox
+	return l.singleEventInbox
 }
 
 // Close stops listening for more events.
 func (l *EventListener) Close() {
 	l.unregister <- l
+}
+
+// close the inbox
+func (l *EventListener) closeInbox() {
+    close(l.singleEventInbox)
 }
