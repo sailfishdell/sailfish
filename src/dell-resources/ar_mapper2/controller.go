@@ -61,7 +61,7 @@ func StartService(ctx context.Context, logger log.Logger, eb eh.EventBus) (*ARSe
 	logger = logger.New("module", "ar2")
 
 	EventPublisher := eventpublisher.NewEventPublisher()
-	eb.AddHandler(eh.MatchAnyEventOf(attributes.AttributeUpdated, attributes.AttributeArrayUpdated), EventPublisher)
+	eb.AddHandler(eh.MatchAnyEventOf(attributes.AttributeUpdated), EventPublisher)
 	EventWaiter := eventwaiter.NewEventWaiter(eventwaiter.SetName("AR Mapper"))
 	EventPublisher.AddObserver(EventWaiter)
 
@@ -72,41 +72,28 @@ func StartService(ctx context.Context, logger log.Logger, eb eh.EventBus) (*ARSe
 		hash:          make(map[string][]update),
 	}
 
-	sp, err := event.NewEventStreamProcessor(ctx, EventWaiter, event.MatchAnyEvent(attributes.AttributeUpdated, attributes.AttributeArrayUpdated), event.SetListenerName("ar_service"))
+	sp, err := event.NewEventStreamProcessor(ctx, EventWaiter, event.MatchAnyEvent(attributes.AttributeUpdated), event.SetListenerName("ar_service"))
 	if err != nil {
 		logger.Error("Failed to create event stream processor", "err", err)
 		return nil, err
 	}
 	go sp.RunForever(func(event eh.Event) {
+		data, ok := event.Data().(*attributes.AttributeUpdatedData)
+		if !ok {
+			return
+		}
+
 		logger.Debug("processing event", "event", event)
-
-		fn := func(data *attributes.AttributeUpdatedData) {
-			key := fmt.Sprintf("%s:%s:%s:%s", data.FQDD, data.Group, data.Index, data.Name)
-			arservice.hashMu.RLock()
-			if arr, ok := arservice.hash[key]; ok {
-				logger.Debug("matched quick hash", "key", key)
-				for _, u := range arr {
-					logger.Debug("updating property", "property", u.property, "value", data.Value)
-					u.model.UpdateProperty(u.property, data.Value)
-				}
+		key := fmt.Sprintf("%s:%s:%s:%s", data.FQDD, data.Group, data.Index, data.Name)
+		arservice.hashMu.RLock()
+		if arr, ok := arservice.hash[key]; ok {
+			logger.Debug("matched quick hash", "key", key)
+			for _, u := range arr {
+				logger.Debug("updating property", "property", u.property, "value", data.Value)
+				u.model.UpdateProperty(u.property, data.Value)
 			}
-			arservice.hashMu.RUnlock()
 		}
-
-		if arr, ok := event.Data().(*attributes.AttributeArrayUpdatedData); ok {
-			for _, data := range arr.Attributes {
-				fn(&data)
-			}
-		} else if data, ok := event.Data().(*attributes.AttributeUpdatedData); ok {
-			fn(data)
-		} else if arr, ok := event.Data().([]*attributes.AttributeUpdatedData); ok {
-			for _, data := range arr {
-				fn(data)
-			}
-		} else {
-			logger.Warn("Should never happen: got an invalid event in the event handler")
-		}
-
+		arservice.hashMu.RUnlock()
 	})
 
 	return arservice, nil

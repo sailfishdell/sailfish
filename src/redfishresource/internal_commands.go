@@ -303,44 +303,28 @@ func (c *InjectEvent) Handle(ctx context.Context, a *RedfishResourceAggregate) e
 	eventList = append(eventList, c.EventData)
 	eventList = append(eventList, c.EventArray...)
 
-	if c.Name != "AttributeUpdated" {
-		requestLogger.Debug("InjectEvent - event list", "number of events", len(eventList), "event name", c.Name)
-		for _, eventData := range eventList {
-			data, err := eh.CreateEventData(c.Name)
-			if err != nil {
-				requestLogger.Info("InjectEvent - event type not registered: injecting raw event.", "event name", c.Name, "error", err)
-				injectChan <- eh.NewEvent(c.Name, eventData, time.Now())
-				continue
-			}
+    requestLogger.Debug("InjectEvent - NEW ARRAY INJECT")
 
-			err = mapstructure.Decode(eventData, &data)
-			if err != nil {
-				requestLogger.Warn("InjectEvent - could not decode event data, skipping event", "error", err, "raw-eventdata", eventData, "dest-event", data)
-				continue
-			}
+    trainload := []eh.EventData{}
+    for _, eventData := range eventList {
+        data, err := eh.CreateEventData(c.Name)
+        if err != nil {
+            requestLogger.Info("InjectEvent - event type not registered: injecting raw event.", "event name", c.Name, "error", err)
+            trainload = append(trainload, eventData)
+            continue
+        }
 
-			requestLogger.Debug("InjectEvent - publishing", "event name", c.Name, "event_data", data)
-			injectChan <- eh.NewEvent(c.Name, data, time.Now())
-		}
-	} else {
-		requestLogger.Debug("InjectEvent - special case for attributes")
+        err = mapstructure.Decode(eventData, &data)
+        if err != nil {
+            requestLogger.Warn("InjectEvent - could not decode event data, skipping event", "error", err, "raw-eventdata", eventData, "dest-event", data)
+            trainload = append(trainload, eventData)
+            continue
+        }
 
-		data := &AttributeArrayUpdatedData{
-			Attributes: make([]AttributeUpdatedData, len(eventList)),
-		}
-
-		for i, eventData := range eventList {
-			singleEvent := AttributeUpdatedData{}
-			err := mapstructure.Decode(eventData, &singleEvent)
-			if err != nil {
-				requestLogger.Warn("InjectEvent - could not decode event data, skipping event", "error", err, "raw-eventdata", eventData, "dest-event", singleEvent)
-				continue
-			}
-			data.Attributes[i] = singleEvent
-		}
-
-		injectChan <- eh.NewEvent("AttributeArrayUpdated", data, time.Now())
-	}
+        trainload = append(trainload, data)
+        requestLogger.Debug("InjectEvent - publishing", "event name", c.Name, "event_data", data)
+    }
+    injectChan <- eh.NewEvent(c.Name, trainload, time.Now())
 
 	return nil
 }

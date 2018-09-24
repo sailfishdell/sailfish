@@ -59,37 +59,30 @@ func New(ctx context.Context, logger log.Logger, m *model.Model, name string, in
 		return nil, err
 	}
 	go sp.RunForever(func(event eh.Event) {
-		fn := func(data *attributes.AttributeUpdatedData) {
-			for _, mapping := range c.mappings {
-				if data.Name != mapping.Name {
-					continue
-				}
-				if data.Group != mapping.Group {
-					continue
-				}
-				if data.Index != mapping.Index {
-					continue
-				}
-				// check for direct fqdd match first
-				if data.FQDD != mapping.FQDD {
-					if mapping.FQDD != "{ANY}" {
-						continue
-					}
-				}
-
-				logger.Info("Updating Model", "mapping", mapping, "property", mapping.Property, "data", data)
-				m.UpdateProperty(mapping.Property, data.Value)
-			}
+		data, ok := event.Data().(*attributes.AttributeUpdatedData)
+		if !ok {
+			return
 		}
 
-		if arr, ok := event.Data().(*attributes.AttributeArrayUpdatedData); ok {
-			for _, data := range arr.Attributes {
-				fn(&data)
+		for _, mapping := range c.mappings {
+			if data.Name != mapping.Name {
+				continue
 			}
-		} else if data, ok := event.Data().(*attributes.AttributeUpdatedData); ok {
-			fn(data)
-		} else {
-			logger.Warn("Should never happen: got an invalid event in the event handler")
+			if data.Group != mapping.Group {
+				continue
+			}
+			if data.Index != mapping.Index {
+				continue
+			}
+			// check for direct fqdd match first
+			if data.FQDD != mapping.FQDD {
+				if mapping.FQDD != "{ANY}" {
+					continue
+				}
+			}
+
+			logger.Info("Updating Model", "mapping", mapping, "property", mapping.Property, "data", data)
+			m.UpdateProperty(mapping.Property, data.Value)
 		}
 	})
 
@@ -197,9 +190,6 @@ func (c *ARMappingController) initialStartupBootstrap(ctx context.Context) {
 func selectAttributeUpdate() func(eh.Event) bool {
 	return func(event eh.Event) bool {
 		if event.EventType() == attributes.AttributeUpdated {
-			return true
-		}
-		if event.EventType() == attributes.AttributeArrayUpdated {
 			return true
 		}
 		return false

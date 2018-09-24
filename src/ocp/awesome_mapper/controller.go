@@ -3,13 +3,13 @@ package awesome_mapper
 import (
 	"context"
 	"errors"
+	"reflect"
+	"strconv"
 
 	"github.com/Knetic/govaluate"
 	"github.com/spf13/viper"
 
 	eh "github.com/looplab/eventhorizon"
-
-	domain "github.com/superchalupa/sailfish/src/redfishresource"
 
 	"github.com/superchalupa/sailfish/src/log"
 	"github.com/superchalupa/sailfish/src/ocp/event"
@@ -48,7 +48,25 @@ func New(ctx context.Context, logger log.Logger, cfg *viper.Viper, mdl *model.Mo
 	}
 	logger.Info("updated mappings", "mappings", c)
 
-	functions := map[string]govaluate.ExpressionFunction{}
+	functions := map[string]govaluate.ExpressionFunction{
+		"int": func(args ...interface{}) (interface{}, error) {
+			switch t := args[0].(type) {
+			case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, uintptr:
+				return float64(reflect.ValueOf(t).Int()), nil
+			case float32, float64:
+				return float64(reflect.ValueOf(t).Float()), nil
+			case string:
+				float, err := strconv.ParseFloat(t, 64)
+				return float, err
+			default:
+				return nil, errors.New("Cant parse non-string")
+			}
+		},
+		"strlen": func(args ...interface{}) (interface{}, error) {
+			length := len(args[0].(string))
+			return (float64)(length), nil
+		},
+	}
 
 outer:
 	for _, entry := range c {
@@ -81,36 +99,27 @@ outer:
 		}
 
 		go sp.RunForever(func(event eh.Event) {
-			fn := func(event eh.Event) {
-				mdl.StopNotifications()
-				for _, query := range loopvar.ModelUpdate {
-					if query.expr == nil {
-						logger.Crit("query is nil, that can't happen", "loopvar", loopvar)
-						continue
-					}
-
-					expressionParameters["type"] = string(event.EventType())
-					expressionParameters["data"] = event.Data()
-					expressionParameters["event"] = event
-
-					expr, err := govaluate.NewEvaluableExpressionFromTokens(query.expr)
-					val, err := expr.Evaluate(expressionParameters)
-					if err != nil {
-						logger.Error("Expression failed to evaluate", "query.Query", query.Query, "parameters", expressionParameters, "err", err)
-						continue
-					}
-					mdl.UpdateProperty(query.Property, val)
+			mdl.StopNotifications()
+			for _, query := range loopvar.ModelUpdate {
+				if query.expr == nil {
+					logger.Crit("query is nil, that can't happen", "loopvar", loopvar)
+					continue
 				}
-				mdl.StartNotifications()
-				mdl.NotifyObservers()
-			}
-			if arr, ok := event.Data().(*domain.AttributeArrayUpdatedData); ok {
-				for _, data := range arr.Attributes {
-					fn(eh.NewEvent("AttributeUpdated", data, event.Timestamp()))
+
+				expressionParameters["type"] = string(event.EventType())
+				expressionParameters["data"] = event.Data()
+				expressionParameters["event"] = event
+
+				expr, err := govaluate.NewEvaluableExpressionFromTokens(query.expr)
+				val, err := expr.Evaluate(expressionParameters)
+				if err != nil {
+					logger.Error("Expression failed to evaluate", "query.Query", query.Query, "parameters", expressionParameters, "err", err)
+					continue
 				}
-			} else {
-				fn(event)
+				mdl.UpdateProperty(query.Property, val)
 			}
+			mdl.StartNotifications()
+			mdl.NotifyObservers()
 		})
 	}
 
