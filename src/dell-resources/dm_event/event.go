@@ -2,21 +2,24 @@ package dm_event
 
 import (
 	eh "github.com/looplab/eventhorizon"
+	//domain "github.com/superchalupa/go-redfish/src/redfishresource"
+	//"github.com/superchalupa/go-redfish/src/dell-resources/attributes"
 )
 
 const (
 	HealthEvent      = eh.EventType("HealthEvent")
 	DataManagerEvent = eh.EventType("DataManagerEvent")
 	FanEvent         = eh.EventType("FanEvent")
-	AttributeUpdated = eh.EventType("AttributeUpdated")
+	PowerSupplyObjEvent = eh.EventType("PowerSupplyObjEvent")
 	AvgPowerConsumptionStatDataObjEvent = eh.EventType("AvgPowerConsumptionStatDataObjEvent")
 )
 
 func init() {
 	eh.RegisterEventData(HealthEvent, func() eh.EventData { return &HealthEventData{} })
 	eh.RegisterEventData(FanEvent, func() eh.EventData { return &FanEventData{} })
+	//eh.RegisterEventData(attributes.AttributeUpdated, func() eh.EventData { return &domain.AttributeUpdatedData{} })
+	eh.RegisterEventData(PowerSupplyObjEvent, func() eh.EventData { return &PowerSupplyObjEventData{} })
 	eh.RegisterEventData(AvgPowerConsumptionStatDataObjEvent, func() eh.EventData { return &AvgPowerConsumptionStatDataObjEventData{} })
-	eh.RegisterEventData(AttributeUpdated, func() eh.EventData { return &AttributeUpdatedData{} })
 	eh.RegisterEventData(DataManagerEvent, func() eh.EventData {
 		var f DataManagerEventData
 		return f
@@ -56,15 +59,41 @@ type FanEventData struct {
 	FanStateMask      int `json:"fanStateMask"`
 }
 
-type AttributeUpdatedData struct {
-	ReqID	string
-	FQDD	string
-        Health	string
-	Group	string
-	Index	string
-	Name	string
-	Value	string
-	Error	string
+type PowerSupplyObjEventData struct {
+	ObjectHeader         DataObjectHeader
+	OutputWatts          int `json:"outputWatts"`
+	InputRatedWatts      int `json:"inputRatedWatts"`
+	InputVolts           int `json:"inputVolts"`
+	PSACOn               bool `json:"psACOn"`
+	PSSwitchOn           bool `json:"psSwitchOn"`
+	PSPOK                bool `json:"psPOK"`
+	PSOn                 bool `json:"psOn"`
+	PSFanFail            bool `json:"psFanFail"`
+	PSState              uint16 `json:"psState"`
+	PSType               uint8 `json:"psType"`
+	PSCfgErrType         uint8 `json:"psCfgErrType"`
+	BPMCapable           bool `json:"bPMCapable"`
+	RatedAmps            uint16 `json:"ratedAmps"`
+	InputStatus          uint8 `json:"inputStatus"`
+	PsuSlot              uint8 `json:"psuSlot"`
+	InstAmps             float64 `json:"instAmps"`
+	PsuCapabilities      uint `json:"psuCapabilities"`
+	OffsetFwVer          uint `json:"offsetfwVer"`
+	OffsetPSLocation     uint `json:"offsetPSLocation"`
+	BoardProductName     string `json:"boardProductName"`
+	BoardSerialNumber    string `json:"boardSerialNumber"`
+	BoardPartNumber	     string `json:"boardPartNumber"`
+	BoardManufacturer    string `json:"boardManufacturer"`
+	RedundancyStatus     uint8 `json:"redundancyStatus"`
+	UpdateTime           int
+	CurrentInputVolts    int `json:"currentInputVolts"`
+	MinimumVoltage       uint16 `json:"minimumvoltage"`
+	MaximumVoltage       uint16 `json:"maxmimumvoltage"`
+	MinimumFreqHz        uint8 `json:"minimumfreqhz"`
+	MaximumFreqHz        uint8 `json:"maximumfreqhz"`
+	InitUpdateInProgress uint `json:"InitupdateInProgress"`
+	U16POutMax           uint16 `json:"u16PoutMax"`
+	LineStatus           uint8 `json:"lineStatus"`
 }
 
 type AvgPowerConsumptionStatDataObjEventData struct {

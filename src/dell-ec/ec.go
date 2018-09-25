@@ -466,7 +466,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			// This controller will populate 'attributes' property with AR entries matching this FQDD ('psuName')
 			ardumper, _ := attributes.NewController(ctx, psuModel, []string{psuName}, ch, eb)
 
-			awesome_mapper.New(ctx, psuLogger, cfgMgr, psuModel, "power_supply", map[string]interface{}{"FQDD": "System.Chassis.1#" + psuName})
+			awesome_mapper.New(ctx, psuLogger, cfgMgr, psuModel, "power_supply", map[string]interface{}{"fqdd": "System.Chassis.1#" + psuName})
 
 			sysChasPwrPsuVw := view.New(
 				view.WithURI(rootView.GetURI()+"/Chassis/"+chasName+"/Power/PowerSupplies/"+psuName),
