@@ -16,7 +16,17 @@ import (
 	"github.com/superchalupa/sailfish/src/ocp/model"
 	domain "github.com/superchalupa/go-redfish/src/redfishresource"
 
+<<<<<<< HEAD
 	"fmt"
+=======
+	"github.com/superchalupa/go-redfish/src/log"
+	"github.com/superchalupa/go-redfish/src/ocp/event"
+	"github.com/superchalupa/go-redfish/src/ocp/model"
+
+	//"fmt"
+	//"os"
+	"time"
+>>>>>>> JIT-0001 added power trend event, fixed registries, awesome_controller function
 )
 
 type Evaluable interface {
@@ -50,6 +60,7 @@ func New(ctx context.Context, logger log.Logger, cfg *viper.Viper, mdl *model.Mo
 		logger.Warn("unmarshal failed", "err", err)
 	}
 	logger.Info("updated mappings", "mappings", c)
+<<<<<<< HEAD
 
 	functions := map[string]govaluate.ExpressionFunction{
 		"int": func(args ...interface{}) (interface{}, error) {
@@ -68,6 +79,11 @@ func New(ctx context.Context, logger log.Logger, cfg *viper.Viper, mdl *model.Mo
 		"strlen": func(args ...interface{}) (interface{}, error) {
 			length := len(args[0].(string))
 			return (float64)(length), nil
+=======
+	functions := map[string]govaluate.ExpressionFunction{
+		"epoch_to_date": func(args ...interface{}) (interface{}, error) {
+			return time.Unix(int64(args[0].(float64)), 0), nil
+>>>>>>> JIT-0001 added power trend event, fixed registries, awesome_controller function
 		},
 	}
 

@@ -180,20 +180,34 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	)
 	registries.AddAggregate(ctx, registryLogger, registryView, rootView.GetUUID(), ch, eb)
 
+	languages := []string{"En"}
+
 	registry_views := []interface{}{}
-	for _, registryNames := range []string{
-		"Messages", "BaseMessages", "ManagerAttributeRegistry",
+	for _, registry_map := range []map[string]interface{}{
+		{"id":"Messages", "description":"iDRAC Message Registry File locations", "name":"iDRAC Message Registry File", "type":"iDrac.1.5", "location":map[string]string{"Uri":"/redfish/v1/Registries/Messages/EEMIRegistry.v1_5_0.json"}},
+		{"id":"BaseMessages", "description":"Base Message Registry File locations", "name":"Base Message Registry File", "type":"Base.1.0", "location":map[string]string{"Uri":"/redfish/v1/Registries/BaseMessages/BaseRegistry.v1_0_0.json", "PublicationUri":"http://www.dmtf.org/sites/default/files/standards/documents/DSP8011_1.0.0a.json"}},
+		{"id":"ManagerAttributeRegistry", "description":"Manager Attribute Registry File Locations", "name":"Manager Attribute Registry File", "type":"ManagerAttributeRegistry.1.0", "location":map[string]string{"Uri":"/redfish/v1/Registries/ManagerAttributeRegistry/ManagerAttributeRegistry.v1_0_0.json"}},
 	} {
+
+		location := []map[string]string{registry_map["location"].(map[string]string)}
+		location[0]["Language"] = "En"
 		regModel := model.New(
-			model.UpdateProperty("registry_id", registryNames),
+			model.UpdateProperty("registry_id", registry_map["id"]),
+			model.UpdateProperty("registry_description", registry_map["description"]),
+			model.UpdateProperty("registry_name", registry_map["name"]),
+			model.UpdateProperty("registry_type", registry_map["type"]),
+			model.UpdateProperty("languages", languages),
+                        model.UpdateProperty("languages_count", len(languages)),
+			model.UpdateProperty("location", location),
+			model.UpdateProperty("location_count", len(location)),
 		)
 
 		// static config controller, initlize values based on yaml config
-		staticMapper, _ := static_mapper.New(ctx, registryLogger, regModel, "Registries/"+registryNames)
+		staticMapper, _ := static_mapper.New(ctx, registryLogger, regModel, "Registries/"+registry_map["id"].(string))
 		updateFns = append(updateFns, staticMapper.ConfigChangedFn)
 
 		rv := view.New(
-			view.WithURI(rootView.GetURI()+"/Registries/"+registryNames),
+			view.WithURI(rootView.GetURI()+"/Registries/"+registry_map["id"].(string)),
 			view.WithModel("default", regModel),
 		)
 		registry.AddAggregate(ctx, registryLogger, rv, ch, eb)
@@ -452,6 +466,8 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			// This controller will populate 'attributes' property with AR entries matching this FQDD ('psuName')
 			ardumper, _ := attributes.NewController(ctx, psuModel, []string{psuName}, ch, eb)
 
+			awesome_mapper.New(ctx, psuLogger, cfgMgr, psuModel, "power_supply", map[string]interface{}{"FQDD": "System.Chassis.1#" + psuName})
+
 			sysChasPwrPsuVw := view.New(
 				view.WithURI(rootView.GetURI()+"/Chassis/"+chasName+"/Power/PowerSupplies/"+psuName),
 				view.WithModel("default", psuModel),
@@ -480,7 +496,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		armapper = arService.NewMapping(pwrCtrlLogger, "Chassis/"+chasName+"/Power/PowerControl", "Chassis/System.Chassis/Power", pwrCtrlModel, map[string]string{"FQDD": chasName})
 
 		// Power consumption in kwh TODO
-		awesome_mapper.New(ctx, pwrCtrlLogger, cfgMgr, pwrCtrlModel, "power", map[string]interface{}{})
+		awesome_mapper.New(ctx, pwrCtrlLogger, cfgMgr, pwrCtrlModel, "power_control", map[string]interface{}{})
 
 		sysChasPwrCtrlVw := view.New(
 			view.WithURI(rootView.GetURI()+"/Chassis/"+chasName+"/Power/PowerControl"),
@@ -512,26 +528,27 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			view.WithController("ar_mapper", armapper),
 			eventservice.PublishResourceUpdatedEventsForModel(ctx, "default", eb),
 		)
-		pwrTrend := powertrends.AddAggregate(ctx, pwrTrendLogger, pwrTrendVw, false, ch)
+		pwrTrend := powertrends.AddAggregate(ctx, pwrTrendLogger, pwrTrendVw, "", ch)
 		p = &domain.RedfishResourceProperty{}
 		p.Parse(pwrTrend)
 		trend_views = append(trend_views, p)
 
 		histogram_views := []interface{}{}
 		for _, trend := range []string{
-			"LastWeek", "LastDay", "LastHour",
+			"Week", "Day", "Hour",
 		} {
 			trendModel := model.New()
-			armapper := arService.NewMapping(pwrTrendLogger, "Chassis/"+chasName+"/Power/PowerTrends-1/"+trend, "Chassis/System.Chassis/Power", trendModel, map[string]string{"FQDD": chasName})
+			//armapper := arService.NewMapping(pwrTrendLogger, "Chassis/"+chasName+"/Power/PowerTrends-1/Last"+trend, "Chassis/System.Chassis/Power", trendModel, map[string]string{"FQDD": chasName})
+			awesome_mapper.New(ctx, pwrTrendLogger, cfgMgr, trendModel, "power_trend", map[string]interface{}{})
 			trendView := view.New(
-				view.WithURI(rootView.GetURI()+"/Chassis/"+chasName+"/Power/PowerTrends-1/"+trend),
+				view.WithURI(rootView.GetURI()+"/Chassis/"+chasName+"/Power/PowerTrends-1/Last"+trend),
 				view.WithModel("default", trendModel),
-				view.WithController("ar_mapper", armapper),
+				//view.WithController("ar_mapper", armapper),
 				eventservice.PublishResourceUpdatedEventsForModel(ctx, "default", eb),
 			)
-			trend := powertrends.AddAggregate(ctx, pwrTrendLogger, trendView, true, ch)
+			pwr_trend := powertrends.AddAggregate(ctx, pwrTrendLogger, trendView, trend, ch)
 			p := &domain.RedfishResourceProperty{}
-			p.Parse(trend)
+			p.Parse(pwr_trend)
 			histogram_views = append(histogram_views, p)
 		}
 
