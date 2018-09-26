@@ -46,6 +46,7 @@ import (
 	"github.com/superchalupa/sailfish/src/dell-resources/logservices/faultlist"
 	"github.com/superchalupa/sailfish/src/dell-resources/logservices/lcl"
 	mgrCMCIntegrated "github.com/superchalupa/sailfish/src/dell-resources/managers/cmc.integrated"
+	"github.com/superchalupa/sailfish/src/dell-resources/managers/cmc.integrated/redundancy"
 	"github.com/superchalupa/sailfish/src/dell-resources/registries"
 	"github.com/superchalupa/sailfish/src/dell-resources/registries/registry"
 	"github.com/superchalupa/sailfish/src/dell-resources/slots"

@@ -3,20 +3,18 @@ package awesome_mapper
 import (
 	"context"
 	"errors"
+	"reflect"
+	"strconv"
+	"time"
 
 	"github.com/Knetic/govaluate"
 	"github.com/spf13/viper"
 
 	eh "github.com/looplab/eventhorizon"
 
-	domain "github.com/superchalupa/go-redfish/src/redfishresource"
-
-	"github.com/superchalupa/go-redfish/src/log"
-	"github.com/superchalupa/go-redfish/src/ocp/event"
-	"github.com/superchalupa/go-redfish/src/ocp/model"
-
-	"fmt"
-	"time"
+	"github.com/superchalupa/sailfish/src/log"
+	"github.com/superchalupa/sailfish/src/ocp/event"
+	"github.com/superchalupa/sailfish/src/ocp/model"
 )
 
 type Evaluable interface {
@@ -50,7 +48,25 @@ func New(ctx context.Context, logger log.Logger, cfg *viper.Viper, mdl *model.Mo
 		logger.Warn("unmarshal failed", "err", err)
 	}
 	logger.Info("updated mappings", "mappings", c)
+
 	functions := map[string]govaluate.ExpressionFunction{
+		"int": func(args ...interface{}) (interface{}, error) {
+			switch t := args[0].(type) {
+			case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, uintptr:
+				return float64(reflect.ValueOf(t).Int()), nil
+			case float32, float64:
+				return float64(reflect.ValueOf(t).Float()), nil
+			case string:
+				float, err := strconv.ParseFloat(t, 64)
+				return float, err
+			default:
+				return nil, errors.New("Cant parse non-string")
+			}
+		},
+		"strlen": func(args ...interface{}) (interface{}, error) {
+			length := len(args[0].(string))
+			return (float64)(length), nil
+		},
 		"epoch_to_date": func(args ...interface{}) (interface{}, error) {
 			return time.Unix(int64(args[0].(float64)), 0), nil
 		},
@@ -87,7 +103,6 @@ outer:
 		}
 
 		go sp.RunForever(func(event eh.Event) {
-			fn := func(event eh.Event) {
 				mdl.StopNotifications()
 				for _, query := range loopvar.ModelUpdate {
 					if query.expr == nil {
@@ -99,10 +114,6 @@ outer:
 					expressionParameters["data"] = event.Data()
 					expressionParameters["event"] = event
 				
-					fmt.Println("TYPE: "+string(event.EventType()))
-					fmt.Println("DATA:", event.Data())
-
-
 					expr, err := govaluate.NewEvaluableExpressionFromTokens(query.expr)
 					val, err := expr.Evaluate(expressionParameters)
 					if err != nil {
@@ -113,14 +124,6 @@ outer:
 				}
 				mdl.StartNotifications()
 				mdl.NotifyObservers()
-			}
-			if arr, ok := event.Data().(*domain.AttributeArrayUpdatedData); ok {
-				for _, data := range arr.Attributes {
-					fn(eh.NewEvent("AttributeUpdated", data, event.Timestamp()))
-				}
-			} else {
-				fn(event)
-			}
 		})
 	}
 

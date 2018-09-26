@@ -42,13 +42,13 @@ binaries=${binaries:-"ocp-server"}
 for pkg in $binaries
 do
     rm -f ${pkg}.${GOARCH}
-    time go build -tags "$BUILD_TAGS" -o ${pkg}.${GOARCH}   "$@" github.com/superchalupa/go-redfish/cmd/${pkg}
+    time go build -tags "$BUILD_TAGS" -o ${pkg}.${GOARCH}   "$@" github.com/superchalupa/sailfish/cmd/${pkg}
 done
 
 # build mappercli
 pkg=mappercli
 rm -f ${pkg}.${GOARCH}
-time go build -tags "$BUILD_TAGS" -o ${pkg}.${GOARCH} "$@" github.com/superchalupa/go-redfish/cmd/${pkg}
+time go build -tags "$BUILD_TAGS" -o ${pkg}.${GOARCH} "$@" github.com/superchalupa/sailfish/cmd/${pkg}
 
 for box in ${TEST_MACHINES}
 do

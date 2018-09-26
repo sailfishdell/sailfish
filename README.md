@@ -13,13 +13,13 @@ export PATH=$PATH:$GOPATH/bin
 go get github.com/golang/dep/cmd/dep
 ```
 
-Checkout go-redfish source and install dependencies:
+Checkout sailfish source and install dependencies:
 
 ```
 mkdir -p go/src/github.com/superchalupa/
 cd go/src/github.com/superchalupa
-git clone https://github.com/superchalupa/go-redfish
-cd go-redfish
+git clone https://github.com/superchalupa/sailfish
+cd sailfish
 # Not really necessary any more:
 # dep ensure
 # the vendor/ directory is now included in the tree, so this step can be skipped
@@ -34,7 +34,7 @@ want to the build, example below shows 'openbmc' build.
 
 ### Build and run the backend (OPENBMC build):
 ```bash
-go build -tags openbmc github.com/superchalupa/go-redfish/cmd/ocp-server
+go build -tags openbmc github.com/superchalupa/sailfish/cmd/ocp-server
 ./ocp-server -l https::8443 -l pprof:localhost:6060
 ```
 
@@ -43,7 +43,7 @@ Visit https://localhost:8443/redfish/v1
 
 ### Build and run the backend (SIMULATION build):
 ```bash
-go build -tags simulation github.com/superchalupa/go-redfish/cmd/ocp-server
+go build -tags simulation github.com/superchalupa/sailfish/cmd/ocp-server
 ./ocp-server -l https::8443 -l pprof:localhost:6060
 ```
 
@@ -96,7 +96,7 @@ export GOARCH=arm
 export GOARM=5
 export GOOS=linux
 
-go build -tags spacemonkey github.com/superchalupa/go-redfish/cmd/ocp-server
+go build -tags spacemonkey github.com/superchalupa/sailfish/cmd/ocp-server
 ```
 
 When running, activate the spacemonkey listener with the command line arg: -l spacemonkey:[addr]:[port]

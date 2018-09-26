@@ -2,8 +2,6 @@ package dm_event
 
 import (
 	eh "github.com/looplab/eventhorizon"
-	//domain "github.com/superchalupa/go-redfish/src/redfishresource"
-	//"github.com/superchalupa/go-redfish/src/dell-resources/attributes"
 )
 
 const (

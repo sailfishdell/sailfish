@@ -30,11 +30,11 @@ export GOARCH=arm
 export GOARM=5
 export GOOS=linux
 
-binaries=${binaries:-"ec-redfish"}
+binaries=${binaries:-"sailfish"}
 for pkg in $binaries
 do
     rm -f ${pkg}.${GOARCH}
-    time go build -tags "$BUILD_TAGS" -o ${pkg}.${GOARCH}   "$@" github.com/superchalupa/go-redfish/cmd/${pkg}
+    time go build -tags "$BUILD_TAGS" -o ${pkg}.${GOARCH}   "$@" github.com/superchalupa/sailfish/cmd/${pkg}
 done
 
 for box in ${TEST_MACHINES}
