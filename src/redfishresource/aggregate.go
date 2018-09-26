@@ -59,8 +59,8 @@ func (a *RedfishResourceAggregate) EventsToPublish() (ret []eh.Event) {
 func (a *RedfishResourceAggregate) ClearEvents() {
 }
 
-func (r RedfishResourceAggregate) AggregateType() eh.AggregateType { return AggregateType }
-func (r RedfishResourceAggregate) EntityID() eh.UUID               { return r.ID }
+func (r *RedfishResourceAggregate) AggregateType() eh.AggregateType { return AggregateType }
+func (r *RedfishResourceAggregate) EntityID() eh.UUID               { return r.ID }
 
 func NewRedfishResourceAggregate(id eh.UUID) *RedfishResourceAggregate {
 	return &RedfishResourceAggregate{}
