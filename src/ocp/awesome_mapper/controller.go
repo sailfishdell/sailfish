@@ -70,6 +70,20 @@ func New(ctx context.Context, logger log.Logger, cfg *viper.Viper, mdl *model.Mo
 		"epoch_to_date": func(args ...interface{}) (interface{}, error) {
 			return time.Unix(int64(args[0].(float64)), 0), nil
 		},
+		"map_health_value": func(args ...interface{}) (interface{}, error) {
+			switch t := args[0].(float64); t {
+			case 0, 1: //other, unknown
+				return nil, nil
+			case 2: //ok
+				return "OK", nil
+			case 3: //non-critical
+				return "Warning", nil
+			case 4, 5: //critical, non-recoverable
+				return "Critical", nil
+			default:
+				return nil, errors.New("Invalid object status")
+			}
+		},
 	}
 
 outer:

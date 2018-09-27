@@ -23,11 +23,8 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 	properties := map[string]interface{}{
 		"@odata.etag@meta": v.Meta(view.GETProperty("etag"), view.GETModel("etag")),
 		"Id@meta":          v.Meta(view.PropGET("unique_name")),
-		//"Name@meta": v.Meta(view.PropGET("name")),
 		"Name": "Manager", //hardcoded in odatalite
-		// TODO: is this in AR somewhere?
 		"ManagerType": "BMC", //hardcoded in odatalite
-		//"Description@meta":         v.Meta(view.PropGET("description")),
 		"Description":              "BMC", //hardcoded in odatalite
 		"Model@meta":               v.Meta(view.PropGET("model")),
 		"DateTime@meta":            map[string]interface{}{"GET": map[string]interface{}{"plugin": "datetime"}},
@@ -35,7 +32,6 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 		"FirmwareVersion@meta":     v.Meta(view.PropGET("firmware_version")),
 		"Links": map[string]interface{}{
 			//"ManagerForServers@meta": v.Meta(view.PropGET("bmc_manager_for_servers")), // not in odatalite json?
-			// "ManagerForChassis@odata.count": 1,
 			"ManagerForChassis@meta":             v.Meta(view.PropGET("manager_for_chassis")),
 			"ManagerForChassis@odata.count@meta": v.Meta(view.PropGET("manager_for_chassis_count")),
 			//"ManagerInChassis@meta":  v.Meta(view.PropGET("in_chassis")), //not in odatalite json?

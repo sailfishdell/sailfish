@@ -52,7 +52,8 @@ awesome_mapper:
         - { Select: "type == 'PowerSupplyObjEvent' && data.ObjectHeader.FQDD == fqdd",
             ModelUpdate: [
                 {Property: "line_input_voltage", Query: "data.InputVolts" },
-                {Property: "input_current", Query: "data.InstAmps" }]}
+                {Property: "input_current", Query: "data.InstAmps" },
+                {Property: "obj_status", Query: "map_health_value(data.ObjectHeader.ObjStatus)" }]}
 
     power_trend:
         - { Select: "type == 'AvgPowerConsumptionStatDataObjEvent'",
