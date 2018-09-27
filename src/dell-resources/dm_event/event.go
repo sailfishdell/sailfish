@@ -62,22 +62,22 @@ type PowerSupplyObjEventData struct {
 	OutputWatts          int `json:"outputWatts"`
 	InputRatedWatts      int `json:"inputRatedWatts"`
 	InputVolts           int `json:"inputVolts"`
-	PSACOn               bool `json:"psACOn"`
-	PSSwitchOn           bool `json:"psSwitchOn"`
-	PSPOK                bool `json:"psPOK"`
-	PSOn                 bool `json:"psOn"`
-	PSFanFail            bool `json:"psFanFail"`
+	PSACOn               float64 `json:"psACOn"`
+	PSSwitchOn           float64 `json:"psSwitchOn"`
+	PSPOK                float64 `json:"psPOK"`
+	PSOn                 float64 `json:"psOn"`
+	PSFanFail            float64 `json:"psFanFail"`
 	PSState              uint16 `json:"psState"`
 	PSType               uint8 `json:"psType"`
 	PSCfgErrType         uint8 `json:"psCfgErrType"`
-	BPMCapable           bool `json:"bPMCapable"`
+	BPMCapable           float64 `json:"bPMCapable"`
 	RatedAmps            uint16 `json:"ratedAmps"`
 	InputStatus          uint8 `json:"inputStatus"`
 	PsuSlot              uint8 `json:"psuSlot"`
 	InstAmps             float64 `json:"instAmps"`
 	PsuCapabilities      uint `json:"psuCapabilities"`
-	OffsetFwVer          uint `json:"offsetfwVer"`
-	OffsetPSLocation     uint `json:"offsetPSLocation"`
+	OffsetFwVer          string `json:"offsetfwVer"`
+	OffsetPSLocation     string `json:"offsetPSLocation"`
 	BoardProductName     string `json:"boardProductName"`
 	BoardSerialNumber    string `json:"boardSerialNumber"`
 	BoardPartNumber	     string `json:"boardPartNumber"`
