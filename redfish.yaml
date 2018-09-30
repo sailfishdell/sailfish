@@ -13,14 +13,12 @@ session:
 views:
   "testview":
       "Logger": ["module", "abc123"]
-      "models":
-        - "default":  {"property1": "value1"}
-      "controllers":
-      "view":
-        - "with_URI": "/redfish/v1/testview#[foo]"
-        - "with_foo": ""
-        - "with_bar": ""
-        - "with_aggregate": "name"
+      "Models":
+        "default":  {"property1": "value1"}
+      "Controllers":
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/testview#' + unique"
 
 # TODO: certain attributes are inputs to if statements for the "actual" property, ie System.Chassis.1#ChassisPower.1#ChassisPowerStatus.1:
 #     if(chassis_power_value == CHASSIS_STANDBY_POWER_STATE_EC)
