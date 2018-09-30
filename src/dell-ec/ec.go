@@ -128,7 +128,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		view.WithURI(rootView.GetURI()+"/testview"),
 		eventservice.PublishResourceUpdatedEventsForModel(ctx, "default", eb),
 	)
-	test.AddAggregate(ctx, testView, ch)
+	test_aggregate.AddAggregate(ctx, testView, ch)
 
 	//*********************************************************************
 	//  /redfish/v1/{Managers,Chassis,Systems,Accounts}

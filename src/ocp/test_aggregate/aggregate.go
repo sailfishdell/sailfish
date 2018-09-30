@@ -1,4 +1,4 @@
-package test
+package test_aggregate
 
 // this file should define the BMC Manager object golang data structures where
 // we put all the data, plus the aggregate that pulls the data.  actual data
