@@ -35,6 +35,7 @@ type View struct {
 	outputFormatters map[string]formatter
 	actions          map[string]Action
 	actionURI        map[string]string
+	registerplugin   bool
 }
 
 func New(options ...Option) *View {
@@ -45,10 +46,14 @@ func New(options ...Option) *View {
 		outputFormatters: map[string]formatter{},
 		actions:          map[string]Action{},
 		actionURI:        map[string]string{},
+		registerplugin:   true,
 	}
 
 	s.ApplyOption(options...)
-	domain.RegisterPlugin(func() domain.Plugin { return s })
+	if s.registerplugin {
+		// caller responsible for registering if this isn't set
+		domain.RegisterPlugin(func() domain.Plugin { return s })
+	}
 	return s
 }
 

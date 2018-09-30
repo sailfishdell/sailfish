@@ -7,6 +7,13 @@ import (
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
 )
 
+func WithDeferRegister() Option {
+	return func(s *View) error {
+		s.registerplugin = false
+		return nil
+	}
+}
+
 func WithURI(name string) Option {
 	return func(s *View) error {
 		s.pluginType = domain.PluginType(name)
