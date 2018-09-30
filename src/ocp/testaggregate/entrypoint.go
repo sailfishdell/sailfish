@@ -1,4 +1,4 @@
-package test_aggregate
+package testaggregate
 
 import (
 	"context"
@@ -7,7 +7,6 @@ import (
 	eventpublisher "github.com/looplab/eventhorizon/publisher/local"
 	"github.com/spf13/viper"
 
-	"github.com/superchalupa/sailfish/src/dell-resources/component"
 	"github.com/superchalupa/sailfish/src/eventwaiter"
 	"github.com/superchalupa/sailfish/src/log"
 )
@@ -73,7 +72,13 @@ func (l *TestService) manageTestObjs(ctx context.Context, logger log.Logger, cfg
 			case event := <-inbox:
 				logger.Info("Got internal redfish TEST event", "event", event)
 				switch typ := event.EventType(); typ {
-				case component.ComponentEvent:
+				case TestEvent:
+					d, ok := event.Data().(*TestEventData)
+					if !ok {
+						logger.Warn("Test Event without proper *TestEventData", "event", event)
+					}
+
+					InstantiateFromCfg(ctx, logger, cfgMgr, "testview", map[string]interface{}{"unique": d.Unique})
 				}
 
 			case <-ctx.Done():

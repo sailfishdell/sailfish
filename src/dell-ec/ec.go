@@ -4,14 +4,39 @@ import (
 	"context"
 	"sync"
 
-	"github.com/spf13/viper"
-	yaml "gopkg.in/yaml.v2"
 	"io/ioutil"
 
+	"github.com/spf13/viper"
+	yaml "gopkg.in/yaml.v2"
+
 	eh "github.com/looplab/eventhorizon"
-	domain "github.com/superchalupa/sailfish/src/redfishresource"
 
 	"github.com/superchalupa/sailfish/src/actionhandler"
+	ah "github.com/superchalupa/sailfish/src/actionhandler"
+	"github.com/superchalupa/sailfish/src/dell-resources/ar_mapper2"
+	"github.com/superchalupa/sailfish/src/dell-resources/attributes"
+	"github.com/superchalupa/sailfish/src/dell-resources/certificateservices"
+	chasCMCIntegrated "github.com/superchalupa/sailfish/src/dell-resources/chassis/cmc.integrated"
+	iom_chassis "github.com/superchalupa/sailfish/src/dell-resources/chassis/iom.slot"
+	system_chassis "github.com/superchalupa/sailfish/src/dell-resources/chassis/system.chassis"
+	"github.com/superchalupa/sailfish/src/dell-resources/chassis/system.chassis/power"
+	"github.com/superchalupa/sailfish/src/dell-resources/chassis/system.chassis/power/powercontrol"
+	"github.com/superchalupa/sailfish/src/dell-resources/chassis/system.chassis/power/powersupply"
+	"github.com/superchalupa/sailfish/src/dell-resources/chassis/system.chassis/power/powertrends"
+	"github.com/superchalupa/sailfish/src/dell-resources/chassis/system.chassis/subsystemhealth"
+	"github.com/superchalupa/sailfish/src/dell-resources/chassis/system.chassis/thermal"
+	"github.com/superchalupa/sailfish/src/dell-resources/chassis/system.chassis/thermal/fans"
+	sled_chassis "github.com/superchalupa/sailfish/src/dell-resources/chassis/system.modular"
+	"github.com/superchalupa/sailfish/src/dell-resources/logservices"
+	"github.com/superchalupa/sailfish/src/dell-resources/logservices/faultlist"
+	"github.com/superchalupa/sailfish/src/dell-resources/logservices/lcl"
+	mgrCMCIntegrated "github.com/superchalupa/sailfish/src/dell-resources/managers/cmc.integrated"
+	"github.com/superchalupa/sailfish/src/dell-resources/registries"
+	"github.com/superchalupa/sailfish/src/dell-resources/registries/registry"
+	"github.com/superchalupa/sailfish/src/dell-resources/slots"
+	"github.com/superchalupa/sailfish/src/dell-resources/slots/slotconfig"
+	"github.com/superchalupa/sailfish/src/dell-resources/update_service"
+	"github.com/superchalupa/sailfish/src/dell-resources/update_service/firmware_inventory"
 	"github.com/superchalupa/sailfish/src/eventwaiter"
 	"github.com/superchalupa/sailfish/src/log"
 	"github.com/superchalupa/sailfish/src/ocp/awesome_mapper"
@@ -23,40 +48,12 @@ import (
 	"github.com/superchalupa/sailfish/src/ocp/static_mapper"
 	"github.com/superchalupa/sailfish/src/ocp/stdcollections"
 	"github.com/superchalupa/sailfish/src/ocp/telemetryservice"
-	"github.com/superchalupa/sailfish/src/ocp/test_aggregate"
+	"github.com/superchalupa/sailfish/src/ocp/testaggregate"
 	"github.com/superchalupa/sailfish/src/ocp/view"
-
-	//"github.com/superchalupa/sailfish/src/dell-resources/ar_mapper"
-	"github.com/superchalupa/sailfish/src/dell-resources/ar_mapper2"
-	"github.com/superchalupa/sailfish/src/dell-resources/attributes"
-	chasCMCIntegrated "github.com/superchalupa/sailfish/src/dell-resources/chassis/cmc.integrated"
-	"github.com/superchalupa/sailfish/src/dell-resources/chassis/iom.slot"
-	"github.com/superchalupa/sailfish/src/dell-resources/chassis/system.chassis"
-	"github.com/superchalupa/sailfish/src/dell-resources/chassis/system.chassis/power"
-	"github.com/superchalupa/sailfish/src/dell-resources/chassis/system.chassis/power/powercontrol"
-	"github.com/superchalupa/sailfish/src/dell-resources/chassis/system.chassis/power/powersupply"
-	"github.com/superchalupa/sailfish/src/dell-resources/chassis/system.chassis/power/powertrends"
-
-	"github.com/superchalupa/sailfish/src/dell-resources/certificateservices"
-	"github.com/superchalupa/sailfish/src/dell-resources/chassis/system.chassis/subsystemhealth"
-	"github.com/superchalupa/sailfish/src/dell-resources/chassis/system.chassis/thermal"
-	"github.com/superchalupa/sailfish/src/dell-resources/chassis/system.chassis/thermal/fans"
-	"github.com/superchalupa/sailfish/src/dell-resources/chassis/system.modular"
-	"github.com/superchalupa/sailfish/src/dell-resources/logservices"
-	"github.com/superchalupa/sailfish/src/dell-resources/logservices/faultlist"
-	"github.com/superchalupa/sailfish/src/dell-resources/logservices/lcl"
-	mgrCMCIntegrated "github.com/superchalupa/sailfish/src/dell-resources/managers/cmc.integrated"
-	"github.com/superchalupa/sailfish/src/dell-resources/registries"
-	"github.com/superchalupa/sailfish/src/dell-resources/registries/registry"
-	"github.com/superchalupa/sailfish/src/dell-resources/slots"
-	"github.com/superchalupa/sailfish/src/dell-resources/slots/slotconfig"
-	"github.com/superchalupa/sailfish/src/dell-resources/update_service"
-	"github.com/superchalupa/sailfish/src/dell-resources/update_service/firmware_inventory"
+	domain "github.com/superchalupa/sailfish/src/redfishresource"
 
 	// register all the DM events that are not otherwise pulled in
 	_ "github.com/superchalupa/sailfish/src/dell-resources/dm_event"
-
-	ah "github.com/superchalupa/sailfish/src/actionhandler"
 )
 
 type ocp struct {
@@ -83,7 +80,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	event.Setup(ch, eb)
 	logSvc := lcl.New(ch, eb)
 	faultSvc := faultlist.New(ch, eb)
-	slotSvc := slot.New(ch, eb)
+	slotSvc := slots.New(ch, eb)
 	slotconfigSvc := slotconfig.New(ch, eb)
 
 	domain.StartInjectService(eb)
@@ -128,7 +125,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		view.WithURI(rootView.GetURI()+"/testview"),
 		eventservice.PublishResourceUpdatedEventsForModel(ctx, "default", eb),
 	)
-	test_aggregate.AddAggregate(ctx, testView, ch)
+	testaggregate.AddAggregate(ctx, testView, ch)
 
 	//*********************************************************************
 	//  /redfish/v1/{Managers,Chassis,Systems,Accounts}

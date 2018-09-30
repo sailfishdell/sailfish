@@ -1,4 +1,4 @@
-package test_aggregate
+package testaggregate
 
 import (
 	eh "github.com/looplab/eventhorizon"

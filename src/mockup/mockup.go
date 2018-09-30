@@ -22,7 +22,7 @@ import (
 	"github.com/superchalupa/sailfish/src/ocp/session"
 	"github.com/superchalupa/sailfish/src/ocp/stdcollections"
 	"github.com/superchalupa/sailfish/src/ocp/telemetryservice"
-	test "github.com/superchalupa/sailfish/src/ocp/test_aggregate"
+	"github.com/superchalupa/sailfish/src/ocp/testaggregate"
 	"github.com/superchalupa/sailfish/src/ocp/view"
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
 )
@@ -70,7 +70,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	//   3) views - pass models and controllers by args
 	//   4) aggregate - pass view
 	testLogger := logger.New("module", "testview")
-	test.StartService(ctx, testLogger, cfgMgr, ch, eb)
+	testaggregate.StartService(ctx, testLogger, cfgMgr, ch, eb)
 	testModel := model.New(
 		model.UpdateProperty("unique_name", "test_unique_name"),
 		model.UpdateProperty("name", "name"),
@@ -83,7 +83,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		view.WithURI(rootView.GetURI()+"/testview"),
 		eventservice.PublishResourceUpdatedEventsForModel(ctx, "default", eb),
 	)
-	test.AddAggregate(ctx, testView, ch)
+	testaggregate.AddAggregate(ctx, testView, ch)
 
 	//*********************************************************************
 	//  /redfish/v1/{Managers,Chassis,Systems,Accounts}
