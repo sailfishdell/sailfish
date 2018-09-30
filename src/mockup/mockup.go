@@ -70,7 +70,8 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	//   3) views - pass models and controllers by args
 	//   4) aggregate - pass view
 	testLogger := logger.New("module", "testview")
-	testaggregate.StartService(ctx, testLogger, cfgMgr, ch, eb)
+	testaggregate.RunRegistryFunctions(testLogger)
+	testaggregate.StartService(ctx, testLogger, cfgMgr, rootView, ch, eb)
 	testModel := model.New(
 		model.UpdateProperty("unique_name", "test_unique_name"),
 		model.UpdateProperty("name", "name"),
