@@ -75,7 +75,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 
 	// These three all set up a waiter for the root service to appear, so init root service after.
 	actionhandler.Setup(ctx, ch, eb)
-	eventservice.Setup(ctx, ch, eb)
+	evtSvc := eventservice.New(ctx, ch, eb)
 	telemetryservice.Setup(ctx, ch, eb)
 	event.Setup(ch, eb)
 	logSvc := lcl.New(ch, eb)
@@ -123,7 +123,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		view.WithModel("default", testModel),
 		view.WithController("ar_mapper", ar2mapper),
 		view.WithURI(rootView.GetURI()+"/testview"),
-		eventservice.PublishResourceUpdatedEventsForModel(ctx, "default", eb),
+		evtSvc.PublishResourceUpdatedEventsForModel(ctx, "default"),
 	)
 	testaggregate.AddAggregate(ctx, testView, ch)
 
@@ -149,7 +149,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		view.WithModel("default", sessionModel),
 		view.WithController("ar_mapper", armapper),
 		view.WithURI(rootView.GetURI()+"/SessionService"),
-		eventservice.PublishResourceUpdatedEventsForModel(ctx, "default", eb),
+		evtSvc.PublishResourceUpdatedEventsForModel(ctx, "default"),
 	)
 	session.AddAggregate(ctx, sessionView, rootView.GetUUID(), ch, eb)
 
@@ -157,7 +157,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	// /redfish/v1/EventService
 	// /redfish/v1/TelemetryService
 	//*********************************************************************
-	eventservice.StartEventService(ctx, logger, rootView)
+	evtSvc.StartEventService(ctx, logger, rootView)
 	telemetryservice.StartTelemetryService(ctx, logger, rootView)
 	// TODO: this guy returns a view we can use if we want to hook up a controller
 
@@ -274,7 +274,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			ah.WithAction(ctx, mgrLogger, "certificates.generatecsr", "/Actions/DellCertificateService.GenerateCSR", makePumpHandledAction("GenerateCSR", 30, eb), ch, eb),
 
 			view.WithFormatter("attributeFormatter", attributes.FormatAttributeDump),
-			eventservice.PublishResourceUpdatedEventsForModel(ctx, "default", eb),
+			evtSvc.PublishResourceUpdatedEventsForModel(ctx, "default"),
 		)
 
 		managers = append(managers, mgrCmcVw)
@@ -313,7 +313,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			view.WithController("ar_mapper", armapper),
 			view.WithController("ar_dump", ardumper),
 			view.WithFormatter("attributeFormatter", attributes.FormatAttributeDump),
-			eventservice.PublishResourceUpdatedEventsForModel(ctx, "default", eb),
+			evtSvc.PublishResourceUpdatedEventsForModel(ctx, "default"),
 			view.UpdateEtag("etag", []string{}),
 		)
 
@@ -363,7 +363,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			ah.WithAction(ctx, sysChasLogger, "chassis.reset", "/Actions/Chassis.Reset", makePumpHandledAction("ChassisReset", 30, eb), ch, eb),
 			ah.WithAction(ctx, sysChasLogger, "msmconfigbackup", "/Actions/Oem/MSMConfigBackup", msmConfigBackup, ch, eb),
 			ah.WithAction(ctx, sysChasLogger, "chassis.msmconfigbackup", "/Actions/Oem/DellChassis.MSMConfigBackup", chassisMSMConfigBackup, ch, eb),
-			eventservice.PublishResourceUpdatedEventsForModel(ctx, "default", eb),
+			evtSvc.PublishResourceUpdatedEventsForModel(ctx, "default"),
 		)
 
 		// Create the .../Attributes URI. Attributes are stored in the attributes property of the chasModel
@@ -397,7 +397,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			view.WithModel("default", powerModel),
 			view.WithModel("global_health", globalHealthModel),
 			view.WithController("ar_mapper", armapper),
-			eventservice.PublishResourceUpdatedEventsForModel(ctx, "default", eb),
+			evtSvc.PublishResourceUpdatedEventsForModel(ctx, "default"),
 		)
 		power.AddAggregate(ctx, powerLogger, sysChasPwrVw, ch)
 
@@ -432,7 +432,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 				view.WithController("ar_dumper", ardumper),
 				view.WithController("fw_mapper", fwmapper),
 				view.WithFormatter("attributeFormatter", attributes.FormatAttributeDump),
-				eventservice.PublishResourceUpdatedEventsForModel(ctx, "default", eb),
+				evtSvc.PublishResourceUpdatedEventsForModel(ctx, "default"),
 			)
 			swinvViews = append(swinvViews, sysChasPwrPsuVw)
 
@@ -457,7 +457,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			view.WithURI(rootView.GetURI()+"/Chassis/"+chasName+"/Power/PowerControl"),
 			view.WithModel("default", pwrCtrlModel),
 			view.WithController("ar_mapper", armapper),
-			eventservice.PublishResourceUpdatedEventsForModel(ctx, "default", eb),
+			evtSvc.PublishResourceUpdatedEventsForModel(ctx, "default"),
 		)
 		pwrCtrl := powercontrol.AddAggregate(ctx, pwrCtrlLogger, sysChasPwrCtrlVw, ch)
 
@@ -481,7 +481,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			view.WithURI(rootView.GetURI()+"/Chassis/"+chasName+"/Power/PowerTrends-1"),
 			view.WithModel("default", pwrTrendModel),
 			view.WithController("ar_mapper", armapper),
-			eventservice.PublishResourceUpdatedEventsForModel(ctx, "default", eb),
+			evtSvc.PublishResourceUpdatedEventsForModel(ctx, "default"),
 		)
 		pwrTrend := powertrends.AddAggregate(ctx, pwrTrendLogger, pwrTrendVw, false, ch)
 		p = &domain.RedfishResourceProperty{}
@@ -498,7 +498,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 				view.WithURI(rootView.GetURI()+"/Chassis/"+chasName+"/Power/PowerTrends-1/"+trend),
 				view.WithModel("default", trendModel),
 				view.WithController("ar_mapper", armapper),
-				eventservice.PublishResourceUpdatedEventsForModel(ctx, "default", eb),
+				evtSvc.PublishResourceUpdatedEventsForModel(ctx, "default"),
 			)
 			trend := powertrends.AddAggregate(ctx, pwrTrendLogger, trendView, true, ch)
 			p := &domain.RedfishResourceProperty{}
@@ -532,7 +532,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			view.WithModel("default", thermalModel),
 			view.WithModel("global_health", globalHealthModel),
 			view.WithController("ar_mapper", armapper),
-			eventservice.PublishResourceUpdatedEventsForModel(ctx, "default", eb),
+			evtSvc.PublishResourceUpdatedEventsForModel(ctx, "default"),
 		)
 		thermal.AddAggregate(ctx, thermalLogger, thermalView, ch)
 
@@ -568,7 +568,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 				view.WithController("ar_dumper", ardumper),
 				view.WithController("fw_mapper", fwmapper),
 				view.WithFormatter("attributeFormatter", attributes.FormatAttributeDump),
-				eventservice.PublishResourceUpdatedEventsForModel(ctx, "default", eb),
+				evtSvc.PublishResourceUpdatedEventsForModel(ctx, "default"),
 			)
 			swinvViews = append(swinvViews, v)
 
@@ -675,7 +675,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			ah.WithAction(ctx, iomLogger, "iom.chassis.reset", "/Actions/Chassis.Reset", makePumpHandledAction("IomChassisReset", 30, eb), ch, eb),
 			ah.WithAction(ctx, iomLogger, "iom.resetpeakpowerconsumption", "/Actions/Oem/DellChassis.ResetPeakPowerConsumption", makePumpHandledAction("IomResetPeakPowerConsumption", 30, eb), ch, eb),
 			ah.WithAction(ctx, iomLogger, "iom.virtualreseat", "/Actions/Oem/DellChassis.VirtualReseat", makePumpHandledAction("IomVirtualReseat", 30, eb), ch, eb),
-			eventservice.PublishResourceUpdatedEventsForModel(ctx, "default", eb),
+			evtSvc.PublishResourceUpdatedEventsForModel(ctx, "default"),
 		)
 		swinvViews = append(swinvViews, iomView)
 		related_items = append(related_items, map[string]string{"@odata.id": iomView.GetURI()})
@@ -723,7 +723,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			ah.WithAction(ctx, sledLogger, "chassis.peripheralmapping", "/Actions/Oem/DellChassis.PeripheralMapping", makePumpHandledAction("SledPeripheralMapping", 30, eb), ch, eb),
 			ah.WithAction(ctx, sledLogger, "sledvirtualreseat", "/Actions/Chassis.VirtualReseat", makePumpHandledAction("SledVirtualReseat", 30, eb), ch, eb),
 			ah.WithAction(ctx, sledLogger, "chassis.sledvirtualreseat", "/Actions/Oem/DellChassis.VirtualReseat", makePumpHandledAction("ChassisSledVirtualReseat", 30, eb), ch, eb),
-			eventservice.PublishResourceUpdatedEventsForModel(ctx, "default", eb),
+			evtSvc.PublishResourceUpdatedEventsForModel(ctx, "default"),
 		)
 		sled_chassis.AddAggregate(ctx, sledLogger, sledView, ch, eb)
 		related_items = append(related_items, map[string]string{"@odata.id": sledView.GetURI()})
@@ -746,7 +746,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			ah.WithAction(ctx, updsvcLogger, "update.eid674.reset", "/Actions/Oem/EID_674_UpdateService.Reset", updateEID674Reset, ch, eb),
 			ah.WithAction(ctx, updsvcLogger, "update.syncup", "/Actions/Oem/DellUpdateService.Syncup", makePumpHandledAction("UpdateSyncup", 30, eb), ch, eb),
 			ah.WithAction(ctx, updsvcLogger, "update.eid674.syncup", "/Actions/Oem/EID_674_UpdateService.Syncup", makePumpHandledAction("UpdateSyncup", 30, eb), ch, eb),
-			eventservice.PublishResourceUpdatedEventsForModel(ctx, "default", eb),
+			evtSvc.PublishResourceUpdatedEventsForModel(ctx, "default"),
 		)
 
 		// add the aggregate to the view tree
@@ -846,11 +846,11 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 				view.WithModel("swinv", mdl),
 				view.WithModel("firm", invmdl),
 				// TODO: oops, no clue why, but this deadlocks for some insane reason
-				//eventservice.PublishResourceUpdatedEventsForModel(ctx, "firm", eb),
+				//evtSvc.PublishResourceUpdatedEventsForModel(ctx, "firm"),
 
 				// TODO: oops, can't set up this observer without deadlocking
 				// need to figure this one out. This deadlocks taking the lock to add observer
-				//				eventservice.PublishResourceUpdatedEventsForModel(ctx, "swinv", eb),
+				//				evtSvc.PublishResourceUpdatedEventsForModel(ctx, "swinv"),
 			)
 			inv[comp_ver_tuple] = invview
 			firmware_inventory.AddAggregate(ctx, rootView, invview, ch)

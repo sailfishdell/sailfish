@@ -45,7 +45,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 
 	domain.StartInjectService(eb)
 	actionhandler.Setup(ctx, ch, eb)
-	eventservice.Setup(ctx, ch, eb)
+	evtSvc := eventservice.New(ctx, ch, eb)
 	telemetryservice.Setup(ctx, ch, eb)
 	event.Setup(ch, eb)
 
@@ -82,7 +82,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	testView := view.New(
 		view.WithModel("default", testModel),
 		view.WithURI(rootView.GetURI()+"/testview"),
-		eventservice.PublishResourceUpdatedEventsForModel(ctx, "default", eb),
+		evtSvc.PublishResourceUpdatedEventsForModel(ctx, "default"),
 	)
 	testaggregate.AddAggregate(ctx, testView, ch)
 
@@ -111,7 +111,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	// /redfish/v1/EventService
 	// /redfish/v1/TelemetryService
 	//*********************************************************************
-	eventservice.StartEventService(ctx, logger, rootView)
+	evtSvc.StartEventService(ctx, logger, rootView)
 	telemetryservice.StartTelemetryService(ctx, logger, rootView)
 
 	// VIPER Config:
