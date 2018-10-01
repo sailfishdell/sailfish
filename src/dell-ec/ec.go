@@ -13,6 +13,7 @@ import (
 	eh "github.com/looplab/eventhorizon"
 
 	"github.com/superchalupa/sailfish/src/actionhandler"
+	ah "github.com/superchalupa/sailfish/src/actionhandler"
 	"github.com/superchalupa/sailfish/src/dell-resources/ar_mapper2"
 	"github.com/superchalupa/sailfish/src/dell-resources/attributes"
 	"github.com/superchalupa/sailfish/src/dell-resources/certificateservices"
@@ -49,7 +50,6 @@ import (
 	"github.com/superchalupa/sailfish/src/ocp/static_mapper"
 	"github.com/superchalupa/sailfish/src/ocp/stdcollections"
 	"github.com/superchalupa/sailfish/src/ocp/telemetryservice"
-	"github.com/superchalupa/sailfish/src/ocp/test_aggregate"
 	"github.com/superchalupa/sailfish/src/ocp/testaggregate"
 	"github.com/superchalupa/sailfish/src/ocp/view"
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
@@ -82,7 +82,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	event.Setup(ch, eb)
 	logSvc := lcl.New(ch, eb)
 	faultSvc := faultlist.New(ch, eb)
-	slotSvc := slots.New(ch, eb)
 	slotconfigSvc := slotconfig.New(ch, eb)
 
 	domain.StartInjectService(eb)
@@ -90,7 +89,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	arService, _ := ar_mapper2.StartService(ctx, logger, eb)
 	updateFns = append(updateFns, arService.ConfigChangedFn)
 
-	slotSvc := slot.New(arService, ch, eb)
+	slotSvc := slots.New(arService, ch, eb)
 
 	//
 	// Create the (empty) model behind the /redfish/v1 service root. Nothing interesting here
@@ -317,7 +316,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			view.WithURI(rootView.GetURI()+"/Managers/"+mgrName+"/Redundancy"),
 			view.WithModel("default", redundancyModel),
 			view.WithController("ar_mapper", armapper),
-			eventservice.PublishResourceUpdatedEventsForModel(ctx, "default", eb),
+			evtSvc.PublishResourceUpdatedEventsForModel(ctx, "default"),
 		)
 		redundancy := redundancy.AddAggregate(ctx, redundancyLogger, redundancyVw, ch)
 		p := &domain.RedfishResourceProperty{}
@@ -541,7 +540,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 				view.WithURI(rootView.GetURI()+"/Chassis/"+chasName+"/Power/PowerTrends-1/Last"+trend),
 				view.WithModel("default", trendModel),
 				//view.WithController("ar_mapper", armapper),
-				eventservice.PublishResourceUpdatedEventsForModel(ctx, "default", eb),
+				evtSvc.PublishResourceUpdatedEventsForModel(ctx, "default"),
 			)
 			pwr_trend := powertrends.AddAggregate(ctx, pwrTrendLogger, trendView, trend, ch)
 			p := &domain.RedfishResourceProperty{}
