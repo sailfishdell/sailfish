@@ -5,7 +5,7 @@ FROM golang:1.9 AS builder
 #RUN chmod +x /usr/bin/dep
 
 # Copy the code from the host and compile it
-#WORKDIR $GOPATH/src/github.com/superchalupa/go-redfish
+#WORKDIR $GOPATH/src/github.com/superchalupa/sailfish
 #COPY Gopkg.toml Gopkg.lock ./
 #RUN dep ensure --vendor-only
 
@@ -18,7 +18,7 @@ RUN rmdir src; \
      ln -s . github.com  ;\
      ln -s . superchalupa    ;\
      ln -s . go-redfish     ;\
-    GOPATH=$PWD CGO_ENABLED=0 GOOS=linux go build -a -installsuffix nocgo -o /app -tags simulation github.com/superchalupa/go-redfish/cmd/ocp-server
+    GOPATH=$PWD CGO_ENABLED=0 GOOS=linux go build -a -installsuffix nocgo -o /app -tags simulation github.com/superchalupa/sailfish/cmd/ocp-server
 
 FROM scratch
 COPY --from=builder /go/v1 /app  /

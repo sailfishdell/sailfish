@@ -10,14 +10,18 @@ import (
 	eh "github.com/looplab/eventhorizon"
 )
 
-func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, member bool, ch eh.CommandHandler) map[string]interface{} {
+func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, member string, ch eh.CommandHandler) map[string]interface{} {
+	s := ""
+	if member == "" {
+	    s = "s"
+	}
 	ch.HandleCommand(
 		ctx,
 		&domain.CreateRedfishResource{
 			ID:          v.GetUUID(),
 			Collection:  false,
 			ResourceURI: v.GetURI(),
-			Type:        "#Power.v1_0_2.PowerSupply",
+			Type:        "#DellPower.v1_0_0.DellPowerTrend"+s,
 			Context:     "/redfish/v1/$metadata#Power.PowerSystem.Chassis.1/Power/$entity",
 			Privileges: map[string]interface{}{
 				"GET":    []string{"Login"},
@@ -33,28 +37,25 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, member b
 }
 
 // this view fragment can be attached elsewhere in the tree
-func getViewFragment(v *view.View, member bool) map[string]interface{} {
+func getViewFragment(v *view.View, member string) map[string]interface{} {
 	properties := map[string]interface{}{
-		"@odata.context": "/redfish/v1/$metadata#Power.PowerSystem.Chassis.1/Power/$entity",
 		"@odata.id":      v.GetURI(),
 		"Name":           "System Power",
 		"MemberId":       "PowerHistogram",
 	}
 
-	if member == true {
+	if member != "" {
 		properties["Name"] = "System Power History"
-		properties["@odata.type"] = "#DellPower.v1_0_0.DellPowerTrend"
-		properties["HistoryAverageWatts@meta"] = v.Meta(view.PropGET("history_average_watts"))  //TODO
-		properties["HistoryMaxWatts@meta"] = v.Meta(view.PropGET("history_max_watts"))          //TODO
-		properties["HistoryMaxWattsTime@meta"] = v.Meta(view.PropGET("history_max_watts_time")) //TODO
-		properties["HistoryMinWatts@meta"] = v.Meta(view.PropGET("history_min_watts"))          //TODO
-		properties["HistoryMinWattsTime@meta"] = v.Meta(view.PropGET("history_min_watts_time")) //TODO
+		properties["HistoryAverageWatts@meta"] = v.Meta(view.PropGET("avg_watts_"+member))
+		properties["HistoryMaxWatts@meta"] = v.Meta(view.PropGET("max_watts_"+member))
+		properties["HistoryMaxWattsTime@meta"] = v.Meta(view.PropGET("max_watts_time_"+member))
+		properties["HistoryMinWatts@meta"] = v.Meta(view.PropGET("min_watts_"+member))
+		properties["HistoryMinWattsTime@meta"] = v.Meta(view.PropGET("min_watts_time_"+member))
 	} else {
-		properties["Name"] = "System Power"
+		properties["@odata.context"] = "/redfish/v1/$metadata#Power.PowerSystem.Chassis.1/Power/$entity"
 		properties["@odata.type"] = "#DellPower.v1_0_0.DellPowerTrends"
 		properties["histograms@meta"] = v.Meta(view.PropGET("histograms"))
 		properties["histograms@odata.count@meta"] = v.Meta(view.PropGET("histograms_count"))
 	}
-
 	return properties
 }

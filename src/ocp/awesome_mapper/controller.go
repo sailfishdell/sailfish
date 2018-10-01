@@ -5,6 +5,7 @@ import (
 	"errors"
 	"reflect"
 	"strconv"
+	"time"
 
 	"github.com/Knetic/govaluate"
 	"github.com/spf13/viper"
@@ -66,6 +67,23 @@ func New(ctx context.Context, logger log.Logger, cfg *viper.Viper, mdl *model.Mo
 			length := len(args[0].(string))
 			return (float64)(length), nil
 		},
+		"epoch_to_date": func(args ...interface{}) (interface{}, error) {
+			return time.Unix(int64(args[0].(float64)), 0), nil
+		},
+		"map_health_value": func(args ...interface{}) (interface{}, error) {
+			switch t := args[0].(float64); t {
+			case 0, 1: //other, unknown
+				return nil, nil
+			case 2: //ok
+				return "OK", nil
+			case 3: //non-critical
+				return "Warning", nil
+			case 4, 5: //critical, non-recoverable
+				return "Critical", nil
+			default:
+				return nil, errors.New("Invalid object status")
+			}
+		},
 	}
 
 outer:
@@ -99,27 +117,27 @@ outer:
 		}
 
 		go sp.RunForever(func(event eh.Event) {
-			mdl.StopNotifications()
-			for _, query := range loopvar.ModelUpdate {
-				if query.expr == nil {
-					logger.Crit("query is nil, that can't happen", "loopvar", loopvar)
-					continue
-				}
+				mdl.StopNotifications()
+				for _, query := range loopvar.ModelUpdate {
+					if query.expr == nil {
+						logger.Crit("query is nil, that can't happen", "loopvar", loopvar)
+						continue
+					}
 
-				expressionParameters["type"] = string(event.EventType())
-				expressionParameters["data"] = event.Data()
-				expressionParameters["event"] = event
-
-				expr, err := govaluate.NewEvaluableExpressionFromTokens(query.expr)
-				val, err := expr.Evaluate(expressionParameters)
-				if err != nil {
-					logger.Error("Expression failed to evaluate", "query.Query", query.Query, "parameters", expressionParameters, "err", err)
-					continue
+					expressionParameters["type"] = string(event.EventType())
+					expressionParameters["data"] = event.Data()
+					expressionParameters["event"] = event
+				
+					expr, err := govaluate.NewEvaluableExpressionFromTokens(query.expr)
+					val, err := expr.Evaluate(expressionParameters)
+					if err != nil {
+						logger.Error("Expression failed to evaluate", "query.Query", query.Query, "parameters", expressionParameters, "err", err)
+						continue
+					}
+					mdl.UpdateProperty(query.Property, val)
 				}
-				mdl.UpdateProperty(query.Property, val)
-			}
-			mdl.StartNotifications()
-			mdl.NotifyObservers()
+				mdl.StartNotifications()
+				mdl.NotifyObservers()
 		})
 	}
 

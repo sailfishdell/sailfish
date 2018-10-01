@@ -1,6 +1,6 @@
 DESCRIPTION = "redfish server written in go"
 SECTION = "webserver"
-HOMEPAGE = "https://github.com/superchalupa/go-redfish"
+HOMEPAGE = "https://github.com/superchalupa/sailfish"
 
 DEPENDS += "go-cross-arm"
 
@@ -12,14 +12,14 @@ LICENSE = "apache-2.0"
 INSANE_SKIP_${PN} = "ldflags"
 
 S = "${WORKDIR}/git"
-UPSTREAM_GO_URI = "github.com/superchalupa/go-redfish"
+UPSTREAM_GO_URI = "github.com/superchalupa/sailfish"
 
 SRC_URI += " \
-  http://github.com/superchalupa/go-redfish/${PN}-${PV}.tar.gz	\
+  http://github.com/superchalupa/sailfish/${PN}-${PV}.tar.gz	\
 "
 
 # real path should be:
-#  git://github.com/superchalupa/go-redfish
+#  git://github.com/superchalupa/sailfish
 
 do_configure[noexec] = "1"
 
@@ -61,7 +61,7 @@ do_compile() {
 	export GOPATH="${S}/.gopath"
 	export GOROOT="${STAGING_LIBDIR_NATIVE}/${TARGET_SYS}/go"
 
-	cd .gopath/src/github.com/superchalupa/go-redfish
+	cd .gopath/src/github.com/superchalupa/sailfish
 
   	$GOROOT/bin/go build -tags openbmc github.com/superchalupa/cmd/ocp-server
 }

@@ -27,7 +27,9 @@ func (t *dateTime) PropertyGet(
 ) {
 	// TODO: do we need to add options here to format different ways? Do we need to be able to format specific times instead of just current time?
 
-	// time.RFC3339
 	//rrp.Value = fmt.Sprintf(time.Now().UTC().Format("2006-01-02T15:04:05Z07:00"))
-	rrp.Value = time.Now().UTC().Format(time.RFC3339)
+
+	//odatalite format: 2000-08-12T18:27:01+00:00
+	//rrp.Value = time.Now().UTC().Format(time.RFC3339) //2018-09-26T20:25:29Z
+	rrp.Value = time.Now().UTC().Format("2006-01-02T15:04:05-07:00") //2018-09-26T20:26:05+00:00
 }
