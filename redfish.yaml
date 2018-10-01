@@ -16,6 +16,8 @@ views:
       "Models":
         "default":  {"unique_name": "TEST_Unique_Name", "name": "TEST_Name", "description": "TEST_Description" }
       "Controllers":
+        - "fn": "AwesomeMapper"
+          "params": {"modelname": "default", "cfgsection": "testview" }
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/testview'"
@@ -41,6 +43,9 @@ views:
 # move these attributes to awesome_mapper and add the if selection
 
 awesome_mapper:
+    testview:
+        - { Select: "type == 'AttributeUpdated' && data.FQDD == fqdd && data.Name == 'InstantaneousPower'", ModelUpdate: [ {Property: "Instantaneous_Power", Query: "data.Value", Default: 0} ] }
+
     fan:
         - { Select: "type == 'FanEvent' && data.ObjectHeader.FQDD == fqdd",
             ModelUpdate: [

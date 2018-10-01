@@ -14,7 +14,6 @@ import (
 	"github.com/superchalupa/sailfish/src/actionhandler"
 	"github.com/superchalupa/sailfish/src/eventwaiter"
 	"github.com/superchalupa/sailfish/src/log"
-	"github.com/superchalupa/sailfish/src/ocp/awesome_mapper"
 	"github.com/superchalupa/sailfish/src/ocp/event"
 	"github.com/superchalupa/sailfish/src/ocp/eventservice"
 	"github.com/superchalupa/sailfish/src/ocp/model"
@@ -49,6 +48,9 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	telemetryservice.Setup(ctx, ch, eb)
 	event.Setup(ch, eb)
 
+	// the package for this is going to change, but this is what makes the various mappers and view functions available
+	testaggregate.RunRegistryFunctions()
+
 	//
 	// Create the (empty) model behind the /redfish/v1 service root. Nothing interesting here
 	//
@@ -69,15 +71,14 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	//   2) controller(s) - pass model by args
 	//   3) views - pass models and controllers by args
 	//   4) aggregate - pass view
-	testaggregate.RunRegistryFunctions(logger)
-
 	testLogger, testView, err := testaggregate.InstantiateFromCfg(ctx, logger, cfgMgr, "testview", map[string]interface{}{"rooturi": rootView.GetURI()})
 	if err == nil {
-		awesome_mapper.New(ctx, testLogger, cfgMgr, testView.GetModel("default"), "testmodel", map[string]interface{}{"fqdd": "System.Modular.1"})
 		testView.ApplyOption(
 			evtSvc.PublishResourceUpdatedEventsForModel(ctx, "default"),
 		)
 		testaggregate.AddAggregate(ctx, testView, ch)
+
+		// separately, start goroutine to listen for test events and create sub uris
 		testaggregate.StartService(ctx, testLogger, cfgMgr, rootView, ch, eb)
 	}
 

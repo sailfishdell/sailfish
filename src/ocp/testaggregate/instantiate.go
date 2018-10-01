@@ -7,7 +7,9 @@ import (
 
 	"github.com/Knetic/govaluate"
 	"github.com/spf13/viper"
+
 	"github.com/superchalupa/sailfish/src/log"
+	"github.com/superchalupa/sailfish/src/ocp/awesome_mapper"
 	"github.com/superchalupa/sailfish/src/ocp/model"
 	"github.com/superchalupa/sailfish/src/ocp/view"
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
@@ -27,28 +29,36 @@ views:
         - "with_aggregate": "name"
 */
 
-type viewFunc func(vw *view.View, cfg interface{}, parameters map[string]interface{}) error
+type viewFunc func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, vw *view.View, cfg interface{}, parameters map[string]interface{}) error
 
-var initRegistry sync.Once
+var initViewRegistry sync.Once
 var viewFunctionsRegistry map[string]viewFunc
 var viewFunctionsRegistryMu sync.Mutex
 
 func RegisterViewFunction(name string, fn viewFunc) {
 	viewFunctionsRegistryMu.Lock()
-	initRegistry.Do(func() { viewFunctionsRegistry = map[string]viewFunc{} })
+	initViewRegistry.Do(func() { viewFunctionsRegistry = map[string]viewFunc{} })
 	defer viewFunctionsRegistryMu.Unlock()
 	viewFunctionsRegistry[name] = fn
 }
 
 func GetViewFunction(name string) viewFunc {
 	viewFunctionsRegistryMu.Lock()
-	initRegistry.Do(func() { viewFunctionsRegistry = map[string]viewFunc{} })
+	initViewRegistry.Do(func() { viewFunctionsRegistry = map[string]viewFunc{} })
 	defer viewFunctionsRegistryMu.Unlock()
 	return viewFunctionsRegistry[name]
 }
 
-func RunRegistryFunctions(logger log.Logger) {
-	RegisterViewFunction("with_URI", func(vw *view.View, cfg interface{}, parameters map[string]interface{}) error {
+func RunRegistryFunctions() {
+	// views
+	RegisterWithURI()
+
+	// controller
+	RegisterAwesomeMapper()
+}
+
+func RegisterWithURI() {
+	RegisterViewFunction("with_URI", func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, vw *view.View, cfg interface{}, parameters map[string]interface{}) error {
 		exprStr, ok := cfg.(string)
 		if !ok {
 			logger.Crit("Failed to type assert cfg to string", "cfg", cfg)
@@ -78,10 +88,67 @@ func RunRegistryFunctions(logger log.Logger) {
 	})
 }
 
+type controllerFunc func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, vw *view.View, cfg interface{}, parameters map[string]interface{}) error
+
+var initControllerRegistry sync.Once
+var controllerFunctionsRegistry map[string]controllerFunc
+var controllerFunctionsRegistryMu sync.Mutex
+
+func RegisterControllerFunction(name string, fn controllerFunc) {
+	controllerFunctionsRegistryMu.Lock()
+	initControllerRegistry.Do(func() { controllerFunctionsRegistry = map[string]controllerFunc{} })
+	defer controllerFunctionsRegistryMu.Unlock()
+	controllerFunctionsRegistry[name] = fn
+}
+
+func GetControllerFunction(name string) controllerFunc {
+	controllerFunctionsRegistryMu.Lock()
+	initControllerRegistry.Do(func() { controllerFunctionsRegistry = map[string]controllerFunc{} })
+	defer controllerFunctionsRegistryMu.Unlock()
+	return controllerFunctionsRegistry[name]
+}
+
+func RegisterAwesomeMapper() {
+	RegisterControllerFunction("AwesomeMapper", func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, vw *view.View, cfg interface{}, parameters map[string]interface{}) error {
+		cfgParams, ok := cfg.(map[interface{}]interface{})
+		if !ok {
+			logger.Crit("Failed to type assert cfg to string", "cfg", cfg)
+			return errors.New("Failed to type assert expression to string")
+		}
+
+		// ctx, logger, viper, *model, cfg_name, params
+		modelName, ok := cfgParams["modelname"]
+		if !ok {
+			modelName = "default"
+		}
+		modelNameStr, ok := modelName.(string)
+		if !ok {
+			modelNameStr = "default"
+		}
+
+		cfgSection, ok := cfgParams["cfgsection"]
+		if !ok {
+			logger.Crit("Required parameter 'cfgsection' missing, cannot continue")
+			return nil
+		}
+		cfgSectionStr, ok := cfgSection.(string)
+		if !ok {
+			logger.Crit("Required parameter 'cfgsection' could not be cast to string")
+			return nil
+		}
+
+		logger.Debug("Creating awesome_mapper controller", "modelName", modelNameStr, "cfgSection", cfgSectionStr)
+		awesome_mapper.New(ctx, logger, cfgMgr, vw.GetModel(modelNameStr), cfgSectionStr, parameters)
+
+		return nil
+	})
+}
+
 type config struct {
-	Logger []interface{}
-	Models map[string]map[string]interface{}
-	View   []map[string]interface{}
+	Logger      []interface{}
+	Models      map[string]map[string]interface{}
+	View        []map[string]interface{}
+	Controllers []map[string]interface{}
 }
 
 func InstantiateFromCfg(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, name string, parameters map[string]interface{}) (log.Logger, *view.View, error) {
@@ -135,14 +202,41 @@ func InstantiateFromCfg(ctx context.Context, logger log.Logger, cfgMgr *viper.Vi
 			continue
 		}
 		fn := GetViewFunction(viewFnNameStr)
-		fn(vw, viewFnParams, parameters)
+		if fn == nil {
+			subLogger.Crit("Could not find registered view function", "function", viewFnNameStr)
+			continue
+		}
+		fn(ctx, logger, cfgMgr, vw, viewFnParams, parameters)
 	}
 
 	// Instantiate controllers
+	for _, contollerFn := range config.Controllers {
+		contollerFnName, ok := contollerFn["fn"]
+		if !ok {
+			subLogger.Crit("Missing function name")
+			continue
+		}
+		controllerFnNameStr := contollerFnName.(string)
+		if !ok {
+			subLogger.Crit("fn name isnt a string")
+			continue
+		}
+		contollerFnParams, ok := contollerFn["params"]
+		if !ok {
+			subLogger.Crit("Missing function parameters")
+			continue
+		}
+		fn := GetControllerFunction(controllerFnNameStr)
+		if fn == nil {
+			subLogger.Crit("Could not find registered controller function", "function", controllerFnNameStr)
+			continue
+		}
+		fn(ctx, logger, cfgMgr, vw, contollerFnParams, parameters)
+	}
 
 	// Instantiate aggregate
 
-	// uncomment when we finish building it
+	// register the plugin
 	domain.RegisterPlugin(func() domain.Plugin { return vw })
 
 	return subLogger, vw, nil
