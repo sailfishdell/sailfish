@@ -48,6 +48,9 @@ func Setup(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus) {
 // StartEventService will create a model, view, and controller for the eventservice, then start a goroutine to publish events
 //      If you want to save settings, hook up a mapper to the "default" view returned
 func startEventService(ctx context.Context, logger log.Logger, rootView viewer, ch eh.CommandHandler, eb eh.EventBus) *view.View {
+
+	event_types_list := []string{"StatusChange","ResourceUpdated","ResourceAdded","ResourceRemoved","Alert"}
+
 	esLogger := logger.New("module", "EventService")
 
 	esModel := model.New(
@@ -55,6 +58,8 @@ func startEventService(ctx context.Context, logger log.Logger, rootView viewer, 
 		model.UpdateProperty("max_events_to_queue", 20),
 		model.UpdateProperty("delivery_retry_attempts", 3),
 		model.UpdateProperty("delivery_retry_interval_seconds", 60),
+		model.UpdateProperty("event_types_list", event_types_list),
+		model.UpdateProperty("event_types_list_count", len(event_types_list)),
 	)
 
 	esView := view.New(
