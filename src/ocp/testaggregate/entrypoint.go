@@ -79,7 +79,7 @@ func (l *TestService) manageTestObjs(ctx context.Context, logger log.Logger, cfg
 						logger.Warn("Test Event without proper *TestEventData", "event", event)
 					}
 
-					InstantiateFromCfg(ctx, logger, cfgMgr, "testview", map[string]interface{}{"unique": d.Unique, "rooturi": rootview.GetURI()})
+					InstantiateFromCfg(ctx, logger, cfgMgr, "testview_sub", map[string]interface{}{"unique": d.Unique, "rooturi": rootview.GetURI()})
 				}
 
 			case <-ctx.Done():

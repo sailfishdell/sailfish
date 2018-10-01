@@ -69,22 +69,17 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	//   2) controller(s) - pass model by args
 	//   3) views - pass models and controllers by args
 	//   4) aggregate - pass view
-	testLogger := logger.New("module", "testview")
-	testaggregate.RunRegistryFunctions(testLogger)
-	testaggregate.StartService(ctx, testLogger, cfgMgr, rootView, ch, eb)
-	testModel := model.New(
-		model.UpdateProperty("unique_name", "test_unique_name"),
-		model.UpdateProperty("name", "name"),
-		model.UpdateProperty("description", "description"),
-	)
-	awesome_mapper.New(ctx, testLogger, cfgMgr, testModel, "testmodel", map[string]interface{}{"fqdd": "System.Modular.1"})
+	testaggregate.RunRegistryFunctions(logger)
 
-	testView := view.New(
-		view.WithModel("default", testModel),
-		view.WithURI(rootView.GetURI()+"/testview"),
-		evtSvc.PublishResourceUpdatedEventsForModel(ctx, "default"),
-	)
-	testaggregate.AddAggregate(ctx, testView, ch)
+	testLogger, testView, err := testaggregate.InstantiateFromCfg(ctx, logger, cfgMgr, "testview", map[string]interface{}{"rooturi": rootView.GetURI()})
+	if err == nil {
+		awesome_mapper.New(ctx, testLogger, cfgMgr, testView.GetModel("default"), "testmodel", map[string]interface{}{"fqdd": "System.Modular.1"})
+		testView.ApplyOption(
+			evtSvc.PublishResourceUpdatedEventsForModel(ctx, "default"),
+		)
+		testaggregate.AddAggregate(ctx, testView, ch)
+		testaggregate.StartService(ctx, testLogger, cfgMgr, rootView, ch, eb)
+	}
 
 	//*********************************************************************
 	//  /redfish/v1/{Managers,Chassis,Systems,Accounts}

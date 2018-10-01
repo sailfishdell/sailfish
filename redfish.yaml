@@ -12,7 +12,16 @@ session:
 
 views:
   "testview":
-      "Logger": ["module", "abc123"]
+      "Logger": ["module", "testview_service_instantiated"]
+      "Models":
+        "default":  {"unique_name": "TEST_Unique_Name", "name": "TEST_Name", "description": "TEST_Description" }
+      "Controllers":
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/testview'"
+
+  "testview_sub":
+      "Logger": ["module", "testview_service_instantiated"]
       "Models":
         "default":  {"property1": "value1"}
       "Controllers":

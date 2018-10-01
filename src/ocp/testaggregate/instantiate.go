@@ -10,6 +10,7 @@ import (
 	"github.com/superchalupa/sailfish/src/log"
 	"github.com/superchalupa/sailfish/src/ocp/model"
 	"github.com/superchalupa/sailfish/src/ocp/view"
+	domain "github.com/superchalupa/sailfish/src/redfishresource"
 )
 
 /*
@@ -83,11 +84,11 @@ type config struct {
 	View   []map[string]interface{}
 }
 
-func InstantiateFromCfg(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, name string, parameters map[string]interface{}) (*view.View, error) {
+func InstantiateFromCfg(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, name string, parameters map[string]interface{}) (log.Logger, *view.View, error) {
 	subCfg := cfgMgr.Sub("views")
 	if subCfg == nil {
 		logger.Warn("missing config file section: 'views'")
-		return nil, errors.New("invalid config section 'views'")
+		return nil, nil, errors.New("invalid config section 'views'")
 	}
 
 	config := config{}
@@ -95,6 +96,7 @@ func InstantiateFromCfg(ctx context.Context, logger log.Logger, cfgMgr *viper.Vi
 	err := subCfg.UnmarshalKey(name, &config)
 	if err != nil {
 		logger.Warn("unamrshal failed", "err", err)
+		return nil, nil, errors.New("unmarshal failed")
 	}
 
 	// Instantiate logger
@@ -141,7 +143,7 @@ func InstantiateFromCfg(ctx context.Context, logger log.Logger, cfgMgr *viper.Vi
 	// Instantiate aggregate
 
 	// uncomment when we finish building it
-	//domain.RegisterPlugin(func() domain.Plugin { return vw })
+	domain.RegisterPlugin(func() domain.Plugin { return vw })
 
-	return vw, nil
+	return subLogger, vw, nil
 }
