@@ -38,7 +38,6 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 			},
 		},
 	}
-	//properties["Oem"].(map[string]interface{})["OemPower"].(map[string]interface{})["PowerTrends@odata.count"] = len(properties["Oem"].(map[string]interface{})["OemPower"].(map[string]interface{})["PowerTrends"].(map[string]interface{}))
 
 	ch.HandleCommand(
 		ctx,

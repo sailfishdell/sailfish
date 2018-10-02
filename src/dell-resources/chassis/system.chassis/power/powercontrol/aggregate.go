@@ -2,7 +2,6 @@ package powercontrol
 
 import (
 	"context"
-	//"strconv"
 
 	"github.com/superchalupa/sailfish/src/log"
 	"github.com/superchalupa/sailfish/src/ocp/view"
@@ -40,22 +39,19 @@ func getViewFragment(v *view.View) map[string]interface{} {
 		"@odata.id":                v.GetURI(),
 		"Name":                     "System Power Control",
 		"MemberId":                 "PowerControl",
-		"PowerAvailableWatts@meta": v.Meta(view.PropGET("available_watts")), // TODO
-		"PowerCapacityWatts@meta":  v.Meta(view.PropGET("capacity_watts")),
-		"PowerConsumedWatts@meta":  v.Meta(view.PropGET("consumed_watts")), // TODO
+		"PowerAvailableWatts@meta": v.Meta(view.PropGET("headroom_watts")),
+		"PowerCapacityWatts@meta":  v.Meta(view.PropGET("capacity_watts")), //System.Chassis.1#ChassisPower.1#SystemInputMaxPowerCapacity
+		"PowerConsumedWatts@meta":  v.Meta(view.PropGET("consumed_watts")),
 
 		"Oem": map[string]interface{}{
-			"EnergyConsumptionStartTime@meta": v.Meta(view.PropGET("energy_consumption_start_time")),
-			"EnergyConsumptionkWh@meta":       v.Meta(view.PropGET("Energy_Consumption_kWh")),
-			"HeadroomWatts@meta":              v.Meta(view.PropGET("headroom_watts")), // TODO
+			"EnergyConsumptionkWh@meta":       v.Meta(view.PropGET("energy_consumption_kwh")),
+			"HeadroomWatts@meta":              v.Meta(view.PropGET("headroom_watts")),
 			"MaxPeakWatts@meta":               v.Meta(view.PropGET("max_peak_watts")),
-			"MaxPeakWattsTime@meta":           v.Meta(view.PropGET("max_peak_watts_time")),
 			"MinPeakWatts@meta":               v.Meta(view.PropGET("min_peak_watts")),
-			"MinPeakWattsTime@meta":           v.Meta(view.PropGET("min_peak_watts_time")),
-			"PeakHeadroomWatts@meta":          v.Meta(view.PropGET("peak_headroom_watts")), // TODO
+			"PeakHeadroomWatts@meta":          v.Meta(view.PropGET("peak_headroom_watts")), 
 		},
 		"PowerLimit": map[string]interface{}{
-			"LimitInWatts@meta": v.Meta(view.PropGET("limit_in_watts")),
+			"LimitInWatts@meta": v.Meta(view.PropGET("limit_in_watts")), //System.Chassis.1#ChassisPower.1#PowerCapValue
 		},
 		"PowerMetrics": map[string]interface{}{
 			"AverageConsumedWatts": 0,
@@ -67,7 +63,9 @@ func getViewFragment(v *view.View) map[string]interface{} {
 		"RelatedItem@odata.count@meta": v.Meta(view.PropGET("related_item_count")),
 	}
 
-	//properties["Oem"].(map[string]interface{})["EnergyConsumptionkWh"]
+	properties["Oem"].(map[string]interface{})["EnergyConsumptionStartTime@meta"] =  v.Meta(view.PropGET("energy_consumption_start_time"))
+	properties["Oem"].(map[string]interface{})["MaxPeakWattsTime@meta"] =  v.Meta(view.PropGET("max_peak_watts_time"))
+	properties["Oem"].(map[string]interface{})["MinPeakWattsTime@meta"] =  v.Meta(view.PropGET("min_peak_watts_time"))
 
 	return properties
 }

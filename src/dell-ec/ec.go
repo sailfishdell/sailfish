@@ -497,7 +497,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 
 		armapper = arService.NewMapping(pwrCtrlLogger, "Chassis/"+chasName+"/Power/PowerControl", "Chassis/System.Chassis/Power", pwrCtrlModel, map[string]string{"FQDD": chasName})
 
-		// Power consumption in kwh TODO
 		awesome_mapper.New(ctx, pwrCtrlLogger, cfgMgr, pwrCtrlModel, "power_control", map[string]interface{}{})
 
 		sysChasPwrCtrlVw := view.New(

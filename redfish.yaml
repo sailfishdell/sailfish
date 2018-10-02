@@ -46,7 +46,17 @@ awesome_mapper:
         - { Select: "type == 'AttributeUpdated' && data.FQDD == fqdd && data.Name == 'InstantaneousPower'", ModelUpdate: [ {Property: "Instantaneous_Power", Query: "data.Value", Default: 0} ] }
 
     power_control:
-        - { Select: "type == 'AttributeUpdated' && data.FQDD == 'System.Chassis.1' && data.Name == 'AccumulativePower'", ModelUpdate: [ {Property: "Energy_Consumption_kWh", Query: "(data.Value)/1000", Default: 0 } ] } #not actually the correct attribute
+        - { Select: "type == 'PowerConsumptionDataObjEvent'", 
+            ModelUpdate: [ 
+                {Property: "energy_consumption_start_time", Query: "epoch_to_date(data.CwStartTime)" }, 
+                {Property: "energy_consumption_kwh", Query: "(data.CumulativeWatts)/1000" }, 
+                {Property: "headroom_watts", Query: "data.InstHeadRoom" },
+                {Property: "max_peak_watts", Query: "data.PeakWatts" },
+                {Property: "max_peak_watts_time", Query: "epoch_to_date(data.PwReadingTime)" },
+                {Property: "min_peak_watts", Query: "data.MinWatts" },
+                {Property: "min_peak_watts_time", Query: "epoch_to_date(data.MinwReadingTime)" },
+                {Property: "peak_headroom_watts", Query: "data.PeakHeadRoom" }, 
+                {Property: "consumed_watts", Query: "data.InstWattsPSU1_2" }]}
 
     power_supply:
         - { Select: "type == 'PowerSupplyObjEvent' && data.ObjectHeader.FQDD == fqdd",
@@ -211,13 +221,7 @@ mappings:
 
     Chassis/System.Chassis/Power:
         - {Property: "capacity_watts", FQDD: "System.Chassis.1", Group: "ChassisPower", Index: "1", Name: "SystemInputMaxPowerCapacity" }
-        - {Property: "energy_consumption_start_time", FQDD: "System.Chassis.1", Group: "SystemPwrMonn", Index: "1", Name: "AccumulativeStartEnergy"}
-        - {Property: "min_peak_watts", FQDD:"System.Chassis.1", Group: "SystemPwrMon", Index: "1", Name: "MinPowerWatts" }
-        - {Property: "min_peak_watts_time", FQDD:"System.Chassis.1", Group: "SystemPwrMon", Index: "1", Name: "MinPowerTimeStr" }
-        - {Property: "max_peak_watts", FQDD:"Systme.Chassis.1", Group: "SystemPwrMon", Index: "1", Name: "PeakPowerWatts" }
-        - {Property: "max_peak_watts_time", FQDD:"Systme.Chassis.1", Group: "SystemPwrMon", Index: "1", Name: "PeakPowerTimeStr" }
         - {Property: "limit_in_watts", FQDD: "System.Chassis.1", Group: "ChassisPower", Index: "1", Name: "PowerCapValue" }
-        - {Property: "cumulative_power_time", FQDD: "System.Chassis.1", Group: "SystemPwrMon", Index: "1", Name: "CumulativePowerStartTimeStr" } 
 
     Chassis/System.Chassis/Thermal:
         # no mappings for now: placeholder
