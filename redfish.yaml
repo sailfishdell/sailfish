@@ -29,6 +29,8 @@ views:
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/testview'"
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
 
   "testview_sub":
       "Logger": ["module", "testview_service_instantiated"]
@@ -38,6 +40,22 @@ views:
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/testview#' + unique"
+
+  "sessionview":
+      "Logger": ["module", "sessionview_service_instantiated"]
+      "Models":
+        "default":  {"session_timeout": 30}
+      "Controllers":
+        - "fn": "AwesomeMapper"
+          "params": {"modelname": "default", "cfgsection": "sessionview" }
+        - "fn": "ARMapper"
+          "params": {"modelname": "default", "cfgsection": "SessionService", "mappinguniquename": "'/redfish/v1/SessionService'"}
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/SessionService'"
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+
 
 # TODO: certain attributes are inputs to if statements for the "actual" property, ie System.Chassis.1#ChassisPower.1#ChassisPowerStatus.1:
 #     if(chassis_power_value == CHASSIS_STANDBY_POWER_STATE_EC)

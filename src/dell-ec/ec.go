@@ -92,7 +92,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	slotSvc := slots.New(arService, ch, eb)
 
 	// the package for this is going to change, but this is what makes the various mappers and view functions available
-	testaggregate.RunRegistryFunctions()
+	testaggregate.RunRegistryFunctions(evtSvc)
 	ar_mapper2.RunRegistryFunctions(arService)
 
 	//
@@ -116,18 +116,11 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	//
 	testLogger, testView, err := testaggregate.InstantiateFromCfg(ctx, logger, cfgMgr, "testview", map[string]interface{}{"rooturi": rootView.GetURI(), "fqdd": "System.Modular.1"})
 	if err == nil {
-		testView.ApplyOption(
-			evtSvc.PublishResourceUpdatedEventsForModel(ctx, "default"),
-		)
 		testaggregate.AddAggregate(ctx, testView, ch)
 
 		// separately, start goroutine to listen for test events and create sub uris
 		testaggregate.StartService(ctx, testLogger, cfgMgr, rootView, ch, eb)
 	}
-
-	testView.ApplyOption(
-		evtSvc.PublishResourceUpdatedEventsForModel(ctx, "default"),
-	)
 
 	testaggregate.AddAggregate(ctx, testView, ch)
 
@@ -141,20 +134,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	//*********************************************************************
 	// /redfish/v1/Sessions
 	//*********************************************************************
-	//
-	sessionLogger := logger.New("module", "SessionService")
-	sessionModel := model.New(
-		model.UpdateProperty("session_timeout", 30))
-	// the controller is what updates the model when ar entries change, also
-	// handles patch from redfish
-	armapper := arService.NewMapping(sessionLogger, "SessionService", "SessionService", sessionModel, map[string]string{})
-
-	sessionView := view.New(
-		view.WithModel("default", sessionModel),
-		view.WithController("ar_mapper", armapper),
-		view.WithURI(rootView.GetURI()+"/SessionService"),
-		evtSvc.PublishResourceUpdatedEventsForModel(ctx, "default"),
-	)
+	_, sessionView, err := testaggregate.InstantiateFromCfg(ctx, logger, cfgMgr, "sessionview", map[string]interface{}{"rooturi": rootView.GetURI()})
 	session.AddAggregate(ctx, sessionView, rootView.GetUUID(), ch, eb)
 
 	//*********************************************************************
@@ -388,7 +368,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		)
 		// the controller is what updates the model when ar entries change,
 		// also handles patch from redfish
-		armapper = arService.NewMapping(sysChasLogger, "Chassis/"+chasName, "Chassis/System.Chassis", chasModel, map[string]string{"FQDD": chasName})
+		armapper := arService.NewMapping(sysChasLogger, "Chassis/"+chasName, "Chassis/System.Chassis", chasModel, map[string]string{"FQDD": chasName})
 
 		// This controller will populate 'attributes' property with AR entries matching this FQDD ('chasName')
 		ardumper, _ := attributes.NewController(ctx, chasModel, []string{chasName}, ch, eb)
@@ -568,7 +548,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		)
 		// the controller is what updates the model when ar entries change,
 		// also handles patch from redfish
-		armapper := arService.NewMapping(thermalLogger, "Chassis/"+chasName+"/Thermal", "Chassis/System.Chassis/Thermal", thermalModel, map[string]string{"FQDD": chasName})
+		armapper = arService.NewMapping(thermalLogger, "Chassis/"+chasName+"/Thermal", "Chassis/System.Chassis/Thermal", thermalModel, map[string]string{"FQDD": chasName})
 
 		thermalView := view.New(
 			view.WithURI(rootView.GetURI()+"/Chassis/"+chasName+"/Thermal"),
@@ -984,7 +964,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	// pull the config from the YAML file to populate some static config options
 	self.configChangeHandler = func() {
 		logger.Info("Re-applying configuration from config file.")
-		sessionModel.ApplyOption(model.UpdateProperty("session_timeout", cfgMgr.GetInt("session.timeout")))
+		sessionView.GetModel("default").ApplyOption(model.UpdateProperty("session_timeout", cfgMgr.GetInt("session.timeout")))
 
 		for _, fn := range updateFns {
 			fn(ctx, cfgMgr)
@@ -1012,7 +992,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	}
 
 	sessObsLogger := logger.New("module", "observer")
-	sessionModel.AddObserver("viper", func(m *model.Model, updates []model.Update) {
+	sessionView.GetModel("default").AddObserver("viper", func(m *model.Model, updates []model.Update) {
 		sessObsLogger.Info("Session variable changed", "model", m, "updates", updates)
 		changed := false
 		for _, up := range updates {

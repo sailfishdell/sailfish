@@ -23,7 +23,6 @@ import (
 	"github.com/superchalupa/sailfish/src/ocp/stdcollections"
 	"github.com/superchalupa/sailfish/src/ocp/telemetryservice"
 	"github.com/superchalupa/sailfish/src/ocp/testaggregate"
-	"github.com/superchalupa/sailfish/src/ocp/view"
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
 )
 
@@ -54,7 +53,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	updateFns = append(updateFns, arService.ConfigChangedFn)
 
 	// the package for this is going to change, but this is what makes the various mappers and view functions available
-	testaggregate.RunRegistryFunctions()
+	testaggregate.RunRegistryFunctions(evtSvc)
 	ar_mapper2.RunRegistryFunctions(arService)
 
 	//
@@ -77,9 +76,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	//   4) aggregate - pass view
 	testLogger, testView, err := testaggregate.InstantiateFromCfg(ctx, logger, cfgMgr, "testview", map[string]interface{}{"rooturi": rootView.GetURI()})
 	if err == nil {
-		testView.ApplyOption(
-			evtSvc.PublishResourceUpdatedEventsForModel(ctx, "default"),
-		)
 		testaggregate.AddAggregate(ctx, testView, ch)
 
 		// separately, start goroutine to listen for test events and create sub uris
@@ -96,15 +92,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	//*********************************************************************
 	// /redfish/v1/Sessions
 	//*********************************************************************
-	//
-	//sessionLogger := logger.New("module", "SessionService")
-	sessionModel := model.New(
-		model.UpdateProperty("session_timeout", 30))
-	// the controller is what updates the model when ar entries change, also
-	// handles patch from redfish
-	sessionView := view.New(
-		view.WithModel("default", sessionModel),
-		view.WithURI(rootView.GetURI()+"/SessionService"))
+	_, sessionView, err := testaggregate.InstantiateFromCfg(ctx, logger, cfgMgr, "sessionview", map[string]interface{}{"rooturi": rootView.GetURI()})
 	session.AddAggregate(ctx, sessionView, rootView.GetUUID(), ch, eb)
 
 	//*********************************************************************
@@ -118,7 +106,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	// pull the config from the YAML file to populate some static config options
 	self.configChangeHandler = func() {
 		logger.Info("Re-applying configuration from config file.")
-		sessionModel.ApplyOption(model.UpdateProperty("session_timeout", cfgMgr.GetInt("session.timeout")))
+		sessionView.GetModel("default").UpdateProperty("session_timeout", cfgMgr.GetInt("session.timeout"))
 
 		for _, fn := range updateFns {
 			fn(ctx, cfgMgr)
@@ -146,7 +134,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	}
 
 	sessObsLogger := logger.New("module", "observer")
-	sessionModel.AddObserver("viper", func(m *model.Model, updates []model.Update) {
+	sessionView.GetModel("default").AddObserver("viper", func(m *model.Model, updates []model.Update) {
 		sessObsLogger.Info("Session variable changed", "model", m, "updates", updates)
 		changed := false
 		for _, up := range updates {
