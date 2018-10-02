@@ -15,20 +15,6 @@ import (
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
 )
 
-/*
-views:
-  "testview":
-      "Logger": ["module": "test_view"]
-      "models":
-        "default":  {"property1": "value1"}
-      "controllers":
-      "view":
-        - "with_URI": " rooturi + 'testview#' + unique"
-        - "with_foo": ""
-        - "with_bar": ""
-        - "with_aggregate": "name"
-*/
-
 type viewFunc func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, vw *view.View, cfg interface{}, parameters map[string]interface{}) error
 
 var initViewRegistry sync.Once
@@ -49,9 +35,14 @@ func GetViewFunction(name string) viewFunc {
 	return viewFunctionsRegistry[name]
 }
 
-func RunRegistryFunctions() {
+type EventService interface {
+	PublishResourceUpdatedEventsForModel(context.Context, string) view.Option
+}
+
+func RunRegistryFunctions(evtsvc EventService) {
 	// views
 	RegisterWithURI()
+	RegisterPublishEvents(evtsvc)
 
 	// controller
 	RegisterAwesomeMapper()
@@ -83,6 +74,21 @@ func RegisterWithURI() {
 
 		logger.Debug("Registering view with URI", "expr", exprStr, "uri", uriStr)
 		vw.ApplyOption(view.WithURI(uriStr))
+
+		return nil
+	})
+}
+
+func RegisterPublishEvents(evtSvc EventService) {
+	RegisterViewFunction("PublishResourceUpdatedEventsForModel", func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, vw *view.View, cfg interface{}, parameters map[string]interface{}) error {
+		modelName, ok := cfg.(string)
+		if !ok {
+			logger.Crit("Failed to type assert cfg to string", "cfg", cfg)
+			return errors.New("Failed to type assert expression to string")
+		}
+
+		logger.Debug("Running PublishResourceUpdatedEventsForModel", "modelName", modelName)
+		vw.ApplyOption(evtSvc.PublishResourceUpdatedEventsForModel(ctx, modelName))
 
 		return nil
 	})
