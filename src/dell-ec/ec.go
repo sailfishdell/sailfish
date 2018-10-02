@@ -143,7 +143,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	//*********************************************************************
 	evtSvc.StartEventService(ctx, logger, rootView)
 	telemetryservice.StartTelemetryService(ctx, logger, rootView)
-	// TODO: this guy returns a view we can use if we want to hook up a controller
 
 	//*********************************************************************
 	// /redfish/v1/Registries
@@ -205,7 +204,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	//
 	// Loop to create similarly named manager objects and the things attached there.
 	//
-	mgrLogger := logger.New("module", "Managers")
 	var managers []*view.View
 	mgrRedundancyMdl := model.New()
 
@@ -218,44 +216,36 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		//*********************************************************************
 		// /redfish/v1/Managers/CMC.Integrated
 		//*********************************************************************
-		mgrLogger := mgrLogger.New("module", "Managers/"+mgrName, "module", "Managers/CMC.Integrated")
 		connectTypesSupported := []interface{}{}
-		//managerForChassis := []map[string]string{{"@odata.id": rootView.GetURI()+"/Chassis/System.Chassis.1"}} //sysChasVw.GetURI()
-		mdl := model.New(
+
+		mgrLogger, mgrCmcVw, _ := testaggregate.InstantiateFromCfg(ctx, logger, cfgMgr, "manager_cmc_integrated",
+			map[string]interface{}{
+				"rooturi": rootView.GetURI(),
+				"FQDD":    mgrName,                                    // this is used for the AR mapper. case difference is confusing, but need to change mappers
+				"fqdd":    "System.Chassis.1#SubSystem.1#" + mgrName}, // This is used for the health subsystem
+		)
+		mgrCmcVw.GetModel("default").ApplyOption(
 			mgrCMCIntegrated.WithUniqueName(mgrName),
 			model.UpdateProperty("unique_name_attr", mgrName+".Attributes"),
 			model.UpdateProperty("attributes", map[string]map[string]map[string]interface{}{}),
 
 			model.UpdateProperty("connect_types_supported", connectTypesSupported),
 			model.UpdateProperty("connect_types_supported_count", len(connectTypesSupported)),
-
-			// manually add health properties until we get a mapper to automatically manage these
 		)
 
-		// the controller is what updates the model when ar entries change,
-		// also handles patch from redfish
-		fwmapper := arService.NewMapping(mgrLogger.New("module", "firmware/inventory"), "fwmapper_Managers/"+mgrName, "firmware/inventory", mdl, map[string]string{"FQDD": mgrName})
-
-		// need to have a separate model to hold fpga ver
-		//fpgamapper, _ := arService.NewMapping(mgrLogger, "fpgamapper_Managers/"+mgrName, "fpga_inventory", mdl, map[string]string{"FQDD": mgrName})
-		armapper := arService.NewMapping(mgrLogger, "Managers/"+mgrName, "Managers/CMC.Integrated", mdl, map[string]string{"FQDD": mgrName})
-
 		// This controller will populate 'attributes' property with AR entries matching this FQDD ('mgrName')
-		ardumper, _ := attributes.NewController(ctx, mdl, []string{mgrName}, ch, eb)
+		ardumper, _ := attributes.NewController(ctx, mgrCmcVw.GetModel("default"), []string{mgrName}, ch, eb)
 
-		awesome_mapper.New(ctx, mgrLogger, cfgMgr, mdl, "health", map[string]interface{}{"fqdd": "System.Chassis.1#SubSystem.1#" + mgrName})
-
-		mgrCmcVw := view.New(
-			view.WithURI(rootView.GetURI()+"/Managers/"+mgrName),
+		mgrCmcVw.ApplyOption(
 			view.WithModel("redundancy_health", mgrRedundancyMdl), // health info in default model
-			view.WithModel("health", mdl),                         // health info in default model
 			view.WithModel("global_health", globalHealthModel),
-			view.WithModel("swinv", mdl), // common name for swinv model, shared in this case
-			view.WithModel("default", mdl),
-			view.WithModel("etag", mdl),
-			view.WithController("ar_mapper", armapper),
+
+			view.WithModel("health", mgrCmcVw.GetModel("default")), // health info in default model
+			view.WithModel("swinv", mgrCmcVw.GetModel("default")),  // common name for swinv model, shared in this case
+			view.WithModel("default", mgrCmcVw.GetModel("default")),
+			view.WithModel("etag", mgrCmcVw.GetModel("default")),
+
 			view.WithController("ar_dump", ardumper),
-			view.WithController("fw_mapper", fwmapper),
 			view.UpdateEtag("etag", []string{}),
 
 			ah.WithAction(ctx, mgrLogger, "manager.reset", "/Actions/Manager.Reset", makePumpHandledAction("ManagerReset", 30, eb), ch, eb),
@@ -267,7 +257,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			ah.WithAction(ctx, mgrLogger, "certificates.generatecsr", "/Actions/DellCertificateService.GenerateCSR", makePumpHandledAction("GenerateCSR", 30, eb), ch, eb),
 
 			view.WithFormatter("attributeFormatter", attributes.FormatAttributeDump),
-			evtSvc.PublishResourceUpdatedEventsForModel(ctx, "default"),
 		)
 
 		managers = append(managers, mgrCmcVw)
@@ -289,7 +278,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			model.UpdateProperty("redundancy_set", redundancy_set),
 			model.UpdateProperty("redundancy_set_count", len(redundancy_set)),
 		)
-		armapper = arService.NewMapping(redundancyLogger, "Managers/"+mgrName+"/Redundancy", "Managers/CMC.Integrated", redundancyModel, map[string]string{"FQDD": mgrName})
+		armapper := arService.NewMapping(redundancyLogger, "Managers/"+mgrName+"/Redundancy", "Managers/CMC.Integrated", redundancyModel, map[string]string{"FQDD": mgrName})
 
 		awesome_mapper.New(ctx, redundancyLogger, cfgMgr, redundancyModel, "health", map[string]interface{}{"fqdd": "System.Chassis.1#SubSystem.1#" + mgrName})
 
@@ -304,8 +293,8 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		p.Parse(redundancy)
 		redundancy_views = append(redundancy_views, p)
 
-		mdl.ApplyOption(model.UpdateProperty("redundancy_views", &domain.RedfishResourceProperty{Value: redundancy_views}))
-		mdl.ApplyOption(model.UpdateProperty("redundancy_views_count", len(redundancy_views)))
+		mgrCmcVw.GetModel("default").ApplyOption(model.UpdateProperty("redundancy_views", &domain.RedfishResourceProperty{Value: redundancy_views}))
+		mgrCmcVw.GetModel("default").ApplyOption(model.UpdateProperty("redundancy_views_count", len(redundancy_views)))
 
 		//*********************************************************************
 		// Create CHASSIS objects for CMC.Integrated.N
@@ -328,7 +317,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		chasCmcVw := view.New(
 			view.WithURI(rootView.GetURI()+"/Chassis/"+mgrName),
 			view.WithModel("default", chasModel),
-			view.WithModel("etag", mdl),
+			view.WithModel("etag", chasModel),
 			view.WithModel("global_health", globalHealthModel),
 			view.WithController("ar_mapper", armapper),
 			view.WithController("ar_dump", ardumper),
