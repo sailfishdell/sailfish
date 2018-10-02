@@ -28,20 +28,26 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, rootID e
 				"DELETE": []string{},
 			},
 			Properties: map[string]interface{}{
-				"@odata.etag@meta":   v.Meta(view.GETProperty("etag"), view.GETModel("etag")),
+				//"@odata.etag@meta":   v.Meta(view.GETProperty("etag"), view.GETModel("etag")), //what is this??
 				"Id":                 "EventService",
 				"Name":               "Event Service",
 				"Description":	      "Event Service represents the properties for the service",
 				"ServerSentEventUri": "/redfish_events", //??
 				"Status": map[string]interface{}{
-					"HealthRollup":  "OK", //TODO
-					"Health": "OK", //TODO
+					"HealthRollup":  "OK", //hardcoded
+					"Health": "OK", //hardcoded
 				},
 				"ServiceEnabled":                    true, //??
 				"DeliveryRetryAttempts@meta":        v.Meta(view.PropGET("delivery_retry_attempts")),
 				"DeliveryRetryIntervalSeconds@meta": v.Meta(view.PropGET("delivery_retry_interval_seconds")),
-				"EventTypesForSubscription@meta": v.Meta(view.PropGET("event_types_list")),
-				"EventTypesForSubscription@odata.count@meta": v.Meta(view.PropGET("event_types_list_count")),
+				"EventTypesForSubscription":	     []string {
+					"StatusChange",
+					"ResourceUpdated",
+					"ResourceAdded",
+					"ResourceRemoved",
+					"Alert",
+				},
+				"EventTypesForSubscription@odata.count": 5,
 				"Subscriptions": map[string]interface{}{
 					"@odata.id": "/redfish/v1/EventService/Subscriptions",
 				},
