@@ -37,23 +37,23 @@ func RegisterARMapper(arsvc *ARService) {
 
 		cfgSection, ok := cfgParams["cfgsection"]
 		if !ok {
-			logger.Crit("Required parameter 'cfgsection' missing, cannot continue")
+			logger.Crit("Required parameter 'cfgsection' missing, cannot continue", "modelname", modelNameStr, "cfg", cfg)
 			return nil
 		}
 		cfgSectionStr, ok := cfgSection.(string)
 		if !ok {
-			logger.Crit("Required parameter 'cfgsection' could not be cast to string")
+			logger.Crit("Required parameter 'cfgsection' could not be cast to string", "modelname", modelNameStr)
 			return nil
 		}
 
 		mappingUniqueName, ok := cfgParams["mappinguniquename"]
 		if !ok {
-			logger.Crit("Required parameter 'mappinguniquename' missing, cannot continue")
+			logger.Crit("Required parameter 'mappinguniquename' missing, cannot continue", "modelname", modelNameStr)
 			return nil
 		}
 		mappingUniqueNameStr, ok := mappingUniqueName.(string)
 		if !ok {
-			logger.Crit("Required parameter 'mappinguniquename' could not be cast to string")
+			logger.Crit("Required parameter 'mappinguniquename' could not be cast to string", "modelname", modelNameStr)
 			return nil
 		}
 
@@ -96,7 +96,7 @@ func RegisterARMapper(arsvc *ARService) {
 		b := arsvc.NewMapping(logger, mappingNameStr, cfgSectionStr, vw.GetModel(modelNameStr), newparams)
 
 		if addToViewBool {
-			vw.ApplyOption(view.WithController("mappintUniqueName", b))
+			vw.ApplyOption(view.WithController(mappingUniqueNameStr, b))
 		}
 
 		return nil

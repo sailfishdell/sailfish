@@ -25,7 +25,7 @@ views:
         - "fn": "AwesomeMapper"
           "params": {"modelname": "default", "cfgsection": "testview" }
         - "fn": "ARMapper"
-          "params": {"modelname": "default", "cfgsection": "testview", "mappinguniquename": "'/redfish/v1/testservice'"}
+          "params": {"modelname": "default", "cfgsection": "testview", "mappinguniquename": "'/redfish/v1/testservice'", "AddToView": true}
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/testview'"
@@ -49,12 +49,32 @@ views:
         - "fn": "AwesomeMapper"
           "params": {"modelname": "default", "cfgsection": "sessionview" }
         - "fn": "ARMapper"
-          "params": {"modelname": "default", "cfgsection": "SessionService", "mappinguniquename": "'/redfish/v1/SessionService'"}
+          "params": {"modelname": "default", "cfgsection": "SessionService", "mappinguniquename": "'/redfish/v1/SessionService'", "AddToView": true}
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/SessionService'"
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
+
+  "manager_cmc_integrated":
+      "Logger": ["module", "managerchassisview_service_instantiated"]
+      "Models":
+        "default":  {}
+      "Controllers":
+        - "fn": "ARMapper"
+          "params": {"modelname": "default", "cfgsection": "firmware/inventory", "mappinguniquename": "'fw_mapper:' + FQDD ", "AddToView": true}
+        - "fn": "ARMapper"
+          "params": {"modelname": "default", "cfgsection": "Managers/CMC.Integrated", "mappinguniquename": "'manager_mapper:' + FQDD ", "AddToView": true}
+        - "fn": "AwesomeMapper"
+          "params": {"modelname": "default", "cfgsection": "health" }
+        - "fn": "ARDumper"
+          "params": {"modelname": "default", "AddToView": true}
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/Managers/' + FQDD"
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+
 
 
 # TODO: certain attributes are inputs to if statements for the "actual" property, ie System.Chassis.1#ChassisPower.1#ChassisPowerStatus.1:
@@ -95,7 +115,7 @@ awesome_mapper:
         - { Select: "type == 'AttributeUpdated' && data.FQDD == fqdd && data.Name == 'InstantaneousPower'", ModelUpdate: [ {Property: "Instantaneous_Power", Query: "data.Value", Default: 0} ] }
 
     power_control:
-        - { Select: "type == 'AttributeUpdated' && data.FQDD == 'System.Chassis.1' && data.Name == 'AccumulativePower'", ModelUpdate: [ {Property: "Energy_Consumption_kWh", Query: "(data.Value)/1000", Default: 0 } ] } #not actually the correct attribute
+        - { Select: "type == 'AttributeUpdated' && data.FQDD == 'System.Chassis.1' && data.Name == 'AccumulativePower'", ModelUpdate: [ {Property: "Energy_Consumption_kWh", Query: "int(data.Value)/1000", Default: 0 } ] } #not actually the correct attribute
 
     power_supply:
         - { Select: "type == 'PowerSupplyObjEvent' && data.ObjectHeader.FQDD == fqdd",

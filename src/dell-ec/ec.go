@@ -94,6 +94,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	// the package for this is going to change, but this is what makes the various mappers and view functions available
 	testaggregate.RunRegistryFunctions(evtSvc)
 	ar_mapper2.RunRegistryFunctions(arService)
+	attributes.RunRegistryFunctions(ch, eb)
 
 	//
 	// Create the (empty) model behind the /redfish/v1 service root. Nothing interesting here
@@ -121,8 +122,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		// separately, start goroutine to listen for test events and create sub uris
 		testaggregate.StartService(ctx, testLogger, cfgMgr, rootView, ch, eb)
 	}
-
-	testaggregate.AddAggregate(ctx, testView, ch)
 
 	//*********************************************************************
 	//  /redfish/v1/{Managers,Chassis,Systems,Accounts}
@@ -220,9 +219,11 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 
 		mgrLogger, mgrCmcVw, _ := testaggregate.InstantiateFromCfg(ctx, logger, cfgMgr, "manager_cmc_integrated",
 			map[string]interface{}{
-				"rooturi": rootView.GetURI(),
-				"FQDD":    mgrName,                                    // this is used for the AR mapper. case difference is confusing, but need to change mappers
-				"fqdd":    "System.Chassis.1#SubSystem.1#" + mgrName}, // This is used for the health subsystem
+				"rooturi":  rootView.GetURI(),
+				"FQDD":     mgrName,                                   // this is used for the AR mapper. case difference is confusing, but need to change mappers
+				"fqdd":     "System.Chassis.1#SubSystem.1#" + mgrName, // This is used for the health subsystem
+				"fqddlist": []string{mgrName},
+			},
 		)
 		mgrCmcVw.GetModel("default").ApplyOption(
 			mgrCMCIntegrated.WithUniqueName(mgrName),
@@ -233,9 +234,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			model.UpdateProperty("connect_types_supported_count", len(connectTypesSupported)),
 		)
 
-		// This controller will populate 'attributes' property with AR entries matching this FQDD ('mgrName')
-		ardumper, _ := attributes.NewController(ctx, mgrCmcVw.GetModel("default"), []string{mgrName}, ch, eb)
-
 		mgrCmcVw.ApplyOption(
 			view.WithModel("redundancy_health", mgrRedundancyMdl), // health info in default model
 			view.WithModel("global_health", globalHealthModel),
@@ -245,7 +243,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			view.WithModel("default", mgrCmcVw.GetModel("default")),
 			view.WithModel("etag", mgrCmcVw.GetModel("default")),
 
-			view.WithController("ar_dump", ardumper),
 			view.UpdateEtag("etag", []string{}),
 
 			ah.WithAction(ctx, mgrLogger, "manager.reset", "/Actions/Manager.Reset", makePumpHandledAction("ManagerReset", 30, eb), ch, eb),
@@ -310,7 +307,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		armapper = arService.NewMapping(chasLogger, "Chassis/"+mgrName, "Managers/CMC.Integrated", chasModel, map[string]string{"FQDD": mgrName})
 
 		// This controller will populate 'attributes' property with AR entries matching this FQDD ('mgrName')
-		ardumper, _ = attributes.NewController(ctx, chasModel, []string{mgrName}, ch, eb)
+		ardumper, _ := attributes.NewController(ctx, chasModel, []string{mgrName}, ch, eb)
 
 		awesome_mapper.New(ctx, chasLogger, cfgMgr, chasModel, "health", map[string]interface{}{"fqdd": "System.Chassis.1#SubSystem.1#CMC"})
 
