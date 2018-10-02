@@ -115,13 +115,11 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	//   3) views - pass models and controllers by args
 	//   4) aggregate - pass view
 	//
-	testLogger, testView, err := testaggregate.InstantiateFromCfg(ctx, logger, cfgMgr, "testview", map[string]interface{}{"rooturi": rootView.GetURI(), "fqdd": "System.Modular.1"})
-	if err == nil {
-		testaggregate.AddAggregate(ctx, testView, ch)
+	testLogger, testView, _ := testaggregate.InstantiateFromCfg(ctx, logger, cfgMgr, "testview", map[string]interface{}{"rooturi": rootView.GetURI(), "fqdd": "System.Modular.1"})
+	testaggregate.AddAggregate(ctx, testView, ch)
 
-		// separately, start goroutine to listen for test events and create sub uris
-		testaggregate.StartService(ctx, testLogger, cfgMgr, rootView, ch, eb)
-	}
+	// separately, start goroutine to listen for test events and create sub uris
+	testaggregate.StartService(ctx, testLogger, cfgMgr, rootView, ch, eb)
 
 	//*********************************************************************
 	//  /redfish/v1/{Managers,Chassis,Systems,Accounts}
@@ -133,7 +131,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	//*********************************************************************
 	// /redfish/v1/Sessions
 	//*********************************************************************
-	_, sessionView, err := testaggregate.InstantiateFromCfg(ctx, logger, cfgMgr, "sessionview", map[string]interface{}{"rooturi": rootView.GetURI()})
+	_, sessionView, _ := testaggregate.InstantiateFromCfg(ctx, logger, cfgMgr, "sessionview", map[string]interface{}{"rooturi": rootView.GetURI()})
 	session.AddAggregate(ctx, sessionView, rootView.GetUUID(), ch, eb)
 
 	//*********************************************************************
@@ -146,21 +144,15 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	//*********************************************************************
 	// /redfish/v1/Registries
 	//*********************************************************************
-	registryLogger := logger.New("module", "Registries")
-	registryModel := model.New()
-
-	// static config controller, initlize values based on yaml config
-	staticMapper, _ := static_mapper.New(ctx, registryLogger, registryModel, "Registries")
-	updateFns = append(updateFns, staticMapper.ConfigChangedFn)
-
-	registryView := view.New(
-		view.WithURI(rootView.GetURI()+"/Registries"),
-		view.WithModel("default", registryModel),
-	)
+	registryLogger, registryView, _ := testaggregate.InstantiateFromCfg(ctx, logger, cfgMgr, "registries", map[string]interface{}{"rooturi": rootView.GetURI()})
 	registries.AddAggregate(ctx, registryLogger, registryView, rootView.GetUUID(), ch, eb)
 
-	languages := []string{"En"}
+	// TODO: make an adapter for this to move it into redfish.yaml
+	// static config controller, initlize values based on yaml config
+	staticMapper, _ := static_mapper.New(ctx, registryLogger, registryView.GetModel("default"), "Registries")
+	updateFns = append(updateFns, staticMapper.ConfigChangedFn)
 
+	languages := []string{"En"}
 	registry_views := []interface{}{}
 	for _, registry_map := range []map[string]interface{}{
 		{"id": "Messages", "description": "iDRAC Message Registry File locations", "name": "iDRAC Message Registry File", "type": "iDrac.1.5", "location": map[string]string{"Uri": "/redfish/v1/Registries/Messages/EEMIRegistry.v1_5_0.json"}},
@@ -191,7 +183,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		)
 		registry.AddAggregate(ctx, registryLogger, rv, ch, eb)
 	}
-	registryModel.ApplyOption(model.UpdateProperty("registry_views", &domain.RedfishResourceProperty{Value: registry_views}))
+	registryView.GetModel("default").ApplyOption(model.UpdateProperty("registry_views", &domain.RedfishResourceProperty{Value: registry_views}))
 
 	//HEALTH
 	// The following model maps a bunch of health related stuff that can be tracked once at a global level.
