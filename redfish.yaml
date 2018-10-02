@@ -105,6 +105,26 @@ views:
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
 
+  "psu_slot":
+      "Logger": ["module", "PSU.Slot"]
+      "Models":
+        "default":  {}
+      "Controllers":
+        - "fn": "ARDumper"
+          "params": {"modelname": "default", "AddToView": true}
+        - "fn": "ARMapper"
+          "params": {"modelname": "default", "cfgsection": "firmware/inventory", "mappinguniquename": "'fw_mapper:' + ChassisFQDD + '_' + FQDD", "AddToView": true}
+        - "fn": "ARMapper"
+          "params": {"modelname": "default", "cfgsection": "PSU/PSU.Slot", "mappinguniquename": "'chassis_psu_mapper:' + ChassisFQDD + '_' + FQDD ", "AddToView": true}
+        - "fn": "AwesomeMapper"
+          "params": {"modelname": "default", "cfgsection": "power_supply" }
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/Chassis/' + ChassisFQDD + '/Power/PowerSupplies/' + FQDD "
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+
+
 # TODO: certain attributes are inputs to if statements for the "actual" property, ie System.Chassis.1#ChassisPower.1#ChassisPowerStatus.1:
 #     if(chassis_power_value == CHASSIS_STANDBY_POWER_STATE_EC)
 #        ChassisObject[CHASSIS_POWERSTATE_KEY] = "Off";

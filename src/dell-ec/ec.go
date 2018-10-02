@@ -399,35 +399,28 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			"PSU.Slot.1", "PSU.Slot.2", "PSU.Slot.3",
 			"PSU.Slot.4", "PSU.Slot.5", "PSU.Slot.6",
 		} {
-			psuLogger := powerLogger.New("module", "Chassis/System.Chassis/Power/PowerSupply")
 
-			psuModel := model.New(
+			psuLogger, sysChasPwrPsuVw, _ := testaggregate.InstantiateFromCfg(ctx, logger, cfgMgr, "psu_slot",
+				map[string]interface{}{
+					"rooturi":     rootView.GetURI(),
+					"FQDD":        psuName,  // this is used for the AR mapper. case difference is confusing, but need to change mappers
+					"ChassisFQDD": chasName, // this is used for the AR mapper. case difference is confusing, but need to change mappers
+					"fqdd":        "System.Chassis.1#" + strings.Replace(psuName, "PSU.Slot", "PowerSupply", 1),
+					"fqddlist":    []string{psuName},
+				},
+			)
+
+			sysChasPwrPsuVw.GetModel("default").ApplyOption(
 				model.UpdateProperty("unique_name", psuName),
 				model.UpdateProperty("unique_name_attr", psuName+".Attributes"),
 				model.UpdateProperty("unique_id", psuName),
 				model.UpdateProperty("attributes", map[string]map[string]map[string]interface{}{}),
 			)
-			fwmapper := arService.NewMapping(psuLogger.New("module", "firmware/inventory"), "firmware_Chassis/"+chasName+"/Power/PowerSupplies/"+psuName, "firmware/inventory", psuModel, map[string]string{"FQDD": psuName})
 
-			// the controller is what updates the model when ar entries change,
-			// also handles patch from redfish
-			armapper := arService.NewMapping(psuLogger, "Chassis/"+chasName+"/Power/PowerSupplies/"+psuName, "PSU/PSU.Slot", psuModel, map[string]string{"FQDD": psuName})
-
-			// This controller will populate 'attributes' property with AR entries matching this FQDD ('psuName')
-			ardumper, _ := attributes.NewController(ctx, psuModel, []string{psuName}, ch, eb)
-
-			awesome_mapper.New(ctx, psuLogger, cfgMgr, psuModel, "power_supply", map[string]interface{}{"fqdd": "System.Chassis.1#" + strings.Replace(psuName, "PSU.Slot", "PowerSupply", 1)})
-
-			sysChasPwrPsuVw := view.New(
-				view.WithURI(rootView.GetURI()+"/Chassis/"+chasName+"/Power/PowerSupplies/"+psuName),
-				view.WithModel("default", psuModel),
-				view.WithModel("swinv", psuModel),
+			sysChasPwrPsuVw.ApplyOption(
+				view.WithModel("swinv", sysChasPwrPsuVw.GetModel("default")),
 				view.WithModel("global_health", globalHealthModel),
-				view.WithController("ar_mapper", armapper),
-				view.WithController("ar_dumper", ardumper),
-				view.WithController("fw_mapper", fwmapper),
 				view.WithFormatter("attributeFormatter", attributes.FormatAttributeDump),
-				evtSvc.PublishResourceUpdatedEventsForModel(ctx, "default"),
 			)
 			swinvViews = append(swinvViews, sysChasPwrPsuVw)
 
