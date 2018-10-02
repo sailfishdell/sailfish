@@ -288,30 +288,25 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		//*********************************************************************
 		// Create CHASSIS objects for CMC.Integrated.N
 		//*********************************************************************
-		chasLogger := logger.New("module", "Chassis/"+mgrName, "module", "Chassis/CMC.Integrated")
-		chasModel, _ := mgrCMCIntegrated.New(
+		chasLogger, chasCmcVw, _ := testaggregate.InstantiateFromCfg(ctx, logger, cfgMgr, "chassis_cmc_integrated",
+			map[string]interface{}{
+				"rooturi":  rootView.GetURI(),
+				"FQDD":     mgrName,                            // this is used for the AR mapper. case difference is confusing, but need to change mappers
+				"fqdd":     "System.Chassis.1#SubSystem.1#CMC", // This is used for the health subsystem
+				"fqddlist": []string{mgrName},
+			},
+		)
+
+		chasCmcVw.GetModel("default").ApplyOption(
 			mgrCMCIntegrated.WithUniqueName(mgrName),
 			model.UpdateProperty("unique_name_attr", mgrName+".Attributes"),
 			model.UpdateProperty("attributes", map[string]map[string]map[string]interface{}{}),
 		)
-		// the controller is what updates the model when ar entries change,
-		// also handles patch from redfish... re-use the same mappings from Managers
-		armapper = arService.NewMapping(chasLogger, "Chassis/"+mgrName, "Managers/CMC.Integrated", chasModel, map[string]string{"FQDD": mgrName})
 
-		// This controller will populate 'attributes' property with AR entries matching this FQDD ('mgrName')
-		ardumper, _ := attributes.NewController(ctx, chasModel, []string{mgrName}, ch, eb)
-
-		awesome_mapper.New(ctx, chasLogger, cfgMgr, chasModel, "health", map[string]interface{}{"fqdd": "System.Chassis.1#SubSystem.1#CMC"})
-
-		chasCmcVw := view.New(
-			view.WithURI(rootView.GetURI()+"/Chassis/"+mgrName),
-			view.WithModel("default", chasModel),
-			view.WithModel("etag", chasModel),
+		chasCmcVw.ApplyOption(
+			view.WithModel("etag", chasCmcVw.GetModel("default")),
 			view.WithModel("global_health", globalHealthModel),
-			view.WithController("ar_mapper", armapper),
-			view.WithController("ar_dump", ardumper),
 			view.WithFormatter("attributeFormatter", attributes.FormatAttributeDump),
-			evtSvc.PublishResourceUpdatedEventsForModel(ctx, "default"),
 			view.UpdateEtag("etag", []string{}),
 		)
 

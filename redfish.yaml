@@ -56,6 +56,18 @@ views:
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
 
+  "registries":
+      "Logger": ["module", "registry"]
+      "Models":
+        "default":  {}
+      "Controllers":
+        # not yet implemented...
+        - "fn": "StaticMapper"
+          "params": {"modelname": "default", "AddToView": true}
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/Registries'"
+
   "manager_cmc_integrated":
       "Logger": ["module", "mgrChassis"]
       "Models":
@@ -75,20 +87,23 @@ views:
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
 
-  "registries":
-      "Logger": ["module", "registry"]
+  "chassis_cmc_integrated":
+      "Logger": ["module", "ChassisCMCInt"]
       "Models":
         "default":  {}
       "Controllers":
-        # not yet implemented...
-        - "fn": "StaticMapper"
+        - "fn": "ARMapper"
+          # note: this is correct, the chassis model re-uses the managers mapper
+          "params": {"modelname": "default", "cfgsection": "Managers/CMC.Integrated", "mappinguniquename": "'chassis:' + FQDD ", "AddToView": true}
+        - "fn": "ARDumper"
           "params": {"modelname": "default", "AddToView": true}
+        - "fn": "AwesomeMapper"
+          "params": {"modelname": "default", "cfgsection": "health" }
       "View":
         - "fn": "with_URI"
-          "params": "rooturi + '/Registries'"
-
-
-
+          "params": "rooturi + '/Chassis/' + FQDD"
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
 
 # TODO: certain attributes are inputs to if statements for the "actual" property, ie System.Chassis.1#ChassisPower.1#ChassisPowerStatus.1:
 #     if(chassis_power_value == CHASSIS_STANDBY_POWER_STATE_EC)
