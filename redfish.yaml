@@ -11,6 +11,12 @@ session:
     timeout: 600
 
 views:
+  "rootview":
+      "Logger": ["module", "root_logger"]
+      "View":
+        - "fn": "with_URI"
+          "params": "'/redfish/v1'"
+
   "testview":
       "Logger": ["module", "testview_service_instantiated"]
       "Models":
@@ -18,6 +24,8 @@ views:
       "Controllers":
         - "fn": "AwesomeMapper"
           "params": {"modelname": "default", "cfgsection": "testview" }
+        - "fn": "ARMapper"
+          "params": {"modelname": "default", "cfgsection": "testview", "mappinguniquename": "'/redfish/v1/testservice'"}
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/testview'"

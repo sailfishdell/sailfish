@@ -91,6 +91,10 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 
 	slotSvc := slots.New(arService, ch, eb)
 
+	// the package for this is going to change, but this is what makes the various mappers and view functions available
+	testaggregate.RunRegistryFunctions()
+	ar_mapper2.RunRegistryFunctions(arService)
+
 	//
 	// Create the (empty) model behind the /redfish/v1 service root. Nothing interesting here
 	//
@@ -98,9 +102,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	// No Model
 	// No Controllers
 	// View created so we have a place to hold the aggregate UUID and URI
-	rootView := view.New(
-		view.WithURI("/redfish/v1"),
-	)
+	_, rootView, _ := testaggregate.InstantiateFromCfg(ctx, logger, cfgMgr, "rootview", map[string]interface{}{})
 	root.AddAggregate(ctx, rootView, ch, eb)
 
 	//*********************************************************************
@@ -112,22 +114,21 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	//   3) views - pass models and controllers by args
 	//   4) aggregate - pass view
 	//
-	testLogger := logger.New("module", "testview")
-	testModel := model.New(
-		model.UpdateProperty("unique_name", "test_unique_name"),
-		model.UpdateProperty("name", "name"),
-		model.UpdateProperty("description", "description"),
-	)
-	awesome_mapper.New(ctx, testLogger, cfgMgr, testModel, "testmodel", map[string]interface{}{"fqdd": "System.Modular.1"})
+	testLogger, testView, err := testaggregate.InstantiateFromCfg(ctx, logger, cfgMgr, "testview", map[string]interface{}{"rooturi": rootView.GetURI(), "fqdd": "System.Modular.1"})
+	if err == nil {
+		testView.ApplyOption(
+			evtSvc.PublishResourceUpdatedEventsForModel(ctx, "default"),
+		)
+		testaggregate.AddAggregate(ctx, testView, ch)
 
-	ar2mapper := arService.NewMapping(testLogger, "test123", "test/testview", testModel, map[string]string{"FQDD": "happy"})
+		// separately, start goroutine to listen for test events and create sub uris
+		testaggregate.StartService(ctx, testLogger, cfgMgr, rootView, ch, eb)
+	}
 
-	testView := view.New(
-		view.WithModel("default", testModel),
-		view.WithController("ar_mapper", ar2mapper),
-		view.WithURI(rootView.GetURI()+"/testview"),
+	testView.ApplyOption(
 		evtSvc.PublishResourceUpdatedEventsForModel(ctx, "default"),
 	)
+
 	testaggregate.AddAggregate(ctx, testView, ch)
 
 	//*********************************************************************

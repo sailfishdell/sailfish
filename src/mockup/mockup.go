@@ -12,6 +12,7 @@ import (
 	eh "github.com/looplab/eventhorizon"
 
 	"github.com/superchalupa/sailfish/src/actionhandler"
+	"github.com/superchalupa/sailfish/src/dell-resources/ar_mapper2"
 	"github.com/superchalupa/sailfish/src/eventwaiter"
 	"github.com/superchalupa/sailfish/src/log"
 	"github.com/superchalupa/sailfish/src/ocp/event"
@@ -42,14 +43,19 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 
 	updateFns := []func(context.Context, *viper.Viper){}
 
+	// service startup
 	domain.StartInjectService(eb)
 	actionhandler.Setup(ctx, ch, eb)
 	evtSvc := eventservice.New(ctx, ch, eb)
 	telemetryservice.Setup(ctx, ch, eb)
 	event.Setup(ch, eb)
 
+	arService, _ := ar_mapper2.StartService(ctx, logger, eb)
+	updateFns = append(updateFns, arService.ConfigChangedFn)
+
 	// the package for this is going to change, but this is what makes the various mappers and view functions available
 	testaggregate.RunRegistryFunctions()
+	ar_mapper2.RunRegistryFunctions(arService)
 
 	//
 	// Create the (empty) model behind the /redfish/v1 service root. Nothing interesting here
@@ -58,9 +64,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	// No Model
 	// No Controllers
 	// View created so we have a place to hold the aggregate UUID and URI
-	rootView := view.New(
-		view.WithURI("/redfish/v1"),
-	)
+	_, rootView, _ := testaggregate.InstantiateFromCfg(ctx, logger, cfgMgr, "rootview", map[string]interface{}{})
 	root.AddAggregate(ctx, rootView, ch, eb)
 
 	//*********************************************************************
