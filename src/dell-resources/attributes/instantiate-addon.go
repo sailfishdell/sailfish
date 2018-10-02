@@ -56,7 +56,7 @@ func RegisterARMapper(ch eh.CommandHandler, eb eh.EventBus) {
 			return nil
 		}
 
-		logger.Warn("Creating ar_dumper controller", "modelName", modelNameStr, "fqddList", fqddlist)
+		logger.Info("Creating ar_dumper controller", "modelName", modelNameStr, "fqddList", fqddlist)
 		dumper, _ := NewController(ctx, vw.GetModel(modelNameStr), fqddlist, ch, eb)
 
 		if addToViewBool {
