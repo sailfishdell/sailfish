@@ -105,6 +105,19 @@ views:
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
 
+  "power":
+      "Logger": ["module", "Power"]
+      "Models":
+        "default":  {}
+      "Controllers":
+        - "fn": "ARMapper"
+          "params": {"modelname": "default", "cfgsection": "Chassis/System.Chassis/Power", "mappinguniquename": "'chassis_power_mapper:' + FQDD", "AddToView": true}
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/Chassis/' + FQDD + '/Power'"
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+
   "psu_slot":
       "Logger": ["module", "PSU.Slot"]
       "Models":
