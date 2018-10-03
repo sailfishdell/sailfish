@@ -1,26 +1,14 @@
-FROM golang:1.9 AS builder
-
-# Download and install the latest release of dep
-#ADD https://github.com/golang/dep/releases/download/v0.4.1/dep-linux-amd64 /usr/bin/dep
-#RUN chmod +x /usr/bin/dep
-
-# Copy the code from the host and compile it
-#WORKDIR $GOPATH/src/github.com/superchalupa/sailfish
-#COPY Gopkg.toml Gopkg.lock ./
-#RUN dep ensure --vendor-only
+#FROM  pgre-artifactory.pgre.dell.com:8001/golang:latest AS builder
+FROM  golang:latest AS builder
 
 # copy source tree in
-COPY . ./
+COPY . /build/
 
 # create a self-contained build structure
-RUN rmdir src; \
-     ln -s . src ;\
-     ln -s . github.com  ;\
-     ln -s . superchalupa    ;\
-     ln -s . go-redfish     ;\
-    GOPATH=$PWD CGO_ENABLED=0 GOOS=linux go build -a -installsuffix nocgo -o /app -tags simulation github.com/superchalupa/sailfish/cmd/ocp-server
+WORKDIR /build
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags '-extldflags "-static"' -mod=vendor -a -installsuffix nocgo -o /sailfish ./cmd/sailfish
 
 FROM scratch
-COPY --from=builder /go/v1 /app  /
+COPY --from=builder /sailfish  /
 EXPOSE 443
-ENTRYPOINT ["/app"]
+ENTRYPOINT ["/sailfish"]
