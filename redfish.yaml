@@ -105,6 +105,22 @@ views:
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
 
+  "chassis_cmc_integrated_redundancy":
+      "Logger": ["module", "ChassisCMCInt/Redundancy"]
+      "Models":
+        "default":  {}
+      "Controllers":
+        - "fn": "ARMapper"
+          # note: this is correct, the redundancy model re-uses the managers mapper
+          "params": {"modelname": "default", "cfgsection": "Managers/CMC.Integrated", "mappinguniquename": "'chassis_redundancy:' + FQDD ", "AddToView": true}
+        - "fn": "AwesomeMapper"
+          "params": {"modelname": "default", "cfgsection": "health" }
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/Managers/' + FQDD + '#Redundancy'"
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+
   "power":
       "Logger": ["module", "Power"]
       "Models":

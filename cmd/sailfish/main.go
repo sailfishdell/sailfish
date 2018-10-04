@@ -42,7 +42,7 @@ import (
 	"github.com/superchalupa/sailfish/src/ocp/session"
 )
 
-type implementationFn func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *sync.Mutex, ch eh.CommandHandler, eb eh.EventBus) Implementation
+type implementationFn func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *sync.Mutex, ch eh.CommandHandler, eb eh.EventBus, d *domain.DomainObjects) Implementation
 
 var implementations map[string]implementationFn = map[string]implementationFn{}
 
@@ -98,7 +98,7 @@ func main() {
 		panic("could not load requested implementation: " + cfgMgr.GetString("main.server_name"))
 	}
 
-	impl = implFn(ctx, logger, cfgMgr, &cfgMgrMu, domainObjs.CommandHandler, domainObjs.EventBus)
+	impl = implFn(ctx, logger, cfgMgr, &cfgMgrMu, domainObjs.CommandHandler, domainObjs.EventBus, domainObjs)
 
 	cfgMgr.OnConfigChange(func(e fsnotify.Event) {
 		cfgMgrMu.Lock()
