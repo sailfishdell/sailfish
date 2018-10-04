@@ -1,0 +1,75 @@
+main:
+    server_name: "mockup"
+
+listen:
+    - https::8443
+
+session:
+    timeout: 600
+
+views:
+  "rootview":
+      "Logger": ["module", "root"]
+      "View":
+        - "fn": "with_URI"
+          "params": "'/redfish/v1'"
+
+  "testview":
+      "Logger": ["module", "testview"]
+      "Models":
+        "default":  {"unique_name": "TEST_Unique_Name", "name": "TEST_Name", "description": "TEST_Description" }
+      "Controllers":
+        - "fn": "AwesomeMapper"
+          "params": {"modelname": "default", "cfgsection": "testview" }
+        - "fn": "ARMapper"
+          "params": {"modelname": "default", "cfgsection": "testview", "mappinguniquename": "'/redfish/v1/testservice'", "AddToView": true}
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/testview'"
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+
+  "testview_sub":
+      "Logger": ["module", "sub_testview"]
+      "Models":
+        "default":  {"property1": "value1"}
+      "Controllers":
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/testview#' + unique"
+
+  "sessionview":
+      "Logger": ["module", "session"]
+      "Models":
+        "default":  {"session_timeout": 30}
+      "Controllers":
+        - "fn": "AwesomeMapper"
+          "params": {"modelname": "default", "cfgsection": "sessionview" }
+        - "fn": "ARMapper"
+          "params": {"modelname": "default", "cfgsection": "SessionService", "mappinguniquename": "'/redfish/v1/SessionService'", "AddToView": true}
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/SessionService'"
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+
+  "registries":
+      "Logger": ["module", "registry"]
+      "Models":
+        "default":  {}
+      "Controllers":
+        # not yet implemented...
+        - "fn": "StaticMapper"
+          "params": {"modelname": "default", "AddToView": true}
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/Registries'"
+
+awesome_mapper:
+    testview:
+        - { Select: "type == 'AttributeUpdated' && data.FQDD == fqdd && data.Name == 'InstantaneousPower'", ModelUpdate: [ {Property: "Instantaneous_Power", Query: "data.Value", Default: 0} ] }
+
+mappings:
+    test/testview:
+        - {Property: "model",                    FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Name" }
+

@@ -1,0 +1,104 @@
+# Logging levels: 
+# debug, info, warn, error, crit
+#
+# The 'logs' config is an ARRAY of output configurations. Below are the valid configuration options for each config.
+#
+# Enabled: disable or enable this specific logger entirely.
+#       DEFAULT: disabled/false
+#
+# FileName: Specify "FileName" to send log output from that config to a file.
+#       DEFAULT: /dev/stderr
+#
+# Level: will globally enable all logs at the specified level or higher. Leave this out to specify on a module by module basis
+#       DEFAULT: (none) - no filtering, all logs output
+#
+# PrintFile: append the file name and line number of the location where the log function was called
+#       DEFAULT: false
+#
+# PrintFunction: append the name of the function that called the log function
+#       DEFAULT: false
+#
+# ModulesToEnable is an ARRAY
+#   give 'name' to specify the name of a 'module', to show all output from all log statements tagged with that module (regardless of the global log level setting)
+#   give 'level' to filter the module output to the specified log level and higher.
+#
+logs:
+    # Log warnings and Crit to stderr (everything else to log file, below)
+    - Enabled: true
+      Level: "warn"
+      PrintFile: true
+      PrintFunction: true
+
+    # log all web server accesses
+    - Enabled: false
+      FileName: "./http-access.log"
+      PrintFile: true
+      PrintFunction: true
+      ModulesToEnable:
+        - name: "http"
+          level: "info"
+
+    # (DISABLED) log stuff on a module by module basis to FILE
+    - Enabled: false
+      FileName: "./debug.log"
+      PrintFile: true
+      PrintFunction: true
+      ModulesToEnable:
+        - name: "PATCH"
+          level: "warn"
+
+        - name: "GET"
+          level: "debug"
+
+        - name: "property_process"
+          level: "warn"
+
+        - name: "ec"
+          level: "warn"
+
+        - name: "testview"
+          level: "warn"
+
+        - name: "internal_commands"
+          level: "debug"
+
+        - name: "sse_handler"
+          level: "debug"
+
+        - name: "redfish_sse_handler"
+          level: "debug"
+
+        - name: "aggregate"
+          level: "debug"
+
+        - name: "domain"
+          level: "debug"
+
+        - name: "main"
+          level: "warn"
+
+        - name: "tlscert"
+          level: "warn"
+
+        - name: "bmc_reset"
+          level: "warn"
+
+        - name: "eventstream"
+          level: "debug"
+
+        - name: "observer"
+          level: "debug"
+
+        - name: "firmware/inventory"
+          level: "warn"
+
+        - name: "Registries"
+          level: "warn"
+
+        - name: "submit_event"
+          level: "warn"
+
+        - name: "event_service"
+          level: "debug"
+
+
