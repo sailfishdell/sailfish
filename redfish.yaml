@@ -105,6 +105,35 @@ views:
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
 
+  "chassis_cmc_integrated_redundancy":
+      "Logger": ["module", "ChassisCMCInt/Redundancy"]
+      "Models":
+        "default":  {}
+      "Controllers":
+        - "fn": "ARMapper"
+          # note: this is correct, the redundancy model re-uses the managers mapper
+          "params": {"modelname": "default", "cfgsection": "Managers/CMC.Integrated", "mappinguniquename": "'chassis_redundancy:' + FQDD ", "AddToView": true}
+        - "fn": "AwesomeMapper"
+          "params": {"modelname": "default", "cfgsection": "health" }
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/Managers/' + FQDD + '#Redundancy'"
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+
+  "power":
+      "Logger": ["module", "Power"]
+      "Models":
+        "default":  {}
+      "Controllers":
+        - "fn": "ARMapper"
+          "params": {"modelname": "default", "cfgsection": "Chassis/System.Chassis/Power", "mappinguniquename": "'chassis_power_mapper:' + FQDD", "AddToView": true}
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/Chassis/' + FQDD + '/Power'"
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+
   "psu_slot":
       "Logger": ["module", "PSU.Slot"]
       "Models":

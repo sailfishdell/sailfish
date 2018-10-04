@@ -32,7 +32,7 @@ import (
 	"github.com/superchalupa/sailfish/src/dell-resources/logservices/faultlist"
 	"github.com/superchalupa/sailfish/src/dell-resources/logservices/lcl"
 	mgrCMCIntegrated "github.com/superchalupa/sailfish/src/dell-resources/managers/cmc.integrated"
-	"github.com/superchalupa/sailfish/src/dell-resources/managers/cmc.integrated/redundancy"
+	"github.com/superchalupa/sailfish/src/dell-resources/managers/cmc.integrated/redundancy2"
 	"github.com/superchalupa/sailfish/src/dell-resources/registries"
 	"github.com/superchalupa/sailfish/src/dell-resources/registries/registry"
 	"github.com/superchalupa/sailfish/src/dell-resources/slots"
@@ -68,7 +68,7 @@ type waiter interface {
 
 func (o *ocp) ConfigChangeHandler() { o.configChangeHandler() }
 
-func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *sync.Mutex, ch eh.CommandHandler, eb eh.EventBus) *ocp {
+func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *sync.Mutex, ch eh.CommandHandler, eb eh.EventBus, d *domain.DomainObjects) *ocp {
 	logger = logger.New("module", "ec")
 	self := &ocp{}
 
@@ -226,6 +226,8 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			model.UpdateProperty("connect_types_supported_count", len(connectTypesSupported)),
 		)
 
+		expandFormatter := makeExpandFormatter(d)
+
 		mgrCmcVw.ApplyOption(
 			view.WithModel("redundancy_health", mgrRedundancyMdl), // health info in default model
 			view.WithModel("global_health", globalHealthModel),
@@ -246,6 +248,8 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			ah.WithAction(ctx, mgrLogger, "certificates.generatecsr", "/Actions/DellCertificateService.GenerateCSR", makePumpHandledAction("GenerateCSR", 30, eb), ch, eb),
 
 			view.WithFormatter("attributeFormatter", attributes.FormatAttributeDump),
+			view.WithFormatter("expand", expandFormatter),
+			view.WithFormatter("count", countFormatter),
 		)
 
 		managers = append(managers, mgrCmcVw)
@@ -259,31 +263,26 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		certificateservices.AddAggregate(ctx, mgrCmcVw, rootView.GetURI()+"/Managers/"+mgrName, ch)
 
 		// Redundancy
-		redundancy_set := []map[string]string{{"@odata.id": rootView.GetURI() + "/Managers/CMC.Integrated.1"}, {"@odata.id": rootView.GetURI() + "/Managers/CMC.Integrated.2"}}
-		redundancy_views := []interface{}{}
-		redundancyLogger := logger.New("module", "Managers/"+mgrName+"/Redundancy")
-		redundancyModel := model.New(
-			model.UpdateProperty("unique_id", rootView.GetURI()+"/Managers/"+mgrName+"#Redundancy"),
+		redundancyLogger, redundancyVw, _ := testaggregate.InstantiateFromCfg(ctx, logger, cfgMgr, "chassis_cmc_integrated_redundancy",
+			map[string]interface{}{
+				"rooturi":  rootView.GetURI(),
+				"FQDD":     mgrName,                                   // this is used for the AR mapper. case difference is confusing, but need to change mappers
+				"fqdd":     "System.Chassis.1#SubSystem.1#" + mgrName, // This is used for the health subsystem
+				"fqddlist": []string{mgrName},
+			},
+		)
+
+		mgrCmcVw.GetModel("default").ApplyOption(
+			model.UpdateProperty("redundancy_uris", []string{redundancyVw.GetURI()}),
+		)
+
+		redundancy_set := []string{rootView.GetURI() + "/Managers/CMC.Integrated.1", rootView.GetURI() + "/Managers/CMC.Integrated.2"}
+
+		redundancyVw.GetModel("default").ApplyOption(
 			model.UpdateProperty("redundancy_set", redundancy_set),
-			model.UpdateProperty("redundancy_set_count", len(redundancy_set)),
 		)
-		armapper := arService.NewMapping(redundancyLogger, "Managers/"+mgrName+"/Redundancy", "Managers/CMC.Integrated", redundancyModel, map[string]string{"FQDD": mgrName})
 
-		awesome_mapper.New(ctx, redundancyLogger, cfgMgr, redundancyModel, "health", map[string]interface{}{"fqdd": "System.Chassis.1#SubSystem.1#" + mgrName})
-
-		redundancyVw := view.New(
-			view.WithURI(rootView.GetURI()+"/Managers/"+mgrName+"/Redundancy"),
-			view.WithModel("default", redundancyModel),
-			view.WithController("ar_mapper", armapper),
-			evtSvc.PublishResourceUpdatedEventsForModel(ctx, "default"),
-		)
-		redundancy := redundancy.AddAggregate(ctx, redundancyLogger, redundancyVw, ch)
-		p := &domain.RedfishResourceProperty{}
-		p.Parse(redundancy)
-		redundancy_views = append(redundancy_views, p)
-
-		mgrCmcVw.GetModel("default").ApplyOption(model.UpdateProperty("redundancy_views", &domain.RedfishResourceProperty{Value: redundancy_views}))
-		mgrCmcVw.GetModel("default").ApplyOption(model.UpdateProperty("redundancy_views_count", len(redundancy_views)))
+		redundancy2.AddAggregate(ctx, redundancyLogger, redundancyVw, ch)
 
 		//*********************************************************************
 		// Create CHASSIS objects for CMC.Integrated.N
@@ -373,23 +372,22 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		//*********************************************************************
 		// Create Power objects for System.Chassis.1
 		//*********************************************************************
-		powerLogger := sysChasLogger.New("module", "Chassis/System.Chassis/Power")
+		powerLogger, sysChasPwrVw, _ := testaggregate.InstantiateFromCfg(ctx, logger, cfgMgr, "power",
+			map[string]interface{}{
+				"rooturi": rootView.GetURI(),
+				"FQDD":    chasName, // this is used for the AR mapper. case difference is confusing, but need to change mappers
+			},
+		)
 
-		powerModel := model.New(
+		sysChasPwrVw.GetModel("default").ApplyOption(
 			mgrCMCIntegrated.WithUniqueName("Power"),
 			model.UpdateProperty("power_supply_views", []interface{}{}),
 			model.UpdateProperty("power_control_views", []interface{}{}),
 			model.UpdateProperty("power_trend_views", []interface{}{}),
 		)
-		// the controller is what updates the model when ar entries change,
-		// also handles patch from redfish
-		armapper = arService.NewMapping(powerLogger, "Chassis/"+chasName+"/Power", "Chassis/System.Chassis/Power", powerModel, map[string]string{"FQDD": chasName})
 
-		sysChasPwrVw := view.New(
-			view.WithURI(rootView.GetURI()+"/Chassis/"+chasName+"/Power"),
-			view.WithModel("default", powerModel),
+		sysChasPwrVw.ApplyOption(
 			view.WithModel("global_health", globalHealthModel),
-			view.WithController("ar_mapper", armapper),
 			evtSvc.PublishResourceUpdatedEventsForModel(ctx, "default"),
 		)
 		power.AddAggregate(ctx, powerLogger, sysChasPwrVw, ch)
@@ -430,8 +428,8 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			p.Parse(psu)
 			psu_views = append(psu_views, p)
 		}
-		powerModel.ApplyOption(model.UpdateProperty("power_supply_views", &domain.RedfishResourceProperty{Value: psu_views}))
-		powerModel.ApplyOption(model.UpdateProperty("power_supply_views_count", len(psu_views)))
+		sysChasPwrVw.GetModel("default").ApplyOption(model.UpdateProperty("power_supply_views", &domain.RedfishResourceProperty{Value: psu_views}))
+		sysChasPwrVw.GetModel("default").ApplyOption(model.UpdateProperty("power_supply_views_count", len(psu_views)))
 
 		pwrCtrl_views := []interface{}{}
 		pwrCtrlLogger := sysChasLogger.New("module", "Chassis/System.Chassis/Power/PowerControl")
@@ -452,8 +450,8 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		p.Parse(pwrCtrl)
 		pwrCtrl_views = append(pwrCtrl_views, p)
 
-		powerModel.ApplyOption(model.UpdateProperty("power_control_views", &domain.RedfishResourceProperty{Value: pwrCtrl_views}))
-		powerModel.ApplyOption(model.UpdateProperty("power_control_views_count", len(pwrCtrl_views)))
+		sysChasPwrVw.GetModel("default").ApplyOption(model.UpdateProperty("power_control_views", &domain.RedfishResourceProperty{Value: pwrCtrl_views}))
+		sysChasPwrVw.GetModel("default").ApplyOption(model.UpdateProperty("power_control_views_count", len(pwrCtrl_views)))
 
 		trend_views := []interface{}{}
 
@@ -497,8 +495,8 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		pwrTrendModel.ApplyOption(model.UpdateProperty("histograms", &domain.RedfishResourceProperty{Value: histogram_views}))
 		pwrTrendModel.ApplyOption(model.UpdateProperty("histograms_count", len(histogram_views)))
 
-		powerModel.ApplyOption(model.UpdateProperty("power_trend_views", &domain.RedfishResourceProperty{Value: trend_views}))
-		powerModel.ApplyOption(model.UpdateProperty("power_trend_count", len(trend_views)))
+		sysChasPwrVw.GetModel("default").ApplyOption(model.UpdateProperty("power_trend_views", &domain.RedfishResourceProperty{Value: trend_views}))
+		sysChasPwrVw.GetModel("default").ApplyOption(model.UpdateProperty("power_trend_count", len(trend_views)))
 
 		//*********************************************************************
 		// Create Thermal objects for System.Chassis.1

@@ -160,7 +160,7 @@ type config struct {
 func InstantiateFromCfg(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, name string, parameters map[string]interface{}) (log.Logger, *view.View, error) {
 	subCfg := cfgMgr.Sub("views")
 	if subCfg == nil {
-		logger.Warn("missing config file section: 'views'")
+		logger.Crit("missing config file section: 'views'")
 		return nil, nil, errors.New("invalid config section 'views'")
 	}
 
@@ -168,7 +168,7 @@ func InstantiateFromCfg(ctx context.Context, logger log.Logger, cfgMgr *viper.Vi
 
 	err := subCfg.UnmarshalKey(name, &config)
 	if err != nil {
-		logger.Warn("unamrshal failed", "err", err)
+		logger.Crit("unamrshal failed", "err", err, "name", name)
 		return nil, nil, errors.New("unmarshal failed")
 	}
 

@@ -14,10 +14,11 @@ import (
 
 	"github.com/superchalupa/sailfish/src/eventwaiter"
 	log "github.com/superchalupa/sailfish/src/log"
+	domain "github.com/superchalupa/sailfish/src/redfishresource"
 )
 
 func init() {
-	implementations["mockup"] = func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *sync.Mutex, ch eh.CommandHandler, eb eh.EventBus) Implementation {
+	implementations["mockup"] = func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *sync.Mutex, ch eh.CommandHandler, eb eh.EventBus, d *domain.DomainObjects) Implementation {
 
 		EventPublisher := eventpublisher.NewEventPublisher()
 		eb.AddHandler(eh.MatchAny(), EventPublisher)

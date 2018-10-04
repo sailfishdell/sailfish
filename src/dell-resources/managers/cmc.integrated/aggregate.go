@@ -21,11 +21,11 @@ type waiter interface {
 
 func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.CommandHandler) *view.View {
 	properties := map[string]interface{}{
-		"@odata.etag@meta": v.Meta(view.GETProperty("etag"), view.GETModel("etag")),
-		"Id@meta":          v.Meta(view.PropGET("unique_name")),
-		"Name": "Manager", //hardcoded in odatalite
-		"ManagerType": "BMC", //hardcoded in odatalite
-		"Description":              "BMC", //hardcoded in odatalite
+		"@odata.etag@meta":         v.Meta(view.GETProperty("etag"), view.GETModel("etag")),
+		"Id@meta":                  v.Meta(view.PropGET("unique_name")),
+		"Name":                     "Manager", //hardcoded in odatalite
+		"ManagerType":              "BMC",     //hardcoded in odatalite
+		"Description":              "BMC",     //hardcoded in odatalite
 		"Model@meta":               v.Meta(view.PropGET("model")),
 		"DateTime@meta":            map[string]interface{}{"GET": map[string]interface{}{"plugin": "datetime"}},
 		"DateTimeLocalOffset@meta": map[string]interface{}{"GET": map[string]interface{}{"plugin": "datetimezone"}},
@@ -73,9 +73,9 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 		},
 
 		"Status": map[string]interface{}{
-			"Health@meta": v.Meta(view.PropGET("health")),
+			"Health@meta":       v.Meta(view.PropGET("health")),
 			"HealthRollup@meta": v.Meta(view.PropGET("health")),
-			"State@meta": v.Meta(view.PropGET("health_state")),
+			"State@meta":        v.Meta(view.PropGET("health_state")),
 		},
 
 		"Actions": map[string]interface{}{
@@ -266,10 +266,9 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 				},
 			},
 		},
+		"Redundancy@meta":             v.Meta(view.GETProperty("redundancy_uris"), view.GETFormatter("expand"), view.GETModel("default")),
+		"Redundancy@odata.count@meta": v.Meta(view.GETProperty("redundancy_uris"), view.GETFormatter("count"), view.GETModel("default")),
 	}
-
-	properties["Redundancy@meta"] = v.Meta(view.PropGET("redundancy_views"))
-	properties["Redundancy@odata.count@meta"] = v.Meta(view.PropGET("redundancy_views_count"))
 
 	ch.HandleCommand(
 		ctx,
