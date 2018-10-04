@@ -153,6 +153,20 @@ views:
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
 
+  "system_chassis":
+      "Logger": ["module", "system_chassis"]
+      "Models":
+        "default":  {}
+      "Controllers":
+        - "fn": "ARMapper"
+          "params": {"modelname": "default", "cfgsection": "Chassis/System.Chassis", "mappinguniquename": "'system_chassis:' + FQDD ", "AddToView": true}
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/Chassis/' + FQDD "
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+
+
 
 # TODO: certain attributes are inputs to if statements for the "actual" property, ie System.Chassis.1#ChassisPower.1#ChassisPowerStatus.1:
 #     if(chassis_power_value == CHASSIS_STANDBY_POWER_STATE_EC)

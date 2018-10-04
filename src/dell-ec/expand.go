@@ -24,7 +24,7 @@ func makeExpandFormatter(d *domain.DomainObjects) func(context.Context, *view.Vi
 			return errors.New("uris property not setup properly")
 		}
 
-		odata := []map[string]interface{}{}
+		odata := []interface{}{}
 		for _, i := range uris {
 
 			aggID, ok := d.GetAggregateIDOK(i)
@@ -41,7 +41,7 @@ func makeExpandFormatter(d *domain.DomainObjects) func(context.Context, *view.Vi
 			sub, _ := domain.ProcessGET(ctx, redfishResource.Properties)
 			redfishResource.PropertiesMu.RUnlock()
 
-			odata = append(odata, map[string]interface{}{"@odata.id": sub})
+			odata = append(odata, sub)
 		}
 
 		rrp.Value = odata

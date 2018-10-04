@@ -95,6 +95,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	testaggregate.RunRegistryFunctions(evtSvc)
 	ar_mapper2.RunRegistryFunctions(arService)
 	attributes.RunRegistryFunctions(ch, eb)
+	expandFormatter := makeExpandFormatter(d)
 
 	//
 	// Create the (empty) model behind the /redfish/v1 service root. Nothing interesting here
@@ -226,8 +227,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			model.UpdateProperty("connect_types_supported_count", len(connectTypesSupported)),
 		)
 
-		expandFormatter := makeExpandFormatter(d)
-
 		mgrCmcVw.ApplyOption(
 			view.WithModel("redundancy_health", mgrRedundancyMdl), // health info in default model
 			view.WithModel("global_health", globalHealthModel),
@@ -329,33 +328,29 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		// CHASSIS System.Chassis.1
 		// ************************************************************************
 		chasName := "System.Chassis.1"
-		sysChasLogger := chasLogger.New("module", "Chassis/"+chasName, "module", "Chassis/System.Chassis")
+		sysChasLogger, sysChasVw, _ := testaggregate.InstantiateFromCfg(ctx, logger, cfgMgr, "system_chassis",
+			map[string]interface{}{
+				"rooturi":  rootView.GetURI(),
+				"FQDD":     chasName,
+				"fqddlist": []string{chasName},
+			},
+		)
+
 		managedBy := []map[string]string{{"@odata.id": managers[0].GetURI()}}
-		chasModel := model.New(
+		sysChasVw.GetModel("default").ApplyOption(
 			model.UpdateProperty("unique_name", chasName),
 			model.UpdateProperty("unique_name_attr", chasName+".Attributes"),
 			model.UpdateProperty("managed_by", managedBy),
 			model.UpdateProperty("managed_by_count", len(managedBy)),
 			model.UpdateProperty("attributes", map[string]map[string]map[string]interface{}{}),
 		)
-		// the controller is what updates the model when ar entries change,
-		// also handles patch from redfish
-		armapper := arService.NewMapping(sysChasLogger, "Chassis/"+chasName, "Chassis/System.Chassis", chasModel, map[string]string{"FQDD": chasName})
 
-		// This controller will populate 'attributes' property with AR entries matching this FQDD ('chasName')
-		ardumper, _ := attributes.NewController(ctx, chasModel, []string{chasName}, ch, eb)
-
-		sysChasVw := view.New(
-			view.WithURI(rootView.GetURI()+"/Chassis/"+chasName),
-			view.WithModel("default", chasModel),
+		sysChasVw.ApplyOption(
 			view.WithModel("global_health", globalHealthModel),
-			view.WithController("ar_mapper", armapper),
-			view.WithController("ar_dump", ardumper),
 			view.WithFormatter("attributeFormatter", attributes.FormatAttributeDump),
 			ah.WithAction(ctx, sysChasLogger, "chassis.reset", "/Actions/Chassis.Reset", makePumpHandledAction("ChassisReset", 30, eb), ch, eb),
 			ah.WithAction(ctx, sysChasLogger, "msmconfigbackup", "/Actions/Oem/MSMConfigBackup", msmConfigBackup, ch, eb),
 			ah.WithAction(ctx, sysChasLogger, "chassis.msmconfigbackup", "/Actions/Oem/DellChassis.MSMConfigBackup", chassisMSMConfigBackup, ch, eb),
-			evtSvc.PublishResourceUpdatedEventsForModel(ctx, "default"),
 		)
 
 		// Create the .../Attributes URI. Attributes are stored in the attributes property of the chasModel
@@ -389,10 +384,12 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		sysChasPwrVw.ApplyOption(
 			view.WithModel("global_health", globalHealthModel),
 			evtSvc.PublishResourceUpdatedEventsForModel(ctx, "default"),
+			view.WithFormatter("expand", expandFormatter),
+			view.WithFormatter("count", countFormatter),
 		)
 		power.AddAggregate(ctx, powerLogger, sysChasPwrVw, ch)
 
-		psu_views := []interface{}{}
+		psu_uris := []string{}
 		for _, psuName := range []string{
 			"PSU.Slot.1", "PSU.Slot.2", "PSU.Slot.3",
 			"PSU.Slot.4", "PSU.Slot.5", "PSU.Slot.6",
@@ -422,19 +419,16 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			)
 			swinvViews = append(swinvViews, sysChasPwrPsuVw)
 
-			psu := powersupply.AddAggregate(ctx, psuLogger, sysChasPwrPsuVw, ch)
+			powersupply.AddAggregate(ctx, psuLogger, sysChasPwrPsuVw, ch)
 
-			p := &domain.RedfishResourceProperty{}
-			p.Parse(psu)
-			psu_views = append(psu_views, p)
+			psu_uris = append(psu_uris, sysChasPwrPsuVw.GetURI())
 		}
-		sysChasPwrVw.GetModel("default").ApplyOption(model.UpdateProperty("power_supply_views", &domain.RedfishResourceProperty{Value: psu_views}))
-		sysChasPwrVw.GetModel("default").ApplyOption(model.UpdateProperty("power_supply_views_count", len(psu_views)))
+		sysChasPwrVw.GetModel("default").ApplyOption(model.UpdateProperty("power_supply_uris", psu_uris))
 
 		pwrCtrl_views := []interface{}{}
 		pwrCtrlLogger := sysChasLogger.New("module", "Chassis/System.Chassis/Power/PowerControl")
 
-		armapper = arService.NewMapping(pwrCtrlLogger, "Chassis/"+chasName+"/Power/PowerControl", "Chassis/System.Chassis/Power", pwrCtrlModel, map[string]string{"FQDD": chasName})
+		armapper := arService.NewMapping(pwrCtrlLogger, "Chassis/"+chasName+"/Power/PowerControl", "Chassis/System.Chassis/Power", pwrCtrlModel, map[string]string{"FQDD": chasName})
 
 		// Power consumption in kwh TODO
 		awesome_mapper.New(ctx, pwrCtrlLogger, cfgMgr, pwrCtrlModel, "power_control", map[string]interface{}{})
