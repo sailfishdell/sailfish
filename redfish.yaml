@@ -10,6 +10,120 @@ listen:
 session:
     timeout: 600
 
+views:
+  "rootview":
+      "Logger": ["module", "root"]
+      "View":
+        - "fn": "with_URI"
+          "params": "'/redfish/v1'"
+
+  "testview":
+      "Logger": ["module", "testview"]
+      "Models":
+        "default":  {"unique_name": "TEST_Unique_Name", "name": "TEST_Name", "description": "TEST_Description" }
+      "Controllers":
+        - "fn": "AwesomeMapper"
+          "params": {"modelname": "default", "cfgsection": "testview" }
+        - "fn": "ARMapper"
+          "params": {"modelname": "default", "cfgsection": "testview", "mappinguniquename": "'/redfish/v1/testservice'", "AddToView": true}
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/testview'"
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+
+  "testview_sub":
+      "Logger": ["module", "sub_testview"]
+      "Models":
+        "default":  {"property1": "value1"}
+      "Controllers":
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/testview#' + unique"
+
+  "sessionview":
+      "Logger": ["module", "session"]
+      "Models":
+        "default":  {"session_timeout": 30}
+      "Controllers":
+        - "fn": "AwesomeMapper"
+          "params": {"modelname": "default", "cfgsection": "sessionview" }
+        - "fn": "ARMapper"
+          "params": {"modelname": "default", "cfgsection": "SessionService", "mappinguniquename": "'/redfish/v1/SessionService'", "AddToView": true}
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/SessionService'"
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+
+  "registries":
+      "Logger": ["module", "registry"]
+      "Models":
+        "default":  {}
+      "Controllers":
+        # not yet implemented...
+        - "fn": "StaticMapper"
+          "params": {"modelname": "default", "AddToView": true}
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/Registries'"
+
+  "manager_cmc_integrated":
+      "Logger": ["module", "mgrChassis"]
+      "Models":
+        "default":  {}
+      "Controllers":
+        - "fn": "ARMapper"
+          "params": {"modelname": "default", "cfgsection": "firmware/inventory", "mappinguniquename": "'fw_mapper:' + FQDD ", "AddToView": true}
+        - "fn": "ARMapper"
+          "params": {"modelname": "default", "cfgsection": "Managers/CMC.Integrated", "mappinguniquename": "'manager_mapper:' + FQDD ", "AddToView": true}
+        - "fn": "AwesomeMapper"
+          "params": {"modelname": "default", "cfgsection": "health" }
+        - "fn": "ARDumper"
+          "params": {"modelname": "default", "AddToView": true}
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/Managers/' + FQDD"
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+
+  "chassis_cmc_integrated":
+      "Logger": ["module", "ChassisCMCInt"]
+      "Models":
+        "default":  {}
+      "Controllers":
+        - "fn": "ARMapper"
+          # note: this is correct, the chassis model re-uses the managers mapper
+          "params": {"modelname": "default", "cfgsection": "Managers/CMC.Integrated", "mappinguniquename": "'chassis:' + FQDD ", "AddToView": true}
+        - "fn": "ARDumper"
+          "params": {"modelname": "default", "AddToView": true}
+        - "fn": "AwesomeMapper"
+          "params": {"modelname": "default", "cfgsection": "health" }
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/Chassis/' + FQDD"
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+
+  "psu_slot":
+      "Logger": ["module", "PSU.Slot"]
+      "Models":
+        "default":  {}
+      "Controllers":
+        - "fn": "ARDumper"
+          "params": {"modelname": "default", "AddToView": true}
+        - "fn": "ARMapper"
+          "params": {"modelname": "default", "cfgsection": "firmware/inventory", "mappinguniquename": "'fw_mapper:' + ChassisFQDD + '_' + FQDD", "AddToView": true}
+        - "fn": "ARMapper"
+          "params": {"modelname": "default", "cfgsection": "PSU/PSU.Slot", "mappinguniquename": "'chassis_psu_mapper:' + ChassisFQDD + '_' + FQDD ", "AddToView": true}
+        - "fn": "AwesomeMapper"
+          "params": {"modelname": "default", "cfgsection": "power_supply" }
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/Chassis/' + ChassisFQDD + '/Power/PowerSupplies/' + FQDD "
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+
 
 # TODO: certain attributes are inputs to if statements for the "actual" property, ie System.Chassis.1#ChassisPower.1#ChassisPowerStatus.1:
 #     if(chassis_power_value == CHASSIS_STANDBY_POWER_STATE_EC)
@@ -23,6 +137,9 @@ session:
 # move these attributes to awesome_mapper and add the if selection
 
 awesome_mapper:
+    testview:
+        - { Select: "type == 'AttributeUpdated' && data.FQDD == fqdd && data.Name == 'InstantaneousPower'", ModelUpdate: [ {Property: "Instantaneous_Power", Query: "data.Value", Default: 0} ] }
+
     fan:
         - { Select: "type == 'FanEvent' && data.ObjectHeader.FQDD == fqdd",
             ModelUpdate: [
@@ -46,6 +163,7 @@ awesome_mapper:
         - { Select: "type == 'AttributeUpdated' && data.FQDD == fqdd && data.Name == 'InstantaneousPower'", ModelUpdate: [ {Property: "Instantaneous_Power", Query: "data.Value", Default: 0} ] }
 
     power_control:
+<<<<<<< HEAD
         - { Select: "type == 'PowerConsumptionDataObjEvent'", 
             ModelUpdate: [ 
                 {Property: "energy_consumption_start_time", Query: "epoch_to_date(data.CwStartTime)" }, 
@@ -57,6 +175,9 @@ awesome_mapper:
                 {Property: "min_peak_watts_time", Query: "epoch_to_date(data.MinwReadingTime)" },
                 {Property: "peak_headroom_watts", Query: "data.PeakHeadRoom" }, 
                 {Property: "consumed_watts", Query: "data.InstWattsPSU1_2" }]}
+=======
+        - { Select: "type == 'AttributeUpdated' && data.FQDD == 'System.Chassis.1' && data.Name == 'AccumulativePower'", ModelUpdate: [ {Property: "Energy_Consumption_kWh", Query: "int(data.Value)/1000", Default: 0 } ] } #not actually the correct attribute
+>>>>>>> origin/dev/meb/master
 
     power_supply:
         - { Select: "type == 'PowerSupplyObjEvent' && data.ObjectHeader.FQDD == fqdd",

@@ -10,8 +10,6 @@ import (
 
 	"github.com/superchalupa/sailfish/src/eventwaiter"
 	"github.com/superchalupa/sailfish/src/log"
-	"github.com/superchalupa/sailfish/src/ocp/model"
-	"github.com/superchalupa/sailfish/src/ocp/view"
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
 )
 
@@ -20,16 +18,6 @@ const defaultQueueTimeMs = 400 * time.Millisecond
 
 type waiter interface {
 	Listen(context.Context, func(eh.Event) bool) (*eventwaiter.EventListener, error)
-}
-
-func PublishResourceUpdatedEventsForModel(ctx context.Context, modelName string, eb eh.EventBus) view.Option {
-	return view.WatchModel(modelName, func(v *view.View, m *model.Model, updates []model.Update) {
-		//eventData := &RedfishEventData{
-		//EventType:         "ResourceUpdated",
-		//OriginOfCondition: map[string]interface{}{"@odata.id": v.GetURI()},
-		//}
-		//go eb.PublishEvent(ctx, eh.NewEvent(RedfishEvent, eventData, time.Now()))
-	})
 }
 
 type propertygetter interface {

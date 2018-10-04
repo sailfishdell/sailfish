@@ -24,31 +24,42 @@ type viewer interface {
 	GetURI() string
 }
 
+type EventService struct {
+	ch eh.CommandHandler
+	eb eh.EventBus
+	ew *eventwaiter.EventWaiter
+	jc chan Job
+}
+
 const WorkQueueLen = 10
 
-var StartEventService func(context.Context, log.Logger, viewer) *view.View
-var CreateSubscription func(context.Context, log.Logger, Subscription, func()) *view.View
+var gEs *EventService
 
-func Setup(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus) {
+func New(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus) *EventService {
 	EventPublisher := eventpublisher.NewEventPublisher()
 	eb.AddHandler(eh.MatchAnyEventOf(ExternalRedfishEvent, domain.RedfishResourceRemoved), EventPublisher)
 	EventWaiter := eventwaiter.NewEventWaiter(eventwaiter.SetName("Event Service"))
 	EventPublisher.AddObserver(EventWaiter)
 
-	jobChan := CreateWorkers(100, 6)
+	ret := &EventService{
+		ch: ch,
+		eb: eb,
+		ew: EventWaiter,
+		jc: CreateWorkers(100, 6),
+	}
 
-	StartEventService = func(ctx context.Context, logger log.Logger, rootView viewer) *view.View {
-		return startEventService(ctx, logger, rootView, ch, eb)
-	}
-	CreateSubscription = func(ctx context.Context, logger log.Logger, sub Subscription, cancel func()) *view.View {
-		return createSubscription(ctx, logger, sub, cancel, ch, EventWaiter, jobChan)
-	}
+	gEs = ret
+	return ret
 }
 
 // StartEventService will create a model, view, and controller for the eventservice, then start a goroutine to publish events
 //      If you want to save settings, hook up a mapper to the "default" view returned
+<<<<<<< HEAD
 func startEventService(ctx context.Context, logger log.Logger, rootView viewer, ch eh.CommandHandler, eb eh.EventBus) *view.View {
 
+=======
+func (es *EventService) StartEventService(ctx context.Context, logger log.Logger, rootView viewer) *view.View {
+>>>>>>> origin/dev/meb/master
 	esLogger := logger.New("module", "EventService")
 
 	esModel := model.New(
@@ -62,21 +73,27 @@ func startEventService(ctx context.Context, logger log.Logger, rootView viewer, 
 		view.WithModel("default", esModel),
 		view.WithModel("etag", esModel),
 		view.WithURI(rootView.GetURI()+"/EventService"),
-		ah.WithAction(ctx, esLogger, "submit.test.event", "/Actions/EventService.SubmitTestEvent", MakeSubmitTestEvent(eb), ch, eb),
+		ah.WithAction(ctx, esLogger, "submit.test.event", "/Actions/EventService.SubmitTestEvent", MakeSubmitTestEvent(es.eb), es.ch, es.eb),
 		view.UpdateEtag("etag", []string{"max_milliseconds_to_queue", "max_events_to_queue", "delivery_retry_attempts", "delivery_retry_interval_seconds"}),
 	)
 
 	// The Plugin: "EventService" property on the Subscriptions endpoint is how we know to run this command
-	eh.RegisterCommand(func() eh.Command { return &POST{model: esView.GetModel("default"), ch: ch, eb: eb} })
-	AddAggregate(ctx, esLogger, esView, rootView.GetUUID(), ch, eb)
-	PublishRedfishEvents(ctx, esModel, eb)
+	eh.RegisterCommand(func() eh.Command { return &POST{model: esView.GetModel("default"), ch: es.ch, eb: es.eb} })
+	AddAggregate(ctx, esLogger, esView, rootView.GetUUID(), es.ch, es.eb)
+	PublishRedfishEvents(ctx, esModel, es.eb)
 
 	return esView
 }
 
+// CreateSubscription forwards to a global instance of event service
+// This func used by the POST Command handler in commands.go until that can be re-worked
+func CreateSubscription(ctx context.Context, logger log.Logger, sub Subscription, cancel func()) *view.View {
+	return gEs.CreateSubscription(ctx, logger, sub, cancel)
+}
+
 // CreateSubscription will create a model, view, and controller for the subscription
 //      If you want to save settings, hook up a mapper to the "default" view returned
-func createSubscription(ctx context.Context, logger log.Logger, sub Subscription, cancel func(), ch eh.CommandHandler, EventWaiter waiter, jobchan chan Job) *view.View {
+func (es *EventService) CreateSubscription(ctx context.Context, logger log.Logger, sub Subscription, cancel func()) *view.View {
 	uuid := eh.NewUUID()
 	uri := fmt.Sprintf("/redfish/v1/EventService/Subscriptions/%s", uuid)
 
@@ -106,7 +123,7 @@ func createSubscription(ctx context.Context, logger log.Logger, sub Subscription
 
 	// set up listener for the delete event
 	// INFO: this listener will only ever get domain.RedfishResourceRemoved or ExternalRedfishEvent
-	listener, err := EventWaiter.Listen(ctx,
+	listener, err := es.ew.Listen(ctx,
 		func(event eh.Event) bool {
 			t := event.EventType()
 			// TODO: will need to add metric reports here
@@ -133,7 +150,7 @@ func createSubscription(ctx context.Context, logger log.Logger, sub Subscription
 		// close the view when we exit this goroutine
 		defer subView.Close()
 		// delete the aggregate
-		defer ch.HandleCommand(context.Background(), &domain.RemoveRedfishResource{ID: uuid, ResourceURI: uri})
+		defer es.ch.HandleCommand(context.Background(), &domain.RemoveRedfishResource{ID: uuid, ResourceURI: uri})
 		defer listener.Close()
 
 		inbox := listener.Inbox()
@@ -156,7 +173,7 @@ func createSubscription(ctx context.Context, logger log.Logger, sub Subscription
 					if dest, ok := esModel.GetProperty("destination").(string); ok {
 						log.MustLogger("event_service").Info("Send to destination", "dest", dest)
 						select {
-						case jobchan <- makePOST(dest, event, context):
+						case es.jc <- makePOST(dest, event, context):
 						default: // drop the POST if the queue is full
 						}
 					}
@@ -170,7 +187,7 @@ func createSubscription(ctx context.Context, logger log.Logger, sub Subscription
 	}()
 
 	// TODO: error handling
-	ch.HandleCommand(
+	es.ch.HandleCommand(
 		ctx,
 		&domain.CreateRedfishResource{
 			ID:          uuid,
@@ -224,4 +241,14 @@ func makePOST(dest string, event eh.Event, context interface{}) func() {
 		}
 		resp.Body.Close()
 	}
+}
+
+func (es *EventService) PublishResourceUpdatedEventsForModel(ctx context.Context, modelName string) view.Option {
+	return view.WatchModel(modelName, func(v *view.View, m *model.Model, updates []model.Update) {
+		eventData := &RedfishEventData{
+			EventType:         "ResourceUpdated",
+			OriginOfCondition: map[string]interface{}{"@odata.id": v.GetURI()},
+		}
+		go es.eb.PublishEvent(ctx, eh.NewEvent(RedfishEvent, eventData, time.Now()))
+	})
 }

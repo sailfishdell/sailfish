@@ -153,7 +153,8 @@ func (c *ARMappingController) ConfigChangedFn(ctx context.Context, cfg *viper.Vi
 
 	c.logger.Info("updating mappings", "mappings", c.mappings)
 	c.createModelProperties(ctx)
-	go c.initialStartupBootstrap(ctx)
+	// bypass for now
+	//go c.initialStartupBootstrap(ctx)
 }
 
 func (c *ARMappingController) createModelProperties(ctx context.Context) {
@@ -169,9 +170,6 @@ func (c *ARMappingController) createModelProperties(ctx context.Context) {
 // background thread that sends messages to the data pump to ask for startup values
 //
 func (c *ARMappingController) initialStartupBootstrap(ctx context.Context) {
-	// bypass for now
-	return
-
 	for {
 		time.Sleep(120 * time.Second)
 		for _, m := range c.mappings {
