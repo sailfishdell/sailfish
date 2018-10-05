@@ -82,14 +82,14 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	event.Setup(ch, eb)
 	logSvc := lcl.New(ch, eb)
 	faultSvc := faultlist.New(ch, eb)
-	slotconfigSvc := slotconfig.New(ch, eb)
 
 	domain.StartInjectService(eb)
 
 	arService, _ := ar_mapper2.StartService(ctx, logger, eb)
 	updateFns = append(updateFns, arService.ConfigChangedFn)
 
-	slotSvc := slots.New(arService, ch, eb)
+	slotSvc := slots.New(ch, eb)
+  slotconfigSvc := slotconfig.New(ch, eb)
 
 	// the package for this is going to change, but this is what makes the various mappers and view functions available
 	testaggregate.RunRegistryFunctions(evtSvc)

@@ -16,7 +16,7 @@ import (
 	"github.com/superchalupa/sailfish/src/ocp/model"
 	//"github.com/superchalupa/sailfish/src/ocp/awesome_mapper"
 	"github.com/spf13/viper"
-	"github.com/superchalupa/sailfish/src/dell-resources/ar_mapper2"
+	"github.com/superchalupa/sailfish/src/dell-resources/ar_mapper"
 
 	"github.com/superchalupa/sailfish/src/dell-resources/component"
 )
@@ -31,10 +31,9 @@ type SlotService struct {
 	eb    eh.EventBus
 	ew    *eventwaiter.EventWaiter
 	slots map[string]interface{}
-    arService *ar_mapper2.ARService
 }
 
-func New(arservice *ar_mapper2.ARService, ch eh.CommandHandler, eb eh.EventBus) *SlotService {
+func New(ch eh.CommandHandler, eb eh.EventBus) *SlotService {
 	EventPublisher := eventpublisher.NewEventPublisher()
 	eb.AddHandler(eh.MatchAnyEventOf(component.ComponentEvent), EventPublisher)
 	EventWaiter := eventwaiter.NewEventWaiter(eventwaiter.SetName("Slot Event Service"))
@@ -46,7 +45,6 @@ func New(arservice *ar_mapper2.ARService, ch eh.CommandHandler, eb eh.EventBus) 
 		eb:    eb,
 		ew:    EventWaiter,
 		slots: ss,
-        arService: arservice,
 	}
 }
 
@@ -120,7 +118,9 @@ func (l *SlotService) manageSlots(ctx context.Context, logger log.Logger, logUri
 					slotModel := model.New()
 					//awesome_mapper.New(ctx, logger, cfgMgr, slotModel, "slots", map[string]interface{}{"group": group, "index": index})
 
-                    armapper := l.arService.NewMapping(logger, uri, "Chassis/Slots", slotModel, map[string]string{"Group": group, "Index": index, "FQDD": ""})
+					armapper, _ := ar_mapper.New(ctx, logger, slotModel, "Chassis/Slots", map[string]string{"Group": group, "Index": index, "FQDD": ""}, ch, eb)
+					updateFns = append(updateFns, armapper.ConfigChangedFn)
+					armapper.ConfigChangedFn(context.Background(), cfgMgr)
 
 					slotView := view.New(
 						view.WithURI(uri),
@@ -138,15 +138,14 @@ func (l *SlotService) manageSlots(ctx context.Context, logger log.Logger, logUri
 						"Name@meta":     slotView.Meta(view.PropGET("slot_name")),
 						"Occupied@meta": slotView.Meta(view.PropGET("slot_occupied")),
 						"SlotName@meta": slotView.Meta(view.PropGET("slot_slotname")),
-						"SledProfile@meta": slotView.Meta(view.PropGET("slot_profile")),
 					}
 
-					// TODO: add to awesome mapper probably
 					/*if strings.Contains(SlotEntry.Id, "SledSlot") {
 											if properties["Contains@meta"] != nil {
 											    sled_key := properties["Contains@meta"].(string)
 											    //properties["SledProfile"] = (sled_key)#Info.1#SledProfile <- How to do this?
 											    sledmapper, _ := ar_mapper.New(ctx, logger, slotModel, "Chassis/System.Modular", map[string]string{"Group":"", "Index":"", "FQDD":sled_key}, ch, eb)
+											    updateFns = append(updateFns, sledmapper.ConfigChangedFn)
 					                                                    slotView.ApplyOption(view.WithController("sled_mapper", sledmapper))
 											    properties["SledProfile"] = slotView.Meta(view.PropGET("sled_profile"))
 											} else {

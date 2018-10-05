@@ -60,7 +60,7 @@ func New(ctx context.Context, logger log.Logger, cfg *viper.Viper, mdl *model.Mo
 				float, err := strconv.ParseFloat(t, 64)
 				return float, err
 			default:
-				return nil, errors.New("Cant parse non-string")
+				return nil, errors.New("Can't parse non-string")
 			}
 		},
 		"strlen": func(args ...interface{}) (interface{}, error) {
@@ -70,6 +70,23 @@ func New(ctx context.Context, logger log.Logger, cfg *viper.Viper, mdl *model.Mo
 		"epoch_to_date": func(args ...interface{}) (interface{}, error) {
 			return time.Unix(int64(args[0].(float64)), 0), nil
 		},
+    "string": func(args ...interface{}) (interface{}, error) {
+      switch t := args[0].(type) {
+      case int, int8, int16, int32, int64:
+        str := strconv.FormatInt(reflect.ValueOf(t).Int(), 10)
+        return str, nil
+      case uint, uint8, uint16, uint32, uint64:
+        str := strconv.FormatUint(reflect.ValueOf(t).Uint(), 10)
+        return str, nil
+      case float32, float64:
+        str := strconv.FormatFloat(reflect.ValueOf(t).Float(), 'G', -1, 64)
+        return str, nil
+      case string:
+        return t, nil
+      default:
+        return nil, errors.New("Not an int, float, or string")
+      }
+    },
 		"map_health_value": func(args ...interface{}) (interface{}, error) {
 			switch t := args[0].(float64); t {
 			case 0, 1: //other, unknown
@@ -127,7 +144,7 @@ outer:
 					expressionParameters["type"] = string(event.EventType())
 					expressionParameters["data"] = event.Data()
 					expressionParameters["event"] = event
-				
+
 					expr, err := govaluate.NewEvaluableExpressionFromTokens(query.expr)
 					val, err := expr.Evaluate(expressionParameters)
 					if err != nil {

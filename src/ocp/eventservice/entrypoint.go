@@ -54,12 +54,7 @@ func New(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus) *EventServic
 
 // StartEventService will create a model, view, and controller for the eventservice, then start a goroutine to publish events
 //      If you want to save settings, hook up a mapper to the "default" view returned
-<<<<<<< HEAD
-func startEventService(ctx context.Context, logger log.Logger, rootView viewer, ch eh.CommandHandler, eb eh.EventBus) *view.View {
-
-=======
 func (es *EventService) StartEventService(ctx context.Context, logger log.Logger, rootView viewer) *view.View {
->>>>>>> origin/dev/meb/master
 	esLogger := logger.New("module", "EventService")
 
 	esModel := model.New(
