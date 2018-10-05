@@ -32,7 +32,7 @@ import (
 	"github.com/superchalupa/sailfish/src/dell-resources/logservices/faultlist"
 	"github.com/superchalupa/sailfish/src/dell-resources/logservices/lcl"
 	mgrCMCIntegrated "github.com/superchalupa/sailfish/src/dell-resources/managers/cmc.integrated"
-	"github.com/superchalupa/sailfish/src/dell-resources/managers/cmc.integrated/redundancy2"
+	"github.com/superchalupa/sailfish/src/dell-resources/redundancy"
 	"github.com/superchalupa/sailfish/src/dell-resources/registries"
 	"github.com/superchalupa/sailfish/src/dell-resources/registries/registry"
 	"github.com/superchalupa/sailfish/src/dell-resources/slots"
@@ -281,7 +281,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			model.UpdateProperty("redundancy_set", redundancy_set),
 		)
 
-		redundancy2.AddAggregate(ctx, redundancyLogger, redundancyVw, ch)
+		redundancy.AddAggregate(ctx, redundancyLogger, redundancyVw, ch)
 
 		//*********************************************************************
 		// Create CHASSIS objects for CMC.Integrated.N

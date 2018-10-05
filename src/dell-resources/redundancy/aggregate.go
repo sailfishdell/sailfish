@@ -1,4 +1,4 @@
-package redundancy2
+package redundancy
 
 import (
 	"context"
@@ -9,6 +9,10 @@ import (
 
 	eh "github.com/looplab/eventhorizon"
 )
+
+func init() {
+	// RegisterAggregate("redundancy", fn() {} )
+}
 
 func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.CommandHandler) {
 	ch.HandleCommand(
