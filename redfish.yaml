@@ -153,6 +153,22 @@ views:
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
 
+  "power_control":
+      "Logger": ["module", "PowerControl"]
+      "Models":
+        "default":  {}
+      "Controllers":
+        - "fn": "ARMapper"
+          "params": {"modelname": "default", "cfgsection": "Chassis/System.Chassis/Power", "mappinguniquename": "'chassis_power_ctrl_mapper:' + FQDD", "AddToView": true}
+        - "fn": "AwesomeMapper"
+          "params": {"modelname": "default", "cfgsection": "power_control" }
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/Chassis/' + FQDD + '/Power/PowerControl'"
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+
+
   "system_chassis":
       "Logger": ["module", "system_chassis"]
       "Models":

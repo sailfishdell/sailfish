@@ -15,33 +15,6 @@ import (
 // because powertrends is not an array. (7 = # of keys in powertrends, probably not intentional)
 
 func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.CommandHandler) {
-
-	properties := map[string]interface{}{
-		"Id":          "Power",
-		"Description": "Power",
-		"Name":        "Power",
-
-		"PowerSupplies@meta":             v.Meta(view.GETProperty("power_supply_uris"), view.GETFormatter("expand"), view.GETModel("default")),
-		"PowerSupplies@odata.count@meta": v.Meta(view.GETProperty("power_supply_uris"), view.GETFormatter("count"), view.GETModel("default")),
-
-		"PowerControl@odata.count@meta": v.Meta(view.PropGET("power_control_views_count")),
-		"PowerControl@meta":             v.Meta(view.PropGET("power_control_views")),
-		"Oem": map[string]interface{}{
-			"OemPower": map[string]interface{}{
-				"PowerTrends@meta":             v.Meta(view.PropGET("power_trend_views")),
-				"PowerTrends@odata.count@meta": v.Meta(view.PropGET("power_trend_count")), // gets # of elements in power trend array instead of # of keys in first power trend array element
-			},
-			"EID_674": map[string]interface{}{
-				"PowerSuppliesSummary": map[string]interface{}{
-					"Status": map[string]interface{}{
-						"HealthRollup@meta": v.Meta(view.GETProperty("psu_rollup"), view.GETModel("global_health")),
-					},
-				},
-			},
-		},
-	}
-	//properties["Oem"].(map[string]interface{})["OemPower"].(map[string]interface{})["PowerTrends@odata.count"] = len(properties["Oem"].(map[string]interface{})["OemPower"].(map[string]interface{})["PowerTrends"].(map[string]interface{}))
-
 	ch.HandleCommand(
 		ctx,
 		&domain.CreateRedfishResource{
@@ -57,6 +30,28 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 				"PATCH":  []string{"ConfigureManager"},
 				"DELETE": []string{}, // can't be deleted
 			},
-			Properties: properties,
+			Properties: map[string]interface{}{
+				"Id":          "Power",
+				"Description": "Power",
+				"Name":        "Power",
+
+				"PowerSupplies@meta":             v.Meta(view.GETProperty("power_supply_uris"), view.GETFormatter("expand"), view.GETModel("default")),
+				"PowerSupplies@odata.count@meta": v.Meta(view.GETProperty("power_supply_uris"), view.GETFormatter("count"), view.GETModel("default")),
+				"PowerControl@meta":              v.Meta(view.GETProperty("power_control_uris"), view.GETFormatter("expand"), view.GETModel("default")),
+				"PowerControl@odata.count@meta":  v.Meta(view.GETProperty("power_control_uris"), view.GETFormatter("count"), view.GETModel("default")),
+				"Oem": map[string]interface{}{
+					"OemPower": map[string]interface{}{
+						"PowerTrends@meta":             v.Meta(view.PropGET("power_trend_views")),
+						"PowerTrends@odata.count@meta": v.Meta(view.PropGET("power_trend_count")), // gets # of elements in power trend array instead of # of keys in first power trend array element
+					},
+					"EID_674": map[string]interface{}{
+						"PowerSuppliesSummary": map[string]interface{}{
+							"Status": map[string]interface{}{
+								"HealthRollup@meta": v.Meta(view.GETProperty("psu_rollup"), view.GETModel("global_health")),
+							},
+						},
+					},
+				},
+			},
 		})
 }
