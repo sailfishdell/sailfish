@@ -5,10 +5,10 @@ import (
 )
 
 const (
-	HealthEvent      = eh.EventType("HealthEvent")
-	DataManagerEvent = eh.EventType("DataManagerEvent")
-	FanEvent         = eh.EventType("FanEvent")
-	PowerSupplyObjEvent = eh.EventType("PowerSupplyObjEvent")
+	HealthEvent                         = eh.EventType("HealthEvent")
+	DataManagerEvent                    = eh.EventType("DataManagerEvent")
+	FanEvent                            = eh.EventType("FanEvent")
+	PowerSupplyObjEvent                 = eh.EventType("PowerSupplyObjEvent")
 	AvgPowerConsumptionStatDataObjEvent = eh.EventType("AvgPowerConsumptionStatDataObjEvent")
 )
 
@@ -59,70 +59,70 @@ type FanEventData struct {
 
 type PowerSupplyObjEventData struct {
 	ObjectHeader         DataObjectHeader
-	OutputWatts          int `json:"outputWatts"`
-	InputRatedWatts      int `json:"inputRatedWatts"`
-	InputVolts           int `json:"inputVolts"`
+	OutputWatts          int     `json:"outputWatts"`
+	InputRatedWatts      int     `json:"inputRatedWatts"`
+	InputVolts           int     `json:"inputVolts"`
 	PSACOn               float64 `json:"psACOn"`
 	PSSwitchOn           float64 `json:"psSwitchOn"`
 	PSPOK                float64 `json:"psPOK"`
 	PSOn                 float64 `json:"psOn"`
 	PSFanFail            float64 `json:"psFanFail"`
-	PSState              uint16 `json:"psState"`
-	PSType               uint8 `json:"psType"`
-	PSCfgErrType         uint8 `json:"psCfgErrType"`
+	PSState              uint16  `json:"psState"`
+	PSType               uint8   `json:"psType"`
+	PSCfgErrType         uint8   `json:"psCfgErrType"`
 	BPMCapable           float64 `json:"bPMCapable"`
-	RatedAmps            uint16 `json:"ratedAmps"`
-	InputStatus          uint8 `json:"inputStatus"`
-	PsuSlot              uint8 `json:"psuSlot"`
+	RatedAmps            uint16  `json:"ratedAmps"`
+	InputStatus          uint8   `json:"inputStatus"`
+	PsuSlot              uint8   `json:"psuSlot"`
 	InstAmps             float64 `json:"instAmps"`
-	PsuCapabilities      uint `json:"psuCapabilities"`
-	OffsetFwVer          string `json:"offsetfwVer"`
-	OffsetPSLocation     string `json:"offsetPSLocation"`
-	BoardProductName     string `json:"boardProductName"`
-	BoardSerialNumber    string `json:"boardSerialNumber"`
-	BoardPartNumber	     string `json:"boardPartNumber"`
-	BoardManufacturer    string `json:"boardManufacturer"`
-	RedundancyStatus     uint8 `json:"redundancyStatus"`
+	PsuCapabilities      uint    `json:"psuCapabilities"`
+	OffsetFwVer          string  `json:"offsetfwVer"`
+	OffsetPSLocation     string  `json:"offsetPSLocation"`
+	BoardProductName     string  `json:"boardProductName"`
+	BoardSerialNumber    string  `json:"boardSerialNumber"`
+	BoardPartNumber      string  `json:"boardPartNumber"`
+	BoardManufacturer    string  `json:"boardManufacturer"`
+	RedundancyStatus     uint8   `json:"redundancyStatus"`
 	UpdateTime           int
-	CurrentInputVolts    int `json:"currentInputVolts"`
+	CurrentInputVolts    int    `json:"currentInputVolts"`
 	MinimumVoltage       uint16 `json:"minimumvoltage"`
 	MaximumVoltage       uint16 `json:"maxmimumvoltage"`
-	MinimumFreqHz        uint8 `json:"minimumfreqhz"`
-	MaximumFreqHz        uint8 `json:"maximumfreqhz"`
-	InitUpdateInProgress uint `json:"InitupdateInProgress"`
+	MinimumFreqHz        uint8  `json:"minimumfreqhz"`
+	MaximumFreqHz        uint8  `json:"maximumfreqhz"`
+	InitUpdateInProgress uint   `json:"InitupdateInProgress"`
 	U16POutMax           uint16 `json:"u16PoutMax"`
-	LineStatus           uint8 `json:"lineStatus"`
+	LineStatus           uint8  `json:"lineStatus"`
 }
 
 type AvgPowerConsumptionStatDataObjEventData struct {
-	ObjectHeader	DataObjectHeader
-	AvgPwrConsByInterval int `json:"avgPwrConsByInterval"`
-	AvgPwrLastDay	int `json:"avgPwrLastDay"`
-	AvgPwrLastHour	int `json:"avgPwrLastHour"`
-	AvgPwrLastMin	int `json:"avgPwrLastMin"`
-	AvgPwrLastWeek	int `json:"avgPwrLastWeek"`
-	DefInterval	int `json:"defInterval"`
-	DeviceType	int `json:"deviceType"`
-	MaxPwrConsByInterval int `json:"maxPwrConsByInterval"`
-	MaxPwrLastDay	int `json:"maxPwrLastDay"`
-	MaxPwrLastDayTime int64 `json:"maxPwrLastDayTime"`
-	MaxPwrLastHour	int `json:"maxPwrLastHour"`
-	MaxPwrLastHourTime int64 `json:"maxPwrLastHourTime"`
-	MaxPwrLastMin	int `json:"maxPwrLastMin"`
-	MaxPwrLastMinTime int64 `json:"maxPwrLastMinTime"`
-	MaxPwrLastWeek	int `json:"maxPwrLastWeek"`
-	MaxPwrLastWeekTime int64 `json:"maxPwrLastWeekTime"`
-	MinPwrConsByInterval int `json:"minPwrConsByInterval"`
-	MinPwrLastDay	int `json:"minPwrLastDay"`
-	MinPwrLastDayTime int64 `json:"minPwrLastDayTime"`
-	MinPwrLastHour	int `json:"minPwrLastHour"`
-	MinPwrLastHourTime int64 `json:"minPwrLastHourTime"`
-	MinPwrLastMin	int `json:"minPwrLastMin"`
-	MinPwrLastMinTime int64 `json:"minPwrLastMinTime"`
-	MinPwrLastWeek	int `json:"minPwrLastWeek"`
-	MinPwrLastWeekTime int64 `json:"minPwrLastWeekTime"`
-	ObjExtFlags	int `json:"objExtFlags"`
-	OffsetKey	string `json:"offsetKey"`
+	ObjectHeader         DataObjectHeader
+	AvgPwrConsByInterval int    `json:"avgPwrConsByInterval"`
+	AvgPwrLastDay        int    `json:"avgPwrLastDay"`
+	AvgPwrLastHour       int    `json:"avgPwrLastHour"`
+	AvgPwrLastMin        int    `json:"avgPwrLastMin"`
+	AvgPwrLastWeek       int    `json:"avgPwrLastWeek"`
+	DefInterval          int    `json:"defInterval"`
+	DeviceType           int    `json:"deviceType"`
+	MaxPwrConsByInterval int    `json:"maxPwrConsByInterval"`
+	MaxPwrLastDay        int    `json:"maxPwrLastDay"`
+	MaxPwrLastDayTime    int64  `json:"maxPwrLastDayTime"`
+	MaxPwrLastHour       int    `json:"maxPwrLastHour"`
+	MaxPwrLastHourTime   int64  `json:"maxPwrLastHourTime"`
+	MaxPwrLastMin        int    `json:"maxPwrLastMin"`
+	MaxPwrLastMinTime    int64  `json:"maxPwrLastMinTime"`
+	MaxPwrLastWeek       int    `json:"maxPwrLastWeek"`
+	MaxPwrLastWeekTime   int64  `json:"maxPwrLastWeekTime"`
+	MinPwrConsByInterval int    `json:"minPwrConsByInterval"`
+	MinPwrLastDay        int    `json:"minPwrLastDay"`
+	MinPwrLastDayTime    int64  `json:"minPwrLastDayTime"`
+	MinPwrLastHour       int    `json:"minPwrLastHour"`
+	MinPwrLastHourTime   int64  `json:"minPwrLastHourTime"`
+	MinPwrLastMin        int    `json:"minPwrLastMin"`
+	MinPwrLastMinTime    int64  `json:"minPwrLastMinTime"`
+	MinPwrLastWeek       int    `json:"minPwrLastWeek"`
+	MinPwrLastWeekTime   int64  `json:"minPwrLastWeekTime"`
+	ObjExtFlags          int    `json:"objExtFlags"`
+	OffsetKey            string `json:"offsetKey"`
 }
 
 type DataManagerEventData interface{}

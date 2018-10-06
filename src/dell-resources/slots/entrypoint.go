@@ -27,11 +27,11 @@ type viewer interface {
 }
 
 type SlotService struct {
-	ch    eh.CommandHandler
-	eb    eh.EventBus
-	ew    *eventwaiter.EventWaiter
-	slots map[string]interface{}
-    arService *ar_mapper2.ARService
+	ch        eh.CommandHandler
+	eb        eh.EventBus
+	ew        *eventwaiter.EventWaiter
+	slots     map[string]interface{}
+	arService *ar_mapper2.ARService
 }
 
 func New(arservice *ar_mapper2.ARService, ch eh.CommandHandler, eb eh.EventBus) *SlotService {
@@ -42,11 +42,11 @@ func New(arservice *ar_mapper2.ARService, ch eh.CommandHandler, eb eh.EventBus) 
 	ss := make(map[string]interface{})
 
 	return &SlotService{
-		ch:    ch,
-		eb:    eb,
-		ew:    EventWaiter,
-		slots: ss,
-        arService: arservice,
+		ch:        ch,
+		eb:        eb,
+		ew:        EventWaiter,
+		slots:     ss,
+		arService: arservice,
 	}
 }
 
@@ -120,7 +120,7 @@ func (l *SlotService) manageSlots(ctx context.Context, logger log.Logger, logUri
 					slotModel := model.New()
 					//awesome_mapper.New(ctx, logger, cfgMgr, slotModel, "slots", map[string]interface{}{"group": group, "index": index})
 
-                    armapper := l.arService.NewMapping(logger, uri, "Chassis/Slots", slotModel, map[string]string{"Group": group, "Index": index, "FQDD": ""})
+					armapper := l.arService.NewMapping(logger, uri, "Chassis/Slots", slotModel, map[string]string{"Group": group, "Index": index, "FQDD": ""})
 
 					slotView := view.New(
 						view.WithURI(uri),
@@ -132,12 +132,12 @@ func (l *SlotService) manageSlots(ctx context.Context, logger log.Logger, logUri
 					l.slots[uri] = uuid
 
 					properties := map[string]interface{}{
-						"Config@meta":   slotView.Meta(view.PropGET("slot_config")),
-						"Contains@meta": slotView.Meta(view.PropGET("slot_contains")),
-						"Id":            SlotEntry.Id,
-						"Name@meta":     slotView.Meta(view.PropGET("slot_name")),
-						"Occupied@meta": slotView.Meta(view.PropGET("slot_occupied")),
-						"SlotName@meta": slotView.Meta(view.PropGET("slot_slotname")),
+						"Config@meta":      slotView.Meta(view.PropGET("slot_config")),
+						"Contains@meta":    slotView.Meta(view.PropGET("slot_contains")),
+						"Id":               SlotEntry.Id,
+						"Name@meta":        slotView.Meta(view.PropGET("slot_name")),
+						"Occupied@meta":    slotView.Meta(view.PropGET("slot_occupied")),
+						"SlotName@meta":    slotView.Meta(view.PropGET("slot_slotname")),
 						"SledProfile@meta": slotView.Meta(view.PropGET("slot_profile")),
 					}
 

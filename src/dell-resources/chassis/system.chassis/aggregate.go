@@ -48,8 +48,8 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 
 				"Status": map[string]interface{}{
 					"HealthRollup@meta": v.Meta(view.PropGET("health")), //smil call?
-					"State":             "Enabled",                             //hardcoded
-					"Health@meta":       v.Meta(view.PropGET("health")),        //smil call?
+					"State":             "Enabled",                      //hardcoded
+					"Health@meta":       v.Meta(view.PropGET("health")), //smil call?
 				},
 
 				"Power":   map[string]interface{}{"@odata.id": v.GetURI() + "/Power"},

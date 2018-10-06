@@ -27,13 +27,13 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 				"DELETE": []string{}, // can't be deleted
 			},
 			Properties: map[string]interface{}{
-				"Description@meta":   v.Meta(view.PropGET("registry_description")),
-				"Id@meta":       v.Meta(view.PropGET("registry_id")),
-				"Languages@meta": v.Meta(view.PropGET("languages")),
+				"Description@meta":           v.Meta(view.PropGET("registry_description")),
+				"Id@meta":                    v.Meta(view.PropGET("registry_id")),
+				"Languages@meta":             v.Meta(view.PropGET("languages")),
 				"Languages@odata.count@meta": v.Meta(view.PropGET("languages_count")),
-				"Location@meta": v.Meta(view.PropGET("location")),
-				"Location@odata.count@meta": v.Meta(view.PropGET("location_count")),
-				"Name@meta":     v.Meta(view.PropGET("registry_name")),
-				"Registry@meta": v.Meta(view.PropGET("registry_type")),
+				"Location@meta":              v.Meta(view.PropGET("location")),
+				"Location@odata.count@meta":  v.Meta(view.PropGET("location_count")),
+				"Name@meta":                  v.Meta(view.PropGET("registry_name")),
+				"Registry@meta":              v.Meta(view.PropGET("registry_type")),
 			}})
 }

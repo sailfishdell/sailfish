@@ -23,9 +23,9 @@ import (
 )
 
 type listener interface {
-    GetID() eh.UUID
-    processEvent(event eh.Event)
-    closeInbox()
+	GetID() eh.UUID
+	processEvent(event eh.Event)
+	closeInbox()
 }
 
 // EventWaiter waits for certain events to match a criteria.
@@ -79,12 +79,12 @@ func (w *EventWaiter) run() {
 			// Check for existence to avoid closing channel twice.
 			if _, ok := listeners[l.GetID()]; ok {
 				delete(listeners, l.GetID())
-                l.closeInbox()
+				l.closeInbox()
 			}
 		case event := <-w.inbox:
-            for _, l := range listeners {
-                l.processEvent(event)
-            }
+			for _, l := range listeners {
+				l.processEvent(event)
+			}
 		}
 	}
 }
@@ -100,14 +100,14 @@ func (w *EventWaiter) Notify(ctx context.Context, event eh.Event) {
 // interesting events by analysing the event data.
 func (w *EventWaiter) Listen(ctx context.Context, match func(eh.Event) bool) (*EventListener, error) {
 	l := &EventListener{
-		Name:       "unnamed",
-		id:         eh.NewUUID(),
-		singleEventInbox:      make(chan eh.Event, 100),
-		match:      match,
-		unregister: w.unregister,
+		Name:             "unnamed",
+		id:               eh.NewUUID(),
+		singleEventInbox: make(chan eh.Event, 100),
+		match:            match,
+		unregister:       w.unregister,
 	}
 
-    w.RegisterListener(l)
+	w.RegisterListener(l)
 
 	return l, nil
 }
@@ -118,40 +118,40 @@ func (w *EventWaiter) RegisterListener(l listener) {
 
 // EventListener receives events from an EventWaiter.
 type EventListener struct {
-	Name       string
-	id         eh.UUID
-	singleEventInbox      chan eh.Event
-	match      func(eh.Event) bool
-	unregister chan listener
-    eventType  *eh.EventType
+	Name             string
+	id               eh.UUID
+	singleEventInbox chan eh.Event
+	match            func(eh.Event) bool
+	unregister       chan listener
+	eventType        *eh.EventType
 }
 
 func (l *EventListener) SetSingleEventType(t eh.EventType) {
-    l.eventType = &t
+	l.eventType = &t
 }
 
 func (l *EventListener) GetID() eh.UUID { return l.id }
 
 func (l *EventListener) processEvent(event eh.Event) {
-    t := event.EventType()
-    if l.eventType != nil && *l.eventType != t {
-        // early return
-        return
-    }
+	t := event.EventType()
+	if l.eventType != nil && *l.eventType != t {
+		// early return
+		return
+	}
 
-    eventDataArray, ok := event.Data().([]eh.EventData)
-    if ok {
-        for _, data := range eventDataArray {
-            oneEvent := eh.NewEvent(t, data, event.Timestamp())
-            if l.match(oneEvent) {
-                l.singleEventInbox <- oneEvent
-            }
-        }
-    } else {
-        if l.match(event) {
-            l.singleEventInbox <- event
-        }
-    }
+	eventDataArray, ok := event.Data().([]eh.EventData)
+	if ok {
+		for _, data := range eventDataArray {
+			oneEvent := eh.NewEvent(t, data, event.Timestamp())
+			if l.match(oneEvent) {
+				l.singleEventInbox <- oneEvent
+			}
+		}
+	} else {
+		if l.match(event) {
+			l.singleEventInbox <- event
+		}
+	}
 }
 
 // Wait waits for the event to arrive.
@@ -176,5 +176,5 @@ func (l *EventListener) Close() {
 
 // close the inbox
 func (l *EventListener) closeInbox() {
-    close(l.singleEventInbox)
+	close(l.singleEventInbox)
 }

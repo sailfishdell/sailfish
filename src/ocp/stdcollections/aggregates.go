@@ -84,7 +84,7 @@ func AddAggregate(ctx context.Context, rootID eh.UUID, rootURI string, ch eh.Com
 				"DELETE": []string{}, // can't be deleted
 			},
 			Properties: map[string]interface{}{
-				"Name": "ManagerInstancesCollection",
+				"Name":        "ManagerInstancesCollection",
 				"Description": "Collection of BMCs",
 			}})
 

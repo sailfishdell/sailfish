@@ -303,28 +303,28 @@ func (c *InjectEvent) Handle(ctx context.Context, a *RedfishResourceAggregate) e
 	eventList = append(eventList, c.EventData)
 	eventList = append(eventList, c.EventArray...)
 
-    requestLogger.Debug("InjectEvent - NEW ARRAY INJECT")
+	requestLogger.Debug("InjectEvent - NEW ARRAY INJECT")
 
-    trainload := []eh.EventData{}
-    for _, eventData := range eventList {
-        data, err := eh.CreateEventData(c.Name)
-        if err != nil {
-            requestLogger.Info("InjectEvent - event type not registered: injecting raw event.", "event name", c.Name, "error", err)
-            trainload = append(trainload, eventData)
-            continue
-        }
+	trainload := []eh.EventData{}
+	for _, eventData := range eventList {
+		data, err := eh.CreateEventData(c.Name)
+		if err != nil {
+			requestLogger.Info("InjectEvent - event type not registered: injecting raw event.", "event name", c.Name, "error", err)
+			trainload = append(trainload, eventData)
+			continue
+		}
 
-        err = mapstructure.Decode(eventData, &data)
-        if err != nil {
-            requestLogger.Warn("InjectEvent - could not decode event data, skipping event", "error", err, "raw-eventdata", eventData, "dest-event", data)
-            trainload = append(trainload, eventData)
-            continue
-        }
+		err = mapstructure.Decode(eventData, &data)
+		if err != nil {
+			requestLogger.Warn("InjectEvent - could not decode event data, skipping event", "error", err, "raw-eventdata", eventData, "dest-event", data)
+			trainload = append(trainload, eventData)
+			continue
+		}
 
-        trainload = append(trainload, data)
-        requestLogger.Debug("InjectEvent - publishing", "event name", c.Name, "event_data", data)
-    }
-    injectChan <- eh.NewEvent(c.Name, trainload, time.Now())
+		trainload = append(trainload, data)
+		requestLogger.Debug("InjectEvent - publishing", "event name", c.Name, "event_data", data)
+	}
+	injectChan <- eh.NewEvent(c.Name, trainload, time.Now())
 
 	return nil
 }
