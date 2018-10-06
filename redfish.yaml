@@ -245,11 +245,11 @@ awesome_mapper:
     power_trend:
         - { Select: "type == 'AvgPowerConsumptionStatDataObjEvent'",
             ModelUpdate: [
-                {Property: "average_watts",  Query: "traverse_struct(data, trend, 'AvgPwr')" },
-                {Property: "max_watts",      Query: "traverse_struct(data, trend, 'MaxPwr')" },
-                {Property: "min_watts",      Query: "traverse_struct(data, trend, 'MinPwr')" },
-                {Property: "max_watts_time", Query: "epoch_to_date(traverse_struct(data, trend, 'MaxPwrTime'))" },
-                {Property: "min_watts_time", Query: "epoch_to_date(traverse_struct(data, trend, 'MinPwrTime'))" }]}
+                {Property: "average_watts",  Query: "traverse_struct(data, 'AvgPwrLast' + trend)" },
+                {Property: "max_watts",      Query: "traverse_struct(data, 'MaxPwrLast' + trend)" },
+                {Property: "min_watts",      Query: "traverse_struct(data, 'MinPwrLast' + trend)" },
+                {Property: "max_watts_time", Query: "epoch_to_date(traverse_struct(data, 'MaxPwrLast' + trend + 'Time'))" },
+                {Property: "min_watts_time", Query: "epoch_to_date(traverse_struct(data, 'MinPwrLast' + trend + 'Time'))" }]}
 
 
     health:
