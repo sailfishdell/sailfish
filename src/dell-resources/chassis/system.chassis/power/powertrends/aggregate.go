@@ -10,52 +10,55 @@ import (
 	eh "github.com/looplab/eventhorizon"
 )
 
-func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, member string, ch eh.CommandHandler) map[string]interface{} {
-	s := ""
-	if member == "" {
-	    s = "s"
-	}
+func AddTrendsAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.CommandHandler) {
 	ch.HandleCommand(
 		ctx,
 		&domain.CreateRedfishResource{
 			ID:          v.GetUUID(),
-			Collection:  false,
 			ResourceURI: v.GetURI(),
-			Type:        "#DellPower.v1_0_0.DellPowerTrend"+s,
+			Type:        "#DellPower.v1_0_0.DellPowerTrends",
 			Context:     "/redfish/v1/$metadata#Power.PowerSystem.Chassis.1/Power/$entity",
+			Collection:  false,
 			Privileges: map[string]interface{}{
 				"GET":    []string{"Login"},
 				"POST":   []string{}, // cannot create sub objects
 				"PUT":    []string{},
-				"PATCH":  []string{"ConfigureManager"},
+				"PATCH":  []string{},
 				"DELETE": []string{}, // can't be deleted
 			},
-			Properties: getViewFragment(v, member),
+			Properties: map[string]interface{}{
+				"Name":                        "System Power",
+				"MemberId":                    "PowerHistogram",
+				"histograms@meta":             v.Meta(view.GETProperty("trend_histogram_uris"), view.GETFormatter("expand"), view.GETModel("default")),
+				"histograms@odata.count@meta": v.Meta(view.GETProperty("trend_histogram_uris"), view.GETFormatter("count"), view.GETModel("default")),
+			},
 		})
-
-	return getViewFragment(v, member)
 }
 
-// this view fragment can be attached elsewhere in the tree
-func getViewFragment(v *view.View, member string) map[string]interface{} {
-	properties := map[string]interface{}{
-		"@odata.id":      v.GetURI(),
-		"Name":           "System Power",
-		"MemberId":       "PowerHistogram",
-	}
-
-	if member != "" {
-		properties["Name"] = "System Power History"
-		properties["HistoryAverageWatts@meta"] = v.Meta(view.PropGET("avg_watts_"+member))
-		properties["HistoryMaxWatts@meta"] = v.Meta(view.PropGET("max_watts_"+member))
-		properties["HistoryMaxWattsTime@meta"] = v.Meta(view.PropGET("max_watts_time_"+member))
-		properties["HistoryMinWatts@meta"] = v.Meta(view.PropGET("min_watts_"+member))
-		properties["HistoryMinWattsTime@meta"] = v.Meta(view.PropGET("min_watts_time_"+member))
-	} else {
-		properties["@odata.context"] = "/redfish/v1/$metadata#Power.PowerSystem.Chassis.1/Power/$entity"
-		properties["@odata.type"] = "#DellPower.v1_0_0.DellPowerTrends"
-		properties["histograms@meta"] = v.Meta(view.PropGET("histograms"))
-		properties["histograms@odata.count@meta"] = v.Meta(view.PropGET("histograms_count"))
-	}
-	return properties
+func AddHistogramAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.CommandHandler) {
+	ch.HandleCommand(
+		ctx,
+		&domain.CreateRedfishResource{
+			ID:          v.GetUUID(),
+			ResourceURI: v.GetURI(),
+			Type:        "#DellPower.v1_0_0.DellPowerTrend",
+			Context:     "/redfish/v1/$metadata#Power.PowerSystem.Chassis.1/Power/$entity",
+			Collection:  false,
+			Privileges: map[string]interface{}{
+				"GET":    []string{"Login"},
+				"POST":   []string{}, // cannot create sub objects
+				"PUT":    []string{},
+				"PATCH":  []string{},
+				"DELETE": []string{}, // can't be deleted
+			},
+			Properties: map[string]interface{}{
+				"Name":                     "System Power History",
+				"MemberId":                 "PowerHistogram",
+				"HistoryMaxWattsTime@meta": v.Meta(view.GETProperty("max_watts_time"), view.GETModel("default")),
+				"HistoryMaxWatts@meta":     v.Meta(view.GETProperty("max_watts"), view.GETModel("default")),
+				"HistoryMinWattsTime@meta": v.Meta(view.GETProperty("min_watts_time"), view.GETModel("default")),
+				"HistoryMinWatts@meta":     v.Meta(view.GETProperty("min_watts"), view.GETModel("default")),
+				"HistoryAverageWatts@meta": v.Meta(view.GETProperty("average_watts"), view.GETModel("default")),
+			},
+		})
 }

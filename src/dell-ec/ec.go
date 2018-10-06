@@ -95,7 +95,8 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	testaggregate.RunRegistryFunctions(evtSvc)
 	ar_mapper2.RunRegistryFunctions(arService)
 	attributes.RunRegistryFunctions(ch, eb)
-	expandFormatter := makeExpandFormatter(d)
+	expandFormatter := makeExpandListFormatter(d)
+	expandOneFormatter := makeExpandOneFormatter(d)
 
 	//
 	// Create the (empty) model behind the /redfish/v1 service root. Nothing interesting here
@@ -370,19 +371,18 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		powerLogger, sysChasPwrVw, _ := testaggregate.InstantiateFromCfg(ctx, logger, cfgMgr, "power",
 			map[string]interface{}{
 				"rooturi": rootView.GetURI(),
-				"FQDD":    chasName, // this is used for the AR mapper. case difference is confusing, but need to change mappers
+				"FQDD":    chasName,
 			},
 		)
 
 		sysChasPwrVw.GetModel("default").ApplyOption(
 			mgrCMCIntegrated.WithUniqueName("Power"),
-			model.UpdateProperty("power_trend_views", []interface{}{}),
 		)
 
 		sysChasPwrVw.ApplyOption(
 			view.WithModel("global_health", globalHealthModel),
-			evtSvc.PublishResourceUpdatedEventsForModel(ctx, "default"),
 			view.WithFormatter("expand", expandFormatter),
+			view.WithFormatter("expandone", expandOneFormatter),
 			view.WithFormatter("count", countFormatter),
 		)
 		power.AddAggregate(ctx, powerLogger, sysChasPwrVw, ch)
@@ -396,8 +396,8 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			psuLogger, sysChasPwrPsuVw, _ := testaggregate.InstantiateFromCfg(ctx, logger, cfgMgr, "psu_slot",
 				map[string]interface{}{
 					"rooturi":     rootView.GetURI(),
-					"FQDD":        psuName,  // this is used for the AR mapper. case difference is confusing, but need to change mappers
-					"ChassisFQDD": chasName, // this is used for the AR mapper. case difference is confusing, but need to change mappers
+					"FQDD":        psuName, // this is used for the AR mapper. case difference with 'fqdd' is confusing, but need to change mappers
+					"ChassisFQDD": chasName,
 					"fqdd":        "System.Chassis.1#" + strings.Replace(psuName, "PSU.Slot", "PowerSupply", 1),
 					"fqddlist":    []string{psuName},
 				},
@@ -416,10 +416,8 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 				view.WithFormatter("attributeFormatter", attributes.FormatAttributeDump),
 			)
 			swinvViews = append(swinvViews, sysChasPwrPsuVw)
-
-			powersupply.AddAggregate(ctx, psuLogger, sysChasPwrPsuVw, ch)
-
 			psu_uris = append(psu_uris, sysChasPwrPsuVw.GetURI())
+			powersupply.AddAggregate(ctx, psuLogger, sysChasPwrPsuVw, ch)
 		}
 		sysChasPwrVw.GetModel("default").ApplyOption(model.UpdateProperty("power_supply_uris", psu_uris))
 
@@ -436,56 +434,43 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		powercontrol.AddAggregate(ctx, pwrCtrlLogger, sysChasPwrCtrlVw, ch)
 		sysChasPwrVw.GetModel("default").ApplyOption(model.UpdateProperty("power_control_uris", []string{sysChasPwrCtrlVw.GetURI()}))
 
-		// #
-		// #
-		// #
-		// #
-		// #
+		// ##################
+		// # Power Trends
+		// ##################
 
-		trend_views := []interface{}{}
-
-		pwrTrendLogger := sysChasLogger.New("module", "Chassis/System.Chassis/Power/PowerTrends")
-		pwrTrendModel := model.New(
-			model.UpdateProperty("histograms", []interface{}{}),
+		pwrTrendLogger, pwrTrendVw, _ := testaggregate.InstantiateFromCfg(ctx, logger, cfgMgr, "power_trends",
+			map[string]interface{}{
+				"rooturi": rootView.GetURI(),
+				"FQDD":    chasName,
+			},
+		)
+		powertrends.AddTrendsAggregate(ctx, pwrTrendLogger, pwrTrendVw, ch)
+		sysChasPwrVw.GetModel("default").ApplyOption(model.UpdateProperty("power_trends_uri", pwrTrendVw.GetURI()))
+		pwrTrendVw.ApplyOption(
+			view.WithFormatter("expand", expandFormatter),
+			view.WithFormatter("expandone", expandOneFormatter),
+			view.WithFormatter("count", countFormatter),
 		)
 
-		armapper := arService.NewMapping(pwrTrendLogger, "Chassis/"+chasName+"/Power/PowerTrends", "Chassis/System.Chassis/Power", pwrTrendModel, map[string]string{"FQDD": chasName})
+		// ##################
+		// # Power Histograms
+		// ##################
 
-		pwrTrendVw := view.New(
-			view.WithURI(rootView.GetURI()+"/Chassis/"+chasName+"/Power/PowerTrends-1"),
-			view.WithModel("default", pwrTrendModel),
-			view.WithController("ar_mapper", armapper),
-			evtSvc.PublishResourceUpdatedEventsForModel(ctx, "default"),
-		)
-		pwrTrend := powertrends.AddAggregate(ctx, pwrTrendLogger, pwrTrendVw, "", ch)
-		p := &domain.RedfishResourceProperty{}
-		p.Parse(pwrTrend)
-		trend_views = append(trend_views, p)
-
-		histogram_views := []interface{}{}
+		histogram_uris := []string{}
 		for _, trend := range []string{
 			"Week", "Day", "Hour",
 		} {
-			trendModel := model.New()
-			//armapper := arService.NewMapping(pwrTrendLogger, "Chassis/"+chasName+"/Power/PowerTrends-1/Last"+trend, "Chassis/System.Chassis/Power", trendModel, map[string]string{"FQDD": chasName})
-			awesome_mapper.New(ctx, pwrTrendLogger, cfgMgr, trendModel, "power_trend", map[string]interface{}{})
-			trendView := view.New(
-				view.WithURI(rootView.GetURI()+"/Chassis/"+chasName+"/Power/PowerTrends-1/Last"+trend),
-				view.WithModel("default", trendModel),
-				//view.WithController("ar_mapper", armapper),
-				evtSvc.PublishResourceUpdatedEventsForModel(ctx, "default"),
+			histLogger, histView, _ := testaggregate.InstantiateFromCfg(ctx, logger, cfgMgr, "power_histogram",
+				map[string]interface{}{
+					"rooturi": rootView.GetURI(),
+					"FQDD":    chasName,
+					"trend":   trend,
+				},
 			)
-			pwr_trend := powertrends.AddAggregate(ctx, pwrTrendLogger, trendView, trend, ch)
-			p := &domain.RedfishResourceProperty{}
-			p.Parse(pwr_trend)
-			histogram_views = append(histogram_views, p)
+			powertrends.AddHistogramAggregate(ctx, histLogger, histView, ch)
+			histogram_uris = append(histogram_uris, histView.GetURI())
 		}
-
-		pwrTrendModel.ApplyOption(model.UpdateProperty("histograms", &domain.RedfishResourceProperty{Value: histogram_views}))
-		pwrTrendModel.ApplyOption(model.UpdateProperty("histograms_count", len(histogram_views)))
-
-		sysChasPwrVw.GetModel("default").ApplyOption(model.UpdateProperty("power_trend_views", &domain.RedfishResourceProperty{Value: trend_views}))
-		sysChasPwrVw.GetModel("default").ApplyOption(model.UpdateProperty("power_trend_count", len(trend_views)))
+		pwrTrendVw.GetModel("default").ApplyOption(model.UpdateProperty("trend_histogram_uris", histogram_uris))
 
 		//*********************************************************************
 		// Create Thermal objects for System.Chassis.1
@@ -500,7 +485,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		)
 		// the controller is what updates the model when ar entries change,
 		// also handles patch from redfish
-		armapper = arService.NewMapping(thermalLogger, "Chassis/"+chasName+"/Thermal", "Chassis/System.Chassis/Thermal", thermalModel, map[string]string{"FQDD": chasName})
+		armapper := arService.NewMapping(thermalLogger, "Chassis/"+chasName+"/Thermal", "Chassis/System.Chassis/Thermal", thermalModel, map[string]string{"FQDD": chasName})
 
 		thermalView := view.New(
 			view.WithURI(rootView.GetURI()+"/Chassis/"+chasName+"/Thermal"),

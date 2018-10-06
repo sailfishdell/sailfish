@@ -168,6 +168,29 @@ views:
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
 
+  "power_trends":
+      "Logger": ["module", "PowerTrends"]
+      "Models":
+        "default":  {}
+      "Controllers":
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/Chassis/' + FQDD + '/Power/PowerTrends-1'"
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+
+  "power_histogram":
+      "Logger": ["module", "PowerTrends"]
+      "Models":
+        "default":  {}
+      "Controllers":
+        - "fn": "AwesomeMapper"
+          "params": {"modelname": "default", "cfgsection": "power_trend" }
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/Chassis/' + FQDD + '/Power/PowerTrends-1/Last'+trend"
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
 
   "system_chassis":
       "Logger": ["module", "system_chassis"]
@@ -234,21 +257,11 @@ awesome_mapper:
     power_trend:
         - { Select: "type == 'AvgPowerConsumptionStatDataObjEvent'",
             ModelUpdate: [
-                {Property: "avg_watts_Hour", Query: "data.AvgPwrLastHour" },
-                {Property: "max_watts_Hour", Query: "data.MaxPwrLastHour" },
-                {Property: "max_watts_time_Hour", Query: "epoch_to_date(data.MaxPwrLastHourTime)" },
-                {Property: "min_watts_Hour", Query: "data.MinPwrLastHour" },
-                {Property: "min_watts_time_Hour", Query: "epoch_to_date(data.MinPwrLastHourTime)" },
-                {Property: "avg_watts_Day", Query: "data.AvgPwrLastDay" },
-                {Property: "max_watts_Day", Query: "data.MaxPwrLastDay" },
-                {Property: "max_watts_time_Day", Query: "epoch_to_date(data.MaxPwrLastDayTime)" },
-                {Property: "min_watts_Day", Query: "data.MinPwrLastDay" },
-                {Property: "min_watts_time_Day", Query: "epoch_to_date(data.MinPwrLastDayTime)" },
-                {Property: "avg_watts_Week", Query: "data.AvgPwrLastWeek" },
-                {Property: "max_watts_Week", Query: "data.MaxPwrLastWeek" },
-                {Property: "max_watts_time_Week", Query: "epoch_to_date(data.MaxPwrLastWeekTime)" },
-                {Property: "min_watts_Week", Query: "data.MinPwrLastWeek" },
-                {Property: "min_watts_time_Week", Query: "epoch_to_date(data.MinPwrLastWeekTime)" }]}
+                {Property: "average_watts", Query: "data.AvgPwrLastHour" },
+                {Property: "max_watts", Query: "data.MaxPwrLastHour" },
+                {Property: "max_watts_time", Query: "epoch_to_date(data.MaxPwrLastHourTime)" },
+                {Property: "min_watts", Query: "data.MinPwrLastHour" },
+                {Property: "min_watts_time", Query: "epoch_to_date(data.MinPwrLastHourTime)" }]}
 
     health:
         - { Select: "type == 'HealthEvent' && data.FQDD == fqdd", ModelUpdate: [ {Property: "health", Query: "data.Health" } ] }

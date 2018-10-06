@@ -41,8 +41,8 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 				"PowerControl@odata.count@meta":  v.Meta(view.GETProperty("power_control_uris"), view.GETFormatter("count"), view.GETModel("default")),
 				"Oem": map[string]interface{}{
 					"OemPower": map[string]interface{}{
-						"PowerTrends@meta":             v.Meta(view.PropGET("power_trend_views")),
-						"PowerTrends@odata.count@meta": v.Meta(view.PropGET("power_trend_count")), // gets # of elements in power trend array instead of # of keys in first power trend array element
+						"PowerTrends@meta":        v.Meta(view.GETProperty("power_trends_uri"), view.GETFormatter("expandone"), view.GETModel("default")),
+						"PowerTrends@odata.count": 7, // TODO: Fix this, it's wrong... this shoulndt even be here
 					},
 					"EID_674": map[string]interface{}{
 						"PowerSuppliesSummary": map[string]interface{}{

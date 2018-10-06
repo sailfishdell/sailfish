@@ -9,7 +9,7 @@ import (
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
 )
 
-func makeExpandFormatter(d *domain.DomainObjects) func(context.Context, *view.View, *model.Model, *domain.RedfishResourceProperty, map[string]interface{}) error {
+func makeExpandListFormatter(d *domain.DomainObjects) func(context.Context, *view.View, *model.Model, *domain.RedfishResourceProperty, map[string]interface{}) error {
 	return func(
 		ctx context.Context,
 		v *view.View,
