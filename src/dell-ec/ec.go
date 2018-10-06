@@ -337,18 +337,19 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			},
 		)
 
-		managedBy := []map[string]string{{"@odata.id": managers[0].GetURI()}}
+		managedBy := []string{managers[0].GetURI()}
 		sysChasVw.GetModel("default").ApplyOption(
 			model.UpdateProperty("unique_name", chasName),
 			model.UpdateProperty("unique_name_attr", chasName+".Attributes"),
 			model.UpdateProperty("managed_by", managedBy),
-			model.UpdateProperty("managed_by_count", len(managedBy)),
 			model.UpdateProperty("attributes", map[string]map[string]map[string]interface{}{}),
 		)
 
 		sysChasVw.ApplyOption(
 			view.WithModel("global_health", globalHealthModel),
 			view.WithFormatter("attributeFormatter", attributes.FormatAttributeDump),
+			view.WithFormatter("formatOdataList", FormatOdataList),
+			view.WithFormatter("count", countFormatter),
 			ah.WithAction(ctx, sysChasLogger, "chassis.reset", "/Actions/Chassis.Reset", makePumpHandledAction("ChassisReset", 30, eb), ch, eb),
 			ah.WithAction(ctx, sysChasLogger, "msmconfigbackup", "/Actions/Oem/MSMConfigBackup", msmConfigBackup, ch, eb),
 			ah.WithAction(ctx, sysChasLogger, "chassis.msmconfigbackup", "/Actions/Oem/DellChassis.MSMConfigBackup", chassisMSMConfigBackup, ch, eb),
@@ -589,12 +590,11 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		"IOM.Slot.C2",
 	} {
 		iomLogger := chasLogger.New("module", "Chassis/"+iomName, "module", "Chassis/IOM.Slot")
-		managedBy := []map[string]string{{"@odata.id": managers[0].GetURI()}}
+		managedBy := []string{managers[0].GetURI()}
 		iomModel := model.New(
 			model.UpdateProperty("unique_name", iomName),
 			model.UpdateProperty("unique_name_attr", iomName+".Attributes"),
 			model.UpdateProperty("managed_by", managedBy),
-			model.UpdateProperty("managed_by_count", len(managedBy)),
 		)
 		fwmapper := arService.NewMapping(iomLogger.New("module", "firmware/inventory"), "firmware_Chassis/"+iomName, "firmware/inventory", iomModel, map[string]string{"FQDD": iomName})
 		// the controller is what updates the model when ar entries change,
@@ -619,6 +619,8 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			view.WithController("fw_mapper", fwmapper),
 			view.WithController("ar_dumper", ardumper),
 			view.WithFormatter("attributeFormatter", attributes.FormatAttributeDump),
+			view.WithFormatter("formatOdataList", FormatOdataList),
+			view.WithFormatter("count", countFormatter),
 			ah.WithAction(ctx, iomLogger, "iom.chassis.reset", "/Actions/Chassis.Reset", makePumpHandledAction("IomChassisReset", 30, eb), ch, eb),
 			ah.WithAction(ctx, iomLogger, "iom.resetpeakpowerconsumption", "/Actions/Oem/DellChassis.ResetPeakPowerConsumption", makePumpHandledAction("IomResetPeakPowerConsumption", 30, eb), ch, eb),
 			ah.WithAction(ctx, iomLogger, "iom.virtualreseat", "/Actions/Oem/DellChassis.VirtualReseat", makePumpHandledAction("IomVirtualReseat", 30, eb), ch, eb),
@@ -640,37 +642,31 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		"System.Modular.7", "System.Modular.7a", "System.Modular.7b",
 		"System.Modular.8", "System.Modular.8a", "System.Modular.8b",
 	} {
-		sledLogger := chasLogger.New("module", "Chassis/"+sledName, "module", "Chassis/System.Modular")
-		managedBy := []map[string]string{{"@odata.id": managers[0].GetURI()}}
-		sledModel := model.New(
+		sledLogger, sledView, _ := testaggregate.InstantiateFromCfg(ctx, logger, cfgMgr, "sled",
+			map[string]interface{}{
+				"rooturi":  rootView.GetURI(),
+				"FQDD":     sledName,
+				"fqdd":     "System.Chassis.1#SubSystem.1#" + sledName,
+				"fqddlist": []string{sledName},
+			},
+		)
+
+		managedBy := []string{managers[0].GetURI()}
+		sledView.GetModel("default").ApplyOption(
 			model.UpdateProperty("unique_name", sledName),
 			model.UpdateProperty("unique_name_attr", sledName+".Attributes"),
 			model.UpdateProperty("managed_by", managedBy),
-			model.UpdateProperty("managed_by_count", len(managedBy)),
 		)
-		fwmapper := arService.NewMapping(sledLogger.New("module", "firmware/inventory"), "firmware_Chassis/"+sledName, "firmware/inventory", sledModel, map[string]string{"FQDD": sledName})
 
-		armapper := arService.NewMapping(sledLogger, "Chassis/"+sledName, "Chassis/System.Modular", sledModel, map[string]string{"FQDD": sledName})
-
-		// This controller will populate 'attributes' property with AR entries matching this FQDD ('sledName')
-		ardumper, _ := attributes.NewController(ctx, sledModel, []string{sledName}, ch, eb)
-
-		//HEALTH
-		awesome_mapper.New(ctx, sledLogger, cfgMgr, sledModel, "health", map[string]interface{}{"fqdd": "System.Chassis.1#SubSystem.1#" + sledName})
-
-		sledView := view.New(
-			view.WithURI(rootView.GetURI()+"/Chassis/"+sledName),
-			view.WithModel("default", sledModel),
-			view.WithModel("swinv", sledModel),
+		sledView.ApplyOption(
+			view.WithModel("swinv", sledView.GetModel("default")),
 			view.WithModel("global_health", globalHealthModel),
-			view.WithController("ar_mapper", armapper),
-			view.WithController("fw_mapper", fwmapper),
-			view.WithController("ar_dumper", ardumper),
 			view.WithFormatter("attributeFormatter", attributes.FormatAttributeDump),
+			view.WithFormatter("formatOdataList", FormatOdataList),
+			view.WithFormatter("count", countFormatter),
 			ah.WithAction(ctx, sledLogger, "chassis.peripheralmapping", "/Actions/Oem/DellChassis.PeripheralMapping", makePumpHandledAction("SledPeripheralMapping", 30, eb), ch, eb),
 			ah.WithAction(ctx, sledLogger, "sledvirtualreseat", "/Actions/Chassis.VirtualReseat", makePumpHandledAction("SledVirtualReseat", 30, eb), ch, eb),
 			ah.WithAction(ctx, sledLogger, "chassis.sledvirtualreseat", "/Actions/Oem/DellChassis.VirtualReseat", makePumpHandledAction("ChassisSledVirtualReseat", 30, eb), ch, eb),
-			evtSvc.PublishResourceUpdatedEventsForModel(ctx, "default"),
 		)
 		sled_chassis.AddAggregate(ctx, sledLogger, sledView, ch, eb)
 		related_items = append(related_items, map[string]string{"@odata.id": sledView.GetURI()})

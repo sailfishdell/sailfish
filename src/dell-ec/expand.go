@@ -101,3 +101,21 @@ func countFormatter(
 
 	return nil
 }
+
+func FormatOdataList(ctx context.Context, v *view.View, m *model.Model, rrp *domain.RedfishResourceProperty, meta map[string]interface{}) error {
+	p, ok := meta["property"].(string)
+
+	uris, ok := m.GetProperty(p).([]string)
+	if !ok {
+		return errors.New("uris property not setup properly")
+	}
+
+	odata := []interface{}{}
+	for _, i := range uris {
+		odata = append(odata, map[string]interface{}{"@odata.id": i})
+	}
+
+	rrp.Value = odata
+
+	return nil
+}
