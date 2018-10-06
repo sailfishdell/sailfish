@@ -27,13 +27,17 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 				"DELETE": []string{}, // can't be deleted
 			},
 			Properties: map[string]interface{}{
-				"Id":                            "Thermal",
-				"Name":                          "Thermal",
-				"Description":                   "Represents the properties for Temperature and Cooling",
-				"Fans@meta":                     v.Meta(view.PropGET("fan_views")),
-				"Fans@odata.count@meta":         v.Meta(view.PropGET("fan_views_count")),
-				"Temperatures@meta":             v.Meta(view.PropGET("thermal_views")),       //TODO: fix this in ec.go
-				"Temperatures@odata.count@meta": v.Meta(view.PropGET("thermal_views_count")), //TODO
+				"Id":          "Thermal",
+				"Name":        "Thermal",
+				"Description": "Represents the properties for Temperature and Cooling",
+
+				"Fans@meta":                     v.Meta(view.GETProperty("fan_uris"), view.GETFormatter("expand"), view.GETModel("default")),
+				"Fans@odata.count@meta":         v.Meta(view.GETProperty("fan_uris"), view.GETFormatter("count"), view.GETModel("default")),
+				"Temperatures@meta":             v.Meta(view.GETProperty("temperature_uris"), view.GETFormatter("expand"), view.GETModel("default")),
+				"Temperatures@odata.count@meta": v.Meta(view.GETProperty("temperature_uris"), view.GETFormatter("count"), view.GETModel("default")),
+				"Redundancy@meta":               v.Meta(view.GETProperty("redundancy_uris"), view.GETFormatter("expand"), view.GETModel("default")),
+				"Redundancy@odata.count@meta":   v.Meta(view.GETProperty("redundancy_uris"), view.GETFormatter("count"), view.GETModel("default")),
+
 				"Oem": map[string]interface{}{
 					"EID_674": map[string]interface{}{
 						"FansSummary": map[string]interface{}{
@@ -50,7 +54,5 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 						},
 					},
 				},
-				"Redundancy@meta":             v.Meta(view.PropGET("redundancy_views")),       //TODO: should something be here? this is empty in odatalite...
-				"Redundancy@odata.count@meta": v.Meta(view.PropGET("redundancy_views_count")), //TODO
 			}})
 }

@@ -475,79 +475,66 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		//*********************************************************************
 		// Create Thermal objects for System.Chassis.1
 		//*********************************************************************
-		thermalLogger := sysChasLogger.New("module", "Chassis/System.Chassis/Thermal")
-
-		thermalModel := model.New(
-			mgrCMCIntegrated.WithUniqueName("Thermal"),
-			model.UpdateProperty("fan_views", []interface{}{}),
-			model.UpdateProperty("thermal_views", []interface{}{}),
-			model.UpdateProperty("redundancy_views", []interface{}{}),
+		thermalLogger, thermalView, _ := testaggregate.InstantiateFromCfg(ctx, logger, cfgMgr, "thermal",
+			map[string]interface{}{
+				"rooturi": rootView.GetURI(),
+				"FQDD":    chasName,
+			},
 		)
-		// the controller is what updates the model when ar entries change,
-		// also handles patch from redfish
-		armapper := arService.NewMapping(thermalLogger, "Chassis/"+chasName+"/Thermal", "Chassis/System.Chassis/Thermal", thermalModel, map[string]string{"FQDD": chasName})
 
-		thermalView := view.New(
-			view.WithURI(rootView.GetURI()+"/Chassis/"+chasName+"/Thermal"),
-			view.WithModel("default", thermalModel),
+		thermalView.GetModel("default").ApplyOption(
+			mgrCMCIntegrated.WithUniqueName("Thermal"),
+		)
+		// thermal_uris := []string{}
+		// redundancy_uris := []string{}
+
+		thermalView.ApplyOption(
 			view.WithModel("global_health", globalHealthModel),
-			view.WithController("ar_mapper", armapper),
-			evtSvc.PublishResourceUpdatedEventsForModel(ctx, "default"),
+			view.WithFormatter("expand", expandFormatter),
+			view.WithFormatter("count", countFormatter),
 		)
 		thermal.AddAggregate(ctx, thermalLogger, thermalView, ch)
 
-		fan_views := []interface{}{}
+		fan_uris := []string{}
 		for _, fanName := range []string{
 			"Fan.Slot.1", "Fan.Slot.2", "Fan.Slot.3",
 			"Fan.Slot.4", "Fan.Slot.5", "Fan.Slot.6",
 			"Fan.Slot.7", "Fan.Slot.8", "Fan.Slot.9",
 		} {
-			fanLogger := thermalLogger.New("module", "Chassis/System.Chassis/Thermal/Fan")
+			fanLogger, fanView, _ := testaggregate.InstantiateFromCfg(ctx, logger, cfgMgr, "fan",
+				map[string]interface{}{
+					"rooturi":     rootView.GetURI(),
+					"ChassisFQDD": chasName,
+					"FQDD":        fanName,
+					"fqdd":        "System.Chassis.1#" + fanName,
+					"fqddlist":    []string{fanName},
+				},
+			)
 
-			fanModel := model.New(
+			fanView.GetModel("default").ApplyOption(
 				model.UpdateProperty("unique_id", fanName),
 				model.UpdateProperty("unique_name_attr", fanName+".Attributes"),
 				model.UpdateProperty("attributes", map[string]map[string]map[string]interface{}{}),
 			)
-			fwmapper := arService.NewMapping(fanLogger.New("module", "firmware/inventory"), "firmware_Chassis/"+chasName+"/Thermal/Fan/"+fanName, "firmware/inventory", fanModel, map[string]string{"FQDD": fanName})
-			// the controller is what updates the model when ar entries change,
-			// also handles patch from redfish
-			armapper := arService.NewMapping(fanLogger, "Chassis/"+chasName+"/Thermal/Fan/"+fanName, "Fans/Fan.Slot", fanModel, map[string]string{"FQDD": fanName})
 
-			awesome_mapper.New(ctx, fanLogger, cfgMgr, fanModel, "fan", map[string]interface{}{"fqdd": "System.Chassis.1#" + fanName})
-
-			// This controller will populate 'attributes' property with AR entries matching this FQDD ('fanName')
-			ardumper, _ := attributes.NewController(ctx, fanModel, []string{fanName}, ch, eb)
-
-			v := view.New(
-				view.WithURI(rootView.GetURI()+"/Chassis/"+chasName+"/Sensors/Fans/"+fanName),
-				view.WithModel("default", fanModel),
-				view.WithModel("swinv", fanModel),
+			fanView.ApplyOption(
+				view.WithModel("swinv", fanView.GetModel("default")),
 				view.WithModel("global_health", globalHealthModel),
-				view.WithController("ar_mapper", armapper),
-				view.WithController("ar_dumper", ardumper),
-				view.WithController("fw_mapper", fwmapper),
 				view.WithFormatter("attributeFormatter", attributes.FormatAttributeDump),
-				evtSvc.PublishResourceUpdatedEventsForModel(ctx, "default"),
 			)
-			swinvViews = append(swinvViews, v)
-
-			fanFragment := fans.AddAggregate(ctx, fanLogger, v, ch)
-
-			p := &domain.RedfishResourceProperty{}
-			p.Parse(fanFragment)
-			fan_views = append(fan_views, p)
+			fans.AddAggregate(ctx, fanLogger, fanView, ch)
+			fan_uris = append(fan_uris, fanView.GetURI())
+			swinvViews = append(swinvViews, fanView)
 		}
-		thermalModel.ApplyOption(model.UpdateProperty("fan_views", &domain.RedfishResourceProperty{Value: fan_views}))
-		thermalModel.ApplyOption(model.UpdateProperty("fan_views_count", len(fan_views)))
+		thermalView.GetModel("default").ApplyOption(model.UpdateProperty("fan_uris", fan_uris))
 
-		thermal_views := []interface{}{}
-		thermalModel.ApplyOption(model.UpdateProperty("thermal_views", &domain.RedfishResourceProperty{Value: thermal_views}))
-		thermalModel.ApplyOption(model.UpdateProperty("thermal_views_count", len(thermal_views)))
-
-		redundancy_views := []interface{}{}
-		thermalModel.ApplyOption(model.UpdateProperty("redundancy_views", &domain.RedfishResourceProperty{Value: redundancy_views}))
-		thermalModel.ApplyOption(model.UpdateProperty("redundancy_views_count", len(redundancy_views)))
+		//		thermal_views := []interface{}{}
+		//		thermalModel.ApplyOption(model.UpdateProperty("thermal_views", &domain.RedfishResourceProperty{Value: thermal_views}))
+		//		thermalModel.ApplyOption(model.UpdateProperty("thermal_views_count", len(thermal_views)))
+		//
+		//		redundancy_views := []interface{}{}
+		//		thermalModel.ApplyOption(model.UpdateProperty("redundancy_views", &domain.RedfishResourceProperty{Value: redundancy_views}))
+		//		thermalModel.ApplyOption(model.UpdateProperty("redundancy_views_count", len(redundancy_views)))
 
 		//*********************************************************************
 		// Create SubSystemHealth for System.Chassis.1
@@ -561,7 +548,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		subSysHealthLogger := sysChasLogger.New("module", "Chassis/System.Chassis/SubSystemHealth")
 		subSysHealthModel := model.New()
 
-		armapper = arService.NewMapping(subSysHealthLogger, "Chassis/"+chasName+"/SubSystemHealth", "Chassis/SubSystemHealths", subSysHealthModel, map[string]string{})
+		armapper := arService.NewMapping(subSysHealthLogger, "Chassis/"+chasName+"/SubSystemHealth", "Chassis/SubSystemHealths", subSysHealthModel, map[string]string{})
 
 		subSysHealthView := view.New(
 			view.WithURI(rootView.GetURI()+"/Chassis/"+chasName+"/SubSystemHealth"),

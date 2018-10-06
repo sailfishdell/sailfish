@@ -121,6 +121,19 @@ views:
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
 
+  "system_chassis":
+      "Logger": ["module", "system_chassis"]
+      "Models":
+        "default":  {}
+      "Controllers":
+        - "fn": "ARMapper"
+          "params": {"modelname": "default", "cfgsection": "Chassis/System.Chassis", "mappinguniquename": "'system_chassis:' + FQDD ", "AddToView": true}
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/Chassis/' + FQDD "
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+
   "power":
       "Logger": ["module", "Power"]
       "Models":
@@ -192,18 +205,39 @@ views:
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
 
-  "system_chassis":
-      "Logger": ["module", "system_chassis"]
+  "thermal":
+      "Logger": ["module", "Thermal"]
       "Models":
         "default":  {}
       "Controllers":
         - "fn": "ARMapper"
-          "params": {"modelname": "default", "cfgsection": "Chassis/System.Chassis", "mappinguniquename": "'system_chassis:' + FQDD ", "AddToView": true}
+          "params": {"modelname": "default", "cfgsection": "Chassis/System.Chassis/Thermal", "mappinguniquename": "'chassis_thermal_mapper:' + FQDD", "AddToView": true}
       "View":
         - "fn": "with_URI"
-          "params": "rooturi + '/Chassis/' + FQDD "
+          "params": "rooturi + '/Chassis/' + FQDD + '/Thermal'"
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
+
+  "fan":
+      "Logger": ["module", "Fan"]
+      "Models":
+        "default":  {}
+      "Controllers":
+        - "fn": "AwesomeMapper"
+          "params": {"modelname": "default", "cfgsection": "fan" }
+        - "fn": "ARMapper"
+          "params": {"modelname": "default", "cfgsection": "firmware/inventory", "mappinguniquename": "'firmware_fan_mapper:' + ChassisFQDD + '/' + FQDD", "AddToView": true}
+        - "fn": "ARMapper"
+          "params": {"modelname": "default", "cfgsection": "Fans/Fan.Slot", "mappinguniquename": "'fan_mapper:' + ChassisFQDD + '/' + FQDD", "AddToView": true}
+        - "fn": "ARDumper"
+          "params": {"modelname": "default", "AddToView": true}
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/Chassis/' + ChassisFQDD + '/Sensors/Fans/' + FQDD "
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+
+
 
 
 awesome_mapper:
