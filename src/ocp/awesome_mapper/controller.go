@@ -70,6 +70,24 @@ func New(ctx context.Context, logger log.Logger, cfg *viper.Viper, mdl *model.Mo
 		"epoch_to_date": func(args ...interface{}) (interface{}, error) {
 			return time.Unix(int64(args[0].(float64)), 0), nil
 		},
+		"traverse_struct": func(args ...interface{}) (interface{}, error) {
+			s := args[0]
+			for _, name := range args[1:] {
+				n := name.(string)
+				r := reflect.ValueOf(s)
+				s = reflect.Indirect(r).FieldByName(n).Interface()
+			}
+
+			// have to return float64 for all numeric types
+			switch t := s.(type) {
+			case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, uintptr:
+				return float64(reflect.ValueOf(t).Int()), nil
+			case float32, float64:
+				return float64(reflect.ValueOf(t).Float()), nil
+			default:
+				return s, nil
+			}
+		},
 		"map_health_value": func(args ...interface{}) (interface{}, error) {
 			switch t := args[0].(float64); t {
 			case 0, 1: //other, unknown
@@ -117,27 +135,27 @@ outer:
 		}
 
 		go sp.RunForever(func(event eh.Event) {
-				mdl.StopNotifications()
-				for _, query := range loopvar.ModelUpdate {
-					if query.expr == nil {
-						logger.Crit("query is nil, that can't happen", "loopvar", loopvar)
-						continue
-					}
-
-					expressionParameters["type"] = string(event.EventType())
-					expressionParameters["data"] = event.Data()
-					expressionParameters["event"] = event
-				
-					expr, err := govaluate.NewEvaluableExpressionFromTokens(query.expr)
-					val, err := expr.Evaluate(expressionParameters)
-					if err != nil {
-						logger.Error("Expression failed to evaluate", "query.Query", query.Query, "parameters", expressionParameters, "err", err)
-						continue
-					}
-					mdl.UpdateProperty(query.Property, val)
+			mdl.StopNotifications()
+			for _, query := range loopvar.ModelUpdate {
+				if query.expr == nil {
+					logger.Crit("query is nil, that can't happen", "loopvar", loopvar)
+					continue
 				}
-				mdl.StartNotifications()
-				mdl.NotifyObservers()
+
+				expressionParameters["type"] = string(event.EventType())
+				expressionParameters["data"] = event.Data()
+				expressionParameters["event"] = event
+
+				expr, err := govaluate.NewEvaluableExpressionFromTokens(query.expr)
+				val, err := expr.Evaluate(expressionParameters)
+				if err != nil {
+					logger.Error("Expression failed to evaluate", "query.Query", query.Query, "parameters", expressionParameters, "err", err)
+					continue
+				}
+				mdl.UpdateProperty(query.Property, val)
+			}
+			mdl.StartNotifications()
+			mdl.NotifyObservers()
 		})
 	}
 
