@@ -88,6 +88,8 @@ views:
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/Registries/Messages'"
+        - "fn": "withFormatter_count"
+          "params":
 
   "base_registry":
       "Logger": ["module", "registry"]
@@ -103,6 +105,8 @@ views:
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/Registries/BaseMessages'"
+        - "fn": "withFormatter_count"
+          "params":
 
   "mgr_attr_registry":
       "Logger": ["module", "registry"]
@@ -118,6 +122,8 @@ views:
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/Registries/ManagerAttributeRegistry'"
+        - "fn": "withFormatter_count"
+          "params":
 
   "manager_cmc_integrated":
       "Logger": ["module", "mgrChassis"]
@@ -137,6 +143,12 @@ views:
           "params": "rooturi + '/Managers/' + FQDD"
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
+        - "fn": "withFormatter_attributeFormatter"
+          "params":
+        - "fn": "withFormatter_expand"
+          "params":
+        - "fn": "withFormatter_count"
+          "params":
 
   "chassis_cmc_integrated":
       "Logger": ["module", "ChassisCMCInt"]
@@ -155,6 +167,8 @@ views:
           "params": "rooturi + '/Chassis/' + FQDD"
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
+        - "fn": "withFormatter_attributeFormatter"
+          "params":
 
   "chassis_cmc_integrated_redundancy":
       "Logger": ["module", "ChassisCMCInt/Redundancy"]
@@ -184,6 +198,16 @@ views:
           "params": "rooturi + '/Chassis/' + FQDD "
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
+        - "fn": "withFormatter_count"
+          "params":
+        - "fn": "withFormatter_attributeFormatter"
+          "params":
+        - "fn": "withFormatter_expand"
+          "params":
+        - "fn": "withFormatter_expandone"
+          "params":
+        - "fn": "withFormatter_formatOdataList"
+          "params":
 
   "power":
       "Logger": ["module", "Power"]
@@ -197,6 +221,12 @@ views:
           "params": "rooturi + '/Chassis/' + FQDD + '/Power'"
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
+        - "fn": "withFormatter_count"
+          "params":
+        - "fn": "withFormatter_expand"
+          "params":
+        - "fn": "withFormatter_expandone"
+          "params":
 
   "psu_slot":
       "Logger": ["module", "PSU.Slot"]
@@ -216,6 +246,8 @@ views:
           "params": "rooturi + '/Chassis/' + ChassisFQDD + '/Power/PowerSupplies/' + FQDD "
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
+        - "fn": "withFormatter_attributeFormatter"
+          "params":
 
   "power_control":
       "Logger": ["module", "PowerControl"]
@@ -231,6 +263,12 @@ views:
           "params": "rooturi + '/Chassis/' + FQDD + '/Power/PowerControl'"
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
+        - "fn": "withFormatter_count"
+          "params":
+        - "fn": "withFormatter_expand"
+          "params":
+        - "fn": "withFormatter_expandone"
+          "params":
 
   "power_trends":
       "Logger": ["module", "PowerTrends"]
@@ -242,6 +280,12 @@ views:
           "params": "rooturi + '/Chassis/' + FQDD + '/Power/PowerTrends-1'"
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
+        - "fn": "withFormatter_count"
+          "params":
+        - "fn": "withFormatter_expand"
+          "params":
+        - "fn": "withFormatter_expandone"
+          "params":
 
   "power_histogram":
       "Logger": ["module", "PowerTrends"]
@@ -268,6 +312,10 @@ views:
           "params": "rooturi + '/Chassis/' + FQDD + '/Thermal'"
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
+        - "fn": "withFormatter_count"
+          "params":
+        - "fn": "withFormatter_expand"
+          "params":
 
   "fan":
       "Logger": ["module", "Fan"]
@@ -287,6 +335,8 @@ views:
           "params": "rooturi + '/Chassis/' + ChassisFQDD + '/Sensors/Fans/' + FQDD "
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
+        - "fn": "withFormatter_attributeFormatter"
+          "params":
 
   "iom":
       "Logger": ["module", "IOM"]
@@ -308,6 +358,12 @@ views:
           "params": "rooturi + '/Chassis/' + FQDD "
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
+        - "fn": "withFormatter_count"
+          "params":
+        - "fn": "withFormatter_attributeFormatter"
+          "params":
+        - "fn": "withFormatter_formatOdataList"
+          "params":
 
   "sled":
       "Logger": ["module", "Sled"]
@@ -327,8 +383,12 @@ views:
           "params": "rooturi + '/Chassis/' + FQDD "
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
-
-
+        - "fn": "withFormatter_count"
+          "params":
+        - "fn": "withFormatter_attributeFormatter"
+          "params":
+        - "fn": "withFormatter_formatOdataList"
+          "params":
 
 
 

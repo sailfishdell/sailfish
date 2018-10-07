@@ -94,8 +94,14 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	testaggregate.RunRegistryFunctions(evtSvc)
 	ar_mapper2.RunRegistryFunctions(arService)
 	attributes.RunRegistryFunctions(ch, eb)
-	expandFormatter := makeExpandListFormatter(d)
-	expandOneFormatter := makeExpandOneFormatter(d)
+	RegisterFormatters(d)
+
+	//HEALTH
+	// The following model maps a bunch of health related stuff that can be tracked once at a global level.
+	// we can add this model to the views that need to expose it
+	globalHealthModel := model.New()
+	healthLogger := logger.New("module", "health_rollup")
+	awesome_mapper.New(ctx, healthLogger, cfgMgr, globalHealthModel, "global_health", map[string]interface{}{})
 
 	//
 	// Create the (empty) model behind the /redfish/v1 service root. Nothing interesting here
@@ -157,22 +163,15 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		registryView.GetModel("default").ApplyOption(
 			model.UpdateProperty("location", location),
 		)
-		registryView.ApplyOption(view.WithFormatter("count", countFormatter))
 		registry.AddAggregate(ctx, registryLogger, registryView, ch, eb)
 	}
-
-	//HEALTH
-	// The following model maps a bunch of health related stuff that can be tracked once at a global level.
-	// we can add this model to the views that need to expose it
-	globalHealthModel := model.New()
-	healthLogger := logger.New("module", "health_rollup")
-	awesome_mapper.New(ctx, healthLogger, cfgMgr, globalHealthModel, "global_health", map[string]interface{}{})
 
 	//
 	// Loop to create similarly named manager objects and the things attached there.
 	//
 	var managers []*view.View
 
+	// the chassis power control has a list of 'related items' that we'll accumulate using power_related_items
 	var sysChasPwrCtrlVw *view.View
 	power_related_items := []string{}
 
@@ -215,10 +214,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			ah.WithAction(ctx, mgrLogger, "manager.importsystemconfig", "/Actions/Oem/EID_674_Manager.ImportSystemConfiguration", importSystemConfiguration, ch, eb),
 			ah.WithAction(ctx, mgrLogger, "manager.importsystemconfigpreview", "/Actions/Oem/EID_674_Manager.ImportSystemConfigurationPreview", importSystemConfigurationPreview, ch, eb),
 			ah.WithAction(ctx, mgrLogger, "certificates.generatecsr", "/Actions/DellCertificateService.GenerateCSR", makePumpHandledAction("GenerateCSR", 30, eb), ch, eb),
-
-			view.WithFormatter("attributeFormatter", attributes.FormatAttributeDump),
-			view.WithFormatter("expand", expandFormatter),
-			view.WithFormatter("count", countFormatter),
 		)
 
 		managers = append(managers, mgrCmcVw)
@@ -268,7 +263,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		chasCmcVw.ApplyOption(
 			view.WithModel("etag", chasCmcVw.GetModel("default")),
 			view.WithModel("global_health", globalHealthModel),
-			view.WithFormatter("attributeFormatter", attributes.FormatAttributeDump),
 			view.UpdateEtag("etag", []string{}),
 		)
 
@@ -303,9 +297,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 
 		sysChasVw.ApplyOption(
 			view.WithModel("global_health", globalHealthModel),
-			view.WithFormatter("attributeFormatter", attributes.FormatAttributeDump),
-			view.WithFormatter("formatOdataList", FormatOdataList),
-			view.WithFormatter("count", countFormatter),
 			ah.WithAction(ctx, sysChasLogger, "chassis.reset", "/Actions/Chassis.Reset", makePumpHandledAction("ChassisReset", 30, eb), ch, eb),
 			ah.WithAction(ctx, sysChasLogger, "msmconfigbackup", "/Actions/Oem/MSMConfigBackup", msmConfigBackup, ch, eb),
 			ah.WithAction(ctx, sysChasLogger, "chassis.msmconfigbackup", "/Actions/Oem/DellChassis.MSMConfigBackup", chassisMSMConfigBackup, ch, eb),
@@ -331,9 +322,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 
 		sysChasPwrVw.ApplyOption(
 			view.WithModel("global_health", globalHealthModel),
-			view.WithFormatter("expand", expandFormatter),
-			view.WithFormatter("expandone", expandOneFormatter),
-			view.WithFormatter("count", countFormatter),
 		)
 		power.AddAggregate(ctx, powerLogger, sysChasPwrVw, ch)
 
@@ -353,14 +341,9 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 				},
 			)
 
-			sysChasPwrPsuVw.GetModel("default").ApplyOption(
-				model.UpdateProperty("unique_id", psuName),
-			)
-
 			sysChasPwrPsuVw.ApplyOption(
 				view.WithModel("swinv", sysChasPwrPsuVw.GetModel("default")),
 				view.WithModel("global_health", globalHealthModel),
-				view.WithFormatter("attributeFormatter", attributes.FormatAttributeDump),
 			)
 			swinvViews = append(swinvViews, sysChasPwrPsuVw)
 			psu_uris = append(psu_uris, sysChasPwrPsuVw.GetURI())
@@ -379,11 +362,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 				"FQDD":    chasName,
 			},
 		)
-		sysChasPwrCtrlVw.ApplyOption(
-			view.WithFormatter("expand", expandFormatter),
-			view.WithFormatter("expandone", expandOneFormatter),
-			view.WithFormatter("count", countFormatter),
-		)
 		powercontrol.AddAggregate(ctx, pwrCtrlLogger, sysChasPwrCtrlVw, ch)
 		sysChasPwrVw.GetModel("default").ApplyOption(model.UpdateProperty("power_control_uris", []string{sysChasPwrCtrlVw.GetURI()}))
 
@@ -399,11 +377,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		)
 		powertrends.AddTrendsAggregate(ctx, pwrTrendLogger, pwrTrendVw, ch)
 		sysChasPwrVw.GetModel("default").ApplyOption(model.UpdateProperty("power_trends_uri", pwrTrendVw.GetURI()))
-		pwrTrendVw.ApplyOption(
-			view.WithFormatter("expand", expandFormatter),
-			view.WithFormatter("expandone", expandOneFormatter),
-			view.WithFormatter("count", countFormatter),
-		)
 
 		// ##################
 		// # Power Histograms
@@ -440,8 +413,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 
 		thermalView.ApplyOption(
 			view.WithModel("global_health", globalHealthModel),
-			view.WithFormatter("expand", expandFormatter),
-			view.WithFormatter("count", countFormatter),
 		)
 		thermal.AddAggregate(ctx, thermalLogger, thermalView, ch)
 
@@ -464,7 +435,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			fanView.ApplyOption(
 				view.WithModel("swinv", fanView.GetModel("default")),
 				view.WithModel("global_health", globalHealthModel),
-				view.WithFormatter("attributeFormatter", attributes.FormatAttributeDump),
 			)
 			fans.AddAggregate(ctx, fanLogger, fanView, ch)
 			fan_uris = append(fan_uris, fanView.GetURI())
@@ -546,9 +516,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		iomView.ApplyOption(
 			view.WithModel("swinv", iomView.GetModel("default")),
 			view.WithModel("global_health", globalHealthModel),
-			view.WithFormatter("attributeFormatter", attributes.FormatAttributeDump),
-			view.WithFormatter("formatOdataList", FormatOdataList),
-			view.WithFormatter("count", countFormatter),
 			ah.WithAction(ctx, iomLogger, "iom.chassis.reset", "/Actions/Chassis.Reset", makePumpHandledAction("IomChassisReset", 30, eb), ch, eb),
 			ah.WithAction(ctx, iomLogger, "iom.resetpeakpowerconsumption", "/Actions/Oem/DellChassis.ResetPeakPowerConsumption", makePumpHandledAction("IomResetPeakPowerConsumption", 30, eb), ch, eb),
 			ah.WithAction(ctx, iomLogger, "iom.virtualreseat", "/Actions/Oem/DellChassis.VirtualReseat", makePumpHandledAction("IomVirtualReseat", 30, eb), ch, eb),
@@ -585,9 +552,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		sledView.ApplyOption(
 			view.WithModel("swinv", sledView.GetModel("default")),
 			view.WithModel("global_health", globalHealthModel),
-			view.WithFormatter("attributeFormatter", attributes.FormatAttributeDump),
-			view.WithFormatter("formatOdataList", FormatOdataList),
-			view.WithFormatter("count", countFormatter),
 			ah.WithAction(ctx, sledLogger, "chassis.peripheralmapping", "/Actions/Oem/DellChassis.PeripheralMapping", makePumpHandledAction("SledPeripheralMapping", 30, eb), ch, eb),
 			ah.WithAction(ctx, sledLogger, "sledvirtualreseat", "/Actions/Chassis.VirtualReseat", makePumpHandledAction("SledVirtualReseat", 30, eb), ch, eb),
 			ah.WithAction(ctx, sledLogger, "chassis.sledvirtualreseat", "/Actions/Oem/DellChassis.VirtualReseat", makePumpHandledAction("ChassisSledVirtualReseat", 30, eb), ch, eb),
