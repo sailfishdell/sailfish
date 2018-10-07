@@ -198,7 +198,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	// Loop to create similarly named manager objects and the things attached there.
 	//
 	var managers []*view.View
-	mgrRedundancyMdl := model.New()
 
 	var sysChasPwrCtrlVw *view.View
 	power_related_items := []string{}
@@ -221,7 +220,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			},
 		)
 		mgrCmcVw.GetModel("default").ApplyOption(
-			mgrCMCIntegrated.WithUniqueName(mgrName),
+			model.UpdateProperty("unique_name", mgrName),
 			model.UpdateProperty("unique_name_attr", mgrName+".Attributes"),
 			model.UpdateProperty("attributes", map[string]map[string]map[string]interface{}{}),
 
@@ -230,7 +229,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		)
 
 		mgrCmcVw.ApplyOption(
-			view.WithModel("redundancy_health", mgrRedundancyMdl), // health info in default model
 			view.WithModel("global_health", globalHealthModel),
 
 			view.WithModel("health", mgrCmcVw.GetModel("default")), // health info in default model
@@ -298,7 +296,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		)
 
 		chasCmcVw.GetModel("default").ApplyOption(
-			mgrCMCIntegrated.WithUniqueName(mgrName),
+			model.UpdateProperty("unique_name", mgrName),
 			model.UpdateProperty("unique_name_attr", mgrName+".Attributes"),
 			model.UpdateProperty("attributes", map[string]map[string]map[string]interface{}{}),
 		)
@@ -374,7 +372,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		)
 
 		sysChasPwrVw.GetModel("default").ApplyOption(
-			mgrCMCIntegrated.WithUniqueName("Power"),
+			model.UpdateProperty("unique_name", "Power"),
 		)
 
 		sysChasPwrVw.ApplyOption(
@@ -487,7 +485,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		)
 
 		thermalView.GetModel("default").ApplyOption(
-			mgrCMCIntegrated.WithUniqueName("Thermal"),
+			model.UpdateProperty("unique_name", "Thermal"),
 		)
 		// thermal_uris := []string{}
 		// redundancy_uris := []string{}
