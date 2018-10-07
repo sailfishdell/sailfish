@@ -200,7 +200,8 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	var managers []*view.View
 	mgrRedundancyMdl := model.New()
 
-	related_items := []map[string]string{}
+	var sysChasPwrCtrlVw *view.View
+	power_related_items := []string{}
 
 	for _, mgrName := range []string{
 		"CMC.Integrated.1",
@@ -313,7 +314,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		chasCMCIntegrated.AddAggregate(ctx, chasLogger, chasCmcVw, ch)
 		attributes.AddAggregate(ctx, chasCmcVw, rootView.GetURI()+"/Chassis/"+mgrName+"/Attributes", ch)
 
-		related_items = append(related_items, map[string]string{"@odata.id": chasCmcVw.GetURI()})
+		power_related_items = append(power_related_items, chasCmcVw.GetURI())
 
 	}
 
@@ -321,9 +322,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	logSvc.StartService(ctx, logger, managers[0])
 	faultSvc.StartService(ctx, logger, managers[0])
 
-	pwrCtrlModel := model.New()
-
-	chasLogger := logger.New("module", "Chassis")
 	{
 		// ************************************************************************
 		// CHASSIS System.Chassis.1
@@ -337,11 +335,10 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			},
 		)
 
-		managedBy := []string{managers[0].GetURI()}
 		sysChasVw.GetModel("default").ApplyOption(
 			model.UpdateProperty("unique_name", chasName),
 			model.UpdateProperty("unique_name_attr", chasName+".Attributes"),
-			model.UpdateProperty("managed_by", managedBy),
+			model.UpdateProperty("managed_by", []string{managers[0].GetURI()}),
 			model.UpdateProperty("attributes", map[string]map[string]map[string]interface{}{}),
 		)
 
@@ -357,7 +354,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 
 		// Create the .../Attributes URI. Attributes are stored in the attributes property of the chasModel
 		system_chassis.AddAggregate(ctx, sysChasLogger, sysChasVw, ch, eb)
-		related_items = append(related_items, map[string]string{"@odata.id": sysChasVw.GetURI()})
+		power_related_items = append(power_related_items, sysChasVw.GetURI())
 		attributes.AddAggregate(ctx, sysChasVw, rootView.GetURI()+"/Chassis/"+chasName+"/Attributes", ch)
 
 		// CMC.INTEGRATED.1 INTERLUDE
@@ -426,11 +423,17 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		// # Power Control
 		// ##################
 
-		pwrCtrlLogger, sysChasPwrCtrlVw, _ := testaggregate.InstantiateFromCfg(ctx, logger, cfgMgr, "power_control",
+		var pwrCtrlLogger log.Logger
+		pwrCtrlLogger, sysChasPwrCtrlVw, _ = testaggregate.InstantiateFromCfg(ctx, logger, cfgMgr, "power_control",
 			map[string]interface{}{
 				"rooturi": rootView.GetURI(),
 				"FQDD":    chasName,
 			},
+		)
+		sysChasPwrCtrlVw.ApplyOption(
+			view.WithFormatter("expand", expandFormatter),
+			view.WithFormatter("expandone", expandOneFormatter),
+			view.WithFormatter("count", countFormatter),
 		)
 		powercontrol.AddAggregate(ctx, pwrCtrlLogger, sysChasPwrCtrlVw, ch)
 		sysChasPwrVw.GetModel("default").ApplyOption(model.UpdateProperty("power_control_uris", []string{sysChasPwrCtrlVw.GetURI()}))
@@ -589,45 +592,33 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		"IOM.Slot.C1",
 		"IOM.Slot.C2",
 	} {
-		iomLogger := chasLogger.New("module", "Chassis/"+iomName, "module", "Chassis/IOM.Slot")
-		managedBy := []string{managers[0].GetURI()}
-		iomModel := model.New(
+		iomLogger, iomView, _ := testaggregate.InstantiateFromCfg(ctx, logger, cfgMgr, "iom",
+			map[string]interface{}{
+				"rooturi":  rootView.GetURI(),
+				"FQDD":     iomName,
+				"fqdd":     "System.Chassis.1#SubSystem.1#" + iomName,
+				"fqddlist": []string{iomName},
+			},
+		)
+
+		iomView.GetModel("default").ApplyOption(
 			model.UpdateProperty("unique_name", iomName),
 			model.UpdateProperty("unique_name_attr", iomName+".Attributes"),
-			model.UpdateProperty("managed_by", managedBy),
+			model.UpdateProperty("managed_by", []string{managers[0].GetURI()}),
 		)
-		fwmapper := arService.NewMapping(iomLogger.New("module", "firmware/inventory"), "firmware_Chassis/"+iomName, "firmware/inventory", iomModel, map[string]string{"FQDD": iomName})
-		// the controller is what updates the model when ar entries change,
-		// also handles patch from redfish
-		armapper := arService.NewMapping(iomLogger, "Chassis/"+iomName, "Chassis/IOM.Slot", iomModel, map[string]string{"FQDD": iomName})
 
-		// This controller will populate 'attributes' property with AR entries matching this FQDD ('iomName')
-		ardumper, _ := attributes.NewController(ctx, iomModel, []string{iomName}, ch, eb)
-
-		//HEALTH
-		awesome_mapper.New(ctx, iomLogger, cfgMgr, iomModel, "health", map[string]interface{}{"fqdd": "System.Chassis.1#SubSystem.1#" + iomName})
-
-		//INST POWER CONSUMPTION
-		awesome_mapper.New(ctx, iomLogger, cfgMgr, iomModel, "iom", map[string]interface{}{"fqdd": iomName})
-
-		iomView := view.New(
-			view.WithURI(rootView.GetURI()+"/Chassis/"+iomName),
-			view.WithModel("default", iomModel),
-			view.WithModel("swinv", iomModel),
+		iomView.ApplyOption(
+			view.WithModel("swinv", iomView.GetModel("default")),
 			view.WithModel("global_health", globalHealthModel),
-			view.WithController("ar_mapper", armapper),
-			view.WithController("fw_mapper", fwmapper),
-			view.WithController("ar_dumper", ardumper),
 			view.WithFormatter("attributeFormatter", attributes.FormatAttributeDump),
 			view.WithFormatter("formatOdataList", FormatOdataList),
 			view.WithFormatter("count", countFormatter),
 			ah.WithAction(ctx, iomLogger, "iom.chassis.reset", "/Actions/Chassis.Reset", makePumpHandledAction("IomChassisReset", 30, eb), ch, eb),
 			ah.WithAction(ctx, iomLogger, "iom.resetpeakpowerconsumption", "/Actions/Oem/DellChassis.ResetPeakPowerConsumption", makePumpHandledAction("IomResetPeakPowerConsumption", 30, eb), ch, eb),
 			ah.WithAction(ctx, iomLogger, "iom.virtualreseat", "/Actions/Oem/DellChassis.VirtualReseat", makePumpHandledAction("IomVirtualReseat", 30, eb), ch, eb),
-			evtSvc.PublishResourceUpdatedEventsForModel(ctx, "default"),
 		)
 		swinvViews = append(swinvViews, iomView)
-		related_items = append(related_items, map[string]string{"@odata.id": iomView.GetURI()})
+		power_related_items = append(power_related_items, iomView.GetURI())
 		iom_chassis.AddAggregate(ctx, iomLogger, iomView, ch, eb)
 		attributes.AddAggregate(ctx, iomView, rootView.GetURI()+"/Chassis/"+iomName+"/Attributes", ch)
 	}
@@ -651,11 +642,10 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			},
 		)
 
-		managedBy := []string{managers[0].GetURI()}
 		sledView.GetModel("default").ApplyOption(
 			model.UpdateProperty("unique_name", sledName),
 			model.UpdateProperty("unique_name_attr", sledName+".Attributes"),
-			model.UpdateProperty("managed_by", managedBy),
+			model.UpdateProperty("managed_by", []string{managers[0].GetURI()}),
 		)
 
 		sledView.ApplyOption(
@@ -669,9 +659,12 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			ah.WithAction(ctx, sledLogger, "chassis.sledvirtualreseat", "/Actions/Oem/DellChassis.VirtualReseat", makePumpHandledAction("ChassisSledVirtualReseat", 30, eb), ch, eb),
 		)
 		sled_chassis.AddAggregate(ctx, sledLogger, sledView, ch, eb)
-		related_items = append(related_items, map[string]string{"@odata.id": sledView.GetURI()})
+		power_related_items = append(power_related_items, sledView.GetURI())
 		attributes.AddAggregate(ctx, sledView, rootView.GetURI()+"/Chassis/"+sledName+"/Attributes", ch)
 	}
+
+	// link in all of the related items for power control
+	sysChasPwrCtrlVw.GetModel("default").ApplyOption(model.UpdateProperty("power_related_items", power_related_items))
 
 	{
 		updsvcLogger := logger.New("module", "UpdateService")
@@ -696,9 +689,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		update_service.AddAggregate(ctx, rootView, updSvcVw, ch)
 		update_service.EnhanceAggregate(ctx, updSvcVw, rootView, ch)
 	}
-
-	pwrCtrlModel.ApplyOption(model.UpdateProperty("related_item", related_items))
-	pwrCtrlModel.ApplyOption(model.UpdateProperty("related_item_count", len(related_items)))
 
 	//
 	// Software Inventory

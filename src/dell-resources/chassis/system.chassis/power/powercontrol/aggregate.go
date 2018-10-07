@@ -56,8 +56,8 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 					"MaxConsumedWatts":     0,
 					"MinConsumedWatts":     0,
 				},
-				"RelatedItem@meta":             v.Meta(view.PropGET("related_item")),
-				"RelatedItem@odata.count@meta": v.Meta(view.PropGET("related_item_count")),
+				"RelatedItem@meta":             v.Meta(view.GETProperty("power_related_items"), view.GETFormatter("formatOdataList"), view.GETModel("default")),
+				"RelatedItem@odata.count@meta": v.Meta(view.GETProperty("power_related_items"), view.GETFormatter("count"), view.GETModel("default")),
 			},
 		})
 }

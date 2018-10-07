@@ -237,6 +237,27 @@ views:
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
 
+  "iom":
+      "Logger": ["module", "IOM"]
+      "Models":
+        "default":  {}
+      "Controllers":
+        - "fn": "ARMapper"
+          "params": {"modelname": "default", "cfgsection": "firmware/inventory", "mappinguniquename": "'iom_fw_mapper:' + FQDD", "AddToView": true}
+        - "fn": "ARMapper"
+          "params": {"modelname": "default", "cfgsection": "Chassis/IOM.Slot", "mappinguniquename": "'iom_mapper:' + FQDD", "AddToView": true}
+        - "fn": "ARDumper"
+          "params": {"modelname": "default", "AddToView": true}
+        - "fn": "AwesomeMapper"
+          "params": {"modelname": "default", "cfgsection": "health" }
+        - "fn": "AwesomeMapper"
+          "params": {"modelname": "default", "cfgsection": "iom" }
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/Chassis/' + FQDD "
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+
   "sled":
       "Logger": ["module", "Sled"]
       "Models":
