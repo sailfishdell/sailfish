@@ -31,10 +31,7 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 				"DELETE": []string{}, // can't be deleted
 			},
 			Properties: map[string]interface{}{
-				"@odata.type":                    "#Redundancy.v1_0_2.Redundancy",
 				"Name":                           "ManagerRedundancy",
-				"@odata.id@meta":                 v.Meta(view.PropGET("unique_id")),
-				"@odata.context":                 "/redfish/v1/$metadata#Redundancy.Redundancy",
 				"Mode@meta":                      v.Meta(view.PropGET("redundancy_mode")),
 				"MinNumNeeded@meta":              v.Meta(view.PropGET("redundancy_min")),
 				"MaxNumSupported@meta":           v.Meta(view.PropGET("redundancy_max")),

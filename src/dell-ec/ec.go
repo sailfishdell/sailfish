@@ -220,8 +220,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			},
 		)
 		mgrCmcVw.GetModel("default").ApplyOption(
-			model.UpdateProperty("unique_name", mgrName),
-			model.UpdateProperty("unique_name_attr", mgrName+".Attributes"),
 			model.UpdateProperty("attributes", map[string]map[string]map[string]interface{}{}),
 
 			model.UpdateProperty("connect_types_supported", connectTypesSupported),
@@ -296,8 +294,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		)
 
 		chasCmcVw.GetModel("default").ApplyOption(
-			model.UpdateProperty("unique_name", mgrName),
-			model.UpdateProperty("unique_name_attr", mgrName+".Attributes"),
 			model.UpdateProperty("attributes", map[string]map[string]map[string]interface{}{}),
 		)
 
@@ -334,8 +330,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		)
 
 		sysChasVw.GetModel("default").ApplyOption(
-			model.UpdateProperty("unique_name", chasName),
-			model.UpdateProperty("unique_name_attr", chasName+".Attributes"),
 			model.UpdateProperty("managed_by", []string{managers[0].GetURI()}),
 			model.UpdateProperty("attributes", map[string]map[string]map[string]interface{}{}),
 		)
@@ -371,10 +365,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			},
 		)
 
-		sysChasPwrVw.GetModel("default").ApplyOption(
-			model.UpdateProperty("unique_name", "Power"),
-		)
-
 		sysChasPwrVw.ApplyOption(
 			view.WithModel("global_health", globalHealthModel),
 			view.WithFormatter("expand", expandFormatter),
@@ -400,8 +390,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			)
 
 			sysChasPwrPsuVw.GetModel("default").ApplyOption(
-				model.UpdateProperty("unique_name", psuName),
-				model.UpdateProperty("unique_name_attr", psuName+".Attributes"),
 				model.UpdateProperty("unique_id", psuName),
 				model.UpdateProperty("attributes", map[string]map[string]map[string]interface{}{}),
 			)
@@ -484,9 +472,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			},
 		)
 
-		thermalView.GetModel("default").ApplyOption(
-			model.UpdateProperty("unique_name", "Thermal"),
-		)
 		// thermal_uris := []string{}
 		// redundancy_uris := []string{}
 
@@ -514,8 +499,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			)
 
 			fanView.GetModel("default").ApplyOption(
-				model.UpdateProperty("unique_id", fanName),
-				model.UpdateProperty("unique_name_attr", fanName+".Attributes"),
 				model.UpdateProperty("attributes", map[string]map[string]map[string]interface{}{}),
 			)
 
@@ -600,8 +583,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		)
 
 		iomView.GetModel("default").ApplyOption(
-			model.UpdateProperty("unique_name", iomName),
-			model.UpdateProperty("unique_name_attr", iomName+".Attributes"),
 			model.UpdateProperty("managed_by", []string{managers[0].GetURI()}),
 		)
 
@@ -641,8 +622,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		)
 
 		sledView.GetModel("default").ApplyOption(
-			model.UpdateProperty("unique_name", sledName),
-			model.UpdateProperty("unique_name_attr", sledName+".Attributes"),
 			model.UpdateProperty("managed_by", []string{managers[0].GetURI()}),
 		)
 

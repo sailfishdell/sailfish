@@ -10,6 +10,15 @@ listen:
 session:
     timeout: 600
 
+# new features needed:
+#  - link_model
+#  - model update fn
+#
+# View FN:
+#   update etag
+#   with formatter
+#
+
 views:
   "rootview":
       "Logger": ["module", "root"]
@@ -20,7 +29,7 @@ views:
   "testview":
       "Logger": ["module", "testview"]
       "Models":
-        "default":  {"unique_name": "TEST_Unique_Name", "name": "TEST_Name", "description": "TEST_Description" }
+        "default":  {"unique_name": "'TEST_Unique_Name'", "name": "'TEST_Name'", "'description'": "'TEST_Description'" }
       "Controllers":
         - "fn": "AwesomeMapper"
           "params": {"modelname": "default", "cfgsection": "testview" }
@@ -35,7 +44,7 @@ views:
   "testview_sub":
       "Logger": ["module", "sub_testview"]
       "Models":
-        "default":  {"property1": "value1"}
+        "default":  {"property1": "'value1'"}
       "Controllers":
       "View":
         - "fn": "with_URI"
@@ -44,7 +53,7 @@ views:
   "sessionview":
       "Logger": ["module", "session"]
       "Models":
-        "default":  {"session_timeout": 30}
+        "default":  {"session_timeout": "30"}
       "Controllers":
         - "fn": "AwesomeMapper"
           "params": {"modelname": "default", "cfgsection": "sessionview" }
@@ -71,7 +80,7 @@ views:
   "manager_cmc_integrated":
       "Logger": ["module", "mgrChassis"]
       "Models":
-        "default":  {}
+        "default":  {"unique_name": "FQDD", "unique_name_attr": "FQDD+'.Attributes'"}
       "Controllers":
         - "fn": "ARMapper"
           "params": {"modelname": "default", "cfgsection": "firmware/inventory", "mappinguniquename": "'fw_mapper:' + FQDD ", "AddToView": true}
@@ -90,7 +99,7 @@ views:
   "chassis_cmc_integrated":
       "Logger": ["module", "ChassisCMCInt"]
       "Models":
-        "default":  {}
+        "default":  {"unique_name": "FQDD", "unique_name_attr": "FQDD+'.Attributes'"}
       "Controllers":
         - "fn": "ARMapper"
           # note: this is correct, the chassis model re-uses the managers mapper
@@ -124,7 +133,7 @@ views:
   "system_chassis":
       "Logger": ["module", "system_chassis"]
       "Models":
-        "default":  {}
+        "default":  {"unique_name": "FQDD", "unique_name_attr": "FQDD+'.Attributes'"}
       "Controllers":
         - "fn": "ARMapper"
           "params": {"modelname": "default", "cfgsection": "Chassis/System.Chassis", "mappinguniquename": "'system_chassis:' + FQDD ", "AddToView": true}
@@ -137,7 +146,7 @@ views:
   "power":
       "Logger": ["module", "Power"]
       "Models":
-        "default":  {}
+        "default":  { "unique_name": "'Power'" }
       "Controllers":
         - "fn": "ARMapper"
           "params": {"modelname": "default", "cfgsection": "Chassis/System.Chassis/Power", "mappinguniquename": "'chassis_power_mapper:' + FQDD", "AddToView": true}
@@ -150,7 +159,7 @@ views:
   "psu_slot":
       "Logger": ["module", "PSU.Slot"]
       "Models":
-        "default":  {}
+        "default":  {"unique_name": "FQDD", "unique_name_attr": "FQDD+'.Attributes'"}
       "Controllers":
         - "fn": "ARDumper"
           "params": {"modelname": "default", "AddToView": true}
@@ -208,7 +217,7 @@ views:
   "thermal":
       "Logger": ["module", "Thermal"]
       "Models":
-        "default":  {}
+        "default":  {"unique_name": "'Thermal'"}
       "Controllers":
         - "fn": "ARMapper"
           "params": {"modelname": "default", "cfgsection": "Chassis/System.Chassis/Thermal", "mappinguniquename": "'chassis_thermal_mapper:' + FQDD", "AddToView": true}
@@ -221,7 +230,7 @@ views:
   "fan":
       "Logger": ["module", "Fan"]
       "Models":
-        "default":  {}
+        "default":  {"unique_name": "FQDD", "unique_name_attr": "FQDD+'.Attributes'"}
       "Controllers":
         - "fn": "AwesomeMapper"
           "params": {"modelname": "default", "cfgsection": "fan" }
@@ -240,7 +249,7 @@ views:
   "iom":
       "Logger": ["module", "IOM"]
       "Models":
-        "default":  {}
+        "default":  {"unique_name": "FQDD", "unique_name_attr": "FQDD+'.Attributes'"}
       "Controllers":
         - "fn": "ARMapper"
           "params": {"modelname": "default", "cfgsection": "firmware/inventory", "mappinguniquename": "'iom_fw_mapper:' + FQDD", "AddToView": true}
@@ -261,7 +270,7 @@ views:
   "sled":
       "Logger": ["module", "Sled"]
       "Models":
-        "default":  {}
+        "default":  {"unique_name": "FQDD", "unique_name_attr": "FQDD+'.Attributes'"}
       "Controllers":
         - "fn": "ARMapper"
           "params": {"modelname": "default", "cfgsection": "firmware/inventory", "mappinguniquename": "'sled_fw_mapper:' + FQDD", "AddToView": true}

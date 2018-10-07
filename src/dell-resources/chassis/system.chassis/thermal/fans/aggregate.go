@@ -27,14 +27,11 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 				"DELETE": []string{}, // can't be deleted
 			},
 			Properties: map[string]interface{}{
-				"@odata.type":    "#Thermal.v1_0_2.Fan",
-				"@odata.context": "/redfish/v1/$metadata#Thermal.Thermal",
-				"@odata.id":      v.GetURI(),
-				"Description":    "Represents the properties for Fan and Cooling",
-				"FanName@meta":   v.Meta(view.PropGET("name")),
-				"MemberId@meta":  v.Meta(view.PropGET("unique_id")),
-				"ReadingUnits":   "RPM",
-				"Reading@meta":   v.Meta(view.PropGET("rpm")),
+				"Description":   "Represents the properties for Fan and Cooling",
+				"FanName@meta":  v.Meta(view.PropGET("name")),
+				"MemberId@meta": v.Meta(view.PropGET("unique_name")),
+				"ReadingUnits":  "RPM",
+				"Reading@meta":  v.Meta(view.PropGET("rpm")),
 				"Status": map[string]interface{}{
 					"HealthRollup@meta": v.Meta(view.PropGET("health")),
 					"Health@meta":       v.Meta(view.PropGET("health")),
