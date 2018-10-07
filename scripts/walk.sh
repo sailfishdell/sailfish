@@ -46,10 +46,12 @@ do
             continue
         fi
         OUTFILE=${outputdir}/$( echo -n ${url} | perl -p -e 's/[^a-zA-Z0-9.]/_/g;' ).json
-        if ! $CURLCMD --fail -H "$AUTH_HEADER" --silent -L -w"$timingarg" ${BASE}${url}  -o $OUTFILE ; then
+        if ! $CURLCMD --fail -H "$AUTH_HEADER" --silent -L -w"$timingarg" ${BASE}${url} -o ${OUTFILE}-RAW ; then
             echo $url >> ${outputdir}/errors.txt
             continue
         fi
+        cat ${OUTFILE}-RAW | jq . > ${OUTFILE}
+        rm ${OUTFILE}-RAW
         cat $OUTFILE | jq -r 'recurse (.[]?) | objects | select(has("@odata.id")) | .["@odata.id"]' | perl -p -i -e 's/(\/#.*)//' | perl -p -i -e 's/(#.*)//' | grep -v JSONSchema >> ${outputdir}/to-visit.txt ||:
         POTENTIALLY_GOT_MORE=1
         echo $url >> ${outputdir}/visited.txt
@@ -65,3 +67,4 @@ timingarg="\nTotal PIPELINED request time (for this subrequest): %{time_total} s
 time $CURLCMD --fail -i -H "$AUTH_HEADER" -w"$timingarg" -s $(cat ${outputdir}/visited.txt | perl -n -e "print '${BASE}' . \$_" ) | tee ${outputdir}/entire-tree.txt
 
 echo "Took $LOOPS loops to collect the URL list"
+
