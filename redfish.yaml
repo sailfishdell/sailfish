@@ -70,17 +70,59 @@ views:
       "Models":
         "default":  {}
       "Controllers":
-        # not yet implemented...
-        - "fn": "StaticMapper"
-          "params": {"modelname": "default", "AddToView": true}
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/Registries'"
 
+  "idrac_registry":
+      "Logger": ["module", "registry"]
+      "Models":
+        "default":  {
+          "id":          "'Messages'",
+          "description": "'iDRAC Message Registry File locations'",
+          "name":        "'iDRAC Message Registry File'",
+          "type":        "'iDrac.1.5'",
+          "languages":   "array('En')",
+        }
+      "Controllers":
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/Registries/Messages'"
+
+  "base_registry":
+      "Logger": ["module", "registry"]
+      "Models":
+        "default":  {
+          "id":          "'BaseMessages'",
+          "description": "'Base Message Registry File locations'",
+          "name":        "'Base Message Registry File'",
+          "type":        "'Base.1.3.8'",
+          "languages":   "array('En')",
+        }
+      "Controllers":
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/Registries/BaseMessages'"
+
+  "mgr_attr_registry":
+      "Logger": ["module", "registry"]
+      "Models":
+        "default":  {
+          "id":          "'ManagerAttributeRegistry'",
+          "description": "'Manager Attribute Registry File Locations'",
+          "name":        "'Manager Attribute Registry File'",
+          "type":        "'ManagerAttributeRegistry.1.0'",
+          "languages":   "array('En')",
+        }
+      "Controllers":
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/Registries/ManagerAttributeRegistry'"
+
   "manager_cmc_integrated":
       "Logger": ["module", "mgrChassis"]
       "Models":
-        "default":  {"unique_name": "FQDD", "unique_name_attr": "FQDD+'.Attributes'"}
+        "default":  {"unique_name": "FQDD", "unique_name_attr": "FQDD+'.Attributes'", "attributes": "add_attribute_property()"}
       "Controllers":
         - "fn": "ARMapper"
           "params": {"modelname": "default", "cfgsection": "firmware/inventory", "mappinguniquename": "'fw_mapper:' + FQDD ", "AddToView": true}
@@ -99,7 +141,7 @@ views:
   "chassis_cmc_integrated":
       "Logger": ["module", "ChassisCMCInt"]
       "Models":
-        "default":  {"unique_name": "FQDD", "unique_name_attr": "FQDD+'.Attributes'"}
+        "default":  {"unique_name": "FQDD", "unique_name_attr": "FQDD+'.Attributes'", "attributes": "add_attribute_property()"}
       "Controllers":
         - "fn": "ARMapper"
           # note: this is correct, the chassis model re-uses the managers mapper
@@ -133,7 +175,7 @@ views:
   "system_chassis":
       "Logger": ["module", "system_chassis"]
       "Models":
-        "default":  {"unique_name": "FQDD", "unique_name_attr": "FQDD+'.Attributes'"}
+        "default":  {"unique_name": "FQDD", "unique_name_attr": "FQDD+'.Attributes'", "attributes": "add_attribute_property()"}
       "Controllers":
         - "fn": "ARMapper"
           "params": {"modelname": "default", "cfgsection": "Chassis/System.Chassis", "mappinguniquename": "'system_chassis:' + FQDD ", "AddToView": true}
@@ -159,7 +201,7 @@ views:
   "psu_slot":
       "Logger": ["module", "PSU.Slot"]
       "Models":
-        "default":  {"unique_name": "FQDD", "unique_name_attr": "FQDD+'.Attributes'"}
+        "default":  {"unique_name": "FQDD", "unique_name_attr": "FQDD+'.Attributes'", "attributes": "add_attribute_property()"}
       "Controllers":
         - "fn": "ARDumper"
           "params": {"modelname": "default", "AddToView": true}
@@ -230,7 +272,7 @@ views:
   "fan":
       "Logger": ["module", "Fan"]
       "Models":
-        "default":  {"unique_name": "FQDD", "unique_name_attr": "FQDD+'.Attributes'"}
+        "default":  {"unique_name": "FQDD", "unique_name_attr": "FQDD+'.Attributes'", "attributes": "add_attribute_property()"}
       "Controllers":
         - "fn": "AwesomeMapper"
           "params": {"modelname": "default", "cfgsection": "fan" }
@@ -249,7 +291,7 @@ views:
   "iom":
       "Logger": ["module", "IOM"]
       "Models":
-        "default":  {"unique_name": "FQDD", "unique_name_attr": "FQDD+'.Attributes'"}
+        "default":  {"unique_name": "FQDD", "unique_name_attr": "FQDD+'.Attributes'", "attributes": "add_attribute_property()"}
       "Controllers":
         - "fn": "ARMapper"
           "params": {"modelname": "default", "cfgsection": "firmware/inventory", "mappinguniquename": "'iom_fw_mapper:' + FQDD", "AddToView": true}
@@ -270,7 +312,7 @@ views:
   "sled":
       "Logger": ["module", "Sled"]
       "Models":
-        "default":  {"unique_name": "FQDD", "unique_name_attr": "FQDD+'.Attributes'"}
+        "default":  {"unique_name": "FQDD", "unique_name_attr": "FQDD+'.Attributes'", "attributes": "add_attribute_property()"}
       "Controllers":
         - "fn": "ARMapper"
           "params": {"modelname": "default", "cfgsection": "firmware/inventory", "mappinguniquename": "'sled_fw_mapper:' + FQDD", "AddToView": true}
@@ -496,16 +538,3 @@ mappings:
 
     UpdateService:
         # no mappings for now: placeholder
-
-    Registries:
-        # placeholder
-
-    Registries/BaseMessages:
-        - {Property: "registry_name",  Value: "Base Message Registry File" }
-        - {Property: "registry_type",  Value: "Base.1.3.8" }
-
-    Registries/Messages:
-        # placeholder
-
-    Registries/ManagerAttributeRegistry:
-        - {Property: "registry_type",  Value: 29 }

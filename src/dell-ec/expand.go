@@ -3,6 +3,7 @@ package dell_ec
 import (
 	"context"
 	"errors"
+	"reflect"
 
 	"github.com/superchalupa/sailfish/src/ocp/model"
 	"github.com/superchalupa/sailfish/src/ocp/view"
@@ -91,13 +92,17 @@ func countFormatter(
 	meta map[string]interface{},
 ) error {
 	p, ok := meta["property"].(string)
-
-	uris, ok := m.GetProperty(p).([]string)
 	if !ok {
-		return errors.New("uris property not setup properly")
+		return errors.New("property name to operate on not passed in meta.")
 	}
 
-	rrp.Value = len(uris)
+	arr := m.GetProperty(p)
+	if arr == nil {
+		return errors.New("array property not setup properly")
+	}
+
+	r := reflect.ValueOf(arr)
+	rrp.Value = r.Len()
 
 	return nil
 }

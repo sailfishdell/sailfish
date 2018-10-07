@@ -47,7 +47,6 @@ import (
 	"github.com/superchalupa/sailfish/src/ocp/model"
 	"github.com/superchalupa/sailfish/src/ocp/root"
 	"github.com/superchalupa/sailfish/src/ocp/session"
-	"github.com/superchalupa/sailfish/src/ocp/static_mapper"
 	"github.com/superchalupa/sailfish/src/ocp/stdcollections"
 	"github.com/superchalupa/sailfish/src/ocp/telemetryservice"
 	"github.com/superchalupa/sailfish/src/ocp/testaggregate"
@@ -149,44 +148,18 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	registryLogger, registryView, _ := testaggregate.InstantiateFromCfg(ctx, logger, cfgMgr, "registries", map[string]interface{}{"rooturi": rootView.GetURI()})
 	registries.AddAggregate(ctx, registryLogger, registryView, rootView.GetUUID(), ch, eb)
 
-	// TODO: make an adapter for this to move it into redfish.yaml
-	// static config controller, initlize values based on yaml config
-	staticMapper, _ := static_mapper.New(ctx, registryLogger, registryView.GetModel("default"), "Registries")
-	updateFns = append(updateFns, staticMapper.ConfigChangedFn)
-
-	languages := []string{"En"}
-	registry_views := []interface{}{}
-	for _, registry_map := range []map[string]interface{}{
-		{"id": "Messages", "description": "iDRAC Message Registry File locations", "name": "iDRAC Message Registry File", "type": "iDrac.1.5", "location": map[string]string{"Uri": "/redfish/v1/Registries/Messages/EEMIRegistry.v1_5_0.json"}},
-		{"id": "BaseMessages", "description": "Base Message Registry File locations", "name": "Base Message Registry File", "type": "Base.1.0", "location": map[string]string{"Uri": "/redfish/v1/Registries/BaseMessages/BaseRegistry.v1_0_0.json", "PublicationUri": "http://www.dmtf.org/sites/default/files/standards/documents/DSP8011_1.0.0a.json"}},
-		{"id": "ManagerAttributeRegistry", "description": "Manager Attribute Registry File Locations", "name": "Manager Attribute Registry File", "type": "ManagerAttributeRegistry.1.0", "location": map[string]string{"Uri": "/redfish/v1/Registries/ManagerAttributeRegistry/ManagerAttributeRegistry.v1_0_0.json"}},
+	for regName, location := range map[string]interface{}{
+		"idrac_registry":    []map[string]string{{"Language": "En", "Uri": "/redfish/v1/Registries/Messages/EEMIRegistry.v1_5_0.json"}},
+		"base_registry":     []map[string]string{{"Language": "En", "Uri": "/redfish/v1/Registries/BaseMessages/BaseRegistry.v1_0_0.json", "PublicationUri": "http://www.dmtf.org/sites/default/files/standards/documents/DSP8011_1.0.0a.json"}},
+		"mgr_attr_registry": []map[string]string{{"Language": "En", "Uri": "/redfish/v1/Registries/ManagerAttributeRegistry/ManagerAttributeRegistry.v1_0_0.json"}},
 	} {
-
-		location := []map[string]string{registry_map["location"].(map[string]string)}
-		location[0]["Language"] = "En"
-		regModel := model.New(
-			model.UpdateProperty("registry_id", registry_map["id"]),
-			model.UpdateProperty("registry_description", registry_map["description"]),
-			model.UpdateProperty("registry_name", registry_map["name"]),
-			model.UpdateProperty("registry_type", registry_map["type"]),
-			model.UpdateProperty("languages", languages),
+		registryLogger, registryView, _ = testaggregate.InstantiateFromCfg(ctx, logger, cfgMgr, regName, map[string]interface{}{"rooturi": rootView.GetURI()})
+		registryView.GetModel("default").ApplyOption(
 			model.UpdateProperty("location", location),
 		)
-
-		// static config controller, initlize values based on yaml config
-		staticMapper, _ := static_mapper.New(ctx, registryLogger, regModel, "Registries/"+registry_map["id"].(string))
-		updateFns = append(updateFns, staticMapper.ConfigChangedFn)
-
-		rv := view.New(
-			view.WithURI(rootView.GetURI()+"/Registries/"+registry_map["id"].(string)),
-			view.WithModel("default", regModel),
-			view.WithFormatter("attributeFormatter", attributes.FormatAttributeDump),
-			view.WithFormatter("expand", expandFormatter),
-			view.WithFormatter("count", countFormatter),
-		)
-		registry.AddAggregate(ctx, registryLogger, rv, ch, eb)
+		registryView.ApplyOption(view.WithFormatter("count", countFormatter))
+		registry.AddAggregate(ctx, registryLogger, registryView, ch, eb)
 	}
-	registryView.GetModel("default").ApplyOption(model.UpdateProperty("registry_views", &domain.RedfishResourceProperty{Value: registry_views}))
 
 	//HEALTH
 	// The following model maps a bunch of health related stuff that can be tracked once at a global level.
@@ -221,8 +194,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			},
 		)
 		mgrCmcVw.GetModel("default").ApplyOption(
-			model.UpdateProperty("attributes", map[string]map[string]map[string]interface{}{}),
-
 			model.UpdateProperty("connect_types_supported", connectTypesSupported),
 			model.UpdateProperty("connect_types_supported_count", len(connectTypesSupported)),
 		)
@@ -294,10 +265,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			},
 		)
 
-		chasCmcVw.GetModel("default").ApplyOption(
-			model.UpdateProperty("attributes", map[string]map[string]map[string]interface{}{}),
-		)
-
 		chasCmcVw.ApplyOption(
 			view.WithModel("etag", chasCmcVw.GetModel("default")),
 			view.WithModel("global_health", globalHealthModel),
@@ -332,7 +299,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 
 		sysChasVw.GetModel("default").ApplyOption(
 			model.UpdateProperty("managed_by", []string{managers[0].GetURI()}),
-			model.UpdateProperty("attributes", map[string]map[string]map[string]interface{}{}),
 		)
 
 		sysChasVw.ApplyOption(
@@ -389,7 +355,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 
 			sysChasPwrPsuVw.GetModel("default").ApplyOption(
 				model.UpdateProperty("unique_id", psuName),
-				model.UpdateProperty("attributes", map[string]map[string]map[string]interface{}{}),
 			)
 
 			sysChasPwrPsuVw.ApplyOption(
@@ -494,10 +459,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 					"fqdd":        "System.Chassis.1#" + fanName,
 					"fqddlist":    []string{fanName},
 				},
-			)
-
-			fanView.GetModel("default").ApplyOption(
-				model.UpdateProperty("attributes", map[string]map[string]map[string]interface{}{}),
 			)
 
 			fanView.ApplyOption(
