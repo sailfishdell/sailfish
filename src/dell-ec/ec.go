@@ -170,9 +170,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			model.UpdateProperty("registry_name", registry_map["name"]),
 			model.UpdateProperty("registry_type", registry_map["type"]),
 			model.UpdateProperty("languages", languages),
-			model.UpdateProperty("languages_count", len(languages)),
 			model.UpdateProperty("location", location),
-			model.UpdateProperty("location_count", len(location)),
 		)
 
 		// static config controller, initlize values based on yaml config
@@ -182,6 +180,9 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		rv := view.New(
 			view.WithURI(rootView.GetURI()+"/Registries/"+registry_map["id"].(string)),
 			view.WithModel("default", regModel),
+			view.WithFormatter("attributeFormatter", attributes.FormatAttributeDump),
+			view.WithFormatter("expand", expandFormatter),
+			view.WithFormatter("count", countFormatter),
 		)
 		registry.AddAggregate(ctx, registryLogger, rv, ch, eb)
 	}
@@ -345,15 +346,12 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		)
 
 		// Create the .../Attributes URI. Attributes are stored in the attributes property of the chasModel
-		system_chassis.AddAggregate(ctx, sysChasLogger, sysChasVw, ch, eb)
 		power_related_items = append(power_related_items, sysChasVw.GetURI())
+		system_chassis.AddAggregate(ctx, sysChasLogger, sysChasVw, ch, eb)
 		attributes.AddAggregate(ctx, sysChasVw, rootView.GetURI()+"/Chassis/"+chasName+"/Attributes", ch)
 
 		// CMC.INTEGRATED.1 INTERLUDE
-		managerForChassis := []map[string]string{{"@odata.id": sysChasVw.GetURI()}}
-		mgr_mdl := managers[0].GetModel("default")
-		mgr_mdl.UpdateProperty("manager_for_chassis", managerForChassis)
-		mgr_mdl.UpdateProperty("manager_for_chassis_count", len(managerForChassis))
+		managers[0].GetModel("default").UpdateProperty("manager_for_chassis", []string{sysChasVw.GetURI()})
 
 		//*********************************************************************
 		// Create Power objects for System.Chassis.1
@@ -515,11 +513,9 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 
 		//		thermal_views := []interface{}{}
 		//		thermalModel.ApplyOption(model.UpdateProperty("thermal_views", &domain.RedfishResourceProperty{Value: thermal_views}))
-		//		thermalModel.ApplyOption(model.UpdateProperty("thermal_views_count", len(thermal_views)))
 		//
 		//		redundancy_views := []interface{}{}
 		//		thermalModel.ApplyOption(model.UpdateProperty("redundancy_views", &domain.RedfishResourceProperty{Value: redundancy_views}))
-		//		thermalModel.ApplyOption(model.UpdateProperty("redundancy_views_count", len(redundancy_views)))
 
 		//*********************************************************************
 		// Create SubSystemHealth for System.Chassis.1
