@@ -166,9 +166,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		registry.AddAggregate(ctx, registryLogger, registryView, ch, eb)
 	}
 
-	//
-	// Loop to create similarly named manager objects and the things attached there.
-	//
+	// various things are "managed" by the managers, create a global to hold the views so we can make references
 	var managers []*view.View
 
 	// the chassis power control has a list of 'related items' that we'll accumulate using power_related_items
@@ -236,17 +234,15 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			},
 		)
 
+		redundancyVw.GetModel("default").ApplyOption(
+			model.UpdateProperty("redundancy_set", []string{rootView.GetURI() + "/Managers/CMC.Integrated.1", rootView.GetURI() + "/Managers/CMC.Integrated.2"}),
+		)
+		redundancy.AddAggregate(ctx, redundancyLogger, redundancyVw, ch)
+
+		// and hook it back into the manager object
 		mgrCmcVw.GetModel("default").ApplyOption(
 			model.UpdateProperty("redundancy_uris", []string{redundancyVw.GetURI()}),
 		)
-
-		redundancy_set := []string{rootView.GetURI() + "/Managers/CMC.Integrated.1", rootView.GetURI() + "/Managers/CMC.Integrated.2"}
-
-		redundancyVw.GetModel("default").ApplyOption(
-			model.UpdateProperty("redundancy_set", redundancy_set),
-		)
-
-		redundancy.AddAggregate(ctx, redundancyLogger, redundancyVw, ch)
 
 		//*********************************************************************
 		// Create CHASSIS objects for CMC.Integrated.N
@@ -270,8 +266,8 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		chasCMCIntegrated.AddAggregate(ctx, chasLogger, chasCmcVw, ch)
 		attributes.AddAggregate(ctx, chasCmcVw, rootView.GetURI()+"/Chassis/"+mgrName+"/Attributes", ch)
 
+		// add these to the list of related power items
 		power_related_items = append(power_related_items, chasCmcVw.GetURI())
-
 	}
 
 	// start log service here: it attaches to cmc.integrated.1
