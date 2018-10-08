@@ -28,24 +28,26 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, rootID e
 				"DELETE": []string{},
 			},
 			Properties: map[string]interface{}{
-				"@odata.etag@meta":   v.Meta(view.GETProperty("etag"), view.GETModel("etag")),
+				//"@odata.etag@meta":   v.Meta(view.GETProperty("etag"), view.GETModel("etag")), //what is this??
 				"Id":                 "EventService",
 				"Name":               "Event Service",
-				"ServerSentEventUri": "/redfish_events",
+				"Description":	      "Event Service represents the properties for the service",
+				"ServerSentEventUri": "/redfish_events", //??
 				"Status": map[string]interface{}{
-					"State":  "Enabled",
-					"Health": "OK",
+					"HealthRollup":  "OK", //hardcoded
+					"Health": "OK", //hardcoded
 				},
-				"ServiceEnabled":                    true,
+				"ServiceEnabled":                    true, //??
 				"DeliveryRetryAttempts@meta":        v.Meta(view.PropGET("delivery_retry_attempts")),
 				"DeliveryRetryIntervalSeconds@meta": v.Meta(view.PropGET("delivery_retry_interval_seconds")),
-				"EventTypesForSubscription": []string{
+				"EventTypesForSubscription":	     []string {
 					"StatusChange",
 					"ResourceUpdated",
 					"ResourceAdded",
 					"ResourceRemoved",
 					"Alert",
 				},
+				"EventTypesForSubscription@odata.count": 5,
 				"Subscriptions": map[string]interface{}{
 					"@odata.id": "/redfish/v1/EventService/Subscriptions",
 				},
@@ -60,10 +62,9 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, rootID e
 							"Alert",
 						},
 					},
-					"Oem": map[string]interface{}{},
 				},
-				"Oem": map[string]interface{}{
-					"go-redfish": map[string]interface{}{
+				"Oem": map[string]interface{}{ //??
+					"sailfish": map[string]interface{}{
 						"max_milliseconds_to_queue@meta": v.Meta(view.PropGET("max_milliseconds_to_queue")),
 						"max_events_to_queue@meta":       v.Meta(view.PropGET("max_events_to_queue")),
 					},
@@ -90,8 +91,9 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, rootID e
 			},
 			Properties: map[string]interface{}{
 				"Name":                "Event Subscriptions Collection",
-				"Members@odata.count": 0,
-				"Members":             []map[string]interface{}{},
+				"Members@odata.count@meta": v.Meta(view.PropGET("event_subscriptions")),
+				"Members@meta":         v.Meta(view.PropGET("event_subscriptions_count")),
+				"Description":		"List of Event subscriptions",
 			}})
 
 	ch.HandleCommand(ctx,

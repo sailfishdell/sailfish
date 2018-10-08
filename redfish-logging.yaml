@@ -123,6 +123,9 @@ logs:
         - name: "submit_event"
           level: "warn"
 
+        - name: "views"
+          level: "warn"
+
         - name: "event_service"
           level: "debug"
 

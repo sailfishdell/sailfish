@@ -2,7 +2,6 @@ package powercontrol
 
 import (
 	"context"
-	//"strconv"
 
 	"github.com/superchalupa/sailfish/src/log"
 	"github.com/superchalupa/sailfish/src/ocp/view"
@@ -28,14 +27,11 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 				"DELETE": []string{}, // can't be deleted
 			},
 			Properties: map[string]interface{}{
-				"@odata.type":              "#Power.v1_0_2.PowerControl",
-				"@odata.context":           "/redfish/v1/$metadata#Power.PowerSystem.Chassis.1/Power/$entity",
-				"@odata.id":                v.GetURI(),
 				"Name":                     "System Power Control",
 				"MemberId":                 "PowerControl",
 				"PowerAvailableWatts@meta": v.Meta(view.PropGET("available_watts")), // TODO
-				"PowerCapacityWatts@meta":  v.Meta(view.PropGET("capacity_watts")),
-				"PowerConsumedWatts@meta":  v.Meta(view.PropGET("consumed_watts")), // TODO
+				"PowerCapacityWatts@meta":  v.Meta(view.PropGET("capacity_watts")),  //System.Chassis.1#ChassisPower.1#SystemInputMaxPowerCapacity
+				"PowerConsumedWatts@meta":  v.Meta(view.PropGET("consumed_watts")),  // TODO
 
 				"Oem": map[string]interface{}{
 					"EnergyConsumptionStartTime@meta": v.Meta(view.PropGET("energy_consumption_start_time")),

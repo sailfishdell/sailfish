@@ -9,14 +9,15 @@ const (
 	DataManagerEvent                    = eh.EventType("DataManagerEvent")
 	FanEvent                            = eh.EventType("FanEvent")
 	PowerSupplyObjEvent                 = eh.EventType("PowerSupplyObjEvent")
+	PowerConsumptionDataObjEvent        = eh.EventType("PowerConsumptionDataObjEvent")
 	AvgPowerConsumptionStatDataObjEvent = eh.EventType("AvgPowerConsumptionStatDataObjEvent")
 )
 
 func init() {
 	eh.RegisterEventData(HealthEvent, func() eh.EventData { return &HealthEventData{} })
 	eh.RegisterEventData(FanEvent, func() eh.EventData { return &FanEventData{} })
-	//eh.RegisterEventData(attributes.AttributeUpdated, func() eh.EventData { return &domain.AttributeUpdatedData{} })
 	eh.RegisterEventData(PowerSupplyObjEvent, func() eh.EventData { return &PowerSupplyObjEventData{} })
+	eh.RegisterEventData(PowerConsumptionDataObjEvent, func() eh.EventData { return &PowerConsumptionDataObjEventData{} })
 	eh.RegisterEventData(AvgPowerConsumptionStatDataObjEvent, func() eh.EventData { return &AvgPowerConsumptionStatDataObjEventData{} })
 	eh.RegisterEventData(DataManagerEvent, func() eh.EventData {
 		var f DataManagerEventData
@@ -92,6 +93,19 @@ type PowerSupplyObjEventData struct {
 	InitUpdateInProgress uint   `json:"InitupdateInProgress"`
 	U16POutMax           uint16 `json:"u16PoutMax"`
 	LineStatus           uint8  `json:"lineStatus"`
+}
+
+type PowerConsumptionDataObjEventData struct {
+	ObjectHeader    DataObjectHeader
+	CwStartTime     int64 `json:"cwStartTime"`
+	CumulativeWatts int   `json:"cumulativeWatts"`
+	InstHeadRoom    int   `json:"instHeadRoom"`
+	PeakWatts       int   `json:"peakWatts"`
+	PwReadingTime   int64 `json:"pwReadingTime"`
+	MinWatts        int   `json:"minWatts"`
+	MinwReadingTime int64 `json:"minwReadingTime"`
+	PeakHeadRoom    int   `json:"peakHeadRoom"`
+	InstWattsPSU1_2 int   `json:"instWattsPSU1_2"`
 }
 
 type AvgPowerConsumptionStatDataObjEventData struct {

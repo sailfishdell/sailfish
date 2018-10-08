@@ -10,7 +10,7 @@ import (
 
 	"github.com/superchalupa/sailfish/src/eventwaiter"
 	"github.com/superchalupa/sailfish/src/log"
-	//"github.com/superchalupa/sailfish/src/ocp/awesome_mapper"
+	"github.com/superchalupa/sailfish/src/ocp/awesome_mapper"
 	"github.com/superchalupa/sailfish/src/dell-resources/ar_mapper"
 	"github.com/superchalupa/sailfish/src/ocp/model"
 	"github.com/superchalupa/sailfish/src/ocp/view"
@@ -115,9 +115,9 @@ func (l *SlotConfigService) manageSlots(ctx context.Context, logger log.Logger, 
 					}
 
 					sCfgModel := model.New()
-					//awesome_mapper.New(ctx, logger, cfgMgr, sCfgModel, "slotconfig", map[string]interface{}{"group": group, "index": index})
+					awesome_mapper.New(ctx, logger, cfgMgr, sCfgModel, "slotconfig", map[string]interface{}{"group": group, "index": index})
 
-					armapper, _ := ar_mapper.New(ctx, logger, sCfgModel, "Chassis/SlotConfigs", map[string]string{"Group": group, "Index": index, "FQDD": ""}, ch, eb)
+					armapper, _ := ar_mapper.New(ctx, logger, sCfgModel, "Chassis/SlotConfigs", map[string]string{"Group": group, "Index": index}, ch, eb)
 					updateFns = append(updateFns, armapper.ConfigChangedFn)
 					armapper.ConfigChangedFn(context.Background(), cfgMgr)
 
@@ -146,9 +146,10 @@ func (l *SlotConfigService) manageSlots(ctx context.Context, logger log.Logger, 
 							},
 							Properties: map[string]interface{}{
 								"Id":                SlotConfig.Id,
-								"Columns@meta":      slotView.Meta(view.PropGET("columns")),
-								"Location@meta":     slotView.Meta(view.PropGET("location")),
-								"Name@meta":         slotView.Meta(view.PropGET("name")),
+								"Columns@meta":      slotView.Meta(view.PropGET("columns")), //sent as int, should be string
+								"Location@meta":     slotView.Meta(view.PropGET("location")), //sent as int, should be string
+                "Name":              SlotConfig.Id, //TODO: odatalite has name identical to id, shoudl this be changed?
+                //"Name@meta":         slotView.Meta(view.PropGET("name")),
 								"Order@meta":        slotView.Meta(view.PropGET("order")),
 								"Orientation@meta":  slotView.Meta(view.PropGET("orientation")),
 								"ParentConfig@meta": slotView.Meta(view.PropGET("parentConfig")),
