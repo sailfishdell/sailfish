@@ -193,6 +193,8 @@ views:
       "Controllers":
         - "fn": "ARMapper"
           "params": {"modelname": "default", "cfgsection": "Chassis/System.Chassis", "mappinguniquename": "'system_chassis:' + FQDD ", "AddToView": true}
+        - "fn": "ARDumper"
+          "params": {"modelname": "default", "AddToView": true}
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/Chassis/' + FQDD "
