@@ -74,7 +74,7 @@ func StartService(ctx context.Context, logger log.Logger, eb eh.EventBus) (*Serv
 
 	ret := &Service{
 		eb:         eb,
-		logger:     logger,
+		logger:     logger.New("module", "am2"),
 		eventTypes: map[eh.EventType]map[string]*AwesomeMapperConfig{},
 	}
 
@@ -85,6 +85,7 @@ func StartService(ctx context.Context, logger log.Logger, eb eh.EventBus) (*Serv
 			defer ret.eventTypesMu.RUnlock()
 
 			// hash lookup to see if we process this event, should be the fastest way
+			ret.logger.Debug("am2 testing event", "type", ev.EventType())
 			if _, ok := ret.eventTypes[ev.EventType()]; ok {
 				return true
 			}
@@ -92,31 +93,36 @@ func StartService(ctx context.Context, logger log.Logger, eb eh.EventBus) (*Serv
 		}),
 		event.SetListenerName("awesome_mapper"))
 	if err != nil {
-		logger.Error("Failed to create event stream processor", "err", err)
+		ret.logger.Error("Failed to create event stream processor", "err", err)
 		return nil, errors.New("")
 	}
 
 	go sp.RunForever(func(event eh.Event) {
 		ret.eventTypesMu.RLock()
 		defer ret.eventTypesMu.RUnlock()
+
+		ret.logger.Debug("am2 processing event", "type", event.EventType())
 		for configName, config := range ret.eventTypes[event.EventType()] {
+			ret.logger.Debug("am2 found processor")
 			expr, err := govaluate.NewEvaluableExpressionFromTokens(config.selectExpr)
 			if err != nil {
-				logger.Error("failed to instantiate expression from tokens", "err", err)
+				ret.logger.Error("failed to instantiate expression from tokens", "err", err)
 				continue
 			}
-			for _, cfg := range config.configs {
+			for cfgName, cfg := range config.configs {
+				ret.logger.Debug("am2 found processing against config", "cfgName", cfgName)
 				// single threaded here, so can update the parameters struct. If this changes, have to update this
 				cfg.params["type"] = string(event.EventType())
 				cfg.params["data"] = event.Data()
 				cfg.params["event"] = event
 				val, err := expr.Evaluate(cfg.params)
 				if err != nil {
-					logger.Error("expression failed to evaluate", "err", err)
+					ret.logger.Error("expression failed to evaluate", "err", err)
 					continue
 				}
 				val, ok := val.(bool)
 				if val == nil || !ok {
+					ret.logger.Error("No match")
 					continue
 				}
 
@@ -124,9 +130,10 @@ func StartService(ctx context.Context, logger log.Logger, eb eh.EventBus) (*Serv
 					expr, err := govaluate.NewEvaluableExpressionFromTokens(m.queryExpr)
 					val, err := expr.Evaluate(cfg.params)
 					if err != nil {
-						logger.Error("Expression failed to evaluate", "configName", configName, "queryString", m.queryString, "parameters", cfg.params, "err", err)
+						ret.logger.Error("Expression failed to evaluate", "configName", configName, "queryString", m.queryString, "parameters", cfg.params, "err", err)
 						continue
 					}
+					ret.logger.Info("Updating property!", "property", m.property, "value", val)
 					cfg.model.UpdateProperty(m.property, val)
 				}
 			}
@@ -139,6 +146,8 @@ func StartService(ctx context.Context, logger log.Logger, eb eh.EventBus) (*Serv
 func (s *Service) NewMapping(ctx context.Context, logger log.Logger, cfg *viper.Viper, mdl *model.Model, cfgName string, uniqueName string, parameters map[string]interface{}) error {
 	s.eventTypesMu.Lock()
 	defer s.eventTypesMu.Unlock()
+
+	logger = logger.New("module", "am2")
 
 	newmapping := &OneMapperConfig{model: mdl, params: map[string]interface{}{}}
 	for k, v := range parameters {
@@ -156,13 +165,14 @@ func (s *Service) NewMapping(ctx context.Context, logger log.Logger, cfg *viper.
 		logger.Warn("unmarshal failed", "err", err)
 		return errors.New("unmarshal failed")
 	}
-	logger.Info("updated mappings", "mappings", c)
+	logger.Info("updating mappings", "mappings", c)
 
 	for _, c := range c {
 		m, ok := s.eventTypes[eh.EventType(c.SelectEventType)]
 		if !ok {
 			m = map[string]*AwesomeMapperConfig{}
 			s.eventTypes[eh.EventType(c.SelectEventType)] = m
+			logger.Info("adding new EMPTY awesome mapper config for event type", "eventtype", c.SelectEventType)
 		}
 
 		mapperConfig, ok := m[cfgName]
@@ -180,6 +190,7 @@ func (s *Service) NewMapping(ctx context.Context, logger log.Logger, cfg *viper.
 				mappings:   []*mapping{},
 			}
 			m[cfgName] = mapperConfig
+			logger.Info("adding new awesome mapper config for event type for config", "eventtype", c.SelectEventType, "cfgName", cfgName)
 		}
 
 		for _, up := range c.ModelUpdate {
@@ -197,6 +208,7 @@ func (s *Service) NewMapping(ctx context.Context, logger log.Logger, cfg *viper.
 			}
 
 			mapperConfig.mappings = append(mapperConfig.mappings, newmapping)
+			logger.Info("adding new mapping", "eventtype", c.SelectEventType, "cfgName", cfgName, "query", up.Query)
 		}
 
 	}
