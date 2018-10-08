@@ -61,7 +61,7 @@ func RegisterARMapper(ch eh.CommandHandler, eb eh.EventBus) {
 
 		if addToViewBool {
 			// there can be only one
-			vw.ApplyOption(view.WithController("ardumper", dumper))
+			vw.ApplyOption(view.WithController("ar_dump", dumper))
 		}
 
 		return nil
