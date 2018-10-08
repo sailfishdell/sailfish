@@ -41,7 +41,6 @@ import (
 	"github.com/superchalupa/sailfish/src/dell-resources/update_service/firmware_inventory"
 	"github.com/superchalupa/sailfish/src/eventwaiter"
 	"github.com/superchalupa/sailfish/src/log"
-	"github.com/superchalupa/sailfish/src/ocp/awesome_mapper"
 	am2 "github.com/superchalupa/sailfish/src/ocp/awesome_mapper2"
 	"github.com/superchalupa/sailfish/src/ocp/event"
 	"github.com/superchalupa/sailfish/src/ocp/eventservice"
@@ -109,7 +108,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	// we can add this model to the views that need to expose it
 	globalHealthModel := model.New()
 	healthLogger := logger.New("module", "health_rollup")
-	awesome_mapper.New(ctx, healthLogger, cfgMgr, globalHealthModel, "global_health", map[string]interface{}{})
+	am2Svc.NewMapping(ctx, healthLogger, cfgMgr, globalHealthModel, "global_health", "global_health", map[string]interface{}{})
 
 	//*********************************************************************
 	//  /redfish/v1 -  Create the (empty) model behind the /redfish/v1 service
