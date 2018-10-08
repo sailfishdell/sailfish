@@ -47,7 +47,6 @@ import (
 	"github.com/superchalupa/sailfish/src/ocp/model"
 	"github.com/superchalupa/sailfish/src/ocp/root"
 	"github.com/superchalupa/sailfish/src/ocp/session"
-	"github.com/superchalupa/sailfish/src/ocp/static_mapper"
 	"github.com/superchalupa/sailfish/src/ocp/stdcollections"
 	"github.com/superchalupa/sailfish/src/ocp/telemetryservice"
 	"github.com/superchalupa/sailfish/src/ocp/testaggregate"
@@ -95,8 +94,14 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	testaggregate.RunRegistryFunctions(evtSvc)
 	ar_mapper2.RunRegistryFunctions(arService)
 	attributes.RunRegistryFunctions(ch, eb)
-	expandFormatter := makeExpandListFormatter(d)
-	expandOneFormatter := makeExpandOneFormatter(d)
+	RegisterFormatters(d)
+
+	//HEALTH
+	// The following model maps a bunch of health related stuff that can be tracked once at a global level.
+	// we can add this model to the views that need to expose it
+	globalHealthModel := model.New()
+	healthLogger := logger.New("module", "health_rollup")
+	awesome_mapper.New(ctx, healthLogger, cfgMgr, globalHealthModel, "global_health", map[string]interface{}{})
 
 	//
 	// Create the (empty) model behind the /redfish/v1 service root. Nothing interesting here
@@ -149,58 +154,24 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	registryLogger, registryView, _ := testaggregate.InstantiateFromCfg(ctx, logger, cfgMgr, "registries", map[string]interface{}{"rooturi": rootView.GetURI()})
 	registries.AddAggregate(ctx, registryLogger, registryView, rootView.GetUUID(), ch, eb)
 
-	// TODO: make an adapter for this to move it into redfish.yaml
-	// static config controller, initlize values based on yaml config
-	staticMapper, _ := static_mapper.New(ctx, registryLogger, registryView.GetModel("default"), "Registries")
-	updateFns = append(updateFns, staticMapper.ConfigChangedFn)
-
-	languages := []string{"En"}
-	registry_views := []interface{}{}
-	for _, registry_map := range []map[string]interface{}{
-		{"id": "Messages", "description": "iDRAC Message Registry File locations", "name": "iDRAC Message Registry File", "type": "iDrac.1.5", "location": map[string]string{"Uri": "/redfish/v1/Registries/Messages/EEMIRegistry.v1_5_0.json"}},
-		{"id": "BaseMessages", "description": "Base Message Registry File locations", "name": "Base Message Registry File", "type": "Base.1.0", "location": map[string]string{"Uri": "/redfish/v1/Registries/BaseMessages/BaseRegistry.v1_0_0.json", "PublicationUri": "http://www.dmtf.org/sites/default/files/standards/documents/DSP8011_1.0.0a.json"}},
-		{"id": "ManagerAttributeRegistry", "description": "Manager Attribute Registry File Locations", "name": "Manager Attribute Registry File", "type": "ManagerAttributeRegistry.1.0", "location": map[string]string{"Uri": "/redfish/v1/Registries/ManagerAttributeRegistry/ManagerAttributeRegistry.v1_0_0.json"}},
+	for regName, location := range map[string]interface{}{
+		"idrac_registry":    []map[string]string{{"Language": "En", "Uri": "/redfish/v1/Registries/Messages/EEMIRegistry.v1_5_0.json"}},
+		"base_registry":     []map[string]string{{"Language": "En", "Uri": "/redfish/v1/Registries/BaseMessages/BaseRegistry.v1_0_0.json", "PublicationUri": "http://www.dmtf.org/sites/default/files/standards/documents/DSP8011_1.0.0a.json"}},
+		"mgr_attr_registry": []map[string]string{{"Language": "En", "Uri": "/redfish/v1/Registries/ManagerAttributeRegistry/ManagerAttributeRegistry.v1_0_0.json"}},
 	} {
-
-		location := []map[string]string{registry_map["location"].(map[string]string)}
-		location[0]["Language"] = "En"
-		regModel := model.New(
-			model.UpdateProperty("registry_id", registry_map["id"]),
-			model.UpdateProperty("registry_description", registry_map["description"]),
-			model.UpdateProperty("registry_name", registry_map["name"]),
-			model.UpdateProperty("registry_type", registry_map["type"]),
-			model.UpdateProperty("languages", languages),
-			model.UpdateProperty("languages_count", len(languages)),
+		registryLogger, registryView, _ = testaggregate.InstantiateFromCfg(ctx, logger, cfgMgr, regName, map[string]interface{}{"rooturi": rootView.GetURI()})
+		registryView.GetModel("default").ApplyOption(
 			model.UpdateProperty("location", location),
-			model.UpdateProperty("location_count", len(location)),
 		)
-
-		// static config controller, initlize values based on yaml config
-		staticMapper, _ := static_mapper.New(ctx, registryLogger, regModel, "Registries/"+registry_map["id"].(string))
-		updateFns = append(updateFns, staticMapper.ConfigChangedFn)
-
-		rv := view.New(
-			view.WithURI(rootView.GetURI()+"/Registries/"+registry_map["id"].(string)),
-			view.WithModel("default", regModel),
-		)
-		registry.AddAggregate(ctx, registryLogger, rv, ch, eb)
+		registry.AddAggregate(ctx, registryLogger, registryView, ch, eb)
 	}
-	registryView.GetModel("default").ApplyOption(model.UpdateProperty("registry_views", &domain.RedfishResourceProperty{Value: registry_views}))
 
-	//HEALTH
-	// The following model maps a bunch of health related stuff that can be tracked once at a global level.
-	// we can add this model to the views that need to expose it
-	globalHealthModel := model.New()
-	healthLogger := logger.New("module", "health_rollup")
-	awesome_mapper.New(ctx, healthLogger, cfgMgr, globalHealthModel, "global_health", map[string]interface{}{})
-
-	//
-	// Loop to create similarly named manager objects and the things attached there.
-	//
+	// various things are "managed" by the managers, create a global to hold the views so we can make references
 	var managers []*view.View
-	mgrRedundancyMdl := model.New()
 
-	related_items := []map[string]string{}
+	// the chassis power control has a list of 'related items' that we'll accumulate using power_related_items
+	var sysChasPwrCtrlVw *view.View
+	power_related_items := []string{}
 
 	for _, mgrName := range []string{
 		"CMC.Integrated.1",
@@ -220,16 +191,11 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			},
 		)
 		mgrCmcVw.GetModel("default").ApplyOption(
-			mgrCMCIntegrated.WithUniqueName(mgrName),
-			model.UpdateProperty("unique_name_attr", mgrName+".Attributes"),
-			model.UpdateProperty("attributes", map[string]map[string]map[string]interface{}{}),
-
 			model.UpdateProperty("connect_types_supported", connectTypesSupported),
 			model.UpdateProperty("connect_types_supported_count", len(connectTypesSupported)),
 		)
 
 		mgrCmcVw.ApplyOption(
-			view.WithModel("redundancy_health", mgrRedundancyMdl), // health info in default model
 			view.WithModel("global_health", globalHealthModel),
 
 			view.WithModel("health", mgrCmcVw.GetModel("default")), // health info in default model
@@ -246,10 +212,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			ah.WithAction(ctx, mgrLogger, "manager.importsystemconfig", "/Actions/Oem/EID_674_Manager.ImportSystemConfiguration", importSystemConfiguration, ch, eb),
 			ah.WithAction(ctx, mgrLogger, "manager.importsystemconfigpreview", "/Actions/Oem/EID_674_Manager.ImportSystemConfigurationPreview", importSystemConfigurationPreview, ch, eb),
 			ah.WithAction(ctx, mgrLogger, "certificates.generatecsr", "/Actions/DellCertificateService.GenerateCSR", makePumpHandledAction("GenerateCSR", 30, eb), ch, eb),
-
-			view.WithFormatter("attributeFormatter", attributes.FormatAttributeDump),
-			view.WithFormatter("expand", expandFormatter),
-			view.WithFormatter("count", countFormatter),
 		)
 
 		managers = append(managers, mgrCmcVw)
@@ -272,17 +234,15 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			},
 		)
 
+		redundancyVw.GetModel("default").ApplyOption(
+			model.UpdateProperty("redundancy_set", []string{rootView.GetURI() + "/Managers/CMC.Integrated.1", rootView.GetURI() + "/Managers/CMC.Integrated.2"}),
+		)
+		redundancy.AddAggregate(ctx, redundancyLogger, redundancyVw, ch)
+
+		// and hook it back into the manager object
 		mgrCmcVw.GetModel("default").ApplyOption(
 			model.UpdateProperty("redundancy_uris", []string{redundancyVw.GetURI()}),
 		)
-
-		redundancy_set := []string{rootView.GetURI() + "/Managers/CMC.Integrated.1", rootView.GetURI() + "/Managers/CMC.Integrated.2"}
-
-		redundancyVw.GetModel("default").ApplyOption(
-			model.UpdateProperty("redundancy_set", redundancy_set),
-		)
-
-		redundancy.AddAggregate(ctx, redundancyLogger, redundancyVw, ch)
 
 		//*********************************************************************
 		// Create CHASSIS objects for CMC.Integrated.N
@@ -296,16 +256,9 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			},
 		)
 
-		chasCmcVw.GetModel("default").ApplyOption(
-			mgrCMCIntegrated.WithUniqueName(mgrName),
-			model.UpdateProperty("unique_name_attr", mgrName+".Attributes"),
-			model.UpdateProperty("attributes", map[string]map[string]map[string]interface{}{}),
-		)
-
 		chasCmcVw.ApplyOption(
 			view.WithModel("etag", chasCmcVw.GetModel("default")),
 			view.WithModel("global_health", globalHealthModel),
-			view.WithFormatter("attributeFormatter", attributes.FormatAttributeDump),
 			view.UpdateEtag("etag", []string{}),
 		)
 
@@ -313,17 +266,14 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		chasCMCIntegrated.AddAggregate(ctx, chasLogger, chasCmcVw, ch)
 		attributes.AddAggregate(ctx, chasCmcVw, rootView.GetURI()+"/Chassis/"+mgrName+"/Attributes", ch)
 
-		related_items = append(related_items, map[string]string{"@odata.id": chasCmcVw.GetURI()})
-
+		// add these to the list of related power items
+		power_related_items = append(power_related_items, chasCmcVw.GetURI())
 	}
 
 	// start log service here: it attaches to cmc.integrated.1
 	logSvc.StartService(ctx, logger, managers[0])
 	faultSvc.StartService(ctx, logger, managers[0])
 
-	pwrCtrlModel := model.New()
-
-	chasLogger := logger.New("module", "Chassis")
 	{
 		// ************************************************************************
 		// CHASSIS System.Chassis.1
@@ -337,33 +287,24 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			},
 		)
 
-		managedBy := []map[string]string{{"@odata.id": managers[0].GetURI()}}
 		sysChasVw.GetModel("default").ApplyOption(
-			model.UpdateProperty("unique_name", chasName),
-			model.UpdateProperty("unique_name_attr", chasName+".Attributes"),
-			model.UpdateProperty("managed_by", managedBy),
-			model.UpdateProperty("managed_by_count", len(managedBy)),
-			model.UpdateProperty("attributes", map[string]map[string]map[string]interface{}{}),
+			model.UpdateProperty("managed_by", []string{managers[0].GetURI()}),
 		)
 
 		sysChasVw.ApplyOption(
 			view.WithModel("global_health", globalHealthModel),
-			view.WithFormatter("attributeFormatter", attributes.FormatAttributeDump),
 			ah.WithAction(ctx, sysChasLogger, "chassis.reset", "/Actions/Chassis.Reset", makePumpHandledAction("ChassisReset", 30, eb), ch, eb),
 			ah.WithAction(ctx, sysChasLogger, "msmconfigbackup", "/Actions/Oem/MSMConfigBackup", msmConfigBackup, ch, eb),
 			ah.WithAction(ctx, sysChasLogger, "chassis.msmconfigbackup", "/Actions/Oem/DellChassis.MSMConfigBackup", chassisMSMConfigBackup, ch, eb),
 		)
 
 		// Create the .../Attributes URI. Attributes are stored in the attributes property of the chasModel
+		power_related_items = append(power_related_items, sysChasVw.GetURI())
 		system_chassis.AddAggregate(ctx, sysChasLogger, sysChasVw, ch, eb)
-		related_items = append(related_items, map[string]string{"@odata.id": sysChasVw.GetURI()})
 		attributes.AddAggregate(ctx, sysChasVw, rootView.GetURI()+"/Chassis/"+chasName+"/Attributes", ch)
 
 		// CMC.INTEGRATED.1 INTERLUDE
-		managerForChassis := []map[string]string{{"@odata.id": sysChasVw.GetURI()}}
-		mgr_mdl := managers[0].GetModel("default")
-		mgr_mdl.UpdateProperty("manager_for_chassis", managerForChassis)
-		mgr_mdl.UpdateProperty("manager_for_chassis_count", len(managerForChassis))
+		managers[0].GetModel("default").UpdateProperty("manager_for_chassis", []string{sysChasVw.GetURI()})
 
 		//*********************************************************************
 		// Create Power objects for System.Chassis.1
@@ -375,15 +316,8 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			},
 		)
 
-		sysChasPwrVw.GetModel("default").ApplyOption(
-			mgrCMCIntegrated.WithUniqueName("Power"),
-		)
-
 		sysChasPwrVw.ApplyOption(
 			view.WithModel("global_health", globalHealthModel),
-			view.WithFormatter("expand", expandFormatter),
-			view.WithFormatter("expandone", expandOneFormatter),
-			view.WithFormatter("count", countFormatter),
 		)
 		power.AddAggregate(ctx, powerLogger, sysChasPwrVw, ch)
 
@@ -403,17 +337,9 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 				},
 			)
 
-			sysChasPwrPsuVw.GetModel("default").ApplyOption(
-				model.UpdateProperty("unique_name", psuName),
-				model.UpdateProperty("unique_name_attr", psuName+".Attributes"),
-				model.UpdateProperty("unique_id", psuName),
-				model.UpdateProperty("attributes", map[string]map[string]map[string]interface{}{}),
-			)
-
 			sysChasPwrPsuVw.ApplyOption(
 				view.WithModel("swinv", sysChasPwrPsuVw.GetModel("default")),
 				view.WithModel("global_health", globalHealthModel),
-				view.WithFormatter("attributeFormatter", attributes.FormatAttributeDump),
 			)
 			swinvViews = append(swinvViews, sysChasPwrPsuVw)
 			psu_uris = append(psu_uris, sysChasPwrPsuVw.GetURI())
@@ -425,7 +351,8 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		// # Power Control
 		// ##################
 
-		pwrCtrlLogger, sysChasPwrCtrlVw, _ := testaggregate.InstantiateFromCfg(ctx, logger, cfgMgr, "power_control",
+		var pwrCtrlLogger log.Logger
+		pwrCtrlLogger, sysChasPwrCtrlVw, _ = testaggregate.InstantiateFromCfg(ctx, logger, cfgMgr, "power_control",
 			map[string]interface{}{
 				"rooturi": rootView.GetURI(),
 				"FQDD":    chasName,
@@ -446,11 +373,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		)
 		powertrends.AddTrendsAggregate(ctx, pwrTrendLogger, pwrTrendVw, ch)
 		sysChasPwrVw.GetModel("default").ApplyOption(model.UpdateProperty("power_trends_uri", pwrTrendVw.GetURI()))
-		pwrTrendVw.ApplyOption(
-			view.WithFormatter("expand", expandFormatter),
-			view.WithFormatter("expandone", expandOneFormatter),
-			view.WithFormatter("count", countFormatter),
-		)
 
 		// ##################
 		// # Power Histograms
@@ -475,79 +397,52 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		//*********************************************************************
 		// Create Thermal objects for System.Chassis.1
 		//*********************************************************************
-		thermalLogger := sysChasLogger.New("module", "Chassis/System.Chassis/Thermal")
-
-		thermalModel := model.New(
-			mgrCMCIntegrated.WithUniqueName("Thermal"),
-			model.UpdateProperty("fan_views", []interface{}{}),
-			model.UpdateProperty("thermal_views", []interface{}{}),
-			model.UpdateProperty("redundancy_views", []interface{}{}),
+		thermalLogger, thermalView, _ := testaggregate.InstantiateFromCfg(ctx, logger, cfgMgr, "thermal",
+			map[string]interface{}{
+				"rooturi": rootView.GetURI(),
+				"FQDD":    chasName,
+			},
 		)
-		// the controller is what updates the model when ar entries change,
-		// also handles patch from redfish
-		armapper := arService.NewMapping(thermalLogger, "Chassis/"+chasName+"/Thermal", "Chassis/System.Chassis/Thermal", thermalModel, map[string]string{"FQDD": chasName})
 
-		thermalView := view.New(
-			view.WithURI(rootView.GetURI()+"/Chassis/"+chasName+"/Thermal"),
-			view.WithModel("default", thermalModel),
+		// thermal_uris := []string{}
+		// redundancy_uris := []string{}
+
+		thermalView.ApplyOption(
 			view.WithModel("global_health", globalHealthModel),
-			view.WithController("ar_mapper", armapper),
-			evtSvc.PublishResourceUpdatedEventsForModel(ctx, "default"),
 		)
 		thermal.AddAggregate(ctx, thermalLogger, thermalView, ch)
 
-		fan_views := []interface{}{}
+		fan_uris := []string{}
 		for _, fanName := range []string{
 			"Fan.Slot.1", "Fan.Slot.2", "Fan.Slot.3",
 			"Fan.Slot.4", "Fan.Slot.5", "Fan.Slot.6",
 			"Fan.Slot.7", "Fan.Slot.8", "Fan.Slot.9",
 		} {
-			fanLogger := thermalLogger.New("module", "Chassis/System.Chassis/Thermal/Fan")
-
-			fanModel := model.New(
-				model.UpdateProperty("unique_id", fanName),
-				model.UpdateProperty("unique_name_attr", fanName+".Attributes"),
-				model.UpdateProperty("attributes", map[string]map[string]map[string]interface{}{}),
+			fanLogger, fanView, _ := testaggregate.InstantiateFromCfg(ctx, logger, cfgMgr, "fan",
+				map[string]interface{}{
+					"rooturi":     rootView.GetURI(),
+					"ChassisFQDD": chasName,
+					"FQDD":        fanName,
+					"fqdd":        "System.Chassis.1#" + fanName,
+					"fqddlist":    []string{fanName},
+				},
 			)
-			fwmapper := arService.NewMapping(fanLogger.New("module", "firmware/inventory"), "firmware_Chassis/"+chasName+"/Thermal/Fan/"+fanName, "firmware/inventory", fanModel, map[string]string{"FQDD": fanName})
-			// the controller is what updates the model when ar entries change,
-			// also handles patch from redfish
-			armapper := arService.NewMapping(fanLogger, "Chassis/"+chasName+"/Thermal/Fan/"+fanName, "Fans/Fan.Slot", fanModel, map[string]string{"FQDD": fanName})
 
-			awesome_mapper.New(ctx, fanLogger, cfgMgr, fanModel, "fan", map[string]interface{}{"fqdd": "System.Chassis.1#" + fanName})
-
-			// This controller will populate 'attributes' property with AR entries matching this FQDD ('fanName')
-			ardumper, _ := attributes.NewController(ctx, fanModel, []string{fanName}, ch, eb)
-
-			v := view.New(
-				view.WithURI(rootView.GetURI()+"/Chassis/"+chasName+"/Sensors/Fans/"+fanName),
-				view.WithModel("default", fanModel),
-				view.WithModel("swinv", fanModel),
+			fanView.ApplyOption(
+				view.WithModel("swinv", fanView.GetModel("default")),
 				view.WithModel("global_health", globalHealthModel),
-				view.WithController("ar_mapper", armapper),
-				view.WithController("ar_dumper", ardumper),
-				view.WithController("fw_mapper", fwmapper),
-				view.WithFormatter("attributeFormatter", attributes.FormatAttributeDump),
-				evtSvc.PublishResourceUpdatedEventsForModel(ctx, "default"),
 			)
-			swinvViews = append(swinvViews, v)
-
-			fanFragment := fans.AddAggregate(ctx, fanLogger, v, ch)
-
-			p := &domain.RedfishResourceProperty{}
-			p.Parse(fanFragment)
-			fan_views = append(fan_views, p)
+			fans.AddAggregate(ctx, fanLogger, fanView, ch)
+			fan_uris = append(fan_uris, fanView.GetURI())
+			swinvViews = append(swinvViews, fanView)
 		}
-		thermalModel.ApplyOption(model.UpdateProperty("fan_views", &domain.RedfishResourceProperty{Value: fan_views}))
-		thermalModel.ApplyOption(model.UpdateProperty("fan_views_count", len(fan_views)))
+		thermalView.GetModel("default").ApplyOption(model.UpdateProperty("fan_uris", fan_uris))
 
-		thermal_views := []interface{}{}
-		thermalModel.ApplyOption(model.UpdateProperty("thermal_views", &domain.RedfishResourceProperty{Value: thermal_views}))
-		thermalModel.ApplyOption(model.UpdateProperty("thermal_views_count", len(thermal_views)))
-
-		redundancy_views := []interface{}{}
-		thermalModel.ApplyOption(model.UpdateProperty("redundancy_views", &domain.RedfishResourceProperty{Value: redundancy_views}))
-		thermalModel.ApplyOption(model.UpdateProperty("redundancy_views_count", len(redundancy_views)))
+		//		thermal_views := []interface{}{}
+		//		thermalModel.ApplyOption(model.UpdateProperty("thermal_views", &domain.RedfishResourceProperty{Value: thermal_views}))
+		//
+		//		redundancy_views := []interface{}{}
+		//		thermalModel.ApplyOption(model.UpdateProperty("redundancy_views", &domain.RedfishResourceProperty{Value: redundancy_views}))
 
 		//*********************************************************************
 		// Create SubSystemHealth for System.Chassis.1
@@ -561,7 +456,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		subSysHealthLogger := sysChasLogger.New("module", "Chassis/System.Chassis/SubSystemHealth")
 		subSysHealthModel := model.New()
 
-		armapper = arService.NewMapping(subSysHealthLogger, "Chassis/"+chasName+"/SubSystemHealth", "Chassis/SubSystemHealths", subSysHealthModel, map[string]string{})
+		armapper := arService.NewMapping(subSysHealthLogger, "Chassis/"+chasName+"/SubSystemHealth", "Chassis/SubSystemHealths", subSysHealthModel, map[string]string{})
 
 		subSysHealthView := view.New(
 			view.WithURI(rootView.GetURI()+"/Chassis/"+chasName+"/SubSystemHealth"),
@@ -601,44 +496,28 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		"IOM.Slot.C1",
 		"IOM.Slot.C2",
 	} {
-		iomLogger := chasLogger.New("module", "Chassis/"+iomName, "module", "Chassis/IOM.Slot")
-		managedBy := []map[string]string{{"@odata.id": managers[0].GetURI()}}
-		iomModel := model.New(
-			model.UpdateProperty("unique_name", iomName),
-			model.UpdateProperty("unique_name_attr", iomName+".Attributes"),
-			model.UpdateProperty("managed_by", managedBy),
-			model.UpdateProperty("managed_by_count", len(managedBy)),
+		iomLogger, iomView, _ := testaggregate.InstantiateFromCfg(ctx, logger, cfgMgr, "iom",
+			map[string]interface{}{
+				"rooturi":  rootView.GetURI(),
+				"FQDD":     iomName,
+				"fqdd":     "System.Chassis.1#SubSystem.1#" + iomName,
+				"fqddlist": []string{iomName},
+			},
 		)
-		fwmapper := arService.NewMapping(iomLogger.New("module", "firmware/inventory"), "firmware_Chassis/"+iomName, "firmware/inventory", iomModel, map[string]string{"FQDD": iomName})
-		// the controller is what updates the model when ar entries change,
-		// also handles patch from redfish
-		armapper := arService.NewMapping(iomLogger, "Chassis/"+iomName, "Chassis/IOM.Slot", iomModel, map[string]string{"FQDD": iomName})
 
-		// This controller will populate 'attributes' property with AR entries matching this FQDD ('iomName')
-		ardumper, _ := attributes.NewController(ctx, iomModel, []string{iomName}, ch, eb)
+		iomView.GetModel("default").ApplyOption(
+			model.UpdateProperty("managed_by", []string{managers[0].GetURI()}),
+		)
 
-		//HEALTH
-		awesome_mapper.New(ctx, iomLogger, cfgMgr, iomModel, "health", map[string]interface{}{"fqdd": "System.Chassis.1#SubSystem.1#" + iomName})
-
-		//INST POWER CONSUMPTION
-		awesome_mapper.New(ctx, iomLogger, cfgMgr, iomModel, "iom", map[string]interface{}{"fqdd": iomName})
-
-		iomView := view.New(
-			view.WithURI(rootView.GetURI()+"/Chassis/"+iomName),
-			view.WithModel("default", iomModel),
-			view.WithModel("swinv", iomModel),
+		iomView.ApplyOption(
+			view.WithModel("swinv", iomView.GetModel("default")),
 			view.WithModel("global_health", globalHealthModel),
-			view.WithController("ar_mapper", armapper),
-			view.WithController("fw_mapper", fwmapper),
-			view.WithController("ar_dumper", ardumper),
-			view.WithFormatter("attributeFormatter", attributes.FormatAttributeDump),
 			ah.WithAction(ctx, iomLogger, "iom.chassis.reset", "/Actions/Chassis.Reset", makePumpHandledAction("IomChassisReset", 30, eb), ch, eb),
 			ah.WithAction(ctx, iomLogger, "iom.resetpeakpowerconsumption", "/Actions/Oem/DellChassis.ResetPeakPowerConsumption", makePumpHandledAction("IomResetPeakPowerConsumption", 30, eb), ch, eb),
 			ah.WithAction(ctx, iomLogger, "iom.virtualreseat", "/Actions/Oem/DellChassis.VirtualReseat", makePumpHandledAction("IomVirtualReseat", 30, eb), ch, eb),
-			evtSvc.PublishResourceUpdatedEventsForModel(ctx, "default"),
 		)
 		swinvViews = append(swinvViews, iomView)
-		related_items = append(related_items, map[string]string{"@odata.id": iomView.GetURI()})
+		power_related_items = append(power_related_items, iomView.GetURI())
 		iom_chassis.AddAggregate(ctx, iomLogger, iomView, ch, eb)
 		attributes.AddAggregate(ctx, iomView, rootView.GetURI()+"/Chassis/"+iomName+"/Attributes", ch)
 	}
@@ -653,42 +532,33 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		"System.Modular.7", "System.Modular.7a", "System.Modular.7b",
 		"System.Modular.8", "System.Modular.8a", "System.Modular.8b",
 	} {
-		sledLogger := chasLogger.New("module", "Chassis/"+sledName, "module", "Chassis/System.Modular")
-		managedBy := []map[string]string{{"@odata.id": managers[0].GetURI()}}
-		sledModel := model.New(
-			model.UpdateProperty("unique_name", sledName),
-			model.UpdateProperty("unique_name_attr", sledName+".Attributes"),
-			model.UpdateProperty("managed_by", managedBy),
-			model.UpdateProperty("managed_by_count", len(managedBy)),
+		sledLogger, sledView, _ := testaggregate.InstantiateFromCfg(ctx, logger, cfgMgr, "sled",
+			map[string]interface{}{
+				"rooturi":  rootView.GetURI(),
+				"FQDD":     sledName,
+				"fqdd":     "System.Chassis.1#SubSystem.1#" + sledName,
+				"fqddlist": []string{sledName},
+			},
 		)
-		fwmapper := arService.NewMapping(sledLogger.New("module", "firmware/inventory"), "firmware_Chassis/"+sledName, "firmware/inventory", sledModel, map[string]string{"FQDD": sledName})
 
-		armapper := arService.NewMapping(sledLogger, "Chassis/"+sledName, "Chassis/System.Modular", sledModel, map[string]string{"FQDD": sledName})
+		sledView.GetModel("default").ApplyOption(
+			model.UpdateProperty("managed_by", []string{managers[0].GetURI()}),
+		)
 
-		// This controller will populate 'attributes' property with AR entries matching this FQDD ('sledName')
-		ardumper, _ := attributes.NewController(ctx, sledModel, []string{sledName}, ch, eb)
-
-		//HEALTH
-		awesome_mapper.New(ctx, sledLogger, cfgMgr, sledModel, "health", map[string]interface{}{"fqdd": "System.Chassis.1#SubSystem.1#" + sledName})
-
-		sledView := view.New(
-			view.WithURI(rootView.GetURI()+"/Chassis/"+sledName),
-			view.WithModel("default", sledModel),
-			view.WithModel("swinv", sledModel),
+		sledView.ApplyOption(
+			view.WithModel("swinv", sledView.GetModel("default")),
 			view.WithModel("global_health", globalHealthModel),
-			view.WithController("ar_mapper", armapper),
-			view.WithController("fw_mapper", fwmapper),
-			view.WithController("ar_dumper", ardumper),
-			view.WithFormatter("attributeFormatter", attributes.FormatAttributeDump),
 			ah.WithAction(ctx, sledLogger, "chassis.peripheralmapping", "/Actions/Oem/DellChassis.PeripheralMapping", makePumpHandledAction("SledPeripheralMapping", 30, eb), ch, eb),
 			ah.WithAction(ctx, sledLogger, "sledvirtualreseat", "/Actions/Chassis.VirtualReseat", makePumpHandledAction("SledVirtualReseat", 30, eb), ch, eb),
 			ah.WithAction(ctx, sledLogger, "chassis.sledvirtualreseat", "/Actions/Oem/DellChassis.VirtualReseat", makePumpHandledAction("ChassisSledVirtualReseat", 30, eb), ch, eb),
-			evtSvc.PublishResourceUpdatedEventsForModel(ctx, "default"),
 		)
 		sled_chassis.AddAggregate(ctx, sledLogger, sledView, ch, eb)
-		related_items = append(related_items, map[string]string{"@odata.id": sledView.GetURI()})
+		power_related_items = append(power_related_items, sledView.GetURI())
 		attributes.AddAggregate(ctx, sledView, rootView.GetURI()+"/Chassis/"+sledName+"/Attributes", ch)
 	}
+
+	// link in all of the related items for power control
+	sysChasPwrCtrlVw.GetModel("default").ApplyOption(model.UpdateProperty("power_related_items", power_related_items))
 
 	{
 		updsvcLogger := logger.New("module", "UpdateService")
@@ -713,9 +583,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		update_service.AddAggregate(ctx, rootView, updSvcVw, ch)
 		update_service.EnhanceAggregate(ctx, updSvcVw, rootView, ch)
 	}
-
-	pwrCtrlModel.ApplyOption(model.UpdateProperty("related_item", related_items))
-	pwrCtrlModel.ApplyOption(model.UpdateProperty("related_item_count", len(related_items)))
 
 	//
 	// Software Inventory

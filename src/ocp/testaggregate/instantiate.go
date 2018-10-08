@@ -179,11 +179,42 @@ func InstantiateFromCfg(ctx context.Context, logger log.Logger, cfgMgr *viper.Vi
 	// Instantiate view
 	vw := view.New(view.WithDeferRegister())
 
+	functions := map[string]govaluate.ExpressionFunction{
+		"array": func(args ...interface{}) (interface{}, error) {
+			a := []interface{}{}
+			for _, i := range args {
+				a = append(a, i)
+			}
+			return a, nil
+		},
+		"add_attribute_property": func(args ...interface{}) (interface{}, error) {
+			return map[string]map[string]map[string]interface{}{}, nil
+		},
+	}
+
 	// Instantiate Models
 	for modelName, modelProperties := range config.Models {
 		subLogger.Debug("creating model", "name", modelName)
-		m := model.New()
+		m := vw.GetModel(modelName)
+		if m == nil {
+			m = model.New()
+		}
 		for propName, propValue := range modelProperties {
+			propValueStr, ok := propValue.(string)
+			if !ok {
+				continue
+			}
+			expr, err := govaluate.NewEvaluableExpressionWithFunctions(propValueStr, functions)
+			if err != nil {
+				logger.Crit("Failed to create evaluable expression", "expr", expr, "err", err)
+				continue
+			}
+			propValue, err := expr.Evaluate(parameters)
+			if err != nil {
+				logger.Crit("expression evaluation failed", "expr", expr, "err", err)
+				continue
+			}
+
 			subLogger.Debug("setting model property", "propname", propName, "propValue", propValue)
 			m.UpdateProperty(propName, propValue)
 		}

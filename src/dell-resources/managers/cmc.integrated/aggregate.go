@@ -32,9 +32,9 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 		"FirmwareVersion@meta":     v.Meta(view.PropGET("firmware_version")),
 		"Links": map[string]interface{}{
 			//"ManagerForServers@meta": v.Meta(view.PropGET("bmc_manager_for_servers")), // not in odatalite json?
-			"ManagerForChassis@meta":             v.Meta(view.PropGET("manager_for_chassis")),
-			"ManagerForChassis@odata.count@meta": v.Meta(view.PropGET("manager_for_chassis_count")),
 			//"ManagerInChassis@meta":  v.Meta(view.PropGET("in_chassis")), //not in odatalite json?
+			"ManagerForChassis@meta":             v.Meta(view.GETProperty("manager_for_chassis"), view.GETFormatter("formatOdataList"), view.GETModel("default")),
+			"ManagerForChassis@odata.count@meta": v.Meta(view.GETProperty("manager_for_chassis"), view.GETFormatter("count"), view.GETModel("default")),
 		},
 
 		"SerialConsole": map[string]interface{}{

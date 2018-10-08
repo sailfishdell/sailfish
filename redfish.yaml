@@ -10,6 +10,15 @@ listen:
 session:
     timeout: 600
 
+# new features needed:
+#  - link_model
+#  - model update fn
+#
+# View FN:
+#   update etag
+#   with formatter
+#
+
 views:
   "rootview":
       "Logger": ["module", "root"]
@@ -20,7 +29,7 @@ views:
   "testview":
       "Logger": ["module", "testview"]
       "Models":
-        "default":  {"unique_name": "TEST_Unique_Name", "name": "TEST_Name", "description": "TEST_Description" }
+        "default":  {"unique_name": "'TEST_Unique_Name'", "name": "'TEST_Name'", "'description'": "'TEST_Description'" }
       "Controllers":
         - "fn": "AwesomeMapper"
           "params": {"modelname": "default", "cfgsection": "testview" }
@@ -35,7 +44,7 @@ views:
   "testview_sub":
       "Logger": ["module", "sub_testview"]
       "Models":
-        "default":  {"property1": "value1"}
+        "default":  {"property1": "'value1'"}
       "Controllers":
       "View":
         - "fn": "with_URI"
@@ -44,7 +53,7 @@ views:
   "sessionview":
       "Logger": ["module", "session"]
       "Models":
-        "default":  {"session_timeout": 30}
+        "default":  {"session_timeout": "30"}
       "Controllers":
         - "fn": "AwesomeMapper"
           "params": {"modelname": "default", "cfgsection": "sessionview" }
@@ -61,17 +70,65 @@ views:
       "Models":
         "default":  {}
       "Controllers":
-        # not yet implemented...
-        - "fn": "StaticMapper"
-          "params": {"modelname": "default", "AddToView": true}
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/Registries'"
 
+  "idrac_registry":
+      "Logger": ["module", "registry"]
+      "Models":
+        "default":  {
+          "id":          "'Messages'",
+          "description": "'iDRAC Message Registry File locations'",
+          "name":        "'iDRAC Message Registry File'",
+          "type":        "'iDrac.1.5'",
+          "languages":   "array('En')",
+        }
+      "Controllers":
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/Registries/Messages'"
+        - "fn": "withFormatter_count"
+          "params":
+
+  "base_registry":
+      "Logger": ["module", "registry"]
+      "Models":
+        "default":  {
+          "id":          "'BaseMessages'",
+          "description": "'Base Message Registry File locations'",
+          "name":        "'Base Message Registry File'",
+          "type":        "'Base.1.3.8'",
+          "languages":   "array('En')",
+        }
+      "Controllers":
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/Registries/BaseMessages'"
+        - "fn": "withFormatter_count"
+          "params":
+
+  "mgr_attr_registry":
+      "Logger": ["module", "registry"]
+      "Models":
+        "default":  {
+          "id":          "'ManagerAttributeRegistry'",
+          "description": "'Manager Attribute Registry File Locations'",
+          "name":        "'Manager Attribute Registry File'",
+          "type":        "'ManagerAttributeRegistry.1.0'",
+          "languages":   "array('En')",
+        }
+      "Controllers":
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/Registries/ManagerAttributeRegistry'"
+        - "fn": "withFormatter_count"
+          "params":
+
   "manager_cmc_integrated":
       "Logger": ["module", "mgrChassis"]
       "Models":
-        "default":  {}
+        "default":  {"unique_name": "FQDD", "unique_name_attr": "FQDD+'.Attributes'", "attributes": "add_attribute_property()"}
       "Controllers":
         - "fn": "ARMapper"
           "params": {"modelname": "default", "cfgsection": "firmware/inventory", "mappinguniquename": "'fw_mapper:' + FQDD ", "AddToView": true}
@@ -86,11 +143,17 @@ views:
           "params": "rooturi + '/Managers/' + FQDD"
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
+        - "fn": "withFormatter_attributeFormatter"
+          "params":
+        - "fn": "withFormatter_expand"
+          "params":
+        - "fn": "withFormatter_count"
+          "params":
 
   "chassis_cmc_integrated":
       "Logger": ["module", "ChassisCMCInt"]
       "Models":
-        "default":  {}
+        "default":  {"unique_name": "FQDD", "unique_name_attr": "FQDD+'.Attributes'", "attributes": "add_attribute_property()"}
       "Controllers":
         - "fn": "ARMapper"
           # note: this is correct, the chassis model re-uses the managers mapper
@@ -104,6 +167,8 @@ views:
           "params": "rooturi + '/Chassis/' + FQDD"
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
+        - "fn": "withFormatter_attributeFormatter"
+          "params":
 
   "chassis_cmc_integrated_redundancy":
       "Logger": ["module", "ChassisCMCInt/Redundancy"]
@@ -121,10 +186,33 @@ views:
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
 
+  "system_chassis":
+      "Logger": ["module", "system_chassis"]
+      "Models":
+        "default":  {"unique_name": "FQDD", "unique_name_attr": "FQDD+'.Attributes'", "attributes": "add_attribute_property()"}
+      "Controllers":
+        - "fn": "ARMapper"
+          "params": {"modelname": "default", "cfgsection": "Chassis/System.Chassis", "mappinguniquename": "'system_chassis:' + FQDD ", "AddToView": true}
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/Chassis/' + FQDD "
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+        - "fn": "withFormatter_count"
+          "params":
+        - "fn": "withFormatter_attributeFormatter"
+          "params":
+        - "fn": "withFormatter_expand"
+          "params":
+        - "fn": "withFormatter_expandone"
+          "params":
+        - "fn": "withFormatter_formatOdataList"
+          "params":
+
   "power":
       "Logger": ["module", "Power"]
       "Models":
-        "default":  {}
+        "default":  { "unique_name": "'Power'" }
       "Controllers":
         - "fn": "ARMapper"
           "params": {"modelname": "default", "cfgsection": "Chassis/System.Chassis/Power", "mappinguniquename": "'chassis_power_mapper:' + FQDD", "AddToView": true}
@@ -133,11 +221,17 @@ views:
           "params": "rooturi + '/Chassis/' + FQDD + '/Power'"
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
+        - "fn": "withFormatter_count"
+          "params":
+        - "fn": "withFormatter_expand"
+          "params":
+        - "fn": "withFormatter_expandone"
+          "params":
 
   "psu_slot":
       "Logger": ["module", "PSU.Slot"]
       "Models":
-        "default":  {}
+        "default":  {"unique_name": "FQDD", "unique_name_attr": "FQDD+'.Attributes'", "attributes": "add_attribute_property()"}
       "Controllers":
         - "fn": "ARDumper"
           "params": {"modelname": "default", "AddToView": true}
@@ -152,6 +246,8 @@ views:
           "params": "rooturi + '/Chassis/' + ChassisFQDD + '/Power/PowerSupplies/' + FQDD "
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
+        - "fn": "withFormatter_attributeFormatter"
+          "params":
 
   "power_control":
       "Logger": ["module", "PowerControl"]
@@ -167,6 +263,12 @@ views:
           "params": "rooturi + '/Chassis/' + FQDD + '/Power/PowerControl'"
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
+        - "fn": "withFormatter_count"
+          "params":
+        - "fn": "withFormatter_expand"
+          "params":
+        - "fn": "withFormatter_expandone"
+          "params":
 
   "power_trends":
       "Logger": ["module", "PowerTrends"]
@@ -178,6 +280,12 @@ views:
           "params": "rooturi + '/Chassis/' + FQDD + '/Power/PowerTrends-1'"
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
+        - "fn": "withFormatter_count"
+          "params":
+        - "fn": "withFormatter_expand"
+          "params":
+        - "fn": "withFormatter_expandone"
+          "params":
 
   "power_histogram":
       "Logger": ["module", "PowerTrends"]
@@ -192,18 +300,96 @@ views:
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
 
-  "system_chassis":
-      "Logger": ["module", "system_chassis"]
+  "thermal":
+      "Logger": ["module", "Thermal"]
       "Models":
-        "default":  {}
+        "default":  {"unique_name": "'Thermal'"}
       "Controllers":
         - "fn": "ARMapper"
-          "params": {"modelname": "default", "cfgsection": "Chassis/System.Chassis", "mappinguniquename": "'system_chassis:' + FQDD ", "AddToView": true}
+          "params": {"modelname": "default", "cfgsection": "Chassis/System.Chassis/Thermal", "mappinguniquename": "'chassis_thermal_mapper:' + FQDD", "AddToView": true}
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/Chassis/' + FQDD + '/Thermal'"
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+        - "fn": "withFormatter_count"
+          "params":
+        - "fn": "withFormatter_expand"
+          "params":
+
+  "fan":
+      "Logger": ["module", "Fan"]
+      "Models":
+        "default":  {"unique_name": "FQDD", "unique_name_attr": "FQDD+'.Attributes'", "attributes": "add_attribute_property()"}
+      "Controllers":
+        - "fn": "AwesomeMapper"
+          "params": {"modelname": "default", "cfgsection": "fan" }
+        - "fn": "ARMapper"
+          "params": {"modelname": "default", "cfgsection": "firmware/inventory", "mappinguniquename": "'firmware_fan_mapper:' + ChassisFQDD + '/' + FQDD", "AddToView": true}
+        - "fn": "ARMapper"
+          "params": {"modelname": "default", "cfgsection": "Fans/Fan.Slot", "mappinguniquename": "'fan_mapper:' + ChassisFQDD + '/' + FQDD", "AddToView": true}
+        - "fn": "ARDumper"
+          "params": {"modelname": "default", "AddToView": true}
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/Chassis/' + ChassisFQDD + '/Sensors/Fans/' + FQDD "
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+        - "fn": "withFormatter_attributeFormatter"
+          "params":
+
+  "iom":
+      "Logger": ["module", "IOM"]
+      "Models":
+        "default":  {"unique_name": "FQDD", "unique_name_attr": "FQDD+'.Attributes'", "attributes": "add_attribute_property()"}
+      "Controllers":
+        - "fn": "ARMapper"
+          "params": {"modelname": "default", "cfgsection": "firmware/inventory", "mappinguniquename": "'iom_fw_mapper:' + FQDD", "AddToView": true}
+        - "fn": "ARMapper"
+          "params": {"modelname": "default", "cfgsection": "Chassis/IOM.Slot", "mappinguniquename": "'iom_mapper:' + FQDD", "AddToView": true}
+        - "fn": "ARDumper"
+          "params": {"modelname": "default", "AddToView": true}
+        - "fn": "AwesomeMapper"
+          "params": {"modelname": "default", "cfgsection": "health" }
+        - "fn": "AwesomeMapper"
+          "params": {"modelname": "default", "cfgsection": "iom" }
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/Chassis/' + FQDD "
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
+        - "fn": "withFormatter_count"
+          "params":
+        - "fn": "withFormatter_attributeFormatter"
+          "params":
+        - "fn": "withFormatter_formatOdataList"
+          "params":
+
+  "sled":
+      "Logger": ["module", "Sled"]
+      "Models":
+        "default":  {"unique_name": "FQDD", "unique_name_attr": "FQDD+'.Attributes'", "attributes": "add_attribute_property()"}
+      "Controllers":
+        - "fn": "ARMapper"
+          "params": {"modelname": "default", "cfgsection": "firmware/inventory", "mappinguniquename": "'sled_fw_mapper:' + FQDD", "AddToView": true}
+        - "fn": "ARMapper"
+          "params": {"modelname": "default", "cfgsection": "Chassis/System.Modular", "mappinguniquename": "'sled_mapper:' + FQDD", "AddToView": true}
+        - "fn": "ARDumper"
+          "params": {"modelname": "default", "AddToView": true}
+        - "fn": "AwesomeMapper"
+          "params": {"modelname": "default", "cfgsection": "health" }
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/Chassis/' + FQDD "
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+        - "fn": "withFormatter_count"
+          "params":
+        - "fn": "withFormatter_attributeFormatter"
+          "params":
+        - "fn": "withFormatter_formatOdataList"
+          "params":
+
 
 
 awesome_mapper:
@@ -422,16 +608,3 @@ mappings:
 
     UpdateService:
         # no mappings for now: placeholder
-
-    Registries:
-        # placeholder
-
-    Registries/BaseMessages:
-        - {Property: "registry_name",  Value: "Base Message Registry File" }
-        - {Property: "registry_type",  Value: "Base.1.3.8" }
-
-    Registries/Messages:
-        # placeholder
-
-    Registries/ManagerAttributeRegistry:
-        - {Property: "registry_type",  Value: 29 }

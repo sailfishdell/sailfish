@@ -39,8 +39,8 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 				"Manufacturer@meta": v.Meta(view.PropGET("manufacturer")),
 
 				"Links": map[string]interface{}{
-					"ManagedBy@meta":             v.Meta(view.PropGET("managed_by")),
-					"ManagedBy@odata.count@meta": v.Meta(view.PropGET("managed_by_count")),
+					"ManagedBy@meta":             v.Meta(view.GETProperty("managed_by"), view.GETFormatter("formatOdataList"), view.GETModel("default")),
+					"ManagedBy@odata.count@meta": v.Meta(view.GETProperty("managed_by"), view.GETFormatter("count"), view.GETModel("default")),
 				},
 
 				"SKU@meta":          v.Meta(view.PropGET("service_tag")),

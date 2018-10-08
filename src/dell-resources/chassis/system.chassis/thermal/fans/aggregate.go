@@ -10,11 +10,7 @@ import (
 	eh "github.com/looplab/eventhorizon"
 )
 
-// So... this class is set up in a somewhat interesting way to support having
-// Fan.Slot.N objects both as PowerSupplies/PSU.Slot.N as well as in the main
-// Power object.
-
-func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.CommandHandler) map[string]interface{} {
+func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.CommandHandler) {
 	ch.HandleCommand(
 		ctx,
 		&domain.CreateRedfishResource{
@@ -30,33 +26,24 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 				"PATCH":  []string{"ConfigureManager"},
 				"DELETE": []string{}, // can't be deleted
 			},
-			Properties: GetViewFragment(v),
+			Properties: map[string]interface{}{
+				"Description":   "Represents the properties for Fan and Cooling",
+				"FanName@meta":  v.Meta(view.PropGET("name")),
+				"MemberId@meta": v.Meta(view.PropGET("unique_name")),
+				"ReadingUnits":  "RPM",
+				"Reading@meta":  v.Meta(view.PropGET("rpm")),
+				"Status": map[string]interface{}{
+					"HealthRollup@meta": v.Meta(view.PropGET("health")),
+					"Health@meta":       v.Meta(view.PropGET("health")),
+				},
+				"Oem": map[string]interface{}{
+					"ReadingUnits":         "Percent",
+					"Reading@meta":         v.Meta(view.PropGET("Fanpwm_int")),
+					"FirmwareVersion@meta": v.Meta(view.PropGET("firmware_version")),
+					"HardwareVersion@meta": v.Meta(view.PropGET("hardware_version")),
+					"GraphicsURI@meta":     v.Meta(view.PropGET("graphics_uri")),
+					"Attributes@meta":      v.Meta(view.GETProperty("attributes"), view.GETFormatter("attributeFormatter"), view.GETModel("default"), view.PropPATCH("attributes", "ar_dump")),
+				},
+			},
 		})
-
-	return GetViewFragment(v)
-}
-
-func GetViewFragment(v *view.View) map[string]interface{} {
-	return map[string]interface{}{
-		"@odata.type":    "#Thermal.v1_0_2.Fan",
-		"@odata.context": "/redfish/v1/$metadata#Thermal.Thermal",
-		"@odata.id":      v.GetURI(),
-		"Description":    "Represents the properties for Fan and Cooling",
-		"FanName@meta":   v.Meta(view.PropGET("name")),
-		"MemberId@meta":  v.Meta(view.PropGET("unique_id")),
-		"ReadingUnits":   "RPM",
-		"Reading@meta":   v.Meta(view.PropGET("rpm")),
-		"Status": map[string]interface{}{
-			"HealthRollup@meta": v.Meta(view.PropGET("health")),
-			"Health@meta":       v.Meta(view.PropGET("health")),
-		},
-		"Oem": map[string]interface{}{
-			"ReadingUnits":         "Percent",
-			"Reading@meta":         v.Meta(view.PropGET("Fanpwm_int")),
-			"FirmwareVersion@meta": v.Meta(view.PropGET("firmware_version")),
-			"HardwareVersion@meta": v.Meta(view.PropGET("hardware_version")),
-			"GraphicsURI@meta":     v.Meta(view.PropGET("graphics_uri")),
-			"Attributes@meta":      v.Meta(view.GETProperty("attributes"), view.GETFormatter("attributeFormatter"), view.GETModel("default"), view.PropPATCH("attributes", "ar_dump")),
-		},
-	}
 }
