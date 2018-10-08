@@ -5,12 +5,14 @@ import (
 	"reflect"
 	"strconv"
 	"time"
+
+	"github.com/Knetic/govaluate"
 )
 
 var functions map[string]govaluate.ExpressionFunction
 
 func init() {
-	functions := map[string]govaluate.ExpressionFunction{
+	functions = map[string]govaluate.ExpressionFunction{
 		"int": func(args ...interface{}) (interface{}, error) {
 			switch t := args[0].(type) {
 			case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, uintptr:
