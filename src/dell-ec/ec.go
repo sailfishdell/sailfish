@@ -42,6 +42,7 @@ import (
 	"github.com/superchalupa/sailfish/src/eventwaiter"
 	"github.com/superchalupa/sailfish/src/log"
 	"github.com/superchalupa/sailfish/src/ocp/awesome_mapper"
+	am2 "github.com/superchalupa/sailfish/src/ocp/awesome_mapper2"
 	"github.com/superchalupa/sailfish/src/ocp/event"
 	"github.com/superchalupa/sailfish/src/ocp/eventservice"
 	"github.com/superchalupa/sailfish/src/ocp/model"
@@ -96,6 +97,13 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	attributes.RunRegistryFunctions(ch, eb)
 	RegisterFormatters(d)
 
+	// awesome mapper 2 service
+	am2Svc, err := am2.StartService(ctx, logger, eb)
+	if err != nil {
+		logger.Error("Failed to start awesome mapper 2", "err", err)
+	}
+	testaggregate.RegisterAM2(am2Svc)
+
 	//HEALTH
 	// The following model maps a bunch of health related stuff that can be tracked once at a global level.
 	// we can add this model to the views that need to expose it
@@ -103,29 +111,21 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	healthLogger := logger.New("module", "health_rollup")
 	awesome_mapper.New(ctx, healthLogger, cfgMgr, globalHealthModel, "global_health", map[string]interface{}{})
 
-	//
-	// Create the (empty) model behind the /redfish/v1 service root. Nothing interesting here
-	//
-	// No Logger
-	// No Model
-	// No Controllers
-	// View created so we have a place to hold the aggregate UUID and URI
+	//*********************************************************************
+	//  /redfish/v1 -  Create the (empty) model behind the /redfish/v1 service
+	//  root. Nothing interesting here
+	//*********************************************************************
 	_, rootView, _ := testaggregate.InstantiateFromCfg(ctx, logger, cfgMgr, "rootview", map[string]interface{}{})
 	root.AddAggregate(ctx, rootView, ch, eb)
 
 	//*********************************************************************
 	//  /redfish/v1/testview - a proof of concept test view and example
 	//*********************************************************************
-	// construction order:
-	//   1) model
-	//   2) controller(s) - pass model by args
-	//   3) views - pass models and controllers by args
-	//   4) aggregate - pass view
-	//
 	testLogger, testView, _ := testaggregate.InstantiateFromCfg(ctx, logger, cfgMgr, "testview", map[string]interface{}{"rooturi": rootView.GetURI(), "fqdd": "System.Modular.1"})
 	testaggregate.AddAggregate(ctx, testView, ch)
 
 	// separately, start goroutine to listen for test events and create sub uris
+	// just a test for now, will need to remove later
 	testaggregate.StartService(ctx, testLogger, cfgMgr, rootView, ch, eb)
 
 	//*********************************************************************
