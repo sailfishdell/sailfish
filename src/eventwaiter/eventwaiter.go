@@ -31,9 +31,11 @@ type listener interface {
 // EventWaiter waits for certain events to match a criteria.
 type EventWaiter struct {
 	name       string
+	done       chan struct{}
 	inbox      chan eh.Event
 	register   chan listener
 	unregister chan listener
+	autorun    bool
 }
 
 type Option func(e *EventWaiter) error
@@ -41,15 +43,28 @@ type Option func(e *EventWaiter) error
 // NewEventWaiter returns a new EventWaiter.
 func NewEventWaiter(o ...Option) *EventWaiter {
 	w := EventWaiter{
+		done:       make(chan struct{}),
 		inbox:      make(chan eh.Event, 100),
 		register:   make(chan listener),
 		unregister: make(chan listener),
+		autorun:    true,
 	}
 
 	w.ApplyOption(o...)
 
-	go w.run()
+	if w.autorun {
+		go w.Run()
+	}
 	return &w
+}
+
+func (w *EventWaiter) Close() {
+	close(w.done)
+}
+
+func NoAutoRun(w *EventWaiter) error {
+	w.autorun = false
+	return nil
 }
 
 func SetName(name string) Option {
@@ -69,10 +84,12 @@ func (w *EventWaiter) ApplyOption(options ...Option) error {
 	return nil
 }
 
-func (w *EventWaiter) run() {
+func (w *EventWaiter) Run() {
 	listeners := map[eh.UUID]listener{}
 	for {
 		select {
+		case <-w.done:
+			return
 		case l := <-w.register:
 			listeners[l.GetID()] = l
 		case l := <-w.unregister:
