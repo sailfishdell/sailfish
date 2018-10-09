@@ -52,6 +52,7 @@ import (
 	"github.com/superchalupa/sailfish/src/ocp/testaggregate"
 	"github.com/superchalupa/sailfish/src/ocp/view"
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
+	"github.com/superchalupa/sailfish/src/stdmeta"
 
 	// register all the DM events that are not otherwise pulled in
 	_ "github.com/superchalupa/sailfish/src/dell-resources/dm_event"
@@ -94,7 +95,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	testaggregate.RunRegistryFunctions(evtSvc)
 	ar_mapper2.RunRegistryFunctions(arService)
 	attributes.RunRegistryFunctions(ch, eb)
-	RegisterFormatters(d)
+	stdmeta.RegisterFormatters(d)
 
 	actionSvc := ah.StartService(ctx, logger, ch, eb)
 

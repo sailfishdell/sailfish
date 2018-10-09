@@ -1,4 +1,4 @@
-package dell_ec
+package stdmeta
 
 import (
 	"context"
