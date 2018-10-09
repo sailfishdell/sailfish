@@ -60,8 +60,10 @@ func NewDomainObjects() (*DomainObjects, error) {
 	d.EventPublisher = eventpublisher.NewEventPublisher()
 	d.EventBus.AddHandler(eh.MatchAny(), d.EventPublisher)
 
-	d.EventWaiter = eventwaiter.NewEventWaiter(eventwaiter.SetName("Main"))
+	ew := eventwaiter.NewEventWaiter(eventwaiter.SetName("Main"), eventwaiter.NoAutoRun)
+	d.EventWaiter = ew
 	d.EventPublisher.AddObserver(d.EventWaiter)
+	go ew.Run()
 
 	// specific event bus to handle returns from http
 	d.HTTPResultsBus = eventbus.NewEventBus()
