@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"sync"
 	"time"
 
 	eh "github.com/looplab/eventhorizon"
@@ -90,6 +91,114 @@ type handler func(context.Context, eh.Event, *domain.HTTPCmdProcessedData) error
 type actionrunner interface {
 	GetAction(string) view.Action
 }
+
+type registration struct {
+	actionName string
+	view       actionrunner
+}
+
+type Service struct {
+	sync.RWMutex
+	ch      eh.CommandHandler
+	eb      eh.EventBus
+	actions map[string]*registration
+}
+
+func StartService(ctx context.Context, logger log.Logger, ch eh.CommandHandler, eb eh.EventBus) *Service {
+	ret := &Service{
+		ch:      ch,
+		eb:      eb,
+		actions: map[string]*registration{},
+	}
+
+	// stream processor for action events
+	sp, err := event.NewESP(ctx, event.CustomFilter(func(ev eh.Event) bool {
+		if ev.EventType() == GenericActionEvent {
+			return true
+		}
+		return false
+	}), event.SetListenerName("actionhandler"))
+	if err != nil {
+		logger.Error("Failed to create event stream processor", "err", err)
+		return nil
+	}
+	go sp.RunForever(func(event eh.Event) {
+		eventData := &domain.HTTPCmdProcessedData{
+			CommandID:  event.Data().(*GenericActionEventData).CmdID,
+			Results:    map[string]interface{}{"msg": "Not Implemented"},
+			StatusCode: 500,
+			Headers:    map[string]string{},
+		}
+
+		logger.Crit("Action running!")
+		var handler view.Action
+		if data, ok := event.Data().(*GenericActionEventData); ok {
+			ret.RLock()
+			reg := ret.actions[data.ResourceURI]
+			handler = reg.view.GetAction(reg.actionName)
+			logger.Crit("URI", "uri", data.ResourceURI)
+			ret.RUnlock()
+		}
+
+		logger.Crit("handler", "handler", handler)
+
+		// only send out our pre-canned response if no handler exists (above), or if handler sets the event status code to 0
+		// for example, if data pump is going to directly send an httpcmdprocessed.
+		if handler != nil {
+			handler(ctx, event, eventData)
+		} else {
+			logger.Warn("UNHANDLED action event: no function handler set up for this event.", "event", event)
+		}
+		if eventData.StatusCode != 0 {
+			responseEvent := eh.NewEvent(domain.HTTPCmdProcessed, eventData, time.Now())
+			go eb.PublishEvent(ctx, responseEvent)
+		}
+	})
+
+	return ret
+}
+
+//
+// NEW HOTNESS
+//
+
+func (s *Service) WithAction(ctx context.Context, name string, uriSuffix string, a view.Action) view.Option {
+	return func(v *view.View) error {
+		uri := v.GetURIUnlocked() + uriSuffix
+		v.SetActionUnlocked(name, a)
+		v.SetActionURIUnlocked(name, uri)
+
+		s.Lock()
+		defer s.Unlock()
+		s.actions[uri] = &registration{
+			actionName: name,
+			view:       v,
+		}
+
+		// The following redfish resource is created only for the purpose of being
+		// a 'receiver' for the action command specified above.
+		s.ch.HandleCommand(
+			ctx,
+			&domain.CreateRedfishResource{
+				ID:          eh.NewUUID(),
+				ResourceURI: uri,
+				Type:        "Action",
+				Context:     "Action",
+				Plugin:      "GenericActionHandler",
+				Privileges: map[string]interface{}{
+					"POST": []string{"ConfigureManager"},
+				},
+				Properties: map[string]interface{}{},
+			},
+		)
+
+		return nil
+	}
+}
+
+//
+// OLD BUSTED
+//
 
 func CreateViewAction(
 	ctx context.Context,
