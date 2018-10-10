@@ -2,16 +2,18 @@ package uploadhandler
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
+	"sync"
 	"time"
 
 	eh "github.com/looplab/eventhorizon"
-	eventpublisher "github.com/looplab/eventhorizon/publisher/local"
+	//  eventpublisher "github.com/looplab/eventhorizon/publisher/local"
 
-	"github.com/superchalupa/sailfish/src/eventwaiter"
+	//  "github.com/superchalupa/sailfish/src/eventwaiter"
 	"github.com/superchalupa/sailfish/src/log"
 	"github.com/superchalupa/sailfish/src/ocp/event"
 	"github.com/superchalupa/sailfish/src/ocp/view"
@@ -26,11 +28,7 @@ func Setup(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus) {
 const (
 	GenericUploadEvent = eh.EventType("GenericUploadEvent")
 	POSTCommand        = eh.CommandType("GenericUploadHandler:POST")
-	MAX_MEMORY         = 1 * 1024 * 1024 // max memory for the mulitpart form parsing
-)
-
-var (
-	UploadDirectory string
+	UploadDir          = "perm"
 )
 
 type GenericUploadEventData struct {
@@ -38,8 +36,7 @@ type GenericUploadEventData struct {
 	CmdID       eh.UUID
 	ResourceURI string
 
-	PostFile  interface{}
-	LocalFile interface{}
+	Files map[string]string
 }
 
 // HTTP POST Command
@@ -51,8 +48,7 @@ type POST struct {
 	Headers map[string]string `eh:"optional"`
 
 	// make sure to make everything else optional or this will fail
-	PostFile  interface{} `eh:"optional"`
-	LocalFile interface{} `eh:"optional"`
+	Files map[string]string `eh:"optional"`
 }
 
 // Static type checking for commands to prevent runtime errors due to typos
@@ -64,26 +60,63 @@ func (c *POST) CommandType() eh.CommandType     { return POSTCommand }
 func (c *POST) SetAggID(id eh.UUID)             { c.ID = id }
 func (c *POST) SetCmdID(id eh.UUID)             { c.CmdID = id }
 func (c *POST) ParseHTTPRequest(r *http.Request) error {
-
-	if err := r.ParseMultipartForm(MAX_MEMORY); err != nil {
-		return err
+	if r.Method != "POST" {
+		return nil
 	}
 
-	file, handler, err := r.FormFile("upload")
+	var localFile string
+	var uploadFile string
+	length := r.ContentLength
+
+	fmt.Printf("\nupload URI %s\n", r.RequestURI)
+
+	// make a map of the uploaded file name to the file it was
+	// actually stored as.. file[ec_fwupd.d9] = "tmp12345"
+	// this will be sent to the pump as a generic upload event
+	// that along with the URL *should* ??? be enough for the pump
+	// to determine what to do with the file(s)
+	c.Files = make(map[string]string)
+
+	// write the file to a temporary one
+	reader, err := r.MultipartReader()
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+	// copy each part to destination.
+	for {
+		part, err := reader.NextPart()
+		if err == io.EOF {
+			break
+		}
+		// if part.FileName() is empty, skip this iteration.
+		if part.FileName() == "" {
+			continue
+		}
 
-	f, err := ioutil.TempFile(".", UploadDirectory+"/upld")
-	if err != nil {
-		return err
+		uploadFile = part.FileName()
+
+		// prepare the destination file (tmpfile name)
+		dst, err := ioutil.TempFile(".", UploadDir+"/upld")
+		defer dst.Close()
+		if err != nil {
+			return err
+		}
+		localFile = dst.Name()
+		c.Files[uploadFile] = localFile
+
+		// for debug TODO: remove later
+		fmt.Printf("\nupload %d %s to %s\n", length, uploadFile, localFile)
+
+		if _, err := io.Copy(dst, part); err != nil {
+			// ERROR!! remove any files that may have been
+			// partially transfered
+			for _, lf := range c.Files {
+				defer os.Remove(lf)
+				fmt.Printf("remove %s\n", lf)
+			}
+			return err
+		}
 	}
-	defer f.Close()
-
-	io.Copy(f, file)
-	c.LocalFile = f.Name()
-	c.PostFile = handler.Filename
 
 	return nil
 }
@@ -93,8 +126,7 @@ func (c *POST) Handle(ctx context.Context, a *domain.RedfishResourceAggregate) e
 		ID:          c.ID,
 		CmdID:       c.CmdID,
 		ResourceURI: a.ResourceURI,
-		PostFile:    c.PostFile,
-		LocalFile:   c.LocalFile,
+		Files:       c.Files,
 	}, time.Now()))
 	return nil
 }
@@ -119,118 +151,106 @@ type prop interface {
 
 type handler func(context.Context, eh.Event, *domain.HTTPCmdProcessedData) error
 
-type actionrunner interface {
-	GetAction(string) view.Action
+type uploadrunner interface {
+	GetUpload(string) view.Upload
 }
 
-func CreateViewUpload(
-	ctx context.Context,
-	logger log.Logger,
-	uploadURI string,
-	uploadDIR string,
-	timeout int,
-	vw actionrunner,
-	ch eh.CommandHandler,
-	eb eh.EventBus,
-) {
-	logger.Info("CREATING UPLOAD", "uploadURI", uploadURI)
+type registration struct {
+	uploadName string
+	view       uploadrunner
+}
 
-	if uploadDIR != "" {
-		UploadDirectory = uploadDIR
-	} else {
-		UploadDirectory = "."
+type Service struct {
+	sync.RWMutex
+	ch      eh.CommandHandler
+	eb      eh.EventBus
+	uploads map[string]*registration
+}
+
+func StartService(ctx context.Context, logger log.Logger, ch eh.CommandHandler, eb eh.EventBus) *Service {
+	ret := &Service{
+		ch:      ch,
+		eb:      eb,
+		uploads: map[string]*registration{},
 	}
-
-	logger.Crit("upload directory", "UploadDirectory", UploadDirectory)
-
-	EventPublisher := eventpublisher.NewEventPublisher()
-	// TODO: fix MatchAny
-	eb.AddHandler(eh.MatchEvent(domain.HTTPCmdProcessed), EventPublisher)
-	EventWaiter := eventwaiter.NewEventWaiter(eventwaiter.SetName("Upload Event Timeout Publisher"))
-	EventPublisher.AddObserver(EventWaiter)
-
-	// The following redfish resource is created only for the purpose of being
-	// a 'receiver' for the upload command specified above.
-	ch.HandleCommand(
-		ctx,
-		&domain.CreateRedfishResource{
-			ID:          eh.NewUUID(),
-			ResourceURI: uploadURI,
-			Type:        "Upload",
-			Context:     "Upload",
-			Plugin:      "GenericUploadHandler",
-			Privileges: map[string]interface{}{
-				"POST": []string{"ConfigureManager"},
-			},
-			Properties: map[string]interface{}{},
-		},
-	)
 
 	// stream processor for upload events
-	sp, err := event.NewESP(ctx, event.CustomFilter(SelectUpload(uploadURI)), event.SetListenerName("uploadhandler"))
+	sp, err := event.NewESP(ctx, event.CustomFilter(func(ev eh.Event) bool {
+		if ev.EventType() == GenericUploadEvent {
+			return true
+		}
+		return false
+	}), event.SetListenerName("uploadhandler"))
 	if err != nil {
 		logger.Error("Failed to create event stream processor", "err", err)
-		return
+		return nil
 	}
 	go sp.RunForever(func(event eh.Event) {
-
-		ourCmdID := event.Data().(*GenericUploadEventData).CmdID
-		ourLocalFile := event.Data().(*GenericUploadEventData).LocalFile.(string)
-
-		logger.Debug("Upload running!", "uploadURI", uploadURI)
-
-		listener, err := EventWaiter.Listen(ctx, func(event eh.Event) bool {
-			if event.EventType() != domain.HTTPCmdProcessed {
-				return false
-			}
-			data, ok := event.Data().(*domain.HTTPCmdProcessedData)
-			if ok && data.CommandID == ourCmdID {
-				return true
-			}
-			return false
-		})
-
-		// unable to create the listiner, thats bad...
-		if err != nil {
-			return
+		eventData := &domain.HTTPCmdProcessedData{
+			CommandID:  event.Data().(*GenericUploadEventData).CmdID,
+			Results:    map[string]interface{}{"msg": "Not Implemented"},
+			StatusCode: 500,
+			Headers:    map[string]string{},
 		}
 
-		go func() {
-			defer os.Remove(ourLocalFile)
-			defer listener.Close()
-			inbox := listener.Inbox()
-			timer := time.NewTimer(time.Duration(timeout) * time.Second)
-			for {
-				select {
-				case <-inbox:
-					// got an event from the pump with our exact cmdid, we are done
-					return
+		logger.Crit("Upload running!")
+		var handler view.Upload
+		if data, ok := event.Data().(*GenericUploadEventData); ok {
+			ret.RLock()
+			reg := ret.uploads[data.ResourceURI]
+			handler = reg.view.GetUpload(reg.uploadName)
+			logger.Crit("URI", "uri", data.ResourceURI)
+			ret.RUnlock()
+		}
 
-				case <-timer.C:
-					eventData := &domain.HTTPCmdProcessedData{
-						CommandID:  ourCmdID,
-						Results:    map[string]interface{}{"msg": "Timed Out!"},
-						StatusCode: 500,
-						Headers:    map[string]string{},
-					}
-					responseEvent := eh.NewEvent(domain.HTTPCmdProcessed, eventData, time.Now())
-					eb.PublishEvent(ctx, responseEvent)
-					logger.Error("Upload timeout", "ID", ourCmdID)
+		logger.Crit("handler", "handler", handler)
 
-				// user cancelled curl request before we could get a response
-				case <-ctx.Done():
-					return
-				}
-			}
-		}()
-
+		// only send out our pre-canned response if no handler exists (above), or if handler sets the event status code to 0
+		// for example, if data pump is going to directly send an httpcmdprocessed.
+		if handler != nil {
+			handler(ctx, event, eventData)
+		} else {
+			logger.Warn("UNHANDLED upload event: no function handler set up for this event.", "event", event)
+		}
+		if eventData.StatusCode != 0 {
+			responseEvent := eh.NewEvent(domain.HTTPCmdProcessed, eventData, time.Now())
+			go eb.PublishEvent(ctx, responseEvent)
+		}
 	})
+
+	return ret
 }
 
-func WithUpload(ctx context.Context, logger log.Logger, uriSuffix string, dir string, timeout int, ch eh.CommandHandler, eb eh.EventBus) view.Option {
-	return func(s *view.View) error {
-		uri := s.GetURIUnlocked() + uriSuffix
-		CreateViewUpload(ctx, logger, uri, dir, timeout, s, ch, eb)
+func (s *Service) WithUpload(ctx context.Context, name string, uriSuffix string, a view.Upload) view.Option {
+	return func(v *view.View) error {
+		uri := v.GetURIUnlocked() + uriSuffix
+		v.SetUploadUnlocked(name, a)
+		v.SetUploadURIUnlocked(name, uri)
+
+		s.Lock()
+		defer s.Unlock()
+		s.uploads[uri] = &registration{
+			uploadName: name,
+			view:       v,
+		}
+
+		// The following redfish resource is created only for the purpose of being
+		// a 'receiver' for the upload command specified above.
+		s.ch.HandleCommand(
+			ctx,
+			&domain.CreateRedfishResource{
+				ID:          eh.NewUUID(),
+				ResourceURI: uri,
+				Type:        "Upload",
+				Context:     "Upload",
+				Plugin:      "GenericUploadHandler",
+				Privileges: map[string]interface{}{
+					"POST": []string{"ConfigureManager"},
+				},
+				Properties: map[string]interface{}{},
+			},
+		)
+
 		return nil
 	}
 }

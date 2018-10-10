@@ -3,6 +3,7 @@ package dell_ec
 import (
 	"context"
 	"fmt"
+	"os"
 	"time"
 
 	eh "github.com/looplab/eventhorizon"
@@ -11,6 +12,7 @@ import (
 	ah "github.com/superchalupa/sailfish/src/actionhandler"
 	"github.com/superchalupa/sailfish/src/eventwaiter"
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
+	"github.com/superchalupa/sailfish/src/uploadhandler"
 )
 
 // TODO: need a logger
@@ -59,6 +61,73 @@ func makePumpHandledAction(name string, maxtimeout int, eb eh.EventBus) func(con
 				case <-timer.C:
 					eventData := &domain.HTTPCmdProcessedData{
 						CommandID:  event.Data().(*ah.GenericActionEventData).CmdID,
+						Results:    map[string]interface{}{"msg": "Timed Out!"},
+						StatusCode: 500,
+						Headers:    map[string]string{},
+					}
+					responseEvent := eh.NewEvent(domain.HTTPCmdProcessed, eventData, time.Now())
+					eb.PublishEvent(ctx, responseEvent)
+
+				// user cancelled curl request before we could get a response
+				case <-ctx.Done():
+					return
+				}
+			}
+		}()
+
+		return nil
+	}
+}
+
+func makePumpHandledUpload(name string, maxtimeout int, eb eh.EventBus) func(context.Context, eh.Event, *domain.HTTPCmdProcessedData) error {
+	EventPublisher := eventpublisher.NewEventPublisher()
+
+	// TODO: fix MatchAny
+	eb.AddHandler(eh.MatchEvent(domain.HTTPCmdProcessed), EventPublisher)
+	EventWaiter := eventwaiter.NewEventWaiter(eventwaiter.SetName("Upload Timeout Publisher"), eventwaiter.NoAutoRun)
+	EventPublisher.AddObserver(EventWaiter)
+	go EventWaiter.Run()
+
+	return func(ctx context.Context, event eh.Event, retData *domain.HTTPCmdProcessedData) error {
+		// The actionhandler will discard the message if we set statuscode to 0. Client should never see it, and pump can send its own return
+		retData.StatusCode = 0
+		ourCmdID := retData.CommandID
+		fmt.Printf("\n\nGot an action that we expect PUMP to handle. We'll set up a timeout to make sure that happens: %s.\n\n", ourCmdID)
+
+		listener, err := EventWaiter.Listen(ctx, func(event eh.Event) bool {
+			if event.EventType() != domain.HTTPCmdProcessed {
+				return false
+			}
+			data, ok := event.Data().(*domain.HTTPCmdProcessedData)
+			if ok && data.CommandID == ourCmdID {
+				return true
+			}
+			return false
+		})
+		if err != nil {
+			return err
+		}
+		listener.Name = "Pump handled action listener: " + name
+
+		ourLocalFiles := event.Data().(*uploadhandler.GenericUploadEventData).Files
+
+		go func() {
+			for key, localFile := range ourLocalFiles {
+				defer os.Remove(localFile)
+				fmt.Printf("\nremove f:%s l:%s on exit\n", key, localFile)
+			}
+			defer listener.Close()
+			inbox := listener.Inbox()
+			timer := time.NewTimer(time.Duration(maxtimeout) * time.Second)
+			for {
+				select {
+				case <-inbox:
+					// got an event from the pump with our exact cmdid, we are done
+					return
+
+				case <-timer.C:
+					eventData := &domain.HTTPCmdProcessedData{
+						CommandID:  event.Data().(*uploadhandler.GenericUploadEventData).CmdID,
 						Results:    map[string]interface{}{"msg": "Timed Out!"},
 						StatusCode: 500,
 						Headers:    map[string]string{},

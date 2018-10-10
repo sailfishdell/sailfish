@@ -100,6 +100,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	stdmeta.RegisterFormatters(instantiateSvc, d)
 
 	actionSvc := ah.StartService(ctx, logger, ch, eb)
+	uploadSvc := uploadhandler.StartService(ctx, logger, ch, eb)
 
 	// awesome mapper 2 service
 	am2Svc, err := am2.StartService(ctx, logger, eb)
@@ -599,7 +600,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			actionSvc.WithAction(ctx, "update.eid674.reset", "/Actions/Oem/EID_674_UpdateService.Reset", updateEID674Reset),
 			actionSvc.WithAction(ctx, "update.syncup", "/Actions/Oem/DellUpdateService.Syncup", makePumpHandledAction("UpdateSyncup", 30, eb)),
 			actionSvc.WithAction(ctx, "update.eid674.syncup", "/Actions/Oem/EID_674_UpdateService.Syncup", makePumpHandledAction("UpdateSyncup", 30, eb)),
-			uploadhandler.WithUpload(ctx, updsvcLogger, "/Actions/Oem/FirmwareUpdate", cfgMgr.GetString("paths.upload"), 30, ch, eb),
+			uploadSvc.WithUpload(ctx, "upload.firmwareUpdate", "/Actions/Oem/FirmwareUpdate", makePumpHandledUpload("FirmwareUpdateResponse", 60, eb)),
 			evtSvc.PublishResourceUpdatedEventsForModel(ctx, "default"),
 		)
 
@@ -704,7 +705,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 				//				evtSvc.PublishResourceUpdatedEventsForModel(ctx, "swinv"),
 
 				// TODO: need this to work at some point...
-				//uploadhandler.WithUpload(ctx, obsLogger, "/FirmwareInventory", 30, ch, eb),
+				//uploadSvc.WithUpload...
 			)
 			inv[comp_ver_tuple] = invview
 			firmware_inventory.AddAggregate(ctx, rootView, invview, ch)
