@@ -234,7 +234,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 
 		// add the aggregate to the view tree
 		mgrCMCIntegrated.AddAggregate(ctx, mgrLogger, mgrCmcVw, ch)
-		attributes.AddAggregate(ctx, mgrCmcVw, rootView.GetURI()+"/Managers/"+mgrName+"/Attributes", ch)
+		attributes.AddAggregate(ctx, mgrCmcVw, rootView.GetURI()+"/Chassis/"+mgrName+"/Attributes", ch) // should this be Managers/mgrName instead of Chassis/mgrName?
 
 		logservices.AddAggregate(ctx, mgrCmcVw, rootView.GetURI()+"/Managers/"+mgrName, ch)
 		certificateservices.AddAggregate(ctx, mgrCmcVw, rootView.GetURI()+"/Managers/"+mgrName, ch)

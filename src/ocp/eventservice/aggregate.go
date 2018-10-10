@@ -106,3 +106,4 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, rootID e
 
 	return
 }
+
