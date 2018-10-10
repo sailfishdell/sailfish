@@ -10,6 +10,9 @@ listen:
 session:
     timeout: 600
 
+paths:
+    upload: "./perm"
+
 # new features needed:
 #  - link_model
 #  - model update fn
