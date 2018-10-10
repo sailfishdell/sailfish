@@ -2,21 +2,12 @@ package certificateservices
 
 import (
 	"context"
-	"io/ioutil"
 
 	"github.com/superchalupa/sailfish/src/ocp/view"
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
 
 	eh "github.com/looplab/eventhorizon"
 )
-
-func ReadFileContent(string) (f string) {
-	b, err := ioutil.ReadFile(f)
-	if err != nil {
-		b = nil
-	}
-	return string(b)
-}
 
 func AddAggregate(ctx context.Context, v *view.View, baseUri string, ch eh.CommandHandler) (ret eh.UUID) {
 	ret = eh.NewUUID()
@@ -35,8 +26,6 @@ func AddAggregate(ctx context.Context, v *view.View, baseUri string, ch eh.Comma
 			"@odata.id": v.GetURI() + "CertificateService/CertificateInventory",
 		},
 	}
-
-	properties["CertificateSigningRequest"] = ReadFileContent("/var/run/FACT_CERT/fact_csr.csr")
 
 	ch.HandleCommand(
 		ctx,
@@ -74,6 +63,30 @@ func AddAggregate(ctx context.Context, v *view.View, baseUri string, ch eh.Comma
 				"Name":        "Certificate Inventory Collection",
 				"Description": "Collection of Certificate Inventory",
 			}})
+
+   ch.HandleCommand(
+    ctx,
+    &domain.CreateRedfishResource{
+      ID:          eh.NewUUID(),
+      Collection:  false,
+      ResourceURI: baseUri + "/CerrtificateService/CertificateInventory/FactoryIdentity.1",
+      Type:        "#DellCertificateInventoryCollection.DellCertificateInventoryCollection",
+      Context:     "/redfish/v1/$metadata#DellCertificateInventoryCollection.DellCertificateInventoryCollection",
+      Privileges:  map[string]interface{}{
+        "GET":    []string{"ConfigureManager"},
+        "POST":   []string{},
+        "PUT":    []string{},
+        "PATCH":  []string{},
+        "DELETE": []string{},
+      },
+      Properties: map[string]interface{}{
+        "Certificate@meta":   v.Meta(view.PropGET("certificate")),
+        "Description":        "Certificate Inveotry Instance",
+        "DownloadFileFormat": "PEM",
+        "Id":                 "FactoryIdentity.1",
+        "Name":               "Factory Identity Cerrtificate",
+        "Type":               "FactoryIdentity",
+      }})
 
 	return
 }
