@@ -47,7 +47,6 @@ type mapping struct {
 	property    string
 	queryString string
 	queryExpr   []govaluate.ExpressionToken
-	def         interface{}
 }
 
 type AwesomeMapperConfig struct {
@@ -167,6 +166,7 @@ func (s *Service) NewMapping(ctx context.Context, logger log.Logger, cfg *viper.
 	}
 	logger.Info("updating mappings", "mappings", c)
 
+	mdl.StopNotifications()
 	for _, c := range c {
 		m, ok := s.eventTypes[eh.EventType(c.SelectEventType)]
 		if !ok {
@@ -203,34 +203,20 @@ func (s *Service) NewMapping(ctx context.Context, logger log.Logger, cfg *viper.
 			newmapping := &mapping{
 				property:    up.Property,
 				queryString: up.Query,
-				def:         up.Default,
 				queryExpr:   queryExpr.Tokens(),
 			}
 
+			// set model default value if present
+			if up.Default != nil {
+				mdl.UpdateProperty(up.Property, up.Default)
+			}
 			mapperConfig.mappings = append(mapperConfig.mappings, newmapping)
 			logger.Info("adding new mapping", "eventtype", c.SelectEventType, "cfgName", cfgName, "query", up.Query)
 		}
 
 	}
-
-	/*
-		// set default values
-
-		mdl.StopNotifications()
-		for _, query := range loopvar.ModelUpdate {
-			expr, err := govaluate.NewEvaluableExpressionWithFunctions(query.Query, functions)
-			if err != nil {
-				logger.Crit("Query construction failed", "query", query.Query, "err", err)
-				continue outer
-			}
-			query.expr = expr.Tokens()
-			if query.Default != nil {
-				mdl.UpdateProperty(query.Property, query.Default)
-			}
-		}
-		mdl.StartNotifications()
-		mdl.NotifyObservers()
-	*/
+	mdl.StartNotifications()
+	mdl.NotifyObservers()
 
 	return nil
 }
