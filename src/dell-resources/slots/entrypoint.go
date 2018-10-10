@@ -13,10 +13,7 @@ import (
 	"github.com/superchalupa/sailfish/src/ocp/view"
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
 
-	//"github.com/superchalupa/sailfish/src/ocp/model"
-	//"github.com/superchalupa/sailfish/src/ocp/awesome_mapper"
 	"github.com/spf13/viper"
-	//"github.com/superchalupa/sailfish/src/dell-resources/ar_mapper"
 
 	"github.com/superchalupa/sailfish/src/dell-resources/component"
   "github.com/superchalupa/sailfish/src/ocp/testaggregate"
@@ -116,16 +113,6 @@ func (l *SlotService) manageSlots(ctx context.Context, logger log.Logger, logUri
 						break
 					}
 
-					/*slotModel := model.New()
-					armapper, _ := ar_mapper.New(ctx, logger, slotModel, "Chassis/Slots", map[string]string{"Group": group, "Index": index}, ch, eb)
-					updateFns = append(updateFns, armapper.ConfigChangedFn)
-					armapper.ConfigChangedFn(context.Background(), cfgMgr)
-					slotView := view.New(
-						view.WithURI(uri),
-						view.WithModel("default", slotModel),
-						view.WithController("ar_mapper", armapper),
-					)*/
-
           slotLogger, slotView, _ := testaggregate.InstantiateFromCfg(ctx, logger, cfgMgr, "slot",
             map[string]interface{}{
               "sloturi": uri,
@@ -149,12 +136,7 @@ func (l *SlotService) manageSlots(ctx context.Context, logger log.Logger, logUri
 					}
 
 					if strings.Contains(SlotEntry.Id, "SledSlot") {
-              fqdd := slotView.Meta(view.PropGET("slot_contains"))
-              fmt.Println("FQDD:", fqdd)
-              // how to do this? value of "slot_contains" is fqdd for awesome_mapper:
-              // "Contains": "System.Modular.3" -> "System.Modular.8#Info.1#SledProfile"
-					    //awesome_mapper.New(ctx, slotLogger, cfgMgr, slotView.GetModel("default"), "slot", map[string]interface{}{"fqdd": fqdd})
-				      //properties["SledProfile"] = slotView.Meta(view.PropGET("sled_profile"))
+				      properties["SledProfile"] = slotView.Meta(view.PropGET("sled_profile"))
 				  }
 
 					l.ch.HandleCommand(
