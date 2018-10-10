@@ -114,7 +114,7 @@ func StartService(ctx context.Context, logger log.Logger, eb eh.EventBus) (*Serv
 				cfg.params["type"] = string(event.EventType())
 				cfg.params["data"] = event.Data()
 				cfg.params["event"] = event
-				cfg.params["model"] = mdl
+				cfg.params["model"] = cfg.model
 				val, err := expr.Evaluate(cfg.params)
 				if err != nil {
 					ret.logger.Error("expression failed to evaluate", "err", err)
