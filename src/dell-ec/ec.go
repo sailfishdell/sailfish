@@ -41,7 +41,7 @@ import (
 	"github.com/superchalupa/sailfish/src/dell-resources/update_service/firmware_inventory"
 	"github.com/superchalupa/sailfish/src/eventwaiter"
 	"github.com/superchalupa/sailfish/src/log"
-	"github.com/superchalupa/sailfish/src/ocp/awesome_mapper"
+	am2 "github.com/superchalupa/sailfish/src/ocp/awesome_mapper2"
 	"github.com/superchalupa/sailfish/src/ocp/event"
 	"github.com/superchalupa/sailfish/src/ocp/eventservice"
 	"github.com/superchalupa/sailfish/src/ocp/model"
@@ -52,6 +52,7 @@ import (
 	"github.com/superchalupa/sailfish/src/ocp/testaggregate"
 	"github.com/superchalupa/sailfish/src/ocp/view"
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
+	"github.com/superchalupa/sailfish/src/stdmeta"
 
 	// register all the DM events that are not otherwise pulled in
 	_ "github.com/superchalupa/sailfish/src/dell-resources/dm_event"
@@ -94,38 +95,39 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	testaggregate.RunRegistryFunctions(evtSvc)
 	ar_mapper2.RunRegistryFunctions(arService)
 	attributes.RunRegistryFunctions(ch, eb)
-	RegisterFormatters(d)
+	stdmeta.RegisterFormatters(d)
+
+	actionSvc := ah.StartService(ctx, logger, ch, eb)
+
+	// awesome mapper 2 service
+	am2Svc, err := am2.StartService(ctx, logger, eb)
+	if err != nil {
+		logger.Error("Failed to start awesome mapper 2", "err", err)
+	}
+	testaggregate.RegisterAM2(am2Svc)
 
 	//HEALTH
 	// The following model maps a bunch of health related stuff that can be tracked once at a global level.
 	// we can add this model to the views that need to expose it
 	globalHealthModel := model.New()
 	healthLogger := logger.New("module", "health_rollup")
-	awesome_mapper.New(ctx, healthLogger, cfgMgr, globalHealthModel, "global_health", map[string]interface{}{})
+	am2Svc.NewMapping(ctx, healthLogger, cfgMgr, globalHealthModel, "global_health", "global_health", map[string]interface{}{})
 
-	//
-	// Create the (empty) model behind the /redfish/v1 service root. Nothing interesting here
-	//
-	// No Logger
-	// No Model
-	// No Controllers
-	// View created so we have a place to hold the aggregate UUID and URI
+	//*********************************************************************
+	//  /redfish/v1 -  Create the (empty) model behind the /redfish/v1 service
+	//  root. Nothing interesting here
+	//*********************************************************************
 	_, rootView, _ := testaggregate.InstantiateFromCfg(ctx, logger, cfgMgr, "rootview", map[string]interface{}{})
 	root.AddAggregate(ctx, rootView, ch, eb)
 
 	//*********************************************************************
 	//  /redfish/v1/testview - a proof of concept test view and example
 	//*********************************************************************
-	// construction order:
-	//   1) model
-	//   2) controller(s) - pass model by args
-	//   3) views - pass models and controllers by args
-	//   4) aggregate - pass view
-	//
 	testLogger, testView, _ := testaggregate.InstantiateFromCfg(ctx, logger, cfgMgr, "testview", map[string]interface{}{"rooturi": rootView.GetURI(), "fqdd": "System.Modular.1"})
 	testaggregate.AddAggregate(ctx, testView, ch)
 
 	// separately, start goroutine to listen for test events and create sub uris
+	// just a test for now, will need to remove later
 	testaggregate.StartService(ctx, testLogger, cfgMgr, rootView, ch, eb)
 
 	//*********************************************************************
@@ -205,13 +207,13 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 
 			view.UpdateEtag("etag", []string{}),
 
-			ah.WithAction(ctx, mgrLogger, "manager.reset", "/Actions/Manager.Reset", makePumpHandledAction("ManagerReset", 30, eb), ch, eb),
-			ah.WithAction(ctx, mgrLogger, "manager.resettodefaults", "/Actions/Oem/DellManager.ResetToDefaults", makePumpHandledAction("ManagerResetToDefaults", 30, eb), ch, eb),
-			ah.WithAction(ctx, mgrLogger, "manager.forcefailover", "/Actions/Manager.ForceFailover", makePumpHandledAction("ManagerForceFailover", 30, eb), ch, eb),
-			ah.WithAction(ctx, mgrLogger, "manager.exportsystemconfig", "/Actions/Oem/EID_674_Manager.ExportSystemConfiguration", exportSystemConfiguration, ch, eb),
-			ah.WithAction(ctx, mgrLogger, "manager.importsystemconfig", "/Actions/Oem/EID_674_Manager.ImportSystemConfiguration", importSystemConfiguration, ch, eb),
-			ah.WithAction(ctx, mgrLogger, "manager.importsystemconfigpreview", "/Actions/Oem/EID_674_Manager.ImportSystemConfigurationPreview", importSystemConfigurationPreview, ch, eb),
-			ah.WithAction(ctx, mgrLogger, "certificates.generatecsr", "/Actions/DellCertificateService.GenerateCSR", makePumpHandledAction("GenerateCSR", 30, eb), ch, eb),
+			actionSvc.WithAction(ctx, "manager.reset", "/Actions/Manager.Reset", makePumpHandledAction("ManagerReset", 30, eb)),
+			actionSvc.WithAction(ctx, "manager.resettodefaults", "/Actions/Oem/DellManager.ResetToDefaults", makePumpHandledAction("ManagerResetToDefaults", 30, eb)),
+			actionSvc.WithAction(ctx, "manager.forcefailover", "/Actions/Manager.ForceFailover", makePumpHandledAction("ManagerForceFailover", 30, eb)),
+			actionSvc.WithAction(ctx, "manager.exportsystemconfig", "/Actions/Oem/EID_674_Manager.ExportSystemConfiguration", exportSystemConfiguration),
+			actionSvc.WithAction(ctx, "manager.importsystemconfig", "/Actions/Oem/EID_674_Manager.ImportSystemConfiguration", importSystemConfiguration),
+			actionSvc.WithAction(ctx, "manager.importsystemconfigpreview", "/Actions/Oem/EID_674_Manager.ImportSystemConfigurationPreview", importSystemConfigurationPreview),
+			actionSvc.WithAction(ctx, "certificates.generatecsr", "/Actions/DellCertificateService.GenerateCSR", makePumpHandledAction("GenerateCSR", 30, eb)),
 		)
 
 		managers = append(managers, mgrCmcVw)
@@ -293,9 +295,9 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 
 		sysChasVw.ApplyOption(
 			view.WithModel("global_health", globalHealthModel),
-			ah.WithAction(ctx, sysChasLogger, "chassis.reset", "/Actions/Chassis.Reset", makePumpHandledAction("ChassisReset", 30, eb), ch, eb),
-			ah.WithAction(ctx, sysChasLogger, "msmconfigbackup", "/Actions/Oem/MSMConfigBackup", msmConfigBackup, ch, eb),
-			ah.WithAction(ctx, sysChasLogger, "chassis.msmconfigbackup", "/Actions/Oem/DellChassis.MSMConfigBackup", chassisMSMConfigBackup, ch, eb),
+			actionSvc.WithAction(ctx, "chassis.reset", "/Actions/Chassis.Reset", makePumpHandledAction("ChassisReset", 30, eb)),
+			actionSvc.WithAction(ctx, "msmconfigbackup", "/Actions/Oem/MSMConfigBackup", msmConfigBackup),
+			actionSvc.WithAction(ctx, "chassis.msmconfigbackup", "/Actions/Oem/DellChassis.MSMConfigBackup", chassisMSMConfigBackup),
 		)
 
 		// Create the .../Attributes URI. Attributes are stored in the attributes property of the chasModel
@@ -512,9 +514,9 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		iomView.ApplyOption(
 			view.WithModel("swinv", iomView.GetModel("default")),
 			view.WithModel("global_health", globalHealthModel),
-			ah.WithAction(ctx, iomLogger, "iom.chassis.reset", "/Actions/Chassis.Reset", makePumpHandledAction("IomChassisReset", 30, eb), ch, eb),
-			ah.WithAction(ctx, iomLogger, "iom.resetpeakpowerconsumption", "/Actions/Oem/DellChassis.ResetPeakPowerConsumption", makePumpHandledAction("IomResetPeakPowerConsumption", 30, eb), ch, eb),
-			ah.WithAction(ctx, iomLogger, "iom.virtualreseat", "/Actions/Oem/DellChassis.VirtualReseat", makePumpHandledAction("IomVirtualReseat", 30, eb), ch, eb),
+			actionSvc.WithAction(ctx, "iom.chassis.reset", "/Actions/Chassis.Reset", makePumpHandledAction("IomChassisReset", 30, eb)),
+			actionSvc.WithAction(ctx, "iom.resetpeakpowerconsumption", "/Actions/Oem/DellChassis.ResetPeakPowerConsumption", makePumpHandledAction("IomResetPeakPowerConsumption", 30, eb)),
+			actionSvc.WithAction(ctx, "iom.virtualreseat", "/Actions/Oem/DellChassis.VirtualReseat", makePumpHandledAction("IomVirtualReseat", 30, eb)),
 		)
 		swinvViews = append(swinvViews, iomView)
 		power_related_items = append(power_related_items, iomView.GetURI())
@@ -548,9 +550,9 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		sledView.ApplyOption(
 			view.WithModel("swinv", sledView.GetModel("default")),
 			view.WithModel("global_health", globalHealthModel),
-			ah.WithAction(ctx, sledLogger, "chassis.peripheralmapping", "/Actions/Oem/DellChassis.PeripheralMapping", makePumpHandledAction("SledPeripheralMapping", 30, eb), ch, eb),
-			ah.WithAction(ctx, sledLogger, "sledvirtualreseat", "/Actions/Chassis.VirtualReseat", makePumpHandledAction("SledVirtualReseat", 30, eb), ch, eb),
-			ah.WithAction(ctx, sledLogger, "chassis.sledvirtualreseat", "/Actions/Oem/DellChassis.VirtualReseat", makePumpHandledAction("ChassisSledVirtualReseat", 30, eb), ch, eb),
+			actionSvc.WithAction(ctx, "chassis.peripheralmapping", "/Actions/Oem/DellChassis.PeripheralMapping", makePumpHandledAction("SledPeripheralMapping", 30, eb)),
+			actionSvc.WithAction(ctx, "sledvirtualreseat", "/Actions/Chassis.VirtualReseat", makePumpHandledAction("SledVirtualReseat", 30, eb)),
+			actionSvc.WithAction(ctx, "chassis.sledvirtualreseat", "/Actions/Oem/DellChassis.VirtualReseat", makePumpHandledAction("ChassisSledVirtualReseat", 30, eb)),
 		)
 		sled_chassis.AddAggregate(ctx, sledLogger, sledView, ch, eb)
 		power_related_items = append(power_related_items, sledView.GetURI())
@@ -572,10 +574,10 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			view.WithURI(rootView.GetURI()+"/UpdateService"),
 			view.WithModel("default", mdl),
 			view.WithController("ar_mapper", armapper),
-			ah.WithAction(ctx, updsvcLogger, "update.reset", "/Actions/Oem/DellUpdateService.Reset", updateReset, ch, eb),
-			ah.WithAction(ctx, updsvcLogger, "update.eid674.reset", "/Actions/Oem/EID_674_UpdateService.Reset", updateEID674Reset, ch, eb),
-			ah.WithAction(ctx, updsvcLogger, "update.syncup", "/Actions/Oem/DellUpdateService.Syncup", makePumpHandledAction("UpdateSyncup", 30, eb), ch, eb),
-			ah.WithAction(ctx, updsvcLogger, "update.eid674.syncup", "/Actions/Oem/EID_674_UpdateService.Syncup", makePumpHandledAction("UpdateSyncup", 30, eb), ch, eb),
+			actionSvc.WithAction(ctx, "update.reset", "/Actions/Oem/DellUpdateService.Reset", updateReset),
+			actionSvc.WithAction(ctx, "update.eid674.reset", "/Actions/Oem/EID_674_UpdateService.Reset", updateEID674Reset),
+			actionSvc.WithAction(ctx, "update.syncup", "/Actions/Oem/DellUpdateService.Syncup", makePumpHandledAction("UpdateSyncup", 30, eb)),
+			actionSvc.WithAction(ctx, "update.eid674.syncup", "/Actions/Oem/EID_674_UpdateService.Syncup", makePumpHandledAction("UpdateSyncup", 30, eb)),
 			evtSvc.PublishResourceUpdatedEventsForModel(ctx, "default"),
 		)
 

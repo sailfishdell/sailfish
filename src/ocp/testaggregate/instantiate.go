@@ -10,6 +10,7 @@ import (
 
 	"github.com/superchalupa/sailfish/src/log"
 	"github.com/superchalupa/sailfish/src/ocp/awesome_mapper"
+	am2 "github.com/superchalupa/sailfish/src/ocp/awesome_mapper2"
 	"github.com/superchalupa/sailfish/src/ocp/model"
 	"github.com/superchalupa/sailfish/src/ocp/view"
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
@@ -55,7 +56,6 @@ func RegisterWithURI() {
 			logger.Crit("Failed to type assert cfg to string", "cfg", cfg)
 			return errors.New("Failed to type assert expression to string")
 		}
-		functions := map[string]govaluate.ExpressionFunction{} // no functions yet
 		expr, err := govaluate.NewEvaluableExpressionWithFunctions(exprStr, functions)
 		if err != nil {
 			logger.Crit("Failed to create evaluable expression", "expr", expr, "err", err)
@@ -150,6 +150,70 @@ func RegisterAwesomeMapper() {
 	})
 }
 
+func RegisterAM2(s *am2.Service) {
+	RegisterControllerFunction("AM2", func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, vw *view.View, cfg interface{}, parameters map[string]interface{}) error {
+		cfgParams, ok := cfg.(map[interface{}]interface{})
+		if !ok {
+			logger.Crit("Failed to type assert cfg to string", "cfg", cfg)
+			return errors.New("Failed to type assert expression to string")
+		}
+
+		// ctx, logger, viper, *model, cfg_name, params
+		modelName, ok := cfgParams["modelname"]
+		if !ok {
+			modelName = "default"
+		}
+		modelNameStr, ok := modelName.(string)
+		if !ok {
+			modelNameStr = "default"
+		}
+
+		cfgSection, ok := cfgParams["cfgsection"]
+		if !ok {
+			logger.Crit("Required parameter 'cfgsection' missing, cannot continue")
+			return errors.New("Required parameter 'cfgsection' missing, cannot continue")
+		}
+		cfgSectionStr, ok := cfgSection.(string)
+		if !ok {
+			logger.Crit("Required parameter 'cfgsection' could not be cast to string")
+			return errors.New("Required parameter 'cfgsection' could not be cast to string")
+		}
+
+		uniqueName, ok := cfgParams["uniquename"]
+		if !ok {
+			logger.Crit("Required parameter 'uniquename' missing, cannot continue")
+			return errors.New("Required parameter 'uniquename' missing, cannot continue")
+		}
+		uniqueNameStr, ok := uniqueName.(string)
+		if !ok {
+			logger.Crit("Required parameter 'uniquename' could not be cast to string")
+			return errors.New("Required parameter 'uniquename' could not be cast to string")
+		}
+
+		expr, err := govaluate.NewEvaluableExpressionWithFunctions(uniqueNameStr, functions)
+		if err != nil {
+			logger.Crit("Failed to create evaluable expression", "uniqueNameStr", uniqueNameStr, "err", err)
+			return err
+		}
+		uniqueName, err = expr.Evaluate(parameters)
+		if err != nil {
+			logger.Crit("expression evaluation failed", "expr", expr, "err", err)
+			return err
+		}
+
+		uniqueNameStr, ok = uniqueName.(string)
+		if err != nil {
+			logger.Crit("could not cast result to string", "uniqueName", uniqueName)
+			return errors.New("could not cast result to string")
+		}
+
+		logger.Debug("Creating awesome_mapper2 controller", "modelName", modelNameStr, "cfgSection", cfgSectionStr, "uniqueName", uniqueNameStr)
+		s.NewMapping(ctx, logger, cfgMgr, vw.GetModel(modelNameStr), cfgSectionStr, uniqueNameStr, parameters)
+
+		return nil
+	})
+}
+
 type config struct {
 	Logger      []interface{}
 	Models      map[string]map[string]interface{}
@@ -179,19 +243,6 @@ func InstantiateFromCfg(ctx context.Context, logger log.Logger, cfgMgr *viper.Vi
 	// Instantiate view
 	vw := view.New(view.WithDeferRegister())
 
-	functions := map[string]govaluate.ExpressionFunction{
-		"array": func(args ...interface{}) (interface{}, error) {
-			a := []interface{}{}
-			for _, i := range args {
-				a = append(a, i)
-			}
-			return a, nil
-		},
-		"add_attribute_property": func(args ...interface{}) (interface{}, error) {
-			return map[string]map[string]map[string]interface{}{}, nil
-		},
-	}
-
 	// Instantiate Models
 	for modelName, modelProperties := range config.Models {
 		subLogger.Debug("creating model", "name", modelName)
@@ -206,7 +257,7 @@ func InstantiateFromCfg(ctx context.Context, logger log.Logger, cfgMgr *viper.Vi
 			}
 			expr, err := govaluate.NewEvaluableExpressionWithFunctions(propValueStr, functions)
 			if err != nil {
-				logger.Crit("Failed to create evaluable expression", "expr", expr, "err", err)
+				logger.Crit("Failed to create evaluable expression", "propValueStr", propValueStr, "err", err)
 				continue
 			}
 			propValue, err := expr.Evaluate(parameters)

@@ -31,8 +31,8 @@ views:
       "Models":
         "default":  {"unique_name": "'TEST_Unique_Name'", "name": "'TEST_Name'", "'description'": "'TEST_Description'" }
       "Controllers":
-        - "fn": "AwesomeMapper"
-          "params": {"modelname": "default", "cfgsection": "testview" }
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "testview" , "uniquename": "'testview'"}
         - "fn": "ARMapper"
           "params": {"modelname": "default", "cfgsection": "testview", "mappinguniquename": "'/redfish/v1/testservice'", "AddToView": true}
       "View":
@@ -55,8 +55,8 @@ views:
       "Models":
         "default":  {"session_timeout": "30"}
       "Controllers":
-        - "fn": "AwesomeMapper"
-          "params": {"modelname": "default", "cfgsection": "sessionview" }
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "sessionview" , "uniquename": "'SessionView'"}
         - "fn": "ARMapper"
           "params": {"modelname": "default", "cfgsection": "SessionService", "mappinguniquename": "'/redfish/v1/SessionService'", "AddToView": true}
       "View":
@@ -134,8 +134,8 @@ views:
           "params": {"modelname": "default", "cfgsection": "firmware/inventory", "mappinguniquename": "'fw_mapper:' + FQDD ", "AddToView": true}
         - "fn": "ARMapper"
           "params": {"modelname": "default", "cfgsection": "Managers/CMC.Integrated", "mappinguniquename": "'manager_mapper:' + FQDD ", "AddToView": true}
-        - "fn": "AwesomeMapper"
-          "params": {"modelname": "default", "cfgsection": "health" }
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "health", "uniquename": "'am2_manager_' + FQDD" }
         - "fn": "ARDumper"
           "params": {"modelname": "default", "AddToView": true}
       "View":
@@ -160,8 +160,8 @@ views:
           "params": {"modelname": "default", "cfgsection": "Managers/CMC.Integrated", "mappinguniquename": "'chassis:' + FQDD ", "AddToView": true}
         - "fn": "ARDumper"
           "params": {"modelname": "default", "AddToView": true}
-        - "fn": "AwesomeMapper"
-          "params": {"modelname": "default", "cfgsection": "health" }
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "health", "uniquename": "'am2_chassis_' + FQDD" }
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/Chassis/' + FQDD"
@@ -178,8 +178,8 @@ views:
         - "fn": "ARMapper"
           # note: this is correct, the redundancy model re-uses the managers mapper
           "params": {"modelname": "default", "cfgsection": "Managers/CMC.Integrated", "mappinguniquename": "'chassis_redundancy:' + FQDD ", "AddToView": true}
-        - "fn": "AwesomeMapper"
-          "params": {"modelname": "default", "cfgsection": "health" }
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "health", "uniquename": "'am2_chassis_redundancy' + FQDD" }
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/Managers/' + FQDD + '#Redundancy'"
@@ -241,8 +241,8 @@ views:
           "params": {"modelname": "default", "cfgsection": "firmware/inventory", "mappinguniquename": "'fw_mapper:' + ChassisFQDD + '_' + FQDD", "AddToView": true}
         - "fn": "ARMapper"
           "params": {"modelname": "default", "cfgsection": "PSU/PSU.Slot", "mappinguniquename": "'chassis_psu_mapper:' + ChassisFQDD + '_' + FQDD ", "AddToView": true}
-        - "fn": "AwesomeMapper"
-          "params": {"modelname": "default", "cfgsection": "power_supply" }
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "power_supply", "uniquename": "'am2_chassis_psu_' + FQDD" }
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/Chassis/' + ChassisFQDD + '/Power/PowerSupplies/' + FQDD "
@@ -258,8 +258,8 @@ views:
       "Controllers":
         - "fn": "ARMapper"
           "params": {"modelname": "default", "cfgsection": "Chassis/System.Chassis/Power", "mappinguniquename": "'chassis_power_ctrl_mapper:' + FQDD", "AddToView": true}
-        - "fn": "AwesomeMapper"
-          "params": {"modelname": "default", "cfgsection": "power_control" }
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "power_control", "uniquename": "'am2_chassis_power_control_' + FQDD" }
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/Chassis/' + FQDD + '/Power/PowerControl'"
@@ -296,8 +296,8 @@ views:
       "Models":
         "default":  {}
       "Controllers":
-        - "fn": "AwesomeMapper"
-          "params": {"modelname": "default", "cfgsection": "power_trend" }
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "power_trend", "uniquename": "'am2_power_hist_chassis_' + FQDD" }
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/Chassis/' + FQDD + '/Power/PowerTrends-1/Last'+trend"
@@ -326,8 +326,8 @@ views:
       "Models":
         "default":  {"unique_name": "FQDD", "unique_name_attr": "FQDD+'.Attributes'", "attributes": "add_attribute_property()"}
       "Controllers":
-        - "fn": "AwesomeMapper"
-          "params": {"modelname": "default", "cfgsection": "fan" }
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "fan", "uniquename": "'am2_fan_' + FQDD + '/' + ChassisFQDD" }
         - "fn": "ARMapper"
           "params": {"modelname": "default", "cfgsection": "firmware/inventory", "mappinguniquename": "'firmware_fan_mapper:' + ChassisFQDD + '/' + FQDD", "AddToView": true}
         - "fn": "ARMapper"
@@ -353,10 +353,10 @@ views:
           "params": {"modelname": "default", "cfgsection": "Chassis/IOM.Slot", "mappinguniquename": "'iom_mapper:' + FQDD", "AddToView": true}
         - "fn": "ARDumper"
           "params": {"modelname": "default", "AddToView": true}
-        - "fn": "AwesomeMapper"
-          "params": {"modelname": "default", "cfgsection": "health" }
-        - "fn": "AwesomeMapper"
-          "params": {"modelname": "default", "cfgsection": "iom" }
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "health", "uniquename": "'am2_iom_health_' + FQDD" }
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "iom", "uniquename": "'am2_iom_' + FQDD" }
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/Chassis/' + FQDD "
@@ -380,8 +380,8 @@ views:
           "params": {"modelname": "default", "cfgsection": "Chassis/System.Modular", "mappinguniquename": "'sled_mapper:' + FQDD", "AddToView": true}
         - "fn": "ARDumper"
           "params": {"modelname": "default", "AddToView": true}
-        - "fn": "AwesomeMapper"
-          "params": {"modelname": "default", "cfgsection": "health" }
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "health", "uniquename": "'am2_sled_chassis_' + FQDD" }
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/Chassis/' + FQDD "
@@ -398,16 +398,16 @@ views:
 
 awesome_mapper:
     testview:
-        - { Select: "type == 'AttributeUpdated' && data.FQDD == fqdd && data.Name == 'InstantaneousPower'", ModelUpdate: [ {Property: "Instantaneous_Power", Query: "data.Value", Default: 0} ] }
+      - { SelectEventType: "AttributeUpdated", Select: "type == 'AttributeUpdated' && data.FQDD == fqdd && data.Name == 'test'", ModelUpdate: [ {Property: "TEST", Query: "data.Value", Default: 0} ] }
 
     slotconfig:
-        - { Select: "type == 'AttributeUpdated' && data.FQDD == 'System.Chassis.1' && data.Group == group && data.Index == index && data.Name == 'Rows'",
+      - { SelectEventType: "AttributeUpdated", Select: "type == 'AttributeUpdated' && data.FQDD == 'System.Chassis.1' && data.Group == group && data.Index == index && data.Name == 'Rows'",
             ModelUpdate: [ {Property: "rows", Query: "string(data.Value)" } ] }
-        - { Select: "type == 'AttributeUpdated' && data.FQDD == 'System.Chassis.1' && data.Group == group && data.Index == index && data.Name == 'Columns'",
+      - { SelectEventType: "AttributeUpdated", Select: "type == 'AttributeUpdated' && data.FQDD == 'System.Chassis.1' && data.Group == group && data.Index == index && data.Name == 'Columns'",
             ModelUpdate: [ {Property: "columns", Query: "string(data.Value)" } ] }
 
     fan:
-        - { Select: "type == 'FanEvent' && data.ObjectHeader.FQDD == fqdd",
+      - { SelectEventType: "FanEvent", Select: "type == 'FanEvent' && data.ObjectHeader.FQDD == fqdd",
             ModelUpdate: [
                 {Property: "fanpwm", Query: "data.Fanpwm" },
                 {Property: "key", Query: "data.Key" },
@@ -426,10 +426,10 @@ awesome_mapper:
                 {Property: "FanStateMask", Query: "data.FanStateMask" }]}
 
     iom:
-        - { Select: "type == 'AttributeUpdated' && data.FQDD == fqdd && data.Name == 'InstantaneousPower'", ModelUpdate: [ {Property: "Instantaneous_Power", Query: "data.Value", Default: 0} ] }
+      - { SelectEventType: "AttributeUpdated", Select: "type == 'AttributeUpdated' && data.FQDD == fqdd && data.Name == 'InstantaneousPower'", ModelUpdate: [ {Property: "Instantaneous_Power", Query: "data.Value", Default: 0} ] }
 
     power_control:
-        - { Select: "type == 'PowerConsumptionDataObjEvent'",
+      - { SelectEventType: "PowerConsumptionDataObjEvent", Select: "type == 'PowerConsumptionDataObjEvent'",
             ModelUpdate: [
                 {Property: "energy_consumption_start_time", Query: "epoch_to_date(data.CwStartTime)" },
                 {Property: "energy_consumption_kwh", Query: "(data.CumulativeWatts)/1000" },
@@ -442,14 +442,14 @@ awesome_mapper:
                 {Property: "consumed_watts", Query: "data.InstWattsPSU1_2" }]}
 
     power_supply:
-        - { Select: "type == 'PowerSupplyObjEvent' && data.ObjectHeader.FQDD == fqdd",
+      - { SelectEventType: "PowerSupplyObjEvent", Select: "type == 'PowerSupplyObjEvent' && data.ObjectHeader.FQDD == fqdd",
             ModelUpdate: [
                 {Property: "line_input_voltage", Query: "data.InputVolts" },
                 {Property: "input_current", Query: "data.InstAmps" },
                 {Property: "obj_status", Query: "map_health_value(data.ObjectHeader.ObjStatus)" }]}
 
     power_trend:
-        - { Select: "type == 'AvgPowerConsumptionStatDataObjEvent'",
+      - { SelectEventType:, "AvgPowerConsumptionStatDataObjEvent", Select: "type == 'AvgPowerConsumptionStatDataObjEvent'",
             ModelUpdate: [
                 {Property: "average_watts",  Query: "traverse_struct(data, 'AvgPwrLast' + trend)" },
                 {Property: "max_watts",      Query: "traverse_struct(data, 'MaxPwrLast' + trend)" },
@@ -459,18 +459,18 @@ awesome_mapper:
 
 
     health:
-        - { Select: "type == 'HealthEvent' && data.FQDD == fqdd", ModelUpdate: [ {Property: "health", Query: "data.Health" } ] }
+      - { SelectEventType: "HealthEvent", Select: "type == 'HealthEvent' && data.FQDD == fqdd", ModelUpdate: [ {Property: "health", Query: "data.Health" } ] }
 
     global_health:
-        - { Select: "type == 'HealthEvent' && data.FQDD == 'System.Chassis.1#SubSystem.1#Fan'", ModelUpdate: [ {Property: "fan_rollup", Query: "data.Health" } ] }
-        - { Select: "type == 'HealthEvent' && data.FQDD == 'System.Chassis.1#SubSystem.1#Temperature'", ModelUpdate: [ {Property: "temperature_rollup", Query: "data.Health" } ] }
-        - { Select: "type == 'HealthEvent' && data.FQDD == 'System.Chassis.1#SubSystem.1#MM'", ModelUpdate: [ {Property: "mm_rollup", Query: "data.Health" } ] }
-        - { Select: "type == 'HealthEvent' && data.FQDD == 'System.Chassis.1#SubSystem.1#SledSystem'", modelupdate: [ {Property: "sled_rollup", Query: "data.Health" } ] }
-        - { Select: "type == 'HealthEvent' && data.FQDD == 'System.Chassis.1#SubSystem.1#PowerSupply'", ModelUpdate: [ {Property: "psu_rollup", Query: "data.Health" } ] }
-        - { Select: "type == 'HealthEvent' && data.FQDD == 'System.Chassis.1#SubSystem.1#CMC'", ModelUpdate: [ {Property: "cmc_rollup", Query: "data.Health" } ] }
-        - { Select: "type == 'HealthEvent' && data.FQDD == 'System.Chassis.1#SubSystem.1#Miscellaneous'", ModelUpdate: [ {Property: "misc_rollup", Query: "data.Health" } ] }
-        - { Select: "type == 'HealthEvent' && data.FQDD == 'System.Chassis.1#SubSystem.1#Battery'", ModelUpdate: [ {Property: "battery_rollup", Query: "data.Health" } ] }
-        - { Select: "type == 'HealthEvent' && data.FQDD == 'System.Chassis.1#SubSystem.1#IOMSubsystem'", ModelUpdate: [ {Property: "iom_rollup", Query: "data.Health" } ] }
+      - { SelectEventType: "HealthEvent", Select: "type == 'HealthEvent' && data.FQDD == 'System.Chassis.1#SubSystem.1#Fan'", ModelUpdate: [ {Property: "fan_rollup", Query: "data.Health" } ] }
+      - { SelectEventType: "HealthEvent", Select: "type == 'HealthEvent' && data.FQDD == 'System.Chassis.1#SubSystem.1#Temperature'", ModelUpdate: [ {Property: "temperature_rollup", Query: "data.Health" } ] }
+      - { SelectEventType: "HealthEvent", Select: "type == 'HealthEvent' && data.FQDD == 'System.Chassis.1#SubSystem.1#MM'", ModelUpdate: [ {Property: "mm_rollup", Query: "data.Health" } ] }
+      - { SelectEventType: "HealthEvent", Select: "type == 'HealthEvent' && data.FQDD == 'System.Chassis.1#SubSystem.1#SledSystem'", modelupdate: [ {Property: "sled_rollup", Query: "data.Health" } ] }
+      - { SelectEventType: "HealthEvent", Select: "type == 'HealthEvent' && data.FQDD == 'System.Chassis.1#SubSystem.1#PowerSupply'", ModelUpdate: [ {Property: "psu_rollup", Query: "data.Health" } ] }
+      - { SelectEventType: "HealthEvent", Select: "type == 'HealthEvent' && data.FQDD == 'System.Chassis.1#SubSystem.1#CMC'", ModelUpdate: [ {Property: "cmc_rollup", Query: "data.Health" } ] }
+      - { SelectEventType: "HealthEvent", Select: "type == 'HealthEvent' && data.FQDD == 'System.Chassis.1#SubSystem.1#Miscellaneous'", ModelUpdate: [ {Property: "misc_rollup", Query: "data.Health" } ] }
+      - { SelectEventType: "HealthEvent", Select: "type == 'HealthEvent' && data.FQDD == 'System.Chassis.1#SubSystem.1#Battery'", ModelUpdate: [ {Property: "battery_rollup", Query: "data.Health" } ] }
+      - { SelectEventType: "HealthEvent", Select: "type == 'HealthEvent' && data.FQDD == 'System.Chassis.1#SubSystem.1#IOMSubsystem'", ModelUpdate: [ {Property: "iom_rollup", Query: "data.Health" } ] }
 
 
 mappings:
