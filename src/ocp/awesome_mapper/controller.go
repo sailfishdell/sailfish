@@ -105,6 +105,12 @@ func New(ctx context.Context, logger log.Logger, cfg *viper.Viper, mdl *model.Mo
 				return nil, errors.New("Not an int, float, or string")
 			}
 		},
+    "zero_to_null": func(args ...interface{}) (interface{}, error) {
+      if (args[0].(int) == 0) {
+        return nil, nil
+      }
+      return args[0], nil
+    },
 		"map_health_value": func(args ...interface{}) (interface{}, error) {
 			switch t := args[0].(float64); t {
 			case 0, 1: //other, unknown
@@ -162,6 +168,7 @@ outer:
 				expressionParameters["type"] = string(event.EventType())
 				expressionParameters["data"] = event.Data()
 				expressionParameters["event"] = event
+        expressionParameters["model"] = mdl
 
 				expr, err := govaluate.NewEvaluableExpressionFromTokens(query.expr)
 				val, err := expr.Evaluate(expressionParameters)

@@ -10,14 +10,15 @@ import (
 
 	"github.com/superchalupa/sailfish/src/eventwaiter"
 	"github.com/superchalupa/sailfish/src/log"
-	"github.com/superchalupa/sailfish/src/ocp/awesome_mapper"
-	"github.com/superchalupa/sailfish/src/dell-resources/ar_mapper"
-	"github.com/superchalupa/sailfish/src/ocp/model"
+	//"github.com/superchalupa/sailfish/src/ocp/awesome_mapper"
+	//"github.com/superchalupa/sailfish/src/dell-resources/ar_mapper"
+	//"github.com/superchalupa/sailfish/src/ocp/model"
 	"github.com/superchalupa/sailfish/src/ocp/view"
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
 
 	"github.com/spf13/viper"
 	"github.com/superchalupa/sailfish/src/dell-resources/component"
+  "github.com/superchalupa/sailfish/src/ocp/testaggregate"
 )
 
 type viewer interface {
@@ -114,7 +115,7 @@ func (l *SlotConfigService) manageSlots(ctx context.Context, logger log.Logger, 
 						break
 					}
 
-					sCfgModel := model.New()
+					/*sCfgModel := model.New()
 					awesome_mapper.New(ctx, logger, cfgMgr, sCfgModel, "slotconfig", map[string]interface{}{"group": group, "index": index})
 
 					armapper, _ := ar_mapper.New(ctx, logger, sCfgModel, "Chassis/SlotConfigs", map[string]string{"Group": group, "Index": index}, ch, eb)
@@ -125,7 +126,17 @@ func (l *SlotConfigService) manageSlots(ctx context.Context, logger log.Logger, 
 						view.WithModel("default", sCfgModel),
 						view.WithURI(uri),
 						view.WithController("ar_mapper", armapper),
-					)
+					)*/
+
+          slotCfgLogger, slotView, _ := testaggregate.InstantiateFromCfg(ctx, logger, cfgMgr, "slotconfig",
+            map[string]interface{}{
+              "slotcfguri": uri,
+              "FQDD": SlotConfig.Id,
+              "Group": group,
+              "Index": index,
+            },
+          )
+          slotCfgLogger.Info("Slot Config Created", "SlotConfig.Id", SlotConfig.Id)
 
 					// update the UUID for this slot
 					l.slotconfigs[uri] = uuid
