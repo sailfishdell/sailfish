@@ -120,8 +120,8 @@ func StartService(ctx context.Context, logger log.Logger, eb eh.EventBus) (*Serv
 					ret.logger.Error("expression failed to evaluate", "err", err)
 					continue
 				}
-				val, ok := val.(bool)
-				if val == nil || !ok {
+				valBool, ok := val.(bool)
+				if !ok || !valBool {
 					ret.logger.Error("No match")
 					continue
 				}
