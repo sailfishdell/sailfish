@@ -10,7 +10,7 @@ out=${out:-bench}
 [ -e ${out}/config ] && . ${out}/config ||:
 
 if [ -z "${ECHOST}" ]; then
-    echo "need to set host variables"
+    echo "need to set ECHOST variable"
     exit 1
 fi
 
