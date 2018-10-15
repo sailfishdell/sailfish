@@ -6,6 +6,7 @@ import (
 	"path"
 	"reflect"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/Knetic/govaluate"
@@ -100,6 +101,16 @@ func init() {
 				fmt.Printf("UPDATED SET: %s\n", vStr)
 			}
 			return nil, errors.New("unimplemented")
+		},
+		"nohash": func(args ...interface{}) (interface{}, error) {
+			str, ok := args[0].(string)
+			if !ok {
+				return nil, errors.New("expected a string argument")
+			}
+			if i := strings.Index(str, "#"); i > -1 {
+				return false, nil
+			}
+			return true, nil
 		},
 		"baseuri": func(args ...interface{}) (interface{}, error) {
 			str, ok := args[0].(string)
