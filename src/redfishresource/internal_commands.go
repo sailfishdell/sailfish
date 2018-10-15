@@ -300,7 +300,9 @@ func (c *InjectEvent) Handle(ctx context.Context, a *RedfishResourceAggregate) e
 	a.ID = eh.UUID("49467bb4-5c1f-473b-0000-00000000000f")
 
 	eventList := []map[string]interface{}{}
-	eventList = append(eventList, c.EventData)
+	if len(c.EventData) > 0 {
+		eventList = append(eventList, c.EventData)
+	}
 	eventList = append(eventList, c.EventArray...)
 
 	requestLogger.Debug("InjectEvent - NEW ARRAY INJECT")
