@@ -131,6 +131,8 @@ func StartService(ctx context.Context, logger log.Logger, eb eh.EventBus) (*Serv
 				}
 
 				cfg.model.StopNotifications()
+				defer cfg.model.StartNotifications()
+				defer cfg.model.NotifyObservers()
 				for _, m := range config.modelUpdates {
 					expr, err := govaluate.NewEvaluableExpressionFromTokens(m.queryExpr)
 					cfg.params["propname"] = m.property
@@ -142,8 +144,6 @@ func StartService(ctx context.Context, logger log.Logger, eb eh.EventBus) (*Serv
 					ret.logger.Info("Updating property!", "property", m.property, "value", val, "Event", event, "EventData", event.Data())
 					cfg.model.UpdateProperty(m.property, val)
 				}
-				cfg.model.StartNotifications()
-				cfg.model.NotifyObservers()
 			}
 		}
 	})
