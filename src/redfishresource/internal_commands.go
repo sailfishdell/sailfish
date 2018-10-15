@@ -301,11 +301,15 @@ func (c *InjectEvent) Handle(ctx context.Context, a *RedfishResourceAggregate) e
 
 	eventList := []map[string]interface{}{}
 	if len(c.EventData) > 0 {
+		requestLogger.Debug("InjectEvent - ONE", "events", c.EventData)
 		eventList = append(eventList, c.EventData)
 	}
-	eventList = append(eventList, c.EventArray...)
+	if len(c.EventArray) > 0 {
+		requestLogger.Debug("InjectEvent - ARRAY", "events", c.EventArray)
+		eventList = append(eventList, c.EventArray...)
+	}
 
-	requestLogger.Debug("InjectEvent - NEW ARRAY INJECT")
+	requestLogger.Debug("InjectEvent - NEW ARRAY INJECT", "events", eventList)
 
 	trainload := []eh.EventData{}
 	for _, eventData := range eventList {
