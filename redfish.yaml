@@ -55,8 +55,6 @@ views:
       "Models":
         "default":  {"session_timeout": "30"}
       "Controllers":
-        - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "sessionview" , "uniquename": "'SessionView'"}
         - "fn": "ARMapper"
           "params": {"modelname": "default", "cfgsection": "SessionService", "mappinguniquename": "'/redfish/v1/SessionService'", "AddToView": true}
       "View":
