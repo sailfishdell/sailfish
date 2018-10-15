@@ -122,7 +122,7 @@ func StartService(ctx context.Context, logger log.Logger, eb eh.EventBus) (*Serv
 				}
 				valBool, ok := val.(bool)
 				if !ok || !valBool {
-					ret.logger.Error("No match")
+					ret.logger.Info("No match")
 					continue
 				}
 
@@ -150,9 +150,9 @@ func (s *Service) NewMapping(ctx context.Context, logger log.Logger, cfg *viper.
 
 	logger = logger.New("module", "am2")
 
-	newmapping := &OneMapperConfig{model: mdl, params: map[string]interface{}{}}
+	newconfig := &OneMapperConfig{model: mdl, params: map[string]interface{}{}}
 	for k, v := range parameters {
-		newmapping.params[k] = v
+		newconfig.params[k] = v
 	}
 
 	c := []ConfigFileMappingEntry{}
@@ -187,13 +187,15 @@ func (s *Service) NewMapping(ctx context.Context, logger log.Logger, cfg *viper.
 
 			mapperConfig = &AwesomeMapperConfig{
 				selectStr:  c.Select,
-				configs:    map[string]*OneMapperConfig{uniqueName: newmapping},
+				configs:    map[string]*OneMapperConfig{},
 				selectExpr: selectExpr.Tokens(),
 				mappings:   []*mapping{},
 			}
 			m[cfgName] = mapperConfig
 			logger.Info("adding new awesome mapper config for event type for config", "eventtype", c.SelectEventType, "cfgName", cfgName)
 		}
+
+		mapperConfig.configs[uniqueName] = newconfig
 
 		for _, up := range c.ModelUpdate {
 			queryExpr, err := govaluate.NewEvaluableExpressionWithFunctions(up.Query, functions)
@@ -202,7 +204,7 @@ func (s *Service) NewMapping(ctx context.Context, logger log.Logger, cfg *viper.
 				return errors.New("Query construction failed")
 			}
 
-			newmapping := &mapping{
+			newModelUpdate := &mapping{
 				property:    up.Property,
 				queryString: up.Query,
 				queryExpr:   queryExpr.Tokens(),
@@ -212,7 +214,7 @@ func (s *Service) NewMapping(ctx context.Context, logger log.Logger, cfg *viper.
 			if up.Default != nil {
 				mdl.UpdateProperty(up.Property, up.Default)
 			}
-			mapperConfig.mappings = append(mapperConfig.mappings, newmapping)
+			mapperConfig.mappings = append(mapperConfig.mappings, newModelUpdate)
 			logger.Info("adding new mapping", "eventtype", c.SelectEventType, "cfgName", cfgName, "query", up.Query)
 		}
 
