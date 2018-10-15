@@ -53,8 +53,10 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	updateFns = append(updateFns, arService.ConfigChangedFn)
 
 	// the package for this is going to change, but this is what makes the various mappers and view functions available
-	testaggregate.RunRegistryFunctions(evtSvc)
-	ar_mapper2.RunRegistryFunctions(arService)
+	instantiateSvc := testaggregate.New(logger, ch)
+	testaggregate.RegisterWithURI(instantiateSvc)
+	testaggregate.RegisterPublishEvents(instantiateSvc, evtSvc)
+	ar_mapper2.RegisterARMapper(instantiateSvc, arService)
 
 	//
 	// Create the (empty) model behind the /redfish/v1 service root. Nothing interesting here
@@ -63,7 +65,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	// No Model
 	// No Controllers
 	// View created so we have a place to hold the aggregate UUID and URI
-	_, rootView, _ := testaggregate.InstantiateFromCfg(ctx, logger, cfgMgr, "rootview", map[string]interface{}{})
+	_, rootView, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "rootview", map[string]interface{}{})
 	root.AddAggregate(ctx, rootView, ch, eb)
 
 	//*********************************************************************
@@ -74,13 +76,8 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	//   2) controller(s) - pass model by args
 	//   3) views - pass models and controllers by args
 	//   4) aggregate - pass view
-	testLogger, testView, err := testaggregate.InstantiateFromCfg(ctx, logger, cfgMgr, "testview", map[string]interface{}{"rooturi": rootView.GetURI()})
-	if err == nil {
-		testaggregate.AddAggregate(ctx, testView, ch)
-
-		// separately, start goroutine to listen for test events and create sub uris
-		testaggregate.StartService(ctx, testLogger, cfgMgr, rootView, ch, eb)
-	}
+	_, testView, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "testview", map[string]interface{}{"rooturi": rootView.GetURI()})
+	testaggregate.AddAggregate(ctx, testView, ch)
 
 	//*********************************************************************
 	//  /redfish/v1/{Managers,Chassis,Systems,Accounts}
@@ -92,7 +89,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	//*********************************************************************
 	// /redfish/v1/Sessions
 	//*********************************************************************
-	_, sessionView, err := testaggregate.InstantiateFromCfg(ctx, logger, cfgMgr, "sessionview", map[string]interface{}{"rooturi": rootView.GetURI()})
+	_, sessionView, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "sessionview", map[string]interface{}{"rooturi": rootView.GetURI()})
 	session.AddAggregate(ctx, sessionView, rootView.GetUUID(), ch, eb)
 
 	//*********************************************************************

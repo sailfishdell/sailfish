@@ -36,6 +36,7 @@ type View struct {
 	actions          map[string]Action
 	actionURI        map[string]string
 	registerplugin   bool
+	closefn          func()
 }
 
 func New(options ...Option) *View {
@@ -47,18 +48,20 @@ func New(options ...Option) *View {
 		actions:          map[string]Action{},
 		actionURI:        map[string]string{},
 		registerplugin:   true,
+		closefn:          func() {},
 	}
 
 	s.ApplyOption(options...)
 	if s.registerplugin {
 		// caller responsible for registering if this isn't set
+		s.closefn = func() { domain.UnregisterPlugin(s.PluginType()) }
 		domain.RegisterPlugin(func() domain.Plugin { return s })
 	}
 	return s
 }
 
 func (s *View) Close() {
-	domain.UnregisterPlugin(s.pluginType)
+	s.closefn()
 }
 
 func (s *View) ApplyOption(options ...Option) error {
