@@ -70,7 +70,6 @@ func main() {
 
 	// Defaults
 	cfgMgr.SetDefault("listen", []string{"https::8443"})
-	cfgMgr.SetDefault("session.timeout", 10)
 	cfgMgr.SetDefault("main.server_name", "mockup")
 
 	flag.Parse()

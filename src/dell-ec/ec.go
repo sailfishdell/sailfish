@@ -37,11 +37,10 @@ import (
 	"github.com/superchalupa/sailfish/src/dell-resources/update_service/firmware_inventory"
 	"github.com/superchalupa/sailfish/src/eventwaiter"
 	"github.com/superchalupa/sailfish/src/log"
-	am2 "github.com/superchalupa/sailfish/src/ocp/awesome_mapper2"
+	"github.com/superchalupa/sailfish/src/ocp/awesome_mapper2"
 	"github.com/superchalupa/sailfish/src/ocp/event"
 	"github.com/superchalupa/sailfish/src/ocp/eventservice"
 	"github.com/superchalupa/sailfish/src/ocp/model"
-	"github.com/superchalupa/sailfish/src/ocp/root"
 	"github.com/superchalupa/sailfish/src/ocp/session"
 	"github.com/superchalupa/sailfish/src/ocp/stdcollections"
 	"github.com/superchalupa/sailfish/src/ocp/telemetryservice"
@@ -78,11 +77,11 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	event.Setup(ch, eb)
 	logSvc := lcl.New(ch, eb)
 	faultSvc := faultlist.New(ch, eb)
-
 	domain.StartInjectService(eb)
-
 	arService, _ := ar_mapper2.StartService(ctx, logger, eb)
-	updateFns = append(updateFns, arService.ConfigChangedFn)
+	arService.ConfigChangedFn(ctx, cfgMgr)
+	actionSvc := ah.StartService(ctx, logger, ch, eb)
+	am2Svc, _ := awesome_mapper2.StartService(ctx, logger, eb)
 
 	slotSvc := slots.New(ch, eb)
 	slotconfigSvc := slotconfig.New(ch, eb)
@@ -91,23 +90,17 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	instantiateSvc := testaggregate.New(logger, ch)
 	testaggregate.RegisterWithURI(instantiateSvc)
 	testaggregate.RegisterPublishEvents(instantiateSvc, evtSvc)
-
+	testaggregate.RegisterAggregate(instantiateSvc)
+	testaggregate.RegisterAM2(instantiateSvc, am2Svc)
 	ar_mapper2.RegisterARMapper(instantiateSvc, arService)
 	attributes.RegisterARMapper(instantiateSvc, ch, eb)
 	stdmeta.RegisterFormatters(instantiateSvc, d)
 	registries.RegisterAggregate(instantiateSvc)
-
-	actionSvc := ah.StartService(ctx, logger, ch, eb)
-
-	// awesome mapper 2 service
-	am2Svc, err := am2.StartService(ctx, logger, eb)
-	if err != nil {
-		logger.Error("Failed to start awesome mapper 2", "err", err)
-	}
-	testaggregate.RegisterAM2(instantiateSvc, am2Svc)
 	stdcollections.RegisterChassis(instantiateSvc)
 
+	// common parameters to instantiate that are used almost everywhere
 	baseParams := map[string]interface{}{}
+	baseParams["rooturi"] = "/redfish/v1"
 	modParams := func(newParams map[string]interface{}) map[string]interface{} {
 		ret := map[string]interface{}{}
 		for k, v := range baseParams {
@@ -127,19 +120,15 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	am2Svc.NewMapping(ctx, healthLogger, cfgMgr, globalHealthModel, "global_health", "global_health", map[string]interface{}{})
 
 	//*********************************************************************
-	//  /redfish/v1 -  Create the (empty) model behind the /redfish/v1 service
-	//  root. Nothing interesting here
+	//  /redfish/v1
 	//*********************************************************************
-	_, rootView, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "rootview", map[string]interface{}{})
-	root.AddAggregate(ctx, rootView, ch, eb)
-	baseParams["rooturi"] = rootView.GetURI()
+	_, rootView, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "rootview", baseParams)
 	baseParams["rootid"] = rootView.GetUUID()
 
 	//*********************************************************************
 	//  /redfish/v1/testview - a proof of concept test view and example
 	//*********************************************************************
-	_, testView, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "testview", map[string]interface{}{"rooturi": rootView.GetURI(), "fqdd": "System.Modular.1"})
-	testaggregate.AddAggregate(ctx, testView, ch)
+	instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "testview", baseParams)
 
 	//*********************************************************************
 	//  /redfish/v1/{Managers,Chassis,Systems,Accounts}
@@ -163,7 +152,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	//*********************************************************************
 	_, sessionView, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "sessionview", map[string]interface{}{"rooturi": rootView.GetURI()})
 	session.AddAggregate(ctx, sessionView, rootView.GetUUID(), ch, eb)
-	sessionView.GetModel("default").UpdateProperty("session_timeout", cfgMgr.GetInt("session.timeout"))
 
 	//*********************************************************************
 	// /redfish/v1/EventService

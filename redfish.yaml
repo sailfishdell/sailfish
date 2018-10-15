@@ -7,9 +7,6 @@ listen:
     - https::8443
     - pprof::9080
 
-session:
-    timeout: 600
-
 # new features needed:
 #  - link_model
 #  - model update fn
@@ -25,6 +22,7 @@ views:
       "View":
         - "fn": "with_URI"
           "params": "'/redfish/v1'"
+      "Aggregate": "root"
 
   "testview":
       "Logger": ["module", "testview"]
@@ -40,15 +38,7 @@ views:
           "params": "rooturi + '/testview'"
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
-
-  "testview_sub":
-      "Logger": ["module", "sub_testview"]
-      "Models":
-        "default":  {"property1": "'value1'"}
-      "Controllers":
-      "View":
-        - "fn": "with_URI"
-          "params": "rooturi + '/testview#' + unique"
+      "Aggregate": "registry_collection"
 
   "sessionview":
       "Logger": ["module", "session"]
@@ -62,6 +52,8 @@ views:
           "params": "rooturi + '/SessionService'"
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
+        - "fn": "withFormatter_formatOdataList"
+          "params":
 
   "registries":
       "Logger": ["module", "registry"]
@@ -74,6 +66,8 @@ views:
         - "fn": "with_URI"
           "params": "rooturi + '/Registries'"
         - "fn": "withFormatter_formatOdataList"
+          "params":
+        - "fn": "withFormatter_count"
           "params":
       "Aggregate": "registry_collection"
 
@@ -406,7 +400,7 @@ views:
   "chassis":
       "Logger": ["module", "Chassis"]
       "Models":
-        "default":  {}
+        "default":  {"members":"''"}
       "Controllers":
         - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + collection_uri" }
@@ -416,13 +410,15 @@ views:
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
         - "fn": "withFormatter_formatOdataList"
+          "params":
+        - "fn": "withFormatter_count"
           "params":
       "Aggregate": "chassis"
 
   "systems":
       "Logger": ["module", "Systems"]
       "Models":
-        "default":  {}
+        "default":  {"members":"''"}
       "Controllers":
         - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + collection_uri" }
@@ -432,13 +428,15 @@ views:
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
         - "fn": "withFormatter_formatOdataList"
+          "params":
+        - "fn": "withFormatter_count"
           "params":
       "Aggregate": "systems"
 
   "managers":
       "Logger": ["module", "Managers"]
       "Models":
-        "default":  {}
+        "default":  {"members":"''"}
       "Controllers":
         - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + collection_uri" }
@@ -449,12 +447,14 @@ views:
           "params": "default"
         - "fn": "withFormatter_formatOdataList"
           "params":
+        - "fn": "withFormatter_count"
+          "params":
       "Aggregate": "managers"
 
   "roles":
       "Logger": ["module", "Roles"]
       "Models":
-        "default":  {}
+        "default":  {"members":"''"}
       "Controllers":
         - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + collection_uri" }
@@ -464,6 +464,8 @@ views:
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
         - "fn": "withFormatter_formatOdataList"
+          "params":
+        - "fn": "withFormatter_count"
           "params":
       "Aggregate": "roles"
 
@@ -479,12 +481,14 @@ views:
           "params": "default"
         - "fn": "withFormatter_formatOdataList"
           "params":
+        - "fn": "withFormatter_count"
+          "params":
       "Aggregate": "accountservice"
 
   "accounts":
       "Logger": ["module", "Accounts"]
       "Models":
-        "default":  {}
+        "default":  {"members":"''"}
       "Controllers":
         - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + collection_uri" }
@@ -494,6 +498,8 @@ views:
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
         - "fn": "withFormatter_formatOdataList"
+          "params":
+        - "fn": "withFormatter_count"
           "params":
       "Aggregate": "accounts"
 

@@ -14,15 +14,16 @@ import (
 	"github.com/superchalupa/sailfish/src/dell-resources/ar_mapper2"
 	"github.com/superchalupa/sailfish/src/dell-resources/attributes"
 	system_chassis "github.com/superchalupa/sailfish/src/dell-resources/chassis/system.chassis"
+	"github.com/superchalupa/sailfish/src/dell-resources/logservices/faultlist"
+	"github.com/superchalupa/sailfish/src/dell-resources/logservices/lcl"
 	"github.com/superchalupa/sailfish/src/dell-resources/registries"
 	storage_enclosure "github.com/superchalupa/sailfish/src/dell-resources/systems/system.embedded/storage/enclosure"
 	"github.com/superchalupa/sailfish/src/eventwaiter"
 	"github.com/superchalupa/sailfish/src/log"
-	am2 "github.com/superchalupa/sailfish/src/ocp/awesome_mapper2"
+	"github.com/superchalupa/sailfish/src/ocp/awesome_mapper2"
 	"github.com/superchalupa/sailfish/src/ocp/event"
 	"github.com/superchalupa/sailfish/src/ocp/eventservice"
 	"github.com/superchalupa/sailfish/src/ocp/model"
-	"github.com/superchalupa/sailfish/src/ocp/root"
 	"github.com/superchalupa/sailfish/src/ocp/session"
 	"github.com/superchalupa/sailfish/src/ocp/stdcollections"
 	"github.com/superchalupa/sailfish/src/ocp/telemetryservice"
@@ -65,54 +66,34 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	evtSvc := eventservice.New(ctx, ch, eb)
 	telemetryservice.Setup(ctx, ch, eb)
 	event.Setup(ch, eb)
-
+	logSvc := lcl.New(ch, eb)
+	faultSvc := faultlist.New(ch, eb)
 	domain.StartInjectService(eb)
-
 	arService, _ := ar_mapper2.StartService(ctx, logger, eb)
-	updateFns = append(updateFns, arService.ConfigChangedFn)
+	arService.ConfigChangedFn(ctx, cfgMgr)
+	actionSvc := ah.StartService(ctx, logger, ch, eb)
+	am2Svc, _ := awesome_mapper2.StartService(ctx, logger, eb)
 
 	// the package for this is going to change, but this is what makes the various mappers and view functions available
 	instantiateSvc := testaggregate.New(logger, ch)
 	testaggregate.RegisterWithURI(instantiateSvc)
 	testaggregate.RegisterPublishEvents(instantiateSvc, evtSvc)
-
+	testaggregate.RegisterAggregate(instantiateSvc)
+	testaggregate.RegisterAM2(instantiateSvc, am2Svc)
 	ar_mapper2.RegisterARMapper(instantiateSvc, arService)
 	attributes.RegisterARMapper(instantiateSvc, ch, eb)
 	stdmeta.RegisterFormatters(instantiateSvc, d)
 	registries.RegisterAggregate(instantiateSvc)
+	stdcollections.RegisterChassis(instantiateSvc)
 
-	// awesome mapper 2 service
-	am2Svc, err := am2.StartService(ctx, logger, eb)
-	if err != nil {
-		logger.Error("Failed to start awesome mapper 2", "err", err)
-	}
-	testaggregate.RegisterAM2(instantiateSvc, am2Svc)
+	// ignore unused for now
+	_ = logSvc
+	_ = faultSvc
+	_ = actionSvc
 
-	// Create the (empty) model behind the /redfish/v1 service root. Nothing interesting here
-	//
-	// No Logger
-	// No Model
-	// No Controllers
-	// View created so we have a place to hold the aggregate UUID and URI
-	_, rootView, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "rootview", map[string]interface{}{})
-	root.AddAggregate(ctx, rootView, ch, eb)
-
-	//*********************************************************************
-	//  /redfish/v1/testview - a proof of concept test view and example
-	//*********************************************************************
-	// construction order:
-	//   1) model
-	//   2) controller(s) - pass model by args
-	//   3) views - pass models and controllers by args
-	//   4) aggregate - pass view
-	//
-	_, testView, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "testview", map[string]interface{}{"rooturi": rootView.GetURI(), "fqdd": "System.Modular.1"})
-	testaggregate.AddAggregate(ctx, testView, ch)
-
-	//*********************************************************************
-	//  /redfish/v1/{Managers,Chassis,Systems,Accounts}
-	//*********************************************************************
-	baseParams := map[string]interface{}{"rooturi": rootView.GetURI(), "rootid": rootView.GetUUID(), "collection_uri": "/redfish/v1/Chassis"}
+	// common parameters to instantiate that are used almost everywhere
+	baseParams := map[string]interface{}{}
+	baseParams["rooturi"] = "/redfish/v1"
 	modParams := func(newParams map[string]interface{}) map[string]interface{} {
 		ret := map[string]interface{}{}
 		for k, v := range baseParams {
@@ -123,6 +104,21 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		}
 		return ret
 	}
+
+	//*********************************************************************
+	//  /redfish/v1
+	//*********************************************************************
+	_, rootView, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "rootview", map[string]interface{}{})
+	baseParams["rootid"] = rootView.GetUUID()
+
+	//*********************************************************************
+	//  /redfish/v1/testview - a proof of concept test view and example
+	//*********************************************************************
+	instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "testview", map[string]interface{}{"rooturi": rootView.GetURI(), "fqdd": "System.Modular.1"})
+
+	//*********************************************************************
+	//  /redfish/v1/{Managers,Chassis,Systems,Accounts}
+	//*********************************************************************
 	_, _, _ = instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "chassis", modParams(map[string]interface{}{"collection_uri": "/redfish/v1/Chassis"}))
 	_, _, _ = instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "systems", modParams(map[string]interface{}{"collection_uri": "/redfish/v1/Systems"}))
 	_, _, _ = instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "managers", modParams(map[string]interface{}{"collection_uri": "/redfish/v1/Managers"}))

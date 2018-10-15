@@ -7,33 +7,32 @@ package testaggregate
 import (
 	"context"
 
+	eh "github.com/looplab/eventhorizon"
+	"github.com/spf13/viper"
+
+	"github.com/superchalupa/sailfish/src/log"
 	"github.com/superchalupa/sailfish/src/ocp/view"
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
-
-	eh "github.com/looplab/eventhorizon"
 )
 
-func AddAggregate(ctx context.Context, v *view.View, ch eh.CommandHandler) *view.View {
-	ch.HandleCommand(
-		ctx,
-		&domain.CreateRedfishResource{
-			ID:          v.GetUUID(),
-			ResourceURI: v.GetURI(),
-			Type:        "#Manager.v1_0_2.Manager",
-			Context:     "/redfish/v1/$metadata#Manager.Manager",
-			Privileges: map[string]interface{}{
-				"GET":    []string{"Login"},
-				"POST":   []string{}, // cannot create sub objects
-				"PUT":    []string{},
-				"PATCH":  []string{"ConfigureManager"},
-				"DELETE": []string{}, // can't be deleted
-			},
-			Properties: map[string]interface{}{
-				"Id@meta":          v.Meta(view.PropGET("unique_name")),
-				"Name@meta":        v.Meta(view.PropGET("name"), view.PropPATCH("name", "ar_mapper")),
-				"Description@meta": v.Meta(view.PropGET("description")),
-				"Model@meta":       v.Meta(view.PropGET("model"), view.PropPATCH("model", "ar_mapper")),
-			}})
+func RegisterAggregate(s *Service) {
+	s.RegisterAggregateFunction("testview",
+		func(ctx context.Context, subLogger log.Logger, cfgMgr *viper.Viper, vw *view.View, extra interface{}, params map[string]interface{}) ([]eh.Command, error) {
+			return []eh.Command{
+				&domain.CreateRedfishResource{
 
-	return v
+					ResourceURI: vw.GetURI(),
+					Type:        "#Manager.v1_0_2.Manager",
+					Context:     "/redfish/v1/$metadata#Manager.Manager",
+					Privileges: map[string]interface{}{
+						"GET":   []string{"Login"},
+						"PATCH": []string{"ConfigureManager"},
+					},
+					Properties: map[string]interface{}{
+						"Id@meta":          vw.Meta(view.PropGET("unique_name")),
+						"Name@meta":        vw.Meta(view.PropGET("name"), view.PropPATCH("name", "ar_mapper")),
+						"Description@meta": vw.Meta(view.PropGET("description")),
+						"Model@meta":       vw.Meta(view.PropGET("model"), view.PropPATCH("model", "ar_mapper")),
+					}}}, nil
+		})
 }

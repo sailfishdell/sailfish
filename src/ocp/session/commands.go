@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"math/rand"
 	"net/http"
+	"strconv"
 	"time"
 
 	jwt "github.com/dgrijalva/jwt-go"
@@ -144,7 +145,17 @@ func (c *POST) Handle(ctx context.Context, a *domain.RedfishResourceAggregate) e
 		return err
 	}
 
-	c.startSessionDeleteTimer(sessionUUID, sessionURI, c.model.GetProperty("session_timeout").(int))
+	var timeout int
+	switch t := c.model.GetProperty("session_timeout").(type) {
+	case int:
+		timeout = t
+	case float64:
+		timeout = int(t)
+	case string:
+		timeout, _ = strconv.Atoi(t)
+	}
+	fmt.Printf("Start sesion delete timer: %s == %s\n", timeout, c.model.GetProperty("session_timeout"))
+	c.startSessionDeleteTimer(sessionUUID, sessionURI, timeout)
 
 	a.PublishEvent(eh.NewEvent(domain.HTTPCmdProcessed, &domain.HTTPCmdProcessedData{
 		CommandID:  c.CmdID,

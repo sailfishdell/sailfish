@@ -22,6 +22,27 @@ func RegisterChassis(s *testaggregate.Service) {
 		"DELETE": []string{}, // can't be deleted
 	}
 
+	s.RegisterAggregateFunction("root",
+		func(ctx context.Context, subLogger log.Logger, cfgMgr *viper.Viper, vw *view.View, extra interface{}, params map[string]interface{}) ([]eh.Command, error) {
+			return []eh.Command{
+				&domain.CreateRedfishResource{
+					ResourceURI: vw.GetURI(),
+					Type:        "#ServiceRoot.v1_0_2.ServiceRoot",
+					Context:     vw.GetURI() + "/$metadata#ServiceRoot.ServiceRoot",
+
+					Privileges: map[string]interface{}{
+						"GET": []string{"Unauthenticated"},
+					},
+					Properties: map[string]interface{}{
+						"Id":             "RootService",
+						"Name":           "Root Service",
+						"Description":    "Root Service",
+						"RedfishVersion": "1.0.2",
+						"@odata.etag":    `W/"abc123"`,
+					}},
+			}, nil
+		})
+
 	s.RegisterAggregateFunction("chassis",
 		func(ctx context.Context, subLogger log.Logger, cfgMgr *viper.Viper, vw *view.View, extra interface{}, params map[string]interface{}) ([]eh.Command, error) {
 			return []eh.Command{
@@ -31,8 +52,9 @@ func RegisterChassis(s *testaggregate.Service) {
 					Context:     params["rooturi"].(string) + "/$metadata#ChassisCollection.ChassisCollection",
 					Privileges:  stdCollectionPrivs,
 					Properties: map[string]interface{}{
-						"Name":         "Chassis Collection",
-						"Members@meta": vw.Meta(view.GETProperty("members"), view.GETFormatter("formatOdataList"), view.GETModel("default")),
+						"Name":                     "Chassis Collection",
+						"Members@meta":             vw.Meta(view.GETProperty("members"), view.GETFormatter("formatOdataList"), view.GETModel("default")),
+						"Members@odata.count@meta": vw.Meta(view.GETProperty("members"), view.GETFormatter("count"), view.GETModel("default")),
 					}},
 				&domain.UpdateRedfishResourceProperties{
 					ID: params["rootid"].(eh.UUID),
@@ -51,8 +73,9 @@ func RegisterChassis(s *testaggregate.Service) {
 					Context:     params["rooturi"].(string) + "/$metadata#ComputerSystemCollection.ComputerSystemCollection",
 					Privileges:  stdCollectionPrivs,
 					Properties: map[string]interface{}{
-						"Name":         "Computer System Collection",
-						"Members@meta": vw.Meta(view.GETProperty("members"), view.GETFormatter("formatOdataList"), view.GETModel("default")),
+						"Name":                     "Computer System Collection",
+						"Members@meta":             vw.Meta(view.GETProperty("members"), view.GETFormatter("formatOdataList"), view.GETModel("default")),
+						"Members@odata.count@meta": vw.Meta(view.GETProperty("members"), view.GETFormatter("count"), view.GETModel("default")),
 					}},
 				&domain.UpdateRedfishResourceProperties{
 					ID: params["rootid"].(eh.UUID),
@@ -71,9 +94,10 @@ func RegisterChassis(s *testaggregate.Service) {
 					Context:     params["rooturi"].(string) + "/$metadata#ManagerCollection.ManagerCollection",
 					Privileges:  stdCollectionPrivs,
 					Properties: map[string]interface{}{
-						"Name":         "ManagerInstancesCollection",
-						"Description":  "Collection of BMCs",
-						"Members@meta": vw.Meta(view.GETProperty("members"), view.GETFormatter("formatOdataList"), view.GETModel("default")),
+						"Name":                     "ManagerInstancesCollection",
+						"Description":              "Collection of BMCs",
+						"Members@meta":             vw.Meta(view.GETProperty("members"), view.GETFormatter("formatOdataList"), view.GETModel("default")),
+						"Members@odata.count@meta": vw.Meta(view.GETProperty("members"), view.GETFormatter("count"), view.GETModel("default")),
 					}},
 
 				&domain.UpdateRedfishResourceProperties{
@@ -131,8 +155,9 @@ func RegisterChassis(s *testaggregate.Service) {
 					Context:     params["rooturi"].(string) + "/$metadata#RoleCollection.RoleCollection",
 					Privileges:  stdCollectionPrivs,
 					Properties: map[string]interface{}{
-						"Name":         "Roles Collection",
-						"Members@meta": vw.Meta(view.GETProperty("members"), view.GETFormatter("formatOdataList"), view.GETModel("default")),
+						"Name":                     "Roles Collection",
+						"Members@meta":             vw.Meta(view.GETProperty("members"), view.GETFormatter("formatOdataList"), view.GETModel("default")),
+						"Members@odata.count@meta": vw.Meta(view.GETProperty("members"), view.GETFormatter("count"), view.GETModel("default")),
 					}},
 				&domain.UpdateRedfishResourceProperties{
 					ID: params["actsvc_id"].(eh.UUID),
@@ -151,8 +176,9 @@ func RegisterChassis(s *testaggregate.Service) {
 					Context:     params["rooturi"].(string) + "/$metadata#ManagerAccountCollection.ManagerAccountCollection",
 					Privileges:  stdCollectionPrivs,
 					Properties: map[string]interface{}{
-						"Name":         "Accounts Collection",
-						"Members@meta": vw.Meta(view.GETProperty("members"), view.GETFormatter("formatOdataList"), view.GETModel("default")),
+						"Name":                     "Accounts Collection",
+						"Members@meta":             vw.Meta(view.GETProperty("members"), view.GETFormatter("formatOdataList"), view.GETModel("default")),
+						"Members@odata.count@meta": vw.Meta(view.GETProperty("members"), view.GETFormatter("count"), view.GETModel("default")),
 					}},
 				&domain.UpdateRedfishResourceProperties{
 					ID: params["actsvc_id"].(eh.UUID),

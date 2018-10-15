@@ -107,7 +107,7 @@ func RegisterAM2(s *Service, am2Svc *am2.Service) {
 		}
 		uniqueName, err = expr.Evaluate(parameters)
 		if err != nil {
-			logger.Crit("expression evaluation failed", "expr", expr, "err", err)
+			logger.Crit("expression evaluation failed", "expr", expr, "err", err, "cfgSection", cfgSectionStr, "uniqueName", uniqueNameStr)
 			return err
 		}
 

@@ -1,4 +1,4 @@
-package awesome_mapper
+package awesome_mapper2
 
 import (
 	"context"
