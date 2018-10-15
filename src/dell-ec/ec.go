@@ -117,6 +117,18 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		return ret
 	}
 
+	baseParams := map[string]interface{}{}
+	modParams := func(newParams map[string]interface{}) map[string]interface{} {
+		ret := map[string]interface{}{}
+		for k, v := range baseParams {
+			ret[k] = v
+		}
+		for k, v := range newParams {
+			ret[k] = v
+		}
+		return ret
+	}
+
 	//HEALTH
 	// The following model maps a bunch of health related stuff that can be tracked once at a global level.
 	// we can add this model to the views that need to expose it
@@ -127,7 +139,13 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	//*********************************************************************
 	//  /redfish/v1
 	//*********************************************************************
+<<<<<<< HEAD
 	_, rootView, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "rootview", baseParams)
+=======
+	_, rootView, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "rootview", map[string]interface{}{})
+	root.AddAggregate(ctx, rootView, ch, eb)
+	baseParams["rooturi"] = rootView.GetURI()
+>>>>>>> aggregate change for registry to bring it into instantiate
 	baseParams["rootid"] = rootView.GetUUID()
 
 	//*********************************************************************
