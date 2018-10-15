@@ -39,7 +39,7 @@ func RegisterChassis(s *testaggregate.Service) {
 				&domain.UpdateRedfishResourceProperties{
 					ID: params["rootid"].(eh.UUID),
 					Properties: map[string]interface{}{
-						"Chassis": map[string]interface{}{"@odata.id": params["rooturi"].(string) + "/Chassis"},
+						"Chassis": map[string]interface{}{"@odata.id": vw.GetURI()},
 					},
 				},
 			}, nil
@@ -61,7 +61,7 @@ func RegisterChassis(s *testaggregate.Service) {
 				&domain.UpdateRedfishResourceProperties{
 					ID: params["rootid"].(eh.UUID),
 					Properties: map[string]interface{}{
-						"Systems": map[string]interface{}{"@odata.id": params["rooturi"].(string) + "/Systems"},
+						"Systems": map[string]interface{}{"@odata.id": vw.GetURI()},
 					},
 				},
 			}, nil
@@ -85,7 +85,47 @@ func RegisterChassis(s *testaggregate.Service) {
 				&domain.UpdateRedfishResourceProperties{
 					ID: params["rootid"].(eh.UUID),
 					Properties: map[string]interface{}{
-						"Managers": map[string]interface{}{"@odata.id": params["rooturi"].(string) + "/Managers"},
+						"Managers": map[string]interface{}{"@odata.id": vw.GetURI()},
+					},
+				},
+			}, nil
+		})
+
+	s.RegisterAggregateFunction("accountservice",
+		func(ctx context.Context, subLogger log.Logger, cfgMgr *viper.Viper, vw *view.View, extra interface{}, params map[string]interface{}) ([]eh.Command, error) {
+			return []eh.Command{
+				&domain.CreateRedfishResource{
+					Collection:  false,
+					ResourceURI: vw.GetURI(),
+					Type:        "#AccountService.v1_0_2.AccountService",
+					Context:     params["rooturi"].(string) + "/$metadata#AccountService.AccountService",
+					Privileges: map[string]interface{}{
+						"GET":    []string{"Login"},
+						"POST":   []string{"ConfigureManager"}, // cannot create sub objects
+						"PUT":    []string{"ConfigureManager"},
+						"PATCH":  []string{"ConfigureManager"},
+						"DELETE": []string{}, // can't be deleted
+					},
+					Properties: map[string]interface{}{
+						"Id":          "AccountService",
+						"Name":        "Account Service",
+						"Description": "Account Service",
+						"Status": map[string]interface{}{
+							"State":  "Enabled",
+							"Health": "OK",
+						},
+						"ServiceEnabled":                  true,
+						"AuthFailureLoggingThreshold":     3,
+						"MinPasswordLength":               8,
+						"AccountLockoutThreshold":         5,
+						"AccountLockoutDuration":          30,
+						"AccountLockoutCounterResetAfter": 30,
+					}},
+
+				&domain.UpdateRedfishResourceProperties{
+					ID: params["rootid"].(eh.UUID),
+					Properties: map[string]interface{}{
+						"AccountService": map[string]interface{}{"@odata.id": vw.GetURI()},
 					},
 				},
 			}, nil
@@ -103,7 +143,14 @@ func RegisterChassis(s *testaggregate.Service) {
 					Properties: map[string]interface{}{
 						"Name":         "Roles Collection",
 						"Members@meta": vw.Meta(view.GETProperty("members"), view.GETFormatter("formatOdataList"), view.GETModel("default")),
-					}}}, nil
+					}},
+				&domain.UpdateRedfishResourceProperties{
+					ID: params["actsvc_id"].(eh.UUID),
+					Properties: map[string]interface{}{
+						"Roles": map[string]interface{}{"@odata.id": vw.GetURI()},
+					},
+				},
+			}, nil
 		})
 
 	s.RegisterAggregateFunction("accounts",
@@ -118,54 +165,20 @@ func RegisterChassis(s *testaggregate.Service) {
 					Properties: map[string]interface{}{
 						"Name":         "Accounts Collection",
 						"Members@meta": vw.Meta(view.GETProperty("members"), view.GETFormatter("formatOdataList"), view.GETModel("default")),
-					}}}, nil
+					}},
+				&domain.UpdateRedfishResourceProperties{
+					ID: params["actsvc_id"].(eh.UUID),
+					Properties: map[string]interface{}{
+						"Accounts": map[string]interface{}{"@odata.id": vw.GetURI()},
+					},
+				},
+			}, nil
 		})
 
 }
 
 func AddAggregate(ctx context.Context, rootID eh.UUID, rootURI string, ch eh.CommandHandler) {
 	// Create Computer System Collection
-	ch.HandleCommand(
-		ctx,
-		&domain.CreateRedfishResource{
-			ID:         eh.NewUUID(),
-			Collection: false,
-
-			ResourceURI: rootURI + "/AccountService",
-			Type:        "#AccountService.v1_0_2.AccountService",
-			Context:     rootURI + "/$metadata#AccountService.AccountService",
-			Privileges: map[string]interface{}{
-				"GET":    []string{"Login"},
-				"POST":   []string{"ConfigureManager"}, // cannot create sub objects
-				"PUT":    []string{"ConfigureManager"},
-				"PATCH":  []string{"ConfigureManager"},
-				"DELETE": []string{}, // can't be deleted
-			},
-			Properties: map[string]interface{}{
-				"Id":          "AccountService",
-				"Name":        "Account Service",
-				"Description": "Account Service",
-				"Status": map[string]interface{}{
-					"State":  "Enabled",
-					"Health": "OK",
-				},
-				"ServiceEnabled":                  true,
-				"AuthFailureLoggingThreshold":     3,
-				"MinPasswordLength":               8,
-				"AccountLockoutThreshold":         5,
-				"AccountLockoutDuration":          30,
-				"AccountLockoutCounterResetAfter": 30,
-				"Accounts":                        map[string]string{"@odata.id": rootURI + "/AccountService/Accounts"},
-				"Roles":                           map[string]string{"@odata.id": rootURI + "/AccountService/Roles"},
-			}})
-
-	ch.HandleCommand(ctx,
-		&domain.UpdateRedfishResourceProperties{
-			ID: rootID,
-			Properties: map[string]interface{}{
-				"AccountService": map[string]interface{}{"@odata.id": rootURI + "/AccountService"},
-			},
-		})
 
 	// add standard DMTF roles: Admin
 	ch.HandleCommand(

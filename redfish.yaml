@@ -458,6 +458,20 @@ views:
           "params":
       "Aggregate": "roles"
 
+  "accountservice":
+      "Logger": ["module", "AccountService"]
+      "Models":
+        "default":  {}
+      "Controllers":
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/AccountService' "
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+        - "fn": "withFormatter_formatOdataList"
+          "params":
+      "Aggregate": "accountservice"
+
   "accounts":
       "Logger": ["module", "Accounts"]
       "Models":
