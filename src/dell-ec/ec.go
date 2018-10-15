@@ -128,7 +128,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	testaggregate.AddAggregate(ctx, testView, ch)
 
 	//*********************************************************************
-	//  /redfish/v1/Chassis
+	//  /redfish/v1/{Managers,Chassis,Systems,Accounts}
 	//*********************************************************************
 	baseParams := map[string]interface{}{"rooturi": rootView.GetURI(), "rootid": rootView.GetUUID(), "collection_uri": "/redfish/v1/Chassis"}
 	modParams := func(newParams map[string]interface{}) map[string]interface{} {
@@ -151,11 +151,9 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	_, _, _ = instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "accounts", modParams(map[string]interface{}{"collection_uri": "/redfish/v1/AccountService/Accounts"}))
 
 	//*********************************************************************
-	//  /redfish/v1/{Managers,Chassis,Systems,Accounts}
+	//  Standard redfish roles
 	//*********************************************************************
-	// Add standard collections: Systems, Chassis, Mangers, Accounts
-	//
-	stdcollections.AddAggregate(ctx, rootView.GetUUID(), rootView.GetURI(), ch)
+	stdcollections.AddStandardRoles(ctx, rootView.GetUUID(), rootView.GetURI(), ch)
 
 	//*********************************************************************
 	// /redfish/v1/Sessions

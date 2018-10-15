@@ -177,7 +177,7 @@ func RegisterChassis(s *testaggregate.Service) {
 
 }
 
-func AddAggregate(ctx context.Context, rootID eh.UUID, rootURI string, ch eh.CommandHandler) {
+func AddStandardRoles(ctx context.Context, rootID eh.UUID, rootURI string, ch eh.CommandHandler) {
 	// Create Computer System Collection
 
 	// add standard DMTF roles: Admin
