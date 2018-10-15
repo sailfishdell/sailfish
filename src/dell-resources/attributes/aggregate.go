@@ -65,7 +65,6 @@ func AddAggregate(ctx context.Context, v *view.View, uri string, ch eh.CommandHa
 		context.Background(),
 		&domain.CreateRedfishResource{
 			ID:          ret,
-			Collection:  false,
 			ResourceURI: uri,
 			Type:        "#OemAttributes.v1_0_0.OemAttributes",
 			Context:     "/redfish/v1/$metadata#OemAttributes.OemAttributes",

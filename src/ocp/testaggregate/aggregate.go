@@ -18,7 +18,6 @@ func AddAggregate(ctx context.Context, v *view.View, ch eh.CommandHandler) *view
 		ctx,
 		&domain.CreateRedfishResource{
 			ID:          v.GetUUID(),
-			Collection:  false,
 			ResourceURI: v.GetURI(),
 			Type:        "#Manager.v1_0_2.Manager",
 			Context:     "/redfish/v1/$metadata#Manager.Manager",

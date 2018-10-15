@@ -18,7 +18,6 @@ func AddTrendsAggregate(ctx context.Context, logger log.Logger, v *view.View, ch
 			ResourceURI: v.GetURI(),
 			Type:        "#DellPower.v1_0_0.DellPowerTrends",
 			Context:     "/redfish/v1/$metadata#Power.PowerSystem.Chassis.1/Power/$entity",
-			Collection:  false,
 			Privileges: map[string]interface{}{
 				"GET":    []string{"Login"},
 				"POST":   []string{}, // cannot create sub objects
@@ -43,7 +42,6 @@ func AddHistogramAggregate(ctx context.Context, logger log.Logger, v *view.View,
 			ResourceURI: v.GetURI(),
 			Type:        "#DellPower.v1_0_0.DellPowerTrend",
 			Context:     "/redfish/v1/$metadata#Power.PowerSystem.Chassis.1/Power/$entity",
-			Collection:  false,
 			Privileges: map[string]interface{}{
 				"GET":    []string{"Login"},
 				"POST":   []string{}, // cannot create sub objects

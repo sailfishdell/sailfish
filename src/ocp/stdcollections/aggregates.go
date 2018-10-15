@@ -26,7 +26,6 @@ func RegisterChassis(s *testaggregate.Service) {
 		func(ctx context.Context, subLogger log.Logger, cfgMgr *viper.Viper, vw *view.View, extra interface{}, params map[string]interface{}) ([]eh.Command, error) {
 			return []eh.Command{
 				&domain.CreateRedfishResource{
-					Collection:  false,
 					ResourceURI: vw.GetURI(),
 					Type:        "#ChassisCollection.ChassisCollection",
 					Context:     params["rooturi"].(string) + "/$metadata#ChassisCollection.ChassisCollection",
@@ -35,13 +34,11 @@ func RegisterChassis(s *testaggregate.Service) {
 						"Name":         "Chassis Collection",
 						"Members@meta": vw.Meta(view.GETProperty("members"), view.GETFormatter("formatOdataList"), view.GETModel("default")),
 					}},
-
 				&domain.UpdateRedfishResourceProperties{
 					ID: params["rootid"].(eh.UUID),
 					Properties: map[string]interface{}{
 						"Chassis": map[string]interface{}{"@odata.id": vw.GetURI()},
-					},
-				},
+					}},
 			}, nil
 		})
 
@@ -49,7 +46,6 @@ func RegisterChassis(s *testaggregate.Service) {
 		func(ctx context.Context, subLogger log.Logger, cfgMgr *viper.Viper, vw *view.View, extra interface{}, params map[string]interface{}) ([]eh.Command, error) {
 			return []eh.Command{
 				&domain.CreateRedfishResource{
-					Collection:  false,
 					ResourceURI: vw.GetURI(),
 					Type:        "#ComputerSystemCollection.ComputerSystemCollection",
 					Context:     params["rooturi"].(string) + "/$metadata#ComputerSystemCollection.ComputerSystemCollection",
@@ -62,8 +58,7 @@ func RegisterChassis(s *testaggregate.Service) {
 					ID: params["rootid"].(eh.UUID),
 					Properties: map[string]interface{}{
 						"Systems": map[string]interface{}{"@odata.id": vw.GetURI()},
-					},
-				},
+					}},
 			}, nil
 		})
 
@@ -71,7 +66,6 @@ func RegisterChassis(s *testaggregate.Service) {
 		func(ctx context.Context, subLogger log.Logger, cfgMgr *viper.Viper, vw *view.View, extra interface{}, params map[string]interface{}) ([]eh.Command, error) {
 			return []eh.Command{
 				&domain.CreateRedfishResource{
-					Collection:  false,
 					ResourceURI: vw.GetURI(),
 					Type:        "#ManagerCollection.ManagerCollection",
 					Context:     params["rooturi"].(string) + "/$metadata#ManagerCollection.ManagerCollection",
@@ -86,8 +80,7 @@ func RegisterChassis(s *testaggregate.Service) {
 					ID: params["rootid"].(eh.UUID),
 					Properties: map[string]interface{}{
 						"Managers": map[string]interface{}{"@odata.id": vw.GetURI()},
-					},
-				},
+					}},
 			}, nil
 		})
 
@@ -95,7 +88,6 @@ func RegisterChassis(s *testaggregate.Service) {
 		func(ctx context.Context, subLogger log.Logger, cfgMgr *viper.Viper, vw *view.View, extra interface{}, params map[string]interface{}) ([]eh.Command, error) {
 			return []eh.Command{
 				&domain.CreateRedfishResource{
-					Collection:  false,
 					ResourceURI: vw.GetURI(),
 					Type:        "#AccountService.v1_0_2.AccountService",
 					Context:     params["rooturi"].(string) + "/$metadata#AccountService.AccountService",
@@ -126,8 +118,7 @@ func RegisterChassis(s *testaggregate.Service) {
 					ID: params["rootid"].(eh.UUID),
 					Properties: map[string]interface{}{
 						"AccountService": map[string]interface{}{"@odata.id": vw.GetURI()},
-					},
-				},
+					}},
 			}, nil
 		})
 
@@ -135,7 +126,6 @@ func RegisterChassis(s *testaggregate.Service) {
 		func(ctx context.Context, subLogger log.Logger, cfgMgr *viper.Viper, vw *view.View, extra interface{}, params map[string]interface{}) ([]eh.Command, error) {
 			return []eh.Command{
 				&domain.CreateRedfishResource{
-					Collection:  false,
 					ResourceURI: vw.GetURI(),
 					Type:        "#RoleCollection.RoleCollection",
 					Context:     params["rooturi"].(string) + "/$metadata#RoleCollection.RoleCollection",
@@ -148,8 +138,7 @@ func RegisterChassis(s *testaggregate.Service) {
 					ID: params["actsvc_id"].(eh.UUID),
 					Properties: map[string]interface{}{
 						"Roles": map[string]interface{}{"@odata.id": vw.GetURI()},
-					},
-				},
+					}},
 			}, nil
 		})
 
@@ -157,7 +146,6 @@ func RegisterChassis(s *testaggregate.Service) {
 		func(ctx context.Context, subLogger log.Logger, cfgMgr *viper.Viper, vw *view.View, extra interface{}, params map[string]interface{}) ([]eh.Command, error) {
 			return []eh.Command{
 				&domain.CreateRedfishResource{
-					Collection:  false,
 					ResourceURI: vw.GetURI(),
 					Type:        "#ManagerAccountCollection.ManagerAccountCollection",
 					Context:     params["rooturi"].(string) + "/$metadata#ManagerAccountCollection.ManagerAccountCollection",
@@ -170,8 +158,7 @@ func RegisterChassis(s *testaggregate.Service) {
 					ID: params["actsvc_id"].(eh.UUID),
 					Properties: map[string]interface{}{
 						"Accounts": map[string]interface{}{"@odata.id": vw.GetURI()},
-					},
-				},
+					}},
 			}, nil
 		})
 
@@ -184,8 +171,7 @@ func AddStandardRoles(ctx context.Context, rootID eh.UUID, rootURI string, ch eh
 	ch.HandleCommand(
 		ctx,
 		&domain.CreateRedfishResource{
-			ID:         eh.NewUUID(),
-			Collection: false,
+			ID: eh.NewUUID(),
 
 			ResourceURI: rootURI + "/AccountService/Roles/Admin",
 			Type:        "#Role.v1_0_2.Role",
@@ -215,9 +201,7 @@ func AddStandardRoles(ctx context.Context, rootID eh.UUID, rootURI string, ch eh
 	ch.HandleCommand(
 		ctx,
 		&domain.CreateRedfishResource{
-			ID:         eh.NewUUID(),
-			Collection: false,
-
+			ID:          eh.NewUUID(),
 			ResourceURI: rootURI + "/AccountService/Roles/Operator",
 			Type:        "#Role.v1_0_2.Role",
 			Context:     rootURI + "/$metadata#Role.Role",
@@ -244,9 +228,7 @@ func AddStandardRoles(ctx context.Context, rootID eh.UUID, rootURI string, ch eh
 	ch.HandleCommand(
 		ctx,
 		&domain.CreateRedfishResource{
-			ID:         eh.NewUUID(),
-			Collection: false,
-
+			ID:          eh.NewUUID(),
 			ResourceURI: rootURI + "/AccountService/Roles/ReadOnlyUser",
 			Type:        "#Role.v1_0_2.Role",
 			Context:     rootURI + "/$metadata#Role.Role",

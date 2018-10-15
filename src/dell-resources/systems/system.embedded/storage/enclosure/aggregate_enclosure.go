@@ -15,7 +15,6 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 		ctx,
 		&domain.CreateRedfishResource{
 			ID:          v.GetUUID(),
-			Collection:  false,
 			ResourceURI: v.GetURI(),
 			Type:        "#Chassis.v1_6_0.Chassis",
 			Context:     "/redfish/v1/$metadata#Chassis.Chassis",

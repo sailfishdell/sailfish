@@ -36,7 +36,6 @@ func AddAggregate(ctx context.Context, v *view.View, baseUri string, ch eh.Comma
 		ctx,
 		&domain.CreateRedfishResource{
 			ID:          eh.NewUUID(),
-			Collection:  false,
 			ResourceURI: baseUri + "/LogServices/Lclog",
 			Type:        "#LogService.v1_0_2.LogService",
 			Context:     "/redfish/v1/$metadata#LogService.LogService",
@@ -64,7 +63,6 @@ func AddAggregate(ctx context.Context, v *view.View, baseUri string, ch eh.Comma
 		ctx,
 		&domain.CreateRedfishResource{
 			ID:          eh.NewUUID(),
-			Collection:  false,
 			ResourceURI: baseUri + "/LogServices/FaultList",
 			Type:        "#LogService.v1_0_2.LogService",
 			Context:     "/redfish/v1/$metadata#LogService.LogService",

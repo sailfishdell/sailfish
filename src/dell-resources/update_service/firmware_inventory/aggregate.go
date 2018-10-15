@@ -18,11 +18,9 @@ func AddAggregate(ctx context.Context, root *view.View, v *view.View, ch eh.Comm
 		ctx,
 		&domain.CreateRedfishResource{
 			ID:          v.GetUUID(),
-			Collection:  false,
 			ResourceURI: v.GetURI(),
-
-			Type:    "#SoftwareInventory.v1_0_0.SoftwareInventory",
-			Context: root.GetURI() + "/$metadata#SoftwareInventory.SoftwareInventory",
+			Type:        "#SoftwareInventory.v1_0_0.SoftwareInventory",
+			Context:     root.GetURI() + "/$metadata#SoftwareInventory.SoftwareInventory",
 			Privileges: map[string]interface{}{
 				"GET":    []string{"Login"},
 				"POST":   []string{}, // cannot create sub objects
