@@ -154,7 +154,6 @@ func (c *POST) Handle(ctx context.Context, a *domain.RedfishResourceAggregate) e
 	case string:
 		timeout, _ = strconv.Atoi(t)
 	}
-	fmt.Printf("Start sesion delete timer: %s == %s\n", timeout, c.model.GetProperty("session_timeout"))
 	c.startSessionDeleteTimer(sessionUUID, sessionURI, timeout)
 
 	a.PublishEvent(eh.NewEvent(domain.HTTPCmdProcessed, &domain.HTTPCmdProcessedData{
