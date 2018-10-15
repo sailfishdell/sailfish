@@ -399,6 +399,8 @@ views:
       "Models":
         "default":  {}
       "Controllers":
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + rooturi" }
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/Chassis' "
@@ -409,6 +411,14 @@ views:
       "Aggregate": "chassis"
 
 awesome_mapper:
+    collection:
+      - { SelectEventType: "RedfishResource:created",
+          Select: "type == 'RedfishResource:created' &&  baseuri(data.ResourceURI) == uriToCheck ",
+          ModelUpdate: [ {Property: "members", Query: "addtoset(model, propname, data.ResourceURI)", Default: 0} ]}
+      - { SelectEventType: "RedfishResource:removed",
+          Select: "type == 'RedfishResource:removed' &&  baseuri(data.ResourceURI) == uriToCheck ",
+          ModelUpdate: [ {Property: "members", Query: "removefromset(model, propname, data.ResourceURI)", Default: 0} ]}
+
     testview:
       - { SelectEventType: "AttributeUpdated", Select: "type == 'AttributeUpdated' && data.FQDD == fqdd && data.Name == 'test'", ModelUpdate: [ {Property: "TEST", Query: "data.Value", Default: 0} ] }
 
