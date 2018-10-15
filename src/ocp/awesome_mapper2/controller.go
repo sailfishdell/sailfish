@@ -102,14 +102,14 @@ func StartService(ctx context.Context, logger log.Logger, eb eh.EventBus) (*Serv
 
 		ret.logger.Debug("am2 processing event", "type", event.EventType())
 		for configName, config := range ret.eventTypes[event.EventType()] {
-			ret.logger.Debug("am2 found processor", "name", configName, "config", config)
+			ret.logger.Debug("am2 found processor", "type", event.EventType(), "name", configName, "config", config)
 			expr, err := govaluate.NewEvaluableExpressionFromTokens(config.selectExpr)
 			if err != nil {
 				ret.logger.Error("failed to instantiate expression from tokens", "err", err)
 				continue
 			}
 			for cfgName, cfg := range config.configs {
-				ret.logger.Debug("am2 found processing against config", "cfgName", cfgName)
+				ret.logger.Debug("am2 running for config", "cfgName", cfgName, "type", event.EventType(), "name", configName, "config", config)
 				// single threaded here, so can update the parameters struct. If this changes, have to update this
 				cfg.params["type"] = string(event.EventType())
 				cfg.params["data"] = event.Data()
@@ -126,6 +126,7 @@ func StartService(ctx context.Context, logger log.Logger, eb eh.EventBus) (*Serv
 					continue
 				}
 
+				cfg.model.StopNotifications()
 				for _, m := range config.mappings {
 					expr, err := govaluate.NewEvaluableExpressionFromTokens(m.queryExpr)
 					cfg.params["propname"] = m.property
@@ -137,6 +138,8 @@ func StartService(ctx context.Context, logger log.Logger, eb eh.EventBus) (*Serv
 					ret.logger.Info("Updating property!", "property", m.property, "value", val)
 					cfg.model.UpdateProperty(m.property, val)
 				}
+				cfg.model.StartNotifications()
+				cfg.model.NotifyObservers()
 			}
 		}
 	})
