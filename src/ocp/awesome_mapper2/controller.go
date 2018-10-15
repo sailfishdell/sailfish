@@ -43,17 +43,17 @@ type OneMapperConfig struct {
 	params map[string]interface{}
 }
 
-type mapping struct {
+type singleModelUpdate struct {
 	property    string
 	queryString string
 	queryExpr   []govaluate.ExpressionToken
 }
 
 type AwesomeMapperConfig struct {
-	configs    map[string]*OneMapperConfig
-	selectStr  string
-	selectExpr []govaluate.ExpressionToken
-	mappings   []*mapping
+	configs      map[string]*OneMapperConfig
+	selectStr    string
+	selectExpr   []govaluate.ExpressionToken
+	modelUpdates []*singleModelUpdate
 }
 
 type Service struct {
@@ -109,7 +109,7 @@ func StartService(ctx context.Context, logger log.Logger, eb eh.EventBus) (*Serv
 				continue
 			}
 			for cfgName, cfg := range config.configs {
-				ret.logger.Debug("am2 running for config", "cfgName", cfgName, "type", event.EventType(), "name", configName, "config", config)
+				ret.logger.Debug("am2 running for config", "cfgName", cfgName, "type", event.EventType(), "name", configName, "config", config, "select", config.selectStr)
 				// single threaded here, so can update the parameters struct. If this changes, have to update this
 				cfg.params["type"] = string(event.EventType())
 				cfg.params["data"] = event.Data()
@@ -117,17 +117,21 @@ func StartService(ctx context.Context, logger log.Logger, eb eh.EventBus) (*Serv
 				cfg.params["model"] = cfg.model
 				val, err := expr.Evaluate(cfg.params)
 				if err != nil {
-					ret.logger.Error("expression failed to evaluate", "err", err)
+					ret.logger.Error("expression failed to evaluate", "err", err, "select", config.selectStr)
 					continue
 				}
 				valBool, ok := val.(bool)
-				if !ok || !valBool {
-					ret.logger.Info("No match")
+				if !ok {
+					ret.logger.Info("NOT A BOOL", "cfgName", cfgName, "type", event.EventType(), "name", configName, "config", config, "select", config.selectStr)
+					continue
+				}
+				if !valBool {
+					ret.logger.Info("Select didnt match", "cfgName", cfgName, "type", event.EventType(), "name", configName, "config", config, "select", config.selectStr)
 					continue
 				}
 
 				cfg.model.StopNotifications()
-				for _, m := range config.mappings {
+				for _, m := range config.modelUpdates {
 					expr, err := govaluate.NewEvaluableExpressionFromTokens(m.queryExpr)
 					cfg.params["propname"] = m.property
 					val, err := expr.Evaluate(cfg.params)
@@ -135,7 +139,7 @@ func StartService(ctx context.Context, logger log.Logger, eb eh.EventBus) (*Serv
 						ret.logger.Error("Expression failed to evaluate", "configName", configName, "queryString", m.queryString, "parameters", cfg.params, "err", err)
 						continue
 					}
-					ret.logger.Info("Updating property!", "property", m.property, "value", val)
+					ret.logger.Info("Updating property!", "property", m.property, "value", val, "Event", event, "EventData", event.Data())
 					cfg.model.UpdateProperty(m.property, val)
 				}
 				cfg.model.StartNotifications()
@@ -175,9 +179,9 @@ func (s *Service) NewMapping(ctx context.Context, logger log.Logger, cfg *viper.
 	for _, c := range c {
 		m, ok := s.eventTypes[eh.EventType(c.SelectEventType)]
 		if !ok {
+			logger.Info("adding new EMPTY awesome mapper config for event type", "eventtype", c.SelectEventType)
 			m = map[string]*AwesomeMapperConfig{}
 			s.eventTypes[eh.EventType(c.SelectEventType)] = m
-			logger.Info("adding new EMPTY awesome mapper config for event type", "eventtype", c.SelectEventType)
 		}
 
 		mapperConfig, ok := m[cfgName]
@@ -189,37 +193,37 @@ func (s *Service) NewMapping(ctx context.Context, logger log.Logger, cfg *viper.
 			}
 
 			mapperConfig = &AwesomeMapperConfig{
-				selectStr:  c.Select,
-				configs:    map[string]*OneMapperConfig{},
-				selectExpr: selectExpr.Tokens(),
-				mappings:   []*mapping{},
+				selectStr:    c.Select,
+				configs:      map[string]*OneMapperConfig{},
+				selectExpr:   selectExpr.Tokens(),
+				modelUpdates: []*singleModelUpdate{},
 			}
+			for _, up := range c.ModelUpdate {
+				queryExpr, err := govaluate.NewEvaluableExpressionWithFunctions(up.Query, functions)
+				if err != nil {
+					logger.Crit("Query construction failed", "query", up.Query, "err", err)
+					return errors.New("Query construction failed")
+				}
+
+				newModelUpdate := &singleModelUpdate{
+					property:    up.Property,
+					queryString: up.Query,
+					queryExpr:   queryExpr.Tokens(),
+				}
+
+				// set model default value if present
+				if up.Default != nil {
+					mdl.UpdateProperty(up.Property, up.Default)
+				}
+				mapperConfig.modelUpdates = append(mapperConfig.modelUpdates, newModelUpdate)
+				logger.Info("adding new mapping", "eventtype", c.SelectEventType, "cfgName", cfgName, "query", up.Query)
+			}
+
 			m[cfgName] = mapperConfig
 			logger.Info("adding new awesome mapper config for event type for config", "eventtype", c.SelectEventType, "cfgName", cfgName)
 		}
 
 		mapperConfig.configs[uniqueName] = newconfig
-
-		for _, up := range c.ModelUpdate {
-			queryExpr, err := govaluate.NewEvaluableExpressionWithFunctions(up.Query, functions)
-			if err != nil {
-				logger.Crit("Query construction failed", "query", up.Query, "err", err)
-				return errors.New("Query construction failed")
-			}
-
-			newModelUpdate := &mapping{
-				property:    up.Property,
-				queryString: up.Query,
-				queryExpr:   queryExpr.Tokens(),
-			}
-
-			// set model default value if present
-			if up.Default != nil {
-				mdl.UpdateProperty(up.Property, up.Default)
-			}
-			mapperConfig.mappings = append(mapperConfig.mappings, newModelUpdate)
-			logger.Info("adding new mapping", "eventtype", c.SelectEventType, "cfgName", cfgName, "query", up.Query)
-		}
 
 	}
 	mdl.StartNotifications()
