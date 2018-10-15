@@ -5,10 +5,7 @@ import (
 	"strings"
 	"sync"
 
-	"io/ioutil"
-
 	"github.com/spf13/viper"
-	yaml "gopkg.in/yaml.v2"
 
 	eh "github.com/looplab/eventhorizon"
 
@@ -142,6 +139,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	//*********************************************************************
 	_, sessionView, _ := testaggregate.InstantiateFromCfg(ctx, logger, cfgMgr, "sessionview", map[string]interface{}{"rooturi": rootView.GetURI()})
 	session.AddAggregate(ctx, sessionView, rootView.GetUUID(), ch, eb)
+	sessionView.GetModel("default").UpdateProperty("session_timeout", cfgMgr.GetInt("session.timeout"))
 
 	//*********************************************************************
 	// /redfish/v1/EventService
@@ -768,52 +766,10 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 
 	// VIPER Config:
 	// pull the config from the YAML file to populate some static config options
-	self.configChangeHandler = func() {
-		logger.Info("Re-applying configuration from config file.")
-		sessionView.GetModel("default").ApplyOption(model.UpdateProperty("session_timeout", cfgMgr.GetInt("session.timeout")))
-
-		for _, fn := range updateFns {
-			fn(ctx, cfgMgr)
-		}
-	}
-	self.ConfigChangeHandler()
-
-	cfgMgr.SetDefault("main.dumpConfigChanges.filename", "redfish-changed.yaml")
-	cfgMgr.SetDefault("main.dumpConfigChanges.enabled", "true")
-	dumpViperConfig := func() {
-		viperMu.Lock()
-		defer viperMu.Unlock()
-
-		dumpFileName := cfgMgr.GetString("main.dumpConfigChanges.filename")
-		enabled := cfgMgr.GetBool("main.dumpConfigChanges.enabled")
-		if !enabled {
-			return
-		}
-
-		// TODO: change this to a streaming write (reduce mem usage)
-		var config map[string]interface{}
-		cfgMgr.Unmarshal(&config)
-		output, _ := yaml.Marshal(config)
-		_ = ioutil.WriteFile(dumpFileName, output, 0644)
+	self.configChangeHandler = func() {}
+	for _, fn := range updateFns {
+		fn(ctx, cfgMgr)
 	}
 
-	sessObsLogger := logger.New("module", "observer")
-	sessionView.GetModel("default").AddObserver("viper", func(m *model.Model, updates []model.Update) {
-		sessObsLogger.Info("Session variable changed", "model", m, "updates", updates)
-		changed := false
-		for _, up := range updates {
-			if up.Property == "session_timeout" {
-				if n, ok := up.NewValue.(int); ok {
-					viperMu.Lock()
-					cfgMgr.Set("session.timeout", n)
-					viperMu.Unlock()
-					changed = true
-				}
-			}
-		}
-		if changed {
-			dumpViperConfig()
-		}
-	})
 	return self
 }
