@@ -2,11 +2,14 @@ package awesome_mapper
 
 import (
 	"errors"
+	"fmt"
+	"path"
 	"reflect"
 	"strconv"
 	"time"
 
 	"github.com/Knetic/govaluate"
+	"github.com/superchalupa/sailfish/src/ocp/model"
 )
 
 var functions map[string]govaluate.ExpressionFunction
@@ -25,6 +28,85 @@ func init() {
 			default:
 				return nil, errors.New("Cant parse non-string")
 			}
+		},
+		"removefromset": func(args ...interface{}) (interface{}, error) {
+			model, ok := args[0].(*model.Model)
+			if !ok {
+				return nil, errors.New("Need model as first arg!")
+			}
+			property, ok := args[1].(string)
+			if !ok {
+				return nil, errors.New("Need property name as second arg!")
+			}
+			str, ok := args[2].(string)
+			if !ok {
+				return nil, errors.New("Need new value as third arg!")
+			}
+			v, ok := model.GetPropertyOk(property)
+			if !ok || v == nil {
+				v = []string{}
+			}
+			vStr, ok := v.([]string)
+			if !ok {
+				v = []string{}
+				vStr = v.([]string)
+			}
+
+			for i, _ := range vStr {
+				if vStr[i] == str {
+					ret := vStr[:i]
+					if i+1 < len(vStr) {
+						ret = append(ret, vStr[i+1:]...)
+					}
+					fmt.Printf("REDUCED SET: minus:(%s) = %s\n", str, ret)
+					model.UpdateProperty(property, ret)
+					break
+				}
+			}
+			return nil, errors.New("unimplemented")
+		},
+		"addtoset": func(args ...interface{}) (interface{}, error) {
+			model, ok := args[0].(*model.Model)
+			if !ok {
+				return nil, errors.New("Need model as first arg!")
+			}
+			property, ok := args[1].(string)
+			if !ok {
+				return nil, errors.New("Need property name as second arg!")
+			}
+			str, ok := args[2].(string)
+			if !ok {
+				return nil, errors.New("Need new value as third arg!")
+			}
+			v, ok := model.GetPropertyOk(property)
+			if !ok || v == nil {
+				v = []string{}
+			}
+			vStr, ok := v.([]string)
+			if !ok {
+				v = []string{}
+				vStr = v.([]string)
+			}
+
+			found := false
+			for i, _ := range vStr {
+				if vStr[i] == str {
+					found = true
+				}
+			}
+			if !found {
+				vStr = append(vStr, str)
+				model.UpdateProperty(property, vStr)
+				fmt.Printf("UPDATED SET: %s\n", vStr)
+			}
+			return nil, errors.New("unimplemented")
+		},
+		"baseuri": func(args ...interface{}) (interface{}, error) {
+			str, ok := args[0].(string)
+			if !ok {
+				return nil, errors.New("expected a string argument")
+			}
+			return path.Dir(str), nil
 		},
 		"strlen": func(args ...interface{}) (interface{}, error) {
 			length := len(args[0].(string))
