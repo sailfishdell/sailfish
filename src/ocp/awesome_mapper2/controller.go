@@ -47,7 +47,6 @@ type mapping struct {
 	property    string
 	queryString string
 	queryExpr   []govaluate.ExpressionToken
-	def         interface{}
 }
 
 type AwesomeMapperConfig struct {
@@ -85,7 +84,7 @@ func StartService(ctx context.Context, logger log.Logger, eb eh.EventBus) (*Serv
 			defer ret.eventTypesMu.RUnlock()
 
 			// hash lookup to see if we process this event, should be the fastest way
-			ret.logger.Debug("am2 testing event", "type", ev.EventType())
+			ret.logger.Debug("am2 checking for processor for event", "type", ev.EventType())
 			if _, ok := ret.eventTypes[ev.EventType()]; ok {
 				return true
 			}
@@ -103,7 +102,7 @@ func StartService(ctx context.Context, logger log.Logger, eb eh.EventBus) (*Serv
 
 		ret.logger.Debug("am2 processing event", "type", event.EventType())
 		for configName, config := range ret.eventTypes[event.EventType()] {
-			ret.logger.Debug("am2 found processor")
+			ret.logger.Debug("am2 found processor", "name", configName, "config", config)
 			expr, err := govaluate.NewEvaluableExpressionFromTokens(config.selectExpr)
 			if err != nil {
 				ret.logger.Error("failed to instantiate expression from tokens", "err", err)
@@ -115,6 +114,7 @@ func StartService(ctx context.Context, logger log.Logger, eb eh.EventBus) (*Serv
 				cfg.params["type"] = string(event.EventType())
 				cfg.params["data"] = event.Data()
 				cfg.params["event"] = event
+				cfg.params["model"] = cfg.model
 				val, err := expr.Evaluate(cfg.params)
 				if err != nil {
 					ret.logger.Error("expression failed to evaluate", "err", err)
@@ -167,6 +167,7 @@ func (s *Service) NewMapping(ctx context.Context, logger log.Logger, cfg *viper.
 	}
 	logger.Info("updating mappings", "mappings", c)
 
+	mdl.StopNotifications()
 	for _, c := range c {
 		m, ok := s.eventTypes[eh.EventType(c.SelectEventType)]
 		if !ok {
@@ -203,34 +204,20 @@ func (s *Service) NewMapping(ctx context.Context, logger log.Logger, cfg *viper.
 			newmapping := &mapping{
 				property:    up.Property,
 				queryString: up.Query,
-				def:         up.Default,
 				queryExpr:   queryExpr.Tokens(),
 			}
 
+			// set model default value if present
+			if up.Default != nil {
+				mdl.UpdateProperty(up.Property, up.Default)
+			}
 			mapperConfig.mappings = append(mapperConfig.mappings, newmapping)
 			logger.Info("adding new mapping", "eventtype", c.SelectEventType, "cfgName", cfgName, "query", up.Query)
 		}
 
 	}
-
-	/*
-		// set default values
-
-		mdl.StopNotifications()
-		for _, query := range loopvar.ModelUpdate {
-			expr, err := govaluate.NewEvaluableExpressionWithFunctions(query.Query, functions)
-			if err != nil {
-				logger.Crit("Query construction failed", "query", query.Query, "err", err)
-				continue outer
-			}
-			query.expr = expr.Tokens()
-			if query.Default != nil {
-				mdl.UpdateProperty(query.Property, query.Default)
-			}
-		}
-		mdl.StartNotifications()
-		mdl.NotifyObservers()
-	*/
+	mdl.StartNotifications()
+	mdl.NotifyObservers()
 
 	return nil
 }

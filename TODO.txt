@@ -1,5 +1,7 @@
 Things that need work: (-) TODO (*) DONE
 
+ - validator system for models? Attach functions that observe and validate. Ability to refuse and return an error?
+
  - Schema Meta builder
 
  - Event Service Server for legacy POST/PATCH/PUT
@@ -19,11 +21,6 @@ Things that need work: (-) TODO (*) DONE
  - Dynamically generate metadata
     - Need to dynamically generate the odata metadata endpoints based on what objects are actually present in-tree
         - probably need to update createredfishresource to have a mandatory parameter specifying the schema
-
- - DBUS interface:
-    - hook base command processor into dbus
-    - need to hook current Tree into DBUS: allow sending the internal commands
-    - hook up signals via plugins
 
  - implement for GET:
     - $filter

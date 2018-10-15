@@ -1,0 +1,178 @@
+main:
+    server_name: "dell_idrac"
+    #options: "openbmc" | "dell_ec" | "mockup"
+
+listen:
+    - http::8080
+    - https::8443
+    - pprof::9080
+
+session:
+    timeout: 600
+
+views:
+  "rootview":
+      "Logger": ["module", "root"]
+      "View":
+        - "fn": "with_URI"
+          "params": "'/redfish/v1'"
+
+  "testview":
+      "Logger": ["module", "testview"]
+      "Models":
+        "default":  {"unique_name": "'TEST_Unique_Name'", "name": "'TEST_Name'", "'description'": "'TEST_Description'" }
+      "Controllers":
+        - "fn": "AwesomeMapper"
+          "params": {"modelname": "default", "cfgsection": "testview" }
+        - "fn": "ARMapper"
+          "params": {"modelname": "default", "cfgsection": "testview", "mappinguniquename": "'/redfish/v1/testservice'", "AddToView": true}
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/testview'"
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+
+  "sessionview":
+      "Logger": ["module", "session"]
+      "Models":
+        "default":  {"session_timeout": "30"}
+      "Controllers":
+        - "fn": "AwesomeMapper"
+          "params": {"modelname": "default", "cfgsection": "sessionview" }
+        - "fn": "ARMapper"
+          "params": {"modelname": "default", "cfgsection": "SessionService", "mappinguniquename": "'/redfish/v1/SessionService'", "AddToView": true}
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/SessionService'"
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+
+  "registries":
+      "Logger": ["module", "registry"]
+      "Models":
+        "default":  {}
+      "Controllers":
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/Registries'"
+
+  "idrac_registry":
+      "Logger": ["module", "registry"]
+      "Models":
+        "default":  {
+          "id":          "'Messages'",
+          "description": "'iDRAC Message Registry File locations'",
+          "name":        "'iDRAC Message Registry File'",
+          "type":        "'iDrac.1.5'",
+          "languages":   "array('En')",
+        }
+      "Controllers":
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/Registries/Messages'"
+        - "fn": "withFormatter_count"
+          "params":
+
+  "base_registry":
+      "Logger": ["module", "registry"]
+      "Models":
+        "default":  {
+          "id":          "'BaseMessages'",
+          "description": "'Base Message Registry File locations'",
+          "name":        "'Base Message Registry File'",
+          "type":        "'Base.1.3.8'",
+          "languages":   "array('En')",
+        }
+      "Controllers":
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/Registries/BaseMessages'"
+        - "fn": "withFormatter_count"
+          "params":
+
+  "mgr_attr_registry":
+      "Logger": ["module", "registry"]
+      "Models":
+        "default":  {
+          "id":          "'ManagerAttributeRegistry'",
+          "description": "'Manager Attribute Registry File Locations'",
+          "name":        "'Manager Attribute Registry File'",
+          "type":        "'ManagerAttributeRegistry.1.0'",
+          "languages":   "array('En')",
+        }
+      "Controllers":
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/Registries/ManagerAttributeRegistry'"
+        - "fn": "withFormatter_count"
+          "params":
+
+  "system_chassis":
+      "Logger": ["module", "system_chassis"]
+      "Models":
+        "default":  {"unique_name": "FQDD", "unique_name_attr": "FQDD+'.Attributes'", "attributes": "add_attribute_property()"}
+      "Controllers":
+        - "fn": "ARDumper"
+          "params": {"modelname": "default", "AddToView": true}
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/Chassis/' + FQDD "
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+        - "fn": "withFormatter_count"
+          "params":
+        - "fn": "withFormatter_attributeFormatter"
+          "params":
+        - "fn": "withFormatter_expand"
+          "params":
+        - "fn": "withFormatter_expandone"
+          "params":
+        - "fn": "withFormatter_formatOdataList"
+          "params":
+
+  "storage_enclosure":
+      "Logger": ["module", "StorageEnclosure"]
+      "Models":
+        "default":  {"unique_name": "FQDD", "unique_name_attr": "FQDD+'.Attributes'", "attributes": "add_attribute_property()"}
+      "Controllers":
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/Chassis/' + FQDD "
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+        - "fn": "withFormatter_count"
+          "params":
+        - "fn": "withFormatter_expand"
+          "params":
+        - "fn": "withFormatter_expandone"
+          "params":
+        - "fn": "withFormatter_formatOdataList"
+          "params":
+
+awesome_mapper:
+    testview:
+        - { Select: "type == 'AttributeUpdated' && data.FQDD == fqdd && data.Name == 'InstantaneousPower'", ModelUpdate: [ {Property: "Instantaneous_Power", Query: "data.Value", Default: 0} ] }
+
+
+mappings:
+    # EVERYTHING HERE is from the Config Attribute Registry. If you are not getting data from the Attribute Registry, it doesn't go here.
+
+    test/testview:
+        - {Property: "model",        FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Name" }
+
+    Chassis/Enclosure:
+        - {Property: "asset_tag",    FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "AssetTag" }
+        - {Property: "chassis_type", FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "ChassisType" }
+        - {Property: "description",  FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Description" }
+        - {Property: "manufacturer", FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Manufacturer" }
+        - {Property: "model",        FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Model" }
+        - {Property: "name",         FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Name" }
+        - {Property: "part_number",  FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "PartNumber" }
+        - {Property: "power_state",  FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "PowerState" }
+        - {Property: "sku",          FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "SKU" }
+        - {Property: "serial",       FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "SerialNumber" }
+        - {Property: "connector",    FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Connector" }
+        - {Property: "service_tag",  FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "ServiceTag" }
+        - {Property: "slot_count",   FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "SlotCount" }
+        - {Property: "version",      FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Version" }
+        - {Property: "wired_order",  FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "WiredOrder" }
