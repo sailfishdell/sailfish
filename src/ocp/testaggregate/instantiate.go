@@ -199,7 +199,6 @@ func (s *Service) InstantiateFromCfg(ctx context.Context, cfgMgr *viper.Viper, n
 			subLogger.Crit("aggregate function returned nil")
 			return
 		}
-		subLogger.Crit("WithAggregate()")
 		vw.ApplyOption(WithAggregate(ctx, agg, s.ch))
 	}()
 
