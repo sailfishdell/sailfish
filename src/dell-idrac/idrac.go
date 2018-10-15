@@ -15,7 +15,6 @@ import (
 	"github.com/superchalupa/sailfish/src/dell-resources/attributes"
 	system_chassis "github.com/superchalupa/sailfish/src/dell-resources/chassis/system.chassis"
 	"github.com/superchalupa/sailfish/src/dell-resources/registries"
-	"github.com/superchalupa/sailfish/src/dell-resources/registries/registry"
 	storage_enclosure "github.com/superchalupa/sailfish/src/dell-resources/systems/system.embedded/storage/enclosure"
 	"github.com/superchalupa/sailfish/src/eventwaiter"
 	"github.com/superchalupa/sailfish/src/log"
@@ -80,6 +79,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	ar_mapper2.RegisterARMapper(instantiateSvc, arService)
 	attributes.RegisterARMapper(instantiateSvc, ch, eb)
 	stdmeta.RegisterFormatters(instantiateSvc, d)
+	registries.RegisterAggregate(instantiateSvc)
 
 	// awesome mapper 2 service
 	am2Svc, err := am2.StartService(ctx, logger, eb)
@@ -153,19 +153,14 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	//*********************************************************************
 	// /redfish/v1/Registries
 	//*********************************************************************
-	registryLogger, registryView, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "registries", map[string]interface{}{"rooturi": rootView.GetURI()})
-	registries.AddAggregate(ctx, registryLogger, registryView, rootView.GetUUID(), ch, eb)
+	instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "registries", map[string]interface{}{"rooturi": rootView.GetURI()})
 
 	for regName, location := range map[string]interface{}{
 		"idrac_registry":    []map[string]string{{"Language": "En", "Uri": "/redfish/v1/Registries/Messages/EEMIRegistry.v1_5_0.json"}},
 		"base_registry":     []map[string]string{{"Language": "En", "Uri": "/redfish/v1/Registries/BaseMessages/BaseRegistry.v1_0_0.json", "PublicationUri": "http://www.dmtf.org/sites/default/files/standards/documents/DSP8011_1.0.0a.json"}},
 		"mgr_attr_registry": []map[string]string{{"Language": "En", "Uri": "/redfish/v1/Registries/ManagerAttributeRegistry/ManagerAttributeRegistry.v1_0_0.json"}},
 	} {
-		registryLogger, registryView, _ = instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, regName, map[string]interface{}{"rooturi": rootView.GetURI()})
-		registryView.GetModel("default").ApplyOption(
-			model.UpdateProperty("location", location),
-		)
-		registry.AddAggregate(ctx, registryLogger, registryView, ch, eb)
+		instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, regName, map[string]interface{}{"location": location, "rooturi": rootView.GetURI()})
 	}
 
 	// storage_enclosure_items := []string{}

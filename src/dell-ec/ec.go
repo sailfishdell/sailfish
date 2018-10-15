@@ -31,7 +31,6 @@ import (
 	mgrCMCIntegrated "github.com/superchalupa/sailfish/src/dell-resources/managers/cmc.integrated"
 	"github.com/superchalupa/sailfish/src/dell-resources/redundancy"
 	"github.com/superchalupa/sailfish/src/dell-resources/registries"
-	"github.com/superchalupa/sailfish/src/dell-resources/registries/registry"
 	"github.com/superchalupa/sailfish/src/dell-resources/slots"
 	"github.com/superchalupa/sailfish/src/dell-resources/slots/slotconfig"
 	"github.com/superchalupa/sailfish/src/dell-resources/update_service"
@@ -96,6 +95,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	ar_mapper2.RegisterARMapper(instantiateSvc, arService)
 	attributes.RegisterARMapper(instantiateSvc, ch, eb)
 	stdmeta.RegisterFormatters(instantiateSvc, d)
+	registries.RegisterAggregate(instantiateSvc)
 
 	actionSvc := ah.StartService(ctx, logger, ch, eb)
 
@@ -106,6 +106,18 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	}
 	testaggregate.RegisterAM2(instantiateSvc, am2Svc)
 	stdcollections.RegisterChassis(instantiateSvc)
+
+	baseParams := map[string]interface{}{}
+	modParams := func(newParams map[string]interface{}) map[string]interface{} {
+		ret := map[string]interface{}{}
+		for k, v := range baseParams {
+			ret[k] = v
+		}
+		for k, v := range newParams {
+			ret[k] = v
+		}
+		return ret
+	}
 
 	//HEALTH
 	// The following model maps a bunch of health related stuff that can be tracked once at a global level.
@@ -120,6 +132,8 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	//*********************************************************************
 	_, rootView, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "rootview", map[string]interface{}{})
 	root.AddAggregate(ctx, rootView, ch, eb)
+	baseParams["rooturi"] = rootView.GetURI()
+	baseParams["rootid"] = rootView.GetUUID()
 
 	//*********************************************************************
 	//  /redfish/v1/testview - a proof of concept test view and example
@@ -130,17 +144,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	//*********************************************************************
 	//  /redfish/v1/{Managers,Chassis,Systems,Accounts}
 	//*********************************************************************
-	baseParams := map[string]interface{}{"rooturi": rootView.GetURI(), "rootid": rootView.GetUUID(), "collection_uri": "/redfish/v1/Chassis"}
-	modParams := func(newParams map[string]interface{}) map[string]interface{} {
-		ret := map[string]interface{}{}
-		for k, v := range baseParams {
-			ret[k] = v
-		}
-		for k, v := range newParams {
-			ret[k] = v
-		}
-		return ret
-	}
 	_, _, _ = instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "chassis", modParams(map[string]interface{}{"collection_uri": "/redfish/v1/Chassis"}))
 	_, _, _ = instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "systems", modParams(map[string]interface{}{"collection_uri": "/redfish/v1/Systems"}))
 	_, _, _ = instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "managers", modParams(map[string]interface{}{"collection_uri": "/redfish/v1/Managers"}))
@@ -172,19 +175,14 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	//*********************************************************************
 	// /redfish/v1/Registries
 	//*********************************************************************
-	registryLogger, registryView, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "registries", map[string]interface{}{"rooturi": rootView.GetURI()})
-	registries.AddAggregate(ctx, registryLogger, registryView, rootView.GetUUID(), ch, eb)
+	instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "registries", modParams(map[string]interface{}{"collection_uri": "/redfish/v1/Registries"}))
 
 	for regName, location := range map[string]interface{}{
 		"idrac_registry":    []map[string]string{{"Language": "En", "Uri": "/redfish/v1/Registries/Messages/EEMIRegistry.v1_5_0.json"}},
 		"base_registry":     []map[string]string{{"Language": "En", "Uri": "/redfish/v1/Registries/BaseMessages/BaseRegistry.v1_0_0.json", "PublicationUri": "http://www.dmtf.org/sites/default/files/standards/documents/DSP8011_1.0.0a.json"}},
 		"mgr_attr_registry": []map[string]string{{"Language": "En", "Uri": "/redfish/v1/Registries/ManagerAttributeRegistry/ManagerAttributeRegistry.v1_0_0.json"}},
 	} {
-		registryLogger, registryView, _ = instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, regName, map[string]interface{}{"rooturi": rootView.GetURI()})
-		registryView.GetModel("default").ApplyOption(
-			model.UpdateProperty("location", location),
-		)
-		registry.AddAggregate(ctx, registryLogger, registryView, ch, eb)
+		instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, regName, modParams(map[string]interface{}{"location": location}))
 	}
 
 	// various things are "managed" by the managers, create a global to hold the views so we can make references
