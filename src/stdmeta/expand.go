@@ -156,7 +156,7 @@ func FormatOdataList(ctx context.Context, v *view.View, m *model.Model, rrp *dom
 
 	uris, ok := m.GetProperty(p).([]string)
 	if !ok {
-		return errors.New("uris property not setup properly")
+		uris = []string{}
 	}
 
 	odata := []interface{}{}

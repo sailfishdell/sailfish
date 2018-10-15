@@ -130,7 +130,11 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	//*********************************************************************
 	//  /redfish/v1/Chassis
 	//*********************************************************************
-	_, _, _ = instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "chassis", map[string]interface{}{"rooturi": rootView.GetURI(), "rootid": rootView.GetUUID(), "uriToCheck": "/redfish/v1/Chassis"})
+	_, _, _ = instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "chassis", map[string]interface{}{"rooturi": rootView.GetURI(), "rootid": rootView.GetUUID(), "collection_uri": "/redfish/v1/Chassis"})
+	_, _, _ = instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "systems", map[string]interface{}{"rooturi": rootView.GetURI(), "rootid": rootView.GetUUID(), "collection_uri": "/redfish/v1/Systems"})
+	_, _, _ = instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "managers", map[string]interface{}{"rooturi": rootView.GetURI(), "rootid": rootView.GetUUID(), "collection_uri": "/redfish/v1/Managers"})
+	_, _, _ = instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "roles", map[string]interface{}{"rooturi": rootView.GetURI(), "rootid": rootView.GetUUID(), "collection_uri": "/redfish/v1/AccountService/Roles"})
+	_, _, _ = instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "accounts", map[string]interface{}{"rooturi": rootView.GetURI(), "rootid": rootView.GetUUID(), "collection_uri": "/redfish/v1/AccountService/Accounts"})
 
 	//*********************************************************************
 	//  /redfish/v1/{Managers,Chassis,Systems,Accounts}
