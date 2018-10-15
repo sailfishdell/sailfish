@@ -117,7 +117,9 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		return ret
 	}
 
+	// common parameters to instantiate that are used almost everywhere
 	baseParams := map[string]interface{}{}
+	baseParams["rooturi"] = "/redfish/v1"
 	modParams := func(newParams map[string]interface{}) map[string]interface{} {
 		ret := map[string]interface{}{}
 		for k, v := range baseParams {
@@ -139,13 +141,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	//*********************************************************************
 	//  /redfish/v1
 	//*********************************************************************
-<<<<<<< HEAD
 	_, rootView, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "rootview", baseParams)
-=======
-	_, rootView, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "rootview", map[string]interface{}{})
-	root.AddAggregate(ctx, rootView, ch, eb)
-	baseParams["rooturi"] = rootView.GetURI()
->>>>>>> aggregate change for registry to bring it into instantiate
 	baseParams["rootid"] = rootView.GetUUID()
 
 	//*********************************************************************
