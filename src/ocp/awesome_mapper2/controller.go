@@ -128,6 +128,7 @@ func StartService(ctx context.Context, logger log.Logger, eb eh.EventBus) (*Serv
 
 				for _, m := range config.mappings {
 					expr, err := govaluate.NewEvaluableExpressionFromTokens(m.queryExpr)
+					cfg.params["propname"] = m.property
 					val, err := expr.Evaluate(cfg.params)
 					if err != nil {
 						ret.logger.Error("Expression failed to evaluate", "configName", configName, "queryString", m.queryString, "parameters", cfg.params, "err", err)
