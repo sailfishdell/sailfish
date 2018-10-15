@@ -10,8 +10,18 @@ import (
 	eh "github.com/looplab/eventhorizon"
 )
 
-func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.CommandHandler, eb eh.EventBus) {
-	ch.HandleCommand(
+func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.CommandHandler, eb eh.EventBus, healths map[string]string) {
+  properties := map[string]interface{}{}
+  //properties["SubSystems@meta"] = v.Meta(view.PropGET("subsystems"))
+  /*for subsystem, health := range healths {
+    properties[subsystem] = map[string]interface{}{
+      "Status": map[string]interface{}{
+        "HealthRollup@meta": v.Meta(view.GETProperty("health"), view.GETModel("health")), //TODO: fix me
+      },
+    }
+  }*/
+
+  ch.HandleCommand(
 		ctx,
 		&domain.CreateRedfishResource{
 			ID:          v.GetUUID(),
@@ -25,9 +35,7 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 				"PATCH":  []string{"ConfigureManager"},
 				"DELETE": []string{}, // can't be deleted
 			},
-			Properties: map[string]interface{}{
-				"SubSystems@meta": v.Meta(view.PropGET("subsystems")), //TODO: this is formatted slightly differently than odatalite, need to dynamically add properties that are map[string]interface{}{map[string]string} for each health rollup that isn't "absent"
-			},
+			Properties: properties,
 		},
 	)
 }

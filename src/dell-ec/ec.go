@@ -237,7 +237,14 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		attributes.AddAggregate(ctx, mgrCmcVw, rootView.GetURI()+"/Chassis/"+mgrName+"/Attributes", ch) // should this be Managers/mgrName instead of Chassis/mgrName?
 
 		logservices.AddAggregate(ctx, mgrCmcVw, rootView.GetURI()+"/Managers/"+mgrName, ch)
+
+    mgrCmcVw.GetModel("default").ApplyOption(
+      model.UpdateProperty("certificate_uris", []string{rootView.GetURI() + "/Managers/"+mgrName+"/CertificateService/CertificateInventory/FactoryIdentity.1"}),
+
+    )
 		certificateservices.AddAggregate(ctx, mgrCmcVw, rootView.GetURI()+"/Managers/"+mgrName, ch)
+
+
 
 		// Redundancy
 		redundancyLogger, redundancyVw, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "chassis_cmc_integrated_redundancy",
@@ -463,7 +470,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		// Create SubSystemHealth for System.Chassis.1
 		//*********************************************************************
 		subSysHealths := map[string]string{}
-		subSysHealthsMap := map[string]interface{}{}
 
 		// TODO: replace this with all healths that are not "absent", use awesome_mapper? or implement perpetual event capture like slots/slotconfig for health events?
 		subSysHealths["Battery"] = "OK"
@@ -479,24 +485,15 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			view.WithController("ar_mapper", armapper),
 		)
 
-		subsystemhealth.AddAggregate(ctx, subSysHealthLogger, subSysHealthView, ch, eb)
-
-		for key, value := range subSysHealths {
-			subSysHealthsMap[key] = map[string]interface{}{
-				"Status": map[string]string{
-					"HealthRollup": value,
-				},
-			}
-		}
-		subSysHealthModel.ApplyOption(model.UpdateProperty("subsystems", &domain.RedfishResourceProperty{Value: subSysHealthsMap}))
+		subsystemhealth.AddAggregate(ctx, subSysHealthLogger, subSysHealthView, ch, eb, subSysHealths)
 
 		/*  Slots */
 		//slotSvc.StartService(ctx, logger, sysChasVw, cfgMgr, arService)
-		slotSvc.StartService(ctx, logger, sysChasVw, cfgMgr, updateFns, ch, eb)
+		slotSvc.StartService(ctx, logger, sysChasVw, cfgMgr, instantiateSvc, ch, eb)
 
 		/* Slot config */
 		//slotconfigSvc.StartService(ctx, logger, sysChasVw, cfgMgr, arService)
-		slotconfigSvc.StartService(ctx, logger, sysChasVw, cfgMgr, updateFns, ch, eb)
+		slotconfigSvc.StartService(ctx, logger, sysChasVw, cfgMgr, instantiateSvc, ch, eb)
 
 	}
 

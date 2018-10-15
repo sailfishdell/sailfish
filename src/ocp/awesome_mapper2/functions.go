@@ -154,5 +154,37 @@ func init() {
 				return nil, errors.New("Invalid object status")
 			}
 		},
+    "string": func(args ...interface{}) (interface{}, error) {
+      switch t := args[0].(type) {
+      case int, int8, int16, int32, int64:
+        str := strconv.FormatInt(reflect.ValueOf(t).Int(), 10)
+        return str, nil
+      case uint, uint8, uint16, uint32, uint64:
+        str := strconv.FormatUint(reflect.ValueOf(t).Uint(), 10)
+        return str, nil
+      case float32, float64:
+        str := strconv.FormatFloat(reflect.ValueOf(t).Float(), 'G', -1, 64)
+        return str, nil
+      case string:
+        return t, nil
+      default:
+        return nil, errors.New("Not an int, float, or string")
+      }
+    },
+    "zero_to_null": func(args ...interface{}) (interface{}, error) {
+      if (args[0] == 0) {
+        return nil, nil
+      }
+      return args[0], nil
+    },
+    "subsystem_health": func(args ...interface{}) (interface{}, error) {
+      fqdd := strings.Split(args[0].(map[string]string)["FQDD"], "#")
+      subsys := fqdd[len(fqdd)-1]
+      health := args[0].(map[string]string)["Health"]
+      if (health == "Absent") {
+        return nil, nil
+      }
+      return map[string]string{"subsys":subsys, health:"health"}, nil
+    },
 	}
 }

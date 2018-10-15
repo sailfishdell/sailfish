@@ -47,7 +47,7 @@ func New(ch eh.CommandHandler, eb eh.EventBus) *SlotService {
 }
 
 // StartService will create a model, view, and controller for the eventservice, then start a goroutine to publish events
-func (l *SlotService) StartService(ctx context.Context, logger log.Logger, rootView viewer, cfgMgr *viper.Viper, updateFns []func(context.Context, *viper.Viper), ch eh.CommandHandler, eb eh.EventBus) *view.View {
+func (l *SlotService) StartService(ctx context.Context, logger log.Logger, rootView viewer, cfgMgr *viper.Viper, instantiateSvc *testaggregate.Service,  ch eh.CommandHandler, eb eh.EventBus) *view.View {
 
 	slotUri := rootView.GetURI() + "/Slots"
 	slotLogger := logger.New("module", "slot")
@@ -60,13 +60,13 @@ func (l *SlotService) StartService(ctx context.Context, logger log.Logger, rootV
 	AddAggregate(ctx, slotLogger, slotView, rootView.GetUUID(), l.ch, l.eb)
 
 	// Start up goroutine that listens for log-specific events and creates log aggregates
-	l.manageSlots(ctx, slotLogger, slotUri, cfgMgr, updateFns, ch, eb)
+	l.manageSlots(ctx, slotLogger, slotUri, cfgMgr, instantiateSvc, ch, eb)
 
 	return slotView
 }
 
 // starts a background process to create new log entries
-func (l *SlotService) manageSlots(ctx context.Context, logger log.Logger, logUri string, cfgMgr *viper.Viper, updateFns []func(context.Context, *viper.Viper), ch eh.CommandHandler, eb eh.EventBus) {
+func (l *SlotService) manageSlots(ctx context.Context, logger log.Logger, logUri string, cfgMgr *viper.Viper, instantiateSvc *testaggregate.Service, ch eh.CommandHandler, eb eh.EventBus) {
 
 	// set up listener for the delete event
 	// INFO: this listener will only ever get
@@ -109,11 +109,11 @@ func (l *SlotService) manageSlots(ctx context.Context, logger log.Logger, logUri
 					oldUuid, ok := l.slots[uri].(eh.UUID)
 					if ok {
 						// early out if the same slot already exists (same URI)
-						logger.Info("slot already created, early out", "uuid", oldUuid)
+            logger.Info("slot already created, early out", "uuid", oldUuid)
 						break
 					}
 
-          slotLogger, slotView, _ := testaggregate.InstantiateFromCfg(ctx, logger, cfgMgr, "slot",
+          slotLogger, slotView, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "slot",
             map[string]interface{}{
               "sloturi": uri,
               "FQDD": SlotEntry.Id,
@@ -136,7 +136,7 @@ func (l *SlotService) manageSlots(ctx context.Context, logger log.Logger, logUri
 					}
 
 					if strings.Contains(SlotEntry.Id, "SledSlot") {
-				      properties["SledProfile"] = slotView.Meta(view.PropGET("sled_profile"))
+				      properties["SledProfile@meta"] = slotView.Meta(view.PropGET("sled_profile"))
 				  }
 
 					l.ch.HandleCommand(

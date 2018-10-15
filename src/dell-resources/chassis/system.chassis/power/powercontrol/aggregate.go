@@ -34,7 +34,7 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 
 				"Oem": map[string]interface{}{
 					"EnergyConsumptionStartTime@meta": v.Meta(view.PropGET("energy_consumption_start_time")),
-					"EnergyConsumptionkWh@meta":       v.Meta(view.PropGET("Energy_Consumption_kWh")),
+					"EnergyConsumptionkWh@meta":       v.Meta(view.PropGET("energy_consumption_kwh")),
 					"HeadroomWatts@meta":              v.Meta(view.PropGET("headroom_watts")), // TODO
 					"MaxPeakWatts@meta":               v.Meta(view.PropGET("max_peak_watts")),
 					"MaxPeakWattsTime@meta":           v.Meta(view.PropGET("max_peak_watts_time")),

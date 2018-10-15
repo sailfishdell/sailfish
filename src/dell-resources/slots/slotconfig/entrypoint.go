@@ -46,7 +46,7 @@ func New(ch eh.CommandHandler, eb eh.EventBus) *SlotConfigService {
 }
 
 // StartService will create a model, view, and controller for the eventservice, then start a goroutine to publish events
-func (l *SlotConfigService) StartService(ctx context.Context, logger log.Logger, rootView viewer, cfgMgr *viper.Viper, updateFns []func(context.Context, *viper.Viper), ch eh.CommandHandler, eb eh.EventBus) *view.View {
+func (l *SlotConfigService) StartService(ctx context.Context, logger log.Logger, rootView viewer, cfgMgr *viper.Viper, instantiateSvc *testaggregate.Service, ch eh.CommandHandler, eb eh.EventBus) *view.View {
 	sCfgUri := rootView.GetURI() + "/SlotConfigs"
 	sCfgLog := logger.New("module", "slot")
 
@@ -58,13 +58,13 @@ func (l *SlotConfigService) StartService(ctx context.Context, logger log.Logger,
 	AddAggregate(ctx, sCfgLog, sCfgView, rootView.GetUUID(), l.ch, l.eb)
 
 	// Start up goroutine that listens for log-specific events and creates log aggregates
-	l.manageSlots(ctx, sCfgLog, sCfgUri, cfgMgr, updateFns, ch, eb)
+	l.manageSlots(ctx, sCfgLog, sCfgUri, cfgMgr, instantiateSvc, ch, eb)
 
 	return sCfgView
 }
 
 // starts a background process to create new log entries
-func (l *SlotConfigService) manageSlots(ctx context.Context, logger log.Logger, cfgUri string, cfgMgr *viper.Viper, updateFns []func(context.Context, *viper.Viper), ch eh.CommandHandler, eb eh.EventBus) {
+func (l *SlotConfigService) manageSlots(ctx context.Context, logger log.Logger, cfgUri string, cfgMgr *viper.Viper, instantiateSvc *testaggregate.Service, ch eh.CommandHandler, eb eh.EventBus) {
 
 	// set up listener for the delete event
 	// INFO: this listener will only ever get
@@ -112,7 +112,7 @@ func (l *SlotConfigService) manageSlots(ctx context.Context, logger log.Logger, 
 						break
 					}
 
-          slotCfgLogger, slotView, _ := testaggregate.InstantiateFromCfg(ctx, logger, cfgMgr, "slotconfig",
+          slotCfgLogger, slotView, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "slotconfig",
             map[string]interface{}{
               "slotcfguri": uri,
               "FQDD": SlotConfig.Id,

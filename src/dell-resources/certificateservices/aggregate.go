@@ -48,7 +48,7 @@ func AddAggregate(ctx context.Context, v *view.View, baseUri string, ch eh.Comma
 		ctx,
 		&domain.CreateRedfishResource{
 			ID:          eh.NewUUID(),
-			Collection:  true,
+			Collection:  false,
 			ResourceURI: baseUri + "/CertificateService/CertificateInventory",
 			Type:        "#DellCertificateInventoryCollection.DellCertificateInventoryCollection",
 			Context:     "/redfish/v1/$metadata#DellCertificateInventoryCollection.DellCertificateInventoryCollection",
@@ -62,6 +62,9 @@ func AddAggregate(ctx context.Context, v *view.View, baseUri string, ch eh.Comma
 			Properties: map[string]interface{}{
 				"Name":        "Certificate Inventory Collection",
 				"Description": "Collection of Certificate Inventory",
+        "Members@meta":             v.Meta(view.GETProperty("certificate_uris"), view.GETFormatter("formatOdataList"), view.GETModel("default")),
+        "Members@odata.count@meta": v.Meta(view.GETProperty("certificate_uris"), view.GETFormatter("count"), view.GETModel("default")),
+
 			}})
 
    ch.HandleCommand(
@@ -69,7 +72,7 @@ func AddAggregate(ctx context.Context, v *view.View, baseUri string, ch eh.Comma
     &domain.CreateRedfishResource{
       ID:          eh.NewUUID(),
       Collection:  false,
-      ResourceURI: baseUri + "/CerrtificateService/CertificateInventory/FactoryIdentity.1",
+      ResourceURI: baseUri + "/CertificateService/CertificateInventory/FactoryIdentity.1",
       Type:        "#DellCertificateInventoryCollection.DellCertificateInventoryCollection",
       Context:     "/redfish/v1/$metadata#DellCertificateInventoryCollection.DellCertificateInventoryCollection",
       Privileges:  map[string]interface{}{
@@ -81,10 +84,10 @@ func AddAggregate(ctx context.Context, v *view.View, baseUri string, ch eh.Comma
       },
       Properties: map[string]interface{}{
         "Certificate@meta":   v.Meta(view.PropGET("certificate")),
-        "Description":        "Certificate Inveotry Instance",
+        "Description":        "Certificate Inventory Instance",
         "DownloadFileFormat": "PEM",
         "Id":                 "FactoryIdentity.1",
-        "Name":               "Factory Identity Cerrtificate",
+        "Name":               "Factory Identity Certificate",
         "Type":               "FactoryIdentity",
       }})
 
