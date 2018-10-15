@@ -13,21 +13,24 @@ import (
 )
 
 func RegisterChassis(s *testaggregate.Service) {
+
+	stdCollectionPrivs := map[string]interface{}{
+		"GET":    []string{"Login"},
+		"POST":   []string{}, // Read Only
+		"PUT":    []string{}, // Read Only
+		"PATCH":  []string{}, // Read Only
+		"DELETE": []string{}, // can't be deleted
+	}
+
 	s.RegisterAggregateFunction("chassis",
 		func(ctx context.Context, subLogger log.Logger, cfgMgr *viper.Viper, vw *view.View, extra interface{}, params map[string]interface{}) ([]eh.Command, error) {
 			return []eh.Command{
 				&domain.CreateRedfishResource{
 					Collection:  false,
-					ResourceURI: params["rooturi"].(string) + "/Chassis",
+					ResourceURI: vw.GetURI(),
 					Type:        "#ChassisCollection.ChassisCollection",
 					Context:     params["rooturi"].(string) + "/$metadata#ChassisCollection.ChassisCollection",
-					Privileges: map[string]interface{}{
-						"GET":    []string{"Login"},
-						"POST":   []string{}, // Read Only
-						"PUT":    []string{}, // Read Only
-						"PATCH":  []string{}, // Read Only
-						"DELETE": []string{}, // can't be deleted
-					},
+					Privileges:  stdCollectionPrivs,
 					Properties: map[string]interface{}{
 						"Name":         "Chassis Collection",
 						"Members@meta": vw.Meta(view.GETProperty("members"), view.GETFormatter("formatOdataList"), view.GETModel("default")),
@@ -47,16 +50,10 @@ func RegisterChassis(s *testaggregate.Service) {
 			return []eh.Command{
 				&domain.CreateRedfishResource{
 					Collection:  false,
-					ResourceURI: params["rooturi"].(string) + "/Systems",
+					ResourceURI: vw.GetURI(),
 					Type:        "#ComputerSystemCollection.ComputerSystemCollection",
 					Context:     params["rooturi"].(string) + "/$metadata#ComputerSystemCollection.ComputerSystemCollection",
-					Privileges: map[string]interface{}{
-						"GET":    []string{"Login"},
-						"POST":   []string{}, // Read Only
-						"PUT":    []string{}, // Read Only
-						"PATCH":  []string{}, // Read Only
-						"DELETE": []string{}, // can't be deleted
-					},
+					Privileges:  stdCollectionPrivs,
 					Properties: map[string]interface{}{
 						"Name":         "Computer System Collection",
 						"Members@meta": vw.Meta(view.GETProperty("members"), view.GETFormatter("formatOdataList"), view.GETModel("default")),
@@ -75,16 +72,10 @@ func RegisterChassis(s *testaggregate.Service) {
 			return []eh.Command{
 				&domain.CreateRedfishResource{
 					Collection:  false,
-					ResourceURI: params["rooturi"].(string) + "/Managers",
+					ResourceURI: vw.GetURI(),
 					Type:        "#ManagerCollection.ManagerCollection",
 					Context:     params["rooturi"].(string) + "/$metadata#ManagerCollection.ManagerCollection",
-					Privileges: map[string]interface{}{
-						"GET":    []string{"Login"},
-						"POST":   []string{}, // Read Only
-						"PUT":    []string{}, // Read Only
-						"PATCH":  []string{}, // Read Only
-						"DELETE": []string{}, // can't be deleted
-					},
+					Privileges:  stdCollectionPrivs,
 					Properties: map[string]interface{}{
 						"Name":         "ManagerInstancesCollection",
 						"Description":  "Collection of BMCs",
@@ -105,16 +96,10 @@ func RegisterChassis(s *testaggregate.Service) {
 			return []eh.Command{
 				&domain.CreateRedfishResource{
 					Collection:  false,
-					ResourceURI: params["rooturi"].(string) + "/AccountService/Roles",
+					ResourceURI: vw.GetURI(),
 					Type:        "#RoleCollection.RoleCollection",
 					Context:     params["rooturi"].(string) + "/$metadata#RoleCollection.RoleCollection",
-					Privileges: map[string]interface{}{
-						"GET":    []string{"Login"},
-						"POST":   []string{}, // Read Only
-						"PUT":    []string{}, // Read Only
-						"PATCH":  []string{}, // Read Only
-						"DELETE": []string{}, // can't be deleted
-					},
+					Privileges:  stdCollectionPrivs,
 					Properties: map[string]interface{}{
 						"Name":         "Roles Collection",
 						"Members@meta": vw.Meta(view.GETProperty("members"), view.GETFormatter("formatOdataList"), view.GETModel("default")),
@@ -126,16 +111,10 @@ func RegisterChassis(s *testaggregate.Service) {
 			return []eh.Command{
 				&domain.CreateRedfishResource{
 					Collection:  false,
-					ResourceURI: params["rooturi"].(string) + "/AccountService/Accounts",
+					ResourceURI: vw.GetURI(),
 					Type:        "#ManagerAccountCollection.ManagerAccountCollection",
 					Context:     params["rooturi"].(string) + "/$metadata#ManagerAccountCollection.ManagerAccountCollection",
-					Privileges: map[string]interface{}{
-						"GET":    []string{"Login"},
-						"POST":   []string{}, // Read Only
-						"PUT":    []string{}, // Read Only
-						"PATCH":  []string{}, // Read Only
-						"DELETE": []string{}, // can't be deleted
-					},
+					Privileges:  stdCollectionPrivs,
 					Properties: map[string]interface{}{
 						"Name":         "Accounts Collection",
 						"Members@meta": vw.Meta(view.GETProperty("members"), view.GETFormatter("formatOdataList"), view.GETModel("default")),
