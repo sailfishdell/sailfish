@@ -6,212 +6,72 @@ import (
 	"sync"
 
 	"github.com/Knetic/govaluate"
+	eh "github.com/looplab/eventhorizon"
 	"github.com/spf13/viper"
 
 	"github.com/superchalupa/sailfish/src/log"
-	"github.com/superchalupa/sailfish/src/ocp/awesome_mapper"
-	am2 "github.com/superchalupa/sailfish/src/ocp/awesome_mapper2"
 	"github.com/superchalupa/sailfish/src/ocp/model"
 	"github.com/superchalupa/sailfish/src/ocp/view"
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
 )
 
 type viewFunc func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, vw *view.View, cfg interface{}, parameters map[string]interface{}) error
-
-var initViewRegistry sync.Once
-var viewFunctionsRegistry map[string]viewFunc
-var viewFunctionsRegistryMu sync.Mutex
-
-func RegisterViewFunction(name string, fn viewFunc) {
-	viewFunctionsRegistryMu.Lock()
-	initViewRegistry.Do(func() { viewFunctionsRegistry = map[string]viewFunc{} })
-	defer viewFunctionsRegistryMu.Unlock()
-	viewFunctionsRegistry[name] = fn
-}
-
-func GetViewFunction(name string) viewFunc {
-	viewFunctionsRegistryMu.Lock()
-	initViewRegistry.Do(func() { viewFunctionsRegistry = map[string]viewFunc{} })
-	defer viewFunctionsRegistryMu.Unlock()
-	return viewFunctionsRegistry[name]
-}
-
-type EventService interface {
-	PublishResourceUpdatedEventsForModel(context.Context, string) view.Option
-}
-
-func RunRegistryFunctions(evtsvc EventService) {
-	// views
-	RegisterWithURI()
-	RegisterPublishEvents(evtsvc)
-
-	// controller
-	RegisterAwesomeMapper()
-}
-
-func RegisterWithURI() {
-	RegisterViewFunction("with_URI", func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, vw *view.View, cfg interface{}, parameters map[string]interface{}) error {
-		exprStr, ok := cfg.(string)
-		if !ok {
-			logger.Crit("Failed to type assert cfg to string", "cfg", cfg)
-			return errors.New("Failed to type assert expression to string")
-		}
-		expr, err := govaluate.NewEvaluableExpressionWithFunctions(exprStr, functions)
-		if err != nil {
-			logger.Crit("Failed to create evaluable expression", "expr", expr, "err", err)
-			return errors.New("Failed to create evaluable expression")
-		}
-		uri, err := expr.Evaluate(parameters)
-		if err != nil {
-			logger.Crit("expression evaluation failed", "expr", expr, "err", err)
-			return errors.New("expression evaluation failed")
-		}
-		uriStr, ok := uri.(string)
-		if !ok {
-			logger.Crit("expression returned non-string", "exprStr", exprStr)
-			return errors.New("expression returned non-string")
-		}
-
-		logger.Debug("Registering view with URI", "expr", exprStr, "uri", uriStr)
-		vw.ApplyOption(view.WithURI(uriStr))
-
-		return nil
-	})
-}
-
-func RegisterPublishEvents(evtSvc EventService) {
-	RegisterViewFunction("PublishResourceUpdatedEventsForModel", func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, vw *view.View, cfg interface{}, parameters map[string]interface{}) error {
-		modelName, ok := cfg.(string)
-		if !ok {
-			logger.Crit("Failed to type assert cfg to string", "cfg", cfg)
-			return errors.New("Failed to type assert expression to string")
-		}
-
-		logger.Debug("Running PublishResourceUpdatedEventsForModel", "modelName", modelName)
-		vw.ApplyOption(evtSvc.PublishResourceUpdatedEventsForModel(ctx, modelName))
-
-		return nil
-	})
-}
-
 type controllerFunc func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, vw *view.View, cfg interface{}, parameters map[string]interface{}) error
+type aggregateFunc func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, vw *view.View, cfg interface{}, parameters map[string]interface{}) ([]eh.Command, error)
 
-var initControllerRegistry sync.Once
-var controllerFunctionsRegistry map[string]controllerFunc
-var controllerFunctionsRegistryMu sync.Mutex
-
-func RegisterControllerFunction(name string, fn controllerFunc) {
-	controllerFunctionsRegistryMu.Lock()
-	initControllerRegistry.Do(func() { controllerFunctionsRegistry = map[string]controllerFunc{} })
-	defer controllerFunctionsRegistryMu.Unlock()
-	controllerFunctionsRegistry[name] = fn
+type Service struct {
+	logger log.Logger
+	sync.RWMutex
+	ch                          eh.CommandHandler
+	viewFunctionsRegistry       map[string]viewFunc
+	controllerFunctionsRegistry map[string]controllerFunc
+	aggregateFunctionsRegistry  map[string]aggregateFunc
 }
 
-func GetControllerFunction(name string) controllerFunc {
-	controllerFunctionsRegistryMu.Lock()
-	initControllerRegistry.Do(func() { controllerFunctionsRegistry = map[string]controllerFunc{} })
-	defer controllerFunctionsRegistryMu.Unlock()
-	return controllerFunctionsRegistry[name]
+func New(logger log.Logger, ch eh.CommandHandler) *Service {
+	return &Service{
+		logger:                      logger,
+		ch:                          ch,
+		viewFunctionsRegistry:       map[string]viewFunc{},
+		controllerFunctionsRegistry: map[string]controllerFunc{},
+		aggregateFunctionsRegistry:  map[string]aggregateFunc{},
+	}
 }
 
-func RegisterAwesomeMapper() {
-	RegisterControllerFunction("AwesomeMapper", func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, vw *view.View, cfg interface{}, parameters map[string]interface{}) error {
-		cfgParams, ok := cfg.(map[interface{}]interface{})
-		if !ok {
-			logger.Crit("Failed to type assert cfg to string", "cfg", cfg)
-			return errors.New("Failed to type assert expression to string")
-		}
-
-		// ctx, logger, viper, *model, cfg_name, params
-		modelName, ok := cfgParams["modelname"]
-		if !ok {
-			modelName = "default"
-		}
-		modelNameStr, ok := modelName.(string)
-		if !ok {
-			modelNameStr = "default"
-		}
-
-		cfgSection, ok := cfgParams["cfgsection"]
-		if !ok {
-			logger.Crit("Required parameter 'cfgsection' missing, cannot continue")
-			return nil
-		}
-		cfgSectionStr, ok := cfgSection.(string)
-		if !ok {
-			logger.Crit("Required parameter 'cfgsection' could not be cast to string")
-			return nil
-		}
-
-		logger.Debug("Creating awesome_mapper controller", "modelName", modelNameStr, "cfgSection", cfgSectionStr)
-		awesome_mapper.New(ctx, logger, cfgMgr, vw.GetModel(modelNameStr), cfgSectionStr, parameters)
-
-		return nil
-	})
+func (s *Service) RegisterViewFunction(name string, fn viewFunc) {
+	s.Lock()
+	defer s.Unlock()
+	s.viewFunctionsRegistry[name] = fn
 }
 
-func RegisterAM2(s *am2.Service) {
-	RegisterControllerFunction("AM2", func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, vw *view.View, cfg interface{}, parameters map[string]interface{}) error {
-		cfgParams, ok := cfg.(map[interface{}]interface{})
-		if !ok {
-			logger.Crit("Failed to type assert cfg to string", "cfg", cfg)
-			return errors.New("Failed to type assert expression to string")
-		}
+func (s *Service) GetViewFunction(name string) viewFunc {
+	s.RLock()
+	defer s.RUnlock()
+	return s.viewFunctionsRegistry[name]
+}
 
-		// ctx, logger, viper, *model, cfg_name, params
-		modelName, ok := cfgParams["modelname"]
-		if !ok {
-			modelName = "default"
-		}
-		modelNameStr, ok := modelName.(string)
-		if !ok {
-			modelNameStr = "default"
-		}
+func (s *Service) RegisterControllerFunction(name string, fn controllerFunc) {
+	s.Lock()
+	defer s.Unlock()
+	s.controllerFunctionsRegistry[name] = fn
+}
 
-		cfgSection, ok := cfgParams["cfgsection"]
-		if !ok {
-			logger.Crit("Required parameter 'cfgsection' missing, cannot continue")
-			return errors.New("Required parameter 'cfgsection' missing, cannot continue")
-		}
-		cfgSectionStr, ok := cfgSection.(string)
-		if !ok {
-			logger.Crit("Required parameter 'cfgsection' could not be cast to string")
-			return errors.New("Required parameter 'cfgsection' could not be cast to string")
-		}
+func (s *Service) GetControllerFunction(name string) controllerFunc {
+	s.RLock()
+	defer s.RUnlock()
+	return s.controllerFunctionsRegistry[name]
+}
 
-		uniqueName, ok := cfgParams["uniquename"]
-		if !ok {
-			logger.Crit("Required parameter 'uniquename' missing, cannot continue")
-			return errors.New("Required parameter 'uniquename' missing, cannot continue")
-		}
-		uniqueNameStr, ok := uniqueName.(string)
-		if !ok {
-			logger.Crit("Required parameter 'uniquename' could not be cast to string")
-			return errors.New("Required parameter 'uniquename' could not be cast to string")
-		}
+func (s *Service) RegisterAggregateFunction(name string, fn aggregateFunc) {
+	s.Lock()
+	defer s.Unlock()
+	s.aggregateFunctionsRegistry[name] = fn
+}
 
-		expr, err := govaluate.NewEvaluableExpressionWithFunctions(uniqueNameStr, functions)
-		if err != nil {
-			logger.Crit("Failed to create evaluable expression", "uniqueNameStr", uniqueNameStr, "err", err)
-			return err
-		}
-		uniqueName, err = expr.Evaluate(parameters)
-		if err != nil {
-			logger.Crit("expression evaluation failed", "expr", expr, "err", err)
-			return err
-		}
-
-		uniqueNameStr, ok = uniqueName.(string)
-		if err != nil {
-			logger.Crit("could not cast result to string", "uniqueName", uniqueName)
-			return errors.New("could not cast result to string")
-		}
-
-		logger.Debug("Creating awesome_mapper2 controller", "modelName", modelNameStr, "cfgSection", cfgSectionStr, "uniqueName", uniqueNameStr)
-		s.NewMapping(ctx, logger, cfgMgr, vw.GetModel(modelNameStr), cfgSectionStr, uniqueNameStr, parameters)
-
-		return nil
-	})
+func (s *Service) GetAggregateFunction(name string) aggregateFunc {
+	s.RLock()
+	defer s.RUnlock()
+	return s.aggregateFunctionsRegistry[name]
 }
 
 type config struct {
@@ -219,12 +79,13 @@ type config struct {
 	Models      map[string]map[string]interface{}
 	View        []map[string]interface{}
 	Controllers []map[string]interface{}
+	Aggregate   string
 }
 
-func InstantiateFromCfg(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, name string, parameters map[string]interface{}) (log.Logger, *view.View, error) {
+func (s *Service) InstantiateFromCfg(ctx context.Context, cfgMgr *viper.Viper, name string, parameters map[string]interface{}) (log.Logger, *view.View, error) {
 	subCfg := cfgMgr.Sub("views")
 	if subCfg == nil {
-		logger.Crit("missing config file section: 'views'")
+		s.logger.Crit("missing config file section: 'views'")
 		return nil, nil, errors.New("invalid config section 'views'")
 	}
 
@@ -232,12 +93,12 @@ func InstantiateFromCfg(ctx context.Context, logger log.Logger, cfgMgr *viper.Vi
 
 	err := subCfg.UnmarshalKey(name, &config)
 	if err != nil {
-		logger.Crit("unamrshal failed", "err", err, "name", name)
+		s.logger.Crit("unamrshal failed", "err", err, "name", name)
 		return nil, nil, errors.New("unmarshal failed")
 	}
 
 	// Instantiate logger
-	subLogger := logger.New(config.Logger...)
+	subLogger := s.logger.New(config.Logger...)
 	subLogger.Debug("Instantiated new logger")
 
 	// Instantiate view
@@ -257,12 +118,12 @@ func InstantiateFromCfg(ctx context.Context, logger log.Logger, cfgMgr *viper.Vi
 			}
 			expr, err := govaluate.NewEvaluableExpressionWithFunctions(propValueStr, functions)
 			if err != nil {
-				logger.Crit("Failed to create evaluable expression", "propValueStr", propValueStr, "err", err)
+				subLogger.Crit("Failed to create evaluable expression", "propValueStr", propValueStr, "err", err)
 				continue
 			}
 			propValue, err := expr.Evaluate(parameters)
 			if err != nil {
-				logger.Crit("expression evaluation failed", "expr", expr, "err", err)
+				subLogger.Crit("expression evaluation failed", "expr", expr, "err", err)
 				continue
 			}
 
@@ -289,40 +150,64 @@ func InstantiateFromCfg(ctx context.Context, logger log.Logger, cfgMgr *viper.Vi
 			subLogger.Crit("Missing function parameters")
 			continue
 		}
-		fn := GetViewFunction(viewFnNameStr)
+		fn := s.GetViewFunction(viewFnNameStr)
 		if fn == nil {
 			subLogger.Crit("Could not find registered view function", "function", viewFnNameStr)
 			continue
 		}
-		fn(ctx, logger, cfgMgr, vw, viewFnParams, parameters)
+		fn(ctx, subLogger, cfgMgr, vw, viewFnParams, parameters)
 	}
 
 	// Instantiate controllers
-	for _, contollerFn := range config.Controllers {
-		contollerFnName, ok := contollerFn["fn"]
+	for _, controllerFn := range config.Controllers {
+		controllerFnName, ok := controllerFn["fn"]
 		if !ok {
 			subLogger.Crit("Missing function name")
 			continue
 		}
-		controllerFnNameStr := contollerFnName.(string)
+		controllerFnNameStr := controllerFnName.(string)
 		if !ok {
 			subLogger.Crit("fn name isnt a string")
 			continue
 		}
-		contollerFnParams, ok := contollerFn["params"]
+		controllerFnParams, ok := controllerFn["params"]
 		if !ok {
 			subLogger.Crit("Missing function parameters")
 			continue
 		}
-		fn := GetControllerFunction(controllerFnNameStr)
+		fn := s.GetControllerFunction(controllerFnNameStr)
 		if fn == nil {
 			subLogger.Crit("Could not find registered controller function", "function", controllerFnNameStr)
 			continue
 		}
-		fn(ctx, logger, cfgMgr, vw, contollerFnParams, parameters)
+		fn(ctx, subLogger, cfgMgr, vw, controllerFnParams, parameters)
 	}
 
 	// Instantiate aggregate
+	func() {
+		if len(config.Aggregate) == 0 {
+			subLogger.Info("no aggregate name to instantiate")
+			return
+		}
+		fn := s.GetAggregateFunction(config.Aggregate)
+		if fn == nil {
+			subLogger.Crit("invalid aggregate function")
+			return
+		}
+		cmds, err := fn(ctx, subLogger, cfgMgr, vw, nil, parameters)
+		if err != nil {
+			subLogger.Crit("aggregate function returned nil")
+			return
+		}
+		// We can get one or more commands back, handle them
+		for _, cmd := range cmds {
+			// if it's a resource create command, use the view ID for that
+			if c, ok := cmd.(*domain.CreateRedfishResource); ok {
+				c.ID = vw.GetUUID()
+			}
+			s.ch.HandleCommand(ctx, cmd)
+		}
+	}()
 
 	// register the plugin
 	domain.RegisterPlugin(func() domain.Plugin { return vw })

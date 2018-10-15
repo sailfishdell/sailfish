@@ -70,3 +70,10 @@ func UpdateEtag(modelName string, includedProps []string) Option {
 		m.UpdatePropertyUnlocked("etag", `W/"genid-`+strconv.Itoa(etag)+`"`)
 	})
 }
+
+func WithCloseFn(fn func()) Option {
+	return func(s *View) error {
+		s.closefn = func() { s.closefn(); fn() }
+		return nil
+	}
+}

@@ -12,13 +12,8 @@ import (
 	"github.com/superchalupa/sailfish/src/ocp/view"
 )
 
-func RunRegistryFunctions(ch eh.CommandHandler, eb eh.EventBus) {
-	// controller
-	RegisterARMapper(ch, eb)
-}
-
-func RegisterARMapper(ch eh.CommandHandler, eb eh.EventBus) {
-	testaggregate.RegisterControllerFunction("ARDumper", func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, vw *view.View, cfg interface{}, parameters map[string]interface{}) error {
+func RegisterARMapper(s *testaggregate.Service, ch eh.CommandHandler, eb eh.EventBus) {
+	s.RegisterControllerFunction("ARDumper", func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, vw *view.View, cfg interface{}, parameters map[string]interface{}) error {
 		cfgParams, ok := cfg.(map[interface{}]interface{})
 		if !ok {
 			logger.Crit("Failed to type assert cfg to string", "cfg", cfg)

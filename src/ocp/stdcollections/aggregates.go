@@ -4,182 +4,181 @@ import (
 	"context"
 
 	eh "github.com/looplab/eventhorizon"
+	"github.com/spf13/viper"
+
+	"github.com/superchalupa/sailfish/src/log"
+	"github.com/superchalupa/sailfish/src/ocp/testaggregate"
+	"github.com/superchalupa/sailfish/src/ocp/view"
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
 )
 
-func AddAggregate(ctx context.Context, rootID eh.UUID, rootURI string, ch eh.CommandHandler) {
-	// Create Computer System Collection
-	ch.HandleCommand(
-		ctx,
-		&domain.CreateRedfishResource{
-			ID:         eh.NewUUID(),
-			Collection: true,
+func RegisterChassis(s *testaggregate.Service) {
 
-			ResourceURI: rootURI + "/Systems",
-			Type:        "#ComputerSystemCollection.ComputerSystemCollection",
-			Context:     rootURI + "/$metadata#ComputerSystemCollection.ComputerSystemCollection",
-			Privileges: map[string]interface{}{
-				"GET":    []string{"Login"},
-				"POST":   []string{}, // Read Only
-				"PUT":    []string{}, // Read Only
-				"PATCH":  []string{}, // Read Only
-				"DELETE": []string{}, // can't be deleted
-			},
-			Properties: map[string]interface{}{
-				"Name": "Computer System Collection",
-			}})
+	stdCollectionPrivs := map[string]interface{}{
+		"GET":    []string{"Login"},
+		"POST":   []string{}, // Read Only
+		"PUT":    []string{}, // Read Only
+		"PATCH":  []string{}, // Read Only
+		"DELETE": []string{}, // can't be deleted
+	}
 
-	ch.HandleCommand(ctx,
-		&domain.UpdateRedfishResourceProperties{
-			ID: rootID,
-			Properties: map[string]interface{}{
-				"Systems": map[string]interface{}{"@odata.id": rootURI + "/Systems"},
-			},
-		})
+	s.RegisterAggregateFunction("chassis",
+		func(ctx context.Context, subLogger log.Logger, cfgMgr *viper.Viper, vw *view.View, extra interface{}, params map[string]interface{}) ([]eh.Command, error) {
+			return []eh.Command{
+				&domain.CreateRedfishResource{
+					Collection:  false,
+					ResourceURI: vw.GetURI(),
+					Type:        "#ChassisCollection.ChassisCollection",
+					Context:     params["rooturi"].(string) + "/$metadata#ChassisCollection.ChassisCollection",
+					Privileges:  stdCollectionPrivs,
+					Properties: map[string]interface{}{
+						"Name":         "Chassis Collection",
+						"Members@meta": vw.Meta(view.GETProperty("members"), view.GETFormatter("formatOdataList"), view.GETModel("default")),
+					}},
 
-	// Create Computer System Collection
-	ch.HandleCommand(
-		ctx,
-		&domain.CreateRedfishResource{
-			ID:         eh.NewUUID(),
-			Collection: true,
-
-			ResourceURI: rootURI + "/Chassis",
-			Type:        "#ChassisCollection.ChassisCollection",
-			Context:     rootURI + "/$metadata#ChassisCollection.ChassisCollection",
-			Privileges: map[string]interface{}{
-				"GET":    []string{"Login"},
-				"POST":   []string{}, // Read Only
-				"PUT":    []string{}, // Read Only
-				"PATCH":  []string{}, // Read Only
-				"DELETE": []string{}, // can't be deleted
-			},
-			Properties: map[string]interface{}{
-				"Name": "Chassis Collection",
-			}})
-
-	ch.HandleCommand(ctx,
-		&domain.UpdateRedfishResourceProperties{
-			ID: rootID,
-			Properties: map[string]interface{}{
-				"Chassis": map[string]interface{}{"@odata.id": rootURI + "/Chassis"},
-			},
-		})
-
-	// Create Computer System Collection
-	ch.HandleCommand(
-		ctx,
-		&domain.CreateRedfishResource{
-			ID:         eh.NewUUID(),
-			Collection: true,
-
-			ResourceURI: rootURI + "/Managers",
-			Type:        "#ManagerCollection.ManagerCollection",
-			Context:     rootURI + "/$metadata#ManagerCollection.ManagerCollection",
-			Privileges: map[string]interface{}{
-				"GET":    []string{"Login"},
-				"POST":   []string{}, // Read Only
-				"PUT":    []string{}, // Read Only
-				"PATCH":  []string{}, // Read Only
-				"DELETE": []string{}, // can't be deleted
-			},
-			Properties: map[string]interface{}{
-				"Name":        "ManagerInstancesCollection",
-				"Description": "Collection of BMCs",
-			}})
-
-	ch.HandleCommand(ctx,
-		&domain.UpdateRedfishResourceProperties{
-			ID: rootID,
-			Properties: map[string]interface{}{
-				"Managers": map[string]interface{}{"@odata.id": rootURI + "/Managers"},
-			},
-		})
-
-	// Add Accounts collection
-	ch.HandleCommand(
-		ctx,
-		&domain.CreateRedfishResource{
-			ID:         eh.NewUUID(),
-			Collection: true,
-
-			ResourceURI: rootURI + "/AccountService/Accounts",
-			Type:        "#ManagerAccountCollection.ManagerAccountCollection",
-			Context:     rootURI + "/$metadata#ManagerAccountCollection.ManagerAccountCollection",
-			Privileges: map[string]interface{}{
-				"GET":    []string{"Login"},
-				"POST":   []string{}, // Read Only
-				"PUT":    []string{}, // Read Only
-				"PATCH":  []string{}, // Read Only
-				"DELETE": []string{}, // can't be deleted
-			},
-			Properties: map[string]interface{}{
-				"Name": "Accounts Collection",
-			}})
-
-	// Add Roles collection
-	ch.HandleCommand(
-		ctx,
-		&domain.CreateRedfishResource{
-			ID:         eh.NewUUID(),
-			Collection: true,
-
-			ResourceURI: rootURI + "/AccountService/Roles",
-			Type:        "#RoleCollection.RoleCollection",
-			Context:     rootURI + "/$metadata#RoleCollection.RoleCollection",
-			Privileges: map[string]interface{}{
-				"GET":    []string{"Login"},
-				"POST":   []string{}, // Read Only
-				"PUT":    []string{}, // Read Only
-				"PATCH":  []string{}, // Read Only
-				"DELETE": []string{}, // can't be deleted
-			},
-			Properties: map[string]interface{}{
-				"Name": "Roles Collection",
-			}})
-
-	// Create Computer System Collection
-	ch.HandleCommand(
-		ctx,
-		&domain.CreateRedfishResource{
-			ID:         eh.NewUUID(),
-			Collection: false,
-
-			ResourceURI: rootURI + "/AccountService",
-			Type:        "#AccountService.v1_0_2.AccountService",
-			Context:     rootURI + "/$metadata#AccountService.AccountService",
-			Privileges: map[string]interface{}{
-				"GET":    []string{"Login"},
-				"POST":   []string{"ConfigureManager"}, // cannot create sub objects
-				"PUT":    []string{"ConfigureManager"},
-				"PATCH":  []string{"ConfigureManager"},
-				"DELETE": []string{}, // can't be deleted
-			},
-			Properties: map[string]interface{}{
-				"Id":          "AccountService",
-				"Name":        "Account Service",
-				"Description": "Account Service",
-				"Status": map[string]interface{}{
-					"State":  "Enabled",
-					"Health": "OK",
+				&domain.UpdateRedfishResourceProperties{
+					ID: params["rootid"].(eh.UUID),
+					Properties: map[string]interface{}{
+						"Chassis": map[string]interface{}{"@odata.id": vw.GetURI()},
+					},
 				},
-				"ServiceEnabled":                  true,
-				"AuthFailureLoggingThreshold":     3,
-				"MinPasswordLength":               8,
-				"AccountLockoutThreshold":         5,
-				"AccountLockoutDuration":          30,
-				"AccountLockoutCounterResetAfter": 30,
-				"Accounts":                        map[string]string{"@odata.id": rootURI + "/AccountService/Accounts"},
-				"Roles":                           map[string]string{"@odata.id": rootURI + "/AccountService/Roles"},
-			}})
-
-	ch.HandleCommand(ctx,
-		&domain.UpdateRedfishResourceProperties{
-			ID: rootID,
-			Properties: map[string]interface{}{
-				"AccountService": map[string]interface{}{"@odata.id": rootURI + "/AccountService"},
-			},
+			}, nil
 		})
+
+	s.RegisterAggregateFunction("systems",
+		func(ctx context.Context, subLogger log.Logger, cfgMgr *viper.Viper, vw *view.View, extra interface{}, params map[string]interface{}) ([]eh.Command, error) {
+			return []eh.Command{
+				&domain.CreateRedfishResource{
+					Collection:  false,
+					ResourceURI: vw.GetURI(),
+					Type:        "#ComputerSystemCollection.ComputerSystemCollection",
+					Context:     params["rooturi"].(string) + "/$metadata#ComputerSystemCollection.ComputerSystemCollection",
+					Privileges:  stdCollectionPrivs,
+					Properties: map[string]interface{}{
+						"Name":         "Computer System Collection",
+						"Members@meta": vw.Meta(view.GETProperty("members"), view.GETFormatter("formatOdataList"), view.GETModel("default")),
+					}},
+				&domain.UpdateRedfishResourceProperties{
+					ID: params["rootid"].(eh.UUID),
+					Properties: map[string]interface{}{
+						"Systems": map[string]interface{}{"@odata.id": vw.GetURI()},
+					},
+				},
+			}, nil
+		})
+
+	s.RegisterAggregateFunction("managers",
+		func(ctx context.Context, subLogger log.Logger, cfgMgr *viper.Viper, vw *view.View, extra interface{}, params map[string]interface{}) ([]eh.Command, error) {
+			return []eh.Command{
+				&domain.CreateRedfishResource{
+					Collection:  false,
+					ResourceURI: vw.GetURI(),
+					Type:        "#ManagerCollection.ManagerCollection",
+					Context:     params["rooturi"].(string) + "/$metadata#ManagerCollection.ManagerCollection",
+					Privileges:  stdCollectionPrivs,
+					Properties: map[string]interface{}{
+						"Name":         "ManagerInstancesCollection",
+						"Description":  "Collection of BMCs",
+						"Members@meta": vw.Meta(view.GETProperty("members"), view.GETFormatter("formatOdataList"), view.GETModel("default")),
+					}},
+
+				&domain.UpdateRedfishResourceProperties{
+					ID: params["rootid"].(eh.UUID),
+					Properties: map[string]interface{}{
+						"Managers": map[string]interface{}{"@odata.id": vw.GetURI()},
+					},
+				},
+			}, nil
+		})
+
+	s.RegisterAggregateFunction("accountservice",
+		func(ctx context.Context, subLogger log.Logger, cfgMgr *viper.Viper, vw *view.View, extra interface{}, params map[string]interface{}) ([]eh.Command, error) {
+			return []eh.Command{
+				&domain.CreateRedfishResource{
+					Collection:  false,
+					ResourceURI: vw.GetURI(),
+					Type:        "#AccountService.v1_0_2.AccountService",
+					Context:     params["rooturi"].(string) + "/$metadata#AccountService.AccountService",
+					Privileges: map[string]interface{}{
+						"GET":    []string{"Login"},
+						"POST":   []string{"ConfigureManager"}, // cannot create sub objects
+						"PUT":    []string{"ConfigureManager"},
+						"PATCH":  []string{"ConfigureManager"},
+						"DELETE": []string{}, // can't be deleted
+					},
+					Properties: map[string]interface{}{
+						"Id":          "AccountService",
+						"Name":        "Account Service",
+						"Description": "Account Service",
+						"Status": map[string]interface{}{
+							"State":  "Enabled",
+							"Health": "OK",
+						},
+						"ServiceEnabled":                  true,
+						"AuthFailureLoggingThreshold":     3,
+						"MinPasswordLength":               8,
+						"AccountLockoutThreshold":         5,
+						"AccountLockoutDuration":          30,
+						"AccountLockoutCounterResetAfter": 30,
+					}},
+
+				&domain.UpdateRedfishResourceProperties{
+					ID: params["rootid"].(eh.UUID),
+					Properties: map[string]interface{}{
+						"AccountService": map[string]interface{}{"@odata.id": vw.GetURI()},
+					},
+				},
+			}, nil
+		})
+
+	s.RegisterAggregateFunction("roles",
+		func(ctx context.Context, subLogger log.Logger, cfgMgr *viper.Viper, vw *view.View, extra interface{}, params map[string]interface{}) ([]eh.Command, error) {
+			return []eh.Command{
+				&domain.CreateRedfishResource{
+					Collection:  false,
+					ResourceURI: vw.GetURI(),
+					Type:        "#RoleCollection.RoleCollection",
+					Context:     params["rooturi"].(string) + "/$metadata#RoleCollection.RoleCollection",
+					Privileges:  stdCollectionPrivs,
+					Properties: map[string]interface{}{
+						"Name":         "Roles Collection",
+						"Members@meta": vw.Meta(view.GETProperty("members"), view.GETFormatter("formatOdataList"), view.GETModel("default")),
+					}},
+				&domain.UpdateRedfishResourceProperties{
+					ID: params["actsvc_id"].(eh.UUID),
+					Properties: map[string]interface{}{
+						"Roles": map[string]interface{}{"@odata.id": vw.GetURI()},
+					},
+				},
+			}, nil
+		})
+
+	s.RegisterAggregateFunction("accounts",
+		func(ctx context.Context, subLogger log.Logger, cfgMgr *viper.Viper, vw *view.View, extra interface{}, params map[string]interface{}) ([]eh.Command, error) {
+			return []eh.Command{
+				&domain.CreateRedfishResource{
+					Collection:  false,
+					ResourceURI: vw.GetURI(),
+					Type:        "#ManagerAccountCollection.ManagerAccountCollection",
+					Context:     params["rooturi"].(string) + "/$metadata#ManagerAccountCollection.ManagerAccountCollection",
+					Privileges:  stdCollectionPrivs,
+					Properties: map[string]interface{}{
+						"Name":         "Accounts Collection",
+						"Members@meta": vw.Meta(view.GETProperty("members"), view.GETFormatter("formatOdataList"), view.GETModel("default")),
+					}},
+				&domain.UpdateRedfishResourceProperties{
+					ID: params["actsvc_id"].(eh.UUID),
+					Properties: map[string]interface{}{
+						"Accounts": map[string]interface{}{"@odata.id": vw.GetURI()},
+					},
+				},
+			}, nil
+		})
+
+}
+
+func AddStandardRoles(ctx context.Context, rootID eh.UUID, rootURI string, ch eh.CommandHandler) {
+	// Create Computer System Collection
 
 	// add standard DMTF roles: Admin
 	ch.HandleCommand(

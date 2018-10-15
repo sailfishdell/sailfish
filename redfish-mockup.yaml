@@ -65,11 +65,112 @@ views:
         - "fn": "with_URI"
           "params": "rooturi + '/Registries'"
 
+  "chassis":
+      "Logger": ["module", "Chassis"]
+      "Models":
+        "default":  {}
+      "Controllers":
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + collection_uri" }
+      "View":
+        - "fn": "with_URI"
+          "params": "collection_uri "
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+        - "fn": "withFormatter_formatOdataList"
+          "params":
+      "Aggregate": "chassis"
+
+  "systems":
+      "Logger": ["module", "Systems"]
+      "Models":
+        "default":  {}
+      "Controllers":
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + collection_uri" }
+      "View":
+        - "fn": "with_URI"
+          "params": "collection_uri "
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+        - "fn": "withFormatter_formatOdataList"
+          "params":
+      "Aggregate": "systems"
+
+  "managers":
+      "Logger": ["module", "Managers"]
+      "Models":
+        "default":  {}
+      "Controllers":
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + collection_uri" }
+      "View":
+        - "fn": "with_URI"
+          "params": "collection_uri "
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+        - "fn": "withFormatter_formatOdataList"
+          "params":
+      "Aggregate": "managers"
+
+  "roles":
+      "Logger": ["module", "Roles"]
+      "Models":
+        "default":  {}
+      "Controllers":
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + collection_uri" }
+      "View":
+        - "fn": "with_URI"
+          "params": "collection_uri "
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+        - "fn": "withFormatter_formatOdataList"
+          "params":
+      "Aggregate": "roles"
+
+  "accountservice":
+      "Logger": ["module", "AccountService"]
+      "Models":
+        "default":  {}
+      "Controllers":
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/AccountService' "
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+        - "fn": "withFormatter_formatOdataList"
+          "params":
+      "Aggregate": "accountservice"
+
+  "accounts":
+      "Logger": ["module", "Accounts"]
+      "Models":
+        "default":  {}
+      "Controllers":
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + collection_uri" }
+      "View":
+        - "fn": "with_URI"
+          "params": "collection_uri "
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+        - "fn": "withFormatter_formatOdataList"
+          "params":
+      "Aggregate": "accounts"
+
+
+
+
 awesome_mapper:
+    collection:
+      - { SelectEventType: "RedfishResource:created",
+          Select: "type == 'RedfishResource:created' && nohash(data.ResourceURI) && baseuri(data.ResourceURI) == collection_uri ",
+          ModelUpdate: [ {Property: "members", Query: "addtoset(model, propname, data.ResourceURI)", Default: 0} ]}
+      - { SelectEventType: "RedfishResource:removed",
+          Select: "type == 'RedfishResource:removed' && nohash(data.ResourceURI) && baseuri(data.ResourceURI) == collection_uri ",
+          ModelUpdate: [ {Property: "members", Query: "removefromset(model, propname, data.ResourceURI)", Default: 0} ]}
+
     testview:
         - { Select: "type == 'AttributeUpdated' && data.FQDD == fqdd && data.Name == 'InstantaneousPower'", ModelUpdate: [ {Property: "Instantaneous_Power", Query: "data.Value", Default: 0} ] }
-
-mappings:
-    test/testview:
-        - {Property: "model",                    FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Name" }
 

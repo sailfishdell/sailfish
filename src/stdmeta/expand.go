@@ -14,9 +14,9 @@ import (
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
 )
 
-func RegisterFormatters(d *domain.DomainObjects) {
+func RegisterFormatters(s *testaggregate.Service, d *domain.DomainObjects) {
 	expandOneFormatter := MakeExpandOneFormatter(d)
-	testaggregate.RegisterViewFunction("withFormatter_expandone", func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, vw *view.View, cfg interface{}, parameters map[string]interface{}) error {
+	s.RegisterViewFunction("withFormatter_expandone", func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, vw *view.View, cfg interface{}, parameters map[string]interface{}) error {
 		logger.Debug("Adding expandone formatter to view", "view", vw.GetURI())
 		vw.ApplyOption(view.WithFormatter("expandone", expandOneFormatter))
 
@@ -24,28 +24,28 @@ func RegisterFormatters(d *domain.DomainObjects) {
 	})
 
 	expandFormatter := MakeExpandListFormatter(d)
-	testaggregate.RegisterViewFunction("withFormatter_expand", func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, vw *view.View, cfg interface{}, parameters map[string]interface{}) error {
+	s.RegisterViewFunction("withFormatter_expand", func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, vw *view.View, cfg interface{}, parameters map[string]interface{}) error {
 		logger.Debug("Adding expand formatter to view", "view", vw.GetURI())
 		vw.ApplyOption(view.WithFormatter("expand", expandFormatter))
 
 		return nil
 	})
 
-	testaggregate.RegisterViewFunction("withFormatter_count", func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, vw *view.View, cfg interface{}, parameters map[string]interface{}) error {
+	s.RegisterViewFunction("withFormatter_count", func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, vw *view.View, cfg interface{}, parameters map[string]interface{}) error {
 		logger.Debug("Adding count formatter to view", "view", vw.GetURI())
 		vw.ApplyOption(view.WithFormatter("count", CountFormatter))
 
 		return nil
 	})
 
-	testaggregate.RegisterViewFunction("withFormatter_attributeFormatter", func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, vw *view.View, cfg interface{}, parameters map[string]interface{}) error {
+	s.RegisterViewFunction("withFormatter_attributeFormatter", func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, vw *view.View, cfg interface{}, parameters map[string]interface{}) error {
 		logger.Debug("Adding attributeFormatter formatter to view", "view", vw.GetURI())
 		vw.ApplyOption(view.WithFormatter("attributeFormatter", attributes.FormatAttributeDump))
 
 		return nil
 	})
 
-	testaggregate.RegisterViewFunction("withFormatter_formatOdataList", func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, vw *view.View, cfg interface{}, parameters map[string]interface{}) error {
+	s.RegisterViewFunction("withFormatter_formatOdataList", func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, vw *view.View, cfg interface{}, parameters map[string]interface{}) error {
 		logger.Debug("Adding FormatOdataList formatter to view", "view", vw.GetURI())
 		vw.ApplyOption(view.WithFormatter("formatOdataList", FormatOdataList))
 
@@ -156,7 +156,7 @@ func FormatOdataList(ctx context.Context, v *view.View, m *model.Model, rrp *dom
 
 	uris, ok := m.GetProperty(p).([]string)
 	if !ok {
-		return errors.New("uris property not setup properly")
+		uris = []string{}
 	}
 
 	odata := []interface{}{}
