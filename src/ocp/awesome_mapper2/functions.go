@@ -53,18 +53,18 @@ func init() {
 				vStr = v.([]string)
 			}
 
+			ret := []string{}
 			for i, _ := range vStr {
 				if vStr[i] == str {
-					ret := vStr[:i]
+					ret = vStr[:i]
 					if i+1 < len(vStr) {
 						ret = append(ret, vStr[i+1:]...)
 					}
 					fmt.Printf("REDUCED SET: minus:(%s) = %s\n", str, ret)
-					model.UpdateProperty(property, ret)
 					break
 				}
 			}
-			return nil, errors.New("unimplemented")
+			return ret, nil
 		},
 		"addtoset": func(args ...interface{}) (interface{}, error) {
 			model, ok := args[0].(*model.Model)
@@ -97,10 +97,9 @@ func init() {
 			}
 			if !found {
 				vStr = append(vStr, str)
-				model.UpdateProperty(property, vStr)
 				fmt.Printf("UPDATED SET: %s\n", vStr)
 			}
-			return nil, errors.New("unimplemented")
+			return vStr, nil
 		},
 		"nohash": func(args ...interface{}) (interface{}, error) {
 			str, ok := args[0].(string)
