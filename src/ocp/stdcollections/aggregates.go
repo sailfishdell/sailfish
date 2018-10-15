@@ -14,26 +14,36 @@ import (
 )
 
 func RegisterChassis(s *testaggregate.Service) {
-	s.RegisterAggregateFunction("chassis", func(ctx context.Context, subLogger log.Logger, cfgMgr *viper.Viper, vw *view.View, extra interface{}, params map[string]interface{}) (*domain.CreateRedfishResource, error) {
-		fmt.Printf("Returning aggregate\n")
-		return &domain.CreateRedfishResource{
-			ID:         eh.NewUUID(),
-			Collection: true,
+	s.RegisterAggregateFunction("chassis",
+		func(ctx context.Context, subLogger log.Logger, cfgMgr *viper.Viper, vw *view.View, extra interface{}, params map[string]interface{}) ([]eh.Command, error) {
+			fmt.Printf("Returning aggregate\n")
+			return []eh.Command{
+				&domain.CreateRedfishResource{
+					ID:          eh.NewUUID(),
+					Collection:  false,
+					ResourceURI: params["rooturi"].(string) + "/Chassis",
+					Type:        "#ChassisCollection.ChassisCollection",
+					Context:     params["rooturi"].(string) + "/$metadata#ChassisCollection.ChassisCollection",
+					Privileges: map[string]interface{}{
+						"GET":    []string{"Login"},
+						"POST":   []string{}, // Read Only
+						"PUT":    []string{}, // Read Only
+						"PATCH":  []string{}, // Read Only
+						"DELETE": []string{}, // can't be deleted
+					},
+					Properties: map[string]interface{}{
+						"Name":         "Chassis Collection",
+						"Members@meta": vw.Meta(view.GETProperty("members"), view.GETFormatter("formatOdataList"), view.GETModel("default")),
+					}},
 
-			ResourceURI: params["rooturi"].(string) + "/Chassis",
-			Type:        "#ChassisCollection.ChassisCollection",
-			Context:     params["rooturi"].(string) + "/$metadata#ChassisCollection.ChassisCollection",
-			Privileges: map[string]interface{}{
-				"GET":    []string{"Login"},
-				"POST":   []string{}, // Read Only
-				"PUT":    []string{}, // Read Only
-				"PATCH":  []string{}, // Read Only
-				"DELETE": []string{}, // can't be deleted
-			},
-			Properties: map[string]interface{}{
-				"Name": "Chassis Collection",
-			}}, nil
-	})
+				&domain.UpdateRedfishResourceProperties{
+					ID: params["rootid"].(eh.UUID),
+					Properties: map[string]interface{}{
+						"Chassis": map[string]interface{}{"@odata.id": params["rooturi"].(string) + "/Chassis"},
+					},
+				},
+			}, nil
+		})
 }
 
 func AddAggregate(ctx context.Context, rootID eh.UUID, rootURI string, ch eh.CommandHandler) {
@@ -63,35 +73,6 @@ func AddAggregate(ctx context.Context, rootID eh.UUID, rootURI string, ch eh.Com
 			ID: rootID,
 			Properties: map[string]interface{}{
 				"Systems": map[string]interface{}{"@odata.id": rootURI + "/Systems"},
-			},
-		})
-
-	// Create Computer System Collection
-	ch.HandleCommand(
-		ctx,
-		&domain.CreateRedfishResource{
-			ID:         eh.NewUUID(),
-			Collection: true,
-
-			ResourceURI: rootURI + "/Chassis",
-			Type:        "#ChassisCollection.ChassisCollection",
-			Context:     rootURI + "/$metadata#ChassisCollection.ChassisCollection",
-			Privileges: map[string]interface{}{
-				"GET":    []string{"Login"},
-				"POST":   []string{}, // Read Only
-				"PUT":    []string{}, // Read Only
-				"PATCH":  []string{}, // Read Only
-				"DELETE": []string{}, // can't be deleted
-			},
-			Properties: map[string]interface{}{
-				"Name": "Chassis Collection",
-			}})
-
-	ch.HandleCommand(ctx,
-		&domain.UpdateRedfishResourceProperties{
-			ID: rootID,
-			Properties: map[string]interface{}{
-				"Chassis": map[string]interface{}{"@odata.id": rootURI + "/Chassis"},
 			},
 		})
 

@@ -130,7 +130,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	//*********************************************************************
 	//  /redfish/v1/Chassis
 	//*********************************************************************
-	_, _, _ = instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "chassis", map[string]interface{}{"rooturi": rootView.GetURI()})
+	_, _, _ = instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "chassis", map[string]interface{}{"rooturi": rootView.GetURI(), "rootid": rootView.GetUUID(), "uriToCheck": "/redfish/v1/Chassis"})
 
 	//*********************************************************************
 	//  /redfish/v1/{Managers,Chassis,Systems,Accounts}

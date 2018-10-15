@@ -17,7 +17,7 @@ import (
 
 type viewFunc func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, vw *view.View, cfg interface{}, parameters map[string]interface{}) error
 type controllerFunc func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, vw *view.View, cfg interface{}, parameters map[string]interface{}) error
-type aggregateFunc func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, vw *view.View, cfg interface{}, parameters map[string]interface{}) (*domain.CreateRedfishResource, error)
+type aggregateFunc func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, vw *view.View, cfg interface{}, parameters map[string]interface{}) ([]eh.Command, error)
 
 type Service struct {
 	logger log.Logger
@@ -194,25 +194,23 @@ func (s *Service) InstantiateFromCfg(ctx context.Context, cfgMgr *viper.Viper, n
 			subLogger.Crit("invalid aggregate function")
 			return
 		}
-		agg, err := fn(ctx, subLogger, cfgMgr, vw, nil, parameters)
+		cmds, err := fn(ctx, subLogger, cfgMgr, vw, nil, parameters)
 		if err != nil {
 			subLogger.Crit("aggregate function returned nil")
 			return
 		}
-		vw.ApplyOption(WithAggregate(ctx, agg, s.ch))
+		// We can get one or more commands back, handle them
+		for _, cmd := range cmds {
+			// if it's a resource create command, use the view ID for that
+			if c, ok := cmd.(*domain.CreateRedfishResource); ok {
+				c.ID = vw.GetUUID()
+			}
+			s.ch.HandleCommand(ctx, cmd)
+		}
 	}()
 
 	// register the plugin
 	domain.RegisterPlugin(func() domain.Plugin { return vw })
 
 	return subLogger, vw, nil
-}
-
-func WithAggregate(ctx context.Context, r *domain.CreateRedfishResource, ch eh.CommandHandler) view.Option {
-	return func(s *view.View) error {
-		r.ID = s.GetUUIDUnlocked()
-		ch.HandleCommand(ctx, r)
-		// TODO: handlecommand to delete prop
-		return nil
-	}
 }
