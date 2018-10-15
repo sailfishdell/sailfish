@@ -2,10 +2,39 @@ package stdcollections
 
 import (
 	"context"
+	"fmt"
 
 	eh "github.com/looplab/eventhorizon"
+	"github.com/spf13/viper"
+
+	"github.com/superchalupa/sailfish/src/log"
+	"github.com/superchalupa/sailfish/src/ocp/testaggregate"
+	"github.com/superchalupa/sailfish/src/ocp/view"
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
 )
+
+func RegisterChassis(s *testaggregate.Service) {
+	s.RegisterAggregateFunction("chassis", func(ctx context.Context, subLogger log.Logger, cfgMgr *viper.Viper, vw *view.View, extra interface{}, params map[string]interface{}) (*domain.CreateRedfishResource, error) {
+		fmt.Printf("Returning aggregate\n")
+		return &domain.CreateRedfishResource{
+			ID:         eh.NewUUID(),
+			Collection: true,
+
+			ResourceURI: params["rooturi"].(string) + "/Chassis",
+			Type:        "#ChassisCollection.ChassisCollection",
+			Context:     params["rooturi"].(string) + "/$metadata#ChassisCollection.ChassisCollection",
+			Privileges: map[string]interface{}{
+				"GET":    []string{"Login"},
+				"POST":   []string{}, // Read Only
+				"PUT":    []string{}, // Read Only
+				"PATCH":  []string{}, // Read Only
+				"DELETE": []string{}, // can't be deleted
+			},
+			Properties: map[string]interface{}{
+				"Name": "Chassis Collection",
+			}}, nil
+	})
+}
 
 func AddAggregate(ctx context.Context, rootID eh.UUID, rootURI string, ch eh.CommandHandler) {
 	// Create Computer System Collection

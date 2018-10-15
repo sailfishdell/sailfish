@@ -17,7 +17,7 @@ import (
 
 type viewFunc func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, vw *view.View, cfg interface{}, parameters map[string]interface{}) error
 type controllerFunc func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, vw *view.View, cfg interface{}, parameters map[string]interface{}) error
-type aggregateFunc func() (*domain.CreateRedfishResource, error)
+type aggregateFunc func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, vw *view.View, cfg interface{}, parameters map[string]interface{}) (*domain.CreateRedfishResource, error)
 
 type Service struct {
 	logger log.Logger
@@ -186,7 +186,7 @@ func (s *Service) InstantiateFromCfg(ctx context.Context, cfgMgr *viper.Viper, n
 	// Instantiate aggregate
 	func() {
 		if len(config.Aggregate) == 0 {
-			subLogger.Crit("no aggregate name to instantiate")
+			subLogger.Info("no aggregate name to instantiate")
 			return
 		}
 		fn := s.GetAggregateFunction(config.Aggregate)
@@ -194,11 +194,12 @@ func (s *Service) InstantiateFromCfg(ctx context.Context, cfgMgr *viper.Viper, n
 			subLogger.Crit("invalid aggregate function")
 			return
 		}
-		agg, err := fn()
+		agg, err := fn(ctx, subLogger, cfgMgr, vw, nil, parameters)
 		if err != nil {
 			subLogger.Crit("aggregate function returned nil")
 			return
 		}
+		subLogger.Crit("WithAggregate()")
 		vw.ApplyOption(WithAggregate(ctx, agg, s.ch))
 	}()
 
@@ -210,7 +211,7 @@ func (s *Service) InstantiateFromCfg(ctx context.Context, cfgMgr *viper.Viper, n
 
 func WithAggregate(ctx context.Context, r *domain.CreateRedfishResource, ch eh.CommandHandler) view.Option {
 	return func(s *view.View) error {
-		r.ID = s.GetUUID()
+		r.ID = s.GetUUIDUnlocked()
 		ch.HandleCommand(ctx, r)
 		// TODO: handlecommand to delete prop
 		return nil

@@ -105,6 +105,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		logger.Error("Failed to start awesome mapper 2", "err", err)
 	}
 	testaggregate.RegisterAM2(instantiateSvc, am2Svc)
+	stdcollections.RegisterChassis(instantiateSvc)
 
 	//HEALTH
 	// The following model maps a bunch of health related stuff that can be tracked once at a global level.

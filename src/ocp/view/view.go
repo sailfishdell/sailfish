@@ -80,10 +80,14 @@ func (s *View) PluginType() domain.PluginType {
 	return s.pluginType
 }
 
+func (s *View) GetUUIDUnlocked() eh.UUID {
+	return s.uuid
+}
+
 func (s *View) GetUUID() eh.UUID {
 	s.RLock()
 	defer s.RUnlock()
-	return s.uuid
+	return s.GetUUIDUnlocked()
 }
 
 func (s *View) GetURIUnlocked() string {

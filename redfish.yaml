@@ -394,7 +394,19 @@ views:
         - "fn": "withFormatter_formatOdataList"
           "params":
 
-
+  "chassis":
+      "Logger": ["module", "Chassis"]
+      "Models":
+        "default":  {}
+      "Controllers":
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/Chassis' "
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+        - "fn": "withFormatter_formatOdataList"
+          "params":
+      "Aggregate": "chassis"
 
 awesome_mapper:
     testview:
