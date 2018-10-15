@@ -84,7 +84,7 @@ func StartService(ctx context.Context, logger log.Logger, eb eh.EventBus) (*Serv
 			defer ret.eventTypesMu.RUnlock()
 
 			// hash lookup to see if we process this event, should be the fastest way
-			ret.logger.Debug("am2 testing event", "type", ev.EventType())
+			ret.logger.Debug("am2 checking for processor for event", "type", ev.EventType())
 			if _, ok := ret.eventTypes[ev.EventType()]; ok {
 				return true
 			}
@@ -102,7 +102,7 @@ func StartService(ctx context.Context, logger log.Logger, eb eh.EventBus) (*Serv
 
 		ret.logger.Debug("am2 processing event", "type", event.EventType())
 		for configName, config := range ret.eventTypes[event.EventType()] {
-			ret.logger.Debug("am2 found processor")
+			ret.logger.Debug("am2 found processor", "name", configName, "config", config)
 			expr, err := govaluate.NewEvaluableExpressionFromTokens(config.selectExpr)
 			if err != nil {
 				ret.logger.Error("failed to instantiate expression from tokens", "err", err)
