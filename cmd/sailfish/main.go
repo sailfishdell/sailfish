@@ -15,7 +15,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/fsnotify/fsnotify"
 	flag "github.com/spf13/pflag"
 	"github.com/spf13/viper"
 
@@ -47,7 +46,6 @@ type implementationFn func(ctx context.Context, logger log.Logger, cfgMgr *viper
 var implementations map[string]implementationFn = map[string]implementationFn{}
 
 type Implementation interface {
-	ConfigChangeHandler()
 }
 
 func main() {
@@ -88,25 +86,12 @@ func main() {
 	// This also initializes all of the plugins
 	domain.InitDomain(ctx, domainObjs.CommandHandler, domainObjs.EventBus, domainObjs.EventWaiter)
 
-	type configHandler interface {
-		ConfigChangeHandler()
-	}
-
-	var impl configHandler
 	implFn, ok := implementations[cfgMgr.GetString("main.server_name")]
 	if !ok {
 		panic("could not load requested implementation: " + cfgMgr.GetString("main.server_name"))
 	}
 
-	impl = implFn(ctx, logger, cfgMgr, &cfgMgrMu, domainObjs.CommandHandler, domainObjs.EventBus, domainObjs)
-
-	cfgMgr.OnConfigChange(func(e fsnotify.Event) {
-		cfgMgrMu.Lock()
-		defer cfgMgrMu.Unlock()
-		logger.Info("CONFIG file changed", "config_file", e.Name)
-		impl.ConfigChangeHandler()
-	})
-	cfgMgr.WatchConfig()
+	implFn(ctx, logger, cfgMgr, &cfgMgrMu, domainObjs.CommandHandler, domainObjs.EventBus, domainObjs)
 
 	// Handle the API.
 	m := mux.NewRouter()
