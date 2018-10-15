@@ -2,7 +2,6 @@ package awesome_mapper
 
 import (
 	"errors"
-	"fmt"
 	"path"
 	"reflect"
 	"strconv"
@@ -60,7 +59,6 @@ func init() {
 					if i+1 < len(vStr) {
 						ret = append(ret, vStr[i+1:]...)
 					}
-					fmt.Printf("REDUCED SET: minus:(%s) = %s\n", str, ret)
 					break
 				}
 			}
@@ -97,7 +95,6 @@ func init() {
 			}
 			if !found {
 				vStr = append(vStr, str)
-				fmt.Printf("UPDATED SET: %s\n", vStr)
 			}
 			return vStr, nil
 		},
