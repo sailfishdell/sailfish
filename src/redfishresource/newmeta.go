@@ -22,7 +22,7 @@ func ProcessPATCH(ctx context.Context, prop *RedfishResourceProperty, request in
 		process: PATCHfn,
 	}
 
-	val, err := parseRecursive(ctx, reflect.ValueOf(prop), opts)
+	val, err := parseRecursive(ctx, reflect.ValueOf(*prop), opts)
 	if val.IsValid() {
 		return val.Interface(), err
 	}
