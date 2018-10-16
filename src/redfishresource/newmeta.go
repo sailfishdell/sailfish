@@ -208,7 +208,7 @@ func PATCHfn(ctx context.Context, rrp *RedfishResourceProperty, opts encOpts) (i
 	ContextLogger(ctx, "property_process").Debug("getting property: PATCH", "value", fmt.Sprintf("%v", rrp.Value), "plugin", plugin)
 	if plugin, ok := plugin.(NewPropPatcher); ok {
 		defer ContextLogger(ctx, "property_process").Debug("AFTER getting property: PATCH - type assert success", "value", fmt.Sprintf("%v", rrp.Value))
-		return plugin.PropertyPatch(ctx, rrp, opts.request, meta_t)
+		return plugin.PropertyPatch(ctx, &rrp, opts.request, meta_t)
 	}
 	if plugin, ok := plugin.(CompatPropPatcher); ok {
 		defer ContextLogger(ctx, "property_process").Debug("AFTER getting property: PATCH - type assert success", "value", fmt.Sprintf("%v", rrp.Value))
