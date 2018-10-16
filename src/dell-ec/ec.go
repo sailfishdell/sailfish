@@ -48,6 +48,7 @@ import (
 	"github.com/superchalupa/sailfish/src/ocp/view"
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
 	"github.com/superchalupa/sailfish/src/stdmeta"
+	"github.com/superchalupa/sailfish/src/uploadhandler"
 
 	// register all the DM events that are not otherwise pulled in
 	_ "github.com/superchalupa/sailfish/src/dell-resources/dm_event"
@@ -72,6 +73,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 
 	// These three all set up a waiter for the root service to appear, so init root service after.
 	actionhandler.Setup(ctx, ch, eb)
+	uploadhandler.Setup(ctx, ch, eb)
 	evtSvc := eventservice.New(ctx, ch, eb)
 	telemetryservice.Setup(ctx, ch, eb)
 	event.Setup(ch, eb)
@@ -81,6 +83,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	arService, _ := ar_mapper2.StartService(ctx, logger, eb)
 	arService.ConfigChangedFn(ctx, cfgMgr)
 	actionSvc := ah.StartService(ctx, logger, ch, eb)
+	uploadSvc := uploadhandler.StartService(ctx, logger, ch, eb)
 	am2Svc, _ := awesome_mapper2.StartService(ctx, logger, eb)
 
 	slotSvc := slots.New(ch, eb)
@@ -587,6 +590,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			actionSvc.WithAction(ctx, "update.eid674.reset", "/Actions/Oem/EID_674_UpdateService.Reset", updateEID674Reset),
 			actionSvc.WithAction(ctx, "update.syncup", "/Actions/Oem/DellUpdateService.Syncup", makePumpHandledAction("UpdateSyncup", 30, eb)),
 			actionSvc.WithAction(ctx, "update.eid674.syncup", "/Actions/Oem/EID_674_UpdateService.Syncup", makePumpHandledAction("UpdateSyncup", 30, eb)),
+			uploadSvc.WithUpload(ctx, "upload.firmwareUpdate", "/Actions/Oem/FirmwareUpdate", makePumpHandledUpload("FirmwareUpdateResponse", 60, eb)),
 			evtSvc.PublishResourceUpdatedEventsForModel(ctx, "default"),
 		)
 
@@ -689,6 +693,9 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 				// TODO: oops, can't set up this observer without deadlocking
 				// need to figure this one out. This deadlocks taking the lock to add observer
 				//				evtSvc.PublishResourceUpdatedEventsForModel(ctx, "swinv"),
+
+				// TODO: need this to work at some point...
+				//uploadSvc.WithUpload...
 			)
 			inv[comp_ver_tuple] = invview
 			firmware_inventory.AddAggregate(ctx, rootView, invview, ch)

@@ -24,6 +24,7 @@ type formatter func(
 ) error
 
 type Action func(context.Context, eh.Event, *domain.HTTPCmdProcessedData) error
+type Upload func(context.Context, eh.Event, *domain.HTTPCmdProcessedData) error
 
 type View struct {
 	sync.RWMutex
@@ -34,7 +35,9 @@ type View struct {
 	models           map[string]*model.Model
 	outputFormatters map[string]formatter
 	actions          map[string]Action
+	uploads          map[string]Upload
 	actionURI        map[string]string
+	uploadURI        map[string]string
 	registerplugin   bool
 	closefn          []func()
 }
@@ -46,7 +49,9 @@ func New(options ...Option) *View {
 		models:           map[string]*model.Model{},
 		outputFormatters: map[string]formatter{},
 		actions:          map[string]Action{},
+		uploads:          map[string]Upload{},
 		actionURI:        map[string]string{},
+		uploadURI:        map[string]string{},
 		registerplugin:   true,
 		closefn:          []func(){},
 	}
@@ -132,4 +137,24 @@ func (v *View) SetActionURIUnlocked(name string, URI string) {
 
 func (v *View) SetActionUnlocked(name string, a Action) {
 	v.actions[name] = a
+}
+
+func (s *View) GetUpload(name string) Upload {
+	s.RLock()
+	defer s.RUnlock()
+	return s.uploads[name]
+}
+
+func (s *View) GetUploadURI(name string) string {
+	s.RLock()
+	defer s.RUnlock()
+	return s.uploadURI[name]
+}
+
+func (v *View) SetUploadURIUnlocked(name string, URI string) {
+	v.uploadURI[name] = URI
+}
+
+func (v *View) SetUploadUnlocked(name string, u Upload) {
+	v.uploads[name] = u
 }

@@ -242,7 +242,7 @@ func main() {
 				Addr:           addr,
 				Handler:        loggingHTTPHandler,
 				MaxHeaderBytes: 1 << 20,
-				ReadTimeout:    10 * time.Second,
+				ReadTimeout:    100 * time.Second,
 				// cannot use writetimeout if we are streaming
 				// WriteTimeout:   10 * time.Second,
 			}
