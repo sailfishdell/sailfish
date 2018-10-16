@@ -66,7 +66,7 @@ func InstantiatePlugin(pluginType PluginType) (Plugin, error) {
 }
 
 func UnregisterPlugin(pluginType PluginType) {
-	pluginsMu.RLock()
-	defer pluginsMu.RUnlock()
+	pluginsMu.Lock()
+	defer pluginsMu.Unlock()
 	delete(plugins, pluginType)
 }
