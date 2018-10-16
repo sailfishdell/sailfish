@@ -71,9 +71,9 @@ func UpdateEtag(modelName string, includedProps []string) Option {
 	})
 }
 
-func WithCloseFn(fn func()) Option {
+func AtClose(fn func()) Option {
 	return func(s *View) error {
-		s.closefn = func() { s.closefn(); fn() }
+		s.closefn = append(s.closefn, fn)
 		return nil
 	}
 }
