@@ -153,7 +153,7 @@ type CompatPropGetter interface {
 }
 
 type NewPropPatcher interface {
-	PropertyPatch(context.Context, RedfishResourceProperty, interface{}, map[string]interface{}) (interface{}, error)
+	PropertyPatch(context.Context, *RedfishResourceProperty, interface{}, map[string]interface{}) (interface{}, error)
 }
 type CompatPropPatcher interface {
 	PropertyPatch(context.Context, *RedfishResourceAggregate, *RedfishResourceProperty, map[string]interface{})
@@ -217,7 +217,7 @@ func PATCHfn(ctx context.Context, rrp RedfishResourceProperty, opts encOpts) (in
 	ContextLogger(ctx, "property_process").Debug("getting property: PATCH", "value", fmt.Sprintf("%v", rrp.Value), "plugin", plugin)
 	if plugin, ok := plugin.(NewPropPatcher); ok {
 		defer ContextLogger(ctx, "property_process").Debug("AFTER getting property: PATCH - type assert success", "value", fmt.Sprintf("%v", rrp.Value))
-		return plugin.PropertyPatch(ctx, rrp, opts.request, meta_t)
+		return plugin.PropertyPatch(ctx, &rrp, opts.request, meta_t)
 	}
 	if plugin, ok := plugin.(CompatPropPatcher); ok {
 		defer ContextLogger(ctx, "property_process").Debug("AFTER getting property: PATCH - type assert success", "value", fmt.Sprintf("%v", rrp.Value))

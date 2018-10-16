@@ -74,7 +74,7 @@ func (s *View) PropertyGet(
 
 func (s *View) PropertyPatch(
 	ctx context.Context,
-	rrp domain.RedfishResourceProperty,
+	rrp *domain.RedfishResourceProperty,
 	body interface{},
 	meta map[string]interface{},
 ) (interface{}, error) {
