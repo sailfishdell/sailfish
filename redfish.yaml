@@ -398,6 +398,22 @@ views:
         - "fn": "withFormatter_formatOdataList"
           "params":
 
+  "iom_config":
+        "Logger": ["module", "IOM_Config"]
+        "Models":
+          "default":  {"unique_name": "FQDD", "unique_name_attr": "FQDD+'.Attributes'", "attributes": "add_attribute_property()"}
+        "Controllers":
+          - "fn": "AM2"
+            "params": {"modelname": "default", "cfgsection": "iom_config", "uniquename": "'am2_iom_config_' + FQDD" }
+        "View":
+          - "fn": "with_URI"
+            "params": "rooturi + '/Chassis/' + FQDD + '/IOMConfiguration'"
+          - "fn": "PublishResourceUpdatedEventsForModel"
+            "params": "default"
+
+
+
+
   "sled":
       "Logger": ["module", "Sled"]
       "Models":
@@ -568,6 +584,14 @@ awesome_mapper:
 
     iom:
       - { SelectEventType: "AttributeUpdated", Select: "type == 'AttributeUpdated' && data.FQDD == fqdd && data.Name == 'InstantaneousPower'", ModelUpdate: [ {Property: "Instantaneous_Power", Query: "data.Value", Default: 0} ] }
+
+    iom_config:
+      - { SelectEventType: "IomCapability", Select: "type == 'IomCapability' && data.Name == FQDD",
+            ModelUpdate: [
+                {Property: "config", Query: "data.IOMConfig_objects" },
+                {Property: "capabilities", Query: "data.Capabilities" },
+                {Property: "managed", Query: "data.Managed" } ]}
+
 
     power_control:
       - { SelectEventType: "PowerConsumptionDataObjEvent", Select: "type == 'PowerConsumptionDataObjEvent'",

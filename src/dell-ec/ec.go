@@ -16,6 +16,7 @@ import (
 	"github.com/superchalupa/sailfish/src/dell-resources/certificateservices"
 	chasCMCIntegrated "github.com/superchalupa/sailfish/src/dell-resources/chassis/cmc.integrated"
 	iom_chassis "github.com/superchalupa/sailfish/src/dell-resources/chassis/iom.slot"
+    iom_config "github.com/superchalupa/sailfish/src/dell-resources/chassis/iom.slot/iomconfig"
 	system_chassis "github.com/superchalupa/sailfish/src/dell-resources/chassis/system.chassis"
 	"github.com/superchalupa/sailfish/src/dell-resources/chassis/system.chassis/power"
 	"github.com/superchalupa/sailfish/src/dell-resources/chassis/system.chassis/power/powercontrol"
@@ -534,7 +535,21 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		power_related_items = append(power_related_items, iomView.GetURI())
 		iom_chassis.AddAggregate(ctx, iomLogger, iomView, ch, eb)
 		attributes.AddAggregate(ctx, iomView, rootView.GetURI()+"/Chassis/"+iomName+"/Attributes", ch)
+
+        // ************************************************************************
+        // CHASSIS IOMConfiguration
+        // ************************************************************************
+        iomCfgLogger, iomCfgView, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "iom_config",
+			map[string]interface{}{
+				"rooturi":  rootView.GetURI(),
+				"FQDD":     iomName,
+				"fqdd":     "System.Chassis.1#SubSystem.1#" + iomName,
+				"fqddlist": []string{iomName},
+			},
+		)
+        iom_config.AddAggregate(ctx, iomCfgLogger, iomCfgView, ch, eb)
 	}
+
 
 	for _, sledName := range []string{
 		"System.Modular.1", "System.Modular.1a", "System.Modular.1b",

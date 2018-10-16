@@ -11,6 +11,7 @@ const (
 	PowerSupplyObjEvent                 = eh.EventType("PowerSupplyObjEvent")
 	PowerConsumptionDataObjEvent        = eh.EventType("PowerConsumptionDataObjEvent")
 	AvgPowerConsumptionStatDataObjEvent = eh.EventType("AvgPowerConsumptionStatDataObjEvent")
+	IomCapability                       = eh.EventType("IomCapability")
 )
 
 func init() {
@@ -23,6 +24,14 @@ func init() {
 		var f DataManagerEventData
 		return f
 	})
+    eh.RegisterEventData(IomCapability, func() eh.EventData { return &IomCapabilityData{} })
+}
+
+type IomCapabilityData struct {
+    Name                string
+    Managed             bool
+    Capabilities        interface{}
+    IOMConfig_objects   interface{}
 }
 
 type HealthEventData struct {
