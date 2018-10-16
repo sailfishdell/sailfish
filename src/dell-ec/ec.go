@@ -117,20 +117,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		return ret
 	}
 
-	// common parameters to instantiate that are used almost everywhere
-	baseParams := map[string]interface{}{}
-	baseParams["rooturi"] = "/redfish/v1"
-	modParams := func(newParams map[string]interface{}) map[string]interface{} {
-		ret := map[string]interface{}{}
-		for k, v := range baseParams {
-			ret[k] = v
-		}
-		for k, v := range newParams {
-			ret[k] = v
-		}
-		return ret
-	}
-
 	//HEALTH
 	// The following model maps a bunch of health related stuff that can be tracked once at a global level.
 	// we can add this model to the views that need to expose it
