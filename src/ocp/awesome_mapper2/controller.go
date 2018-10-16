@@ -117,7 +117,7 @@ func StartService(ctx context.Context, logger log.Logger, eb eh.EventBus) (*Serv
 				cfg.params["model"] = cfg.model
 				val, err := expr.Evaluate(cfg.params)
 				if err != nil {
-					ret.logger.Error("expression failed to evaluate", "err", err, "select", config.selectStr)
+					ret.logger.Error("expression failed to evaluate", "err", err, "select", config.selectStr, "config", cfgName, "name", configName)
 					continue
 				}
 				valBool, ok := val.(bool)
