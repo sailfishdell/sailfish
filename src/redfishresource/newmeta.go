@@ -35,7 +35,7 @@ func ProcessGET(ctx context.Context, prop *RedfishResourceProperty) (results int
 		process: GETfn,
 	}
 
-	val, err := parseRecursive(ctx, reflect.ValueOf(prop), opts)
+	val, err := parseRecursive(ctx, reflect.ValueOf(*prop), opts)
 	if val.IsValid() {
 		return val.Interface(), err
 	}
