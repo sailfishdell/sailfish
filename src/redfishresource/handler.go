@@ -233,6 +233,13 @@ func (d *DomainObjects) Notify(ctx context.Context, event eh.Event) {
 			// TODO: remove from aggregatestore?
 			logger.Debug("Delete Resource", "URI", data.ResourceURI)
 			d.DeleteResource(ctx, data.ResourceURI)
+			p, err := InstantiatePlugin(PluginType(data.ResourceURI))
+			type closer interface{ Close() }
+			if err == nil && p != nil {
+				if c, ok := p.(closer); ok {
+					c.Close()
+				}
+			}
 		}
 		return
 	}

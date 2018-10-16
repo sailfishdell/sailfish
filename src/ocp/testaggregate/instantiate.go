@@ -218,7 +218,10 @@ func (s *Service) InstantiateFromCfg(ctx context.Context, cfgMgr *viper.Viper, n
 
 	// register the plugin
 	domain.RegisterPlugin(func() domain.Plugin { return vw })
-	vw.ApplyOption(view.AtClose(func() { domain.UnregisterPlugin(vw.PluginType()) }))
+	vw.ApplyOption(view.AtClose(func() {
+		subLogger.Info("Closing view", "URI", vw.GetURI(), "UUID", vw.GetUUID())
+		domain.UnregisterPlugin(vw.PluginType())
+	}))
 
 	return subLogger, vw, nil
 }
