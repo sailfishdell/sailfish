@@ -46,7 +46,8 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	testaggregate.RegisterAggregate(instantiateSvc)
 	testaggregate.RegisterAM2(instantiateSvc, am2Svc)
 	stdmeta.RegisterFormatters(instantiateSvc, d)
-	stdcollections.RegisterChassis(instantiateSvc)
+	stdcollections.RegisterAggregate(instantiateSvc)
+	session.RegisterAggregate(instantiateSvc)
 
 	// ignore unused for now
 	_ = actionSvc
@@ -96,8 +97,11 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	//*********************************************************************
 	// /redfish/v1/Sessions
 	//*********************************************************************
-	_, sessionView, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "sessionview", map[string]interface{}{"rooturi": rootView.GetURI()})
-	session.AddAggregate(ctx, sessionView, rootView.GetUUID(), ch, eb)
+	_, sessionSvcVw, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "sessionservice", baseParams)
+	baseParams["sessionsvc_id"] = sessionSvcVw.GetUUID()
+	baseParams["sessionsvc_uri"] = sessionSvcVw.GetURI()
+	session.SetupSessionService(ctx, instantiateSvc, sessionSvcVw, cfgMgr, ch, eb, baseParams)
+	instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "sessioncollection", modParams(map[string]interface{}{"collection_uri": "/redfish/v1/SessionService/Sessions"}))
 
 	//*********************************************************************
 	// /redfish/v1/EventService

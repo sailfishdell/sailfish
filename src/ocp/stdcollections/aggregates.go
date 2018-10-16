@@ -12,7 +12,7 @@ import (
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
 )
 
-func RegisterChassis(s *testaggregate.Service) {
+func RegisterAggregate(s *testaggregate.Service) {
 
 	stdCollectionPrivs := map[string]interface{}{
 		"GET":    []string{"Login"},

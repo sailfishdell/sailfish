@@ -40,7 +40,7 @@ views:
           "params": "default"
       "Aggregate": "registry_collection"
 
-  "sessionview":
+  "sessionservice":
       "Logger": ["module", "session"]
       "Models":
         "default":  {"session_timeout": "30"}
@@ -54,6 +54,36 @@ views:
           "params": "default"
         - "fn": "withFormatter_formatOdataList"
           "params":
+      "Aggregate": "sessionservice"
+
+  "sessioncollection":
+      "Logger": ["module", "session"]
+      "Models":
+        "default":  {}
+      "Controllers":
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + collection_uri" }
+        - "fn": "ARMapper"
+          "params": {"modelname": "default", "cfgsection": "SessionService", "mappinguniquename": "'/redfish/v1/SessionService/Sessions'", "AddToView": true}
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/SessionService/Sessions'"
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+        - "fn": "withFormatter_formatOdataList"
+          "params":
+        - "fn": "withFormatter_count"
+          "params":
+      "Aggregate": "sessioncollection"
+
+  "session":
+      "Logger": ["module", "session"]
+      "Models":
+      "Controllers":
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/SessionService/Sessions/' + uuid"
+      "Aggregate": "session"
 
   "registries":
       "Logger": ["module", "registry"]

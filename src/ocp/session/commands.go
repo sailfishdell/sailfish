@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"math/rand"
 	"net/http"
 	"strconv"
@@ -14,6 +13,7 @@ import (
 	eh "github.com/looplab/eventhorizon"
 	"github.com/superchalupa/sailfish/src/eventwaiter"
 	"github.com/superchalupa/sailfish/src/ocp/model"
+	"github.com/superchalupa/sailfish/src/ocp/view"
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
 )
 
@@ -50,6 +50,7 @@ type POST struct {
 	model          *model.Model
 	commandHandler eh.CommandHandler
 	eventWaiter    waiter
+	svcWrapper     func(map[string]interface{}) *view.View
 
 	ID      eh.UUID           `json:"id"`
 	CmdID   eh.UUID           `json:"cmdid"`
@@ -98,10 +99,10 @@ func (c *POST) Handle(ctx context.Context, a *domain.RedfishResourceAggregate) e
 		return errors.New("Could not verify username/password")
 	}
 
-	// step 2: Generate new session
-	sessionUUID := eh.NewUUID()
-	sessionURI := fmt.Sprintf("/redfish/v1/SessionService/Sessions/%s", sessionUUID)
+	// instantiate here
+	sessionVw := c.svcWrapper(map[string]interface{}{"username": c.LR.UserName})
 
+	// step 2: Generate new session
 	token := jwt.New(jwt.SigningMethodHS256)
 	claims := make(jwt.MapClaims)
 	//claims["exp"] = time.Now().Add(time.Hour * time.Duration(1)).Unix()
@@ -109,41 +110,10 @@ func (c *POST) Handle(ctx context.Context, a *domain.RedfishResourceAggregate) e
 	claims["iss"] = "localhost"
 	claims["sub"] = c.LR.UserName
 	claims["privileges"] = privileges
-	claims["sessionuri"] = sessionURI
+	claims["sessionuri"] = sessionVw.GetURI()
 	token.Claims = claims
 	secret := SECRET
-	tokenString, err := token.SignedString(secret)
-
-	retprops := map[string]interface{}{
-		"@odata.type":    "#Session.v1_0_0.Session",
-		"@odata.id":      sessionURI,
-		"@odata.context": "/redfish/v1/$metadata#Session.Session",
-		"Id":             fmt.Sprintf("%s", sessionUUID),
-		"Name":           "User Session",
-		"Description":    "User Session",
-		"UserName":       c.LR.UserName,
-	}
-
-	err = c.commandHandler.HandleCommand(
-		ctx,
-		&domain.CreateRedfishResource{
-			ID:          sessionUUID,
-			ResourceURI: retprops["@odata.id"].(string),
-			Type:        retprops["@odata.type"].(string),
-			Context:     retprops["@odata.context"].(string),
-			Privileges: map[string]interface{}{
-				"GET":    []string{"ConfigureManager"},
-				"POST":   []string{"ConfigureManager"},
-				"PUT":    []string{"ConfigureManager"},
-				"PATCH":  []string{"ConfigureManager"},
-				"DELETE": []string{"ConfigureSelf_" + c.LR.UserName, "ConfigureManager"},
-			},
-			Properties: retprops,
-			Private:    map[string]interface{}{"token_secret": secret},
-		})
-	if err != nil {
-		return err
-	}
+	tokenString, _ := token.SignedString(secret)
 
 	var timeout int
 	switch t := c.model.GetProperty("session_timeout").(type) {
@@ -154,23 +124,25 @@ func (c *POST) Handle(ctx context.Context, a *domain.RedfishResourceAggregate) e
 	case string:
 		timeout, _ = strconv.Atoi(t)
 	}
-	c.startSessionDeleteTimer(sessionUUID, sessionURI, timeout)
+	c.startSessionDeleteTimer(sessionVw, timeout)
 
 	a.PublishEvent(eh.NewEvent(domain.HTTPCmdProcessed, &domain.HTTPCmdProcessedData{
 		CommandID:  c.CmdID,
-		Results:    retprops,
+		Results:    nil, // TODO: return the uri contents
 		StatusCode: 200,
 		Headers: map[string]string{
 			"X-Auth-Token": tokenString,
-			"Location":     sessionURI,
+			"Location":     sessionVw.GetURI(),
 		},
 	}, time.Now()))
 	return nil
 }
 
-func (c *POST) startSessionDeleteTimer(sessionUUID eh.UUID, sessionURI string, timeout int) {
+func (c *POST) startSessionDeleteTimer(sessionVw *view.View, timeout int) {
 	// all background stuff
 	ctx := context.Background()
+	sessionUUID := sessionVw.GetUUID()
+	sessionURI := sessionVw.GetURI()
 
 	// INFO: This event waiter is set up to *ONLY* get XAuthTokenRefreshEvents
 	refreshListener, err := c.eventWaiter.Listen(ctx, func(event eh.Event) bool {
@@ -187,6 +159,7 @@ func (c *POST) startSessionDeleteTimer(sessionUUID eh.UUID, sessionURI string, t
 	if err != nil {
 		// immediately expire session if we cannot create a listener
 		c.commandHandler.HandleCommand(ctx, &domain.RemoveRedfishResource{ID: sessionUUID, ResourceURI: sessionURI})
+		sessionVw.Close()
 		return
 	}
 
@@ -207,6 +180,7 @@ func (c *POST) startSessionDeleteTimer(sessionUUID eh.UUID, sessionURI string, t
 		// immediately expire session if we cannot create a listener
 		c.commandHandler.HandleCommand(ctx, &domain.RemoveRedfishResource{ID: sessionUUID, ResourceURI: sessionURI})
 		refreshListener.Close()
+		sessionVw.Close()
 		return
 	}
 
@@ -226,6 +200,7 @@ func (c *POST) startSessionDeleteTimer(sessionUUID eh.UUID, sessionURI string, t
 				return // it's gone, all done here
 			case <-time.After(time.Duration(timeout) * time.Second):
 				c.commandHandler.HandleCommand(ctx, &domain.RemoveRedfishResource{ID: sessionUUID, ResourceURI: sessionURI})
+				sessionVw.Close()
 				return //exit goroutine
 			}
 		}

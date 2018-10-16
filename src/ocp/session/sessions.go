@@ -6,14 +6,16 @@ import (
 	"net/http"
 	"time"
 
+	jwt "github.com/dgrijalva/jwt-go"
+	eh "github.com/looplab/eventhorizon"
+	"github.com/spf13/viper"
+
 	eventpublisher "github.com/looplab/eventhorizon/publisher/local"
 	"github.com/superchalupa/sailfish/src/eventwaiter"
 	"github.com/superchalupa/sailfish/src/log"
+	"github.com/superchalupa/sailfish/src/ocp/testaggregate"
 	"github.com/superchalupa/sailfish/src/ocp/view"
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
-
-	jwt "github.com/dgrijalva/jwt-go"
-	eh "github.com/looplab/eventhorizon"
 )
 
 var SECRET []byte = []byte("happyhappyjoyjoy1234")
@@ -104,81 +106,31 @@ func MakeHandlerFunc(logger log.Logger, eb eh.EventBus, getter IDGetter, withUse
 	}
 }
 
-func AddAggregate(ctx context.Context, v *view.View, rootID eh.UUID, ch eh.CommandHandler, eb eh.EventBus) {
-
+func SetupSessionService(ctx context.Context, svc *testaggregate.Service, v *view.View, cfgMgr *viper.Viper, ch eh.CommandHandler, eb eh.EventBus, masterparams map[string]interface{}) {
 	// somewhat of a violation of how i want to structure all this, but it's the best option for now
 	EventPublisher := eventpublisher.NewEventPublisher()
 	eb.AddHandler(eh.MatchEvent(XAuthTokenRefreshEvent), EventPublisher)
 	EventWaiter := eventwaiter.NewEventWaiter(eventwaiter.SetName("Session Service"))
 	EventPublisher.AddObserver(EventWaiter)
+
 	eh.RegisterCommand(func() eh.Command {
-		return &POST{model: v.GetModel("default"), commandHandler: ch, eventWaiter: EventWaiter}
+		return &POST{
+			model:          v.GetModel("default"),
+			commandHandler: ch,
+			eventWaiter:    EventWaiter,
+			svcWrapper: func(params map[string]interface{}) *view.View {
+
+				newParams := map[string]interface{}{}
+				for k, v := range masterparams {
+					newParams[k] = v
+				}
+				for k, v := range params {
+					newParams[k] = v
+				}
+
+				_, vw, _ := svc.InstantiateFromCfg(ctx, cfgMgr, "session", newParams)
+				return vw
+			},
+		}
 	})
-
-	// Create SessionService aggregate
-	ch.HandleCommand(
-		ctx,
-		&domain.CreateRedfishResource{
-			ID:          v.GetUUID(),
-			ResourceURI: v.GetURI(),
-			Type:        "#SessionService.v1_0_2.SessionService",
-			Context:     "/redfish/v1/$metadata#SessionService.SessionService",
-			Privileges: map[string]interface{}{
-				"GET":    []string{"ConfigureManager"},
-				"POST":   []string{},
-				"PUT":    []string{},
-				"PATCH":  []string{"ConfigureManager"},
-				"DELETE": []string{},
-			},
-			Properties: map[string]interface{}{
-				"Id":          "SessionService",
-				"Name":        "Session Service",
-				"Description": "Session Service",
-				"Status": map[string]interface{}{
-					"State":  "Enabled",
-					"Health": "OK",
-				},
-				"ServiceEnabled": true,
-				"SessionTimeout@meta": v.Meta(
-					view.PropGET("session_timeout"),
-					view.PropPATCH("session_timeout", "default"),
-				),
-				"Sessions": map[string]interface{}{
-					"@odata.id": "/redfish/v1/SessionService/Sessions",
-				},
-			}})
-
-	// Create Sessions Collection
-	ch.HandleCommand(
-		context.Background(),
-		&domain.CreateRedfishResource{
-			ID:          eh.NewUUID(),
-			Collection:  true,
-			Plugin:      "SessionService",
-			ResourceURI: "/redfish/v1/SessionService/Sessions",
-			Type:        "#SessionCollection.SessionCollection",
-			Context:     "/redfish/v1/$metadata#SessionCollection.SessionCollection",
-			Privileges: map[string]interface{}{
-				"GET":    []string{"ConfigureManager"},
-				"POST":   []string{"Unauthenticated"},
-				"PUT":    []string{"ConfigureManager"},
-				"PATCH":  []string{"ConfigureManager"},
-				"DELETE": []string{"ConfigureSelf"},
-			},
-			Properties: map[string]interface{}{
-				"Name":                "Session Collection",
-				"Members@odata.count": 0,
-				"Members":             []map[string]interface{}{},
-			}})
-
-	ch.HandleCommand(ctx,
-		&domain.UpdateRedfishResourceProperties{
-			ID: rootID,
-			Properties: map[string]interface{}{
-				"SessionService": map[string]interface{}{"@odata.id": "/redfish/v1/SessionService"},
-				"Links":          map[string]interface{}{"Sessions": map[string]interface{}{"@odata.id": "/redfish/v1/SessionService/Sessions"}},
-			},
-		})
-
-	return
 }

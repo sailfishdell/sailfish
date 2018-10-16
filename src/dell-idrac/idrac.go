@@ -23,7 +23,6 @@ import (
 	"github.com/superchalupa/sailfish/src/ocp/awesome_mapper2"
 	"github.com/superchalupa/sailfish/src/ocp/event"
 	"github.com/superchalupa/sailfish/src/ocp/eventservice"
-	"github.com/superchalupa/sailfish/src/ocp/model"
 	"github.com/superchalupa/sailfish/src/ocp/session"
 	"github.com/superchalupa/sailfish/src/ocp/stdcollections"
 	"github.com/superchalupa/sailfish/src/ocp/telemetryservice"
@@ -59,8 +58,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	logger = logger.New("module", "ec")
 	self := &ocp{}
 
-	updateFns := []func(context.Context, *viper.Viper){}
-
 	// These three all set up a waiter for the root service to appear, so init root service after.
 	actionhandler.Setup(ctx, ch, eb)
 	evtSvc := eventservice.New(ctx, ch, eb)
@@ -84,7 +81,8 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	attributes.RegisterARMapper(instantiateSvc, ch, eb)
 	stdmeta.RegisterFormatters(instantiateSvc, d)
 	registries.RegisterAggregate(instantiateSvc)
-	stdcollections.RegisterChassis(instantiateSvc)
+	stdcollections.RegisterAggregate(instantiateSvc)
+	session.RegisterAggregate(instantiateSvc)
 
 	// ignore unused for now
 	_ = logSvc
@@ -136,8 +134,11 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	//*********************************************************************
 	// /redfish/v1/Sessions
 	//*********************************************************************
-	_, sessionView, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "sessionview", map[string]interface{}{"rooturi": rootView.GetURI()})
-	session.AddAggregate(ctx, sessionView, rootView.GetUUID(), ch, eb)
+	_, sessionSvcVw, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "sessionservice", baseParams)
+	baseParams["sessionsvc_id"] = sessionSvcVw.GetUUID()
+	baseParams["sessionsvc_uri"] = sessionSvcVw.GetURI()
+	session.SetupSessionService(ctx, instantiateSvc, sessionSvcVw, cfgMgr, ch, eb, baseParams)
+	instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "sessioncollection", modParams(map[string]interface{}{"collection_uri": "/redfish/v1/SessionService/Sessions"}))
 
 	//*********************************************************************
 	// /redfish/v1/EventService
@@ -199,21 +200,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		//sysStorEnclsrCtrlVw.GetModel("default").ApplyOption(model.UpdateProperty("link_uris", storage_enclosure_items))
 
 	}
-
-	// VIPER Config:
-	// pull the config from the YAML file to populate some static config options
-	self.configChangeHandler = func() {
-		logger.Info("Re-applying configuration from config file.")
-		sessionView.GetModel("default").ApplyOption(model.UpdateProperty("session_timeout", cfgMgr.GetInt("session.timeout")))
-
-		for _, fn := range updateFns {
-			fn(ctx, cfgMgr)
-		}
-	}
-	self.ConfigChangeHandler()
-
-	cfgMgr.SetDefault("main.dumpConfigChanges.filename", "redfish-changed.yaml")
-	cfgMgr.SetDefault("main.dumpConfigChanges.enabled", "true")
 
 	return self
 }
