@@ -83,6 +83,12 @@ type config struct {
 }
 
 func (s *Service) InstantiateFromCfg(ctx context.Context, cfgMgr *viper.Viper, name string, parameters map[string]interface{}) (log.Logger, *view.View, error) {
+
+	newParams := map[string]interface{}{}
+	for k, v := range parameters {
+		newParams[k] = v
+	}
+
 	subCfg := cfgMgr.Sub("views")
 	if subCfg == nil {
 		s.logger.Crit("missing config file section: 'views'")
@@ -103,6 +109,7 @@ func (s *Service) InstantiateFromCfg(ctx context.Context, cfgMgr *viper.Viper, n
 
 	// Instantiate view
 	vw := view.New(view.WithDeferRegister())
+	newParams["uuid"] = vw.GetUUID()
 
 	// Instantiate Models
 	for modelName, modelProperties := range config.Models {
@@ -121,7 +128,7 @@ func (s *Service) InstantiateFromCfg(ctx context.Context, cfgMgr *viper.Viper, n
 				subLogger.Crit("Failed to create evaluable expression", "propValueStr", propValueStr, "err", err)
 				continue
 			}
-			propValue, err := expr.Evaluate(parameters)
+			propValue, err := expr.Evaluate(newParams)
 			if err != nil {
 				subLogger.Crit("expression evaluation failed", "expr", expr, "err", err)
 				continue
@@ -155,7 +162,7 @@ func (s *Service) InstantiateFromCfg(ctx context.Context, cfgMgr *viper.Viper, n
 			subLogger.Crit("Could not find registered view function", "function", viewFnNameStr)
 			continue
 		}
-		fn(ctx, subLogger, cfgMgr, vw, viewFnParams, parameters)
+		fn(ctx, subLogger, cfgMgr, vw, viewFnParams, newParams)
 	}
 
 	// Instantiate controllers
@@ -180,13 +187,13 @@ func (s *Service) InstantiateFromCfg(ctx context.Context, cfgMgr *viper.Viper, n
 			subLogger.Crit("Could not find registered controller function", "function", controllerFnNameStr)
 			continue
 		}
-		fn(ctx, subLogger, cfgMgr, vw, controllerFnParams, parameters)
+		fn(ctx, subLogger, cfgMgr, vw, controllerFnParams, newParams)
 	}
 
 	// Instantiate aggregate
 	func() {
 		if len(config.Aggregate) == 0 {
-			subLogger.Info("no aggregate name to instantiate")
+			subLogger.Debug("no aggregate specified in config file to instantiate.")
 			return
 		}
 		fn := s.GetAggregateFunction(config.Aggregate)
@@ -194,7 +201,7 @@ func (s *Service) InstantiateFromCfg(ctx context.Context, cfgMgr *viper.Viper, n
 			subLogger.Crit("invalid aggregate function")
 			return
 		}
-		cmds, err := fn(ctx, subLogger, cfgMgr, vw, nil, parameters)
+		cmds, err := fn(ctx, subLogger, cfgMgr, vw, nil, newParams)
 		if err != nil {
 			subLogger.Crit("aggregate function returned nil")
 			return
@@ -211,6 +218,7 @@ func (s *Service) InstantiateFromCfg(ctx context.Context, cfgMgr *viper.Viper, n
 
 	// register the plugin
 	domain.RegisterPlugin(func() domain.Plugin { return vw })
+	vw.ApplyOption(view.AtClose(func() { domain.UnregisterPlugin(vw.PluginType()) }))
 
 	return subLogger, vw, nil
 }
