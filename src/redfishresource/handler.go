@@ -3,6 +3,7 @@ package domain
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -137,6 +138,27 @@ func (d *DomainObjects) DeleteResource(ctx context.Context, uri string) {
 		}
 	}
 	delete(d.Tree, uri)
+}
+
+func (d *DomainObjects) ExpandURI(ctx context.Context, uri string) (interface{}, error) {
+	aggID, ok := d.GetAggregateIDOK(uri)
+	if !ok {
+		return nil, errors.New("URI does not exist: " + uri)
+	}
+	agg, _ := d.AggregateStore.Load(ctx, AggregateType, aggID)
+	redfishResource, ok := agg.(*RedfishResourceAggregate)
+	if !ok {
+		return nil, errors.New("Problem loading URI from aggregate store: " + uri)
+	}
+
+	redfishResource.PropertiesMu.RLock()
+	defer redfishResource.PropertiesMu.RUnlock()
+	sub, err := ProcessGET(ctx, redfishResource.Properties)
+	if err != nil {
+		return nil, errors.New("Problem loading URI from aggregate store: " + uri)
+	}
+
+	return sub, nil
 }
 
 // Notify implements the Notify method of the EventObserver interface.
