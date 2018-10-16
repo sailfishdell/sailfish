@@ -1,4 +1,4 @@
-// +build !skip_ec
+// +build !skip_idrac
 
 package main
 
