@@ -8,7 +8,7 @@ import (
 	"sync"
 )
 
-type processFn func(context.Context, RedfishResourceProperty, encOpts) (interface{}, error)
+type processFn func(context.Context, *RedfishResourceProperty, encOpts) (interface{}, error)
 
 type encOpts struct {
 	request interface{}
@@ -22,7 +22,7 @@ func ProcessPATCH(ctx context.Context, prop *RedfishResourceProperty, request in
 		process: PATCHfn,
 	}
 
-	val, err := parseRecursive(ctx, reflect.ValueOf(*prop), opts)
+	val, err := parseRecursive(ctx, reflect.ValueOf(prop), opts)
 	if val.IsValid() {
 		return val.Interface(), err
 	}
@@ -35,7 +35,7 @@ func ProcessGET(ctx context.Context, prop *RedfishResourceProperty) (results int
 		process: GETfn,
 	}
 
-	val, err := parseRecursive(ctx, reflect.ValueOf(*prop), opts)
+	val, err := parseRecursive(ctx, reflect.ValueOf(prop), opts)
 	if val.IsValid() {
 		return val.Interface(), err
 	}
@@ -46,7 +46,7 @@ type Marshaler interface {
 	DOMETA(context.Context, encOpts) (reflect.Value, error)
 }
 
-func (rrp RedfishResourceProperty) DOMETA(ctx context.Context, e encOpts) (results reflect.Value, err error) {
+func (rrp *RedfishResourceProperty) DOMETA(ctx context.Context, e encOpts) (results reflect.Value, err error) {
 	//fmt.Printf("DOMETA\n")
 	res, _ := e.process(ctx, rrp, e)
 	return parseRecursive(ctx, reflect.ValueOf(res), e)
@@ -159,7 +159,7 @@ type CompatPropPatcher interface {
 	PropertyPatch(context.Context, *RedfishResourceAggregate, *RedfishResourceProperty, map[string]interface{})
 }
 
-func GETfn(ctx context.Context, rrp RedfishResourceProperty, opts encOpts) (interface{}, error) {
+func GETfn(ctx context.Context, rrp *RedfishResourceProperty, opts encOpts) (interface{}, error) {
 	meta_t, ok := rrp.Meta["GET"].(map[string]interface{})
 	if !ok {
 		return rrp.Value, errors.New("No GET")
@@ -178,7 +178,7 @@ func GETfn(ctx context.Context, rrp RedfishResourceProperty, opts encOpts) (inte
 	// ContextLogger(ctx, "property_process").Debug("getting property: GET", "value", fmt.Sprintf("%v", rrp.Value))
 	if plugin, ok := plugin.(NewPropGetter); ok {
 		// defer ContextLogger(ctx, "property_process").Debug("AFTER getting property: GET - type assert success", "value", fmt.Sprintf("%v", rrp.Value))
-		return plugin.PropertyGet(ctx, rrp, meta_t)
+		return plugin.PropertyGet(ctx, *rrp, meta_t)
 	}
 	if plugin, ok := plugin.(CompatPropGetter); ok {
 		// defer ContextLogger(ctx, "property_process").Debug("AFTER getting property: GET - type assert success", "value", fmt.Sprintf("%v", rrp.Value))
@@ -189,7 +189,7 @@ func GETfn(ctx context.Context, rrp RedfishResourceProperty, opts encOpts) (inte
 	return rrp.Value, errors.New("foobar")
 }
 
-func PATCHfn(ctx context.Context, rrp RedfishResourceProperty, opts encOpts) (interface{}, error) {
+func PATCHfn(ctx context.Context, rrp *RedfishResourceProperty, opts encOpts) (interface{}, error) {
 	ContextLogger(ctx, "property_process").Debug("PATCHfn", "opts", opts, "rrp", rrp)
 	if !opts.present {
 		ContextLogger(ctx, "property_process").Debug("NOT PRESENT")
@@ -217,7 +217,7 @@ func PATCHfn(ctx context.Context, rrp RedfishResourceProperty, opts encOpts) (in
 	ContextLogger(ctx, "property_process").Debug("getting property: PATCH", "value", fmt.Sprintf("%v", rrp.Value), "plugin", plugin)
 	if plugin, ok := plugin.(NewPropPatcher); ok {
 		defer ContextLogger(ctx, "property_process").Debug("AFTER getting property: PATCH - type assert success", "value", fmt.Sprintf("%v", rrp.Value))
-		return plugin.PropertyPatch(ctx, &rrp, opts.request, meta_t)
+		return plugin.PropertyPatch(ctx, rrp, opts.request, meta_t)
 	}
 	if plugin, ok := plugin.(CompatPropPatcher); ok {
 		defer ContextLogger(ctx, "property_process").Debug("AFTER getting property: PATCH - type assert success", "value", fmt.Sprintf("%v", rrp.Value))
