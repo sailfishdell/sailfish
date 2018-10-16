@@ -99,7 +99,7 @@ func (c *PATCH) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 	}
 
 	a.PropertiesMu.Lock()
-	data.Results, _ = ProcessPATCH(ctx, a.Properties, c.Body)
+	data.Results, _ = ProcessPATCH(ctx, &a.Properties, c.Body)
 	a.PropertiesMu.Unlock()
 
 	// TODO: set error status code based on err from ProcessPATCH
