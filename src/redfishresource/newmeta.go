@@ -22,7 +22,7 @@ func ProcessPATCH(ctx context.Context, prop *RedfishResourceProperty, request in
 		process: PATCHfn,
 	}
 
-	val, err := parseRecursive(ctx, reflect.ValueOf(*prop), opts)
+	val, err := parseRecursive(ctx, reflect.ValueOf(prop), opts)
 	if val.IsValid() {
 		return val.Interface(), err
 	}
@@ -35,7 +35,7 @@ func ProcessGET(ctx context.Context, prop *RedfishResourceProperty) (results int
 		process: GETfn,
 	}
 
-	val, err := parseRecursive(ctx, reflect.ValueOf(*prop), opts)
+	val, err := parseRecursive(ctx, reflect.ValueOf(prop), opts)
 	if val.IsValid() {
 		return val.Interface(), err
 	}
@@ -208,7 +208,7 @@ func PATCHfn(ctx context.Context, rrp *RedfishResourceProperty, opts encOpts) (i
 	ContextLogger(ctx, "property_process").Debug("getting property: PATCH", "value", fmt.Sprintf("%v", rrp.Value), "plugin", plugin)
 	if plugin, ok := plugin.(NewPropPatcher); ok {
 		defer ContextLogger(ctx, "property_process").Debug("AFTER getting property: PATCH - type assert success", "value", fmt.Sprintf("%v", rrp.Value))
-		return plugin.PropertyPatch(ctx, &rrp, opts.request, meta_t)
+		return plugin.PropertyPatch(ctx, rrp, opts.request, meta_t)
 	}
 	if plugin, ok := plugin.(CompatPropPatcher); ok {
 		defer ContextLogger(ctx, "property_process").Debug("AFTER getting property: PATCH - type assert success", "value", fmt.Sprintf("%v", rrp.Value))
