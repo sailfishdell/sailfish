@@ -159,7 +159,6 @@ func (c *POST) startSessionDeleteTimer(sessionVw *view.View, timeout int) {
 	if err != nil {
 		// immediately expire session if we cannot create a listener
 		c.commandHandler.HandleCommand(ctx, &domain.RemoveRedfishResource{ID: sessionUUID, ResourceURI: sessionURI})
-		sessionVw.Close()
 		return
 	}
 
@@ -180,7 +179,6 @@ func (c *POST) startSessionDeleteTimer(sessionVw *view.View, timeout int) {
 		// immediately expire session if we cannot create a listener
 		c.commandHandler.HandleCommand(ctx, &domain.RemoveRedfishResource{ID: sessionUUID, ResourceURI: sessionURI})
 		refreshListener.Close()
-		sessionVw.Close()
 		return
 	}
 
@@ -200,7 +198,6 @@ func (c *POST) startSessionDeleteTimer(sessionVw *view.View, timeout int) {
 				return // it's gone, all done here
 			case <-time.After(time.Duration(timeout) * time.Second):
 				c.commandHandler.HandleCommand(ctx, &domain.RemoveRedfishResource{ID: sessionUUID, ResourceURI: sessionURI})
-				sessionVw.Close()
 				return //exit goroutine
 			}
 		}
