@@ -71,22 +71,10 @@ func MakeExpandListFormatter(d *domain.DomainObjects) func(context.Context, *vie
 
 		odata := []interface{}{}
 		for _, i := range uris {
-
-			aggID, ok := d.GetAggregateIDOK(i)
-			if !ok {
-				continue
+			out, err := d.ExpandURI(ctx, i)
+			if err == nil {
+				odata = append(odata, out)
 			}
-			agg, _ := d.AggregateStore.Load(ctx, domain.AggregateType, aggID)
-			redfishResource, ok := agg.(*domain.RedfishResourceAggregate)
-			if !ok {
-				continue
-			}
-
-			redfishResource.PropertiesMu.RLock()
-			sub, _ := domain.ProcessGET(ctx, redfishResource.Properties)
-			redfishResource.PropertiesMu.RUnlock()
-
-			odata = append(odata, sub)
 		}
 
 		rrp.Value = odata
@@ -110,19 +98,10 @@ func MakeExpandOneFormatter(d *domain.DomainObjects) func(context.Context, *view
 			return errors.New("uri property not setup properly")
 		}
 
-		aggID, ok := d.GetAggregateIDOK(uri)
-		if !ok {
-			return errors.New("could not find aggregate")
+		out, err := d.ExpandURI(ctx, uri)
+		if err == nil {
+			rrp.Value = out
 		}
-		agg, _ := d.AggregateStore.Load(ctx, domain.AggregateType, aggID)
-		redfishResource, ok := agg.(*domain.RedfishResourceAggregate)
-		if !ok {
-			return errors.New("specified uri wasn't an aggregate (impossible!)")
-		}
-
-		redfishResource.PropertiesMu.RLock()
-		rrp.Value, _ = domain.ProcessGET(ctx, redfishResource.Properties)
-		redfishResource.PropertiesMu.RUnlock()
 
 		return nil
 	}
