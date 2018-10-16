@@ -294,7 +294,7 @@ func getResourceEtag(ctx context.Context, agg *RedfishResourceAggregate) string 
 
 	switch t := etagintf.(type) {
 	case *RedfishResourceProperty:
-		etagprocessedintf, _ := ProcessGET(ctx, *t)
+		etagprocessedintf, _ := ProcessGET(ctx, t)
 		etagstr, ok = etagprocessedintf.(string)
 		if !ok {
 			//fmt.Printf("@odata.etag not a string: %T - %#v\n", etagprocessedintf, etagprocessedintf)

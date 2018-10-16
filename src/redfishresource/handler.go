@@ -153,7 +153,7 @@ func (d *DomainObjects) ExpandURI(ctx context.Context, uri string) (interface{},
 
 	redfishResource.PropertiesMu.RLock()
 	defer redfishResource.PropertiesMu.RUnlock()
-	sub, err := ProcessGET(ctx, redfishResource.Properties)
+	sub, err := ProcessGET(ctx, &redfishResource.Properties)
 	if err != nil {
 		return nil, errors.New("Problem loading URI from aggregate store: " + uri)
 	}

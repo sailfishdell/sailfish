@@ -29,13 +29,13 @@ func ProcessPATCH(ctx context.Context, prop RedfishResourceProperty, request int
 	return nil, err
 }
 
-func ProcessGET(ctx context.Context, prop RedfishResourceProperty) (results interface{}, err error) {
+func ProcessGET(ctx context.Context, prop *RedfishResourceProperty) (results interface{}, err error) {
 	opts := encOpts{
 		request: nil,
 		process: GETfn,
 	}
 
-	val, err := parseRecursive(ctx, reflect.ValueOf(prop), opts)
+	val, err := parseRecursive(ctx, reflect.ValueOf(*prop), opts)
 	if val.IsValid() {
 		return val.Interface(), err
 	}
