@@ -13,10 +13,9 @@ import (
 // already locked at aggregate level when we get here
 func (s *View) PropertyGet(
 	ctx context.Context,
-	agg *domain.RedfishResourceAggregate,
 	rrp *domain.RedfishResourceProperty,
 	meta map[string]interface{},
-) {
+) error {
 	// but lock the actual service anyways, because we need to exclude anybody
 	// mucking with the backend directly. (side eye at you, viper)
 	s.RLock()
@@ -35,7 +34,7 @@ func (s *View) PropertyGet(
 	modelObj := s.GetModel(modelName)
 	if modelObj == nil {
 		log.MustLogger("GET").Debug("metadata specifies a nonexistent model name", "meta", meta, "view", s)
-		return
+		return errors.New("metadata specifies a nonexistent model name")
 	}
 
 	formatterRaw, ok := meta["formatter"]
@@ -69,7 +68,7 @@ func (s *View) PropertyGet(
 		}
 	}
 
-	formatterFn(ctx, s, modelObj, rrp, meta)
+	return formatterFn(ctx, s, modelObj, rrp, meta)
 }
 
 func (s *View) PropertyPatch(

@@ -3,6 +3,7 @@ package stdmeta
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"os/exec"
 
@@ -23,15 +24,14 @@ func (t *runCmd) PluginType() domain.PluginType { return runCmdPlugin }
 
 func (t *runCmd) PropertyGet(
 	ctx context.Context,
-	agg *domain.RedfishResourceAggregate,
 	rrp *domain.RedfishResourceProperty,
 	meta map[string]interface{},
-) {
+) error {
 
 	cmd, ok := meta["CMD"].(string)
 	if !ok {
 		fmt.Printf("Misconfigured runcmd plugin: CMD not set\n")
-		return
+		return errors.New("Misconfigured runcmd plugin: CMD not set")
 	}
 
 	// convert args to something we can pass to command
@@ -50,9 +50,10 @@ func (t *runCmd) PropertyGet(
 	out, err := exec.CommandContext(ctx, cmd, args...).Output()
 	if err != nil {
 		fmt.Printf("Command execution failure: %s\n", err.Error())
-		return
+		return err
 	}
 
 	fmt.Printf("Ran command (%s) with args (%s) and got output = %s\n", cmd, args, out)
 	rrp.Value = fmt.Sprintf("%s", bytes.TrimSpace(out))
+	return nil
 }

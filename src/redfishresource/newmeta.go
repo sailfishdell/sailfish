@@ -146,10 +146,7 @@ func parseRecursive(ctx context.Context, val reflect.Value, e encOpts) (reflect.
 }
 
 type NewPropGetter interface {
-	PropertyGet(context.Context, RedfishResourceProperty, map[string]interface{}) (interface{}, error)
-}
-type CompatPropGetter interface {
-	PropertyGet(context.Context, *RedfishResourceAggregate, *RedfishResourceProperty, map[string]interface{})
+	PropertyGet(context.Context, *RedfishResourceProperty, map[string]interface{}) error
 }
 
 type NewPropPatcher interface {
@@ -175,18 +172,12 @@ func GETfn(ctx context.Context, rrp *RedfishResourceProperty, opts encOpts) (int
 		return rrp.Value, errors.New("No plugin named(" + pluginName + ") for GET")
 	}
 
-	// ContextLogger(ctx, "property_process").Debug("getting property: GET", "value", fmt.Sprintf("%v", rrp.Value))
+	ContextLogger(ctx, "property_process").Debug("getting property: GET", "value", fmt.Sprintf("%v", rrp.Value))
 	if plugin, ok := plugin.(NewPropGetter); ok {
-		// defer ContextLogger(ctx, "property_process").Debug("AFTER getting property: GET - type assert success", "value", fmt.Sprintf("%v", rrp.Value))
-		return plugin.PropertyGet(ctx, *rrp, meta_t)
+		defer ContextLogger(ctx, "property_process").Debug("AFTER getting property: GET - type assert success", "value", fmt.Sprintf("%v", rrp.Value))
+		err = plugin.PropertyGet(ctx, rrp, meta_t)
 	}
-	if plugin, ok := plugin.(CompatPropGetter); ok {
-		// defer ContextLogger(ctx, "property_process").Debug("AFTER getting property: GET - type assert success", "value", fmt.Sprintf("%v", rrp.Value))
-		tempRRP := &RedfishResourceProperty{Value: rrp.Value, Meta: rrp.Meta}
-		plugin.PropertyGet(ctx, nil, tempRRP, meta_t)
-		return tempRRP.Value, nil
-	}
-	return rrp.Value, errors.New("foobar")
+	return rrp.Value, err
 }
 
 func PATCHfn(ctx context.Context, rrp *RedfishResourceProperty, opts encOpts) (interface{}, error) {

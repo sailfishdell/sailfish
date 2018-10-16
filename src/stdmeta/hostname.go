@@ -21,12 +21,12 @@ func (t *hostname) PluginType() domain.PluginType { return hostnamePlugin }
 
 func (t *hostname) PropertyGet(
 	ctx context.Context,
-	agg *domain.RedfishResourceAggregate,
 	rrp *domain.RedfishResourceProperty,
 	meta map[string]interface{},
-) {
+) error {
 	hostname, err := os.Hostname()
 	if err == nil {
 		rrp.Value = hostname
 	}
+	return err
 }

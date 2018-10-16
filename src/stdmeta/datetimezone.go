@@ -21,9 +21,9 @@ func (t *dateTimeZone) PluginType() domain.PluginType { return dateTimeZonePlugi
 
 func (t *dateTimeZone) PropertyGet(
 	ctx context.Context,
-	agg *domain.RedfishResourceAggregate,
 	rrp *domain.RedfishResourceProperty,
 	meta map[string]interface{},
-) {
+) error {
 	rrp.Value = time.Now().UTC().Format("-07:00")
+	return nil
 }
