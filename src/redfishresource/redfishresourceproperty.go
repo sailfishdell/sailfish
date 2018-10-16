@@ -16,7 +16,7 @@ func NewProperty() *RedfishResourceProperty {
 	return &RedfishResourceProperty{}
 }
 
-func (rrp RedfishResourceProperty) MarshalJSON() ([]byte, error) {
+func (rrp *RedfishResourceProperty) MarshalJSON() ([]byte, error) {
 	rrp.Lock()
 	defer rrp.Unlock()
 	return json.Marshal(rrp.Value)
