@@ -336,7 +336,7 @@ func iterInterfaceIPAddrs(logger log.Logger, fn func(net.IP)) {
 
 func init() {
 	go func() {
-		t := time.Tick(time.Second)
+		t := time.Tick(time.Second * 30)
 		for {
 			<-t
 			debug.FreeOSMemory()
