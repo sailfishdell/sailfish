@@ -53,7 +53,7 @@ func init() {
 			}
 
 			ret := []string{}
-			for i, _ := range vStr {
+			for i := range vStr {
 				if vStr[i] == str {
 					ret = vStr[:i]
 					if i+1 < len(vStr) {
@@ -88,7 +88,7 @@ func init() {
 			}
 
 			found := false
-			for i, _ := range vStr {
+			for i := range vStr {
 				if vStr[i] == str {
 					found = true
 				}
