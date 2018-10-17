@@ -109,7 +109,7 @@ func MakeExpandOneFormatter(d *domain.DomainObjects) func(context.Context, *view
 
 func CountFormatter(
 	ctx context.Context,
-	v *view.View,
+	vw *view.View,
 	m *model.Model,
 	rrp *domain.RedfishResourceProperty,
 	meta map[string]interface{},
@@ -124,8 +124,19 @@ func CountFormatter(
 		return errors.New("array property not setup properly")
 	}
 
-	r := reflect.ValueOf(arr)
-	rrp.Value = r.Len()
+	v := reflect.ValueOf(arr)
+	switch v.Kind() {
+	case reflect.String:
+		rrp.Value = v.Len()
+	case reflect.Slice:
+		rrp.Value = v.Len()
+	case reflect.Map:
+		rrp.Value = v.Len()
+	case reflect.Chan:
+		rrp.Value = v.Len()
+	default:
+		rrp.Value = nil
+	}
 
 	return nil
 }
