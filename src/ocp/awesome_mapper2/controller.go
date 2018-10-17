@@ -153,7 +153,7 @@ func (s *Service) NewMapping(ctx context.Context, logger log.Logger, cfg *viper.
 
 		// and then optimize by rebuilding the event indexed hash
 		logger.Info("start Optimize hash", "s.cfgSection", s.cfgSection)
-		for k, _ := range s.hash {
+		for k := range s.hash {
 			delete(s.hash, k)
 		}
 

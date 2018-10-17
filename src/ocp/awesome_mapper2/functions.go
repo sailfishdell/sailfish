@@ -26,21 +26,21 @@ func init() {
 				float, err := strconv.ParseFloat(t, 64)
 				return float, err
 			default:
-				return nil, errors.New("Cant parse non-string")
+				return nil, errors.New("cant parse non-string")
 			}
 		},
 		"removefromset": func(args ...interface{}) (interface{}, error) {
 			model, ok := args[0].(*model.Model)
 			if !ok {
-				return nil, errors.New("Need model as first arg!")
+				return nil, errors.New("need model as first arg")
 			}
 			property, ok := args[1].(string)
 			if !ok {
-				return nil, errors.New("Need property name as second arg!")
+				return nil, errors.New("need property name as second arg")
 			}
 			str, ok := args[2].(string)
 			if !ok {
-				return nil, errors.New("Need new value as third arg!")
+				return nil, errors.New("need new value as third arg")
 			}
 			v, ok := model.GetPropertyOk(property)
 			if !ok || v == nil {
@@ -67,15 +67,15 @@ func init() {
 		"addtoset": func(args ...interface{}) (interface{}, error) {
 			model, ok := args[0].(*model.Model)
 			if !ok {
-				return nil, errors.New("Need model as first arg!")
+				return nil, errors.New("need model as first arg")
 			}
 			property, ok := args[1].(string)
 			if !ok {
-				return nil, errors.New("Need property name as second arg!")
+				return nil, errors.New("need property name as second arg")
 			}
 			str, ok := args[2].(string)
 			if !ok {
-				return nil, errors.New("Need new value as third arg!")
+				return nil, errors.New("need new value as third arg")
 			}
 			v, ok := model.GetPropertyOk(property)
 			if !ok || v == nil {
