@@ -12,20 +12,20 @@ import (
 func AddAggregate(ctx context.Context, v *view.View, baseUri string, ch eh.CommandHandler) (ret eh.UUID) {
 	ret = eh.NewUUID()
 
-	properties := map[string]interface{}{
-		"Id":                             "CertificateService",
-		"Name":                           "Certificate Service",
-		"Description":                    "Represents the properties of Certificate Service",
-		"CertificateSigningRequest@meta": v.Meta(view.PropGET("certificate_signing_request")),
-		"Actions": map[string]interface{}{
-			"#DellCertificateService.GenerateCSR": map[string]interface{}{
-				"target": v.GetActionURI("certificates.generatecsr"),
-			},
-		},
-		"CertificateInventory": map[string]interface{}{
-			"@odata.id": v.GetURI() + "CertificateService/CertificateInventory",
-		},
-	}
+  properties := map[string]interface{}{
+    "Id":                             "CertificateService",
+    "Name":                           "Certificate Service",
+    "Description":                    "Represents the properties of Certificate Service",
+    "CertificateSigningRequest@meta": v.Meta(view.PropGET("certificate_signing_request")),
+    "Actions": map[string]interface{}{
+      "#DellCertificateService.GenerateCSR": map[string]interface{}{
+        "target": v.GetActionURI("certificates.generatecsr"),
+      },
+    },
+    "CertificateInventory": map[string]interface{}{
+      "@odata.id": v.GetURI() + "CertificateService/CertificateInventory",
+    },
+  }
 
 	ch.HandleCommand(
 		ctx,

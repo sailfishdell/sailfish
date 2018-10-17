@@ -7,6 +7,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+  "io/ioutil"
+  "os"
 
 	"github.com/Knetic/govaluate"
 	"github.com/superchalupa/sailfish/src/ocp/model"
@@ -185,6 +187,24 @@ func init() {
         return nil, nil
       }
       return map[string]string{"subsys":subsys, health:"health"}, nil
+    },
+    "read_file": func(args ...interface{}) (interface{}, error) {
+      lines := ""
+      file_path := args[0].(string)
+      if (file_path == "NONE") {
+        return nil, nil
+      }
+      bytes, err := ioutil.ReadFile(file_path)
+      if (err != nil) {
+        return nil, err
+      } else {
+        lines = string(bytes)
+      }
+      err = os.Remove(file_path)
+      if (err != nil) {
+        return lines, err
+      }
+      return lines, nil
     },
 	}
 }

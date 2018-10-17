@@ -167,6 +167,8 @@ views:
           "params": {"modelname": "default", "cfgsection": "health", "uniquename": "'am2_manager_' + FQDD" }
         - "fn": "ARDumper"
           "params": {"modelname": "default", "AddToView": true}
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "certificate", "uniquename": "'certificate_services_' + FQDD" }
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/Managers/' + FQDD"
@@ -580,6 +582,10 @@ awesome_mapper:
 
     testview:
       - { SelectEventType: "AttributeUpdated", Select: "type == 'AttributeUpdated' && data.FQDD == fqdd && data.Name == 'test'", ModelUpdate: [ {Property: "TEST", Query: "data.Value", Default: 0} ] }
+
+    certificate:
+      - { SelectEventType: "FileReadEvent", Select: "data.URI == 'CertificateInventory' && data.FQDD == FQDD", ModelUpdate: [ { Property: "certificate_signing_request", Query: "read_file(data.FilePath)" } ] }
+      - { SelectEventType: "FileReadEvent", Select: "data.URI == 'FactoryIdentity' && data.FQDD == FQDD", ModelUpdate: [ { Property: "certificate", Query: "read_file(data.FilePath)" } ] }
 
     slot:
       - { SelectEventType: "AttributeUpdated", Select: "type == 'AttributeUpdated' && data.FQDD == 'System.Chassis.1' && data.Group == Group && data.Index == Index && data.Name == 'Config'",
