@@ -1,5 +1,7 @@
 Things that need work: (-) TODO (*) DONE
 
+ - SELECT  EC.*
+
  - validator system for models? Attach functions that observe and validate. Ability to refuse and return an error?
 
  - Schema Meta builder

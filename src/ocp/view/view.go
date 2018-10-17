@@ -13,6 +13,7 @@ type Option func(*View) error
 
 type controller interface {
 	UpdateRequest(ctx context.Context, property string, value interface{}) (interface{}, error)
+	Close()
 }
 
 type formatter func(

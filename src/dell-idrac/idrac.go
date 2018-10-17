@@ -66,8 +66,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	logSvc := lcl.New(ch, eb)
 	faultSvc := faultlist.New(ch, eb)
 	domain.StartInjectService(eb)
-	arService, _ := ar_mapper2.StartService(ctx, logger, eb)
-	arService.ConfigChangedFn(ctx, cfgMgr)
+	arService, _ := ar_mapper2.StartService(ctx, logger, cfgMgr, eb)
 	actionSvc := ah.StartService(ctx, logger, ch, eb)
 	am2Svc, _ := awesome_mapper2.StartService(ctx, logger, eb)
 

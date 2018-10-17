@@ -39,6 +39,7 @@ func WithFormatter(name string, g formatter) Option {
 func WithController(name string, c controller) Option {
 	return func(s *View) error {
 		s.controllers[name] = c
+		s.closefn = append(s.closefn, c.Close)
 		return nil
 	}
 }

@@ -42,6 +42,7 @@ type ModelMappings struct {
 
 type ARService struct {
 	eb     eh.EventBus
+	cfg    *viper.Viper
 	logger log.Logger
 
 	mappingsMu    sync.RWMutex
@@ -57,7 +58,7 @@ type update struct {
 	property string
 }
 
-func StartService(ctx context.Context, logger log.Logger, eb eh.EventBus) (*ARService, error) {
+func StartService(ctx context.Context, logger log.Logger, cfg *viper.Viper, eb eh.EventBus) (*ARService, error) {
 	logger = logger.New("module", "ar2")
 
 	EventPublisher := eventpublisher.NewEventPublisher()
@@ -67,6 +68,7 @@ func StartService(ctx context.Context, logger log.Logger, eb eh.EventBus) (*ARSe
 
 	arservice := &ARService{
 		eb:            eb,
+		cfg:           cfg,
 		logger:        logger,
 		modelmappings: make(map[string]ModelMappings),
 		hash:          make(map[string][]update),
@@ -121,7 +123,15 @@ func (ars *ARService) NewMapping(logger log.Logger, mappingName, cfgsection stri
 	ars.modelmappings[mappingName] = mm
 	ars.mappingsMu.Unlock()
 
+	ars.loadConfig()
+
 	return breadcrumb{ars: ars, mappingName: mappingName, logger: logger}
+}
+
+func (b breadcrumb) Close() {
+	b.ars.mappingsMu.Lock()
+	delete(b.ars.modelmappings, b.mappingName)
+	b.ars.mappingsMu.Unlock()
 }
 
 func (b breadcrumb) UpdateRequest(ctx context.Context, property string, value interface{}) (interface{}, error) {
@@ -157,7 +167,7 @@ func (b breadcrumb) UpdateRequest(ctx context.Context, property string, value in
 }
 
 // this is the function that viper will call whenever the configuration changes at runtime
-func (ars *ARService) ConfigChangedFn(ctx context.Context, cfg *viper.Viper) {
+func (ars *ARService) loadConfig() {
 	ars.mappingsMu.Lock()
 	defer ars.mappingsMu.Unlock()
 	ars.hashMu.Lock()
@@ -170,7 +180,7 @@ func (ars *ARService) ConfigChangedFn(ctx context.Context, cfg *viper.Viper) {
 		delete(ars.hash, k)
 	}
 
-	subCfg := cfg.Sub("mappings")
+	subCfg := ars.cfg.Sub("mappings")
 	if subCfg == nil {
 		ars.logger.Warn("missing config file section: 'mappings'")
 		return
