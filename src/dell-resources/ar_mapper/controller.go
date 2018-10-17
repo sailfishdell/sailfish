@@ -89,6 +89,11 @@ func New(ctx context.Context, logger log.Logger, m *model.Model, name string, in
 	return c, nil
 }
 
+func (c *ARMappingController) Close() {
+	// TODO: Need to fixup this controller so that it can be cleanly shut down without leaking
+	panic("ARDump controller currently does not support shutting down and will leak memory. This function should never be called.")
+}
+
 func (c *ARMappingController) UpdateRequest(ctx context.Context, property string, value interface{}) (interface{}, error) {
 	for _, mapping := range c.mappings {
 		if property != mapping.Property {
