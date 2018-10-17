@@ -29,7 +29,7 @@ func TestParsing(t *testing.T) {
 	}
 	for _, subtest := range tests {
 		t.Run(subtest.testname, func(t *testing.T) {
-			output, _ := ProcessGET(context.Background(), &subtest.input)
+			output, _ := ProcessGET(context.Background(), subtest.input)
 			assert.EqualValues(t, subtest.expected, output)
 		})
 	}
