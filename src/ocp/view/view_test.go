@@ -21,20 +21,20 @@ func TestView(t *testing.T) {
 		WithModel("default", testModel),
 	)
 
-	var tests = []struct {
+	var tests = []*struct {
 		testname string
-		input    domain.RedfishResourceProperty
+		input    *domain.RedfishResourceProperty
 		expected interface{}
 	}{
-		{"test string 1", domain.RedfishResourceProperty{Value: "appy", Meta: map[string]interface{}{
+		{"test string 1", &domain.RedfishResourceProperty{Value: "appy", Meta: map[string]interface{}{
 			"GET": map[string]interface{}{"plugin": "TESTURI", "property": "test", "model": "default"}}}, "HAPPY"},
 		{"test recursion 1",
-			domain.RedfishResourceProperty{Value: map[string]interface{}{"happy": domain.RedfishResourceProperty{Value: "joy"}}},
+			&domain.RedfishResourceProperty{Value: map[string]interface{}{"happy": &domain.RedfishResourceProperty{Value: "joy"}}},
 			map[string]interface{}{"happy": "joy"}},
 	}
 	for _, subtest := range tests {
 		t.Run(subtest.testname, func(t *testing.T) {
-			output, _ := domain.ProcessGET(context.Background(), &subtest.input)
+			output, _ := domain.ProcessGET(context.Background(), subtest.input)
 			assert.EqualValues(t, subtest.expected, output)
 		})
 	}
