@@ -42,6 +42,11 @@ func NewController(ctx context.Context, m *model.Model, fqdds []string, ch eh.Co
 	return c, nil
 }
 
+func (d *ARDump) Close() {
+	// TODO: Need to fixup this controller so that it can be cleanly shut down without leaking
+	panic("ARDump controller currently does not support shutting down and will leak memory. This function should never be called.")
+}
+
 func (d *ARDump) UpdateRequest(ctx context.Context, property string, value interface{}) (interface{}, error) {
 	log.MustLogger("ARDump_Controller").Debug("UpdateRequest", "property", property, "value", value)
 
