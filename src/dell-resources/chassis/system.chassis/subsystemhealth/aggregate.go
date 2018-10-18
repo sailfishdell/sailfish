@@ -10,16 +10,8 @@ import (
 	eh "github.com/looplab/eventhorizon"
 )
 
-func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.CommandHandler, eb eh.EventBus, healths map[string]string) {
+func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.CommandHandler, eb eh.EventBus) {
   properties := map[string]interface{}{}
-  //properties["SubSystems@meta"] = v.Meta(view.PropGET("subsystems"))
-  /*for subsystem, health := range healths {
-    properties[subsystem] = map[string]interface{}{
-      "Status": map[string]interface{}{
-        "HealthRollup@meta": v.Meta(view.GETProperty("health"), view.GETModel("health")), //TODO: fix me
-      },
-    }
-  }*/
 
   ch.HandleCommand(
 		ctx,

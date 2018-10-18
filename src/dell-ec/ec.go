@@ -87,6 +87,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	uploadSvc := uploadhandler.StartService(ctx, logger, ch, eb)
 	am2Svc, _ := awesome_mapper2.StartService(ctx, logger, eb)
 
+  subSystemSvc := subsystemhealth.New(ch, eb)
 	slotSvc := slots.New(ch, eb)
 	slotconfigSvc := slotconfig.New(ch, eb)
 
@@ -469,12 +470,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		//*********************************************************************
 		// Create SubSystemHealth for System.Chassis.1
 		//*********************************************************************
-		subSysHealths := map[string]string{}
-
-		// TODO: replace this with all healths that are not "absent", use awesome_mapper? or implement perpetual event capture like slots/slotconfig for health events?
-		subSysHealths["Battery"] = "OK"
-
-		subSysHealthLogger := sysChasLogger.New("module", "Chassis/System.Chassis/SubSystemHealth")
+		/*subSysHealthLogger := sysChasLogger.New("module", "Chassis/System.Chassis/SubSystemHealth")
 		subSysHealthModel := model.New()
 
 		armapper := arService.NewMapping(subSysHealthLogger, "Chassis/"+chasName+"/SubSystemHealth", "Chassis/SubSystemHealths", subSysHealthModel, map[string]string{})
@@ -485,14 +481,15 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			view.WithController("ar_mapper", armapper),
 		)
 
-		subsystemhealth.AddAggregate(ctx, subSysHealthLogger, subSysHealthView, ch, eb, subSysHealths)
+
+		subsystemhealth.AddAggregate(ctx, subSysHealthLogger, subSysHealthView, ch, eb)*/
+    /* SubSystemHealth */
+    subSystemSvc.StartService(ctx, logger, sysChasVw, cfgMgr, instantiateSvc, ch, eb)
 
 		/*  Slots */
-		//slotSvc.StartService(ctx, logger, sysChasVw, cfgMgr, arService)
 		slotSvc.StartService(ctx, logger, sysChasVw, cfgMgr, instantiateSvc, ch, eb)
 
 		/* Slot config */
-		//slotconfigSvc.StartService(ctx, logger, sysChasVw, cfgMgr, arService)
 		slotconfigSvc.StartService(ctx, logger, sysChasVw, cfgMgr, instantiateSvc, ch, eb)
 
 	}
