@@ -113,7 +113,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	//*********************************************************************
 	//  /redfish/v1/testview - a proof of concept test view and example
 	//*********************************************************************
-	instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "testview", map[string]interface{}{"rooturi": rootView.GetURI(), "fqdd": "System.Modular.1"})
+	instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "testview", baseParams)
 
 	//*********************************************************************
 	//  /redfish/v1/{Managers,Chassis,Systems,Accounts}
@@ -170,7 +170,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	// /redfish/v1/Managers/iDRAC.Embedded.1
 	//*********************************************************************
 
-	mgrLogger, mgrCmcVw, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "manager_cmc_integrated",
+	mgrLogger, mgrCmcVw, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "idrac_embedded",
 		map[string]interface{}{
 			"rooturi":  rootView.GetURI(),
 			"FQDD":     mgrName,                                   // this is used for the AR mapper. case difference is confusing, but need to change mappers

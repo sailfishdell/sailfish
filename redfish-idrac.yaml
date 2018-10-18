@@ -16,28 +16,26 @@ views:
       "View":
         - "fn": "with_URI"
           "params": "'/redfish/v1'"
+      "Aggregate": "root"
 
   "testview":
       "Logger": ["module", "testview"]
       "Models":
         "default":  {"unique_name": "'TEST_Unique_Name'", "name": "'TEST_Name'", "'description'": "'TEST_Description'" }
       "Controllers":
-        - "fn": "AwesomeMapper"
-          "params": {"modelname": "default", "cfgsection": "testview" }
-        - "fn": "ARMapper"
-          "params": {"modelname": "default", "cfgsection": "testview", "mappinguniquename": "'/redfish/v1/testservice'", "AddToView": true}
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/testview'"
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
+      "Aggregate": "registry_collection"
 
   "sessionview":
       "Logger": ["module", "session"]
       "Models":
         "default":  {"session_timeout": "30"}
       "Controllers":
-        - "fn": "AwesomeMapper"
+        - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "sessionview" }
         - "fn": "ARMapper"
           "params": {"modelname": "default", "cfgsection": "SessionService", "mappinguniquename": "'/redfish/v1/SessionService'", "AddToView": true}
@@ -106,6 +104,169 @@ views:
           "params": "rooturi + '/Registries/ManagerAttributeRegistry'"
         - "fn": "withFormatter_count"
           "params":
+
+  "sessioncollection":
+      "Logger": ["module", "session"]
+      "Models":
+        "default":  {}
+      "Controllers":
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + collection_uri" }
+        - "fn": "ARMapper"
+          "params": {"modelname": "default", "cfgsection": "SessionService", "mappinguniquename": "'/redfish/v1/SessionService/Sessions'", "AddToView": true}
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/SessionService/Sessions'"
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+        - "fn": "withFormatter_formatOdataList"
+          "params":
+        - "fn": "withFormatter_count"
+          "params":
+      "Aggregate": "sessioncollection"
+
+  "session":
+      "Logger": ["module", "session"]
+      "Models":
+      "Controllers":
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/SessionService/Sessions/' + uuid"
+      "Aggregate": "session"
+
+  "chassis":
+      "Logger": ["module", "Chassis"]
+      "Models":
+        "default":  {"members":"''"}
+      "Controllers":
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + collection_uri" }
+      "View":
+        - "fn": "with_URI"
+          "params": "collection_uri "
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+        - "fn": "withFormatter_formatOdataList"
+          "params":
+        - "fn": "withFormatter_count"
+          "params":
+      "Aggregate": "chassis"
+
+  "systems":
+      "Logger": ["module", "Systems"]
+      "Models":
+        "default":  {"members":"''"}
+      "Controllers":
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + collection_uri" }
+      "View":
+        - "fn": "with_URI"
+          "params": "collection_uri "
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+        - "fn": "withFormatter_formatOdataList"
+          "params":
+        - "fn": "withFormatter_count"
+          "params":
+      "Aggregate": "systems"
+
+  "managers":
+      "Logger": ["module", "Managers"]
+      "Models":
+        "default":  {"members":"''"}
+      "Controllers":
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + collection_uri" }
+      "View":
+        - "fn": "with_URI"
+          "params": "collection_uri "
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+        - "fn": "withFormatter_formatOdataList"
+          "params":
+        - "fn": "withFormatter_count"
+          "params":
+      "Aggregate": "managers"
+
+  "roles":
+      "Logger": ["module", "Roles"]
+      "Models":
+        "default":  {"members":"''"}
+      "Controllers":
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + collection_uri" }
+      "View":
+        - "fn": "with_URI"
+          "params": "collection_uri "
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+        - "fn": "withFormatter_formatOdataList"
+          "params":
+        - "fn": "withFormatter_count"
+          "params":
+      "Aggregate": "roles"
+
+  "accountservice":
+      "Logger": ["module", "AccountService"]
+      "Models":
+        "default":  {}
+      "Controllers":
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/AccountService' "
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+        - "fn": "withFormatter_formatOdataList"
+          "params":
+        - "fn": "withFormatter_count"
+          "params":
+      "Aggregate": "accountservice"
+
+  "accounts":
+      "Logger": ["module", "Accounts"]
+      "Models":
+        "default":  {"members":"''"}
+      "Controllers":
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + collection_uri" }
+      "View":
+        - "fn": "with_URI"
+          "params": "collection_uri "
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+        - "fn": "withFormatter_formatOdataList"
+          "params":
+        - "fn": "withFormatter_count"
+          "params":
+      "Aggregate": "accounts"
+
+
+  "idrac_embedded":
+      "Logger": ["module", "mgrChassis"]
+      "Models":
+        "default":  {"unique_name": "FQDD", "unique_name_attr": "FQDD+'.Attributes'", "attributes": "add_attribute_property()"}
+      "Controllers":
+        - "fn": "ARMapper"
+          "params": {"modelname": "default", "cfgsection": "firmware/inventory", "mappinguniquename": "'fw_mapper:' + FQDD ", "AddToView": true}
+        - "fn": "ARMapper"
+          "params": {"modelname": "default", "cfgsection": "Managers/CMC.Integrated", "mappinguniquename": "'manager_mapper:' + FQDD ", "AddToView": true}
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "health", "uniquename": "'am2_manager_' + FQDD" }
+        - "fn": "ARDumper"
+          "params": {"modelname": "default", "AddToView": true}
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/Managers/' + FQDD"
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+        - "fn": "withFormatter_attributeFormatter"
+          "params":
+        - "fn": "withFormatter_expand"
+          "params":
+        - "fn": "withFormatter_count"
+          "params":
+
+
 
   "system_chassis":
       "Logger": ["module", "system_chassis"]
