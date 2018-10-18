@@ -11,8 +11,6 @@ import (
 )
 
 func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.CommandHandler, eb eh.EventBus) {
-  properties := map[string]interface{}{}
-
   ch.HandleCommand(
 		ctx,
 		&domain.CreateRedfishResource{
@@ -27,7 +25,17 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 				"PATCH":  []string{"ConfigureManager"},
 				"DELETE": []string{}, // can't be deleted
 			},
-			Properties: properties,
+			Properties: map[string]interface{}{},
 		},
 	)
+}
+
+func UpdateAggregate(ctx context.Context, v *view.View, ch eh.CommandHandler, properties map[string]interface{}) {
+  ch.HandleCommand(ctx,
+    &domain.UpdateRedfishResourceProperties{
+      ID:         v.GetUUID(),
+      Properties: properties,
+    })
+
+  return
 }

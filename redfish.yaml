@@ -180,6 +180,8 @@ views:
           "params":
         - "fn": "withFormatter_count"
           "params":
+        - "fn": "withFormatter_formatOdataList"
+          "params":
 
   "chassis_cmc_integrated":
       "Logger": ["module", "ChassisCMCInt"]
@@ -412,6 +414,14 @@ views:
             "params": "rooturi + '/Chassis/' + FQDD + '/IOMConfiguration'"
           - "fn": "PublishResourceUpdatedEventsForModel"
             "params": "default"
+  "subsyshealth":
+      "Logger": ["module", "subsyshealth"]
+      "Models":
+        "default": {}
+      "Controllers":
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/SubSystemHealth'"
 
   "slot":
       "Logger": ["module", "slot"]
@@ -422,7 +432,7 @@ views:
           "params": {"modelname": "default", "cfgsection": "slot", "uniquename": "'slot:' + FQDD"}
       "View":
         - "fn": "with_URI"
-          "params": "sloturi "
+          "params": "sloturi"
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
 
@@ -796,23 +806,6 @@ mappings:
         - {Property: "manufacturer", FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Manufacturer" }
         - {Property: "service_tag",  FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "ServiceTag" }
         - {Property: "indicator_led", FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "IndicatorLED"}
-
-    Chassis/Slots:
-        - {Property: "slot_config", FQDD: "System.Chassis.1", Group: "{GROUP}", Index: "{INDEX}", Name: "Config" }
-        #- {Property: "slot_contains", FQDD: "System.Chassis.1", Group: "{GROUP}", Index: "{INDEX}", Name: "Contains" }
-        - {Property: "slot_name", FQDD: "System.Chassis.1", Group: "{GROUP}", Index: "{INDEX}", Name: "Name" }
-        - {Property: "slot_occupied", FQDD: "System.Chassis.1", Group: "{GROUP}", Index: "{INDEX}", Name: "Occupied" }
-        - {Property: "slot_slotname", FQDD: "System.Chassis.1", Group: "{GROUP}", Index: "{INDEX}", Name: "SlotName" }
-
-    Chassis/SlotConfigs:
-        #- {Property: "columns", FQDD: "System.Chassis.1", Group: "{GROUP}", Index: "{INDEX}", Name: "Columns" } # check awesome mapper
-        - {Property: "location", FQDD: "System.Chassis.1", Group: "{GROUP}", Index: "{INDEX}", Name: "Location" }
-        - {Property: "name", FQDD: "System.Chassis.1", Group: "{GROUP}", Index: "{INDEX}", Name: "Name" }
-        - {Property: "order", FQDD: "System.Chassis.1", Group: "{GROUP}", Index: "{INDEX}", Name: "Order" }
-        - {Property: "orientation", FQDD: "System.Chassis.1", Group: "{GROUP}", Index: "{INDEX}", Name: "Orientation" }
-        - {Property: "parentConfig", FQDD: "System.Chassis.1", Group: "{GROUP}", Index: "{INDEX}", Name: "ParentConfig" }
-        #- {Property: "rows", FQDD: "System.Chassis.1", Group: "{GROUP}", Index: "{INDEX}", Name: "Rows" } # check awesome mapper
-        - {Property: "type", FQDD: "System.Chassis.1", Group: "{GROUP}", Index: "{INDEX}", Name: "Type" }
 
     Chassis/System.Chassis/Power:
         - {Property: "capacity_watts", FQDD: "System.Chassis.1", Group: "ChassisPower", Index: "1", Name: "SystemInputMaxPowerCapacity" }

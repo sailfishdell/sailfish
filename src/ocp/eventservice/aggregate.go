@@ -18,7 +18,7 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, rootID e
 		&domain.CreateRedfishResource{
 			ID:          v.GetUUID(),
 			ResourceURI: v.GetURI(),
-			Type:        "#EventService.v1_0_4.EventService",
+			Type:        "#EventService.v1_0_2.EventService",
 			Context:     "/redfish/v1/$metadata#EventService.EventService",
 			Privileges: map[string]interface{}{
 				"GET":    []string{"ConfigureManager"},

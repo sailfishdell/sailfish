@@ -227,7 +227,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			actionSvc.WithAction(ctx, "manager.exportsystemconfig", "/Actions/Oem/EID_674_Manager.ExportSystemConfiguration", exportSystemConfiguration),
 			actionSvc.WithAction(ctx, "manager.importsystemconfig", "/Actions/Oem/EID_674_Manager.ImportSystemConfiguration", importSystemConfiguration),
 			actionSvc.WithAction(ctx, "manager.importsystemconfigpreview", "/Actions/Oem/EID_674_Manager.ImportSystemConfigurationPreview", importSystemConfigurationPreview),
-			actionSvc.WithAction(ctx, "certificates.generatecsr", "/Actions/DellCertificateService.GenerateCSR", makePumpHandledAction("GenerateCSR", 30, eb)),
+			actionSvc.WithAction(ctx, "certificates.generatecsr", "/CertificateService/Actions/DellCertificateService.GenerateCSR", makePumpHandledAction("GenerateCSR", 30, eb)),
 		)
 
 		managers = append(managers, mgrCmcVw)
@@ -239,10 +239,9 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 
 		logservices.AddAggregate(ctx, mgrCmcVw, rootView.GetURI()+"/Managers/"+mgrName, ch)
 
-    mgrCmcVw.GetModel("default").ApplyOption(
-      model.UpdateProperty("certificate_uris", []string{rootView.GetURI() + "/Managers/"+mgrName+"/CertificateService/CertificateInventory/FactoryIdentity.1"}),
+    certificate_uris := []string{mgrCmcVw.GetURI()+"/CertificateService/CertificateInventory/FactoryIdentity.1"}
 
-    )
+    mgrCmcVw.GetModel("default").ApplyOption(model.UpdateProperty("certificate_uris", certificate_uris))
 		certificateservices.AddAggregate(ctx, mgrCmcVw, rootView.GetURI()+"/Managers/"+mgrName, ch)
 
 

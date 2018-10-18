@@ -28,19 +28,19 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 			Properties: map[string]interface{}{
 				"Name":                     "System Power Control",
 				"MemberId":                 "PowerControl",
-				"PowerAvailableWatts@meta": v.Meta(view.PropGET("available_watts")), // TODO
+				"PowerAvailableWatts@meta": v.Meta(view.PropGET("headroom_watts")),
 				"PowerCapacityWatts@meta":  v.Meta(view.PropGET("capacity_watts")),  //System.Chassis.1#ChassisPower.1#SystemInputMaxPowerCapacity
-				"PowerConsumedWatts@meta":  v.Meta(view.PropGET("consumed_watts")),  // TODO
+				"PowerConsumedWatts@meta":  v.Meta(view.PropGET("consumed_watts")), 
 
 				"Oem": map[string]interface{}{
 					"EnergyConsumptionStartTime@meta": v.Meta(view.PropGET("energy_consumption_start_time")),
 					"EnergyConsumptionkWh@meta":       v.Meta(view.PropGET("energy_consumption_kwh")),
-					"HeadroomWatts@meta":              v.Meta(view.PropGET("headroom_watts")), // TODO
+					"HeadroomWatts@meta":              v.Meta(view.PropGET("headroom_watts")),
 					"MaxPeakWatts@meta":               v.Meta(view.PropGET("max_peak_watts")),
 					"MaxPeakWattsTime@meta":           v.Meta(view.PropGET("max_peak_watts_time")),
 					"MinPeakWatts@meta":               v.Meta(view.PropGET("min_peak_watts")),
 					"MinPeakWattsTime@meta":           v.Meta(view.PropGET("min_peak_watts_time")),
-					"PeakHeadroomWatts@meta":          v.Meta(view.PropGET("peak_headroom_watts")), // TODO
+					"PeakHeadroomWatts@meta":          v.Meta(view.PropGET("peak_headroom_watts")),
 				},
 				"PowerLimit": map[string]interface{}{
 					"LimitInWatts@meta": v.Meta(view.PropGET("limit_in_watts")),

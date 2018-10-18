@@ -23,7 +23,7 @@ func AddAggregate(ctx context.Context, v *view.View, baseUri string, ch eh.Comma
       },
     },
     "CertificateInventory": map[string]interface{}{
-      "@odata.id": v.GetURI() + "CertificateService/CertificateInventory",
+      "@odata.id": v.GetURI() + "/CertificateService/CertificateInventory",
     },
   }
 
@@ -73,8 +73,8 @@ func AddAggregate(ctx context.Context, v *view.View, baseUri string, ch eh.Comma
       ID:          eh.NewUUID(),
       Collection:  false,
       ResourceURI: baseUri + "/CertificateService/CertificateInventory/FactoryIdentity.1",
-      Type:        "#DellCertificateInventoryCollection.DellCertificateInventoryCollection",
-      Context:     "/redfish/v1/$metadata#DellCertificateInventoryCollection.DellCertificateInventoryCollection",
+      Type:        "#DellCertificateInventory.v1_0_0.DellCertificateInventory",
+      Context:     "/redfish/v1/$metadata#DellCertificateInventory.DellCertificateInventory",
       Privileges:  map[string]interface{}{
         "GET":    []string{"ConfigureManager"},
         "POST":   []string{},

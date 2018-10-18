@@ -1,0 +1,195 @@
+package ar_mapper
+
+import (
+	"context"
+	"sync"
+	"time"
+
+	"github.com/spf13/viper"
+
+	eh "github.com/looplab/eventhorizon"
+
+	"github.com/superchalupa/sailfish/src/log"
+	"github.com/superchalupa/sailfish/src/ocp/event"
+	"github.com/superchalupa/sailfish/src/ocp/model"
+
+	"github.com/superchalupa/sailfish/src/dell-resources/attributes"
+)
+
+type mapping struct {
+	Property string
+	FQDD     string
+	Group    string
+	Index    string
+	Name     string
+}
+
+type ARMappingController struct {
+	mappings   []mapping
+	mappingsMu sync.RWMutex
+	logger     log.Logger
+	name       string
+	mdl        *model.Model
+
+	requestedFQDD  string
+	requestedGroup string
+	requestedIndex string
+	requestedName  string
+
+	eb eh.EventBus
+}
+
+func New(ctx context.Context, logger log.Logger, m *model.Model, name string, inputs map[string]string, ch eh.CommandHandler, eb eh.EventBus) (*ARMappingController, error) {
+	c := &ARMappingController{
+		mappings:       []mapping{},
+		name:           name,
+		logger:         logger,
+		eb:             eb,
+		mdl:            m,
+		requestedFQDD:  inputs["FQDD"],
+		requestedGroup: inputs["Group"],
+		requestedIndex: inputs["Index"],
+		requestedName:  inputs["Name"],
+	}
+
+	// stream processor for action events
+	sp, err := event.NewESP(ctx, event.CustomFilter(selectAttributeUpdate()), event.SetListenerName("ar_mapper"))
+	if err != nil {
+		logger.Error("Failed to create event stream processor", "err", err)
+		return nil, err
+	}
+	go sp.RunForever(func(event eh.Event) {
+		data, ok := event.Data().(*attributes.AttributeUpdatedData)
+		if !ok {
+			return
+		}
+
+		for _, mapping := range c.mappings {
+			if data.Name != mapping.Name {
+				continue
+			}
+			if data.Group != mapping.Group {
+				continue
+			}
+			if data.Index != mapping.Index {
+				continue
+			}
+			// check for direct fqdd match first
+			if data.FQDD != mapping.FQDD {
+				if mapping.FQDD != "{ANY}" {
+					continue
+				}
+			}
+
+			logger.Info("Updating Model", "mapping", mapping, "property", mapping.Property, "data", data)
+			m.UpdateProperty(mapping.Property, data.Value)
+		}
+	})
+
+	return c, nil
+}
+
+func (c *ARMappingController) UpdateRequest(ctx context.Context, property string, value interface{}) (interface{}, error) {
+	for _, mapping := range c.mappings {
+		if property != mapping.Property {
+			continue
+		}
+
+		c.logger.Info("Sending Update Request", "mapping", mapping, "value", value)
+		reqUUID := eh.NewUUID()
+
+		data := &attributes.AttributeUpdateRequestData{
+			ReqID: reqUUID,
+			FQDD:  mapping.FQDD,
+			Group: mapping.Group,
+			Index: mapping.Index,
+			Name:  mapping.Name,
+			Value: value,
+		}
+		c.eb.PublishEvent(ctx, eh.NewEvent(attributes.AttributeUpdateRequest, data, time.Now()))
+
+		break
+	}
+
+	// TODO: wait for event to come back matching request
+
+	return value, nil
+}
+
+// this is the function that viper will call whenever the configuration changes at runtime
+func (c *ARMappingController) ConfigChangedFn(ctx context.Context, cfg *viper.Viper) {
+	c.mappingsMu.Lock()
+	defer c.mappingsMu.Unlock()
+
+	k := cfg.Sub("mappings")
+	if k == nil {
+		c.logger.Warn("missing config file section: 'mappings'")
+		return
+	}
+	err := k.UnmarshalKey(c.name, &c.mappings)
+	if err != nil {
+		c.logger.Warn("unmarshal failed", "err", err)
+	}
+
+	for i, m := range c.mappings {
+		if m.FQDD == "{FQDD}" {
+			c.mappings[i].FQDD = c.requestedFQDD
+			c.logger.Debug("Replacing {FQDD} with real fqdd", "fqdd", c.requestedFQDD)
+		}
+		if m.Group == "{GROUP}" {
+			c.mappings[i].Group = c.requestedGroup
+			c.logger.Debug("Replacing {GROUP} with real group", "group", c.requestedGroup)
+		}
+		if m.Index == "{INDEX}" {
+			c.mappings[i].Index = c.requestedIndex
+			c.logger.Debug("Replacing {INDEX} with real index", "index", c.requestedIndex)
+		}
+		if m.Name == "{NAME}" {
+			c.mappings[i].Name = c.requestedName
+			c.logger.Debug("Replacing {NAME} with real name", "name", c.requestedName)
+
+		}
+	}
+
+	c.logger.Info("updating mappings", "mappings", c.mappings)
+	c.createModelProperties(ctx)
+	// bypass for now
+	//go c.initialStartupBootstrap(ctx)
+}
+
+func (c *ARMappingController) createModelProperties(ctx context.Context) {
+	for _, m := range c.mappings {
+		if _, ok := c.mdl.GetPropertyOkUnlocked(m.Property); !ok {
+			c.logger.Info("Model property does not exist, creating: "+m.Property, "property", m.Property, "FQDD", m.FQDD)
+			c.mdl.UpdateProperty(m.Property, nil)
+		}
+	}
+}
+
+//
+// background thread that sends messages to the data pump to ask for startup values
+//
+func (c *ARMappingController) initialStartupBootstrap(ctx context.Context) {
+	for {
+		time.Sleep(120 * time.Second)
+		for _, m := range c.mappings {
+			c.logger.Info("SENDING ATTRIBUTE REQUEST", "mapping", m)
+			data := &attributes.AttributeGetCurrentValueRequestData{
+				FQDD:  m.FQDD,
+				Group: m.Group,
+				Index: m.Index,
+				Name:  m.Name,
+			}
+			c.eb.PublishEvent(ctx, eh.NewEvent(attributes.AttributeGetCurrentValueRequest, data, time.Now()))
+		}
+	}
+}
+
+func selectAttributeUpdate() func(eh.Event) bool {
+	return func(event eh.Event) bool {
+		if event.EventType() == attributes.AttributeUpdated {
+			return true
+		}
+		return false
+	}
+}

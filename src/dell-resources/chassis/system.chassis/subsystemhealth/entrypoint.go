@@ -2,7 +2,8 @@ package subsystemhealth
 
 import (
 	"context"
-	"fmt"
+	"strings"
+	//"fmt"
 
 	eh "github.com/looplab/eventhorizon"
 	eventpublisher "github.com/looplab/eventhorizon/publisher/local"
@@ -10,7 +11,6 @@ import (
 	"github.com/superchalupa/sailfish/src/eventwaiter"
 	"github.com/superchalupa/sailfish/src/log"
 	"github.com/superchalupa/sailfish/src/ocp/view"
-	//domain "github.com/superchalupa/sailfish/src/redfishresource"
 
 	"github.com/spf13/viper"
 
@@ -45,14 +45,11 @@ func New(ch eh.CommandHandler, eb eh.EventBus) *SubSystemHealthService {
 	}
 }
 
-// StartService will create a model, view, and controller for the eventservice, then start a goroutine to publish events
 func (l *SubSystemHealthService) StartService(ctx context.Context, logger log.Logger, rootView viewer, cfgMgr *viper.Viper, instantiateSvc *testaggregate.Service,  ch eh.CommandHandler, eb eh.EventBus) *view.View {
-
-	subSysHealthUri := rootView.GetURI() + "/SubSystemHealth"
-	subSysHealthLogger := logger.New("module", "subsyshealth")
-
-	subSysHealthView := view.New(
-		view.WithURI(subSysHealthUri),
+	subSysHealthLogger, subSysHealthView, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "subsyshealth",
+		map[string]interface{}{
+			"rooturi":  rootView.GetURI(),
+		},
 	)
 
 	AddAggregate(ctx, subSysHealthLogger, subSysHealthView, l.ch, l.eb)
@@ -63,6 +60,8 @@ func (l *SubSystemHealthService) StartService(ctx context.Context, logger log.Lo
 }
 
 func (l *SubSystemHealthService) manageSubSystems(ctx context.Context, logger log.Logger, vw *view.View, cfgMgr *viper.Viper, ch eh.CommandHandler, eb eh.EventBus) {
+	subsystem_healths := map[string]interface{}{}
+
 	listener, err := l.ew.Listen(ctx,
 		func(event eh.Event) bool {
 			t := event.EventType()
@@ -90,12 +89,26 @@ func (l *SubSystemHealthService) manageSubSystems(ctx context.Context, logger lo
 				switch typ := event.EventType(); typ {
 				case dm_event.HealthEvent:
 					HealthEntry := event.Data().(*dm_event.HealthEventData)
-					
-					subsys := HealthEntry.FQDD
+
+					s := strings.Split(HealthEntry.FQDD, "#")
+					subsys := s[len(s)-1]
 					health := HealthEntry.Health
-					fmt.Println("subsys: ", subsys)
-					fmt.Println("health: ", health)
-					//view.GetModel()
+
+					health_entry := map[string]interface{}{"Status": map[string]string{"HealthRollup": health}}
+
+					if (health == "Absent") { 
+
+						//if receive subsystem health is absent, delete subsystem entry if present
+						if _, ok := subsystem_healths[subsys]; ok { //property exists, delete
+							delete(subsystem_healths, subsys)
+							UpdateAggregate(ctx, vw, ch, subsystem_healths)
+						}
+					} else {
+						//if health is not absent, create or update subsystem entry
+						subsystem_healths[subsys] = health_entry
+						UpdateAggregate(ctx, vw, ch, subsystem_healths)
+					}
+					//fmt.Println(subsystem_healths)
 			}
 
 			case <-ctx.Done():

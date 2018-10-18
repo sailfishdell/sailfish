@@ -61,7 +61,7 @@ func (es *EventService) StartEventService(ctx context.Context, logger log.Logger
 		model.UpdateProperty("max_milliseconds_to_queue", 500),
 		model.UpdateProperty("max_events_to_queue", 20),
 		model.UpdateProperty("delivery_retry_attempts", 3),
-		model.UpdateProperty("delivery_retry_interval_seconds", 60),
+		model.UpdateProperty("delivery_retry_interval_seconds", 30),
 	)
 
 	esView := view.New(
