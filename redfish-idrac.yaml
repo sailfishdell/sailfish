@@ -30,13 +30,11 @@ views:
           "params": "default"
       "Aggregate": "registry_collection"
 
-  "sessionview":
+  "sessionservice":
       "Logger": ["module", "session"]
       "Models":
         "default":  {"session_timeout": "30"}
       "Controllers":
-        - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "sessionview" }
         - "fn": "ARMapper"
           "params": {"modelname": "default", "cfgsection": "SessionService", "mappinguniquename": "'/redfish/v1/SessionService'", "AddToView": true}
       "View":
@@ -44,6 +42,39 @@ views:
           "params": "rooturi + '/SessionService'"
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
+        - "fn": "withFormatter_formatOdataList"
+          "params":
+      "Aggregate": "sessionservice"
+
+  "sessioncollection":
+      "Logger": ["module", "session"]
+      "Models":
+        "default":  {}
+      "Controllers":
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + collection_uri" }
+        - "fn": "ARMapper"
+          "params": {"modelname": "default", "cfgsection": "SessionService", "mappinguniquename": "'/redfish/v1/SessionService/Sessions'", "AddToView": true}
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/SessionService/Sessions'"
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+        - "fn": "withFormatter_formatOdataList"
+          "params":
+        - "fn": "withFormatter_count"
+          "params":
+      "Aggregate": "sessioncollection"
+
+  "session":
+      "Logger": ["module", "session"]
+      "Models":
+      "Controllers":
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/SessionService/Sessions/' + uuid"
+      "Aggregate": "session"
+
 
   "registries":
       "Logger": ["module", "registry"]
@@ -351,7 +382,7 @@ views:
   "storage_collection":
       "Logger": ["module", "StorageCollection"]
       "Models":
-        "default":  {"unique_name": "FQDD", "unique_name_attr": "FQDD+'.Attributes'", "attributes": "add_attribute_property()"}
+        "default":  {}
       "Controllers":
       "View":
         - "fn": "with_URI"
@@ -425,6 +456,14 @@ views:
           "params":
 
 awesome_mapper:
+    collection:
+      - { SelectEventType: "RedfishResource:created",
+          Select: "type == 'RedfishResource:created' && nohash(data.ResourceURI) && baseuri(data.ResourceURI) == collection_uri ",
+          ModelUpdate: [ {Property: "members", Query: "addtoset(model, propname, data.ResourceURI)", Default: 0} ]}
+      - { SelectEventType: "RedfishResource:removed",
+          Select: "type == 'RedfishResource:removed' && nohash(data.ResourceURI) && baseuri(data.ResourceURI) == collection_uri ",
+          ModelUpdate: [ {Property: "members", Query: "removefromset(model, propname, data.ResourceURI)", Default: 0} ]}
+
     testview:
         - { Select: "type == 'AttributeUpdated' && data.FQDD == fqdd && data.Name == 'InstantaneousPower'", ModelUpdate: [ {Property: "Instantaneous_Power", Query: "data.Value", Default: 0} ] }
 
