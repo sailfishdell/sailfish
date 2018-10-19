@@ -8,6 +8,7 @@ server.crt
 server.key
 
 # ignore artifacts from running locally
+redfish.yaml
 ec-redfish
 http-access.log
 cscope.out
