@@ -16,6 +16,7 @@ import (
 	"github.com/superchalupa/sailfish/src/dell-resources/certificateservices"
 	chasCMCIntegrated "github.com/superchalupa/sailfish/src/dell-resources/chassis/cmc.integrated"
 	iom_chassis "github.com/superchalupa/sailfish/src/dell-resources/chassis/iom.slot"
+    iom_config "github.com/superchalupa/sailfish/src/dell-resources/chassis/iom.slot/iomconfig"
 	system_chassis "github.com/superchalupa/sailfish/src/dell-resources/chassis/system.chassis"
 	"github.com/superchalupa/sailfish/src/dell-resources/chassis/system.chassis/power"
 	"github.com/superchalupa/sailfish/src/dell-resources/chassis/system.chassis/power/powercontrol"
@@ -85,6 +86,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	uploadSvc := uploadhandler.StartService(ctx, logger, ch, eb)
 	am2Svc, _ := awesome_mapper2.StartService(ctx, logger, eb)
 
+  subSystemSvc := subsystemhealth.New(ch, eb)
 	slotSvc := slots.New(ch, eb)
 	slotconfigSvc := slotconfig.New(ch, eb)
 
@@ -224,7 +226,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			actionSvc.WithAction(ctx, "manager.exportsystemconfig", "/Actions/Oem/EID_674_Manager.ExportSystemConfiguration", exportSystemConfiguration),
 			actionSvc.WithAction(ctx, "manager.importsystemconfig", "/Actions/Oem/EID_674_Manager.ImportSystemConfiguration", importSystemConfiguration),
 			actionSvc.WithAction(ctx, "manager.importsystemconfigpreview", "/Actions/Oem/EID_674_Manager.ImportSystemConfigurationPreview", importSystemConfigurationPreview),
-			actionSvc.WithAction(ctx, "certificates.generatecsr", "/Actions/DellCertificateService.GenerateCSR", makePumpHandledAction("GenerateCSR", 30, eb)),
+			actionSvc.WithAction(ctx, "certificates.generatecsr", "/CertificateService/Actions/DellCertificateService.GenerateCSR", makePumpHandledAction("GenerateCSR", 30, eb)),
 		)
 
 		managers = append(managers, mgrCmcVw)
@@ -235,7 +237,13 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		attributes.AddAggregate(ctx, mgrCmcVw, rootView.GetURI()+"/Managers/"+mgrName+"/Attributes", ch)
 
 		logservices.AddAggregate(ctx, mgrCmcVw, rootView.GetURI()+"/Managers/"+mgrName, ch)
+
+    certificate_uris := []string{mgrCmcVw.GetURI()+"/CertificateService/CertificateInventory/FactoryIdentity.1"}
+
+    mgrCmcVw.GetModel("default").ApplyOption(model.UpdateProperty("certificate_uris", certificate_uris))
 		certificateservices.AddAggregate(ctx, mgrCmcVw, rootView.GetURI()+"/Managers/"+mgrName, ch)
+
+
 
 		// Redundancy
 		redundancyLogger, redundancyVw, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "chassis_cmc_integrated_redundancy",
@@ -460,13 +468,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		//*********************************************************************
 		// Create SubSystemHealth for System.Chassis.1
 		//*********************************************************************
-		subSysHealths := map[string]string{}
-		subSysHealthsMap := map[string]interface{}{}
-
-		// TODO: replace this with all healths that are not "absent", use awesome_mapper? or implement perpetual event capture like slots/slotconfig for health events?
-		subSysHealths["Battery"] = "OK"
-
-		subSysHealthLogger := sysChasLogger.New("module", "Chassis/System.Chassis/SubSystemHealth")
+		/*subSysHealthLogger := sysChasLogger.New("module", "Chassis/System.Chassis/SubSystemHealth")
 		subSysHealthModel := model.New()
 
 		armapper := arService.NewMapping(subSysHealthLogger, "Chassis/"+chasName+"/SubSystemHealth", "Chassis/SubSystemHealths", subSysHealthModel, map[string]string{})
@@ -477,24 +479,16 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			view.WithController("ar_mapper", armapper),
 		)
 
-		subsystemhealth.AddAggregate(ctx, subSysHealthLogger, subSysHealthView, ch, eb)
 
-		for key, value := range subSysHealths {
-			subSysHealthsMap[key] = map[string]interface{}{
-				"Status": map[string]string{
-					"HealthRollup": value,
-				},
-			}
-		}
-		subSysHealthModel.ApplyOption(model.UpdateProperty("subsystems", &domain.RedfishResourceProperty{Value: subSysHealthsMap}))
+		subsystemhealth.AddAggregate(ctx, subSysHealthLogger, subSysHealthView, ch, eb)*/
+    /* SubSystemHealth */
+    subSystemSvc.StartService(ctx, logger, sysChasVw, cfgMgr, instantiateSvc, ch, eb)
 
 		/*  Slots */
-		//slotSvc.StartService(ctx, logger, sysChasVw, cfgMgr, arService)
-		slotSvc.StartService(ctx, logger, sysChasVw, cfgMgr, updateFns, ch, eb)
+		slotSvc.StartService(ctx, logger, sysChasVw, cfgMgr, instantiateSvc, ch, eb)
 
 		/* Slot config */
-		//slotconfigSvc.StartService(ctx, logger, sysChasVw, cfgMgr, arService)
-		slotconfigSvc.StartService(ctx, logger, sysChasVw, cfgMgr, updateFns, ch, eb)
+		slotconfigSvc.StartService(ctx, logger, sysChasVw, cfgMgr, instantiateSvc, ch, eb)
 
 	}
 
@@ -533,7 +527,21 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		power_related_items = append(power_related_items, iomView.GetURI())
 		iom_chassis.AddAggregate(ctx, iomLogger, iomView, ch, eb)
 		attributes.AddAggregate(ctx, iomView, rootView.GetURI()+"/Chassis/"+iomName+"/Attributes", ch)
+
+        // ************************************************************************
+        // CHASSIS IOMConfiguration
+        // ************************************************************************
+        iomCfgLogger, iomCfgView, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "iom_config",
+			map[string]interface{}{
+				"rooturi":  rootView.GetURI(),
+				"FQDD":     iomName,
+				"fqdd":     "System.Chassis.1#SubSystem.1#" + iomName,
+				"fqddlist": []string{iomName},
+			},
+		)
+        iom_config.AddAggregate(ctx, iomCfgLogger, iomCfgView, ch, eb)
 	}
+
 
 	for _, sledName := range []string{
 		"System.Modular.1", "System.Modular.1a", "System.Modular.1b",

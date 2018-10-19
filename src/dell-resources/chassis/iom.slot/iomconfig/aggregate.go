@@ -1,4 +1,4 @@
-package subsystemhealth
+package iomconfig
 
 import (
 	"context"
@@ -11,31 +11,26 @@ import (
 )
 
 func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.CommandHandler, eb eh.EventBus) {
-  ch.HandleCommand(
+	ch.HandleCommand(
 		ctx,
 		&domain.CreateRedfishResource{
 			ID:          v.GetUUID(),
+			Collection:  false,
 			ResourceURI: v.GetURI(),
-			Type:        "DellSubSystemHealth.v1_0_0.DellSubSystemHealth",
+			Type:        "#DellIomConfiguration.v1_0_0.DellIomConfiguration",
 			Context:     "/redfish/v1/$metadata#ChassisCollection.ChassisCollection/Members/$entity",
 			Privileges: map[string]interface{}{
 				"GET":    []string{"Login"},
 				"POST":   []string{}, // cannot create sub objects
 				"PUT":    []string{},
-				"PATCH":  []string{"ConfigureManager"},
+				"PATCH":  []string{},
 				"DELETE": []string{}, // can't be deleted
 			},
-			Properties: map[string]interface{}{},
-		},
-	)
-}
+			Properties: map[string]interface{}{
+				"Id@meta":                          v.Meta(view.PropGET("unique_name")),
+				"internal_mgmt_supported@meta":     v.Meta(view.PropGET("managed")),
+                "IOMConfig_objects@meta":           v.Meta(view.PropGET("config")),
+                "Capabilities@meta":                v.Meta(view.PropGET("capabilities")),
+			}})
 
-func UpdateAggregate(ctx context.Context, v *view.View, ch eh.CommandHandler, properties map[string]interface{}) {
-  ch.HandleCommand(ctx,
-    &domain.UpdateRedfishResourceProperties{
-      ID:         v.GetUUID(),
-      Properties: properties,
-    })
-
-  return
 }

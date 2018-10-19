@@ -1,0 +1,11 @@
+{ "name": "ComponentEvent", "event_array": [{"Id": "CMCSlot.2", "Type": "Slot"}] }
+{ "name": "ComponentEvent", "event_array": [{"Id": "IOMSlot.6", "Type": "Slot"}] }
+{ "name": "ComponentEvent", "event_array": [{"Id": "PSUSlot.6", "Type": "Slot"}] }
+{ "name": "ComponentEvent", "event_array": [{"Id": "SledSlot.8", "Type": "Slot"}] }
+{ "name": "ComponentEvent", "event_array": [{"Id": "FanSlot.9", "Type": "Slot"}] }
+{ "name": "ComponentEvent", "event_array": [{"Id": "SlotConfig.1", "Type": "SlotConfig"}] }
+{ "name": "ComponentEvent", "event_array": [{"Id": "SlotConfig.2", "Type": "SlotConfig"}] }
+{ "name": "ComponentEvent", "event_array": [{"Id": "SlotConfig.3", "Type": "SlotConfig"}] }
+{"name":"AttributeUpdated","data":{"ReqID":"","FQDD":"System.Chassis.1","Group":"SlotConfig","Index":"1","Name":"Columns","Value":"hello","Error":""}}
+{"name":"AttributeUpdated","data":{"ReqID":"","FQDD":"System.Chassis.1","Group":"SlotConfig","Index":"1","Name":"Rows","Value":"hello22","Error":""}}
+######{"name":"AttributeUpdated","data":{"ReqID":"","FQDD":"System.Chassis.1","Group":"SlotConfig","Index":"1","Name":"Orientation","Value":[{"attributes":[{"name":"time", "writable":"true"}]}],"Error":""}}

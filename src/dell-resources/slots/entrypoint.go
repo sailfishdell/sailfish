@@ -13,12 +13,10 @@ import (
 	"github.com/superchalupa/sailfish/src/ocp/view"
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
 
-	"github.com/superchalupa/sailfish/src/ocp/model"
-	//"github.com/superchalupa/sailfish/src/ocp/awesome_mapper"
 	"github.com/spf13/viper"
-	"github.com/superchalupa/sailfish/src/dell-resources/ar_mapper"
 
 	"github.com/superchalupa/sailfish/src/dell-resources/component"
+  "github.com/superchalupa/sailfish/src/ocp/testaggregate"
 )
 
 type viewer interface {
@@ -49,7 +47,7 @@ func New(ch eh.CommandHandler, eb eh.EventBus) *SlotService {
 }
 
 // StartService will create a model, view, and controller for the eventservice, then start a goroutine to publish events
-func (l *SlotService) StartService(ctx context.Context, logger log.Logger, rootView viewer, cfgMgr *viper.Viper, updateFns []func(context.Context, *viper.Viper), ch eh.CommandHandler, eb eh.EventBus) *view.View {
+func (l *SlotService) StartService(ctx context.Context, logger log.Logger, rootView viewer, cfgMgr *viper.Viper, instantiateSvc *testaggregate.Service,  ch eh.CommandHandler, eb eh.EventBus) *view.View {
 
 	slotUri := rootView.GetURI() + "/Slots"
 	slotLogger := logger.New("module", "slot")
@@ -62,13 +60,13 @@ func (l *SlotService) StartService(ctx context.Context, logger log.Logger, rootV
 	AddAggregate(ctx, slotLogger, slotView, rootView.GetUUID(), l.ch, l.eb)
 
 	// Start up goroutine that listens for log-specific events and creates log aggregates
-	l.manageSlots(ctx, slotLogger, slotUri, cfgMgr, updateFns, ch, eb)
+	l.manageSlots(ctx, slotLogger, slotUri, cfgMgr, instantiateSvc, ch, eb)
 
 	return slotView
 }
 
 // starts a background process to create new log entries
-func (l *SlotService) manageSlots(ctx context.Context, logger log.Logger, logUri string, cfgMgr *viper.Viper, updateFns []func(context.Context, *viper.Viper), ch eh.CommandHandler, eb eh.EventBus) {
+func (l *SlotService) manageSlots(ctx context.Context, logger log.Logger, logUri string, cfgMgr *viper.Viper, instantiateSvc *testaggregate.Service, ch eh.CommandHandler, eb eh.EventBus) {
 
 	// set up listener for the delete event
 	// INFO: this listener will only ever get
@@ -111,22 +109,19 @@ func (l *SlotService) manageSlots(ctx context.Context, logger log.Logger, logUri
 					oldUuid, ok := l.slots[uri].(eh.UUID)
 					if ok {
 						// early out if the same slot already exists (same URI)
-						logger.Info("slot already created, early out", "uuid", oldUuid)
+            logger.Info("slot already created, early out", "uuid", oldUuid)
 						break
 					}
 
-					slotModel := model.New()
-					//awesome_mapper.New(ctx, logger, cfgMgr, slotModel, "slots", map[string]interface{}{"group": group, "index": index})
-
-					armapper, _ := ar_mapper.New(ctx, logger, slotModel, "Chassis/Slots", map[string]string{"Group": group, "Index": index, "FQDD": ""}, ch, eb)
-					updateFns = append(updateFns, armapper.ConfigChangedFn)
-					armapper.ConfigChangedFn(context.Background(), cfgMgr)
-
-					slotView := view.New(
-						view.WithURI(uri),
-						view.WithModel("default", slotModel),
-						view.WithController("ar_mapper", armapper),
-					)
+          slotLogger, slotView, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "slot",
+            map[string]interface{}{
+              "sloturi": uri,
+              "FQDD": SlotEntry.Id,
+              "Group": group, // for ar mapper
+              "Index": index, // for ar mapper
+            },
+          )
+          slotLogger.Info("Slot Created", "SlotEntry.Id", SlotEntry.Id)
 
 					// update the UUID for this slot
 					l.slots[uri] = uuid
@@ -140,18 +135,9 @@ func (l *SlotService) manageSlots(ctx context.Context, logger log.Logger, logUri
 						"SlotName@meta": slotView.Meta(view.PropGET("slot_slotname")),
 					}
 
-					/*if strings.Contains(SlotEntry.Id, "SledSlot") {
-											if properties["Contains@meta"] != nil {
-											    sled_key := properties["Contains@meta"].(string)
-											    //properties["SledProfile"] = (sled_key)#Info.1#SledProfile <- How to do this?
-											    sledmapper, _ := ar_mapper.New(ctx, logger, slotModel, "Chassis/System.Modular", map[string]string{"Group":"", "Index":"", "FQDD":sled_key}, ch, eb)
-											    updateFns = append(updateFns, sledmapper.ConfigChangedFn)
-					                                                    slotView.ApplyOption(view.WithController("sled_mapper", sledmapper))
-											    properties["SledProfile"] = slotView.Meta(view.PropGET("sled_profile"))
-											} else {
-											    properties["SledProfile"] = nil
-											}
-										}*/
+					if strings.Contains(SlotEntry.Id, "SledSlot") {
+				      properties["SledProfile@meta"] = slotView.Meta(view.PropGET("sled_profile"))
+				  }
 
 					l.ch.HandleCommand(
 						ctx,

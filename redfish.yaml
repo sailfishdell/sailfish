@@ -167,6 +167,8 @@ views:
           "params": {"modelname": "default", "cfgsection": "health", "uniquename": "'am2_manager_' + FQDD" }
         - "fn": "ARDumper"
           "params": {"modelname": "default", "AddToView": true}
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "certificate", "uniquename": "'certificate_services_' + FQDD" }
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/Managers/' + FQDD"
@@ -177,6 +179,8 @@ views:
         - "fn": "withFormatter_expand"
           "params":
         - "fn": "withFormatter_count"
+          "params":
+        - "fn": "withFormatter_formatOdataList"
           "params":
 
   "chassis_cmc_integrated":
@@ -211,7 +215,7 @@ views:
           "params": {"modelname": "default", "cfgsection": "health", "uniquename": "'am2_chassis_redundancy' + FQDD" }
       "View":
         - "fn": "with_URI"
-          "params": "rooturi + '/Managers/' + FQDD + '#Redundancy'"
+          "params": "rooturi + '/Managers/' + FQDD + '/Redundancy'"
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
 
@@ -398,6 +402,54 @@ views:
         - "fn": "withFormatter_formatOdataList"
           "params":
 
+  "iom_config":
+        "Logger": ["module", "IOM_Config"]
+        "Models":
+          "default":  {"unique_name": "FQDD", "unique_name_attr": "FQDD+'.Attributes'", "attributes": "add_attribute_property()"}
+        "Controllers":
+          - "fn": "AM2"
+            "params": {"modelname": "default", "cfgsection": "iom_config", "uniquename": "'am2_iom_config_' + FQDD" }
+        "View":
+          - "fn": "with_URI"
+            "params": "rooturi + '/Chassis/' + FQDD + '/IOMConfiguration'"
+          - "fn": "PublishResourceUpdatedEventsForModel"
+            "params": "default"
+  "subsyshealth":
+      "Logger": ["module", "subsyshealth"]
+      "Models":
+        "default": {}
+      "Controllers":
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/SubSystemHealth'"
+
+  "slot":
+      "Logger": ["module", "slot"]
+      "Models":
+        "default": {}
+      "Controllers":
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "slot", "uniquename": "'slot:' + FQDD"}
+      "View":
+        - "fn": "with_URI"
+          "params": "sloturi"
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+
+
+  "slotconfig":
+      "Logger": ["module", "slotconfig"]
+      "Models":
+        "default": {}
+      "Controllers":
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "slotconfig", "uniquename": "'slot:' + FQDD"}
+      "View":
+        - "fn": "with_URI"
+          "params": "slotcfguri"
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+
   "sled":
       "Logger": ["module", "Sled"]
       "Models":
@@ -529,9 +581,6 @@ views:
           "params":
       "Aggregate": "accounts"
 
-
-
-
 awesome_mapper:
     collection:
       - { SelectEventType: "RedfishResource:created",
@@ -541,11 +590,44 @@ awesome_mapper:
           Select: "type == 'RedfishResource:removed' && nohash(data.ResourceURI) && baseuri(data.ResourceURI) == collection_uri ",
           ModelUpdate: [ {Property: "members", Query: "removefromset(model, propname, data.ResourceURI)", Default: 0} ]}
 
+    testview:
+      - { SelectEventType: "AttributeUpdated", Select: "type == 'AttributeUpdated' && data.FQDD == fqdd && data.Name == 'test'", ModelUpdate: [ {Property: "TEST", Query: "data.Value", Default: 0} ] }
+
+    certificate:
+      - { SelectEventType: "FileReadEvent", Select: "data.URI == 'CertificateInventory' && data.FQDD == FQDD", ModelUpdate: [ { Property: "certificate_signing_request", Query: "read_file(data.FilePath)" } ] }
+      - { SelectEventType: "FileReadEvent", Select: "data.URI == 'FactoryIdentity' && data.FQDD == FQDD", ModelUpdate: [ { Property: "certificate", Query: "read_file(data.FilePath)" } ] }
+
+    slot:
+      - { SelectEventType: "AttributeUpdated", Select: "type == 'AttributeUpdated' && data.FQDD == 'System.Chassis.1' && data.Group == Group && data.Index == Index && data.Name == 'Config'",
+            ModelUpdate: [ {Property: "slot_config", Query: "data.Value"}]}
+      - { SelectEventType: "AttributeUpdated", Select: "type == 'AttributeUpdated' && data.FQDD == 'System.Chassis.1' && data.Group == Group && data.Index == Index && data.Name == 'Contains'",
+            ModelUpdate: [ {Property: "slot_contains", Query: "data.Value"}]}
+      - { SelectEventType: "AttributeUpdated", Select: "type == 'AttributeUpdated' && data.FQDD == 'System.Chassis.1' && data.Group == Group && data.Index == Index && data.Name == 'Name'",
+            ModelUpdate: [ {Property: "slot_name", Query: "data.Value"}]}
+      - { SelectEventType: "AttributeUpdated", Select: "type == 'AttributeUpdated' && data.FQDD == 'System.Chassis.1' && data.Group == Group && data.Index == Index && data.Name == 'Occupied'",
+            ModelUpdate: [ {Property: "slot_occupied", Query: "data.Value"}]}
+      - { SelectEventType: "AttributeUpdated", Select: "type == 'AttributeUpdated' && data.FQDD == 'System.Chassis.1' && data.Group == Group && data.Index == Index && data.Name == 'SlotName'",
+            ModelUpdate: [ {Property: "slot_slotname", Query: "data.Value"}]}
+      - { SelectEventType: "AttributeUpdated", Select: "type == 'AttributeUpdated' && (data.FQDD == model.GetPropertyOk(\"slot_contains\")) && data.Name == 'SledProfile'",
+            ModelUpdate: [ {Property: "sled_profile", Query: "data.Value", Default: ""}]}
+
     slotconfig:
-      - { SelectEventType: "AttributeUpdated", Select: "type == 'AttributeUpdated' && data.FQDD == 'System.Chassis.1' && data.Group == group && data.Index == index && data.Name == 'Rows'",
-            ModelUpdate: [ {Property: "rows", Query: "string(data.Value)" } ] }
-      - { SelectEventType: "AttributeUpdated", Select: "type == 'AttributeUpdated' && data.FQDD == 'System.Chassis.1' && data.Group == group && data.Index == index && data.Name == 'Columns'",
-            ModelUpdate: [ {Property: "columns", Query: "string(data.Value)" } ] }
+      - { SelectEventType: "AttributeUpdated", Select: "type == 'AttributeUpdated' && data.FQDD == 'System.Chassis.1' && data.Group == Group && data.Index == Index && data.Name == 'Rows'",
+            ModelUpdate: [ {Property: "rows", Query: "string(data.Value)"}]}
+      - { SelectEventType: "AttributeUpdated", Select: "type == 'AttributeUpdated' && data.FQDD == 'System.Chassis.1' && data.Group == Group && data.Index == Index && data.Name == 'Columns'",
+            ModelUpdate: [ {Property: "columns", Query: "string(data.Value)"}]}
+      - { SelectEventType: "AttributeUpdated", Select: "type == 'AttributeUpdated' && data.FQDD == 'System.Chassis.1' && data.Group == Group && data.Index == Index && data.Name == 'Location'",
+            ModelUpdate: [ {Property: "location", Query: "data.Value"}]}
+      - { SelectEventType: "AttributeUpdated", Select: "type == 'AttributeUpdated' && data.FQDD == 'System.Chassis.1' && data.Group == Group && data.Index == Index && data.Name == 'Name'",
+            ModelUpdate: [ {Property: "name", Query: "data.Value"}]}
+      - { SelectEventType: "AttributeUpdated", Select: "type == 'AttributeUpdated' && data.FQDD == 'System.Chassis.1' && data.Group == Group && data.Index == Index && data.Name == 'Order'",
+            ModelUpdate: [ {Property: "order", Query: "data.Value"}]}
+      - { SelectEventType: "AttributeUpdated", Select: "type == 'AttributeUpdated' && data.FQDD == 'System.Chassis.1' && data.Group == Group && data.Index == Index && data.Name == 'Orientation'",
+            ModelUpdate: [ {Property: "orientation", Query: "data.Value"}]}
+      - { SelectEventType: "AttributeUpdated", Select: "type == 'AttributeUpdated' && data.FQDD == 'System.Chassis.1' && data.Group == Group && data.Index == Index && data.Name == 'ParentConfig'",
+            ModelUpdate: [ {Property: "parentConfig", Query: "data.Value"}]}
+      - { SelectEventType: "AttributeUpdated", Select: "type == 'AttributeUpdated' && data.FQDD == 'System.Chassis.1' && data.Group == Group && data.Index == Index && data.Name == 'Type'",
+            ModelUpdate: [ {Property: "type", Query: "data.Value"}]}
 
     fan:
       - { SelectEventType: "FanEvent", Select: "type == 'FanEvent' && data.ObjectHeader.FQDD == fqdd",
@@ -569,6 +651,14 @@ awesome_mapper:
     iom:
       - { SelectEventType: "AttributeUpdated", Select: "type == 'AttributeUpdated' && data.FQDD == fqdd && data.Name == 'InstantaneousPower'", ModelUpdate: [ {Property: "Instantaneous_Power", Query: "data.Value", Default: 0} ] }
 
+    iom_config:
+      - { SelectEventType: "IomCapability", Select: "type == 'IomCapability' && data.Name == FQDD",
+            ModelUpdate: [
+                {Property: "config", Query: "data.IOMConfig_objects" },
+                {Property: "capabilities", Query: "data.Capabilities" },
+                {Property: "managed", Query: "data.Managed" } ]}
+
+
     power_control:
       - { SelectEventType: "PowerConsumptionDataObjEvent", Select: "type == 'PowerConsumptionDataObjEvent'",
             ModelUpdate: [
@@ -585,14 +675,14 @@ awesome_mapper:
     power_supply:
       - { SelectEventType: "PowerSupplyObjEvent", Select: "type == 'PowerSupplyObjEvent' && data.ObjectHeader.FQDD == fqdd",
             ModelUpdate: [
-                {Property: "line_input_voltage", Query: "data.InputVolts" },
-                {Property: "input_current", Query: "data.InstAmps" },
+                {Property: "line_input_voltage", Query: "zero_to_null(data.InputVolts)" }, #unsigned int
+                {Property: "input_current", Query: "zero_to_null(data.InstAmps)" }, #float
                 {Property: "obj_status", Query: "map_health_value(data.ObjectHeader.ObjStatus)" }]}
 
     power_trend:
-      - { SelectEventType:, "AvgPowerConsumptionStatDataObjEvent", Select: "type == 'AvgPowerConsumptionStatDataObjEvent'",
+      - { SelectEventType: "AvgPowerConsumptionStatDataObjEvent", Select: "type == 'AvgPowerConsumptionStatDataObjEvent'",
             ModelUpdate: [
-                {Property: "average_watts",  Query: "traverse_struct(data, 'AvgPwrLast' + trend)" },
+                {Property: "average_watts",  Query: "traverse_struct(data, 'AvgPwrLast' + trend)" }, #does not work, trend is not a list?
                 {Property: "max_watts",      Query: "traverse_struct(data, 'MaxPwrLast' + trend)" },
                 {Property: "min_watts",      Query: "traverse_struct(data, 'MinPwrLast' + trend)" },
                 {Property: "max_watts_time", Query: "epoch_to_date(traverse_struct(data, 'MaxPwrLast' + trend + 'Time'))" },
@@ -601,6 +691,9 @@ awesome_mapper:
 
     health:
       - { SelectEventType: "HealthEvent", Select: "type == 'HealthEvent' && data.FQDD == fqdd", ModelUpdate: [ {Property: "health", Query: "data.Health" } ] }
+
+    subsystemhealth:
+      - { SelectEventType: "HealthEvent", Select: "type == 'HealthEvent'",  ModelUpdate: [ {Property: "subsystem_health", Query: "subsystem_health(data)" } ] }
 
     global_health:
       - { SelectEventType: "HealthEvent", Select: "type == 'HealthEvent' && data.FQDD == 'System.Chassis.1#SubSystem.1#Fan'", ModelUpdate: [ {Property: "fan_rollup", Query: "data.Health" } ] }
@@ -713,23 +806,6 @@ mappings:
         - {Property: "manufacturer", FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Manufacturer" }
         - {Property: "service_tag",  FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "ServiceTag" }
         - {Property: "indicator_led", FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "IndicatorLED"}
-
-    Chassis/Slots:
-        - {Property: "slot_config", FQDD: "System.Chassis.1", Group: "{GROUP}", Index: "{INDEX}", Name: "Config" }
-        - {Property: "slot_contains", FQDD: "System.Chassis.1", Group: "{GROUP}", Index: "{INDEX}", Name: "Contains" }
-        - {Property: "slot_name", FQDD: "System.Chassis.1", Group: "{GROUP}", Index: "{INDEX}", Name: "Name" }
-        - {Property: "slot_occupied", FQDD: "System.Chassis.1", Group: "{GROUP}", Index: "{INDEX}", Name: "Occupied" }
-        - {Property: "slot_slotname", FQDD: "System.Chassis.1", Group: "{GROUP}", Index: "{INDEX}", Name: "SlotName" }
-
-    Chassis/SlotConfigs:
-        #- {Property: "columns", FQDD: "System.Chassis.1", Group: "{GROUP}", Index: "{INDEX}", Name: "Columns" } # check awesome mapper
-        - {Property: "location", FQDD: "System.Chassis.1", Group: "{GROUP}", Index: "{INDEX}", Name: "Location" }
-        - {Property: "name", FQDD: "System.Chassis.1", Group: "{GROUP}", Index: "{INDEX}", Name: "Name" }
-        - {Property: "order", FQDD: "System.Chassis.1", Group: "{GROUP}", Index: "{INDEX}", Name: "Order" }
-        - {Property: "orientation", FQDD: "System.Chassis.1", Group: "{GROUP}", Index: "{INDEX}", Name: "Orientation" }
-        - {Property: "parentConfig", FQDD: "System.Chassis.1", Group: "{GROUP}", Index: "{INDEX}", Name: "ParentConfig" }
-        #- {Property: "rows", FQDD: "System.Chassis.1", Group: "{GROUP}", Index: "{INDEX}", Name: "Rows" } # check awesome mapper
-        - {Property: "type", FQDD: "System.Chassis.1", Group: "{GROUP}", Index: "{INDEX}", Name: "Type" }
 
     Chassis/System.Chassis/Power:
         - {Property: "capacity_watts", FQDD: "System.Chassis.1", Group: "ChassisPower", Index: "1", Name: "SystemInputMaxPowerCapacity" }

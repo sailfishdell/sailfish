@@ -1,5 +1,7 @@
 package ar_mapper
 
+//stil used in redfish.yaml TODO change thsoe to ar mapper 2
+
 import (
 	"context"
 	"sync"
