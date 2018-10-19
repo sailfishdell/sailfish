@@ -218,7 +218,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		// ##################
 		// # Storage Enclosure
 		// ##################
-		fmt.Printf("Startup for enclosure")
+		fmt.Printf("Startup for enclosure\n")
 
 		strgCntlrLogger, sysStorEnclsrCtrlVw, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "storage_enclosure",
 			map[string]interface{}{
@@ -234,7 +234,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		// ##################
 		// # Storage Instance
 		// ##################
-		fmt.Printf("Startup for Storage instance")
+		fmt.Printf("Startup for Storage instance\n")
 
 		strgInstanceLogger, sysStorInstanceCtrlVw, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "storage_instance",
 			map[string]interface{}{
@@ -250,7 +250,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		// ##################
 		// # Storage controller
 		// ##################
-		fmt.Printf("Startup for Storage controller")
+		fmt.Printf("Startup for Storage controller\n")
 
 		strgControllerLogger, sysStorControllerCtrlVw, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "storage_controller",
 			map[string]interface{}{
@@ -266,7 +266,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		// ##################
 		// # Storage drive
 		// ##################
-		fmt.Printf("Startup for Storage drive")
+		fmt.Printf("Startup for Storage drive\n")
 
 		strgDriveLogger, sysStorDriveCtrlVw, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "storage_drive",
 			map[string]interface{}{
@@ -282,7 +282,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		// ##################
 		// # Storage volume
 		// ##################
-		fmt.Printf("Startup for Storage volume")
+		fmt.Printf("Startup for Storage volume\n")
 
 		strgVolLogger, sysStorVolCtrlVw, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "storage_volume",
 			map[string]interface{}{
@@ -298,7 +298,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		// ##################
 		// # Storage volume Collection
 		// ##################
-		fmt.Printf("Startup for Storage volume collection")
+		fmt.Printf("Startup for Storage volume collection\n")
 
 		strgVolCollLogger, sysStorVolCollCtrlVw, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "storage_volume_collection",
 			map[string]interface{}{
@@ -313,7 +313,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		// ##################
 		// # Storage Collection
 		// ##################
-		fmt.Printf("Startup for Storage collection")
+		fmt.Printf("Startup for Storage collection\n")
 
 		strgCollLogger, sysStorCollCtrlVw, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "storage_collection",
 			map[string]interface{}{
