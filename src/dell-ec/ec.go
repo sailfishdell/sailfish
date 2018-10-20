@@ -75,7 +75,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	// These three all set up a waiter for the root service to appear, so init root service after.
 	actionhandler.Setup(ctx, ch, eb)
 	uploadhandler.Setup(ctx, ch, eb)
-	evtSvc := eventservice.New(ctx, ch, eb)
 	telemetryservice.Setup(ctx, ch, eb)
 	event.Setup(ch, eb)
 	logSvc := lcl.New(ch, eb)
@@ -92,6 +91,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 
 	// the package for this is going to change, but this is what makes the various mappers and view functions available
 	instantiateSvc := testaggregate.New(logger, ch)
+	evtSvc := eventservice.New(ctx, cfgMgr, instantiateSvc, ch, eb)
 	testaggregate.RegisterWithURI(instantiateSvc)
 	testaggregate.RegisterPublishEvents(instantiateSvc, evtSvc)
 	testaggregate.RegisterAggregate(instantiateSvc)
@@ -102,6 +102,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	registries.RegisterAggregate(instantiateSvc)
 	stdcollections.RegisterAggregate(instantiateSvc)
 	session.RegisterAggregate(instantiateSvc)
+	eventservice.RegisterAggregate(instantiateSvc)
 
 	// common parameters to instantiate that are used almost everywhere
 	baseParams := map[string]interface{}{}
@@ -165,7 +166,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	// /redfish/v1/EventService
 	// /redfish/v1/TelemetryService
 	//*********************************************************************
-	evtSvc.StartEventService(ctx, logger, rootView)
+	evtSvc.StartEventService(ctx, logger, instantiateSvc, baseParams)
 	telemetryservice.StartTelemetryService(ctx, logger, rootView)
 
 	//*********************************************************************

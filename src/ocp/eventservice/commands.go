@@ -7,7 +7,6 @@ import (
 	"time"
 
 	eh "github.com/looplab/eventhorizon"
-	"github.com/superchalupa/sailfish/src/ocp/model"
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
 )
 
@@ -24,9 +23,7 @@ type Subscription struct {
 
 // HTTP POST Command
 type POST struct {
-	model *model.Model
-	ch    eh.CommandHandler
-	eb    eh.EventBus
+	es *EventService
 
 	ID      eh.UUID           `json:"id"`
 	CmdID   eh.UUID           `json:"cmdid"`
@@ -47,7 +44,7 @@ func (c *POST) ParseHTTPRequest(r *http.Request) error {
 	return nil
 }
 func (c *POST) Handle(ctx context.Context, a *domain.RedfishResourceAggregate) error {
-	view := CreateSubscription(ctx, domain.ContextLogger(ctx, "eventservice"), c.Sub, func() {})
+	view := c.es.CreateSubscription(ctx, domain.ContextLogger(ctx, "eventservice"), c.Sub, func() {})
 
 	a.PublishEvent(eh.NewEvent(domain.HTTPCmdProcessed, &domain.HTTPCmdProcessedData{
 		CommandID:  c.CmdID,

@@ -36,6 +36,58 @@ views:
           "params": "default"
       "Aggregate": "registry_collection"
 
+  "eventservice":
+      "Logger": ["module", "eventservice"]
+      "Models":
+        "default": {
+           "max_milliseconds_to_queue": "500",
+           "max_events_to_queue": "20",
+           "delivery_retry_attempts": "3",
+           "delivery_retry_interval_seconds": "60",
+           }
+      "Controllers":
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/EventService'"
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+      "Aggregate": "eventservice"
+
+  "subscriptioncollection":
+      "Logger": ["module", "eventservice"]
+      "Models":
+        "default": {}
+      "Controllers":
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + collection_uri" }
+      "View":
+        - "fn": "with_URI"
+          "params": "eventsvc_uri + '/Subscriptions'"
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+        - "fn": "withFormatter_formatOdataList"
+          "params":
+        - "fn": "withFormatter_count"
+          "params":
+      "Aggregate": "subscriptioncollection"
+
+  "subscription":
+      "Logger": ["module", "eventservice"]
+      "Models":
+        "default": {
+          "destination": "destination",
+          "protocol":    "protocol",
+          "context":     "context",
+          "event_types": "eventTypes",
+        }
+      "Controllers":
+      "View":
+        - "fn": "with_URI"
+          "params": "eventsvc_uri + '/Subscriptions/' + uuid"
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+      "Aggregate": "subscription"
+
   "sessionservice":
       "Logger": ["module", "session"]
       "Models":

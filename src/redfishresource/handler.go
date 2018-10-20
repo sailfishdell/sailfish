@@ -163,9 +163,10 @@ func (d *DomainObjects) ExpandURI(ctx context.Context, uri string) (interface{},
 // Notify implements the Notify method of the EventObserver interface.
 func (d *DomainObjects) Notify(ctx context.Context, event eh.Event) {
 	logger := ContextLogger(ctx, "domain")
-	logger.Debug("Collection processor processing event", "event", event)
+	logger.Debug("EVENT", "event", event, "data", event.Data())
 	if event.EventType() == RedfishResourceCreated {
 		if data, ok := event.Data().(*RedfishResourceCreatedData); ok {
+			logger.Info("Create URI", "URI", data.ResourceURI)
 			// TODO: handle conflicts (how?)
 			d.SetAggregateID(data.ResourceURI, data.ID)
 		}
@@ -173,7 +174,7 @@ func (d *DomainObjects) Notify(ctx context.Context, event eh.Event) {
 	}
 	if event.EventType() == RedfishResourceRemoved {
 		if data, ok := event.Data().(*RedfishResourceRemovedData); ok {
-			logger.Debug("Delete Resource", "URI", data.ResourceURI)
+			logger.Info("Delete URI", "URI", data.ResourceURI)
 			d.DeleteResource(ctx, data.ResourceURI)
 			p, err := InstantiatePlugin(PluginType(data.ResourceURI))
 			type closer interface{ Close() }

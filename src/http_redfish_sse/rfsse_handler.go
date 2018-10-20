@@ -82,13 +82,13 @@ func (rh *RedfishSSEHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		Context:     rfSubContext,
 	}
 	sseContext, cancel := context.WithCancel(ctx)
-	view := eventservice.CreateSubscription(sseContext, requestLogger, sub, cancel)
+	view := eventservice.GlobalEventService.CreateSubscription(sseContext, requestLogger, sub, cancel)
 	_ = view
 
 	for {
 		event, err := l.Wait(sseContext)
 		if err != nil {
-			requestLogger.Error("Wait exited", "err", err)
+			requestLogger.Warn("Context was cancelled.", "err", err)
 			break
 		}
 
