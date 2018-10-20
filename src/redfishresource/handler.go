@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"path"
 	"sync"
 
 	"github.com/gorilla/mux"
@@ -169,68 +168,11 @@ func (d *DomainObjects) Notify(ctx context.Context, event eh.Event) {
 		if data, ok := event.Data().(*RedfishResourceCreatedData); ok {
 			// TODO: handle conflicts (how?)
 			d.SetAggregateID(data.ResourceURI, data.ID)
-
-			// TODO: need to split out auto collection management into a plugin
-			if data.Collection {
-				logger.Debug("New collection", "collection_name", data.ResourceURI)
-				d.collectionsMu.Lock()
-				d.collections = append(d.collections, data.ResourceURI)
-				d.collectionsMu.Unlock()
-			}
-
-			collectionToTest := path.Dir(data.ResourceURI)
-			d.collectionsMu.RLock()
-			for _, v := range d.collections {
-				if v == collectionToTest {
-					logger.Debug("Add member to collection", "collection_name", v, "new_uri", data.ResourceURI)
-					d.CommandHandler.HandleCommand(
-						ctx,
-						&AddResourceToRedfishResourceCollection{
-							ID:          d.GetAggregateID(collectionToTest),
-							ResourceURI: data.ResourceURI,
-						},
-					)
-				}
-			}
-			d.collectionsMu.RUnlock()
 		}
 		return
 	}
 	if event.EventType() == RedfishResourceRemoved {
 		if data, ok := event.Data().(*RedfishResourceRemovedData); ok {
-			// Look to see if it is a member of a collection
-			logger.Debug("Delete", "event", event)
-			collectionToTest := path.Dir(data.ResourceURI)
-			d.collectionsMu.RLock()
-			for _, v := range d.collections {
-				if v == collectionToTest {
-					logger.Debug("Remove member from collection", "collection_name", v, "new_uri", data.ResourceURI)
-					d.CommandHandler.HandleCommand(
-						ctx,
-						&RemoveResourceFromRedfishResourceCollection{
-							ID:          d.GetAggregateID(collectionToTest),
-							ResourceURI: data.ResourceURI,
-						},
-					)
-				}
-			}
-			d.collectionsMu.RUnlock()
-
-			// is this a collection? If so, remove it from our collections list
-			d.collectionsMu.Lock()
-			for i, c := range d.collections {
-				if c == data.ResourceURI {
-					logger.Debug("Remove collection", "collection_name", data.ResourceURI)
-					// swap the collection we found to the end
-					d.collections[len(d.collections)-1], d.collections[i] = d.collections[i], d.collections[len(d.collections)-1]
-					// then slice it off
-					d.collections = d.collections[:len(d.collections)-1]
-					break
-				}
-			}
-			d.collectionsMu.Unlock()
-
-			// TODO: remove from aggregatestore?
 			logger.Debug("Delete Resource", "URI", data.ResourceURI)
 			d.DeleteResource(ctx, data.ResourceURI)
 			p, err := InstantiatePlugin(PluginType(data.ResourceURI))
