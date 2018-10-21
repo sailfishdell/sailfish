@@ -505,9 +505,10 @@ views:
           "params": {"modelname": "default", "cfgsection": "slot", "uniquename": "'slot:' + FQDD"}
       "View":
         - "fn": "with_URI"
-          "params": "sloturi"
+          "params": "collection_uri + '/' + FQDD"
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
+      "Aggregate": "slot"
 
 
   "slotconfig":

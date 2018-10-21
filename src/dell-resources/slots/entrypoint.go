@@ -2,7 +2,6 @@ package slots
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	eh "github.com/looplab/eventhorizon"
@@ -10,13 +9,11 @@ import (
 
 	"github.com/superchalupa/sailfish/src/eventwaiter"
 	"github.com/superchalupa/sailfish/src/log"
-	"github.com/superchalupa/sailfish/src/ocp/view"
-	domain "github.com/superchalupa/sailfish/src/redfishresource"
 
 	"github.com/spf13/viper"
 
 	"github.com/superchalupa/sailfish/src/dell-resources/component"
-  "github.com/superchalupa/sailfish/src/ocp/testaggregate"
+	"github.com/superchalupa/sailfish/src/ocp/testaggregate"
 )
 
 type viewer interface {
@@ -25,10 +22,10 @@ type viewer interface {
 }
 
 type SlotService struct {
-	ch    eh.CommandHandler
-	eb    eh.EventBus
-	ew    *eventwaiter.EventWaiter
-	slots map[string]interface{}
+	ch        eh.CommandHandler
+	eb        eh.EventBus
+	ew        *eventwaiter.EventWaiter
+	modParams func(...map[string]interface{}) map[string]interface{}
 }
 
 func New(ch eh.CommandHandler, eb eh.EventBus) *SlotService {
@@ -36,37 +33,37 @@ func New(ch eh.CommandHandler, eb eh.EventBus) *SlotService {
 	eb.AddHandler(eh.MatchAnyEventOf(component.ComponentEvent), EventPublisher)
 	EventWaiter := eventwaiter.NewEventWaiter(eventwaiter.SetName("Slot Event Service"))
 	EventPublisher.AddObserver(EventWaiter)
-	ss := make(map[string]interface{})
 
 	return &SlotService{
-		ch:    ch,
-		eb:    eb,
-		ew:    EventWaiter,
-		slots: ss,
+		ch: ch,
+		eb: eb,
+		ew: EventWaiter,
 	}
 }
 
 // StartService will create a model, view, and controller for the eventservice, then start a goroutine to publish events
-func (l *SlotService) StartService(ctx context.Context, logger log.Logger, rootView viewer, cfgMgr *viper.Viper, instantiateSvc *testaggregate.Service,  ch eh.CommandHandler, eb eh.EventBus) *view.View {
+func (l *SlotService) StartService(ctx context.Context, logger log.Logger, baseView viewer, cfgMgr *viper.Viper, instantiateSvc *testaggregate.Service, modParams func(map[string]interface{}) map[string]interface{}, ch eh.CommandHandler, eb eh.EventBus) {
 
-	slotUri := rootView.GetURI() + "/Slots"
-	slotLogger := logger.New("module", "slot")
+	l.modParams = func(in ...map[string]interface{}) map[string]interface{} {
+		mod := map[string]interface{}{}
+		mod["collection_uri"] = baseView.GetURI() + "/Slots"
+		for _, i := range in {
+			for k, v := range i {
+				mod[k] = v
+			}
+		}
+		return modParams(mod)
+	}
+	slotLogger, _, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "slotcollection", l.modParams())
 
-	slotView := view.New(
-		view.WithURI(slotUri),
-		//ah.WithAction(ctx, slotLogger, "clear.logs", "/Actions/..fixme...", MakeClearLog(eb), ch, eb),
-	)
-
-	AddAggregate(ctx, slotLogger, slotView, rootView.GetUUID(), l.ch, l.eb)
+	slotLogger.Info("Created slot collection", "uri", baseView.GetURI()+"/Slots")
 
 	// Start up goroutine that listens for log-specific events and creates log aggregates
-	l.manageSlots(ctx, slotLogger, slotUri, cfgMgr, instantiateSvc, ch, eb)
-
-	return slotView
+	l.manageSlots(ctx, slotLogger, cfgMgr, instantiateSvc, ch, eb)
 }
 
 // starts a background process to create new log entries
-func (l *SlotService) manageSlots(ctx context.Context, logger log.Logger, logUri string, cfgMgr *viper.Viper, instantiateSvc *testaggregate.Service, ch eh.CommandHandler, eb eh.EventBus) {
+func (l *SlotService) manageSlots(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, instantiateSvc *testaggregate.Service, ch eh.CommandHandler, eb eh.EventBus) {
 
 	// set up listener for the delete event
 	// INFO: this listener will only ever get
@@ -90,6 +87,7 @@ func (l *SlotService) manageSlots(ctx context.Context, logger log.Logger, logUri
 		defer listener.Close()
 
 		inbox := listener.Inbox()
+		slots := map[string]struct{}{}
 		for {
 			select {
 			case event := <-inbox:
@@ -101,60 +99,25 @@ func (l *SlotService) manageSlots(ctx context.Context, logger log.Logger, logUri
 						break
 					}
 
-					uuid := eh.NewUUID()
-					uri := fmt.Sprintf("%s/%s", logUri, SlotEntry.Id)
 					s := strings.Split(SlotEntry.Id, ".")
 					group, index := s[0], s[1]
 
-					oldUuid, ok := l.slots[uri].(eh.UUID)
+					_, ok := slots[SlotEntry.Id]
 					if ok {
-						// early out if the same slot already exists (same URI)
-            logger.Info("slot already created, early out", "uuid", oldUuid)
+						logger.Info("slot already created, skip", "baseSlotURI", l.modParams()["collection_uri"], "SlotEntry.Id", SlotEntry.Id)
 						break
 					}
+					// track that this slot is instantiated
+					slots[SlotEntry.Id] = struct{}{}
 
-          slotLogger, slotView, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "slot",
-            map[string]interface{}{
-              "sloturi": uri,
-              "FQDD": SlotEntry.Id,
-              "Group": group, // for ar mapper
-              "Index": index, // for ar mapper
-            },
-          )
-          slotLogger.Info("Slot Created", "SlotEntry.Id", SlotEntry.Id)
-
-					// update the UUID for this slot
-					l.slots[uri] = uuid
-
-					properties := map[string]interface{}{
-						"Config@meta":   slotView.Meta(view.PropGET("slot_config")),
-						"Contains@meta": slotView.Meta(view.PropGET("slot_contains")),
-						"Id":            SlotEntry.Id,
-						"Name@meta":     slotView.Meta(view.PropGET("slot_name")),
-						"Occupied@meta": slotView.Meta(view.PropGET("slot_occupied")),
-						"SlotName@meta": slotView.Meta(view.PropGET("slot_slotname")),
-					}
-
-					if strings.Contains(SlotEntry.Id, "SledSlot") {
-				      properties["SledProfile@meta"] = slotView.Meta(view.PropGET("sled_profile"))
-				  }
-
-					l.ch.HandleCommand(
-						ctx,
-						&domain.CreateRedfishResource{
-							ID:          uuid,
-							ResourceURI: uri,
-							Type:        "#DellSlot.v1_0_0.DellSlot",
-							Context:     "/redfish/v1/$metadata#DellSlot.DellSlot",
-							Privileges: map[string]interface{}{
-								"GET":    []string{"ConfigureManager"},
-								"POST":   []string{},
-								"PUT":    []string{"ConfigureManager"},
-								"PATCH":  []string{"ConfigureManager"},
-								"DELETE": []string{"ConfigureManager"},
-							},
-							Properties: properties,
-						})
+					slotLogger, _, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "slot",
+						l.modParams(map[string]interface{}{
+							"FQDD":  SlotEntry.Id,
+							"Group": group, // for ar mapper
+							"Index": index, // for ar mapper
+						}),
+					)
+					slotLogger.Info("Created Slot", "SlotEntry.Id", SlotEntry.Id)
 				}
 
 			case <-ctx.Done():

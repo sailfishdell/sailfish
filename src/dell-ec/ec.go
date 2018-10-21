@@ -104,6 +104,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	stdcollections.RegisterAggregate(instantiateSvc)
 	session.RegisterAggregate(instantiateSvc)
 	eventservice.RegisterAggregate(instantiateSvc)
+	slots.RegisterAggregate(instantiateSvc)
 
 	// common parameters to instantiate that are used almost everywhere
 	baseParams := map[string]interface{}{}
@@ -485,7 +486,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		subSystemSvc.StartService(ctx, logger, sysChasVw, cfgMgr, instantiateSvc, ch, eb)
 
 		/*  Slots */
-		slotSvc.StartService(ctx, logger, sysChasVw, cfgMgr, instantiateSvc, ch, eb)
+		slotSvc.StartService(ctx, logger, sysChasVw, cfgMgr, instantiateSvc, modParams, ch, eb)
 
 		/* Slot config */
 		slotconfigSvc.StartService(ctx, logger, sysChasVw, cfgMgr, instantiateSvc, ch, eb)
