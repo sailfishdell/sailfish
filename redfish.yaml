@@ -475,6 +475,27 @@ views:
         - "fn": "with_URI"
           "params": "rooturi + '/SubSystemHealth'"
 
+
+  "slotcollection":
+      "Logger": ["module", "slot"]
+      "Models":
+        "default": {}
+      "Controllers":
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + collection_uri" }
+      "View":
+        - "fn": "with_URI"
+          "params": "collection_uri"
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+        - "fn": "withFormatter_count"
+          "params":
+        - "fn": "withFormatter_attributeFormatter"
+          "params":
+        - "fn": "withFormatter_formatOdataList"
+          "params":
+      "Aggregate": "slotcollection"
+
   "slot":
       "Logger": ["module", "slot"]
       "Models":
