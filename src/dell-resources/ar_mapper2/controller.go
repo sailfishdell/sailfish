@@ -123,7 +123,11 @@ func (ars *ARService) NewMapping(logger log.Logger, mappingName, cfgsection stri
 	ars.modelmappings[mappingName] = mm
 	ars.mappingsMu.Unlock()
 
-	ars.loadConfig()
+	ars.loadConfig(mappingName)
+
+	// ars.logger.Info("updating mappings", "mappings", c.mappings)
+	// c.createModelProperties(ctx)
+	// go c.initialStartupBootstrap(ctx)
 
 	return breadcrumb{ars: ars, mappingName: mappingName, logger: logger}
 }
@@ -132,6 +136,8 @@ func (b breadcrumb) Close() {
 	b.ars.mappingsMu.Lock()
 	delete(b.ars.modelmappings, b.mappingName)
 	b.ars.mappingsMu.Unlock()
+
+	b.ars.resetConfig()
 }
 
 func (b breadcrumb) UpdateRequest(ctx context.Context, property string, value interface{}) (interface{}, error) {
@@ -166,8 +172,21 @@ func (b breadcrumb) UpdateRequest(ctx context.Context, property string, value in
 	return value, nil
 }
 
+func (ars *ARService) resetConfig() {
+	ars.hashMu.Lock()
+	// clear out old mappings in preparation
+	for k := range ars.hash {
+		delete(ars.hash, k)
+	}
+	ars.hashMu.Unlock()
+
+	for k, _ := range ars.modelmappings {
+		ars.loadConfig(k)
+	}
+}
+
 // this is the function that viper will call whenever the configuration changes at runtime
-func (ars *ARService) loadConfig() {
+func (ars *ARService) loadConfig(mappingName string) {
 	ars.mappingsMu.Lock()
 	defer ars.mappingsMu.Unlock()
 	ars.hashMu.Lock()
@@ -175,64 +194,54 @@ func (ars *ARService) loadConfig() {
 
 	ars.logger.Info("Updating Config")
 
-	// clear out old mappings in preparation
-	for k := range ars.hash {
-		delete(ars.hash, k)
-	}
-
 	subCfg := ars.cfg.Sub("mappings")
 	if subCfg == nil {
 		ars.logger.Warn("missing config file section: 'mappings'")
 		return
 	}
 
-	for k, _ := range ars.modelmappings {
-		newmaps := []mapping{}
-		err := subCfg.UnmarshalKey(ars.modelmappings[k].cfgsect, &newmaps)
-		if err != nil {
-			ars.logger.Warn("unamrshal failed", "err", err)
-		}
-
-		ars.logger.Info("Loading Config", "mappingName", k, "configsection", ars.modelmappings[k].cfgsect, "mappings", newmaps)
-
-		for mappingIdx, mm := range newmaps {
-			if mm.FQDD == "{FQDD}" {
-				mm.FQDD = ars.modelmappings[k].requestedFQDD
-				ars.modelmappings[k].logger.Debug("Replacing {FQDD} with real fqdd", "fqdd", mm.FQDD)
-			}
-			if mm.Group == "{GROUP}" {
-				mm.Group = ars.modelmappings[k].requestedGroup
-				ars.modelmappings[k].logger.Debug("Replacing {GROUP} with real group", "group", mm.Group)
-			}
-			if mm.Index == "{INDEX}" {
-				mm.Index = ars.modelmappings[k].requestedIndex
-				ars.modelmappings[k].logger.Debug("Replacing {INDEX} with real index", "index", mm.Index)
-			}
-
-			modelmapping := ars.modelmappings[k]
-			modelmapping.mappings = append(ars.modelmappings[k].mappings, mm)
-			ars.modelmappings[k] = modelmapping
-
-			mapstring := fmt.Sprintf("%s:%s:%s:%s",
-				ars.modelmappings[k].mappings[mappingIdx].FQDD,
-				ars.modelmappings[k].mappings[mappingIdx].Group,
-				ars.modelmappings[k].mappings[mappingIdx].Index,
-				ars.modelmappings[k].mappings[mappingIdx].Name,
-			)
-			updArr, ok := ars.hash[mapstring]
-			if !ok {
-				updArr = []update{}
-			}
-
-			updArr = append(updArr, update{model: ars.modelmappings[k].model, property: mm.Property})
-			ars.hash[mapstring] = updArr
-
-			ars.logger.Info("Updated config array", "update_array", updArr)
-		}
-		ars.logger.Info("finished optimizing hash", "hash", ars.hash)
+	k := mappingName
+	newmaps := []mapping{}
+	err := subCfg.UnmarshalKey(ars.modelmappings[k].cfgsect, &newmaps)
+	if err != nil {
+		ars.logger.Warn("unamrshal failed", "err", err)
 	}
 
-	// ars.logger.Info("updating mappings", "mappings", c.mappings)
-	// c.createModelProperties(ctx)
-	// go c.initialStartupBootstrap(ctx)
+	ars.logger.Info("Loading Config", "mappingName", k, "configsection", ars.modelmappings[k].cfgsect, "mappings", newmaps)
+
+	for mappingIdx, mm := range newmaps {
+		if mm.FQDD == "{FQDD}" {
+			mm.FQDD = ars.modelmappings[k].requestedFQDD
+			ars.modelmappings[k].logger.Debug("Replacing {FQDD} with real fqdd", "fqdd", mm.FQDD)
+		}
+		if mm.Group == "{GROUP}" {
+			mm.Group = ars.modelmappings[k].requestedGroup
+			ars.modelmappings[k].logger.Debug("Replacing {GROUP} with real group", "group", mm.Group)
+		}
+		if mm.Index == "{INDEX}" {
+			mm.Index = ars.modelmappings[k].requestedIndex
+			ars.modelmappings[k].logger.Debug("Replacing {INDEX} with real index", "index", mm.Index)
+		}
+
+		modelmapping := ars.modelmappings[k]
+		modelmapping.mappings = append(ars.modelmappings[k].mappings, mm)
+		ars.modelmappings[k] = modelmapping
+
+		mapstring := fmt.Sprintf("%s:%s:%s:%s",
+			ars.modelmappings[k].mappings[mappingIdx].FQDD,
+			ars.modelmappings[k].mappings[mappingIdx].Group,
+			ars.modelmappings[k].mappings[mappingIdx].Index,
+			ars.modelmappings[k].mappings[mappingIdx].Name,
+		)
+		updArr, ok := ars.hash[mapstring]
+		if !ok {
+			updArr = []update{}
+		}
+
+		updArr = append(updArr, update{model: ars.modelmappings[k].model, property: mm.Property})
+		ars.hash[mapstring] = updArr
+
+		ars.logger.Info("Updated config array", "update_array", updArr)
+		ars.logger.Info("finished optimizing hash", "hash", ars.hash)
+	}
 }
