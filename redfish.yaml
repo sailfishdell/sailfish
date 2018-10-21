@@ -658,10 +658,10 @@ views:
 awesome_mapper:
     collection:
       - { SelectEventType: "RedfishResource:created",
-          Select: "type == 'RedfishResource:created' && nohash(data.ResourceURI) && baseuri(data.ResourceURI) == collection_uri ",
+          Select: "nohash(data.ResourceURI) && baseuri(data.ResourceURI) == collection_uri ",
           ModelUpdate: [ {Property: "members", Query: "addtoset(model, propname, data.ResourceURI)", Default: 0} ]}
       - { SelectEventType: "RedfishResource:removed",
-          Select: "type == 'RedfishResource:removed' && nohash(data.ResourceURI) && baseuri(data.ResourceURI) == collection_uri ",
+          Select: "nohash(data.ResourceURI) && baseuri(data.ResourceURI) == collection_uri ",
           ModelUpdate: [ {Property: "members", Query: "removefromset(model, propname, data.ResourceURI)", Default: 0} ]}
 
     testview:
