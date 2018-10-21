@@ -60,28 +60,34 @@ func NewPumpActionSvc(ctx context.Context, logger log.Logger, eb eh.EventBus) *S
 					continue
 				}
 				cid := data.CommandID
-				ret.Lock()
-				defer ret.Unlock()
-				_, ok = ret.outstandingCommands[cid]
-				if !ok {
-					continue
-				}
-				logger.Info("Got response from pump for action before timeout, cancelling")
-				delete(ret.outstandingCommands, cid)
-				ret.calculateNewTimer(0 * time.Second)
+				func() {
+					ret.Lock()
+					defer ret.Unlock()
+					_, ok = ret.outstandingCommands[cid]
+					if !ok {
+						return
+					}
+					logger.Info("Got response from pump for action before timeout, cancelling")
+					delete(ret.outstandingCommands, cid)
+					ret.calculateNewTimer(1 * time.Hour)
+				}()
 
 			case <-ret.timer.C:
 				// scan our list and see what is timed out
-				n := time.Now()
-				ret.Lock()
-				defer ret.Unlock()
-				for k, v := range ret.outstandingCommands {
-					if n.After(v) {
-						ret.PublishTimeout(k)
-						delete(ret.outstandingCommands, k)
+				func() {
+					n := time.Now()
+
+					ret.Lock()
+					defer ret.Unlock()
+
+					for k, v := range ret.outstandingCommands {
+						if n.After(v) {
+							ret.PublishTimeout(k)
+							delete(ret.outstandingCommands, k)
+						}
 					}
-				}
-				ret.calculateNewTimer(0 * time.Second)
+					ret.calculateNewTimer(1 * time.Hour)
+				}()
 
 			// user cancelled curl request before we could get a response
 			case <-ctx.Done():
@@ -105,6 +111,7 @@ func (s *Service) PublishTimeout(cmdid eh.UUID) {
 }
 
 func (s *Service) calculateNewTimer(shortest time.Duration) {
+	s.logger.Info("Calculating new timeout for action handler", "requested shortest", shortest)
 	// set new timer based on whatever is the shortest time coming up
 	for _, v := range s.outstandingCommands {
 		if time.Until(v) < shortest {
@@ -113,9 +120,13 @@ func (s *Service) calculateNewTimer(shortest time.Duration) {
 	}
 
 	if !s.timer.Stop() {
-		<-s.timer.C
+		select {
+		case <-s.timer.C:
+		default:
+		}
 	}
 
+	s.logger.Info("Calculating new timeout for action handler", "shortest", shortest)
 	if shortest != 0 {
 		s.timer.Reset(shortest)
 	}
@@ -123,6 +134,7 @@ func (s *Service) calculateNewTimer(shortest time.Duration) {
 
 func (s *Service) NewPumpAction(maxtimeout int) func(context.Context, eh.Event, *domain.HTTPCmdProcessedData) error {
 	return func(ctx context.Context, event eh.Event, retData *domain.HTTPCmdProcessedData) error {
+		s.logger.Info("Running new pump action")
 		s.Lock()
 		defer s.Unlock()
 
@@ -142,7 +154,6 @@ func (s *Service) NewPumpAction(maxtimeout int) func(context.Context, eh.Event, 
 func makePumpHandledUpload(name string, maxtimeout int, eb eh.EventBus) func(context.Context, eh.Event, *domain.HTTPCmdProcessedData) error {
 	EventPublisher := eventpublisher.NewEventPublisher()
 
-	// TODO: fix MatchAny
 	eb.AddHandler(eh.MatchEvent(domain.HTTPCmdProcessed), EventPublisher)
 	EventWaiter := eventwaiter.NewEventWaiter(eventwaiter.SetName("Upload Timeout Publisher"), eventwaiter.NoAutoRun)
 	EventPublisher.AddObserver(EventWaiter)
