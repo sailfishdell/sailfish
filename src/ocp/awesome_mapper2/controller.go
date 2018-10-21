@@ -31,6 +31,7 @@ type ConfigFileMappingEntry struct {
 	Select          string
 	SelectEventType string
 	ModelUpdate     []*ConfigFileModelUpdate
+	Exec            []string
 }
 
 // ########################
@@ -64,6 +65,7 @@ type MapperConfig struct {
 	selectStr    string
 	selectExpr   []govaluate.ExpressionToken
 	modelUpdates []*ModelUpdate
+	exec         []*Exec
 	cfg          *ConfigSection
 }
 
@@ -72,6 +74,11 @@ type ModelUpdate struct {
 	queryString string
 	queryExpr   []govaluate.ExpressionToken
 	defaultVal  interface{}
+}
+
+type Exec struct {
+	execString string
+	execExpr   []govaluate.ExpressionToken
 }
 
 func (s *Service) NewMapping(ctx context.Context, logger log.Logger, cfg *viper.Viper, mdl *model.Model, cfgName string, uniqueName string, parameters map[string]interface{}) error {
@@ -131,6 +138,7 @@ func (s *Service) NewMapping(ctx context.Context, logger log.Logger, cfg *viper.
 				selectStr:    cfgEntry.Select,
 				selectExpr:   selectExpr.Tokens(),
 				modelUpdates: []*ModelUpdate{},
+				exec:         []*Exec{},
 				cfg:          mappingsForSection,
 			}
 			mappingsForSection.mappings = append(mappingsForSection.mappings, mc)
@@ -149,6 +157,20 @@ func (s *Service) NewMapping(ctx context.Context, logger log.Logger, cfg *viper.
 					defaultVal:  modelUpdate.Default,
 				})
 			}
+
+			for _, exec := range cfgEntry.Exec {
+				execExpr, err := govaluate.NewEvaluableExpressionWithFunctions(exec, functions)
+				if err != nil {
+					logger.Crit("Query construction failed", "exec", exec, "err", err, "cfgName", cfgName, "select", cfgEntry.Select)
+					continue
+				}
+
+				mc.exec = append(mc.exec, &Exec{
+					execString: exec,
+					execExpr:   execExpr.Tokens(),
+				})
+			}
+
 		}
 
 		// and then optimize by rebuilding the event indexed hash
@@ -288,6 +310,17 @@ func StartService(ctx context.Context, logger log.Logger, eb eh.EventBus) (*Serv
 					ret.logger.Info("Updating property!", "property", updates.property, "value", val, "Event", event, "EventData", event.Data())
 					parameters.model.UpdateProperty(updates.property, val)
 				}
+
+				delete(parameters.params, "propname")
+				for _, updates := range mapping.exec {
+					expr, err := govaluate.NewEvaluableExpressionFromTokens(updates.execExpr)
+					val, err := expr.Evaluate(parameters.params)
+					if err != nil {
+						ret.logger.Error("Expression failed to evaluate", "err", err, "cfgName", cfgName, "type", event.EventType(), "execString", updates.execString, "parameters", parameters.params, "val", val)
+						continue
+					}
+				}
+
 			}
 		}
 	})
