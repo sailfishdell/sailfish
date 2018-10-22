@@ -201,6 +201,11 @@ func (s *Service) NewMapping(ctx context.Context, logger log.Logger, cfg *viper.
 	// Add our parameters to the pile
 	mappingsForSection.parameters[uniqueName] = instanceParameters
 
+	// no need to set defaults if there is no model to put them in...
+	if mdl == nil {
+		return nil
+	}
+
 	// now set all of the model default values based on the mapper config
 	for _, mapping := range mappingsForSection.mappings {
 		mdl.StopNotifications()
