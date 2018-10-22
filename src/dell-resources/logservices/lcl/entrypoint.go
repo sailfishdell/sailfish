@@ -10,7 +10,6 @@ import (
 	//ah "github.com/superchalupa/sailfish/src/actionhandler"
 	"github.com/superchalupa/sailfish/src/eventwaiter"
 	"github.com/superchalupa/sailfish/src/log"
-	"github.com/superchalupa/sailfish/src/ocp/view"
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
 	//mgrCMCIntegrated "github.com/superchalupa/sailfish/src/dell-resources/managers/cmc.integrated"
 )
@@ -40,7 +39,7 @@ func New(ch eh.CommandHandler, eb eh.EventBus) *LCLService {
 }
 
 // StartService will create a model, view, and controller for the eventservice, then start a goroutine to publish events
-func (l *LCLService) StartService(ctx context.Context, logger log.Logger, rootView viewer) *view.View {
+func (l *LCLService) StartService(ctx context.Context, logger log.Logger, rootView viewer) {
 	// COLLECTION AGGREGATE to hold Lclog and Faultlist: /redfish/v1/Managers/CMC.Integrated.1/LogServices
 	// AGGREGATE: /redfish/v1/Managers/CMC.Integrated.1/LogServices/Lclog
 	// COLLECTION AGGREGATE: /redfish/v1/Managers/CMC.Integrated.1/Logs/Lclog.json  <-- lets save this for last
@@ -49,20 +48,10 @@ func (l *LCLService) StartService(ctx context.Context, logger log.Logger, rootVi
 	//
 	// SKIP FOR NOW (implement after LCL done) __redfish__v1__Managers__CMC.Integrated.1__Logs__FaultList.json
 	lcLogUri := rootView.GetURI() + "/Logs/Lclog"
-
 	lclLogger := logger.New("module", "LCL")
-
-	lclView := view.New(
-		view.WithURI(lcLogUri),
-		//ah.WithAction(ctx, lclLogger, "clear.logs", "/Actions/..fixme...", MakeClearLog(eb), ch, eb),
-	)
-
-	AddAggregate(ctx, lclLogger, lclView, rootView.GetUUID(), l.ch, l.eb)
 
 	// Start up goroutine that listens for log-specific events and creates log aggregates
 	l.manageLcLogs(ctx, lclLogger, lcLogUri)
-
-	return lclView
 }
 
 const MAX_LOGS = 100

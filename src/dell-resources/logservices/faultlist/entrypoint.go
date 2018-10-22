@@ -9,7 +9,6 @@ import (
 
 	"github.com/superchalupa/sailfish/src/eventwaiter"
 	"github.com/superchalupa/sailfish/src/log"
-	"github.com/superchalupa/sailfish/src/ocp/view"
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
 )
 
@@ -38,22 +37,13 @@ func New(ch eh.CommandHandler, eb eh.EventBus) *FaultListService {
 }
 
 // StartService will create a model, view, and controller for the eventservice, then start a goroutine to publish events
-func (f *FaultListService) StartService(ctx context.Context, logger log.Logger, rootView viewer) *view.View {
+func (f *FaultListService) StartService(ctx context.Context, logger log.Logger, rootView viewer) {
 	faultListUri := rootView.GetURI() + "/Logs/FaultList"
 
 	faultLogger := logger.New("module", "LCL")
 
-	faultView := view.New(
-		view.WithURI(faultListUri),
-		//ah.WithAction(ctx, lclLogger, "clear.logs", "/Actions/..fixme...", MakeClearLog(eb), ch, eb),
-	)
-
-	AddAggregate(ctx, faultLogger, faultView, rootView.GetUUID(), f.ch, f.eb)
-
 	// Start up goroutine that listens for log-specific events and creates log aggregates
 	f.manageLcLogs(ctx, faultLogger, faultListUri)
-
-	return faultView
 }
 
 // manageLcLogs starts a background process to create new log entreis

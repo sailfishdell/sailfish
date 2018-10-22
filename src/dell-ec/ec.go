@@ -104,6 +104,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	session.RegisterAggregate(instantiateSvc)
 	eventservice.RegisterAggregate(instantiateSvc)
 	slots.RegisterAggregate(instantiateSvc)
+	logservices.RegisterAggregate(instantiateSvc)
 
 	// common parameters to instantiate that are used almost everywhere
 	baseParams := map[string]interface{}{}
@@ -238,7 +239,14 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		mgrCMCIntegrated.AddAggregate(ctx, mgrLogger, mgrCmcVw, ch)
 		attributes.AddAggregate(ctx, mgrCmcVw, rootView.GetURI()+"/Managers/"+mgrName+"/Attributes", ch)
 
-		logservices.AddAggregate(ctx, mgrCmcVw, rootView.GetURI()+"/Managers/"+mgrName, ch)
+		// ######################
+		// log related uris
+		// ######################
+		instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "logservices",
+			modParams(map[string]interface{}{"FQDD": mgrName, "collection_uri": baseParams["rooturi"].(string) + "/Managers/" + mgrName + "/LogServices"}),
+		)
+		instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "lclogservices", modParams(map[string]interface{}{"FQDD": mgrName}))
+		instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "faultlistservices", modParams(map[string]interface{}{"FQDD": mgrName}))
 
 		certificate_uris := []string{mgrCmcVw.GetURI() + "/CertificateService/CertificateInventory/FactoryIdentity.1"}
 
@@ -291,6 +299,12 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		power_related_items = append(power_related_items, chasCmcVw.GetURI())
 	}
 
+	instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "lclogentrycollection",
+		modParams(map[string]interface{}{"FQDD": "CMC.Integrated.1", "collection_uri": baseParams["rooturi"].(string) + "/Managers/CMC.Integrated.1/Logs/Lclog"}),
+	)
+	instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "faultlistentrycollection",
+		modParams(map[string]interface{}{"FQDD": "CMC.Integrated.1", "collection_uri": baseParams["rooturi"].(string) + "/Managers/CMC.Integrated.1/Logs/FaultList"}),
+	)
 	// start log service here: it attaches to cmc.integrated.1
 	logSvc.StartService(ctx, logger, managers[0])
 	faultSvc.StartService(ctx, logger, managers[0])

@@ -3,88 +3,123 @@ package logservices
 import (
 	"context"
 
+	eh "github.com/looplab/eventhorizon"
+	"github.com/spf13/viper"
+
+	"github.com/superchalupa/sailfish/src/log"
+	"github.com/superchalupa/sailfish/src/ocp/testaggregate"
 	"github.com/superchalupa/sailfish/src/ocp/view"
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
-
-	eh "github.com/looplab/eventhorizon"
 )
 
-func AddAggregate(ctx context.Context, v *view.View, baseUri string, ch eh.CommandHandler) (ret eh.UUID) {
-	ret = eh.NewUUID()
+func RegisterAggregate(s *testaggregate.Service) {
+	s.RegisterAggregateFunction("logservices",
+		func(ctx context.Context, subLogger log.Logger, cfgMgr *viper.Viper, vw *view.View, extra interface{}, params map[string]interface{}) ([]eh.Command, error) {
+			return []eh.Command{
+				&domain.CreateRedfishResource{
+					ResourceURI: vw.GetURI(),
+					Type:        "#LogServiceCollection.LogServiceCollection",
+					Context:     params["rooturi"].(string) + "/$metadata#LogServiceCollection.LogServiceCollection",
+					Privileges: map[string]interface{}{
+						"GET": []string{"Login"},
+					},
+					Properties: map[string]interface{}{
+						"Name":                     "Log Service Collection",
+						"Description":              "Collection of Log Services for this Manager",
+						"Members@meta":             vw.Meta(view.GETProperty("members"), view.GETFormatter("formatOdataList"), view.GETModel("default")),
+						"Members@odata.count@meta": vw.Meta(view.GETProperty("members"), view.GETFormatter("count"), view.GETModel("default")),
+					}},
+			}, nil
+		})
 
-	ch.HandleCommand(
-		ctx,
-		&domain.CreateRedfishResource{
-			ID:          ret,
-			Collection:  true,
-			ResourceURI: baseUri + "/LogServices",
-			Type:        "#LogServiceCollection.LogServiceCollection",
-			Context:     "/redfish/v1/$metadata#LogServiceCollection.LogServiceCollection",
-			Privileges: map[string]interface{}{
-				"GET":    []string{"ConfigureManager"},
-				"POST":   []string{},
-				"PUT":    []string{},
-				"PATCH":  []string{},
-				"DELETE": []string{},
-			},
-			Properties: map[string]interface{}{
-				"Name":        "Log Service Collection",
-				"Description": "Collection of Log Services for this Manager",
-			}})
+	s.RegisterAggregateFunction("lclogservices",
+		func(ctx context.Context, subLogger log.Logger, cfgMgr *viper.Viper, vw *view.View, extra interface{}, params map[string]interface{}) ([]eh.Command, error) {
+			return []eh.Command{
+				&domain.CreateRedfishResource{
+					ResourceURI: vw.GetURI(),
+					Type:        "#LogService.v1_0_2.LogService",
+					Context:     params["rooturi"].(string) + "/$metadata#LogService.LogService",
+					Privileges: map[string]interface{}{
+						"GET": []string{"Login"},
+					},
+					Properties: map[string]interface{}{
+						"Name":               "LifeCycle Controller Log Service",
+						"Description":        "LifeCycle Controller Log Service",
+						"OverWritePolicy":    "WrapsWhenFull",
+						"MaxNumberOfRecords": 500000,
+						"ServiceEnabled":     true,
+						"Entries": map[string]interface{}{
+							"@odata.id": "/redfish/v1/Managers/CMC.Integrated.1/Logs/Lclog",
+						},
+						"DateTimeLocalOffset": "+00:00",
+						"Id":                  "LC",
+					}},
+			}, nil
+		})
 
-	ch.HandleCommand(
-		ctx,
-		&domain.CreateRedfishResource{
-			ID:          eh.NewUUID(),
-			ResourceURI: baseUri + "/LogServices/Lclog",
-			Type:        "#LogService.v1_0_2.LogService",
-			Context:     "/redfish/v1/$metadata#LogService.LogService",
-			Privileges: map[string]interface{}{
-				"GET":    []string{"ConfigureManager"},
-				"POST":   []string{},
-				"PUT":    []string{},
-				"PATCH":  []string{},
-				"DELETE": []string{},
-			},
-			Properties: map[string]interface{}{
-				"Name":               "LifeCycle Controller Log Service",
-				"Description":        "LifeCycle Controller Log Service",
-				"OverWritePolicy":    "WrapsWhenFull",
-				"MaxNumberOfRecords": 500000,
-				"ServiceEnabled":     true,
-				"Entries": map[string]interface{}{
-					"@odata.id": "/redfish/v1/Managers/CMC.Integrated.1/Logs/Lclog",
-				},
-				"DateTimeLocalOffset": "+00:00",
-				"Id":                  "LC",
-			}})
+	s.RegisterAggregateFunction("lclogentrycollection",
+		func(ctx context.Context, subLogger log.Logger, cfgMgr *viper.Viper, vw *view.View, extra interface{}, params map[string]interface{}) ([]eh.Command, error) {
+			return []eh.Command{
+				&domain.CreateRedfishResource{
+					ResourceURI: vw.GetURI(),
+					Type:        "#LogService.v1_0_2.LogService",
+					Context:     params["rooturi"].(string) + "/$metadata#LogService.LogService",
+					Privileges: map[string]interface{}{
+						"GET": []string{"Login"},
+					},
+					Properties: map[string]interface{}{
+						"Description":              "LC Logs for this manager",
+						"Name":                     "Log Entry Collection",
+						"Members@meta":             vw.Meta(view.GETProperty("members"), view.GETFormatter("formatOdataList"), view.GETModel("default")),
+						"Members@odata.count@meta": vw.Meta(view.GETProperty("members"), view.GETFormatter("count"), view.GETModel("default")),
+					}},
+			}, nil
+		})
 
-	ch.HandleCommand(
-		ctx,
-		&domain.CreateRedfishResource{
-			ID:          eh.NewUUID(),
-			ResourceURI: baseUri + "/LogServices/FaultList",
-			Type:        "#LogService.v1_0_2.LogService",
-			Context:     "/redfish/v1/$metadata#LogService.LogService",
-			Privileges: map[string]interface{}{
-				"GET":    []string{"ConfigureManager"},
-				"POST":   []string{},
-				"PUT":    []string{},
-				"PATCH":  []string{},
-				"DELETE": []string{},
-			},
-			Properties: map[string]interface{}{
-				"Name":               "FaultListEntries",
-				"Description":        "Collection of FaultList Entries",
-				"OverWritePolicy":    "WrapsWhenFull",
-				"MaxNumberOfRecords": 500000,
-				"ServiceEnabled":     true,
-				"Entries": map[string]interface{}{
-					"@odata.id": "/redfish/v1/Managers/CMC.Integrated.1/Logs/FaultList",
-				},
-				"DateTimeLocalOffset": "+00:00",
-				"DateTime":            "TODO", //TODO
-				"Id":                  "FaultList",
-			}})
+	s.RegisterAggregateFunction("faultlistservices",
+		func(ctx context.Context, subLogger log.Logger, cfgMgr *viper.Viper, vw *view.View, extra interface{}, params map[string]interface{}) ([]eh.Command, error) {
+			return []eh.Command{
+				&domain.CreateRedfishResource{
+					ResourceURI: vw.GetURI(),
+					Type:        "#LogService.v1_0_2.LogService",
+					Context:     params["rooturi"].(string) + "/$metadata#LogService.LogService",
+					Privileges: map[string]interface{}{
+						"GET": []string{"Login"},
+					},
+					Properties: map[string]interface{}{
+						"Name":               "FaultListEntries",
+						"Description":        "Collection of FaultList Entries",
+						"OverWritePolicy":    "WrapsWhenFull",
+						"MaxNumberOfRecords": 500000,
+						"ServiceEnabled":     true,
+						"Entries": map[string]interface{}{
+							"@odata.id": "/redfish/v1/Managers/CMC.Integrated.1/Logs/FaultList",
+						},
+						"DateTimeLocalOffset": "+00:00",
+						"DateTime":            "TODO", //TODO
+						"Id":                  "FaultList",
+					}},
+			}, nil
+		})
+
+	s.RegisterAggregateFunction("faultlistentrycollection",
+		func(ctx context.Context, subLogger log.Logger, cfgMgr *viper.Viper, vw *view.View, extra interface{}, params map[string]interface{}) ([]eh.Command, error) {
+			return []eh.Command{
+				&domain.CreateRedfishResource{
+					ResourceURI: vw.GetURI(),
+					Type:        "#LogService.v1_0_2.LogService",
+					Context:     params["rooturi"].(string) + "/$metadata#LogService.LogService",
+					Privileges: map[string]interface{}{
+						"GET": []string{"Login"},
+					},
+					Properties: map[string]interface{}{
+						"Description":              "Providing additional health information for the devices which support rolled up health data",
+						"Name":                     "FaultList Entries Collection",
+						"Members@meta":             vw.Meta(view.GETProperty("members"), view.GETFormatter("formatOdataList"), view.GETModel("default")),
+						"Members@odata.count@meta": vw.Meta(view.GETProperty("members"), view.GETFormatter("count"), view.GETModel("default")),
+					}},
+			}, nil
+		})
+
 	return
 }
