@@ -87,7 +87,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	pumpSvc := NewPumpActionSvc(ctx, logger, eb)
 
 	subSystemSvc := subsystemhealth.New(ch, eb)
-	slotSvc := slots.New(ch, eb)
 	slotconfigSvc := slotconfig.New(ch, eb)
 
 	// the package for this is going to change, but this is what makes the various mappers and view functions available
@@ -486,7 +485,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		subSystemSvc.StartService(ctx, logger, sysChasVw, cfgMgr, instantiateSvc, ch, eb)
 
 		/*  Slots */
-		slotSvc.StartService(ctx, logger, sysChasVw, cfgMgr, instantiateSvc, modParams, ch, eb)
+		slots.CreateSlotCollection(ctx, sysChasVw, cfgMgr, instantiateSvc, modParams)
 
 		/* Slot config */
 		slotconfigSvc.StartService(ctx, logger, sysChasVw, cfgMgr, instantiateSvc, ch, eb)

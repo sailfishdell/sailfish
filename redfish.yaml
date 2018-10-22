@@ -483,6 +483,8 @@ views:
       "Controllers":
         - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + collection_uri" }
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "addslot", "uniquename": "'addslot_collection_' + collection_uri" }
       "View":
         - "fn": "with_URI"
           "params": "collection_uri"
@@ -663,6 +665,11 @@ awesome_mapper:
       - { SelectEventType: "RedfishResource:removed",
           Select: "nohash(data.ResourceURI) && baseuri(data.ResourceURI) == collection_uri ",
           ModelUpdate: [ {Property: "members", Query: "removefromset(model, propname, data.ResourceURI)", Default: 0} ]}
+
+    addslot:
+      - { SelectEventType: "ComponentEvent",
+          Select: "data.Type == 'Slot'",
+          Exec: [ "echo('hi: ', data.Type) && addslot(data.Id) && echo('DONE')" ]}
 
     testview:
       - { SelectEventType: "AttributeUpdated", Select: "type == 'AttributeUpdated' && data.FQDD == fqdd && data.Name == 'test'", ModelUpdate: [ {Property: "TEST", Query: "data.Value", Default: 0} ] }
