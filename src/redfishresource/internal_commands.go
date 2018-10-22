@@ -13,26 +13,20 @@ func init() {
 	eh.RegisterCommand(func() eh.Command { return &CreateRedfishResource{} })
 	eh.RegisterCommand(func() eh.Command { return &RemoveRedfishResource{} })
 	eh.RegisterCommand(func() eh.Command { return &UpdateRedfishResourceProperties{} })
-	eh.RegisterCommand(func() eh.Command { return &AddResourceToRedfishResourceCollection{} })
-	eh.RegisterCommand(func() eh.Command { return &RemoveResourceFromRedfishResourceCollection{} })
 	eh.RegisterCommand(func() eh.Command { return &InjectEvent{} })
 }
 
 const (
-	CreateRedfishResourceCommand                       = eh.CommandType("internal:RedfishResource:Create")
-	RemoveRedfishResourceCommand                       = eh.CommandType("internal:RedfishResource:Remove")
-	UpdateRedfishResourcePropertiesCommand             = eh.CommandType("internal:RedfishResourceProperties:Update")
-	AddResourceToRedfishResourceCollectionCommand      = eh.CommandType("internal:RedfishResourceCollection:Add")
-	RemoveResourceFromRedfishResourceCollectionCommand = eh.CommandType("internal:RedfishResourceCollection:Remove")
-	InjectEventCommand                                 = eh.CommandType("internal:Event:Inject")
+	CreateRedfishResourceCommand           = eh.CommandType("internal:RedfishResource:Create")
+	RemoveRedfishResourceCommand           = eh.CommandType("internal:RedfishResource:Remove")
+	UpdateRedfishResourcePropertiesCommand = eh.CommandType("internal:RedfishResourceProperties:Update")
+	InjectEventCommand                     = eh.CommandType("internal:Event:Inject")
 )
 
 // Static type checking for commands to prevent runtime errors due to typos
 var _ = eh.Command(&CreateRedfishResource{})
 var _ = eh.Command(&RemoveRedfishResource{})
 var _ = eh.Command(&UpdateRedfishResourceProperties{})
-var _ = eh.Command(&AddResourceToRedfishResourceCollection{})
-var _ = eh.Command(&RemoveResourceFromRedfishResourceCollection{})
 var _ = eh.Command(&InjectEvent{})
 
 var immutableProperties = []string{"@odata.id", "@odata.type", "@odata.context"}
@@ -50,7 +44,6 @@ type CreateRedfishResource struct {
 	Properties map[string]interface{} `eh:"optional"`
 	Meta       map[string]interface{} `eh:"optional"`
 	Private    map[string]interface{} `eh:"optional"`
-	Collection bool                   `eh:"optional"`
 }
 
 // AggregateType satisfies base Aggregate interface
@@ -111,16 +104,10 @@ func (c *CreateRedfishResource) Handle(ctx context.Context, a *RedfishResourceAg
 
 	a.PropertiesMu.Unlock()
 
-	// if command claims that this will be a collection, automatically set up the Members property
-	if c.Collection {
-		a.EnsureCollection()
-	}
-
 	// send out event that it's created first
 	a.PublishEvent(eh.NewEvent(RedfishResourceCreated, &RedfishResourceCreatedData{
 		ID:          c.ID,
 		ResourceURI: c.ResourceURI,
-		Collection:  c.Collection,
 	}, time.Now()))
 
 	// then send out possible notifications about changes in the properties or meta
@@ -205,55 +192,7 @@ func (c *UpdateRedfishResourceProperties) Handle(ctx context.Context, a *Redfish
 	return nil
 }
 
-type AddResourceToRedfishResourceCollection struct {
-	ID          eh.UUID `json:"id"`
-	ResourceURI string  // resource to add to the collection
-}
-
-// AggregateType satisfies base Aggregate interface
-func (c *AddResourceToRedfishResourceCollection) AggregateType() eh.AggregateType {
-	return AggregateType
-}
-
-// AggregateID satisfies base Aggregate interface
-func (c *AddResourceToRedfishResourceCollection) AggregateID() eh.UUID { return c.ID }
-
-// CommandType satisfies base Command interface
-func (c *AddResourceToRedfishResourceCollection) CommandType() eh.CommandType {
-	return AddResourceToRedfishResourceCollectionCommand
-}
-func (c *AddResourceToRedfishResourceCollection) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
-	a.AddCollectionMember(c.ResourceURI)
-	return nil
-}
-
-type RemoveResourceFromRedfishResourceCollection struct {
-	ID          eh.UUID `json:"id"`
-	ResourceURI string
-}
-
-// AggregateType satisfies base Aggregate interface
-func (c *RemoveResourceFromRedfishResourceCollection) AggregateType() eh.AggregateType {
-	return AggregateType
-}
-
-// AggregateID satisfies base Aggregate interface
-func (c *RemoveResourceFromRedfishResourceCollection) AggregateID() eh.UUID { return c.ID }
-
-// CommandType satisfies base Command interface
-func (c *RemoveResourceFromRedfishResourceCollection) CommandType() eh.CommandType {
-	return RemoveResourceFromRedfishResourceCollectionCommand
-}
-func (c *RemoveResourceFromRedfishResourceCollection) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
-	a.RemoveCollectionMember(c.ResourceURI)
-	return nil
-}
-
 // gross layering violation, but to avoid import cycles, moved the events here for now
-type AttributeArrayUpdatedData struct {
-	Attributes []AttributeUpdatedData
-}
-
 type AttributeUpdatedData struct {
 	ReqID eh.UUID
 	FQDD  string

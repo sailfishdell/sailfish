@@ -73,8 +73,8 @@ func AddAggregate(ctx context.Context, root *view.View, v *view.View, ch eh.Comm
 	ch.HandleCommand(
 		ctx,
 		&domain.CreateRedfishResource{
-			ID:         eh.NewUUID(),
-			Collection: true,
+			ID: eh.NewUUID(),
+			// Collection: true, // FIXME: collection code removed, move this to awesome mapper collection instead
 
 			ResourceURI: v.GetURI() + "/FirmwareInventory",
 			Type:        "#SoftwareInventoryCollection.SoftwareInventoryCollection",

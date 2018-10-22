@@ -144,17 +144,17 @@ func (s *Service) InstantiateFromCfg(ctx context.Context, cfgMgr *viper.Viper, n
 	for _, viewFn := range config.View {
 		viewFnName, ok := viewFn["fn"]
 		if !ok {
-			subLogger.Crit("Missing function name")
+			subLogger.Crit("Missing function name", "name", name, "subsection", "View")
 			continue
 		}
 		viewFnNameStr := viewFnName.(string)
 		if !ok {
-			subLogger.Crit("fn name isnt a string")
+			subLogger.Crit("fn name isnt a string", "name", name, "subsection", "View")
 			continue
 		}
 		viewFnParams, ok := viewFn["params"]
 		if !ok {
-			subLogger.Crit("Missing function parameters")
+			subLogger.Crit("Missing function parameters", "name", name, "subsection", "View")
 			continue
 		}
 		fn := s.GetViewFunction(viewFnNameStr)
@@ -169,17 +169,17 @@ func (s *Service) InstantiateFromCfg(ctx context.Context, cfgMgr *viper.Viper, n
 	for _, controllerFn := range config.Controllers {
 		controllerFnName, ok := controllerFn["fn"]
 		if !ok {
-			subLogger.Crit("Missing function name")
+			subLogger.Crit("Missing function name", "name", name, "subsection", "Controllers")
 			continue
 		}
 		controllerFnNameStr := controllerFnName.(string)
 		if !ok {
-			subLogger.Crit("fn name isnt a string")
+			subLogger.Crit("fn name isnt a string", "name", name, "subsection", "Controllers")
 			continue
 		}
 		controllerFnParams, ok := controllerFn["params"]
 		if !ok {
-			subLogger.Crit("Missing function parameters")
+			subLogger.Crit("Missing function parameters", "name", name, "subsection", "Controllers", "function", controllerFnNameStr)
 			continue
 		}
 		fn := s.GetControllerFunction(controllerFnNameStr)

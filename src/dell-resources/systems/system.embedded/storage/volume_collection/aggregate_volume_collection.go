@@ -14,8 +14,8 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 	ch.HandleCommand(
 		ctx,
 		&domain.CreateRedfishResource{
-			ID:          v.GetUUID(),
-			Collection:  true,
+			ID: v.GetUUID(),
+			// Collection:  true, // FIXME: collection code removed, move this to awesome mapper collection instead
 			ResourceURI: v.GetURI(),
 			Type:        "#VolumeCollection.VolumeCollection",
 			Context:     "/redfish/v1/$metadata#VolumeCollection.VolumeCollection",

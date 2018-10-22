@@ -1,4 +1,4 @@
-package component
+package slots
 
 import (
 	eh "github.com/looplab/eventhorizon"

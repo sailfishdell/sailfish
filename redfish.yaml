@@ -564,7 +564,6 @@ views:
         - "fn": "with_URI"
           "params": "rooturi + '/SubSystemHealth'"
 
-
   "slotcollection":
       "Logger": ["module", "slot"]
       "Models":
@@ -580,8 +579,6 @@ views:
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
         - "fn": "withFormatter_count"
-          "params":
-        - "fn": "withFormatter_attributeFormatter"
           "params":
         - "fn": "withFormatter_formatOdataList"
           "params":
@@ -602,6 +599,27 @@ views:
       "Aggregate": "slot"
 
 
+  "slotconfigcollection":
+      "Logger": ["module", "slotconfig"]
+      "Models":
+        "default": {}
+      "Controllers":
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + collection_uri" }
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "addslotconfig", "uniquename": "'addslotconfig_collection_' + collection_uri" }
+      "View":
+        - "fn": "with_URI"
+          "params": "collection_uri"
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+        - "fn": "withFormatter_count"
+          "params":
+        - "fn": "withFormatter_formatOdataList"
+          "params":
+      "Aggregate": "slotconfigcollection"
+
+
   "slotconfig":
       "Logger": ["module", "slotconfig"]
       "Models":
@@ -611,9 +629,10 @@ views:
           "params": {"modelname": "default", "cfgsection": "slotconfig", "uniquename": "'slot:' + FQDD"}
       "View":
         - "fn": "with_URI"
-          "params": "slotcfguri"
+          "params": "collection_uri + '/' + FQDD"
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
+      "Aggregate": "slotconfig"
 
   "sled":
       "Logger": ["module", "Sled"]
@@ -759,6 +778,11 @@ awesome_mapper:
       - { SelectEventType: "ComponentEvent",
           Select: "data.Type == 'Slot'",
           Exec: [ "addslot(data.Id)" ]}
+
+    addslotconfig:
+      - { SelectEventType: "ComponentEvent",
+          Select: "data.Type == 'SlotConfig'",
+          Exec: [ "addslotconfig(data.Id)" ]}
 
     testview:
       - { SelectEventType: "AttributeUpdated", Select: "type == 'AttributeUpdated' && data.FQDD == fqdd && data.Name == 'test'", ModelUpdate: [ {Property: "TEST", Query: "data.Value", Default: 0} ] }

@@ -11,6 +11,7 @@ import (
 
 	"github.com/superchalupa/sailfish/src/actionhandler"
 	ah "github.com/superchalupa/sailfish/src/actionhandler"
+	"github.com/superchalupa/sailfish/src/dell-ec/slots"
 	"github.com/superchalupa/sailfish/src/dell-resources/ar_mapper2"
 	"github.com/superchalupa/sailfish/src/dell-resources/attributes"
 	"github.com/superchalupa/sailfish/src/dell-resources/certificateservices"
@@ -32,8 +33,6 @@ import (
 	mgrCMCIntegrated "github.com/superchalupa/sailfish/src/dell-resources/managers/cmc.integrated"
 	"github.com/superchalupa/sailfish/src/dell-resources/redundancy"
 	"github.com/superchalupa/sailfish/src/dell-resources/registries"
-	"github.com/superchalupa/sailfish/src/dell-resources/slots"
-	"github.com/superchalupa/sailfish/src/dell-resources/slots/slotconfig"
 	"github.com/superchalupa/sailfish/src/dell-resources/update_service"
 	"github.com/superchalupa/sailfish/src/dell-resources/update_service/firmware_inventory"
 	"github.com/superchalupa/sailfish/src/eventwaiter"
@@ -87,7 +86,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	pumpSvc := NewPumpActionSvc(ctx, logger, eb)
 
 	subSystemSvc := subsystemhealth.New(ch, eb)
-	slotconfigSvc := slotconfig.New(ch, eb)
 
 	// the package for this is going to change, but this is what makes the various mappers and view functions available
 	instantiateSvc := testaggregate.New(logger, ch)
@@ -482,28 +480,26 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		//*********************************************************************
 		// Create SubSystemHealth for System.Chassis.1
 		//*********************************************************************
-		/*subSysHealthLogger := sysChasLogger.New("module", "Chassis/System.Chassis/SubSystemHealth")
-		subSysHealthModel := model.New()
+		/*
+			subSysHealthLogger := sysChasLogger.New("module", "Chassis/System.Chassis/SubSystemHealth")
+			subSysHealthModel := model.New()
 
-		armapper := arService.NewMapping(subSysHealthLogger, "Chassis/"+chasName+"/SubSystemHealth", "Chassis/SubSystemHealths", subSysHealthModel, map[string]string{})
+			armapper := arService.NewMapping(subSysHealthLogger, "Chassis/"+chasName+"/SubSystemHealth", "Chassis/SubSystemHealths", subSysHealthModel, map[string]string{})
 
-		subSysHealthView := view.New(
-			view.WithURI(rootView.GetURI()+"/Chassis/"+chasName+"/SubSystemHealth"),
-			view.WithModel("default", subSysHealthModel),
-			view.WithController("ar_mapper", armapper),
-		)
+			subSysHealthView := view.New(
+				view.WithURI(rootView.GetURI()+"/Chassis/"+chasName+"/SubSystemHealth"),
+				view.WithModel("default", subSysHealthModel),
+				view.WithController("ar_mapper", armapper),
+			)
+			subsystemhealth.AddAggregate(ctx, subSysHealthLogger, subSysHealthView, ch, eb)
+		*/
 
-
-		subsystemhealth.AddAggregate(ctx, subSysHealthLogger, subSysHealthView, ch, eb)*/
 		/* SubSystemHealth */
 		subSystemSvc.StartService(ctx, logger, sysChasVw, cfgMgr, instantiateSvc, ch, eb)
 
 		/*  Slots */
 		slots.CreateSlotCollection(ctx, sysChasVw, cfgMgr, instantiateSvc, modParams)
-
-		/* Slot config */
-		slotconfigSvc.StartService(ctx, logger, sysChasVw, cfgMgr, instantiateSvc, ch, eb)
-
+		slots.CreateSlotConfigCollection(ctx, sysChasVw, cfgMgr, instantiateSvc, modParams)
 	}
 
 	// ************************************************************************
