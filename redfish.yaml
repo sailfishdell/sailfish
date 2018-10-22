@@ -669,7 +669,7 @@ awesome_mapper:
     addslot:
       - { SelectEventType: "ComponentEvent",
           Select: "data.Type == 'Slot'",
-          Exec: [ "echo('hi: ', data.Type) && addslot(data.Id) && echo('DONE')" ]}
+          Exec: [ "addslot(data.Id)" ]}
 
     testview:
       - { SelectEventType: "AttributeUpdated", Select: "type == 'AttributeUpdated' && data.FQDD == fqdd && data.Name == 'test'", ModelUpdate: [ {Property: "TEST", Query: "data.Value", Default: 0} ] }
