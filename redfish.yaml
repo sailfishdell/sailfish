@@ -235,6 +235,95 @@ views:
         - "fn": "withFormatter_formatOdataList"
           "params":
 
+  "logservices":
+      "Logger": ["module", "lclog"]
+      "Models":
+        "default":  {}
+      "Controllers":
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + collection_uri" }
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/Managers/' + FQDD + '/LogServices'"
+        - "fn": "withFormatter_formatOdataList"
+          "params":
+        - "fn": "withFormatter_count"
+          "params":
+      "Aggregate": "logservices"
+
+  "lclogservices":
+      "Logger": ["module", "lclog"]
+      "Controllers":
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/Managers/' + FQDD + '/LogServices/Lclog'"
+      "Aggregate": "lclogservices"
+
+  "lclogentrycollection":
+      "Logger": ["module", "lclog"]
+      "Models":
+        "default":  {}
+      "Controllers":
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + collection_uri" }
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/Managers/' + FQDD + '/Logs/Lclog'"
+        - "fn": "withFormatter_formatOdataList"
+          "params":
+        - "fn": "withFormatter_count"
+          "params":
+      "Aggregate": "lclogentrycollection"
+
+  "lclogentry":
+      "Logger": ["module", "lclog"]
+      "Controllers":
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/Managers/' + FQDD + '/Logs/Lclog/' + uuid"
+      "Aggregate": "lclogentry"
+
+
+
+  "faultlistservices":
+      "Logger": ["module", "lclog"]
+      "Controllers":
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/Managers/' + FQDD + '/LogServices/FaultList'"
+      "Aggregate": "faultlistservices"
+
+  "faultlistentrycollection":
+      "Logger": ["module", "lclog"]
+      "Models":
+        "default":  {}
+      "Controllers":
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + collection_uri" }
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/Managers/' + FQDD + '/Logs/FaultList'"
+        - "fn": "withFormatter_formatOdataList"
+          "params":
+        - "fn": "withFormatter_count"
+          "params":
+      "Aggregate": "faultlistentrycollection"
+
+
+  "faultlistentry":
+      "Logger": ["module", "lclog"]
+      "Controllers":
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + collection_uri" }
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/Managers/' + FQDD + '/Logs/FaultList/' + uuid"
+      "Aggregate": "faultlistentry"
+
+
+
+
+
   "chassis_cmc_integrated":
       "Logger": ["module", "ChassisCMCInt"]
       "Models":
