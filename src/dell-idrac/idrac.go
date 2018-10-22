@@ -23,6 +23,7 @@ import (
 	"github.com/superchalupa/sailfish/src/ocp/awesome_mapper2"
 	"github.com/superchalupa/sailfish/src/ocp/event"
 	"github.com/superchalupa/sailfish/src/ocp/eventservice"
+	"github.com/superchalupa/sailfish/src/ocp/model"
 	"github.com/superchalupa/sailfish/src/ocp/session"
 	"github.com/superchalupa/sailfish/src/ocp/stdcollections"
 	"github.com/superchalupa/sailfish/src/ocp/telemetryservice"
@@ -36,12 +37,13 @@ import (
 	_ "github.com/superchalupa/sailfish/src/dell-resources/dm_event"
 
 	// goal is to get rid of the _ in front of each of these....
-	_ "github.com/superchalupa/sailfish/src/dell-resources/systems/system.embedded/storage"
-	_ "github.com/superchalupa/sailfish/src/dell-resources/systems/system.embedded/storage/controller"
-	_ "github.com/superchalupa/sailfish/src/dell-resources/systems/system.embedded/storage/drive"
-	_ "github.com/superchalupa/sailfish/src/dell-resources/systems/system.embedded/storage/storage_collection"
-	_ "github.com/superchalupa/sailfish/src/dell-resources/systems/system.embedded/storage/volume"
-	_ "github.com/superchalupa/sailfish/src/dell-resources/systems/system.embedded/storage/volume_collection"
+	mgrCMCIntegrated "github.com/superchalupa/sailfish/src/dell-resources/managers/cmc.integrated"
+	"github.com/superchalupa/sailfish/src/dell-resources/systems/system.embedded/storage"
+	"github.com/superchalupa/sailfish/src/dell-resources/systems/system.embedded/storage/controller"
+	"github.com/superchalupa/sailfish/src/dell-resources/systems/system.embedded/storage/drive"
+	"github.com/superchalupa/sailfish/src/dell-resources/systems/system.embedded/storage/storage_collection"
+	"github.com/superchalupa/sailfish/src/dell-resources/systems/system.embedded/storage/volume"
+	"github.com/superchalupa/sailfish/src/dell-resources/systems/system.embedded/storage/volume_collection"
 )
 
 type ocp struct {
@@ -111,7 +113,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	//*********************************************************************
 	//  /redfish/v1/testview - a proof of concept test view and example
 	//*********************************************************************
-	instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "testview", map[string]interface{}{"rooturi": rootView.GetURI(), "fqdd": "System.Modular.1"})
+	instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "testview", baseParams)
 
 	//*********************************************************************
 	//  /redfish/v1/{Managers,Chassis,Systems,Accounts}
@@ -159,7 +161,38 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, regName, map[string]interface{}{"location": location, "rooturi": rootView.GetURI()})
 	}
 
-	// storage_enclosure_items := []string{}
+	// various things are "managed" by the managers, create a global to hold the views so we can make references
+	//	var managers []*view.View
+
+	mgrName := "iDRAC.Embedded.1"
+
+	//*********************************************************************
+	// /redfish/v1/Managers/iDRAC.Embedded.1
+	//*********************************************************************
+
+	mgrLogger, mgrCmcVw, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "idrac_embedded",
+		map[string]interface{}{
+			"rooturi":  rootView.GetURI(),
+			"FQDD":     mgrName,                                   // this is used for the AR mapper. case difference is confusing, but need to change mappers
+			"fqdd":     "System.Chassis.1#SubSystem.1#" + mgrName, // This is used for the health subsystem
+			"fqddlist": []string{mgrName},
+		},
+	)
+
+	//	managers = append(managers, mgrCmcVw)
+	//	swinvViews = append(swinvViews, mgrCmcVw)
+
+	// add the aggregate to the view tree
+	mgrCMCIntegrated.AddAggregate(ctx, mgrLogger, mgrCmcVw, ch)
+	attributes.AddAggregate(ctx, mgrCmcVw, rootView.GetURI()+"/Managers/"+mgrName+"/Attributes", ch)
+
+	//end
+
+	storage_enclosure_items := []string{}
+	storage_instance_items := []string{}
+	storage_controller_items := []string{}
+	storage_drive_items := []string{}
+	storage_vol_items := []string{}
 
 	{
 		// ************************************************************************
@@ -185,19 +218,113 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		// ##################
 		// # Storage Enclosure
 		// ##################
-		fmt.Printf("Startup for enclosure")
+		fmt.Printf("Startup for enclosure\n")
 
 		strgCntlrLogger, sysStorEnclsrCtrlVw, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "storage_enclosure",
 			map[string]interface{}{
 				"rooturi": rootView.GetURI(),
-				"FQDD":    "test.fqdd",
+				"FQDD":    "Enclosure.Internal.0-1:RAID.Slot.4-1",
 			},
 		)
 
 		storage_enclosure.AddAggregate(ctx, strgCntlrLogger, sysStorEnclsrCtrlVw, ch)
-		// storage_enclosure_items = append(storage_enclosure_items, sysStorEnclsrCtrlVw.GetURI())
-		//sysStorEnclsrCtrlVw.GetModel("default").ApplyOption(model.UpdateProperty("link_uris", storage_enclosure_items))
+		storage_enclosure_items = append(storage_enclosure_items, sysStorEnclsrCtrlVw.GetURI())
+		sysStorEnclsrCtrlVw.GetModel("default").ApplyOption(model.UpdateProperty("link_uris", storage_enclosure_items))
 
+		// ##################
+		// # Storage Instance
+		// ##################
+		fmt.Printf("Startup for Storage instance\n")
+
+		strgInstanceLogger, sysStorInstanceCtrlVw, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "storage_instance",
+			map[string]interface{}{
+				"rooturi": rootView.GetURI(),
+				"FQDD":    "RAID.Slot.4-1",
+			},
+		)
+
+		storage_instance.AddAggregate(ctx, strgInstanceLogger, sysStorInstanceCtrlVw, ch)
+		storage_instance_items = append(storage_instance_items, sysStorInstanceCtrlVw.GetURI())
+		sysStorInstanceCtrlVw.GetModel("default").ApplyOption(model.UpdateProperty("link_uris", storage_instance_items))
+
+		// ##################
+		// # Storage controller
+		// ##################
+		fmt.Printf("Startup for Storage controller\n")
+
+		strgControllerLogger, sysStorControllerCtrlVw, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "storage_controller",
+			map[string]interface{}{
+				"rooturi": rootView.GetURI(),
+				"FQDD":    "RAID.Slot.4-1",
+			},
+		)
+
+		storage_controller.AddAggregate(ctx, strgControllerLogger, sysStorControllerCtrlVw, ch)
+		storage_controller_items = append(storage_controller_items, sysStorControllerCtrlVw.GetURI())
+		sysStorControllerCtrlVw.GetModel("default").ApplyOption(model.UpdateProperty("link_uris", storage_controller_items))
+
+		// ##################
+		// # Storage drive
+		// ##################
+		fmt.Printf("Startup for Storage drive\n")
+
+		strgDriveLogger, sysStorDriveCtrlVw, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "storage_drive",
+			map[string]interface{}{
+				"rooturi": rootView.GetURI(),
+				"FQDD":    "Disk.Bay.0:Enclosure.Internal.0-1:RAID.Slot.4-1",
+			},
+		)
+
+		storage_drive.AddAggregate(ctx, strgDriveLogger, sysStorDriveCtrlVw, ch)
+		storage_drive_items = append(storage_drive_items, sysStorDriveCtrlVw.GetURI())
+		sysStorDriveCtrlVw.GetModel("default").ApplyOption(model.UpdateProperty("link_uris", storage_drive_items))
+
+		// ##################
+		// # Storage volume
+		// ##################
+		fmt.Printf("Startup for Storage volume\n")
+
+		strgVolLogger, sysStorVolCtrlVw, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "storage_volume",
+			map[string]interface{}{
+				"rooturi": rootView.GetURI(),
+				"FQDD":    "Disk.Virtual.0:RAID.Slot.4-1",
+			},
+		)
+
+		storage_volume.AddAggregate(ctx, strgVolLogger, sysStorVolCtrlVw, ch)
+		storage_vol_items = append(storage_vol_items, sysStorVolCtrlVw.GetURI())
+		sysStorVolCtrlVw.GetModel("default").ApplyOption(model.UpdateProperty("link_uris", storage_vol_items))
+
+		// ##################
+		// # Storage volume Collection
+		// ##################
+		fmt.Printf("Startup for Storage volume collection\n")
+
+		strgVolCollLogger, sysStorVolCollCtrlVw, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "storage_volume_collection",
+			map[string]interface{}{
+				"rooturi": rootView.GetURI(),
+				"FQDD":    "RAID.Slot.4-1",
+			},
+		)
+
+		storage_volume_collection.AddAggregate(ctx, strgVolCollLogger, sysStorVolCollCtrlVw, ch)
+		//storage_vol_coll_items = append(storage_vol_coll_items, sysStorVolCollCtrlVw.GetURI())
+		//sysStorVolCollCtrlVw.GetModel("default").ApplyOption(model.UpdateProperty("link_uris", storage_vol_coll_items))
+		// ##################
+		// # Storage Collection
+		// ##################
+		fmt.Printf("Startup for Storage collection\n")
+
+		strgCollLogger, sysStorCollCtrlVw, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "storage_collection",
+			map[string]interface{}{
+				"rooturi": rootView.GetURI(),
+				//"FQDD":    "RAID.Slot.4-1",
+			},
+		)
+
+		storage_collection.AddAggregate(ctx, strgCollLogger, sysStorCollCtrlVw, ch)
+		//storage_coll_items = append(storage_coll_items, sysStorCollCtrlVw.GetURI())
+		//sysStorCollCtrlVw.GetModel("default").ApplyOption(model.UpdateProperty("link_uris", storage_coll_items))
 	}
 
 	return self

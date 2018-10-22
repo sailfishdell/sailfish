@@ -16,21 +16,19 @@ views:
       "View":
         - "fn": "with_URI"
           "params": "'/redfish/v1'"
+      "Aggregate": "root"
 
   "testview":
       "Logger": ["module", "testview"]
       "Models":
         "default":  {"unique_name": "'TEST_Unique_Name'", "name": "'TEST_Name'", "'description'": "'TEST_Description'" }
       "Controllers":
-        - "fn": "AwesomeMapper"
-          "params": {"modelname": "default", "cfgsection": "testview" }
-        - "fn": "ARMapper"
-          "params": {"modelname": "default", "cfgsection": "testview", "mappinguniquename": "'/redfish/v1/testservice'", "AddToView": true}
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/testview'"
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
+      "Aggregate": "registry_collection"
 
   "sessionservice":
       "Logger": ["module", "session"]
@@ -76,6 +74,7 @@ views:
         - "fn": "with_URI"
           "params": "rooturi + '/SessionService/Sessions/' + uuid"
       "Aggregate": "session"
+
 
   "registries":
       "Logger": ["module", "registry"]
@@ -137,6 +136,169 @@ views:
         - "fn": "withFormatter_count"
           "params":
 
+  "sessioncollection":
+      "Logger": ["module", "session"]
+      "Models":
+        "default":  {}
+      "Controllers":
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + collection_uri" }
+        - "fn": "ARMapper"
+          "params": {"modelname": "default", "cfgsection": "SessionService", "mappinguniquename": "'/redfish/v1/SessionService/Sessions'", "AddToView": true}
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/SessionService/Sessions'"
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+        - "fn": "withFormatter_formatOdataList"
+          "params":
+        - "fn": "withFormatter_count"
+          "params":
+      "Aggregate": "sessioncollection"
+
+  "session":
+      "Logger": ["module", "session"]
+      "Models":
+      "Controllers":
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/SessionService/Sessions/' + uuid"
+      "Aggregate": "session"
+
+  "chassis":
+      "Logger": ["module", "Chassis"]
+      "Models":
+        "default":  {"members":"''"}
+      "Controllers":
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + collection_uri" }
+      "View":
+        - "fn": "with_URI"
+          "params": "collection_uri "
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+        - "fn": "withFormatter_formatOdataList"
+          "params":
+        - "fn": "withFormatter_count"
+          "params":
+      "Aggregate": "chassis"
+
+  "systems":
+      "Logger": ["module", "Systems"]
+      "Models":
+        "default":  {"members":"''"}
+      "Controllers":
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + collection_uri" }
+      "View":
+        - "fn": "with_URI"
+          "params": "collection_uri "
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+        - "fn": "withFormatter_formatOdataList"
+          "params":
+        - "fn": "withFormatter_count"
+          "params":
+      "Aggregate": "systems"
+
+  "managers":
+      "Logger": ["module", "Managers"]
+      "Models":
+        "default":  {"members":"''"}
+      "Controllers":
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + collection_uri" }
+      "View":
+        - "fn": "with_URI"
+          "params": "collection_uri "
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+        - "fn": "withFormatter_formatOdataList"
+          "params":
+        - "fn": "withFormatter_count"
+          "params":
+      "Aggregate": "managers"
+
+  "roles":
+      "Logger": ["module", "Roles"]
+      "Models":
+        "default":  {"members":"''"}
+      "Controllers":
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + collection_uri" }
+      "View":
+        - "fn": "with_URI"
+          "params": "collection_uri "
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+        - "fn": "withFormatter_formatOdataList"
+          "params":
+        - "fn": "withFormatter_count"
+          "params":
+      "Aggregate": "roles"
+
+  "accountservice":
+      "Logger": ["module", "AccountService"]
+      "Models":
+        "default":  {}
+      "Controllers":
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/AccountService' "
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+        - "fn": "withFormatter_formatOdataList"
+          "params":
+        - "fn": "withFormatter_count"
+          "params":
+      "Aggregate": "accountservice"
+
+  "accounts":
+      "Logger": ["module", "Accounts"]
+      "Models":
+        "default":  {"members":"''"}
+      "Controllers":
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + collection_uri" }
+      "View":
+        - "fn": "with_URI"
+          "params": "collection_uri "
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+        - "fn": "withFormatter_formatOdataList"
+          "params":
+        - "fn": "withFormatter_count"
+          "params":
+      "Aggregate": "accounts"
+
+
+  "idrac_embedded":
+      "Logger": ["module", "mgrChassis"]
+      "Models":
+        "default":  {"unique_name": "FQDD", "unique_name_attr": "FQDD+'.Attributes'", "attributes": "add_attribute_property()"}
+      "Controllers":
+        - "fn": "ARMapper"
+          "params": {"modelname": "default", "cfgsection": "firmware/inventory", "mappinguniquename": "'fw_mapper:' + FQDD ", "AddToView": true}
+        - "fn": "ARMapper"
+          "params": {"modelname": "default", "cfgsection": "Managers/CMC.Integrated", "mappinguniquename": "'manager_mapper:' + FQDD ", "AddToView": true}
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "health", "uniquename": "'am2_manager_' + FQDD" }
+        - "fn": "ARDumper"
+          "params": {"modelname": "default", "AddToView": true}
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/Managers/' + FQDD"
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+        - "fn": "withFormatter_attributeFormatter"
+          "params":
+        - "fn": "withFormatter_expand"
+          "params":
+        - "fn": "withFormatter_count"
+          "params":
+
+
+
   "system_chassis":
       "Logger": ["module", "system_chassis"]
       "Models":
@@ -179,102 +341,119 @@ views:
         - "fn": "withFormatter_formatOdataList"
           "params":
 
-  "chassis":
-      "Logger": ["module", "Chassis"]
+  "storage_controller":
+      "Logger": ["module", "StorageController"]
       "Models":
-        "default":  {}
+        "default":  {"unique_name": "FQDD", "unique_name_attr": "FQDD+'.Attributes'", "attributes": "add_attribute_property()"}
       "Controllers":
-        - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + collection_uri" }
       "View":
         - "fn": "with_URI"
-          "params": "collection_uri "
+          "params": "rooturi + '/Systems/System.Embedded.1/StorageControllers/' + FQDD "
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
+        - "fn": "withFormatter_count"
+          "params":
+        - "fn": "withFormatter_expand"
+          "params":
+        - "fn": "withFormatter_expandone"
+          "params":
         - "fn": "withFormatter_formatOdataList"
           "params":
-      "Aggregate": "chassis"
 
-  "systems":
-      "Logger": ["module", "Systems"]
+  "storage_drive":
+      "Logger": ["module", "StorageDrive"]
       "Models":
-        "default":  {}
+        "default":  {"unique_name": "FQDD", "unique_name_attr": "FQDD+'.Attributes'", "attributes": "add_attribute_property()"}
       "Controllers":
-        - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + collection_uri" }
       "View":
         - "fn": "with_URI"
-          "params": "collection_uri "
+          "params": "rooturi + '/Systems/System.Embedded.1/Storage/Drives/' + FQDD "
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
+        - "fn": "withFormatter_count"
+          "params":
+        - "fn": "withFormatter_expand"
+          "params":
+        - "fn": "withFormatter_expandone"
+          "params":
         - "fn": "withFormatter_formatOdataList"
           "params":
-      "Aggregate": "systems"
 
-  "managers":
-      "Logger": ["module", "Managers"]
-      "Models":
-        "default":  {}
-      "Controllers":
-        - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + collection_uri" }
-      "View":
-        - "fn": "with_URI"
-          "params": "collection_uri "
-        - "fn": "PublishResourceUpdatedEventsForModel"
-          "params": "default"
-        - "fn": "withFormatter_formatOdataList"
-          "params":
-      "Aggregate": "managers"
-
-  "roles":
-      "Logger": ["module", "Roles"]
-      "Models":
-        "default":  {}
-      "Controllers":
-        - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + collection_uri" }
-      "View":
-        - "fn": "with_URI"
-          "params": "collection_uri "
-        - "fn": "PublishResourceUpdatedEventsForModel"
-          "params": "default"
-        - "fn": "withFormatter_formatOdataList"
-          "params":
-      "Aggregate": "roles"
-
-  "accountservice":
-      "Logger": ["module", "AccountService"]
+  "storage_collection":
+      "Logger": ["module", "StorageCollection"]
       "Models":
         "default":  {}
       "Controllers":
       "View":
         - "fn": "with_URI"
-          "params": "rooturi + '/AccountService' "
+          "params": "rooturi + '/Systems/System.Embedded.1/Storage/'"
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
+        - "fn": "withFormatter_count"
+          "params":
+        - "fn": "withFormatter_expand"
+          "params":
+        - "fn": "withFormatter_expandone"
+          "params":
         - "fn": "withFormatter_formatOdataList"
           "params":
-      "Aggregate": "accountservice"
 
-  "accounts":
-      "Logger": ["module", "Accounts"]
+  "storage_instance":
+      "Logger": ["module", "StorageInstance"]
       "Models":
-        "default":  {}
+        "default":  {"unique_name": "FQDD", "unique_name_attr": "FQDD+'.Attributes'", "attributes": "add_attribute_property()"}
       "Controllers":
-        - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + collection_uri" }
       "View":
         - "fn": "with_URI"
-          "params": "collection_uri "
+          "params": "rooturi + '/Systems/System.Embedded.1/Storage/' + FQDD "
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
+        - "fn": "withFormatter_count"
+          "params":
+        - "fn": "withFormatter_expand"
+          "params":
+        - "fn": "withFormatter_expandone"
+          "params":
         - "fn": "withFormatter_formatOdataList"
           "params":
-      "Aggregate": "accounts"
 
+  "storage_volume":
+      "Logger": ["module", "StorageVolume"]
+      "Models":
+        "default":  {"unique_name": "FQDD", "unique_name_attr": "FQDD+'.Attributes'", "attributes": "add_attribute_property()"}
+      "Controllers":
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/Systems/System.Embedded.1/Storage/Volumes/' + FQDD "
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+        - "fn": "withFormatter_count"
+          "params":
+        - "fn": "withFormatter_expand"
+          "params":
+        - "fn": "withFormatter_expandone"
+          "params":
+        - "fn": "withFormatter_formatOdataList"
+          "params":
 
-
+  "storage_volume_collection":
+      "Logger": ["module", "StorageVolumeCollection"]
+      "Models":
+        "default":  {"unique_name": "FQDD", "unique_name_attr": "FQDD+'.Attributes'", "attributes": "add_attribute_property()"}
+      "Controllers":
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/Systems/System.Embedded.1/Storage/' + FQDD  +'/Volumes'"
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+        - "fn": "withFormatter_count"
+          "params":
+        - "fn": "withFormatter_expand"
+          "params":
+        - "fn": "withFormatter_expandone"
+          "params":
+        - "fn": "withFormatter_formatOdataList"
+          "params":
 
 awesome_mapper:
     collection:
@@ -311,3 +490,59 @@ mappings:
         - {Property: "slot_count",   FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "SlotCount" }
         - {Property: "version",      FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Version" }
         - {Property: "wired_order",  FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "WiredOrder" }
+
+    Storage/Instance:
+        - {Property: "name",         FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Name" }
+        - {Property: "firmware_version",    FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "FirmwareVersion" }
+        - {Property: "manufacturer", FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Manufacturer" }
+        - {Property: "member_id", FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "MemberId" }
+        - {Property: "model",        FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Model" }
+        - {Property: "speed",  FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "SpeedGbps" }
+
+    Storage/Controller:
+        - {Property: "name",         FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Name" }
+        - {Property: "firmware_version",    FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "FirmwareVersion" }
+        - {Property: "manufacturer", FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Manufacturer" }
+        - {Property: "member_id", FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "MemberId" }
+        - {Property: "model",        FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Model" }
+        - {Property: "speed",  FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "SpeedGbps" }
+
+    Storage/Drive:
+        - {Property: "block_size",    FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "BlockSizeBytes" }
+        - {Property: "capable_speed", FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "CapableSpeedGbs" }
+        - {Property: "description",  FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Description" }
+        - {Property: "capacity", FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "CapacityBytes" }
+        - {Property: "encryption_ability",        FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "EncryptionAbility" }
+        - {Property: "encryption_status",         FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "EncryptionStatus" }
+        - {Property: "failure_predicted",  FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "FailurePredicted" }
+        - {Property: "hotspare_type",  FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "HotspareType" }
+        - {Property: "id",          FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Id" }
+        - {Property: "manufacturer", FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Manufacturer" }
+        - {Property: "media_type",  FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "MediaType" }
+        - {Property: "model",        FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Model" }
+        - {Property: "name",         FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Name" }
+        - {Property: "negotiated_speed",  FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "NegotiatedSpeedGbs" }
+        - {Property: "part_number",  FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "PartNumber" }
+        - {Property: "predicted_media_life_left",  FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "PredictedMediaLifeLeftPercent" }
+        - {Property: "protocol",       FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Protocol" }
+        - {Property: "revision",       FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Revision" }
+        - {Property: "rotation_speed",       FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "RotationSpeedRPM" }
+        - {Property: "serial",       FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "SerialNumber" }
+
+    Storage/Volume:
+        - {Property: "block_size",    FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "BlockSizeBytes" }
+        - {Property: "capacity", FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "CapacityBytes" }
+        - {Property: "description",  FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Description" }
+        - {Property: "encrypted", FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Encrypted" }
+        - {Property: "id",        FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Id" }
+        - {Property: "name",         FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Name" }
+        - {Property: "optimum_io_size",  FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "OptimumIOSizeBytes" }
+        - {Property: "volume_type",  FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "VolumeType" }
+
+    Storage/Collection:
+        - {Property: "description",  FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Description" }
+        - {Property: "name",         FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Name" }
+
+    Storage/VolumeCollection:
+        - {Property: "description",  FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Description" }
+        - {Property: "name",         FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Name" }
