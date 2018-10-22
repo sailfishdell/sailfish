@@ -2,6 +2,7 @@ package awesome_mapper2
 
 import (
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path"
@@ -29,6 +30,12 @@ func AddFunction(name string, fn func(args ...interface{}) (interface{}, error))
 
 func init() {
 	initFunctions()
+
+	AddFunction("echo", func(args ...interface{}) (interface{}, error) {
+		fmt.Println(args...)
+		return true, nil
+	})
+
 	AddFunction("int", func(args ...interface{}) (interface{}, error) {
 		switch t := args[0].(type) {
 		case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, uintptr:
