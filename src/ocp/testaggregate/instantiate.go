@@ -198,7 +198,7 @@ func (s *Service) InstantiateFromCfg(ctx context.Context, cfgMgr *viper.Viper, n
 		}
 		fn := s.GetAggregateFunction(config.Aggregate)
 		if fn == nil {
-			subLogger.Crit("invalid aggregate function")
+			subLogger.Crit("invalid aggregate function", "aggregate", config.Aggregate)
 			return
 		}
 		cmds, err := fn(ctx, subLogger, cfgMgr, vw, nil, newParams)
