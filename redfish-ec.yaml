@@ -56,7 +56,7 @@ views:
   "subscriptioncollection":
       "Logger": ["module", "eventservice"]
       "Models":
-        "default": {}
+        "default": {"members": "array()"}
       "Controllers":
         - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + collection_uri" }
@@ -107,7 +107,7 @@ views:
   "sessioncollection":
       "Logger": ["module", "session"]
       "Models":
-        "default":  {}
+        "default":  {"members": "array()"}
       "Controllers":
         - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + collection_uri" }
@@ -136,7 +136,7 @@ views:
   "registries":
       "Logger": ["module", "registry"]
       "Models":
-        "default":  {}
+        "default":  {"members": "array()"}
       "Controllers":
         - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + collection_uri" }
@@ -254,7 +254,7 @@ views:
   "logservices":
       "Logger": ["module", "lclog"]
       "Models":
-        "default":  {}
+        "default":  {"members": "array()"}
       "Controllers":
         - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + collection_uri" }
@@ -278,7 +278,7 @@ views:
   "lclogentrycollection":
       "Logger": ["module", "lclog"]
       "Models":
-        "default":  {}
+        "default":  {"members": "array()"}
       "Controllers":
         - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + collection_uri" }
@@ -312,7 +312,7 @@ views:
   "faultlistentrycollection":
       "Logger": ["module", "lclog"]
       "Models":
-        "default":  {}
+        "default":  {"members": "array()"}
       "Controllers":
         - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + collection_uri" }
@@ -328,9 +328,9 @@ views:
 
   "faultlistentry":
       "Logger": ["module", "lclog"]
+      "Models":
+        "default":  {}
       "Controllers":
-        - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + collection_uri" }
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/Managers/' + FQDD + '/Logs/FaultList/' + uuid"
@@ -610,7 +610,7 @@ views:
   "slotcollection":
       "Logger": ["module", "slot"]
       "Models":
-        "default": {}
+        "default": {"members": "array()"}
       "Controllers":
         - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + collection_uri" }
@@ -645,7 +645,7 @@ views:
   "slotconfigcollection":
       "Logger": ["module", "slotconfig"]
       "Models":
-        "default": {}
+        "default": {"members": "array()"}
       "Controllers":
         - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + collection_uri" }
@@ -713,7 +713,7 @@ views:
   "chassis":
       "Logger": ["module", "Chassis"]
       "Models":
-        "default":  {"members":"''"}
+        "default":  {"members": "array()"}
       "Controllers":
         - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + collection_uri" }
@@ -731,7 +731,7 @@ views:
   "systems":
       "Logger": ["module", "Systems"]
       "Models":
-        "default":  {"members":"''"}
+        "default":  {"members": "array()"}
       "Controllers":
         - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + collection_uri" }
@@ -749,7 +749,7 @@ views:
   "managers":
       "Logger": ["module", "Managers"]
       "Models":
-        "default":  {"members":"''"}
+        "default":  {"members": "array()"}
       "Controllers":
         - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + collection_uri" }
@@ -767,7 +767,7 @@ views:
   "roles":
       "Logger": ["module", "Roles"]
       "Models":
-        "default":  {"members":"''"}
+        "default":  {"members": "array()"}
       "Controllers":
         - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + collection_uri" }
@@ -801,7 +801,7 @@ views:
   "accounts":
       "Logger": ["module", "Accounts"]
       "Models":
-        "default":  {"members":"''"}
+        "default":  {"members": "array()"}
       "Controllers":
         - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + collection_uri" }
@@ -820,10 +820,10 @@ awesome_mapper:
     collection:
       - { SelectEventType: "RedfishResource:created",
           Select: "nohash(data.ResourceURI) && baseuri(data.ResourceURI) == collection_uri ",
-          ModelUpdate: [ {Property: "members", Query: "addtoset(model, propname, data.ResourceURI)", Default: 0} ]}
+          ModelUpdate: [ {Property: "members", Query: "addtoset(model, propname, data.ResourceURI)"} ]}
       - { SelectEventType: "RedfishResource:removed",
           Select: "nohash(data.ResourceURI) && baseuri(data.ResourceURI) == collection_uri ",
-          ModelUpdate: [ {Property: "members", Query: "removefromset(model, propname, data.ResourceURI)", Default: 0} ]}
+          ModelUpdate: [ {Property: "members", Query: "removefromset(model, propname, data.ResourceURI)"} ]}
 
     addslot:
       - { SelectEventType: "ComponentEvent",

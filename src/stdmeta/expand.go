@@ -128,6 +128,8 @@ func CountFormatter(
 	switch v.Kind() {
 	case reflect.String:
 		rrp.Value = v.Len()
+	case reflect.Array:
+		rrp.Value = v.Len()
 	case reflect.Slice:
 		rrp.Value = v.Len()
 	case reflect.Map:
@@ -135,7 +137,7 @@ func CountFormatter(
 	case reflect.Chan:
 		rrp.Value = v.Len()
 	default:
-		rrp.Value = nil
+		rrp.Value = 0
 	}
 
 	return nil
@@ -149,6 +151,7 @@ func FormatOdataList(ctx context.Context, v *view.View, m *model.Model, rrp *dom
 		uris = []string{}
 	}
 
+	// TODO: make this parse array using reflect
 	odata := []interface{}{}
 	for _, i := range uris {
 		odata = append(odata, map[string]interface{}{"@odata.id": i})
