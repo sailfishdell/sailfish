@@ -11,7 +11,6 @@ import (
 	eventpublisher "github.com/looplab/eventhorizon/publisher/local"
 	"github.com/spf13/viper"
 
-	ah "github.com/superchalupa/sailfish/src/actionhandler"
 	"github.com/superchalupa/sailfish/src/eventwaiter"
 	"github.com/superchalupa/sailfish/src/log"
 	"github.com/superchalupa/sailfish/src/ocp/model"
@@ -25,32 +24,38 @@ type viewer interface {
 	GetURI() string
 }
 
+type actionService interface {
+	WithAction(context.Context, string, string, view.Action) view.Option
+}
+
 type EventService struct {
-	ch       eh.CommandHandler
-	eb       eh.EventBus
-	ew       *eventwaiter.EventWaiter
-	cfg      *viper.Viper
-	jc       chan Job
-	wrap     func(string, map[string]interface{}) (log.Logger, *view.View, error)
-	addparam func(map[string]interface{}) map[string]interface{}
+	ch        eh.CommandHandler
+	eb        eh.EventBus
+	ew        *eventwaiter.EventWaiter
+	cfg       *viper.Viper
+	jc        chan Job
+	wrap      func(string, map[string]interface{}) (log.Logger, *view.View, error)
+	addparam  func(map[string]interface{}) map[string]interface{}
+	actionSvc actionService
 }
 
 const WorkQueueLen = 10
 
 var GlobalEventService *EventService
 
-func New(ctx context.Context, cfg *viper.Viper, instantiateSvc *testaggregate.Service, ch eh.CommandHandler, eb eh.EventBus) *EventService {
+func New(ctx context.Context, cfg *viper.Viper, instantiateSvc *testaggregate.Service, actionSvc actionService, ch eh.CommandHandler, eb eh.EventBus) *EventService {
 	EventPublisher := eventpublisher.NewEventPublisher()
 	eb.AddHandler(eh.MatchAnyEventOf(ExternalRedfishEvent, domain.RedfishResourceRemoved), EventPublisher)
 	EventWaiter := eventwaiter.NewEventWaiter(eventwaiter.SetName("Event Service"))
 	EventPublisher.AddObserver(EventWaiter)
 
 	ret := &EventService{
-		ch:  ch,
-		eb:  eb,
-		ew:  EventWaiter,
-		cfg: cfg,
-		jc:  CreateWorkers(100, 6),
+		ch:        ch,
+		eb:        eb,
+		ew:        EventWaiter,
+		cfg:       cfg,
+		jc:        CreateWorkers(100, 6),
+		actionSvc: actionSvc,
 		wrap: func(name string, params map[string]interface{}) (log.Logger, *view.View, error) {
 			return instantiateSvc.InstantiateFromCfg(ctx, cfg, name, params)
 		},
@@ -74,14 +79,14 @@ func (es *EventService) StartEventService(ctx context.Context, logger log.Logger
 		return
 	}
 
-	esLogger, esView, _ := instantiateSvc.InstantiateFromCfg(ctx, es.cfg, "eventservice", params)
+	_, esView, _ := instantiateSvc.InstantiateFromCfg(ctx, es.cfg, "eventservice", params)
 	params["eventsvc_id"] = esView.GetUUID()
 	params["eventsvc_uri"] = esView.GetURI()
 	instantiateSvc.InstantiateFromCfg(ctx, es.cfg, "subscriptioncollection", es.addparam(map[string]interface{}{"collection_uri": "/redfish/v1/EventService/Subscriptions"}))
 
 	esView.ApplyOption(
 		view.WithModel("etag", esView.GetModel("default")),
-		ah.WithAction(ctx, esLogger, "submit.test.event", "/Actions/EventService.SubmitTestEvent", MakeSubmitTestEvent(es.eb), es.ch, es.eb),
+		es.actionSvc.WithAction(ctx, "submit.test.event", "/Actions/EventService.SubmitTestEvent", MakeSubmitTestEvent(es.eb)),
 		view.UpdateEtag("etag", []string{"max_milliseconds_to_queue", "max_events_to_queue", "delivery_retry_attempts", "delivery_retry_interval_seconds"}),
 	)
 

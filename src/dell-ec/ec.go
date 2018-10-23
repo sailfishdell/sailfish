@@ -74,7 +74,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	// These three all set up a waiter for the root service to appear, so init root service after.
 	actionhandler.Setup(ctx, ch, eb)
 	uploadhandler.Setup(ctx, ch, eb)
-	telemetryservice.Setup(ctx, ch, eb)
 	event.Setup(ch, eb)
 	logSvc := lcl.New(ch, eb)
 	faultSvc := faultlist.New(ch, eb)
@@ -83,13 +82,14 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	actionSvc := ah.StartService(ctx, logger, ch, eb)
 	uploadSvc := uploadhandler.StartService(ctx, logger, ch, eb)
 	am2Svc, _ := awesome_mapper2.StartService(ctx, logger, eb)
+	telemetryservice.Setup(ctx, actionSvc, ch, eb)
 	pumpSvc := NewPumpActionSvc(ctx, logger, eb)
 
 	subSystemSvc := subsystemhealth.New(ch, eb)
 
 	// the package for this is going to change, but this is what makes the various mappers and view functions available
 	instantiateSvc := testaggregate.New(logger, ch)
-	evtSvc := eventservice.New(ctx, cfgMgr, instantiateSvc, ch, eb)
+	evtSvc := eventservice.New(ctx, cfgMgr, instantiateSvc, actionSvc, ch, eb)
 	testaggregate.RegisterWithURI(instantiateSvc)
 	testaggregate.RegisterPublishEvents(instantiateSvc, evtSvc)
 	testaggregate.RegisterAggregate(instantiateSvc)

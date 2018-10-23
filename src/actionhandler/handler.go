@@ -158,10 +158,6 @@ func StartService(ctx context.Context, logger log.Logger, ch eh.CommandHandler, 
 	return ret
 }
 
-//
-// NEW HOTNESS
-//
-
 func (s *Service) WithAction(ctx context.Context, name string, uriSuffix string, a view.Action) view.Option {
 	return func(v *view.View) error {
 		uri := v.GetURIUnlocked() + uriSuffix
@@ -192,81 +188,6 @@ func (s *Service) WithAction(ctx context.Context, name string, uriSuffix string,
 			},
 		)
 
-		return nil
-	}
-}
-
-//
-// OLD BUSTED
-//
-
-func CreateViewAction(
-	ctx context.Context,
-	logger log.Logger,
-	action string,
-	actionURI string,
-	vw actionrunner,
-	ch eh.CommandHandler,
-	eb eh.EventBus,
-) {
-
-	logger.Info("CREATING ACTION", "action", action, "actionURI", actionURI)
-
-	// The following redfish resource is created only for the purpose of being
-	// a 'receiver' for the action command specified above.
-	ch.HandleCommand(
-		ctx,
-		&domain.CreateRedfishResource{
-			ID:          eh.NewUUID(),
-			ResourceURI: actionURI,
-			Type:        "Action",
-			Context:     "Action",
-			Plugin:      "GenericActionHandler",
-			Privileges: map[string]interface{}{
-				"POST": []string{"ConfigureManager"},
-			},
-			Properties: map[string]interface{}{},
-		},
-	)
-
-	// stream processor for action events
-	sp, err := event.NewESP(ctx, event.CustomFilter(SelectAction(actionURI)), event.SetListenerName("actionhandler"))
-	if err != nil {
-		logger.Error("Failed to create event stream processor", "err", err)
-		return
-	}
-	go sp.RunForever(func(event eh.Event) {
-		eventData := &domain.HTTPCmdProcessedData{
-			CommandID:  event.Data().(*GenericActionEventData).CmdID,
-			Results:    map[string]interface{}{"msg": "Not Implemented"},
-			StatusCode: 500,
-			Headers:    map[string]string{},
-		}
-
-		logger.Crit("Action running!")
-		handler := vw.GetAction(action)
-		logger.Crit("handler", "handler", handler)
-
-		// only send out our pre-canned response if no handler exists (above), or if handler sets the event status code to 0
-		// for example, if data pump is going to directly send an httpcmdprocessed.
-		if handler != nil {
-			handler(ctx, event, eventData)
-		} else {
-			logger.Warn("UNHANDLED action event: no function handler set up for this event.", "event", event)
-		}
-		if eventData.StatusCode != 0 {
-			responseEvent := eh.NewEvent(domain.HTTPCmdProcessed, eventData, time.Now())
-			go eb.PublishEvent(ctx, responseEvent)
-		}
-	})
-}
-
-func WithAction(ctx context.Context, logger log.Logger, name string, uriSuffix string, a view.Action, ch eh.CommandHandler, eb eh.EventBus) view.Option {
-	return func(s *view.View) error {
-		uri := s.GetURIUnlocked() + uriSuffix
-		s.SetActionUnlocked(name, a)
-		s.SetActionURIUnlocked(name, uri)
-		CreateViewAction(ctx, logger, name, uri, s, ch, eb)
 		return nil
 	}
 }

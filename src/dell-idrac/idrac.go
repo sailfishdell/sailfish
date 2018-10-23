@@ -62,7 +62,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 
 	// These three all set up a waiter for the root service to appear, so init root service after.
 	actionhandler.Setup(ctx, ch, eb)
-	telemetryservice.Setup(ctx, ch, eb)
 	event.Setup(ch, eb)
 	logSvc := lcl.New(ch, eb)
 	faultSvc := faultlist.New(ch, eb)
@@ -70,10 +69,11 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	arService, _ := ar_mapper2.StartService(ctx, logger, cfgMgr, eb)
 	actionSvc := ah.StartService(ctx, logger, ch, eb)
 	am2Svc, _ := awesome_mapper2.StartService(ctx, logger, eb)
+	telemetryservice.Setup(ctx, actionSvc, ch, eb)
 
 	// the package for this is going to change, but this is what makes the various mappers and view functions available
 	instantiateSvc := testaggregate.New(logger, ch)
-	evtSvc := eventservice.New(ctx, cfgMgr, instantiateSvc, ch, eb)
+	evtSvc := eventservice.New(ctx, cfgMgr, instantiateSvc, actionSvc, ch, eb)
 	testaggregate.RegisterWithURI(instantiateSvc)
 	testaggregate.RegisterPublishEvents(instantiateSvc, evtSvc)
 	testaggregate.RegisterAggregate(instantiateSvc)
@@ -208,7 +208,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		)
 
 		sysChasVw.ApplyOption(
-			ah.WithAction(ctx, sysChasLogger, "chassis.reset", "/Actions/Chassis.Reset", makePumpHandledAction("ChassisReset", 30, eb), ch, eb),
+			actionSvc.WithAction(ctx, "chassis.reset", "/Actions/Chassis.Reset", makePumpHandledAction("ChassisReset", 30, eb)),
 		)
 
 		// Create the .../Attributes URI. Attributes are stored in the attributes property of the chasModel
