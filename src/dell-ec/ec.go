@@ -197,24 +197,17 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		//*********************************************************************
 		// /redfish/v1/Managers/CMC.Integrated
 		//*********************************************************************
-		connectTypesSupported := []interface{}{}
-
 		mgrLogger, mgrCmcVw, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "manager_cmc_integrated",
 			map[string]interface{}{
-				"rooturi":  rootView.GetURI(),
-				"FQDD":     mgrName,                                   // this is used for the AR mapper. case difference is confusing, but need to change mappers
-				"fqdd":     "System.Chassis.1#SubSystem.1#" + mgrName, // This is used for the health subsystem
-				"fqddlist": []string{mgrName},
+				"rooturi":           rootView.GetURI(),
+				"FQDD":              mgrName,                                   // this is used for the AR mapper. case difference is confusing, but need to change mappers
+				"fqdd":              "System.Chassis.1#SubSystem.1#" + mgrName, // This is used for the health subsystem
+				"fqddlist":          []string{mgrName},
+				"globalHealthModel": globalHealthModel,
 			},
-		)
-		mgrCmcVw.GetModel("default").ApplyOption(
-			model.UpdateProperty("connect_types_supported", connectTypesSupported),
-			model.UpdateProperty("connect_types_supported_count", len(connectTypesSupported)),
 		)
 
 		mgrCmcVw.ApplyOption(
-			view.WithModel("global_health", globalHealthModel),
-
 			view.WithModel("health", mgrCmcVw.GetModel("default")), // health info in default model
 			view.WithModel("swinv", mgrCmcVw.GetModel("default")),  // common name for swinv model, shared in this case
 			view.WithModel("default", mgrCmcVw.GetModel("default")),
@@ -272,16 +265,16 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		//*********************************************************************
 		chasLogger, chasCmcVw, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "chassis_cmc_integrated",
 			map[string]interface{}{
-				"rooturi":  rootView.GetURI(),
-				"FQDD":     mgrName,                            // this is used for the AR mapper. case difference is confusing, but need to change mappers
-				"fqdd":     "System.Chassis.1#SubSystem.1#CMC", // This is used for the health subsystem
-				"fqddlist": []string{mgrName},
+				"rooturi":           rootView.GetURI(),
+				"FQDD":              mgrName,                            // this is used for the AR mapper. case difference is confusing, but need to change mappers
+				"fqdd":              "System.Chassis.1#SubSystem.1#CMC", // This is used for the health subsystem
+				"fqddlist":          []string{mgrName},
+				"globalHealthModel": globalHealthModel,
 			},
 		)
 
 		chasCmcVw.ApplyOption(
 			view.WithModel("etag", chasCmcVw.GetModel("default")),
-			view.WithModel("global_health", globalHealthModel),
 			view.UpdateEtag("etag", []string{}),
 		)
 
@@ -310,9 +303,10 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		chasName := "System.Chassis.1"
 		sysChasLogger, sysChasVw, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "system_chassis",
 			map[string]interface{}{
-				"rooturi":  rootView.GetURI(),
-				"FQDD":     chasName,
-				"fqddlist": []string{chasName},
+				"rooturi":           rootView.GetURI(),
+				"FQDD":              chasName,
+				"fqddlist":          []string{chasName},
+				"globalHealthModel": globalHealthModel,
 			},
 		)
 
@@ -321,7 +315,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		)
 
 		sysChasVw.ApplyOption(
-			view.WithModel("global_health", globalHealthModel),
 			actionSvc.WithAction(ctx, "msmconfigbackup", "/Actions/Oem/MSMConfigBackup", msmConfigBackup),
 			actionSvc.WithAction(ctx, "chassis.msmconfigbackup", "/Actions/Oem/DellChassis.MSMConfigBackup", chassisMSMConfigBackup),
 		)
@@ -339,14 +332,12 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		//*********************************************************************
 		powerLogger, sysChasPwrVw, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "power",
 			map[string]interface{}{
-				"rooturi": rootView.GetURI(),
-				"FQDD":    chasName,
+				"rooturi":           rootView.GetURI(),
+				"FQDD":              chasName,
+				"globalHealthModel": globalHealthModel,
 			},
 		)
 
-		sysChasPwrVw.ApplyOption(
-			view.WithModel("global_health", globalHealthModel),
-		)
 		power.AddAggregate(ctx, powerLogger, sysChasPwrVw, ch)
 
 		psu_uris := []string{}
@@ -357,17 +348,17 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 
 			psuLogger, sysChasPwrPsuVw, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "psu_slot",
 				map[string]interface{}{
-					"rooturi":     rootView.GetURI(),
-					"FQDD":        psuName, // this is used for the AR mapper. case difference with 'fqdd' is confusing, but need to change mappers
-					"ChassisFQDD": chasName,
-					"fqdd":        "System.Chassis.1#" + strings.Replace(psuName, "PSU.Slot", "PowerSupply", 1),
-					"fqddlist":    []string{psuName},
+					"rooturi":           rootView.GetURI(),
+					"FQDD":              psuName, // this is used for the AR mapper. case difference with 'fqdd' is confusing, but need to change mappers
+					"ChassisFQDD":       chasName,
+					"fqdd":              "System.Chassis.1#" + strings.Replace(psuName, "PSU.Slot", "PowerSupply", 1),
+					"fqddlist":          []string{psuName},
+					"globalHealthModel": globalHealthModel,
 				},
 			)
 
 			sysChasPwrPsuVw.ApplyOption(
 				view.WithModel("swinv", sysChasPwrPsuVw.GetModel("default")),
-				view.WithModel("global_health", globalHealthModel),
 			)
 			swinvViews = append(swinvViews, sysChasPwrPsuVw)
 			psu_uris = append(psu_uris, sysChasPwrPsuVw.GetURI())
@@ -427,17 +418,15 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		//*********************************************************************
 		thermalLogger, thermalView, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "thermal",
 			map[string]interface{}{
-				"rooturi": rootView.GetURI(),
-				"FQDD":    chasName,
+				"rooturi":           rootView.GetURI(),
+				"FQDD":              chasName,
+				"globalHealthModel": globalHealthModel,
 			},
 		)
 
 		// thermal_uris := []string{}
 		// redundancy_uris := []string{}
 
-		thermalView.ApplyOption(
-			view.WithModel("global_health", globalHealthModel),
-		)
 		thermal.AddAggregate(ctx, thermalLogger, thermalView, ch)
 
 		fan_uris := []string{}
@@ -448,17 +437,17 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		} {
 			fanLogger, fanView, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "fan",
 				map[string]interface{}{
-					"rooturi":     rootView.GetURI(),
-					"ChassisFQDD": chasName,
-					"FQDD":        fanName,
-					"fqdd":        "System.Chassis.1#" + fanName,
-					"fqddlist":    []string{fanName},
+					"rooturi":           rootView.GetURI(),
+					"ChassisFQDD":       chasName,
+					"FQDD":              fanName,
+					"fqdd":              "System.Chassis.1#" + fanName,
+					"fqddlist":          []string{fanName},
+					"globalHealthModel": globalHealthModel,
 				},
 			)
 
 			fanView.ApplyOption(
 				view.WithModel("swinv", fanView.GetModel("default")),
-				view.WithModel("global_health", globalHealthModel),
 			)
 			fans.AddAggregate(ctx, fanLogger, fanView, ch)
 			fan_uris = append(fan_uris, fanView.GetURI())
@@ -510,10 +499,11 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	} {
 		iomLogger, iomView, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "iom",
 			map[string]interface{}{
-				"rooturi":  rootView.GetURI(),
-				"FQDD":     iomName,
-				"fqdd":     "System.Chassis.1#SubSystem.1#" + iomName,
-				"fqddlist": []string{iomName},
+				"rooturi":           rootView.GetURI(),
+				"FQDD":              iomName,
+				"fqdd":              "System.Chassis.1#SubSystem.1#" + iomName,
+				"fqddlist":          []string{iomName},
+				"globalHealthModel": globalHealthModel,
 			},
 		)
 
@@ -523,7 +513,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 
 		iomView.ApplyOption(
 			view.WithModel("swinv", iomView.GetModel("default")),
-			view.WithModel("global_health", globalHealthModel),
 		)
 		swinvViews = append(swinvViews, iomView)
 		power_related_items = append(power_related_items, iomView.GetURI())
@@ -556,10 +545,11 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	} {
 		sledLogger, sledView, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "sled",
 			map[string]interface{}{
-				"rooturi":  rootView.GetURI(),
-				"FQDD":     sledName,
-				"fqdd":     "System.Chassis.1#SubSystem.1#" + sledName,
-				"fqddlist": []string{sledName},
+				"rooturi":           rootView.GetURI(),
+				"FQDD":              sledName,
+				"fqdd":              "System.Chassis.1#SubSystem.1#" + sledName,
+				"fqddlist":          []string{sledName},
+				"globalHealthModel": globalHealthModel,
 			},
 		)
 
@@ -569,7 +559,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 
 		sledView.ApplyOption(
 			view.WithModel("swinv", sledView.GetModel("default")),
-			view.WithModel("global_health", globalHealthModel),
 		)
 		sled_chassis.AddAggregate(ctx, sledLogger, sledView, ch, eb)
 		power_related_items = append(power_related_items, sledView.GetURI())

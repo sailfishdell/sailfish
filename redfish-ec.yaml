@@ -209,7 +209,7 @@ views:
   "manager_cmc_integrated":
       "Logger": ["module", "mgrChassis"]
       "Models":
-        "default":  {"unique_name": "FQDD", "unique_name_attr": "FQDD+'.Attributes'", "attributes": "add_attribute_property()"}
+        "default":  {"unique_name": "FQDD", "unique_name_attr": "FQDD+'.Attributes'", "attributes": "add_attribute_property()", "connect_types_supported": "array()"}
       "Controllers":
         - "fn": "ARMapper"
           "params": {"modelname": "default", "cfgsection": "firmware/inventory", "mappinguniquename": "'fw_mapper:' + FQDD ", "AddToView": true}
@@ -222,6 +222,8 @@ views:
         - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "certificate", "uniquename": "'certificate_services_' + FQDD" }
       "View":
+        - "fn": "withModel"
+          "params": {"name": "global_health", "expr": "globalHealthModel"}
         - "fn": "with_URI"
           "params": "rooturi + '/Managers/' + FQDD"
         - "fn": "PublishResourceUpdatedEventsForModel"
@@ -328,10 +330,6 @@ views:
           "params": "rooturi + '/Managers/' + FQDD + '/Logs/FaultList/' + uuid"
       "Aggregate": "faultlistentry"
 
-
-
-
-
   "chassis_cmc_integrated":
       "Logger": ["module", "ChassisCMCInt"]
       "Models":
@@ -345,6 +343,8 @@ views:
         - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "health", "uniquename": "'am2_chassis_' + FQDD" }
       "View":
+        - "fn": "withModel"
+          "params": {"name": "global_health", "expr": "globalHealthModel"}
         - "fn": "with_URI"
           "params": "rooturi + '/Chassis/' + FQDD"
         - "fn": "PublishResourceUpdatedEventsForModel"
@@ -378,6 +378,8 @@ views:
         - "fn": "ARDumper"
           "params": {"modelname": "default", "AddToView": true}
       "View":
+        - "fn": "withModel"
+          "params": {"name": "global_health", "expr": "globalHealthModel"}
         - "fn": "with_URI"
           "params": "rooturi + '/Chassis/' + FQDD "
         - "fn": "PublishResourceUpdatedEventsForModel"
@@ -403,6 +405,8 @@ views:
         - "fn": "ARMapper"
           "params": {"modelname": "default", "cfgsection": "Chassis/System.Chassis/Power", "mappinguniquename": "'chassis_power_mapper:' + FQDD", "AddToView": true}
       "View":
+        - "fn": "withModel"
+          "params": {"name": "global_health", "expr": "globalHealthModel"}
         - "fn": "with_URI"
           "params": "rooturi + '/Chassis/' + FQDD + '/Power'"
         - "fn": "PublishResourceUpdatedEventsForModel"
@@ -430,6 +434,8 @@ views:
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/Chassis/' + ChassisFQDD + '/Power/PowerSupplies/' + FQDD "
+        - "fn": "withModel"
+          "params": {"name": "global_health", "expr": "globalHealthModel"}
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
         - "fn": "withFormatter_attributeFormatter"
@@ -498,6 +504,8 @@ views:
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/Chassis/' + FQDD + '/Thermal'"
+        - "fn": "withModel"
+          "params": {"name": "global_health", "expr": "globalHealthModel"}
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
         - "fn": "withFormatter_count"
@@ -521,6 +529,8 @@ views:
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/Chassis/' + ChassisFQDD + '/Sensors/Fans/' + FQDD "
+        - "fn": "withModel"
+          "params": {"name": "global_health", "expr": "globalHealthModel"}
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
         - "fn": "withFormatter_attributeFormatter"
@@ -544,6 +554,8 @@ views:
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/Chassis/' + FQDD "
+        - "fn": "withModel"
+          "params": {"name": "global_health", "expr": "globalHealthModel"}
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
         - "fn": "withFormatter_count"
@@ -560,17 +572,18 @@ views:
           "params": {"name": "iom.virtualreseat", "uri": "/Actions/Oem/DellChassis.VirtualReseat", "timeout": 30}
 
   "iom_config":
-        "Logger": ["module", "IOM_Config"]
-        "Models":
-          "default":  {"unique_name": "FQDD", "unique_name_attr": "FQDD+'.Attributes'", "attributes": "add_attribute_property()"}
-        "Controllers":
-          - "fn": "AM2"
-            "params": {"modelname": "default", "cfgsection": "iom_config", "uniquename": "'am2_iom_config_' + FQDD" }
-        "View":
-          - "fn": "with_URI"
-            "params": "rooturi + '/Chassis/' + FQDD + '/IOMConfiguration'"
-          - "fn": "PublishResourceUpdatedEventsForModel"
-            "params": "default"
+      "Logger": ["module", "IOM_Config"]
+      "Models":
+        "default":  {"unique_name": "FQDD", "unique_name_attr": "FQDD+'.Attributes'", "attributes": "add_attribute_property()"}
+      "Controllers":
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "iom_config", "uniquename": "'am2_iom_config_' + FQDD" }
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/Chassis/' + FQDD + '/IOMConfiguration'"
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+
   "subsyshealth":
       "Logger": ["module", "subsyshealth"]
       "Models":

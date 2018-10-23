@@ -38,9 +38,9 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 		},
 
 		"SerialConsole": map[string]interface{}{
-			"ConnectTypesSupported@odata.count@meta": v.Meta(view.PropGET("connect_types_supported_count")),
+			"ConnectTypesSupported@meta":             v.Meta(view.GETProperty("connect_types_supported"), view.GETModel("default")),
+			"ConnectTypesSupported@odata.count@meta": v.Meta(view.GETProperty("connect_types_supported"), view.GETFormatter("count"), view.GETModel("default")),
 			"MaxConcurrentSessions":                  0,
-			"ConnectTypesSupported@meta":             v.Meta(view.PropGET("connect_types_supported")),
 			"ServiceEnabled":                         false,
 		},
 
