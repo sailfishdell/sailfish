@@ -39,7 +39,7 @@ logs:
           level: "info"
 
     # (DISABLED) log stuff on a module by module basis to FILE
-    - Enabled: false
+    - Enabled: true 
       FileName: "./debug.log"
       PrintFile: true
       PrintFunction: true
@@ -51,16 +51,16 @@ logs:
         # "Managers/CMC.Integrated.1". For the template config, we only
         # specify the top levels
         - name: "Managers/CMC.Integrated"
-          level: "warn"
+          level: "debug"
 
         - name: "Chassis/CMC.Integrated"
-          level: "warn"
+          level: "debug"
 
         - name: "Chassis/System.Modular"
-          level: "warn"
+          level: "debug"
 
         - name: "Chassis/IOM.Slot"
-          level: "warn"
+          level: "debug"
 
         - name: "Chassis/System.Chassis/Power"
           level: "warn"

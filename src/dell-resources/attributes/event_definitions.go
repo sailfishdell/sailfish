@@ -17,7 +17,7 @@ func init() {
 	eh.RegisterEventData(AttributeGetCurrentValueRequest, func() eh.EventData { return &AttributeGetCurrentValueRequestData{} })
 }
 
-type AttributeUpdatedData = domain.AttributeUpdatedData
+type AttributeUpdatedData domain.AttributeUpdatedData
 
 type AttributeUpdateRequestData struct {
 	ReqID eh.UUID
