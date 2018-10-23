@@ -234,6 +234,14 @@ views:
           "params":
         - "fn": "withFormatter_formatOdataList"
           "params":
+        - "fn": "with_PumpHandledAction"
+          "params": {"name": "manager.reset", "uri": "/Actions/Manager.Reset", "timeout": 30}
+        - "fn": "with_PumpHandledAction"
+          "params": {"name": "manager.resettodefaults", "uri": "/Actions/Oem/DellManager.ResetToDefaults", "timeout": 30}
+        - "fn": "with_PumpHandledAction"
+          "params": {"name": "manager.forcefailover", "uri": "/Actions/Manager.ForceFailover", "timeout": 30}
+        - "fn": "with_PumpHandledAction"
+          "params": {"name": "certificates.generatecsr", "uri": "/CertificateService/Actions/DellCertificateService.GenerateCSR", "timeout": 30}
 
   "logservices":
       "Logger": ["module", "lclog"]
@@ -384,6 +392,8 @@ views:
           "params":
         - "fn": "withFormatter_formatOdataList"
           "params":
+        - "fn": "with_PumpHandledAction"
+          "params": {"name": "chassis.reset", "uri": "/Actions/Chassis.Reset", "timeout": 30}
 
   "power":
       "Logger": ["module", "Power"]
@@ -542,6 +552,12 @@ views:
           "params":
         - "fn": "withFormatter_formatOdataList"
           "params":
+        - "fn": "with_PumpHandledAction"
+          "params": {"name": "iom.chassis.reset", "uri": "/Actions/Chassis.Reset", "timeout": 30}
+        - "fn": "with_PumpHandledAction"
+          "params": {"name": "iom.resetpeakpowerconsumption", "uri": "/Actions/Oem/DellChassis.ResetPeakPowerConsumption", "timeout": 30}
+        - "fn": "with_PumpHandledAction"
+          "params": {"name": "iom.virtualreseat", "uri": "/Actions/Oem/DellChassis.VirtualReseat", "timeout": 30}
 
   "iom_config":
         "Logger": ["module", "IOM_Config"]
@@ -658,6 +674,12 @@ views:
           "params":
         - "fn": "withFormatter_formatOdataList"
           "params":
+        - "fn": "with_PumpHandledAction"
+          "params": {"name": "chassis.peripheralmapping", "uri": "/Actions/Oem/DellChassis.PeripheralMapping", "timeout": 30}
+        - "fn": "with_PumpHandledAction"
+          "params": {"name": "sledvirtualreseat", "uri": "/Actions/Chassis.VirtualReseat", "timeout": 30}
+        - "fn": "with_PumpHandledAction"
+          "params": {"name": "chassis.sledvirtualreseat", "uri": "/Actions/Oem/DellChassis.VirtualReseat", "timeout": 30}
 
   "chassis":
       "Logger": ["module", "Chassis"]

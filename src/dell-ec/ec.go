@@ -94,6 +94,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	testaggregate.RegisterPublishEvents(instantiateSvc, evtSvc)
 	testaggregate.RegisterAggregate(instantiateSvc)
 	testaggregate.RegisterAM2(instantiateSvc, am2Svc)
+	testaggregate.RegisterPumpAction(instantiateSvc, actionSvc, pumpSvc)
 	ar_mapper2.RegisterARMapper(instantiateSvc, arService)
 	attributes.RegisterARMapper(instantiateSvc, ch, eb)
 	stdmeta.RegisterFormatters(instantiateSvc, d)
@@ -220,14 +221,9 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			view.WithModel("etag", mgrCmcVw.GetModel("default")),
 
 			view.UpdateEtag("etag", []string{}),
-
-			actionSvc.WithAction(ctx, "manager.reset", "/Actions/Manager.Reset", pumpSvc.NewPumpAction(30)),
-			actionSvc.WithAction(ctx, "manager.resettodefaults", "/Actions/Oem/DellManager.ResetToDefaults", pumpSvc.NewPumpAction(30)),
-			actionSvc.WithAction(ctx, "manager.forcefailover", "/Actions/Manager.ForceFailover", pumpSvc.NewPumpAction(30)),
 			actionSvc.WithAction(ctx, "manager.exportsystemconfig", "/Actions/Oem/EID_674_Manager.ExportSystemConfiguration", exportSystemConfiguration),
 			actionSvc.WithAction(ctx, "manager.importsystemconfig", "/Actions/Oem/EID_674_Manager.ImportSystemConfiguration", importSystemConfiguration),
 			actionSvc.WithAction(ctx, "manager.importsystemconfigpreview", "/Actions/Oem/EID_674_Manager.ImportSystemConfigurationPreview", importSystemConfigurationPreview),
-			actionSvc.WithAction(ctx, "certificates.generatecsr", "/CertificateService/Actions/DellCertificateService.GenerateCSR", pumpSvc.NewPumpAction(30)),
 		)
 
 		managers = append(managers, mgrCmcVw)
@@ -326,7 +322,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 
 		sysChasVw.ApplyOption(
 			view.WithModel("global_health", globalHealthModel),
-			actionSvc.WithAction(ctx, "chassis.reset", "/Actions/Chassis.Reset", pumpSvc.NewPumpAction(30)),
 			actionSvc.WithAction(ctx, "msmconfigbackup", "/Actions/Oem/MSMConfigBackup", msmConfigBackup),
 			actionSvc.WithAction(ctx, "chassis.msmconfigbackup", "/Actions/Oem/DellChassis.MSMConfigBackup", chassisMSMConfigBackup),
 		)
@@ -529,9 +524,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		iomView.ApplyOption(
 			view.WithModel("swinv", iomView.GetModel("default")),
 			view.WithModel("global_health", globalHealthModel),
-			actionSvc.WithAction(ctx, "iom.chassis.reset", "/Actions/Chassis.Reset", pumpSvc.NewPumpAction(30)),
-			actionSvc.WithAction(ctx, "iom.resetpeakpowerconsumption", "/Actions/Oem/DellChassis.ResetPeakPowerConsumption", pumpSvc.NewPumpAction(30)),
-			actionSvc.WithAction(ctx, "iom.virtualreseat", "/Actions/Oem/DellChassis.VirtualReseat", pumpSvc.NewPumpAction(30)),
 		)
 		swinvViews = append(swinvViews, iomView)
 		power_related_items = append(power_related_items, iomView.GetURI())
@@ -578,9 +570,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		sledView.ApplyOption(
 			view.WithModel("swinv", sledView.GetModel("default")),
 			view.WithModel("global_health", globalHealthModel),
-			actionSvc.WithAction(ctx, "chassis.peripheralmapping", "/Actions/Oem/DellChassis.PeripheralMapping", pumpSvc.NewPumpAction(30)),
-			actionSvc.WithAction(ctx, "sledvirtualreseat", "/Actions/Chassis.VirtualReseat", pumpSvc.NewPumpAction(30)),
-			actionSvc.WithAction(ctx, "chassis.sledvirtualreseat", "/Actions/Oem/DellChassis.VirtualReseat", pumpSvc.NewPumpAction(30)),
 		)
 		sled_chassis.AddAggregate(ctx, sledLogger, sledView, ch, eb)
 		power_related_items = append(power_related_items, sledView.GetURI())
