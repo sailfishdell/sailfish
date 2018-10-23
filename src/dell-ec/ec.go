@@ -208,11 +208,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		)
 
 		mgrCmcVw.ApplyOption(
-			view.WithModel("health", mgrCmcVw.GetModel("default")), // health info in default model
-			view.WithModel("swinv", mgrCmcVw.GetModel("default")),  // common name for swinv model, shared in this case
-			view.WithModel("default", mgrCmcVw.GetModel("default")),
-			view.WithModel("etag", mgrCmcVw.GetModel("default")),
-
 			view.UpdateEtag("etag", []string{}),
 			actionSvc.WithAction(ctx, "manager.exportsystemconfig", "/Actions/Oem/EID_674_Manager.ExportSystemConfiguration", exportSystemConfiguration),
 			actionSvc.WithAction(ctx, "manager.importsystemconfig", "/Actions/Oem/EID_674_Manager.ImportSystemConfiguration", importSystemConfiguration),
@@ -274,7 +269,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		)
 
 		chasCmcVw.ApplyOption(
-			view.WithModel("etag", chasCmcVw.GetModel("default")),
 			view.UpdateEtag("etag", []string{}),
 		)
 
@@ -357,9 +351,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 				},
 			)
 
-			sysChasPwrPsuVw.ApplyOption(
-				view.WithModel("swinv", sysChasPwrPsuVw.GetModel("default")),
-			)
 			swinvViews = append(swinvViews, sysChasPwrPsuVw)
 			psu_uris = append(psu_uris, sysChasPwrPsuVw.GetURI())
 			powersupply.AddAggregate(ctx, psuLogger, sysChasPwrPsuVw, ch)
@@ -446,9 +437,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 				},
 			)
 
-			fanView.ApplyOption(
-				view.WithModel("swinv", fanView.GetModel("default")),
-			)
 			fans.AddAggregate(ctx, fanLogger, fanView, ch)
 			fan_uris = append(fan_uris, fanView.GetURI())
 			swinvViews = append(swinvViews, fanView)
@@ -511,9 +499,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			model.UpdateProperty("managed_by", []string{managers[0].GetURI()}),
 		)
 
-		iomView.ApplyOption(
-			view.WithModel("swinv", iomView.GetModel("default")),
-		)
 		swinvViews = append(swinvViews, iomView)
 		power_related_items = append(power_related_items, iomView.GetURI())
 		iom_chassis.AddAggregate(ctx, iomLogger, iomView, ch, eb)
@@ -557,9 +542,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			model.UpdateProperty("managed_by", []string{managers[0].GetURI()}),
 		)
 
-		sledView.ApplyOption(
-			view.WithModel("swinv", sledView.GetModel("default")),
-		)
 		sled_chassis.AddAggregate(ctx, sledLogger, sledView, ch, eb)
 		power_related_items = append(power_related_items, sledView.GetURI())
 		attributes.AddAggregate(ctx, sledView, rootView.GetURI()+"/Chassis/"+sledName+"/Attributes", ch)

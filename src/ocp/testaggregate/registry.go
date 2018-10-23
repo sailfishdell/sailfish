@@ -115,6 +115,42 @@ func RegisterPumpAction(s *Service, actionSvc actionService, pumpSvc pumpService
 
 		return nil
 	})
+
+	s.RegisterViewFunction("linkModel", func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, vw *view.View, cfg interface{}, parameters map[string]interface{}) error {
+		cfgParams, ok := cfg.(map[interface{}]interface{})
+		if !ok {
+			logger.Crit("Failed to type assert cfg to string", "cfg", cfg)
+			return errors.New("Failed to type assert expression to string")
+		}
+
+		existing, ok := cfgParams["existing"]
+		if !ok {
+			logger.Crit("Config file missing model name for action", "cfg", cfg)
+			return nil
+		}
+		existingStr, ok := existing.(string)
+		if !ok {
+			logger.Crit("model name isnt a string", "cfg", cfg)
+			return nil
+		}
+
+		linkname, ok := cfgParams["linkname"]
+		if !ok {
+			logger.Crit("Config file missing model name for action", "cfg", cfg)
+			return nil
+		}
+		linknameStr, ok := linkname.(string)
+		if !ok {
+			logger.Crit("model name isnt a string", "cfg", cfg)
+			return nil
+		}
+
+		logger.Info("WithModel", "name", existingStr, "exprStr", linknameStr)
+		vw.ApplyOption(view.WithModel(linknameStr, vw.GetModel(existingStr)))
+
+		return nil
+	})
+
 }
 
 func RegisterWithURI(s *Service) {

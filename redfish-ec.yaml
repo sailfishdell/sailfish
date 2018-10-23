@@ -222,6 +222,12 @@ views:
         - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "certificate", "uniquename": "'certificate_services_' + FQDD" }
       "View":
+        - "fn": "linkModel"
+          "params": {"existing": "default", "linkname": "health"}
+        - "fn": "linkModel"
+          "params": {"existing": "default", "linkname": "swinv"}
+        - "fn": "linkModel"
+          "params": {"existing": "default", "linkname": "etag"}
         - "fn": "withModel"
           "params": {"name": "global_health", "expr": "globalHealthModel"}
         - "fn": "with_URI"
@@ -345,6 +351,8 @@ views:
       "View":
         - "fn": "withModel"
           "params": {"name": "global_health", "expr": "globalHealthModel"}
+        - "fn": "linkModel"
+          "params": {"existing": "default", "linkname": "etag"}
         - "fn": "with_URI"
           "params": "rooturi + '/Chassis/' + FQDD"
         - "fn": "PublishResourceUpdatedEventsForModel"
@@ -434,6 +442,8 @@ views:
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/Chassis/' + ChassisFQDD + '/Power/PowerSupplies/' + FQDD "
+        - "fn": "linkModel"
+          "params": {"existing": "default", "linkname": "swinv"}
         - "fn": "withModel"
           "params": {"name": "global_health", "expr": "globalHealthModel"}
         - "fn": "PublishResourceUpdatedEventsForModel"
@@ -529,6 +539,8 @@ views:
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/Chassis/' + ChassisFQDD + '/Sensors/Fans/' + FQDD "
+        - "fn": "linkModel"
+          "params": {"existing": "default", "linkname": "swinv"}
         - "fn": "withModel"
           "params": {"name": "global_health", "expr": "globalHealthModel"}
         - "fn": "PublishResourceUpdatedEventsForModel"
@@ -554,6 +566,8 @@ views:
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/Chassis/' + FQDD "
+        - "fn": "linkModel"
+          "params": {"existing": "default", "linkname": "swinv"}
         - "fn": "withModel"
           "params": {"name": "global_health", "expr": "globalHealthModel"}
         - "fn": "PublishResourceUpdatedEventsForModel"
@@ -679,6 +693,8 @@ views:
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/Chassis/' + FQDD "
+        - "fn": "linkModel"
+          "params": {"existing": "default", "linkname": "swinv"}
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
         - "fn": "withFormatter_count"
