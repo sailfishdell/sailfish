@@ -5,14 +5,71 @@ import (
 	"errors"
 
 	"github.com/Knetic/govaluate"
+	"github.com/looplab/eventhorizon"
 	"github.com/spf13/viper"
 	"github.com/superchalupa/sailfish/src/log"
 	am2 "github.com/superchalupa/sailfish/src/ocp/awesome_mapper2"
 	"github.com/superchalupa/sailfish/src/ocp/view"
+	domain "github.com/superchalupa/sailfish/src/redfishresource"
 )
 
 type EventService interface {
 	PublishResourceUpdatedEventsForModel(context.Context, string) view.Option
+}
+
+type actionService interface {
+	WithAction(context.Context, string, string, view.Action) view.Option
+}
+type pumpService interface {
+	NewPumpAction(int) func(context.Context, eventhorizon.Event, *domain.HTTPCmdProcessedData) error
+}
+
+func RegisterPumpAction(s *Service, actionSvc actionService, pumpSvc pumpService) {
+	s.RegisterViewFunction("with_PumpHandledAction", func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, vw *view.View, cfg interface{}, parameters map[string]interface{}) error {
+		cfgParams, ok := cfg.(map[interface{}]interface{})
+		if !ok {
+			logger.Crit("Failed to type assert cfg to string", "cfg", cfg)
+			return errors.New("Failed to type assert expression to string")
+		}
+
+		actionName, ok := cfgParams["name"]
+		if !ok {
+			logger.Crit("Config file missing action name for action", "cfg", cfg)
+			return nil
+		}
+		actionNameStr, ok := actionName.(string)
+		if !ok {
+			logger.Crit("Action name isnt a string", "cfg", cfg)
+			return nil
+		}
+
+		actionURIFrag, ok := cfgParams["uri"]
+		if !ok {
+			logger.Crit("Config file missing action URI for action", "cfg", cfg)
+			return nil
+		}
+		actionURIFragStr, ok := actionURIFrag.(string)
+		if !ok {
+			logger.Crit("Action URI isnt a string", "cfg", cfg)
+			return nil
+		}
+
+		actionTimeout, ok := cfgParams["timeout"]
+		if !ok {
+			logger.Crit("Config file missing action URI for action", "cfg", cfg)
+			return nil
+		}
+		actionTimeoutInt, ok := actionTimeout.(int)
+		if !ok {
+			logger.Crit("Action timeout isn't a number", "cfg", cfg)
+			return nil
+		}
+
+		logger.Debug("Registering pump handled action", "name", actionNameStr, "URI fragment", actionURIFragStr, "timeout", actionTimeoutInt)
+		actionSvc.WithAction(ctx, actionNameStr, actionURIFragStr, pumpSvc.NewPumpAction(actionTimeoutInt))
+
+		return nil
+	})
 }
 
 func RegisterWithURI(s *Service) {
