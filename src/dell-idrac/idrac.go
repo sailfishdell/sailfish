@@ -38,12 +38,12 @@ import (
 
 	// goal is to get rid of the _ in front of each of these....
 	mgrCMCIntegrated "github.com/superchalupa/sailfish/src/dell-resources/managers/cmc.integrated"
-	"github.com/superchalupa/sailfish/src/dell-resources/systems/system.embedded/storage"
-	"github.com/superchalupa/sailfish/src/dell-resources/systems/system.embedded/storage/controller"
-	"github.com/superchalupa/sailfish/src/dell-resources/systems/system.embedded/storage/drive"
-	"github.com/superchalupa/sailfish/src/dell-resources/systems/system.embedded/storage/storage_collection"
-	"github.com/superchalupa/sailfish/src/dell-resources/systems/system.embedded/storage/volume"
-	"github.com/superchalupa/sailfish/src/dell-resources/systems/system.embedded/storage/volume_collection"
+	storage_instance "github.com/superchalupa/sailfish/src/dell-resources/systems/system.embedded/storage"
+	storage_controller "github.com/superchalupa/sailfish/src/dell-resources/systems/system.embedded/storage/controller"
+	storage_drive "github.com/superchalupa/sailfish/src/dell-resources/systems/system.embedded/storage/drive"
+	storage_collection "github.com/superchalupa/sailfish/src/dell-resources/systems/system.embedded/storage/storage_collection"
+	storage_volume "github.com/superchalupa/sailfish/src/dell-resources/systems/system.embedded/storage/volume"
+	storage_volume_collection "github.com/superchalupa/sailfish/src/dell-resources/systems/system.embedded/storage/volume_collection"
 )
 
 type ocp struct {
