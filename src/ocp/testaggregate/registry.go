@@ -65,8 +65,8 @@ func RegisterPumpAction(s *Service, actionSvc actionService, pumpSvc pumpService
 			return nil
 		}
 
-		logger.Debug("Registering pump handled action", "name", actionNameStr, "URI fragment", actionURIFragStr, "timeout", actionTimeoutInt)
-		actionSvc.WithAction(ctx, actionNameStr, actionURIFragStr, pumpSvc.NewPumpAction(actionTimeoutInt))
+		logger.Info("Registering pump handled action", "name", actionNameStr, "URI fragment", actionURIFragStr, "timeout", actionTimeoutInt)
+		vw.ApplyOption(actionSvc.WithAction(ctx, actionNameStr, actionURIFragStr, pumpSvc.NewPumpAction(actionTimeoutInt)))
 
 		return nil
 	})
