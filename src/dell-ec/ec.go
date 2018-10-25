@@ -187,6 +187,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	var managers []*view.View
 
 	// the chassis power control has a list of 'related items' that we'll accumulate using power_related_items
+	// TODO: this should be an awesome mapper
 	var sysChasPwrCtrlVw *view.View
 	power_related_items := []string{}
 
@@ -199,19 +200,15 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		//*********************************************************************
 		mgrLogger, mgrCmcVw, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "manager_cmc_integrated",
 			map[string]interface{}{
-				"rooturi":           rootView.GetURI(),
-				"FQDD":              mgrName,                                   // this is used for the AR mapper. case difference is confusing, but need to change mappers
-				"fqdd":              "System.Chassis.1#SubSystem.1#" + mgrName, // This is used for the health subsystem
-				"fqddlist":          []string{mgrName},
-				"globalHealthModel": globalHealthModel,
+				"rooturi":                          rootView.GetURI(),
+				"FQDD":                             mgrName,                                   // this is used for the AR mapper. case difference is confusing, but need to change mappers
+				"fqdd":                             "System.Chassis.1#SubSystem.1#" + mgrName, // This is used for the health subsystem
+				"fqddlist":                         []string{mgrName},
+				"globalHealthModel":                globalHealthModel,
+				"exportSystemConfiguration":        view.Action(exportSystemConfiguration),
+				"importSystemConfiguration":        view.Action(importSystemConfiguration),
+				"importSystemConfigurationPreview": view.Action(importSystemConfigurationPreview),
 			},
-		)
-
-		mgrCmcVw.ApplyOption(
-			view.UpdateEtag("etag", []string{}),
-			actionSvc.WithAction(ctx, "manager.exportsystemconfig", "/Actions/Oem/EID_674_Manager.ExportSystemConfiguration", exportSystemConfiguration),
-			actionSvc.WithAction(ctx, "manager.importsystemconfig", "/Actions/Oem/EID_674_Manager.ImportSystemConfiguration", importSystemConfiguration),
-			actionSvc.WithAction(ctx, "manager.importsystemconfigpreview", "/Actions/Oem/EID_674_Manager.ImportSystemConfigurationPreview", importSystemConfigurationPreview),
 		)
 
 		managers = append(managers, mgrCmcVw)
@@ -268,10 +265,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			},
 		)
 
-		chasCmcVw.ApplyOption(
-			view.UpdateEtag("etag", []string{}),
-		)
-
 		// add the aggregate to the view tree
 		chasCMCIntegrated.AddAggregate(ctx, chasLogger, chasCmcVw, ch)
 		attributes.AddAggregate(ctx, chasCmcVw, rootView.GetURI()+"/Chassis/"+mgrName+"/Attributes", ch)
@@ -297,20 +290,14 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		chasName := "System.Chassis.1"
 		sysChasLogger, sysChasVw, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "system_chassis",
 			map[string]interface{}{
-				"rooturi":           rootView.GetURI(),
-				"FQDD":              chasName,
-				"fqddlist":          []string{chasName},
-				"globalHealthModel": globalHealthModel,
+				"rooturi":                rootView.GetURI(),
+				"FQDD":                   chasName,
+				"fqddlist":               []string{chasName},
+				"globalHealthModel":      globalHealthModel,
+				"msmConfigBackup":        view.Action(msmConfigBackup),
+				"chassisMSMConfigBackup": view.Action(chassisMSMConfigBackup),
+				"managed_by":             []string{managers[0].GetURI()},
 			},
-		)
-
-		sysChasVw.GetModel("default").ApplyOption(
-			model.UpdateProperty("managed_by", []string{managers[0].GetURI()}),
-		)
-
-		sysChasVw.ApplyOption(
-			actionSvc.WithAction(ctx, "msmconfigbackup", "/Actions/Oem/MSMConfigBackup", msmConfigBackup),
-			actionSvc.WithAction(ctx, "chassis.msmconfigbackup", "/Actions/Oem/DellChassis.MSMConfigBackup", chassisMSMConfigBackup),
 		)
 
 		// Create the .../Attributes URI. Attributes are stored in the attributes property of the chasModel
@@ -334,7 +321,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 
 		power.AddAggregate(ctx, powerLogger, sysChasPwrVw, ch)
 
-		psu_uris := []string{}
 		for _, psuName := range []string{
 			"PSU.Slot.1", "PSU.Slot.2", "PSU.Slot.3",
 			"PSU.Slot.4", "PSU.Slot.5", "PSU.Slot.6",
@@ -352,10 +338,8 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			)
 
 			swinvViews = append(swinvViews, sysChasPwrPsuVw)
-			psu_uris = append(psu_uris, sysChasPwrPsuVw.GetURI())
 			powersupply.AddAggregate(ctx, psuLogger, sysChasPwrPsuVw, ch)
 		}
-		sysChasPwrVw.GetModel("default").ApplyOption(model.UpdateProperty("power_supply_uris", psu_uris))
 
 		// ##################
 		// # Power Control
@@ -369,7 +353,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			},
 		)
 		powercontrol.AddAggregate(ctx, pwrCtrlLogger, sysChasPwrCtrlVw, ch)
-		sysChasPwrVw.GetModel("default").ApplyOption(model.UpdateProperty("power_control_uris", []string{sysChasPwrCtrlVw.GetURI()}))
 
 		// ##################
 		// # Power Trends
@@ -382,13 +365,11 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			},
 		)
 		powertrends.AddTrendsAggregate(ctx, pwrTrendLogger, pwrTrendVw, ch)
-		sysChasPwrVw.GetModel("default").ApplyOption(model.UpdateProperty("power_trends_uri", pwrTrendVw.GetURI()))
 
 		// ##################
 		// # Power Histograms
 		// ##################
 
-		histogram_uris := []string{}
 		for _, trend := range []string{
 			"Week", "Day", "Hour",
 		} {
@@ -400,9 +381,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 				},
 			)
 			powertrends.AddHistogramAggregate(ctx, histLogger, histView, ch)
-			histogram_uris = append(histogram_uris, histView.GetURI())
 		}
-		pwrTrendVw.GetModel("default").ApplyOption(model.UpdateProperty("trend_histogram_uris", histogram_uris))
 
 		//*********************************************************************
 		// Create Thermal objects for System.Chassis.1
@@ -414,9 +393,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 				"globalHealthModel": globalHealthModel,
 			},
 		)
-
-		// thermal_uris := []string{}
-		// redundancy_uris := []string{}
 
 		thermal.AddAggregate(ctx, thermalLogger, thermalView, ch)
 
@@ -492,11 +468,8 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 				"fqdd":              "System.Chassis.1#SubSystem.1#" + iomName,
 				"fqddlist":          []string{iomName},
 				"globalHealthModel": globalHealthModel,
+				"managed_by":        []string{managers[0].GetURI()},
 			},
-		)
-
-		iomView.GetModel("default").ApplyOption(
-			model.UpdateProperty("managed_by", []string{managers[0].GetURI()}),
 		)
 
 		swinvViews = append(swinvViews, iomView)
@@ -535,11 +508,8 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 				"fqdd":              "System.Chassis.1#SubSystem.1#" + sledName,
 				"fqddlist":          []string{sledName},
 				"globalHealthModel": globalHealthModel,
+				"managed_by":        []string{managers[0].GetURI()},
 			},
-		)
-
-		sledView.GetModel("default").ApplyOption(
-			model.UpdateProperty("managed_by", []string{managers[0].GetURI()}),
 		)
 
 		sled_chassis.AddAggregate(ctx, sledLogger, sledView, ch, eb)

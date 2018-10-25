@@ -3,6 +3,7 @@ package testaggregate
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/Knetic/govaluate"
 	"github.com/looplab/eventhorizon"
@@ -68,6 +69,67 @@ func RegisterPumpAction(s *Service, actionSvc actionService, pumpSvc pumpService
 
 		logger.Info("Registering pump handled action", "name", actionNameStr, "URI fragment", actionURIFragStr, "timeout", actionTimeoutInt)
 		vw.ApplyOption(actionSvc.WithAction(ctx, actionNameStr, actionURIFragStr, pumpSvc.NewPumpAction(actionTimeoutInt)))
+
+		return nil
+	})
+
+	s.RegisterViewFunction("WithAction", func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, vw *view.View, cfg interface{}, parameters map[string]interface{}) error {
+		cfgParams, ok := cfg.(map[interface{}]interface{})
+		if !ok {
+			logger.Crit("Failed to type assert cfg to string", "cfg", cfg)
+			return errors.New("Failed to type assert expression to string")
+		}
+
+		actionName, ok := cfgParams["name"]
+		if !ok {
+			logger.Crit("Config file missing action name for action", "cfg", cfg)
+			return fmt.Errorf("Config file missing action name for action: %s", cfgParams)
+		}
+		actionNameStr, ok := actionName.(string)
+		if !ok {
+			logger.Crit("Action name isnt a string", "cfg", cfg)
+			return nil
+		}
+
+		actionURIFrag, ok := cfgParams["uri"]
+		if !ok {
+			logger.Crit("Config file missing action URI for action", "cfg", cfg)
+			return nil
+		}
+		actionURIFragStr, ok := actionURIFrag.(string)
+		if !ok {
+			logger.Crit("Action URI isnt a string", "cfg", cfg)
+			return nil
+		}
+
+		modelAction, ok := cfgParams["actionFunction"]
+		if !ok {
+			logger.Crit("Config file missing model name for action", "cfg", cfg)
+			return errors.New("Config file missing model name for action")
+		}
+		modelActionStr, ok := modelAction.(string)
+		if !ok {
+			logger.Crit("model name isnt a string", "cfg", cfg)
+			return errors.New("model name isnt a string")
+		}
+		expr, err := govaluate.NewEvaluableExpressionWithFunctions(modelActionStr, functions)
+		if err != nil {
+			logger.Crit("Failed to create evaluable expression", "expr", expr, "err", err)
+			return errors.New("Failed to create evaluable expression")
+		}
+		action, err := expr.Evaluate(parameters)
+		if err != nil {
+			logger.Crit("expression evaluation failed", "expr", expr, "err", err)
+			return errors.New("expression evaluation failed")
+		}
+		actionFn, ok := action.(view.Action)
+		if !ok {
+			logger.Crit("Could not type assert to action function", "expr", expr)
+			return errors.New("Could not type assert to action function")
+		}
+
+		logger.Info("WithAction", "name", actionName, "exprStr", modelActionStr)
+		vw.ApplyOption(actionSvc.WithAction(ctx, actionNameStr, actionURIFragStr, actionFn))
 
 		return nil
 	})
@@ -147,6 +209,26 @@ func RegisterPumpAction(s *Service, actionSvc actionService, pumpSvc pumpService
 
 		logger.Info("WithModel", "name", existingStr, "exprStr", linknameStr)
 		vw.ApplyOption(view.WithModel(linknameStr, vw.GetModel(existingStr)))
+
+		return nil
+	})
+
+	s.RegisterViewFunction("etag", func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, vw *view.View, cfg interface{}, parameters map[string]interface{}) error {
+		cfgParams, ok := cfg.([]interface{})
+		if !ok {
+			logger.Crit("Failed to type assert cfg to string", "cfg", cfg)
+			return errors.New("Failed to type assert expression to string")
+		}
+
+		strList := []string{}
+		for _, k := range cfgParams {
+			if s, ok := k.(string); ok {
+				strList = append(strList, s)
+			}
+		}
+
+		logger.Info("UpdateEtag", "strlist", strList)
+		vw.ApplyOption(view.UpdateEtag("etag", strList))
 
 		return nil
 	})
