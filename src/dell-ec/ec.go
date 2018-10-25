@@ -353,7 +353,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			},
 		)
 		powercontrol.AddAggregate(ctx, pwrCtrlLogger, sysChasPwrCtrlVw, ch)
-		sysChasPwrVw.GetModel("default").ApplyOption(model.UpdateProperty("power_control_uris", []string{sysChasPwrCtrlVw.GetURI()}))
 
 		// ##################
 		// # Power Trends
@@ -366,13 +365,11 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			},
 		)
 		powertrends.AddTrendsAggregate(ctx, pwrTrendLogger, pwrTrendVw, ch)
-		sysChasPwrVw.GetModel("default").ApplyOption(model.UpdateProperty("power_trends_uri", pwrTrendVw.GetURI()))
 
 		// ##################
 		// # Power Histograms
 		// ##################
 
-		histogram_uris := []string{}
 		for _, trend := range []string{
 			"Week", "Day", "Hour",
 		} {
@@ -384,9 +381,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 				},
 			)
 			powertrends.AddHistogramAggregate(ctx, histLogger, histView, ch)
-			histogram_uris = append(histogram_uris, histView.GetURI())
 		}
-		pwrTrendVw.GetModel("default").ApplyOption(model.UpdateProperty("trend_histogram_uris", histogram_uris))
 
 		//*********************************************************************
 		// Create Thermal objects for System.Chassis.1

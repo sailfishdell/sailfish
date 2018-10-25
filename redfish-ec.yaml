@@ -434,6 +434,10 @@ views:
           "params": {"modelname": "default", "cfgsection": "Chassis/System.Chassis/Power", "mappinguniquename": "'chassis_power_mapper:' + FQDD", "AddToView": true}
         - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "power_supply_uris", "uniquename": "'am2_psu_uris:' + FQDD" }
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "power_control_uris", "uniquename": "'am2_control_uris:' + FQDD" }
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "power_trends_uri", "uniquename": "'am2_trends_uri:' + FQDD" }
       "View":
         - "fn": "withModel"
           "params": {"name": "global_health", "expr": "globalHealthModel"}
@@ -501,6 +505,8 @@ views:
       "Models":
         "default":  {}
       "Controllers":
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "trend_histogram_uris", "uniquename": "'am2_trends_uri:' + FQDD" }
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/Chassis/' + FQDD + '/Power/PowerTrends-1'"
@@ -854,6 +860,30 @@ awesome_mapper:
       - { SelectEventType: "RedfishResource:removed",
           Select: "nohash(data.ResourceURI) && baseuri(data.ResourceURI) == rooturi + '/Chassis/' + FQDD + '/Power/PowerSupplies' ",
           ModelUpdate: [ {Property: "power_supply_uris", Query: "removefromset(model, propname, data.ResourceURI)"} ]}
+
+    power_control_uris:
+      - { SelectEventType: "RedfishResource:created",
+          Select: "nohash(data.ResourceURI) && data.ResourceURI == rooturi + '/Chassis/' + FQDD + '/Power/PowerControl' ",
+          ModelUpdate: [ {Property: "power_control_uris", Query: "addtoset(model, propname, data.ResourceURI)"} ]}
+      - { SelectEventType: "RedfishResource:removed",
+          Select: "nohash(data.ResourceURI) && data.ResourceURI == rooturi + '/Chassis/' + FQDD + '/Power/PowerControl' ",
+          ModelUpdate: [ {Property: "power_control_uris", Query: "removefromset(model, propname, data.ResourceURI)"} ]}
+
+    power_trends_uri:
+      - { SelectEventType: "RedfishResource:created",
+          Select: "nohash(data.ResourceURI) && data.ResourceURI == rooturi + '/Chassis/' + FQDD + '/Power/PowerTrends-1' ",
+          ModelUpdate: [ {Property: "power_trends_uri", Query: "data.ResourceURI"} ]}
+      - { SelectEventType: "RedfishResource:removed",
+          Select: "nohash(data.ResourceURI) && data.ResourceURI == rooturi + '/Chassis/' + FQDD + '/Power/PowerTrends-1' ",
+          ModelUpdate: [ {Property: "power_trends_uri", Query: "''"} ]}
+
+    trend_histogram_uris:
+      - { SelectEventType: "RedfishResource:created",
+          Select: "nohash(data.ResourceURI) && baseuri(data.ResourceURI) == rooturi + '/Chassis/' + FQDD + '/Power/PowerTrends-1' ",
+          ModelUpdate: [ {Property: "trend_histogram_uris", Query: "addtoset(model, propname, data.ResourceURI)"} ]}
+      - { SelectEventType: "RedfishResource:removed",
+          Select: "nohash(data.ResourceURI) && baseuri(data.ResourceURI) == rooturi + '/Chassis/' + FQDD + '/Power/PowerTrends-1' ",
+          ModelUpdate: [ {Property: "trend_histogram_uris", Query: "removefromset(model, propname, data.ResourceURI)"} ]}
 
     addslot:
       - { SelectEventType: "ComponentEvent",
