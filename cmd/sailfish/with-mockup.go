@@ -15,7 +15,7 @@ import (
 )
 
 func init() {
-	implementations["mockup"] = func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *sync.Mutex, ch eh.CommandHandler, eb eh.EventBus, d *domain.DomainObjects) Implementation {
+	implementations["mockup"] = func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *sync.RWMutex, ch eh.CommandHandler, eb eh.EventBus, d *domain.DomainObjects) Implementation {
 		mockup.New(ctx, logger, cfgMgr, viperMu, ch, eb, d)
 		return nil
 	}

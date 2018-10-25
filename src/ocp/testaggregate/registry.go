@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync"
 
 	"github.com/Knetic/govaluate"
 	"github.com/looplab/eventhorizon"
@@ -27,7 +28,7 @@ type pumpService interface {
 }
 
 func RegisterPumpAction(s *Service, actionSvc actionService, pumpSvc pumpService) {
-	s.RegisterViewFunction("with_PumpHandledAction", func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, vw *view.View, cfg interface{}, parameters map[string]interface{}) error {
+	s.RegisterViewFunction("with_PumpHandledAction", func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, vw *view.View, cfg interface{}, parameters map[string]interface{}) error {
 		cfgParams, ok := cfg.(map[interface{}]interface{})
 		if !ok {
 			logger.Crit("Failed to type assert cfg to string", "cfg", cfg)
@@ -73,7 +74,7 @@ func RegisterPumpAction(s *Service, actionSvc actionService, pumpSvc pumpService
 		return nil
 	})
 
-	s.RegisterViewFunction("WithAction", func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, vw *view.View, cfg interface{}, parameters map[string]interface{}) error {
+	s.RegisterViewFunction("WithAction", func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, vw *view.View, cfg interface{}, parameters map[string]interface{}) error {
 		cfgParams, ok := cfg.(map[interface{}]interface{})
 		if !ok {
 			logger.Crit("Failed to type assert cfg to string", "cfg", cfg)
@@ -134,7 +135,7 @@ func RegisterPumpAction(s *Service, actionSvc actionService, pumpSvc pumpService
 		return nil
 	})
 
-	s.RegisterViewFunction("withModel", func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, vw *view.View, cfg interface{}, parameters map[string]interface{}) error {
+	s.RegisterViewFunction("withModel", func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, vw *view.View, cfg interface{}, parameters map[string]interface{}) error {
 		cfgParams, ok := cfg.(map[interface{}]interface{})
 		if !ok {
 			logger.Crit("Failed to type assert cfg to string", "cfg", cfg)
@@ -178,7 +179,7 @@ func RegisterPumpAction(s *Service, actionSvc actionService, pumpSvc pumpService
 		return nil
 	})
 
-	s.RegisterViewFunction("linkModel", func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, vw *view.View, cfg interface{}, parameters map[string]interface{}) error {
+	s.RegisterViewFunction("linkModel", func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, vw *view.View, cfg interface{}, parameters map[string]interface{}) error {
 		cfgParams, ok := cfg.(map[interface{}]interface{})
 		if !ok {
 			logger.Crit("Failed to type assert cfg to string", "cfg", cfg)
@@ -213,7 +214,7 @@ func RegisterPumpAction(s *Service, actionSvc actionService, pumpSvc pumpService
 		return nil
 	})
 
-	s.RegisterViewFunction("etag", func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, vw *view.View, cfg interface{}, parameters map[string]interface{}) error {
+	s.RegisterViewFunction("etag", func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, vw *view.View, cfg interface{}, parameters map[string]interface{}) error {
 		cfgParams, ok := cfg.([]interface{})
 		if !ok {
 			logger.Crit("Failed to type assert cfg to string", "cfg", cfg)
@@ -236,7 +237,7 @@ func RegisterPumpAction(s *Service, actionSvc actionService, pumpSvc pumpService
 }
 
 func RegisterWithURI(s *Service) {
-	s.RegisterViewFunction("with_URI", func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, vw *view.View, cfg interface{}, parameters map[string]interface{}) error {
+	s.RegisterViewFunction("with_URI", func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, vw *view.View, cfg interface{}, parameters map[string]interface{}) error {
 		exprStr, ok := cfg.(string)
 		if !ok {
 			logger.Crit("Failed to type assert cfg to string", "cfg", cfg)
@@ -266,7 +267,7 @@ func RegisterWithURI(s *Service) {
 }
 
 func RegisterPublishEvents(s *Service, evtSvc EventService) {
-	s.RegisterViewFunction("PublishResourceUpdatedEventsForModel", func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, vw *view.View, cfg interface{}, parameters map[string]interface{}) error {
+	s.RegisterViewFunction("PublishResourceUpdatedEventsForModel", func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, vw *view.View, cfg interface{}, parameters map[string]interface{}) error {
 		modelName, ok := cfg.(string)
 		if !ok {
 			logger.Crit("Failed to type assert cfg to string", "cfg", cfg)
@@ -281,7 +282,7 @@ func RegisterPublishEvents(s *Service, evtSvc EventService) {
 }
 
 func RegisterAM2(s *Service, am2Svc *am2.Service) {
-	s.RegisterControllerFunction("AM2", func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, vw *view.View, cfg interface{}, parameters map[string]interface{}) error {
+	s.RegisterControllerFunction("AM2", func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, vw *view.View, cfg interface{}, parameters map[string]interface{}) error {
 		cfgParams, ok := cfg.(map[interface{}]interface{})
 		if !ok {
 			logger.Crit("Failed to type assert cfg to string", "cfg", cfg)
@@ -338,7 +339,7 @@ func RegisterAM2(s *Service, am2Svc *am2.Service) {
 		}
 
 		logger.Debug("Creating awesome_mapper2 controller", "modelName", modelNameStr, "cfgSection", cfgSectionStr, "uniqueName", uniqueNameStr)
-		am2Svc.NewMapping(ctx, logger, cfgMgr, vw.GetModel(modelNameStr), cfgSectionStr, uniqueNameStr, parameters)
+		am2Svc.NewMapping(ctx, logger, cfgMgr, cfgMgrMu, vw.GetModel(modelNameStr), cfgSectionStr, uniqueNameStr, parameters)
 
 		return nil
 	})

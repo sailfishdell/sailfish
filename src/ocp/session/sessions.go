@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"sync"
 	"time"
 
 	jwt "github.com/dgrijalva/jwt-go"
@@ -106,7 +107,7 @@ func MakeHandlerFunc(logger log.Logger, eb eh.EventBus, getter IDGetter, withUse
 	}
 }
 
-func SetupSessionService(ctx context.Context, svc *testaggregate.Service, v *view.View, cfgMgr *viper.Viper, ch eh.CommandHandler, eb eh.EventBus, masterparams map[string]interface{}) {
+func SetupSessionService(ctx context.Context, svc *testaggregate.Service, v *view.View, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, ch eh.CommandHandler, eb eh.EventBus, masterparams map[string]interface{}) {
 	// somewhat of a violation of how i want to structure all this, but it's the best option for now
 	EventPublisher := eventpublisher.NewEventPublisher()
 	eb.AddHandler(eh.MatchEvent(XAuthTokenRefreshEvent), EventPublisher)
@@ -128,7 +129,7 @@ func SetupSessionService(ctx context.Context, svc *testaggregate.Service, v *vie
 					newParams[k] = v
 				}
 
-				_, vw, _ := svc.InstantiateFromCfg(ctx, cfgMgr, "session", newParams)
+				_, vw, _ := svc.InstantiateFromCfg(ctx, cfgMgr, cfgMgrMu, "session", newParams)
 				return vw
 			},
 		}

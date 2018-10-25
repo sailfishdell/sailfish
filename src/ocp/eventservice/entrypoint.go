@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"sync"
 	"time"
 
 	eh "github.com/looplab/eventhorizon"
@@ -33,6 +34,7 @@ type EventService struct {
 	eb        eh.EventBus
 	ew        *eventwaiter.EventWaiter
 	cfg       *viper.Viper
+	cfgMu     *sync.RWMutex
 	jc        chan Job
 	wrap      func(string, map[string]interface{}) (log.Logger, *view.View, error)
 	addparam  func(map[string]interface{}) map[string]interface{}
@@ -43,7 +45,7 @@ const WorkQueueLen = 10
 
 var GlobalEventService *EventService
 
-func New(ctx context.Context, cfg *viper.Viper, instantiateSvc *testaggregate.Service, actionSvc actionService, ch eh.CommandHandler, eb eh.EventBus) *EventService {
+func New(ctx context.Context, cfg *viper.Viper, cfgMu *sync.RWMutex, instantiateSvc *testaggregate.Service, actionSvc actionService, ch eh.CommandHandler, eb eh.EventBus) *EventService {
 	EventPublisher := eventpublisher.NewEventPublisher()
 	eb.AddHandler(eh.MatchAnyEventOf(ExternalRedfishEvent, domain.RedfishResourceRemoved), EventPublisher)
 	EventWaiter := eventwaiter.NewEventWaiter(eventwaiter.SetName("Event Service"))
@@ -54,10 +56,11 @@ func New(ctx context.Context, cfg *viper.Viper, instantiateSvc *testaggregate.Se
 		eb:        eb,
 		ew:        EventWaiter,
 		cfg:       cfg,
+		cfgMu:     cfgMu,
 		jc:        CreateWorkers(100, 6),
 		actionSvc: actionSvc,
 		wrap: func(name string, params map[string]interface{}) (log.Logger, *view.View, error) {
-			return instantiateSvc.InstantiateFromCfg(ctx, cfg, name, params)
+			return instantiateSvc.InstantiateFromCfg(ctx, cfg, cfgMu, name, params)
 		},
 	}
 
@@ -79,12 +82,12 @@ func (es *EventService) StartEventService(ctx context.Context, logger log.Logger
 		return
 	}
 
-	_, esView, _ := instantiateSvc.InstantiateFromCfg(ctx, es.cfg, "eventservice", es.addparam(map[string]interface{}{
+	_, esView, _ := instantiateSvc.InstantiateFromCfg(ctx, es.cfg, es.cfgMu, "eventservice", es.addparam(map[string]interface{}{
 		"submittestevent": view.Action(MakeSubmitTestEvent(es.eb)),
 	}))
 	params["eventsvc_id"] = esView.GetUUID()
 	params["eventsvc_uri"] = esView.GetURI()
-	instantiateSvc.InstantiateFromCfg(ctx, es.cfg, "subscriptioncollection", es.addparam(map[string]interface{}{
+	instantiateSvc.InstantiateFromCfg(ctx, es.cfg, es.cfgMu, "subscriptioncollection", es.addparam(map[string]interface{}{
 		"collection_uri": "/redfish/v1/EventService/Subscriptions",
 	}))
 

@@ -3,6 +3,7 @@ package ar_mapper2
 import (
 	"context"
 	"errors"
+	"sync"
 
 	"github.com/Knetic/govaluate"
 	"github.com/spf13/viper"
@@ -13,7 +14,7 @@ import (
 )
 
 func RegisterARMapper(s *testaggregate.Service, arsvc *ARService) {
-	s.RegisterControllerFunction("ARMapper", func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, vw *view.View, cfg interface{}, parameters map[string]interface{}) error {
+	s.RegisterControllerFunction("ARMapper", func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, vw *view.View, cfg interface{}, parameters map[string]interface{}) error {
 		cfgParams, ok := cfg.(map[interface{}]interface{})
 		if !ok {
 			logger.Crit("Failed to type assert cfg to string", "cfg", cfg)

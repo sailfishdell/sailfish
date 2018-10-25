@@ -15,9 +15,9 @@ import (
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
 )
 
-type viewFunc func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, vw *view.View, cfg interface{}, parameters map[string]interface{}) error
-type controllerFunc func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, vw *view.View, cfg interface{}, parameters map[string]interface{}) error
-type aggregateFunc func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, vw *view.View, cfg interface{}, parameters map[string]interface{}) ([]eh.Command, error)
+type viewFunc func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, vw *view.View, cfg interface{}, parameters map[string]interface{}) error
+type controllerFunc func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, vw *view.View, cfg interface{}, parameters map[string]interface{}) error
+type aggregateFunc func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, vw *view.View, cfg interface{}, parameters map[string]interface{}) ([]eh.Command, error)
 
 type Service struct {
 	logger log.Logger
@@ -82,15 +82,18 @@ type config struct {
 	Aggregate   string
 }
 
-func (s *Service) InstantiateFromCfg(ctx context.Context, cfgMgr *viper.Viper, name string, parameters map[string]interface{}) (log.Logger, *view.View, error) {
+func (s *Service) InstantiateFromCfg(ctx context.Context, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, name string, parameters map[string]interface{}) (log.Logger, *view.View, error) {
 
 	newParams := map[string]interface{}{}
 	for k, v := range parameters {
 		newParams[k] = v
 	}
 
+	// be sure to unlock()
+	cfgMgrMu.Lock()
 	subCfg := cfgMgr.Sub("views")
 	if subCfg == nil {
+		cfgMgrMu.Unlock()
 		s.logger.Crit("missing config file section: 'views'")
 		return nil, nil, errors.New("invalid config section 'views'")
 	}
@@ -98,6 +101,7 @@ func (s *Service) InstantiateFromCfg(ctx context.Context, cfgMgr *viper.Viper, n
 	config := config{}
 
 	err := subCfg.UnmarshalKey(name, &config)
+	cfgMgrMu.Unlock()
 	if err != nil {
 		s.logger.Crit("unamrshal failed", "err", err, "name", name)
 		return nil, nil, errors.New("unmarshal failed")
@@ -162,7 +166,7 @@ func (s *Service) InstantiateFromCfg(ctx context.Context, cfgMgr *viper.Viper, n
 			subLogger.Crit("Could not find registered view function", "function", viewFnNameStr)
 			continue
 		}
-		fn(ctx, subLogger, cfgMgr, vw, viewFnParams, newParams)
+		fn(ctx, subLogger, cfgMgr, cfgMgrMu, vw, viewFnParams, newParams)
 	}
 
 	// Instantiate controllers
@@ -187,7 +191,7 @@ func (s *Service) InstantiateFromCfg(ctx context.Context, cfgMgr *viper.Viper, n
 			subLogger.Crit("Could not find registered controller function", "function", controllerFnNameStr)
 			continue
 		}
-		fn(ctx, subLogger, cfgMgr, vw, controllerFnParams, newParams)
+		fn(ctx, subLogger, cfgMgr, cfgMgrMu, vw, controllerFnParams, newParams)
 	}
 
 	// Instantiate aggregate
@@ -201,7 +205,7 @@ func (s *Service) InstantiateFromCfg(ctx context.Context, cfgMgr *viper.Viper, n
 			subLogger.Crit("invalid aggregate function", "aggregate", config.Aggregate)
 			return
 		}
-		cmds, err := fn(ctx, subLogger, cfgMgr, vw, nil, newParams)
+		cmds, err := fn(ctx, subLogger, cfgMgr, cfgMgrMu, vw, nil, newParams)
 		if err != nil {
 			subLogger.Crit("aggregate function returned nil")
 			return

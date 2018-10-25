@@ -64,11 +64,10 @@ type waiter interface {
 
 func (o *ocp) ConfigChangeHandler() { o.configChangeHandler() }
 
-func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *sync.Mutex, ch eh.CommandHandler, eb eh.EventBus, d *domain.DomainObjects) *ocp {
+func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, ch eh.CommandHandler, eb eh.EventBus, d *domain.DomainObjects) *ocp {
 	logger = logger.New("module", "ec")
 	self := &ocp{}
 
-	updateFns := []func(context.Context, *viper.Viper){}
 	swinvViews := []*view.View{}
 
 	// These three all set up a waiter for the root service to appear, so init root service after.
@@ -78,7 +77,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	logSvc := lcl.New(ch, eb)
 	faultSvc := faultlist.New(ch, eb)
 	domain.StartInjectService(eb)
-	arService, _ := ar_mapper2.StartService(ctx, logger, cfgMgr, eb)
+	arService, _ := ar_mapper2.StartService(ctx, logger, cfgMgr, cfgMgrMu, eb)
 	actionSvc := ah.StartService(ctx, logger, ch, eb)
 	uploadSvc := uploadhandler.StartService(ctx, logger, ch, eb)
 	am2Svc, _ := awesome_mapper2.StartService(ctx, logger, eb)
@@ -89,7 +88,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 
 	// the package for this is going to change, but this is what makes the various mappers and view functions available
 	instantiateSvc := testaggregate.New(logger, ch)
-	evtSvc := eventservice.New(ctx, cfgMgr, instantiateSvc, actionSvc, ch, eb)
+	evtSvc := eventservice.New(ctx, cfgMgr, cfgMgrMu, instantiateSvc, actionSvc, ch, eb)
 	testaggregate.RegisterWithURI(instantiateSvc)
 	testaggregate.RegisterPublishEvents(instantiateSvc, evtSvc)
 	testaggregate.RegisterAggregate(instantiateSvc)
@@ -124,30 +123,30 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	// we can add this model to the views that need to expose it
 	globalHealthModel := model.New()
 	healthLogger := logger.New("module", "health_rollup")
-	am2Svc.NewMapping(ctx, healthLogger, cfgMgr, globalHealthModel, "global_health", "global_health", map[string]interface{}{})
+	am2Svc.NewMapping(ctx, healthLogger, cfgMgr, cfgMgrMu, globalHealthModel, "global_health", "global_health", map[string]interface{}{})
 
 	//*********************************************************************
 	//  /redfish/v1
 	//*********************************************************************
-	_, rootView, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "rootview", baseParams)
+	_, rootView, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, cfgMgrMu, "rootview", baseParams)
 	baseParams["rootid"] = rootView.GetUUID()
 
 	//*********************************************************************
 	//  /redfish/v1/testview - a proof of concept test view and example
 	//*********************************************************************
-	instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "testview", baseParams)
+	instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, cfgMgrMu, "testview", baseParams)
 
 	//*********************************************************************
 	//  /redfish/v1/{Managers,Chassis,Systems,Accounts}
 	//*********************************************************************
-	_, _, _ = instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "chassis", modParams(map[string]interface{}{"collection_uri": "/redfish/v1/Chassis"}))
-	_, _, _ = instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "systems", modParams(map[string]interface{}{"collection_uri": "/redfish/v1/Systems"}))
-	_, _, _ = instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "managers", modParams(map[string]interface{}{"collection_uri": "/redfish/v1/Managers"}))
-	_, accountSvcVw, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "accountservice", modParams(map[string]interface{}{}))
+	_, _, _ = instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, cfgMgrMu, "chassis", modParams(map[string]interface{}{"collection_uri": "/redfish/v1/Chassis"}))
+	_, _, _ = instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, cfgMgrMu, "systems", modParams(map[string]interface{}{"collection_uri": "/redfish/v1/Systems"}))
+	_, _, _ = instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, cfgMgrMu, "managers", modParams(map[string]interface{}{"collection_uri": "/redfish/v1/Managers"}))
+	_, accountSvcVw, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, cfgMgrMu, "accountservice", modParams(map[string]interface{}{}))
 	baseParams["actsvc_uri"] = accountSvcVw.GetURI()
 	baseParams["actsvc_id"] = accountSvcVw.GetUUID()
-	_, _, _ = instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "roles", modParams(map[string]interface{}{"collection_uri": "/redfish/v1/AccountService/Roles"}))
-	_, _, _ = instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "accounts", modParams(map[string]interface{}{"collection_uri": "/redfish/v1/AccountService/Accounts"}))
+	_, _, _ = instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, cfgMgrMu, "roles", modParams(map[string]interface{}{"collection_uri": "/redfish/v1/AccountService/Roles"}))
+	_, _, _ = instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, cfgMgrMu, "accounts", modParams(map[string]interface{}{"collection_uri": "/redfish/v1/AccountService/Accounts"}))
 
 	//*********************************************************************
 	//  Standard redfish roles
@@ -157,11 +156,11 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	//*********************************************************************
 	// /redfish/v1/Sessions
 	//*********************************************************************
-	_, sessionSvcVw, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "sessionservice", baseParams)
+	_, sessionSvcVw, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, cfgMgrMu, "sessionservice", baseParams)
 	baseParams["sessionsvc_id"] = sessionSvcVw.GetUUID()
 	baseParams["sessionsvc_uri"] = sessionSvcVw.GetURI()
-	session.SetupSessionService(ctx, instantiateSvc, sessionSvcVw, cfgMgr, ch, eb, baseParams)
-	instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "sessioncollection", modParams(map[string]interface{}{"collection_uri": "/redfish/v1/SessionService/Sessions"}))
+	session.SetupSessionService(ctx, instantiateSvc, sessionSvcVw, cfgMgr, cfgMgrMu, ch, eb, baseParams)
+	instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, cfgMgrMu, "sessioncollection", modParams(map[string]interface{}{"collection_uri": "/redfish/v1/SessionService/Sessions"}))
 
 	//*********************************************************************
 	// /redfish/v1/EventService
@@ -173,14 +172,14 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	//*********************************************************************
 	// /redfish/v1/Registries
 	//*********************************************************************
-	instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "registries", modParams(map[string]interface{}{"collection_uri": "/redfish/v1/Registries"}))
+	instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, cfgMgrMu, "registries", modParams(map[string]interface{}{"collection_uri": "/redfish/v1/Registries"}))
 
 	for regName, location := range map[string]interface{}{
 		"idrac_registry":    []map[string]string{{"Language": "En", "Uri": "/redfish/v1/Registries/Messages/EEMIRegistry.v1_5_0.json"}},
 		"base_registry":     []map[string]string{{"Language": "En", "Uri": "/redfish/v1/Registries/BaseMessages/BaseRegistry.v1_0_0.json", "PublicationUri": "http://www.dmtf.org/sites/default/files/standards/documents/DSP8011_1.0.0a.json"}},
 		"mgr_attr_registry": []map[string]string{{"Language": "En", "Uri": "/redfish/v1/Registries/ManagerAttributeRegistry/ManagerAttributeRegistry.v1_0_0.json"}},
 	} {
-		instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, regName, modParams(map[string]interface{}{"location": location}))
+		instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, cfgMgrMu, regName, modParams(map[string]interface{}{"location": location}))
 	}
 
 	// various things are "managed" by the managers, create a global to hold the views so we can make references
@@ -198,7 +197,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		//*********************************************************************
 		// /redfish/v1/Managers/CMC.Integrated
 		//*********************************************************************
-		mgrLogger, mgrCmcVw, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "manager_cmc_integrated",
+		mgrLogger, mgrCmcVw, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, cfgMgrMu, "manager_cmc_integrated",
 			map[string]interface{}{
 				"rooturi":                          rootView.GetURI(),
 				"FQDD":                             mgrName,                                   // this is used for the AR mapper. case difference is confusing, but need to change mappers
@@ -221,11 +220,11 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		// ######################
 		// log related uris
 		// ######################
-		instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "logservices",
+		instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, cfgMgrMu, "logservices",
 			modParams(map[string]interface{}{"FQDD": mgrName, "collection_uri": baseParams["rooturi"].(string) + "/Managers/" + mgrName + "/LogServices"}),
 		)
-		instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "lclogservices", modParams(map[string]interface{}{"FQDD": mgrName}))
-		instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "faultlistservices", modParams(map[string]interface{}{"FQDD": mgrName}))
+		instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, cfgMgrMu, "lclogservices", modParams(map[string]interface{}{"FQDD": mgrName}))
+		instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, cfgMgrMu, "faultlistservices", modParams(map[string]interface{}{"FQDD": mgrName}))
 
 		certificate_uris := []string{mgrCmcVw.GetURI() + "/CertificateService/CertificateInventory/FactoryIdentity.1"}
 
@@ -233,7 +232,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		certificateservices.AddAggregate(ctx, mgrCmcVw, rootView.GetURI()+"/Managers/"+mgrName, ch)
 
 		// Redundancy
-		redundancyLogger, redundancyVw, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "chassis_cmc_integrated_redundancy",
+		redundancyLogger, redundancyVw, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, cfgMgrMu, "chassis_cmc_integrated_redundancy",
 			map[string]interface{}{
 				"rooturi":  rootView.GetURI(),
 				"FQDD":     mgrName,                                   // this is used for the AR mapper. case difference is confusing, but need to change mappers
@@ -255,7 +254,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		//*********************************************************************
 		// Create CHASSIS objects for CMC.Integrated.N
 		//*********************************************************************
-		chasLogger, chasCmcVw, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "chassis_cmc_integrated",
+		chasLogger, chasCmcVw, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, cfgMgrMu, "chassis_cmc_integrated",
 			map[string]interface{}{
 				"rooturi":           rootView.GetURI(),
 				"FQDD":              mgrName,                            // this is used for the AR mapper. case difference is confusing, but need to change mappers
@@ -273,10 +272,10 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		power_related_items = append(power_related_items, chasCmcVw.GetURI())
 	}
 
-	instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "lclogentrycollection",
+	instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, cfgMgrMu, "lclogentrycollection",
 		modParams(map[string]interface{}{"FQDD": "CMC.Integrated.1", "collection_uri": baseParams["rooturi"].(string) + "/Managers/CMC.Integrated.1/Logs/Lclog"}),
 	)
-	instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "faultlistentrycollection",
+	instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, cfgMgrMu, "faultlistentrycollection",
 		modParams(map[string]interface{}{"FQDD": "CMC.Integrated.1", "collection_uri": baseParams["rooturi"].(string) + "/Managers/CMC.Integrated.1/Logs/FaultList"}),
 	)
 	// start log service here: it attaches to cmc.integrated.1
@@ -288,7 +287,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		// CHASSIS System.Chassis.1
 		// ************************************************************************
 		chasName := "System.Chassis.1"
-		sysChasLogger, sysChasVw, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "system_chassis",
+		sysChasLogger, sysChasVw, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, cfgMgrMu, "system_chassis",
 			map[string]interface{}{
 				"rooturi":                rootView.GetURI(),
 				"FQDD":                   chasName,
@@ -311,7 +310,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		//*********************************************************************
 		// Create Power objects for System.Chassis.1
 		//*********************************************************************
-		powerLogger, sysChasPwrVw, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "power",
+		powerLogger, sysChasPwrVw, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, cfgMgrMu, "power",
 			map[string]interface{}{
 				"rooturi":           rootView.GetURI(),
 				"FQDD":              chasName,
@@ -326,7 +325,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			"PSU.Slot.4", "PSU.Slot.5", "PSU.Slot.6",
 		} {
 
-			psuLogger, sysChasPwrPsuVw, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "psu_slot",
+			psuLogger, sysChasPwrPsuVw, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, cfgMgrMu, "psu_slot",
 				map[string]interface{}{
 					"rooturi":           rootView.GetURI(),
 					"FQDD":              psuName, // this is used for the AR mapper. case difference with 'fqdd' is confusing, but need to change mappers
@@ -346,7 +345,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		// ##################
 
 		var pwrCtrlLogger log.Logger
-		pwrCtrlLogger, sysChasPwrCtrlVw, _ = instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "power_control",
+		pwrCtrlLogger, sysChasPwrCtrlVw, _ = instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, cfgMgrMu, "power_control",
 			map[string]interface{}{
 				"rooturi": rootView.GetURI(),
 				"FQDD":    chasName,
@@ -358,7 +357,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		// # Power Trends
 		// ##################
 
-		pwrTrendLogger, pwrTrendVw, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "power_trends",
+		pwrTrendLogger, pwrTrendVw, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, cfgMgrMu, "power_trends",
 			map[string]interface{}{
 				"rooturi": rootView.GetURI(),
 				"FQDD":    chasName,
@@ -373,7 +372,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		for _, trend := range []string{
 			"Week", "Day", "Hour",
 		} {
-			histLogger, histView, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "power_histogram",
+			histLogger, histView, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, cfgMgrMu, "power_histogram",
 				map[string]interface{}{
 					"rooturi": rootView.GetURI(),
 					"FQDD":    chasName,
@@ -386,7 +385,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		//*********************************************************************
 		// Create Thermal objects for System.Chassis.1
 		//*********************************************************************
-		thermalLogger, thermalView, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "thermal",
+		thermalLogger, thermalView, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, cfgMgrMu, "thermal",
 			map[string]interface{}{
 				"rooturi":           rootView.GetURI(),
 				"FQDD":              chasName,
@@ -402,7 +401,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			"Fan.Slot.4", "Fan.Slot.5", "Fan.Slot.6",
 			"Fan.Slot.7", "Fan.Slot.8", "Fan.Slot.9",
 		} {
-			fanLogger, fanView, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "fan",
+			fanLogger, fanView, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, cfgMgrMu, "fan",
 				map[string]interface{}{
 					"rooturi":           rootView.GetURI(),
 					"ChassisFQDD":       chasName,
@@ -443,11 +442,11 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		*/
 
 		/* SubSystemHealth */
-		subSystemSvc.StartService(ctx, logger, sysChasVw, cfgMgr, instantiateSvc, ch, eb)
+		subSystemSvc.StartService(ctx, logger, sysChasVw, cfgMgr, cfgMgrMu, instantiateSvc)
 
 		/*  Slots */
-		slots.CreateSlotCollection(ctx, sysChasVw, cfgMgr, instantiateSvc, modParams)
-		slots.CreateSlotConfigCollection(ctx, sysChasVw, cfgMgr, instantiateSvc, modParams)
+		slots.CreateSlotCollection(ctx, sysChasVw, cfgMgr, cfgMgrMu, instantiateSvc, modParams)
+		slots.CreateSlotConfigCollection(ctx, sysChasVw, cfgMgr, cfgMgrMu, instantiateSvc, modParams)
 	}
 
 	// ************************************************************************
@@ -461,7 +460,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		"IOM.Slot.C1",
 		"IOM.Slot.C2",
 	} {
-		iomLogger, iomView, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "iom",
+		iomLogger, iomView, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, cfgMgrMu, "iom",
 			map[string]interface{}{
 				"rooturi":           rootView.GetURI(),
 				"FQDD":              iomName,
@@ -480,7 +479,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		// ************************************************************************
 		// CHASSIS IOMConfiguration
 		// ************************************************************************
-		iomCfgLogger, iomCfgView, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "iom_config",
+		iomCfgLogger, iomCfgView, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, cfgMgrMu, "iom_config",
 			map[string]interface{}{
 				"rooturi":  rootView.GetURI(),
 				"FQDD":     iomName,
@@ -501,7 +500,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		"System.Modular.7", "System.Modular.7a", "System.Modular.7b",
 		"System.Modular.8", "System.Modular.8a", "System.Modular.8b",
 	} {
-		sledLogger, sledView, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "sled",
+		sledLogger, sledView, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, cfgMgrMu, "sled",
 			map[string]interface{}{
 				"rooturi":           rootView.GetURI(),
 				"FQDD":              sledName,
@@ -731,9 +730,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	// VIPER Config:
 	// pull the config from the YAML file to populate some static config options
 	self.configChangeHandler = func() {}
-	for _, fn := range updateFns {
-		fn(ctx, cfgMgr)
-	}
 
 	return self
 }

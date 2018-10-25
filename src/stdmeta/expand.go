@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"reflect"
+	"sync"
 
 	"github.com/spf13/viper"
 	"github.com/superchalupa/sailfish/src/dell-resources/attributes"
@@ -16,7 +17,7 @@ import (
 
 func RegisterFormatters(s *testaggregate.Service, d *domain.DomainObjects) {
 	expandOneFormatter := MakeExpandOneFormatter(d)
-	s.RegisterViewFunction("withFormatter_expandone", func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, vw *view.View, cfg interface{}, parameters map[string]interface{}) error {
+	s.RegisterViewFunction("withFormatter_expandone", func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, vw *view.View, cfg interface{}, parameters map[string]interface{}) error {
 		logger.Debug("Adding expandone formatter to view", "view", vw.GetURI())
 		vw.ApplyOption(view.WithFormatter("expandone", expandOneFormatter))
 
@@ -24,28 +25,28 @@ func RegisterFormatters(s *testaggregate.Service, d *domain.DomainObjects) {
 	})
 
 	expandFormatter := MakeExpandListFormatter(d)
-	s.RegisterViewFunction("withFormatter_expand", func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, vw *view.View, cfg interface{}, parameters map[string]interface{}) error {
+	s.RegisterViewFunction("withFormatter_expand", func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, vw *view.View, cfg interface{}, parameters map[string]interface{}) error {
 		logger.Debug("Adding expand formatter to view", "view", vw.GetURI())
 		vw.ApplyOption(view.WithFormatter("expand", expandFormatter))
 
 		return nil
 	})
 
-	s.RegisterViewFunction("withFormatter_count", func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, vw *view.View, cfg interface{}, parameters map[string]interface{}) error {
+	s.RegisterViewFunction("withFormatter_count", func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, vw *view.View, cfg interface{}, parameters map[string]interface{}) error {
 		logger.Debug("Adding count formatter to view", "view", vw.GetURI())
 		vw.ApplyOption(view.WithFormatter("count", CountFormatter))
 
 		return nil
 	})
 
-	s.RegisterViewFunction("withFormatter_attributeFormatter", func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, vw *view.View, cfg interface{}, parameters map[string]interface{}) error {
+	s.RegisterViewFunction("withFormatter_attributeFormatter", func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, vw *view.View, cfg interface{}, parameters map[string]interface{}) error {
 		logger.Debug("Adding attributeFormatter formatter to view", "view", vw.GetURI())
 		vw.ApplyOption(view.WithFormatter("attributeFormatter", attributes.FormatAttributeDump))
 
 		return nil
 	})
 
-	s.RegisterViewFunction("withFormatter_formatOdataList", func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, vw *view.View, cfg interface{}, parameters map[string]interface{}) error {
+	s.RegisterViewFunction("withFormatter_formatOdataList", func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, vw *view.View, cfg interface{}, parameters map[string]interface{}) error {
 		logger.Debug("Adding FormatOdataList formatter to view", "view", vw.GetURI())
 		vw.ApplyOption(view.WithFormatter("formatOdataList", FormatOdataList))
 
