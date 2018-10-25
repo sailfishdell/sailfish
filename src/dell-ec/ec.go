@@ -321,7 +321,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 
 		power.AddAggregate(ctx, powerLogger, sysChasPwrVw, ch)
 
-		psu_uris := []string{}
 		for _, psuName := range []string{
 			"PSU.Slot.1", "PSU.Slot.2", "PSU.Slot.3",
 			"PSU.Slot.4", "PSU.Slot.5", "PSU.Slot.6",
@@ -339,10 +338,8 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			)
 
 			swinvViews = append(swinvViews, sysChasPwrPsuVw)
-			psu_uris = append(psu_uris, sysChasPwrPsuVw.GetURI())
 			powersupply.AddAggregate(ctx, psuLogger, sysChasPwrPsuVw, ch)
 		}
-		sysChasPwrVw.GetModel("default").ApplyOption(model.UpdateProperty("power_supply_uris", psu_uris))
 
 		// ##################
 		// # Power Control
