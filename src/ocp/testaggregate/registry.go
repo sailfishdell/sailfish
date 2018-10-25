@@ -122,13 +122,11 @@ func RegisterPumpAction(s *Service, actionSvc actionService, pumpSvc pumpService
 			logger.Crit("expression evaluation failed", "expr", expr, "err", err)
 			return errors.New("expression evaluation failed")
 		}
-		actionFn := action.(view.Action)
-		/*
-			if !ok {
-				logger.Crit("Could not type assert to action function", "expr", expr)
-				return errors.New("Could not type assert to action function")
-			}
-		*/
+		actionFn, ok := action.(view.Action)
+		if !ok {
+			logger.Crit("Could not type assert to action function", "expr", expr)
+			return errors.New("Could not type assert to action function")
+		}
 
 		logger.Info("WithAction", "name", actionName, "exprStr", modelActionStr)
 		vw.ApplyOption(actionSvc.WithAction(ctx, actionNameStr, actionURIFragStr, actionFn))

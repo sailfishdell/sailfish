@@ -187,6 +187,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 	var managers []*view.View
 
 	// the chassis power control has a list of 'related items' that we'll accumulate using power_related_items
+	// TODO: this should be an awesome mapper
 	var sysChasPwrCtrlVw *view.View
 	power_related_items := []string{}
 
@@ -409,9 +410,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			},
 		)
 
-		// thermal_uris := []string{}
-		// redundancy_uris := []string{}
-
 		thermal.AddAggregate(ctx, thermalLogger, thermalView, ch)
 
 		fan_uris := []string{}
@@ -486,11 +484,8 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 				"fqdd":              "System.Chassis.1#SubSystem.1#" + iomName,
 				"fqddlist":          []string{iomName},
 				"globalHealthModel": globalHealthModel,
+				"managed_by":        []string{managers[0].GetURI()},
 			},
-		)
-
-		iomView.GetModel("default").ApplyOption(
-			model.UpdateProperty("managed_by", []string{managers[0].GetURI()}),
 		)
 
 		swinvViews = append(swinvViews, iomView)
@@ -529,11 +524,8 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 				"fqdd":              "System.Chassis.1#SubSystem.1#" + sledName,
 				"fqddlist":          []string{sledName},
 				"globalHealthModel": globalHealthModel,
+				"managed_by":        []string{managers[0].GetURI()},
 			},
-		)
-
-		sledView.GetModel("default").ApplyOption(
-			model.UpdateProperty("managed_by", []string{managers[0].GetURI()}),
 		)
 
 		sled_chassis.AddAggregate(ctx, sledLogger, sledView, ch, eb)
