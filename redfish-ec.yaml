@@ -51,6 +51,12 @@ views:
           "params": "rooturi + '/EventService'"
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
+        - "fn": "etag"
+          "params": ["max_milliseconds_to_queue", "max_events_to_queue", "delivery_retry_attempts", "delivery_retry_interval_seconds"]
+        - "fn": "WithAction"
+          "params": {"name": "submit.test.event", "uri": "/Actions/EventService.SubmitTestEvent", "actionFunction": "submittestevent"}
+        - "fn": "linkModel"
+          "params": {"existing": "default", "linkname": "etag"}
       "Aggregate": "eventservice"
 
   "subscriptioncollection":
@@ -256,6 +262,8 @@ views:
           "params": {"name": "manager.importsystemconfig", "uri": "/Actions/Oem/EID_674_Manager.ImportSystemConfiguration", "actionFunction": "importSystemConfiguration"}
         - "fn": "WithAction"
           "params": {"name": "manager.importsystemconfigpreview", "uri": "/Actions/Oem/EID_674_Manager.ImportSystemConfigurationPreview", "actionFunction": "importSystemConfigurationPreview"}
+        - "fn": "etag"
+          "params": []
 
   "logservices":
       "Logger": ["module", "lclog"]
@@ -365,6 +373,8 @@ views:
           "params": "default"
         - "fn": "withFormatter_attributeFormatter"
           "params":
+        - "fn": "etag"
+          "params": []
 
   "chassis_cmc_integrated_redundancy":
       "Logger": ["module", "ChassisCMCInt/Redundancy"]

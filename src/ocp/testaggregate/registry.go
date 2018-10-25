@@ -213,6 +213,26 @@ func RegisterPumpAction(s *Service, actionSvc actionService, pumpSvc pumpService
 		return nil
 	})
 
+	s.RegisterViewFunction("etag", func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, vw *view.View, cfg interface{}, parameters map[string]interface{}) error {
+		cfgParams, ok := cfg.([]interface{})
+		if !ok {
+			logger.Crit("Failed to type assert cfg to string", "cfg", cfg)
+			return errors.New("Failed to type assert expression to string")
+		}
+
+		strList := []string{}
+		for _, k := range cfgParams {
+			if s, ok := k.(string); ok {
+				strList = append(strList, s)
+			}
+		}
+
+		logger.Info("UpdateEtag", "strlist", strList)
+		vw.ApplyOption(view.UpdateEtag("etag", strList))
+
+		return nil
+	})
+
 }
 
 func RegisterWithURI(s *Service) {

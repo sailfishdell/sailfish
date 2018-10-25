@@ -79,16 +79,14 @@ func (es *EventService) StartEventService(ctx context.Context, logger log.Logger
 		return
 	}
 
-	_, esView, _ := instantiateSvc.InstantiateFromCfg(ctx, es.cfg, "eventservice", params)
+	_, esView, _ := instantiateSvc.InstantiateFromCfg(ctx, es.cfg, "eventservice", es.addparam(map[string]interface{}{
+		"submittestevent": view.Action(MakeSubmitTestEvent(es.eb)),
+	}))
 	params["eventsvc_id"] = esView.GetUUID()
 	params["eventsvc_uri"] = esView.GetURI()
-	instantiateSvc.InstantiateFromCfg(ctx, es.cfg, "subscriptioncollection", es.addparam(map[string]interface{}{"collection_uri": "/redfish/v1/EventService/Subscriptions"}))
-
-	esView.ApplyOption(
-		view.WithModel("etag", esView.GetModel("default")),
-		es.actionSvc.WithAction(ctx, "submit.test.event", "/Actions/EventService.SubmitTestEvent", MakeSubmitTestEvent(es.eb)),
-		view.UpdateEtag("etag", []string{"max_milliseconds_to_queue", "max_events_to_queue", "delivery_retry_attempts", "delivery_retry_interval_seconds"}),
-	)
+	instantiateSvc.InstantiateFromCfg(ctx, es.cfg, "subscriptioncollection", es.addparam(map[string]interface{}{
+		"collection_uri": "/redfish/v1/EventService/Subscriptions",
+	}))
 
 	// The Plugin: "EventService" property on the Subscriptions endpoint is how we know to run this command
 	eh.RegisterCommand(func() eh.Command {

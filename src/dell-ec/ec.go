@@ -211,10 +211,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 			},
 		)
 
-		mgrCmcVw.ApplyOption(
-			view.UpdateEtag("etag", []string{}),
-		)
-
 		managers = append(managers, mgrCmcVw)
 		swinvViews = append(swinvViews, mgrCmcVw)
 
@@ -267,10 +263,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 				"fqddlist":          []string{mgrName},
 				"globalHealthModel": globalHealthModel,
 			},
-		)
-
-		chasCmcVw.ApplyOption(
-			view.UpdateEtag("etag", []string{}),
 		)
 
 		// add the aggregate to the view tree
