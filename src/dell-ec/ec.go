@@ -199,19 +199,19 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		//*********************************************************************
 		mgrLogger, mgrCmcVw, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "manager_cmc_integrated",
 			map[string]interface{}{
-				"rooturi":           rootView.GetURI(),
-				"FQDD":              mgrName,                                   // this is used for the AR mapper. case difference is confusing, but need to change mappers
-				"fqdd":              "System.Chassis.1#SubSystem.1#" + mgrName, // This is used for the health subsystem
-				"fqddlist":          []string{mgrName},
-				"globalHealthModel": globalHealthModel,
+				"rooturi":                          rootView.GetURI(),
+				"FQDD":                             mgrName,                                   // this is used for the AR mapper. case difference is confusing, but need to change mappers
+				"fqdd":                             "System.Chassis.1#SubSystem.1#" + mgrName, // This is used for the health subsystem
+				"fqddlist":                         []string{mgrName},
+				"globalHealthModel":                globalHealthModel,
+				"exportSystemConfiguration":        view.Action(exportSystemConfiguration),
+				"importSystemConfiguration":        view.Action(importSystemConfiguration),
+				"importSystemConfigurationPreview": view.Action(importSystemConfigurationPreview),
 			},
 		)
 
 		mgrCmcVw.ApplyOption(
 			view.UpdateEtag("etag", []string{}),
-			actionSvc.WithAction(ctx, "manager.exportsystemconfig", "/Actions/Oem/EID_674_Manager.ExportSystemConfiguration", exportSystemConfiguration),
-			actionSvc.WithAction(ctx, "manager.importsystemconfig", "/Actions/Oem/EID_674_Manager.ImportSystemConfiguration", importSystemConfiguration),
-			actionSvc.WithAction(ctx, "manager.importsystemconfigpreview", "/Actions/Oem/EID_674_Manager.ImportSystemConfigurationPreview", importSystemConfigurationPreview),
 		)
 
 		managers = append(managers, mgrCmcVw)
@@ -297,20 +297,14 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *s
 		chasName := "System.Chassis.1"
 		sysChasLogger, sysChasVw, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "system_chassis",
 			map[string]interface{}{
-				"rooturi":           rootView.GetURI(),
-				"FQDD":              chasName,
-				"fqddlist":          []string{chasName},
-				"globalHealthModel": globalHealthModel,
+				"rooturi":                rootView.GetURI(),
+				"FQDD":                   chasName,
+				"fqddlist":               []string{chasName},
+				"globalHealthModel":      globalHealthModel,
+				"msmConfigBackup":        view.Action(msmConfigBackup),
+				"chassisMSMConfigBackup": view.Action(chassisMSMConfigBackup),
+				"managed_by":             []string{managers[0].GetURI()},
 			},
-		)
-
-		sysChasVw.GetModel("default").ApplyOption(
-			model.UpdateProperty("managed_by", []string{managers[0].GetURI()}),
-		)
-
-		sysChasVw.ApplyOption(
-			actionSvc.WithAction(ctx, "msmconfigbackup", "/Actions/Oem/MSMConfigBackup", msmConfigBackup),
-			actionSvc.WithAction(ctx, "chassis.msmconfigbackup", "/Actions/Oem/DellChassis.MSMConfigBackup", chassisMSMConfigBackup),
 		)
 
 		// Create the .../Attributes URI. Attributes are stored in the attributes property of the chasModel
