@@ -44,7 +44,7 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 
 				"Oem": map[string]interface{}{
 					"Dell": map[string]interface{}{
-            "@odata.type":       "#DellPower.v1_0_0.DellPowerSupply",
+						"@odata.type":       "#DellPower.v1_0_0.DellPowerSupply",
 						"ComponentID@meta":  v.Meta(view.PropGET("component_id")),
 						"InputCurrent@meta": v.Meta(view.PropGET("input_current")),
 						"Attributes@meta":   v.Meta(view.GETProperty("attributes"), view.GETFormatter("attributeFormatter"), view.GETModel("default"), view.PropPATCH("attributes", "ar_dump")),
