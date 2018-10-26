@@ -228,8 +228,9 @@ func (s *Service) NewMapping(ctx context.Context, logger log.Logger, cfg *viper.
 func StartService(ctx context.Context, logger log.Logger, eb eh.EventBus) (*Service, error) {
 	EventPublisher := eventpublisher.NewEventPublisher()
 	eb.AddHandler(eh.MatchAny(), EventPublisher)
-	EventWaiter := eventwaiter.NewEventWaiter(eventwaiter.SetName("Awesome Mapper2"))
+	EventWaiter := eventwaiter.NewEventWaiter(eventwaiter.SetName("Awesome Mapper2"), eventwaiter.NoAutoRun)
 	EventPublisher.AddObserver(EventWaiter)
+	go EventWaiter.Run()
 
 	ret := &Service{
 		logger:     logger.New("module", "am2"),

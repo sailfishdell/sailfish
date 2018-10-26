@@ -111,8 +111,9 @@ func SetupSessionService(ctx context.Context, svc *testaggregate.Service, v *vie
 	// somewhat of a violation of how i want to structure all this, but it's the best option for now
 	EventPublisher := eventpublisher.NewEventPublisher()
 	eb.AddHandler(eh.MatchEvent(XAuthTokenRefreshEvent), EventPublisher)
-	EventWaiter := eventwaiter.NewEventWaiter(eventwaiter.SetName("Session Service"))
+	EventWaiter := eventwaiter.NewEventWaiter(eventwaiter.SetName("Session Service"), eventwaiter.NoAutoRun)
 	EventPublisher.AddObserver(EventWaiter)
+	go EventWaiter.Run()
 
 	eh.RegisterCommand(func() eh.Command {
 		return &POST{
