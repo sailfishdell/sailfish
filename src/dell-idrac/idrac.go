@@ -69,6 +69,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	arService, _ := ar_mapper2.StartService(ctx, logger, cfgMgr, cfgMgrMu, eb)
 	actionSvc := ah.StartService(ctx, logger, ch, eb)
 	am2Svc, _ := awesome_mapper2.StartService(ctx, logger, eb)
+	ardumpSvc, _ := attributes.StartService(ctx, logger, eb)
 	telemetryservice.Setup(ctx, actionSvc, ch, eb)
 
 	// the package for this is going to change, but this is what makes the various mappers and view functions available
@@ -79,7 +80,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	testaggregate.RegisterAggregate(instantiateSvc)
 	testaggregate.RegisterAM2(instantiateSvc, am2Svc)
 	ar_mapper2.RegisterARMapper(instantiateSvc, arService)
-	attributes.RegisterARMapper(instantiateSvc, ch, eb)
+	attributes.RegisterController(instantiateSvc, ardumpSvc)
 	stdmeta.RegisterFormatters(instantiateSvc, d)
 	registries.RegisterAggregate(instantiateSvc)
 	stdcollections.RegisterAggregate(instantiateSvc)
