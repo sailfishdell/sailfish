@@ -21,8 +21,9 @@ func makePumpHandledAction(name string, maxtimeout int, eb eh.EventBus) func(con
 
 	// TODO: fix MatchAny
 	eb.AddHandler(eh.MatchEvent(domain.HTTPCmdProcessed), EventPublisher)
-	EventWaiter := eventwaiter.NewEventWaiter(eventwaiter.SetName("Action Timeout Publisher"))
+	EventWaiter := eventwaiter.NewEventWaiter(eventwaiter.SetName("Action Timeout Publisher"), eventwaiter.NoAutoRun)
 	EventPublisher.AddObserver(EventWaiter)
+	go EventWaiter.Run()
 
 	return func(ctx context.Context, event eh.Event, retData *domain.HTTPCmdProcessedData) error {
 		// The actionhandler will discard the message if we set statuscode to 0. Client should never see it, and pump can send its own return

@@ -5,7 +5,6 @@ import (
 	"errors"
 	"sync"
 
-	eh "github.com/looplab/eventhorizon"
 	"github.com/spf13/viper"
 
 	"github.com/superchalupa/sailfish/src/log"
@@ -13,7 +12,7 @@ import (
 	"github.com/superchalupa/sailfish/src/ocp/view"
 )
 
-func RegisterARMapper(s *testaggregate.Service, ch eh.CommandHandler, eb eh.EventBus) {
+func RegisterController(s *testaggregate.Service, arsvc *Service) {
 	s.RegisterControllerFunction("ARDumper", func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, vw *view.View, cfg interface{}, parameters map[string]interface{}) error {
 		cfgParams, ok := cfg.(map[interface{}]interface{})
 		if !ok {
@@ -53,7 +52,7 @@ func RegisterARMapper(s *testaggregate.Service, ch eh.CommandHandler, eb eh.Even
 		}
 
 		logger.Info("Creating ar_dumper controller", "modelName", modelNameStr, "fqddList", fqddlist)
-		dumper, _ := NewController(ctx, vw.GetModel(modelNameStr), fqddlist, ch, eb)
+		dumper := arsvc.NewMapping(ctx, vw.GetModel(modelNameStr), fqddlist)
 
 		if addToViewBool {
 			// there can be only one

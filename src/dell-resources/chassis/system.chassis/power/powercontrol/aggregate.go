@@ -29,8 +29,8 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 				"Name":                     "System Power Control",
 				"MemberId":                 "PowerControl",
 				"PowerAvailableWatts@meta": v.Meta(view.PropGET("headroom_watts")),
-				"PowerCapacityWatts@meta":  v.Meta(view.PropGET("capacity_watts")),  //System.Chassis.1#ChassisPower.1#SystemInputMaxPowerCapacity
-				"PowerConsumedWatts@meta":  v.Meta(view.PropGET("consumed_watts")), 
+				"PowerCapacityWatts@meta":  v.Meta(view.PropGET("capacity_watts")), //System.Chassis.1#ChassisPower.1#SystemInputMaxPowerCapacity
+				"PowerConsumedWatts@meta":  v.Meta(view.PropGET("consumed_watts")),
 
 				"Oem": map[string]interface{}{
 					"EnergyConsumptionStartTime@meta": v.Meta(view.PropGET("energy_consumption_start_time")),

@@ -48,8 +48,9 @@ var GlobalEventService *EventService
 func New(ctx context.Context, cfg *viper.Viper, cfgMu *sync.RWMutex, instantiateSvc *testaggregate.Service, actionSvc actionService, ch eh.CommandHandler, eb eh.EventBus) *EventService {
 	EventPublisher := eventpublisher.NewEventPublisher()
 	eb.AddHandler(eh.MatchAnyEventOf(ExternalRedfishEvent, domain.RedfishResourceRemoved), EventPublisher)
-	EventWaiter := eventwaiter.NewEventWaiter(eventwaiter.SetName("Event Service"))
+	EventWaiter := eventwaiter.NewEventWaiter(eventwaiter.SetName("Event Service"), eventwaiter.NoAutoRun)
 	EventPublisher.AddObserver(EventWaiter)
+	go EventWaiter.Run()
 
 	ret := &EventService{
 		ch:        ch,

@@ -37,6 +37,7 @@ import (
 	_ "github.com/superchalupa/sailfish/src/dell-resources/dm_event"
 
 	// goal is to get rid of the _ in front of each of these....
+	"github.com/superchalupa/sailfish/src/dell-ec"
 	mgrCMCIntegrated "github.com/superchalupa/sailfish/src/dell-resources/managers/cmc.integrated"
 	storage_instance "github.com/superchalupa/sailfish/src/dell-resources/systems/system.embedded/storage"
 	storage_controller "github.com/superchalupa/sailfish/src/dell-resources/systems/system.embedded/storage/controller"
@@ -69,7 +70,9 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	arService, _ := ar_mapper2.StartService(ctx, logger, cfgMgr, cfgMgrMu, eb)
 	actionSvc := ah.StartService(ctx, logger, ch, eb)
 	am2Svc, _ := awesome_mapper2.StartService(ctx, logger, eb)
+	ardumpSvc, _ := attributes.StartService(ctx, logger, eb)
 	telemetryservice.Setup(ctx, actionSvc, ch, eb)
+	pumpSvc := dell_ec.NewPumpActionSvc(ctx, logger, eb)
 
 	// the package for this is going to change, but this is what makes the various mappers and view functions available
 	instantiateSvc := testaggregate.New(logger, ch)
@@ -78,12 +81,14 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	testaggregate.RegisterPublishEvents(instantiateSvc, evtSvc)
 	testaggregate.RegisterAggregate(instantiateSvc)
 	testaggregate.RegisterAM2(instantiateSvc, am2Svc)
+	testaggregate.RegisterPumpAction(instantiateSvc, actionSvc, pumpSvc)
 	ar_mapper2.RegisterARMapper(instantiateSvc, arService)
-	attributes.RegisterARMapper(instantiateSvc, ch, eb)
+	attributes.RegisterController(instantiateSvc, ardumpSvc)
 	stdmeta.RegisterFormatters(instantiateSvc, d)
 	registries.RegisterAggregate(instantiateSvc)
 	stdcollections.RegisterAggregate(instantiateSvc)
 	session.RegisterAggregate(instantiateSvc)
+	eventservice.RegisterAggregate(instantiateSvc)
 
 	// ignore unused for now
 	_ = logSvc

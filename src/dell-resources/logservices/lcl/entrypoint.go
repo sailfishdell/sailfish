@@ -28,8 +28,9 @@ type LCLService struct {
 func New(ch eh.CommandHandler, eb eh.EventBus) *LCLService {
 	EventPublisher := eventpublisher.NewEventPublisher()
 	eb.AddHandler(eh.MatchAnyEventOf(LogEvent), EventPublisher)
-	EventWaiter := eventwaiter.NewEventWaiter(eventwaiter.SetName("LCL Service"))
+	EventWaiter := eventwaiter.NewEventWaiter(eventwaiter.SetName("LCL Service"), eventwaiter.NoAutoRun)
 	EventPublisher.AddObserver(EventWaiter)
+	go EventWaiter.Run()
 
 	return &LCLService{
 		ch: ch,

@@ -37,8 +37,9 @@ var NewESP func(ctx context.Context, options ...Options) (d *privateStateStructu
 func Setup(ch eh.CommandHandler, eb eh.EventBus) {
 	EventPublisher := eventpublisher.NewEventPublisher()
 	eb.AddHandler(eh.MatchAny(), EventPublisher)
-	EventWaiter := eventwaiter.NewEventWaiter(eventwaiter.SetName("generic eventstream"))
+	EventWaiter := eventwaiter.NewEventWaiter(eventwaiter.SetName("generic eventstream"), eventwaiter.NoAutoRun)
 	EventPublisher.AddObserver(EventWaiter)
+	go EventWaiter.Run()
 
 	NewESP = func(ctx context.Context, options ...Options) (d *privateStateStructure, err error) {
 		return NewEventStreamProcessor(ctx, EventWaiter, options...)

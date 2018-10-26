@@ -33,8 +33,9 @@ type SubSystemHealthService struct {
 func New(ch eh.CommandHandler, eb eh.EventBus) *SubSystemHealthService {
 	EventPublisher := eventpublisher.NewEventPublisher()
 	eb.AddHandler(eh.MatchAnyEventOf(dm_event.HealthEvent), EventPublisher)
-	EventWaiter := eventwaiter.NewEventWaiter(eventwaiter.SetName("SubSystemHealth Service"))
+	EventWaiter := eventwaiter.NewEventWaiter(eventwaiter.SetName("SubSystemHealth Service"), eventwaiter.NoAutoRun)
 	EventPublisher.AddObserver(EventWaiter)
+	go EventWaiter.Run()
 	ss := make(map[string]interface{})
 
 	return &SubSystemHealthService{

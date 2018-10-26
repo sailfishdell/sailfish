@@ -64,8 +64,9 @@ func StartService(ctx context.Context, logger log.Logger, cfg *viper.Viper, cfgM
 
 	EventPublisher := eventpublisher.NewEventPublisher()
 	eb.AddHandler(eh.MatchAnyEventOf(attributes.AttributeUpdated), EventPublisher)
-	EventWaiter := eventwaiter.NewEventWaiter(eventwaiter.SetName("AR Mapper"))
+	EventWaiter := eventwaiter.NewEventWaiter(eventwaiter.SetName("AR Mapper"), eventwaiter.NoAutoRun)
 	EventPublisher.AddObserver(EventWaiter)
+	go EventWaiter.Run()
 
 	arservice := &ARService{
 		eb:            eb,

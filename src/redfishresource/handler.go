@@ -23,6 +23,7 @@ import (
 type waiter interface {
 	Listen(context.Context, func(eh.Event) bool) (*eventwaiter.EventListener, error)
 	Notify(context.Context, eh.Event)
+	Run()
 }
 
 type DomainObjects struct {
@@ -71,9 +72,10 @@ func NewDomainObjects() (*DomainObjects, error) {
 	d.HTTPResultsBus.AddHandler(eh.MatchEvent(HTTPCmdProcessed), d.HTTPPublisher)
 
 	// hook up http waiter to the other bus for back compat
-	d.HTTPWaiter = eventwaiter.NewEventWaiter(eventwaiter.SetName("HTTP"))
+	d.HTTPWaiter = eventwaiter.NewEventWaiter(eventwaiter.SetName("HTTP"), eventwaiter.NoAutoRun)
 	d.EventPublisher.AddObserver(d.HTTPWaiter)
 	d.HTTPPublisher.AddObserver(d.HTTPWaiter)
+	go d.HTTPWaiter.Run()
 
 	// set up commands so that they can directly publish to http bus
 	eh.RegisterCommand(func() eh.Command {

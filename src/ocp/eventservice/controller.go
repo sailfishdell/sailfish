@@ -30,8 +30,9 @@ func PublishRedfishEvents(ctx context.Context, m propertygetter, eb eh.EventBus)
 
 	EventPublisher := eventpublisher.NewEventPublisher()
 	eb.AddHandler(eh.MatchAnyEventOf(RedfishEvent, domain.RedfishResourceCreated, domain.RedfishResourceRemoved), EventPublisher)
-	EventWaiter := eventwaiter.NewEventWaiter(eventwaiter.SetName("Event Service Publisher"))
+	EventWaiter := eventwaiter.NewEventWaiter(eventwaiter.SetName("Event Service Publisher"), eventwaiter.NoAutoRun)
 	EventPublisher.AddObserver(EventWaiter)
+	go EventWaiter.Run()
 
 	// INFO: the publisher only sends RedfishEvent, domain.RedfishResourceCreated, domain.RedfishResourceRemoved)
 	//  because of MatchAnyEventOf

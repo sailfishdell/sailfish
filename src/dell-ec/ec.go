@@ -81,6 +81,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	actionSvc := ah.StartService(ctx, logger, ch, eb)
 	uploadSvc := uploadhandler.StartService(ctx, logger, ch, eb)
 	am2Svc, _ := awesome_mapper2.StartService(ctx, logger, eb)
+	ardumpSvc, _ := attributes.StartService(ctx, logger, eb)
 	telemetryservice.Setup(ctx, actionSvc, ch, eb)
 	pumpSvc := NewPumpActionSvc(ctx, logger, eb)
 
@@ -95,7 +96,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	testaggregate.RegisterAM2(instantiateSvc, am2Svc)
 	testaggregate.RegisterPumpAction(instantiateSvc, actionSvc, pumpSvc)
 	ar_mapper2.RegisterARMapper(instantiateSvc, arService)
-	attributes.RegisterARMapper(instantiateSvc, ch, eb)
+	attributes.RegisterController(instantiateSvc, ardumpSvc)
 	stdmeta.RegisterFormatters(instantiateSvc, d)
 	registries.RegisterAggregate(instantiateSvc)
 	stdcollections.RegisterAggregate(instantiateSvc)

@@ -12,7 +12,7 @@ const (
 	PowerConsumptionDataObjEvent        = eh.EventType("PowerConsumptionDataObjEvent")
 	AvgPowerConsumptionStatDataObjEvent = eh.EventType("AvgPowerConsumptionStatDataObjEvent")
 	IomCapability                       = eh.EventType("IomCapability")
-  FileReadEvent                       = eh.EventType("FileReadEvent")
+	FileReadEvent                       = eh.EventType("FileReadEvent")
 )
 
 func init() {
@@ -21,19 +21,19 @@ func init() {
 	eh.RegisterEventData(PowerSupplyObjEvent, func() eh.EventData { return &PowerSupplyObjEventData{} })
 	eh.RegisterEventData(PowerConsumptionDataObjEvent, func() eh.EventData { return &PowerConsumptionDataObjEventData{} })
 	eh.RegisterEventData(AvgPowerConsumptionStatDataObjEvent, func() eh.EventData { return &AvgPowerConsumptionStatDataObjEventData{} })
-  eh.RegisterEventData(FileReadEvent, func () eh.EventData { return &FileReadEventData{} })
+	eh.RegisterEventData(FileReadEvent, func() eh.EventData { return &FileReadEventData{} })
 	eh.RegisterEventData(DataManagerEvent, func() eh.EventData {
 		var f DataManagerEventData
 		return f
 	})
-    eh.RegisterEventData(IomCapability, func() eh.EventData { return &IomCapabilityData{} })
+	eh.RegisterEventData(IomCapability, func() eh.EventData { return &IomCapabilityData{} })
 }
 
 type IomCapabilityData struct {
-    Name                string
-    Managed             bool
-    Capabilities        interface{}
-    IOMConfig_objects   interface{}
+	Name              string
+	Managed           bool
+	Capabilities      interface{}
+	IOMConfig_objects interface{}
 }
 
 type HealthEventData struct {
@@ -151,9 +151,9 @@ type AvgPowerConsumptionStatDataObjEventData struct {
 }
 
 type FileReadEventData struct {
-  FilePath string
-  URI      string
-  FQDD     string
+	FilePath string
+	URI      string
+	FQDD     string
 }
 
 type DataManagerEventData interface{}
