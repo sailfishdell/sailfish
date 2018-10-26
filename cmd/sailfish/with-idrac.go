@@ -16,7 +16,7 @@ import (
 )
 
 func init() {
-	implementations["dell_idrac"] = func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *sync.Mutex, ch eh.CommandHandler, eb eh.EventBus, d *domain.DomainObjects) Implementation {
+	implementations["dell_idrac"] = func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *sync.RWMutex, ch eh.CommandHandler, eb eh.EventBus, d *domain.DomainObjects) Implementation {
 		return dell_idrac.New(ctx, logger, cfgMgr, viperMu, ch, eb, d)
 	}
 }

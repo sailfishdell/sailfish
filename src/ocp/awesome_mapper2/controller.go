@@ -81,7 +81,7 @@ type Exec struct {
 	execExpr   []govaluate.ExpressionToken
 }
 
-func (s *Service) NewMapping(ctx context.Context, logger log.Logger, cfg *viper.Viper, mdl *model.Model, cfgName string, uniqueName string, parameters map[string]interface{}) error {
+func (s *Service) NewMapping(ctx context.Context, logger log.Logger, cfg *viper.Viper, cfgMu *sync.RWMutex, mdl *model.Model, cfgName string, uniqueName string, parameters map[string]interface{}) error {
 	s.Lock()
 	defer s.Unlock()
 	logger = logger.New("module", "am2")
@@ -100,6 +100,9 @@ func (s *Service) NewMapping(ctx context.Context, logger log.Logger, cfg *viper.
 		// ############################################
 		// otherwise we need to load it from the config file
 		logger.Info("Loading config for mapping from config file", "cfgName", cfgName)
+
+		cfgMu.Lock()
+		defer cfgMu.Unlock()
 
 		// Pull out the section from YAML config file
 		fullSectionMappingList := []ConfigFileMappingEntry{}

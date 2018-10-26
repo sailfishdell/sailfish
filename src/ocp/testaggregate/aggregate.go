@@ -6,6 +6,7 @@ package testaggregate
 
 import (
 	"context"
+	"sync"
 
 	eh "github.com/looplab/eventhorizon"
 	"github.com/spf13/viper"
@@ -17,7 +18,7 @@ import (
 
 func RegisterAggregate(s *Service) {
 	s.RegisterAggregateFunction("testview",
-		func(ctx context.Context, subLogger log.Logger, cfgMgr *viper.Viper, vw *view.View, extra interface{}, params map[string]interface{}) ([]eh.Command, error) {
+		func(ctx context.Context, subLogger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, vw *view.View, extra interface{}, params map[string]interface{}) ([]eh.Command, error) {
 			return []eh.Command{
 				&domain.CreateRedfishResource{
 

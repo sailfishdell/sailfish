@@ -18,7 +18,7 @@ type viewer interface {
 }
 
 // CreateSlotCollection will instantiate the slot collection as well set up the function to add slots
-func CreateSlotCollection(ctx context.Context, baseView viewer, cfgMgr *viper.Viper, instantiateSvc *testaggregate.Service, modParams func(map[string]interface{}) map[string]interface{}) {
+func CreateSlotCollection(ctx context.Context, baseView viewer, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, instantiateSvc *testaggregate.Service, modParams func(map[string]interface{}) map[string]interface{}) {
 	var slotLogger log.Logger
 	myModParams := func(in ...map[string]interface{}) map[string]interface{} {
 		mod := map[string]interface{}{}
@@ -62,7 +62,7 @@ func CreateSlotCollection(ctx context.Context, baseView viewer, cfgMgr *viper.Vi
 
 		slotLogger.Info("About to instantiate", "FQDD", FQDD)
 		// have to do this in a goroutine because awesome mapper is locked while it processes events
-		go instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "slot",
+		go instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, cfgMgrMu, "slot",
 			myModParams(map[string]interface{}{
 				"FQDD":  FQDD,
 				"Group": group, // for ar mapper
@@ -73,12 +73,12 @@ func CreateSlotCollection(ctx context.Context, baseView viewer, cfgMgr *viper.Vi
 		return true, nil
 	})
 
-	slotLogger, _, _ = instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "slotcollection", myModParams())
+	slotLogger, _, _ = instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, cfgMgrMu, "slotcollection", myModParams())
 	slotLogger.Info("Created slot collection", "uri", baseView.GetURI()+"/Slots")
 }
 
 // CreateSlotConfigCollection will instantiate the slot collection as well set up the function to add slotconfigs
-func CreateSlotConfigCollection(ctx context.Context, baseView viewer, cfgMgr *viper.Viper, instantiateSvc *testaggregate.Service, modParams func(map[string]interface{}) map[string]interface{}) {
+func CreateSlotConfigCollection(ctx context.Context, baseView viewer, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, instantiateSvc *testaggregate.Service, modParams func(map[string]interface{}) map[string]interface{}) {
 	var slotLogger log.Logger
 	myModParams := func(in ...map[string]interface{}) map[string]interface{} {
 		mod := map[string]interface{}{}
@@ -122,7 +122,7 @@ func CreateSlotConfigCollection(ctx context.Context, baseView viewer, cfgMgr *vi
 
 		slotLogger.Info("About to instantiate", "FQDD", FQDD)
 		// have to do this in a goroutine because awesome mapper is locked while it processes events
-		go instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "slotconfig",
+		go instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, cfgMgrMu, "slotconfig",
 			myModParams(map[string]interface{}{
 				"FQDD":  FQDD,
 				"Group": group, // for ar mapper
@@ -133,6 +133,6 @@ func CreateSlotConfigCollection(ctx context.Context, baseView viewer, cfgMgr *vi
 		return true, nil
 	})
 
-	slotLogger, _, _ = instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, "slotconfigcollection", myModParams())
+	slotLogger, _, _ = instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, cfgMgrMu, "slotconfigcollection", myModParams())
 	slotLogger.Info("Created slot config collection", "uri", baseView.GetURI()+"/SlotConfigs")
 }

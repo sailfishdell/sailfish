@@ -43,6 +43,7 @@ type ModelMappings struct {
 type ARService struct {
 	eb     eh.EventBus
 	cfg    *viper.Viper
+	cfgMu  *sync.RWMutex
 	logger log.Logger
 
 	mappingsMu    sync.RWMutex
@@ -58,7 +59,7 @@ type update struct {
 	property string
 }
 
-func StartService(ctx context.Context, logger log.Logger, cfg *viper.Viper, eb eh.EventBus) (*ARService, error) {
+func StartService(ctx context.Context, logger log.Logger, cfg *viper.Viper, cfgMu *sync.RWMutex, eb eh.EventBus) (*ARService, error) {
 	logger = logger.New("module", "ar2")
 
 	EventPublisher := eventpublisher.NewEventPublisher()
@@ -69,6 +70,7 @@ func StartService(ctx context.Context, logger log.Logger, cfg *viper.Viper, eb e
 	arservice := &ARService{
 		eb:            eb,
 		cfg:           cfg,
+		cfgMu:         cfgMu,
 		logger:        logger,
 		modelmappings: make(map[string]ModelMappings),
 		hash:          make(map[string][]update),
@@ -193,6 +195,9 @@ func (ars *ARService) loadConfig(mappingName string) {
 	defer ars.hashMu.Unlock()
 
 	ars.logger.Info("Updating Config")
+
+	ars.cfgMu.Lock()
+	defer ars.cfgMu.Unlock()
 
 	subCfg := ars.cfg.Sub("mappings")
 	if subCfg == nil {

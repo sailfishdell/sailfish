@@ -10,8 +10,8 @@ import (
 	eh "github.com/looplab/eventhorizon"
 )
 
-func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.CommandHandler, eb eh.EventBus) {
-  ch.HandleCommand(
+func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.CommandHandler) {
+	ch.HandleCommand(
 		ctx,
 		&domain.CreateRedfishResource{
 			ID:          v.GetUUID(),
@@ -31,11 +31,11 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 }
 
 func UpdateAggregate(ctx context.Context, v *view.View, ch eh.CommandHandler, properties map[string]interface{}) {
-  ch.HandleCommand(ctx,
-    &domain.UpdateRedfishResourceProperties{
-      ID:         v.GetUUID(),
-      Properties: properties,
-    })
+	ch.HandleCommand(ctx,
+		&domain.UpdateRedfishResourceProperties{
+			ID:         v.GetUUID(),
+			Properties: properties,
+		})
 
-  return
+	return
 }

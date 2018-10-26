@@ -41,7 +41,7 @@ import (
 	"github.com/superchalupa/sailfish/src/ocp/session"
 )
 
-type implementationFn func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *sync.Mutex, ch eh.CommandHandler, eb eh.EventBus, d *domain.DomainObjects) Implementation
+type implementationFn func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *sync.RWMutex, ch eh.CommandHandler, eb eh.EventBus, d *domain.DomainObjects) Implementation
 
 var implementations map[string]implementationFn = map[string]implementationFn{}
 
@@ -51,7 +51,7 @@ type Implementation interface {
 func main() {
 	flag.StringSliceP("listen", "l", []string{}, "Listen address.  Formats: (http:[ip]:nn, https:[ip]:port)")
 
-	var cfgMgrMu sync.Mutex
+	var cfgMgrMu sync.RWMutex
 	cfgMgr := viper.New()
 	if err := cfgMgr.BindPFlags(flag.CommandLine); err != nil {
 		fmt.Fprintf(os.Stderr, "Could not bind viper flags: %s\n", err)
@@ -90,6 +90,7 @@ func main() {
 		panic("could not load requested implementation: " + cfgMgr.GetString("main.server_name"))
 	}
 
+	// This starts goroutines that use cfgmgr, so from here on out we need to lock it
 	implFn(ctx, logger, cfgMgr, &cfgMgrMu, domainObjs.CommandHandler, domainObjs.EventBus, domainObjs)
 
 	// Handle the API.
@@ -212,6 +213,7 @@ func main() {
 		serverCert.Serialize()
 	}
 
+	cfgMgrMu.RLock()
 	if len(cfgMgr.GetStringSlice("listen")) == 0 {
 		fmt.Fprintf(os.Stderr, "No listeners configured! Use the '-l' option to configure a listener!")
 	}
@@ -276,6 +278,7 @@ func main() {
 	}
 
 	logger.Debug("Listening", "module", "main", "addresses", fmt.Sprintf("%v\n", cfgMgr.GetStringSlice("listen")))
+	cfgMgrMu.RUnlock()
 	SdNotify("READY=1")
 
 	// wait until we get an interrupt (CTRL-C)

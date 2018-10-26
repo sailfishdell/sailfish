@@ -3,6 +3,7 @@ package attributes
 import (
 	"context"
 	"errors"
+	"sync"
 
 	eh "github.com/looplab/eventhorizon"
 	"github.com/spf13/viper"
@@ -13,7 +14,7 @@ import (
 )
 
 func RegisterARMapper(s *testaggregate.Service, ch eh.CommandHandler, eb eh.EventBus) {
-	s.RegisterControllerFunction("ARDumper", func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, vw *view.View, cfg interface{}, parameters map[string]interface{}) error {
+	s.RegisterControllerFunction("ARDumper", func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, vw *view.View, cfg interface{}, parameters map[string]interface{}) error {
 		cfgParams, ok := cfg.(map[interface{}]interface{})
 		if !ok {
 			logger.Crit("Failed to type assert cfg to string", "cfg", cfg)

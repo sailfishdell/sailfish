@@ -2,6 +2,7 @@ package eventservice
 
 import (
 	"context"
+	"sync"
 
 	eh "github.com/looplab/eventhorizon"
 	"github.com/spf13/viper"
@@ -14,7 +15,7 @@ import (
 
 func RegisterAggregate(s *testaggregate.Service) {
 	s.RegisterAggregateFunction("eventservice",
-		func(ctx context.Context, subLogger log.Logger, cfgMgr *viper.Viper, vw *view.View, extra interface{}, params map[string]interface{}) ([]eh.Command, error) {
+		func(ctx context.Context, subLogger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, vw *view.View, extra interface{}, params map[string]interface{}) ([]eh.Command, error) {
 			return []eh.Command{
 				&domain.CreateRedfishResource{
 					ResourceURI: vw.GetURI(),
@@ -74,7 +75,7 @@ func RegisterAggregate(s *testaggregate.Service) {
 		})
 
 	s.RegisterAggregateFunction("subscriptioncollection",
-		func(ctx context.Context, subLogger log.Logger, cfgMgr *viper.Viper, vw *view.View, extra interface{}, params map[string]interface{}) ([]eh.Command, error) {
+		func(ctx context.Context, subLogger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, vw *view.View, extra interface{}, params map[string]interface{}) ([]eh.Command, error) {
 			return []eh.Command{
 				&domain.CreateRedfishResource{
 					ResourceURI: vw.GetURI(),
@@ -105,7 +106,7 @@ func RegisterAggregate(s *testaggregate.Service) {
 		})
 
 	s.RegisterAggregateFunction("subscription",
-		func(ctx context.Context, subLogger log.Logger, cfgMgr *viper.Viper, vw *view.View, extra interface{}, params map[string]interface{}) ([]eh.Command, error) {
+		func(ctx context.Context, subLogger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, vw *view.View, extra interface{}, params map[string]interface{}) ([]eh.Command, error) {
 			return []eh.Command{
 				&domain.CreateRedfishResource{
 					ResourceURI: vw.GetURI(),

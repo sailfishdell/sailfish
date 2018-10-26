@@ -3,6 +3,7 @@ package slots
 import (
 	"context"
 	"strings"
+	"sync"
 
 	"github.com/spf13/viper"
 	"github.com/superchalupa/sailfish/src/ocp/testaggregate"
@@ -16,7 +17,7 @@ import (
 
 func RegisterAggregate(s *testaggregate.Service) {
 	s.RegisterAggregateFunction("slotcollection",
-		func(ctx context.Context, subLogger log.Logger, cfgMgr *viper.Viper, vw *view.View, extra interface{}, params map[string]interface{}) ([]eh.Command, error) {
+		func(ctx context.Context, subLogger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, vw *view.View, extra interface{}, params map[string]interface{}) ([]eh.Command, error) {
 			return []eh.Command{
 				&domain.CreateRedfishResource{
 					ResourceURI: vw.GetURI(),
@@ -34,7 +35,7 @@ func RegisterAggregate(s *testaggregate.Service) {
 		})
 
 	s.RegisterAggregateFunction("slot",
-		func(ctx context.Context, subLogger log.Logger, cfgMgr *viper.Viper, vw *view.View, extra interface{}, params map[string]interface{}) ([]eh.Command, error) {
+		func(ctx context.Context, subLogger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, vw *view.View, extra interface{}, params map[string]interface{}) ([]eh.Command, error) {
 
 			properties := map[string]interface{}{
 				"Id":            params["FQDD"],
@@ -63,7 +64,7 @@ func RegisterAggregate(s *testaggregate.Service) {
 		})
 
 	s.RegisterAggregateFunction("slotconfigcollection",
-		func(ctx context.Context, subLogger log.Logger, cfgMgr *viper.Viper, vw *view.View, extra interface{}, params map[string]interface{}) ([]eh.Command, error) {
+		func(ctx context.Context, subLogger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, vw *view.View, extra interface{}, params map[string]interface{}) ([]eh.Command, error) {
 			return []eh.Command{
 				&domain.CreateRedfishResource{
 					ResourceURI: vw.GetURI(),
@@ -81,7 +82,7 @@ func RegisterAggregate(s *testaggregate.Service) {
 		})
 
 	s.RegisterAggregateFunction("slotconfig",
-		func(ctx context.Context, subLogger log.Logger, cfgMgr *viper.Viper, vw *view.View, extra interface{}, params map[string]interface{}) ([]eh.Command, error) {
+		func(ctx context.Context, subLogger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, vw *view.View, extra interface{}, params map[string]interface{}) ([]eh.Command, error) {
 			return []eh.Command{
 				&domain.CreateRedfishResource{
 					ResourceURI: vw.GetURI(),
