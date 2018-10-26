@@ -30,6 +30,30 @@ views:
           "params": "default"
       "Aggregate": "registry_collection"
 
+  "eventservice":
+      "Logger": ["module", "eventservice"]
+      "Models":
+        "default": {
+           "max_milliseconds_to_queue": "500",
+           "max_events_to_queue": "20",
+           "delivery_retry_attempts": "3",
+           "delivery_retry_interval_seconds": "60",
+           }
+      "Controllers":
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/EventService'"
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+        - "fn": "etag"
+          "params": ["max_milliseconds_to_queue", "max_events_to_queue", "delivery_retry_attempts", "delivery_retry_interval_seconds"]
+        - "fn": "WithAction"
+          "params": {"name": "submit.test.event", "uri": "/Actions/EventService.SubmitTestEvent", "actionFunction": "submittestevent"}
+        - "fn": "linkModel"
+          "params": {"existing": "default", "linkname": "etag"}
+      "Aggregate": "eventservice"
+
+
   "sessionservice":
       "Logger": ["module", "session"]
       "Models":
