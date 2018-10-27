@@ -53,6 +53,15 @@ func RegisterFormatters(s *testaggregate.Service, d *domain.DomainObjects) {
 		return nil
 	})
 
+	s.RegisterViewFunction("stdFormatters", func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, vw *view.View, cfg interface{}, parameters map[string]interface{}) error {
+		logger.Debug("Adding standard formatters (expand, expandone, count, attributeFormatter, formatOdataList) to view", "view", vw.GetURI())
+		vw.ApplyOption(view.WithFormatter("expandone", expandOneFormatter))
+		vw.ApplyOption(view.WithFormatter("expand", expandFormatter))
+		vw.ApplyOption(view.WithFormatter("count", CountFormatter))
+		vw.ApplyOption(view.WithFormatter("attributeFormatter", attributes.FormatAttributeDump))
+		vw.ApplyOption(view.WithFormatter("formatOdataList", FormatOdataList))
+		return nil
+	})
 }
 
 func MakeExpandListFormatter(d *domain.DomainObjects) func(context.Context, *view.View, *model.Model, *domain.RedfishResourceProperty, map[string]interface{}) error {

@@ -71,9 +71,7 @@ views:
           "params": "eventsvc_uri + '/Subscriptions'"
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
-        - "fn": "withFormatter_formatOdataList"
-          "params":
-        - "fn": "withFormatter_count"
+        - "fn": "stdFormatters"
           "params":
       "Aggregate": "subscriptioncollection"
 
@@ -106,7 +104,7 @@ views:
           "params": "rooturi + '/SessionService'"
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
-        - "fn": "withFormatter_formatOdataList"
+        - "fn": "stdFormatters"
           "params":
       "Aggregate": "sessionservice"
 
@@ -124,9 +122,7 @@ views:
           "params": "rooturi + '/SessionService/Sessions'"
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
-        - "fn": "withFormatter_formatOdataList"
-          "params":
-        - "fn": "withFormatter_count"
+        - "fn": "stdFormatters"
           "params":
       "Aggregate": "sessioncollection"
 
@@ -149,9 +145,7 @@ views:
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/Registries'"
-        - "fn": "withFormatter_formatOdataList"
-          "params":
-        - "fn": "withFormatter_count"
+        - "fn": "stdFormatters"
           "params":
       "Aggregate": "registry_collection"
 
@@ -170,7 +164,7 @@ views:
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/Registries/Messages'"
-        - "fn": "withFormatter_count"
+        - "fn": "stdFormatters"
           "params":
       "Aggregate": "registry"
 
@@ -189,7 +183,7 @@ views:
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/Registries/BaseMessages'"
-        - "fn": "withFormatter_count"
+        - "fn": "stdFormatters"
           "params":
       "Aggregate": "registry"
 
@@ -208,7 +202,7 @@ views:
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/Registries/ManagerAttributeRegistry'"
-        - "fn": "withFormatter_count"
+        - "fn": "stdFormatters"
           "params":
       "Aggregate": "registry"
 
@@ -240,13 +234,7 @@ views:
           "params": "rooturi + '/Managers/' + FQDD"
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
-        - "fn": "withFormatter_attributeFormatter"
-          "params":
-        - "fn": "withFormatter_expand"
-          "params":
-        - "fn": "withFormatter_count"
-          "params":
-        - "fn": "withFormatter_formatOdataList"
+        - "fn": "stdFormatters"
           "params":
         - "fn": "with_PumpHandledAction"
           "params": {"name": "manager.reset", "uri": "/Actions/Manager.Reset", "timeout": 30}
@@ -275,9 +263,7 @@ views:
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/Managers/' + FQDD + '/LogServices'"
-        - "fn": "withFormatter_formatOdataList"
-          "params":
-        - "fn": "withFormatter_count"
+        - "fn": "stdFormatters"
           "params":
       "Aggregate": "logservices"
 
@@ -299,9 +285,7 @@ views:
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/Managers/' + FQDD + '/Logs/Lclog'"
-        - "fn": "withFormatter_formatOdataList"
-          "params":
-        - "fn": "withFormatter_count"
+        - "fn": "stdFormatters"
           "params":
       "Aggregate": "lclogentrycollection"
 
@@ -333,9 +317,7 @@ views:
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/Managers/' + FQDD + '/Logs/FaultList'"
-        - "fn": "withFormatter_formatOdataList"
-          "params":
-        - "fn": "withFormatter_count"
+        - "fn": "stdFormatters"
           "params":
       "Aggregate": "faultlistentrycollection"
 
@@ -371,7 +353,7 @@ views:
           "params": "rooturi + '/Chassis/' + FQDD"
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
-        - "fn": "withFormatter_attributeFormatter"
+        - "fn": "stdFormatters"
           "params":
         - "fn": "etag"
           "params": []
@@ -408,15 +390,7 @@ views:
           "params": "rooturi + '/Chassis/' + FQDD "
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
-        - "fn": "withFormatter_count"
-          "params":
-        - "fn": "withFormatter_attributeFormatter"
-          "params":
-        - "fn": "withFormatter_expand"
-          "params":
-        - "fn": "withFormatter_expandone"
-          "params":
-        - "fn": "withFormatter_formatOdataList"
+        - "fn": "stdFormatters"
           "params":
         - "fn": "with_PumpHandledAction"
           "params": {"name": "chassis.reset", "uri": "/Actions/Chassis.Reset", "timeout": 30}
@@ -445,11 +419,7 @@ views:
           "params": "rooturi + '/Chassis/' + FQDD + '/Power'"
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
-        - "fn": "withFormatter_count"
-          "params":
-        - "fn": "withFormatter_expand"
-          "params":
-        - "fn": "withFormatter_expandone"
+        - "fn": "stdFormatters"
           "params":
 
   "psu_slot":
@@ -474,7 +444,7 @@ views:
           "params": {"name": "global_health", "expr": "globalHealthModel"}
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
-        - "fn": "withFormatter_attributeFormatter"
+        - "fn": "stdFormatters"
           "params":
 
   "power_control":
@@ -491,13 +461,7 @@ views:
           "params": "rooturi + '/Chassis/' + FQDD + '/Power/PowerControl'"
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
-        - "fn": "withFormatter_count"
-          "params":
-        - "fn": "withFormatter_expand"
-          "params":
-        - "fn": "withFormatter_expandone"
-          "params":
-        - "fn": "withFormatter_formatOdataList"
+        - "fn": "stdFormatters"
           "params":
 
   "power_trends":
@@ -512,11 +476,7 @@ views:
           "params": "rooturi + '/Chassis/' + FQDD + '/Power/PowerTrends-1'"
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
-        - "fn": "withFormatter_count"
-          "params":
-        - "fn": "withFormatter_expand"
-          "params":
-        - "fn": "withFormatter_expandone"
+        - "fn": "stdFormatters"
           "params":
 
   "power_histogram":
@@ -546,9 +506,7 @@ views:
           "params": {"name": "global_health", "expr": "globalHealthModel"}
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
-        - "fn": "withFormatter_count"
-          "params":
-        - "fn": "withFormatter_expand"
+        - "fn": "stdFormatters"
           "params":
 
   "fan":
@@ -573,7 +531,7 @@ views:
           "params": {"name": "global_health", "expr": "globalHealthModel"}
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
-        - "fn": "withFormatter_attributeFormatter"
+        - "fn": "stdFormatters"
           "params":
 
   "iom":
@@ -600,11 +558,7 @@ views:
           "params": {"name": "global_health", "expr": "globalHealthModel"}
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
-        - "fn": "withFormatter_count"
-          "params":
-        - "fn": "withFormatter_attributeFormatter"
-          "params":
-        - "fn": "withFormatter_formatOdataList"
+        - "fn": "stdFormatters"
           "params":
         - "fn": "with_PumpHandledAction"
           "params": {"name": "iom.chassis.reset", "uri": "/Actions/Chassis.Reset", "timeout": 30}
@@ -649,9 +603,7 @@ views:
           "params": "collection_uri"
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
-        - "fn": "withFormatter_count"
-          "params":
-        - "fn": "withFormatter_formatOdataList"
+        - "fn": "stdFormatters"
           "params":
       "Aggregate": "slotcollection"
 
@@ -684,9 +636,7 @@ views:
           "params": "collection_uri"
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
-        - "fn": "withFormatter_count"
-          "params":
-        - "fn": "withFormatter_formatOdataList"
+        - "fn": "stdFormatters"
           "params":
       "Aggregate": "slotconfigcollection"
 
@@ -725,11 +675,7 @@ views:
           "params": {"existing": "default", "linkname": "swinv"}
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
-        - "fn": "withFormatter_count"
-          "params":
-        - "fn": "withFormatter_attributeFormatter"
-          "params":
-        - "fn": "withFormatter_formatOdataList"
+        - "fn": "stdFormatters"
           "params":
         - "fn": "with_PumpHandledAction"
           "params": {"name": "chassis.peripheralmapping", "uri": "/Actions/Oem/DellChassis.PeripheralMapping", "timeout": 30}
@@ -750,9 +696,7 @@ views:
           "params": "collection_uri "
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
-        - "fn": "withFormatter_formatOdataList"
-          "params":
-        - "fn": "withFormatter_count"
+        - "fn": "stdFormatters"
           "params":
       "Aggregate": "chassis"
 
@@ -768,9 +712,7 @@ views:
           "params": "collection_uri "
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
-        - "fn": "withFormatter_formatOdataList"
-          "params":
-        - "fn": "withFormatter_count"
+        - "fn": "stdFormatters"
           "params":
       "Aggregate": "systems"
 
@@ -786,9 +728,7 @@ views:
           "params": "collection_uri "
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
-        - "fn": "withFormatter_formatOdataList"
-          "params":
-        - "fn": "withFormatter_count"
+        - "fn": "stdFormatters"
           "params":
       "Aggregate": "managers"
 
@@ -804,9 +744,7 @@ views:
           "params": "collection_uri "
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
-        - "fn": "withFormatter_formatOdataList"
-          "params":
-        - "fn": "withFormatter_count"
+        - "fn": "stdFormatters"
           "params":
       "Aggregate": "roles"
 
@@ -820,9 +758,7 @@ views:
           "params": "rooturi + '/AccountService' "
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
-        - "fn": "withFormatter_formatOdataList"
-          "params":
-        - "fn": "withFormatter_count"
+        - "fn": "stdFormatters"
           "params":
       "Aggregate": "accountservice"
 
@@ -838,9 +774,7 @@ views:
           "params": "collection_uri "
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
-        - "fn": "withFormatter_formatOdataList"
-          "params":
-        - "fn": "withFormatter_count"
+        - "fn": "stdFormatters"
           "params":
       "Aggregate": "accounts"
 
