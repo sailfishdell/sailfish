@@ -25,7 +25,7 @@ views:
           "params": "rooturi + '/testview'"
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
-      "Aggregate": "registry_collection"
+      "Aggregate": "testview"
 
   "eventservice":
       "Logger": ["module", "eventservice"]
@@ -88,8 +88,6 @@ views:
       "Models":
         "default":  {"session_timeout": "30"}
       "Controllers":
-        - "fn": "ARMapper"
-          "params": {"modelname": "default", "cfgsection": "SessionService", "mappinguniquename": "'/redfish/v1/SessionService'", "AddToView": true}
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/SessionService'"
@@ -106,8 +104,6 @@ views:
       "Controllers":
         - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + collection_uri" }
-        - "fn": "ARMapper"
-          "params": {"modelname": "default", "cfgsection": "SessionService", "mappinguniquename": "'/redfish/v1/SessionService/Sessions'", "AddToView": true}
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/SessionService/Sessions'"

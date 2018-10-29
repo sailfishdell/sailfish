@@ -10,6 +10,8 @@ import (
 
 	"github.com/superchalupa/sailfish/src/actionhandler"
 	ah "github.com/superchalupa/sailfish/src/actionhandler"
+	dell_ec "github.com/superchalupa/sailfish/src/dell-ec"
+	"github.com/superchalupa/sailfish/src/dell-resources/registries"
 	"github.com/superchalupa/sailfish/src/eventwaiter"
 	"github.com/superchalupa/sailfish/src/log"
 	"github.com/superchalupa/sailfish/src/ocp/awesome_mapper2"
@@ -37,14 +39,18 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	actionSvc := ah.StartService(ctx, logger, ch, eb)
 	am2Svc, _ := awesome_mapper2.StartService(ctx, logger, eb)
 	telemetryservice.Setup(ctx, actionSvc, ch, eb)
+	pumpSvc := dell_ec.NewPumpActionSvc(ctx, logger, eb)
 
 	// the package for this is going to change, but this is what makes the various mappers and view functions available
 	instantiateSvc := testaggregate.New(logger, ch)
 	evtSvc := eventservice.New(ctx, cfgMgr, cfgMgrMu, instantiateSvc, actionSvc, ch, eb)
+	eventservice.RegisterAggregate(instantiateSvc)
 	testaggregate.RegisterWithURI(instantiateSvc)
 	testaggregate.RegisterPublishEvents(instantiateSvc, evtSvc)
 	testaggregate.RegisterAggregate(instantiateSvc)
 	testaggregate.RegisterAM2(instantiateSvc, am2Svc)
+	testaggregate.RegisterPumpAction(instantiateSvc, actionSvc, pumpSvc)
+	registries.RegisterAggregate(instantiateSvc)
 	stdmeta.RegisterFormatters(instantiateSvc, d)
 	stdcollections.RegisterAggregate(instantiateSvc)
 	session.RegisterAggregate(instantiateSvc)
