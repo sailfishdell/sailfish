@@ -1,0 +1,131 @@
+{
+    "definitions": {
+        "EventDestinationProtocol": {
+            "type": "string",
+            "enum": [
+                "Redfish"
+            ]
+        },
+        "EventDestination": {
+            "requiredOnCreate": [
+                "Destination",
+                "EventTypes",
+                "Context",
+                "Protocol"
+            ],
+            "type": "object",
+            "required": [
+                "Id",
+                "Name"
+            ],
+            "patternProperties": {
+                "^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message|Privileges)\\.[a-zA-Z_][a-zA-Z0-9_.]+$": {
+                    "type": [
+                        "array",
+                        "boolean",
+                        "number",
+                        "null",
+                        "object",
+                        "string"
+                    ],
+                    "description": "This property shall specify a valid odata or Redfish property."
+                }
+            },
+            "properties": {
+                "Protocol": {
+                    "readonly": true,
+                    "description": "The protocol type of the event connection.",
+                    "longDescription": "This property shall contain the protocol type that the event will use for sending the event to the destination.  A value of Redfish shall be used to indicate that the event type shall adhere to that defined in the Redfish specification.",
+                    "$ref": "#/definitions/EventDestinationProtocol"
+                },
+                "Name": {
+                    "$ref": "/redfish/v1/Schemas/Resource.json#/definitions/Name"
+                },
+                "Description": {
+                    "anyOf": [
+                        {
+                            "$ref": "/redfish/v1/Schemas/Resource.json#/definitions/Description"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ]
+                },
+                "@odata.context": {
+                    "$ref": "/redfish/v1/Schemas/odata.4.0.0.json#/definitions/context"
+                },
+                "Context": {
+                    "type": "string",
+                    "longDescription": "This property shall contain a client supplied context that will remain with the connection through the connections lifetime.",
+                    "description": "A client-supplied string that is stored with the event destination subscription."
+                },
+                "HttpHeaders": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/HttpHeaderProperty"
+                    },
+                    "longDescription": "This property shall contain an object consisting of the names and values of of HTTP header to be included with every event POST to the Event Destination.  This property shall be null on a GET.",
+                    "description": "This is for setting HTTP headers, such as authorization information.  This object will be null on a GET."
+                },
+                "Oem": {
+                    "description": "This is the manufacturer/provider specific extension moniker used to divide the Oem object into sections.",
+                    "longDescription": "The value of this string shall be of the format for the reserved word *Oem*.",
+                    "$ref": "/redfish/v1/Schemas/Resource.json#/definitions/Oem"
+                },
+                "EventTypes": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "/redfish/v1/Schemas/Event.v1_0_0.json#/definitions/EventType"
+                    },
+                    "readonly": true,
+                    "description": "This property shall contain the types of events that shall be sent to the desination."
+                },
+                "@odata.type": {
+                    "$ref": "/redfish/v1/Schemas/odata.4.0.0.json#/definitions/type"
+                },
+                "Destination": {
+                    "readonly": true,
+                    "type": "string",
+                    "longDescription": "This property shall contain a URI to the destination where the events will be sent.",
+                    "format": "uri",
+                    "description": "The URI of the destination Event Service."
+                },
+                "Id": {
+                    "$ref": "/redfish/v1/Schemas/Resource.json#/definitions/Id"
+                },
+                "@odata.id": {
+                    "$ref": "/redfish/v1/Schemas/odata.4.0.0.json#/definitions/id"
+                }
+            },
+            "description": "An Event Destination desribes the target of an event subscription, including the types of events subscribed and context to provide to the target in the Event payload.",
+            "additionalProperties": false
+        },
+        "HttpHeaderProperty": {
+            "properties": {},
+            "patternProperties": {
+                "^[^:\\s]+$": {
+                    "type": "string"
+                },
+                "^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message|Privileges)\\.[a-zA-Z_][a-zA-Z0-9_.]+$": {
+                    "type": [
+                        "array",
+                        "boolean",
+                        "number",
+                        "null",
+                        "object",
+                        "string"
+                    ],
+                    "description": "This property shall specify a valid odata or Redfish property."
+                }
+            },
+            "type": "object",
+            "additionalProperties": false,
+            "description": "The value of the HTTP header is the property value.  The header name is the property name."
+        }
+    },
+    "$schema": "/redfish/v1/Schemas/redfish-schema.v1_1_0.json",
+    "title": "#EventDestination.v1_0_2.EventDestination",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "copyright": "Copyright 2014-2016 Distributed Management Task Force, Inc. (DMTF). For the full DMTF copyright policy, see http://www.dmtf.org/about/policies/copyright",
+    "$ref": "#/definitions/EventDestination"
+}

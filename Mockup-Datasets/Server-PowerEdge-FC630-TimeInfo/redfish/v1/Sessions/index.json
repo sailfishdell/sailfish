@@ -1,0 +1,10 @@
+{
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "@odata.id": "/redfish/v1/Sessions",
+    "Description": "Session Collection",
+    "Members": [],
+    "Name": "Session Collection",
+    "@odata.context": "/redfish/v1/$metadata#SessionCollection.SessionCollection",
+    "Members@odata.count": 0,
+    "@odata.type": "#SessionCollection.SessionCollection"
+}

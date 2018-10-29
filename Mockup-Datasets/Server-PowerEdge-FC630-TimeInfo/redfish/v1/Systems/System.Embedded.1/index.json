@@ -1,0 +1,136 @@
+{
+    "IndicatorLED": "Off",
+    "SKU": "9K5C942",
+    "UUID": "4c4c4544-004b-3510-8043-b9c04f393432",
+    "SerialNumber": "CN7016351200IS",
+    "PowerState": "Off",
+    "SystemType": "Physical",
+    "MemorySummary": {
+        "Status": {
+            "HealthRollUp": null,
+            "State": "Enabled",
+            "Health": null
+        },
+        "TotalSystemMemoryGiB": 16.0
+    },
+    "SimpleStorage": {
+        "@odata.id": "/redfish/v1/Systems/System.Embedded.1/Storage/Controllers"
+    },
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "Links": {
+        "CooledBy@odata.count": 10,
+        "PoweredBy": [
+            {
+                "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Power/PowerSupplies/PSU.Slot.1"
+            },
+            {
+                "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Power/PowerSupplies/PSU.Slot.2"
+            }
+        ],
+        "Chassis@odata.count": 1,
+        "Chassis": [
+            {
+                "@odata.id": "/redfish/v1/Chassis/System.Embedded.1"
+            }
+        ],
+        "CooledBy": [
+            {
+                "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Sensors/Fans/0x17||Fan.Embedded.1A"
+            },
+            {
+                "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Sensors/Fans/0x17||Fan.Embedded.1B"
+            },
+            {
+                "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Sensors/Fans/0x17||Fan.Embedded.2"
+            },
+            {
+                "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Sensors/Fans/0x17||Fan.Embedded.3"
+            },
+            {
+                "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Sensors/Fans/0x17||Fan.Embedded.4"
+            },
+            {
+                "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Sensors/Fans/0x17||Fan.Embedded.5A"
+            },
+            {
+                "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Sensors/Fans/0x17||Fan.Embedded.5B"
+            },
+            {
+                "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Sensors/Fans/0x17||Fan.Embedded.6"
+            },
+            {
+                "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Sensors/Fans/0x17||Fan.Embedded.7"
+            },
+            {
+                "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Sensors/Fans/0x17||Fan.Embedded.8"
+            }
+        ],
+        "PoweredBy@odata.count": 2,
+        "ManagedBy@odata.count": 1,
+        "ManagedBy": [
+            {
+                "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+            }
+        ]
+    },
+    "Description": "Computer System which represents a machine (physical or virtual) and the local resources such as memory, cpu and other devices that can be accessed from that machine.",
+    "EthernetInterfaces": {
+        "@odata.id": "/redfish/v1/Systems/System.Embedded.1/EthernetInterfaces"
+    },
+    "Status": {
+        "HealthRollUp": "OK",
+        "State": "StandbyOffline",
+        "Health": "OK"
+    },
+    "Boot": {
+        "BootSourceOverrideTarget": "None",
+        "BootSourceOverrideEnabled": "Once",
+        "UefiTargetBootSourceOverride": "",
+        "BootSourceOverrideTarget@Redfish.AllowableValues": [
+            "None",
+            "Pxe",
+            "Cd",
+            "Floppy",
+            "Hdd",
+            "BiosSetup",
+            "Utilities",
+            "UefiTarget",
+            "SDCard"
+        ]
+    },
+    "Processors": {
+        "@odata.id": "/redfish/v1/Systems/System.Embedded.1/Processors"
+    },
+    "@odata.id": "/redfish/v1/Systems/System.Embedded.1",
+    "Actions": {
+        "#ComputerSystem.Reset": {
+            "target": "/redfish/v1/Systems/System.Embedded.1/Actions/ComputerSystem.Reset",
+            "ResetType@Redfish.AllowableValues": [
+                "On",
+                "ForceOff",
+                "GracefulRestart",
+                "PushPowerButton",
+                "Nmi"
+            ]
+        }
+    },
+    "Id": "System.Embedded.1",
+    "BiosVersion": "1.7.10",
+    "@odata.context": "/redfish/v1/$metadata#ComputerSystem.ComputerSystem",
+    "PartNumber": "0JXJPTA00",
+    "ProcessorSummary": {
+        "Count": 2,
+        "Status": {
+            "HealthRollUp": "OK",
+            "State": "Enabled",
+            "Health": "OK"
+        },
+        "Model": "Intel(R) Xeon(R) CPU E5-2630 v3 @ 2.40GHz"
+    },
+    "AssetTag": "",
+    "HostName": "",
+    "Name": "System",
+    "Manufacturer": "Dell Inc.",
+    "Model": "PowerEdge FC630",
+    "@odata.type": "#ComputerSystem.v1_0_2.ComputerSystem"
+}

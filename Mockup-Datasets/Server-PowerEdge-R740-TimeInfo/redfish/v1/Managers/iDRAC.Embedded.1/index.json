@@ -1,0 +1,271 @@
+{
+    "Model": "14G Monolithic",
+    "DateTimeLocalOffset": "-05:00",
+    "UUID": "3132334f-c0b7-3480-3510-00364c4c4544",
+    "Name": "Manager",
+    "@odata.type": "#Manager.v1_0_2.Manager",
+    "FirmwareVersion": "3.15.15.15",
+    "ManagerType": "BMC",
+    "Redundancy": [],
+    "EthernetInterfaces": {
+        "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/EthernetInterfaces"
+    },
+    "Links": {
+        "ManagerForChassis@odata.count": 1,
+        "ManagerInChassis": {
+            "@odata.id": "/redfish/v1/Chassis"
+        },
+        "ManagerForChassis": [
+            {
+                "@odata.id": "/redfish/v1/Chassis/System.Embedded.1"
+            }
+        ],
+        "ManagerForServers@odata.count": 1,
+        "Oem": {
+            "Dell": {
+                "Jobs": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Jobs"
+                },
+                "DellAttributes@odata.count": 3,
+                "@odata.type": "#DellManager.v1_0_0.DellManager",
+                "DellAttributes": [
+                    {
+                        "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Attributes"
+                    },
+                    {
+                        "@odata.id": "/redfish/v1/Managers/System.Embedded.1/Attributes"
+                    },
+                    {
+                        "@odata.id": "/redfish/v1/Managers/LifecycleController.Embedded.1/Attributes"
+                    }
+                ]
+            }
+        },
+        "ManagerForServers": [
+            {
+                "@odata.id": "/redfish/v1/Systems/System.Embedded.1"
+            }
+        ]
+    },
+    "Id": "iDRAC.Embedded.1",
+    "VirtualMedia": {
+        "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/VirtualMedia"
+    },
+    "SerialInterfaces": {
+        "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/SerialInterfaces"
+    },
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1",
+    "LogServices": {
+        "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/LogServices"
+    },
+    "Actions": {
+        "#Manager.Reset": {
+            "target": "/redfish/v1/Managers/iDRAC.Embedded.1/Actions/Manager.Reset",
+            "ResetType@Redfish.AllowableValues": [
+                "GracefulRestart"
+            ]
+        },
+        "Oem": {
+            "DellManager.v1_0_0#DellManager.ResetToDefaults": {
+                "target": "/redfish/v1/Managers/iDRAC.Embedded.1/Actions/Oem/DellManager.ResetToDefaults",
+                "ResetType@Redfish.AllowableValues": [
+                    "All",
+                    "ResetAllWithRootDefaults",
+                    "Default"
+                ]
+            },
+            "OemManager.v1_0_0#OemManager.ImportSystemConfiguration": {
+                "ImportSystemConfiguration@Redfish.AllowableValues": [
+                    "TimeToWait",
+                    "ImportBuffer"
+                ],
+                "ShareParameters": {
+                    "IgnoreCertificateWarning@Redfish.AllowableValues": [
+                        "Disabled",
+                        "Enabled"
+                    ],
+                    "ShareType@Redfish.AllowableValues": [
+                        "NFS",
+                        "CIFS",
+                        "HTTP",
+                        "HTTPS"
+                    ],
+                    "ShareParameters@Redfish.AllowableValues": [
+                        "IPAddress",
+                        "ShareName",
+                        "FileName",
+                        "UserName",
+                        "Password",
+                        "Workgroup",
+                        "ProxyServer",
+                        "ProxyUserName",
+                        "ProxyPassword",
+                        "ProxyPort"
+                    ],
+                    "Target@Redfish.AllowableValues": [
+                        "ALL",
+                        "IDRAC",
+                        "BIOS",
+                        "NIC",
+                        "RAID"
+                    ],
+                    "ProxySupport@Redfish.AllowableValues": [
+                        "Disabled",
+                        "EnabledProxyDefault",
+                        "Enabled"
+                    ],
+                    "ProxyType@Redfish.AllowableValues": [
+                        "HTTP",
+                        "SOCKS4"
+                    ]
+                },
+                "target": "/redfish/v1/Managers/iDRAC.Embedded.1/Actions/Oem/EID_674_Manager.ImportSystemConfiguration",
+                "HostPowerState@Redfish.AllowableValues": [
+                    "On",
+                    "Off"
+                ],
+                "ShutdownType@Redfish.AllowableValues": [
+                    "Graceful",
+                    "Forced",
+                    "NoReboot"
+                ]
+            },
+            "OemManager.v1_0_0#OemManager.ImportSystemConfigurationPreview": {
+                "target": "/redfish/v1/Managers/iDRAC.Embedded.1/Actions/Oem/EID_674_Manager.ImportSystemConfigurationPreview",
+                "ShareParameters": {
+                    "IgnoreCertificateWarning@Redfish.AllowableValues": [
+                        "Disabled",
+                        "Enabled"
+                    ],
+                    "ShareType@Redfish.AllowableValues": [
+                        "NFS",
+                        "CIFS",
+                        "HTTP",
+                        "HTTPS"
+                    ],
+                    "ShareParameters@Redfish.AllowableValues": [
+                        "IPAddress",
+                        "ShareName",
+                        "FileName",
+                        "UserName",
+                        "Password",
+                        "Workgroup",
+                        "ProxyServer",
+                        "ProxyUserName",
+                        "ProxyPassword",
+                        "ProxyPort"
+                    ],
+                    "Target@Redfish.AllowableValues": [
+                        "ALL"
+                    ],
+                    "ProxySupport@Redfish.AllowableValues": [
+                        "Disabled",
+                        "EnabledProxyDefault",
+                        "Enabled"
+                    ],
+                    "ProxyType@Redfish.AllowableValues": [
+                        "HTTP",
+                        "SOCKS4"
+                    ]
+                },
+                "ImportSystemConfigurationPreview@Redfish.AllowableValues": [
+                    "ImportBuffer"
+                ]
+            },
+            "OemManager.v1_0_0#OemManager.ExportSystemConfiguration": {
+                "ExportUse@Redfish.AllowableValues": [
+                    "Default",
+                    "Clone",
+                    "Replace"
+                ],
+                "ExportFormat@Redfish.AllowableValues": [
+                    "XML",
+                    "JSON"
+                ],
+                "ShareParameters": {
+                    "IgnoreCertificateWarning@Redfish.AllowableValues": [
+                        "Disabled",
+                        "Enabled"
+                    ],
+                    "ShareType@Redfish.AllowableValues": [
+                        "NFS",
+                        "CIFS",
+                        "HTTP",
+                        "HTTPS"
+                    ],
+                    "ShareParameters@Redfish.AllowableValues": [
+                        "IPAddress",
+                        "ShareName",
+                        "FileName",
+                        "UserName",
+                        "Password",
+                        "Workgroup",
+                        "ProxyServer",
+                        "ProxyUserName",
+                        "ProxyPassword",
+                        "ProxyPort"
+                    ],
+                    "Target@Redfish.AllowableValues": [
+                        "ALL",
+                        "IDRAC",
+                        "BIOS",
+                        "NIC",
+                        "RAID"
+                    ],
+                    "ProxySupport@Redfish.AllowableValues": [
+                        "Disabled",
+                        "EnabledProxyDefault",
+                        "Enabled"
+                    ],
+                    "ProxyType@Redfish.AllowableValues": [
+                        "HTTP",
+                        "SOCKS4"
+                    ]
+                },
+                "target": "/redfish/v1/Managers/iDRAC.Embedded.1/Actions/Oem/EID_674_Manager.ExportSystemConfiguration",
+                "IncludeInExport@Redfish.AllowableValues": [
+                    "Default",
+                    "IncludeReadOnly",
+                    "IncludePasswordHashValues",
+                    "IncludeReadOnly,IncludePasswordHashValues"
+                ]
+            }
+        }
+    },
+    "DateTime": "2017-11-02T18:10:42-05:00",
+    "@odata.context": "/redfish/v1/$metadata#Manager.Manager",
+    "SerialConsole": {
+        "ConnectTypesSupported@odata.count": 0,
+        "MaxConcurrentSessions": 0,
+        "ConnectTypesSupported": [],
+        "ServiceEnabled": false
+    },
+    "Description": "BMC",
+    "Redundancy@odata.count": 0,
+    "NetworkProtocol": {
+        "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/NetworkProtocol"
+    },
+    "GraphicalConsole": {
+        "ConnectTypesSupported@odata.count": 1,
+        "MaxConcurrentSessions": 6,
+        "ConnectTypesSupported": [
+            "KVMIP"
+        ],
+        "ServiceEnabled": true
+    },
+    "CommandShell": {
+        "ConnectTypesSupported@odata.count": 3,
+        "MaxConcurrentSessions": 5,
+        "ConnectTypesSupported": [
+            "SSH",
+            "Telnet",
+            "IPMI"
+        ],
+        "ServiceEnabled": true
+    },
+    "Status": {
+        "State": "Enabled",
+        "Health": "OK"
+    },
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved."
+}

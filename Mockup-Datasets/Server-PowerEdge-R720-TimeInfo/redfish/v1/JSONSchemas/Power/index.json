@@ -1,0 +1,22 @@
+{
+    "Name": "Power Schema File",
+    "@odata.context": "/redfish/v1/$metadata#JsonSchemaFile.JsonSchemaFile",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "Description": "Power Schema File Location",
+    "@odata.type": "#JsonSchemaFile.v1_0_2.JsonSchemaFile",
+    "Languages": [
+        "en"
+    ],
+    "Id": "Power",
+    "Location": [
+        {
+            "PublicationUri": "http://redfish.dmtf.org/schemas/v1/Power.json",
+            "Language": "en",
+            "Uri": "/redfish/v1/Schemas/Power.json"
+        }
+    ],
+    "Languages@odata.count": 1,
+    "@odata.id": "/redfish/v1/JSONSchemas/Power",
+    "Location@odata.count": 1,
+    "Schema": "#Power.Power"
+}

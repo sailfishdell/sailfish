@@ -1,0 +1,28 @@
+{
+    "Description": " Log Entry 697",
+    "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+    "Links": {},
+    "MessageID": "579034",
+    "MessageArgs@odata.count": 0,
+    "Name": " Log Entry 697",
+    "Severity": "Warning",
+    "Message": "The system board Consumption current is greater than the upper warning threshold.",
+    "EntryType": "SEL",
+    "@odata.context": "/redfish/v1/$metadata#LogEntry.LogEntry",
+    "Created": "2017-05-30T11:37:24-05:00",
+    "SensorNumber": 119,
+    "EntryCode": [
+        {
+            "Member": "Upper Non-critical - going high"
+        }
+    ],
+    "Id": "697",
+    "SensorType": [
+        {
+            "Member": "Current"
+        }
+    ],
+    "MessageArgs": [],
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/697"
+}

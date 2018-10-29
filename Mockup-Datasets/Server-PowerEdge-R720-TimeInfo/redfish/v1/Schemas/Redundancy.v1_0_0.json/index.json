@@ -1,0 +1,118 @@
+{
+    "definitions": {
+        "RedundancyMode": {
+            "type": "string",
+            "enumDescriptions": {
+                "Sparing": "One or more spare units are available to take over the function of a failed unit, but takeover is not automatic",
+                "N+m": "Multiple units are available and active such that normal operation will continue if one or more units fail",
+                "Sharing": "Multiple units contribute or share such that operation will continue, but at a reduced capacity, if one or more units fail",
+                "Failover": "Failure of one unit will automatically cause its functions to be taken over by a standby or offline unit in the redundancy set"
+            },
+            "enum": [
+                "Failover",
+                "N+m",
+                "Sharing",
+                "Sparing"
+            ]
+        },
+        "Redundancy": {
+            "type": "object",
+            "required": [
+                "Name",
+                "Mode",
+                "MaxNumSupported",
+                "MinNumNeeded",
+                "Status",
+                "RedundancySet"
+            ],
+            "patternProperties": {
+                "^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message|Privileges)\\.[a-zA-Z_][a-zA-Z0-9_.]+$": {
+                    "type": [
+                        "array",
+                        "boolean",
+                        "number",
+                        "null",
+                        "object",
+                        "string"
+                    ],
+                    "description": "This property shall specify a valid odata or Redfish property."
+                }
+            },
+            "properties": {
+                "Status": {
+                    "$ref": "/redfish/v1/Schemas/Resource.json#/definitions/Status"
+                },
+                "MinNumNeeded": {
+                    "readonly": true,
+                    "longDescription": "The value of this property shall contain the minimum number of members allowed in the redundancy group for the current redundancy mode to still be fault tolerant.",
+                    "type": [
+                        "number",
+                        "null"
+                    ],
+                    "description": "This is the minumum number of members needed for this group to be redundant."
+                },
+                "RedundancySet@odata.count": {
+                    "$ref": "/redfish/v1/Schemas/odata.4.0.0.json#/definitions/count"
+                },
+                "MemberId": {
+                    "type": "string",
+                    "longDescription": "The value of this string shall uniquely identify the member within the collection.",
+                    "description": "This is the identifier for the member within the collection."
+                },
+                "Mode": {
+                    "longDescription": "The value of this property shall contain the information about the redundancy mode of this manager.  Failover shall indicate a master/slave type arrangement where status indicates the role of this manager.  N+1 indicates an arrangement where the redundancy set needs MaxNumSupported-1 number of resources in order to be redundant.  Load Balanced indicates all members are active. However, there functionality is not independent of each other. Their functioning is determined by some sort of load balancing algorithm. Sparing is implied (i.e. each member can be a spare for the other(s). Sparing indicates that all members are active and are aware of each others. However, their functionality is independent until failover. Each member can be a spare for the other(s). Limited Sparing indicates that all members are active, and they may or may not be aware of each and they are not spares for each other.",
+                    "anyOf": [
+                        {
+                            "$ref": "#/definitions/RedundancyMode"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "readonly": true,
+                    "description": "This is the redundancy mode of the group."
+                },
+                "Oem": {
+                    "description": "This is the manufacturer/provider specific extension moniker used to divide the Oem object into sections.",
+                    "longDescription": "The value of this string shall be of the format for the reserved word *Oem*.",
+                    "$ref": "/redfish/v1/Schemas/Resource.json#/definitions/Oem"
+                },
+                "RedundancySet": {
+                    "readonly": true,
+                    "items": {
+                        "$ref": "/redfish/v1/Schemas/odata.4.0.0.json#/definitions/idRef"
+                    },
+                    "longDescription": "The value of this property shall contain the ids of components that are part of this redundancy set. The id values may or may not be dereferenceable.",
+                    "type": "array",
+                    "description": "Contains any ids that represent components of this redundancy set."
+                },
+                "Name": {
+                    "readonly": true,
+                    "longDescription": "This object represents the Name property.  All values for resources described by this schema shall comply to the requirements as described in the Redfish specification. The value of this string shall be of the format for the reserved word *Name*.",
+                    "type": "string",
+                    "description": "The name of the resource or array element."
+                },
+                "MaxNumSupported": {
+                    "readonly": true,
+                    "longDescription": "The value of this property shall contain the maximum number of members allowed in the redundancy group.",
+                    "type": [
+                        "number",
+                        "null"
+                    ],
+                    "description": "This is the maximum number of members allowable for this particular redundancy group."
+                },
+                "RedundancySet@odata.navigationLink": {
+                    "type": "string",
+                    "format": "uri"
+                }
+            },
+            "description": "This is the redundancy definition to be used in other resource schemas.",
+            "longDescription": "This object represents the Redundancy element property.  All values for resources described by this schema shall comply to the requirements as described in the Redfish specification.  The value of this string shall be of the format for the reserved word *Redundancy*",
+            "additionalProperties": false
+        }
+    },
+    "copyright": "Copyright 2014-2016 Distributed Management Task Force, Inc. (DMTF). For the full DMTF copyright policy, see http://www.dmtf.org/about/policies/copyright",
+    "$schema": "/redfish/v1/Schemas/redfish-schema.v1_1_0.json",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "title": "#Redundancy.v1_0_0"
+}

@@ -1,0 +1,20 @@
+{
+    "OEMRecordFormat": "Dell",
+    "Links": {},
+    "Id": "1566",
+    "EntryType": "Oem",
+    "Created": "2017-10-29T05:43:59-05:00",
+    "MessageArgs@odata.count": 1,
+    "@odata.context": "/redfish/v1/$metadata#LogEntry.LogEntry",
+    "Severity": "Ok",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1566",
+    "Description": " Log Entry 1566",
+    "MessageID": "LOG007",
+    "MessageArgs": [
+        "31"
+    ],
+    "Name": " Log Entry 1566",
+    "Message": "The previous log entry was repeated 31 times.",
+    "@odata.type": "#LogEntry.v1_0_2.LogEntry"
+}

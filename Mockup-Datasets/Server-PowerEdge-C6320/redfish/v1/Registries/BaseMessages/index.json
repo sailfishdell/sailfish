@@ -1,0 +1,22 @@
+{
+    "Languages": [
+        "En"
+    ],
+    "@odata.type": "#MessageRegistryFile.v1_0_2.MessageRegistryFile",
+    "@Redfish.Copyright": "Copyright 2017 TTU.edu All rights reserved.",
+    "@odata.context": "/redfish/v1/$metadata#MessageRegistryFile.MessageRegistryFile",
+    "Registry": "Base.1.0",
+    "@odata.id": "/redfish/v1/Registries/BaseMessages",
+    "Location": [
+        {
+            "Uri": "/redfish/v1/Registries/BaseMessages/BaseRegistry.v1_0_0.json",
+            "PublicationUri": "http://www.dmtf.org/sites/default/files/standards/documents/DSP8011_1.0.0a.json",
+            "Language": "En"
+        }
+    ],
+    "Id": "BaseMessages",
+    "Languages@odata.count": 1,
+    "Description": "Base Message Registry File locations",
+    "Location@odata.count": 1,
+    "Name": "Base Message Registry File"
+}

@@ -1,0 +1,22 @@
+{
+    "Schema": "#EventDestinationCollection.EventDestinationCollection",
+    "Languages@odata.count": 1,
+    "Location@odata.count": 1,
+    "Name": "EventDestinationCollection Schema File",
+    "@odata.type": "#JsonSchemaFile.v1_0_2.JsonSchemaFile",
+    "@odata.context": "/redfish/v1/$metadata#JsonSchemaFile.JsonSchemaFile",
+    "Description": "EventDestinationCollection Schema File Location",
+    "Id": "EventDestinationCollection",
+    "Location": [
+        {
+            "PublicationUri": "http://redfish.dmtf.org/schemas/v1/EventDestinationCollection.json",
+            "Uri": "/redfish/v1/Schemas/EventDestinationCollection.json",
+            "Language": "en"
+        }
+    ],
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "Languages": [
+        "en"
+    ],
+    "@odata.id": "/redfish/v1/JSONSchemas/EventDestinationCollection"
+}

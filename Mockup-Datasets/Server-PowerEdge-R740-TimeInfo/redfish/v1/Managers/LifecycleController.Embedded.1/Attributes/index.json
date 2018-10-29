@@ -1,0 +1,40 @@
+{
+    "Description": "This schema provides the oem attributes",
+    "@Redfish.Settings": {
+        "@odata.type": "#Settings.v1_0_2.Settings",
+        "SettingsObject": {
+            "@odata.id": "/redfish/v1/Managers/LifecycleController.Embedded.1/Attributes/Settings"
+        },
+        "@odata.context": "/redfish/v1/$metadata#Settings.Settings"
+    },
+    "Attributes": {
+        "LCAttributes.1.AutoBackup": "Disabled",
+        "LCAttributes.1.LifecycleControllerState": "Enabled",
+        "LCAttributes.1.UserProxyUserName": "",
+        "LCAttributes.1.VirtualAddressManagementApplication": "",
+        "LCAttributes.1.PartFirmwareUpdate": "Match firmware of replaced part",
+        "LCAttributes.1.BIOSRTDRequested": "False",
+        "LCAttributes.1.DiscoveryFactoryDefaults": "Off",
+        "LCAttributes.1.AutoUpdate": "Disabled",
+        "LCAttributes.1.ProvisioningServer": "",
+        "LCAttributes.1.IPAddress": "",
+        "LCAttributes.1.IPChangeNotifyPS": "Off",
+        "LCAttributes.1.IgnoreCertWarning": "On",
+        "LCAttributes.1.UserProxyType": "HTTP",
+        "LCAttributes.1.PartConfigurationUpdate": "Apply Always",
+        "LCAttributes.1.UserProxyPassword": null,
+        "LCAttributes.1.UserProxyServer": "",
+        "LCAttributes.1.AutoDiscovery": "Off",
+        "LCAttributes.1.SystemID": "1507",
+        "LCAttributes.1.CollectSystemInventoryOnRestart": "Enabled",
+        "LCAttributes.1.UserProxyPort": "80",
+        "LCAttributes.1.Licensed": "No"
+    },
+    "Id": "LCAttributes",
+    "Name": "OEMAttributeRegistry",
+    "AttributeRegistry": "ManagerAttributeRegistry.v1_0_0",
+    "@odata.type": "#DellAttributes.v1_0_0.DellAttributes",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "@odata.id": "/redfish/v1/Managers/LifecycleController.Embedded.1/Attributes",
+    "@odata.context": "/redfish/v1/$metadata#DellAttributes.DellAttributes"
+}

@@ -1,0 +1,28 @@
+{
+    "SensorNumber": 9,
+    "Name": " Log Entry 155",
+    "SensorType": [
+        {
+            "Member": "Processor"
+        }
+    ],
+    "MessageArgs@odata.count": 0,
+    "@odata.context": "/redfish/v1/$metadata#LogEntry.LogEntry",
+    "Message": "Internal error has occurred check for additional logs.",
+    "Severity": "OK",
+    "EntryCode": [
+        {
+            "Member": "Assert"
+        }
+    ],
+    "Description": " Log Entry 155",
+    "MessageArgs": [],
+    "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+    "EntryType": "SEL",
+    "Id": "155",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/155",
+    "Links": {},
+    "MessageID": "a014",
+    "Created": "2015-11-15T23:26:23-06:00"
+}

@@ -1,0 +1,14 @@
+{
+    "Description": "Collection of Processors for this System",
+    "Name": "ProcessorsCollection",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "@odata.type": "#ProcessorCollection.ProcessorCollection",
+    "Members": [
+        {
+            "@odata.id": "/redfish/v1/Systems/System.Embedded.1/Processors/CPU.Socket.1"
+        }
+    ],
+    "Members@odata.count": 1,
+    "@odata.id": "/redfish/v1/Systems/System.Embedded.1/Processors",
+    "@odata.context": "/redfish/v1/$metadata#ProcessorCollection.ProcessorCollection"
+}

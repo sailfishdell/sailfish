@@ -1,0 +1,26 @@
+{
+    "Name": "Boot Sources Configuration Pending Settings",
+    "AttributeRegistry": "DellBootSourcesRegistry.v1_0_0",
+    "Oem": {
+        "Dell": {
+            "@odata.type": "#DellManager.v1_0_0.DellManager",
+            "Jobs": {
+                "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Jobs"
+            }
+        }
+    },
+    "Actions": {
+        "Oem": {
+            "DellManager.v1_0_0#DellManager.ClearPending": {
+                "target": "/redfish/v1/Systems/System.Embedded.1/Bios/Settings/Actions/Oem/DellManager.ClearPending"
+            }
+        }
+    },
+    "@odata.context": "/redfish/v1/$metadata#DellBootSources.DellBootSources",
+    "@odata.id": "/redfish/v1/Systems/System.Embedded.1/BootSources/Settings",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "Description": "Boot Sources Pending Settings. These settings will be applied on next system reboot.",
+    "Attributes": {},
+    "@odata.type": "#DellBootSources.v1_0_0.DellBootSources",
+    "Id": "Settings"
+}

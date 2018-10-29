@@ -1,0 +1,22 @@
+{
+    "Name": "Chassis Schema File",
+    "@odata.context": "/redfish/v1/$metadata#JsonSchemaFile.JsonSchemaFile",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "Description": "Chassis Schema File Location",
+    "@odata.type": "#JsonSchemaFile.v1_0_2.JsonSchemaFile",
+    "Languages": [
+        "en"
+    ],
+    "Id": "Chassis.v1_0_1",
+    "Location": [
+        {
+            "PublicationUri": "http://redfish.dmtf.org/schemas/v1/Chassis.v1_0_1.json",
+            "Language": "en",
+            "Uri": "/redfish/v1/Schemas/Chassis.v1_0_1.json"
+        }
+    ],
+    "Languages@odata.count": 1,
+    "@odata.id": "/redfish/v1/JSONSchemas/Chassis.v1_0_1",
+    "Location@odata.count": 1,
+    "Schema": "#Chassis.v1_0_1.Chassis"
+}

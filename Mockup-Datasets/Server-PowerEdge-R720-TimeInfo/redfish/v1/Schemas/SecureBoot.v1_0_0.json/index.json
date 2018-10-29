@@ -1,0 +1,210 @@
+{
+    "definitions": {
+        "SecureBootModeType": {
+            "type": "string",
+            "enumDescriptions": {
+                "DeployedMode": "Secure Boot is currently in Deployed Mode.",
+                "UserMode": "Secure Boot is currently in User Mode.",
+                "SetupMode": "Secure Boot is currently in Setup Mode.",
+                "AuditMode": "Secure Boot is currently in Audit Mode."
+            },
+            "enum": [
+                "SetupMode",
+                "UserMode",
+                "AuditMode",
+                "DeployedMode"
+            ]
+        },
+        "SecureBoot": {
+            "type": "object",
+            "required": [
+                "Id",
+                "Name"
+            ],
+            "patternProperties": {
+                "^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message|Privileges)\\.[a-zA-Z_][a-zA-Z0-9_.]+$": {
+                    "type": [
+                        "array",
+                        "boolean",
+                        "number",
+                        "null",
+                        "object",
+                        "string"
+                    ],
+                    "description": "This property shall specify a valid odata or Redfish property."
+                }
+            },
+            "properties": {
+                "SecureBootMode": {
+                    "longDescription": "This property shall contain the current Secure Boot mode, as defined in the UEFI Specification.",
+                    "anyOf": [
+                        {
+                            "$ref": "#/definitions/SecureBootModeType"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "readonly": true,
+                    "description": "Current Secure Boot Mode."
+                },
+                "Name": {
+                    "$ref": "/redfish/v1/Schemas/Resource.json#/definitions/Name"
+                },
+                "Id": {
+                    "$ref": "/redfish/v1/Schemas/Resource.json#/definitions/Id"
+                },
+                "Oem": {
+                    "description": "This is the manufacturer/provider specific extension moniker used to divide the Oem object into sections.",
+                    "longDescription": "The value of this string shall be of the format for the reserved word *Oem*.",
+                    "$ref": "/redfish/v1/Schemas/Resource.json#/definitions/Oem"
+                },
+                "Actions": {
+                    "readonly": true,
+                    "patternProperties": {
+                        "^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message|Privileges)\\.[a-zA-Z_][a-zA-Z0-9_.]+$": {
+                            "type": [
+                                "array",
+                                "boolean",
+                                "number",
+                                "null",
+                                "object",
+                                "string"
+                            ],
+                            "description": "This property shall specify a valid odata or Redfish property."
+                        }
+                    },
+                    "properties": {
+                        "Oem": {
+                            "properties": {},
+                            "type": "object",
+                            "additionalProperties": true,
+                            "patternProperties": {
+                                "^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message|Privileges)\\.[a-zA-Z_][a-zA-Z0-9_.]+$": {
+                                    "type": [
+                                        "array",
+                                        "boolean",
+                                        "number",
+                                        "null",
+                                        "object",
+                                        "string"
+                                    ],
+                                    "description": "This property shall specify a valid odata or Redfish property."
+                                }
+                            }
+                        },
+                        "#SecureBoot.ResetKeys": {
+                            "$ref": "#/definitions/ResetKeys"
+                        }
+                    },
+                    "type": "object",
+                    "description": "The available actions for this resource.",
+                    "longDescription": "The Actions property shall contain the available actions for this resource.",
+                    "additionalProperties": false
+                },
+                "@odata.context": {
+                    "$ref": "/redfish/v1/Schemas/odata.4.0.0.json#/definitions/context"
+                },
+                "@odata.id": {
+                    "$ref": "/redfish/v1/Schemas/odata.4.0.0.json#/definitions/id"
+                },
+                "SecureBootCurrentBoot": {
+                    "longDescription": "The value of this property shall indicate the UEFI Secure Boot state during the current boot cycle.",
+                    "anyOf": [
+                        {
+                            "$ref": "#/definitions/SecureBootCurrentBootType"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "readonly": true,
+                    "description": "Secure Boot state during the current boot cycle."
+                },
+                "Description": {
+                    "anyOf": [
+                        {
+                            "$ref": "/redfish/v1/Schemas/Resource.json#/definitions/Description"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ]
+                },
+                "SecureBootEnable": {
+                    "type": [
+                        "boolean",
+                        "null"
+                    ],
+                    "longDescription": "Setting this property to true enables UEFI Secure Boot, and setting it to false disables it. This property can be enabled only in UEFI boot mode.",
+                    "description": "Enable or disable UEFI Secure Boot (takes effect on next boot)."
+                },
+                "@odata.type": {
+                    "$ref": "/redfish/v1/Schemas/odata.4.0.0.json#/definitions/type"
+                }
+            },
+            "description": "This resource contains UEFI Secure Boot information. It represents properties for managing the UEFI Secure Boot functionality of a system.",
+            "longDescription": "This resource shall be used to represent a UEFI Secure Boot resource for a Redfish implementation.",
+            "additionalProperties": false
+        },
+        "SecureBootCurrentBootType": {
+            "type": "string",
+            "enumDescriptions": {
+                "Disabled": "Secure Boot is currently disabled.",
+                "Enabled": "Secure Boot is currently enabled."
+            },
+            "enum": [
+                "Enabled",
+                "Disabled"
+            ]
+        },
+        "ResetKeys": {
+            "type": "object",
+            "patternProperties": {
+                "^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message|Privileges)\\.[a-zA-Z_][a-zA-Z0-9_.]+$": {
+                    "type": [
+                        "array",
+                        "boolean",
+                        "number",
+                        "null",
+                        "object",
+                        "string"
+                    ],
+                    "description": "This property shall specify a valid odata or Redfish property."
+                }
+            },
+            "properties": {
+                "target": {
+                    "type": "string",
+                    "format": "uri",
+                    "description": "Link to invoke action"
+                },
+                "title": {
+                    "type": "string",
+                    "description": "Friendly action name"
+                }
+            },
+            "description": "This action is used to reset the Secure Boot keys.",
+            "longDescription": "This action shall perform a reset of the Secure Boot key databases. The ResetAllKeysToDefault value shall reset the UEFI Secure Boot key databases to their default values. The DeleteAllKeys value shall delete the content of the UEFI Secure Boot key databases. The DeletePK value shall delete the content of the PK Secure boot key.",
+            "additionalProperties": false
+        },
+        "ResetKeysType": {
+            "type": "string",
+            "enumDescriptions": {
+                "DeletePK": "Delete the content of the PK UEFI Secure Boot database. This puts the system in Setup Mode.",
+                "DeleteAllKeys": "Delete the content of all UEFI Secure Boot key databases (PK, KEK, DB, DBX). This puts the system in Setup Mode.",
+                "ResetAllKeysToDefault": "Reset the content of all UEFI Secure Boot key databases (PK, KEK, DB, DBX) to their default values."
+            },
+            "enum": [
+                "ResetAllKeysToDefault",
+                "DeleteAllKeys",
+                "DeletePK"
+            ]
+        }
+    },
+    "$schema": "/redfish/v1/Schemas/redfish-schema.v1_1_0.json",
+    "title": "#SecureBoot.v1_0_0.SecureBoot",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "copyright": "Copyright 2014-2016 Distributed Management Task Force, Inc. (DMTF). For the full DMTF copyright policy, see http://www.dmtf.org/about/policies/copyright",
+    "$ref": "#/definitions/SecureBoot"
+}

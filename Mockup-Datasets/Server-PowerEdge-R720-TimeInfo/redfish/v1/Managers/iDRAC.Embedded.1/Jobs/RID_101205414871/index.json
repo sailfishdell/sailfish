@@ -1,0 +1,19 @@
+{
+    "TargetSettingsURI": null,
+    "Name": "Reboot3",
+    "CompletionTime": "2017-11-07T23:55:57",
+    "MessageId": "RED030",
+    "@odata.context": "/redfish/v1/$metadata#DellJob.DellJob",
+    "EndTime": null,
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "Description": "Job Instance",
+    "MessageArgs": [],
+    "@odata.type": "#DellJob.v1_0_0.DellJob",
+    "Message": "Reboot is complete.",
+    "Id": "RID_101205414871",
+    "JobState": "Completed",
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Jobs/RID_101205414871",
+    "StartTime": null,
+    "PercentComplete": 254,
+    "JobType": "RebootForce"
+}

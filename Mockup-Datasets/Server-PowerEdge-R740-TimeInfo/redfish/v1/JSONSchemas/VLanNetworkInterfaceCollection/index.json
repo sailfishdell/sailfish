@@ -1,0 +1,22 @@
+{
+    "Schema": "#VLanNetworkInterfaceCollection.VLanNetworkInterfaceCollection",
+    "Languages@odata.count": 1,
+    "Location@odata.count": 1,
+    "Name": "VLanNetworkInterfaceCollection Schema File",
+    "@odata.type": "#JsonSchemaFile.v1_0_2.JsonSchemaFile",
+    "@odata.context": "/redfish/v1/$metadata#JsonSchemaFile.JsonSchemaFile",
+    "Description": "VLanNetworkInterfaceCollection Schema File Location",
+    "Id": "VLanNetworkInterfaceCollection",
+    "Location": [
+        {
+            "PublicationUri": "http://redfish.dmtf.org/schemas/v1/VLanNetworkInterfaceCollection.json",
+            "Uri": "/redfish/v1/Schemas/VLanNetworkInterfaceCollection.json",
+            "Language": "en"
+        }
+    ],
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "Languages": [
+        "en"
+    ],
+    "@odata.id": "/redfish/v1/JSONSchemas/VLanNetworkInterfaceCollection"
+}

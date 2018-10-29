@@ -1,0 +1,17 @@
+{
+    "UefiDevicePath": "PciRoot(0x0)/Pci(0x1F,0x2)",
+    "Id": "AHCI.Embedded.2-1",
+    "@odata.context": "/redfish/v1/$metadata#SimpleStorage.SimpleStorage",
+    "Description": "Simple Storage Controller",
+    "Status": {
+        "State": "Enabled",
+        "Health": null,
+        "HealthRollup": null
+    },
+    "@odata.type": "#SimpleStorage.v1_0_2.SimpleStorage",
+    "Devices@odata.count": 0,
+    "Devices": [],
+    "Name": "C610/X99 series chipset 6-Port SATA Controller [AHCI mode]",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "@odata.id": "/redfish/v1/Systems/System.Embedded.1/Storage/Controllers/AHCI.Embedded.2-1"
+}

@@ -1,0 +1,84 @@
+{
+    "PowerState": "On",
+    "Description": "It represents the properties for physical components for any system.It represent racks, rackmount servers, blades, standalone, modular systems,enclosures, and all other containers.The non-cpu/device centric parts of the schema are all accessed either directly or indirectly through this resource.",
+    "@odata.type": "#Chassis.v1_0_2.Chassis",
+    "Links": {
+        "PoweredBy@odata.count": 2,
+        "ComputerSystems": [
+            {
+                "@odata.id": "/redfish/v1/Systems/System.Embedded.1"
+            }
+        ],
+        "Contains": [],
+        "ManagedBy": [
+            {
+                "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+            }
+        ],
+        "ComputerSystems@odata.count": 1,
+        "CooledBy": [
+            {
+                "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Sensors/Fans/0x17||Fan.Embedded.1"
+            },
+            {
+                "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Sensors/Fans/0x17||Fan.Embedded.2"
+            },
+            {
+                "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Sensors/Fans/0x17||Fan.Embedded.3"
+            },
+            {
+                "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Sensors/Fans/0x17||Fan.Embedded.4"
+            },
+            {
+                "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Sensors/Fans/0x17||Fan.Embedded.5"
+            },
+            {
+                "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Sensors/Fans/0x17||Fan.Embedded.6"
+            }
+        ],
+        "CooledBy@odata.count": 6,
+        "ManagedBy@odata.count": 1,
+        "Contains@odata.count": 0,
+        "PoweredBy": [
+            {
+                "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Power/PowerSupplies/PSU.Slot.1"
+            },
+            {
+                "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Power/PowerSupplies/PSU.Slot.2"
+            }
+        ]
+    },
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "Name": "Computer System Chassis",
+    "ChassisType": "StandAlone",
+    "SKU": "GBM5CD2",
+    "Model": "PowerEdge T630",
+    "Manufacturer": "Dell Inc.",
+    "IndicatorLED": "Blinking",
+    "@odata.context": "/redfish/v1/$metadata#Chassis.Chassis",
+    "SerialNumber": "CN77921645014I",
+    "Status": {
+        "State": "Enabled",
+        "Health": "Critical",
+        "HealthRollup": "Critical"
+    },
+    "PartNumber": "0NT78XA00",
+    "Thermal": {
+        "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Thermal"
+    },
+    "Actions": {
+        "#Chassis.Reset": {
+            "Target": "/redfish/v1/Chassis/System.Embedded.1/Actions/Chassis.Reset",
+            "ResetType@Redfish.AllowableValues": [
+                "On",
+                "ForceOff"
+            ]
+        }
+    },
+    "Power": {
+        "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Power"
+    },
+    "Id": "System.Embedded.1",
+    "AssetTag": "",
+    "@odata.id": "/redfish/v1/Chassis/System.Embedded.1"
+}

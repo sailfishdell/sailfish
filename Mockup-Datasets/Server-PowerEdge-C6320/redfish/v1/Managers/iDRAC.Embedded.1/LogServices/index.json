@@ -1,0 +1,17 @@
+{
+    "Members@odata.count": 2,
+    "@odata.type": "#LogServiceCollection.LogServiceCollection",
+    "@Redfish.Copyright": "Copyright 2017 TTU.edu All rights reserved.",
+    "@odata.context": "/redfish/v1/$metadata#LogServiceCollection.LogServiceCollection",
+    "Description": "Collection of Log Services for this Manager",
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/LogServices",
+    "Members": [
+        {
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/LogServices/Sel"
+        },
+        {
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/LogServices/Lclog"
+        }
+    ],
+    "Name": "Log Service Collection"
+}

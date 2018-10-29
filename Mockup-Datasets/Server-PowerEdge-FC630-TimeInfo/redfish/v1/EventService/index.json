@@ -1,0 +1,41 @@
+{
+    "Subscriptions": {
+        "@odata.id": "/redfish/v1/EventService/Subscriptions"
+    },
+    "EventTypesForSubscription@odata.count": 5,
+    "IgnoreCertificateErrors": "No",
+    "Actions": {
+        "#EventService.SubmitTestEvent": {
+            "target": "/redfish/v1/EventService/Actions/EventService.SubmitTestEvent",
+            "EventType@Redfish.AllowableValues": [
+                "StatusChange",
+                "ResourceUpdated",
+                "ResourceAdded",
+                "ResourceRemoved",
+                "Alert"
+            ]
+        }
+    },
+    "Id": "EventService",
+    "DeliveryRetryIntervalInSeconds": 30,
+    "@odata.context": "/redfish/v1/$metadata#EventService.EventService",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "EventTypesForSubscription": [
+        "StatusChange",
+        "ResourceUpdated",
+        "ResourceAdded",
+        "ResourceRemoved",
+        "Alert"
+    ],
+    "@odata.id": "/redfish/v1/EventService",
+    "Description": "Event Service represents the properties for the service",
+    "Name": "Event Service",
+    "ServiceEnabled": false,
+    "DeliveryRetryAttempts": 3,
+    "Status": {
+        "HealthRollUp": "Ok",
+        "State": "Disabled",
+        "Health": "Ok"
+    },
+    "@odata.type": "#EventService.v1_0_2.EventService"
+}

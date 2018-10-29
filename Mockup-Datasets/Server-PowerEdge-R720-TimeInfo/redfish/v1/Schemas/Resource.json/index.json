@@ -1,0 +1,229 @@
+{
+    "definitions": {
+        "Name": {
+            "readonly": true,
+            "longDescription": "This object represents the Name property.  All values for resources described by this schema shall comply to the requirements as described in the Redfish specification. The value of this string shall be of the format for the reserved word *Name*.",
+            "type": "string",
+            "description": "The name of the resource or array element."
+        },
+        "Description": {
+            "readonly": true,
+            "longDescription": "This object represents the Description property.  All values for resources described by this schema shall comply to the requirements as described in the Redfish specification.",
+            "type": "string",
+            "description": "Provides a description of this resource and is used for commonality  in the schema definitions."
+        },
+        "Health": {
+            "type": "string",
+            "enumDescriptions": {
+                "Critical": "A critical condition exists that requires immediate attention",
+                "OK": "Normal",
+                "Warning": "A condition exists that requires attention"
+            },
+            "enum": [
+                "OK",
+                "Warning",
+                "Critical"
+            ]
+        },
+        "Resource": {
+            "$ref": "/redfish/v1/Schemas/Resource.v1_0_0.json#/definitions/Resource"
+        },
+        "ResetType": {
+            "type": "string",
+            "enumDescriptions": {
+                "ForceOff": "Turn the system off immediately (non-graceful) shutdown",
+                "GracefulShutdown": "Perform a graceful system shutdown and power off",
+                "ForceOn": "Turn the system on immediately",
+                "ForceRestart": "Perform an immediate (non-graceful) shutdown, followed by a restart of the system",
+                "GracefulRestart": "Perform a graceful system shutdown followed by a restart of the system",
+                "PushPowerButton": "Simulate the pressing of the physical power button on this system",
+                "Nmi": "Generate a Diagnostic Interrupt (usually an NMI on x86 systems) to cease normal operations, perform diagnostic actions and typically halt the system.",
+                "On": "Turn the system on"
+            },
+            "enum": [
+                "On",
+                "ForceOff",
+                "GracefulShutdown",
+                "GracefulRestart",
+                "ForceRestart",
+                "Nmi",
+                "ForceOn",
+                "PushPowerButton"
+            ]
+        },
+        "UUID": {
+            "pattern": "([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})",
+            "type": "string"
+        },
+        "Status": {
+            "properties": {
+                "State": {
+                    "longDescription": "This property shall represent if this component is available or not and why.  Enabled indicates the resource is available.  Disabled indicates the resource has been intentionally made unavailable but it can be enabled.  Offline indicates the resource is unavailable intentionally and requires action to be made available.  InTest indicates that the component is undergoing testing.  Starting indicates that the resource is on its way to becoming available.  Absent indicates the resources is physically unavailable.",
+                    "anyOf": [
+                        {
+                            "$ref": "#/definitions/State"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "readonly": true,
+                    "description": "This indicates the known state of the resource, such as if it is enabled."
+                },
+                "Oem": {
+                    "$ref": "#/definitions/Oem"
+                },
+                "Health": {
+                    "longDescription": "This property shall represent the HealthState of the resource without considering its dependent resources. The values shall conform to those defined in the Redfish specification.",
+                    "anyOf": [
+                        {
+                            "$ref": "#/definitions/Health"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "readonly": true,
+                    "description": "This represents the health state of this resource in the absence of its dependent resources."
+                },
+                "HealthRollup": {
+                    "longDescription": "This property shall represent the HealthState of the resource and its dependent resources.  The values shall conform to those defined in the Redfish specification.",
+                    "anyOf": [
+                        {
+                            "$ref": "#/definitions/Health"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "readonly": true,
+                    "description": "This represents the overall health state from the view of this resource."
+                }
+            },
+            "type": "object",
+            "readonly": true,
+            "additionalProperties": false,
+            "patternProperties": {
+                "^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message|Privileges)\\.[a-zA-Z_][a-zA-Z0-9_.]+$": {
+                    "type": [
+                        "array",
+                        "boolean",
+                        "number",
+                        "null",
+                        "object",
+                        "string"
+                    ],
+                    "description": "This property shall specify a valid odata or Redfish property."
+                }
+            }
+        },
+        "Item": {
+            "anyOf": [
+                {
+                    "$ref": "/redfish/v1/Schemas/Resource.json#/definitions/ReferenceableMember"
+                },
+                {
+                    "$ref": "/redfish/v1/Schemas/Resource.json#/definitions/Resource"
+                },
+                {
+                    "$ref": "/redfish/v1/Schemas/Resource.v1_0_0.json#/definitions/ReferenceableMember"
+                },
+                {
+                    "$ref": "/redfish/v1/Schemas/Resource.v1_0_0.json#/definitions/Resource"
+                },
+                {
+                    "$ref": "/redfish/v1/Schemas/Resource.v1_1_0.json#/definitions/ReferenceableMember"
+                }
+            ]
+        },
+        "Oem": {
+            "type": "object",
+            "patternProperties": {
+                "[A-Za-z0-9_.:]+": {
+                    "$ref": "#/definitions/OemObject"
+                },
+                "^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message|Privileges)\\.[a-zA-Z_][a-zA-Z0-9_.]+$": {
+                    "type": [
+                        "array",
+                        "boolean",
+                        "number",
+                        "null",
+                        "object",
+                        "string"
+                    ],
+                    "description": "This property shall specify a valid odata or Redfish property."
+                }
+            },
+            "properties": {},
+            "description": "Oem extension object.",
+            "longDescription": "This object represents the Oem properties.  All values for resources described by this schema shall comply to the requirements as described in the Redfish specification.",
+            "additionalProperties": true
+        },
+        "Id": {
+            "readonly": true,
+            "longDescription": "This property represents an identifier for the resource.  All values for resources described by this schema shall comply to the requirements as described in the Redfish specification.",
+            "type": "string",
+            "description": "Uniquely identifies the resource within the collection of like resources."
+        },
+        "State": {
+            "type": "string",
+            "enumDescriptions": {
+                "Absent": "This function or resource is not present or not detected",
+                "InTest": "This function or resource is undergoing testing",
+                "StandbySpare": "This function or resource is part of a redundancy set and is awaiting a failover or other external action to activate it.",
+                "Enabled": "This function or resource has been enabled",
+                "Starting": "This function or resource is starting",
+                "StandbyOffline": "This function or resource is enabled, but awaiting an external action to activate it",
+                "Disabled": "This function or resource has been disabled",
+                "UnavailableOffline": "This function or resource is present but cannot be used"
+            },
+            "enum": [
+                "Enabled",
+                "Disabled",
+                "StandbyOffline",
+                "StandbySpare",
+                "InTest",
+                "Starting",
+                "Absent",
+                "UnavailableOffline"
+            ]
+        },
+        "OemObject": {
+            "type": "object",
+            "patternProperties": {
+                "^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message|Privileges)\\.[a-zA-Z_][a-zA-Z0-9_.]+$": {
+                    "type": [
+                        "array",
+                        "boolean",
+                        "number",
+                        "null",
+                        "object",
+                        "string"
+                    ],
+                    "description": "This property shall specify a valid odata or Redfish property."
+                }
+            },
+            "properties": {},
+            "description": "Base type for an Oem object.",
+            "longDescription": "This object represents the base type for an Oem property.  All values for resources described by this schema shall comply to the requirements as described in the Redfish specification.",
+            "additionalProperties": true
+        },
+        "ReferenceableMember": {
+            "anyOf": [
+                {
+                    "$ref": "/redfish/v1/Schemas/Resource.v1_0_0.json#/definitions/ReferenceableMember"
+                },
+                {
+                    "$ref": "/redfish/v1/Schemas/Resource.v1_1_0.json#/definitions/ReferenceableMember"
+                }
+            ]
+        },
+        "ResourceCollection": {
+            "$ref": "/redfish/v1/Schemas/Resource.v1_0_0.json#/definitions/ResourceCollection"
+        }
+    },
+    "copyright": "Copyright 2014-2016 Distributed Management Task Force, Inc. (DMTF). For the full DMTF copyright policy, see http://www.dmtf.org/about/policies/copyright",
+    "$schema": "/redfish/v1/Schemas/redfish-schema.v1_1_0.json",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "title": "#Resource"
+}

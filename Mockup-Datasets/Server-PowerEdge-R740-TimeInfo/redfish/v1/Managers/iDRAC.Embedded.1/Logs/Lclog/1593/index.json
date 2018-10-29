@@ -1,0 +1,26 @@
+{
+    "MessageID": "USR0030",
+    "EntryType": "Oem",
+    "Severity": "Ok",
+    "Name": " Log Entry 1593",
+    "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+    "Message": "Successfully logged in using root, from 10.30.191.55 and GUI.",
+    "Description": " Log Entry 1593",
+    "Created": "2017-10-26T15:17:34-05:00",
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1593",
+    "Id": "1593",
+    "OemRecordFormat": "Dell",
+    "Links": {
+        "OriginOfCondition": {
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+        }
+    },
+    "@odata.context": "/redfish/v1/$metadata#LogEntry.LogEntry",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "MessageArgs@odata.count": 3,
+    "MessageArgs": [
+        "root",
+        "10.30.191.55",
+        "GUI"
+    ]
+}

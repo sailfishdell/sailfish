@@ -1,0 +1,38 @@
+{
+    "Name": "CPU 1",
+    "@odata.context": "/redfish/v1/$metadata#Processor.Processor",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "ProcessorId": {
+        "EffectiveFamily": "6",
+        "EffectiveModel": "45",
+        "IdentificationRegisters": "0x000206D7",
+        "MicrocodeInfo": null,
+        "VendorId": "GenuineIntel",
+        "Step": "7"
+    },
+    "Description": "Represents the properties of a Processor attached to this System",
+    "@odata.type": "#Processor.v1_0_2.Processor",
+    "MaxSpeedMHz": 3600,
+    "Model": "Intel(R) Xeon(R) CPU E5-2630 0 @ 2.30GHz",
+    "TotalCores": 6,
+    "Id": "CPU.Socket.1",
+    "Manufacturer": "Intel",
+    "TotalThreads": 12,
+    "@odata.id": "/redfish/v1/Systems/System.Embedded.1/Processors/CPU.Socket.1",
+    "InstructionSet": [
+        {
+            "Member": "x86-64"
+        }
+    ],
+    "ProcessorType": "CPU",
+    "Status": {
+        "State": "Enabled",
+        "Health": "OK"
+    },
+    "Socket": "CPU.Socket.1",
+    "ProcessorArchitecture": [
+        {
+            "Member": "x86"
+        }
+    ]
+}

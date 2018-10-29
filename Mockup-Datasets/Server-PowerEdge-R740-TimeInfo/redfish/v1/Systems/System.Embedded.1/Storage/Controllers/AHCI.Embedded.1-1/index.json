@@ -1,0 +1,29 @@
+{
+    "Description": "Simple Storage Controller",
+    "Status": {
+        "State": "Enabled",
+        "HealthRollup": null,
+        "Health": null
+    },
+    "Devices@odata.count": 1,
+    "Id": "AHCI.Embedded.1-1",
+    "Name": "Lewisburg SSATA Controller [AHCI mode]",
+    "UefiDevicePath": "PciRoot(0x0)/Pci(0x11,0x5)",
+    "@odata.type": "#SimpleStorage.v1_0_2.SimpleStorage",
+    "Devices": [
+        {
+            "Model": "ST2000NM0055 1V4",
+            "Name": "Physical Disk 2:0",
+            "CapacityBytes": 2000398934016,
+            "Manufacturer": "SEAGATE",
+            "Status": {
+                "State": "Enabled",
+                "HealthRollup": null,
+                "Health": null
+            }
+        }
+    ],
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "@odata.id": "/redfish/v1/Systems/System.Embedded.1/Storage/Controllers/AHCI.Embedded.1-1",
+    "@odata.context": "/redfish/v1/$metadata#SimpleStorage.SimpleStorage"
+}

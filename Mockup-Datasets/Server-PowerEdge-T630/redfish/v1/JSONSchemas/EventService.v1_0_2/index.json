@@ -1,0 +1,22 @@
+{
+    "Description": "EventService Schema File Location",
+    "Location@odata.count": 1,
+    "@odata.type": "#JsonSchemaFile.v1_0_2.JsonSchemaFile",
+    "Languages": [
+        "en"
+    ],
+    "Name": "EventService Schema File",
+    "Languages@odata.count": 1,
+    "@odata.context": "/redfish/v1/$metadata#JsonSchemaFile.JsonSchemaFile",
+    "Location": [
+        {
+            "PublicationUri": "http://redfish.dmtf.org/schemas/v1/EventService.v1_0_2.json",
+            "Uri": "/redfish/v1/Schemas/EventService.v1_0_2.json",
+            "Language": "en"
+        }
+    ],
+    "Schema": "#EventService.v1_0_2.EventService",
+    "Id": "EventService.v1_0_2",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "@odata.id": "/redfish/v1/JSONSchemas/EventService.v1_0_2"
+}

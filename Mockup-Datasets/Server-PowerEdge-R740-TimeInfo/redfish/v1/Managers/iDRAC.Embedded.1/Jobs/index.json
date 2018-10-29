@@ -1,0 +1,15 @@
+{
+    "Description": "Collection of Job Instances",
+    "Id": "JobQueue",
+    "Name": "JobQueue",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "@odata.type": "#DellJobCollection.DellJobCollection",
+    "Members": [
+        {
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Jobs/JID_089112791532"
+        }
+    ],
+    "Members@odata.count": 1,
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Jobs",
+    "@odata.context": "/redfish/v1/$metadata#DellJobCollection.DellJobCollection"
+}

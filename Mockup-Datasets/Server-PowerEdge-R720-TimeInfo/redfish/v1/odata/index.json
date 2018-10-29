@@ -1,0 +1,56 @@
+{
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "value": [
+        {
+            "name": "Service",
+            "kind": "Singleton",
+            "url": "/redfish/v1"
+        },
+        {
+            "name": "Systems",
+            "kind": "Singleton",
+            "url": "/redfish/v1/Systems"
+        },
+        {
+            "name": "Chassis",
+            "kind": "Singleton",
+            "url": "/redfish/v1/Chassis"
+        },
+        {
+            "name": "Managers",
+            "kind": "Singleton",
+            "url": "/redfish/v1/Managers"
+        },
+        {
+            "name": "TaskService",
+            "kind": "Singleton",
+            "url": "/redfish/v1/TaskService"
+        },
+        {
+            "name": "AccountService",
+            "kind": "Singleton",
+            "url": "/redfish/v1/Managers/iDRAC.Embedded.1/AccountService"
+        },
+        {
+            "name": "SessionService",
+            "kind": "Singleton",
+            "url": "/redfish/v1/SessionService"
+        },
+        {
+            "name": "JsonSchemas",
+            "kind": "Singleton",
+            "url": "/redfish/v1/JSONSchemas"
+        },
+        {
+            "name": "Registries",
+            "kind": "Singleton",
+            "url": "/redfish/v1/Registries"
+        },
+        {
+            "name": "EventService",
+            "kind": "Singleton",
+            "url": "/redfish/v1/EventService"
+        }
+    ],
+    "@odata.context": "/redfish/v1/$metadata"
+}

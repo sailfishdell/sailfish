@@ -1,0 +1,17 @@
+{
+    "Description": "iDRAC Virtual Media Services Settings",
+    "Name": "Virtual Media Services",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "@odata.type": "#VirtualMediaCollection.VirtualMediaCollection",
+    "Members": [
+        {
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/VirtualMedia/RemovableDisk"
+        },
+        {
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/VirtualMedia/CD"
+        }
+    ],
+    "Members@odata.count": 2,
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/VirtualMedia",
+    "@odata.context": "/redfish/v1/$metadata#VirtualMediaCollection.VirtualMediaCollection"
+}

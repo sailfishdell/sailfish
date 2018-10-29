@@ -1,0 +1,24 @@
+{
+    "OEMRecordFormat": "Dell",
+    "Links": {
+        "OriginOfCondition": {
+            "@odata.id": "/redfish/v1/Systems/System.Embedded.1/Storage/Controllers/RAID.Integrated.1-1"
+        }
+    },
+    "Id": "1548",
+    "EntryType": "Oem",
+    "Created": "2017-09-02T03:00:11-05:00",
+    "MessageArgs@odata.count": 1,
+    "@odata.context": "/redfish/v1/$metadata#LogEntry.LogEntry",
+    "Severity": "Ok",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1548",
+    "Description": " Log Entry 1548",
+    "MessageID": "CTL37",
+    "MessageArgs": [
+        "Integrated RAID Controller 1"
+    ],
+    "Name": " Log Entry 1548",
+    "Message": "A Patrol Read operation started for Integrated RAID Controller 1.",
+    "@odata.type": "#LogEntry.v1_0_2.LogEntry"
+}

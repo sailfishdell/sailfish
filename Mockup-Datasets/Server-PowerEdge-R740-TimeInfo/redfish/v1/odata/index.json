@@ -1,0 +1,61 @@
+{
+    "value": [
+        {
+            "kind": "Singleton",
+            "url": "/redfish/v1",
+            "name": "Service"
+        },
+        {
+            "kind": "Singleton",
+            "url": "/redfish/v1/Systems",
+            "name": "Systems"
+        },
+        {
+            "kind": "Singleton",
+            "url": "/redfish/v1/Chassis",
+            "name": "Chassis"
+        },
+        {
+            "kind": "Singleton",
+            "url": "/redfish/v1/Managers",
+            "name": "Managers"
+        },
+        {
+            "kind": "Singleton",
+            "url": "/redfish/v1/TaskService",
+            "name": "TaskService"
+        },
+        {
+            "kind": "Singleton",
+            "url": "/redfish/v1/Managers/iDRAC.Embedded.1/AccountService",
+            "name": "AccountService"
+        },
+        {
+            "kind": "Singleton",
+            "url": "/redfish/v1/SessionService",
+            "name": "SessionService"
+        },
+        {
+            "kind": "Singleton",
+            "url": "/redfish/v1/JSONSchemas",
+            "name": "JsonSchemas"
+        },
+        {
+            "kind": "Singleton",
+            "url": "/redfish/v1/Registries",
+            "name": "Registries"
+        },
+        {
+            "kind": "Singleton",
+            "url": "/redfish/v1/EventService",
+            "name": "EventService"
+        },
+        {
+            "kind": "Singleton",
+            "url": "/redfish/v1/UpdateService",
+            "name": "UpdateService"
+        }
+    ],
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "@odata.context": "/redfish/v1/$metadata"
+}

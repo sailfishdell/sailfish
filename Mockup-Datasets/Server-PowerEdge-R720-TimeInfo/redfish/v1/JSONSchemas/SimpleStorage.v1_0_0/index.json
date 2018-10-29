@@ -1,0 +1,22 @@
+{
+    "Name": "SimpleStorage Schema File",
+    "@odata.context": "/redfish/v1/$metadata#JsonSchemaFile.JsonSchemaFile",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "Description": "SimpleStorage Schema File Location",
+    "@odata.type": "#JsonSchemaFile.v1_0_2.JsonSchemaFile",
+    "Languages": [
+        "en"
+    ],
+    "Id": "SimpleStorage.v1_0_0",
+    "Location": [
+        {
+            "PublicationUri": "http://redfish.dmtf.org/schemas/v1/SimpleStorage.v1_0_0.json",
+            "Language": "en",
+            "Uri": "/redfish/v1/Schemas/SimpleStorage.v1_0_0.json"
+        }
+    ],
+    "Languages@odata.count": 1,
+    "@odata.id": "/redfish/v1/JSONSchemas/SimpleStorage.v1_0_0",
+    "Location@odata.count": 1,
+    "Schema": "#SimpleStorage.v1_0_0.SimpleStorage"
+}

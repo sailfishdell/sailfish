@@ -1,0 +1,17 @@
+{
+    "Members@odata.count": 2,
+    "@odata.type": "#MessageRegistryFileCollection.MessageRegistryFileCollection",
+    "@Redfish.Copyright": "Copyright 2017 TTU.edu All rights reserved.",
+    "@odata.context": "/redfish/v1/$metadata#MessageRegistryFileCollection.MessageRegistryFileCollection",
+    "Description": "Registry Repository",
+    "@odata.id": "/redfish/v1/Registries",
+    "Members": [
+        {
+            "@odata.id": "/redfish/v1/Registries/Messages"
+        },
+        {
+            "@odata.id": "/redfish/v1/Registries/BaseMessages"
+        }
+    ],
+    "Name": "Registry Repository"
+}

@@ -1,0 +1,19 @@
+{
+    "@odata.type": "#ManagerAccount.v1_0_2.ManagerAccount",
+    "UserName": "",
+    "@Redfish.Copyright": "Copyright 2017 TTU.edu All rights reserved.",
+    "Locked": false,
+    "@odata.context": "/redfish/v1/$metadata#ManagerAccount.ManagerAccount",
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Accounts/13",
+    "Id": "13",
+    "Password": null,
+    "Description": "User Account",
+    "Enabled": false,
+    "RoleId": "None",
+    "Name": "User Account",
+    "Links": {
+        "Role": {
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Roles/None"
+        }
+    }
+}

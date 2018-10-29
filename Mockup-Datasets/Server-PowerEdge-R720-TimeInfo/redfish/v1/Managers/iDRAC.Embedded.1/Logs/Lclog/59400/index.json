@@ -1,0 +1,20 @@
+{
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "Name": " Log Entry 59400",
+    "MessageArgs@odata.count": 1,
+    "@odata.context": "/redfish/v1/$metadata#LogEntry.LogEntry",
+    "Message": "The previous log entry was repeated 1 times.",
+    "OEMRecordFormat": "Dell",
+    "Description": " Log Entry 59400",
+    "MessageArgs": [
+        "1"
+    ],
+    "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+    "EntryType": "Oem",
+    "Id": "59400",
+    "Severity": "OK",
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/59400",
+    "Links": {},
+    "MessageID": "LOG007",
+    "Created": "2017-11-08T05:37:46-06:00"
+}

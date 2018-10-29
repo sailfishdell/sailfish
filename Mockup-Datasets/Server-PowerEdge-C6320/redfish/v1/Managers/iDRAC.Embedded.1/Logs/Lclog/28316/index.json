@@ -1,0 +1,27 @@
+{
+    "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+    "@Redfish.Copyright": "Copyright 2017 TTU.edu All rights reserved.",
+    "@odata.context": "/redfish/v1/$metadata#LogEntry.LogEntry",
+    "Id": "28316",
+    "MessageID": "USR0034",
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/28316",
+    "MessageArgs@odata.count": 4,
+    "Created": "2017-09-15T18:20:03-05:00",
+    "MessageArgs": [
+        "root-p",
+        "10.100.29.254",
+        "REDFISH",
+        "60"
+    ],
+    "Message": "Login attempt alert for root-p from 10.100.29.254 using REDFISH, IP will be blocked for 60 seconds.",
+    "Severity": "Warning",
+    "Description": " Log Entry 28316",
+    "OEMRecordFormat": "Dell",
+    "EntryType": "Oem",
+    "Name": " Log Entry 28316",
+    "Links": {
+        "OriginOfCondition": {
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+        }
+    }
+}

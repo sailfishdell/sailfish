@@ -1,0 +1,20 @@
+{
+    "Name": " Log Entry 59402",
+    "OEMRecordFormat": "Dell",
+    "@odata.context": "/redfish/v1/$metadata#LogEntry.LogEntry",
+    "Message": "Virtual Console session exited.",
+    "Severity": "OK",
+    "Description": " Log Entry 59402",
+    "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+    "EntryType": "Oem",
+    "Id": "59402",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/59402",
+    "Links": {
+        "OriginOfCondition": {
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+        }
+    },
+    "Created": "2017-11-08T05:37:46-06:00",
+    "MessageID": "VME0005"
+}

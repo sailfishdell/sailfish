@@ -1,0 +1,22 @@
+{
+    "Schema": "#PhysicalContext.v1_0_2.PhysicalContext",
+    "Languages@odata.count": 1,
+    "Location@odata.count": 1,
+    "Name": "PhysicalContext Schema File",
+    "@odata.type": "#JsonSchemaFile.v1_0_2.JsonSchemaFile",
+    "@odata.context": "/redfish/v1/$metadata#JsonSchemaFile.JsonSchemaFile",
+    "Description": "PhysicalContext Schema File Location",
+    "Id": "PhysicalContext.v1_0_2",
+    "Location": [
+        {
+            "PublicationUri": "http://redfish.dmtf.org/schemas/v1/PhysicalContext.v1_0_2.json",
+            "Uri": "/redfish/v1/Schemas/PhysicalContext.v1_0_2.json",
+            "Language": "en"
+        }
+    ],
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "Languages": [
+        "en"
+    ],
+    "@odata.id": "/redfish/v1/JSONSchemas/PhysicalContext.v1_0_2"
+}

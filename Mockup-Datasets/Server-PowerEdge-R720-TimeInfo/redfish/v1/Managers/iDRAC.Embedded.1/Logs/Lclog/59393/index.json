@@ -1,0 +1,20 @@
+{
+    "Name": " Log Entry 59393",
+    "OEMRecordFormat": "Dell",
+    "@odata.context": "/redfish/v1/$metadata#LogEntry.LogEntry",
+    "Message": "System CPU Resetting.",
+    "Severity": "OK",
+    "Description": " Log Entry 59393",
+    "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+    "EntryType": "Oem",
+    "Id": "59393",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/59393",
+    "Links": {
+        "OriginOfCondition": {
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1%23HostPowerCtrl"
+        }
+    },
+    "Created": "2017-11-07T23:59:37-06:00",
+    "MessageID": "SYS1003"
+}

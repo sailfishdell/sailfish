@@ -1,0 +1,28 @@
+{
+    "Description": " Log Entry 698",
+    "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+    "Links": {},
+    "MessageID": "59903a",
+    "MessageArgs@odata.count": 0,
+    "Name": " Log Entry 698",
+    "Severity": "Critical",
+    "Message": "The system board Consumption current is greater than the upper critical threshold.",
+    "EntryType": "SEL",
+    "@odata.context": "/redfish/v1/$metadata#LogEntry.LogEntry",
+    "Created": "2017-05-30T11:37:25-05:00",
+    "SensorNumber": 119,
+    "EntryCode": [
+        {
+            "Member": "Upper Critical - going high"
+        }
+    ],
+    "Id": "698",
+    "SensorType": [
+        {
+            "Member": "Current"
+        }
+    ],
+    "MessageArgs": [],
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/698"
+}

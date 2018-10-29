@@ -1,0 +1,28 @@
+{
+    "EntryCode": [
+        {
+            "Member": "Assert"
+        }
+    ],
+    "SensorType": [
+        {
+            "Member": "Cable/Interconnect"
+        }
+    ],
+    "MessageID": "1ffff",
+    "EntryType": "SEL",
+    "Severity": "Critical",
+    "Name": " Log Entry 53",
+    "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+    "Message": "The system board VGA cable or interconnect is not connected, or is improperly connected.",
+    "Description": " Log Entry 53",
+    "Created": "2017-08-24T11:07:40-05:00",
+    "MessageArgs@odata.count": 0,
+    "Id": "53",
+    "SensorNumber": 82,
+    "Links": {},
+    "@odata.context": "/redfish/v1/$metadata#LogEntry.LogEntry",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/53",
+    "MessageArgs": []
+}

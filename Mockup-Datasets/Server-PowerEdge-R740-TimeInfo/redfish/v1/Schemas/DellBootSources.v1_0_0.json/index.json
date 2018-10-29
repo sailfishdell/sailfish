@@ -1,0 +1,200 @@
+{
+    "$ref": "#/definitions/DellBootSources",
+    "$schema": "/redfish/v1/Schemas/redfish-schema.v1_1_0.json",
+    "definitions": {
+        "DellBootSources": {
+            "additionalProperties": true,
+            "required": [
+                "Id",
+                "Name"
+            ],
+            "description": "BootSources contains properties surrounding a BIOS BootSources Registry (where the system-specific BIOS BootSources are described) and the Actions needed to perform changes to BIOS BootSources settings, which typically require a system reset to apply.",
+            "patternProperties": {
+                "^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message|Privileges)\\.[a-zA-Z_][a-zA-Z0-9_.]+$": {
+                    "type": [
+                        "array",
+                        "boolean",
+                        "number",
+                        "null",
+                        "object",
+                        "string"
+                    ],
+                    "description": "This property shall specify a valid odata or Redfish property."
+                }
+            },
+            "type": "object",
+            "longDescription": "This resource shall be used to represent BIOS BootSources attributes for a Redfish implementation.",
+            "properties": {
+                "Actions": {
+                    "additionalProperties": false,
+                    "description": "The available actions for this resource.",
+                    "patternProperties": {
+                        "^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message|Privileges)\\.[a-zA-Z_][a-zA-Z0-9_.]+$": {
+                            "type": [
+                                "array",
+                                "boolean",
+                                "number",
+                                "null",
+                                "object",
+                                "string"
+                            ],
+                            "description": "This property shall specify a valid odata or Redfish property."
+                        }
+                    },
+                    "type": "object",
+                    "readonly": true,
+                    "longDescription": "The Actions property shall contain the available actions for this resource.",
+                    "properties": {
+                        "Oem": {
+                            "additionalProperties": true,
+                            "type": "object",
+                            "patternProperties": {
+                                "^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message|Privileges)\\.[a-zA-Z_][a-zA-Z0-9_.]+$": {
+                                    "type": [
+                                        "array",
+                                        "boolean",
+                                        "number",
+                                        "null",
+                                        "object",
+                                        "string"
+                                    ],
+                                    "description": "This property shall specify a valid odata or Redfish property."
+                                }
+                            },
+                            "properties": {}
+                        }
+                    }
+                },
+                "Attributes": {
+                    "$ref": "#/definitions/Attributes",
+                    "description": "This is the manufacturer/provider specific list of BIOS attributes.",
+                    "longDescription": "BIOS BootSources settings appear as additional properties in this object, and can be looked up in the BootSources Registry by their AttributeName."
+                },
+                "Id": {
+                    "$ref": "/redfish/v1/Schemas/Resource.json#/definitions/Id"
+                },
+                "Name": {
+                    "$ref": "/redfish/v1/Schemas/Resource.json#/definitions/Name"
+                },
+                "AttributeRegistry": {
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "description": "The Resource ID of the BootSources Registry for the BIOS BootSources resource.",
+                    "longDescription": "The reference to the BootSources Registry that lists the metadata describing the BIOS BootSources settings in this resource."
+                },
+                "@odata.type": {
+                    "$ref": "/redfish/v1/Schemas/odata.4.0.0.json#/definitions/type"
+                },
+                "Oem": {
+                    "$ref": "/redfish/v1/Schemas/Resource.json#/definitions/Oem",
+                    "description": "This is the manufacturer/provider specific extension moniker used to divide the Oem object into sections.",
+                    "longDescription": "The value of this string shall be of the format for the reserved word *Oem*."
+                },
+                "Description": {
+                    "anyOf": [
+                        {
+                            "$ref": "/redfish/v1/Schemas/Resource.json#/definitions/Description"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ]
+                },
+                "@odata.id": {
+                    "$ref": "/redfish/v1/Schemas/odata.4.0.0.json#/definitions/id"
+                },
+                "@odata.context": {
+                    "$ref": "/redfish/v1/Schemas/odata.4.0.0.json#/definitions/context"
+                }
+            }
+        },
+        "Attributes": {
+            "additionalProperties": false,
+            "type": "object",
+            "patternProperties": {
+                "^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message|Privileges)\\.[a-zA-Z_][a-zA-Z0-9_.]+$": {
+                    "type": [
+                        "array",
+                        "boolean",
+                        "number",
+                        "null",
+                        "object",
+                        "string"
+                    ],
+                    "description": "This property shall specify a valid odata or Redfish property."
+                },
+                "[A-Za-z0-9]+": {
+                    "type": "array",
+                    "description": "The array containing possible values for attributes of type 'OrderedList'.",
+                    "longDescription": "The value of this property shall be an array containing the possible values of an attribute of type 'OrderedList'.",
+                    "items": {
+                        "$ref": "#/definitions/Entry"
+                    }
+                }
+            },
+            "properties": {}
+        },
+        "Entry": {
+            "additionalProperties": true,
+            "type": "object",
+            "patternProperties": {
+                "^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message|Privileges)\\.[a-zA-Z_][a-zA-Z0-9_.]+$": {
+                    "type": [
+                        "array",
+                        "boolean",
+                        "number",
+                        "null",
+                        "object",
+                        "string"
+                    ],
+                    "description": "This property shall specify a valid odata or Redfish property."
+                }
+            },
+            "properties": {
+                "Enabled": {
+                    "pattern": "^[A-Za-z0-9]+$",
+                    "readonly": true,
+                    "type": [
+                        "boolean",
+                        "null"
+                    ],
+                    "description": "The attribute that is used set if the boot device is Enabled.",
+                    "longDescription": "The value of this property shall be used to indicate if the boot device is Enabled."
+                },
+                "Name": {
+                    "readonly": true,
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "description": "The fully qualified device descriptor (FQDD) of the boot device.",
+                    "longDescription": "The value of this property shall indicate the fully qualified device descriptor (FQDD) of the boot device."
+                },
+                "Id": {
+                    "readonly": true,
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "description": "The device ID fo the boot device.",
+                    "longDescription": "The value of this property shall indicate the device ID for the boot device."
+                },
+                "Index": {
+                    "pattern": "^[A-Za-z0-9]+$",
+                    "readonly": true,
+                    "type": [
+                        "number",
+                        "null"
+                    ],
+                    "description": "The index number of the boot device in the boot order list.",
+                    "longDescription": "The value of this property shall indicate the index number of the boot device in the boot order list."
+                }
+            }
+        }
+    },
+    "title": "#DellBootSources.v1_0_0.DellBootSources",
+    "copyright": "Copyright 2016 Dell, Inc. or its subsidiaries.  All Rights Reserved.",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved."
+}

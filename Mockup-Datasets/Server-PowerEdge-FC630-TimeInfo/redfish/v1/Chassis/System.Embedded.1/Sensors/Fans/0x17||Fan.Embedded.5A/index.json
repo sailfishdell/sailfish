@@ -1,0 +1,27 @@
+{
+    "@odata.context": "/redfish/v1/$metadata#Thermal.Thermal",
+    "RelatedItem": [],
+    "Reading": 1440,
+    "UpperThresholdCritical": null,
+    "LowerThresholdCritical": 720,
+    "FanName": "Chassis Fan5A",
+    "Status": {
+        "State": "Enabled",
+        "Health": "OK"
+    },
+    "UpperThresholdNonCritical": null,
+    "Redundancy@odata.count": 0,
+    "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Sensors/Fans/0x17||Fan.Embedded.5A",
+    "LowerThresholdFatal": 720,
+    "ReadingUnits": "RPM",
+    "MaxReadingRange": 197,
+    "PhysicalContext": "BackPlane",
+    "MinReadingRange": 139,
+    "LowerThresholdNonCritical": 960,
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "RelatedItem@odata.count": 0,
+    "MemberID": "0x17||Fan.Embedded.5A",
+    "Redundancy": [],
+    "UpperThresholdFatal": null,
+    "@odata.type": "#Thermal.v1_0_2.Fan"
+}

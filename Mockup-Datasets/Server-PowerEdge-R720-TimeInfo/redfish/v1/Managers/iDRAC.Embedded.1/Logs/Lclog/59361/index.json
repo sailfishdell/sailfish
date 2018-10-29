@@ -1,0 +1,20 @@
+{
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "Name": " Log Entry 59361",
+    "MessageArgs@odata.count": 1,
+    "@odata.context": "/redfish/v1/$metadata#LogEntry.LogEntry",
+    "Message": "The iDRAC firmware was rebooted with the following reason: user initiated.",
+    "OEMRecordFormat": "Dell",
+    "Description": " Log Entry 59361",
+    "MessageArgs": [
+        "user initiated"
+    ],
+    "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+    "EntryType": "Oem",
+    "Id": "59361",
+    "Severity": "OK",
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/59361",
+    "Links": {},
+    "MessageID": "RAC0182",
+    "Created": "2017-11-07T23:21:16-06:00"
+}

@@ -1,0 +1,20 @@
+{
+    "Languages": [
+        "en"
+    ],
+    "@odata.context": "/redfish/v1/$metadata#MessageRegistryFile.MessageRegistryFile",
+    "Description": "BIOS Attribute Registry File locations",
+    "Location": [
+        {
+            "Uri": "/redfish/v1/Systems/System.Embedded.1/Bios/BiosRegistry",
+            "Language": "en"
+        }
+    ],
+    "@odata.type": "#MessageRegistryFile.v1_0_2.MessageRegistryFile",
+    "Oem": {},
+    "Id": "BiosAttributeRegistry.v1_0_0",
+    "Registry": "BiosAttributeRegistry1.0",
+    "Name": "BIOS Attribute Registry File",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "@odata.id": "/redfish/v1/Registries/BiosAttributeRegistry.v1_0_0"
+}

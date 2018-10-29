@@ -1,0 +1,89 @@
+{
+    "OwningEntity": "Dell",
+    "RegistryVersion": "v1_0_0",
+    "Description": "This registry defines a representation of Boot Sources instances",
+    "Id": "DellBootSourcesRegistry.v1_0_0",
+    "Name": "Dell Boot Sources Registry",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "@odata.type": "#DellBootSourcesRegistry.v1_0_0.DellBootSourcesRegistry",
+    "Language": "en",
+    "RegistryEntries": {
+        "Dependencies": [
+            {
+                "Dependency": {
+                    "MapToAttribute": "UefiBootSeq",
+                    "MapToProperty": "ReadOnly",
+                    "MapFrom": [
+                        {
+                            "MapFromCondition": "EQU",
+                            "MapFromValue": "Bios",
+                            "MapFromProperty": "CurrentValue",
+                            "MapFromAttribute": "BootMode"
+                        }
+                    ],
+                    "MapToValue": true
+                },
+                "Type": "Map",
+                "DependencyFor": "UefiBootSeq"
+            }
+        ],
+        "Attributes": [
+            {
+                "Type": "OrderedList",
+                "Entry": [
+                    {
+                        "Enabled": null,
+                        "Name": "Unknown.Unknown.1-1",
+                        "Id": "BIOS.Setup.1-1#UefiBootSeq#Unknown.Unknown.1-1#6a5b6f7087238ab1275889252ad0dffe",
+                        "DisplayName": "Unavailable: Windows Boot Manager",
+                        "Index": null
+                    },
+                    {
+                        "Enabled": null,
+                        "Name": "NIC.PxeDevice.1-1",
+                        "Id": "BIOS.Setup.1-1#UefiBootSeq#NIC.PxeDevice.1-1#81e55d13a36bc065ca3bf9bf8d699391",
+                        "DisplayName": "PXE Device 1: Integrated NIC 1 Port 1 Partition 1",
+                        "Index": null
+                    },
+                    {
+                        "Enabled": null,
+                        "Name": "NIC.PxeDevice.2-1",
+                        "Id": "BIOS.Setup.1-1#UefiBootSeq#NIC.PxeDevice.2-1#e158d778680bb5e05f7e79c4a8a46dd9",
+                        "DisplayName": "PXE Device 2: Integrated NIC 1 Port 1 Partition 1",
+                        "Index": null
+                    },
+                    {
+                        "Enabled": null,
+                        "Name": "Unknown.Unknown.4-1",
+                        "Id": "BIOS.Setup.1-1#UefiBootSeq#Unknown.Unknown.4-1#1bf3271ff7089d67a1c7e9700e270249",
+                        "DisplayName": "Unavailable: Windows Boot Manager",
+                        "Index": null
+                    },
+                    {
+                        "Enabled": null,
+                        "Name": "Unknown.Unknown.5-1",
+                        "Id": "BIOS.Setup.1-1#UefiBootSeq#Unknown.Unknown.5-1#56eb912788a6e1daa8242d1064d1746e",
+                        "DisplayName": "Unavailable: Windows Boot Manager",
+                        "Index": null
+                    },
+                    {
+                        "Enabled": null,
+                        "Name": "Disk.SATAEmbedded.A-1",
+                        "Id": "BIOS.Setup.1-1#UefiBootSeq#Disk.SATAEmbedded.A-1#8cdf1b981058f1f7cf0afcc95f8347e9",
+                        "DisplayName": "Embedded SATA Port Disk A: Windows Boot Manager",
+                        "Index": null
+                    }
+                ],
+                "Hidden": false,
+                "DisplayName": "Uefi Boot Sequence",
+                "AttributeName": "UefiBootSeq",
+                "HelpText": "This field controls the UEFI boot order. The first option in the list will be attempted first, and if unsuccessful, the second option will be attempted and so on. This field applies only when Boot Mode is 'UEFI'; it has no effect when Boot Mode is 'BIOS'.",
+                "DisplayOrder": 0,
+                "MenuPath": "./BootSettingsRef/UefiBootSettingsRef",
+                "ReadOnly": false
+            }
+        ]
+    },
+    "@odata.id": "/redfish/v1/Systems/System.Embedded.1/BootSources/BootSourcesRegistry",
+    "@odata.context": "/redfish/v1/$metadata#DellBootSourcesRegistry.DellBootSourcesRegistry"
+}

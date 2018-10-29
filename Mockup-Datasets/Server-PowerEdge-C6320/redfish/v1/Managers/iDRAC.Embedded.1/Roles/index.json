@@ -1,0 +1,23 @@
+{
+    "Members@odata.count": 4,
+    "@odata.type": "#RoleCollection.RoleCollection",
+    "@Redfish.Copyright": "Copyright 2017 TTU.edu All rights reserved.",
+    "@odata.context": "/redfish/v1/$metadata#RoleCollection.RoleCollection",
+    "Description": "Roles Collection",
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Roles",
+    "Members": [
+        {
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Roles/Administrator"
+        },
+        {
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Roles/Operator"
+        },
+        {
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Roles/ReadOnly"
+        },
+        {
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Roles/None"
+        }
+    ],
+    "Name": "Roles Collection"
+}

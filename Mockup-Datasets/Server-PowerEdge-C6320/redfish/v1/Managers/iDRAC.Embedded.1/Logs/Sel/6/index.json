@@ -1,0 +1,28 @@
+{
+    "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+    "@Redfish.Copyright": "Copyright 2017 TTU.edu All rights reserved.",
+    "MessageID": "592f2f",
+    "@odata.context": "/redfish/v1/$metadata#LogEntry.LogEntry",
+    "Id": "6",
+    "EntryCode": [
+        {
+            "Member": "Upper Critical - going high"
+        }
+    ],
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/6",
+    "MessageArgs@odata.count": 0,
+    "SensorNumber": 177,
+    "Created": "2017-04-24T06:47:28-05:00",
+    "SensorType": [
+        {
+            "Member": "Temperature"
+        }
+    ],
+    "MessageArgs": [],
+    "Message": "The  Inlet temperature is greater than the upper critical threshold.",
+    "Severity": "Critical",
+    "Description": " Log Entry 6",
+    "EntryType": "SEL",
+    "Name": " Log Entry 6",
+    "Links": {}
+}

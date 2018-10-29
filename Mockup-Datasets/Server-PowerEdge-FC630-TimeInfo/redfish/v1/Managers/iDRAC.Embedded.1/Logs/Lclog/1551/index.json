@@ -1,0 +1,20 @@
+{
+    "OEMRecordFormat": "Dell",
+    "Links": {
+        "OriginOfCondition": {
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1%23HostPowerCtrl"
+        }
+    },
+    "Id": "1551",
+    "EntryType": "Oem",
+    "Created": "2017-09-08T14:24:19-05:00",
+    "@odata.context": "/redfish/v1/$metadata#LogEntry.LogEntry",
+    "Severity": "Ok",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1551",
+    "Description": " Log Entry 1551",
+    "MessageID": "SYS1003",
+    "Name": " Log Entry 1551",
+    "Message": "System CPU Resetting.",
+    "@odata.type": "#LogEntry.v1_0_2.LogEntry"
+}

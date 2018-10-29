@@ -1,0 +1,14 @@
+{
+    "Members@odata.count": 1,
+    "@odata.type": "#ManagerCollection.ManagerCollection",
+    "@Redfish.Copyright": "Copyright 2017 TTU.edu All rights reserved.",
+    "@odata.context": "/redfish/v1/$metadata#ManagerCollection.ManagerCollection",
+    "Description": "BMC",
+    "@odata.id": "/redfish/v1/Managers",
+    "Members": [
+        {
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+        }
+    ],
+    "Name": "Manager"
+}

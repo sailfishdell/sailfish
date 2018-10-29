@@ -1,0 +1,17 @@
+{
+    "Members": [
+        {
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/LogServices/Sel"
+        },
+        {
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/LogServices/Lclog"
+        }
+    ],
+    "Name": "Log Service Collection",
+    "@odata.context": "/redfish/v1/$metadata#LogServiceCollection.LogServiceCollection",
+    "Members@odata.count": 2,
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/LogServices",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "Description": "Collection of Log Services for this Manager",
+    "@odata.type": "#LogServiceCollection.LogServiceCollection"
+}

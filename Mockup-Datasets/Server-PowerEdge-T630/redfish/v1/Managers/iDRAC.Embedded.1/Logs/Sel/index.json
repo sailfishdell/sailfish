@@ -1,0 +1,1262 @@
+{
+    "Members": [
+        {
+            "Description": " Log Entry 738",
+            "Links": {},
+            "MessageID": "a017",
+            "MessageArgs@odata.count": 0,
+            "Name": " Log Entry 738",
+            "Severity": "Critical",
+            "Message": "Drive 7 is removed from disk drive bay 1.",
+            "EntryType": "SEL",
+            "EntryCode": [
+                {
+                    "Member": "Deassert"
+                }
+            ],
+            "Created": "2017-06-01T10:57:16-05:00",
+            "SensorNumber": 171,
+            "Id": "738",
+            "SensorType": [
+                {
+                    "Member": "Drive Slot/Bay"
+                }
+            ],
+            "MessageArgs": [],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/738"
+        },
+        {
+            "Description": " Log Entry 737",
+            "Links": {},
+            "MessageID": "2d590",
+            "MessageArgs@odata.count": 0,
+            "Name": " Log Entry 737",
+            "Severity": "Ok",
+            "Message": "OEM software event.",
+            "EntryType": "SEL",
+            "EntryCode": [
+                {
+                    "Member": "Deassert"
+                }
+            ],
+            "Created": "2017-05-30T15:07:46-05:00",
+            "SensorNumber": 206,
+            "Id": "737",
+            "SensorType": [
+                {
+                    "Member": null
+                }
+            ],
+            "MessageArgs": [],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/737"
+        },
+        {
+            "Description": " Log Entry 736",
+            "Links": {},
+            "MessageID": "1ffff",
+            "MessageArgs@odata.count": 0,
+            "Name": " Log Entry 736",
+            "Severity": "Ok",
+            "Message": "C: boot completed.",
+            "EntryType": "SEL",
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "Created": "2017-05-30T15:07:46-05:00",
+            "SensorNumber": 0,
+            "Id": "736",
+            "SensorType": [
+                {
+                    "Member": "BaseOSBoot/InstallationStatus"
+                }
+            ],
+            "MessageArgs": [],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/736"
+        },
+        {
+            "Description": " Log Entry 735",
+            "Links": {},
+            "MessageID": "0850",
+            "MessageArgs@odata.count": 0,
+            "Name": " Log Entry 735",
+            "Severity": "Ok",
+            "Message": "OEM software event.",
+            "EntryType": "SEL",
+            "EntryCode": [
+                {
+                    "Member": null
+                }
+            ],
+            "Created": "2017-05-30T15:03:36-05:00",
+            "SensorNumber": 0,
+            "Id": "735",
+            "SensorType": [
+                {
+                    "Member": null
+                }
+            ],
+            "MessageArgs": [],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/735"
+        },
+        {
+            "Description": " Log Entry 734",
+            "Links": {},
+            "MessageID": "3ffff",
+            "MessageArgs@odata.count": 0,
+            "Name": " Log Entry 734",
+            "Severity": "Ok",
+            "Message": "An OS graceful shut-down occurred.",
+            "EntryType": "SEL",
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "Created": "2017-05-30T15:03:36-05:00",
+            "SensorNumber": 0,
+            "Id": "734",
+            "SensorType": [
+                {
+                    "Member": "OS Stop/Shutdown"
+                }
+            ],
+            "MessageArgs": [],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/734"
+        },
+        {
+            "Description": " Log Entry 733",
+            "Links": {},
+            "MessageID": "a017",
+            "MessageArgs@odata.count": 0,
+            "Name": " Log Entry 733",
+            "Severity": "Ok",
+            "Message": "Drive 7 is installed in disk drive bay 1.",
+            "EntryType": "SEL",
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "Created": "2017-05-30T15:02:01-05:00",
+            "SensorNumber": 171,
+            "Id": "733",
+            "SensorType": [
+                {
+                    "Member": "Drive Slot/Bay"
+                }
+            ],
+            "MessageArgs": [],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/733"
+        },
+        {
+            "Description": " Log Entry 732",
+            "Links": {},
+            "MessageID": "a117",
+            "MessageArgs@odata.count": 0,
+            "Name": " Log Entry 732",
+            "Severity": "Ok",
+            "Message": "Drive 7 in disk drive bay 1 is operating normally.",
+            "EntryType": "SEL",
+            "EntryCode": [
+                {
+                    "Member": "Deassert"
+                }
+            ],
+            "Created": "2017-05-30T14:59:04-05:00",
+            "SensorNumber": 171,
+            "Id": "732",
+            "SensorType": [
+                {
+                    "Member": "Drive Slot/Bay"
+                }
+            ],
+            "MessageArgs": [],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/732"
+        },
+        {
+            "Description": " Log Entry 731",
+            "Links": {},
+            "MessageID": "a017",
+            "MessageArgs@odata.count": 0,
+            "Name": " Log Entry 731",
+            "Severity": "Critical",
+            "Message": "Drive 7 is removed from disk drive bay 1.",
+            "EntryType": "SEL",
+            "EntryCode": [
+                {
+                    "Member": "Deassert"
+                }
+            ],
+            "Created": "2017-05-30T14:59:04-05:00",
+            "SensorNumber": 171,
+            "Id": "731",
+            "SensorType": [
+                {
+                    "Member": "Drive Slot/Bay"
+                }
+            ],
+            "MessageArgs": [],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/731"
+        },
+        {
+            "Description": " Log Entry 730",
+            "Links": {},
+            "MessageID": "2d590",
+            "MessageArgs@odata.count": 0,
+            "Name": " Log Entry 730",
+            "Severity": "Ok",
+            "Message": "OEM software event.",
+            "EntryType": "SEL",
+            "EntryCode": [
+                {
+                    "Member": "Deassert"
+                }
+            ],
+            "Created": "2017-05-30T14:51:02-05:00",
+            "SensorNumber": 227,
+            "Id": "730",
+            "SensorType": [
+                {
+                    "Member": null
+                }
+            ],
+            "MessageArgs": [],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/730"
+        },
+        {
+            "Description": " Log Entry 729",
+            "Links": {},
+            "MessageID": "1ffff",
+            "MessageArgs@odata.count": 0,
+            "Name": " Log Entry 729",
+            "Severity": "Ok",
+            "Message": "C: boot completed.",
+            "EntryType": "SEL",
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "Created": "2017-05-30T14:51:02-05:00",
+            "SensorNumber": 0,
+            "Id": "729",
+            "SensorType": [
+                {
+                    "Member": "BaseOSBoot/InstallationStatus"
+                }
+            ],
+            "MessageArgs": [],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/729"
+        },
+        {
+            "Description": " Log Entry 728",
+            "Links": {},
+            "MessageID": "a117",
+            "MessageArgs@odata.count": 0,
+            "Name": " Log Entry 728",
+            "Severity": "Critical",
+            "Message": "Fault detected on drive 7 in disk drive bay 1.",
+            "EntryType": "SEL",
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "Created": "2017-05-30T14:45:02-05:00",
+            "SensorNumber": 171,
+            "Id": "728",
+            "SensorType": [
+                {
+                    "Member": "Drive Slot/Bay"
+                }
+            ],
+            "MessageArgs": [],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/728"
+        },
+        {
+            "Description": " Log Entry 727",
+            "Links": {},
+            "MessageID": "a017",
+            "MessageArgs@odata.count": 0,
+            "Name": " Log Entry 727",
+            "Severity": "Ok",
+            "Message": "Drive 7 is installed in disk drive bay 1.",
+            "EntryType": "SEL",
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "Created": "2017-05-30T14:43:56-05:00",
+            "SensorNumber": 171,
+            "Id": "727",
+            "SensorType": [
+                {
+                    "Member": "Drive Slot/Bay"
+                }
+            ],
+            "MessageArgs": [],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/727"
+        },
+        {
+            "Description": " Log Entry 726",
+            "Links": {},
+            "MessageID": "a117",
+            "MessageArgs@odata.count": 0,
+            "Name": " Log Entry 726",
+            "Severity": "Ok",
+            "Message": "Drive 7 in disk drive bay 1 is operating normally.",
+            "EntryType": "SEL",
+            "EntryCode": [
+                {
+                    "Member": "Deassert"
+                }
+            ],
+            "Created": "2017-05-30T14:43:36-05:00",
+            "SensorNumber": 171,
+            "Id": "726",
+            "SensorType": [
+                {
+                    "Member": "Drive Slot/Bay"
+                }
+            ],
+            "MessageArgs": [],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/726"
+        },
+        {
+            "Description": " Log Entry 725",
+            "Links": {},
+            "MessageID": "a017",
+            "MessageArgs@odata.count": 0,
+            "Name": " Log Entry 725",
+            "Severity": "Critical",
+            "Message": "Drive 7 is removed from disk drive bay 1.",
+            "EntryType": "SEL",
+            "EntryCode": [
+                {
+                    "Member": "Deassert"
+                }
+            ],
+            "Created": "2017-05-30T14:43:35-05:00",
+            "SensorNumber": 171,
+            "Id": "725",
+            "SensorType": [
+                {
+                    "Member": "Drive Slot/Bay"
+                }
+            ],
+            "MessageArgs": [],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/725"
+        },
+        {
+            "Description": " Log Entry 724",
+            "Links": {},
+            "MessageID": "0850",
+            "MessageArgs@odata.count": 0,
+            "Name": " Log Entry 724",
+            "Severity": "Ok",
+            "Message": "OEM software event.",
+            "EntryType": "SEL",
+            "EntryCode": [
+                {
+                    "Member": null
+                }
+            ],
+            "Created": "2017-05-30T14:25:53-05:00",
+            "SensorNumber": 0,
+            "Id": "724",
+            "SensorType": [
+                {
+                    "Member": null
+                }
+            ],
+            "MessageArgs": [],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/724"
+        },
+        {
+            "Description": " Log Entry 723",
+            "Links": {},
+            "MessageID": "3ffff",
+            "MessageArgs@odata.count": 0,
+            "Name": " Log Entry 723",
+            "Severity": "Ok",
+            "Message": "An OS graceful shut-down occurred.",
+            "EntryType": "SEL",
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "Created": "2017-05-30T14:25:53-05:00",
+            "SensorNumber": 0,
+            "Id": "723",
+            "SensorType": [
+                {
+                    "Member": "OS Stop/Shutdown"
+                }
+            ],
+            "MessageArgs": [],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/723"
+        },
+        {
+            "Description": " Log Entry 722",
+            "Links": {},
+            "MessageID": "2d590",
+            "MessageArgs@odata.count": 0,
+            "Name": " Log Entry 722",
+            "Severity": "Ok",
+            "Message": "OEM software event.",
+            "EntryType": "SEL",
+            "EntryCode": [
+                {
+                    "Member": "Deassert"
+                }
+            ],
+            "Created": "2017-05-30T14:20:24-05:00",
+            "SensorNumber": 180,
+            "Id": "722",
+            "SensorType": [
+                {
+                    "Member": null
+                }
+            ],
+            "MessageArgs": [],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/722"
+        },
+        {
+            "Description": " Log Entry 721",
+            "Links": {},
+            "MessageID": "1ffff",
+            "MessageArgs@odata.count": 0,
+            "Name": " Log Entry 721",
+            "Severity": "Ok",
+            "Message": "C: boot completed.",
+            "EntryType": "SEL",
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "Created": "2017-05-30T14:20:23-05:00",
+            "SensorNumber": 0,
+            "Id": "721",
+            "SensorType": [
+                {
+                    "Member": "BaseOSBoot/InstallationStatus"
+                }
+            ],
+            "MessageArgs": [],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/721"
+        },
+        {
+            "Description": " Log Entry 720",
+            "Links": {},
+            "MessageID": "a010",
+            "MessageArgs@odata.count": 0,
+            "Name": " Log Entry 720",
+            "Severity": "Ok",
+            "Message": "Drive 0 is installed in disk drive bay 1.",
+            "EntryType": "SEL",
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "Created": "2017-05-30T14:16:17-05:00",
+            "SensorNumber": 164,
+            "Id": "720",
+            "SensorType": [
+                {
+                    "Member": "Drive Slot/Bay"
+                }
+            ],
+            "MessageArgs": [],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/720"
+        },
+        {
+            "Description": " Log Entry 719",
+            "Links": {},
+            "MessageID": "a117",
+            "MessageArgs@odata.count": 0,
+            "Name": " Log Entry 719",
+            "Severity": "Critical",
+            "Message": "Fault detected on drive 7 in disk drive bay 1.",
+            "EntryType": "SEL",
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "Created": "2017-05-30T14:11:57-05:00",
+            "SensorNumber": 171,
+            "Id": "719",
+            "SensorType": [
+                {
+                    "Member": "Drive Slot/Bay"
+                }
+            ],
+            "MessageArgs": [],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/719"
+        },
+        {
+            "Description": " Log Entry 718",
+            "Links": {},
+            "MessageID": "a017",
+            "MessageArgs@odata.count": 0,
+            "Name": " Log Entry 718",
+            "Severity": "Ok",
+            "Message": "Drive 7 is installed in disk drive bay 1.",
+            "EntryType": "SEL",
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "Created": "2017-05-30T14:10:51-05:00",
+            "SensorNumber": 171,
+            "Id": "718",
+            "SensorType": [
+                {
+                    "Member": "Drive Slot/Bay"
+                }
+            ],
+            "MessageArgs": [],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/718"
+        },
+        {
+            "Description": " Log Entry 717",
+            "Links": {},
+            "MessageID": "a016",
+            "MessageArgs@odata.count": 0,
+            "Name": " Log Entry 717",
+            "Severity": "Ok",
+            "Message": "Drive 6 is installed in disk drive bay 1.",
+            "EntryType": "SEL",
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "Created": "2017-05-30T14:08:56-05:00",
+            "SensorNumber": 170,
+            "Id": "717",
+            "SensorType": [
+                {
+                    "Member": "Drive Slot/Bay"
+                }
+            ],
+            "MessageArgs": [],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/717"
+        },
+        {
+            "Description": " Log Entry 716",
+            "Links": {},
+            "MessageID": "a016",
+            "MessageArgs@odata.count": 0,
+            "Name": " Log Entry 716",
+            "Severity": "Critical",
+            "Message": "Drive 6 is removed from disk drive bay 1.",
+            "EntryType": "SEL",
+            "EntryCode": [
+                {
+                    "Member": "Deassert"
+                }
+            ],
+            "Created": "2017-05-30T14:08:46-05:00",
+            "SensorNumber": 170,
+            "Id": "716",
+            "SensorType": [
+                {
+                    "Member": "Drive Slot/Bay"
+                }
+            ],
+            "MessageArgs": [],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/716"
+        },
+        {
+            "Description": " Log Entry 715",
+            "Links": {},
+            "MessageID": "a117",
+            "MessageArgs@odata.count": 0,
+            "Name": " Log Entry 715",
+            "Severity": "Ok",
+            "Message": "Drive 7 in disk drive bay 1 is operating normally.",
+            "EntryType": "SEL",
+            "EntryCode": [
+                {
+                    "Member": "Deassert"
+                }
+            ],
+            "Created": "2017-05-30T14:08:30-05:00",
+            "SensorNumber": 171,
+            "Id": "715",
+            "SensorType": [
+                {
+                    "Member": "Drive Slot/Bay"
+                }
+            ],
+            "MessageArgs": [],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/715"
+        },
+        {
+            "Description": " Log Entry 714",
+            "Links": {},
+            "MessageID": "a017",
+            "MessageArgs@odata.count": 0,
+            "Name": " Log Entry 714",
+            "Severity": "Critical",
+            "Message": "Drive 7 is removed from disk drive bay 1.",
+            "EntryType": "SEL",
+            "EntryCode": [
+                {
+                    "Member": "Deassert"
+                }
+            ],
+            "Created": "2017-05-30T14:08:29-05:00",
+            "SensorNumber": 171,
+            "Id": "714",
+            "SensorType": [
+                {
+                    "Member": "Drive Slot/Bay"
+                }
+            ],
+            "MessageArgs": [],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/714"
+        },
+        {
+            "Description": " Log Entry 713",
+            "Links": {},
+            "MessageID": "a010",
+            "MessageArgs@odata.count": 0,
+            "Name": " Log Entry 713",
+            "Severity": "Critical",
+            "Message": "Drive 0 is removed from disk drive bay 1.",
+            "EntryType": "SEL",
+            "EntryCode": [
+                {
+                    "Member": "Deassert"
+                }
+            ],
+            "Created": "2017-05-30T14:07:57-05:00",
+            "SensorNumber": 164,
+            "Id": "713",
+            "SensorType": [
+                {
+                    "Member": "Drive Slot/Bay"
+                }
+            ],
+            "MessageArgs": [],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/713"
+        },
+        {
+            "Description": " Log Entry 712",
+            "Links": {},
+            "MessageID": "a117",
+            "MessageArgs@odata.count": 0,
+            "Name": " Log Entry 712",
+            "Severity": "Critical",
+            "Message": "Fault detected on drive 7 in disk drive bay 1.",
+            "EntryType": "SEL",
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "Created": "2017-05-30T14:01:45-05:00",
+            "SensorNumber": 171,
+            "Id": "712",
+            "SensorType": [
+                {
+                    "Member": "Drive Slot/Bay"
+                }
+            ],
+            "MessageArgs": [],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/712"
+        },
+        {
+            "Description": " Log Entry 711",
+            "Links": {},
+            "MessageID": "a11a",
+            "MessageArgs@odata.count": 0,
+            "Name": " Log Entry 711",
+            "Severity": "Ok",
+            "Message": "Drive 10 in disk drive bay 1 is operating normally.",
+            "EntryType": "SEL",
+            "EntryCode": [
+                {
+                    "Member": "Deassert"
+                }
+            ],
+            "Created": "2017-05-30T13:57:49-05:00",
+            "SensorNumber": 174,
+            "Id": "711",
+            "SensorType": [
+                {
+                    "Member": "Drive Slot/Bay"
+                }
+            ],
+            "MessageArgs": [],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/711"
+        },
+        {
+            "Description": " Log Entry 710",
+            "Links": {},
+            "MessageID": "a01a",
+            "MessageArgs@odata.count": 0,
+            "Name": " Log Entry 710",
+            "Severity": "Critical",
+            "Message": "Drive 10 is removed from disk drive bay 1.",
+            "EntryType": "SEL",
+            "EntryCode": [
+                {
+                    "Member": "Deassert"
+                }
+            ],
+            "Created": "2017-05-30T13:57:49-05:00",
+            "SensorNumber": 174,
+            "Id": "710",
+            "SensorType": [
+                {
+                    "Member": "Drive Slot/Bay"
+                }
+            ],
+            "MessageArgs": [],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/710"
+        },
+        {
+            "Description": " Log Entry 709",
+            "Links": {},
+            "MessageID": "a018",
+            "MessageArgs@odata.count": 0,
+            "Name": " Log Entry 709",
+            "Severity": "Ok",
+            "Message": "Drive 8 is installed in disk drive bay 1.",
+            "EntryType": "SEL",
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "Created": "2017-05-30T13:57:38-05:00",
+            "SensorNumber": 172,
+            "Id": "709",
+            "SensorType": [
+                {
+                    "Member": "Drive Slot/Bay"
+                }
+            ],
+            "MessageArgs": [],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/709"
+        },
+        {
+            "Description": " Log Entry 708",
+            "Links": {},
+            "MessageID": "a018",
+            "MessageArgs@odata.count": 0,
+            "Name": " Log Entry 708",
+            "Severity": "Critical",
+            "Message": "Drive 8 is removed from disk drive bay 1.",
+            "EntryType": "SEL",
+            "EntryCode": [
+                {
+                    "Member": "Deassert"
+                }
+            ],
+            "Created": "2017-05-30T13:56:33-05:00",
+            "SensorNumber": 172,
+            "Id": "708",
+            "SensorType": [
+                {
+                    "Member": "Drive Slot/Bay"
+                }
+            ],
+            "MessageArgs": [],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/708"
+        },
+        {
+            "Description": " Log Entry 707",
+            "Links": {},
+            "MessageID": "a11a",
+            "MessageArgs@odata.count": 0,
+            "Name": " Log Entry 707",
+            "Severity": "Critical",
+            "Message": "Fault detected on drive 10 in disk drive bay 1.",
+            "EntryType": "SEL",
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "Created": "2017-05-30T13:52:37-05:00",
+            "SensorNumber": 174,
+            "Id": "707",
+            "SensorType": [
+                {
+                    "Member": "Drive Slot/Bay"
+                }
+            ],
+            "MessageArgs": [],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/707"
+        },
+        {
+            "Description": " Log Entry 706",
+            "Links": {},
+            "MessageID": "a019",
+            "MessageArgs@odata.count": 0,
+            "Name": " Log Entry 706",
+            "Severity": "Ok",
+            "Message": "Drive 9 is installed in disk drive bay 1.",
+            "EntryType": "SEL",
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "Created": "2017-05-30T13:51:02-05:00",
+            "SensorNumber": 173,
+            "Id": "706",
+            "SensorType": [
+                {
+                    "Member": "Drive Slot/Bay"
+                }
+            ],
+            "MessageArgs": [],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/706"
+        },
+        {
+            "Description": " Log Entry 705",
+            "Links": {},
+            "MessageID": "a019",
+            "MessageArgs@odata.count": 0,
+            "Name": " Log Entry 705",
+            "Severity": "Critical",
+            "Message": "Drive 9 is removed from disk drive bay 1.",
+            "EntryType": "SEL",
+            "EntryCode": [
+                {
+                    "Member": "Deassert"
+                }
+            ],
+            "Created": "2017-05-30T13:50:36-05:00",
+            "SensorNumber": 173,
+            "Id": "705",
+            "SensorType": [
+                {
+                    "Member": "Drive Slot/Bay"
+                }
+            ],
+            "MessageArgs": [],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/705"
+        },
+        {
+            "Description": " Log Entry 704",
+            "Links": {},
+            "MessageID": "a01b",
+            "MessageArgs@odata.count": 0,
+            "Name": " Log Entry 704",
+            "Severity": "Critical",
+            "Message": "Drive 11 is removed from disk drive bay 1.",
+            "EntryType": "SEL",
+            "EntryCode": [
+                {
+                    "Member": "Deassert"
+                }
+            ],
+            "Created": "2017-05-30T13:50:25-05:00",
+            "SensorNumber": 175,
+            "Id": "704",
+            "SensorType": [
+                {
+                    "Member": "Drive Slot/Bay"
+                }
+            ],
+            "MessageArgs": [],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/704"
+        },
+        {
+            "Description": " Log Entry 703",
+            "Links": {},
+            "MessageID": "a000",
+            "MessageArgs@odata.count": 0,
+            "Name": " Log Entry 703",
+            "Severity": "Ok",
+            "Message": "Drive 0 is installed in disk drive bay 0.",
+            "EntryType": "SEL",
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "Created": "2017-05-30T13:35:42-05:00",
+            "SensorNumber": 160,
+            "Id": "703",
+            "SensorType": [
+                {
+                    "Member": "Drive Slot/Bay"
+                }
+            ],
+            "MessageArgs": [],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/703"
+        },
+        {
+            "Description": " Log Entry 702",
+            "Links": {},
+            "MessageID": "a000",
+            "MessageArgs@odata.count": 0,
+            "Name": " Log Entry 702",
+            "Severity": "Critical",
+            "Message": "Drive 0 is removed from disk drive bay 0.",
+            "EntryType": "SEL",
+            "EntryCode": [
+                {
+                    "Member": "Deassert"
+                }
+            ],
+            "Created": "2017-05-30T13:35:27-05:00",
+            "SensorNumber": 160,
+            "Id": "702",
+            "SensorType": [
+                {
+                    "Member": "Drive Slot/Bay"
+                }
+            ],
+            "MessageArgs": [],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/702"
+        },
+        {
+            "Description": " Log Entry 701",
+            "Links": {},
+            "MessageID": "1ffff",
+            "MessageArgs@odata.count": 0,
+            "Name": " Log Entry 701",
+            "Severity": "Critical",
+            "Message": "Fan redundancy is lost.",
+            "EntryType": "SEL",
+            "EntryCode": [
+                {
+                    "Member": "Redundancy Lost"
+                }
+            ],
+            "Created": "2017-05-30T11:37:48-05:00",
+            "SensorNumber": 117,
+            "Id": "701",
+            "SensorType": [
+                {
+                    "Member": "Fan"
+                }
+            ],
+            "MessageArgs": [],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/701"
+        },
+        {
+            "Description": " Log Entry 700",
+            "Links": {},
+            "MessageID": "57834",
+            "MessageArgs@odata.count": 0,
+            "Name": " Log Entry 700",
+            "Severity": "Ok",
+            "Message": "The system board Consumption current is within range.",
+            "EntryType": "SEL",
+            "EntryCode": [
+                {
+                    "Member": "Upper Non-critical - going high"
+                }
+            ],
+            "Created": "2017-05-30T11:37:28-05:00",
+            "SensorNumber": 119,
+            "Id": "700",
+            "SensorType": [
+                {
+                    "Member": "Current"
+                }
+            ],
+            "MessageArgs": [],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/700"
+        },
+        {
+            "Description": " Log Entry 699",
+            "Links": {},
+            "MessageID": "5983a",
+            "MessageArgs@odata.count": 0,
+            "Name": " Log Entry 699",
+            "Severity": "Warning",
+            "Message": "The system board Consumption current is greater than the upper warning threshold.",
+            "EntryType": "SEL",
+            "EntryCode": [
+                {
+                    "Member": "Upper Critical - going high"
+                }
+            ],
+            "Created": "2017-05-30T11:37:27-05:00",
+            "SensorNumber": 119,
+            "Id": "699",
+            "SensorType": [
+                {
+                    "Member": "Current"
+                }
+            ],
+            "MessageArgs": [],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/699"
+        },
+        {
+            "Description": " Log Entry 698",
+            "Links": {},
+            "MessageID": "59903a",
+            "MessageArgs@odata.count": 0,
+            "Name": " Log Entry 698",
+            "Severity": "Critical",
+            "Message": "The system board Consumption current is greater than the upper critical threshold.",
+            "EntryType": "SEL",
+            "EntryCode": [
+                {
+                    "Member": "Upper Critical - going high"
+                }
+            ],
+            "Created": "2017-05-30T11:37:25-05:00",
+            "SensorNumber": 119,
+            "Id": "698",
+            "SensorType": [
+                {
+                    "Member": "Current"
+                }
+            ],
+            "MessageArgs": [],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/698"
+        },
+        {
+            "Description": " Log Entry 697",
+            "Links": {},
+            "MessageID": "579034",
+            "MessageArgs@odata.count": 0,
+            "Name": " Log Entry 697",
+            "Severity": "Warning",
+            "Message": "The system board Consumption current is greater than the upper warning threshold.",
+            "EntryType": "SEL",
+            "EntryCode": [
+                {
+                    "Member": "Upper Non-critical - going high"
+                }
+            ],
+            "Created": "2017-05-30T11:37:24-05:00",
+            "SensorNumber": 119,
+            "Id": "697",
+            "SensorType": [
+                {
+                    "Member": "Current"
+                }
+            ],
+            "MessageArgs": [],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/697"
+        },
+        {
+            "Description": " Log Entry 696",
+            "Links": {},
+            "MessageID": "5202",
+            "MessageArgs@odata.count": 0,
+            "Name": " Log Entry 696",
+            "Severity": "Critical",
+            "Message": "Fan 3 RPM is less than the lower critical threshold.",
+            "EntryType": "SEL",
+            "EntryCode": [
+                {
+                    "Member": "Lower Critical - going low"
+                }
+            ],
+            "Created": "2017-05-30T11:37:22-05:00",
+            "SensorNumber": 50,
+            "Id": "696",
+            "SensorType": [
+                {
+                    "Member": "Fan"
+                }
+            ],
+            "MessageArgs": [],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/696"
+        },
+        {
+            "Description": " Log Entry 695",
+            "Links": {},
+            "MessageID": "5003",
+            "MessageArgs@odata.count": 0,
+            "Name": " Log Entry 695",
+            "Severity": "Warning",
+            "Message": "Fan 3 RPM is less than the lower warning threshold.",
+            "EntryType": "SEL",
+            "EntryCode": [
+                {
+                    "Member": "Lower Non-critical - going low"
+                }
+            ],
+            "Created": "2017-05-30T11:37:22-05:00",
+            "SensorNumber": 50,
+            "Id": "695",
+            "SensorType": [
+                {
+                    "Member": "Fan"
+                }
+            ],
+            "MessageArgs": [],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/695"
+        },
+        {
+            "Description": " Log Entry 694",
+            "Links": {},
+            "MessageID": "1ffff",
+            "MessageArgs@odata.count": 0,
+            "Name": " Log Entry 694",
+            "Severity": "Critical",
+            "Message": "Power supply redundancy is lost.",
+            "EntryType": "SEL",
+            "EntryCode": [
+                {
+                    "Member": "Redundancy Lost"
+                }
+            ],
+            "Created": "2017-05-30T11:36:37-05:00",
+            "SensorNumber": 116,
+            "Id": "694",
+            "SensorType": [
+                {
+                    "Member": "Power Supply / Converter"
+                }
+            ],
+            "MessageArgs": [],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/694"
+        },
+        {
+            "Description": " Log Entry 693",
+            "Links": {},
+            "MessageID": "3ffff",
+            "MessageArgs@odata.count": 0,
+            "Name": " Log Entry 693",
+            "Severity": "Critical",
+            "Message": "The power input for power supply 2 is lost.",
+            "EntryType": "SEL",
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "Created": "2017-05-30T11:36:36-05:00",
+            "SensorNumber": 99,
+            "Id": "693",
+            "SensorType": [
+                {
+                    "Member": "Power Supply / Converter"
+                }
+            ],
+            "MessageArgs": [],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/693"
+        },
+        {
+            "Description": " Log Entry 692",
+            "Links": {},
+            "MessageID": "1ffff",
+            "MessageArgs@odata.count": 0,
+            "Name": " Log Entry 692",
+            "Severity": "Critical",
+            "Message": "The storage BP0 PCIe D cable is not connected, or is improperly connected.",
+            "EntryType": "SEL",
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "Created": "2017-05-30T11:36:32-05:00",
+            "SensorNumber": 227,
+            "Id": "692",
+            "SensorType": [
+                {
+                    "Member": "Cable/Interconnect"
+                }
+            ],
+            "MessageArgs": [],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/692"
+        },
+        {
+            "Description": " Log Entry 691",
+            "Links": {},
+            "MessageID": "1ffff",
+            "MessageArgs@odata.count": 0,
+            "Name": " Log Entry 691",
+            "Severity": "Critical",
+            "Message": "The storage BP0 PCIe C cable is not connected, or is improperly connected.",
+            "EntryType": "SEL",
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "Created": "2017-05-30T11:36:31-05:00",
+            "SensorNumber": 226,
+            "Id": "691",
+            "SensorType": [
+                {
+                    "Member": "Cable/Interconnect"
+                }
+            ],
+            "MessageArgs": [],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/691"
+        },
+        {
+            "Description": " Log Entry 690",
+            "Links": {},
+            "MessageID": "1ffff",
+            "MessageArgs@odata.count": 0,
+            "Name": " Log Entry 690",
+            "Severity": "Critical",
+            "Message": "The storage BP0 PCIe B cable is not connected, or is improperly connected.",
+            "EntryType": "SEL",
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "Created": "2017-05-30T11:36:30-05:00",
+            "SensorNumber": 225,
+            "Id": "690",
+            "SensorType": [
+                {
+                    "Member": "Cable/Interconnect"
+                }
+            ],
+            "MessageArgs": [],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/690"
+        },
+        {
+            "Description": " Log Entry 689",
+            "Links": {},
+            "MessageID": "1ffff",
+            "MessageArgs@odata.count": 0,
+            "Name": " Log Entry 689",
+            "Severity": "Critical",
+            "Message": "The storage BP0 PCIe A cable is not connected, or is improperly connected.",
+            "EntryType": "SEL",
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "Created": "2017-05-30T11:36:30-05:00",
+            "SensorNumber": 224,
+            "Id": "689",
+            "SensorType": [
+                {
+                    "Member": "Cable/Interconnect"
+                }
+            ],
+            "MessageArgs": [],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/689"
+        }
+    ],
+    "@odata.context": "/redfish/v1/$metadata#LogEntryCollection.LogEntryCollection",
+    "Description": "System Event Logs for this manager",
+    "Members@odata.count": 738,
+    "@odata.type": "#LogEntryCollection.LogEntryCollection",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "@odata.nextLink": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel?$skip=50",
+    "Name": "Log Entry Collection",
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel"
+}

@@ -1,0 +1,26 @@
+{
+    "@odata.type": "#AccountService.v1_0_2.AccountService",
+    "AccountLockoutCounterResetAfter": 0,
+    "@Redfish.Copyright": "Copyright 2017 TTU.edu All rights reserved.",
+    "@odata.context": "/redfish/v1/$metadata#AccountService.AccountService",
+    "AuthFailureLoggingThreshold": 2,
+    "Accounts": {
+        "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Accounts"
+    },
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/AccountService",
+    "MinPasswordLength": 1,
+    "Roles": {
+        "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Roles"
+    },
+    "Id": "AccountService",
+    "ServiceEnabled": true,
+    "Description": "BMC User Accounts",
+    "MaxPasswordLength": 20,
+    "AccountLockoutThreshold": 0,
+    "Status": {
+        "Health": "Ok",
+        "State": "Enabled"
+    },
+    "Name": "Account Service",
+    "AccountLockoutDuration": 0
+}

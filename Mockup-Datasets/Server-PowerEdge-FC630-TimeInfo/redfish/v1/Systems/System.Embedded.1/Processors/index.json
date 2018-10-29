@@ -1,0 +1,23 @@
+{
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "@odata.id": "/redfish/v1/Systems/System.Embedded.1/Processors",
+    "Description": "Collection of Processors for this System",
+    "Members": [
+        {
+            "@odata.id": "/redfish/v1/Systems/System.Embedded.1/Processors/CPU.Socket.1"
+        },
+        {
+            "@odata.id": "/redfish/v1/Systems/System.Embedded.1/Processors/CPU.Socket.2"
+        }
+    ],
+    "Name": "ProcessorsCollection",
+    "@Message.ExtendedInfo": {
+        "Message": "Host system is switched-off",
+        "MessageId": "Base.1.0.ObjectInfo",
+        "Severity": "WARNING",
+        "Resolution": "Switch-On Host System and retry"
+    },
+    "Members@odata.count": 2,
+    "@odata.context": "/redfish/v1/$metadata#ProcessorCollection.ProcessorCollection",
+    "@odata.type": "#ProcessorCollection.ProcessorCollection"
+}

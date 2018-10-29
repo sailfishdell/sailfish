@@ -1,0 +1,21 @@
+{
+    "OEMRecordFormat": "Dell",
+    "Links": {},
+    "Id": "1564",
+    "EntryType": "Oem",
+    "Created": "2017-09-11T19:46:45-05:00",
+    "MessageArgs@odata.count": 2,
+    "@odata.context": "/redfish/v1/$metadata#LogEntry.LogEntry",
+    "Severity": "Ok",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1564",
+    "Description": " Log Entry 1564",
+    "MessageID": "IPA0100",
+    "MessageArgs": [
+        "0.0.0.0",
+        "100.68.124.137"
+    ],
+    "Name": " Log Entry 1564",
+    "Message": "The iDRAC IP Address changed from 0.0.0.0 to 100.68.124.137.",
+    "@odata.type": "#LogEntry.v1_0_2.LogEntry"
+}

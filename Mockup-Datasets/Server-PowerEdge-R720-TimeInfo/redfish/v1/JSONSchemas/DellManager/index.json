@@ -1,0 +1,22 @@
+{
+    "Name": "DellManager Schema File",
+    "@odata.context": "/redfish/v1/$metadata#JsonSchemaFile.JsonSchemaFile",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "Description": "DellManager Schema File Location",
+    "@odata.type": "#JsonSchemaFile.v1_0_2.JsonSchemaFile",
+    "Languages": [
+        "en"
+    ],
+    "Id": "DellManager",
+    "Location": [
+        {
+            "PublicationUri": "http://downloads.dell.com/redfish/bmc/schemas/DellManager.json",
+            "Language": "en",
+            "Uri": "/redfish/v1/Schemas/DellManager.json"
+        }
+    ],
+    "Languages@odata.count": 1,
+    "@odata.id": "/redfish/v1/JSONSchemas/DellManager",
+    "Location@odata.count": 1,
+    "Schema": "#DellManager.DellManager"
+}

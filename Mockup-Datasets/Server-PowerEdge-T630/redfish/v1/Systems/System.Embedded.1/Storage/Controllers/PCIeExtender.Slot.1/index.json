@@ -1,0 +1,27 @@
+{
+    "Id": "PCIeExtender.Slot.1",
+    "@odata.context": "/redfish/v1/$metadata#SimpleStorage.SimpleStorage",
+    "Description": "Simple Storage Controller",
+    "Status": {
+        "State": "Enabled",
+        "Health": "OK",
+        "HealthRollup": "OK"
+    },
+    "@odata.type": "#SimpleStorage.v1_0_2.SimpleStorage",
+    "Devices@odata.count": 1,
+    "Devices": [
+        {
+            "Model": "PCIe SSD BP 0",
+            "Manufacturer": "DELL",
+            "Name": "Backplane 0 of PCIe Extender in PCIe Slot 1",
+            "Status": {
+                "State": "Enabled",
+                "Health": "OK",
+                "HealthRollup": "OK"
+            }
+        }
+    ],
+    "Name": "PCIe Extender 1",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "@odata.id": "/redfish/v1/Systems/System.Embedded.1/Storage/Controllers/PCIeExtender.Slot.1"
+}

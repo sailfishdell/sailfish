@@ -1,0 +1,20 @@
+{
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "Name": " Log Entry 59376",
+    "MessageArgs@odata.count": 1,
+    "@odata.context": "/redfish/v1/$metadata#LogEntry.LogEntry",
+    "Message": "An update job JID_101205159811 was created.",
+    "OEMRecordFormat": "Dell",
+    "Description": " Log Entry 59376",
+    "MessageArgs": [
+        "JID_101205159811"
+    ],
+    "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+    "EntryType": "Oem",
+    "Id": "59376",
+    "Severity": "OK",
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/59376",
+    "Links": {},
+    "MessageID": "RED054",
+    "Created": "2017-11-07T23:55:16-06:00"
+}

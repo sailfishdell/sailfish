@@ -1,0 +1,19 @@
+{
+    "TargetSettingsURI": null,
+    "Name": "update:DCIM:INSTALLED#301_C_RAID.Integrated.1-1",
+    "CompletionTime": "2017-11-08T00:04:29",
+    "MessageId": "PR19",
+    "@odata.context": "/redfish/v1/$metadata#DellJob.DellJob",
+    "EndTime": null,
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "Description": "Job Instance",
+    "MessageArgs": [],
+    "@odata.type": "#DellJob.v1_0_0.DellJob",
+    "Message": "Job completed successfully.",
+    "Id": "JID_101205159811",
+    "JobState": "Completed",
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Jobs/JID_101205159811",
+    "StartTime": null,
+    "PercentComplete": 254,
+    "JobType": "FirmwareUpdate"
+}

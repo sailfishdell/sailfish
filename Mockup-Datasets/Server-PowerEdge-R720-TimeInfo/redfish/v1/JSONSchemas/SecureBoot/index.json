@@ -1,0 +1,22 @@
+{
+    "Name": "SecureBoot Schema File",
+    "@odata.context": "/redfish/v1/$metadata#JsonSchemaFile.JsonSchemaFile",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "Description": "SecureBoot Schema File Location",
+    "@odata.type": "#JsonSchemaFile.v1_0_2.JsonSchemaFile",
+    "Languages": [
+        "en"
+    ],
+    "Id": "SecureBoot",
+    "Location": [
+        {
+            "PublicationUri": "http://redfish.dmtf.org/schemas/v1/SecureBoot.json",
+            "Language": "en",
+            "Uri": "/redfish/v1/Schemas/SecureBoot.json"
+        }
+    ],
+    "Languages@odata.count": 1,
+    "@odata.id": "/redfish/v1/JSONSchemas/SecureBoot",
+    "Location@odata.count": 1,
+    "Schema": "#SecureBoot.SecureBoot"
+}

@@ -1,0 +1,22 @@
+{
+    "Schema": "#DellCertificateCollection.DellCertificateCollection",
+    "Languages@odata.count": 1,
+    "Location@odata.count": 1,
+    "Name": "DellCertificateCollection Schema File",
+    "@odata.type": "#JsonSchemaFile.v1_0_2.JsonSchemaFile",
+    "@odata.context": "/redfish/v1/$metadata#JsonSchemaFile.JsonSchemaFile",
+    "Description": "DellCertificateCollection Schema File Location",
+    "Id": "DellCertificateCollection",
+    "Location": [
+        {
+            "PublicationUri": "http://downloads.dell.com/redfish/bmc/schemas/DellCertificateCollection.json",
+            "Uri": "/redfish/v1/Schemas/DellCertificateCollection.json",
+            "Language": "en"
+        }
+    ],
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "Languages": [
+        "en"
+    ],
+    "@odata.id": "/redfish/v1/JSONSchemas/DellCertificateCollection"
+}

@@ -1,0 +1,35 @@
+{
+    "SecureBootCurrentBoot": "Disabled",
+    "Name": "UEFI Secure Boot",
+    "Oem": {
+        "Dell": {
+            "Certificates": {
+                "@odata.id": "/redfish/v1/Systems/System.Embedded.1/SecureBoot/Certificates"
+            },
+            "@odata.type": "#DellSecureBoot.v1_0_0.DellSecureBoot"
+        }
+    },
+    "@odata.type": "#SecureBoot.v1_0_0.SecureBoot",
+    "Actions": {
+        "Oem": {},
+        "#SecureBoot.ResetKeys": {
+            "ResetKeysType@Redfish.AllowableValues": [
+                "ResetAllKeysToDefault",
+                "DeleteAllKeys",
+                "DeletePK",
+                "ResetPK",
+                "ResetKEK",
+                "ResetDB",
+                "ResetDBX"
+            ],
+            "target": "/redfish/v1/Systems/System.Embedded.1/SecureBoot/Actions/SecureBoot.ResetKeys"
+        }
+    },
+    "@odata.context": "/redfish/v1/$metadata#SecureBoot.SecureBoot",
+    "Description": "UEFI Secure Boot",
+    "Id": "SecureBoot",
+    "SecureBootMode": "UserMode",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "SecureBootEnable": false,
+    "@odata.id": "/redfish/v1/Systems/System.Embedded.1/SecureBoot"
+}

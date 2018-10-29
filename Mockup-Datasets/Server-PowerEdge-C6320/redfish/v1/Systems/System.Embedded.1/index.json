@@ -1,0 +1,111 @@
+{
+    "Processors": {
+        "@odata.id": "/redfish/v1/Systems/System.Embedded.1/Processors"
+    },
+    "@odata.type": "#ComputerSystem.v1_0_2.ComputerSystem",
+    "UUID": "4c4c4544-004d-3210-8054-b7c04f514432",
+    "BiosVersion": "2.2.5",
+    "AssetTag": "",
+    "SKU": "7M2TQD2",
+    "Manufacturer": "Dell Inc.",
+    "Model": "PowerEdge C6320",
+    "Id": "System.Embedded.1",
+    "@Redfish.Copyright": "Copyright 2017 TTU.edu All rights reserved.",
+    "SimpleStorage": {
+        "@odata.id": "/redfish/v1/Systems/System.Embedded.1/Storage/Controllers"
+    },
+    "Actions": {
+        "#ComputerSystem.Reset": {
+            "ResetType@Redfish.AllowableValues": [
+                "On",
+                "ForceOff",
+                "GracefulRestart",
+                "PushPowerButton",
+                "Nmi"
+            ],
+            "target": "/redfish/v1/Systems/System.Embedded.1/Actions/ComputerSystem.Reset"
+        }
+    },
+    "ProcessorSummary": {
+        "Status": {
+            "HealthRollUp": "OK",
+            "Health": "OK",
+            "State": "Enabled"
+        },
+        "Model": "Intel(R) Xeon(R) CPU E5-2695 v4 @ 2.10GHz",
+        "Count": 2
+    },
+    "Name": "System",
+    "PowerState": "On",
+    "@odata.context": "/redfish/v1/$metadata#ComputerSystem.ComputerSystem",
+    "Status": {
+        "HealthRollUp": "OK",
+        "Health": "OK",
+        "State": "Enabled"
+    },
+    "IndicatorLED": "Off",
+    "HostName": "MINWINPC",
+    "EthernetInterfaces": {
+        "@odata.id": "/redfish/v1/Systems/System.Embedded.1/EthernetInterfaces"
+    },
+    "Links": {
+        "CooledBy": [
+            {
+                "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Sensors/Fans/0x17||Fan.Embedded._1"
+            },
+            {
+                "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Sensors/Fans/0x17||Fan.Embedded._2"
+            },
+            {
+                "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Sensors/Fans/0x17||Fan.Embedded._3"
+            },
+            {
+                "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Sensors/Fans/0x17||Fan.Embedded._4"
+            }
+        ],
+        "ManagedBy": [
+            {
+                "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+            }
+        ],
+        "ManagedBy@odata.count": 1,
+        "Chassis@odata.count": 1,
+        "CooledBy@odata.count": 4,
+        "PoweredBy": [],
+        "PoweredBy@odata.count": 0,
+        "Chassis": [
+            {
+                "@odata.id": "/redfish/v1/Chassis/System.Embedded.1"
+            }
+        ]
+    },
+    "Description": "Computer System which represents a machine (physical or virtual) and the local resources such as memory, cpu and other devices that can be accessed from that machine.",
+    "Boot": {
+        "BootSourceOverrideTarget@Redfish.AllowableValues": [
+            "None",
+            "Pxe",
+            "Cd",
+            "Floppy",
+            "Hdd",
+            "BiosSetup",
+            "Utilities",
+            "UefiTarget",
+            "SDCard"
+        ],
+        "BootSourceOverrideEnabled": "Once",
+        "BootSourceOverrideTarget": "None",
+        "UefiTargetBootSourceOverride": ""
+    },
+    "MemorySummary": {
+        "TotalSystemMemoryGiB": 192.0,
+        "Status": {
+            "HealthRollUp": "OK",
+            "Health": "OK",
+            "State": "Enabled"
+        }
+    },
+    "@odata.id": "/redfish/v1/Systems/System.Embedded.1",
+    "SerialNumber": "CN7475165K0098",
+    "SystemType": "Physical",
+    "PartNumber": "082F9MA00"
+}

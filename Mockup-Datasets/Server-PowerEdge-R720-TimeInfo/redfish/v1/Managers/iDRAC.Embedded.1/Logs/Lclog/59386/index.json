@@ -1,0 +1,16 @@
+{
+    "Name": " Log Entry 59386",
+    "OEMRecordFormat": "Dell",
+    "@odata.context": "/redfish/v1/$metadata#LogEntry.LogEntry",
+    "Message": "Reboot is complete.",
+    "Severity": "OK",
+    "Description": " Log Entry 59386",
+    "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+    "EntryType": "Oem",
+    "Id": "59386",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/59386",
+    "Links": {},
+    "Created": "2017-11-07T23:55:57-06:00",
+    "MessageID": "RED030"
+}

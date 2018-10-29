@@ -1,0 +1,26 @@
+{
+    "Actions": {
+        "Oem": {
+            "DellManager.v1_0_0#DellManager.ClearPending": {
+                "target": "/redfish/v1/Systems/System.Embedded.1/Bios/Settings/Actions/Oem/DellManager.ClearPending"
+            }
+        }
+    },
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "Attributes": {},
+    "Id": "Settings",
+    "Name": "BIOS Configuration Pending Settings",
+    "AttributeRegistry": "BiosAttributeRegistry.v1_0_0",
+    "@odata.type": "#Bios.v1_0_0.Bios",
+    "Oem": {
+        "Dell": {
+            "Jobs": {
+                "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Jobs"
+            },
+            "@odata.type": "#DellManager.v1_0_0.DellManager"
+        }
+    },
+    "Description": "BIOS Configuration Pending Settings. These settings will be applied on next system reboot.",
+    "@odata.id": "/redfish/v1/Systems/System.Embedded.1/Bios/Settings",
+    "@odata.context": "/redfish/v1/$metadata#Bios.Bios"
+}

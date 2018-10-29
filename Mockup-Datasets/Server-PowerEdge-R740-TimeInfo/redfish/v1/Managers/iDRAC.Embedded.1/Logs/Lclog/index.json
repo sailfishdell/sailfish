@@ -1,0 +1,1093 @@
+{
+    "Name": "Log Entry Collection",
+    "Description": "LC Logs for this manager",
+    "@odata.nextLink": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog?$skip=50",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "@odata.type": "#LogEntryCollection.LogEntryCollection",
+    "Members": [
+        {
+            "MessageID": "USR0030",
+            "EntryType": "Oem",
+            "Severity": "Ok",
+            "Name": " Log Entry 1641",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "Successfully logged in using root, from 10.204.136.20 and redfish.",
+            "Description": " Log Entry 1641",
+            "Created": "2017-11-02T18:09:31-05:00",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1641",
+            "Id": "1641",
+            "OemRecordFormat": "Dell",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "MessageArgs@odata.count": 3,
+            "MessageArgs": [
+                "root",
+                "10.204.136.20",
+                "redfish"
+            ]
+        },
+        {
+            "MessageID": "USR0032",
+            "EntryType": "Oem",
+            "Severity": "Ok",
+            "Name": " Log Entry 1640",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "The session for root from 10.30.165.194 using GUI is logged off.",
+            "Description": " Log Entry 1640",
+            "Created": "2017-11-02T15:54:56-05:00",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1640",
+            "Id": "1640",
+            "OemRecordFormat": "Dell",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "MessageArgs@odata.count": 3,
+            "MessageArgs": [
+                "root",
+                "10.30.165.194",
+                "GUI"
+            ]
+        },
+        {
+            "MessageID": "USR0032",
+            "EntryType": "Oem",
+            "Severity": "Ok",
+            "Name": " Log Entry 1639",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "The session for root from 10.30.165.194 using Virtual Console is logged off.",
+            "Description": " Log Entry 1639",
+            "Created": "2017-11-02T15:41:25-05:00",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1639",
+            "Id": "1639",
+            "OemRecordFormat": "Dell",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "MessageArgs@odata.count": 3,
+            "MessageArgs": [
+                "root",
+                "10.30.165.194",
+                "Virtual Console"
+            ]
+        },
+        {
+            "MessageID": "VME0005",
+            "EntryType": "Oem",
+            "Severity": "Ok",
+            "Name": " Log Entry 1638",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "Virtual Console session exited.",
+            "Description": " Log Entry 1638",
+            "Created": "2017-11-02T15:41:25-05:00",
+            "Id": "1638",
+            "OemRecordFormat": "Dell",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1638"
+        },
+        {
+            "MessageID": "USR0032",
+            "EntryType": "Oem",
+            "Severity": "Ok",
+            "Name": " Log Entry 1637",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "The session for root from 10.30.165.194 using Virtual Media is logged off.",
+            "Description": " Log Entry 1637",
+            "Created": "2017-11-02T15:41:25-05:00",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1637",
+            "Id": "1637",
+            "OemRecordFormat": "Dell",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "MessageArgs@odata.count": 3,
+            "MessageArgs": [
+                "root",
+                "10.30.165.194",
+                "Virtual Media"
+            ]
+        },
+        {
+            "MessageID": "VME0006",
+            "EntryType": "Oem",
+            "Severity": "Ok",
+            "Name": " Log Entry 1636",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "Virtual Media session exited.",
+            "Description": " Log Entry 1636",
+            "Created": "2017-11-02T15:41:25-05:00",
+            "Id": "1636",
+            "OemRecordFormat": "Dell",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1636"
+        },
+        {
+            "MessageID": "VME0008",
+            "EntryType": "Oem",
+            "Severity": "Ok",
+            "Name": " Log Entry 1635",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "Virtual Media session created.",
+            "Description": " Log Entry 1635",
+            "Created": "2017-11-02T15:25:08-05:00",
+            "Id": "1635",
+            "OemRecordFormat": "Dell",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1635"
+        },
+        {
+            "MessageID": "VME0002",
+            "EntryType": "Oem",
+            "Severity": "Ok",
+            "Name": " Log Entry 1634",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "Virtual Media session started.",
+            "Description": " Log Entry 1634",
+            "Created": "2017-11-02T15:25:08-05:00",
+            "Id": "1634",
+            "OemRecordFormat": "Dell",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1634"
+        },
+        {
+            "MessageID": "USR0030",
+            "EntryType": "Oem",
+            "Severity": "Ok",
+            "Name": " Log Entry 1633",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "Successfully logged in using root, from 10.30.165.194 and Virtual Media.",
+            "Description": " Log Entry 1633",
+            "Created": "2017-11-02T15:25:08-05:00",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1633",
+            "Id": "1633",
+            "OemRecordFormat": "Dell",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "MessageArgs@odata.count": 3,
+            "MessageArgs": [
+                "root",
+                "10.30.165.194",
+                "Virtual Media"
+            ]
+        },
+        {
+            "MessageID": "VME0007",
+            "EntryType": "Oem",
+            "Severity": "Ok",
+            "Name": " Log Entry 1632",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "Virtual Console session created.",
+            "Description": " Log Entry 1632",
+            "Created": "2017-11-02T15:25:01-05:00",
+            "Id": "1632",
+            "OemRecordFormat": "Dell",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1632"
+        },
+        {
+            "MessageID": "VME0001",
+            "EntryType": "Oem",
+            "Severity": "Ok",
+            "Name": " Log Entry 1631",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "Virtual Console session started.",
+            "Description": " Log Entry 1631",
+            "Created": "2017-11-02T15:25:01-05:00",
+            "Id": "1631",
+            "OemRecordFormat": "Dell",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1631"
+        },
+        {
+            "MessageID": "USR0030",
+            "EntryType": "Oem",
+            "Severity": "Ok",
+            "Name": " Log Entry 1630",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "Successfully logged in using root, from 10.30.165.194 and Virtual Console.",
+            "Description": " Log Entry 1630",
+            "Created": "2017-11-02T15:25:01-05:00",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1630",
+            "Id": "1630",
+            "OemRecordFormat": "Dell",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "MessageArgs@odata.count": 3,
+            "MessageArgs": [
+                "root",
+                "10.30.165.194",
+                "Virtual Console"
+            ]
+        },
+        {
+            "MessageID": "USR0030",
+            "EntryType": "Oem",
+            "Severity": "Ok",
+            "Name": " Log Entry 1629",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "Successfully logged in using root, from 10.30.165.194 and GUI.",
+            "Description": " Log Entry 1629",
+            "Created": "2017-11-02T14:40:44-05:00",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1629",
+            "Id": "1629",
+            "OemRecordFormat": "Dell",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "MessageArgs@odata.count": 3,
+            "MessageArgs": [
+                "root",
+                "10.30.165.194",
+                "GUI"
+            ]
+        },
+        {
+            "MessageID": "USR0032",
+            "EntryType": "Oem",
+            "Severity": "Ok",
+            "Name": " Log Entry 1628",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "The session for root from 10.30.165.194 using GUI is logged off.",
+            "Description": " Log Entry 1628",
+            "Created": "2017-11-02T13:20:21-05:00",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1628",
+            "Id": "1628",
+            "OemRecordFormat": "Dell",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "MessageArgs@odata.count": 3,
+            "MessageArgs": [
+                "root",
+                "10.30.165.194",
+                "GUI"
+            ]
+        },
+        {
+            "MessageID": "USR0030",
+            "EntryType": "Oem",
+            "Severity": "Ok",
+            "Name": " Log Entry 1627",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "Successfully logged in using root, from 10.30.165.194 and GUI.",
+            "Description": " Log Entry 1627",
+            "Created": "2017-11-02T13:15:05-05:00",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1627",
+            "Id": "1627",
+            "OemRecordFormat": "Dell",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "MessageArgs@odata.count": 3,
+            "MessageArgs": [
+                "root",
+                "10.30.165.194",
+                "GUI"
+            ]
+        },
+        {
+            "MessageID": "VME0005",
+            "EntryType": "Oem",
+            "Severity": "Ok",
+            "Name": " Log Entry 1626",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "Virtual Console session exited.",
+            "Description": " Log Entry 1626",
+            "Created": "2017-11-02T13:14:17-05:00",
+            "Id": "1626",
+            "OemRecordFormat": "Dell",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1626"
+        },
+        {
+            "MessageID": "USR0032",
+            "EntryType": "Oem",
+            "Severity": "Ok",
+            "Name": " Log Entry 1625",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "The session for root from 10.30.165.194 using Virtual Console is logged off.",
+            "Description": " Log Entry 1625",
+            "Created": "2017-11-02T13:14:17-05:00",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1625",
+            "Id": "1625",
+            "OemRecordFormat": "Dell",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "MessageArgs@odata.count": 3,
+            "MessageArgs": [
+                "root",
+                "10.30.165.194",
+                "Virtual Console"
+            ]
+        },
+        {
+            "MessageID": "USR0032",
+            "EntryType": "Oem",
+            "Severity": "Ok",
+            "Name": " Log Entry 1624",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "The session for root from 10.30.165.194 using GUI is logged off.",
+            "Description": " Log Entry 1624",
+            "Created": "2017-11-02T13:14:14-05:00",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1624",
+            "Id": "1624",
+            "OemRecordFormat": "Dell",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "MessageArgs@odata.count": 3,
+            "MessageArgs": [
+                "root",
+                "10.30.165.194",
+                "GUI"
+            ]
+        },
+        {
+            "MessageID": "USR0031",
+            "EntryType": "Oem",
+            "Severity": "Ok",
+            "Name": " Log Entry 1623",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "Unable to log in for root from 10.30.165.194 using Virtual Console.",
+            "Description": " Log Entry 1623",
+            "Created": "2017-11-02T13:14:02-05:00",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1623",
+            "Id": "1623",
+            "OemRecordFormat": "Dell",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "MessageArgs@odata.count": 3,
+            "MessageArgs": [
+                "root",
+                "10.30.165.194",
+                "Virtual Console"
+            ]
+        },
+        {
+            "MessageID": "VME0007",
+            "EntryType": "Oem",
+            "Severity": "Ok",
+            "Name": " Log Entry 1622",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "Virtual Console session created.",
+            "Description": " Log Entry 1622",
+            "Created": "2017-11-02T13:13:46-05:00",
+            "Id": "1622",
+            "OemRecordFormat": "Dell",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1622"
+        },
+        {
+            "MessageID": "VME0001",
+            "EntryType": "Oem",
+            "Severity": "Ok",
+            "Name": " Log Entry 1621",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "Virtual Console session started.",
+            "Description": " Log Entry 1621",
+            "Created": "2017-11-02T13:13:46-05:00",
+            "Id": "1621",
+            "OemRecordFormat": "Dell",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1621"
+        },
+        {
+            "MessageID": "USR0030",
+            "EntryType": "Oem",
+            "Severity": "Ok",
+            "Name": " Log Entry 1620",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "Successfully logged in using root, from 10.30.165.194 and Virtual Console.",
+            "Description": " Log Entry 1620",
+            "Created": "2017-11-02T13:13:46-05:00",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1620",
+            "Id": "1620",
+            "OemRecordFormat": "Dell",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "MessageArgs@odata.count": 3,
+            "MessageArgs": [
+                "root",
+                "10.30.165.194",
+                "Virtual Console"
+            ]
+        },
+        {
+            "MessageID": "USR0031",
+            "EntryType": "Oem",
+            "Severity": "Ok",
+            "Name": " Log Entry 1619",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "Unable to log in for root from 10.30.165.194 using Virtual Console.",
+            "Description": " Log Entry 1619",
+            "Created": "2017-11-02T13:13:36-05:00",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1619",
+            "Id": "1619",
+            "OemRecordFormat": "Dell",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "MessageArgs@odata.count": 3,
+            "MessageArgs": [
+                "root",
+                "10.30.165.194",
+                "Virtual Console"
+            ]
+        },
+        {
+            "MessageID": "USR0032",
+            "EntryType": "Oem",
+            "Severity": "Ok",
+            "Name": " Log Entry 1618",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "The session for root from 10.30.165.194 using Virtual Console is logged off.",
+            "Description": " Log Entry 1618",
+            "Created": "2017-11-02T13:13:30-05:00",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1618",
+            "Id": "1618",
+            "OemRecordFormat": "Dell",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "MessageArgs@odata.count": 3,
+            "MessageArgs": [
+                "root",
+                "10.30.165.194",
+                "Virtual Console"
+            ]
+        },
+        {
+            "MessageID": "VME0005",
+            "EntryType": "Oem",
+            "Severity": "Ok",
+            "Name": " Log Entry 1617",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "Virtual Console session exited.",
+            "Description": " Log Entry 1617",
+            "Created": "2017-11-02T13:13:30-05:00",
+            "Id": "1617",
+            "OemRecordFormat": "Dell",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1617"
+        },
+        {
+            "MessageID": "USR0031",
+            "EntryType": "Oem",
+            "Severity": "Ok",
+            "Name": " Log Entry 1616",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "Unable to log in for root from 10.30.165.194 using Virtual Console.",
+            "Description": " Log Entry 1616",
+            "Created": "2017-11-02T13:13:22-05:00",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1616",
+            "Id": "1616",
+            "OemRecordFormat": "Dell",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "MessageArgs@odata.count": 3,
+            "MessageArgs": [
+                "root",
+                "10.30.165.194",
+                "Virtual Console"
+            ]
+        },
+        {
+            "MessageID": "VME0007",
+            "EntryType": "Oem",
+            "Severity": "Ok",
+            "Name": " Log Entry 1615",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "Virtual Console session created.",
+            "Description": " Log Entry 1615",
+            "Created": "2017-11-02T13:13:04-05:00",
+            "Id": "1615",
+            "OemRecordFormat": "Dell",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1615"
+        },
+        {
+            "MessageID": "VME0001",
+            "EntryType": "Oem",
+            "Severity": "Ok",
+            "Name": " Log Entry 1614",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "Virtual Console session started.",
+            "Description": " Log Entry 1614",
+            "Created": "2017-11-02T13:13:04-05:00",
+            "Id": "1614",
+            "OemRecordFormat": "Dell",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1614"
+        },
+        {
+            "MessageID": "USR0030",
+            "EntryType": "Oem",
+            "Severity": "Ok",
+            "Name": " Log Entry 1613",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "Successfully logged in using root, from 10.30.165.194 and Virtual Console.",
+            "Description": " Log Entry 1613",
+            "Created": "2017-11-02T13:13:04-05:00",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1613",
+            "Id": "1613",
+            "OemRecordFormat": "Dell",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "MessageArgs@odata.count": 3,
+            "MessageArgs": [
+                "root",
+                "10.30.165.194",
+                "Virtual Console"
+            ]
+        },
+        {
+            "MessageID": "RAC1195",
+            "EntryType": "Oem",
+            "Severity": "Ok",
+            "Name": " Log Entry 1612",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "User root via IP 10.30.165.194 requested state / configuration change to Virtual Console using GUI.",
+            "Description": " Log Entry 1612",
+            "Created": "2017-11-02T13:11:35-05:00",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1612",
+            "Id": "1612",
+            "OemRecordFormat": "Dell",
+            "Links": {},
+            "MessageArgs@odata.count": 4,
+            "MessageArgs": [
+                "root",
+                "10.30.165.194",
+                "Virtual Console",
+                "GUI"
+            ]
+        },
+        {
+            "MessageID": "USR0030",
+            "EntryType": "Oem",
+            "Severity": "Ok",
+            "Name": " Log Entry 1611",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "Successfully logged in using root, from 10.30.165.194 and GUI.",
+            "Description": " Log Entry 1611",
+            "Created": "2017-11-02T13:10:11-05:00",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1611",
+            "Id": "1611",
+            "OemRecordFormat": "Dell",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "MessageArgs@odata.count": 3,
+            "MessageArgs": [
+                "root",
+                "10.30.165.194",
+                "GUI"
+            ]
+        },
+        {
+            "MessageID": "USR0032",
+            "EntryType": "Oem",
+            "Severity": "Ok",
+            "Name": " Log Entry 1610",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "The session for root from 10.30.165.194 using GUI is logged off.",
+            "Description": " Log Entry 1610",
+            "Created": "2017-11-02T12:21:37-05:00",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1610",
+            "Id": "1610",
+            "OemRecordFormat": "Dell",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "MessageArgs@odata.count": 3,
+            "MessageArgs": [
+                "root",
+                "10.30.165.194",
+                "GUI"
+            ]
+        },
+        {
+            "MessageID": "USR0030",
+            "EntryType": "Oem",
+            "Severity": "Ok",
+            "Name": " Log Entry 1609",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "Successfully logged in using root, from 10.30.165.194 and GUI.",
+            "Description": " Log Entry 1609",
+            "Created": "2017-11-02T11:51:31-05:00",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1609",
+            "Id": "1609",
+            "OemRecordFormat": "Dell",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "MessageArgs@odata.count": 3,
+            "MessageArgs": [
+                "root",
+                "10.30.165.194",
+                "GUI"
+            ]
+        },
+        {
+            "MessageID": "USR0032",
+            "EntryType": "Oem",
+            "Severity": "Ok",
+            "Name": " Log Entry 1608",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "The session for root from 10.30.161.246 using SSH is logged off.",
+            "Description": " Log Entry 1608",
+            "Created": "2017-11-02T09:27:03-05:00",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1608",
+            "Id": "1608",
+            "OemRecordFormat": "Dell",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "MessageArgs@odata.count": 3,
+            "MessageArgs": [
+                "root",
+                "10.30.161.246",
+                "SSH"
+            ]
+        },
+        {
+            "MessageID": "USR0030",
+            "EntryType": "Oem",
+            "Severity": "Ok",
+            "Name": " Log Entry 1607",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "Successfully logged in using root, from 10.30.161.246 and SSH.",
+            "Description": " Log Entry 1607",
+            "Created": "2017-11-02T09:25:07-05:00",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1607",
+            "Id": "1607",
+            "OemRecordFormat": "Dell",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "MessageArgs@odata.count": 3,
+            "MessageArgs": [
+                "root",
+                "10.30.161.246",
+                "SSH"
+            ]
+        },
+        {
+            "MessageID": "USR0032",
+            "EntryType": "Oem",
+            "Severity": "Ok",
+            "Name": " Log Entry 1606",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "The session for root from 10.132.62.38 using SSH is logged off.",
+            "Description": " Log Entry 1606",
+            "Created": "2017-11-01T22:05:21-05:00",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1606",
+            "Id": "1606",
+            "OemRecordFormat": "Dell",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "MessageArgs@odata.count": 3,
+            "MessageArgs": [
+                "root",
+                "10.132.62.38",
+                "SSH"
+            ]
+        },
+        {
+            "MessageID": "USR0030",
+            "EntryType": "Oem",
+            "Severity": "Ok",
+            "Name": " Log Entry 1605",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "Successfully logged in using root, from 10.132.62.38 and SSH.",
+            "Description": " Log Entry 1605",
+            "Created": "2017-11-01T21:45:50-05:00",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1605",
+            "Id": "1605",
+            "OemRecordFormat": "Dell",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "MessageArgs@odata.count": 3,
+            "MessageArgs": [
+                "root",
+                "10.132.62.38",
+                "SSH"
+            ]
+        },
+        {
+            "MessageID": "IPA0100",
+            "EntryType": "Oem",
+            "Severity": "Ok",
+            "Name": " Log Entry 1604",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "The iDRAC IP Address changed from 0.0.0.0 to 10.35.176.72.",
+            "Description": " Log Entry 1604",
+            "Created": "2017-10-27T14:15:12-05:00",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1604",
+            "Id": "1604",
+            "OemRecordFormat": "Dell",
+            "Links": {},
+            "MessageArgs@odata.count": 2,
+            "MessageArgs": [
+                "0.0.0.0",
+                "10.35.176.72"
+            ]
+        },
+        {
+            "MessageID": "NIC101",
+            "EntryType": "Oem",
+            "Severity": "Ok",
+            "Name": " Log Entry 1603",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "The NIC Integrated 1 Port 2 network link is started.",
+            "Description": " Log Entry 1603",
+            "Created": "2017-10-27T14:13:58-05:00",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1603",
+            "Id": "1603",
+            "OemRecordFormat": "Dell",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Systems/System.Embedded.1/EthernetInterfaces/NIC.Integrated.1-2-1"
+                }
+            },
+            "MessageArgs@odata.count": 2,
+            "MessageArgs": [
+                "NIC Integrated 1",
+                "2"
+            ]
+        },
+        {
+            "MessageID": "NIC100",
+            "EntryType": "Oem",
+            "Severity": "Warning",
+            "Name": " Log Entry 1602",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "The NIC Integrated 1 Port 2 network link is down.",
+            "Description": " Log Entry 1602",
+            "Created": "2017-10-27T14:13:38-05:00",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1602",
+            "Id": "1602",
+            "OemRecordFormat": "Dell",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Systems/System.Embedded.1/EthernetInterfaces/NIC.Integrated.1-2-1"
+                }
+            },
+            "MessageArgs@odata.count": 2,
+            "MessageArgs": [
+                "NIC Integrated 1",
+                "2"
+            ]
+        },
+        {
+            "MessageID": "NIC101",
+            "EntryType": "Oem",
+            "Severity": "Ok",
+            "Name": " Log Entry 1601",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "The NIC Integrated 1 Port 2 network link is started.",
+            "Description": " Log Entry 1601",
+            "Created": "2017-10-27T14:13:33-05:00",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1601",
+            "Id": "1601",
+            "OemRecordFormat": "Dell",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Systems/System.Embedded.1/EthernetInterfaces/NIC.Integrated.1-2-1"
+                }
+            },
+            "MessageArgs@odata.count": 2,
+            "MessageArgs": [
+                "NIC Integrated 1",
+                "2"
+            ]
+        },
+        {
+            "MessageID": "IPA0100",
+            "EntryType": "Oem",
+            "Severity": "Ok",
+            "Name": " Log Entry 1600",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "The iDRAC IP Address changed from 10.35.176.72 to 0.0.0.0.",
+            "Description": " Log Entry 1600",
+            "Created": "2017-10-27T14:13:26-05:00",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1600",
+            "Id": "1600",
+            "OemRecordFormat": "Dell",
+            "Links": {},
+            "MessageArgs@odata.count": 2,
+            "MessageArgs": [
+                "10.35.176.72",
+                "0.0.0.0"
+            ]
+        },
+        {
+            "MessageID": "NIC100",
+            "EntryType": "Oem",
+            "Severity": "Warning",
+            "Name": " Log Entry 1599",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "The NIC Integrated 1 Port 2 network link is down.",
+            "Description": " Log Entry 1599",
+            "Created": "2017-10-27T14:13:13-05:00",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1599",
+            "Id": "1599",
+            "OemRecordFormat": "Dell",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Systems/System.Embedded.1/EthernetInterfaces/NIC.Integrated.1-2-1"
+                }
+            },
+            "MessageArgs@odata.count": 2,
+            "MessageArgs": [
+                "NIC Integrated 1",
+                "2"
+            ]
+        },
+        {
+            "MessageID": "RAC0401",
+            "EntryType": "Oem",
+            "Severity": "Critical",
+            "Name": " Log Entry 1598",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "iDRAC monitor: iDRAC process dsm_sa_popprocienvpop failed to respond, recovering from hung state..",
+            "Description": " Log Entry 1598",
+            "Created": "2017-10-27T13:35:11-05:00",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1598",
+            "Id": "1598",
+            "OemRecordFormat": "Dell",
+            "Links": {},
+            "MessageArgs@odata.count": 1,
+            "MessageArgs": [
+                "iDRAC process dsm_sa_popprocienvpop failed to respond, recovering from hung state."
+            ]
+        },
+        {
+            "MessageID": "RAC0401",
+            "EntryType": "Oem",
+            "Severity": "Critical",
+            "Name": " Log Entry 1597",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "iDRAC monitor: iDRAC process dsm_sa_popproclclpop failed to respond, recovering from hung state..",
+            "Description": " Log Entry 1597",
+            "Created": "2017-10-27T13:33:56-05:00",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1597",
+            "Id": "1597",
+            "OemRecordFormat": "Dell",
+            "Links": {},
+            "MessageArgs@odata.count": 1,
+            "MessageArgs": [
+                "iDRAC process dsm_sa_popproclclpop failed to respond, recovering from hung state."
+            ]
+        },
+        {
+            "MessageID": "LOG007",
+            "EntryType": "Oem",
+            "Severity": "Ok",
+            "Name": " Log Entry 1596",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "The previous log entry was repeated 1 times.",
+            "Description": " Log Entry 1596",
+            "Created": "2017-10-27T13:34:18-05:00",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1596",
+            "Id": "1596",
+            "OemRecordFormat": "Dell",
+            "Links": {},
+            "MessageArgs@odata.count": 1,
+            "MessageArgs": [
+                "1"
+            ]
+        },
+        {
+            "MessageID": "RAC0401",
+            "EntryType": "Oem",
+            "Severity": "Critical",
+            "Name": " Log Entry 1595",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "iDRAC monitor: iDRAC service dsm-sa-datamgr.service failed to respond, recovering from hung state..",
+            "Description": " Log Entry 1595",
+            "Created": "2017-10-27T12:51:21-05:00",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1595",
+            "Id": "1595",
+            "OemRecordFormat": "Dell",
+            "Links": {},
+            "MessageArgs@odata.count": 1,
+            "MessageArgs": [
+                "iDRAC service dsm-sa-datamgr.service failed to respond, recovering from hung state."
+            ]
+        },
+        {
+            "MessageID": "USR0032",
+            "EntryType": "Oem",
+            "Severity": "Ok",
+            "Name": " Log Entry 1594",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "The session for root from 10.30.191.55 using GUI is logged off.",
+            "Description": " Log Entry 1594",
+            "Created": "2017-10-26T15:35:33-05:00",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1594",
+            "Id": "1594",
+            "OemRecordFormat": "Dell",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "MessageArgs@odata.count": 3,
+            "MessageArgs": [
+                "root",
+                "10.30.191.55",
+                "GUI"
+            ]
+        },
+        {
+            "MessageID": "USR0030",
+            "EntryType": "Oem",
+            "Severity": "Ok",
+            "Name": " Log Entry 1593",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "Successfully logged in using root, from 10.30.191.55 and GUI.",
+            "Description": " Log Entry 1593",
+            "Created": "2017-10-26T15:17:34-05:00",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1593",
+            "Id": "1593",
+            "OemRecordFormat": "Dell",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "MessageArgs@odata.count": 3,
+            "MessageArgs": [
+                "root",
+                "10.30.191.55",
+                "GUI"
+            ]
+        },
+        {
+            "MessageID": "HWC2005",
+            "EntryType": "Oem",
+            "Severity": "Critical",
+            "Name": " Log Entry 1592",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "The system board VGA cable or interconnect is not connected, or is improperly connected.",
+            "Description": " Log Entry 1592",
+            "Created": "2017-10-25T23:24:56-05:00",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1592",
+            "Id": "1592",
+            "OemRecordFormat": "Dell",
+            "Links": {},
+            "MessageArgs@odata.count": 1,
+            "MessageArgs": [
+                "VGA"
+            ]
+        }
+    ],
+    "Members@odata.count": 1641,
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog",
+    "@odata.context": "/redfish/v1/$metadata#LogEntryCollection.LogEntryCollection"
+}

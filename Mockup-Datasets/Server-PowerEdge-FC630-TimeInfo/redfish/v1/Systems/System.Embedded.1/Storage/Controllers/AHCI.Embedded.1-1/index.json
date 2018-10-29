@@ -1,0 +1,17 @@
+{
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "UEFIDevicePath": "PciRoot(0x0)/Pci(0x11,0x4)",
+    "@odata.id": "/redfish/v1/Systems/System.Embedded.1/Storage/Controllers/AHCI.Embedded.1-1",
+    "Description": "Simple Storage Controller",
+    "Devices": [],
+    "Id": "AHCI.Embedded.1-1",
+    "Devices@odata.count": 0,
+    "Name": "C610/X99 series chipset sSATA Controller [AHCI mode]",
+    "@odata.context": "/redfish/v1/$metadata#SimpleStorage.SimpleStorage",
+    "Status": {
+        "HealthRollUp": null,
+        "State": "Enabled",
+        "Health": null
+    },
+    "@odata.type": "#SimpleStorage.v1_0_2.SimpleStorage"
+}

@@ -1,0 +1,18 @@
+{
+    "Name": "Task Service",
+    "Id": "TaskService",
+    "Tasks": {
+        "@odata.id": "/redfish/v1/TaskService/Tasks"
+    },
+    "@odata.context": "/redfish/v1/$metadata#TaskService.TaskService",
+    "ServiceEnabled": false,
+    "@odata.id": "/redfish/v1/TaskService",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "Description": "Represents the properties for the service itself and has links to the actual list of Tasks",
+    "Status": {
+        "State": "Disabled",
+        "Health": "OK"
+    },
+    "@odata.type": "#TaskService.v1_0_2.TaskService",
+    "DateTime": "2017-11-08T09:50:38-06:00"
+}

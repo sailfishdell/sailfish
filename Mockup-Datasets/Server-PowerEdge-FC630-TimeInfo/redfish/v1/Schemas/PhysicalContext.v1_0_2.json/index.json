@@ -1,0 +1,55 @@
+{
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "$schema": "http://redfish.dmtf.org/schemas/v1/redfish-schema.v1_1_0.json",
+    "title": "#PhysicalContext.v1_0_2",
+    "copyright": "Copyright 2014-2016 Distributed Management Task Force, Inc. (DMTF). For the full DMTF copyright policy, see http://www.dmtf.org/about/policies/copyright",
+    "definitions": {
+        "PhysicalContext": {
+            "type": "string",
+            "enum": [
+                "Room",
+                "Intake",
+                "Exhaust",
+                "Front",
+                "Back",
+                "Upper",
+                "Lower",
+                "CPU",
+                "GPU",
+                "Backplane",
+                "SystemBoard",
+                "PowerSupply",
+                "VoltageRegulator",
+                "StorageDevice",
+                "NetworkingDevice",
+                "ComputeBay",
+                "StorageBay",
+                "NetworkBay",
+                "ExpansionBay",
+                "PowerSupplyBay"
+            ],
+            "enumDescriptions": {
+                "VoltageRegulator": "A voltage regulator device",
+                "NetworkBay": "Within a networking bay",
+                "ExpansionBay": "Within an expansion bay",
+                "Upper": "The upper portion of the chassis",
+                "Front": "The front of the chassis",
+                "Room": "The room",
+                "CPU": "A Processor (CPU)",
+                "SystemBoard": "The system board (PCB)",
+                "StorageDevice": "A storage device",
+                "Intake": "The intake point of the chassis",
+                "Backplane": "A backplane within the chassis",
+                "StorageBay": "Within a storage bay",
+                "NetworkingDevice": "A networking device",
+                "Back": "The back of the chassis",
+                "PowerSupply": "A power supply",
+                "Exhaust": "The exhaust point of the chassis",
+                "Lower": "The lower portion of the chassis",
+                "GPU": "A Graphics Processor (GPU)",
+                "ComputeBay": "Within a compute bay",
+                "PowerSupplyBay": "Within a power supply bay"
+            }
+        }
+    }
+}

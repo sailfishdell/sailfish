@@ -1,0 +1,20 @@
+{
+    "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+    "@Redfish.Copyright": "Copyright 2017 TTU.edu All rights reserved.",
+    "@odata.context": "/redfish/v1/$metadata#LogEntry.LogEntry",
+    "Id": "28313",
+    "MessageID": "LOG007",
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/28313",
+    "MessageArgs@odata.count": 1,
+    "Created": "2017-09-15T18:19:31-05:00",
+    "MessageArgs": [
+        "1"
+    ],
+    "Message": "The previous log entry was repeated 1 times.",
+    "Severity": "Ok",
+    "Description": " Log Entry 28313",
+    "OEMRecordFormat": "Dell",
+    "EntryType": "Oem",
+    "Name": " Log Entry 28313",
+    "Links": {}
+}

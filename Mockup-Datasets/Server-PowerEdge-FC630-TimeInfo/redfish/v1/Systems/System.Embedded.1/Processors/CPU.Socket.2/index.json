@@ -1,0 +1,44 @@
+{
+    "ProcessorId": {
+        "EffectiveModel": "63",
+        "EffectiveFamily": "6",
+        "VendorID": "GenuineIntel",
+        "Step": "2",
+        "MicrocodeInfo": "0x36",
+        "IdentificationRegisters": "0x000306F2"
+    },
+    "MaxSpeedMHz": 4000,
+    "@odata.id": "/redfish/v1/Systems/System.Embedded.1/Processors/CPU.Socket.2",
+    "Id": "CPU.Socket.2",
+    "InstructionSet": [
+        {
+            "Member": "x86-64"
+        }
+    ],
+    "@odata.context": "/redfish/v1/$metadata#Processor.Processor",
+    "Socket": "CPU.Socket.2",
+    "TotalCores": 8,
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "ProcessorType": "CPU",
+    "Description": "Represents the properties of a Processor attached to this System",
+    "TotalThreads": 16,
+    "ProcessorArchitecture": [
+        {
+            "Member": "x86"
+        }
+    ],
+    "Name": "CPU 2",
+    "Status": {
+        "State": "Enabled",
+        "Health": "OK"
+    },
+    "@Message.ExtendedInfo": {
+        "Message": "Host system is switched-off",
+        "MessageId": "Base.1.0.ObjectInfo",
+        "Severity": "WARNING",
+        "Resolution": "Switch-On Host System and retry"
+    },
+    "Manufacturer": "Intel",
+    "Model": "Intel(R) Xeon(R) CPU E5-2630 v3 @ 2.40GHz",
+    "@odata.type": "#Processor.v1_0_2.Processor"
+}

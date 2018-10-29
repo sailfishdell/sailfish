@@ -1,0 +1,42 @@
+{
+    "AccountService": {
+        "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/AccountService"
+    },
+    "Systems": {
+        "@odata.id": "/redfish/v1/Systems"
+    },
+    "Links": {
+        "Sessions": {
+            "@odata.id": "/redfish/v1/Sessions"
+        }
+    },
+    "Id": "RootService",
+    "Registries": {
+        "@odata.id": "/redfish/v1/Registries"
+    },
+    "RedfishVersion": "1.0.2",
+    "Name": "Root Service",
+    "@odata.context": "/redfish/v1/$metadata#ServiceRoot.ServiceRoot",
+    "Tasks": {
+        "@odata.id": "/redfish/v1/TaskService"
+    },
+    "Managers": {
+        "@odata.id": "/redfish/v1/Managers"
+    },
+    "SessionService": {
+        "@odata.id": "/redfish/v1/SessionService"
+    },
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "JsonSchemas": {
+        "@odata.id": "/redfish/v1/JSONSchemas"
+    },
+    "@odata.id": "/redfish/v1",
+    "Description": "Root Service",
+    "EventService": {
+        "@odata.id": "/redfish/v1/EventService"
+    },
+    "Chassis": {
+        "@odata.id": "/redfish/v1/Chassis"
+    },
+    "@odata.type": "#ServiceRoot.v1_0_2.ServiceRoot"
+}

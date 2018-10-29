@@ -1,0 +1,20 @@
+{
+    "OEMRecordFormat": "Dell",
+    "Links": {
+        "OriginOfCondition": {
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1%23HostPowerCtrl"
+        }
+    },
+    "Id": "1550",
+    "EntryType": "Oem",
+    "Created": "2017-09-08T14:24:19-05:00",
+    "@odata.context": "/redfish/v1/$metadata#LogEntry.LogEntry",
+    "Severity": "Ok",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1550",
+    "Description": " Log Entry 1550",
+    "MessageID": "SYS1001",
+    "Name": " Log Entry 1550",
+    "Message": "System is turning off.",
+    "@odata.type": "#LogEntry.v1_0_2.LogEntry"
+}

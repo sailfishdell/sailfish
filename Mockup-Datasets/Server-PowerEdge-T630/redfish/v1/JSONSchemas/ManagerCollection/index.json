@@ -1,0 +1,22 @@
+{
+    "Description": "ManagerCollection Schema File Location",
+    "Location@odata.count": 1,
+    "@odata.type": "#JsonSchemaFile.v1_0_2.JsonSchemaFile",
+    "Languages": [
+        "en"
+    ],
+    "Name": "ManagerCollection Schema File",
+    "Languages@odata.count": 1,
+    "@odata.context": "/redfish/v1/$metadata#JsonSchemaFile.JsonSchemaFile",
+    "Location": [
+        {
+            "PublicationUri": "http://redfish.dmtf.org/schemas/v1/ManagerCollection.json",
+            "Uri": "/redfish/v1/Schemas/ManagerCollection.json",
+            "Language": "en"
+        }
+    ],
+    "Schema": "#ManagerCollection.ManagerCollection",
+    "Id": "ManagerCollection",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "@odata.id": "/redfish/v1/JSONSchemas/ManagerCollection"
+}

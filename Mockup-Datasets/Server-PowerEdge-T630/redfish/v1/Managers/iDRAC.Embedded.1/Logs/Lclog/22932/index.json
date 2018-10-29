@@ -1,0 +1,26 @@
+{
+    "OEMRecordFormat": "Dell",
+    "Description": " Log Entry 22932",
+    "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+    "Links": {
+        "OriginOfCondition": {
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+        }
+    },
+    "MessageID": "USR0030",
+    "MessageArgs@odata.count": 3,
+    "Name": " Log Entry 22932",
+    "Severity": "Ok",
+    "Message": "Successfully logged in using root, from 10.117.41.54 and REDFISH.",
+    "EntryType": "Oem",
+    "@odata.context": "/redfish/v1/$metadata#LogEntry.LogEntry",
+    "Created": "2017-08-17T21:22:59-05:00",
+    "Id": "22932",
+    "MessageArgs": [
+        "root",
+        "10.117.41.54",
+        "REDFISH"
+    ],
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/22932"
+}

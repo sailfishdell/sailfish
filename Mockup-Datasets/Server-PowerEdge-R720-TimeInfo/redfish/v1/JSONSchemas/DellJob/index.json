@@ -1,0 +1,22 @@
+{
+    "Name": "DellJob Schema File",
+    "@odata.context": "/redfish/v1/$metadata#JsonSchemaFile.JsonSchemaFile",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "Description": "DellJob Schema File Location",
+    "@odata.type": "#JsonSchemaFile.v1_0_2.JsonSchemaFile",
+    "Languages": [
+        "en"
+    ],
+    "Id": "DellJob",
+    "Location": [
+        {
+            "PublicationUri": "http://downloads.dell.com/redfish/bmc/schemas/DellJob.json",
+            "Language": "en",
+            "Uri": "/redfish/v1/Schemas/DellJob.json"
+        }
+    ],
+    "Languages@odata.count": 1,
+    "@odata.id": "/redfish/v1/JSONSchemas/DellJob",
+    "Location@odata.count": 1,
+    "Schema": "#DellJob.DellJob"
+}

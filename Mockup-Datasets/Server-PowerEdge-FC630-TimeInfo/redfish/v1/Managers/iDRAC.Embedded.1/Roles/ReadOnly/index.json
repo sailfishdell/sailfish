@@ -1,0 +1,14 @@
+{
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "Id": "ReadOnly",
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Roles/ReadOnly",
+    "Description": "ReadOnly User Role",
+    "AssignedPrivileges@odata.count": 1,
+    "@odata.type": "#Role.v1_0_2.Role",
+    "IsPredefined": true,
+    "Name": "User Role",
+    "@odata.context": "/redfish/v1/$metadata#Role.Role",
+    "AssignedPrivileges": [
+        "Login"
+    ]
+}

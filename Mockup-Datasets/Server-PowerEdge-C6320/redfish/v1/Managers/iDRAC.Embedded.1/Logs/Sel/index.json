@@ -1,0 +1,161 @@
+{
+    "Members@odata.count": 6,
+    "@odata.type": "#LogEntryCollection.LogEntryCollection",
+    "@Redfish.Copyright": "Copyright 2017 TTU.edu All rights reserved.",
+    "@odata.context": "/redfish/v1/$metadata#LogEntryCollection.LogEntryCollection",
+    "Description": "System Event Logs for this manager",
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel",
+    "Members": [
+        {
+            "MessageArgs": [],
+            "MessageID": "592f2f",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/6",
+            "MessageArgs@odata.count": 0,
+            "SensorNumber": 177,
+            "EntryCode": [
+                {
+                    "Member": "Upper Critical - going high"
+                }
+            ],
+            "SensorType": [
+                {
+                    "Member": "Temperature"
+                }
+            ],
+            "Id": "6",
+            "Message": "The  Inlet temperature is greater than the upper critical threshold.",
+            "Severity": "Critical",
+            "Description": " Log Entry 6",
+            "EntryType": "SEL",
+            "Created": "2017-04-24T06:47:28-05:00",
+            "Name": " Log Entry 6",
+            "Links": {}
+        },
+        {
+            "MessageArgs": [],
+            "MessageID": "572a2a",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/5",
+            "MessageArgs@odata.count": 0,
+            "SensorNumber": 177,
+            "EntryCode": [
+                {
+                    "Member": "Upper Non-critical - going high"
+                }
+            ],
+            "SensorType": [
+                {
+                    "Member": "Temperature"
+                }
+            ],
+            "Id": "5",
+            "Message": "The  Inlet temperature is greater than the upper warning threshold.",
+            "Severity": "Warning",
+            "Description": " Log Entry 5",
+            "EntryType": "SEL",
+            "Created": "2017-04-24T06:26:43-05:00",
+            "Name": " Log Entry 5",
+            "Links": {}
+        },
+        {
+            "MessageArgs": [],
+            "MessageID": "700",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/4",
+            "MessageArgs@odata.count": 0,
+            "SensorNumber": 0,
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "SensorType": [
+                {
+                    "Member": "BaseOSBoot/InstallationStatus"
+                }
+            ],
+            "Id": "4",
+            "Message": "The process of installing an operating system or hypervisor is started and is in progress.",
+            "Severity": "Ok",
+            "Description": " Log Entry 4",
+            "EntryType": "SEL",
+            "Created": "2017-01-31T12:46:01-06:00",
+            "Name": " Log Entry 4",
+            "Links": {}
+        },
+        {
+            "MessageArgs": [],
+            "MessageID": "800",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/3",
+            "MessageArgs@odata.count": 0,
+            "SensorNumber": 0,
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "SensorType": [
+                {
+                    "Member": "BaseOSBoot/InstallationStatus"
+                }
+            ],
+            "Id": "3",
+            "Message": "The process of installing an operating system or hypervisor is successfully completed.",
+            "Severity": "Ok",
+            "Description": " Log Entry 3",
+            "EntryType": "SEL",
+            "Created": "2017-01-04T13:06:33-06:00",
+            "Name": " Log Entry 3",
+            "Links": {}
+        },
+        {
+            "MessageArgs": [],
+            "MessageID": "700",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/2",
+            "MessageArgs@odata.count": 0,
+            "SensorNumber": 0,
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "SensorType": [
+                {
+                    "Member": "BaseOSBoot/InstallationStatus"
+                }
+            ],
+            "Id": "2",
+            "Message": "The process of installing an operating system or hypervisor is started and is in progress.",
+            "Severity": "Ok",
+            "Description": " Log Entry 2",
+            "EntryType": "SEL",
+            "Created": "2017-01-04T12:57:19-06:00",
+            "Name": " Log Entry 2",
+            "Links": {}
+        },
+        {
+            "MessageArgs": [],
+            "MessageID": "2ffff",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/1",
+            "MessageArgs@odata.count": 0,
+            "SensorNumber": 114,
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "SensorType": [
+                {
+                    "Member": "Event Logging Disabled"
+                }
+            ],
+            "Id": "1",
+            "Message": "Log cleared.",
+            "Severity": "Ok",
+            "Description": " Log Entry 1",
+            "EntryType": "SEL",
+            "Created": "2016-11-03T21:23:54-05:00",
+            "Name": " Log Entry 1",
+            "Links": {}
+        }
+    ],
+    "Name": "Log Entry Collection"
+}

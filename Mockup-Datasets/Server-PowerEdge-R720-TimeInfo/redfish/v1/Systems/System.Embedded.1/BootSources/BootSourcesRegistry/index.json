@@ -1,0 +1,195 @@
+{
+    "Name": "Dell Boot Sources Registry",
+    "Id": "DellBootSourcesRegistry.v1_0_0",
+    "OwningEntity": "Dell",
+    "@odata.context": "/redfish/v1/$metadata#DellBootSourcesRegistry.DellBootSourcesRegistry",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "@odata.id": "/redfish/v1/Systems/System.Embedded.1/BootSources/BootSourcesRegistry",
+    "RegistryEntries": {
+        "Dependencies": [
+            {
+                "DependencyFor": "BootSeq",
+                "Dependency": {
+                    "MapFrom": [
+                        {
+                            "MapFromProperty": "CurrentValue",
+                            "MapFromCondition": "EQU",
+                            "MapFromValue": "Uefi",
+                            "MapFromAttribute": "BootMode"
+                        }
+                    ],
+                    "MapToValue": true,
+                    "MapToAttribute": "BootSeq",
+                    "MapToProperty": "ReadOnly"
+                },
+                "Type": "Map"
+            },
+            {
+                "DependencyFor": "UefiBootSeq",
+                "Dependency": {
+                    "MapFrom": [
+                        {
+                            "MapFromProperty": "CurrentValue",
+                            "MapFromCondition": "EQU",
+                            "MapFromValue": "Bios",
+                            "MapFromAttribute": "BootMode"
+                        }
+                    ],
+                    "MapToValue": true,
+                    "MapToAttribute": "UefiBootSeq",
+                    "MapToProperty": "ReadOnly"
+                },
+                "Type": "Map"
+            },
+            {
+                "DependencyFor": "HddSeq",
+                "Dependency": {
+                    "MapFrom": [
+                        {
+                            "MapFromProperty": "CurrentValue",
+                            "MapFromCondition": "EQU",
+                            "MapFromValue": "Uefi",
+                            "MapFromAttribute": "BootMode"
+                        }
+                    ],
+                    "MapToValue": true,
+                    "MapToAttribute": "HddSeq",
+                    "MapToProperty": "ReadOnly"
+                },
+                "Type": "Map"
+            }
+        ],
+        "Attributes": [
+            {
+                "MenuPath": "./BootSettingsRef/BiosBootSettingsRef",
+                "Hidden": false,
+                "HelpText": "This field tells the system where to find the operating system files needed for system startup. This field applies only when Boot Mode is 'BIOS'; it has no effect when Boot Mode is 'UEFI'.",
+                "Entry": [
+                    {
+                        "Index": null,
+                        "Id": "BIOS.Setup.1-1#BootSeq#Optical.SATAEmbedded.E-1#8b597e9243eaf95cb027093603f5b8bb",
+                        "Name": "Optical.SATAEmbedded.E-1",
+                        "Enabled": null,
+                        "DisplayName": "Embedded SATA Port Optical Drive E: PLDS DVD-ROM DS-8D9SH                   "
+                    },
+                    {
+                        "Index": null,
+                        "Id": "BIOS.Setup.1-1#BootSeq#NIC.Integrated.1-1-1#8bf5a9aab8ee64c5ee7189244c02847c",
+                        "Name": "NIC.Integrated.1-1-1",
+                        "Enabled": null,
+                        "DisplayName": "Integrated NIC 1 Port 1 Partition 1: QLogic MBA Slot 0100 v7.12.6"
+                    },
+                    {
+                        "Index": null,
+                        "Id": "BIOS.Setup.1-1#BootSeq#NIC.Integrated.1-2-1#da23f575d8e2d3bd5d933d93ee183d54",
+                        "Name": "NIC.Integrated.1-2-1",
+                        "Enabled": null,
+                        "DisplayName": "Integrated NIC 1 Port 2 Partition 1: QLogic MBA Slot 0101 v7.12.6"
+                    },
+                    {
+                        "Index": null,
+                        "Id": "BIOS.Setup.1-1#BootSeq#NIC.Integrated.1-3-1#3a6cb9c60a70852b2da29448931a45f4",
+                        "Name": "NIC.Integrated.1-3-1",
+                        "Enabled": null,
+                        "DisplayName": "Integrated NIC 1 Port 3 Partition 1: QLogic MBA Slot 0102 v7.12.6"
+                    },
+                    {
+                        "Index": null,
+                        "Id": "BIOS.Setup.1-1#BootSeq#NIC.Integrated.1-4-1#11944b56f4bb8bcc0a937d8d42618166",
+                        "Name": "NIC.Integrated.1-4-1",
+                        "Enabled": null,
+                        "DisplayName": "Integrated NIC 1 Port 4 Partition 1: QLogic MBA Slot 0103 v7.12.6"
+                    },
+                    {
+                        "Index": null,
+                        "Id": "BIOS.Setup.1-1#BootSeq#HardDisk.List.1-1#c9203080df84781e2ca3d512883dee6f",
+                        "Name": "HardDisk.List.1-1",
+                        "Enabled": null,
+                        "DisplayName": "Hard drive C:"
+                    }
+                ],
+                "DisplayOrder": 0,
+                "AttributeName": "BootSeq",
+                "ReadOnly": false,
+                "Type": "OrderedList",
+                "DisplayName": "Boot Sequence"
+            },
+            {
+                "MenuPath": "./BootSettingsRef/UefiBootSettingsRef",
+                "Hidden": false,
+                "HelpText": "This field controls the UEFI boot order. The first option in the list will be attempted first, and if unsuccessful, the second option will be attempted and so on. This field applies only when Boot Mode is 'UEFI'; it has no effect when Boot Mode is 'BIOS'.",
+                "Entry": [
+                    {
+                        "Index": null,
+                        "Id": "BIOS.Setup.1-1#UefiBootSeq#Unknown.Unknown.1-1#451ad1a192cb79525fa878d6fd6e73c2",
+                        "Name": "Unknown.Unknown.1-1",
+                        "Enabled": null,
+                        "DisplayName": "Unavailable: Red Hat Enterprise Linux"
+                    },
+                    {
+                        "Index": null,
+                        "Id": "BIOS.Setup.1-1#UefiBootSeq#Optical.SATAEmbedded.E-1#6f15a0464d4d606c08f8fd15152fad70",
+                        "Name": "Optical.SATAEmbedded.E-1",
+                        "Enabled": null,
+                        "DisplayName": "Embedded SATA Port Optical Drive E: PLDS DVD-ROM DS-8D9SH                   "
+                    },
+                    {
+                        "Index": null,
+                        "Id": "BIOS.Setup.1-1#UefiBootSeq#NIC.Integrated.1-1-1#55f48560803415bd3ebf7c28c1a103e1",
+                        "Name": "NIC.Integrated.1-1-1",
+                        "Enabled": null,
+                        "DisplayName": "Integrated NIC 1 Port 1 Partition 1: EFI Network 1"
+                    },
+                    {
+                        "Index": null,
+                        "Id": "BIOS.Setup.1-1#UefiBootSeq#NIC.Integrated.1-2-1#434452c9dbb0da9d53d948c4aef0d802",
+                        "Name": "NIC.Integrated.1-2-1",
+                        "Enabled": null,
+                        "DisplayName": "Integrated NIC 1 Port 2 Partition 1: EFI Network 2"
+                    },
+                    {
+                        "Index": null,
+                        "Id": "BIOS.Setup.1-1#UefiBootSeq#NIC.Integrated.1-3-1#122e4235f3b6b3a57032b035b81cfda7",
+                        "Name": "NIC.Integrated.1-3-1",
+                        "Enabled": null,
+                        "DisplayName": "Integrated NIC 1 Port 3 Partition 1: EFI Network 3"
+                    },
+                    {
+                        "Index": null,
+                        "Id": "BIOS.Setup.1-1#UefiBootSeq#NIC.Integrated.1-4-1#e4644a34589b341282143baa417f9fc6",
+                        "Name": "NIC.Integrated.1-4-1",
+                        "Enabled": null,
+                        "DisplayName": "Integrated NIC 1 Port 4 Partition 1: EFI Network 4"
+                    }
+                ],
+                "DisplayOrder": 0,
+                "AttributeName": "UefiBootSeq",
+                "ReadOnly": false,
+                "Type": "OrderedList",
+                "DisplayName": "Uefi Boot Sequence"
+            },
+            {
+                "MenuPath": "./BootSettingsRef/BiosBootSettingsRef",
+                "Hidden": false,
+                "HelpText": "This field specifies the order in which hard-disk drives will be configured in the system. The first hard drive in the system will be the bootable C: drive in DOS/DOS-like operating systems. This field applies only when Boot Mode is 'BIOS'; it has no effect when Boot Mode is 'UEFI'.",
+                "Entry": [
+                    {
+                        "Index": null,
+                        "Id": "BIOS.Setup.1-1#HddSeq#RAID.Integrated.1-1#0df7c63c2e9f9e120f71ed7ce4aa1abc",
+                        "Name": "RAID.Integrated.1-1",
+                        "DisplayName": "Integrated RAID Controller 1: PERC H710 Mini(bus 02 dev 00)"
+                    }
+                ],
+                "DisplayOrder": 0,
+                "AttributeName": "HddSeq",
+                "ReadOnly": false,
+                "Type": "OrderedList",
+                "DisplayName": "Hard-Disk Drive Sequence"
+            }
+        ]
+    },
+    "RegistryVersion": "v1_0_0",
+    "Description": "This registry defines a representation of Boot Sources instances",
+    "Language": "en",
+    "@odata.type": "#DellBootSourcesRegistry.v1_0_0.DellBootSourcesRegistry"
+}

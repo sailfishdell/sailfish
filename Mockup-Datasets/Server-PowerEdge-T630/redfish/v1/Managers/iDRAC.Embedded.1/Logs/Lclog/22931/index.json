@@ -1,0 +1,20 @@
+{
+    "OEMRecordFormat": "Dell",
+    "Description": " Log Entry 22931",
+    "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+    "Links": {},
+    "MessageID": "LOG007",
+    "MessageArgs@odata.count": 1,
+    "Name": " Log Entry 22931",
+    "Severity": "Ok",
+    "Message": "The previous log entry was repeated 16 times.",
+    "EntryType": "Oem",
+    "@odata.context": "/redfish/v1/$metadata#LogEntry.LogEntry",
+    "Created": "2017-08-17T21:22:59-05:00",
+    "Id": "22931",
+    "MessageArgs": [
+        "16"
+    ],
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/22931"
+}

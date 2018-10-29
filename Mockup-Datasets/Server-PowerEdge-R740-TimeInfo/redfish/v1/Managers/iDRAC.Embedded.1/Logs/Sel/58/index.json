@@ -1,0 +1,28 @@
+{
+    "EntryCode": [
+        {
+            "Member": "Assert"
+        }
+    ],
+    "SensorType": [
+        {
+            "Member": null
+        }
+    ],
+    "MessageID": "b6590",
+    "EntryType": "SEL",
+    "Severity": "Ok",
+    "Name": " Log Entry 58",
+    "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+    "Message": "OEM software event.",
+    "Description": " Log Entry 58",
+    "Created": "2017-09-11T05:15:16-05:00",
+    "MessageArgs@odata.count": 0,
+    "Id": "58",
+    "SensorNumber": 223,
+    "Links": {},
+    "@odata.context": "/redfish/v1/$metadata#LogEntry.LogEntry",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/58",
+    "MessageArgs": []
+}

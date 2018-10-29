@@ -1,0 +1,26 @@
+{
+    "MessageID": "USR0032",
+    "EntryType": "Oem",
+    "Severity": "Ok",
+    "Name": " Log Entry 1628",
+    "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+    "Message": "The session for root from 10.30.165.194 using GUI is logged off.",
+    "Description": " Log Entry 1628",
+    "Created": "2017-11-02T13:20:21-05:00",
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1628",
+    "Id": "1628",
+    "OemRecordFormat": "Dell",
+    "Links": {
+        "OriginOfCondition": {
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+        }
+    },
+    "@odata.context": "/redfish/v1/$metadata#LogEntry.LogEntry",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "MessageArgs@odata.count": 3,
+    "MessageArgs": [
+        "root",
+        "10.30.165.194",
+        "GUI"
+    ]
+}

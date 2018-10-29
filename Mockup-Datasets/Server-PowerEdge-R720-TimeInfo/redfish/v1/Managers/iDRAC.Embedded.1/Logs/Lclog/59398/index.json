@@ -1,0 +1,26 @@
+{
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "Name": " Log Entry 59398",
+    "MessageArgs@odata.count": 3,
+    "@odata.context": "/redfish/v1/$metadata#LogEntry.LogEntry",
+    "Message": "Version change detected for PERC H710 Mini firmware. Previous version:21.3.2-0005, Current version:21.3.5-0002",
+    "OEMRecordFormat": "Dell",
+    "Description": " Log Entry 59398",
+    "MessageArgs": [
+        "PERC H710 Mini",
+        "21.3.2-0005",
+        "21.3.5-0002"
+    ],
+    "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+    "EntryType": "Oem",
+    "Id": "59398",
+    "Severity": "OK",
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/59398",
+    "Links": {
+        "OriginOfCondition": {
+            "@odata.id": "/redfish/v1/Systems/System.Embedded.1/Storage/Controllers/RAID.Integrated.1-1"
+        }
+    },
+    "MessageID": "PR36",
+    "Created": "2017-11-08T00:03:55-06:00"
+}

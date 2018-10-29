@@ -1,0 +1,28 @@
+{
+    "SensorNumber": 26,
+    "Name": " Log Entry 198",
+    "SensorType": [
+        {
+            "Member": null
+        }
+    ],
+    "MessageArgs@odata.count": 0,
+    "@odata.context": "/redfish/v1/$metadata#LogEntry.LogEntry",
+    "Message": "An OEM diagnostic event occurred.",
+    "Severity": "OK",
+    "EntryCode": [
+        {
+            "Member": "Assert"
+        }
+    ],
+    "Description": " Log Entry 198",
+    "MessageArgs": [],
+    "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+    "EntryType": "SEL",
+    "Id": "198",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/198",
+    "Links": {},
+    "MessageID": "1243d",
+    "Created": "2016-12-13T22:00:47-06:00"
+}

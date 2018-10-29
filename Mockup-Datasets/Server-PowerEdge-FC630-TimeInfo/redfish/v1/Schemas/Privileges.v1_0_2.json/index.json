@@ -1,0 +1,25 @@
+{
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "$schema": "http://redfish.dmtf.org/schemas/v1/redfish-schema.v1_1_0.json",
+    "title": "#Privileges.v1_0_2",
+    "copyright": "Copyright 2014-2016 Distributed Management Task Force, Inc. (DMTF). For the full DMTF copyright policy, see http://www.dmtf.org/about/policies/copyright",
+    "definitions": {
+        "PrivilegeType": {
+            "type": "string",
+            "enum": [
+                "Login",
+                "ConfigureManager",
+                "ConfigureUsers",
+                "ConfigureSelf",
+                "ConfigureComponents"
+            ],
+            "enumDescriptions": {
+                "ConfigureComponents": "Able to configure components managed by this service.",
+                "ConfigureManager": "Able to configure Manager resources.",
+                "Login": "Able to log into the service and read resources.",
+                "ConfigureSelf": "Able to change the password for the current user Account.",
+                "ConfigureUsers": "Able to configure Users and their Accounts."
+            }
+        }
+    }
+}

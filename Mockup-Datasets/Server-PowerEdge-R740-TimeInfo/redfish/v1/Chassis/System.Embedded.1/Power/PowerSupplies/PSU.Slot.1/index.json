@@ -1,0 +1,42 @@
+{
+    "LineInputVoltage": 118,
+    "Model": "PWR SPLY,750W,RDNT,ARTESYN    ",
+    "InputRanges": [
+        {
+            "MaximumVoltage": 90,
+            "MinimumFrequencyHz": 63,
+            "MaximumFrequencyHz": 47,
+            "InputType": "AC",
+            "MinimumVoltage": 264,
+            "OutputWattage": 750
+        }
+    ],
+    "LastPowerOutputWatts": 750,
+    "Name": "PS1 Status",
+    "@odata.type": "#Power.v1_1_0.PowerSupply",
+    "InputRanges@odata.count": 1,
+    "FirmwareVersion": "00.14.4B",
+    "Redundancy": [],
+    "PartNumber": "0Y9VFCA00",
+    "Status": {
+        "State": "Enabled",
+        "Health": "OK"
+    },
+    "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Power/PowerSupplies/PSU.Slot.1",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "LineInputVoltageType": "ACLowLine",
+    "RelatedItem@odata.count": 1,
+    "PowerCapacityWatts": 750,
+    "@odata.context": "/redfish/v1/$metadata#Power.Power",
+    "SerialNumber": "PH16298697007V",
+    "MemberId": "PSU.Slot.1",
+    "RelatedItem": [
+        {
+            "@odata.id": "/redfish/v1/Chassis/System.Embedded.1"
+        }
+    ],
+    "SparePartNumber": "0Y9VFCA00",
+    "Manufacturer": "Dell",
+    "PowerSupplyType": "AC",
+    "Redundancy@odata.count": 0
+}

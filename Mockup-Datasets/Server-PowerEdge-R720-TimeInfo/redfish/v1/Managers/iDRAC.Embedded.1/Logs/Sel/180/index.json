@@ -1,0 +1,28 @@
+{
+    "SensorNumber": 98,
+    "Name": " Log Entry 180",
+    "SensorType": [
+        {
+            "Member": "Power Supply / Converter"
+        }
+    ],
+    "MessageArgs@odata.count": 0,
+    "@odata.context": "/redfish/v1/$metadata#LogEntry.LogEntry",
+    "Message": "The power input for power supply 1 is lost.",
+    "Severity": "Critical",
+    "EntryCode": [
+        {
+            "Member": "Assert"
+        }
+    ],
+    "Description": " Log Entry 180",
+    "MessageArgs": [],
+    "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+    "EntryType": "SEL",
+    "Id": "180",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/180",
+    "Links": {},
+    "MessageID": "3ffff",
+    "Created": "2016-04-12T23:53:34-05:00"
+}

@@ -1,0 +1,33 @@
+{
+    "Hash@odata.count": 0,
+    "Description": "DellCertificateCollection",
+    "Name": "DellCertificateCollection",
+    "Certificates": [
+        {
+            "CertificateType": "PK",
+            "IssuerCommonName_CN": "Dell Inc. Platform Key",
+            "CertificateSubtype": "Certificate",
+            "SubjectCountryCode_CC": "US",
+            "Thumbprint": "A8:52:14:A3:BA:23:C1:CE:98:5A:C2:F6:52:11:C3:54:7B:C4:0A:FC",
+            "SubjectCommonName_CN": "Dell Inc. Platform Key",
+            "IssuerOrganization_O": "Dell Inc.",
+            "SubjectLocality_L": "Round Rock",
+            "IssuerState_S": "Texas",
+            "IssuerCountryCode_CC": "US",
+            "SerialNumber": "18E0E033DB57CD984ABB23689D61BE4D",
+            "SubjectState_S": "Texas",
+            "SubjectOrganization_O": "Dell Inc.",
+            "ValidFrom": "Feb  2 17:17:37 2016 GMT",
+            "IssuerLocality_L": "Round Rock",
+            "SecureBootPolicy": "Standard",
+            "@odata.id": "/redfish/v1/Systems/System.Embedded.1/SecureBoot/Certificates/PK/iDRAC.Embedded.1%23StdSecbootpolicy.1",
+            "ValidTo": "Feb  2 17:27:36 2031 GMT"
+        }
+    ],
+    "@odata.type": "#DellCertificateCollection.DellCertificateCollection",
+    "Certificates@odata.count": 1,
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "Hash": [],
+    "@odata.id": "/redfish/v1/Systems/System.Embedded.1/SecureBoot/Certificates/PK",
+    "@odata.context": "/redfish/v1/$metadata#DellCertificateCollection.DellCertificateCollection"
+}

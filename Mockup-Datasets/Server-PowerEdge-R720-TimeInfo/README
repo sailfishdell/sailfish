@@ -1,0 +1,6 @@
+Redfish Service state stored in Redfish Mockup Format
+Program: redfishMockupCreate,  ver: 0.9.3
+Created: 2017-11-08 10:18:56
+rhost:  10.94.44.67
+Description: This is a mockup of a real R720
+Commandline: python3.4 ./redfishMockupCreate.py -r 10.94.44.67 -u root -p calvin -S -A Basic -D ../test -d This is a mockup of a real R720 -C Copyright 2017 Dell Inc. All rights reserved. -T

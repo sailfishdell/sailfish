@@ -1,0 +1,21 @@
+{
+    "Languages@odata.count": 1,
+    "Location@odata.count": 1,
+    "Name": "iDRAC Message Registry File",
+    "@odata.type": "#MessageRegistryFile.v1_0_2.MessageRegistryFile",
+    "@odata.context": "/redfish/v1/$metadata#MessageRegistryFile.MessageRegistryFile",
+    "Description": "iDRAC Message Registry File locations",
+    "@odata.id": "/redfish/v1/Registries/Messages",
+    "Id": "Messages",
+    "Location": [
+        {
+            "Uri": "/redfish/v1/Registries/Messages/EEMIRegistry.v1_5_0.json",
+            "Language": "En"
+        }
+    ],
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "Languages": [
+        "En"
+    ],
+    "Registry": "iDrac.1.5"
+}

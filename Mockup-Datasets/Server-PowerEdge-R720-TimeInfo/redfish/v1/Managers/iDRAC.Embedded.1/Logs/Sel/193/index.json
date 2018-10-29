@@ -1,0 +1,28 @@
+{
+    "SensorNumber": 24,
+    "Name": " Log Entry 193",
+    "SensorType": [
+        {
+            "Member": "Critical Interrupt"
+        }
+    ],
+    "MessageArgs@odata.count": 0,
+    "@odata.context": "/redfish/v1/$metadata#LogEntry.LogEntry",
+    "Message": "A bus fatal error was detected on a component at bus 0 device 28 function 7.",
+    "Severity": "Critical",
+    "EntryCode": [
+        {
+            "Member": "Assert"
+        }
+    ],
+    "Description": " Log Entry 193",
+    "MessageArgs": [],
+    "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+    "EntryType": "SEL",
+    "Id": "193",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/193",
+    "Links": {},
+    "MessageID": "aae70",
+    "Created": "2016-12-13T22:00:47-06:00"
+}

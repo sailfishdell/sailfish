@@ -1,0 +1,26 @@
+{
+    "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+    "@Redfish.Copyright": "Copyright 2017 TTU.edu All rights reserved.",
+    "@odata.context": "/redfish/v1/$metadata#LogEntry.LogEntry",
+    "Id": "28315",
+    "MessageID": "USR0031",
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/28315",
+    "MessageArgs@odata.count": 3,
+    "Created": "2017-09-15T18:20:03-05:00",
+    "MessageArgs": [
+        "root-p",
+        "10.100.29.254",
+        "REDFISH"
+    ],
+    "Message": "Unable to log in for root-p from 10.100.29.254 using REDFISH.",
+    "Severity": "Ok",
+    "Description": " Log Entry 28315",
+    "OEMRecordFormat": "Dell",
+    "EntryType": "Oem",
+    "Name": " Log Entry 28315",
+    "Links": {
+        "OriginOfCondition": {
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+        }
+    }
+}

@@ -1,0 +1,55 @@
+{
+    "definitions": {
+        "PhysicalContext": {
+            "type": "string",
+            "enumDescriptions": {
+                "ExpansionBay": "Within an expansion bay",
+                "PowerSupplyBay": "Within a power supply bay",
+                "Backplane": "A backplane within the chassis",
+                "Front": "The front of the chassis",
+                "Intake": "The intake point of the chassis",
+                "Lower": "The lower portion of the chassis",
+                "GPU": "A Graphics Processor (GPU)",
+                "VoltageRegulator": "A voltage regulator device",
+                "PowerSupply": "A power supply",
+                "ComputeBay": "Within a compute bay",
+                "Back": "The back of the chassis",
+                "NetworkBay": "Within a networking bay",
+                "StorageDevice": "A storage device",
+                "NetworkingDevice": "A networking device",
+                "CPU": "A Processor (CPU)",
+                "SystemBoard": "The system board (PCB)",
+                "StorageBay": "Within a storage bay",
+                "Exhaust": "The exhaust point of the chassis",
+                "Upper": "The upper portion of the chassis",
+                "Room": "The room"
+            },
+            "enum": [
+                "Room",
+                "Intake",
+                "Exhaust",
+                "Front",
+                "Back",
+                "Upper",
+                "Lower",
+                "CPU",
+                "GPU",
+                "Backplane",
+                "SystemBoard",
+                "PowerSupply",
+                "VoltageRegulator",
+                "StorageDevice",
+                "NetworkingDevice",
+                "ComputeBay",
+                "StorageBay",
+                "NetworkBay",
+                "ExpansionBay",
+                "PowerSupplyBay"
+            ]
+        }
+    },
+    "copyright": "Copyright 2014-2016 Distributed Management Task Force, Inc. (DMTF). For the full DMTF copyright policy, see http://www.dmtf.org/about/policies/copyright",
+    "$schema": "/redfish/v1/Schemas/redfish-schema.v1_1_0.json",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "title": "#PhysicalContext.v1_0_2"
+}

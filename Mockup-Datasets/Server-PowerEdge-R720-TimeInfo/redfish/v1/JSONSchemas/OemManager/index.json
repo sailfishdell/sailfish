@@ -1,0 +1,22 @@
+{
+    "Name": "OemManager Schema File",
+    "@odata.context": "/redfish/v1/$metadata#JsonSchemaFile.JsonSchemaFile",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "Description": "OemManager Schema File Location",
+    "@odata.type": "#JsonSchemaFile.v1_0_2.JsonSchemaFile",
+    "Languages": [
+        "en"
+    ],
+    "Id": "OemManager",
+    "Location": [
+        {
+            "PublicationUri": "http://downloads.dell.com/redfish/bmc/schemas/OemManager.json",
+            "Language": "en",
+            "Uri": "/redfish/v1/Schemas/OemManager.json"
+        }
+    ],
+    "Languages@odata.count": 1,
+    "@odata.id": "/redfish/v1/JSONSchemas/OemManager",
+    "Location@odata.count": 1,
+    "Schema": "#OemManager.OemManager"
+}

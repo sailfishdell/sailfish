@@ -1,0 +1,30 @@
+{
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "Name": " Log Entry 59360",
+    "MessageArgs@odata.count": 7,
+    "@odata.context": "/redfish/v1/$metadata#LogEntry.LogEntry",
+    "Message": "Power Supply 2: Status = 0x00, IOUT = 0x0, VOUT= 0x0, TEMP= 0x0, FAN = 0x0, INPUT= 0x0.",
+    "OEMRecordFormat": "Dell",
+    "Description": " Log Entry 59360",
+    "MessageArgs": [
+        "2",
+        "00",
+        "0",
+        "0",
+        "0",
+        "0",
+        "0"
+    ],
+    "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+    "EntryType": "Oem",
+    "Id": "59360",
+    "Severity": "OK",
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/59360",
+    "Links": {
+        "OriginOfCondition": {
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+        }
+    },
+    "MessageID": "PSU0800",
+    "Created": "2017-11-07T23:19:05-06:00"
+}

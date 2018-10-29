@@ -1,0 +1,56 @@
+{
+    "Status": {
+        "State": "Enabled",
+        "Health": "OK"
+    },
+    "LastPowerOutputWatts": 1600,
+    "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Power/PowerSupplies/PSU.Slot.2",
+    "PowerCapacityWatts": 1600,
+    "SerialNumber": "CN179724C106PG",
+    "RelatedItem": [
+        {
+            "@odata.id": "/redfish/v1/Chassis/System.Embedded.1"
+        }
+    ],
+    "SparePartNumber": "095HR5A01",
+    "LineInputVoltage": null,
+    "PowerSupplyType": "AC",
+    "@odata.context": "/redfish/v1/$metadata#Power.Power",
+    "PartNumber": "095HR5A01",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "RelatedItem@odata.count": 1,
+    "LineInputVoltageType": "Unknown",
+    "Name": "Chassis PS2 Status",
+    "MemberID": "PSU.Slot.2",
+    "FirmwareVersion": "",
+    "Redundancy": [
+        {
+            "MinNumNeeded": 2,
+            "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Power/Redundancy/iDRAC.Embedded.1%23ChassisPSRedundancy",
+            "Name": "Chassis PS Redundancy",
+            "Mode": [
+                {
+                    "Member": "N+1"
+                }
+            ],
+            "MemberID": "iDRAC.Embedded.1#ChassisPSRedundancy",
+            "RedundancySet@odata.count": 2,
+            "RedundancySet": [
+                {
+                    "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Power/PowerSupplies/PSU.Slot.1"
+                },
+                {
+                    "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Power/PowerSupplies/PSU.Slot.2"
+                }
+            ],
+            "Status": {
+                "State": "Enabled",
+                "Health": "Ok"
+            },
+            "MaxNumSupported": 4
+        }
+    ],
+    "Model": "PWR SPLY,1600W,RDNT,DELTA     ",
+    "Redundancy@odata.count": 1,
+    "@odata.type": "#Power.v1_0_2.PowerSupply"
+}

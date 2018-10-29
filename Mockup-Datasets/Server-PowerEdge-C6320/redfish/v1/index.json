@@ -1,0 +1,42 @@
+{
+    "@odata.type": "#ServiceRoot.v1_0_2.ServiceRoot",
+    "Systems": {
+        "@odata.id": "/redfish/v1/Systems"
+    },
+    "@odata.context": "/redfish/v1/$metadata#ServiceRoot.ServiceRoot",
+    "Managers": {
+        "@odata.id": "/redfish/v1/Managers"
+    },
+    "Id": "RootService",
+    "@odata.id": "/redfish/v1",
+    "Tasks": {
+        "@odata.id": "/redfish/v1/TaskService"
+    },
+    "Chassis": {
+        "@odata.id": "/redfish/v1/Chassis"
+    },
+    "SessionService": {
+        "@odata.id": "/redfish/v1/SessionService"
+    },
+    "JsonSchemas": {
+        "@odata.id": "/redfish/v1/JSONSchemas"
+    },
+    "@Redfish.Copyright": "Copyright 2017 TTU.edu All rights reserved.",
+    "AccountService": {
+        "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/AccountService"
+    },
+    "Description": "Root Service",
+    "EventService": {
+        "@odata.id": "/redfish/v1/EventService"
+    },
+    "Registries": {
+        "@odata.id": "/redfish/v1/Registries"
+    },
+    "RedfishVersion": "1.0.2",
+    "Name": "Root Service",
+    "Links": {
+        "Sessions": {
+            "@odata.id": "/redfish/v1/Sessions"
+        }
+    }
+}

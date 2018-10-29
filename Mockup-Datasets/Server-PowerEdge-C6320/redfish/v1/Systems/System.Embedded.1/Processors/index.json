@@ -1,0 +1,17 @@
+{
+    "Members@odata.count": 2,
+    "@odata.type": "#ProcessorCollection.ProcessorCollection",
+    "@Redfish.Copyright": "Copyright 2017 TTU.edu All rights reserved.",
+    "@odata.context": "/redfish/v1/$metadata#ProcessorCollection.ProcessorCollection",
+    "Description": "Collection of Processors for this System",
+    "@odata.id": "/redfish/v1/Systems/System.Embedded.1/Processors",
+    "Members": [
+        {
+            "@odata.id": "/redfish/v1/Systems/System.Embedded.1/Processors/CPU.Socket.1"
+        },
+        {
+            "@odata.id": "/redfish/v1/Systems/System.Embedded.1/Processors/CPU.Socket.2"
+        }
+    ],
+    "Name": "ProcessorsCollection"
+}

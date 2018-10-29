@@ -1,0 +1,22 @@
+{
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "Name": " Log Entry 59363",
+    "MessageArgs@odata.count": 3,
+    "@odata.context": "/redfish/v1/$metadata#LogEntry.LogEntry",
+    "Message": "Version change detected for Lifecycle Controller firmware. Previous version:2.10.10.10, Current version:2.50.50.50",
+    "OEMRecordFormat": "Dell",
+    "Description": " Log Entry 59363",
+    "MessageArgs": [
+        "Lifecycle Controller",
+        "2.10.10.10",
+        "2.50.50.50"
+    ],
+    "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+    "EntryType": "Oem",
+    "Id": "59363",
+    "Severity": "OK",
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/59363",
+    "Links": {},
+    "MessageID": "PR36",
+    "Created": "2017-11-07T23:21:32-06:00"
+}

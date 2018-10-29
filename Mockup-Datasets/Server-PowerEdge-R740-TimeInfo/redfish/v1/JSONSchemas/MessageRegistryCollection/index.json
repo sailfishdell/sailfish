@@ -1,0 +1,22 @@
+{
+    "Schema": "#MessageRegistryCollection.MessageRegistryCollection",
+    "Languages@odata.count": 1,
+    "Location@odata.count": 1,
+    "Name": "MessageRegistryCollection Schema File",
+    "@odata.type": "#JsonSchemaFile.v1_0_2.JsonSchemaFile",
+    "@odata.context": "/redfish/v1/$metadata#JsonSchemaFile.JsonSchemaFile",
+    "Description": "MessageRegistryCollection Schema File Location",
+    "Id": "MessageRegistryCollection",
+    "Location": [
+        {
+            "PublicationUri": "http://redfish.dmtf.org/schemas/v1/MessageRegistryCollection.json",
+            "Uri": "/redfish/v1/Schemas/MessageRegistryCollection.json",
+            "Language": "en"
+        }
+    ],
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "Languages": [
+        "en"
+    ],
+    "@odata.id": "/redfish/v1/JSONSchemas/MessageRegistryCollection"
+}

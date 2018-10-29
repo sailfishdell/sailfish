@@ -1,0 +1,22 @@
+{
+    "MaxNumberOfRecords": 1024,
+    "Actions": {
+        "#LogService.ClearLog": {
+            "target": "/redfish/v1/Managers/iDRAC.Embedded.1/LogServices/Sel/Actions/LogService.ClearLog"
+        }
+    },
+    "Id": "SEL",
+    "DateTime": "2017-11-03T16:23:46-05:00",
+    "@odata.context": "/redfish/v1/$metadata#LogService.LogService",
+    "DateTimeLocalOffset": "-05:00",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/LogServices/Sel",
+    "Description": "SEL Log Service",
+    "Entries": {
+        "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel"
+    },
+    "Name": "SEL Log Service",
+    "ServiceEnabled": true,
+    "OverWritePolicy": "WrapsWhenFull",
+    "@odata.type": "#LogService.v1_0_2.LogService"
+}

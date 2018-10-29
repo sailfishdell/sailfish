@@ -1,0 +1,28 @@
+{
+    "Links": {},
+    "Id": "2",
+    "SensorType": [
+        {
+            "Member": "System Firmware Progress"
+        }
+    ],
+    "EntryType": "SEL",
+    "Created": "2016-01-21T13:53:59-06:00",
+    "MessageArgs@odata.count": 0,
+    "@odata.context": "/redfish/v1/$metadata#LogEntry.LogEntry",
+    "Severity": "Critical",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "SensorNumber": 30,
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/2",
+    "Description": " Log Entry 2",
+    "MessageID": "fd0ff",
+    "MessageArgs": [],
+    "Name": " Log Entry 2",
+    "EntryCode": [
+        {
+            "Member": "Assert"
+        }
+    ],
+    "Message": "System BIOS has halted.",
+    "@odata.type": "#LogEntry.v1_0_2.LogEntry"
+}

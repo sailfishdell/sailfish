@@ -1,0 +1,6 @@
+Redfish Service state stored in Redfish Mockup Format
+Program: redfishMockupCreate,  ver: 0.9.3
+Created: 2017-09-15 15:16:24
+rhost:  10.101.22.28
+Description: This is a my mockup of a real C6320 at TTU HPC Center
+Commandline: python3.4 ./redfishMockupCreate.py -r 10.101.22.28 -u root -p calvin -S -A Basic -D C6320/ -d This is a my mockup of a real C6320 at TTU HPC Center -C Copyright 2017 TTU.edu All rights reserved.

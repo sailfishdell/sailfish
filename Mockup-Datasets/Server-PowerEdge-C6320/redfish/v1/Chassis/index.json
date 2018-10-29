@@ -1,0 +1,14 @@
+{
+    "Members@odata.count": 1,
+    "@odata.type": "#ChassisCollection.ChassisCollection",
+    "@Redfish.Copyright": "Copyright 2017 TTU.edu All rights reserved.",
+    "@odata.context": "/redfish/v1/$metadata#ChassisCollection.ChassisCollection",
+    "Description": "Collection of Chassis",
+    "@odata.id": "/redfish/v1/Chassis/",
+    "Members": [
+        {
+            "@odata.id": "/redfish/v1/Chassis/System.Embedded.1"
+        }
+    ],
+    "Name": "Chassis Collection"
+}

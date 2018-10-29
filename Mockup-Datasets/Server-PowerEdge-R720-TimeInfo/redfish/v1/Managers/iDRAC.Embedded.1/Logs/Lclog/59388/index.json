@@ -1,0 +1,26 @@
+{
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "Name": " Log Entry 59388",
+    "MessageArgs@odata.count": 3,
+    "@odata.context": "/redfish/v1/$metadata#LogEntry.LogEntry",
+    "Message": "Successfully logged in using root, from 10.94.14.77 and Virtual Console.",
+    "OEMRecordFormat": "Dell",
+    "Description": " Log Entry 59388",
+    "MessageArgs": [
+        "root",
+        "10.94.14.77",
+        "Virtual Console"
+    ],
+    "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+    "EntryType": "Oem",
+    "Id": "59388",
+    "Severity": "OK",
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/59388",
+    "Links": {
+        "OriginOfCondition": {
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+        }
+    },
+    "MessageID": "USR0030",
+    "Created": "2017-11-07T23:55:58-06:00"
+}

@@ -1,0 +1,28 @@
+{
+    "Description": " Log Entry 720",
+    "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+    "Links": {},
+    "MessageID": "a010",
+    "MessageArgs@odata.count": 0,
+    "Name": " Log Entry 720",
+    "Severity": "Ok",
+    "Message": "Drive 0 is installed in disk drive bay 1.",
+    "EntryType": "SEL",
+    "@odata.context": "/redfish/v1/$metadata#LogEntry.LogEntry",
+    "Created": "2017-05-30T14:16:17-05:00",
+    "SensorNumber": 164,
+    "EntryCode": [
+        {
+            "Member": "Assert"
+        }
+    ],
+    "Id": "720",
+    "SensorType": [
+        {
+            "Member": "Drive Slot/Bay"
+        }
+    ],
+    "MessageArgs": [],
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/720"
+}

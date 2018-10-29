@@ -1,0 +1,20 @@
+{
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "Name": " Log Entry 59365",
+    "MessageArgs@odata.count": 1,
+    "@odata.context": "/redfish/v1/$metadata#LogEntry.LogEntry",
+    "Message": "New device detected: POWER SUPPLY(psu.slot.2)",
+    "OEMRecordFormat": "Dell",
+    "Description": " Log Entry 59365",
+    "MessageArgs": [
+        "POWER SUPPLY(psu.slot.2)"
+    ],
+    "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+    "EntryType": "Oem",
+    "Id": "59365",
+    "Severity": "OK",
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/59365",
+    "Links": {},
+    "MessageID": "PR7",
+    "Created": "2017-11-07T23:21:33-06:00"
+}

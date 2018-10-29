@@ -1,0 +1,26 @@
+{
+    "Actions": {
+        "Oem": {
+            "DellManager.v1_0_0#DellManager.ClearPending": {
+                "target": "/redfish/v1/Managers/System.Embedded.1/Attributes/Settings/Actions/Oem/DellManager.ClearPending"
+            }
+        }
+    },
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "Attributes": {},
+    "Id": "SystemSettings",
+    "Name": "OemAttributeRegistrySettings",
+    "AttributeRegistry": "ManagerAttributeRegistry.v1_0_0",
+    "@odata.type": "#DellAttributes.v1_0_0.DellAttributes",
+    "Oem": {
+        "Dell": {
+            "Jobs": {
+                "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Jobs"
+            },
+            "@odata.type": "#DellManager.v1_0_0.DellManager"
+        }
+    },
+    "Description": "This schema provides settings of the oem attributes",
+    "@odata.id": "/redfish/v1/Managers/System.Embedded.1/Attributes/Settings",
+    "@odata.context": "/redfish/v1/$metadata#DellAttributes.DellAttributes"
+}

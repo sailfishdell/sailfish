@@ -1,0 +1,28 @@
+{
+    "Description": " Log Entry 735",
+    "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+    "Links": {},
+    "MessageID": "0850",
+    "MessageArgs@odata.count": 0,
+    "Name": " Log Entry 735",
+    "Severity": "Ok",
+    "Message": "OEM software event.",
+    "EntryType": "SEL",
+    "@odata.context": "/redfish/v1/$metadata#LogEntry.LogEntry",
+    "Created": "2017-05-30T15:03:36-05:00",
+    "SensorNumber": 0,
+    "EntryCode": [
+        {
+            "Member": null
+        }
+    ],
+    "Id": "735",
+    "SensorType": [
+        {
+            "Member": null
+        }
+    ],
+    "MessageArgs": [],
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/735"
+}
