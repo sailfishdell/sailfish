@@ -13,38 +13,81 @@ views:
       "View":
         - "fn": "with_URI"
           "params": "'/redfish/v1'"
+      "Aggregate": "root"
 
   "testview":
       "Logger": ["module", "testview"]
       "Models":
-        "default":  {"unique_name": "TEST_Unique_Name", "name": "TEST_Name", "description": "TEST_Description" }
+        "default":  {"unique_name": "'TEST_Unique_Name'", "name": "'TEST_Name'", "'description'": "'TEST_Description'" }
       "Controllers":
-        - "fn": "AwesomeMapper"
-          "params": {"modelname": "default", "cfgsection": "testview" }
-        - "fn": "ARMapper"
-          "params": {"modelname": "default", "cfgsection": "testview", "mappinguniquename": "'/redfish/v1/testservice'", "AddToView": true}
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/testview'"
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
+      "Aggregate": "registry_collection"
 
-  "testview_sub":
-      "Logger": ["module", "sub_testview"]
+  "eventservice":
+      "Logger": ["module", "eventservice"]
       "Models":
-        "default":  {"property1": "value1"}
+        "default": {
+           "max_milliseconds_to_queue": "500",
+           "max_events_to_queue": "20",
+           "delivery_retry_attempts": "3",
+           "delivery_retry_interval_seconds": "60",
+           }
       "Controllers":
       "View":
         - "fn": "with_URI"
-          "params": "rooturi + '/testview#' + unique"
+          "params": "rooturi + '/EventService'"
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+        - "fn": "etag"
+          "params": ["max_milliseconds_to_queue", "max_events_to_queue", "delivery_retry_attempts", "delivery_retry_interval_seconds"]
+        - "fn": "WithAction"
+          "params": {"name": "submit.test.event", "uri": "/Actions/EventService.SubmitTestEvent", "actionFunction": "submittestevent"}
+        - "fn": "linkModel"
+          "params": {"existing": "default", "linkname": "etag"}
+      "Aggregate": "eventservice"
 
-  "sessionview":
+  "subscriptioncollection":
+      "Logger": ["module", "eventservice"]
+      "Models":
+        "default": {"members": "array()"}
+      "Controllers":
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + collection_uri" }
+      "View":
+        - "fn": "with_URI"
+          "params": "eventsvc_uri + '/Subscriptions'"
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+        - "fn": "stdFormatters"
+          "params":
+      "Aggregate": "subscriptioncollection"
+
+  "subscription":
+      "Logger": ["module", "eventservice"]
+      "Models":
+        "default": {
+          "destination": "destination",
+          "protocol":    "protocol",
+          "context":     "context",
+          "event_types": "eventTypes",
+        }
+      "Controllers":
+      "View":
+        - "fn": "with_URI"
+          "params": "eventsvc_uri + '/Subscriptions/' + uuid"
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+      "Aggregate": "subscription"
+
+  "sessionservice":
       "Logger": ["module", "session"]
       "Models":
-        "default":  {"session_timeout": 30}
+        "default":  {"session_timeout": "30"}
       "Controllers":
-        - "fn": "AwesomeMapper"
-          "params": {"modelname": "default", "cfgsection": "sessionview" }
         - "fn": "ARMapper"
           "params": {"modelname": "default", "cfgsection": "SessionService", "mappinguniquename": "'/redfish/v1/SessionService'", "AddToView": true}
       "View":
@@ -52,23 +95,112 @@ views:
           "params": "rooturi + '/SessionService'"
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
+        - "fn": "stdFormatters"
+          "params":
+      "Aggregate": "sessionservice"
+
+  "sessioncollection":
+      "Logger": ["module", "session"]
+      "Models":
+        "default":  {"members": "array()"}
+      "Controllers":
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + collection_uri" }
+        - "fn": "ARMapper"
+          "params": {"modelname": "default", "cfgsection": "SessionService", "mappinguniquename": "'/redfish/v1/SessionService/Sessions'", "AddToView": true}
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/SessionService/Sessions'"
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+        - "fn": "stdFormatters"
+          "params":
+      "Aggregate": "sessioncollection"
+
+  "session":
+      "Logger": ["module", "session"]
+      "Models":
+      "Controllers":
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/SessionService/Sessions/' + uuid"
+      "Aggregate": "session"
 
   "registries":
       "Logger": ["module", "registry"]
       "Models":
-        "default":  {}
+        "default":  {"members": "array()"}
       "Controllers":
-        # not yet implemented...
-        - "fn": "StaticMapper"
-          "params": {"modelname": "default", "AddToView": true}
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + collection_uri" }
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/Registries'"
+        - "fn": "stdFormatters"
+          "params":
+      "Aggregate": "registry_collection"
+
+  "idrac_registry":
+      "Logger": ["module", "registry"]
+      "Models":
+        "default":  {
+          "id":          "'Messages'",
+          "description": "'iDRAC Message Registry File locations'",
+          "name":        "'iDRAC Message Registry File'",
+          "type":        "'iDrac.1.5'",
+          "languages":   "array('En')",
+          "location":   "location",
+        }
+      "Controllers":
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/Registries/Messages'"
+        - "fn": "stdFormatters"
+          "params":
+      "Aggregate": "registry"
+
+  "base_registry":
+      "Logger": ["module", "registry"]
+      "Models":
+        "default":  {
+          "id":          "'BaseMessages'",
+          "description": "'Base Message Registry File locations'",
+          "name":        "'Base Message Registry File'",
+          "type":        "'Base.1.3.8'",
+          "languages":   "array('En')",
+          "location":   "location",
+        }
+      "Controllers":
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/Registries/BaseMessages'"
+        - "fn": "stdFormatters"
+          "params":
+      "Aggregate": "registry"
+
+  "mgr_attr_registry":
+      "Logger": ["module", "registry"]
+      "Models":
+        "default":  {
+          "id":          "'ManagerAttributeRegistry'",
+          "description": "'Manager Attribute Registry File Locations'",
+          "name":        "'Manager Attribute Registry File'",
+          "type":        "'ManagerAttributeRegistry.1.0'",
+          "languages":   "array('En')",
+          "location":   "location",
+        }
+      "Controllers":
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/Registries/ManagerAttributeRegistry'"
+        - "fn": "stdFormatters"
+          "params":
+      "Aggregate": "registry"
 
   "chassis":
       "Logger": ["module", "Chassis"]
       "Models":
-        "default":  {}
+        "default":  {"members": "array()"}
       "Controllers":
         - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + collection_uri" }
@@ -77,14 +209,14 @@ views:
           "params": "collection_uri "
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
-        - "fn": "withFormatter_formatOdataList"
+        - "fn": "stdFormatters"
           "params":
       "Aggregate": "chassis"
 
   "systems":
       "Logger": ["module", "Systems"]
       "Models":
-        "default":  {}
+        "default":  {"members": "array()"}
       "Controllers":
         - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + collection_uri" }
@@ -93,14 +225,14 @@ views:
           "params": "collection_uri "
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
-        - "fn": "withFormatter_formatOdataList"
+        - "fn": "stdFormatters"
           "params":
       "Aggregate": "systems"
 
   "managers":
       "Logger": ["module", "Managers"]
       "Models":
-        "default":  {}
+        "default":  {"members": "array()"}
       "Controllers":
         - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + collection_uri" }
@@ -109,14 +241,14 @@ views:
           "params": "collection_uri "
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
-        - "fn": "withFormatter_formatOdataList"
+        - "fn": "stdFormatters"
           "params":
       "Aggregate": "managers"
 
   "roles":
       "Logger": ["module", "Roles"]
       "Models":
-        "default":  {}
+        "default":  {"members": "array()"}
       "Controllers":
         - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + collection_uri" }
@@ -125,7 +257,7 @@ views:
           "params": "collection_uri "
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
-        - "fn": "withFormatter_formatOdataList"
+        - "fn": "stdFormatters"
           "params":
       "Aggregate": "roles"
 
@@ -139,14 +271,14 @@ views:
           "params": "rooturi + '/AccountService' "
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
-        - "fn": "withFormatter_formatOdataList"
+        - "fn": "stdFormatters"
           "params":
       "Aggregate": "accountservice"
 
   "accounts":
       "Logger": ["module", "Accounts"]
       "Models":
-        "default":  {}
+        "default":  {"members": "array()"}
       "Controllers":
         - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + collection_uri" }
@@ -155,9 +287,15 @@ views:
           "params": "collection_uri "
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
-        - "fn": "withFormatter_formatOdataList"
+        - "fn": "stdFormatters"
           "params":
       "Aggregate": "accounts"
+
+
+
+
+
+
 
 
 
