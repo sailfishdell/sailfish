@@ -1,0 +1,14 @@
+{
+    "Members@odata.count": 1,
+    "@odata.type": "#SerialInterfaceCollection.SerialInterfaceCollection",
+    "@Redfish.Copyright": "Copyright 2017 TTU.edu All rights reserved.",
+    "@odata.context": "/redfish/v1/$metadata#SerialInterfaceCollection.SerialInterfaceCollection",
+    "Description": "Collection of Serial Interfaces for this System",
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/SerialInterfaces",
+    "Members": [
+        {
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/SerialInterfaces/iDRAC.Embedded.1%23Serial.1"
+        }
+    ],
+    "Name": "Serial Interface Collection"
+}

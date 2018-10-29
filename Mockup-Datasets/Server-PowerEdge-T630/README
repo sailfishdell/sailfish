@@ -1,0 +1,6 @@
+Redfish Service state stored in Redfish Mockup Format
+Program: redfishMockupCreate,  ver: 0.9.3
+Created: 2017-08-17 11:18:57
+rhost:  100.101.2.76
+Description: A mockup of a 13G server with 2.50.50.50 firmware version
+Commandline: python3.4 ./redfishMockupCreate.py -r 100.101.2.76 -u root -p calvin -S -A Basic -D mockups/13G-Monolithic/ -d A mockup of a 13G server with 2.50.50.50 firmware version -C Copyright 2017 Dell Inc. All rights reserved.

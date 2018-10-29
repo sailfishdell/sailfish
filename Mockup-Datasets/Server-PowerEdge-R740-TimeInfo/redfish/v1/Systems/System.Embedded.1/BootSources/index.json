@@ -1,0 +1,57 @@
+{
+    "Description": "Boot Sources Current Settings",
+    "@Redfish.Settings": {
+        "@odata.type": "#Settings.v1_0_2.Settings",
+        "SettingsObject": {
+            "@odata.id": "/redfish/v1/Systems/System.Embedded.1/BootSources/Settings"
+        },
+        "@odata.context": "/redfish/v1/$metadata#Settings.Settings"
+    },
+    "Attributes": {
+        "UefiBootSeq": [
+            {
+                "Enabled": true,
+                "Name": "Unknown.Unknown.1-1",
+                "Id": "BIOS.Setup.1-1#UefiBootSeq#Unknown.Unknown.1-1#6a5b6f7087238ab1275889252ad0dffe",
+                "Index": 0
+            },
+            {
+                "Enabled": true,
+                "Name": "NIC.PxeDevice.1-1",
+                "Id": "BIOS.Setup.1-1#UefiBootSeq#NIC.PxeDevice.1-1#81e55d13a36bc065ca3bf9bf8d699391",
+                "Index": 1
+            },
+            {
+                "Enabled": true,
+                "Name": "NIC.PxeDevice.2-1",
+                "Id": "BIOS.Setup.1-1#UefiBootSeq#NIC.PxeDevice.2-1#e158d778680bb5e05f7e79c4a8a46dd9",
+                "Index": 2
+            },
+            {
+                "Enabled": true,
+                "Name": "Unknown.Unknown.4-1",
+                "Id": "BIOS.Setup.1-1#UefiBootSeq#Unknown.Unknown.4-1#1bf3271ff7089d67a1c7e9700e270249",
+                "Index": 3
+            },
+            {
+                "Enabled": true,
+                "Name": "Unknown.Unknown.5-1",
+                "Id": "BIOS.Setup.1-1#UefiBootSeq#Unknown.Unknown.5-1#56eb912788a6e1daa8242d1064d1746e",
+                "Index": 4
+            },
+            {
+                "Enabled": true,
+                "Name": "Disk.SATAEmbedded.A-1",
+                "Id": "BIOS.Setup.1-1#UefiBootSeq#Disk.SATAEmbedded.A-1#8cdf1b981058f1f7cf0afcc95f8347e9",
+                "Index": 5
+            }
+        ]
+    },
+    "Id": "BootSources",
+    "Name": "Boot Sources Configuration Current Settings",
+    "AttributeRegistry": "DellBootSourcesRegistry.v1_0_0",
+    "@odata.type": "#DellBootSources.v1_0_0.DellBootSources",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "@odata.id": "/redfish/v1/Systems/System.Embedded.1/BootSources",
+    "@odata.context": "/redfish/v1/$metadata#DellBootSources.DellBootSources"
+}

@@ -1,0 +1,14 @@
+{
+    "Members": [
+        {
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/EthernetInterfaces/iDRAC.Embedded.1%23NIC.1"
+        }
+    ],
+    "Name": "Ethernet Network Interface Collection",
+    "@odata.context": "/redfish/v1/$metadata#EthernetInterfaceCollection.EthernetInterfaceCollection",
+    "Members@odata.count": 1,
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/EthernetInterfaces",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "Description": "Collection of EthernetInterfaces for this Manager",
+    "@odata.type": "#EthernetInterfaceCollection.EthernetInterfaceCollection"
+}

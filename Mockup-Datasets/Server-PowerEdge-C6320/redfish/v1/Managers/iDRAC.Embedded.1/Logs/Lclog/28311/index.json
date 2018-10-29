@@ -1,0 +1,26 @@
+{
+    "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+    "@Redfish.Copyright": "Copyright 2017 TTU.edu All rights reserved.",
+    "@odata.context": "/redfish/v1/$metadata#LogEntry.LogEntry",
+    "Id": "28311",
+    "MessageID": "USR0032",
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/28311",
+    "MessageArgs@odata.count": 3,
+    "Created": "2017-09-15T16:37:20-05:00",
+    "MessageArgs": [
+        "root",
+        "10.100.29.254",
+        "IPMI over LAN"
+    ],
+    "Message": "The session for root from 10.100.29.254 using IPMI over LAN is logged off.",
+    "Severity": "Ok",
+    "Description": " Log Entry 28311",
+    "OEMRecordFormat": "Dell",
+    "EntryType": "Oem",
+    "Name": " Log Entry 28311",
+    "Links": {
+        "OriginOfCondition": {
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+        }
+    }
+}

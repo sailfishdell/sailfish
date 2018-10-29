@@ -1,0 +1,23 @@
+{
+    "OEMRecordFormat": "Dell",
+    "Links": {},
+    "Id": "1568",
+    "EntryType": "Oem",
+    "Created": "2017-10-29T05:44:00-05:00",
+    "MessageArgs@odata.count": 4,
+    "@odata.context": "/redfish/v1/$metadata#LogEntry.LogEntry",
+    "Severity": "Ok",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1568",
+    "Description": " Log Entry 1568",
+    "MessageID": "USR8508",
+    "MessageArgs": [
+        "SSH",
+        "snowdscv",
+        "10.0.200.80",
+        "User does not exist"
+    ],
+    "Name": " Log Entry 1568",
+    "Message": "SSH login was not successful (username=snowdscv, ip=10.0.200.80, reason=User does not exist)",
+    "@odata.type": "#LogEntry.v1_0_2.LogEntry"
+}

@@ -1,0 +1,21 @@
+{
+    "MessageID": "IPA0100",
+    "EntryType": "Oem",
+    "Severity": "Ok",
+    "Name": " Log Entry 1600",
+    "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+    "Message": "The iDRAC IP Address changed from 10.35.176.72 to 0.0.0.0.",
+    "Description": " Log Entry 1600",
+    "Created": "2017-10-27T14:13:26-05:00",
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1600",
+    "Id": "1600",
+    "OemRecordFormat": "Dell",
+    "Links": {},
+    "@odata.context": "/redfish/v1/$metadata#LogEntry.LogEntry",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "MessageArgs@odata.count": 2,
+    "MessageArgs": [
+        "10.35.176.72",
+        "0.0.0.0"
+    ]
+}

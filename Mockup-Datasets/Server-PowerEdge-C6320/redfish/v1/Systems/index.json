@@ -1,0 +1,14 @@
+{
+    "Members@odata.count": 1,
+    "@odata.type": "#ComputerSystemCollection.ComputerSystemCollection",
+    "@Redfish.Copyright": "Copyright 2017 TTU.edu All rights reserved.",
+    "@odata.context": "/redfish/v1/$metadata#ComputerSystemCollection.ComputerSystemCollection",
+    "Description": "Collection of Computer Systems",
+    "@odata.id": "/redfish/v1/Systems",
+    "Members": [
+        {
+            "@odata.id": "/redfish/v1/Systems/System.Embedded.1"
+        }
+    ],
+    "Name": "Computer System Collection"
+}

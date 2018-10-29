@@ -1,0 +1,28 @@
+{
+    "Description": " Log Entry 738",
+    "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+    "Links": {},
+    "MessageID": "a017",
+    "MessageArgs@odata.count": 0,
+    "Name": " Log Entry 738",
+    "Severity": "Critical",
+    "Message": "Drive 7 is removed from disk drive bay 1.",
+    "EntryType": "SEL",
+    "@odata.context": "/redfish/v1/$metadata#LogEntry.LogEntry",
+    "Created": "2017-06-01T10:57:16-05:00",
+    "SensorNumber": 171,
+    "EntryCode": [
+        {
+            "Member": "Deassert"
+        }
+    ],
+    "Id": "738",
+    "SensorType": [
+        {
+            "Member": "Drive Slot/Bay"
+        }
+    ],
+    "MessageArgs": [],
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/738"
+}

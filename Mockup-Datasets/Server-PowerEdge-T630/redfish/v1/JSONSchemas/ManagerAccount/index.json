@@ -1,0 +1,22 @@
+{
+    "Description": "ManagerAccount Schema File Location",
+    "Location@odata.count": 1,
+    "@odata.type": "#JsonSchemaFile.v1_0_2.JsonSchemaFile",
+    "Languages": [
+        "en"
+    ],
+    "Name": "ManagerAccount Schema File",
+    "Languages@odata.count": 1,
+    "@odata.context": "/redfish/v1/$metadata#JsonSchemaFile.JsonSchemaFile",
+    "Location": [
+        {
+            "PublicationUri": "http://redfish.dmtf.org/schemas/v1/ManagerAccount.json",
+            "Uri": "/redfish/v1/Schemas/ManagerAccount.json",
+            "Language": "en"
+        }
+    ],
+    "Schema": "#ManagerAccount.ManagerAccount",
+    "Id": "ManagerAccount",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "@odata.id": "/redfish/v1/JSONSchemas/ManagerAccount"
+}

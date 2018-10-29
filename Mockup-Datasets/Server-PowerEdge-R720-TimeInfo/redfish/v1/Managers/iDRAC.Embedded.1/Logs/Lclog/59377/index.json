@@ -1,0 +1,16 @@
+{
+    "Name": " Log Entry 59377",
+    "OEMRecordFormat": "Dell",
+    "@odata.context": "/redfish/v1/$metadata#LogEntry.LogEntry",
+    "Message": "Downloading package.",
+    "Severity": "OK",
+    "Description": " Log Entry 59377",
+    "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+    "EntryType": "Oem",
+    "Id": "59377",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/59377",
+    "Links": {},
+    "Created": "2017-11-07T23:55:17-06:00",
+    "MessageID": "RED003"
+}

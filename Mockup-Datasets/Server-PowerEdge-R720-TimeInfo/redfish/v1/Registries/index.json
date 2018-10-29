@@ -1,0 +1,23 @@
+{
+    "Members": [
+        {
+            "@odata.id": "/redfish/v1/Registries/Messages"
+        },
+        {
+            "@odata.id": "/redfish/v1/Registries/BaseMessages"
+        },
+        {
+            "@odata.id": "/redfish/v1/Registries/BiosAttributeRegistry.v1_0_0"
+        },
+        {
+            "@odata.id": "/redfish/v1/Registries/BootSourcesRegistry.v1_0_0"
+        }
+    ],
+    "Name": "Registry File Collection",
+    "@odata.context": "/redfish/v1/$metadata#MessageRegistryFileCollection.MessageRegistryFileCollection",
+    "Members@odata.count": 4,
+    "@odata.id": "/redfish/v1/Registries",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "Description": "Registry Repository",
+    "@odata.type": "#MessageRegistryFileCollection.MessageRegistryFileCollection"
+}

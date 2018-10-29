@@ -1,0 +1,34 @@
+{
+    "@odata.type": "#SerialInterface.v1_0_2.SerialInterface",
+    "Parity": "None",
+    "@odata.context": "/redfish/v1/$metadata#SerialInterface.SerialInterface",
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/SerialInterfaces/iDRAC.Embedded.1%23Serial.1",
+    "ConnectorType": [
+        {
+            "Member": "DB9 Male"
+        }
+    ],
+    "BitRate": [
+        {
+            "Member": 57600
+        }
+    ],
+    "DataBits": [
+        {
+            "Member": 8
+        }
+    ],
+    "Id": "iDRAC.Embedded.1#Serial.1",
+    "@Redfish.Copyright": "Copyright 2017 TTU.edu All rights reserved.",
+    "FlowControl": "Hardware",
+    "PinOut": "Cisco",
+    "Description": "Management for Serial Interface",
+    "StopBits": [
+        {
+            "Member": 1
+        }
+    ],
+    "Name": "Managed Serial Interface 1",
+    "InterfaceEnabled": true,
+    "SignalType": "Rs232"
+}

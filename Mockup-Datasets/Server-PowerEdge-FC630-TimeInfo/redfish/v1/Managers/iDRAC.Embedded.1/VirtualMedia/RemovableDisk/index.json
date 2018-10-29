@@ -1,0 +1,18 @@
+{
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/VirtualMedia/RemovableDisk",
+    "WriteProtected": null,
+    "ImageName": null,
+    "Id": "RemovableDisk",
+    "Inserted": false,
+    "@odata.context": "/redfish/v1/$metadata#VirtualMedia.VirtualMedia",
+    "MediaTypes": [
+        "USBStick"
+    ],
+    "MediaTypes@odata.count": 1,
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "ConnectedVia": "NotConnected",
+    "Description": "iDRAC Virtual Media Services Settings",
+    "Image": null,
+    "Name": "Virtual Removable Disk",
+    "@odata.type": "#VirtualMedia.v1_0_2.VirtualMedia"
+}

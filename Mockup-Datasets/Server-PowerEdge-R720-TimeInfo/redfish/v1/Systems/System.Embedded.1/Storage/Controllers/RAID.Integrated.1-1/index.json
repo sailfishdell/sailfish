@@ -1,0 +1,38 @@
+{
+    "Devices@odata.count": 2,
+    "Id": "RAID.Integrated.1-1",
+    "Name": "PERC H710 Mini",
+    "@odata.context": "/redfish/v1/$metadata#SimpleStorage.SimpleStorage",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "@odata.id": "/redfish/v1/Systems/System.Embedded.1/Storage/Controllers/RAID.Integrated.1-1",
+    "Status": {
+        "State": "Enabled",
+        "Health": "OK",
+        "HealthRollup": "OK"
+    },
+    "Description": "Simple Storage Controller",
+    "Devices": [
+        {
+            "Model": "ST9500620NS",
+            "Status": {
+                "State": "Enabled",
+                "Health": "OK",
+                "HealthRollup": "OK"
+            },
+            "Name": "Physical Disk 0:1:0",
+            "Manufacturer": "ATA"
+        },
+        {
+            "Model": "BP12G+EXP 0:1",
+            "Status": {
+                "State": "Enabled",
+                "Health": "OK",
+                "HealthRollup": "OK"
+            },
+            "Name": "Backplane 1 on Connector 0 of Integrated RAID Controller 1",
+            "Manufacturer": "DELL"
+        }
+    ],
+    "@odata.type": "#SimpleStorage.v1_0_2.SimpleStorage",
+    "UefiDevicePath": "PcieRoot(0x0)/Pci(0x2,0x2)/Pci(0x0,0x0)/Ctrl(0x1)"
+}

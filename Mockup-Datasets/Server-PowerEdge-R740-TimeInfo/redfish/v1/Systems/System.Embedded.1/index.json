@@ -1,0 +1,146 @@
+{
+    "TrustedModules": [
+        {
+            "Status": {
+                "State": "Disabled"
+            }
+        }
+    ],
+    "EthernetInterfaces": {
+        "@odata.id": "/redfish/v1/Systems/System.Embedded.1/EthernetInterfaces"
+    },
+    "SKU": "7654321",
+    "UUID": "4c4c4544-0036-3510-8034-b7c04f333231",
+    "HostName": "WIN-02GODDHDJTC",
+    "@odata.type": "#ComputerSystem.v1_1_0.ComputerSystem",
+    "SecureBoot": {
+        "@odata.id": "/redfish/v1/Systems/System.Embedded.1/SecureBoot"
+    },
+    "SystemType": "Physical",
+    "ProcessorSummary": {
+        "Count": 1,
+        "Status": {
+            "State": "Enabled",
+            "HealthRollup": "OK",
+            "Health": "OK"
+        },
+        "Model": "Intel(R) Xeon(R) Gold 6130 CPU @ 2.10GHz"
+    },
+    "Model": "PowerEdge R740",
+    "Links": {
+        "Chassis@odata.count": 1,
+        "ManagedBy@odata.count": 1,
+        "PoweredBy@odata.count": 1,
+        "CooledBy@odata.count": 6,
+        "CooledBy": [
+            {
+                "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Sensors/Fans/0x17||Fan.Embedded.1"
+            },
+            {
+                "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Sensors/Fans/0x17||Fan.Embedded.2"
+            },
+            {
+                "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Sensors/Fans/0x17||Fan.Embedded.3"
+            },
+            {
+                "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Sensors/Fans/0x17||Fan.Embedded.4"
+            },
+            {
+                "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Sensors/Fans/0x17||Fan.Embedded.5"
+            },
+            {
+                "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Sensors/Fans/0x17||Fan.Embedded.6"
+            }
+        ],
+        "Oem": {
+            "Dell": {
+                "@odata.type": "#DellComputerSystem.v1_0_0.DellComputerSystem",
+                "BootOrder": {
+                    "@odata.id": "/redfish/v1/Systems/System.Embedded.1/BootSources"
+                }
+            }
+        },
+        "ManagedBy": [
+            {
+                "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+            }
+        ],
+        "Chassis": [
+            {
+                "@odata.id": "/redfish/v1/Chassis/System.Embedded.1"
+            }
+        ],
+        "PoweredBy": [
+            {
+                "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Power/PowerSupplies/PSU.Slot.1"
+            }
+        ]
+    },
+    "PowerState": "On",
+    "Id": "System.Embedded.1",
+    "PartNumber": "06G98XX10",
+    "Name": "System",
+    "@odata.id": "/redfish/v1/Systems/System.Embedded.1",
+    "Status": {
+        "State": "Enabled",
+        "HealthRollup": "Critical",
+        "Health": "Critical"
+    },
+    "SerialNumber": "CN7475171F0057",
+    "MemorySummary": {
+        "MemoryMirroring": "System",
+        "Status": {
+            "State": "Enabled",
+            "HealthRollup": "OK",
+            "Health": "OK"
+        },
+        "TotalSystemMemoryGiB": 8.0
+    },
+    "Actions": {
+        "#ComputerSystem.Reset": {
+            "target": "/redfish/v1/Systems/System.Embedded.1/Actions/ComputerSystem.Reset",
+            "ResetType@Redfish.AllowableValues": [
+                "On",
+                "ForceOff",
+                "GracefulRestart",
+                "GracefulShutdown",
+                "PushPowerButton",
+                "Nmi"
+            ]
+        }
+    },
+    "Boot": {
+        "BootSourceOverrideTarget@Redfish.AllowableValues": [
+            "None",
+            "Pxe",
+            "Floppy",
+            "Cd",
+            "Hdd",
+            "BiosSetup",
+            "Utilities",
+            "UefiTarget",
+            "SDCard",
+            "UefiHttp"
+        ],
+        "BootSourceOverrideEnabled": "Once",
+        "UefiTargetBootSourceOverride": "",
+        "BootSourceOverrideTarget": "None",
+        "BootSourceOverrideMode": "UEFI"
+    },
+    "@odata.context": "/redfish/v1/$metadata#ComputerSystem.ComputerSystem",
+    "Bios": {
+        "@odata.id": "/redfish/v1/Systems/System.Embedded.1/Bios"
+    },
+    "Description": "Computer System which represents a machine (physical or virtual) and the local resources such as memory, cpu and other devices that can be accessed from that machine.",
+    "Processors": {
+        "@odata.id": "/redfish/v1/Systems/System.Embedded.1/Processors"
+    },
+    "SimpleStorage": {
+        "@odata.id": "/redfish/v1/Systems/System.Embedded.1/Storage/Controllers"
+    },
+    "IndicatorLED": "Off",
+    "BiosVersion": "0.4.1",
+    "AssetTag": "",
+    "Manufacturer": "Dell Inc.",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved."
+}

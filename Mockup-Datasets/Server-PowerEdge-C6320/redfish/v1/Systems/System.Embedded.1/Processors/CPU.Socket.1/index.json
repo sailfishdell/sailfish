@@ -1,0 +1,38 @@
+{
+    "@odata.type": "#Processor.v1_0_2.Processor",
+    "@Redfish.Copyright": "Copyright 2017 TTU.edu All rights reserved.",
+    "@odata.id": "/redfish/v1/Systems/System.Embedded.1/Processors/CPU.Socket.1",
+    "@odata.context": "/redfish/v1/$metadata#Processor.Processor",
+    "ProcessorType": "CPU",
+    "TotalThreads": 36,
+    "MaxSpeedMHz": 4000,
+    "Socket": "CPU.Socket.1",
+    "Manufacturer": "Intel",
+    "Model": "Intel(R) Xeon(R) CPU E5-2695 v4 @ 2.10GHz",
+    "InstructionSet": [
+        {
+            "Member": "x86-64"
+        }
+    ],
+    "Id": "CPU.Socket.1",
+    "Status": {
+        "Health": "OK",
+        "State": "Enabled"
+    },
+    "Description": "Represents the properties of a Processor attached to this System",
+    "ProcessorArchitecture": [
+        {
+            "Member": "x86"
+        }
+    ],
+    "TotalCores": 18,
+    "Name": "CPU 1",
+    "ProcessorId": {
+        "VendorID": "GenuineIntel",
+        "IdentificationRegisters": "0x000406F1",
+        "Step": "1",
+        "EffectiveModel": "79",
+        "EffectiveFamily": "6",
+        "MicrocodeInfo": "0xB00001E"
+    }
+}

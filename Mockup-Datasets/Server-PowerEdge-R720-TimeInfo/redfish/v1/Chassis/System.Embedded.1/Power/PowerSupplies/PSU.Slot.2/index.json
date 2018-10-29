@@ -1,0 +1,49 @@
+{
+    "PowerSupplyType": "AC",
+    "SerialNumber": "CN179723656VIP",
+    "Name": "PS2 Status",
+    "PowerCapacityWatts": 750,
+    "SparePartNumber": "05NF18A01",
+    "@odata.context": "/redfish/v1/$metadata#Power.Power",
+    "Redundancy": [
+        {
+            "Status": {
+                "State": "Disabled",
+                "Health": "OK"
+            },
+            "MinNumNeeded": 2,
+            "RedundancySet@odata.count": 0,
+            "MemberId": "iDRAC.Embedded.1#SystemBoardPSRedundancy",
+            "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Power/Redundancy/iDRAC.Embedded.1%23SystemBoardPSRedundancy",
+            "Mode": [
+                {
+                    "Member": "N+1"
+                }
+            ],
+            "RedundancySet": [],
+            "Name": "System Board PS Redundancy",
+            "MaxNumSupported": 4
+        }
+    ],
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "FirmwareVersion": "07.2B.7D",
+    "@odata.type": "#Power.v1_0_2.PowerSupply",
+    "LastPowerOutputWatts": 750,
+    "Model": "PWR SPLY,750WP,RDNT,DELTA     ",
+    "RelatedItem@odata.count": 1,
+    "Redundancy@odata.count": 1,
+    "LineInputVoltage": 240,
+    "RelatedItem": [
+        {
+            "@odata.id": "/redfish/v1/Chassis/System.Embedded.1"
+        }
+    ],
+    "MemberId": "PSU.Slot.2",
+    "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Power/PowerSupplies/PSU.Slot.2",
+    "LineInputVoltageType": "ACMidLine",
+    "Status": {
+        "State": "Enabled",
+        "Health": "OK"
+    },
+    "PartNumber": "05NF18A01"
+}

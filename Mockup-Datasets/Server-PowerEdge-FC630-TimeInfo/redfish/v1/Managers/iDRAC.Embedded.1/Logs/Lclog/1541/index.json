@@ -1,0 +1,22 @@
+{
+    "OEMRecordFormat": "Dell",
+    "Links": {},
+    "Id": "1541",
+    "EntryType": "Oem",
+    "Created": "2017-08-22T13:40:11-05:00",
+    "MessageArgs@odata.count": 3,
+    "@odata.context": "/redfish/v1/$metadata#LogEntry.LogEntry",
+    "Severity": "Ok",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1541",
+    "Description": " Log Entry 1541",
+    "MessageID": "USR8513",
+    "MessageArgs": [
+        "root",
+        "100.68.124.38",
+        "RACADM"
+    ],
+    "Name": " Log Entry 1541",
+    "Message": "root login successful from 100.68.124.38 (type=RACADM).",
+    "@odata.type": "#LogEntry.v1_0_2.LogEntry"
+}

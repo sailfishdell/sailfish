@@ -1,0 +1,46 @@
+{
+    "HostName": "idrac",
+    "KVMIP": {
+        "ProtocolEnabled": true,
+        "Port": 5900
+    },
+    "Name": "Manager Network Protocol",
+    "@odata.context": "/redfish/v1/$metadata#ManagerNetworkProtocol.ManagerNetworkProtocol",
+    "IPMI": {
+        "ProtocolEnabled": false
+    },
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "Description": "Manager Network Service Status",
+    "@odata.type": "#ManagerNetworkProtocol.v1_0_2.ManagerNetworkProtocol",
+    "HTTP": {
+        "ProtocolEnabled": true,
+        "Port": 80
+    },
+    "SNMP": {
+        "ProtocolEnabled": true,
+        "Port": 161
+    },
+    "Id": "NetworkProtocol",
+    "HTTPS": {
+        "ProtocolEnabled": true,
+        "Port": 443
+    },
+    "VirtualMedia": {
+        "ProtocolEnabled": true
+    },
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/NetworkProtocol",
+    "Telnet": {
+        "ProtocolEnabled": false,
+        "Port": 23
+    },
+    "FQDN": "",
+    "Status": {
+        "State": "Enabled",
+        "Health": "OK",
+        "HealthRollup": "OK"
+    },
+    "SSH": {
+        "ProtocolEnabled": true,
+        "Port": 22
+    }
+}

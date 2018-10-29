@@ -1,0 +1,22 @@
+{
+    "Registry": "Base.1.0",
+    "Name": "Base Message Registry File",
+    "@odata.context": "/redfish/v1/$metadata#MessageRegistryFile.MessageRegistryFile",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "Description": "Base Message Registry File locations",
+    "@odata.type": "#MessageRegistryFile.v1_0_2.MessageRegistryFile",
+    "Languages": [
+        "En"
+    ],
+    "Id": "BaseMessages",
+    "Location": [
+        {
+            "PublicationUri": "http://www.dmtf.org/sites/default/files/standards/documents/DSP8011_1.0.0a.json",
+            "Language": "En",
+            "Uri": "/redfish/v1/Registries/BaseMessages/BaseRegistry.v1_0_0.json"
+        }
+    ],
+    "Languages@odata.count": 1,
+    "@odata.id": "/redfish/v1/Registries/BaseMessages",
+    "Location@odata.count": 1
+}

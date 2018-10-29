@@ -1,0 +1,19 @@
+{
+    "Image": null,
+    "MediaTypes@odata.count": 2,
+    "Description": "iDRAC Virtual Media Services Settings",
+    "@odata.type": "#VirtualMedia.v1_0_2.VirtualMedia",
+    "ConnectedVia": "NotConnected",
+    "Name": "Virtual CD",
+    "Inserted": false,
+    "@odata.context": "/redfish/v1/$metadata#VirtualMedia.VirtualMedia",
+    "WriteProtected": null,
+    "ImageName": null,
+    "Id": "CD",
+    "MediaTypes": [
+        "CD",
+        "DVD"
+    ],
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/VirtualMedia/CD"
+}

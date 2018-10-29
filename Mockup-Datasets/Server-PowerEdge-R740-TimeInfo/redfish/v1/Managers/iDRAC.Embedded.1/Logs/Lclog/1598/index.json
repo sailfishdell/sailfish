@@ -1,0 +1,20 @@
+{
+    "MessageID": "RAC0401",
+    "EntryType": "Oem",
+    "Severity": "Critical",
+    "Name": " Log Entry 1598",
+    "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+    "Message": "iDRAC monitor: iDRAC process dsm_sa_popprocienvpop failed to respond, recovering from hung state..",
+    "Description": " Log Entry 1598",
+    "Created": "2017-10-27T13:35:11-05:00",
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1598",
+    "Id": "1598",
+    "OemRecordFormat": "Dell",
+    "Links": {},
+    "@odata.context": "/redfish/v1/$metadata#LogEntry.LogEntry",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "MessageArgs@odata.count": 1,
+    "MessageArgs": [
+        "iDRAC process dsm_sa_popprocienvpop failed to respond, recovering from hung state."
+    ]
+}

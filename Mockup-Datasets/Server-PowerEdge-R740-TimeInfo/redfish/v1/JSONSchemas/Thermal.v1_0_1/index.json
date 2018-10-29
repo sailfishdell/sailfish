@@ -1,0 +1,22 @@
+{
+    "Schema": "#Thermal.v1_0_1.Thermal",
+    "Languages@odata.count": 1,
+    "Location@odata.count": 1,
+    "Name": "Thermal Schema File",
+    "@odata.type": "#JsonSchemaFile.v1_0_2.JsonSchemaFile",
+    "@odata.context": "/redfish/v1/$metadata#JsonSchemaFile.JsonSchemaFile",
+    "Description": "Thermal Schema File Location",
+    "Id": "Thermal.v1_0_1",
+    "Location": [
+        {
+            "PublicationUri": "http://redfish.dmtf.org/schemas/v1/Thermal.v1_0_1.json",
+            "Uri": "/redfish/v1/Schemas/Thermal.v1_0_1.json",
+            "Language": "en"
+        }
+    ],
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "Languages": [
+        "en"
+    ],
+    "@odata.id": "/redfish/v1/JSONSchemas/Thermal.v1_0_1"
+}

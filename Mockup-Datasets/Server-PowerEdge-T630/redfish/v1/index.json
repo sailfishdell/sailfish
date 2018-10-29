@@ -1,0 +1,50 @@
+{
+    "Systems": {
+        "@odata.id": "/redfish/v1/Systems"
+    },
+    "Registries": {
+        "@odata.id": "/redfish/v1/Registries"
+    },
+    "Tasks": {
+        "@odata.id": "/redfish/v1/TaskService"
+    },
+    "Description": "Root Service",
+    "Chassis": {
+        "@odata.id": "/redfish/v1/Chassis"
+    },
+    "@odata.type": "#ServiceRoot.v1_0_2.ServiceRoot",
+    "Links": {
+        "Sessions": {
+            "@odata.id": "/redfish/v1/Sessions"
+        }
+    },
+    "Managers": {
+        "@odata.id": "/redfish/v1/Managers"
+    },
+    "Name": "Root Service",
+    "JsonSchemas": {
+        "@odata.id": "/redfish/v1/JSONSchemas"
+    },
+    "AccountService": {
+        "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/AccountService"
+    },
+    "@odata.context": "/redfish/v1/$metadata#ServiceRoot.ServiceRoot",
+    "EventService": {
+        "@odata.id": "/redfish/v1/EventService"
+    },
+    "Id": "RootService",
+    "SessionService": {
+        "@odata.id": "/redfish/v1/SessionService"
+    },
+    "RedfishVersion": "1.0.2",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "@odata.id": "/redfish/v1",
+    "Oem": {
+        "Dell": {
+            "@odata.type": "#DellServiceRoot.v1_0_0.ServiceRootSummary",
+            "IsBranded": 0,
+            "ManagerMACAddress": "17:17:17:23:23:23",
+            "ServiceTag": "GBM5CD2"
+        }
+    }
+}

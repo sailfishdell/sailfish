@@ -1,0 +1,12 @@
+{
+    "AssignedPrivileges": [],
+    "AssignedPrivileges@odata.count": 0,
+    "@Redfish.Copyright": "Copyright 2017 TTU.edu All rights reserved.",
+    "IsPredefined": true,
+    "@odata.context": "/redfish/v1/$metadata#Role.Role",
+    "@odata.type": "#Role.v1_0_2.Role",
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Roles/None",
+    "Description": "User Role None",
+    "Name": "User Role",
+    "Id": "None"
+}

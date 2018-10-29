@@ -1,0 +1,22 @@
+{
+    "Schema": "#SessionService.v1_0_0.SessionService",
+    "Languages@odata.count": 1,
+    "Location@odata.count": 1,
+    "Name": "SessionService Schema File",
+    "@odata.type": "#JsonSchemaFile.v1_0_2.JsonSchemaFile",
+    "@odata.context": "/redfish/v1/$metadata#JsonSchemaFile.JsonSchemaFile",
+    "Description": "SessionService Schema File Location",
+    "Id": "SessionService.v1_0_0",
+    "Location": [
+        {
+            "PublicationUri": "http://redfish.dmtf.org/schemas/v1/SessionService.v1_0_0.json",
+            "Uri": "/redfish/v1/Schemas/SessionService.v1_0_0.json",
+            "Language": "en"
+        }
+    ],
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "Languages": [
+        "en"
+    ],
+    "@odata.id": "/redfish/v1/JSONSchemas/SessionService.v1_0_0"
+}

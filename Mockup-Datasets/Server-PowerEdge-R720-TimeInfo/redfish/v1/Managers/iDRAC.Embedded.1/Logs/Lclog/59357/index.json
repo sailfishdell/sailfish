@@ -1,0 +1,20 @@
+{
+    "Name": " Log Entry 59357",
+    "OEMRecordFormat": "Dell",
+    "@odata.context": "/redfish/v1/$metadata#LogEntry.LogEntry",
+    "Message": "Firmware update successful.",
+    "Severity": "OK",
+    "Description": " Log Entry 59357",
+    "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+    "EntryType": "Oem",
+    "Id": "59357",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/59357",
+    "Links": {
+        "OriginOfCondition": {
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+        }
+    },
+    "Created": "2017-11-07T23:17:43-06:00",
+    "MessageID": "SUP1906"
+}

@@ -1,0 +1,178 @@
+{
+    "@odata.id": "/redfish/v1/Chassis/Chassis.Embedded.1/Power",
+    "PowerControl@odata.count": 1,
+    "Id": "Power",
+    "PowerSupplies": [
+        {
+            "Status": {
+                "State": "Enabled",
+                "Health": "OK"
+            },
+            "LastPowerOutputWatts": 1600,
+            "@odata.id": "/redfish/v1/Chassis/Chassis.Embedded.1/Power/PowerSupplies/PSU.Slot.1",
+            "SerialNumber": "CN179724BF0520",
+            "RelatedItem": [
+                {
+                    "@odata.id": "/redfish/v1/Chassis/Chassis.Embedded.1"
+                }
+            ],
+            "SparePartNumber": "095HR5A01",
+            "LineInputVoltage": null,
+            "PowerSupplyType": "AC",
+            "PartNumber": "095HR5A01",
+            "RelatedItem@odata.count": 1,
+            "LineInputVoltageType": "Unknown",
+            "PowerCapacityWatts": 1600,
+            "Name": "Chassis PS1 Status",
+            "MemberID": "PSU.Slot.1",
+            "FirmwareVersion": "",
+            "Redundancy": [
+                {
+                    "MinNumNeeded": 2,
+                    "@odata.id": "/redfish/v1/Chassis/Chassis.Embedded.1/Power/Redundancy/iDRAC.Embedded.1%23ChassisPSRedundancy",
+                    "Name": "Chassis PS Redundancy",
+                    "Mode": [
+                        {
+                            "Member": "N+1"
+                        }
+                    ],
+                    "MemberID": "iDRAC.Embedded.1#ChassisPSRedundancy",
+                    "RedundancySet@odata.count": 2,
+                    "RedundancySet": [
+                        {
+                            "@odata.id": "/redfish/v1/Chassis/Chassis.Embedded.1/Power/PowerSupplies/PSU.Slot.1"
+                        },
+                        {
+                            "@odata.id": "/redfish/v1/Chassis/Chassis.Embedded.1/Power/PowerSupplies/PSU.Slot.2"
+                        }
+                    ],
+                    "Status": {
+                        "State": "Enabled",
+                        "Health": "Ok"
+                    },
+                    "MaxNumSupported": 4
+                }
+            ],
+            "Model": "PWR SPLY,1600W,RDNT,DELTA     ",
+            "Redundancy@odata.count": 1
+        },
+        {
+            "Status": {
+                "State": "Enabled",
+                "Health": "OK"
+            },
+            "LastPowerOutputWatts": 1600,
+            "@odata.id": "/redfish/v1/Chassis/Chassis.Embedded.1/Power/PowerSupplies/PSU.Slot.2",
+            "SerialNumber": "CN179724C106PG",
+            "RelatedItem": [
+                {
+                    "@odata.id": "/redfish/v1/Chassis/Chassis.Embedded.1"
+                }
+            ],
+            "SparePartNumber": "095HR5A01",
+            "LineInputVoltage": null,
+            "PowerSupplyType": "AC",
+            "PartNumber": "095HR5A01",
+            "RelatedItem@odata.count": 1,
+            "LineInputVoltageType": "Unknown",
+            "PowerCapacityWatts": 1600,
+            "Name": "Chassis PS2 Status",
+            "MemberID": "PSU.Slot.2",
+            "FirmwareVersion": "",
+            "Redundancy": [
+                {
+                    "MinNumNeeded": 2,
+                    "@odata.id": "/redfish/v1/Chassis/Chassis.Embedded.1/Power/Redundancy/iDRAC.Embedded.1%23ChassisPSRedundancy",
+                    "Name": "Chassis PS Redundancy",
+                    "Mode": [
+                        {
+                            "Member": "N+1"
+                        }
+                    ],
+                    "MemberID": "iDRAC.Embedded.1#ChassisPSRedundancy",
+                    "RedundancySet@odata.count": 2,
+                    "RedundancySet": [
+                        {
+                            "@odata.id": "/redfish/v1/Chassis/Chassis.Embedded.1/Power/PowerSupplies/PSU.Slot.1"
+                        },
+                        {
+                            "@odata.id": "/redfish/v1/Chassis/Chassis.Embedded.1/Power/PowerSupplies/PSU.Slot.2"
+                        }
+                    ],
+                    "Status": {
+                        "State": "Enabled",
+                        "Health": "Ok"
+                    },
+                    "MaxNumSupported": 4
+                }
+            ],
+            "Model": "PWR SPLY,1600W,RDNT,DELTA     ",
+            "Redundancy@odata.count": 1
+        }
+    ],
+    "PowerControl": [
+        {
+            "PowerAvailableWatts": 0,
+            "@odata.id": "/redfish/v1/Chassis/Chassis.Embedded.1/Power/PowerControl",
+            "PowerMetrics": {
+                "IntervalInMin": 60,
+                "MinConsumedWatts": 7,
+                "AverageConsumedWatts": 7,
+                "MaxConsumedWatts": 8
+            },
+            "RelatedItem@odata.count": 1,
+            "RelatedItem": [
+                {
+                    "@odata.id": "/redfish/v1/Chassis/Chassis.Embedded.1"
+                }
+            ],
+            "PowerAllocatedWatts": 808,
+            "PowerRequestedWatts": 682,
+            "PowerConsumedWatts": 8,
+            "PowerCapacityWatts": 224,
+            "Name": "System Power Control",
+            "PowerLimit": {
+                "LimitInWatts": 396,
+                "CorrectionInMs": 0,
+                "LimitException": "HardPowerOff"
+            },
+            "MemberID": "PowerControl"
+        }
+    ],
+    "@odata.context": "/redfish/v1/$metadata#Power.Power",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "PowerSupplies@odata.count": 2,
+    "Description": "Power",
+    "Voltages@odata.count": 0,
+    "Voltages": [],
+    "Name": "Power",
+    "Redundancy": [
+        {
+            "MinNumNeeded": 2,
+            "@odata.id": "/redfish/v1/Chassis/Chassis.Embedded.1/Power/Redundancy/iDRAC.Embedded.1%23ChassisPSRedundancy",
+            "Name": "Chassis PS Redundancy",
+            "Mode": [
+                {
+                    "Member": "N+1"
+                }
+            ],
+            "MemberID": "iDRAC.Embedded.1#ChassisPSRedundancy",
+            "RedundancySet@odata.count": 2,
+            "RedundancySet": [
+                {
+                    "@odata.id": "/redfish/v1/Chassis/Chassis.Embedded.1/Power/PowerSupplies/PSU.Slot.1"
+                },
+                {
+                    "@odata.id": "/redfish/v1/Chassis/Chassis.Embedded.1/Power/PowerSupplies/PSU.Slot.2"
+                }
+            ],
+            "Status": {
+                "State": "Enabled",
+                "Health": "Ok"
+            },
+            "MaxNumSupported": 4
+        }
+    ],
+    "Redundancy@odata.count": 1,
+    "@odata.type": "#Power.v1_0_2.Power"
+}

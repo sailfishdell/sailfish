@@ -1,0 +1,22 @@
+{
+    "Languages": [
+        "en"
+    ],
+    "@odata.type": "#JsonSchemaFile.v1_0_2.JsonSchemaFile",
+    "@Redfish.Copyright": "Copyright 2017 TTU.edu All rights reserved.",
+    "@odata.context": "/redfish/v1/$metadata#JsonSchemaFile.JsonSchemaFile",
+    "@odata.id": "/redfish/v1/JSONSchemas/JsonSchemaFile",
+    "Location": [
+        {
+            "Uri": "/redfish/v1/Schemas/JsonSchemaFile.json",
+            "PublicationUri": "http://redfish.dmtf.org/schemas/v1/JsonSchemaFile.json",
+            "Language": "en"
+        }
+    ],
+    "Id": "JsonSchemaFile",
+    "Languages@odata.count": 1,
+    "Description": "JsonSchemaFile Schema File Location",
+    "Location@odata.count": 1,
+    "Name": "JsonSchemaFile Schema File",
+    "Schema": "#JsonSchemaFile.JsonSchemaFile"
+}

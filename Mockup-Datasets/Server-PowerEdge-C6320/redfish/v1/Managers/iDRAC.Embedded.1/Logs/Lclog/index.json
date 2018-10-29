@@ -1,0 +1,1122 @@
+{
+    "Members@odata.count": 3727,
+    "@odata.type": "#LogEntryCollection.LogEntryCollection",
+    "@Redfish.Copyright": "Copyright 2017 TTU.edu All rights reserved.",
+    "@odata.nextLink": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog?$skip=50",
+    "@odata.context": "/redfish/v1/$metadata#LogEntryCollection.LogEntryCollection",
+    "Description": "LC Logs for this manager",
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog",
+    "Members": [
+        {
+            "MessageArgs": [
+                "root",
+                "10.100.29.254",
+                "REDFISH"
+            ],
+            "MessageID": "USR0030",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/28321",
+            "MessageArgs@odata.count": 3,
+            "Created": "2017-09-15T20:07:37-05:00",
+            "Id": "28321",
+            "Message": "Successfully logged in using root, from 10.100.29.254 and REDFISH.",
+            "Severity": "Ok",
+            "Description": " Log Entry 28321",
+            "OEMRecordFormat": "Dell",
+            "EntryType": "Oem",
+            "Name": " Log Entry 28321",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            }
+        },
+        {
+            "MessageArgs": [
+                "root-p",
+                "10.100.29.254",
+                "REDFISH",
+                "60"
+            ],
+            "MessageID": "USR0034",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/28320",
+            "MessageArgs@odata.count": 4,
+            "Created": "2017-09-15T18:24:15-05:00",
+            "Id": "28320",
+            "Message": "Login attempt alert for root-p from 10.100.29.254 using REDFISH, IP will be blocked for 60 seconds.",
+            "Severity": "Warning",
+            "Description": " Log Entry 28320",
+            "OEMRecordFormat": "Dell",
+            "EntryType": "Oem",
+            "Name": " Log Entry 28320",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            }
+        },
+        {
+            "MessageArgs": [
+                "root-p",
+                "10.100.29.254",
+                "REDFISH"
+            ],
+            "MessageID": "USR0031",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/28319",
+            "MessageArgs@odata.count": 3,
+            "Created": "2017-09-15T18:24:15-05:00",
+            "Id": "28319",
+            "Message": "Unable to log in for root-p from 10.100.29.254 using REDFISH.",
+            "Severity": "Ok",
+            "Description": " Log Entry 28319",
+            "OEMRecordFormat": "Dell",
+            "EntryType": "Oem",
+            "Name": " Log Entry 28319",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            }
+        },
+        {
+            "MessageArgs": [
+                "root-p",
+                "10.100.29.254",
+                "REDFISH",
+                "60"
+            ],
+            "MessageID": "USR0034",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/28318",
+            "MessageArgs@odata.count": 4,
+            "Created": "2017-09-15T18:21:25-05:00",
+            "Id": "28318",
+            "Message": "Login attempt alert for root-p from 10.100.29.254 using REDFISH, IP will be blocked for 60 seconds.",
+            "Severity": "Warning",
+            "Description": " Log Entry 28318",
+            "OEMRecordFormat": "Dell",
+            "EntryType": "Oem",
+            "Name": " Log Entry 28318",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            }
+        },
+        {
+            "MessageArgs": [
+                "root-p",
+                "10.100.29.254",
+                "REDFISH"
+            ],
+            "MessageID": "USR0031",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/28317",
+            "MessageArgs@odata.count": 3,
+            "Created": "2017-09-15T18:21:25-05:00",
+            "Id": "28317",
+            "Message": "Unable to log in for root-p from 10.100.29.254 using REDFISH.",
+            "Severity": "Ok",
+            "Description": " Log Entry 28317",
+            "OEMRecordFormat": "Dell",
+            "EntryType": "Oem",
+            "Name": " Log Entry 28317",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            }
+        },
+        {
+            "MessageArgs": [
+                "root-p",
+                "10.100.29.254",
+                "REDFISH",
+                "60"
+            ],
+            "MessageID": "USR0034",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/28316",
+            "MessageArgs@odata.count": 4,
+            "Created": "2017-09-15T18:20:03-05:00",
+            "Id": "28316",
+            "Message": "Login attempt alert for root-p from 10.100.29.254 using REDFISH, IP will be blocked for 60 seconds.",
+            "Severity": "Warning",
+            "Description": " Log Entry 28316",
+            "OEMRecordFormat": "Dell",
+            "EntryType": "Oem",
+            "Name": " Log Entry 28316",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            }
+        },
+        {
+            "MessageArgs": [
+                "root-p",
+                "10.100.29.254",
+                "REDFISH"
+            ],
+            "MessageID": "USR0031",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/28315",
+            "MessageArgs@odata.count": 3,
+            "Created": "2017-09-15T18:20:03-05:00",
+            "Id": "28315",
+            "Message": "Unable to log in for root-p from 10.100.29.254 using REDFISH.",
+            "Severity": "Ok",
+            "Description": " Log Entry 28315",
+            "OEMRecordFormat": "Dell",
+            "EntryType": "Oem",
+            "Name": " Log Entry 28315",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            }
+        },
+        {
+            "MessageArgs": [
+                "root-p",
+                "10.100.29.254",
+                "REDFISH",
+                "30"
+            ],
+            "MessageID": "USR0034",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/28314",
+            "MessageArgs@odata.count": 4,
+            "Created": "2017-09-15T18:19:31-05:00",
+            "Id": "28314",
+            "Message": "Login attempt alert for root-p from 10.100.29.254 using REDFISH, IP will be blocked for 30 seconds.",
+            "Severity": "Warning",
+            "Description": " Log Entry 28314",
+            "OEMRecordFormat": "Dell",
+            "EntryType": "Oem",
+            "Name": " Log Entry 28314",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            }
+        },
+        {
+            "MessageArgs": [
+                "1"
+            ],
+            "MessageID": "LOG007",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/28313",
+            "MessageArgs@odata.count": 1,
+            "Created": "2017-09-15T18:19:31-05:00",
+            "Id": "28313",
+            "Message": "The previous log entry was repeated 1 times.",
+            "Severity": "Ok",
+            "Description": " Log Entry 28313",
+            "OEMRecordFormat": "Dell",
+            "EntryType": "Oem",
+            "Name": " Log Entry 28313",
+            "Links": {}
+        },
+        {
+            "MessageArgs": [
+                "root-p",
+                "10.100.29.254",
+                "REDFISH"
+            ],
+            "MessageID": "USR0031",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/28312",
+            "MessageArgs@odata.count": 3,
+            "Created": "2017-09-15T18:19:30-05:00",
+            "Id": "28312",
+            "Message": "Unable to log in for root-p from 10.100.29.254 using REDFISH.",
+            "Severity": "Ok",
+            "Description": " Log Entry 28312",
+            "OEMRecordFormat": "Dell",
+            "EntryType": "Oem",
+            "Name": " Log Entry 28312",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            }
+        },
+        {
+            "MessageArgs": [
+                "root",
+                "10.100.29.254",
+                "IPMI over LAN"
+            ],
+            "MessageID": "USR0032",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/28311",
+            "MessageArgs@odata.count": 3,
+            "Created": "2017-09-15T16:37:20-05:00",
+            "Id": "28311",
+            "Message": "The session for root from 10.100.29.254 using IPMI over LAN is logged off.",
+            "Severity": "Ok",
+            "Description": " Log Entry 28311",
+            "OEMRecordFormat": "Dell",
+            "EntryType": "Oem",
+            "Name": " Log Entry 28311",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            }
+        },
+        {
+            "MessageArgs": [
+                "root",
+                "10.100.29.254",
+                "IPMI over LAN"
+            ],
+            "MessageID": "USR0030",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/28310",
+            "MessageArgs@odata.count": 3,
+            "Created": "2017-09-15T16:37:20-05:00",
+            "Id": "28310",
+            "Message": "Successfully logged in using root, from 10.100.29.254 and IPMI over LAN.",
+            "Severity": "Ok",
+            "Description": " Log Entry 28310",
+            "OEMRecordFormat": "Dell",
+            "EntryType": "Oem",
+            "Name": " Log Entry 28310",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            }
+        },
+        {
+            "MessageArgs": [
+                "NIC Embedded 1",
+                "1"
+            ],
+            "MessageID": "NIC101",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/28309",
+            "MessageArgs@odata.count": 2,
+            "Created": "2017-08-14T13:23:35-05:00",
+            "Id": "28309",
+            "Message": "The NIC Embedded 1 Port 1 network link is started.",
+            "Severity": "Ok",
+            "Description": " Log Entry 28309",
+            "OEMRecordFormat": "Dell",
+            "EntryType": "Oem",
+            "Name": " Log Entry 28309",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Systems/System.Embedded.1/EthernetInterfaces/NIC.Embedded.1-1-1"
+                }
+            }
+        },
+        {
+            "MessageArgs": [
+                "NIC Embedded 1",
+                "1"
+            ],
+            "MessageID": "NIC100",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/28308",
+            "MessageArgs@odata.count": 2,
+            "Created": "2017-08-14T13:21:00-05:00",
+            "Id": "28308",
+            "Message": "The NIC Embedded 1 Port 1 network link is down.",
+            "Severity": "Warning",
+            "Description": " Log Entry 28308",
+            "OEMRecordFormat": "Dell",
+            "EntryType": "Oem",
+            "Name": " Log Entry 28308",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Systems/System.Embedded.1/EthernetInterfaces/NIC.Embedded.1-1-1"
+                }
+            }
+        },
+        {
+            "MessageArgs": [
+                "NIC Embedded 1",
+                "2"
+            ],
+            "MessageID": "NIC101",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/28307",
+            "MessageArgs@odata.count": 2,
+            "Created": "2017-08-02T17:59:31-05:00",
+            "Id": "28307",
+            "Message": "The NIC Embedded 1 Port 2 network link is started.",
+            "Severity": "Ok",
+            "Description": " Log Entry 28307",
+            "OEMRecordFormat": "Dell",
+            "EntryType": "Oem",
+            "Name": " Log Entry 28307",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Systems/System.Embedded.1/EthernetInterfaces/NIC.Embedded.2-1-1"
+                }
+            }
+        },
+        {
+            "MessageArgs": [
+                "NIC Embedded 1",
+                "2"
+            ],
+            "MessageID": "NIC100",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/28306",
+            "MessageArgs@odata.count": 2,
+            "Created": "2017-08-02T17:58:01-05:00",
+            "Id": "28306",
+            "Message": "The NIC Embedded 1 Port 2 network link is down.",
+            "Severity": "Warning",
+            "Description": " Log Entry 28306",
+            "OEMRecordFormat": "Dell",
+            "EntryType": "Oem",
+            "Name": " Log Entry 28306",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Systems/System.Embedded.1/EthernetInterfaces/NIC.Embedded.2-1-1"
+                }
+            }
+        },
+        {
+            "MessageArgs": [
+                "NIC Embedded 1",
+                "2"
+            ],
+            "MessageID": "NIC101",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/28305",
+            "MessageArgs@odata.count": 2,
+            "Created": "2017-07-26T03:16:46-05:00",
+            "Id": "28305",
+            "Message": "The NIC Embedded 1 Port 2 network link is started.",
+            "Severity": "Ok",
+            "Description": " Log Entry 28305",
+            "OEMRecordFormat": "Dell",
+            "EntryType": "Oem",
+            "Name": " Log Entry 28305",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Systems/System.Embedded.1/EthernetInterfaces/NIC.Embedded.2-1-1"
+                }
+            }
+        },
+        {
+            "MessageArgs": [
+                "NIC Embedded 1",
+                "2"
+            ],
+            "MessageID": "NIC100",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/28304",
+            "MessageArgs@odata.count": 2,
+            "Created": "2017-07-26T03:14:46-05:00",
+            "Id": "28304",
+            "Message": "The NIC Embedded 1 Port 2 network link is down.",
+            "Severity": "Warning",
+            "Description": " Log Entry 28304",
+            "OEMRecordFormat": "Dell",
+            "EntryType": "Oem",
+            "Name": " Log Entry 28304",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Systems/System.Embedded.1/EthernetInterfaces/NIC.Embedded.2-1-1"
+                }
+            }
+        },
+        {
+            "MessageArgs": [
+                "NIC Embedded 1",
+                "2"
+            ],
+            "MessageID": "NIC101",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/28303",
+            "MessageArgs@odata.count": 2,
+            "Created": "2017-07-26T03:12:30-05:00",
+            "Id": "28303",
+            "Message": "The NIC Embedded 1 Port 2 network link is started.",
+            "Severity": "Ok",
+            "Description": " Log Entry 28303",
+            "OEMRecordFormat": "Dell",
+            "EntryType": "Oem",
+            "Name": " Log Entry 28303",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Systems/System.Embedded.1/EthernetInterfaces/NIC.Embedded.2-1-1"
+                }
+            }
+        },
+        {
+            "MessageArgs": [
+                "NIC Embedded 1",
+                "2"
+            ],
+            "MessageID": "NIC100",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/28302",
+            "MessageArgs@odata.count": 2,
+            "Created": "2017-07-26T03:10:30-05:00",
+            "Id": "28302",
+            "Message": "The NIC Embedded 1 Port 2 network link is down.",
+            "Severity": "Warning",
+            "Description": " Log Entry 28302",
+            "OEMRecordFormat": "Dell",
+            "EntryType": "Oem",
+            "Name": " Log Entry 28302",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Systems/System.Embedded.1/EthernetInterfaces/NIC.Embedded.2-1-1"
+                }
+            }
+        },
+        {
+            "MessageArgs": [
+                "NIC Embedded 1",
+                "2"
+            ],
+            "MessageID": "NIC101",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/28301",
+            "MessageArgs@odata.count": 2,
+            "Created": "2017-07-19T00:07:42-05:00",
+            "Id": "28301",
+            "Message": "The NIC Embedded 1 Port 2 network link is started.",
+            "Severity": "Ok",
+            "Description": " Log Entry 28301",
+            "OEMRecordFormat": "Dell",
+            "EntryType": "Oem",
+            "Name": " Log Entry 28301",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Systems/System.Embedded.1/EthernetInterfaces/NIC.Embedded.2-1-1"
+                }
+            }
+        },
+        {
+            "MessageArgs": [
+                "NIC Embedded 1",
+                "2"
+            ],
+            "MessageID": "NIC100",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/28300",
+            "MessageArgs@odata.count": 2,
+            "Created": "2017-07-19T00:05:41-05:00",
+            "Id": "28300",
+            "Message": "The NIC Embedded 1 Port 2 network link is down.",
+            "Severity": "Warning",
+            "Description": " Log Entry 28300",
+            "OEMRecordFormat": "Dell",
+            "EntryType": "Oem",
+            "Name": " Log Entry 28300",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Systems/System.Embedded.1/EthernetInterfaces/NIC.Embedded.2-1-1"
+                }
+            }
+        },
+        {
+            "MessageArgs": [
+                "NIC Embedded 1",
+                "2"
+            ],
+            "MessageID": "NIC101",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/28299",
+            "MessageArgs@odata.count": 2,
+            "Created": "2017-07-19T00:03:51-05:00",
+            "Id": "28299",
+            "Message": "The NIC Embedded 1 Port 2 network link is started.",
+            "Severity": "Ok",
+            "Description": " Log Entry 28299",
+            "OEMRecordFormat": "Dell",
+            "EntryType": "Oem",
+            "Name": " Log Entry 28299",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Systems/System.Embedded.1/EthernetInterfaces/NIC.Embedded.2-1-1"
+                }
+            }
+        },
+        {
+            "MessageArgs": [
+                "NIC Embedded 1",
+                "2"
+            ],
+            "MessageID": "NIC100",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/28298",
+            "MessageArgs@odata.count": 2,
+            "Created": "2017-07-19T00:02:21-05:00",
+            "Id": "28298",
+            "Message": "The NIC Embedded 1 Port 2 network link is down.",
+            "Severity": "Warning",
+            "Description": " Log Entry 28298",
+            "OEMRecordFormat": "Dell",
+            "EntryType": "Oem",
+            "Name": " Log Entry 28298",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Systems/System.Embedded.1/EthernetInterfaces/NIC.Embedded.2-1-1"
+                }
+            }
+        },
+        {
+            "MessageArgs": [
+                "NIC Embedded 1",
+                "2"
+            ],
+            "MessageID": "NIC101",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/28297",
+            "MessageArgs@odata.count": 2,
+            "Created": "2017-07-12T01:57:46-05:00",
+            "Id": "28297",
+            "Message": "The NIC Embedded 1 Port 2 network link is started.",
+            "Severity": "Ok",
+            "Description": " Log Entry 28297",
+            "OEMRecordFormat": "Dell",
+            "EntryType": "Oem",
+            "Name": " Log Entry 28297",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Systems/System.Embedded.1/EthernetInterfaces/NIC.Embedded.2-1-1"
+                }
+            }
+        },
+        {
+            "MessageArgs": [
+                "NIC Embedded 1",
+                "2"
+            ],
+            "MessageID": "NIC100",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/28296",
+            "MessageArgs@odata.count": 2,
+            "Created": "2017-07-12T01:57:41-05:00",
+            "Id": "28296",
+            "Message": "The NIC Embedded 1 Port 2 network link is down.",
+            "Severity": "Warning",
+            "Description": " Log Entry 28296",
+            "OEMRecordFormat": "Dell",
+            "EntryType": "Oem",
+            "Name": " Log Entry 28296",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Systems/System.Embedded.1/EthernetInterfaces/NIC.Embedded.2-1-1"
+                }
+            }
+        },
+        {
+            "MessageArgs": [
+                "NIC Embedded 1",
+                "2"
+            ],
+            "MessageID": "NIC101",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/28295",
+            "MessageArgs@odata.count": 2,
+            "Created": "2017-07-05T20:45:35-05:00",
+            "Id": "28295",
+            "Message": "The NIC Embedded 1 Port 2 network link is started.",
+            "Severity": "Ok",
+            "Description": " Log Entry 28295",
+            "OEMRecordFormat": "Dell",
+            "EntryType": "Oem",
+            "Name": " Log Entry 28295",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Systems/System.Embedded.1/EthernetInterfaces/NIC.Embedded.2-1-1"
+                }
+            }
+        },
+        {
+            "MessageArgs": [
+                "NIC Embedded 1",
+                "2"
+            ],
+            "MessageID": "NIC100",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/28294",
+            "MessageArgs@odata.count": 2,
+            "Created": "2017-07-05T20:43:35-05:00",
+            "Id": "28294",
+            "Message": "The NIC Embedded 1 Port 2 network link is down.",
+            "Severity": "Warning",
+            "Description": " Log Entry 28294",
+            "OEMRecordFormat": "Dell",
+            "EntryType": "Oem",
+            "Name": " Log Entry 28294",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Systems/System.Embedded.1/EthernetInterfaces/NIC.Embedded.2-1-1"
+                }
+            }
+        },
+        {
+            "MessageArgs": [
+                "NIC Embedded 1",
+                "2"
+            ],
+            "MessageID": "NIC101",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/28293",
+            "MessageArgs@odata.count": 2,
+            "Created": "2017-06-27T22:06:25-05:00",
+            "Id": "28293",
+            "Message": "The NIC Embedded 1 Port 2 network link is started.",
+            "Severity": "Ok",
+            "Description": " Log Entry 28293",
+            "OEMRecordFormat": "Dell",
+            "EntryType": "Oem",
+            "Name": " Log Entry 28293",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Systems/System.Embedded.1/EthernetInterfaces/NIC.Embedded.2-1-1"
+                }
+            }
+        },
+        {
+            "MessageArgs": [
+                "NIC Embedded 1",
+                "2"
+            ],
+            "MessageID": "NIC100",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/28292",
+            "MessageArgs@odata.count": 2,
+            "Created": "2017-06-27T22:04:30-05:00",
+            "Id": "28292",
+            "Message": "The NIC Embedded 1 Port 2 network link is down.",
+            "Severity": "Warning",
+            "Description": " Log Entry 28292",
+            "OEMRecordFormat": "Dell",
+            "EntryType": "Oem",
+            "Name": " Log Entry 28292",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Systems/System.Embedded.1/EthernetInterfaces/NIC.Embedded.2-1-1"
+                }
+            }
+        },
+        {
+            "MessageArgs": [
+                "NIC Embedded 1",
+                "2"
+            ],
+            "MessageID": "NIC101",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/28291",
+            "MessageArgs@odata.count": 2,
+            "Created": "2017-06-27T22:03:09-05:00",
+            "Id": "28291",
+            "Message": "The NIC Embedded 1 Port 2 network link is started.",
+            "Severity": "Ok",
+            "Description": " Log Entry 28291",
+            "OEMRecordFormat": "Dell",
+            "EntryType": "Oem",
+            "Name": " Log Entry 28291",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Systems/System.Embedded.1/EthernetInterfaces/NIC.Embedded.2-1-1"
+                }
+            }
+        },
+        {
+            "MessageArgs": [
+                "NIC Embedded 1",
+                "2"
+            ],
+            "MessageID": "NIC100",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/28290",
+            "MessageArgs@odata.count": 2,
+            "Created": "2017-06-27T22:01:09-05:00",
+            "Id": "28290",
+            "Message": "The NIC Embedded 1 Port 2 network link is down.",
+            "Severity": "Warning",
+            "Description": " Log Entry 28290",
+            "OEMRecordFormat": "Dell",
+            "EntryType": "Oem",
+            "Name": " Log Entry 28290",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Systems/System.Embedded.1/EthernetInterfaces/NIC.Embedded.2-1-1"
+                }
+            }
+        },
+        {
+            "MessageArgs": [
+                "NIC Embedded 1",
+                "2"
+            ],
+            "MessageID": "NIC101",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/28289",
+            "MessageArgs@odata.count": 2,
+            "Created": "2017-06-20T20:39:30-05:00",
+            "Id": "28289",
+            "Message": "The NIC Embedded 1 Port 2 network link is started.",
+            "Severity": "Ok",
+            "Description": " Log Entry 28289",
+            "OEMRecordFormat": "Dell",
+            "EntryType": "Oem",
+            "Name": " Log Entry 28289",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Systems/System.Embedded.1/EthernetInterfaces/NIC.Embedded.2-1-1"
+                }
+            }
+        },
+        {
+            "MessageArgs": [
+                "NIC Embedded 1",
+                "2"
+            ],
+            "MessageID": "NIC100",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/28288",
+            "MessageArgs@odata.count": 2,
+            "Created": "2017-06-20T20:37:30-05:00",
+            "Id": "28288",
+            "Message": "The NIC Embedded 1 Port 2 network link is down.",
+            "Severity": "Warning",
+            "Description": " Log Entry 28288",
+            "OEMRecordFormat": "Dell",
+            "EntryType": "Oem",
+            "Name": " Log Entry 28288",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Systems/System.Embedded.1/EthernetInterfaces/NIC.Embedded.2-1-1"
+                }
+            }
+        },
+        {
+            "MessageArgs": [
+                "NIC Embedded 1",
+                "2"
+            ],
+            "MessageID": "NIC101",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/28287",
+            "MessageArgs@odata.count": 2,
+            "Created": "2017-06-20T20:35:50-05:00",
+            "Id": "28287",
+            "Message": "The NIC Embedded 1 Port 2 network link is started.",
+            "Severity": "Ok",
+            "Description": " Log Entry 28287",
+            "OEMRecordFormat": "Dell",
+            "EntryType": "Oem",
+            "Name": " Log Entry 28287",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Systems/System.Embedded.1/EthernetInterfaces/NIC.Embedded.2-1-1"
+                }
+            }
+        },
+        {
+            "MessageArgs": [
+                "NIC Embedded 1",
+                "2"
+            ],
+            "MessageID": "NIC100",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/28286",
+            "MessageArgs@odata.count": 2,
+            "Created": "2017-06-20T20:33:50-05:00",
+            "Id": "28286",
+            "Message": "The NIC Embedded 1 Port 2 network link is down.",
+            "Severity": "Warning",
+            "Description": " Log Entry 28286",
+            "OEMRecordFormat": "Dell",
+            "EntryType": "Oem",
+            "Name": " Log Entry 28286",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Systems/System.Embedded.1/EthernetInterfaces/NIC.Embedded.2-1-1"
+                }
+            }
+        },
+        {
+            "MessageArgs": [
+                "NIC Embedded 1",
+                "2"
+            ],
+            "MessageID": "NIC101",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/28285",
+            "MessageArgs@odata.count": 2,
+            "Created": "2017-06-14T23:46:56-05:00",
+            "Id": "28285",
+            "Message": "The NIC Embedded 1 Port 2 network link is started.",
+            "Severity": "Ok",
+            "Description": " Log Entry 28285",
+            "OEMRecordFormat": "Dell",
+            "EntryType": "Oem",
+            "Name": " Log Entry 28285",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Systems/System.Embedded.1/EthernetInterfaces/NIC.Embedded.2-1-1"
+                }
+            }
+        },
+        {
+            "MessageArgs": [
+                "NIC Embedded 1",
+                "2"
+            ],
+            "MessageID": "NIC100",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/28284",
+            "MessageArgs@odata.count": 2,
+            "Created": "2017-06-14T23:44:56-05:00",
+            "Id": "28284",
+            "Message": "The NIC Embedded 1 Port 2 network link is down.",
+            "Severity": "Warning",
+            "Description": " Log Entry 28284",
+            "OEMRecordFormat": "Dell",
+            "EntryType": "Oem",
+            "Name": " Log Entry 28284",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Systems/System.Embedded.1/EthernetInterfaces/NIC.Embedded.2-1-1"
+                }
+            }
+        },
+        {
+            "MessageArgs": [
+                "NIC Embedded 1",
+                "2"
+            ],
+            "MessageID": "NIC101",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/28283",
+            "MessageArgs@odata.count": 2,
+            "Created": "2017-06-14T23:43:26-05:00",
+            "Id": "28283",
+            "Message": "The NIC Embedded 1 Port 2 network link is started.",
+            "Severity": "Ok",
+            "Description": " Log Entry 28283",
+            "OEMRecordFormat": "Dell",
+            "EntryType": "Oem",
+            "Name": " Log Entry 28283",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Systems/System.Embedded.1/EthernetInterfaces/NIC.Embedded.2-1-1"
+                }
+            }
+        },
+        {
+            "MessageArgs": [
+                "NIC Embedded 1",
+                "2"
+            ],
+            "MessageID": "NIC100",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/28282",
+            "MessageArgs@odata.count": 2,
+            "Created": "2017-06-14T23:41:30-05:00",
+            "Id": "28282",
+            "Message": "The NIC Embedded 1 Port 2 network link is down.",
+            "Severity": "Warning",
+            "Description": " Log Entry 28282",
+            "OEMRecordFormat": "Dell",
+            "EntryType": "Oem",
+            "Name": " Log Entry 28282",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Systems/System.Embedded.1/EthernetInterfaces/NIC.Embedded.2-1-1"
+                }
+            }
+        },
+        {
+            "MessageArgs": [
+                "NIC Embedded 1",
+                "2"
+            ],
+            "MessageID": "NIC101",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/28281",
+            "MessageArgs@odata.count": 2,
+            "Created": "2017-06-06T23:33:00-05:00",
+            "Id": "28281",
+            "Message": "The NIC Embedded 1 Port 2 network link is started.",
+            "Severity": "Ok",
+            "Description": " Log Entry 28281",
+            "OEMRecordFormat": "Dell",
+            "EntryType": "Oem",
+            "Name": " Log Entry 28281",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Systems/System.Embedded.1/EthernetInterfaces/NIC.Embedded.2-1-1"
+                }
+            }
+        },
+        {
+            "MessageArgs": [
+                "NIC Embedded 1",
+                "2"
+            ],
+            "MessageID": "NIC100",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/28280",
+            "MessageArgs@odata.count": 2,
+            "Created": "2017-06-06T23:31:05-05:00",
+            "Id": "28280",
+            "Message": "The NIC Embedded 1 Port 2 network link is down.",
+            "Severity": "Warning",
+            "Description": " Log Entry 28280",
+            "OEMRecordFormat": "Dell",
+            "EntryType": "Oem",
+            "Name": " Log Entry 28280",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Systems/System.Embedded.1/EthernetInterfaces/NIC.Embedded.2-1-1"
+                }
+            }
+        },
+        {
+            "MessageArgs": [
+                "NIC Embedded 1",
+                "2"
+            ],
+            "MessageID": "NIC101",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/28279",
+            "MessageArgs@odata.count": 2,
+            "Created": "2017-06-06T23:29:35-05:00",
+            "Id": "28279",
+            "Message": "The NIC Embedded 1 Port 2 network link is started.",
+            "Severity": "Ok",
+            "Description": " Log Entry 28279",
+            "OEMRecordFormat": "Dell",
+            "EntryType": "Oem",
+            "Name": " Log Entry 28279",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Systems/System.Embedded.1/EthernetInterfaces/NIC.Embedded.2-1-1"
+                }
+            }
+        },
+        {
+            "MessageArgs": [
+                "NIC Embedded 1",
+                "2"
+            ],
+            "MessageID": "NIC100",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/28278",
+            "MessageArgs@odata.count": 2,
+            "Created": "2017-06-06T23:27:39-05:00",
+            "Id": "28278",
+            "Message": "The NIC Embedded 1 Port 2 network link is down.",
+            "Severity": "Warning",
+            "Description": " Log Entry 28278",
+            "OEMRecordFormat": "Dell",
+            "EntryType": "Oem",
+            "Name": " Log Entry 28278",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Systems/System.Embedded.1/EthernetInterfaces/NIC.Embedded.2-1-1"
+                }
+            }
+        },
+        {
+            "MessageArgs": [
+                "NIC Embedded 1",
+                "2"
+            ],
+            "MessageID": "NIC101",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/28277",
+            "MessageArgs@odata.count": 2,
+            "Created": "2017-06-01T21:19:18-05:00",
+            "Id": "28277",
+            "Message": "The NIC Embedded 1 Port 2 network link is started.",
+            "Severity": "Ok",
+            "Description": " Log Entry 28277",
+            "OEMRecordFormat": "Dell",
+            "EntryType": "Oem",
+            "Name": " Log Entry 28277",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Systems/System.Embedded.1/EthernetInterfaces/NIC.Embedded.2-1-1"
+                }
+            }
+        },
+        {
+            "MessageArgs": [
+                "NIC Embedded 1",
+                "2"
+            ],
+            "MessageID": "NIC100",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/28276",
+            "MessageArgs@odata.count": 2,
+            "Created": "2017-06-01T21:15:48-05:00",
+            "Id": "28276",
+            "Message": "The NIC Embedded 1 Port 2 network link is down.",
+            "Severity": "Warning",
+            "Description": " Log Entry 28276",
+            "OEMRecordFormat": "Dell",
+            "EntryType": "Oem",
+            "Name": " Log Entry 28276",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Systems/System.Embedded.1/EthernetInterfaces/NIC.Embedded.2-1-1"
+                }
+            }
+        },
+        {
+            "MessageArgs": [
+                "NIC Embedded 1",
+                "2"
+            ],
+            "MessageID": "NIC101",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/28275",
+            "MessageArgs@odata.count": 2,
+            "Created": "2017-05-31T10:22:38-05:00",
+            "Id": "28275",
+            "Message": "The NIC Embedded 1 Port 2 network link is started.",
+            "Severity": "Ok",
+            "Description": " Log Entry 28275",
+            "OEMRecordFormat": "Dell",
+            "EntryType": "Oem",
+            "Name": " Log Entry 28275",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Systems/System.Embedded.1/EthernetInterfaces/NIC.Embedded.2-1-1"
+                }
+            }
+        },
+        {
+            "MessageArgs": [
+                "NIC Embedded 1",
+                "2"
+            ],
+            "MessageID": "NIC100",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/28274",
+            "MessageArgs@odata.count": 2,
+            "Created": "2017-05-31T10:20:37-05:00",
+            "Id": "28274",
+            "Message": "The NIC Embedded 1 Port 2 network link is down.",
+            "Severity": "Warning",
+            "Description": " Log Entry 28274",
+            "OEMRecordFormat": "Dell",
+            "EntryType": "Oem",
+            "Name": " Log Entry 28274",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Systems/System.Embedded.1/EthernetInterfaces/NIC.Embedded.2-1-1"
+                }
+            }
+        },
+        {
+            "MessageArgs": [
+                "NIC Embedded 1",
+                "2"
+            ],
+            "MessageID": "NIC101",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/28273",
+            "MessageArgs@odata.count": 2,
+            "Created": "2017-05-24T16:17:22-05:00",
+            "Id": "28273",
+            "Message": "The NIC Embedded 1 Port 2 network link is started.",
+            "Severity": "Ok",
+            "Description": " Log Entry 28273",
+            "OEMRecordFormat": "Dell",
+            "EntryType": "Oem",
+            "Name": " Log Entry 28273",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Systems/System.Embedded.1/EthernetInterfaces/NIC.Embedded.2-1-1"
+                }
+            }
+        },
+        {
+            "MessageArgs": [
+                "NIC Embedded 1",
+                "2"
+            ],
+            "MessageID": "NIC100",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/28272",
+            "MessageArgs@odata.count": 2,
+            "Created": "2017-05-24T16:15:22-05:00",
+            "Id": "28272",
+            "Message": "The NIC Embedded 1 Port 2 network link is down.",
+            "Severity": "Warning",
+            "Description": " Log Entry 28272",
+            "OEMRecordFormat": "Dell",
+            "EntryType": "Oem",
+            "Name": " Log Entry 28272",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Systems/System.Embedded.1/EthernetInterfaces/NIC.Embedded.2-1-1"
+                }
+            }
+        }
+    ],
+    "Name": "Log Entry Collection"
+}

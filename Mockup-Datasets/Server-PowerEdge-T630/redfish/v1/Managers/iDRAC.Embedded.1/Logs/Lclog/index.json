@@ -1,0 +1,1132 @@
+{
+    "Members": [
+        {
+            "OEMRecordFormat": "Dell",
+            "Description": " Log Entry 22936",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "MessageID": "USR0030",
+            "MessageArgs@odata.count": 3,
+            "Name": " Log Entry 22936",
+            "Severity": "Ok",
+            "Message": "Successfully logged in using root, from 100.68.124.136 and REDFISH.",
+            "EntryType": "Oem",
+            "Created": "2017-08-17T21:46:08-05:00",
+            "Id": "22936",
+            "MessageArgs": [
+                "root",
+                "100.68.124.136",
+                "REDFISH"
+            ],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/22936"
+        },
+        {
+            "OEMRecordFormat": "Dell",
+            "Description": " Log Entry 22935",
+            "Links": {},
+            "MessageID": "LOG007",
+            "MessageArgs@odata.count": 1,
+            "Name": " Log Entry 22935",
+            "Severity": "Ok",
+            "Message": "The previous log entry was repeated 3 times.",
+            "EntryType": "Oem",
+            "Created": "2017-08-17T21:46:08-05:00",
+            "Id": "22935",
+            "MessageArgs": [
+                "3"
+            ],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/22935"
+        },
+        {
+            "OEMRecordFormat": "Dell",
+            "Description": " Log Entry 22934",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "MessageID": "USR0030",
+            "MessageArgs@odata.count": 3,
+            "Name": " Log Entry 22934",
+            "Severity": "Ok",
+            "Message": "Successfully logged in using root, from 100.64.20.102 and REDFISH.",
+            "EntryType": "Oem",
+            "Created": "2017-08-17T21:41:00-05:00",
+            "Id": "22934",
+            "MessageArgs": [
+                "root",
+                "100.64.20.102",
+                "REDFISH"
+            ],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/22934"
+        },
+        {
+            "OEMRecordFormat": "Dell",
+            "Description": " Log Entry 22933",
+            "Links": {},
+            "MessageID": "LOG007",
+            "MessageArgs@odata.count": 1,
+            "Name": " Log Entry 22933",
+            "Severity": "Ok",
+            "Message": "The previous log entry was repeated 4 times.",
+            "EntryType": "Oem",
+            "Created": "2017-08-17T21:41:00-05:00",
+            "Id": "22933",
+            "MessageArgs": [
+                "4"
+            ],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/22933"
+        },
+        {
+            "OEMRecordFormat": "Dell",
+            "Description": " Log Entry 22932",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "MessageID": "USR0030",
+            "MessageArgs@odata.count": 3,
+            "Name": " Log Entry 22932",
+            "Severity": "Ok",
+            "Message": "Successfully logged in using root, from 10.117.41.54 and REDFISH.",
+            "EntryType": "Oem",
+            "Created": "2017-08-17T21:22:59-05:00",
+            "Id": "22932",
+            "MessageArgs": [
+                "root",
+                "10.117.41.54",
+                "REDFISH"
+            ],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/22932"
+        },
+        {
+            "OEMRecordFormat": "Dell",
+            "Description": " Log Entry 22931",
+            "Links": {},
+            "MessageID": "LOG007",
+            "MessageArgs@odata.count": 1,
+            "Name": " Log Entry 22931",
+            "Severity": "Ok",
+            "Message": "The previous log entry was repeated 16 times.",
+            "EntryType": "Oem",
+            "Created": "2017-08-17T21:22:59-05:00",
+            "Id": "22931",
+            "MessageArgs": [
+                "16"
+            ],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/22931"
+        },
+        {
+            "OEMRecordFormat": "Dell",
+            "Description": " Log Entry 22930",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "MessageID": "USR0030",
+            "MessageArgs@odata.count": 3,
+            "Name": " Log Entry 22930",
+            "Severity": "Ok",
+            "Message": "Successfully logged in using root, from 100.97.62.107 and WS-MAN.",
+            "EntryType": "Oem",
+            "Created": "2017-08-17T05:37:59-05:00",
+            "Id": "22930",
+            "MessageArgs": [
+                "root",
+                "100.97.62.107",
+                "WS-MAN"
+            ],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/22930"
+        },
+        {
+            "OEMRecordFormat": "Dell",
+            "Description": " Log Entry 22929",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "MessageID": "USR0032",
+            "MessageArgs@odata.count": 3,
+            "Name": " Log Entry 22929",
+            "Severity": "Ok",
+            "Message": "The session for root from 100.97.62.107 using SSH is logged off.",
+            "EntryType": "Oem",
+            "Created": "2017-08-17T02:18:01-05:00",
+            "Id": "22929",
+            "MessageArgs": [
+                "root",
+                "100.97.62.107",
+                "SSH"
+            ],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/22929"
+        },
+        {
+            "OEMRecordFormat": "Dell",
+            "Description": " Log Entry 22928",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "MessageID": "USR0030",
+            "MessageArgs@odata.count": 3,
+            "Name": " Log Entry 22928",
+            "Severity": "Ok",
+            "Message": "Successfully logged in using root, from 100.97.62.107 and SSH.",
+            "EntryType": "Oem",
+            "Created": "2017-08-17T02:17:56-05:00",
+            "Id": "22928",
+            "MessageArgs": [
+                "root",
+                "100.97.62.107",
+                "SSH"
+            ],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/22928"
+        },
+        {
+            "OEMRecordFormat": "Dell",
+            "Description": " Log Entry 22927",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "MessageID": "USR0032",
+            "MessageArgs@odata.count": 3,
+            "Name": " Log Entry 22927",
+            "Severity": "Ok",
+            "Message": "The session for root from 100.97.62.107 using SSH is logged off.",
+            "EntryType": "Oem",
+            "Created": "2017-08-17T00:53:14-05:00",
+            "Id": "22927",
+            "MessageArgs": [
+                "root",
+                "100.97.62.107",
+                "SSH"
+            ],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/22927"
+        },
+        {
+            "OEMRecordFormat": "Dell",
+            "Description": " Log Entry 22926",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "MessageID": "USR0030",
+            "MessageArgs@odata.count": 3,
+            "Name": " Log Entry 22926",
+            "Severity": "Ok",
+            "Message": "Successfully logged in using root, from 100.97.62.107 and SSH.",
+            "EntryType": "Oem",
+            "Created": "2017-08-17T00:53:09-05:00",
+            "Id": "22926",
+            "MessageArgs": [
+                "root",
+                "100.97.62.107",
+                "SSH"
+            ],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/22926"
+        },
+        {
+            "OEMRecordFormat": "Dell",
+            "Description": " Log Entry 22925",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "MessageID": "USR0032",
+            "MessageArgs@odata.count": 3,
+            "Name": " Log Entry 22925",
+            "Severity": "Ok",
+            "Message": "The session for root from 100.97.62.107 using SSH is logged off.",
+            "EntryType": "Oem",
+            "Created": "2017-08-17T00:53:00-05:00",
+            "Id": "22925",
+            "MessageArgs": [
+                "root",
+                "100.97.62.107",
+                "SSH"
+            ],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/22925"
+        },
+        {
+            "OEMRecordFormat": "Dell",
+            "Description": " Log Entry 22924",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "MessageID": "USR0030",
+            "MessageArgs@odata.count": 3,
+            "Name": " Log Entry 22924",
+            "Severity": "Ok",
+            "Message": "Successfully logged in using root, from 100.97.62.107 and SSH.",
+            "EntryType": "Oem",
+            "Created": "2017-08-17T00:52:52-05:00",
+            "Id": "22924",
+            "MessageArgs": [
+                "root",
+                "100.97.62.107",
+                "SSH"
+            ],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/22924"
+        },
+        {
+            "OEMRecordFormat": "Dell",
+            "Description": " Log Entry 22923",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "MessageID": "USR0032",
+            "MessageArgs@odata.count": 3,
+            "Name": " Log Entry 22923",
+            "Severity": "Ok",
+            "Message": "The session for root from 100.97.62.107 using SSH is logged off.",
+            "EntryType": "Oem",
+            "Created": "2017-08-17T00:52:45-05:00",
+            "Id": "22923",
+            "MessageArgs": [
+                "root",
+                "100.97.62.107",
+                "SSH"
+            ],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/22923"
+        },
+        {
+            "OEMRecordFormat": "Dell",
+            "Description": " Log Entry 22922",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "MessageID": "USR0030",
+            "MessageArgs@odata.count": 3,
+            "Name": " Log Entry 22922",
+            "Severity": "Ok",
+            "Message": "Successfully logged in using root, from 100.97.62.107 and SSH.",
+            "EntryType": "Oem",
+            "Created": "2017-08-17T00:52:41-05:00",
+            "Id": "22922",
+            "MessageArgs": [
+                "root",
+                "100.97.62.107",
+                "SSH"
+            ],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/22922"
+        },
+        {
+            "OEMRecordFormat": "Dell",
+            "Description": " Log Entry 22921",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "MessageID": "USR0032",
+            "MessageArgs@odata.count": 3,
+            "Name": " Log Entry 22921",
+            "Severity": "Ok",
+            "Message": "The session for root from 100.97.62.107 using SSH is logged off.",
+            "EntryType": "Oem",
+            "Created": "2017-08-17T00:52:36-05:00",
+            "Id": "22921",
+            "MessageArgs": [
+                "root",
+                "100.97.62.107",
+                "SSH"
+            ],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/22921"
+        },
+        {
+            "OEMRecordFormat": "Dell",
+            "Description": " Log Entry 22920",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "MessageID": "USR0030",
+            "MessageArgs@odata.count": 3,
+            "Name": " Log Entry 22920",
+            "Severity": "Ok",
+            "Message": "Successfully logged in using root, from 100.97.62.107 and SSH.",
+            "EntryType": "Oem",
+            "Created": "2017-08-17T00:52:34-05:00",
+            "Id": "22920",
+            "MessageArgs": [
+                "root",
+                "100.97.62.107",
+                "SSH"
+            ],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/22920"
+        },
+        {
+            "OEMRecordFormat": "Dell",
+            "Description": " Log Entry 22919",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "MessageID": "USR0032",
+            "MessageArgs@odata.count": 3,
+            "Name": " Log Entry 22919",
+            "Severity": "Ok",
+            "Message": "The session for root from 100.97.62.107 using SSH is logged off.",
+            "EntryType": "Oem",
+            "Created": "2017-08-17T00:52:29-05:00",
+            "Id": "22919",
+            "MessageArgs": [
+                "root",
+                "100.97.62.107",
+                "SSH"
+            ],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/22919"
+        },
+        {
+            "OEMRecordFormat": "Dell",
+            "Description": " Log Entry 22918",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "MessageID": "USR0030",
+            "MessageArgs@odata.count": 3,
+            "Name": " Log Entry 22918",
+            "Severity": "Ok",
+            "Message": "Successfully logged in using root, from 100.97.62.107 and SSH.",
+            "EntryType": "Oem",
+            "Created": "2017-08-17T00:52:27-05:00",
+            "Id": "22918",
+            "MessageArgs": [
+                "root",
+                "100.97.62.107",
+                "SSH"
+            ],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/22918"
+        },
+        {
+            "OEMRecordFormat": "Dell",
+            "Description": " Log Entry 22917",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "MessageID": "USR0032",
+            "MessageArgs@odata.count": 3,
+            "Name": " Log Entry 22917",
+            "Severity": "Ok",
+            "Message": "The session for root from 100.97.62.107 using SSH is logged off.",
+            "EntryType": "Oem",
+            "Created": "2017-08-17T00:52:21-05:00",
+            "Id": "22917",
+            "MessageArgs": [
+                "root",
+                "100.97.62.107",
+                "SSH"
+            ],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/22917"
+        },
+        {
+            "OEMRecordFormat": "Dell",
+            "Description": " Log Entry 22916",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "MessageID": "USR0030",
+            "MessageArgs@odata.count": 3,
+            "Name": " Log Entry 22916",
+            "Severity": "Ok",
+            "Message": "Successfully logged in using root, from 100.97.62.107 and SSH.",
+            "EntryType": "Oem",
+            "Created": "2017-08-17T00:52:16-05:00",
+            "Id": "22916",
+            "MessageArgs": [
+                "root",
+                "100.97.62.107",
+                "SSH"
+            ],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/22916"
+        },
+        {
+            "OEMRecordFormat": "Dell",
+            "Description": " Log Entry 22915",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "MessageID": "USR0032",
+            "MessageArgs@odata.count": 3,
+            "Name": " Log Entry 22915",
+            "Severity": "Ok",
+            "Message": "The session for root from 100.97.62.107 using SSH is logged off.",
+            "EntryType": "Oem",
+            "Created": "2017-08-17T00:52:01-05:00",
+            "Id": "22915",
+            "MessageArgs": [
+                "root",
+                "100.97.62.107",
+                "SSH"
+            ],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/22915"
+        },
+        {
+            "OEMRecordFormat": "Dell",
+            "Description": " Log Entry 22914",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "MessageID": "USR0030",
+            "MessageArgs@odata.count": 3,
+            "Name": " Log Entry 22914",
+            "Severity": "Ok",
+            "Message": "Successfully logged in using root, from 100.97.62.107 and SSH.",
+            "EntryType": "Oem",
+            "Created": "2017-08-17T00:51:55-05:00",
+            "Id": "22914",
+            "MessageArgs": [
+                "root",
+                "100.97.62.107",
+                "SSH"
+            ],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/22914"
+        },
+        {
+            "OEMRecordFormat": "Dell",
+            "Description": " Log Entry 22913",
+            "Links": {},
+            "MessageID": "LOG007",
+            "MessageArgs@odata.count": 1,
+            "Name": " Log Entry 22913",
+            "Severity": "Ok",
+            "Message": "The previous log entry was repeated 15 times.",
+            "EntryType": "Oem",
+            "Created": "2017-08-17T00:51:55-05:00",
+            "Id": "22913",
+            "MessageArgs": [
+                "15"
+            ],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/22913"
+        },
+        {
+            "OEMRecordFormat": "Dell",
+            "Description": " Log Entry 22912",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "MessageID": "USR0030",
+            "MessageArgs@odata.count": 3,
+            "Name": " Log Entry 22912",
+            "Severity": "Ok",
+            "Message": "Successfully logged in using root, from 100.97.62.107 and WS-MAN.",
+            "EntryType": "Oem",
+            "Created": "2017-08-16T05:39:17-05:00",
+            "Id": "22912",
+            "MessageArgs": [
+                "root",
+                "100.97.62.107",
+                "WS-MAN"
+            ],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/22912"
+        },
+        {
+            "OEMRecordFormat": "Dell",
+            "Description": " Log Entry 22911",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "MessageID": "USR0032",
+            "MessageArgs@odata.count": 3,
+            "Name": " Log Entry 22911",
+            "Severity": "Ok",
+            "Message": "The session for root from 100.97.62.107 using SSH is logged off.",
+            "EntryType": "Oem",
+            "Created": "2017-08-16T02:18:01-05:00",
+            "Id": "22911",
+            "MessageArgs": [
+                "root",
+                "100.97.62.107",
+                "SSH"
+            ],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/22911"
+        },
+        {
+            "OEMRecordFormat": "Dell",
+            "Description": " Log Entry 22910",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "MessageID": "USR0030",
+            "MessageArgs@odata.count": 3,
+            "Name": " Log Entry 22910",
+            "Severity": "Ok",
+            "Message": "Successfully logged in using root, from 100.97.62.107 and SSH.",
+            "EntryType": "Oem",
+            "Created": "2017-08-16T02:17:56-05:00",
+            "Id": "22910",
+            "MessageArgs": [
+                "root",
+                "100.97.62.107",
+                "SSH"
+            ],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/22910"
+        },
+        {
+            "OEMRecordFormat": "Dell",
+            "Description": " Log Entry 22909",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "MessageID": "USR0032",
+            "MessageArgs@odata.count": 3,
+            "Name": " Log Entry 22909",
+            "Severity": "Ok",
+            "Message": "The session for root from 100.97.62.107 using SSH is logged off.",
+            "EntryType": "Oem",
+            "Created": "2017-08-16T00:53:33-05:00",
+            "Id": "22909",
+            "MessageArgs": [
+                "root",
+                "100.97.62.107",
+                "SSH"
+            ],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/22909"
+        },
+        {
+            "OEMRecordFormat": "Dell",
+            "Description": " Log Entry 22908",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "MessageID": "USR0030",
+            "MessageArgs@odata.count": 3,
+            "Name": " Log Entry 22908",
+            "Severity": "Ok",
+            "Message": "Successfully logged in using root, from 100.97.62.107 and SSH.",
+            "EntryType": "Oem",
+            "Created": "2017-08-16T00:53:30-05:00",
+            "Id": "22908",
+            "MessageArgs": [
+                "root",
+                "100.97.62.107",
+                "SSH"
+            ],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/22908"
+        },
+        {
+            "OEMRecordFormat": "Dell",
+            "Description": " Log Entry 22907",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "MessageID": "USR0032",
+            "MessageArgs@odata.count": 3,
+            "Name": " Log Entry 22907",
+            "Severity": "Ok",
+            "Message": "The session for root from 100.97.62.107 using SSH is logged off.",
+            "EntryType": "Oem",
+            "Created": "2017-08-16T00:53:19-05:00",
+            "Id": "22907",
+            "MessageArgs": [
+                "root",
+                "100.97.62.107",
+                "SSH"
+            ],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/22907"
+        },
+        {
+            "OEMRecordFormat": "Dell",
+            "Description": " Log Entry 22906",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "MessageID": "USR0030",
+            "MessageArgs@odata.count": 3,
+            "Name": " Log Entry 22906",
+            "Severity": "Ok",
+            "Message": "Successfully logged in using root, from 100.97.62.107 and SSH.",
+            "EntryType": "Oem",
+            "Created": "2017-08-16T00:53:17-05:00",
+            "Id": "22906",
+            "MessageArgs": [
+                "root",
+                "100.97.62.107",
+                "SSH"
+            ],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/22906"
+        },
+        {
+            "OEMRecordFormat": "Dell",
+            "Description": " Log Entry 22905",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "MessageID": "USR0032",
+            "MessageArgs@odata.count": 3,
+            "Name": " Log Entry 22905",
+            "Severity": "Ok",
+            "Message": "The session for root from 100.97.62.107 using SSH is logged off.",
+            "EntryType": "Oem",
+            "Created": "2017-08-16T00:53:10-05:00",
+            "Id": "22905",
+            "MessageArgs": [
+                "root",
+                "100.97.62.107",
+                "SSH"
+            ],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/22905"
+        },
+        {
+            "OEMRecordFormat": "Dell",
+            "Description": " Log Entry 22904",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "MessageID": "USR0030",
+            "MessageArgs@odata.count": 3,
+            "Name": " Log Entry 22904",
+            "Severity": "Ok",
+            "Message": "Successfully logged in using root, from 100.97.62.107 and SSH.",
+            "EntryType": "Oem",
+            "Created": "2017-08-16T00:53:06-05:00",
+            "Id": "22904",
+            "MessageArgs": [
+                "root",
+                "100.97.62.107",
+                "SSH"
+            ],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/22904"
+        },
+        {
+            "OEMRecordFormat": "Dell",
+            "Description": " Log Entry 22903",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "MessageID": "USR0032",
+            "MessageArgs@odata.count": 3,
+            "Name": " Log Entry 22903",
+            "Severity": "Ok",
+            "Message": "The session for root from 100.97.62.107 using SSH is logged off.",
+            "EntryType": "Oem",
+            "Created": "2017-08-16T00:53:01-05:00",
+            "Id": "22903",
+            "MessageArgs": [
+                "root",
+                "100.97.62.107",
+                "SSH"
+            ],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/22903"
+        },
+        {
+            "OEMRecordFormat": "Dell",
+            "Description": " Log Entry 22902",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "MessageID": "USR0030",
+            "MessageArgs@odata.count": 3,
+            "Name": " Log Entry 22902",
+            "Severity": "Ok",
+            "Message": "Successfully logged in using root, from 100.97.62.107 and SSH.",
+            "EntryType": "Oem",
+            "Created": "2017-08-16T00:52:59-05:00",
+            "Id": "22902",
+            "MessageArgs": [
+                "root",
+                "100.97.62.107",
+                "SSH"
+            ],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/22902"
+        },
+        {
+            "OEMRecordFormat": "Dell",
+            "Description": " Log Entry 22901",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "MessageID": "USR0032",
+            "MessageArgs@odata.count": 3,
+            "Name": " Log Entry 22901",
+            "Severity": "Ok",
+            "Message": "The session for root from 100.97.62.107 using SSH is logged off.",
+            "EntryType": "Oem",
+            "Created": "2017-08-16T00:52:41-05:00",
+            "Id": "22901",
+            "MessageArgs": [
+                "root",
+                "100.97.62.107",
+                "SSH"
+            ],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/22901"
+        },
+        {
+            "OEMRecordFormat": "Dell",
+            "Description": " Log Entry 22900",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "MessageID": "USR0030",
+            "MessageArgs@odata.count": 3,
+            "Name": " Log Entry 22900",
+            "Severity": "Ok",
+            "Message": "Successfully logged in using root, from 100.97.62.107 and SSH.",
+            "EntryType": "Oem",
+            "Created": "2017-08-16T00:52:38-05:00",
+            "Id": "22900",
+            "MessageArgs": [
+                "root",
+                "100.97.62.107",
+                "SSH"
+            ],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/22900"
+        },
+        {
+            "OEMRecordFormat": "Dell",
+            "Description": " Log Entry 22899",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "MessageID": "USR0032",
+            "MessageArgs@odata.count": 3,
+            "Name": " Log Entry 22899",
+            "Severity": "Ok",
+            "Message": "The session for root from 100.97.62.107 using SSH is logged off.",
+            "EntryType": "Oem",
+            "Created": "2017-08-16T00:52:21-05:00",
+            "Id": "22899",
+            "MessageArgs": [
+                "root",
+                "100.97.62.107",
+                "SSH"
+            ],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/22899"
+        },
+        {
+            "OEMRecordFormat": "Dell",
+            "Description": " Log Entry 22898",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "MessageID": "USR0030",
+            "MessageArgs@odata.count": 3,
+            "Name": " Log Entry 22898",
+            "Severity": "Ok",
+            "Message": "Successfully logged in using root, from 100.97.62.107 and SSH.",
+            "EntryType": "Oem",
+            "Created": "2017-08-16T00:52:16-05:00",
+            "Id": "22898",
+            "MessageArgs": [
+                "root",
+                "100.97.62.107",
+                "SSH"
+            ],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/22898"
+        },
+        {
+            "OEMRecordFormat": "Dell",
+            "Description": " Log Entry 22897",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "MessageID": "USR0032",
+            "MessageArgs@odata.count": 3,
+            "Name": " Log Entry 22897",
+            "Severity": "Ok",
+            "Message": "The session for root from 100.97.62.107 using SSH is logged off.",
+            "EntryType": "Oem",
+            "Created": "2017-08-16T00:52:00-05:00",
+            "Id": "22897",
+            "MessageArgs": [
+                "root",
+                "100.97.62.107",
+                "SSH"
+            ],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/22897"
+        },
+        {
+            "OEMRecordFormat": "Dell",
+            "Description": " Log Entry 22896",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "MessageID": "USR0030",
+            "MessageArgs@odata.count": 3,
+            "Name": " Log Entry 22896",
+            "Severity": "Ok",
+            "Message": "Successfully logged in using root, from 100.97.62.107 and SSH.",
+            "EntryType": "Oem",
+            "Created": "2017-08-16T00:51:55-05:00",
+            "Id": "22896",
+            "MessageArgs": [
+                "root",
+                "100.97.62.107",
+                "SSH"
+            ],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/22896"
+        },
+        {
+            "OEMRecordFormat": "Dell",
+            "Description": " Log Entry 22895",
+            "Links": {},
+            "MessageID": "LOG007",
+            "MessageArgs@odata.count": 1,
+            "Name": " Log Entry 22895",
+            "Severity": "Ok",
+            "Message": "The previous log entry was repeated 15 times.",
+            "EntryType": "Oem",
+            "Created": "2017-08-16T00:51:55-05:00",
+            "Id": "22895",
+            "MessageArgs": [
+                "15"
+            ],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/22895"
+        },
+        {
+            "OEMRecordFormat": "Dell",
+            "Description": " Log Entry 22894",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "MessageID": "USR0030",
+            "MessageArgs@odata.count": 3,
+            "Name": " Log Entry 22894",
+            "Severity": "Ok",
+            "Message": "Successfully logged in using root, from 100.97.62.107 and WS-MAN.",
+            "EntryType": "Oem",
+            "Created": "2017-08-15T05:39:13-05:00",
+            "Id": "22894",
+            "MessageArgs": [
+                "root",
+                "100.97.62.107",
+                "WS-MAN"
+            ],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/22894"
+        },
+        {
+            "OEMRecordFormat": "Dell",
+            "Description": " Log Entry 22893",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "MessageID": "USR0032",
+            "MessageArgs@odata.count": 3,
+            "Name": " Log Entry 22893",
+            "Severity": "Ok",
+            "Message": "The session for root from 100.97.62.107 using SSH is logged off.",
+            "EntryType": "Oem",
+            "Created": "2017-08-15T02:18:16-05:00",
+            "Id": "22893",
+            "MessageArgs": [
+                "root",
+                "100.97.62.107",
+                "SSH"
+            ],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/22893"
+        },
+        {
+            "OEMRecordFormat": "Dell",
+            "Description": " Log Entry 22892",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "MessageID": "USR0030",
+            "MessageArgs@odata.count": 3,
+            "Name": " Log Entry 22892",
+            "Severity": "Ok",
+            "Message": "Successfully logged in using root, from 100.97.62.107 and SSH.",
+            "EntryType": "Oem",
+            "Created": "2017-08-15T02:18:11-05:00",
+            "Id": "22892",
+            "MessageArgs": [
+                "root",
+                "100.97.62.107",
+                "SSH"
+            ],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/22892"
+        },
+        {
+            "OEMRecordFormat": "Dell",
+            "Description": " Log Entry 22891",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "MessageID": "USR0032",
+            "MessageArgs@odata.count": 3,
+            "Name": " Log Entry 22891",
+            "Severity": "Ok",
+            "Message": "The session for root from 100.97.62.107 using SSH is logged off.",
+            "EntryType": "Oem",
+            "Created": "2017-08-15T00:53:21-05:00",
+            "Id": "22891",
+            "MessageArgs": [
+                "root",
+                "100.97.62.107",
+                "SSH"
+            ],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/22891"
+        },
+        {
+            "OEMRecordFormat": "Dell",
+            "Description": " Log Entry 22890",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "MessageID": "USR0030",
+            "MessageArgs@odata.count": 3,
+            "Name": " Log Entry 22890",
+            "Severity": "Ok",
+            "Message": "Successfully logged in using root, from 100.97.62.107 and SSH.",
+            "EntryType": "Oem",
+            "Created": "2017-08-15T00:53:19-05:00",
+            "Id": "22890",
+            "MessageArgs": [
+                "root",
+                "100.97.62.107",
+                "SSH"
+            ],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/22890"
+        },
+        {
+            "OEMRecordFormat": "Dell",
+            "Description": " Log Entry 22889",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "MessageID": "USR0032",
+            "MessageArgs@odata.count": 3,
+            "Name": " Log Entry 22889",
+            "Severity": "Ok",
+            "Message": "The session for root from 100.97.62.107 using SSH is logged off.",
+            "EntryType": "Oem",
+            "Created": "2017-08-15T00:53:07-05:00",
+            "Id": "22889",
+            "MessageArgs": [
+                "root",
+                "100.97.62.107",
+                "SSH"
+            ],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/22889"
+        },
+        {
+            "OEMRecordFormat": "Dell",
+            "Description": " Log Entry 22888",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "MessageID": "USR0030",
+            "MessageArgs@odata.count": 3,
+            "Name": " Log Entry 22888",
+            "Severity": "Ok",
+            "Message": "Successfully logged in using root, from 100.97.62.107 and SSH.",
+            "EntryType": "Oem",
+            "Created": "2017-08-15T00:53:05-05:00",
+            "Id": "22888",
+            "MessageArgs": [
+                "root",
+                "100.97.62.107",
+                "SSH"
+            ],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/22888"
+        },
+        {
+            "OEMRecordFormat": "Dell",
+            "Description": " Log Entry 22887",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "MessageID": "USR0032",
+            "MessageArgs@odata.count": 3,
+            "Name": " Log Entry 22887",
+            "Severity": "Ok",
+            "Message": "The session for root from 100.97.62.107 using SSH is logged off.",
+            "EntryType": "Oem",
+            "Created": "2017-08-15T00:52:58-05:00",
+            "Id": "22887",
+            "MessageArgs": [
+                "root",
+                "100.97.62.107",
+                "SSH"
+            ],
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/22887"
+        }
+    ],
+    "@odata.context": "/redfish/v1/$metadata#LogEntryCollection.LogEntryCollection",
+    "Description": "LC Logs for this manager",
+    "Members@odata.count": 970,
+    "@odata.type": "#LogEntryCollection.LogEntryCollection",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "@odata.nextLink": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog?$skip=50",
+    "Name": "Log Entry Collection",
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog"
+}

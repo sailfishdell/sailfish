@@ -1,0 +1,14 @@
+{
+    "Description": "BMC",
+    "Name": "Manager",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "@odata.type": "#ManagerCollection.ManagerCollection",
+    "Members": [
+        {
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+        }
+    ],
+    "Members@odata.count": 1,
+    "@odata.id": "/redfish/v1/Managers",
+    "@odata.context": "/redfish/v1/$metadata#ManagerCollection.ManagerCollection"
+}

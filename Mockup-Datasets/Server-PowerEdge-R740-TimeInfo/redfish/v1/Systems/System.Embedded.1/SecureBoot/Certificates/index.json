@@ -1,0 +1,23 @@
+{
+    "Description": "DellCertificateStoreCollection",
+    "Name": "DellCertificateStoreCollection",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "@odata.type": "#DellCertificateStoreCollection.DellCertificateStoreCollection",
+    "Members": [
+        {
+            "@odata.id": "/redfish/v1/Systems/System.Embedded.1/SecureBoot/Certificates/PK"
+        },
+        {
+            "@odata.id": "/redfish/v1/Systems/System.Embedded.1/SecureBoot/Certificates/KEK"
+        },
+        {
+            "@odata.id": "/redfish/v1/Systems/System.Embedded.1/SecureBoot/Certificates/DB"
+        },
+        {
+            "@odata.id": "/redfish/v1/Systems/System.Embedded.1/SecureBoot/Certificates/DBX"
+        }
+    ],
+    "Members@odata.count": 4,
+    "@odata.id": "/redfish/v1/Systems/System.Embedded.1/SecureBoot/Certificates",
+    "@odata.context": "/redfish/v1/$metadata#DellCertificateStoreCollection.DellCertificateStoreCollection"
+}

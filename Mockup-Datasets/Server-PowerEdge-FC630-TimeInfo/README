@@ -1,0 +1,6 @@
+Redfish Service state stored in Redfish Mockup Format
+Program: redfishMockupCreate,  ver: 0.9.3
+Created: 2017-11-03 11:26:17
+rhost:  100.68.124.137
+Description: 
+Commandline: python3.4 redfishMockupCreate.py -r 100.68.124.137 -u root -p calvin -S -A Basic -D ../test -C Copyright 2017 Dell Inc. All rights reserved. -T

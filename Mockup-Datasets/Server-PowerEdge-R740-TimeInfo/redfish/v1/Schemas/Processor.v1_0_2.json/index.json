@@ -1,0 +1,296 @@
+{
+    "$ref": "#/definitions/Processor",
+    "$schema": "/redfish/v1/Schemas/redfish-schema.v1_1_0.json",
+    "definitions": {
+        "InstructionSet": {
+            "enum": [
+                "x86",
+                "x86-64",
+                "IA-64",
+                "ARM-A32",
+                "ARM-A64",
+                "MIPS32",
+                "MIPS64",
+                "OEM"
+            ],
+            "type": "string",
+            "enumDescriptions": {
+                "ARM-A32": "ARM 32-bit",
+                "OEM": "OEM-defined",
+                "MIPS32": "MIPS 32-bit",
+                "x86": "x86 32-bit",
+                "ARM-A64": "ARM 64-bit",
+                "x86-64": "x86 64-bit",
+                "MIPS64": "MIPS 64-bit",
+                "IA-64": "Intel IA-64"
+            }
+        },
+        "ProcessorArchitecture": {
+            "enum": [
+                "x86",
+                "IA-64",
+                "ARM",
+                "MIPS",
+                "OEM"
+            ],
+            "type": "string",
+            "enumDescriptions": {
+                "ARM": "ARM",
+                "OEM": "OEM-defined",
+                "MIPS": "MIPS",
+                "x86": "x86 or x86-64",
+                "IA-64": "Intel Itanium"
+            }
+        },
+        "Processor": {
+            "additionalProperties": false,
+            "required": [
+                "Id",
+                "Name"
+            ],
+            "properties": {
+                "ProcessorArchitecture": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/definitions/ProcessorArchitecture"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "readonly": true,
+                    "description": "The architecture of the processor",
+                    "longDescription": "This property shall contain the string which identifies the architecture of the processor contained in this Socket."
+                },
+                "Model": {
+                    "readonly": true,
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "description": "The product model number of this device",
+                    "longDescription": "This property shall indicate the model information as provided by the manufacturer of this processor."
+                },
+                "Socket": {
+                    "readonly": true,
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "description": "The socket or location of the processor",
+                    "longDescription": "This property shall contain the string which identifies the physical location or socket of the processor."
+                },
+                "MaxSpeedMHz": {
+                    "readonly": true,
+                    "type": [
+                        "number",
+                        "null"
+                    ],
+                    "description": "The maximum clock speed of the processor",
+                    "longDescription": "This property shall indicate the maximum rated clock speed of the processor in MHz."
+                },
+                "Name": {
+                    "$ref": "/redfish/v1/Schemas/Resource.json#/definitions/Name"
+                },
+                "@odata.type": {
+                    "$ref": "/redfish/v1/Schemas/odata.4.0.0.json#/definitions/type"
+                },
+                "ProcessorType": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/definitions/ProcessorType"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "readonly": true,
+                    "description": "The type of processor",
+                    "longDescription": "This property shall contain the string which identifies the type of processor contained in this Socket."
+                },
+                "ProcessorId": {
+                    "$ref": "#/definitions/ProcessorId",
+                    "description": "Identification information for this processor.",
+                    "longDescription": "This object shall contain identification information for this processor."
+                },
+                "@odata.context": {
+                    "$ref": "/redfish/v1/Schemas/odata.4.0.0.json#/definitions/context"
+                },
+                "Status": {
+                    "$ref": "/redfish/v1/Schemas/Resource.json#/definitions/Status"
+                },
+                "Description": {
+                    "anyOf": [
+                        {
+                            "$ref": "/redfish/v1/Schemas/Resource.json#/definitions/Description"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ]
+                },
+                "TotalThreads": {
+                    "readonly": true,
+                    "type": [
+                        "number",
+                        "null"
+                    ],
+                    "description": "The total number of execution threads supported by this processor",
+                    "longDescription": "This property shall indicate the total count of independent execution threads supported by this processor."
+                },
+                "TotalCores": {
+                    "readonly": true,
+                    "type": [
+                        "number",
+                        "null"
+                    ],
+                    "description": "The total number of cores contained in this processor",
+                    "longDescription": "This property shall indicate the total count of independent processor cores contained within this processor."
+                },
+                "Id": {
+                    "$ref": "/redfish/v1/Schemas/Resource.json#/definitions/Id"
+                },
+                "InstructionSet": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/definitions/InstructionSet"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "readonly": true,
+                    "description": "The instruction set of the processor",
+                    "longDescription": "This property shall contain the string which identifies the instruction set of the processor contained in this socket."
+                },
+                "Manufacturer": {
+                    "readonly": true,
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "description": "The processor manufacturer",
+                    "longDescription": "This property shall contain a string which identifies the manufacturer of the processor."
+                },
+                "Oem": {
+                    "$ref": "/redfish/v1/Schemas/Resource.json#/definitions/Oem",
+                    "description": "This is the manufacturer/provider specific extension moniker used to divide the Oem object into sections.",
+                    "longDescription": "The value of this string shall be of the format for the reserved word *Oem*."
+                },
+                "@odata.id": {
+                    "$ref": "/redfish/v1/Schemas/odata.4.0.0.json#/definitions/id"
+                }
+            },
+            "patternProperties": {
+                "^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message|Privileges)\\.[a-zA-Z_][a-zA-Z0-9_.]+$": {
+                    "type": [
+                        "array",
+                        "boolean",
+                        "number",
+                        "null",
+                        "object",
+                        "string"
+                    ],
+                    "description": "This property shall specify a valid odata or Redfish property."
+                }
+            },
+            "type": "object",
+            "description": "This is the schema definition for the Processor resource.  It represents the properties of a processor attached to a System."
+        },
+        "ProcessorType": {
+            "enum": [
+                "CPU",
+                "GPU",
+                "FPGA",
+                "DSP",
+                "Accelerator",
+                "OEM"
+            ],
+            "type": "string",
+            "enumDescriptions": {
+                "DSP": "A Digital Signal Processor",
+                "OEM": "An OEM-defined Processing Unit",
+                "Accelerator": "An Accelerator",
+                "GPU": "A Graphics Processing Unit",
+                "CPU": "A Central Processing Unit",
+                "FPGA": "A Field Programmable Gate Array"
+            }
+        },
+        "ProcessorId": {
+            "additionalProperties": false,
+            "type": "object",
+            "patternProperties": {
+                "^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message|Privileges)\\.[a-zA-Z_][a-zA-Z0-9_.]+$": {
+                    "type": [
+                        "array",
+                        "boolean",
+                        "number",
+                        "null",
+                        "object",
+                        "string"
+                    ],
+                    "description": "This property shall specify a valid odata or Redfish property."
+                }
+            },
+            "properties": {
+                "EffectiveModel": {
+                    "readonly": true,
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "description": "The effective Model for this processor",
+                    "longDescription": "This property shall indicate the effective Model information as provided by the manufacturer of this processor."
+                },
+                "MicrocodeInfo": {
+                    "readonly": true,
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "description": "The Microcode Information for this processor",
+                    "longDescription": "This property shall indicate the Microcode Information as provided by the manufacturer of this processor."
+                },
+                "Step": {
+                    "readonly": true,
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "description": "The Step value for this processor",
+                    "longDescription": "This property shall indicate the Step or revision string information as provided by the manufacturer of this processor."
+                },
+                "IdentificationRegisters": {
+                    "readonly": true,
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "description": "The contents of the Identification Registers (CPUID) for this processor",
+                    "longDescription": "This property shall include the raw CPUID instruction output as provided by the manufacturer of this processor."
+                },
+                "EffectiveFamily": {
+                    "readonly": true,
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "description": "The effective Family for this processor",
+                    "longDescription": "This property shall indicate the effective Family information as provided by the manufacturer of this processor."
+                },
+                "VendorId": {
+                    "readonly": true,
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "description": "The Vendor Identification for this processor",
+                    "longDescription": "This property shall indicate the Vendor Identification string information as provided by the manufacturer of this processor."
+                }
+            }
+        }
+    },
+    "title": "#Processor.v1_0_2.Processor",
+    "copyright": "Copyright 2014-2016 Distributed Management Task Force, Inc. (DMTF). For the full DMTF copyright policy, see http://www.dmtf.org/about/policies/copyright",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved."
+}

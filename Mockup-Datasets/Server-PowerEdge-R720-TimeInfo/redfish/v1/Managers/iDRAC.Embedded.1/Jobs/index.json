@@ -1,0 +1,36 @@
+{
+    "Members": [
+        {
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Jobs/JID_752389413170"
+        },
+        {
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Jobs/JID_101179052303"
+        },
+        {
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Jobs/JID_724625122666"
+        },
+        {
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Jobs/JID_721157106323"
+        },
+        {
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Jobs/RID_101169428147"
+        },
+        {
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Jobs/JID_101163901687"
+        },
+        {
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Jobs/JID_101205159811"
+        },
+        {
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Jobs/RID_101205414871"
+        }
+    ],
+    "Id": "JobQueue",
+    "Name": "JobQueue",
+    "@odata.context": "/redfish/v1/$metadata#DellJobCollection.DellJobCollection",
+    "Members@odata.count": 8,
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Jobs",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "Description": "Collection of Job Instances",
+    "@odata.type": "#DellJobCollection.DellJobCollection"
+}

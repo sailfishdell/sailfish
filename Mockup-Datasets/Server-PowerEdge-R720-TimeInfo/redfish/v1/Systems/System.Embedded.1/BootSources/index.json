@@ -1,0 +1,102 @@
+{
+    "@odata.id": "/redfish/v1/Systems/System.Embedded.1/BootSources",
+    "AttributeRegistry": "DellBootSourcesRegistry.v1_0_0",
+    "Name": "Boot Sources Configuration Current Settings",
+    "@odata.context": "/redfish/v1/$metadata#DellBootSources.DellBootSources",
+    "@Redfish.Settings": {
+        "SettingsObject": {
+            "@odata.id": "/redfish/v1/Systems/System.Embedded.1/BootSources/Settings"
+        },
+        "@odata.type": "#Settings.v1_0_2.Settings",
+        "@odata.context": "/redfish/v1/$metadata#Settings.Settings"
+    },
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "Description": "Boot Sources Current Settings",
+    "Attributes": {
+        "BootSeq": [
+            {
+                "Index": 0,
+                "Id": "BIOS.Setup.1-1#BootSeq#Optical.SATAEmbedded.E-1#8b597e9243eaf95cb027093603f5b8bb",
+                "Name": "Optical.SATAEmbedded.E-1",
+                "Enabled": true
+            },
+            {
+                "Index": 1,
+                "Id": "BIOS.Setup.1-1#BootSeq#NIC.Integrated.1-1-1#8bf5a9aab8ee64c5ee7189244c02847c",
+                "Name": "NIC.Integrated.1-1-1",
+                "Enabled": true
+            },
+            {
+                "Index": 2,
+                "Id": "BIOS.Setup.1-1#BootSeq#NIC.Integrated.1-2-1#da23f575d8e2d3bd5d933d93ee183d54",
+                "Name": "NIC.Integrated.1-2-1",
+                "Enabled": true
+            },
+            {
+                "Index": 3,
+                "Id": "BIOS.Setup.1-1#BootSeq#NIC.Integrated.1-3-1#3a6cb9c60a70852b2da29448931a45f4",
+                "Name": "NIC.Integrated.1-3-1",
+                "Enabled": true
+            },
+            {
+                "Index": 4,
+                "Id": "BIOS.Setup.1-1#BootSeq#NIC.Integrated.1-4-1#11944b56f4bb8bcc0a937d8d42618166",
+                "Name": "NIC.Integrated.1-4-1",
+                "Enabled": true
+            },
+            {
+                "Index": 5,
+                "Id": "BIOS.Setup.1-1#BootSeq#HardDisk.List.1-1#c9203080df84781e2ca3d512883dee6f",
+                "Name": "HardDisk.List.1-1",
+                "Enabled": true
+            }
+        ],
+        "UefiBootSeq": [
+            {
+                "Index": 0,
+                "Id": "BIOS.Setup.1-1#UefiBootSeq#Unknown.Unknown.1-1#451ad1a192cb79525fa878d6fd6e73c2",
+                "Name": "Unknown.Unknown.1-1",
+                "Enabled": true
+            },
+            {
+                "Index": 1,
+                "Id": "BIOS.Setup.1-1#UefiBootSeq#Optical.SATAEmbedded.E-1#6f15a0464d4d606c08f8fd15152fad70",
+                "Name": "Optical.SATAEmbedded.E-1",
+                "Enabled": true
+            },
+            {
+                "Index": 2,
+                "Id": "BIOS.Setup.1-1#UefiBootSeq#NIC.Integrated.1-1-1#55f48560803415bd3ebf7c28c1a103e1",
+                "Name": "NIC.Integrated.1-1-1",
+                "Enabled": true
+            },
+            {
+                "Index": 3,
+                "Id": "BIOS.Setup.1-1#UefiBootSeq#NIC.Integrated.1-2-1#434452c9dbb0da9d53d948c4aef0d802",
+                "Name": "NIC.Integrated.1-2-1",
+                "Enabled": true
+            },
+            {
+                "Index": 4,
+                "Id": "BIOS.Setup.1-1#UefiBootSeq#NIC.Integrated.1-3-1#122e4235f3b6b3a57032b035b81cfda7",
+                "Name": "NIC.Integrated.1-3-1",
+                "Enabled": true
+            },
+            {
+                "Index": 5,
+                "Id": "BIOS.Setup.1-1#UefiBootSeq#NIC.Integrated.1-4-1#e4644a34589b341282143baa417f9fc6",
+                "Name": "NIC.Integrated.1-4-1",
+                "Enabled": true
+            }
+        ],
+        "HddSeq": [
+            {
+                "Index": 0,
+                "Id": "BIOS.Setup.1-1#HddSeq#RAID.Integrated.1-1#0df7c63c2e9f9e120f71ed7ce4aa1abc",
+                "Name": "RAID.Integrated.1-1"
+            }
+        ]
+    },
+    "@odata.type": "#DellBootSources.v1_0_0.DellBootSources",
+    "Id": "BootSources"
+}

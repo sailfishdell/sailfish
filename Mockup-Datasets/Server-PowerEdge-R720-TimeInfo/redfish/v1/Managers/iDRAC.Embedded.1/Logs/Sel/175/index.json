@@ -1,0 +1,28 @@
+{
+    "SensorNumber": 98,
+    "Name": " Log Entry 175",
+    "SensorType": [
+        {
+            "Member": "Power Supply / Converter"
+        }
+    ],
+    "MessageArgs@odata.count": 0,
+    "@odata.context": "/redfish/v1/$metadata#LogEntry.LogEntry",
+    "Message": "Power supply 1 is absent.",
+    "Severity": "Critical",
+    "EntryCode": [
+        {
+            "Member": "Deassert"
+        }
+    ],
+    "Description": " Log Entry 175",
+    "MessageArgs": [],
+    "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+    "EntryType": "SEL",
+    "Id": "175",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/175",
+    "Links": {},
+    "MessageID": "0ffff",
+    "Created": "2016-04-12T23:52:31-05:00"
+}

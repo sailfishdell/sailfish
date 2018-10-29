@@ -1,0 +1,22 @@
+{
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "definitions": {
+        "LogEntry": {
+            "anyOf": [
+                {
+                    "$ref": "http://redfish.dmtf.org/schemas/v1/odata.4.0.0.json#/definitions/idRef"
+                },
+                {
+                    "$ref": "http://redfish.dmtf.org/schemas/v1/LogEntry.v1_0_0.json#/definitions/LogEntry"
+                },
+                {
+                    "$ref": "http://redfish.dmtf.org/schemas/v1/LogEntry.v1_0_2.json#/definitions/LogEntry"
+                }
+            ]
+        }
+    },
+    "title": "#LogEntry.LogEntry",
+    "copyright": "Copyright 2014-2016 Distributed Management Task Force, Inc. (DMTF). For the full DMTF copyright policy, see http://www.dmtf.org/about/policies/copyright",
+    "$schema": "http://redfish.dmtf.org/schemas/v1/redfish-schema.v1_1_0.json",
+    "$ref": "#/definitions/LogEntry"
+}

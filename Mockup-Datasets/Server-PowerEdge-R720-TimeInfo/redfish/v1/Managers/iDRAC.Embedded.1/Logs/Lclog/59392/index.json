@@ -1,0 +1,21 @@
+{
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "Name": " Log Entry 59392",
+    "MessageArgs@odata.count": 2,
+    "@odata.context": "/redfish/v1/$metadata#LogEntry.LogEntry",
+    "Message": "Successfully updated the PERC H710 Mini Monolithic firmware to version 21.3.5-0002.",
+    "OEMRecordFormat": "Dell",
+    "Description": " Log Entry 59392",
+    "MessageArgs": [
+        "PERC H710 Mini Monolithic",
+        "21.3.5-0002"
+    ],
+    "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+    "EntryType": "Oem",
+    "Id": "59392",
+    "Severity": "OK",
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/59392",
+    "Links": {},
+    "MessageID": "SUP0518",
+    "Created": "2017-11-07T23:59:31-06:00"
+}

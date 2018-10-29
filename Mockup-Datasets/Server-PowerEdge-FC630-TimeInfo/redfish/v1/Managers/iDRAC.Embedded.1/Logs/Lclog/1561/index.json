@@ -1,0 +1,20 @@
+{
+    "OEMRecordFormat": "Dell",
+    "Links": {
+        "OriginOfCondition": {
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+        }
+    },
+    "Id": "1561",
+    "EntryType": "Oem",
+    "Created": "2017-09-11T14:04:57-05:00",
+    "@odata.context": "/redfish/v1/$metadata#LogEntry.LogEntry",
+    "Severity": "Ok",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1561",
+    "Description": " Log Entry 1561",
+    "MessageID": "DIS002",
+    "Name": " Log Entry 1561",
+    "Message": "Auto Discovery feature disabled.",
+    "@odata.type": "#LogEntry.v1_0_2.LogEntry"
+}

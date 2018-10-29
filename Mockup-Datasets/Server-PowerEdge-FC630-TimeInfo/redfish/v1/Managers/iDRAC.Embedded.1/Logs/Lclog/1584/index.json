@@ -1,0 +1,23 @@
+{
+    "OEMRecordFormat": "Dell",
+    "Links": {},
+    "Id": "1584",
+    "EntryType": "Oem",
+    "Created": "2017-10-29T05:44:13-05:00",
+    "MessageArgs@odata.count": 4,
+    "@odata.context": "/redfish/v1/$metadata#LogEntry.LogEntry",
+    "Severity": "Ok",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1584",
+    "Description": " Log Entry 1584",
+    "MessageID": "USR8508",
+    "MessageArgs": [
+        "SSH",
+        "service_proddisc_lin",
+        "10.0.200.80",
+        "Illegal user name length"
+    ],
+    "Name": " Log Entry 1584",
+    "Message": "SSH login was not successful (username=service_proddisc_lin, ip=10.0.200.80, reason=Illegal user name length)",
+    "@odata.type": "#LogEntry.v1_0_2.LogEntry"
+}

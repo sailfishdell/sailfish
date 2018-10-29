@@ -1,0 +1,26 @@
+{
+    "Members": [
+        {
+            "@odata.id": "/redfish/v1/Systems/System.Embedded.1/Storage/Controllers/RAID.Slot.2-1"
+        },
+        {
+            "@odata.id": "/redfish/v1/Systems/System.Embedded.1/Storage/Controllers/RAID.Slot.8-1"
+        },
+        {
+            "@odata.id": "/redfish/v1/Systems/System.Embedded.1/Storage/Controllers/AHCI.Embedded.1-1"
+        },
+        {
+            "@odata.id": "/redfish/v1/Systems/System.Embedded.1/Storage/Controllers/AHCI.Embedded.2-1"
+        },
+        {
+            "@odata.id": "/redfish/v1/Systems/System.Embedded.1/Storage/Controllers/PCIeExtender.Slot.1"
+        }
+    ],
+    "@odata.context": "/redfish/v1/$metadata#SimpleStorageCollection.SimpleStorageCollection",
+    "Description": "Collection of Controllers for this system",
+    "Members@odata.count": 5,
+    "@odata.type": "#SimpleStorageCollection.SimpleStorageCollection",
+    "Name": "Simple Storage Collection",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "@odata.id": "/redfish/v1/Systems/System.Embedded.1/Storage/Controllers"
+}

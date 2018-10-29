@@ -1,0 +1,10 @@
+{
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "@odata.id": "/redfish/v1/TaskService/Tasks",
+    "Description": "Collection of Tasks",
+    "Members": [],
+    "Name": "Task Collection",
+    "@odata.context": "/redfish/v1/$metadata#TaskCollection.TaskCollection",
+    "Members@odata.count": 0,
+    "@odata.type": "#TaskCollection.TaskCollection"
+}

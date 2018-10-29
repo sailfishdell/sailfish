@@ -1,0 +1,26 @@
+{
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "Name": " Log Entry 59401",
+    "MessageArgs@odata.count": 3,
+    "@odata.context": "/redfish/v1/$metadata#LogEntry.LogEntry",
+    "Message": "The session for root from 10.94.14.77 using Virtual Console is logged off.",
+    "OEMRecordFormat": "Dell",
+    "Description": " Log Entry 59401",
+    "MessageArgs": [
+        "root",
+        "10.94.14.77",
+        "Virtual Console"
+    ],
+    "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+    "EntryType": "Oem",
+    "Id": "59401",
+    "Severity": "OK",
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/59401",
+    "Links": {
+        "OriginOfCondition": {
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+        }
+    },
+    "MessageID": "USR0032",
+    "Created": "2017-11-08T05:37:46-06:00"
+}

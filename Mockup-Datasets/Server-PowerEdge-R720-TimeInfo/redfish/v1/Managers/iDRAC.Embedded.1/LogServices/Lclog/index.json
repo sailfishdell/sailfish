@@ -1,0 +1,17 @@
+{
+    "ServiceEnabled": true,
+    "Name": "LifeCycle Controller Log Service",
+    "Entries": {
+        "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog"
+    },
+    "@odata.context": "/redfish/v1/$metadata#LogService.LogService",
+    "MaxNumberOfRecords": 500000,
+    "Description": "LifeCycle Controller Log Service",
+    "@odata.type": "#LogService.v1_0_2.LogService",
+    "DateTime": "2017-11-08T09:00:49-06:00",
+    "Id": "LC",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/LogServices/Lclog",
+    "OverWritePolicy": "WrapsWhenFull",
+    "DateTimeLocalOffset": "-06:00"
+}

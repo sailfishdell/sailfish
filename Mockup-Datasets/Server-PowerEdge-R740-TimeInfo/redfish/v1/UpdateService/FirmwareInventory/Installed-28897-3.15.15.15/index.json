@@ -1,0 +1,15 @@
+{
+    "Description": "Represents Firmware Inventory",
+    "Version": "3.15.15.15",
+    "Id": "Installed-28897-3.15.15.15",
+    "Name": "Lifecycle Controller",
+    "@odata.type": "#SoftwareInventory.v1_0_0.SoftwareInventory",
+    "Status": {
+        "State": "Enabled",
+        "Health": "OK"
+    },
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "Updateable": false,
+    "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/Installed-28897-3.15.15.15",
+    "@odata.context": "/redfish/v1/$metadata#SoftwareInventory.SoftwareInventory"
+}

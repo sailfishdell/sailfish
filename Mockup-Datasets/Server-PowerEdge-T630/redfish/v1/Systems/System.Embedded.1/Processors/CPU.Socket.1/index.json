@@ -1,0 +1,38 @@
+{
+    "TotalCores": 12,
+    "TotalThreads": 24,
+    "MaxSpeedMHz": 4000,
+    "Description": "Represents the properties of a Processor attached to this System",
+    "InstructionSet": [
+        {
+            "Member": "x86-64"
+        }
+    ],
+    "@odata.type": "#Processor.v1_0_2.Processor",
+    "Socket": "CPU.Socket.1",
+    "Name": "CPU 1",
+    "Model": "Intel(R) Xeon(R) CPU E5-2650 v4 @ 2.20GHz",
+    "Manufacturer": "Intel",
+    "@odata.context": "/redfish/v1/$metadata#Processor.Processor",
+    "ProcessorArchitecture": [
+        {
+            "Member": "x86"
+        }
+    ],
+    "Status": {
+        "State": "Enabled",
+        "Health": "OK"
+    },
+    "ProcessorId": {
+        "VendorId": "GenuineIntel",
+        "MicrocodeInfo": "0xB00001B",
+        "Step": "1",
+        "EffectiveModel": "79",
+        "IdentificationRegisters": "0x000406F1",
+        "EffectiveFamily": "6"
+    },
+    "Id": "CPU.Socket.1",
+    "ProcessorType": "CPU",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "@odata.id": "/redfish/v1/Systems/System.Embedded.1/Processors/CPU.Socket.1"
+}

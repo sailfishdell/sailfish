@@ -1,0 +1,22 @@
+{
+    "Description": "Redundancy Schema File Location",
+    "Location@odata.count": 1,
+    "@odata.type": "#JsonSchemaFile.v1_0_2.JsonSchemaFile",
+    "Languages": [
+        "en"
+    ],
+    "Name": "Redundancy Schema File",
+    "Languages@odata.count": 1,
+    "@odata.context": "/redfish/v1/$metadata#JsonSchemaFile.JsonSchemaFile",
+    "Location": [
+        {
+            "PublicationUri": "http://redfish.dmtf.org/schemas/v1/Redundancy.v1_0_0.json",
+            "Uri": "/redfish/v1/Schemas/Redundancy.v1_0_0.json",
+            "Language": "en"
+        }
+    ],
+    "Schema": "#Redundancy.v1_0_0.Redundancy",
+    "Id": "Redundancy.v1_0_0",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "@odata.id": "/redfish/v1/JSONSchemas/Redundancy.v1_0_0"
+}

@@ -1,0 +1,1312 @@
+{
+    "Name": "Log Entry Collection",
+    "Description": "System Event Logs for this manager",
+    "@odata.nextLink": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel?$skip=50",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "@odata.type": "#LogEntryCollection.LogEntryCollection",
+    "Members": [
+        {
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "MessageID": "1ffff",
+            "EntryType": "SEL",
+            "Severity": "Critical",
+            "Name": " Log Entry 90",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "The system board VGA cable or interconnect is not connected, or is improperly connected.",
+            "Description": " Log Entry 90",
+            "Created": "2017-10-25T23:23:24-05:00",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/90",
+            "Id": "90",
+            "SensorType": [
+                {
+                    "Member": "Cable/Interconnect"
+                }
+            ],
+            "Links": {},
+            "SensorNumber": 82,
+            "MessageArgs@odata.count": 0,
+            "MessageArgs": []
+        },
+        {
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "MessageID": "1ffff",
+            "EntryType": "SEL",
+            "Severity": "Critical",
+            "Name": " Log Entry 89",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "The system board VGA cable or interconnect is not connected, or is improperly connected.",
+            "Description": " Log Entry 89",
+            "Created": "2017-10-25T07:55:15-05:00",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/89",
+            "Id": "89",
+            "SensorType": [
+                {
+                    "Member": "Cable/Interconnect"
+                }
+            ],
+            "Links": {},
+            "SensorNumber": 82,
+            "MessageArgs@odata.count": 0,
+            "MessageArgs": []
+        },
+        {
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "MessageID": "1ffff",
+            "EntryType": "SEL",
+            "Severity": "Critical",
+            "Name": " Log Entry 88",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "The system board VGA cable or interconnect is not connected, or is improperly connected.",
+            "Description": " Log Entry 88",
+            "Created": "2017-10-25T01:04:34-05:00",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/88",
+            "Id": "88",
+            "SensorType": [
+                {
+                    "Member": "Cable/Interconnect"
+                }
+            ],
+            "Links": {},
+            "SensorNumber": 82,
+            "MessageArgs@odata.count": 0,
+            "MessageArgs": []
+        },
+        {
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "MessageID": "1ffff",
+            "EntryType": "SEL",
+            "Severity": "Critical",
+            "Name": " Log Entry 87",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "The system board VGA cable or interconnect is not connected, or is improperly connected.",
+            "Description": " Log Entry 87",
+            "Created": "2017-10-23T17:34:40-05:00",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/87",
+            "Id": "87",
+            "SensorType": [
+                {
+                    "Member": "Cable/Interconnect"
+                }
+            ],
+            "Links": {},
+            "SensorNumber": 82,
+            "MessageArgs@odata.count": 0,
+            "MessageArgs": []
+        },
+        {
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "MessageID": "1ffff",
+            "EntryType": "SEL",
+            "Severity": "Critical",
+            "Name": " Log Entry 86",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "The system board VGA cable or interconnect is not connected, or is improperly connected.",
+            "Description": " Log Entry 86",
+            "Created": "2017-10-23T11:33:51-05:00",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/86",
+            "Id": "86",
+            "SensorType": [
+                {
+                    "Member": "Cable/Interconnect"
+                }
+            ],
+            "Links": {},
+            "SensorNumber": 82,
+            "MessageArgs@odata.count": 0,
+            "MessageArgs": []
+        },
+        {
+            "EntryCode": [
+                {
+                    "Member": "Deassert"
+                }
+            ],
+            "MessageID": "ed590",
+            "EntryType": "SEL",
+            "Severity": "Ok",
+            "Name": " Log Entry 85",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "OEM software event.",
+            "Description": " Log Entry 85",
+            "Created": "2017-10-23T11:28:03-05:00",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/85",
+            "Id": "85",
+            "SensorType": [
+                {
+                    "Member": null
+                }
+            ],
+            "Links": {},
+            "SensorNumber": 62,
+            "MessageArgs@odata.count": 0,
+            "MessageArgs": []
+        },
+        {
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "MessageID": "1ffff",
+            "EntryType": "SEL",
+            "Severity": "Ok",
+            "Name": " Log Entry 84",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "C: boot completed.",
+            "Description": " Log Entry 84",
+            "Created": "2017-10-23T11:28:03-05:00",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/84",
+            "Id": "84",
+            "SensorType": [
+                {
+                    "Member": "BaseOSBoot/InstallationStatus"
+                }
+            ],
+            "Links": {},
+            "SensorNumber": 0,
+            "MessageArgs@odata.count": 0,
+            "MessageArgs": []
+        },
+        {
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "MessageID": "1ffff",
+            "EntryType": "SEL",
+            "Severity": "Critical",
+            "Name": " Log Entry 83",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "The system board VGA cable or interconnect is not connected, or is improperly connected.",
+            "Description": " Log Entry 83",
+            "Created": "2017-10-23T11:27:20-05:00",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/83",
+            "Id": "83",
+            "SensorType": [
+                {
+                    "Member": "Cable/Interconnect"
+                }
+            ],
+            "Links": {},
+            "SensorNumber": 82,
+            "MessageArgs@odata.count": 0,
+            "MessageArgs": []
+        },
+        {
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "MessageID": "1ffff",
+            "EntryType": "SEL",
+            "Severity": "Critical",
+            "Name": " Log Entry 82",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "The system board VGA cable or interconnect is not connected, or is improperly connected.",
+            "Description": " Log Entry 82",
+            "Created": "2017-10-20T15:23:23-05:00",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/82",
+            "Id": "82",
+            "SensorType": [
+                {
+                    "Member": "Cable/Interconnect"
+                }
+            ],
+            "Links": {},
+            "SensorNumber": 82,
+            "MessageArgs@odata.count": 0,
+            "MessageArgs": []
+        },
+        {
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "MessageID": "e6590",
+            "EntryType": "SEL",
+            "Severity": "Ok",
+            "Name": " Log Entry 81",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "OEM software event.",
+            "Description": " Log Entry 81",
+            "Created": "2017-10-17T14:31:13-05:00",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/81",
+            "Id": "81",
+            "SensorType": [
+                {
+                    "Member": null
+                }
+            ],
+            "Links": {},
+            "SensorNumber": 44,
+            "MessageArgs@odata.count": 0,
+            "MessageArgs": []
+        },
+        {
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "MessageID": "1ffff",
+            "EntryType": "SEL",
+            "Severity": "Ok",
+            "Name": " Log Entry 80",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "C: boot completed.",
+            "Description": " Log Entry 80",
+            "Created": "2017-10-17T14:31:13-05:00",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/80",
+            "Id": "80",
+            "SensorType": [
+                {
+                    "Member": "BaseOSBoot/InstallationStatus"
+                }
+            ],
+            "Links": {},
+            "SensorNumber": 0,
+            "MessageArgs@odata.count": 0,
+            "MessageArgs": []
+        },
+        {
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "MessageID": "1ffff",
+            "EntryType": "SEL",
+            "Severity": "Critical",
+            "Name": " Log Entry 79",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "The system board VGA cable or interconnect is not connected, or is improperly connected.",
+            "Description": " Log Entry 79",
+            "Created": "2017-10-17T14:30:31-05:00",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/79",
+            "Id": "79",
+            "SensorType": [
+                {
+                    "Member": "Cable/Interconnect"
+                }
+            ],
+            "Links": {},
+            "SensorNumber": 82,
+            "MessageArgs@odata.count": 0,
+            "MessageArgs": []
+        },
+        {
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "MessageID": "1ffff",
+            "EntryType": "SEL",
+            "Severity": "Critical",
+            "Name": " Log Entry 78",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "The system board VGA cable or interconnect is not connected, or is improperly connected.",
+            "Description": " Log Entry 78",
+            "Created": "2017-10-13T14:59:32-05:00",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/78",
+            "Id": "78",
+            "SensorType": [
+                {
+                    "Member": "Cable/Interconnect"
+                }
+            ],
+            "Links": {},
+            "SensorNumber": 82,
+            "MessageArgs@odata.count": 0,
+            "MessageArgs": []
+        },
+        {
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "MessageID": "1ffff",
+            "EntryType": "SEL",
+            "Severity": "Critical",
+            "Name": " Log Entry 77",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "The system board VGA cable or interconnect is not connected, or is improperly connected.",
+            "Description": " Log Entry 77",
+            "Created": "2017-10-12T23:48:49-05:00",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/77",
+            "Id": "77",
+            "SensorType": [
+                {
+                    "Member": "Cable/Interconnect"
+                }
+            ],
+            "Links": {},
+            "SensorNumber": 82,
+            "MessageArgs@odata.count": 0,
+            "MessageArgs": []
+        },
+        {
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "MessageID": "1ffff",
+            "EntryType": "SEL",
+            "Severity": "Critical",
+            "Name": " Log Entry 76",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "The system board VGA cable or interconnect is not connected, or is improperly connected.",
+            "Description": " Log Entry 76",
+            "Created": "2017-10-12T14:53:43-05:00",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/76",
+            "Id": "76",
+            "SensorType": [
+                {
+                    "Member": "Cable/Interconnect"
+                }
+            ],
+            "Links": {},
+            "SensorNumber": 82,
+            "MessageArgs@odata.count": 0,
+            "MessageArgs": []
+        },
+        {
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "MessageID": "1ffff",
+            "EntryType": "SEL",
+            "Severity": "Critical",
+            "Name": " Log Entry 75",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "The system board VGA cable or interconnect is not connected, or is improperly connected.",
+            "Description": " Log Entry 75",
+            "Created": "2017-10-12T13:00:56-05:00",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/75",
+            "Id": "75",
+            "SensorType": [
+                {
+                    "Member": "Cable/Interconnect"
+                }
+            ],
+            "Links": {},
+            "SensorNumber": 82,
+            "MessageArgs@odata.count": 0,
+            "MessageArgs": []
+        },
+        {
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "MessageID": "1ffff",
+            "EntryType": "SEL",
+            "Severity": "Critical",
+            "Name": " Log Entry 74",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "The system board VGA cable or interconnect is not connected, or is improperly connected.",
+            "Description": " Log Entry 74",
+            "Created": "2017-10-12T12:12:57-05:00",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/74",
+            "Id": "74",
+            "SensorType": [
+                {
+                    "Member": "Cable/Interconnect"
+                }
+            ],
+            "Links": {},
+            "SensorNumber": 82,
+            "MessageArgs@odata.count": 0,
+            "MessageArgs": []
+        },
+        {
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "MessageID": "1ffff",
+            "EntryType": "SEL",
+            "Severity": "Critical",
+            "Name": " Log Entry 73",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "The system board VGA cable or interconnect is not connected, or is improperly connected.",
+            "Description": " Log Entry 73",
+            "Created": "2017-10-12T11:37:27-05:00",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/73",
+            "Id": "73",
+            "SensorType": [
+                {
+                    "Member": "Cable/Interconnect"
+                }
+            ],
+            "Links": {},
+            "SensorNumber": 82,
+            "MessageArgs@odata.count": 0,
+            "MessageArgs": []
+        },
+        {
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "MessageID": "1ffff",
+            "EntryType": "SEL",
+            "Severity": "Critical",
+            "Name": " Log Entry 72",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "The system board VGA cable or interconnect is not connected, or is improperly connected.",
+            "Description": " Log Entry 72",
+            "Created": "2017-10-12T10:07:25-05:00",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/72",
+            "Id": "72",
+            "SensorType": [
+                {
+                    "Member": "Cable/Interconnect"
+                }
+            ],
+            "Links": {},
+            "SensorNumber": 82,
+            "MessageArgs@odata.count": 0,
+            "MessageArgs": []
+        },
+        {
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "MessageID": "1ffff",
+            "EntryType": "SEL",
+            "Severity": "Critical",
+            "Name": " Log Entry 71",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "The system board VGA cable or interconnect is not connected, or is improperly connected.",
+            "Description": " Log Entry 71",
+            "Created": "2017-10-09T12:59:58-05:00",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/71",
+            "Id": "71",
+            "SensorType": [
+                {
+                    "Member": "Cable/Interconnect"
+                }
+            ],
+            "Links": {},
+            "SensorNumber": 82,
+            "MessageArgs@odata.count": 0,
+            "MessageArgs": []
+        },
+        {
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "MessageID": "1ffff",
+            "EntryType": "SEL",
+            "Severity": "Critical",
+            "Name": " Log Entry 70",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "The system board VGA cable or interconnect is not connected, or is improperly connected.",
+            "Description": " Log Entry 70",
+            "Created": "2017-10-09T12:56:12-05:00",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/70",
+            "Id": "70",
+            "SensorType": [
+                {
+                    "Member": "Cable/Interconnect"
+                }
+            ],
+            "Links": {},
+            "SensorNumber": 82,
+            "MessageArgs@odata.count": 0,
+            "MessageArgs": []
+        },
+        {
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "MessageID": "1ffff",
+            "EntryType": "SEL",
+            "Severity": "Critical",
+            "Name": " Log Entry 69",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "The system board VGA cable or interconnect is not connected, or is improperly connected.",
+            "Description": " Log Entry 69",
+            "Created": "2017-10-09T12:44:29-05:00",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/69",
+            "Id": "69",
+            "SensorType": [
+                {
+                    "Member": "Cable/Interconnect"
+                }
+            ],
+            "Links": {},
+            "SensorNumber": 82,
+            "MessageArgs@odata.count": 0,
+            "MessageArgs": []
+        },
+        {
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "MessageID": "1ffff",
+            "EntryType": "SEL",
+            "Severity": "Critical",
+            "Name": " Log Entry 68",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "The system board VGA cable or interconnect is not connected, or is improperly connected.",
+            "Description": " Log Entry 68",
+            "Created": "2017-10-09T12:01:10-05:00",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/68",
+            "Id": "68",
+            "SensorType": [
+                {
+                    "Member": "Cable/Interconnect"
+                }
+            ],
+            "Links": {},
+            "SensorNumber": 82,
+            "MessageArgs@odata.count": 0,
+            "MessageArgs": []
+        },
+        {
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "MessageID": "1ffff",
+            "EntryType": "SEL",
+            "Severity": "Critical",
+            "Name": " Log Entry 67",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "The system board VGA cable or interconnect is not connected, or is improperly connected.",
+            "Description": " Log Entry 67",
+            "Created": "2017-10-09T11:51:36-05:00",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/67",
+            "Id": "67",
+            "SensorType": [
+                {
+                    "Member": "Cable/Interconnect"
+                }
+            ],
+            "Links": {},
+            "SensorNumber": 82,
+            "MessageArgs@odata.count": 0,
+            "MessageArgs": []
+        },
+        {
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "MessageID": "1ffff",
+            "EntryType": "SEL",
+            "Severity": "Critical",
+            "Name": " Log Entry 66",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "The system board VGA cable or interconnect is not connected, or is improperly connected.",
+            "Description": " Log Entry 66",
+            "Created": "2017-09-17T05:58:18-05:00",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/66",
+            "Id": "66",
+            "SensorType": [
+                {
+                    "Member": "Cable/Interconnect"
+                }
+            ],
+            "Links": {},
+            "SensorNumber": 82,
+            "MessageArgs@odata.count": 0,
+            "MessageArgs": []
+        },
+        {
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "MessageID": "1ffff",
+            "EntryType": "SEL",
+            "Severity": "Critical",
+            "Name": " Log Entry 65",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "The system board VGA cable or interconnect is not connected, or is improperly connected.",
+            "Description": " Log Entry 65",
+            "Created": "2017-09-17T05:47:33-05:00",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/65",
+            "Id": "65",
+            "SensorType": [
+                {
+                    "Member": "Cable/Interconnect"
+                }
+            ],
+            "Links": {},
+            "SensorNumber": 82,
+            "MessageArgs@odata.count": 0,
+            "MessageArgs": []
+        },
+        {
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "MessageID": "1ffff",
+            "EntryType": "SEL",
+            "Severity": "Critical",
+            "Name": " Log Entry 64",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "The system board VGA cable or interconnect is not connected, or is improperly connected.",
+            "Description": " Log Entry 64",
+            "Created": "2017-09-17T05:44:06-05:00",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/64",
+            "Id": "64",
+            "SensorType": [
+                {
+                    "Member": "Cable/Interconnect"
+                }
+            ],
+            "Links": {},
+            "SensorNumber": 82,
+            "MessageArgs@odata.count": 0,
+            "MessageArgs": []
+        },
+        {
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "MessageID": "1ffff",
+            "EntryType": "SEL",
+            "Severity": "Critical",
+            "Name": " Log Entry 63",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "The system board VGA cable or interconnect is not connected, or is improperly connected.",
+            "Description": " Log Entry 63",
+            "Created": "2017-09-17T04:59:41-05:00",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/63",
+            "Id": "63",
+            "SensorType": [
+                {
+                    "Member": "Cable/Interconnect"
+                }
+            ],
+            "Links": {},
+            "SensorNumber": 82,
+            "MessageArgs@odata.count": 0,
+            "MessageArgs": []
+        },
+        {
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "MessageID": "1ffff",
+            "EntryType": "SEL",
+            "Severity": "Critical",
+            "Name": " Log Entry 62",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "The system board VGA cable or interconnect is not connected, or is improperly connected.",
+            "Description": " Log Entry 62",
+            "Created": "2017-09-17T04:42:36-05:00",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/62",
+            "Id": "62",
+            "SensorType": [
+                {
+                    "Member": "Cable/Interconnect"
+                }
+            ],
+            "Links": {},
+            "SensorNumber": 82,
+            "MessageArgs@odata.count": 0,
+            "MessageArgs": []
+        },
+        {
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "MessageID": "1ffff",
+            "EntryType": "SEL",
+            "Severity": "Critical",
+            "Name": " Log Entry 61",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "The system board VGA cable or interconnect is not connected, or is improperly connected.",
+            "Description": " Log Entry 61",
+            "Created": "2017-09-17T03:46:17-05:00",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/61",
+            "Id": "61",
+            "SensorType": [
+                {
+                    "Member": "Cable/Interconnect"
+                }
+            ],
+            "Links": {},
+            "SensorNumber": 82,
+            "MessageArgs@odata.count": 0,
+            "MessageArgs": []
+        },
+        {
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "MessageID": "1ffff",
+            "EntryType": "SEL",
+            "Severity": "Critical",
+            "Name": " Log Entry 60",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "The system board VGA cable or interconnect is not connected, or is improperly connected.",
+            "Description": " Log Entry 60",
+            "Created": "2017-09-17T03:34:36-05:00",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/60",
+            "Id": "60",
+            "SensorType": [
+                {
+                    "Member": "Cable/Interconnect"
+                }
+            ],
+            "Links": {},
+            "SensorNumber": 82,
+            "MessageArgs@odata.count": 0,
+            "MessageArgs": []
+        },
+        {
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "MessageID": "1ffff",
+            "EntryType": "SEL",
+            "Severity": "Critical",
+            "Name": " Log Entry 59",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "The system board VGA cable or interconnect is not connected, or is improperly connected.",
+            "Description": " Log Entry 59",
+            "Created": "2017-09-16T07:18:04-05:00",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/59",
+            "Id": "59",
+            "SensorType": [
+                {
+                    "Member": "Cable/Interconnect"
+                }
+            ],
+            "Links": {},
+            "SensorNumber": 82,
+            "MessageArgs@odata.count": 0,
+            "MessageArgs": []
+        },
+        {
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "MessageID": "b6590",
+            "EntryType": "SEL",
+            "Severity": "Ok",
+            "Name": " Log Entry 58",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "OEM software event.",
+            "Description": " Log Entry 58",
+            "Created": "2017-09-11T05:15:16-05:00",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/58",
+            "Id": "58",
+            "SensorType": [
+                {
+                    "Member": null
+                }
+            ],
+            "Links": {},
+            "SensorNumber": 223,
+            "MessageArgs@odata.count": 0,
+            "MessageArgs": []
+        },
+        {
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "MessageID": "1ffff",
+            "EntryType": "SEL",
+            "Severity": "Ok",
+            "Name": " Log Entry 57",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "C: boot completed.",
+            "Description": " Log Entry 57",
+            "Created": "2017-09-11T05:15:16-05:00",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/57",
+            "Id": "57",
+            "SensorType": [
+                {
+                    "Member": "BaseOSBoot/InstallationStatus"
+                }
+            ],
+            "Links": {},
+            "SensorNumber": 0,
+            "MessageArgs@odata.count": 0,
+            "MessageArgs": []
+        },
+        {
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "MessageID": "1ffff",
+            "EntryType": "SEL",
+            "Severity": "Critical",
+            "Name": " Log Entry 56",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "The system board VGA cable or interconnect is not connected, or is improperly connected.",
+            "Description": " Log Entry 56",
+            "Created": "2017-09-11T05:14:32-05:00",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/56",
+            "Id": "56",
+            "SensorType": [
+                {
+                    "Member": "Cable/Interconnect"
+                }
+            ],
+            "Links": {},
+            "SensorNumber": 82,
+            "MessageArgs@odata.count": 0,
+            "MessageArgs": []
+        },
+        {
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "MessageID": "1ffff",
+            "EntryType": "SEL",
+            "Severity": "Critical",
+            "Name": " Log Entry 55",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "The system board VGA cable or interconnect is not connected, or is improperly connected.",
+            "Description": " Log Entry 55",
+            "Created": "2017-09-09T06:47:21-05:00",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/55",
+            "Id": "55",
+            "SensorType": [
+                {
+                    "Member": "Cable/Interconnect"
+                }
+            ],
+            "Links": {},
+            "SensorNumber": 82,
+            "MessageArgs@odata.count": 0,
+            "MessageArgs": []
+        },
+        {
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "MessageID": "1ffff",
+            "EntryType": "SEL",
+            "Severity": "Critical",
+            "Name": " Log Entry 54",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "The system board VGA cable or interconnect is not connected, or is improperly connected.",
+            "Description": " Log Entry 54",
+            "Created": "2017-08-24T11:07:39-05:00",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/54",
+            "Id": "54",
+            "SensorType": [
+                {
+                    "Member": "Cable/Interconnect"
+                }
+            ],
+            "Links": {},
+            "SensorNumber": 82,
+            "MessageArgs@odata.count": 0,
+            "MessageArgs": []
+        },
+        {
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "MessageID": "1ffff",
+            "EntryType": "SEL",
+            "Severity": "Critical",
+            "Name": " Log Entry 53",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "The system board VGA cable or interconnect is not connected, or is improperly connected.",
+            "Description": " Log Entry 53",
+            "Created": "2017-08-24T11:07:40-05:00",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/53",
+            "Id": "53",
+            "SensorType": [
+                {
+                    "Member": "Cable/Interconnect"
+                }
+            ],
+            "Links": {},
+            "SensorNumber": 82,
+            "MessageArgs@odata.count": 0,
+            "MessageArgs": []
+        },
+        {
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "MessageID": "1ffff",
+            "EntryType": "SEL",
+            "Severity": "Critical",
+            "Name": " Log Entry 52",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "The system board VGA cable or interconnect is not connected, or is improperly connected.",
+            "Description": " Log Entry 52",
+            "Created": "2017-08-24T11:07:38-05:00",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/52",
+            "Id": "52",
+            "SensorType": [
+                {
+                    "Member": "Cable/Interconnect"
+                }
+            ],
+            "Links": {},
+            "SensorNumber": 82,
+            "MessageArgs@odata.count": 0,
+            "MessageArgs": []
+        },
+        {
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "MessageID": "1ffff",
+            "EntryType": "SEL",
+            "Severity": "Critical",
+            "Name": " Log Entry 51",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "The system board VGA cable or interconnect is not connected, or is improperly connected.",
+            "Description": " Log Entry 51",
+            "Created": "2017-08-24T11:07:37-05:00",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/51",
+            "Id": "51",
+            "SensorType": [
+                {
+                    "Member": "Cable/Interconnect"
+                }
+            ],
+            "Links": {},
+            "SensorNumber": 82,
+            "MessageArgs@odata.count": 0,
+            "MessageArgs": []
+        },
+        {
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "MessageID": "1ffff",
+            "EntryType": "SEL",
+            "Severity": "Critical",
+            "Name": " Log Entry 50",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "The system board VGA cable or interconnect is not connected, or is improperly connected.",
+            "Description": " Log Entry 50",
+            "Created": "2017-08-24T11:07:38-05:00",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/50",
+            "Id": "50",
+            "SensorType": [
+                {
+                    "Member": "Cable/Interconnect"
+                }
+            ],
+            "Links": {},
+            "SensorNumber": 82,
+            "MessageArgs@odata.count": 0,
+            "MessageArgs": []
+        },
+        {
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "MessageID": "1ffff",
+            "EntryType": "SEL",
+            "Severity": "Critical",
+            "Name": " Log Entry 49",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "The system board VGA cable or interconnect is not connected, or is improperly connected.",
+            "Description": " Log Entry 49",
+            "Created": "2017-08-24T11:07:41-05:00",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/49",
+            "Id": "49",
+            "SensorType": [
+                {
+                    "Member": "Cable/Interconnect"
+                }
+            ],
+            "Links": {},
+            "SensorNumber": 82,
+            "MessageArgs@odata.count": 0,
+            "MessageArgs": []
+        },
+        {
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "MessageID": "1ffff",
+            "EntryType": "SEL",
+            "Severity": "Critical",
+            "Name": " Log Entry 48",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "The system board VGA cable or interconnect is not connected, or is improperly connected.",
+            "Description": " Log Entry 48",
+            "Created": "2017-08-24T11:07:42-05:00",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/48",
+            "Id": "48",
+            "SensorType": [
+                {
+                    "Member": "Cable/Interconnect"
+                }
+            ],
+            "Links": {},
+            "SensorNumber": 82,
+            "MessageArgs@odata.count": 0,
+            "MessageArgs": []
+        },
+        {
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "MessageID": "9f590",
+            "EntryType": "SEL",
+            "Severity": "Ok",
+            "Name": " Log Entry 47",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "OEM software event.",
+            "Description": " Log Entry 47",
+            "Created": "2017-08-25T00:59:22-05:00",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/47",
+            "Id": "47",
+            "SensorType": [
+                {
+                    "Member": null
+                }
+            ],
+            "Links": {},
+            "SensorNumber": 101,
+            "MessageArgs@odata.count": 0,
+            "MessageArgs": []
+        },
+        {
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "MessageID": "1ffff",
+            "EntryType": "SEL",
+            "Severity": "Ok",
+            "Name": " Log Entry 46",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "C: boot completed.",
+            "Description": " Log Entry 46",
+            "Created": "2017-08-25T00:59:22-05:00",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/46",
+            "Id": "46",
+            "SensorType": [
+                {
+                    "Member": "BaseOSBoot/InstallationStatus"
+                }
+            ],
+            "Links": {},
+            "SensorNumber": 0,
+            "MessageArgs@odata.count": 0,
+            "MessageArgs": []
+        },
+        {
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "MessageID": "1ffff",
+            "EntryType": "SEL",
+            "Severity": "Critical",
+            "Name": " Log Entry 45",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "The system board VGA cable or interconnect is not connected, or is improperly connected.",
+            "Description": " Log Entry 45",
+            "Created": "2017-08-25T00:58:39-05:00",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/45",
+            "Id": "45",
+            "SensorType": [
+                {
+                    "Member": "Cable/Interconnect"
+                }
+            ],
+            "Links": {},
+            "SensorNumber": 82,
+            "MessageArgs@odata.count": 0,
+            "MessageArgs": []
+        },
+        {
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "MessageID": "1ffff",
+            "EntryType": "SEL",
+            "Severity": "Critical",
+            "Name": " Log Entry 44",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "The system board VGA cable or interconnect is not connected, or is improperly connected.",
+            "Description": " Log Entry 44",
+            "Created": "2017-08-24T09:47:25-05:00",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/44",
+            "Id": "44",
+            "SensorType": [
+                {
+                    "Member": "Cable/Interconnect"
+                }
+            ],
+            "Links": {},
+            "SensorNumber": 82,
+            "MessageArgs@odata.count": 0,
+            "MessageArgs": []
+        },
+        {
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "MessageID": "1ffff",
+            "EntryType": "SEL",
+            "Severity": "Critical",
+            "Name": " Log Entry 43",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "The system board VGA cable or interconnect is not connected, or is improperly connected.",
+            "Description": " Log Entry 43",
+            "Created": "2017-08-24T06:51:09-05:00",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/43",
+            "Id": "43",
+            "SensorType": [
+                {
+                    "Member": "Cable/Interconnect"
+                }
+            ],
+            "Links": {},
+            "SensorNumber": 82,
+            "MessageArgs@odata.count": 0,
+            "MessageArgs": []
+        },
+        {
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "MessageID": "1ffff",
+            "EntryType": "SEL",
+            "Severity": "Critical",
+            "Name": " Log Entry 42",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "The system board VGA cable or interconnect is not connected, or is improperly connected.",
+            "Description": " Log Entry 42",
+            "Created": "2017-08-18T03:17:14-05:00",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/42",
+            "Id": "42",
+            "SensorType": [
+                {
+                    "Member": "Cable/Interconnect"
+                }
+            ],
+            "Links": {},
+            "SensorNumber": 82,
+            "MessageArgs@odata.count": 0,
+            "MessageArgs": []
+        },
+        {
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "MessageID": "1ffff",
+            "EntryType": "SEL",
+            "Severity": "Critical",
+            "Name": " Log Entry 41",
+            "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+            "Message": "The system board VGA cable or interconnect is not connected, or is improperly connected.",
+            "Description": " Log Entry 41",
+            "Created": "2017-08-18T02:14:55-05:00",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/41",
+            "Id": "41",
+            "SensorType": [
+                {
+                    "Member": "Cable/Interconnect"
+                }
+            ],
+            "Links": {},
+            "SensorNumber": 82,
+            "MessageArgs@odata.count": 0,
+            "MessageArgs": []
+        }
+    ],
+    "Members@odata.count": 90,
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel",
+    "@odata.context": "/redfish/v1/$metadata#LogEntryCollection.LogEntryCollection"
+}

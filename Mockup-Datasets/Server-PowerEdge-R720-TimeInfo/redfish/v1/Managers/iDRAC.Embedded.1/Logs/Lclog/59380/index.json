@@ -1,0 +1,20 @@
+{
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "Name": " Log Entry 59380",
+    "MessageArgs@odata.count": 1,
+    "@odata.context": "/redfish/v1/$metadata#LogEntry.LogEntry",
+    "Message": "A reboot job RID_101205414871 was created.",
+    "OEMRecordFormat": "Dell",
+    "Description": " Log Entry 59380",
+    "MessageArgs": [
+        "RID_101205414871"
+    ],
+    "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+    "EntryType": "Oem",
+    "Id": "59380",
+    "Severity": "OK",
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/59380",
+    "Links": {},
+    "MessageID": "RED055",
+    "Created": "2017-11-07T23:55:41-06:00"
+}

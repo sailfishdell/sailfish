@@ -1,0 +1,21 @@
+{
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "Name": " Log Entry 59358",
+    "MessageArgs@odata.count": 2,
+    "@odata.context": "/redfish/v1/$metadata#LogEntry.LogEntry",
+    "Message": "The iDRAC firmware updated successfully. Previous version: 2.10.10.10, Current version: 2.50.50.50",
+    "OEMRecordFormat": "Dell",
+    "Description": " Log Entry 59358",
+    "MessageArgs": [
+        "2.10.10.10",
+        "2.50.50.50"
+    ],
+    "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+    "EntryType": "Oem",
+    "Id": "59358",
+    "Severity": "OK",
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/59358",
+    "Links": {},
+    "MessageID": "RED063",
+    "Created": "2017-11-07T23:17:44-06:00"
+}

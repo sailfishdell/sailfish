@@ -1,0 +1,26 @@
+{
+    "Status": {
+        "State": "Enabled",
+        "Health": "Ok"
+    },
+    "AccountLockoutDuration": 0,
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/AccountService",
+    "AccountLockoutCounterResetAfter": 0,
+    "Id": "AccountService",
+    "AuthFailureLoggingThreshold": 2,
+    "@odata.context": "/redfish/v1/$metadata#AccountService.AccountService",
+    "MinPasswordLength": 1,
+    "AccountLockoutThreshold": 0,
+    "Accounts": {
+        "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Accounts"
+    },
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "Description": "BMC User Accounts",
+    "Name": "Account Service",
+    "ServiceEnabled": true,
+    "MaxPasswordLength": 20,
+    "Roles": {
+        "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Roles"
+    },
+    "@odata.type": "#AccountService.v1_0_2.AccountService"
+}

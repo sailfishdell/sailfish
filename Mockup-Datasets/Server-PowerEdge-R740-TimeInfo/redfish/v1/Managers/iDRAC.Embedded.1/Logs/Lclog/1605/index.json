@@ -1,0 +1,26 @@
+{
+    "MessageID": "USR0030",
+    "EntryType": "Oem",
+    "Severity": "Ok",
+    "Name": " Log Entry 1605",
+    "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+    "Message": "Successfully logged in using root, from 10.132.62.38 and SSH.",
+    "Description": " Log Entry 1605",
+    "Created": "2017-11-01T21:45:50-05:00",
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1605",
+    "Id": "1605",
+    "OemRecordFormat": "Dell",
+    "Links": {
+        "OriginOfCondition": {
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+        }
+    },
+    "@odata.context": "/redfish/v1/$metadata#LogEntry.LogEntry",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "MessageArgs@odata.count": 3,
+    "MessageArgs": [
+        "root",
+        "10.132.62.38",
+        "SSH"
+    ]
+}

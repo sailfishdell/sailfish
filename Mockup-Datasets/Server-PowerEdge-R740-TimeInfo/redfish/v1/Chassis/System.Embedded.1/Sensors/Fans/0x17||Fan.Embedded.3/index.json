@@ -1,0 +1,32 @@
+{
+    "PhysicalContext": "SystemBoard",
+    "UpperThresholdNonCritical": null,
+    "RelatedItem@odata.count": 1,
+    "Name": "System Board Fan3",
+    "@odata.type": "#Thermal.v1_0_2.Fan",
+    "LowerThresholdNonCritical": 840,
+    "Redundancy": [],
+    "MinReadingRange": 139,
+    "UpperThresholdFatal": null,
+    "LowerThresholdFatal": 480,
+    "Status": {
+        "State": "Enabled",
+        "Health": "OK"
+    },
+    "UpperThresholdCritical": null,
+    "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Sensors/Fans/0x17||Fan.Embedded.3",
+    "FanName": "System Board Fan3",
+    "Reading": 3240,
+    "MaxReadingRange": 197,
+    "@odata.context": "/redfish/v1/$metadata#Thermal.Thermal",
+    "MemberId": "0x17||Fan.Embedded.3",
+    "RelatedItem": [
+        {
+            "@odata.id": "/redfish/v1/Chassis/System.Embedded.1"
+        }
+    ],
+    "LowerThresholdCritical": 480,
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "ReadingUnits": "RPM",
+    "Redundancy@odata.count": 0
+}

@@ -1,0 +1,10 @@
+{
+    "Description": "List of Event subscriptions",
+    "Name": "Event Subscriptions Collection",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "@odata.type": "#EventDestinationCollection.EventDestinationCollection",
+    "Members": [],
+    "Members@odata.count": 0,
+    "@odata.id": "/redfish/v1/EventService/Subscriptions",
+    "@odata.context": "/redfish/v1/$metadata#EventDestinationCollection.EventDestinationCollection"
+}

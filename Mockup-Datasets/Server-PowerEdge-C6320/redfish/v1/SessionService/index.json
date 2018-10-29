@@ -1,0 +1,14 @@
+{
+    "Id": "SessionService",
+    "ServiceEnabled": true,
+    "@Redfish.Copyright": "Copyright 2017 TTU.edu All rights reserved.",
+    "@odata.type": "#SessionService.v1_0_2.SessionService",
+    "@odata.context": "/redfish/v1/$metadata#SessionService.SessionService",
+    "Description": "Session Service",
+    "@odata.id": "/redfish/v1/SessionService",
+    "SessionTimeout": 1800,
+    "Name": "Session Service",
+    "Sessions": {
+        "@odata.id": "/redfish/v1/Sessions"
+    }
+}

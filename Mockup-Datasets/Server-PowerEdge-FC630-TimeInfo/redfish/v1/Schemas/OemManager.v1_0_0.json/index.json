@@ -1,0 +1,232 @@
+{
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "definitions": {
+        "ShareParameters": {
+            "Target": {
+                "longDescription": "To identify the component for Export. It identifies the one or more FQDDs .Selective list of FQDDs should be given in comma separated format . Default = ALL.",
+                "description": "To identify the component for Export. It identifies the one or more FQDDs.",
+                "readonly": true,
+                "$ref": "#/definitions/Target"
+            },
+            "description": "Share parameters are listed.",
+            "IPAddress": {
+                "description": "The IP address of the target export or import server.",
+                "type": "string",
+                "readonly": true,
+                "longDescription": "The IP address of the target export or import server."
+            },
+            "ShareType": {
+                "longDescription": "The ShareType specifies Type of share like  NFS, CIFS. If nothing is specified it is a local share type.",
+                "description": "The ShareType specifies Type of share like  NFS, CIFS.",
+                "readonly": true,
+                "$ref": "#/definitions/ShareType"
+            },
+            "ShareName": {
+                "description": "The ShareName or the directory path to the mount point.",
+                "type": "string",
+                "readonly": true,
+                "longDescription": "The ShareName or the directory path to the mount point for NFS and CIFS, during export or import server configuration."
+            },
+            "longDescription": "Share parameters are listed in this object for accessing the NFS, CIFS share locations for Export of the configuration XML file.",
+            "Username": {
+                "description": "User name for the target export or import server configuration.",
+                "type": "string",
+                "readonly": true,
+                "longDescription": "User name for the target export or import server configuration in the NFS or CIFS share path."
+            },
+            "Password": {
+                "description": "Password for the target export or import server configuration.",
+                "type": "string",
+                "readonly": true,
+                "longDescription": "Password for the target export or import server configuration in the NFS or CIFS share path."
+            },
+            "FileName": {
+                "description": "The target output file name.",
+                "type": "string",
+                "readonly": true,
+                "longDescription": "The target output file name for export or import server configuration."
+            }
+        },
+        "ExportSystemConfiguration": {
+            "description": "This action is used to export System Configuration attributes.",
+            "additionalProperties": false,
+            "properties": {
+                "target": {
+                    "format": "uri",
+                    "description": "Link to invoke action",
+                    "type": "string"
+                },
+                "title": {
+                    "description": "Friendly action name",
+                    "type": "string"
+                }
+            },
+            "LongDescription": "This action shall perform an export System Configuration attributes.",
+            "type": "object",
+            "patternProperties": {
+                "^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message|Privileges)\\.[a-zA-Z_][a-zA-Z0-9_.]+$": {
+                    "description": "This property shall specify a valid odata or Redfish property.",
+                    "type": [
+                        "array",
+                        "boolean",
+                        "number",
+                        "null",
+                        "object",
+                        "string"
+                    ]
+                }
+            }
+        },
+        "Target": {
+            "type": "string",
+            "enum": [
+                "ALL",
+                "IDRAC",
+                "BIOS",
+                "NIC",
+                "RAID"
+            ],
+            "enumDescriptions": {
+                "BIOS": "The SCP-generated profile includes BIOS aspects of the system.",
+                "IDRAC": "The SCP-generated profile includes IDRAC aspects of the system.",
+                "ALL": "The SCP-generated profile includes ALL aspects of the system, such as BIOS, NIC, RAID, FC, iDRAC, System and Lifecycle Controller settings.",
+                "RAID": "The SCP-generated profile includes RAID aspects of the system.",
+                "NIC": "The SCP-generated profile includes NIC aspects of the system."
+            }
+        },
+        "ExportFormat": {
+            "type": "string",
+            "enum": [
+                "XML"
+            ],
+            "enumDescriptions": {
+                "XML": "The Server configuration profile format is XML for exporting."
+            }
+        },
+        "ShareType": {
+            "type": "string",
+            "enum": [
+                "NFS",
+                "CIFS"
+            ],
+            "enumDescriptions": {
+                "CIFS": "Network Share type is CIFS for export, import or preview.",
+                "NFS": "Network Share type is NFS for export, import or preview."
+            }
+        },
+        "ShutdownType": {
+            "type": "string",
+            "enum": [
+                "Graceful",
+                "Forced",
+                "NoReboot"
+            ],
+            "enumDescriptions": {
+                "Graceful": "The system will Gracefully shut down before performing import operation.",
+                "NoReboot": "The system will shut down before performing import operation. Manual reboot is done here.",
+                "Forced": "The system will forcefully shut down before performing import operation"
+            }
+        },
+        "ExportUse": {
+            "type": "string",
+            "enum": [
+                "Default",
+                "Clone",
+                "Replace"
+            ],
+            "enumDescriptions": {
+                "Default": "The SCP-generated profile includes all aspects of the system, such as BIOS, NIC, RAID, FC, iDRAC, System and Lifecycle Controller settings.This is the default.",
+                "Replace": "If the user intends to retire a server from the datacenter and replace it with another or restore a server   s settings to a known baseline, this mode of export could be used.",
+                "Clone": "If the user intends to Clone settings from one gold server to another server with identical hardware setup, this export mode can be used."
+            }
+        },
+        "IncludeInExport": {
+            "type": "string",
+            "enum": [
+                "Default",
+                "IncludeReadOnly",
+                "IncludePasswordHashValues"
+            ],
+            "enumDescriptions": {
+                "Default": "Extra information to include in the export like Default.",
+                "IncludePasswordHashValues": "Extra information to include in the export like Include password hash values, Include read only and password hash values.",
+                "IncludeReadOnly": "Extra information to include in the export like Include read only."
+            }
+        },
+        "ImportSystemConfigurationPreview": {
+            "description": "This action is used to import System Configuration Preview.",
+            "additionalProperties": false,
+            "properties": {
+                "target": {
+                    "format": "uri",
+                    "description": "Link to invoke action",
+                    "type": "string"
+                },
+                "title": {
+                    "description": "Friendly action name",
+                    "type": "string"
+                }
+            },
+            "LongDescription": "This action shall perform an import System Configuration Preview.",
+            "type": "object",
+            "patternProperties": {
+                "^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message|Privileges)\\.[a-zA-Z_][a-zA-Z0-9_.]+$": {
+                    "description": "This property shall specify a valid odata or Redfish property.",
+                    "type": [
+                        "array",
+                        "boolean",
+                        "number",
+                        "null",
+                        "object",
+                        "string"
+                    ]
+                }
+            }
+        },
+        "ImportSystemConfiguration": {
+            "description": "This action is used to import System Configuration attributes.",
+            "additionalProperties": false,
+            "properties": {
+                "target": {
+                    "format": "uri",
+                    "description": "Link to invoke action",
+                    "type": "string"
+                },
+                "title": {
+                    "description": "Friendly action name",
+                    "type": "string"
+                }
+            },
+            "LongDescription": "This action shall perform an import System Configuration attributes.",
+            "type": "object",
+            "patternProperties": {
+                "^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message|Privileges)\\.[a-zA-Z_][a-zA-Z0-9_.]+$": {
+                    "description": "This property shall specify a valid odata or Redfish property.",
+                    "type": [
+                        "array",
+                        "boolean",
+                        "number",
+                        "null",
+                        "object",
+                        "string"
+                    ]
+                }
+            }
+        },
+        "HostPowerState": {
+            "type": "string",
+            "enum": [
+                "On",
+                "Off"
+            ],
+            "enumDescriptions": {
+                "On": "Host power state after performing import operation is set to On.",
+                "Off": "Host power state after performing import operation is set to Off."
+            }
+        }
+    },
+    "title": "#OemManager.v1_0_0.OemManager",
+    "copyright": "Copyright 2016 Dell, Inc. or its subsidiaries.  All Rights Reserved.",
+    "$schema": "/redfish/v1/Schemas/redfish-schema.v1_1_0.json",
+    "$ref": "#/definitions/OemManager"
+}

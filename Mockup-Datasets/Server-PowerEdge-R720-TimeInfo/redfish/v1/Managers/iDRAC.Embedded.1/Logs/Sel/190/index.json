@@ -1,0 +1,28 @@
+{
+    "SensorNumber": 0,
+    "Name": " Log Entry 190",
+    "SensorType": [
+        {
+            "Member": "BaseOSBoot/InstallationStatus"
+        }
+    ],
+    "MessageArgs@odata.count": 0,
+    "@odata.context": "/redfish/v1/$metadata#LogEntry.LogEntry",
+    "Message": "C: boot completed.",
+    "Severity": "OK",
+    "EntryCode": [
+        {
+            "Member": "Assert"
+        }
+    ],
+    "Description": " Log Entry 190",
+    "MessageArgs": [],
+    "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+    "EntryType": "SEL",
+    "Id": "190",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/190",
+    "Links": {},
+    "MessageID": "1ffff",
+    "Created": "2016-12-13T08:21:58-06:00"
+}

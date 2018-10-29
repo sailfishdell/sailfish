@@ -1,0 +1,28 @@
+{
+    "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+    "@Redfish.Copyright": "Copyright 2017 TTU.edu All rights reserved.",
+    "MessageID": "700",
+    "@odata.context": "/redfish/v1/$metadata#LogEntry.LogEntry",
+    "Id": "2",
+    "EntryCode": [
+        {
+            "Member": "Assert"
+        }
+    ],
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/2",
+    "MessageArgs@odata.count": 0,
+    "SensorNumber": 0,
+    "Created": "2017-01-04T12:57:19-06:00",
+    "SensorType": [
+        {
+            "Member": "BaseOSBoot/InstallationStatus"
+        }
+    ],
+    "MessageArgs": [],
+    "Message": "The process of installing an operating system or hypervisor is started and is in progress.",
+    "Severity": "Ok",
+    "Description": " Log Entry 2",
+    "EntryType": "SEL",
+    "Name": " Log Entry 2",
+    "Links": {}
+}

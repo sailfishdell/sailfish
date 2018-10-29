@@ -1,0 +1,20 @@
+{
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "Name": " Log Entry 59366",
+    "MessageArgs@odata.count": 1,
+    "@odata.context": "/redfish/v1/$metadata#LogEntry.LogEntry",
+    "Message": "Firmware update will not be performed. Firmware package is not present for POWER SUPPLY",
+    "OEMRecordFormat": "Dell",
+    "Description": " Log Entry 59366",
+    "MessageArgs": [
+        "POWER SUPPLY"
+    ],
+    "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+    "EntryType": "Oem",
+    "Id": "59366",
+    "Severity": "OK",
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/59366",
+    "Links": {},
+    "MessageID": "PR10",
+    "Created": "2017-11-07T23:21:33-06:00"
+}

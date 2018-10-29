@@ -1,0 +1,48 @@
+{
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "UEFIDevicePath": "PciRoot(0x0)/Pci(0x2,0x0)/Pci(0x0,0x0)",
+    "@odata.id": "/redfish/v1/Systems/System.Embedded.1/Storage/Controllers/RAID.Integrated.1-1",
+    "Description": "Simple Storage Controller",
+    "Devices": [
+        {
+            "Name": "Physical Disk 0:1:0",
+            "Status": {
+                "HealthRollUp": null,
+                "State": "Enabled",
+                "Health": null
+            },
+            "Manufacturer": "SEAGATE",
+            "Model": "ST9300653SS"
+        },
+        {
+            "Name": "Physical Disk 0:1:1",
+            "Status": {
+                "HealthRollUp": null,
+                "State": "Enabled",
+                "Health": null
+            },
+            "Manufacturer": "SEAGATE",
+            "Model": "ST9300653SS"
+        },
+        {
+            "Name": "Backplane 1 on Connector 0 of Integrated RAID Controller 1",
+            "Status": {
+                "HealthRollUp": "OK",
+                "State": null,
+                "Health": null
+            },
+            "Manufacturer": "DELL",
+            "Model": "BP13G+ 0:1"
+        }
+    ],
+    "Id": "RAID.Integrated.1-1",
+    "Devices@odata.count": 3,
+    "Name": "PERC H730 Mini",
+    "@odata.context": "/redfish/v1/$metadata#SimpleStorage.SimpleStorage",
+    "Status": {
+        "HealthRollUp": null,
+        "State": "Enabled",
+        "Health": null
+    },
+    "@odata.type": "#SimpleStorage.v1_0_2.SimpleStorage"
+}

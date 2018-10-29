@@ -1,0 +1,23 @@
+{
+    "MessageID": "RAC1195",
+    "EntryType": "Oem",
+    "Severity": "Ok",
+    "Name": " Log Entry 1612",
+    "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+    "Message": "User root via IP 10.30.165.194 requested state / configuration change to Virtual Console using GUI.",
+    "Description": " Log Entry 1612",
+    "Created": "2017-11-02T13:11:35-05:00",
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1612",
+    "Id": "1612",
+    "OemRecordFormat": "Dell",
+    "Links": {},
+    "@odata.context": "/redfish/v1/$metadata#LogEntry.LogEntry",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "MessageArgs@odata.count": 4,
+    "MessageArgs": [
+        "root",
+        "10.30.165.194",
+        "Virtual Console",
+        "GUI"
+    ]
+}

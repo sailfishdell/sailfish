@@ -1,0 +1,22 @@
+{
+    "Name": "Processor Schema File",
+    "@odata.context": "/redfish/v1/$metadata#JsonSchemaFile.JsonSchemaFile",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "Description": "Processor Schema File Location",
+    "@odata.type": "#JsonSchemaFile.v1_0_2.JsonSchemaFile",
+    "Languages": [
+        "en"
+    ],
+    "Id": "Processor",
+    "Location": [
+        {
+            "PublicationUri": "http://redfish.dmtf.org/schemas/v1/Processor.json",
+            "Language": "en",
+            "Uri": "/redfish/v1/Schemas/Processor.json"
+        }
+    ],
+    "Languages@odata.count": 1,
+    "@odata.id": "/redfish/v1/JSONSchemas/Processor",
+    "Location@odata.count": 1,
+    "Schema": "#Processor.Processor"
+}

@@ -1,0 +1,15 @@
+{
+    "Description": "Represents Firmware Inventory",
+    "Version": "7.10.0",
+    "Id": "Installed-27481-7.10.0",
+    "Name": "Broadcom Gigabit Ethernet BCM5720 - 18:66:DA:F0:5A:8A",
+    "@odata.type": "#SoftwareInventory.v1_0_0.SoftwareInventory",
+    "Status": {
+        "State": "Enabled",
+        "Health": "OK"
+    },
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "Updateable": true,
+    "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/Installed-27481-7.10.0",
+    "@odata.context": "/redfish/v1/$metadata#SoftwareInventory.SoftwareInventory"
+}

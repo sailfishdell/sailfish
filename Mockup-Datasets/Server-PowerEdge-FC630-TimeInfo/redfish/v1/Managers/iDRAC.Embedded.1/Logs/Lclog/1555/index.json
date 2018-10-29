@@ -1,0 +1,20 @@
+{
+    "OEMRecordFormat": "Dell",
+    "Links": {},
+    "Id": "1555",
+    "EntryType": "Oem",
+    "Created": "2017-09-11T14:04:55-05:00",
+    "MessageArgs@odata.count": 1,
+    "@odata.context": "/redfish/v1/$metadata#LogEntry.LogEntry",
+    "Severity": "Ok",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1555",
+    "Description": " Log Entry 1555",
+    "MessageID": "RDU8500",
+    "MessageArgs": [
+        "1"
+    ],
+    "Name": " Log Entry 1555",
+    "Message": "CMC1: active",
+    "@odata.type": "#LogEntry.v1_0_2.LogEntry"
+}

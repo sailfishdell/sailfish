@@ -1,0 +1,183 @@
+{
+    "UUID": "3234394f-c0b9-4380-3510-004b4c4c4544",
+    "@odata.context": "/redfish/v1/$metadata#Manager.Manager",
+    "SerialInterfaces": {
+        "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/SerialInterfaces"
+    },
+    "Model": "13G Modular",
+    "VirtualMedia": {
+        "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/VirtualMedia"
+    },
+    "LogServices": {
+        "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/LogServices"
+    },
+    "Links": {
+        "ManagerForChassis@odata.count": 1,
+        "ManagerForChassis": [
+            {
+                "@odata.id": "/redfish/v1/Chassis/System.Embedded.1"
+            }
+        ],
+        "ManagerForServers": [
+            {
+                "@odata.id": "/redfish/v1/Systems/System.Embedded.1"
+            }
+        ],
+        "ManagerForServers@odata.count": 1
+    },
+    "Name": "Manager",
+    "FirmwareVersion": "2.41.40.40",
+    "EthernetInterfaces": {
+        "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/EthernetInterfaces"
+    },
+    "RedundancySet@odata.count": 0,
+    "Status": {
+        "State": "Enabled",
+        "Health": "Ok"
+    },
+    "Redundancy@odata.count": 0,
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1",
+    "Actions": {
+        "Oem": {
+            "OemManager.v1_0_0#OemManager.ImportSystemConfiguration": {
+                "target": "/redfish/v1/Managers/iDRAC.Embedded.1/Actions/Oem/EID_674_Manager.ImportSystemConfiguration",
+                "HostPowerState@Redfish.AllowableValues": [
+                    "On",
+                    "Off"
+                ],
+                "ShutdownType@Redfish.AllowableValues": [
+                    "Graceful",
+                    "Forced",
+                    "NoReboot"
+                ],
+                "ShareParameters": {
+                    "Target@Redfish.AllowableValues": [
+                        "ALL",
+                        "IDRAC",
+                        "BIOS",
+                        "NIC",
+                        "RAID"
+                    ],
+                    "ShareParameters@Redfish.AllowableValues": [
+                        "IPAddress",
+                        "ShareName",
+                        "FileName",
+                        "UserName",
+                        "Password",
+                        "Workgroup"
+                    ],
+                    "ShareType@Redfish.AllowableValues": [
+                        "NFS",
+                        "CIFS"
+                    ]
+                },
+                "ImportSystemConfiguration@Redfish.AllowableValues": [
+                    "TimeToWait",
+                    "ImportBuffer"
+                ]
+            },
+            "OemManager.v1_0_0#OemManager.ImportSystemConfigurationPreview": {
+                "target": "/redfish/v1/Managers/iDRAC.Embedded.1/Actions/Oem/EID_674_Manager.ImportSystemConfigurationPreview",
+                "ShareParameters": {
+                    "Target@Redfish.AllowableValues": [
+                        "ALL"
+                    ],
+                    "ShareParameters@Redfish.AllowableValues": [
+                        "IPAddress",
+                        "ShareName",
+                        "FileName",
+                        "UserName",
+                        "Password",
+                        "Workgroup"
+                    ],
+                    "ShareType@Redfish.AllowableValues": [
+                        "NFS",
+                        "CIFS"
+                    ]
+                },
+                "ImportSystemConfigurationPreview@Redfish.AllowableValues": [
+                    "ImportBuffer"
+                ]
+            },
+            "OemManager.v1_0_0#OemManager.ExportSystemConfiguration": {
+                "target": "/redfish/v1/Managers/iDRAC.Embedded.1/Actions/Oem/EID_674_Manager.ExportSystemConfiguration",
+                "ExportFormat@Redfish.AllowableValues": [
+                    "XML"
+                ],
+                "IncludeInExport@Redfish.AllowableValues": [
+                    "Default",
+                    "IncludeReadOnly",
+                    "IncludePasswordHashValues"
+                ],
+                "ShareParameters": {
+                    "Target@Redfish.AllowableValues": [
+                        "ALL",
+                        "IDRAC",
+                        "BIOS",
+                        "NIC",
+                        "RAID"
+                    ],
+                    "ShareParameters@Redfish.AllowableValues": [
+                        "IPAddress",
+                        "ShareName",
+                        "FileName",
+                        "UserName",
+                        "Password",
+                        "Workgroup"
+                    ],
+                    "ShareType@Redfish.AllowableValues": [
+                        "NFS",
+                        "CIFS"
+                    ]
+                },
+                "ExportUse@Redfish.AllowableValues": [
+                    "Default",
+                    "Clone",
+                    "Replace"
+                ]
+            }
+        },
+        "#Manager.Reset": {
+            "target": "/redfish/v1/Managers/iDRAC.Embedded.1/Actions/Manager.Reset",
+            "ResetType@Redfish.AllowableValues": [
+                "GracefulRestart"
+            ]
+        }
+    },
+    "Id": "iDRAC.Embedded.1",
+    "RedundancySet": [],
+    "NetworkProtocol": {
+        "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/NetworkProtocol"
+    },
+    "SerialConsole": {
+        "ConnectTypesSupported@odata.count": 0,
+        "ServiceEnabled": false,
+        "MaxConcurrentSessions": 0,
+        "ConnectTypesSupported": []
+    },
+    "DateTimeLocalOffset": "-05:00",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "GraphicalConsole": {
+        "ConnectTypesSupported@odata.count": 1,
+        "ServiceEnabled": true,
+        "MaxConcurrentSessions": 6,
+        "ConnectTypesSupported": [
+            "KVMIP"
+        ]
+    },
+    "CommandShell": {
+        "ConnectTypesSupported@odata.count": 3,
+        "ServiceEnabled": true,
+        "MaxConcurrentSessions": 5,
+        "ConnectTypesSupported": [
+            "SSH",
+            "Telnet",
+            "IPMI"
+        ]
+    },
+    "Description": "BMC",
+    "ManagerType": "BMC",
+    "Redundancy": [],
+    "DateTime": "2017-11-03T16:23:40-05:00",
+    "@odata.type": "#Manager.v1_0_2.Manager"
+}

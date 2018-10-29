@@ -1,0 +1,183 @@
+{
+    "@odata.type": "#Manager.v1_0_2.Manager",
+    "LogServices": {
+        "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/LogServices"
+    },
+    "UUID": "3244514f-c0b7-5480-3210-004d4c4c4544",
+    "VirtualMedia": {
+        "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/VirtualMedia"
+    },
+    "CommandShell": {
+        "ServiceEnabled": true,
+        "MaxConcurrentSessions": 5,
+        "ConnectTypesSupported@odata.count": 3,
+        "ConnectTypesSupported": [
+            "SSH",
+            "Telnet",
+            "IPMI"
+        ]
+    },
+    "DateTime": "2017-09-15T20:14:10-05:00",
+    "NetworkProtocol": {
+        "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/NetworkProtocol"
+    },
+    "Model": "13G DCS",
+    "SerialInterfaces": {
+        "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/SerialInterfaces"
+    },
+    "ManagerType": "BMC",
+    "Id": "iDRAC.Embedded.1",
+    "@Redfish.Copyright": "Copyright 2017 TTU.edu All rights reserved.",
+    "Actions": {
+        "Oem": {
+            "OemManager.v1_0_0#OemManager.ExportSystemConfiguration": {
+                "ExportUse@Redfish.AllowableValues": [
+                    "Default",
+                    "Clone",
+                    "Replace"
+                ],
+                "IncludeInExport@Redfish.AllowableValues": [
+                    "Default",
+                    "IncludeReadOnly",
+                    "IncludePasswordHashValues"
+                ],
+                "target": "/redfish/v1/Managers/iDRAC.Embedded.1/Actions/Oem/EID_674_Manager.ExportSystemConfiguration",
+                "ShareParameters": {
+                    "ShareParameters@Redfish.AllowableValues": [
+                        "IPAddress",
+                        "ShareName",
+                        "FileName",
+                        "UserName",
+                        "Password",
+                        "Workgroup"
+                    ],
+                    "Target@Redfish.AllowableValues": [
+                        "ALL",
+                        "IDRAC",
+                        "BIOS",
+                        "NIC",
+                        "RAID"
+                    ],
+                    "ShareType@Redfish.AllowableValues": [
+                        "NFS",
+                        "CIFS"
+                    ]
+                },
+                "ExportFormat@Redfish.AllowableValues": [
+                    "XML"
+                ]
+            },
+            "OemManager.v1_0_0#OemManager.ImportSystemConfiguration": {
+                "HostPowerState@Redfish.AllowableValues": [
+                    "On",
+                    "Off"
+                ],
+                "target": "/redfish/v1/Managers/iDRAC.Embedded.1/Actions/Oem/EID_674_Manager.ImportSystemConfiguration",
+                "ShutdownType@Redfish.AllowableValues": [
+                    "Graceful",
+                    "Forced",
+                    "NoReboot"
+                ],
+                "ShareParameters": {
+                    "ShareParameters@Redfish.AllowableValues": [
+                        "IPAddress",
+                        "ShareName",
+                        "FileName",
+                        "UserName",
+                        "Password",
+                        "Workgroup"
+                    ],
+                    "Target@Redfish.AllowableValues": [
+                        "ALL",
+                        "IDRAC",
+                        "BIOS",
+                        "NIC",
+                        "RAID"
+                    ],
+                    "ShareType@Redfish.AllowableValues": [
+                        "NFS",
+                        "CIFS"
+                    ]
+                },
+                "ImportSystemConfiguration@Redfish.AllowableValues": [
+                    "TimeToWait",
+                    "ImportBuffer"
+                ]
+            },
+            "OemManager.v1_0_0#OemManager.ImportSystemConfigurationPreview": {
+                "ImportSystemConfigurationPreview@Redfish.AllowableValues": [
+                    "ImportBuffer"
+                ],
+                "target": "/redfish/v1/Managers/iDRAC.Embedded.1/Actions/Oem/EID_674_Manager.ImportSystemConfigurationPreview",
+                "ShareParameters": {
+                    "ShareParameters@Redfish.AllowableValues": [
+                        "IPAddress",
+                        "ShareName",
+                        "FileName",
+                        "UserName",
+                        "Password",
+                        "Workgroup"
+                    ],
+                    "Target@Redfish.AllowableValues": [
+                        "ALL"
+                    ],
+                    "ShareType@Redfish.AllowableValues": [
+                        "NFS",
+                        "CIFS"
+                    ]
+                }
+            }
+        },
+        "#Manager.Reset": {
+            "ResetType@Redfish.AllowableValues": [
+                "GracefulRestart"
+            ],
+            "target": "/redfish/v1/Managers/iDRAC.Embedded.1/Actions/Manager.Reset"
+        }
+    },
+    "DateTimeLocalOffset": "-05:00",
+    "Name": "Manager",
+    "RedundancySet": [],
+    "@odata.context": "/redfish/v1/$metadata#Manager.Manager",
+    "Status": {
+        "Health": "Ok",
+        "State": "Enabled"
+    },
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1",
+    "EthernetInterfaces": {
+        "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/EthernetInterfaces"
+    },
+    "Redundancy": [],
+    "GraphicalConsole": {
+        "ServiceEnabled": true,
+        "MaxConcurrentSessions": 1,
+        "ConnectTypesSupported@odata.count": 1,
+        "ConnectTypesSupported": [
+            "KVMIP"
+        ]
+    },
+    "FirmwareVersion": "2.40.40.40",
+    "SerialConsole": {
+        "ServiceEnabled": false,
+        "MaxConcurrentSessions": 0,
+        "ConnectTypesSupported@odata.count": 0,
+        "ConnectTypesSupported": []
+    },
+    "Description": "BMC",
+    "RedundancySet@odata.count": 0,
+    "Links": {
+        "ManagerForChassis": [
+            {
+                "@odata.id": "/redfish/v1/Chassis/System.Embedded.1"
+            }
+        ],
+        "ManagerForServers": [
+            {
+                "@odata.id": "/redfish/v1/Systems/System.Embedded.1"
+            }
+        ],
+        "ManagerForChassis@odata.count": 1,
+        "ManagerForServers@odata.count": 1
+    },
+    "Redundancy@odata.count": 0
+}

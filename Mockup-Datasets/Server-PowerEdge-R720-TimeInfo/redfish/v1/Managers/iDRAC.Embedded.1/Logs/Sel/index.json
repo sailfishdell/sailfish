@@ -1,0 +1,1262 @@
+{
+    "Members": [
+        {
+            "SensorNumber": 115,
+            "Name": " Log Entry 202",
+            "SensorType": [
+                {
+                    "Member": "Physical Chassis Security"
+                }
+            ],
+            "MessageArgs@odata.count": 0,
+            "Message": "The chassis is closed while the power is on.",
+            "Severity": "OK",
+            "EntryCode": [
+                {
+                    "Member": "Deassert"
+                }
+            ],
+            "Description": " Log Entry 202",
+            "MessageArgs": [],
+            "EntryType": "SEL",
+            "Id": "202",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/202",
+            "Links": {},
+            "MessageID": "801ff",
+            "Created": "2017-11-07T22:34:55-06:00"
+        },
+        {
+            "SensorNumber": 115,
+            "Name": " Log Entry 201",
+            "SensorType": [
+                {
+                    "Member": "Physical Chassis Security"
+                }
+            ],
+            "MessageArgs@odata.count": 0,
+            "Message": "The chassis is open while the power is on.",
+            "Severity": "Critical",
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "Description": " Log Entry 201",
+            "MessageArgs": [],
+            "EntryType": "SEL",
+            "Id": "201",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/201",
+            "Links": {},
+            "MessageID": "801ff",
+            "Created": "2017-11-07T22:34:34-06:00"
+        },
+        {
+            "SensorNumber": 26,
+            "Name": " Log Entry 200",
+            "SensorType": [
+                {
+                    "Member": null
+                }
+            ],
+            "MessageArgs@odata.count": 0,
+            "Message": "An OEM diagnostic event occurred.",
+            "Severity": "OK",
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "Description": " Log Entry 200",
+            "MessageArgs": [],
+            "EntryType": "SEL",
+            "Id": "200",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/200",
+            "Links": {},
+            "MessageID": "164",
+            "Created": "2016-12-13T22:00:47-06:00"
+        },
+        {
+            "SensorNumber": 26,
+            "Name": " Log Entry 199",
+            "SensorType": [
+                {
+                    "Member": null
+                }
+            ],
+            "MessageArgs@odata.count": 0,
+            "Message": "An OEM diagnostic event occurred.",
+            "Severity": "OK",
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "Description": " Log Entry 199",
+            "MessageArgs": [],
+            "EntryType": "SEL",
+            "Id": "199",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/199",
+            "Links": {},
+            "MessageID": "1540",
+            "Created": "2016-12-13T22:00:47-06:00"
+        },
+        {
+            "SensorNumber": 26,
+            "Name": " Log Entry 198",
+            "SensorType": [
+                {
+                    "Member": null
+                }
+            ],
+            "MessageArgs@odata.count": 0,
+            "Message": "An OEM diagnostic event occurred.",
+            "Severity": "OK",
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "Description": " Log Entry 198",
+            "MessageArgs": [],
+            "EntryType": "SEL",
+            "Id": "198",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/198",
+            "Links": {},
+            "MessageID": "1243d",
+            "Created": "2016-12-13T22:00:47-06:00"
+        },
+        {
+            "SensorNumber": 26,
+            "Name": " Log Entry 197",
+            "SensorType": [
+                {
+                    "Member": null
+                }
+            ],
+            "MessageArgs@odata.count": 0,
+            "Message": "An OEM diagnostic event occurred.",
+            "Severity": "OK",
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "Description": " Log Entry 197",
+            "MessageArgs": [],
+            "EntryType": "SEL",
+            "Id": "197",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/197",
+            "Links": {},
+            "MessageID": "123b",
+            "Created": "2016-12-13T22:00:47-06:00"
+        },
+        {
+            "SensorNumber": 26,
+            "Name": " Log Entry 196",
+            "SensorType": [
+                {
+                    "Member": null
+                }
+            ],
+            "MessageArgs@odata.count": 0,
+            "Message": "An OEM diagnostic event occurred.",
+            "Severity": "OK",
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "Description": " Log Entry 196",
+            "MessageArgs": [],
+            "EntryType": "SEL",
+            "Id": "196",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/196",
+            "Links": {},
+            "MessageID": "12120",
+            "Created": "2016-12-13T22:00:47-06:00"
+        },
+        {
+            "SensorNumber": 26,
+            "Name": " Log Entry 195",
+            "SensorType": [
+                {
+                    "Member": null
+                }
+            ],
+            "MessageArgs@odata.count": 0,
+            "Message": "An OEM diagnostic event occurred.",
+            "Severity": "OK",
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "Description": " Log Entry 195",
+            "MessageArgs": [],
+            "EntryType": "SEL",
+            "Id": "195",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/195",
+            "Links": {},
+            "MessageID": "1201",
+            "Created": "2016-12-13T22:00:47-06:00"
+        },
+        {
+            "SensorNumber": 26,
+            "Name": " Log Entry 194",
+            "SensorType": [
+                {
+                    "Member": null
+                }
+            ],
+            "MessageArgs@odata.count": 0,
+            "Message": "An OEM diagnostic event occurred.",
+            "Severity": "OK",
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "Description": " Log Entry 194",
+            "MessageArgs": [],
+            "EntryType": "SEL",
+            "Id": "194",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/194",
+            "Links": {},
+            "MessageID": "11fa",
+            "Created": "2016-12-13T22:00:47-06:00"
+        },
+        {
+            "SensorNumber": 24,
+            "Name": " Log Entry 193",
+            "SensorType": [
+                {
+                    "Member": "Critical Interrupt"
+                }
+            ],
+            "MessageArgs@odata.count": 0,
+            "Message": "A bus fatal error was detected on a component at bus 0 device 28 function 7.",
+            "Severity": "Critical",
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "Description": " Log Entry 193",
+            "MessageArgs": [],
+            "EntryType": "SEL",
+            "Id": "193",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/193",
+            "Links": {},
+            "MessageID": "aae70",
+            "Created": "2016-12-13T22:00:47-06:00"
+        },
+        {
+            "SensorNumber": 24,
+            "Name": " Log Entry 192",
+            "SensorType": [
+                {
+                    "Member": "Critical Interrupt"
+                }
+            ],
+            "MessageArgs@odata.count": 0,
+            "Message": "A bus fatal error was detected on a component at bus 8 device 0 function 0.",
+            "Severity": "Critical",
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "Description": " Log Entry 192",
+            "MessageArgs": [],
+            "EntryType": "SEL",
+            "Id": "192",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/192",
+            "Links": {},
+            "MessageID": "aa08",
+            "Created": "2016-12-13T22:00:46-06:00"
+        },
+        {
+            "SensorNumber": 160,
+            "Name": " Log Entry 191",
+            "SensorType": [
+                {
+                    "Member": null
+                }
+            ],
+            "MessageArgs@odata.count": 0,
+            "Message": "OEM software event.",
+            "Severity": "OK",
+            "EntryCode": [
+                {
+                    "Member": "Deassert"
+                }
+            ],
+            "Description": " Log Entry 191",
+            "MessageArgs": [],
+            "EntryType": "SEL",
+            "Id": "191",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/191",
+            "Links": {},
+            "MessageID": "4f580",
+            "Created": "2016-12-13T08:21:58-06:00"
+        },
+        {
+            "SensorNumber": 0,
+            "Name": " Log Entry 190",
+            "SensorType": [
+                {
+                    "Member": "BaseOSBoot/InstallationStatus"
+                }
+            ],
+            "MessageArgs@odata.count": 0,
+            "Message": "C: boot completed.",
+            "Severity": "OK",
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "Description": " Log Entry 190",
+            "MessageArgs": [],
+            "EntryType": "SEL",
+            "Id": "190",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/190",
+            "Links": {},
+            "MessageID": "1ffff",
+            "Created": "2016-12-13T08:21:58-06:00"
+        },
+        {
+            "SensorNumber": 116,
+            "Name": " Log Entry 189",
+            "SensorType": [
+                {
+                    "Member": "Power Supply / Converter"
+                }
+            ],
+            "MessageArgs@odata.count": 0,
+            "Message": "Power supply redundancy is lost.",
+            "Severity": "Critical",
+            "EntryCode": [
+                {
+                    "Member": "Redundancy Lost"
+                }
+            ],
+            "Description": " Log Entry 189",
+            "MessageArgs": [],
+            "EntryType": "SEL",
+            "Id": "189",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/189",
+            "Links": {},
+            "MessageID": "1ffff",
+            "Created": "2016-10-20T23:29:26-05:00"
+        },
+        {
+            "SensorNumber": 116,
+            "Name": " Log Entry 188",
+            "SensorType": [
+                {
+                    "Member": "Power Supply / Converter"
+                }
+            ],
+            "MessageArgs@odata.count": 0,
+            "Message": "Power supply redundancy is lost.",
+            "Severity": "Critical",
+            "EntryCode": [
+                {
+                    "Member": "Redundancy Lost"
+                }
+            ],
+            "Description": " Log Entry 188",
+            "MessageArgs": [],
+            "EntryType": "SEL",
+            "Id": "188",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/188",
+            "Links": {},
+            "MessageID": "1ffff",
+            "Created": "2016-09-30T08:42:45-05:00"
+        },
+        {
+            "SensorNumber": 116,
+            "Name": " Log Entry 187",
+            "SensorType": [
+                {
+                    "Member": "Power Supply / Converter"
+                }
+            ],
+            "MessageArgs@odata.count": 0,
+            "Message": "Power supply redundancy is lost.",
+            "Severity": "Critical",
+            "EntryCode": [
+                {
+                    "Member": "Redundancy Lost"
+                }
+            ],
+            "Description": " Log Entry 187",
+            "MessageArgs": [],
+            "EntryType": "SEL",
+            "Id": "187",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/187",
+            "Links": {},
+            "MessageID": "1ffff",
+            "Created": "2016-08-19T04:42:01-05:00"
+        },
+        {
+            "SensorNumber": 116,
+            "Name": " Log Entry 186",
+            "SensorType": [
+                {
+                    "Member": "Power Supply / Converter"
+                }
+            ],
+            "MessageArgs@odata.count": 0,
+            "Message": "Power supply redundancy is lost.",
+            "Severity": "Critical",
+            "EntryCode": [
+                {
+                    "Member": "Redundancy Lost"
+                }
+            ],
+            "Description": " Log Entry 186",
+            "MessageArgs": [],
+            "EntryType": "SEL",
+            "Id": "186",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/186",
+            "Links": {},
+            "MessageID": "1ffff",
+            "Created": "2016-08-18T01:38:07-05:00"
+        },
+        {
+            "SensorNumber": 116,
+            "Name": " Log Entry 185",
+            "SensorType": [
+                {
+                    "Member": "Power Supply / Converter"
+                }
+            ],
+            "MessageArgs@odata.count": 0,
+            "Message": "Power supply redundancy is lost.",
+            "Severity": "Critical",
+            "EntryCode": [
+                {
+                    "Member": "Redundancy Lost"
+                }
+            ],
+            "Description": " Log Entry 185",
+            "MessageArgs": [],
+            "EntryType": "SEL",
+            "Id": "185",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/185",
+            "Links": {},
+            "MessageID": "1ffff",
+            "Created": "2016-08-18T00:44:31-05:00"
+        },
+        {
+            "SensorNumber": 116,
+            "Name": " Log Entry 184",
+            "SensorType": [
+                {
+                    "Member": "Power Supply / Converter"
+                }
+            ],
+            "MessageArgs@odata.count": 0,
+            "Message": "Power supply redundancy is lost.",
+            "Severity": "Critical",
+            "EntryCode": [
+                {
+                    "Member": "Redundancy Lost"
+                }
+            ],
+            "Description": " Log Entry 184",
+            "MessageArgs": [],
+            "EntryType": "SEL",
+            "Id": "184",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/184",
+            "Links": {},
+            "MessageID": "1ffff",
+            "Created": "2016-08-18T00:18:47-05:00"
+        },
+        {
+            "SensorNumber": 116,
+            "Name": " Log Entry 183",
+            "SensorType": [
+                {
+                    "Member": "Power Supply / Converter"
+                }
+            ],
+            "MessageArgs@odata.count": 0,
+            "Message": "Power supply redundancy is lost.",
+            "Severity": "Critical",
+            "EntryCode": [
+                {
+                    "Member": "Redundancy Lost"
+                }
+            ],
+            "Description": " Log Entry 183",
+            "MessageArgs": [],
+            "EntryType": "SEL",
+            "Id": "183",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/183",
+            "Links": {},
+            "MessageID": "1ffff",
+            "Created": "2016-08-17T23:56:01-05:00"
+        },
+        {
+            "SensorNumber": 116,
+            "Name": " Log Entry 182",
+            "SensorType": [
+                {
+                    "Member": "Power Supply / Converter"
+                }
+            ],
+            "MessageArgs@odata.count": 0,
+            "Message": "Power supply redundancy is lost.",
+            "Severity": "Critical",
+            "EntryCode": [
+                {
+                    "Member": "Redundancy Lost"
+                }
+            ],
+            "Description": " Log Entry 182",
+            "MessageArgs": [],
+            "EntryType": "SEL",
+            "Id": "182",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/182",
+            "Links": {},
+            "MessageID": "1ffff",
+            "Created": "2016-07-08T02:23:16-05:00"
+        },
+        {
+            "SensorNumber": 98,
+            "Name": " Log Entry 181",
+            "SensorType": [
+                {
+                    "Member": "Power Supply / Converter"
+                }
+            ],
+            "MessageArgs@odata.count": 0,
+            "Message": "Power supply 1 is absent.",
+            "Severity": "Critical",
+            "EntryCode": [
+                {
+                    "Member": "Deassert"
+                }
+            ],
+            "Description": " Log Entry 181",
+            "MessageArgs": [],
+            "EntryType": "SEL",
+            "Id": "181",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/181",
+            "Links": {},
+            "MessageID": "0ffff",
+            "Created": "2016-04-12T23:53:34-05:00"
+        },
+        {
+            "SensorNumber": 98,
+            "Name": " Log Entry 180",
+            "SensorType": [
+                {
+                    "Member": "Power Supply / Converter"
+                }
+            ],
+            "MessageArgs@odata.count": 0,
+            "Message": "The power input for power supply 1 is lost.",
+            "Severity": "Critical",
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "Description": " Log Entry 180",
+            "MessageArgs": [],
+            "EntryType": "SEL",
+            "Id": "180",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/180",
+            "Links": {},
+            "MessageID": "3ffff",
+            "Created": "2016-04-12T23:53:34-05:00"
+        },
+        {
+            "SensorNumber": 99,
+            "Name": " Log Entry 179",
+            "SensorType": [
+                {
+                    "Member": "Power Supply / Converter"
+                }
+            ],
+            "MessageArgs@odata.count": 0,
+            "Message": "The input power for power supply 2 has been restored.",
+            "Severity": "OK",
+            "EntryCode": [
+                {
+                    "Member": "Deassert"
+                }
+            ],
+            "Description": " Log Entry 179",
+            "MessageArgs": [],
+            "EntryType": "SEL",
+            "Id": "179",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/179",
+            "Links": {},
+            "MessageID": "3ffff",
+            "Created": "2016-04-12T23:53:20-05:00"
+        },
+        {
+            "SensorNumber": 99,
+            "Name": " Log Entry 178",
+            "SensorType": [
+                {
+                    "Member": "Power Supply / Converter"
+                }
+            ],
+            "MessageArgs@odata.count": 0,
+            "Message": "The power input for power supply 2 is lost.",
+            "Severity": "Critical",
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "Description": " Log Entry 178",
+            "MessageArgs": [],
+            "EntryType": "SEL",
+            "Id": "178",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/178",
+            "Links": {},
+            "MessageID": "3ffff",
+            "Created": "2016-04-12T23:53:10-05:00"
+        },
+        {
+            "SensorNumber": 98,
+            "Name": " Log Entry 177",
+            "SensorType": [
+                {
+                    "Member": "Power Supply / Converter"
+                }
+            ],
+            "MessageArgs@odata.count": 0,
+            "Message": "The input power for power supply 1 has been restored.",
+            "Severity": "OK",
+            "EntryCode": [
+                {
+                    "Member": "Deassert"
+                }
+            ],
+            "Description": " Log Entry 177",
+            "MessageArgs": [],
+            "EntryType": "SEL",
+            "Id": "177",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/177",
+            "Links": {},
+            "MessageID": "3ffff",
+            "Created": "2016-04-12T23:53:03-05:00"
+        },
+        {
+            "SensorNumber": 98,
+            "Name": " Log Entry 176",
+            "SensorType": [
+                {
+                    "Member": "Power Supply / Converter"
+                }
+            ],
+            "MessageArgs@odata.count": 0,
+            "Message": "Power supply 1 is present.",
+            "Severity": "OK",
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "Description": " Log Entry 176",
+            "MessageArgs": [],
+            "EntryType": "SEL",
+            "Id": "176",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/176",
+            "Links": {},
+            "MessageID": "0ffff",
+            "Created": "2016-04-12T23:52:41-05:00"
+        },
+        {
+            "SensorNumber": 98,
+            "Name": " Log Entry 175",
+            "SensorType": [
+                {
+                    "Member": "Power Supply / Converter"
+                }
+            ],
+            "MessageArgs@odata.count": 0,
+            "Message": "Power supply 1 is absent.",
+            "Severity": "Critical",
+            "EntryCode": [
+                {
+                    "Member": "Deassert"
+                }
+            ],
+            "Description": " Log Entry 175",
+            "MessageArgs": [],
+            "EntryType": "SEL",
+            "Id": "175",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/175",
+            "Links": {},
+            "MessageID": "0ffff",
+            "Created": "2016-04-12T23:52:31-05:00"
+        },
+        {
+            "SensorNumber": 98,
+            "Name": " Log Entry 174",
+            "SensorType": [
+                {
+                    "Member": "Power Supply / Converter"
+                }
+            ],
+            "MessageArgs@odata.count": 0,
+            "Message": "The power input for power supply 1 is lost.",
+            "Severity": "Critical",
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "Description": " Log Entry 174",
+            "MessageArgs": [],
+            "EntryType": "SEL",
+            "Id": "174",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/174",
+            "Links": {},
+            "MessageID": "3ffff",
+            "Created": "2016-04-12T04:09:43-05:00"
+        },
+        {
+            "SensorNumber": 98,
+            "Name": " Log Entry 173",
+            "SensorType": [
+                {
+                    "Member": "Power Supply / Converter"
+                }
+            ],
+            "MessageArgs@odata.count": 0,
+            "Message": "The power input for power supply 1 is lost.",
+            "Severity": "Critical",
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "Description": " Log Entry 173",
+            "MessageArgs": [],
+            "EntryType": "SEL",
+            "Id": "173",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/173",
+            "Links": {},
+            "MessageID": "3ffff",
+            "Created": "2016-04-05T03:05:48-05:00"
+        },
+        {
+            "SensorNumber": 98,
+            "Name": " Log Entry 172",
+            "SensorType": [
+                {
+                    "Member": "Power Supply / Converter"
+                }
+            ],
+            "MessageArgs@odata.count": 0,
+            "Message": "The power input for power supply 1 is lost.",
+            "Severity": "Critical",
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "Description": " Log Entry 172",
+            "MessageArgs": [],
+            "EntryType": "SEL",
+            "Id": "172",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/172",
+            "Links": {},
+            "MessageID": "3ffff",
+            "Created": "2016-02-22T04:15:17-06:00"
+        },
+        {
+            "SensorNumber": 98,
+            "Name": " Log Entry 171",
+            "SensorType": [
+                {
+                    "Member": "Power Supply / Converter"
+                }
+            ],
+            "MessageArgs@odata.count": 0,
+            "Message": "The power input for power supply 1 is lost.",
+            "Severity": "Critical",
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "Description": " Log Entry 171",
+            "MessageArgs": [],
+            "EntryType": "SEL",
+            "Id": "171",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/171",
+            "Links": {},
+            "MessageID": "3ffff",
+            "Created": "2015-12-31T01:48:12-06:00"
+        },
+        {
+            "SensorNumber": 98,
+            "Name": " Log Entry 170",
+            "SensorType": [
+                {
+                    "Member": "Power Supply / Converter"
+                }
+            ],
+            "MessageArgs@odata.count": 0,
+            "Message": "The power input for power supply 1 is lost.",
+            "Severity": "Critical",
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "Description": " Log Entry 170",
+            "MessageArgs": [],
+            "EntryType": "SEL",
+            "Id": "170",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/170",
+            "Links": {},
+            "MessageID": "3ffff",
+            "Created": "2015-12-30T23:57:41-06:00"
+        },
+        {
+            "SensorNumber": 98,
+            "Name": " Log Entry 169",
+            "SensorType": [
+                {
+                    "Member": "Power Supply / Converter"
+                }
+            ],
+            "MessageArgs@odata.count": 0,
+            "Message": "The power input for power supply 1 is lost.",
+            "Severity": "Critical",
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "Description": " Log Entry 169",
+            "MessageArgs": [],
+            "EntryType": "SEL",
+            "Id": "169",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/169",
+            "Links": {},
+            "MessageID": "3ffff",
+            "Created": "2015-12-30T23:34:45-06:00"
+        },
+        {
+            "SensorNumber": 98,
+            "Name": " Log Entry 168",
+            "SensorType": [
+                {
+                    "Member": "Power Supply / Converter"
+                }
+            ],
+            "MessageArgs@odata.count": 0,
+            "Message": "The power input for power supply 1 is lost.",
+            "Severity": "Critical",
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "Description": " Log Entry 168",
+            "MessageArgs": [],
+            "EntryType": "SEL",
+            "Id": "168",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/168",
+            "Links": {},
+            "MessageID": "3ffff",
+            "Created": "2015-12-28T03:15:46-06:00"
+        },
+        {
+            "SensorNumber": 98,
+            "Name": " Log Entry 167",
+            "SensorType": [
+                {
+                    "Member": "Power Supply / Converter"
+                }
+            ],
+            "MessageArgs@odata.count": 0,
+            "Message": "The power input for power supply 1 is lost.",
+            "Severity": "Critical",
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "Description": " Log Entry 167",
+            "MessageArgs": [],
+            "EntryType": "SEL",
+            "Id": "167",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/167",
+            "Links": {},
+            "MessageID": "3ffff",
+            "Created": "2015-12-21T21:23:21-06:00"
+        },
+        {
+            "SensorNumber": 98,
+            "Name": " Log Entry 166",
+            "SensorType": [
+                {
+                    "Member": "Power Supply / Converter"
+                }
+            ],
+            "MessageArgs@odata.count": 0,
+            "Message": "The power input for power supply 1 is lost.",
+            "Severity": "Critical",
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "Description": " Log Entry 166",
+            "MessageArgs": [],
+            "EntryType": "SEL",
+            "Id": "166",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/166",
+            "Links": {},
+            "MessageID": "3ffff",
+            "Created": "2015-12-20T21:35:04-06:00"
+        },
+        {
+            "SensorNumber": 98,
+            "Name": " Log Entry 165",
+            "SensorType": [
+                {
+                    "Member": "Power Supply / Converter"
+                }
+            ],
+            "MessageArgs@odata.count": 0,
+            "Message": "The power input for power supply 1 is lost.",
+            "Severity": "Critical",
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "Description": " Log Entry 165",
+            "MessageArgs": [],
+            "EntryType": "SEL",
+            "Id": "165",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/165",
+            "Links": {},
+            "MessageID": "3ffff",
+            "Created": "2015-12-08T07:15:11-06:00"
+        },
+        {
+            "SensorNumber": 98,
+            "Name": " Log Entry 164",
+            "SensorType": [
+                {
+                    "Member": "Power Supply / Converter"
+                }
+            ],
+            "MessageArgs@odata.count": 0,
+            "Message": "The power input for power supply 1 is lost.",
+            "Severity": "Critical",
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "Description": " Log Entry 164",
+            "MessageArgs": [],
+            "EntryType": "SEL",
+            "Id": "164",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/164",
+            "Links": {},
+            "MessageID": "3ffff",
+            "Created": "2015-12-07T22:00:56-06:00"
+        },
+        {
+            "SensorNumber": 40,
+            "Name": " Log Entry 163",
+            "SensorType": [
+                {
+                    "Member": null
+                }
+            ],
+            "MessageArgs@odata.count": 0,
+            "Message": "An OEM diagnostic event occurred.",
+            "Severity": "OK",
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "Description": " Log Entry 163",
+            "MessageArgs": [],
+            "EntryType": "SEL",
+            "Id": "163",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/163",
+            "Links": {},
+            "MessageID": "bc1eee",
+            "Created": "2015-11-15T23:26:25-06:00"
+        },
+        {
+            "SensorNumber": 40,
+            "Name": " Log Entry 162",
+            "SensorType": [
+                {
+                    "Member": null
+                }
+            ],
+            "MessageArgs@odata.count": 0,
+            "Message": "An OEM diagnostic event occurred.",
+            "Severity": "OK",
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "Description": " Log Entry 162",
+            "MessageArgs": [],
+            "EntryType": "SEL",
+            "Id": "162",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/162",
+            "Links": {},
+            "MessageID": "8040",
+            "Created": "2015-11-15T23:26:25-06:00"
+        },
+        {
+            "SensorNumber": 40,
+            "Name": " Log Entry 161",
+            "SensorType": [
+                {
+                    "Member": null
+                }
+            ],
+            "MessageArgs@odata.count": 0,
+            "Message": "An OEM diagnostic event occurred.",
+            "Severity": "OK",
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "Description": " Log Entry 161",
+            "MessageArgs": [],
+            "EntryType": "SEL",
+            "Id": "161",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/161",
+            "Links": {},
+            "MessageID": "013",
+            "Created": "2015-11-15T23:26:24-06:00"
+        },
+        {
+            "SensorNumber": 40,
+            "Name": " Log Entry 160",
+            "SensorType": [
+                {
+                    "Member": null
+                }
+            ],
+            "MessageArgs@odata.count": 0,
+            "Message": "An OEM diagnostic event occurred.",
+            "Severity": "OK",
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "Description": " Log Entry 160",
+            "MessageArgs": [],
+            "EntryType": "SEL",
+            "Id": "160",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/160",
+            "Links": {},
+            "MessageID": "d40",
+            "Created": "2015-11-15T23:26:24-06:00"
+        },
+        {
+            "SensorNumber": 40,
+            "Name": " Log Entry 159",
+            "SensorType": [
+                {
+                    "Member": null
+                }
+            ],
+            "MessageArgs@odata.count": 0,
+            "Message": "An OEM diagnostic event occurred.",
+            "Severity": "OK",
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "Description": " Log Entry 159",
+            "MessageArgs": [],
+            "EntryType": "SEL",
+            "Id": "159",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/159",
+            "Links": {},
+            "MessageID": "fe9cfb",
+            "Created": "2015-11-15T23:26:24-06:00"
+        },
+        {
+            "SensorNumber": 40,
+            "Name": " Log Entry 158",
+            "SensorType": [
+                {
+                    "Member": null
+                }
+            ],
+            "MessageArgs@odata.count": 0,
+            "Message": "An OEM diagnostic event occurred.",
+            "Severity": "OK",
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "Description": " Log Entry 158",
+            "MessageArgs": [],
+            "EntryType": "SEL",
+            "Id": "158",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/158",
+            "Links": {},
+            "MessageID": "a7ff8a",
+            "Created": "2015-11-15T23:26:24-06:00"
+        },
+        {
+            "SensorNumber": 40,
+            "Name": " Log Entry 157",
+            "SensorType": [
+                {
+                    "Member": null
+                }
+            ],
+            "MessageArgs@odata.count": 0,
+            "Message": "An OEM diagnostic event occurred.",
+            "Severity": "OK",
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "Description": " Log Entry 157",
+            "MessageArgs": [],
+            "EntryType": "SEL",
+            "Id": "157",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/157",
+            "Links": {},
+            "MessageID": "0ebe0",
+            "Created": "2015-11-15T23:26:24-06:00"
+        },
+        {
+            "SensorNumber": 40,
+            "Name": " Log Entry 156",
+            "SensorType": [
+                {
+                    "Member": null
+                }
+            ],
+            "MessageArgs@odata.count": 0,
+            "Message": "An OEM diagnostic event occurred.",
+            "Severity": "OK",
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "Description": " Log Entry 156",
+            "MessageArgs": [],
+            "EntryType": "SEL",
+            "Id": "156",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/156",
+            "Links": {},
+            "MessageID": "540",
+            "Created": "2015-11-15T23:26:23-06:00"
+        },
+        {
+            "SensorNumber": 9,
+            "Name": " Log Entry 155",
+            "SensorType": [
+                {
+                    "Member": "Processor"
+                }
+            ],
+            "MessageArgs@odata.count": 0,
+            "Message": "Internal error has occurred check for additional logs.",
+            "Severity": "OK",
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "Description": " Log Entry 155",
+            "MessageArgs": [],
+            "EntryType": "SEL",
+            "Id": "155",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/155",
+            "Links": {},
+            "MessageID": "a014",
+            "Created": "2015-11-15T23:26:23-06:00"
+        },
+        {
+            "SensorNumber": 40,
+            "Name": " Log Entry 154",
+            "SensorType": [
+                {
+                    "Member": null
+                }
+            ],
+            "MessageArgs@odata.count": 0,
+            "Message": "An OEM diagnostic event occurred.",
+            "Severity": "OK",
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "Description": " Log Entry 154",
+            "MessageArgs": [],
+            "EntryType": "SEL",
+            "Id": "154",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/154",
+            "Links": {},
+            "MessageID": "10af",
+            "Created": "2015-11-15T23:26:23-06:00"
+        },
+        {
+            "SensorNumber": 40,
+            "Name": " Log Entry 153",
+            "SensorType": [
+                {
+                    "Member": null
+                }
+            ],
+            "MessageArgs@odata.count": 0,
+            "Message": "An OEM diagnostic event occurred.",
+            "Severity": "OK",
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "Description": " Log Entry 153",
+            "MessageArgs": [],
+            "EntryType": "SEL",
+            "Id": "153",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/153",
+            "Links": {},
+            "MessageID": "600",
+            "Created": "2015-11-15T23:26:23-06:00"
+        }
+    ],
+    "Name": "Log Entry Collection",
+    "@odata.nextLink": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel?$skip=50",
+    "@odata.context": "/redfish/v1/$metadata#LogEntryCollection.LogEntryCollection",
+    "Members@odata.count": 202,
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "Description": "System Event Logs for this manager",
+    "@odata.type": "#LogEntryCollection.LogEntryCollection"
+}

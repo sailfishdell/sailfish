@@ -1,0 +1,190 @@
+{
+    "definitions": {
+        "ResetToDefaults": {
+            "type": "object",
+            "patternProperties": {
+                "^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message|Privileges)\\.[a-zA-Z_][a-zA-Z0-9_.]+$": {
+                    "type": [
+                        "array",
+                        "boolean",
+                        "number",
+                        "null",
+                        "object",
+                        "string"
+                    ],
+                    "description": "This property shall specify a valid odata or Redfish property."
+                }
+            },
+            "properties": {
+                "target": {
+                    "type": "string",
+                    "format": "uri",
+                    "description": "Link to invoke action"
+                },
+                "title": {
+                    "type": "string",
+                    "description": "Friendly action name"
+                }
+            },
+            "description": "This action is used to reset the Dell attributes to default.",
+            "longDescription": "This action shall perform reset of the Dell attributes to their default values.",
+            "additionalProperties": false
+        },
+        "ServerConfigurationProfileResults": {
+            "properties": {
+                "DisplayValue": {
+                    "type": "string",
+                    "longDescription": "This property shall contain Display Value of the Configuration opertaion.",
+                    "description": "This is the Display Value of the Configuration opertaion."
+                },
+                "ErrCode": {
+                    "type": "string",
+                    "longDescription": "This property shall contain Error code of the configuration operation, default value for success is 0.",
+                    "description": "This is the Error code of the configuration operation."
+                },
+                "Name": {
+                    "type": "string",
+                    "longDescription": "This property shall contain Name of the configuration operation.",
+                    "description": "This is the Name of the configuration operation."
+                },
+                "NewValue": {
+                    "type": "string",
+                    "longDescription": "This property shall contain New Value of the configuration operation.",
+                    "description": "This is the New Value of the configuration operation."
+                },
+                "OldValue": {
+                    "type": "string",
+                    "longDescription": "This property shall contain Old Value of the configuration operation.",
+                    "description": "This is the Old Value of the configuration operation."
+                }
+            },
+            "type": "object",
+            "additionalProperties": true,
+            "patternProperties": {
+                "^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message|Privileges)\\.[a-zA-Z_][a-zA-Z0-9_.]+$": {
+                    "type": [
+                        "array",
+                        "boolean",
+                        "number",
+                        "null",
+                        "object",
+                        "string"
+                    ],
+                    "description": "This property shall specify a valid odata or Redfish property."
+                }
+            }
+        },
+        "DellManager": {
+            "type": "object",
+            "required": [
+                "Id",
+                "Name"
+            ],
+            "patternProperties": {
+                "^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message|Privileges)\\.[a-zA-Z_][a-zA-Z0-9_.]+$": {
+                    "type": [
+                        "array",
+                        "boolean",
+                        "number",
+                        "null",
+                        "object",
+                        "string"
+                    ],
+                    "description": "This property shall specify a valid odata or Redfish property."
+                }
+            },
+            "properties": {
+                "Name": {
+                    "$ref": "/redfish/v1/Schemas/Resource.json#/definitions/Name"
+                },
+                "Id": {
+                    "$ref": "/redfish/v1/Schemas/Resource.json#/definitions/Id"
+                },
+                "Oem": {
+                    "description": "This is the manufacturer/provider specific extension moniker used to divide the Oem object into sections.",
+                    "longDescription": "The value of this string shall be of the format for the reserved word *Oem*.",
+                    "$ref": "/redfish/v1/Schemas/Resource.json#/definitions/Oem"
+                },
+                "DellAttributes@odata.navigationLink": {
+                    "type": "string",
+                    "format": "uri"
+                },
+                "DellAttributes@odata.count": {
+                    "$ref": "/redfish/v1/Schemas/odata.4.0.0.json#/definitions/count"
+                },
+                "@odata.context": {
+                    "$ref": "/redfish/v1/Schemas/odata.4.0.0.json#/definitions/context"
+                },
+                "DellAttributes": {
+                    "readonly": true,
+                    "items": {
+                        "$ref": "/redfish/v1/Schemas/DellAttributes.json#/definitions/DellAttributes"
+                    },
+                    "longDescription": "The value of this property shall be a .",
+                    "type": "array",
+                    "description": "An array of references to the DellAttributes."
+                },
+                "@odata.id": {
+                    "$ref": "/redfish/v1/Schemas/odata.4.0.0.json#/definitions/id"
+                },
+                "Description": {
+                    "anyOf": [
+                        {
+                            "$ref": "/redfish/v1/Schemas/Resource.json#/definitions/Description"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ]
+                },
+                "@odata.type": {
+                    "$ref": "/redfish/v1/Schemas/odata.4.0.0.json#/definitions/type"
+                },
+                "Jobs": {
+                    "readonly": true,
+                    "description": "A reference to the collection of Job associated with this system.",
+                    "longDescription": "The value of this property shall be a link to a collection of type Job.",
+                    "$ref": "/redfish/v1/Schemas/DellJobCollection.json#/definitions/DellJobCollection"
+                }
+            },
+            "description": "This is the schema definition for the additional OEM properties to complement DMTF Manager Schema.",
+            "longDescription": "This resource shall be used to represent an OEM Manager for a Redfish implementation.",
+            "additionalProperties": true
+        },
+        "ClearPending": {
+            "type": "object",
+            "patternProperties": {
+                "^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message|Privileges)\\.[a-zA-Z_][a-zA-Z0-9_.]+$": {
+                    "type": [
+                        "array",
+                        "boolean",
+                        "number",
+                        "null",
+                        "object",
+                        "string"
+                    ],
+                    "description": "This property shall specify a valid odata or Redfish property."
+                }
+            },
+            "properties": {
+                "target": {
+                    "type": "string",
+                    "format": "uri",
+                    "description": "Link to invoke action"
+                },
+                "title": {
+                    "type": "string",
+                    "description": "Friendly action name"
+                }
+            },
+            "description": "This action is used to clear all the pending values.",
+            "longDescription": "This action shall perform a clear pending values.",
+            "additionalProperties": false
+        }
+    },
+    "$schema": "/redfish/v1/Schemas/redfish-schema.v1_1_0.json",
+    "title": "#DellManager.v1_0_0.DellManager",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "copyright": "Copyright 2016 Dell, Inc. or its subsidiaries.  All Rights Reserved.",
+    "$ref": "#/definitions/DellManager"
+}

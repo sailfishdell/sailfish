@@ -1,0 +1,267 @@
+{
+    "$ref": "#/definitions/OemManager",
+    "$schema": "/redfish/v1/Schemas/redfish-schema.v1_1_0.json",
+    "definitions": {
+        "ShareType": {
+            "enum": [
+                "NFS",
+                "CIFS",
+                "HTTP",
+                "HTTPS"
+            ],
+            "type": "string",
+            "enumDescriptions": {
+                "HTTPS": "Network Share type is HTTPS for export, import or preview.",
+                "NFS": "Network Share type is NFS for export, import or preview.",
+                "HTTP": "Network Share type is HTTP for export, import or preview.",
+                "CIFS": "Network Share type is CIFS for export, import or preview."
+            }
+        },
+        "ImportSystemConfigurationPreview": {
+            "additionalProperties": false,
+            "properties": {
+                "target": {
+                    "type": "string",
+                    "description": "Link to invoke action",
+                    "format": "uri"
+                },
+                "title": {
+                    "type": "string",
+                    "description": "Friendly action name"
+                }
+            },
+            "patternProperties": {
+                "^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message|Privileges)\\.[a-zA-Z_][a-zA-Z0-9_.]+$": {
+                    "type": [
+                        "array",
+                        "boolean",
+                        "number",
+                        "null",
+                        "object",
+                        "string"
+                    ],
+                    "description": "This property shall specify a valid odata or Redfish property."
+                }
+            },
+            "type": "object",
+            "LongDescription": "This action shall perform an import System Configuration Preview.",
+            "description": "This action is used to import System Configuration Preview."
+        },
+        "ExportFormat": {
+            "enum": [
+                "XML",
+                "JSON"
+            ],
+            "type": "string",
+            "enumDescriptions": {
+                "JSON": "The Server configuration profile format is JSON for exporting.",
+                "XML": "The Server configuration profile format is XML for exporting."
+            }
+        },
+        "ImportSystemConfiguration": {
+            "additionalProperties": false,
+            "properties": {
+                "target": {
+                    "type": "string",
+                    "description": "Link to invoke action",
+                    "format": "uri"
+                },
+                "title": {
+                    "type": "string",
+                    "description": "Friendly action name"
+                }
+            },
+            "patternProperties": {
+                "^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message|Privileges)\\.[a-zA-Z_][a-zA-Z0-9_.]+$": {
+                    "type": [
+                        "array",
+                        "boolean",
+                        "number",
+                        "null",
+                        "object",
+                        "string"
+                    ],
+                    "description": "This property shall specify a valid odata or Redfish property."
+                }
+            },
+            "type": "object",
+            "LongDescription": "This action shall perform an import System Configuration attributes.",
+            "description": "This action is used to import System Configuration attributes."
+        },
+        "ExportSystemConfiguration": {
+            "additionalProperties": false,
+            "properties": {
+                "target": {
+                    "type": "string",
+                    "description": "Link to invoke action",
+                    "format": "uri"
+                },
+                "title": {
+                    "type": "string",
+                    "description": "Friendly action name"
+                }
+            },
+            "patternProperties": {
+                "^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message|Privileges)\\.[a-zA-Z_][a-zA-Z0-9_.]+$": {
+                    "type": [
+                        "array",
+                        "boolean",
+                        "number",
+                        "null",
+                        "object",
+                        "string"
+                    ],
+                    "description": "This property shall specify a valid odata or Redfish property."
+                }
+            },
+            "type": "object",
+            "LongDescription": "This action shall perform an export System Configuration attributes.",
+            "description": "This action is used to export System Configuration attributes."
+        },
+        "ExportUse": {
+            "enum": [
+                "Default",
+                "Clone",
+                "Replace"
+            ],
+            "type": "string",
+            "enumDescriptions": {
+                "Replace": "If the user intends to retire a server from the datacenter and replace it with another or restore a server\u2019s settings to a known baseline, this mode of export could be used.",
+                "Default": "The SCP-generated profile includes all aspects of the system, such as BIOS, NIC, RAID, FC, iDRAC, System and Lifecycle Controller settings.This is the default.",
+                "Clone": "If the user intends to Clone settings from one gold server to another server with identical hardware setup, this export mode can be used."
+            }
+        },
+        "ShareParameters": {
+            "ProxySupport": {
+                "$ref": "#/definitions/ProxySupport",
+                "readonly": true,
+                "description": "Proxy Support to be Enabled or Disabled.",
+                "longDescription": "Proxy Support to be Enabled or Disabled."
+            },
+            "ShareType": {
+                "$ref": "#/definitions/ShareType",
+                "readonly": true,
+                "description": "The ShareType specifies Type of share like  NFS, CIFS.",
+                "longDescription": "The ShareType specifies Type of share like  NFS, CIFS. If nothing is specified it is a local share type."
+            },
+            "ProxyServer": {
+                "readonly": true,
+                "type": "string",
+                "description": "Proxy Server address.",
+                "longDescription": "Proxy Server address."
+            },
+            "ProxyType": {
+                "$ref": "#/definitions/ProxyType",
+                "readonly": true,
+                "description": "Type of Proxy HTTP or SOCKS4.",
+                "longDescription": "Type of Proxy HTTP or SOCKS4."
+            },
+            "description": "Share parameters are listed.",
+            "Target": {
+                "readonly": true,
+                "type": "string",
+                "description": "To identify the component for Export. It identifies the one or more FQDDs.",
+                "longDescription": "To identify the component for Export. It identifies the one or more FQDDs .Selective list of FQDDs should be given in comma separated format . Default = ALL."
+            },
+            "ProxyPassword": {
+                "readonly": true,
+                "type": "string",
+                "description": "Proxy Server Password.",
+                "longDescription": "Proxy Server Password."
+            },
+            "ProxyUserName": {
+                "readonly": true,
+                "type": "string",
+                "description": "Proxy Server User Name.",
+                "longDescription": "Proxy Server User Name."
+            },
+            "longDescription": "Share parameters are listed in this object for accessing the NFS, CIFS share locations for Export of the configuration XML file.",
+            "ProxyPort": {
+                "readonly": true,
+                "type": "number",
+                "description": "Proxy Port address.",
+                "longDescription": "Proxy Port address."
+            },
+            "Password": {
+                "readonly": true,
+                "type": "string",
+                "description": "Password for the target export or import server configuration.",
+                "longDescription": "Password for the target export or import server configuration in the NFS or CIFS share path."
+            },
+            "IPAddress": {
+                "readonly": true,
+                "type": "string",
+                "description": "The IP address of the target export or import server.",
+                "longDescription": "The IP address of the target export or import server."
+            },
+            "Username": {
+                "readonly": true,
+                "type": "string",
+                "description": "User name for the target export or import server configuration.",
+                "longDescription": "User name for the target export or import server configuration in the NFS or CIFS share path."
+            },
+            "ShareName": {
+                "readonly": true,
+                "type": "string",
+                "description": "The ShareName or the directory path to the mount point.",
+                "longDescription": "The ShareName or the directory path to the mount point for NFS and CIFS, during export or import server configuration."
+            },
+            "FileName": {
+                "readonly": true,
+                "type": "string",
+                "description": "The target output file name.",
+                "longDescription": "The target output file name for export or import server configuration."
+            }
+        },
+        "IncludeInExport": {
+            "enum": [
+                "Default",
+                "IncludeReadOnly",
+                "IncludePasswordHashValues"
+            ],
+            "type": "string",
+            "enumDescriptions": {
+                "IncludePasswordHashValues": "Extra information to include in the export like Include password hash values, Include read only and password hash values.",
+                "Default": "Extra information to include in the export like Default.",
+                "IncludeReadOnly": "Extra information to include in the export like Include read only."
+            }
+        },
+        "ImportBuffer": {
+            "type": "string",
+            "description": "Buffer content to perform Import. This is reqired for localstore only and not required for CIFS/NFS style Import."
+        },
+        "ShutdownType": {
+            "enum": [
+                "Graceful",
+                "Forced",
+                "NoReboot"
+            ],
+            "type": "string",
+            "enumDescriptions": {
+                "NoReboot": "The system will shut down before performing import operation. Manual reboot is done here.",
+                "Forced": "The system will forcefully shut down before performing import operation",
+                "Graceful": "The system will Gracefully shut down before performing import operation."
+            }
+        },
+        "TimeToWait": {
+            "maximum": 3600,
+            "type": "number",
+            "minimum": 300,
+            "description": "The time to wait for the host to shut down. Default and minimum value is 300 seconds. Maximum value is 3600 seconds."
+        },
+        "HostPowerState": {
+            "enum": [
+                "On",
+                "Off"
+            ],
+            "type": "string",
+            "enumDescriptions": {
+                "On": "Host power state after performing import operation is set to On.",
+                "Off": "Host power state after performing import operation is set to Off."
+            }
+        }
+    },
+    "title": "#OemManager.v1_1_0.OemManager",
+    "copyright": "Copyright 2016 Dell, Inc. or its subsidiaries.  All Rights Reserved.",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved."
+}

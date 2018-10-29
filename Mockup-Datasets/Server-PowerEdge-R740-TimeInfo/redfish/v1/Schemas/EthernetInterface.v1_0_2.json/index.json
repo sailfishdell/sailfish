@@ -1,0 +1,295 @@
+{
+    "$ref": "#/definitions/EthernetInterface",
+    "$schema": "/redfish/v1/Schemas/redfish-schema.v1_1_0.json",
+    "definitions": {
+        "IPv6AddressPolicyEntry": {
+            "additionalProperties": false,
+            "type": "object",
+            "patternProperties": {
+                "^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message|Privileges)\\.[a-zA-Z_][a-zA-Z0-9_.]+$": {
+                    "type": [
+                        "array",
+                        "boolean",
+                        "number",
+                        "null",
+                        "object",
+                        "string"
+                    ],
+                    "description": "This property shall specify a valid odata or Redfish property."
+                }
+            },
+            "properties": {
+                "Label": {
+                    "maximum": 100,
+                    "type": [
+                        "number",
+                        "null"
+                    ],
+                    "minimum": 0,
+                    "description": "The IPv6 Label (as defined in RFC 6724 section 2.1)",
+                    "longDescription": "This property shall contain the IPv6 Label value for this table entry as defined in RFC 6724 section 2.1."
+                },
+                "Prefix": {
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "description": "The IPv6 Address Prefix (as defined in RFC 6724 section 2.1)",
+                    "longDescription": "This property shall contain the IPv6 Address Prefix for this table entry as defined in RFC 6724 section 2.1."
+                },
+                "Precedence": {
+                    "maximum": 100,
+                    "type": [
+                        "number",
+                        "null"
+                    ],
+                    "minimum": 1,
+                    "description": "The IPv6 Precedence (as defined in RFC 6724 section 2.1",
+                    "longDescription": "This property shall contain the IPv6 Precedence value for this table entry as defined in RFC 6724 section 2.1."
+                }
+            }
+        },
+        "MACAddress": {
+            "pattern": "^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$",
+            "type": "string"
+        },
+        "EthernetInterface": {
+            "additionalProperties": false,
+            "required": [
+                "Id",
+                "Name"
+            ],
+            "description": "This schema defines a simple ethernet NIC resource.",
+            "patternProperties": {
+                "^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message|Privileges)\\.[a-zA-Z_][a-zA-Z0-9_.]+$": {
+                    "type": [
+                        "array",
+                        "boolean",
+                        "number",
+                        "null",
+                        "object",
+                        "string"
+                    ],
+                    "description": "This property shall specify a valid odata or Redfish property."
+                }
+            },
+            "type": "object",
+            "longDescription": "This resource shall be used to represent NIC resources as part of the Redfish specification.",
+            "properties": {
+                "MTUSize": {
+                    "type": [
+                        "number",
+                        "null"
+                    ],
+                    "description": "This is the currently configured Maximum Transmission Unit (MTU) in bytes on this interface.",
+                    "longDescription": "The value of this property shall be the size in bytes of largest Protocol Data Unit (PDU) that can be passed in an Ethernet (MAC) frame on this interface."
+                },
+                "FQDN": {
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "description": "This is the complete, fully qualified domain name obtained by DNS for this interface.",
+                    "longDescription": "The value of this property shall be the fully qualified domain name for this interface."
+                },
+                "HostName": {
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "description": "The DNS Host Name, without any domain information",
+                    "longDescription": "The value of this property shall be host name for this interface."
+                },
+                "@odata.type": {
+                    "$ref": "/redfish/v1/Schemas/odata.4.0.0.json#/definitions/type"
+                },
+                "NameServers": {
+                    "readonly": true,
+                    "type": "array",
+                    "description": "This represents DNS name servers that are currently in use on this interface.",
+                    "longDescription": "The value of this property shall be the DNS name servers used on this interface.",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "IPv6Addresses": {
+                    "readonly": true,
+                    "type": "array",
+                    "description": "This array of objects enumerates all of the currently assigned IPv6 addresses on this interface.",
+                    "longDescription": "The value of this property shall be an array of objects used to represent the IPv6 connection characteristics for this interface.",
+                    "items": {
+                        "$ref": "/redfish/v1/Schemas/IPAddresses.v1_0_0.json#/definitions/IPv6Address"
+                    }
+                },
+                "InterfaceEnabled": {
+                    "type": [
+                        "boolean",
+                        "null"
+                    ],
+                    "description": "This indicates whether this interface is enabled.",
+                    "longDescription": "The value of this property shall be a boolean indicating whether this interface is enabled."
+                },
+                "Id": {
+                    "$ref": "/redfish/v1/Schemas/Resource.json#/definitions/Id"
+                },
+                "IPv6DefaultGateway": {
+                    "readonly": true,
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "description": "This is the IPv6 default gateway address that is currently in use on this interface.",
+                    "longDescription": "The value of this property shall be the current IPv6 default gateway address that is in use on this interface."
+                },
+                "SpeedMbps": {
+                    "type": [
+                        "number",
+                        "null"
+                    ],
+                    "description": "This is the current speed in Mbps of this interface.",
+                    "longDescription": "The value of this property shall be the link speed of the interface in Mbps."
+                },
+                "AutoNeg": {
+                    "type": [
+                        "boolean",
+                        "null"
+                    ],
+                    "description": "This indicates if the speed and duplex are automatically negotiated and configured on this interface.",
+                    "longDescription": "The value of this property shall be true if auto negotiation of speed and duplex is enabled on this interface and false if it is disabled."
+                },
+                "Oem": {
+                    "$ref": "/redfish/v1/Schemas/Resource.json#/definitions/Oem",
+                    "description": "This is the manufacturer/provider specific extension moniker used to divide the Oem object into sections.",
+                    "longDescription": "The value of this string shall be of the format for the reserved word *Oem*."
+                },
+                "@odata.id": {
+                    "$ref": "/redfish/v1/Schemas/odata.4.0.0.json#/definitions/id"
+                },
+                "VLANs": {
+                    "$ref": "/redfish/v1/Schemas/VLanNetworkInterfaceCollection.json#/definitions/VLanNetworkInterfaceCollection",
+                    "readonly": true,
+                    "description": "This is a reference to a collection of VLANs and is only used if the interface supports more than one VLANs.",
+                    "longDescription": "The value of this property shall reference a collection of VLAN resources. If this property is used, the VLANEnabled and VLANId property shall not be used."
+                },
+                "FullDuplex": {
+                    "type": [
+                        "boolean",
+                        "null"
+                    ],
+                    "description": "This indicates if the interface is in Full Duplex mode or not.",
+                    "longDescription": "The value of this property shall represent the duplex status of the Ethernet connection on this interface."
+                },
+                "IPv6StaticAddresses": {
+                    "readonly": true,
+                    "type": "array",
+                    "description": "This array of objects represents all of the IPv6 static addresses to be assigned on this interface.",
+                    "longDescription": "The value of this property shall be an array of objects used to represent the IPv6 static connection characteristics for this interface.",
+                    "items": {
+                        "$ref": "/redfish/v1/Schemas/IPAddresses.v1_0_0.json#/definitions/IPv6StaticAddress"
+                    }
+                },
+                "VLAN": {
+                    "anyOf": [
+                        {
+                            "$ref": "/redfish/v1/Schemas/VLanNetworkInterface.v1_0_0.json#/definitions/VLAN"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "If this Network Interface supports more than one VLAN, this property will not be present and the client should look for VLANs collection in the link section of this resource.",
+                    "longDescription": "The value of this property shall be the VLAN for this interface.  If this interface supports more than one VLAN, the VLAN property shall not be present and the VLANS collection link shall be present instead."
+                },
+                "MaxIPv6StaticAddresses": {
+                    "readonly": true,
+                    "type": [
+                        "number",
+                        "null"
+                    ],
+                    "description": "This indicates the maximum number of Static IPv6 addresses that can be configured on this interface.",
+                    "longDescription": "The value of this property shall indicate the number of array items supported by IPv6StaticAddresses."
+                },
+                "MACAddress": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/definitions/MACAddress"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "This is the currently configured MAC address of the (logical port) interface.",
+                    "longDescription": "The value of this property shall be the effective current MAC Address of this interface. If an assignable MAC address is not supported, this is a read only alias of the PermanentMACAddress."
+                },
+                "IPv4Addresses": {
+                    "readonly": true,
+                    "type": "array",
+                    "description": "The IPv4 addresses assigned to this interface",
+                    "longDescription": "The value of this property shall be an array of objects used to represent the IPv4 connection characteristics for this interface.",
+                    "items": {
+                        "$ref": "/redfish/v1/Schemas/IPAddresses.v1_0_0.json#/definitions/IPv4Address"
+                    }
+                },
+                "@odata.context": {
+                    "$ref": "/redfish/v1/Schemas/odata.4.0.0.json#/definitions/context"
+                },
+                "Name": {
+                    "$ref": "/redfish/v1/Schemas/Resource.json#/definitions/Name"
+                },
+                "Description": {
+                    "anyOf": [
+                        {
+                            "$ref": "/redfish/v1/Schemas/Resource.json#/definitions/Description"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ]
+                },
+                "IPv6AddressPolicyTable": {
+                    "type": "array",
+                    "description": "An array representing the RFC 6724 Address Selection Policy Table.",
+                    "longDescription": "The value of this property shall be an array of objects used to represent the Address Selection Policy Table as defined in RFC 6724.",
+                    "items": {
+                        "$ref": "#/definitions/IPv6AddressPolicyEntry"
+                    }
+                },
+                "UefiDevicePath": {
+                    "readonly": true,
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "description": "The UEFI device path for this interface",
+                    "longDescription": "The value of this property shall be the UEFI device path to the device which implements this interface (port)."
+                },
+                "PermanentMACAddress": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/definitions/MACAddress"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "readonly": true,
+                    "description": "This is the permanent MAC address assigned to this interface (port)",
+                    "longDescription": "The value of this property shall be the Permanent MAC Address of this interface (port). This value is typically programmed during the manufacturing time. This address is not assignable."
+                },
+                "Status": {
+                    "anyOf": [
+                        {
+                            "$ref": "/redfish/v1/Schemas/Resource.json#/definitions/Status"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ]
+                }
+            }
+        }
+    },
+    "title": "#EthernetInterface.v1_0_2.EthernetInterface",
+    "copyright": "Copyright 2014-2016 Distributed Management Task Force, Inc. (DMTF). For the full DMTF copyright policy, see http://www.dmtf.org/about/policies/copyright",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved."
+}

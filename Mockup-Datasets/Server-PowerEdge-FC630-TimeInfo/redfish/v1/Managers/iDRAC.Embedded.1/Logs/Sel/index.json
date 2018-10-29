@@ -1,0 +1,86 @@
+{
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel",
+    "Description": "System Event Logs for this manager",
+    "Members": [
+        {
+            "Links": {},
+            "Created": "2016-01-21T14:41:34-06:00",
+            "SensorType": [
+                {
+                    "Member": "System Firmware Progress"
+                }
+            ],
+            "EntryType": "SEL",
+            "Id": "3",
+            "MessageArgs@odata.count": 0,
+            "Severity": "Critical",
+            "SensorNumber": 30,
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/3",
+            "Description": " Log Entry 3",
+            "MessageID": "fd0ff",
+            "MessageArgs": [],
+            "Name": " Log Entry 3",
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "Message": "System BIOS has halted."
+        },
+        {
+            "Links": {},
+            "Created": "2016-01-21T13:53:59-06:00",
+            "SensorType": [
+                {
+                    "Member": "System Firmware Progress"
+                }
+            ],
+            "EntryType": "SEL",
+            "Id": "2",
+            "MessageArgs@odata.count": 0,
+            "Severity": "Critical",
+            "SensorNumber": 30,
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/2",
+            "Description": " Log Entry 2",
+            "MessageID": "fd0ff",
+            "MessageArgs": [],
+            "Name": " Log Entry 2",
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "Message": "System BIOS has halted."
+        },
+        {
+            "Links": {},
+            "Created": "2015-02-13T17:38:02-06:00",
+            "SensorType": [
+                {
+                    "Member": "Event Logging Disabled"
+                }
+            ],
+            "EntryType": "SEL",
+            "Id": "1",
+            "MessageArgs@odata.count": 0,
+            "Severity": "Ok",
+            "SensorNumber": 114,
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/1",
+            "Description": " Log Entry 1",
+            "MessageID": "2ffff",
+            "MessageArgs": [],
+            "Name": " Log Entry 1",
+            "EntryCode": [
+                {
+                    "Member": "Assert"
+                }
+            ],
+            "Message": "Log cleared."
+        }
+    ],
+    "Name": "Log Entry Collection",
+    "@odata.context": "/redfish/v1/$metadata#LogEntryCollection.LogEntryCollection",
+    "Members@odata.count": 3,
+    "@odata.type": "#LogEntryCollection.LogEntryCollection"
+}

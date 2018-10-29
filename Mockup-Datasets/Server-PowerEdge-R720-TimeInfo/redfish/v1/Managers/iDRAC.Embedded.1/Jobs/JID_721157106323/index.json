@@ -1,0 +1,19 @@
+{
+    "TargetSettingsURI": null,
+    "Name": "Import Configuration",
+    "CompletionTime": "2016-08-25T04:02:06",
+    "MessageId": "SYS053",
+    "@odata.context": "/redfish/v1/$metadata#DellJob.DellJob",
+    "EndTime": null,
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "Description": "Job Instance",
+    "MessageArgs": [],
+    "@odata.type": "#DellJob.v1_0_0.DellJob",
+    "Message": "Successfully imported and applied system configuration XML file.",
+    "Id": "JID_721157106323",
+    "JobState": "Completed",
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Jobs/JID_721157106323",
+    "StartTime": null,
+    "PercentComplete": 100,
+    "JobType": "ImportConfiguration"
+}

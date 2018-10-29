@@ -1,0 +1,14 @@
+{
+    "Members": [
+        {
+            "@odata.id": "/redfish/v1/Systems/System.Embedded.1"
+        }
+    ],
+    "Name": "Computer System Collection",
+    "@odata.context": "/redfish/v1/$metadata#ComputerSystemCollection.ComputerSystemCollection",
+    "Members@odata.count": 1,
+    "@odata.id": "/redfish/v1/Systems",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "Description": "Collection of Computer Systems",
+    "@odata.type": "#ComputerSystemCollection.ComputerSystemCollection"
+}

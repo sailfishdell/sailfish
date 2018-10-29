@@ -1,0 +1,81 @@
+{
+    "IndicatorLED": null,
+    "SKU": null,
+    "Links": {
+        "CooledBy@odata.count": 10,
+        "PoweredBy": [
+            {
+                "@odata.id": "/redfish/v1/Chassis/Chassis.Embedded.1/Power/PowerSupplies/PSU.Slot.1"
+            },
+            {
+                "@odata.id": "/redfish/v1/Chassis/Chassis.Embedded.1/Power/PowerSupplies/PSU.Slot.2"
+            }
+        ],
+        "Contains@odata.count": 1,
+        "ManagedBy": [],
+        "ComputerSystems@odata.count": 0,
+        "PoweredBy@odata.count": 2,
+        "CooledBy": [
+            {
+                "@odata.id": "/redfish/v1/Chassis/Chassis.Embedded.1/Sensors/Fans/0x17||Fan.Embedded.1A"
+            },
+            {
+                "@odata.id": "/redfish/v1/Chassis/Chassis.Embedded.1/Sensors/Fans/0x17||Fan.Embedded.1B"
+            },
+            {
+                "@odata.id": "/redfish/v1/Chassis/Chassis.Embedded.1/Sensors/Fans/0x17||Fan.Embedded.2"
+            },
+            {
+                "@odata.id": "/redfish/v1/Chassis/Chassis.Embedded.1/Sensors/Fans/0x17||Fan.Embedded.3"
+            },
+            {
+                "@odata.id": "/redfish/v1/Chassis/Chassis.Embedded.1/Sensors/Fans/0x17||Fan.Embedded.4"
+            },
+            {
+                "@odata.id": "/redfish/v1/Chassis/Chassis.Embedded.1/Sensors/Fans/0x17||Fan.Embedded.5A"
+            },
+            {
+                "@odata.id": "/redfish/v1/Chassis/Chassis.Embedded.1/Sensors/Fans/0x17||Fan.Embedded.5B"
+            },
+            {
+                "@odata.id": "/redfish/v1/Chassis/Chassis.Embedded.1/Sensors/Fans/0x17||Fan.Embedded.6"
+            },
+            {
+                "@odata.id": "/redfish/v1/Chassis/Chassis.Embedded.1/Sensors/Fans/0x17||Fan.Embedded.7"
+            },
+            {
+                "@odata.id": "/redfish/v1/Chassis/Chassis.Embedded.1/Sensors/Fans/0x17||Fan.Embedded.8"
+            }
+        ],
+        "ManagedBy@odata.count": 0,
+        "ComputerSystems": [],
+        "Contains": [
+            {
+                "@odata.id": "/redfish/v1/Chassis/System.Embedded.1"
+            }
+        ]
+    },
+    "SerialNumber": null,
+    "Id": "Chassis.Embedded.1",
+    "ChassisType": "Rack",
+    "@odata.context": "/redfish/v1/$metadata#Chassis.Chassis",
+    "Thermal": {
+        "@odata.id": "/redfish/v1/Chassis/Chassis.Embedded.1/Thermal"
+    },
+    "PartNumber": null,
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "PowerState": "On",
+    "AssetTag": "",
+    "@odata.id": "/redfish/v1/Chassis/Chassis.Embedded.1",
+    "Description": "It represents the properties for physical components for any system.It represent racks, rackmount servers, blades, standalone, modular systems,enclosures, and all other containers.The non-cpu/device centric parts of the schema are all accessed either directly or indirectly through this resource.",
+    "Name": "CMC-9K4G942",
+    "Status": {
+        "State": "Enabled"
+    },
+    "Power": {
+        "@odata.id": "/redfish/v1/Chassis/Chassis.Embedded.1/Power"
+    },
+    "Manufacturer": "Dell Inc.",
+    "Model": "PowerEdge FX2s",
+    "@odata.type": "#Chassis.v1_0_2.Chassis"
+}

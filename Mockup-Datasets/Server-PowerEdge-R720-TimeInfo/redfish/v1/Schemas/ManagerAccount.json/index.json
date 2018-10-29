@@ -1,0 +1,22 @@
+{
+    "definitions": {
+        "ManagerAccount": {
+            "anyOf": [
+                {
+                    "$ref": "/redfish/v1/Schemas/odata.4.0.0.json#/definitions/idRef"
+                },
+                {
+                    "$ref": "/redfish/v1/Schemas/ManagerAccount.v1_0_0.json#/definitions/ManagerAccount"
+                },
+                {
+                    "$ref": "/redfish/v1/Schemas/ManagerAccount.v1_0_2.json#/definitions/ManagerAccount"
+                }
+            ]
+        }
+    },
+    "$schema": "/redfish/v1/Schemas/redfish-schema.v1_1_0.json",
+    "title": "#ManagerAccount.ManagerAccount",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "copyright": "Copyright 2014-2016 Distributed Management Task Force, Inc. (DMTF). For the full DMTF copyright policy, see http://www.dmtf.org/about/policies/copyright",
+    "$ref": "#/definitions/ManagerAccount"
+}

@@ -1,0 +1,23 @@
+{
+    "Description": "Roles Collection",
+    "Name": "Roles Collection",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "@odata.type": "#RoleCollection.RoleCollection",
+    "Members": [
+        {
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Roles/Administrator"
+        },
+        {
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Roles/Operator"
+        },
+        {
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Roles/ReadOnly"
+        },
+        {
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Roles/None"
+        }
+    ],
+    "Members@odata.count": 4,
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Roles",
+    "@odata.context": "/redfish/v1/$metadata#RoleCollection.RoleCollection"
+}

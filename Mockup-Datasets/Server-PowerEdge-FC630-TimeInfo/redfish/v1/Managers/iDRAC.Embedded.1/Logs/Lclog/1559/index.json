@@ -1,0 +1,20 @@
+{
+    "OEMRecordFormat": "Dell",
+    "Links": {},
+    "Id": "1559",
+    "EntryType": "Oem",
+    "Created": "2017-09-11T14:04:57-05:00",
+    "MessageArgs@odata.count": 1,
+    "@odata.context": "/redfish/v1/$metadata#LogEntry.LogEntry",
+    "Severity": "Ok",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1559",
+    "Description": " Log Entry 1559",
+    "MessageID": "HWC5030",
+    "MessageArgs": [
+        "A1"
+    ],
+    "Name": " Log Entry 1559",
+    "Message": "IO module A1 is online.",
+    "@odata.type": "#LogEntry.v1_0_2.LogEntry"
+}

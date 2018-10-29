@@ -1,0 +1,21 @@
+{
+    "Languages": [
+        "En"
+    ],
+    "@odata.type": "#MessageRegistryFile.v1_0_2.MessageRegistryFile",
+    "@Redfish.Copyright": "Copyright 2017 TTU.edu All rights reserved.",
+    "@odata.context": "/redfish/v1/$metadata#MessageRegistryFile.MessageRegistryFile",
+    "Registry": "iDrac.1.5",
+    "@odata.id": "/redfish/v1/Registries/Messages",
+    "Location": [
+        {
+            "Uri": "/redfish/v1/Registries/Messages/EEMIRegistry.v1_5_0.json",
+            "Language": "En"
+        }
+    ],
+    "Id": "Messages",
+    "Languages@odata.count": 1,
+    "Description": "iDRAC Message Registry File locations",
+    "Location@odata.count": 1,
+    "Name": "iDRAC Message Registry File"
+}

@@ -1,0 +1,38 @@
+{
+    "ProcessorArchitecture": [
+        {
+            "Member": "x86"
+        }
+    ],
+    "Model": "Intel(R) Xeon(R) Gold 6130 CPU @ 2.10GHz",
+    "Socket": "CPU.Socket.1",
+    "MaxSpeedMHz": 4000,
+    "Name": "CPU 1",
+    "@odata.type": "#Processor.v1_0_2.Processor",
+    "ProcessorType": "CPU",
+    "ProcessorId": {
+        "EffectiveModel": "85",
+        "MicrocodeInfo": null,
+        "Step": "4",
+        "IdentificationRegisters": "0x00050654",
+        "EffectiveFamily": "6",
+        "VendorId": "GenuineIntel"
+    },
+    "@odata.context": "/redfish/v1/$metadata#Processor.Processor",
+    "Status": {
+        "State": "Enabled",
+        "Health": "OK"
+    },
+    "Description": "Represents the properties of a Processor attached to this System",
+    "TotalThreads": 32,
+    "TotalCores": 16,
+    "Id": "CPU.Socket.1",
+    "InstructionSet": [
+        {
+            "Member": "x86-64"
+        }
+    ],
+    "Manufacturer": "Intel",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "@odata.id": "/redfish/v1/Systems/System.Embedded.1/Processors/CPU.Socket.1"
+}

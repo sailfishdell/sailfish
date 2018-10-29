@@ -1,0 +1,14 @@
+{
+    "Members": [
+        {
+            "@odata.id": "/redfish/v1/Chassis/System.Embedded.1"
+        }
+    ],
+    "Name": "Chassis Collection",
+    "@odata.context": "/redfish/v1/$metadata#ChassisCollection.ChassisCollection",
+    "Members@odata.count": 1,
+    "@odata.id": "/redfish/v1/Chassis/",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "Description": "Collection of Chassis",
+    "@odata.type": "#ChassisCollection.ChassisCollection"
+}

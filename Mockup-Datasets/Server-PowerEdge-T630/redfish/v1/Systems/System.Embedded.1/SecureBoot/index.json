@@ -1,0 +1,14 @@
+{
+    "SecureBootCurrentBoot": "Disabled",
+    "SecureBootEnable": false,
+    "@odata.context": "/redfish/v1/$metadata#SecureBoot.SecureBoot",
+    "Description": "UEFI Secure Boot",
+    "@odata.type": "#SecureBoot.v1_0_0.SecureBoot",
+    "Actions": {
+        "Oem": {}
+    },
+    "Id": "SecureBoot",
+    "Name": "UEFI Secure Boot",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "@odata.id": "/redfish/v1/Systems/System.Embedded.1/SecureBoot"
+}

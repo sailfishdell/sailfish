@@ -1,0 +1,29 @@
+{
+    "Name": "Update Service",
+    "Description": "Represents the properties for the Update Service",
+    "ServiceEnabled": true,
+    "Id": "UpdateService",
+    "FirmwareInventory": {
+        "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory"
+    },
+    "@odata.type": "#UpdateService.v1_0_0.UpdateService",
+    "Status": {
+        "State": "Enabled",
+        "Health": "OK"
+    },
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "Actions": {
+        "Oem": {
+            "DellUpdateService.v1_0_0#DellUpdateService.Install": {
+                "InstallUpon@Redfish.AllowableValues": [
+                    "Now",
+                    "NowAndReboot",
+                    "NextReboot"
+                ],
+                "target": "/redfish/v1/UpdateService/Actions/Oem/DellUpdateService.Install"
+            }
+        }
+    },
+    "@odata.id": "/redfish/v1/UpdateService",
+    "@odata.context": "/redfish/v1/$metadata#UpdateService.UpdateService"
+}

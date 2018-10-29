@@ -1,0 +1,21 @@
+{
+    "Languages@odata.count": 1,
+    "Location@odata.count": 1,
+    "Name": "Manager Attribute Registry File",
+    "@odata.type": "#MessageRegistryFile.v1_0_2.MessageRegistryFile",
+    "@odata.context": "/redfish/v1/$metadata#MessageRegistryFile.MessageRegistryFile",
+    "Description": "Manager Attribute Registry File Locations",
+    "@odata.id": "/redfish/v1/Registries/ManagerAttributeRegistry",
+    "Id": "ManagerAttributeRegistry",
+    "Location": [
+        {
+            "Uri": "/redfish/v1/Registries/ManagerAttributeRegistry/ManagerAttributeRegistry.v1_0_0.json",
+            "Language": "En"
+        }
+    ],
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "Languages": [
+        "En"
+    ],
+    "Registry": "ManagerAttributeRegistry.1.0"
+}

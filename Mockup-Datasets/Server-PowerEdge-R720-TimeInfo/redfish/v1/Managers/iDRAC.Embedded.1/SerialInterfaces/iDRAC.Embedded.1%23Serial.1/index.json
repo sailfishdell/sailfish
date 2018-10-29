@@ -1,0 +1,34 @@
+{
+    "PinOut": "Cisco",
+    "Name": "Managed Serial Interface 1",
+    "DataBits": [
+        {
+            "Member": 8
+        }
+    ],
+    "SignalType": "Rs232",
+    "@odata.context": "/redfish/v1/$metadata#SerialInterface.SerialInterface",
+    "BitRate": [
+        {
+            "Member": 57600
+        }
+    ],
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "Description": "Management for Serial Interface",
+    "@odata.type": "#SerialInterface.v1_0_2.SerialInterface",
+    "Parity": "None",
+    "StopBits": [
+        {
+            "Member": 1
+        }
+    ],
+    "Id": "iDRAC.Embedded.1#Serial.1",
+    "ConnectorType": [
+        {
+            "Member": "DB9 Male"
+        }
+    ],
+    "FlowControl": "Hardware",
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/SerialInterfaces/iDRAC.Embedded.1%23Serial.1",
+    "InterfaceEnabled": true
+}

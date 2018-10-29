@@ -1,0 +1,42 @@
+{
+    "definitions": {
+        "type": {
+            "readonly": true,
+            "longDescription": "The value of this property shall be an absolute URL that specifies the type of the resource and it shall be of the form defined in the Redfish specification.",
+            "type": "string",
+            "description": "The type of a resource."
+        },
+        "id": {
+            "readonly": true,
+            "type": "string",
+            "longDescription": "The value of this property shall be the unique identifier for the resource and it shall be of the form defined in the Redfish specification.",
+            "format": "uri",
+            "description": "The unique identifier for a resource."
+        },
+        "context": {
+            "readonly": true,
+            "type": "string",
+            "longDescription": "The value of this property shall be the context URL that describes the resource according to OData-Protocol and shall be of the form defined in the Redfish specification.",
+            "format": "uri",
+            "description": "The OData description of a payload."
+        },
+        "count": {
+            "readonly": true,
+            "longDescription": "The value of this property shall be an integer representing the number of items in a collection.",
+            "type": "number",
+            "description": "The number of items in a collection."
+        },
+        "idRef": {
+            "properties": {
+                "@odata.id": {
+                    "$ref": "#/definitions/id"
+                }
+            },
+            "type": "object",
+            "longDescription": "The value of this property shall be used for references to a resource.",
+            "description": "A reference to a resource."
+        }
+    },
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "$schema": "/redfish/v1/Schemas/redfish-schema.1.0.0"
+}

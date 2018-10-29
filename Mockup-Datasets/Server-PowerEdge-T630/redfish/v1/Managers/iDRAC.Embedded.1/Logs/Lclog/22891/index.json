@@ -1,0 +1,26 @@
+{
+    "OEMRecordFormat": "Dell",
+    "Description": " Log Entry 22891",
+    "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+    "Links": {
+        "OriginOfCondition": {
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+        }
+    },
+    "MessageID": "USR0032",
+    "MessageArgs@odata.count": 3,
+    "Name": " Log Entry 22891",
+    "Severity": "Ok",
+    "Message": "The session for root from 100.97.62.107 using SSH is logged off.",
+    "EntryType": "Oem",
+    "@odata.context": "/redfish/v1/$metadata#LogEntry.LogEntry",
+    "Created": "2017-08-15T00:53:21-05:00",
+    "Id": "22891",
+    "MessageArgs": [
+        "root",
+        "100.97.62.107",
+        "SSH"
+    ],
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/22891"
+}

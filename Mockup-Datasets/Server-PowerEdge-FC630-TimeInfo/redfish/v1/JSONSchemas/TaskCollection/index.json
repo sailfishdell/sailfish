@@ -1,0 +1,22 @@
+{
+    "Location": [
+        {
+            "Language": "en",
+            "Uri": "/redfish/v1/Schemas/TaskCollection.json",
+            "PublicationUri": "http://redfish.dmtf.org/schemas/v1/TaskCollection.json"
+        }
+    ],
+    "@odata.id": "/redfish/v1/JSONSchemas/TaskCollection",
+    "Id": "TaskCollection",
+    "Languages": [
+        "en"
+    ],
+    "@odata.context": "/redfish/v1/$metadata#JsonSchemaFile.JsonSchemaFile",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "Languages@odata.count": 1,
+    "Description": "TaskCollection Schema File Location",
+    "Schema": "#TaskCollection.TaskCollection",
+    "Name": "TaskCollection Schema File",
+    "Location@odata.count": 1,
+    "@odata.type": "#JsonSchemaFile.v1_0_2.JsonSchemaFile"
+}

@@ -1,0 +1,20 @@
+{
+    "MessageID": "LOG007",
+    "EntryType": "Oem",
+    "Severity": "Ok",
+    "Name": " Log Entry 1596",
+    "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+    "Message": "The previous log entry was repeated 1 times.",
+    "Description": " Log Entry 1596",
+    "Created": "2017-10-27T13:34:18-05:00",
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1596",
+    "Id": "1596",
+    "OemRecordFormat": "Dell",
+    "Links": {},
+    "@odata.context": "/redfish/v1/$metadata#LogEntry.LogEntry",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "MessageArgs@odata.count": 1,
+    "MessageArgs": [
+        "1"
+    ]
+}

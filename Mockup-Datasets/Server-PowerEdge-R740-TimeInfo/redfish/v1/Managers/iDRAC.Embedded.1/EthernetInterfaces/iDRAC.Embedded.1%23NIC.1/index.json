@@ -1,0 +1,150 @@
+{
+    "MTUSize": 1500,
+    "Id": "iDRAC.Embedded.1#NIC.1",
+    "HostName": "iDRAC-7654321",
+    "NameServers@odata.count": 8,
+    "@odata.type": "#EthernetInterface.v1_0_2.EthernetInterface",
+    "NameServers": [
+        "0.0.0.0",
+        "0.0.0.0",
+        "0.0.0.0",
+        "0.0.0.0",
+        "::",
+        "::",
+        "::",
+        "::"
+    ],
+    "IPv6Addresses@odata.count": 15,
+    "IPv6Addresses": [
+        {
+            "Address": "::",
+            "AddressState": "Preferred",
+            "PrefixLength": 64,
+            "AddressOrigin": "DHCPv6"
+        },
+        {
+            "Address": "::",
+            "AddressState": "Preferred",
+            "PrefixLength": 64,
+            "AddressOrigin": "DHCPv6"
+        },
+        {
+            "Address": "::",
+            "AddressState": null,
+            "PrefixLength": 64,
+            "AddressOrigin": null
+        },
+        {
+            "Address": "::",
+            "AddressState": null,
+            "PrefixLength": 64,
+            "AddressOrigin": null
+        },
+        {
+            "Address": "::",
+            "AddressState": null,
+            "PrefixLength": 64,
+            "AddressOrigin": null
+        },
+        {
+            "Address": "::",
+            "AddressState": null,
+            "PrefixLength": 64,
+            "AddressOrigin": null
+        },
+        {
+            "Address": "::",
+            "AddressState": null,
+            "PrefixLength": 64,
+            "AddressOrigin": null
+        },
+        {
+            "Address": "::",
+            "AddressState": null,
+            "PrefixLength": 64,
+            "AddressOrigin": null
+        },
+        {
+            "Address": "::",
+            "AddressState": null,
+            "PrefixLength": 64,
+            "AddressOrigin": null
+        },
+        {
+            "Address": "::",
+            "AddressState": null,
+            "PrefixLength": 64,
+            "AddressOrigin": null
+        },
+        {
+            "Address": "::",
+            "AddressState": null,
+            "PrefixLength": 64,
+            "AddressOrigin": null
+        },
+        {
+            "Address": "::",
+            "AddressState": null,
+            "PrefixLength": 64,
+            "AddressOrigin": null
+        },
+        {
+            "Address": "::",
+            "AddressState": null,
+            "PrefixLength": 64,
+            "AddressOrigin": null
+        },
+        {
+            "Address": "::",
+            "AddressState": null,
+            "PrefixLength": 64,
+            "AddressOrigin": null
+        },
+        {
+            "Address": "::",
+            "AddressState": null,
+            "PrefixLength": 64,
+            "AddressOrigin": null
+        }
+    ],
+    "InterfaceEnabled": true,
+    "FQDN": "",
+    "IPv6DefaultGateway": "::",
+    "SpeedMbps": 1000,
+    "AutoNeg": true,
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/EthernetInterfaces/iDRAC.Embedded.1%23NIC.1",
+    "FullDuplex": true,
+    "IPv6StaticAddresses": [
+        {
+            "Address": "::",
+            "PrefixLength": 64
+        }
+    ],
+    "IPv6AddressPolicyTable@odata.count": 0,
+    "VLAN": {
+        "VLANEnable": false,
+        "VLANId": 1
+    },
+    "MaxIPv6StaticAddresses": 16,
+    "MACAddress": "84:7b:eb:f4:e7:ea",
+    "IPv4Addresses": [
+        {
+            "SubnetMask": "255.255.255.0",
+            "Address": "10.35.176.72",
+            "Gateway": "10.35.176.1",
+            "AddressOrigin": "DHCP"
+        }
+    ],
+    "@odata.context": "/redfish/v1/$metadata#EthernetInterface.EthernetInterface",
+    "Name": "Manager Ethernet Interface",
+    "Description": "Management Network Interface",
+    "IPv6AddressPolicyTable": [],
+    "IPv4Addresses@odata.count": 1,
+    "PermanentMACAddress": "84:7b:eb:f4:e7:ea",
+    "IPv6StaticAddresses@odata.count": 1,
+    "Status": {
+        "State": "Enabled",
+        "Health": "OK"
+    },
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved."
+}

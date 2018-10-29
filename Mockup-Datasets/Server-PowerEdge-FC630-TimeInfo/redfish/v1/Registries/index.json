@@ -1,0 +1,17 @@
+{
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "@odata.id": "/redfish/v1/Registries",
+    "Description": "Registry Repository",
+    "Members": [
+        {
+            "@odata.id": "/redfish/v1/Registries/Messages"
+        },
+        {
+            "@odata.id": "/redfish/v1/Registries/BaseMessages"
+        }
+    ],
+    "Name": "Registry Repository",
+    "@odata.context": "/redfish/v1/$metadata#MessageRegistryFileCollection.MessageRegistryFileCollection",
+    "Members@odata.count": 2,
+    "@odata.type": "#MessageRegistryFileCollection.MessageRegistryFileCollection"
+}

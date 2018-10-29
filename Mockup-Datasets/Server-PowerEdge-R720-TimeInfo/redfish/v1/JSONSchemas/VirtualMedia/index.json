@@ -1,0 +1,22 @@
+{
+    "Name": "VirtualMedia Schema File",
+    "@odata.context": "/redfish/v1/$metadata#JsonSchemaFile.JsonSchemaFile",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "Description": "VirtualMedia Schema File Location",
+    "@odata.type": "#JsonSchemaFile.v1_0_2.JsonSchemaFile",
+    "Languages": [
+        "en"
+    ],
+    "Id": "VirtualMedia",
+    "Location": [
+        {
+            "PublicationUri": "http://redfish.dmtf.org/schemas/v1/VirtualMedia.json",
+            "Language": "en",
+            "Uri": "/redfish/v1/Schemas/VirtualMedia.json"
+        }
+    ],
+    "Languages@odata.count": 1,
+    "@odata.id": "/redfish/v1/JSONSchemas/VirtualMedia",
+    "Location@odata.count": 1,
+    "Schema": "#VirtualMedia.VirtualMedia"
+}

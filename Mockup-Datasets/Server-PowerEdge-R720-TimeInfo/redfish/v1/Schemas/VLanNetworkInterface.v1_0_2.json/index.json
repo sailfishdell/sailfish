@@ -1,0 +1,135 @@
+{
+    "definitions": {
+        "VLAN": {
+            "properties": {
+                "VLANEnable": {
+                    "type": [
+                        "boolean",
+                        "null"
+                    ],
+                    "longDescription": "The value of this property shall be used to indicate if this VLAN is enabled for this interface.",
+                    "description": "This indicates if this VLAN is enabled."
+                },
+                "VLANId": {
+                    "longDescription": "The value of this property shall be used to indicate the VLAN identifier for this VLAN.",
+                    "anyOf": [
+                        {
+                            "$ref": "#/definitions/VLANId"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "This indicates the VLAN identifier for this VLAN."
+                }
+            },
+            "requiredOnCreate": [
+                "VLANEnable",
+                "VLANId"
+            ],
+            "type": "object",
+            "additionalProperties": false,
+            "patternProperties": {
+                "^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message|Privileges)\\.[a-zA-Z_][a-zA-Z0-9_.]+$": {
+                    "type": [
+                        "array",
+                        "boolean",
+                        "number",
+                        "null",
+                        "object",
+                        "string"
+                    ],
+                    "description": "This property shall specify a valid odata or Redfish property."
+                }
+            }
+        },
+        "VLanNetworkInterface": {
+            "requiredOnCreate": [
+                "VLANEnable",
+                "VLANId"
+            ],
+            "type": "object",
+            "required": [
+                "Id",
+                "Name"
+            ],
+            "patternProperties": {
+                "^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message|Privileges)\\.[a-zA-Z_][a-zA-Z0-9_.]+$": {
+                    "type": [
+                        "array",
+                        "boolean",
+                        "number",
+                        "null",
+                        "object",
+                        "string"
+                    ],
+                    "description": "This property shall specify a valid odata or Redfish property."
+                }
+            },
+            "properties": {
+                "VLANId": {
+                    "longDescription": "The value of this property shall be used to indicate the VLAN identifier for this VLAN.",
+                    "anyOf": [
+                        {
+                            "$ref": "#/definitions/VLANId"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "This indicates the VLAN identifier for this VLAN."
+                },
+                "Name": {
+                    "$ref": "/redfish/v1/Schemas/Resource.json#/definitions/Name"
+                },
+                "Id": {
+                    "$ref": "/redfish/v1/Schemas/Resource.json#/definitions/Id"
+                },
+                "Oem": {
+                    "description": "This is the manufacturer/provider specific extension moniker used to divide the Oem object into sections.",
+                    "longDescription": "The value of this string shall be of the format for the reserved word *Oem*.",
+                    "$ref": "/redfish/v1/Schemas/Resource.json#/definitions/Oem"
+                },
+                "@odata.context": {
+                    "$ref": "/redfish/v1/Schemas/odata.4.0.0.json#/definitions/context"
+                },
+                "VLANEnable": {
+                    "type": [
+                        "boolean",
+                        "null"
+                    ],
+                    "longDescription": "The value of this property shall be used to indicate if this VLAN is enabled for this interface.",
+                    "description": "This indicates if this VLAN is enabled."
+                },
+                "@odata.id": {
+                    "$ref": "/redfish/v1/Schemas/odata.4.0.0.json#/definitions/id"
+                },
+                "Description": {
+                    "anyOf": [
+                        {
+                            "$ref": "/redfish/v1/Schemas/Resource.json#/definitions/Description"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ]
+                },
+                "@odata.type": {
+                    "$ref": "/redfish/v1/Schemas/odata.4.0.0.json#/definitions/type"
+                }
+            },
+            "description": "This resource contains information for a Virtual LAN (VLAN) network instance available on a manager, system or other device.",
+            "additionalProperties": false
+        },
+        "VLANId": {
+            "minimum": 0,
+            "maximum": 4094,
+            "type": "number"
+        }
+    },
+    "$schema": "/redfish/v1/Schemas/redfish-schema.v1_1_0.json",
+    "title": "#VLanNetworkInterface.v1_0_2.VLanNetworkInterface",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "copyright": "Copyright 2014-2016 Distributed Management Task Force, Inc. (DMTF). For the full DMTF copyright policy, see http://www.dmtf.org/about/policies/copyright",
+    "$ref": "#/definitions/VLanNetworkInterface"
+}

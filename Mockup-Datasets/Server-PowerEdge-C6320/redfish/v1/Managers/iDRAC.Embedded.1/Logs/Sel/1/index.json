@@ -1,0 +1,28 @@
+{
+    "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+    "@Redfish.Copyright": "Copyright 2017 TTU.edu All rights reserved.",
+    "MessageID": "2ffff",
+    "@odata.context": "/redfish/v1/$metadata#LogEntry.LogEntry",
+    "Id": "1",
+    "EntryCode": [
+        {
+            "Member": "Assert"
+        }
+    ],
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/1",
+    "MessageArgs@odata.count": 0,
+    "SensorNumber": 114,
+    "Created": "2016-11-03T21:23:54-05:00",
+    "SensorType": [
+        {
+            "Member": "Event Logging Disabled"
+        }
+    ],
+    "MessageArgs": [],
+    "Message": "Log cleared.",
+    "Severity": "Ok",
+    "Description": " Log Entry 1",
+    "EntryType": "SEL",
+    "Name": " Log Entry 1",
+    "Links": {}
+}

@@ -1,0 +1,28 @@
+{
+    "@odata.type": "#SimpleStorage.v1_0_2.SimpleStorage",
+    "@Redfish.Copyright": "Copyright 2017 TTU.edu All rights reserved.",
+    "Status": {
+        "HealthRollUp": null,
+        "Health": null,
+        "State": "Enabled"
+    },
+    "@odata.context": "/redfish/v1/$metadata#SimpleStorage.SimpleStorage",
+    "Description": "Simple Storage Controller",
+    "@odata.id": "/redfish/v1/Systems/System.Embedded.1/Storage/Controllers/AHCI.Embedded.2-1",
+    "Devices": [
+        {
+            "Name": "Physical Disk 0:0",
+            "Manufacturer": "SEAGATE",
+            "Model": "ST9500620NS",
+            "Status": {
+                "HealthRollUp": null,
+                "Health": null,
+                "State": "Enabled"
+            }
+        }
+    ],
+    "Devices@odata.count": 1,
+    "Name": "C610/X99 series chipset 6-Port SATA Controller [AHCI mode]",
+    "UEFIDevicePath": "PciRoot(0x0)/Pci(0x1F,0x2)",
+    "Id": "AHCI.Embedded.2-1"
+}

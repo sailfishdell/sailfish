@@ -1,0 +1,956 @@
+{
+    "@odata.nextLink": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog?$skip=50",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog",
+    "Description": "LC Logs for this manager",
+    "Members": [
+        {
+            "OEMRecordFormat": "Dell",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "Id": "1586",
+            "EntryType": "Oem",
+            "Created": "2017-11-03T16:23:09-05:00",
+            "MessageArgs@odata.count": 3,
+            "Severity": "Ok",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1586",
+            "Description": " Log Entry 1586",
+            "MessageID": "USR0030",
+            "MessageArgs": [
+                "root",
+                "100.68.124.143",
+                "REDFISH"
+            ],
+            "Name": " Log Entry 1586",
+            "Message": "Successfully logged in using root, from 100.68.124.143 and REDFISH."
+        },
+        {
+            "OEMRecordFormat": "Dell",
+            "Links": {},
+            "Id": "1585",
+            "EntryType": "Oem",
+            "Created": "2017-10-29T05:44:13-05:00",
+            "MessageArgs@odata.count": 4,
+            "Severity": "Ok",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1585",
+            "Description": " Log Entry 1585",
+            "MessageID": "USR8508",
+            "MessageArgs": [
+                "SSH",
+                "snowdscv",
+                "10.0.200.80",
+                "IP address is in penalty box"
+            ],
+            "Name": " Log Entry 1585",
+            "Message": "SSH login was not successful (username=snowdscv, ip=10.0.200.80, reason=IP address is in penalty box)"
+        },
+        {
+            "OEMRecordFormat": "Dell",
+            "Links": {},
+            "Id": "1584",
+            "EntryType": "Oem",
+            "Created": "2017-10-29T05:44:13-05:00",
+            "MessageArgs@odata.count": 4,
+            "Severity": "Ok",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1584",
+            "Description": " Log Entry 1584",
+            "MessageID": "USR8508",
+            "MessageArgs": [
+                "SSH",
+                "service_proddisc_lin",
+                "10.0.200.80",
+                "Illegal user name length"
+            ],
+            "Name": " Log Entry 1584",
+            "Message": "SSH login was not successful (username=service_proddisc_lin, ip=10.0.200.80, reason=Illegal user name length)"
+        },
+        {
+            "OEMRecordFormat": "Dell",
+            "Links": {},
+            "Id": "1583",
+            "EntryType": "Oem",
+            "Created": "2017-10-29T05:44:13-05:00",
+            "MessageArgs@odata.count": 2,
+            "Severity": "Warning",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1583",
+            "Description": " Log Entry 1583",
+            "MessageID": "USR8500",
+            "MessageArgs": [
+                "10.0.200.80",
+                "300"
+            ],
+            "Name": " Log Entry 1583",
+            "Message": "Excessive login failures from 10.0.200.80; blocked for 300 seconds."
+        },
+        {
+            "OEMRecordFormat": "Dell",
+            "Links": {},
+            "Id": "1582",
+            "EntryType": "Oem",
+            "Created": "2017-10-29T05:44:10-05:00",
+            "MessageArgs@odata.count": 4,
+            "Severity": "Ok",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1582",
+            "Description": " Log Entry 1582",
+            "MessageID": "USR8508",
+            "MessageArgs": [
+                "SSH",
+                "snowdscv",
+                "10.0.200.80",
+                "IP address is in penalty box"
+            ],
+            "Name": " Log Entry 1582",
+            "Message": "SSH login was not successful (username=snowdscv, ip=10.0.200.80, reason=IP address is in penalty box)"
+        },
+        {
+            "OEMRecordFormat": "Dell",
+            "Links": {},
+            "Id": "1581",
+            "EntryType": "Oem",
+            "Created": "2017-10-29T05:44:10-05:00",
+            "MessageArgs@odata.count": 4,
+            "Severity": "Ok",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1581",
+            "Description": " Log Entry 1581",
+            "MessageID": "USR8508",
+            "MessageArgs": [
+                "SSH",
+                "service_proddisc_lin",
+                "10.0.200.80",
+                "Illegal user name length"
+            ],
+            "Name": " Log Entry 1581",
+            "Message": "SSH login was not successful (username=service_proddisc_lin, ip=10.0.200.80, reason=Illegal user name length)"
+        },
+        {
+            "OEMRecordFormat": "Dell",
+            "Links": {},
+            "Id": "1580",
+            "EntryType": "Oem",
+            "Created": "2017-10-29T05:44:10-05:00",
+            "MessageArgs@odata.count": 4,
+            "Severity": "Ok",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1580",
+            "Description": " Log Entry 1580",
+            "MessageID": "USR8508",
+            "MessageArgs": [
+                "SSH",
+                "snowdscv",
+                "10.0.200.80",
+                "IP address is in penalty box"
+            ],
+            "Name": " Log Entry 1580",
+            "Message": "SSH login was not successful (username=snowdscv, ip=10.0.200.80, reason=IP address is in penalty box)"
+        },
+        {
+            "OEMRecordFormat": "Dell",
+            "Links": {},
+            "Id": "1579",
+            "EntryType": "Oem",
+            "Created": "2017-10-29T05:44:09-05:00",
+            "MessageArgs@odata.count": 4,
+            "Severity": "Ok",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1579",
+            "Description": " Log Entry 1579",
+            "MessageID": "USR8508",
+            "MessageArgs": [
+                "SSH",
+                "service_proddisc_lin",
+                "10.0.200.80",
+                "Illegal user name length"
+            ],
+            "Name": " Log Entry 1579",
+            "Message": "SSH login was not successful (username=service_proddisc_lin, ip=10.0.200.80, reason=Illegal user name length)"
+        },
+        {
+            "OEMRecordFormat": "Dell",
+            "Links": {},
+            "Id": "1578",
+            "EntryType": "Oem",
+            "Created": "2017-10-29T05:44:07-05:00",
+            "MessageArgs@odata.count": 4,
+            "Severity": "Ok",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1578",
+            "Description": " Log Entry 1578",
+            "MessageID": "USR8508",
+            "MessageArgs": [
+                "SSH",
+                "snowdscv",
+                "10.0.200.80",
+                "IP address is in penalty box"
+            ],
+            "Name": " Log Entry 1578",
+            "Message": "SSH login was not successful (username=snowdscv, ip=10.0.200.80, reason=IP address is in penalty box)"
+        },
+        {
+            "OEMRecordFormat": "Dell",
+            "Links": {},
+            "Id": "1577",
+            "EntryType": "Oem",
+            "Created": "2017-10-29T05:44:07-05:00",
+            "MessageArgs@odata.count": 2,
+            "Severity": "Warning",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1577",
+            "Description": " Log Entry 1577",
+            "MessageID": "USR8500",
+            "MessageArgs": [
+                "10.0.200.80",
+                "300"
+            ],
+            "Name": " Log Entry 1577",
+            "Message": "Excessive login failures from 10.0.200.80; blocked for 300 seconds."
+        },
+        {
+            "OEMRecordFormat": "Dell",
+            "Links": {},
+            "Id": "1576",
+            "EntryType": "Oem",
+            "Created": "2017-10-29T05:44:06-05:00",
+            "MessageArgs@odata.count": 4,
+            "Severity": "Ok",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1576",
+            "Description": " Log Entry 1576",
+            "MessageID": "USR8508",
+            "MessageArgs": [
+                "SSH",
+                "service_proddisc_lin",
+                "10.0.200.80",
+                "Illegal user name length"
+            ],
+            "Name": " Log Entry 1576",
+            "Message": "SSH login was not successful (username=service_proddisc_lin, ip=10.0.200.80, reason=Illegal user name length)"
+        },
+        {
+            "OEMRecordFormat": "Dell",
+            "Links": {},
+            "Id": "1575",
+            "EntryType": "Oem",
+            "Created": "2017-10-29T05:44:06-05:00",
+            "MessageArgs@odata.count": 4,
+            "Severity": "Ok",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1575",
+            "Description": " Log Entry 1575",
+            "MessageID": "USR8508",
+            "MessageArgs": [
+                "SSH",
+                "snowdscv",
+                "10.0.200.80",
+                "IP address is in penalty box"
+            ],
+            "Name": " Log Entry 1575",
+            "Message": "SSH login was not successful (username=snowdscv, ip=10.0.200.80, reason=IP address is in penalty box)"
+        },
+        {
+            "OEMRecordFormat": "Dell",
+            "Links": {},
+            "Id": "1574",
+            "EntryType": "Oem",
+            "Created": "2017-10-29T05:44:06-05:00",
+            "MessageArgs@odata.count": 4,
+            "Severity": "Ok",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1574",
+            "Description": " Log Entry 1574",
+            "MessageID": "USR8508",
+            "MessageArgs": [
+                "SSH",
+                "service_proddisc_lin",
+                "10.0.200.80",
+                "Illegal user name length"
+            ],
+            "Name": " Log Entry 1574",
+            "Message": "SSH login was not successful (username=service_proddisc_lin, ip=10.0.200.80, reason=Illegal user name length)"
+        },
+        {
+            "OEMRecordFormat": "Dell",
+            "Links": {},
+            "Id": "1573",
+            "EntryType": "Oem",
+            "Created": "2017-10-29T05:44:03-05:00",
+            "MessageArgs@odata.count": 4,
+            "Severity": "Ok",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1573",
+            "Description": " Log Entry 1573",
+            "MessageID": "USR8508",
+            "MessageArgs": [
+                "SSH",
+                "snowdscv",
+                "10.0.200.80",
+                "IP address is in penalty box"
+            ],
+            "Name": " Log Entry 1573",
+            "Message": "SSH login was not successful (username=snowdscv, ip=10.0.200.80, reason=IP address is in penalty box)"
+        },
+        {
+            "OEMRecordFormat": "Dell",
+            "Links": {},
+            "Id": "1572",
+            "EntryType": "Oem",
+            "Created": "2017-10-29T05:44:03-05:00",
+            "MessageArgs@odata.count": 4,
+            "Severity": "Ok",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1572",
+            "Description": " Log Entry 1572",
+            "MessageID": "USR8508",
+            "MessageArgs": [
+                "SSH",
+                "service_proddisc_lin",
+                "10.0.200.80",
+                "Illegal user name length"
+            ],
+            "Name": " Log Entry 1572",
+            "Message": "SSH login was not successful (username=service_proddisc_lin, ip=10.0.200.80, reason=Illegal user name length)"
+        },
+        {
+            "OEMRecordFormat": "Dell",
+            "Links": {},
+            "Id": "1571",
+            "EntryType": "Oem",
+            "Created": "2017-10-29T05:44:03-05:00",
+            "MessageArgs@odata.count": 2,
+            "Severity": "Warning",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1571",
+            "Description": " Log Entry 1571",
+            "MessageID": "USR8500",
+            "MessageArgs": [
+                "10.0.200.80",
+                "300"
+            ],
+            "Name": " Log Entry 1571",
+            "Message": "Excessive login failures from 10.0.200.80; blocked for 300 seconds."
+        },
+        {
+            "OEMRecordFormat": "Dell",
+            "Links": {},
+            "Id": "1570",
+            "EntryType": "Oem",
+            "Created": "2017-10-29T05:44:03-05:00",
+            "MessageArgs@odata.count": 4,
+            "Severity": "Ok",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1570",
+            "Description": " Log Entry 1570",
+            "MessageID": "USR8508",
+            "MessageArgs": [
+                "SSH",
+                "snowdscv",
+                "10.0.200.80",
+                "User does not exist"
+            ],
+            "Name": " Log Entry 1570",
+            "Message": "SSH login was not successful (username=snowdscv, ip=10.0.200.80, reason=User does not exist)"
+        },
+        {
+            "OEMRecordFormat": "Dell",
+            "Links": {},
+            "Id": "1569",
+            "EntryType": "Oem",
+            "Created": "2017-10-29T05:44:02-05:00",
+            "MessageArgs@odata.count": 4,
+            "Severity": "Ok",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1569",
+            "Description": " Log Entry 1569",
+            "MessageID": "USR8508",
+            "MessageArgs": [
+                "SSH",
+                "service_proddisc_lin",
+                "10.0.200.80",
+                "Illegal user name length"
+            ],
+            "Name": " Log Entry 1569",
+            "Message": "SSH login was not successful (username=service_proddisc_lin, ip=10.0.200.80, reason=Illegal user name length)"
+        },
+        {
+            "OEMRecordFormat": "Dell",
+            "Links": {},
+            "Id": "1568",
+            "EntryType": "Oem",
+            "Created": "2017-10-29T05:44:00-05:00",
+            "MessageArgs@odata.count": 4,
+            "Severity": "Ok",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1568",
+            "Description": " Log Entry 1568",
+            "MessageID": "USR8508",
+            "MessageArgs": [
+                "SSH",
+                "snowdscv",
+                "10.0.200.80",
+                "User does not exist"
+            ],
+            "Name": " Log Entry 1568",
+            "Message": "SSH login was not successful (username=snowdscv, ip=10.0.200.80, reason=User does not exist)"
+        },
+        {
+            "OEMRecordFormat": "Dell",
+            "Links": {},
+            "Id": "1567",
+            "EntryType": "Oem",
+            "Created": "2017-10-29T05:43:59-05:00",
+            "MessageArgs@odata.count": 4,
+            "Severity": "Ok",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1567",
+            "Description": " Log Entry 1567",
+            "MessageID": "USR8508",
+            "MessageArgs": [
+                "SSH",
+                "service_proddisc_lin",
+                "10.0.200.80",
+                "Illegal user name length"
+            ],
+            "Name": " Log Entry 1567",
+            "Message": "SSH login was not successful (username=service_proddisc_lin, ip=10.0.200.80, reason=Illegal user name length)"
+        },
+        {
+            "OEMRecordFormat": "Dell",
+            "Links": {},
+            "Id": "1566",
+            "EntryType": "Oem",
+            "Created": "2017-10-29T05:43:59-05:00",
+            "MessageArgs@odata.count": 1,
+            "Severity": "Ok",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1566",
+            "Description": " Log Entry 1566",
+            "MessageID": "LOG007",
+            "MessageArgs": [
+                "31"
+            ],
+            "Name": " Log Entry 1566",
+            "Message": "The previous log entry was repeated 31 times."
+        },
+        {
+            "OEMRecordFormat": "Dell",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "Id": "1565",
+            "EntryType": "Oem",
+            "Created": "2017-10-06T14:43:55-05:00",
+            "MessageArgs@odata.count": 3,
+            "Severity": "Ok",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1565",
+            "Description": " Log Entry 1565",
+            "MessageID": "USR0030",
+            "MessageArgs": [
+                "root",
+                "100.68.124.156",
+                "REDFISH"
+            ],
+            "Name": " Log Entry 1565",
+            "Message": "Successfully logged in using root, from 100.68.124.156 and REDFISH."
+        },
+        {
+            "OEMRecordFormat": "Dell",
+            "Links": {},
+            "Id": "1564",
+            "EntryType": "Oem",
+            "Created": "2017-09-11T19:46:45-05:00",
+            "MessageArgs@odata.count": 2,
+            "Severity": "Ok",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1564",
+            "Description": " Log Entry 1564",
+            "MessageID": "IPA0100",
+            "MessageArgs": [
+                "0.0.0.0",
+                "100.68.124.137"
+            ],
+            "Name": " Log Entry 1564",
+            "Message": "The iDRAC IP Address changed from 0.0.0.0 to 100.68.124.137."
+        },
+        {
+            "OEMRecordFormat": "Dell",
+            "Links": {},
+            "Id": "1563",
+            "EntryType": "Oem",
+            "Created": "2017-09-11T19:46:45-05:00",
+            "MessageArgs@odata.count": 1,
+            "Severity": "Ok",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1563",
+            "Description": " Log Entry 1563",
+            "MessageID": "LOG007",
+            "MessageArgs": [
+                "1"
+            ],
+            "Name": " Log Entry 1563",
+            "Message": "The previous log entry was repeated 1 times."
+        },
+        {
+            "Links": {},
+            "Severity": "Ok",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1562",
+            "Description": " Log Entry 1562",
+            "MessageID": "IOID119",
+            "Id": "1562",
+            "EntryType": "Oem",
+            "Message": "FlexAddress is enabled on all NIC and FC HBA devices.",
+            "Created": "2017-09-11T14:05:34-05:00",
+            "OEMRecordFormat": "Dell",
+            "Name": " Log Entry 1562"
+        },
+        {
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "Severity": "Ok",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1561",
+            "Description": " Log Entry 1561",
+            "MessageID": "DIS002",
+            "Id": "1561",
+            "EntryType": "Oem",
+            "Message": "Auto Discovery feature disabled.",
+            "Created": "2017-09-11T14:04:57-05:00",
+            "OEMRecordFormat": "Dell",
+            "Name": " Log Entry 1561"
+        },
+        {
+            "OEMRecordFormat": "Dell",
+            "Links": {},
+            "Id": "1560",
+            "EntryType": "Oem",
+            "Created": "2017-09-11T14:04:57-05:00",
+            "MessageArgs@odata.count": 1,
+            "Severity": "Ok",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1560",
+            "Description": " Log Entry 1560",
+            "MessageID": "HWC5030",
+            "MessageArgs": [
+                "A2"
+            ],
+            "Name": " Log Entry 1560",
+            "Message": "IO module A2 is online."
+        },
+        {
+            "OEMRecordFormat": "Dell",
+            "Links": {},
+            "Id": "1559",
+            "EntryType": "Oem",
+            "Created": "2017-09-11T14:04:57-05:00",
+            "MessageArgs@odata.count": 1,
+            "Severity": "Ok",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1559",
+            "Description": " Log Entry 1559",
+            "MessageID": "HWC5030",
+            "MessageArgs": [
+                "A1"
+            ],
+            "Name": " Log Entry 1559",
+            "Message": "IO module A1 is online."
+        },
+        {
+            "Links": {},
+            "Severity": "Ok",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1558",
+            "Description": " Log Entry 1558",
+            "MessageID": "PWR8542",
+            "Id": "1558",
+            "EntryType": "Oem",
+            "Message": "Chassis powerup operation completed.",
+            "Created": "2017-09-11T14:04:57-05:00",
+            "OEMRecordFormat": "Dell",
+            "Name": " Log Entry 1558"
+        },
+        {
+            "Links": {},
+            "Severity": "Ok",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1557",
+            "Description": " Log Entry 1557",
+            "MessageID": "PWR8541",
+            "Id": "1557",
+            "EntryType": "Oem",
+            "Message": "Chassis powerup operation initiated.",
+            "Created": "2017-09-11T14:04:57-05:00",
+            "OEMRecordFormat": "Dell",
+            "Name": " Log Entry 1557"
+        },
+        {
+            "OEMRecordFormat": "Dell",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Systems/System.Embedded.1"
+                }
+            },
+            "Id": "1556",
+            "EntryType": "Oem",
+            "Created": "2017-09-11T14:04:55-05:00",
+            "MessageArgs@odata.count": 1,
+            "Severity": "Ok",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1556",
+            "Description": " Log Entry 1556",
+            "MessageID": "LNK2701",
+            "MessageArgs": [
+                "CMC 1"
+            ],
+            "Name": " Log Entry 1556",
+            "Message": "The CMC 1 network link is up."
+        },
+        {
+            "OEMRecordFormat": "Dell",
+            "Links": {},
+            "Id": "1555",
+            "EntryType": "Oem",
+            "Created": "2017-09-11T14:04:55-05:00",
+            "MessageArgs@odata.count": 1,
+            "Severity": "Ok",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1555",
+            "Description": " Log Entry 1555",
+            "MessageID": "RDU8500",
+            "MessageArgs": [
+                "1"
+            ],
+            "Name": " Log Entry 1555",
+            "Message": "CMC1: active"
+        },
+        {
+            "OEMRecordFormat": "Dell",
+            "Links": {},
+            "Id": "1554",
+            "EntryType": "Oem",
+            "Created": "2017-09-11T14:04:55-05:00",
+            "MessageArgs@odata.count": 1,
+            "Severity": "Ok",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1554",
+            "Description": " Log Entry 1554",
+            "MessageID": "CMC8540",
+            "MessageArgs": [
+                "1"
+            ],
+            "Name": " Log Entry 1554",
+            "Message": "The CMC 1 is turned on."
+        },
+        {
+            "OEMRecordFormat": "Dell",
+            "Links": {},
+            "Id": "1553",
+            "EntryType": "Oem",
+            "Created": "2017-09-11T14:04:55-05:00",
+            "MessageArgs@odata.count": 1,
+            "Severity": "Ok",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1553",
+            "Description": " Log Entry 1553",
+            "MessageID": "CMC8550",
+            "MessageArgs": [
+                "Healthy"
+            ],
+            "Name": " Log Entry 1553",
+            "Message": "The chassis health is Healthy."
+        },
+        {
+            "Links": {},
+            "Severity": "Ok",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1552",
+            "Description": " Log Entry 1552",
+            "MessageID": "PWR8548",
+            "Id": "1552",
+            "EntryType": "Oem",
+            "Message": "Chassis shutdown operation initiated.",
+            "Created": "2017-09-08T14:24:28-05:00",
+            "OEMRecordFormat": "Dell",
+            "Name": " Log Entry 1552"
+        },
+        {
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1%23HostPowerCtrl"
+                }
+            },
+            "Severity": "Ok",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1551",
+            "Description": " Log Entry 1551",
+            "MessageID": "SYS1003",
+            "Id": "1551",
+            "EntryType": "Oem",
+            "Message": "System CPU Resetting.",
+            "Created": "2017-09-08T14:24:19-05:00",
+            "OEMRecordFormat": "Dell",
+            "Name": " Log Entry 1551"
+        },
+        {
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1%23HostPowerCtrl"
+                }
+            },
+            "Severity": "Ok",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1550",
+            "Description": " Log Entry 1550",
+            "MessageID": "SYS1001",
+            "Id": "1550",
+            "EntryType": "Oem",
+            "Message": "System is turning off.",
+            "Created": "2017-09-08T14:24:19-05:00",
+            "OEMRecordFormat": "Dell",
+            "Name": " Log Entry 1550"
+        },
+        {
+            "OEMRecordFormat": "Dell",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Systems/System.Embedded.1/Storage/Controllers/RAID.Integrated.1-1"
+                }
+            },
+            "Id": "1549",
+            "EntryType": "Oem",
+            "Created": "2017-09-02T03:29:33-05:00",
+            "MessageArgs@odata.count": 1,
+            "Severity": "Ok",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1549",
+            "Description": " Log Entry 1549",
+            "MessageID": "CTL38",
+            "MessageArgs": [
+                "Integrated RAID Controller 1"
+            ],
+            "Name": " Log Entry 1549",
+            "Message": "The Patrol Read operation completed for Integrated RAID Controller 1."
+        },
+        {
+            "OEMRecordFormat": "Dell",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Systems/System.Embedded.1/Storage/Controllers/RAID.Integrated.1-1"
+                }
+            },
+            "Id": "1548",
+            "EntryType": "Oem",
+            "Created": "2017-09-02T03:00:11-05:00",
+            "MessageArgs@odata.count": 1,
+            "Severity": "Ok",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1548",
+            "Description": " Log Entry 1548",
+            "MessageID": "CTL37",
+            "MessageArgs": [
+                "Integrated RAID Controller 1"
+            ],
+            "Name": " Log Entry 1548",
+            "Message": "A Patrol Read operation started for Integrated RAID Controller 1."
+        },
+        {
+            "OEMRecordFormat": "Dell",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Systems/System.Embedded.1/Storage/Controllers/RAID.Integrated.1-1"
+                }
+            },
+            "Id": "1547",
+            "EntryType": "Oem",
+            "Created": "2017-08-26T03:29:30-05:00",
+            "MessageArgs@odata.count": 1,
+            "Severity": "Ok",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1547",
+            "Description": " Log Entry 1547",
+            "MessageID": "CTL38",
+            "MessageArgs": [
+                "Integrated RAID Controller 1"
+            ],
+            "Name": " Log Entry 1547",
+            "Message": "The Patrol Read operation completed for Integrated RAID Controller 1."
+        },
+        {
+            "OEMRecordFormat": "Dell",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Systems/System.Embedded.1/Storage/Controllers/RAID.Integrated.1-1"
+                }
+            },
+            "Id": "1546",
+            "EntryType": "Oem",
+            "Created": "2017-08-26T03:00:07-05:00",
+            "MessageArgs@odata.count": 1,
+            "Severity": "Ok",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1546",
+            "Description": " Log Entry 1546",
+            "MessageID": "CTL37",
+            "MessageArgs": [
+                "Integrated RAID Controller 1"
+            ],
+            "Name": " Log Entry 1546",
+            "Message": "A Patrol Read operation started for Integrated RAID Controller 1."
+        },
+        {
+            "OEMRecordFormat": "Dell",
+            "Links": {},
+            "Id": "1545",
+            "EntryType": "Oem",
+            "Created": "2017-08-26T03:00:07-05:00",
+            "MessageArgs@odata.count": 1,
+            "Severity": "Ok",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1545",
+            "Description": " Log Entry 1545",
+            "MessageID": "LOG007",
+            "MessageArgs": [
+                "38"
+            ],
+            "Name": " Log Entry 1545",
+            "Message": "The previous log entry was repeated 38 times."
+        },
+        {
+            "OEMRecordFormat": "Dell",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "Id": "1544",
+            "EntryType": "Oem",
+            "Created": "2017-08-23T15:03:00-05:00",
+            "MessageArgs@odata.count": 3,
+            "Severity": "Ok",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1544",
+            "Description": " Log Entry 1544",
+            "MessageID": "USR0030",
+            "MessageArgs": [
+                "root",
+                "100.68.124.38",
+                "WS-MAN"
+            ],
+            "Name": " Log Entry 1544",
+            "Message": "Successfully logged in using root, from 100.68.124.38 and WS-MAN."
+        },
+        {
+            "OEMRecordFormat": "Dell",
+            "Links": {},
+            "Id": "1543",
+            "EntryType": "Oem",
+            "Created": "2017-08-23T15:03:00-05:00",
+            "MessageArgs@odata.count": 1,
+            "Severity": "Ok",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1543",
+            "Description": " Log Entry 1543",
+            "MessageID": "LOG007",
+            "MessageArgs": [
+                "76"
+            ],
+            "Name": " Log Entry 1543",
+            "Message": "The previous log entry was repeated 76 times."
+        },
+        {
+            "OEMRecordFormat": "Dell",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "Id": "1542",
+            "EntryType": "Oem",
+            "Created": "2017-08-22T13:40:27-05:00",
+            "MessageArgs@odata.count": 3,
+            "Severity": "Ok",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1542",
+            "Description": " Log Entry 1542",
+            "MessageID": "USR0030",
+            "MessageArgs": [
+                "root",
+                "100.68.124.38",
+                "WS-MAN"
+            ],
+            "Name": " Log Entry 1542",
+            "Message": "Successfully logged in using root, from 100.68.124.38 and WS-MAN."
+        },
+        {
+            "OEMRecordFormat": "Dell",
+            "Links": {},
+            "Id": "1541",
+            "EntryType": "Oem",
+            "Created": "2017-08-22T13:40:11-05:00",
+            "MessageArgs@odata.count": 3,
+            "Severity": "Ok",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1541",
+            "Description": " Log Entry 1541",
+            "MessageID": "USR8513",
+            "MessageArgs": [
+                "root",
+                "100.68.124.38",
+                "RACADM"
+            ],
+            "Name": " Log Entry 1541",
+            "Message": "root login successful from 100.68.124.38 (type=RACADM)."
+        },
+        {
+            "OEMRecordFormat": "Dell",
+            "Links": {},
+            "Id": "1540",
+            "EntryType": "Oem",
+            "Created": "2017-08-22T13:40:11-05:00",
+            "MessageArgs@odata.count": 1,
+            "Severity": "Ok",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1540",
+            "Description": " Log Entry 1540",
+            "MessageID": "LOG007",
+            "MessageArgs": [
+                "25"
+            ],
+            "Name": " Log Entry 1540",
+            "Message": "The previous log entry was repeated 25 times."
+        },
+        {
+            "OEMRecordFormat": "Dell",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "Id": "1539",
+            "EntryType": "Oem",
+            "Created": "2017-08-22T13:34:33-05:00",
+            "MessageArgs@odata.count": 3,
+            "Severity": "Ok",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1539",
+            "Description": " Log Entry 1539",
+            "MessageID": "USR0030",
+            "MessageArgs": [
+                "root",
+                "100.68.124.38",
+                "WS-MAN"
+            ],
+            "Name": " Log Entry 1539",
+            "Message": "Successfully logged in using root, from 100.68.124.38 and WS-MAN."
+        },
+        {
+            "OEMRecordFormat": "Dell",
+            "Links": {},
+            "Id": "1538",
+            "EntryType": "Oem",
+            "Created": "2017-08-22T13:34:33-05:00",
+            "MessageArgs@odata.count": 1,
+            "Severity": "Ok",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1538",
+            "Description": " Log Entry 1538",
+            "MessageID": "LOG007",
+            "MessageArgs": [
+                "83"
+            ],
+            "Name": " Log Entry 1538",
+            "Message": "The previous log entry was repeated 83 times."
+        },
+        {
+            "OEMRecordFormat": "Dell",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "Id": "1537",
+            "EntryType": "Oem",
+            "Created": "2017-08-21T09:24:29-05:00",
+            "MessageArgs@odata.count": 3,
+            "Severity": "Ok",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1537",
+            "Description": " Log Entry 1537",
+            "MessageID": "USR0030",
+            "MessageArgs": [
+                "root",
+                "100.68.124.38",
+                "WS-MAN"
+            ],
+            "Name": " Log Entry 1537",
+            "Message": "Successfully logged in using root, from 100.68.124.38 and WS-MAN."
+        }
+    ],
+    "Name": "Log Entry Collection",
+    "@odata.context": "/redfish/v1/$metadata#LogEntryCollection.LogEntryCollection",
+    "Members@odata.count": 1586,
+    "@odata.type": "#LogEntryCollection.LogEntryCollection"
+}

@@ -1,0 +1,22 @@
+{
+    "Location": [
+        {
+            "Language": "en",
+            "Uri": "/redfish/v1/Schemas/Role.v1_0_0.json",
+            "PublicationUri": "http://redfish.dmtf.org/schemas/v1/Role.v1_0_0.json"
+        }
+    ],
+    "@odata.id": "/redfish/v1/JSONSchemas/Role.v1_0_0",
+    "Id": "Role.v1_0_0",
+    "Languages": [
+        "en"
+    ],
+    "@odata.context": "/redfish/v1/$metadata#JsonSchemaFile.JsonSchemaFile",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "Languages@odata.count": 1,
+    "Description": "Role Schema File Location",
+    "Schema": "#Role.v1_0_0.Role",
+    "Name": "Role Schema File",
+    "Location@odata.count": 1,
+    "@odata.type": "#JsonSchemaFile.v1_0_2.JsonSchemaFile"
+}

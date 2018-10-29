@@ -1,0 +1,20 @@
+{
+    "MessageID": "RAC0401",
+    "EntryType": "Oem",
+    "Severity": "Critical",
+    "Name": " Log Entry 1595",
+    "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+    "Message": "iDRAC monitor: iDRAC service dsm-sa-datamgr.service failed to respond, recovering from hung state..",
+    "Description": " Log Entry 1595",
+    "Created": "2017-10-27T12:51:21-05:00",
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1595",
+    "Id": "1595",
+    "OemRecordFormat": "Dell",
+    "Links": {},
+    "@odata.context": "/redfish/v1/$metadata#LogEntry.LogEntry",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "MessageArgs@odata.count": 1,
+    "MessageArgs": [
+        "iDRAC service dsm-sa-datamgr.service failed to respond, recovering from hung state."
+    ]
+}

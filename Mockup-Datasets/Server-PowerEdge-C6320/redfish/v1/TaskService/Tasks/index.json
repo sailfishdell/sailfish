@@ -1,0 +1,10 @@
+{
+    "Members@odata.count": 0,
+    "@odata.type": "#TaskCollection.TaskCollection",
+    "@Redfish.Copyright": "Copyright 2017 TTU.edu All rights reserved.",
+    "@odata.context": "/redfish/v1/$metadata#TaskCollection.TaskCollection",
+    "Description": "Collection of Tasks",
+    "@odata.id": "/redfish/v1/TaskService/Tasks",
+    "Members": [],
+    "Name": "Task Collection"
+}

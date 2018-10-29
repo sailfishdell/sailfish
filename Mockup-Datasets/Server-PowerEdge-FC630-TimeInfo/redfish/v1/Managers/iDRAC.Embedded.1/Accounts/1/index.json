@@ -1,0 +1,19 @@
+{
+    "Enabled": false,
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Accounts/1",
+    "Id": "1",
+    "@odata.context": "/redfish/v1/$metadata#ManagerAccount.ManagerAccount",
+    "Password": null,
+    "Locked": false,
+    "UserName": "",
+    "Links": {
+        "Role": {
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Roles/None"
+        }
+    },
+    "Description": "User Account",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "Name": "User Account",
+    "RoleId": "None",
+    "@odata.type": "#ManagerAccount.v1_0_2.ManagerAccount"
+}

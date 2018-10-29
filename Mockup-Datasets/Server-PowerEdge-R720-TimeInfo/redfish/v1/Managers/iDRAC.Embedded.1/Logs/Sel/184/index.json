@@ -1,0 +1,28 @@
+{
+    "SensorNumber": 116,
+    "Name": " Log Entry 184",
+    "SensorType": [
+        {
+            "Member": "Power Supply / Converter"
+        }
+    ],
+    "MessageArgs@odata.count": 0,
+    "@odata.context": "/redfish/v1/$metadata#LogEntry.LogEntry",
+    "Message": "Power supply redundancy is lost.",
+    "Severity": "Critical",
+    "EntryCode": [
+        {
+            "Member": "Redundancy Lost"
+        }
+    ],
+    "Description": " Log Entry 184",
+    "MessageArgs": [],
+    "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+    "EntryType": "SEL",
+    "Id": "184",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/184",
+    "Links": {},
+    "MessageID": "1ffff",
+    "Created": "2016-08-18T00:18:47-05:00"
+}

@@ -1,0 +1,14 @@
+{
+    "Name": "Session Service",
+    "Id": "SessionService",
+    "Sessions": {
+        "@odata.id": "/redfish/v1/Sessions"
+    },
+    "@odata.context": "/redfish/v1/$metadata#SessionService.SessionService",
+    "ServiceEnabled": true,
+    "@odata.id": "/redfish/v1/SessionService",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "Description": "Session Service",
+    "@odata.type": "#SessionService.v1_0_2.SessionService",
+    "SessionTimeout": 1800
+}

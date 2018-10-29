@@ -1,0 +1,41 @@
+{
+    "@odata.type": "#EventService.v1_0_2.EventService",
+    "@Redfish.Copyright": "Copyright 2017 TTU.edu All rights reserved.",
+    "@odata.context": "/redfish/v1/$metadata#EventService.EventService",
+    "Status": {
+        "HealthRollUp": "Ok",
+        "Health": "Ok",
+        "State": "Disabled"
+    },
+    "@odata.id": "/redfish/v1/EventService",
+    "DeliveryRetryIntervalInSeconds": 30,
+    "EventTypesForSubscription@odata.count": 5,
+    "EventTypesForSubscription": [
+        "StatusChange",
+        "ResourceUpdated",
+        "ResourceAdded",
+        "ResourceRemoved",
+        "Alert"
+    ],
+    "IgnoreCertificateErrors": "Yes",
+    "Id": "EventService",
+    "ServiceEnabled": false,
+    "DeliveryRetryAttempts": 3,
+    "Actions": {
+        "#EventService.SubmitTestEvent": {
+            "EventType@Redfish.AllowableValues": [
+                "StatusChange",
+                "ResourceUpdated",
+                "ResourceAdded",
+                "ResourceRemoved",
+                "Alert"
+            ],
+            "target": "/redfish/v1/EventService/Actions/EventService.SubmitTestEvent"
+        }
+    },
+    "Description": "Event Service represents the properties for the service",
+    "Name": "Event Service",
+    "Subscriptions": {
+        "@odata.id": "/redfish/v1/EventService/Subscriptions"
+    }
+}

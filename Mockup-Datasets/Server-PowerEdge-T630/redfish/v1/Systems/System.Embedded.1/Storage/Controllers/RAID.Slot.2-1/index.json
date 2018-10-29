@@ -1,0 +1,17 @@
+{
+    "UefiDevicePath": "PciRoot(0x0)/Pci(0x1C,0x4)/Pci(0x0,0x0)/Ctrl(0x1)",
+    "Id": "RAID.Slot.2-1",
+    "@odata.context": "/redfish/v1/$metadata#SimpleStorage.SimpleStorage",
+    "Description": "Simple Storage Controller",
+    "Status": {
+        "State": "Enabled",
+        "Health": "OK",
+        "HealthRollup": "OK"
+    },
+    "@odata.type": "#SimpleStorage.v1_0_2.SimpleStorage",
+    "Devices@odata.count": 0,
+    "Devices": [],
+    "Name": "PERC H830 Adapter",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "@odata.id": "/redfish/v1/Systems/System.Embedded.1/Storage/Controllers/RAID.Slot.2-1"
+}

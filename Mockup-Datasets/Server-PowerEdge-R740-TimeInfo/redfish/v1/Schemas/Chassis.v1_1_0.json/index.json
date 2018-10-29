@@ -1,0 +1,512 @@
+{
+    "$ref": "#/definitions/Chassis",
+    "$schema": "/redfish/v1/Schemas/redfish-schema.v1_1_0.json",
+    "definitions": {
+        "PhysicalSecurity": {
+            "additionalProperties": false,
+            "type": "object",
+            "patternProperties": {
+                "^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message|Privileges)\\.[a-zA-Z_][a-zA-Z0-9_.]+$": {
+                    "type": [
+                        "array",
+                        "boolean",
+                        "number",
+                        "null",
+                        "object",
+                        "string"
+                    ],
+                    "description": "This property shall specify a valid odata or Redfish property."
+                }
+            },
+            "properties": {
+                "IntrusionSensorNumber": {
+                    "readonly": true,
+                    "type": [
+                        "number",
+                        "null"
+                    ],
+                    "description": "A numerical identifier to represent the physical security sensor.",
+                    "longDescription": "The value of this property shall be a numerical identifier for this physical security sensor that is unique within this resource. "
+                },
+                "IntrusionSensorReArm": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/definitions/IntrusionSensorReArm"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "readonly": true,
+                    "description": "This indicates how the Normal state to be restored.",
+                    "longDescription": "This property shall represent the method to set back to the Normal statue of this physical security sensor.  Manual indicates manual re-arm is needed.  Automatic indicates the state is restored automatically as no abnormal physical security conditions are detected."
+                },
+                "IntrusionSensor": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/definitions/IntrusionSensor"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "readonly": false,
+                    "description": "This indicates the known state of the physical security sensor, such as if it is hardware intrusion detected.",
+                    "longDescription": "This property shall represent the state of this physical security sensor.  Hardware intrusion indicates the internal hardware is detected as being accessed in an insecure state. Tampering detected indicates the physical tampering of the monitored entity is detected."
+                }
+            }
+        },
+        "PowerState": {
+            "enum": [
+                "On",
+                "Off",
+                "PoweringOn",
+                "PoweringOff"
+            ],
+            "type": "string",
+            "enumDescriptions": {
+                "PoweringOff": "A temporary state between On and Off. The components within the chassis can take time to process the power off action.",
+                "On": "The components within the chassis has power on.",
+                "PoweringOn": "A temporary state between Off and On. The components within the chassis can take time to process the power on action.",
+                "Off": "The components within the chassis has no power, except some components may continue to have AUX power such as management controller."
+            }
+        },
+        "IntrusionSensor": {
+            "enum": [
+                "Normal",
+                "HardwareIntrusion",
+                "TamperingDetected"
+            ],
+            "type": "string",
+            "enumDescriptions": {
+                "TamperingDetected": "Physical tampering of the monitored entity is detected.",
+                "HardwareIntrusion": "A door, lock, or other mechanism protecting the internal system hardware from being accessed is detected as being in an insecure state.",
+                "Normal": "No abnormal physical security conditions are detected at this time."
+            }
+        },
+        "IndicatorLED": {
+            "enum": [
+                "Unknown",
+                "Lit",
+                "Blinking",
+                "Off"
+            ],
+            "type": "string",
+            "enumDescriptions": {
+                "Unknown": "The state of the Indicator LED cannot be determined. Deprecated: Return null if state is unknown.",
+                "Lit": "The Indicator LED is lit.",
+                "Off": "The Indicator LED is off.",
+                "Blinking": "The Indicator LED is blinking."
+            }
+        },
+        "ChassisType": {
+            "enum": [
+                "Rack",
+                "Blade",
+                "Enclosure",
+                "StandAlone",
+                "RackMount",
+                "Card",
+                "Cartridge",
+                "Row",
+                "Pod",
+                "Expansion",
+                "Sidecar",
+                "Zone",
+                "Sled",
+                "Shelf",
+                "Drawer",
+                "Module",
+                "Component",
+                "Other"
+            ],
+            "type": "string",
+            "enumDescriptions": {
+                "Drawer": "An enclosed or semi-enclosed, typically horizontally-oriented, system chassis which may be slid into a multi-system chassis.",
+                "StandAlone": "A single, free-standing system, commonly called a tower or desktop chassis",
+                "Zone": "A logical division or portion of a physical chassis that contains multiple devices or systems that cannot be physically separated",
+                "Cartridge": "A small self-contained system intended to be plugged into a multi-system chassis",
+                "Card": "A loose device or circuit board intended to be installed in a system or other enclosure",
+                "Row": "A collection of equipment racks",
+                "Expansion": "A chassis which expands the capabilities or capacity of another chassis",
+                "Pod": "A collection of equipment racks in a large, likely transportable, container",
+                "Sidecar": "A chassis that mates mechanically with another chassis to expand its capabilities or capacity",
+                "Component": "A small chassis, card, or device which contains devices for a particular subsystem or function",
+                "Shelf": "An enclosed or semi-enclosed, typically horizontally-oriented, system chassis which must be plugged into a multi-system chassis to function normally",
+                "Sled": "An enclosed or semi-enclosed, system chassis which must be plugged into a multi-system chassis to function normally similar to a blade type chassis.",
+                "Enclosure": "A generic term for a chassis that does not fit any other description",
+                "Other": "A chassis that does not fit any of these definitions",
+                "Blade": "An enclosed or semi-enclosed, typically vertically-oriented, system chassis which must be plugged into a multi-system chassis to function normally",
+                "Module": "A small, typically removable, chassis or card which contains devices for a particular subsystem or function",
+                "Rack": "An equipment rack, typically a 19-inch wide freestanding unit",
+                "RackMount": "A single system chassis designed specifically for mounting in an equipment rack"
+            }
+        },
+        "Reset": {
+            "additionalProperties": false,
+            "description": "This action is used to reset the chassis. This action resets the chassis, not Systems or other contained resources, although side effects may occur which affect those resources.",
+            "patternProperties": {
+                "^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message|Privileges)\\.[a-zA-Z_][a-zA-Z0-9_.]+$": {
+                    "type": [
+                        "array",
+                        "boolean",
+                        "number",
+                        "null",
+                        "object",
+                        "string"
+                    ],
+                    "description": "This property shall specify a valid odata or Redfish property."
+                }
+            },
+            "type": "object",
+            "longDescription": "This defines the name of the custom action supported on this resource.",
+            "properties": {
+                "target": {
+                    "type": "string",
+                    "description": "Link to invoke action",
+                    "format": "uri"
+                },
+                "title": {
+                    "type": "string",
+                    "description": "Friendly action name"
+                }
+            }
+        },
+        "IntrusionSensorReArm": {
+            "enum": [
+                "Manual",
+                "Automatic"
+            ],
+            "type": "string",
+            "enumDescriptions": {
+                "Automatic": "This sensor would be restored to the Normal state automatically as no abnormal physical security conditions are detected.",
+                "Manual": "This sensor would be restored to the Normal state by a manual re-arm."
+            }
+        },
+        "Chassis": {
+            "additionalProperties": false,
+            "required": [
+                "Id",
+                "Name",
+                "ChassisType"
+            ],
+            "description": "A Chassis represents the physical components for any system.  This resource represents the sheet-metal confined spaces and logical zones like racks, enclosures, chassis and all other containers. Subsystems (like sensors), which operate outside of a system's data plane (meaning the resources are not accessible to software running on the system) are linked either directly or indirectly through this resource.",
+            "patternProperties": {
+                "^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message|Privileges)\\.[a-zA-Z_][a-zA-Z0-9_.]+$": {
+                    "type": [
+                        "array",
+                        "boolean",
+                        "number",
+                        "null",
+                        "object",
+                        "string"
+                    ],
+                    "description": "This property shall specify a valid odata or Redfish property."
+                }
+            },
+            "type": "object",
+            "longDescription": "This resource shall be used to represent a chassis or other physical enclosure for a Redfish implementation.",
+            "properties": {
+                "Model": {
+                    "readonly": true,
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "description": "This is the model number for the chassis.",
+                    "longDescription": "The value of this property shall be the name by which the manufacturer generally refers to the chassis."
+                },
+                "SKU": {
+                    "readonly": true,
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "description": "This is the SKU for this chassis.",
+                    "longDescription": "The value of this property shall be the stock-keeping unit number for this chassis."
+                },
+                "Name": {
+                    "$ref": "/redfish/v1/Schemas/Resource.json#/definitions/Name"
+                },
+                "ChassisType": {
+                    "$ref": "#/definitions/ChassisType",
+                    "readonly": true,
+                    "description": "This property indicates the type of physical form factor of this resource.",
+                    "longDescription": "ChassisType shall indicate the physical form factor for the type of chassis."
+                },
+                "PhysicalSecurity": {
+                    "$ref": "#/definitions/PhysicalSecurity",
+                    "description": "The state of the physical security sensor.",
+                    "longDescription": "This value of this property shall contain the sensor state of the physical security."
+                },
+                "Links": {
+                    "additionalProperties": false,
+                    "description": "Contains references to other resources that are related to this resource.",
+                    "patternProperties": {
+                        "^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message|Privileges)\\.[a-zA-Z_][a-zA-Z0-9_.]+$": {
+                            "type": [
+                                "array",
+                                "boolean",
+                                "number",
+                                "null",
+                                "object",
+                                "string"
+                            ],
+                            "description": "This property shall specify a valid odata or Redfish property."
+                        }
+                    },
+                    "type": "object",
+                    "readonly": true,
+                    "longDescription": "The Links property, as described by the Redfish Specification, shall contain references to resources that are related to, but not contained by (subordinate to), this resource.",
+                    "properties": {
+                        "ManagedBy@odata.count": {
+                            "$ref": "/redfish/v1/Schemas/odata.4.0.0.json#/definitions/count"
+                        },
+                        "PoweredBy@odata.count": {
+                            "$ref": "/redfish/v1/Schemas/odata.4.0.0.json#/definitions/count"
+                        },
+                        "ComputerSystems@odata.navigationLink": {
+                            "type": "string",
+                            "format": "uri"
+                        },
+                        "CooledBy": {
+                            "readonly": true,
+                            "type": "array",
+                            "description": "An array of ID[s] of resources that cool this chassis. Normally the ID will be a chassis or a specific set of fans.",
+                            "longDescription": "The value of this property shall be an array of IDs containing pointers consistent with JSON pointer syntax to the resource that cools this chassis.",
+                            "items": {
+                                "$ref": "/redfish/v1/Schemas/odata.4.0.0.json#/definitions/idRef"
+                            }
+                        },
+                        "PoweredBy": {
+                            "readonly": true,
+                            "type": "array",
+                            "description": "An array of ID[s] of resources that power this chassis. Normally the ID will be a chassis or a specific set of powerSupplies",
+                            "longDescription": "The value of this property shall be an array of IDs containing pointers consistent with JSON pointer syntax to the resource that powers this chassis.",
+                            "items": {
+                                "$ref": "/redfish/v1/Schemas/odata.4.0.0.json#/definitions/idRef"
+                            }
+                        },
+                        "CooledBy@odata.count": {
+                            "$ref": "/redfish/v1/Schemas/odata.4.0.0.json#/definitions/count"
+                        },
+                        "ComputerSystems": {
+                            "readonly": true,
+                            "type": "array",
+                            "description": "An array of references to the computer systems contained in this chassis.  This will only reference ComputerSystems that are directly and wholly contained in this chassis.",
+                            "longDescription": "The value of this property shall be a reference to the resource that this physical container is associated with and shall reference a resource of type ComputerSystem.  If a ComputerSystem is also referenced in a Chassis that is referenced in a Contains link from this resource, that ComputerSystem shall not be referenced in this Chassis.",
+                            "items": {
+                                "$ref": "/redfish/v1/Schemas/ComputerSystem.json#/definitions/ComputerSystem"
+                            }
+                        },
+                        "ManagedBy": {
+                            "readonly": true,
+                            "type": "array",
+                            "description": "An array of references to the Managers responsible for managing this chassis.",
+                            "longDescription": "The value of this property shall be a reference to the resource that manages this chassis and shall reference a resource of type Manager.",
+                            "items": {
+                                "$ref": "/redfish/v1/Schemas/Manager.json#/definitions/Manager"
+                            }
+                        },
+                        "Contains@odata.count": {
+                            "$ref": "/redfish/v1/Schemas/odata.4.0.0.json#/definitions/count"
+                        },
+                        "PoweredBy@odata.navigationLink": {
+                            "type": "string",
+                            "format": "uri"
+                        },
+                        "CooledBy@odata.navigationLink": {
+                            "type": "string",
+                            "format": "uri"
+                        },
+                        "Contains": {
+                            "readonly": true,
+                            "type": "array",
+                            "description": "An array of references to any other chassis that this chassis has in it.",
+                            "longDescription": "The value of this property shall be a reference to the resource that represents the chassis that this chassis contains and shall be of type Chassis.",
+                            "items": {
+                                "$ref": "/redfish/v1/Schemas/Chassis.json#/definitions/Chassis"
+                            }
+                        },
+                        "ManagedBy@odata.navigationLink": {
+                            "type": "string",
+                            "format": "uri"
+                        },
+                        "Contains@odata.navigationLink": {
+                            "type": "string",
+                            "format": "uri"
+                        },
+                        "ComputerSystems@odata.count": {
+                            "$ref": "/redfish/v1/Schemas/odata.4.0.0.json#/definitions/count"
+                        },
+                        "Oem": {
+                            "$ref": "/redfish/v1/Schemas/Resource.json#/definitions/Oem",
+                            "description": "Oem extension object.",
+                            "longDescription": "This object represents the Oem property.  All values for resources described by this schema shall comply to the requirements as described in the Redfish specification."
+                        },
+                        "ContainedBy": {
+                            "$ref": "/redfish/v1/Schemas/Chassis.json#/definitions/Chassis",
+                            "readonly": true,
+                            "description": "A reference to the chassis that this chassis is contained by.",
+                            "longDescription": "The value of this property shall be a reference to the resource that represents the chassis that contains this chassis and shall be of type Chassis."
+                        }
+                    }
+                },
+                "PowerState": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/definitions/PowerState"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "readonly": true,
+                    "description": "This is the current power state of the chassis.",
+                    "longDescription": "The value of this property shall contain the power state of the chassis."
+                },
+                "Id": {
+                    "$ref": "/redfish/v1/Schemas/Resource.json#/definitions/Id"
+                },
+                "PartNumber": {
+                    "readonly": true,
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "description": "The part number for this chassis.",
+                    "longDescription": "The value of this property shall be a part number assigned by the organization that is responsible for producing or manufacturing the chassis."
+                },
+                "Status": {
+                    "$ref": "/redfish/v1/Schemas/Resource.json#/definitions/Status"
+                },
+                "Oem": {
+                    "$ref": "/redfish/v1/Schemas/Resource.json#/definitions/Oem",
+                    "description": "This is the manufacturer/provider specific extension moniker used to divide the Oem object into sections.",
+                    "longDescription": "The value of this string shall be of the format for the reserved word *Oem*."
+                },
+                "AssetTag": {
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "description": "The user assigned asset tag for this chassis.",
+                    "longDescription": "The value of this property shall be an identifying string used to track the chassis for inventory purposes."
+                },
+                "@odata.id": {
+                    "$ref": "/redfish/v1/Schemas/odata.4.0.0.json#/definitions/id"
+                },
+                "Thermal": {
+                    "$ref": "/redfish/v1/Schemas/Thermal.json#/definitions/Thermal",
+                    "readonly": true,
+                    "description": "A reference to the thermal properties (fans, cooling, sensors) for this chassis.",
+                    "longDescription": "The value of this property shall be a reference to the resource that represents the thermal characteristics of this chassis and shall be of type Thermal."
+                },
+                "LogServices": {
+                    "$ref": "/redfish/v1/Schemas/LogServiceCollection.json#/definitions/LogServiceCollection",
+                    "readonly": true,
+                    "description": "A reference to the logs for this chassis.",
+                    "longDescription": "The value of this property shall be a link to a collection of type LogServiceCollection."
+                },
+                "Actions": {
+                    "additionalProperties": false,
+                    "description": "The available actions for this resource.",
+                    "patternProperties": {
+                        "^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message|Privileges)\\.[a-zA-Z_][a-zA-Z0-9_.]+$": {
+                            "type": [
+                                "array",
+                                "boolean",
+                                "number",
+                                "null",
+                                "object",
+                                "string"
+                            ],
+                            "description": "This property shall specify a valid odata or Redfish property."
+                        }
+                    },
+                    "type": "object",
+                    "readonly": true,
+                    "longDescription": "The Actions property shall contain the available actions for this resource.",
+                    "properties": {
+                        "#Chassis.Reset": {
+                            "$ref": "#/definitions/Reset"
+                        },
+                        "Oem": {
+                            "additionalProperties": true,
+                            "type": "object",
+                            "patternProperties": {
+                                "^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message|Privileges)\\.[a-zA-Z_][a-zA-Z0-9_.]+$": {
+                                    "type": [
+                                        "array",
+                                        "boolean",
+                                        "number",
+                                        "null",
+                                        "object",
+                                        "string"
+                                    ],
+                                    "description": "This property shall specify a valid odata or Redfish property."
+                                }
+                            },
+                            "properties": {}
+                        }
+                    }
+                },
+                "@odata.context": {
+                    "$ref": "/redfish/v1/Schemas/odata.4.0.0.json#/definitions/context"
+                },
+                "SerialNumber": {
+                    "readonly": true,
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "description": "The serial number for this chassis.",
+                    "longDescription": "The value of this property shall be a manufacturer-allocated number used to identify the chassis."
+                },
+                "Description": {
+                    "anyOf": [
+                        {
+                            "$ref": "/redfish/v1/Schemas/Resource.json#/definitions/Description"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ]
+                },
+                "IndicatorLED": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/definitions/IndicatorLED"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "The state of the indicator LED, used to identify the chassis.",
+                    "longDescription": "This value of this property shall contain the indicator light state for the indicator light associated with this system."
+                },
+                "Power": {
+                    "$ref": "/redfish/v1/Schemas/Power.json#/definitions/Power",
+                    "readonly": true,
+                    "description": "A reference to the power properties (power supplies, power policies, sensors) for this chassis.",
+                    "longDescription": "The value of this property shall be a reference to the resource that represents the power characteristics of this chassis and shall be of type Power."
+                },
+                "Manufacturer": {
+                    "readonly": true,
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "description": "This is the manufacturer of this chassis.",
+                    "longDescription": "The value of this property shall be the name of the organization responsible for producing the chassis. This organization might be the entity from whom the chassis is purchased, but this is not necessarily true."
+                },
+                "@odata.type": {
+                    "$ref": "/redfish/v1/Schemas/odata.4.0.0.json#/definitions/type"
+                }
+            }
+        }
+    },
+    "title": "#Chassis.v1_1_0.Chassis",
+    "copyright": "Copyright 2014-2016 Distributed Management Task Force, Inc. (DMTF). For the full DMTF copyright policy, see http://www.dmtf.org/about/policies/copyright",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved."
+}

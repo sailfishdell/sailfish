@@ -1,0 +1,14 @@
+{
+    "Description": "Collection of Serial Interfaces for this System",
+    "Name": "Serial Interface Collection",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "@odata.type": "#SerialInterfaceCollection.SerialInterfaceCollection",
+    "Members": [
+        {
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/SerialInterfaces/iDRAC.Embedded.1%23Serial.1"
+        }
+    ],
+    "Members@odata.count": 1,
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/SerialInterfaces",
+    "@odata.context": "/redfish/v1/$metadata#SerialInterfaceCollection.SerialInterfaceCollection"
+}

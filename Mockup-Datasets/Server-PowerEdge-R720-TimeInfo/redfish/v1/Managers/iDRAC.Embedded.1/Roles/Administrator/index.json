@@ -1,0 +1,18 @@
+{
+    "AssignedPrivileges": [
+        "Login",
+        "ConfigureManager",
+        "ConfigureUser",
+        "ConfigureComponent",
+        "ConfigureSelf"
+    ],
+    "Id": "Administrator",
+    "AssignedPrivileges@odata.count": 5,
+    "Name": "User Role",
+    "@odata.context": "/redfish/v1/$metadata#Role.Role",
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Roles/Administrator",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "Description": "Administrator User Role",
+    "IsPredefined": true,
+    "@odata.type": "#Role.v1_0_2.Role"
+}

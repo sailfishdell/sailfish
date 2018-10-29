@@ -1,0 +1,33 @@
+{
+    "Hash@odata.count": 0,
+    "Description": "DellCertificateCollection",
+    "Name": "DellCertificateCollection",
+    "Certificates": [
+        {
+            "CertificateType": "KEK",
+            "IssuerCommonName_CN": "Microsoft Corporation Third Party Marketplace Root",
+            "CertificateSubtype": "Certificate",
+            "SubjectCountryCode_CC": "US",
+            "Thumbprint": "31:59:0B:FD:89:C9:D7:4E:D0:87:DF:AC:66:33:4B:39:31:25:4B:30",
+            "SubjectCommonName_CN": "Microsoft Corporation KEK CA 2011",
+            "IssuerOrganization_O": "Microsoft Corporation",
+            "SubjectLocality_L": "Redmond",
+            "IssuerState_S": "Washington",
+            "IssuerCountryCode_CC": "US",
+            "SerialNumber": "610AD188000000000003",
+            "SubjectState_S": "Washington",
+            "SubjectOrganization_O": "Microsoft Corporation",
+            "ValidFrom": "Jun 24 20:41:29 2011 GMT",
+            "IssuerLocality_L": "Redmond",
+            "SecureBootPolicy": "Standard",
+            "@odata.id": "/redfish/v1/Systems/System.Embedded.1/SecureBoot/Certificates/KEK/iDRAC.Embedded.1%23StdSecbootpolicy.2",
+            "ValidTo": "Jun 24 20:51:29 2026 GMT"
+        }
+    ],
+    "@odata.type": "#DellCertificateCollection.DellCertificateCollection",
+    "Certificates@odata.count": 1,
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "Hash": [],
+    "@odata.id": "/redfish/v1/Systems/System.Embedded.1/SecureBoot/Certificates/KEK",
+    "@odata.context": "/redfish/v1/$metadata#DellCertificateCollection.DellCertificateCollection"
+}

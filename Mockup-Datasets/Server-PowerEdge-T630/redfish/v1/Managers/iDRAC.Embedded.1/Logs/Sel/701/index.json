@@ -1,0 +1,28 @@
+{
+    "Description": " Log Entry 701",
+    "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+    "Links": {},
+    "MessageID": "1ffff",
+    "MessageArgs@odata.count": 0,
+    "Name": " Log Entry 701",
+    "Severity": "Critical",
+    "Message": "Fan redundancy is lost.",
+    "EntryType": "SEL",
+    "@odata.context": "/redfish/v1/$metadata#LogEntry.LogEntry",
+    "Created": "2017-05-30T11:37:48-05:00",
+    "SensorNumber": 117,
+    "EntryCode": [
+        {
+            "Member": "Redundancy Lost"
+        }
+    ],
+    "Id": "701",
+    "SensorType": [
+        {
+            "Member": "Fan"
+        }
+    ],
+    "MessageArgs": [],
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/701"
+}

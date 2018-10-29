@@ -1,0 +1,25 @@
+{
+    "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+    "@Redfish.Copyright": "Copyright 2017 TTU.edu All rights reserved.",
+    "@odata.context": "/redfish/v1/$metadata#LogEntry.LogEntry",
+    "Id": "28307",
+    "MessageID": "NIC101",
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/28307",
+    "MessageArgs@odata.count": 2,
+    "Created": "2017-08-02T17:59:31-05:00",
+    "MessageArgs": [
+        "NIC Embedded 1",
+        "2"
+    ],
+    "Message": "The NIC Embedded 1 Port 2 network link is started.",
+    "Severity": "Ok",
+    "Description": " Log Entry 28307",
+    "OEMRecordFormat": "Dell",
+    "EntryType": "Oem",
+    "Name": " Log Entry 28307",
+    "Links": {
+        "OriginOfCondition": {
+            "@odata.id": "/redfish/v1/Systems/System.Embedded.1/EthernetInterfaces/NIC.Embedded.2-1-1"
+        }
+    }
+}

@@ -1,0 +1,20 @@
+{
+    "Languages": [
+        "en"
+    ],
+    "@odata.context": "/redfish/v1/$metadata#MessageRegistryFile.MessageRegistryFile",
+    "Description": "BootSources Attribute Registry File locations",
+    "Location": [
+        {
+            "Uri": "/redfish/v1/Systems/System.Embedded.1/BootSources/BootSourcesRegistry",
+            "Language": "en"
+        }
+    ],
+    "@odata.type": "#MessageRegistryFile.v1_0_2.MessageRegistryFile",
+    "Oem": {},
+    "Id": "BootSourcesRegistry.v1_0_0",
+    "Registry": "BootSourcesRegistry1.0",
+    "Name": "BootSources Attribute Registry File",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "@odata.id": "/redfish/v1/Registries/BootSourcesRegistry.v1_0_0"
+}

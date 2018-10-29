@@ -1,0 +1,153 @@
+{
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "definitions": {
+        "ConnectedVia": {
+            "type": "string",
+            "enum": [
+                "NotConnected",
+                "URI",
+                "Applet",
+                "Oem"
+            ],
+            "enumDescriptions": {
+                "URI": "Connected to a URI location",
+                "NotConnected": "No current connection",
+                "Oem": "Connected via an OEM-defined method",
+                "Applet": "Connected to a client application"
+            }
+        },
+        "MediaType": {
+            "type": "string",
+            "enum": [
+                "CD",
+                "Floppy",
+                "USBStick",
+                "DVD"
+            ],
+            "enumDescriptions": {
+                "CD": "A CD-ROM format (ISO) image",
+                "Floppy": "A floppy disk image",
+                "USBStick": "An emulation of a USB storage device",
+                "DVD": "A DVD-ROM format image"
+            }
+        },
+        "VirtualMedia": {
+            "description": "This resource allows monitoring and control of an instance of virtual media (e.g. a remote CD, DVD, or USB device) functionality provided by a Manager for a system or device.",
+            "additionalProperties": false,
+            "properties": {
+                "@odata.id": {
+                    "$ref": "http://redfish.dmtf.org/schemas/v1/odata.4.0.0.json#/definitions/id"
+                },
+                "Oem": {
+                    "longDescription": "The value of this string shall be of the format for the reserved word *Oem*.",
+                    "description": "This is the manufacturer/provider specific extension moniker used to divide the Oem object into sections.",
+                    "$ref": "http://redfish.dmtf.org/schemas/v1/Resource.json#/definitions/Oem"
+                },
+                "ImageName": {
+                    "description": "The current image name",
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "readonly": true,
+                    "longDescription": "The value of this property shall be the name of the image. "
+                },
+                "WriteProtected": {
+                    "description": "Indicates the media is write protected.",
+                    "type": [
+                        "boolean",
+                        "null"
+                    ],
+                    "readonly": true,
+                    "longDescription": "The value of this property shall be used to indicate if the remote device media prevents writing to that media. "
+                },
+                "Id": {
+                    "$ref": "http://redfish.dmtf.org/schemas/v1/Resource.json#/definitions/Id"
+                },
+                "Inserted": {
+                    "description": "Indicates if virtual media is inserted in the virtual device.",
+                    "type": [
+                        "boolean",
+                        "null"
+                    ],
+                    "readonly": true,
+                    "longDescription": "The value of this property shall be used to indicate if media is present in the virtual media device.  This is usually only applicable to remoting of devices and not for image virtual media usage. "
+                },
+                "@odata.context": {
+                    "$ref": "http://redfish.dmtf.org/schemas/v1/odata.4.0.0.json#/definitions/context"
+                },
+                "MediaTypes": {
+                    "items": {
+                        "$ref": "#/definitions/MediaType"
+                    },
+                    "description": "This is the media types supported as virtual media.",
+                    "type": "array",
+                    "readonly": true,
+                    "longDescription": "The values of this array shall be the supported media types for this connection."
+                },
+                "ConnectedVia": {
+                    "readonly": true,
+                    "description": "Current virtual media connection methods",
+                    "anyOf": [
+                        {
+                            "$ref": "#/definitions/ConnectedVia"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "longDescription": "The value of this property shall indicate the current connection method from a client to the virtual media represented by this resource.  A value of NotConnected shall indicate no connection is present.  A value of URI shall indicate that a remote connection via a URI reference type is being used. "
+                },
+                "Description": {
+                    "anyOf": [
+                        {
+                            "$ref": "http://redfish.dmtf.org/schemas/v1/Resource.json#/definitions/Description"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ]
+                },
+                "Image": {
+                    "format": "uri",
+                    "description": "A URI providing the location of the selected image",
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "readonly": true,
+                    "longDescription": "The value of this string shall be an URI.  A null value indicated no image connection."
+                },
+                "Name": {
+                    "$ref": "http://redfish.dmtf.org/schemas/v1/Resource.json#/definitions/Name"
+                },
+                "@odata.type": {
+                    "$ref": "http://redfish.dmtf.org/schemas/v1/odata.4.0.0.json#/definitions/type"
+                }
+            },
+            "required": [
+                "Id",
+                "Name"
+            ],
+            "type": "object",
+            "patternProperties": {
+                "^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message|Privileges)\\.[a-zA-Z_][a-zA-Z0-9_.]+$": {
+                    "description": "This property shall specify a valid odata or Redfish property.",
+                    "type": [
+                        "array",
+                        "boolean",
+                        "number",
+                        "null",
+                        "object",
+                        "string"
+                    ]
+                }
+            },
+            "longDescription": "This resource shall be used to represent a virtual media service for a Redfish implementation."
+        }
+    },
+    "title": "#VirtualMedia.v1_0_0.VirtualMedia",
+    "copyright": "Copyright 2014-2016 Distributed Management Task Force, Inc. (DMTF). For the full DMTF copyright policy, see http://www.dmtf.org/about/policies/copyright",
+    "$schema": "http://redfish.dmtf.org/schemas/v1/redfish-schema.v1_1_0.json",
+    "$ref": "#/definitions/VirtualMedia"
+}

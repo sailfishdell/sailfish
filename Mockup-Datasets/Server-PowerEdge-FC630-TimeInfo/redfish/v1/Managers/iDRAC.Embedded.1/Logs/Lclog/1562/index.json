@@ -1,0 +1,16 @@
+{
+    "OEMRecordFormat": "Dell",
+    "Links": {},
+    "Id": "1562",
+    "EntryType": "Oem",
+    "Created": "2017-09-11T14:05:34-05:00",
+    "@odata.context": "/redfish/v1/$metadata#LogEntry.LogEntry",
+    "Severity": "Ok",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1562",
+    "Description": " Log Entry 1562",
+    "MessageID": "IOID119",
+    "Name": " Log Entry 1562",
+    "Message": "FlexAddress is enabled on all NIC and FC HBA devices.",
+    "@odata.type": "#LogEntry.v1_0_2.LogEntry"
+}

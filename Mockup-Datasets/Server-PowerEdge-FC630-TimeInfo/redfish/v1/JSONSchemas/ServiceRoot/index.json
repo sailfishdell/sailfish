@@ -1,0 +1,22 @@
+{
+    "Location": [
+        {
+            "Language": "en",
+            "Uri": "/redfish/v1/Schemas/ServiceRoot.json",
+            "PublicationUri": "http://redfish.dmtf.org/schemas/v1/ServiceRoot.json"
+        }
+    ],
+    "@odata.id": "/redfish/v1/JSONSchemas/ServiceRoot",
+    "Id": "ServiceRoot",
+    "Languages": [
+        "en"
+    ],
+    "@odata.context": "/redfish/v1/$metadata#JsonSchemaFile.JsonSchemaFile",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "Languages@odata.count": 1,
+    "Description": "ServiceRoot Schema File Location",
+    "Schema": "#ServiceRoot.ServiceRoot",
+    "Name": "ServiceRoot Schema File",
+    "Location@odata.count": 1,
+    "@odata.type": "#JsonSchemaFile.v1_0_2.JsonSchemaFile"
+}

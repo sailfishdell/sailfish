@@ -1,0 +1,16 @@
+{
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "Id": "Operator",
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Roles/Operator",
+    "Description": "Operator User Role",
+    "AssignedPrivileges@odata.count": 3,
+    "@odata.type": "#Role.v1_0_2.Role",
+    "IsPredefined": true,
+    "Name": "User Role",
+    "@odata.context": "/redfish/v1/$metadata#Role.Role",
+    "AssignedPrivileges": [
+        "Login",
+        "ConfigureComponent",
+        "ConfigureSelf"
+    ]
+}

@@ -1,0 +1,14 @@
+{
+    "Members@odata.count": 1,
+    "@odata.type": "#SimpleStorageCollection.SimpleStorageCollection",
+    "@Redfish.Copyright": "Copyright 2017 TTU.edu All rights reserved.",
+    "@odata.context": "/redfish/v1/$metadata#SimpleStorageCollection.SimpleStorageCollection",
+    "Description": "Collection of Controllers for this system",
+    "@odata.id": "/redfish/v1/Systems/System.Embedded.1/Storage/Controllers",
+    "Members": [
+        {
+            "@odata.id": "/redfish/v1/Systems/System.Embedded.1/Storage/Controllers/AHCI.Embedded.2-1"
+        }
+    ],
+    "Name": "Simple Storage Collection"
+}

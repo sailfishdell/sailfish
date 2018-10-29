@@ -1,0 +1,135 @@
+{
+    "definitions": {
+        "AccountService": {
+            "type": "object",
+            "required": [
+                "Id",
+                "Name"
+            ],
+            "patternProperties": {
+                "^([a-zA-Z_][a-zA-Z0-9_]*)?@(odata|Redfish|Message|Privileges)\\.[a-zA-Z_][a-zA-Z0-9_.]+$": {
+                    "type": [
+                        "array",
+                        "boolean",
+                        "number",
+                        "null",
+                        "object",
+                        "string"
+                    ],
+                    "description": "This property shall specify a valid odata or Redfish property."
+                }
+            },
+            "properties": {
+                "Accounts": {
+                    "readonly": true,
+                    "description": "Link to a collection of Manager Accounts",
+                    "longDescription": "This property shall contain the link to a collection of type ManagerAccountCollection.",
+                    "$ref": "/redfish/v1/Schemas/ManagerAccountCollection.json#/definitions/ManagerAccountCollection"
+                },
+                "Name": {
+                    "$ref": "/redfish/v1/Schemas/Resource.json#/definitions/Name"
+                },
+                "AccountLockoutCounterResetAfter": {
+                    "minimum": 0,
+                    "readonly": false,
+                    "longDescription": "This property shall reference the threshold of time in seconds from the last failed login attempt at which point the AccountLockoutThreshold counter (that counts number of failed login attempts) is reset back to zero (at which point AccountLockoutThreshold failures would be required before the account is locked).  This value shall be less than or equal to AccountLockoutDuration. The threshold counter also resets to zero after each successful login.",
+                    "type": "number",
+                    "description": "The interval of time in seconds since the last failed login attempt at which point the lockout threshold counter for the account is reset to zero. Must be less than or equal to AccountLockoutDuration"
+                },
+                "@odata.context": {
+                    "$ref": "/redfish/v1/Schemas/odata.4.0.0.json#/definitions/context"
+                },
+                "AuthFailureLoggingThreshold": {
+                    "minimum": 0,
+                    "readonly": false,
+                    "longDescription": "This property shall reference the threshold for when an authorization failure is logged.  This represents a modulo function value, thus the failure shall be logged every nth occurrence where n represents the value of this property.",
+                    "type": "number",
+                    "description": "This is the number of authorization failures that need to occur before the failure attempt is logged to the manager log."
+                },
+                "Roles": {
+                    "readonly": true,
+                    "description": "Link to a collection of Roles",
+                    "longDescription": "This property shall contain the link to a collection of type RoleCollection.",
+                    "$ref": "/redfish/v1/Schemas/RoleCollection.json#/definitions/RoleCollection"
+                },
+                "Description": {
+                    "anyOf": [
+                        {
+                            "$ref": "/redfish/v1/Schemas/Resource.json#/definitions/Description"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ]
+                },
+                "@odata.type": {
+                    "$ref": "/redfish/v1/Schemas/odata.4.0.0.json#/definitions/type"
+                },
+                "AccountLockoutThreshold": {
+                    "minimum": 0,
+                    "readonly": false,
+                    "longDescription": "This property shall reference the threshold of failed login attempts at which point the user's account is locked.  If set to 0, no lockout shall ever occur.",
+                    "type": [
+                        "number",
+                        "null"
+                    ],
+                    "description": "The number of failed login attempts before a user account is locked for a specified duration. (0=never locked)"
+                },
+                "ServiceEnabled": {
+                    "type": [
+                        "boolean",
+                        "null"
+                    ],
+                    "longDescription": "The value of this property shall be a boolean indicating whether this service is enabled.",
+                    "description": "This indicates whether this service is enabled."
+                },
+                "Id": {
+                    "$ref": "/redfish/v1/Schemas/Resource.json#/definitions/Id"
+                },
+                "MaxPasswordLength": {
+                    "minimum": 0,
+                    "readonly": true,
+                    "longDescription": "This property shall reference the maximum password length that the implementation will allow a password to be set to.",
+                    "type": "number",
+                    "description": "This is the maximum password length for this service."
+                },
+                "AccountLockoutDuration": {
+                    "minimum": 0,
+                    "readonly": false,
+                    "longDescription": "This property shall reference the period of time in seconds that an account is locked after the number of failed login attempts reaches the threshold referenced by AccountLockoutThreshold, within the window of time referenced by AccountLockoutCounterResetAfter.  The value shall be greater than or equal to the value of AccountLockoutResetAfter.  If set to 0, no lockout shall occur.",
+                    "type": [
+                        "number",
+                        "null"
+                    ],
+                    "description": "The time in seconds an account is locked after the account lockout threshold is met. Must be >= AccountLockoutResetAfter. If set to 0, no lockout will occur."
+                },
+                "@odata.id": {
+                    "$ref": "/redfish/v1/Schemas/odata.4.0.0.json#/definitions/id"
+                },
+                "MinPasswordLength": {
+                    "minimum": 0,
+                    "readonly": true,
+                    "longDescription": "This property shall reference the minimum password length that the implementation will allow a password to be set to.",
+                    "type": "number",
+                    "description": "This is the minimum password length for this service."
+                },
+                "Oem": {
+                    "description": "This is the manufacturer/provider specific extension moniker used to divide the Oem object into sections.",
+                    "longDescription": "The value of this string shall be of the format for the reserved word *Oem*.",
+                    "$ref": "/redfish/v1/Schemas/Resource.json#/definitions/Oem"
+                },
+                "Status": {
+                    "$ref": "/redfish/v1/Schemas/Resource.json#/definitions/Status"
+                }
+            },
+            "description": "Account Service contains properties common to all user accounts, such as password requirements, and control features such as account lockout.  It also contains links to the collections of Manager Accounts and Roles.",
+            "longDescription": "This resource shall be used to represent a management account service for a Redfish implementation.",
+            "additionalProperties": false
+        }
+    },
+    "$schema": "/redfish/v1/Schemas/redfish-schema.v1_1_0.json",
+    "title": "#AccountService.v1_0_0.AccountService",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "copyright": "Copyright 2014-2016 Distributed Management Task Force, Inc. (DMTF). For the full DMTF copyright policy, see http://www.dmtf.org/about/policies/copyright",
+    "$ref": "#/definitions/AccountService"
+}

@@ -1,0 +1,10 @@
+{
+    "Members@odata.count": 0,
+    "@odata.type": "#SessionCollection.SessionCollection",
+    "@Redfish.Copyright": "Copyright 2017 TTU.edu All rights reserved.",
+    "@odata.context": "/redfish/v1/$metadata#SessionCollection.SessionCollection",
+    "Description": "Session Collection",
+    "@odata.id": "/redfish/v1/Sessions",
+    "Members": [],
+    "Name": "Session Collection"
+}

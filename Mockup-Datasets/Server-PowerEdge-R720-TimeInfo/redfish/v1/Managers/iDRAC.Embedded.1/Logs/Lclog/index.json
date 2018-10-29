@@ -1,0 +1,910 @@
+{
+    "Members": [
+        {
+            "Name": " Log Entry 59403",
+            "MessageArgs@odata.count": 3,
+            "Message": "Successfully logged in using root, from 10.204.136.20 and REDFISH.",
+            "OEMRecordFormat": "Dell",
+            "Description": " Log Entry 59403",
+            "MessageArgs": [
+                "root",
+                "10.204.136.20",
+                "REDFISH"
+            ],
+            "EntryType": "Oem",
+            "Id": "59403",
+            "Severity": "OK",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/59403",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "MessageID": "USR0030",
+            "Created": "2017-11-08T08:32:35-06:00"
+        },
+        {
+            "Created": "2017-11-08T05:37:46-06:00",
+            "OEMRecordFormat": "Dell",
+            "Id": "59402",
+            "MessageID": "VME0005",
+            "Message": "Virtual Console session exited.",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/59402",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "Description": " Log Entry 59402",
+            "Severity": "OK",
+            "Name": " Log Entry 59402",
+            "EntryType": "Oem"
+        },
+        {
+            "Name": " Log Entry 59401",
+            "MessageArgs@odata.count": 3,
+            "Message": "The session for root from 10.94.14.77 using Virtual Console is logged off.",
+            "OEMRecordFormat": "Dell",
+            "Description": " Log Entry 59401",
+            "MessageArgs": [
+                "root",
+                "10.94.14.77",
+                "Virtual Console"
+            ],
+            "EntryType": "Oem",
+            "Id": "59401",
+            "Severity": "OK",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/59401",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "MessageID": "USR0032",
+            "Created": "2017-11-08T05:37:46-06:00"
+        },
+        {
+            "Name": " Log Entry 59400",
+            "MessageArgs@odata.count": 1,
+            "Message": "The previous log entry was repeated 1 times.",
+            "OEMRecordFormat": "Dell",
+            "Description": " Log Entry 59400",
+            "MessageArgs": [
+                "1"
+            ],
+            "EntryType": "Oem",
+            "Id": "59400",
+            "Severity": "OK",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/59400",
+            "Links": {},
+            "MessageID": "LOG007",
+            "Created": "2017-11-08T05:37:46-06:00"
+        },
+        {
+            "Name": " Log Entry 59399",
+            "MessageArgs@odata.count": 3,
+            "Message": "The session for root from 10.94.14.77 using GUI is logged off.",
+            "OEMRecordFormat": "Dell",
+            "Description": " Log Entry 59399",
+            "MessageArgs": [
+                "root",
+                "10.94.14.77",
+                "GUI"
+            ],
+            "EntryType": "Oem",
+            "Id": "59399",
+            "Severity": "OK",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/59399",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "MessageID": "USR0032",
+            "Created": "2017-11-08T00:10:43-06:00"
+        },
+        {
+            "Name": " Log Entry 59398",
+            "MessageArgs@odata.count": 3,
+            "Message": "Version change detected for PERC H710 Mini firmware. Previous version:21.3.2-0005, Current version:21.3.5-0002",
+            "OEMRecordFormat": "Dell",
+            "Description": " Log Entry 59398",
+            "MessageArgs": [
+                "PERC H710 Mini",
+                "21.3.2-0005",
+                "21.3.5-0002"
+            ],
+            "EntryType": "Oem",
+            "Id": "59398",
+            "Severity": "OK",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/59398",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Systems/System.Embedded.1/Storage/Controllers/RAID.Integrated.1-1"
+                }
+            },
+            "MessageID": "PR36",
+            "Created": "2017-11-08T00:03:55-06:00"
+        },
+        {
+            "Created": "2017-11-08T00:01:22-06:00",
+            "OEMRecordFormat": "Dell",
+            "Id": "59397",
+            "MessageID": "SYS1003",
+            "Message": "System CPU Resetting.",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/59397",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1%23HostPowerCtrl"
+                }
+            },
+            "Description": " Log Entry 59397",
+            "Severity": "OK",
+            "Name": " Log Entry 59397",
+            "EntryType": "Oem"
+        },
+        {
+            "Created": "2017-11-08T00:01:21-06:00",
+            "OEMRecordFormat": "Dell",
+            "Id": "59396",
+            "MessageID": "SYS1000",
+            "Message": "System is turning on.",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/59396",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1%23HostPowerCtrl"
+                }
+            },
+            "Description": " Log Entry 59396",
+            "Severity": "OK",
+            "Name": " Log Entry 59396",
+            "EntryType": "Oem"
+        },
+        {
+            "Created": "2017-11-08T00:01:13-06:00",
+            "OEMRecordFormat": "Dell",
+            "Id": "59395",
+            "MessageID": "SYS1001",
+            "Message": "System is turning off.",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/59395",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1%23HostPowerCtrl"
+                }
+            },
+            "Description": " Log Entry 59395",
+            "Severity": "OK",
+            "Name": " Log Entry 59395",
+            "EntryType": "Oem"
+        },
+        {
+            "Name": " Log Entry 59394",
+            "MessageArgs@odata.count": 1,
+            "Message": "The previous log entry was repeated 1 times.",
+            "OEMRecordFormat": "Dell",
+            "Description": " Log Entry 59394",
+            "MessageArgs": [
+                "1"
+            ],
+            "EntryType": "Oem",
+            "Id": "59394",
+            "Severity": "OK",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/59394",
+            "Links": {},
+            "MessageID": "LOG007",
+            "Created": "2017-11-08T00:01:13-06:00"
+        },
+        {
+            "Created": "2017-11-07T23:59:37-06:00",
+            "OEMRecordFormat": "Dell",
+            "Id": "59393",
+            "MessageID": "SYS1003",
+            "Message": "System CPU Resetting.",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/59393",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1%23HostPowerCtrl"
+                }
+            },
+            "Description": " Log Entry 59393",
+            "Severity": "OK",
+            "Name": " Log Entry 59393",
+            "EntryType": "Oem"
+        },
+        {
+            "Name": " Log Entry 59392",
+            "MessageArgs@odata.count": 2,
+            "Message": "Successfully updated the PERC H710 Mini Monolithic firmware to version 21.3.5-0002.",
+            "OEMRecordFormat": "Dell",
+            "Description": " Log Entry 59392",
+            "MessageArgs": [
+                "PERC H710 Mini Monolithic",
+                "21.3.5-0002"
+            ],
+            "EntryType": "Oem",
+            "Id": "59392",
+            "Severity": "OK",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/59392",
+            "Links": {},
+            "MessageID": "SUP0518",
+            "Created": "2017-11-07T23:59:31-06:00"
+        },
+        {
+            "Name": " Log Entry 59391",
+            "MessageArgs@odata.count": 2,
+            "Message": "Updating firmware for PERC H710 Mini Monolithic to version 21.3.5-0002.",
+            "OEMRecordFormat": "Dell",
+            "Description": " Log Entry 59391",
+            "MessageArgs": [
+                "PERC H710 Mini Monolithic",
+                "21.3.5-0002"
+            ],
+            "EntryType": "Oem",
+            "Id": "59391",
+            "Severity": "OK",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/59391",
+            "Links": {},
+            "MessageID": "SUP0516",
+            "Created": "2017-11-07T23:58:47-06:00"
+        },
+        {
+            "Created": "2017-11-07T23:55:58-06:00",
+            "OEMRecordFormat": "Dell",
+            "Id": "59390",
+            "MessageID": "VME0007",
+            "Message": "Virtual Console session created.",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/59390",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "Description": " Log Entry 59390",
+            "Severity": "OK",
+            "Name": " Log Entry 59390",
+            "EntryType": "Oem"
+        },
+        {
+            "Created": "2017-11-07T23:55:58-06:00",
+            "OEMRecordFormat": "Dell",
+            "Id": "59389",
+            "MessageID": "VME0001",
+            "Message": "Virtual Console session started.",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/59389",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "Description": " Log Entry 59389",
+            "Severity": "OK",
+            "Name": " Log Entry 59389",
+            "EntryType": "Oem"
+        },
+        {
+            "Name": " Log Entry 59388",
+            "MessageArgs@odata.count": 3,
+            "Message": "Successfully logged in using root, from 10.94.14.77 and Virtual Console.",
+            "OEMRecordFormat": "Dell",
+            "Description": " Log Entry 59388",
+            "MessageArgs": [
+                "root",
+                "10.94.14.77",
+                "Virtual Console"
+            ],
+            "EntryType": "Oem",
+            "Id": "59388",
+            "Severity": "OK",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/59388",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "MessageID": "USR0030",
+            "Created": "2017-11-07T23:55:58-06:00"
+        },
+        {
+            "Created": "2017-11-07T23:55:57-06:00",
+            "OEMRecordFormat": "Dell",
+            "Id": "59387",
+            "MessageID": "SYS1003",
+            "Message": "System CPU Resetting.",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/59387",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1%23HostPowerCtrl"
+                }
+            },
+            "Description": " Log Entry 59387",
+            "Severity": "OK",
+            "Name": " Log Entry 59387",
+            "EntryType": "Oem"
+        },
+        {
+            "Created": "2017-11-07T23:55:57-06:00",
+            "OEMRecordFormat": "Dell",
+            "Id": "59386",
+            "MessageID": "RED030",
+            "Message": "Reboot is complete.",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/59386",
+            "Links": {},
+            "Description": " Log Entry 59386",
+            "Severity": "OK",
+            "Name": " Log Entry 59386",
+            "EntryType": "Oem"
+        },
+        {
+            "Created": "2017-11-07T23:55:56-06:00",
+            "OEMRecordFormat": "Dell",
+            "Id": "59385",
+            "MessageID": "SYS1000",
+            "Message": "System is turning on.",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/59385",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1%23HostPowerCtrl"
+                }
+            },
+            "Description": " Log Entry 59385",
+            "Severity": "OK",
+            "Name": " Log Entry 59385",
+            "EntryType": "Oem"
+        },
+        {
+            "Created": "2017-11-07T23:55:52-06:00",
+            "OEMRecordFormat": "Dell",
+            "Id": "59384",
+            "MessageID": "RAC0701",
+            "Message": "Requested system powerup.",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/59384",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "Description": " Log Entry 59384",
+            "Severity": "OK",
+            "Name": " Log Entry 59384",
+            "EntryType": "Oem"
+        },
+        {
+            "Created": "2017-11-07T23:55:48-06:00",
+            "OEMRecordFormat": "Dell",
+            "Id": "59383",
+            "MessageID": "SYS1003",
+            "Message": "System CPU Resetting.",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/59383",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1%23HostPowerCtrl"
+                }
+            },
+            "Description": " Log Entry 59383",
+            "Severity": "OK",
+            "Name": " Log Entry 59383",
+            "EntryType": "Oem"
+        },
+        {
+            "Created": "2017-11-07T23:55:48-06:00",
+            "OEMRecordFormat": "Dell",
+            "Id": "59382",
+            "MessageID": "SYS1001",
+            "Message": "System is turning off.",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/59382",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1%23HostPowerCtrl"
+                }
+            },
+            "Description": " Log Entry 59382",
+            "Severity": "OK",
+            "Name": " Log Entry 59382",
+            "EntryType": "Oem"
+        },
+        {
+            "Created": "2017-11-07T23:55:47-06:00",
+            "OEMRecordFormat": "Dell",
+            "Id": "59381",
+            "MessageID": "RAC0705",
+            "Message": "Requested system graceful shutdown.",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/59381",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "Description": " Log Entry 59381",
+            "Severity": "OK",
+            "Name": " Log Entry 59381",
+            "EntryType": "Oem"
+        },
+        {
+            "Name": " Log Entry 59380",
+            "MessageArgs@odata.count": 1,
+            "Message": "A reboot job RID_101205414871 was created.",
+            "OEMRecordFormat": "Dell",
+            "Description": " Log Entry 59380",
+            "MessageArgs": [
+                "RID_101205414871"
+            ],
+            "EntryType": "Oem",
+            "Id": "59380",
+            "Severity": "OK",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/59380",
+            "Links": {},
+            "MessageID": "RED055",
+            "Created": "2017-11-07T23:55:41-06:00"
+        },
+        {
+            "Created": "2017-11-07T23:55:41-06:00",
+            "OEMRecordFormat": "Dell",
+            "Id": "59379",
+            "MessageID": "RED029",
+            "Message": "A reboot is pending.",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/59379",
+            "Links": {},
+            "Description": " Log Entry 59379",
+            "Severity": "OK",
+            "Name": " Log Entry 59379",
+            "EntryType": "Oem"
+        },
+        {
+            "Created": "2017-11-07T23:55:34-06:00",
+            "OEMRecordFormat": "Dell",
+            "Id": "59378",
+            "MessageID": "RED002",
+            "Message": "Package successfully downloaded.",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/59378",
+            "Links": {},
+            "Description": " Log Entry 59378",
+            "Severity": "OK",
+            "Name": " Log Entry 59378",
+            "EntryType": "Oem"
+        },
+        {
+            "Created": "2017-11-07T23:55:17-06:00",
+            "OEMRecordFormat": "Dell",
+            "Id": "59377",
+            "MessageID": "RED003",
+            "Message": "Downloading package.",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/59377",
+            "Links": {},
+            "Description": " Log Entry 59377",
+            "Severity": "OK",
+            "Name": " Log Entry 59377",
+            "EntryType": "Oem"
+        },
+        {
+            "Name": " Log Entry 59376",
+            "MessageArgs@odata.count": 1,
+            "Message": "An update job JID_101205159811 was created.",
+            "OEMRecordFormat": "Dell",
+            "Description": " Log Entry 59376",
+            "MessageArgs": [
+                "JID_101205159811"
+            ],
+            "EntryType": "Oem",
+            "Id": "59376",
+            "Severity": "OK",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/59376",
+            "Links": {},
+            "MessageID": "RED054",
+            "Created": "2017-11-07T23:55:16-06:00"
+        },
+        {
+            "Created": "2017-11-07T23:55:15-06:00",
+            "OEMRecordFormat": "Dell",
+            "Id": "59375",
+            "MessageID": "RED052",
+            "Message": "Processing of update packages is starting.",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/59375",
+            "Links": {},
+            "Description": " Log Entry 59375",
+            "Severity": "OK",
+            "Name": " Log Entry 59375",
+            "EntryType": "Oem"
+        },
+        {
+            "Created": "2017-11-07T23:47:07-06:00",
+            "OEMRecordFormat": "Dell",
+            "Id": "59374",
+            "MessageID": "RED002",
+            "Message": "Package successfully downloaded.",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/59374",
+            "Links": {},
+            "Description": " Log Entry 59374",
+            "Severity": "OK",
+            "Name": " Log Entry 59374",
+            "EntryType": "Oem"
+        },
+        {
+            "Name": " Log Entry 59373",
+            "MessageArgs@odata.count": 1,
+            "Message": "The previous log entry was repeated 1 times.",
+            "OEMRecordFormat": "Dell",
+            "Description": " Log Entry 59373",
+            "MessageArgs": [
+                "1"
+            ],
+            "EntryType": "Oem",
+            "Id": "59373",
+            "Severity": "OK",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/59373",
+            "Links": {},
+            "MessageID": "LOG007",
+            "Created": "2017-11-07T23:47:07-06:00"
+        },
+        {
+            "Name": " Log Entry 59372",
+            "MessageArgs@odata.count": 3,
+            "Message": "Successfully logged in using root, from 10.94.14.77 and GUI.",
+            "OEMRecordFormat": "Dell",
+            "Description": " Log Entry 59372",
+            "MessageArgs": [
+                "root",
+                "10.94.14.77",
+                "GUI"
+            ],
+            "EntryType": "Oem",
+            "Id": "59372",
+            "Severity": "OK",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/59372",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "MessageID": "USR0030",
+            "Created": "2017-11-07T23:40:22-06:00"
+        },
+        {
+            "Name": " Log Entry 59371",
+            "MessageArgs@odata.count": 3,
+            "Message": "The session for root from 10.94.14.77 using GUI is logged off.",
+            "OEMRecordFormat": "Dell",
+            "Description": " Log Entry 59371",
+            "MessageArgs": [
+                "root",
+                "10.94.14.77",
+                "GUI"
+            ],
+            "EntryType": "Oem",
+            "Id": "59371",
+            "Severity": "OK",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/59371",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "MessageID": "USR0032",
+            "Created": "2017-11-07T23:40:18-06:00"
+        },
+        {
+            "Name": " Log Entry 59370",
+            "MessageArgs@odata.count": 3,
+            "Message": "Successfully logged in using root, from 10.94.14.77 and GUI.",
+            "OEMRecordFormat": "Dell",
+            "Description": " Log Entry 59370",
+            "MessageArgs": [
+                "root",
+                "10.94.14.77",
+                "GUI"
+            ],
+            "EntryType": "Oem",
+            "Id": "59370",
+            "Severity": "OK",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/59370",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "MessageID": "USR0030",
+            "Created": "2017-11-07T23:33:40-06:00"
+        },
+        {
+            "Name": " Log Entry 59369",
+            "MessageArgs@odata.count": 3,
+            "Message": "The session for root from 10.94.14.77 using GUI is logged off.",
+            "OEMRecordFormat": "Dell",
+            "Description": " Log Entry 59369",
+            "MessageArgs": [
+                "root",
+                "10.94.14.77",
+                "GUI"
+            ],
+            "EntryType": "Oem",
+            "Id": "59369",
+            "Severity": "OK",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/59369",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "MessageID": "USR0032",
+            "Created": "2017-11-07T23:33:35-06:00"
+        },
+        {
+            "Name": " Log Entry 59368",
+            "MessageArgs@odata.count": 3,
+            "Message": "Successfully logged in using root, from 10.94.14.77 and GUI.",
+            "OEMRecordFormat": "Dell",
+            "Description": " Log Entry 59368",
+            "MessageArgs": [
+                "root",
+                "10.94.14.77",
+                "GUI"
+            ],
+            "EntryType": "Oem",
+            "Id": "59368",
+            "Severity": "OK",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/59368",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "MessageID": "USR0030",
+            "Created": "2017-11-07T23:27:09-06:00"
+        },
+        {
+            "Name": " Log Entry 59367",
+            "MessageArgs@odata.count": 2,
+            "Message": "The iDRAC IP Address changed from 0.0.0.0 to 10.94.44.67.",
+            "OEMRecordFormat": "Dell",
+            "Description": " Log Entry 59367",
+            "MessageArgs": [
+                "0.0.0.0",
+                "10.94.44.67"
+            ],
+            "EntryType": "Oem",
+            "Id": "59367",
+            "Severity": "OK",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/59367",
+            "Links": {},
+            "MessageID": "IPA0100",
+            "Created": "2017-11-07T23:21:39-06:00"
+        },
+        {
+            "Name": " Log Entry 59366",
+            "MessageArgs@odata.count": 1,
+            "Message": "Firmware update will not be performed. Firmware package is not present for POWER SUPPLY",
+            "OEMRecordFormat": "Dell",
+            "Description": " Log Entry 59366",
+            "MessageArgs": [
+                "POWER SUPPLY"
+            ],
+            "EntryType": "Oem",
+            "Id": "59366",
+            "Severity": "OK",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/59366",
+            "Links": {},
+            "MessageID": "PR10",
+            "Created": "2017-11-07T23:21:33-06:00"
+        },
+        {
+            "Name": " Log Entry 59365",
+            "MessageArgs@odata.count": 1,
+            "Message": "New device detected: POWER SUPPLY(psu.slot.2)",
+            "OEMRecordFormat": "Dell",
+            "Description": " Log Entry 59365",
+            "MessageArgs": [
+                "POWER SUPPLY(psu.slot.2)"
+            ],
+            "EntryType": "Oem",
+            "Id": "59365",
+            "Severity": "OK",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/59365",
+            "Links": {},
+            "MessageID": "PR7",
+            "Created": "2017-11-07T23:21:33-06:00"
+        },
+        {
+            "Name": " Log Entry 59364",
+            "MessageArgs@odata.count": 1,
+            "Message": "A replacement part was detected for device: POWER SUPPLY",
+            "OEMRecordFormat": "Dell",
+            "Description": " Log Entry 59364",
+            "MessageArgs": [
+                "POWER SUPPLY"
+            ],
+            "EntryType": "Oem",
+            "Id": "59364",
+            "Severity": "OK",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/59364",
+            "Links": {},
+            "MessageID": "PR1",
+            "Created": "2017-11-07T23:21:33-06:00"
+        },
+        {
+            "Name": " Log Entry 59363",
+            "MessageArgs@odata.count": 3,
+            "Message": "Version change detected for Lifecycle Controller firmware. Previous version:2.10.10.10, Current version:2.50.50.50",
+            "OEMRecordFormat": "Dell",
+            "Description": " Log Entry 59363",
+            "MessageArgs": [
+                "Lifecycle Controller",
+                "2.10.10.10",
+                "2.50.50.50"
+            ],
+            "EntryType": "Oem",
+            "Id": "59363",
+            "Severity": "OK",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/59363",
+            "Links": {},
+            "MessageID": "PR36",
+            "Created": "2017-11-07T23:21:32-06:00"
+        },
+        {
+            "Created": "2017-11-07T23:21:17-06:00",
+            "OEMRecordFormat": "Dell",
+            "Id": "59362",
+            "MessageID": "DIS002",
+            "Message": "Auto Discovery feature disabled.",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/59362",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "Description": " Log Entry 59362",
+            "Severity": "OK",
+            "Name": " Log Entry 59362",
+            "EntryType": "Oem"
+        },
+        {
+            "Name": " Log Entry 59361",
+            "MessageArgs@odata.count": 1,
+            "Message": "The iDRAC firmware was rebooted with the following reason: user initiated.",
+            "OEMRecordFormat": "Dell",
+            "Description": " Log Entry 59361",
+            "MessageArgs": [
+                "user initiated"
+            ],
+            "EntryType": "Oem",
+            "Id": "59361",
+            "Severity": "OK",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/59361",
+            "Links": {},
+            "MessageID": "RAC0182",
+            "Created": "2017-11-07T23:21:16-06:00"
+        },
+        {
+            "Name": " Log Entry 59360",
+            "MessageArgs@odata.count": 7,
+            "Message": "Power Supply 2: Status = 0x00, IOUT = 0x0, VOUT= 0x0, TEMP= 0x0, FAN = 0x0, INPUT= 0x0.",
+            "OEMRecordFormat": "Dell",
+            "Description": " Log Entry 59360",
+            "MessageArgs": [
+                "2",
+                "00",
+                "0",
+                "0",
+                "0",
+                "0",
+                "0"
+            ],
+            "EntryType": "Oem",
+            "Id": "59360",
+            "Severity": "OK",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/59360",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "MessageID": "PSU0800",
+            "Created": "2017-11-07T23:19:05-06:00"
+        },
+        {
+            "Created": "2017-11-07T23:17:44-06:00",
+            "OEMRecordFormat": "Dell",
+            "Id": "59359",
+            "MessageID": "RED001",
+            "Message": "Job completed successfully.",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/59359",
+            "Links": {},
+            "Description": " Log Entry 59359",
+            "Severity": "OK",
+            "Name": " Log Entry 59359",
+            "EntryType": "Oem"
+        },
+        {
+            "Name": " Log Entry 59358",
+            "MessageArgs@odata.count": 2,
+            "Message": "The iDRAC firmware updated successfully. Previous version: 2.10.10.10, Current version: 2.50.50.50",
+            "OEMRecordFormat": "Dell",
+            "Description": " Log Entry 59358",
+            "MessageArgs": [
+                "2.10.10.10",
+                "2.50.50.50"
+            ],
+            "EntryType": "Oem",
+            "Id": "59358",
+            "Severity": "OK",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/59358",
+            "Links": {},
+            "MessageID": "RED063",
+            "Created": "2017-11-07T23:17:44-06:00"
+        },
+        {
+            "Created": "2017-11-07T23:17:43-06:00",
+            "OEMRecordFormat": "Dell",
+            "Id": "59357",
+            "MessageID": "SUP1906",
+            "Message": "Firmware update successful.",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/59357",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "Description": " Log Entry 59357",
+            "Severity": "OK",
+            "Name": " Log Entry 59357",
+            "EntryType": "Oem"
+        },
+        {
+            "Created": "2017-11-07T23:14:45-06:00",
+            "OEMRecordFormat": "Dell",
+            "Id": "59356",
+            "MessageID": "SUP1905",
+            "Message": "Firmware update programming flash.",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/59356",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "Description": " Log Entry 59356",
+            "Severity": "OK",
+            "Name": " Log Entry 59356",
+            "EntryType": "Oem"
+        },
+        {
+            "Created": "2017-11-07T23:14:45-06:00",
+            "OEMRecordFormat": "Dell",
+            "Id": "59355",
+            "MessageID": "SUP1903",
+            "Message": "Firmware update verify image headers.",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/59355",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "Description": " Log Entry 59355",
+            "Severity": "OK",
+            "Name": " Log Entry 59355",
+            "EntryType": "Oem"
+        },
+        {
+            "Created": "2017-11-07T23:14:04-06:00",
+            "OEMRecordFormat": "Dell",
+            "Id": "59354",
+            "MessageID": "SUP1904",
+            "Message": "Firmware update checksumming image.",
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/59354",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+                }
+            },
+            "Description": " Log Entry 59354",
+            "Severity": "OK",
+            "Name": " Log Entry 59354",
+            "EntryType": "Oem"
+        }
+    ],
+    "Name": "Log Entry Collection",
+    "@odata.nextLink": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog?$skip=50",
+    "@odata.context": "/redfish/v1/$metadata#LogEntryCollection.LogEntryCollection",
+    "Members@odata.count": 3613,
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "Description": "LC Logs for this manager",
+    "@odata.type": "#LogEntryCollection.LogEntryCollection"
+}

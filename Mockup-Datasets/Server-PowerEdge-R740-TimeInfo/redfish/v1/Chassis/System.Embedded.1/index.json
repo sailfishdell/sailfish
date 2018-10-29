@@ -1,0 +1,96 @@
+{
+    "Model": "PowerEdge R740",
+    "SKU": "7654321",
+    "Name": "Computer System Chassis",
+    "ChassisType": "Rack",
+    "Links": {
+        "ManagedBy@odata.count": 1,
+        "PoweredBy@odata.count": 1,
+        "CooledBy": [
+            {
+                "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Sensors/Fans/0x17||Fan.Embedded.1"
+            },
+            {
+                "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Sensors/Fans/0x17||Fan.Embedded.2"
+            },
+            {
+                "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Sensors/Fans/0x17||Fan.Embedded.3"
+            },
+            {
+                "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Sensors/Fans/0x17||Fan.Embedded.4"
+            },
+            {
+                "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Sensors/Fans/0x17||Fan.Embedded.5"
+            },
+            {
+                "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Sensors/Fans/0x17||Fan.Embedded.6"
+            }
+        ],
+        "CooledBy@odata.count": 6,
+        "ComputerSystems": [
+            {
+                "@odata.id": "/redfish/v1/Systems/System.Embedded.1"
+            }
+        ],
+        "ManagedBy": [
+            {
+                "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+            }
+        ],
+        "Contains@odata.count": 0,
+        "ManagersInChassis": [
+            {
+                "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+            }
+        ],
+        "ManagersInChassis@odata.count": 1,
+        "Contains": [],
+        "ComputerSystems@odata.count": 1,
+        "PoweredBy": [
+            {
+                "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Power/PowerSupplies/PSU.Slot.1"
+            }
+        ]
+    },
+    "PowerState": "On",
+    "Id": "System.Embedded.1",
+    "PartNumber": "06G98XX10",
+    "Status": {
+        "State": "Enabled",
+        "HealthRollup": "Critical",
+        "Health": "Critical"
+    },
+    "Location": {
+        "Info": ";;;;1",
+        "InfoFormat": "DataCenter;RoomName;Aisle;RackName;RackSlot"
+    },
+    "@odata.id": "/redfish/v1/Chassis/System.Embedded.1",
+    "Thermal": {
+        "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Thermal"
+    },
+    "PhysicalSecurity": {
+        "IntrusionSensorNumber": 115,
+        "IntrusionSensorReArm": "Manual",
+        "IntrusionSensor": "Normal"
+    },
+    "Actions": {
+        "#Chassis.Reset": {
+            "target": "/redfish/v1/Chassis/System.Embedded.1/Actions/Chassis.Reset",
+            "ResetType@Redfish.AllowableValues": [
+                "On",
+                "ForceOff"
+            ]
+        }
+    },
+    "@odata.context": "/redfish/v1/$metadata#Chassis.Chassis",
+    "SerialNumber": "CN7475171F0057",
+    "Description": "It represents the properties for physical components for any system.It represent racks, rackmount servers, blades, standalone, modular systems,enclosures, and all other containers.The non-cpu/device centric parts of the schema are all accessed either directly or indirectly through this resource.",
+    "AssetTag": null,
+    "IndicatorLED": "Off",
+    "Power": {
+        "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Power"
+    },
+    "Manufacturer": "Dell Inc.",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "@odata.type": "#Chassis.v1_2_0.Chassis"
+}

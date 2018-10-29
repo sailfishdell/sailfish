@@ -1,0 +1,19 @@
+{
+    "definitions": {
+        "BootSources": {
+            "anyOf": [
+                {
+                    "$ref": "/redfish/v1/Schemas/odata.4.0.0.json#/definitions/idRef"
+                },
+                {
+                    "$ref": "/redfish/v1/Schemas/DellBootSources.v1_0_0.json#/definitions/DellBootSources"
+                }
+            ]
+        }
+    },
+    "$schema": "/redfish/v1/Schemas/redfish-schema.v1_1_0.json",
+    "title": "#DellBootSources.DellBootSources",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "copyright": "Copyright 2016 Dell, Inc. or its subsidiaries.  All Rights Reserved.",
+    "$ref": "#/definitions/DellBootSources"
+}

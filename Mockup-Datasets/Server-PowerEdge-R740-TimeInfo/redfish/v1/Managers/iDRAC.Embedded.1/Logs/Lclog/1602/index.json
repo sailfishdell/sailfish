@@ -1,0 +1,25 @@
+{
+    "MessageID": "NIC100",
+    "EntryType": "Oem",
+    "Severity": "Warning",
+    "Name": " Log Entry 1602",
+    "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+    "Message": "The NIC Integrated 1 Port 2 network link is down.",
+    "Description": " Log Entry 1602",
+    "Created": "2017-10-27T14:13:38-05:00",
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1602",
+    "Id": "1602",
+    "OemRecordFormat": "Dell",
+    "Links": {
+        "OriginOfCondition": {
+            "@odata.id": "/redfish/v1/Systems/System.Embedded.1/EthernetInterfaces/NIC.Integrated.1-2-1"
+        }
+    },
+    "@odata.context": "/redfish/v1/$metadata#LogEntry.LogEntry",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "MessageArgs@odata.count": 2,
+    "MessageArgs": [
+        "NIC Integrated 1",
+        "2"
+    ]
+}

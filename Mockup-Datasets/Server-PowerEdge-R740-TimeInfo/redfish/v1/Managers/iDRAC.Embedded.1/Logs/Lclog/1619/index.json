@@ -1,0 +1,26 @@
+{
+    "MessageID": "USR0031",
+    "EntryType": "Oem",
+    "Severity": "Ok",
+    "Name": " Log Entry 1619",
+    "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+    "Message": "Unable to log in for root from 10.30.165.194 using Virtual Console.",
+    "Description": " Log Entry 1619",
+    "Created": "2017-11-02T13:13:36-05:00",
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Lclog/1619",
+    "Id": "1619",
+    "OemRecordFormat": "Dell",
+    "Links": {
+        "OriginOfCondition": {
+            "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1"
+        }
+    },
+    "@odata.context": "/redfish/v1/$metadata#LogEntry.LogEntry",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "MessageArgs@odata.count": 3,
+    "MessageArgs": [
+        "root",
+        "10.30.165.194",
+        "Virtual Console"
+    ]
+}

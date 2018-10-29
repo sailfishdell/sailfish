@@ -1,0 +1,28 @@
+{
+    "SensorNumber": 98,
+    "Name": " Log Entry 176",
+    "SensorType": [
+        {
+            "Member": "Power Supply / Converter"
+        }
+    ],
+    "MessageArgs@odata.count": 0,
+    "@odata.context": "/redfish/v1/$metadata#LogEntry.LogEntry",
+    "Message": "Power supply 1 is present.",
+    "Severity": "OK",
+    "EntryCode": [
+        {
+            "Member": "Assert"
+        }
+    ],
+    "Description": " Log Entry 176",
+    "MessageArgs": [],
+    "@odata.type": "#LogEntry.v1_0_2.LogEntry",
+    "EntryType": "SEL",
+    "Id": "176",
+    "@Redfish.Copyright": "Copyright 2017 Dell Inc. All rights reserved.",
+    "@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1/Logs/Sel/176",
+    "Links": {},
+    "MessageID": "0ffff",
+    "Created": "2016-04-12T23:52:41-05:00"
+}
