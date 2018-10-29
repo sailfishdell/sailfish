@@ -33,7 +33,7 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 				"Model@meta":        v.Meta(view.GETProperty("model"), view.GETModel("default")),
 				"Manufacturer@meta": v.Meta(view.GETProperty("manufacturer"), view.GETModel("default")),
 				"SerialNumber@meta": v.Meta(view.GETProperty("serial"), view.GETModel("default")),
-				"Description@meta":  v.Meta(view.GETProperty("description"), view.GETModel("default")),
+				"Description": "",
 
 				"Links": map[string]interface{}{
 					"ManagedBy@meta":             v.Meta(view.GETProperty("managed_by"), view.GETFormatter("formatOdataList"), view.GETModel("default")),
@@ -70,7 +70,7 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 								"Accept",
 								"Clear",
 							},
-							"target": v.GetActionURI("chassis.peripiheralmapping"),
+							"target": v.GetActionURI("chassis.peripheralmapping"),
 						},
 						"#DellChassis.v1_0_0.VirtualReseat": map[string]interface{}{
 							"target": v.GetActionURI("chassis.sledvirtualreseat"),

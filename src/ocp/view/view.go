@@ -45,7 +45,7 @@ type View struct {
 
 func New(options ...Option) *View {
 	s := &View{
-		uuid:             eh.NewUUID(),
+		uuid:             eh.NewUUID(),  //use go eventhoirizon to provide a unique identifier  
 		controllers:      map[string]controller{},
 		models:           map[string]*model.Model{},
 		outputFormatters: map[string]formatter{},
