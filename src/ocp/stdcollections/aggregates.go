@@ -54,6 +54,7 @@ func RegisterAggregate(s *testaggregate.Service) {
 					Privileges:  stdCollectionPrivs,
 					Properties: map[string]interface{}{
 						"Name":                     "Chassis Collection",
+            "Description":              "Collection of Chassis",
 						"Members@meta":             vw.Meta(view.GETProperty("members"), view.GETFormatter("formatOdataList"), view.GETModel("default")),
 						"Members@odata.count@meta": vw.Meta(view.GETProperty("members"), view.GETFormatter("count"), view.GETModel("default")),
 					}},
