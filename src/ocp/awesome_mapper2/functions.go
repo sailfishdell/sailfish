@@ -32,10 +32,20 @@ func AddFunction(name string, fn func(args ...interface{}) (interface{}, error))
 func init() {
 	InitFunctions()
 
+	// debugging function
 	AddFunction("echo", func(args ...interface{}) (interface{}, error) {
 		fmt.Println(args...)
 		return true, nil
 	})
+
+	AddFunction("array",
+		func(args ...interface{}) (interface{}, error) {
+			a := []interface{}{}
+			for _, i := range args {
+				a = append(a, i)
+			}
+			return a, nil
+		})
 
 	AddFunction("int", func(args ...interface{}) (interface{}, error) {
 		switch t := args[0].(type) {
