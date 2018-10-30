@@ -28,7 +28,7 @@ views:
           "params": "rooturi + '/testview'"
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
-      "Aggregate": "registry_collection"
+      "Aggregate": "testview"
 
   "eventservice":
       "Logger": ["module", "eventservice"]
