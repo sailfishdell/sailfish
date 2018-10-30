@@ -1,6 +1,7 @@
 // Copyright (c) 2017 - The Event Horizon authors.
 // modifications Copyright (c) 2018 - Dell EMC
 //  - don't drop events
+//  - rework the api between waiter and listener so they aren't so incestuous
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,6 +21,7 @@ import (
 	"context"
 
 	eh "github.com/looplab/eventhorizon"
+	"github.com/superchalupa/sailfish/src/log"
 )
 
 type listener interface {
@@ -36,6 +38,7 @@ type EventWaiter struct {
 	register   chan listener
 	unregister chan listener
 	autorun    bool
+	logger     log.Logger
 }
 
 type Option func(e *EventWaiter) error
@@ -74,6 +77,13 @@ func SetName(name string) Option {
 	}
 }
 
+func WithLogger(l log.Logger) Option {
+	return func(w *EventWaiter) error {
+		w.logger = l
+		return nil
+	}
+}
+
 func (w *EventWaiter) ApplyOption(options ...Option) error {
 	for _, o := range options {
 		err := o(w)
@@ -86,6 +96,7 @@ func (w *EventWaiter) ApplyOption(options ...Option) error {
 
 func (w *EventWaiter) Run() {
 	listeners := map[eh.UUID]listener{}
+	startPrinting := false
 	for {
 		select {
 		case <-w.done:
@@ -99,6 +110,15 @@ func (w *EventWaiter) Run() {
 				l.closeInbox()
 			}
 		case event := <-w.inbox:
+			if len(w.inbox) > 25 {
+				startPrinting = true
+			}
+			if startPrinting && w.logger != nil {
+				w.logger.Debug("Event Waiter congestion", "len", len(w.inbox), "cap", cap(w.inbox), "name", w.name)
+			}
+			if len(w.inbox) == 0 {
+				startPrinting = false
+			}
 			for _, l := range listeners {
 				l.processEvent(event)
 			}
@@ -122,6 +142,7 @@ func (w *EventWaiter) Listen(ctx context.Context, match func(eh.Event) bool) (*E
 		singleEventInbox: make(chan eh.Event, 100),
 		match:            match,
 		unregister:       w.unregister,
+		logger:           w.logger,
 	}
 
 	w.RegisterListener(l)
@@ -141,6 +162,8 @@ type EventListener struct {
 	match            func(eh.Event) bool
 	unregister       chan listener
 	eventType        *eh.EventType
+	startPrinting    bool
+	logger           log.Logger
 }
 
 func (l *EventListener) SetSingleEventType(t eh.EventType) {
@@ -175,6 +198,16 @@ func (l *EventListener) processEvent(event eh.Event) {
 func (l *EventListener) Wait(ctx context.Context) (eh.Event, error) {
 	select {
 	case event := <-l.singleEventInbox:
+		if len(l.singleEventInbox) > 25 {
+			l.startPrinting = true
+		}
+		if l.startPrinting && l.logger != nil {
+			l.logger.Debug("Event Listener congestion", "len", len(l.singleEventInbox), "cap", cap(l.singleEventInbox), "name", l.Name)
+		}
+		if len(l.singleEventInbox) == 0 {
+			l.startPrinting = false
+		}
+
 		return event, nil
 	case <-ctx.Done():
 		return nil, ctx.Err()
