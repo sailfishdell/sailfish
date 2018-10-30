@@ -212,10 +212,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 			},
 		)
 
-		sysChasVw.ApplyOption(
-			actionSvc.WithAction(ctx, "chassis.reset", "/Actions/Chassis.Reset", makePumpHandledAction("ChassisReset", 30, eb)),
-		)
-
 		// Create the .../Attributes URI. Attributes are stored in the attributes property of the chasModel
 		system_chassis.AddAggregate(ctx, sysChasLogger, sysChasVw, ch, eb)
 		attributes.AddAggregate(ctx, sysChasVw, rootView.GetURI()+"/Chassis/"+chasName+"/Attributes", ch)
