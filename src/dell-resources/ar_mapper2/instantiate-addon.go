@@ -9,6 +9,7 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/superchalupa/sailfish/src/log"
+	"github.com/superchalupa/sailfish/src/ocp/awesome_mapper2"
 	"github.com/superchalupa/sailfish/src/ocp/testaggregate"
 	"github.com/superchalupa/sailfish/src/ocp/view"
 )
@@ -53,7 +54,7 @@ func RegisterARMapper(s *testaggregate.Service, arsvc *ARService) {
 			return nil
 		}
 
-		functions := map[string]govaluate.ExpressionFunction{} // no functions yet
+		functions := awesome_mapper2.InitFunctions()
 		expr, err := govaluate.NewEvaluableExpressionWithFunctions(mappingUniqueNameStr, functions)
 		if err != nil {
 			logger.Crit("Failed to create evaluable expression", "expr", expr, "err", err)
