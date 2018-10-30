@@ -206,6 +206,102 @@ views:
           "params":
       "Aggregate": "registry"
 
+  "chassis":
+      "Logger": ["module", "Chassis"]
+      "Models":
+        "default":  {"members": "array()"}
+      "Controllers":
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + collection_uri" }
+      "View":
+        - "fn": "with_URI"
+          "params": "collection_uri "
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+        - "fn": "stdFormatters"
+          "params":
+      "Aggregate": "chassis"
+
+  "systems":
+      "Logger": ["module", "Systems"]
+      "Models":
+        "default":  {"members": "array()"}
+      "Controllers":
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + collection_uri" }
+      "View":
+        - "fn": "with_URI"
+          "params": "collection_uri "
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+        - "fn": "stdFormatters"
+          "params":
+      "Aggregate": "systems"
+
+  "managers":
+      "Logger": ["module", "Managers"]
+      "Models":
+        "default":  {"members": "array()"}
+      "Controllers":
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + collection_uri" }
+      "View":
+        - "fn": "with_URI"
+          "params": "collection_uri "
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+        - "fn": "stdFormatters"
+          "params":
+      "Aggregate": "managers"
+
+  "roles":
+      "Logger": ["module", "Roles"]
+      "Models":
+        "default":  {"members": "array()"}
+      "Controllers":
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + collection_uri" }
+      "View":
+        - "fn": "with_URI"
+          "params": "collection_uri "
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+        - "fn": "stdFormatters"
+          "params":
+      "Aggregate": "roles"
+
+  "accountservice":
+      "Logger": ["module", "AccountService"]
+      "Models":
+        "default":  {}
+      "Controllers":
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/AccountService' "
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+        - "fn": "stdFormatters"
+          "params":
+      "Aggregate": "accountservice"
+
+  "accounts":
+      "Logger": ["module", "Accounts"]
+      "Models":
+        "default":  {"members": "array()"}
+      "Controllers":
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + collection_uri" }
+      "View":
+        - "fn": "with_URI"
+          "params": "collection_uri "
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+        - "fn": "stdFormatters"
+          "params":
+      "Aggregate": "accounts"
+
+
+
   "manager_cmc_integrated":
       "Logger": ["module", "mgrChassis"]
       "Models":
@@ -683,100 +779,6 @@ views:
           "params": {"name": "sledvirtualreseat", "uri": "/Actions/Chassis.VirtualReseat", "timeout": 30}
         - "fn": "with_PumpHandledAction"
           "params": {"name": "chassis.sledvirtualreseat", "uri": "/Actions/Oem/DellChassis.VirtualReseat", "timeout": 30}
-
-  "chassis":
-      "Logger": ["module", "Chassis"]
-      "Models":
-        "default":  {"members": "array()"}
-      "Controllers":
-        - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + collection_uri" }
-      "View":
-        - "fn": "with_URI"
-          "params": "collection_uri "
-        - "fn": "PublishResourceUpdatedEventsForModel"
-          "params": "default"
-        - "fn": "stdFormatters"
-          "params":
-      "Aggregate": "chassis"
-
-  "systems":
-      "Logger": ["module", "Systems"]
-      "Models":
-        "default":  {"members": "array()"}
-      "Controllers":
-        - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + collection_uri" }
-      "View":
-        - "fn": "with_URI"
-          "params": "collection_uri "
-        - "fn": "PublishResourceUpdatedEventsForModel"
-          "params": "default"
-        - "fn": "stdFormatters"
-          "params":
-      "Aggregate": "systems"
-
-  "managers":
-      "Logger": ["module", "Managers"]
-      "Models":
-        "default":  {"members": "array()"}
-      "Controllers":
-        - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + collection_uri" }
-      "View":
-        - "fn": "with_URI"
-          "params": "collection_uri "
-        - "fn": "PublishResourceUpdatedEventsForModel"
-          "params": "default"
-        - "fn": "stdFormatters"
-          "params":
-      "Aggregate": "managers"
-
-  "roles":
-      "Logger": ["module", "Roles"]
-      "Models":
-        "default":  {"members": "array()"}
-      "Controllers":
-        - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + collection_uri" }
-      "View":
-        - "fn": "with_URI"
-          "params": "collection_uri "
-        - "fn": "PublishResourceUpdatedEventsForModel"
-          "params": "default"
-        - "fn": "stdFormatters"
-          "params":
-      "Aggregate": "roles"
-
-  "accountservice":
-      "Logger": ["module", "AccountService"]
-      "Models":
-        "default":  {}
-      "Controllers":
-      "View":
-        - "fn": "with_URI"
-          "params": "rooturi + '/AccountService' "
-        - "fn": "PublishResourceUpdatedEventsForModel"
-          "params": "default"
-        - "fn": "stdFormatters"
-          "params":
-      "Aggregate": "accountservice"
-
-  "accounts":
-      "Logger": ["module", "Accounts"]
-      "Models":
-        "default":  {"members": "array()"}
-      "Controllers":
-        - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + collection_uri" }
-      "View":
-        - "fn": "with_URI"
-          "params": "collection_uri "
-        - "fn": "PublishResourceUpdatedEventsForModel"
-          "params": "default"
-        - "fn": "stdFormatters"
-          "params":
-      "Aggregate": "accounts"
 
 awesome_mapper:
     collection:
