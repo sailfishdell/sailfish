@@ -26,15 +26,17 @@ type Service struct {
 	viewFunctionsRegistry       map[string]viewFunc
 	controllerFunctionsRegistry map[string]controllerFunc
 	aggregateFunctionsRegistry  map[string]aggregateFunc
+	serviceGlobals              map[string]interface{}
 }
 
 func New(logger log.Logger, ch eh.CommandHandler) *Service {
 	return &Service{
-		logger:                      logger,
-		ch:                          ch,
+		logger: logger,
+		ch:     ch,
 		viewFunctionsRegistry:       map[string]viewFunc{},
 		controllerFunctionsRegistry: map[string]controllerFunc{},
 		aggregateFunctionsRegistry:  map[string]aggregateFunc{},
+		serviceGlobals:              map[string]interface{}{},
 	}
 }
 
@@ -82,10 +84,11 @@ type config struct {
 	Aggregate   string
 }
 
-// name should be a key in the Views section of cfgMgr
-// cfgMgr is the config file
-// parameters is a dictionary of key/value pairs that  
-// The following is needed in the Views[key] 
+// InstantiateFromCfg will set up logger, model, view, controllers, aggregates from the config file
+// 	- name should be a key in the Views section of cfgMgr
+// 	- cfgMgr is the config file
+// 	- parameters is a dictionary of key/value pairs that
+// The following is needed in the Views[key]
 //            key should have the same names as config struct above
 //
 func (s *Service) InstantiateFromCfg(ctx context.Context, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, name string, parameters map[string]interface{}) (log.Logger, *view.View, error) {
@@ -94,6 +97,10 @@ func (s *Service) InstantiateFromCfg(ctx context.Context, cfgMgr *viper.Viper, c
 	for k, v := range parameters {
 		newParams[k] = v
 	}
+	for k, v := range s.serviceGlobals {
+		newParams[k] = v
+	}
+	newParams["serviceglobals"] = s.serviceGlobals
 
 	// be sure to unlock()
 	cfgMgrMu.Lock()
@@ -120,6 +127,7 @@ func (s *Service) InstantiateFromCfg(ctx context.Context, cfgMgr *viper.Viper, c
 	// Instantiate view
 	vw := view.New(view.WithDeferRegister())
 	newParams["uuid"] = vw.GetUUID()
+	newParams["view"] = vw
 
 	// Instantiate Models
 	for modelName, modelProperties := range config.Models {
