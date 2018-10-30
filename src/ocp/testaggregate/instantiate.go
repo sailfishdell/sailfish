@@ -82,6 +82,7 @@ type config struct {
 	View        []map[string]interface{}
 	Controllers []map[string]interface{}
 	Aggregate   string
+	ExecPost    []string
 }
 
 // InstantiateFromCfg will set up logger, model, view, controllers, aggregates from the config file
@@ -233,6 +234,22 @@ func (s *Service) InstantiateFromCfg(ctx context.Context, cfgMgr *viper.Viper, c
 			s.ch.HandleCommand(ctx, cmd)
 		}
 	}()
+
+	// Run any POST commands
+	for _, execStr := range config.ExecPost {
+		subLogger.Debug("exec post", "execStr", execStr)
+
+		expr, err := govaluate.NewEvaluableExpressionWithFunctions(execStr, functions)
+		if err != nil {
+			subLogger.Crit("Failed to create evaluable expression", "execStr", execStr, "err", err)
+			continue
+		}
+		_, err = expr.Evaluate(newParams)
+		if err != nil {
+			subLogger.Crit("expression evaluation failed", "expr", expr, "err", err)
+			continue
+		}
+	}
 
 	// register the plugin
 	domain.RegisterPlugin(func() domain.Plugin { return vw })
