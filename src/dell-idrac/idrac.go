@@ -37,7 +37,7 @@ import (
 	_ "github.com/superchalupa/sailfish/src/dell-resources/dm_event"
 
 	// goal is to get rid of the _ in front of each of these....
-	"github.com/superchalupa/sailfish/src/dell-ec"
+	dell_ec "github.com/superchalupa/sailfish/src/dell-ec"
 	mgrCMCIntegrated "github.com/superchalupa/sailfish/src/dell-resources/managers/cmc.integrated"
 	storage_instance "github.com/superchalupa/sailfish/src/dell-resources/systems/system.embedded/storage"
 	storage_controller "github.com/superchalupa/sailfish/src/dell-resources/systems/system.embedded/storage/controller"
@@ -66,7 +66,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	event.Setup(ch, eb)
 	logSvc := lcl.New(ch, eb)
 	faultSvc := faultlist.New(ch, eb)
-	domain.StartInjectService(eb)
+	domain.StartInjectService(logger, eb)
 	arService, _ := ar_mapper2.StartService(ctx, logger, cfgMgr, cfgMgrMu, eb)
 	actionSvc := ah.StartService(ctx, logger, ch, eb)
 	am2Svc, _ := awesome_mapper2.StartService(ctx, logger, eb)

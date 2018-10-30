@@ -7,6 +7,7 @@ import (
 
 	eh "github.com/looplab/eventhorizon"
 	"github.com/mitchellh/mapstructure"
+	log "github.com/superchalupa/sailfish/src/log"
 )
 
 func init() {
@@ -223,11 +224,23 @@ func (c *InjectEvent) CommandType() eh.CommandType {
 
 var injectChan chan eh.Event
 
-func StartInjectService(eb eh.EventBus) {
+func StartInjectService(logger log.Logger, eb eh.EventBus) {
 	injectChan = make(chan eh.Event, 1000)
+	logger = logger.New("module", "injectservice")
 	go func() {
+		startPrinting := false
 		for {
 			event := <-injectChan
+			// if (len(injectChan)*10)/(cap(injectChan)*10) > 5 {
+			if len(injectChan) > 20 {
+				startPrinting = true
+			}
+			if startPrinting {
+				logger.Debug("Inject chan congestion", "cap", cap(injectChan), "len", len(injectChan))
+			}
+			if len(injectChan) == 0 {
+				startPrinting = false
+			}
 			eb.PublishEvent(context.Background(), event) // in a goroutine (comment for grep purposes)
 		}
 	}()

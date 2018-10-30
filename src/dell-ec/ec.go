@@ -76,7 +76,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	event.Setup(ch, eb)
 	logSvc := lcl.New(ch, eb)
 	faultSvc := faultlist.New(ch, eb)
-	domain.StartInjectService(eb)
+	domain.StartInjectService(logger, eb)
 	arService, _ := ar_mapper2.StartService(ctx, logger, cfgMgr, cfgMgrMu, eb)
 	actionSvc := ah.StartService(ctx, logger, ch, eb)
 	uploadSvc := uploadhandler.StartService(ctx, logger, ch, eb)
@@ -236,7 +236,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 		redundancyLogger, redundancyVw, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, cfgMgrMu, "chassis_cmc_integrated_redundancy",
 			map[string]interface{}{
 				"rooturi":  rootView.GetURI(),
-				"FQDD":     mgrName,                                   // this is used for the AR mapper. case difference is confusing, but need to change mappers
+				"FQDD":     mgrName,                       // this is used for the AR mapper. case difference is confusing, but need to change mappers
 				"fqdd":     "System.Chassis.1#" + mgrName, // This is used for the health subsystem
 				"fqddlist": []string{mgrName},
 			},
@@ -463,10 +463,10 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	} {
 		iomLogger, iomView, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, cfgMgrMu, "iom",
 			map[string]interface{}{
-				"rooturi":  rootView.GetURI(),
-				"FQDD":     iomName,
-				"fqdd":     "System.Chassis.1#" + iomName,
-				"fqddlist": []string{iomName},
+				"rooturi":           rootView.GetURI(),
+				"FQDD":              iomName,
+				"fqdd":              "System.Chassis.1#" + iomName,
+				"fqddlist":          []string{iomName},
 				"globalHealthModel": globalHealthModel,
 				"managed_by":        []string{managers[0].GetURI()},
 			},
@@ -503,10 +503,10 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	} {
 		sledLogger, sledView, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, cfgMgrMu, "sled",
 			map[string]interface{}{
-				"rooturi":  rootView.GetURI(),
-				"FQDD":     sledName,
-				"fqdd":     "System.Chassis.1#" + sledName,
-				"fqddlist": []string{sledName},
+				"rooturi":           rootView.GetURI(),
+				"FQDD":              sledName,
+				"fqdd":              "System.Chassis.1#" + sledName,
+				"fqddlist":          []string{sledName},
 				"globalHealthModel": globalHealthModel,
 				"managed_by":        []string{managers[0].GetURI()},
 			},
