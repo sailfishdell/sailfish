@@ -47,6 +47,19 @@ func init() {
 			return a, nil
 		})
 
+	AddFunction("set_hash_value",
+		func(args ...interface{}) (interface{}, error) {
+			if len(args) < 2 {
+				return nil, errors.New("set_hash_value failed, not enough arguments")
+			}
+			hash := reflect.ValueOf(args[0])
+			key := reflect.ValueOf(args[1])
+			value := reflect.ValueOf(args[2])
+			hash.SetMapIndex(key, value)
+
+			return args[2], nil
+		})
+
 	AddFunction("int", func(args ...interface{}) (interface{}, error) {
 		switch t := args[0].(type) {
 		case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, uintptr:
