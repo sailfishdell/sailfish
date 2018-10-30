@@ -19,17 +19,18 @@ import (
 var functionsInit sync.Once
 var functions map[string]govaluate.ExpressionFunction
 
-func initFunctions() {
+func InitFunctions() map[string]govaluate.ExpressionFunction {
 	functionsInit.Do(func() { functions = map[string]govaluate.ExpressionFunction{} })
+	return functions
 }
 
 func AddFunction(name string, fn func(args ...interface{}) (interface{}, error)) {
-	initFunctions()
+	InitFunctions()
 	functions[name] = fn
 }
 
 func init() {
-	initFunctions()
+	InitFunctions()
 
 	AddFunction("echo", func(args ...interface{}) (interface{}, error) {
 		fmt.Println(args...)
