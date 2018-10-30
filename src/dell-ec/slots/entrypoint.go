@@ -18,18 +18,8 @@ type viewer interface {
 }
 
 // CreateSlotCollection will instantiate the slot collection as well set up the function to add slots
-func CreateSlotCollection(ctx context.Context, baseView viewer, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, instantiateSvc *testaggregate.Service, modParams func(map[string]interface{}) map[string]interface{}) {
+func CreateSlotCollection(ctx context.Context, baseView viewer, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, instantiateSvc *testaggregate.Service) {
 	var slotLogger log.Logger
-	myModParams := func(in ...map[string]interface{}) map[string]interface{} {
-		mod := map[string]interface{}{}
-		mod["collection_uri"] = baseView.GetURI() + "/Slots"
-		for _, i := range in {
-			for k, v := range i {
-				mod[k] = v
-			}
-		}
-		return modParams(mod)
-	}
 
 	// this is used in the closure below.
 	slotsMu := sync.Mutex{}
@@ -52,7 +42,7 @@ func CreateSlotCollection(ctx context.Context, baseView viewer, cfgMgr *viper.Vi
 		slotsMu.Lock()
 		_, ok = slots[FQDD]
 		if ok {
-			slotLogger.Warn("slot already created, skip", "baseSlotURI", myModParams()["collection_uri"], "SlotEntry.Id", FQDD)
+			slotLogger.Warn("slot already created, skip", "baseSlotURI", baseView.GetURI()+"/Slots", "SlotEntry.Id", FQDD)
 			slotsMu.Unlock()
 			return false, nil
 		}
@@ -63,33 +53,26 @@ func CreateSlotCollection(ctx context.Context, baseView viewer, cfgMgr *viper.Vi
 		slotLogger.Info("About to instantiate", "FQDD", FQDD)
 		// have to do this in a goroutine because awesome mapper is locked while it processes events
 		go instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, cfgMgrMu, "slot",
-			myModParams(map[string]interface{}{
-				"FQDD":  FQDD,
-				"Group": group, // for ar mapper
-				"Index": index, // for ar mapper
-			}),
+			map[string]interface{}{
+				"collection_uri": baseView.GetURI() + "/Slots",
+				"FQDD":           FQDD,
+				"Group":          group, // for ar mapper
+				"Index":          index, // for ar mapper
+			},
 		)
 
 		return true, nil
 	})
 
-	slotLogger, _, _ = instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, cfgMgrMu, "slotcollection", myModParams())
+	slotLogger, _, _ = instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, cfgMgrMu, "slotcollection", map[string]interface{}{
+		"collection_uri": baseView.GetURI() + "/Slots",
+	})
 	slotLogger.Info("Created slot collection", "uri", baseView.GetURI()+"/Slots")
 }
 
 // CreateSlotConfigCollection will instantiate the slot collection as well set up the function to add slotconfigs
-func CreateSlotConfigCollection(ctx context.Context, baseView viewer, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, instantiateSvc *testaggregate.Service, modParams func(map[string]interface{}) map[string]interface{}) {
+func CreateSlotConfigCollection(ctx context.Context, baseView viewer, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, instantiateSvc *testaggregate.Service) {
 	var slotLogger log.Logger
-	myModParams := func(in ...map[string]interface{}) map[string]interface{} {
-		mod := map[string]interface{}{}
-		mod["collection_uri"] = baseView.GetURI() + "/SlotConfigs"
-		for _, i := range in {
-			for k, v := range i {
-				mod[k] = v
-			}
-		}
-		return modParams(mod)
-	}
 
 	// this is used in the closure below.
 	slotConfigsMu := sync.Mutex{}
@@ -112,7 +95,7 @@ func CreateSlotConfigCollection(ctx context.Context, baseView viewer, cfgMgr *vi
 		slotConfigsMu.Lock()
 		_, ok = slotConfigs[FQDD]
 		if ok {
-			slotLogger.Warn("slotconfig already created, skip", "baseSlotURI", myModParams()["collection_uri"], "SlotEntry.Id", FQDD)
+			slotLogger.Warn("slotconfig already created, skip", "baseSlotURI", baseView.GetURI()+"/SlotConfigs", "SlotEntry.Id", FQDD)
 			slotConfigsMu.Unlock()
 			return false, nil
 		}
@@ -123,16 +106,19 @@ func CreateSlotConfigCollection(ctx context.Context, baseView viewer, cfgMgr *vi
 		slotLogger.Info("About to instantiate", "FQDD", FQDD)
 		// have to do this in a goroutine because awesome mapper is locked while it processes events
 		go instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, cfgMgrMu, "slotconfig",
-			myModParams(map[string]interface{}{
-				"FQDD":  FQDD,
-				"Group": group, // for ar mapper
-				"Index": index, // for ar mapper
-			}),
+			map[string]interface{}{
+				"collection_uri": baseView.GetURI() + "/SlotConfigs",
+				"FQDD":           FQDD,
+				"Group":          group, // for ar mapper
+				"Index":          index, // for ar mapper
+			},
 		)
 
 		return true, nil
 	})
 
-	slotLogger, _, _ = instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, cfgMgrMu, "slotconfigcollection", myModParams())
+	slotLogger, _, _ = instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, cfgMgrMu, "slotconfigcollection", map[string]interface{}{
+		"collection_uri": baseView.GetURI() + "/SlotConfigs",
+	})
 	slotLogger.Info("Created slot config collection", "uri", baseView.GetURI()+"/SlotConfigs")
 }
