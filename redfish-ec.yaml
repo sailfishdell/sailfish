@@ -23,6 +23,10 @@ views:
         - "fn": "with_URI"
           "params": "'/redfish/v1'"
       "Aggregate": "root"
+      "ExecPost": [
+        "set_hash_value(serviceglobals, 'rootid', uuid)",
+        "set_hash_value(serviceglobals, 'rooturi', view.GetURI())",
+      ]
 
   "testview":
       "Logger": ["module", "testview"]
@@ -107,6 +111,10 @@ views:
         - "fn": "stdFormatters"
           "params":
       "Aggregate": "sessionservice"
+      "ExecPost": [
+        "set_hash_value(serviceglobals, 'sessionsvc_id', uuid)",
+        "set_hash_value(serviceglobals, 'sessionsvc_uri', view.GetURI())",
+      ]
 
   "sessioncollection":
       "Logger": ["module", "session"]
@@ -283,6 +291,10 @@ views:
         - "fn": "stdFormatters"
           "params":
       "Aggregate": "accountservice"
+      "ExecPost": [
+        "set_hash_value(serviceglobals, 'actsvc_id', uuid)",
+        "set_hash_value(serviceglobals, 'actsvc_uri', view.GetURI())",
+      ]
 
   "accounts":
       "Logger": ["module", "Accounts"]
