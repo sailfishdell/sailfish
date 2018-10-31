@@ -1,0 +1,13 @@
+#!/bin/bash
+
+# http://pg-redmine.us.dell.com/redmine/projects/idrac-yocto/wiki/Commit-msg
+# https://www.kernel.org/pub/software/scm/git/docs/githooks.html
+
+for s in .git/hooks/commit-msg.d/*;do
+    if [ -x $s ]; then
+        if ! $s "$@"; then
+            echo "ERROR: $(basename $s) failed"
+            exit 1
+        fi
+    fi
+done
