@@ -56,7 +56,7 @@ views:
            "max_milliseconds_to_queue": "500",
            "max_events_to_queue": "20",
            "delivery_retry_attempts": "3",
-           "delivery_retry_interval_seconds": "60",
+           "delivery_retry_interval_seconds": "30",
            }
       "Controllers":
       "View":
@@ -192,7 +192,7 @@ views:
           "id":          "'BaseMessages'",
           "description": "'Base Message Registry File locations'",
           "name":        "'Base Message Registry File'",
-          "type":        "'Base.1.3.8'",
+          "type":        "'Base.1.0'",
           "languages":   "array('En')",
           "location":   "location",
         }
@@ -489,6 +489,10 @@ views:
         - "fn": "with_URI"
           "params": "rooturi + '/Managers/' + FQDD + '/Redundancy'"
         - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+        - "fn": "withFormatter_formatOdataList"
+          "params": "default"
+        - "fn": "withFormatter_count"
           "params": "default"
 
   "system_chassis":
@@ -842,6 +846,11 @@ awesome_mapper:
           Select: "nohash(data.ResourceURI) && baseuri(data.ResourceURI) == rooturi + '/Chassis/' + FQDD + '/Power/PowerTrends-1' ",
           ModelUpdate: [ {Property: "trend_histogram_uris", Query: "removefromset(model, propname, data.ResourceURI)"} ]}
 
+    addsubsystemhealth:
+      - { SelectEventType: "HealthEvent",
+          Select: "type == 'HealthEvent'",
+          Exec: [ "addsubsyshealth(data.FQDD, data.Health)" ]}
+
     addslot:
       - { SelectEventType: "ComponentEvent",
           Select: "data.Type == 'Slot'",
@@ -856,8 +865,8 @@ awesome_mapper:
       - { SelectEventType: "AttributeUpdated", Select: "type == 'AttributeUpdated' && data.FQDD == fqdd && data.Name == 'test'", ModelUpdate: [ {Property: "TEST", Query: "data.Value", Default: 0} ] }
 
     certificate:
-      - { SelectEventType: "FileReadEvent", Select: "data.URI == 'CertificateInventory' && data.FQDD == FQDD", ModelUpdate: [ { Property: "certificate_signing_request", Query: "read_file(data.FilePath)" } ] }
-      - { SelectEventType: "FileReadEvent", Select: "data.URI == 'FactoryIdentity' && data.FQDD == FQDD", ModelUpdate: [ { Property: "certificate", Query: "read_file(data.FilePath)" } ] }
+      - { SelectEventType: "FileReadEvent", Select: "data.URI == 'CertificateInventory' && data.FQDD == FQDD", ModelUpdate: [ { Property: "certificate_signing_request", Query: "data.FileContent" } ] }
+      - { SelectEventType: "FileReadEvent", Select: "data.URI == 'FactoryIdentity' && data.FQDD == FQDD", ModelUpdate: [ { Property: "certificate", Query: "data.Content" } ] }
 
     slot:
       - { SelectEventType: "AttributeUpdated", Select: "type == 'AttributeUpdated' && data.FQDD == 'System.Chassis.1' && data.Group == Group && data.Index == Index && data.Name == 'Config'",
@@ -925,7 +934,7 @@ awesome_mapper:
       - { SelectEventType: "PowerConsumptionDataObjEvent", Select: "type == 'PowerConsumptionDataObjEvent'",
             ModelUpdate: [
                 {Property: "energy_consumption_start_time", Query: "epoch_to_date(data.CwStartTime)" },
-                {Property: "energy_consumption_kwh", Query: "(data.CumulativeWatts)/1000" },
+                {Property: "energy_consumption_kwh", Query: "int((data.CumulativeWatts)/1000)" },
                 {Property: "headroom_watts", Query: "data.InstHeadRoom" },
                 {Property: "max_peak_watts", Query: "data.PeakWatts" },
                 {Property: "max_peak_watts_time", Query: "epoch_to_date(data.PwReadingTime)" },
@@ -954,8 +963,8 @@ awesome_mapper:
     health:
       - { SelectEventType: "HealthEvent", Select: "type == 'HealthEvent' && data.FQDD == fqdd", ModelUpdate: [ {Property: "health", Query: "data.Health" } ] }
 
-    subsystemhealth:
-      - { SelectEventType: "HealthEvent", Select: "type == 'HealthEvent'",  ModelUpdate: [ {Property: "subsystem_health", Query: "subsystem_health(data)" } ] }
+    #subsystemhealth:
+    #- { SelectEventType: "HealthEvent", Select: "type == 'HealthEvent'",  ModelUpdate: [ {Property: "subsystem_health", Query: "subsystem_health(data)" } ] }
 
     global_health:
       - { SelectEventType: "HealthEvent", Select: "type == 'HealthEvent' && data.FQDD == 'System.Chassis.1#SubSystem.1#Fan'", ModelUpdate: [ {Property: "fan_rollup", Query: "data.Health" } ] }

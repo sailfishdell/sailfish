@@ -184,7 +184,7 @@ func init() {
 			return s, nil
 		}
 	})
-	AddFunction("map_health_value", func(args ...interface{}) (interface{}, error) {
+  AddFunction("map_health_value", func(args ...interface{}) (interface{}, error) { //todo: turn into hash
 		switch t := args[0].(float64); t {
 		case 0, 1: //other, unknown
 			return nil, nil
@@ -198,6 +198,16 @@ func init() {
 			return nil, errors.New("Invalid object status")
 		}
 	})
+  AddFunction("map_led_value", func(args ...interface{}) (interface{}, error) { //todo: turn into hash
+    switch t := args[0].(string); t {
+    case "Blink-Off", "BLINK-OFF":
+      return "Lit", nil
+    case "Blink-1", "Blink-2", "BLINK-ON":
+      return "Blinking", nil
+    default:
+      return nil, nil
+    }
+  })
 	AddFunction("string", func(args ...interface{}) (interface{}, error) {
 		switch t := args[0].(type) {
 		case int, int8, int16, int32, int64:

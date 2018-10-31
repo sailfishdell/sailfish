@@ -234,8 +234,10 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 			},
 		)
 
+    redundancy_set := []string{rootView.GetURI()+"/Managers/CMC.Integrated.1", rootView.GetURI()+"/Managers/CMC.Integrated.2"}
+
 		redundancyVw.GetModel("default").ApplyOption(
-			model.UpdateProperty("redundancy_set", []string{rootView.GetURI() + "/Managers/CMC.Integrated.1", rootView.GetURI() + "/Managers/CMC.Integrated.2"}),
+			model.UpdateProperty("redundancy_set", redundancy_set),
 		)
 		redundancy.AddAggregate(ctx, redundancyLogger, redundancyVw, ch)
 
