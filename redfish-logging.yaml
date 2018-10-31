@@ -39,7 +39,7 @@ logs:
           level: "info"
 
     # (DISABLED) log stuff on a module by module basis to FILE
-    - Enabled: true 
+    - Enabled: false 
       FileName: "./debug.log"
       PrintFile: true
       PrintFunction: true
