@@ -169,8 +169,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	//*********************************************************************
 	// /redfish/v1/Registries
 	//*********************************************************************
-	instantiateSvc.Instantiate("registries", map[string]interface{}{"collection_uri": "/redfish/v1/Registries"})
-
 	for regName, location := range map[string]interface{}{
 		"idrac_registry":    []map[string]string{{"Language": "En", "Uri": "/redfish/v1/Registries/Messages/EEMIRegistry.v1_5_0.json"}},
 		"base_registry":     []map[string]string{{"Language": "En", "Uri": "/redfish/v1/Registries/BaseMessages/BaseRegistry.v1_0_0.json", "PublicationUri": "http://www.dmtf.org/sites/default/files/standards/documents/DSP8011_1.0.0a.json"}},

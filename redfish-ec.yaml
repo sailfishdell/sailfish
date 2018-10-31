@@ -33,6 +33,8 @@ views:
         "instantiate('accountservice')",
         "instantiate('roles', 'collection_uri', '/redfish/v1/AccountService/Roles')",
         "instantiate('accounts', 'collection_uri', '/redfish/v1/AccountService/Accounts')",
+        "instantiate('registries', 'collection_uri', '/redfish/v1/Registries')",
+        #"instantiate('sessionservice')",
       ]
 
   "testview":
