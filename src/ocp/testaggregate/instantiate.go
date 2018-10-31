@@ -20,8 +20,11 @@ type controllerFunc func(ctx context.Context, logger log.Logger, cfgMgr *viper.V
 type aggregateFunc func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, vw *view.View, cfg interface{}, parameters map[string]interface{}) ([]eh.Command, error)
 
 type Service struct {
-	logger log.Logger
 	sync.RWMutex
+	logger                      log.Logger
+	ctx                         context.Context
+	cfgMgr                      *viper.Viper
+	cfgMgrMu                    *sync.RWMutex
 	ch                          eh.CommandHandler
 	viewFunctionsRegistry       map[string]viewFunc
 	controllerFunctionsRegistry map[string]controllerFunc
@@ -29,10 +32,13 @@ type Service struct {
 	serviceGlobals              map[string]interface{}
 }
 
-func New(logger log.Logger, ch eh.CommandHandler) *Service {
+func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, ch eh.CommandHandler) *Service {
 	return &Service{
-		logger: logger,
-		ch:     ch,
+		ctx:                         ctx,
+		logger:                      logger,
+		ch:                          ch,
+		cfgMgr:                      cfgMgr,
+		cfgMgrMu:                    cfgMgrMu,
 		viewFunctionsRegistry:       map[string]viewFunc{},
 		controllerFunctionsRegistry: map[string]controllerFunc{},
 		aggregateFunctionsRegistry:  map[string]aggregateFunc{},
@@ -47,8 +53,6 @@ func (s *Service) RegisterViewFunction(name string, fn viewFunc) {
 }
 
 func (s *Service) GetViewFunction(name string) viewFunc {
-	s.RLock()
-	defer s.RUnlock()
 	return s.viewFunctionsRegistry[name]
 }
 
@@ -59,8 +63,6 @@ func (s *Service) RegisterControllerFunction(name string, fn controllerFunc) {
 }
 
 func (s *Service) GetControllerFunction(name string) controllerFunc {
-	s.RLock()
-	defer s.RUnlock()
 	return s.controllerFunctionsRegistry[name]
 }
 
@@ -71,8 +73,6 @@ func (s *Service) RegisterAggregateFunction(name string, fn aggregateFunc) {
 }
 
 func (s *Service) GetAggregateFunction(name string) aggregateFunc {
-	s.RLock()
-	defer s.RUnlock()
 	return s.aggregateFunctionsRegistry[name]
 }
 
@@ -92,7 +92,13 @@ type config struct {
 // The following is needed in the Views[key]
 //            key should have the same names as config struct above
 //
+func (s *Service) Instantiate(name string, parameters map[string]interface{}) (log.Logger, *view.View, error) {
+	return s.InstantiateFromCfg(s.ctx, s.cfgMgr, s.cfgMgrMu, name, parameters)
+}
+
 func (s *Service) InstantiateFromCfg(ctx context.Context, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, name string, parameters map[string]interface{}) (log.Logger, *view.View, error) {
+	s.Lock()
+	defer s.Unlock()
 
 	newParams := map[string]interface{}{}
 	for k, v := range parameters {

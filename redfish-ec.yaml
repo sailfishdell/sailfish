@@ -26,6 +26,13 @@ views:
       "ExecPost": [
         "set_hash_value(serviceglobals, 'rootid', uuid)",
         "set_hash_value(serviceglobals, 'rooturi', view.GetURI())",
+        "instantiate('testview')",
+        "instantiate('chassis', 'collection_uri', '/redfish/v1/Chassis')",
+        "instantiate('systems', 'collection_uri', '/redfish/v1/Systems')",
+        "instantiate('managers', 'collection_uri', '/redfish/v1/Managers')",
+        "instantiate('accountservice')",
+        "instantiate('roles', 'collection_uri', '/redfish/v1/AccountService/Roles')",
+        "instantiate('accounts', 'collection_uri', '/redfish/v1/AccountService/Accounts')",
       ]
 
   "testview":

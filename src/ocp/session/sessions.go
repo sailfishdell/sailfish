@@ -4,12 +4,10 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"sync"
 	"time"
 
 	jwt "github.com/dgrijalva/jwt-go"
 	eh "github.com/looplab/eventhorizon"
-	"github.com/spf13/viper"
 
 	eventpublisher "github.com/looplab/eventhorizon/publisher/local"
 	"github.com/superchalupa/sailfish/src/eventwaiter"
@@ -107,7 +105,7 @@ func MakeHandlerFunc(logger log.Logger, eb eh.EventBus, getter IDGetter, withUse
 	}
 }
 
-func SetupSessionService(ctx context.Context, svc *testaggregate.Service, v *view.View, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, ch eh.CommandHandler, eb eh.EventBus, masterparams map[string]interface{}) {
+func SetupSessionService(svc *testaggregate.Service, v *view.View, ch eh.CommandHandler, eb eh.EventBus) {
 	// somewhat of a violation of how i want to structure all this, but it's the best option for now
 	EventPublisher := eventpublisher.NewEventPublisher()
 	eb.AddHandler(eh.MatchEvent(XAuthTokenRefreshEvent), EventPublisher)
@@ -121,16 +119,7 @@ func SetupSessionService(ctx context.Context, svc *testaggregate.Service, v *vie
 			commandHandler: ch,
 			eventWaiter:    EventWaiter,
 			svcWrapper: func(params map[string]interface{}) *view.View {
-
-				newParams := map[string]interface{}{}
-				for k, v := range masterparams {
-					newParams[k] = v
-				}
-				for k, v := range params {
-					newParams[k] = v
-				}
-
-				_, vw, _ := svc.InstantiateFromCfg(ctx, cfgMgr, cfgMgrMu, "session", newParams)
+				_, vw, _ := svc.Instantiate("session", params)
 				return vw
 			},
 		}

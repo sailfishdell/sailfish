@@ -42,7 +42,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	pumpSvc := dell_ec.NewPumpActionSvc(ctx, logger, eb)
 
 	// the package for this is going to change, but this is what makes the various mappers and view functions available
-	instantiateSvc := testaggregate.New(logger, ch)
+	instantiateSvc := testaggregate.New(ctx, logger, cfgMgr, cfgMgrMu, ch)
 	evtSvc := eventservice.New(ctx, cfgMgr, cfgMgrMu, instantiateSvc, actionSvc, ch, eb)
 	eventservice.RegisterAggregate(instantiateSvc)
 	testaggregate.RegisterWithURI(instantiateSvc)
@@ -106,7 +106,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	_, sessionSvcVw, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, cfgMgrMu, "sessionservice", baseParams)
 	baseParams["sessionsvc_id"] = sessionSvcVw.GetUUID()
 	baseParams["sessionsvc_uri"] = sessionSvcVw.GetURI()
-	session.SetupSessionService(ctx, instantiateSvc, sessionSvcVw, cfgMgr, cfgMgrMu, ch, eb, baseParams)
+	session.SetupSessionService(instantiateSvc, sessionSvcVw, ch, eb)
 	instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, cfgMgrMu, "sessioncollection", modParams(map[string]interface{}{"collection_uri": "/redfish/v1/SessionService/Sessions"}))
 
 	//*********************************************************************
