@@ -638,7 +638,7 @@ views:
         "default":  {"unique_name": "FQDD", "unique_name_attr": "FQDD+'.Attributes'", "attributes": "add_attribute_property()"}
       "Controllers":
         - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "fan", "uniquename": "'am2_fan_' + FQDD + '/' + ChassisFQDD" }
+          "params": {"modelname": "default", "cfgsection": "fan", "uniquename": "'am2_fan_' + FQDD + '/' + ChassisFQDD", "passthru": {"DM_FQDD": "ChassisFQDD + '#' + FQDD"}}
         - "fn": "ARMapper"
           "params": {"modelname": "default", "cfgsection": "firmware/inventory", "mappinguniquename": "'firmware_fan_mapper:' + ChassisFQDD + '/' + FQDD", "AddToView": true}
         - "fn": "ARMapper"
@@ -671,7 +671,7 @@ views:
         - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "health", "uniquename": "'am2_health_' + FQDD", "passthru": {"health_fqdd": "'System.Chassis.1#' + FQDD"} }
         - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "iom", "uniquename": "'am2_iom_' + FQDD" }
+          "params": {"modelname": "default", "cfgsection": "iom", "uniquename": "'am2_iom_' + FQDD", "passthru": {"DM_FQDD": "'System.Chassis.1#' + FQDD"}}
       "View":
         - "fn": "linkModel"
           "params": {"existing": "default", "linkname": "health"}
@@ -907,7 +907,7 @@ awesome_mapper:
             ModelUpdate: [ {Property: "type", Query: "data.Value"}]}
 
     fan:
-      - { SelectEventType: "FanEvent", Select: "type == 'FanEvent' && data.ObjectHeader.FQDD == fqdd",
+      - { SelectEventType: "FanEvent", Select: "type == 'FanEvent' && data.ObjectHeader.FQDD == DM_FQDD",
             ModelUpdate: [
                 {Property: "fanpwm", Query: "data.Fanpwm" },
                 {Property: "key", Query: "data.Key" },
@@ -926,7 +926,7 @@ awesome_mapper:
                 {Property: "FanStateMask", Query: "data.FanStateMask" }]}
 
     iom:
-      - { SelectEventType: "AttributeUpdated", Select: "type == 'AttributeUpdated' && data.FQDD == fqdd && data.Name == 'InstantaneousPower'", ModelUpdate: [ {Property: "Instantaneous_Power", Query: "data.Value", Default: 0} ] }
+      - { SelectEventType: "AttributeUpdated", Select: "type == 'AttributeUpdated' && data.FQDD == DM_FQDD && data.Name == 'InstantaneousPower'", ModelUpdate: [ {Property: "Instantaneous_Power", Query: "data.Value", Default: 0} ] }
 
     iom_config:
       - { SelectEventType: "IomCapability", Select: "type == 'IomCapability' && data.Name == FQDD",
@@ -950,7 +950,7 @@ awesome_mapper:
                 {Property: "consumed_watts", Query: "data.InstWattsPSU1_2" }]}
 
     power_supply:
-      - { SelectEventType: "PowerSupplyObjEvent", Select: "type == 'PowerSupplyObjEvent' && data.ObjectHeader.FQDD == fqdd",
+      - { SelectEventType: "PowerSupplyObjEvent", Select: "type == 'PowerSupplyObjEvent' && data.ObjectHeader.FQDD == DM_FQDD",
             ModelUpdate: [
                 {Property: "line_input_voltage", Query: "zero_to_null(data.InputVolts)" }, #unsigned int
                 {Property: "input_current", Query: "zero_to_null(data.InstAmps)" }, #float

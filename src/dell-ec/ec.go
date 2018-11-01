@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"sync"
 
 	"github.com/spf13/viper"
@@ -310,10 +311,10 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 
 			psuLogger, sysChasPwrPsuVw, _ := instantiateSvc.Instantiate("psu_slot",
 				map[string]interface{}{
-					"FQDD":        psuName,
-					"ChassisFQDD": chasName,
-					// MEB: this doesnt appear to be used at all (ie. there is no AM2 health mapper attached in the config)
-					// "health_fqdd":       "System.Chassis.1#" + strings.Replace(psuName, "PSU.Slot", "PowerSupply", 1),
+					// Need to move this to awesome mapper but dont yet have a string replace function exported
+					"DM_FQDD":           "System.Chassis.1#" + strings.Replace(psuName, "PSU.Slot", "PowerSupply", 1),
+					"FQDD":              psuName,
+					"ChassisFQDD":       chasName,
 					"fqddlist":          []string{psuName},
 					"globalHealthModel": globalHealthModel,
 				},
