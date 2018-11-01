@@ -351,11 +351,13 @@ views:
   "storage_enclosure":
       "Logger": ["module", "StorageEnclosure"]
       "Models":
-        "default":  {"unique_name": "FQDD", "unique_name_attr": "FQDD+'.Attributes'", "attributes": "add_attribute_property()"}
+        "default":  {"unique_name": "URI_FQDD", "unique_name_attr": "URI_FQDD+'.Attributes'", "attributes": "add_attribute_property()"}
       "Controllers":
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "storage_enclosure", "uniquename": "'am2_storage_enclosure_' + URI_FQDD" }
       "View":
         - "fn": "with_URI"
-          "params": "rooturi + '/Chassis/' + FQDD "
+          "params": "rooturi + '/Chassis/' + URI_FQDD "
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
         - "fn": "withFormatter_count"
@@ -370,11 +372,15 @@ views:
   "storage_controller":
       "Logger": ["module", "StorageController"]
       "Models":
-        "default":  {"unique_name": "FQDD", "unique_name_attr": "FQDD+'.Attributes'", "attributes": "add_attribute_property()"}
+        "default":  {"unique_name": "URI_FQDD", "unique_name_attr": "URI_FQDD+'.Attributes'", "attributes": "add_attribute_property()"}
       "Controllers":
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "storage_physical", "uniquename": "'am2_storage_physical_' + URI_FQDD" }
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "storage_adapter", "uniquename": "'am2_storage_adapter_' + URI_FQDD" }
       "View":
         - "fn": "with_URI"
-          "params": "rooturi + '/Systems/System.Embedded.1/StorageControllers/' + FQDD "
+          "params": "rooturi + '/Systems/System.Embedded.1/StorageControllers/' + URI_FQDD "
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
         - "fn": "withFormatter_count"
@@ -389,11 +395,13 @@ views:
   "storage_drive":
       "Logger": ["module", "StorageDrive"]
       "Models":
-        "default":  {"unique_name": "FQDD", "unique_name_attr": "FQDD+'.Attributes'", "attributes": "add_attribute_property()"}
+        "default":  {"unique_name": "URI_FQDD", "unique_name_attr": "URI_FQDD+'.Attributes'", "attributes": "add_attribute_property()"}
       "Controllers":
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "storage_drive", "uniquename": "'am2_storage_drive_' + URI_FQDD" }
       "View":
         - "fn": "with_URI"
-          "params": "rooturi + '/Systems/System.Embedded.1/Storage/Drives/' + FQDD "
+          "params": "rooturi + '/Systems/System.Embedded.1/Storage/Drives/' + URI_FQDD "
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
         - "fn": "withFormatter_count"
@@ -410,6 +418,8 @@ views:
       "Models":
         "default":  {}
       "Controllers":
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + collection_uri" }
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/Systems/System.Embedded.1/Storage/'"
@@ -427,11 +437,24 @@ views:
   "storage_instance":
       "Logger": ["module", "StorageInstance"]
       "Models":
-        "default":  {"unique_name": "FQDD", "unique_name_attr": "FQDD+'.Attributes'", "attributes": "add_attribute_property()"}
+        "default":  {"unique_name": "URI_FQDD", "unique_name_attr": "URI_FQDD+'.Attributes'", "attributes": "add_attribute_property()"}
       "Controllers":
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "storage_drive", "uniquename": "'am2_storage_drive_' + URI_FQDD" }
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "storage_adapter", "uniquename": "'am2_storage_adapter_' + URI_FQDD" }
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "storage_volume", "uniquename": "'am2_storage_volume_' + URI_FQDD" }
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "health", "uniquename": "'am2_iom_health_' + URI_FQDD" }
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "storage_drive_uris", "uniquename": "'am2_drives_uris:' + URI_FQDD" }
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "storage_volume_uris", "uniquename": "'am2_volumes_uris:' + URI_FQDD" }
+
       "View":
         - "fn": "with_URI"
-          "params": "rooturi + '/Systems/System.Embedded.1/Storage/' + FQDD "
+          "params": "rooturi + '/Systems/System.Embedded.1/Storage/' + URI_FQDD "
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
         - "fn": "withFormatter_count"
@@ -446,11 +469,16 @@ views:
   "storage_volume":
       "Logger": ["module", "StorageVolume"]
       "Models":
-        "default":  {"unique_name": "FQDD", "unique_name_attr": "FQDD+'.Attributes'", "attributes": "add_attribute_property()"}
+        "default":  {"unique_name": "URI_FQDD", "unique_name_attr": "URI_FQDD+'.Attributes'", "attributes": "add_attribute_property()"}
       "Controllers":
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "storage_volume", "uniquename": "'am2_storage_volume_' + URI_FQDD" }
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "storage_adapter", "uniquename": "'am2_storage_adapter_' + URI_FQDD" }
+
       "View":
         - "fn": "with_URI"
-          "params": "rooturi + '/Systems/System.Embedded.1/Storage/Volumes/' + FQDD "
+          "params": "rooturi + '/Systems/System.Embedded.1/Storage/Volumes/' + URI_FQDD "
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
         - "fn": "withFormatter_count"
@@ -465,11 +493,13 @@ views:
   "storage_volume_collection":
       "Logger": ["module", "StorageVolumeCollection"]
       "Models":
-        "default":  {"unique_name": "FQDD", "unique_name_attr": "FQDD+'.Attributes'", "attributes": "add_attribute_property()"}
+        "default":  {"unique_name": "URI_FQDD", "unique_name_attr": "URI_FQDD+'.Attributes'", "attributes": "add_attribute_property()"}
       "Controllers":
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + collection_uri" }
       "View":
         - "fn": "with_URI"
-          "params": "rooturi + '/Systems/System.Embedded.1/Storage/' + FQDD  +'/Volumes'"
+          "params": "rooturi + '/Systems/System.Embedded.1/Storage/' + URI_FQDD  +'/Volumes'"
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
         - "fn": "withFormatter_count"
@@ -493,82 +523,111 @@ awesome_mapper:
     testview:
         - { Select: "type == 'AttributeUpdated' && data.FQDD == fqdd && data.Name == 'InstantaneousPower'", ModelUpdate: [ {Property: "Instantaneous_Power", Query: "data.Value", Default: 0} ] }
 
+    storage_adapter:
+      - { SelectEventType: "StorageAdapterEvent", Select: "data.ObjectHeader.FQDD == EVENT_FQDD",
+            ModelUpdate: [
+                {Property: "name", Query: "data.RaidObjHeader.ObjName" },
+                {Property: "firmware_version", Query: "data.FirmwareVersion" },
+                {Property: "manufacturer", Query: "data.Manufacturer" },
+                {Property: "member_id", Query: "data.Id" },
+                {Property: "model", Query: "data.ObjectHeader.Struct" },
+                {Property: "name", Query: "data.ObjectHeader.FQDD" },
+                {Property: "speed", Query: "data.CapableSpeeds" }],
+                Exec: [ "echo('GOT AN EVENT THAT MATCHED - ADAPTER')" ]
+                }
+                
 
+    storage_drive:
+      - { SelectEventType: "StoragePhysicalEvent", Select: "data.ObjectHeader.FQDD == EVENT_FQDD",
+            ModelUpdate: [
+                {Property: "block_size_bytes", Query: "data.BlockSize" },
+                {Property: "capable_speed", Query: "data.CapableSpeeds" },
+                {Property: "description", Query: "data.RaidObjHeader.ObjName" },
+                {Property: "capacity", Query: "data.Capacity" },
+                {Property: "encryption_ability", Query: "data.EncryptionAbility" },
+                {Property: "encryption_status", Query: "data.EncryptionStatus" },
+                {Property: "failure_predicted", Query: "data.FailurePredicted" },
+                {Property: "hotspare_type", Query: "data.Hotspare" },
+                {Property: "unique_name", Query: "data.Id" },
+                {Property: "manufacturer", Query: "data.Manufacturer" },
+                {Property: "media_type", Query: "data.MediaType" },
+                {Property: "model", Query: "data.ObjectHeader.FQDD" },
+                {Property: "name", Query: "data.RaidObjHeader.ObjName" },
+                {Property: "negotiated_speed", Query: "data.NegotiatedSpeed" },
+                {Property: "part_number", Query: "data.PartNumber" },
+                {Property: "predicted_media_life_left_percent", Query: "data.PredictedMediaLife" },
+                {Property: "protocol", Query: "data.Protocol" },
+                {Property: "revision", Query: "data.Revision" },
+                {Property: "rotation_speed", Query: "data.NominalMediumRotationRate" },
+                {Property: "serial_number", Query: "data.Serial" }],
+           Exec: [ "echo('GOT AN EVENT THAT MATCHED - DRIVE')" ]
+                }
+
+    storage_volume:
+      - { SelectEventType: "StorageVirtualEvent", Select: "data.ObjectHeader.FQDD == EVENT_FQDD",
+            ModelUpdate: [
+                {Property: "name", Query: "data.RaidObjHeader.ObjName" },
+                {Property: "block_size", Query: "data.BlockSize" },
+                {Property: "capacity", Query: "data.Capacity" },
+                {Property: "description", Query: "data.RaidObjHeader.ObjName" },
+                {Property: "encrypted", Query: "data.Encrypted" },
+                {Property: "optimum_io_size_bytes", Query: "data.OptimumIoSize*512" },
+                {Property: "volume_type", Query: "data.VolumeType" },
+                {Property: "unique_name", Query: "data.Id" }],
+                Exec: [ "echo('GOT AN EVENT THAT MATCHED - VOLUME')" ]
+                }
+
+
+    storage_enclosure:
+      - { SelectEventType: "StorageEnclosureEvent", Select: "data.ObjectHeader.FQDD == EVENT_FQDD",
+            ModelUpdate: [
+                {Property: "asset_tag", Query: "data.AssetTag" },
+                {Property: "chassis_type", Query: "data.ChassisType" },
+                {Property: "description", Query: "data.RaidObjHeader.ObjName" },
+                {Property: "unique_name", Query: "data.DeviceId" },
+                {Property: "manufacturer", Query: "data.Manufacturer" },
+                {Property: "model", Query: "data.RaidObjHeader.ObjName" },
+                {Property: "name", Query: "data.RaidObjHeader.ObjName" },
+                {Property: "part_number", Query: "data.PartNumber" },
+                {Property: "power_state", Query: "data.PowerState" },
+                {Property: "sku", Query: "data.Sku" },
+                {Property: "serial_number", Query: "data.Serial" },
+                {Property: "connector", Query: "data.Connector" },
+                {Property: "service_tag", Query: "data.ServiceTag" },
+                {Property: "slot_count", Query: "data.SlotCount" },
+                {Property: "version", Query: "data.Version" },
+                {Property: "wired_order", Query: "data.WiredOrder" }],
+                Exec: [ "echo('GOT AN EVENT THAT MATCHED - ENCLOSYRE')" ]
+                }
+                
+    storage_drive_uris:
+      - { SelectEventType: "RedfishResource:created",
+          Select: "nohash(data.ResourceURI) && data.ResourceURI == rooturi + '/Systems/System.Embedded.1/Storage/Drives/' + URI_FQDD ",
+          ModelUpdate: [ {Property: "storage_drive_uris", Query: "addtoset(model, propname, data.ResourceURI)"} ]}
+      - { SelectEventType: "RedfishResource:removed",
+          Select: "nohash(data.ResourceURI) && data.ResourceURI == rooturi + '/Systems/System.Embedded.1/Storage/Drives/' + URI_FQDD ",
+          ModelUpdate: [ {Property: "storage_drive_uris", Query: "removefromset(model, propname, data.ResourceURI)"} ]}
+
+    storage_volume_uris:
+      - { SelectEventType: "RedfishResource:created",
+          Select: "nohash(data.ResourceURI) && data.ResourceURI == rooturi + '/Systems/System.Embedded.1/Storage/' + URI_FQDD + '/Volumes' ",
+          ModelUpdate: [ {Property: "storage_volume_uris", Query: "addtoset(model, propname, data.ResourceURI)"} ]}
+      - { SelectEventType: "RedfishResource:removed",
+          Select: "nohash(data.ResourceURI) && data.ResourceURI == rooturi + '/Systems/System.Embedded.1/Storage/' + URI_FQDD + '/Volumes' ",
+          ModelUpdate: [ {Property: "storage_volume_uris", Query: "removefromset(model, propname, data.ResourceURI)"} ]}
+
+    storage_enclosure_uris:
+      - { SelectEventType: "RedfishResource:created",
+          Select: "nohash(data.ResourceURI) && data.ResourceURI == rooturi + '/Chassis/' + URI_FQDD ",
+          ModelUpdate: [ {Property: "storage_enclosure_uris", Query: "addtoset(model, propname, data.ResourceURI)"} ]}
+      - { SelectEventType: "RedfishResource:removed",
+          Select: "nohash(data.ResourceURI) && data.ResourceURI == rooturi + '/Chassis/' + URI_FQDD ",
+          ModelUpdate: [ {Property: "storage_enclosure_uris", Query: "removefromset(model, propname, data.ResourceURI)"} ]}
 mappings:
     # EVERYTHING HERE is from the Config Attribute Registry. If you are not getting data from the Attribute Registry, it doesn't go here.
 
     test/testview:
         - {Property: "model",        FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Name" }
 
-    Chassis/Enclosure:
-        - {Property: "asset_tag",    FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "AssetTag" }
-        - {Property: "chassis_type", FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "ChassisType" }
-        - {Property: "description",  FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Description" }
-        - {Property: "manufacturer", FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Manufacturer" }
-        - {Property: "model",        FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Model" }
-        - {Property: "name",         FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Name" }
-        - {Property: "part_number",  FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "PartNumber" }
-        - {Property: "power_state",  FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "PowerState" }
-        - {Property: "sku",          FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "SKU" }
-        - {Property: "serial",       FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "SerialNumber" }
-        - {Property: "connector",    FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Connector" }
-        - {Property: "service_tag",  FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "ServiceTag" }
-        - {Property: "slot_count",   FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "SlotCount" }
-        - {Property: "version",      FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Version" }
-        - {Property: "wired_order",  FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "WiredOrder" }
 
-    Storage/Instance:
-        - {Property: "name",         FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Name" }
-        - {Property: "firmware_version",    FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "FirmwareVersion" }
-        - {Property: "manufacturer", FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Manufacturer" }
-        - {Property: "member_id", FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "MemberId" }
-        - {Property: "model",        FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Model" }
-        - {Property: "speed",  FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "SpeedGbps" }
 
-    Storage/Controller:
-        - {Property: "name",         FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Name" }
-        - {Property: "firmware_version",    FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "FirmwareVersion" }
-        - {Property: "manufacturer", FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Manufacturer" }
-        - {Property: "member_id", FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "MemberId" }
-        - {Property: "model",        FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Model" }
-        - {Property: "speed",  FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "SpeedGbps" }
-
-    Storage/Drive:
-        - {Property: "block_size",    FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "BlockSizeBytes" }
-        - {Property: "capable_speed", FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "CapableSpeedGbs" }
-        - {Property: "description",  FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Description" }
-        - {Property: "capacity", FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "CapacityBytes" }
-        - {Property: "encryption_ability",        FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "EncryptionAbility" }
-        - {Property: "encryption_status",         FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "EncryptionStatus" }
-        - {Property: "failure_predicted",  FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "FailurePredicted" }
-        - {Property: "hotspare_type",  FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "HotspareType" }
-        - {Property: "id",          FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Id" }
-        - {Property: "manufacturer", FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Manufacturer" }
-        - {Property: "media_type",  FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "MediaType" }
-        - {Property: "model",        FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Model" }
-        - {Property: "name",         FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Name" }
-        - {Property: "negotiated_speed",  FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "NegotiatedSpeedGbs" }
-        - {Property: "part_number",  FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "PartNumber" }
-        - {Property: "predicted_media_life_left",  FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "PredictedMediaLifeLeftPercent" }
-        - {Property: "protocol",       FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Protocol" }
-        - {Property: "revision",       FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Revision" }
-        - {Property: "rotation_speed",       FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "RotationSpeedRPM" }
-        - {Property: "serial",       FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "SerialNumber" }
-
-    Storage/Volume:
-        - {Property: "block_size",    FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "BlockSizeBytes" }
-        - {Property: "capacity", FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "CapacityBytes" }
-        - {Property: "description",  FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Description" }
-        - {Property: "encrypted", FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Encrypted" }
-        - {Property: "id",        FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Id" }
-        - {Property: "name",         FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Name" }
-        - {Property: "optimum_io_size",  FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "OptimumIOSizeBytes" }
-        - {Property: "volume_type",  FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "VolumeType" }
-
-    Storage/Collection:
-        - {Property: "description",  FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Description" }
-        - {Property: "name",         FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Name" }
-
-    Storage/VolumeCollection:
-        - {Property: "description",  FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Description" }
-        - {Property: "name",         FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Name" }

@@ -71,7 +71,7 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 				"PartNumber@meta":              v.Meta(view.PropGET("part_number")),
 				"PowerState@meta":              v.Meta(view.PropGET("power_state")),
 				"SKU@meta":                     v.Meta(view.PropGET("sku")),
-				"SerialNumber@meta":            v.Meta(view.PropGET("serial")),
+				"SerialNumber@meta":            v.Meta(view.PropGET("serial_number")),
 				"Status": map[string]interface{}{
 					"HealthRollup@meta": v.Meta(view.PropGET("health")),
 					"State@meta":        v.Meta(view.PropGET("health_state")),

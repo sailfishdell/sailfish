@@ -12,8 +12,13 @@ const (
 	PowerConsumptionDataObjEvent        = eh.EventType("PowerConsumptionDataObjEvent")
 	AvgPowerConsumptionStatDataObjEvent = eh.EventType("AvgPowerConsumptionStatDataObjEvent")
 	IomCapability                       = eh.EventType("IomCapability")
-  FileReadEvent                       = eh.EventType("FileReadEvent")
-  FileLinkEvent                       = eh.EventType("FileLinkEvent")
+	FileReadEvent                       = eh.EventType("FileReadEvent")
+	FileLinkEvent                       = eh.EventType("FileLinkEvent")
+	StorageEnclosureEvent                 = eh.EventType("StorageEnclosureEvent")
+	StorageAdapterEvent                 = eh.EventType("StorageAdapterEvent")
+	StoragePhysicalEvent                 = eh.EventType("StoragePhysicalEvent")
+	StorageVirtualEvent                 = eh.EventType("StorageVirtualEvent")
+
 )
 
 func init() {
@@ -29,6 +34,10 @@ func init() {
 		return f
 	})
 	eh.RegisterEventData(IomCapability, func() eh.EventData { return &IomCapabilityData{} })
+	eh.RegisterEventData(StorageAdapterEvent, func() eh.EventData { return &StorageAdapterObjEventData{} })
+	eh.RegisterEventData(StorageEnclosureEvent, func() eh.EventData { return &StorageEnclosureObjEventData{} })
+	eh.RegisterEventData(StoragePhysicalEvent, func() eh.EventData { return &StoragePhysicalObjEventData{} })
+	eh.RegisterEventData(StorageVirtualEvent, func() eh.EventData { return &StorageVirtualObjEventData{} })
 }
 
 type IomCapabilityData struct {
@@ -151,6 +160,89 @@ type AvgPowerConsumptionStatDataObjEventData struct {
 	ObjExtFlags          int    `json:"objExtFlags"`
 	OffsetKey            string `json:"offsetKey"`
 }
+
+
+type RaidSiObjectHeader struct {
+	ObjExtFlags         int    `json:"objExtFlags"`
+	KeyOffset           int    `json:"keyOffset"`
+    FqddOffset          int    `json:"fqddOffset"`
+    FriendlyFQDDOffset  int    `json:"friendlyFQDDOffset"`
+    ObjVersion          int    `json:"objVersion"`
+    ObjName             string  `json:"objName"`
+    ObjAttributes       int    `json:"objAttributes"`
+    PrimaryStatus       int    `json:"primaryStatus"`
+    UpdateTime          int    `json:"updateTime"`
+    SyncTime            float64    `json:"syncTime"`
+    AlternateFQDDOffset int   `json:"alternateFQDDOffset"`
+    Flags               int       `json:"flags"`
+}
+
+
+type StorageVirtualObjEventData struct {
+	ObjectHeader             DataObjectHeader
+	RaidObjHeader     RaidSiObjectHeader  `json:"raidSiobjheader"`
+	BlockSize          int   `json:"blockSize"`
+	Capacity           int64    `json:"size"`
+	Encrypted          int    `json:"attributes"`
+	OptimumIoSize      int    `json:"stripeSize"`
+	VolumeType         int    `json:"raidLevel"`
+	Id                 string    `json:"fqdd"`
+}
+
+
+type StoragePhysicalObjEventData struct {
+	ObjectHeader         DataObjectHeader
+	RaidObjHeader     RaidSiObjectHeader  `json:"raidSiobjheader"`
+	BlockSize int    `json:"blockSize"`
+	Capacity        uint64    `json:"size"`
+	CapableSpeeds       int    `json:"capableSpeeds"`
+	EncryptionAbility       int    `json:"attributes"`
+	EncryptionStatus       int    `json:"securityState"`
+	FailurePredicted       int    `json:"attributes"`
+	Hotspare       int    `json:"hotspare"`
+	Id          string    `json:"fqdd"`
+	Manufacturer       string    `json:"manufactureName"`
+	Model       string    `json:"modelName"`
+	MediaType       int    `json:"attributes"`
+	NegotiatedSpeed       int    `json:"negotiatedSpeed"`
+	PartNumber       string    `json:"ppid"`
+	PredictedMediaLife       int    `json:"deviceLifeRemaining"`
+	Protocol       int    `json:"protocol"`
+	Revision       string    `json:"revision"`
+	NominalMediumRotationRate       int    `json:"nominalMediumRotationRate"`
+	Serial       string    `json:"serialNumber"`
+}
+
+type StorageAdapterObjEventData struct {
+	ObjectHeader             DataObjectHeader
+	RaidObjHeader     RaidSiObjectHeader  `json:"raidSiobjheader"`
+	Manufacturer       string    `json:"manufacturer"`
+	FirmwareVersion       string    `json:"currentAvailableFwVer"`
+	Id                 string    `json:"fqdd"`
+	CapableSpeeds       int    `json:"capableSpeeds"`
+	Model              string     `json:"fqdd"`
+}
+
+type StorageEnclosureObjEventData struct {
+	ObjectHeader             DataObjectHeader
+	RaidObjHeader     RaidSiObjectHeader  `json:"raidSiobjheader"`
+	AssetTag       string    `json:"assetTag"`
+	ChassisType  int    `json:"bpType"`
+	DeviceId  int    `json:"deviceID"`
+	Manufacturer       string    `json:"manufacturer"`
+	Model              string     `json:"fqdd"`
+	PartNumber          string    `json:"ppid"`
+	PowerState        int    `json:"drivePower"`
+	Sku             string   `json:"serialNumber"`
+	Serial        string    `json:"serialNumber"`
+	Connector       int     `json:"connectorCount"`
+	ServiceTag      string    `json:"serviceTag"`
+	SlotCount       int     `json:"slotCount"`
+	Version  string    `json:"currentAvailableFwVer"`
+	WiredOrder   string    `json:"currentAvailableFwVer"`
+}
+
+
 
 type FileReadEventData struct {
   Content  string
