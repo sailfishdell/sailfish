@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 	"sync"
 
 	"github.com/spf13/viper"
@@ -194,8 +193,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 		//*********************************************************************
 		mgrLogger, mgrCmcVw, _ := instantiateSvc.Instantiate("manager_cmc_integrated",
 			map[string]interface{}{
-				"FQDD":                             mgrName,                                   // this is used for the AR mapper. case difference is confusing, but need to change mappers
-				"fqdd":                             "System.Chassis.1#SubSystem.1#" + mgrName, // This is used for the health subsystem
+				"FQDD":                             mgrName,
 				"fqddlist":                         []string{mgrName},
 				"globalHealthModel":                globalHealthModel,
 				"exportSystemConfiguration":        view.Action(exportSystemConfiguration),
@@ -214,9 +212,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 		// ######################
 		// log related uris
 		// ######################
-		instantiateSvc.Instantiate("logservices",
-			map[string]interface{}{"FQDD": mgrName},
-		)
+		instantiateSvc.Instantiate("logservices", map[string]interface{}{"FQDD": mgrName})
 		instantiateSvc.Instantiate("lclogservices", map[string]interface{}{"FQDD": mgrName})
 		instantiateSvc.Instantiate("faultlistservices", map[string]interface{}{"FQDD": mgrName})
 
@@ -228,8 +224,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 		// Redundancy
 		redundancyLogger, redundancyVw, _ := instantiateSvc.Instantiate("chassis_cmc_integrated_redundancy",
 			map[string]interface{}{
-				"FQDD":     mgrName,                       // this is used for the AR mapper. case difference is confusing, but need to change mappers
-				"fqdd":     "System.Chassis.1#" + mgrName, // This is used for the health subsystem
+				"FQDD":     mgrName,
 				"fqddlist": []string{mgrName},
 			},
 		)
@@ -251,8 +246,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 		//*********************************************************************
 		chasLogger, chasCmcVw, _ := instantiateSvc.Instantiate("chassis_cmc_integrated",
 			map[string]interface{}{
-				"FQDD":              mgrName,                            // this is used for the AR mapper. case difference is confusing, but need to change mappers
-				"fqdd":              "System.Chassis.1#SubSystem.1#CMC", // This is used for the health subsystem
+				"FQDD":              mgrName,
 				"fqddlist":          []string{mgrName},
 				"globalHealthModel": globalHealthModel,
 			},
@@ -266,12 +260,9 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 		power_related_items = append(power_related_items, chasCmcVw.GetURI())
 	}
 
-	instantiateSvc.Instantiate("lclogentrycollection",
-		map[string]interface{}{"FQDD": "CMC.Integrated.1"},
-	)
-	instantiateSvc.Instantiate("faultlistentrycollection",
-		map[string]interface{}{"FQDD": "CMC.Integrated.1"},
-	)
+	instantiateSvc.Instantiate("lclogentrycollection", map[string]interface{}{"FQDD": "CMC.Integrated.1"})
+	instantiateSvc.Instantiate("faultlistentrycollection", map[string]interface{}{"FQDD": "CMC.Integrated.1"})
+
 	// start log service here: it attaches to cmc.integrated.1
 	logSvc.StartService(ctx, logger, managers[0])
 	faultSvc.StartService(ctx, logger, managers[0])
@@ -319,9 +310,10 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 
 			psuLogger, sysChasPwrPsuVw, _ := instantiateSvc.Instantiate("psu_slot",
 				map[string]interface{}{
-					"FQDD":              psuName, // this is used for the AR mapper. case difference with 'fqdd' is confusing, but need to change mappers
-					"ChassisFQDD":       chasName,
-					"fqdd":              "System.Chassis.1#" + strings.Replace(psuName, "PSU.Slot", "PowerSupply", 1),
+					"FQDD":        psuName,
+					"ChassisFQDD": chasName,
+					// MEB: this doesnt appear to be used at all (ie. there is no AM2 health mapper attached in the config)
+					// "health_fqdd":       "System.Chassis.1#" + strings.Replace(psuName, "PSU.Slot", "PowerSupply", 1),
 					"fqddlist":          []string{psuName},
 					"globalHealthModel": globalHealthModel,
 				},
@@ -386,9 +378,10 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 		} {
 			fanLogger, fanView, _ := instantiateSvc.Instantiate("fan",
 				map[string]interface{}{
-					"ChassisFQDD":       chasName,
-					"FQDD":              fanName,
-					"fqdd":              "System.Chassis.1#" + fanName,
+					"ChassisFQDD": chasName,
+					"FQDD":        fanName,
+					// MEB: this doesnt appear to be used at all (ie. there is no AM2 health mapper attached in the config)
+					// "health_fqdd":       "System.Chassis.1#" + fanName,
 					"fqddlist":          []string{fanName},
 					"globalHealthModel": globalHealthModel,
 				},
@@ -445,7 +438,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 		iomLogger, iomView, _ := instantiateSvc.Instantiate("iom",
 			map[string]interface{}{
 				"FQDD":              iomName,
-				"fqdd":              "System.Chassis.1#" + iomName,
 				"fqddlist":          []string{iomName},
 				"globalHealthModel": globalHealthModel,
 				"managed_by":        []string{managers[0].GetURI()},
@@ -462,8 +454,9 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 		// ************************************************************************
 		iomCfgLogger, iomCfgView, _ := instantiateSvc.Instantiate("iom_config",
 			map[string]interface{}{
-				"FQDD":     iomName,
-				"fqdd":     "System.Chassis.1#SubSystem.1#" + iomName,
+				"FQDD": iomName,
+				// MEB: this doesnt appear to be used at all (ie. there is no AM2 health mapper attached in the config)
+				//"health_fqdd": "System.Chassis.1#SubSystem.1#" + iomName,
 				"fqddlist": []string{iomName},
 			},
 		)
@@ -483,7 +476,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 		sledLogger, sledView, _ := instantiateSvc.Instantiate("sled",
 			map[string]interface{}{
 				"FQDD":              sledName,
-				"fqdd":              "System.Chassis.1#" + sledName,
 				"fqddlist":          []string{sledName},
 				"globalHealthModel": globalHealthModel,
 				"managed_by":        []string{managers[0].GetURI()},

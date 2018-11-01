@@ -331,7 +331,7 @@ views:
         - "fn": "ARMapper"
           "params": {"modelname": "default", "cfgsection": "Managers/CMC.Integrated", "mappinguniquename": "'manager_mapper:' + FQDD ", "AddToView": true}
         - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "health", "uniquename": "'am2_manager_' + FQDD" }
+          "params": {"modelname": "default", "cfgsection": "health", "uniquename": "'am2_health_' + FQDD", "passthru": {"health_fqdd": "'System.Chassis.1#SubSystem.1#' + FQDD"} }
         - "fn": "ARDumper"
           "params": {"modelname": "default", "AddToView": true}
         - "fn": "AM2"
@@ -458,12 +458,14 @@ views:
         - "fn": "ARDumper"
           "params": {"modelname": "default", "AddToView": true}
         - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "health", "uniquename": "'am2_chassis_' + FQDD" }
+          "params": {"modelname": "default", "cfgsection": "health", "uniquename": "'am2_health_' + FQDD", "passthru": {"health_fqdd": "'System.Chassis.1#SubSystem.1#CMC'"} }
       "View":
         - "fn": "withModel"
           "params": {"name": "global_health", "expr": "globalHealthModel"}
         - "fn": "linkModel"
           "params": {"existing": "default", "linkname": "etag"}
+        - "fn": "linkModel"
+          "params": {"existing": "default", "linkname": "health"}
         - "fn": "with_URI"
           "params": "rooturi + '/Chassis/' + FQDD"
         - "fn": "PublishResourceUpdatedEventsForModel"
@@ -482,8 +484,10 @@ views:
           # note: this is correct, the redundancy model re-uses the managers mapper
           "params": {"modelname": "default", "cfgsection": "Managers/CMC.Integrated", "mappinguniquename": "'chassis_redundancy:' + FQDD ", "AddToView": true}
         - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "health", "uniquename": "'am2_chassis_redundancy' + FQDD" }
+          "params": {"modelname": "default", "cfgsection": "health", "uniquename": "'am2_health_' + FQDD", "passthru": {"health_fqdd": "'System.Chassis.1#' + FQDD"} }
       "View":
+        - "fn": "linkModel"
+          "params": {"existing": "default", "linkname": "health"}
         - "fn": "with_URI"
           "params": "rooturi + '/Managers/' + FQDD + '/Redundancy'"
         - "fn": "PublishResourceUpdatedEventsForModel"
@@ -665,10 +669,12 @@ views:
         - "fn": "ARDumper"
           "params": {"modelname": "default", "AddToView": true}
         - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "health", "uniquename": "'am2_iom_health_' + FQDD" }
+          "params": {"modelname": "default", "cfgsection": "health", "uniquename": "'am2_health_' + FQDD", "passthru": {"health_fqdd": "'System.Chassis.1#' + FQDD"} }
         - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "iom", "uniquename": "'am2_iom_' + FQDD" }
       "View":
+        - "fn": "linkModel"
+          "params": {"existing": "default", "linkname": "health"}
         - "fn": "with_URI"
           "params": "rooturi + '/Chassis/' + FQDD "
         - "fn": "linkModel"
@@ -714,7 +720,7 @@ views:
         "default": {"members": "array()"}
       "Controllers":
         - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + collection_uri" }
+          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + view.GetURI()", "passthru": {'collection_uri': 'view.GetURI()'} }
         - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "addslot", "uniquename": "'addslot_collection_' + collection_uri" }
       "View":
@@ -747,7 +753,7 @@ views:
         "default": {"members": "array()"}
       "Controllers":
         - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + collection_uri" }
+          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + view.GetURI()", "passthru": {'collection_uri': 'view.GetURI()'} }
         - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "addslotconfig", "uniquename": "'addslotconfig_collection_' + collection_uri" }
       "View":
@@ -786,8 +792,10 @@ views:
         - "fn": "ARDumper"
           "params": {"modelname": "default", "AddToView": true}
         - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "health", "uniquename": "'am2_sled_chassis_' + FQDD" }
+          "params": {"modelname": "default", "cfgsection": "health", "uniquename": "'am2_health_' + FQDD", "passthru": {"health_fqdd": "'System.Chassis.1#' + FQDD"} }
       "View":
+        - "fn": "linkModel"
+          "params": {"existing": "default", "linkname": "health"}
         - "fn": "with_URI"
           "params": "rooturi + '/Chassis/' + FQDD "
         - "fn": "linkModel"
@@ -959,7 +967,7 @@ awesome_mapper:
 
 
     health:
-      - { SelectEventType: "HealthEvent", Select: "type == 'HealthEvent' && data.FQDD == fqdd", ModelUpdate: [ {Property: "health", Query: "data.Health" } ] }
+      - { SelectEventType: "HealthEvent", Select: "type == 'HealthEvent' && data.FQDD == health_fqdd", ModelUpdate: [ {Property: "health", Query: "data.Health" } ] }
 
     #subsystemhealth:
     #- { SelectEventType: "HealthEvent", Select: "type == 'HealthEvent'",  ModelUpdate: [ {Property: "subsystem_health", Query: "subsystem_health(data)" } ] }
