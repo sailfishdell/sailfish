@@ -85,13 +85,6 @@ type config struct {
 	ExecPost    []string
 }
 
-// InstantiateFromCfg will set up logger, model, view, controllers, aggregates from the config file
-// 	- name should be a key in the Views section of cfgMgr
-// 	- cfgMgr is the config file
-// 	- parameters is a dictionary of key/value pairs that
-// The following is needed in the Views[key]
-//            key should have the same names as config struct above
-//
 func (s *Service) InstantiateFromCfg(ctx context.Context, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, name string, parameters map[string]interface{}) (log.Logger, *view.View, error) {
 
 	newParams := map[string]interface{}{}
