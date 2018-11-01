@@ -89,6 +89,8 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	stdcollections.RegisterAggregate(instantiateSvc)
 	session.RegisterAggregate(instantiateSvc)
 	eventservice.RegisterAggregate(instantiateSvc)
+	storage_collection.RegisterAggregate(instantiateSvc)
+	storage_volume_collection.RegisterAggregate(instantiateSvc)
 
 	// ignore unused for now
 	_ = logSvc
@@ -224,7 +226,8 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 		strgCntlrLogger, sysStorEnclsrCtrlVw, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, cfgMgrMu, "storage_enclosure",
 			map[string]interface{}{
 				"rooturi": rootView.GetURI(),
-				"FQDD":    "Enclosure.Internal.0-1:RAID.Slot.4-1",
+				"URI_FQDD":    "Enclosure.Internal.0-1:RAID.Slot.4-1",
+				"EVENT_FQDD":    "308|C|Enclosure.Internal.0-1:RAID.Slot.4-1",
 			},
 		)
 
@@ -240,7 +243,8 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 		strgInstanceLogger, sysStorInstanceCtrlVw, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, cfgMgrMu, "storage_instance",
 			map[string]interface{}{
 				"rooturi": rootView.GetURI(),
-				"FQDD":    "RAID.Slot.4-1",
+				"URI_FQDD":    "AHCI.Embedded.2-1",
+				"EVENT_FQDD":    "301|P|AHCI.Embedded.2-1",
 			},
 		)
 
@@ -256,7 +260,8 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 		strgControllerLogger, sysStorControllerCtrlVw, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, cfgMgrMu, "storage_controller",
 			map[string]interface{}{
 				"rooturi": rootView.GetURI(),
-				"FQDD":    "RAID.Slot.4-1",
+				"URI_FQDD":    "RAID.Slot.4-1",
+				"EVENT_FQDD":    "301|P|AHCI.Embedded.2-1",
 			},
 		)
 
@@ -272,7 +277,8 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 		strgDriveLogger, sysStorDriveCtrlVw, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, cfgMgrMu, "storage_drive",
 			map[string]interface{}{
 				"rooturi": rootView.GetURI(),
-				"FQDD":    "Disk.Bay.0:Enclosure.Internal.0-1:RAID.Slot.4-1",
+				"URI_FQDD":    "Disk.Bay.0:Enclosure.Internal.0-1:RAID.Slot.4-1",
+				"EVENT_FQDD":    "304|P|Disk.Bay.0:Enclosure.Internal.0-1:RAID.Slot.4-1",
 			},
 		)
 
@@ -288,7 +294,8 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 		strgVolLogger, sysStorVolCtrlVw, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, cfgMgrMu, "storage_volume",
 			map[string]interface{}{
 				"rooturi": rootView.GetURI(),
-				"FQDD":    "Disk.Virtual.0:RAID.Slot.4-1",
+				"URI_FQDD": "Disk.Virtual.0:RAID.Slot.4-1",
+				"EVENT_FQDD": "305|P|Disk.Virtual.0:RAID.Slot.4-1",
 			},
 		)
 
@@ -301,14 +308,14 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 		// ##################
 		fmt.Printf("Startup for Storage volume collection\n")
 
-		strgVolCollLogger, sysStorVolCollCtrlVw, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, cfgMgrMu, "storage_volume_collection",
-			map[string]interface{}{
-				"rooturi": rootView.GetURI(),
-				"FQDD":    "RAID.Slot.4-1",
-			},
-		)
+//		strgVolCollLogger, sysStorVolCollCtrlVw, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, cfgMgrMu, "storage_volume_collection",
+//			map[string]interface{}{
+//				"rooturi": rootView.GetURI(),
+//				"URI_FQDD":    "RAID.Slot.4-1",
+//			},
+//		)
 
-		storage_volume_collection.AddAggregate(ctx, strgVolCollLogger, sysStorVolCollCtrlVw, ch)
+//		storage_volume_collection.AddAggregate(ctx, strgVolCollLogger, sysStorVolCollCtrlVw, ch)
 		//storage_vol_coll_items = append(storage_vol_coll_items, sysStorVolCollCtrlVw.GetURI())
 		//sysStorVolCollCtrlVw.GetModel("default").ApplyOption(model.UpdateProperty("link_uris", storage_vol_coll_items))
 		// ##################
@@ -316,14 +323,14 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 		// ##################
 		fmt.Printf("Startup for Storage collection\n")
 
-		strgCollLogger, sysStorCollCtrlVw, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, cfgMgrMu, "storage_collection",
-			map[string]interface{}{
-				"rooturi": rootView.GetURI(),
-				//"FQDD":    "RAID.Slot.4-1",
-			},
-		)
+//		strgCollLogger, sysStorCollCtrlVw, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, cfgMgrMu, "storage_collection",
+	//		map[string]interface{}{
+	//			"rooturi": rootView.GetURI(),
+	//			//"URI_FQDD":    "RAID.Slot.4-1",
+	//		},
+		//)
 
-		storage_collection.AddAggregate(ctx, strgCollLogger, sysStorCollCtrlVw, ch)
+		//storage_collection.AddAggregate(ctx, strgCollLogger, sysStorCollCtrlVw, ch)
 		//storage_coll_items = append(storage_coll_items, sysStorCollCtrlVw.GetURI())
 		//sysStorCollCtrlVw.GetModel("default").ApplyOption(model.UpdateProperty("link_uris", storage_coll_items))
 	}
