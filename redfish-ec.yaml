@@ -1026,7 +1026,7 @@ mappings:
 
     Managers/CMC.Integrated:
         - {Property: "firmware_version",        FQDD: "{FQDD}", Group: "FWInventory", Index: "1", Name: "Version" }
-        - {Property: "name",                    FQDD: "{FQDD}", Group: "ChassisInfo", Index: "1", Name: "Name" }
+        - {Property: "name",                    FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Name" }
         - {Property: "description",             FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Description" }
         - {Property: "health_state",            FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "State" }
         - {Property: "asset_tag",               FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "AssetTag" } #not listed in attributes.txt

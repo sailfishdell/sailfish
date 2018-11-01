@@ -2863,6 +2863,7 @@
 {"name":"HTTPCmdProcessed","data":{"CommandID":"364abfa1-5dc7-4991-98d9-c8a4ec133a07","Results":null,"StatusCode":200,"Headers":null}}
 {"name":"ThermalSensorEvent","data":{"ObjectHeader":{"FQDD":"System.Chassis.1#Temperature.CHASSIS_AMBIENT","Struct":"thp_thermal_sensor","objFlags":8,"objSize":191,"objStatus":2,"objType":3392,"refreshInterval":0},"lowerCriticalThreshold":-7,"lowerWarningThreshold":3,"objExtFlags":1,"rangeGood":1,"readingValid":1,"sensorHealth":2,"sensorReading":28,"sensorReadingInt":28,"sensorStateMask":1,"upperCriticalThreshold":47,"upperWarningThreshold":43}}
 {"name":"HTTPCmdProcessed","data":{"CommandID":"d11b9fab-3458-4195-a298-2604e93342ac","Results":null,"StatusCode":200,"Headers":null}}
+{"name":"HealthEvent","data":{"FQDD":"","Health":""}}
 {"name":"HealthEvent","data":{"FQDD":"System.Chassis.1#SubSystem.1#Fan","Health":"OK"}}
 {"name":"HealthEvent","data":{"FQDD":"System.Chassis.1#SubSystem.1#Temperature","Health":"OK"}}
 {"name":"HealthEvent","data":{"FQDD":"System.Chassis.1#SubSystem.1#MM","Health":"OK"}}
@@ -5476,6 +5477,7 @@
 {"name":"HTTPCmdProcessed","data":{"CommandID":"0241fadc-e0d6-45a6-b967-223530694876","Results":null,"StatusCode":200,"Headers":null}}
 {"name":"ThermalSensorEvent","data":{"ObjectHeader":{"FQDD":"System.Chassis.1#Temperature.CHASSIS_AMBIENT","Struct":"thp_thermal_sensor","objFlags":8,"objSize":191,"objStatus":2,"objType":3392,"refreshInterval":0},"lowerCriticalThreshold":-7,"lowerWarningThreshold":3,"objExtFlags":1,"rangeGood":1,"readingValid":1,"sensorHealth":2,"sensorReading":28,"sensorReadingInt":28,"sensorStateMask":1,"upperCriticalThreshold":47,"upperWarningThreshold":43}}
 {"name":"HTTPCmdProcessed","data":{"CommandID":"ef79b6a2-548f-4c6e-978a-3e75a7a32e38","Results":null,"StatusCode":200,"Headers":null}}
+{"name":"HealthEvent","data":{"FQDD":"","Health":""}}
 {"name":"HealthEvent","data":{"FQDD":"System.Chassis.1#SubSystem.1#Fan","Health":"OK"}}
 {"name":"HealthEvent","data":{"FQDD":"System.Chassis.1#SubSystem.1#Temperature","Health":"OK"}}
 {"name":"HealthEvent","data":{"FQDD":"System.Chassis.1#SubSystem.1#MM","Health":"OK"}}
@@ -7743,6 +7745,7 @@
 {"name":"HTTPCmdProcessed","data":{"CommandID":"9ae3c8e3-669b-4cbb-a1a5-ce4a60ceb251","Results":null,"StatusCode":200,"Headers":null}}
 {"name":"FanEvent","data":{"ObjectHeader":{"objStatus":2,"objSize":137,"objType":3330,"refreshInterval":0,"objFlags":8,"FQDD":"System.Chassis.1#Fan.Slot.9","Struct":"thp_fan_data_object"},"fanpwm":30,"Key":"System.Chassis.1#Fan.Slot.9","FanName":"Rear Fan 5","fanpwm_int":30,"VendorName":"","warningThreshold":1050,"DeviceName":"System.Chassis.1#Fan.Slot.9","TachName":"","criticalThreshold":800,"fanhealth":2,"numrotors":2,"rotor2rpm":4114,"rotor1rpm":4952,"fanStateMask":1}}
 {"name":"HTTPCmdProcessed","data":{"CommandID":"a5402fa6-5f69-49af-82ec-f3440ca9a427","Results":null,"StatusCode":200,"Headers":null}}
+{"name":"HealthEvent","data":{"FQDD":"","Health":""}}
 {"name":"HealthEvent","data":{"FQDD":"System.Chassis.1#SubSystem.1#Fan","Health":"OK"}}
 {"name":"HealthEvent","data":{"FQDD":"System.Chassis.1#SubSystem.1#Temperature","Health":"OK"}}
 {"name":"HealthEvent","data":{"FQDD":"System.Chassis.1#SubSystem.1#MM","Health":"OK"}}
@@ -7901,6 +7904,7 @@
 {"name":"HTTPCmdProcessed","data":{"CommandID":"2f672a00-4230-4a5f-a61e-aa608db97c70","Results":null,"StatusCode":200,"Headers":null}}
 {"name":"FanEvent","data":{"ObjectHeader":{"objStatus":2,"objSize":137,"objType":3330,"refreshInterval":0,"objFlags":8,"FQDD":"System.Chassis.1#Fan.Slot.9","Struct":"thp_fan_data_object"},"fanpwm":30,"Key":"System.Chassis.1#Fan.Slot.9","FanName":"Rear Fan 5","fanpwm_int":30,"VendorName":"","warningThreshold":1050,"DeviceName":"System.Chassis.1#Fan.Slot.9","TachName":"","criticalThreshold":800,"fanhealth":2,"numrotors":2,"rotor2rpm":4116,"rotor1rpm":4952,"fanStateMask":1}}
 {"name":"HTTPCmdProcessed","data":{"CommandID":"e46a5a46-072b-47c1-b97d-a34038c08167","Results":null,"StatusCode":200,"Headers":null}}
+{"name":"HealthEvent","data":{"FQDD":"","Health":""}}
 {"name":"HealthEvent","data":{"FQDD":"System.Chassis.1#SubSystem.1#Fan","Health":"OK"}}
 {"name":"HealthEvent","data":{"FQDD":"System.Chassis.1#SubSystem.1#Temperature","Health":"OK"}}
 {"name":"HealthEvent","data":{"FQDD":"System.Chassis.1#SubSystem.1#MM","Health":"OK"}}
@@ -8060,6 +8064,7 @@
 {"name":"HTTPCmdProcessed","data":{"CommandID":"3c07480d-e927-4023-b79d-6553174678cd","Results":null,"StatusCode":200,"Headers":null}}
 {"name":"FanEvent","data":{"ObjectHeader":{"objStatus":2,"objSize":137,"objType":3330,"refreshInterval":0,"objFlags":8,"FQDD":"System.Chassis.1#Fan.Slot.9","Struct":"thp_fan_data_object"},"fanpwm":30,"Key":"System.Chassis.1#Fan.Slot.9","FanName":"Rear Fan 5","fanpwm_int":30,"VendorName":"","warningThreshold":1050,"DeviceName":"System.Chassis.1#Fan.Slot.9","TachName":"","criticalThreshold":800,"fanhealth":2,"numrotors":2,"rotor2rpm":4113,"rotor1rpm":4952,"fanStateMask":1}}
 {"name":"HTTPCmdProcessed","data":{"CommandID":"67e776d6-4d35-4733-821d-3e2e0930809e","Results":null,"StatusCode":200,"Headers":null}}
+{"name":"HealthEvent","data":{"FQDD":"","Health":""}}
 {"name":"HealthEvent","data":{"FQDD":"System.Chassis.1#SubSystem.1#Fan","Health":"OK"}}
 {"name":"HealthEvent","data":{"FQDD":"System.Chassis.1#SubSystem.1#Temperature","Health":"OK"}}
 {"name":"HealthEvent","data":{"FQDD":"System.Chassis.1#SubSystem.1#MM","Health":"OK"}}
@@ -8077,7 +8082,8 @@
 {"name":"HealthEvent","data":{"FQDD":"System.Chassis.1#SubSystem.1#IOM.Slot.B2b","Health":"Absent"}}
 {"name":"HealthEvent","data":{"FQDD":"System.Chassis.1#SubSystem.1#IOM.Slot.C1","Health":"Absent"}}
 {"name":"HealthEvent","data":{"FQDD":"System.Chassis.1#SubSystem.1#IOM.Slot.C2","Health":"Absent"}}
-{"name": "HealthEvent", "data": {"FQDD": "", "health": ""}}
+{"name":"HealthEvent","data":{"FQDD":"System.Chassis.1#SubSystem.1#System.Modular.1","Health":"Absent"}}
+{"name":"HealthEvent","data":{"FQDD":"System.Chassis.1#SubSystem.1#System.Modular.1a","Health":"Absent"}}
 {"name": "HealthEvent", "data": {"FQDD": "System.Chassis.1#IOM.Slot.A1", "health": "OK"}}
 {"name": "HealthEvent", "data": {"FQDD": "System.Chassis.1#IOM.Slot.A2", "health": "OK"}}
 {"name": "HealthEvent", "data": {"FQDD": "System.Chassis.1#SubSystem.1#IOM", "health": "OK"}}
