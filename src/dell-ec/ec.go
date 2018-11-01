@@ -215,7 +215,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 		// log related uris
 		// ######################
 		instantiateSvc.Instantiate("logservices",
-			map[string]interface{}{"FQDD": mgrName, "collection_uri": rootView.GetURI() + "/Managers/" + mgrName + "/LogServices"},
+			map[string]interface{}{"FQDD": mgrName},
 		)
 		instantiateSvc.Instantiate("lclogservices", map[string]interface{}{"FQDD": mgrName})
 		instantiateSvc.Instantiate("faultlistservices", map[string]interface{}{"FQDD": mgrName})
@@ -267,10 +267,10 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	}
 
 	instantiateSvc.Instantiate("lclogentrycollection",
-		map[string]interface{}{"FQDD": "CMC.Integrated.1", "collection_uri": rootView.GetURI() + "/Managers/CMC.Integrated.1/Logs/Lclog"},
+		map[string]interface{}{"FQDD": "CMC.Integrated.1"},
 	)
 	instantiateSvc.Instantiate("faultlistentrycollection",
-		map[string]interface{}{"FQDD": "CMC.Integrated.1", "collection_uri": rootView.GetURI() + "/Managers/CMC.Integrated.1/Logs/FaultList"},
+		map[string]interface{}{"FQDD": "CMC.Integrated.1"},
 	)
 	// start log service here: it attaches to cmc.integrated.1
 	logSvc.StartService(ctx, logger, managers[0])
