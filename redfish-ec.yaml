@@ -27,13 +27,13 @@ views:
         "set_hash_value(serviceglobals, 'rootid', uuid)",
         "set_hash_value(serviceglobals, 'rooturi', view.GetURI())",
         "instantiate('testview')",
-        "instantiate('chassis', 'collection_uri', '/redfish/v1/Chassis')",
-        "instantiate('systems', 'collection_uri', '/redfish/v1/Systems')",
-        "instantiate('managers', 'collection_uri', '/redfish/v1/Managers')",
+        "instantiate('chassis')",
+        "instantiate('systems')",
+        "instantiate('managers')",
         "instantiate('accountservice')",
-        "instantiate('roles', 'collection_uri', '/redfish/v1/AccountService/Roles')",
-        "instantiate('accounts', 'collection_uri', '/redfish/v1/AccountService/Accounts')",
-        "instantiate('registries', 'collection_uri', '/redfish/v1/Registries')",
+        "instantiate('roles')",
+        "instantiate('accounts')",
+        "instantiate('registries')",
         #"instantiate('sessionservice')",
       ]
 
@@ -48,6 +48,103 @@ views:
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
       "Aggregate": "testview"
+
+  "chassis":
+      "Logger": ["module", "Chassis"]
+      "Models":
+        "default":  {"members": "array()"}
+      "Controllers":
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + view.GetURI()", "passthru": {'collection_uri': 'view.GetURI()'} }
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/Chassis'"
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+        - "fn": "stdFormatters"
+          "params":
+      "Aggregate": "chassis"
+
+  "systems":
+      "Logger": ["module", "Systems"]
+      "Models":
+        "default":  {"members": "array()"}
+      "Controllers":
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + view.GetURI()", "passthru": {'collection_uri': 'view.GetURI()'} }
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/Systems'"
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+        - "fn": "stdFormatters"
+          "params":
+      "Aggregate": "systems"
+
+  "managers":
+      "Logger": ["module", "Managers"]
+      "Models":
+        "default":  {"members": "array()"}
+      "Controllers":
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + view.GetURI()", "passthru": {'collection_uri': 'view.GetURI()'} }
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/Managers'"
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+        - "fn": "stdFormatters"
+          "params":
+      "Aggregate": "managers"
+
+  "accountservice":
+      "Logger": ["module", "AccountService"]
+      "Models":
+        "default":  {}
+      "Controllers":
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/AccountService' "
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+        - "fn": "stdFormatters"
+          "params":
+      "Aggregate": "accountservice"
+      "ExecPost": [
+        "set_hash_value(serviceglobals, 'actsvc_id', uuid)",
+        "set_hash_value(serviceglobals, 'actsvc_uri', view.GetURI())"]
+
+  "roles":
+      "Logger": ["module", "Roles"]
+      "Models":
+        "default":  {"members": "array()"}
+      "Controllers":
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + view.GetURI()", "passthru": {'collection_uri': 'view.GetURI()'} }
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/AccountService/Roles'"
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+        - "fn": "stdFormatters"
+          "params":
+      "Aggregate": "roles"
+
+  "accounts":
+      "Logger": ["module", "Accounts"]
+      "Models":
+        "default":  {"members": "array()"}
+      "Controllers":
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + view.GetURI()", "passthru": {'collection_uri': 'view.GetURI()'} }
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/AccountService/Accounts'"
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+        - "fn": "stdFormatters"
+          "params":
+      "Aggregate": "accounts"
 
   "eventservice":
       "Logger": ["module", "eventservice"]
@@ -78,7 +175,7 @@ views:
         "default": {"members": "array()"}
       "Controllers":
         - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + collection_uri" }
+          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + view.GetURI()", "passthru": {'collection_uri': 'view.GetURI()'} }
       "View":
         - "fn": "with_URI"
           "params": "eventsvc_uri + '/Subscriptions'"
@@ -111,7 +208,7 @@ views:
         "default":  {"session_timeout": "30"}
       "Controllers":
         - "fn": "ARMapper"
-          "params": {"modelname": "default", "cfgsection": "SessionService", "mappinguniquename": "'/redfish/v1/SessionService'", "AddToView": true}
+          "params": {"modelname": "default", "cfgsection": "SessionService", "mappinguniquename": "rooturi + '/SessionService'", "AddToView": true}
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/SessionService'"
@@ -131,9 +228,9 @@ views:
         "default":  {"members": "array()"}
       "Controllers":
         - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + collection_uri" }
+          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + view.GetURI()", "passthru": {'collection_uri': 'view.GetURI()'} }
         - "fn": "ARMapper"
-          "params": {"modelname": "default", "cfgsection": "SessionService", "mappinguniquename": "'/redfish/v1/SessionService/Sessions'", "AddToView": true}
+          "params": {"modelname": "default", "cfgsection": "SessionService", "mappinguniquename": "rooturi + '/SessionService/Sessions'", "AddToView": true}
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/SessionService/Sessions'"
@@ -158,7 +255,7 @@ views:
         "default":  {"members": "array()"}
       "Controllers":
         - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + collection_uri" }
+          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + view.GetURI()", "passthru": {'collection_uri': 'view.GetURI()'} }
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/Registries'"
@@ -222,105 +319,6 @@ views:
         - "fn": "stdFormatters"
           "params":
       "Aggregate": "registry"
-
-  "chassis":
-      "Logger": ["module", "Chassis"]
-      "Models":
-        "default":  {"members": "array()"}
-      "Controllers":
-        - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + collection_uri" }
-      "View":
-        - "fn": "with_URI"
-          "params": "collection_uri "
-        - "fn": "PublishResourceUpdatedEventsForModel"
-          "params": "default"
-        - "fn": "stdFormatters"
-          "params":
-      "Aggregate": "chassis"
-
-  "systems":
-      "Logger": ["module", "Systems"]
-      "Models":
-        "default":  {"members": "array()"}
-      "Controllers":
-        - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + collection_uri" }
-      "View":
-        - "fn": "with_URI"
-          "params": "collection_uri "
-        - "fn": "PublishResourceUpdatedEventsForModel"
-          "params": "default"
-        - "fn": "stdFormatters"
-          "params":
-      "Aggregate": "systems"
-
-  "managers":
-      "Logger": ["module", "Managers"]
-      "Models":
-        "default":  {"members": "array()"}
-      "Controllers":
-        - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + collection_uri" }
-      "View":
-        - "fn": "with_URI"
-          "params": "collection_uri "
-        - "fn": "PublishResourceUpdatedEventsForModel"
-          "params": "default"
-        - "fn": "stdFormatters"
-          "params":
-      "Aggregate": "managers"
-
-  "roles":
-      "Logger": ["module", "Roles"]
-      "Models":
-        "default":  {"members": "array()"}
-      "Controllers":
-        - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + collection_uri" }
-      "View":
-        - "fn": "with_URI"
-          "params": "collection_uri "
-        - "fn": "PublishResourceUpdatedEventsForModel"
-          "params": "default"
-        - "fn": "stdFormatters"
-          "params":
-      "Aggregate": "roles"
-
-  "accountservice":
-      "Logger": ["module", "AccountService"]
-      "Models":
-        "default":  {}
-      "Controllers":
-      "View":
-        - "fn": "with_URI"
-          "params": "rooturi + '/AccountService' "
-        - "fn": "PublishResourceUpdatedEventsForModel"
-          "params": "default"
-        - "fn": "stdFormatters"
-          "params":
-      "Aggregate": "accountservice"
-      "ExecPost": [
-        "set_hash_value(serviceglobals, 'actsvc_id', uuid)",
-        "set_hash_value(serviceglobals, 'actsvc_uri', view.GetURI())",
-      ]
-
-  "accounts":
-      "Logger": ["module", "Accounts"]
-      "Models":
-        "default":  {"members": "array()"}
-      "Controllers":
-        - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + collection_uri" }
-      "View":
-        - "fn": "with_URI"
-          "params": "collection_uri "
-        - "fn": "PublishResourceUpdatedEventsForModel"
-          "params": "default"
-        - "fn": "stdFormatters"
-          "params":
-      "Aggregate": "accounts"
-
 
 
   "manager_cmc_integrated":

@@ -131,7 +131,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 		}
 
 		// have to do this in a goroutine because awesome mapper is locked while it processes events
-		go instantiateSvc.Instantiate(cfgStr, params)
+		instantiateSvc.WorkQueue <- func() { instantiateSvc.InstantiateNoWait(cfgStr, params) }
 		return true, nil
 	})
 
@@ -152,7 +152,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	//*********************************************************************
 	_, sessionSvcVw, _ := instantiateSvc.Instantiate("sessionservice", map[string]interface{}{})
 	session.SetupSessionService(instantiateSvc, sessionSvcVw, ch, eb)
-	instantiateSvc.Instantiate("sessioncollection", map[string]interface{}{"collection_uri": "/redfish/v1/SessionService/Sessions"})
+	instantiateSvc.Instantiate("sessioncollection", map[string]interface{}{})
 
 	//*********************************************************************
 	//  Standard redfish roles
@@ -234,7 +234,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 			},
 		)
 
-    redundancy_set := []string{rootView.GetURI()+"/Managers/CMC.Integrated.1", rootView.GetURI()+"/Managers/CMC.Integrated.2"}
+		redundancy_set := []string{rootView.GetURI() + "/Managers/CMC.Integrated.1", rootView.GetURI() + "/Managers/CMC.Integrated.2"}
 
 		redundancyVw.GetModel("default").ApplyOption(
 			model.UpdateProperty("redundancy_set", redundancy_set),
