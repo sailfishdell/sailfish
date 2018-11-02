@@ -129,6 +129,18 @@ func (d *DomainObjects) SetAggregateID(uri string, ID eh.UUID) {
 	d.Tree[uri] = ID
 }
 
+func (d *DomainObjects) FindMatchingURIs(matcher func(string) bool) []string {
+	d.treeMu.RLock()
+	defer d.treeMu.RUnlock()
+	ret := []string{}
+	for uri, _ := range d.Tree {
+		if matcher(uri) {
+			ret = append(ret, uri)
+		}
+	}
+	return ret
+}
+
 func (d *DomainObjects) DeleteResource(ctx context.Context, uri string) {
 	d.treeMu.Lock()
 	defer d.treeMu.Unlock()
@@ -179,7 +191,9 @@ func (d *DomainObjects) Notify(ctx context.Context, event eh.Event) {
 			logger.Info("Delete URI", "URI", data.ResourceURI)
 			d.DeleteResource(ctx, data.ResourceURI)
 			p, err := InstantiatePlugin(PluginType(data.ResourceURI))
-			type closer interface{ Close() }
+			type closer interface {
+				Close()
+			}
 			if err == nil && p != nil {
 				if c, ok := p.(closer); ok {
 					c.Close()
