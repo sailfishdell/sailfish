@@ -854,7 +854,7 @@ awesome_mapper:
 
     addsubsystemhealth:
       - { SelectEventType: "HealthEvent",
-          Select: "type == 'HealthEvent'",
+          Select: "true",
           Exec: [ "addsubsyshealth(data.FQDD, data.Health)" ]}
 
     addslot:
@@ -868,46 +868,46 @@ awesome_mapper:
           Exec: [ "addslotconfig(data.Id)" ]}
 
     testview:
-      - { SelectEventType: "AttributeUpdated", Select: "type == 'AttributeUpdated' && data.FQDD == fqdd && data.Name == 'test'", ModelUpdate: [ {Property: "TEST", Query: "data.Value", Default: 0} ] }
+      - { SelectEventType: "AttributeUpdated", Select: "data.FQDD == fqdd && data.Name == 'test'", ModelUpdate: [ {Property: "TEST", Query: "data.Value", Default: 0} ] }
 
     certificate:
       - { SelectEventType: "FileReadEvent", Select: "data.URI == 'CertificateInventory' && data.FQDD == FQDD", ModelUpdate: [ { Property: "certificate_signing_request", Query: "data.FileContent" } ] }
       - { SelectEventType: "FileReadEvent", Select: "data.URI == 'FactoryIdentity' && data.FQDD == FQDD", ModelUpdate: [ { Property: "certificate", Query: "data.Content" } ] }
 
     slot:
-      - { SelectEventType: "AttributeUpdated", Select: "type == 'AttributeUpdated' && data.FQDD == 'System.Chassis.1' && data.Group == Group && data.Index == Index && data.Name == 'Config'",
+      - { SelectEventType: "AttributeUpdated", Select: "data.FQDD == 'System.Chassis.1' && data.Group == Group && data.Index == Index && data.Name == 'Config'",
             ModelUpdate: [ {Property: "slot_config", Query: "data.Value"}]}
-      - { SelectEventType: "AttributeUpdated", Select: "type == 'AttributeUpdated' && data.FQDD == 'System.Chassis.1' && data.Group == Group && data.Index == Index && data.Name == 'Contains'",
+      - { SelectEventType: "AttributeUpdated", Select: "data.FQDD == 'System.Chassis.1' && data.Group == Group && data.Index == Index && data.Name == 'Contains'",
             ModelUpdate: [ {Property: "slot_contains", Query: "data.Value"}]}
-      - { SelectEventType: "AttributeUpdated", Select: "type == 'AttributeUpdated' && data.FQDD == 'System.Chassis.1' && data.Group == Group && data.Index == Index && data.Name == 'Name'",
+      - { SelectEventType: "AttributeUpdated", Select: "data.FQDD == 'System.Chassis.1' && data.Group == Group && data.Index == Index && data.Name == 'Name'",
             ModelUpdate: [ {Property: "slot_name", Query: "data.Value"}]}
-      - { SelectEventType: "AttributeUpdated", Select: "type == 'AttributeUpdated' && data.FQDD == 'System.Chassis.1' && data.Group == Group && data.Index == Index && data.Name == 'Occupied'",
+      - { SelectEventType: "AttributeUpdated", Select: "data.FQDD == 'System.Chassis.1' && data.Group == Group && data.Index == Index && data.Name == 'Occupied'",
             ModelUpdate: [ {Property: "slot_occupied", Query: "data.Value"}]}
-      - { SelectEventType: "AttributeUpdated", Select: "type == 'AttributeUpdated' && data.FQDD == 'System.Chassis.1' && data.Group == Group && data.Index == Index && data.Name == 'SlotName'",
+      - { SelectEventType: "AttributeUpdated", Select: "data.FQDD == 'System.Chassis.1' && data.Group == Group && data.Index == Index && data.Name == 'SlotName'",
             ModelUpdate: [ {Property: "slot_slotname", Query: "data.Value"}]}
-      - { SelectEventType: "AttributeUpdated", Select: "type == 'AttributeUpdated' && (data.FQDD == model.GetPropertyOk(\"slot_contains\")) && data.Name == 'SledProfile'",
+      - { SelectEventType: "AttributeUpdated", Select: "(data.FQDD == model.GetPropertyOk(\"slot_contains\")) && data.Name == 'SledProfile'",
             ModelUpdate: [ {Property: "sled_profile", Query: "data.Value", Default: ""}]}
 
     slotconfig:
-      - { SelectEventType: "AttributeUpdated", Select: "type == 'AttributeUpdated' && data.FQDD == 'System.Chassis.1' && data.Group == Group && data.Index == Index && data.Name == 'Rows'",
+      - { SelectEventType: "AttributeUpdated", Select: "data.FQDD == 'System.Chassis.1' && data.Group == Group && data.Index == Index && data.Name == 'Rows'",
             ModelUpdate: [ {Property: "rows", Query: "string(data.Value)"}]}
-      - { SelectEventType: "AttributeUpdated", Select: "type == 'AttributeUpdated' && data.FQDD == 'System.Chassis.1' && data.Group == Group && data.Index == Index && data.Name == 'Columns'",
+      - { SelectEventType: "AttributeUpdated", Select: "data.FQDD == 'System.Chassis.1' && data.Group == Group && data.Index == Index && data.Name == 'Columns'",
             ModelUpdate: [ {Property: "columns", Query: "string(data.Value)"}]}
-      - { SelectEventType: "AttributeUpdated", Select: "type == 'AttributeUpdated' && data.FQDD == 'System.Chassis.1' && data.Group == Group && data.Index == Index && data.Name == 'Location'",
+      - { SelectEventType: "AttributeUpdated", Select: "data.FQDD == 'System.Chassis.1' && data.Group == Group && data.Index == Index && data.Name == 'Location'",
             ModelUpdate: [ {Property: "location", Query: "data.Value"}]}
-      - { SelectEventType: "AttributeUpdated", Select: "type == 'AttributeUpdated' && data.FQDD == 'System.Chassis.1' && data.Group == Group && data.Index == Index && data.Name == 'Name'",
+      - { SelectEventType: "AttributeUpdated", Select: "data.FQDD == 'System.Chassis.1' && data.Group == Group && data.Index == Index && data.Name == 'Name'",
             ModelUpdate: [ {Property: "name", Query: "data.Value"}]}
-      - { SelectEventType: "AttributeUpdated", Select: "type == 'AttributeUpdated' && data.FQDD == 'System.Chassis.1' && data.Group == Group && data.Index == Index && data.Name == 'Order'",
+      - { SelectEventType: "AttributeUpdated", Select: "data.FQDD == 'System.Chassis.1' && data.Group == Group && data.Index == Index && data.Name == 'Order'",
             ModelUpdate: [ {Property: "order", Query: "data.Value"}]}
-      - { SelectEventType: "AttributeUpdated", Select: "type == 'AttributeUpdated' && data.FQDD == 'System.Chassis.1' && data.Group == Group && data.Index == Index && data.Name == 'Orientation'",
+      - { SelectEventType: "AttributeUpdated", Select: "data.FQDD == 'System.Chassis.1' && data.Group == Group && data.Index == Index && data.Name == 'Orientation'",
             ModelUpdate: [ {Property: "orientation", Query: "data.Value"}]}
-      - { SelectEventType: "AttributeUpdated", Select: "type == 'AttributeUpdated' && data.FQDD == 'System.Chassis.1' && data.Group == Group && data.Index == Index && data.Name == 'ParentConfig'",
+      - { SelectEventType: "AttributeUpdated", Select: "data.FQDD == 'System.Chassis.1' && data.Group == Group && data.Index == Index && data.Name == 'ParentConfig'",
             ModelUpdate: [ {Property: "parentConfig", Query: "data.Value"}]}
-      - { SelectEventType: "AttributeUpdated", Select: "type == 'AttributeUpdated' && data.FQDD == 'System.Chassis.1' && data.Group == Group && data.Index == Index && data.Name == 'Type'",
+      - { SelectEventType: "AttributeUpdated", Select: "data.FQDD == 'System.Chassis.1' && data.Group == Group && data.Index == Index && data.Name == 'Type'",
             ModelUpdate: [ {Property: "type", Query: "data.Value"}]}
 
     fan:
-      - { SelectEventType: "FanEvent", Select: "type == 'FanEvent' && data.ObjectHeader.FQDD == DM_FQDD",
+      - { SelectEventType: "FanEvent", Select: "data.ObjectHeader.FQDD == DM_FQDD",
             ModelUpdate: [
                 {Property: "fanpwm", Query: "data.Fanpwm" },
                 {Property: "key", Query: "data.Key" },
@@ -926,10 +926,10 @@ awesome_mapper:
                 {Property: "FanStateMask", Query: "data.FanStateMask" }]}
 
     iom:
-      - { SelectEventType: "AttributeUpdated", Select: "type == 'AttributeUpdated' && data.FQDD == DM_FQDD && data.Name == 'InstantaneousPower'", ModelUpdate: [ {Property: "Instantaneous_Power", Query: "data.Value", Default: 0} ] }
+      - { SelectEventType: "AttributeUpdated", Select: "data.FQDD == DM_FQDD && data.Name == 'InstantaneousPower'", ModelUpdate: [ {Property: "Instantaneous_Power", Query: "data.Value", Default: 0} ] }
 
     iom_config:
-      - { SelectEventType: "IomCapability", Select: "type == 'IomCapability' && data.Name == FQDD",
+      - { SelectEventType: "IomCapability", Select: "data.Name == FQDD",
             ModelUpdate: [
                 {Property: "config", Query: "data.IOMConfig_objects" },
                 {Property: "capabilities", Query: "data.Capabilities" },
@@ -937,7 +937,7 @@ awesome_mapper:
 
 
     power_control:
-      - { SelectEventType: "PowerConsumptionDataObjEvent", Select: "type == 'PowerConsumptionDataObjEvent'",
+      - { SelectEventType: "PowerConsumptionDataObjEvent", Select: "true",
             ModelUpdate: [
                 {Property: "energy_consumption_start_time", Query: "epoch_to_date(data.CwStartTime)" },
                 {Property: "energy_consumption_kwh", Query: "int((data.CumulativeWatts)/1000)" },
@@ -950,14 +950,14 @@ awesome_mapper:
                 {Property: "consumed_watts", Query: "data.InstWattsPSU1_2" }]}
 
     power_supply:
-      - { SelectEventType: "PowerSupplyObjEvent", Select: "type == 'PowerSupplyObjEvent' && data.ObjectHeader.FQDD == DM_FQDD",
+      - { SelectEventType: "PowerSupplyObjEvent", Select: "data.ObjectHeader.FQDD == DM_FQDD",
             ModelUpdate: [
                 {Property: "line_input_voltage", Query: "zero_to_null(data.InputVolts)" }, #unsigned int
                 {Property: "input_current", Query: "zero_to_null(data.InstAmps)" }, #float
                 {Property: "obj_status", Query: "map_health_value(data.ObjectHeader.ObjStatus)" }]}
 
     power_trend:
-      - { SelectEventType: "AvgPowerConsumptionStatDataObjEvent", Select: "type == 'AvgPowerConsumptionStatDataObjEvent'",
+      - { SelectEventType: "AvgPowerConsumptionStatDataObjEvent", Select: "true",
             ModelUpdate: [
                 {Property: "average_watts",  Query: "traverse_struct(data, 'AvgPwrLast' + trend)" }, #does not work, trend is not a list?
                 {Property: "max_watts",      Query: "traverse_struct(data, 'MaxPwrLast' + trend)" },
@@ -967,21 +967,21 @@ awesome_mapper:
 
 
     health:
-      - { SelectEventType: "HealthEvent", Select: "type == 'HealthEvent' && data.FQDD == health_fqdd", ModelUpdate: [ {Property: "health", Query: "data.Health" } ] }
+      - { SelectEventType: "HealthEvent", Select: "data.FQDD == health_fqdd", ModelUpdate: [ {Property: "health", Query: "data.Health" } ] }
 
     #subsystemhealth:
-    #- { SelectEventType: "HealthEvent", Select: "type == 'HealthEvent'",  ModelUpdate: [ {Property: "subsystem_health", Query: "subsystem_health(data)" } ] }
+    #- { SelectEventType: "HealthEvent", Select: "true",  ModelUpdate: [ {Property: "subsystem_health", Query: "subsystem_health(data)" } ] }
 
     global_health:
-      - { SelectEventType: "HealthEvent", Select: "type == 'HealthEvent' && data.FQDD == 'System.Chassis.1#SubSystem.1#Fan'", ModelUpdate: [ {Property: "fan_rollup", Query: "data.Health" } ] }
-      - { SelectEventType: "HealthEvent", Select: "type == 'HealthEvent' && data.FQDD == 'System.Chassis.1#SubSystem.1#Temperature'", ModelUpdate: [ {Property: "temperature_rollup", Query: "data.Health" } ] }
-      - { SelectEventType: "HealthEvent", Select: "type == 'HealthEvent' && data.FQDD == 'System.Chassis.1#SubSystem.1#MM'", ModelUpdate: [ {Property: "mm_rollup", Query: "data.Health" } ] }
-      - { SelectEventType: "HealthEvent", Select: "type == 'HealthEvent' && data.FQDD == 'System.Chassis.1#SubSystem.1#SledSystem'", modelupdate: [ {Property: "sled_rollup", Query: "data.Health" } ] }
-      - { SelectEventType: "HealthEvent", Select: "type == 'HealthEvent' && data.FQDD == 'System.Chassis.1#SubSystem.1#PowerSupply'", ModelUpdate: [ {Property: "psu_rollup", Query: "data.Health" } ] }
-      - { SelectEventType: "HealthEvent", Select: "type == 'HealthEvent' && data.FQDD == 'System.Chassis.1#SubSystem.1#CMC'", ModelUpdate: [ {Property: "cmc_rollup", Query: "data.Health" } ] }
-      - { SelectEventType: "HealthEvent", Select: "type == 'HealthEvent' && data.FQDD == 'System.Chassis.1#SubSystem.1#Miscellaneous'", ModelUpdate: [ {Property: "misc_rollup", Query: "data.Health" } ] }
-      - { SelectEventType: "HealthEvent", Select: "type == 'HealthEvent' && data.FQDD == 'System.Chassis.1#SubSystem.1#Battery'", ModelUpdate: [ {Property: "battery_rollup", Query: "data.Health" } ] }
-      - { SelectEventType: "HealthEvent", Select: "type == 'HealthEvent' && data.FQDD == 'System.Chassis.1#SubSystem.1#IOMSubsystem'", ModelUpdate: [ {Property: "iom_rollup", Query: "data.Health" } ] }
+      - { SelectEventType: "HealthEvent", Select: "data.FQDD == 'System.Chassis.1#SubSystem.1#Fan'", ModelUpdate: [ {Property: "fan_rollup", Query: "data.Health" } ] }
+      - { SelectEventType: "HealthEvent", Select: "data.FQDD == 'System.Chassis.1#SubSystem.1#Temperature'", ModelUpdate: [ {Property: "temperature_rollup", Query: "data.Health" } ] }
+      - { SelectEventType: "HealthEvent", Select: "data.FQDD == 'System.Chassis.1#SubSystem.1#MM'", ModelUpdate: [ {Property: "mm_rollup", Query: "data.Health" } ] }
+      - { SelectEventType: "HealthEvent", Select: "data.FQDD == 'System.Chassis.1#SubSystem.1#SledSystem'", modelupdate: [ {Property: "sled_rollup", Query: "data.Health" } ] }
+      - { SelectEventType: "HealthEvent", Select: "data.FQDD == 'System.Chassis.1#SubSystem.1#PowerSupply'", ModelUpdate: [ {Property: "psu_rollup", Query: "data.Health" } ] }
+      - { SelectEventType: "HealthEvent", Select: "data.FQDD == 'System.Chassis.1#SubSystem.1#CMC'", ModelUpdate: [ {Property: "cmc_rollup", Query: "data.Health" } ] }
+      - { SelectEventType: "HealthEvent", Select: "data.FQDD == 'System.Chassis.1#SubSystem.1#Miscellaneous'", ModelUpdate: [ {Property: "misc_rollup", Query: "data.Health" } ] }
+      - { SelectEventType: "HealthEvent", Select: "data.FQDD == 'System.Chassis.1#SubSystem.1#Battery'", ModelUpdate: [ {Property: "battery_rollup", Query: "data.Health" } ] }
+      - { SelectEventType: "HealthEvent", Select: "data.FQDD == 'System.Chassis.1#SubSystem.1#IOMSubsystem'", ModelUpdate: [ {Property: "iom_rollup", Query: "data.Health" } ] }
 
 
 mappings:
