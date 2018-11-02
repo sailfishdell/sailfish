@@ -245,7 +245,7 @@ func RegisterWithURI(s *Service) {
 		}
 		expr, err := govaluate.NewEvaluableExpressionWithFunctions(exprStr, functions)
 		if err != nil {
-			logger.Error("Failed to create evaluable expression", "expr", expr, "err", err)
+			logger.Error("Failed to create evaluable expression", "expr", exprStr, "err", err)
 			return errors.New("Failed to create evaluable expression")
 		}
 		uri, err := expr.Evaluate(parameters)
