@@ -195,7 +195,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 		mgrLogger, mgrCmcVw, _ := instantiateSvc.Instantiate("manager_cmc_integrated",
 			map[string]interface{}{
 				"FQDD":                             mgrName,
-				"fqddlist":                         []string{mgrName},
 				"globalHealthModel":                globalHealthModel,
 				"exportSystemConfiguration":        view.Action(exportSystemConfiguration),
 				"importSystemConfiguration":        view.Action(importSystemConfiguration),
@@ -225,8 +224,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 		// Redundancy
 		redundancyLogger, redundancyVw, _ := instantiateSvc.Instantiate("chassis_cmc_integrated_redundancy",
 			map[string]interface{}{
-				"FQDD":     mgrName,
-				"fqddlist": []string{mgrName},
+				"FQDD": mgrName,
 			},
 		)
 
@@ -248,7 +246,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 		chasLogger, chasCmcVw, _ := instantiateSvc.Instantiate("chassis_cmc_integrated",
 			map[string]interface{}{
 				"FQDD":              mgrName,
-				"fqddlist":          []string{mgrName},
 				"globalHealthModel": globalHealthModel,
 			},
 		)
@@ -276,7 +273,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 		sysChasLogger, sysChasVw, _ := instantiateSvc.Instantiate("system_chassis",
 			map[string]interface{}{
 				"FQDD":                   chasName,
-				"fqddlist":               []string{chasName},
 				"globalHealthModel":      globalHealthModel,
 				"msmConfigBackup":        view.Action(msmConfigBackup),
 				"chassisMSMConfigBackup": view.Action(chassisMSMConfigBackup),
@@ -315,7 +311,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 					"DM_FQDD":           "System.Chassis.1#" + strings.Replace(psuName, "PSU.Slot", "PowerSupply", 1),
 					"FQDD":              psuName,
 					"ChassisFQDD":       chasName,
-					"fqddlist":          []string{psuName},
 					"globalHealthModel": globalHealthModel,
 				},
 			)
@@ -383,7 +378,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 					"FQDD":        fanName,
 					// MEB: this doesnt appear to be used at all (ie. there is no AM2 health mapper attached in the config)
 					// "health_fqdd":       "System.Chassis.1#" + fanName,
-					"fqddlist":          []string{fanName},
 					"globalHealthModel": globalHealthModel,
 				},
 			)
@@ -439,7 +433,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 		iomLogger, iomView, _ := instantiateSvc.Instantiate("iom",
 			map[string]interface{}{
 				"FQDD":              iomName,
-				"fqddlist":          []string{iomName},
 				"globalHealthModel": globalHealthModel,
 				"managed_by":        []string{managers[0].GetURI()},
 			},
@@ -458,7 +451,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 				"FQDD": iomName,
 				// MEB: this doesnt appear to be used at all (ie. there is no AM2 health mapper attached in the config)
 				//"health_fqdd": "System.Chassis.1#SubSystem.1#" + iomName,
-				"fqddlist": []string{iomName},
 			},
 		)
 		iom_config.AddAggregate(ctx, iomCfgLogger, iomCfgView, ch, eb)
@@ -477,7 +469,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 		sledLogger, sledView, _ := instantiateSvc.Instantiate("sled",
 			map[string]interface{}{
 				"FQDD":              sledName,
-				"fqddlist":          []string{sledName},
 				"globalHealthModel": globalHealthModel,
 				"managed_by":        []string{managers[0].GetURI()},
 			},

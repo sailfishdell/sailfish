@@ -39,15 +39,32 @@ func RegisterController(s *testaggregate.Service, arsvc *Service) {
 			addToViewBool = true
 		}
 
+		// if this stuff not present, no big deal
+		passthruParams, ok := cfgParams["passthru"]
+		if ok {
+			testaggregate.GetPassThruParams(logger, parameters, passthruParams)
+		}
+
 		fqdd, ok := parameters["fqddlist"]
 		if !ok {
 			logger.Crit("Required parameter 'fqddlist' missing from parameters to InstantiateFromCfg()")
 			return nil
 		}
 
-		fqddlist, ok := fqdd.([]string)
-		if !ok {
-			logger.Crit("Required parameter 'fqddlist' should be an array")
+		var fqddlist []string
+
+		switch t := fqdd.(type) {
+		case []string:
+			fqddlist = t
+		case []interface{}:
+			fqddlist = []string{}
+			for _, v := range t {
+				if s, ok := v.(string); ok {
+					fqddlist = append(fqddlist, s)
+				}
+			}
+		default:
+			logger.Crit("Required parameter 'fqddlist' should be an []string or []interface{}")
 			return nil
 		}
 
