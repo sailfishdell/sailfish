@@ -31,7 +31,7 @@ logs:
 
     # log all web server accesses
     - Enabled: false
-      FileName: "./http-access.log"
+      FileName: "/var/log/http-access.log"
       PrintFile: true
       PrintFunction: true
       ModulesToEnable:
@@ -40,7 +40,7 @@ logs:
 
     # (DISABLED) log stuff on a module by module basis to FILE
     - Enabled: false
-      FileName: "./debug.log"
+      FileName: "/var/log/sailfish.log"
       PrintFile: true
       PrintFunction: true
       ModulesToEnable:
