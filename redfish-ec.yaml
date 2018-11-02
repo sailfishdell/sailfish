@@ -26,6 +26,7 @@ views:
       "ExecPost": [
         "set_hash_value(serviceglobals, 'rootid', uuid)",
         "set_hash_value(serviceglobals, 'rooturi', view.GetURI())",
+        "set_hash_value(serviceglobals, 'globalHealthModel', globalHealthModel)",
         "instantiate('testview')",
         "instantiate('chassis')",
         "instantiate('systems')",
@@ -34,6 +35,7 @@ views:
         "instantiate('roles')",
         "instantiate('accounts')",
         "instantiate('registries')",
+        # we will eventually enable sessionservice, but need to do some work in ec.go to enable it first
         #"instantiate('sessionservice')",
       ]
 
@@ -379,7 +381,15 @@ views:
         - "fn": "etag"
           "params": []
       "ExecPost": [
-        "instantiate('attributes', 'parenturi', rooturi + '/Managers/' + FQDD, 'FQDD', FQDD)"
+        # probably should instantiate these in the same place that cmc.integrated.N are instantiated. (ie. flatten the instantiate tree)
+        "instantiate('attributes', 'parenturi', rooturi + '/Managers/' + FQDD, 'FQDD', FQDD)",
+        "instantiate('logservices', 'FQDD', FQDD)",
+        "instantiate('lclogservices', 'FQDD', FQDD)",
+        "instantiate('faultlistservices', 'FQDD', FQDD)",
+
+        # only instantiate the collection once for cmc.integrated.1
+        "FQDD == 'CMC.Integrated.1' && instantiate('lclogentrycollection', 'FQDD', FQDD)",
+        "FQDD == 'CMC.Integrated.1' && instantiate('faultlistentrycollection', 'FQDD', FQDD)"
         ]
 
   "logservices":
@@ -541,7 +551,7 @@ views:
   "power":
       "Logger": ["module", "Power"]
       "Models":
-        "default":  { "unique_name": "'Power'" }
+        "default":  { "unique_name": "'Power'"}
       "Controllers":
         - "fn": "ARMapper"
           "params": {"modelname": "default", "cfgsection": "Chassis/System.Chassis/Power", "mappinguniquename": "'chassis_power_mapper:' + FQDD", "AddToView": true}
@@ -592,7 +602,7 @@ views:
   "power_control":
       "Logger": ["module", "PowerControl"]
       "Models":
-        "default":  {}
+        "default":  { "power_related_items": "power_related_items"}
       "Controllers":
         - "fn": "ARMapper"
           "params": {"modelname": "default", "cfgsection": "Chassis/System.Chassis/Power", "mappinguniquename": "'chassis_power_ctrl_mapper:' + FQDD", "AddToView": true}
@@ -972,6 +982,13 @@ awesome_mapper:
                 {Property: "min_peak_watts_time", Query: "epoch_to_date(data.MinwReadingTime)" },
                 {Property: "peak_headroom_watts", Query: "data.PeakHeadRoom" },
                 {Property: "consumed_watts", Query: "data.InstWattsPSU1_2" }]}
+      # every chassis object is a power related item. add and remove them as they come
+      - { SelectEventType: "RedfishResource:created",
+          Select: "nohash(data.ResourceURI) && baseuri(data.ResourceURI) == rooturi + '/Chassis' ",
+          ModelUpdate: [ {Property: "power_related_items", Query: "addtoset(model, propname, data.ResourceURI)"} ]}
+      - { SelectEventType: "RedfishResource:removed",
+          Select: "nohash(data.ResourceURI) && baseuri(data.ResourceURI) == rooturi + '/Chassis' ",
+          ModelUpdate: [ {Property: "power_related_items", Query: "removefromset(model, propname, data.ResourceURI)"} ]}
 
     power_supply:
       - { SelectEventType: "PowerSupplyObjEvent", Select: "data.ObjectHeader.FQDD == DM_FQDD",

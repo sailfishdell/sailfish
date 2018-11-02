@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"path"
 	"strings"
 	"sync"
 
@@ -146,7 +147,12 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	//*********************************************************************
 	//  /redfish/v1
 	//*********************************************************************
-	_, rootView, _ := instantiateSvc.Instantiate("rootview", map[string]interface{}{"rooturi": "/redfish/v1"})
+	rooturi := "/redfish/v1"
+	_, rootView, _ := instantiateSvc.Instantiate("rootview",
+		map[string]interface{}{
+			"rooturi":           rooturi,
+			"globalHealthModel": globalHealthModel,
+		})
 
 	//*********************************************************************
 	// /redfish/v1/Sessions
@@ -181,11 +187,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	// various things are "managed" by the managers, create a global to hold the views so we can make references
 	var managers []*view.View
 
-	// the chassis power control has a list of 'related items' that we'll accumulate using power_related_items
-	// TODO: this should be an awesome mapper
-	var sysChasPwrCtrlVw *view.View
-	power_related_items := []string{}
-
 	for _, mgrName := range []string{
 		"CMC.Integrated.1",
 		"CMC.Integrated.2",
@@ -195,8 +196,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 		//*********************************************************************
 		mgrLogger, mgrCmcVw, _ := instantiateSvc.Instantiate("manager_cmc_integrated",
 			map[string]interface{}{
-				"FQDD":                             mgrName,
-				"globalHealthModel":                globalHealthModel,
+				"FQDD": mgrName,
 				"exportSystemConfiguration":        view.Action(exportSystemConfiguration),
 				"importSystemConfiguration":        view.Action(importSystemConfiguration),
 				"importSystemConfigurationPreview": view.Action(importSystemConfigurationPreview),
@@ -208,13 +208,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 
 		// add the aggregate to the view tree
 		mgrCMCIntegrated.AddAggregate(ctx, mgrLogger, mgrCmcVw, ch)
-
-		// ######################
-		// log related uris
-		// ######################
-		instantiateSvc.Instantiate("logservices", map[string]interface{}{"FQDD": mgrName})
-		instantiateSvc.Instantiate("lclogservices", map[string]interface{}{"FQDD": mgrName})
-		instantiateSvc.Instantiate("faultlistservices", map[string]interface{}{"FQDD": mgrName})
 
 		certificate_uris := []string{mgrCmcVw.GetURI() + "/CertificateService/CertificateInventory/FactoryIdentity.1"}
 
@@ -245,20 +238,13 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 		//*********************************************************************
 		chasLogger, chasCmcVw, _ := instantiateSvc.Instantiate("chassis_cmc_integrated",
 			map[string]interface{}{
-				"FQDD":              mgrName,
-				"globalHealthModel": globalHealthModel,
+				"FQDD": mgrName,
 			},
 		)
 
 		// add the aggregate to the view tree
 		chasCMCIntegrated.AddAggregate(ctx, chasLogger, chasCmcVw, ch)
-
-		// add these to the list of related power items
-		power_related_items = append(power_related_items, chasCmcVw.GetURI())
 	}
-
-	instantiateSvc.Instantiate("lclogentrycollection", map[string]interface{}{"FQDD": "CMC.Integrated.1"})
-	instantiateSvc.Instantiate("faultlistentrycollection", map[string]interface{}{"FQDD": "CMC.Integrated.1"})
 
 	// start log service here: it attaches to cmc.integrated.1
 	logSvc.StartService(ctx, logger, managers[0])
@@ -272,15 +258,12 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 		sysChasLogger, sysChasVw, _ := instantiateSvc.Instantiate("system_chassis",
 			map[string]interface{}{
 				"FQDD":                   chasName,
-				"globalHealthModel":      globalHealthModel,
 				"msmConfigBackup":        view.Action(msmConfigBackup),
 				"chassisMSMConfigBackup": view.Action(chassisMSMConfigBackup),
 				"managed_by":             []string{managers[0].GetURI()},
 			},
 		)
 
-		// Create the .../Attributes URI. Attributes are stored in the attributes property of the chasModel
-		power_related_items = append(power_related_items, sysChasVw.GetURI())
 		system_chassis.AddAggregate(ctx, sysChasLogger, sysChasVw, ch, eb)
 
 		// CMC.INTEGRATED.1 INTERLUDE
@@ -291,8 +274,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 		//*********************************************************************
 		powerLogger, sysChasPwrVw, _ := instantiateSvc.Instantiate("power",
 			map[string]interface{}{
-				"FQDD":              chasName,
-				"globalHealthModel": globalHealthModel,
+				"FQDD": chasName,
 			},
 		)
 
@@ -306,10 +288,9 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 			psuLogger, sysChasPwrPsuVw, _ := instantiateSvc.Instantiate("psu_slot",
 				map[string]interface{}{
 					// Need to move this to awesome mapper but dont yet have a string replace function exported
-					"DM_FQDD":           "System.Chassis.1#" + strings.Replace(psuName, "PSU.Slot", "PowerSupply", 1),
-					"FQDD":              psuName,
-					"ChassisFQDD":       chasName,
-					"globalHealthModel": globalHealthModel,
+					"DM_FQDD":     "System.Chassis.1#" + strings.Replace(psuName, "PSU.Slot", "PowerSupply", 1),
+					"FQDD":        psuName,
+					"ChassisFQDD": chasName,
 				},
 			)
 
@@ -321,19 +302,18 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 		// # Power Control
 		// ##################
 
-		var pwrCtrlLogger log.Logger
-		pwrCtrlLogger, sysChasPwrCtrlVw, _ = instantiateSvc.Instantiate("power_control",
-			map[string]interface{}{"FQDD": chasName},
-		)
+		pwrCtrlLogger, sysChasPwrCtrlVw, _ := instantiateSvc.Instantiate("power_control",
+			map[string]interface{}{
+				"FQDD":                chasName,
+				"power_related_items": d.FindMatchingURIs(func(uri string) bool { return path.Dir(uri) == rooturi+"/Chassis" }),
+			})
 		powercontrol.AddAggregate(ctx, pwrCtrlLogger, sysChasPwrCtrlVw, ch)
 
 		// ##################
 		// # Power Trends
 		// ##################
 
-		pwrTrendLogger, pwrTrendVw, _ := instantiateSvc.Instantiate("power_trends",
-			map[string]interface{}{"FQDD": chasName},
-		)
+		pwrTrendLogger, pwrTrendVw, _ := instantiateSvc.Instantiate("power_trends", map[string]interface{}{"FQDD": chasName})
 		powertrends.AddTrendsAggregate(ctx, pwrTrendLogger, pwrTrendVw, ch)
 
 		// ##################
@@ -357,8 +337,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 		//*********************************************************************
 		thermalLogger, thermalView, _ := instantiateSvc.Instantiate("thermal",
 			map[string]interface{}{
-				"FQDD":              chasName,
-				"globalHealthModel": globalHealthModel,
+				"FQDD": chasName,
 			},
 		)
 
@@ -376,7 +355,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 					"FQDD":        fanName,
 					// MEB: this doesnt appear to be used at all (ie. there is no AM2 health mapper attached in the config)
 					// "health_fqdd":       "System.Chassis.1#" + fanName,
-					"globalHealthModel": globalHealthModel,
 				},
 			)
 
@@ -430,14 +408,12 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	} {
 		iomLogger, iomView, _ := instantiateSvc.Instantiate("iom",
 			map[string]interface{}{
-				"FQDD":              iomName,
-				"globalHealthModel": globalHealthModel,
-				"managed_by":        []string{managers[0].GetURI()},
+				"FQDD":       iomName,
+				"managed_by": []string{managers[0].GetURI()},
 			},
 		)
 
 		swinvViews = append(swinvViews, iomView)
-		power_related_items = append(power_related_items, iomView.GetURI())
 		iom_chassis.AddAggregate(ctx, iomLogger, iomView, ch, eb)
 
 		// ************************************************************************
@@ -465,18 +441,13 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	} {
 		sledLogger, sledView, _ := instantiateSvc.Instantiate("sled",
 			map[string]interface{}{
-				"FQDD":              sledName,
-				"globalHealthModel": globalHealthModel,
-				"managed_by":        []string{managers[0].GetURI()},
+				"FQDD":       sledName,
+				"managed_by": []string{managers[0].GetURI()},
 			},
 		)
 
 		sled_chassis.AddAggregate(ctx, sledLogger, sledView, ch, eb)
-		power_related_items = append(power_related_items, sledView.GetURI())
 	}
-
-	// link in all of the related items for power control
-	sysChasPwrCtrlVw.GetModel("default").ApplyOption(model.UpdateProperty("power_related_items", power_related_items))
 
 	{
 		updsvcLogger := logger.New("module", "UpdateService")

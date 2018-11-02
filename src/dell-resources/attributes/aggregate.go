@@ -53,45 +53,6 @@ func FormatAttributeDump(
 	return nil
 }
 
-func EnhanceAggregate(ctx context.Context, v *view.View, ch eh.CommandHandler, baseUUID eh.UUID) {
-	ch.HandleCommand(ctx,
-		&domain.UpdateRedfishResourceProperties{
-			ID: baseUUID,
-			Properties: map[string]interface{}{
-				"Attributes@meta": v.Meta(view.GETProperty("attributes"), view.GETFormatter("attributeFormatter"), view.GETModel("default"), view.PropPATCH("attributes", "ar_dump")),
-			},
-		})
-}
-
-func AddAggregate(ctx context.Context, v *view.View, uri string, ch eh.CommandHandler) (ret eh.UUID) {
-	ret = eh.NewUUID()
-
-	ch.HandleCommand(
-		context.Background(),
-		&domain.CreateRedfishResource{
-			ID:          ret,
-			ResourceURI: uri,
-			Type:        "#OemAttributes.v1_0_0.OemAttributes",
-			Context:     "/redfish/v1/$metadata#OemAttributes.OemAttributes",
-
-			Privileges: map[string]interface{}{
-				"GET":    []string{"Login"},
-				"POST":   []string{}, // cannot create sub objects
-				"PUT":    []string{},
-				"PATCH":  []string{"ConfigureManager"},
-				"DELETE": []string{}, // can't be deleted
-			},
-			Properties: map[string]interface{}{
-				"Id@meta":           v.Meta(view.GETProperty("unique_name_attr"), view.GETModel("default")),
-				"Name":              "Oem Attributes",
-				"Description":       "This is the manufacturer/provider specific list of attributes.",
-				"AttributeRegistry": "ManagerAttributeRegistry.v1_0_0",
-				"Attributes@meta":   v.Meta(view.GETProperty("attributes"), view.GETFormatter("attributeFormatter"), view.GETModel("default"), view.PropPATCH("attributes", "ar_dump")),
-			}})
-
-	return
-}
-
 func RegisterAggregate(s *testaggregate.Service) {
 	s.RegisterAggregateFunction("attributes_uri",
 		func(ctx context.Context, subLogger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, vw *view.View, extra interface{}, params map[string]interface{}) ([]eh.Command, error) {
