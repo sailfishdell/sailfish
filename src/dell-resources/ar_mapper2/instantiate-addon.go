@@ -80,6 +80,12 @@ func RegisterARMapper(s *testaggregate.Service, arsvc *ARService) {
 			addToViewBool = true
 		}
 
+		// if this stuff not present, no big deal
+		passthruParams, ok := cfgParams["passthru"]
+		if ok {
+			testaggregate.GetPassThruParams(logger, parameters, passthruParams)
+		}
+
 		// convert params
 		newparams := map[string]string{}
 		for k, v := range parameters {
