@@ -339,46 +339,47 @@ func RegisterAM2(s *Service, am2Svc *am2.Service) {
 		}
 
 		// if this stuff not present, no big deal
-		func() {
-			passthruParams, ok := cfgParams["passthru"]
-			if !ok {
-				return
-			}
-			passthruParamsMap, ok := passthruParams.(map[interface{}]interface{})
-			if !ok {
-				logger.Error("Optional parameter 'passthru' could not be cast to string", "type", fmt.Sprintf("%T", passthruParams))
-				return
-			}
-
-			for k, v := range passthruParamsMap {
-				keyStr, ok := k.(string)
-				if !ok {
-					logger.Error("expression could not be cast to string", "k", k, "cfgSection", cfgSectionStr, "passthruParams", uniqueNameStr)
-				}
-
-				exprStr, ok := v.(string)
-				if !ok {
-					logger.Error("expression could not be cast to string", "v", v, "cfgSection", cfgSectionStr, "passthruParams", uniqueNameStr)
-				}
-
-				expr, err := govaluate.NewEvaluableExpressionWithFunctions(exprStr, functions)
-				if err != nil {
-					logger.Error("Failed to create evaluable expression", "passthruParamsMap", passthruParamsMap, "err", err)
-					continue
-				}
-				val, err := expr.Evaluate(parameters)
-				if err != nil {
-					logger.Error("expression evaluation failed", "expr", expr, "err", err, "cfgSection", cfgSectionStr, "passthruParams", uniqueNameStr)
-					continue
-				}
-
-				parameters[keyStr] = val
-			}
-		}()
+		passthruParams, ok := cfgParams["passthru"]
+		if ok {
+			GetPassThruParams(logger, parameters, passthruParams)
+		}
 
 		logger.Debug("Creating awesome_mapper2 controller", "modelName", modelNameStr, "cfgSection", cfgSectionStr, "uniqueName", uniqueNameStr)
 		am2Svc.NewMapping(ctx, logger, cfgMgr, cfgMgrMu, vw.GetModel(modelNameStr), cfgSectionStr, uniqueNameStr, parameters)
 
 		return nil
 	})
+}
+
+func GetPassThruParams(logger log.Logger, parameters map[string]interface{}, passthruParams interface{}) {
+	passthruParamsMap, ok := passthruParams.(map[interface{}]interface{})
+	if !ok {
+		logger.Error("Optional parameter 'passthru' could not be cast to string", "type", fmt.Sprintf("%T", passthruParams))
+		return
+	}
+
+	for k, v := range passthruParamsMap {
+		keyStr, ok := k.(string)
+		if !ok {
+			logger.Error("expression could not be cast to string", "k", k, "passthruParams", passthruParams)
+		}
+
+		exprStr, ok := v.(string)
+		if !ok {
+			logger.Error("expression could not be cast to string", "v", v, "passthruParams", passthruParams)
+		}
+
+		expr, err := govaluate.NewEvaluableExpressionWithFunctions(exprStr, functions)
+		if err != nil {
+			logger.Error("Failed to create evaluable expression", "passthruParamsMap", passthruParamsMap, "err", err)
+			continue
+		}
+		val, err := expr.Evaluate(parameters)
+		if err != nil {
+			logger.Error("expression evaluation failed", "expr", expr, "err", err, "passthruParams", passthruParams)
+			continue
+		}
+
+		parameters[keyStr] = val
+	}
 }
