@@ -48,6 +48,8 @@ func AddAggregate(ctx context.Context, root *view.View, v *view.View, ch eh.Comm
 					"Health": "OK",      //TODO
 				},
 
+				"Attributes@meta": v.Meta(view.GETProperty("attributes"), view.GETFormatter("attributeFormatter"), view.GETModel("default"), view.PropPATCH("attributes", "ar_dump")),
+
 				"FirmwareInventory": map[string]interface{}{
 					"@odata.id": v.GetURI() + "/FirmwareInventory",
 				},
