@@ -304,8 +304,9 @@ func StartService(ctx context.Context, logger log.Logger, eb eh.EventBus) (*Serv
 
 				for _, updates := range mapping.modelUpdates {
 					parameters.model.StopNotifications()
-					defer parameters.model.StartNotifications()
+					// Note: LIFO order for defer
 					defer parameters.model.NotifyObservers()
+					defer parameters.model.StartNotifications()
 
 					parameters.params["propname"] = updates.property
 					val, err := updates.queryExpr.Evaluate(parameters.params)
@@ -326,6 +327,7 @@ func StartService(ctx context.Context, logger log.Logger, eb eh.EventBus) (*Serv
 					}
 				}
 
+				cleanup()
 			}
 		}
 	})
