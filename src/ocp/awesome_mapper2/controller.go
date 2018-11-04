@@ -63,7 +63,7 @@ type MapperParameters struct {
 type MapperConfig struct {
 	eventType    eh.EventType
 	selectStr    string
-	selectExpr   []govaluate.ExpressionToken
+	selectExpr   *govaluate.EvaluableExpression
 	modelUpdates []*ModelUpdate
 	exec         []*Exec
 	cfg          *ConfigSection
@@ -72,13 +72,13 @@ type MapperConfig struct {
 type ModelUpdate struct {
 	property    string
 	queryString string
-	queryExpr   []govaluate.ExpressionToken
+	queryExpr   *govaluate.EvaluableExpression
 	defaultVal  interface{}
 }
 
 type Exec struct {
 	execString string
-	execExpr   []govaluate.ExpressionToken
+	execExpr   *govaluate.EvaluableExpression
 }
 
 func (s *Service) NewMapping(ctx context.Context, logger log.Logger, cfg *viper.Viper, cfgMu *sync.RWMutex, mdl *model.Model, cfgName string, uniqueName string, parameters map[string]interface{}) error {
@@ -139,7 +139,7 @@ func (s *Service) NewMapping(ctx context.Context, logger log.Logger, cfg *viper.
 			mc := &MapperConfig{
 				eventType:    eh.EventType(cfgEntry.SelectEventType),
 				selectStr:    cfgEntry.Select,
-				selectExpr:   selectExpr.Tokens(),
+				selectExpr:   selectExpr,
 				modelUpdates: []*ModelUpdate{},
 				exec:         []*Exec{},
 				cfg:          mappingsForSection,
@@ -156,7 +156,7 @@ func (s *Service) NewMapping(ctx context.Context, logger log.Logger, cfg *viper.
 				mc.modelUpdates = append(mc.modelUpdates, &ModelUpdate{
 					property:    modelUpdate.Property,
 					queryString: modelUpdate.Query,
-					queryExpr:   queryExpr.Tokens(),
+					queryExpr:   queryExpr,
 					defaultVal:  modelUpdate.Default,
 				})
 			}
@@ -170,7 +170,7 @@ func (s *Service) NewMapping(ctx context.Context, logger log.Logger, cfg *viper.
 
 				mc.exec = append(mc.exec, &Exec{
 					execString: exec,
-					execExpr:   execExpr.Tokens(),
+					execExpr:   execExpr,
 				})
 			}
 
@@ -245,7 +245,8 @@ func StartService(ctx context.Context, logger log.Logger, eb eh.EventBus) (*Serv
 			defer ret.RUnlock()
 
 			// hash lookup to see if we process this event, should be the fastest way
-			ret.logger.Debug("am2 check event FILTER", "type", ev.EventType())
+			// comment out logging in the fast path. uncomment to enable.
+			//ret.logger.Debug("am2 check event FILTER", "type", ev.EventType())
 			if _, ok := ret.hash[ev.EventType()]; ok {
 				return true
 			}
@@ -261,22 +262,18 @@ func StartService(ctx context.Context, logger log.Logger, eb eh.EventBus) (*Serv
 		ret.RLock()
 		defer ret.RUnlock()
 
-		ret.logger.Debug("am2 processing event", "type", event.EventType())
+		// comment out logging in the fast path. uncomment to enable.
+		//ret.logger.Debug("am2 processing event", "type", event.EventType())
 		for _, mapping := range ret.hash[event.EventType()] {
-			expr, err := govaluate.NewEvaluableExpressionFromTokens(mapping.selectExpr)
-			if err != nil {
-				ret.logger.Error("failed to instantiate expression from tokens", "err", err, "select", mapping.selectStr)
-				continue
-			}
-
 			for cfgName, parameters := range mapping.cfg.parameters {
-				ret.logger.Debug("am2 check mapping", "type", event.EventType(), "select", mapping.selectStr, "for config", cfgName)
+				// comment out logging in the fast path. uncomment to enable.
+				//ret.logger.Debug("am2 check mapping", "type", event.EventType(), "select", mapping.selectStr, "for config", cfgName)
 				parameters.params["type"] = string(event.EventType())
 				parameters.params["data"] = event.Data()
 				parameters.params["event"] = event
 				parameters.params["model"] = parameters.model
 
-				val, err := expr.Evaluate(parameters.params)
+				val, err := mapping.selectExpr.Evaluate(parameters.params)
 
 				// delete these to save up mem before checking error conditions
 				cleanup := func() {
@@ -302,16 +299,17 @@ func StartService(ctx context.Context, logger log.Logger, eb eh.EventBus) (*Serv
 					continue
 				}
 
-				ret.logger.Info("GOT A MATCH!!!!!")
+				// comment out logging in the fast path. uncomment to enable.
+				//ret.logger.Info("GOT A MATCH!!!!!")
 
 				for _, updates := range mapping.modelUpdates {
 					parameters.model.StopNotifications()
-					defer parameters.model.StartNotifications()
+					// Note: LIFO order for defer
 					defer parameters.model.NotifyObservers()
+					defer parameters.model.StartNotifications()
 
-					expr, err := govaluate.NewEvaluableExpressionFromTokens(updates.queryExpr)
 					parameters.params["propname"] = updates.property
-					val, err := expr.Evaluate(parameters.params)
+					val, err := updates.queryExpr.Evaluate(parameters.params)
 					if err != nil {
 						ret.logger.Error("Expression failed to evaluate", "err", err, "cfgName", cfgName, "type", event.EventType(), "queryString", updates.queryString, "parameters", parameters.params, "val", val)
 						continue
@@ -322,14 +320,14 @@ func StartService(ctx context.Context, logger log.Logger, eb eh.EventBus) (*Serv
 
 				delete(parameters.params, "propname")
 				for _, updates := range mapping.exec {
-					expr, err := govaluate.NewEvaluableExpressionFromTokens(updates.execExpr)
-					val, err := expr.Evaluate(parameters.params)
+					val, err := updates.execExpr.Evaluate(parameters.params)
 					if err != nil {
 						ret.logger.Error("Expression failed to evaluate", "err", err, "cfgName", cfgName, "type", event.EventType(), "execString", updates.execString, "parameters", parameters.params, "val", val)
 						continue
 					}
 				}
 
+				cleanup()
 			}
 		}
 	})
