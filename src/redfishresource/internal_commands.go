@@ -253,20 +253,24 @@ func (c *InjectEvent) Handle(ctx context.Context, a *RedfishResourceAggregate) e
 
 	eventList := []map[string]interface{}{}
 	if len(c.EventData) > 0 {
-		requestLogger.Debug("InjectEvent - ONE", "events", c.EventData)
+		// comment out debug prints in the hot path, uncomment for debugging
+		//requestLogger.Debug("InjectEvent - ONE", "events", c.EventData)
 		eventList = append(eventList, c.EventData)
 	}
 	if len(c.EventArray) > 0 {
-		requestLogger.Debug("InjectEvent - ARRAY", "events", c.EventArray)
+		// comment out debug prints in the hot path, uncomment for debugging
+		//requestLogger.Debug("InjectEvent - ARRAY", "events", c.EventArray)
 		eventList = append(eventList, c.EventArray...)
 	}
 
-	requestLogger.Debug("InjectEvent - NEW ARRAY INJECT", "events", eventList)
+	// comment out debug prints in the hot path, uncomment for debugging
+	//requestLogger.Debug("InjectEvent - NEW ARRAY INJECT", "events", eventList)
 
 	trainload := []eh.EventData{}
 	for _, eventData := range eventList {
 		data, err := eh.CreateEventData(c.Name)
 		if err != nil {
+			// this debug statement probably not hit too often, leave enabled for now
 			requestLogger.Info("InjectEvent - event type not registered: injecting raw event.", "event name", c.Name, "error", err)
 			trainload = append(trainload, eventData)
 			continue
@@ -280,7 +284,8 @@ func (c *InjectEvent) Handle(ctx context.Context, a *RedfishResourceAggregate) e
 		}
 
 		trainload = append(trainload, data)
-		requestLogger.Debug("InjectEvent - publishing", "event name", c.Name, "event_data", data)
+		// comment out debug prints in the hot path, uncomment for debugging
+		//requestLogger.Debug("InjectEvent - publishing", "event name", c.Name, "event_data", data)
 	}
 	injectChan <- eh.NewEvent(c.Name, trainload, time.Now())
 
