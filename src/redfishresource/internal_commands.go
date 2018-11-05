@@ -188,17 +188,6 @@ func (c *UpdateRedfishResourceProperties) Handle(ctx context.Context, a *Redfish
 	return nil
 }
 
-// gross layering violation, but to avoid import cycles, moved the events here for now
-type AttributeUpdatedData struct {
-	ReqID eh.UUID
-	FQDD  string
-	Group string
-	Index string
-	Name  string
-	Value interface{}
-	Error string
-}
-
 type InjectEvent struct {
 	ID         eh.UUID                  `json:"id" eh:"optional"`
 	Name       eh.EventType             `json:"name"`
