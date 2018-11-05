@@ -93,7 +93,6 @@ func (c *CreateRedfishResource) Handle(ctx context.Context, a *RedfishResourceAg
 		Meta:        map[string]interface{}{},
 	}
 
-	a.PropertiesMu.Lock()
 	v := map[string]interface{}{}
 	a.Properties.Value = v
 	a.Properties.Parse(c.Properties)
@@ -102,8 +101,6 @@ func (c *CreateRedfishResource) Handle(ctx context.Context, a *RedfishResourceAg
 	v["@odata.id"] = &RedfishResourceProperty{Value: c.ResourceURI}
 	v["@odata.type"] = &RedfishResourceProperty{Value: c.Type}
 	v["@odata.context"] = &RedfishResourceProperty{Value: c.Context}
-
-	a.PropertiesMu.Unlock()
 
 	// send out event that it's created first
 	a.PublishEvent(eh.NewEvent(RedfishResourceCreated, &RedfishResourceCreatedData{
@@ -179,9 +176,7 @@ func (c *UpdateRedfishResourceProperties) Handle(ctx context.Context, a *Redfish
 		Meta:        map[string]interface{}{},
 	}
 
-	a.PropertiesMu.Lock()
 	a.Properties.Parse(c.Properties)
-	a.PropertiesMu.Unlock()
 
 	if len(d.PropertyNames) > 0 {
 		a.PublishEvent(eh.NewEvent(RedfishResourcePropertiesUpdated, d, time.Now()))

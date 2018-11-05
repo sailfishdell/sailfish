@@ -3,7 +3,6 @@ package domain
 import (
 	"context"
 	"errors"
-	"fmt"
 	"reflect"
 	"sync"
 )
@@ -16,34 +15,30 @@ type encOpts struct {
 	process processFn
 }
 
-func ProcessPATCH(ctx context.Context, prop *RedfishResourceProperty, request interface{}) (results interface{}, err error) {
+func ProcessPATCH(ctx context.Context, rrp *RedfishResourceProperty, request interface{}) (results interface{}, err error) {
 	opts := encOpts{
 		request: request,
 		process: PATCHfn,
 	}
 
-	val, err := parseRecursive(ctx, reflect.ValueOf(prop), opts)
+	val, err := parseRecursive(ctx, reflect.ValueOf(rrp), opts)
 	if val.IsValid() {
 		return val.Interface(), err
 	}
 	return nil, err
 }
 
-func ProcessGET(ctx context.Context, prop *RedfishResourceProperty) (results interface{}, err error) {
+func ProcessGET(ctx context.Context, rrp *RedfishResourceProperty) (results interface{}, err error) {
 	opts := encOpts{
 		request: nil,
 		process: GETfn,
 	}
 
-	val, err := parseRecursive(ctx, reflect.ValueOf(prop), opts)
+	val, err := parseRecursive(ctx, reflect.ValueOf(rrp), opts)
 	if val.IsValid() {
 		return val.Interface(), err
 	}
 	return nil, err
-}
-
-type Marshaler interface {
-	DOMETA(context.Context, encOpts) (reflect.Value, error)
 }
 
 func (rrp *RedfishResourceProperty) DOMETA(ctx context.Context, e encOpts) (results reflect.Value, err error) {
@@ -52,12 +47,28 @@ func (rrp *RedfishResourceProperty) DOMETA(ctx context.Context, e encOpts) (resu
 	return parseRecursive(ctx, reflect.ValueOf(res), e)
 }
 
+type Marshaler interface {
+	DOMETA(context.Context, encOpts) (reflect.Value, error)
+}
+
+type Locker interface {
+	Lock()
+	Unlock()
+}
+
 var marshalerType = reflect.TypeOf(new(Marshaler)).Elem()
+var locktype = reflect.TypeOf(new(Locker)).Elem()
 
 func parseRecursive(ctx context.Context, val reflect.Value, e encOpts) (reflect.Value, error) {
 	if !val.IsValid() {
 		//fmt.Printf("NOT VALID, returning\n")
 		return val, errors.New("not a valid type")
+	}
+
+	if val.Type().Implements(locktype) {
+		m := val.Interface().(Locker)
+		m.Lock()
+		defer m.Unlock()
 	}
 
 	if val.Type().Implements(marshalerType) {
@@ -207,13 +218,13 @@ func PATCHfn(ctx context.Context, rrp *RedfishResourceProperty, opts encOpts) (i
 		return GETfn(ctx, rrp, opts)
 	}
 
-	ContextLogger(ctx, "property_process").Debug("getting property: PATCH", "value", fmt.Sprintf("%v", rrp.Value), "plugin", plugin)
+	//ContextLogger(ctx, "property_process").Debug("getting property: PATCH", "value", fmt.Sprintf("%v", rrp.Value), "plugin", plugin)
 	if plugin, ok := plugin.(NewPropPatcher); ok {
-		defer ContextLogger(ctx, "property_process").Debug("AFTER getting property: PATCH - type assert success", "value", fmt.Sprintf("%v", rrp.Value))
+		//defer ContextLogger(ctx, "property_process").Debug("AFTER getting property: PATCH - type assert success", "value", fmt.Sprintf("%v", rrp.Value))
 		return plugin.PropertyPatch(ctx, rrp, opts.request, meta_t)
 	}
 	if plugin, ok := plugin.(CompatPropPatcher); ok {
-		defer ContextLogger(ctx, "property_process").Debug("AFTER getting property: PATCH - type assert success", "value", fmt.Sprintf("%v", rrp.Value))
+		//defer ContextLogger(ctx, "property_process").Debug("AFTER getting property: PATCH - type assert success", "value", fmt.Sprintf("%v", rrp.Value))
 		tempRRP := &RedfishResourceProperty{Value: rrp.Value, Meta: rrp.Meta}
 		plugin.PropertyPatch(ctx, nil, tempRRP, meta_t)
 		return tempRRP.Value, nil
