@@ -651,6 +651,8 @@ views:
       "Controllers":
         - "fn": "ARMapper"
           "params": {"modelname": "default", "cfgsection": "Chassis/System.Chassis/Thermal", "mappinguniquename": "'chassis_thermal_mapper:' + FQDD", "AddToView": true}
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "thermal", "uniquename": "'am2_thermal:' + FQDD", "passthru": {"fanuri": "rooturi + '/Chassis/' + FQDD + '/Sensors/Fans'"} }
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/Chassis/' + FQDD + '/Thermal'"
@@ -685,6 +687,7 @@ views:
           "params": "default"
         - "fn": "stdFormatters"
           "params":
+      "Aggregate": "fan"
       "ExecPost": [
         "instantiate('attributes', 'parenturi', rooturi + '/Chassis/' + ChassisFQDD + '/Sensors/Fans/' + FQDD, 'FQDD', FQDD)"
         ]
@@ -885,6 +888,15 @@ awesome_mapper:
       - { SelectEventType: "RedfishResource:removed",
           Select: "nohash(data.ResourceURI) && baseuri(data.ResourceURI) == rooturi + '/Chassis/' + FQDD + '/Power/PowerTrends-1' ",
           ModelUpdate: [ {Property: "trend_histogram_uris", Query: "removefromset(model, propname, data.ResourceURI)"} ]}
+
+    thermal:
+      - { SelectEventType: "RedfishResource:created",
+          Select: "nohash(data.ResourceURI) && baseuri(data.ResourceURI) == fanuri",
+          ModelUpdate: [ {Property: "fan_uris", Query: "addtoset(model, propname, data.ResourceURI)"} ]}
+      - { SelectEventType: "RedfishResource:removed",
+          Select: "nohash(data.ResourceURI) && baseuri(data.ResourceURI) == fanuri",
+          ModelUpdate: [ {Property: "fan_uris", Query: "removefromset(model, propname, data.ResourceURI)"} ]}
+
 
     addsubsystemhealth:
       - { SelectEventType: "HealthEvent",

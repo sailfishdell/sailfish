@@ -108,6 +108,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	slots.RegisterAggregate(instantiateSvc)
 	logservices.RegisterAggregate(instantiateSvc)
 	attributes.RegisterAggregate(instantiateSvc)
+	fans.RegisterAggregate(instantiateSvc)
 
 	// add mapper helper to instantiate
 	awesome_mapper2.AddFunction("instantiate", func(args ...interface{}) (interface{}, error) {
@@ -152,6 +153,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 		map[string]interface{}{
 			"rooturi":           rooturi,
 			"globalHealthModel": globalHealthModel,
+			"swinvViews":        swinvViews,
 		})
 
 	//*********************************************************************
@@ -343,26 +345,19 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 
 		thermal.AddAggregate(ctx, thermalLogger, thermalView, ch)
 
-		fan_uris := []string{}
 		for _, fanName := range []string{
 			"Fan.Slot.1", "Fan.Slot.2", "Fan.Slot.3",
 			"Fan.Slot.4", "Fan.Slot.5", "Fan.Slot.6",
 			"Fan.Slot.7", "Fan.Slot.8", "Fan.Slot.9",
 		} {
-			fanLogger, fanView, _ := instantiateSvc.Instantiate("fan",
+			_, fanView, _ := instantiateSvc.Instantiate("fan",
 				map[string]interface{}{
 					"ChassisFQDD": chasName,
 					"FQDD":        fanName,
-					// MEB: this doesnt appear to be used at all (ie. there is no AM2 health mapper attached in the config)
-					// "health_fqdd":       "System.Chassis.1#" + fanName,
 				},
 			)
-
-			fans.AddAggregate(ctx, fanLogger, fanView, ch)
-			fan_uris = append(fan_uris, fanView.GetURI())
 			swinvViews = append(swinvViews, fanView)
 		}
-		thermalView.GetModel("default").ApplyOption(model.UpdateProperty("fan_uris", fan_uris))
 
 		//		thermal_views := []interface{}{}
 		//		thermalModel.ApplyOption(model.UpdateProperty("thermal_views", &domain.RedfishResourceProperty{Value: thermal_views}))
