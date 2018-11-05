@@ -749,6 +749,8 @@ views:
           "params": "rooturi + '/Chassis/' + FQDD + '/IOMConfiguration'"
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
+        - "fn": "with_PumpHandledAction"
+          "params": {"name": "IOMConfig_objects", "uri": "/Mailbox", "timeout": 30}
 
   "subsyshealth":
       "Logger": ["module", "subsyshealth"]
@@ -988,7 +990,8 @@ awesome_mapper:
             ModelUpdate: [
                 {Property: "config", Query: "data.IOMConfig_objects" },
                 {Property: "capabilities", Query: "data.Capabilities" },
-                {Property: "managed", Query: "data.Managed" } ]}
+                {Property: "managed", Query: "data.Internal_mgmt_supported" },
+                {Property: "capCount", Query: "data.CapabilitiesCount" }]}
 
 
     power_control:
