@@ -570,6 +570,12 @@ views:
           "params": "default"
         - "fn": "stdFormatters"
           "params":
+      "ExecPost": [
+        "instantiate('power_trends', 'FQDD', FQDD)",
+        "instantiate('power_histogram', 'FQDD', FQDD, 'trend', 'Hour')",
+        "instantiate('power_histogram', 'FQDD', FQDD, 'trend', 'Day')",
+        "instantiate('power_histogram', 'FQDD', FQDD, 'trend', 'Week')"
+        ]
 
   "psu_slot":
       "Logger": ["module", "PSU.Slot"]
@@ -630,6 +636,7 @@ views:
           "params": "default"
         - "fn": "stdFormatters"
           "params":
+      "Aggregate": "power_trends"
 
   "power_histogram":
       "Logger": ["module", "PowerTrends"]
@@ -643,6 +650,7 @@ views:
           "params": "rooturi + '/Chassis/' + FQDD + '/Power/PowerTrends-1/Last'+trend"
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
+      "Aggregate": "trend_histogram"
 
   "thermal":
       "Logger": ["module", "Thermal"]

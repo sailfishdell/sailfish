@@ -110,6 +110,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	attributes.RegisterAggregate(instantiateSvc)
 	fans.RegisterAggregate(instantiateSvc)
 	thermal.RegisterAggregate(instantiateSvc)
+	powertrends.RegisterAggregate(instantiateSvc)
 
 	// add mapper helper to instantiate
 	awesome_mapper2.AddFunction("instantiate", func(args ...interface{}) (interface{}, error) {
@@ -239,11 +240,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 		//*********************************************************************
 		// Create CHASSIS objects for CMC.Integrated.N
 		//*********************************************************************
-		chasLogger, chasCmcVw, _ := instantiateSvc.Instantiate("chassis_cmc_integrated",
-			map[string]interface{}{
-				"FQDD": mgrName,
-			},
-		)
+		chasLogger, chasCmcVw, _ := instantiateSvc.Instantiate("chassis_cmc_integrated", map[string]interface{}{"FQDD": mgrName})
 
 		// add the aggregate to the view tree
 		chasCMCIntegrated.AddAggregate(ctx, chasLogger, chasCmcVw, ch)
@@ -311,29 +308,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 				"power_related_items": d.FindMatchingURIs(func(uri string) bool { return path.Dir(uri) == rooturi+"/Chassis" }),
 			})
 		powercontrol.AddAggregate(ctx, pwrCtrlLogger, sysChasPwrCtrlVw, ch)
-
-		// ##################
-		// # Power Trends
-		// ##################
-
-		pwrTrendLogger, pwrTrendVw, _ := instantiateSvc.Instantiate("power_trends", map[string]interface{}{"FQDD": chasName})
-		powertrends.AddTrendsAggregate(ctx, pwrTrendLogger, pwrTrendVw, ch)
-
-		// ##################
-		// # Power Histograms
-		// ##################
-
-		for _, trend := range []string{
-			"Week", "Day", "Hour",
-		} {
-			histLogger, histView, _ := instantiateSvc.Instantiate("power_histogram",
-				map[string]interface{}{
-					"FQDD":  chasName,
-					"trend": trend,
-				},
-			)
-			powertrends.AddHistogramAggregate(ctx, histLogger, histView, ch)
-		}
 
 		//*********************************************************************
 		// Create Thermal objects for System.Chassis.1
