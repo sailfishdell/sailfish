@@ -109,6 +109,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	logservices.RegisterAggregate(instantiateSvc)
 	attributes.RegisterAggregate(instantiateSvc)
 	fans.RegisterAggregate(instantiateSvc)
+	thermal.RegisterAggregate(instantiateSvc)
 
 	// add mapper helper to instantiate
 	awesome_mapper2.AddFunction("instantiate", func(args ...interface{}) (interface{}, error) {
@@ -337,13 +338,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 		//*********************************************************************
 		// Create Thermal objects for System.Chassis.1
 		//*********************************************************************
-		thermalLogger, thermalView, _ := instantiateSvc.Instantiate("thermal",
-			map[string]interface{}{
-				"FQDD": chasName,
-			},
-		)
-
-		thermal.AddAggregate(ctx, thermalLogger, thermalView, ch)
+		instantiateSvc.Instantiate("thermal", map[string]interface{}{"FQDD": chasName})
 
 		for _, fanName := range []string{
 			"Fan.Slot.1", "Fan.Slot.2", "Fan.Slot.3",
@@ -358,12 +353,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 			)
 			swinvViews = append(swinvViews, fanView)
 		}
-
-		//		thermal_views := []interface{}{}
-		//		thermalModel.ApplyOption(model.UpdateProperty("thermal_views", &domain.RedfishResourceProperty{Value: thermal_views}))
-		//
-		//		redundancy_views := []interface{}{}
-		//		thermalModel.ApplyOption(model.UpdateProperty("redundancy_views", &domain.RedfishResourceProperty{Value: redundancy_views}))
 
 		//*********************************************************************
 		// Create SubSystemHealth for System.Chassis.1

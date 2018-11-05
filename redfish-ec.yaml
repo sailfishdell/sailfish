@@ -662,6 +662,7 @@ views:
           "params": "default"
         - "fn": "stdFormatters"
           "params":
+      "Aggregate": "thermal"
 
   "fan":
       "Logger": ["module", "Fan"]
