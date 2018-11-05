@@ -172,9 +172,11 @@ func GETfn(ctx context.Context, rrp *RedfishResourceProperty, opts encOpts) (int
 		return rrp.Value, errors.New("No plugin named(" + pluginName + ") for GET")
 	}
 
-	ContextLogger(ctx, "property_process").Debug("getting property: GET", "value", fmt.Sprintf("%v", rrp.Value))
+	// comment out debugging in the fast path. Uncomment if you need to debug
+	// ContextLogger(ctx, "property_process").Debug("getting property: GET", "value", fmt.Sprintf("%v", rrp.Value))
 	if plugin, ok := plugin.(NewPropGetter); ok {
-		defer ContextLogger(ctx, "property_process").Debug("AFTER getting property: GET - type assert success", "value", fmt.Sprintf("%v", rrp.Value))
+		// comment out debugging in the fast path. Uncomment if you need to debug
+		//defer ContextLogger(ctx, "property_process").Debug("AFTER getting property: GET - type assert success", "value", fmt.Sprintf("%v", rrp.Value))
 		err = plugin.PropertyGet(ctx, rrp, meta_t)
 	}
 	return rrp.Value, err
