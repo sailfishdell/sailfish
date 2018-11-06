@@ -480,7 +480,7 @@ views:
           # note: this is correct, the chassis model re-uses the managers mapper
           "params": {"modelname": "default", "cfgsection": "Managers/CMC.Integrated", "mappinguniquename": "'chassis:' + FQDD ", "AddToView": true}
         - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "health", "uniquename": "'am2_health_' + FQDD", "passthru": {"health_fqdd": "'System.Chassis.1#SubSystem.1#CMC'"} }
+          "params": {"modelname": "default", "cfgsection": "health", "uniquename": "'am2_health_' + FQDD", "passthru": {"health_fqdd": "'System.Chassis.1#' + FQDD"} }
       "View":
         - "fn": "withModel"
           "params": {"name": "global_health", "expr": "globalHealthModel"}
@@ -1031,9 +1031,6 @@ awesome_mapper:
     health:
       - { SelectEventType: "HealthEvent", Select: "data.FQDD == health_fqdd", ModelUpdate: [ {Property: "health", Query: "data.Health" } ] }
 
-    #subsystemhealth:
-    #- { SelectEventType: "HealthEvent", Select: "true",  ModelUpdate: [ {Property: "subsystem_health", Query: "subsystem_health(data)" } ] }
-
     global_health:
       - { SelectEventType: "HealthEvent", Select: "data.FQDD == 'System.Chassis.1#SubSystem.1#Fan'", ModelUpdate: [ {Property: "fan_rollup", Query: "data.Health" } ] }
       - { SelectEventType: "HealthEvent", Select: "data.FQDD == 'System.Chassis.1#SubSystem.1#Temperature'", ModelUpdate: [ {Property: "temperature_rollup", Query: "data.Health" } ] }
@@ -1103,7 +1100,7 @@ mappings:
 
     Managers/CMC.Integrated:
         - {Property: "firmware_version",        FQDD: "{FQDD}", Group: "FWInventory", Index: "1", Name: "Version" }
-        - {Property: "name",                    FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Name" }
+        - {Property: "name",                    FQDD: "{FQDD}", Group: "ChassisInfo", Index: "1", Name: "Name" }
         - {Property: "description",             FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Description" }
         - {Property: "health_state",            FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "State" }
         - {Property: "asset_tag",               FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "AssetTag" } #not listed in attributes.txt

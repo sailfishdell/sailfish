@@ -39,11 +39,11 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 				"Description@meta":  v.Meta(view.PropGET("description")),
 				"Links":             map[string]interface{}{},
 				"Status": map[string]interface{}{
-					"HealthRollup@meta": v.Meta(view.GETProperty("cmc_rollup"), view.GETModel("global_health")),
+					"HealthRollup@meta": v.Meta(view.PropGET("health")),
 					"State@meta":        v.Meta(view.PropGET("health_state")),
 					"Health@meta":       v.Meta(view.PropGET("health")),
 				},
-				"IndicatorLED@meta": v.Meta(view.PropGET("indicator_led")), //uses sys.chas.1 ar value
+				"IndicatorLED": "Blinking", // static.  MSM does a patch operation and reads from attributes 
 				"Oem": map[string]interface{}{
 					"OemChassis": map[string]interface{}{
 						"@odata.id": v.GetURI() + "/Attributes",
