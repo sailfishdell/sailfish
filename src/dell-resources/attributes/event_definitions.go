@@ -2,7 +2,6 @@ package attributes
 
 import (
 	eh "github.com/looplab/eventhorizon"
-	domain "github.com/superchalupa/sailfish/src/redfishresource"
 )
 
 const (
