@@ -16,13 +16,15 @@ import (
 )
 
 func Setup(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus) {
-	eh.RegisterCommand(func() eh.Command { return &POST{eventBus: eb} })
+	eh.RegisterCommand(func() eh.Command { return &POST{eventBus: eb, command: POSTCommand} })
+	eh.RegisterCommand(func() eh.Command { return &POST{eventBus: eb, command: PATCHCommand} })
 	eh.RegisterEventData(GenericActionEvent, func() eh.EventData { return &GenericActionEventData{} })
 }
 
 const (
 	GenericActionEvent = eh.EventType("GenericActionEvent")
 	POSTCommand        = eh.CommandType("GenericActionHandler:POST")
+	PATCHCommand       = eh.CommandType("GenericActionHandler:PATCH")
 )
 
 type GenericActionEventData struct {
@@ -36,6 +38,7 @@ type GenericActionEventData struct {
 // HTTP POST Command
 type POST struct {
 	eventBus eh.EventBus
+	command  eh.CommandType
 
 	ID      eh.UUID           `json:"id"`
 	CmdID   eh.UUID           `json:"cmdid"`
@@ -50,7 +53,7 @@ var _ = eh.Command(&POST{})
 
 func (c *POST) AggregateType() eh.AggregateType { return domain.AggregateType }
 func (c *POST) AggregateID() eh.UUID            { return c.ID }
-func (c *POST) CommandType() eh.CommandType     { return POSTCommand }
+func (c *POST) CommandType() eh.CommandType     { return c.command }
 func (c *POST) SetAggID(id eh.UUID)             { c.ID = id }
 func (c *POST) SetCmdID(id eh.UUID)             { c.CmdID = id }
 func (c *POST) ParseHTTPRequest(r *http.Request) error {
@@ -134,10 +137,16 @@ func StartService(ctx context.Context, logger log.Logger, ch eh.CommandHandler, 
 		var handler view.Action
 		if data, ok := event.Data().(*GenericActionEventData); ok {
 			ret.RLock()
-			reg := ret.actions[data.ResourceURI]
+			defer ret.RUnlock()
+			reg, ok := ret.actions[data.ResourceURI]
+			if !ok {
+				// didn't find upload for this URL
+				logger.Crit("COULD NOT FIND URI", "URI", data.ResourceURI)
+				return
+			}
 			handler = reg.view.GetAction(reg.actionName)
 			logger.Crit("URI", "uri", data.ResourceURI)
-			ret.RUnlock()
+
 		}
 
 		logger.Crit("handler", "handler", handler)
@@ -171,22 +180,26 @@ func (s *Service) WithAction(ctx context.Context, name string, uriSuffix string,
 			view:       v,
 		}
 
-		// The following redfish resource is created only for the purpose of being
-		// a 'receiver' for the action command specified above.
-		s.ch.HandleCommand(
-			ctx,
-			&domain.CreateRedfishResource{
-				ID:          eh.NewUUID(),
-				ResourceURI: uri,
-				Type:        "Action",
-				Context:     "Action",
-				Plugin:      "GenericActionHandler",
-				Privileges: map[string]interface{}{
-					"POST": []string{"ConfigureManager"},
+		// only create receiver aggregate for the POST/PATCH for cases where it is a different
+		// UIR from the view (this lets us handle PATCH on the actual view)
+		if v.GetURIUnlocked() != uri {
+			// The following redfish resource is created only for the purpose of being
+			// a 'receiver' for the action command specified above.
+			s.ch.HandleCommand(
+				ctx,
+				&domain.CreateRedfishResource{
+					ID:          eh.NewUUID(),
+					ResourceURI: uri,
+					Type:        "Action",
+					Context:     "Action",
+					Plugin:      "GenericActionHandler",
+					Privileges: map[string]interface{}{
+						"POST": []string{"ConfigureManager"},
+					},
+					Properties: map[string]interface{}{},
 				},
-				Properties: map[string]interface{}{},
-			},
-		)
+			)
+		}
 
 		return nil
 	}

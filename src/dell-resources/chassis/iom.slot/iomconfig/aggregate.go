@@ -18,11 +18,12 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 			ResourceURI: v.GetURI(),
 			Type:        "#DellIomConfiguration.v1_0_0.DellIomConfiguration",
 			Context:     "/redfish/v1/$metadata#ChassisCollection.ChassisCollection/Members/$entity",
+			Plugin:      "GenericActionHandler",
 			Privileges: map[string]interface{}{
 				"GET":    []string{"Login"},
 				"POST":   []string{}, // cannot create sub objects
 				"PUT":    []string{},
-				"PATCH":  []string{},
+				"PATCH":  []string{"ConfigureManager"},
 				"DELETE": []string{}, // can't be deleted
 			},
 			Properties: map[string]interface{}{

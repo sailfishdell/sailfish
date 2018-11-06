@@ -81,9 +81,10 @@ func AddAggregate(ctx context.Context, root *view.View, v *view.View, ch eh.Comm
 			ResourceURI: v.GetURI() + "/FirmwareInventory",
 			Type:        "#SoftwareInventoryCollection.SoftwareInventoryCollection",
 			Context:     root.GetURI() + "/$metadata#SoftwareInventoryCollection.SoftwareInventoryCollection",
+			Plugin:      "GenericUploadHandler",
 			Privileges: map[string]interface{}{
 				"GET":    []string{"Login"},
-				"POST":   []string{}, // Read Only
+				"POST":   []string{"ConfigureManager"},
 				"PUT":    []string{}, // Read Only
 				"PATCH":  []string{}, // Read Only
 				"DELETE": []string{}, // can't be deleted

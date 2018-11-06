@@ -197,10 +197,17 @@ func StartService(ctx context.Context, logger log.Logger, ch eh.CommandHandler, 
 		var handler view.Upload
 		if data, ok := event.Data().(*GenericUploadEventData); ok {
 			ret.RLock()
-			reg := ret.uploads[data.ResourceURI]
+			defer ret.RUnlock()
+			logger.Crit("URI", "URI", data.ResourceURI, "pending", ret.uploads)
+			reg, ok := ret.uploads[data.ResourceURI]
+			if !ok {
+				// didn't find upload for this URL
+				logger.Crit("COULD NOT FIND URI", "URI", data.ResourceURI)
+				return
+			}
 			handler = reg.view.GetUpload(reg.uploadName)
 			logger.Crit("URI", "uri", data.ResourceURI)
-			ret.RUnlock()
+
 		}
 
 		logger.Crit("handler", "handler", handler)
@@ -233,23 +240,6 @@ func (s *Service) WithUpload(ctx context.Context, name string, uriSuffix string,
 			uploadName: name,
 			view:       v,
 		}
-
-		// The following redfish resource is created only for the purpose of being
-		// a 'receiver' for the upload command specified above.
-		s.ch.HandleCommand(
-			ctx,
-			&domain.CreateRedfishResource{
-				ID:          eh.NewUUID(),
-				ResourceURI: uri,
-				Type:        "Upload",
-				Context:     "Upload",
-				Plugin:      "GenericUploadHandler",
-				Privileges: map[string]interface{}{
-					"POST": []string{"ConfigureManager"},
-				},
-				Properties: map[string]interface{}{},
-			},
-		)
 
 		return nil
 	}

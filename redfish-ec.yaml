@@ -750,7 +750,7 @@ views:
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
         - "fn": "with_PumpHandledAction"
-          "params": {"name": "IOMConfig_objects", "uri": "/Mailbox", "timeout": 30}
+          "params": {"name": "IOMConfig_objects", "uri": "", "timeout": 30}
 
   "subsyshealth":
       "Logger": ["module", "subsyshealth"]
