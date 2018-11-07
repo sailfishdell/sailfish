@@ -85,6 +85,9 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 					"GracefulRestart",
 				},
 			},
+            "#Manager.ForceFailover": map[string]interface{}{
+					"target": v.GetActionURI("manager.forcefailover"),
+				},
 			"Oem": map[string]interface{}{
 				// TODO: Remove per JIT-66996
 				"DellManager.v1_0_0#DellManager.ResetToDefaults": map[string]interface{}{
@@ -95,9 +98,6 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 						"ResetToEngineeringDefaults",
 					},
 					"target": v.GetActionURI("manager.resettodefaults"),
-				},
-				"#Manager.ForceFailover": map[string]interface{}{
-					"target": v.GetActionURI("manager.forcefailover"),
 				},
 				"#DellManager.v1_0_0.DellManager.ResetToDefaults": map[string]interface{}{
 					"ResetType@Redfish.AllowableValues": []string{
@@ -118,7 +118,7 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 						"Clone",
 						"Replace",
 					},
-					"OemManager.v1_0_0#OemManager.ExportSystemConfiguration": []string{
+					"IncludeInExport@Redfish.AllowableValues": []string{
 						"Default",
 						"IncludeReadOnly",
 						"IncludePasswordHashValues",
@@ -223,7 +223,7 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 					"target": v.GetActionURI("manager.importsystemconfig"),
 				},
 				"OemManager.v1_0_0#OemManager.ImportSystemConfigurationPreview": map[string]interface{}{
-					"ImportSystemConfigurationPreview@Redfish.AllowableVaues": []string{
+					"ImportSystemConfigurationPreview@Redfish.AllowableValues": []string{
 						"ImportBuffer",
 					},
 					"ShareParameters": map[string]interface{}{
