@@ -25,18 +25,13 @@
 logs:
     # Log warnings and Crit to stderr (everything else to log file, below)
     - Enabled: true
-      Level: "debug"
+      Level: "warn"
       PrintFile: true
       PrintFunction: true
 
     # log all web server accesses
-<<<<<<< Updated upstream
     - Enabled: false
       FileName: "/var/log/http-access.log"
-=======
-    - Enabled: true
-      FileName: "./http-access.log"
->>>>>>> Stashed changes
       PrintFile: true
       PrintFunction: true
       ModulesToEnable:
@@ -44,14 +39,10 @@ logs:
           level: "debug"
 
     # (DISABLED) log stuff on a module by module basis to FILE
-<<<<<<< Updated upstream
     - Enabled: false
       FileName: "/var/log/sailfish.log"
-=======
-    - Enabled: true 
       FileName: "./debug.log"
       Level: "debug"
->>>>>>> Stashed changes
       PrintFile: true
       PrintFunction: true
       ModulesToEnable:
