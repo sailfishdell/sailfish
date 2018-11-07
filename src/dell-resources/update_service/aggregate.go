@@ -30,7 +30,7 @@ func AddAggregate(ctx context.Context, root *view.View, v *view.View, ch eh.Comm
 			ID:          v.GetUUID(),
 			ResourceURI: v.GetURI(),
 			Type:        "#UpdateService.v1_0_0.UpdateService",
-			Context:     root.GetURI() + "/metadata#UpdateService.UpdateService",
+			Context:     root.GetURI() + "/$metadata#UpdateService.UpdateService",
 			Privileges: map[string]interface{}{
 				"GET":    []string{"Login"},
 				"POST":   []string{}, // cannot create sub objects

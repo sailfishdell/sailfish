@@ -70,7 +70,7 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 								"Accept",
 								"Clear",
 							},
-							"target": v.GetActionURI("chassis.peripiheralmapping"),
+							"target": v.GetActionURI("chassis.peripheralmapping"),
 						},
 						"#DellChassis.v1_0_0.VirtualReseat": map[string]interface{}{
 							"target": v.GetActionURI("chassis.sledvirtualreseat"),
