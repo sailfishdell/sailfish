@@ -346,7 +346,7 @@ views:
         - "fn": "ARMapper"
           "params": {"modelname": "default", "cfgsection": "Managers/CMC.Integrated", "mappinguniquename": "'manager_mapper:' + FQDD ", "AddToView": true}
         - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "health", "uniquename": "'am2_health_' + FQDD", "passthru": {"health_fqdd": "'System.Chassis.1#SubSystem.1#' + FQDD"} }
+          "params": {"modelname": "default", "cfgsection": "health", "uniquename": "'am2_health_' + FQDD", "passthru": {"health_fqdd": "'System.Chassis.1#' + FQDD"} }
         - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "certificate", "uniquename": "'certificate_services_' + FQDD" }
       "View":
@@ -713,7 +713,7 @@ views:
         - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "health", "uniquename": "'am2_health_' + FQDD", "passthru": {"health_fqdd": "'System.Chassis.1#' + FQDD"} }
         - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "iom", "uniquename": "'am2_iom_' + FQDD", "passthru": {"DM_FQDD": "'System.Chassis.1#' + FQDD"}}
+          "params": {"modelname": "default", "cfgsection": "inst_power", "uniquename": "'am2_iom_' + FQDD", "passthru": {"DM_FQDD": "FQDD"}}
       "View":
         - "fn": "linkModel"
           "params": {"existing": "default", "linkname": "health"}
@@ -837,7 +837,9 @@ views:
         - "fn": "ARMapper"
           "params": {"modelname": "default", "cfgsection": "Chassis/System.Modular", "mappinguniquename": "'sled_mapper:' + FQDD", "AddToView": true}
         - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "health", "uniquename": "'am2_health_' + FQDD", "passthru": {"health_fqdd": "'System.Chassis.1#' + FQDD"} }
+          "params": {"modelname": "default", "cfgsection": "health", "uniquename": "'am2_health_' + FQDD", "passthru": {"health_fqdd": "'System.Chassis.1#' + FQDD" } }
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "inst_power", "uniquename": "'am2_sled_' + FQDD", "passthru": {"DM_FQDD": "'System.Chassis.1#' + FQDD + '#Power'"}}
       "View":
         - "fn": "linkModel"
           "params": {"existing": "default", "linkname": "health"}
@@ -982,8 +984,10 @@ awesome_mapper:
                 {Property: "rpm", Query: "(data.Rotor1rpm+data.Rotor2rpm)/2" },
                 {Property: "FanStateMask", Query: "data.FanStateMask" }]}
 
-    iom:
-      - { SelectEventType: "AttributeUpdated", Select: "data.FQDD == DM_FQDD && data.Name == 'InstantaneousPower'", ModelUpdate: [ {Property: "Instantaneous_Power", Query: "data.Value", Default: 0} ] }
+    inst_power:
+      - { SelectEventType: "InstPowerEvent", Select: "data.FQDD == DM_FQDD",
+            ModelUpdate: [
+                {Property: "Instantaneous_Power", Query: "data.InstPower"}]}
 
     iom_config:
       - { SelectEventType: "IomCapability", Select: "data.Name == FQDD",
@@ -1048,16 +1052,17 @@ awesome_mapper:
 
 mappings:
     Chassis/System.Modular:
-        - {Property: "description",  FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Description" }
-        - {Property: "service_tag",  FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "ServiceTag" }
-        - {Property: "power_state",  FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "PowerState" }
-        - {Property: "chassis_type", FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "ChassisType" }
-        - {Property: "model",        FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Model" }
-        - {Property: "manufacturer", FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Manufacturer" }
-        - {Property: "serial",       FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "SerialNumber" }
-        - {Property: "part_number",  FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "PartNumber" }
-        - {Property: "name",         FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Name" }
-        - {Property: "sled_profile", FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "SledProfile" }
+        - {Property: "description",      FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Description" }
+        - {Property: "service_tag",      FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "ServiceTag" }
+        - {Property: "power_state",      FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "PowerState" }
+        - {Property: "chassis_type",     FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "ChassisType" }
+        - {Property: "model",            FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Model" }
+        - {Property: "manufacturer",     FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Manufacturer" }
+        - {Property: "serial",           FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "SerialNumber" }
+        - {Property: "part_number",      FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "PartNumber" }
+        - {Property: "name",             FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Name" }
+        - {Property: "sled_profile",     FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "SledProfile" }
+        - {Property: "sub_chassis_type", FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "ChassisSubType" }
 
     firmware/inventory:
         - {Property: "fw_device_class",     FQDD: "{FQDD}", Group: "FWInventory", Index: "1", Name: "DeviceClass" }
@@ -1139,7 +1144,7 @@ mappings:
         - {Property: "power_state",  FQDD: "{FQDD}", Group: "ChassisPower", Index: "1", Name: "ChassisPowerStatus.1" }
         - {Property: "serial",       FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "SerialNumber" }
         - {Property: "part_number",  FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "PartNumber" }
-        - {Property: "chassis_type", FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "ChassisType" }
+        - {Property: "chassis_type", FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "ChassisType"}
         - {Property: "model",        FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Model" }
         - {Property: "name",         FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Name" }
         - {Property: "manufacturer", FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Manufacturer" }

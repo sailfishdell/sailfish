@@ -6,6 +6,7 @@ import (
 
 const (
 	HealthEvent                         = eh.EventType("HealthEvent")
+	InstPowerEvent                      = eh.EventType("InstPowerEvent")
 	DataManagerEvent                    = eh.EventType("DataManagerEvent")
 	FanEvent                            = eh.EventType("FanEvent")
 	PowerSupplyObjEvent                 = eh.EventType("PowerSupplyObjEvent")
@@ -22,6 +23,7 @@ const (
 
 func init() {
 	eh.RegisterEventData(HealthEvent, func() eh.EventData { return &HealthEventData{} })
+	eh.RegisterEventData(InstPowerEvent, func() eh.EventData { return &InstPowerEventData{} })
 	eh.RegisterEventData(FanEvent, func() eh.EventData { return &FanEventData{} })
 	eh.RegisterEventData(PowerSupplyObjEvent, func() eh.EventData { return &PowerSupplyObjEventData{} })
 	eh.RegisterEventData(PowerConsumptionDataObjEvent, func() eh.EventData { return &PowerConsumptionDataObjEventData{} })
@@ -50,6 +52,10 @@ type IomCapabilityData struct {
 type HealthEventData struct {
 	FQDD   string
 	Health string
+}
+type InstPowerEventData struct {
+        FQDD      string
+        InstPower float64
 }
 
 type DataObjectHeader struct {
