@@ -162,10 +162,6 @@ type AvgPowerConsumptionStatDataObjEventData struct {
 }
 
 type RaidSiObjectHeader struct {
-	ObjExtFlags         int     `json:"objExtFlags"`
-	KeyOffset           int     `json:"keyOffset"`
-	FqddOffset          int     `json:"fqddOffset"`
-	FriendlyFQDDOffset  int     `json:"friendlyFQDDOffset"`
 	ObjVersion          int     `json:"objVersion"`
 	ObjName             string  `json:"objName"`
 	ObjAttributes       int     `json:"objAttributes"`
@@ -176,20 +172,38 @@ type RaidSiObjectHeader struct {
 	Flags               int     `json:"flags"`
 }
 
+
+type RaidObjectHeader struct {
+	DataObjHeader       DataObjectHeader
+	PrimaryStatus       int     `json:"primaryStatus"`
+	FriendlyFQDDOffset  int     `json:"friendlyFQDDOffset"`
+	SyncTime            float64 `json:"syncTime"`
+	ObjExtFlags         int     `json:"objExtFlags"`
+	ObjAttributes       int     `json:"objAttributes"`
+	ObjName             string  `json:"objName"`
+	KeyOffset           int     `json:"keyOffset"`
+	ObjVersion          int     `json:"objVersion"`
+	FqddOffset          int     `json:"fqddOffset"`
+	AlternateFQDDOffset int     `json:"alternateFQDDOffset"`
+	Flags               int     `json:"flags"`
+	UpdateTime          int     `json:"updateTime"`
+}
+
 type StorageVirtualObjEventData struct {
 	ObjectHeader  DataObjectHeader
-	RaidObjHeader RaidSiObjectHeader `json:"raidSiobjheader"`
-	BlockSize     int                `json:"blockSize"`
-	Capacity      int64              `json:"size"`
-	Encrypted     int                `json:"attributes"`
-	OptimumIoSize int                `json:"stripeSize"`
-	VolumeType    int                `json:"raidLevel"`
-	Id            string             `json:"fqdd"`
+	RaidObjHeader RaidObjectHeader `mapstructure:"raidObjheader"`
+	BlockSize     int              `json:"blockSize"`
+	Capacity      int64            `json:"size"`
+	Encrypted     int              `json:"attributes"`
+	OptimumIoSize int              `json:"stripeSize"`
+	VolumeType    int              `json:"raidLevel"`
+	Id            string
+	Description   string
 }
 
 type StoragePhysicalObjEventData struct {
 	ObjectHeader              DataObjectHeader
-	RaidObjHeader             RaidSiObjectHeader `json:"raidSiobjheader"`
+	RaidObjHeader             RaidSiObjectHeader `mapstructure:"raidSiobjheader"`
 	BlockSize                 int                `json:"blockSize"`
 	Capacity                  uint64             `json:"size"`
 	CapableSpeeds             int                `json:"capableSpeeds"`
@@ -197,27 +211,27 @@ type StoragePhysicalObjEventData struct {
 	EncryptionStatus          int                `json:"securityState"`
 	FailurePredicted          int                `json:"attributes"`
 	Hotspare                  int                `json:"hotspare"`
-	Id                        string             `json:"fqdd"`
-	Manufacturer              string             `json:"manufactureName"`
-	Model                     string             `json:"modelName"`
+	Id                        string             `mapstructure:"fqdd"`
+	Manufacturer              string             `mapstructure:"manufactureName"`
+	Model                     string             `mapstructure:"modelName"`
 	MediaType                 int                `json:"attributes"`
 	NegotiatedSpeed           int                `json:"negotiatedSpeed"`
-	PartNumber                string             `json:"ppid"`
+	PartNumber                string             `mapstructure:"ppid"`
 	PredictedMediaLife        int                `json:"deviceLifeRemaining"`
 	Protocol                  int                `json:"protocol"`
-	Revision                  string             `json:"revision"`
+	Revision                  string             `mapstructure:"revision"`
 	NominalMediumRotationRate int                `json:"nominalMediumRotationRate"`
-	Serial                    string             `json:"serialNumber"`
+	Serial                    string             `mapstructure:"serialNumber"`
 }
 
 type StorageAdapterObjEventData struct {
 	ObjectHeader    DataObjectHeader
 	RaidObjHeader   RaidSiObjectHeader `json:"raidSiobjheader"`
-	Manufacturer    string             `json:"manufacturer"`
-	FirmwareVersion string             `json:"currentAvailableFwVer"`
-	Id              string             `json:"fqdd"`
+	Manufacturer    string             `mapstructure:"manufacturer"`
+	FirmwareVersion string             `mapstructure:"currentAvailableFwVer"`
+	Id              string             `mapstructure:"fqdd"`
 	CapableSpeeds   int                `json:"capableSpeeds"`
-	Model           string             `json:"fqdd"`
+	Model           string             `mapstructure:"fqdd"`
 }
 
 type StorageEnclosureObjEventData struct {
@@ -226,17 +240,17 @@ type StorageEnclosureObjEventData struct {
 	AssetTag      string             `json:"assetTag"`
 	ChassisType   int                `json:"bpType"`
 	DeviceId      int                `json:"deviceID"`
-	Manufacturer  string             `json:"manufacturer"`
-	Model         string             `json:"fqdd"`
-	PartNumber    string             `json:"ppid"`
-	PowerState    int                `json:"drivePower"`
-	Sku           string             `json:"serialNumber"`
-	Serial        string             `json:"serialNumber"`
+	Manufacturer  string             `mapstructure:"manufacturer"`
+	Model         string             `mapstructure:"fqdd"`
+	PartNumber    string             `mapstructure:"ppid"`
+	PowerState    int                `mapstructure:"drivePower"`
+	Sku           string             `mapstructure:"serialNumber"`
+	Serial        string             `mapstructure:"serialNumber"`
 	Connector     int                `json:"connectorCount"`
-	ServiceTag    string             `json:"serviceTag"`
+	ServiceTag    string             `mapstructure:"serviceTag"`
 	SlotCount     int                `json:"slotCount"`
-	Version       string             `json:"currentAvailableFwVer"`
-	WiredOrder    string             `json:"currentAvailableFwVer"`
+	Version       string             `mapstructure:"currentAvailableFwVer"`
+	WiredOrder    string             `mapstructure:"currentAvailableFwVer"`
 }
 
 type FileReadEventData struct {

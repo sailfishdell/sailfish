@@ -399,6 +399,8 @@ views:
       "Controllers":
         - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "storage_drive", "uniquename": "'am2_storage_drive_' + URI_FQDD" }
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "health", "uniquename": "'am2_storage_drive_health_' + FQDD" }
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/Systems/System.Embedded.1/Storage/Drives/' + URI_FQDD "
@@ -544,10 +546,10 @@ awesome_mapper:
                 {Property: "capable_speed", Query: "data.CapableSpeeds" },
                 {Property: "description", Query: "data.RaidObjHeader.ObjName" },
                 {Property: "capacity", Query: "data.Capacity" },
-                {Property: "encryption_ability", Query: "data.EncryptionAbility" },
-                {Property: "encryption_status", Query: "data.EncryptionStatus" },
-                {Property: "failure_predicted", Query: "data.FailurePredicted" },
-                {Property: "hotspare_type", Query: "data.Hotspare" },
+                {Property: "encryption_ability", Query: "encryptn_ability(data.EncryptionAbility)" },
+                {Property: "encryption_status", Query: "encryptn_status(data.EncryptionStatus)" },
+                {Property: "failure_predicted", Query: "fail_predicted(data.FailurePredicted, data.RaidObjHeader.ObjAttributes)" },
+                {Property: "hotspare_type", Query: "hotspare(data.Hotspare)" },
                 {Property: "unique_name", Query: "data.Id" },
                 {Property: "manufacturer", Query: "data.Manufacturer" },
                 {Property: "media_type", Query: "data.MediaType" },
@@ -573,7 +575,7 @@ awesome_mapper:
                 {Property: "encrypted", Query: "data.Encrypted" },
                 {Property: "optimum_io_size_bytes", Query: "data.OptimumIoSize*512" },
                 {Property: "volume_type", Query: "data.VolumeType" },
-                {Property: "unique_name", Query: "data.Id" }],
+                {Property: "unique_name", Query: "data.ObjectHeader.FQDD" }],
                 Exec: [ "echo('GOT AN EVENT THAT MATCHED - VOLUME')" ]
                 }
 

@@ -184,7 +184,7 @@ func init() {
 			return s, nil
 		}
 	})
-  AddFunction("map_health_value", func(args ...interface{}) (interface{}, error) { //todo: turn into hash
+	AddFunction("map_health_value", func(args ...interface{}) (interface{}, error) { //todo: turn into hash
 		switch t := args[0].(float64); t {
 		case 0, 1: //other, unknown
 			return nil, nil
@@ -198,16 +198,16 @@ func init() {
 			return nil, errors.New("Invalid object status")
 		}
 	})
-  AddFunction("map_led_value", func(args ...interface{}) (interface{}, error) { //todo: turn into hash
-    switch t := args[0].(string); t {
-    case "Blink-Off", "BLINK-OFF":
-      return "Lit", nil
-    case "Blink-1", "Blink-2", "BLINK-ON":
-      return "Blinking", nil
-    default:
-      return nil, nil
-    }
-  })
+	AddFunction("map_led_value", func(args ...interface{}) (interface{}, error) { //todo: turn into hash
+		switch t := args[0].(string); t {
+		case "Blink-Off", "BLINK-OFF":
+			return "Lit", nil
+		case "Blink-1", "Blink-2", "BLINK-ON":
+			return "Blinking", nil
+		default:
+			return nil, nil
+		}
+	})
 	AddFunction("string", func(args ...interface{}) (interface{}, error) {
 		switch t := args[0].(type) {
 		case int, int8, int16, int32, int64:
@@ -257,5 +257,45 @@ func init() {
 			return lines, err
 		}
 		return lines, nil
+	})
+	AddFunction("encryptn_ability", func(args ...interface{}) (interface{}, error) {
+		var attributes int64 = int64(args[0].(float64))
+		if attributes&0x04 == 0x04 {
+			return "SelfEncryptingDrive", nil
+		} else {
+			return "None", nil
+		}
+	})
+	AddFunction("encryptn_status", func(args ...interface{}) (interface{}, error) {
+		var security int64 = int64(args[0].(float64))
+		if security&0x01 == 0x01 {
+			return "Unlocked", nil
+		} else if security&0x02 == 0x02 {
+			return "Locked", nil
+		} else if security&0x04 == 0x04 {
+			return "Foreign", nil
+		} else {
+			return "Unencrypted", nil
+		}
+	})
+	AddFunction("fail_predicted", func(args ...interface{}) (interface{}, error) {
+		var attributes int64 = int64(args[0].(float64))
+		var objattributes int64 = int64(args[1].(float64))
+
+		if attributes&0x01 == 0x01 && objattributes&01 == 0x01 {
+			return true, nil
+		} else {
+			return false, nil
+		}
+	})
+	AddFunction("hotspare", func(args ...interface{}) (interface{}, error) {
+		var hotspare int8 = int8(args[0].(float64))
+		if hotspare&0x01 == 0x01 {
+			return "Dedicated", nil
+		} else if hotspare&0x02 == 0x02 {
+			return "Global", nil
+		} else {
+			return "None", nil
+		}
 	})
 }
