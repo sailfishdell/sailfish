@@ -36,7 +36,7 @@ logs:
       PrintFunction: true
       ModulesToEnable:
         - name: "http"
-          level: "info"
+          level: "debug"
 
     # (DISABLED) log stuff on a module by module basis to FILE
     - Enabled: false
