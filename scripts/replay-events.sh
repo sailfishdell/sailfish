@@ -14,8 +14,12 @@ if [ -z "$1" ]; then
     exit 1
 fi
 
+tmpfile=$(mktemp ./TEMP-XXXXXX)
+trap "rm -f $tmpfile" EXIT
+
 cat $1 | while read line ; do
-    $CURLCMD --fail -f $BASE/api/Event%3AInject -d  "$line"
+   echo "$line" > $tmpfile
+    $CURLCMD --fail -f $BASE/api/Event%3AInject -d  @$tmpfile
 
 # rate limit requests, if needed:
 #    i=$((i+1))
