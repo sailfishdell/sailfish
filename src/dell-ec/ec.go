@@ -419,11 +419,11 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 			view.WithURI(rootView.GetURI()+"/UpdateService"),
 			view.WithModel("default", mdl),
 			view.WithController("ar_mapper", armapper),
-			actionSvc.WithAction(ctx, "update.reset", "/Actions/Oem/DellUpdateService.Reset", updateReset),
-			actionSvc.WithAction(ctx, "update.eid674.reset", "/Actions/Oem/EID_674_UpdateService.Reset", updateEID674Reset),
+			actionSvc.WithAction(ctx, "update.reset", "/Actions/Oem/DellUpdateService.Reset", pumpSvc.NewPumpAction(30)),
+			actionSvc.WithAction(ctx, "update.eid674.reset", "/Actions/Oem/EID_674_UpdateService.Reset", pumpSvc.NewPumpAction(30)),
 			actionSvc.WithAction(ctx, "update.syncup", "/Actions/Oem/DellUpdateService.Syncup", pumpSvc.NewPumpAction(30)),
 			actionSvc.WithAction(ctx, "update.eid674.syncup", "/Actions/Oem/EID_674_UpdateService.Syncup", pumpSvc.NewPumpAction(30)),
-			uploadSvc.WithUpload(ctx, "upload.firmwareUpdate", "/FirmwareInventory", pumpSvc.NewPumpAction(60)),
+			uploadSvc.WithUpload(ctx, "upload.firmwareUpdate", "/FirmwareInventory", pumpSvc.NewPumpAction(300)),
 			evtSvc.PublishResourceUpdatedEventsForModel(ctx, "default"),
 		)
 
