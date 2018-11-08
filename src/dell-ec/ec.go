@@ -530,6 +530,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 				// TODO: need this to work at some point...
 				//uploadSvc.WithUpload...
 			)
+
 			inv[comp_ver_tuple] = invview
 			firmware_inventory.AddAggregate(ctx, rootView, invview, ch)
 
@@ -593,6 +594,10 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 		firm_mdl.ApplyOption(
 			model.UpdateProperty("fw_fqdd_list", fw_fqdd_list),
 			model.UpdateProperty("fw_related_list", fw_related_list),
+
+			// TODO: remove these after this section has been moved to instantiate
+			model.UpdateProperty("fw_fqdd_list_count", len(fw_fqdd_list)),
+			model.UpdateProperty("fw_related_list_count", len(fw_related_list)),
 		)
 
 		obsLogger.Info("updated inventory view", "invview", invview, "fw_fqdd_list", fw_fqdd_list, "fw_related_list", fw_related_list)
