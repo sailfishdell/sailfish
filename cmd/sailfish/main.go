@@ -23,6 +23,7 @@ import (
 	eh "github.com/looplab/eventhorizon"
 
 	log "github.com/superchalupa/sailfish/src/log"
+	applog "github.com/superchalupa/sailfish/src/log15adapter"
 
 	"github.com/superchalupa/sailfish/src/http_redfish_sse"
 	"github.com/superchalupa/sailfish/src/http_sse"
@@ -76,11 +77,12 @@ func main() {
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	logger := initializeApplicationLogging()
+	logger := applog.InitializeApplicationLogging("")
 
 	domainObjs, _ := domain.NewDomainObjects()
-	domainObjs.EventPublisher.AddObserver(logger)
-	domainObjs.CommandHandler = logger.makeLoggingCmdHandler(domainObjs.CommandHandler)
+	// redo this later to observe events
+	//domainObjs.EventPublisher.AddObserver(logger)
+	domainObjs.CommandHandler = makeLoggingCmdHandler(logger, domainObjs.CommandHandler)
 
 	// This also initializes all of the plugins
 	domain.InitDomain(ctx, domainObjs.CommandHandler, domainObjs.EventBus, domainObjs.EventWaiter)
@@ -95,7 +97,7 @@ func main() {
 
 	// Handle the API.
 	m := mux.NewRouter()
-	loggingHTTPHandler := logger.makeLoggingHTTPHandler(m)
+	loggingHTTPHandler := makeLoggingHTTPHandler(logger, m)
 
 	// per spec: redirect /redfish to /redfish/
 	m.Path("/redfish").HandlerFunc(func(w http.ResponseWriter, r *http.Request) { http.Redirect(w, r, "/redfish/", 301) })

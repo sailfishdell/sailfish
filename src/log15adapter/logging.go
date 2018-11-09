@@ -28,7 +28,6 @@ func (l *MyLogger) New(ctx ...interface{}) mylog.Logger {
 }
 
 func InitializeApplicationLogging(logCfgFile string) (logger *MyLogger) {
-
 	logger = &MyLogger{
 		Logger:   log.New(),
 		logCfg:   viper.New(),
