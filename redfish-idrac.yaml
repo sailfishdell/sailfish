@@ -330,24 +330,21 @@ views:
         "default":  {"unique_name": "FQDD", "unique_name_attr": "FQDD+'.Attributes'", "attributes": "add_attribute_property()"}
       "Controllers":
         - "fn": "ARDumper"
-          "params": {"modelname": "default", "AddToView": true}
+          "params": {"modelname": "default", "AddToView": true, "passthru": {"fqddlist": "array(FQDD)"}}
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/Chassis/' + FQDD "
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
-        - "fn": "withFormatter_count"
-          "params":
-        - "fn": "withFormatter_attributeFormatter"
-          "params":
-        - "fn": "withFormatter_expand"
-          "params":
-        - "fn": "withFormatter_expandone"
-          "params":
-        - "fn": "withFormatter_formatOdataList"
-          "params":
         - "fn": "with_PumpHandledAction"
           "params": {"name": "chassis.reset", "uri": "/Actions/Chassis.Reset", "timeout": 30}
+        - "fn": "stdFormatters"
+          "params":
+      "Aggregate": "idrac_system_chassis"
+
+
+
+
 
   "storage_enclosure":
       "Logger": ["module", "StorageEnclosure"]
