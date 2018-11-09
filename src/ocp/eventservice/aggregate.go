@@ -26,16 +26,16 @@ func RegisterAggregate(s *testaggregate.Service) {
 						"PATCH": []string{"ConfigureManager"},
 					},
 					Properties: map[string]interface{}{
-						//"@odata.etag@meta":   vw.Meta(view.GETProperty("etag"), view.GETModel("etag")), //what is this??
+						"@odata.etag@meta":   vw.Meta(view.GETProperty("etag"), view.GETModel("etag")),
 						"Id":                 "EventService",
 						"Name":               "Event Service",
 						"Description":        "Event Service represents the properties for the service",
-						"ServerSentEventUri": "/redfish_events", //??
+						"ServerSentEventUri": "/redfish_events",
 						"Status": map[string]interface{}{
 							"HealthRollup": "OK", //hardcoded
 							"Health":       "OK", //hardcoded
 						},
-						"ServiceEnabled":                    true, //??
+						"ServiceEnabled":                    true,
 						"DeliveryRetryAttempts@meta":        vw.Meta(view.PropGET("delivery_retry_attempts")),
 						"DeliveryRetryIntervalSeconds@meta": vw.Meta(view.PropGET("delivery_retry_interval_seconds")),
 						"EventTypesForSubscription": []string{
