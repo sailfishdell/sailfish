@@ -55,6 +55,8 @@ views:
         # This is for dynamic runtime instantiation of new chassis as they appear
         - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "idrac_system_chassis", "uniquename": "'idrac_system_chassis_' + view.GetURI()"}
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "idrac_storage_enclosure", "uniquename": "'idrac_storage_enclosure_' + view.GetURI()"}
 
       "View":
         - "fn": "with_URI"
@@ -541,6 +543,11 @@ awesome_mapper:
       - { SelectEventType: "IDRACComponentEvent",
           Select: "data.Type == 'Chassis'",
           Exec: [ "addsystemchassis(data.FQDD)" ]}
+
+    idrac_storage_enclosure:
+      - { SelectEventType: "IDRACComponentEvent",
+          Select: "data.Type == 'StorageEnclosure'",
+          Exec: [ "addstorageenclosure(data.FQDD)" ]}
 
     storage_adapter:
       - { SelectEventType: "StorageAdapterEvent", Select: "data.ObjectHeader.FQDD == EVENT_FQDD",
