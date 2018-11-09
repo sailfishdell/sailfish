@@ -39,7 +39,7 @@ import (
 
 	// goal is to get rid of the _ in front of each of these....
 	dell_ec "github.com/superchalupa/sailfish/src/dell-ec"
-	mgrCMCIntegrated "github.com/superchalupa/sailfish/src/dell-resources/managers/cmc.integrated"
+	"github.com/superchalupa/sailfish/src/dell-resources/managers/idrac.embedded"
 	storage_instance "github.com/superchalupa/sailfish/src/dell-resources/systems/system.embedded/storage"
 	storage_controller "github.com/superchalupa/sailfish/src/dell-resources/systems/system.embedded/storage/controller"
 	storage_drive "github.com/superchalupa/sailfish/src/dell-resources/systems/system.embedded/storage/drive"
@@ -92,6 +92,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	eventservice.RegisterAggregate(instantiateSvc)
 	storage_collection.RegisterAggregate(instantiateSvc)
 	storage_volume_collection.RegisterAggregate(instantiateSvc)
+	idrac_embedded.RegisterAggregate(instantiateSvc)
 
 	// ignore unused for now
 	_ = logSvc
@@ -138,6 +139,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	//*********************************************************************
 	//  Standard redfish roles
 	//*********************************************************************
+	// TODO: convert to instantiate
 	stdcollections.AddStandardRoles(ctx, rootView.GetUUID(), rootView.GetURI(), ch)
 
 	//*********************************************************************
@@ -165,31 +167,10 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 		instantiateSvc.Instantiate(regName, map[string]interface{}{"location": location})
 	}
 
-	// various things are "managed" by the managers, create a global to hold the views so we can make references
-	//	var managers []*view.View
-
-	mgrName := "iDRAC.Embedded.1"
-
 	//*********************************************************************
 	// /redfish/v1/Managers/iDRAC.Embedded.1
 	//*********************************************************************
-
-	mgrLogger, mgrCmcVw, _ := instantiateSvc.Instantiate("idrac_embedded",
-		map[string]interface{}{
-			"rooturi":  rootView.GetURI(),
-			"FQDD":     mgrName,                                   // this is used for the AR mapper. case difference is confusing, but need to change mappers
-			"fqdd":     "System.Chassis.1#SubSystem.1#" + mgrName, // This is used for the health subsystem
-			"fqddlist": []string{mgrName},
-		},
-	)
-
-	//	managers = append(managers, mgrCmcVw)
-	//	swinvViews = append(swinvViews, mgrCmcVw)
-
-	// add the aggregate to the view tree
-	mgrCMCIntegrated.AddAggregate(ctx, mgrLogger, mgrCmcVw, ch)
-
-	//end
+	instantiateSvc.Instantiate("idrac_embedded", map[string]interface{}{"FQDD": "iDRAC.Embedded.1"})
 
 	storage_enclosure_items := []string{}
 	storage_instance_items := []string{}

@@ -310,30 +310,18 @@ views:
           "params":
 
   "idrac_embedded":
-      "Logger": ["module", "mgrChassis"]
+      "Logger": ["module", "idrac_embedded"]
       "Models":
-        "default":  {"unique_name": "FQDD", "unique_name_attr": "FQDD+'.Attributes'", "attributes": "add_attribute_property()"}
+        "default":  {}
       "Controllers":
-        - "fn": "ARMapper"
-          "params": {"modelname": "default", "cfgsection": "firmware/inventory", "mappinguniquename": "'fw_mapper:' + FQDD ", "AddToView": true}
-        - "fn": "ARMapper"
-          "params": {"modelname": "default", "cfgsection": "Managers/CMC.Integrated", "mappinguniquename": "'manager_mapper:' + FQDD ", "AddToView": true}
-        - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "health", "uniquename": "'am2_manager_' + FQDD" }
-        - "fn": "ARDumper"
-          "params": {"modelname": "default", "AddToView": true}
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/Managers/' + FQDD"
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
-        - "fn": "withFormatter_attributeFormatter"
+        - "fn": "stdFormatters"
           "params":
-        - "fn": "withFormatter_expand"
-          "params":
-        - "fn": "withFormatter_count"
-          "params":
-
+      "Aggregate": "idrac_embedded"
 
 
   "system_chassis":
@@ -413,7 +401,7 @@ views:
         - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "storage_drive", "uniquename": "'am2_storage_drive_' + URI_FQDD" }
         - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "health", "uniquename": "'am2_storage_drive_health_' + FQDD" }
+          "params": {"modelname": "default", "cfgsection": "health", "uniquename": "'am2_storage_drive_health_' + URI_FQDD" }
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/Systems/System.Embedded.1/Storage/Drives/' + URI_FQDD "
