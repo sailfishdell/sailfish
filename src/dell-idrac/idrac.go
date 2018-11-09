@@ -89,6 +89,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	registries.RegisterAggregate(instantiateSvc)
 	stdcollections.RegisterAggregate(instantiateSvc)
 	session.RegisterAggregate(instantiateSvc)
+	attributes.RegisterAggregate(instantiateSvc)
 	eventservice.RegisterAggregate(instantiateSvc)
 	idrac_embedded.RegisterAggregate(instantiateSvc)
 	system_chassis.RegisterAggregate(instantiateSvc)
@@ -188,20 +189,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 		storage_vol_items := []string{}
 
 		{
-			// ************************************************************************
-			// CHASSIS System.Chassis.1
-			// ************************************************************************
-			chasName := "System.Chassis.1"
-			sysChasLogger, sysChasVw, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, cfgMgrMu, "system_chassis",
-				map[string]interface{}{
-					"rooturi":  rootView.GetURI(),
-					"FQDD":     chasName,
-					"fqddlist": []string{chasName},
-				},
-			)
-
-			// Create the .../Attributes URI. Attributes are stored in the attributes property of the chasModel
-			system_chassis.AddAggregate(ctx, sysChasLogger, sysChasVw, ch, eb)
 
 			// ##################
 			// # Storage Enclosure

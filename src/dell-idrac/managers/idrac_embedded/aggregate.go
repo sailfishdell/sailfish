@@ -19,7 +19,7 @@ func RegisterAggregate(s *testaggregate.Service) {
 			return []eh.Command{
 				&domain.CreateRedfishResource{
 					ResourceURI: vw.GetURI(),
-					Type:         "#Manager.v1_0_2.Manager",
+					Type:        "#Manager.v1_0_2.Manager",
 					Context:     "/redfish/v1/$metadata#Manager.Manager",
 
 					Privileges: map[string]interface{}{
@@ -36,6 +36,12 @@ func RegisterAggregate(s *testaggregate.Service) {
 						"@odata.type":         "#Manager.v1_0_2.Manager",
 						"FirmwareVersion":     "3.15.15.15",
 						"ManagerType":         "BMC",
+
+						"Oem": map[string]interface{}{
+							"OemAttributes": map[string]interface{}{
+								"@odata.id": vw.GetURI() + "/Attributes",
+							},
+						},
 					}},
 			}, nil
 		})

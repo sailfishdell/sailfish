@@ -306,8 +306,23 @@ views:
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/Registries/ManagerAttributeRegistry'"
-        - "fn": "withFormatter_count"
+        - "fn": "stdFormatters"
           "params":
+
+  "attributes":
+      "Logger": ["module", "attributes"]
+      "Models":
+        "default":  {"unique_name": "FQDD", "unique_name_attr": "FQDD+'.Attributes'", "attributes": "add_attribute_property()"}
+      "Controllers":
+        - "fn": "ARDumper"
+          "params": {"modelname": "default", "AddToView": true, "passthru": {"fqddlist": "array(FQDD)"}}
+      "View":
+        - "fn": "with_URI"
+          "params": "parenturi + '/Attributes'"
+        - "fn": "stdFormatters"
+          "params":
+      "Aggregate": "attributes_uri"
+
 
   "idrac_embedded":
       "Logger": ["module", "idrac_embedded"]
@@ -322,12 +337,14 @@ views:
         - "fn": "stdFormatters"
           "params":
       "Aggregate": "idrac_embedded"
-
+      "ExecPost": [
+        "instantiate('attributes', 'parenturi', rooturi + '/Managers/' + FQDD, 'FQDD', FQDD)"
+       ]
 
   "system_chassis":
       "Logger": ["module", "system_chassis"]
       "Models":
-        "default":  {"unique_name": "FQDD", "unique_name_attr": "FQDD+'.Attributes'", "attributes": "add_attribute_property()"}
+        "default":  {}
       "Controllers":
         - "fn": "ARDumper"
           "params": {"modelname": "default", "AddToView": true, "passthru": {"fqddlist": "array(FQDD)"}}
