@@ -54,9 +54,7 @@ views:
 
         # This is for dynamic runtime instantiation of new chassis as they appear
         - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "idrac_system_chassis", "uniquename": "'idrac_system_chassis_' + view.GetURI()"}
-        - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "idrac_storage_enclosure", "uniquename": "'idrac_storage_enclosure_' + view.GetURI()"}
+          "params": {"modelname": "default", "cfgsection": "idrac_component_events", "uniquename": "'idrac_system_chassis_' + view.GetURI()"}
 
       "View":
         - "fn": "with_URI"
@@ -209,8 +207,8 @@ views:
       "Models":
         "default":  {"session_timeout": "30"}
       "Controllers":
-        - "fn": "ARMapper"
-          "params": {"modelname": "default", "cfgsection": "SessionService", "mappinguniquename": "rooturi + '/SessionService'", "AddToView": true}
+#        - "fn": "ARMapper"
+#          "params": {"modelname": "default", "cfgsection": "SessionService", "mappinguniquename": "rooturi + '/SessionService'", "AddToView": true}
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/SessionService'"
@@ -231,8 +229,6 @@ views:
       "Controllers":
         - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + view.GetURI()", "passthru": {'collection_uri': 'view.GetURI()'} }
-        - "fn": "ARMapper"
-          "params": {"modelname": "default", "cfgsection": "SessionService", "mappinguniquename": "rooturi + '/SessionService/Sessions'", "AddToView": true}
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/SessionService/Sessions'"
@@ -539,15 +535,16 @@ awesome_mapper:
     testview:
         - { Select: "type == 'AttributeUpdated' && data.FQDD == fqdd && data.Name == 'InstantaneousPower'", ModelUpdate: [ {Property: "Instantaneous_Power", Query: "data.Value", Default: 0} ] }
 
-    idrac_system_chassis:
+    idrac_component_events:
       - { SelectEventType: "IDRACComponentEvent",
-          Select: "data.Type == 'Chassis'",
-          Exec: [ "addsystemchassis(data.FQDD)" ]}
+          Select: "true",
+          Exec: [ 
+                "data.Type == 'Chassis' && addsystemchassis(data.FQDD)",
+                "data.Type == 'StorageEnclosure' && addstorageenclosure(data.FQDD)",
+                ]}
 
-    idrac_storage_enclosure:
-      - { SelectEventType: "IDRACComponentEvent",
-          Select: "data.Type == 'StorageEnclosure'",
-          Exec: [ "addstorageenclosure(data.FQDD)" ]}
+
+        # we'll get to the mappers below soon, for now they are unused
 
     storage_adapter:
       - { SelectEventType: "StorageAdapterEvent", Select: "data.ObjectHeader.FQDD == EVENT_FQDD",
@@ -649,11 +646,7 @@ awesome_mapper:
       - { SelectEventType: "RedfishResource:removed",
           Select: "nohash(data.ResourceURI) && data.ResourceURI == rooturi + '/Chassis/' + URI_FQDD ",
           ModelUpdate: [ {Property: "storage_enclosure_uris", Query: "removefromset(model, propname, data.ResourceURI)"} ]}
+
+
+# we dont have any AR Mappings right now
 mappings:
-    # EVERYTHING HERE is from the Config Attribute Registry. If you are not getting data from the Attribute Registry, it doesn't go here.
-
-    test/testview:
-        - {Property: "model",        FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Name" }
-
-
-
