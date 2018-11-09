@@ -2,6 +2,7 @@ package dell_idrac
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 
@@ -97,42 +98,42 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	_ = faultSvc
 	_ = actionSvc
 
-	// common parameters to instantiate that are used almost everywhere
-	baseParams := map[string]interface{}{}
-	baseParams["rooturi"] = "/redfish/v1"
-	modParams := func(newParams map[string]interface{}) map[string]interface{} {
-		ret := map[string]interface{}{}
-		for k, v := range baseParams {
-			ret[k] = v
+	// add mapper helper to instantiate
+	awesome_mapper2.AddFunction("instantiate", func(args ...interface{}) (interface{}, error) {
+		if len(args) < 1 {
+			return nil, errors.New("need to specify cfg section to instantiate")
 		}
-		for k, v := range newParams {
-			ret[k] = v
+		cfgStr, ok := args[0].(string)
+		if !ok {
+			return nil, errors.New("need to specify cfg section to instantiate")
 		}
-		return ret
-	}
+
+		params := map[string]interface{}{}
+		var key string
+		for i, val := range args[1:] {
+			if i%2 == 0 {
+				key, ok = val.(string)
+				if !ok {
+					return nil, fmt.Errorf("got a non-string key value: %s", key)
+				}
+			} else {
+				params[key] = val
+			}
+		}
+
+		// have to do this in a goroutine because awesome mapper is locked while it processes events
+		instantiateSvc.WorkQueue <- func() { instantiateSvc.InstantiateNoWait(cfgStr, params) }
+		return true, nil
+	})
 
 	//*********************************************************************
 	//  /redfish/v1
 	//*********************************************************************
-	_, rootView, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, cfgMgrMu, "rootview", map[string]interface{}{})
-	baseParams["rootid"] = rootView.GetUUID()
-
-	//*********************************************************************
-	//  /redfish/v1/testview - a proof of concept test view and example
-	//*********************************************************************
-	instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, cfgMgrMu, "testview", baseParams)
-
-	//*********************************************************************
-	//  /redfish/v1/{Managers,Chassis,Systems,Accounts}
-	//*********************************************************************
-	_, _, _ = instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, cfgMgrMu, "chassis", modParams(map[string]interface{}{"collection_uri": "/redfish/v1/Chassis"}))
-	_, _, _ = instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, cfgMgrMu, "systems", modParams(map[string]interface{}{"collection_uri": "/redfish/v1/Systems"}))
-	_, _, _ = instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, cfgMgrMu, "managers", modParams(map[string]interface{}{"collection_uri": "/redfish/v1/Managers"}))
-	_, accountSvcVw, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, cfgMgrMu, "accountservice", modParams(map[string]interface{}{}))
-	baseParams["actsvc_uri"] = accountSvcVw.GetURI()
-	baseParams["actsvc_id"] = accountSvcVw.GetUUID()
-	_, _, _ = instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, cfgMgrMu, "roles", modParams(map[string]interface{}{"collection_uri": "/redfish/v1/AccountService/Roles"}))
-	_, _, _ = instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, cfgMgrMu, "accounts", modParams(map[string]interface{}{"collection_uri": "/redfish/v1/AccountService/Accounts"}))
+	rooturi := "/redfish/v1"
+	_, rootView, _ := instantiateSvc.Instantiate("rootview",
+		map[string]interface{}{
+			"rooturi": rooturi,
+		})
 
 	//*********************************************************************
 	//  Standard redfish roles
@@ -142,30 +143,26 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	//*********************************************************************
 	// /redfish/v1/Sessions
 	//*********************************************************************
-	_, sessionSvcVw, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, cfgMgrMu, "sessionservice", baseParams)
-	baseParams["sessionsvc_id"] = sessionSvcVw.GetUUID()
-	baseParams["sessionsvc_uri"] = sessionSvcVw.GetURI()
+	_, sessionSvcVw, _ := instantiateSvc.Instantiate("sessionservice", map[string]interface{}{})
 	session.SetupSessionService(instantiateSvc, sessionSvcVw, ch, eb)
-	instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, cfgMgrMu, "sessioncollection", modParams(map[string]interface{}{"collection_uri": "/redfish/v1/SessionService/Sessions"}))
+	instantiateSvc.Instantiate("sessioncollection", map[string]interface{}{})
 
 	//*********************************************************************
 	// /redfish/v1/EventService
 	// /redfish/v1/TelemetryService
 	//*********************************************************************
-	evtSvc.StartEventService(ctx, logger, instantiateSvc, baseParams)
+	evtSvc.StartEventService(ctx, logger, instantiateSvc, map[string]interface{}{})
 	telemetryservice.StartTelemetryService(ctx, logger, rootView)
 
 	//*********************************************************************
 	// /redfish/v1/Registries
 	//*********************************************************************
-	instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, cfgMgrMu, "registries", map[string]interface{}{"rooturi": rootView.GetURI()})
-
 	for regName, location := range map[string]interface{}{
 		"idrac_registry":    []map[string]string{{"Language": "En", "Uri": "/redfish/v1/Registries/Messages/EEMIRegistry.v1_5_0.json"}},
 		"base_registry":     []map[string]string{{"Language": "En", "Uri": "/redfish/v1/Registries/BaseMessages/BaseRegistry.v1_0_0.json", "PublicationUri": "http://www.dmtf.org/sites/default/files/standards/documents/DSP8011_1.0.0a.json"}},
 		"mgr_attr_registry": []map[string]string{{"Language": "En", "Uri": "/redfish/v1/Registries/ManagerAttributeRegistry/ManagerAttributeRegistry.v1_0_0.json"}},
 	} {
-		instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, cfgMgrMu, regName, map[string]interface{}{"location": location, "rooturi": rootView.GetURI()})
+		instantiateSvc.Instantiate(regName, map[string]interface{}{"location": location})
 	}
 
 	// various things are "managed" by the managers, create a global to hold the views so we can make references
@@ -177,7 +174,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	// /redfish/v1/Managers/iDRAC.Embedded.1
 	//*********************************************************************
 
-	mgrLogger, mgrCmcVw, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, cfgMgrMu, "idrac_embedded",
+	mgrLogger, mgrCmcVw, _ := instantiateSvc.Instantiate("idrac_embedded",
 		map[string]interface{}{
 			"rooturi":  rootView.GetURI(),
 			"FQDD":     mgrName,                                   // this is used for the AR mapper. case difference is confusing, but need to change mappers
