@@ -47,9 +47,9 @@ func AddAggregate(ctx context.Context, root *view.View, v *view.View, ch eh.Comm
 						//"RelatedItem@odata.count": 4,
 						//"FQDD@odata.count": 4,
 						"FQDD@meta":                    v.Meta(view.GETProperty("fw_fqdd_list"), view.GETModel("firm")),
-						"FQDD@odata.count@meta":        v.Meta(view.GETProperty("fw_fqdd_list_count"), view.GETModel("firm")),
+						"FQDD@odata.count@meta":        v.Meta(view.GETProperty("fw_fqdd_list"), view.GETFormatter("count"), view.GETModel("default")),
 						"RelatedItem@meta":             v.Meta(view.GETProperty("fw_related_list"), view.GETModel("firm")),
-						"RelatedItem@odata.count@meta": v.Meta(view.GETProperty("fw_related_list_count"), view.GETModel("firm")),
+						"RelatedItem@odata.count@meta": v.Meta(view.GETProperty("fw_related_list"), view.GETFormatter("count"), view.GETModel("default")),
 					},
 				},
 			}})
