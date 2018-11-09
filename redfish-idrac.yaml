@@ -51,6 +51,11 @@ views:
       "Controllers":
         - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + view.GetURI()", "passthru": {'collection_uri': 'view.GetURI()'} }
+
+        # This is for dynamic runtime instantiation of new chassis as they appear
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "idrac_system_chassis", "uniquename": "'idrac_system_chassis_' + view.GetURI()"}
+
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/Chassis'"
@@ -359,30 +364,22 @@ views:
           "params":
       "Aggregate": "idrac_system_chassis"
 
-
-
-
-
   "storage_enclosure":
       "Logger": ["module", "StorageEnclosure"]
       "Models":
-        "default":  {"unique_name": "URI_FQDD", "unique_name_attr": "URI_FQDD+'.Attributes'", "attributes": "add_attribute_property()"}
+        "default":  {}
       "Controllers":
-        - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "storage_enclosure", "uniquename": "'am2_storage_enclosure_' + URI_FQDD" }
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/Chassis/' + URI_FQDD "
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
-        - "fn": "withFormatter_count"
+        - "fn": "stdFormatters"
           "params":
-        - "fn": "withFormatter_expand"
-          "params":
-        - "fn": "withFormatter_expandone"
-          "params":
-        - "fn": "withFormatter_formatOdataList"
-          "params":
+      "Aggregate": "idrac_storage_enclosure"
+
+
+
 
   "storage_controller":
       "Logger": ["module", "StorageController"]
@@ -539,6 +536,11 @@ awesome_mapper:
 
     testview:
         - { Select: "type == 'AttributeUpdated' && data.FQDD == fqdd && data.Name == 'InstantaneousPower'", ModelUpdate: [ {Property: "Instantaneous_Power", Query: "data.Value", Default: 0} ] }
+
+    idrac_system_chassis:
+      - { SelectEventType: "IDRACComponentEvent",
+          Select: "data.Type == 'Chassis'",
+          Exec: [ "addsystemchassis(data.FQDD)" ]}
 
     storage_adapter:
       - { SelectEventType: "StorageAdapterEvent", Select: "data.ObjectHeader.FQDD == EVENT_FQDD",
