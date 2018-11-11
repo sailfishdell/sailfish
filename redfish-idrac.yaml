@@ -51,6 +51,11 @@ views:
       "Controllers":
         - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + view.GetURI()", "passthru": {'collection_uri': 'view.GetURI()'} }
+
+        # This is for dynamic runtime instantiation of new chassis as they appear
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "idrac_component_events", "uniquename": "'idrac_system_chassis_' + view.GetURI()"}
+
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/Chassis'"
@@ -202,8 +207,8 @@ views:
       "Models":
         "default":  {"session_timeout": "30"}
       "Controllers":
-        - "fn": "ARMapper"
-          "params": {"modelname": "default", "cfgsection": "SessionService", "mappinguniquename": "rooturi + '/SessionService'", "AddToView": true}
+#        - "fn": "ARMapper"
+#          "params": {"modelname": "default", "cfgsection": "SessionService", "mappinguniquename": "rooturi + '/SessionService'", "AddToView": true}
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/SessionService'"
@@ -224,8 +229,6 @@ views:
       "Controllers":
         - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + view.GetURI()", "passthru": {'collection_uri': 'view.GetURI()'} }
-        - "fn": "ARMapper"
-          "params": {"modelname": "default", "cfgsection": "SessionService", "mappinguniquename": "rooturi + '/SessionService/Sessions'", "AddToView": true}
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/SessionService/Sessions'"
@@ -306,81 +309,75 @@ views:
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/Registries/ManagerAttributeRegistry'"
-        - "fn": "withFormatter_count"
+        - "fn": "stdFormatters"
           "params":
 
-  "idrac_embedded":
-      "Logger": ["module", "mgrChassis"]
+  "attributes":
+      "Logger": ["module", "attributes"]
       "Models":
         "default":  {"unique_name": "FQDD", "unique_name_attr": "FQDD+'.Attributes'", "attributes": "add_attribute_property()"}
       "Controllers":
-        - "fn": "ARMapper"
-          "params": {"modelname": "default", "cfgsection": "firmware/inventory", "mappinguniquename": "'fw_mapper:' + FQDD ", "AddToView": true}
-        - "fn": "ARMapper"
-          "params": {"modelname": "default", "cfgsection": "Managers/CMC.Integrated", "mappinguniquename": "'manager_mapper:' + FQDD ", "AddToView": true}
-        - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "health", "uniquename": "'am2_manager_' + FQDD" }
         - "fn": "ARDumper"
-          "params": {"modelname": "default", "AddToView": true}
+          "params": {"modelname": "default", "AddToView": true, "passthru": {"fqddlist": "array(FQDD)"}}
+      "View":
+        - "fn": "with_URI"
+          "params": "parenturi + '/Attributes'"
+        - "fn": "stdFormatters"
+          "params":
+      "Aggregate": "attributes_uri"
+
+
+  "idrac_embedded":
+      "Logger": ["module", "idrac_embedded"]
+      "Models":
+        "default":  {}
+      "Controllers":
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/Managers/' + FQDD"
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
-        - "fn": "withFormatter_attributeFormatter"
+        - "fn": "stdFormatters"
           "params":
-        - "fn": "withFormatter_expand"
-          "params":
-        - "fn": "withFormatter_count"
-          "params":
-
-
+      "Aggregate": "idrac_embedded"
+      "ExecPost": [
+        "instantiate('attributes', 'parenturi', rooturi + '/Managers/' + FQDD, 'FQDD', FQDD)"
+       ]
 
   "system_chassis":
       "Logger": ["module", "system_chassis"]
       "Models":
-        "default":  {"unique_name": "FQDD", "unique_name_attr": "FQDD+'.Attributes'", "attributes": "add_attribute_property()"}
+        "default":  {}
       "Controllers":
         - "fn": "ARDumper"
-          "params": {"modelname": "default", "AddToView": true}
+          "params": {"modelname": "default", "AddToView": true, "passthru": {"fqddlist": "array(FQDD)"}}
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/Chassis/' + FQDD "
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
-        - "fn": "withFormatter_count"
-          "params":
-        - "fn": "withFormatter_attributeFormatter"
-          "params":
-        - "fn": "withFormatter_expand"
-          "params":
-        - "fn": "withFormatter_expandone"
-          "params":
-        - "fn": "withFormatter_formatOdataList"
-          "params":
         - "fn": "with_PumpHandledAction"
           "params": {"name": "chassis.reset", "uri": "/Actions/Chassis.Reset", "timeout": 30}
+        - "fn": "stdFormatters"
+          "params":
+      "Aggregate": "idrac_system_chassis"
 
   "storage_enclosure":
       "Logger": ["module", "StorageEnclosure"]
       "Models":
-        "default":  {"unique_name": "URI_FQDD", "unique_name_attr": "URI_FQDD+'.Attributes'", "attributes": "add_attribute_property()"}
+        "default":  {}
       "Controllers":
-        - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "storage_enclosure", "uniquename": "'am2_storage_enclosure_' + URI_FQDD" }
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/Chassis/' + URI_FQDD "
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
-        - "fn": "withFormatter_count"
+        - "fn": "stdFormatters"
           "params":
-        - "fn": "withFormatter_expand"
-          "params":
-        - "fn": "withFormatter_expandone"
-          "params":
-        - "fn": "withFormatter_formatOdataList"
-          "params":
+      "Aggregate": "idrac_storage_enclosure"
+
+
+
 
   "storage_controller":
       "Logger": ["module", "StorageController"]
@@ -413,7 +410,7 @@ views:
         - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "storage_drive", "uniquename": "'am2_storage_drive_' + URI_FQDD" }
         - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "health", "uniquename": "'am2_storage_drive_health_' + FQDD" }
+          "params": {"modelname": "default", "cfgsection": "health", "uniquename": "'am2_storage_drive_health_' + URI_FQDD" }
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/Systems/System.Embedded.1/Storage/Drives/' + URI_FQDD "
@@ -538,6 +535,17 @@ awesome_mapper:
     testview:
         - { Select: "type == 'AttributeUpdated' && data.FQDD == fqdd && data.Name == 'InstantaneousPower'", ModelUpdate: [ {Property: "Instantaneous_Power", Query: "data.Value", Default: 0} ] }
 
+    idrac_component_events:
+      - { SelectEventType: "IDRACComponentEvent",
+          Select: "true",
+          Exec: [ 
+                "data.Type == 'Chassis' && addsystemchassis(data.FQDD)",
+                "data.Type == 'StorageEnclosure' && addstorageenclosure(data.FQDD)",
+                ]}
+
+
+        # we'll get to the mappers below soon, for now they are unused
+
     storage_adapter:
       - { SelectEventType: "StorageAdapterEvent", Select: "data.ObjectHeader.FQDD == EVENT_FQDD",
             ModelUpdate: [
@@ -550,7 +558,6 @@ awesome_mapper:
                 {Property: "speed", Query: "data.CapableSpeeds" }],
                 Exec: [ "echo('GOT AN EVENT THAT MATCHED - ADAPTER')" ]
                 }
-                
 
     storage_drive:
       - { SelectEventType: "StoragePhysicalEvent", Select: "data.ObjectHeader.FQDD == EVENT_FQDD",
@@ -614,7 +621,7 @@ awesome_mapper:
                 {Property: "wired_order", Query: "data.WiredOrder" }],
                 Exec: [ "echo('GOT AN EVENT THAT MATCHED - ENCLOSYRE')" ]
                 }
-                
+
     storage_drive_uris:
       - { SelectEventType: "RedfishResource:created",
           Select: "nohash(data.ResourceURI) && data.ResourceURI == rooturi + '/Systems/System.Embedded.1/Storage/Drives/' + URI_FQDD ",
@@ -638,11 +645,7 @@ awesome_mapper:
       - { SelectEventType: "RedfishResource:removed",
           Select: "nohash(data.ResourceURI) && data.ResourceURI == rooturi + '/Chassis/' + URI_FQDD ",
           ModelUpdate: [ {Property: "storage_enclosure_uris", Query: "removefromset(model, propname, data.ResourceURI)"} ]}
+
+
+# we dont have any AR Mappings right now
 mappings:
-    # EVERYTHING HERE is from the Config Attribute Registry. If you are not getting data from the Attribute Registry, it doesn't go here.
-
-    test/testview:
-        - {Property: "model",        FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Name" }
-
-
-

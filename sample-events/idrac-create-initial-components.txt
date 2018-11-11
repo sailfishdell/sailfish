@@ -1,0 +1,1 @@
+{ "name": "IDRACComponentEvent", "event_array": [ {"Type": "Chassis", "FQDD": "System.Chassis.1"}, {"Type": "StorageEnclosure", "FQDD": "Enclosure.Internal.0_1_RAID.Slot.4_1"}]}
