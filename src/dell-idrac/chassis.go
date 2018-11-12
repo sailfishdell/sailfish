@@ -38,10 +38,21 @@ func MakeMaker(l log.Logger, name string, fn func(args ...interface{}) (interfac
 }
 
 func AddChassisInstantiate(l log.Logger, instantiateSvc *testaggregate.Service) {
+	MakeMaker(l, "system_embedded", func(args ...interface{}) (interface{}, error) {
+		FQDD, ok := args[0].(string)
+		if !ok {
+			return nil, errors.New("Need a string fqdd for addsystem_embedded(), but didnt get one")
+		}
+		// have to do this in a goroutine because awesome mapper is locked while it processes events
+		go instantiateSvc.Instantiate("idrac_system_embedded", map[string]interface{}{"FQDD": FQDD})
+
+		return true, nil
+	})
+
 	MakeMaker(l, "system_chassis", func(args ...interface{}) (interface{}, error) {
 		FQDD, ok := args[0].(string)
 		if !ok {
-			return nil, errors.New("Need a string fqdd for addslot(), but didnt get one")
+			return nil, errors.New("Need a string fqdd for addsystem_chassis(), but didnt get one")
 		}
 		// have to do this in a goroutine because awesome mapper is locked while it processes events
 		go instantiateSvc.Instantiate("system_chassis", map[string]interface{}{"FQDD": FQDD})
@@ -52,7 +63,7 @@ func AddChassisInstantiate(l log.Logger, instantiateSvc *testaggregate.Service) 
 	MakeMaker(l, "storage_enclosure", func(args ...interface{}) (interface{}, error) {
 		FQDD, ok := args[0].(string)
 		if !ok {
-			return nil, errors.New("Need a string fqdd for addslot(), but didnt get one")
+			return nil, errors.New("Need a string fqdd for addsystem_enclosure(), but didnt get one")
 		}
 		// have to do this in a goroutine because awesome mapper is locked while it processes events
 		go instantiateSvc.Instantiate("storage_enclosure", map[string]interface{}{"URI_FQDD": FQDD, "EVENT_FQDD": "308|C|" + FQDD})

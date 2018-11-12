@@ -362,6 +362,40 @@ views:
           "params":
       "Aggregate": "idrac_system_chassis"
 
+  "idrac_system_embedded":
+      "Logger": ["module", "system_embedded"]
+      "Models":
+        "default":  {}
+      "Controllers":
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/Systems/' + FQDD "
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+        - "fn": "stdFormatters"
+          "params":
+      "Aggregate": "idrac_system_embedded"
+      "ExecPost": [
+        "instantiate('attributes', 'parenturi', rooturi + '/Systems/' + FQDD, 'FQDD', FQDD)",
+        "instantiate('storage_collection', 'parenturi', rooturi + '/Systems/' + FQDD, 'FQDD', FQDD)",
+       ]
+
+  "storage_collection":
+      "Logger": ["module", "StorageCollection"]
+      "Models":
+        "default":  {}
+      "Controllers":
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + view.GetURI()", "passthru": {'collection_uri': 'view.GetURI()'} }
+      "View":
+        - "fn": "with_URI"
+          "params": "parenturi + '/Storage'"
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+        - "fn": "stdFormatters"
+          "params":
+      "Aggregate": "idrac_storage_collection"
+
   "storage_enclosure":
       "Logger": ["module", "StorageEnclosure"]
       "Models":
@@ -414,27 +448,6 @@ views:
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/Systems/System.Embedded.1/Storage/Drives/' + URI_FQDD "
-        - "fn": "PublishResourceUpdatedEventsForModel"
-          "params": "default"
-        - "fn": "withFormatter_count"
-          "params":
-        - "fn": "withFormatter_expand"
-          "params":
-        - "fn": "withFormatter_expandone"
-          "params":
-        - "fn": "withFormatter_formatOdataList"
-          "params":
-
-  "storage_collection":
-      "Logger": ["module", "StorageCollection"]
-      "Models":
-        "default":  {}
-      "Controllers":
-        - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + collection_uri" }
-      "View":
-        - "fn": "with_URI"
-          "params": "rooturi + '/Systems/System.Embedded.1/Storage/'"
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
         - "fn": "withFormatter_count"
@@ -538,7 +551,8 @@ awesome_mapper:
     idrac_component_events:
       - { SelectEventType: "IDRACComponentEvent",
           Select: "true",
-          Exec: [ 
+          Exec: [
+                "data.Type == 'System' && addsystem_embedded(data.FQDD)",
                 "data.Type == 'Chassis' && addsystem_chassis(data.FQDD)",
                 "data.Type == 'StorageEnclosure' && addstorage_enclosure(data.FQDD)",
                 ]}
