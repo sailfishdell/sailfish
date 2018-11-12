@@ -7,9 +7,9 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/superchalupa/sailfish/src/log"
+	"github.com/superchalupa/sailfish/src/ocp/testaggregate"
 	"github.com/superchalupa/sailfish/src/ocp/view"
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
-	"github.com/superchalupa/sailfish/src/ocp/testaggregate"
 
 	eh "github.com/looplab/eventhorizon"
 )
@@ -52,7 +52,6 @@ func RegisterAggregate(s *testaggregate.Service) {
 					}},
 			}, nil
 		})
-
 
 	return
 }

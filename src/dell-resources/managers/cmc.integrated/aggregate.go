@@ -85,9 +85,9 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 					"GracefulRestart",
 				},
 			},
-            "#Manager.ForceFailover": map[string]interface{}{
-					"target": v.GetActionURI("manager.forcefailover"),
-				},
+			"#Manager.ForceFailover": map[string]interface{}{
+				"target": v.GetActionURI("manager.forcefailover"),
+			},
 			"Oem": map[string]interface{}{
 				// TODO: Remove per JIT-66996
 				"DellManager.v1_0_0#DellManager.ResetToDefaults": map[string]interface{}{

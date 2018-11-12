@@ -54,8 +54,8 @@ type HealthEventData struct {
 	Health string
 }
 type InstPowerEventData struct {
-        FQDD      string
-        InstPower float64
+	FQDD      string
+	InstPower float64
 }
 
 type DataObjectHeader struct {
@@ -177,7 +177,6 @@ type RaidSiObjectHeader struct {
 	AlternateFQDDOffset int     `json:"alternateFQDDOffset"`
 	Flags               int     `json:"flags"`
 }
-
 
 type RaidObjectHeader struct {
 	DataObjHeader       DataObjectHeader

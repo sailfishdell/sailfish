@@ -32,7 +32,7 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 				"Id@meta":                 v.Meta(view.PropGET("unique_name")),
 				"Links": map[string]interface{}{
 					"Enclosures": []map[string]interface{}{
-						//Need to add Enclosures array
+					//Need to add Enclosures array
 					},
 					"Enclosures@odata.count": v.Meta(view.PropGET("count")),
 				},
@@ -40,9 +40,9 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 				"Oem": map[string]interface{}{ //Done
 					"Dell": map[string]interface{}{
 						"DellController": map[string]interface{}{
-							"@odata.context":            "/redfish/v1/$metadata#DellController.DellController",
-							"@odata.id":                 "/redfish/v1/Dell/Systems/System.Emdedded.1/Storage/DellController/$entity",
-							"@odata.type":               "#DellController.v1_0_0.DellController",
+							"@odata.context":                 "/redfish/v1/$metadata#DellController.DellController",
+							"@odata.id":                      "/redfish/v1/Dell/Systems/System.Emdedded.1/Storage/DellController/$entity",
+							"@odata.type":                    "#DellController.v1_0_0.DellController",
 							"CacheSizeInMB@meta":             v.Meta(view.PropGET("cache_size")),
 							"CachecadeCapability@meta":       v.Meta(view.PropGET("cache_capability")),
 							"ControllerFirmwareVersion@meta": v.Meta(view.PropGET("controller_firmware_version")),
@@ -69,7 +69,7 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 					"@odata.id":            v.GetURI(),
 					"FirmwareVersion@meta": v.Meta(view.PropGET("firmware_version")),
 					"Identifiers":          map[string]interface{}{
-						//need make this an array.
+					//need make this an array.
 					},
 					"Links":             map[string]interface{}{},
 					"Manufacturer@meta": v.Meta(view.PropGET("manufacturer")),
@@ -83,10 +83,10 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 						"Health@meta":       v.Meta(view.PropGET("health")),
 					},
 					"SupportedControllerProtocols": map[string]interface{}{
-						//need to make this an array
+					//need to make this an array
 					},
 					"SupportedDeviceProtocols": map[string]interface{}{
-						//need to make this an array
+					//need to make this an array
 					},
 				},
 				"StorageControllers@odata.count@meta": v.Meta(view.PropGET("storage_controller_count")),

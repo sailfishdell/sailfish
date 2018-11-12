@@ -42,8 +42,8 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 					"ManagedBy@odata.count@meta": v.Meta(view.GETProperty("managed_by"), view.GETFormatter("count"), view.GETModel("default")),
 				},
 
-				"SKU@meta":          v.Meta(view.PropGET("service_tag")),
-				"IndicatorLED":      "Lit",
+				"SKU@meta":     v.Meta(view.PropGET("service_tag")),
+				"IndicatorLED": "Lit",
 				"Status": map[string]interface{}{
 					"HealthRollup@meta": v.Meta(view.PropGET("health")),
 					"State":             "Enabled", //hard coded

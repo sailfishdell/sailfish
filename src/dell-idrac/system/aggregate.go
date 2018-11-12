@@ -18,15 +18,13 @@ func RegisterAggregate(s *testaggregate.Service) {
 			return []eh.Command{
 				&domain.CreateRedfishResource{
 					ResourceURI: vw.GetURI(),
-					Type:        "#StorageCollection.StorageCollection",
-					Context:     params["rooturi"].(string) + "/$metadata#StorageCollection.StorageCollection",
+					Type:        "#ComputerSystem.v1_4_0.ComputerSystem",
+					Context:     params["rooturi"].(string) + "/$metadata#ComputerSystem.ComputerSystem",
 					Privileges: map[string]interface{}{
 						"GET": []string{"Login"},
 					},
 					Properties: map[string]interface{}{
-						"@odata.context":           "/redfish/v1/$metadata#ComputerSystem.ComputerSystem",
 						"@odata.id":                "/redfish/v1/Systems/System.Embedded.1",
-						"@odata.type":              "#ComputerSystem.v1_4_0.ComputerSystem",
 						"Id":                       "System.Embedded.1",
 						"AssetTag":                 "",
 						"BiosVersion":              "0.4.1",
@@ -111,6 +109,11 @@ func RegisterAggregate(s *testaggregate.Service) {
 							},
 							"UefiTargetBootSourceOverride": "",
 						},
+
+						"Storage": map[string]interface{}{
+							"@odata.id": "/redfish/v1/Systems/System.Embedded.1/Storage",
+						},
+
 						"Links": map[string]interface{}{
 							"Chassis@meta":               vw.Meta(view.GETProperty("chassis_uris"), view.GETFormatter("formatOdataList"), view.GETModel("default")),
 							"Chassis@odata.count@meta":   vw.Meta(view.GETProperty("chassis_uris"), view.GETFormatter("count"), view.GETModel("default")),
@@ -177,12 +180,6 @@ func RegisterAggregate(s *testaggregate.Service) {
 							},
 						*/
 
-						/*
-									// TODO: uncomment when this is instantiated. should be a static instantiate in the yaml file
-							"Storage": map[string]interface{}{
-								"@odata.id": "/redfish/v1/Systems/System.Embedded.1/Storage",
-							},
-						*/
 					},
 				},
 			}, nil

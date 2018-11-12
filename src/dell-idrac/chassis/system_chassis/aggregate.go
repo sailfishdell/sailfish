@@ -50,7 +50,7 @@ func RegisterAggregate(s *testaggregate.Service) {
 
 						"Status": map[string]interface{}{
 							"HealthRollup@meta": vw.Meta(view.PropGET("health")), //smil call?
-							"State":             "Enabled",                      //hardcoded
+							"State":             "Enabled",                       //hardcoded
 							"Health@meta":       vw.Meta(view.PropGET("health")), //smil call?
 						},
 

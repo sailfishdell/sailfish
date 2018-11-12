@@ -13,7 +13,7 @@ import (
 )
 
 func RegisterAggregate(s *testaggregate.Service) {
-	s.RegisterAggregateFunction("storage_collection",
+	s.RegisterAggregateFunction("idrac_storage_collection",
 		func(ctx context.Context, subLogger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, vw *view.View, extra interface{}, params map[string]interface{}) ([]eh.Command, error) {
 			return []eh.Command{
 				&domain.CreateRedfishResource{
@@ -62,7 +62,7 @@ func RegisterAggregate(s *testaggregate.Service) {
 						"Description@meta": vw.Meta(view.PropGET("description")),
 						"Id@meta":          vw.Meta(view.PropGET("unique_name")),
 						"Links":            map[string]interface{}{
-							//Need to add links detail.
+						//Need to add links detail.
 						},
 						"Links@meta":             vw.Meta(view.GETProperty("links_uris"), view.GETFormatter("expand"), view.GETModel("default")),
 						"Links@odata.count@meta": vw.Meta(view.GETProperty("links_uris"), view.GETFormatter("count"), view.GETModel("default")),

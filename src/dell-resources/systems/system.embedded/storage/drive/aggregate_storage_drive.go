@@ -38,7 +38,7 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 				"Id@meta@meta":           v.Meta(view.PropGET("unique_name")),
 				"Links": map[string]interface{}{
 					"Enclosures": []map[string]interface{}{
-						//Need to add Enclosures array
+					//Need to add Enclosures array
 					},
 					"Enclosures@odata.count@meta": v.Meta(view.PropGET("count")),
 				},
@@ -51,9 +51,9 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 				"Oem": map[string]interface{}{ //Done
 					"Dell": map[string]interface{}{
 						"DellPhysicalDisk": map[string]interface{}{
-							"@odata.context":         "/redfish/v1/$metadata#DellPhysicalDisk.DellPhysicalDisk",
-							"@odata.id":              "/redfish/v1/Dell/Systems/System.Embedded.1/Storage/Drives/DellPhysicalDisk/$entity",
-							"@odata.type":            "#DellPhysicalDisk.v1_0_0.DellPhysicalDisk",
+							"@odata.context":              "/redfish/v1/$metadata#DellPhysicalDisk.DellPhysicalDisk",
+							"@odata.id":                   "/redfish/v1/Dell/Systems/System.Embedded.1/Storage/Drives/DellPhysicalDisk/$entity",
+							"@odata.type":                 "#DellPhysicalDisk.v1_0_0.DellPhysicalDisk",
 							"Connector@meta":              v.Meta(view.PropGET("connector")),
 							"DriveFormFactor@meta":        v.Meta(view.PropGET("drive_formfactor")),
 							"FreeSizeInBytes@meta":        v.Meta(view.PropGET("free_size")),

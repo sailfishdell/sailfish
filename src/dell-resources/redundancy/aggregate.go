@@ -34,12 +34,12 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 				"Mode@meta":                      v.Meta(view.PropGET("redundancy_mode")),
 				"MinNumNeeded@meta":              v.Meta(view.PropGET("redundancy_min")),
 				"MaxNumSupported@meta":           v.Meta(view.PropGET("redundancy_max")),
-        "RedundancySet@meta":             v.Meta(view.GETProperty("redundancy_set"), view.GETFormatter("formatOdataList"), view.GETModel("default")),
-        "RedundancySet@odata.count@meta": v.Meta(view.GETProperty("redundancy_set"), view.GETFormatter("count"), view.GETModel("default")),
+				"RedundancySet@meta":             v.Meta(view.GETProperty("redundancy_set"), view.GETFormatter("formatOdataList"), view.GETModel("default")),
+				"RedundancySet@odata.count@meta": v.Meta(view.GETProperty("redundancy_set"), view.GETFormatter("count"), view.GETModel("default")),
 				"Status": map[string]interface{}{
-					"Health@meta":      v.Meta(view.PropGET("health")),
+					"Health@meta":       v.Meta(view.PropGET("health")),
 					"HealthRollup@meta": v.Meta(view.PropGET("health")),
-					"State@meta":       v.Meta(view.PropGET("health_state")),
+					"State@meta":        v.Meta(view.PropGET("health_state")),
 				},
 			},
 		})
