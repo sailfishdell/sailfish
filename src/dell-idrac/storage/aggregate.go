@@ -101,6 +101,78 @@ func RegisterAggregate(s *testaggregate.Service) {
 			}, nil
 		})
 
+	s.RegisterAggregateFunction("idrac_storage_drive",
+		func(ctx context.Context, subLogger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, vw *view.View, extra interface{}, params map[string]interface{}) ([]eh.Command, error) {
+			return []eh.Command{
+				&domain.CreateRedfishResource{
+					ResourceURI: vw.GetURI(),
+					Type:        "#Drive.v1_3_0.Drive",
+					Context:     "/redfish/v1/$metadata#Drive.Drive",
+					Privileges: map[string]interface{}{
+						"GET":  []string{"Login"},
+						"POST": []string{"ConfigureManager"},
+					},
+					Properties: map[string]interface{}{
+						// TODO: assembly shouldnt be hard coded
+						"Assembly": map[string]interface{}{
+							"@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Assembly",
+						},
+						//Acion needs to be added.
+						"BlockSizeBytes@meta":    vw.Meta(view.PropGET("block_size_bytes")),
+						"CapableSpeedGbs@meta":   vw.Meta(view.PropGET("capable_speed")),
+						"CapacityBytes@meta":     vw.Meta(view.PropGET("capacity")),
+						"Description@meta":       vw.Meta(view.PropGET("description")),
+						"EncryptionAbility@meta": vw.Meta(view.PropGET("encryption_ability")),
+						"EncryptionStatus@meta":  vw.Meta(view.PropGET("encryption_status")),
+						"FailurePredicted@meta":  vw.Meta(view.PropGET("failure_predicted")),
+						"HotspareType@meta":      vw.Meta(view.PropGET("hotspare_type")),
+						"Id@meta@meta":           vw.Meta(view.PropGET("unique_name")),
+						"Links": map[string]interface{}{
+							"Enclosures@meta":             vw.Meta(view.GETProperty("enclosure_uris"), view.GETFormatter("formatOdataList"), view.GETModel("default")),
+							"Enclosures@odata.count@meta": vw.Meta(view.GETProperty("enclosure_uris"), view.GETFormatter("count"), view.GETModel("default")),
+						},
+						"Location":                map[string]interface{}{},
+						"Manufacturer@meta":       vw.Meta(view.PropGET("manufacturer")),     //Done
+						"MediaType@meta":          vw.Meta(view.PropGET("media_type")),       //Done
+						"Model@meta":              vw.Meta(view.PropGET("model")),            //Done
+						"Name@meta":               vw.Meta(view.PropGET("name")),             //Done
+						"NegotiatedSpeedGbs@meta": vw.Meta(view.PropGET("negotiated_speed")), //Done
+						"Oem": map[string]interface{}{ //Done
+							"Dell": map[string]interface{}{
+								"DellPhysicalDisk": map[string]interface{}{
+									"@odata.context":              "/redfish/v1/$metadata#DellPhysicalDisk.DellPhysicalDisk",
+									"@odata.id":                   "/redfish/v1/Dell/Systems/System.Embedded.1/Storage/Drives/DellPhysicalDisk/$entity",
+									"@odata.type":                 "#DellPhysicalDisk.v1_0_0.DellPhysicalDisk",
+									"Connector@meta":              vw.Meta(view.PropGET("connector")),
+									"DriveFormFactor@meta":        vw.Meta(view.PropGET("drive_formfactor")),
+									"FreeSizeInBytes@meta":        vw.Meta(view.PropGET("free_size")),
+									"ManufacturingDay@meta":       vw.Meta(view.PropGET("manufacturing_day")),
+									"ManufacturingWeek@meta":      vw.Meta(view.PropGET("manufacturing_week")),
+									"ManufacturingYear@meta":      vw.Meta(view.PropGET("manufacturing_year")),
+									"PPID@meta":                   vw.Meta(view.PropGET("ppid")),
+									"PredictiveFailureState@meta": vw.Meta(view.PropGET("predictive_failure_state")),
+									"RaidStatus@meta":             vw.Meta(view.PropGET("raid_status")),
+									"SASAddress@meta":             vw.Meta(view.PropGET("sas_address")),
+									"Slot@meta":                   vw.Meta(view.PropGET("slot")),
+									"UsedSizeInBytes@meta":        vw.Meta(view.PropGET("used_size")),
+								},
+							},
+						},
+
+						"PartNumber@meta":                    vw.Meta(view.PropGET("part_number")),
+						"PredictedMediaLifeLeftPercent@meta": vw.Meta(view.PropGET("predicted_media_life_left_percent")),
+						"Protocol@meta":                      vw.Meta(view.PropGET("protocol")),
+						"Revision@meta":                      vw.Meta(view.PropGET("revision")),
+						"RotationSpeedRPM@meta":              vw.Meta(view.PropGET("rotation_speed")),
+						"SerialNumber@meta":                  vw.Meta(view.PropGET("serial_number")),
+						"Status": map[string]interface{}{
+							"HealthRollup@meta": vw.Meta(view.PropGET("obj_status")),
+							"State@meta":        vw.Meta(view.PropGET("state")),
+							"Health@meta":       vw.Meta(view.PropGET("obj_status")),
+						},
+					}}}, nil
+		})
+
 	s.RegisterAggregateFunction("idrac_storage_enclosure",
 		func(ctx context.Context, subLogger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, vw *view.View, extra interface{}, params map[string]interface{}) ([]eh.Command, error) {
 			return []eh.Command{
@@ -131,7 +203,7 @@ func RegisterAggregate(s *testaggregate.Service) {
 						"Description@meta": vw.Meta(view.PropGET("description")),
 						"Id@meta":          vw.Meta(view.PropGET("unique_name")),
 						"Links":            map[string]interface{}{
-							//Need to add links detail.
+						//Need to add links detail.
 						},
 						"Links@meta":             vw.Meta(view.GETProperty("links_uris"), view.GETFormatter("expand"), view.GETModel("default")),
 						"Links@odata.count@meta": vw.Meta(view.GETProperty("links_uris"), view.GETFormatter("count"), view.GETModel("default")),

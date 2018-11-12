@@ -378,6 +378,7 @@ views:
       "ExecPost": [
         "instantiate('attributes', 'parenturi', rooturi + '/Systems/' + FQDD, 'FQDD', FQDD)",
         "instantiate('storage_collection', 'parenturi', rooturi + '/Systems/' + FQDD, 'FQDD', FQDD)",
+        #"instantiate('storage_volumes', 'parenturi', rooturi + '/Systems/' + FQDD, 'FQDD', FQDD)",
        ]
 
   "storage_collection":
@@ -401,6 +402,8 @@ views:
       "Models":
         "default":  {}
       "Controllers":
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "idrac_storage_drive_uris", "uniquename": "'am2_storage_instance_drive_uris:' + ParentFQDD + ':' + FQDD", "passthru": {"ParentFQDD": "ParentFQDD", "FQDD": "FQDD"}}
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/Systems/' + ParentFQDD + '/Storage/' + FQDD "
@@ -409,6 +412,20 @@ views:
         - "fn": "stdFormatters"
           "params":
       "Aggregate": "idrac_storage_instance"
+
+  "idrac_storage_drive":
+      "Logger": ["module", "StorageDrive"]
+      "Models":
+        "default":  {}
+      "Controllers":
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/Systems/' + ParentFQDD + '/Storage/Drives/' + FQDD "
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+        - "fn": "stdFormatters"
+          "params":
+      "Aggregate": "idrac_storage_drive"
 
   "storage_enclosure":
       "Logger": ["module", "StorageEnclosure"]
@@ -424,7 +441,9 @@ views:
           "params":
       "Aggregate": "idrac_storage_enclosure"
 
-
+# <<==================================================================>>
+# # everything above this point is basically correctly implemented and
+# dynamically instantiated on demand based on component events
 
 
   "storage_controller":
@@ -439,29 +458,6 @@ views:
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/Systems/System.Embedded.1/StorageControllers/' + URI_FQDD "
-        - "fn": "PublishResourceUpdatedEventsForModel"
-          "params": "default"
-        - "fn": "withFormatter_count"
-          "params":
-        - "fn": "withFormatter_expand"
-          "params":
-        - "fn": "withFormatter_expandone"
-          "params":
-        - "fn": "withFormatter_formatOdataList"
-          "params":
-
-  "storage_drive":
-      "Logger": ["module", "StorageDrive"]
-      "Models":
-        "default":  {"unique_name": "URI_FQDD", "unique_name_attr": "URI_FQDD+'.Attributes'", "attributes": "add_attribute_property()"}
-      "Controllers":
-        - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "storage_drive", "uniquename": "'am2_storage_drive_' + URI_FQDD" }
-        - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "health", "uniquename": "'am2_storage_drive_health_' + URI_FQDD" }
-      "View":
-        - "fn": "with_URI"
-          "params": "rooturi + '/Systems/System.Embedded.1/Storage/Drives/' + URI_FQDD "
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
         - "fn": "withFormatter_count"
@@ -537,8 +533,18 @@ awesome_mapper:
                 "data.Type == 'System' && addsystem_embedded(data.FQDD)",
                 "data.Type == 'Chassis' && addsystem_chassis(data.FQDD)",
                 "data.Type == 'StorageInstance' && addidrac_storage_instance(data.ParentFQDD + ':' + data.FQDD, data.ParentFQDD, data.FQDD)",
+                "data.Type == 'StorageDrive' && addidrac_storage_drive(data.ParentFQDD + ':' + data.FQDD, data.ParentFQDD, data.FQDD)",
                 "data.Type == 'StorageEnclosure' && addstorage_enclosure(data.FQDD)",
                 ]}
+
+    idrac_storage_drive_uris:
+      - { SelectEventType: "RedfishResource:created",
+          Select: "nohash(data.ResourceURI) && baseuri(data.ResourceURI) == rooturi + '/Systems/' + ParentFQDD + '/Storage/Drives'",
+          ModelUpdate: [ {Property: "drive_uris", Query: "addtoset(model, propname, data.ResourceURI)"} ]}
+      - { SelectEventType: "RedfishResource:removed",
+          Select: "nohash(data.ResourceURI) && baseuri(data.ResourceURI) == rooturi + '/Systems/' + ParentFQDD + '/Storage/Drives'",
+          ModelUpdate: [ {Property: "drive_uris", Query: "removefromset(model, propname, data.ResourceURI)"} ]}
+
 
 
         # we'll get to the mappers below soon, for now they are unused
@@ -618,14 +624,6 @@ awesome_mapper:
                 {Property: "wired_order", Query: "data.WiredOrder" }],
                 Exec: [ "echo('GOT AN EVENT THAT MATCHED - ENCLOSYRE')" ]
                 }
-
-    storage_drive_uris:
-      - { SelectEventType: "RedfishResource:created",
-          Select: "nohash(data.ResourceURI) && data.ResourceURI == rooturi + '/Systems/System.Embedded.1/Storage/Drives/' + URI_FQDD ",
-          ModelUpdate: [ {Property: "storage_drive_uris", Query: "addtoset(model, propname, data.ResourceURI)"} ]}
-      - { SelectEventType: "RedfishResource:removed",
-          Select: "nohash(data.ResourceURI) && data.ResourceURI == rooturi + '/Systems/System.Embedded.1/Storage/Drives/' + URI_FQDD ",
-          ModelUpdate: [ {Property: "storage_drive_uris", Query: "removefromset(model, propname, data.ResourceURI)"} ]}
 
     storage_volume_uris:
       - { SelectEventType: "RedfishResource:created",
