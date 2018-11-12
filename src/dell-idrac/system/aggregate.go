@@ -179,7 +179,6 @@ func RegisterAggregate(s *testaggregate.Service) {
 								"@odata.id": "/redfish/v1/Systems/System.Embedded.1/SimpleStorage/Controllers",
 							},
 						*/
-
 					},
 				},
 			}, nil
