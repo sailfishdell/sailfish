@@ -53,7 +53,7 @@ func RegisterAggregate(s *testaggregate.Service) {
 							"@odata.id": "/redfish/v1/Managers/CMC.Integrated.1/Logs/Lclog",
 						},
 						"DateTimeLocalOffset": "+00:00",
-						"Id": "LC",
+						"Id":                  "LC",
 					}},
 			}, nil
 		})

@@ -200,7 +200,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 		//*********************************************************************
 		mgrLogger, mgrCmcVw, _ := instantiateSvc.Instantiate("manager_cmc_integrated",
 			map[string]interface{}{
-				"FQDD": mgrName,
+				"FQDD":                             mgrName,
 				"exportSystemConfiguration":        view.Action(exportSystemConfiguration),
 				"importSystemConfiguration":        view.Action(importSystemConfiguration),
 				"importSystemConfigurationPreview": view.Action(importSystemConfigurationPreview),

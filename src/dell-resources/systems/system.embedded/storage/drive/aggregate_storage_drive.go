@@ -38,7 +38,7 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 				"Id@meta@meta":           v.Meta(view.PropGET("unique_name")),
 				"Links": map[string]interface{}{
 					"Enclosures": []map[string]interface{}{
-					//Need to add Enclosures array
+						//Need to add Enclosures array
 					},
 					"Enclosures@odata.count@meta": v.Meta(view.PropGET("count")),
 				},

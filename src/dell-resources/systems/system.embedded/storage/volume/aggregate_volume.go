@@ -46,7 +46,7 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 				"Identifiers":         []map[string]interface{}{},
 				"Links": map[string]interface{}{
 					"Drives": []map[string]interface{}{
-					//Need to add Enclosures array
+						//Need to add Enclosures array
 					},
 					"Drives@odata.count": v.Meta(view.PropGET("count")),
 				},
@@ -72,7 +72,7 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 					},
 				},
 				"Operations": []map[string]interface{}{
-				//Need to add Operations
+					//Need to add Operations
 				},
 				"OptimumIOSizeBytes@meta": v.Meta(view.PropGET("optimum_io_size_bytes")),
 				"Status": map[string]interface{}{
