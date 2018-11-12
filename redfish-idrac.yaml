@@ -208,7 +208,7 @@ views:
         "default":  {"session_timeout": "30"}
       "Controllers":
 #        - "fn": "ARMapper"
-#          "params": {"modelname": "default", "cfgsection": "SessionService", "mappinguniquename": "rooturi + '/SessionService'", "AddToView": true}
+#          "params": {"modelname": "default", "cfgsection": "SessionService", "mappinguniquename": "rooturi + '/SessionService'", "AddToView": "ar_mapper"}
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/SessionService'"

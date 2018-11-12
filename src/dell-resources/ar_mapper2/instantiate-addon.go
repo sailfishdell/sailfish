@@ -73,11 +73,11 @@ func RegisterARMapper(s *testaggregate.Service, arsvc *ARService) {
 
 		addToView, ok := cfgParams["AddToView"]
 		if !ok {
-			addToView = true
+			addToView = ""
 		}
-		addToViewBool, ok := addToView.(bool)
+		addToViewStr, ok := addToView.(string)
 		if !ok {
-			addToViewBool = true
+			addToViewStr = ""
 		}
 
 		// if this stuff not present, no big deal
@@ -98,8 +98,8 @@ func RegisterARMapper(s *testaggregate.Service, arsvc *ARService) {
 		logger.Debug("Creating ar_mapper2 controller", "modelName", modelNameStr, "cfgSection", cfgSectionStr, "mappingNameStr", mappingNameStr)
 		b := arsvc.NewMapping(logger, mappingNameStr, cfgSectionStr, vw.GetModel(modelNameStr), newparams)
 
-		if addToViewBool {
-			vw.ApplyOption(view.WithController(mappingUniqueNameStr, b))
+		if addToViewStr != "" {
+			vw.ApplyOption(view.WithController(addToViewStr, b))
 		}
 
 		return nil

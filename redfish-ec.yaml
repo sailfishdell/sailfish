@@ -210,7 +210,7 @@ views:
         "default":  {"session_timeout": "30"}
       "Controllers":
         - "fn": "ARMapper"
-          "params": {"modelname": "default", "cfgsection": "SessionService", "mappinguniquename": "rooturi + '/SessionService'", "AddToView": true}
+          "params": {"modelname": "default", "cfgsection": "SessionService", "mappinguniquename": "rooturi + '/SessionService'", "AddToView": "ar_mapper"}
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/SessionService'"
@@ -232,7 +232,7 @@ views:
         - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + view.GetURI()", "passthru": {'collection_uri': 'view.GetURI()'} }
         - "fn": "ARMapper"
-          "params": {"modelname": "default", "cfgsection": "SessionService", "mappinguniquename": "rooturi + '/SessionService/Sessions'", "AddToView": true}
+          "params": {"modelname": "default", "cfgsection": "SessionService", "mappinguniquename": "rooturi + '/SessionService/Sessions'", "AddToView": "ar_mapper"}
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/SessionService/Sessions'"
@@ -342,9 +342,9 @@ views:
         "default":  {"unique_name": "FQDD", "connect_types_supported": "array()"}
       "Controllers":
         - "fn": "ARMapper"
-          "params": {"modelname": "default", "cfgsection": "firmware/inventory", "mappinguniquename": "'fw_mapper:' + FQDD ", "AddToView": true}
+          "params": {"modelname": "default", "cfgsection": "firmware/inventory", "mappinguniquename": "'fw_mapper:' + FQDD ", "AddToView": "ar_mapper_inv"}
         - "fn": "ARMapper"
-          "params": {"modelname": "default", "cfgsection": "Managers/CMC.Integrated", "mappinguniquename": "'manager_mapper:' + FQDD ", "AddToView": true}
+          "params": {"modelname": "default", "cfgsection": "Managers/CMC.Integrated", "mappinguniquename": "'manager_mapper:' + FQDD ", "AddToView": "ar_mapper"}
         - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "health", "uniquename": "'am2_health_' + FQDD", "passthru": {"health_fqdd": "'System.Chassis.1#' + FQDD"} }
         - "fn": "AM2"
@@ -478,7 +478,7 @@ views:
       "Controllers":
         - "fn": "ARMapper"
           # note: this is correct, the chassis model re-uses the managers mapper
-          "params": {"modelname": "default", "cfgsection": "Managers/CMC.Integrated", "mappinguniquename": "'chassis:' + FQDD ", "AddToView": true}
+          "params": {"modelname": "default", "cfgsection": "Managers/CMC.Integrated", "mappinguniquename": "'chassis:' + FQDD ", "AddToView": "ar_mapper"}
         - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "health", "uniquename": "'am2_health_' + FQDD", "passthru": {"health_fqdd": "'System.Chassis.1#' + FQDD"} }
       "View":
@@ -507,7 +507,7 @@ views:
       "Controllers":
         - "fn": "ARMapper"
           # note: this is correct, the redundancy model re-uses the managers mapper
-          "params": {"modelname": "default", "cfgsection": "Managers/CMC.Integrated", "mappinguniquename": "'chassis_redundancy:' + FQDD ", "AddToView": true}
+          "params": {"modelname": "default", "cfgsection": "Managers/CMC.Integrated", "mappinguniquename": "'chassis_redundancy:' + FQDD ", "AddToView": "ar_mapper"}
         - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "health", "uniquename": "'am2_health_' + FQDD", "passthru": {"health_fqdd": "'System.Chassis.1#' + FQDD"} }
       "View":
@@ -528,7 +528,7 @@ views:
         "default":  {"unique_name": "FQDD", "managed_by": "managed_by"}
       "Controllers":
         - "fn": "ARMapper"
-          "params": {"modelname": "default", "cfgsection": "Chassis/System.Chassis", "mappinguniquename": "'system_chassis:' + FQDD ", "AddToView": true}
+          "params": {"modelname": "default", "cfgsection": "Chassis/System.Chassis", "mappinguniquename": "'system_chassis:' + FQDD ", "AddToView": "ar_mapper"}
       "View":
         - "fn": "withModel"
           "params": {"name": "global_health", "expr": "globalHealthModel"}
@@ -554,7 +554,7 @@ views:
         "default":  { "unique_name": "'Power'"}
       "Controllers":
         - "fn": "ARMapper"
-          "params": {"modelname": "default", "cfgsection": "Chassis/System.Chassis/Power", "mappinguniquename": "'chassis_power_mapper:' + FQDD", "AddToView": true}
+          "params": {"modelname": "default", "cfgsection": "Chassis/System.Chassis/Power", "mappinguniquename": "'chassis_power_mapper:' + FQDD", "AddToView": "ar_mapper"}
         - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "power_supply_uris", "uniquename": "'am2_psu_uris:' + FQDD" }
         - "fn": "AM2"
@@ -583,9 +583,9 @@ views:
         "default":  {"unique_name": "FQDD", "unique_name_attr": "FQDD+'.Attributes'", "attributes": "add_attribute_property()"}
       "Controllers":
         - "fn": "ARMapper"
-          "params": {"modelname": "default", "cfgsection": "firmware/inventory", "mappinguniquename": "'fw_mapper:' + ChassisFQDD + '_' + FQDD", "AddToView": true}
+          "params": {"modelname": "default", "cfgsection": "firmware/inventory", "mappinguniquename": "'fw_mapper:' + ChassisFQDD + '_' + FQDD", "AddToView": "ar_mapper_inv"}
         - "fn": "ARMapper"
-          "params": {"modelname": "default", "cfgsection": "PSU/PSU.Slot", "mappinguniquename": "'chassis_psu_mapper:' + ChassisFQDD + '_' + FQDD ", "AddToView": true}
+          "params": {"modelname": "default", "cfgsection": "PSU/PSU.Slot", "mappinguniquename": "'chassis_psu_mapper:' + ChassisFQDD + '_' + FQDD ", "AddToView": "ar_mapper"}
         - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "power_supply", "uniquename": "'am2_chassis_psu_' + FQDD" }
         - "fn": "ARDumper"
@@ -611,7 +611,7 @@ views:
         "default":  { "power_related_items": "power_related_items"}
       "Controllers":
         - "fn": "ARMapper"
-          "params": {"modelname": "default", "cfgsection": "Chassis/System.Chassis/Power", "mappinguniquename": "'chassis_power_ctrl_mapper:' + FQDD", "AddToView": true}
+          "params": {"modelname": "default", "cfgsection": "Chassis/System.Chassis/Power", "mappinguniquename": "'chassis_power_ctrl_mapper:' + FQDD", "AddToView": "ar_mapper"}
         - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "power_control", "uniquename": "'am2_chassis_power_control_' + FQDD" }
       "View":
@@ -658,7 +658,7 @@ views:
         "default":  {"unique_name": "'Thermal'"}
       "Controllers":
         - "fn": "ARMapper"
-          "params": {"modelname": "default", "cfgsection": "Chassis/System.Chassis/Thermal", "mappinguniquename": "'chassis_thermal_mapper:' + FQDD", "AddToView": true}
+          "params": {"modelname": "default", "cfgsection": "Chassis/System.Chassis/Thermal", "mappinguniquename": "'chassis_thermal_mapper:' + FQDD", "AddToView": "ar_mapper"}
         - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "thermal", "uniquename": "'am2_thermal:' + FQDD", "passthru": {"fanuri": "rooturi + '/Chassis/' + FQDD + '/Sensors/Fans'"} }
       "View":
@@ -680,9 +680,9 @@ views:
         - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "fan", "uniquename": "'am2_fan_' + FQDD + '/' + ChassisFQDD", "passthru": {"DM_FQDD": "ChassisFQDD + '#' + FQDD"}}
         - "fn": "ARMapper"
-          "params": {"modelname": "default", "cfgsection": "firmware/inventory", "mappinguniquename": "'firmware_fan_mapper:' + ChassisFQDD + '/' + FQDD", "AddToView": true}
+          "params": {"modelname": "default", "cfgsection": "firmware/inventory", "mappinguniquename": "'firmware_fan_mapper:' + ChassisFQDD + '/' + FQDD", "AddToView": "ar_mapper_inv"}
         - "fn": "ARMapper"
-          "params": {"modelname": "default", "cfgsection": "Fans/Fan.Slot", "mappinguniquename": "'fan_mapper:' + ChassisFQDD + '/' + FQDD", "AddToView": true}
+          "params": {"modelname": "default", "cfgsection": "Fans/Fan.Slot", "mappinguniquename": "'fan_mapper:' + ChassisFQDD + '/' + FQDD", "AddToView": "ar_mapper"}
         - "fn": "ARDumper"
           "params": {"modelname": "default", "AddToView": true, "passthru": {"fqddlist": "array(FQDD)"}}
       "View":
@@ -707,9 +707,9 @@ views:
         "default":  {"unique_name": "FQDD", "managed_by": "managed_by"}
       "Controllers":
         - "fn": "ARMapper"
-          "params": {"modelname": "default", "cfgsection": "firmware/inventory", "mappinguniquename": "'iom_fw_mapper:' + FQDD", "AddToView": true}
+          "params": {"modelname": "default", "cfgsection": "firmware/inventory", "mappinguniquename": "'iom_fw_mapper:' + FQDD", "AddToView": "ar_mapper_inv"}
         - "fn": "ARMapper"
-          "params": {"modelname": "default", "cfgsection": "Chassis/IOM.Slot", "mappinguniquename": "'iom_mapper:' + FQDD", "AddToView": true}
+          "params": {"modelname": "default", "cfgsection": "Chassis/IOM.Slot", "mappinguniquename": "'iom_mapper:' + FQDD", "AddToView": "ar_mapper"}
         - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "health", "uniquename": "'am2_health_' + FQDD", "passthru": {"health_fqdd": "'System.Chassis.1#' + FQDD"} }
         - "fn": "AM2"
@@ -833,9 +833,9 @@ views:
         "default":  {"unique_name": "FQDD", "managed_by": "managed_by"}
       "Controllers":
         - "fn": "ARMapper"
-          "params": {"modelname": "default", "cfgsection": "firmware/inventory", "mappinguniquename": "'sled_fw_mapper:' + FQDD", "AddToView": true}
+          "params": {"modelname": "default", "cfgsection": "firmware/inventory", "mappinguniquename": "'sled_fw_mapper:' + FQDD", "AddToView": "ar_mapper_inv"}
         - "fn": "ARMapper"
-          "params": {"modelname": "default", "cfgsection": "Chassis/System.Modular", "mappinguniquename": "'sled_mapper:' + FQDD", "AddToView": true}
+          "params": {"modelname": "default", "cfgsection": "Chassis/System.Modular", "mappinguniquename": "'sled_mapper:' + FQDD", "AddToView": "ar_mapper"}
         - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "health", "uniquename": "'am2_health_' + FQDD", "passthru": {"health_fqdd": "'System.Chassis.1#' + FQDD" } }
         - "fn": "AM2"
