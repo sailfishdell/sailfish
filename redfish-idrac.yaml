@@ -13,6 +13,10 @@ session:
 views:
   "rootview":
       "Logger": ["module", "root"]
+      "Controllers":
+        # This is for dynamic runtime instantiation of new chassis as they appear
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "idrac_component_events", "uniquename": "'idrac_system_chassis_' + view.GetURI()"}
       "View":
         - "fn": "with_URI"
           "params": "'/redfish/v1'"
@@ -51,10 +55,6 @@ views:
       "Controllers":
         - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + view.GetURI()", "passthru": {'collection_uri': 'view.GetURI()'} }
-
-        # This is for dynamic runtime instantiation of new chassis as they appear
-        - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "idrac_component_events", "uniquename": "'idrac_system_chassis_' + view.GetURI()"}
 
       "View":
         - "fn": "with_URI"
@@ -539,8 +539,8 @@ awesome_mapper:
       - { SelectEventType: "IDRACComponentEvent",
           Select: "true",
           Exec: [ 
-                "data.Type == 'Chassis' && addsystemchassis(data.FQDD)",
-                "data.Type == 'StorageEnclosure' && addstorageenclosure(data.FQDD)",
+                "data.Type == 'Chassis' && addsystem_chassis(data.FQDD)",
+                "data.Type == 'StorageEnclosure' && addstorage_enclosure(data.FQDD)",
                 ]}
 
 
