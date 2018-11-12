@@ -1,20 +1,37 @@
-package enclosure
+package storage
 
 import (
 	"context"
-"sync"
-
-"github.com/spf13/viper"
-
-	"github.com/superchalupa/sailfish/src/log"
-	"github.com/superchalupa/sailfish/src/ocp/view"
-	"github.com/superchalupa/sailfish/src/ocp/testaggregate"
-	domain "github.com/superchalupa/sailfish/src/redfishresource"
+	"sync"
 
 	eh "github.com/looplab/eventhorizon"
+	"github.com/spf13/viper"
+	"github.com/superchalupa/sailfish/src/log"
+	"github.com/superchalupa/sailfish/src/ocp/testaggregate"
+	"github.com/superchalupa/sailfish/src/ocp/view"
+	domain "github.com/superchalupa/sailfish/src/redfishresource"
 )
 
 func RegisterAggregate(s *testaggregate.Service) {
+	s.RegisterAggregateFunction("storage_collection",
+		func(ctx context.Context, subLogger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, vw *view.View, extra interface{}, params map[string]interface{}) ([]eh.Command, error) {
+			return []eh.Command{
+				&domain.CreateRedfishResource{
+					ResourceURI: vw.GetURI(),
+					Type:        "#StorageCollection.StorageCollection",
+					Context:     params["rooturi"].(string) + "/$metadata#StorageCollection.StorageCollection",
+					Privileges: map[string]interface{}{
+						"GET": []string{"Login"},
+					},
+					Properties: map[string]interface{}{
+						"Name":                     "Storage  Collection",
+						"Description":              "Collection of Storage Devices",
+						"Members@meta":             vw.Meta(view.GETProperty("members"), view.GETFormatter("formatOdataList"), view.GETModel("default")),
+						"Members@odata.count@meta": vw.Meta(view.GETProperty("members"), view.GETFormatter("count"), view.GETModel("default")),
+					}},
+			}, nil
+		})
+
 	s.RegisterAggregateFunction("idrac_storage_enclosure",
 		func(ctx context.Context, subLogger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, vw *view.View, extra interface{}, params map[string]interface{}) ([]eh.Command, error) {
 			return []eh.Command{

@@ -38,16 +38,16 @@ import (
 	dell_ec "github.com/superchalupa/sailfish/src/dell-ec"
 	"github.com/superchalupa/sailfish/src/dell-idrac/chassis/system_chassis"
 	"github.com/superchalupa/sailfish/src/dell-idrac/managers/idrac_embedded"
-	"github.com/superchalupa/sailfish/src/dell-idrac/storage/enclosure"
+	"github.com/superchalupa/sailfish/src/dell-idrac/storage"
 	/*
-	// all these are TODO:
-			storage_enclosure "github.com/superchalupa/sailfish/src/dell-resources/systems/system.embedded/storage/enclosure"
-			storage_instance "github.com/superchalupa/sailfish/src/dell-resources/systems/system.embedded/storage"
-			storage_controller "github.com/superchalupa/sailfish/src/dell-resources/systems/system.embedded/storage/controller"
-			storage_drive "github.com/superchalupa/sailfish/src/dell-resources/systems/system.embedded/storage/drive"
-			storage_collection "github.com/superchalupa/sailfish/src/dell-resources/systems/system.embedded/storage/storage_collection"
-			storage_volume "github.com/superchalupa/sailfish/src/dell-resources/systems/system.embedded/storage/volume"
-			storage_volume_collection "github.com/superchalupa/sailfish/src/dell-resources/systems/system.embedded/storage/volume_collection"
+		// all these are TODO:
+				storage_enclosure "github.com/superchalupa/sailfish/src/dell-resources/systems/system.embedded/storage/enclosure"
+				storage_instance "github.com/superchalupa/sailfish/src/dell-resources/systems/system.embedded/storage"
+				storage_controller "github.com/superchalupa/sailfish/src/dell-resources/systems/system.embedded/storage/controller"
+				storage_drive "github.com/superchalupa/sailfish/src/dell-resources/systems/system.embedded/storage/drive"
+				storage_collection "github.com/superchalupa/sailfish/src/dell-resources/systems/system.embedded/storage/storage_collection"
+				storage_volume "github.com/superchalupa/sailfish/src/dell-resources/systems/system.embedded/storage/volume"
+				storage_volume_collection "github.com/superchalupa/sailfish/src/dell-resources/systems/system.embedded/storage/volume_collection"
 	*/)
 
 type ocp struct {
@@ -95,7 +95,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	eventservice.RegisterAggregate(instantiateSvc)
 	idrac_embedded.RegisterAggregate(instantiateSvc)
 	system_chassis.RegisterAggregate(instantiateSvc)
-	enclosure.RegisterAggregate(instantiateSvc)
+	storage.RegisterAggregate(instantiateSvc)
 
 	AddChassisInstantiate(logger, instantiateSvc)
 
@@ -180,12 +180,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	// /redfish/v1/Managers/iDRAC.Embedded.1
 	//*********************************************************************
 	instantiateSvc.Instantiate("idrac_embedded", map[string]interface{}{"FQDD": "iDRAC.Embedded.1"})
-
-	/*
-		fqdd := "Enclosure.Internal.0-1:RAID.Slot.4-1"
-		instantiateSvc.Instantiate("storage_enclosure", map[string]interface{}{"URI_FQDD": fqdd, "EVENT_FQDD": "308|C|" + fqdd})
-
-	*/
 
 	// stuff below is "legacy" and is in-progress for conversion
 	/*
