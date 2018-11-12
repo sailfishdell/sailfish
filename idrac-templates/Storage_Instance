@@ -1,1 +1,122 @@
-{"@odata.context":"/redfish/v1/$metadata#Storage.Storage","@odata.id":"/redfish/v1/Systems/System.Embedded.1/Storage/RAID.Slot.6-1","@odata.type":"#Storage.v1_4_0.Storage","Description":"PERC H740P Adapter","Drives":[{"@odata.id":"/redfish/v1/Systems/System.Embedded.1/Storage/Drives/Disk.Bay.0:Enclosure.Internal.0-1:RAID.Slot.6-1"},{"@odata.id":"/redfish/v1/Systems/System.Embedded.1/Storage/Drives/Disk.Bay.1:Enclosure.Internal.0-1:RAID.Slot.6-1"},{"@odata.id":"/redfish/v1/Systems/System.Embedded.1/Storage/Drives/Disk.Bay.2:Enclosure.Internal.0-1:RAID.Slot.6-1"},{"@odata.id":"/redfish/v1/Systems/System.Embedded.1/Storage/Drives/Disk.Bay.3:Enclosure.Internal.0-1:RAID.Slot.6-1"},{"@odata.id":"/redfish/v1/Systems/System.Embedded.1/Storage/Drives/Disk.Bay.4:Enclosure.Internal.0-1:RAID.Slot.6-1"},{"@odata.id":"/redfish/v1/Systems/System.Embedded.1/Storage/Drives/Disk.Bay.5:Enclosure.Internal.0-1:RAID.Slot.6-1"},{"@odata.id":"/redfish/v1/Systems/System.Embedded.1/Storage/Drives/Disk.Bay.6:Enclosure.Internal.0-1:RAID.Slot.6-1"},{"@odata.id":"/redfish/v1/Systems/System.Embedded.1/Storage/Drives/Disk.Bay.7:Enclosure.Internal.0-1:RAID.Slot.6-1"},{"@odata.id":"/redfish/v1/Systems/System.Embedded.1/Storage/Drives/Disk.Bay.8:Enclosure.Internal.0-1:RAID.Slot.6-1"},{"@odata.id":"/redfish/v1/Systems/System.Embedded.1/Storage/Drives/Disk.Bay.9:Enclosure.Internal.0-1:RAID.Slot.6-1"},{"@odata.id":"/redfish/v1/Systems/System.Embedded.1/Storage/Drives/Disk.Bay.10:Enclosure.Internal.0-1:RAID.Slot.6-1"},{"@odata.id":"/redfish/v1/Systems/System.Embedded.1/Storage/Drives/Disk.Bay.11:Enclosure.Internal.0-1:RAID.Slot.6-1"}],"Drives@odata.count":12,"Id":"RAID.Slot.6-1","Links":{"Enclosures":[{"@odata.id":"/redfish/v1/Chassis/Enclosure.Internal.0-1:RAID.Slot.6-1"},{"@odata.id":"/redfish/v1/Chassis/System.Embedded.1"}],"Enclosures@odata.count":2},"Name":"PERC H740P Adapter","Oem":{"Dell":{"DellController":{"@odata.context":"/redfish/v1/$metadata#DellController.DellController","@odata.id":"/redfish/v1/Dell/Systems/System.Emdedded.1/Storage/DellController/RAID.Slot.6-1","@odata.type":"#DellController.v1_0_0.DellController","CacheSizeInMB":8192,"CachecadeCapability":"NotSupported","ControllerFirmwareVersion":"50.5.0-1750","DeviceCardSlotType":"PCI Express Gen3 x16","DriverVersion":"7.703.06.00","EncryptionCapability":"LocalKeyManagementCapable","EncryptionMode":"None","PCISlot":6,"PatrolReadState":"Stopped","RollupStatus":"OK","SecurityStatus":"EncryptionCapable","SlicedVDCapability":"Supported"}}},"Status":{"Health":"OK","HealthRollup":"OK","State":"Enabled"},"StorageControllers":[{"@odata.id":"/redfish/v1/Systems/System.Embedded.1/StorageControllers/RAID.Slot.6-1","@odata.type":"#Storage.v1_4_0.StorageController","Assembly":{"@odata.id":"/redfish/v1/Chassis/System.Embedded.1/Assembly"},"FirmwareVersion":"50.5.0-1750","Identifiers":[{"DurableName":"5D0946602BC50300","DurableNameFormat":"NAA"}],"Links":{},"Manufacturer":"DELL","MemberId":"RAID.Slot.6-1","Model":"PERC H740P Adapter","Name":"PERC H740P Adapter","SpeedGbps":12,"Status":{"Health":"OK","HealthRollup":"OK","State":"Enabled"},"SupportedControllerProtocols":["PCIe"],"SupportedDeviceProtocols":["SAS","SATA"]}],"StorageControllers@odata.count":1,"Volumes":{"@odata.id":"/redfish/v1/Systems/System.Embedded.1/Storage/RAID.Slot.6-1/Volumes"}}
+{
+  "@odata.context": "/redfish/v1/$metadata#Storage.Storage",
+  "@odata.id": "/redfish/v1/Systems/System.Embedded.1/Storage/RAID.Slot.6-1",
+  "@odata.type": "#Storage.v1_4_0.Storage",
+  "Description": "PERC H740P Adapter",
+  "Drives": [
+    {
+      "@odata.id": "/redfish/v1/Systems/System.Embedded.1/Storage/Drives/Disk.Bay.0:Enclosure.Internal.0-1:RAID.Slot.6-1"
+    },
+    {
+      "@odata.id": "/redfish/v1/Systems/System.Embedded.1/Storage/Drives/Disk.Bay.1:Enclosure.Internal.0-1:RAID.Slot.6-1"
+    },
+    {
+      "@odata.id": "/redfish/v1/Systems/System.Embedded.1/Storage/Drives/Disk.Bay.2:Enclosure.Internal.0-1:RAID.Slot.6-1"
+    },
+    {
+      "@odata.id": "/redfish/v1/Systems/System.Embedded.1/Storage/Drives/Disk.Bay.3:Enclosure.Internal.0-1:RAID.Slot.6-1"
+    },
+    {
+      "@odata.id": "/redfish/v1/Systems/System.Embedded.1/Storage/Drives/Disk.Bay.4:Enclosure.Internal.0-1:RAID.Slot.6-1"
+    },
+    {
+      "@odata.id": "/redfish/v1/Systems/System.Embedded.1/Storage/Drives/Disk.Bay.5:Enclosure.Internal.0-1:RAID.Slot.6-1"
+    },
+    {
+      "@odata.id": "/redfish/v1/Systems/System.Embedded.1/Storage/Drives/Disk.Bay.6:Enclosure.Internal.0-1:RAID.Slot.6-1"
+    },
+    {
+      "@odata.id": "/redfish/v1/Systems/System.Embedded.1/Storage/Drives/Disk.Bay.7:Enclosure.Internal.0-1:RAID.Slot.6-1"
+    },
+    {
+      "@odata.id": "/redfish/v1/Systems/System.Embedded.1/Storage/Drives/Disk.Bay.8:Enclosure.Internal.0-1:RAID.Slot.6-1"
+    },
+    {
+      "@odata.id": "/redfish/v1/Systems/System.Embedded.1/Storage/Drives/Disk.Bay.9:Enclosure.Internal.0-1:RAID.Slot.6-1"
+    },
+    {
+      "@odata.id": "/redfish/v1/Systems/System.Embedded.1/Storage/Drives/Disk.Bay.10:Enclosure.Internal.0-1:RAID.Slot.6-1"
+    },
+    {
+      "@odata.id": "/redfish/v1/Systems/System.Embedded.1/Storage/Drives/Disk.Bay.11:Enclosure.Internal.0-1:RAID.Slot.6-1"
+    }
+  ],
+  "Drives@odata.count": 12,
+  "Id": "RAID.Slot.6-1",
+  "Links": {
+    "Enclosures": [
+      {
+        "@odata.id": "/redfish/v1/Chassis/Enclosure.Internal.0-1:RAID.Slot.6-1"
+      },
+      {
+        "@odata.id": "/redfish/v1/Chassis/System.Embedded.1"
+      }
+    ],
+    "Enclosures@odata.count": 2
+  },
+  "Name": "PERC H740P Adapter",
+  "Oem": {
+    "Dell": {
+      "DellController": {
+        "@odata.context": "/redfish/v1/$metadata#DellController.DellController",
+        "@odata.id": "/redfish/v1/Dell/Systems/System.Emdedded.1/Storage/DellController/RAID.Slot.6-1",
+        "@odata.type": "#DellController.v1_0_0.DellController",
+        "CacheSizeInMB": 8192,
+        "CachecadeCapability": "NotSupported",
+        "ControllerFirmwareVersion": "50.5.0-1750",
+        "DeviceCardSlotType": "PCI Express Gen3 x16",
+        "DriverVersion": "7.703.06.00",
+        "EncryptionCapability": "LocalKeyManagementCapable",
+        "EncryptionMode": "None",
+        "PCISlot": 6,
+        "PatrolReadState": "Stopped",
+        "RollupStatus": "OK",
+        "SecurityStatus": "EncryptionCapable",
+        "SlicedVDCapability": "Supported"
+      }
+    }
+  },
+  "Status": {
+    "Health": "OK",
+    "HealthRollup": "OK",
+    "State": "Enabled"
+  },
+  "StorageControllers": [
+    {
+      "@odata.id": "/redfish/v1/Systems/System.Embedded.1/StorageControllers/RAID.Slot.6-1",
+      "@odata.type": "#Storage.v1_4_0.StorageController",
+      "Assembly": {
+        "@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Assembly"
+      },
+      "FirmwareVersion": "50.5.0-1750",
+      "Identifiers": [
+        {
+          "DurableName": "5D0946602BC50300",
+          "DurableNameFormat": "NAA"
+        }
+      ],
+      "Links": {},
+      "Manufacturer": "DELL",
+      "MemberId": "RAID.Slot.6-1",
+      "Model": "PERC H740P Adapter",
+      "Name": "PERC H740P Adapter",
+      "SpeedGbps": 12,
+      "Status": {
+        "Health": "OK",
+        "HealthRollup": "OK",
+        "State": "Enabled"
+      },
+      "SupportedControllerProtocols": [
+        "PCIe"
+      ],
+      "SupportedDeviceProtocols": [
+        "SAS",
+        "SATA"
+      ]
+    }
+  ],
+  "StorageControllers@odata.count": 1,
+  "Volumes": {
+    "@odata.id": "/redfish/v1/Systems/System.Embedded.1/Storage/RAID.Slot.6-1/Volumes"
+  }
+}

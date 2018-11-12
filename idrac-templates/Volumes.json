@@ -1,1 +1,34 @@
-{"@odata.context":"/redfish/v1/$metadata#VolumeCollection.VolumeCollection","@odata.id":"/redfish/v1/Systems/System.Embedded.1/Storage/RAID.Slot.6-1/Volumes","@odata.type":"#VolumeCollection.VolumeCollection","Description":"Collection Of Volume","Members":[{"@odata.id":"/redfish/v1/Systems/System.Embedded.1/Storage/Volumes/Disk.Virtual.0:RAID.Slot.6-1"},{"@odata.id":"/redfish/v1/Systems/System.Embedded.1/Storage/Volumes/Disk.Virtual.1:RAID.Slot.6-1"},{"@odata.id":"/redfish/v1/Systems/System.Embedded.1/Storage/Volumes/Disk.Virtual.2:RAID.Slot.6-1"},{"@odata.id":"/redfish/v1/Systems/System.Embedded.1/Storage/Volumes/Disk.Virtual.3:RAID.Slot.6-1"},{"@odata.id":"/redfish/v1/Systems/System.Embedded.1/Storage/Volumes/Disk.Virtual.4:RAID.Slot.6-1"},{"@odata.id":"/redfish/v1/Systems/System.Embedded.1/Storage/Volumes/Disk.Virtual.5:RAID.Slot.6-1"},{"@odata.id":"/redfish/v1/Systems/System.Embedded.1/Storage/Volumes/Disk.Virtual.6:RAID.Slot.6-1"},{"@odata.id":"/redfish/v1/Systems/System.Embedded.1/Storage/Volumes/Disk.Virtual.7:RAID.Slot.6-1"}],"Members@odata.count":8,"Name":"Volume Collection"}
+{
+  "@odata.context": "/redfish/v1/$metadata#VolumeCollection.VolumeCollection",
+  "@odata.id": "/redfish/v1/Systems/System.Embedded.1/Storage/RAID.Slot.6-1/Volumes",
+  "@odata.type": "#VolumeCollection.VolumeCollection",
+  "Description": "Collection Of Volume",
+  "Members": [
+    {
+      "@odata.id": "/redfish/v1/Systems/System.Embedded.1/Storage/Volumes/Disk.Virtual.0:RAID.Slot.6-1"
+    },
+    {
+      "@odata.id": "/redfish/v1/Systems/System.Embedded.1/Storage/Volumes/Disk.Virtual.1:RAID.Slot.6-1"
+    },
+    {
+      "@odata.id": "/redfish/v1/Systems/System.Embedded.1/Storage/Volumes/Disk.Virtual.2:RAID.Slot.6-1"
+    },
+    {
+      "@odata.id": "/redfish/v1/Systems/System.Embedded.1/Storage/Volumes/Disk.Virtual.3:RAID.Slot.6-1"
+    },
+    {
+      "@odata.id": "/redfish/v1/Systems/System.Embedded.1/Storage/Volumes/Disk.Virtual.4:RAID.Slot.6-1"
+    },
+    {
+      "@odata.id": "/redfish/v1/Systems/System.Embedded.1/Storage/Volumes/Disk.Virtual.5:RAID.Slot.6-1"
+    },
+    {
+      "@odata.id": "/redfish/v1/Systems/System.Embedded.1/Storage/Volumes/Disk.Virtual.6:RAID.Slot.6-1"
+    },
+    {
+      "@odata.id": "/redfish/v1/Systems/System.Embedded.1/Storage/Volumes/Disk.Virtual.7:RAID.Slot.6-1"
+    }
+  ],
+  "Members@odata.count": 8,
+  "Name": "Volume Collection"
+}
