@@ -13,6 +13,7 @@ func init() {
 }
 
 type IDRACComponentEventData struct {
-	Type string
-	FQDD string
+	Type       string
+	FQDD       string
+	ParentFQDD string
 }

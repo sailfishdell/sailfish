@@ -1,1 +1,1 @@
-{ "name": "IDRACComponentEvent", "event_array": [ {"Type": "System", "FQDD": "System.Embedded.1"}, {"Type": "Chassis", "FQDD": "System.Chassis.1"}, {"Type": "StorageEnclosure", "FQDD": "Enclosure.Internal.0_1_RAID.Slot.4_1"} ]}
+{ "name": "IDRACComponentEvent", "event_array": [ {"Type": "System", "FQDD": "System.Embedded.1"}, {"Type": "Chassis", "FQDD": "System.Chassis.1"}, {"Type": "StorageInstance", "ParentFQDD": "System.Embedded.1", "FQDD": "RAID.Slot.6-1"}, {"Type": "StorageEnclosure", "FQDD": "Enclosure.Internal.0_1_RAID.Slot.4_1"} ]}

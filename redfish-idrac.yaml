@@ -396,6 +396,20 @@ views:
           "params":
       "Aggregate": "idrac_storage_collection"
 
+  "idrac_storage_instance":
+      "Logger": ["module", "StorageInstance"]
+      "Models":
+        "default":  {}
+      "Controllers":
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/Systems/' + ParentFQDD + '/Storage/' + FQDD "
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+        - "fn": "stdFormatters"
+          "params":
+      "Aggregate": "idrac_storage_instance"
+
   "storage_enclosure":
       "Logger": ["module", "StorageEnclosure"]
       "Models":
@@ -448,38 +462,6 @@ views:
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/Systems/System.Embedded.1/Storage/Drives/' + URI_FQDD "
-        - "fn": "PublishResourceUpdatedEventsForModel"
-          "params": "default"
-        - "fn": "withFormatter_count"
-          "params":
-        - "fn": "withFormatter_expand"
-          "params":
-        - "fn": "withFormatter_expandone"
-          "params":
-        - "fn": "withFormatter_formatOdataList"
-          "params":
-
-  "storage_instance":
-      "Logger": ["module", "StorageInstance"]
-      "Models":
-        "default":  {"unique_name": "URI_FQDD", "unique_name_attr": "URI_FQDD+'.Attributes'", "attributes": "add_attribute_property()"}
-      "Controllers":
-        - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "storage_drive", "uniquename": "'am2_storage_drive_' + URI_FQDD" }
-        - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "storage_adapter", "uniquename": "'am2_storage_adapter_' + URI_FQDD" }
-        - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "storage_volume", "uniquename": "'am2_storage_volume_' + URI_FQDD" }
-        - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "health", "uniquename": "'am2_iom_health_' + URI_FQDD" }
-        - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "storage_drive_uris", "uniquename": "'am2_drives_uris:' + URI_FQDD" }
-        - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "storage_volume_uris", "uniquename": "'am2_volumes_uris:' + URI_FQDD" }
-
-      "View":
-        - "fn": "with_URI"
-          "params": "rooturi + '/Systems/System.Embedded.1/Storage/' + URI_FQDD "
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
         - "fn": "withFormatter_count"
@@ -554,6 +536,7 @@ awesome_mapper:
           Exec: [
                 "data.Type == 'System' && addsystem_embedded(data.FQDD)",
                 "data.Type == 'Chassis' && addsystem_chassis(data.FQDD)",
+                "data.Type == 'StorageInstance' && addidrac_storage_instance(data.ParentFQDD + ':' + data.FQDD, data.ParentFQDD, data.FQDD)",
                 "data.Type == 'StorageEnclosure' && addstorage_enclosure(data.FQDD)",
                 ]}
 

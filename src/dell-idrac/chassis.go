@@ -60,6 +60,22 @@ func AddChassisInstantiate(l log.Logger, instantiateSvc *testaggregate.Service) 
 		return true, nil
 	})
 
+	MakeMaker(l, "idrac_storage_instance", func(args ...interface{}) (interface{}, error) {
+		ParentFQDD, ok := args[1].(string)
+		if !ok {
+			return nil, errors.New("Need a string fqdd for addsystem_enclosure(), but didnt get one")
+		}
+		FQDD, ok := args[2].(string)
+		if !ok {
+			return nil, errors.New("Need a string fqdd for addsystem_enclosure(), but didnt get one")
+		}
+		// have to do this in a goroutine because awesome mapper is locked while it processes events
+		l.Warn("instantiate idrac_storage_instance", "ParentFQDD", ParentFQDD, "FQDD", FQDD)
+		go instantiateSvc.Instantiate("idrac_storage_instance", map[string]interface{}{"ParentFQDD": ParentFQDD, "FQDD": FQDD})
+
+		return true, nil
+	})
+
 	MakeMaker(l, "storage_enclosure", func(args ...interface{}) (interface{}, error) {
 		FQDD, ok := args[0].(string)
 		if !ok {

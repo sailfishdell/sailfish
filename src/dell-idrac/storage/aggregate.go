@@ -32,6 +32,75 @@ func RegisterAggregate(s *testaggregate.Service) {
 			}, nil
 		})
 
+	s.RegisterAggregateFunction("idrac_storage_instance",
+		func(ctx context.Context, subLogger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, vw *view.View, extra interface{}, params map[string]interface{}) ([]eh.Command, error) {
+			return []eh.Command{
+				&domain.CreateRedfishResource{
+					ResourceURI: vw.GetURI(),
+					Type:        "#Storage.v1_3_0.Storage",
+					Context:     "/redfish/v1/$metadata#Storage.Storage",
+					Privileges: map[string]interface{}{
+						"GET":    []string{"Login"},
+						"POST":   []string{"ConfigureManager"},
+						"PUT":    []string{},
+						"PATCH":  []string{"ConfigureManager"},
+						"DELETE": []string{"ConfigureManager"},
+					},
+					Properties: map[string]interface{}{
+						"Id@meta":                  vw.Meta(view.PropGET("unique_name")),
+						"Description@meta":         vw.Meta(view.PropGET("description")), //Done
+						"Name@meta":                vw.Meta(view.PropGET("name")),        //Done
+						"Drives@meta":              vw.Meta(view.GETProperty("drive_uris"), view.GETFormatter("formatOdataList"), view.GETModel("default")),
+						"Drives@odata.count@meta":  vw.Meta(view.GETProperty("drive_uris"), view.GETFormatter("count"), view.GETModel("default")),
+						"Volumes@meta":             vw.Meta(view.GETProperty("volume_uris"), view.GETFormatter("formatOdataList"), view.GETModel("default")),
+						"Volumes@odata.count@meta": vw.Meta(view.GETProperty("volume_uris"), view.GETFormatter("count"), view.GETModel("default")),
+						// this should expand:
+						"StorageControllers@meta":             vw.Meta(view.GETProperty("storage_controller_uris"), view.GETFormatter("formatOdataList"), view.GETModel("default")),
+						"StorageControllers@odata.count@meta": vw.Meta(view.GETProperty("storage_controller_uris"), view.GETFormatter("count"), view.GETModel("default")),
+
+						"Links": map[string]interface{}{
+							"Enclosures@meta":             vw.Meta(view.GETProperty("enclosure_uris"), view.GETFormatter("formatOdataList"), view.GETModel("default")),
+							"Enclosures@odata.count@meta": vw.Meta(view.GETProperty("enclosure_uris"), view.GETFormatter("count"), view.GETModel("default")),
+						},
+
+						"Status": map[string]interface{}{
+							"HealthRollup@meta": vw.Meta(view.PropGET("obj_status")),
+							"State@meta":        vw.Meta(view.PropGET("state")),
+							"Health@meta":       vw.Meta(view.PropGET("obj_status")),
+						},
+
+						"Actions": map[string]interface{}{
+							"#Storage.SetEncryptionKey": map[string]interface{}{
+								"target": "/redfish/v1/Systems/System.Embedded.1/Storage/AHCI.Embedded.1-1/Actions/Storage.SetEncryptionKey",
+							},
+						},
+
+						"Oem": map[string]interface{}{ //Done
+							"Dell": map[string]interface{}{
+								"DellController": map[string]interface{}{
+									// MEB: WTF is this? it's not right. we should not have an @odata.id/type/context here, ever.
+									"@odata.context":                 "/redfish/v1/$metadata#DellController.DellController",
+									"@odata.id":                      "/redfish/v1/Dell/Systems/System.Emdedded.1/Storage/DellController/$entity",
+									"@odata.type":                    "#DellController.v1_0_0.DellController",
+									"CacheSizeInMB@meta":             vw.Meta(view.PropGET("cache_size")),
+									"CachecadeCapability@meta":       vw.Meta(view.PropGET("cache_capability")),
+									"ControllerFirmwareVersion@meta": vw.Meta(view.PropGET("controller_firmware_version")),
+									"DeviceCardSlotType@meta":        vw.Meta(view.PropGET("device_card_slot_type")),
+									"DriverVersion@meta":             vw.Meta(view.PropGET("driver_version")),
+									"EncryptionCapability@meta":      vw.Meta(view.PropGET("encryption_capability")),
+									"EncryptionMode@meta":            vw.Meta(view.PropGET("encryption_mode")),
+									"PCISlot@meta":                   vw.Meta(view.PropGET("pci_slot")),
+									"PatrolReadState@meta":           vw.Meta(view.PropGET("patrol_read_state")),
+									"RollupStatus@meta":              vw.Meta(view.PropGET("rollup_status")),
+									"SecurityStatus@meta":            vw.Meta(view.PropGET("security_status")),
+									"SlicedVDCapability@meta":        vw.Meta(view.PropGET("sliced_vd_capabiltiy")),
+								},
+							},
+						},
+					}},
+			}, nil
+		})
+
 	s.RegisterAggregateFunction("idrac_storage_enclosure",
 		func(ctx context.Context, subLogger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, vw *view.View, extra interface{}, params map[string]interface{}) ([]eh.Command, error) {
 			return []eh.Command{
@@ -62,7 +131,7 @@ func RegisterAggregate(s *testaggregate.Service) {
 						"Description@meta": vw.Meta(view.PropGET("description")),
 						"Id@meta":          vw.Meta(view.PropGET("unique_name")),
 						"Links":            map[string]interface{}{
-						//Need to add links detail.
+							//Need to add links detail.
 						},
 						"Links@meta":             vw.Meta(view.GETProperty("links_uris"), view.GETFormatter("expand"), view.GETModel("default")),
 						"Links@odata.count@meta": vw.Meta(view.GETProperty("links_uris"), view.GETFormatter("count"), view.GETModel("default")),
