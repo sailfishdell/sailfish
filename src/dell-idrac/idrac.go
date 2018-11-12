@@ -39,6 +39,7 @@ import (
 	"github.com/superchalupa/sailfish/src/dell-idrac/chassis/system_chassis"
 	"github.com/superchalupa/sailfish/src/dell-idrac/managers/idrac_embedded"
 	"github.com/superchalupa/sailfish/src/dell-idrac/storage"
+	"github.com/superchalupa/sailfish/src/dell-idrac/system"
 	/*
 		// all these are TODO:
 				storage_enclosure "github.com/superchalupa/sailfish/src/dell-resources/systems/system.embedded/storage/enclosure"
@@ -96,6 +97,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	idrac_embedded.RegisterAggregate(instantiateSvc)
 	system_chassis.RegisterAggregate(instantiateSvc)
 	storage.RegisterAggregate(instantiateSvc)
+	system.RegisterAggregate(instantiateSvc)
 
 	AddChassisInstantiate(logger, instantiateSvc)
 

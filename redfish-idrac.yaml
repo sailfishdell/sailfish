@@ -362,6 +362,20 @@ views:
           "params":
       "Aggregate": "idrac_system_chassis"
 
+  "idrac_system_embedded":
+      "Logger": ["module", "system_embedded"]
+      "Models":
+        "default":  {}
+      "Controllers":
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/Systems/' + FQDD "
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+        - "fn": "stdFormatters"
+          "params":
+      "Aggregate": "idrac_system_embedded"
+
   "storage_enclosure":
       "Logger": ["module", "StorageEnclosure"]
       "Models":
@@ -538,7 +552,8 @@ awesome_mapper:
     idrac_component_events:
       - { SelectEventType: "IDRACComponentEvent",
           Select: "true",
-          Exec: [ 
+          Exec: [
+                "data.Type == 'System' && addsystem_embedded(data.FQDD)",
                 "data.Type == 'Chassis' && addsystem_chassis(data.FQDD)",
                 "data.Type == 'StorageEnclosure' && addstorage_enclosure(data.FQDD)",
                 ]}
