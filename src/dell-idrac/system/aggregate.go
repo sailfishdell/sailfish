@@ -24,7 +24,6 @@ func RegisterAggregate(s *testaggregate.Service) {
 						"GET": []string{"Login"},
 					},
 					Properties: map[string]interface{}{
-						"@odata.id":                "/redfish/v1/Systems/System.Embedded.1",
 						"Id":                       "System.Embedded.1",
 						"AssetTag":                 "",
 						"BiosVersion":              "0.4.1",
