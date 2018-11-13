@@ -378,7 +378,6 @@ views:
       "ExecPost": [
         "instantiate('attributes', 'parenturi', rooturi + '/Systems/' + FQDD, 'FQDD', FQDD)",
         "instantiate('storage_collection', 'parenturi', rooturi + '/Systems/' + FQDD, 'FQDD', FQDD)",
-        #"instantiate('storage_volumes', 'parenturi', rooturi + '/Systems/' + FQDD, 'FQDD', FQDD)",
        ]
 
   "storage_collection":
@@ -414,6 +413,9 @@ views:
         - "fn": "stdFormatters"
           "params":
       "Aggregate": "idrac_storage_instance"
+      "ExecPost": [
+        "instantiate('idrac_storage_volume_collection', 'parenturi', rooturi + '/Systems/' + ParentFQDD + '/Storage/' + FQDD , 'FQDD', FQDD, 'ParentFQDD', ParentFQDD)",
+        ]
 
   "idrac_storage_drive":
       "Logger": ["module", "StorageDrive"]
@@ -457,55 +459,40 @@ views:
           "params":
       "Aggregate": "idrac_storage_controller"
 
+  "idrac_storage_volume_collection":
+      "Logger": ["module", "StorageVolumeCollection"]
+      "Models":
+        "default":  {}
+      "Controllers":
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "volume_collection", "uniquename": "'collection_' + view.GetURI()", "passthru": {'collection_uri': "rooturi + '/Systems/' + ParentFQDD + '/Storage/Volumes'", 'ParentFQDD': 'ParentFQDD', 'FQDD': 'FQDD'} }
+      "View":
+        - "fn": "with_URI"
+          "params": "parenturi + '/Volumes'"
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+        - "fn": "stdFormatters"
+          "params":
+      "Aggregate": "idrac_storage_volume_collection"
+
+  "idrac_storage_volume":
+      "Logger": ["module", "StorageVolume"]
+      "Models":
+        "default":  {}
+      "Controllers":
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/Systems/' + ParentFQDD + '/Storage/Volumes/' + FQDD"
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+        - "fn": "stdFormatters"
+          "params":
+      "Aggregate": "idrac_storage_volume"
+
+
 # <<==================================================================>>
 # # everything above this point is basically correctly implemented and
 # dynamically instantiated on demand based on component events
-
-
-  "storage_volume":
-      "Logger": ["module", "StorageVolume"]
-      "Models":
-        "default":  {"unique_name": "URI_FQDD", "unique_name_attr": "URI_FQDD+'.Attributes'", "attributes": "add_attribute_property()"}
-      "Controllers":
-        - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "storage_volume", "uniquename": "'am2_storage_volume_' + URI_FQDD" }
-        - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "storage_adapter", "uniquename": "'am2_storage_adapter_' + URI_FQDD" }
-
-      "View":
-        - "fn": "with_URI"
-          "params": "rooturi + '/Systems/System.Embedded.1/Storage/Volumes/' + URI_FQDD "
-        - "fn": "PublishResourceUpdatedEventsForModel"
-          "params": "default"
-        - "fn": "withFormatter_count"
-          "params":
-        - "fn": "withFormatter_expand"
-          "params":
-        - "fn": "withFormatter_expandone"
-          "params":
-        - "fn": "withFormatter_formatOdataList"
-          "params":
-
-  "storage_volume_collection":
-      "Logger": ["module", "StorageVolumeCollection"]
-      "Models":
-        "default":  {"unique_name": "URI_FQDD", "unique_name_attr": "URI_FQDD+'.Attributes'", "attributes": "add_attribute_property()"}
-      "Controllers":
-        - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + collection_uri" }
-      "View":
-        - "fn": "with_URI"
-          "params": "rooturi + '/Systems/System.Embedded.1/Storage/' + URI_FQDD  +'/Volumes'"
-        - "fn": "PublishResourceUpdatedEventsForModel"
-          "params": "default"
-        - "fn": "withFormatter_count"
-          "params":
-        - "fn": "withFormatter_expand"
-          "params":
-        - "fn": "withFormatter_expandone"
-          "params":
-        - "fn": "withFormatter_formatOdataList"
-          "params":
 
 awesome_mapper:
     collection:
@@ -529,6 +516,7 @@ awesome_mapper:
                 "data.Type == 'StorageController' && addidrac_storage_controller(data.ParentFQDD + ':' + data.FQDD, data.ParentFQDD, data.FQDD)",
                 "data.Type == 'StorageDrive' && addidrac_storage_drive(data.ParentFQDD + ':' + data.FQDD, data.ParentFQDD, data.FQDD)",
                 "data.Type == 'StorageEnclosure' && addstorage_enclosure(data.FQDD)",
+                "data.Type == 'StorageVolume' && addstorage_volume(data.ParentFQDD + ':' + data.FQDD, data.ParentFQDD, data.FQDD)",
                 ]}
 
     idrac_storage_drive_uris:
@@ -546,6 +534,24 @@ awesome_mapper:
       - { SelectEventType: "RedfishResource:removed",
           Select: "nohash(data.ResourceURI) && baseuri(data.ResourceURI) == rooturi + '/Systems/' + ParentFQDD + '/StorageControllers'",
           ModelUpdate: [ {Property: "storage_controller_uris", Query: "removefromset(model, propname, data.ResourceURI)"} ]}
+
+    # have to do this one differently because enclosures are just a "Chassis"
+    # object and are hard to distinguish from every other chassis
+    idrac_storage_enclosure_uris:
+      - { SelectEventType: "IDRACComponentEvent",
+          Select: "data.Type == 'StorageEnclosure'",
+          ModelUpdate: [ {Property: "enclosure_uris", Query: "addtoset(model, propname, rooturi + '/Chassis/' + data.FQDD)"} ]}
+      # TODO: need to add a mapper to delete
+
+
+    volume_collection:
+        # TODO: have to test that resourceuri ENDS_WITH the "FQDD" value (correspoding with the mapped storage controller)
+      - { SelectEventType: "RedfishResource:created",
+          Select: "nohash(data.ResourceURI) && baseuri(data.ResourceURI) == collection_uri ",
+          ModelUpdate: [ {Property: "members", Query: "addtoset(model, propname, data.ResourceURI)", Default: 0} ]}
+      - { SelectEventType: "RedfishResource:removed",
+          Select: "nohash(data.ResourceURI) && baseuri(data.ResourceURI) == collection_uri ",
+          ModelUpdate: [ {Property: "members", Query: "removefromset(model, propname, data.ResourceURI)", Default: 0} ]}
 
 
 

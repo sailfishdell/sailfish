@@ -7,3 +7,6 @@
 { "name": "IDRACComponentEvent", "event_array": [ {"Type": "StorageDrive", "ParentFQDD": "System.Embedded.1", "FQDD": "Disk.Bay.1:Enclosure.Internal.0-1:RAID.Slot.4-1"} ]}
 { "name": "IDRACComponentEvent", "event_array": [ {"Type": "StorageDrive", "ParentFQDD": "System.Embedded.1", "FQDD": "Disk.Bay.2:Enclosure.Internal.0-1:RAID.Slot.4-1"} ]}
 { "name": "IDRACComponentEvent", "event_array": [ {"Type": "StorageDrive", "ParentFQDD": "System.Embedded.1", "FQDD": "Disk.Bay.3:Enclosure.Internal.0-1:RAID.Slot.4-1"} ]}
+{ "name": "IDRACComponentEvent", "event_array": [ {"Type": "StorageVolume", "ParentFQDD": "System.Embedded.1", "FQDD": "Disk.Direct.0-0:RAID.Slot.4-1"} ]}
+{ "name": "IDRACComponentEvent", "event_array": [ {"Type": "StorageVolume", "ParentFQDD": "System.Embedded.1", "FQDD": "Disk.Direct.1-0:RAID.Slot.4-1"} ]}
+{ "name": "IDRACComponentEvent", "event_array": [ {"Type": "StorageVolume", "ParentFQDD": "System.Embedded.1", "FQDD": "Disk.Direct.2-0:RAID.Slot.4-1"} ]}
