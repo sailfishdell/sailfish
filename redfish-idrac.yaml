@@ -510,6 +510,7 @@ awesome_mapper:
       - { SelectEventType: "IDRACComponentEvent",
           Select: "true",
           Exec: [
+                "data.Type == 'iDRAC' && addidrac_embedded(data.FQDD)",
                 "data.Type == 'System' && addsystem_embedded(data.FQDD)",
                 "data.Type == 'Chassis' && addsystem_chassis(data.FQDD)",
                 "data.Type == 'StorageInstance' && addidrac_storage_instance(data.ParentFQDD + ':' + data.FQDD, data.ParentFQDD, data.FQDD)",

@@ -38,6 +38,18 @@ func MakeMaker(l log.Logger, name string, fn func(args ...interface{}) (interfac
 }
 
 func AddChassisInstantiate(l log.Logger, instantiateSvc *testaggregate.Service) {
+
+	MakeMaker(l, "idrac_embedded", func(args ...interface{}) (interface{}, error) {
+		FQDD, ok := args[0].(string)
+		if !ok {
+			return nil, errors.New("Need a string fqdd for addidrac_embedded(), but didnt get one")
+		}
+		// have to do this in a goroutine because awesome mapper is locked while it processes events
+		go instantiateSvc.Instantiate("idrac_embedded", map[string]interface{}{"FQDD": FQDD})
+
+		return true, nil
+	})
+
 	MakeMaker(l, "system_embedded", func(args ...interface{}) (interface{}, error) {
 		FQDD, ok := args[0].(string)
 		if !ok {
