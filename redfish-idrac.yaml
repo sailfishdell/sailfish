@@ -545,12 +545,13 @@ awesome_mapper:
 
 
     volume_collection:
-        # TODO: have to test that resourceuri ENDS_WITH the "FQDD" value (correspoding with the mapped storage controller)
+        # the uri's for volumes are ambiguous, so we have to do extra tests.
+        # have to test that resourceuri ENDS WITH the "FQDD" value (correspoding with the mapped storage controller)
       - { SelectEventType: "RedfishResource:created",
-          Select: "nohash(data.ResourceURI) && baseuri(data.ResourceURI) == collection_uri ",
-          ModelUpdate: [ {Property: "members", Query: "addtoset(model, propname, data.ResourceURI)", Default: 0} ]}
+          Select: "nohash(data.ResourceURI) && baseuri(data.ResourceURI) == collection_uri && hassuffix(data.ResourceURI, ':' + FQDD)",
+          ModelUpdate: [ {Property: "members", Query: "addtoset(model, propname, data.ResourceURI)", Default: 0} ] }
       - { SelectEventType: "RedfishResource:removed",
-          Select: "nohash(data.ResourceURI) && baseuri(data.ResourceURI) == collection_uri ",
+          Select: "nohash(data.ResourceURI) && baseuri(data.ResourceURI) == collection_uri && hassuffix(data.ResourceURI, ':' + FQDD)",
           ModelUpdate: [ {Property: "members", Query: "removefromset(model, propname, data.ResourceURI)", Default: 0} ]}
 
 
