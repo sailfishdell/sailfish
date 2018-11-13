@@ -159,6 +159,17 @@ func init() {
 		}
 		return path.Dir(str), nil
 	})
+	AddFunction("hassuffix", func(args ...interface{}) (interface{}, error) {
+		str, ok := args[0].(string)
+		if !ok {
+			return nil, errors.New("expected a string argument")
+		}
+		suffix, ok := args[1].(string)
+		if !ok {
+			return nil, errors.New("expected a string argument")
+		}
+		return strings.HasSuffix(str, suffix), nil
+	})
 	AddFunction("strlen", func(args ...interface{}) (interface{}, error) {
 		length := len(args[0].(string))
 		return (float64)(length), nil

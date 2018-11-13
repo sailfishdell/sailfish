@@ -178,11 +178,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 		instantiateSvc.Instantiate(regName, map[string]interface{}{"location": location})
 	}
 
-	//*********************************************************************
-	// /redfish/v1/Managers/iDRAC.Embedded.1
-	//*********************************************************************
-	instantiateSvc.Instantiate("idrac_embedded", map[string]interface{}{"FQDD": "iDRAC.Embedded.1"})
-
 	// stuff below is "legacy" and is in-progress for conversion
 	/*
 		storage_enclosure_items := []string{}
