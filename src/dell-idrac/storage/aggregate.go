@@ -32,6 +32,44 @@ func RegisterAggregate(s *testaggregate.Service) {
 			}, nil
 		})
 
+	s.RegisterAggregateFunction("idrac_storage_controller",
+		func(ctx context.Context, subLogger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, vw *view.View, extra interface{}, params map[string]interface{}) ([]eh.Command, error) {
+			return []eh.Command{
+				&domain.CreateRedfishResource{
+					ResourceURI: vw.GetURI(),
+					Type:        "#Storage.v1_4_0.StorageController",
+					Context:     "/redfish/v1/$metadata#Storage.Storage",
+					Privileges: map[string]interface{}{
+						"GET": []string{"Login"},
+					},
+					Properties: map[string]interface{}{
+						"Assembly": map[string]interface{}{
+							"@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Assembly",
+						},
+						"FirmwareVersion@meta": vw.Meta(view.PropGET("firmware_version")),
+						"Identifiers":          map[string]interface{}{
+						//need to make this an array.
+						},
+						"Links":             map[string]interface{}{},
+						"Manufacturer@meta": vw.Meta(view.PropGET("manufacturer")),
+						"MemberId@meta":     vw.Meta(view.PropGET("member_id")),
+						"Model@meta":        vw.Meta(view.PropGET("model")),
+						"Name@meta":         vw.Meta(view.PropGET("name")),
+						"SpeedGbps@meta":    vw.Meta(view.PropGET("speed")),
+						"Status": map[string]interface{}{
+							"HealthRollup@meta": vw.Meta(view.PropGET("obj_status")),
+							"State@meta":        vw.Meta(view.PropGET("state")),
+							"Health@meta":       vw.Meta(view.PropGET("obj_status")),
+						},
+						"SupportedControllerProtocols": map[string]interface{}{
+						//need to make this an array
+						},
+						"SupportedDeviceProtocols": map[string]interface{}{
+						//need to make this an array
+						},
+					}}}, nil
+		})
+
 	s.RegisterAggregateFunction("idrac_storage_instance",
 		func(ctx context.Context, subLogger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, vw *view.View, extra interface{}, params map[string]interface{}) ([]eh.Command, error) {
 			return []eh.Command{
@@ -55,7 +93,7 @@ func RegisterAggregate(s *testaggregate.Service) {
 						"Volumes@meta":             vw.Meta(view.GETProperty("volume_uris"), view.GETFormatter("formatOdataList"), view.GETModel("default")),
 						"Volumes@odata.count@meta": vw.Meta(view.GETProperty("volume_uris"), view.GETFormatter("count"), view.GETModel("default")),
 						// this should expand:
-						"StorageControllers@meta":             vw.Meta(view.GETProperty("storage_controller_uris"), view.GETFormatter("formatOdataList"), view.GETModel("default")),
+						"StorageControllers@meta":             vw.Meta(view.GETProperty("storage_controller_uris"), view.GETFormatter("expand"), view.GETModel("default")),
 						"StorageControllers@odata.count@meta": vw.Meta(view.GETProperty("storage_controller_uris"), view.GETFormatter("count"), view.GETModel("default")),
 
 						"Links": map[string]interface{}{
