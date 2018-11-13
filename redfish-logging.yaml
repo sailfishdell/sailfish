@@ -41,7 +41,6 @@ logs:
     # (DISABLED) log stuff on a module by module basis to FILE
     - Enabled: false
       FileName: "/var/log/sailfish.log"
-      FileName: "./debug.log"
       Level: "debug"
       PrintFile: true
       PrintFunction: true
