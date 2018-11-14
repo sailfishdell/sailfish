@@ -65,8 +65,9 @@ func octetStreamUploadHandler(c *POST, r *http.Request) error {
     var localFile string
 	var uploadFile string
 
-
-    uploadFile = "ec-firmimgFIT.d9"
+    // no file specified so just use the upload name so the
+    // action needs to be based on the URL.
+    uploadFile = "octet_stream.file"
 
     // prepare the destination file (tmpfile name)
     dst, err := ioutil.TempFile(".", UploadDir+"/upld")
@@ -77,7 +78,6 @@ func octetStreamUploadHandler(c *POST, r *http.Request) error {
     }
     localFile = dst.Name()
     c.Files[uploadFile] = localFile
-
 
 	n, err := io.Copy(dst, r.Body)
 	if err != nil {
