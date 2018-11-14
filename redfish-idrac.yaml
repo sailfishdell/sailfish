@@ -422,6 +422,8 @@ views:
       "Models":
         "default":  {}
       "Controllers":
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "idrac_storage_drive_map", "uniquename": "'am2_idrac_storage_instance_map_' + FQDD", "passthru": {"ParentFQDD": "ParentFQDD", "FQDD": "FQDD"}}
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/Systems/' + ParentFQDD + '/Storage/Drives/' + FQDD "
@@ -556,23 +558,8 @@ awesome_mapper:
           ModelUpdate: [ {Property: "members", Query: "removefromset(model, propname, data.ResourceURI)", Default: 0} ]}
 
 
-
-        # we'll get to the mappers below soon, for now they are unused
-
-    storage_adapter:
-      - { SelectEventType: "StorageAdapterEvent", Select: "data.ObjectHeader.FQDD == EVENT_FQDD",
-            ModelUpdate: [
-                {Property: "name", Query: "data.RaidObjHeader.ObjName" },
-                {Property: "firmware_version", Query: "data.FirmwareVersion" },
-                {Property: "manufacturer", Query: "data.Manufacturer" },
-                {Property: "member_id", Query: "data.Id" },
-                {Property: "model", Query: "data.ObjectHeader.Struct" },
-                {Property: "name", Query: "data.ObjectHeader.FQDD" },
-                {Property: "speed", Query: "data.CapableSpeeds" }],
-                Exec: [ "echo('GOT AN EVENT THAT MATCHED - ADAPTER')" ]
-                }
-
-    storage_drive:
+    idrac_storage_drive_map:
+        # idrac assumes all storage is attached to system.embedded.1, so there is no ParentFQDD check here.
       - { SelectEventType: "StoragePhysicalEvent", Select: "data.ObjectHeader.FQDD == EVENT_FQDD",
             ModelUpdate: [
                 {Property: "block_size_bytes", Query: "data.BlockSize" },
@@ -595,7 +582,22 @@ awesome_mapper:
                 {Property: "revision", Query: "data.Revision" },
                 {Property: "rotation_speed", Query: "data.NominalMediumRotationRate" },
                 {Property: "serial_number", Query: "data.Serial" }],
-           Exec: [ "echo('GOT AN EVENT THAT MATCHED - DRIVE')" ]
+                }
+
+
+        # we'll get to the mappers below soon, for now they are unused
+
+    storage_adapter:
+      - { SelectEventType: "StorageAdapterEvent", Select: "data.ObjectHeader.FQDD == EVENT_FQDD",
+            ModelUpdate: [
+                {Property: "name", Query: "data.RaidObjHeader.ObjName" },
+                {Property: "firmware_version", Query: "data.FirmwareVersion" },
+                {Property: "manufacturer", Query: "data.Manufacturer" },
+                {Property: "member_id", Query: "data.Id" },
+                {Property: "model", Query: "data.ObjectHeader.Struct" },
+                {Property: "name", Query: "data.ObjectHeader.FQDD" },
+                {Property: "speed", Query: "data.CapableSpeeds" }],
+                Exec: [ "echo('GOT AN EVENT THAT MATCHED - ADAPTER')" ]
                 }
 
     storage_volume:
