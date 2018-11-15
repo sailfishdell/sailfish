@@ -18,7 +18,6 @@ import (
 	"github.com/superchalupa/sailfish/src/dell-resources/ar_mapper2"
 	"github.com/superchalupa/sailfish/src/dell-resources/attributes"
 	"github.com/superchalupa/sailfish/src/dell-resources/certificateservices"
-	chasCMCIntegrated "github.com/superchalupa/sailfish/src/dell-resources/chassis/cmc.integrated"
 	"github.com/superchalupa/sailfish/src/dell-resources/chassis/system.chassis/subsystemhealth"
 	"github.com/superchalupa/sailfish/src/dell-resources/chassis/system.chassis/thermal/fans"
 	"github.com/superchalupa/sailfish/src/dell-resources/logservices"
@@ -226,10 +225,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 		//*********************************************************************
 		// Create CHASSIS objects for CMC.Integrated.N
 		//*********************************************************************
-		chasLogger, chasCmcVw, _ := instantiateSvc.Instantiate("chassis_cmc_integrated", map[string]interface{}{"FQDD": mgrName})
-
-		// add the aggregate to the view tree
-		chasCMCIntegrated.AddAggregate(ctx, chasLogger, chasCmcVw, ch)
+		instantiateSvc.Instantiate("chassis_cmc_integrated", map[string]interface{}{"FQDD": mgrName})
 	}
 
 	// start log service here: it attaches to cmc.integrated.1

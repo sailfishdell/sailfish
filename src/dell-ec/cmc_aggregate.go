@@ -277,4 +277,44 @@ func RegisterCMCAggregate(s *testaggregate.Service) {
 					}}}, nil
 		})
 
+	s.RegisterAggregateFunction("chassis_cmc_integrated",
+		func(ctx context.Context, subLogger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, vw *view.View, extra interface{}, params map[string]interface{}) ([]eh.Command, error) {
+			return []eh.Command{
+				&domain.CreateRedfishResource{
+					ResourceURI: vw.GetURI(),
+					Type:        "#Chassis.v1_0_2.Chassis",
+					Context:     "/redfish/v1/$metadata#ChassisCollection.ChassisCollection/Members/$entity",
+					Privileges: map[string]interface{}{
+						"GET":    []string{"Login"},
+						"POST":   []string{}, // cannot create sub objects
+						"PUT":    []string{},
+						"PATCH":  []string{"ConfigureManager"},
+						"DELETE": []string{}, // can't be deleted
+					},
+					Properties: map[string]interface{}{
+						"@odata.etag@meta":  vw.Meta(view.GETProperty("etag"), view.GETModel("etag")),
+						"Id@meta":           vw.Meta(view.PropGET("unique_name")),
+						"AssetTag":          nil,
+						"SerialNumber@meta": vw.Meta(view.PropGET("serial")),      //uses sys.chas.1 ar value
+						"PartNumber@meta":   vw.Meta(view.PropGET("part_number")), //uses sys.chas.1 ar value
+						"ChassisType@meta":  vw.Meta(view.PropGET("chassis_type")),
+						"Model@meta":        vw.Meta(view.PropGET("model")),
+						"Manufacturer@meta": vw.Meta(view.PropGET("manufacturer")),
+						"Name@meta":         vw.Meta(view.PropGET("name")),
+						"SKU":               nil,
+						"Description@meta":  vw.Meta(view.PropGET("description")),
+						"Links":             map[string]interface{}{},
+						"Status": map[string]interface{}{
+							"HealthRollup@meta": vw.Meta(view.PropGET("health")),
+							"State@meta":        vw.Meta(view.PropGET("health_state")),
+							"Health@meta":       vw.Meta(view.PropGET("health")),
+						},
+						"IndicatorLED": "Blinking", // static.  MSM does a patch operation and reads from attributes
+						"Oem": map[string]interface{}{
+							"OemChassis": map[string]interface{}{
+								"@odata.id": vw.GetURI() + "/Attributes",
+							},
+						},
+					}}}, nil
+		})
 }

@@ -501,6 +501,7 @@ views:
           "params":
         - "fn": "etag"
           "params": []
+      "Aggregate": "chassis_cmc_integrated"
       "ExecPost": [
         "instantiate('attributes', 'parenturi', rooturi + '/Chassis/' + FQDD, 'FQDD', FQDD)"
         ]
