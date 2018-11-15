@@ -19,15 +19,11 @@ import (
 	"github.com/superchalupa/sailfish/src/dell-resources/attributes"
 	"github.com/superchalupa/sailfish/src/dell-resources/certificateservices"
 	chasCMCIntegrated "github.com/superchalupa/sailfish/src/dell-resources/chassis/cmc.integrated"
-	iom_chassis "github.com/superchalupa/sailfish/src/dell-resources/chassis/iom.slot"
-	iom_config "github.com/superchalupa/sailfish/src/dell-resources/chassis/iom.slot/iomconfig"
 	system_chassis "github.com/superchalupa/sailfish/src/dell-resources/chassis/system.chassis"
-	"github.com/superchalupa/sailfish/src/dell-resources/chassis/system.chassis/power/powercontrol"
 	"github.com/superchalupa/sailfish/src/dell-resources/chassis/system.chassis/power/powersupply"
 	"github.com/superchalupa/sailfish/src/dell-resources/chassis/system.chassis/subsystemhealth"
 	"github.com/superchalupa/sailfish/src/dell-resources/chassis/system.chassis/thermal"
 	"github.com/superchalupa/sailfish/src/dell-resources/chassis/system.chassis/thermal/fans"
-	sled_chassis "github.com/superchalupa/sailfish/src/dell-resources/chassis/system.modular"
 	"github.com/superchalupa/sailfish/src/dell-resources/logservices"
 	"github.com/superchalupa/sailfish/src/dell-resources/logservices/faultlist"
 	"github.com/superchalupa/sailfish/src/dell-resources/logservices/lcl"
@@ -35,7 +31,6 @@ import (
 	"github.com/superchalupa/sailfish/src/dell-resources/redundancy"
 	"github.com/superchalupa/sailfish/src/dell-resources/registries"
 	"github.com/superchalupa/sailfish/src/dell-resources/update_service"
-	"github.com/superchalupa/sailfish/src/dell-resources/update_service/firmware_inventory"
 	"github.com/superchalupa/sailfish/src/eventwaiter"
 	"github.com/superchalupa/sailfish/src/log"
 	"github.com/superchalupa/sailfish/src/ocp/awesome_mapper2"
@@ -68,8 +63,6 @@ func (o *ocp) ConfigChangeHandler() { o.configChangeHandler() }
 func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, ch eh.CommandHandler, eb eh.EventBus, d *domain.DomainObjects) *ocp {
 	logger = logger.New("module", "ec")
 	self := &ocp{}
-
-	swinvViews := []*view.View{}
 
 	// These three all set up a waiter for the root service to appear, so init root service after.
 	actionhandler.Setup(ctx, ch, eb)
@@ -110,6 +103,8 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	thermal.RegisterAggregate(instantiateSvc)
 
 	RegisterAggregate(instantiateSvc)
+	RegisterIOMAggregate(instantiateSvc)
+	RegisterSledAggregate(instantiateSvc)
 
 	// add mapper helper to instantiate
 	awesome_mapper2.AddFunction("instantiate", func(args ...interface{}) (interface{}, error) {
@@ -154,7 +149,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 		map[string]interface{}{
 			"rooturi":           rooturi,
 			"globalHealthModel": globalHealthModel,
-			"swinvViews":        swinvViews,
 		})
 
 	//*********************************************************************
@@ -207,7 +201,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 		)
 
 		managers = append(managers, mgrCmcVw)
-		swinvViews = append(swinvViews, mgrCmcVw)
 
 		// add the aggregate to the view tree
 		mgrCMCIntegrated.AddAggregate(ctx, mgrLogger, mgrCmcVw, ch)
@@ -259,7 +252,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 				"FQDD":                   chasName,
 				"msmConfigBackup":        view.Action(msmConfigBackup),
 				"chassisMSMConfigBackup": view.Action(chassisMSMConfigBackup),
-				"managed_by":             []string{managers[0].GetURI()},
 			},
 		)
 
@@ -289,30 +281,27 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 		// # Power Control
 		// ##################
 
-		pwrCtrlLogger, sysChasPwrCtrlVw, _ := instantiateSvc.Instantiate("power_control",
+		instantiateSvc.Instantiate("power_control",
 			map[string]interface{}{
 				"FQDD":                chasName,
 				"power_related_items": d.FindMatchingURIs(func(uri string) bool { return path.Dir(uri) == rooturi+"/Chassis" }),
 			})
-		powercontrol.AddAggregate(ctx, pwrCtrlLogger, sysChasPwrCtrlVw, ch)
 
 		//*********************************************************************
 		// Create Thermal objects for System.Chassis.1
 		//*********************************************************************
-		instantiateSvc.Instantiate("thermal", map[string]interface{}{"FQDD": chasName})
 
 		for _, fanName := range []string{
 			"Fan.Slot.1", "Fan.Slot.2", "Fan.Slot.3",
 			"Fan.Slot.4", "Fan.Slot.5", "Fan.Slot.6",
 			"Fan.Slot.7", "Fan.Slot.8", "Fan.Slot.9",
 		} {
-			_, fanView, _ := instantiateSvc.Instantiate("fan",
+			instantiateSvc.Instantiate("fan",
 				map[string]interface{}{
 					"ChassisFQDD": chasName,
 					"FQDD":        fanName,
 				},
 			)
-			swinvViews = append(swinvViews, fanView)
 		}
 
 		//*********************************************************************
@@ -351,27 +340,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 		"IOM.Slot.C1",
 		"IOM.Slot.C2",
 	} {
-		iomLogger, iomView, _ := instantiateSvc.Instantiate("iom",
-			map[string]interface{}{
-				"FQDD":       iomName,
-				"managed_by": []string{managers[0].GetURI()},
-			},
-		)
-
-		swinvViews = append(swinvViews, iomView)
-		iom_chassis.AddAggregate(ctx, iomLogger, iomView, ch, eb)
-
-		// ************************************************************************
-		// CHASSIS IOMConfiguration
-		// ************************************************************************
-		iomCfgLogger, iomCfgView, _ := instantiateSvc.Instantiate("iom_config",
-			map[string]interface{}{
-				"FQDD": iomName,
-				// MEB: this doesnt appear to be used at all (ie. there is no AM2 health mapper attached in the config)
-				//"health_fqdd": "System.Chassis.1#SubSystem.1#" + iomName,
-			},
-		)
-		iom_config.AddAggregate(ctx, iomCfgLogger, iomCfgView, ch, eb)
+		instantiateSvc.Instantiate("iom", map[string]interface{}{"FQDD": iomName})
 	}
 
 	for _, sledName := range []string{
@@ -384,14 +353,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 		"System.Modular.7", "System.Modular.7a", "System.Modular.7b",
 		"System.Modular.8", "System.Modular.8a", "System.Modular.8b",
 	} {
-		sledLogger, sledView, _ := instantiateSvc.Instantiate("sled",
-			map[string]interface{}{
-				"FQDD":       sledName,
-				"managed_by": []string{managers[0].GetURI()},
-			},
-		)
-
-		sled_chassis.AddAggregate(ctx, sledLogger, sledView, ch, eb)
+		instantiateSvc.Instantiate("sled", map[string]interface{}{"FQDD": sledName})
 	}
 
 	{
@@ -406,205 +368,17 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 			view.WithURI(rootView.GetURI()+"/UpdateService"),
 			view.WithModel("default", mdl),
 			view.WithController("ar_mapper", armapper),
-			actionSvc.WithAction(ctx, "update.reset", "/Actions/Oem/DellUpdateService.Reset", pumpSvc.NewPumpAction(30)),
-			actionSvc.WithAction(ctx, "update.eid674.reset", "/Actions/Oem/EID_674_UpdateService.Reset", pumpSvc.NewPumpAction(30)),
+			actionSvc.WithAction(ctx, "update.reset", "/Actions/Oem/DellUpdateService.Reset", updateReset),
+			actionSvc.WithAction(ctx, "update.eid674.reset", "/Actions/Oem/EID_674_UpdateService.Reset", updateEID674Reset),
 			actionSvc.WithAction(ctx, "update.syncup", "/Actions/Oem/DellUpdateService.Syncup", pumpSvc.NewPumpAction(30)),
 			actionSvc.WithAction(ctx, "update.eid674.syncup", "/Actions/Oem/EID_674_UpdateService.Syncup", pumpSvc.NewPumpAction(30)),
-			uploadSvc.WithUpload(ctx, "upload.firmwareUpdate", "/FirmwareInventory", pumpSvc.NewPumpAction(300)),
+			uploadSvc.WithUpload(ctx, "upload.firmwareUpdate", "/FirmwareInventory", pumpSvc.NewPumpAction(60)),
 			evtSvc.PublishResourceUpdatedEventsForModel(ctx, "default"),
 		)
 
 		// add the aggregate to the view tree
 		update_service.AddAggregate(ctx, rootView, updSvcVw, ch)
 		update_service.EnhanceAggregate(ctx, updSvcVw, rootView, ch)
-	}
-
-	//
-	// Software Inventory
-	//
-	inv := map[string]*view.View{}
-	model2View := map[*model.Model]*view.View{}
-	swMu := sync.Mutex{}
-
-	// Purpose of this function is to make a list of all of the firmware
-	// inventory models and then create a reverse-mapping for the updateservice
-	// firmwareinventory
-	//
-	// TODO: "QuickSync.Chassis.1"
-	// TODO: "LCD.Chassis.1"
-	// TODO: "ControlPanel.Chassis.1"
-	// TODO: "CMC.Integrated.1" / "FPGAFWInventory"
-	// TODO: "CMC.Integrated.2" / "FPGAFWInventory"
-	//
-	// DONE: "Fan.Slot.1"
-	// DONE: "IOM.Slot.A1a"
-	// DONE: "PSU.Slot.1"
-	// DONE: "CMC.Integrated.1"
-
-	obsLogger := logger.New("module", "observer")
-	// IMPORTANT: this function is called with the model lock held! You can't
-	// call any functions on the model that take the model lock, or it will
-	// deadlock.
-	fn := func(mdl *model.Model, property string, newValue interface{}) {
-		obsLogger.Info("observer entered", "model", mdl, "property", property, "newValue", newValue)
-
-		classRaw, ok := mdl.GetPropertyOkUnlocked("fw_device_class")
-		if !ok || classRaw == nil {
-			obsLogger.Debug("DID NOT GET device_class raw")
-			return
-		}
-
-		class, ok := classRaw.(string)
-		if !ok || class == "" {
-			obsLogger.Debug("DID NOT GET class string")
-			return
-		}
-
-		versionRaw, ok := mdl.GetPropertyOkUnlocked("fw_version")
-		if !ok || versionRaw == nil {
-			obsLogger.Debug("DID NOT GET version raw")
-			return
-		}
-
-		version, ok := versionRaw.(string)
-		if !ok || version == "" {
-			obsLogger.Debug("DID NOT GET version string")
-			return
-		}
-
-		fqddRaw, ok := mdl.GetPropertyOkUnlocked("fw_fqdd")
-		if !ok || fqddRaw == nil {
-			obsLogger.Debug("DID NOT GET fqdd raw")
-			return
-		}
-
-		fqdd, ok := fqddRaw.(string)
-		if !ok || fqdd == "" {
-			obsLogger.Debug("DID NOT GET fqdd string")
-			return
-		}
-
-		swMu.Lock()
-		defer swMu.Unlock()
-
-		obsLogger.Info("GOT FULL SWVERSION INFO", "model", mdl, "property", property, "newValue", newValue)
-
-		comp_ver_tuple := class + "-" + version
-
-		fw_fqdd_list := []string{fqdd}
-		fw_related_list := []map[string]interface{}{}
-
-		invview, ok := inv[comp_ver_tuple]
-		if !ok {
-			// didn't previously have a view/model for this version/componentid, so make one
-			//
-			obsLogger.Info("No previous view, creating a new view.", "tuple", comp_ver_tuple)
-			invmdl := model.New(
-				model.UpdateProperty("fw_id", "Installed-"+comp_ver_tuple),
-			)
-
-			invview = view.New(
-				view.WithURI(rootView.GetURI()+"/UpdateService/FirmwareInventory/Installed-"+comp_ver_tuple),
-				view.WithModel("swinv", mdl),
-				view.WithModel("firm", invmdl),
-				// TODO: oops, no clue why, but this deadlocks for some insane reason
-				//evtSvc.PublishResourceUpdatedEventsForModel(ctx, "firm"),
-
-				// TODO: oops, can't set up this observer without deadlocking
-				// need to figure this one out. This deadlocks taking the lock to add observer
-				//				evtSvc.PublishResourceUpdatedEventsForModel(ctx, "swinv"),
-
-				// TODO: need this to work at some point...
-				//uploadSvc.WithUpload...
-			)
-
-			inv[comp_ver_tuple] = invview
-			firmware_inventory.AddAggregate(ctx, rootView, invview, ch)
-
-			fw_related_list = append(fw_related_list, map[string]interface{}{"@odata.id": model2View[mdl].GetURI()})
-		} else {
-			obsLogger.Info("UPDATING previous view.", "tuple", comp_ver_tuple)
-
-			// we have an existing view/model, so add our uniqueness to theirs
-			firm_mdl := invview.GetModel("firm")
-			if firm_mdl == nil {
-				obsLogger.Info("Programming error: got an inventory view that doesn't have a 'firm' model. Should not be able to happen.", "tuple", comp_ver_tuple)
-				return
-			}
-
-			raw_fqdd_list, ok := firm_mdl.GetPropertyOk("fw_fqdd_list")
-			if !ok {
-				raw_fqdd_list = []string{fqdd}
-			}
-			fw_fqdd_list, ok = raw_fqdd_list.([]string)
-			if !ok {
-				fw_fqdd_list = []string{fqdd}
-			}
-			obsLogger.Info("PREVIOUS FQDD LIST.", "fw_fqdd_list", fw_fqdd_list)
-
-			add := true
-			for _, m := range fw_fqdd_list {
-				if m == fqdd {
-					add = false
-					break
-				}
-			}
-			if add {
-				fw_fqdd_list = append(fw_fqdd_list, fqdd)
-			}
-
-			raw_related_list, ok := firm_mdl.GetPropertyOk("fw_related_list")
-			if !ok {
-				raw_related_list = []map[string]interface{}{}
-			}
-
-			fw_related_list, ok = raw_related_list.([]map[string]interface{})
-			if !ok {
-				fw_related_list = []map[string]interface{}{}
-			}
-
-			obsLogger.Info("PREVIOUS related LIST.", "fw_related_list", fw_related_list)
-
-			add = true
-			for _, m := range fw_related_list {
-				if m["@odata.id"] == model2View[mdl].GetURI() {
-					add = false
-					break
-				}
-			}
-			if add {
-				fw_related_list = append(fw_related_list, map[string]interface{}{"@odata.id": model2View[mdl].GetURI()})
-			}
-		}
-
-		firm_mdl := invview.GetModel("firm")
-		firm_mdl.ApplyOption(
-			model.UpdateProperty("fw_fqdd_list", fw_fqdd_list),
-			model.UpdateProperty("fw_related_list", fw_related_list),
-
-			// TODO: remove these after this section has been moved to instantiate
-			model.UpdateProperty("fw_fqdd_list_count", len(fw_fqdd_list)),
-			model.UpdateProperty("fw_related_list_count", len(fw_related_list)),
-		)
-
-		obsLogger.Info("updated inventory view", "invview", invview, "fw_fqdd_list", fw_fqdd_list, "fw_related_list", fw_related_list)
-
-		// TODO: delete any old copies of this model in the tree
-	}
-
-	fn2 := func(mdl *model.Model, updates []model.Update) {
-		for _, up := range updates {
-			fn(mdl, up.Property, up.NewValue)
-		}
-	}
-
-	// Set up observers for each swinv model
-	obsLogger.Info("Setting up observers", "swinvviews", swinvViews)
-	for _, swinvView := range swinvViews {
-		// going to assume each view has swinv model at 'swinv'
-		mdl := swinvView.GetModel("swinv")
-		mdl.AddObserver("swinv", fn2)
-		model2View[mdl] = swinvView
 	}
 
 	// VIPER Config:

@@ -529,7 +529,7 @@ views:
   "system_chassis":
       "Logger": ["module", "system_chassis"]
       "Models":
-        "default":  {"unique_name": "FQDD", "managed_by": "managed_by"}
+        "default":  {"unique_name": "FQDD", "managed_by": "array(rooturi + '/Managers/CMC.Integrated.1')"}
       "Controllers":
         - "fn": "ARMapper"
           "params": {"modelname": "default", "cfgsection": "Chassis/System.Chassis", "mappinguniquename": "'system_chassis:' + FQDD ", "AddToView": "ar_mapper"}
@@ -551,6 +551,7 @@ views:
       "ExecPost": [
         "instantiate('attributes', 'parenturi', rooturi + '/Chassis/' + FQDD, 'FQDD', FQDD)",
         "instantiate('power', 'parenturi', rooturi + '/Chassis/' + FQDD, 'FQDD', FQDD)",
+        "instantiate('thermal', 'parenturi', rooturi + '/Chassis/' + FQDD, 'FQDD', FQDD)",
         ]
 
   "power":
@@ -627,6 +628,7 @@ views:
           "params": "default"
         - "fn": "stdFormatters"
           "params":
+      "Aggregate": "power_control"
 
   "power_trends":
       "Logger": ["module", "PowerTrends"]
@@ -710,7 +712,7 @@ views:
   "iom":
       "Logger": ["module", "IOM"]
       "Models":
-        "default":  {"unique_name": "FQDD", "managed_by": "managed_by"}
+        "default":  {"unique_name": "FQDD", "managed_by": "array(rooturi + '/Managers/CMC.Integrated.1')"}
       "Controllers":
         - "fn": "ARMapper"
           "params": {"modelname": "default", "cfgsection": "firmware/inventory", "mappinguniquename": "'iom_fw_mapper:' + FQDD", "AddToView": "ar_mapper_inv"}
@@ -739,8 +741,10 @@ views:
           "params": {"name": "iom.resetpeakpowerconsumption", "uri": "/Actions/Oem/DellChassis.ResetPeakPowerConsumption", "timeout": 30}
         - "fn": "with_PumpHandledAction"
           "params": {"name": "iom.virtualreseat", "uri": "/Actions/Oem/DellChassis.VirtualReseat", "timeout": 30}
+      "Aggregate": "iom"
       "ExecPost": [
-        "instantiate('attributes', 'parenturi', rooturi + '/Chassis/' + FQDD, 'FQDD', FQDD)"
+        "instantiate('attributes', 'parenturi', rooturi + '/Chassis/' + FQDD, 'FQDD', FQDD)",
+        "instantiate('iom_config', 'FQDD', FQDD)",
         ]
 
   "iom_config":
@@ -757,6 +761,7 @@ views:
           "params": "default"
         - "fn": "with_PumpHandledAction"
           "params": {"name": "IOMConfig_objects", "uri": "", "timeout": 30}
+      "Aggregate": "iom_config"
 
   "subsyshealth":
       "Logger": ["module", "subsyshealth"]
@@ -818,7 +823,6 @@ views:
           "params":
       "Aggregate": "slotconfigcollection"
 
-
   "slotconfig":
       "Logger": ["module", "slotconfig"]
       "Models":
@@ -836,7 +840,7 @@ views:
   "sled":
       "Logger": ["module", "Sled"]
       "Models":
-        "default":  {"unique_name": "FQDD", "managed_by": "managed_by"}
+        "default":  {"unique_name": "FQDD", "managed_by": "array(rooturi + '/Managers/CMC.Integrated.1')"}
       "Controllers":
         - "fn": "ARMapper"
           "params": {"modelname": "default", "cfgsection": "firmware/inventory", "mappinguniquename": "'sled_fw_mapper:' + FQDD", "AddToView": "ar_mapper_inv"}
@@ -863,6 +867,7 @@ views:
           "params": {"name": "sledvirtualreseat", "uri": "/Actions/Chassis.VirtualReseat", "timeout": 30}
         - "fn": "with_PumpHandledAction"
           "params": {"name": "chassis.sledvirtualreseat", "uri": "/Actions/Oem/DellChassis.VirtualReseat", "timeout": 30}
+      "Aggregate": "sled"
       "ExecPost": [
         "instantiate('attributes', 'parenturi', rooturi + '/Chassis/' + FQDD, 'FQDD', FQDD)"
         ]
