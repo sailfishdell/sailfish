@@ -19,6 +19,10 @@ listen:
 views:
   "rootview":
       "Logger": ["module", "root"]
+      "Controllers":
+        # This is for dynamic runtime instantiation of new chassis as they appear
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "ec_component_events", "uniquename": "'idrac_system_chassis_' + view.GetURI()"}
       "View":
         - "fn": "with_URI"
           "params": "'/redfish/v1'"
@@ -545,7 +549,8 @@ views:
         - "fn": "WithAction"
           "params": {"name": "chassis.msmconfigbackup", "uri": "/Actions/Oem/DellChassis.MSMConfigBackup", "actionFunction": "chassisMSMConfigBackup"}
       "ExecPost": [
-        "instantiate('attributes', 'parenturi', rooturi + '/Chassis/' + FQDD, 'FQDD', FQDD)"
+        "instantiate('attributes', 'parenturi', rooturi + '/Chassis/' + FQDD, 'FQDD', FQDD)",
+        "instantiate('power', 'parenturi', rooturi + '/Chassis/' + FQDD, 'FQDD', FQDD)",
         ]
 
   "power":
@@ -565,11 +570,12 @@ views:
         - "fn": "withModel"
           "params": {"name": "global_health", "expr": "globalHealthModel"}
         - "fn": "with_URI"
-          "params": "rooturi + '/Chassis/' + FQDD + '/Power'"
+          "params": "parenturi + '/Power'"
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
         - "fn": "stdFormatters"
           "params":
+      "Aggregate": "power"
       "ExecPost": [
         "instantiate('power_trends', 'FQDD', FQDD)",
         "instantiate('power_histogram', 'FQDD', FQDD, 'trend', 'Hour')",
@@ -862,6 +868,13 @@ views:
         ]
 
 awesome_mapper:
+    ec_component_events:
+      - { SelectEventType: "ComponentEvent",
+          Select: "true",
+          Exec: [
+            #"data.Type == 'iDRAC' && addidrac_embedded(data.FQDD)",
+                ]}
+
     collection:
       - { SelectEventType: "RedfishResource:created",
           Select: "nohash(data.ResourceURI) && baseuri(data.ResourceURI) == collection_uri ",

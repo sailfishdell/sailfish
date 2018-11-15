@@ -1,19 +1,55 @@
-package powertrends
+package dell_ec
 
 import (
 	"context"
 	"sync"
 
+	eh "github.com/looplab/eventhorizon"
 	"github.com/spf13/viper"
+
 	"github.com/superchalupa/sailfish/src/log"
 	"github.com/superchalupa/sailfish/src/ocp/testaggregate"
 	"github.com/superchalupa/sailfish/src/ocp/view"
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
-
-	eh "github.com/looplab/eventhorizon"
 )
 
 func RegisterAggregate(s *testaggregate.Service) {
+	s.RegisterAggregateFunction("power",
+		func(ctx context.Context, subLogger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, vw *view.View, extra interface{}, params map[string]interface{}) ([]eh.Command, error) {
+			return []eh.Command{
+				&domain.CreateRedfishResource{
+					ResourceURI: vw.GetURI(),
+					Type:        "#Power.v1_0_2.Power",
+					Context:     params["rooturi"].(string) + "/redfish/v1/$metadata#Power.PowerSystem.Chassis.1/Power/$entity",
+					Privileges: map[string]interface{}{
+						"GET": []string{"Unauthenticated"},
+					},
+					Properties: map[string]interface{}{
+						"Id":          "Power",
+						"Description": "Power",
+						"Name":        "Power",
+						"@odata.etag": `W/"abc123"`,
+
+						"PowerSupplies@meta":             vw.Meta(view.GETProperty("power_supply_uris"), view.GETFormatter("expand"), view.GETModel("default")),
+						"PowerSupplies@odata.count@meta": vw.Meta(view.GETProperty("power_supply_uris"), view.GETFormatter("count"), view.GETModel("default")),
+						"PowerControl@meta":              vw.Meta(view.GETProperty("power_control_uris"), view.GETFormatter("expand"), view.GETModel("default")),
+						"PowerControl@odata.count@meta":  vw.Meta(view.GETProperty("power_control_uris"), view.GETFormatter("count"), view.GETModel("default")),
+						"Oem": map[string]interface{}{
+							"OemPower": map[string]interface{}{
+								"PowerTrends@meta":        vw.Meta(view.GETProperty("power_trends_uri"), view.GETFormatter("expandone"), view.GETModel("default")),
+								"PowerTrends@odata.count": 7, // TODO: Fix this, it's wrong... this shoulndt even be here
+							},
+							"EID_674": map[string]interface{}{
+								"PowerSuppliesSummary": map[string]interface{}{
+									"Status": map[string]interface{}{
+										"HealthRollup@meta": vw.Meta(view.GETProperty("psu_rollup"), view.GETModel("global_health")),
+									},
+								},
+							},
+						}}},
+			}, nil
+		})
+
 	s.RegisterAggregateFunction("power_trends",
 		func(ctx context.Context, subLogger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, vw *view.View, extra interface{}, params map[string]interface{}) ([]eh.Command, error) {
 			return []eh.Command{
@@ -63,4 +99,5 @@ func RegisterAggregate(s *testaggregate.Service) {
 					}},
 			}, nil
 		})
+
 }

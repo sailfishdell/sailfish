@@ -22,10 +22,8 @@ import (
 	iom_chassis "github.com/superchalupa/sailfish/src/dell-resources/chassis/iom.slot"
 	iom_config "github.com/superchalupa/sailfish/src/dell-resources/chassis/iom.slot/iomconfig"
 	system_chassis "github.com/superchalupa/sailfish/src/dell-resources/chassis/system.chassis"
-	"github.com/superchalupa/sailfish/src/dell-resources/chassis/system.chassis/power"
 	"github.com/superchalupa/sailfish/src/dell-resources/chassis/system.chassis/power/powercontrol"
 	"github.com/superchalupa/sailfish/src/dell-resources/chassis/system.chassis/power/powersupply"
-	"github.com/superchalupa/sailfish/src/dell-resources/chassis/system.chassis/power/powertrends"
 	"github.com/superchalupa/sailfish/src/dell-resources/chassis/system.chassis/subsystemhealth"
 	"github.com/superchalupa/sailfish/src/dell-resources/chassis/system.chassis/thermal"
 	"github.com/superchalupa/sailfish/src/dell-resources/chassis/system.chassis/thermal/fans"
@@ -110,7 +108,8 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	attributes.RegisterAggregate(instantiateSvc)
 	fans.RegisterAggregate(instantiateSvc)
 	thermal.RegisterAggregate(instantiateSvc)
-	powertrends.RegisterAggregate(instantiateSvc)
+
+	RegisterAggregate(instantiateSvc)
 
 	// add mapper helper to instantiate
 	awesome_mapper2.AddFunction("instantiate", func(args ...interface{}) (interface{}, error) {
@@ -269,17 +268,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 		// CMC.INTEGRATED.1 INTERLUDE
 		managers[0].GetModel("default").UpdateProperty("manager_for_chassis", []string{sysChasVw.GetURI()})
 
-		//*********************************************************************
-		// Create Power objects for System.Chassis.1
-		//*********************************************************************
-		powerLogger, sysChasPwrVw, _ := instantiateSvc.Instantiate("power",
-			map[string]interface{}{
-				"FQDD": chasName,
-			},
-		)
-
-		power.AddAggregate(ctx, powerLogger, sysChasPwrVw, ch)
-
 		for _, psuName := range []string{
 			"PSU.Slot.1", "PSU.Slot.2", "PSU.Slot.3",
 			"PSU.Slot.4", "PSU.Slot.5", "PSU.Slot.6",
@@ -294,7 +282,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 				},
 			)
 
-			swinvViews = append(swinvViews, sysChasPwrPsuVw)
 			powersupply.AddAggregate(ctx, psuLogger, sysChasPwrPsuVw, ch)
 		}
 
