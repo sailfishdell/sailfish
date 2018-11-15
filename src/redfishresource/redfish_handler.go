@@ -246,6 +246,10 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add(k, v)
 	}
 
+	if data.StatusCode != 0 {
+		w.WriteHeader(data.StatusCode)
+	}
+
 	addEtag(w, data)
 
 	/*
