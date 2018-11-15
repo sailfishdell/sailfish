@@ -156,15 +156,22 @@ func CountFormatter(
 func FormatOdataList(ctx context.Context, v *view.View, m *model.Model, rrp *domain.RedfishResourceProperty, meta map[string]interface{}) error {
 	p, ok := meta["property"].(string)
 
-	uris, ok := m.GetProperty(p).([]string)
+	uris, ok := m.GetPropertyOk(p)
 	if !ok {
 		uris = []string{}
 	}
 
-	// TODO: make this parse array using reflect
 	odata := []interface{}{}
-	for _, i := range uris {
-		odata = append(odata, map[string]interface{}{"@odata.id": i})
+
+	switch u := uris.(type) {
+	case []string:
+		for _, i := range u {
+			odata = append(odata, map[string]interface{}{"@odata.id": i})
+		}
+	case []interface{}:
+		for _, i := range u {
+			odata = append(odata, map[string]interface{}{"@odata.id": i})
+		}
 	}
 
 	rrp.Value = odata
