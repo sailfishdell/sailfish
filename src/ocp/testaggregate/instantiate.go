@@ -41,7 +41,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 		}
 	}
 
-	work := make(chan func(), 50)
+	work := make(chan func(), 200)
 	go DoWork(work)
 
 	return &Service{

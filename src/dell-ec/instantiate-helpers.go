@@ -62,6 +62,49 @@ func AddECInstantiate(l log.Logger, instantiateSvc *testaggregate.Service) {
 		return true, nil
 	})
 
+	MakeMaker(l, "ecfan", func(args ...interface{}) (interface{}, error) {
+		ParentFQDD, ok := args[1].(string)
+		if !ok {
+			return nil, errors.New("Need a string fqdd for addecfan(), but didnt get one")
+		}
+		FQDD, ok := args[2].(string)
+		if !ok {
+			return nil, errors.New("Need a string fqdd for addecfan(), but didnt get one")
+		}
+
+		// have to do this in a goroutine because awesome mapper is locked while it processes events
+		go instantiateSvc.Instantiate("fan",
+			map[string]interface{}{
+				"ChassisFQDD": ParentFQDD,
+				"FQDD":        FQDD,
+			},
+		)
+
+		return true, nil
+	})
+
+	MakeMaker(l, "ecpsu", func(args ...interface{}) (interface{}, error) {
+		ParentFQDD, ok := args[1].(string)
+		if !ok {
+			return nil, errors.New("Need a string fqdd for addecpsu(), but didnt get one")
+		}
+		FQDD, ok := args[2].(string)
+		if !ok {
+			return nil, errors.New("Need a string fqdd for addecpsu(), but didnt get one")
+		}
+
+		// have to do this in a goroutine because awesome mapper is locked while it processes events
+		go instantiateSvc.Instantiate("psu_slot",
+			map[string]interface{}{
+				"DM_FQDD":     "System.Chassis.1#" + strings.Replace(FQDD, "PSU.Slot", "PowerSupply", 1),
+				"ChassisFQDD": ParentFQDD,
+				"FQDD":        FQDD,
+			},
+		)
+
+		return true, nil
+	})
+
 	MakeMaker(l, "slot", func(args ...interface{}) (interface{}, error) {
 		ParentFQDD, ok := args[1].(string)
 		if !ok {

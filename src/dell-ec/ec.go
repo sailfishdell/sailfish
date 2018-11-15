@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"path"
-	"strings"
 	"sync"
 
 	"github.com/spf13/viper"
@@ -248,44 +247,12 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 
 		subSystemSvc.StartService(ctx, logger, sysChasVw, cfgMgr, cfgMgrMu, instantiateSvc)
 
-		for _, psuName := range []string{
-			"PSU.Slot.1", "PSU.Slot.2", "PSU.Slot.3",
-			"PSU.Slot.4", "PSU.Slot.5", "PSU.Slot.6",
-		} {
-
-			instantiateSvc.Instantiate("psu_slot",
-				map[string]interface{}{
-					// Need to move this to awesome mapper but dont yet have a string replace function exported
-					"DM_FQDD":     "System.Chassis.1#" + strings.Replace(psuName, "PSU.Slot", "PowerSupply", 1),
-					"FQDD":        psuName,
-					"ChassisFQDD": chasName,
-				},
-			)
-		}
-
 		// the rest of power uris are automatically created. need to add an awesome mapper function for FindMatchingURIs to migrate this one
 		instantiateSvc.Instantiate("power_control",
 			map[string]interface{}{
 				"FQDD":                chasName,
 				"power_related_items": d.FindMatchingURIs(func(uri string) bool { return path.Dir(uri) == rooturi+"/Chassis" }),
 			})
-
-		//*********************************************************************
-		// Create Thermal objects for System.Chassis.1
-		//*********************************************************************
-
-		for _, fanName := range []string{
-			"Fan.Slot.1", "Fan.Slot.2", "Fan.Slot.3",
-			"Fan.Slot.4", "Fan.Slot.5", "Fan.Slot.6",
-			"Fan.Slot.7", "Fan.Slot.8", "Fan.Slot.9",
-		} {
-			instantiateSvc.Instantiate("fan",
-				map[string]interface{}{
-					"ChassisFQDD": chasName,
-					"FQDD":        fanName,
-				},
-			)
-		}
 	}
 
 	{

@@ -712,7 +712,7 @@ views:
           "params":
       "Aggregate": "fan"
       "ExecPost": [
-        "instantiate('attributes', 'parenturi', rooturi + '/Chassis/' + ChassisFQDD + '/Sensors/Fans/' + FQDD, 'FQDD', FQDD)"
+        "instantiate('attributes', 'parenturi', rooturi + '/Chassis/' + ChassisFQDD + '/Sensors/Fans/' + FQDD, 'FQDD', FQDD)",
         ]
 
   "iom":
@@ -879,10 +879,12 @@ awesome_mapper:
       - { SelectEventType: "ComponentEvent",
           Select: "true",
           Exec: [
-            "data.Type == 'ECIOM'     && addiom(data.FQDD)",
+            "data.Type == 'ECIOM'      && addiom(data.FQDD)",
             "data.Type == 'ECSled'     && addec_system_modular(data.FQDD)",
-            "data.Type == 'Slot'       && addslot( data.ParentFQDD + ':' + data.FQDD, data.FQDD, data.ParentFQDD)",
-            "data.Type == 'SlotConfig' && addslotconfig( data.ParentFQDD + ':' + data.FQDD, data.FQDD, data.ParentFQDD)",
+            "data.Type == 'ECFan'      && addecfan( data.ParentFQDD + ':' + data.FQDD, data.ParentFQDD, data.FQDD)",
+            "data.Type == 'ECPSU'      && addecpsu( data.ParentFQDD + ':' + data.FQDD, data.ParentFQDD, data.FQDD)",
+            "data.Type == 'Slot'       && addslot( data.ParentFQDD + ':' + data.FQDD, data.ParentFQDD, data.FQDD)",
+            "data.Type == 'SlotConfig' && addslotconfig( data.ParentFQDD + ':' + data.FQDD, data.ParentFQDD, data.FQDD)",
                 ]}
 
     collection:
