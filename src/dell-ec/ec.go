@@ -101,6 +101,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	RegisterSledAggregate(instantiateSvc)
 	RegisterThermalAggregate(instantiateSvc)
 	RegisterCMCAggregate(instantiateSvc)
+	AddECInstantiate(logger, instantiateSvc)
 
 	// add mapper helper to instantiate
 	awesome_mapper2.AddFunction("instantiate", func(args ...interface{}) (interface{}, error) {
@@ -189,7 +190,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 		//*********************************************************************
 		_, mgrCmcVw, _ := instantiateSvc.Instantiate("manager_cmc_integrated",
 			map[string]interface{}{
-				"FQDD":                             mgrName,
+				"FQDD": mgrName,
 				"exportSystemConfiguration":        view.Action(exportSystemConfiguration),
 				"importSystemConfiguration":        view.Action(importSystemConfiguration),
 				"importSystemConfigurationPreview": view.Action(importSystemConfigurationPreview),
@@ -246,11 +247,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 		)
 
 		subSystemSvc.StartService(ctx, logger, sysChasVw, cfgMgr, cfgMgrMu, instantiateSvc)
-		slots.CreateSlotCollection(ctx, sysChasVw, cfgMgr, cfgMgrMu, instantiateSvc)
-		slots.CreateSlotConfigCollection(ctx, sysChasVw, cfgMgr, cfgMgrMu, instantiateSvc)
-
-		// CMC.INTEGRATED.1 INTERLUDE
-		managers[0].GetModel("default").UpdateProperty("manager_for_chassis", []string{sysChasVw.GetURI()})
 
 		for _, psuName := range []string{
 			"PSU.Slot.1", "PSU.Slot.2", "PSU.Slot.3",
@@ -290,52 +286,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 				},
 			)
 		}
-
-		//*********************************************************************
-		// Create SubSystemHealth for System.Chassis.1
-		//*********************************************************************
-		/*
-			subSysHealthLogger := sysChasLogger.New("module", "Chassis/System.Chassis/SubSystemHealth")
-			subSysHealthModel := model.New()
-
-			armapper := arService.NewMapping(subSysHealthLogger, "Chassis/"+chasName+"/SubSystemHealth", "Chassis/SubSystemHealths", subSysHealthModel, map[string]string{})
-
-			subSysHealthView := view.New(
-				view.WithURI(rootView.GetURI()+"/Chassis/"+chasName+"/SubSystemHealth"),
-				view.WithModel("default", subSysHealthModel),
-				view.WithController("ar_mapper", armapper),
-			)
-			subsystemhealth.AddAggregate(ctx, subSysHealthLogger, subSysHealthView, ch, eb)
-		*/
-
-		/* SubSystemHealth */
-	}
-
-	// ************************************************************************
-	// CHASSIS IOM.Slot
-	// ************************************************************************
-	for _, iomName := range []string{
-		"IOM.Slot.A1", "IOM.Slot.A1a", "IOM.Slot.A1b",
-		"IOM.Slot.A2", "IOM.Slot.A2a", "IOM.Slot.A2b",
-		"IOM.Slot.B1", "IOM.Slot.B1a", "IOM.Slot.B1b",
-		"IOM.Slot.B2", "IOM.Slot.B2a", "IOM.Slot.B2b",
-		"IOM.Slot.C1",
-		"IOM.Slot.C2",
-	} {
-		instantiateSvc.Instantiate("iom", map[string]interface{}{"FQDD": iomName})
-	}
-
-	for _, sledName := range []string{
-		"System.Modular.1", "System.Modular.1a", "System.Modular.1b",
-		"System.Modular.2", "System.Modular.2a", "System.Modular.2b",
-		"System.Modular.3", "System.Modular.3a", "System.Modular.3b",
-		"System.Modular.4", "System.Modular.4a", "System.Modular.4b",
-		"System.Modular.5", "System.Modular.5a", "System.Modular.5b",
-		"System.Modular.6", "System.Modular.6a", "System.Modular.6b",
-		"System.Modular.7", "System.Modular.7a", "System.Modular.7b",
-		"System.Modular.8", "System.Modular.8a", "System.Modular.8b",
-	} {
-		instantiateSvc.Instantiate("sled", map[string]interface{}{"FQDD": sledName})
 	}
 
 	{

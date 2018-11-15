@@ -13,6 +13,8 @@ func init() {
 }
 
 type ComponentEventData struct {
-	Id   string
-	Type string
+	Id         string
+	Type       string
+	FQDD       string
+	ParentFQDD string
 }

@@ -343,7 +343,7 @@ views:
   "manager_cmc_integrated":
       "Logger": ["module", "mgrChassis"]
       "Models":
-        "default":  {"unique_name": "FQDD", "connect_types_supported": "array()"}
+        "default":  {"unique_name": "FQDD", "connect_types_supported": "array()", "manager_for_chassis": "array('/redfish/v1/Chassis/System.Chassis.1')"}
       "Controllers":
         - "fn": "ARMapper"
           "params": {"modelname": "default", "cfgsection": "firmware/inventory", "mappinguniquename": "'fw_mapper:' + FQDD ", "AddToView": "ar_mapper_inv"}
@@ -555,6 +555,8 @@ views:
         "instantiate('attributes', 'parenturi', rooturi + '/Chassis/' + FQDD, 'FQDD', FQDD)",
         "instantiate('power', 'parenturi', rooturi + '/Chassis/' + FQDD, 'FQDD', FQDD)",
         "instantiate('thermal', 'parenturi', rooturi + '/Chassis/' + FQDD, 'FQDD', FQDD)",
+        "instantiate('slotcollection', 'parenturi', rooturi + '/Chassis/' + FQDD, 'FQDD', FQDD)",
+        "instantiate('slotconfigcollection', 'parenturi', rooturi + '/Chassis/' + FQDD, 'FQDD', FQDD)",
         ]
 
   "power":
@@ -783,11 +785,9 @@ views:
       "Controllers":
         - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + view.GetURI()", "passthru": {'collection_uri': 'view.GetURI()'} }
-        - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "addslot", "uniquename": "'addslot_collection_' + collection_uri" }
       "View":
         - "fn": "with_URI"
-          "params": "collection_uri"
+          "params": "parenturi + '/Slots'"
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
         - "fn": "stdFormatters"
@@ -800,10 +800,10 @@ views:
         "default": {}
       "Controllers":
         - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "slot", "uniquename": "'slot:' + FQDD"}
+          "params": {"modelname": "default", "cfgsection": "slot", "uniquename": "'slot:' + FQDD", "passthru": {"FQDD": "FQDD", "ParentFQDD": "ParentFQDD"}}
       "View":
         - "fn": "with_URI"
-          "params": "collection_uri + '/' + FQDD"
+          "params": " rooturi + '/Chassis/' + ParentFQDD + '/Slots/' + FQDD"
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
       "Aggregate": "slot"
@@ -816,11 +816,9 @@ views:
       "Controllers":
         - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + view.GetURI()", "passthru": {'collection_uri': 'view.GetURI()'} }
-        - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "addslotconfig", "uniquename": "'addslotconfig_collection_' + collection_uri" }
       "View":
         - "fn": "with_URI"
-          "params": "collection_uri"
+          "params": "parenturi + '/SlotConfig'"
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
         - "fn": "stdFormatters"
@@ -833,10 +831,10 @@ views:
         "default": {}
       "Controllers":
         - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "slotconfig", "uniquename": "'slot:' + FQDD"}
+          "params": {"modelname": "default", "cfgsection": "slotconfig", "uniquename": "'slot:' + FQDD", "passthru": {"FQDD": "FQDD", "ParentFQDD": "ParentFQDD"}}
       "View":
         - "fn": "with_URI"
-          "params": "collection_uri + '/' + FQDD"
+          "params": " rooturi + '/Chassis/' + ParentFQDD + '/SlotConfig/' + FQDD"
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
       "Aggregate": "slotconfig"
@@ -881,7 +879,10 @@ awesome_mapper:
       - { SelectEventType: "ComponentEvent",
           Select: "true",
           Exec: [
-            #"data.Type == 'iDRAC' && addidrac_embedded(data.FQDD)",
+            "data.Type == 'ECIOM'     && addiom(data.FQDD)",
+            "data.Type == 'ECSled'     && addec_system_modular(data.FQDD)",
+            "data.Type == 'Slot'       && addslot( data.ParentFQDD + ':' + data.FQDD, data.FQDD, data.ParentFQDD)",
+            "data.Type == 'SlotConfig' && addslotconfig( data.ParentFQDD + ':' + data.FQDD, data.FQDD, data.ParentFQDD)",
                 ]}
 
     collection:
@@ -937,16 +938,6 @@ awesome_mapper:
       - { SelectEventType: "HealthEvent",
           Select: "true",
           Exec: [ "addsubsyshealth(data.FQDD, data.Health)" ]}
-
-    addslot:
-      - { SelectEventType: "ComponentEvent",
-          Select: "data.Type == 'Slot'",
-          Exec: [ "addslot(data.Id)" ]}
-
-    addslotconfig:
-      - { SelectEventType: "ComponentEvent",
-          Select: "data.Type == 'SlotConfig'",
-          Exec: [ "addslotconfig(data.Id)" ]}
 
     testview:
       - { SelectEventType: "AttributeUpdated", Select: "data.FQDD == fqdd && data.Name == 'test'", ModelUpdate: [ {Property: "TEST", Query: "data.Value", Default: 0} ] }
