@@ -19,8 +19,6 @@ import (
 	"github.com/superchalupa/sailfish/src/dell-resources/attributes"
 	"github.com/superchalupa/sailfish/src/dell-resources/certificateservices"
 	chasCMCIntegrated "github.com/superchalupa/sailfish/src/dell-resources/chassis/cmc.integrated"
-	system_chassis "github.com/superchalupa/sailfish/src/dell-resources/chassis/system.chassis"
-	"github.com/superchalupa/sailfish/src/dell-resources/chassis/system.chassis/power/powersupply"
 	"github.com/superchalupa/sailfish/src/dell-resources/chassis/system.chassis/subsystemhealth"
 	"github.com/superchalupa/sailfish/src/dell-resources/chassis/system.chassis/thermal"
 	"github.com/superchalupa/sailfish/src/dell-resources/chassis/system.chassis/thermal/fans"
@@ -247,7 +245,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 		// CHASSIS System.Chassis.1
 		// ************************************************************************
 		chasName := "System.Chassis.1"
-		sysChasLogger, sysChasVw, _ := instantiateSvc.Instantiate("system_chassis",
+		_, sysChasVw, _ := instantiateSvc.Instantiate("system_chassis",
 			map[string]interface{}{
 				"FQDD":                   chasName,
 				"msmConfigBackup":        view.Action(msmConfigBackup),
@@ -255,7 +253,9 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 			},
 		)
 
-		system_chassis.AddAggregate(ctx, sysChasLogger, sysChasVw, ch, eb)
+		subSystemSvc.StartService(ctx, logger, sysChasVw, cfgMgr, cfgMgrMu, instantiateSvc)
+		slots.CreateSlotCollection(ctx, sysChasVw, cfgMgr, cfgMgrMu, instantiateSvc)
+		slots.CreateSlotConfigCollection(ctx, sysChasVw, cfgMgr, cfgMgrMu, instantiateSvc)
 
 		// CMC.INTEGRATED.1 INTERLUDE
 		managers[0].GetModel("default").UpdateProperty("manager_for_chassis", []string{sysChasVw.GetURI()})
@@ -265,7 +265,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 			"PSU.Slot.4", "PSU.Slot.5", "PSU.Slot.6",
 		} {
 
-			psuLogger, sysChasPwrPsuVw, _ := instantiateSvc.Instantiate("psu_slot",
+			instantiateSvc.Instantiate("psu_slot",
 				map[string]interface{}{
 					// Need to move this to awesome mapper but dont yet have a string replace function exported
 					"DM_FQDD":     "System.Chassis.1#" + strings.Replace(psuName, "PSU.Slot", "PowerSupply", 1),
@@ -273,8 +273,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 					"ChassisFQDD": chasName,
 				},
 			)
-
-			powersupply.AddAggregate(ctx, psuLogger, sysChasPwrPsuVw, ch)
 		}
 
 		// ##################
@@ -322,11 +320,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 		*/
 
 		/* SubSystemHealth */
-		subSystemSvc.StartService(ctx, logger, sysChasVw, cfgMgr, cfgMgrMu, instantiateSvc)
-
-		/*  Slots */
-		slots.CreateSlotCollection(ctx, sysChasVw, cfgMgr, cfgMgrMu, instantiateSvc)
-		slots.CreateSlotConfigCollection(ctx, sysChasVw, cfgMgr, cfgMgrMu, instantiateSvc)
 	}
 
 	// ************************************************************************

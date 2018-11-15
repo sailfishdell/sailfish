@@ -22,7 +22,7 @@ views:
       "Controllers":
         # This is for dynamic runtime instantiation of new chassis as they appear
         - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "ec_component_events", "uniquename": "'idrac_system_chassis_' + view.GetURI()"}
+          "params": {"modelname": "default", "cfgsection": "ec_component_events", "uniquename": "'ec_component_events:' + view.GetURI()"}
       "View":
         - "fn": "with_URI"
           "params": "'/redfish/v1'"
@@ -548,6 +548,7 @@ views:
           "params": {"name": "msmconfigbackup", "uri": "/Actions/Oem/MSMConfigBackup", "actionFunction": "msmConfigBackup"}
         - "fn": "WithAction"
           "params": {"name": "chassis.msmconfigbackup", "uri": "/Actions/Oem/DellChassis.MSMConfigBackup", "actionFunction": "chassisMSMConfigBackup"}
+      "Aggregate": "system_chassis"
       "ExecPost": [
         "instantiate('attributes', 'parenturi', rooturi + '/Chassis/' + FQDD, 'FQDD', FQDD)",
         "instantiate('power', 'parenturi', rooturi + '/Chassis/' + FQDD, 'FQDD', FQDD)",
@@ -608,6 +609,7 @@ views:
           "params": "default"
         - "fn": "stdFormatters"
           "params":
+      "Aggregate": "psu_slot"
       "ExecPost": [
         "instantiate('attributes', 'parenturi', rooturi + '/Chassis/' + ChassisFQDD + '/Power/PowerSupplies/' + FQDD, 'FQDD', FQDD)"
         ]

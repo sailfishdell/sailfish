@@ -146,4 +146,46 @@ func RegisterAggregate(s *testaggregate.Service) {
 				}}, nil
 		})
 
+	s.RegisterAggregateFunction("psu_slot",
+		func(ctx context.Context, subLogger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, vw *view.View, extra interface{}, params map[string]interface{}) ([]eh.Command, error) {
+			return []eh.Command{
+				&domain.CreateRedfishResource{
+					ResourceURI: vw.GetURI(),
+					Type:        "#Power.v1_0_2.PowerSupply",
+					Context:     "/redfish/v1/$metadata#Power.PowerSystem.Chassis.1/Power/$entity",
+					Privileges: map[string]interface{}{
+						"GET":    []string{"Login"},
+						"POST":   []string{}, // cannot create sub objects
+						"PUT":    []string{},
+						"PATCH":  []string{"ConfigureManager"},
+						"DELETE": []string{}, // can't be deleted
+					},
+					Properties: map[string]interface{}{
+						"Name@meta":               vw.Meta(view.PropGET("name")),
+						"MemberId@meta":           vw.Meta(view.PropGET("unique_name")),
+						"PowerCapacityWatts@meta": vw.Meta(view.PropGET("capacity_watts")),
+						"LineInputVoltage@meta":   vw.Meta(view.PropGET("line_input_voltage")),
+						"FirmwareVersion@meta":    vw.Meta(view.PropGET("firmware_version")),
+
+						"Status": map[string]interface{}{
+							"HealthRollup@meta": vw.Meta(view.PropGET("obj_status")),
+							"State@meta":        vw.Meta(view.PropGET("state")),
+							"Health@meta":       vw.Meta(view.PropGET("obj_status")),
+						},
+
+						"Oem": map[string]interface{}{
+							"Dell": map[string]interface{}{
+								"@odata.type":       "#DellPower.v1_0_0.DellPowerSupply",
+								"ComponentID@meta":  vw.Meta(view.PropGET("component_id")),
+								"InputCurrent@meta": vw.Meta(view.PropGET("input_current")),
+								"Attributes@meta":   vw.Meta(view.GETProperty("attributes"), view.GETFormatter("attributeFormatter"), view.GETModel("default"), view.PropPATCH("attributes", "ar_dump")),
+							},
+						},
+						// this should be a link using getformatter
+						"Redundancy":             []interface{}{},
+						"Redundancy@odata.count": 0,
+					},
+				}}, nil
+		})
+
 }

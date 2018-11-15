@@ -17,16 +17,19 @@ import (
 )
 
 var functionsInit sync.Once
+var functionsMu sync.RWMutex
 var functions map[string]govaluate.ExpressionFunction
 
-func InitFunctions() map[string]govaluate.ExpressionFunction {
+func InitFunctions() (map[string]govaluate.ExpressionFunction, *sync.RWMutex) {
 	functionsInit.Do(func() { functions = map[string]govaluate.ExpressionFunction{} })
-	return functions
+	return functions, &functionsMu
 }
 
 func AddFunction(name string, fn func(args ...interface{}) (interface{}, error)) {
 	InitFunctions()
+	functionsMu.Lock()
 	functions[name] = fn
+	functionsMu.Unlock()
 }
 
 func init() {

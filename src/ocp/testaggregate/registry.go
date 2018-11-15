@@ -113,12 +113,15 @@ func RegisterPumpAction(s *Service, actionSvc actionService, pumpSvc pumpService
 			logger.Error("model name isnt a string", "cfg", cfg)
 			return errors.New("model name isnt a string")
 		}
+		functionsMu.RLock()
 		expr, err := govaluate.NewEvaluableExpressionWithFunctions(modelActionStr, functions)
 		if err != nil {
 			logger.Error("Failed to create evaluable expression", "expr", expr, "err", err)
+			functionsMu.RUnlock()
 			return errors.New("Failed to create evaluable expression")
 		}
 		action, err := expr.Evaluate(parameters)
+		functionsMu.RUnlock()
 		if err != nil {
 			logger.Error("expression evaluation failed", "expr", expr, "err", err)
 			return errors.New("expression evaluation failed")
@@ -163,12 +166,15 @@ func RegisterPumpAction(s *Service, actionSvc actionService, pumpSvc pumpService
 			logger.Error("model name isnt a string", "cfg", cfg)
 			return nil
 		}
+		functionsMu.RLock()
 		expr, err := govaluate.NewEvaluableExpressionWithFunctions(modelExprStr, functions)
 		if err != nil {
+			functionsMu.RUnlock()
 			logger.Error("Failed to create evaluable expression", "expr", expr, "err", err)
 			return errors.New("Failed to create evaluable expression")
 		}
 		modelVar, err := expr.Evaluate(parameters)
+		functionsMu.RUnlock()
 		if err != nil {
 			logger.Error("expression evaluation failed", "expr", expr, "err", err)
 			return errors.New("expression evaluation failed")
@@ -243,12 +249,15 @@ func RegisterWithURI(s *Service) {
 			logger.Error("Failed to type assert cfg to string", "cfg", cfg)
 			return errors.New("Failed to type assert expression to string")
 		}
+		functionsMu.RLock()
 		expr, err := govaluate.NewEvaluableExpressionWithFunctions(exprStr, functions)
 		if err != nil {
 			logger.Error("Failed to create evaluable expression", "expr", exprStr, "err", err)
+			functionsMu.RUnlock()
 			return errors.New("Failed to create evaluable expression")
 		}
 		uri, err := expr.Evaluate(parameters)
+		functionsMu.RUnlock()
 		if err != nil {
 			logger.Error("expression evaluation failed", "expr", expr, "err", err)
 			return errors.New("expression evaluation failed")
@@ -321,12 +330,15 @@ func RegisterAM2(s *Service, am2Svc *am2.Service) {
 			return errors.New("Required parameter 'uniquename' could not be cast to string")
 		}
 
+		functionsMu.RLock()
 		expr, err := govaluate.NewEvaluableExpressionWithFunctions(uniqueNameStr, functions)
 		if err != nil {
 			logger.Error("Failed to create evaluable expression", "uniqueNameStr", uniqueNameStr, "err", err)
+			functionsMu.RUnlock()
 			return err
 		}
 		uniqueName, err = expr.Evaluate(parameters)
+		functionsMu.RUnlock()
 		if err != nil {
 			logger.Error("expression evaluation failed", "expr", expr, "err", err, "cfgSection", cfgSectionStr, "uniqueName", uniqueNameStr)
 			return err
@@ -369,12 +381,15 @@ func GetPassThruParams(logger log.Logger, parameters map[string]interface{}, pas
 			logger.Error("expression could not be cast to string", "v", v, "passthruParams", passthruParams)
 		}
 
+		functionsMu.RLock()
 		expr, err := govaluate.NewEvaluableExpressionWithFunctions(exprStr, functions)
 		if err != nil {
 			logger.Error("Failed to create evaluable expression", "passthruParamsMap", passthruParamsMap, "err", err)
+			functionsMu.RUnlock()
 			continue
 		}
 		val, err := expr.Evaluate(parameters)
+		functionsMu.RUnlock()
 		if err != nil {
 			logger.Error("expression evaluation failed", "expr", expr, "err", err, "passthruParams", passthruParams)
 			continue

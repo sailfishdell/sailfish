@@ -84,6 +84,10 @@ type Exec struct {
 func (s *Service) NewMapping(ctx context.Context, logger log.Logger, cfg *viper.Viper, cfgMu *sync.RWMutex, mdl *model.Model, cfgName string, uniqueName string, parameters map[string]interface{}) error {
 	s.Lock()
 	defer s.Unlock()
+
+	functionsMu.RLock()
+	defer functionsMu.RUnlock()
+
 	logger = logger.New("module", "am2")
 
 	instanceParameters := &MapperParameters{model: mdl, params: map[string]interface{}{}}

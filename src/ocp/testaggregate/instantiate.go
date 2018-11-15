@@ -175,12 +175,15 @@ func (s *Service) instantiateFromCfg(ctx context.Context, cfgMgr *viper.Viper, c
 			if !ok {
 				continue
 			}
+			functionsMu.RLock()
 			expr, err := govaluate.NewEvaluableExpressionWithFunctions(propValueStr, functions)
 			if err != nil {
 				subLogger.Crit("Failed to create evaluable expression", "propValueStr", propValueStr, "err", err)
+				functionsMu.RUnlock()
 				continue
 			}
 			propValue, err := expr.Evaluate(newParams)
+			functionsMu.RUnlock()
 			if err != nil {
 				subLogger.Crit("expression evaluation failed", "expr", expr, "err", err)
 				continue
@@ -272,12 +275,15 @@ func (s *Service) instantiateFromCfg(ctx context.Context, cfgMgr *viper.Viper, c
 	for _, execStr := range config.ExecPost {
 		subLogger.Debug("exec post", "execStr", execStr)
 
+		functionsMu.RLock()
 		expr, err := govaluate.NewEvaluableExpressionWithFunctions(execStr, functions)
 		if err != nil {
+			functionsMu.RUnlock()
 			subLogger.Crit("Failed to create evaluable expression", "execStr", execStr, "err", err)
 			continue
 		}
 		_, err = expr.Evaluate(newParams)
+		functionsMu.RUnlock()
 		if err != nil {
 			subLogger.Crit("expression evaluation failed", "expr", expr, "err", err)
 			continue

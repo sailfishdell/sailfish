@@ -54,7 +54,10 @@ func RegisterARMapper(s *testaggregate.Service, arsvc *ARService) {
 			return nil
 		}
 
-		functions := awesome_mapper2.InitFunctions()
+		functions, functionsMu := awesome_mapper2.InitFunctions()
+		functionsMu.RLock()
+		defer functionsMu.RUnlock()
+
 		expr, err := govaluate.NewEvaluableExpressionWithFunctions(mappingUniqueNameStr, functions)
 		if err != nil {
 			logger.Crit("Failed to create evaluable expression", "expr", expr, "err", err)
