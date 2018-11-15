@@ -1,4 +1,4 @@
-package thermal
+package dell_ec
 
 import (
 	"context"
@@ -13,7 +13,7 @@ import (
 	eh "github.com/looplab/eventhorizon"
 )
 
-func RegisterAggregate(s *testaggregate.Service) {
+func RegisterThermalAggregate(s *testaggregate.Service) {
 	s.RegisterAggregateFunction("thermal",
 		func(ctx context.Context, subLogger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, vw *view.View, extra interface{}, params map[string]interface{}) ([]eh.Command, error) {
 			return []eh.Command{

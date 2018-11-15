@@ -384,6 +384,7 @@ views:
           "params": {"name": "manager.importsystemconfigpreview", "uri": "/Actions/Oem/EID_674_Manager.ImportSystemConfigurationPreview", "actionFunction": "importSystemConfigurationPreview"}
         - "fn": "etag"
           "params": []
+      "Aggregate": "manager_cmc_integrated"
       "ExecPost": [
         # probably should instantiate these in the same place that cmc.integrated.N are instantiated. (ie. flatten the instantiate tree)
         "instantiate('attributes', 'parenturi', rooturi + '/Managers/' + FQDD, 'FQDD', FQDD)",

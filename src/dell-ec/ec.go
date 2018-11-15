@@ -20,12 +20,10 @@ import (
 	"github.com/superchalupa/sailfish/src/dell-resources/certificateservices"
 	chasCMCIntegrated "github.com/superchalupa/sailfish/src/dell-resources/chassis/cmc.integrated"
 	"github.com/superchalupa/sailfish/src/dell-resources/chassis/system.chassis/subsystemhealth"
-	"github.com/superchalupa/sailfish/src/dell-resources/chassis/system.chassis/thermal"
 	"github.com/superchalupa/sailfish/src/dell-resources/chassis/system.chassis/thermal/fans"
 	"github.com/superchalupa/sailfish/src/dell-resources/logservices"
 	"github.com/superchalupa/sailfish/src/dell-resources/logservices/faultlist"
 	"github.com/superchalupa/sailfish/src/dell-resources/logservices/lcl"
-	mgrCMCIntegrated "github.com/superchalupa/sailfish/src/dell-resources/managers/cmc.integrated"
 	"github.com/superchalupa/sailfish/src/dell-resources/redundancy"
 	"github.com/superchalupa/sailfish/src/dell-resources/registries"
 	"github.com/superchalupa/sailfish/src/dell-resources/update_service"
@@ -98,11 +96,12 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	logservices.RegisterAggregate(instantiateSvc)
 	attributes.RegisterAggregate(instantiateSvc)
 	fans.RegisterAggregate(instantiateSvc)
-	thermal.RegisterAggregate(instantiateSvc)
 
 	RegisterAggregate(instantiateSvc)
 	RegisterIOMAggregate(instantiateSvc)
 	RegisterSledAggregate(instantiateSvc)
+	RegisterThermalAggregate(instantiateSvc)
+	RegisterCMCAggregate(instantiateSvc)
 
 	// add mapper helper to instantiate
 	awesome_mapper2.AddFunction("instantiate", func(args ...interface{}) (interface{}, error) {
@@ -189,7 +188,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 		//*********************************************************************
 		// /redfish/v1/Managers/CMC.Integrated
 		//*********************************************************************
-		mgrLogger, mgrCmcVw, _ := instantiateSvc.Instantiate("manager_cmc_integrated",
+		_, mgrCmcVw, _ := instantiateSvc.Instantiate("manager_cmc_integrated",
 			map[string]interface{}{
 				"FQDD":                             mgrName,
 				"exportSystemConfiguration":        view.Action(exportSystemConfiguration),
@@ -199,9 +198,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 		)
 
 		managers = append(managers, mgrCmcVw)
-
-		// add the aggregate to the view tree
-		mgrCMCIntegrated.AddAggregate(ctx, mgrLogger, mgrCmcVw, ch)
 
 		certificate_uris := []string{mgrCmcVw.GetURI() + "/CertificateService/CertificateInventory/FactoryIdentity.1"}
 
@@ -275,10 +271,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 			)
 		}
 
-		// ##################
-		// # Power Control
-		// ##################
-
+		// the rest of power uris are automatically created. need to add an awesome mapper function for FindMatchingURIs to migrate this one
 		instantiateSvc.Instantiate("power_control",
 			map[string]interface{}{
 				"FQDD":                chasName,
