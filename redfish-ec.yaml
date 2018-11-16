@@ -881,6 +881,7 @@ awesome_mapper:
           Exec: [
             "data.Type == 'ECIOM'      && addiom(data.FQDD)",
             "data.Type == 'ECSled'     && addec_system_modular(data.FQDD)",
+            "data.Type == 'ECChassis'  && addchassis_cmc_integrated(data.FQDD)",
             "data.Type == 'ECFan'      && addecfan( data.ParentFQDD + ':' + data.FQDD, data.ParentFQDD, data.FQDD)",
             "data.Type == 'ECPSU'      && addecpsu( data.ParentFQDD + ':' + data.FQDD, data.ParentFQDD, data.FQDD)",
             "data.Type == 'Slot'       && addslot( data.ParentFQDD + ':' + data.FQDD, data.ParentFQDD, data.FQDD)",

@@ -221,11 +221,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 		mgrCmcVw.GetModel("default").ApplyOption(
 			model.UpdateProperty("redundancy_uris", []string{redundancyVw.GetURI()}),
 		)
-
-		//*********************************************************************
-		// Create CHASSIS objects for CMC.Integrated.N
-		//*********************************************************************
-		instantiateSvc.Instantiate("chassis_cmc_integrated", map[string]interface{}{"FQDD": mgrName})
 	}
 
 	// start log service here: it attaches to cmc.integrated.1
