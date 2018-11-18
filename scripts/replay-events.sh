@@ -17,9 +17,11 @@ fi
 tmpfile=$(mktemp ./TEMP-XXXXXX)
 trap "rm -f $tmpfile" EXIT
 
-cat $1 | while read line ; do
+while read -u 5 line ; do
    echo "$line" > $tmpfile
     $CURLCMD --fail -f $BASE/api/Event%3AInject -d  @$tmpfile
+
+    if [ -n "$singlestep" ]; then  read -p "Paused" pause; fi
 
 # rate limit requests, if needed:
 #    i=$((i+1))
@@ -27,4 +29,4 @@ cat $1 | while read line ; do
 #        sleep 1
 #    fi
 
-done
+done 5<$1
