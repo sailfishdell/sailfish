@@ -8,6 +8,7 @@ import (
 	"github.com/superchalupa/sailfish/src/log"
 	"github.com/superchalupa/sailfish/src/ocp/awesome_mapper2"
 	"github.com/superchalupa/sailfish/src/ocp/testaggregate"
+	"github.com/superchalupa/sailfish/src/ocp/view"
 )
 
 func MakeMaker(l log.Logger, name string, fn func(args ...interface{}) (interface{}, error)) {
@@ -39,6 +40,37 @@ func MakeMaker(l log.Logger, name string, fn func(args ...interface{}) (interfac
 }
 
 func AddECInstantiate(l log.Logger, instantiateSvc *testaggregate.Service) {
+
+	MakeMaker(l, "manager_cmc_integrated", func(args ...interface{}) (interface{}, error) {
+		FQDD, ok := args[0].(string)
+		if !ok {
+			return nil, errors.New("Need a string fqdd for addec_system_modular(), but didnt get one")
+		}
+		// have to do this in a goroutine because awesome mapper is locked while it processes events
+		go instantiateSvc.Instantiate("manager_cmc_integrated", map[string]interface{}{
+			"FQDD": FQDD,
+			"exportSystemConfiguration":        view.Action(exportSystemConfiguration),
+			"importSystemConfiguration":        view.Action(importSystemConfiguration),
+			"importSystemConfigurationPreview": view.Action(importSystemConfigurationPreview),
+		})
+
+		return true, nil
+	})
+
+	MakeMaker(l, "system_chassis", func(args ...interface{}) (interface{}, error) {
+		FQDD, ok := args[0].(string)
+		if !ok {
+			return nil, errors.New("Need a string fqdd for addec_system_modular(), but didnt get one")
+		}
+		// have to do this in a goroutine because awesome mapper is locked while it processes events
+		go instantiateSvc.Instantiate("system_chassis", map[string]interface{}{
+			"FQDD":                   FQDD,
+			"msmConfigBackup":        view.Action(msmConfigBackup),
+			"chassisMSMConfigBackup": view.Action(chassisMSMConfigBackup),
+		})
+
+		return true, nil
+	})
 
 	MakeMaker(l, "chassis_cmc_integrated", func(args ...interface{}) (interface{}, error) {
 		FQDD, ok := args[0].(string)
