@@ -137,7 +137,7 @@ func (c *RemoveRedfishResource) CommandType() eh.CommandType { return RemoveRedf
 func (c *RemoveRedfishResource) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 	a.PublishEvent(eh.NewEvent(RedfishResourceRemoved, &RedfishResourceRemovedData{
 		ID:          c.ID,
-		ResourceURI: c.ResourceURI,
+		ResourceURI: a.ResourceURI,
 	}, time.Now()))
 	return nil
 }
