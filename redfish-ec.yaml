@@ -343,16 +343,16 @@ views:
   "manager_cmc_integrated":
       "Logger": ["module", "mgrChassis"]
       "Models":
-        "default":  {"unique_name": "FQDD", "connect_types_supported": "array()", "manager_for_chassis": "array('/redfish/v1/Chassis/System.Chassis.1')"}
+        "default":  {
+            "unique_name": "FQDD", "connect_types_supported": "array()", "manager_for_chassis": "array('/redfish/v1/Chassis/System.Chassis.1')",
+            "redundancy_uris": "array(rooturi + '/Managers/' + FQDD + '/Redundancy')" }
       "Controllers":
         - "fn": "ARMapper"
-          "params": {"modelname": "default", "cfgsection": "firmware/inventory", "mappinguniquename": "'fw_mapper:' + FQDD ", "AddToView": "ar_mapper_inv"}
+          "params": {"modelname": "default", "cfgsection": "firmware/inventory", "mappinguniquename": "'fw_mapper_manager:' + FQDD ", "AddToView": "ar_mapper_inv"}
         - "fn": "ARMapper"
           "params": {"modelname": "default", "cfgsection": "Managers/CMC.Integrated", "mappinguniquename": "'manager_mapper:' + FQDD ", "AddToView": "ar_mapper"}
         - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "health", "uniquename": "'am2_health_' + FQDD", "passthru": {"health_fqdd": "'System.Chassis.1#' + FQDD"} }
-        - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "certificate", "uniquename": "'certificate_services_' + FQDD" }
+          "params": {"modelname": "default", "cfgsection": "health", "uniquename": "'am2_health_manger_' + FQDD", "passthru": {"health_fqdd": "'System.Chassis.1#' + FQDD"} }
       "View":
         - "fn": "linkModel"
           "params": {"existing": "default", "linkname": "health"}
@@ -374,8 +374,6 @@ views:
           "params": {"name": "manager.resettodefaults", "uri": "/Actions/Oem/DellManager.ResetToDefaults", "timeout": 30}
         - "fn": "with_PumpHandledAction"
           "params": {"name": "manager.forcefailover", "uri": "/Actions/Manager.ForceFailover", "timeout": 30}
-        - "fn": "with_PumpHandledAction"
-          "params": {"name": "certificates.generatecsr", "uri": "/CertificateService/Actions/DellCertificateService.GenerateCSR", "timeout": 30}
         - "fn": "WithAction"
           "params": {"name": "manager.exportsystemconfig", "uri": "/Actions/Oem/EID_674_Manager.ExportSystemConfiguration", "actionFunction": "exportSystemConfiguration"}
         - "fn": "WithAction"
@@ -391,11 +389,57 @@ views:
         "instantiate('logservices', 'FQDD', FQDD)",
         "instantiate('lclogservices', 'FQDD', FQDD)",
         "instantiate('faultlistservices', 'FQDD', FQDD)",
+        "instantiate('certificateservices', 'parenturi', view.GetURI())",
+        "instantiate('manager_cmc_integrated_redundancy', 'FQDD', FQDD, 'parenturi', view.GetURI())",
 
         # only instantiate the collection once for cmc.integrated.1
         "FQDD == 'CMC.Integrated.1' && instantiate('lclogentrycollection', 'FQDD', FQDD)",
         "FQDD == 'CMC.Integrated.1' && instantiate('faultlistentrycollection', 'FQDD', FQDD)"
         ]
+
+  "certificateservices":
+      "Logger": ["module", "certificateservices"]
+      "Models":
+        "default":  {}
+      "Controllers":
+      "View":
+        - "fn": "with_URI"
+          "params": "parenturi + '/CertificateService'"
+        - "fn": "with_PumpHandledAction"
+          "params": {"name": "certificates.generatecsr", "uri": "/Actions/DellCertificateService.GenerateCSR", "timeout": 30}
+        - "fn": "stdFormatters"
+          "params":
+      "Aggregate": "certificateservices"
+      "ExecPost": [
+        "instantiate('certificatecollection', 'parenturi', view.GetURI())",
+        ]
+
+  "certificatecollection":
+      "Logger": ["module", "certificateservices"]
+      "Models":
+        "default":  {}
+      "Controllers":
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + view.GetURI()", "passthru": {'collection_uri': 'view.GetURI()'} }
+      "View":
+        - "fn": "with_URI"
+          "params": "parenturi + '/CertificateInventory'"
+        - "fn": "stdFormatters"
+          "params":
+      "Aggregate": "certificatecollection"
+
+  "certificate":
+      "Logger": ["module", "certificate"]
+      "Models":
+        "default":  {}
+      "Controllers":
+      "View":
+        - "fn": "with_URI"
+          "params": "parenturi + '/CertificateInventory'"
+          "params": "rooturi + '/Managers/' + ParentFQDD + '/CertificateService/CertificateInventory/' + FQDD"
+        - "fn": "stdFormatters"
+          "params":
+      "Aggregate": "certificate"
 
   "logservices":
       "Logger": ["module", "lclog"]
@@ -441,8 +485,6 @@ views:
           "params": "rooturi + '/Managers/' + FQDD + '/Logs/Lclog/' + uuid"
       "Aggregate": "lclogentry"
 
-
-
   "faultlistservices":
       "Logger": ["module", "lclog"]
       "Controllers":
@@ -483,9 +525,9 @@ views:
       "Controllers":
         - "fn": "ARMapper"
           # note: this is correct, the chassis model re-uses the managers mapper
-          "params": {"modelname": "default", "cfgsection": "Managers/CMC.Integrated", "mappinguniquename": "'chassis:' + FQDD ", "AddToView": "ar_mapper"}
+          "params": {"modelname": "default", "cfgsection": "Managers/CMC.Integrated", "mappinguniquename": "'cmc_chassis:' + FQDD ", "AddToView": "ar_mapper"}
         - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "health", "uniquename": "'am2_health_' + FQDD", "passthru": {"health_fqdd": "'System.Chassis.1#' + FQDD"} }
+          "params": {"modelname": "default", "cfgsection": "health", "uniquename": "'am2_health_chassis_' + FQDD", "passthru": {"health_fqdd": "'System.Chassis.1#' + FQDD"} }
       "View":
         - "fn": "withModel"
           "params": {"name": "global_health", "expr": "globalHealthModel"}
@@ -506,27 +548,28 @@ views:
         "instantiate('attributes', 'parenturi', rooturi + '/Chassis/' + FQDD, 'FQDD', FQDD)"
         ]
 
-  "chassis_cmc_integrated_redundancy":
+  "manager_cmc_integrated_redundancy":
       "Logger": ["module", "ChassisCMCInt/Redundancy"]
       "Models":
-        "default":  {}
+        "default":  { "redundancy_set": "array(rooturi + '/Managers/CMC.Integrated.1', rooturi + '/Managers/CMC.Integrated.2')" }
       "Controllers":
         - "fn": "ARMapper"
           # note: this is correct, the redundancy model re-uses the managers mapper
-          "params": {"modelname": "default", "cfgsection": "Managers/CMC.Integrated", "mappinguniquename": "'chassis_redundancy:' + FQDD ", "AddToView": "ar_mapper"}
+          "params": {"modelname": "default", "cfgsection": "Managers/CMC.Integrated", "mappinguniquename": "'chassis_redundancy:' + parenturi ", "AddToView": "ar_mapper"}
         - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "health", "uniquename": "'am2_health_' + FQDD", "passthru": {"health_fqdd": "'System.Chassis.1#' + FQDD"} }
+          "params": {"modelname": "default", "cfgsection": "health", "uniquename": "'am2_health_redundancy:' + parenturi", "passthru": {"health_fqdd": "'System.Chassis.1#' + FQDD"} }
       "View":
         - "fn": "linkModel"
           "params": {"existing": "default", "linkname": "health"}
         - "fn": "with_URI"
-          "params": "rooturi + '/Managers/' + FQDD + '/Redundancy'"
+          "params": "parenturi + '/Redundancy'"
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
         - "fn": "withFormatter_formatOdataList"
           "params": "default"
         - "fn": "withFormatter_count"
           "params": "default"
+      "Aggregate": "manager_cmc_integrated_redundancy"
 
   "system_chassis":
       "Logger": ["module", "system_chassis"]
@@ -881,7 +924,10 @@ awesome_mapper:
           Exec: [
             "data.Type == 'ECIOM'      && addiom(data.FQDD)",
             "data.Type == 'ECSled'     && addec_system_modular(data.FQDD)",
+            "data.Type == 'ECManager'  && addmanager_cmc_integrated(data.FQDD)",
             "data.Type == 'ECChassis'  && addchassis_cmc_integrated(data.FQDD)",
+            "data.Type == 'Certificate'  && addcertificate(data.ParentFQDD + ':' + data.FQDD, data.ParentFQDD, data.FQDD)",
+            "data.Type == 'SysChassis' && addsystem_chassis(data.FQDD)",
             "data.Type == 'ECFan'      && addecfan( data.ParentFQDD + ':' + data.FQDD, data.ParentFQDD, data.FQDD)",
             "data.Type == 'ECPSU'      && addecpsu( data.ParentFQDD + ':' + data.FQDD, data.ParentFQDD, data.FQDD)",
             "data.Type == 'Slot'       && addslot( data.ParentFQDD + ':' + data.FQDD, data.ParentFQDD, data.FQDD)",

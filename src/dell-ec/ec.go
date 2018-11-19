@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"path"
 	"sync"
 
 	"github.com/spf13/viper"
@@ -16,13 +15,8 @@ import (
 	"github.com/superchalupa/sailfish/src/dell-ec/slots"
 	"github.com/superchalupa/sailfish/src/dell-resources/ar_mapper2"
 	"github.com/superchalupa/sailfish/src/dell-resources/attributes"
-	"github.com/superchalupa/sailfish/src/dell-resources/certificateservices"
-	"github.com/superchalupa/sailfish/src/dell-resources/chassis/system.chassis/subsystemhealth"
 	"github.com/superchalupa/sailfish/src/dell-resources/chassis/system.chassis/thermal/fans"
 	"github.com/superchalupa/sailfish/src/dell-resources/logservices"
-	"github.com/superchalupa/sailfish/src/dell-resources/logservices/faultlist"
-	"github.com/superchalupa/sailfish/src/dell-resources/logservices/lcl"
-	"github.com/superchalupa/sailfish/src/dell-resources/redundancy"
 	"github.com/superchalupa/sailfish/src/dell-resources/registries"
 	"github.com/superchalupa/sailfish/src/dell-resources/update_service"
 	"github.com/superchalupa/sailfish/src/eventwaiter"
@@ -62,8 +56,8 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	actionhandler.Setup(ctx, ch, eb)
 	uploadhandler.Setup(ctx, ch, eb)
 	event.Setup(ch, eb)
-	logSvc := lcl.New(ch, eb)
-	faultSvc := faultlist.New(ch, eb)
+	//logSvc := lcl.New(ch, eb)
+	//faultSvc := faultlist.New(ch, eb)
 	domain.StartInjectService(logger, eb)
 	arService, _ := ar_mapper2.StartService(ctx, logger, cfgMgr, cfgMgrMu, eb)
 	actionSvc := ah.StartService(ctx, logger, ch, eb)
@@ -73,7 +67,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	telemetryservice.Setup(ctx, actionSvc, ch, eb)
 	pumpSvc := NewPumpActionSvc(ctx, logger, eb)
 
-	subSystemSvc := subsystemhealth.New(ch, eb)
+	// TODO: ?? what is this?  subSystemSvc := subsystemhealth.New(ch, eb)
 
 	// the package for this is going to change, but this is what makes the various mappers and view functions available
 	instantiateSvc := testaggregate.New(ctx, logger, cfgMgr, cfgMgrMu, ch)
@@ -100,6 +94,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	RegisterSledAggregate(instantiateSvc)
 	RegisterThermalAggregate(instantiateSvc)
 	RegisterCMCAggregate(instantiateSvc)
+	RegisterCertAggregate(instantiateSvc)
 	AddECInstantiate(logger, instantiateSvc)
 
 	// add mapper helper to instantiate
@@ -177,78 +172,26 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 		instantiateSvc.Instantiate(regName, map[string]interface{}{"location": location})
 	}
 
-	// various things are "managed" by the managers, create a global to hold the views so we can make references
-	var managers []*view.View
+	// TODO:
+	//logSvc.StartService(ctx, logger, managers[0])
+	//faultSvc.StartService(ctx, logger, managers[0])
 
-	for _, mgrName := range []string{
-		"CMC.Integrated.1",
-		"CMC.Integrated.2",
-	} {
-		//*********************************************************************
-		// /redfish/v1/Managers/CMC.Integrated
-		//*********************************************************************
-		_, mgrCmcVw, _ := instantiateSvc.Instantiate("manager_cmc_integrated",
-			map[string]interface{}{
-				"FQDD": mgrName,
-				"exportSystemConfiguration":        view.Action(exportSystemConfiguration),
-				"importSystemConfiguration":        view.Action(importSystemConfiguration),
-				"importSystemConfigurationPreview": view.Action(importSystemConfigurationPreview),
-			},
-		)
+	// Certificate services, certificate collection, factory cert
+	// redundancy uris
 
-		managers = append(managers, mgrCmcVw)
+	// TODO: formerly called on system.chassis.1
+	// subSystemSvc.StartService(ctx, logger, sysChasVw, cfgMgr, cfgMgrMu, instantiateSvc)
 
-		certificate_uris := []string{mgrCmcVw.GetURI() + "/CertificateService/CertificateInventory/FactoryIdentity.1"}
-
-		mgrCmcVw.GetModel("default").ApplyOption(model.UpdateProperty("certificate_uris", certificate_uris))
-		certificateservices.AddAggregate(ctx, mgrCmcVw, rootView.GetURI()+"/Managers/"+mgrName, ch)
-
-		// Redundancy
-		redundancyLogger, redundancyVw, _ := instantiateSvc.Instantiate("chassis_cmc_integrated_redundancy",
-			map[string]interface{}{
-				"FQDD": mgrName,
-			},
-		)
-
-		redundancy_set := []string{rootView.GetURI() + "/Managers/CMC.Integrated.1", rootView.GetURI() + "/Managers/CMC.Integrated.2"}
-
-		redundancyVw.GetModel("default").ApplyOption(
-			model.UpdateProperty("redundancy_set", redundancy_set),
-		)
-		redundancy.AddAggregate(ctx, redundancyLogger, redundancyVw, ch)
-
-		// and hook it back into the manager object
-		mgrCmcVw.GetModel("default").ApplyOption(
-			model.UpdateProperty("redundancy_uris", []string{redundancyVw.GetURI()}),
-		)
-	}
-
-	// start log service here: it attaches to cmc.integrated.1
-	logSvc.StartService(ctx, logger, managers[0])
-	faultSvc.StartService(ctx, logger, managers[0])
-
-	{
-		// ************************************************************************
-		// CHASSIS System.Chassis.1
-		// ************************************************************************
-		chasName := "System.Chassis.1"
-		_, sysChasVw, _ := instantiateSvc.Instantiate("system_chassis",
-			map[string]interface{}{
-				"FQDD":                   chasName,
-				"msmConfigBackup":        view.Action(msmConfigBackup),
-				"chassisMSMConfigBackup": view.Action(chassisMSMConfigBackup),
-			},
-		)
-
-		subSystemSvc.StartService(ctx, logger, sysChasVw, cfgMgr, cfgMgrMu, instantiateSvc)
-
-		// the rest of power uris are automatically created. need to add an awesome mapper function for FindMatchingURIs to migrate this one
-		instantiateSvc.Instantiate("power_control",
-			map[string]interface{}{
-				"FQDD":                chasName,
-				"power_related_items": d.FindMatchingURIs(func(uri string) bool { return path.Dir(uri) == rooturi+"/Chassis" }),
-			})
-	}
+	/*
+		{
+			// the rest of power uris are automatically created. need to add an awesome mapper function for FindMatchingURIs to migrate this one
+			instantiateSvc.Instantiate("power_control",
+				map[string]interface{}{
+					"FQDD":                chasName,
+					"power_related_items": d.FindMatchingURIs(func(uri string) bool { return path.Dir(uri) == rooturi+"/Chassis" }),
+				})
+		}
+	*/
 
 	{
 		updsvcLogger := logger.New("module", "UpdateService")

@@ -317,4 +317,35 @@ func RegisterCMCAggregate(s *testaggregate.Service) {
 						},
 					}}}, nil
 		})
+
+	s.RegisterAggregateFunction("manager_cmc_integrated_redundancy",
+		func(ctx context.Context, subLogger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, vw *view.View, extra interface{}, params map[string]interface{}) ([]eh.Command, error) {
+			return []eh.Command{
+				&domain.CreateRedfishResource{
+					ResourceURI: vw.GetURI(),
+					Type:        "#Redundancy.v1_0_2.Redundancy",
+					Context:     "/redfish/v1/$metadata#Redundancy.Redundancy",
+					Privileges: map[string]interface{}{
+						"GET":    []string{"Login"},
+						"POST":   []string{}, // cannot create sub objects
+						"PUT":    []string{},
+						"PATCH":  []string{"ConfigureManager"},
+						"DELETE": []string{}, // can't be deleted
+					},
+					Properties: map[string]interface{}{
+						"Name":                           "ManagerRedundancy",
+						"Mode@meta":                      vw.Meta(view.PropGET("redundancy_mode")),
+						"MinNumNeeded@meta":              vw.Meta(view.PropGET("redundancy_min")),
+						"MaxNumSupported@meta":           vw.Meta(view.PropGET("redundancy_max")),
+						"RedundancySet@meta":             vw.Meta(view.GETProperty("redundancy_set"), view.GETFormatter("formatOdataList"), view.GETModel("default")),
+						"RedundancySet@odata.count@meta": vw.Meta(view.GETProperty("redundancy_set"), view.GETFormatter("count"), view.GETModel("default")),
+						"Status": map[string]interface{}{
+							"Health@meta":       vw.Meta(view.PropGET("health")),
+							"HealthRollup@meta": vw.Meta(view.PropGET("health")),
+							"State@meta":        vw.Meta(view.PropGET("health_state")),
+						},
+					},
+				}}, nil
+		})
+
 }

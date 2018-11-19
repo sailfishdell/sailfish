@@ -200,4 +200,25 @@ func AddECInstantiate(l log.Logger, instantiateSvc *testaggregate.Service) {
 		return true, nil
 	})
 
+	MakeMaker(l, "certificate", func(args ...interface{}) (interface{}, error) {
+		ParentFQDD, ok := args[1].(string)
+		if !ok {
+			return nil, errors.New("Need a string fqdd for addcertificate(), but didnt get one")
+		}
+		FQDD, ok := args[2].(string)
+		if !ok {
+			return nil, errors.New("Need a string fqdd for addcertificate(), but didnt get one")
+		}
+
+		// have to do this in a goroutine because awesome mapper is locked while it processes events
+		go instantiateSvc.Instantiate("certificate",
+			map[string]interface{}{
+				"ParentFQDD": ParentFQDD,
+				"FQDD":       FQDD,
+			},
+		)
+
+		return true, nil
+	})
+
 }
