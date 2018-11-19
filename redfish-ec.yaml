@@ -529,6 +529,8 @@ views:
       "Controllers":
         - "fn": "ARMapper"
           "params": {"modelname": "default", "cfgsection": "Chassis/System.Chassis", "mappinguniquename": "'system_chassis:' + FQDD ", "AddToView": "ar_mapper"}
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "health", "uniquename": "'am2_health_' + FQDD", "passthru": {"health_fqdd": "'System.Chassis.1#SubSystem.1#Group.1'"} }
       "View":
         - "fn": "withModel"
           "params": {"name": "global_health", "expr": "globalHealthModel"}
@@ -644,7 +646,7 @@ views:
         "default":  {}
       "Controllers":
         - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "power_trend", "uniquename": "'am2_power_hist_chassis_' + FQDD" }
+          "params": {"modelname": "default", "cfgsection": "power_trend", "uniquename": "'am2_power_hist_chassis_' + trend", "passthru": {"trend":"trend"} }
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/Chassis/' + FQDD + '/Power/PowerTrends-1/Last'+trend"
@@ -1021,7 +1023,7 @@ awesome_mapper:
     power_supply:
       - { SelectEventType: "PowerSupplyObjEvent", Select: "data.ObjectHeader.FQDD == DM_FQDD",
             ModelUpdate: [
-                {Property: "line_input_voltage", Query: "zero_to_null(data.InputVolts)" }, #unsigned int
+                {Property: "line_input_voltage", Query: "zero_to_null(data.CurrentInputVolts)" }, #unsigned int
                 {Property: "input_current", Query: "zero_to_null(data.InstAmps)" }, #float
                 {Property: "obj_status", Query: "map_health_value(data.ObjectHeader.ObjStatus)" }]}
 

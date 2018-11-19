@@ -39,10 +39,15 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 				"PowerControl@meta":              v.Meta(view.GETProperty("power_control_uris"), view.GETFormatter("expand"), view.GETModel("default")),
 				"PowerControl@odata.count@meta":  v.Meta(view.GETProperty("power_control_uris"), view.GETFormatter("count"), view.GETModel("default")),
 				"Oem": map[string]interface{}{
-					"OemPower": map[string]interface{}{
-						"PowerTrends@meta":        v.Meta(view.GETProperty("power_trends_uri"), view.GETFormatter("expandone"), view.GETModel("default")),
-						"PowerTrends@odata.count": 7, // TODO: Fix this, it's wrong... this shoulndt even be here
-					},
+					"Dell": map[string]interface{}{
+						"PowerSuppliesSummary": map[string]interface{}{
+							"Status": map[string]interface{}{
+								"HealthRollup@meta": v.Meta(view.GETProperty("psu_rollup"), view.GETModel("global_health")),
+							},
+						},
+                                	},
+					"PowerTrends@meta":        v.Meta(view.GETProperty("power_trends_uri"), view.GETFormatter("expandone"), view.GETModel("default")),
+					"PowerTrends@odata.count@meta": v.Meta(view.GETProperty("power_trends_uri"), view.GETFormatter("count"), view.GETModel("default")),
 					"EID_674": map[string]interface{}{
 						"PowerSuppliesSummary": map[string]interface{}{
 							"Status": map[string]interface{}{

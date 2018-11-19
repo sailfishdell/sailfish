@@ -5,6 +5,7 @@ import (
 	"errors"
 	"reflect"
 	"sync"
+        "sort"
 
 	"github.com/spf13/viper"
 	"github.com/superchalupa/sailfish/src/dell-resources/attributes"
@@ -161,11 +162,15 @@ func FormatOdataList(ctx context.Context, v *view.View, m *model.Model, rrp *dom
 		uris = []string{}
 	}
 
+	sort.Strings(uris) 
+
 	// TODO: make this parse array using reflect
 	odata := []interface{}{}
 	for _, i := range uris {
 		odata = append(odata, map[string]interface{}{"@odata.id": i})
 	}
+
+        
 
 	rrp.Value = odata
 
