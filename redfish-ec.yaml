@@ -629,7 +629,8 @@ views:
         "instantiate('power_trends', 'FQDD', FQDD)",
         "instantiate('power_histogram', 'FQDD', FQDD, 'trend', 'Hour')",
         "instantiate('power_histogram', 'FQDD', FQDD, 'trend', 'Day')",
-        "instantiate('power_histogram', 'FQDD', FQDD, 'trend', 'Week')"
+        "instantiate('power_histogram', 'FQDD', FQDD, 'trend', 'Week')",
+        "instantiate('power_control', 'FQDD', FQDD )",
         ]
 
   "psu_slot":
@@ -664,7 +665,7 @@ views:
   "power_control":
       "Logger": ["module", "PowerControl"]
       "Models":
-        "default":  { "power_related_items": "power_related_items"}
+        "default":  { "power_related_items": "find_uris_with_basename( rooturi + '/Chassis' )"}
       "Controllers":
         - "fn": "ARMapper"
           "params": {"modelname": "default", "cfgsection": "Chassis/System.Chassis/Power", "mappinguniquename": "'chassis_power_ctrl_mapper:' + FQDD", "AddToView": "ar_mapper"}
