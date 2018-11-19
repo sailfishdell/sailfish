@@ -74,16 +74,31 @@ func MakeExpandListFormatter(d *domain.DomainObjects) func(context.Context, *vie
 	) error {
 		p, ok := meta["property"].(string)
 
-		uris, ok := m.GetProperty(p).([]string)
+		uris, ok := m.GetPropertyOk(p)
 		if !ok {
-			return errors.New("uris property not setup properly")
+			uris = []string{}
 		}
 
 		odata := []interface{}{}
-		for _, i := range uris {
-			out, err := d.ExpandURI(ctx, i)
-			if err == nil {
-				odata = append(odata, out)
+
+		switch u := uris.(type) {
+		case []string:
+			for _, i := range u {
+				out, err := d.ExpandURI(ctx, i)
+				if err == nil {
+					odata = append(odata, out)
+				}
+			}
+		case []interface{}:
+			for _, i := range u {
+				j, ok := i.(string)
+				if !ok {
+					continue
+				}
+				out, err := d.ExpandURI(ctx, j)
+				if err == nil {
+					odata = append(odata, out)
+				}
 			}
 		}
 
