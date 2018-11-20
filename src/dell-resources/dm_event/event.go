@@ -227,11 +227,23 @@ type StoragePhysicalObjEventData struct {
 	Revision                  string             `mapstructure:"revision"`
 	NominalMediumRotationRate int                `json:"nominalMediumRotationRate"`
 	Serial                    string             `mapstructure:"serialNumber"`
+	DriveFormFactor           int                `mapstructure:"driveFormFactor"`
+	Connector                 int
+	FreeSize                  uint64             `mapstructure:"freeSize"`
+	ManufacturingDay          uint16             `mapstructure:"manufactureDay"`
+	ManufacturingWeek         uint16             `mapstructure:"manufactureWeek"`
+	ManufacturingYear         uint32             `mapstructure:"manufactureYear"`
+	Ppid                      string             `mapstructure:"ppid"`
+	PredictiveFailState       string
+	RaidStatus                string
+	SasAddress                uint64             `mapstructure:"wwn"`
+	Slot                      int8               `mapstructure:"slot"`
+	UsedSize                  uint64             `mapstructure:"usedSize"`
 }
 
 type StorageAdapterObjEventData struct {
 	ObjectHeader    DataObjectHeader
-	RaidObjHeader   RaidSiObjectHeader `json:"raidSiobjheader"`
+	RaidObjHeader   RaidSiObjectHeader `mapstructure:"raidSiobjheader"`
 	Manufacturer    string             `mapstructure:"manufacturer"`
 	FirmwareVersion string             `mapstructure:"currentAvailableFwVer"`
 	Id              string             `mapstructure:"fqdd"`
@@ -242,7 +254,7 @@ type StorageAdapterObjEventData struct {
 type StorageEnclosureObjEventData struct {
 	ObjectHeader  DataObjectHeader
 	RaidObjHeader RaidSiObjectHeader `json:"raidSiobjheader"`
-	AssetTag      string             `json:"assetTag"`
+	AssetTag      string             `mapstructure:"assetTag"`
 	ChassisType   int                `json:"bpType"`
 	DeviceId      int                `json:"deviceID"`
 	Manufacturer  string             `mapstructure:"manufacturer"`

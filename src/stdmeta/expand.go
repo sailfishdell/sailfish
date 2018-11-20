@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"reflect"
+	"sort"
 	"sync"
 
 	"github.com/spf13/viper"
@@ -176,8 +177,9 @@ func FormatOdataList(ctx context.Context, v *view.View, m *model.Model, rrp *dom
 		uris = []string{}
 	}
 
-	odata := []interface{}{}
+	sort.Strings(uris)
 
+	odata := []interface{}{}
 	switch u := uris.(type) {
 	case []string:
 		for _, i := range u {
