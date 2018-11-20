@@ -88,6 +88,8 @@ func (s *Service) updateCache() {
 
 func (s *Service) selectCachedAttributes() func(eh.Event) bool {
 	return func(event eh.Event) bool {
+		s.RLock()
+		defer s.RUnlock()
 		if event.EventType() == AttributeUpdated {
 			if data, ok := event.Data().(*AttributeUpdatedData); ok {
 				if _, ok := s.cache[data.FQDD]; ok {
