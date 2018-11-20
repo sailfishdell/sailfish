@@ -46,8 +46,7 @@ func RegisterAggregate(s *testaggregate.Service) {
 								"HardwareVersion@meta": vw.Meta(view.PropGET("hardware_version")),
 								"GraphicsURI@meta":     vw.Meta(view.PropGET("graphics_uri")),
 								"Attributes@meta":      vw.Meta(view.GETProperty("attributes"), view.GETFormatter("attributeFormatter"), view.GETModel("default"), view.PropPATCH("attributes", "ar_dump")),
-                                                  
-						}}},
+							}}},
 				}}, nil
 		})
 }
