@@ -177,18 +177,24 @@ func FormatOdataList(ctx context.Context, v *view.View, m *model.Model, rrp *dom
 		uris = []string{}
 	}
 
-	sort.Strings(uris)
-
+	var uriArr []string
 	odata := []interface{}{}
+
 	switch u := uris.(type) {
 	case []string:
-		for _, i := range u {
-			odata = append(odata, map[string]interface{}{"@odata.id": i})
-		}
+		uriArr = u
 	case []interface{}:
+		uriArr = []string{}
 		for _, i := range u {
-			odata = append(odata, map[string]interface{}{"@odata.id": i})
+			if s, ok := i.(string); ok {
+				uriArr = append(uriArr, s)
+			}
 		}
+	}
+
+	sort.Strings(uriArr)
+	for _, i := range uriArr {
+		odata = append(odata, map[string]interface{}{"@odata.id": i})
 	}
 
 	rrp.Value = odata
