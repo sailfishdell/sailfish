@@ -122,7 +122,7 @@ func (c *CreateRedfishResource) Handle(ctx context.Context, a *RedfishResourceAg
 // RemoveRedfishResource Command
 type RemoveRedfishResource struct {
 	ID          eh.UUID `json:"id"`
-	ResourceURI string
+	ResourceURI string  `eh:"optional"`
 }
 
 // AggregateType satisfies base Aggregate interface
