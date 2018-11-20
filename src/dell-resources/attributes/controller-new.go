@@ -41,6 +41,9 @@ func StartService(ctx context.Context, logger log.Logger, eb eh.EventBus) (*Serv
 			return
 		}
 
+		ret.RLock()
+		defer ret.RUnlock()
+
 		modelArray, ok := ret.cache[data.FQDD]
 		if !ok {
 			return
@@ -97,8 +100,8 @@ func (s *Service) selectCachedAttributes() func(eh.Event) bool {
 }
 
 func (b *breadcrumb) UpdateRequest(ctx context.Context, property string, value interface{}) (interface{}, error) {
-	b.s.Lock()
-	defer b.s.Unlock()
+	b.s.RLock()
+	defer b.s.RUnlock()
 
 	b.s.logger.Debug("UpdateRequest", "property", property, "value", value)
 
