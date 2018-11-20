@@ -12,7 +12,7 @@ import (
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
 )
 
-const MAX_LOGS = 10
+const MAX_LCLOGS = 10
 
 func initLCL(logger log.Logger, ch eh.CommandHandler) {
 	lclogs := []eh.UUID{}
@@ -59,14 +59,55 @@ func initLCL(logger log.Logger, ch eh.CommandHandler) {
 					"Action":      logEntry.Action,
 				}})
 
-		for len(lclogs) > MAX_LOGS {
-			logger.Warn("too many logs, trimming", "len", len(lclogs))
+		for len(lclogs) > MAX_LCLOGS {
+			logger.Debug("too many logs, trimming", "len", len(lclogs))
 			toDelete := lclogs[0]
 			lclogs = lclogs[1:]
 			go ch.HandleCommand(context.Background(), &domain.RemoveRedfishResource{ID: toDelete})
-			logger.Warn("AFTER TRIM", "len", len(lclogs))
 		}
 
 		return true, nil
 	})
+
+	awesome_mapper2.AddFunction("addfaultentry", func(args ...interface{}) (interface{}, error) {
+		logUri, ok := args[0].(string)
+		if !ok {
+			logger.Crit("Mapper configuration error: uri not passed as string", "args[0]", args[0])
+			return nil, errors.New("Mapper configuration error: uri not passed as string")
+		}
+		faultEntry, ok := args[1].(*FaultEntryAddData)
+		if !ok {
+			logger.Crit("Mapper configuration error: log event data not passed", "args[1]", args[1], "TYPE", fmt.Sprintf("%#T", args[1]))
+			return nil, errors.New("Mapper configuration error: log event data not passed")
+		}
+
+		uuid := eh.NewUUID()
+		uri := fmt.Sprintf("%s/%d", logUri, faultEntry.Id)
+
+		go ch.HandleCommand(
+			context.Background(),
+			&domain.CreateRedfishResource{
+				ID:          uuid,
+				ResourceURI: uri,
+				Type:        "#LogEntryCollection.LogEntryCollection",
+				Context:     "/redfish/v1/$metadata#LogEntryCollection.LogEntryCollection",
+				Privileges: map[string]interface{}{
+					"GET": []string{"ConfigureManager"},
+				},
+				Properties: map[string]interface{}{
+					"Description": faultEntry.Description,
+					"Name":        faultEntry.Name,
+					"EntryType":   faultEntry.EntryType,
+					"Id":          faultEntry.Id,
+					"MessageArgs": faultEntry.MessageArgs,
+					"Message":     faultEntry.Message,
+					"MessageID":   faultEntry.MessageID,
+					"Category":    faultEntry.Category,
+					"Severity":    faultEntry.Severity,
+					"Action":      faultEntry.Action,
+				}})
+
+		return true, nil
+	})
+
 }

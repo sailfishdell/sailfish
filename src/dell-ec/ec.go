@@ -57,7 +57,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	actionhandler.Setup(ctx, ch, eb)
 	uploadhandler.Setup(ctx, ch, eb)
 	event.Setup(ch, eb)
-	//faultSvc := faultlist.New(ch, eb)
 	domain.StartInjectService(logger, eb)
 	arService, _ := ar_mapper2.StartService(ctx, logger, cfgMgr, cfgMgrMu, eb)
 	actionSvc := ah.StartService(ctx, logger, ch, eb)
@@ -184,9 +183,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	} {
 		instantiateSvc.Instantiate(regName, map[string]interface{}{"location": location})
 	}
-
-	// TODO:
-	//faultSvc.StartService(ctx, logger, managers[0])
 
 	// TODO: formerly called on system.chassis.1
 	// subSystemSvc.StartService(ctx, logger, sysChasVw, cfgMgr, cfgMgrMu, instantiateSvc)

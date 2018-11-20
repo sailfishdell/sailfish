@@ -479,14 +479,6 @@ views:
           "params":
       "Aggregate": "lclogentrycollection"
 
-  "lclogentry":
-      "Logger": ["module", "lclog"]
-      "Controllers":
-      "View":
-        - "fn": "with_URI"
-          "params": "rooturi + '/Managers/' + FQDD + '/Logs/Lclog/' + uuid"
-      "Aggregate": "lclogentry"
-
   "faultlistservices":
       "Logger": ["module", "lclog"]
       "Controllers":
@@ -502,23 +494,14 @@ views:
       "Controllers":
         - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + view.GetURI()", "passthru": {'collection_uri': 'view.GetURI()'} }
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "faultlist", "uniquename": "'collection_faultlist_' + view.GetURI()", "passthru": {'collection_uri': 'view.GetURI()'} }
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/Managers/' + FQDD + '/Logs/FaultList'"
         - "fn": "stdFormatters"
           "params":
       "Aggregate": "faultlistentrycollection"
-
-
-  "faultlistentry":
-      "Logger": ["module", "lclog"]
-      "Models":
-        "default":  {}
-      "Controllers":
-      "View":
-        - "fn": "with_URI"
-          "params": "rooturi + '/Managers/' + FQDD + '/Logs/FaultList/' + uuid"
-      "Aggregate": "faultlistentry"
 
   "chassis_cmc_integrated":
       "Logger": ["module", "ChassisCMCInt"]
@@ -990,6 +973,10 @@ awesome_mapper:
           Select: "true",
           Exec: [ "addlclog(collection_uri, data)" ]}
 
+    faultlist:
+      - { SelectEventType: "FaultEntryAdd",
+          Select: "true",
+          Exec: [ "addfaultentry(collection_uri, data)" ]}
 
     addsubsystemhealth:
       - { SelectEventType: "HealthEvent",
