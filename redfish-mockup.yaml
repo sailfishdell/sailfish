@@ -14,18 +14,16 @@ views:
         - "fn": "with_URI"
           "params": "'/redfish/v1'"
       "Aggregate": "root"
-
-  "testview":
-      "Logger": ["module", "testview"]
-      "Models":
-        "default":  {"unique_name": "'TEST_Unique_Name'", "name": "'TEST_Name'", "'description'": "'TEST_Description'" }
-      "Controllers":
-      "View":
-        - "fn": "with_URI"
-          "params": "rooturi + '/testview'"
-        - "fn": "PublishResourceUpdatedEventsForModel"
-          "params": "default"
-      "Aggregate": "testview"
+      "ExecPost": [
+        "set_hash_value(serviceglobals, 'rootid', uuid)",
+        "set_hash_value(serviceglobals, 'rooturi', view.GetURI())",
+        "instantiate('chassis')",
+        "instantiate('systems')",
+        "instantiate('managers')",
+        "instantiate('accountservice')",
+        "instantiate('roles')",
+        "instantiate('accounts')",
+        ]
 
   "eventservice":
       "Logger": ["module", "eventservice"]
@@ -56,7 +54,7 @@ views:
         "default": {"members": "array()"}
       "Controllers":
         - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + collection_uri" }
+          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + view.GetURI()", "passthru": {'collection_uri': 'view.GetURI()'} }
       "View":
         - "fn": "with_URI"
           "params": "eventsvc_uri + '/Subscriptions'"
@@ -96,6 +94,10 @@ views:
         - "fn": "stdFormatters"
           "params":
       "Aggregate": "sessionservice"
+      "ExecPost": [
+        "set_hash_value(serviceglobals, 'sessionsvc_id', uuid)",
+        "set_hash_value(serviceglobals, 'sessionsvc_uri', view.GetURI())",
+      ]
 
   "sessioncollection":
       "Logger": ["module", "session"]
@@ -103,7 +105,7 @@ views:
         "default":  {"members": "array()"}
       "Controllers":
         - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + collection_uri" }
+          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + view.GetURI()", "passthru": {'collection_uri': 'view.GetURI()'} }
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/SessionService/Sessions'"
@@ -128,7 +130,7 @@ views:
         "default":  {"members": "array()"}
       "Controllers":
         - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + collection_uri" }
+          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + view.GetURI()", "passthru": {'collection_uri': 'view.GetURI()'} }
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/Registries'"
@@ -199,10 +201,10 @@ views:
         "default":  {"members": "array()"}
       "Controllers":
         - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + collection_uri" }
+          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + view.GetURI()", "passthru": {'collection_uri': 'view.GetURI()'} }
       "View":
         - "fn": "with_URI"
-          "params": "collection_uri "
+          "params": "rooturi + '/Chassis'"
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
         - "fn": "stdFormatters"
@@ -215,10 +217,10 @@ views:
         "default":  {"members": "array()"}
       "Controllers":
         - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + collection_uri" }
+          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + view.GetURI()", "passthru": {'collection_uri': 'view.GetURI()'} }
       "View":
         - "fn": "with_URI"
-          "params": "collection_uri "
+          "params": "rooturi + '/Systems'"
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
         - "fn": "stdFormatters"
@@ -231,10 +233,10 @@ views:
         "default":  {"members": "array()"}
       "Controllers":
         - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + collection_uri" }
+          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + view.GetURI()", "passthru": {'collection_uri': 'view.GetURI()'} }
       "View":
         - "fn": "with_URI"
-          "params": "collection_uri "
+          "params": "rooturi + '/Managers'"
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
         - "fn": "stdFormatters"
@@ -247,10 +249,10 @@ views:
         "default":  {"members": "array()"}
       "Controllers":
         - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + collection_uri" }
+          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + view.GetURI()", "passthru": {'collection_uri': 'view.GetURI()'} }
       "View":
         - "fn": "with_URI"
-          "params": "collection_uri "
+          "params": "rooturi + '/AccountService/Roles'"
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
         - "fn": "stdFormatters"
@@ -270,6 +272,9 @@ views:
         - "fn": "stdFormatters"
           "params":
       "Aggregate": "accountservice"
+      "ExecPost": [
+        "set_hash_value(serviceglobals, 'actsvc_id', uuid)",
+        "set_hash_value(serviceglobals, 'actsvc_uri', view.GetURI())"]
 
   "accounts":
       "Logger": ["module", "Accounts"]
@@ -277,23 +282,15 @@ views:
         "default":  {"members": "array()"}
       "Controllers":
         - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + collection_uri" }
+          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + view.GetURI()", "passthru": {'collection_uri': 'view.GetURI()'} }
       "View":
         - "fn": "with_URI"
-          "params": "collection_uri "
+          "params": "rooturi + '/AccountService/Accounts'"
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
         - "fn": "stdFormatters"
           "params":
       "Aggregate": "accounts"
-
-
-
-
-
-
-
-
 
 
 awesome_mapper:
@@ -304,7 +301,3 @@ awesome_mapper:
       - { SelectEventType: "RedfishResource:removed",
           Select: "type == 'RedfishResource:removed' && nohash(data.ResourceURI) && baseuri(data.ResourceURI) == collection_uri ",
           ModelUpdate: [ {Property: "members", Query: "removefromset(model, propname, data.ResourceURI)", Default: 0} ]}
-
-    testview:
-        - { Select: "type == 'AttributeUpdated' && data.FQDD == fqdd && data.Name == 'InstantaneousPower'", ModelUpdate: [ {Property: "Instantaneous_Power", Query: "data.Value", Default: 0} ] }
-

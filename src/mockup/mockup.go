@@ -2,6 +2,8 @@ package mockup
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"sync"
 
 	"github.com/spf13/viper"
@@ -10,7 +12,7 @@ import (
 
 	"github.com/superchalupa/sailfish/src/actionhandler"
 	ah "github.com/superchalupa/sailfish/src/actionhandler"
-	dell_ec "github.com/superchalupa/sailfish/src/dell-ec"
+	"github.com/superchalupa/sailfish/src/dell-ec"
 	"github.com/superchalupa/sailfish/src/dell-resources/registries"
 	"github.com/superchalupa/sailfish/src/eventwaiter"
 	"github.com/superchalupa/sailfish/src/log"
@@ -55,45 +57,40 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	stdcollections.RegisterAggregate(instantiateSvc)
 	session.RegisterAggregate(instantiateSvc)
 
+	awesome_mapper2.AddFunction("instantiate", func(args ...interface{}) (interface{}, error) {
+		if len(args) < 1 {
+			return nil, errors.New("need to specify cfg section to instantiate")
+		}
+		cfgStr, ok := args[0].(string)
+		if !ok {
+			return nil, errors.New("need to specify cfg section to instantiate")
+		}
+
+		params := map[string]interface{}{}
+		var key string
+		for i, val := range args[1:] {
+			if i%2 == 0 {
+				key, ok = val.(string)
+				if !ok {
+					return nil, fmt.Errorf("got a non-string key value: %s", key)
+				}
+			} else {
+				params[key] = val
+			}
+		}
+
+		// have to do this in a goroutine because awesome mapper is locked while it processes events
+		instantiateSvc.WorkQueue <- func() { instantiateSvc.InstantiateNoWait(cfgStr, params) }
+		return true, nil
+	})
+
 	// ignore unused for now
 	_ = actionSvc
-
-	// common parameters to instantiate that are used almost everywhere
-	baseParams := map[string]interface{}{}
-	baseParams["rooturi"] = "/redfish/v1"
-	modParams := func(newParams map[string]interface{}) map[string]interface{} {
-		ret := map[string]interface{}{}
-		for k, v := range baseParams {
-			ret[k] = v
-		}
-		for k, v := range newParams {
-			ret[k] = v
-		}
-		return ret
-	}
 
 	//*********************************************************************
 	//  /redfish/v1
 	//*********************************************************************
-	_, rootView, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, cfgMgrMu, "rootview", baseParams)
-	baseParams["rootid"] = rootView.GetUUID()
-
-	//*********************************************************************
-	//  /redfish/v1/testview - a proof of concept test view and example
-	//*********************************************************************
-	instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, cfgMgrMu, "testview", map[string]interface{}{"rooturi": rootView.GetURI()})
-
-	//*********************************************************************
-	//  /redfish/v1/{Managers,Chassis,Systems,Accounts}
-	//*********************************************************************
-	_, _, _ = instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, cfgMgrMu, "chassis", modParams(map[string]interface{}{"collection_uri": "/redfish/v1/Chassis"}))
-	_, _, _ = instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, cfgMgrMu, "systems", modParams(map[string]interface{}{"collection_uri": "/redfish/v1/Systems"}))
-	_, _, _ = instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, cfgMgrMu, "managers", modParams(map[string]interface{}{"collection_uri": "/redfish/v1/Managers"}))
-	_, accountSvcVw, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, cfgMgrMu, "accountservice", modParams(map[string]interface{}{}))
-	baseParams["actsvc_uri"] = accountSvcVw.GetURI()
-	baseParams["actsvc_id"] = accountSvcVw.GetUUID()
-	_, _, _ = instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, cfgMgrMu, "roles", modParams(map[string]interface{}{"collection_uri": "/redfish/v1/AccountService/Roles"}))
-	_, _, _ = instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, cfgMgrMu, "accounts", modParams(map[string]interface{}{"collection_uri": "/redfish/v1/AccountService/Accounts"}))
+	_, rootView, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, cfgMgrMu, "rootview", map[string]interface{}{"rooturi": "/redfish/v1"})
 
 	//*********************************************************************
 	//  Standard redfish roles
@@ -103,16 +100,14 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	//*********************************************************************
 	// /redfish/v1/Sessions
 	//*********************************************************************
-	_, sessionSvcVw, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, cfgMgrMu, "sessionservice", baseParams)
-	baseParams["sessionsvc_id"] = sessionSvcVw.GetUUID()
-	baseParams["sessionsvc_uri"] = sessionSvcVw.GetURI()
+	_, sessionSvcVw, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, cfgMgrMu, "sessionservice", map[string]interface{}{})
 	session.SetupSessionService(instantiateSvc, sessionSvcVw, ch, eb)
-	instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, cfgMgrMu, "sessioncollection", modParams(map[string]interface{}{"collection_uri": "/redfish/v1/SessionService/Sessions"}))
+	instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, cfgMgrMu, "sessioncollection", map[string]interface{}{"collection_uri": "/redfish/v1/SessionService/Sessions"})
 
 	//*********************************************************************
 	// /redfish/v1/EventService
 	// /redfish/v1/TelemetryService
 	//*********************************************************************
-	evtSvc.StartEventService(ctx, logger, instantiateSvc, baseParams)
+	evtSvc.StartEventService(ctx, logger, instantiateSvc, map[string]interface{}{})
 	telemetryservice.StartTelemetryService(ctx, logger, rootView)
 }
