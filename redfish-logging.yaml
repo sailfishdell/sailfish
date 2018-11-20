@@ -31,12 +31,10 @@ logs:
 
     # log all web server accesses
     - Enabled: false
-      FileName: "/var/log/http-access.log"
+      Level: "debug"
+      FileName: "debug.log"
       PrintFile: true
       PrintFunction: true
-      ModulesToEnable:
-        - name: "http"
-          level: "debug"
 
     # (DISABLED) log stuff on a module by module basis to FILE
     - Enabled: false

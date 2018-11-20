@@ -57,7 +57,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	actionhandler.Setup(ctx, ch, eb)
 	uploadhandler.Setup(ctx, ch, eb)
 	event.Setup(ch, eb)
-	//logSvc := lcl.New(ch, eb)
 	//faultSvc := faultlist.New(ch, eb)
 	domain.StartInjectService(logger, eb)
 	arService, _ := ar_mapper2.StartService(ctx, logger, cfgMgr, cfgMgrMu, eb)
@@ -97,6 +96,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	RegisterCMCAggregate(instantiateSvc)
 	RegisterCertAggregate(instantiateSvc)
 	AddECInstantiate(logger, instantiateSvc)
+	initLCL(logger, ch)
 
 	// add mapper helper to instantiate
 	awesome_mapper2.AddFunction("find_uris_with_basename", func(args ...interface{}) (interface{}, error) {
@@ -186,25 +186,10 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	}
 
 	// TODO:
-	//logSvc.StartService(ctx, logger, managers[0])
 	//faultSvc.StartService(ctx, logger, managers[0])
-
-	// Certificate services, certificate collection, factory cert
-	// redundancy uris
 
 	// TODO: formerly called on system.chassis.1
 	// subSystemSvc.StartService(ctx, logger, sysChasVw, cfgMgr, cfgMgrMu, instantiateSvc)
-
-	/*
-		{
-			// the rest of power uris are automatically created. need to add an awesome mapper function for FindMatchingURIs to migrate this one
-			instantiateSvc.Instantiate("power_control",
-				map[string]interface{}{
-					"FQDD":                chasName,
-					"power_related_items": d.FindMatchingURIs(func(uri string) bool { return path.Dir(uri) == rooturi+"/Chassis" }),
-				})
-		}
-	*/
 
 	{
 		updsvcLogger := logger.New("module", "UpdateService")

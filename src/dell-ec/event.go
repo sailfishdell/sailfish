@@ -1,4 +1,4 @@
-package lcl
+package dell_ec
 
 import (
 	eh "github.com/looplab/eventhorizon"

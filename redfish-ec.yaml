@@ -470,6 +470,8 @@ views:
       "Controllers":
         - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + view.GetURI()", "passthru": {'collection_uri': 'view.GetURI()'} }
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "lclog", "uniquename": "'collection_lclog_' + view.GetURI()", "passthru": {'collection_uri': 'view.GetURI()'} }
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/Managers/' + FQDD + '/Logs/Lclog'"
@@ -982,6 +984,11 @@ awesome_mapper:
       - { SelectEventType: "RedfishResource:removed",
           Select: "nohash(data.ResourceURI) && baseuri(data.ResourceURI) == fanuri",
           ModelUpdate: [ {Property: "fan_uris", Query: "removefromset(model, propname, data.ResourceURI)"} ]}
+
+    lclog:
+      - { SelectEventType: "LogEvent",
+          Select: "true",
+          Exec: [ "addlclog(collection_uri, data)" ]}
 
 
     addsubsystemhealth:

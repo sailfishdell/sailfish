@@ -42,8 +42,8 @@ type DomainObjects struct {
 	treeMu sync.RWMutex
 	Tree   map[string]eh.UUID
 
-	collectionsMu sync.RWMutex
-	collections   []string
+	licensesMu sync.RWMutex
+	licenses   []string
 }
 
 // SetupDDDFunctions sets up the full Event Horizon domain

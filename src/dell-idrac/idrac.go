@@ -14,8 +14,6 @@ import (
 	ah "github.com/superchalupa/sailfish/src/actionhandler"
 	"github.com/superchalupa/sailfish/src/dell-resources/ar_mapper2"
 	"github.com/superchalupa/sailfish/src/dell-resources/attributes"
-	"github.com/superchalupa/sailfish/src/dell-resources/logservices/faultlist"
-	"github.com/superchalupa/sailfish/src/dell-resources/logservices/lcl"
 	"github.com/superchalupa/sailfish/src/dell-resources/registries"
 	"github.com/superchalupa/sailfish/src/eventwaiter"
 	"github.com/superchalupa/sailfish/src/log"
@@ -68,8 +66,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	// These three all set up a waiter for the root service to appear, so init root service after.
 	actionhandler.Setup(ctx, ch, eb)
 	event.Setup(ch, eb)
-	logSvc := lcl.New(ch, eb)
-	faultSvc := faultlist.New(ch, eb)
 	domain.StartInjectService(logger, eb)
 	arService, _ := ar_mapper2.StartService(ctx, logger, cfgMgr, cfgMgrMu, eb)
 	actionSvc := ah.StartService(ctx, logger, ch, eb)
@@ -106,8 +102,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	//storage_volume_collection.RegisterAggregate(instantiateSvc)
 
 	// ignore unused for now
-	_ = logSvc
-	_ = faultSvc
 	_ = actionSvc
 
 	// add mapper helper to instantiate
