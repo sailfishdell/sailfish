@@ -987,7 +987,7 @@ awesome_mapper:
     generate_health_status:
       - { SelectEventType: "HealthEvent",
           Select: "true",
-          ModelUpdate: [ {Property: "health", Query: "generate_new_health(data)"} ]}
+          ModelUpdate: [ {Property: "health", Query: "generate_new_health(data, view.GetUUID())"} ]}
 
     testview:
       - { SelectEventType: "AttributeUpdated", Select: "data.FQDD == fqdd && data.Name == 'test'", ModelUpdate: [ {Property: "TEST", Query: "data.Value", Default: 0} ] }
