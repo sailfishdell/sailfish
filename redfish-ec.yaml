@@ -587,6 +587,7 @@ views:
         "instantiate('thermal', 'parenturi', rooturi + '/Chassis/' + FQDD, 'FQDD', FQDD)",
         "instantiate('slotcollection', 'parenturi', rooturi + '/Chassis/' + FQDD, 'FQDD', FQDD)",
         "instantiate('slotconfigcollection', 'parenturi', rooturi + '/Chassis/' + FQDD, 'FQDD', FQDD)",
+        "instantiate('subsyshealth', 'parentid', 'view.GetUUID()', 'parenturi', rooturi + '/Chassis/' + FQDD, 'FQDD', FQDD)",
         ]
 
   "power":
@@ -805,9 +806,12 @@ views:
       "Models":
         "default": {}
       "Controllers":
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "generate_health_status", "uniquename": "'subsyshealth_' + view.GetURI()", "passthru": {} }
       "View":
         - "fn": "with_URI"
-          "params": "rooturi + '/SubSystemHealth'"
+          "params": "parenturi + '/SubSystemHealth'"
+      "Aggregate": "subsyshealth"
 
   "slotcollection":
       "Logger": ["module", "slot"]
@@ -980,10 +984,10 @@ awesome_mapper:
           Select: "true",
           Exec: [ "addfaultentry(collection_uri, data)" ]}
 
-    addsubsystemhealth:
+    generate_health_status:
       - { SelectEventType: "HealthEvent",
           Select: "true",
-          Exec: [ "addsubsyshealth(data.FQDD, data.Health)" ]}
+          ModelUpdate: [ {Property: "health", Query: "generate_new_health(data)"} ]}
 
     testview:
       - { SelectEventType: "AttributeUpdated", Select: "data.FQDD == fqdd && data.Name == 'test'", ModelUpdate: [ {Property: "TEST", Query: "data.Value", Default: 0} ] }

@@ -66,8 +66,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	telemetryservice.Setup(ctx, actionSvc, ch, eb)
 	pumpSvc := NewPumpActionSvc(ctx, logger, eb)
 
-	// TODO: ?? what is this?  subSystemSvc := subsystemhealth.New(ch, eb)
-
 	// the package for this is going to change, but this is what makes the various mappers and view functions available
 	instantiateSvc := testaggregate.New(ctx, logger, cfgMgr, cfgMgrMu, ch)
 	evtSvc := eventservice.New(ctx, cfgMgr, cfgMgrMu, instantiateSvc, actionSvc, ch, eb)
@@ -96,6 +94,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	RegisterCertAggregate(instantiateSvc)
 	AddECInstantiate(logger, instantiateSvc)
 	initLCL(logger, ch)
+	inithealth(logger)
 
 	// add mapper helper to instantiate
 	awesome_mapper2.AddFunction("find_uris_with_basename", func(args ...interface{}) (interface{}, error) {
@@ -183,9 +182,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	} {
 		instantiateSvc.Instantiate(regName, map[string]interface{}{"location": location})
 	}
-
-	// TODO: formerly called on system.chassis.1
-	// subSystemSvc.StartService(ctx, logger, sysChasVw, cfgMgr, cfgMgrMu, instantiateSvc)
 
 	{
 		updsvcLogger := logger.New("module", "UpdateService")
