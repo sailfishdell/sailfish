@@ -16,14 +16,24 @@ func init() {
 	eh.RegisterEventData(AttributeGetCurrentValueRequest, func() eh.EventData { return &AttributeGetCurrentValueRequestData{} })
 }
 
+type PrivilegeData struct {
+	License        int
+	ReadPrivilege  int
+	WritePrivilege int
+	Readonly       bool
+	IsSuppressed   bool
+	Private        bool
+}
+
 type AttributeUpdatedData struct {
-	ReqID eh.UUID
-	FQDD  string
-	Group string
-	Index string
-	Name  string
-	Value interface{}
-	Error string
+	Privileges PrivilegeData
+	ReqID      eh.UUID
+	FQDD       string
+	Group      string
+	Index      string
+	Name       string
+	Value      interface{}
+	Error      string
 }
 
 type AttributeUpdateRequestData struct {

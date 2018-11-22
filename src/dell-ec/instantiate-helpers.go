@@ -159,6 +159,9 @@ func AddECInstantiate(l log.Logger, instantiateSvc *testaggregate.Service) {
 		}
 
 		s := strings.Split(FQDD, ".")
+		if len(s) < 2 {
+			return nil, errors.New("Invalid FQDD")
+		}
 		group, index := s[0], s[1]
 
 		// have to do this in a goroutine because awesome mapper is locked while it processes events
@@ -185,6 +188,9 @@ func AddECInstantiate(l log.Logger, instantiateSvc *testaggregate.Service) {
 		}
 
 		s := strings.Split(FQDD, ".")
+		if len(s) < 2 {
+			return nil, errors.New("Invalid FQDD")
+		}
 		group, index := s[0], s[1]
 
 		// have to do this in a goroutine because awesome mapper is locked while it processes events
