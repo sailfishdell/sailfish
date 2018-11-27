@@ -1046,7 +1046,7 @@ awesome_mapper:
     inst_power:
       - { SelectEventType: "InstPowerEvent", Select: "data.FQDD == DM_FQDD",
             ModelUpdate: [
-                {Property: "Instantaneous_Power", Query: "data.InstPower"}]}
+                {Property: "Instantaneous_Power", Query: "data.InstPower", Default: 0}]}
 
     iom_config:
       - { SelectEventType: "IomCapability", Select: "data.Name == FQDD",
