@@ -113,7 +113,7 @@ func RegisterSledAggregate(s *testaggregate.Service) {
 						"Description@meta":  vw.Meta(view.GETProperty("description"), view.GETModel("default")),
 						"PowerState@meta":   vw.Meta(view.GETProperty("power_state"), view.GETModel("default")),
 
-						"IndicatorLED": vw.Meta(view.GETModel("default"), view.PropPATCH("indicator_led", "ar_mapper"), view.GETProperty("indicator_led")),
+						"IndicatorLED@meta": vw.Meta(view.GETModel("default"), view.PropPATCH("indicator_led", "ar_mapper"), view.GETProperty("indicator_led")),
 						"SKU@meta":     vw.Meta(view.GETProperty("service_tag"), view.GETModel("default")),
 
 						"Links": map[string]interface{}{

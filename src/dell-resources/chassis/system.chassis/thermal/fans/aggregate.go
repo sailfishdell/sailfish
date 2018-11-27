@@ -40,13 +40,15 @@ func RegisterAggregate(s *testaggregate.Service) {
 						},
 						"Oem": map[string]interface{}{
 							"Dell": map[string]interface{}{
-								"ReadingUnits":         "Percent",
-								"Reading@meta":         vw.Meta(view.PropGET("Fanpwm_int")),
-								"FirmwareVersion@meta": vw.Meta(view.PropGET("firmware_version")),
-								"HardwareVersion@meta": vw.Meta(view.PropGET("hardware_version")),
-								"GraphicsURI@meta":     vw.Meta(view.PropGET("graphics_uri")),
 								"Attributes@meta":      vw.Meta(view.GETProperty("attributes"), view.GETFormatter("attributeFormatter"), view.GETModel("default"), view.PropPATCH("attributes", "ar_dump")),
-							}}},
+							},
+							"ReadingUnits":         "Percent",
+							"Reading@meta":         vw.Meta(view.PropGET("Fanpwm_int")),
+							"FirmwareVersion@meta": vw.Meta(view.PropGET("firmware_version")),
+							"HardwareVersion@meta": vw.Meta(view.PropGET("hardware_version")),
+							"GraphicsURI@meta":     vw.Meta(view.PropGET("graphics_uri")),
+						},
+					},
 				}}, nil
 		})
 }
