@@ -9,6 +9,10 @@ import (
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
 )
 
+type closer interface {
+	Close()
+}
+
 type Option func(*View) error
 
 type controller interface {
@@ -59,6 +63,14 @@ func New(options ...Option) *View {
 
 	s.ApplyOption(options...)
 	if s.registerplugin {
+		// close any previous registrations
+		p, err := domain.InstantiatePlugin(s.PluginType())
+		if err == nil && p != nil {
+			if c, ok := p.(closer); ok {
+				c.Close()
+			}
+		}
+
 		// caller responsible for registering if this isn't set
 		s.closefn = append(s.closefn, func() { domain.UnregisterPlugin(s.PluginType()) })
 		domain.RegisterPlugin(func() domain.Plugin { return s })

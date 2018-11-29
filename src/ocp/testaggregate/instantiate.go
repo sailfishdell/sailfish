@@ -15,6 +15,10 @@ import (
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
 )
 
+type closer interface {
+	Close()
+}
+
 type viewFunc func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, vw *view.View, cfg interface{}, parameters map[string]interface{}) error
 type controllerFunc func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, vw *view.View, cfg interface{}, parameters map[string]interface{}) error
 type aggregateFunc func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, vw *view.View, cfg interface{}, parameters map[string]interface{}) ([]eh.Command, error)
@@ -287,6 +291,14 @@ func (s *Service) instantiateFromCfg(ctx context.Context, cfgMgr *viper.Viper, c
 		if err != nil {
 			subLogger.Crit("expression evaluation failed", "expr", expr, "err", err)
 			continue
+		}
+	}
+
+	// close any previous registrations
+	p, err := domain.InstantiatePlugin(vw.PluginType())
+	if err == nil && p != nil {
+		if c, ok := p.(closer); ok {
+			c.Close()
 		}
 	}
 
