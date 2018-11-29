@@ -9,6 +9,7 @@ const (
 	InstPowerEvent                      = eh.EventType("InstPowerEvent")
 	DataManagerEvent                    = eh.EventType("DataManagerEvent")
 	FanEvent                            = eh.EventType("FanEvent")
+        ThermalSensorEvent                  = eh.EventType("ThermalSensorEvent")
 	PowerSupplyObjEvent                 = eh.EventType("PowerSupplyObjEvent")
 	PowerConsumptionDataObjEvent        = eh.EventType("PowerConsumptionDataObjEvent")
 	AvgPowerConsumptionStatDataObjEvent = eh.EventType("AvgPowerConsumptionStatDataObjEvent")
@@ -25,6 +26,7 @@ func init() {
 	eh.RegisterEventData(HealthEvent, func() eh.EventData { return &HealthEventData{} })
 	eh.RegisterEventData(InstPowerEvent, func() eh.EventData { return &InstPowerEventData{} })
 	eh.RegisterEventData(FanEvent, func() eh.EventData { return &FanEventData{} })
+	eh.RegisterEventData(ThermalSensorEvent, func() eh.EventData { return &ThermalSensorEventData{} })
 	eh.RegisterEventData(PowerSupplyObjEvent, func() eh.EventData { return &PowerSupplyObjEventData{} })
 	eh.RegisterEventData(PowerConsumptionDataObjEvent, func() eh.EventData { return &PowerConsumptionDataObjEventData{} })
 	eh.RegisterEventData(AvgPowerConsumptionStatDataObjEvent, func() eh.EventData { return &AvgPowerConsumptionStatDataObjEventData{} })
@@ -40,6 +42,7 @@ func init() {
 	eh.RegisterEventData(StoragePhysicalEvent, func() eh.EventData { return &StoragePhysicalObjEventData{} })
 	eh.RegisterEventData(StorageVirtualEvent, func() eh.EventData { return &StorageVirtualObjEventData{} })
 }
+
 
 type IomCapabilityData struct {
 	Name                    string
@@ -68,6 +71,7 @@ type DataObjectHeader struct {
 	Struct          string
 }
 
+
 type FanEventData struct {
 	ObjectHeader      DataObjectHeader
 	Fanpwm            float64 `json:"fanpwm"`
@@ -85,6 +89,19 @@ type FanEventData struct {
 	Rotor1rpm         int `json:"rotor1rpm"`
 	FanStateMask      int `json:"fanStateMask"`
 }
+
+type ThermalSensorEventData struct {
+	ObjectHeader      DataObjectHeader
+	ReadingValid      int `json:"readingValid"`
+        UpperCriticalThreshold    int `json:"upperCriticalThreshold"`
+        SensorReading             int `json:"sensorReadingInt"`
+        LowerWarningThreshold     int `json:"lowerWarningThreshold"`
+        SensorStateMask           int `json:"sensorStateMask"`
+        SensorHealth              int `json:"sensorHealth"`
+        UpperWarningThreshold     int `json:"upperWarningThreshold"`
+        LowerCriticalThreshold    int `json:"lowerCriticalThreshold"`
+}
+
 
 type PowerSupplyObjEventData struct {
 	ObjectHeader         DataObjectHeader

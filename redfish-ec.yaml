@@ -16,6 +16,8 @@ listen:
 #   with formatter
 #
 
+
+
 views:
   "rootview":
       "Logger": ["module", "root"]
@@ -707,6 +709,8 @@ views:
           "params": {"modelname": "default", "cfgsection": "Chassis/System.Chassis/Thermal", "mappinguniquename": "'chassis_thermal_mapper:' + FQDD", "AddToView": "ar_mapper"}
         - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "thermal", "uniquename": "'am2_thermal:' + FQDD", "passthru": {"fanuri": "rooturi + '/Chassis/' + FQDD + '/Sensors/Fans'"} }
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "thermal_sensor", "uniquename": "'am2_thermal_sensor_' + FQDD ", "passthru": { }}
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/Chassis/' + FQDD + '/Thermal'"
@@ -717,6 +721,28 @@ views:
         - "fn": "stdFormatters"
           "params":
       "Aggregate": "thermal"
+      "ExecPost": [
+        "instantiate('sensor', 'FQDD', FQDD )",
+      ]
+
+  "sensor":
+      "Logger": ["module", "Thermal"]
+      "Models":
+        "default":  {"unique_name": "'Sensor'"}
+      "Controllers":
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "sensor", "uniquename": "'am2_sensor_' + FQDD ", "passthru": {"FQDD": "'System.Chassis.1%23Temperature.CHASSIS_AMBIENT'" } }
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/Chassis/System.Chassis.1/Sensors/Temperatures/System.Chassis.1%23Temperature.CHASSIS_AMBIENT'"
+        - "fn": "withModel"
+          "params": {"name": "global_health", "expr": "globalHealthModel"}
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+        - "fn": "stdFormatters"
+          "params":
+      "Aggregate": "sensor"
+
 
   "fan":
       "Logger": ["module", "Fan"]
@@ -853,7 +879,7 @@ views:
           "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + view.GetURI()", "passthru": {'collection_uri': 'view.GetURI()'} }
       "View":
         - "fn": "with_URI"
-          "params": "parenturi + '/SlotConfig'"
+          "params": "parenturi + '/SlotConfigs'"
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
         - "fn": "stdFormatters"
@@ -869,7 +895,7 @@ views:
           "params": {"modelname": "default", "cfgsection": "slotconfig", "uniquename": "'slot:' + FQDD", "passthru": {"FQDD": "FQDD", "ParentFQDD": "ParentFQDD"}}
       "View":
         - "fn": "with_URI"
-          "params": " rooturi + '/Chassis/' + ParentFQDD + '/SlotConfig/' + FQDD"
+          "params": " rooturi + '/Chassis/' + ParentFQDD + '/SlotConfigs/' + FQDD"
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
       "Aggregate": "slotconfig"
@@ -974,6 +1000,14 @@ awesome_mapper:
           Select: "nohash(data.ResourceURI) && baseuri(data.ResourceURI) == fanuri",
           ModelUpdate: [ {Property: "fan_uris", Query: "removefromset(model, propname, data.ResourceURI)"} ]}
 
+    thermal_sensor:
+      - { SelectEventType: "RedfishResource:created",
+          Select: "nohash(data.ResourceURI) && baseuri(data.ResourceURI) == rooturi + '/Chassis/System.Chassis.1/Sensors/Temperatures'",
+          ModelUpdate: [ {Property: "temperature_uris", Query: "addtoset(model, propname, data.ResourceURI)"} ]}
+      - { SelectEventType: "RedfishResource:removed",
+          Select: "nohash(data.ResourceURI) && baseuri(data.ResourceURI) == rooturi + '/Chassis/System.Chassis.1/Sensors/Temperatures'",
+          ModelUpdate: [ {Property: "temperature_uris", Query: "removefromset(model, propname, data.ResourceURI)"} ]}
+
     lclog:
       - { SelectEventType: "LogEvent",
           Select: "true",
@@ -1047,10 +1081,21 @@ awesome_mapper:
                 {Property: "rpm", Query: "(data.Rotor1rpm+data.Rotor2rpm)/2" },
                 {Property: "FanStateMask", Query: "data.FanStateMask" }]}
 
+    sensor:
+      - { SelectEventType: "ThermalSensorEvent", Select: "data.ObjectHeader.FQDD == FQDD",
+            ModelUpdate: [
+                {Property: "LowerWarningThreshold", Query: "data.LowerWarningThreshold" },
+                {Property: "UpperWarningThreshold", Query: "data.UpperWarningThreshold" },
+                {Property: "LowerCriticalThreshold", Query: "data.LowerCriticalThreshold" },
+                {Property: "UpperCriticalThreshold", Query: "data.UpperCriticalThreshold" },
+                {Property: "sensorReading", Query: "data.SensorReading" },
+                {Property: "sensorHealth", Query: "map_health_value(data.SensorHealth)" }]}
+
+
     inst_power:
       - { SelectEventType: "InstPowerEvent", Select: "data.FQDD == DM_FQDD",
             ModelUpdate: [
-                {Property: "Instantaneous_Power", Query: "data.InstPower"}]}
+                {Property: "Instantaneous_Power", Query: "data.InstPower", Default: 0}]}
 
     iom_config:
       - { SelectEventType: "IomCapability", Select: "data.Name == FQDD",
@@ -1096,6 +1141,7 @@ awesome_mapper:
                 {Property: "min_watts",      Query: "traverse_struct(data, 'MinPwrLast' + trend)" },
                 {Property: "max_watts_time", Query: "epoch_to_date(traverse_struct(data, 'MaxPwrLast' + trend + 'Time'))" },
                 {Property: "min_watts_time", Query: "epoch_to_date(traverse_struct(data, 'MinPwrLast' + trend + 'Time'))" }]}
+
 
 
     health:
@@ -1204,7 +1250,7 @@ mappings:
     Chassis/System.Chassis:
         - {Property: "asset_tag",    FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "AssetTag" }
         - {Property: "description",  FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Description" }
-        - {Property: "power_state",  FQDD: "{FQDD}", Group: "ChassisPower", Index: "1", Name: "ChassisPowerStatus.1" }
+        - {Property: "power_state",  FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "ChassisPowerStatus" }
         - {Property: "serial",       FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "SerialNumber" }
         - {Property: "part_number",  FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "PartNumber" }
         - {Property: "chassis_type", FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "ChassisType"}

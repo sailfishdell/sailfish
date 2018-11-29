@@ -59,4 +59,39 @@ func RegisterThermalAggregate(s *testaggregate.Service) {
 					}},
 			}, nil
 		})
-}
+
+
+	s.RegisterAggregateFunction("sensor",
+		func(ctx context.Context, subLogger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, vw *view.View, extra interface{}, params map[string]interface{}) ([]eh.Command, error) {
+			return []eh.Command{
+				&domain.CreateRedfishResource{
+					ResourceURI: vw.GetURI(),
+					Type:        "#Thermal.v1_0_2.Temperature",
+					Context:     "/redfish/v1/$metadata#Thermal.Thermal",
+					Privileges: map[string]interface{}{
+						"GET":    []string{"Login"},
+						"POST":   []string{}, // cannot create sub objects
+						"PUT":    []string{},
+						"PATCH":  []string{},
+						"DELETE": []string{}, // can't be deleted
+					},
+					Properties: map[string]interface{}{
+						"Id":					params["FQDD"] ,
+						"Name":        				"Chassis Inlet Temperature",
+						"Description": 				"Represents the properties for Temperature and Cooling",
+						"LowerThresholdCritical@meta": 		vw.Meta(view.GETProperty("LowerWarningThreshold"), view.GETModel("default")),
+						"LowerThresholdNonCritical@meta": 	vw.Meta(view.GETProperty("LowerCriticalThreshold"), view.GETModel("default")),
+						"MemberId": 				"System.Chassis.1",
+						"ReadingCelsius@meta":			vw.Meta(view.GETProperty("sensorReading"), view.GETModel("default")),
+						"Status": map[string]interface{} {
+											"HealthRollup@meta": vw.Meta(view.GETProperty("sensorHealth"), view.GETModel("default")),
+											"State":             "Enabled", //hardcoded
+											"Health@meta":       vw.Meta(view.GETProperty("sensorHealth"), view.GETModel("default")),
+						},
+						"UpperThresholdCritical@meta":		vw.Meta(view.GETProperty("UpperCriticalThreshold"), view.GETModel("default")),
+						"UpperThresholdNonCritical@meta":	vw.Meta(view.GETProperty("UpperWarningThreshold"), view.GETModel("default")),
+
+					}},
+
+			}, nil
+})}
