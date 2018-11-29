@@ -110,16 +110,27 @@ func (d *DomainObjects) HasAggregateID(uri string) bool {
 	return ok
 }
 
-func (d *DomainObjects) GetAggregateID(uri string) eh.UUID {
-	d.treeMu.RLock()
-	defer d.treeMu.RUnlock()
-	return d.Tree[uri]
+func (d *DomainObjects) GetAggregateID(uri string) (id eh.UUID) {
+	id, _ = d.GetAggregateIDOK(uri)
+	return
 }
 
 func (d *DomainObjects) GetAggregateIDOK(uri string) (id eh.UUID, ok bool) {
 	d.treeMu.RLock()
 	defer d.treeMu.RUnlock()
 	id, ok = d.Tree[uri]
+
+	if !ok {
+		// strip out any trailing slash and try again
+		i := 0
+		// start at the end and while the next char is '/', increment
+		for i = 0; i < len(uri) && uri[len(uri)-(1+i)] == '/'; i++ {
+			fmt.Printf("  test %s\n", uri[len(uri)-(1+i)])
+		}
+		// use all the way up to the last non-'/' char
+		id, ok = d.Tree[uri[:len(uri)-(i)]]
+	}
+
 	return
 }
 
