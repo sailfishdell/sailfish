@@ -13,9 +13,9 @@ import (
 	eh "github.com/looplab/eventhorizon"
 	"github.com/looplab/eventhorizon/aggregatestore/model"
 	"github.com/looplab/eventhorizon/commandhandler/aggregate"
-	eventbus "github.com/looplab/eventhorizon/eventbus/local"
 	eventpublisher "github.com/looplab/eventhorizon/publisher/local"
 	repo "github.com/looplab/eventhorizon/repo/memory"
+	"github.com/superchalupa/sailfish/src/eventbus"
 
 	"github.com/superchalupa/sailfish/src/eventwaiter"
 )
@@ -179,8 +179,11 @@ func (d *DomainObjects) Notify(ctx context.Context, event eh.Event) {
 	if event.EventType() == RedfishResourceCreated {
 		if data, ok := event.Data().(*RedfishResourceCreatedData); ok {
 			logger.Info("Create URI", "URI", data.ResourceURI)
-			// TODO: handle conflicts (how?)
+			// First, delete any old resource at that URI
+			d.DeleteResource(ctx, data.ResourceURI)
+			// then attach the new resource
 			d.SetAggregateID(data.ResourceURI, data.ID)
+			// no need to worry about plugins as new plugin should automatically overwrite any old one.
 		}
 		return
 	}
