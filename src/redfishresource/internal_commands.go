@@ -7,8 +7,14 @@ import (
 
 	eh "github.com/looplab/eventhorizon"
 	"github.com/mitchellh/mapstructure"
+	"github.com/superchalupa/sailfish/src/event"
 	log "github.com/superchalupa/sailfish/src/log"
 )
+
+type syncEvent interface {
+	Add(int)
+	Wait()
+}
 
 func init() {
 	eh.RegisterCommand(func() eh.Command { return &CreateRedfishResource{} })
@@ -189,10 +195,11 @@ func (c *UpdateRedfishResourceProperties) Handle(ctx context.Context, a *Redfish
 }
 
 type InjectEvent struct {
-	ID         eh.UUID                  `json:"id" eh:"optional"`
-	Name       eh.EventType             `json:"name"`
-	EventData  map[string]interface{}   `json:"data" eh:"optional"`
-	EventArray []map[string]interface{} `json:"event_array" eh:"optional"`
+	ID          eh.UUID                  `json:"id" eh:"optional"`
+	Name        eh.EventType             `json:"name"`
+	Synchronous bool                     `eh:"optional"`
+	EventData   map[string]interface{}   `json:"data" eh:"optional"`
+	EventArray  []map[string]interface{} `json:"event_array" eh:"optional"`
 }
 
 // AggregateType satisfies base Aggregate interface
@@ -225,7 +232,15 @@ func StartInjectService(logger log.Logger, eb eh.EventBus) {
 			if len(injectChan) == 0 {
 				startPrinting = false
 			}
+
 			eb.PublishEvent(context.Background(), event) // in a goroutine (comment for grep purposes)
+
+			// if we get a sync event, we have to pause processing new events until it's completed processing
+			// it may be processing in the background
+			if ev, ok := event.(syncEvent); ok {
+				logger.Warn("Processing synchronous event")
+				ev.Wait()
+			}
 		}
 	}()
 }
@@ -271,7 +286,16 @@ func (c *InjectEvent) Handle(ctx context.Context, a *RedfishResourceAggregate) e
 		// comment out debug prints in the hot path, uncomment for debugging
 		//requestLogger.Debug("InjectEvent - publishing", "event name", c.Name, "event_data", data)
 	}
-	injectChan <- eh.NewEvent(c.Name, trainload, time.Now())
+
+	var evt eh.Event
+	if c.Synchronous || c.Name == eh.EventType("ComponentEvent") {
+		e := event.NewSyncEvent(c.Name, trainload, time.Now())
+		e.Add(1)
+		evt = e
+	} else {
+		evt = eh.NewEvent(c.Name, trainload, time.Now())
+	}
+	injectChan <- evt
 
 	return nil
 }
