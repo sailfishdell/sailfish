@@ -240,7 +240,7 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Strict-Transport-Security", "max-age=63072000; includeSubDomains") // for A+ SSL Labs score
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.Header().Set("OData-Version", "4.0")
-	w.Header().Set("Server", "go-redfish")
+	w.Header().Set("Server", "sailfish")
 
 	for k, v := range data.Headers {
 		w.Header().Add(k, v)

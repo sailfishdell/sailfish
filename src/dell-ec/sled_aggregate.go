@@ -168,4 +168,29 @@ func RegisterSledAggregate(s *testaggregate.Service) {
 					}}}, nil
 		})
 
+	s.RegisterAggregateFunction("subsyshealth",
+		func(ctx context.Context, subLogger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, vw *view.View, extra interface{}, params map[string]interface{}) ([]eh.Command, error) {
+			return []eh.Command{
+				&domain.CreateRedfishResource{
+					ResourceURI: vw.GetURI(),
+					Type:        "DellSubSystemHealth.v1_0_0.DellSubSystemHealth",
+					Context:     "/redfish/v1/$metadata#ChassisCollection.ChassisCollection/Members/$entity",
+					Privileges: map[string]interface{}{
+						"GET": []string{"Login"},
+					},
+					Properties: map[string]interface{}{
+					// The below doesn't work because it creates a property with name "".
+					// So for now, the awesome mapper function will just do an update
+					// resource command directly
+					// "@meta": vw.Meta(view.PropGET("health")),
+					}},
+
+				&domain.UpdateRedfishResourceProperties{
+					ID: eh.UUID(params["parentid"].(string)),
+					Properties: map[string]interface{}{
+						"SubSysHealth": map[string]interface{}{"@odata.id": vw.GetURI()},
+					}},
+			}, nil
+		})
+
 }
