@@ -21,6 +21,7 @@ import (
 	"context"
 
 	eh "github.com/looplab/eventhorizon"
+	myevent "github.com/superchalupa/sailfish/src/event"
 	"github.com/superchalupa/sailfish/src/log"
 )
 
@@ -120,15 +121,36 @@ func (w *EventWaiter) Run() {
 				startPrinting = false
 			}
 			for _, l := range listeners {
+
 				l.processEvent(event)
 			}
+
+			// TODO: separation of concerns: this should be factored out into a middleware of some sort...
+			// now that we are waiting on the listeners, we can .Done() the waitgroup for the eventwaiter itself
+			if e, ok := event.(syncEvent); ok {
+				//fmt.Printf("Done in listener\n")
+				e.Done()
+			}
+
 		}
 	}
+}
+
+type syncEvent interface {
+	Add(int)
+	Done()
 }
 
 // Notify implements the eventhorizon.EventObserver.Notify method which forwards
 // events to the waiters so that they can match the events.
 func (w *EventWaiter) Notify(ctx context.Context, event eh.Event) {
+
+	// TODO: separation of concerns: this should be factored out into a middleware of some sort...
+	if e, ok := event.(syncEvent); ok {
+		//fmt.Printf("ADD(1) in eventwaiter Notify\n")
+		e.Add(1)
+	}
+
 	w.inbox <- event
 }
 
@@ -182,13 +204,34 @@ func (l *EventListener) processEvent(event eh.Event) {
 	eventDataArray, ok := event.Data().([]eh.EventData)
 	if ok {
 		for _, data := range eventDataArray {
-			oneEvent := eh.NewEvent(t, data, event.Timestamp())
+
+			var oneEvent eh.Event
+			if _, ok := event.(myevent.SyncEvent); ok {
+				newEv := myevent.NewSyncEvent(t, data, event.Timestamp())
+				newEv.WaitGroup = event.(myevent.SyncEvent).WaitGroup
+				oneEvent = newEv
+			} else {
+				oneEvent = eh.NewEvent(t, data, event.Timestamp())
+			}
+
 			if l.match(oneEvent) {
+				// TODO: separation of concerns: this should be factored out into a middleware of some sort...
+				// now that we are waiting on the listeners, we can .Done() the waitgroup for the eventwaiter itself
+				if e, ok := oneEvent.(syncEvent); ok {
+					//fmt.Printf("ADD(1) in listener processEvent\n")
+					e.Add(1)
+				}
 				l.singleEventInbox <- oneEvent
 			}
 		}
 	} else {
 		if l.match(event) {
+			// TODO: separation of concerns: this should be factored out into a middleware of some sort...
+			// now that we are waiting on the listeners, we can .Done() the waitgroup for the eventwaiter itself
+			if e, ok := event.(syncEvent); ok {
+				//fmt.Printf("ADD(1) in listener processEvent\n")
+				e.Add(1)
+			}
 			l.singleEventInbox <- event
 		}
 	}
@@ -206,6 +249,13 @@ func (l *EventListener) Wait(ctx context.Context) (eh.Event, error) {
 		}
 		if len(l.singleEventInbox) == 0 {
 			l.startPrinting = false
+		}
+
+		// TODO: separation of concerns: this should be factored out into a middleware of some sort...
+		// now that we are waiting on the listeners, we can .Done() the waitgroup for the eventwaiter itself
+		if e, ok := event.(syncEvent); ok {
+			defer e.Done()
+			//defer fmt.Printf("Done in Wait()\n")
 		}
 
 		return event, nil
