@@ -245,6 +245,12 @@ func init() {
 		}
 		return args[0], nil
 	})
+  AddFunction("empty_to_null", func(args ...interface{}) (interface{}, error) {
+    if args[0] == "" {
+      return nil, nil
+    }
+    return args[0], nil
+  })
 	AddFunction("subsystem_health", func(args ...interface{}) (interface{}, error) {
 		fqdd := strings.Split(args[0].(map[string]string)["FQDD"], "#")
 		subsys := fqdd[len(fqdd)-1]

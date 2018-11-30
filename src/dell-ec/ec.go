@@ -94,6 +94,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	AddECInstantiate(logger, instantiateSvc)
 	initLCL(logger, ch)
 	inithealth(ctx, logger, ch)
+  initpowercontrol(logger)
 
 	// add mapper helper to instantiate
 	awesome_mapper2.AddFunction("find_uris_with_basename", func(args ...interface{}) (interface{}, error) {
