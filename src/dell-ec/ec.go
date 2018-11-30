@@ -184,24 +184,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	}
 
 	{
-		/*updsvcLogger := logger.New("module", "UpdateService")
-		mdl := model.New()
-
-		// the controller is what updates the model when ar entries change,
-		// also handles patch from redfish
-		armapper := arService.NewMapping(updsvcLogger, "Chassis", "update_service", mdl, map[string]string{})
-
-		updSvcVw := view.New(
-			view.WithURI(rootView.GetURI()+"/UpdateService"),
-			view.WithModel("default", mdl),
-			view.WithController("ar_mapper", armapper),
-			actionSvc.WithAction(ctx, "update.reset", "/Actions/Oem/DellUpdateService.Reset", updateReset),
-			actionSvc.WithAction(ctx, "update.eid674.reset", "/Actions/Oem/EID_674_UpdateService.Reset", updateEID674Reset),*/
     _, updSvcVw, _ := instantiateSvc.Instantiate("update_service", map[string]interface{}{
-      //"updateReset": view.Action(updateReset),
-      //"updateEID674Reset": view.Action(updateEID674Reset),
-      //"updateSyncup": view.Action(updateSyncup),
-      //"updateEID674Syncup": view.Action(updateEID674Syncup),
 		  "firmware_inventory_members": d.FindMatchingURIs(func(uri string) bool { return path.Dir(uri) == rooturi+"/UpdateService/FirmwareInventory/Installed-" }),
     })
 
