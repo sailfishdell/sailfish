@@ -441,7 +441,6 @@ views:
           "params": {"modelname": "default", "cfgsection": "certificate", "uniquename": "'certificate_' + ParentFQDD", "passthru": {'FQDD': 'ParentFQDD'} }
       "View":
         - "fn": "with_URI"
-          "params": "parenturi + '/CertificateInventory'"
           "params": "rooturi + '/Managers/' + ParentFQDD + '/CertificateService/CertificateInventory/' + FQDD"
         - "fn": "stdFormatters"
           "params":
@@ -484,6 +483,41 @@ views:
         - "fn": "stdFormatters"
           "params":
       "Aggregate": "lclogentrycollection"
+
+  "lclogentry":
+      "Logger": ["module", "lclog"]
+      "Controllers":
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/Managers/' + FQDD + '/Logs/Lclog/' + uuid"
+      "Aggregate": "lclogentry"
+
+  "update_service":
+      "Logger": ["module", "updateservice"]
+      "Models":
+        "default": {}
+      "Controllers":
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/UpdateService'"
+      "Aggregate": "update_service"
+      "ExecPost": [
+        "instantiate('update_service_firmwareinventory', 'firmware_inventory_members', firmware_inventory_members)"
+      ]
+
+  "update_service_firmwareinventory":
+      "Logger": ["module", "updateservice"]
+      "Models":
+        "default": {"firmware_inventory_members": "firmware_inventory_members"}
+      "Controllers":
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "update_service", "uniquename": "'firmware_inventory'" }
+      "View":
+        - "fn": "stdFormatters"
+          "params":
+        - "fn": "with_URI"
+          "params": "rooturi + '/UpdateService/FirmwareInventory'"
+      "Aggregate": "update_service_firmwareinventory"
 
   "faultlistservices":
       "Logger": ["module", "lclog"]
@@ -582,9 +616,9 @@ views:
           "params":
         - "fn": "with_PumpHandledAction"
           "params": {"name": "chassis.reset", "uri": "/Actions/Chassis.Reset", "timeout": 30}
-        - "fn": "WithAction"
+        - "fn": "WithAction" #change this to upload
           "params": {"name": "msmconfigbackup", "uri": "/Actions/Oem/MSMConfigBackup", "actionFunction": "msmConfigBackup"}
-        - "fn": "WithAction"
+        - "fn": "WithAction" #chagne this to upload
           "params": {"name": "chassis.msmconfigbackup", "uri": "/Actions/Oem/DellChassis.MSMConfigBackup", "actionFunction": "chassisMSMConfigBackup"}
       "Aggregate": "system_chassis"
       "ExecPost": [
@@ -832,7 +866,7 @@ views:
       "Aggregate": "iom_config"
 
   "subsyshealth":
-      "Logger": ["module", "subsyshealth"]
+      "Logger": ["module", "subsystemhealth"]
       "Models":
         "default": {}
       "Controllers":
@@ -903,6 +937,20 @@ views:
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
       "Aggregate": "slotconfig"
+
+  "inv_view":
+      "Logger": ["module", "observer"]
+      "Models":
+        "default": {"fw_id": "'Installed-'+comp_ver_tuple"}
+      "Controllers":
+        - "fn": "ARMapper"
+          "params": {"modelname": "default", "cfgsection": "firmware/inventory", "mappinguniquename": "'firmware_inventory:' + comp_ver_tuple", "AddToView": true}
+      "View":
+        - "fn": "linkModel"
+          "params": {"existing": "default", "linkname": "swinv"}
+        - "fn": "with_URI"
+          "params": "rooturi + '/UpdateService/FirmwareInventory/Installed-' + comp_ver_tuple"
+      "Aggregate": "inv_view"
 
   "sled":
       "Logger": ["module", "Sled"]
@@ -1027,6 +1075,14 @@ awesome_mapper:
           Select: "true",
           ModelUpdate: [ {Property: "health", Query: "generate_new_health(data, view.GetUUID())"} ]}
 
+    update_service:
+      - { SelectEventType: "RedfishResource:created",
+      Select: "nohash(data.ResourceURI) && baseuri(data.ResourceURI) == rooturi + '/UpdateService/FirmwareInventory/Installed-' ",
+          ModelUpdate: [ {Property: "firmware_inventory_members", Query: "addtoset(model, propname, data.ResourceURI)"} ]}
+      - { SelectEventType: "RedfishResource:removed",
+      Select: "nohash(data.ResourceURI) && baseuri(data.ResourceURI) == rooturi + '/UpdateService/FirmwareInventory/Installed-' ",
+          ModelUpdate: [ {Property: "firmware_inventory_members", Query: "removefromset(model, propname, data.ResourceURI)"} ]}
+
     testview:
       - { SelectEventType: "AttributeUpdated", Select: "data.FQDD == fqdd && data.Name == 'test'", ModelUpdate: [ {Property: "TEST", Query: "data.Value", Default: 0} ] }
 
@@ -1099,7 +1155,7 @@ awesome_mapper:
     inst_power:
       - { SelectEventType: "InstPowerEvent", Select: "data.FQDD == DM_FQDD",
             ModelUpdate: [
-                {Property: "Instantaneous_Power", Query: "data.InstPower", Default: 0}]}
+                {Property: "Instantaneous_Power", Query: "data.InstPower"}]}
 
     iom_config:
       - { SelectEventType: "IomCapability", Select: "data.Name == FQDD",
@@ -1282,5 +1338,3 @@ mappings:
         - {Property: "graphics_uri",    FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "GraphicsURI" }
         - {Property: "name",    FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "FanName" }
 
-    UpdateService:
-        # no mappings for now: placeholder

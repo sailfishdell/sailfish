@@ -30,7 +30,6 @@ import (
 	"github.com/superchalupa/sailfish/src/ocp/stdcollections"
 	"github.com/superchalupa/sailfish/src/ocp/telemetryservice"
 	"github.com/superchalupa/sailfish/src/ocp/testaggregate"
-	"github.com/superchalupa/sailfish/src/ocp/view"
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
 	"github.com/superchalupa/sailfish/src/stdmeta"
 	"github.com/superchalupa/sailfish/src/uploadhandler"
@@ -84,6 +83,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	slots.RegisterAggregate(instantiateSvc)
 	logservices.RegisterAggregate(instantiateSvc)
 	attributes.RegisterAggregate(instantiateSvc)
+  update_service.RegisterAggregate(instantiateSvc)
 	fans.RegisterAggregate(instantiateSvc)
 	RegisterAggregate(instantiateSvc)
 	RegisterIOMAggregate(instantiateSvc)
@@ -184,7 +184,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	}
 
 	{
-		updsvcLogger := logger.New("module", "UpdateService")
+		/*updsvcLogger := logger.New("module", "UpdateService")
 		mdl := model.New()
 
 		// the controller is what updates the model when ar entries change,
@@ -196,15 +196,25 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 			view.WithModel("default", mdl),
 			view.WithController("ar_mapper", armapper),
 			actionSvc.WithAction(ctx, "update.reset", "/Actions/Oem/DellUpdateService.Reset", updateReset),
-			actionSvc.WithAction(ctx, "update.eid674.reset", "/Actions/Oem/EID_674_UpdateService.Reset", updateEID674Reset),
+			actionSvc.WithAction(ctx, "update.eid674.reset", "/Actions/Oem/EID_674_UpdateService.Reset", updateEID674Reset),*/
+    _, updSvcVw, _ := instantiateSvc.Instantiate("update_service", map[string]interface{}{
+      //"updateReset": view.Action(updateReset),
+      //"updateEID674Reset": view.Action(updateEID674Reset),
+      //"updateSyncup": view.Action(updateSyncup),
+      //"updateEID674Syncup": view.Action(updateEID674Syncup),
+		  "firmware_inventory_members": d.FindMatchingURIs(func(uri string) bool { return path.Dir(uri) == rooturi+"/UpdateService/FirmwareInventory/Installed-" }),
+    })
+
+    updSvcVw.ApplyOption(
+      actionSvc.WithAction(ctx, "update.reset", "/Actions/Oem/DellUpdateService.Reset", pumpSvc.NewPumpAction(30)),
+      actionSvc.WithAction(ctx, "update.eid674.reset", "/Actions/Oem/EID_674_UpdateService.Reset", pumpSvc.NewPumpAction(30)),
 			actionSvc.WithAction(ctx, "update.syncup", "/Actions/Oem/DellUpdateService.Syncup", pumpSvc.NewPumpAction(30)),
 			actionSvc.WithAction(ctx, "update.eid674.syncup", "/Actions/Oem/EID_674_UpdateService.Syncup", pumpSvc.NewPumpAction(30)),
 			uploadSvc.WithUpload(ctx, "upload.firmwareUpdate", "/FirmwareInventory", pumpSvc.NewPumpAction(60)),
 			evtSvc.PublishResourceUpdatedEventsForModel(ctx, "default"),
 		)
 
-		// add the aggregate to the view tree
-		update_service.AddAggregate(ctx, rootView, updSvcVw, ch)
+		// add the aggregate to /redfish/v1/ tree
 		update_service.EnhanceAggregate(ctx, updSvcVw, rootView, ch)
 	}
 

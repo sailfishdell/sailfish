@@ -308,6 +308,7 @@ func init() {
 			return false, nil
 		}
 	})
+
 	AddFunction("hotspare", func(args ...interface{}) (interface{}, error) {
 		var hotspare int8 = int8(args[0].(float64))
 		if hotspare&0x01 == 0x01 {
