@@ -29,6 +29,7 @@ type LogEventData struct {
 	EntryType   string
 	Id          int
 	MessageArgs []string
+	Created     string
 	Message     string
 	MessageID   string
 	Category    string

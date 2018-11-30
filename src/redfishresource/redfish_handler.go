@@ -74,6 +74,7 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Each command needs a unique UUID. We'll use that to listen for the HTTPProcessed Event, which should have a matching UUID.
 	cmdID := eh.NewUUID()
 	reqCtx := WithRequestID(r.Context(), cmdID)
+	//fmt.Printf("GET URL IS : '%s'\n", r.URL.Path)
 
 	// All operations have to be on URLs that exist, so look it up in the tree
 	aggID, ok := rh.d.GetAggregateIDOK(r.URL.Path)

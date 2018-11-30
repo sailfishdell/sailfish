@@ -44,16 +44,23 @@ func RegisterAggregate(s *testaggregate.Service) {
 						"GET": []string{"Login"},
 					},
 					Properties: map[string]interface{}{
-						"Name":               "LifeCycle Controller Log Service",
-						"Description":        "LifeCycle Controller Log Service",
-						"OverWritePolicy":    "WrapsWhenFull",
-						"MaxNumberOfRecords": 500000,
-						"ServiceEnabled":     true,
+						"Name":            "LifeCycle Controller Log Service",
+						"Description":     "LifeCycle Controller Log Service",
+						"OverWritePolicy": "WrapsWhenFull",
 						"Entries": map[string]interface{}{
 							"@odata.id": "/redfish/v1/Managers/CMC.Integrated.1/Logs/Lclog",
 						},
+						"MaxNumberOfRecords":  500000,
+						"ServiceEnabled":      true,
+						"@odata.id":           "/redfish/v1/Managers/CMC.Integrated.1/LogServices/Lclog",
+						"DateTime@meta":       map[string]interface{}{"GET": map[string]interface{}{"plugin": "datetime"}},
 						"DateTimeLocalOffset": "+00:00",
-						"Id":                  "LC",
+						"Id": "LC",
+						"Actions": map[string]interface{}{
+							"#LogService.ClearLog": map[string]interface{}{
+								"target": vw.GetActionURI("clearlog"),
+							},
+						},
 					}},
 			}, nil
 		})
@@ -73,6 +80,7 @@ func RegisterAggregate(s *testaggregate.Service) {
 						"Name":                     "Log Entry Collection",
 						"Members@meta":             vw.Meta(view.GETProperty("members"), view.GETFormatter("expand"), view.GETModel("default")),
 						"Members@odata.count@meta": vw.Meta(view.GETProperty("members"), view.GETFormatter("count"), view.GETModel("default")),
+						"Members@odata.nextLink":   "/redfish/v1/Managers/CMC.Integrated.1/Logs/Lclog?$skip=50",
 					}},
 			}, nil
 		})
@@ -88,16 +96,17 @@ func RegisterAggregate(s *testaggregate.Service) {
 						"GET": []string{"Login"},
 					},
 					Properties: map[string]interface{}{
-						"Name":               "FaultListEntries",
-						"Description":        "Collection of FaultList Entries",
-						"OverWritePolicy":    "WrapsWhenFull",
-						"MaxNumberOfRecords": 500000,
-						"ServiceEnabled":     true,
+						"Name":        "FaultListEntries",
+						"Description": "Collection of FaultList Entries",
 						"Entries": map[string]interface{}{
-							"@odata.id": "/redfish/v1/Managers/CMC.Integrated.1/Logs/FaultList",
+							"@odata.id": "/redfish/v1/Managers/CMC.Integrated.1/Logs/FaultsList",
 						},
+						"OverWritePolicy":     "WrapsWhenFull",
+						"MaxNumberOfRecords":  500000,
+						"ServiceEnabled":      true,
+						"@odata.id":           "/redfish/v1/Managers/CMC.Integrated.1/LogServices/FaultList",
 						"DateTimeLocalOffset": "+00:00",
-						"DateTime":            "TODO", //TODO
+						"DateTime":            map[string]interface{}{"GET": map[string]interface{}{"plugin": "datetime"}},
 						"Id":                  "FaultList",
 					}},
 			}, nil
@@ -108,15 +117,15 @@ func RegisterAggregate(s *testaggregate.Service) {
 			return []eh.Command{
 				&domain.CreateRedfishResource{
 					ResourceURI: vw.GetURI(),
-					Type:        "#LogService.v1_0_2.LogService",
-					Context:     params["rooturi"].(string) + "/$metadata#LogService.LogService",
+					Type:        "#LogEntryCollection.LogEntryCollection",
+					Context:     params["rooturi"].(string) + "/$metadata#LogEntryCollection.LogEntryCollection",
 					Privileges: map[string]interface{}{
 						"GET": []string{"Login"},
 					},
 					Properties: map[string]interface{}{
 						"Description":              "Providing additional health information for the devices which support rolled up health data",
 						"Name":                     "FaultList Entries Collection",
-						"Members@meta":             vw.Meta(view.GETProperty("members"), view.GETFormatter("formatOdataList"), view.GETModel("default")),
+						"Members@meta":             vw.Meta(view.GETProperty("members"), view.GETFormatter("expand"), view.GETModel("default")),
 						"Members@odata.count@meta": vw.Meta(view.GETProperty("members"), view.GETFormatter("count"), view.GETModel("default")),
 					}},
 			}, nil

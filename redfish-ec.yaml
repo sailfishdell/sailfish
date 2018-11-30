@@ -449,7 +449,7 @@ views:
         "default":  {"members": "array()"}
       "Controllers":
         - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + view.GetURI()", "passthru": {'collection_uri': 'view.GetURI()'} }
+          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + view.GetURI()", "passthru": {'collection_uri': "'/redfish/v1/Managers/CMC.Integrated.1/LogServices'"} }
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/Managers/' + FQDD + '/LogServices'"
@@ -463,6 +463,8 @@ views:
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/Managers/' + FQDD + '/LogServices/Lclog'"
+        - "fn": "with_PumpHandledAction"
+          "params": {"name": "clearlog", "uri": "/Actions/LogService.ClearLog", "timeout": 30}
       "Aggregate": "lclogservices"
 
   "lclogentrycollection":
@@ -590,6 +592,7 @@ views:
         "instantiate('slotcollection', 'parenturi', rooturi + '/Chassis/' + FQDD, 'FQDD', FQDD)",
         "instantiate('slotconfigcollection', 'parenturi', rooturi + '/Chassis/' + FQDD, 'FQDD', FQDD)",
         "instantiate('subsyshealth', 'parentid', 'view.GetUUID()', 'parenturi', rooturi + '/Chassis/' + FQDD, 'FQDD', FQDD)",
+
         ]
 
   "power":
@@ -731,10 +734,10 @@ views:
         "default":  {"unique_name": "'Sensor'"}
       "Controllers":
         - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "sensor", "uniquename": "'am2_sensor_' + FQDD ", "passthru": {"FQDD": "'System.Chassis.1%23Temperature.CHASSIS_AMBIENT'" } }
+          "params": {"modelname": "default", "cfgsection": "sensor", "uniquename": "'am2_sensor_' + FQDD ", "passthru": {"FQDD": "'System.Chassis.1#Temperature.CHASSIS_AMBIENT'" } }
       "View":
         - "fn": "with_URI"
-          "params": "rooturi + '/Chassis/System.Chassis.1/Sensors/Temperatures/System.Chassis.1%23Temperature.CHASSIS_AMBIENT'"
+          "params": "rooturi + '/Chassis/System.Chassis.1/Sensors/Temperatures/System.Chassis.1#Temperature.CHASSIS_AMBIENT'"
         - "fn": "withModel"
           "params": {"name": "global_health", "expr": "globalHealthModel"}
         - "fn": "PublishResourceUpdatedEventsForModel"
@@ -826,6 +829,7 @@ views:
         - "fn": "with_PumpHandledAction"
           "params": {"name": "IOMConfig_objects", "uri": "", "timeout": 30}
       "Aggregate": "iom_config"
+
 
   "subsyshealth":
       "Logger": ["module", "subsyshealth"]
@@ -1002,10 +1006,10 @@ awesome_mapper:
 
     thermal_sensor:
       - { SelectEventType: "RedfishResource:created",
-          Select: "nohash(data.ResourceURI) && baseuri(data.ResourceURI) == rooturi + '/Chassis/System.Chassis.1/Sensors/Temperatures'",
+          Select: "baseuri(data.ResourceURI) == rooturi + '/Chassis/System.Chassis.1/Sensors/Temperatures'",
           ModelUpdate: [ {Property: "temperature_uris", Query: "addtoset(model, propname, data.ResourceURI)"} ]}
       - { SelectEventType: "RedfishResource:removed",
-          Select: "nohash(data.ResourceURI) && baseuri(data.ResourceURI) == rooturi + '/Chassis/System.Chassis.1/Sensors/Temperatures'",
+          Select: "baseuri(data.ResourceURI) == rooturi + '/Chassis/System.Chassis.1/Sensors/Temperatures'",
           ModelUpdate: [ {Property: "temperature_uris", Query: "removefromset(model, propname, data.ResourceURI)"} ]}
 
     lclog:

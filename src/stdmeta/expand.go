@@ -147,7 +147,8 @@ func CountFormatter(
 
 	arr := m.GetProperty(p)
 	if arr == nil {
-		return errors.New("array property not setup properly")
+		rrp.Value = 0
+		return errors.New("array property not setup properly, however setting count to 0")
 	}
 
 	v := reflect.ValueOf(arr)

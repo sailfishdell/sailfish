@@ -93,7 +93,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	RegisterCMCAggregate(instantiateSvc)
 	RegisterCertAggregate(instantiateSvc)
 	AddECInstantiate(logger, instantiateSvc)
-	initLCL(logger, ch)
+	initLCL(logger, ch, d)
 	inithealth(ctx, logger, ch)
 
 	// add mapper helper to instantiate
