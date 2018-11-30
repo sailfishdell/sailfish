@@ -288,7 +288,7 @@ func (c *InjectEvent) Handle(ctx context.Context, a *RedfishResourceAggregate) e
 	}
 
 	var evt eh.Event
-	if c.Synchronous || c.Name == eh.EventType("ComponentEvent") {
+	if c.Synchronous || c.Name == eh.EventType("ComponentEvent") || c.Name == eh.EventType("IDRACComponentEvent") {
 		e := event.NewSyncEvent(c.Name, trainload, time.Now())
 		e.Add(1)
 		evt = e
