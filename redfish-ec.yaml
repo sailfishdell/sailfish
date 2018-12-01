@@ -391,7 +391,7 @@ views:
         "instantiate('logservices', 'FQDD', FQDD)",
         "instantiate('lclogservices', 'FQDD', FQDD)",
         "instantiate('faultlistservices', 'FQDD', FQDD)",
-        "instantiate('certificateservices', 'parenturi', view.GetURI())",
+        "instantiate('certificateservices', 'parenturi', rooturi + '/Managers/' + FQDD, 'FQDD', FQDD)",
         "instantiate('manager_cmc_integrated_redundancy', 'FQDD', FQDD, 'parenturi', view.GetURI())",
 
         # only instantiate the collection once for cmc.integrated.1
@@ -404,6 +404,8 @@ views:
       "Models":
         "default":  {}
       "Controllers":
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "certificate", "uniquename": "'certificateservices_' + FQDD", "passthru": {'FQDD': 'FQDD'} }
       "View":
         - "fn": "with_URI"
           "params": "parenturi + '/CertificateService'"
@@ -435,9 +437,10 @@ views:
       "Models":
         "default":  {}
       "Controllers":
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "certificate", "uniquename": "'certificate_' + ParentFQDD", "passthru": {'FQDD': 'ParentFQDD'} }
       "View":
         - "fn": "with_URI"
-          "params": "parenturi + '/CertificateInventory'"
           "params": "rooturi + '/Managers/' + ParentFQDD + '/CertificateService/CertificateInventory/' + FQDD"
         - "fn": "stdFormatters"
           "params":
@@ -482,6 +485,41 @@ views:
         - "fn": "stdFormatters"
           "params":
       "Aggregate": "lclogentrycollection"
+
+  "lclogentry":
+      "Logger": ["module", "lclog"]
+      "Controllers":
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/Managers/' + FQDD + '/Logs/Lclog/' + uuid"
+      "Aggregate": "lclogentry"
+
+  "update_service":
+      "Logger": ["module", "updateservice"]
+      "Models":
+        "default": {}
+      "Controllers":
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/UpdateService'"
+      "Aggregate": "update_service"
+      "ExecPost": [
+        "instantiate('update_service_firmwareinventory', 'firmware_inventory_members', firmware_inventory_members)"
+      ]
+
+  "update_service_firmwareinventory":
+      "Logger": ["module", "updateservice"]
+      "Models":
+        "default": {"firmware_inventory_members": "firmware_inventory_members"}
+      "Controllers":
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "update_service", "uniquename": "'firmware_inventory'" }
+      "View":
+        - "fn": "stdFormatters"
+          "params":
+        - "fn": "with_URI"
+          "params": "rooturi + '/UpdateService/FirmwareInventory'"
+      "Aggregate": "update_service_firmwareinventory"
 
   "faultlistservices":
       "Logger": ["module", "lclog"]
@@ -580,9 +618,9 @@ views:
           "params":
         - "fn": "with_PumpHandledAction"
           "params": {"name": "chassis.reset", "uri": "/Actions/Chassis.Reset", "timeout": 30}
-        - "fn": "WithAction"
+        - "fn": "WithAction" #change this to upload
           "params": {"name": "msmconfigbackup", "uri": "/Actions/Oem/MSMConfigBackup", "actionFunction": "msmConfigBackup"}
-        - "fn": "WithAction"
+        - "fn": "WithAction" #chagne this to upload
           "params": {"name": "chassis.msmconfigbackup", "uri": "/Actions/Oem/DellChassis.MSMConfigBackup", "actionFunction": "chassisMSMConfigBackup"}
       "Aggregate": "system_chassis"
       "ExecPost": [
@@ -679,7 +717,7 @@ views:
         "default":  {}
       "Controllers":
         - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "trend_histogram_uris", "uniquename": "'am2_trends_uri:' + FQDD" }
+          "params": {"modelname": "default", "cfgsection": "trend_histogram_uris", "uniquename": "'powertrends_uri:' + FQDD" }
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/Chassis/' + FQDD + '/Power/PowerTrends-1'"
@@ -832,7 +870,7 @@ views:
 
 
   "subsyshealth":
-      "Logger": ["module", "subsyshealth"]
+      "Logger": ["module", "subsystemhealth"]
       "Models":
         "default": {}
       "Controllers":
@@ -903,6 +941,20 @@ views:
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
       "Aggregate": "slotconfig"
+
+  "inv_view":
+      "Logger": ["module", "observer"]
+      "Models":
+        "default": {"fw_id": "'Installed-'+comp_ver_tuple"}
+      "Controllers":
+        - "fn": "ARMapper"
+          "params": {"modelname": "default", "cfgsection": "firmware/inventory", "mappinguniquename": "'firmware_inventory:' + comp_ver_tuple", "AddToView": true}
+      "View":
+        - "fn": "linkModel"
+          "params": {"existing": "default", "linkname": "swinv"}
+        - "fn": "with_URI"
+          "params": "rooturi + '/UpdateService/FirmwareInventory/Installed-' + comp_ver_tuple"
+      "Aggregate": "inv_view"
 
   "sled":
       "Logger": ["module", "Sled"]
@@ -982,11 +1034,11 @@ awesome_mapper:
 
     power_trends_uri:
       - { SelectEventType: "RedfishResource:created",
-          Select: "nohash(data.ResourceURI) && data.ResourceURI == rooturi + '/Chassis/' + FQDD + '/Power/PowerTrends-1' ",
-          ModelUpdate: [ {Property: "power_trends_uri", Query: "data.ResourceURI"} ]}
+          Select: "nohash(data.ResourceURI) && baseuri(data.ResourceURI) == rooturi + '/Chassis/' + FQDD + '/Power/PowerTrends-1' ",
+          ModelUpdate: [ {Property: "power_trends_uri", Query: "addtoset(model, propname, data.ResourceURI)"} ]}
       - { SelectEventType: "RedfishResource:removed",
-          Select: "nohash(data.ResourceURI) && data.ResourceURI == rooturi + '/Chassis/' + FQDD + '/Power/PowerTrends-1' ",
-          ModelUpdate: [ {Property: "power_trends_uri", Query: "''"} ]}
+          Select: "nohash(data.ResourceURI) && baseuri(data.ResourceURI) == rooturi + '/Chassis/' + FQDD + '/Power/PowerTrends-1' ",
+          ModelUpdate: [ {Property: "power_trends_uri", Query: "removefromset(model, propname, data.ResourceURI)"} ]}
 
     trend_histogram_uris:
       - { SelectEventType: "RedfishResource:created",
@@ -1027,12 +1079,20 @@ awesome_mapper:
           Select: "true",
           ModelUpdate: [ {Property: "health", Query: "generate_new_health(data, view.GetUUID())"} ]}
 
+    update_service:
+      - { SelectEventType: "RedfishResource:created",
+      Select: "nohash(data.ResourceURI) && baseuri(data.ResourceURI) == rooturi + '/UpdateService/FirmwareInventory/Installed-' ",
+          ModelUpdate: [ {Property: "firmware_inventory_members", Query: "addtoset(model, propname, data.ResourceURI)"} ]}
+      - { SelectEventType: "RedfishResource:removed",
+      Select: "nohash(data.ResourceURI) && baseuri(data.ResourceURI) == rooturi + '/UpdateService/FirmwareInventory/Installed-' ",
+          ModelUpdate: [ {Property: "firmware_inventory_members", Query: "removefromset(model, propname, data.ResourceURI)"} ]}
+
     testview:
       - { SelectEventType: "AttributeUpdated", Select: "data.FQDD == fqdd && data.Name == 'test'", ModelUpdate: [ {Property: "TEST", Query: "data.Value", Default: 0} ] }
 
     certificate:
-      - { SelectEventType: "FileReadEvent", Select: "data.URI == 'CertificateInventory' && data.FQDD == FQDD", ModelUpdate: [ { Property: "certificate_signing_request", Query: "data.FileContent" } ] }
-      - { SelectEventType: "FileReadEvent", Select: "data.URI == 'FactoryIdentity' && data.FQDD == FQDD", ModelUpdate: [ { Property: "certificate", Query: "data.Content" } ] }
+      - { SelectEventType: "FileReadEvent", Select: "data.URI == 'CertificateInventory' && data.FQDD == FQDD", ModelUpdate: [ { Property: "certificate_signing_request", Query: "empty_to_null(data.Content)" } ] }
+      - { SelectEventType: "FileReadEvent", Select: "data.URI == 'FactoryIdentity' && data.FQDD == FQDD", ModelUpdate: [ { Property: "certificate", Query: "empty_to_null(data.Content)" } ] }
 
     slot:
       - { SelectEventType: "AttributeUpdated", Select: "data.FQDD == 'System.Chassis.1' && data.Group == Group && data.Index == Index && data.Name == 'Config'",
@@ -1099,7 +1159,7 @@ awesome_mapper:
     inst_power:
       - { SelectEventType: "InstPowerEvent", Select: "data.FQDD == DM_FQDD",
             ModelUpdate: [
-                {Property: "Instantaneous_Power", Query: "data.InstPower", Default: 0}]}
+              {Property: "Instantaneous_Power", Query: "data.InstPower", Default: 0}]}
 
     iom_config:
       - { SelectEventType: "IomCapability", Select: "data.Name == FQDD",
@@ -1129,6 +1189,10 @@ awesome_mapper:
       - { SelectEventType: "RedfishResource:removed",
           Select: "nohash(data.ResourceURI) && baseuri(data.ResourceURI) == rooturi + '/Chassis' ",
           ModelUpdate: [ {Property: "power_related_items", Query: "removefromset(model, propname, data.ResourceURI)"} ]}
+      - { SelectEventType: "AttributeUpdated", Select: "data.FQDD == 'System.Chassis.1' && data.Name == 'PowerCapSetting'",
+          Exec: [ "set_power_cap_enable(data.Value)" ]}
+      - { SelectEventType: "AttributeUpdated", Select: "data.FQDD == 'System.Chassis.1' && data.Name == 'PowerCapValue'",
+          ModelUpdate: [ {Property: "limit_in_watts", Query: "check_power_cap(data.Value)"}]}
 
     power_supply:
       - { SelectEventType: "PowerSupplyObjEvent", Select: "data.ObjectHeader.FQDD == DM_FQDD",
@@ -1146,10 +1210,8 @@ awesome_mapper:
                 {Property: "max_watts_time", Query: "epoch_to_date(traverse_struct(data, 'MaxPwrLast' + trend + 'Time'))" },
                 {Property: "min_watts_time", Query: "epoch_to_date(traverse_struct(data, 'MinPwrLast' + trend + 'Time'))" }]}
 
-
-
     health:
-      - { SelectEventType: "HealthEvent", Select: "data.FQDD == health_fqdd", ModelUpdate: [ {Property: "health", Query: "data.Health" } ] }
+      - { SelectEventType: "HealthEvent", Select: "data.FQDD == health_fqdd", ModelUpdate: [ {Property: "health", Query: "empty_to_null(data.Health)" } ] }
 
     global_health:
       - { SelectEventType: "HealthEvent", Select: "data.FQDD == 'System.Chassis.1#SubSystem.1#Fan'", ModelUpdate: [ {Property: "fan_rollup", Query: "data.Health" } ] }
@@ -1266,7 +1328,6 @@ mappings:
 
     Chassis/System.Chassis/Power:
         - {Property: "capacity_watts", FQDD: "System.Chassis.1", Group: "ChassisPower", Index: "1", Name: "SystemInputMaxPowerCapacity" }
-        - {Property: "limit_in_watts", FQDD: "System.Chassis.1", Group: "ChassisPower", Index: "1", Name: "PowerCapValue" }
 
     Chassis/System.Chassis/Thermal:
         # no mappings for now: placeholder
@@ -1281,5 +1342,3 @@ mappings:
         - {Property: "graphics_uri",    FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "GraphicsURI" }
         - {Property: "name",    FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "FanName" }
 
-    UpdateService:
-        # no mappings for now: placeholder

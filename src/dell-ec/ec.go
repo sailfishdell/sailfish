@@ -30,7 +30,6 @@ import (
 	"github.com/superchalupa/sailfish/src/ocp/stdcollections"
 	"github.com/superchalupa/sailfish/src/ocp/telemetryservice"
 	"github.com/superchalupa/sailfish/src/ocp/testaggregate"
-	"github.com/superchalupa/sailfish/src/ocp/view"
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
 	"github.com/superchalupa/sailfish/src/stdmeta"
 	"github.com/superchalupa/sailfish/src/uploadhandler"
@@ -84,8 +83,8 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	slots.RegisterAggregate(instantiateSvc)
 	logservices.RegisterAggregate(instantiateSvc)
 	attributes.RegisterAggregate(instantiateSvc)
+  update_service.RegisterAggregate(instantiateSvc)
 	fans.RegisterAggregate(instantiateSvc)
-
 	RegisterAggregate(instantiateSvc)
 	RegisterIOMAggregate(instantiateSvc)
 	RegisterSledAggregate(instantiateSvc)
@@ -95,6 +94,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	AddECInstantiate(logger, instantiateSvc)
 	initLCL(logger, ch, d)
 	inithealth(ctx, logger, ch)
+  initpowercontrol(logger)
 
 	// add mapper helper to instantiate
 	awesome_mapper2.AddFunction("find_uris_with_basename", func(args ...interface{}) (interface{}, error) {
@@ -184,27 +184,20 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	}
 
 	{
-		updsvcLogger := logger.New("module", "UpdateService")
-		mdl := model.New()
+    _, updSvcVw, _ := instantiateSvc.Instantiate("update_service", map[string]interface{}{
+		  "firmware_inventory_members": d.FindMatchingURIs(func(uri string) bool { return path.Dir(uri) == rooturi+"/UpdateService/FirmwareInventory/Installed-" }),
+    })
 
-		// the controller is what updates the model when ar entries change,
-		// also handles patch from redfish
-		armapper := arService.NewMapping(updsvcLogger, "Chassis", "update_service", mdl, map[string]string{})
-
-		updSvcVw := view.New(
-			view.WithURI(rootView.GetURI()+"/UpdateService"),
-			view.WithModel("default", mdl),
-			view.WithController("ar_mapper", armapper),
-			actionSvc.WithAction(ctx, "update.reset", "/Actions/Oem/DellUpdateService.Reset", updateReset),
-			actionSvc.WithAction(ctx, "update.eid674.reset", "/Actions/Oem/EID_674_UpdateService.Reset", updateEID674Reset),
+    updSvcVw.ApplyOption(
+      actionSvc.WithAction(ctx, "update.reset", "/Actions/Oem/DellUpdateService.Reset", pumpSvc.NewPumpAction(30)),
+      actionSvc.WithAction(ctx, "update.eid674.reset", "/Actions/Oem/EID_674_UpdateService.Reset", pumpSvc.NewPumpAction(30)),
 			actionSvc.WithAction(ctx, "update.syncup", "/Actions/Oem/DellUpdateService.Syncup", pumpSvc.NewPumpAction(30)),
 			actionSvc.WithAction(ctx, "update.eid674.syncup", "/Actions/Oem/EID_674_UpdateService.Syncup", pumpSvc.NewPumpAction(30)),
 			uploadSvc.WithUpload(ctx, "upload.firmwareUpdate", "/FirmwareInventory", pumpSvc.NewPumpAction(60)),
 			evtSvc.PublishResourceUpdatedEventsForModel(ctx, "default"),
 		)
 
-		// add the aggregate to the view tree
-		update_service.AddAggregate(ctx, rootView, updSvcVw, ch)
+		// add the aggregate to /redfish/v1/ tree
 		update_service.EnhanceAggregate(ctx, updSvcVw, rootView, ch)
 	}
 
