@@ -331,7 +331,7 @@ func init() {
 	AddFunction("durable_format", func(args ...interface{}) (interface{}, error) {
         wwn,_ := strconv.Atoi(args[0].(string))
 		if wwn > 0x00 {
-			return "NAA", nil 
+			return "NAA", nil
 		} else {
 			return nil, nil
 		}
@@ -352,7 +352,6 @@ func init() {
 		var vStr []string
 		var deviceprotocols uint32 = uint32(args[0].(float64))
 
-
 		if deviceprotocols&0x00000000 == 0x00000000 {
 			vStr = append(vStr, "UNKNOWN")
 		}
@@ -364,7 +363,7 @@ func init() {
 		}
         if deviceprotocols&0x00000004 == 0x00000004 {
 			vStr = append(vStr, "FIBRE")
-		} 
+		}
         if deviceprotocols&0x00000008 == 0x00000008{
 			vStr = append(vStr, "USB")
 		}
@@ -373,7 +372,7 @@ func init() {
 		}
         if deviceprotocols&0x00000020 == 0x00000020 {
 			vStr = append(vStr, "SAS")
-		} 
+		}
         if deviceprotocols&0x00000040 == 0x00000040{
 			vStr = append(vStr, "PCIE")
 		}
@@ -388,5 +387,4 @@ func init() {
 		vStr = append(vStr, "PCIe")
 		return vStr, nil
 	})
-    
 }

@@ -566,8 +566,8 @@ awesome_mapper:
     idrac_storage_drive_uris_for_instance:
       - { SelectEventType: "IDRACComponentEvent",
           Select: "data.Type == 'StorageAdapterAssociateDrive'",
-          ModelUpdate: [ {Property: "drive_uris", Query: "addtoset(model, propname, rooturi + '/Systems/' + ParentFQDD + '/Storage/Drives/' + data.AssociateFQDD)"} ], 
-          Exec: [ "echo('@@@@@@@@@Drive LIST - Instance. data.AssociateFQDD == ' + data.AssociateFQDD )" ]}
+          ModelUpdate: [ {Property: "drive_uris", Query: "addtoset(model, propname, rooturi + '/Systems/' + ParentFQDD + '/Storage/Drives/' + data.AssociateFQDD)"} ],
+          Exec: [ "echo('Drive LIST - Instance. data.AssociateFQDD == ' + data.AssociateFQDD )" ]}
       - { SelectEventType: "RedfishResource:removed",
           Select: "nohash(data.ResourceURI) && baseuri(data.ResourceURI) == rooturi + '/Systems/' + ParentFQDD + '/Storage/Drives/' + data.AssociateFQDD",
           ModelUpdate: [ {Property: "encl_uris", Query: "removefromset(model, propname, data.ResourceURI)"} ]}
@@ -575,8 +575,8 @@ awesome_mapper:
     idrac_storage_encls_uris_for_instance:
       - { SelectEventType: "IDRACComponentEvent",
           Select: "data.Type == 'StorageAdapterAssociateEnclosure'",
-          ModelUpdate: [ {Property: "enclosure_uris", Query: "addtoset(model, propname, rooturi + '/Chassis/' + data.AssociateFQDD)"} ], 
-          Exec: [ "echo('@@@@@@@@@Enclosure LIST - Instance. data.AssociateFQDD == ' + data.AssociateFQDD )" ]
+          ModelUpdate: [ {Property: "enclosure_uris", Query: "addtoset(model, propname, rooturi + '/Chassis/' + data.AssociateFQDD)"} ],
+          Exec: [ "echo('Enclosure LIST - Instance. data.AssociateFQDD == ' + data.AssociateFQDD )" ]
           }
       - { SelectEventType: "RedfishResource:removed",
           Select: "nohash(data.ResourceURI) && baseuri(data.ResourceURI) == rooturi + '/Chassis/' + data.AssociateFQDD",
@@ -585,8 +585,8 @@ awesome_mapper:
     idrac_drive_uris_for_encls:
       - { SelectEventType: "IDRACComponentEvent",
           Select: "data.Type == 'StorageAdapterAssociateDrive'",
-          ModelUpdate: [ {Property: "encl_drv_uris", Query: "addtoset(model, propname, rooturi + '/Systems/' + ParentFQDD + '/Storage/Drives/' + data.AssociateFQDD)"} ], 
-          Exec: [ "echo('@@@@@@@@@DRIVE LIST - ENCLOSURE. data.AssociateFQDD == ' + data.AssociateFQDD )" ]}
+          ModelUpdate: [ {Property: "encl_drv_uris", Query: "addtoset(model, propname, rooturi + '/Systems/' + ParentFQDD + '/Storage/Drives/' + data.AssociateFQDD)"} ],
+          Exec: [ "echo('DRIVE LIST - ENCLOSURE. data.AssociateFQDD == ' + data.AssociateFQDD )" ]}
       - { SelectEventType: "RedfishResource:removed",
           Select: "nohash(data.ResourceURI) && baseuri(data.ResourceURI) == rooturi + '/Systems/' + ParentFQDD + '/Storage/Drives/'  + data.AssociateFQDD",
           ModelUpdate: [ {Property: "encl_drv_uris", Query: "removefromset(model, propname, data.ResourceURI)"} ]}
@@ -594,8 +594,8 @@ awesome_mapper:
     idrac_storage_uris_for_encls:
       - { SelectEventType: "IDRACComponentEvent",
           Select: "data.Type == 'StorageEnclosureAssociateAdapter'",
-          ModelUpdate: [ {Property: "storage_uris", Query: "addtoset(model, propname, rooturi + '/Systems/' + ParentFQDD + '/Storage/' + data.AssociateFQDD)"} ], 
-          Exec: [ "echo('@@@@@@@@@storage LIST - ENCLOSURE. data.AssociateFQDD == ' + data.AssociateFQDD )" ]}
+          ModelUpdate: [ {Property: "storage_uris", Query: "addtoset(model, propname, rooturi + '/Systems/' + ParentFQDD + '/Storage/' + data.AssociateFQDD)"} ],
+          Exec: [ "echo('storage LIST - ENCLOSURE. data.AssociateFQDD == ' + data.AssociateFQDD )" ]}
       - { SelectEventType: "RedfishResource:removed",
           Select: "nohash(data.ResourceURI) && baseuri(data.ResourceURI) == rooturi + '/Systems/' + ParentFQDD + '/Storage/'  + data.AssociateFQDD",
           ModelUpdate: [ {Property: "storage_uris", Query: "removefromset(model, propname, data.ResourceURI)"} ]}
@@ -603,8 +603,8 @@ awesome_mapper:
     idrac_storage_drive_uris_for_vol:
       - { SelectEventType: "IDRACComponentEvent",
           Select: "data.Type == 'StorageVolumeAssociateDrive'",
-          ModelUpdate: [ {Property: "drive_uris", Query: "addtoset(model, propname, rooturi + '/Systems/' + ParentFQDD + '/Storage/Drives/' + data.AssociateFQDD)"} ], 
-          Exec: [ "echo('@@@@@@@@@DRIVE LIST - VOLUME. data.AssociateFQDD == ' + data.AssociateFQDD )" ]
+          ModelUpdate: [ {Property: "drive_uris", Query: "addtoset(model, propname, rooturi + '/Systems/' + ParentFQDD + '/Storage/Drives/' + data.AssociateFQDD)"} ],
+          Exec: [ "echo('DRIVE LIST - VOLUME. data.AssociateFQDD == ' + data.AssociateFQDD )" ]
           }
       - { SelectEventType: "RedfishResource:removed",
           Select: "nohash(data.ResourceURI) && baseuri(data.ResourceURI) == rooturi + '/Systems/' + ParentFQDD + '/Storage/Drives/'  + data.AssociateFQDD",
@@ -613,8 +613,8 @@ awesome_mapper:
     idrac_storage_volume_uris_for_drive:
       - { SelectEventType: "IDRACComponentEvent",
           Select: "data.Type == 'StorageDriveAssociateVolume'",
-          ModelUpdate: [ {Property: "volume_uris", Query: "addtoset(model, propname, rooturi + '/Systems/' + ParentFQDD + '/Storage/Volumes/' + data.AssociateFQDD)"} ], 
-          Exec: [ "echo('@@@@@@@@@Volume LIST - DRIVE. data.AssociateFQDD == ' + data.AssociateFQDD )" ]
+          ModelUpdate: [ {Property: "volume_uris", Query: "addtoset(model, propname, rooturi + '/Systems/' + ParentFQDD + '/Storage/Volumes/' + data.AssociateFQDD)"} ],
+          Exec: [ "echo('Volume LIST - DRIVE. data.AssociateFQDD == ' + data.AssociateFQDD )" ]
           }
       - { SelectEventType: "RedfishResource:removed",
           Select: "nohash(data.ResourceURI) && baseuri(data.ResourceURI) == rooturi + '/Systems/' + ParentFQDD + '/Storage/Volumes/'  + data.AssociateFQDD",
@@ -632,7 +632,7 @@ awesome_mapper:
       - { SelectEventType: "StorageAdapterEvent",
           Select: "FQDD == data.fqdd || FQDD == data.FQDD",
           ModelUpdate: [ {Property: "storage_controller_uris_instance", Query: "addtoset(model, propname, data.ResourceURI)"} ],
-          Exec: [ "echo('####### CONTROLLER LIST - Instance. data.FQDD == ' + data.FQDD )" ]}
+          Exec: [ "echo('CONTROLLER LIST - Instance. data.FQDD == ' + data.FQDD )" ]}
       - { SelectEventType: "RedfishResource:removed",
           Select: "nohash(data.ResourceURI) && baseuri(data.ResourceURI) == rooturi + '/Systems/' + ParentFQDD + '/StorageControllers/' + data.FQDD",
           ModelUpdate: [ {Property: "storage_controller_uris_instance", Query: "removefromset(model, propname, data.ResourceURI)"} ]}
@@ -640,13 +640,12 @@ awesome_mapper:
     idrac_storage_drive_uris_for_instance:
       - { SelectEventType: "IDRACComponentEvent",
           Select: "data.Type == 'StorageAdapterAssociateDrive'",
-          ModelUpdate: [ {Property: "drive_uris", Query: "addtoset(model, propname, rooturi + '/Systems/' + ParentFQDD + '/Storage/Drives/' + data.AssociateFQDD)"} ], 
-          Exec: [ "echo('@@@@@@@@@Drive LIST - Instance. data.AssociateFQDD == ' + data.AssociateFQDD )" ]}
+          ModelUpdate: [ {Property: "drive_uris", Query: "addtoset(model, propname, rooturi + '/Systems/' + ParentFQDD + '/Storage/Drives/' + data.AssociateFQDD)"} ],
+          Exec: [ "echo('Drive LIST - Instance. data.AssociateFQDD == ' + data.AssociateFQDD )" ]}
       - { SelectEventType: "RedfishResource:removed",
           Select: "nohash(data.ResourceURI) && baseuri(data.ResourceURI) == rooturi + '/Systems/' + ParentFQDD + '/Storage/Drives/' + data.AssociateFQDD",
           ModelUpdate: [ {Property: "encl_uris", Query: "removefromset(model, propname, data.ResourceURI)"} ]}
 
-          
     # have to do this one differently because enclosures are just a "Chassis"
     # object and are hard to distinguish from every other chassis
     manage_enclosure_uris:
@@ -674,7 +673,6 @@ awesome_mapper:
           Select: "nohash(data.ResourceURI) && baseuri(data.ResourceURI) == rooturi + '/Systems/' + ParentFQDD + '/StorageControllers' + data.FQDD",
           ModelUpdate: [ {Property: "deviceprotocols", Query: "removefromset(model, propname, data.ResourceURI)"} ]}
 
-          
     volume_collection:
         # the uri's for volumes are ambiguous, so we have to do extra tests.
         # have to test that resourceuri ENDS WITH the "FQDD" value (correspoding with the mapped storage controller)
