@@ -48,8 +48,10 @@ func RegisterAggregate(s *testaggregate.Service) {
 						},
 						"FirmwareVersion@meta": vw.Meta(view.PropGET("firmware_version")),
 						"Identifiers":          map[string]interface{}{
-						//need to make this an array.
+						    "DurableName@meta":     vw.Meta(view.PropGET("durable_name")),
+						    "DurableFormat@meta":     vw.Meta(view.PropGET("durable_format")),
 						},
+						//"Identifiers@meta":  vw.Meta(view.GETProperty("identifiers"), view.GETFormatter("formatOdataList"), view.GETModel("default")),
 						"Links":             map[string]interface{}{},
 						"Manufacturer@meta": vw.Meta(view.PropGET("manufacturer")),
 						"MemberId@meta":     vw.Meta(view.PropGET("member_id")),
@@ -57,16 +59,12 @@ func RegisterAggregate(s *testaggregate.Service) {
 						"Name@meta":         vw.Meta(view.PropGET("name")),
 						"SpeedGbps@meta":    vw.Meta(view.PropGET("speed")),
 						"Status": map[string]interface{}{
-							"HealthRollup@meta": vw.Meta(view.PropGET("obj_status")),
-							"State@meta":        vw.Meta(view.PropGET("state")),
-							"Health@meta":       vw.Meta(view.PropGET("obj_status")),
+							"HealthRollup@meta": vw.Meta(view.PropGET("health_rollup")),
+							"State":             "Enabled",
+							"Health@meta":       vw.Meta(view.PropGET("health")),
 						},
-						"SupportedControllerProtocols": map[string]interface{}{
-						//need to make this an array
-						},
-						"SupportedDeviceProtocols": map[string]interface{}{
-						//need to make this an array
-						},
+						"SupportedControllerProtocols@meta": vw.Meta(view.PropGET("supported_controller_protocols")),
+						"SupportedDeviceProtocols@meta":     vw.Meta(view.PropGET("supported_device_protocols")),
 					}}}, nil
 		})
 
@@ -85,17 +83,17 @@ func RegisterAggregate(s *testaggregate.Service) {
 						"DELETE": []string{"ConfigureManager"},
 					},
 					Properties: map[string]interface{}{
-						"Id@meta":                  vw.Meta(view.PropGET("unique_name")),
-						"Description@meta":         vw.Meta(view.PropGET("description")), //Done
-						"Name@meta":                vw.Meta(view.PropGET("name")),        //Done
-						"Drives@meta":              vw.Meta(view.GETProperty("drive_uris"), view.GETFormatter("formatOdataList"), view.GETModel("default")),
-						"Drives@odata.count@meta":  vw.Meta(view.GETProperty("drive_uris"), view.GETFormatter("count"), view.GETModel("default")),
+						"Id@meta":                 vw.Meta(view.PropGET("Id")),
+						"Description@meta":        vw.Meta(view.PropGET("description")), //Done
+						"Name@meta":               vw.Meta(view.PropGET("name")),        //Done
+						"Drives@meta":             vw.Meta(view.GETProperty("drive_uris"), view.GETFormatter("formatOdataList"), view.GETModel("default")),
+						"Drives@odata.count@meta": vw.Meta(view.GETProperty("drive_uris"), view.GETFormatter("count"), view.GETModel("default")),
 
 						// volumes is a single static link to a collection
-						"Volumes": map[string]interface{}{ "@odata.id": vw.GetURI() + "/Volumes" },
+						"Volumes": map[string]interface{}{"@odata.id": vw.GetURI() + "/Volumes"},
 
-						"StorageControllers@meta":             vw.Meta(view.GETProperty("storage_controller_uris"), view.GETFormatter("expand"), view.GETModel("default")),
-						"StorageControllers@odata.count@meta": vw.Meta(view.GETProperty("storage_controller_uris"), view.GETFormatter("count"), view.GETModel("default")),
+						"StorageControllers@meta":             vw.Meta(view.GETProperty("storage_controller_uris_instance"), view.GETFormatter("expand"), view.GETModel("default")),
+						"StorageControllers@odata.count@meta": vw.Meta(view.GETProperty("storage_controller_uris_instance"), view.GETFormatter("count"), view.GETModel("default")),
 
 						"Links": map[string]interface{}{
 							"Enclosures@meta":             vw.Meta(view.GETProperty("enclosure_uris"), view.GETFormatter("formatOdataList"), view.GETModel("default")),
@@ -103,14 +101,14 @@ func RegisterAggregate(s *testaggregate.Service) {
 						},
 
 						"Status": map[string]interface{}{
-							"HealthRollup@meta": vw.Meta(view.PropGET("obj_status")),
-							"State@meta":        vw.Meta(view.PropGET("state")),
-							"Health@meta":       vw.Meta(view.PropGET("obj_status")),
+							"HealthRollup@meta": vw.Meta(view.PropGET("health_rollup")),
+							"State":             "Enabled",
+							"Health@meta":       vw.Meta(view.PropGET("health")),
 						},
 
 						"Actions": map[string]interface{}{
 							"#Storage.SetEncryptionKey": map[string]interface{}{
-								"target": "/redfish/v1/Systems/System.Embedded.1/Storage/AHCI.Embedded.1-1/Actions/Storage.SetEncryptionKey",
+								"target": vw.GetActionURI("storage.setencryptionkey"),
 							},
 						},
 
@@ -156,7 +154,11 @@ func RegisterAggregate(s *testaggregate.Service) {
 						"Assembly": map[string]interface{}{
 							"@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Assembly",
 						},
-						//Acion needs to be added.
+						"Actions": map[string]interface{}{
+							"#Drive.SecureErase": map[string]interface{}{
+								"target": vw.GetActionURI("drive.secureerase"),
+							},
+						},
 						"BlockSizeBytes@meta":    vw.Meta(view.PropGET("block_size_bytes")),
 						"CapableSpeedGbs@meta":   vw.Meta(view.PropGET("capable_speed")),
 						"CapacityBytes@meta":     vw.Meta(view.PropGET("capacity")),
@@ -167,8 +169,9 @@ func RegisterAggregate(s *testaggregate.Service) {
 						"HotspareType@meta":      vw.Meta(view.PropGET("hotspare_type")),
 						"Id@meta@meta":           vw.Meta(view.PropGET("unique_name")),
 						"Links": map[string]interface{}{
-							"Enclosures@meta":             vw.Meta(view.GETProperty("enclosure_uris"), view.GETFormatter("formatOdataList"), view.GETModel("default")),
-							"Enclosures@odata.count@meta": vw.Meta(view.GETProperty("enclosure_uris"), view.GETFormatter("count"), view.GETModel("default")),
+							"Chassis@meta":             vw.Meta(view.GETProperty("enclosure_uris"), view.GETFormatter("formatOdataList"), view.GETModel("default")),
+							"Volumes@meta":             vw.Meta(view.GETProperty("volume_uris"), view.GETFormatter("formatOdataList"), view.GETModel("default")),
+							"Volumes@odata.count@meta": vw.Meta(view.GETProperty("volume_uris"), view.GETFormatter("count"), view.GETModel("default")),
 						},
 						"Location":                map[string]interface{}{},
 						"Manufacturer@meta":       vw.Meta(view.PropGET("manufacturer")),     //Done
@@ -205,9 +208,9 @@ func RegisterAggregate(s *testaggregate.Service) {
 						"RotationSpeedRPM@meta":              vw.Meta(view.PropGET("rotation_speed")),
 						"SerialNumber@meta":                  vw.Meta(view.PropGET("serial_number")),
 						"Status": map[string]interface{}{
-							"HealthRollup@meta": vw.Meta(view.PropGET("obj_status")),
-							"State@meta":        vw.Meta(view.PropGET("state")),
-							"Health@meta":       vw.Meta(view.PropGET("obj_status")),
+							"HealthRollup@meta": vw.Meta(view.PropGET("health_rollup")),
+							"State":             "Enabled",
+							"Health@meta":       vw.Meta(view.PropGET("health")),
 						},
 					}}}, nil
 		})
@@ -238,17 +241,30 @@ func RegisterAggregate(s *testaggregate.Service) {
 						},
 						"Actions":          map[string]interface{}{},
 						"AssetTag@meta":    vw.Meta(view.PropGET("asset_tag")), //Done
-						"ChassisType@meta": vw.Meta(view.PropGET("chassis_type")),
+						"ChassisType":      "Enclosure",
 						"Description@meta": vw.Meta(view.PropGET("description")),
 						"Id@meta":          vw.Meta(view.PropGET("unique_name")),
-						"Links":            map[string]interface{}{
-						//Need to add links detail.
+						"Links": map[string]interface{}{
+							"ContainedBy:": map[string]interface{}{
+								"@odata.id": "redfish/v1/Chassis/System.Embedded.1",
+							},
+							//"Contains":vw.Meta(view.PropGET("contains")),
+							"Drives@meta":             vw.Meta(view.GETProperty("encl_drv_uris"), view.GETFormatter("formatOdataList"), view.GETModel("default")),
+							"Drives@odata.count@meta": vw.Meta(view.GETProperty("encl_drv_uris"), view.GETFormatter("count"), view.GETModel("default")),
+							"ManagedBy": map[string]interface{}{
+								"@odata.id": "redfish/v1/Managers/iDRAC.Embedded.1",
+							},
+							"ManagedBy@odata.count":  1,
+							"PCIeDevices:@meta": map[string]interface{}{
+							//Needs addition
+							},
+							"PCIeDevices@odata.count":0,
+							"Storage@meta":             vw.Meta(view.GETProperty("storage_uris"), view.GETFormatter("formatOdataList"), view.GETModel("default")),
+							"Storage@odata.count@meta": vw.Meta(view.GETProperty("storage_uris"), view.GETFormatter("count"), view.GETModel("default")),
 						},
-						"Links@meta":             vw.Meta(view.GETProperty("links_uris"), view.GETFormatter("expand"), view.GETModel("default")),
-						"Links@odata.count@meta": vw.Meta(view.GETProperty("links_uris"), view.GETFormatter("count"), view.GETModel("default")),
-						"Manufacturer@meta":      vw.Meta(view.PropGET("manufacturer")), //Done
-						"Model@meta":             vw.Meta(view.PropGET("model")),        //Done
-						"Name@meta":              vw.Meta(view.PropGET("name")),         //Done
+						"Manufacturer@meta": vw.Meta(view.PropGET("manufacturer")), //Done
+						"Model@meta":        vw.Meta(view.PropGET("model")),        //Done
+						"Name@meta":         vw.Meta(view.PropGET("name")),         //Done
 						"Oem": map[string]interface{}{ //Done
 							"Dell": map[string]interface{}{
 								"DellEnclosure@meta": vw.Meta(view.GETProperty("enclosure_uris"), view.GETFormatter("expandone"), view.GETModel("default")),
@@ -261,8 +277,8 @@ func RegisterAggregate(s *testaggregate.Service) {
 						"SKU@meta":                     vw.Meta(view.PropGET("sku")),
 						"SerialNumber@meta":            vw.Meta(view.PropGET("serial_number")),
 						"Status": map[string]interface{}{
-							"HealthRollup@meta": vw.Meta(view.PropGET("health")),
-							"State@meta":        vw.Meta(view.PropGET("health_state")),
+							"HealthRollup@meta": vw.Meta(view.PropGET("health_rollup")),
+							"State":             "Enabled",
 							"Health@meta":       vw.Meta(view.PropGET("health")),
 						},
 					},
@@ -289,78 +305,88 @@ func RegisterAggregate(s *testaggregate.Service) {
 			}, nil
 		})
 
-
 	s.RegisterAggregateFunction("idrac_storage_volume",
 		func(ctx context.Context, subLogger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, vw *view.View, extra interface{}, params map[string]interface{}) ([]eh.Command, error) {
 			return []eh.Command{
-            &domain.CreateRedfishResource{
-                ResourceURI: vw.GetURI(),
-                Type:        "#Volume.v1_0_3.Volume",
-                Context:     "/redfish/v1/$metadata#Volume.Volume",
-                Privileges: map[string]interface{}{
-                    "GET":    []string{"Login"},
-                    "POST":   []string{"ConfigureManager"},
-                    "DELETE": []string{"ConfigureManager"},
-                },
+				&domain.CreateRedfishResource{
+					ResourceURI: vw.GetURI(),
+					Type:        "#Volume.v1_0_3.Volume",
+					Context:     "/redfish/v1/$metadata#Volume.Volume",
+					Privileges: map[string]interface{}{
+						"GET":    []string{"Login"},
+						"POST":   []string{"ConfigureManager"},
+						"DELETE": []string{"ConfigureManager"},
+					},
 
-                //Need to add actions
-                Properties: map[string]interface{}{
-                    "@Redfish.Settings": map[string]interface{}{ //Done
-                        "@odata.context": "/redfish/v1/$metadata#Settings.Settings",
-                        "@odata.id":      "/redfish/v1/Systems/System.Embedded.1/Storage/Volumes/$Entity/Settings",
-                        "@odata.type":    "#Settings.v1_1_0.Settings",
-                        "SupportedApplyTimes": []string{
-                            "Immediate",
-                            "OnReset",
-                            "AtMaintenanceWindowStart",
-                            "InMaintenanceWindowOnReset",
-                        },
-                    },
-                    "BlockSizeBytes@meta": vw.Meta(view.PropGET("block_size")),  //Done
-                    "CapacityBytes@meta":  vw.Meta(view.PropGET("capacity")),    //Done
-                    "Description@meta":    vw.Meta(view.PropGET("description")), //Done
-                    "Encrypted@meta":      vw.Meta(view.PropGET("encrypted")),   //DONE
-                    "EncryptionTypes":     []map[string]interface{}{},
-                    "Id@meta":             vw.Meta(view.PropGET("unique_name")),
-                    "Identifiers":         []map[string]interface{}{},
-                    "Links": map[string]interface{}{
-                        "Drives": []map[string]interface{}{
-                            //Need to add Enclosures array
-                        },
-                        "Drives@odata.count": vw.Meta(view.PropGET("count")),
-                    },
-                    "Name@meta": vw.Meta(view.PropGET("name")), //Done
-                    "Oem": map[string]interface{}{ //Done
-                        "Dell": map[string]interface{}{
-                            "DellVirtualDisk": map[string]interface{}{
-                                "@odata.context": "/redfish/v1/$metadata#DellVirtualDisk.DellVirtualDisk",
-                                "@odata.id":      "/redfish/v1/Dell/Systems/System.Embedded.1/Storage/Volumes/DellVirtualDisk/$Entity",
-                                "@odata.type":    "#DellVirtualDisk.v1_0_0.DellVirtualDisk",
+					//Need to add actions
+					Properties: map[string]interface{}{
+						"@Redfish.Settings": map[string]interface{}{ //Done
+							"@odata.context": "/redfish/v1/$metadata#Settings.Settings",
+							"@odata.id":      "/redfish/v1/Systems/System.Embedded.1/Storage/Volumes/$Entity/Settings",
+							"@odata.type":    "#Settings.v1_1_0.Settings",
+							"SupportedApplyTimes": []string{
+								"Immediate",
+								"OnReset",
+								"AtMaintenanceWindowStart",
+								"InMaintenanceWindowOnReset",
+							},
+						},
+						"Actions": map[string]interface{}{
+							"#Volume.CheckConsistency": map[string]interface{}{
 
-                                "BusProtocol@meta":         vw.Meta(view.PropGET("bus_protocol")),
-                                "Cachecade@meta":           vw.Meta(view.PropGET("cache_cade")),
-                                "DiskCachePolicy@meta":     vw.Meta(view.PropGET("disk_cache_policy")),
-                                "LockStatus@meta":          vw.Meta(view.PropGET("lock_status")),
-                                "MediaType@meta":           vw.Meta(view.PropGET("media_type")),
-                                "ReadCachePolicy@meta":     vw.Meta(view.PropGET("read_cache_policy")),
-                                "SpanDepth@meta":           vw.Meta(view.PropGET("span_depth")),
-                                "SpanLength@meta":          vw.Meta(view.PropGET("span_length")),
-                                "VirtualDiskTargetID@meta": vw.Meta(view.PropGET("virtual_disk_target")),
-                                "WriteCachePolicy@meta":    vw.Meta(view.PropGET("write_cache_policy")),
-                            },
-                        },
-                    },
-                    "Operations": []map[string]interface{}{
-                        //Need to add Operations
-                    },
-                    "OptimumIOSizeBytes@meta": vw.Meta(view.PropGET("optimum_io_size_bytes")),
-                    "Status": map[string]interface{}{
-                        "HealthRollup@meta": vw.Meta(view.PropGET("obj_status")),
-                        "State@meta":        vw.Meta(view.PropGET("state")),
-                        "Health@meta":       vw.Meta(view.PropGET("obj_status")),
-                    },
-                    "VolumeType@meta": vw.Meta(view.PropGET("volume_type")),
-                }}}, nil
-    })
+								"target": vw.GetActionURI("volume.checkconsistency"),
+							},
+							"#Volume.Initialize": map[string]interface{}{
+								"InitializeType@Redfish.AllowableValues": []string{
+									"Fast",
+									"Slow",
+								},
+								"target": vw.GetActionURI("volume.initialize"),
+							},
+						},
+						"BlockSizeBytes@meta": vw.Meta(view.PropGET("block_size")),  //Done
+						"CapacityBytes@meta":  vw.Meta(view.PropGET("capacity")),    //Done
+						"Description@meta":    vw.Meta(view.PropGET("description")), //Done
+						"Encrypted@meta":      vw.Meta(view.PropGET("encrypted")),   //DONE
+						"EncryptionTypes":     []map[string]interface{}{},
+						"Id@meta":             vw.Meta(view.PropGET("unique_name")),
+						"Identifiers":         []map[string]interface{}{},
+						"Links": map[string]interface{}{
+							"Drives@meta":             vw.Meta(view.GETProperty("drive_uris"), view.GETFormatter("formatOdataList"), view.GETModel("default")),
+							"Drives@odata.count@meta": vw.Meta(view.GETProperty("drive_uris"), view.GETFormatter("count"), view.GETModel("default")),
+						},
+						"Name@meta": vw.Meta(view.PropGET("name")), //Done
+						"Oem": map[string]interface{}{ //Done
+							"Dell": map[string]interface{}{
+								"DellVirtualDisk": map[string]interface{}{
+									"@odata.context": "/redfish/v1/$metadata#DellVirtualDisk.DellVirtualDisk",
+									"@odata.id":      "/redfish/v1/Dell/Systems/System.Embedded.1/Storage/Volumes/DellVirtualDisk/$Entity",
+									"@odata.type":    "#DellVirtualDisk.v1_0_0.DellVirtualDisk",
+
+									"BusProtocol@meta":         vw.Meta(view.PropGET("bus_protocol")),
+									"Cachecade@meta":           vw.Meta(view.PropGET("cache_cade")),
+									"DiskCachePolicy@meta":     vw.Meta(view.PropGET("disk_cache_policy")),
+									"LockStatus@meta":          vw.Meta(view.PropGET("lock_status")),
+									"MediaType@meta":           vw.Meta(view.PropGET("media_type")),
+									"ReadCachePolicy@meta":     vw.Meta(view.PropGET("read_cache_policy")),
+									"SpanDepth@meta":           vw.Meta(view.PropGET("span_depth")),
+									"SpanLength@meta":          vw.Meta(view.PropGET("span_length")),
+									"VirtualDiskTargetID@meta": vw.Meta(view.PropGET("virtual_disk_target")),
+									"WriteCachePolicy@meta":    vw.Meta(view.PropGET("write_cache_policy")),
+								},
+							},
+						},
+						"Operations": []map[string]interface{}{
+						//Need to add Operations
+						},
+						"OptimumIOSizeBytes@meta": vw.Meta(view.PropGET("optimum_io_size_bytes")),
+						"Status": map[string]interface{}{
+							"HealthRollup@meta": vw.Meta(view.PropGET("health_rollup")),
+							"State":             "Enabled",
+							"Health@meta":       vw.Meta(view.PropGET("health")),
+						},
+						"VolumeType@meta": vw.Meta(view.PropGET("volume_type")),
+					}}}, nil
+		})
 
 }
