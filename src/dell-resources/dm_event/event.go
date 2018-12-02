@@ -214,12 +214,12 @@ type RaidObjectHeader struct {
 type StorageVirtualObjEventData struct {
 	ObjectHeader  DataObjectHeader
 	RaidObjHeader RaidObjectHeader `mapstructure:"raidObjheader"`
-	BlockSize     int              `json:"blockSize"`
-	Capacity      int64            `json:"size"`
-	Encrypted     int              `json:"attributes"`
-	OptimumIoSize int              `json:"stripeSize"`
-	VolumeType    int              `json:"raidLevel"`
-	Id            string
+	BlockSize     int              `mapstructure:"blockSize"`
+	Capacity      int64            `mapstructure:"size"`
+	Encrypted     int              `mapstructure:"attributes"`
+	OptimumIoSize int              `mapstructure:"stripeSize"`
+	VolumeType    int              `mapstructure:"raidLevel"`
+	Id            string           `maspstructure:"fqdd"`
 	Description   string
 }
 
@@ -253,7 +253,7 @@ type StoragePhysicalObjEventData struct {
 	Ppid                      string             `mapstructure:"ppid"`
 	PredictiveFailState       string
 	RaidStatus                string
-	SasAddress                uint64             `mapstructure:"wwn"`
+	SasAddress                string             `mapstructure:"wwn"`
 	Slot                      int8               `mapstructure:"slot"`
 	UsedSize                  uint64             `mapstructure:"usedSize"`
 }
@@ -261,19 +261,22 @@ type StoragePhysicalObjEventData struct {
 type StorageAdapterObjEventData struct {
 	ObjectHeader    DataObjectHeader
 	RaidObjHeader   RaidSiObjectHeader `mapstructure:"raidSiobjheader"`
+	Wwn             string                `mapstructure:"wwn"`
 	Manufacturer    string             `mapstructure:"manufacturer"`
-	FirmwareVersion string             `mapstructure:"currentAvailableFwVer"`
+	FirmwareVersion string             `mapstructure:"firmwareVersion"`
 	Id              string             `mapstructure:"fqdd"`
 	CapableSpeeds   int                `json:"capableSpeeds"`
 	Model           string             `mapstructure:"fqdd"`
+	SupportedDiskProtocols           int             `mapstructure:"supportedDiskProtocols"`
+	SupportedControllerProtocols     int
 }
 
 type StorageEnclosureObjEventData struct {
 	ObjectHeader  DataObjectHeader
-	RaidObjHeader RaidSiObjectHeader `json:"raidSiobjheader"`
+	RaidObjHeader RaidSiObjectHeader `mapstructure:"raidSiobjheader"`
 	AssetTag      string             `mapstructure:"assetTag"`
 	ChassisType   int                `json:"bpType"`
-	DeviceId      int                `json:"deviceID"`
+	DeviceId      string                `mapstructure:"fqdd"`
 	Manufacturer  string             `mapstructure:"manufacturer"`
 	Model         string             `mapstructure:"fqdd"`
 	PartNumber    string             `mapstructure:"ppid"`
