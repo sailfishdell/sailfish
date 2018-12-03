@@ -361,6 +361,9 @@ views:
         - "fn": "stdFormatters"
           "params":
       "Aggregate": "idrac_system_chassis"
+      "ExecPost": [
+        "instantiate('power', 'parenturi', rooturi + '/Chassis/' + FQDD, 'FQDD', FQDD)",
+        ]
 
   "idrac_system_embedded":
       "Logger": ["module", "system_embedded"]
@@ -379,6 +382,67 @@ views:
         "instantiate('attributes', 'parenturi', rooturi + '/Systems/' + FQDD, 'FQDD', FQDD)",
         "instantiate('storage_collection', 'parenturi', rooturi + '/Systems/' + FQDD, 'FQDD', FQDD)",
        ]
+
+  "power":
+      "Logger": ["module", "Power"]
+      "Models":
+        "default":  { "unique_name": "'Power'"}
+      "Controllers":
+        - "fn": "ARMapper"
+          "params": {"modelname": "default", "cfgsection": "Chassis/System.Chassis/Power", "mappinguniquename": "'chassis_power_mapper:' + FQDD", "AddToView": "ar_mapper"}
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "power_control_uris", "uniquename": "'am2_control_uris:' + FQDD" }
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "power_supply_uris", "uniquename": "'am2_psu_uris:' + FQDD" }
+      "View":
+        - "fn": "with_URI"
+          "params": "parenturi + '/Power'"
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+        - "fn": "stdFormatters"
+          "params":
+      "Aggregate": "power"
+      "ExecPost": [
+        "instantiate('power_control', 'FQDD', FQDD )",
+        ]
+
+  "power_control":
+      "Logger": ["module", "PowerControl"]
+      "Models":
+        "default":  { "power_related_items": "find_uris_with_basename( rooturi + '/Chassis' )"}
+      "Controllers":
+        - "fn": "ARMapper"
+          "params": {"modelname": "default", "cfgsection": "Chassis/System.Chassis/Power", "mappinguniquename": "'chassis_power_ctrl_mapper:' + FQDD", "AddToView": "ar_mapper"}
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "power_control", "uniquename": "'am2_chassis_power_control_' + FQDD" }
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/Chassis/' + FQDD + '/Power/PowerControl'"
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+        - "fn": "stdFormatters"
+          "params":
+      "Aggregate": "power_control"
+
+  "psu_slot":
+      "Logger": ["module", "PSU.Slot"]
+      "Models":
+        "default":  {"unique_name": "FQDD", "unique_name_attr": "FQDD+'.Attributes'", "attributes": "add_attribute_property()"}
+      "Controllers":
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "power_supply", "uniquename": "'am2_chassis_psu_' + FQDD" }
+        - "fn": "ARDumper"
+          "params": {"modelname": "default", "AddToView": true, "passthru": {"fqddlist": "array(FQDD)"}}
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/Chassis/' + ChassisFQDD + '/Power/PowerSupplies/' + FQDD "
+        - "fn": "linkModel"
+          "params": {"existing": "default", "linkname": "swinv"}
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+        - "fn": "stdFormatters"
+          "params":
+      "Aggregate": "psu_slot"
 
   "storage_collection":
       "Logger": ["module", "StorageCollection"]
@@ -551,7 +615,24 @@ awesome_mapper:
                 "data.Type == 'StorageDrive' && addidrac_storage_drive(data.ParentFQDD + ':' + data.FQDD, data.ParentFQDD, data.FQDD)",
                 "data.Type == 'StorageEnclosure' && addidrac_storage_enclosure(data.FQDD)",
                 "data.Type == 'StorageVolume' && addidrac_storage_volume(data.ParentFQDD + ':' + data.FQDD, data.ParentFQDD, data.FQDD)",
+                "data.Type == 'IDRACPSU'      && addidracpsu( data.ParentFQDD + ':' + data.FQDD, data.ParentFQDD, data.FQDD)",
                 ]}
+
+    power_control_uris:
+      - { SelectEventType: "RedfishResource:created",
+          Select: "nohash(data.ResourceURI) && data.ResourceURI == rooturi + '/Chassis/' + FQDD + '/Power/PowerControl' ",
+          ModelUpdate: [ {Property: "power_control_uris", Query: "addtoset(model, propname, data.ResourceURI)"} ]}
+      - { SelectEventType: "RedfishResource:removed",
+          Select: "nohash(data.ResourceURI) && data.ResourceURI == rooturi + '/Chassis/' + FQDD + '/Power/PowerControl' ",
+          ModelUpdate: [ {Property: "power_control_uris", Query: "removefromset(model, propname, data.ResourceURI)"} ]}
+
+    power_supply_uris:
+      - { SelectEventType: "RedfishResource:created",
+          Select: "nohash(data.ResourceURI) && baseuri(data.ResourceURI) == rooturi + '/Chassis/' + FQDD + '/Power/PowerSupplies' ",
+          ModelUpdate: [ {Property: "power_supply_uris", Query: "addtoset(model, propname, data.ResourceURI)"} ]}
+      - { SelectEventType: "RedfishResource:removed",
+          Select: "nohash(data.ResourceURI) && baseuri(data.ResourceURI) == rooturi + '/Chassis/' + FQDD + '/Power/PowerSupplies' ",
+          ModelUpdate: [ {Property: "power_supply_uris", Query: "removefromset(model, propname, data.ResourceURI)"} ]}
 
     idrac_storage_drive_uris:
       - { SelectEventType: "RedfishResource:created",
@@ -682,6 +763,26 @@ awesome_mapper:
       - { SelectEventType: "RedfishResource:removed",
           Select: "nohash(data.ResourceURI) && baseuri(data.ResourceURI) == collection_uri && hassuffix(data.ResourceURI, ':' + FQDD)",
           ModelUpdate: [ {Property: "members", Query: "removefromset(model, propname, data.ResourceURI)", Default: 0} ]}
+
+    power_control:
+      - { SelectEventType: "PowerConsumptionDataObjEvent", Select: "true",
+            ModelUpdate: [
+                {Property: "energy_consumption_start_time", Query: "epoch_to_date(data.CwStartTime)" },
+                {Property: "energy_consumption_kwh", Query: "int((data.CumulativeWatts)/1000)" },
+                {Property: "headroom_watts", Query: "data.InstHeadRoom" },
+                {Property: "max_peak_watts", Query: "data.PeakWatts" },
+                {Property: "max_peak_watts_time", Query: "epoch_to_date(data.PwReadingTime)" },
+                {Property: "min_peak_watts", Query: "data.MinWatts" },
+                {Property: "min_peak_watts_time", Query: "epoch_to_date(data.MinwReadingTime)" },
+                {Property: "peak_headroom_watts", Query: "data.PeakHeadRoom" },
+                {Property: "consumed_watts", Query: "data.InstWattsPSU1_2" }]}
+
+    power_supply:
+      - { SelectEventType: "PowerSupplyObjEvent", Select: "data.ObjectHeader.FQDD == DM_FQDD",
+            ModelUpdate: [
+                {Property: "line_input_voltage", Query: "zero_to_null(data.CurrentInputVolts)" }, #unsigned int
+                {Property: "input_current", Query: "zero_to_null(data.InstAmps)" }, #float
+                {Property: "obj_status", Query: "map_health_value(data.ObjectHeader.ObjStatus)" }]}
 
 
     idrac_storage_drive_map:

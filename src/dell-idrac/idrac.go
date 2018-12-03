@@ -96,6 +96,8 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	system.RegisterAggregate(instantiateSvc)
 
 	AddChassisInstantiate(logger, instantiateSvc)
+	//instantiate power resources
+	RegisterAggregate(instantiateSvc)
 
 
 	// ignore unused for now
