@@ -341,7 +341,9 @@ views:
           "params":
       "Aggregate": "idrac_embedded"
       "ExecPost": [
-        "instantiate('attributes', 'parenturi', rooturi + '/Managers/' + FQDD, 'FQDD', FQDD)"
+        "instantiate('attributes', 'parenturi', rooturi + '/Managers/' + FQDD, 'FQDD', FQDD)",
+        "instantiate('attributes', 'parenturi', rooturi + '/Managers/' + 'System.Embedded.1', 'FQDD', 'System.Embedded.1')",
+        "instantiate('attributes', 'parenturi', rooturi + '/Managers/' + 'LifecycleController.Embedded.1', 'FQDD', 'LifecycleController.Embedded.1')"
        ]
 
   "system_chassis":
