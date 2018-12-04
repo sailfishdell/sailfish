@@ -83,7 +83,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	slots.RegisterAggregate(instantiateSvc)
 	logservices.RegisterAggregate(instantiateSvc)
 	attributes.RegisterAggregate(instantiateSvc)
-  update_service.RegisterAggregate(instantiateSvc)
+  	update_service.RegisterAggregate(instantiateSvc)
 	fans.RegisterAggregate(instantiateSvc)
 	RegisterAggregate(instantiateSvc)
 	RegisterIOMAggregate(instantiateSvc)
