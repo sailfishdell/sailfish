@@ -8,19 +8,19 @@ import (
 	"context"
 	"sync"
 
-	"github.com/superchalupa/sailfish/src/ocp/view"
 	"github.com/superchalupa/sailfish/src/log"
-	domain "github.com/superchalupa/sailfish/src/redfishresource"
 	"github.com/superchalupa/sailfish/src/ocp/testaggregate"
+	"github.com/superchalupa/sailfish/src/ocp/view"
+	domain "github.com/superchalupa/sailfish/src/redfishresource"
 
 	eh "github.com/looplab/eventhorizon"
-    "github.com/spf13/viper"
+	"github.com/spf13/viper"
 )
 
 func RegisterAggregate(s *testaggregate.Service) {
 	s.RegisterAggregateFunction("inv_view",
-        func(ctx context.Context, subLogger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, vw *view.View, extra interface{}, params map[string]interface{}) ([]eh.Command, error) {
-      subLogger.Crit("making inventory instance");
+		func(ctx context.Context, subLogger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, vw *view.View, extra interface{}, params map[string]interface{}) ([]eh.Command, error) {
+			subLogger.Crit("making inventory instance")
 			return []eh.Command{
 				&domain.CreateRedfishResource{
 					ID:          vw.GetUUID(),
@@ -49,7 +49,7 @@ func RegisterAggregate(s *testaggregate.Service) {
 								"ComponentId@meta": vw.Meta(view.GETProperty("fw_device_class"), view.GETModel("swinv")),
 								"InstallDate@meta": vw.Meta(view.GETProperty("fw_install_date"), view.GETModel("swinv")),
 
-								"@odata.type": "#EID_674_SoftwareInventory.v1_0_0.OemSoftwareInventory",
+								"@odata.type":                  "#EID_674_SoftwareInventory.v1_0_0.OemSoftwareInventory",
 								"FQDD@meta":                    vw.Meta(view.GETProperty("fw_fqdd_list"), view.GETModel("firm")),
 								"FQDD@odata.count@meta":        vw.Meta(view.GETProperty("fw_fqdd_list_count"), view.GETModel("firm")),
 								"RelatedItem@meta":             vw.Meta(view.GETProperty("fw_related_list"), view.GETModel("firm")),
@@ -58,7 +58,7 @@ func RegisterAggregate(s *testaggregate.Service) {
 						},
 					}},
 			}, nil
-	})
+		})
 
 	return
 }

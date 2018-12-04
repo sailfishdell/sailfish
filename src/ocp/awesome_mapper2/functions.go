@@ -245,12 +245,12 @@ func init() {
 		}
 		return args[0], nil
 	})
-  AddFunction("empty_to_null", func(args ...interface{}) (interface{}, error) {
-    if args[0] == "" {
-      return nil, nil
-    }
-    return args[0], nil
-  })
+	AddFunction("empty_to_null", func(args ...interface{}) (interface{}, error) {
+		if args[0] == "" {
+			return nil, nil
+		}
+		return args[0], nil
+	})
 	AddFunction("subsystem_health", func(args ...interface{}) (interface{}, error) {
 		fqdd := strings.Split(args[0].(map[string]string)["FQDD"], "#")
 		subsys := fqdd[len(fqdd)-1]
@@ -320,16 +320,16 @@ func init() {
 		}
 	})
 	AddFunction("durable_name", func(args ...interface{}) (interface{}, error) {
-        wwn,_ := strconv.Atoi(args[0].(string))
+		wwn, _ := strconv.Atoi(args[0].(string))
 		if wwn > 0x00 {
-            identif := fmt.Sprintf("%X", wwn)
+			identif := fmt.Sprintf("%X", wwn)
 			return identif, nil
 		} else {
 			return nil, nil
 		}
 	})
 	AddFunction("durable_format", func(args ...interface{}) (interface{}, error) {
-        wwn,_ := strconv.Atoi(args[0].(string))
+		wwn, _ := strconv.Atoi(args[0].(string))
 		if wwn > 0x00 {
 			return "NAA", nil
 		} else {
@@ -337,17 +337,17 @@ func init() {
 		}
 	})
 	AddFunction("identifier_gen", func(args ...interface{}) (interface{}, error) {
-        wwnStr := args[0].(string)
-        wwn,_ := strconv.Atoi(wwnStr)
+		wwnStr := args[0].(string)
+		wwn, _ := strconv.Atoi(wwnStr)
 		if wwn > 0x00 {
-            dur_name := fmt.Sprintf("%X", wwn)
-            dur_format := "NAA"
-			return []map[string]string{ map[string]string{"DurableName": dur_name, "DurableNameFormat": dur_format}}, nil
+			dur_name := fmt.Sprintf("%X", wwn)
+			dur_format := "NAA"
+			return []map[string]string{map[string]string{"DurableName": dur_name, "DurableNameFormat": dur_format}}, nil
 		} else {
 			return nil, nil
 		}
-    })
-    
+	})
+
 	AddFunction("deviceprotocols", func(args ...interface{}) (interface{}, error) {
 		var vStr []string
 		var deviceprotocols uint32 = uint32(args[0].(float64))
@@ -358,25 +358,25 @@ func init() {
 		if deviceprotocols&0x00000001 == 0x00000001 {
 			vStr = append(vStr, "SCSI")
 		}
-        if deviceprotocols&0x00000002 == 0x00000002 {
+		if deviceprotocols&0x00000002 == 0x00000002 {
 			vStr = append(vStr, "PATA")
 		}
-        if deviceprotocols&0x00000004 == 0x00000004 {
+		if deviceprotocols&0x00000004 == 0x00000004 {
 			vStr = append(vStr, "FIBRE")
 		}
-        if deviceprotocols&0x00000008 == 0x00000008{
+		if deviceprotocols&0x00000008 == 0x00000008 {
 			vStr = append(vStr, "USB")
 		}
-        if deviceprotocols&0x00000010 == 0x00000010{
+		if deviceprotocols&0x00000010 == 0x00000010 {
 			vStr = append(vStr, "SATA")
 		}
-        if deviceprotocols&0x00000020 == 0x00000020 {
+		if deviceprotocols&0x00000020 == 0x00000020 {
 			vStr = append(vStr, "SAS")
 		}
-        if deviceprotocols&0x00000040 == 0x00000040{
+		if deviceprotocols&0x00000040 == 0x00000040 {
 			vStr = append(vStr, "PCIE")
 		}
-        if deviceprotocols&0x00000100 == 0x00000100{
+		if deviceprotocols&0x00000100 == 0x00000100 {
 			vStr = append(vStr, "NVMe")
 		}
 		return vStr, nil

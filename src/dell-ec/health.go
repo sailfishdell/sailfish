@@ -33,9 +33,9 @@ func inithealth(ctx context.Context, logger log.Logger, ch eh.CommandHandler) {
 		health := healthEvent.Health
 
 		health_entry := map[string]interface{}{"Status": map[string]string{"HealthRollup": health}}
-    if health == "" {
-      health_entry = map[string]interface{}{"Status": map[string]interface{}{"HealthRollup": nil}}
-    }
+		if health == "" {
+			health_entry = map[string]interface{}{"Status": map[string]interface{}{"HealthRollup": nil}}
+		}
 		subSystemHealthList[subsys] = health_entry
 
 		if health == "Absent" { //currently only "Absent" is ignored, add "" later?

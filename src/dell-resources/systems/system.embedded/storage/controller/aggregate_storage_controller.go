@@ -27,7 +27,7 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 				},
 				"FirmwareVersion@meta": v.Meta(view.PropGET("firmware_version")),
 				"Identifiers":          map[string]interface{}{
-					//need to make this an array.
+				//need to make this an array.
 				},
 				"Links":             map[string]interface{}{},
 				"Manufacturer@meta": v.Meta(view.PropGET("manufacturer")),
@@ -41,10 +41,10 @@ func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, ch eh.Co
 					"Health@meta":       v.Meta(view.PropGET("obj_status")),
 				},
 				"SupportedControllerProtocols": map[string]interface{}{
-					//need to make this an array
+				//need to make this an array
 				},
 				"SupportedDeviceProtocols": map[string]interface{}{
-					//need to make this an array
+				//need to make this an array
 				},
 			}})
 }
