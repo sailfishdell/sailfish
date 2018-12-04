@@ -15,7 +15,7 @@ import (
 )
 
 func initLCL(logger log.Logger, ch eh.CommandHandler, d *domain.DomainObjects) {
-	MAX_LOGS :=51
+	MAX_LOGS := 51
 	lclogs := []eh.UUID{}
 
 	awesome_mapper2.AddFunction("addlclog", func(args ...interface{}) (interface{}, error) {
@@ -24,7 +24,6 @@ func initLCL(logger log.Logger, ch eh.CommandHandler, d *domain.DomainObjects) {
 			logger.Crit("Mapper configuration error: uri not passed as string", "args[0]", args[0])
 			return nil, errors.New("Mapper configuration error: uri not passed as string")
 		}
-
 
 		logEntry, ok := args[1].(*LogEventData)
 		if !ok {
@@ -37,7 +36,7 @@ func initLCL(logger log.Logger, ch eh.CommandHandler, d *domain.DomainObjects) {
 
 		aggID, ok := d.GetAggregateIDOK(uri)
 		if ok {
-			logger.Crit("Mapper configuration error: URI already exists", "aggID",aggID, "uri",uri)
+			logger.Crit("Mapper configuration error: URI already exists", "aggID", aggID, "uri", uri)
 			return nil, errors.New("lclog: URI already exists %s")
 		}
 

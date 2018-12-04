@@ -99,7 +99,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	//instantiate power resources
 	RegisterAggregate(instantiateSvc)
 
-
 	// ignore unused for now
 	_ = actionSvc
 
