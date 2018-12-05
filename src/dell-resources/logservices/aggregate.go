@@ -27,7 +27,7 @@ func RegisterAggregate(s *testaggregate.Service) {
 					Properties: map[string]interface{}{
 						"Name":                     "Log Service Collection",
 						"Description":              "Collection of Log Services for this Manager",
-						"Members@meta":             vw.Meta(view.GETProperty("members"), view.GETFormatter("expand"), view.GETModel("default")),
+						"Members@meta":             vw.Meta(view.GETProperty("members"), view.GETFormatter("formatOdataList"), view.GETModel("default")),
 						"Members@odata.count@meta": vw.Meta(view.GETProperty("members"), view.GETFormatter("count"), view.GETModel("default")),
 					}},
 			}, nil
@@ -44,16 +44,20 @@ func RegisterAggregate(s *testaggregate.Service) {
 						"GET": []string{"Login"},
 					},
 					Properties: map[string]interface{}{
-						"Name":            "LifeCycle Controller Log Service",
-						"Description":     "LifeCycle Controller Log Service",
-						"OverWritePolicy": "WrapsWhenFull",
+            "Actions": map[string]interface{}{
+              "#LogService.ClearLog": map[string]interface{}{
+                "target": vw.GetActionURI("logservice.clearlog"),
+              },
+            },
+						"Name":               "LifeCycle Controller Log Service",
+						"Description":        "LifeCycle Controller Log Service",
+						"OverWritePolicy":    "WrapsWhenFull",
+						"MaxNumberOfRecords": 500000,
+						"ServiceEnabled":     true,
 						"Entries": map[string]interface{}{
 							"@odata.id": "/redfish/v1/Managers/CMC.Integrated.1/Logs/Lclog",
 						},
-						"MaxNumberOfRecords":  500000,
-						"ServiceEnabled":      true,
-						"@odata.id":           "/redfish/v1/Managers/CMC.Integrated.1/LogServices/Lclog",
-						"DateTime@meta":       map[string]interface{}{"GET": map[string]interface{}{"plugin": "datetime"}},
+            "DateTime@meta":        map[string]interface{}{"GET": map[string]interface{}{"plugin": "datetime"}},
 						"DateTimeLocalOffset": "+00:00",
 						"Id": "LC",
 						"Actions": map[string]interface{}{
@@ -106,7 +110,7 @@ func RegisterAggregate(s *testaggregate.Service) {
 						"ServiceEnabled":      true,
 						"@odata.id":           "/redfish/v1/Managers/CMC.Integrated.1/LogServices/FaultList",
 						"DateTimeLocalOffset": "+00:00",
-						"DateTime":            map[string]interface{}{"GET": map[string]interface{}{"plugin": "datetime"}},
+            "DateTime@meta":        map[string]interface{}{"GET": map[string]interface{}{"plugin": "datetime"}},
 						"Id":                  "FaultList",
 					}},
 			}, nil
