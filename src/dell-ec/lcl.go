@@ -224,6 +224,10 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 	go func() {
 		swinvList := map[string]*model.Model{}
 		for {
+
+			// Wait for this thread to be kicked
+			// either a model gets updated (trigger)
+			// or a new model is added (newchan)
 			select {
 			case <-trigger:
 			case n := <-newchan:
@@ -232,6 +236,7 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 				continue
 			}
 
+			// scan through each model and build our new inventory uris
 			for uri, mdl := range swinvList {
 				fqddRaw, ok := mdl.GetPropertyOk("fw_fqdd")
 				if !ok || fqddRaw == nil {
