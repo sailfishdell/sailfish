@@ -83,7 +83,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	slots.RegisterAggregate(instantiateSvc)
 	logservices.RegisterAggregate(instantiateSvc)
 	attributes.RegisterAggregate(instantiateSvc)
-  update_service.RegisterAggregate(instantiateSvc)
+	update_service.RegisterAggregate(instantiateSvc)
 	fans.RegisterAggregate(instantiateSvc)
 	RegisterAggregate(instantiateSvc)
 	RegisterIOMAggregate(instantiateSvc)
@@ -92,9 +92,9 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	RegisterCMCAggregate(instantiateSvc)
 	RegisterCertAggregate(instantiateSvc)
 	AddECInstantiate(logger, instantiateSvc)
-	initLCL(logger, ch, d)
+	initLCL(logger, instantiateSvc, ch, d)
 	inithealth(ctx, logger, ch)
-  initpowercontrol(logger)
+	initpowercontrol(logger)
 
 	// add mapper helper to instantiate
 	awesome_mapper2.AddFunction("find_uris_with_basename", func(args ...interface{}) (interface{}, error) {
@@ -183,23 +183,11 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 		instantiateSvc.Instantiate(regName, map[string]interface{}{"location": location})
 	}
 
-	{
-    _, updSvcVw, _ := instantiateSvc.Instantiate("update_service", map[string]interface{}{
-		  "firmware_inventory_members": d.FindMatchingURIs(func(uri string) bool { return path.Dir(uri) == rooturi+"/UpdateService/FirmwareInventory/Installed-" }),
-    })
+	_, updSvcVw, _ := instantiateSvc.Instantiate("update_service", map[string]interface{}{})
 
-    updSvcVw.ApplyOption(
-      actionSvc.WithAction(ctx, "update.reset", "/Actions/Oem/DellUpdateService.Reset", pumpSvc.NewPumpAction(30)),
-      actionSvc.WithAction(ctx, "update.eid674.reset", "/Actions/Oem/EID_674_UpdateService.Reset", pumpSvc.NewPumpAction(30)),
-			actionSvc.WithAction(ctx, "update.syncup", "/Actions/Oem/DellUpdateService.Syncup", pumpSvc.NewPumpAction(30)),
-			actionSvc.WithAction(ctx, "update.eid674.syncup", "/Actions/Oem/EID_674_UpdateService.Syncup", pumpSvc.NewPumpAction(30)),
-			uploadSvc.WithUpload(ctx, "upload.firmwareUpdate", "/FirmwareInventory", pumpSvc.NewPumpAction(60)),
-			evtSvc.PublishResourceUpdatedEventsForModel(ctx, "default"),
-		)
-
-		// add the aggregate to /redfish/v1/ tree
-		update_service.EnhanceAggregate(ctx, updSvcVw, rootView, ch)
-	}
+	updSvcVw.ApplyOption(
+		uploadSvc.WithUpload(ctx, "upload.firmwareUpdate", "/FirmwareInventory", pumpSvc.NewPumpAction(60)),
+	)
 
 	// VIPER Config:
 	// pull the config from the YAML file to populate some static config options

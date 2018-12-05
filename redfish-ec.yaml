@@ -502,24 +502,48 @@ views:
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/UpdateService'"
+        - "fn": "with_PumpHandledAction"
+          "params": {"name": "update.reset", "uri": "/Actions/Oem/DellUpdateService.Reset", "timeout": 30}
+        - "fn": "with_PumpHandledAction"
+          "params": {"name": "update.eid674.reset", "uri": "/Actions/Oem/EID_674_UpdateService.Reset", "timeout": 30}
+        - "fn": "with_PumpHandledAction"
+          "params": {"name": "update.syncup", "uri": "/Actions/Oem/DellUpdateService.Syncup", "timeout": 30}
+        - "fn": "with_PumpHandledAction"
+          "params": {"name": "update.eid674.syncup", "uri": "/Actions/Oem/EID_674_UpdateService.Syncup", "timeout": 30}
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
       "Aggregate": "update_service"
       "ExecPost": [
-        "instantiate('update_service_firmwareinventory', 'firmware_inventory_members', firmware_inventory_members)"
+        "instantiate('update_service_firmwareinventory')"
       ]
 
   "update_service_firmwareinventory":
       "Logger": ["module", "updateservice"]
       "Models":
-        "default": {"firmware_inventory_members": "firmware_inventory_members"}
+        "default": {}
       "Controllers":
         - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "update_service", "uniquename": "'firmware_inventory'" }
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + view.GetURI()", "passthru": {'collection_uri': 'view.GetURI()'} }
       "View":
         - "fn": "stdFormatters"
           "params":
         - "fn": "with_URI"
           "params": "rooturi + '/UpdateService/FirmwareInventory'"
       "Aggregate": "update_service_firmwareinventory"
+
+  "firmware_instance":
+      "Logger": ["module", "firmware_instance"]
+      "Models":
+        "default": {}
+      "Controllers":
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/UpdateService/FirmwareInventory/Installed-' + compVerTuple"
+        - "fn": "stdFormatters"
+          "params":
+      "Aggregate": "firmware_instance"
 
   "faultlistservices":
       "Logger": ["module", "lclog"]
@@ -1081,11 +1105,8 @@ awesome_mapper:
 
     update_service:
       - { SelectEventType: "RedfishResource:created",
-      Select: "nohash(data.ResourceURI) && baseuri(data.ResourceURI) == rooturi + '/UpdateService/FirmwareInventory/Installed-' ",
-          ModelUpdate: [ {Property: "firmware_inventory_members", Query: "addtoset(model, propname, data.ResourceURI)"} ]}
-      - { SelectEventType: "RedfishResource:removed",
-      Select: "nohash(data.ResourceURI) && baseuri(data.ResourceURI) == rooturi + '/UpdateService/FirmwareInventory/Installed-' ",
-          ModelUpdate: [ {Property: "firmware_inventory_members", Query: "removefromset(model, propname, data.ResourceURI)"} ]}
+      Select: "has_swinv_model(data.ResourceURI)",
+          Exec: ["add_swinv(data.ResourceURI)"] }
 
     testview:
       - { SelectEventType: "AttributeUpdated", Select: "data.FQDD == fqdd && data.Name == 'test'", ModelUpdate: [ {Property: "TEST", Query: "data.Value", Default: 0} ] }
