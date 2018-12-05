@@ -441,12 +441,12 @@ views:
         # probably should instantiate these in the same place that cmc.integrated.N are instantiated. (ie. flatten the instantiate tree)
         "instantiate('attributes', 'parenturi', rooturi + '/Managers/' + FQDD, 'FQDD', FQDD)",
         "instantiate('logservices', 'FQDD', FQDD)",
-        "instantiate('lclogservices', 'FQDD', FQDD)",
-        "instantiate('faultlistservices', 'FQDD', FQDD)",
         "instantiate('certificateservices', 'parenturi', rooturi + '/Managers/' + FQDD, 'FQDD', FQDD)",
         "instantiate('manager_cmc_integrated_redundancy', 'FQDD', FQDD, 'parenturi', view.GetURI())",
 
         # only instantiate the collection once for cmc.integrated.1
+        "FQDD == 'CMC.Integrated.1' && instantiate('lclogservices', 'FQDD', FQDD)",
+        "FQDD == 'CMC.Integrated.1' && instantiate('faultlistservices', 'FQDD', FQDD)",
         "FQDD == 'CMC.Integrated.1' && instantiate('lclogentrycollection', 'FQDD', FQDD)",
         "FQDD == 'CMC.Integrated.1' && instantiate('faultlistentrycollection', 'FQDD', FQDD)"
         ]
@@ -1023,16 +1023,19 @@ views:
   "inv_view":
       "Logger": ["module", "observer"]
       "Models":
-        "default": {"fw_id": "'Installed-'+comp_ver_tuple"}
+        "default": {"fw_id": "'Installed-'+tuple"}
       "Controllers":
         - "fn": "ARMapper"
-          "params": {"modelname": "default", "cfgsection": "firmware/inventory", "mappinguniquename": "'firmware_inventory:' + comp_ver_tuple", "AddToView": true}
+          "params": {"modelname": "default", "cfgsection": "firmware/inventory", "mappinguniquename": "'firmware_inventory:' + tuple", "AddToView": true}
       "View":
         - "fn": "linkModel"
           "params": {"existing": "default", "linkname": "swinv"}
         - "fn": "with_URI"
-          "params": "rooturi + '/UpdateService/FirmwareInventory/Installed-' + comp_ver_tuple"
+          "params": "rooturi + '/UpdateService/FirmwareInventory/' + tuple"
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
       "Aggregate": "inv_view"
+
 
   "sled":
       "Logger": ["module", "Sled"]

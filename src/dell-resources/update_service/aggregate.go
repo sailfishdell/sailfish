@@ -5,13 +5,16 @@ package update_service
 // population should happen in an impl class. ie. no dbus calls in this file
 
 import (
-	"context"
-	"sync"
+    "context"
+    "sync"
+    "fmt"
+    "errors"
 
-	"github.com/superchalupa/sailfish/src/log"
-	"github.com/superchalupa/sailfish/src/ocp/testaggregate"
-	"github.com/superchalupa/sailfish/src/ocp/view"
-	domain "github.com/superchalupa/sailfish/src/redfishresource"
+    "github.com/superchalupa/sailfish/src/ocp/view"
+    "github.com/superchalupa/sailfish/src/log"
+    domain "github.com/superchalupa/sailfish/src/redfishresource"
+    "github.com/superchalupa/sailfish/src/ocp/testaggregate"
+    "github.com/superchalupa/sailfish/src/ocp/awesome_mapper2"
 
 	eh "github.com/looplab/eventhorizon"
 	"github.com/spf13/viper"

@@ -19,8 +19,7 @@ import (
 
 func RegisterAggregate(s *testaggregate.Service) {
 	s.RegisterAggregateFunction("inv_view",
-		func(ctx context.Context, subLogger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, vw *view.View, extra interface{}, params map[string]interface{}) ([]eh.Command, error) {
-			subLogger.Crit("making inventory instance")
+    func(ctx context.Context, subLogger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, vw *view.View, extra interface{}, params map[string]interface{}) ([]eh.Command, error) {
 			return []eh.Command{
 				&domain.CreateRedfishResource{
 					ID:          vw.GetUUID(),

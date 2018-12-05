@@ -44,11 +44,6 @@ func RegisterAggregate(s *testaggregate.Service) {
 						"GET": []string{"Login"},
 					},
 					Properties: map[string]interface{}{
-            "Actions": map[string]interface{}{
-              "#LogService.ClearLog": map[string]interface{}{
-                "target": vw.GetActionURI("logservice.clearlog"),
-              },
-            },
 						"Name":               "LifeCycle Controller Log Service",
 						"Description":        "LifeCycle Controller Log Service",
 						"OverWritePolicy":    "WrapsWhenFull",
