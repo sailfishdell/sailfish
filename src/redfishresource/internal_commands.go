@@ -238,7 +238,6 @@ func StartInjectService(logger log.Logger, eb eh.EventBus) {
 			// if we get a sync event, we have to pause processing new events until it's completed processing
 			// it may be processing in the background
 			if ev, ok := event.(syncEvent); ok {
-				logger.Warn("Processing synchronous event")
 				ev.Wait()
 			}
 		}

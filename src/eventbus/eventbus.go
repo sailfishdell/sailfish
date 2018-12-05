@@ -17,7 +17,6 @@ package eventbus
 
 import (
 	"context"
-	"fmt"
 	"sync"
 
 	eh "github.com/looplab/eventhorizon"
@@ -60,7 +59,6 @@ func (b *EventBus) PublishEvent(ctx context.Context, event eh.Event) error {
 	}
 
 	if e, ok := event.(waiter); ok {
-		fmt.Printf("Done in eventbus\n")
 		e.Done()
 	}
 

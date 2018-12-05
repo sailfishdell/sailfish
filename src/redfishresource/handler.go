@@ -125,7 +125,6 @@ func (d *DomainObjects) GetAggregateIDOK(uri string) (id eh.UUID, ok bool) {
 		i := 0
 		// start at the end and while the next char is '/', increment
 		for i = 0; i < len(uri) && uri[len(uri)-(1+i)] == '/'; i++ {
-			fmt.Printf("  test %s\n", uri[len(uri)-(1+i)])
 		}
 		// use all the way up to the last non-'/' char
 		id, ok = d.Tree[uri[:len(uri)-(i)]]
