@@ -26,7 +26,7 @@ func MakeMaker(l log.Logger, name string, fn func(args ...interface{}) (interfac
 		setMu.Lock()
 		_, ok = set[uniqueName]
 		if ok {
-			l.Warn("Already created unique name in this set", "name", name, "uniqueName", uniqueName)
+			l.Info("Already created unique name in this set", "name", name, "uniqueName", uniqueName)
 			setMu.Unlock()
 			return false, nil
 		}
