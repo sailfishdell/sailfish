@@ -536,7 +536,7 @@ views:
   "firmware_instance":
       "Logger": ["module", "firmware_instance"]
       "Models":
-        "default": {}
+        "default": {"name": "name", "version": "version", "updateable": "updateable", "comp_ver_tuple": "compVerTuple"}
       "Controllers":
       "View":
         - "fn": "with_URI"

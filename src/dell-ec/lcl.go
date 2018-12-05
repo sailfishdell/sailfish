@@ -278,11 +278,15 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 				_ = fw_related_list
 
 				if _, ok := firmwareInventoryViews[compVerTuple]; !ok {
-					_, vw, _ := instantiateSvc.InstantiateNoWait("firmware_instance", map[string]interface{}{"compVerTuple": compVerTuple})
+					_, vw, _ := instantiateSvc.InstantiateNoWait("firmware_instance", map[string]interface{}{
+						"compVerTuple": compVerTuple,
+						"name":         "TEST",
+						"version":      version,
+						"updateable":   false,
+					})
 					fmt.Printf("add to list ------------------------------ INSTANTIATED: %s\n", vw.GetURI())
 					firmwareInventoryViews[compVerTuple] = vw
 				}
-
 			}
 		}
 	}()

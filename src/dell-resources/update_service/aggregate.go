@@ -113,7 +113,15 @@ func RegisterAggregate(s *testaggregate.Service) {
 						"GET": []string{"ConfigureManager"},
 					},
 					Properties: map[string]interface{}{
-						"Name": "Firmware Instance",
+						"Status": map[string]interface{}{
+							"State":  "Enabled",
+							"Health": "OK",
+						},
+						"Name@meta":       vw.Meta(view.GETProperty("name"), view.GETModel("default")),
+						"Version@meta":    vw.Meta(view.GETProperty("version"), view.GETModel("default")),
+						"Updateable@meta": vw.Meta(view.GETProperty("updateable"), view.GETModel("default")),
+						"Id@meta":         vw.Meta(view.GETProperty("comp_ver_tuple"), view.GETModel("default")),
+						"Description":     "Represents Firmware Inventory",
 					}},
 			}, nil
 		})
