@@ -283,6 +283,7 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 						"name":         "TEST",
 						"version":      version,
 						"updateable":   false,
+						"id":           class,
 					})
 					fmt.Printf("add to list ------------------------------ INSTANTIATED: %s\n", vw.GetURI())
 					firmwareInventoryViews[compVerTuple] = vw

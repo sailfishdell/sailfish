@@ -122,6 +122,12 @@ func RegisterAggregate(s *testaggregate.Service) {
 						"Updateable@meta": vw.Meta(view.GETProperty("updateable"), view.GETModel("default")),
 						"Id@meta":         vw.Meta(view.GETProperty("comp_ver_tuple"), view.GETModel("default")),
 						"Description":     "Represents Firmware Inventory",
+						"Oem": map[string]interface{}{
+							"EID_674": map[string]interface{}{
+								"@odata.type":      "#EID_674_SoftwareInventory.v1_0_0.OemSoftwareInventory",
+								"ComponentId@meta": vw.Meta(view.GETProperty("id"), view.GETModel("default")),
+							},
+						},
 					}},
 			}, nil
 		})
