@@ -40,7 +40,7 @@ func RegisterAggregate(s *testaggregate.Service) {
 						},
 						"Oem": map[string]interface{}{
 							"Dell": map[string]interface{}{
-								"Attributes@meta":      vw.Meta(view.GETProperty("attributes"), view.GETFormatter("attributeFormatter"), view.GETModel("default"), view.PropPATCH("attributes", "ar_dump")),
+								"Attributes@meta": vw.Meta(view.GETProperty("attributes"), view.GETFormatter("attributeFormatter"), view.GETModel("default"), view.PropPATCH("attributes", "ar_dump")),
 							},
 							"ReadingUnits":         "Percent",
 							"Reading@meta":         vw.Meta(view.PropGET("Fanpwm_int")),

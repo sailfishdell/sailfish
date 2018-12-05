@@ -37,9 +37,17 @@ func RegisterAggregate(s *testaggregate.Service) {
 						"FirmwareVersion":     "3.15.15.15",
 						"ManagerType":         "BMC",
 
-						"Oem": map[string]interface{}{
-							"OemAttributes": map[string]interface{}{
+						"Oem":map[string]interface{}{
+							"OemAttributes":[] map[string]interface{}{
+								map[string]interface{}{
 								"@odata.id": vw.GetURI() + "/Attributes",
+								},
+								map[string]interface{}{
+								"@odata.id": "/redfish/v1/Managers" + "/System.Embedded.1" + "/Attributes",
+								},
+								map[string]interface{}{
+								"@odata.id": "/redfish/v1/Managers" + "/LifecycleController.Embedded.1" + "/Attributes",
+								},
 							},
 						},
 					}},

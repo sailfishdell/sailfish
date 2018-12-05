@@ -9,7 +9,7 @@ const (
 	InstPowerEvent                      = eh.EventType("InstPowerEvent")
 	DataManagerEvent                    = eh.EventType("DataManagerEvent")
 	FanEvent                            = eh.EventType("FanEvent")
-        ThermalSensorEvent                  = eh.EventType("ThermalSensorEvent")
+	ThermalSensorEvent                  = eh.EventType("ThermalSensorEvent")
 	PowerSupplyObjEvent                 = eh.EventType("PowerSupplyObjEvent")
 	PowerConsumptionDataObjEvent        = eh.EventType("PowerConsumptionDataObjEvent")
 	AvgPowerConsumptionStatDataObjEvent = eh.EventType("AvgPowerConsumptionStatDataObjEvent")
@@ -43,7 +43,6 @@ func init() {
 	eh.RegisterEventData(StorageVirtualEvent, func() eh.EventData { return &StorageVirtualObjEventData{} })
 }
 
-
 type IomCapabilityData struct {
 	Name                    string
 	Internal_mgmt_supported bool
@@ -71,7 +70,6 @@ type DataObjectHeader struct {
 	Struct          string
 }
 
-
 type FanEventData struct {
 	ObjectHeader      DataObjectHeader
 	Fanpwm            float64 `json:"fanpwm"`
@@ -91,17 +89,16 @@ type FanEventData struct {
 }
 
 type ThermalSensorEventData struct {
-	ObjectHeader      DataObjectHeader
-	ReadingValid      int `json:"readingValid"`
-        UpperCriticalThreshold    int `json:"upperCriticalThreshold"`
-        SensorReading             int `json:"sensorReadingInt"`
-        LowerWarningThreshold     int `json:"lowerWarningThreshold"`
-        SensorStateMask           int `json:"sensorStateMask"`
-        SensorHealth              int `json:"sensorHealth"`
-        UpperWarningThreshold     int `json:"upperWarningThreshold"`
-        LowerCriticalThreshold    int `json:"lowerCriticalThreshold"`
+	ObjectHeader           DataObjectHeader
+	ReadingValid           int `json:"readingValid"`
+	UpperCriticalThreshold int `json:"upperCriticalThreshold"`
+	SensorReading          int `json:"sensorReadingInt"`
+	LowerWarningThreshold  int `json:"lowerWarningThreshold"`
+	SensorStateMask        int `json:"sensorStateMask"`
+	SensorHealth           int `json:"sensorHealth"`
+	UpperWarningThreshold  int `json:"upperWarningThreshold"`
+	LowerCriticalThreshold int `json:"lowerCriticalThreshold"`
 }
-
 
 type PowerSupplyObjEventData struct {
 	ObjectHeader         DataObjectHeader
@@ -246,29 +243,29 @@ type StoragePhysicalObjEventData struct {
 	Serial                    string             `mapstructure:"serialNumber"`
 	DriveFormFactor           int                `mapstructure:"driveFormFactor"`
 	Connector                 int
-	FreeSize                  uint64             `mapstructure:"freeSize"`
-	ManufacturingDay          uint16             `mapstructure:"manufactureDay"`
-	ManufacturingWeek         uint16             `mapstructure:"manufactureWeek"`
-	ManufacturingYear         uint32             `mapstructure:"manufactureYear"`
-	Ppid                      string             `mapstructure:"ppid"`
+	FreeSize                  uint64 `mapstructure:"freeSize"`
+	ManufacturingDay          uint16 `mapstructure:"manufactureDay"`
+	ManufacturingWeek         uint16 `mapstructure:"manufactureWeek"`
+	ManufacturingYear         uint32 `mapstructure:"manufactureYear"`
+	Ppid                      string `mapstructure:"ppid"`
 	PredictiveFailState       string
 	RaidStatus                string
-	SasAddress                string             `mapstructure:"wwn"`
-	Slot                      int8               `mapstructure:"slot"`
-	UsedSize                  uint64             `mapstructure:"usedSize"`
+	SasAddress                string `mapstructure:"wwn"`
+	Slot                      int8   `mapstructure:"slot"`
+	UsedSize                  uint64 `mapstructure:"usedSize"`
 }
 
 type StorageAdapterObjEventData struct {
-	ObjectHeader    DataObjectHeader
-	RaidObjHeader   RaidSiObjectHeader `mapstructure:"raidSiobjheader"`
-	Wwn             string                `mapstructure:"wwn"`
-	Manufacturer    string             `mapstructure:"manufacturer"`
-	FirmwareVersion string             `mapstructure:"firmwareVersion"`
-	Id              string             `mapstructure:"fqdd"`
-	CapableSpeeds   int                `json:"capableSpeeds"`
-	Model           string             `mapstructure:"fqdd"`
-	SupportedDiskProtocols           int             `mapstructure:"supportedDiskProtocols"`
-	SupportedControllerProtocols     int
+	ObjectHeader                 DataObjectHeader
+	RaidObjHeader                RaidSiObjectHeader `mapstructure:"raidSiobjheader"`
+	Wwn                          string             `mapstructure:"wwn"`
+	Manufacturer                 string             `mapstructure:"manufacturer"`
+	FirmwareVersion              string             `mapstructure:"firmwareVersion"`
+	Id                           string             `mapstructure:"fqdd"`
+	CapableSpeeds                int                `json:"capableSpeeds"`
+	Model                        string             `mapstructure:"fqdd"`
+	SupportedDiskProtocols       int                `mapstructure:"supportedDiskProtocols"`
+	SupportedControllerProtocols int
 }
 
 type StorageEnclosureObjEventData struct {
@@ -276,7 +273,7 @@ type StorageEnclosureObjEventData struct {
 	RaidObjHeader RaidSiObjectHeader `mapstructure:"raidSiobjheader"`
 	AssetTag      string             `mapstructure:"assetTag"`
 	ChassisType   int                `json:"bpType"`
-	DeviceId      string                `mapstructure:"fqdd"`
+	DeviceId      string             `mapstructure:"fqdd"`
 	Manufacturer  string             `mapstructure:"manufacturer"`
 	Model         string             `mapstructure:"fqdd"`
 	PartNumber    string             `mapstructure:"ppid"`

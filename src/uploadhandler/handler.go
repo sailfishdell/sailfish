@@ -6,7 +6,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
-    "net/http/httputil"
+	"net/http/httputil"
 	"os"
 	"sync"
 	"time"
@@ -19,7 +19,7 @@ import (
 	"github.com/superchalupa/sailfish/src/ocp/event"
 	"github.com/superchalupa/sailfish/src/ocp/view"
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
-    )
+)
 
 func Setup(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus) {
 	eh.RegisterCommand(func() eh.Command { return &POST{eventBus: eb} })
@@ -52,45 +52,44 @@ type POST struct {
 	Files map[string]string `eh:"optional"`
 }
 
-func debugError (r *http.Request) {
-    for name, headers := range r.Header {
-       for _, h := range headers {
-         fmt.Printf("\n%v : %v\n", name, h)
-       }
-     }
+func debugError(r *http.Request) {
+	for name, headers := range r.Header {
+		for _, h := range headers {
+			fmt.Printf("\n%v : %v\n", name, h)
+		}
+	}
 }
 
-
 func octetStreamUploadHandler(c *POST, r *http.Request) error {
-    var localFile string
+	var localFile string
 	var uploadFile string
 
-    // no file specified so just use the upload name so the
-    // action needs to be based on the URL.
-    uploadFile = "octet_stream.file"
+	// no file specified so just use the upload name so the
+	// action needs to be based on the URL.
+	uploadFile = "octet_stream.file"
 
-    // prepare the destination file (tmpfile name)
-    dst, err := ioutil.TempFile(".", UploadDir+"/upld")
-    defer dst.Close()
-    if err != nil {
-        fmt.Printf("\nunable to create upload file, %s\n", err)
-        return err
-    }
-    localFile = dst.Name()
-    c.Files[uploadFile] = localFile
+	// prepare the destination file (tmpfile name)
+	dst, err := ioutil.TempFile(".", UploadDir+"/upld")
+	defer dst.Close()
+	if err != nil {
+		fmt.Printf("\nunable to create upload file, %s\n", err)
+		return err
+	}
+	localFile = dst.Name()
+	c.Files[uploadFile] = localFile
 
 	n, err := io.Copy(dst, r.Body)
 	if err != nil {
-        fmt.Printf("\ncopy failed, %s\n", err)
-        defer os.Remove(localFile)
-        fmt.Printf("remove %s\n", localFile)
+		fmt.Printf("\ncopy failed, %s\n", err)
+		defer os.Remove(localFile)
+		fmt.Printf("remove %s\n", localFile)
 		return err
 	}
 
 	fmt.Sprintf("%d bytes are recieved.\n", n)
-    fmt.Printf("\nupload %d %s to %s\n", n, uploadFile, localFile)
+	fmt.Printf("\nupload %d %s to %s\n", n, uploadFile, localFile)
 
-    return nil
+	return nil
 }
 
 // Static type checking for commands to prevent runtime errors due to typos
@@ -122,10 +121,10 @@ func (c *POST) ParseHTTPRequest(r *http.Request) error {
 	// write the file to a temporary one
 	reader, err := r.MultipartReader()
 	if err != nil {
-        fmt.Printf("\nno reader %s\n", err)
-        httputil.DumpRequest(r, false)
-        debugError(r)
-        return octetStreamUploadHandler(c, r)
+		fmt.Printf("\nno reader %s\n", err)
+		httputil.DumpRequest(r, false)
+		debugError(r)
+		return octetStreamUploadHandler(c, r)
 		//return err
 	}
 	// copy each part to destination.
@@ -145,7 +144,7 @@ func (c *POST) ParseHTTPRequest(r *http.Request) error {
 		dst, err := ioutil.TempFile(".", UploadDir+"/upld")
 		defer dst.Close()
 		if err != nil {
-            fmt.Printf("\nunable to create upload file, %s\n", err)
+			fmt.Printf("\nunable to create upload file, %s\n", err)
 			return err
 		}
 		localFile = dst.Name()
@@ -157,11 +156,11 @@ func (c *POST) ParseHTTPRequest(r *http.Request) error {
 		if _, err := io.Copy(dst, part); err != nil {
 			// ERROR!! remove any files that may have been
 			// partially transfered
-            for _, lf := range c.Files {
-                defer os.Remove(lf)
-                fmt.Printf("remove %s\n", lf)
-            }
-            fmt.Printf("\ncopy failed, %s\n", err)
+			for _, lf := range c.Files {
+				defer os.Remove(lf)
+				fmt.Printf("remove %s\n", lf)
+			}
+			fmt.Printf("\ncopy failed, %s\n", err)
 			return err
 		}
 	}
@@ -259,10 +258,10 @@ func StartService(ctx context.Context, logger log.Logger, ch eh.CommandHandler, 
 		}
 
 		// defer removing the uploaded file
-//  	for _, lf := range event.Data().(*GenericUploadEventData).Files {
-//  		defer os.Remove(lf)
-//  		logger.Crit("remove upload file", "FILE", lf)
-//  	}
+		//  	for _, lf := range event.Data().(*GenericUploadEventData).Files {
+		//  		defer os.Remove(lf)
+		//  		logger.Crit("remove upload file", "FILE", lf)
+		//  	}
 
 		logger.Crit("handler", "handler", handler)
 

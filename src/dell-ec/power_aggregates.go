@@ -2,48 +2,48 @@ package dell_ec
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"sync"
-  "errors"
-  "fmt"
 
 	eh "github.com/looplab/eventhorizon"
 	"github.com/spf13/viper"
 
 	"github.com/superchalupa/sailfish/src/log"
+	"github.com/superchalupa/sailfish/src/ocp/awesome_mapper2"
 	"github.com/superchalupa/sailfish/src/ocp/testaggregate"
 	"github.com/superchalupa/sailfish/src/ocp/view"
-  "github.com/superchalupa/sailfish/src/ocp/awesome_mapper2"
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
 )
 
 func initpowercontrol(logger log.Logger) {
-  powercap_enabled := false
-  awesome_mapper2.AddFunction("set_power_cap_enable", func(args ...interface{}) (interface{}, error) {
-    powercap_setting, ok := args[0].(string)
-    if !ok {
-      logger.Crit("Mapper configuration error: Need power cap setting as a string", "args[0]", args[0], "TYPE", fmt.Sprintf("%#T", args[0]))
-      return nil, errors.New("Mapper configuration error: power cap setting not a string")
-    }
-    if powercap_setting == "Enabled" {
-      powercap_enabled = true
-    } else {
-      powercap_enabled = false
-    }
-    return nil, nil
-  })
+	powercap_enabled := false
+	awesome_mapper2.AddFunction("set_power_cap_enable", func(args ...interface{}) (interface{}, error) {
+		powercap_setting, ok := args[0].(string)
+		if !ok {
+			logger.Crit("Mapper configuration error: Need power cap setting as a string", "args[0]", args[0], "TYPE", fmt.Sprintf("%#T", args[0]))
+			return nil, errors.New("Mapper configuration error: power cap setting not a string")
+		}
+		if powercap_setting == "Enabled" {
+			powercap_enabled = true
+		} else {
+			powercap_enabled = false
+		}
+		return nil, nil
+	})
 
-  awesome_mapper2.AddFunction("check_power_cap", func(args ...interface{}) (interface{}, error) {
-    powercap_value, ok := args[0].(float64)
-    if !ok {
-      logger.Crit("Mapper configuration error: Need power cap value as a number", "args[0]", args[0],  "TYPE", fmt.Sprintf("%#T", args[0]))
-      return nil, errors.New("Mapper configuration error: power cap value is not a number")
-    }
-    if powercap_enabled == true {
-      return int(powercap_value), nil
-    } else {
-      return 0, nil
-    }
-  })
+	awesome_mapper2.AddFunction("check_power_cap", func(args ...interface{}) (interface{}, error) {
+		powercap_value, ok := args[0].(float64)
+		if !ok {
+			logger.Crit("Mapper configuration error: Need power cap value as a number", "args[0]", args[0], "TYPE", fmt.Sprintf("%#T", args[0]))
+			return nil, errors.New("Mapper configuration error: power cap value is not a number")
+		}
+		if powercap_enabled == true {
+			return int(powercap_value), nil
+		} else {
+			return 0, nil
+		}
+	})
 
 }
 
@@ -64,7 +64,7 @@ func RegisterAggregate(s *testaggregate.Service) {
 						"Name":        "Power",
 						"@odata.etag": `W/"abc123"`,
 
-						"PowerSupplies@meta":             vw.Meta(view.GETProperty("power_supply_uris"), view.GETFormatter("expand"),view.GETModel("default")),
+						"PowerSupplies@meta":             vw.Meta(view.GETProperty("power_supply_uris"), view.GETFormatter("expand"), view.GETModel("default")),
 						"PowerSupplies@odata.count@meta": vw.Meta(view.GETProperty("power_supply_uris"), view.GETFormatter("count"), view.GETModel("default")),
 						"PowerControl@meta":              vw.Meta(view.GETProperty("power_control_uris"), view.GETFormatter("expand"), view.GETModel("default")),
 						"PowerControl@odata.count@meta":  vw.Meta(view.GETProperty("power_control_uris"), view.GETFormatter("count"), view.GETModel("default")),
@@ -75,8 +75,8 @@ func RegisterAggregate(s *testaggregate.Service) {
 										"HealthRollup@meta": vw.Meta(view.GETProperty("psu_rollup"), view.GETModel("global_health")),
 									},
 								},
-							"PowerTrends@meta":             vw.Meta(view.GETProperty("power_trends_uri"), view.GETFormatter("expand"), view.GETModel("default")),
-							"PowerTrends@odata.count@meta": vw.Meta(view.GETProperty("power_trends_uri"), view.GETFormatter("count"), view.GETModel("default")),
+								"PowerTrends@meta":             vw.Meta(view.GETProperty("power_trends_uri"), view.GETFormatter("expand"), view.GETModel("default")),
+								"PowerTrends@odata.count@meta": vw.Meta(view.GETProperty("power_trends_uri"), view.GETFormatter("count"), view.GETModel("default")),
 							},
 						}}},
 			}, nil

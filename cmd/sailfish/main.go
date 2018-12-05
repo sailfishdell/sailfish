@@ -106,25 +106,6 @@ func main() {
 	// per spec: redirect /redfish/v1/ to /redfish/v1
 	m.Path("/redfish/v1/").HandlerFunc(func(w http.ResponseWriter, r *http.Request) { http.Redirect(w, r, "/redfish/v1", 301) })
 
-	m.Path("/redfish/v1/Chassis/System.Chassis.1/Sensors/PowerSupplies/PSU.Slot.1").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		http.Redirect(w, r, "/redfish/v1/Chassis/System.Chassis.1/Power/PowerSupplies/PSU.Slot.1", 301)
-	})
-	m.Path("/redfish/v1/Chassis/System.Chassis.1/Sensors/PowerSupplies/PSU.Slot.2").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		http.Redirect(w, r, "/redfish/v1/Chassis/System.Chassis.1/Power/PowerSupplies/PSU.Slot.2", 301)
-	})
-	m.Path("/redfish/v1/Chassis/System.Chassis.1/Sensors/PowerSupplies/PSU.Slot.3").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		http.Redirect(w, r, "/redfish/v1/Chassis/System.Chassis.1/Power/PowerSupplies/PSU.Slot.3", 301)
-	})
-	m.Path("/redfish/v1/Chassis/System.Chassis.1/Sensors/PowerSupplies/PSU.Slot.4").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		http.Redirect(w, r, "/redfish/v1/Chassis/System.Chassis.1/Power/PowerSupplies/PSU.Slot.4", 301)
-	})
-	m.Path("/redfish/v1/Chassis/System.Chassis.1/Sensors/PowerSupplies/PSU.Slot.5").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		http.Redirect(w, r, "/redfish/v1/Chassis/System.Chassis.1/Power/PowerSupplies/PSU.Slot.5", 301)
-	})
-	m.Path("/redfish/v1/Chassis/System.Chassis.1/Sensors/PowerSupplies/PSU.Slot.6").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		http.Redirect(w, r, "/redfish/v1/Chassis/System.Chassis.1/Power/PowerSupplies/PSU.Slot.6", 301)
-	})
-
 	// some static files that we should generate at some point
 	m.Path("/redfish/v1/$metadata").HandlerFunc(func(w http.ResponseWriter, r *http.Request) { http.ServeFile(w, r, "v1/metadata.xml") })
 	m.Path("/redfish/v1/odata").HandlerFunc(func(w http.ResponseWriter, r *http.Request) { http.ServeFile(w, r, "v1/odata.json") })

@@ -47,9 +47,9 @@ func RegisterAggregate(s *testaggregate.Service) {
 							"@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Assembly",
 						},
 						"FirmwareVersion@meta": vw.Meta(view.PropGET("firmware_version")),
-						"Identifiers":          map[string]interface{}{
-						    "DurableName@meta":     vw.Meta(view.PropGET("durable_name")),
-						    "DurableFormat@meta":     vw.Meta(view.PropGET("durable_format")),
+						"Identifiers": map[string]interface{}{
+							"DurableName@meta":   vw.Meta(view.PropGET("durable_name")),
+							"DurableFormat@meta": vw.Meta(view.PropGET("durable_format")),
 						},
 						//"Identifiers@meta":  vw.Meta(view.GETProperty("identifiers"), view.GETFormatter("formatOdataList"), view.GETModel("default")),
 						"Links":             map[string]interface{}{},
@@ -254,11 +254,11 @@ func RegisterAggregate(s *testaggregate.Service) {
 							"ManagedBy": map[string]interface{}{
 								"@odata.id": "redfish/v1/Managers/iDRAC.Embedded.1",
 							},
-							"ManagedBy@odata.count":  1,
-							"PCIeDevices:@meta": map[string]interface{}{
+							"ManagedBy@odata.count": 1,
+							"PCIeDevices:@meta":     map[string]interface{}{
 							//Needs addition
 							},
-							"PCIeDevices@odata.count":0,
+							"PCIeDevices@odata.count":  0,
 							"Storage@meta":             vw.Meta(view.GETProperty("storage_uris"), view.GETFormatter("formatOdataList"), view.GETModel("default")),
 							"Storage@odata.count@meta": vw.Meta(view.GETProperty("storage_uris"), view.GETFormatter("count"), view.GETModel("default")),
 						},
