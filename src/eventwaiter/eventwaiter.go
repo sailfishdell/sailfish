@@ -48,7 +48,7 @@ type Option func(e *EventWaiter) error
 func NewEventWaiter(o ...Option) *EventWaiter {
 	w := EventWaiter{
 		done:       make(chan struct{}),
-		inbox:      make(chan eh.Event, 100),
+		inbox:      make(chan eh.Event, 50),
 		register:   make(chan listener),
 		unregister: make(chan listener),
 		autorun:    true,
@@ -161,7 +161,7 @@ func (w *EventWaiter) Listen(ctx context.Context, match func(eh.Event) bool) (*E
 	l := &EventListener{
 		Name:             "unnamed",
 		id:               eh.NewUUID(),
-		singleEventInbox: make(chan eh.Event, 100),
+		singleEventInbox: make(chan eh.Event, 5),
 		match:            match,
 		unregister:       w.unregister,
 		logger:           w.logger,
