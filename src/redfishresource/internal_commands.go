@@ -286,6 +286,8 @@ func (c *InjectEvent) Handle(ctx context.Context, a *RedfishResourceAggregate) e
 		//requestLogger.Debug("InjectEvent - publishing", "event name", c.Name, "event_data", data)
 	}
 
+	c.Synchronous = true
+
 	var evt eh.Event
 	if c.Synchronous || c.Name == eh.EventType("ComponentEvent") || c.Name == eh.EventType("IDRACComponentEvent") {
 		e := event.NewSyncEvent(c.Name, trainload, time.Now())
