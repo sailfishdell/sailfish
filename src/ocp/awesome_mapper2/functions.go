@@ -347,13 +347,6 @@ func init() {
 		}
 	})
 	AddFunction("identifier_gen", func(args ...interface{}) (interface{}, error) {
-<<<<<<< Updated upstream
-		wwnStr := args[0].(string)
-		wwn, _ := strconv.Atoi(wwnStr)
-		if wwn > 0x00 {
-			dur_name := fmt.Sprintf("%X", wwn)
-			dur_format := "NAA"
-=======
 		fmt.Printf("in identifier_gen()\n")
 		wwnStr := args[0].(string)
 		fmt.Printf("in identifier_gen() -- %s\n", wwnStr)
@@ -362,7 +355,6 @@ func init() {
 			dur_name := fmt.Sprintf("%X", wwn)
 			dur_format := "NAA"
 			fmt.Printf("Returning identifier: %s\n", []map[string]string{map[string]string{"DurableName": dur_name, "DurableNameFormat": dur_format}})
->>>>>>> Stashed changes
 			return []map[string]string{map[string]string{"DurableName": dur_name, "DurableNameFormat": dur_format}}, nil
 		} else {
 			fmt.Printf("wwn is nil, returning nil")
@@ -370,8 +362,6 @@ func init() {
 		}
 	})
 
-<<<<<<< Updated upstream
-=======
 	AddFunction("encryptionstatus", func(args ...interface{}) (interface{}, error) {
 		fmt.Printf("in encryption types()\n")
         var attrib uint32 = uint32(args[0].(float64))
@@ -418,7 +408,6 @@ func init() {
 		}
 	})
 
->>>>>>> Stashed changes
 	AddFunction("deviceprotocols", func(args ...interface{}) (interface{}, error) {
 		var vStr []string
 		var deviceprotocols uint32 = uint32(args[0].(float64))

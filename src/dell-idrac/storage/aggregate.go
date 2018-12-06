@@ -47,19 +47,6 @@ func RegisterAggregate(s *testaggregate.Service) {
 							"@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Assembly",
 						},
 						"FirmwareVersion@meta": vw.Meta(view.PropGET("firmware_version")),
-<<<<<<< Updated upstream
-						"Identifiers": map[string]interface{}{
-							"DurableName@meta":   vw.Meta(view.PropGET("durable_name")),
-							"DurableFormat@meta": vw.Meta(view.PropGET("durable_format")),
-						},
-						//"Identifiers@meta":  vw.Meta(view.GETProperty("identifiers"), view.GETFormatter("formatOdataList"), view.GETModel("default")),
-						"Links":             map[string]interface{}{},
-						"Manufacturer@meta": vw.Meta(view.PropGET("manufacturer")),
-						"MemberId@meta":     vw.Meta(view.PropGET("member_id")),
-						"Model@meta":        vw.Meta(view.PropGET("model")),
-						"Name@meta":         vw.Meta(view.PropGET("name")),
-						"SpeedGbps@meta":    vw.Meta(view.PropGET("speed")),
-=======
 						"Identifiers@meta":     vw.Meta(view.GETProperty("identifiers"), view.GETModel("default")),
 						"Links":                map[string]interface{}{},
 						"Manufacturer@meta":    vw.Meta(view.PropGET("manufacturer")),
@@ -67,7 +54,6 @@ func RegisterAggregate(s *testaggregate.Service) {
 						"Model@meta":           vw.Meta(view.PropGET("model")),
 						"Name@meta":            vw.Meta(view.PropGET("name")),
 						"SpeedGbps@meta":       vw.Meta(view.PropGET("speed")),
->>>>>>> Stashed changes
 						"Status": map[string]interface{}{
 							"HealthRollup@meta": vw.Meta(view.PropGET("health_rollup")),
 							"State":             "Enabled",
