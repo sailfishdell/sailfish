@@ -117,7 +117,7 @@ func PublishRedfishEvents(ctx context.Context, m propertygetter, eb eh.EventBus)
 						OriginOfCondition: map[string]interface{}{"@odata.id": data.ResourceURI},
 					}
 
-					go eb.PublishEvent(ctx, eh.NewEvent(RedfishEvent, eventData, time.Now()))
+					eb.PublishEvent(ctx, eh.NewEvent(RedfishEvent, eventData, time.Now()))
 
 				case *domain.RedfishResourceRemovedData:
 					eventData := &RedfishEventData{
@@ -125,7 +125,7 @@ func PublishRedfishEvents(ctx context.Context, m propertygetter, eb eh.EventBus)
 						OriginOfCondition: map[string]interface{}{"@odata.id": data.ResourceURI},
 					}
 
-					go eb.PublishEvent(ctx, eh.NewEvent(RedfishEvent, eventData, time.Now()))
+					eb.PublishEvent(ctx, eh.NewEvent(RedfishEvent, eventData, time.Now()))
 
 				default:
 					log.MustLogger("event_service").Warn("Should never happen: got an invalid event in the event handler", "data", data, "deets", fmt.Sprintf("%T", data))
@@ -154,7 +154,7 @@ func sendEvents(ctx context.Context, id int, events []*RedfishEventData, eb eh.E
 		Events:  events,
 	}
 
-	go eb.PublishEvent(ctx, eh.NewEvent(ExternalRedfishEvent, data, time.Now()))
+	eb.PublishEvent(ctx, eh.NewEvent(ExternalRedfishEvent, data, time.Now()))
 }
 
 func selectRedfishEvent(event eh.Event) bool {
