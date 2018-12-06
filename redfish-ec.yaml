@@ -33,6 +33,7 @@ views:
         "set_hash_value(serviceglobals, 'rootid', uuid)",
         "set_hash_value(serviceglobals, 'rooturi', view.GetURI())",
         "set_hash_value(serviceglobals, 'globalHealthModel', globalHealthModel)",
+        "set_hash_value(serviceglobals, 'submittestmetricreport', submit_test_metric_report)",
         "instantiate('testview')",
         "instantiate('chassis')",
         "instantiate('systems')",
@@ -43,6 +44,7 @@ views:
         "instantiate('registries')",
         # we will eventually enable sessionservice, but need to do some work in ec.go to enable it first
         #"instantiate('sessionservice')",
+        "instantiate('telemetry_service')",
       ]
 
   "testview":
@@ -209,6 +211,41 @@ views:
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
       "Aggregate": "subscription"
+
+  "telemetry_service":
+      "Logger": ["module", "telemetry_service"]
+      "Models":
+        "default": {}
+      "Controllers":
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/TelemetryService'"
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+        - "fn": "etag"
+          "params": []
+        - "fn": "WithAction"
+          "params": {"name": "submit.test.metric.report", "uri": "/Actions/TelemetryService.SubmitTestMetricReport", "actionFunction": "submittestmetricreport"}
+        - "fn": "linkModel"
+          "params": {"existing": "default", "linkname": "etag"}
+      "Aggregate": "telemetry_service"
+      "ExecPost": [
+        "instantiate('metric_report_definitions', 'parenturi', view.GetURI())",
+      ]
+
+  "metric_report_definitions":
+      "Logger": ["module", "metric_report_definitions"]
+      "Models":
+        "default":  {"members": "array()"}
+      "Controllers":
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + view.GetURI()", "passthru": {'collection_uri': 'view.GetURI()'} }
+      "View":
+        - "fn": "with_URI"
+          "params": "parenturi + '/MetricReportDefinitions'"
+        - "fn": "stdFormatters"
+          "params":
+      "Aggregate": "metric_report_definitions"
 
   "sessionservice":
       "Logger": ["module", "session"]

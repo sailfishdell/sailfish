@@ -23,6 +23,7 @@ import (
 	"github.com/superchalupa/sailfish/src/ocp/stdcollections"
 	"github.com/superchalupa/sailfish/src/ocp/telemetryservice"
 	"github.com/superchalupa/sailfish/src/ocp/testaggregate"
+	"github.com/superchalupa/sailfish/src/ocp/view"
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
 	"github.com/superchalupa/sailfish/src/stdmeta"
 )
@@ -40,7 +41,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	domain.StartInjectService(logger, eb)
 	actionSvc := ah.StartService(ctx, logger, ch, eb)
 	am2Svc, _ := awesome_mapper2.StartService(ctx, logger, eb)
-	telemetryservice.Setup(ctx, actionSvc, ch, eb)
 	pumpSvc := dell_ec.NewPumpActionSvc(ctx, logger, eb)
 
 	// the package for this is going to change, but this is what makes the various mappers and view functions available
@@ -56,6 +56,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	stdmeta.RegisterFormatters(instantiateSvc, d)
 	stdcollections.RegisterAggregate(instantiateSvc)
 	session.RegisterAggregate(instantiateSvc)
+	telemetryservice.RegisterAggregate(instantiateSvc)
 
 	awesome_mapper2.AddFunction("instantiate", func(args ...interface{}) (interface{}, error) {
 		if len(args) < 1 {
@@ -90,7 +91,10 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	//*********************************************************************
 	//  /redfish/v1
 	//*********************************************************************
-	_, rootView, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, cfgMgrMu, "rootview", map[string]interface{}{"rooturi": "/redfish/v1"})
+	_, rootView, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, cfgMgrMu, "rootview", map[string]interface{}{
+		"rooturi":                   "/redfish/v1",
+		"submit_test_metric_report": view.Action(telemetryservice.MakeSubmitTestMetricReport(eb)),
+	})
 
 	//*********************************************************************
 	//  Standard redfish roles
@@ -106,8 +110,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 
 	//*********************************************************************
 	// /redfish/v1/EventService
-	// /redfish/v1/TelemetryService
 	//*********************************************************************
 	evtSvc.StartEventService(ctx, logger, instantiateSvc, map[string]interface{}{})
-	telemetryservice.StartTelemetryService(ctx, logger, rootView)
 }

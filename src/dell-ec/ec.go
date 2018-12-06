@@ -30,6 +30,7 @@ import (
 	"github.com/superchalupa/sailfish/src/ocp/stdcollections"
 	"github.com/superchalupa/sailfish/src/ocp/telemetryservice"
 	"github.com/superchalupa/sailfish/src/ocp/testaggregate"
+	"github.com/superchalupa/sailfish/src/ocp/view"
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
 	"github.com/superchalupa/sailfish/src/stdmeta"
 	"github.com/superchalupa/sailfish/src/uploadhandler"
@@ -62,7 +63,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	uploadSvc := uploadhandler.StartService(ctx, logger, ch, eb)
 	am2Svc, _ := awesome_mapper2.StartService(ctx, logger, eb)
 	ardumpSvc, _ := attributes.StartService(ctx, logger, eb)
-	telemetryservice.Setup(ctx, actionSvc, ch, eb)
 	pumpSvc := NewPumpActionSvc(ctx, logger, eb)
 
 	// the package for this is going to change, but this is what makes the various mappers and view functions available
@@ -95,6 +95,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	initLCL(logger, instantiateSvc, ch, d)
 	inithealth(ctx, logger, ch)
 	initpowercontrol(logger)
+	telemetryservice.RegisterAggregate(instantiateSvc)
 
 	// add mapper helper to instantiate
 	awesome_mapper2.AddFunction("find_uris_with_basename", func(args ...interface{}) (interface{}, error) {
@@ -149,8 +150,9 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	rooturi := "/redfish/v1"
 	_, rootView, _ := instantiateSvc.Instantiate("rootview",
 		map[string]interface{}{
-			"rooturi":           rooturi,
-			"globalHealthModel": globalHealthModel,
+			"rooturi":                   rooturi,
+			"globalHealthModel":         globalHealthModel,
+			"submit_test_metric_report": view.Action(telemetryservice.MakeSubmitTestMetricReport(eb)),
 		})
 
 	//*********************************************************************
@@ -167,10 +169,8 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 
 	//*********************************************************************
 	// /redfish/v1/EventService
-	// /redfish/v1/TelemetryService
 	//*********************************************************************
 	evtSvc.StartEventService(ctx, logger, instantiateSvc, map[string]interface{}{})
-	telemetryservice.StartTelemetryService(ctx, logger, rootView)
 
 	//*********************************************************************
 	// /redfish/v1/Registries

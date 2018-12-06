@@ -2,49 +2,66 @@ package telemetryservice
 
 import (
 	"context"
-
-	"github.com/superchalupa/sailfish/src/ocp/view"
-
-	"github.com/superchalupa/sailfish/src/log"
-	domain "github.com/superchalupa/sailfish/src/redfishresource"
+	"sync"
 
 	eh "github.com/looplab/eventhorizon"
+	"github.com/spf13/viper"
+
+	"github.com/superchalupa/sailfish/src/log"
+	"github.com/superchalupa/sailfish/src/ocp/testaggregate"
+	"github.com/superchalupa/sailfish/src/ocp/view"
+	domain "github.com/superchalupa/sailfish/src/redfishresource"
 )
 
-func AddAggregate(ctx context.Context, logger log.Logger, v *view.View, rootID eh.UUID, ch eh.CommandHandler) {
-	// Create SessionService aggregate
-	ch.HandleCommand(
-		ctx,
-		&domain.CreateRedfishResource{
-			ID:          v.GetUUID(),
-			ResourceURI: v.GetURI(),
-			Type:        "#TelemetryService.v1_0_0.TelemetryService",
-			Context:     "/redfish/v1/$metadata#TelemetryService.TelemetryService",
-			Privileges: map[string]interface{}{
-				"GET":    []string{"ConfigureManager"},
-				"POST":   []string{},
-				"PUT":    []string{},
-				"PATCH":  []string{"ConfigureManager"},
-				"DELETE": []string{},
-			},
-			Properties: map[string]interface{}{
-				"Id":             "TelemetryService",
-				"Name":           "Telemetry Service",
-				"ServiceEnabled": true,
-				"Actions": map[string]interface{}{
-					"#TelemetryService.SubmitTestMetricReport": map[string]interface{}{
-						"target": v.GetActionURI("submit.test.metric.report"),
+func RegisterAggregate(s *testaggregate.Service) {
+	s.RegisterAggregateFunction("telemetry_service",
+		func(ctx context.Context, subLogger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, vw *view.View, extra interface{}, params map[string]interface{}) ([]eh.Command, error) {
+			return []eh.Command{
+				&domain.CreateRedfishResource{
+					ResourceURI: vw.GetURI(),
+					Type:        "#TelemetryService.v1_0_0.TelemetryService",
+					Context:     "/redfish/v1/$metadata#TelemetryService.TelemetryService",
+					Privileges: map[string]interface{}{
+						"GET": []string{"Unauthenticated"},
 					},
-					"Oem": map[string]interface{}{},
-				},
-			}})
+					Properties: map[string]interface{}{
+						"Id":             "TelemetryService",
+						"Name":           "Telemetry Service",
+						"ServiceEnabled": true,
+						"Actions": map[string]interface{}{
+							"#TelemetryService.SubmitTestMetricReport": map[string]interface{}{
+								"target": vw.GetActionURI("submit.test.metric.report"),
+							},
+							"Oem": map[string]interface{}{},
+							"MetricReportDefinitions": map[string]interface{}{"@odata.id": vw.GetURI() + "/MetricReportDefinitions"},
+						},
+					}},
 
-	ch.HandleCommand(ctx,
-		&domain.UpdateRedfishResourceProperties{
-			ID: rootID,
-			Properties: map[string]interface{}{
-				"TelemetryService": map[string]interface{}{"@odata.id": "/redfish/v1/TelemetryService"},
-			},
+				&domain.UpdateRedfishResourceProperties{
+					ID: params["rootid"].(eh.UUID),
+					Properties: map[string]interface{}{
+						"TelemetryService": map[string]interface{}{"@odata.id": "/redfish/v1/TelemetryService"},
+					},
+				},
+			}, nil
+		})
+
+	s.RegisterAggregateFunction("metric_report_definitions",
+		func(ctx context.Context, subLogger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, vw *view.View, extra interface{}, params map[string]interface{}) ([]eh.Command, error) {
+			return []eh.Command{
+				&domain.CreateRedfishResource{
+					ResourceURI: vw.GetURI(),
+					Type:        "#TelemetryService.v1_0_0.___TODO___FIXME___",
+					Context:     "/redfish/v1/$metadata#TelemetryService.___TODO___FIXME___",
+					Privileges: map[string]interface{}{
+						"GET": []string{"Unauthenticated"},
+					},
+					Properties: map[string]interface{}{
+						"Id":                       "MetricReportsDefinition",
+						"Members@meta":             vw.Meta(view.GETProperty("members"), view.GETFormatter("formatOdataList"), view.GETModel("default")),
+						"Members@odata.count@meta": vw.Meta(view.GETProperty("members"), view.GETFormatter("count"), view.GETModel("default")),
+					}},
+			}, nil
 		})
 
 	return
