@@ -249,6 +249,21 @@ func (s *Service) instantiateFromCfg(ctx context.Context, cfgMgr *viper.Viper, c
 		fn(ctx, subLogger, cfgMgr, cfgMgrMu, vw, controllerFnParams, newParams)
 	}
 
+	// close any previous registrations
+	p, err := domain.InstantiatePlugin(vw.PluginType())
+	if err == nil && p != nil {
+		if c, ok := p.(closer); ok {
+			c.Close()
+		}
+	}
+
+	// register the plugin
+	domain.RegisterPlugin(func() domain.Plugin { return vw })
+	vw.ApplyOption(view.AtClose(func() {
+		subLogger.Info("Closing view", "URI", vw.GetURI(), "UUID", vw.GetUUID())
+		domain.UnregisterPlugin(vw.PluginType())
+	}))
+
 	// Instantiate aggregate
 	func() {
 		if len(config.Aggregate) == 0 {
@@ -293,21 +308,6 @@ func (s *Service) instantiateFromCfg(ctx context.Context, cfgMgr *viper.Viper, c
 			continue
 		}
 	}
-
-	// close any previous registrations
-	p, err := domain.InstantiatePlugin(vw.PluginType())
-	if err == nil && p != nil {
-		if c, ok := p.(closer); ok {
-			c.Close()
-		}
-	}
-
-	// register the plugin
-	domain.RegisterPlugin(func() domain.Plugin { return vw })
-	vw.ApplyOption(view.AtClose(func() {
-		subLogger.Info("Closing view", "URI", vw.GetURI(), "UUID", vw.GetUUID())
-		domain.UnregisterPlugin(vw.PluginType())
-	}))
 
 	return subLogger, vw, nil
 }
