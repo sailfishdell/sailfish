@@ -50,7 +50,7 @@ done
 
 for i in $(find \
 	${TREE}/redfish/v1 -type f -name index.json \
-	|grep -E -v 'AccountService|SessionService|EventService' | grep -v 'redfish/v1/Managers/index.json | redfish/v1/Systems/index.json |  redfish/v1/Chassis/index.json')
+	|grep -E -v 'AccountService|SessionService|EventService' | grep -v 'redfish/v1/Managers/index.json | grep -v redfish/v1/Systems/index.json |  grep -v redfish/v1/Chassis/index.json' | grep -v 'redfish/v1/TelemetryService/index.json' | grep -v 'redfish/v1/TelemetryService/MetricReportDefinitions/index.json')
 do
 	echo $i
 	add_element $i
