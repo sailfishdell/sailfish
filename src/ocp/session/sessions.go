@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"sync"
 	"time"
 
 	jwt "github.com/dgrijalva/jwt-go"
@@ -48,6 +49,7 @@ type cacheItem struct {
 
 func MakeHandlerFunc(logger log.Logger, eb eh.EventBus, getter IDGetter, withUser func(string, []string) http.Handler, chain http.Handler) http.HandlerFunc {
 	tokenCache := []cacheItem{}
+	tokenCacheMu := sync.RWMutex{}
 	handlerlog := logger.New("module", "session")
 	handlerlog.Crit("Creating x-auth-token based session handler.")
 	return func(rw http.ResponseWriter, req *http.Request) {
@@ -58,6 +60,7 @@ func MakeHandlerFunc(logger log.Logger, eb eh.EventBus, getter IDGetter, withUse
 		if xauthtoken != "" {
 			// check cache before doing expensive parse
 			foundCache := false
+			tokenCacheMu.RLock()
 			for _, i := range tokenCache {
 				if i.token == xauthtoken && getter.HasAggregateID(i.sessionuri) {
 					// comment out unused logs in the hotpath, uncomment to debug if needed
@@ -68,6 +71,7 @@ func MakeHandlerFunc(logger log.Logger, eb eh.EventBus, getter IDGetter, withUse
 					foundCache = true
 				}
 			}
+			tokenCacheMu.RUnlock()
 
 			if !foundCache {
 				token, err := jwt.ParseWithClaims(xauthtoken, &RedfishClaims{}, func(token *jwt.Token) (interface{}, error) {
@@ -84,12 +88,15 @@ func MakeHandlerFunc(logger log.Logger, eb eh.EventBus, getter IDGetter, withUse
 							privileges = claims.Privileges
 							eb.PublishEvent(context.Background(), eh.NewEvent(XAuthTokenRefreshEvent, &XAuthTokenRefreshData{SessionURI: claims.SessionURI}, time.Now()))
 
-							//handlerlog.Debug("Add cache item", "token", xauthtoken)
+							tokenCacheMu.Lock()
+
 							tokenCache = append(tokenCache, cacheItem{sessionuri: claims.SessionURI, username: userName, privileges: claims.Privileges, token: xauthtoken})
 							if len(tokenCache) > 4 {
 								//handlerlog.Debug("trim cache", "cache", tokenCache)
 								tokenCache = tokenCache[1:]
 							}
+
+							tokenCacheMu.Unlock()
 						}
 					}
 				}
