@@ -34,6 +34,7 @@ func RegisterAggregate(s *testaggregate.Service) {
 							},
 							"Oem": map[string]interface{}{},
 							"MetricReportDefinitions": map[string]interface{}{"@odata.id": vw.GetURI() + "/MetricReportDefinitions"},
+							"MetricReports":           map[string]interface{}{"@odata.id": vw.GetURI() + "/MetricReports"},
 						},
 					}},
 
@@ -57,7 +58,25 @@ func RegisterAggregate(s *testaggregate.Service) {
 						"GET": []string{"Unauthenticated"},
 					},
 					Properties: map[string]interface{}{
-						"Id":                       "MetricReportsDefinition",
+						"Id":                       "MetricReportDefinitions",
+						"Members@meta":             vw.Meta(view.GETProperty("members"), view.GETFormatter("formatOdataList"), view.GETModel("default")),
+						"Members@odata.count@meta": vw.Meta(view.GETProperty("members"), view.GETFormatter("count"), view.GETModel("default")),
+					}},
+			}, nil
+		})
+
+	s.RegisterAggregateFunction("metric_reports",
+		func(ctx context.Context, subLogger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, vw *view.View, extra interface{}, params map[string]interface{}) ([]eh.Command, error) {
+			return []eh.Command{
+				&domain.CreateRedfishResource{
+					ResourceURI: vw.GetURI(),
+					Type:        "#TelemetryService.v1_0_0.___TODO___FIXME___",
+					Context:     "/redfish/v1/$metadata#TelemetryService.___TODO___FIXME___",
+					Privileges: map[string]interface{}{
+						"GET": []string{"Unauthenticated"},
+					},
+					Properties: map[string]interface{}{
+						"Id":                       "MetricReports",
 						"Members@meta":             vw.Meta(view.GETProperty("members"), view.GETFormatter("formatOdataList"), view.GETModel("default")),
 						"Members@odata.count@meta": vw.Meta(view.GETProperty("members"), view.GETFormatter("count"), view.GETModel("default")),
 					}},
