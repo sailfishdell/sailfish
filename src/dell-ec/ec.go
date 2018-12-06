@@ -71,7 +71,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	evtSvc := eventservice.New(ctx, cfgMgr, cfgMgrMu, instantiateSvc, actionSvc, ch, eb)
 	testaggregate.RegisterWithURI(instantiateSvc)
 	testaggregate.RegisterPublishEvents(instantiateSvc, evtSvc)
-	testaggregate.RegisterAggregate(instantiateSvc)
 	testaggregate.RegisterAM2(instantiateSvc, am2Svc)
 	testaggregate.RegisterPumpAction(instantiateSvc, actionSvc, pumpSvc)
 	ar_mapper2.RegisterARMapper(instantiateSvc, arService)

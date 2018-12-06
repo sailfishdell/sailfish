@@ -25,7 +25,6 @@ views:
         "set_hash_value(serviceglobals, 'rootid', uuid)",
         "set_hash_value(serviceglobals, 'rooturi', view.GetURI())",
         "set_hash_value(serviceglobals, 'submittestmetricreport', submit_test_metric_report)",
-        "instantiate('testview')",
         "instantiate('chassis')",
         "instantiate('systems')",
         "instantiate('managers')",
@@ -37,18 +36,6 @@ views:
         #"instantiate('sessionservice')",
         "instantiate('telemetry_service')",
       ]
-
-  "testview":
-      "Logger": ["module", "testview"]
-      "Models":
-        "default":  {"unique_name": "'TEST_Unique_Name'", "name": "'TEST_Name'", "'description'": "'TEST_Description'" }
-      "Controllers":
-      "View":
-        - "fn": "with_URI"
-          "params": "rooturi + '/testview'"
-        - "fn": "PublishResourceUpdatedEventsForModel"
-          "params": "default"
-      "Aggregate": "testview"
 
   "chassis":
       "Logger": ["module", "Chassis"]
@@ -691,9 +678,6 @@ awesome_mapper:
       - { SelectEventType: "RedfishResource:removed",
           Select: "type == 'RedfishResource:removed' && nohash(data.ResourceURI) && baseuri(data.ResourceURI) == collection_uri ",
           ModelUpdate: [ {Property: "members", Query: "removefromset(model, propname, data.ResourceURI)", Default: 0} ]}
-
-    testview:
-        - { Select: "type == 'AttributeUpdated' && data.FQDD == fqdd && data.Name == 'InstantaneousPower'", ModelUpdate: [ {Property: "Instantaneous_Power", Query: "data.Value", Default: 0} ] }
 
     idrac_component_events:
       - { SelectEventType: "IDRACComponentEvent",
