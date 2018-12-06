@@ -47,6 +47,7 @@ func RegisterAggregate(s *testaggregate.Service) {
 							"@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Assembly",
 						},
 						"FirmwareVersion@meta": vw.Meta(view.PropGET("firmware_version")),
+<<<<<<< Updated upstream
 						"Identifiers": map[string]interface{}{
 							"DurableName@meta":   vw.Meta(view.PropGET("durable_name")),
 							"DurableFormat@meta": vw.Meta(view.PropGET("durable_format")),
@@ -58,6 +59,15 @@ func RegisterAggregate(s *testaggregate.Service) {
 						"Model@meta":        vw.Meta(view.PropGET("model")),
 						"Name@meta":         vw.Meta(view.PropGET("name")),
 						"SpeedGbps@meta":    vw.Meta(view.PropGET("speed")),
+=======
+						"Identifiers@meta":     vw.Meta(view.GETProperty("identifiers"), view.GETModel("default")),
+						"Links":                map[string]interface{}{},
+						"Manufacturer@meta":    vw.Meta(view.PropGET("manufacturer")),
+						"MemberId@meta":        vw.Meta(view.PropGET("member_id")),
+						"Model@meta":           vw.Meta(view.PropGET("model")),
+						"Name@meta":            vw.Meta(view.PropGET("name")),
+						"SpeedGbps@meta":       vw.Meta(view.PropGET("speed")),
+>>>>>>> Stashed changes
 						"Status": map[string]interface{}{
 							"HealthRollup@meta": vw.Meta(view.PropGET("health_rollup")),
 							"State":             "Enabled",
@@ -168,6 +178,7 @@ func RegisterAggregate(s *testaggregate.Service) {
 						"FailurePredicted@meta":  vw.Meta(view.PropGET("failure_predicted")),
 						"HotspareType@meta":      vw.Meta(view.PropGET("hotspare_type")),
 						"Id@meta@meta":           vw.Meta(view.PropGET("unique_name")),
+						"Identifiers@meta":     vw.Meta(view.GETProperty("identifiers"), view.GETModel("default")),
 						"Links": map[string]interface{}{
 							"Chassis@meta":             vw.Meta(view.GETProperty("enclosure_uris"), view.GETFormatter("formatOdataList"), view.GETModel("default")),
 							"Volumes@meta":             vw.Meta(view.GETProperty("volume_uris"), view.GETFormatter("formatOdataList"), view.GETModel("default")),
@@ -228,22 +239,12 @@ func RegisterAggregate(s *testaggregate.Service) {
 					},
 
 					Properties: map[string]interface{}{
-						"@Redfish.Settings": map[string]interface{}{ //Done
-							"@odata.context": "/redfish/v1/$metadata#Settings.Settings",
-							"@odata.id":      "/redfish/v1/Chassis/$Entity/Settings",
-							"@odata.type":    "#Settings.v1_1_0.Settings",
-							"SupportedApplyTimes": []string{
-								"Immediate",
-								"OnReset",
-								"AtMaintenanceWindowStart",
-								"InMaintenanceWindowOnReset",
-							},
-						},
-						"Actions":          map[string]interface{}{},
-						"AssetTag@meta":    vw.Meta(view.PropGET("asset_tag")), //Done
-						"ChassisType":      "Enclosure",
-						"Description@meta": vw.Meta(view.PropGET("description")),
-						"Id@meta":          vw.Meta(view.PropGET("unique_name")),
+						"@Redfish.Settings@meta": vw.Meta(view.GETProperty("settings_uri"), view.GETFormatter("expandone"), view.GETModel("default")),
+						"Actions":                map[string]interface{}{},
+						"AssetTag@meta":          vw.Meta(view.PropGET("asset_tag")), //Done
+						"ChassisType":            "Enclosure",
+						"Description@meta":       vw.Meta(view.PropGET("description")),
+						"Id@meta":                vw.Meta(view.PropGET("unique_name")),
 						"Links": map[string]interface{}{
 							"ContainedBy:": map[string]interface{}{
 								"@odata.id": "redfish/v1/Chassis/System.Embedded.1",
@@ -320,17 +321,7 @@ func RegisterAggregate(s *testaggregate.Service) {
 
 					//Need to add actions
 					Properties: map[string]interface{}{
-						"@Redfish.Settings": map[string]interface{}{ //Done
-							"@odata.context": "/redfish/v1/$metadata#Settings.Settings",
-							"@odata.id":      "/redfish/v1/Systems/System.Embedded.1/Storage/Volumes/$Entity/Settings",
-							"@odata.type":    "#Settings.v1_1_0.Settings",
-							"SupportedApplyTimes": []string{
-								"Immediate",
-								"OnReset",
-								"AtMaintenanceWindowStart",
-								"InMaintenanceWindowOnReset",
-							},
-						},
+						"@Redfish.Settings@meta": vw.Meta(view.GETProperty("settings_uri"), view.GETFormatter("expandone"), view.GETModel("default")),
 						"Actions": map[string]interface{}{
 							"#Volume.CheckConsistency": map[string]interface{}{
 
@@ -348,9 +339,9 @@ func RegisterAggregate(s *testaggregate.Service) {
 						"CapacityBytes@meta":  vw.Meta(view.PropGET("capacity")),    //Done
 						"Description@meta":    vw.Meta(view.PropGET("description")), //Done
 						"Encrypted@meta":      vw.Meta(view.PropGET("encrypted")),   //DONE
-						"EncryptionTypes":     []map[string]interface{}{},
+						"EncryptionTypes@meta":     vw.Meta(view.PropGET("encryptiontypes")),
 						"Id@meta":             vw.Meta(view.PropGET("unique_name")),
-						"Identifiers":         []map[string]interface{}{},
+						"Identifiers@meta":     vw.Meta(view.GETProperty("identifiers"), view.GETModel("default")),
 						"Links": map[string]interface{}{
 							"Drives@meta":             vw.Meta(view.GETProperty("drive_uris"), view.GETFormatter("formatOdataList"), view.GETModel("default")),
 							"Drives@odata.count@meta": vw.Meta(view.GETProperty("drive_uris"), view.GETFormatter("count"), view.GETModel("default")),
@@ -389,4 +380,45 @@ func RegisterAggregate(s *testaggregate.Service) {
 					}}}, nil
 		})
 
+	s.RegisterAggregateFunction("idrac_storage_enclosure_settings",
+		func(ctx context.Context, subLogger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, vw *view.View, extra interface{}, params map[string]interface{}) ([]eh.Command, error) {
+			return []eh.Command{
+				&domain.CreateRedfishResource{
+					ResourceURI: vw.GetURI(),
+					Type: "#Settings.v1_1_0.Settings",
+						Context: params["rooturi"].(string) + "/$metadata#Settings.Settings",
+					Privileges: map[string]interface{}{
+						"GET": []string{"Login"},
+					},
+					Properties: map[string]interface{}{
+						"SupportedApplyTimes": []string{
+							"Immediate",
+							"OnReset",
+							"AtMaintenanceWindowStart",
+							"InMaintenanceWindowOnReset",
+						},
+					}},
+			}, nil
+		})
+
+	s.RegisterAggregateFunction("idrac_storage_volume_settings",
+		func(ctx context.Context, subLogger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, vw *view.View, extra interface{}, params map[string]interface{}) ([]eh.Command, error) {
+			return []eh.Command{
+				&domain.CreateRedfishResource{
+					ResourceURI: vw.GetURI(),
+					Type: "#Settings.v1_1_0.Settings",
+						Context: params["rooturi"].(string) + "/$metadata#Settings.Settings",
+					Privileges: map[string]interface{}{
+						"GET": []string{"Login"},
+					},
+					Properties: map[string]interface{}{
+						"SupportedApplyTimes": []string{
+							"Immediate",
+							"OnReset",
+							"AtMaintenanceWindowStart",
+							"InMaintenanceWindowOnReset",
+						},
+					}},
+			}, nil
+		})
 }

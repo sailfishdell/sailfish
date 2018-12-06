@@ -213,9 +213,9 @@ type StorageVirtualObjEventData struct {
 	RaidObjHeader RaidObjectHeader `mapstructure:"raidObjheader"`
 	BlockSize     int              `mapstructure:"blockSize"`
 	Capacity      int64            `mapstructure:"size"`
-	Encrypted     int              `mapstructure:"attributes"`
+	Encrypted     uint32              `mapstructure:"attributes"`
 	OptimumIoSize int              `mapstructure:"stripeSize"`
-	VolumeType    int              `mapstructure:"raidLevel"`
+	VolumeType    uint32              `mapstructure:"raidLevel"`
 	Id            string           `maspstructure:"fqdd"`
 	Description   string
 }
@@ -233,11 +233,11 @@ type StoragePhysicalObjEventData struct {
 	Id                        string             `mapstructure:"fqdd"`
 	Manufacturer              string             `mapstructure:"manufactureName"`
 	Model                     string             `mapstructure:"modelName"`
-	MediaType                 int                `json:"attributes"`
+	MediaType                 int                `mapstructure:"attributes"`
 	NegotiatedSpeed           int                `json:"negotiatedSpeed"`
 	PartNumber                string             `mapstructure:"ppid"`
-	PredictedMediaLife        int                `json:"deviceLifeRemaining"`
-	Protocol                  int                `json:"protocol"`
+	PredictedMediaLife        int                `mapstructure:"deviceLifeRemaining"`
+	Protocol                  int                `mapstructure:"protocol"`
 	Revision                  string             `mapstructure:"revision"`
 	NominalMediumRotationRate int                `json:"nominalMediumRotationRate"`
 	Serial                    string             `mapstructure:"serialNumber"`

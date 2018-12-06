@@ -517,7 +517,10 @@ views:
   "idrac_storage_instance":
       "Logger": ["module", "StorageInstance"]
       "Models":
-        "default":  {}
+        "default":  {
+                "storage_controller_uris_instance": "array(rooturi + '/Systems/' + ParentFQDD + '/StorageControllers/' + FQDD)",
+                "enclosure_uris": "array(rooturi + '/Chassis/System.Embedded.1' )",
+                }
       "Controllers":
         - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "idrac_storage_encls_uris_for_instance", "uniquename": "'am2_meu__' + FQDD", "passthru": {}}
@@ -525,8 +528,6 @@ views:
           "params": {"modelname": "default", "cfgsection": "idrac_storage_adapter_map", "uniquename": "'am2_idrac_storage_instance_map' + FQDD", "passthru": {"ParentFQDD": "ParentFQDD", "FQDD": "FQDD"}}
         - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "idrac_storage_drive_uris_for_instance", "uniquename": "'am2_storage_instance_drive_uris_:' + ParentFQDD + ':' + FQDD", "passthru": {"ParentFQDD": "ParentFQDD", "FQDD": "FQDD"}}
-        - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "idrac_storage_controller_uris_for_instance", "uniquename": "'am2_storage_instance_controller_uris_instance:' + ParentFQDD + ':' + FQDD", "passthru": {"ParentFQDD": "ParentFQDD", "FQDD": "FQDD"}}
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/Systems/' + ParentFQDD + '/Storage/' + FQDD "
@@ -552,6 +553,8 @@ views:
           "params": {"modelname": "default", "cfgsection": "manage_enclosure_uris", "uniquename": "'am2_meu_drive_' + FQDD", "passthru": {}}
         - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "idrac_storage_volume_uris_for_drive", "uniquename": "'am2_storage_drive_volume_uris:' + ParentFQDD + ':' + FQDD", "passthru": {"ParentFQDD": "ParentFQDD", "FQDD": "FQDD"}}
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "manage_drive_identifiers", "uniquename": "'am2_drive_identifiers_' + FQDD", "passthru": {}}
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/Systems/' + ParentFQDD + '/Storage/Drives/' + FQDD "
@@ -566,7 +569,7 @@ views:
   "idrac_storage_enclosure":
       "Logger": ["module", "StorageEnclosure"]
       "Models":
-        "default":  {}
+        "default":  {"settings_uri": "rooturi + '/Chassis/' + FQDD + '/Settings'"}
       "Controllers":
         - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "idrac_storage_enclosure_map", "uniquename": "'am2_idrac_storage_enclosure_map_' + FQDD"}
@@ -582,6 +585,23 @@ views:
         - "fn": "stdFormatters"
           "params":
       "Aggregate": "idrac_storage_enclosure"
+      "ExecPost": [
+        "instantiate('idrac_storage_enclosure_settings', 'FQDD', FQDD)",
+        ]
+
+  "idrac_storage_enclosure_settings":
+      "Logger": ["module", "StorageEnclosureSettings"]
+      "Models":
+        "default":  {}
+      "Controllers":
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/Chassis/' + FQDD + '/Settings' "
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+        - "fn": "stdFormatters"
+          "params":
+      "Aggregate": "idrac_storage_enclosure_settings"
 
   "idrac_storage_controller":
       "Logger": ["module", "StorageController"]
@@ -591,7 +611,7 @@ views:
         - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "idrac_storage_adapter_map", "uniquename": "'am2_idrac_storage_controller_map_' + FQDD", "passthru": {"ParentFQDD": "ParentFQDD", "FQDD": "FQDD"}}
         - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "manage_identifiers", "uniquename": "'am2_identifiers__' + FQDD", "passthru": {}}
+          "params": {"modelname": "default", "cfgsection": "manage_controller_identifiers", "uniquename": "'am2_controller_identifiers_' + FQDD", "passthru": {}}
 
       "View":
         - "fn": "with_URI"
@@ -621,12 +641,14 @@ views:
   "idrac_storage_volume":
       "Logger": ["module", "StorageVolume"]
       "Models":
-        "default":  {}
+        "default":  {"settings_uri": "rooturi + '/Systems/' + ParentFQDD + '/Storage/Volumes/' + FQDD + '/Settings'"}
       "Controllers":
         - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "idrac_storage_volume_map", "uniquename": "'am2_idrac_storage_volume_map_' + FQDD", "passthru": {"ParentFQDD": "ParentFQDD", "FQDD": "FQDD"}}
         - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "idrac_storage_drive_uris_for_vol", "uniquename": "'am2_storage_volume_drive_uris:' + ParentFQDD + ':' + FQDD", "passthru": {"ParentFQDD": "ParentFQDD", "FQDD": "FQDD"}}
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "manage_volume_identifiers", "uniquename": "'am2_volume_identifiers_' + FQDD", "passthru": {}}
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/Systems/' + ParentFQDD + '/Storage/Volumes/' + FQDD"
@@ -639,7 +661,23 @@ views:
         - "fn": "stdFormatters"
           "params":
       "Aggregate": "idrac_storage_volume"
+      "ExecPost": [
+        "instantiate('idrac_storage_volume_settings', 'FQDD', FQDD, 'ParentFQDD', ParentFQDD)",
+        ]
 
+  "idrac_storage_volume_settings":
+      "Logger": ["module", "StorageVolumeSettings"]
+      "Models":
+        "default":  {}
+      "Controllers":
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/Systems/' + ParentFQDD + '/Storage/Volumes/' + FQDD + '/Settings' "
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+        - "fn": "stdFormatters"
+          "params":
+      "Aggregate": "idrac_storage_volume_settings"
 
 # <<==================================================================>>
 # # everything above this point is basically correctly implemented and
@@ -763,15 +801,6 @@ awesome_mapper:
           Select: "nohash(data.ResourceURI) && baseuri(data.ResourceURI) == rooturi + '/Systems/' + ParentFQDD + '/StorageControllers'",
           ModelUpdate: [ {Property: "storage_controller_uris", Query: "removefromset(model, propname, data.ResourceURI)"} ]}
 
-    idrac_storage_controller_uris_for_instance:
-      - { SelectEventType: "StorageAdapterEvent",
-          Select: "FQDD == data.fqdd || FQDD == data.FQDD",
-          ModelUpdate: [ {Property: "storage_controller_uris_instance", Query: "addtoset(model, propname, data.ResourceURI)"} ],
-          Exec: [ "echo('CONTROLLER LIST - Instance. data.FQDD == ' + data.FQDD )" ]}
-      - { SelectEventType: "RedfishResource:removed",
-          Select: "nohash(data.ResourceURI) && baseuri(data.ResourceURI) == rooturi + '/Systems/' + ParentFQDD + '/StorageControllers/' + data.FQDD",
-          ModelUpdate: [ {Property: "storage_controller_uris_instance", Query: "removefromset(model, propname, data.ResourceURI)"} ]}
-
     idrac_storage_drive_uris_for_instance:
       - { SelectEventType: "IDRACComponentEvent",
           Select: "data.Type == 'StorageAdapterAssociateDrive'",
@@ -792,13 +821,20 @@ awesome_mapper:
           ModelUpdate: [ {Property: "enclosure_uris", Query: "removefromset(model, propname, data.ResourceURI)"} ]}
 
 
-    manage_identifiers:
-      - { SelectEventType: "StorageAdapaterEvent",
+    manage_controller_identifiers:
+      - { SelectEventType: "StorageAdapterEvent",
           Select: "data.ObjectHeader.FQDD == EVENT_FQDD",
           ModelUpdate: [ {Property: "identifiers", Query: "identifier_gen(data.Wwn)"} ]}
-      - { SelectEventType: "RedfishResource:removed",
-          Select: "nohash(data.ResourceURI) && baseuri(data.ResourceURI) == rooturi + '/Systems/' + ParentFQDD + '/StorageControllers' + data.FQDD",
-          ModelUpdate: [ {Property: "identifiers", Query: "removefromset(model, propname, data.ResourceURI)"} ]}
+
+    manage_drive_identifiers:
+      - { SelectEventType: "StoragePhysicalEvent",
+          Select: "data.ObjectHeader.FQDD == EVENT_FQDD",
+          ModelUpdate: [ {Property: "identifiers", Query: "identifier_gen(data.SasAddress)"} ]}
+
+    manage_volume_identifiers:
+      - { SelectEventType: "StorageVirtualEvent",
+          Select: "data.ObjectHeader.FQDD == EVENT_FQDD",
+          ModelUpdate: [ {Property: "identifiers", Query: "identifier_gen(data.Description)"} ]}
 
     supported_device_protocols:
       - { SelectEventType: "IDRACComponentEvent",
@@ -853,13 +889,13 @@ awesome_mapper:
                 {Property: "hotspare_type", Query: "hotspare(data.Hotspare)" },
                 {Property: "unique_name", Query: "data.Id" },
                 {Property: "manufacturer", Query: "data.Manufacturer" },
-                {Property: "media_type", Query: "data.MediaType" },
+                {Property: "media_type", Query: "mediatype(data.MediaType)" },
                 {Property: "model", Query: "data.Model" },
                 {Property: "name", Query: "data.RaidObjHeader.ObjName" },
                 {Property: "negotiated_speed", Query: "data.NegotiatedSpeed" },
                 {Property: "part_number", Query: "data.PartNumber" },
                 {Property: "predicted_media_life_left_percent", Query: "data.PredictedMediaLife" },
-                {Property: "protocol", Query: "data.Protocol" },
+                {Property: "protocol", Query: "deviceprotocols(data.Protocol)" },
                 {Property: "revision", Query: "data.Revision" },
                 {Property: "rotation_speed", Query: "data.NominalMediumRotationRate" },
                 {Property: "serial_number", Query: "data.Serial" },
@@ -907,9 +943,10 @@ awesome_mapper:
                 {Property: "block_size", Query: "data.BlockSize" },
                 {Property: "capacity", Query: "data.Capacity" },
                 {Property: "description", Query: "data.RaidObjHeader.ObjName" },
-                {Property: "encrypted", Query: "data.Encrypted" },
+                {Property: "encrypted", Query: "encryptionstatus(data.Encrypted)" },
+                {Property: "encryptiontypes", Query: "encryptiontypes(data)" },
                 {Property: "optimum_io_size_bytes", Query: "data.OptimumIoSize * 512" },
-                {Property: "volume_type", Query: "data.VolumeType" },
+                {Property: "volume_type", Query: "volumetype(data.VolumeType)" },
                 {Property: "unique_name", Query: "data.Id" },
                 {Property: "health_rollup", Query: "map_health_value(data.RaidObjHeader.DataObjHeader.ObjStatus)" },
                 {Property: "health", Query: "map_health_value(data.RaidObjHeader.DataObjHeader.ObjStatus)" }],

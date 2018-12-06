@@ -128,10 +128,20 @@ func init() {
 		if !ok || v == nil {
 			v = []string{}
 		}
-		vStr, ok := v.([]string)
-		if !ok {
-			v = []string{}
-			vStr = v.([]string)
+
+		var vStr []string
+
+		switch t := v.(type) {
+		case []string:
+			vStr = t
+		case []interface{}:
+			for _, i := range t {
+				if k, ok := i.(string); ok {
+					vStr = append(vStr, k)
+				}
+			}
+		default:
+			vStr = []string{}
 		}
 
 		found := false
@@ -337,17 +347,78 @@ func init() {
 		}
 	})
 	AddFunction("identifier_gen", func(args ...interface{}) (interface{}, error) {
+<<<<<<< Updated upstream
 		wwnStr := args[0].(string)
 		wwn, _ := strconv.Atoi(wwnStr)
 		if wwn > 0x00 {
 			dur_name := fmt.Sprintf("%X", wwn)
 			dur_format := "NAA"
+=======
+		fmt.Printf("in identifier_gen()\n")
+		wwnStr := args[0].(string)
+		fmt.Printf("in identifier_gen() -- %s\n", wwnStr)
+        wwn, _ := strconv.ParseUint(args[0].(string), 10, 64)
+		if wwn > 0x00 {
+			dur_name := fmt.Sprintf("%X", wwn)
+			dur_format := "NAA"
+			fmt.Printf("Returning identifier: %s\n", []map[string]string{map[string]string{"DurableName": dur_name, "DurableNameFormat": dur_format}})
+>>>>>>> Stashed changes
 			return []map[string]string{map[string]string{"DurableName": dur_name, "DurableNameFormat": dur_format}}, nil
+		} else {
+			fmt.Printf("wwn is nil, returning nil")
+			return nil, nil
+		}
+	})
+
+<<<<<<< Updated upstream
+=======
+	AddFunction("encryptionstatus", func(args ...interface{}) (interface{}, error) {
+		fmt.Printf("in encryption types()\n")
+        var attrib uint32 = uint32(args[0].(float64))
+		if attrib&0x01 == 0x01 {
+			return "true", nil
+		} else {
+			return "false", nil
+		}
+	})
+
+	AddFunction("volumetype", func(args ...interface{}) (interface{}, error) {
+		fmt.Printf("in volume types()\n")
+        var raidlevel uint32 = uint32(args[0].(float64))
+		if raidlevel&0x01 == 0x01 {
+			return "RawDevice", nil
+		} else if raidlevel&0x00000002 == 0x00000002 {
+			return "NonRedundant", nil
+		} else if raidlevel&0x00000004 == 0x00000004 {
+			return "Mirrored", nil
+		} else if raidlevel&0x00000040 == 0x00000040 {
+			return "StripedWithParity", nil
+		} else if raidlevel&0x00000800 == 0x00000800 {
+			return "SpannedMirrors", nil
+		} else if raidlevel&0x00002000 == 0x00002000 || raidlevel&0x00004000 == 0x00004000 {
+			return "SpannedStripesWithParity", nil
 		} else {
 			return nil, nil
 		}
 	})
 
+	AddFunction("encryptiontypes", func(args ...interface{}) (interface{}, error) {
+		var vStr []string
+		vStr = append(vStr, "NativeDriveEncryption")
+		return vStr, nil
+	})
+
+
+	AddFunction("mediatype", func(args ...interface{}) (interface{}, error) {
+        var attrib uint32 = uint32(args[0].(float64))
+		if attrib&0x02 == 0x02 {
+			return "SSD", nil
+		} else {
+			return "HDD", nil
+		}
+	})
+
+>>>>>>> Stashed changes
 	AddFunction("deviceprotocols", func(args ...interface{}) (interface{}, error) {
 		var vStr []string
 		var deviceprotocols uint32 = uint32(args[0].(float64))
@@ -381,6 +452,7 @@ func init() {
 		}
 		return vStr, nil
 	})
+
 
 	AddFunction("controllerprotocols", func(args ...interface{}) (interface{}, error) {
 		var vStr []string
