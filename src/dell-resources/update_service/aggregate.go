@@ -124,8 +124,13 @@ func RegisterAggregate(s *testaggregate.Service) {
 						"Description":     "Represents Firmware Inventory",
 						"Oem": map[string]interface{}{
 							"EID_674": map[string]interface{}{
-								"@odata.type":      "#EID_674_SoftwareInventory.v1_0_0.OemSoftwareInventory",
-								"ComponentId@meta": vw.Meta(view.GETProperty("id"), view.GETModel("default")),
+								"@odata.type":                  "#EID_674_SoftwareInventory.v1_0_0.OemSoftwareInventory",
+								"ComponentId@meta":             vw.Meta(view.GETProperty("id"), view.GETModel("default")),
+								"InstallDate@meta":             vw.Meta(view.GETProperty("install_date"), view.GETModel("default")),
+								"FQDD@meta":                    vw.Meta(view.GETProperty("fqdd_list"), view.GETModel("default")),
+								"FQDD@odata.count@meta":        vw.Meta(view.GETProperty("fqdd_list"), view.GETFormatter("count"), view.GETModel("default")),
+								"RelatedItem@meta":             vw.Meta(view.GETProperty("related_list"), view.GETFormatter("formatOdataList"), view.GETModel("default")),
+								"RelatedItem@odata.count@meta": vw.Meta(view.GETProperty("related_list"), view.GETFormatter("count"), view.GETModel("default")),
 							},
 						},
 					}},

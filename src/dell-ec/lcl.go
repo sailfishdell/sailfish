@@ -185,25 +185,21 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 	awesome_mapper2.AddFunction("add_swinv", func(args ...interface{}) (interface{}, error) {
 		resourceURI, ok := args[0].(string)
 		if !ok || resourceURI == "" {
-			fmt.Printf("OUT 1\n")
 			return false, nil
 		}
 
 		v, err := domain.InstantiatePlugin(domain.PluginType(resourceURI))
 		if err != nil || v == nil {
-			fmt.Printf("OUT 2\n")
 			return false, nil
 		}
 
 		vw, ok := v.(*view.View)
 		if !ok {
-			fmt.Printf("OUT 3\n")
 			return false, nil
 		}
 
 		mdl := vw.GetModel("swinv")
 		if mdl == nil {
-			fmt.Printf("OUT 4\n")
 			return false, nil
 		}
 
@@ -235,6 +231,9 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 				fmt.Printf("NEW model from URI: %s\n", n.uri)
 				continue
 			}
+
+			fqdd_mappings := map[string][]string{}
+			uri_mappings := map[string][]string{}
 
 			// scan through each model and build our new inventory uris
 			for uri, mdl := range swinvList {
@@ -275,24 +274,44 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 				}
 
 				compVerTuple := class + "-" + version
-				fw_fqdd_list := []string{fqdd}
-				fw_related_list := []map[string]interface{}{}
 
-				_ = uri
-				_ = fw_fqdd_list
-				_ = fw_related_list
+				arr, ok := fqdd_mappings[compVerTuple]
+				if !ok {
+					arr = []string{}
+				}
+				arr = append(arr, fqdd)
+				fqdd_mappings[compVerTuple] = arr
+
+				uriarr, ok := uri_mappings[compVerTuple]
+				if !ok {
+					uriarr = []string{}
+				}
+				uriarr = append(uriarr, uri)
+				uri_mappings[compVerTuple] = uriarr
 
 				if _, ok := firmwareInventoryViews[compVerTuple]; !ok {
-					_, vw, _ := instantiateSvc.InstantiateNoWait("firmware_instance", map[string]interface{}{
+					_, vw, _ := instantiateSvc.Instantiate("firmware_instance", map[string]interface{}{
 						"compVerTuple": compVerTuple,
 						"name":         "TEST",
 						"version":      version,
 						"updateable":   false,
 						"id":           class,
 					})
-					fmt.Printf("add to list ------------------------------ INSTANTIATED: %s\n", vw.GetURI())
+					fmt.Printf("add to list ---------> INSTANTIATED: %s\n", vw.GetURI())
 					firmwareInventoryViews[compVerTuple] = vw
 				}
+			}
+
+			for compVerTuple, arr := range fqdd_mappings {
+				vw := firmwareInventoryViews[compVerTuple]
+				mdl := vw.GetModel("default")
+				mdl.UpdateProperty("fqdd_list", arr)
+			}
+
+			for compVerTuple, arr := range uri_mappings {
+				vw := firmwareInventoryViews[compVerTuple]
+				mdl := vw.GetModel("default")
+				mdl.UpdateProperty("related_list", arr)
 			}
 		}
 	}()
