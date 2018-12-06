@@ -21,6 +21,7 @@ import (
 	"github.com/superchalupa/sailfish/src/dell-resources/registries"
 	"github.com/superchalupa/sailfish/src/dell-resources/update_service"
   "github.com/superchalupa/sailfish/src/dell-resources/update_service/firmware_inventory"
+  "github.com/superchalupa/sailfish/src/dell-resources/task_service"
 	"github.com/superchalupa/sailfish/src/eventwaiter"
 	"github.com/superchalupa/sailfish/src/log"
 	"github.com/superchalupa/sailfish/src/ocp/awesome_mapper2"
@@ -86,8 +87,8 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	attributes.RegisterAggregate(instantiateSvc)
 	update_service.RegisterAggregate(instantiateSvc)
   firmware_inventory.RegisterAggregate(instantiateSvc)
-  update_service.RegisterAggregate(instantiateSvc)
-  update_service.InitUpdate(logger, instantiateSvc)
+  task_service.RegisterAggregate(instantiateSvc)
+  task_service.InitTask(logger, instantiateSvc)
 	fans.RegisterAggregate(instantiateSvc)
 	RegisterAggregate(instantiateSvc)
 	RegisterIOMAggregate(instantiateSvc)
@@ -192,6 +193,14 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	updSvcVw.ApplyOption(
 		uploadSvc.WithUpload(ctx, "upload.firmwareUpdate", "/FirmwareInventory", pumpSvc.NewPumpAction(60)),
 	)
+
+  {
+    _, taskSvcVw, _ := instantiateSvc.Instantiate("task_service", map[string]interface{}{"task_members": d.FindMatchingURIs(func(uri string) bool { return path.Dir(uri) == rooturi+"/TaskService/Tasks" }), })
+
+    task_service.EnhanceAggregate(ctx, taskSvcVw, rootView, ch)
+
+    //instantiateSvc.Instantiate("task", map[string]interface{}{"task_id": "TEST", "task_name": "NAME", "task_state": "STATE", "task_status": "STATUS", "task_start": "START", "task_end": "END", "task_percent": 100, "task_msg": "MSG", "task_msg_args": []string{"MSG ARGS"}, "task_msg_id": "MSG ID"})
+  }
 
 	// VIPER Config:
 	// pull the config from the YAML file to populate some static config options

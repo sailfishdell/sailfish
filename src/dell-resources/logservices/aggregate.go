@@ -98,7 +98,7 @@ func RegisterAggregate(s *testaggregate.Service) {
 						"Name":        "FaultListEntries",
 						"Description": "Collection of FaultList Entries",
 						"Entries": map[string]interface{}{
-							"@odata.id": "/redfish/v1/Managers/CMC.Integrated.1/Logs/FaultsList",
+							"@odata.id": "/redfish/v1/Managers/CMC.Integrated.1/Logs/FaultList",
 						},
 						"OverWritePolicy":     "WrapsWhenFull",
 						"MaxNumberOfRecords":  500000,
