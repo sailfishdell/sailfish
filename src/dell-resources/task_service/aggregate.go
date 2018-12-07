@@ -249,62 +249,6 @@ func InitTask(logger log.Logger, instantiateSvc *testaggregate.Service) {
         })
       }
     }()
-
-    /*setMu := sync.Mutex{}
-    task_properties := map[string]interface{}{}
-    set := map[string]struct{}{}
-
-    awesome_mapper2.AddFunction("task_handler", func(args ... interface{}) (interface{}, error) {
-        task_value := args[0]
-        task_grid := args[1].(string) + args[2].(string) // group + id
-        task_name := args[3].(string)
-        _, ok := task_properties[task_grid]
-        if !ok {
-            //first time, create new map for this task group/id combination
-            task_properties[task_grid] = map[string]interface{}{task_name: task_value}
-            return task_grid, nil
-        }
-        //add/update this task group/id's property
-        this_task := task_properties[task_grid].(map[string]interface{})
-        this_task[task_name] = task_value
-
-        if (len(task_properties[task_grid].(map[string]interface{})) == 12 && this_task["Id"] != "unknown") {
-            var task_msg_args[]string
-            if (this_task["MessageArg1-1"].(string) != "") {
-               task_msg_args = append(task_msg_args, this_task["MessageArg1-1"].(string))
-            }
-            if (this_task["MessageArg1-2"].(string) != "") {
-                task_msg_args = append(task_msg_args, this_task["MessageArg1-2"].(string))
-            }
-            if (this_task["MessageArg1-3"].(string) != "") {
-                task_msg_args = append(task_msg_args, this_task["MessageArg1-3"].(string))
-            }
-            setMu.Lock()
-            _, ok := set[task_grid]
-            if ok {
-                setMu.Unlock()
-                return task_grid, nil
-            }
-            set[task_grid] = struct{}{}
-            setMu.Unlock()
-            logger.Info("Creating task", "task_grid", task_grid)
-            //fmt.Println("task_msg_args:", task_msg_args)
-            //fmt.Println("task_grid:", task_grid)
-            go instantiateSvc.Instantiate("task", map[string]interface{}{
-                "task_id": this_task["Id"].(string),
-                "task_name": this_task["Name"].(string),
-                "task_state": this_task["TaskState"].(string),
-                "task_status": this_task["TaskStatus"].(string),
-                "task_start": this_task["StartTime"].(string),
-                "task_end": this_task["EndTime"].(string),
-                "task_percent": this_task["PercentComplete"],
-                "task_msg": this_task["Message1"].(string),
-                "task_msg_args": task_msg_args,
-                "task_msg_id": this_task["MessageID1"].(string),
-            })
-        }
-        return task_grid, nil
-    })*/
 }
 
 func RegisterAggregate(s *testaggregate.Service) {
