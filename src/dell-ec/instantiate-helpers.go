@@ -142,6 +142,16 @@ func AddECInstantiate(l log.Logger, instantiateSvc *testaggregate.Service) {
 				"DM_FQDD":     "System.Chassis.1#" + strings.Replace(FQDD, "PSU.Slot", "PowerSupply", 1),
 				"ChassisFQDD": ParentFQDD,
 				"FQDD":        FQDD,
+                                "PowerType":   "Power",
+			},
+		)
+
+		go instantiateSvc.Instantiate("psu_slot",
+			map[string]interface{}{
+				"DM_FQDD":     "System.Chassis.1#" + strings.Replace(FQDD, "PSU.Slot", "PowerSupply", 1),
+				"ChassisFQDD": ParentFQDD,
+				"FQDD":        FQDD,
+                                "PowerType":   "Sensors",
 			},
 		)
 

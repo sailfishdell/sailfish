@@ -755,9 +755,7 @@ views:
           "params": {"modelname": "default", "AddToView": true, "passthru": {"fqddlist": "array(FQDD)"}}
       "View":
         - "fn": "with_URI"
-          "params": "rooturi + '/Chassis/' + ChassisFQDD + '/Power/PowerSupplies/' + FQDD "
-        - "fn": "with_URI"
-          "params": "rooturi + '/Chassis/' + ChassisFQDD + '/Sensors/PowerSupplies/' + FQDD "
+          "params": "rooturi + '/Chassis/' + ChassisFQDD + '/' + PowerType + '/PowerSupplies/' + FQDD "
         - "fn": "linkModel"
           "params": {"existing": "default", "linkname": "swinv"}
         - "fn": "withModel"
