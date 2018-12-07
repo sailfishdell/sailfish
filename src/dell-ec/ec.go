@@ -20,6 +20,7 @@ import (
 	"github.com/superchalupa/sailfish/src/dell-resources/logservices"
 	"github.com/superchalupa/sailfish/src/dell-resources/registries"
 	"github.com/superchalupa/sailfish/src/dell-resources/update_service"
+  "github.com/superchalupa/sailfish/src/dell-resources/task_service"
 	"github.com/superchalupa/sailfish/src/eventwaiter"
 	"github.com/superchalupa/sailfish/src/log"
 	"github.com/superchalupa/sailfish/src/ocp/awesome_mapper2"
@@ -84,6 +85,8 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	logservices.RegisterAggregate(instantiateSvc)
 	attributes.RegisterAggregate(instantiateSvc)
 	update_service.RegisterAggregate(instantiateSvc)
+  task_service.RegisterAggregate(instantiateSvc)
+  task_service.InitTask(logger, instantiateSvc)
 	fans.RegisterAggregate(instantiateSvc)
 	RegisterAggregate(instantiateSvc)
 	RegisterIOMAggregate(instantiateSvc)
