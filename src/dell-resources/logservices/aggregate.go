@@ -27,8 +27,17 @@ func RegisterAggregate(s *testaggregate.Service) {
 					Properties: map[string]interface{}{
 						"Name":                     "Log Service Collection",
 						"Description":              "Collection of Log Services for this Manager",
-						"Members@meta":             vw.Meta(view.GETProperty("members"), view.GETFormatter("formatOdataList"), view.GETModel("default")),
-						"Members@odata.count@meta": vw.Meta(view.GETProperty("members"), view.GETFormatter("count"), view.GETModel("default")),
+						//"Members@meta":             vw.Meta(view.GETProperty("members"), view.GETFormatter("formatOdataList"), view.GETModel("default")), // hard coded for time being due to timing issue
+            "Members": []map[string]interface{}{
+              map[string]interface{}{
+                "@odata.id": "/redfish/v1/Managers/CMC.Integrated.1/LogServices/Lclog",
+              },
+              map[string]interface{}{
+                "@odata.id": "/redfish/v1/Managers/CMC.Integrated.1/LogServices/FaultList",
+              },
+            },
+						//"Members@odata.count@meta": vw.Meta(view.GETProperty("members"), view.GETFormatter("count"), view.GETModel("default")),
+            "Members@odata.count": 2,
 					}},
 			}, nil
 		})

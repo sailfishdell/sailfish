@@ -45,6 +45,13 @@ func (s *Model) UnderLock(fn func()) {
 	fn()
 }
 
+// UnderRLock lets you run a function under the model read lock.
+func (s *Model) UnderRLock(fn func()) {
+	s.RLock()
+	defer s.RUnlock()
+	fn()
+}
+
 // ApplyOption is run with all of the options given by the constructor, but can
 // also be used after construction to apply options
 func (s *Model) ApplyOption(options ...Option) error {

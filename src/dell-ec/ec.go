@@ -194,14 +194,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 		uploadSvc.WithUpload(ctx, "upload.firmwareUpdate", "/FirmwareInventory", pumpSvc.NewPumpAction(60)),
 	)
 
-  {
-    _, taskSvcVw, _ := instantiateSvc.Instantiate("task_service", map[string]interface{}{"task_members": d.FindMatchingURIs(func(uri string) bool { return path.Dir(uri) == rooturi+"/TaskService/Tasks" }), })
-
-    task_service.EnhanceAggregate(ctx, taskSvcVw, rootView, ch)
-
-    //instantiateSvc.Instantiate("task", map[string]interface{}{"task_id": "TEST", "task_name": "NAME", "task_state": "STATE", "task_status": "STATUS", "task_start": "START", "task_end": "END", "task_percent": 100, "task_msg": "MSG", "task_msg_args": []string{"MSG ARGS"}, "task_msg_id": "MSG ID"})
-  }
-
 	// VIPER Config:
 	// pull the config from the YAML file to populate some static config options
 	self.configChangeHandler = func() {}

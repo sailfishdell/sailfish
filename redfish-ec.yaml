@@ -45,6 +45,7 @@ views:
         # we will eventually enable sessionservice, but need to do some work in ec.go to enable it first
         #"instantiate('sessionservice')",
         "instantiate('telemetry_service')",
+        "instantiate('task_service')",
       ]
 
   "testview":
@@ -1025,25 +1026,42 @@ views:
       "Models":
         "default": {}
       "Controllers":
-        - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "task_service", "uniquename": "'task_service'"}
       "View":
         - "fn": "with_URI"
-          "params": "rooturi + '/TaskService/Tasks'"
-        # - "fn": "with_URI"
-        # "params": "rooturi + '/TaskServices/Tasks'"
+          "params": "rooturi + '/TaskService'"
+      "Aggregate": "task_service"
+      "ExecPost": [
+        "instantiate('task_service_tasks', 'parenturi', rooturi + '/TaskService/')",
+      ]
+
+  "task_service_tasks":
+      "Logger": ["module", "taskservice"]
+      "Models":
+        "default": {}
+      "Controllers":
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "task_service", "uniquename": "'task_service'"}
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + view.GetURI()", "passthru": {'collection_uri': 'view.GetURI()'} }
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/TaskServices/Tasks'"
+        - "fn": "with_URI"
+          "params": "parenturi + 'Tasks'"
         - "fn": "stdFormatters"
           "params":
-      "Aggregate": "task_service"
+      "Aggregate": "task_service_tasks"
 
   "task":
       "Logger": ["module", "taskservice"]
       "Models":
-        "default": {"task_id": "task_id", "task_name": "task_name", "task_state": "task_state", "task_status": "task_status", "task_start": "task_start", "task_end": "task_end", "task_percent": "task_percent", "task_msg": "task_msg", "task_msg_args": "task_msg_args", "task_msg_id": "task_msg_id"}
+        "default": {"task_id": "task_id", "task_name": "task_name", "task_state": "task_state", "task_status": "task_status", "task_start": "task_start", "task_end": "task_end", "task_percent": "task_percent", "task_msg_1": "task_msg_1", "task_msg_1_id": "task_msg_1_id", "task_msg_1_args": "task_msg_1_args"}
       "Controllers":
         - "fn": "ARMapper"
           "params": {"modelname": "default", "cfgsection": "tasks", "mappinguniquename": "'task_id:' + task_id", "AddToView": true}
       "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/TaskServices/Tasks/' + task_id"
         - "fn": "with_URI"
           "params": "rooturi + '/TaskService/Tasks/' + task_id"
         - "fn": "PublishResourceUpdatedEventsForModel"
@@ -1196,14 +1214,9 @@ awesome_mapper:
           ModelUpdate: [ {Property: "health", Query: "generate_new_health(data, view.GetUUID())"} ]}
 
     task_service:
-      - { SelectEventType: "AttributeUpdated", Select: "(data.Group == 'FWUpdateTask' || data.Group == 'ProfileTask')",
-          Exec: [ "task_handler(data.Value, data.Group, data.Index, data.Name)" ] }
       - { SelectEventType: "RedfishResource:created",
-          Select: "nohash(data.ResourceURI) && baseuri(data.ResourceURI) == rooturi + '/TaskService/Tasks' ",
-          ModelUpdate: [ {Property: "task_members", Query: "addtoset(model, propname, data.ResourceURI)"} ]}
-      - { SelectEventType: "RedfishResource:removed",
-          Select: "nohash(data.ResourceURI) && baseuri(data.ResourceURI) == rooturi + '/TaskService/Tasks' ",
-          ModelUpdate: [ {Property: "task_members", Query: "removefromset(model, propname, data.ResourceURI)"} ]}
+      Select: "data.ResourceURI == rooturi + '/Chassis/System.Chassis.1/Attributes'",
+          Exec: ["add_attributes(data.ResourceURI)"] }
 
     update_service:
       - { SelectEventType: "RedfishResource:created",
@@ -1369,9 +1382,11 @@ mappings:
         - {Property: "task_start", FQDD: "System.Chassis.1", Group: "{GROUP}", Index: "{INDEX}", Name: "StartTime"}
         - {Property: "task_end", FQDD: "System.Chassis.1", Group: "{GROUP}", Index: "{INDEX}", Name: "EndTime"}
         - {Property: "task_percent", FQDD: "System.Chassis.1", Group: "{GROUP}", Index: "{INDEX}", Name: "PercentComplete"}
-        - {Property: "task_msg", FQDD: "System.Chassis.1", Group: "{GROUP}", Index: "{INDEX}", Name: "Message1"}
-        - {Property: "task_msg_id", FQDD: "System.Chassis.1", Group: "{GROUP}", Index: "{INDEX}", Name: "MessageID1"}
-    # TODO: awesome mapper for message args
+        - {Property: "task_msg_1", FQDD: "System.Chassis.1", Group: "{GROUP}", Index: "{INDEX}", Name: "Message1"}
+        - {Property: "task_msg_1_arg1", FQDD: "System.Chassis.1", Group: "{GROUP}", Index: "{INDEX}", Name: "MessageArg1-1"}
+        - {Property: "task_msg_1_arg2", FQDD: "System.Chassis.1", Group: "{GROUP}", Index: "{INDEX}", Name: "MessageArg1-2"}
+        - {Property: "task_msg_1_arg3", FQDD: "System.Chassis.1", Group: "{GROUP}", Index: "{INDEX}", Name: "MessageArg1-3"}
+        - {Property: "task_msg_1_id", FQDD: "System.Chassis.1", Group: "{GROUP}", Index: "{INDEX}", Name: "MessageID1"}
 
     firmware/inventory:
         - {Property: "fw_device_class",     FQDD: "{FQDD}", Group: "FWInventory", Index: "1", Name: "DeviceClass" }
