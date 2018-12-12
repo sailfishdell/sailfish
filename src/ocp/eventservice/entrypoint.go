@@ -143,10 +143,13 @@ func (es *EventService) CreateSubscription(ctx context.Context, logger log.Logge
 		defer es.ch.HandleCommand(context.Background(), &domain.RemoveRedfishResource{ID: subView.GetUUID(), ResourceURI: subView.GetURI()})
 		defer listener.Close()
 
-		inbox := listener.Inbox()
 		for {
 			select {
-			case event := <-inbox:
+			case event := <-listener.Inbox():
+				if e, ok := event.(syncEvent); ok {
+					e.Done()
+				}
+
 				subLogger.Debug("Got internal redfish event", "event", event)
 				switch typ := event.EventType(); typ {
 				case domain.RedfishResourceRemoved:

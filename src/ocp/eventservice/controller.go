@@ -24,6 +24,11 @@ type propertygetter interface {
 	GetPropertyOk(string) (interface{}, bool)
 }
 
+type syncEvent interface {
+	Add(int)
+	Done()
+}
+
 // PublishRedfishEvents starts a background goroutine to collage internal
 // redfish events for external consumption
 func PublishRedfishEvents(ctx context.Context, m propertygetter, eb eh.EventBus) error {
@@ -46,7 +51,6 @@ func PublishRedfishEvents(ctx context.Context, m propertygetter, eb eh.EventBus)
 	// background task to collate internal redfish events and publish
 	go func() {
 		defer listener.Close()
-		inbox := listener.Inbox()
 		eventQ := []*RedfishEventData{}
 		timer := time.NewTimer(10 * time.Second)
 		timer.Stop()
@@ -54,7 +58,12 @@ func PublishRedfishEvents(ctx context.Context, m propertygetter, eb eh.EventBus)
 		var maxE int = defaultMaxEventsToQueue
 		for {
 			select {
-			case event := <-inbox:
+			case event := <-listener.Inbox():
+				// have to mark the event complete if we don't use Wait and take it off the bus ourselves
+				if e, ok := event.(syncEvent); ok {
+					e.Done()
+				}
+
 				log.MustLogger("event_service").Info("Got event", "event", event)
 				switch data := event.Data().(type) {
 				case *RedfishEventData:

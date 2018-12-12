@@ -24,6 +24,11 @@ type Service struct {
 	logger              log.Logger
 }
 
+type syncEvent interface {
+	Add(int)
+	Done()
+}
+
 func NewPumpActionSvc(ctx context.Context, logger log.Logger, eb eh.EventBus) *Service {
 	EventPublisher := eventpublisher.NewEventPublisher()
 	eb.AddHandler(eh.MatchEvent(domain.HTTPCmdProcessed), EventPublisher)
@@ -50,10 +55,13 @@ func NewPumpActionSvc(ctx context.Context, logger log.Logger, eb eh.EventBus) *S
 
 	go func() {
 		defer listener.Close()
-		inbox := listener.Inbox()
 		for {
 			select {
-			case event := <-inbox:
+			case event := <-listener.Inbox():
+				if e, ok := event.(syncEvent); ok {
+					e.Done()
+				}
+
 				// check if its in our list
 				data, ok := event.Data().(*domain.HTTPCmdProcessedData)
 				if !ok {
@@ -188,11 +196,14 @@ func makePumpHandledUpload(name string, maxtimeout int, eb eh.EventBus) func(con
 				fmt.Printf("\nremove f:%s l:%s on exit\n", key, localFile)
 			}
 			defer listener.Close()
-			inbox := listener.Inbox()
 			timer := time.NewTimer(time.Duration(maxtimeout) * time.Second)
 			for {
 				select {
-				case <-inbox:
+				case <-listener.Inbox():
+					if e, ok := event.(syncEvent); ok {
+						e.Done()
+					}
+
 					// got an event from the pump with our exact cmdid, we are done
 					return
 
