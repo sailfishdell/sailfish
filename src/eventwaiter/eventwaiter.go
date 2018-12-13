@@ -161,7 +161,7 @@ func (w *EventWaiter) Listen(ctx context.Context, match func(eh.Event) bool) (*E
 	l := &EventListener{
 		Name:             "unnamed",
 		id:               eh.NewUUID(),
-		singleEventInbox: make(chan eh.Event, 5),
+		singleEventInbox: make(chan eh.Event, 10),
 		match:            match,
 		unregister:       w.unregister,
 		logger:           w.logger,
