@@ -218,10 +218,10 @@ func makePOST(dest string, event eh.Event, context interface{}) func() {
 
 func (es *EventService) PublishResourceUpdatedEventsForModel(ctx context.Context, modelName string) view.Option {
 	return view.WatchModel(modelName, func(v *view.View, m *model.Model, updates []model.Update) {
-		//		eventData := &RedfishEventData{
-		//			EventType:         "ResourceUpdated",
-		//			OriginOfCondition: map[string]interface{}{"@odata.id": v.GetURI()},
-		//		}
-		//		go es.eb.PublishEvent(ctx, eh.NewEvent(RedfishEvent, eventData, time.Now()))
+		eventData := &RedfishEventData{
+			EventType:         "ResourceUpdated",
+			OriginOfCondition: map[string]interface{}{"@odata.id": v.GetURI()},
+		}
+		go es.eb.PublishEvent(ctx, eh.NewEvent(RedfishEvent, eventData, time.Now()))
 	})
 }
