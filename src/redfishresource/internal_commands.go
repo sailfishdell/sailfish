@@ -216,7 +216,7 @@ func (c *InjectEvent) CommandType() eh.CommandType {
 var injectChan chan eh.Event
 
 func StartInjectService(logger log.Logger, eb eh.EventBus) {
-	injectChan = make(chan eh.Event, 1000)
+	injectChan = make(chan eh.Event, 100)
 	logger = logger.New("module", "injectservice")
 	go func() {
 		startPrinting := false
