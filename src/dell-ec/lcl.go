@@ -178,7 +178,7 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 		uri string
 		mdl *model.Model
 	}
-	newchan := make(chan newfirm, 30)
+	newchan := make(chan newfirm, 90)
 	trigger := make(chan struct{})
 	firmwareInventoryViews := map[string]*view.View{}
 
