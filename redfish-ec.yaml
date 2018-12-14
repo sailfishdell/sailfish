@@ -1055,8 +1055,8 @@ views:
       "Models":
         "default": {"task_id": "task_id", "task_name": "task_name", "task_state": "task_state", "task_status": "task_status", "task_start": "task_start", "task_end": "task_end", "task_percent": "task_percent", "task_msg_1": "task_msg_1", "task_msg_1_id": "task_msg_1_id", "task_msg_1_args": "task_msg_1_args"}
       "Controllers":
-        - "fn": "ARMapper"
-          "params": {"modelname": "default", "cfgsection": "tasks", "mappinguniquename": "'task_id:' + task_id", "AddToView": true}
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "tasks", "uniquename": "'task_id:' + task_id", "passthru": {"Index": "Index", "Group": "Group"} }
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/TaskServices/Tasks/' + task_id"
@@ -1260,6 +1260,27 @@ awesome_mapper:
       - { SelectEventType: "AttributeUpdated", Select: "data.FQDD == 'System.Chassis.1' && data.Group == Group && data.Index == Index && data.Name == 'Type'",
             ModelUpdate: [ {Property: "type", Query: "data.Value"}]}
 
+    tasks:
+      - { SelectEventType: "AttributeUpdated", Select: "data.Group == Group && data.Index == Index && data.Name == 'Name'",
+            ModelUpdate: [ {Property: "task_name", Query: "data.Value"}]}
+      - { SelectEventType: "AttributeUpdated", Select: "data.Group == Group && data.Index == Index && data.Name == 'TaskState'",
+            ModelUpdate: [ {Property: "task_state", Query: "map_task_state(data.Value)"}]}
+      - { SelectEventType: "AttributeUpdated", Select: "data.Group == Group && data.Index == Index && data.Name == 'TaskStatus'",
+            ModelUpdate: [ {Property: "task_status", Query: "data.Value"}]}
+      - { SelectEventType: "AttributeUpdated", Select: "data.Group == Group && data.Index == Index && data.Name == 'StartTime'",
+            ModelUpdate: [ {Property: "task_start", Query: "data.Value"}]}
+      - { SelectEventType: "AttributeUpdated", Select: "data.Group == Group && data.Index == Index && data.Name == 'EndTime'",
+            ModelUpdate: [ {Property: "task_end", Query: "data.Value"}]}
+      - { SelectEventType: "AttributeUpdated", Select: "data.Group == Group && data.Index == Index && data.Name == 'PercentComplete'",
+            ModelUpdate: [ {Property: "task_percent", Query: "data.Value"}]}
+      - { SelectEventType: "AttributeUpdated", Select: "data.Group == Group && data.Index == Index && data.Name == 'Message1'",
+            ModelUpdate: [ {Property: "task_msg_1", Query: "data.Value"}]}
+      - { SelectEventType: "AttributeUpdated", Select: "data.Group == Group && data.Index == Index && data.Name == 'MessageID1'",
+            ModelUpdate: [ {Property: "task_msg_1_id", Query: "data.Value"}]}
+      #- { SelectEventType: "AttributeUpdated", Select: "data.Group == Group && data.Index == Index && (data.Name == 'MessageArg1-1' || data.Name == 'MessageArg1-2' || data.Name == 'MessageArg1-3')",
+      #ModelUpdate: #[ {Property: "task_msg_1_args", Query: "update_task_args(data.Value, data.Name)"}]}
+
+
     fan:
       - { SelectEventType: "FanEvent", Select: "data.ObjectHeader.FQDD == DM_FQDD",
             ModelUpdate: [
@@ -1372,19 +1393,6 @@ mappings:
         - {Property: "name",             FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Name" }
         - {Property: "sled_profile",     FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "SledProfile" }
         - {Property: "sub_chassis_type", FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "ChassisSubType" }
-
-    tasks:
-        - {Property: "task_name", FQDD: "System.Chassis.1", Group: "{GROUP}", Index: "{INDEX}", Name: "Name"}
-        - {Property: "task_state", FQDD: "System.Chassis.1", Group: "{GROUP}", Index: "{INDEX}", Name: "TaskState"}
-        - {Property: "task_status", FQDD: "System.Chassis.1", Group: "{GROUP}", Index: "{INDEX}", Name: "TaskStatus"}
-        - {Property: "task_start", FQDD: "System.Chassis.1", Group: "{GROUP}", Index: "{INDEX}", Name: "StartTime"}
-        - {Property: "task_end", FQDD: "System.Chassis.1", Group: "{GROUP}", Index: "{INDEX}", Name: "EndTime"}
-        - {Property: "task_percent", FQDD: "System.Chassis.1", Group: "{GROUP}", Index: "{INDEX}", Name: "PercentComplete"}
-        - {Property: "task_msg_1", FQDD: "System.Chassis.1", Group: "{GROUP}", Index: "{INDEX}", Name: "Message1"}
-        - {Property: "task_msg_1_arg1", FQDD: "System.Chassis.1", Group: "{GROUP}", Index: "{INDEX}", Name: "MessageArg1-1"}
-        - {Property: "task_msg_1_arg2", FQDD: "System.Chassis.1", Group: "{GROUP}", Index: "{INDEX}", Name: "MessageArg1-2"}
-        - {Property: "task_msg_1_arg3", FQDD: "System.Chassis.1", Group: "{GROUP}", Index: "{INDEX}", Name: "MessageArg1-3"}
-        - {Property: "task_msg_1_id", FQDD: "System.Chassis.1", Group: "{GROUP}", Index: "{INDEX}", Name: "MessageID1"}
 
     firmware/inventory:
         - {Property: "fw_device_class",     FQDD: "{FQDD}", Group: "FWInventory", Index: "1", Name: "DeviceClass" }
