@@ -188,7 +188,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	_, updSvcVw, _ := instantiateSvc.Instantiate("update_service", map[string]interface{}{})
 
 	updSvcVw.ApplyOption(
-		uploadSvc.WithUpload(ctx, "upload.firmwareUpdate", "/FirmwareInventory", pumpSvc.NewPumpAction(60)),
+		uploadSvc.WithUpload(ctx, "upload.firmwareUpdate", "/FirmwareInventory", pumpSvc.NewPumpAction(300)),
 	)
 
 	// VIPER Config:

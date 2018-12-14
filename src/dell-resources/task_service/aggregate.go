@@ -5,6 +5,7 @@ import (
     "context"
     "sync"
     "fmt"
+    "errors"
 
     "github.com/superchalupa/sailfish/src/ocp/view"
     "github.com/superchalupa/sailfish/src/log"
@@ -18,6 +19,32 @@ import (
 )
 
 func InitTask(logger log.Logger, instantiateSvc *testaggregate.Service) {
+
+    //TODO: figure out what exactly updating the args should actually do
+    /*awesome_mapper2.AddFunction("update_task_args", func (args ... interface{}) (interface{}, error) {
+      task_arg, ok := args[0].(string)
+      if !ok {
+        logger.Crit("Mapper configuration error: task arg not passed as string", "args[0]", args[0])
+        return nil, errors.New("Mapper configuration error: task arg not passed as string")
+      }
+      if task_arg == "" {
+        return nil, nil
+      }
+      task_arg_name, _ := args[1].(string) //this should always be a string
+      attributes, ok := attrModel.GetPropertyOkUnlocked("task_msg_1_args")
+    }*/
+
+    awesome_mapper2.AddFunction("map_task_state", func(args ...interface{}) (interface{}, error) {
+      task_state, ok := args[0].(string)
+      if !ok {
+        logger.Crit("Mapper configuration error: task state not passed as string", "args[0]", args[0])
+        return nil, errors.New("Mapper configuration error: task state not passed as string")
+      }
+      if task_state == "In_Progress" {
+        return "Running", nil
+      }
+      return task_state, nil
+    })
 
     var syncModels func(m *model.Model, updates []model.Update)
     type newtask struct {
@@ -89,6 +116,7 @@ func InitTask(logger log.Logger, instantiateSvc *testaggregate.Service) {
 
           // index, namemap := range taskMap
 
+          // don't allow a task to be created until it has all of its properties populated
           for groupid, taskMap := range taskMaps {
             for index, namemap := range taskMap {
               id_raw, ok := namemap["Id"]
@@ -122,6 +150,9 @@ func InitTask(logger log.Logger, instantiateSvc *testaggregate.Service) {
               if !ok || state == "" {
                 logger.Debug("Did not get task state as a valid string")
                 continue
+              }
+              if state == "In_Progress" {
+                state = "Running"
               }
 
               status_raw, ok := namemap["TaskStatus"]

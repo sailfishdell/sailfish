@@ -17,6 +17,11 @@ import (
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
 )
 
+type syncEvent interface {
+	Add(int)
+	Done()
+}
+
 type LoginRequest struct {
 	UserName string
 	Password string
@@ -192,9 +197,19 @@ func (c *POST) startSessionDeleteTimer(sessionVw *view.View, timeout int) {
 		// loop forever
 		for {
 			select {
-			case <-refreshListener.Inbox():
+			case event := <-refreshListener.Inbox():
+				// have to mark the event complete if we don't use Wait and take it off the bus ourselves
+				if e, ok := event.(syncEvent); ok {
+					e.Done()
+				}
+
 				continue // still alive for now! start over again...
-			case <-deleteListener.Inbox():
+			case event := <-deleteListener.Inbox():
+				// have to mark the event complete if we don't use Wait and take it off the bus ourselves
+				if e, ok := event.(syncEvent); ok {
+					e.Done()
+				}
+
 				return // it's gone, all done here
 			case <-time.After(time.Duration(timeout) * time.Second):
 				c.commandHandler.HandleCommand(ctx, &domain.RemoveRedfishResource{ID: sessionUUID, ResourceURI: sessionURI})
