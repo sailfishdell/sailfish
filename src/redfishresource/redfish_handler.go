@@ -412,6 +412,9 @@ func handleSelect(r *http.Request, d *HTTPCmdProcessedData) *HTTPCmdProcessedDat
 
 		// WORKAROUND FOR BROKEN MSM
 		selectQuery = append(selectQuery, strings.Split("Attributes/"+i, "/"))
+		selectQuery = append(selectQuery, []string{"Id"})
+		selectQuery = append(selectQuery, []string{"Name"})
+		selectQuery = append(selectQuery, []string{"Description"})
 	}
 
 	res, ok := d.Results.(map[string]interface{})
