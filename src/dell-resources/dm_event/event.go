@@ -213,9 +213,9 @@ type StorageVirtualObjEventData struct {
 	RaidObjHeader RaidObjectHeader `mapstructure:"raidObjheader"`
 	BlockSize     int              `mapstructure:"blockSize"`
 	Capacity      int64            `mapstructure:"size"`
-	Encrypted     uint32              `mapstructure:"attributes"`
+	Encrypted     uint32           `mapstructure:"attributes"`
 	OptimumIoSize int              `mapstructure:"stripeSize"`
-	VolumeType    uint32              `mapstructure:"raidLevel"`
+	VolumeType    uint32           `mapstructure:"raidLevel"`
 	Id            string           `maspstructure:"fqdd"`
 	Description   string
 }

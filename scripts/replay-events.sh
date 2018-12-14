@@ -23,7 +23,12 @@ do
      echo "$line" > $tmpfile
       $CURLCMD --fail -f $BASE/api/Event%3AInject -d  @$tmpfile
 
+
       if [ -n "$singlestep" ]; then  read -p "Paused" pause; fi
+
+      if [[ $line == *"ComponentEvent"* ]]; then
+          sleep 7
+      fi
 
   # rate limit requests, if needed:
   #    i=$((i+1))

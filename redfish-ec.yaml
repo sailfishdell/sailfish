@@ -45,7 +45,27 @@ views:
         #"instantiate('sessionservice')",
         "instantiate('telemetry_service')",
         "instantiate('task_service')",
+        "instantiate('non-compliant', 'FQDD', 'LCD.Chassis.1')",
+        "instantiate('non-compliant','FQDD', 'QuickSync.Chassis.1')",
+        "instantiate('non-compliant', 'FQDD', 'ControlPanel.Chassis.1')",
       ]
+
+  # Needs to be fixed, lcd, quicksync, control_panel is not compliant.
+  "non-compliant":
+      "Logger": ["module", "FQDD"]
+      "Models":
+        "default":  { "unique_name": "FQDD"}
+      "Controllers":
+        - "fn": "ARMapper"
+          "params": {"modelname": "default", "cfgsection": "firmware/inventory", "mappinguniquename": "'fw_mapper_manager:' + FQDD ", "AddToView": "ar_mapper_inv"}
+      "View":
+        - "fn": "linkModel"
+          "params": {"existing": "default", "linkname": "swinv"}
+        - "fn": "with_URI"
+          "params":  " '/redfish/' + FQDD"
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+      "Aggregate": "root"
 
   "chassis":
       "Logger": ["module", "Chassis"]
@@ -388,11 +408,14 @@ views:
         "default":  {
             "unique_name": "FQDD", "connect_types_supported": "array()", "manager_for_chassis": "array('/redfish/v1/Chassis/System.Chassis.1')",
             "redundancy_uris": "array(rooturi + '/Managers/' + FQDD + '/Redundancy')" }
+        "swinv_fpga": {}
       "Controllers":
         - "fn": "ARMapper"
           "params": {"modelname": "default", "cfgsection": "firmware/inventory", "mappinguniquename": "'fw_mapper_manager:' + FQDD ", "AddToView": "ar_mapper_inv"}
         - "fn": "ARMapper"
           "params": {"modelname": "default", "cfgsection": "Managers/CMC.Integrated", "mappinguniquename": "'manager_mapper:' + FQDD ", "AddToView": "ar_mapper"}
+        - "fn": "ARMapper"
+          "params": {"modelname": "swinv_fpga", "cfgsection": "fpga_inventory", "mappinguniquename": "'fw_mapper_fpga_manager:' + FQDD ", "AddToView": "ar_mapper_inv"}
         - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "health", "uniquename": "'am2_health_manger_' + FQDD", "passthru": {"health_fqdd": "'System.Chassis.1#' + FQDD"} }
       "View":
@@ -576,11 +599,11 @@ views:
   "firmware_instance":
       "Logger": ["module", "firmware_instance"]
       "Models":
-        "default": {"name": "name", "version": "version", "updateable": "updateable", "comp_ver_tuple": "compVerTuple", "id": "id"}
+        "default": {"name": "name", "version": "version", "updateable": "updateable", "install_date": "installDate", "comp_ver_tuple": "compVerTuple", "id": "id"}
       "Controllers":
       "View":
         - "fn": "with_URI"
-          "params": "rooturi + '/UpdateService/FirmwareInventory/Installed-' + compVerTuple"
+          "params": "rooturi + '/UpdateService/FirmwareInventory/' + compVerTuple"
         - "fn": "stdFormatters"
           "params":
       "Aggregate": "firmware_instance"
@@ -599,7 +622,7 @@ views:
         "default":  {"members": "array()"}
       "Controllers":
         - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + view.GetURI()", "passthru": {'collection_uri': 'view.GetURI()'} }
+          "params": {"modelname": "default", "cfgsection": "collection_w_hash", "uniquename": "'collection_' + view.GetURI()", "passthru": {'collection_uri': 'view.GetURI()'} }
         - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "faultlist", "uniquename": "'collection_faultlist_' + view.GetURI()", "passthru": {'collection_uri': 'view.GetURI()'} }
       "View":
@@ -620,6 +643,8 @@ views:
         - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "health", "uniquename": "'am2_health_chassis_' + FQDD", "passthru": {"health_fqdd": "'System.Chassis.1#' + FQDD"} }
       "View":
+        - "fn": "linkModel"
+          "params": {"existing": "default", "linkname": "swinv"}
         - "fn": "withModel"
           "params": {"name": "global_health", "expr": "globalHealthModel"}
         - "fn": "linkModel"
@@ -695,8 +720,8 @@ views:
         "instantiate('slotconfigcollection', 'parenturi', rooturi + '/Chassis/' + FQDD, 'FQDD', FQDD)",
         "instantiate('subsyshealth', 'parentid', 'view.GetUUID()', 'parenturi', rooturi + '/Chassis/' + FQDD, 'FQDD', FQDD)",
 
-        ]
 
+        ]
   "power":
       "Logger": ["module", "Power"]
       "Models":
@@ -936,7 +961,7 @@ views:
   "subsyshealth":
       "Logger": ["module", "subsystemhealth"]
       "Models":
-        "default": {}
+        "default":  {"unique_name": "FQDD", "managed_by": "array(rooturi + '/Chassis/System.Chassis.1')"}
       "Controllers":
         - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "generate_health_status", "uniquename": "'subsyshealth_' + view.GetURI()", "passthru": {} }
@@ -1013,10 +1038,10 @@ views:
       "Controllers":
       "View":
         - "fn": "with_URI"
-          "params": "rooturi + '/TaskService'"
+          "params": "rooturi + '/TaskServices'"
       "Aggregate": "task_service"
       "ExecPost": [
-        "instantiate('task_service_tasks', 'parenturi', rooturi + '/TaskService/')",
+        "instantiate('task_service_tasks', 'parenturi', rooturi + '/TaskServices/')",
       ]
 
   "task_service_tasks":
@@ -1047,8 +1072,6 @@ views:
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/TaskServices/Tasks/' + task_id"
-        - "fn": "with_URI"
-          "params": "rooturi + '/TaskService/Tasks/' + task_id"
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
         - "fn": "stdFormatters"
@@ -1134,6 +1157,15 @@ awesome_mapper:
       - { SelectEventType: "RedfishResource:removed",
           Select: "nohash(data.ResourceURI) && baseuri(data.ResourceURI) == collection_uri ",
           ModelUpdate: [ {Property: "members", Query: "removefromset(model, propname, data.ResourceURI)"} ]}
+
+    collection_w_hash:
+      - { SelectEventType: "RedfishResource:created",
+          Select: "baseuri(data.ResourceURI) == collection_uri ",
+          ModelUpdate: [ {Property: "members", Query: "addtoset(model, propname, data.ResourceURI)"} ]}
+      - { SelectEventType: "RedfishResource:removed",
+          Select: "baseuri(data.ResourceURI) == collection_uri ",
+          ModelUpdate: [ {Property: "members", Query: "removefromset(model, propname, data.ResourceURI)"} ]}
+
 
     power_supply_uris:
       - { SelectEventType: "RedfishResource:created",
@@ -1390,18 +1422,19 @@ mappings:
         - {Property: "fw_version",          FQDD: "{FQDD}", Group: "FWInventory", Index: "1", Name: "Version" }
         - {Property: "fw_version_sequence", FQDD: "{FQDD}", Group: "FWInventory", Index: "1", Name: "VersionSequence" }
 
+
     fpga_inventory:
-        - {Property: "device_class",     FQDD: "{FQDD}", Group: "FWInventory", Index: "1", Name: "DeviceClass" }
-        - {Property: "description",      FQDD: "{FQDD}", Group: "FWInventory", Index: "1", Name: "Description"}
-        - {Property: "device_context",   FQDD: "{FQDD}", Group: "FWInventory", Index: "1", Name: "DeviceContext" }
-        - {Property: "device_instance",  FQDD: "{FQDD}", Group: "FWInventory", Index: "1", Name: "DeviceInstance" }
-        - {Property: "fqdd",             FQDD: "{FQDD}", Group: "FWInventory", Index: "1", Name: "FQDD" }
-        - {Property: "name",             FQDD: "{FQDD}", Group: "FWInventory", Index: "1", Name: "Name" }
-        - {Property: "label",            FQDD: "{FQDD}", Group: "FWInventory", Index: "1", Name: "Label" }
-        - {Property: "install_date",     FQDD: "{FQDD}", Group: "FWInventory", Index: "1", Name: "InstallDate" }
-        - {Property: "updateable",       FQDD: "{FQDD}", Group: "FWInventory", Index: "1", Name: "Updateable" }
-        - {Property: "version",          FQDD: "{FQDD}", Group: "FWInventory", Index: "1", Name: "Version" }
-        - {Property: "version_sequence", FQDD: "{FQDD}", Group: "FWInventory", Index: "1", Name: "VersionSequence" }
+        - {Property: "fw_device_class",     FQDD: "{FQDD}", Group: "FPGAFWInventory", Index: "1", Name: "DeviceClass" }
+        - {Property: "fw_description",      FQDD: "{FQDD}", Group: "FPGAFWInventory", Index: "1", Name: "Description"}
+        - {Property: "fw_device_context",   FQDD: "{FQDD}", Group: "FPGAFWInventory", Index: "1", Name: "DeviceContext" }
+        - {Property: "fw_device_instance",  FQDD: "{FQDD}", Group: "FPGAFWInventory", Index: "1", Name: "DeviceInstance" }
+        - {Property: "fw_fqdd",             FQDD: "{FQDD}", Group: "FPGAFWInventory", Index: "1", Name: "FQDD" }
+        - {Property: "fw_name",             FQDD: "{FQDD}", Group: "FPGAFWInventory", Index: "1", Name: "Name" }
+        - {Property: "fw_label",            FQDD: "{FQDD}", Group: "FPGAFWInventory", Index: "1", Name: "Label" }
+        - {Property: "fw_install_date",     FQDD: "{FQDD}", Group: "FPGAFWInventory", Index: "1", Name: "InstallDate" }
+        - {Property: "fw_updateable",       FQDD: "{FQDD}", Group: "FPGAFWInventory", Index: "1", Name: "Updateable" }
+        - {Property: "fw_version",          FQDD: "{FQDD}", Group: "FPGAFWInventory", Index: "1", Name: "Version" }
+        - {Property: "fw_version_sequence", FQDD: "{FQDD}", Group: "FPGAFWInventory", Index: "1", Name: "VersionSequence" }
 
     # map AR entries to back end model
     PSU/PSU.Slot:

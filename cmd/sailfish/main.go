@@ -122,7 +122,7 @@ func main() {
 			basicauth.MakeHandlerFunc(chainAuth,
 				chainAuth("UNKNOWN", []string{"Unauthenticated"}))))
 
-	m.PathPrefix("/redfish/v1").Methods("GET", "PUT", "POST", "PATCH", "DELETE", "HEAD", "OPTIONS").HandlerFunc(handlerFunc)
+	m.PathPrefix("/redfish").Methods("GET", "PUT", "POST", "PATCH", "DELETE", "HEAD", "OPTIONS").HandlerFunc(handlerFunc)
 
 	// SSE
 	chainAuthSSE := func(u string, p []string) http.Handler { return http_sse.NewSSEHandler(domainObjs, logger, u, p) }

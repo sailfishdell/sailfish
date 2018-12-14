@@ -37,7 +37,7 @@ logs:
       PrintFunction: true
 
     # (DISABLED) log stuff on a module by module basis to FILE
-    - Enabled: false
+    - Enabled: false 
       FileName: "/var/log/sailfish.log"
       Level: "debug"
       PrintFile: true
@@ -50,16 +50,20 @@ logs:
         # "Managers/CMC.Integrated.1". For the template config, we only
         # specify the top levels
         - name: "Managers/CMC.Integrated"
-          level: "warn"
+          level: "crit"
+
+
+        - name: "mgrChassis"
+          level: "debug"
 
         - name: "Chassis/CMC.Integrated"
-          level: "warn"
+          level: "crit"
 
         - name: "Chassis/System.Modular"
-          level: "warn"
+          level: "crit"
 
         - name: "Chassis/IOM.Slot"
-          level: "warn"
+          level: "crit"
 
         - name: "Chassis/System.Chassis/Power"
           level: "warn"
@@ -78,7 +82,7 @@ logs:
           level: "warn"
 
         - name: "ec"
-          level: "warn"
+          level: "debug"
 
         - name: "testview"
           level: "warn"

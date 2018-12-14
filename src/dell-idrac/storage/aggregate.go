@@ -164,7 +164,7 @@ func RegisterAggregate(s *testaggregate.Service) {
 						"FailurePredicted@meta":  vw.Meta(view.PropGET("failure_predicted")),
 						"HotspareType@meta":      vw.Meta(view.PropGET("hotspare_type")),
 						"Id@meta@meta":           vw.Meta(view.PropGET("unique_name")),
-						"Identifiers@meta":     vw.Meta(view.GETProperty("identifiers"), view.GETModel("default")),
+						"Identifiers@meta":       vw.Meta(view.GETProperty("identifiers"), view.GETModel("default")),
 						"Links": map[string]interface{}{
 							"Chassis@meta":             vw.Meta(view.GETProperty("enclosure_uris"), view.GETFormatter("formatOdataList"), view.GETModel("default")),
 							"Volumes@meta":             vw.Meta(view.GETProperty("volume_uris"), view.GETFormatter("formatOdataList"), view.GETModel("default")),
@@ -321,12 +321,12 @@ func RegisterAggregate(s *testaggregate.Service) {
 								"target": vw.GetActionURI("volume.initialize"),
 							},
 						},
-						"BlockSizeBytes@meta": vw.Meta(view.PropGET("block_size")),  //Done
-						"CapacityBytes@meta":  vw.Meta(view.PropGET("capacity")),    //Done
-						"Description@meta":    vw.Meta(view.PropGET("description")), //Done
-						"Encrypted@meta":      vw.Meta(view.PropGET("encrypted")),   //DONE
-						"EncryptionTypes@meta":     vw.Meta(view.PropGET("encryptiontypes")),
-						"Id@meta":             vw.Meta(view.PropGET("unique_name")),
+						"BlockSizeBytes@meta":  vw.Meta(view.PropGET("block_size")),  //Done
+						"CapacityBytes@meta":   vw.Meta(view.PropGET("capacity")),    //Done
+						"Description@meta":     vw.Meta(view.PropGET("description")), //Done
+						"Encrypted@meta":       vw.Meta(view.PropGET("encrypted")),   //DONE
+						"EncryptionTypes@meta": vw.Meta(view.PropGET("encryptiontypes")),
+						"Id@meta":              vw.Meta(view.PropGET("unique_name")),
 						"Identifiers@meta":     vw.Meta(view.GETProperty("identifiers"), view.GETModel("default")),
 						"Links": map[string]interface{}{
 							"Drives@meta":             vw.Meta(view.GETProperty("drive_uris"), view.GETFormatter("formatOdataList"), view.GETModel("default")),
@@ -371,8 +371,8 @@ func RegisterAggregate(s *testaggregate.Service) {
 			return []eh.Command{
 				&domain.CreateRedfishResource{
 					ResourceURI: vw.GetURI(),
-					Type: "#Settings.v1_1_0.Settings",
-						Context: params["rooturi"].(string) + "/$metadata#Settings.Settings",
+					Type:        "#Settings.v1_1_0.Settings",
+					Context:     params["rooturi"].(string) + "/$metadata#Settings.Settings",
 					Privileges: map[string]interface{}{
 						"GET": []string{"Login"},
 					},
@@ -392,8 +392,8 @@ func RegisterAggregate(s *testaggregate.Service) {
 			return []eh.Command{
 				&domain.CreateRedfishResource{
 					ResourceURI: vw.GetURI(),
-					Type: "#Settings.v1_1_0.Settings",
-						Context: params["rooturi"].(string) + "/$metadata#Settings.Settings",
+					Type:        "#Settings.v1_1_0.Settings",
+					Context:     params["rooturi"].(string) + "/$metadata#Settings.Settings",
 					Privileges: map[string]interface{}{
 						"GET": []string{"Login"},
 					},

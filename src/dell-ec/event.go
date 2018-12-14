@@ -25,27 +25,31 @@ type ComponentEventData struct {
 
 type LogEventData struct {
 	Description string
-	Name        string
 	EntryType   string
 	Id          int
-	MessageArgs []string
 	Created     string
 	Message     string
+	MessageArgs []string
 	MessageID   string
-	Category    string
+	Name        string
 	Severity    string
+	Category    string
 	Action      string
 }
 
 type FaultEntryAddData struct {
-	Description string
-	Name        string
-	EntryType   string
-	Id          int
-	MessageArgs []string
-	Message     string
-	MessageID   string
-	Category    string
-	Severity    string
-	Action      string
+	Description   string
+	EntryType     string
+	Id            int
+	Created       string
+	Message       string
+	MessageArgs   []string
+	MessageID     string
+	Name          string
+	Severity      string
+	Category      string
+	Action        string
+	CompSubSystem string
+	SubSystem     string
+	FQDD          string
 }

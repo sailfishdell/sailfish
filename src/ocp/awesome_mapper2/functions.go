@@ -350,7 +350,7 @@ func init() {
 		fmt.Printf("in identifier_gen()\n")
 		wwnStr := args[0].(string)
 		fmt.Printf("in identifier_gen() -- %s\n", wwnStr)
-        wwn, _ := strconv.ParseUint(args[0].(string), 10, 64)
+		wwn, _ := strconv.ParseUint(args[0].(string), 10, 64)
 		if wwn > 0x00 {
 			dur_name := fmt.Sprintf("%X", wwn)
 			dur_format := "NAA"
@@ -364,7 +364,7 @@ func init() {
 
 	AddFunction("encryptionstatus", func(args ...interface{}) (interface{}, error) {
 		fmt.Printf("in encryption types()\n")
-        var attrib uint32 = uint32(args[0].(float64))
+		var attrib uint32 = uint32(args[0].(float64))
 		if attrib&0x01 == 0x01 {
 			return "true", nil
 		} else {
@@ -374,7 +374,7 @@ func init() {
 
 	AddFunction("volumetype", func(args ...interface{}) (interface{}, error) {
 		fmt.Printf("in volume types()\n")
-        var raidlevel uint32 = uint32(args[0].(float64))
+		var raidlevel uint32 = uint32(args[0].(float64))
 		if raidlevel&0x01 == 0x01 {
 			return "RawDevice", nil
 		} else if raidlevel&0x00000002 == 0x00000002 {
@@ -398,9 +398,8 @@ func init() {
 		return vStr, nil
 	})
 
-
 	AddFunction("mediatype", func(args ...interface{}) (interface{}, error) {
-        var attrib uint32 = uint32(args[0].(float64))
+		var attrib uint32 = uint32(args[0].(float64))
 		if attrib&0x02 == 0x02 {
 			return "SSD", nil
 		} else {
@@ -441,7 +440,6 @@ func init() {
 		}
 		return vStr, nil
 	})
-
 
 	AddFunction("controllerprotocols", func(args ...interface{}) (interface{}, error) {
 		var vStr []string

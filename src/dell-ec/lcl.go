@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sort"
 	"strconv"
 	"time"
 
@@ -17,8 +18,17 @@ import (
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
 )
 
+func in_array(a string, list []string) bool {
+	for _, b := range list {
+		if b == a {
+			return true
+		}
+	}
+	return false
+}
+
 func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.CommandHandler, d *domain.DomainObjects) {
-	MAX_LOGS := 51
+	MAX_LOGS := 1001
 	lclogs := []eh.UUID{}
 
 	awesome_mapper2.AddFunction("addlclog", func(args ...interface{}) (interface{}, error) {
@@ -40,13 +50,13 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 		aggID, ok := d.GetAggregateIDOK(uri)
 		if ok {
 			logger.Crit("Mapper configuration error: URI already exists", "aggID", aggID, "uri", uri)
-			return nil, errors.New("lclog: URI already exists %s")
+			return nil, errors.New("skip! url already exists " + uri)
 		}
 
 		timeF, err := strconv.ParseFloat(logEntry.Created, 64)
 		if err != nil {
-			logger.Crit("Mapper configuration error: Time information can not be parsed", "time", logEntry.Created, "err", err)
-			return nil, errors.New("Mapper configuration error: Time information can not be parsed")
+			logger.Debug("Mapper configuration error: Time information can not be parsed", "time", logEntry.Created, "err", err, "set time to", 0)
+			timeF = 0
 		}
 		createdTime := time.Unix(int64(timeF), 0)
 
@@ -104,6 +114,7 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 
 	awesome_mapper2.AddFunction("addfaultentry", func(args ...interface{}) (interface{}, error) {
 		logUri, ok := args[0].(string)
+		//fmt.Printf("%s", logUri)
 		if !ok {
 			logger.Crit("Mapper configuration error: uri not passed as string", "args[0]", args[0])
 			return nil, errors.New("Mapper configuration error: uri not passed as string")
@@ -114,8 +125,16 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 			return nil, errors.New("Mapper configuration error: log event data not passed")
 		}
 
+		timeF, err := strconv.ParseFloat(faultEntry.Created, 64)
+		if err != nil {
+			logger.Debug("Mapper configuration error: Time information can not be parsed", "time", faultEntry.Created, "err", err, "set time to", 0)
+			timeF = 0
+		}
+		createdTime := time.Unix(int64(timeF), 0)
+
 		uuid := eh.NewUUID()
-		uri := fmt.Sprintf("%s/%d", logUri, faultEntry.Id)
+		uri := fmt.Sprintf("%s/%s", logUri, faultEntry.Name)
+		//fmt.Printf("%s/%s", logUri, faultEntry.Name)
 
 		go ch.HandleCommand(
 			context.Background(),
@@ -128,16 +147,26 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 					"GET": []string{"ConfigureManager"},
 				},
 				Properties: map[string]interface{}{
-					"Description": faultEntry.Description,
-					"Name":        faultEntry.Name,
-					"EntryType":   faultEntry.EntryType,
-					"Id":          faultEntry.Id,
-					"MessageArgs": faultEntry.MessageArgs,
-					"Message":     faultEntry.Message,
-					"MessageID":   faultEntry.MessageID,
-					"Category":    faultEntry.Category,
-					"Severity":    faultEntry.Severity,
-					"Action":      faultEntry.Action,
+					"Created":                 createdTime,
+					"Description":             "FaultList Entry " + faultEntry.FQDD,
+					"Name":                    "FaultList Entry " + faultEntry.FQDD,
+					"EntryType":               faultEntry.EntryType,
+					"Id":                      faultEntry.Name,
+					"MessageArgs":             faultEntry.MessageArgs,
+					"MessageArgs@odata.count": len(faultEntry.MessageArgs),
+					"Message":                 faultEntry.Message,
+					"MessageId":               faultEntry.MessageID,
+					"Category":                faultEntry.Category,
+					"Oem": map[string]interface{}{
+						"Dell": map[string]interface{}{
+							"@odata.type": "#DellLogEntry.v1_0_0.LogEntrySummary",
+							"FQDD":        faultEntry.FQDD,
+							"SubSystem":   faultEntry.SubSystem,
+						}},
+					"OemRecordFormat": "Dell",
+					"Severity":        faultEntry.Severity,
+					"Action":          faultEntry.Action,
+					"Links":           map[string]interface{}{},
 				}})
 
 		return true, nil
@@ -148,25 +177,27 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 
 		resourceURI, ok := args[0].(string)
 		if !ok || resourceURI == "" {
-			//fmt.Printf("no resource uri passed or not string\n")
+			//fmt.Printf("has_swinv: no resource uri passed or not string\n")
 			return false, nil
 		}
 
+		//fmt.Printf("has_swinv URI (%s)\n", resourceURI)
+
 		v, err := domain.InstantiatePlugin(domain.PluginType(resourceURI))
 		if err != nil || v == nil {
-			//fmt.Printf("couldn't instantiate view for URI (%s): %s\n", resourceURI, err)
+			//fmt.Printf("has_swinv couldn't instantiate view for URI (%s): %s\n", resourceURI, err)
 			return false, nil
 		}
 
 		vw, ok := v.(*view.View)
 		if !ok {
-			//fmt.Printf("instantiated non-view\n")
+			//fmt.Printf("has_swinv instantiated non-view\n")
 			return false, nil
 		}
 
 		mdl := vw.GetModel("swinv")
 		if mdl == nil {
-			//fmt.Printf("NO SWINV MODEL (not an error)\n")
+			//fmt.Printf("has_swinv NO SWINV MODEL (not an error)\n")
 			return false, nil
 		}
 
@@ -175,8 +206,8 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 
 	var syncModels func(m *model.Model, updates []model.Update)
 	type newfirm struct {
-		uri string
-		mdl *model.Model
+		uri  string
+		mdls []*model.Model
 	}
 	newchan := make(chan newfirm, 90)
 	trigger := make(chan struct{})
@@ -198,15 +229,19 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 			return false, nil
 		}
 
-		mdl := vw.GetModel("swinv")
-		if mdl == nil {
+		mdls := vw.GetModels("swinv")
+		if mdls == nil {
 			return false, nil
 		}
 
-		mdl.AddObserver("swinv", syncModels)
+		for _, mdl := range mdls {
+			//fmt.Printf("passing swinv to channel with uri %s\n", resourceURI)
+			mdl.AddObserver("swinv", syncModels)
+		}
 
-		newchan <- newfirm{resourceURI, mdl}
+		newchan <- newfirm{resourceURI, mdls}
 
+		//fmt.Printf("URI is in %s\n", resourceURI)
 		return true, nil
 	})
 
@@ -218,7 +253,7 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 	}
 
 	go func() {
-		swinvList := map[string]*model.Model{}
+		swinvList := map[string][]*model.Model{}
 		for {
 
 			// Wait for this thread to be kicked
@@ -227,8 +262,8 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 			select {
 			case <-trigger:
 			case n := <-newchan:
-				swinvList[n.uri] = n.mdl
-				fmt.Printf("NEW model from URI: %s\n", n.uri)
+				swinvList[n.uri] = n.mdls
+				//fmt.Printf("NEW model from URI: %s\n", n.uri)
 				continue
 			}
 
@@ -236,69 +271,121 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 			uri_mappings := map[string][]string{}
 
 			// scan through each model and build our new inventory uris
-			for uri, mdl := range swinvList {
-				fqddRaw, ok := mdl.GetPropertyOk("fw_fqdd")
-				if !ok || fqddRaw == nil {
-					logger.Debug("DID NOT GET fqdd raw")
-					continue
-				}
+			// need to iterate through models.  With the same work flow below.. When iteration is complete... need to add uris and fqdds to model.
+			for uri, mdls := range swinvList {
+				for _, mdl := range mdls {
+					//fmt.Printf("swinvList uri is %s\n", uri)
+					fqddRaw, ok := mdl.GetPropertyOk("fw_fqdd")
+					if !ok || fqddRaw == nil {
+						logger.Debug("swinv DID NOT GET fqdd raw with " + uri)
+						continue
+					}
 
-				fqdd, ok := fqddRaw.(string)
-				if !ok || fqdd == "" {
-					logger.Debug("DID NOT GET fqdd stringg")
-					continue
-				}
+					fqdd, ok := fqddRaw.(string)
+					if !ok || fqdd == "" {
+						logger.Debug("swinv DID NOT GET fqdd string with " + uri)
+						continue
+					}
 
-				classRaw, ok := mdl.GetPropertyOk("fw_device_class")
-				if !ok || classRaw == nil {
-					logger.Debug("DID NOT GET device_class raw")
-					continue
-				}
+					classRaw, ok := mdl.GetPropertyOk("fw_device_class")
+					if !ok || classRaw == nil {
+						logger.Debug("swinv DID NOT GET device_class raw with " + uri)
+						continue
+					}
 
-				class, ok := classRaw.(string)
-				if !ok || class == "" {
-					logger.Debug("DID NOT GET class string")
-					class = "unknown"
-				}
+					class, ok := classRaw.(string)
+					if !ok || class == "" {
+						logger.Debug("swinv DID NOT GET class string with " + uri)
+						class = "unknown"
+					}
 
-				versionRaw, ok := mdl.GetPropertyOk("fw_version")
-				if !ok || versionRaw == nil {
-					logger.Debug("DID NOT GET version raw")
-					continue
-				}
+					versionRaw, ok := mdl.GetPropertyOk("fw_version")
+					if !ok || versionRaw == nil {
+						logger.Debug("swinv DID NOT GET version raw with " + uri)
+						continue
+					}
 
-				version, ok := versionRaw.(string)
-				if !ok || version == "" {
-					logger.Debug("DID NOT GET version string")
-					version = "unknown"
-				}
+					version, ok := versionRaw.(string)
+					if !ok || version == "" {
+						logger.Debug("swinv DID NOT GET version string with " + uri)
+						version = "unknown"
+					}
 
-				compVerTuple := class + "-" + version
+					compVerTuple := "Installed-" + class + "-" + version
 
-				arr, ok := fqdd_mappings[compVerTuple]
-				if !ok {
-					arr = []string{}
-				}
-				arr = append(arr, fqdd)
-				fqdd_mappings[compVerTuple] = arr
+					arr, ok := fqdd_mappings[compVerTuple]
+					if !ok {
+						arr = []string{}
+					}
+					arr = append(arr, fqdd)
+					fqdd_mappings[compVerTuple] = arr
 
-				uriarr, ok := uri_mappings[compVerTuple]
-				if !ok {
-					uriarr = []string{}
-				}
-				uriarr = append(uriarr, uri)
-				uri_mappings[compVerTuple] = uriarr
+					updateableRaw, ok := mdl.GetPropertyOk("fw_updateable")
+					if !ok {
+						logger.Debug("swinv DID NOT GET updateable string with " + uri)
+						continue
+					}
 
-				if _, ok := firmwareInventoryViews[compVerTuple]; !ok {
-					_, vw, _ := instantiateSvc.Instantiate("firmware_instance", map[string]interface{}{
-						"compVerTuple": compVerTuple,
-						"name":         "TEST",
-						"version":      version,
-						"updateable":   false,
-						"id":           class,
-					})
-					fmt.Printf("add to list ---------> INSTANTIATED: %s\n", vw.GetURI())
-					firmwareInventoryViews[compVerTuple] = vw
+					updateable, ok := updateableRaw.(string)
+					if !ok || updateable == "" || updateable == "Yes" {
+						updateable = "True"
+					} else {
+						updateable = "False"
+					}
+
+					installDateRaw, ok := mdl.GetPropertyOk("fw_install_date")
+					if !ok {
+						logger.Debug("swinv DID NOT GET install date string with " + uri)
+						continue
+					}
+
+					installDate, ok := installDateRaw.(string)
+					if !ok || installDate == "" {
+						logger.Debug("swinv DID NOT GET class string with " + uri)
+						installDate = "1970-01-01T00:00:00Z"
+					}
+
+					nameRaw, ok := mdl.GetPropertyOk("fw_name")
+					if !ok {
+						logger.Debug("swinv DID NOT GET name string with " + uri)
+						continue
+					}
+
+					name, ok := nameRaw.(string)
+					if !ok || name == "" {
+						logger.Debug("swinv DID NOT GET name string with " + uri)
+						name = ""
+					}
+
+					if !in_array(fqdd, arr) {
+						arr = append(arr, fqdd)
+						sort.Strings(arr)
+						fqdd_mappings[compVerTuple] = arr
+					}
+
+					uriarr, ok := uri_mappings[compVerTuple]
+					if !ok {
+						uriarr = []string{}
+					}
+
+					if !in_array(uri, uriarr) {
+						uriarr = append(uriarr, uri)
+						sort.Strings(uriarr)
+						uri_mappings[compVerTuple] = uriarr
+					}
+
+					if _, ok := firmwareInventoryViews[compVerTuple]; !ok {
+						_, vw, _ := instantiateSvc.Instantiate("firmware_instance", map[string]interface{}{
+							"compVerTuple": compVerTuple,
+							"name":         name,
+							"version":      version,
+							"updateable":   updateable,
+							"installDate":  installDate,
+							"id":           class,
+						})
+						//fmt.Printf("add to list ---------> INSTANTIATED: %s\n", vw.GetURI())
+						firmwareInventoryViews[compVerTuple] = vw
+					}
 				}
 			}
 

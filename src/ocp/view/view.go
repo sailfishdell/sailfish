@@ -2,6 +2,8 @@ package view
 
 import (
 	"context"
+	//	"fmt"
+	"strings"
 	"sync"
 
 	eh "github.com/looplab/eventhorizon"
@@ -124,6 +126,20 @@ func (s *View) GetModel(name string) *model.Model {
 	s.RLock()
 	defer s.RUnlock()
 	return s.models[name]
+}
+
+// will return models that has the passed in substring
+func (s *View) GetModels(sub_name string) []*model.Model {
+	namearr := []*model.Model{}
+	s.RLock()
+	defer s.RUnlock()
+	for n, m := range s.models {
+		if strings.Contains(n, sub_name) {
+			namearr = append(namearr, m)
+		}
+	}
+
+	return namearr
 }
 
 func (s *View) GetController(name string) controller {

@@ -142,7 +142,7 @@ func AddECInstantiate(l log.Logger, instantiateSvc *testaggregate.Service) {
 				"DM_FQDD":     "System.Chassis.1#" + strings.Replace(FQDD, "PSU.Slot", "PowerSupply", 1),
 				"ChassisFQDD": ParentFQDD,
 				"FQDD":        FQDD,
-                                "PowerType":   "Power",
+				"PowerType":   "Power",
 			},
 		)
 
@@ -151,7 +151,7 @@ func AddECInstantiate(l log.Logger, instantiateSvc *testaggregate.Service) {
 				"DM_FQDD":     "System.Chassis.1#" + strings.Replace(FQDD, "PSU.Slot", "PowerSupply", 1),
 				"ChassisFQDD": ParentFQDD,
 				"FQDD":        FQDD,
-                                "PowerType":   "Sensors",
+				"PowerType":   "Sensors",
 			},
 		)
 
