@@ -3,7 +3,7 @@ main:
     #options: "openbmc" | "dell_ec" | "mockup"
 
 listen:
-    - http::8080
+    - http::8081
     - https::8443
     - pprof::9080
 
