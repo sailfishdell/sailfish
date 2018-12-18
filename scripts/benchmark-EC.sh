@@ -22,13 +22,13 @@ export goapacheuri=${goapacheuri:-/redfish/v1/Managers/CMC.Integrated.1/Attribut
 export odataliteuri=${goapacheuri:-/redfish/v1/Managers/CMC.Integrated.1}
 
 # run TOP and save results during each run
-export profile=1
+export profile=${profile:-1}
 
 # run basic auth tests for each that supports
-export runbasic=1
+export runbasic=${runbasic:-1}
 
 # run token auth tests for each that supports
-export runtoken=1
+export runtoken=${runtoken:-1}
 
 # either run 'oauthtest token' and set TOKEN= to that value
 #  -or-
