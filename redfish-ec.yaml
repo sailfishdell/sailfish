@@ -3,9 +3,11 @@ main:
     #options: "openbmc" | "dell_ec" | "mockup"
 
 listen:
-    - http::8080
-    - https::8443
-    - pprof::9080
+    - http:localhost:8080
+   # disable direct https listener, uncomment if needed for testing:
+   # - https::8443
+   # disable debug port, uncomment to enable
+   # - pprof::9080
 
 # new features needed:
 #  - link_model
