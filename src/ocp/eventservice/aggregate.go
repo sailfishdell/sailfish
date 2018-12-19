@@ -22,7 +22,7 @@ func RegisterAggregate(s *testaggregate.Service) {
 					Type:        "#EventService.v1_0_2.EventService",
 					Context:     "/redfish/v1/$metadata#EventService.EventService",
 					Privileges: map[string]interface{}{
-						"GET":   []string{"ConfigureManager"},
+						"GET":   []string{"Login"},
 						"PATCH": []string{"ConfigureManager"},
 					},
 					Properties: map[string]interface{}{
@@ -84,7 +84,7 @@ func RegisterAggregate(s *testaggregate.Service) {
 					// Plugin is how we find the POST command handler
 					Plugin: "EventService",
 					Privileges: map[string]interface{}{
-						"GET":    []string{"ConfigureManager"},
+						"GET":    []string{"Login"},
 						"POST":   []string{"ConfigureManager"},
 						"PUT":    []string{"ConfigureManager"},
 						"PATCH":  []string{"ConfigureManager"},
@@ -116,7 +116,7 @@ func RegisterAggregate(s *testaggregate.Service) {
 					// Plugin is how we find the POST command handler
 					Plugin: "EventService",
 					Privileges: map[string]interface{}{
-						"GET":    []string{"ConfigureManager"},
+						"GET":    []string{"Login"},
 						"PUT":    []string{"ConfigureManager"},
 						"PATCH":  []string{"ConfigureManager"},
 						"DELETE": []string{"ConfigureManager"},

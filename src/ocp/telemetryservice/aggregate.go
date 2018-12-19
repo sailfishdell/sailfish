@@ -22,7 +22,7 @@ func RegisterAggregate(s *testaggregate.Service) {
 					Type:        "#TelemetryService.v1_0_0.TelemetryService",
 					Context:     "/redfish/v1/$metadata#TelemetryService.TelemetryService",
 					Privileges: map[string]interface{}{
-						"GET": []string{"Unauthenticated"},
+						"GET": []string{"Login"},
 					},
 					Properties: map[string]interface{}{
 						"Id":             "TelemetryService",
@@ -55,7 +55,7 @@ func RegisterAggregate(s *testaggregate.Service) {
 					Type:        "#TelemetryService.v1_0_0.___TODO___FIXME___",
 					Context:     "/redfish/v1/$metadata#TelemetryService.___TODO___FIXME___",
 					Privileges: map[string]interface{}{
-						"GET": []string{"Unauthenticated"},
+						"GET": []string{"Login"},
 					},
 					Properties: map[string]interface{}{
 						"Id":                       "MetricReportDefinitions",
@@ -73,7 +73,7 @@ func RegisterAggregate(s *testaggregate.Service) {
 					Type:        "#TelemetryService.v1_0_0.___TODO___FIXME___",
 					Context:     "/redfish/v1/$metadata#TelemetryService.___TODO___FIXME___",
 					Privileges: map[string]interface{}{
-						"GET": []string{"Unauthenticated"},
+						"GET": []string{"Login"},
 					},
 					Properties: map[string]interface{}{
 						"Id":                       "MetricReports",

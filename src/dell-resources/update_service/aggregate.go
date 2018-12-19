@@ -110,7 +110,7 @@ func RegisterAggregate(s *testaggregate.Service) {
 					Type:        "#SoftwareInventory.v1_0_0.SoftwareInventory",
 					Context:     params["rooturi"].(string) + "/$metadata#SoftwareInventory.SoftwareInventory",
 					Privileges: map[string]interface{}{
-						"GET": []string{"ConfigureManager"},
+						"GET": []string{"Login"},
 					},
 					Properties: map[string]interface{}{
 						"Status": map[string]interface{}{

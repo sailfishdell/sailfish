@@ -22,7 +22,7 @@ func RegisterCertAggregate(s *testaggregate.Service) {
 					Type:        "#DellCertificateService.v1_0_0.DellCertificateService",
 					Context:     "/redfish/v1/$metadata#DellCertificateService.DellCertificateService",
 					Privileges: map[string]interface{}{
-						"GET": []string{"ConfigureManager"},
+						"GET": []string{"Login"},
 					},
 					Properties: map[string]interface{}{
 						"Id":                             "CertificateService",
@@ -49,7 +49,7 @@ func RegisterCertAggregate(s *testaggregate.Service) {
 					Type:        "#DellCertificateInventoryCollection.DellCertificateInventoryCollection",
 					Context:     "/redfish/v1/$metadata#DellCertificateInventoryCollection.DellCertificateInventoryCollection",
 					Privileges: map[string]interface{}{
-						"GET": []string{"ConfigureManager"},
+						"GET": []string{"Login"},
 					},
 					Properties: map[string]interface{}{
 						"Name":                     "Certificate Inventory Collection",
@@ -69,7 +69,7 @@ func RegisterCertAggregate(s *testaggregate.Service) {
 					Type:        "#DellCertificateInventory.v1_0_0.DellCertificateInventory",
 					Context:     "/redfish/v1/$metadata#DellCertificateInventory.DellCertificateInventory",
 					Privileges: map[string]interface{}{
-						"GET": []string{"ConfigureManager"},
+						"GET": []string{"Login"},
 					},
 					Properties: map[string]interface{}{
 						"Certificate@meta":   vw.Meta(view.PropGET("certificate")),

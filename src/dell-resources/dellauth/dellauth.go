@@ -16,6 +16,7 @@ func MakeHandlerFunc(withUser func(string, []string) http.Handler, chain http.Ha
 
 		username := req.Header.Get("Authnz_user")
 		privs := req.Header.Get("User_priv")
+
 		privsInt, _ := strconv.Atoi(privs)
 		privileges := []string{}
 		if privsInt&0x09 == 0x09 {
@@ -26,6 +27,12 @@ func MakeHandlerFunc(withUser func(string, []string) http.Handler, chain http.Ha
 		}
 		if privsInt&0x0b == 0x0b {
 			privileges = append(privileges, "Login", "ConfigureManager", "ConfigureUser")
+		}
+
+		if username != "" {
+			privileges = append(privileges,
+				"Unauthenticated", "dellauth", "ConfigureSelf_"+username,
+			)
 		}
 
 		if len(privileges) > 0 && username != "" {

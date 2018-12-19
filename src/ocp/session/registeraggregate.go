@@ -21,7 +21,7 @@ func RegisterAggregate(s *testaggregate.Service) {
 					Type:        "#SessionService.v1_0_2.SessionService",
 					Context:     "/redfish/v1/$metadata#SessionService.SessionService",
 					Privileges: map[string]interface{}{
-						"GET":   []string{"ConfigureManager"},
+						"GET":   []string{"Login"},
 						"PATCH": []string{"ConfigureManager"},
 					},
 					Properties: map[string]interface{}{
@@ -56,7 +56,7 @@ func RegisterAggregate(s *testaggregate.Service) {
 					Context:     "/redfish/v1/$metadata#SessionCollection.SessionCollection",
 					Plugin:      "SessionService",
 					Privileges: map[string]interface{}{
-						"GET":    []string{"ConfigureManager"},
+						"GET":    []string{"Login"},
 						"POST":   []string{"Unauthenticated"},
 						"PUT":    []string{"ConfigureManager"},
 						"PATCH":  []string{"ConfigureManager"},
@@ -84,7 +84,7 @@ func RegisterAggregate(s *testaggregate.Service) {
 					Type:        "#Session.v1_0_0.Session",
 					Context:     "/redfish/v1/$metadata#Session.Session",
 					Privileges: map[string]interface{}{
-						"GET":    []string{"ConfigureManager"},
+						"GET":    []string{"Login"},
 						"POST":   []string{"ConfigureManager"},
 						"PUT":    []string{"ConfigureManager"},
 						"PATCH":  []string{"ConfigureManager"},

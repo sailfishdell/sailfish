@@ -56,7 +56,7 @@ func RegisterAggregate(s *testaggregate.Service) {
 					Type:        "#Power.v1_0_2.Power",
 					Context:     params["rooturi"].(string) + "/$metadata#Power.PowerSystem.Chassis.1/Power/$entity",
 					Privileges: map[string]interface{}{
-						"GET": []string{"Unauthenticated"},
+						"GET": []string{"Login"},
 					},
 					Properties: map[string]interface{}{
 						"Id":          "Power",

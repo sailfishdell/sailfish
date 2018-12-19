@@ -75,7 +75,7 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 				Type:        "#LogEntry.v1_0_2.LogEntry",
 				Context:     "/redfish/v1/$metadata#LogEntry.LogEntry",
 				Privileges: map[string]interface{}{
-					"GET": []string{"ConfigureManager"},
+					"GET": []string{"Login"},
 				},
 				Properties: map[string]interface{}{
 					"Created":     createdTime,
@@ -144,7 +144,7 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 				Type:        "#LogEntryCollection.LogEntryCollection",
 				Context:     "/redfish/v1/$metadata#LogEntryCollection.LogEntryCollection",
 				Privileges: map[string]interface{}{
-					"GET": []string{"ConfigureManager"},
+					"GET": []string{"Login"},
 				},
 				Properties: map[string]interface{}{
 					"Created":                 createdTime,

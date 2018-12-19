@@ -23,7 +23,7 @@ func RegisterCMCAggregate(s *testaggregate.Service) {
 					Context:     "/redfish/v1/$metadata#Manager.Manager",
 
 					Privileges: map[string]interface{}{
-						"GET":   []string{"Unauthenticated"},
+						"GET":   []string{"Login"},
 						"PATCH": []string{"ConfigureManager"},
 					},
 					Properties: map[string]interface{}{

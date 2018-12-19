@@ -179,10 +179,10 @@ func RegisterSledAggregate(s *testaggregate.Service) {
 						"GET": []string{"Login"},
 					},
 					Properties: map[string]interface{}{
-					// The below doesn't work because it creates a property with name "".
-					// So for now, the awesome mapper function will just do an update
-					// resource command directly
-					// "@meta": vw.Meta(view.PropGET("health")),
+						// The below doesn't work because it creates a property with name "".
+						// So for now, the awesome mapper function will just do an update
+						// resource command directly
+						// "@meta": vw.Meta(view.PropGET("health")),
 					}},
 
 				&domain.UpdateRedfishResourceProperties{
