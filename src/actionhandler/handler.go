@@ -78,20 +78,6 @@ func (c *POST) Handle(ctx context.Context, a *domain.RedfishResourceAggregate) e
 	return nil
 }
 
-func SelectAction(uri string) func(eh.Event) bool {
-	return func(event eh.Event) bool {
-		if event.EventType() != GenericActionEvent {
-			return false
-		}
-		if data, ok := event.Data().(*GenericActionEventData); ok {
-			if data.ResourceURI == uri {
-				return true
-			}
-		}
-		return false
-	}
-}
-
 type prop interface {
 	GetProperty(string) interface{}
 }
