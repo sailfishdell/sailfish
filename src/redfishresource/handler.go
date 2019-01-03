@@ -15,9 +15,8 @@ import (
 	"github.com/looplab/eventhorizon/commandhandler/aggregate"
 	eventpublisher "github.com/looplab/eventhorizon/publisher/local"
 	repo "github.com/looplab/eventhorizon/repo/memory"
-	"github.com/superchalupa/sailfish/src/eventbus"
-
-	"github.com/superchalupa/sailfish/src/eventwaiter"
+	"github.com/superchalupa/sailfish/src/looplab/eventbus"
+	"github.com/superchalupa/sailfish/src/looplab/eventwaiter"
 )
 
 type waiter interface {

@@ -10,7 +10,7 @@ import (
 	eventpublisher "github.com/looplab/eventhorizon/publisher/local"
 	"github.com/superchalupa/sailfish/src/log"
 
-	"github.com/superchalupa/sailfish/src/eventwaiter"
+	"github.com/superchalupa/sailfish/src/looplab/eventwaiter"
 )
 
 type Options func(*privateStateStructure) error
