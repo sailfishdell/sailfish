@@ -209,15 +209,25 @@ type RaidObjectHeader struct {
 }
 
 type StorageVirtualObjEventData struct {
-	ObjectHeader  DataObjectHeader
-	RaidObjHeader RaidObjectHeader `mapstructure:"raidObjheader"`
-	BlockSize     int              `mapstructure:"blockSize"`
-	Capacity      int64            `mapstructure:"size"`
-	Encrypted     uint32           `mapstructure:"attributes"`
-	OptimumIoSize int              `mapstructure:"stripeSize"`
-	VolumeType    uint32           `mapstructure:"raidLevel"`
-	Id            string           `maspstructure:"fqdd"`
-	Description   string
+	ObjectHeader        DataObjectHeader
+	RaidObjHeader       RaidObjectHeader `mapstructure:"raidObjheader"`
+	BlockSize           int              `mapstructure:"blockSize"`
+	Capacity            int64            `mapstructure:"size"`
+	Encrypted           uint32           `mapstructure:"attributes"`
+	OptimumIoSize       int              `mapstructure:"stripeSize"`
+	VolumeType          uint32           `mapstructure:"raidLevel"`
+	Protocol            int              `mapstructure:"availableProtocols"`
+	Cachecade           int              `mapstructure:"attributes"`
+	DiskCachePolicy     int              `mapstructure:"diskCachePolicy"`
+	LockStatus          int              `mapstructure:"attributes"`
+	MediaType           int              `mapstructure:"attributes"`
+	ReadCachePolicy     int              `mapstructure:"cachePolicy"`
+	SpanDepth           int              `mapstructure:"spanDepth"`
+	SpanLength          int              `mapstructure:"pdsPerSpan"`
+	VirtualDiskTargetID int              `mapstructure:"targetID"`
+	WriteCachePolicy    int              `mapstructure:"cachePolicy"`
+	Id                  string           `mapstructure:"fqdd"`
+	Description         string
 }
 
 type StoragePhysicalObjEventData struct {
@@ -262,9 +272,22 @@ type StorageAdapterObjEventData struct {
 	Manufacturer                 string             `mapstructure:"manufacturer"`
 	FirmwareVersion              string             `mapstructure:"firmwareVersion"`
 	Id                           string             `mapstructure:"fqdd"`
-	CapableSpeeds                int                `json:"capableSpeeds"`
-	Model                        string             `mapstructure:"fqdd"`
-	SupportedDiskProtocols       int                `mapstructure:"supportedDiskProtocols"`
+	CapableSpeeds                int                `mapstructure:"capableSpeeds"`
+	CacheSizeInMb                int                `mapstructure:"cacheSize"`
+	CachecadeCapability          int                `mapstructure:"attributes"`
+	ControllerFirmwareVersion    string             `mapstructure:"firmwareVersion"`
+	DeviceCardSlotType           int                `mapstructure:"slotType"`
+	DriverVersion                int                `mapstructure:""`
+	EncryptionCapability         int                `mapstructure:"attributes"`
+	EncryptionMode               int                `mapstructure:"encryptionmode"`
+	PCISlot                      int                `mapstructure:"slot"`
+	Embedded                     int                `mapstructure:"embedded"`
+	PatrolReadState              int                `mapstructure:"prMode"`
+	RollupStatus                 int
+	SecurityStatus               int    `mapstructure:"attributes"`
+	SlicedVDCapability           int    `mapstructure:"attributes"`
+	Model                        string `mapstructure:"fqdd"`
+	SupportedDiskProtocols       int    `mapstructure:"supportedDiskProtocols"`
 	SupportedControllerProtocols int
 }
 

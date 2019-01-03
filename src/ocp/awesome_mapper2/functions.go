@@ -366,9 +366,9 @@ func init() {
 		fmt.Printf("in encryption types()\n")
 		var attrib uint32 = uint32(args[0].(float64))
 		if attrib&0x01 == 0x01 {
-			return "true", nil
+			return true, nil
 		} else {
-			return "false", nil
+			return false, nil
 		}
 	})
 
@@ -408,42 +408,234 @@ func init() {
 	})
 
 	AddFunction("deviceprotocols", func(args ...interface{}) (interface{}, error) {
-		var vStr []string
+		var vStr string
 		var deviceprotocols uint32 = uint32(args[0].(float64))
 
-		if deviceprotocols&0x00000000 == 0x00000000 {
-			vStr = append(vStr, "UNKNOWN")
-		}
 		if deviceprotocols&0x00000001 == 0x00000001 {
-			vStr = append(vStr, "SCSI")
+			vStr = "SCSI"
 		}
 		if deviceprotocols&0x00000002 == 0x00000002 {
-			vStr = append(vStr, "PATA")
+			vStr = "PATA"
 		}
 		if deviceprotocols&0x00000004 == 0x00000004 {
-			vStr = append(vStr, "FIBRE")
+			vStr = "FIBRE"
 		}
 		if deviceprotocols&0x00000008 == 0x00000008 {
-			vStr = append(vStr, "USB")
+			vStr = "USB"
 		}
 		if deviceprotocols&0x00000010 == 0x00000010 {
-			vStr = append(vStr, "SATA")
+			vStr = "SATA"
 		}
 		if deviceprotocols&0x00000020 == 0x00000020 {
-			vStr = append(vStr, "SAS")
+			vStr = "SAS"
 		}
 		if deviceprotocols&0x00000040 == 0x00000040 {
-			vStr = append(vStr, "PCIE")
+			vStr = "PCIE"
 		}
 		if deviceprotocols&0x00000100 == 0x00000100 {
-			vStr = append(vStr, "NVMe")
+			vStr = "NVMe"
 		}
 		return vStr, nil
 	})
 
+	AddFunction("cachecade", func(args ...interface{}) (interface{}, error) {
+		var vStr string
+		var attributes uint32 = uint32(args[0].(float64))
+
+		if attributes&0x00000080 == 0x00000080 {
+			vStr = "CachecadeVD"
+		} else {
+			vStr = "NonCachecadeVD"
+		}
+		return vStr, nil
+	})
+
+	AddFunction("diskcachepolicy", func(args ...interface{}) (interface{}, error) {
+		var vStr string
+		var diskCachePolicy uint32 = uint32(args[0].(float64))
+
+		if diskCachePolicy&0x00000100 == 0x00000100 {
+			vStr = "Default"
+		}
+		if diskCachePolicy&0x00000200 == 0x00000200 {
+			vStr = "Enabled"
+		}
+		if diskCachePolicy&0x00000400 == 0x00000400 {
+			vStr = "Disabled"
+		}
+		return vStr, nil
+	})
+
+	AddFunction("readcachepolicy", func(args ...interface{}) (interface{}, error) {
+		var vStr string
+		var readCachePolicy uint32 = uint32(args[0].(float64))
+
+		if readCachePolicy&0x00000010 == 0x00000010 {
+			vStr = "NoReadAhead"
+		}
+		if readCachePolicy&0x00000020 == 0x00000020 {
+			vStr = "ReadAhead"
+		}
+		if readCachePolicy&0x00000040 == 0x00000040 {
+			vStr = "AdaptiveReadAhead"
+		}
+		return vStr, nil
+	})
+
+	AddFunction("writecachepolicy", func(args ...interface{}) (interface{}, error) {
+		var vStr string
+		var writeCachePolicy uint32 = uint32(args[0].(float64))
+
+		if writeCachePolicy&0x000001 == 0x000001 {
+			vStr = "WriteThrough"
+		}
+		if writeCachePolicy&0x000002 == 0x000002 {
+			vStr = "WriteBack"
+		}
+		if writeCachePolicy&0x000004 == 0x000004 {
+			vStr = "WriteBackForce"
+		}
+		return vStr, nil
+	})
+
+	AddFunction("lockstatus", func(args ...interface{}) (interface{}, error) {
+		var vStr string
+		var attributes uint32 = uint32(args[0].(float64))
+
+		if attributes&0x00000001 == 0x00000001 {
+			vStr = "Locked"
+		} else {
+			vStr = "UnLocked"
+		}
+		return vStr, nil
+	})
+
+	AddFunction("cachecadecap", func(args ...interface{}) (interface{}, error) {
+		var vStr string
+		var attributes uint32 = uint32(args[0].(float64))
+
+		if attributes&0x00002000 == 0x00002000 {
+			vStr = "Supported"
+		} else {
+			vStr = "NotSupported"
+		}
+		return vStr, nil
+	})
+
+	AddFunction("slottype", func(args ...interface{}) (interface{}, error) {
+		var vStr string
+		var slottype uint32 = uint32(args[0].(float64))
+		var g_sSlotType = []string{"Unknown", "PCI Express x8", "PCI Express Gen3", "PCI Express Gen3 x1",
+			"PCI Express Gen3 x2", "PCI Express Gen3 x4", "PCI Express Gen3 x8", "PCI Express Gen3 x16", "PCI Express x16",
+			"PCI Express", "PCI Express x1", "PCI Express x2", "PCI Express x4", "PCI Express Gen2 x16", "PCI Express Gen2"}
+		switch slottype {
+		case 0xA9:
+			return g_sSlotType[1], nil
+		case 0xB1:
+			return g_sSlotType[2], nil
+		case 0xB2:
+			return g_sSlotType[3], nil
+		case 0xB3:
+			return g_sSlotType[4], nil
+		case 0xB4:
+			return g_sSlotType[5], nil
+		case 0xB5:
+			return g_sSlotType[6], nil
+		case 0xB6:
+			return g_sSlotType[7], nil
+		case 0xAA:
+			return g_sSlotType[8], nil
+		case 0xA5:
+			return g_sSlotType[9], nil
+		case 0xA6:
+			return g_sSlotType[10], nil
+		case 0xA7:
+			return g_sSlotType[11], nil
+		case 0xA8:
+			return g_sSlotType[12], nil
+		case 0xB0:
+			return g_sSlotType[13], nil
+		case 0xAB:
+			return g_sSlotType[14], nil
+		default:
+			return g_sSlotType[0], nil
+		}
+		return vStr, nil
+	})
+
+	AddFunction("encryptionncap", func(args ...interface{}) (interface{}, error) {
+		var attributes int64 = int64(args[0].(float64))
+		if attributes&0x00000080 == 0x00000080 {
+			return "LocalKeyManagementCapable", nil
+		}
+		if attributes&0x00000400 == 0x00000400 {
+			return "LocalKeyManagementAndDellKeyManagementCapable", nil
+		}
+		return nil, nil
+	})
+
+	AddFunction("pcislot", func(args ...interface{}) (interface{}, error) {
+		var embdedded int64 = int64(args[0].(float64))
+		var slot int64 = int64(args[1].(float64))
+		if embdedded != 0 {
+			return slot, nil
+		}
+		return nil, nil
+	})
+
+	AddFunction("patrolstate", func(args ...interface{}) (interface{}, error) {
+		var patrolState int64 = int64(args[0].(float64))
+		if patrolState&0x10 == 0x10 {
+			return "Stopped", nil
+		}
+		if patrolState&0x20 == 0x20 {
+			return "Running", nil
+		}
+		return nil, nil
+	})
+
+	AddFunction("rollupstatus", func(args ...interface{}) (interface{}, error) {
+		var rollupStatus int64 = int64(args[0].(float64))
+		if rollupStatus == 0x1 {
+			return "Unknown", nil
+		}
+		if rollupStatus == 0x2 {
+			return "Ok", nil
+		}
+		if rollupStatus == 0x3 {
+			return "Error", nil
+		}
+		if rollupStatus == 0x4 {
+			return "Degraded", nil
+		}
+		return nil, nil
+	})
+
+	AddFunction("securitystatus", func(args ...interface{}) (interface{}, error) {
+		var secStatus int64 = int64(args[0].(float64))
+		if secStatus&0x00000100 == 0x00000100 {
+			return "SecurityKeyAssigned", nil
+		} else if secStatus&0x00000080 == 0x00000080 {
+			return "EncryptionCapable", nil
+		} else {
+			return "EncryptionNotCapable", nil
+		}
+		return nil, nil
+	})
+
+	AddFunction("slicedvdcap", func(args ...interface{}) (interface{}, error) {
+		var slicedVDCap int64 = int64(args[0].(float64))
+		if slicedVDCap&0x00040000 == 0x00040000 {
+			return "Supported", nil
+		} else {
+			return "NotSupported", nil
+		}
+		return nil, nil
+	})
+
 	AddFunction("controllerprotocols", func(args ...interface{}) (interface{}, error) {
-		var vStr []string
-		vStr = append(vStr, "PCIe")
+		var vStr string
+		vStr = "PCIe"
 		return vStr, nil
 	})
 }

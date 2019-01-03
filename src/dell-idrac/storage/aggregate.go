@@ -337,7 +337,7 @@ func RegisterAggregate(s *testaggregate.Service) {
 							"Dell": map[string]interface{}{
 								"DellVirtualDisk": map[string]interface{}{
 									"@odata.context": "/redfish/v1/$metadata#DellVirtualDisk.DellVirtualDisk",
-									"@odata.id":      "/redfish/v1/Dell/Systems/System.Embedded.1/Storage/Volumes/DellVirtualDisk/$Entity",
+									"@odata.id":      "/redfish/v1/Dell/Systems/System.Embedded.1/Storage/Volumes/DellVirtualDisk/", //+ 'vw.Meta(view.PropGET("unique_name"))',
 									"@odata.type":    "#DellVirtualDisk.v1_0_0.DellVirtualDisk",
 
 									"BusProtocol@meta":         vw.Meta(view.PropGET("bus_protocol")),
@@ -391,13 +391,13 @@ func RegisterAggregate(s *testaggregate.Service) {
 		func(ctx context.Context, subLogger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, vw *view.View, extra interface{}, params map[string]interface{}) ([]eh.Command, error) {
 			return []eh.Command{
 				&domain.CreateRedfishResource{
-					ResourceURI: vw.GetURI(),
-					Type:        "#Settings.v1_1_0.Settings",
-					Context:     params["rooturi"].(string) + "/$metadata#Settings.Settings",
+					Type:    "#Settings.v1_1_0.Settings",
+					Context: params["rooturi"].(string) + "/$metadata#Settings.Settings",
 					Privileges: map[string]interface{}{
 						"GET": []string{"Login"},
 					},
 					Properties: map[string]interface{}{
+						"SettingsObject": []string{vw.GetURI()},
 						"SupportedApplyTimes": []string{
 							"Immediate",
 							"OnReset",
