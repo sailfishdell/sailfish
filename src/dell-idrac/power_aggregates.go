@@ -37,6 +37,9 @@ func RegisterAggregate(s *testaggregate.Service) {
 						"PowerSupplies@odata.count@meta": vw.Meta(view.GETProperty("power_supply_uris"), view.GETFormatter("count"), view.GETModel("default")),
 						"PowerControl@meta":              vw.Meta(view.GETProperty("power_control_uris"), view.GETFormatter("expand"), view.GETModel("default")),
 						"PowerControl@odata.count@meta":  vw.Meta(view.GETProperty("power_control_uris"), view.GETFormatter("count"), view.GETModel("default")),
+						"Voltages@meta":             vw.Meta(view.GETProperty("voltage_sensor_uris"), view.GETFormatter("expand"), view.GETModel("default")),
+						"Voltages@odata.count@meta": vw.Meta(view.GETProperty("voltage_sensor_uris"), view.GETFormatter("count"), view.GETModel("default")),
+
 					}},
 			}, nil
 		})
@@ -131,5 +134,45 @@ func RegisterAggregate(s *testaggregate.Service) {
 					},
 				}}, nil
 		})
+
+	s.RegisterAggregateFunction("voltage_sensor",
+                func(ctx context.Context, subLogger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, vw *view.View, extra interface{}, params map[string]interface{}) ([]eh.Command, error) {
+                        return []eh.Command{
+                                &domain.CreateRedfishResource{
+                                        ResourceURI: vw.GetURI(),
+                                        Type:        "#Power.v1_0_2.PowerControl",
+                                        Context:     "/redfish/v1/$metadata#Power.PowerSystem.Chassis.1/Power/$entity",
+                                        Privileges: map[string]interface{}{
+                                                "GET":    []string{"Login"},
+                                                "POST":   []string{}, // cannot create sub objects
+                                                "PUT":    []string{},
+                                                "PATCH":  []string{"ConfigureManager"},
+                                                "DELETE": []string{}, // can't be deleted
+                                        },
+                                        Properties: map[string]interface{}{
+                                                "Name":                     "System Power Control",
+                                                "MemberId":                 "PowerControl",
+                                                "LowerThresholdCritical@meta": vw.Meta(view.PropGET("maxreading")),
+                                                "LowerThresholdFatal@meta": vw.Meta(view.PropGET("maxreading")),
+                                                "LowerThresholdNonCritical@meta":  vw.Meta(view.PropGET("maxreading")),
+                                                "MaxReadingRange@meta":  vw.Meta(view.PropGET("maxreading")),
+						"MinReadingRange@meta":  vw.Meta(view.PropGET("minreading")),
+						"PhysicalContext@meta":  vw.Meta(view.PropGET("maxreading")),
+						"ReadingVolts@meta":  vw.Meta(view.PropGET("maxreading")),
+						"SensorNumber@meta":  vw.Meta(view.PropGET("maxreading")),
+						"UpperThresholdCritical@meta":  vw.Meta(view.PropGET("maxreading")),
+						"UpperThresholdFatal@meta":  vw.Meta(view.PropGET("maxreading")),
+						"UpperThresholdNonCritical@meta":  vw.Meta(view.PropGET("maxreading")),
+                                                "Status": map[string]interface{}{
+                                                        "HealthRollup@meta": vw.Meta(view.PropGET("obj_status")),
+                                                        "State@meta":        vw.Meta(view.PropGET("state")),
+                                                        "Health@meta":       vw.Meta(view.PropGET("obj_status")),
+                                                },
+                                                "RelatedItem@meta":             vw.Meta(view.GETProperty("power_related_items"), view.GETFormatter("formatOdataList"), view.GETModel("default")),
+                                                "RelatedItem@odata.count@meta": vw.Meta(view.GETProperty("power_related_items"), view.GETFormatter("count"), view.GETModel("default")),
+                                        },
+                                }}, nil
+                })
+
 
 }

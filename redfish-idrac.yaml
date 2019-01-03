@@ -485,6 +485,24 @@ views:
           "params":
       "Aggregate": "psu_slot"
 
+  "voltage_sensor":
+      "Logger": ["module", "voltage.sensor"]
+      "Models":
+        "default":  {"unique_name": "FQDD", "unique_name_attr": "FQDD+'.Attributes'", "attributes": "add_attribute_property()"}
+      "Controllers":
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "voltage_sensor_instance", "uniquename": "'am2_chassis_psu_' + FQDD" }
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/Chassis/' + ChassisFQDD + '/Power/Sensors/Voltages/' + FQDD "
+        - "fn": "linkModel"
+          "params": {"existing": "default", "linkname": "swinv"}
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+        - "fn": "stdFormatters"
+          "params":
+      "Aggregate": "voltage_sensor"
+
   "storage_collection":
       "Logger": ["module", "StorageCollection"]
       "Models":
@@ -695,7 +713,8 @@ awesome_mapper:
                 "data.Type == 'StorageDrive' && addidrac_storage_drive(data.ParentFQDD + ':' + data.FQDD, data.ParentFQDD, data.FQDD)",
                 "data.Type == 'StorageEnclosure' && addidrac_storage_enclosure(data.FQDD)",
                 "data.Type == 'StorageVolume' && addidrac_storage_volume(data.ParentFQDD + ':' + data.FQDD, data.ParentFQDD, data.FQDD)",
-                "data.Type == 'IDRACPSU'      && addidracpsu( data.ParentFQDD + ':' + data.FQDD, data.ParentFQDD, data.FQDD)",
+                "data.Type == 'IDRACPSU'      && addidracpsu(data.ParentFQDD + ':' + data.FQDD, data.ParentFQDD, data.FQDD)",
+                "data.Type == 'idracvoltagesensors'  && addidracvoltagesensors(data.ParentFQDD + ':' + data.FQDD, data.ParentFQDD, data.FQDD)",
                 ]}
 
     power_control_uris:
@@ -713,6 +732,14 @@ awesome_mapper:
       - { SelectEventType: "RedfishResource:removed",
           Select: "nohash(data.ResourceURI) && baseuri(data.ResourceURI) == rooturi + '/Chassis/' + FQDD + '/Power/PowerSupplies' ",
           ModelUpdate: [ {Property: "power_supply_uris", Query: "removefromset(model, propname, data.ResourceURI)"} ]}
+
+    voltage_sensor_uris:
+      - { SelectEventType: "RedfishResource:created",
+          Select: "nohash(data.ResourceURI) && baseuri(data.ResourceURI) == rooturi + '/Chassis/' + FQDD + '/Power/Sensors/Voltages/' ",
+          ModelUpdate: [ {Property: "voltage_sensor_uris", Query: "addtoset(model, propname, data.ResourceURI)"} ]}
+      - { SelectEventType: "RedfishResource:removed",
+          Select: "nohash(data.ResourceURI) && baseuri(data.ResourceURI) == rooturi + '/Chassis/' + FQDD + '/Power/Sensors/Voltages/' ",
+          ModelUpdate: [ {Property: "voltage_sensor_uris", Query: "removefromset(model, propname, data.ResourceURI)"} ]}
 
     idrac_storage_drive_uris:
       - { SelectEventType: "RedfishResource:created",
@@ -862,6 +889,12 @@ awesome_mapper:
                 {Property: "input_current", Query: "zero_to_null(data.InstAmps)" }, #float
                 {Property: "obj_status", Query: "map_health_value(data.ObjectHeader.ObjStatus)" }]}
 
+    voltage_sensor_instance:
+      - { SelectEventType: "ProbeObjEvent", Select: "data.ObjectHeader.FQDD == DM_FQDD",
+            ModelUpdate: [
+                {Property: "maxreading", Query: "zero_to_null(data.Type1MaxReadingRange)" }, #unsigned int
+                {Property: "minreading", Query: "zero_to_null(data.Type1MinReadingRange)" }, #float
+                {Property: "obj_status", Query: "map_health_value(data.ObjectHeader.ObjStatus)" }]}
 
     idrac_storage_drive_map:
         # idrac assumes all storage is attached to system.embedded.1, so there is no ParentFQDD check here.
