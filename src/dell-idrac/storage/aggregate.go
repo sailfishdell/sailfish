@@ -143,7 +143,10 @@ func RegisterAggregate(s *testaggregate.Service) {
 					Context:     "/redfish/v1/$metadata#Drive.Drive",
 					Privileges: map[string]interface{}{
 						"GET":  []string{"Login"},
-						"POST": []string{"ConfigureManager"},
+						"POST":   []string{"ConfigureManager"},
+						"PUT":    []string{},
+						"PATCH":  []string{"ConfigureManager"},
+						"DELETE": []string{"ConfigureManager"},
 					},
 					Properties: map[string]interface{}{
 						// TODO: assembly shouldnt be hard coded
@@ -222,6 +225,10 @@ func RegisterAggregate(s *testaggregate.Service) {
 					Context:     "/redfish/v1/$metadata#Chassis.Chassis",
 					Privileges: map[string]interface{}{
 						"GET": []string{"Login"},
+						"POST":   []string{"ConfigureManager"},
+						"PUT":    []string{},
+						"PATCH":  []string{"ConfigureManager"},
+						"DELETE": []string{"ConfigureManager"},
 					},
 
 					Properties: map[string]interface{}{
@@ -280,8 +287,11 @@ func RegisterAggregate(s *testaggregate.Service) {
 					ResourceURI: vw.GetURI(),
 					Type:        "#VolumeCollection.VolumeCollection",
 					Context:     params["rooturi"].(string) + "/$metadata#VolumeCollection.VolumeCollection",
+					Plugin:      "GenericActionHandler",
 					Privileges: map[string]interface{}{
 						"GET": []string{"Login"},
+						"POST":   []string{"ConfigureManager"},
+						"DELETE": []string{"ConfigureManager"},
 					},
 					Properties: map[string]interface{}{
 						"Name":                     "Volume Collection",
@@ -299,6 +309,7 @@ func RegisterAggregate(s *testaggregate.Service) {
 					ResourceURI: vw.GetURI(),
 					Type:        "#Volume.v1_0_3.Volume",
 					Context:     "/redfish/v1/$metadata#Volume.Volume",
+					Plugin:      "GenericActionHandler",
 					Privileges: map[string]interface{}{
 						"GET":    []string{"Login"},
 						"POST":   []string{"ConfigureManager"},
@@ -309,6 +320,10 @@ func RegisterAggregate(s *testaggregate.Service) {
 					Properties: map[string]interface{}{
 						"@Redfish.Settings@meta": vw.Meta(view.GETProperty("settings_uri"), view.GETFormatter("expandone"), view.GETModel("default")),
 						"Actions": map[string]interface{}{
+							"#Volume.Delete": map[string]interface{}{
+
+								"target": vw.GetActionURI("volume.delete"),
+							},
 							"#Volume.CheckConsistency": map[string]interface{}{
 
 								"target": vw.GetActionURI("volume.checkconsistency"),

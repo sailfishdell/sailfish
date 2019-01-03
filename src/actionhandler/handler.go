@@ -18,6 +18,7 @@ import (
 func Setup(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus) {
 	eh.RegisterCommand(func() eh.Command { return &POST{eventBus: eb, command: POSTCommand} })
 	eh.RegisterCommand(func() eh.Command { return &POST{eventBus: eb, command: PATCHCommand} })
+	eh.RegisterCommand(func() eh.Command { return &POST{eventBus: eb, command: DELETECommand} })
 	eh.RegisterEventData(GenericActionEvent, func() eh.EventData { return &GenericActionEventData{} })
 }
 
@@ -25,12 +26,14 @@ const (
 	GenericActionEvent = eh.EventType("GenericActionEvent")
 	POSTCommand        = eh.CommandType("GenericActionHandler:POST")
 	PATCHCommand       = eh.CommandType("GenericActionHandler:PATCH")
+	DELETECommand       = eh.CommandType("GenericActionHandler:DELETE")
 )
 
 type GenericActionEventData struct {
 	ID          eh.UUID // id of aggregate
 	CmdID       eh.UUID
 	ResourceURI string
+	Method	string
 
 	ActionData interface{}
 }
@@ -46,6 +49,8 @@ type POST struct {
 
 	// make sure to make everything else optional or this will fail
 	PostBody interface{} `eh:"optional"`
+
+	Method string
 }
 
 // Static type checking for commands to prevent runtime errors due to typos
@@ -57,6 +62,7 @@ func (c *POST) CommandType() eh.CommandType     { return c.command }
 func (c *POST) SetAggID(id eh.UUID)             { c.ID = id }
 func (c *POST) SetCmdID(id eh.UUID)             { c.CmdID = id }
 func (c *POST) ParseHTTPRequest(r *http.Request) error {
+	c.Method = r.Method
 	json.NewDecoder(r.Body).Decode(&c.PostBody)
 	return nil
 }
@@ -67,6 +73,7 @@ func (c *POST) Handle(ctx context.Context, a *domain.RedfishResourceAggregate) e
 		CmdID:       c.CmdID,
 		ResourceURI: a.ResourceURI,
 		ActionData:  c.PostBody,
+		Method:	     c.Method,
 	}, time.Now()))
 	return nil
 }

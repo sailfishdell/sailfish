@@ -619,6 +619,8 @@ views:
       "View":
         - "fn": "with_URI"
           "params": "parenturi + '/Volumes'"
+        - "fn": "with_PumpHandledAction"
+          "params": {"name": "volume.add", "uri":  "''", "timeout": 30}
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
         - "fn": "stdFormatters"
@@ -639,6 +641,8 @@ views:
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/Systems/' + ParentFQDD + '/Storage/Volumes/' + FQDD"
+        - "fn": "with_PumpHandledAction"
+          "params": {"name": "volume.delete", "uri":  "''", "timeout": 30}
         - "fn": "with_PumpHandledAction"
           "params": {"name": "volume.checkconsistency", "uri":  "/Actions/Volume.CheckConsistency", "timeout": 30}
         - "fn": "with_PumpHandledAction"
