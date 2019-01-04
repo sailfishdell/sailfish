@@ -1,5 +1,5 @@
 { "name": "IDRACComponentEvent", "event_array": [ {"Type": "iDRAC", "FQDD": "iDRAC.Embedded.1"}]}
-{ "name": "IDRACComponentEvent", "event_array": [ {"Type": "Chassis", "FQDD": "System.Chassis.1"}]}
+{ "name": "IDRACComponentEvent", "event_array": [ {"Type": "Chassis", "FQDD": "System.Embedded.1"}]}
 { "name": "IDRACComponentEvent", "event_array": [ {"Type": "System", "FQDD": "System.Embedded.1"}]}
 { "name": "IDRACComponentEvent", "event_array": [ {"Type": "StorageAdapter",   "ParentFQDD": "System.Embedded.1", "FQDD": "RAID.Slot.4-1"}]}
 { "name": "IDRACComponentEvent", "event_array": [ {"Type": "StorageAdapter",   "ParentFQDD": "System.Embedded.1", "FQDD": "AHCI.Embedded.2-1"}]}
@@ -13,3 +13,5 @@
 { "name": "IDRACComponentEvent", "event_array": [ {"Type": "StorageVolume", "ParentFQDD": "System.Embedded.1", "FQDD": "Disk.Virtual.0:RAID.Slot.4-1"} ]}
 { "name": "IDRACComponentEvent", "event_array": [ {"Type": "StorageVolume", "ParentFQDD": "System.Embedded.1", "FQDD": "Disk.Virtual.1:RAID.Slot.4-1"} ]}
 { "name": "IDRACComponentEvent", "event_array": [ {"Type": "StorageVolume", "ParentFQDD": "System.Embedded.1", "FQDD": "Disk.Virtual.2:RAID.Slot.4-1"} ]}
+{ "name": "IDRACComponentEvent", "event_array": [ {"Type": "IDRACPSU", "ParentFQDD":"System.Embedded.1","FQDD": "PSU.Slot.1"}]}
+{ "name": "IDRACComponentEvent", "event_array": [ {"Type": "IDRACvoltagesensors","ParentFQDD":"System.Embedded.1", "FQDD": "iDRAC.Embedded.1.SystemBoardCMOSBattery"}]}

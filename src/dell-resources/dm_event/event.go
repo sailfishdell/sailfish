@@ -20,6 +20,7 @@ const (
 	StorageAdapterEvent                 = eh.EventType("StorageAdapterEvent")
 	StoragePhysicalEvent                = eh.EventType("StoragePhysicalEvent")
 	StorageVirtualEvent                 = eh.EventType("StorageVirtualEvent")
+	ProbeObjEvent                       = eh.EventType("ProbeObjEvent")
 )
 
 func init() {
@@ -41,6 +42,7 @@ func init() {
 	eh.RegisterEventData(StorageEnclosureEvent, func() eh.EventData { return &StorageEnclosureObjEventData{} })
 	eh.RegisterEventData(StoragePhysicalEvent, func() eh.EventData { return &StoragePhysicalObjEventData{} })
 	eh.RegisterEventData(StorageVirtualEvent, func() eh.EventData { return &StorageVirtualObjEventData{} })
+	eh.RegisterEventData(ProbeObjEvent, func() eh.EventData { return &ProbeObjEventData{} })
 }
 
 type IomCapabilityData struct {
@@ -308,6 +310,54 @@ type StorageEnclosureObjEventData struct {
 	SlotCount     int                `json:"slotCount"`
 	Version       string             `mapstructure:"currentAvailableFwVer"`
 	WiredOrder    string             `mapstructure:"currentAvailableFwVer"`
+}
+type ProbeThresholdsobj struct {
+        UnrThreshold    int    `json:"unrThreshold"`
+        UcThreshold     int    `json:"ucThreshold"`
+        LncThreshold    int    `json:"lncThreshold"`
+        UncThreshold    int    `json:"uncThreshold"`
+        LcThreshold     int    `json:"lcThreshold"`
+        LnrThreshold    int    `json:"lnrThreshold"`
+}
+
+type ProbeObjEventData struct {
+        ObjectHeader    DataObjectHeader
+        ProbeThresholds          ProbeThresholdsobj     `json:"ProbeThresholds"`
+        OffsetProbeLocation     string  `json:"offsetProbeLocation"`
+        EntityID        int     `json:"entityID"`
+        ProbeStatus     int     `json:"probeStatus"`
+        ProbeCapabilities       int     `json:"probeCapabilities"`
+        ObjExtFlags     int     `json:"objExtFlags"`
+        OffsetKey       string  `json:"offsetKey"`
+        OffsetReAliasedName     string  `json:"offsetReAliasedName"`
+        OffsetFriendlyFQDD      string  `json:"offsetFriendlyFQDD"`
+        Type1MaxReadingRange    int     `json:"type1MaxReadingRange"`
+        Type1MinReadingRange    int     `json:"type1MinReadingRange"`
+        UnitModifier    int     `json:"unitModifier"`
+        SubType         int     `json:"subType"`
+        ProbeReading    int     `json:"probeReading"`
+        SensorNumber    int     `json:"sensorNumber"`
+        OffsetTargetDevKey      string `json:"offsetTargetDevKey"`
+        InitupdateInProgress    int     `json:"InitupdateInProgress"`
+}
+
+type VoltageSensorObjEventData struct {
+        ObjectHeader             DataObjectHeader
+        ProbeThresholds          ProbeThresholdsobj //`json:"ProbeThresholds"`
+        probestatus              int            `json:"probeStatus"`
+        probecapabilities        int            `json:"probeCapabilities"`
+        objextflags              int            `json:"objExtFlags"`
+        offsetkey                string         `mapstructure:"offsetKey"`
+        offsetrealiasedname      string         `mapstructure:"offsetReAliasedName"`
+        offsetfriendlyFQDD       string         `mapstructure:"offsetFriendlyFQDD"`
+        type1maxreadingrange     int            `json:"type1MaxReadingRange"`
+        type1minreadingrange     int            `json:"type1MinReadingRange"`
+        unitmodifier             int            `json:"unitModifier"`
+        subtype                  int            `json:"subType"`
+        probereading             int            `json:"probeReading"`
+        offsettargetdevkey       string         `mapstructure:"offsetTargetDevKey"`
+        sensornumber             int            `mapstructure:"sensorNumber"`
+        initupdateinprogress     int            `mapstructure:"InitupdateInProgress"`
 }
 
 type FileReadEventData struct {

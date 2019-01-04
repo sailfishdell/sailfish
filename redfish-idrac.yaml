@@ -435,6 +435,8 @@ views:
           "params": {"modelname": "default", "cfgsection": "power_control_uris", "uniquename": "'am2_control_uris:' + FQDD" }
         - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "power_supply_uris", "uniquename": "'am2_psu_uris:' + FQDD" }
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "voltage_sensor_uris", "uniquename": "'am2_voltage_uris:' + FQDD" }
       "View":
         - "fn": "with_URI"
           "params": "parenturi + '/Power'"
@@ -486,12 +488,14 @@ views:
       "Aggregate": "psu_slot"
 
   "voltage_sensor":
-      "Logger": ["module", "voltage.sensor"]
+      "Logger": ["module", "voltage_sensor"]
       "Models":
         "default":  {"unique_name": "FQDD", "unique_name_attr": "FQDD+'.Attributes'", "attributes": "add_attribute_property()"}
       "Controllers":
         - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "voltage_sensor_instance", "uniquename": "'am2_chassis_psu_' + FQDD" }
+          "params": {"modelname": "default", "cfgsection": "voltage_sensor_instance", "uniquename": "'am2_chassis_voltage_' + FQDD" }
+        - "fn": "ARDumper"
+          "params": {"modelname": "default", "AddToView": true, "passthru": {"fqddlist": "array(FQDD)"}}
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/Chassis/' + ChassisFQDD + '/Power/Sensors/Voltages/' + FQDD "
@@ -714,7 +718,7 @@ awesome_mapper:
                 "data.Type == 'StorageEnclosure' && addidrac_storage_enclosure(data.FQDD)",
                 "data.Type == 'StorageVolume' && addidrac_storage_volume(data.ParentFQDD + ':' + data.FQDD, data.ParentFQDD, data.FQDD)",
                 "data.Type == 'IDRACPSU'      && addidracpsu(data.ParentFQDD + ':' + data.FQDD, data.ParentFQDD, data.FQDD)",
-                "data.Type == 'idracvoltagesensors'  && addidracvoltagesensors(data.ParentFQDD + ':' + data.FQDD, data.ParentFQDD, data.FQDD)",
+                "data.Type == 'IDRACvoltagesensors'  && addidracvoltagesensors(data.ParentFQDD + ':' + data.FQDD, data.ParentFQDD, data.FQDD)",
                 ]}
 
     power_control_uris:
@@ -735,10 +739,10 @@ awesome_mapper:
 
     voltage_sensor_uris:
       - { SelectEventType: "RedfishResource:created",
-          Select: "nohash(data.ResourceURI) && baseuri(data.ResourceURI) == rooturi + '/Chassis/' + FQDD + '/Power/Sensors/Voltages/' ",
+          Select: "nohash(data.ResourceURI) && baseuri(data.ResourceURI) == rooturi + '/Chassis/' + FQDD + '/Power/Sensors/Voltages' ",
           ModelUpdate: [ {Property: "voltage_sensor_uris", Query: "addtoset(model, propname, data.ResourceURI)"} ]}
       - { SelectEventType: "RedfishResource:removed",
-          Select: "nohash(data.ResourceURI) && baseuri(data.ResourceURI) == rooturi + '/Chassis/' + FQDD + '/Power/Sensors/Voltages/' ",
+          Select: "nohash(data.ResourceURI) && baseuri(data.ResourceURI) == rooturi + '/Chassis/' + FQDD + '/Power/Sensors/Voltages' ",
           ModelUpdate: [ {Property: "voltage_sensor_uris", Query: "removefromset(model, propname, data.ResourceURI)"} ]}
 
     idrac_storage_drive_uris:
@@ -892,8 +896,20 @@ awesome_mapper:
     voltage_sensor_instance:
       - { SelectEventType: "ProbeObjEvent", Select: "data.ObjectHeader.FQDD == DM_FQDD",
             ModelUpdate: [
-                {Property: "maxreading", Query: "zero_to_null(data.Type1MaxReadingRange)" }, #unsigned int
-                {Property: "minreading", Query: "zero_to_null(data.Type1MinReadingRange)" }, #float
+                {Property: "member_id", Query: "data.ObjectHeader.FQDD" },
+                {Property: "name", Query: "zero_to_null(data.OffsetProbeLocation)" },
+                {Property: "upperthresholdfatal", Query: "data.ProbeThresholds.UnrThreshold" },
+                {Property: "upperthresholdcritical", Query: "data.ProbeThresholds.UcThreshold" },
+                {Property: "lowerthresholdnoncritical", Query: "data.ProbeThresholds.LncThreshold" },
+                {Property: "upperthresholdnoncritical", Query: "data.ProbeThresholds.UncThreshold" },
+                {Property: "lowerthresholdcritical", Query: "data.ProbeThresholds.LcThreshold" },
+                {Property: "lowerthresholdfatal", Query: "data.ProbeThresholds.LnrThreshold" },
+                {Property: "max_reading_range", Query: "zero_to_null(data.Type1MaxReadingRange)" },
+                {Property: "min_reading_range", Query: "zero_to_null(data.Type1MinReadingRange)" },
+                {Property: "physical_context", Query: "zero_to_null(data.EntityID)" },
+                {Property: "reading_volts", Query: "zero_to_null(data.ProbeReading)" },
+                {Property: "sensor_number", Query: "zero_to_null(data.SensorNumber)" },
+                {Property: "offsettarget_devkey", Query: "zero_to_null(data.OffsetTargetDevKey)" },
                 {Property: "obj_status", Query: "map_health_value(data.ObjectHeader.ObjStatus)" }]}
 
     idrac_storage_drive_map:
