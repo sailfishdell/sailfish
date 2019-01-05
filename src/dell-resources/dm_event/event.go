@@ -63,11 +63,11 @@ type InstPowerEventData struct {
 }
 
 type DataObjectHeader struct {
-	ObjStatus       int `json:"objStatus"`
-	ObjSize         int `json:"objSize"`
-	ObjType         int `json:"objType"`
-	RefreshInterval int `json:"refreshInterval"`
-	ObjFlags        int `json:"objFlags"`
+	ObjStatus       int `mapstructure:"objStatus"`
+	ObjSize         int `mapstructure:"objSize"`
+	ObjType         int `mapstructure:"objType"`
+	RefreshInterval int `mapstructure:"refreshInterval"`
+	ObjFlags        int `mapstructure:"objFlags"`
 	FQDD            string
 	Struct          string
 }
@@ -235,23 +235,23 @@ type StorageVirtualObjEventData struct {
 type StoragePhysicalObjEventData struct {
 	ObjectHeader              DataObjectHeader
 	RaidObjHeader             RaidSiObjectHeader `mapstructure:"raidSiobjheader"`
-	BlockSize                 int                `json:"blockSize"`
-	Capacity                  uint64             `json:"size"`
-	CapableSpeeds             int                `json:"capableSpeeds"`
-	EncryptionAbility         int                `json:"attributes"`
-	EncryptionStatus          int                `json:"securityState"`
-	FailurePredicted          int                `json:"attributes"`
-	Hotspare                  int                `json:"hotspare"`
+	BlockSize                 int                `mapstructure:"blockSize"`
+	Capacity                  uint64             `mapstructure:"size"`
+	CapableSpeeds             int                `mapstructure:"capableSpeeds"`
+	EncryptionAbility         int                `mapstructure:"attributes"`
+	EncryptionStatus          int                `mapstructure:"securityState"`
+	FailurePredicted          int                `mapstructure:"attributes"`
+	Hotspare                  int                `mapstructure:"hotspare"`
 	Id                        string             `mapstructure:"fqdd"`
 	Manufacturer              string             `mapstructure:"manufactureName"`
 	Model                     string             `mapstructure:"modelName"`
 	MediaType                 int                `mapstructure:"attributes"`
-	NegotiatedSpeed           int                `json:"negotiatedSpeed"`
+	NegotiatedSpeed           int                `mapstructure:"negotiatedSpeed"`
 	PartNumber                string             `mapstructure:"ppid"`
 	PredictedMediaLife        int                `mapstructure:"deviceLifeRemaining"`
 	Protocol                  int                `mapstructure:"protocol"`
 	Revision                  string             `mapstructure:"revision"`
-	NominalMediumRotationRate int                `json:"nominalMediumRotationRate"`
+	NominalMediumRotationRate int                `mapstructure:"nominalMediumRotationRate"`
 	Serial                    string             `mapstructure:"serialNumber"`
 	DriveFormFactor           int                `mapstructure:"driveFormFactor"`
 	Connector                 int
@@ -260,8 +260,8 @@ type StoragePhysicalObjEventData struct {
 	ManufacturingWeek         uint16 `mapstructure:"manufactureWeek"`
 	ManufacturingYear         uint32 `mapstructure:"manufactureYear"`
 	Ppid                      string `mapstructure:"ppid"`
-	PredictiveFailState       string
-	RaidStatus                string
+	PredictiveFailState       int    `mapstructure:"attributes"`
+	RaidStatus                int    `mapstructure:"raidState"`
 	SasAddress                string `mapstructure:"wwn"`
 	Slot                      int8   `mapstructure:"slot"`
 	UsedSize                  uint64 `mapstructure:"usedSize"`
@@ -302,62 +302,64 @@ type StorageEnclosureObjEventData struct {
 	Manufacturer  string             `mapstructure:"manufacturer"`
 	Model         string             `mapstructure:"fqdd"`
 	PartNumber    string             `mapstructure:"ppid"`
-	PowerState    int                `mapstructure:"drivePower"`
-	Sku           string             `mapstructure:"serialNumber"`
-	Serial        string             `mapstructure:"serialNumber"`
-	Connector     int                `json:"connectorCount"`
-	ServiceTag    string             `mapstructure:"serviceTag"`
-	SlotCount     int                `json:"slotCount"`
-	Version       string             `mapstructure:"currentAvailableFwVer"`
-	WiredOrder    string             `mapstructure:"currentAvailableFwVer"`
+	//PowerState    int                `mapstructure:"drivePower"`
+	Sku        string `mapstructure:"serialNumber"`
+	Serial     string `mapstructure:"serialNumber"`
+	Connector  int    `mapstructure:"port"`
+	ServiceTag string `mapstructure:"serviceTag"`
+	SlotCount  int    `mapstructure:"slotCount"`
+	Version    string `mapstructure:"revision"`
+	WiredOrder int    `mapstructure:"position"`
+	PowerState int    `mapstructure:"powerState"`
 }
+
 type ProbeThresholdsobj struct {
-        UnrThreshold    int    `json:"unrThreshold"`
-        UcThreshold     int    `json:"ucThreshold"`
-        LncThreshold    int    `json:"lncThreshold"`
-        UncThreshold    int    `json:"uncThreshold"`
-        LcThreshold     int    `json:"lcThreshold"`
-        LnrThreshold    int    `json:"lnrThreshold"`
+	UnrThreshold int `json:"unrThreshold"`
+	UcThreshold  int `json:"ucThreshold"`
+	LncThreshold int `json:"lncThreshold"`
+	UncThreshold int `json:"uncThreshold"`
+	LcThreshold  int `json:"lcThreshold"`
+	LnrThreshold int `json:"lnrThreshold"`
 }
 
 type ProbeObjEventData struct {
-        ObjectHeader    DataObjectHeader
-        ProbeThresholds          ProbeThresholdsobj     `json:"ProbeThresholds"`
-        OffsetProbeLocation     string  `json:"offsetProbeLocation"`
-        EntityID        int     `json:"entityID"`
-        ProbeStatus     int     `json:"probeStatus"`
-        ProbeCapabilities       int     `json:"probeCapabilities"`
-        ObjExtFlags     int     `json:"objExtFlags"`
-        OffsetKey       string  `json:"offsetKey"`
-        OffsetReAliasedName     string  `json:"offsetReAliasedName"`
-        OffsetFriendlyFQDD      string  `json:"offsetFriendlyFQDD"`
-        Type1MaxReadingRange    int     `json:"type1MaxReadingRange"`
-        Type1MinReadingRange    int     `json:"type1MinReadingRange"`
-        UnitModifier    int     `json:"unitModifier"`
-        SubType         int     `json:"subType"`
-        ProbeReading    int     `json:"probeReading"`
-        SensorNumber    int     `json:"sensorNumber"`
-        OffsetTargetDevKey      string `json:"offsetTargetDevKey"`
-        InitupdateInProgress    int     `json:"InitupdateInProgress"`
+	ObjectHeader         DataObjectHeader
+	ProbeThresholds      ProbeThresholdsobj `json:"ProbeThresholds"`
+	OffsetProbeLocation  string             `json:"offsetProbeLocation"`
+	EntityID             int                `json:"entityID"`
+	ProbeStatus          int                `json:"probeStatus"`
+	ProbeCapabilities    int                `json:"probeCapabilities"`
+	ObjExtFlags          int                `json:"objExtFlags"`
+	OffsetKey            string             `json:"offsetKey"`
+	OffsetReAliasedName  string             `json:"offsetReAliasedName"`
+	OffsetFriendlyFQDD   string             `json:"offsetFriendlyFQDD"`
+	Type1MaxReadingRange int                `json:"type1MaxReadingRange"`
+	Type1MinReadingRange int                `json:"type1MinReadingRange"`
+	UnitModifier         int                `json:"unitModifier"`
+	SubType              int                `json:"subType"`
+	ProbeReading         int                `json:"probeReading"`
+	SensorNumber         int                `json:"sensorNumber"`
+	OffsetTargetDevKey   string             `json:"offsetTargetDevKey"`
+	InitupdateInProgress int                `json:"InitupdateInProgress"`
 }
 
 type VoltageSensorObjEventData struct {
-        ObjectHeader             DataObjectHeader
-        ProbeThresholds          ProbeThresholdsobj //`json:"ProbeThresholds"`
-        probestatus              int            `json:"probeStatus"`
-        probecapabilities        int            `json:"probeCapabilities"`
-        objextflags              int            `json:"objExtFlags"`
-        offsetkey                string         `mapstructure:"offsetKey"`
-        offsetrealiasedname      string         `mapstructure:"offsetReAliasedName"`
-        offsetfriendlyFQDD       string         `mapstructure:"offsetFriendlyFQDD"`
-        type1maxreadingrange     int            `json:"type1MaxReadingRange"`
-        type1minreadingrange     int            `json:"type1MinReadingRange"`
-        unitmodifier             int            `json:"unitModifier"`
-        subtype                  int            `json:"subType"`
-        probereading             int            `json:"probeReading"`
-        offsettargetdevkey       string         `mapstructure:"offsetTargetDevKey"`
-        sensornumber             int            `mapstructure:"sensorNumber"`
-        initupdateinprogress     int            `mapstructure:"InitupdateInProgress"`
+	ObjectHeader         DataObjectHeader
+	ProbeThresholds      ProbeThresholdsobj //`json:"ProbeThresholds"`
+	probestatus          int                `json:"probeStatus"`
+	probecapabilities    int                `json:"probeCapabilities"`
+	objextflags          int                `json:"objExtFlags"`
+	offsetkey            string             `mapstructure:"offsetKey"`
+	offsetrealiasedname  string             `mapstructure:"offsetReAliasedName"`
+	offsetfriendlyFQDD   string             `mapstructure:"offsetFriendlyFQDD"`
+	type1maxreadingrange int                `json:"type1MaxReadingRange"`
+	type1minreadingrange int                `json:"type1MinReadingRange"`
+	unitmodifier         int                `json:"unitModifier"`
+	subtype              int                `json:"subType"`
+	probereading         int                `json:"probeReading"`
+	offsettargetdevkey   string             `mapstructure:"offsetTargetDevKey"`
+	sensornumber         int                `mapstructure:"sensorNumber"`
+	initupdateinprogress int                `mapstructure:"InitupdateInProgress"`
 }
 
 type FileReadEventData struct {

@@ -350,7 +350,8 @@ func init() {
 		fmt.Printf("in identifier_gen()\n")
 		wwnStr := args[0].(string)
 		fmt.Printf("in identifier_gen() -- %s\n", wwnStr)
-		wwn, _ := strconv.ParseUint(args[0].(string), 10, 64)
+		wwn, _ := strconv.ParseInt(wwnStr, 16, 64)
+		fmt.Printf("wwn in identifier_gen() -- %d\n", wwn)
 		if wwn > 0x00 {
 			dur_name := fmt.Sprintf("%X", wwn)
 			dur_format := "NAA"
@@ -372,6 +373,20 @@ func init() {
 		}
 	})
 
+	AddFunction("encryptionmode", func(args ...interface{}) (interface{}, error) { //todo: turn into hash
+		switch t := args[0].(float64); t {
+		case 0:
+			return "None", nil
+		case 1:
+			return "LocalKeyManagement", nil
+		case 2:
+			return "DellKeyManagement", nil
+		case 3:
+			return "PendingDellKeyManagementCapable", nil
+		default:
+			return nil, errors.New("Invalid object status")
+		}
+	})
 	AddFunction("volumetype", func(args ...interface{}) (interface{}, error) {
 		fmt.Printf("in volume types()\n")
 		var raidlevel uint32 = uint32(args[0].(float64))
@@ -405,6 +420,105 @@ func init() {
 		} else {
 			return "HDD", nil
 		}
+	})
+
+	AddFunction("powerstate", func(args ...interface{}) (interface{}, error) {
+		var powerstate uint32 = uint32(args[0].(float64))
+		if powerstate == 3 {
+			return "On", nil
+		} else if powerstate == 1 {
+			return "Off", nil
+		} else if powerstate == 2 {
+			return "PoweringOn", nil
+		} else if powerstate == 4 {
+			return "PoweringOff", nil
+		} else {
+			return nil, nil
+		}
+	})
+
+	AddFunction("driveformfactor", func(args ...interface{}) (interface{}, error) {
+		var driveFF uint32 = uint32(args[0].(float64))
+		if driveFF == 0 {
+			return "Unknown", nil
+		} else if driveFF == 1 {
+			return "1.5Inch", nil
+		} else if driveFF == 2 {
+			return "2.5Inch", nil
+		} else if driveFF == 3 {
+			return "3.5Inch", nil
+		} else {
+			return nil, nil
+		}
+	})
+
+	AddFunction("smartalert", func(args ...interface{}) (interface{}, error) {
+		var smartAlt uint32 = uint32(args[0].(float64))
+		if smartAlt&0x00000001 == 0x00000001 {
+			return "SmartAlertPresent", nil
+		} else {
+			return "SmartAlertAbsent", nil
+		}
+	})
+
+	AddFunction("raidstatus", func(args ...interface{}) (interface{}, error) {
+		var vStr string
+		var raidStatus uint32 = uint32(args[0].(float64))
+		var g_raidStatus = []string{"Unknown", "Ready", "Online", "Foreign", "Offline", "Blocked", "Failed", "Degraded", "NonRAID", "Missing"}
+		switch raidStatus {
+		case 1:
+			return g_raidStatus[1], nil
+		case 2:
+			return g_raidStatus[2], nil
+		case 3:
+			return g_raidStatus[3], nil
+		case 4:
+			return g_raidStatus[4], nil
+		case 5:
+			return g_raidStatus[5], nil
+		case 6:
+			return g_raidStatus[6], nil
+		case 7:
+			return g_raidStatus[7], nil
+		case 8:
+			return g_raidStatus[8], nil
+		case 9:
+			return g_raidStatus[9], nil
+		default:
+			return g_raidStatus[0], nil
+		}
+		return vStr, nil
+	})
+
+	AddFunction("supporteddeviceprotocols", func(args ...interface{}) (interface{}, error) {
+		var vStr []string
+		var deviceprotocols uint32 = uint32(args[0].(float64))
+
+		if deviceprotocols&0x00000001 == 0x00000001 {
+			vStr = append(vStr, "SCSI")
+		}
+		if deviceprotocols&0x00000002 == 0x00000002 {
+			vStr = append(vStr, "PATA")
+		}
+		if deviceprotocols&0x00000004 == 0x00000004 {
+			vStr = append(vStr, "FIBRE")
+		}
+		if deviceprotocols&0x00000008 == 0x00000008 {
+			vStr = append(vStr, "USB")
+		}
+		if deviceprotocols&0x00000010 == 0x00000010 {
+			vStr = append(vStr, "SATA")
+		}
+		if deviceprotocols&0x00000020 == 0x00000020 {
+			vStr = append(vStr, "SAS")
+		}
+		if deviceprotocols&0x00000040 == 0x00000040 {
+			vStr = append(vStr, "PCIE")
+		}
+		if deviceprotocols&0x00000100 == 0x00000100 {
+			vStr = append(vStr, "NVMe")
+		}
+		return vStr, nil
 	})
 
 	AddFunction("deviceprotocols", func(args ...interface{}) (interface{}, error) {
@@ -575,10 +689,12 @@ func init() {
 	})
 
 	AddFunction("pcislot", func(args ...interface{}) (interface{}, error) {
-		var embdedded int64 = int64(args[0].(float64))
+		var embedded int64 = int64(args[0].(float64))
 		var slot int64 = int64(args[1].(float64))
-		if embdedded != 0 {
-			return slot, nil
+		fmt.Printf("embedded -- %d\n", embedded)
+		fmt.Printf("slot -- %d\n", slot)
+		if embedded != 0 {
+			return int(slot), nil
 		}
 		return nil, nil
 	})
@@ -596,6 +712,7 @@ func init() {
 
 	AddFunction("rollupstatus", func(args ...interface{}) (interface{}, error) {
 		var rollupStatus int64 = int64(args[0].(float64))
+		fmt.Printf("Input for rollupStatus -- %d\n", rollupStatus)
 		if rollupStatus == 0x1 {
 			return "Unknown", nil
 		}
@@ -609,6 +726,46 @@ func init() {
 			return "Degraded", nil
 		}
 		return nil, nil
+	})
+
+	AddFunction("capablespeeds", func(args ...interface{}) (interface{}, error) {
+		var speed float32
+		fmt.Printf("cpbspeeds -- %d\n", int(args[0].(float64)))
+		switch cpbspeeds := int(args[0].(float64)); cpbspeeds {
+		case 15:
+			speed = 12
+		case 7, 4:
+			speed = 3
+		case 3:
+			speed = 1
+		case 1:
+			speed = 1.5
+		}
+		fmt.Printf("speed -- %f\n", speed)
+		return speed, nil
+	})
+
+	AddFunction("negospeeds", func(args ...interface{}) (interface{}, error) {
+		var speed float32
+		fmt.Printf("negospeeds -- %d\n", int(args[0].(float64)))
+		switch negospeeds := int(args[0].(float64)); negospeeds {
+		case 64:
+			speed = 64
+		case 32:
+			speed = 32
+		case 16:
+			speed = 16
+		case 8:
+			speed = 12
+		case 7, 4:
+			speed = 6
+		case 2:
+			speed = 3
+		case 1:
+			speed = 1.5
+		}
+		fmt.Printf("speed -- %f\n", speed)
+		return speed, nil
 	})
 
 	AddFunction("securitystatus", func(args ...interface{}) (interface{}, error) {
@@ -634,8 +791,8 @@ func init() {
 	})
 
 	AddFunction("controllerprotocols", func(args ...interface{}) (interface{}, error) {
-		var vStr string
-		vStr = "PCIe"
+		var vStr []string
+		vStr = append(vStr, "PCIe")
 		return vStr, nil
 	})
 }

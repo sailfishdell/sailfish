@@ -142,7 +142,7 @@ func RegisterAggregate(s *testaggregate.Service) {
 					Type:        "#Drive.v1_3_0.Drive",
 					Context:     "/redfish/v1/$metadata#Drive.Drive",
 					Privileges: map[string]interface{}{
-						"GET":  []string{"Login"},
+						"GET":    []string{"Login"},
 						"POST":   []string{"ConfigureManager"},
 						"PUT":    []string{},
 						"PATCH":  []string{"ConfigureManager"},
@@ -166,7 +166,7 @@ func RegisterAggregate(s *testaggregate.Service) {
 						"EncryptionStatus@meta":  vw.Meta(view.PropGET("encryption_status")),
 						"FailurePredicted@meta":  vw.Meta(view.PropGET("failure_predicted")),
 						"HotspareType@meta":      vw.Meta(view.PropGET("hotspare_type")),
-						"Id@meta@meta":           vw.Meta(view.PropGET("unique_name")),
+						"Id@meta":                vw.Meta(view.PropGET("unique_name")),
 						"Identifiers@meta":       vw.Meta(view.GETProperty("identifiers"), view.GETModel("default")),
 						"Links": map[string]interface{}{
 							"Chassis@meta":             vw.Meta(view.GETProperty("enclosure_uris"), view.GETFormatter("formatOdataList"), view.GETModel("default")),
@@ -200,7 +200,7 @@ func RegisterAggregate(s *testaggregate.Service) {
 								},
 							},
 						},
-
+						"Operations":                         []map[string]interface{}{},
 						"PartNumber@meta":                    vw.Meta(view.PropGET("part_number")),
 						"PredictedMediaLifeLeftPercent@meta": vw.Meta(view.PropGET("predicted_media_life_left_percent")),
 						"Protocol@meta":                      vw.Meta(view.PropGET("protocol")),
@@ -224,7 +224,7 @@ func RegisterAggregate(s *testaggregate.Service) {
 					Type:        "#Chassis.v1_6_0.Chassis",
 					Context:     "/redfish/v1/$metadata#Chassis.Chassis",
 					Privileges: map[string]interface{}{
-						"GET": []string{"Login"},
+						"GET":    []string{"Login"},
 						"POST":   []string{"ConfigureManager"},
 						"PUT":    []string{},
 						"PATCH":  []string{"ConfigureManager"},
@@ -239,17 +239,19 @@ func RegisterAggregate(s *testaggregate.Service) {
 						"Description@meta":       vw.Meta(view.PropGET("description")),
 						"Id@meta":                vw.Meta(view.PropGET("unique_name")),
 						"Links": map[string]interface{}{
-							"ContainedBy:": map[string]interface{}{
-								"@odata.id": "redfish/v1/Chassis/System.Embedded.1",
+							"ContainedBy": map[string]interface{}{
+								"@odata.id": "/redfish/v1/Chassis/System.Embedded.1",
 							},
 							//"Contains":vw.Meta(view.PropGET("contains")),
+							"Contains":                map[string]interface{}{},
+							"Contains@odata.count":    0,
 							"Drives@meta":             vw.Meta(view.GETProperty("encl_drv_uris"), view.GETFormatter("formatOdataList"), view.GETModel("default")),
 							"Drives@odata.count@meta": vw.Meta(view.GETProperty("encl_drv_uris"), view.GETFormatter("count"), view.GETModel("default")),
 							"ManagedBy": map[string]interface{}{
-								"@odata.id": "redfish/v1/Managers/iDRAC.Embedded.1",
+								"@odata.id": "/redfish/v1/Managers/iDRAC.Embedded.1",
 							},
 							"ManagedBy@odata.count": 1,
-							"PCIeDevices:@meta":     map[string]interface{}{
+							"PCIeDevices@meta":      map[string]interface{}{
 								//Needs addition
 							},
 							"PCIeDevices@odata.count":  0,
@@ -261,7 +263,18 @@ func RegisterAggregate(s *testaggregate.Service) {
 						"Name@meta":         vw.Meta(view.PropGET("name")),         //Done
 						"Oem": map[string]interface{}{ //Done
 							"Dell": map[string]interface{}{
-								"DellEnclosure@meta": vw.Meta(view.GETProperty("enclosure_uris"), view.GETFormatter("expandone"), view.GETModel("default")),
+								//"DellEnclosure@meta": vw.Meta(view.GETProperty("enclosure_uris"), view.GETFormatter("expandone"), view.GETModel("default")),
+								"DellEnclosure": map[string]interface{}{
+									"@odata.context":  "/redfish/v1/$metadata#DellEnclosure.DellEnclosure",
+									"@odata.id":       "/redfish/v1/Dell/Chassis/System.Embedded.1/DellEnclosure/$entity",
+									"@odata.type":     "#DellEnclosure.v1_0_0.DellEnclosure",
+									"Connector@meta":  vw.Meta(view.PropGET("connector")),
+									"Links@meta":      vw.Meta(view.PropGET("")),
+									"ServiceTag@meta": vw.Meta(view.PropGET("service_tag")),
+									"SlotCount@meta":  vw.Meta(view.PropGET("slot_count")),
+									"Version@meta":    vw.Meta(view.PropGET("version")),
+									"WiredOrder@meta": vw.Meta(view.PropGET("wired_order")),
+								},
 							},
 						},
 						"PCIeDevices":                  map[string]interface{}{},
@@ -289,7 +302,7 @@ func RegisterAggregate(s *testaggregate.Service) {
 					Context:     params["rooturi"].(string) + "/$metadata#VolumeCollection.VolumeCollection",
 					Plugin:      "GenericActionHandler",
 					Privileges: map[string]interface{}{
-						"GET": []string{"Login"},
+						"GET":    []string{"Login"},
 						"POST":   []string{"ConfigureManager"},
 						"DELETE": []string{"ConfigureManager"},
 					},
@@ -392,6 +405,7 @@ func RegisterAggregate(s *testaggregate.Service) {
 						"GET": []string{"Login"},
 					},
 					Properties: map[string]interface{}{
+						"SettingsObject": []string{vw.GetURI()},
 						"SupportedApplyTimes": []string{
 							"Immediate",
 							"OnReset",
@@ -406,8 +420,9 @@ func RegisterAggregate(s *testaggregate.Service) {
 		func(ctx context.Context, subLogger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, vw *view.View, extra interface{}, params map[string]interface{}) ([]eh.Command, error) {
 			return []eh.Command{
 				&domain.CreateRedfishResource{
-					Type:    "#Settings.v1_1_0.Settings",
-					Context: params["rooturi"].(string) + "/$metadata#Settings.Settings",
+					ResourceURI: vw.GetURI(),
+					Type:        "#Settings.v1_1_0.Settings",
+					Context:     params["rooturi"].(string) + "/$metadata#Settings.Settings",
 					Privileges: map[string]interface{}{
 						"GET": []string{"Login"},
 					},
