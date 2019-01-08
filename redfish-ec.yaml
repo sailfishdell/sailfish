@@ -1217,8 +1217,11 @@ awesome_mapper:
 
     lclog:
       - { SelectEventType: "LogEvent",
-          Select: "true",
+          Select: "data.LogAlert == 'log' || data.LogAlert == 'log alert'",
           Exec: [ "addlclog(collection_uri, data)" ]}
+      - { SelectEventType: "LogEvent",
+          Select: "data.LogAlert == 'alert' || data.LogAlert == 'log alert'",
+          Exec: [ "firealert(data)" ]}
 
     faultlist:
       - { SelectEventType: "FaultEntryAdd",

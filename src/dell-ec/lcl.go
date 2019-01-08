@@ -46,7 +46,7 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 
 		uuid := eh.NewUUID()
 		uri := fmt.Sprintf("%s/%d", logUri, logEntry.Id)
-
+//d.eb.publishevent(eh.NewEvent())
 		aggID, ok := d.GetAggregateIDOK(uri)
 		if ok {
 			logger.Crit("Mapper configuration error: URI already exists", "aggID", aggID, "uri", uri)

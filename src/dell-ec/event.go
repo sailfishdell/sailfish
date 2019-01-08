@@ -35,6 +35,7 @@ type LogEventData struct {
 	Severity    string
 	Category    string
 	Action      string
+    LogAlert    string
 }
 
 type FaultEntryAddData struct {
