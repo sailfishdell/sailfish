@@ -255,6 +255,49 @@ func init() {
 		}
 		return args[0], nil
 	})
+	AddFunction("null_lt_zero",func(args ...interface{}) (interface{}, error) {
+		if args[0] == 0 {
+                        return nil, nil
+                }
+		switch t := args[0].(float64);t {
+		default:
+			if t < 0 {
+				return nil, errors.New("threshold less than 0")
+			}else{
+				return t, nil
+			}
+		}
+	})
+	AddFunction("map_physical_context", func(args ...interface{}) (interface{}, error) { //todo: turn into hash
+                switch t := args[0].(float64); t {
+                case 3: return "CPU", nil
+                case 4: return "StorageDevice", nil
+                case 6: return "ComputeBay", nil
+                case 7: return "SystemBoard", nil
+		case 8: return "Memory", nil
+		case 9: return "CPU", nil
+		case 10: return "PowerSupply", nil
+		case 12: return "Front", nil
+		case 13: return "Back", nil
+		case 14: return "PowerSupply", nil
+		case 18: return "CPU", nil
+		case 19: return "PowerSupply", nil
+		case 20: return "VoltageRegulator", nil
+		case 21: return "PowerSupply", nil
+		case 23: return "Chassis", nil
+		case 24: return "Chassis", nil
+		case 25: return "ComputeBay", nil
+		case 29: return "Fan", nil
+		case 30: return "Fan", nil
+		case 32: return "Memory", nil
+		case 41: return "ComputeBay", nil
+		case 42: return "NetworkDevice", nil
+		case 43: return "NetworkDevice", nil
+		case 46: return "Chassis", nil
+                default:
+                        return "Chassis", errors.New("Invalid object status")
+                }
+        })
 	AddFunction("empty_to_null", func(args ...interface{}) (interface{}, error) {
 		if args[0] == "" {
 			return nil, nil

@@ -107,9 +107,9 @@ func AddChassisInstantiate(l log.Logger, instantiateSvc *testaggregate.Service) 
                 // have to do this in a goroutine because awesome mapper is locked while it processes events
                 go instantiateSvc.Instantiate("voltage_sensor",
                         map[string]interface{}{
-                                "DM_FQDD":     FQDD,
+				"DM_FQDD":     "iDRAC.Embedded.1#"+FQDD,
                                 "ChassisFQDD": ParentFQDD,
-                                "FQDD":        FQDD,
+                                "FQDD":        "iDRAC.Embedded.1."+FQDD,
                         },
                 )
 

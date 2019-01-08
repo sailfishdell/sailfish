@@ -884,13 +884,34 @@ awesome_mapper:
                 {Property: "min_peak_watts", Query: "data.MinWatts" },
                 {Property: "min_peak_watts_time", Query: "epoch_to_date(data.MinwReadingTime)" },
                 {Property: "peak_headroom_watts", Query: "data.PeakHeadRoom" },
+                {Property: "power_requested_watts", Query: "data.Maxpower" },
                 {Property: "consumed_watts", Query: "data.InstWattsPSU1_2" }]}
+      - { SelectEventType: "AvgPowerConsumptionStatDataObjEvent", Select: "true",
+            ModelUpdate: [
+                {Property: "minPwrLastMin", Query: "data.MinPwrLastMin" },
+                {Property: "maxPwrLastMin", Query: "data.MaxPwrLastMin" },
+                {Property: "avgPwrLastMin", Query: "data.AvgPwrLastMin" }]}
 
     power_supply:
       - { SelectEventType: "PowerSupplyObjEvent", Select: "data.ObjectHeader.FQDD == DM_FQDD",
             ModelUpdate: [
-                {Property: "line_input_voltage", Query: "zero_to_null(data.CurrentInputVolts)" }, #unsigned int
-                {Property: "input_current", Query: "zero_to_null(data.InstAmps)" }, #float
+                {Property: "name", Query: "zero_to_null(data.OffsetPSLocation)" },
+                {Property: "member_id", Query: "zero_to_null(data.OffsetPSLocation)" },
+                {Property: "fwVer", Query: "zero_to_null(data.OffsetFwVer)" },
+                {Property: "efficiency_percent", Query: "zero_to_null(data.CurrentInputVolts)" }, #EfficiencyPercent
+                {Property: "hotpluggable", Query: "zero_to_null(data.BPMCapable)" },
+                {Property: "poweroutputwatts", Query: "zero_to_null(data.CurrentInputVolts)" }, #DynamicoutputWatts
+                {Property: "powerinputwatts", Query: "zero_to_null(data.InputRatedWatts)" },
+                {Property: "lineinputVoltage", Query: "zero_to_null(data.CurrentInputVolts)" },
+                {Property: "lineinputVoltagetype", Query: "zero_to_null(data.CurrentInputVolts)" },
+                {Property: "manufacturer", Query: "zero_to_null(data.BoardManufacturer)" },
+                {Property: "model", Query: "zero_to_null(data.BoardProductName)" },
+                {Property: "boardpartnumber", Query: "zero_to_null(data.BoardPartNumber)" },
+                {Property: "powercapacitywatts", Query: "zero_to_null(data.U16POutMax)" },
+                {Property: "powersupplytype", Query: "zero_to_null(data.PSType)" },
+                {Property: "serialnumber", Query: "zero_to_null(data.BoardSerialNumber)" },
+                {Property: "sparepartnumber", Query: "zero_to_null(data.BoardPartNumber)" },
+                {Property: "obj_state", Query: "zero_to_null(data.PSState)" },
                 {Property: "obj_status", Query: "map_health_value(data.ObjectHeader.ObjStatus)" }]}
 
     voltage_sensor_instance:
@@ -898,18 +919,18 @@ awesome_mapper:
             ModelUpdate: [
                 {Property: "member_id", Query: "data.ObjectHeader.FQDD" },
                 {Property: "name", Query: "zero_to_null(data.OffsetProbeLocation)" },
-                {Property: "upperthresholdfatal", Query: "data.ProbeThresholds.UnrThreshold" },
-                {Property: "upperthresholdcritical", Query: "data.ProbeThresholds.UcThreshold" },
-                {Property: "lowerthresholdnoncritical", Query: "data.ProbeThresholds.LncThreshold" },
-                {Property: "upperthresholdnoncritical", Query: "data.ProbeThresholds.UncThreshold" },
-                {Property: "lowerthresholdcritical", Query: "data.ProbeThresholds.LcThreshold" },
-                {Property: "lowerthresholdfatal", Query: "data.ProbeThresholds.LnrThreshold" },
+                {Property: "upperthresholdfatal", Query: "null_lt_zero(data.ProbeThresholds.UnrThreshold)" },
+                {Property: "upperthresholdcritical", Query: "null_lt_zero(data.ProbeThresholds.UcThreshold)" },
+                {Property: "lowerthresholdnoncritical", Query: "null_lt_zero(data.ProbeThresholds.LncThreshold)" },
+                {Property: "upperthresholdnoncritical", Query: "null_lt_zero(data.ProbeThresholds.UncThreshold)" },
+                {Property: "lowerthresholdcritical", Query: "null_lt_zero(data.ProbeThresholds.LcThreshold)" },
+                {Property: "lowerthresholdfatal", Query: "null_lt_zero(data.ProbeThresholds.LnrThreshold)" },
                 {Property: "max_reading_range", Query: "zero_to_null(data.Type1MaxReadingRange)" },
                 {Property: "min_reading_range", Query: "zero_to_null(data.Type1MinReadingRange)" },
-                {Property: "physical_context", Query: "zero_to_null(data.EntityID)" },
-                {Property: "reading_volts", Query: "zero_to_null(data.ProbeReading)" },
+                {Property: "physical_context", Query: "map_physical_context(data.EntityID)" },
+                {Property: "reading_volts", Query: "null_lt_zero(data.ProbeReading)" },
                 {Property: "sensor_number", Query: "zero_to_null(data.SensorNumber)" },
-                {Property: "offsettarget_devkey", Query: "zero_to_null(data.OffsetTargetDevKey)" },
+                {Property: "offsettarget_devkey", Query: "data.OffsetTargetDevKey" },
                 {Property: "obj_status", Query: "map_health_value(data.ObjectHeader.ObjStatus)" }]}
 
     idrac_storage_drive_map:

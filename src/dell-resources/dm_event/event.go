@@ -101,9 +101,19 @@ type ThermalSensorEventData struct {
 	UpperWarningThreshold  int `json:"upperWarningThreshold"`
 	LowerCriticalThreshold int `json:"lowerCriticalThreshold"`
 }
-
+type BaseSoftwareInventoryObjectobj struct {
+	OffsetVersionDependencyArray string `json:"OffsetVersionDependencyArray"`
+	DeviceType		int     `json:"DeviceType"`
+	FQDDOffset		string	`json:"FQDDOffset"`
+}
+type SlotBasedSoftwareInventoryObjectobj struct {
+	BaseSoftwareInventoryObject	BaseSoftwareInventoryObjectobj	`json:"BaseSoftwareInventoryObject"`
+	SlotNum		int 	`json:"SlotNum"`
+	UniqueID	int     `json:"UniqueID"`
+}
 type PowerSupplyObjEventData struct {
 	ObjectHeader         DataObjectHeader
+	SlotBasedSoftwareInventoryObject      SlotBasedSoftwareInventoryObjectobj     `json:"slotBasedSoftwareInventoryObject"`
 	OutputWatts          int     `json:"outputWatts"`
 	InputRatedWatts      int     `json:"inputRatedWatts"`
 	InputVolts           int     `json:"inputVolts"`
@@ -149,6 +159,7 @@ type PowerConsumptionDataObjEventData struct {
 	MinWatts        int   `json:"minWatts"`
 	MinwReadingTime int64 `json:"minwReadingTime"`
 	PeakHeadRoom    int   `json:"peakHeadRoom"`
+	Maxpower	int   `json:"maxPower"`
 	InstWattsPSU1_2 int   `json:"instWattsPSU1_2"`
 }
 
