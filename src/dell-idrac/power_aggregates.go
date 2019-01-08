@@ -22,8 +22,8 @@ func RegisterAggregate(s *testaggregate.Service) {
 			return []eh.Command{
 				&domain.CreateRedfishResource{
 					ResourceURI: vw.GetURI(),
-					Type:        "#Power.v1_0_2.Power",
-					Context:     params["rooturi"].(string) + "/$metadata#Power.PowerSystem.Chassis.1/Power/$entity",
+					Type:        "#Power.v1_5_0.Power",
+					Context:     params["rooturi"].(string) + "/$metadata#Power.Power",
 					Privileges: map[string]interface{}{
 						"GET": []string{"Login"},
 					},
@@ -31,12 +31,13 @@ func RegisterAggregate(s *testaggregate.Service) {
 						"Id":          "Power",
 						"Description": "Power",
 						"Name":        "Power",
-						"@odata.etag": `W/"abc123"`,
 
 						"PowerSupplies@meta":             vw.Meta(view.GETProperty("power_supply_uris"), view.GETFormatter("expand"), view.GETModel("default")),
 						"PowerSupplies@odata.count@meta": vw.Meta(view.GETProperty("power_supply_uris"), view.GETFormatter("count"), view.GETModel("default")),
 						"PowerControl@meta":              vw.Meta(view.GETProperty("power_control_uris"), view.GETFormatter("expand"), view.GETModel("default")),
 						"PowerControl@odata.count@meta":  vw.Meta(view.GETProperty("power_control_uris"), view.GETFormatter("count"), view.GETModel("default")),
+						"Redundancy":              []interface{}{},
+                                                "Redundancy@odata.count":  0,
 						"Voltages@meta":             vw.Meta(view.GETProperty("voltage_sensor_uris"), view.GETFormatter("expand"), view.GETModel("default")),
 						"Voltages@odata.count@meta": vw.Meta(view.GETProperty("voltage_sensor_uris"), view.GETFormatter("count"), view.GETModel("default")),
 
@@ -49,8 +50,8 @@ func RegisterAggregate(s *testaggregate.Service) {
 			return []eh.Command{
 				&domain.CreateRedfishResource{
 					ResourceURI: vw.GetURI(),
-					Type:        "#Power.v1_0_2.PowerControl",
-					Context:     "/redfish/v1/$metadata#Power.PowerSystem.Chassis.1/Power/$entity",
+					Type:        "#Power.v1_4_0.PowerControl",
+					Context:     "/redfish/v1/$metadata#Power.Power",
 					Privileges: map[string]interface{}{
 						"GET":    []string{"Login"},
 						"POST":   []string{}, // cannot create sub objects
@@ -88,8 +89,8 @@ func RegisterAggregate(s *testaggregate.Service) {
 			return []eh.Command{
 				&domain.CreateRedfishResource{
 					ResourceURI: vw.GetURI(),
-					Type:        "#Power.v1_0_2.PowerSupply",
-					Context:     "/redfish/v1/$metadata#Power.PowerSystem.Chassis.1/Power/$entity",
+					Type:        "#Power.v1_5_0.PowerSupply",
+					Context:     "/redfish/v1/$metadata#Power.Power",
 					Privileges: map[string]interface{}{
 						"GET":    []string{"Login"},
 						"POST":   []string{}, // cannot create sub objects
@@ -106,8 +107,16 @@ func RegisterAggregate(s *testaggregate.Service) {
 						"EfficiencyPercent@meta":    vw.Meta(view.PropGET("efficiency_percent")),
 						"FirmwareVersion@meta":      vw.Meta(view.PropGET("fwVer")),
 						"HotPluggable@meta":         vw.Meta(view.PropGET("hotpluggable")),
-						"InputRanges":               []interface{}{},
-						"InputRanges@odata.count":   0,
+						"InputRanges":               []interface{}{
+							map[string]interface{}{
+							"InputType@meta":    vw.Meta(view.PropGET("input_pstype")),
+							"MaximumFrequencyHz@meta": vw.Meta(view.PropGET("maximum_frequencyHz")),
+							"MaximumVoltage@meta":	vw.Meta(view.PropGET("maximum_voltage")),
+							"MinimumFrequencyHz@meta": vw.Meta(view.PropGET("minimum_frequencyHz")),
+							"MinimumVoltage@meta": vw.Meta(view.PropGET("minimum_voltage")),
+							"OutputWattage@meta": vw.Meta(view.PropGET("output_wattage")),
+						}},
+						"InputRanges@odata.count":   1,
 						"LastPowerOutputWatts@meta": vw.Meta(view.PropGET("")),
 						"LineInputVoltage@meta":     vw.Meta(view.PropGET("lineinputVoltage")),
 						"LineInputVoltageType@meta": vw.Meta(view.PropGET("lineinputVoltagetype")),
@@ -122,7 +131,6 @@ func RegisterAggregate(s *testaggregate.Service) {
 						"SparePartNumber@meta":      vw.Meta(view.PropGET("sparepartnumber")),
 
 						"Status": map[string]interface{}{
-							"HealthRollup@meta": vw.Meta(view.PropGET("obj_status")),
 							"State@meta":        vw.Meta(view.PropGET("obj_state")),
 							"Health@meta":       vw.Meta(view.PropGET("obj_status")),
 						},
@@ -140,7 +148,7 @@ func RegisterAggregate(s *testaggregate.Service) {
                         return []eh.Command{
                                 &domain.CreateRedfishResource{
                                         ResourceURI: vw.GetURI(),
-                                        Type:        "#Power.v1_0_2.PowerControl",
+                                        Type:        "#Power.v1_3_0.Voltage",
                                         Context:     "/redfish/v1/$metadata#Power.Power",
                                         Privileges: map[string]interface{}{
                                                 "GET":    []string{"Login"},

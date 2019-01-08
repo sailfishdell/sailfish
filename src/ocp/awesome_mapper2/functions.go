@@ -249,11 +249,78 @@ func init() {
 			return nil, errors.New("Not an int, float, or string")
 		}
 	})
+	AddFunction("get_input_voltagetype", func(args ...interface{}) (interface{}, error) {
+		switch t := args[0].(float64);t {
+			case 0:
+				t1 := int(args[1].(float64))
+				if t1 >= 100 && t1 <=127 {
+					return "AC120V",nil
+				}else if t1 >= 200 && t1 <=240 {
+                                        return "AC240V",nil
+                                }else if t1 == 277 {
+					return "AC277V",nil
+				}else{
+					return "Unknown",nil
+				}
+			case 1:
+				t1 := int(args[1].(float64))
+				if t1 == -48 {
+                                        return "DCNeg48V",nil
+                                }else if t1 == 380 {
+                                        return "DC380V",nil
+                                }else{
+                                        return "Unknown",nil
+                                }
+			default: return "Unknown",nil
+		}
+	})
+	AddFunction("get_ps_state", func(args ...interface{}) (interface{}, error) {
+		t := int(args[0].(float64))
+		if 64 & t == 64 {
+			return "Disabled",nil
+		}else if 32 & t == 32 {
+			return "UnavailableOffline",nil
+		}else if 16 & t == 16 {
+                        return "UnavailableOffline",nil
+                }else if 8 & t == 8 {
+                        return "UnavailableOffline",nil
+                }else if 2 & t == 2 {
+                        return "Disabled",nil
+                }else if 1 & t == 1 {
+                        return "Enabled",nil
+                }else{
+			return nil,nil
+		}
+	})
+	AddFunction("get_ac_dc_value", func(args ...interface{}) (interface{}, error) {
+		switch t := args[0].(float64);t {
+                case 0: return "AC",nil
+                case 1: return "DC",nil
+                default: return "Unknown",nil
+                }
+	})
 	AddFunction("zero_to_null", func(args ...interface{}) (interface{}, error) {
 		if args[0] == 0 {
 			return nil, nil
 		}
 		return args[0], nil
+	})
+	AddFunction("zero_or_value",func(args ...interface{}) (interface{}, error) {
+		switch t := args[0].(float64);t {
+			default:
+				if t < 0 {
+					return 0, nil
+				}else {
+					return t, nil
+				}
+		}
+	})
+	AddFunction("get_hotpluggable_value",func(args ...interface{}) (interface{}, error) {
+		switch t := args[0].(float64);t {
+		case 0: return false,nil
+		case 1: return true,nil
+		default: return nil,nil
+		}
 	})
 	AddFunction("null_lt_zero",func(args ...interface{}) (interface{}, error) {
 		if args[0] == 0 {

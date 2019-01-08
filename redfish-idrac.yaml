@@ -896,22 +896,29 @@ awesome_mapper:
       - { SelectEventType: "PowerSupplyObjEvent", Select: "data.ObjectHeader.FQDD == DM_FQDD",
             ModelUpdate: [
                 {Property: "name", Query: "zero_to_null(data.OffsetPSLocation)" },
-                {Property: "member_id", Query: "zero_to_null(data.OffsetPSLocation)" },
+                {Property: "member_id", Query: "data.ObjectHeader.FQDD" },
                 {Property: "fwVer", Query: "zero_to_null(data.OffsetFwVer)" },
                 {Property: "efficiency_percent", Query: "zero_to_null(data.CurrentInputVolts)" }, #EfficiencyPercent
-                {Property: "hotpluggable", Query: "zero_to_null(data.BPMCapable)" },
-                {Property: "poweroutputwatts", Query: "zero_to_null(data.CurrentInputVolts)" }, #DynamicoutputWatts
-                {Property: "powerinputwatts", Query: "zero_to_null(data.InputRatedWatts)" },
-                {Property: "lineinputVoltage", Query: "zero_to_null(data.CurrentInputVolts)" },
-                {Property: "lineinputVoltagetype", Query: "zero_to_null(data.CurrentInputVolts)" },
+                {Property: "hotpluggable", Query: "get_hotpluggable_value(data.BPMCapable)" },
+                {Property: "input_pstype", Query: "get_ac_dc_value(data.PSType)" },
+                {Property: "maximum_frequencyHz", Query: "zero_or_value(data.MaximumFreqHz)" },
+                {Property: "maximum_voltage", Query: "data.MaximumVoltage" },
+                {Property: "minimum_frequencyHz", Query: "zero_or_value(data.MinimumFreqHz)" },
+                {Property: "minimum_voltage", Query: "data.MinimumVoltage" },
+                {Property: "output_wattage", Query: "zero_or_value(data.OutputWatts)" },
+                {Property: "poweroutputwatts", Query: "data.CurrentInputVolts" }, #DynamicoutputWatts
+                {Property: "powerinputwatts", Query: "data.InputRatedWatts" },
+                {Property: "lastpoweroutputwatts", Query: "" },
+                {Property: "lineinputVoltage", Query: "null_lt_zero(data.CurrentInputVolts)" },
+                {Property: "lineinputVoltagetype", Query: "get_input_voltagetype(data.PSType,data.CurrentInputVolts)" },
                 {Property: "manufacturer", Query: "zero_to_null(data.BoardManufacturer)" },
                 {Property: "model", Query: "zero_to_null(data.BoardProductName)" },
                 {Property: "boardpartnumber", Query: "zero_to_null(data.BoardPartNumber)" },
-                {Property: "powercapacitywatts", Query: "zero_to_null(data.U16POutMax)" },
-                {Property: "powersupplytype", Query: "zero_to_null(data.PSType)" },
-                {Property: "serialnumber", Query: "zero_to_null(data.BoardSerialNumber)" },
-                {Property: "sparepartnumber", Query: "zero_to_null(data.BoardPartNumber)" },
-                {Property: "obj_state", Query: "zero_to_null(data.PSState)" },
+                {Property: "powercapacitywatts", Query: "zero_or_value(data.U16POutMax)" },
+                {Property: "powersupplytype", Query: "get_ac_dc_value(data.PSType)" },
+                {Property: "serialnumber", Query: "data.BoardSerialNumber" },
+                {Property: "sparepartnumber", Query: "data.BoardPartNumber" },
+                {Property: "obj_state", Query: "get_ps_state(data.PSState)" },
                 {Property: "obj_status", Query: "map_health_value(data.ObjectHeader.ObjStatus)" }]}
 
     voltage_sensor_instance:
