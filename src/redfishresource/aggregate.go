@@ -32,8 +32,9 @@ type RedfishResourceAggregate struct {
 
 	// TODO: need accessor functions for all of these just like property stuff
 	// above so that everything can be properly locked
-	PrivilegeMap map[string]interface{}
-	Headers      map[string]string
+	PrivilegeMap  map[string]interface{}
+	Headers       map[string]string
+	Authorization RedfishAuthorizationProperty
 }
 
 // PublishEvent registers an event to be published after the aggregate

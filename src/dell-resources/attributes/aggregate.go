@@ -3,6 +3,7 @@ package attributes
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sync"
 
 	"github.com/spf13/viper"
@@ -21,6 +22,7 @@ func FormatAttributeDump(
 	v *view.View,
 	m *model.Model,
 	rrp *domain.RedfishResourceProperty,
+	auth *domain.RedfishAuthorizationProperty,
 	meta map[string]interface{},
 ) error {
 	p, ok := meta["property"]
@@ -40,11 +42,18 @@ func FormatAttributeDump(
 		return errors.New("attributes not setup properly")
 	}
 
+	fmt.Println(auth)
+
+	var ad AttributeData
 	res := map[string]interface{}{}
 	for group, v := range attributes {
 		for index, v2 := range v {
 			for name, value := range v2 {
-				res[group+"."+index+"."+name] = value
+				if ad.ReadAllowed(value, auth) {
+					res[group+"."+index+"."+name] = ad.Value
+				} else {
+					fmt.Println("skipping ", group+"."+index+"."+name)
+				}
 			}
 		}
 	}

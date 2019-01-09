@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"sync"
 
+    "github.com/superchalupa/sailfish/src/dell-resources/attributes"
 	"github.com/superchalupa/sailfish/src/log"
 	"github.com/superchalupa/sailfish/src/ocp/awesome_mapper2"
 	"github.com/superchalupa/sailfish/src/ocp/model"
@@ -92,6 +93,7 @@ func InitTask(logger log.Logger, instantiateSvc *testaggregate.Service) {
 
 	go func() {
 		var attrModel *model.Model // model from syschas1/attr
+        var ad attributes.AttributeData // for mapping the actual attribute date
 		for {
 			select {
 			case <-trigger:
@@ -119,33 +121,33 @@ func InitTask(logger log.Logger, instantiateSvc *testaggregate.Service) {
 				for groupid, taskMap := range taskMaps {
 					for index, namemap := range taskMap {
 						id_raw, ok := namemap["Id"]
-						if !ok {
+						if !ok || !ad.Valid(id_raw) {
 							//this attribute not yet populated
 							continue
 						}
-						id, ok := id_raw.(string)
+						id, ok := ad.Value.(string)
 						if !ok || id == "" || id == "unknown" {
 							logger.Debug("Did not get task ID as a valid string")
 							continue
 						}
 
 						name_raw, ok := namemap["Name"]
-						if !ok {
+						if !ok || !ad.Valid(name_raw) {
 							//this attribute not yet populated
 							continue
 						}
-						name, ok := name_raw.(string)
+						name, ok := ad.Value.(string)
 						if !ok || name == "" {
 							logger.Debug("Did not get task name as a valid string")
 							continue
 						}
 
 						state_raw, ok := namemap["TaskState"]
-						if !ok {
+						if !ok || !ad.Valid(state_raw) {
 							//this attribute not yet populated
 							continue
 						}
-						state, ok := state_raw.(string)
+						state, ok := ad.Value.(string)
 						if !ok || state == "" {
 							logger.Debug("Did not get task state as a valid string")
 							continue
@@ -155,90 +157,91 @@ func InitTask(logger log.Logger, instantiateSvc *testaggregate.Service) {
 						}
 
 						status_raw, ok := namemap["TaskStatus"]
-						if !ok {
+						if !ok || !ad.Valid(status_raw) {
 							//this attribute not yet populated
 							continue
 						}
-						status, ok := status_raw.(string)
+						status, ok := ad.Value.(string)
 						if !ok || status == "" {
 							logger.Debug("Did not get task status as a valid string")
 							continue
 						}
 
 						start_time_raw, ok := namemap["StartTime"]
-						if !ok {
+						if !ok || !ad.Valid(start_time_raw) {
 							//this attribute not yet populated
 							continue
 						}
-						start_time, ok := start_time_raw.(string)
+						start_time, ok := ad.Value.(string)
 						if !ok || start_time == "" {
 							logger.Debug("Did not get task start time as a valid string")
 							continue
 						}
 
 						end_time_raw, ok := namemap["EndTime"]
-						if !ok {
+						if !ok || !ad.Valid(end_time_raw) {
 							//this attribute not yet populated
 							continue
 						}
-						end_time, ok := end_time_raw.(string)
+						end_time, ok := ad.Value.(string)
 						if !ok || end_time == "" {
 							logger.Debug("Did not get task end time as a valid string")
 							continue
 						}
 
-						percent, ok := namemap["PercentComplete"]
-						if !ok {
+						percent_raw, ok := namemap["PercentComplete"]
+						if !ok || !ad.Valid(percent_raw) {
 							//this attribute not yet populated
 							continue
 						}
+                        percent := ad.Value
 
 						message_raw, ok := namemap["Message1"]
-						if !ok {
+						if !ok || !ad.Valid(message_raw) {
 							//this attribute not yet populated
 							continue
 						}
-						message, ok := message_raw.(string)
+						message, ok := ad.Value.(string)
 						if !ok || message == "" {
 							logger.Debug("Did not get task message as a valid string")
 							continue
 						}
 
 						message_id_raw, ok := namemap["MessageID1"]
-						if !ok {
+						if !ok || !ad.Valid(message_id_raw) {
 							//this attribute not yet populated
 							continue
 						}
-						message_id, ok := message_id_raw.(string)
+						message_id, ok := ad.Value.(string)
 						if !ok || message_id == "" {
 							logger.Debug("Did not get task message ID as a valid string")
 							continue
 						}
 
 						msg_args_1_raw, ok := namemap["MessageArg1-1"]
-						if !ok {
+						if !ok || !ad.Valid(msg_args_1_raw) {
 							continue
 						}
-						msg_args_1, ok := msg_args_1_raw.(string)
+						msg_args_1, ok := ad.Value.(string)
 						if !ok {
 							logger.Debug("Did not get msg args 1 as a string")
 							continue
 						}
 
 						msg_args_2_raw, ok := namemap["MessageArg1-2"]
-						if !ok {
+						if !ok || !ad.Valid(msg_args_2_raw) {
 							continue
 						}
-						msg_args_2, ok := msg_args_2_raw.(string)
+						msg_args_2, ok := ad.Value.(string)
 						if !ok {
 							logger.Debug("Did not get msg args 2 as a string")
 							continue
 						}
 						msg_args_3_raw, ok := namemap["MessageArg1-3"]
-						if !ok {
+						if !ok || !ad.Valid(msg_args_3_raw) {
 							continue
 						}
-						msg_args_3, ok := msg_args_3_raw.(string)
+						msg_args_3, ok := ad.Value.(string)
 						if !ok {
 							logger.Debug("Did not get msg args 3 as a string")
 							continue

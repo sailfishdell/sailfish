@@ -18,16 +18,7 @@ func MakeHandlerFunc(withUser func(string, []string) http.Handler, chain http.Ha
 		privs := req.Header.Get("User_priv")
 
 		privsInt, _ := strconv.Atoi(privs)
-		privileges := []string{}
-		if privsInt&0x09 == 0x09 {
-			privileges = append(privileges, "Login", "ConfigureManager")
-		}
-		if privsInt&0x11 == 0x11 {
-			privileges = append(privileges, "Login", "ConfigureSelf")
-		}
-		if privsInt&0x0b == 0x0b {
-			privileges = append(privileges, "Login", "ConfigureManager", "ConfigureUser")
-		}
+		privileges := PrivilegeBitsToStrings(privsInt)
 
 		if username != "" {
 			privileges = append(privileges,
@@ -41,4 +32,46 @@ func MakeHandlerFunc(withUser func(string, []string) http.Handler, chain http.Ha
 			chain.ServeHTTP(rw, req)
 		}
 	}
+}
+
+/*
+   Convert iDRAC privilege bites to their Redfish/OEM string versions
+*/
+func mEval(val, bits int) bool { return val&bits == bits }
+func PrivilegeBitsToStrings(required int) []string {
+	var Privileges []string
+
+	if required == 0 {
+		Privileges = append(Privileges, "Unauthenticated")
+	} else {
+		if mEval(required, 1) {
+			Privileges = append(Privileges, "Login")
+		}
+		if mEval(required, 2) {
+			Privileges = append(Privileges, "ConfigureManager")
+		}
+		if mEval(required, 4) {
+			Privileges = append(Privileges, "ConfigureUsers")
+		}
+		if mEval(required, 8) {
+			Privileges = append(Privileges, "ClearLogs")
+		}
+		if mEval(required, 16) {
+			Privileges = append(Privileges, "ConfigureComponents")
+		}
+		if mEval(required, 32) {
+			Privileges = append(Privileges, "AccessVirtualConsole")
+		}
+		if mEval(required, 64) {
+			Privileges = append(Privileges, "AccessVirtualMedia")
+		}
+		if mEval(required, 128) {
+			Privileges = append(Privileges, "TestAlerts")
+		}
+        if mEval(required, 256) {
+			Privileges = append(Privileges, "ExecuteDebugCommands")
+		}
+	}
+
+	return Privileges
 }

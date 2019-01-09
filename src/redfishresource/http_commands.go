@@ -98,7 +98,7 @@ func (c *PATCH) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 		StatusCode: 200,
 	}
 
-	data.Results, _ = ProcessPATCH(ctx, &a.Properties, c.Body)
+	data.Results, _ = ProcessPATCH(ctx, &a.Properties, &a.Authorization, c.Body)
 
 	// TODO: set error status code based on err from ProcessPATCH
 	// TODO: This is not thread safe: deep copy

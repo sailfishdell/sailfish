@@ -2,9 +2,18 @@ package domain
 
 import (
 	"encoding/json"
+	"fmt"
 	"strings"
 	"sync"
+
+	"github.com/superchalupa/sailfish/src/dell-resources/dellauth"
 )
+
+type RedfishAuthorizationProperty struct {
+	UserName   string
+	Privileges []string
+	Licenses   []string
+}
 
 type RedfishResourceProperty struct {
 	sync.Mutex
@@ -73,4 +82,28 @@ func parse_map(start map[string]interface{}, props map[string]interface{}) {
 		}
 	}
 	return
+}
+
+func (auth *RedfishAuthorizationProperty) VerifyPrivileges(Privileges []string) bool {
+
+	rh := &RedfishHandler{
+		UserName:   auth.UserName,
+		Privileges: auth.Privileges,
+	}
+
+	authAction := rh.isAuthorized(Privileges)
+
+	if authAction != "authorized" {
+		fmt.Println("required auth ", Privileges)
+		fmt.Println(auth.UserName, " current priv ", auth.Privileges)
+		fmt.Println("allowed ", authAction)
+	}
+
+	return authAction == "authorized"
+}
+
+func (auth *RedfishAuthorizationProperty) VerifyPrivilegeBits(requiredPrivs int) bool {
+	// TODO: remove once the privlige information is being sent as an array of strings.
+	Privileges := dellauth.PrivilegeBitsToStrings(requiredPrivs)
+	return auth.VerifyPrivileges(Privileges)
 }
