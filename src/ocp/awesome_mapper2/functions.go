@@ -329,7 +329,7 @@ func init() {
 		switch t := args[0].(float64);t {
 		default:
 			if t < 0 {
-				return nil, errors.New("threshold less than 0")
+				return nil, nil
 			}else{
 				return t, nil
 			}
