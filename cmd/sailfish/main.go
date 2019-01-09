@@ -122,8 +122,6 @@ func main() {
 			basicauth.MakeHandlerFunc(chainAuth,
 				chainAuth("UNKNOWN", []string{"Unauthenticated"}))))
 
-	m.PathPrefix("/redfish").Methods("GET", "PUT", "POST", "PATCH", "DELETE", "HEAD", "OPTIONS").HandlerFunc(handlerFunc)
-
 	// SSE
 	chainAuthSSE := func(u string, p []string) http.Handler { return http_sse.NewSSEHandler(domainObjs, logger, u, p) }
 	m.PathPrefix("/events").Methods("GET").HandlerFunc(
@@ -135,6 +133,10 @@ func main() {
 	}
 	m.PathPrefix("/redfish_events").Methods("GET").HandlerFunc(
 		session.MakeHandlerFunc(logger, domainObjs.EventBus, domainObjs, chainAuthRFSSE, basicauth.MakeHandlerFunc(chainAuthRFSSE, chainAuthRFSSE("UNKNOWN", []string{"Unauthenticated"}))))
+
+	m.PathPrefix("/redfish").Methods("GET", "PUT", "POST", "PATCH", "DELETE", "HEAD", "OPTIONS").HandlerFunc(handlerFunc)
+
+
 
 	// backend command handling
 	m.PathPrefix("/api/{command}").Handler(domainObjs.GetInternalCommandHandler(ctx))
