@@ -1038,10 +1038,10 @@ views:
       "Controllers":
       "View":
         - "fn": "with_URI"
-          "params": "rooturi + '/TaskServices'"
+          "params": "rooturi + '/TaskService'"
       "Aggregate": "task_service"
       "ExecPost": [
-        "instantiate('task_service_tasks', 'parenturi', rooturi + '/TaskServices/')",
+        "instantiate('task_service_tasks', 'parenturi', rooturi + '/TaskService/')",
       ]
 
   "task_service_tasks":
@@ -1055,7 +1055,7 @@ views:
           "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + view.GetURI()", "passthru": {'collection_uri': 'view.GetURI()'} }
       "View":
         - "fn": "with_URI"
-          "params": "rooturi + '/TaskServices/Tasks'"
+          "params": "rooturi + '/TaskService/Tasks'"
         - "fn": "with_URI"
           "params": "parenturi + 'Tasks'"
         - "fn": "stdFormatters"
@@ -1071,7 +1071,7 @@ views:
           "params": {"modelname": "default", "cfgsection": "tasks", "uniquename": "'task_id:' + task_id", "passthru": {"Index": "Index", "Group": "Group"} }
       "View":
         - "fn": "with_URI"
-          "params": "rooturi + '/TaskServices/Tasks/' + task_id"
+          "params": "rooturi + '/TaskService/Tasks/' + task_id"
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
         - "fn": "stdFormatters"
