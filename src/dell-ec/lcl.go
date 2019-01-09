@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strconv"
 	"time"
+    "sync"
 
 	eh "github.com/looplab/eventhorizon"
 
@@ -15,6 +16,7 @@ import (
 	"github.com/superchalupa/sailfish/src/ocp/model"
 	"github.com/superchalupa/sailfish/src/ocp/testaggregate"
 	"github.com/superchalupa/sailfish/src/ocp/view"
+	"github.com/superchalupa/sailfish/src/ocp/eventservice"
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
 )
 
@@ -28,8 +30,9 @@ func in_array(a string, list []string) bool {
 }
 
 func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.CommandHandler, d *domain.DomainObjects) {
-	MAX_LOGS := 1001
+	MAX_LOGS := 3000
 	lclogs := []eh.UUID{}
+    mutex := &sync.Mutex{}
 
 	awesome_mapper2.AddFunction("addlclog", func(args ...interface{}) (interface{}, error) {
 		logUri, ok := args[0].(string)
@@ -46,7 +49,7 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 
 		uuid := eh.NewUUID()
 		uri := fmt.Sprintf("%s/%d", logUri, logEntry.Id)
-//d.eb.publishevent(eh.NewEvent())
+
 		aggID, ok := d.GetAggregateIDOK(uri)
 		if ok {
 			logger.Crit("Mapper configuration error: URI already exists", "aggID", aggID, "uri", uri)
@@ -65,7 +68,9 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 			severity = "OK"
 		}
 
+        mutex.Lock()
 		lclogs = append(lclogs, uuid)
+        mutex.Unlock()
 
 		go ch.HandleCommand(
 			context.Background(),
@@ -96,19 +101,37 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 						"Dell": map[string]interface{}{
 							"@odata.type": "#DellLogEntry.v1_0_0.LogEntrySummary",
 							"Category":    logEntry.Category,
+							"FQDD":        logEntry.FQDD,
 						}},
 					"OemRecordFormat": "Dell",
 					"Severity":        severity,
 					"Action":          logEntry.Action,
 				}})
 		// need to be updated to filter the first 50...
+        mutex.Lock()
 		for len(lclogs) > MAX_LOGS {
 			logger.Debug("too many logs, trimming", "len", len(lclogs))
 			toDelete := lclogs[0]
 			lclogs = lclogs[1:]
 			go ch.HandleCommand(context.Background(), &domain.RemoveRedfishResource{ID: toDelete})
 		}
+        mutex.Unlock()
 
+		return true, nil
+	})
+
+	awesome_mapper2.AddFunction("clearlclog", func(args ...interface{}) (interface{}, error) {
+
+		logger.Debug("Clearing all logs", "len", len(lclogs))
+		// need to be updated to filter the first 50...
+        mutex.Lock()
+		for len(lclogs) > 0 {
+			
+			toDelete := lclogs[0]
+			lclogs = lclogs[1:]
+			go ch.HandleCommand(context.Background(), &domain.RemoveRedfishResource{ID: toDelete})
+		}
+        mutex.Unlock()
 		return true, nil
 	})
 
@@ -171,6 +194,38 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 
 		return true, nil
 	})
+
+	awesome_mapper2.AddFunction("firealert", func(args ...interface{}) (interface{}, error) {
+		logEntry, ok := args[0].(*LogEventData)
+		if !ok {
+			logger.Crit("Mapper configuration error: log event data not passed", "args[1]", args[1], "TYPE", fmt.Sprintf("%#T", args[1]))
+			return nil, errors.New("Mapper configuration error: log event data not passed")
+		}
+
+		timeF, err := strconv.ParseFloat(logEntry.Created, 64)
+		if err != nil {
+			logger.Debug("Mapper configuration error: Time information can not be parsed", "time", logEntry.Created, "err", err, "set time to", 0)
+			timeF = 0
+		}
+		createdTime := time.Unix(int64(timeF), 0)
+
+		//Create Alert type event:
+
+		go d.EventBus.PublishEvent(context.Background(),
+			eh.NewEvent(eventservice.RedfishEvent, &eventservice.RedfishEventData{
+				EventType:          "Alert",
+				EventId:            logEntry.EventId,
+				EventTimestamp:     createdTime.String(),
+				Severity:           logEntry.Severity,
+				Message:            logEntry.Message,
+				MessageId:          logEntry.MessageID,
+				MessageArgs:        logEntry.MessageArgs,
+				OriginOfCondition:  map[string]interface{}{"@odata.id": logEntry.FQDD},
+			}, time.Now()))
+
+		return true, nil
+	})
+
 
 	awesome_mapper2.AddFunction("has_swinv_model", func(args ...interface{}) (interface{}, error) {
 		//fmt.Printf("Check to see if the new resource has an 'swinv' model\n")
