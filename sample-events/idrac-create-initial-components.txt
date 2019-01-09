@@ -13,5 +13,5 @@
 { "name": "IDRACComponentEvent", "event_array": [ {"Type": "StorageVolume", "ParentFQDD": "System.Embedded.1", "FQDD": "Disk.Virtual.0:RAID.Slot.4-1"} ]}
 { "name": "IDRACComponentEvent", "event_array": [ {"Type": "StorageVolume", "ParentFQDD": "System.Embedded.1", "FQDD": "Disk.Virtual.1:RAID.Slot.4-1"} ]}
 { "name": "IDRACComponentEvent", "event_array": [ {"Type": "StorageVolume", "ParentFQDD": "System.Embedded.1", "FQDD": "Disk.Virtual.2:RAID.Slot.4-1"} ]}
-{ "name": "IDRACComponentEvent", "event_array": [ {"Type": "IDRACPSU", "ParentFQDD":"System.Embedded.1","FQDD": "PSU.Slot.1"}]}
-{ "name": "IDRACComponentEvent", "event_array": [ {"Type": "IDRACvoltagesensors","ParentFQDD":"System.Embedded.1", "FQDD": "iDRAC.Embedded.1.SystemBoardCMOSBattery"}]}
+{ "name": "IDRACComponentEvent", "event_array": [ {"Type": "IDRACPSU", "ParentFQDD":"System.Embedded.1","FQDD": "0x15||PSU.Slot.1"}]}
+{ "name": "IDRACComponentEvent", "event_array": [ {"Type": "IDRACvoltagesensors", "ParentFQDD":"System.Embedded.1", "FQDD": "SystemBoardPS1PGFAIL"}]}
