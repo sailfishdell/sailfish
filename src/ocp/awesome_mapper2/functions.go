@@ -11,6 +11,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"sort"
 
 	"github.com/Knetic/govaluate"
 	"github.com/superchalupa/sailfish/src/ocp/model"
@@ -30,6 +31,14 @@ func AddFunction(name string, fn func(args ...interface{}) (interface{}, error))
 	functionsMu.Lock()
 	functions[name] = fn
 	functionsMu.Unlock()
+}
+
+func CompareURLStrings (strA, strB string) bool {
+	a, err := strconv.Atoi(path.Base(strA))
+	if err != nil { a = 0 }
+	b, err := strconv.Atoi(path.Base(strB))
+	if err != nil { b = 0 }
+	return a > b
 }
 
 func init() {
@@ -155,6 +164,62 @@ func init() {
 		}
 		return vStr, nil
 	})
+	AddFunction("reversesorttoset", func(args ...interface{}) (interface{}, error) {
+		model, ok := args[0].(*model.Model)
+		if !ok {
+			return nil, errors.New("need model as first arg")
+		}
+		property, ok := args[1].(string)
+		if !ok {
+			return nil, errors.New("need property name as second arg")
+		}
+		str, ok := args[2].(string)
+		if !ok {
+			return nil, errors.New("need new value as third arg")
+		}
+		v, ok := model.GetPropertyOk(property)
+		if !ok || v == nil {
+			v = []string{}
+		}
+
+		var vStr []string
+
+		switch t := v.(type) {
+		case []string:
+			vStr = t
+		case []interface{}:
+			for _, i := range t {
+				if k, ok := i.(string); ok {
+					vStr = append(vStr, k)
+				}
+			}
+		default:
+			vStr = []string{}
+		}
+
+		found := false
+		for i := range vStr {
+			if vStr[i] == str {
+				found = true
+			}
+		}
+		if !found {
+			if len(vStr) == 0 {
+				vStr = append(vStr, str)
+			} else if CompareURLStrings (str, vStr[0]) {
+				vStr = append([]string{str}, vStr...)
+			} else if CompareURLStrings (vStr[len(vStr)-1], str) {
+				vStr = append(vStr, str)
+			} else {
+				index := sort.Search(len(vStr), func(i int) bool { return CompareURLStrings (str, vStr[i]) })
+				vStr = append(vStr, "")
+				copy(vStr[index+1:],vStr[index:])
+				vStr[index] = str
+			}
+		}
+
+		return vStr, nil
+	})
 	AddFunction("nohash", func(args ...interface{}) (interface{}, error) {
 		str, ok := args[0].(string)
 		if !ok {
@@ -256,8 +321,8 @@ func init() {
 				if t1 >= 100 && t1 <=127 {
 					return "AC120V",nil
 				}else if t1 >= 200 && t1 <=240 {
-                                        return "AC240V",nil
-                                }else if t1 == 277 {
+										return "AC240V",nil
+								}else if t1 == 277 {
 					return "AC277V",nil
 				}else{
 					return "Unknown",nil
@@ -265,12 +330,12 @@ func init() {
 			case 1:
 				t1 := int(args[1].(float64))
 				if t1 == -48 {
-                                        return "DCNeg48V",nil
-                                }else if t1 == 380 {
-                                        return "DC380V",nil
-                                }else{
-                                        return "Unknown",nil
-                                }
+										return "DCNeg48V",nil
+								}else if t1 == 380 {
+										return "DC380V",nil
+								}else{
+										return "Unknown",nil
+								}
 			default: return "Unknown",nil
 		}
 	})
@@ -281,23 +346,23 @@ func init() {
 		}else if 32 & t == 32 {
 			return "UnavailableOffline",nil
 		}else if 16 & t == 16 {
-                        return "UnavailableOffline",nil
-                }else if 8 & t == 8 {
-                        return "UnavailableOffline",nil
-                }else if 2 & t == 2 {
-                        return "Disabled",nil
-                }else if 1 & t == 1 {
-                        return "Enabled",nil
-                }else{
+						return "UnavailableOffline",nil
+				}else if 8 & t == 8 {
+						return "UnavailableOffline",nil
+				}else if 2 & t == 2 {
+						return "Disabled",nil
+				}else if 1 & t == 1 {
+						return "Enabled",nil
+				}else{
 			return nil,nil
 		}
 	})
 	AddFunction("get_ac_dc_value", func(args ...interface{}) (interface{}, error) {
 		switch t := args[0].(float64);t {
-                case 0: return "AC",nil
-                case 1: return "DC",nil
-                default: return "Unknown",nil
-                }
+				case 0: return "AC",nil
+				case 1: return "DC",nil
+				default: return "Unknown",nil
+				}
 	})
 	AddFunction("zero_to_null", func(args ...interface{}) (interface{}, error) {
 		if args[0] == 0 {
@@ -324,8 +389,8 @@ func init() {
 	})
 	AddFunction("null_lt_zero",func(args ...interface{}) (interface{}, error) {
 		if args[0] == 0 {
-                        return nil, nil
-                }
+						return nil, nil
+				}
 		switch t := args[0].(float64);t {
 		default:
 			if t < 0 {
@@ -336,11 +401,11 @@ func init() {
 		}
 	})
 	AddFunction("map_physical_context", func(args ...interface{}) (interface{}, error) { //todo: turn into hash
-                switch t := args[0].(float64); t {
-                case 3: return "CPU", nil
-                case 4: return "StorageDevice", nil
-                case 6: return "ComputeBay", nil
-                case 7: return "SystemBoard", nil
+				switch t := args[0].(float64); t {
+				case 3: return "CPU", nil
+				case 4: return "StorageDevice", nil
+				case 6: return "ComputeBay", nil
+				case 7: return "SystemBoard", nil
 		case 8: return "Memory", nil
 		case 9: return "CPU", nil
 		case 10: return "PowerSupply", nil
@@ -361,10 +426,10 @@ func init() {
 		case 42: return "NetworkDevice", nil
 		case 43: return "NetworkDevice", nil
 		case 46: return "Chassis", nil
-                default:
-                        return "Chassis", errors.New("Invalid object status")
-                }
-        })
+				default:
+						return "Chassis", errors.New("Invalid object status")
+				}
+		})
 	AddFunction("empty_to_null", func(args ...interface{}) (interface{}, error) {
 		if args[0] == "" {
 			return nil, nil

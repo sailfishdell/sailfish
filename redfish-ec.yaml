@@ -539,7 +539,7 @@ views:
         "default":  {"members": "array()"}
       "Controllers":
         - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + view.GetURI()", "passthru": {'collection_uri': 'view.GetURI()'} }
+          "params": {"modelname": "default", "cfgsection": "collection_reverse_sort", "uniquename": "'collection_' + view.GetURI()", "passthru": {'collection_uri': 'view.GetURI()'} }
         - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "lclog", "uniquename": "'collection_lclog_' + view.GetURI()", "passthru": {'collection_uri': 'view.GetURI()'} }
       "View":
@@ -1166,6 +1166,13 @@ awesome_mapper:
           Select: "baseuri(data.ResourceURI) == collection_uri ",
           ModelUpdate: [ {Property: "members", Query: "removefromset(model, propname, data.ResourceURI)"} ]}
 
+    collection_reverse_sort:
+      - { SelectEventType: "RedfishResource:created",
+          Select: "nohash(data.ResourceURI) && baseuri(data.ResourceURI) == collection_uri ",
+          ModelUpdate: [ {Property: "members", Query: "reversesorttoset(model, propname, data.ResourceURI)"} ]}
+      - { SelectEventType: "RedfishResource:removed",
+          Select: "nohash(data.ResourceURI) && baseuri(data.ResourceURI) == collection_uri ",
+          ModelUpdate: [ {Property: "members", Query: "removefromset(model, propname, data.ResourceURI)"} ]}
 
     power_supply_uris:
       - { SelectEventType: "RedfishResource:created",
