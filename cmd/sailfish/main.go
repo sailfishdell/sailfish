@@ -137,6 +137,17 @@ func main() {
 		session.MakeHandlerFunc(logger, domainObjs.EventBus, domainObjs, chainAuthRFSSE, basicauth.MakeHandlerFunc(chainAuthRFSSE, chainAuthRFSSE("UNKNOWN", []string{"Unauthenticated"}))))
 
 	// backend command handling
+
+	// most-used command is event inject, specify that manually to avoid some regexp memory allocations
+	m.Path("/api/Event:Inject").HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			// manually set command var instead of letting gorilla use regexp
+			mux.SetURLVars(r, map[string]string{"command": "Event:Inject"})
+			// now call the passthrough
+			domainObjs.GetInternalCommandHandler(ctx)
+		})
+
+	// all the other command apis.
 	m.PathPrefix("/api/{command}").Handler(domainObjs.GetInternalCommandHandler(ctx))
 
 	tlscfg := &tls.Config{
@@ -344,6 +355,7 @@ func init() {
 		t := time.Tick(time.Second * 30)
 		for {
 			<-t
+			fmt.Println("Freeing unused memory back to the OS.")
 			debug.FreeOSMemory()
 		}
 	}()
