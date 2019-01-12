@@ -12,7 +12,7 @@ TMP=$(mktemp /dev/shm/curl_input.XXXXXXXXX)
 CURLCMD="curl "
 prot=${prot:-http}
 host=${host:-localhost}
-port=${port:-8080}
+port=${port:-443}
 
 URL=$prot://$host:$port
 

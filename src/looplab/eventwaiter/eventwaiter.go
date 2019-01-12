@@ -21,8 +21,8 @@ import (
 	"context"
 
 	eh "github.com/looplab/eventhorizon"
-	myevent "github.com/superchalupa/sailfish/src/event"
 	"github.com/superchalupa/sailfish/src/log"
+	myevent "github.com/superchalupa/sailfish/src/looplab/event"
 )
 
 type listener interface {

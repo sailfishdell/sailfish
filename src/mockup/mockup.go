@@ -12,10 +12,10 @@ import (
 
 	"github.com/superchalupa/sailfish/src/actionhandler"
 	ah "github.com/superchalupa/sailfish/src/actionhandler"
-	"github.com/superchalupa/sailfish/src/dell-ec"
+	dell_ec "github.com/superchalupa/sailfish/src/dell-ec"
 	"github.com/superchalupa/sailfish/src/dell-resources/registries"
-	"github.com/superchalupa/sailfish/src/eventwaiter"
 	"github.com/superchalupa/sailfish/src/log"
+	"github.com/superchalupa/sailfish/src/looplab/eventwaiter"
 	"github.com/superchalupa/sailfish/src/ocp/awesome_mapper2"
 	"github.com/superchalupa/sailfish/src/ocp/event"
 	"github.com/superchalupa/sailfish/src/ocp/eventservice"
