@@ -136,21 +136,22 @@ func main() {
 
 	m.PathPrefix("/redfish").Methods("GET", "PUT", "POST", "PATCH", "DELETE", "HEAD", "OPTIONS").HandlerFunc(handlerFunc)
 
-
-
 	// backend command handling
+	internalHandlerFunc := domainObjs.GetInternalCommandHandler(ctx)
 
 	// most-used command is event inject, specify that manually to avoid some regexp memory allocations
-	m.Path("/api/Event:Inject").HandlerFunc(
-		func(w http.ResponseWriter, r *http.Request) {
+	m.Path("/api/Event:Inject").Handler(
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// manually set command var instead of letting gorilla use regexp
-			mux.SetURLVars(r, map[string]string{"command": "Event:Inject"})
+			vars := mux.Vars(r)
+			vars["command"] = "Event:Inject"
+			mux.SetURLVars(r, vars)
 			// now call the passthrough
-			domainObjs.GetInternalCommandHandler(ctx)
-		})
+			internalHandlerFunc.ServeHTTP(w, r)
+		}))
 
 	// all the other command apis.
-	m.PathPrefix("/api/{command}").Handler(domainObjs.GetInternalCommandHandler(ctx))
+	m.PathPrefix("/api/{command}").Handler(internalHandlerFunc)
 
 	tlscfg := &tls.Config{
 		MinVersion: tls.VersionTLS12,
