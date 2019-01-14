@@ -7,7 +7,7 @@ listen:
    # disable direct https listener, uncomment if needed for testing:
    # - https::8443
    # disable debug port, uncomment to enable
-   # - pprof::9080
+    - pprof:localhost:9080
 
 # new features needed:
 #  - link_model
