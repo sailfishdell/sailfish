@@ -71,7 +71,7 @@ func MakeExpandListFormatter(d *domain.DomainObjects) func(context.Context, *vie
 		v *view.View,
 		m *model.Model,
 		rrp *domain.RedfishResourceProperty,
-        auth *domain.RedfishAuthorizationProperty,
+		auth *domain.RedfishAuthorizationProperty,
 		meta map[string]interface{},
 	) error {
 		p, ok := meta["property"].(string)
@@ -88,7 +88,7 @@ func MakeExpandListFormatter(d *domain.DomainObjects) func(context.Context, *vie
 			for _, i := range u {
 				out, err := d.ExpandURI(ctx, i)
 				if err == nil {
-					odata = append(odata, out)
+					odata = append(odata, out.Value)
 				}
 			}
 		case []interface{}:
@@ -99,7 +99,7 @@ func MakeExpandListFormatter(d *domain.DomainObjects) func(context.Context, *vie
 				}
 				out, err := d.ExpandURI(ctx, j)
 				if err == nil {
-					odata = append(odata, out)
+					odata = append(odata, out.Value)
 				}
 			}
 		}
@@ -116,7 +116,7 @@ func MakeExpandOneFormatter(d *domain.DomainObjects) func(context.Context, *view
 		v *view.View,
 		m *model.Model,
 		rrp *domain.RedfishResourceProperty,
-        auth *domain.RedfishAuthorizationProperty,
+		auth *domain.RedfishAuthorizationProperty,
 		meta map[string]interface{},
 	) error {
 		p, ok := meta["property"].(string)
@@ -128,7 +128,7 @@ func MakeExpandOneFormatter(d *domain.DomainObjects) func(context.Context, *view
 
 		out, err := d.ExpandURI(ctx, uri)
 		if err == nil {
-			rrp.Value = out
+			rrp.Value = out.Value
 		}
 
 		return nil
@@ -140,7 +140,7 @@ func CountFormatter(
 	vw *view.View,
 	m *model.Model,
 	rrp *domain.RedfishResourceProperty,
-    auth *domain.RedfishAuthorizationProperty,
+	auth *domain.RedfishAuthorizationProperty,
 	meta map[string]interface{},
 ) error {
 	p, ok := meta["property"].(string)
