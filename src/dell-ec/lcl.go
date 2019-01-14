@@ -6,17 +6,17 @@ import (
 	"fmt"
 	"sort"
 	"strconv"
+	"sync"
 	"time"
-    "sync"
 
 	eh "github.com/looplab/eventhorizon"
 
 	"github.com/superchalupa/sailfish/src/log"
 	"github.com/superchalupa/sailfish/src/ocp/awesome_mapper2"
+	"github.com/superchalupa/sailfish/src/ocp/eventservice"
 	"github.com/superchalupa/sailfish/src/ocp/model"
 	"github.com/superchalupa/sailfish/src/ocp/testaggregate"
 	"github.com/superchalupa/sailfish/src/ocp/view"
-	"github.com/superchalupa/sailfish/src/ocp/eventservice"
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
 )
 
@@ -32,7 +32,7 @@ func in_array(a string, list []string) bool {
 func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.CommandHandler, d *domain.DomainObjects) {
 	MAX_LOGS := 3000
 	lclogs := []eh.UUID{}
-    mutex := &sync.Mutex{}
+	mutex := &sync.Mutex{}
 
 	awesome_mapper2.AddFunction("addlclog", func(args ...interface{}) (interface{}, error) {
 		logUri, ok := args[0].(string)
@@ -43,7 +43,7 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 
 		logEntry, ok := args[1].(*LogEventData)
 		if !ok {
-			logger.Crit("Mapper configuration error: log event data not passed", "args[1]", args[1], "TYPE", fmt.Sprintf("%#T", args[1]))
+			logger.Crit("Mapper configuration error: log event data not passed", "args[1]", args[1], "TYPE", fmt.Sprintf("%T", args[1]))
 			return nil, errors.New("Mapper configuration error: log event data not passed")
 		}
 
@@ -68,9 +68,9 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 			severity = "OK"
 		}
 
-        mutex.Lock()
+		mutex.Lock()
 		lclogs = append(lclogs, uuid)
-        mutex.Unlock()
+		mutex.Unlock()
 
 		go ch.HandleCommand(
 			context.Background(),
@@ -108,14 +108,14 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 					"Action":          logEntry.Action,
 				}})
 		// need to be updated to filter the first 50...
-        mutex.Lock()
+		mutex.Lock()
 		for len(lclogs) > MAX_LOGS {
 			logger.Debug("too many logs, trimming", "len", len(lclogs))
 			toDelete := lclogs[0]
 			lclogs = lclogs[1:]
 			go ch.HandleCommand(context.Background(), &domain.RemoveRedfishResource{ID: toDelete})
 		}
-        mutex.Unlock()
+		mutex.Unlock()
 
 		return true, nil
 	})
@@ -124,14 +124,14 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 
 		logger.Debug("Clearing all logs", "len", len(lclogs))
 		// need to be updated to filter the first 50...
-        mutex.Lock()
+		mutex.Lock()
 		for len(lclogs) > 0 {
-			
+
 			toDelete := lclogs[0]
 			lclogs = lclogs[1:]
 			go ch.HandleCommand(context.Background(), &domain.RemoveRedfishResource{ID: toDelete})
 		}
-        mutex.Unlock()
+		mutex.Unlock()
 		return true, nil
 	})
 
@@ -144,7 +144,7 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 		}
 		faultEntry, ok := args[1].(*FaultEntryAddData)
 		if !ok {
-			logger.Crit("Mapper configuration error: log event data not passed", "args[1]", args[1], "TYPE", fmt.Sprintf("%#T", args[1]))
+			logger.Crit("Mapper configuration error: log event data not passed", "args[1]", args[1], "TYPE", fmt.Sprintf("%T", args[1]))
 			return nil, errors.New("Mapper configuration error: log event data not passed")
 		}
 
@@ -198,7 +198,7 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 	awesome_mapper2.AddFunction("firealert", func(args ...interface{}) (interface{}, error) {
 		logEntry, ok := args[0].(*LogEventData)
 		if !ok {
-			logger.Crit("Mapper configuration error: log event data not passed", "args[1]", args[1], "TYPE", fmt.Sprintf("%#T", args[1]))
+			logger.Crit("Mapper configuration error: log event data not passed", "args[1]", args[1], "TYPE", fmt.Sprintf("%T", args[1]))
 			return nil, errors.New("Mapper configuration error: log event data not passed")
 		}
 
@@ -213,19 +213,18 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 
 		go d.EventBus.PublishEvent(context.Background(),
 			eh.NewEvent(eventservice.RedfishEvent, &eventservice.RedfishEventData{
-				EventType:          "Alert",
-				EventId:            logEntry.EventId,
-				EventTimestamp:     createdTime.String(),
-				Severity:           logEntry.Severity,
-				Message:            logEntry.Message,
-				MessageId:          logEntry.MessageID,
-				MessageArgs:        logEntry.MessageArgs,
-				OriginOfCondition:  map[string]interface{}{"@odata.id": logEntry.FQDD},
+				EventType:         "Alert",
+				EventId:           logEntry.EventId,
+				EventTimestamp:    createdTime.String(),
+				Severity:          logEntry.Severity,
+				Message:           logEntry.Message,
+				MessageId:         logEntry.MessageID,
+				MessageArgs:       logEntry.MessageArgs,
+				OriginOfCondition: map[string]interface{}{"@odata.id": logEntry.FQDD},
 			}, time.Now()))
 
 		return true, nil
 	})
-
 
 	awesome_mapper2.AddFunction("has_swinv_model", func(args ...interface{}) (interface{}, error) {
 		//fmt.Printf("Check to see if the new resource has an 'swinv' model\n")

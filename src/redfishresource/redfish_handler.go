@@ -3,7 +3,7 @@ package domain
 import (
 	"context"
 	"encoding/json"
-	//"fmt"
+	"fmt"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -439,6 +439,7 @@ func handleSelect(r *http.Request, d *HTTPCmdProcessedData) *HTTPCmdProcessedDat
 func trimSelect(r interface{}, selAry [][]string) {
 	res, ok := r.(map[string]interface{})
 	if !ok {
+		fmt.Printf("Could not trim no map[string]interface{} item: %s = %T\n", r, r)
 		return
 	}
 

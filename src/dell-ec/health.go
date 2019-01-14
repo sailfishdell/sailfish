@@ -19,12 +19,12 @@ func inithealth(ctx context.Context, logger log.Logger, ch eh.CommandHandler) {
 	awesome_mapper2.AddFunction("generate_new_health", func(args ...interface{}) (interface{}, error) {
 		healthEvent, ok := args[0].(*dm_event.HealthEventData)
 		if !ok {
-			logger.Crit("Mapper configuration error: health event data not passed", "args[1]", args[1], "TYPE", fmt.Sprintf("%#T", args[1]))
+			logger.Crit("Mapper configuration error: health event data not passed", "args[1]", args[1], "TYPE", fmt.Sprintf("%T", args[1]))
 			return nil, errors.New("Mapper configuration error: health event data not passed")
 		}
 		aggregateUUID, ok := args[1].(eh.UUID)
 		if !ok {
-			logger.Crit("Mapper configuration error: aggregate UUID not passed", "args[1]", args[1], "TYPE", fmt.Sprintf("%#T", args[1]))
+			logger.Crit("Mapper configuration error: aggregate UUID not passed", "args[1]", args[1], "TYPE", fmt.Sprintf("%T", args[1]))
 			return nil, errors.New("Mapper configuration error: aggregate UUID not passed")
 		}
 
@@ -38,9 +38,9 @@ func inithealth(ctx context.Context, logger log.Logger, ch eh.CommandHandler) {
 		}
 		subSystemHealthList[subsys] = health_entry
 
-    // temporary workaround to filter out mchars health statuses
+		// temporary workaround to filter out mchars health statuses
 		if health == "Absent" || subsys == "SledSystem" || subsys == "IOM" || subsys == "Group.1" {
-      //currently only "Absent" is ignored, add "" later?
+			//currently only "Absent" is ignored, add "" later?
 			if _, ok := subSystemHealthList[subsys]; ok { //property exists, delete
 				delete(subSystemHealthList, subsys)
 			}
