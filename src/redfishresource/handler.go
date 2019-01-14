@@ -102,6 +102,14 @@ func NewDomainObjects() (*DomainObjects, error) {
 	return &d, nil
 }
 
+func (d *DomainObjects) GetLicenses() []string {
+	d.licensesMu.RLock()
+	defer d.licensesMu.RUnlock()
+	ret := make([]string, len(d.licenses))
+	copy(ret, d.licenses)
+	return ret
+}
+
 func (d *DomainObjects) HasAggregateID(uri string) bool {
 	d.treeMu.RLock()
 	defer d.treeMu.RUnlock()
@@ -173,7 +181,7 @@ func (d *DomainObjects) ExpandURI(ctx context.Context, uri string) (interface{},
 		return nil, errors.New("Problem loading URI from aggregate store: " + uri)
 	}
 
-	sub, err := ProcessGET(ctx, &redfishResource.Properties)
+	sub, err := ProcessGET(ctx, &redfishResource.Properties, &redfishResource.Authorization)
 	if err != nil {
 		return nil, errors.New("Problem loading URI from aggregate store: " + uri)
 	}

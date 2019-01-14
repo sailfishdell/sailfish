@@ -31,9 +31,9 @@ const (
 )
 
 type GenericUploadEventData struct {
-	ID          eh.UUID // id of aggregate
-	CmdID       eh.UUID
-	ResourceURI string
+	ID            eh.UUID // id of aggregate
+	CmdID         eh.UUID
+	ResourceURI   string
 
 	Files map[string]string
 }
@@ -168,10 +168,10 @@ func (c *POST) ParseHTTPRequest(r *http.Request) error {
 func (c *POST) Handle(ctx context.Context, a *domain.RedfishResourceAggregate) error {
 	// Upload handler needs to send HTTP response
 	c.eventBus.PublishEvent(ctx, eh.NewEvent(GenericUploadEvent, &GenericUploadEventData{
-		ID:          c.ID,
-		CmdID:       c.CmdID,
-		ResourceURI: a.ResourceURI,
-		Files:       c.Files,
+		ID:            c.ID,
+		CmdID:         c.CmdID,
+		ResourceURI:   a.ResourceURI,
+		Files:         c.Files,
 	}, time.Now()))
 	return nil
 }

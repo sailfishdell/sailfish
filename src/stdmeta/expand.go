@@ -65,12 +65,13 @@ func RegisterFormatters(s *testaggregate.Service, d *domain.DomainObjects) {
 	})
 }
 
-func MakeExpandListFormatter(d *domain.DomainObjects) func(context.Context, *view.View, *model.Model, *domain.RedfishResourceProperty, map[string]interface{}) error {
+func MakeExpandListFormatter(d *domain.DomainObjects) func(context.Context, *view.View, *model.Model, *domain.RedfishResourceProperty, *domain.RedfishAuthorizationProperty, map[string]interface{}) error {
 	return func(
 		ctx context.Context,
 		v *view.View,
 		m *model.Model,
 		rrp *domain.RedfishResourceProperty,
+        auth *domain.RedfishAuthorizationProperty,
 		meta map[string]interface{},
 	) error {
 		p, ok := meta["property"].(string)
@@ -109,12 +110,13 @@ func MakeExpandListFormatter(d *domain.DomainObjects) func(context.Context, *vie
 	}
 }
 
-func MakeExpandOneFormatter(d *domain.DomainObjects) func(context.Context, *view.View, *model.Model, *domain.RedfishResourceProperty, map[string]interface{}) error {
+func MakeExpandOneFormatter(d *domain.DomainObjects) func(context.Context, *view.View, *model.Model, *domain.RedfishResourceProperty, *domain.RedfishAuthorizationProperty, map[string]interface{}) error {
 	return func(
 		ctx context.Context,
 		v *view.View,
 		m *model.Model,
 		rrp *domain.RedfishResourceProperty,
+        auth *domain.RedfishAuthorizationProperty,
 		meta map[string]interface{},
 	) error {
 		p, ok := meta["property"].(string)
@@ -138,6 +140,7 @@ func CountFormatter(
 	vw *view.View,
 	m *model.Model,
 	rrp *domain.RedfishResourceProperty,
+    auth *domain.RedfishAuthorizationProperty,
 	meta map[string]interface{},
 ) error {
 	p, ok := meta["property"].(string)
@@ -170,7 +173,7 @@ func CountFormatter(
 	return nil
 }
 
-func FormatOdataList(ctx context.Context, v *view.View, m *model.Model, rrp *domain.RedfishResourceProperty, meta map[string]interface{}) error {
+func FormatOdataList(ctx context.Context, v *view.View, m *model.Model, rrp *domain.RedfishResourceProperty, auth *domain.RedfishAuthorizationProperty, meta map[string]interface{}) error {
 	p, ok := meta["property"].(string)
 
 	uris, ok := m.GetPropertyOk(p)

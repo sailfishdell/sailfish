@@ -10,15 +10,17 @@ import (
 type processFn func(context.Context, *RedfishResourceProperty, encOpts) (interface{}, error)
 
 type encOpts struct {
-	request interface{}
-	present bool
-	process processFn
+	request   interface{}
+	present   bool
+	process   processFn
+	fnArgAuth *RedfishAuthorizationProperty
 }
 
-func ProcessPATCH(ctx context.Context, rrp *RedfishResourceProperty, request interface{}) (results interface{}, err error) {
+func ProcessPATCH(ctx context.Context, rrp *RedfishResourceProperty, auth *RedfishAuthorizationProperty, request interface{}) (results interface{}, err error) {
 	opts := encOpts{
-		request: request,
-		process: PATCHfn,
+		request:   request,
+		process:   PATCHfn,
+		fnArgAuth: auth,
 	}
 
 	val, err := parseRecursive(ctx, reflect.ValueOf(rrp), opts)
@@ -28,10 +30,11 @@ func ProcessPATCH(ctx context.Context, rrp *RedfishResourceProperty, request int
 	return nil, err
 }
 
-func ProcessGET(ctx context.Context, rrp *RedfishResourceProperty) (results interface{}, err error) {
+func ProcessGET(ctx context.Context, rrp *RedfishResourceProperty, auth *RedfishAuthorizationProperty) (results interface{}, err error) {
 	opts := encOpts{
 		request: nil,
 		process: GETfn,
+        fnArgAuth: auth,
 	}
 
 	val, err := parseRecursive(ctx, reflect.ValueOf(rrp), opts)
@@ -95,9 +98,10 @@ func parseRecursive(ctx context.Context, val reflect.Value, e encOpts) (reflect.
 			wg.Add(1)
 			go func(k reflect.Value) {
 				newEncOpts := encOpts{
-					request: e.request,
-					present: e.present,
-					process: e.process,
+					request:   e.request,
+					present:   e.present,
+					process:   e.process,
+					fnArgAuth: e.fnArgAuth,
 				}
 
 				// if e.request has any data, pull out the matching mapval
@@ -157,11 +161,11 @@ func parseRecursive(ctx context.Context, val reflect.Value, e encOpts) (reflect.
 }
 
 type NewPropGetter interface {
-	PropertyGet(context.Context, *RedfishResourceProperty, map[string]interface{}) error
+	PropertyGet(context.Context, *RedfishAuthorizationProperty, *RedfishResourceProperty, map[string]interface{}) error
 }
 
 type NewPropPatcher interface {
-	PropertyPatch(context.Context, *RedfishResourceProperty, interface{}, map[string]interface{}) (interface{}, error)
+	PropertyPatch(context.Context, *RedfishAuthorizationProperty, *RedfishResourceProperty, interface{}, map[string]interface{}) (interface{}, error)
 }
 type CompatPropPatcher interface {
 	PropertyPatch(context.Context, *RedfishResourceAggregate, *RedfishResourceProperty, map[string]interface{})
@@ -188,7 +192,7 @@ func GETfn(ctx context.Context, rrp *RedfishResourceProperty, opts encOpts) (int
 	if plugin, ok := plugin.(NewPropGetter); ok {
 		// comment out debugging in the fast path. Uncomment if you need to debug
 		//defer ContextLogger(ctx, "property_process").Debug("AFTER getting property: GET - type assert success", "value", fmt.Sprintf("%v", rrp.Value))
-		err = plugin.PropertyGet(ctx, rrp, meta_t)
+		err = plugin.PropertyGet(ctx, opts.fnArgAuth, rrp, meta_t)
 	}
 	return rrp.Value, err
 }
@@ -221,7 +225,7 @@ func PATCHfn(ctx context.Context, rrp *RedfishResourceProperty, opts encOpts) (i
 	//ContextLogger(ctx, "property_process").Debug("getting property: PATCH", "value", fmt.Sprintf("%v", rrp.Value), "plugin", plugin)
 	if plugin, ok := plugin.(NewPropPatcher); ok {
 		//defer ContextLogger(ctx, "property_process").Debug("AFTER getting property: PATCH - type assert success", "value", fmt.Sprintf("%v", rrp.Value))
-		return plugin.PropertyPatch(ctx, rrp, opts.request, meta_t)
+		return plugin.PropertyPatch(ctx, opts.fnArgAuth, rrp, opts.request, meta_t)
 	}
 	if plugin, ok := plugin.(CompatPropPatcher); ok {
 		//defer ContextLogger(ctx, "property_process").Debug("AFTER getting property: PATCH - type assert success", "value", fmt.Sprintf("%v", rrp.Value))

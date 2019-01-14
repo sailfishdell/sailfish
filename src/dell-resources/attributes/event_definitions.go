@@ -1,7 +1,11 @@
 package attributes
 
 import (
+	"fmt"
+
 	eh "github.com/looplab/eventhorizon"
+	"github.com/mitchellh/mapstructure"
+	domain "github.com/superchalupa/sailfish/src/redfishresource"
 )
 
 const (
@@ -25,6 +29,11 @@ type PrivilegeData struct {
 	Private        bool
 }
 
+type AttributeData struct {
+	Privileges PrivilegeData
+	Value      interface{}
+}
+
 type AttributeUpdatedData struct {
 	Privileges PrivilegeData
 	ReqID      eh.UUID
@@ -37,12 +46,13 @@ type AttributeUpdatedData struct {
 }
 
 type AttributeUpdateRequestData struct {
-	ReqID eh.UUID
-	FQDD  string
-	Group string
-	Index string
-	Name  string
-	Value interface{}
+	ReqID         eh.UUID
+	FQDD          string
+	Group         string
+	Index         string
+	Name          string
+	Value         interface{}
+	Authorization domain.RedfishAuthorizationProperty
 }
 
 type AttributeGetCurrentValueRequestData struct {
@@ -50,4 +60,40 @@ type AttributeGetCurrentValueRequestData struct {
 	Group string
 	Index string
 	Name  string
+}
+
+func (ad *AttributeData) Valid(attrVal interface{}) bool {
+	err := mapstructure.Decode(attrVal, ad)
+	if err != nil {
+		return false
+	}
+	return true
+}
+
+func (ad *AttributeData) WriteAllowed(attrVal interface{}, auth *domain.RedfishAuthorizationProperty) bool {
+	if !ad.Valid(attrVal) {
+		return false
+	}
+
+	if ad.Privileges.Private ||
+		ad.Privileges.Readonly ||
+		ad.Privileges.IsSuppressed ||
+		!auth.VerifyPrivilegeBits(ad.Privileges.WritePrivilege) {
+		fmt.Println("not allowed to write ", ad)
+		return false
+	}
+	return true
+}
+
+func (ad *AttributeData) ReadAllowed(attrVal interface{}, auth *domain.RedfishAuthorizationProperty) bool {
+	if !ad.Valid(attrVal) {
+		return false
+	}
+
+	if ad.Privileges.Private ||
+		!auth.VerifyPrivilegeBits(ad.Privileges.ReadPrivilege) {
+		fmt.Println("not allowed to read ", ad)
+		return false
+	}
+	return true
 }

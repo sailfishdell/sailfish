@@ -8,9 +8,11 @@ import (
 	"time"
 
 	eh "github.com/looplab/eventhorizon"
+
 	"github.com/superchalupa/sailfish/src/log"
 	"github.com/superchalupa/sailfish/src/ocp/event"
 	"github.com/superchalupa/sailfish/src/ocp/model"
+	domain "github.com/superchalupa/sailfish/src/redfishresource"
 )
 
 type Service struct {
@@ -50,7 +52,11 @@ func StartService(ctx context.Context, logger log.Logger, eb eh.EventBus) (*Serv
 		}
 
 		for _, m := range modelArray {
-			m.ApplyOption(WithAttribute(data.Group, data.Index, data.Name, data.Value))
+            value := AttributeData {
+                Privileges: data.Privileges,
+                Value: data.Value,
+            }
+			m.ApplyOption(WithAttribute(data.Group, data.Index, data.Name, value))
 		}
 	})
 
@@ -101,7 +107,33 @@ func (s *Service) selectCachedAttributes() func(eh.Event) bool {
 	}
 }
 
-func (b *breadcrumb) UpdateRequest(ctx context.Context, property string, value interface{}) (interface{}, error) {
+
+func getAttrValue (m *model.Model, group, gindex, name string) (ret interface{}, ok bool) {
+    attributes, ok := m.GetPropertyOkUnlocked("attributes")
+    if !ok {
+        return nil, ok
+    }
+    attrMap := attributes.(map[string]map[string]map[string]interface{})
+
+    groupMap, ok := attrMap[group]
+    if !ok {
+        return nil, ok
+    }
+
+    index, ok := groupMap[gindex]
+    if !ok {
+        return nil, ok
+    }
+
+    value, ok := index[name]
+    if !ok {
+        return nil, ok
+    }
+
+    return value, ok
+}
+
+func (b *breadcrumb) UpdateRequest(ctx context.Context, property string, value interface{}, auth *domain.RedfishAuthorizationProperty) (interface{}, error) {
 	b.s.RLock()
 	defer b.s.RUnlock()
 
@@ -111,18 +143,28 @@ func (b *breadcrumb) UpdateRequest(ctx context.Context, property string, value i
 		stuff := strings.Split(k, ".")
 		reqUUID := eh.NewUUID()
 
-		// TODO: validate
 		//  - validate that the requested member is in this list
 		//  - validate that it is writable
 		//  - validate that user has perms
-		//
+        attrVal, ok := getAttrValue(b.m, stuff[0], stuff[1], stuff[2])
+        if !ok {
+            return nil, errors.New("attributes not found " + k)
+        }
+
+        var ad AttributeData
+        if !ad.WriteAllowed(attrVal, auth) {
+            b.s.logger.Error("Unable to set attribute", "Attribute",  attrVal)
+            return nil, errors.New("unable to set attribute " + k)
+        }
+
 		data := &AttributeUpdateRequestData{
-			ReqID: reqUUID,
-			FQDD:  b.s.forwardMapping[b.m][0], // take the first fqdd
-			Group: stuff[0],
-			Index: stuff[1],
-			Name:  stuff[2],
-			Value: v,
+			ReqID:         reqUUID,
+			FQDD:          b.s.forwardMapping[b.m][0], // take the first fqdd
+			Group:         stuff[0],
+			Index:         stuff[1],
+			Name:          stuff[2],
+			Value:         v,
+			Authorization: *auth,
 		}
 		b.s.eb.PublishEvent(ctx, eh.NewEvent(AttributeUpdateRequest, data, time.Now()))
 	}

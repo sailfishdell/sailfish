@@ -16,6 +16,7 @@ import (
 	"github.com/superchalupa/sailfish/src/looplab/eventwaiter"
 	"github.com/superchalupa/sailfish/src/ocp/event"
 	"github.com/superchalupa/sailfish/src/ocp/model"
+	domain "github.com/superchalupa/sailfish/src/redfishresource"
 
 	"github.com/superchalupa/sailfish/src/dell-resources/attributes"
 )
@@ -143,7 +144,7 @@ func (b breadcrumb) Close() {
 	b.ars.resetConfig()
 }
 
-func (b breadcrumb) UpdateRequest(ctx context.Context, property string, value interface{}) (interface{}, error) {
+func (b breadcrumb) UpdateRequest(ctx context.Context, property string, value interface{}, auth *domain.RedfishAuthorizationProperty) (interface{}, error) {
 	b.logger.Info("UpdateRequest", "property", property, "mappingName", b.mappingName)
 	mappings, ok := b.ars.modelmappings[b.mappingName]
 	if !ok {
@@ -159,12 +160,13 @@ func (b breadcrumb) UpdateRequest(ctx context.Context, property string, value in
 		reqUUID := eh.NewUUID()
 
 		data := &attributes.AttributeUpdateRequestData{
-			ReqID: reqUUID,
-			FQDD:  mapping.FQDD,
-			Group: mapping.Group,
-			Index: mapping.Index,
-			Name:  mapping.Name,
-			Value: value,
+			ReqID:         reqUUID,
+			FQDD:          mapping.FQDD,
+			Group:         mapping.Group,
+			Index:         mapping.Index,
+			Name:          mapping.Name,
+			Value:         value,
+			Authorization: *auth,
 		}
 		b.ars.eb.PublishEvent(ctx, eh.NewEvent(attributes.AttributeUpdateRequest, data, time.Now()))
 

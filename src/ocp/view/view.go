@@ -18,7 +18,7 @@ type closer interface {
 type Option func(*View) error
 
 type controller interface {
-	UpdateRequest(ctx context.Context, property string, value interface{}) (interface{}, error)
+	UpdateRequest(ctx context.Context, property string, value interface{}, auth *domain.RedfishAuthorizationProperty) (interface{}, error)
 	Close()
 }
 
@@ -27,6 +27,7 @@ type formatter func(
 	v *View,
 	m *model.Model,
 	rrp *domain.RedfishResourceProperty,
+    auth *domain.RedfishAuthorizationProperty,
 	meta map[string]interface{},
 ) error
 

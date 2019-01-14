@@ -541,7 +541,7 @@ views:
         "default":  {"members": "array()"}
       "Controllers":
         - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + view.GetURI()", "passthru": {'collection_uri': 'view.GetURI()'} }
+          "params": {"modelname": "default", "cfgsection": "collection_reverse_sort", "uniquename": "'collection_' + view.GetURI()", "passthru": {'collection_uri': 'view.GetURI()'} }
         - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "lclog", "uniquename": "'collection_lclog_' + view.GetURI()", "passthru": {'collection_uri': 'view.GetURI()'} }
       "View":
@@ -1040,10 +1040,10 @@ views:
       "Controllers":
       "View":
         - "fn": "with_URI"
-          "params": "rooturi + '/TaskServices'"
+          "params": "rooturi + '/TaskService'"
       "Aggregate": "task_service"
       "ExecPost": [
-        "instantiate('task_service_tasks', 'parenturi', rooturi + '/TaskServices/')",
+        "instantiate('task_service_tasks', 'parenturi', rooturi + '/TaskService/')",
       ]
 
   "task_service_tasks":
@@ -1057,7 +1057,7 @@ views:
           "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + view.GetURI()", "passthru": {'collection_uri': 'view.GetURI()'} }
       "View":
         - "fn": "with_URI"
-          "params": "rooturi + '/TaskServices/Tasks'"
+          "params": "rooturi + '/TaskService/Tasks'"
         - "fn": "with_URI"
           "params": "parenturi + 'Tasks'"
         - "fn": "stdFormatters"
@@ -1073,7 +1073,7 @@ views:
           "params": {"modelname": "default", "cfgsection": "tasks", "uniquename": "'task_id:' + task_id", "passthru": {"Index": "Index", "Group": "Group"} }
       "View":
         - "fn": "with_URI"
-          "params": "rooturi + '/TaskServices/Tasks/' + task_id"
+          "params": "rooturi + '/TaskService/Tasks/' + task_id"
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
         - "fn": "stdFormatters"
@@ -1168,6 +1168,13 @@ awesome_mapper:
           Select: "baseuri(data.ResourceURI) == collection_uri ",
           ModelUpdate: [ {Property: "members", Query: "removefromset(model, propname, data.ResourceURI)"} ]}
 
+    collection_reverse_sort:
+      - { SelectEventType: "RedfishResource:created",
+          Select: "nohash(data.ResourceURI) && baseuri(data.ResourceURI) == collection_uri ",
+          ModelUpdate: [ {Property: "members", Query: "reversesorttoset(model, propname, data.ResourceURI)"} ]}
+      - { SelectEventType: "RedfishResource:removed",
+          Select: "nohash(data.ResourceURI) && baseuri(data.ResourceURI) == collection_uri ",
+          ModelUpdate: [ {Property: "members", Query: "removefromset(model, propname, data.ResourceURI)"} ]}
 
     power_supply_uris:
       - { SelectEventType: "RedfishResource:created",
@@ -1219,8 +1226,14 @@ awesome_mapper:
 
     lclog:
       - { SelectEventType: "LogEvent",
-          Select: "true",
+          Select: "data.LogAlert == 'log' || data.LogAlert == 'log alert'",
           Exec: [ "addlclog(collection_uri, data)" ]}
+      - { SelectEventType: "LogEvent",
+          Select: "data.LogAlert == 'alert' || data.LogAlert == 'log alert'",
+          Exec: [ "firealert(data)" ]}
+      - { SelectEventType: "LogEvent",
+          Select: "data.LogAlert == 'clear'",
+          Exec: [ "clearlclog()" ]}
 
     faultlist:
       - { SelectEventType: "FaultEntryAdd",

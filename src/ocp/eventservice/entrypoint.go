@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"sync"
 	"time"
+	"crypto/tls"
 
 	eh "github.com/looplab/eventhorizon"
 	eventpublisher "github.com/looplab/eventhorizon/publisher/local"
@@ -205,8 +206,12 @@ func makePOST(dest string, event eh.Event, context interface{}) func() {
 		}
 
 		// TODO: should be able to configure timeout
+		// TODO: Shore up security for POST
 		client := &http.Client{
-			Timeout: time.Second * 1,
+			Timeout: time.Second * 3,
+			Transport: &http.Transport{
+				 TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+				 },
 		}
 		req, err := http.NewRequest("POST", dest, bytes.NewBuffer(d))
 		req.Header.Add("OData-Version", "4.0")

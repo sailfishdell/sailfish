@@ -181,6 +181,11 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// add authorization details
+	redfishResource.Authorization.UserName = rh.UserName
+	redfishResource.Authorization.Privileges = rh.Privileges
+	redfishResource.Authorization.Licenses = rh.d.GetLicenses()
+
 	// to avoid races, set up our listener first
 	l, err := rh.d.HTTPWaiter.Listen(reqCtx, func(event eh.Event) bool {
 		if event.EventType() != HTTPCmdProcessed {
@@ -300,7 +305,7 @@ func getResourceEtag(ctx context.Context, agg *RedfishResourceAggregate) string 
 
 	switch t := etagintf.(type) {
 	case *RedfishResourceProperty:
-		etagprocessedintf, _ := ProcessGET(ctx, t)
+		etagprocessedintf, _ := ProcessGET(ctx, t, &agg.Authorization)
 		etagstr, ok = etagprocessedintf.(string)
 		if !ok {
 			//fmt.Printf("@odata.etag not a string: %T - %#v\n", etagprocessedintf, etagprocessedintf)

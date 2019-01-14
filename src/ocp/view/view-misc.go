@@ -13,6 +13,7 @@ import (
 // already locked at aggregate level when we get here
 func (s *View) PropertyGet(
 	ctx context.Context,
+	auth *domain.RedfishAuthorizationProperty,
 	rrp *domain.RedfishResourceProperty,
 	meta map[string]interface{},
 ) error {
@@ -55,6 +56,7 @@ func (s *View) PropertyGet(
 			v *View,
 			m *model.Model,
 			rrp *domain.RedfishResourceProperty,
+            auth *domain.RedfishAuthorizationProperty,
 			meta map[string]interface{},
 		) error {
 			property, ok := meta["property"].(string)
@@ -68,11 +70,12 @@ func (s *View) PropertyGet(
 		}
 	}
 
-	return formatterFn(ctx, s, modelObj, rrp, meta)
+	return formatterFn(ctx, s, modelObj, rrp, auth, meta)
 }
 
 func (s *View) PropertyPatch(
 	ctx context.Context,
+	auth *domain.RedfishAuthorizationProperty,
 	rrp *domain.RedfishResourceProperty,
 	body interface{},
 	meta map[string]interface{},
@@ -97,7 +100,7 @@ func (s *View) PropertyPatch(
 
 	property, ok := meta["property"].(string)
 	if ok {
-		newval, err := controller.UpdateRequest(ctx, property, body)
+		newval, err := controller.UpdateRequest(ctx, property, body, auth)
 		log.MustLogger("PATCH").Debug("update request", "newval", newval, "err", err)
 		if err == nil {
 			return newval, nil
