@@ -52,10 +52,10 @@ func StartService(ctx context.Context, logger log.Logger, eb eh.EventBus) (*Serv
 		}
 
 		for _, m := range modelArray {
-            value := AttributeData {
-                Privileges: data.Privileges,
-                Value: data.Value,
-            }
+			value := AttributeData{
+				Privileges: data.Privileges,
+				Value:      data.Value,
+			}
 			m.ApplyOption(WithAttribute(data.Group, data.Index, data.Name, value))
 		}
 	})
@@ -107,30 +107,29 @@ func (s *Service) selectCachedAttributes() func(eh.Event) bool {
 	}
 }
 
+func getAttrValue(m *model.Model, group, gindex, name string) (ret interface{}, ok bool) {
+	attributes, ok := m.GetPropertyOkUnlocked("attributes")
+	if !ok {
+		return nil, ok
+	}
+	attrMap := attributes.(map[string]map[string]map[string]interface{})
 
-func getAttrValue (m *model.Model, group, gindex, name string) (ret interface{}, ok bool) {
-    attributes, ok := m.GetPropertyOkUnlocked("attributes")
-    if !ok {
-        return nil, ok
-    }
-    attrMap := attributes.(map[string]map[string]map[string]interface{})
+	groupMap, ok := attrMap[group]
+	if !ok {
+		return nil, ok
+	}
 
-    groupMap, ok := attrMap[group]
-    if !ok {
-        return nil, ok
-    }
+	index, ok := groupMap[gindex]
+	if !ok {
+		return nil, ok
+	}
 
-    index, ok := groupMap[gindex]
-    if !ok {
-        return nil, ok
-    }
+	value, ok := index[name]
+	if !ok {
+		return nil, ok
+	}
 
-    value, ok := index[name]
-    if !ok {
-        return nil, ok
-    }
-
-    return value, ok
+	return value, ok
 }
 
 func (b *breadcrumb) UpdateRequest(ctx context.Context, property string, value interface{}, auth *domain.RedfishAuthorizationProperty) (interface{}, error) {
@@ -146,16 +145,17 @@ func (b *breadcrumb) UpdateRequest(ctx context.Context, property string, value i
 		//  - validate that the requested member is in this list
 		//  - validate that it is writable
 		//  - validate that user has perms
-        attrVal, ok := getAttrValue(b.m, stuff[0], stuff[1], stuff[2])
-        if !ok {
-            return nil, errors.New("attributes not found " + k)
-        }
+		attrVal, ok := getAttrValue(b.m, stuff[0], stuff[1], stuff[2])
+		if !ok {
+			b.s.logger.Error("not found", "Attribute", k)
+			continue
+		}
 
-        var ad AttributeData
-        if !ad.WriteAllowed(attrVal, auth) {
-            b.s.logger.Error("Unable to set attribute", "Attribute",  attrVal)
-            return nil, errors.New("unable to set attribute " + k)
-        }
+		var ad AttributeData
+		if !ad.WriteAllowed(attrVal, auth) {
+			b.s.logger.Error("Unable to set", "Attribute", k)
+			continue
+		}
 
 		data := &AttributeUpdateRequestData{
 			ReqID:         reqUUID,
