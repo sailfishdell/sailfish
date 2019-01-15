@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 
 	eh "github.com/looplab/eventhorizon"
 	log "github.com/superchalupa/sailfish/src/log"
@@ -29,9 +30,9 @@ type AggIDSetter interface {
 type UserDetailsSetter interface {
 	SetUserDetails(string, []string) string
 	// return codes:
-	//      "checkMaster" - command check passed, but also check master
-	//      "authorized"  - command check passed, go right ahead, no master check
-	//      "unauthorized" - failed auth check in command, no need to check further
+	//		"checkMaster" - command check passed, but also check master
+	//		"authorized"  - command check passed, go right ahead, no master check
+	//		"unauthorized" - failed auth check in command, no need to check further
 
 }
 
@@ -49,8 +50,8 @@ func NewRedfishHandler(dobjs *DomainObjects, logger log.Logger, u string, p []st
 type RedfishHandler struct {
 	UserName   string
 	Privileges []string
-	d          *DomainObjects
-	logger     log.Logger
+	d		   *DomainObjects
+	logger	   log.Logger
 }
 
 func (rh *RedfishHandler) isAuthorized(requiredPrivs []string) (authorized string) {
@@ -235,6 +236,7 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method == "GET" {
 		// $top, $skip, $filter
+		//fmt.Printf("Calling to process top,skip,filter\n")
 		data = handleCollectionQueryOptions(r, data)
 		data = handleExpand(r, data)
 		data = handleSelect(r, data)
@@ -260,18 +262,18 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	addEtag(w, data)
 
 	/*
-	       // START
-	       // STREAMING ENCODE TO OUTPUT (not possible to get content length)
-	   	// and then encode response
-	   	enc := json.NewEncoder(w)
-	   	// enc.SetIndent("", "  ")
-	   	enc.Encode(data.Results)
-	       // END
+		   // START
+		   // STREAMING ENCODE TO OUTPUT (not possible to get content length)
+		// and then encode response
+		enc := json.NewEncoder(w)
+		// enc.SetIndent("", "	")
+		enc.Encode(data.Results)
+		   // END
 	*/
 
 	// START:
 	// uses more ram: encode to buffer first, get length, then send
-	// This  lets 'ab' (apachebench) properly do keepalives
+	// This	 lets 'ab' (apachebench) properly do keepalives
 	b, err := json.Marshal(data.Results)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -345,36 +347,225 @@ func addEtag(w http.ResponseWriter, d *HTTPCmdProcessedData) *HTTPCmdProcessedDa
 
 	return d
 }
+func handleCollectionFilter(filter string, membersArr []interface{}) []interface{} {
+	//fmt.Printf("filter: %s\n", filter)
+
+	const (
+		BLANK = 0
+		EQ = 1
+		LT = 2
+		GT = 3
+		GE = 4
+		LE = 5
+	)
+
+	var comparisonString = map[int]string{
+		BLANK:	"",
+		EQ:		" eq ",
+		LT:		" lt ",
+		GT:		" gt ",
+		GE:		" ge ",
+		LE:		" le ",
+	}
+
+	var sevInteger = map[string]int{
+		"Fatal":	4,
+		"Critical":	3,
+		"Warning":	2,
+		"OK":		1,
+	}
+
+	type FilterTest struct {
+		Category string //What field we compare against
+		SearchTerm	 string	   //For string search the second term
+		Comparator	   int	  //Operator ==, <, >, >=, <=
+		Time   time.Time	//Time construct for date compare
+	}
+
+	filterArray := []FilterTest{}
+	keepArray := []int{}
+	//TODO Right now only working with filter 'and' filter, 'or' is a whole 'nother ballgame
+	splitFilter := strings.Split(filter, " and ")
+	//For whatever filters may have been found, parse them out into a structure we can use
+	for i := 0 ; i < len(splitFilter) ; i += 1 {
+		tok := splitFilter[i]
+		//Have a 'token' get the parts of it
+		searchTok := BLANK
+		for k := EQ; k <= LE; k += 1 {
+			//fmt.Printf("Checking for:%s\n",comparisonString[k])
+			if strings.Contains(tok, comparisonString[k]){
+				searchTok = k
+				break
+			}
+		}
+		if searchTok != BLANK {
+			subSplit := strings.Split(tok, comparisonString[searchTok])
+			tmpTime, _ := time.Parse("2006-01-02T15:04:05-0700", subSplit[1])
+			if strings.Contains (subSplit[0], "MessageID") {
+				subSplit[0] = "MessageId" //Bug fix? From which party?
+			}
+			filterArray = append(filterArray, FilterTest{subSplit[0], subSplit[1], searchTok, tmpTime})
+			//fmt.Println(filterArray[len(filterArray)-1])
+		}
+	}
+
+	//For each element in the log array apply all filters
+	for i := 0; i < len(membersArr) ; i += 1 {
+		memberInstance := membersArr[i].(map[string]interface{})
+		keepArray = append(keepArray, i)
+		//fmt.Println(currentMember)
+		for j := 0; j < len(filterArray) ; j += 1 {
+			//Each filter on the same object
+			//fmt.Println(filterArray[j])
+			var currentMember interface{}
+			if memberInstance[filterArray[j].Category] != nil {
+				currentMember = memberInstance[filterArray[j].Category]
+			} else {
+				//Drill down a layer further
+				currentSubMember := memberInstance["Oem"].(map[string]interface{})
+				if currentSubMember != nil {
+					currentSubSubMember := currentSubMember["Dell"].(map[string]interface{})
+					if currentSubSubMember[filterArray[j].Category] != nil {
+						//fmt.Printf("Found %s in Oem:Dell\n", filterArray[j].Category)
+						currentMember = currentSubSubMember[filterArray[j].Category]
+					} else {
+						//fmt.Printf("ERROR can't find %s\n", filterArray[j].Category)
+						currentMember = nil
+					}
+				} else {
+						//fmt.Printf("ERROR can't find %s\n", filterArray[j].Category)
+						currentMember = nil
+				}
+			}
+			if currentMember != nil {
+				//fmt.Printf("Comparing %s%sto %s\n", filterArray[j].Category, comparisonString[filterArray[j].Comparator], filterArray[j].SearchTerm)
+				if filterArray[j].Category == "Created" {
+					//Handle time comparisons
+					memberTime := currentMember.(time.Time)
+					var result bool
+					switch filterArray[j].Comparator {
+						case GE:
+							result = memberTime.Equal(filterArray[j].Time)
+							if !result {
+								result = memberTime.After(filterArray[j].Time)
+							}
+						case GT:
+							result = memberTime.After(filterArray[j].Time)
+						case LE:
+							result = memberTime.Equal(filterArray[j].Time)
+							if !result {
+								result = memberTime.Before(filterArray[j].Time)
+							}
+						case LT:
+							result = memberTime.Before(filterArray[j].Time)
+						case EQ:
+							result = memberTime.Equal(filterArray[j].Time)
+						default :
+							result = true //What happened?
+					}
+					//Invert logic to determine delete
+					if !result {
+						//Remove
+						//fmt.Printf("Remove by time: %v\n", memberInstance)
+						keepArray = keepArray[:len(keepArray)-1]
+						break
+					}
+				} else if filterArray[j].Category == "Severity" {
+					//Severity comparisons
+					memberSev := sevInteger[currentMember.(string)]
+					searchSev := sevInteger[filterArray[j].SearchTerm]
+					if memberSev > 0 && memberSev < 5 && searchSev > 0 && searchSev < 5 {
+						var result bool
+						switch filterArray[j].Comparator {
+							case GE:
+								result = memberSev >= searchSev
+							case GT:
+								result = memberSev > searchSev
+							case LE:
+								result = memberSev <= searchSev
+							case LT:
+								result = memberSev < searchSev
+							case EQ:
+								result = memberSev == searchSev
+							default :
+								result = true //What happened?
+						}
+						//Invert logic to determine delete
+						if !result {
+							//Remove
+							//fmt.Printf("Remove by Severity %s: %v\n", filterArray[j].SearchTerm, memberInstance)
+							keepArray = keepArray[:len(keepArray)-1]
+							break
+						}
+					} else {
+						//fmt.Printf("ERROR invalid severities: %d %d\n", memberSev, searchSev)
+					}
+				} else {
+					//All other not time options are string searches, ignore Comparator
+					if !strings.Contains(currentMember.(string), filterArray[j].SearchTerm){
+						//Remove
+						//fmt.Printf("Remove by text %s:%s: %v\n", filterArray[j].Category, filterArray[j].SearchTerm, memberInstance)
+						keepArray = keepArray[:len(keepArray)-1]
+						break
+					}
+				}
+			}
+		}
+	}
+
+	//We have all logs we don't want in an array, put those in our output
+	var returnArr []interface{}
+	//fmt.Printf("Keep only these indexes: %v\n", keepArray)
+	for _, index := range keepArray {
+		returnArr = append (returnArr, membersArr[index])
+	}
+	return returnArr
+}
+
 
 func handleCollectionQueryOptions(r *http.Request, d *HTTPCmdProcessedData) *HTTPCmdProcessedData {
 	// the following query parameters affect how we return collections:
 	skip := r.URL.Query().Get("$skip")
 	top := r.URL.Query().Get("$top")
-	//filter = r.URL.Query().Get("$filter")
-
+	filter := r.URL.Query().Get("$filter")
+	//fmt.Printf("Top: %s, skip:%s\n", top, skip)
 	res, ok := d.Results.(map[string]interface{})
 	if !ok {
 		// can't be a collection if it's not a map[string]interface{} (or, rather, we can't handle it here and would need to completely re-do this with introspection.)
+		//fmt.Printf("ERROR: res\n")
 		return d
 	}
 
 	members, ok := res["Members"]
 	if !ok {
+		//fmt.Printf("ERROR: members\n")
 		return d
 	}
 
-	membersArr, ok := members.([]map[string]interface{})
+	membersArr, ok := members.([]interface{})
 	if !ok {
+		//fmt.Printf("ERROR: membersArr\n")
 		return d
 	}
 
+	if filter != "" {
+		membersArr = handleCollectionFilter(filter, membersArr)
+		res["Members"] = membersArr
+		res["Members@odata.count"] = len(membersArr)
+	}
 	var skipI int
 	if skip != "" {
-		skipI, err := strconv.Atoi(skip)
+		tmpskipI, err := strconv.Atoi(skip)
+		skipI = tmpskipI
 		// TODO: http error on invalid skip request
 		if err == nil && skipI > 0 {
-			// slice off the number we are supposed to skip from the beginning
-			membersArr = membersArr[skipI:]
+			if skipI < len(membersArr) {
+				// slice off the number we are supposed to skip from the beginning
+				membersArr = membersArr[skipI:]
+			} else {
+				//Handle too big of a skip, so we don't fault
+				membersArr = []interface{}{}
+			}
 			res["Members"] = membersArr
 		}
 	}
