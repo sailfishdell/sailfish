@@ -34,7 +34,7 @@ func TestView(t *testing.T) {
 	}
 	for _, subtest := range tests {
 		t.Run(subtest.testname, func(t *testing.T) {
-			output, _ := domain.ProcessGET(context.Background(), subtest.input)
+			output, _ := domain.ProcessGET(context.Background(), subtest.input, nil)
 			assert.EqualValues(t, subtest.expected, output)
 		})
 	}
