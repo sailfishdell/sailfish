@@ -79,8 +79,8 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 			}
 		}
 
-		// have to do this in a goroutine because awesome mapper is locked while it processes events
-		instantiateSvc.WorkQueue <- func() { instantiateSvc.InstantiateNoWait(cfgStr, params) }
+		// queue up an instantiate to prevent deadlock. this runs in another thread off a queue
+		instantiateSvc.QueueInstantiate(cfgStr, params)
 		return true, nil
 	})
 

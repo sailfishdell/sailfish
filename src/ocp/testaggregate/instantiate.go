@@ -34,20 +34,9 @@ type Service struct {
 	controllerFunctionsRegistry map[string]controllerFunc
 	aggregateFunctionsRegistry  map[string]aggregateFunc
 	serviceGlobals              map[string]interface{}
-	WorkQueue                   chan func()
 }
 
 func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, ch eh.CommandHandler) *Service {
-
-	DoWork := func(jobs chan func()) {
-		for job := range jobs {
-			job()
-		}
-	}
-
-	work := make(chan func(), 400)
-	go DoWork(work)
-
 	return &Service{
 		ctx:                         ctx,
 		logger:                      logger,
@@ -58,7 +47,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 		controllerFunctionsRegistry: map[string]controllerFunc{},
 		aggregateFunctionsRegistry:  map[string]aggregateFunc{},
 		serviceGlobals:              map[string]interface{}{},
-		WorkQueue:                   work,
 	}
 }
 
@@ -108,26 +96,26 @@ type config struct {
 // The following is needed in the Views[key]
 //            key should have the same names as config struct above
 //
+
+type Waiter interface {
+	Done()
+}
+
+func (s *Service) QueueInstantiate(name string, parameters map[string]interface{}) Waiter {
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		s.InstantiateFromCfg(s.ctx, s.cfgMgr, s.cfgMgrMu, name, parameters)
+		wg.Done()
+	}()
+	return wg
+}
+
 func (s *Service) Instantiate(name string, parameters map[string]interface{}) (log.Logger, *view.View, error) {
 	return s.InstantiateFromCfg(s.ctx, s.cfgMgr, s.cfgMgrMu, name, parameters)
 }
 
-func (s *Service) InstantiateNoWait(name string, parameters map[string]interface{}) (log.Logger, *view.View, error) {
-	return s.instantiateFromCfg(s.ctx, s.cfgMgr, s.cfgMgrMu, name, parameters)
-}
-
 func (s *Service) InstantiateFromCfg(ctx context.Context, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, name string, parameters map[string]interface{}) (l log.Logger, v *view.View, e error) {
-	wg := sync.WaitGroup{}
-	wg.Add(1)
-	s.WorkQueue <- func() {
-		l, v, e = s.instantiateFromCfg(ctx, cfgMgr, cfgMgrMu, name, parameters)
-		wg.Done()
-	}
-	wg.Wait()
-	return
-}
-
-func (s *Service) instantiateFromCfg(ctx context.Context, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, name string, parameters map[string]interface{}) (log.Logger, *view.View, error) {
 	s.Lock()
 	defer s.Unlock()
 
