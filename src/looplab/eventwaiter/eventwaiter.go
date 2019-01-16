@@ -264,6 +264,26 @@ func (l *EventListener) Wait(ctx context.Context) (eh.Event, error) {
 	}
 }
 
+// Wait waits for the event to arrive.
+func (l *EventListener) UnSyncWait(ctx context.Context) (eh.Event, error) {
+	select {
+	case event := <-l.singleEventInbox:
+		if len(l.singleEventInbox) > 25 {
+			l.startPrinting = true
+		}
+		if l.startPrinting && l.logger != nil {
+			l.logger.Debug("Event Listener congestion", "len", len(l.singleEventInbox), "cap", cap(l.singleEventInbox), "name", l.Name)
+		}
+		if len(l.singleEventInbox) == 0 {
+			l.startPrinting = false
+		}
+
+		return event, nil
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	}
+}
+
 // Inbox returns the channel that events will be delivered on so that you can integrate into your own select() if needed.
 func (l *EventListener) Inbox() <-chan eh.Event {
 	return l.singleEventInbox
