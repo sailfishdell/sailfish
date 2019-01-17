@@ -21,7 +21,7 @@ func initpowercontrol(logger log.Logger) {
 	awesome_mapper2.AddFunction("set_power_cap_enable", func(args ...interface{}) (interface{}, error) {
 		powercap_setting, ok := args[0].(string)
 		if !ok {
-			logger.Crit("Mapper configuration error: Need power cap setting as a string", "args[0]", args[0], "TYPE", fmt.Sprintf("%#T", args[0]))
+			logger.Crit("Mapper configuration error: Need power cap setting as a string", "args[0]", args[0], "TYPE", fmt.Sprintf("%T", args[0]))
 			return nil, errors.New("Mapper configuration error: power cap setting not a string")
 		}
 		if powercap_setting == "Enabled" {
@@ -35,7 +35,7 @@ func initpowercontrol(logger log.Logger) {
 	awesome_mapper2.AddFunction("check_power_cap", func(args ...interface{}) (interface{}, error) {
 		powercap_value, ok := args[0].(float64)
 		if !ok {
-			logger.Crit("Mapper configuration error: Need power cap value as a number", "args[0]", args[0], "TYPE", fmt.Sprintf("%#T", args[0]))
+			logger.Crit("Mapper configuration error: Need power cap value as a number", "args[0]", args[0], "TYPE", fmt.Sprintf("%T", args[0]))
 			return nil, errors.New("Mapper configuration error: power cap value is not a number")
 		}
 		if powercap_enabled == true {

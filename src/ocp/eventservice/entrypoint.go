@@ -3,18 +3,18 @@ package eventservice
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"net/http"
 	"sync"
 	"time"
-	"crypto/tls"
 
 	eh "github.com/looplab/eventhorizon"
 	eventpublisher "github.com/looplab/eventhorizon/publisher/local"
 	"github.com/spf13/viper"
 
-	"github.com/superchalupa/sailfish/src/eventwaiter"
 	"github.com/superchalupa/sailfish/src/log"
+	"github.com/superchalupa/sailfish/src/looplab/eventwaiter"
 	"github.com/superchalupa/sailfish/src/ocp/model"
 	"github.com/superchalupa/sailfish/src/ocp/testaggregate"
 	"github.com/superchalupa/sailfish/src/ocp/view"
@@ -210,8 +210,8 @@ func makePOST(dest string, event eh.Event, context interface{}) func() {
 		client := &http.Client{
 			Timeout: time.Second * 3,
 			Transport: &http.Transport{
-				 TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-				 },
+				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+			},
 		}
 		req, err := http.NewRequest("POST", dest, bytes.NewBuffer(d))
 		req.Header.Add("OData-Version", "4.0")
@@ -226,10 +226,12 @@ func makePOST(dest string, event eh.Event, context interface{}) func() {
 
 func (es *EventService) PublishResourceUpdatedEventsForModel(ctx context.Context, modelName string) view.Option {
 	return view.WatchModel(modelName, func(v *view.View, m *model.Model, updates []model.Update) {
-		eventData := &RedfishEventData{
-			EventType:         "ResourceUpdated",
-			OriginOfCondition: map[string]interface{}{"@odata.id": v.GetURI()},
-		}
-		go es.eb.PublishEvent(ctx, eh.NewEvent(RedfishEvent, eventData, time.Now()))
+		/*
+			eventData := &RedfishEventData{
+				EventType:         "ResourceUpdated",
+				OriginOfCondition: map[string]interface{}{"@odata.id": v.GetURI()},
+			}
+			go es.eb.PublishEvent(ctx, eh.NewEvent(RedfishEvent, eventData, time.Now()))
+		*/
 	})
 }

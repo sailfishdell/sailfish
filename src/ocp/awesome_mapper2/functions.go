@@ -7,11 +7,11 @@ import (
 	"os"
 	"path"
 	"reflect"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
-	"sort"
 
 	"github.com/Knetic/govaluate"
 	"github.com/superchalupa/sailfish/src/ocp/model"
@@ -33,11 +33,15 @@ func AddFunction(name string, fn func(args ...interface{}) (interface{}, error))
 	functionsMu.Unlock()
 }
 
-func CompareURLStrings (strA, strB string) bool {
+func CompareURLStrings(strA, strB string) bool {
 	a, err := strconv.Atoi(path.Base(strA))
-	if err != nil { a = 0 }
+	if err != nil {
+		a = 0
+	}
 	b, err := strconv.Atoi(path.Base(strB))
-	if err != nil { b = 0 }
+	if err != nil {
+		b = 0
+	}
 	return a > b
 }
 
@@ -206,14 +210,14 @@ func init() {
 		if !found {
 			if len(vStr) == 0 {
 				vStr = append(vStr, str)
-			} else if CompareURLStrings (str, vStr[0]) {
+			} else if CompareURLStrings(str, vStr[0]) {
 				vStr = append([]string{str}, vStr...)
-			} else if CompareURLStrings (vStr[len(vStr)-1], str) {
+			} else if CompareURLStrings(vStr[len(vStr)-1], str) {
 				vStr = append(vStr, str)
 			} else {
-				index := sort.Search(len(vStr), func(i int) bool { return CompareURLStrings (str, vStr[i]) })
+				index := sort.Search(len(vStr), func(i int) bool { return CompareURLStrings(str, vStr[i]) })
 				vStr = append(vStr, "")
-				copy(vStr[index+1:],vStr[index:])
+				copy(vStr[index+1:], vStr[index:])
 				vStr[index] = str
 			}
 		}
@@ -315,54 +319,58 @@ func init() {
 		}
 	})
 	AddFunction("get_input_voltagetype", func(args ...interface{}) (interface{}, error) {
-		switch t := args[0].(float64);t {
-			case 0:
-				t1 := int(args[1].(float64))
-				if t1 >= 100 && t1 <=127 {
-					return "AC120V",nil
-				}else if t1 >= 200 && t1 <=240 {
-										return "AC240V",nil
-								}else if t1 == 277 {
-					return "AC277V",nil
-				}else{
-					return "Unknown",nil
-				}
-			case 1:
-				t1 := int(args[1].(float64))
-				if t1 == -48 {
-										return "DCNeg48V",nil
-								}else if t1 == 380 {
-										return "DC380V",nil
-								}else{
-										return "Unknown",nil
-								}
-			default: return "Unknown",nil
+		switch t := args[0].(float64); t {
+		case 0:
+			t1 := int(args[1].(float64))
+			if t1 >= 100 && t1 <= 127 {
+				return "AC120V", nil
+			} else if t1 >= 200 && t1 <= 240 {
+				return "AC240V", nil
+			} else if t1 == 277 {
+				return "AC277V", nil
+			} else {
+				return "Unknown", nil
+			}
+		case 1:
+			t1 := int(args[1].(float64))
+			if t1 == -48 {
+				return "DCNeg48V", nil
+			} else if t1 == 380 {
+				return "DC380V", nil
+			} else {
+				return "Unknown", nil
+			}
+		default:
+			return "Unknown", nil
 		}
 	})
 	AddFunction("get_ps_state", func(args ...interface{}) (interface{}, error) {
 		t := int(args[0].(float64))
-		if 64 & t == 64 {
-			return "Disabled",nil
-		}else if 32 & t == 32 {
-			return "UnavailableOffline",nil
-		}else if 16 & t == 16 {
-						return "UnavailableOffline",nil
-				}else if 8 & t == 8 {
-						return "UnavailableOffline",nil
-				}else if 2 & t == 2 {
-						return "Disabled",nil
-				}else if 1 & t == 1 {
-						return "Enabled",nil
-				}else{
-			return nil,nil
+		if 64&t == 64 {
+			return "Disabled", nil
+		} else if 32&t == 32 {
+			return "UnavailableOffline", nil
+		} else if 16&t == 16 {
+			return "UnavailableOffline", nil
+		} else if 8&t == 8 {
+			return "UnavailableOffline", nil
+		} else if 2&t == 2 {
+			return "Disabled", nil
+		} else if 1&t == 1 {
+			return "Enabled", nil
+		} else {
+			return nil, nil
 		}
 	})
 	AddFunction("get_ac_dc_value", func(args ...interface{}) (interface{}, error) {
-		switch t := args[0].(float64);t {
-				case 0: return "AC",nil
-				case 1: return "DC",nil
-				default: return "Unknown",nil
-				}
+		switch t := args[0].(float64); t {
+		case 0:
+			return "AC", nil
+		case 1:
+			return "DC", nil
+		default:
+			return "Unknown", nil
+		}
 	})
 	AddFunction("zero_to_null", func(args ...interface{}) (interface{}, error) {
 		if args[0] == 0 {
@@ -370,66 +378,93 @@ func init() {
 		}
 		return args[0], nil
 	})
-	AddFunction("zero_or_value",func(args ...interface{}) (interface{}, error) {
-		switch t := args[0].(float64);t {
-			default:
-				if t < 0 {
-					return 0, nil
-				}else {
-					return t, nil
-				}
+	AddFunction("zero_or_value", func(args ...interface{}) (interface{}, error) {
+		switch t := args[0].(float64); t {
+		default:
+			if t < 0 {
+				return 0, nil
+			} else {
+				return t, nil
+			}
 		}
 	})
-	AddFunction("get_hotpluggable_value",func(args ...interface{}) (interface{}, error) {
-		switch t := args[0].(float64);t {
-		case 0: return false,nil
-		case 1: return true,nil
-		default: return nil,nil
+	AddFunction("get_hotpluggable_value", func(args ...interface{}) (interface{}, error) {
+		switch t := args[0].(float64); t {
+		case 0:
+			return false, nil
+		case 1:
+			return true, nil
+		default:
+			return nil, nil
 		}
 	})
-	AddFunction("null_lt_zero",func(args ...interface{}) (interface{}, error) {
+	AddFunction("null_lt_zero", func(args ...interface{}) (interface{}, error) {
 		if args[0] == 0 {
-						return nil, nil
-				}
-		switch t := args[0].(float64);t {
+			return nil, nil
+		}
+		switch t := args[0].(float64); t {
 		default:
 			if t < 0 {
 				return nil, nil
-			}else{
+			} else {
 				return t, nil
 			}
 		}
 	})
 	AddFunction("map_physical_context", func(args ...interface{}) (interface{}, error) { //todo: turn into hash
-				switch t := args[0].(float64); t {
-				case 3: return "CPU", nil
-				case 4: return "StorageDevice", nil
-				case 6: return "ComputeBay", nil
-				case 7: return "SystemBoard", nil
-		case 8: return "Memory", nil
-		case 9: return "CPU", nil
-		case 10: return "PowerSupply", nil
-		case 12: return "Front", nil
-		case 13: return "Back", nil
-		case 14: return "PowerSupply", nil
-		case 18: return "CPU", nil
-		case 19: return "PowerSupply", nil
-		case 20: return "VoltageRegulator", nil
-		case 21: return "PowerSupply", nil
-		case 23: return "Chassis", nil
-		case 24: return "Chassis", nil
-		case 25: return "ComputeBay", nil
-		case 29: return "Fan", nil
-		case 30: return "Fan", nil
-		case 32: return "Memory", nil
-		case 41: return "ComputeBay", nil
-		case 42: return "NetworkDevice", nil
-		case 43: return "NetworkDevice", nil
-		case 46: return "Chassis", nil
-				default:
-						return "Chassis", errors.New("Invalid object status")
-				}
-		})
+		switch t := args[0].(float64); t {
+		case 3:
+			return "CPU", nil
+		case 4:
+			return "StorageDevice", nil
+		case 6:
+			return "ComputeBay", nil
+		case 7:
+			return "SystemBoard", nil
+		case 8:
+			return "Memory", nil
+		case 9:
+			return "CPU", nil
+		case 10:
+			return "PowerSupply", nil
+		case 12:
+			return "Front", nil
+		case 13:
+			return "Back", nil
+		case 14:
+			return "PowerSupply", nil
+		case 18:
+			return "CPU", nil
+		case 19:
+			return "PowerSupply", nil
+		case 20:
+			return "VoltageRegulator", nil
+		case 21:
+			return "PowerSupply", nil
+		case 23:
+			return "Chassis", nil
+		case 24:
+			return "Chassis", nil
+		case 25:
+			return "ComputeBay", nil
+		case 29:
+			return "Fan", nil
+		case 30:
+			return "Fan", nil
+		case 32:
+			return "Memory", nil
+		case 41:
+			return "ComputeBay", nil
+		case 42:
+			return "NetworkDevice", nil
+		case 43:
+			return "NetworkDevice", nil
+		case 46:
+			return "Chassis", nil
+		default:
+			return "Chassis", errors.New("Invalid object status")
+		}
+	})
 	AddFunction("empty_to_null", func(args ...interface{}) (interface{}, error) {
 		if args[0] == "" {
 			return nil, nil
@@ -637,7 +672,6 @@ func init() {
 	})
 
 	AddFunction("raidstatus", func(args ...interface{}) (interface{}, error) {
-		var vStr string
 		var raidStatus uint32 = uint32(args[0].(float64))
 		var g_raidStatus = []string{"Unknown", "Ready", "Online", "Foreign", "Offline", "Blocked", "Failed", "Degraded", "NonRAID", "Missing"}
 		switch raidStatus {
@@ -662,7 +696,6 @@ func init() {
 		default:
 			return g_raidStatus[0], nil
 		}
-		return vStr, nil
 	})
 
 	AddFunction("supporteddeviceprotocols", func(args ...interface{}) (interface{}, error) {
@@ -812,7 +845,6 @@ func init() {
 	})
 
 	AddFunction("slottype", func(args ...interface{}) (interface{}, error) {
-		var vStr string
 		var slottype uint32 = uint32(args[0].(float64))
 		var g_sSlotType = []string{"Unknown", "PCI Express x8", "PCI Express Gen3", "PCI Express Gen3 x1",
 			"PCI Express Gen3 x2", "PCI Express Gen3 x4", "PCI Express Gen3 x8", "PCI Express Gen3 x16", "PCI Express x16",
@@ -849,7 +881,6 @@ func init() {
 		default:
 			return g_sSlotType[0], nil
 		}
-		return vStr, nil
 	})
 
 	AddFunction("encryptionncap", func(args ...interface{}) (interface{}, error) {
@@ -952,7 +983,6 @@ func init() {
 		} else {
 			return "EncryptionNotCapable", nil
 		}
-		return nil, nil
 	})
 
 	AddFunction("slicedvdcap", func(args ...interface{}) (interface{}, error) {
@@ -962,7 +992,6 @@ func init() {
 		} else {
 			return "NotSupported", nil
 		}
-		return nil, nil
 	})
 
 	AddFunction("controllerprotocols", func(args ...interface{}) (interface{}, error) {

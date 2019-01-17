@@ -10,7 +10,7 @@ import (
 	eventpublisher "github.com/looplab/eventhorizon/publisher/local"
 	"github.com/superchalupa/sailfish/src/log"
 
-	"github.com/superchalupa/sailfish/src/eventwaiter"
+	"github.com/superchalupa/sailfish/src/looplab/eventwaiter"
 )
 
 type Options func(*privateStateStructure) error
@@ -79,16 +79,26 @@ func (d *privateStateStructure) Close() {
 	}
 }
 
+type syncEvent interface {
+	Done()
+}
+
 func (d *privateStateStructure) RunForever(fn func(eh.Event)) {
 	defer d.Close()
 
 	for {
-		event, err := d.listener.Wait(d.ctx)
+		event, err := d.listener.UnSyncWait(d.ctx)
 		if err != nil {
 			log.MustLogger("eventstream").Info("Shutting down listener", "err", err)
 			return
 		}
 		fn(event)
+
+		// TODO: separation of concerns: this should be factored out into a middleware of some sort...
+		// now that we are waiting on the listeners, we can .Done() the waitgroup for the eventwaiter itself
+		if e, ok := event.(syncEvent); ok {
+			e.Done()
+		}
 	}
 }
 

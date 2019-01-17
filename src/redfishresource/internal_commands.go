@@ -7,8 +7,8 @@ import (
 
 	eh "github.com/looplab/eventhorizon"
 	"github.com/mitchellh/mapstructure"
-	"github.com/superchalupa/sailfish/src/event"
 	log "github.com/superchalupa/sailfish/src/log"
+	"github.com/superchalupa/sailfish/src/looplab/event"
 )
 
 type syncEvent interface {

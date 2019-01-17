@@ -12,9 +12,7 @@ import (
 	"time"
 
 	eh "github.com/looplab/eventhorizon"
-	//  eventpublisher "github.com/looplab/eventhorizon/publisher/local"
 
-	//  "github.com/superchalupa/sailfish/src/eventwaiter"
 	"github.com/superchalupa/sailfish/src/log"
 	"github.com/superchalupa/sailfish/src/ocp/event"
 	"github.com/superchalupa/sailfish/src/ocp/view"
@@ -33,9 +31,9 @@ const (
 )
 
 type GenericUploadEventData struct {
-	ID            eh.UUID // id of aggregate
-	CmdID         eh.UUID
-	ResourceURI   string
+	ID          eh.UUID // id of aggregate
+	CmdID       eh.UUID
+	ResourceURI string
 
 	Files map[string]string
 }
@@ -86,7 +84,7 @@ func octetStreamUploadHandler(c *POST, r *http.Request) error {
 		return err
 	}
 
-	fmt.Sprintf("%d bytes are recieved.\n", n)
+	fmt.Printf("%d bytes are recieved.\n", n)
 	fmt.Printf("\nupload %d %s to %s\n", n, uploadFile, localFile)
 
 	return nil
@@ -170,10 +168,10 @@ func (c *POST) ParseHTTPRequest(r *http.Request) error {
 func (c *POST) Handle(ctx context.Context, a *domain.RedfishResourceAggregate) error {
 	// Upload handler needs to send HTTP response
 	c.eventBus.PublishEvent(ctx, eh.NewEvent(GenericUploadEvent, &GenericUploadEventData{
-		ID:            c.ID,
-		CmdID:         c.CmdID,
-		ResourceURI:   a.ResourceURI,
-		Files:         c.Files,
+		ID:          c.ID,
+		CmdID:       c.CmdID,
+		ResourceURI: a.ResourceURI,
+		Files:       c.Files,
 	}, time.Now()))
 	return nil
 }

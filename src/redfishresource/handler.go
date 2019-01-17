@@ -15,9 +15,8 @@ import (
 	"github.com/looplab/eventhorizon/commandhandler/aggregate"
 	eventpublisher "github.com/looplab/eventhorizon/publisher/local"
 	repo "github.com/looplab/eventhorizon/repo/memory"
-	"github.com/superchalupa/sailfish/src/eventbus"
-
-	"github.com/superchalupa/sailfish/src/eventwaiter"
+	"github.com/superchalupa/sailfish/src/looplab/eventbus"
+	"github.com/superchalupa/sailfish/src/looplab/eventwaiter"
 )
 
 type waiter interface {
@@ -171,7 +170,7 @@ func (d *DomainObjects) DeleteResource(ctx context.Context, uri string) {
 	delete(d.Tree, uri)
 }
 
-func (d *DomainObjects) ExpandURI(ctx context.Context, uri string) (interface{}, error) {
+func (d *DomainObjects) ExpandURI(ctx context.Context, uri string) (*RedfishResourceProperty, error) {
 	aggID, ok := d.GetAggregateIDOK(uri)
 	if !ok {
 		return nil, errors.New("URI does not exist: " + uri)
@@ -182,12 +181,9 @@ func (d *DomainObjects) ExpandURI(ctx context.Context, uri string) (interface{},
 		return nil, errors.New("Problem loading URI from aggregate store: " + uri)
 	}
 
-	sub, err := ProcessGET(ctx, &redfishResource.Properties, &redfishResource.Authorization)
-	if err != nil {
-		return nil, errors.New("Problem loading URI from aggregate store: " + uri)
-	}
+	// TODO: check to see if .Meta of the properties is set and call process on it if so
 
-	return sub, nil
+	return &redfishResource.Properties, nil
 }
 
 // Notify implements the Notify method of the EventObserver interface.

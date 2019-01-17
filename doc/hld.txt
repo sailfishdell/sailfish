@@ -1,0 +1,95 @@
+
+High Level Design
+
+The high level design of the sailfish server can be described by three interlocking concepts:
+  1) Redfish optimized data storage
+  2) Event Streaming
+  3) Config driven
+
+Redfish optimized data storage
+  Sailfish strategy is to maintain data in the most efficient form needed to
+produce redfish output. Redfish basic content is just JSON. Go natively
+supports JSON serialization of all of it's built-in data structures. Thus,
+sailfish just needs to maintain a native go map (also sometimes called a
+'dictionary' or 'hash') data structure representing the raw redfish output.
+This is memory and cpu efficient in that the output is stored in a native data
+structure and then serialized to JSON using the golang builtin primitives.
+
+  There are two fundamental differences between this approach and previous
+approaches. First, sailfish attempts as much as possible to ensure that it can
+satisfy all incoming redfish requests using in-process data. That is,
+sailfish's normal case for producing redfish output is that it will not do any
+interprocess calls to request data. To accomplish this, the second difference
+is that sailfish keeps it's own copy of all of the data it needs to satisfy
+redfish requests. Sailfish maintains what basically amounts to its own copy of
+all of the output data. A full walk of the current IDRAC redfish tree produces
+less than 2MB of JSON data, so this is fairly reasonable.
+
+  However, it is important to note that sailfish does have mechanisms to do
+demand based retrieval from other processes. It is just that, for speed
+purposes, it is heavily de-emphasized and should only be used in places where
+there is no other choice. One specific example of where this mechanism should
+be used: IOMs have a mailbox command to obtain a secure, time limited login
+URL, which is ues by the GUI to launch the IOM management page without
+requiring login. Because the URL expires every 30s, it would be problematic to
+try to pump this URI info in, as it would likely be stale or within a few
+seconds of expiry an unacceptable amount of the time, and it would waste i2c
+cycles with FReD to repeatedly get this info. Thus, the best option for this
+attribute is to simply request it on-demand from FReD when a request comes in.
+
+Event Streaming
+  As described in the previous section, sailfish maintains its own data store
+to satisfy redfish requests. The strategy for maintaining this internal data
+store is by listening to a stream of events that represent all of the
+actions/activity happening in the system.  This stream of events is produced
+by the sailfish pump and injected into the localhost/internal http api
+endpoint. This stream of events is currently encoded in JSON (see the pump HLD
+section) and represent things such as:
+  1) Attribute registry changes
+  2) DM Object creation/removal
+  2) DM Object changes
+  3) DNMS notifications
+
+  Internal to sailfish process, there is a virtual event bus construct. The
+sailfish server listens on the internal-only HTTP endpoint /api/EventInject
+and takes all events submitted and puts them onto the internal event bus.
+
+  After events are on the event bus, specific event listeners can filter on
+events and process each event to update the individual redfish properties.
+There are a couple of pre-built event listeners that handle the vast majority
+of redfish property updates
+  1) Attribute Mapper
+  2) Attribute Dumper
+  3) Awesome Mapper
+
+Attribute Mapper
+  The attribute mapper is a specific mapper that is built to handle config
+manager attributes. It can handle special AttributeUpdated events to map
+specific config attributes to specific redfish resource properties. The way
+that it handles this mapping is by reading the mappings from a config file.
+Each attribute FQDD, Group, Index, and Attribute Name can be mapped to a
+specific property on a redfish resource.
+
+Attribute Dumper
+  Several redfish URIs contain an "Attributes" property that simply contains a
+dump of all Attribute Registry entries matching a specific FQDD. The Attribute
+Dumper event listener will do this. It is intialized with a list of FQDDs.
+When any AttributeUpdated event occurs which matches that FQDD, the Dumper
+will add that attribute to the list of attributes.
+
+Awesome Mapper
+  The bread and butter mapper, the awesome mapper utilizes a generic
+expression evaluation library to take arbitrary expressions encoded into the
+config file and use them to select events to be matched out of the event
+stream and then to generically update model properties based on arbitrary
+expressions involving the event.
+
+Config Driven
+  The final major part of the design is around how every effort has been made
+to reduce the amount of code written and maximize code re-usability by making
+the redfish output config driven as much as possible. This is accomplished by
+means of a flexible config parsing system that, at its core, fundamentally is
+centered around creating a flexible way to select events that appear on the
+message bus, and then defining what actions to take in response to those
+events via the config file, rather than having to write code for each
+individual event.
