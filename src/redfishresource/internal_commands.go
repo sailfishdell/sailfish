@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"time"
+  "strings"
 
 	eh "github.com/looplab/eventhorizon"
 	"github.com/mitchellh/mapstructure"
@@ -104,7 +105,13 @@ func (c *CreateRedfishResource) Handle(ctx context.Context, a *RedfishResourceAg
 	a.Properties.Parse(c.Properties)
 	a.Properties.Meta = c.Meta
 
-	v["@odata.id"] = &RedfishResourceProperty{Value: c.ResourceURI}
+  // take care of special character encoding
+  resourceURI := strings.Replace(c.ResourceURI, "#", "%23", -1)
+  resourceURI = strings.Replace(resourceURI, "|", "%7C", -1)
+  resourceURI = strings.Replace(resourceURI, ":", "%3A", -1)
+  resourceURI = strings.Replace(resourceURI, " ", "%20", -1)
+
+	v["@odata.id"] = &RedfishResourceProperty{Value: resourceURI}
 	v["@odata.type"] = &RedfishResourceProperty{Value: c.Type}
 	v["@odata.context"] = &RedfishResourceProperty{Value: c.Context}
 

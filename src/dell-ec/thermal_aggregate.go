@@ -75,7 +75,6 @@ func RegisterThermalAggregate(s *testaggregate.Service) {
 						"DELETE": []string{}, // can't be deleted
 					},
 					Properties: map[string]interface{}{
-						"Id":                             params["FQDD"],
 						"Name":                           "Chassis Inlet Temperature",
 						"Description":                    "Represents the properties for Temperature and Cooling",
 						"LowerThresholdCritical@meta":    vw.Meta(view.GETProperty("LowerWarningThreshold"), view.GETModel("default")),
