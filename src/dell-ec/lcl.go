@@ -32,7 +32,7 @@ func in_array(a string, list []string) bool {
 func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.CommandHandler, d *domain.DomainObjects) {
 	MAX_LOGS := 3000
 	lclogs := []eh.UUID{}
-	mutex := &sync.Mutex{}
+	lclogsMu := &sync.Mutex{}
 
 	awesome_mapper2.AddFunction("addlclog", func(args ...interface{}) (interface{}, error) {
 		logUri, ok := args[0].(string)
@@ -68,9 +68,9 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 			severity = "OK"
 		}
 
-		mutex.Lock()
+		lclogsMu.Lock()
 		lclogs = append(lclogs, uuid)
-		mutex.Unlock()
+		lclogsMu.Unlock()
 
 		go ch.HandleCommand(
 			context.Background(),
@@ -108,30 +108,35 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 					"Action":          logEntry.Action,
 				}})
 		// need to be updated to filter the first 50...
-		mutex.Lock()
+		lclogsMu.Lock()
 		for len(lclogs) > MAX_LOGS {
 			logger.Debug("too many logs, trimming", "len", len(lclogs))
 			toDelete := lclogs[0]
 			lclogs = lclogs[1:]
 			go ch.HandleCommand(context.Background(), &domain.RemoveRedfishResource{ID: toDelete})
 		}
-		mutex.Unlock()
+		lclogsMu.Unlock()
 
 		return true, nil
 	})
 
 	awesome_mapper2.AddFunction("clearlclog", func(args ...interface{}) (interface{}, error) {
-
 		logger.Debug("Clearing all logs", "len", len(lclogs))
-		// need to be updated to filter the first 50...
-		mutex.Lock()
-		for len(lclogs) > 0 {
 
-			toDelete := lclogs[0]
-			lclogs = lclogs[1:]
-			go ch.HandleCommand(context.Background(), &domain.RemoveRedfishResource{ID: toDelete})
-		}
-		mutex.Unlock()
+		// do a really quick lock of the log list to save it off, then just clear
+		// the array and set up a single background goroutine to clear everything
+		// off
+		lclogsMu.Lock()
+		toDel := lclogs[0:]
+		lclogs = []eh.UUID{}
+		lclogsMu.Unlock()
+
+		// spawn background goroutine to clear all logs
+		go func(toDel []eh.UUID) {
+			for _, toDelete := range toDel {
+				ch.HandleCommand(context.Background(), &domain.RemoveRedfishResource{ID: toDelete})
+			}
+		}(toDel)
 		return true, nil
 	})
 
