@@ -3,7 +3,6 @@ package task_service
 import (
 	"context"
 	"errors"
-	"fmt"
 	"sync"
 
     "github.com/superchalupa/sailfish/src/dell-resources/attributes"
@@ -99,7 +98,6 @@ func InitTask(logger log.Logger, instantiateSvc *testaggregate.Service) {
 			case <-trigger:
 			case n := <-newchan:
 				attrModel = n.mdl
-				fmt.Println("new model from uri: ", n.uri)
 				continue
 			}
 
@@ -274,7 +272,6 @@ func InitTask(logger log.Logger, instantiateSvc *testaggregate.Service) {
 								"Group":           groups[groupid],
 								"Index":           index,
 							})
-							fmt.Println("instantiating", vw.GetURI())
 							taskViews[id] = vw
 						}
 					}

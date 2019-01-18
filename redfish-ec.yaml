@@ -697,6 +697,8 @@ views:
         - "fn": "ARMapper"
           "params": {"modelname": "default", "cfgsection": "Chassis/System.Chassis", "mappinguniquename": "'system_chassis:' + FQDD ", "AddToView": "ar_mapper"}
         - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "chassis", "uniquename": "'system_chassis:' + FQDD", "passthru": {"FQDD" : "FQDD"} }
+        - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "health", "uniquename": "'am2_health_' + FQDD", "passthru": {"health_fqdd": "'System.Chassis.1#SubSystem.1#Group.1'"} }
       "View":
         - "fn": "withModel"
@@ -1311,6 +1313,9 @@ awesome_mapper:
       #- { SelectEventType: "AttributeUpdated", Select: "data.Group == Group && data.Index == Index && (data.Name == 'MessageArg1-1' || data.Name == 'MessageArg1-2' || data.Name == 'MessageArg1-3')",
       #ModelUpdate: #[ {Property: "task_msg_1_args", Query: "update_task_args(data.Value, data.Name)"}]}
 
+    chassis:
+      - { SelectEventType: "AttributeUpdated", Select: "data.FQDD == FQDD && data.Name == 'ChassisPowerStatus'",
+            ModelUpdate: [ {Property: "power_state", Query: "map_chassis_state(data.Value)"}]}
 
     fan:
       - { SelectEventType: "FanEvent", Select: "data.ObjectHeader.FQDD == DM_FQDD",
@@ -1415,7 +1420,6 @@ mappings:
     Chassis/System.Modular:
         - {Property: "description",      FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Description" }
         - {Property: "service_tag",      FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "ServiceTag" }
-        - {Property: "power_state",      FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "PowerState" }
         - {Property: "chassis_type",     FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "ChassisType" }
         - {Property: "model",            FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Model" }
         - {Property: "manufacturer",     FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Manufacturer" }
