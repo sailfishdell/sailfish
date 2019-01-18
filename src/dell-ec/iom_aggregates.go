@@ -32,7 +32,7 @@ func RegisterIOMAggregate(s *testaggregate.Service) {
 					},
 					Properties: map[string]interface{}{
 						"Id@meta":           vw.Meta(view.PropGET("unique_name")),
-						"AssetTag@meta":     vw.Meta(view.PropGET("asset_tag")),
+						"AssetTag@meta":     vw.Meta(view.PropGET("asset_tag"), view.PropPATCH("asset_tag", "ar_mapper")),
 						"Description@meta":  vw.Meta(view.PropGET("description")),
 						"PowerState@meta":   vw.Meta(view.PropGET("power_state")),
 						"SerialNumber@meta": vw.Meta(view.PropGET("serial")),
@@ -47,7 +47,7 @@ func RegisterIOMAggregate(s *testaggregate.Service) {
 							"ManagedBy@odata.count@meta": vw.Meta(view.GETProperty("managed_by"), view.GETFormatter("count"), view.GETModel("default")),
 						},
 
-						"SKU@meta":          vw.Meta(view.PropGET("service_tag")),
+						"SKU@meta":          vw.Meta(view.PropGET("service_tag"), view.PropPATCH("service_tag", "ar_mapper")),
 						"IndicatorLED@meta": vw.Meta(view.GETProperty("indicator_led"), view.GETModel("default"), view.PropPATCH("indicator_led", "ar_mapper")),
 						"Status": map[string]interface{}{
 							"HealthRollup@meta": vw.Meta(view.PropGET("health")),
@@ -56,7 +56,7 @@ func RegisterIOMAggregate(s *testaggregate.Service) {
 						},
 						"Oem": map[string]interface{}{
 							"Dell": map[string]interface{}{
-								"ServiceTag@meta":           vw.Meta(view.PropGET("service_tag")),
+								"ServiceTag@meta":           vw.Meta(view.PropGET("service_tag"), view.PropPATCH("service_tag", "ar_mapper")),
 								"InstPowerConsumption@meta": vw.Meta(view.PropGET("Instantaneous_Power")),
 								"OemChassis": map[string]interface{}{
 									"@odata.id": vw.GetURI() + "/Attributes",
