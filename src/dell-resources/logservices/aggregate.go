@@ -88,7 +88,6 @@ func RegisterAggregate(s *testaggregate.Service) {
 						"Name":                     "Log Entry Collection",
 						"Members@meta":             vw.Meta(view.GETProperty("members"), view.GETFormatter("expand"), view.GETModel("default")),
 						"Members@odata.count@meta": vw.Meta(view.GETProperty("members"), view.GETFormatter("count"), view.GETModel("default")),
-						"Members@odata.nextLink":   "/redfish/v1/Managers/CMC.Integrated.1/Logs/Lclog?$skip=50",
 					}},
 			}, nil
 		})
