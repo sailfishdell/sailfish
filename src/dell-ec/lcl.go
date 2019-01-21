@@ -133,8 +133,13 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 
 		// spawn background goroutine to clear all logs
 		go func(toDel []eh.UUID) {
-			for _, toDelete := range toDel {
-				ch.HandleCommand(context.Background(), &domain.RemoveRedfishResource{ID: toDelete})
+			//using range is so much cleaner, but we need to go backwards
+			for x := len(toDel) - 1; x >= 0; x = x - 1 {
+				ch.HandleCommand(context.Background(), &domain.RemoveRedfishResource{ID: toDel[x]})
+				if x%50 == 0 {
+					//Ugh... but slow it down so we don't flood the queue
+					time.Sleep(time.Second * 1)
+				}
 			}
 		}(toDel)
 		return true, nil
