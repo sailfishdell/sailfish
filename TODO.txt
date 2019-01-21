@@ -1,5 +1,10 @@
 Things that need work: (-) TODO (*) DONE
 
+ - expanduri formatter
+ - fix instantiate from awesome mapper
+ * subscription create should return the actual resource
+ - subscription should not allow duplicates
+
  - SELECT  EC.*
 
  - validator system for models? Attach functions that observe and validate. Ability to refuse and return an error?

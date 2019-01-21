@@ -69,9 +69,13 @@ func init() {
 				return nil, errors.New("set_hash_value failed, not enough arguments")
 			}
 			hash := reflect.ValueOf(args[0])
-			key := reflect.ValueOf(args[1])
-			value := reflect.ValueOf(args[2])
+			mu := args[1].(*sync.RWMutex)
+			key := reflect.ValueOf(args[2])
+			value := reflect.ValueOf(args[3])
+
+			mu.Lock()
 			hash.SetMapIndex(key, value)
+			mu.Unlock()
 
 			return args[2], nil
 		})
