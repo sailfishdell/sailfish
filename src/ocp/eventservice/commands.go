@@ -3,6 +3,7 @@ package eventservice
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"time"
 
@@ -24,6 +25,7 @@ type Subscription struct {
 // HTTP POST Command
 type POST struct {
 	es *EventService
+	d  *domain.DomainObjects
 
 	ID      eh.UUID           `json:"id"`
 	CmdID   eh.UUID           `json:"cmdid"`
@@ -46,13 +48,30 @@ func (c *POST) ParseHTTPRequest(r *http.Request) error {
 func (c *POST) Handle(ctx context.Context, a *domain.RedfishResourceAggregate) error {
 	view := c.es.CreateSubscription(ctx, domain.ContextLogger(ctx, "eventservice"), c.Sub, func() {})
 
-	a.PublishEvent(eh.NewEvent(domain.HTTPCmdProcessed, &domain.HTTPCmdProcessedData{
+	data := &domain.HTTPCmdProcessedData{
 		CommandID:  c.CmdID,
-		Results:    map[string]interface{}{"msg": "subscription created successfully"},
-		StatusCode: 200,
-		Headers: map[string]string{
-			"Location": view.GetURI(),
-		},
-	}, time.Now()))
+		Results:    map[string]interface{}{"msg": "Error creating subscription"},
+		StatusCode: 500,
+		Headers:    map[string]string{}}
+
+	agg, err := c.d.AggregateStore.Load(ctx, domain.AggregateType, view.GetUUID())
+	if err != nil {
+		a.PublishEvent(eh.NewEvent(domain.HTTPCmdProcessed, data, time.Now()))
+		return errors.New("Could not load subscription aggregate")
+	}
+	redfishResource, ok := agg.(*domain.RedfishResourceAggregate)
+	if !ok {
+		a.PublishEvent(eh.NewEvent(domain.HTTPCmdProcessed, data, time.Now()))
+		return errors.New("Wrong aggregate type returned")
+	}
+
+	data.Results, _ = domain.ProcessGET(ctx, &redfishResource.Properties, &redfishResource.Authorization)
+	for k, v := range a.Headers {
+		data.Headers[k] = v
+	}
+	data.Headers["Location"] = view.GetURI()
+	data.StatusCode = 200
+	a.PublishEvent(eh.NewEvent(domain.HTTPCmdProcessed, data, time.Now()))
+
 	return nil
 }

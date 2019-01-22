@@ -15,7 +15,13 @@ func MakeMaker(l log.Logger, name string, fn func(args ...interface{}) (interfac
 	set := map[string]struct{}{}
 
 	awesome_mapper2.AddFunction("add"+name, func(args ...interface{}) (interface{}, error) {
-		uniqueName, ok := args[0].(string)
+
+		postprocs, ok := args[0].(*[]func())
+		if !ok {
+			return nil, errors.New("need to pass postprocs")
+		}
+
+		uniqueName, ok := args[1].(string)
 		if !ok {
 			return nil, errors.New("Need a string fqdd for addslot(), but didnt get one")
 		}
@@ -24,7 +30,7 @@ func MakeMaker(l log.Logger, name string, fn func(args ...interface{}) (interfac
 		setMu.Lock()
 		_, ok = set[uniqueName]
 		if ok {
-			l.Warn("Already created unique name in this set", "name", name, "uniqueName", uniqueName)
+			l.Info("Already created unique name in this set", "name", name, "uniqueName", uniqueName)
 			setMu.Unlock()
 			return false, nil
 		}
@@ -32,8 +38,10 @@ func MakeMaker(l log.Logger, name string, fn func(args ...interface{}) (interfac
 		set[uniqueName] = struct{}{}
 		setMu.Unlock()
 
-		l.Info("About to instantiate", "uniqueName", uniqueName)
-		return fn(args...)
+		*postprocs = append(*postprocs, func() {
+			fn(args[1:]...)
+		})
+		return true, nil
 	})
 }
 
@@ -45,7 +53,7 @@ func AddChassisInstantiate(l log.Logger, instantiateSvc *testaggregate.Service) 
 			return nil, errors.New("Need a string fqdd for addidrac_embedded(), but didnt get one")
 		}
 		// have to do this in a goroutine because awesome mapper is locked while it processes events
-		go instantiateSvc.QueueInstantiate("idrac_embedded", map[string]interface{}{"FQDD": FQDD})
+		go instantiateSvc.Instantiate("idrac_embedded", map[string]interface{}{"FQDD": FQDD})
 
 		return true, nil
 	})
@@ -56,7 +64,7 @@ func AddChassisInstantiate(l log.Logger, instantiateSvc *testaggregate.Service) 
 			return nil, errors.New("Need a string fqdd for addsystem_embedded(), but didnt get one")
 		}
 		// have to do this in a goroutine because awesome mapper is locked while it processes events
-		go instantiateSvc.QueueInstantiate("idrac_system_embedded", map[string]interface{}{"FQDD": FQDD})
+		go instantiateSvc.Instantiate("idrac_system_embedded", map[string]interface{}{"FQDD": FQDD})
 
 		return true, nil
 	})
@@ -67,7 +75,7 @@ func AddChassisInstantiate(l log.Logger, instantiateSvc *testaggregate.Service) 
 			return nil, errors.New("Need a string fqdd for addsystem_chassis(), but didnt get one")
 		}
 		// have to do this in a goroutine because awesome mapper is locked while it processes events
-		go instantiateSvc.QueueInstantiate("system_chassis", map[string]interface{}{"FQDD": FQDD})
+		go instantiateSvc.Instantiate("system_chassis", map[string]interface{}{"FQDD": FQDD})
 
 		return true, nil
 	})
@@ -83,7 +91,7 @@ func AddChassisInstantiate(l log.Logger, instantiateSvc *testaggregate.Service) 
 		}
 
 		// have to do this in a goroutine because awesome mapper is locked while it processes events
-		go instantiateSvc.QueueInstantiate("psu_slot",
+		go instantiateSvc.Instantiate("psu_slot",
 			map[string]interface{}{
 				"DM_FQDD":     FQDD,
 				"ChassisFQDD": ParentFQDD,
@@ -105,7 +113,7 @@ func AddChassisInstantiate(l log.Logger, instantiateSvc *testaggregate.Service) 
 		}
 
 		// have to do this in a goroutine because awesome mapper is locked while it processes events
-		go instantiateSvc.QueueInstantiate("voltage_sensor",
+		go instantiateSvc.Instantiate("voltage_sensor",
 			map[string]interface{}{
 				"DM_FQDD":     "iDRAC.Embedded.1#" + FQDD,
 				"ChassisFQDD": ParentFQDD,
@@ -126,7 +134,7 @@ func AddChassisInstantiate(l log.Logger, instantiateSvc *testaggregate.Service) 
 			return nil, errors.New("Need a string fqdd for addidrac_storage_instance(), but didnt get one")
 		}
 		// have to do this in a goroutine because awesome mapper is locked while it processes events
-		go instantiateSvc.QueueInstantiate("idrac_storage_instance", map[string]interface{}{"ParentFQDD": ParentFQDD, "FQDD": FQDD, "EVENT_FQDD": "301|C|" + FQDD})
+		go instantiateSvc.Instantiate("idrac_storage_instance", map[string]interface{}{"ParentFQDD": ParentFQDD, "FQDD": FQDD, "EVENT_FQDD": "301|C|" + FQDD})
 
 		return true, nil
 	})
@@ -141,7 +149,7 @@ func AddChassisInstantiate(l log.Logger, instantiateSvc *testaggregate.Service) 
 			return nil, errors.New("Need a string fqdd for addidrac_storage_controller(), but didnt get one")
 		}
 		// have to do this in a goroutine because awesome mapper is locked while it processes events
-		go instantiateSvc.QueueInstantiate("idrac_storage_controller", map[string]interface{}{"ParentFQDD": ParentFQDD, "FQDD": FQDD, "EVENT_FQDD": "301|C|" + FQDD})
+		go instantiateSvc.Instantiate("idrac_storage_controller", map[string]interface{}{"ParentFQDD": ParentFQDD, "FQDD": FQDD, "EVENT_FQDD": "301|C|" + FQDD})
 
 		return true, nil
 	})
@@ -156,7 +164,7 @@ func AddChassisInstantiate(l log.Logger, instantiateSvc *testaggregate.Service) 
 			return nil, errors.New("Need a string fqdd for addidrac_storage_drive(), but didnt get one")
 		}
 		// have to do this in a goroutine because awesome mapper is locked while it processes events
-		go instantiateSvc.QueueInstantiate("idrac_storage_drive", map[string]interface{}{"ParentFQDD": ParentFQDD, "FQDD": FQDD, "EVENT_FQDD": "304|C|" + FQDD})
+		go instantiateSvc.Instantiate("idrac_storage_drive", map[string]interface{}{"ParentFQDD": ParentFQDD, "FQDD": FQDD, "EVENT_FQDD": "304|C|" + FQDD})
 
 		return true, nil
 	})
@@ -167,7 +175,7 @@ func AddChassisInstantiate(l log.Logger, instantiateSvc *testaggregate.Service) 
 			return nil, errors.New("Need a string fqdd for addstorage_enclosure(), but didnt get one")
 		}
 		// have to do this in a goroutine because awesome mapper is locked while it processes events
-		go instantiateSvc.QueueInstantiate("idrac_storage_enclosure", map[string]interface{}{"FQDD": FQDD, "EVENT_FQDD": "308|C|" + FQDD})
+		go instantiateSvc.Instantiate("idrac_storage_enclosure", map[string]interface{}{"FQDD": FQDD, "EVENT_FQDD": "308|C|" + FQDD})
 
 		return true, nil
 	})
@@ -182,7 +190,7 @@ func AddChassisInstantiate(l log.Logger, instantiateSvc *testaggregate.Service) 
 			return nil, errors.New("Need a string fqdd for addidrac_storage_volume(), but didnt get one")
 		}
 		// have to do this in a goroutine because awesome mapper is locked while it processes events
-		go instantiateSvc.QueueInstantiate("idrac_storage_volume", map[string]interface{}{"ParentFQDD": ParentFQDD, "FQDD": FQDD, "EVENT_FQDD": "305|C|" + FQDD})
+		go instantiateSvc.Instantiate("idrac_storage_volume", map[string]interface{}{"ParentFQDD": ParentFQDD, "FQDD": FQDD, "EVENT_FQDD": "305|C|" + FQDD})
 
 		return true, nil
 	})

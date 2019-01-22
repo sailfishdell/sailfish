@@ -1,5 +1,13 @@
 Things that need work: (-) TODO (*) DONE
 
+ - expanduri formatter
+ - subscription should not allow duplicates
+
+ * fix instantiate from awesome mapper
+    - done: now semi-reentrant if you use the postproc facility
+ * subscription create should return the actual resource
+    - done
+
  - SELECT  EC.*
 
  - validator system for models? Attach functions that observe and validate. Ability to refuse and return an error?

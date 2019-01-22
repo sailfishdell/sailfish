@@ -45,7 +45,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 
 	// the package for this is going to change, but this is what makes the various mappers and view functions available
 	instantiateSvc := testaggregate.New(ctx, logger, cfgMgr, cfgMgrMu, ch)
-	evtSvc := eventservice.New(ctx, cfgMgr, cfgMgrMu, instantiateSvc, actionSvc, ch, eb)
+	evtSvc := eventservice.New(ctx, cfgMgr, cfgMgrMu, d, instantiateSvc, actionSvc)
 	eventservice.RegisterAggregate(instantiateSvc)
 	testaggregate.RegisterWithURI(instantiateSvc)
 	testaggregate.RegisterPublishEvents(instantiateSvc, evtSvc)
@@ -79,8 +79,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 			}
 		}
 
-		// queue up an instantiate to prevent deadlock. this runs in another thread off a queue
-		instantiateSvc.QueueInstantiate(cfgStr, params)
+		instantiateSvc.Instantiate(cfgStr, params)
 		return true, nil
 	})
 

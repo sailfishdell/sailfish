@@ -22,9 +22,9 @@ views:
           "params": "'/redfish/v1'"
       "Aggregate": "root"
       "ExecPost": [
-        "set_hash_value(serviceglobals, 'rootid', uuid)",
-        "set_hash_value(serviceglobals, 'rooturi', view.GetURI())",
-        "set_hash_value(serviceglobals, 'submittestmetricreport', submit_test_metric_report)",
+        "set_hash_value(serviceglobals, serviceglobalsmu, 'rootid', uuid)",
+        "set_hash_value(serviceglobals, serviceglobalsmu, 'rooturi', view.GetURI())",
+        "set_hash_value(serviceglobals, serviceglobalsmu, 'submittestmetricreport', submit_test_metric_report)",
         "instantiate('chassis')",
         "instantiate('systems')",
         "instantiate('managers')",
@@ -100,8 +100,8 @@ views:
           "params":
       "Aggregate": "accountservice"
       "ExecPost": [
-        "set_hash_value(serviceglobals, 'actsvc_id', uuid)",
-        "set_hash_value(serviceglobals, 'actsvc_uri', view.GetURI())"]
+        "set_hash_value(serviceglobals, serviceglobalsmu, 'actsvc_id', uuid)",
+        "set_hash_value(serviceglobals, serviceglobalsmu, 'actsvc_uri', view.GetURI())"]
 
   "roles":
       "Logger": ["module", "Roles"]
@@ -257,8 +257,8 @@ views:
           "params":
       "Aggregate": "sessionservice"
       "ExecPost": [
-        "set_hash_value(serviceglobals, 'sessionsvc_id', uuid)",
-        "set_hash_value(serviceglobals, 'sessionsvc_uri', view.GetURI())",
+        "set_hash_value(serviceglobals, serviceglobalsmu, 'sessionsvc_id', uuid)",
+        "set_hash_value(serviceglobals, serviceglobalsmu, 'sessionsvc_uri', view.GetURI())",
       ]
 
   "sessioncollection":
@@ -709,16 +709,16 @@ awesome_mapper:
       - { SelectEventType: "IDRACComponentEvent",
           Select: "true",
           Exec: [
-                "data.Type == 'iDRAC' && addidrac_embedded(data.FQDD)",
-                "data.Type == 'System' && addsystem_embedded(data.FQDD)",
-                "data.Type == 'Chassis' && addsystem_chassis(data.FQDD)",
-                "data.Type == 'StorageAdapter' && addidrac_storage_instance(data.ParentFQDD + ':' + data.FQDD, data.ParentFQDD, data.FQDD)",
-                "data.Type == 'StorageAdapter' && addidrac_storage_controller(data.ParentFQDD + ':' + data.FQDD, data.ParentFQDD, data.FQDD)",
-                "data.Type == 'StorageDrive' && addidrac_storage_drive(data.ParentFQDD + ':' + data.FQDD, data.ParentFQDD, data.FQDD)",
-                "data.Type == 'StorageEnclosure' && addidrac_storage_enclosure(data.FQDD)",
-                "data.Type == 'StorageVolume' && addidrac_storage_volume(data.ParentFQDD + ':' + data.FQDD, data.ParentFQDD, data.FQDD)",
-                "data.Type == 'IDRACPSU'      && addidracpsu(data.ParentFQDD + ':' + data.FQDD, data.ParentFQDD, data.FQDD)",
-                "data.Type == 'IDRACvoltagesensors'  && addidracvoltagesensors(data.ParentFQDD + ':' + data.FQDD, data.ParentFQDD, data.FQDD)",
+                "data.Type == 'iDRAC' && addidrac_embedded(postprocs, data.FQDD)",
+                "data.Type == 'System' && addsystem_embedded(postprocs, data.FQDD)",
+                "data.Type == 'Chassis' && addsystem_chassis(postprocs, data.FQDD)",
+                "data.Type == 'StorageAdapter' && addidrac_storage_instance(postprocs, data.ParentFQDD + ':' + data.FQDD, data.ParentFQDD, data.FQDD)",
+                "data.Type == 'StorageAdapter' && addidrac_storage_controller(postprocs, data.ParentFQDD + ':' + data.FQDD, data.ParentFQDD, data.FQDD)",
+                "data.Type == 'StorageDrive' && addidrac_storage_drive(postprocs, data.ParentFQDD + ':' + data.FQDD, data.ParentFQDD, data.FQDD)",
+                "data.Type == 'StorageEnclosure' && addidrac_storage_enclosure(postprocs, data.FQDD)",
+                "data.Type == 'StorageVolume' && addidrac_storage_volume(postprocs, data.ParentFQDD + ':' + data.FQDD, data.ParentFQDD, data.FQDD)",
+                "data.Type == 'IDRACPSU'      && addidracpsu(postprocs, data.ParentFQDD + ':' + data.FQDD, data.ParentFQDD, data.FQDD)",
+                "data.Type == 'IDRACvoltagesensors'  && addidracvoltagesensors(postprocs, data.ParentFQDD + ':' + data.FQDD, data.ParentFQDD, data.FQDD)",
                 ]}
 
     power_control_uris:

@@ -34,6 +34,7 @@ type Service struct {
 	controllerFunctionsRegistry map[string]controllerFunc
 	aggregateFunctionsRegistry  map[string]aggregateFunc
 	serviceGlobals              map[string]interface{}
+	serviceGlobalsMu            sync.RWMutex
 }
 
 func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, ch eh.CommandHandler) *Service {
@@ -47,6 +48,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 		controllerFunctionsRegistry: map[string]controllerFunc{},
 		aggregateFunctionsRegistry:  map[string]aggregateFunc{},
 		serviceGlobals:              map[string]interface{}{},
+		serviceGlobalsMu:            sync.RWMutex{},
 	}
 }
 
@@ -57,6 +59,8 @@ func (s *Service) RegisterViewFunction(name string, fn viewFunc) {
 }
 
 func (s *Service) GetViewFunction(name string) viewFunc {
+	s.RLock()
+	defer s.RUnlock()
 	return s.viewFunctionsRegistry[name]
 }
 
@@ -67,6 +71,8 @@ func (s *Service) RegisterControllerFunction(name string, fn controllerFunc) {
 }
 
 func (s *Service) GetControllerFunction(name string) controllerFunc {
+	s.RLock()
+	defer s.RUnlock()
 	return s.controllerFunctionsRegistry[name]
 }
 
@@ -77,6 +83,8 @@ func (s *Service) RegisterAggregateFunction(name string, fn aggregateFunc) {
 }
 
 func (s *Service) GetAggregateFunction(name string) aggregateFunc {
+	s.RLock()
+	defer s.RUnlock()
 	return s.aggregateFunctionsRegistry[name]
 }
 
@@ -116,24 +124,26 @@ func (s *Service) Instantiate(name string, parameters map[string]interface{}) (l
 }
 
 func (s *Service) InstantiateFromCfg(ctx context.Context, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, name string, parameters map[string]interface{}) (l log.Logger, v *view.View, e error) {
-	s.Lock()
-	defer s.Unlock()
-
 	newParams := map[string]interface{}{}
 	for k, v := range parameters {
 		newParams[k] = v
 	}
+	s.serviceGlobalsMu.RLock()
 	for k, v := range s.serviceGlobals {
 		newParams[k] = v
 	}
 	newParams["serviceglobals"] = s.serviceGlobals
+	newParams["serviceglobalsmu"] = &s.serviceGlobalsMu
+	s.serviceGlobalsMu.RUnlock()
 
 	// be sure to unlock()
 	cfgMgrMu.Lock()
 	subCfg := cfgMgr.Sub("views")
 	if subCfg == nil {
 		cfgMgrMu.Unlock()
+		s.RLock()
 		s.logger.Crit("missing config file section: 'views'")
+		s.RUnlock()
 		return nil, nil, errors.New("invalid config section 'views'")
 	}
 
@@ -142,12 +152,16 @@ func (s *Service) InstantiateFromCfg(ctx context.Context, cfgMgr *viper.Viper, c
 	err := subCfg.UnmarshalKey(name, &config)
 	cfgMgrMu.Unlock()
 	if err != nil {
+		s.RLock()
 		s.logger.Crit("unamrshal failed", "err", err, "name", name)
+		s.RUnlock()
 		return nil, nil, errors.New("unmarshal failed")
 	}
 
 	// Instantiate logger
+	s.RLock()
 	subLogger := s.logger.New(config.Logger...)
+	s.RUnlock()
 	subLogger.Debug("Instantiated new logger")
 
 	// Instantiate view

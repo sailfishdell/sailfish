@@ -51,6 +51,7 @@ type Service struct {
 }
 
 type ConfigSection struct {
+	sync.RWMutex
 	parameters map[string]*MapperParameters
 	mappings   []*MapperConfig
 }
@@ -61,6 +62,7 @@ type MapperParameters struct {
 }
 
 type MapperConfig struct {
+	sync.RWMutex
 	eventType    eh.EventType
 	selectStr    string
 	selectExpr   *govaluate.EvaluableExpression
@@ -82,9 +84,6 @@ type Exec struct {
 }
 
 func (s *Service) NewMapping(ctx context.Context, logger log.Logger, cfg *viper.Viper, cfgMu *sync.RWMutex, mdl *model.Model, cfgName string, uniqueName string, parameters map[string]interface{}) error {
-	s.Lock()
-	defer s.Unlock()
-
 	functionsMu.RLock()
 	defer functionsMu.RUnlock()
 
@@ -98,7 +97,9 @@ func (s *Service) NewMapping(ctx context.Context, logger log.Logger, cfg *viper.
 	// ###############################################
 	// Ensure that we have that section in our service
 	// ###############################################
+	s.RLock()
 	mappingsForSection, ok := s.cfgSection[cfgName]
+	s.RUnlock()
 
 	if !ok {
 		// ############################################
@@ -127,7 +128,9 @@ func (s *Service) NewMapping(ctx context.Context, logger log.Logger, cfg *viper.
 			parameters: map[string]*MapperParameters{},
 			mappings:   []*MapperConfig{},
 		}
+		s.Lock()
 		s.cfgSection[cfgName] = mappingsForSection
+		s.Unlock()
 
 		// transcribe each individual mapper in the config section into our config
 		for _, cfgEntry := range fullSectionMappingList {
@@ -140,6 +143,7 @@ func (s *Service) NewMapping(ctx context.Context, logger log.Logger, cfg *viper.
 				continue
 			}
 
+			mappingsForSection.Lock()
 			mc := &MapperConfig{
 				eventType:    eh.EventType(cfgEntry.SelectEventType),
 				selectStr:    cfgEntry.Select,
@@ -177,16 +181,19 @@ func (s *Service) NewMapping(ctx context.Context, logger log.Logger, cfg *viper.
 					execExpr:   execExpr,
 				})
 			}
+			mappingsForSection.Unlock()
 
 		}
 
 		// and then optimize by rebuilding the event indexed hash
 		logger.Info("start Optimize hash", "s.cfgSection", s.cfgSection)
+		s.Lock()
 		for k := range s.hash {
 			delete(s.hash, k)
 		}
 
 		for name, cfgSection := range s.cfgSection {
+			cfgSection.RLock()
 			logger.Info("Optimize hash", "LEN", len(cfgSection.mappings), "section", name, "config", cfgSection, "mappings", cfgSection.mappings)
 
 			for index, singleMapping := range cfgSection.mappings {
@@ -200,13 +207,17 @@ func (s *Service) NewMapping(ctx context.Context, logger log.Logger, cfg *viper.
 				typeArray = append(typeArray, singleMapping)
 				s.hash[singleMapping.eventType] = typeArray
 			}
+			cfgSection.RUnlock()
 		}
+		s.Unlock()
 	}
 
 	logger.Debug("UPDATE MODEL")
 
 	// Add our parameters to the pile
+	mappingsForSection.Lock()
 	mappingsForSection.parameters[uniqueName] = instanceParameters
+	mappingsForSection.Unlock()
 
 	// no need to set defaults if there is no model to put them in...
 	if mdl == nil {
@@ -214,6 +225,7 @@ func (s *Service) NewMapping(ctx context.Context, logger log.Logger, cfg *viper.
 	}
 
 	// now set all of the model default values based on the mapper config
+	mappingsForSection.RLock()
 	for _, mapping := range mappingsForSection.mappings {
 		mdl.StopNotifications()
 		for _, mapperUpdate := range mapping.modelUpdates {
@@ -225,6 +237,7 @@ func (s *Service) NewMapping(ctx context.Context, logger log.Logger, cfg *viper.
 		mdl.StartNotifications()
 		mdl.NotifyObservers()
 	}
+	mappingsForSection.RUnlock()
 
 	return nil
 }
@@ -264,11 +277,16 @@ func StartService(ctx context.Context, logger log.Logger, eb eh.EventBus) (*Serv
 
 	go sp.RunForever(func(event eh.Event) {
 		ret.RLock()
-		defer ret.RUnlock()
+		mappings := ret.hash[event.EventType()]
+		ret.RUnlock()
+
+		postProcs := []func(){}
 
 		// comment out logging in the fast path. uncomment to enable.
 		//ret.logger.Debug("am2 processing event", "type", event.EventType())
-		for _, mapping := range ret.hash[event.EventType()] {
+		for _, mapping := range mappings {
+			mapping.Lock()
+			mapping.cfg.Lock()
 			for cfgName, parameters := range mapping.cfg.parameters {
 				// comment out logging in the fast path. uncomment to enable.
 				//ret.logger.Debug("am2 check mapping", "type", event.EventType(), "select", mapping.selectStr, "for config", cfgName)
@@ -276,6 +294,7 @@ func StartService(ctx context.Context, logger log.Logger, eb eh.EventBus) (*Serv
 				parameters.params["data"] = event.Data()
 				parameters.params["event"] = event
 				parameters.params["model"] = parameters.model
+				parameters.params["postprocs"] = &postProcs
 
 				val, err := mapping.selectExpr.Evaluate(parameters.params)
 
@@ -333,6 +352,12 @@ func StartService(ctx context.Context, logger log.Logger, eb eh.EventBus) (*Serv
 
 				cleanup()
 			}
+			mapping.cfg.Unlock()
+			mapping.Unlock()
+		}
+
+		for _, fn := range postProcs {
+			fn()
 		}
 	})
 

@@ -31,8 +31,7 @@ type actionService interface {
 }
 
 type EventService struct {
-	ch        eh.CommandHandler
-	eb        eh.EventBus
+	d         *domain.DomainObjects
 	ew        *eventwaiter.EventWaiter
 	cfg       *viper.Viper
 	cfgMu     *sync.RWMutex
@@ -46,16 +45,15 @@ const WorkQueueLen = 10
 
 var GlobalEventService *EventService
 
-func New(ctx context.Context, cfg *viper.Viper, cfgMu *sync.RWMutex, instantiateSvc *testaggregate.Service, actionSvc actionService, ch eh.CommandHandler, eb eh.EventBus) *EventService {
+func New(ctx context.Context, cfg *viper.Viper, cfgMu *sync.RWMutex, d *domain.DomainObjects, instantiateSvc *testaggregate.Service, actionSvc actionService) *EventService {
 	EventPublisher := eventpublisher.NewEventPublisher()
-	eb.AddHandler(eh.MatchAnyEventOf(ExternalRedfishEvent, domain.RedfishResourceRemoved), EventPublisher)
+	d.EventBus.AddHandler(eh.MatchAnyEventOf(ExternalRedfishEvent, domain.RedfishResourceRemoved), EventPublisher)
 	EventWaiter := eventwaiter.NewEventWaiter(eventwaiter.SetName("Event Service"), eventwaiter.NoAutoRun)
 	EventPublisher.AddObserver(EventWaiter)
 	go EventWaiter.Run()
 
 	ret := &EventService{
-		ch:        ch,
-		eb:        eb,
+		d:         d,
 		ew:        EventWaiter,
 		cfg:       cfg,
 		cfgMu:     cfgMu,
@@ -85,7 +83,7 @@ func (es *EventService) StartEventService(ctx context.Context, logger log.Logger
 	}
 
 	_, esView, _ := instantiateSvc.InstantiateFromCfg(ctx, es.cfg, es.cfgMu, "eventservice", es.addparam(map[string]interface{}{
-		"submittestevent": view.Action(MakeSubmitTestEvent(es.eb)),
+		"submittestevent": view.Action(MakeSubmitTestEvent(es.d.EventBus)),
 	}))
 	params["eventsvc_id"] = esView.GetUUID()
 	params["eventsvc_uri"] = esView.GetURI()
@@ -95,9 +93,9 @@ func (es *EventService) StartEventService(ctx context.Context, logger log.Logger
 
 	// The Plugin: "EventService" property on the Subscriptions endpoint is how we know to run this command
 	eh.RegisterCommand(func() eh.Command {
-		return &POST{es: es}
+		return &POST{es: es, d: es.d}
 	})
-	PublishRedfishEvents(ctx, esView.GetModel("default"), es.eb)
+	PublishRedfishEvents(ctx, esView.GetModel("default"), es.d.EventBus)
 
 	return esView
 }
@@ -141,7 +139,7 @@ func (es *EventService) CreateSubscription(ctx context.Context, logger log.Logge
 		// close the view when we exit this goroutine
 		defer subView.Close()
 		// delete the aggregate
-		defer es.ch.HandleCommand(context.Background(), &domain.RemoveRedfishResource{ID: subView.GetUUID(), ResourceURI: subView.GetURI()})
+		defer es.d.CommandHandler.HandleCommand(context.Background(), &domain.RemoveRedfishResource{ID: subView.GetUUID(), ResourceURI: subView.GetURI()})
 		defer listener.Close()
 
 		for {
@@ -226,12 +224,10 @@ func makePOST(dest string, event eh.Event, context interface{}) func() {
 
 func (es *EventService) PublishResourceUpdatedEventsForModel(ctx context.Context, modelName string) view.Option {
 	return view.WatchModel(modelName, func(v *view.View, m *model.Model, updates []model.Update) {
-		/*
-			eventData := &RedfishEventData{
-				EventType:         "ResourceUpdated",
-				OriginOfCondition: map[string]interface{}{"@odata.id": v.GetURI()},
-			}
-			go es.eb.PublishEvent(ctx, eh.NewEvent(RedfishEvent, eventData, time.Now()))
-		*/
+		eventData := &RedfishEventData{
+			EventType:         "ResourceUpdated",
+			OriginOfCondition: map[string]interface{}{"@odata.id": v.GetURI()},
+		}
+		go es.d.EventBus.PublishEvent(ctx, eh.NewEvent(RedfishEvent, eventData, time.Now()))
 	})
 }

@@ -11,10 +11,10 @@ import (
 
 	"github.com/gorilla/mux"
 	eh "github.com/looplab/eventhorizon"
-	"github.com/looplab/eventhorizon/aggregatestore/model"
 	"github.com/looplab/eventhorizon/commandhandler/aggregate"
 	eventpublisher "github.com/looplab/eventhorizon/publisher/local"
 	repo "github.com/looplab/eventhorizon/repo/memory"
+	"github.com/superchalupa/sailfish/src/looplab/aggregatestore"
 	"github.com/superchalupa/sailfish/src/looplab/eventbus"
 	"github.com/superchalupa/sailfish/src/looplab/eventwaiter"
 )
@@ -88,7 +88,7 @@ func NewDomainObjects() (*DomainObjects, error) {
 
 	// Create the aggregate repository.
 	var err error
-	d.AggregateStore, err = model.NewAggregateStore(d.Repo, d.EventBus)
+	d.AggregateStore, err = aggregatestore.NewAggregateStore(d.Repo, d.EventBus)
 	if err != nil {
 		return nil, fmt.Errorf("could not create aggregate store: %s", err)
 	}
@@ -162,10 +162,7 @@ func (d *DomainObjects) DeleteResource(ctx context.Context, uri string) {
 	d.treeMu.Lock()
 	defer d.treeMu.Unlock()
 	if UUID, ok := d.Tree[uri]; ok {
-		as, ok := d.AggregateStore.(eh.WriteRepo)
-		if ok {
-			as.Remove(ctx, UUID)
-		}
+		d.Repo.Remove(ctx, UUID)
 	}
 	delete(d.Tree, uri)
 }
