@@ -162,10 +162,7 @@ func (d *DomainObjects) DeleteResource(ctx context.Context, uri string) {
 	d.treeMu.Lock()
 	defer d.treeMu.Unlock()
 	if UUID, ok := d.Tree[uri]; ok {
-		as, ok := d.AggregateStore.(eh.WriteRepo)
-		if ok {
-			as.Remove(ctx, UUID)
-		}
+		d.Repo.Remove(ctx, UUID)
 	}
 	delete(d.Tree, uri)
 }
