@@ -143,6 +143,7 @@ func (s *Service) NewMapping(ctx context.Context, logger log.Logger, cfg *viper.
 				continue
 			}
 
+			mappingsForSection.Lock()
 			mc := &MapperConfig{
 				eventType:    eh.EventType(cfgEntry.SelectEventType),
 				selectStr:    cfgEntry.Select,
@@ -151,9 +152,7 @@ func (s *Service) NewMapping(ctx context.Context, logger log.Logger, cfg *viper.
 				exec:         []*Exec{},
 				cfg:          mappingsForSection,
 			}
-			mappingsForSection.Lock()
 			mappingsForSection.mappings = append(mappingsForSection.mappings, mc)
-			mappingsForSection.Unlock()
 
 			for _, modelUpdate := range cfgEntry.ModelUpdate {
 				queryExpr, err := govaluate.NewEvaluableExpressionWithFunctions(modelUpdate.Query, functions)
@@ -182,6 +181,7 @@ func (s *Service) NewMapping(ctx context.Context, logger log.Logger, cfg *viper.
 					execExpr:   execExpr,
 				})
 			}
+			mappingsForSection.Unlock()
 
 		}
 
@@ -294,7 +294,7 @@ func StartService(ctx context.Context, logger log.Logger, eb eh.EventBus) (*Serv
 				parameters.params["data"] = event.Data()
 				parameters.params["event"] = event
 				parameters.params["model"] = parameters.model
-				parameters.params["postprocs"] = postProcs
+				parameters.params["postprocs"] = &postProcs
 
 				val, err := mapping.selectExpr.Evaluate(parameters.params)
 

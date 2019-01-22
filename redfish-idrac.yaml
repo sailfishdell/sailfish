@@ -709,16 +709,16 @@ awesome_mapper:
       - { SelectEventType: "IDRACComponentEvent",
           Select: "true",
           Exec: [
-                "data.Type == 'iDRAC' && addidrac_embedded(data.FQDD)",
-                "data.Type == 'System' && addsystem_embedded(data.FQDD)",
-                "data.Type == 'Chassis' && addsystem_chassis(data.FQDD)",
-                "data.Type == 'StorageAdapter' && addidrac_storage_instance(data.ParentFQDD + ':' + data.FQDD, data.ParentFQDD, data.FQDD)",
-                "data.Type == 'StorageAdapter' && addidrac_storage_controller(data.ParentFQDD + ':' + data.FQDD, data.ParentFQDD, data.FQDD)",
-                "data.Type == 'StorageDrive' && addidrac_storage_drive(data.ParentFQDD + ':' + data.FQDD, data.ParentFQDD, data.FQDD)",
-                "data.Type == 'StorageEnclosure' && addidrac_storage_enclosure(data.FQDD)",
-                "data.Type == 'StorageVolume' && addidrac_storage_volume(data.ParentFQDD + ':' + data.FQDD, data.ParentFQDD, data.FQDD)",
-                "data.Type == 'IDRACPSU'      && addidracpsu(data.ParentFQDD + ':' + data.FQDD, data.ParentFQDD, data.FQDD)",
-                "data.Type == 'IDRACvoltagesensors'  && addidracvoltagesensors(data.ParentFQDD + ':' + data.FQDD, data.ParentFQDD, data.FQDD)",
+                "data.Type == 'iDRAC' && addidrac_embedded(postprocs, data.FQDD)",
+                "data.Type == 'System' && addsystem_embedded(postprocs, data.FQDD)",
+                "data.Type == 'Chassis' && addsystem_chassis(postprocs, data.FQDD)",
+                "data.Type == 'StorageAdapter' && addidrac_storage_instance(postprocs, data.ParentFQDD + ':' + data.FQDD, data.ParentFQDD, data.FQDD)",
+                "data.Type == 'StorageAdapter' && addidrac_storage_controller(postprocs, data.ParentFQDD + ':' + data.FQDD, data.ParentFQDD, data.FQDD)",
+                "data.Type == 'StorageDrive' && addidrac_storage_drive(postprocs, data.ParentFQDD + ':' + data.FQDD, data.ParentFQDD, data.FQDD)",
+                "data.Type == 'StorageEnclosure' && addidrac_storage_enclosure(postprocs, data.FQDD)",
+                "data.Type == 'StorageVolume' && addidrac_storage_volume(postprocs, data.ParentFQDD + ':' + data.FQDD, data.ParentFQDD, data.FQDD)",
+                "data.Type == 'IDRACPSU'      && addidracpsu(postprocs, data.ParentFQDD + ':' + data.FQDD, data.ParentFQDD, data.FQDD)",
+                "data.Type == 'IDRACvoltagesensors'  && addidracvoltagesensors(postprocs, data.ParentFQDD + ':' + data.FQDD, data.ParentFQDD, data.FQDD)",
                 ]}
 
     power_control_uris:

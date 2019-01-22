@@ -26,10 +26,6 @@ do
 
       if [ -n "$singlestep" ]; then  read -p "Paused" pause; fi
 
-      if [[ $line == *"ComponentEvent"* ]]; then
-          sleep 1
-      fi
-
   # rate limit requests, if needed:
   #    i=$((i+1))
   #    if [ $((i%20)) -eq 0 ] ; then

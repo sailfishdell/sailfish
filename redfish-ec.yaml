@@ -721,8 +721,6 @@ views:
         "instantiate('slotcollection', 'parenturi', rooturi + '/Chassis/' + FQDD, 'FQDD', FQDD)",
         "instantiate('slotconfigcollection', 'parenturi', rooturi + '/Chassis/' + FQDD, 'FQDD', FQDD)",
         "instantiate('subsyshealth', 'parentid', 'view.GetUUID()', 'parenturi', rooturi + '/Chassis/' + FQDD, 'FQDD', FQDD)",
-
-
         ]
   "power":
       "Logger": ["module", "Power"]
@@ -1140,16 +1138,16 @@ awesome_mapper:
       - { SelectEventType: "ComponentEvent",
           Select: "true",
           Exec: [
-            "data.Type == 'ECIOM'      && addiom(data.FQDD)",
-            "data.Type == 'ECSled'     && addec_system_modular(data.FQDD)",
-            "data.Type == 'ECManager'  && addmanager_cmc_integrated(data.FQDD)",
-            "data.Type == 'ECChassis'  && addchassis_cmc_integrated(data.FQDD)",
-            "data.Type == 'Certificate'  && addcertificate(data.ParentFQDD + ':' + data.FQDD, data.ParentFQDD, data.FQDD)",
-            "data.Type == 'SysChassis' && addsystem_chassis(data.FQDD)",
-            "data.Type == 'ECFan'      && addecfan( data.ParentFQDD + ':' + data.FQDD, data.ParentFQDD, data.FQDD)",
-            "data.Type == 'ECPSU'      && addecpsu( data.ParentFQDD + ':' + data.FQDD, data.ParentFQDD, data.FQDD)",
-            "data.Type == 'Slot'       && addslot( data.ParentFQDD + ':' + data.FQDD, data.ParentFQDD, data.FQDD)",
-            "data.Type == 'SlotConfig' && addslotconfig( data.ParentFQDD + ':' + data.FQDD, data.ParentFQDD, data.FQDD)",
+            "data.Type == 'ECIOM'      && addiom(postprocs, data.FQDD)",
+            "data.Type == 'ECSled'     && addec_system_modular(postprocs, data.FQDD)",
+            "data.Type == 'ECManager'  && addmanager_cmc_integrated(postprocs, data.FQDD)",
+            "data.Type == 'ECChassis'  && addchassis_cmc_integrated(postprocs, data.FQDD)",
+            "data.Type == 'Certificate'  && addcertificate(postprocs, data.ParentFQDD + ':' + data.FQDD, data.ParentFQDD, data.FQDD)",
+            "data.Type == 'SysChassis' && addsystem_chassis(postprocs, data.FQDD)",
+            "data.Type == 'ECFan'      && addecfan(postprocs, data.ParentFQDD + ':' + data.FQDD, data.ParentFQDD, data.FQDD)",
+            "data.Type == 'ECPSU'      && addecpsu(postprocs, data.ParentFQDD + ':' + data.FQDD, data.ParentFQDD, data.FQDD)",
+            "data.Type == 'Slot'       && addslot(postprocs, data.ParentFQDD + ':' + data.FQDD, data.ParentFQDD, data.FQDD)",
+            "data.Type == 'SlotConfig' && addslotconfig(postprocs, data.ParentFQDD + ':' + data.FQDD, data.ParentFQDD, data.FQDD)",
                 ]}
 
     collection:

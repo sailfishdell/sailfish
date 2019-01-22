@@ -125,8 +125,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 			}
 		}
 
-		// queue up an instantiate to prevent deadlock. this runs in another thread off a queue
-		instantiateSvc.QueueInstantiate(cfgStr, params)
+		instantiateSvc.Instantiate(cfgStr, params)
 		return true, nil
 	})
 
