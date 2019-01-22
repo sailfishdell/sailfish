@@ -2,7 +2,6 @@ package dell_ec
 
 import (
 	"errors"
-	"fmt"
 	"strings"
 	"sync"
 
@@ -42,10 +41,7 @@ func MakeMaker(l log.Logger, name string, fn func(args ...interface{}) (interfac
 		setMu.Unlock()
 
 		*postprocs = append(*postprocs, func() {
-			fmt.Printf("RUNNING APPEND\n")
-			fmt.Println("About to instantiate", "uniqueName", uniqueName)
 			fn(args[1:]...)
-			fmt.Println("DONE to instantiate", "uniqueName", uniqueName)
 		})
 		return true, nil
 	})
