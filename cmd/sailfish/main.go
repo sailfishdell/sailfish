@@ -91,12 +91,11 @@ func main() {
 	m := mux.NewRouter()
 	loggingHTTPHandler := makeLoggingHTTPHandler(logger, m)
 
-	// per spec: redirect /redfish to /redfish/
-	m.Path("/redfish").HandlerFunc(func(w http.ResponseWriter, r *http.Request) { http.Redirect(w, r, "/redfish/", 301) })
-	// per spec: hardcoded output for /redfish/ to list versions supported.
-	m.Path("/redfish/").HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.Write([]byte("{\n\t\"v1\": \"/redfish/v1/\"\n}\n")) })
-	// per spec: redirect /redfish/v1/ to /redfish/v1
-	m.Path("/redfish/v1/").HandlerFunc(func(w http.ResponseWriter, r *http.Request) { http.Redirect(w, r, "/redfish/v1", 301) })
+
+    // per spec: hardcoded output for /redfish to list versions supported.
+    m.Path("/redfish").HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.Write([]byte("{\n\t\"v1\": \"/redfish/v1/\"\n}\n")) })
+    // per spec: redirect /redfish/ to /redfish/v1
+    m.Path("/redfish/").HandlerFunc(func(w http.ResponseWriter, r *http.Request) { http.Redirect(w, r, "/redfish/v1", 301) })
 
 	// some static files that we should generate at some point
 	m.Path("/redfish/v1/$metadata").HandlerFunc(func(w http.ResponseWriter, r *http.Request) { http.ServeFile(w, r, "v1/metadata.xml") })
