@@ -72,7 +72,7 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 		lclogs = append(lclogs, uuid)
 		lclogsMu.Unlock()
 
-		go ch.HandleCommand(
+		ch.HandleCommand(
 			context.Background(),
 			&domain.CreateRedfishResource{
 				ID:          uuid,
@@ -107,13 +107,13 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 					"Severity":        severity,
 					"Action":          logEntry.Action,
 				}})
-		// need to be updated to filter the first 50...
+
 		lclogsMu.Lock()
 		for len(lclogs) > MAX_LOGS {
 			logger.Debug("too many logs, trimming", "len", len(lclogs))
 			toDelete := lclogs[0]
 			lclogs = lclogs[1:]
-			go ch.HandleCommand(context.Background(), &domain.RemoveRedfishResource{ID: toDelete})
+			ch.HandleCommand(context.Background(), &domain.RemoveRedfishResource{ID: toDelete})
 		}
 		lclogsMu.Unlock()
 
@@ -169,7 +169,7 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 		uri := fmt.Sprintf("%s/%s", logUri, faultEntry.Name)
 		//fmt.Printf("%s/%s", logUri, faultEntry.Name)
 
-		go ch.HandleCommand(
+		ch.HandleCommand(
 			context.Background(),
 			&domain.CreateRedfishResource{
 				ID:          uuid,
@@ -221,7 +221,7 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 
 		//Create Alert type event:
 
-		go d.EventBus.PublishEvent(context.Background(),
+		d.EventBus.PublishEvent(context.Background(),
 			eh.NewEvent(eventservice.RedfishEvent, &eventservice.RedfishEventData{
 				EventType:         "Alert",
 				EventId:           logEntry.EventId,

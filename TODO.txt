@@ -3,12 +3,7 @@ Things that need work: (-) TODO (*) DONE
  - expanduri formatter
  - subscription should not allow duplicates
 
- * fix instantiate from awesome mapper
-    - done: now semi-reentrant if you use the postproc facility
- * subscription create should return the actual resource
-    - done
-
- - SELECT  EC.*
+ * SELECT  EC.*
 
  - validator system for models? Attach functions that observe and validate. Ability to refuse and return an error?
 
@@ -89,6 +84,11 @@ Things that need work: (-) TODO (*) DONE
     * $skip
     * $top
     * $select
+
+ * fix instantiate from awesome mapper
+    - done: now semi-reentrant if you use the postproc facility (this is implemented everywhere it's currently used. See MakeMaker() in instantiate-helpers.go)
+ * subscription create should return the actual resource
+    - done
 
  * EVENTS
     * implement an http endpoint to inject raw events into the system (internal command)
