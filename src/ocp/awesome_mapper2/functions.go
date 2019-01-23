@@ -281,7 +281,7 @@ func init() {
 			return s, nil
 		}
 	})
-	AddFunction("map_health_value", func(args ...interface{}) (interface{}, error) { //todo: turn into hash
+	AddFunction("map_health_value", func(args ...interface{}) (interface{}, error) {
 		switch t := args[0].(float64); t {
 		case 0, 1: //other, unknown
 			return nil, nil
@@ -295,7 +295,21 @@ func init() {
 			return nil, errors.New("Invalid object status")
 		}
 	})
-	AddFunction("map_led_value", func(args ...interface{}) (interface{}, error) { //todo: turn into hash
+  AddFunction("map_chassis_state", func(args ...interface{}) (interface{}, error) {
+    switch t := args[0].(string); t {
+    case "Chassis Standby Power State":
+      return "Off", nil
+    case "Chassis Power On State":
+      return "On", nil
+    case "Chassis Powering On State":
+      return "PoweringOn", nil
+    case "Chassis Powering Off State":
+      return "PoweringOff", nil
+    default:
+      return nil, nil
+    }
+  })
+	AddFunction("map_led_value", func(args ...interface{}) (interface{}, error) {
 		switch t := args[0].(string); t {
 		case "Blink-Off", "BLINK-OFF":
 			return "Lit", nil
