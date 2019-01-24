@@ -317,7 +317,8 @@ func StartService(ctx context.Context, logger log.Logger, eb eh.EventBus) (*Serv
 					continue
 				}
 				if !valBool {
-					ret.logger.Debug("Select did not match", "cfgName", cfgName, "type", event.EventType(), "select", mapping.selectStr, "val", val)
+					// comment out logging in the fast path. uncomment to enable.
+					//ret.logger.Debug("Select did not match", "cfgName", cfgName, "type", event.EventType(), "select", mapping.selectStr, "val", val)
 					cleanup()
 					continue
 				}
@@ -337,7 +338,8 @@ func StartService(ctx context.Context, logger log.Logger, eb eh.EventBus) (*Serv
 						ret.logger.Error("Expression failed to evaluate", "err", err, "cfgName", cfgName, "type", event.EventType(), "queryString", updates.queryString, "parameters", parameters.params, "val", val)
 						continue
 					}
-					ret.logger.Info("Updating property!", "property", updates.property, "value", val, "Event", event, "EventData", event.Data())
+					// comment out logging in the fast path. uncomment to enable.
+					//ret.logger.Info("Updating property!", "property", updates.property, "value", val, "Event", event, "EventData", event.Data())
 					parameters.model.UpdateProperty(updates.property, val)
 				}
 
