@@ -22,8 +22,8 @@ type RedfishEventData struct {
 	Message           string                 `json:",omitempty"`
 	MessageId         string                 `json:",omitempty"`
 	MessageArgs       []string               `json:",omitempty"`
-	OriginOfCondition map[string]interface{} `json:",omitempty"`
-}
+	OriginOfCondition string                 `json:",omitempty"`
+} //TODO MSM BUG: OriginOfCondition for events has to be a string or will be rejected
 
 type ExternalRedfishEventData struct {
 	Id      int    `json:",string"`

@@ -230,7 +230,8 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 				Message:           logEntry.Message,
 				MessageId:         logEntry.MessageID,
 				MessageArgs:       logEntry.MessageArgs,
-				OriginOfCondition: map[string]interface{}{"@odata.id": logEntry.FQDD},
+				//TODO MSM BUG: OriginOfCondition for events has to be a string or will be rejected
+				OriginOfCondition: logEntry.FQDD,
 			}, time.Now()))
 
 		return true, nil
