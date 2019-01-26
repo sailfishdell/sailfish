@@ -282,7 +282,7 @@ func init() {
 		}
 	})
 	AddFunction("map_health_value", func(args ...interface{}) (interface{}, error) {
-		switch t := args[0].(float64); t {
+    switch t := int(args[0].(float64)); t {
 		case 0, 1: //other, unknown
 			return nil, nil
 		case 2: //ok
@@ -391,10 +391,22 @@ func init() {
 		}
 	})
 	AddFunction("zero_to_null", func(args ...interface{}) (interface{}, error) {
-		if args[0] == 0 {
-			return nil, nil
+		switch args[0].(type) {
+		case int, int8, int16, int32, int64:
+      val := int(args[0].(float64))
+      if (val == 0) {
+        return nil, nil
+      }
+			return val, nil
+    case float32, float64:
+      val := args[0].(float64)
+      if (val == 0) {
+        return nil, nil
+      }
+      return val, nil
+    default:
+      return nil, errors.New("cant parse non-int or non-float")
 		}
-		return args[0], nil
 	})
 	AddFunction("zero_or_value", func(args ...interface{}) (interface{}, error) {
 		switch t := args[0].(float64); t {
