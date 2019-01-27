@@ -731,14 +731,16 @@ func handleSelect(r *http.Request, d *HTTPCmdProcessedData) *HTTPCmdProcessedDat
 	}
 
 	selectQuery := [][]string{}
-	for _, i := range selAry {
-		selectQuery = append(selectQuery, strings.Split(i, "/"))
+	for _, j := range selAry {
+		for _, i := range strings.Split(j, ",") {
+			selectQuery = append(selectQuery, strings.Split(i, "/"))
 
-		// WORKAROUND FOR BROKEN MSM
-		selectQuery = append(selectQuery, strings.Split("Attributes/"+i, "/"))
-		selectQuery = append(selectQuery, []string{"Id"})
-		selectQuery = append(selectQuery, []string{"Name"})
-		selectQuery = append(selectQuery, []string{"Description"})
+			// WORKAROUND FOR BROKEN MSM
+			selectQuery = append(selectQuery, strings.Split("Attributes/"+i, "/"))
+			selectQuery = append(selectQuery, []string{"Id"})
+			selectQuery = append(selectQuery, []string{"Name"})
+			selectQuery = append(selectQuery, []string{"Description"})
+		}
 	}
 
 	res, ok := d.Results.(map[string]interface{})

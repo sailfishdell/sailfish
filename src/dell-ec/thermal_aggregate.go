@@ -77,8 +77,8 @@ func RegisterThermalAggregate(s *testaggregate.Service) {
 					Properties: map[string]interface{}{
 						"Name":                           "Chassis Inlet Temperature",
 						"Description":                    "Represents the properties for Temperature and Cooling",
-						"LowerThresholdCritical@meta":    vw.Meta(view.GETProperty("LowerWarningThreshold"), view.GETModel("default")),
-						"LowerThresholdNonCritical@meta": vw.Meta(view.GETProperty("LowerCriticalThreshold"), view.GETModel("default")),
+						"LowerThresholdCritical@meta":    vw.Meta(view.GETProperty("LowerCriticalThreshold"), view.GETModel("default")),
+						"LowerThresholdNonCritical@meta": vw.Meta(view.GETProperty("LowerWarningThreshold"), view.GETModel("default")),
 						"MemberId":                       "System.Chassis.1",
 						"ReadingCelsius@meta":            vw.Meta(view.GETProperty("sensorReading"), view.GETModel("default")),
 						"Status": map[string]interface{}{

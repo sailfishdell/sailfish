@@ -69,10 +69,11 @@ func PublishRedfishEvents(ctx context.Context, m propertygetter, eb eh.EventBus)
 				case *RedfishEventData:
 					// mitigate duplicate messages
 					found := false
+					//TODO MSM BUG: OriginOfCondition for events has to be a string or will be rejected
 					for _, evt := range eventQ {
 						if data.EventType == "ResourceUpdated" &&
 							evt.EventType == data.EventType &&
-							evt.OriginOfCondition["@odata.id"] == data.OriginOfCondition["@odata.id"] {
+							evt.OriginOfCondition == data.OriginOfCondition {
 							log.MustLogger("event_service").Debug("duplicate")
 							found = true
 						}
@@ -123,7 +124,8 @@ func PublishRedfishEvents(ctx context.Context, m propertygetter, eb eh.EventBus)
 				case *domain.RedfishResourceCreatedData:
 					eventData := &RedfishEventData{
 						EventType:         "ResourceCreated",
-						OriginOfCondition: map[string]interface{}{"@odata.id": data.ResourceURI},
+						//TODO MSM BUG: OriginOfCondition for events has to be a string or will be rejected
+						OriginOfCondition: data.ResourceURI,
 					}
 
 					eb.PublishEvent(ctx, eh.NewEvent(RedfishEvent, eventData, time.Now()))
@@ -131,7 +133,8 @@ func PublishRedfishEvents(ctx context.Context, m propertygetter, eb eh.EventBus)
 				case *domain.RedfishResourceRemovedData:
 					eventData := &RedfishEventData{
 						EventType:         "ResourceRemoved",
-						OriginOfCondition: map[string]interface{}{"@odata.id": data.ResourceURI},
+						//TODO MSM BUG: OriginOfCondition for events has to be a string or will be rejected
+						OriginOfCondition: data.ResourceURI,
 					}
 
 					eb.PublishEvent(ctx, eh.NewEvent(RedfishEvent, eventData, time.Now()))
