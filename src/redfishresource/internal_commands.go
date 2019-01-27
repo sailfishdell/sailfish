@@ -3,9 +3,9 @@ package domain
 import (
 	"context"
 	"errors"
+	"net/url"
+	"strings"
 	"time"
-  "net/url"
-  "strings"
 
 	eh "github.com/looplab/eventhorizon"
 	"github.com/mitchellh/mapstructure"
@@ -106,11 +106,11 @@ func (c *CreateRedfishResource) Handle(ctx context.Context, a *RedfishResourceAg
 	a.Properties.Parse(c.Properties)
 	a.Properties.Meta = c.Meta
 
-  var resourceURI []string
-  // preserve slashes
-  for _, x := range strings.Split(c.ResourceURI, "/") {
-    resourceURI = append(resourceURI, url.PathEscape(x))
-  }
+	var resourceURI []string
+	// preserve slashes
+	for _, x := range strings.Split(c.ResourceURI, "/") {
+		resourceURI = append(resourceURI, url.PathEscape(x))
+	}
 
 	v["@odata.id"] = &RedfishResourceProperty{Value: strings.Join(resourceURI, "/")}
 	v["@odata.type"] = &RedfishResourceProperty{Value: c.Type}
@@ -252,6 +252,8 @@ func StartInjectService(logger log.Logger, eb eh.EventBus) {
 	}()
 }
 
+const MAX_CONSOLIDATED_EVENTS = 30
+
 func (c *InjectEvent) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 	requestLogger := ContextLogger(ctx, "internal_commands").New("module", "inject_event")
 
@@ -271,6 +273,11 @@ func (c *InjectEvent) Handle(ctx context.Context, a *RedfishResourceAggregate) e
 
 	// comment out debug prints in the hot path, uncomment for debugging
 	//requestLogger.Debug("InjectEvent - NEW ARRAY INJECT", "events", eventList)
+
+	// force synchronous events for component events to prevent race conditions
+	if c.Name == eh.EventType("ComponentEvent") || c.Name == eh.EventType("IDRACComponentEvent") {
+		c.Synchronous = true
+	}
 
 	trainload := []eh.EventData{}
 	for _, eventData := range eventList {
@@ -292,19 +299,25 @@ func (c *InjectEvent) Handle(ctx context.Context, a *RedfishResourceAggregate) e
 		trainload = append(trainload, data)
 		// comment out debug prints in the hot path, uncomment for debugging
 		//requestLogger.Debug("InjectEvent - publishing", "event name", c.Name, "event_data", data)
+
+		// limit number of consolidated events to 30 to prevent overflowing queues and deadlocking
+		if len(trainload) > MAX_CONSOLIDATED_EVENTS {
+			e := event.NewSyncEvent(c.Name, trainload, time.Now())
+			e.Add(1)
+			if c.Synchronous {
+				defer e.Wait()
+			}
+			trainload = []eh.EventData{}
+			injectChan <- e
+		}
 	}
 
-	c.Synchronous = true
-
-	var evt eh.Event
-	if c.Synchronous || c.Name == eh.EventType("ComponentEvent") || c.Name == eh.EventType("IDRACComponentEvent") {
-		e := event.NewSyncEvent(c.Name, trainload, time.Now())
-		e.Add(1)
-		evt = e
-	} else {
-		evt = eh.NewEvent(c.Name, trainload, time.Now())
+	e := event.NewSyncEvent(c.Name, trainload, time.Now())
+	e.Add(1)
+	if c.Synchronous {
+		defer e.Wait()
 	}
-	injectChan <- evt
+	injectChan <- e
 
 	return nil
 }
