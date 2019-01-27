@@ -4,9 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"path"
 	"sort"
 	"strconv"
-	"sync"
 	"time"
 
 	eh "github.com/looplab/eventhorizon"
@@ -31,8 +31,6 @@ func in_array(a string, list []string) bool {
 
 func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.CommandHandler, d *domain.DomainObjects) {
 	MAX_LOGS := 3000
-	lclogs := []eh.UUID{}
-	lclogsMu := &sync.Mutex{}
 
 	awesome_mapper2.AddFunction("addlclog", func(args ...interface{}) (interface{}, error) {
 		logUri, ok := args[0].(string)
@@ -67,10 +65,6 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 		if logEntry.Severity == "Informational" {
 			severity = "OK"
 		}
-
-		lclogsMu.Lock()
-		lclogs = append(lclogs, uuid)
-		lclogsMu.Unlock()
 
 		ch.HandleCommand(
 			context.Background(),
@@ -108,41 +102,53 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 					"Action":          logEntry.Action,
 				}})
 
-		lclogsMu.Lock()
-		for len(lclogs) > MAX_LOGS {
-			logger.Debug("too many logs, trimming", "len", len(lclogs))
-			toDelete := lclogs[0]
-			lclogs = lclogs[1:]
-			ch.HandleCommand(context.Background(), &domain.RemoveRedfishResource{ID: toDelete})
+		uriList := d.FindMatchingURIs(func(uri string) bool { return path.Dir(uri) == logUri })
+
+		sort.Slice(uriList, func(i, j int) bool {
+			idx_i, _ := strconv.Atoi(path.Base(uriList[i]))
+			idx_j, _ := strconv.Atoi(path.Base(uriList[j]))
+			return idx_i > idx_j
+		})
+
+		if len(uriList) > MAX_LOGS {
+			for _, uri := range uriList[MAX_LOGS:] {
+				logger.Debug("too many logs, trimming", "len", len(uriList))
+				id, ok := d.GetAggregateIDOK(uri)
+				if ok {
+					ch.HandleCommand(context.Background(), &domain.RemoveRedfishResource{ID: id})
+				}
+			}
 		}
-		lclogsMu.Unlock()
 
 		return true, nil
 	})
 
 	awesome_mapper2.AddFunction("clearlclog", func(args ...interface{}) (interface{}, error) {
-		logger.Debug("Clearing all logs", "len", len(lclogs))
+		logger.Debug("Clearing all logs")
 
-		// do a really quick lock of the log list to save it off, then just clear
-		// the array and set up a single background goroutine to clear everything
-		// off
-		lclogsMu.Lock()
-		toDel := lclogs[0:]
-		lclogs = []eh.UUID{}
-		lclogsMu.Unlock()
+		logUri, ok := args[0].(string)
+		if !ok {
+			logger.Crit("Mapper configuration error: uri not passed as string", "args[0]", args[0])
+			return nil, errors.New("Mapper configuration error: uri not passed as string")
+		}
 
-		// spawn background goroutine to clear all logs
-		go func(toDel []eh.UUID) {
-			//using range is so much cleaner, but we need to go backwards
-			for x := len(toDel) - 1; x >= 0; x = x - 1 {
-				ch.HandleCommand(context.Background(), &domain.RemoveRedfishResource{ID: toDel[x]})
-				if x%50 == 0 {
-					//Ugh... but slow it down so we don't flood the queue
-					time.Sleep(time.Second * 1)
+		uriList := d.FindMatchingURIs(func(uri string) bool { return path.Dir(uri) == logUri })
+
+		go func(toDel []string) {
+			for idx, uri := range uriList {
+				id, ok := d.GetAggregateIDOK(uri)
+				if !ok {
+					continue
+				}
+				ch.HandleCommand(context.Background(), &domain.RemoveRedfishResource{ID: id})
+				if idx%10 == 0 {
+					//Ugh... but slow it down so we don't flood the queue and deadlock
+					time.Sleep(time.Second / 10)
 				}
 			}
-		}(toDel)
-		return true, nil
+		}(uriList)
+
+		return nil, nil
 	})
 
 	awesome_mapper2.AddFunction("addfaultentry", func(args ...interface{}) (interface{}, error) {

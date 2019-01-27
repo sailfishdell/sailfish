@@ -1225,7 +1225,7 @@ awesome_mapper:
           Exec: [ "firealert(data)" ]}
       - { SelectEventType: "LogEvent",
           Select: "data.LogAlert == 'clear'",
-          Exec: [ "clearlclog()" ]}
+          Exec: [ "clearlclog(collection_uri)" ]}
 
     faultlist:
       - { SelectEventType: "FaultEntryAdd",
