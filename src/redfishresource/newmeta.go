@@ -192,9 +192,16 @@ func GETfn(ctx context.Context, rrp *RedfishResourceProperty, opts encOpts) (int
 	if plugin, ok := plugin.(NewPropGetter); ok {
 		// comment out debugging in the fast path. Uncomment if you need to debug
 		//defer ContextLogger(ctx, "property_process").Debug("AFTER getting property: GET - type assert success", "value", fmt.Sprintf("%v", rrp.Value))
+
+		// plugin can use value to cache if it resets this
+		rrp.Ephemeral = true
 		err = plugin.PropertyGet(ctx, opts.fnArgAuth, rrp, meta_t)
 	}
-	return rrp.Value, err
+	ret := rrp.Value
+	if rrp.Ephemeral {
+		rrp.Value = nil
+	}
+	return ret, err
 }
 
 func PATCHfn(ctx context.Context, rrp *RedfishResourceProperty, opts encOpts) (interface{}, error) {

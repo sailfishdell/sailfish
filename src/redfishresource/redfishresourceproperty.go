@@ -1,7 +1,6 @@
 package domain
 
 import (
-	"encoding/json"
 	"fmt"
 	"strings"
 	"sync"
@@ -17,18 +16,13 @@ type RedfishAuthorizationProperty struct {
 
 type RedfishResourceProperty struct {
 	sync.Mutex
-	Value interface{}
-	Meta  map[string]interface{}
+	Value     interface{}
+	Meta      map[string]interface{}
+	Ephemeral bool
 }
 
 func NewProperty() *RedfishResourceProperty {
 	return &RedfishResourceProperty{}
-}
-
-func (rrp *RedfishResourceProperty) MarshalJSON() ([]byte, error) {
-	rrp.Lock()
-	defer rrp.Unlock()
-	return json.Marshal(rrp.Value)
 }
 
 func (rrp *RedfishResourceProperty) Parse(thing interface{}) (ret *RedfishResourceProperty) {
