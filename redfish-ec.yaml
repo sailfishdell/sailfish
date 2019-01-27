@@ -551,14 +551,6 @@ views:
           "params":
       "Aggregate": "lclogentrycollection"
 
-  "lclogentry":
-      "Logger": ["module", "lclog"]
-      "Controllers":
-      "View":
-        - "fn": "with_URI"
-          "params": "rooturi + '/Managers/' + FQDD + '/Logs/Lclog/' + uuid"
-      "Aggregate": "lclogentry"
-
   "update_service":
       "Logger": ["module", "updateservice"]
       "Models":
