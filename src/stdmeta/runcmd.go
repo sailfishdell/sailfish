@@ -24,7 +24,7 @@ func (t *runCmd) PluginType() domain.PluginType { return runCmdPlugin }
 
 func (t *runCmd) PropertyGet(
 	ctx context.Context,
-    auth *domain.RedfishAuthorizationProperty,
+	auth *domain.RedfishAuthorizationProperty,
 	rrp *domain.RedfishResourceProperty,
 	meta map[string]interface{},
 ) error {

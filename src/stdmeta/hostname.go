@@ -21,6 +21,7 @@ func (t *hostname) PluginType() domain.PluginType { return hostnamePlugin }
 
 func (t *hostname) PropertyGet(
 	ctx context.Context,
+	auth *domain.RedfishAuthorizationProperty,
 	rrp *domain.RedfishResourceProperty,
 	meta map[string]interface{},
 ) error {

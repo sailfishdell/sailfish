@@ -21,6 +21,7 @@ func (t *dateTime) PluginType() domain.PluginType { return dateTimePlugin }
 
 func (t *dateTime) PropertyGet(
 	ctx context.Context,
+	auth *domain.RedfishAuthorizationProperty,
 	rrp *domain.RedfishResourceProperty,
 	meta map[string]interface{},
 ) error {
