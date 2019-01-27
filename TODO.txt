@@ -2,6 +2,8 @@ Things that need work: (-) TODO (*) DONE
 
  - expanduri formatter
  - subscription should not allow duplicates
+ * EPHEMERAL resource property
+     - values returned by plugins are now ephemeral by default and not saved in the redfishresourceproperty after being returned up the stack. this prevents excessive mem usage
 
  * SELECT  EC.*
 

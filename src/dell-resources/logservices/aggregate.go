@@ -27,7 +27,6 @@ func RegisterAggregate(s *testaggregate.Service) {
 					Properties: map[string]interface{}{
 						"Name":        "Log Service Collection",
 						"Description": "Collection of Log Services for this Manager",
-						//"Members@meta":             vw.Meta(view.GETProperty("members"), view.GETFormatter("formatOdataList"), view.GETModel("default")), // hard coded for time being due to timing issue
 						"Members": []map[string]interface{}{
 							map[string]interface{}{
 								"@odata.id": "/redfish/v1/Managers/CMC.Integrated.1/LogServices/Lclog",
@@ -36,7 +35,6 @@ func RegisterAggregate(s *testaggregate.Service) {
 								"@odata.id": "/redfish/v1/Managers/CMC.Integrated.1/LogServices/FaultList",
 							},
 						},
-						//"Members@odata.count@meta": vw.Meta(view.GETProperty("members"), view.GETFormatter("count"), view.GETModel("default")),
 						"Members@odata.count": 2,
 					}},
 			}, nil
@@ -63,7 +61,7 @@ func RegisterAggregate(s *testaggregate.Service) {
 						},
 						"DateTime@meta":       map[string]interface{}{"GET": map[string]interface{}{"plugin": "datetime"}},
 						"DateTimeLocalOffset": "+00:00",
-						"Id": "LC",
+						"Id":                  "LC",
 						"Actions": map[string]interface{}{
 							"#LogService.ClearLog": map[string]interface{}{
 								"target": vw.GetActionURI("clearlog"),
@@ -84,10 +82,22 @@ func RegisterAggregate(s *testaggregate.Service) {
 						"GET": []string{"Login"},
 					},
 					Properties: map[string]interface{}{
-						"Description":              "LC Logs for this manager",
-						"Name":                     "Log Entry Collection",
-						"Members@meta":             vw.Meta(view.GETProperty("members"), view.GETFormatter("expand"), view.GETModel("default")),
-						"Members@odata.count@meta": vw.Meta(view.GETProperty("members"), view.GETFormatter("count"), view.GETModel("default")),
+						"Description": "LC Logs for this manager",
+						"Name":        "Log Entry Collection",
+
+						// manually set up the fast expand handler since there isn't currently a nice helper
+						"Members@meta": map[string]interface{}{
+							"GET": map[string]interface{}{
+								"plugin":    vw.GetURI(),
+								"property":  "members", // here is where we'll store the count
+								"model":     "default",
+								"formatter": "fastexpand",
+
+								"uribase": vw.GetURI(),
+							}},
+
+						// the fastexpand helper directly stores the count here, no formatter needed
+						"Members@odata.count@meta": vw.Meta(view.GETProperty("members"), view.GETModel("default")),
 					}},
 			}, nil
 		})
