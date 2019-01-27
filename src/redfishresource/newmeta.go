@@ -32,9 +32,9 @@ func ProcessPATCH(ctx context.Context, rrp *RedfishResourceProperty, auth *Redfi
 
 func ProcessGET(ctx context.Context, rrp *RedfishResourceProperty, auth *RedfishAuthorizationProperty) (results interface{}, err error) {
 	opts := encOpts{
-		request: nil,
-		process: GETfn,
-        fnArgAuth: auth,
+		request:   nil,
+		process:   GETfn,
+		fnArgAuth: auth,
 	}
 
 	val, err := parseRecursive(ctx, reflect.ValueOf(rrp), opts)
@@ -96,7 +96,7 @@ func parseRecursive(ctx context.Context, val reflect.Value, e encOpts) (reflect.
 		wg := sync.WaitGroup{}
 		for _, k := range val.MapKeys() {
 			wg.Add(1)
-			go func(k reflect.Value) {
+			func(k reflect.Value) {
 				newEncOpts := encOpts{
 					request:   e.request,
 					present:   e.present,
@@ -140,7 +140,7 @@ func parseRecursive(ctx context.Context, val reflect.Value, e encOpts) (reflect.
 		wg := sync.WaitGroup{}
 		for i := 0; i < val.Len(); i++ {
 			wg.Add(1)
-			go func(k int) {
+			func(k int) {
 				//TODO: for PATCH, no clue how we map an array of body elements to an array here! Punting for now
 
 				sliceVal := val.Index(k)
