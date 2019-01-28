@@ -357,7 +357,6 @@ func init() {
 		t := time.Tick(time.Second * 30)
 		for {
 			<-t
-			fmt.Println("Freeing unused memory back to the OS.")
 			debug.FreeOSMemory()
 		}
 	}()
