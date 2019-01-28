@@ -8,6 +8,7 @@ import (
 	"sort"
 	"strconv"
 	"time"
+	"strings"
 
 	eh "github.com/looplab/eventhorizon"
 
@@ -27,6 +28,16 @@ func in_array(a string, list []string) bool {
 		}
 	}
 	return false
+}
+
+func link_mapper(fqdd string) string {
+    ret_string := "/redfish/v1/Chassis/System.Chassis.1"
+    if strings.HasPrefix(fqdd, "Fan") {
+        ret_string += "/Sensors/Fans/" + fqdd
+    } else if strings.HasPrefix(fqdd, "PSU") {
+        ret_string += "/Sensors/PowerSupplies/" + fqdd
+    }
+    return ret_string
 }
 
 func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.CommandHandler, d *domain.DomainObjects) {
@@ -84,7 +95,7 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 					"Id":          logEntry.Id,
 					"Links": map[string]interface{}{
 						"OriginOfCondition": map[string]interface{}{
-							"@odata.id": "/redfish/v1/Chassis/System.Chassis.1",
+							"@odata.id": link_mapper(logEntry.FQDD),
 						},
 					},
 					"MessageArgs@odata.count": len(logEntry.MessageArgs),
