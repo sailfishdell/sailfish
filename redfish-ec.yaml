@@ -541,9 +541,9 @@ views:
         "default":  {"members": "array()"}
       "Controllers":
         - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "collection_reverse_sort", "uniquename": "'collection_' + view.GetURI()", "passthru": {'collection_uri': 'view.GetURI()'} }
+          "params": {"modelname": "default", "cfgsection": "invalidate_cache", "uniquename": "'invalidate_cache_' + view.GetURI()", "passthru": {'collection_uri': 'view.GetURI()'} }
         - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "lclog", "uniquename": "'collection_lclog_' + view.GetURI()", "passthru": {'collection_uri': 'view.GetURI()'} }
+          "params": {"modelname": "default", "cfgsection": "lclog", "uniquename": "'addlog_lclog_' + view.GetURI()", "passthru": {'collection_uri': 'view.GetURI()'} }
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/Managers/' + FQDD + '/Logs/Lclog'"
@@ -1160,13 +1160,16 @@ awesome_mapper:
           Select: "baseuri(data.ResourceURI) == collection_uri ",
           ModelUpdate: [ {Property: "members", Query: "removefromset(model, propname, data.ResourceURI)"} ]}
 
-    collection_reverse_sort:
+    invalidate_cache:
       - { SelectEventType: "RedfishResource:created",
           Select: "nohash(data.ResourceURI) && baseuri(data.ResourceURI) == collection_uri ",
-          ModelUpdate: [ {Property: "members", Query: "reversesorttoset(model, propname, data.ResourceURI)"} ]}
+          ModelUpdate: [ {Property: "members", Query: "false"} ]}
       - { SelectEventType: "RedfishResource:removed",
           Select: "nohash(data.ResourceURI) && baseuri(data.ResourceURI) == collection_uri ",
-          ModelUpdate: [ {Property: "members", Query: "removefromset(model, propname, data.ResourceURI)"} ]}
+          ModelUpdate: [ {Property: "members", Query: "false"} ]}
+      - { SelectEventType: "RedfishResource:updated",
+          Select: "nohash(data.ResourceURI) && baseuri(data.ResourceURI) == collection_uri ",
+          ModelUpdate: [ {Property: "members", Query: "false"} ]}
 
     power_supply_uris:
       - { SelectEventType: "RedfishResource:created",
