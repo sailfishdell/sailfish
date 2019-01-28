@@ -103,15 +103,17 @@ func (t *uriCollection) PropertyGet(
 		return idx_i > idx_j
 	})
 
-	for idx, uri := range uriList {
+	used := 0
+	for _, uri := range uriList {
 		out, err := t.d.ExpandURI(ctx, uri)
 		if err != nil {
 			continue
 		}
-		odata[idx] = out.Value
+		odata[used] = out.Value
+		used = used + 1
 	}
 
-	rrp.Value = odata
+	rrp.Value = odata[:used]
 
 	return nil
 }

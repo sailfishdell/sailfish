@@ -141,13 +141,13 @@ func parseRecursive(ctx context.Context, val reflect.Value, e encOpts) (reflect.
 		for i := 0; i < val.Len(); i++ {
 			wg.Add(1)
 			func(k int) {
-				//TODO: for PATCH, no clue how we map an array of body elements to an array here! Punting for now
-
+				defer wg.Done()
 				sliceVal := val.Index(k)
-				parsed, err := parseRecursive(ctx, reflect.ValueOf(sliceVal.Interface()), e)
-				_ = err // supress unused var error
-				ret.Index(k).Set(parsed)
-				wg.Done()
+				if sliceVal.IsValid() {
+					parsed, err := parseRecursive(ctx, reflect.ValueOf(sliceVal.Interface()), e)
+					_ = err // supress unused var error
+					ret.Index(k).Set(parsed)
+				}
 			}(i)
 		}
 		wg.Wait()
