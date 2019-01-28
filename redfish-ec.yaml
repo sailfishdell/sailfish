@@ -456,12 +456,11 @@ views:
         "instantiate('logservices', 'FQDD', FQDD)",
         "instantiate('certificateservices', 'parenturi', rooturi + '/Managers/' + FQDD, 'FQDD', FQDD)",
         "instantiate('manager_cmc_integrated_redundancy', 'FQDD', FQDD, 'parenturi', view.GetURI())",
+        "instantiate('lclogservices', 'FQDD', FQDD)",
+        "instantiate('faultlistservices', 'FQDD', FQDD)",
+        "instantiate('lclogentrycollection', 'FQDD', FQDD)",
+        "instantiate('faultlistentrycollection', 'FQDD', FQDD)"
 
-        # only instantiate the collection once for cmc.integrated.1
-        "FQDD == 'CMC.Integrated.1' && instantiate('lclogservices', 'FQDD', FQDD)",
-        "FQDD == 'CMC.Integrated.1' && instantiate('faultlistservices', 'FQDD', FQDD)",
-        "FQDD == 'CMC.Integrated.1' && instantiate('lclogentrycollection', 'FQDD', FQDD)",
-        "FQDD == 'CMC.Integrated.1' && instantiate('faultlistentrycollection', 'FQDD', FQDD)"
         ]
 
   "certificateservices":
@@ -517,7 +516,7 @@ views:
         "default":  {"members": "array()"}
       "Controllers":
         - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + view.GetURI()", "passthru": {'collection_uri': "'/redfish/v1/Managers/CMC.Integrated.1/LogServices'"} }
+          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + view.GetURI()", "passthru": {'collection_uri': "'/redfish/v1/Managers/' + FQDD + '/LogServices'"} }
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/Managers/' + FQDD + '/LogServices'"
