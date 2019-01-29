@@ -274,11 +274,6 @@ func (c *InjectEvent) Handle(ctx context.Context, a *RedfishResourceAggregate) e
 	// comment out debug prints in the hot path, uncomment for debugging
 	//requestLogger.Debug("InjectEvent - NEW ARRAY INJECT", "events", eventList)
 
-	// force synchronous events for component events to prevent race conditions
-	if c.Name == eh.EventType("ComponentEvent") || c.Name == eh.EventType("IDRACComponentEvent") {
-		c.Synchronous = true
-	}
-
 	trainload := []eh.EventData{}
 	for _, eventData := range eventList {
 		data, err := eh.CreateEventData(c.Name)
