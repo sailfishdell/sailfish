@@ -196,7 +196,7 @@ func RegisterAggregate(s *testaggregate.Service) {
 						"Name@meta":               vw.Meta(view.PropGET("name")),
 						"MemberId@meta":           vw.Meta(view.PropGET("unique_name")),
 						"PowerCapacityWatts@meta": vw.Meta(view.PropGET("capacity_watts")),
-						"LineInputVoltage@meta":   vw.Meta(view.PropGET("line_input_voltage")),
+						"LineInputVoltage@meta":   vw.Meta(view.GETProperty("line_input_voltage"), view.GETModel("default")),
 						"FirmwareVersion@meta":    vw.Meta(view.PropGET("firmware_version")),
 
 						"Status": map[string]interface{}{
@@ -209,7 +209,7 @@ func RegisterAggregate(s *testaggregate.Service) {
 							"Dell": map[string]interface{}{
 								"@odata.type":       "#DellPower.v1_0_0.DellPowerSupply",
 								"ComponentID@meta":  vw.Meta(view.PropGET("component_id")),
-								"InputCurrent@meta": vw.Meta(view.PropGET("input_current")),
+								"InputCurrent@meta": vw.Meta(view.GETProperty("input_current"), view.GETModel("default")),
 								"Attributes@meta":   vw.Meta(view.GETProperty("attributes"), view.GETFormatter("attributeFormatter"), view.GETModel("default"), view.PropPATCH("attributes", "ar_dump")),
 							},
 						},
