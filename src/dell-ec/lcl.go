@@ -61,13 +61,14 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 
 		aggID, ok := d.GetAggregateIDOK(uri)
 		if ok {
-			logger.Crit("Mapper configuration error: URI already exists", "aggID", aggID, "uri", uri)
-			return nil, errors.New("skip! url already exists " + uri)
+			logger.Info("URI already exists, skipping add log", "aggID", aggID, "uri", uri)
+			// not returning error because that will unnecessarily freak out govaluate when there really isn't an error we care about at that level
+			return nil, nil
 		}
 
 		timeF, err := strconv.ParseFloat(logEntry.Created, 64)
 		if err != nil {
-			logger.Debug("Mapper configuration error: Time information can not be parsed", "time", logEntry.Created, "err", err, "set time to", 0)
+			logger.Debug("LCLOG: Time information can not be parsed", "time", logEntry.Created, "err", err, "set time to", 0)
 			timeF = 0
 		}
 		createdTime := time.Unix(int64(timeF), 0)

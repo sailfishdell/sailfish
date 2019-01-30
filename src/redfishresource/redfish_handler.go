@@ -263,9 +263,20 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method == "GET" {
 		// $top, $skip, $filter
-		data = handleCollectionQueryOptions(r, data)
-		data = handleExpand(r, data)
-		data = handleSelect(r, data)
+		queryPresent := r.URL.Query().Get("$select") != "" || r.URL.Query().Get("$skip") != "" || r.URL.Query().Get("$top") != "" || r.URL.Query().Get("$filter") != ""
+		// copy data before we slice and dice
+		if queryPresent {
+			mapstrint, ok := data.Results.(map[string]interface{})
+			if ok {
+				temp, err := DeepCopyMap(mapstrint)
+				if err == nil {
+					data.Results = temp
+					data = handleCollectionQueryOptions(r, data)
+					data = handleExpand(r, data)
+					data = handleSelect(r, data)
+				}
+			}
+		}
 
 		// TODO: Implementation shall return the 501, Not Implemented, status code for any query parameters starting with "$" that are not supported, and should return an extended error indicating the requested query parameter(s) not supported for this resource.
 		// Implementation: for loop over the query parameters and check for anything unexpected

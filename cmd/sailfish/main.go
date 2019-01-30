@@ -91,18 +91,14 @@ func main() {
 	m := mux.NewRouter()
 	loggingHTTPHandler := makeLoggingHTTPHandler(logger, m)
 
-
-    // per spec: hardcoded output for /redfish to list versions supported.
-    m.Path("/redfish").HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.Write([]byte("{\n\t\"v1\": \"/redfish/v1/\"\n}\n")) })
-    // per spec: redirect /redfish/ to /redfish/v1
-    m.Path("/redfish/").HandlerFunc(func(w http.ResponseWriter, r *http.Request) { http.Redirect(w, r, "/redfish/v1", 301) })
+	// per spec: hardcoded output for /redfish to list versions supported.
+	m.Path("/redfish").HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.Write([]byte("{\n\t\"v1\": \"/redfish/v1/\"\n}\n")) })
+	// per spec: redirect /redfish/ to /redfish/v1
+	m.Path("/redfish/").HandlerFunc(func(w http.ResponseWriter, r *http.Request) { http.Redirect(w, r, "/redfish/v1", 301) })
 
 	// some static files that we should generate at some point
 	m.Path("/redfish/v1/$metadata").HandlerFunc(func(w http.ResponseWriter, r *http.Request) { http.ServeFile(w, r, "v1/metadata.xml") })
 	m.Path("/redfish/v1/odata").HandlerFunc(func(w http.ResponseWriter, r *http.Request) { http.ServeFile(w, r, "v1/odata.json") })
-
-	// serve up the schema XML
-	m.PathPrefix("/schemas/v1/").Handler(http.StripPrefix("/schemas/v1/", http.FileServer(http.Dir("./v1/schemas/"))))
 
 	// generic handler for redfish output on most http verbs
 	// Note: this works by using the session service to get user details from token to pass up the stack using the embedded struct
@@ -115,17 +111,15 @@ func main() {
 
 	// SSE
 	chainAuthSSE := func(u string, p []string) http.Handler { return http_sse.NewSSEHandler(domainObjs, logger, u, p) }
-	m.PathPrefix("/events").Methods("GET").HandlerFunc(
+	m.Path("/events").Methods("GET").HandlerFunc(
 		session.MakeHandlerFunc(logger, domainObjs.EventBus, domainObjs, chainAuthSSE, basicauth.MakeHandlerFunc(chainAuthSSE, chainAuthSSE("UNKNOWN", []string{"Unauthenticated"}))))
 
 	// Redfish SSE
 	chainAuthRFSSE := func(u string, p []string) http.Handler {
 		return http_redfish_sse.NewRedfishSSEHandler(domainObjs, logger, u, p)
 	}
-	m.PathPrefix("/redfish_events").Methods("GET").HandlerFunc(
+	m.Path("/redfish_events").Methods("GET").HandlerFunc(
 		session.MakeHandlerFunc(logger, domainObjs.EventBus, domainObjs, chainAuthRFSSE, basicauth.MakeHandlerFunc(chainAuthRFSSE, chainAuthRFSSE("UNKNOWN", []string{"Unauthenticated"}))))
-
-	m.PathPrefix("/redfish").Methods("GET", "PUT", "POST", "PATCH", "DELETE", "HEAD", "OPTIONS").HandlerFunc(handlerFunc)
 
 	// backend command handling
 	internalHandlerFunc := domainObjs.GetInternalCommandHandler(ctx)
@@ -140,6 +134,13 @@ func main() {
 			// now call the passthrough
 			internalHandlerFunc.ServeHTTP(w, r)
 		}))
+
+	//m.PathPrefix("/redfish/").Methods("GET", "PUT", "POST", "PATCH", "DELETE", "HEAD", "OPTIONS").HandlerFunc(handlerFunc)
+
+	// serve up the schema XML
+	m.MatcherFunc(func(r *http.Request, rm *mux.RouteMatch) bool { return strings.HasPrefix(r.URL.Path, "/redfish/") }).HandlerFunc(handlerFunc)
+
+	m.PathPrefix("/schemas/v1/").Handler(http.StripPrefix("/schemas/v1/", http.FileServer(http.Dir("./v1/schemas/"))))
 
 	// all the other command apis.
 	m.PathPrefix("/api/{command}").Handler(internalHandlerFunc)
