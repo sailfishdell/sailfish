@@ -741,16 +741,31 @@ func handleSelect(r *http.Request, d *HTTPCmdProcessedData) *HTTPCmdProcessedDat
 		return d
 	}
 
-	selectQuery := [][]string{}
+	makesel := func(q *[][]Matcher, s []string) {
+		b := []Matcher{}
+		if len(s) == 0 {
+			return
+		}
+		for _, i := range s {
+			re, err := regexp.Compile(strings.Replace(i, "*", ".*", -1))
+			if err != nil {
+				return
+			}
+			b = append(b, re)
+		}
+		*q = append(*q, b)
+	}
+
+	selectQuery := [][]Matcher{}
 	for _, j := range selAry {
 		for _, i := range strings.Split(j, ",") {
-			selectQuery = append(selectQuery, strings.Split(i, "/"))
+			makesel(&selectQuery, strings.Split(i, "/"))
 
 			// WORKAROUND FOR BROKEN MSM
-			selectQuery = append(selectQuery, strings.Split("Attributes/"+i, "/"))
-			selectQuery = append(selectQuery, []string{"Id"})
-			selectQuery = append(selectQuery, []string{"Name"})
-			selectQuery = append(selectQuery, []string{"Description"})
+			makesel(&selectQuery, strings.Split("Attributes/"+i, "/"))
+			makesel(&selectQuery, []string{"Id"})
+			makesel(&selectQuery, []string{"Name"})
+			makesel(&selectQuery, []string{"Description"})
 		}
 	}
 
@@ -764,8 +779,12 @@ func handleSelect(r *http.Request, d *HTTPCmdProcessedData) *HTTPCmdProcessedDat
 	return d
 }
 
+type Matcher interface {
+	MatchString(string) bool
+}
+
 //TODO: regex still matches more than it should be matching
-func trimSelect(r interface{}, selAry [][]string) {
+func trimSelect(r interface{}, selAry [][]Matcher) {
 	res, ok := r.(map[string]interface{})
 	if !ok {
 		fmt.Printf("Could not trim no map[string]interface{} item: %s = %T\n", r, r)
@@ -779,23 +798,14 @@ func trimSelect(r interface{}, selAry [][]string) {
 		}
 		if !found {
 			for _, n := range selAry {
-				if len(n[0]) == 0 {
-					// let's not try to select nothing
-					continue
-				}
-				re := regexp.MustCompile(strings.Replace(n[0], "*", ".*", -1))
-				if re.MatchString(k) {
+				newQuery := [][]Matcher{}
+				if n[0].MatchString(k) {
 					found = true
 					if len(n) <= 1 {
 						break
 					}
 
-					newQuery := [][]string{}
-					for _, n := range selAry {
-						if k == n[0] {
-							newQuery = append(newQuery, n[1:])
-						}
-					}
+					newQuery = append(newQuery, n[1:])
 					trimSelect(res[k], newQuery)
 				}
 			}
