@@ -122,6 +122,7 @@ func RegisterAggregate(s *testaggregate.Service) {
 						"DELETE": []string{"ConfigureManager"},
 					},
 					Properties: map[string]interface{}{
+						"Id":               vw.GetUUID(),
 						"Protocol@meta":    vw.Meta(view.GETProperty("protocol"), view.GETModel("default")),
 						"Name@meta":        vw.Meta(view.GETProperty("name"), view.GETModel("default")),
 						"Destination@meta": vw.Meta(view.GETProperty("destination"), view.GETModel("default"), view.PropPATCH("session_timeout", "default")),
