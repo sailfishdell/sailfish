@@ -28,7 +28,10 @@ type RedfishResourceAggregate struct {
 	ResourceURI string
 	Plugin      string
 
-	Properties RedfishResourceProperty
+	Properties     RedfishResourceProperty
+	ResultsCache   interface{}
+	ResultsCacheMu sync.RWMutex
+	CacheTimeSec   int
 
 	// TODO: need accessor functions for all of these just like property stuff
 	// above so that everything can be properly locked
