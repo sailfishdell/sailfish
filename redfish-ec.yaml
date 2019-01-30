@@ -393,7 +393,7 @@ views:
   "attributes":
       "Logger": ["module", "attributes"]
       "Models":
-        "default":  {"unique_name": "FQDD", "unique_name_attr": "FQDD+'.Attributes'", "attributes": "add_attribute_property()"}
+        "default":  {"unique_name": "FQDD" }
       "Controllers":
         - "fn": "ARDumper"
           "params": {"modelname": "default", "AddToView": true, "passthru": {"fqddlist": "array(FQDD)"}}
@@ -456,12 +456,11 @@ views:
         "instantiate('logservices', 'FQDD', FQDD)",
         "instantiate('certificateservices', 'parenturi', rooturi + '/Managers/' + FQDD, 'FQDD', FQDD)",
         "instantiate('manager_cmc_integrated_redundancy', 'FQDD', FQDD, 'parenturi', view.GetURI())",
+        "instantiate('lclogservices', 'FQDD', FQDD)",
+        "instantiate('faultlistservices', 'FQDD', FQDD)",
+        "instantiate('lclogentrycollection', 'FQDD', FQDD)",
+        "instantiate('faultlistentrycollection', 'FQDD', FQDD)"
 
-        # only instantiate the collection once for cmc.integrated.1
-        "FQDD == 'CMC.Integrated.1' && instantiate('lclogservices', 'FQDD', FQDD)",
-        "FQDD == 'CMC.Integrated.1' && instantiate('faultlistservices', 'FQDD', FQDD)",
-        "FQDD == 'CMC.Integrated.1' && instantiate('lclogentrycollection', 'FQDD', FQDD)",
-        "FQDD == 'CMC.Integrated.1' && instantiate('faultlistentrycollection', 'FQDD', FQDD)"
         ]
 
   "certificateservices":
@@ -517,7 +516,7 @@ views:
         "default":  {"members": "array()"}
       "Controllers":
         - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + view.GetURI()", "passthru": {'collection_uri': "'/redfish/v1/Managers/CMC.Integrated.1/LogServices'"} }
+          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + view.GetURI()", "passthru": {'collection_uri': "'/redfish/v1/Managers/' + FQDD + '/LogServices'"} }
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/Managers/' + FQDD + '/LogServices'"
@@ -748,14 +747,14 @@ views:
   "psu_slot":
       "Logger": ["module", "PSU.Slot"]
       "Models":
-        "default":  {"unique_name": "FQDD", "unique_name_attr": "FQDD+'.Attributes'", "attributes": "add_attribute_property()"}
+        "default":  {"unique_name": "FQDD" }
       "Controllers":
         - "fn": "ARMapper"
-          "params": {"modelname": "default", "cfgsection": "firmware/inventory", "mappinguniquename": "'fw_mapper:' + ChassisFQDD + '_' + FQDD", "AddToView": "ar_mapper_inv"}
+          "params": {"modelname": "default", "cfgsection": "firmware/inventory", "mappinguniquename": "'fw_mapper:' + PowerType + '/' + ChassisFQDD + '_' + FQDD", "AddToView": "ar_mapper_inv"}
         - "fn": "ARMapper"
-          "params": {"modelname": "default", "cfgsection": "PSU/PSU.Slot", "mappinguniquename": "'chassis_psu_mapper:' + ChassisFQDD + '_' + FQDD ", "AddToView": "ar_mapper"}
+          "params": {"modelname": "default", "cfgsection": "PSU/PSU.Slot", "mappinguniquename": "'chassis_psu_mapper:' + PowerType + '/' + ChassisFQDD + '_' + FQDD ", "AddToView": "ar_mapper"}
         - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "power_supply", "uniquename": "'am2_chassis_psu_' + FQDD" }
+          "params": {"modelname": "default", "cfgsection": "power_supply", "uniquename": "'am2_chassis_psu_' + PowerType + '_' + FQDD", "passthru": { "DM_FQDD" : "DM_FQDD" } }
         - "fn": "ARDumper"
           "params": {"modelname": "default", "AddToView": true, "passthru": {"fqddlist": "array(FQDD)"}}
       "View":
@@ -869,7 +868,7 @@ views:
   "fan":
       "Logger": ["module", "Fan"]
       "Models":
-        "default":  {"unique_name": "FQDD", "unique_name_attr": "FQDD+'.Attributes'", "attributes": "add_attribute_property()"}
+        "default":  {"unique_name": "FQDD" }
       "Controllers":
         - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "fan", "uniquename": "'am2_fan_' + FQDD + '/' + ChassisFQDD", "passthru": {"DM_FQDD": "ChassisFQDD + '#' + FQDD"}}
@@ -936,7 +935,7 @@ views:
   "iom_config":
       "Logger": ["module", "IOM_Config"]
       "Models":
-        "default":  {"unique_name": "FQDD", "unique_name_attr": "FQDD+'.Attributes'", "attributes": "add_attribute_property()"}
+        "default":  {"unique_name": "FQDD" }
       "Controllers":
         - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "iom_config", "uniquename": "'am2_iom_config_' + FQDD" }
@@ -985,6 +984,8 @@ views:
       "Controllers":
         - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "slot", "uniquename": "'slot:' + FQDD", "passthru": {"FQDD": "FQDD", "ParentFQDD": "ParentFQDD"}}
+        - "fn": "ARMapper"
+          "params": {"modelname": "default", "cfgsection": "Chassis/Slots", "mappinguniquename": "'chassis_slot:' + FQDD", "AddToView": "ar_mapper"}
       "View":
         - "fn": "with_URI"
           "params": " rooturi + '/Chassis/' + ParentFQDD + '/Slots/' + FQDD"
@@ -1015,7 +1016,9 @@ views:
         "default": {}
       "Controllers":
         - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "slotconfig", "uniquename": "'slot:' + FQDD", "passthru": {"FQDD": "FQDD", "ParentFQDD": "ParentFQDD"}}
+          "params": {"modelname": "default", "cfgsection": "slotconfig", "uniquename": "'slotconfig:' + FQDD", "passthru": {"FQDD": "FQDD", "ParentFQDD": "ParentFQDD"}}
+        - "fn": "ARMapper"
+          "params": {"modelname": "default", "cfgsection": "Chassis/SlotConfig", "mappinguniquename": "'chassis_slotconfig:' + FQDD", "AddToView": "ar_mapper"}
       "View":
         - "fn": "with_URI"
           "params": " rooturi + '/Chassis/' + ParentFQDD + '/SlotConfigs/' + FQDD"
@@ -1061,6 +1064,8 @@ views:
       "Controllers":
         - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "tasks", "uniquename": "'task_id:' + task_id", "passthru": {"Index": "Index", "Group": "Group"} }
+        - "fn": "ARMapper"
+          "params": {"modelname": "default", "cfgsection": "Tasks", "mappinguniquename": "'task:' + task_id", "AddToView": "ar_mapper"}
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/TaskService/Tasks/' + task_id"
@@ -1242,16 +1247,6 @@ awesome_mapper:
       - { SelectEventType: "FileReadEvent", Select: "data.URI == 'FactoryIdentity' && data.FQDD == FQDD", ModelUpdate: [ { Property: "certificate", Query: "empty_to_null(data.Content)" } ] }
 
     slot:
-      - { SelectEventType: "AttributeUpdated", Select: "data.FQDD == 'System.Chassis.1' && data.Group == Group && data.Index == Index && data.Name == 'Config'",
-            ModelUpdate: [ {Property: "slot_config", Query: "data.Value"}]}
-      - { SelectEventType: "AttributeUpdated", Select: "data.FQDD == 'System.Chassis.1' && data.Group == Group && data.Index == Index && data.Name == 'Contains'",
-            ModelUpdate: [ {Property: "slot_contains", Query: "data.Value"}]}
-      - { SelectEventType: "AttributeUpdated", Select: "data.FQDD == 'System.Chassis.1' && data.Group == Group && data.Index == Index && data.Name == 'Name'",
-            ModelUpdate: [ {Property: "slot_name", Query: "data.Value"}]}
-      - { SelectEventType: "AttributeUpdated", Select: "data.FQDD == 'System.Chassis.1' && data.Group == Group && data.Index == Index && data.Name == 'Occupied'",
-            ModelUpdate: [ {Property: "slot_occupied", Query: "data.Value"}]}
-      - { SelectEventType: "AttributeUpdated", Select: "data.FQDD == 'System.Chassis.1' && data.Group == Group && data.Index == Index && data.Name == 'SlotName'",
-            ModelUpdate: [ {Property: "slot_slotname", Query: "data.Value"}]}
       - { SelectEventType: "AttributeUpdated", Select: "(data.FQDD == model.GetPropertyOk(\"slot_contains\")) && data.Name == 'SledProfile'",
             ModelUpdate: [ {Property: "sled_profile", Query: "data.Value", Default: ""}]}
 
@@ -1260,36 +1255,10 @@ awesome_mapper:
             ModelUpdate: [ {Property: "rows", Query: "string(data.Value)"}]}
       - { SelectEventType: "AttributeUpdated", Select: "data.FQDD == 'System.Chassis.1' && data.Group == Group && data.Index == Index && data.Name == 'Columns'",
             ModelUpdate: [ {Property: "columns", Query: "string(data.Value)"}]}
-      - { SelectEventType: "AttributeUpdated", Select: "data.FQDD == 'System.Chassis.1' && data.Group == Group && data.Index == Index && data.Name == 'Location'",
-            ModelUpdate: [ {Property: "location", Query: "data.Value"}]}
-      - { SelectEventType: "AttributeUpdated", Select: "data.FQDD == 'System.Chassis.1' && data.Group == Group && data.Index == Index && data.Name == 'Name'",
-            ModelUpdate: [ {Property: "name", Query: "data.Value"}]}
-      - { SelectEventType: "AttributeUpdated", Select: "data.FQDD == 'System.Chassis.1' && data.Group == Group && data.Index == Index && data.Name == 'Order'",
-            ModelUpdate: [ {Property: "order", Query: "data.Value"}]}
-      - { SelectEventType: "AttributeUpdated", Select: "data.FQDD == 'System.Chassis.1' && data.Group == Group && data.Index == Index && data.Name == 'Orientation'",
-            ModelUpdate: [ {Property: "orientation", Query: "data.Value"}]}
-      - { SelectEventType: "AttributeUpdated", Select: "data.FQDD == 'System.Chassis.1' && data.Group == Group && data.Index == Index && data.Name == 'ParentConfig'",
-            ModelUpdate: [ {Property: "parentConfig", Query: "data.Value"}]}
-      - { SelectEventType: "AttributeUpdated", Select: "data.FQDD == 'System.Chassis.1' && data.Group == Group && data.Index == Index && data.Name == 'Type'",
-            ModelUpdate: [ {Property: "type", Query: "data.Value"}]}
 
     tasks:
-      - { SelectEventType: "AttributeUpdated", Select: "data.Group == Group && data.Index == Index && data.Name == 'Name'",
-            ModelUpdate: [ {Property: "task_name", Query: "data.Value"}]}
       - { SelectEventType: "AttributeUpdated", Select: "data.Group == Group && data.Index == Index && data.Name == 'TaskState'",
             ModelUpdate: [ {Property: "task_state", Query: "map_task_state(data.Value)"}]}
-      - { SelectEventType: "AttributeUpdated", Select: "data.Group == Group && data.Index == Index && data.Name == 'TaskStatus'",
-            ModelUpdate: [ {Property: "task_status", Query: "data.Value"}]}
-      - { SelectEventType: "AttributeUpdated", Select: "data.Group == Group && data.Index == Index && data.Name == 'StartTime'",
-            ModelUpdate: [ {Property: "task_start", Query: "data.Value"}]}
-      - { SelectEventType: "AttributeUpdated", Select: "data.Group == Group && data.Index == Index && data.Name == 'EndTime'",
-            ModelUpdate: [ {Property: "task_end", Query: "data.Value"}]}
-      - { SelectEventType: "AttributeUpdated", Select: "data.Group == Group && data.Index == Index && data.Name == 'PercentComplete'",
-            ModelUpdate: [ {Property: "task_percent", Query: "data.Value"}]}
-      - { SelectEventType: "AttributeUpdated", Select: "data.Group == Group && data.Index == Index && data.Name == 'Message1'",
-            ModelUpdate: [ {Property: "task_msg_1", Query: "data.Value"}]}
-      - { SelectEventType: "AttributeUpdated", Select: "data.Group == Group && data.Index == Index && data.Name == 'MessageID1'",
-            ModelUpdate: [ {Property: "task_msg_1_id", Query: "data.Value"}]}
       #- { SelectEventType: "AttributeUpdated", Select: "data.Group == Group && data.Index == Index && (data.Name == 'MessageArg1-1' || data.Name == 'MessageArg1-2' || data.Name == 'MessageArg1-3')",
       #ModelUpdate: #[ {Property: "task_msg_1_args", Query: "update_task_args(data.Value, data.Name)"}]}
 
@@ -1368,8 +1337,8 @@ awesome_mapper:
     power_supply:
       - { SelectEventType: "PowerSupplyObjEvent", Select: "data.ObjectHeader.FQDD == DM_FQDD",
             ModelUpdate: [
-                {Property: "line_input_voltage", Query: "zero_to_null(data.CurrentInputVolts)" }, #unsigned int
-                {Property: "input_current", Query: "zero_to_null(data.InstAmps)" }, #float
+                {Property: "line_input_voltage", Query: "zero_to_null(data.CurrentInputVolts)" },
+                {Property: "input_current", Query: "zero_to_null(data.InstAmps)" },
                 {Property: "obj_status", Query: "map_health_value(data.ObjectHeader.ObjStatus)" }]}
 
     power_trend:
@@ -1496,6 +1465,30 @@ mappings:
         - {Property: "manufacturer", FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Manufacturer" }
         - {Property: "service_tag",  FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "ServiceTag" }
         - {Property: "indicator_led", FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "IndicatorLED"}
+
+    Chassis/Slots:
+        - {Property: "slot_config",   FQDD: "System.Chassis.1", Group: "{GROUP}", Index: "{INDEX}", Name: "Config" }
+        - {Property: "slot_contains", FQDD: "System.Chassis.1", Group: "{GROUP}", Index: "{INDEX}", Name: "Contains" }
+        - {Property: "slot_name",     FQDD: "System.Chassis.1", Group: "{GROUP}", Index: "{INDEX}", Name: "Name" }
+        - {Property: "slot_occupied", FQDD: "System.Chassis.1", Group: "{GROUP}", Index: "{INDEX}", Name: "Occupied" }
+        - {Property: "slot_slotname", FQDD: "System.Chassis.1", Group: "{GROUP}", Index: "{INDEX}", Name: "SlotName" }
+
+    Chassis/SlotConfig:
+        - {Property: "location",      FQDD: "System.Chassis.1", Group: "{GROUP}", Index: "{INDEX}", Name: "Location" }
+        - {Property: "name",          FQDD: "System.Chassis.1", Group: "{GROUP}", Index: "{INDEX}", Name: "Name" }
+        - {Property: "order",         FQDD: "System.Chassis.1", Group: "{GROUP}", Index: "{INDEX}", Name: "Order" }
+        - {Property: "orientation",   FQDD: "System.Chassis.1", Group: "{GROUP}", Index: "{INDEX}", Name: "Orientation" }
+        - {Property: "parentConfig",  FQDD: "System.Chassis.1", Group: "{GROUP}", Index: "{INDEX}", Name: "ParentConfig" }
+        - {Property: "type",          FQDD: "System.Chassis.1", Group: "{GROUP}", Index: "{INDEX}", Name: "Type" }
+
+    Tasks:
+        - {Property: "task_name",     FQDD: "System.Chassis.1", Group: "{GROUP}", Index: "{INDEX}", Name: "Name" }
+        - {Property: "task_status",   FQDD: "System.Chassis.1", Group: "{GROUP}", Index: "{INDEX}", Name: "TaskStatus" }
+        - {Property: "task_start",    FQDD: "System.Chassis.1", Group: "{GROUP}", Index: "{INDEX}", Name: "StartTime" }
+        - {Property: "task_end",      FQDD: "System.Chassis.1", Group: "{GROUP}", Index: "{INDEX}", Name: "EndTime" }
+        - {Property: "task_percent",  FQDD: "System.Chassis.1", Group: "{GROUP}", Index: "{INDEX}", Name: "PercentComplete" }
+        - {Property: "task_msg_1",    FQDD: "System.Chassis.1", Group: "{GROUP}", Index: "{INDEX}", Name: "Message1" }
+        - {Property: "task_msg_1_id", FQDD: "System.Chassis.1", Group: "{GROUP}", Index: "{INDEX}", Name: "MessageID1" }
 
     Chassis/System.Chassis/Power:
         - {Property: "capacity_watts", FQDD: "System.Chassis.1", Group: "ChassisPower", Index: "1", Name: "SystemInputMaxPowerCapacity" }
