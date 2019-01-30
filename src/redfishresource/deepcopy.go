@@ -12,11 +12,13 @@ package domain
 import (
 	"bytes"
 	"encoding/gob"
+	"time"
 )
 
 func init() {
 	gob.Register(map[string]interface{}{})
 	gob.Register([]interface{}{})
+	gob.Register(time.Time{})
 }
 
 // Map performs a deep copy of the given map m.
