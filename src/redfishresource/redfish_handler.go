@@ -274,6 +274,8 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					data = handleCollectionQueryOptions(r, data)
 					data = handleExpand(r, data)
 					data = handleSelect(r, data)
+				} else {
+					fmt.Printf("SHOULD NOT HAPPEN, need to fix (talk to MEB): %s\n", err)
 				}
 			}
 		}
