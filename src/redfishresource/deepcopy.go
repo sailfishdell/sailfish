@@ -16,6 +16,7 @@ import (
 
 func init() {
 	gob.Register(map[string]interface{}{})
+	gob.Register([]interface{}{})
 }
 
 // Map performs a deep copy of the given map m.

@@ -734,12 +734,19 @@ func handleExpand(r *http.Request, d *HTTPCmdProcessedData) *HTTPCmdProcessedDat
 	return d
 }
 
+type Matcher interface {
+	MatchString(string) bool
+}
+
 func handleSelect(r *http.Request, d *HTTPCmdProcessedData) *HTTPCmdProcessedData {
 	q := r.URL.Query()
 	selAry, ok := q["$select"]
 	if !ok {
 		return d
 	}
+
+	// Leaving debug prints commented out because this is hairy and they'll be needed when we revisit this
+	//fmt.Printf("SELECT: %s\n", selAry)
 
 	makesel := func(q *[][]Matcher, s []string) {
 		b := []Matcher{}
@@ -779,39 +786,45 @@ func handleSelect(r *http.Request, d *HTTPCmdProcessedData) *HTTPCmdProcessedDat
 	return d
 }
 
-type Matcher interface {
-	MatchString(string) bool
-}
-
 //TODO: regex still matches more than it should be matching
 func trimSelect(r interface{}, selAry [][]Matcher) {
+
+	//fmt.Printf("TRIMMING: r: %s, s: %s\n", r, selAry)
 	res, ok := r.(map[string]interface{})
 	if !ok {
-		fmt.Printf("Could not trim no map[string]interface{} item: %s = %T\n", r, r)
+		//fmt.Printf("Could not trim no map[string]interface{} item: %s = %T\n", r, r)
 		return
 	}
 
 	for k, _ := range res {
+		newQuery := [][]Matcher{}
+		recurse := true
+		//fmt.Printf("Check key %s\n", k)
 		found := false
 		if strings.HasPrefix(k, "@") {
 			found = true
+			recurse = false
 		}
 		if !found {
 			for _, n := range selAry {
-				newQuery := [][]Matcher{}
+				//fmt.Printf("  check key %s with matcher %s\n", k, n[0])
 				if n[0].MatchString(k) {
 					found = true
+					//fmt.Printf("\tfound\n")
 					if len(n) <= 1 {
-						break
+						recurse = false
 					}
-
 					newQuery = append(newQuery, n[1:])
-					trimSelect(res[k], newQuery)
 				}
 			}
 		}
 		if !found {
 			delete(res, k)
+		}
+		if found && recurse {
+			//fmt.Printf("=============subtrim start\n")
+			trimSelect(res[k], newQuery)
+			//fmt.Printf("=============subtrim end\n")
 		}
 	}
 
