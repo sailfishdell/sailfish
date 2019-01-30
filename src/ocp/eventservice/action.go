@@ -26,13 +26,6 @@ func MakeSubmitTestEvent(eb eh.EventBus) func(context.Context, eh.Event, *domain
 		redfishEvent := &RedfishEventData{}
 		mapstructure.Decode(data.ActionData, redfishEvent)
 
-		// Require EventType and EventID or else we bail
-		if redfishEvent.EventType == "" || redfishEvent.EventId == "" {
-			retData.Results = map[string]interface{}{"error": "Bad request"}
-			retData.StatusCode = 400
-			return errors.New("Did not get a valid redfish event to publish")
-		}
-
 		// need to publish here.
 		responseEvent := eh.NewEvent(RedfishEvent, redfishEvent, time.Now())
 		eb.PublishEvent(ctx, responseEvent)
