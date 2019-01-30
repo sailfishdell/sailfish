@@ -2,6 +2,7 @@ package eventservice
 
 import (
 	"context"
+	"fmt"
 	"sync"
 
 	eh "github.com/looplab/eventhorizon"
@@ -122,12 +123,13 @@ func RegisterAggregate(s *testaggregate.Service) {
 						"DELETE": []string{"ConfigureManager"},
 					},
 					Properties: map[string]interface{}{
-						"Id":               vw.GetUUID(),
-						"Protocol@meta":    vw.Meta(view.GETProperty("protocol"), view.GETModel("default")),
-						"Name@meta":        vw.Meta(view.GETProperty("name"), view.GETModel("default")),
-						"Destination@meta": vw.Meta(view.GETProperty("destination"), view.GETModel("default"), view.PropPATCH("session_timeout", "default")),
-						"EventTypes@meta":  vw.Meta(view.GETProperty("event_types"), view.GETModel("default")),
-						"Context@meta":     vw.Meta(view.GETProperty("context"), view.GETModel("default")),
+						"Id":                          vw.GetUUID(),
+						"Protocol@meta":               vw.Meta(view.GETProperty("protocol"), view.GETModel("default")),
+						"Name":                        fmt.Sprintf("EventSubscription %s", vw.GetUUID()),
+						"Destination@meta":            vw.Meta(view.GETProperty("destination"), view.GETModel("default"), view.PropPATCH("session_timeout", "default")),
+						"EventTypes@meta":             vw.Meta(view.GETProperty("event_types"), view.GETModel("default")),
+						"EventTypes@odata.count@meta": vw.Meta(view.GETProperty("event_types"), view.GETFormatter("count"), view.GETModel("default")),
+						"Context@meta":                vw.Meta(view.GETProperty("context"), view.GETModel("default")),
 					}},
 			}, nil
 		})
