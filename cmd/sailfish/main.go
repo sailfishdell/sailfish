@@ -92,7 +92,10 @@ func main() {
 	loggingHTTPHandler := makeLoggingHTTPHandler(logger, m)
 
 	// per spec: hardcoded output for /redfish to list versions supported.
-	m.Path("/redfish").HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.Write([]byte("{\n\t\"v1\": \"/redfish/v1/\"\n}\n")) })
+	m.Path("/redfish").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		w.Write([]byte("{\n\t\"v1\": \"/redfish/v1/\"\n}\n"))
+	})
 	// per spec: redirect /redfish/ to /redfish/v1
 	m.Path("/redfish/").HandlerFunc(func(w http.ResponseWriter, r *http.Request) { http.Redirect(w, r, "/redfish/v1", 301) })
 
