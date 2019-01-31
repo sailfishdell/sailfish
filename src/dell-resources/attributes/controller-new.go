@@ -8,10 +8,12 @@ import (
 	"time"
 
 	eh "github.com/looplab/eventhorizon"
+  eventpublisher "github.com/looplab/eventhorizon/publisher/local"
 
 	"github.com/superchalupa/sailfish/src/log"
 	"github.com/superchalupa/sailfish/src/ocp/event"
 	"github.com/superchalupa/sailfish/src/ocp/model"
+  "github.com/superchalupa/sailfish/src/looplab/eventwaiter"
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
 )
 
@@ -23,6 +25,11 @@ type Service struct {
 	eb             eh.EventBus
 }
 
+type syncEvent interface {
+  Add(int)
+  Done()
+}
+
 func StartService(ctx context.Context, logger log.Logger, eb eh.EventBus) (*Service, error) {
 	ret := &Service{
 		forwardMapping: map[*model.Model][]string{},
@@ -30,7 +37,6 @@ func StartService(ctx context.Context, logger log.Logger, eb eh.EventBus) (*Serv
 		logger:         logger,
 		eb:             eb,
 	}
-
 	// stream processor for action events
 	sp, err := event.NewESP(ctx, event.CustomFilter(ret.selectCachedAttributes()), event.SetListenerName("NEW_attributes"))
 	if err != nil {
@@ -138,6 +144,35 @@ func (b *breadcrumb) UpdateRequest(ctx context.Context, property string, value i
 
 	b.s.logger.Debug("UpdateRequest", "property", property, "value", value)
 
+  reqIDs := []eh.UUID{}
+  responses := []AttributeUpdatedData{}
+  status_code := 200
+  patch_timeout := 3
+
+  EventPublisher := eventpublisher.NewEventPublisher()
+  b.s.eb.AddHandler(eh.MatchAnyEventOf(AttributeUpdated), EventPublisher)
+  EventWaiter := eventwaiter.NewEventWaiter(eventwaiter.SetName("patch request"), eventwaiter.NoAutoRun)
+  EventPublisher.AddObserver(EventWaiter)
+  go EventWaiter.Run()
+
+  listener, err := EventWaiter.Listen(ctx, func(event eh.Event) bool {
+    if event.EventType() != AttributeUpdated {
+      return false
+    }
+    _, ok := event.Data().(*AttributeUpdatedData)
+    if !ok {
+      return false
+    }
+    return true
+  })
+  if err != nil {
+    b.s.logger.Error("Could not create listener", "err", err)
+    return nil, errors.New("Failed to make attribute updated event listener")
+  }
+  listener.Name = "patch listener"
+
+  defer listener.Close()
+
 	for k, v := range value.(map[string]interface{}) {
 		stuff := strings.Split(k, ".")
 		reqUUID := eh.NewUUID()
@@ -148,12 +183,16 @@ func (b *breadcrumb) UpdateRequest(ctx context.Context, property string, value i
 		attrVal, ok := getAttrValue(b.m, stuff[0], stuff[1], stuff[2])
 		if !ok {
 			b.s.logger.Error("not found", "Attribute", k)
+      // if an attribute in the patch request can't be found, send error
+      status_code = 400
 			continue
 		}
 
 		var ad AttributeData
 		if !ad.WriteAllowed(attrVal, auth) {
 			b.s.logger.Error("Unable to set", "Attribute", k)
+      // if an attribute in the patch request can't be written, send error
+      status_code = 400
 			continue
 		}
 
@@ -167,8 +206,47 @@ func (b *breadcrumb) UpdateRequest(ctx context.Context, property string, value i
 			Authorization: *auth,
 		}
 		b.s.eb.PublishEvent(ctx, eh.NewEvent(AttributeUpdateRequest, data, time.Now()))
+    reqIDs = append(reqIDs, reqUUID)
 	}
-	return nil, nil
+
+  // create a timer based on number of attributes to be patched
+  timer := time.NewTimer(time.Duration(patch_timeout*len(reqIDs)) * time.Second)
+
+  for {
+    select {
+    case event := <- listener.Inbox():
+      data, _ := event.Data().(*AttributeUpdatedData)
+      for i, reqID := range reqIDs {
+        if reqID == data.ReqID {
+          //remove found reqid from list
+          reqIDs[i] = reqIDs[len(reqIDs)-1]
+          reqIDs = reqIDs[:len(reqIDs)-1]
+          responses = append(responses, *data)
+          if (data.Error != "") {
+            status_code = 400
+          }
+          break
+        }
+      }
+
+      if e, ok := event.(syncEvent); ok {
+        e.Done()
+      }
+
+      if (len(reqIDs) == 0) {
+        //all reqIDs found
+        return status_code, nil
+      }
+
+    case <- timer.C:
+      //time out for any attr updated events that we are still waiting for
+      return 400, nil
+
+    case <- ctx.Done():
+      //terminated early by user
+      return status_code, nil
+    }
+  }
 }
 
 func (b *breadcrumb) Close() {
