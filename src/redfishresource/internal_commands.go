@@ -49,6 +49,7 @@ type CreateRedfishResource struct {
 	Privileges  map[string]interface{}
 
 	// optional stuff
+        Headers    map[string]string      `eh:"optional"`
 	Plugin     string                 `eh:"optional"`
 	Properties map[string]interface{} `eh:"optional"`
 	Meta       map[string]interface{} `eh:"optional"`
@@ -78,8 +79,8 @@ func (c *CreateRedfishResource) Handle(ctx context.Context, a *RedfishResourceAg
 	if a.Plugin == "" {
 		a.Plugin = "RedfishResource"
 	}
+        a.Headers = c.Headers
 	a.PrivilegeMap = map[string]interface{}{}
-	a.Headers = map[string]string{}
 
 	for k, v := range c.Privileges {
 		a.PrivilegeMap[k] = v

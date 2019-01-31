@@ -1222,12 +1222,18 @@ awesome_mapper:
           Exec: [ "firealert(data)" ]}
       - { SelectEventType: "LogEvent",
           Select: "data.LogAlert == 'clear'",
-          Exec: [ "clearlclog(collection_uri)" ]}
+          Exec: [ "clearuris(collection_uri)" ]}
 
     faultlist:
       - { SelectEventType: "FaultEntryAdd",
           Select: "true",
           Exec: [ "addfaultentry(collection_uri, data)" ]}
+      - { SelectEventType: "FaultEntryRemove",
+          Select: "true",
+          Exec: [ "removefaultentry(collection_uri, data)" ]}
+      - { SelectEventType: "FaultEntriesClear",
+          Select: "true",
+          Exec: [ "clearuris(collection_uri)" ]}
 
     generate_health_status:
       - { SelectEventType: "HealthEvent",
