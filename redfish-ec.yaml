@@ -220,6 +220,8 @@ views:
           "params": "eventsvc_uri + '/Subscriptions/' + uuid"
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
+        - "fn": "stdFormatters"
+          "params":
       "Aggregate": "subscription"
 
   "telemetry_service":
