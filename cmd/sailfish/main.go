@@ -167,26 +167,112 @@ func main() {
 			tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,   // Go 1.8 only
 			tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
 			tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
-
-			/*
-			   tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
-			   tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
-			   tls.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,
-			   tls.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,
-			   tls.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,
-			   tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
-			   tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
-			   tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
-			   tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
-			   tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,
-			   tls.TLS_RSA_WITH_AES_256_GCM_SHA384,
-			   tls.TLS_RSA_WITH_AES_256_CBC_SHA,
-			   tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,
-			   tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,
-			*/
 		},
 	}
 
+	cfgMgrMu.RLock()
+	if len(cfgMgr.GetStringSlice("listen")) == 0 {
+		fmt.Fprintf(os.Stderr, "No listeners configured! Use the '-l' option to configure a listener!")
+	}
+
+	fmt.Printf("Starting services: %s\n", cfgMgr.GetStringSlice("listen"))
+
+	// And finally, start up all of the listeners that we have configured
+	for _, listen := range cfgMgr.GetStringSlice("listen") {
+		switch {
+		case strings.HasPrefix(listen, "pprof:"):
+			pprofMux := http.DefaultServeMux
+			http.DefaultServeMux = http.NewServeMux()
+			addr := strings.TrimPrefix(listen, "pprof:")
+			s := &http.Server{
+				Addr:    addr,
+				Handler: pprofMux,
+			}
+			logger.Info("PPROF activated with tcp listener: " + addr)
+			go s.ListenAndServe()
+			go handleShutdown(ctx, logger, s)
+
+		case strings.HasPrefix(listen, "http:"):
+			// HTTP protocol listener
+			// "https:[addr]:port
+			addr := strings.TrimPrefix(listen, "http:")
+			logger.Info("HTTP listener starting on " + addr)
+			s := &http.Server{
+				Addr:           addr,
+				Handler:        loggingHTTPHandler,
+				MaxHeaderBytes: 1 << 20,
+				ReadTimeout:    100 * time.Second,
+				// cannot use writetimeout if we are streaming
+				// WriteTimeout:   10 * time.Second,
+			}
+			go func() { logger.Info("Server exited", "err", s.ListenAndServe()) }()
+			go handleShutdown(ctx, logger, s)
+
+		case strings.HasPrefix(listen, "unix:"):
+			// HTTP protocol listener
+			// "https:[addr]:port
+			addr := strings.TrimPrefix(listen, "unix:")
+			logger.Info("UNIX SOCKET listener starting on " + addr)
+			s := &http.Server{
+				Handler:        loggingHTTPHandler,
+				MaxHeaderBytes: 1 << 20,
+				ReadTimeout:    100 * time.Second,
+			}
+			unixListener, err := net.Listen("unix", addr)
+			if err == nil {
+				go func() { logger.Info("Server exited", "err", s.Serve(unixListener)) }()
+				go handleShutdown(ctx, logger, s)
+			}
+
+		case strings.HasPrefix(listen, "https:"):
+			// HTTPS protocol listener
+			// "https:[addr]:port,certfile,keyfile
+			addr := strings.TrimPrefix(listen, "https:")
+			s := &http.Server{
+				Addr:           addr,
+				Handler:        loggingHTTPHandler,
+				MaxHeaderBytes: 1 << 20,
+				ReadTimeout:    10 * time.Second,
+				// cannot use writetimeout if we are streaming
+				// WriteTimeout:   10 * time.Second,
+				TLSConfig: tlscfg,
+				// can't remember why this doesn't work... TODO: reason this doesnt work
+				//TLSNextProto:   make(map[string]func(*http.Server, *tls.Conn, http.Handler), 0),
+			}
+			logger.Info("HTTPS listener starting on " + addr)
+			checkCaCerts(logger)
+			go func() { logger.Info("Server exited", "err", s.ListenAndServeTLS("server.crt", "server.key")) }()
+			go handleShutdown(ctx, logger, s)
+		case strings.HasPrefix(listen, "spacemonkey:"):
+			addr := strings.TrimPrefix(listen, "spacemonkey:")
+			logger.Info("SPACEMONKEY listener starting on " + addr)
+			go runSpaceMonkey(addr, loggingHTTPHandler)
+
+		}
+	}
+
+	logger.Debug("Listening", "module", "main", "addresses", fmt.Sprintf("%v\n", cfgMgr.GetStringSlice("listen")))
+	cfgMgrMu.RUnlock()
+	SdNotify("READY=1")
+
+	implFn, ok := implementations[cfgMgr.GetString("main.server_name")]
+	if !ok {
+		panic("could not load requested implementation: " + cfgMgr.GetString("main.server_name"))
+	}
+
+	// This starts goroutines that use cfgmgr, so from here on out we need to lock it
+	implFn(ctx, logger, cfgMgr, &cfgMgrMu, domainObjs.CommandHandler, domainObjs.EventBus, domainObjs)
+
+	// wait until we get an interrupt (CTRL-C)
+	intr := make(chan os.Signal, 1)
+	signal.Notify(intr, os.Interrupt)
+	<-intr
+	logger.Crit("INTERRUPTED, Cancelling...")
+	cancel()
+	logger.Warn("Bye!", "module", "main")
+}
+
+func checkCaCerts(logger log.Logger) {
 	// TODO: cli option to enable/disable and control cert options
 	// Load CA cert if it exists. Create CA cert if it doesn't.
 	ca, err := tlscert.Load(tlscert.SetBaseFilename("ca"), tlscert.WithLogger(logger))
@@ -223,90 +309,6 @@ func main() {
 		iterInterfaceIPAddrs(logger, func(ip net.IP) { serverCert.ApplyOption(tlscert.AddSANIP(ip)) })
 		serverCert.Serialize()
 	}
-
-	cfgMgrMu.RLock()
-	if len(cfgMgr.GetStringSlice("listen")) == 0 {
-		fmt.Fprintf(os.Stderr, "No listeners configured! Use the '-l' option to configure a listener!")
-	}
-
-	logger.Info("Starting services: ", "services", cfgMgr.GetStringSlice("listen"))
-
-	// And finally, start up all of the listeners that we have configured
-	for _, listen := range cfgMgr.GetStringSlice("listen") {
-		switch {
-		case strings.HasPrefix(listen, "pprof:"):
-			pprofMux := http.DefaultServeMux
-			http.DefaultServeMux = http.NewServeMux()
-			addr := strings.TrimPrefix(listen, "pprof:")
-			s := &http.Server{
-				Addr:    addr,
-				Handler: pprofMux,
-			}
-			logger.Info("PPROF activated with tcp listener: " + addr)
-			go s.ListenAndServe()
-			go handleShutdown(ctx, logger, s)
-
-		case strings.HasPrefix(listen, "http:"):
-			// HTTP protocol listener
-			// "https:[addr]:port
-			addr := strings.TrimPrefix(listen, "http:")
-			logger.Info("HTTP listener starting on " + addr)
-			s := &http.Server{
-				Addr:           addr,
-				Handler:        loggingHTTPHandler,
-				MaxHeaderBytes: 1 << 20,
-				ReadTimeout:    100 * time.Second,
-				// cannot use writetimeout if we are streaming
-				// WriteTimeout:   10 * time.Second,
-			}
-			go func() { logger.Info("Server exited", "err", s.ListenAndServe()) }()
-			go handleShutdown(ctx, logger, s)
-
-		case strings.HasPrefix(listen, "https:"):
-			// HTTPS protocol listener
-			// "https:[addr]:port,certfile,keyfile
-			addr := strings.TrimPrefix(listen, "https:")
-			s := &http.Server{
-				Addr:           addr,
-				Handler:        loggingHTTPHandler,
-				MaxHeaderBytes: 1 << 20,
-				ReadTimeout:    10 * time.Second,
-				// cannot use writetimeout if we are streaming
-				// WriteTimeout:   10 * time.Second,
-				TLSConfig: tlscfg,
-				// can't remember why this doesn't work... TODO: reason this doesnt work
-				//TLSNextProto:   make(map[string]func(*http.Server, *tls.Conn, http.Handler), 0),
-			}
-			logger.Info("HTTPS listener starting on " + addr)
-			go func() { logger.Info("Server exited", "err", s.ListenAndServeTLS("server.crt", "server.key")) }()
-			go handleShutdown(ctx, logger, s)
-		case strings.HasPrefix(listen, "spacemonkey:"):
-			addr := strings.TrimPrefix(listen, "spacemonkey:")
-			logger.Info("SPACEMONKEY listener starting on " + addr)
-			go runSpaceMonkey(addr, loggingHTTPHandler)
-
-		}
-	}
-
-	logger.Debug("Listening", "module", "main", "addresses", fmt.Sprintf("%v\n", cfgMgr.GetStringSlice("listen")))
-	cfgMgrMu.RUnlock()
-	SdNotify("READY=1")
-
-	implFn, ok := implementations[cfgMgr.GetString("main.server_name")]
-	if !ok {
-		panic("could not load requested implementation: " + cfgMgr.GetString("main.server_name"))
-	}
-
-	// This starts goroutines that use cfgmgr, so from here on out we need to lock it
-	implFn(ctx, logger, cfgMgr, &cfgMgrMu, domainObjs.CommandHandler, domainObjs.EventBus, domainObjs)
-
-	// wait until we get an interrupt (CTRL-C)
-	intr := make(chan os.Signal, 1)
-	signal.Notify(intr, os.Interrupt)
-	<-intr
-	logger.Crit("INTERRUPTED, Cancelling...")
-	cancel()
-	logger.Warn("Bye!", "module", "main")
 }
 
 type shutdowner interface {
