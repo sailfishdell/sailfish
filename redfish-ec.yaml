@@ -1372,6 +1372,7 @@ mappings:
         - {Property: "description",      FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Description" }
         - {Property: "service_tag",      FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "ServiceTag" }
         - {Property: "chassis_type",     FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "ChassisType" }
+        - {Property: "power_state",      FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "PowerState" }
         - {Property: "model",            FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Model" }
         - {Property: "manufacturer",     FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Manufacturer" }
         - {Property: "serial",           FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "SerialNumber" }
