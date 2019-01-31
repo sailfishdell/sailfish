@@ -2,13 +2,14 @@ package domain
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/json-iterator/go"
 
 	eh "github.com/looplab/eventhorizon"
 	log "github.com/superchalupa/sailfish/src/log"
@@ -55,8 +56,8 @@ func NewRedfishHandler(dobjs *DomainObjects, logger log.Logger, u string, p []st
 type RedfishHandler struct {
 	UserName   string
 	Privileges []string
-	d		   *DomainObjects
-	logger	   log.Logger
+	d          *DomainObjects
+	logger     log.Logger
 }
 
 const (
@@ -333,7 +334,16 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// START:
 	// uses more ram: encode to buffer first, get length, then send
 	// This	 lets 'ab' (apachebench) properly do keepalives
+
+	// stdlib marshaller (slower?)
+	// must import "encoding/json"
+	// b, err := json.Marshal(data.Results)
+
+	// faster json marshal:
+	//var json = jsoniter.ConfigCompatibleWithStandardLibrary
+	var json = jsoniter.ConfigFastest
 	b, err := json.Marshal(data.Results)
+
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
