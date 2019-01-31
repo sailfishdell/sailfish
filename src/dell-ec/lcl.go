@@ -7,8 +7,8 @@ import (
 	"path"
 	"sort"
 	"strconv"
-	"time"
 	"strings"
+	"time"
 
 	eh "github.com/looplab/eventhorizon"
 
@@ -31,13 +31,13 @@ func in_array(a string, list []string) bool {
 }
 
 func link_mapper(fqdd string) string {
-    ret_string := "/redfish/v1/Chassis/System.Chassis.1"
-    if strings.HasPrefix(fqdd, "Fan") {
-        ret_string += "/Sensors/Fans/" + fqdd
-    } else if strings.HasPrefix(fqdd, "PSU") {
-        ret_string += "/Sensors/PowerSupplies/" + fqdd
-    }
-    return ret_string
+	ret_string := "/redfish/v1/Chassis/System.Chassis.1"
+	if strings.HasPrefix(fqdd, "Fan") {
+		ret_string += "/Sensors/Fans/" + fqdd
+	} else if strings.HasPrefix(fqdd, "PSU") {
+		ret_string += "/Sensors/PowerSupplies/" + fqdd
+	}
+	return ret_string
 }
 
 func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.CommandHandler, d *domain.DomainObjects) {
@@ -241,13 +241,13 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 
 		d.EventBus.PublishEvent(context.Background(),
 			eh.NewEvent(eventservice.RedfishEvent, &eventservice.RedfishEventData{
-				EventType:         "Alert",
-				EventId:           logEntry.EventId,
-				EventTimestamp:    createdTime.String(),
-				Severity:          logEntry.Severity,
-				Message:           logEntry.Message,
-				MessageId:         logEntry.MessageID,
-				MessageArgs:       logEntry.MessageArgs,
+				EventType:      "Alert",
+				EventId:        logEntry.EventId,
+				EventTimestamp: createdTime.String(),
+				Severity:       logEntry.Severity,
+				Message:        logEntry.Message,
+				MessageId:      logEntry.MessageID,
+				MessageArgs:    logEntry.MessageArgs,
 				//TODO MSM BUG: OriginOfCondition for events has to be a string or will be rejected
 				OriginOfCondition: logEntry.FQDD,
 			}, time.Now()))

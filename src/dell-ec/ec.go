@@ -99,7 +99,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	initpowercontrol(logger)
 	telemetryservice.RegisterAggregate(instantiateSvc)
 
-	// add mapper helper to instantiate
 	awesome_mapper2.AddFunction("find_uris_with_basename", func(args ...interface{}) (interface{}, error) {
 		if len(args) < 1 {
 			return nil, errors.New("need to specify uri to match")
@@ -112,6 +111,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 		return d.FindMatchingURIs(func(uri string) bool { return path.Dir(uri) == p }), nil
 	})
 
+	// add mapper helper to instantiate
 	awesome_mapper2.AddFunction("instantiate", func(args ...interface{}) (interface{}, error) {
 		if len(args) < 1 {
 			return nil, errors.New("need to specify cfg section to instantiate")
