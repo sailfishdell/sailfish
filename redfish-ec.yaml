@@ -3,7 +3,7 @@ main:
     #options: "openbmc" | "dell_ec" | "mockup"
 
 listen:
-  - unix:/run/sailfish/sailfish.socket
+  - unix:sailfish.socket
   - http:localhost:8080
   - pprof:localhost:9080
   # disable direct https listener, uncomment if needed for testing:
