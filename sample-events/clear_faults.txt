@@ -1,0 +1,1 @@
+{ "name": "FaultEntriesClear", "event_array": [{}]}
