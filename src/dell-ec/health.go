@@ -40,12 +40,14 @@ func inithealth(ctx context.Context, logger log.Logger, ch eh.CommandHandler) {
 
     // temporary workaround to filter out mchars health statuses
     // if additional subsystems end up getting incorrectly added, change pump to specify that only 5e, 1401, and 1303 events can be subsystems
-		if health == "Absent" || subsys == "SledSystem" || subsys == "IOM" || subsys == "Group.1" || subsys == "CMC.Integrated.1" {
-      //currently only "Absent" is ignored, add "" later?
-			if _, ok := subSystemHealthList[subsys]; ok { //property exists, delete
-				delete(subSystemHealthList, subsys)
-			}
-		}
+    extra_subsys := []string{"Absent", "SledSystem", "IOM", "Group.1", "CMC.Integrated.1", "CMC.Integrated.2"}
+    for _, extra := range extra_subsys {
+      if extra == subsys {
+			  if _, ok := subSystemHealthList[subsys]; ok { //property exists, delete
+				  delete(subSystemHealthList, subsys)
+        }
+      }
+    }
 
 		// Ok, so this is a little wierd, sorry.
 		// What we do here is directly update the aggregate because I cannot update the top level properties right now using the features built in.

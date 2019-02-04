@@ -100,16 +100,16 @@ func (c *PATCH) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 	// set up the base response data
 	data := &HTTPCmdProcessedData{
 		CommandID:  c.CmdID,
-		StatusCode: 200,
 	}
 
 	data.Results, _ = ProcessPATCH(ctx, &a.Properties, c.auth, c.Body)
 
-	// TODO: set error status code based on err from ProcessPATCH
 	// TODO: This is not thread safe: deep copy
 	data.Headers = a.Headers
+  // status code is passed upward through Attribute key in results
+  data.StatusCode = data.Results.(map[string]interface{})["Attributes"].(int)
 
-	a.PublishEvent(eh.NewEvent(HTTPCmdProcessed, data, time.Now()))
+  a.PublishEvent(eh.NewEvent(HTTPCmdProcessed, data, time.Now()))
 	return nil
 }
 

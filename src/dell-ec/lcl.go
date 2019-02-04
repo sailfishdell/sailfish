@@ -135,14 +135,14 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 		return true, nil
 	})
 
-	awesome_mapper2.AddFunction("clearlclog", func(args ...interface{}) (interface{}, error) {
-		logger.Debug("Clearing all logs")
-
+	awesome_mapper2.AddFunction("clearuris", func(args ...interface{}) (interface{}, error) {
 		logUri, ok := args[0].(string)
 		if !ok {
 			logger.Crit("Mapper configuration error: uri not passed as string", "args[0]", args[0])
 			return nil, errors.New("Mapper configuration error: uri not passed as string")
 		}
+
+		logger.Debug("Clearing all uris within base_uri","base_uri",logUri)
 
 		uriList := d.FindMatchingURIs(func(uri string) bool { return path.Dir(uri) == logUri })
 
@@ -162,6 +162,29 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 
 		return nil, nil
 	})
+	awesome_mapper2.AddFunction("removefaultentry", func(args ...interface{}) (interface{}, error) {
+		logUri, ok := args[0].(string)
+		if !ok {
+			logger.Crit("Mapper configuration error: uri not passed as string", "args[0]", args[0])
+			return nil, errors.New("Mapper configuration error: uri not passed as string")
+		}
+		faultEntry, ok := args[1].(*FaultEntryRmData)
+		if !ok {
+			logger.Crit("Mapper configuration error: log event data not passed", "args[1]", args[1], "TYPE", fmt.Sprintf("%T", args[1]))
+			return nil, errors.New("Mapper configuration error: log event data not passed")
+		}
+
+		uri := fmt.Sprintf("%s/%s", logUri, faultEntry.Name)
+		//fmt.Printf("%s/%s", logUri, faultEntry.Name)
+
+		id, ok := d.GetAggregateIDOK(uri)
+		if ok {
+			ch.HandleCommand(context.Background(), &domain.RemoveRedfishResource{ID: id})
+		}
+		return true, nil
+	})
+
+
 
 	awesome_mapper2.AddFunction("addfaultentry", func(args ...interface{}) (interface{}, error) {
 		logUri, ok := args[0].(string)
@@ -170,6 +193,7 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 			logger.Crit("Mapper configuration error: uri not passed as string", "args[0]", args[0])
 			return nil, errors.New("Mapper configuration error: uri not passed as string")
 		}
+
 		faultEntry, ok := args[1].(*FaultEntryAddData)
 		if !ok {
 			logger.Crit("Mapper configuration error: log event data not passed", "args[1]", args[1], "TYPE", fmt.Sprintf("%T", args[1]))
@@ -187,6 +211,15 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 		uri := fmt.Sprintf("%s/%s", logUri, faultEntry.Name)
 		//fmt.Printf("%s/%s", logUri, faultEntry.Name)
 
+                // when mchars is restarted, it clears faults and expects old faults to be recreated.
+                // skip re-creating old faults if this happens.
+		aggID, ok := d.GetAggregateIDOK(uri)
+		if ok {
+			logger.Info("URI already exists, skipping add log", "aggID", aggID, "uri", uri)
+			// not returning error because that will unnecessarily freak out govaluate when there really isn't an error we care about at that level
+			return nil, nil
+		}
+
 		ch.HandleCommand(
 			context.Background(),
 			&domain.CreateRedfishResource{
@@ -194,6 +227,9 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 				ResourceURI: uri,
 				Type:        "#LogEntryCollection.LogEntryCollection",
 				Context:     "/redfish/v1/$metadata#LogEntryCollection.LogEntryCollection",
+                                Headers:    map[string]string{
+                                        "Location":uri,
+                                },
 				Privileges: map[string]interface{}{
 					"GET": []string{"Login"},
 				},

@@ -30,6 +30,11 @@ type mapping struct {
 	Name     string
 }
 
+type syncEvent interface {
+  Add(int)
+  Done()
+}
+
 // individual mapping: only for bookkeeping
 type ModelMappings struct {
 	logger         log.Logger
@@ -145,14 +150,48 @@ func (b breadcrumb) Close() {
 }
 
 func (b breadcrumb) UpdateRequest(ctx context.Context, property string, value interface{}, auth *domain.RedfishAuthorizationProperty) (interface{}, error) {
+  b.ars.hashMu.RLock()
+  defer b.ars.hashMu.RUnlock()
+
 	b.logger.Info("UpdateRequest", "property", property, "mappingName", b.mappingName)
+
+  reqIDs := []eh.UUID{}
+  responses := []attributes.AttributeUpdatedData{}
+  status_code := 200
+  patch_timeout := 3
+
+  EventPublisher := eventpublisher.NewEventPublisher()
+  b.ars.eb.AddHandler(eh.MatchAnyEventOf(attributes.AttributeUpdated), EventPublisher)
+  EventWaiter := eventwaiter.NewEventWaiter(eventwaiter.SetName("patch request"), eventwaiter.NoAutoRun)
+  EventPublisher.AddObserver(EventWaiter)
+  go EventWaiter.Run()
+
+  listener, err := EventWaiter.Listen(ctx, func(event eh.Event) bool {
+    if event.EventType() != attributes.AttributeUpdated {
+      return false
+    }
+    _, ok := event.Data().(*attributes.AttributeUpdatedData)
+    if !ok {
+      return false
+    }
+    return true
+  })
+  if err != nil {
+    b.ars.logger.Error("Could not create listener", "err", err)
+    return nil, errors.New("Failed to make attribute updated event listener")
+  }
+  listener.Name = "ar patch listener"
+
+  defer listener.Close()
+
 	mappings, ok := b.ars.modelmappings[b.mappingName]
 	if !ok {
-		return nil, errors.New("Could not find mapping: " + b.mappingName)
+		return 400, errors.New("Could not find mapping: " + b.mappingName)
 	}
 
 	for _, mapping := range mappings.mappings {
 		if property != mapping.Property {
+      status_code = 400
 			continue
 		}
 
@@ -169,12 +208,41 @@ func (b breadcrumb) UpdateRequest(ctx context.Context, property string, value in
 			Authorization: *auth,
 		}
 		b.ars.eb.PublishEvent(ctx, eh.NewEvent(attributes.AttributeUpdateRequest, data, time.Now()))
-
+    reqIDs = append(reqIDs, reqUUID)
 		break
 	}
-	// TODO: wait for event to come back matching request (maybe?)
 
-	return value, nil
+  timer := time.NewTimer(time.Duration(patch_timeout*len(reqIDs)) * time.Second)
+
+  for {
+    select {
+    case event := <- listener.Inbox():
+      data, _ := event.Data().(*attributes.AttributeUpdatedData)
+      for i, reqID := range reqIDs {
+        if reqID == data.ReqID {
+          reqIDs[i] = reqIDs[len(reqIDs)-1]
+          reqIDs = reqIDs[:len(reqIDs)-1]
+          responses = append(responses, *data)
+          if (data.Error != "") {
+            status_code = 400
+          }
+          break
+        }
+      }
+      if e, ok := event.(syncEvent); ok {
+        e.Done()
+      }
+      if (len(reqIDs) == 0) {
+        return status_code, nil
+      }
+
+      case <- timer.C:
+        return 400, nil
+
+      case <- ctx.Done():
+        return status_code, nil
+    }
+  }
 }
 
 func (ars *ARService) resetConfig() {

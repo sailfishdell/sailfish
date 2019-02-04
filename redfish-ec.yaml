@@ -1222,12 +1222,18 @@ awesome_mapper:
           Exec: [ "firealert(data)" ]}
       - { SelectEventType: "LogEvent",
           Select: "data.LogAlert == 'clear'",
-          Exec: [ "clearlclog(collection_uri)" ]}
+          Exec: [ "clearuris(collection_uri)" ]}
 
     faultlist:
       - { SelectEventType: "FaultEntryAdd",
           Select: "true",
           Exec: [ "addfaultentry(collection_uri, data)" ]}
+      - { SelectEventType: "FaultEntryRemove",
+          Select: "true",
+          Exec: [ "removefaultentry(collection_uri, data)" ]}
+      - { SelectEventType: "FaultEntriesClear",
+          Select: "true",
+          Exec: [ "clearuris(collection_uri)" ]}
 
     generate_health_status:
       - { SelectEventType: "HealthEvent",
@@ -1372,6 +1378,7 @@ mappings:
         - {Property: "description",      FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Description" }
         - {Property: "service_tag",      FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "ServiceTag" }
         - {Property: "chassis_type",     FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "ChassisType" }
+        - {Property: "power_state",      FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "PowerState" }
         - {Property: "model",            FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Model" }
         - {Property: "manufacturer",     FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Manufacturer" }
         - {Property: "serial",           FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "SerialNumber" }
