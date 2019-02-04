@@ -2,6 +2,7 @@ package domain
 
 import (
 	"fmt"
+	"net/url"
 	"strings"
 	"sync"
 
@@ -12,6 +13,7 @@ type RedfishAuthorizationProperty struct {
 	UserName   string
 	Privileges []string
 	Licenses   []string
+	Query      url.Values
 }
 
 type RedfishResourceProperty struct {

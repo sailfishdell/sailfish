@@ -80,6 +80,7 @@ type PATCH struct {
 	CmdID eh.UUID `json:"cmdid"`
 
 	Body map[string]interface{} `eh:"optional"`
+	auth *RedfishAuthorizationProperty
 }
 
 func (c *PATCH) AggregateType() eh.AggregateType { return AggregateType }
@@ -87,6 +88,10 @@ func (c *PATCH) AggregateID() eh.UUID            { return c.ID }
 func (c *PATCH) CommandType() eh.CommandType     { return PATCHCommand }
 func (c *PATCH) SetAggID(id eh.UUID)             { c.ID = id }
 func (c *PATCH) SetCmdID(id eh.UUID)             { c.CmdID = id }
+func (c *PATCH) SetUserDetails(a *RedfishAuthorizationProperty) string {
+	c.auth = a
+	return "checkMaster"
+}
 func (c *PATCH) ParseHTTPRequest(r *http.Request) error {
 	json.NewDecoder(r.Body).Decode(&c.Body)
 	return nil
@@ -98,7 +103,7 @@ func (c *PATCH) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 		StatusCode: 200,
 	}
 
-	data.Results, _ = ProcessPATCH(ctx, &a.Properties, &a.Authorization, c.Body)
+	data.Results, _ = ProcessPATCH(ctx, &a.Properties, c.auth, c.Body)
 
 	// TODO: set error status code based on err from ProcessPATCH
 	// TODO: This is not thread safe: deep copy

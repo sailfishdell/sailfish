@@ -21,6 +21,7 @@ type GET struct {
 	ID           eh.UUID `json:"id"`
 	CmdID        eh.UUID `json:"cmdid"`
 	HTTPEventBus eh.EventBus
+	auth         *RedfishAuthorizationProperty
 	outChan      chan<- eh.Event
 }
 
@@ -34,7 +35,8 @@ func (c *GET) UseEventChan(out chan<- eh.Event) {
 	c.outChan = out
 }
 
-func (c *GET) SetUserDetails(u string, p []string) string {
+func (c *GET) SetUserDetails(a *RedfishAuthorizationProperty) string {
+	c.auth = a
 	return "checkMaster"
 }
 func (c *GET) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
@@ -64,7 +66,7 @@ func (c *GET) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 	a.ResultsCacheMu.Lock()
 	if a.ResultsCache == nil {
 		fmt.Printf("X")
-		data.Results, _ = ProcessGET(ctx, &a.Properties, &a.Authorization)
+		data.Results, _ = ProcessGET(ctx, &a.Properties, c.auth)
 		a.ResultsCache = data.Results
 
 		// TODO: cache until an invalidation message comes in

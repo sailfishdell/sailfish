@@ -29,7 +29,7 @@ type AggIDSetter interface {
 
 // UserDetailsSetter is the interface that commands should implement to tell the handler if they handle authorization or std code should do it.
 type UserDetailsSetter interface {
-	SetUserDetails(string, []string) string
+	SetUserDetails(*RedfishAuthorizationProperty) string
 	// return codes:
 	//		"checkMaster" - command check passed, but also check master
 	//		"authorized"  - command check passed, go right ahead, no master check
@@ -157,13 +157,15 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		t.SetAggID(aggID)
 	}
 
+	auth := &RedfishAuthorizationProperty{UserName: rh.UserName, Privileges: rh.Privileges, Licenses: rh.d.GetLicenses(), Query: r.URL.Query()}
+
 	// Choices: command can process Authorization, or we can process authorization, or both
 	// If command implements UserDetailsSetter interface, we'll go ahead and call that.
 	// Return code from command determines if we also check privs here
 	authAction := "checkMaster"
 	var implementsAuthorization bool
 	if t, implementsAuthorization := cmd.(UserDetailsSetter); implementsAuthorization {
-		authAction = t.SetUserDetails(rh.UserName, rh.Privileges)
+		authAction = t.SetUserDetails(auth)
 	}
 	// if command does not implement userdetails setter, we always check privs here
 	if !implementsAuthorization || authAction == "checkMaster" {
@@ -194,7 +196,7 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// for intial implementation of etags, we will check etags right here. we may need to move this around later. For example, the command might need to handle it
 	// TODO: this all has to happen after the privilege check
 	if match := r.Header.Get("If-None-Match"); match != "" {
-		e := getResourceEtag(reqCtx, redfishResource)
+		e := getResourceEtag(reqCtx, redfishResource, auth)
 		if e != "" {
 			if match == e {
 				w.WriteHeader(http.StatusNotModified)
@@ -205,7 +207,7 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// TODO: If-Match must be able to match comma separated list
 	if match := r.Header.Get("If-Match"); match != "" {
-		e := getResourceEtag(reqCtx, redfishResource)
+		e := getResourceEtag(reqCtx, redfishResource, auth)
 		if e != "" {
 			if match != e {
 				w.WriteHeader(http.StatusRequestedRangeNotSatisfiable)
@@ -213,11 +215,6 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
-
-	// add authorization details
-	redfishResource.Authorization.UserName = rh.UserName
-	redfishResource.Authorization.Privileges = rh.Privileges
-	redfishResource.Authorization.Licenses = rh.d.GetLicenses()
 
 	// to avoid races, set up our listener first
 	l, err := rh.d.HTTPWaiter.Listen(reqCtx, func(event eh.Event) bool {
@@ -356,7 +353,7 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
-func getResourceEtag(ctx context.Context, agg *RedfishResourceAggregate) string {
+func getResourceEtag(ctx context.Context, agg *RedfishResourceAggregate, auth *RedfishAuthorizationProperty) string {
 	v := agg.Properties.Value
 	m, ok := v.(map[string]interface{})
 	if !ok {
@@ -372,7 +369,7 @@ func getResourceEtag(ctx context.Context, agg *RedfishResourceAggregate) string 
 
 	switch t := etagintf.(type) {
 	case *RedfishResourceProperty:
-		etagprocessedintf, _ := ProcessGET(ctx, t, &agg.Authorization)
+		etagprocessedintf, _ := ProcessGET(ctx, t, auth)
 		etagstr, ok = etagprocessedintf.(string)
 		if !ok {
 			return ""
