@@ -163,10 +163,12 @@ func (es *EventService) CreateSubscription(ctx context.Context, logger log.Logge
 						continue
 					}
 					context := esModel.GetProperty("context")
+					eventtypes := esModel.GetProperty("eventTypes")
+					memberid := subView.GetUUID()
 					if dest, ok := esModel.GetProperty("destination").(string); ok {
 						subLogger.Info("Send to destination", "dest", dest)
 						select {
-						case es.jc <- makePOST(dest, event, context):
+						case es.jc <- makePOST(dest, event, context, memberid, eventtypes):
 						default: // drop the POST if the queue is full
 						}
 					}
@@ -182,21 +184,46 @@ func (es *EventService) CreateSubscription(ctx context.Context, logger log.Logge
 	return subView
 }
 
-func makePOST(dest string, event eh.Event, context interface{}) func() {
+func makePOST(dest string, event eh.Event, context interface{}, id eh.UUID, et interface{}) func() {
 	return func() {
 		log.MustLogger("event_service").Info("POST!", "dest", dest, "event", event)
 
 		evt := event.Data()
 		var d []byte
 		var err error
-		if _, ok := evt.(*ExternalRedfishEventData); ok {
+		if eventPtr, ok := evt.(*ExternalRedfishEventData); ok {
+			eventlist := eventPtr.Events
+			var outputEvents []*RedfishEventData
+			var validEvents []string
+			if validEvents, ok = et.([]string); !ok {
+				//TODO no subscription types are getting to here but right now all clients want Alert only
+				validEvents = []string{"Alert"}
+			}
+			//Keep only the events in the Event Array which match the subscription
+			for _, subevent := range eventlist {
+				if subevent != nil {
+					for _, subvalid := range validEvents {
+						if subevent.EventType == subvalid {
+							outputEvents = append (outputEvents, subevent)
+							break
+						}
+					}
+				}
+			}
+			if len(outputEvents) == 0 {
+				return
+			} else {
+				eventPtr.Events = outputEvents
+			}
 			d, err = json.Marshal(
 				&struct {
 					*ExternalRedfishEventData
 					Context interface{} `json:",omitempty"`
+					MemberId eh.UUID    `json:"MemberId"`
 				}{
-					ExternalRedfishEventData: evt.(*ExternalRedfishEventData),
+					ExternalRedfishEventData: eventPtr,
 					Context:                  context,
+					MemberId:                 id,
 				},
 			)
 		} else {
@@ -213,6 +240,7 @@ func makePOST(dest string, event eh.Event, context interface{}) func() {
 		}
 		req, err := http.NewRequest("POST", dest, bytes.NewBuffer(d))
 		req.Header.Add("OData-Version", "4.0")
+		req.Header.Set("Content-Type", "application/json")
 		resp, err := client.Do(req)
 		if err != nil {
 			log.MustLogger("event_service").Warn("ERROR POSTING", "err", err)
