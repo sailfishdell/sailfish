@@ -3,7 +3,6 @@ package attributes
 import (
 	"context"
 	"errors"
-	"fmt"
 	"sync"
 
 	"github.com/spf13/viper"
@@ -43,7 +42,7 @@ func FormatAttributeDump(
 		return nil
 	}
 
-	fmt.Println(auth)
+	//fmt.Println(auth)
 
 	var ad AttributeData
 	res := map[string]interface{}{}
@@ -53,7 +52,7 @@ func FormatAttributeDump(
 				if ad.ReadAllowed(value, auth) {
 					res[group+"."+index+"."+name] = ad.Value
 				} else {
-					fmt.Println("skipping ", group+"."+index+"."+name)
+					//fmt.Println("skipping ", group+"."+index+"."+name)
 				}
 			}
 		}

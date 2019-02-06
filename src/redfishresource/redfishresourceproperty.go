@@ -1,7 +1,6 @@
 package domain
 
 import (
-	"fmt"
 	"net/url"
 	"strings"
 	"sync"
@@ -14,17 +13,27 @@ type RedfishAuthorizationProperty struct {
 	Privileges []string
 	Licenses   []string
 	Query      url.Values
+
+	// pass the supported query options to the backend
+	doFilter   bool
+	filter     string
+	filterDone bool
+	doTop      bool
+	top        int
+	topDone    bool
+	doSkip     bool
+	skip       int
+	skipDone   bool
+	doSel      bool
+	sel        []string
+	selDone    bool
 }
 
 type RedfishResourceProperty struct {
-	sync.Mutex
+	sync.RWMutex
 	Value     interface{}
 	Meta      map[string]interface{}
 	Ephemeral bool
-}
-
-func NewProperty() *RedfishResourceProperty {
-	return &RedfishResourceProperty{}
 }
 
 func (rrp *RedfishResourceProperty) Parse(thing interface{}) (ret *RedfishResourceProperty) {
@@ -90,9 +99,9 @@ func (auth *RedfishAuthorizationProperty) VerifyPrivileges(Privileges []string) 
 	authAction := rh.isAuthorized(Privileges)
 
 	if authAction != "authorized" {
-		fmt.Println("required auth ", Privileges)
-		fmt.Println(auth.UserName, " current priv ", auth.Privileges)
-		fmt.Println("allowed ", authAction)
+		//fmt.Println("required auth ", Privileges)
+		//fmt.Println(auth.UserName, " current priv ", auth.Privileges)
+		//fmt.Println("allowed ", authAction)
 	}
 
 	return authAction == "authorized"
