@@ -33,6 +33,7 @@ type RedfishResourceAggregate struct {
 	ResultsCacheAuth *RedfishAuthorizationProperty
 	ResultsCacheMu   sync.RWMutex
 	CacheTimeSec     int
+	StatusCode       int // http status code for the current state of this object since the last time we've run the meta functions
 
 	// TODO: need accessor functions for all of these just like property stuff
 	// above so that everything can be properly locked

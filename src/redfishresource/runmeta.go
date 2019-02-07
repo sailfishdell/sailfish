@@ -13,21 +13,17 @@ func (rrp *RedfishResourceProperty) MarshalJSON() ([]byte, error) {
 	return json.Marshal(rrp.Value)
 }
 
-func NewGet(ctx context.Context, rrp *RedfishResourceProperty, auth *RedfishAuthorizationProperty) (err error) {
+func NewGet(ctx context.Context, agg *RedfishResourceAggregate, rrp *RedfishResourceProperty, auth *RedfishAuthorizationProperty) error {
 	opts := nuEncOpts{
 		request: nil,
 		process: nuGETfn,
 		root:    true,
 	}
 
-	return rrp.RunMetaFunctions(ctx, auth, opts)
+	return rrp.RunMetaFunctions(ctx, agg, auth, opts)
 }
 
-type httpStatus interface {
-	GetHTTPStatusCode() int
-}
-
-func NewPatch(ctx context.Context, rrp *RedfishResourceProperty, auth *RedfishAuthorizationProperty, body interface{}) (statusCode int, err error) {
+func NewPatch(ctx context.Context, agg *RedfishResourceAggregate, rrp *RedfishResourceProperty, auth *RedfishAuthorizationProperty, body interface{}) error {
 	// Paste in redfish spec stuff here
 	// 200 if anything succeeds, 400 if everything fails
 	opts := nuEncOpts{
@@ -36,14 +32,7 @@ func NewPatch(ctx context.Context, rrp *RedfishResourceProperty, auth *RedfishAu
 		root:    true,
 	}
 
-	statusCode = 200
-	err = rrp.RunMetaFunctions(ctx, auth, opts)
-
-	//rrp.Value[ "@message.extendedinfo" ] = '...'
-	if a, ok := err.(httpStatus); ok {
-		statusCode = a.GetHTTPStatusCode()
-	}
-	return
+	return rrp.RunMetaFunctions(ctx, agg, auth, opts)
 }
 
 type nuProcessFn func(context.Context, *RedfishResourceProperty, *RedfishAuthorizationProperty, nuEncOpts) error
@@ -169,7 +158,7 @@ func Flatten(thing interface{}) interface{} {
 	return nil
 }
 
-func (rrp *RedfishResourceProperty) RunMetaFunctions(ctx context.Context, auth *RedfishAuthorizationProperty, e nuEncOpts) (err error) {
+func (rrp *RedfishResourceProperty) RunMetaFunctions(ctx context.Context, agg *RedfishResourceAggregate, auth *RedfishAuthorizationProperty, e nuEncOpts) (err error) {
 	rrp.Lock()
 	defer rrp.Unlock()
 
@@ -178,7 +167,7 @@ func (rrp *RedfishResourceProperty) RunMetaFunctions(ctx context.Context, auth *
 		return
 	}
 
-	helperError := helper(ctx, auth, e, rrp.Value)
+	helperError := helper(ctx, agg, auth, e, rrp.Value)
 	// TODO: need to collect messages here
 
 	if err != nil {
@@ -200,10 +189,10 @@ type objectErrMessages interface {
 	GetObjectErrorMessages() []interface{}
 }
 
-func helper(ctx context.Context, auth *RedfishAuthorizationProperty, e nuEncOpts, v interface{}) error {
+func helper(ctx context.Context, agg *RedfishResourceAggregate, auth *RedfishAuthorizationProperty, e nuEncOpts, v interface{}) error {
 	// handle special case of RRP inside RRP.Value of parent
 	if vp, ok := v.(*RedfishResourceProperty); ok {
-		return vp.RunMetaFunctions(ctx, auth, e)
+		return vp.RunMetaFunctions(ctx, agg, auth, e)
 	}
 
 	objectErrorMessages := []interface{}{}
@@ -243,7 +232,7 @@ func helper(ctx context.Context, auth *RedfishAuthorizationProperty, e nuEncOpts
 
 			mapVal := val.MapIndex(k)
 			if mapVal.IsValid() {
-				err := helper(ctx, auth, newEncOpts, mapVal.Interface())
+				err := helper(ctx, agg, auth, newEncOpts, mapVal.Interface())
 				if err == nil {
 					continue
 				}
@@ -281,6 +270,9 @@ func helper(ctx context.Context, auth *RedfishAuthorizationProperty, e nuEncOpts
 		}
 
 		if e.root && len(objectErrorMessages) > 0 {
+			if agg != nil {
+				agg.StatusCode = 400
+			}
 			annotatedKey := "error"
 			value := map[string]interface{}{
 				"code":                  "Base.1.0.GeneralError",
@@ -290,13 +282,17 @@ func helper(ctx context.Context, auth *RedfishAuthorizationProperty, e nuEncOpts
 			if compatible(reflect.TypeOf(value), val.Type().Elem()) {
 				val.SetMapIndex(reflect.ValueOf(annotatedKey), reflect.ValueOf(value))
 			}
+		} else {
+			if agg != nil {
+				agg.StatusCode = 200
+			}
 		}
 
 	case reflect.Slice:
 		for i := 0; i < val.Len(); i++ {
 			sliceVal := val.Index(i)
 			if sliceVal.IsValid() {
-				err := helper(ctx, auth, e, sliceVal.Interface())
+				err := helper(ctx, agg, auth, e, sliceVal.Interface())
 				if err == nil {
 					continue
 				}

@@ -29,7 +29,7 @@ func TestParsing(t *testing.T) {
 	}
 	for _, subtest := range tests {
 		t.Run(subtest.testname, func(t *testing.T) {
-			NewGet(context.Background(), subtest.input, &RedfishAuthorizationProperty{})
+			NewGet(context.Background(), nil, subtest.input, &RedfishAuthorizationProperty{})
 			output := Flatten(subtest.input.Value)
 
 			assert.EqualValues(t, subtest.expected, output)

@@ -72,6 +72,7 @@ func (c *GET) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 
 			fmt.Printf(".")
 			data.Results = a.ResultsCache
+			data.StatusCode = a.StatusCode
 			if c.outChan != nil {
 				c.outChan <- CompletionEvent{event: eh.NewEvent(HTTPCmdProcessed, data, time.Now()), complete: complete}
 			} else {
@@ -93,7 +94,7 @@ func (c *GET) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 		// if we got here, we need to refresh the data
 		if a.ResultsCache == nil {
 			fmt.Printf("X")
-			NewGet(ctx, &a.Properties, c.auth)
+			NewGet(ctx, a, &a.Properties, c.auth)
 
 			// TODO: flatten results
 			a.ResultsCache = Flatten(a.Properties.Value)

@@ -388,7 +388,7 @@ func getResourceEtag(ctx context.Context, agg *RedfishResourceAggregate, auth *R
 
 	switch t := etagintf.(type) {
 	case *RedfishResourceProperty:
-		NewGet(ctx, t, auth)
+		NewGet(ctx, agg, t, auth)
 		etagIntf := Flatten(t.Value)
 		etagstr, ok = etagIntf.(string)
 		if !ok {
