@@ -192,39 +192,13 @@ func (rrp *RedfishResourceProperty) RunMetaFunctions(ctx context.Context, auth *
 type propertyExtMessages interface {
 	GetPropertyExtendedMessages() []interface{}
 }
+
 type objectExtMessages interface {
 	GetObjectExtendedMessages() []interface{}
 }
 
-type PropertyExtendedInfoMessages struct {
-	propMsgs []interface{}
-}
-
-func (p *PropertyExtendedInfoMessages) GetPropertyExtendedMessages() []interface{} {
-	return p.propMsgs
-}
-
-func (o *PropertyExtendedInfoMessages) Error() string {
-	return "ERROR"
-}
-
-type ObjectExtendedInfoMessages struct {
-	objMsgs []interface{}
-}
-
-func NewObjectExtendedInfoMessages(msgs []interface{}) *ObjectExtendedInfoMessages {
-	o := &ObjectExtendedInfoMessages{}
-	o.objMsgs = make([]interface{}, len(msgs))
-	copy(o.objMsgs, msgs)
-	return o
-}
-
-func (o *ObjectExtendedInfoMessages) GetObjectExtendedMessages() []interface{} {
-	return o.objMsgs
-}
-
-func (o *ObjectExtendedInfoMessages) Error() string {
-	return "ERROR"
+type objectErrMessages interface {
+	GetObjectErrorMessages() []interface{}
 }
 
 func helper(ctx context.Context, auth *RedfishAuthorizationProperty, e nuEncOpts, v interface{}) error {
@@ -233,13 +207,21 @@ func helper(ctx context.Context, auth *RedfishAuthorizationProperty, e nuEncOpts
 		return vp.RunMetaFunctions(ctx, auth, e)
 	}
 
+	objectErrorMessages := []interface{}{}
 	objectExtendedMessages := []interface{}{}
-	propertyExtendedMessages := []interface{}{}
 
 	// recurse through maps or slices and recursively call helper on them
 	val := reflect.ValueOf(v)
 	switch k := val.Kind(); k {
 	case reflect.Map:
+
+		elemType := val.Type().Elem()
+		if e.root {
+			annotatedKey := "@Message.ExtendedInfo"
+			val.SetMapIndex(reflect.ValueOf(annotatedKey), reflect.Value{})
+			val.SetMapIndex(reflect.ValueOf("error"), reflect.Value{})
+		}
+
 		for _, k := range val.MapKeys() {
 			newEncOpts := nuEncOpts{
 				request: e.request,
@@ -261,6 +243,7 @@ func helper(ctx context.Context, auth *RedfishAuthorizationProperty, e nuEncOpts
 					continue
 				}
 				// annotate at this level
+				propertyExtendedMessages := []interface{}{}
 				if e, ok := err.(propertyExtMessages); ok {
 					propertyExtendedMessages = append(propertyExtendedMessages, e.GetPropertyExtendedMessages()...)
 				}
@@ -268,26 +251,42 @@ func helper(ctx context.Context, auth *RedfishAuthorizationProperty, e nuEncOpts
 				if e, ok := err.(objectExtMessages); ok {
 					objectExtendedMessages = append(objectExtendedMessages, e.GetObjectExtendedMessages()...)
 				}
+				if e, ok := err.(objectErrMessages); ok {
+					objectErrorMessages = append(objectErrorMessages, e.GetObjectErrorMessages()...)
+				}
 
 				// TODO: add generic annotation support
 
 				if len(propertyExtendedMessages) > 0 {
 					if strK, ok := k.Interface().(string); ok {
 						annotatedKey := strK + "@Message.ExtendedInfo"
-						if compatible(reflect.TypeOf(propertyExtendedMessages), val.Type().Elem()) {
+						if compatible(reflect.TypeOf(propertyExtendedMessages), elemType) {
 							val.SetMapIndex(reflect.ValueOf(annotatedKey), reflect.ValueOf(propertyExtendedMessages))
 						}
 					}
 				}
-
-				if e.root && len(objectExtendedMessages) > 0 {
-					annotatedKey := "@Message.ExtendedInfo"
-					if compatible(reflect.TypeOf(objectExtendedMessages), val.Type().Elem()) {
-						val.SetMapIndex(reflect.ValueOf(annotatedKey), reflect.ValueOf(objectExtendedMessages))
-					}
-				}
 			}
 		}
+
+		if e.root && len(objectExtendedMessages) > 0 {
+			annotatedKey := "@Message.ExtendedInfo"
+			if compatible(reflect.TypeOf(objectExtendedMessages), val.Type().Elem()) {
+				val.SetMapIndex(reflect.ValueOf(annotatedKey), reflect.ValueOf(objectExtendedMessages))
+			}
+		}
+
+		if e.root && len(objectErrorMessages) > 0 {
+			annotatedKey := "error"
+			value := map[string]interface{}{
+				"code":                  "Base.1.0.GeneralError",
+				"message":               "A general error has occurred. See ExtendedInfo for more information.",
+				"@Message.ExtendedInfo": objectErrorMessages,
+			}
+			if compatible(reflect.TypeOf(value), val.Type().Elem()) {
+				val.SetMapIndex(reflect.ValueOf(annotatedKey), reflect.ValueOf(value))
+			}
+		}
+
 	case reflect.Slice:
 		for i := 0; i < val.Len(); i++ {
 			sliceVal := val.Index(i)
@@ -301,16 +300,20 @@ func helper(ctx context.Context, auth *RedfishAuthorizationProperty, e nuEncOpts
 				if e, ok := err.(objectExtMessages); ok {
 					objectExtendedMessages = append(objectExtendedMessages, e.GetObjectExtendedMessages()...)
 				}
+				if e, ok := err.(objectErrMessages); ok {
+					objectErrorMessages = append(objectErrorMessages, e.GetObjectErrorMessages()...)
+				}
 
 				// TODO: do annotations make sense here?
 			}
 		}
 	}
 
-	if len(objectExtendedMessages) > 0 {
-		return NewObjectExtendedInfoMessages(objectExtendedMessages)
+	return &CombinedInfoError{
+		ObjectExtendedInfoMessages:  NewObjectExtendedInfoMessages(objectExtendedMessages),
+		ObjectExtendedErrorMessages: NewObjectExtendedErrorMessages(objectErrorMessages),
 	}
-	return nil
+
 }
 
 func compatible(actual, expected reflect.Type) bool {
