@@ -70,7 +70,11 @@ func (c *POST) Handle(ctx context.Context, a *domain.RedfishResourceAggregate) e
 		return errors.New("Wrong aggregate type returned")
 	}
 
-	data.Results, _ = domain.ProcessGET(ctx, &redfishResource.Properties, c.auth)
+	redfishResource.ResultsCacheMu.Lock()
+	defer redfishResource.ResultsCacheMu.Unlock()
+	domain.NewGet(ctx, &redfishResource.Properties, c.auth)
+	data.Results = domain.Flatten(redfishResource.Properties.Value)
+
 	for k, v := range a.Headers {
 		data.Headers[k] = v
 	}

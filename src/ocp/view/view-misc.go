@@ -79,7 +79,7 @@ func (s *View) PropertyPatch(
 	rrp *domain.RedfishResourceProperty,
 	body interface{},
 	meta map[string]interface{},
-) (interface{}, error) {
+) error {
 
 	s.Lock()
 	defer s.Unlock()
@@ -89,13 +89,13 @@ func (s *View) PropertyPatch(
 	controllerName, ok := meta["controller"].(string)
 	if !ok {
 		log.MustLogger("PATCH").Debug("metadata is missing the controller name", "meta", meta)
-		return nil, errors.New(fmt.Sprintf("metadata is missing the controller name: %v\n", meta))
+		return errors.New(fmt.Sprintf("metadata is missing the controller name: %v\n", meta))
 	}
 
 	controller, ok := s.controllers[controllerName]
 	if !ok {
 		log.MustLogger("PATCH").Debug("metadata specifies a nonexistent controller name", "meta", meta)
-		return nil, errors.New(fmt.Sprintf("metadata specifies a nonexistent controller name: %v\n", meta))
+		return errors.New(fmt.Sprintf("metadata specifies a nonexistent controller name: %v\n", meta))
 	}
 
 	property, ok := meta["property"].(string)
@@ -103,10 +103,10 @@ func (s *View) PropertyPatch(
 		newval, err := controller.UpdateRequest(ctx, property, body, auth)
 		log.MustLogger("PATCH").Debug("update request", "newval", newval, "err", err)
 		if err == nil {
-			return newval, nil
+			rrp.Value = newval
 		}
-		return nil, errors.New("Error updating")
+		return errors.New("Error updating")
 	}
 
-	return nil, errors.New("Error updating: no property specified")
+	return errors.New("Error updating: no property specified")
 }

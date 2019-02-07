@@ -11,7 +11,7 @@ import (
 
 const (
 	GETCommand       = eh.CommandType("http:RedfishResource:GET")
-	DefaultCacheTime = 20
+	DefaultCacheTime = 5
 )
 
 // Static type checking for commands to prevent runtime errors due to typos
@@ -61,7 +61,7 @@ func (c *GET) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 	var complete func()
 	complete = func() { a.ResultsCacheMu.RUnlock() }
 
-	// provide a construct to break out of
+	// loop until something interesting happens
 	for {
 		// assume cache HIT
 		a.ResultsCacheMu.RLock()
@@ -74,6 +74,9 @@ func (c *GET) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 			data.Results = a.ResultsCache
 			if c.outChan != nil {
 				c.outChan <- CompletionEvent{event: eh.NewEvent(HTTPCmdProcessed, data, time.Now()), complete: complete}
+			} else {
+				// if we can't send the completion event, we'll leave a lock hanging, so just complete ourselves.
+				complete()
 			}
 			return nil
 		}

@@ -327,6 +327,8 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("OData-Version", "4.0")
 	w.Header().Set("Server", "sailfish")
 
+	addEtag(w, data)
+
 	for k, v := range data.Headers {
 		w.Header().Add(k, v)
 	}
@@ -334,8 +336,6 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if data.StatusCode != 0 {
 		w.WriteHeader(data.StatusCode)
 	}
-
-	addEtag(w, data)
 
 	/*
 		   // START
@@ -388,8 +388,9 @@ func getResourceEtag(ctx context.Context, agg *RedfishResourceAggregate, auth *R
 
 	switch t := etagintf.(type) {
 	case *RedfishResourceProperty:
-		etagprocessedintf, _ := ProcessGET(ctx, t, auth)
-		etagstr, ok = etagprocessedintf.(string)
+		NewGet(ctx, t, auth)
+		etagIntf := Flatten(t.Value)
+		etagstr, ok = etagIntf.(string)
 		if !ok {
 			return ""
 		}
