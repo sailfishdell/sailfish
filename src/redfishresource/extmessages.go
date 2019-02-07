@@ -8,6 +8,13 @@ type PropertyExtendedInfoMessages struct {
 	propMsgs []interface{}
 }
 
+func NewPropertyExtendedInfoMessages(msgs []interface{}) *PropertyExtendedInfoMessages {
+	o := &PropertyExtendedInfoMessages{}
+	o.propMsgs = make([]interface{}, len(msgs))
+	copy(o.propMsgs, msgs)
+	return o
+}
+
 func (p *PropertyExtendedInfoMessages) GetPropertyExtendedMessages() []interface{} {
 	return p.propMsgs
 }
@@ -54,7 +61,7 @@ func NewObjectExtendedErrorMessages(msgs []interface{}) *ObjectExtendedErrorMess
 	return o
 }
 
-func (o *ObjectExtendedErrorMessages) GetObjectExtendedMessages() []interface{} {
+func (o *ObjectExtendedErrorMessages) GetObjectErrorMessages() []interface{} {
 	return o.objErrs
 }
 
@@ -66,9 +73,10 @@ func (o *ObjectExtendedErrorMessages) Error() string {
 // combined
 //
 
-type CombinedInfoError struct {
-	*ObjectExtendedErrorMessages
-	*ObjectExtendedInfoMessages
+type CombinedPropObjInfoError struct {
+	ObjectExtendedErrorMessages
+	ObjectExtendedInfoMessages
+	PropertyExtendedInfoMessages
 }
 
-func (c *CombinedInfoError) Error() string { return "combined" }
+func (c *CombinedPropObjInfoError) Error() string { return "combined" }

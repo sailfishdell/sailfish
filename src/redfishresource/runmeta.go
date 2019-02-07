@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"reflect"
 )
 
@@ -137,8 +136,8 @@ func Flatten(thing interface{}) interface{} {
 	// recurse through maps or slices and recursively call helper on them
 	val := reflect.ValueOf(thing)
 	switch k := val.Kind(); k {
-	case reflect.Ptr:
-		fmt.Printf("PTR!\n")
+	//	case reflect.Ptr:
+	//		fmt.Printf("PTR!\n")
 
 	case reflect.Map:
 		// everything inside of a redfishresourceproperty should fit into a map[string]interface{}
@@ -223,6 +222,12 @@ func helper(ctx context.Context, auth *RedfishAuthorizationProperty, e nuEncOpts
 		}
 
 		for _, k := range val.MapKeys() {
+			// first scrub any old extended messages
+			if strK, ok := k.Interface().(string); ok {
+				annotatedKey := strK + "@Message.ExtendedInfo"
+				val.SetMapIndex(reflect.ValueOf(annotatedKey), reflect.Value{})
+			}
+
 			newEncOpts := nuEncOpts{
 				request: e.request,
 				present: e.present,
@@ -309,9 +314,9 @@ func helper(ctx context.Context, auth *RedfishAuthorizationProperty, e nuEncOpts
 		}
 	}
 
-	return &CombinedInfoError{
-		ObjectExtendedInfoMessages:  NewObjectExtendedInfoMessages(objectExtendedMessages),
-		ObjectExtendedErrorMessages: NewObjectExtendedErrorMessages(objectErrorMessages),
+	return &CombinedPropObjInfoError{
+		ObjectExtendedInfoMessages:  *NewObjectExtendedInfoMessages(objectExtendedMessages),
+		ObjectExtendedErrorMessages: *NewObjectExtendedErrorMessages(objectErrorMessages),
 	}
 
 }

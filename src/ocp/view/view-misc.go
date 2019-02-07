@@ -104,8 +104,13 @@ func (s *View) PropertyPatch(
 		log.MustLogger("PATCH").Debug("update request", "newval", newval, "err", err)
 		if err == nil {
 			rrp.Value = newval
+			// TODO: henry to put the official message here
+			return &domain.CombinedPropObjInfoError{
+				ObjectExtendedInfoMessages:   *domain.NewObjectExtendedInfoMessages([]interface{}{"SUCCESSFULLY PATCHED OBJECT"}),
+				PropertyExtendedInfoMessages: *domain.NewPropertyExtendedInfoMessages([]interface{}{"SUCCESSFULLY PATCHED PROPERTY"}),
+			}
 		}
-		return errors.New("Error updating")
+		return err
 	}
 
 	return errors.New("Error updating: no property specified")
