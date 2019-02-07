@@ -1,0 +1,28 @@
+#!/bin/sh
+
+script_dir=$(cd $(dirname $0); pwd)
+cd $script_dir/..
+
+host=$1
+if [ -z "$host" ]; then
+  echo "specify the EC to update"
+  exit 1
+fi
+
+ssh-copy-id root@${host}
+GOARCH=arm GOARM=5 go build -mod=vendor ./cmd/sailfish || exit 1
+
+ssh root@${host} iptables -D EC_INPUT_CHAIN -j DROP
+ssh root@${host} umount /etc/redfish.yaml
+scp redfish-ec.yaml root@${host}:/tmp/redfish.yaml
+ssh root@${host} perl -p -i -e 's/localhost//' /tmp/redfish.yaml
+ssh root@${host} mount --bind /tmp/redfish.yaml /etc/redfish.yaml
+
+ssh root@${host} systemctl stop sailfish
+ssh root@${host} mount -o remount,exec /mnt/persistent_data
+ssh root@${host} umount /usr/bin/sailfish
+ssh root@${host} mkdir /flash/data0/go
+scp sailfish root@${host}:/flash/data0/go/
+ssh root@${host} mount --bind /flash/data0/go/sailfish /usr/bin/sailfish
+ssh root@${host} restorecon /usr/bin/sailfish /etc/redfish.yaml
+ssh root@${host} systemctl restart sailfish
