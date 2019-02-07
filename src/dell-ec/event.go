@@ -17,7 +17,7 @@ func init() {
 	eh.RegisterEventData(LogEvent, func() eh.EventData { return &LogEventData{} })
 	eh.RegisterEventData(FaultEntryAdd, func() eh.EventData { return &FaultEntryAddData{} })
 	eh.RegisterEventData(FaultEntryRemove, func() eh.EventData { return &FaultEntryRmData{} })
-	eh.RegisterEventData(FaultEntriesClear, func() eh.EventData { return &empty{} })
+	eh.RegisterEventData(FaultEntriesClear, func() eh.EventData { return &struct{}{} })
 }
 
 type ComponentEventData struct {
@@ -47,9 +47,6 @@ type LogEventData struct {
 type FaultEntryRmData struct {
         Id              int
 	Name            string
-}
-
-type empty struct {
 }
 
 type FaultEntryAddData struct {

@@ -79,7 +79,11 @@ func (c *CreateRedfishResource) Handle(ctx context.Context, a *RedfishResourceAg
 	if a.Plugin == "" {
 		a.Plugin = "RedfishResource"
 	}
-        a.Headers = c.Headers
+        a.Headers = map[string]string{}
+        for k, v :=range c.Headers {
+            a.Headers[k] = v
+        }
+
 	a.PrivilegeMap = map[string]interface{}{}
 
 	for k, v := range c.Privileges {
