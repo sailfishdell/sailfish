@@ -524,11 +524,12 @@ func processFilterOneObject(memberInstance map[string]interface{}, filterArray [
 				}
 			}
 		//========= String array members =======
-		case []string:
+		case []interface{}:
 			//For this one, assume we're not going to find it until proven wrong
 			//If we drop out of the loop without finding it, the we don't keep it
+			localMemberStr := localMember.(string)
 			for b := 0; b < len(localMember) && !keepElement; b += 1 {
-				keepElement = strings.Contains(localMember[b], filterArray[j].SearchTerm)
+				keepElement = strings.Contains(localMemberStr[b], filterArray[j].SearchTerm)
 			}
 		//========= Time members =======
 		case time.Time:
