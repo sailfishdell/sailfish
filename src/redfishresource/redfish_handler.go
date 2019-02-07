@@ -50,41 +50,42 @@ func NewRedfishHandler(dobjs *DomainObjects, logger log.Logger, u string, p []st
 type RedfishHandler struct {
 	UserName   string
 	Privileges []string
-	d		   *DomainObjects
-	logger	   log.Logger
+	d          *DomainObjects
+	logger     log.Logger
 }
 
 const (
-	BLANK = 0
-	EQ = 1
-	LT = 2
-	GT = 3
-	GE = 4
-	LE = 5
+	BLANK    = 0
+	EQ       = 1
+	LT       = 2
+	GT       = 3
+	GE       = 4
+	LE       = 5
+	CONTAINS = 6
 )
 
 var comparisonString = map[int]string{
-	BLANK:	"",
-	EQ:		" eq ",
-	LT:		" lt ",
-	GT:		" gt ",
-	GE:		" ge ",
-	LE:		" le ",
+	BLANK:    "",
+	EQ:       " eq ",
+	LT:       " lt ",
+	GT:       " gt ",
+	GE:       " ge ",
+	LE:       " le ",
+	CONTAINS: "contains",
 }
 
 var sevInteger = map[string]int{
-	"Fatal":	4,
-	"Critical":	3,
-	"Warning":	2,
-	"OK":		1,
+	"Fatal":    4,
+	"Critical": 3,
+	"Warning":  2,
+	"OK":       1,
 }
 
 type FilterTest struct {
-	Category string //What field we compare against
-	SearchTerm	 string	   //For string search the second term
-	Comparator	   int	  //Operator ==, <, >, >=, <=
+	Category   string //What field we compare against
+	SearchTerm string //For string search the second term
+	Comparator int    //Operator ==, <, >, >=, <=
 }
-
 
 func (rh *RedfishHandler) isAuthorized(requiredPrivs []string) (authorized string) {
 	authorized = "unauthorized"
@@ -263,7 +264,10 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method == "GET" {
 		// $top, $skip, $filter
-		queryPresent := r.URL.Query().Get("$select") != "" || r.URL.Query().Get("$skip") != "" || r.URL.Query().Get("$top") != "" || r.URL.Query().Get("$filter") != ""
+		queryPresent := (r.URL.Query().Get("$select") != "" ||
+			r.URL.Query().Get("$skip") != "" ||
+			r.URL.Query().Get("$top") != "" ||
+			r.URL.Query().Get("$filter") != "")
 		// copy data before we slice and dice
 		if queryPresent {
 			mapstrint, ok := data.Results.(map[string]interface{})
@@ -378,27 +382,73 @@ func addEtag(w http.ResponseWriter, d *HTTPCmdProcessedData) *HTTPCmdProcessedDa
 	return d
 }
 
+// input is a string with pattern ( val1, val2) or  [ val1, val2 ] or { val1, val2 }
+// return is a list  [ val1, val2 ]
+// quotes and spaces are trimmed from val1 and val2
+func regexGetStrInParanth(val string) ([]string, bool) {
+	m := make([]string, 2)
+	re := regexp.MustCompile(`[\(\[\{](.*)\,(.*)[\)\]\}]`)
+
+	matches := re.FindStringSubmatch(val)
+	if len(matches) == 0 {
+		return m, false
+	}
+
+	val1 := matches[1]
+	val2 := matches[2]
+
+	//cleanup
+	val1 = strings.TrimSpace(val1)
+	val2 = strings.TrimSpace(val2)
+
+	re = regexp.MustCompile(`^['"].*['"]$`)
+	lenStr := len(val1)
+	if re.FindString(val1) != "" {
+		val1 = val1[1 : lenStr-1]
+	}
+
+	lenStr = len(val2)
+	if re.FindString(val2) != "" {
+		val2 = val2[1 : lenStr-1]
+	}
+
+	m[0] = val1
+	m[1] = val2
+
+	return m, true
+
+}
+
+// takes a url filter and organizes it in a list of structures
 func createFilterArray(filter string) ([]FilterTest, bool) {
 	filterArray := []FilterTest{}
 	//TODO Right now only working with filter 'and' filter, 'or' is a whole 'nother ballgame
 	splitFilter := strings.Split(filter, " and ")
 	//For whatever filters may have been found, parse them out into a structure we can use
-	for i := 0 ; i < len(splitFilter) ; i += 1 {
-		tok := splitFilter[i]
+	// iterates list providing the index and element
+	for _, tok := range splitFilter {
 		//Have a 'token' get the parts of it
 		searchTok := BLANK
-		for k := EQ; k <= LE; k += 1 {
-			if strings.Contains(tok, comparisonString[k]){
+		for k := EQ; k <= CONTAINS; k += 1 {
+			if strings.Contains(tok, comparisonString[k]) {
 				searchTok = k
 				break
 			}
 		}
-		if searchTok != BLANK {
+		if searchTok == CONTAINS {
+			// matches (<string>, <string>)
+			subSplit, ok := regexGetStrInParanth(tok)
+			if ok {
+				filterArray = append(filterArray, FilterTest{subSplit[0], subSplit[1], CONTAINS})
+			}
+
+		} else if searchTok != BLANK {
 			subSplit := strings.Split(tok, comparisonString[searchTok])
-			if strings.Contains (subSplit[0], "MessageID") {
+			if strings.Contains(subSplit[0], "MessageID") {
 				subSplit[0] = "MessageId" //Bug fix to Handle MSM
 			}
 			filterArray = append(filterArray, FilterTest{subSplit[0], subSplit[1], searchTok})
+
 		} else {
 			//Filter syntax violation
 			return []FilterTest{}, false
@@ -407,26 +457,56 @@ func createFilterArray(filter string) ([]FilterTest, bool) {
 	return filterArray, true
 }
 
-func processFilterOneObject (memberInstance map[string]interface{}, filterArray []FilterTest) bool {
-
-	for j := 0; j < len(filterArray) ; j += 1 {
-		//Find the String object we're trying to match
-		var currentMember interface{}
-		if memberInstance[filterArray[j].Category] != nil {
-			currentMember = memberInstance[filterArray[j].Category]
+// goes through a layered map (memberInstance) using the list (p) to find the final value
+func getValueWithPath(memberInstance map[string]interface{}, p []string) (interface{}, bool) {
+	var mVal interface{}
+	var ok bool
+	for i, v := range p {
+		if i == len(p)-1 {
+			mVal, ok = memberInstance[v].(interface{})
 		} else {
-			//Drill down a layer further
-			currentSubMember := memberInstance["Oem"].(map[string]interface{})
-			if currentSubMember != nil {
-				currentSubSubMember := currentSubMember["Dell"].(map[string]interface{})
-				if currentSubSubMember[filterArray[j].Category] != nil {
-					currentMember = currentSubSubMember[filterArray[j].Category]
-				} else {
-					return false
-				}
-			} else {
-				return false
-			}
+			memberInstance, ok = memberInstance[v].(map[string]interface{})
+		}
+
+		// exit out early if value not retrieved
+		if !ok {
+			return mVal, ok
+		}
+
+	}
+
+	return mVal, ok
+
+}
+
+// looks for string (c) in nested map (memberInstance)
+func getCategoryValue(memberInstance map[string]interface{}, c string) (interface{}, bool) {
+	//Find the  object we're trying to match
+	ok := false
+	var mVal interface{}
+
+	// for filters providing a path to filter value (like faults)
+	cL := strings.Split(c, "/")
+	mVal, ok = getValueWithPath(memberInstance, cL)
+
+	if ok {
+		return mVal, true
+	}
+
+	// check if this is a log message filter
+	log_pathL := []string{"Oem", "Dell", c}
+	mVal, ok = getValueWithPath(memberInstance, log_pathL)
+
+	return mVal, ok
+}
+
+// returns true if the memberInstance matches with the url filter, stored as filterArray
+func processFilterOneObject(memberInstance map[string]interface{}, filterArray []FilterTest) bool {
+
+	for j := 0; j < len(filterArray); j += 1 {
+		currentMember, rc := getCategoryValue(memberInstance, filterArray[j].Category)
+		if rc == false {
+			return false
 		}
 
 		//Only keep item IF we find at least one term to search against
@@ -434,91 +514,92 @@ func processFilterOneObject (memberInstance map[string]interface{}, filterArray 
 		keepElement := false
 		//We could have multiple member types
 		switch localMember := currentMember.(type) {
-			//========= String members =======
-			case string :
-				if filterArray[j].Category == "Severity" {
-					//Severity comparisons string to ENUM sorta
-					memberSev := sevInteger[localMember]
-					searchSev := sevInteger[filterArray[j].SearchTerm]
-					if memberSev > 0 && memberSev < 5 && searchSev > 0 && searchSev < 5 {
-						switch filterArray[j].Comparator {
-							case GE:
-								keepElement = memberSev >= searchSev
-							case GT:
-								keepElement = memberSev > searchSev
-							case LE:
-								keepElement = memberSev <= searchSev
-							case LT:
-								keepElement = memberSev < searchSev
-							case EQ:
-								keepElement = memberSev == searchSev
-						}
-					}
-				} else {
-					//Other strings just get this as the keepElement
-					keepElement = strings.Contains(localMember, filterArray[j].SearchTerm)
-				}
-			//========= Integer members =======
-			case int :
-				//Currently no fields like this?
-				searchInt, err := strconv.Atoi(filterArray[j].SearchTerm)
-				if err == nil {
+		//========= String members =======
+		case string:
+			if filterArray[j].Category == "Severity" {
+				//Severity comparisons string to ENUM sorta
+				memberSev := sevInteger[localMember]
+				searchSev := sevInteger[filterArray[j].SearchTerm]
+				if memberSev > 0 && memberSev < 5 && searchSev > 0 && searchSev < 5 {
 					switch filterArray[j].Comparator {
-						case GE:
-							keepElement = localMember >= searchInt
-						case GT:
-							keepElement = localMember > searchInt
-						case LE:
-							keepElement = localMember <= searchInt
-						case LT:
-							keepElement = localMember < searchInt
-						case EQ:
-							keepElement = localMember == searchInt
+					case GE:
+						keepElement = memberSev >= searchSev
+					case GT:
+						keepElement = memberSev > searchSev
+					case LE:
+						keepElement = memberSev <= searchSev
+					case LT:
+						keepElement = memberSev < searchSev
+					case EQ:
+						keepElement = memberSev == searchSev
 					}
 				}
-			//========= String array members =======
-			case []string :
-				//For this one, assume we're not going to find it until proven wrong
-				//If we drop out of the loop without finding it, the we don't keep it
-				for b := 0; b < len(localMember) && !keepElement ; b += 1 {
-					keepElement = strings.Contains(localMember[b], filterArray[j].SearchTerm)
+
+			} else {
+				//fmt.Println(localMember, filterArray[j].SearchTerm, strings.Contains(localMember, filterArray[j].SearchTerm))
+				keepElement = strings.Contains(localMember, filterArray[j].SearchTerm)
+			}
+		//========= Integer members =======
+		case int:
+			//Currently no fields like this?
+			searchInt, err := strconv.Atoi(filterArray[j].SearchTerm)
+			if err == nil {
+				switch filterArray[j].Comparator {
+				case GE:
+					keepElement = localMember >= searchInt
+				case GT:
+					keepElement = localMember > searchInt
+				case LE:
+					keepElement = localMember <= searchInt
+				case LT:
+					keepElement = localMember < searchInt
+				case EQ:
+					keepElement = localMember == searchInt
 				}
-			//========= Time members =======
-			case time.Time :
-				//Handle time comparisons
-				memberTime := localMember
-				//Use fallback custom parser because of bug in Go time RFC3339 implementation
-				searchTime, err := time.Parse(time.RFC3339, filterArray[j].SearchTerm)
-				if err != nil {
-					//If there is no : in the time adjustment RFC3339 breaks
-					searchTime, err = time.Parse("2006-01-02T15:04:05-0700", filterArray[j].SearchTerm)
-				}
-				if err == nil {
-					//If we were able to parse the input time with one of the methods
-					switch filterArray[j].Comparator {
-						case GE:
-							keepElement = memberTime.Equal(searchTime)
-							if !keepElement {
-								keepElement = memberTime.After(searchTime)
-							}
-						case GT:
-							keepElement = memberTime.After(searchTime)
-						case LE:
-							keepElement = memberTime.Equal(searchTime)
-							if !keepElement {
-								keepElement = memberTime.Before(searchTime)
-							}
-						case LT:
-							keepElement = memberTime.Before(searchTime)
-						case EQ:
-							keepElement = memberTime.Equal(searchTime)
+			}
+		//========= String array members =======
+		case []string:
+			//For this one, assume we're not going to find it until proven wrong
+			//If we drop out of the loop without finding it, the we don't keep it
+			for b := 0; b < len(localMember) && !keepElement; b += 1 {
+				keepElement = strings.Contains(localMember[b], filterArray[j].SearchTerm)
+			}
+		//========= Time members =======
+		case time.Time:
+			//Handle time comparisons
+			memberTime := localMember
+			//Use fallback custom parser because of bug in Go time RFC3339 implementation
+			searchTime, err := time.Parse(time.RFC3339, filterArray[j].SearchTerm)
+			if err != nil {
+				//If there is no : in the time adjustment RFC3339 breaks
+				searchTime, err = time.Parse("2006-01-02T15:04:05-0700", filterArray[j].SearchTerm)
+			}
+			if err == nil {
+				//If we were able to parse the input time with one of the methods
+				switch filterArray[j].Comparator {
+				case GE:
+					keepElement = memberTime.Equal(searchTime)
+					if !keepElement {
+						keepElement = memberTime.After(searchTime)
 					}
+				case GT:
+					keepElement = memberTime.After(searchTime)
+				case LE:
+					keepElement = memberTime.Equal(searchTime)
+					if !keepElement {
+						keepElement = memberTime.Before(searchTime)
+					}
+				case LT:
+					keepElement = memberTime.Before(searchTime)
+				case EQ:
+					keepElement = memberTime.Equal(searchTime)
 				}
-			//========= The what?! members =======
-			default :
-				//Most like map[string]interface{}, problem is we don't know how to drill down
-				//Give it a pass
-				keepElement = true
+			}
+		//========= The what?! members =======
+		default:
+			//Most like map[string]interface{}, problem is we don't know how to drill down
+			//Give it a pass
+			keepElement = true
 		}
 		if !keepElement {
 			return false
@@ -529,7 +610,7 @@ func processFilterOneObject (memberInstance map[string]interface{}, filterArray 
 }
 
 func handleCollectionFilterMap(filter string, membersArr []map[string]interface{}) ([]map[string]interface{}, bool) {
-		filterArray, ok := createFilterArray(filter)
+	filterArray, ok := createFilterArray(filter)
 	//If filter violation return nothing
 	//If empty filters return everything
 	if !ok {
@@ -541,11 +622,11 @@ func handleCollectionFilterMap(filter string, membersArr []map[string]interface{
 	keepArray := []int{}
 
 	//For each element in the log array apply all filters
-	for i := 0; i < len(membersArr) ; i += 1 {
+	for i := 0; i < len(membersArr); i += 1 {
 		memberInstance := membersArr[i]
 
 		//Invert logic to determine delete
-		if processFilterOneObject (memberInstance, filterArray) {
+		if processFilterOneObject(memberInstance, filterArray) {
 			keepArray = append(keepArray, i)
 		}
 	}
@@ -557,7 +638,7 @@ func handleCollectionFilterMap(filter string, membersArr []map[string]interface{
 		returnArr = membersArr
 	} else {
 		for _, index := range keepArray {
-			returnArr = append (returnArr, membersArr[index])
+			returnArr = append(returnArr, membersArr[index])
 		}
 	}
 	return returnArr, ok
@@ -577,15 +658,16 @@ func handleCollectionFilter(filter string, membersArr []interface{}) ([]interfac
 	keepArray := []int{}
 
 	//For each element in the log array apply all filters
-	for i := 0; i < len(membersArr) ; i += 1 {
+	for i := 0; i < len(membersArr); i += 1 {
 		memberInstance, ok := membersArr[i].(map[string]interface{})
 		if !ok {
 			return membersArr, ok
 		}
 		//Invert logic to determine delete
-		if processFilterOneObject (memberInstance, filterArray) {
+		if processFilterOneObject(memberInstance, filterArray) {
 			keepArray = append(keepArray, i)
 		}
+
 	}
 
 	//We have all logs we want to keep in an array, put those in our output
@@ -595,12 +677,11 @@ func handleCollectionFilter(filter string, membersArr []interface{}) ([]interfac
 		returnArr = membersArr
 	} else {
 		for _, index := range keepArray {
-			returnArr = append (returnArr, membersArr[index])
+			returnArr = append(returnArr, membersArr[index])
 		}
 	}
 	return returnArr, ok
 }
-
 
 func handleCollectionQueryOptions(r *http.Request, d *HTTPCmdProcessedData) *HTTPCmdProcessedData {
 	// the following query parameters affect how we return collections:
@@ -619,7 +700,7 @@ func handleCollectionQueryOptions(r *http.Request, d *HTTPCmdProcessedData) *HTT
 	}
 
 	switch membersArr := members.(type) {
-	case []interface{} :
+	case []interface{}:
 		if filter != "" {
 			membersArr, _ = handleCollectionFilter(filter, membersArr)
 			//TODO handle bad filter request with HTTP error
@@ -671,7 +752,7 @@ func handleCollectionQueryOptions(r *http.Request, d *HTTPCmdProcessedData) *HTT
 			res["Members@odata.nextlink"] = nextlink.String()
 		}
 		return d
-	case []map[string]interface{} :
+	case []map[string]interface{}:
 		if filter != "" {
 			membersArr, _ = handleCollectionFilterMap(filter, membersArr)
 			//TODO handle bad filter request with HTTP error
