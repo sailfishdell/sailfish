@@ -10,7 +10,6 @@ import (
 	"github.com/spf13/viper"
 
 	eh "github.com/looplab/eventhorizon"
-	eventpublisher "github.com/looplab/eventhorizon/publisher/local"
 
 	"github.com/superchalupa/sailfish/src/log"
 	"github.com/superchalupa/sailfish/src/looplab/eventwaiter"
@@ -35,6 +34,15 @@ type syncEvent interface {
   Done()
 }
 
+type waiter interface {
+  Listen(context.Context, func(eh.Event) bool) (*eventwaiter.EventListener, error)
+}
+
+type listener interface {
+  Inbox() <- chan eh.Event
+  Close()
+}
+
 // individual mapping: only for bookkeeping
 type ModelMappings struct {
 	logger         log.Logger
@@ -57,6 +65,8 @@ type ARService struct {
 
 	hashMu sync.RWMutex
 	hash   map[string][]update
+
+  ew     waiter
 }
 
 // post-processed and optimized update
@@ -68,12 +78,6 @@ type update struct {
 func StartService(ctx context.Context, logger log.Logger, cfg *viper.Viper, cfgMu *sync.RWMutex, eb eh.EventBus) (*ARService, error) {
 	logger = logger.New("module", "ar2")
 
-	EventPublisher := eventpublisher.NewEventPublisher()
-	eb.AddHandler(eh.MatchAnyEventOf(attributes.AttributeUpdated), EventPublisher)
-	EventWaiter := eventwaiter.NewEventWaiter(eventwaiter.SetName("AR Mapper"), eventwaiter.NoAutoRun)
-	EventPublisher.AddObserver(EventWaiter)
-	go EventWaiter.Run()
-
 	arservice := &ARService{
 		eb:            eb,
 		cfg:           cfg,
@@ -83,11 +87,13 @@ func StartService(ctx context.Context, logger log.Logger, cfg *viper.Viper, cfgM
 		hash:          make(map[string][]update),
 	}
 
-	sp, err := event.NewEventStreamProcessor(ctx, EventWaiter, event.MatchAnyEvent(attributes.AttributeUpdated), event.SetListenerName("ar_service"))
-	if err != nil {
-		logger.Error("Failed to create event stream processor", "err", err)
-		return nil, err
-	}
+  sp, err := event.NewESP(ctx, event.MatchAnyEvent(attributes.AttributeUpdated), event.SetListenerName("ar_service"))
+  if err != nil {
+    logger.Error("Failed to create new event stream processor", "err", err)
+    return nil, errors.New("Failed to create ESP")
+  }
+  arservice.ew = &sp.EW
+
 	go sp.RunForever(func(event eh.Event) {
 		data, ok := event.Data().(*attributes.AttributeUpdatedData)
 		if !ok {
@@ -149,6 +155,19 @@ func (b breadcrumb) Close() {
 	b.ars.resetConfig()
 }
 
+type HTTP_code struct {
+  status_code int
+  err_message string
+}
+
+func (e HTTP_code) StatusCode() int {
+  return e.status_code
+}
+
+func (e HTTP_code) Error() string {
+  return fmt.Sprintf("Request Error Message: %s, Return Code: %d", e.err_message, e.status_code)
+}
+
 func (b breadcrumb) UpdateRequest(ctx context.Context, property string, value interface{}, auth *domain.RedfishAuthorizationProperty) (interface{}, error) {
   b.ars.hashMu.RLock()
   defer b.ars.hashMu.RUnlock()
@@ -160,13 +179,7 @@ func (b breadcrumb) UpdateRequest(ctx context.Context, property string, value in
   status_code := 200
   patch_timeout := 3
 
-  EventPublisher := eventpublisher.NewEventPublisher()
-  b.ars.eb.AddHandler(eh.MatchAnyEventOf(attributes.AttributeUpdated), EventPublisher)
-  EventWaiter := eventwaiter.NewEventWaiter(eventwaiter.SetName("patch request"), eventwaiter.NoAutoRun)
-  EventPublisher.AddObserver(EventWaiter)
-  go EventWaiter.Run()
-
-  listener, err := EventWaiter.Listen(ctx, func(event eh.Event) bool {
+  l, err := b.ars.ew.Listen(ctx, func(event eh.Event) bool {
     if event.EventType() != attributes.AttributeUpdated {
       return false
     }
@@ -180,7 +193,9 @@ func (b breadcrumb) UpdateRequest(ctx context.Context, property string, value in
     b.ars.logger.Error("Could not create listener", "err", err)
     return nil, errors.New("Failed to make attribute updated event listener")
   }
-  listener.Name = "ar patch listener"
+  l.Name = "ar patch listener"
+  var listener listener
+  listener = l
 
   defer listener.Close()
 
@@ -233,14 +248,12 @@ func (b breadcrumb) UpdateRequest(ctx context.Context, property string, value in
         e.Done()
       }
       if (len(reqIDs) == 0) {
-        return status_code, nil
+        return nil, HTTP_code{status_code: status_code, err_message: data.Error}
       }
-
       case <- timer.C:
-        return 400, nil
-
+        return nil, HTTP_code{status_code: 400, err_message: "Timed out!"}
       case <- ctx.Done():
-        return status_code, nil
+        return nil, HTTP_code{status_code: status_code, err_message: ""}
     }
   }
 }

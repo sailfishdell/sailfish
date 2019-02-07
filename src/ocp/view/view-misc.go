@@ -103,9 +103,9 @@ func (s *View) PropertyPatch(
 		newval, err := controller.UpdateRequest(ctx, property, body, auth)
 		log.MustLogger("PATCH").Debug("update request", "newval", newval, "err", err)
 		if err == nil {
-			return newval, nil
+			return nil, errors.New("Error updating!")
 		}
-		return nil, errors.New("Error updating")
+    return newval, err
 	}
 
 	return nil, errors.New("Error updating: no property specified")

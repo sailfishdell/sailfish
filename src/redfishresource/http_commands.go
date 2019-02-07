@@ -82,6 +82,10 @@ type PATCH struct {
 	Body map[string]interface{} `eh:"optional"`
 }
 
+type IsHTTPCode interface {
+  StatusCode() int
+}
+
 func (c *PATCH) AggregateType() eh.AggregateType { return AggregateType }
 func (c *PATCH) AggregateID() eh.UUID            { return c.ID }
 func (c *PATCH) CommandType() eh.CommandType     { return PATCHCommand }
@@ -95,14 +99,18 @@ func (c *PATCH) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 	// set up the base response data
 	data := &HTTPCmdProcessedData{
 		CommandID:  c.CmdID,
+    StatusCode: 400,
 	}
 
-	data.Results, _ = ProcessPATCH(ctx, &a.Properties, &a.Authorization, c.Body)
+  results, err := ProcessPATCH(ctx, &a.Properties, &a.Authorization, c.Body)
 
 	// TODO: This is not thread safe: deep copy
+  data.Results = results
 	data.Headers = a.Headers
   // status code is passed upward through Attribute key in results
-  data.StatusCode = data.Results.(map[string]interface{})["Attributes"].(int)
+  if sc, ok := err.(IsHTTPCode); ok {
+    data.StatusCode = sc.StatusCode()
+  }
 
   a.PublishEvent(eh.NewEvent(HTTPCmdProcessed, data, time.Now()))
 	return nil

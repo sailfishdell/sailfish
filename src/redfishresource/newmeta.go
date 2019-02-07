@@ -46,8 +46,12 @@ func ProcessGET(ctx context.Context, rrp *RedfishResourceProperty, auth *Redfish
 
 func (rrp *RedfishResourceProperty) DOMETA(ctx context.Context, e encOpts) (results reflect.Value, err error) {
 	//fmt.Printf("DOMETA\n")
-	res, _ := e.process(ctx, rrp, e)
-	return parseRecursive(ctx, reflect.ValueOf(res), e)
+	res, err := e.process(ctx, rrp, e)
+  res2, err2 := parseRecursive(ctx, reflect.ValueOf(res), e)
+  if _, ok := err.(IsHTTPCode); ok {
+    return res2, err
+  }
+	return res2, err2
 }
 
 type Marshaler interface {
@@ -65,7 +69,7 @@ var locktype = reflect.TypeOf(new(Locker)).Elem()
 func parseRecursive(ctx context.Context, val reflect.Value, e encOpts) (reflect.Value, error) {
 	if !val.IsValid() {
 		//fmt.Printf("NOT VALID, returning\n")
-		return val, errors.New("not a valid type")
+    return val, nil
 	}
 
 	if val.Type().Implements(locktype) {
@@ -84,6 +88,7 @@ func parseRecursive(ctx context.Context, val reflect.Value, e encOpts) (reflect.
 
 	switch k := val.Kind(); k {
 	case reflect.Map:
+    var map_err error
 		//fmt.Printf("Map\n")
 
 		var ret reflect.Value
@@ -110,16 +115,16 @@ func parseRecursive(ctx context.Context, val reflect.Value, e encOpts) (reflect.
 				if newEncOpts.present {
 					newEncOpts.request, newEncOpts.present = requestBody[k.Interface().(string)]
 				}
-
 				mapVal := val.MapIndex(k).Interface()
 				parsed, err := parseRecursive(ctx, reflect.ValueOf(mapVal), newEncOpts)
-				_ = err // supress unused var error
+        if err != nil {
+          map_err = err
+        }
 
 				if !parsed.IsValid() {
 					// SetMapIndex will *delete* the indexed entry if you pass a nil!
 					parsed = reflect.Zero(elemType)
 				}
-
 				m.Lock()
 				ret.SetMapIndex(k, parsed)
 				m.Unlock()
@@ -127,12 +132,13 @@ func parseRecursive(ctx context.Context, val reflect.Value, e encOpts) (reflect.
 			}(k)
 		}
 		wg.Wait()
-		return ret, nil
+		return ret, map_err
 
 	case reflect.Slice:
 		//fmt.Printf("slice\n")
 
 		var ret reflect.Value
+    var map_err error
 		elemType := val.Type().Elem()
 		arraytype := reflect.SliceOf(elemType)
 		ret = reflect.MakeSlice(arraytype, val.Len(), val.Cap())
@@ -145,13 +151,15 @@ func parseRecursive(ctx context.Context, val reflect.Value, e encOpts) (reflect.
 				sliceVal := val.Index(k)
 				if sliceVal.IsValid() {
 					parsed, err := parseRecursive(ctx, reflect.ValueOf(sliceVal.Interface()), e)
-					_ = err // supress unused var error
+          if err != nil {
+            map_err = err
+          }
 					ret.Index(k).Set(parsed)
 				}
 			}(i)
 		}
 		wg.Wait()
-		return ret, nil
+		return ret, map_err
 
 	default:
 		//fmt.Printf("other\n")
