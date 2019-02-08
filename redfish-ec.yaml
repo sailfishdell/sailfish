@@ -1290,7 +1290,7 @@ awesome_mapper:
                 {Property: "Numrotors", Query: "data.Numrotors" },
                 {Property: "Rotor2rpm", Query: "data.Rotor2rpm" },
                 {Property: "Rotor1rpm", Query: "data.Rotor1rpm" },
-                {Property: "rpm", Query: "(data.Rotor1rpm+data.Rotor2rpm)/2" },
+                {Property: "rpm", Query: "int((data.Rotor1rpm+data.Rotor2rpm)/2)" },
                 {Property: "FanStateMask", Query: "data.FanStateMask" }]}
 
     sensor:

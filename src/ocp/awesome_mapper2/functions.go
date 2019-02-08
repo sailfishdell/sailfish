@@ -390,6 +390,15 @@ func init() {
 			return "Unknown", nil
 		}
 	})
+	AddFunction("int", func(args ...interface{}) (interface{}, error) {
+                val, ok := args[0].(float64)
+    
+                if ok {
+                    return int(val), nil
+                } else {
+                    return args[0], nil
+                }
+	})
 	AddFunction("zero_to_null", func(args ...interface{}) (interface{}, error) {
 		switch args[0].(type) {
 		case int, int8, int16, int32, int64:
