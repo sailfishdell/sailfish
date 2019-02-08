@@ -1346,7 +1346,7 @@ awesome_mapper:
       - { SelectEventType: "PowerSupplyObjEvent", Select: "data.ObjectHeader.FQDD == DM_FQDD",
             ModelUpdate: [
                 {Property: "line_input_voltage", Query: "zero_to_null(data.CurrentInputVolts)" },
-                {Property: "input_current", Query: "zero_to_null(data.InstAmps)" },
+                {Property: "input_current", Query: "zero_to_null(round_2_dec_pl(data.InstAmps))" },
                 {Property: "obj_status", Query: "map_health_value(data.ObjectHeader.ObjStatus)" }]}
 
     power_trend:
