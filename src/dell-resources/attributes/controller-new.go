@@ -175,7 +175,7 @@ func (b *breadcrumb) UpdateRequest(ctx context.Context, property string, value i
 
   reqIDs := []eh.UUID{}
   responses := []AttributeUpdatedData{}
-  status_code := 400
+  status_code := 200
   errs := []string{}
   patch_timeout := 3
 
@@ -231,6 +231,7 @@ func (b *breadcrumb) UpdateRequest(ctx context.Context, property string, value i
     reqIDs = append(reqIDs, reqUUID)
 	}
 
+  req_ct := len(reqIDs)
   // create a timer based on number of attributes to be patched
   timer := time.NewTimer(time.Duration(patch_timeout*len(reqIDs)) * time.Second)
 
@@ -244,9 +245,7 @@ func (b *breadcrumb) UpdateRequest(ctx context.Context, property string, value i
           reqIDs[i] = reqIDs[len(reqIDs)-1]
           reqIDs = reqIDs[:len(reqIDs)-1]
           responses = append(responses, *data)
-          if (data.Error == "") {
-            status_code = 200
-          } else {
+          if (data.Error != "") {
             errs = append(errs, data.Error)
           }
           break
@@ -259,14 +258,16 @@ func (b *breadcrumb) UpdateRequest(ctx context.Context, property string, value i
 
       if (len(reqIDs) == 0) {
         //all reqIDs found
+        if len(errs) == req_ct {
+          status_code = 400
+        }
         http_response := HTTP_code{status_code: status_code, err_message: errs}
         return nil, http_response
       }
 
     case <- timer.C:
       //time out for any attr updated events that we are still waiting for
-      //return 400, nil
-      return nil, HTTP_code{status_code: 400, err_message: []string{"Timed out!"}}
+      return nil, HTTP_code{status_code: 200, err_message: []string{"Timed out!"}}
 
     case <- ctx.Done():
       return nil, HTTP_code{status_code: 200, err_message: nil}

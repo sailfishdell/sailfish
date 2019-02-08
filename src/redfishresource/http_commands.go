@@ -100,7 +100,7 @@ func (c *PATCH) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 	// set up the base response data
 	data := &HTTPCmdProcessedData{
 		CommandID:  c.CmdID,
-    StatusCode: 400,
+    StatusCode: 200,
 	}
 
   results, err := ProcessPATCH(ctx, &a.Properties, &a.Authorization, c.Body)

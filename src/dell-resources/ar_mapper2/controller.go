@@ -181,7 +181,7 @@ func (b breadcrumb) UpdateRequest(ctx context.Context, property string, value in
   reqIDs := []eh.UUID{}
   responses := []attributes.AttributeUpdatedData{}
   errs := []string{}
-  status_code := 400
+  status_code := 200
   patch_timeout := 3
 
   l, err := b.ars.ew.Listen(ctx, func(event eh.Event) bool {
@@ -231,6 +231,7 @@ func (b breadcrumb) UpdateRequest(ctx context.Context, property string, value in
 		break
 	}
 
+  req_ct := len(reqIDs)
   timer := time.NewTimer(time.Duration(patch_timeout*len(reqIDs)) * time.Second)
 
   for {
@@ -242,9 +243,7 @@ func (b breadcrumb) UpdateRequest(ctx context.Context, property string, value in
           reqIDs[i] = reqIDs[len(reqIDs)-1]
           reqIDs = reqIDs[:len(reqIDs)-1]
           responses = append(responses, *data)
-          if (data.Error == "") {
-            status_code = 200
-          } else {
+          if (data.Error != "") {
             errs = append(errs, data.Error)
           }
           break
@@ -254,10 +253,13 @@ func (b breadcrumb) UpdateRequest(ctx context.Context, property string, value in
         e.Done()
       }
       if (len(reqIDs) == 0) {
+        if len(errs) == req_ct {
+          status_code = 400
+        }
         return nil, HTTP_code{status_code: status_code, err_message: errs}
       }
       case <- timer.C:
-        return nil, HTTP_code{status_code: 400, err_message: []string{"Timed out!"}}
+        return nil, HTTP_code{status_code: 200, err_message: []string{"Timed out!"}}
       case <- ctx.Done():
         return nil, HTTP_code{status_code: 200, err_message: nil}
     }
