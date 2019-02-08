@@ -27,6 +27,58 @@ type pumpService interface {
 	NewPumpAction(int) func(context.Context, eventhorizon.Event, *domain.HTTPCmdProcessedData) error
 }
 
+type uploadService interface {
+	WithUpload(context.Context, string, string, view.Upload) view.Option
+}
+
+func RegisterPumpUpload(s *Service, uploadSvc uploadService, pumpSvc pumpService) {
+	s.RegisterViewFunction("with_PumpHandledUpload", func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, vw *view.View, cfg interface{}, parameters map[string]interface{}) error {
+		cfgParams, ok := cfg.(map[interface{}]interface{})
+		if !ok {
+			logger.Error("Failed to type assert cfg to string", "cfg", cfg)
+			return errors.New("Failed to type assert expression to string")
+		}
+
+		actionName, ok := cfgParams["name"]
+		if !ok {
+			logger.Error("Config file missing action name for action", "cfg", cfg)
+			return nil
+		}
+		actionNameStr, ok := actionName.(string)
+		if !ok {
+			logger.Error("Action name isnt a string", "cfg", cfg)
+			return nil
+		}
+
+		actionURIFrag, ok := cfgParams["uri"]
+		if !ok {
+			logger.Error("Config file missing action URI for action", "cfg", cfg)
+			return nil
+		}
+		actionURIFragStr, ok := actionURIFrag.(string)
+		if !ok {
+			logger.Error("Action URI isnt a string", "cfg", cfg)
+			return nil
+		}
+
+		actionTimeout, ok := cfgParams["timeout"]
+		if !ok {
+			logger.Error("Config file missing action URI for action", "cfg", cfg)
+			return nil
+		}
+		actionTimeoutInt, ok := actionTimeout.(int)
+		if !ok {
+			logger.Error("Action timeout isn't a number", "cfg", cfg)
+			return nil
+		}
+
+		logger.Info("Registering pump handled action", "name", actionNameStr, "URI fragment", actionURIFragStr, "timeout", actionTimeoutInt)
+		vw.ApplyOption(uploadSvc.WithUpload(ctx, actionNameStr, actionURIFragStr, pumpSvc.NewPumpAction(actionTimeoutInt)))
+
+		return nil
+	})
+}
+
 func RegisterPumpAction(s *Service, actionSvc actionService, pumpSvc pumpService) {
 	s.RegisterViewFunction("with_PumpHandledAction", func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, vw *view.View, cfg interface{}, parameters map[string]interface{}) error {
 		cfgParams, ok := cfg.(map[interface{}]interface{})

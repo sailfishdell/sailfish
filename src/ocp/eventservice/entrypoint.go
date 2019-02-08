@@ -30,6 +30,10 @@ type actionService interface {
 	WithAction(context.Context, string, string, view.Action) view.Option
 }
 
+type uploadService interface {
+	WithUpload(context.Context, string, string, view.Upload) view.Option
+}
+
 type EventService struct {
 	d         *domain.DomainObjects
 	ew        *eventwaiter.EventWaiter
@@ -39,13 +43,14 @@ type EventService struct {
 	wrap      func(string, map[string]interface{}) (log.Logger, *view.View, error)
 	addparam  func(map[string]interface{}) map[string]interface{}
 	actionSvc actionService
+	uploadSvc uploadService
 }
 
 const WorkQueueLen = 10
 
 var GlobalEventService *EventService
 
-func New(ctx context.Context, cfg *viper.Viper, cfgMu *sync.RWMutex, d *domain.DomainObjects, instantiateSvc *testaggregate.Service, actionSvc actionService) *EventService {
+func New(ctx context.Context, cfg *viper.Viper, cfgMu *sync.RWMutex, d *domain.DomainObjects, instantiateSvc *testaggregate.Service, actionSvc actionService, uploadSvc uploadService) *EventService {
 	EventPublisher := eventpublisher.NewEventPublisher()
 	d.EventBus.AddHandler(eh.MatchAnyEventOf(ExternalRedfishEvent, domain.RedfishResourceRemoved), EventPublisher)
 	EventWaiter := eventwaiter.NewEventWaiter(eventwaiter.SetName("Event Service"), eventwaiter.NoAutoRun)
@@ -202,7 +207,7 @@ func makePOST(dest string, event eh.Event, context interface{}, id eh.UUID, et i
 				if subevent != nil {
 					for _, subvalid := range validEvents {
 						if subevent.EventType == subvalid {
-							outputEvents = append (outputEvents, subevent)
+							outputEvents = append(outputEvents, subevent)
 							break
 						}
 					}
@@ -211,44 +216,43 @@ func makePOST(dest string, event eh.Event, context interface{}, id eh.UUID, et i
 			if len(outputEvents) == 0 {
 				return
 			} else {
-                //TODO put back when MSM is Redfish Event compliant
-                for _, eachEvent := range outputEvents {
-                    d, err := json.Marshal(
-                        &struct {
-                            Context interface{} `json:",omitempty"`
-                            MemberId eh.UUID    `json:"MemberId"`
-                            ArgsCount  int      `json:"MessageArgs@odata.count"`
-                            *RedfishEventData
-                        }{
-                            Context:                  context,
-                            MemberId:                 id,
-                            ArgsCount:                len(eachEvent.MessageArgs),
-                            RedfishEventData:         eachEvent,
-                        },
-                    )
-                    // TODO: should be able to configure timeout
-                    // TODO: Shore up security for POST
-                    client := &http.Client{
-                        Timeout: time.Second * 3,
-                        Transport: &http.Transport{
-                            TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-                        },
-                    }
-                    req, err := http.NewRequest("POST", dest, bytes.NewBuffer(d))
-                    req.Header.Add("OData-Version", "4.0")
-                    req.Header.Set("Content-Type", "application/json")
-                    resp, err := client.Do(req)
-                    if err != nil {
-                        log.MustLogger("event_service").Warn("ERROR POSTING", "err", err)
-                        return
-                    }
-                    resp.Body.Close()
-                }
+				//TODO put back when MSM is Redfish Event compliant
+				for _, eachEvent := range outputEvents {
+					d, err := json.Marshal(
+						&struct {
+							Context   interface{} `json:",omitempty"`
+							MemberId  eh.UUID     `json:"MemberId"`
+							ArgsCount int         `json:"MessageArgs@odata.count"`
+							*RedfishEventData
+						}{
+							Context:          context,
+							MemberId:         id,
+							ArgsCount:        len(eachEvent.MessageArgs),
+							RedfishEventData: eachEvent,
+						},
+					)
+					// TODO: should be able to configure timeout
+					// TODO: Shore up security for POST
+					client := &http.Client{
+						Timeout: time.Second * 3,
+						Transport: &http.Transport{
+							TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+						},
+					}
+					req, err := http.NewRequest("POST", dest, bytes.NewBuffer(d))
+					req.Header.Add("OData-Version", "4.0")
+					req.Header.Set("Content-Type", "application/json")
+					resp, err := client.Do(req)
+					if err != nil {
+						log.MustLogger("event_service").Warn("ERROR POSTING", "err", err)
+						return
+					}
+					resp.Body.Close()
+				}
 			}
 		} else {
-            return
+			return
 		}
-
 
 	}
 }
@@ -256,7 +260,7 @@ func makePOST(dest string, event eh.Event, context interface{}, id eh.UUID, et i
 func (es *EventService) PublishResourceUpdatedEventsForModel(ctx context.Context, modelName string) view.Option {
 	return view.WatchModel(modelName, func(v *view.View, m *model.Model, updates []model.Update) {
 		eventData := &RedfishEventData{
-			EventType:         "ResourceUpdated",
+			EventType: "ResourceUpdated",
 			//TODO MSM BUG: OriginOfCondition for events has to be a string or will be rejected
 			OriginOfCondition: v.GetURI(),
 		}

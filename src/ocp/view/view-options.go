@@ -51,6 +51,13 @@ func WithAction(name string, a Action) Option {
 	}
 }
 
+func WithUpload(name string, u Upload) Option {
+	return func(s *View) error {
+		s.uploads[name] = u
+		return nil
+	}
+}
+
 func WatchModel(name string, fn func(*View, *model.Model, []model.Update)) Option {
 	return func(s *View) error {
 		if m, ok := s.models[name]; ok {

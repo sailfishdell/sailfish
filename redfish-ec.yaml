@@ -702,10 +702,10 @@ views:
           "params":
         - "fn": "with_PumpHandledAction"
           "params": {"name": "chassis.reset", "uri": "/Actions/Chassis.Reset", "timeout": 30}
-        - "fn": "WithAction" #change this to upload
-          "params": {"name": "msmconfigbackup", "uri": "/Actions/Oem/MSMConfigBackup", "actionFunction": "msmConfigBackup"}
-        - "fn": "WithAction" #chagne this to upload
-          "params": {"name": "chassis.msmconfigbackup", "uri": "/Actions/Oem/DellChassis.MSMConfigBackup", "actionFunction": "chassisMSMConfigBackup"}
+        - "fn": "with_PumpHandledUpload"
+          "params": {"name": "msmconfigbackup", "uri": "/Actions/Oem/MSMConfigBackup", "timeout": 300}
+        - "fn": "with_PumpHandledUpload"
+          "params": {"name": "chassis.msmconfigbackup", "uri": "/Actions/Oem/DellChassis.MSMConfigBackup", "timeout": 300}
       "Aggregate": "system_chassis"
       "ExecPost": [
         "instantiate('attributes', 'parenturi', rooturi + '/Chassis/' + FQDD, 'FQDD', FQDD)",
