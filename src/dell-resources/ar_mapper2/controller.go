@@ -157,11 +157,15 @@ func (b breadcrumb) Close() {
 
 type HTTP_code struct {
   status_code int
-  err_message string
+  err_message []string
 }
 
 func (e HTTP_code) StatusCode() int {
   return e.status_code
+}
+
+func (e HTTP_code) ErrMessagE() []string {
+  return e.err_message
 }
 
 func (e HTTP_code) Error() string {
@@ -176,7 +180,8 @@ func (b breadcrumb) UpdateRequest(ctx context.Context, property string, value in
 
   reqIDs := []eh.UUID{}
   responses := []attributes.AttributeUpdatedData{}
-  status_code := 200
+  errs := []string{}
+  status_code := 400
   patch_timeout := 3
 
   l, err := b.ars.ew.Listen(ctx, func(event eh.Event) bool {
@@ -201,12 +206,11 @@ func (b breadcrumb) UpdateRequest(ctx context.Context, property string, value in
 
 	mappings, ok := b.ars.modelmappings[b.mappingName]
 	if !ok {
-		return 400, errors.New("Could not find mapping: " + b.mappingName)
+		return nil, errors.New("Could not find mapping: " + b.mappingName)
 	}
 
 	for _, mapping := range mappings.mappings {
 		if property != mapping.Property {
-      status_code = 400
 			continue
 		}
 
@@ -238,8 +242,10 @@ func (b breadcrumb) UpdateRequest(ctx context.Context, property string, value in
           reqIDs[i] = reqIDs[len(reqIDs)-1]
           reqIDs = reqIDs[:len(reqIDs)-1]
           responses = append(responses, *data)
-          if (data.Error != "") {
-            status_code = 400
+          if (data.Error == "") {
+            status_code = 200
+          } else {
+            errs = append(errs, data.Error)
           }
           break
         }
@@ -248,12 +254,12 @@ func (b breadcrumb) UpdateRequest(ctx context.Context, property string, value in
         e.Done()
       }
       if (len(reqIDs) == 0) {
-        return nil, HTTP_code{status_code: status_code, err_message: data.Error}
+        return nil, HTTP_code{status_code: status_code, err_message: errs}
       }
       case <- timer.C:
-        return nil, HTTP_code{status_code: 400, err_message: "Timed out!"}
+        return nil, HTTP_code{status_code: 400, err_message: []string{"Timed out!"}}
       case <- ctx.Done():
-        return nil, HTTP_code{status_code: status_code, err_message: ""}
+        return nil, HTTP_code{status_code: 200, err_message: nil}
     }
   }
 }

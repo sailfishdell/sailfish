@@ -7,8 +7,8 @@ import (
 	"sync"
 	"time"
   "fmt"
-
 	eh "github.com/looplab/eventhorizon"
+
 
 	"github.com/superchalupa/sailfish/src/log"
 	"github.com/superchalupa/sailfish/src/ocp/event"
@@ -152,11 +152,15 @@ func getAttrValue(m *model.Model, group, gindex, name string) (ret interface{}, 
 
 type HTTP_code struct {
   status_code int
-  err_message string
+  err_message []string
 }
 
 func (e HTTP_code) StatusCode() int {
   return e.status_code
+}
+
+func (e HTTP_code) ErrMessage() []string {
+  return e.err_message
 }
 
 func (e HTTP_code) Error() string {
@@ -171,7 +175,8 @@ func (b *breadcrumb) UpdateRequest(ctx context.Context, property string, value i
 
   reqIDs := []eh.UUID{}
   responses := []AttributeUpdatedData{}
-  status_code := 200
+  status_code := 400
+  errs := []string{}
   patch_timeout := 3
 
   l, err := b.s.ew.Listen(ctx, func(event eh.Event) bool {
@@ -204,16 +209,12 @@ func (b *breadcrumb) UpdateRequest(ctx context.Context, property string, value i
 		attrVal, ok := getAttrValue(b.m, stuff[0], stuff[1], stuff[2])
 		if !ok {
 			b.s.logger.Error("not found", "Attribute", k)
-      // if an attribute in the patch request can't be found, send error
-      status_code = 400
 			continue
 		}
 
 		var ad AttributeData
 		if !ad.WriteAllowed(attrVal, auth) {
 			b.s.logger.Error("Unable to set", "Attribute", k)
-      // if an attribute in the patch request can't be written, send error
-      status_code = 400
 			continue
 		}
 
@@ -243,8 +244,10 @@ func (b *breadcrumb) UpdateRequest(ctx context.Context, property string, value i
           reqIDs[i] = reqIDs[len(reqIDs)-1]
           reqIDs = reqIDs[:len(reqIDs)-1]
           responses = append(responses, *data)
-          if (data.Error != "") {
-            status_code = 400
+          if (data.Error == "") {
+            status_code = 200
+          } else {
+            errs = append(errs, data.Error)
           }
           break
         }
@@ -256,17 +259,17 @@ func (b *breadcrumb) UpdateRequest(ctx context.Context, property string, value i
 
       if (len(reqIDs) == 0) {
         //all reqIDs found
-        http_response := HTTP_code{status_code: status_code, err_message: data.Error}
+        http_response := HTTP_code{status_code: status_code, err_message: errs}
         return nil, http_response
       }
 
     case <- timer.C:
       //time out for any attr updated events that we are still waiting for
       //return 400, nil
-      return nil, HTTP_code{status_code: 400, err_message: "Timed out!"}
+      return nil, HTTP_code{status_code: 400, err_message: []string{"Timed out!"}}
 
     case <- ctx.Done():
-      return nil, HTTP_code{status_code: status_code, err_message: ""}
+      return nil, HTTP_code{status_code: 200, err_message: nil}
     }
   }
 }

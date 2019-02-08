@@ -84,6 +84,7 @@ type PATCH struct {
 
 type IsHTTPCode interface {
   StatusCode() int
+  ErrMessage() []string
 }
 
 func (c *PATCH) AggregateType() eh.AggregateType { return AggregateType }
