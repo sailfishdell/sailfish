@@ -395,7 +395,7 @@ views:
   "attributes":
       "Logger": ["module", "attributes"]
       "Models":
-        "default":  {"unique_name": "FQDD" }
+        "default":  {"unique_name": "FQDD", "unique_name_attr": "FQDD+'.Attributes'", "attributes": "add_attribute_property()"}
       "Controllers":
         - "fn": "ARDumper"
           "params": {"modelname": "default", "AddToView": true, "passthru": {"fqddlist": "array(FQDD)"}}
@@ -539,7 +539,7 @@ views:
   "lclogentrycollection":
       "Logger": ["module", "lclog"]
       "Models":
-        "default":  {"members": "array()"}
+        "default":  {}
       "Controllers":
         - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "lclog", "uniquename": "'addlog_lclog_' + view.GetURI()", "passthru": {'collection_uri': 'view.GetURI()'} }
