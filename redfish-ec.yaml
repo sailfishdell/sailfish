@@ -422,6 +422,8 @@ views:
           "params": {"modelname": "swinv_fpga", "cfgsection": "fpga_inventory", "mappinguniquename": "'fw_mapper_fpga_manager:' + FQDD ", "AddToView": "ar_mapper_inv"}
         - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "health", "uniquename": "'am2_health_manger_' + FQDD", "passthru": {"health_fqdd": "'System.Chassis.1#' + FQDD"} }
+        - "fn": "ARMapper"
+          "params": {"modelname": "default", "cfgsection": "Chassis/System.Chassis/Time", "mappinguniquename": "'armapper_time_' + FQDD", "AddToView" : "ar_mapper" }
       "View":
         - "fn": "linkModel"
           "params": {"existing": "default", "linkname": "health"}
@@ -1501,6 +1503,9 @@ mappings:
 
     Chassis/System.Chassis/Power:
         - {Property: "capacity_watts", FQDD: "System.Chassis.1", Group: "ChassisPower", Index: "1", Name: "SystemInputMaxPowerCapacity" }
+
+    Chassis/System.Chassis/Time:
+        - {Property: "time", FQDD: "System.Chassis.1", Group: "Time", Index: "1", Name: "Time" }
 
     Chassis/System.Chassis/Thermal:
         # no mappings for now: placeholder
