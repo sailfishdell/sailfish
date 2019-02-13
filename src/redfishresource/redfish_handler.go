@@ -60,21 +60,23 @@ type RedfishHandler struct {
 }
 
 const (
-	BLANK = 0
-	EQ    = 1
-	LT    = 2
-	GT    = 3
-	GE    = 4
-	LE    = 5
+	BLANK    = 0
+	EQ       = 1
+	LT       = 2
+	GT       = 3
+	GE       = 4
+	LE       = 5
+	CONTAINS = 6
 )
 
 var comparisonString = map[int]string{
-	BLANK: "",
-	EQ:    " eq ",
-	LT:    " lt ",
-	GT:    " gt ",
-	GE:    " ge ",
-	LE:    " le ",
+	BLANK:    "",
+	EQ:       " eq ",
+	LT:       " lt ",
+	GT:       " gt ",
+	GE:       " ge ",
+	LE:       " le ",
+	CONTAINS: "contains",
 }
 
 var sevInteger = map[string]int{
@@ -425,27 +427,73 @@ func addEtag(w http.ResponseWriter, d *HTTPCmdProcessedData) *HTTPCmdProcessedDa
 	return d
 }
 
+// input is a string with pattern ( val1, val2) or  [ val1, val2 ] or { val1, val2 }
+// return is a list  [ val1, val2 ]
+// quotes and spaces are trimmed from val1 and val2
+func regexGetStrInParanth(val string) ([]string, bool) {
+	m := make([]string, 2)
+	re := regexp.MustCompile(`[\(\[\{](.*)\,(.*)[\)\]\}]`)
+
+	matches := re.FindStringSubmatch(val)
+	if len(matches) == 0 {
+		return m, false
+	}
+
+	val1 := matches[1]
+	val2 := matches[2]
+
+	//cleanup
+	val1 = strings.TrimSpace(val1)
+	val2 = strings.TrimSpace(val2)
+
+	re = regexp.MustCompile(`^['"].*['"]$`)
+	lenStr := len(val1)
+	if re.FindString(val1) != "" {
+		val1 = val1[1 : lenStr-1]
+	}
+
+	lenStr = len(val2)
+	if re.FindString(val2) != "" {
+		val2 = val2[1 : lenStr-1]
+	}
+
+	m[0] = val1
+	m[1] = val2
+
+	return m, true
+
+}
+
+// takes a url filter and organizes it in a list of structures
 func createFilterArray(filter string) ([]FilterTest, bool) {
 	filterArray := []FilterTest{}
 	//TODO Right now only working with filter 'and' filter, 'or' is a whole 'nother ballgame
 	splitFilter := strings.Split(filter, " and ")
 	//For whatever filters may have been found, parse them out into a structure we can use
-	for i := 0; i < len(splitFilter); i += 1 {
-		tok := splitFilter[i]
+	// iterates list providing the index and element
+	for _, tok := range splitFilter {
 		//Have a 'token' get the parts of it
 		searchTok := BLANK
-		for k := EQ; k <= LE; k += 1 {
+		for k := EQ; k <= CONTAINS; k += 1 {
 			if strings.Contains(tok, comparisonString[k]) {
 				searchTok = k
 				break
 			}
 		}
-		if searchTok != BLANK {
+		if searchTok == CONTAINS {
+			// matches (<string>, <string>)
+			subSplit, ok := regexGetStrInParanth(tok)
+			if ok {
+				filterArray = append(filterArray, FilterTest{subSplit[0], subSplit[1], CONTAINS})
+			}
+
+		} else if searchTok != BLANK {
 			subSplit := strings.Split(tok, comparisonString[searchTok])
 			if strings.Contains(subSplit[0], "MessageID") {
 				subSplit[0] = "MessageId" //Bug fix to Handle MSM
 			}
 			filterArray = append(filterArray, FilterTest{subSplit[0], subSplit[1], searchTok})
+
 		} else {
 			//Filter syntax violation
 			return []FilterTest{}, false
@@ -454,26 +502,56 @@ func createFilterArray(filter string) ([]FilterTest, bool) {
 	return filterArray, true
 }
 
+// goes through a layered map (memberInstance) using the list (p) to find the final value
+func getValueWithPath(memberInstance map[string]interface{}, p []string) (interface{}, bool) {
+	var mVal interface{}
+	var ok bool
+	for i, v := range p {
+		if i == len(p)-1 {
+			mVal, ok = memberInstance[v].(interface{})
+		} else {
+			memberInstance, ok = memberInstance[v].(map[string]interface{})
+		}
+
+		// exit out early if value not retrieved
+		if !ok {
+			return mVal, ok
+		}
+
+	}
+
+	return mVal, ok
+
+}
+
+// looks for string (c) in nested map (memberInstance)
+func getCategoryValue(memberInstance map[string]interface{}, c string) (interface{}, bool) {
+	//Find the  object we're trying to match
+	ok := false
+	var mVal interface{}
+
+	// for filters providing a path to filter value (like faults)
+	cL := strings.Split(c, "/")
+	mVal, ok = getValueWithPath(memberInstance, cL)
+
+	if ok {
+		return mVal, true
+	}
+
+	// check if this is a log message filter
+	log_pathL := []string{"Oem", "Dell", c}
+	mVal, ok = getValueWithPath(memberInstance, log_pathL)
+
+	return mVal, ok
+}
+
+// returns true if the memberInstance matches with the url filter, stored as filterArray
 func processFilterOneObject(memberInstance map[string]interface{}, filterArray []FilterTest) bool {
 
 	for j := 0; j < len(filterArray); j += 1 {
-		//Find the String object we're trying to match
-		var currentMember interface{}
-		if memberInstance[filterArray[j].Category] != nil {
-			currentMember = memberInstance[filterArray[j].Category]
-		} else {
-			//Drill down a layer further
-			currentSubMember := memberInstance["Oem"].(map[string]interface{})
-			if currentSubMember != nil {
-				currentSubSubMember := currentSubMember["Dell"].(map[string]interface{})
-				if currentSubSubMember[filterArray[j].Category] != nil {
-					currentMember = currentSubSubMember[filterArray[j].Category]
-				} else {
-					return false
-				}
-			} else {
-				return false
-			}
+		currentMember, rc := getCategoryValue(memberInstance, filterArray[j].Category)
+		if rc == false {
+			return false
 		}
 
 		//Only keep item IF we find at least one term to search against
@@ -501,8 +579,9 @@ func processFilterOneObject(memberInstance map[string]interface{}, filterArray [
 						keepElement = memberSev == searchSev
 					}
 				}
+
 			} else {
-				//Other strings just get this as the keepElement
+				//fmt.Println(localMember, filterArray[j].SearchTerm, strings.Contains(localMember, filterArray[j].SearchTerm))
 				keepElement = strings.Contains(localMember, filterArray[j].SearchTerm)
 			}
 		//========= Integer members =======
@@ -599,6 +678,7 @@ func handleCollectionFilter(filter string, membersArr []interface{}) ([]interfac
 		if processFilterOneObject(memberInstance, filterArray) {
 			keepArray = append(keepArray, i)
 		}
+
 	}
 
 	//We have all logs we want to keep in an array, put those in our output

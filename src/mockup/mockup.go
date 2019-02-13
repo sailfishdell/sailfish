@@ -26,6 +26,7 @@ import (
 	"github.com/superchalupa/sailfish/src/ocp/view"
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
 	"github.com/superchalupa/sailfish/src/stdmeta"
+	"github.com/superchalupa/sailfish/src/uploadhandler"
 )
 
 type waiter interface {
@@ -40,12 +41,13 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	event.Setup(ch, eb)
 	domain.StartInjectService(logger, eb)
 	actionSvc := ah.StartService(ctx, logger, ch, eb)
+	uploadSvc := uploadhandler.StartService(ctx, logger, ch, eb)
 	am2Svc, _ := awesome_mapper2.StartService(ctx, logger, eb)
 	pumpSvc := dell_ec.NewPumpActionSvc(ctx, logger, eb)
 
 	// the package for this is going to change, but this is what makes the various mappers and view functions available
 	instantiateSvc := testaggregate.New(ctx, logger, cfgMgr, cfgMgrMu, ch)
-	evtSvc := eventservice.New(ctx, cfgMgr, cfgMgrMu, d, instantiateSvc, actionSvc)
+	evtSvc := eventservice.New(ctx, cfgMgr, cfgMgrMu, d, instantiateSvc, actionSvc, uploadSvc)
 	eventservice.RegisterAggregate(instantiateSvc)
 	testaggregate.RegisterWithURI(instantiateSvc)
 	testaggregate.RegisterPublishEvents(instantiateSvc, evtSvc)

@@ -77,7 +77,6 @@ func (ad *AttributeData) WriteAllowed(attrVal interface{}, auth *domain.RedfishA
 
 	if ad.Privileges.Private ||
 		ad.Privileges.Readonly ||
-		ad.Privileges.IsSuppressed ||
 		!auth.VerifyPrivilegeBits(ad.Privileges.WritePrivilege) {
 		fmt.Println("not allowed to write ", ad)
 		return false
@@ -91,6 +90,7 @@ func (ad *AttributeData) ReadAllowed(attrVal interface{}, auth *domain.RedfishAu
 	}
 
 	if ad.Privileges.Private ||
+		ad.Privileges.IsSuppressed ||
 		!auth.VerifyPrivilegeBits(ad.Privileges.ReadPrivilege) {
 		fmt.Println("not allowed to read ", ad)
 		return false

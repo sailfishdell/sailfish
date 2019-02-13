@@ -84,6 +84,11 @@ type PATCH struct {
 	outChan chan<- CompletionEvent
 }
 
+type IsHTTPCode interface {
+	StatusCode() int
+	ErrMessage() []string
+}
+
 func (c *PATCH) AggregateType() eh.AggregateType { return AggregateType }
 func (c *PATCH) AggregateID() eh.UUID            { return c.ID }
 func (c *PATCH) CommandType() eh.CommandType     { return PATCHCommand }

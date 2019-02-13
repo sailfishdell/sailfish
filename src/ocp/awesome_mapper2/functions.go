@@ -282,7 +282,7 @@ func init() {
 		}
 	})
 	AddFunction("map_health_value", func(args ...interface{}) (interface{}, error) {
-    switch t := int(args[0].(float64)); t {
+		switch t := int(args[0].(float64)); t {
 		case 0, 1: //other, unknown
 			return nil, nil
 		case 2: //ok
@@ -295,20 +295,20 @@ func init() {
 			return nil, errors.New("Invalid object status")
 		}
 	})
-  AddFunction("map_chassis_state", func(args ...interface{}) (interface{}, error) {
-    switch t := args[0].(string); t {
-    case "Chassis Standby Power State":
-      return "Off", nil
-    case "Chassis Power On State":
-      return "On", nil
-    case "Chassis Powering On State":
-      return "PoweringOn", nil
-    case "Chassis Powering Off State":
-      return "PoweringOff", nil
-    default:
-      return nil, nil
-    }
-  })
+	AddFunction("map_chassis_state", func(args ...interface{}) (interface{}, error) {
+		switch t := args[0].(string); t {
+		case "Chassis Standby Power State":
+			return "Off", nil
+		case "Chassis Power On State":
+			return "On", nil
+		case "Chassis Powering On State":
+			return "PoweringOn", nil
+		case "Chassis Powering Off State":
+			return "PoweringOff", nil
+		default:
+			return nil, nil
+		}
+	})
 	AddFunction("map_led_value", func(args ...interface{}) (interface{}, error) {
 		switch t := args[0].(string); t {
 		case "Blink-Off", "BLINK-OFF":
@@ -390,22 +390,47 @@ func init() {
 			return "Unknown", nil
 		}
 	})
+	AddFunction("round_2_dec_pl", func(args ...interface{}) (interface{}, error) {
+		val, ok := args[0].(float64)
+		var err error
+
+		if !ok {
+			return args[0], nil
+		}
+
+		valStr := fmt.Sprintf("%.2f", val)
+		val, err = strconv.ParseFloat(valStr, 2)
+		if err != nil {
+			return args[0], nil
+		}
+
+		return val, nil
+	})
+	AddFunction("int", func(args ...interface{}) (interface{}, error) {
+		val, ok := args[0].(float64)
+
+		if ok {
+			return int(val), nil
+		} else {
+			return args[0], nil
+		}
+	})
 	AddFunction("zero_to_null", func(args ...interface{}) (interface{}, error) {
 		switch args[0].(type) {
 		case int, int8, int16, int32, int64:
-      val := int(args[0].(float64))
-      if (val == 0) {
-        return nil, nil
-      }
+			val := int(args[0].(float64))
+			if val == 0 {
+				return nil, nil
+			}
 			return val, nil
-    case float32, float64:
-      val := args[0].(float64)
-      if (val == 0) {
-        return nil, nil
-      }
-      return val, nil
-    default:
-      return nil, errors.New("cant parse non-int or non-float")
+		case float32, float64:
+			val := args[0].(float64)
+			if val == 0 {
+				return nil, nil
+			}
+			return val, nil
+		default:
+			return nil, errors.New("cant parse non-int or non-float")
 		}
 	})
 	AddFunction("zero_or_value", func(args ...interface{}) (interface{}, error) {

@@ -432,12 +432,6 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 
 					compVerTuple := "Installed-" + class + "-" + version
 
-					arr, ok := fqdd_mappings[compVerTuple]
-					if !ok {
-						arr = []string{}
-					}
-					arr = append(arr, fqdd)
-					fqdd_mappings[compVerTuple] = arr
 
 					updateableRaw, ok := mdl.GetPropertyOk("fw_updateable")
 					if !ok {
@@ -476,22 +470,6 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 						name = ""
 					}
 
-					if !in_array(fqdd, arr) {
-						arr = append(arr, fqdd)
-						sort.Strings(arr)
-						fqdd_mappings[compVerTuple] = arr
-					}
-
-					uriarr, ok := uri_mappings[compVerTuple]
-					if !ok {
-						uriarr = []string{}
-					}
-
-					if !in_array(uri, uriarr) {
-						uriarr = append(uriarr, uri)
-						sort.Strings(uriarr)
-						uri_mappings[compVerTuple] = uriarr
-					}
 
 					if _, ok := firmwareInventoryViews[compVerTuple]; !ok {
 						_, vw, _ := instantiateSvc.Instantiate("firmware_instance", map[string]interface{}{
@@ -505,13 +483,41 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 						//fmt.Printf("add to list ---------> INSTANTIATED: %s\n", vw.GetURI())
 						firmwareInventoryViews[compVerTuple] = vw
 					}
+
+                                        // These values are for post processing on Instantiated object
+					arr, ok := fqdd_mappings[compVerTuple]
+					if !ok {
+						arr = []string{}
+					}
+					arr = append(arr, fqdd)
+					fqdd_mappings[compVerTuple] = arr
+
+					if !in_array(fqdd, arr) {
+						arr = append(arr, fqdd)
+						sort.Strings(arr)
+						fqdd_mappings[compVerTuple] = arr
+					}
+
+
+					uriarr, ok := uri_mappings[compVerTuple]
+					if !ok {
+						uriarr = []string{}
+					}
+
+					if !in_array(uri, uriarr) {
+						uriarr = append(uriarr, uri)
+						sort.Strings(uriarr)
+						uri_mappings[compVerTuple] = uriarr
+					}
 				}
 			}
 
 			for compVerTuple, arr := range fqdd_mappings {
 				vw := firmwareInventoryViews[compVerTuple]
 				mdl := vw.GetModel("default")
-				mdl.UpdateProperty("fqdd_list", arr)
+                                if mdl != nil {
+				    mdl.UpdateProperty("fqdd_list", arr)
+                                }
 			}
 
 			for compVerTuple, arr := range uri_mappings {

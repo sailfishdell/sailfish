@@ -6,9 +6,9 @@ import (
 	"strings"
 	"sync"
 	"time"
-
+  "fmt"
 	eh "github.com/looplab/eventhorizon"
-  eventpublisher "github.com/looplab/eventhorizon/publisher/local"
+
 
 	"github.com/superchalupa/sailfish/src/log"
 	"github.com/superchalupa/sailfish/src/ocp/event"
@@ -23,11 +23,21 @@ type Service struct {
 	cache          map[string][]*model.Model
 	logger         log.Logger
 	eb             eh.EventBus
+  ew             waiter
 }
 
 type syncEvent interface {
   Add(int)
   Done()
+}
+
+type waiter interface {
+  Listen(context.Context, func(eh.Event) bool) (*eventwaiter.EventListener, error)
+}
+
+type listener interface {
+  Inbox() <-chan eh.Event
+  Close()
 }
 
 func StartService(ctx context.Context, logger log.Logger, eb eh.EventBus) (*Service, error) {
@@ -43,6 +53,8 @@ func StartService(ctx context.Context, logger log.Logger, eb eh.EventBus) (*Serv
 		logger.Error("Failed to create event stream processor", "err", err)
 		return nil, errors.New("Failed to create stream processor")
 	}
+  ret.ew = &sp.EW
+
 	go sp.RunForever(func(event eh.Event) {
 		data, ok := event.Data().(*AttributeUpdatedData)
 		if !ok {
@@ -138,6 +150,23 @@ func getAttrValue(m *model.Model, group, gindex, name string) (ret interface{}, 
 	return value, ok
 }
 
+type HTTP_code struct {
+  status_code int
+  err_message []string
+}
+
+func (e HTTP_code) StatusCode() int {
+  return e.status_code
+}
+
+func (e HTTP_code) ErrMessage() []string {
+  return e.err_message
+}
+
+func (e HTTP_code) Error() string {
+  return fmt.Sprintf("Request Error Message: %s, Return Code: %d", e.err_message, e.status_code)
+}
+
 func (b *breadcrumb) UpdateRequest(ctx context.Context, property string, value interface{}, auth *domain.RedfishAuthorizationProperty) (interface{}, error) {
 	b.s.RLock()
 	defer b.s.RUnlock()
@@ -147,15 +176,10 @@ func (b *breadcrumb) UpdateRequest(ctx context.Context, property string, value i
   reqIDs := []eh.UUID{}
   responses := []AttributeUpdatedData{}
   status_code := 200
+  errs := []string{}
   patch_timeout := 3
 
-  EventPublisher := eventpublisher.NewEventPublisher()
-  b.s.eb.AddHandler(eh.MatchAnyEventOf(AttributeUpdated), EventPublisher)
-  EventWaiter := eventwaiter.NewEventWaiter(eventwaiter.SetName("patch request"), eventwaiter.NoAutoRun)
-  EventPublisher.AddObserver(EventWaiter)
-  go EventWaiter.Run()
-
-  listener, err := EventWaiter.Listen(ctx, func(event eh.Event) bool {
+  l, err := b.s.ew.Listen(ctx, func(event eh.Event) bool {
     if event.EventType() != AttributeUpdated {
       return false
     }
@@ -169,7 +193,9 @@ func (b *breadcrumb) UpdateRequest(ctx context.Context, property string, value i
     b.s.logger.Error("Could not create listener", "err", err)
     return nil, errors.New("Failed to make attribute updated event listener")
   }
-  listener.Name = "patch listener"
+  l.Name = "patch listener"
+  var listener listener
+  listener = l
 
   defer listener.Close()
 
@@ -183,16 +209,12 @@ func (b *breadcrumb) UpdateRequest(ctx context.Context, property string, value i
 		attrVal, ok := getAttrValue(b.m, stuff[0], stuff[1], stuff[2])
 		if !ok {
 			b.s.logger.Error("not found", "Attribute", k)
-      // if an attribute in the patch request can't be found, send error
-      status_code = 400
 			continue
 		}
 
 		var ad AttributeData
 		if !ad.WriteAllowed(attrVal, auth) {
 			b.s.logger.Error("Unable to set", "Attribute", k)
-      // if an attribute in the patch request can't be written, send error
-      status_code = 400
 			continue
 		}
 
@@ -209,6 +231,7 @@ func (b *breadcrumb) UpdateRequest(ctx context.Context, property string, value i
     reqIDs = append(reqIDs, reqUUID)
 	}
 
+  req_ct := len(reqIDs)
   // create a timer based on number of attributes to be patched
   timer := time.NewTimer(time.Duration(patch_timeout*len(reqIDs)) * time.Second)
 
@@ -223,7 +246,7 @@ func (b *breadcrumb) UpdateRequest(ctx context.Context, property string, value i
           reqIDs = reqIDs[:len(reqIDs)-1]
           responses = append(responses, *data)
           if (data.Error != "") {
-            status_code = 400
+            errs = append(errs, data.Error)
           }
           break
         }
@@ -235,16 +258,19 @@ func (b *breadcrumb) UpdateRequest(ctx context.Context, property string, value i
 
       if (len(reqIDs) == 0) {
         //all reqIDs found
-        return status_code, nil
+        if len(errs) == req_ct {
+          status_code = 400
+        }
+        http_response := HTTP_code{status_code: status_code, err_message: errs}
+        return nil, http_response
       }
 
     case <- timer.C:
       //time out for any attr updated events that we are still waiting for
-      return 400, nil
+      return nil, HTTP_code{status_code: 200, err_message: []string{"Timed out!"}}
 
     case <- ctx.Done():
-      //terminated early by user
-      return status_code, nil
+      return nil, HTTP_code{status_code: 200, err_message: nil}
     }
   }
 }
