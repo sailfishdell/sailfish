@@ -3,7 +3,6 @@ package attributes
 import (
 	"context"
 	"errors"
-	"fmt"
 	"sync"
 
 	"github.com/spf13/viper"
@@ -39,10 +38,11 @@ func FormatAttributeDump(
 	defer m.Unlock()
 	attributes, ok := m.GetPropertyUnlocked(prop).(map[string]map[string]map[string]interface{})
 	if !ok {
-		return errors.New("attributes not setup properly")
+		rrp.Value = map[string]interface{}{}
+		return nil
 	}
 
-	fmt.Println(auth)
+	//fmt.Println(auth)
 
 	var ad AttributeData
 	res := map[string]interface{}{}
@@ -52,7 +52,7 @@ func FormatAttributeDump(
 				if ad.ReadAllowed(value, auth) {
 					res[group+"."+index+"."+name] = ad.Value
 				} else {
-					fmt.Println("skipping ", group+"."+index+"."+name)
+					//fmt.Println("skipping ", group+"."+index+"."+name)
 				}
 			}
 		}

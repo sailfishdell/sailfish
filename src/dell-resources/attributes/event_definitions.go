@@ -1,8 +1,6 @@
 package attributes
 
 import (
-	"fmt"
-
 	eh "github.com/looplab/eventhorizon"
 	"github.com/mitchellh/mapstructure"
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
@@ -78,7 +76,7 @@ func (ad *AttributeData) WriteAllowed(attrVal interface{}, auth *domain.RedfishA
 	if ad.Privileges.Private ||
 		ad.Privileges.Readonly ||
 		!auth.VerifyPrivilegeBits(ad.Privileges.WritePrivilege) {
-		fmt.Println("not allowed to write ", ad)
+		//fmt.Println("not allowed to write ", ad)
 		return false
 	}
 	return true
@@ -92,7 +90,7 @@ func (ad *AttributeData) ReadAllowed(attrVal interface{}, auth *domain.RedfishAu
 	if ad.Privileges.Private ||
 		ad.Privileges.IsSuppressed ||
 		!auth.VerifyPrivilegeBits(ad.Privileges.ReadPrivilege) {
-		fmt.Println("not allowed to read ", ad)
+		//fmt.Println("not allowed to read ", ad)
 		return false
 	}
 	return true

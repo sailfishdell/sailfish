@@ -24,8 +24,9 @@ type Subscription struct {
 
 // HTTP POST Command
 type POST struct {
-	es *EventService
-	d  *domain.DomainObjects
+	es   *EventService
+	d    *domain.DomainObjects
+	auth *domain.RedfishAuthorizationProperty
 
 	ID      eh.UUID           `json:"id"`
 	CmdID   eh.UUID           `json:"cmdid"`
@@ -41,6 +42,10 @@ func (c *POST) AggregateID() eh.UUID            { return c.ID }
 func (c *POST) CommandType() eh.CommandType     { return POSTCommand }
 func (c *POST) SetAggID(id eh.UUID)             { c.ID = id }
 func (c *POST) SetCmdID(id eh.UUID)             { c.CmdID = id }
+func (c *POST) SetUserDetails(a *domain.RedfishAuthorizationProperty) string {
+	c.auth = a
+	return "checkMaster"
+}
 func (c *POST) ParseHTTPRequest(r *http.Request) error {
 	json.NewDecoder(r.Body).Decode(&c.Sub)
 	return nil
@@ -65,7 +70,11 @@ func (c *POST) Handle(ctx context.Context, a *domain.RedfishResourceAggregate) e
 		return errors.New("Wrong aggregate type returned")
 	}
 
-	data.Results, _ = domain.ProcessGET(ctx, &redfishResource.Properties, &redfishResource.Authorization)
+	redfishResource.ResultsCacheMu.Lock()
+	defer redfishResource.ResultsCacheMu.Unlock()
+	domain.NewGet(ctx, redfishResource, &redfishResource.Properties, c.auth)
+	data.Results = domain.Flatten(redfishResource.Properties.Value)
+
 	for k, v := range a.Headers {
 		data.Headers[k] = v
 	}

@@ -2,13 +2,13 @@ package domain
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/json-iterator/go"
 
 	eh "github.com/looplab/eventhorizon"
 	log "github.com/superchalupa/sailfish/src/log"
@@ -28,7 +28,7 @@ type AggIDSetter interface {
 
 // UserDetailsSetter is the interface that commands should implement to tell the handler if they handle authorization or std code should do it.
 type UserDetailsSetter interface {
-	SetUserDetails(string, []string) string
+	SetUserDetails(*RedfishAuthorizationProperty) string
 	// return codes:
 	//		"checkMaster" - command check passed, but also check master
 	//		"authorized"  - command check passed, go right ahead, no master check
@@ -39,6 +39,11 @@ type UserDetailsSetter interface {
 // HTTPParser is the interface for commands that want to do their own http body parsing
 type HTTPParser interface {
 	ParseHTTPRequest(*http.Request) error
+}
+
+// Optimized return
+type EventChanUser interface {
+	UseEventChan(chan<- CompletionEvent)
 }
 
 // NewRedfishHandler is the constructor that returns a new RedfishHandler object.
@@ -153,13 +158,43 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		t.SetAggID(aggID)
 	}
 
+	auth := &RedfishAuthorizationProperty{
+		UserName:   rh.UserName,
+		Privileges: rh.Privileges,
+		Licenses:   rh.d.GetLicenses(),
+		Query:      r.URL.Query(),
+	}
+
+	// default to top=50 to reduce cpu
+	auth.top = 50
+	auth.doTop = true
+	if tstr := r.URL.Query().Get("$top"); tstr != "" {
+		auth.top, err = strconv.Atoi(tstr)
+		auth.doTop = (err == nil)
+	}
+
+	if tstr := r.URL.Query().Get("$skip"); tstr != "" {
+		auth.skip, err = strconv.Atoi(tstr)
+		auth.doSkip = (err == nil)
+	}
+
+	if tstr := r.URL.Query().Get("$filter"); tstr != "" {
+		auth.filter = r.URL.Query().Get("$filter")
+		auth.doFilter = true
+	}
+
+	if tstr := r.URL.Query().Get("$select"); tstr != "" {
+		auth.sel = r.URL.Query()["$select"]
+		auth.doSel = true
+	}
+
 	// Choices: command can process Authorization, or we can process authorization, or both
 	// If command implements UserDetailsSetter interface, we'll go ahead and call that.
 	// Return code from command determines if we also check privs here
 	authAction := "checkMaster"
 	var implementsAuthorization bool
 	if t, implementsAuthorization := cmd.(UserDetailsSetter); implementsAuthorization {
-		authAction = t.SetUserDetails(rh.UserName, rh.Privileges)
+		authAction = t.SetUserDetails(auth)
 	}
 	// if command does not implement userdetails setter, we always check privs here
 	if !implementsAuthorization || authAction == "checkMaster" {
@@ -190,7 +225,7 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// for intial implementation of etags, we will check etags right here. we may need to move this around later. For example, the command might need to handle it
 	// TODO: this all has to happen after the privilege check
 	if match := r.Header.Get("If-None-Match"); match != "" {
-		e := getResourceEtag(reqCtx, redfishResource)
+		e := getResourceEtag(reqCtx, redfishResource, auth)
 		if e != "" {
 			if match == e {
 				w.WriteHeader(http.StatusNotModified)
@@ -201,7 +236,7 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// TODO: If-Match must be able to match comma separated list
 	if match := r.Header.Get("If-Match"); match != "" {
-		e := getResourceEtag(reqCtx, redfishResource)
+		e := getResourceEtag(reqCtx, redfishResource, auth)
 		if e != "" {
 			if match != e {
 				w.WriteHeader(http.StatusRequestedRangeNotSatisfiable)
@@ -209,11 +244,6 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
-
-	// add authorization details
-	redfishResource.Authorization.UserName = rh.UserName
-	redfishResource.Authorization.Privileges = rh.Privileges
-	redfishResource.Authorization.Licenses = rh.d.GetLicenses()
 
 	// to avoid races, set up our listener first
 	l, err := rh.d.HTTPWaiter.Listen(reqCtx, func(event eh.Event) bool {
@@ -244,16 +274,35 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	directReturnChan := make(chan CompletionEvent, 1)
+	if t, ok := cmd.(EventChanUser); ok {
+		t.UseEventChan(directReturnChan)
+	}
+
 	ctx := WithRequestID(context.Background(), cmdID)
 	if err := rh.d.CommandHandler.HandleCommand(ctx, cmd); err != nil {
 		http.Error(w, "redfish handler could not handle command (type: "+string(cmd.CommandType())+"): "+err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	event, err := l.Wait(reqCtx)
-	if err != nil {
+	type eventRequiresCompletion interface {
+		Done()
+	}
+
+	var event eh.Event
+	select {
+	case event = <-l.Inbox():
+		// have to mark the event complete if we don't use Wait and take it off the bus ourselves
+		if evtS, ok := event.(eventRequiresCompletion); ok {
+			evtS.Done()
+		}
+	case <-reqCtx.Done():
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
+	case t := <-directReturnChan:
+		defer t.complete()
+		event = t.event
+
 	}
 
 	data, ok := event.Data().(*HTTPCmdProcessedData)
@@ -263,25 +312,11 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method == "GET" {
-		// $top, $skip, $filter
-		queryPresent := (r.URL.Query().Get("$select") != "" ||
-			r.URL.Query().Get("$skip") != "" ||
-			r.URL.Query().Get("$top") != "" ||
-			r.URL.Query().Get("$filter") != "")
-		// copy data before we slice and dice
-		if queryPresent {
-			mapstrint, ok := data.Results.(map[string]interface{})
-			if ok {
-				temp, err := DeepCopyMap(mapstrint)
-				if err == nil {
-					data.Results = temp
-					data = handleCollectionQueryOptions(r, data)
-					data = handleExpand(r, data)
-					data = handleSelect(r, data)
-				} else {
-					fmt.Printf("SHOULD NOT HAPPEN, need to fix (talk to MEB): %s\n", err)
-				}
-			}
+		if auth.doSkip || auth.doTop || auth.doFilter {
+			data = handleCollectionQueryOptions(r, auth, data)
+		}
+		if auth.doSel {
+			data = handleSelect(r, data)
 		}
 
 		// TODO: Implementation shall return the 501, Not Implemented, status code for any query parameters starting with "$" that are not supported, and should return an extended error indicating the requested query parameter(s) not supported for this resource.
@@ -294,6 +329,8 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("OData-Version", "4.0")
 	w.Header().Set("Server", "sailfish")
 
+	addEtag(w, data)
+
 	for k, v := range data.Headers {
 		w.Header().Add(k, v)
 	}
@@ -301,8 +338,6 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if data.StatusCode != 0 {
 		w.WriteHeader(data.StatusCode)
 	}
-
-	addEtag(w, data)
 
 	/*
 		   // START
@@ -317,7 +352,16 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// START:
 	// uses more ram: encode to buffer first, get length, then send
 	// This	 lets 'ab' (apachebench) properly do keepalives
+
+	// stdlib marshaller (slower?)
+	// must import "encoding/json"
+	// b, err := json.Marshal(data.Results)
+
+	// faster json marshal:
+	//var json = jsoniter.ConfigCompatibleWithStandardLibrary
+	var json = jsoniter.ConfigFastest
 	b, err := json.Marshal(data.Results)
+
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -330,7 +374,7 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
-func getResourceEtag(ctx context.Context, agg *RedfishResourceAggregate) string {
+func getResourceEtag(ctx context.Context, agg *RedfishResourceAggregate, auth *RedfishAuthorizationProperty) string {
 	v := agg.Properties.Value
 	m, ok := v.(map[string]interface{})
 	if !ok {
@@ -346,8 +390,9 @@ func getResourceEtag(ctx context.Context, agg *RedfishResourceAggregate) string 
 
 	switch t := etagintf.(type) {
 	case *RedfishResourceProperty:
-		etagprocessedintf, _ := ProcessGET(ctx, t, &agg.Authorization)
-		etagstr, ok = etagprocessedintf.(string)
+		NewGet(ctx, agg, t, auth)
+		etagIntf := Flatten(t.Value)
+		etagstr, ok = etagIntf.(string)
 		if !ok {
 			return ""
 		}
@@ -558,11 +603,12 @@ func processFilterOneObject(memberInstance map[string]interface{}, filterArray [
 				}
 			}
 		//========= String array members =======
-		case []string:
+		case []interface{}:
 			//For this one, assume we're not going to find it until proven wrong
 			//If we drop out of the loop without finding it, the we don't keep it
 			for b := 0; b < len(localMember) && !keepElement; b += 1 {
-				keepElement = strings.Contains(localMember[b], filterArray[j].SearchTerm)
+				localMemberStr := localMember[b].(string)
+				keepElement = strings.Contains(localMemberStr, filterArray[j].SearchTerm)
 			}
 		//========= Time members =======
 		case time.Time:
@@ -609,41 +655,6 @@ func processFilterOneObject(memberInstance map[string]interface{}, filterArray [
 	return true
 }
 
-func handleCollectionFilterMap(filter string, membersArr []map[string]interface{}) ([]map[string]interface{}, bool) {
-	filterArray, ok := createFilterArray(filter)
-	//If filter violation return nothing
-	//If empty filters return everything
-	if !ok {
-		return []map[string]interface{}{}, ok
-	}
-	if len(filterArray) == 0 {
-		return membersArr, ok
-	}
-	keepArray := []int{}
-
-	//For each element in the log array apply all filters
-	for i := 0; i < len(membersArr); i += 1 {
-		memberInstance := membersArr[i]
-
-		//Invert logic to determine delete
-		if processFilterOneObject(memberInstance, filterArray) {
-			keepArray = append(keepArray, i)
-		}
-	}
-
-	//We have all logs we want to keep in an array, put those in our output
-	returnArr := []map[string]interface{}{}
-	//Special case to same some cycles, if we filtered out nothing in the end, just return the original
-	if len(keepArray) == len(membersArr) {
-		returnArr = membersArr
-	} else {
-		for _, index := range keepArray {
-			returnArr = append(returnArr, membersArr[index])
-		}
-	}
-	return returnArr, ok
-}
-
 func handleCollectionFilter(filter string, membersArr []interface{}) ([]interface{}, bool) {
 
 	filterArray, ok := createFilterArray(filter)
@@ -683,137 +694,77 @@ func handleCollectionFilter(filter string, membersArr []interface{}) ([]interfac
 	return returnArr, ok
 }
 
-func handleCollectionQueryOptions(r *http.Request, d *HTTPCmdProcessedData) *HTTPCmdProcessedData {
-	// the following query parameters affect how we return collections:
-	skip := r.URL.Query().Get("$skip")
-	top := r.URL.Query().Get("$top")
-	filter := r.URL.Query().Get("$filter")
+func handleCollectionQueryOptions(r *http.Request, a *RedfishAuthorizationProperty, d *HTTPCmdProcessedData) *HTTPCmdProcessedData {
 	res, ok := d.Results.(map[string]interface{})
 	if !ok {
-		// can't be a collection if it's not a map[string]interface{} (or, rather, we can't handle it here and would need to completely re-do this with introspection.)
+		// can't be a collection if it's not a map[string]interface{}
 		return d
 	}
 
+	// make sure it is an actual collection and return if not
 	members, ok := res["Members"]
 	if !ok {
 		return d
 	}
 
-	switch membersArr := members.(type) {
-	case []interface{}:
-		if filter != "" {
-			membersArr, _ = handleCollectionFilter(filter, membersArr)
-			//TODO handle bad filter request with HTTP error
-			res["Members"] = membersArr
-			res["Members@odata.count"] = len(membersArr)
-		}
-		var skipI int
-		if skip != "" {
-			tmpskipI, err := strconv.Atoi(skip)
-			skipI = tmpskipI
-			// TODO: http error on invalid skip request
-			if err == nil && skipI > 0 {
-				if skipI < len(membersArr) {
-					// slice off the number we are supposed to skip from the beginning
-					membersArr = membersArr[skipI:]
-				} else {
-					//Handle too big of a skip, so we don't fault
-					membersArr = []interface{}{}
-				}
-				res["Members"] = membersArr
-			}
-		}
-
-		topI := 50 //Default value so the Redfish output doesn't grow wild
-		if top != "" {
-			tmptopI, err := strconv.Atoi(top)
-			// TODO: http error on invalid top request
-			if err == nil {
-				topI = tmptopI
-			} else {
-				topI = 0
-			}
-		}
-
-		if topI > 0 && topI < len(membersArr) {
-			// top means return exactly that many (or fewer), so slice off the end
-			membersArr = membersArr[:topI]
-			res["Members"] = membersArr
-
-			// since we sliced off the end, add a nextlink user can follow to
-			// get the rest (per redfish spec)
-			// we'll be nice and preserve all the original query options
-			q := r.URL.Query()
-			q.Set("$skip", strconv.Itoa(skipI+topI))
-			if top == "" {
-				q.Add("$top", "50")
-			}
-			nextlink := url.URL{Path: r.URL.Path, RawQuery: q.Encode()}
-			res["Members@odata.nextlink"] = nextlink.String()
-		}
-		return d
-	case []map[string]interface{}:
-		if filter != "" {
-			membersArr, _ = handleCollectionFilterMap(filter, membersArr)
-			//TODO handle bad filter request with HTTP error
-			res["Members"] = membersArr
-			res["Members@odata.count"] = len(membersArr)
-		}
-
-		var skipI int
-		if skip != "" {
-			tmpskipI, err := strconv.Atoi(skip)
-			skipI = tmpskipI
-			// TODO: http error on invalid skip request
-			if err == nil && skipI > 0 {
-				if skipI < len(membersArr) {
-					// slice off the number we are supposed to skip from the beginning
-					membersArr = membersArr[skipI:]
-				} else {
-					//Handle too big of a skip, so we don't fault
-					membersArr = []map[string]interface{}{}
-				}
-				res["Members"] = membersArr
-			}
-		}
-
-		topI := 50 //Default value so the Redfish output doesn't grow wild
-		if top != "" {
-			tmptopI, err := strconv.Atoi(top)
-			// TODO: http error on invalid top request
-			if err == nil {
-				topI = tmptopI
-			} else {
-				topI = 0
-			}
-		}
-
-		if topI > 0 && topI < len(membersArr) {
-			// top means return exactly that many (or fewer), so slice off the end
-			membersArr = membersArr[:topI]
-			res["Members"] = membersArr
-
-			// since we sliced off the end, add a nextlink user can follow to
-			// get the rest (per redfish spec)
-			// we'll be nice and preserve all the original query options
-			q := r.URL.Query()
-			q.Set("$skip", strconv.Itoa(skipI+topI))
-			if top == "" {
-				q.Add("$top", "50")
-			}
-			nextlink := url.URL{Path: r.URL.Path, RawQuery: q.Encode()}
-			res["Members@odata.nextlink"] = nextlink.String()
-		}
-		return d
-	default:
-		//TODO Don't know how to handle this, what other are there?
+	// then type assert to ensure it's an array
+	membersArr, ok := members.([]interface{})
+	if !ok {
 		return d
 	}
 
-}
+	// Need to make a one-level deep copy to not disturb the original data
+	newResults := map[string]interface{}{}
+	for k, v := range res {
+		// skip 'members', that will be copied separately, next
+		if k == "members" {
+			continue
+		}
+		newResults[k] = v
+	}
 
-func handleExpand(r *http.Request, d *HTTPCmdProcessedData) *HTTPCmdProcessedData {
-	//expand = r.URL.Query().Get("$expand")
+	if a.doFilter {
+		//TODO handle bad filter request with HTTP error
+		//
+		// redfish standard says that filtering changes odata.count
+		// but top and skip do not
+		membersArr, _ = handleCollectionFilter(a.filter, membersArr)
+		newResults["Members@odata.count"] = len(membersArr)
+	}
+
+	// figure out parameters for the final slice
+	beginning := 0
+	end := len(membersArr)
+
+	if a.doSkip && a.skip > 0 {
+		if a.skip < len(membersArr) {
+			beginning = a.skip
+		} else {
+			beginning = end
+		}
+	}
+
+	if a.doTop && a.top > 0 {
+		if a.top+beginning < len(membersArr) {
+			end = beginning + a.top
+
+			// since we sliced off the end, add a nextlink user can follow to
+			// get the rest (per redfish spec)
+			// we'll be nice and preserve all the original query options
+			q := r.URL.Query()
+			q.Set("$skip", strconv.Itoa(a.skip+a.top))
+			q.Set("$top", strconv.Itoa(a.top))
+			nextlink := url.URL{Path: r.URL.Path, RawQuery: q.Encode()}
+			newResults["Members@odata.nextlink"] = nextlink.String()
+		}
+	}
+
+	// so we are going to return pointer to the records from the original cached
+	// array. Note that we should have a read lock on this data until it's
+	// serialized to user, so it shouldn't change under us
+	newResults["Members"] = membersArr[beginning:end]
+
+	d.Results = newResults
 	return d
 }
 
@@ -856,44 +807,44 @@ func handleSelect(r *http.Request, d *HTTPCmdProcessedData) *HTTPCmdProcessedDat
 			makesel(&selectQuery, []string{"Id"})
 			makesel(&selectQuery, []string{"Name"})
 			makesel(&selectQuery, []string{"Description"})
+			makesel(&selectQuery, []string{"@*"})
 		}
 	}
 
-	res, ok := d.Results.(map[string]interface{})
-	if !ok {
-		return d
-	}
+	source := d.Results
+	d.Results = map[string]interface{}{}
 
-	trimSelect(res, selectQuery)
+	copySelect(d.Results, source, selectQuery)
 
 	return d
 }
 
 //TODO: regex still matches more than it should be matching
-func trimSelect(r interface{}, selAry [][]Matcher) {
-
-	//fmt.Printf("TRIMMING: r: %s, s: %s\n", r, selAry)
-	res, ok := r.(map[string]interface{})
+func copySelect(dest, src interface{}, selAry [][]Matcher) {
+	srcM, ok := src.(map[string]interface{})
 	if !ok {
-		//fmt.Printf("Could not trim no map[string]interface{} item: %s = %T\n", r, r)
+		//fmt.Printf("NOT a MAP")
+		dest = src
 		return
 	}
 
-	for k, _ := range res {
+	destM, ok := dest.(map[string]interface{})
+	if !ok {
+		// can't happen!
+		//fmt.Printf("CANT HAPPEN")
+		dest = src
+		return
+	}
+
+	for k, v := range srcM {
 		newQuery := [][]Matcher{}
 		recurse := true
-		//fmt.Printf("Check key %s\n", k)
 		found := false
-		if strings.HasPrefix(k, "@") {
-			found = true
-			recurse = false
-		}
 		if !found {
 			for _, n := range selAry {
-				//fmt.Printf("  check key %s with matcher %s\n", k, n[0])
 				if n[0].MatchString(k) {
+					//fmt.Printf("FOUND")
 					found = true
-					//fmt.Printf("\tfound\n")
 					if len(n) <= 1 {
 						recurse = false
 					}
@@ -901,13 +852,11 @@ func trimSelect(r interface{}, selAry [][]Matcher) {
 				}
 			}
 		}
-		if !found {
-			delete(res, k)
-		}
 		if found && recurse {
-			//fmt.Printf("=============subtrim start\n")
-			trimSelect(res[k], newQuery)
-			//fmt.Printf("=============subtrim end\n")
+			destM[k] = map[string]interface{}{}
+			copySelect(destM[k], srcM[k], newQuery)
+		} else if found {
+			destM[k] = v
 		}
 	}
 

@@ -1,7 +1,20 @@
 Things that need work: (-) TODO (*) DONE
 
- - expanduri formatter
+ - fold together the instantiate_helpers as much as possible (much duplicate code here)
+ - need to address all of the new "data mapping" functions that were added that only convert enums to strings
+
  - subscription should not allow duplicates
+ - Inject events should check for HTTPCmdProcessed events and directly place them on the http bus
+ - Audit all other places where we produce HTTPCmdProcessed events and put them on the http bus
+ - remove the http listener from the general internal bus
+ - move etag into the aggregate, invalidate cache on etag update
+ - performance: unix domain socket proxypass?
+ - performance: proxypass keepalive?
+ - performance:
+
+ - TELEMETRY:  need to have telemetry service up and running to do metric reports, triggers, and such
+
+ * expanduri formatter
  * EPHEMERAL resource property
      - values returned by plugins are now ephemeral by default and not saved in the redfishresourceproperty after being returned up the stack. this prevents excessive mem usage
 

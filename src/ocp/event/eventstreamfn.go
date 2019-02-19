@@ -26,7 +26,7 @@ type privateStateStructure struct {
 	listener     *eventwaiter.EventListener
 	listenerName string
 	logger       log.Logger
-  EW           eventwaiter.EventWaiter
+	EW           eventwaiter.EventWaiter
 }
 
 var NewESP func(ctx context.Context, options ...Options) (d *privateStateStructure, err error)
@@ -49,7 +49,7 @@ func NewEventStreamProcessor(ctx context.Context, ew *eventwaiter.EventWaiter, o
 		// default filter is to process no events
 		filterFn:     func(eh.Event) bool { return false },
 		listenerName: "SET ME!",
-    EW:           *ew,
+		EW:           *ew,
 	}
 	err = nil
 
@@ -85,18 +85,21 @@ func (d *privateStateStructure) RunForever(fn func(eh.Event)) {
 	defer d.Close()
 
 	for {
-		event, err := d.listener.UnSyncWait(d.ctx)
-		if err != nil {
-			log.MustLogger("eventstream").Info("Shutting down listener", "err", err)
-			return
-		}
-		fn(event)
+		func() {
+			event, err := d.listener.UnSyncWait(d.ctx)
+			if err != nil {
+				log.MustLogger("eventstream").Info("Shutting down listener", "err", err)
+				return
+			}
 
-		// TODO: separation of concerns: this should be factored out into a middleware of some sort...
-		// now that we are waiting on the listeners, we can .Done() the waitgroup for the eventwaiter itself
-		if e, ok := event.(syncEvent); ok {
-			e.Done()
-		}
+			// TODO: separation of concerns: this should be factored out into a middleware of some sort...
+			// now that we are waiting on the listeners, we can .Done() the waitgroup for the eventwaiter itself
+			if e, ok := event.(syncEvent); ok {
+				defer e.Done()
+			}
+
+			fn(event)
+		}()
 	}
 }
 

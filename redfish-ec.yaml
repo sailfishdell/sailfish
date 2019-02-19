@@ -3,11 +3,11 @@ main:
     #options: "openbmc" | "dell_ec" | "mockup"
 
 listen:
-    - http:localhost:8080
-   # disable direct https listener, uncomment if needed for testing:
-   # - https::8443
-   # disable debug port, uncomment to enable
-    - pprof:localhost:9080
+  - unix:sailfish.socket
+  - http:localhost:8080
+  - pprof:localhost:9080
+  # disable direct https listener, uncomment if needed for testing:
+  # - https::8443
 
 # new features needed:
 #  - link_model
@@ -395,7 +395,7 @@ views:
   "attributes":
       "Logger": ["module", "attributes"]
       "Models":
-        "default":  {"unique_name": "FQDD" }
+        "default":  {"unique_name": "FQDD", "unique_name_attr": "FQDD+'.Attributes'", "attributes": "add_attribute_property()"}
       "Controllers":
         - "fn": "ARDumper"
           "params": {"modelname": "default", "AddToView": true, "passthru": {"fqddlist": "array(FQDD)"}}
@@ -541,7 +541,7 @@ views:
   "lclogentrycollection":
       "Logger": ["module", "lclog"]
       "Models":
-        "default":  {"members": "array()"}
+        "default":  {}
       "Controllers":
         - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "lclog", "uniquename": "'addlog_lclog_' + view.GetURI()", "passthru": {'collection_uri': 'view.GetURI()'} }

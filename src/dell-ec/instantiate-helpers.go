@@ -80,38 +80,28 @@ func AddECInstantiate(l log.Logger, instantiateSvc *testaggregate.Service) {
 		return true, nil
 	})
 
-	MakeMaker(l, "chassis_cmc_integrated", func(args ...interface{}) (interface{}, error) {
-		FQDD, ok := args[0].(string)
-		if !ok {
-			return nil, errors.New("Need a string fqdd for addec_system_modular(), but didnt get one")
-		}
-		// have to do this in a goroutine because awesome mapper is locked while it processes events
-		instantiateSvc.Instantiate("chassis_cmc_integrated", map[string]interface{}{"FQDD": FQDD})
+	// reduce duplicate code by creating a mapping function from a table for the few that are identical
+	makeMappings := []struct {
+		name        string
+		instantiate string
+	}{
+		{"chassis_cmc_integrated", "chassis_cmc_integrated"},
+		{"ec_system_modular", "sled"},
+		{"iom", "iom"},
+	}
 
-		return true, nil
-	})
+	for _, s := range makeMappings {
+		MakeMaker(l, s.name, func(args ...interface{}) (interface{}, error) {
+			FQDD, ok := args[0].(string)
+			if !ok {
+				return nil, errors.New("Need a string fqdd for addec_system_modular(), but didnt get one")
+			}
+			// have to do this in a goroutine because awesome mapper is locked while it processes events
+			instantiateSvc.Instantiate(s.instantiate, map[string]interface{}{"FQDD": FQDD})
 
-	MakeMaker(l, "ec_system_modular", func(args ...interface{}) (interface{}, error) {
-		FQDD, ok := args[0].(string)
-		if !ok {
-			return nil, errors.New("Need a string fqdd for addec_system_modular(), but didnt get one")
-		}
-		// have to do this in a goroutine because awesome mapper is locked while it processes events
-		instantiateSvc.Instantiate("sled", map[string]interface{}{"FQDD": FQDD})
-
-		return true, nil
-	})
-
-	MakeMaker(l, "iom", func(args ...interface{}) (interface{}, error) {
-		FQDD, ok := args[0].(string)
-		if !ok {
-			return nil, errors.New("Need a string fqdd for addiom(), but didnt get one")
-		}
-		// have to do this in a goroutine because awesome mapper is locked while it processes events
-		instantiateSvc.Instantiate("iom", map[string]interface{}{"FQDD": FQDD})
-
-		return true, nil
-	})
+			return true, nil
+		})
+	}
 
 	MakeMaker(l, "ecfan", func(args ...interface{}) (interface{}, error) {
 		ParentFQDD, ok := args[1].(string)

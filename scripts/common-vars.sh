@@ -1,7 +1,6 @@
 #!/bin/sh
 
 set -e
-set -x
 
 unset HTTP_PROXY HTTPS_PROXY http_proxy https_proxy
 scriptdir=$(cd $(dirname $0); pwd)
