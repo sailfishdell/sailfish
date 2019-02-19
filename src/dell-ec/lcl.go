@@ -59,13 +59,6 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 		uuid := eh.NewUUID()
 		uri := fmt.Sprintf("%s/%d", logUri, logEntry.Id)
 
-		aggID, ok := d.GetAggregateIDOK(uri)
-		if ok {
-			logger.Info("URI already exists, skipping add log", "aggID", aggID, "uri", uri)
-			// not returning error because that will unnecessarily freak out govaluate when there really isn't an error we care about at that level
-			return nil, nil
-		}
-
 		timeF, err := strconv.ParseFloat(logEntry.Created, 64)
 		if err != nil {
 			logger.Debug("LCLOG: Time information can not be parsed", "time", logEntry.Created, "err", err, "set time to", 0)
@@ -142,23 +135,25 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 			return nil, errors.New("Mapper configuration error: uri not passed as string")
 		}
 
-		logger.Debug("Clearing all uris within base_uri","base_uri",logUri)
+		logger.Debug("Clearing all uris within base_uri", "base_uri", logUri)
 
 		uriList := d.FindMatchingURIs(func(uri string) bool { return path.Dir(uri) == logUri })
-
-		go func(toDel []string) {
-			for idx, uri := range uriList {
-				id, ok := d.GetAggregateIDOK(uri)
-				if !ok {
-					continue
-				}
+		var idList []eh.UUID
+		for _, uri := range uriList {
+			id, ok := d.GetAggregateIDOK(uri)
+			if ok {
+				idList = append(idList, id)
+			}
+		}
+		go func(toDel []eh.UUID) {
+			for idx, id := range idList {
 				ch.HandleCommand(context.Background(), &domain.RemoveRedfishResource{ID: id})
 				if idx%10 == 0 {
 					//Ugh... but slow it down so we don't flood the queue and deadlock
 					time.Sleep(time.Second / 10)
 				}
 			}
-		}(uriList)
+		}(idList)
 
 		return nil, nil
 	})
@@ -183,8 +178,6 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 		}
 		return true, nil
 	})
-
-
 
 	awesome_mapper2.AddFunction("addfaultentry", func(args ...interface{}) (interface{}, error) {
 		logUri, ok := args[0].(string)
@@ -211,8 +204,8 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 		uri := fmt.Sprintf("%s/%s", logUri, faultEntry.Name)
 		//fmt.Printf("%s/%s", logUri, faultEntry.Name)
 
-                // when mchars is restarted, it clears faults and expects old faults to be recreated.
-                // skip re-creating old faults if this happens.
+		// when mchars is restarted, it clears faults and expects old faults to be recreated.
+		// skip re-creating old faults if this happens.
 		aggID, ok := d.GetAggregateIDOK(uri)
 		if ok {
 			logger.Info("URI already exists, skipping add log", "aggID", aggID, "uri", uri)
@@ -227,9 +220,9 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 				ResourceURI: uri,
 				Type:        "#LogEntryCollection.LogEntryCollection",
 				Context:     "/redfish/v1/$metadata#LogEntryCollection.LogEntryCollection",
-                                Headers:    map[string]string{
-                                        "Location":uri,
-                                },
+				Headers: map[string]string{
+					"Location": uri,
+				},
 				Privileges: map[string]interface{}{
 					"GET": []string{"Login"},
 				},
@@ -432,7 +425,6 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 
 					compVerTuple := "Installed-" + class + "-" + version
 
-
 					updateableRaw, ok := mdl.GetPropertyOk("fw_updateable")
 					if !ok {
 						logger.Debug("swinv DID NOT GET updateable string with " + uri)
@@ -470,7 +462,6 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 						name = ""
 					}
 
-
 					if _, ok := firmwareInventoryViews[compVerTuple]; !ok {
 						_, vw, _ := instantiateSvc.Instantiate("firmware_instance", map[string]interface{}{
 							"compVerTuple": compVerTuple,
@@ -484,7 +475,7 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 						firmwareInventoryViews[compVerTuple] = vw
 					}
 
-                                        // These values are for post processing on Instantiated object
+					// These values are for post processing on Instantiated object
 					arr, ok := fqdd_mappings[compVerTuple]
 					if !ok {
 						arr = []string{}
@@ -497,7 +488,6 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 						sort.Strings(arr)
 						fqdd_mappings[compVerTuple] = arr
 					}
-
 
 					uriarr, ok := uri_mappings[compVerTuple]
 					if !ok {
@@ -515,9 +505,9 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 			for compVerTuple, arr := range fqdd_mappings {
 				vw := firmwareInventoryViews[compVerTuple]
 				mdl := vw.GetModel("default")
-                                if mdl != nil {
-				    mdl.UpdateProperty("fqdd_list", arr)
-                                }
+				if mdl != nil {
+					mdl.UpdateProperty("fqdd_list", arr)
+				}
 			}
 
 			for compVerTuple, arr := range uri_mappings {

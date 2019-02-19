@@ -159,6 +159,7 @@ func (es *EventService) CreateSubscription(ctx context.Context, logger log.Logge
 				case domain.RedfishResourceRemoved:
 					subLogger.Info("Cancelling subscription", "uri", subView.GetURI())
 					cancel()
+					return
 				case ExternalRedfishEvent:
 					subLogger.Info(" redfish event processing")
 					// NOTE: we don't actually check to ensure that this is an actual ExternalRedfishEventData specifically because Metric Reports don't currently go through like this.

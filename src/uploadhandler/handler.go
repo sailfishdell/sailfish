@@ -294,7 +294,8 @@ func (s *Service) WithUpload(ctx context.Context, name string, uriSuffix string,
 
 		// only create receiver aggregate for the PATCH for cases where it is a different
 		// UIR from the view (this lets us handle PATCH on the actual view)
-		if v.GetURIUnlocked() != uri {
+        // TODO: FIX THIS CORRECTLY, without the check for FirmwareInventory GET requests there fail
+		if uriSuffix != "/FirmwareInventory" && v.GetURIUnlocked() != uri {
 			// The following redfish resource is created only for the purpose of being
 			// a 'receiver' for the action command specified above.
 			s.ch.HandleCommand(

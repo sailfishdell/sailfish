@@ -85,11 +85,10 @@ func RegisterAggregate(s *testaggregate.Service) {
 					// Plugin is how we find the POST command handler
 					Plugin: "EventService",
 					Privileges: map[string]interface{}{
-						"GET":    []string{"Login"},
-						"POST":   []string{"ConfigureManager"},
-						"PUT":    []string{"ConfigureManager"},
-						"PATCH":  []string{"ConfigureManager"},
-						"DELETE": []string{"ConfigureManager"},
+						"GET":   []string{"Login"},
+						"POST":  []string{"ConfigureManager"},
+						"PUT":   []string{"ConfigureManager"},
+						"PATCH": []string{"ConfigureManager"},
 					},
 					Properties: map[string]interface{}{
 						"Name":                     "Event Subscriptions Collection",

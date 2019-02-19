@@ -1,1 +1,2 @@
 { "name": "LogEvent", "event_array": [{"LogAlert": "clear"}]}
+{ "name": "LogEvent", "event_array": [{"Description": "The Chassis Log file was cleared as a result of clear log operation.", "Name": "Log Entry 1", "Action": "No response action is required.", "Message": "The Chassis Log file was cleared.", "EntryType": "Oem", "Severity": "Informational", "Id": 1, "Created": "1546464228", "MessageArgs": [], "MessageID": "LOG305", "Category": "Configuration", "FQDD": "System.Chassis.1", "LogAlert": "log"}]}
