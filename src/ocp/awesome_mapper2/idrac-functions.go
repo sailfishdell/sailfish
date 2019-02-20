@@ -3,18 +3,8 @@ package awesome_mapper2
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
-	"os"
-	"path"
-	"reflect"
-	"sort"
 	"strconv"
 	"strings"
-	"sync"
-	"time"
-
-	"github.com/Knetic/govaluate"
-	"github.com/superchalupa/sailfish/src/ocp/model"
 )
 
 // TODO: this file needs to be moved to src/dell-idrac/
