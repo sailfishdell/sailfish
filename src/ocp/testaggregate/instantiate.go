@@ -105,20 +105,6 @@ type config struct {
 //            key should have the same names as config struct above
 //
 
-type Waiter interface {
-	Done()
-}
-
-func (s *Service) QueueInstantiate(name string, parameters map[string]interface{}) Waiter {
-	wg := &sync.WaitGroup{}
-	wg.Add(1)
-	go func() {
-		s.InstantiateFromCfg(s.ctx, s.cfgMgr, s.cfgMgrMu, name, parameters)
-		wg.Done()
-	}()
-	return wg
-}
-
 func (s *Service) Instantiate(name string, parameters map[string]interface{}) (log.Logger, *view.View, error) {
 	return s.InstantiateFromCfg(s.ctx, s.cfgMgr, s.cfgMgrMu, name, parameters)
 }

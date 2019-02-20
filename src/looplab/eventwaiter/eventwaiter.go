@@ -19,6 +19,7 @@ package eventwaiter
 
 import (
 	"context"
+	"fmt"
 
 	eh "github.com/looplab/eventhorizon"
 	"github.com/superchalupa/sailfish/src/log"
@@ -254,7 +255,7 @@ func (l *EventListener) Wait(ctx context.Context) (eh.Event, error) {
 		// TODO: separation of concerns: this should be factored out into a middleware of some sort...
 		// now that we are waiting on the listeners, we can .Done() the waitgroup for the eventwaiter itself
 		if e, ok := event.(syncEvent); ok {
-			defer e.Done()
+			e.Done()
 			//defer fmt.Printf("Done in Wait()\n")
 		}
 
@@ -297,4 +298,12 @@ func (l *EventListener) Close() {
 // close the inbox
 func (l *EventListener) closeInbox() {
 	close(l.singleEventInbox)
+
+	// closing inbox that may have some inbound events. go ahead and mark them all done
+	for event := range l.singleEventInbox {
+		if e, ok := event.(syncEvent); ok {
+			e.Done()
+			fmt.Printf("Completed orphan event! %s\n", event.EventType())
+		}
+	}
 }

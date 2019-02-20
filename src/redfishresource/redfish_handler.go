@@ -297,7 +297,7 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			evtS.Done()
 		}
 	case <-reqCtx.Done():
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, "Request cancelled, aborting http response", http.StatusInternalServerError)
 		return
 	case t := <-directReturnChan:
 		defer t.complete()
