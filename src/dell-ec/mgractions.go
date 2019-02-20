@@ -25,7 +25,6 @@ type Service struct {
 }
 
 type syncEvent interface {
-	Add(int)
 	Done()
 }
 
