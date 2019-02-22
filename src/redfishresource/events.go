@@ -5,6 +5,7 @@ import (
 )
 
 const (
+	WatchdogEvent                       = eh.EventType("Watchdog")
 	RedfishResourceCreated              = eh.EventType("RedfishResource:created")
 	RedfishResourceRemoved              = eh.EventType("RedfishResource:removed")
 	HTTPCmdProcessed       eh.EventType = "HTTPCmdProcessed"
@@ -14,6 +15,9 @@ const (
 )
 
 func init() {
+	eh.RegisterEventData(WatchdogEvent, func() eh.EventData {
+		return &struct{}{}
+	})
 	eh.RegisterEventData(RedfishResourceCreated, func() eh.EventData {
 		return &RedfishResourceCreatedData{}
 	})
