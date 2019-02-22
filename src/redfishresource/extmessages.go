@@ -1,6 +1,46 @@
 package domain
 
 //
+// extended info struct
+//
+type ExtendedInfo struct {
+  Message             string
+  MessageArgs         []string
+  MessageArgsCt       int `json:"MessageArgs@odata.count"`
+  MessageId           string
+  RelatedProperties   []string
+  RelatedPropertiesCt int `json:"RelatedProperties@odata.count"`
+  Resolution          string
+  Severity            string
+}
+
+func (e *ExtendedInfo) GetDefaultExtendedInfo() map[string]interface{}{
+  e.Message = "Successfully Completed Request"
+  e.MessageArgs = []string{}
+  e.MessageArgsCt = len(e.MessageArgs)
+  e.MessageId = "Base.1.0.Success"
+  e.RelatedProperties = []string{}
+  e.RelatedPropertiesCt = len(e.RelatedProperties)
+  e.Resolution = "None"
+  e.Severity = "OK"
+  return e.GetExtendedInfo()
+}
+
+func (e *ExtendedInfo) GetExtendedInfo() map[string]interface{}{
+  info := map[string]interface{}{
+    "Message": e.Message,
+    "MessageArgs": e.MessageArgs,
+    "MessageArgs@odata.count": e.MessageArgsCt,
+    "MessageId": e.MessageId,
+    "RelatedProperties": e.RelatedProperties,
+    "RelatedProperties@odata.count": e.RelatedPropertiesCt,
+    "Resolution": e.Resolution,
+    "Severity": e.Severity,
+  }
+  return info
+}
+
+//
 // property level
 //
 

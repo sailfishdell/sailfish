@@ -103,11 +103,16 @@ func StartService(ctx context.Context, logger log.Logger, cfg *viper.Viper, cfgM
 		logger.Debug("processing event", "event", event)
 		key := fmt.Sprintf("%s:%s:%s:%s", data.FQDD, data.Group, data.Index, data.Name)
 		arservice.hashMu.RLock()
+
 		if arr, ok := arservice.hash[key]; ok {
 			logger.Debug("matched quick hash", "key", key)
 			for _, u := range arr {
-				logger.Debug("updating property", "property", u.property, "value", data.Value)
-				u.model.UpdateProperty(u.property, data.Value)
+        if data.Error == "" {
+				  logger.Debug("updating property", "property", u.property, "value", data.Value)
+				  u.model.UpdateProperty(u.property, data.Value)
+        } else {
+          logger.Debug("event has error, not updating property", "property", u.property, "error", data.Error)
+        }
 			}
 		}
 		arservice.hashMu.RUnlock()
@@ -156,12 +161,7 @@ func (b breadcrumb) Close() {
 }
 
 type HTTP_code struct {
-  status_code int
   err_message []string
-}
-
-func (e HTTP_code) StatusCode() int {
-  return e.status_code
 }
 
 func (e HTTP_code) ErrMessagE() []string {
@@ -169,19 +169,19 @@ func (e HTTP_code) ErrMessagE() []string {
 }
 
 func (e HTTP_code) Error() string {
-  return fmt.Sprintf("Request Error Message: %s, Return Code: %d", e.err_message, e.status_code)
+  return fmt.Sprintf("Request Error Message: %s", e.err_message)
 }
 
 func (b breadcrumb) UpdateRequest(ctx context.Context, property string, value interface{}, auth *domain.RedfishAuthorizationProperty) (interface{}, error) {
   b.ars.hashMu.RLock()
   defer b.ars.hashMu.RUnlock()
 
+  canned_response := `{"RelatedProperties@odata.count": 1, "Message": "%s", "MessageArgs": ["%[2]s"], "Resolution": "Remove the %sproperty from the request body and resubmit the request if the operation failed.", "MessageId": "%s", "MessageArgs@odata.count": 1, "RelatedProperties": ["%[2]s"], "Severity": "Warning"}`
 	b.logger.Info("UpdateRequest", "property", property, "mappingName", b.mappingName)
 
   reqIDs := []eh.UUID{}
   responses := []attributes.AttributeUpdatedData{}
   errs := []string{}
-  status_code := 200
   patch_timeout := 3
 
   l, err := b.ars.ew.Listen(ctx, func(event eh.Event) bool {
@@ -210,9 +210,21 @@ func (b breadcrumb) UpdateRequest(ctx context.Context, property string, value in
 	}
 
 	for _, mapping := range mappings.mappings {
+
 		if property != mapping.Property {
+      b.ars.logger.Error("not found", "Attribute", property)
+      err_msg := fmt.Sprintf("The property %s is not in the list of valid properties for the resource.", property)
+      errs = append(errs, fmt.Sprintf(canned_response, []interface{}{err_msg, property, "unknown ", "Base.1.0.PropertyUnknown"}...))
 			continue
 		}
+
+    var ad attributes.AttributeData
+    if !ad.WriteAllowed(property, auth) {
+      b.ars.logger.Error("Unable to set", "Attribute", property)
+      err_msg := fmt.Sprintf("The property %s is a read only property and cannot be assigned a value.", property)
+      errs = append(errs, fmt.Sprintf(canned_response, []interface{}{err_msg, property, "", "Base.1.0.PropertyNotWritable"}...))
+      continue
+    }
 
 		mappings.logger.Info("Sending Update Request", "mapping", mapping, "value", value)
 		reqUUID := eh.NewUUID()
@@ -231,7 +243,9 @@ func (b breadcrumb) UpdateRequest(ctx context.Context, property string, value in
 		break
 	}
 
-  req_ct := len(reqIDs)
+  if (len(reqIDs) == 0) {
+    return nil, HTTP_code{err_message: errs}
+  }
   timer := time.NewTimer(time.Duration(patch_timeout*len(reqIDs)) * time.Second)
 
   for {
@@ -253,15 +267,15 @@ func (b breadcrumb) UpdateRequest(ctx context.Context, property string, value in
         e.Done()
       }
       if (len(reqIDs) == 0) {
-        if len(errs) == req_ct {
-          status_code = 400
+        if (len(errs) == 0) {
+          return nil, nil
         }
-        return nil, HTTP_code{status_code: status_code, err_message: errs}
+        return nil, HTTP_code{err_message: errs}
       }
       case <- timer.C:
-        return nil, HTTP_code{status_code: 200, err_message: []string{"Timed out!"}}
+        return nil, HTTP_code{err_message: []string{"Timed out!"}}
       case <- ctx.Done():
-        return nil, HTTP_code{status_code: 200, err_message: nil}
+        return nil, nil
     }
   }
 }

@@ -74,7 +74,11 @@ func StartService(ctx context.Context, logger log.Logger, eb eh.EventBus) (*Serv
 				Privileges: data.Privileges,
 				Value:      data.Value,
 			}
-			m.ApplyOption(WithAttribute(data.Group, data.Index, data.Name, value))
+
+      if data.Error == "" {
+        //update property only if no errors & have write privilege
+			  m.ApplyOption(WithAttribute(data.Group, data.Index, data.Name, value))
+      }
 		}
 	})
 
@@ -151,12 +155,7 @@ func getAttrValue(m *model.Model, group, gindex, name string) (ret interface{}, 
 }
 
 type HTTP_code struct {
-  status_code int
   err_message []string
-}
-
-func (e HTTP_code) StatusCode() int {
-  return e.status_code
 }
 
 func (e HTTP_code) ErrMessage() []string {
@@ -164,7 +163,7 @@ func (e HTTP_code) ErrMessage() []string {
 }
 
 func (e HTTP_code) Error() string {
-  return fmt.Sprintf("Request Error Message: %s, Return Code: %d", e.err_message, e.status_code)
+  return fmt.Sprintf("Request Error Message: %s", e.err_message)
 }
 
 func (b *breadcrumb) UpdateRequest(ctx context.Context, property string, value interface{}, auth *domain.RedfishAuthorizationProperty) (interface{}, error) {
@@ -175,9 +174,9 @@ func (b *breadcrumb) UpdateRequest(ctx context.Context, property string, value i
 
   reqIDs := []eh.UUID{}
   responses := []AttributeUpdatedData{}
-  status_code := 200
   errs := []string{}
   patch_timeout := 3
+  canned_response := `{"RelatedProperties@odata.count": 1, "Message": "%s", "MessageArgs": ["%[2]s"], "Resolution": "Remove the %sproperty from the request body and resubmit the request if the operation failed.", "MessageId": "%s", "MessageArgs@odata.count": 1, "RelatedProperties": ["%[2]s"], "Severity": "Warning"}`
 
   l, err := b.s.ew.Listen(ctx, func(event eh.Event) bool {
     if event.EventType() != AttributeUpdated {
@@ -205,16 +204,27 @@ func (b *breadcrumb) UpdateRequest(ctx context.Context, property string, value i
 
 		//  - validate that the requested member is in this list
 		//  - validate that it is writable
-		//  - validate that user has perms
+		//  - validate that user has permsi
+
+    if (len(stuff) != 3) { // this one is extra wrong
+			b.s.logger.Error("improperly formatted attribute", "Attribute", k)
+      err_msg := fmt.Sprintf("The property %s is not in the list of valid properties for the resource.", k)
+      errs = append(errs, fmt.Sprintf(canned_response, []interface{}{err_msg, k, "unknown ", "Base.1.0.PropertyUnknown"}...))
+      continue
+    }
 		attrVal, ok := getAttrValue(b.m, stuff[0], stuff[1], stuff[2])
 		if !ok {
 			b.s.logger.Error("not found", "Attribute", k)
+      err_msg := fmt.Sprintf("The property %s is not in the list of valid properties for the resource.", k)
+      errs = append(errs, fmt.Sprintf(canned_response, []interface{}{err_msg, k, "unknown ", "Base.1.0.PropertyUnknown"}...))
 			continue
 		}
 
 		var ad AttributeData
 		if !ad.WriteAllowed(attrVal, auth) {
 			b.s.logger.Error("Unable to set", "Attribute", k)
+      err_msg := fmt.Sprintf("The property %s is a read only property and cannot be assigned a value", k)
+      errs = append(errs, fmt.Sprintf(canned_response, []interface{}{err_msg, k, "", "Base.1.0.PropertyNotWritable"}...))
 			continue
 		}
 
@@ -231,7 +241,10 @@ func (b *breadcrumb) UpdateRequest(ctx context.Context, property string, value i
     reqIDs = append(reqIDs, reqUUID)
 	}
 
-  req_ct := len(reqIDs)
+  if (len(reqIDs) == 0) {
+    return nil, HTTP_code{err_message: errs}
+  }
+
   // create a timer based on number of attributes to be patched
   timer := time.NewTimer(time.Duration(patch_timeout*len(reqIDs)) * time.Second)
 
@@ -258,19 +271,19 @@ func (b *breadcrumb) UpdateRequest(ctx context.Context, property string, value i
 
       if (len(reqIDs) == 0) {
         //all reqIDs found
-        if len(errs) == req_ct {
-          status_code = 400
+        if (len(errs) == 0) {
+          return data.Value, nil
         }
-        http_response := HTTP_code{status_code: status_code, err_message: errs}
+        http_response := HTTP_code{err_message: errs}
         return nil, http_response
       }
 
     case <- timer.C:
       //time out for any attr updated events that we are still waiting for
-      return nil, HTTP_code{status_code: 200, err_message: []string{"Timed out!"}}
+      return nil, HTTP_code{err_message: []string{"Timed out!"}}
 
     case <- ctx.Done():
-      return nil, HTTP_code{status_code: 200, err_message: nil}
+      return nil, nil
     }
   }
 }
