@@ -116,6 +116,7 @@ func (es *EventService) CreateSubscription(ctx context.Context, logger log.Logge
 
 	// set up listener for the delete event
 	// INFO: this listener will only ever get domain.RedfishResourceRemoved or ExternalRedfishEvent
+	uri := subView.GetURI()
 	listener, err := es.ew.Listen(ctx,
 		func(event eh.Event) bool {
 			t := event.EventType()
@@ -128,7 +129,7 @@ func (es *EventService) CreateSubscription(ctx context.Context, logger log.Logge
 				return false
 			}
 			if data, ok := event.Data().(*domain.RedfishResourceRemovedData); ok {
-				if data.ResourceURI == subView.GetURI() {
+				if data.ResourceURI == uri {
 					return true
 				}
 			}
