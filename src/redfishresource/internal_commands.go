@@ -3,6 +3,7 @@ package domain
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/url"
 	"strings"
 	"time"
@@ -49,7 +50,7 @@ type CreateRedfishResource struct {
 	Privileges  map[string]interface{}
 
 	// optional stuff
-        Headers    map[string]string      `eh:"optional"`
+	Headers    map[string]string      `eh:"optional"`
 	Plugin     string                 `eh:"optional"`
 	Properties map[string]interface{} `eh:"optional"`
 	Meta       map[string]interface{} `eh:"optional"`
@@ -79,10 +80,10 @@ func (c *CreateRedfishResource) Handle(ctx context.Context, a *RedfishResourceAg
 	if a.Plugin == "" {
 		a.Plugin = "RedfishResource"
 	}
-        a.Headers = map[string]string{}
-        for k, v :=range c.Headers {
-            a.Headers[k] = v
-        }
+	a.Headers = map[string]string{}
+	for k, v := range c.Headers {
+		a.Headers[k] = v
+	}
 
 	a.PrivilegeMap = map[string]interface{}{}
 
@@ -228,9 +229,56 @@ func (c *InjectEvent) CommandType() eh.CommandType {
 
 var injectChan chan eh.Event
 
-func StartInjectService(logger log.Logger, eb eh.EventBus) {
+func StartInjectService(logger log.Logger, eb eh.EventBus, ew waiter) {
 	injectChan = make(chan eh.Event, 100)
 	logger = logger.New("module", "injectservice")
+
+	var s closeNotifier
+	s, err := NewSdnotify()
+	if err != nil {
+		fmt.Printf("Error setting up SD_NOTIFY, using simulation instead: %s\n", err)
+		s = SimulateSdnotify()
+	}
+
+	listener, err := ew.Listen(context.Background(), func(event eh.Event) bool {
+		if event.EventType() == WatchdogEvent {
+			return true
+		}
+		return false
+	})
+
+	if err != nil {
+		panic("Could not start listener")
+	}
+
+	// goroutine to run sd_notify
+	go func() {
+		defer s.Close()
+		for {
+			_, err := listener.Wait(context.Background())
+			if err != nil {
+				fmt.Printf("Watchdog wait exited\n")
+				break
+			}
+
+			fmt.Printf("WATCHDOG")
+			s.Notify("WATCHDOG=1")
+		}
+	}()
+
+	// goroutine to inject watchdog events
+	go func() {
+		// inject a watchdog event every 10s. It will be processed by a listener elsewhere.
+		for {
+			time.Sleep(10 * time.Second)
+			data, err := eh.CreateEventData("WatchdogEvent")
+			if err != nil {
+				injectChan <- eh.NewEvent(WatchdogEvent, data, time.Now())
+			}
+		}
+	}()
+
+	// goroutine to synchronously handle the event inject queue
 	go func() {
 		startPrinting := false
 		for {
