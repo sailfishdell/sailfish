@@ -261,7 +261,6 @@ func StartInjectService(logger log.Logger, eb eh.EventBus, ew waiter) {
 				break
 			}
 
-			fmt.Printf("WATCHDOG")
 			s.Notify("WATCHDOG=1")
 		}
 	}()
