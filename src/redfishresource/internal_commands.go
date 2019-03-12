@@ -268,42 +268,52 @@ func StartInjectService(logger log.Logger, eb eh.EventBus, ew waiter) {
 		s = SimulateSdnotify()
 	}
 
-	listener, err := ew.Listen(context.Background(), func(event eh.Event) bool {
-		if event.EventType() == WatchdogEvent {
-			return true
-		}
-		return false
-	})
+	if interval := s.GetIntervalUsec(); interval == 0 {
+		fmt.Printf("Watchdog interval is not set, so skipping watchdog setup. Set WATCHDOG_USEC to set.\n")
+	} else {
+		fmt.Printf("Setting up watchdog\n")
 
-	if err != nil {
-		panic("Could not start listener")
+		// send watchdogs 3x per interval
+		interval = interval / 3
+
+		// set up listener for the watchdog events
+		listener, err := ew.Listen(context.Background(), func(event eh.Event) bool {
+			if event.EventType() == WatchdogEvent {
+				return true
+			}
+			return false
+		})
+
+		if err != nil {
+			panic("Could not start listener")
+		}
+
+		// goroutine to run sd_notify whenever we see a watchdog event
+		go func() {
+			defer s.Close()
+			for {
+				_, err := listener.Wait(context.Background())
+				if err != nil {
+					fmt.Printf("Watchdog wait exited\n")
+					break
+				}
+
+				s.Notify("WATCHDOG=1")
+			}
+		}()
+
+		// goroutine to inject watchdog events
+		go func() {
+			// inject a watchdog event every 10s. It will be processed by a listener elsewhere.
+			for {
+				time.Sleep(time.Duration(interval) * time.Microsecond)
+				data, err := eh.CreateEventData("WatchdogEvent")
+				if err != nil {
+					injectChan <- eh.NewEvent(WatchdogEvent, data, time.Now())
+				}
+			}
+		}()
 	}
-
-	// goroutine to run sd_notify
-	go func() {
-		defer s.Close()
-		for {
-			_, err := listener.Wait(context.Background())
-			if err != nil {
-				fmt.Printf("Watchdog wait exited\n")
-				break
-			}
-
-			s.Notify("WATCHDOG=1")
-		}
-	}()
-
-	// goroutine to inject watchdog events
-	go func() {
-		// inject a watchdog event every 10s. It will be processed by a listener elsewhere.
-		for {
-			time.Sleep(10 * time.Second)
-			data, err := eh.CreateEventData("WatchdogEvent")
-			if err != nil {
-				injectChan <- eh.NewEvent(WatchdogEvent, data, time.Now())
-			}
-		}
-	}()
 
 	// goroutine to synchronously handle the event inject queue
 	go func() {
