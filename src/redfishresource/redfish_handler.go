@@ -492,6 +492,9 @@ func createFilterArray(filter string) ([]FilterTest, bool) {
 			if strings.Contains(subSplit[0], "MessageID") {
 				subSplit[0] = "MessageId" //Bug fix to Handle MSM
 			}
+			if subSplit[1] == "Ok" {
+				subSplit[1] = "OK" //Bug fix to Handle MSM
+			}
 			filterArray = append(filterArray, FilterTest{subSplit[0], subSplit[1], searchTok})
 
 		} else {
