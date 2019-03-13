@@ -462,9 +462,9 @@ views:
         "instantiate('manager_cmc_integrated_redundancy', 'FQDD', FQDD, 'parenturi', view.GetURI())",
         "instantiate('lclogservices', 'FQDD', FQDD)",
         "instantiate('faultlistservices', 'FQDD', FQDD)",
-        "instantiate('lclogentrycollection', 'FQDD', FQDD)",
+        #Only instantiate 1 instance of lclog collection, it is too big to keep duplicate and each one generates alerts
+        "FQDD == 'CMC.Integrated.1' && instantiate('lclogentrycollection', 'FQDD', FQDD)",
         "instantiate('faultlistentrycollection', 'FQDD', FQDD)"
-
         ]
 
   "certificateservices":
