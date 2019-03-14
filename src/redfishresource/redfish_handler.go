@@ -218,7 +218,7 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if authAction != "authorized" {
-		http.Error(w, "Not authorized to access this resource: ", http.StatusUnauthorized)
+		http.Error(w, "Not authorized to access this resource: ", http.StatusMethodNotAllowed)
 		return
 	}
 
