@@ -51,16 +51,10 @@ func RegisterAggregate(s *testaggregate.Service) {
 						"Actions": map[string]interface{}{
 							"Oem": map[string]interface{}{
 								"#DellUpdateService.v1_0_0.DellUpdateService.Reset": map[string]interface{}{
-									"target": "/redfish/v1/UpdateService/Actions/Oem/DellUpdateService.Reset", //vw.GetActionURI("update.reset"), temporarily hardcoded until pumpservice can be parsed in instantiate
-								},
-								"UpdateService.v1_0_0#EID_674_UpdateService.Reset": map[string]interface{}{
-									"target": "/redfish/v1/UpdateService/Actions/Oem/EID_674_UpdateService.Reset", //vw.GetActionURI("update.eid674.reset"), temporarily hardcoded until pumpservice can be parsed in instantiate
+									"target": vw.GetActionURI("update.reset"),
 								},
 								"#DellUpdateService.v1_0_0.DellUpdateService.Syncup": map[string]interface{}{
-									"target": "/redfish/v1/UpdateService/Actions/Oem/DellUpdateService.Syncup", //vw.GetActionURI("update.syncup"), temporarily hardcoded until pumpservice can be parsed in instantiate
-								},
-								"UpdateService.v1_0_0#EID_674_UpdateService.Syncup": map[string]interface{}{
-									"target": "/redfish/v1/UpdateService/Actions/Oem/EID_674_UpdateService.Syncup", //vw.GetActionURI("update.eid674.syncup"), temporarily hardcoded until pumpservice can be parsed in instantiate
+									"target": vw.GetActionURI("update.syncup"),
 								},
 							},
 						},

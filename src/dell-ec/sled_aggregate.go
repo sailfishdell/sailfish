@@ -61,17 +61,6 @@ func RegisterSledAggregate(s *testaggregate.Service) {
 						},
 						"Actions": map[string]interface{}{
 							"Oem": map[string]interface{}{
-								// TODO: Remove per JIT-66996
-								"#DellChassis.v1_0_0#DellChassis.PeripheralMapping": map[string]interface{}{
-									"MappingType@Redfish.AllowableValues": []string{
-										"Accept",
-										"Clear",
-									},
-									"target": vw.GetActionURI("chassis.peripheralmapping"),
-								},
-								"#Chassis.VirtualReseat": map[string]interface{}{
-									"target": vw.GetActionURI("sledvirtualreseat"),
-								},
 								"#DellChassis.v1_0_0.PeripheralMapping": map[string]interface{}{
 									"MappingType@Redfish.AllowableValues": []string{
 										"Accept",
@@ -80,7 +69,7 @@ func RegisterSledAggregate(s *testaggregate.Service) {
 									"target": vw.GetActionURI("chassis.peripheralmapping"),
 								},
 								"#DellChassis.v1_0_0.VirtualReseat": map[string]interface{}{
-									"target": vw.GetActionURI("chassis.sledvirtualreseat"),
+									"target": vw.GetActionURI("chassis.virtualreseat"),
 								},
 							},
 						},
@@ -157,11 +146,8 @@ func RegisterSledAggregate(s *testaggregate.Service) {
 								"target": vw.GetActionURI("chassis.reset"),
 							},
 							"Oem": map[string]interface{}{
-								"#MSMConfigBackupURI": map[string]interface{}{
-									"target": vw.GetUploadURI("msmconfigbackup"),
-								},
 								"#DellChassis.v1_0_0.MSMConfigBackup": map[string]interface{}{
-									"target": vw.GetUploadURI("chassis.msmconfigbackup"),
+									"target": vw.GetUploadURI("msmconfigbackup"),
 								},
 							},
 						},

@@ -563,11 +563,7 @@ views:
         - "fn": "with_PumpHandledAction"
           "params": {"name": "update.reset", "uri": "/Actions/Oem/DellUpdateService.Reset", "timeout": 30}
         - "fn": "with_PumpHandledAction"
-          "params": {"name": "update.eid674.reset", "uri": "/Actions/Oem/EID_674_UpdateService.Reset", "timeout": 30}
-        - "fn": "with_PumpHandledAction"
           "params": {"name": "update.syncup", "uri": "/Actions/Oem/DellUpdateService.Syncup", "timeout": 30}
-        - "fn": "with_PumpHandledAction"
-          "params": {"name": "update.eid674.syncup", "uri": "/Actions/Oem/EID_674_UpdateService.Syncup", "timeout": 30}
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
       "Aggregate": "update_service"
@@ -705,9 +701,7 @@ views:
         - "fn": "with_PumpHandledAction"
           "params": {"name": "chassis.reset", "uri": "/Actions/Chassis.Reset", "timeout": 30}
         - "fn": "with_PumpHandledUpload"
-          "params": {"name": "msmconfigbackup", "uri": "/Actions/Oem/MSMConfigBackup", "timeout": 300}
-        - "fn": "with_PumpHandledUpload"
-          "params": {"name": "chassis.msmconfigbackup", "uri": "/Actions/Oem/DellChassis.MSMConfigBackup", "timeout": 300}
+          "params": {"name": "msmconfigbackup", "uri": "/Actions/Oem/DellChassis.MSMConfigBackup", "timeout": 300}
       "Aggregate": "system_chassis"
       "ExecPost": [
         "instantiate('attributes', 'parenturi', rooturi + '/Chassis/' + FQDD, 'FQDD', FQDD)",
@@ -1123,9 +1117,7 @@ views:
         - "fn": "with_PumpHandledAction"
           "params": {"name": "chassis.peripheralmapping", "uri": "/Actions/Oem/DellChassis.PeripheralMapping", "timeout": 30}
         - "fn": "with_PumpHandledAction"
-          "params": {"name": "sledvirtualreseat", "uri": "/Actions/Chassis.VirtualReseat", "timeout": 30}
-        - "fn": "with_PumpHandledAction"
-          "params": {"name": "chassis.sledvirtualreseat", "uri": "/Actions/Oem/DellChassis.VirtualReseat", "timeout": 30}
+          "params": {"name": "chassis.virtualreseat", "uri": "/Actions/Oem/DellChassis.VirtualReseat", "timeout": 30}
       "Aggregate": "sled"
       "ExecPost": [
         "instantiate('attributes', 'parenturi', rooturi + '/Chassis/' + FQDD, 'FQDD', FQDD)"

@@ -83,14 +83,6 @@ func RegisterIOMAggregate(s *testaggregate.Service) {
 								"#DellChassis.v1_0_0.VirtualReseat": map[string]interface{}{
 									"target": vw.GetActionURI("iom.virtualreseat"),
 								},
-								// TODO: Remove per JIT-66996
-								"DellChassis.v1_0_0#DellChassis.ResetPeakPowerConsumption": map[string]interface{}{
-									"target": vw.GetActionURI("iom.resetpeakpowerconsumption"),
-								},
-								// TODO: Remove per JIT-66996
-								"DellChassis.v1_0_0#DellChassis.VirtualReseat": map[string]interface{}{
-									"target": vw.GetActionURI("iom.virtualreseat"),
-								},
 							},
 						},
 					}}}, nil

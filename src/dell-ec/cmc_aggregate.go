@@ -95,17 +95,6 @@ func RegisterCMCAggregate(s *testaggregate.Service) {
 								"target": vw.GetActionURI("manager.forcefailover"),
 							},
 							"Oem": map[string]interface{}{
-								// TODO: Remove per JIT-66996
-								"DellManager.v1_0_0#DellManager.ResetToDefaults": map[string]interface{}{
-									"ResetType@Redfish.AllowableValues": []string{
-										"ClearToShip",
-										"Decommission",
-										"ResetFactoryConfig",
-										"ResetToEngineeringDefaults",
-										"Default",
-									},
-									"target": vw.GetActionURI("manager.resettodefaults"),
-								},
 								"#DellManager.v1_0_0.DellManager.ResetToDefaults": map[string]interface{}{
 									"ResetType@Redfish.AllowableValues": []string{
 										"ClearToShip",
