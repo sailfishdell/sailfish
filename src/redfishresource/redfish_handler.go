@@ -732,8 +732,9 @@ func handleCollectionQueryOptions(r *http.Request, a *RedfishAuthorizationProper
 		// redfish standard says that filtering changes odata.count
 		// but top and skip do not
 		membersArr, _ = handleCollectionFilter(a.filter, membersArr)
-		newResults["Members@odata.count"] = len(membersArr)
 	}
+	//Always update count, sometimes it comes out wrong for some reason
+	newResults["Members@odata.count"] = len(membersArr)
 
 	// figure out parameters for the final slice
 	beginning := 0
