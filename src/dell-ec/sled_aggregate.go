@@ -158,10 +158,10 @@ func RegisterSledAggregate(s *testaggregate.Service) {
 							},
 							"Oem": map[string]interface{}{
 								"#MSMConfigBackupURI": map[string]interface{}{
-									"target": vw.GetActionURI("msmconfigbackup"),
+									"target": vw.GetUploadURI("msmconfigbackup"),
 								},
 								"#DellChassis.v1_0_0.MSMConfigBackup": map[string]interface{}{
-									"target": vw.GetActionURI("chassis.msmconfigbackup"),
+									"target": vw.GetUploadURI("chassis.msmconfigbackup"),
 								},
 							},
 						},
