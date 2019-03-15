@@ -4,11 +4,16 @@ import (
 	"context"
 	"errors"
 	"fmt"
+  "encoding/json"
 
 	"github.com/superchalupa/sailfish/src/log"
 	"github.com/superchalupa/sailfish/src/ocp/model"
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
 )
+
+type isHTTPCode interface{
+  ErrMessage() []string
+}
 
 // already locked at aggregate level when we get here
 func (s *View) PropertyGet(
@@ -81,6 +86,7 @@ func (s *View) PropertyPatch(
 	meta map[string]interface{},
 ) error {
 
+
 	s.Lock()
 	defer s.Unlock()
 
@@ -102,15 +108,36 @@ func (s *View) PropertyPatch(
 	if ok {
 		newval, err := controller.UpdateRequest(ctx, property, body, auth)
 		log.MustLogger("PATCH").Debug("update request", "newval", newval, "err", err)
-		if err == nil {
+    if e, ok := err.(isHTTPCode); ok {
+      //errors reported from patch & formatted correctly
+      err_extendedinfos := []domain.ExtendedInfo{}
+      for _, err_msg := range(e.ErrMessage()) {
+        //generted extended error info msg for each err
+        fmt.Println("CAPTURED: ", err_msg)
+        //de-serialize err_msg here! need to turn from string into map[string]interface{}
+        msg := domain.ExtendedInfo{}
+        err := json.Unmarshal([]byte(err_msg), &msg)
+        if err != nil {
+          log.MustLogger("PATCH").Crit("Error could not be unmarshalled to an EEMI message")
+          return errors.New("Error updating: Could not unmarshal EEMI message")
+        }
+        err_extendedinfos = append(err_extendedinfos, msg)
+      }
+      oeem := *domain.NewObjectExtendedErrorMessages([]interface{}{err_extendedinfos})
+      return &domain.CombinedPropObjInfoError{
+        ObjectExtendedErrorMessages: oeem,
+      }
+    } else if err == nil {
+      //no errors reported from patch, return default message
 			rrp.Value = newval
-			// TODO: henry to put the official message here
+      default_msg := domain.ExtendedInfo{}
+      oeim := *domain.NewObjectExtendedInfoMessages([]interface{}{default_msg.GetDefaultExtendedInfo()})
 			return &domain.CombinedPropObjInfoError{
-				ObjectExtendedInfoMessages:   *domain.NewObjectExtendedInfoMessages([]interface{}{"SUCCESSFULLY PATCHED OBJECT"}),
-				PropertyExtendedInfoMessages: *domain.NewPropertyExtendedInfoMessages([]interface{}{"SUCCESSFULLY PATCHED PROPERTY"}),
+				ObjectExtendedInfoMessages:   oeim,
 			}
-		}
-		return err
+    }
+
+    return errors.New("Error updating: patch error message not formatted properly")
 	}
 
 	return errors.New("Error updating: no property specified")
