@@ -65,6 +65,7 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 			timeF = 0
 		}
 		createdTime := time.Unix(int64(timeF), 0)
+    cTime := createdTime.Format("2006-01-02T15:04:05-07:00")
 
 		severity := logEntry.Severity
 		if logEntry.Severity == "Informational" {
@@ -82,7 +83,7 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 					"GET": []string{"Login"},
 				},
 				Properties: map[string]interface{}{
-					"Created":     createdTime,
+          "Created": cTime,
 					"Description": logEntry.Name,
 					"Name":        logEntry.Name,
 					"EntryType":   logEntry.EntryType,
@@ -199,6 +200,7 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 			timeF = 0
 		}
 		createdTime := time.Unix(int64(timeF), 0)
+    cTime := createdTime.Format("2006-01-02T15:04:05-07:00")
 
 		uuid := eh.NewUUID()
 		uri := fmt.Sprintf("%s/%s", logUri, faultEntry.Name)
@@ -227,7 +229,7 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 					"GET": []string{"Login"},
 				},
 				Properties: map[string]interface{}{
-					"Created":                 createdTime,
+          "Created": cTime,
 					"Description":             "FaultList Entry " + faultEntry.FQDD,
 					"Name":                    "FaultList Entry " + faultEntry.FQDD,
 					"EntryType":               faultEntry.EntryType,
@@ -265,6 +267,7 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 			timeF = 0
 		}
 		createdTime := time.Unix(int64(timeF), 0)
+    cTime := createdTime.Format("2006-01-02T15:04:05-07:00")
 
 		//Create Alert type event:
 
@@ -272,7 +275,7 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 			eh.NewEvent(eventservice.RedfishEvent, &eventservice.RedfishEventData{
 				EventType:      "Alert",
 				EventId:        logEntry.EventId,
-				EventTimestamp: createdTime.String(),
+        EventTimestamp: cTime,
 				Severity:       logEntry.Severity,
 				Message:        logEntry.Message,
 				MessageId:      logEntry.MessageID,
