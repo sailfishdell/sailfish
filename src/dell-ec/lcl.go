@@ -220,8 +220,8 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 			&domain.CreateRedfishResource{
 				ID:          uuid,
 				ResourceURI: uri,
-				Type:        "#LogEntryCollection.LogEntryCollection",
-				Context:     "/redfish/v1/$metadata#LogEntryCollection.LogEntryCollection",
+				Type:        "#LogEntry.LogEntry",
+				Context:     "/redfish/v1/$metadata#LogEntry.LogEntry",
 				Headers: map[string]string{
 					"Location": uri,
 				},

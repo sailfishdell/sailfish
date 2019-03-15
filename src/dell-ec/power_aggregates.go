@@ -54,7 +54,7 @@ func RegisterAggregate(s *testaggregate.Service) {
 				&domain.CreateRedfishResource{
 					ResourceURI: vw.GetURI(),
 					Type:        "#Power.v1_0_2.Power",
-					Context:     params["rooturi"].(string) + "/$metadata#Power.PowerSystem.Chassis.1/Power/$entity",
+					Context:     params["rooturi"].(string) + "/$metadata#Power.Power",
 					Privileges: map[string]interface{}{
 						"GET": []string{"Login"},
 					},
@@ -89,7 +89,7 @@ func RegisterAggregate(s *testaggregate.Service) {
 
 					ResourceURI: vw.GetURI(),
 					Type:        "#DellPower.v1_0_0.DellPowerTrends",
-					Context:     "/redfish/v1/$metadata#Power.PowerSystem.Chassis.1/Power/$entity",
+					Context:     "/redfish/v1/$metadata#Power.Power",
 					Privileges: map[string]interface{}{
 						"GET":    []string{"Login"},
 						"POST":   []string{}, // cannot create sub objects
@@ -112,7 +112,7 @@ func RegisterAggregate(s *testaggregate.Service) {
 				&domain.CreateRedfishResource{
 					ResourceURI: vw.GetURI(),
 					Type:        "#DellPower.v1_0_0.DellPowerTrend",
-					Context:     "/redfish/v1/$metadata#Power.PowerSystem.Chassis.1/Power/$entity",
+					Context:     "/redfish/v1/$metadata#Power.Power",
 					Privileges: map[string]interface{}{
 						"GET":    []string{"Login"},
 						"POST":   []string{}, // cannot create sub objects
@@ -137,8 +137,8 @@ func RegisterAggregate(s *testaggregate.Service) {
 			return []eh.Command{
 				&domain.CreateRedfishResource{
 					ResourceURI: vw.GetURI(),
-					Type:        "#Power.v1_0_2.PowerControl",
-					Context:     "/redfish/v1/$metadata#Power.PowerSystem.Chassis.1/Power/$entity",
+					Type:        "#Power.v1_0_0.PowerControl",
+					Context:     "/redfish/v1/$metadata#Power.v1_0_0.PowerControl",
 					Privileges: map[string]interface{}{
 						"GET":    []string{"Login"},
 						"POST":   []string{}, // cannot create sub objects
@@ -183,8 +183,8 @@ func RegisterAggregate(s *testaggregate.Service) {
 			return []eh.Command{
 				&domain.CreateRedfishResource{
 					ResourceURI: vw.GetURI(),
-					Type:        "#Power.v1_0_2.PowerSupply",
-					Context:     "/redfish/v1/$metadata#Power.PowerSystem.Chassis.1/Power/$entity",
+					Type:        "#Power.v1_0_0.PowerSupply",
+					Context:     "/redfish/v1/$metadata#Power.v1_0_0.PowerSupply",
 					Privileges: map[string]interface{}{
 						"GET":    []string{"Login"},
 						"POST":   []string{}, // cannot create sub objects

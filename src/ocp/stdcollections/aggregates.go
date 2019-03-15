@@ -28,7 +28,7 @@ func RegisterAggregate(s *testaggregate.Service) {
 			return []eh.Command{
 				&domain.CreateRedfishResource{
 					ResourceURI: vw.GetURI(),
-					Type:        "#ServiceRoot.v1_1_0.ServiceRoot",
+					Type:        "#ServiceRoot.v1_4_0.ServiceRoot",
 					Context:     vw.GetURI() + "/$metadata#ServiceRoot.ServiceRoot",
 
 					Privileges: map[string]interface{}{

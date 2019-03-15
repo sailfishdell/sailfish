@@ -27,15 +27,14 @@ func RegisterAggregate(s *testaggregate.Service) {
 					Properties: map[string]interface{}{
 						"Id":             "TelemetryService",
 						"Name":           "Telemetry Service",
-						"ServiceEnabled": true,
 						"Actions": map[string]interface{}{
 							"#TelemetryService.SubmitTestMetricReport": map[string]interface{}{
 								"target": vw.GetActionURI("submit.test.metric.report"),
 							},
-							"Oem": map[string]interface{}{},
-							"MetricReportDefinitions": map[string]interface{}{"@odata.id": vw.GetURI() + "/MetricReportDefinitions"},
-							"MetricReports":           map[string]interface{}{"@odata.id": vw.GetURI() + "/MetricReports"},
 						},
+						"Oem": map[string]interface{}{},
+						"MetricReportDefinitions": map[string]interface{}{"@odata.id": vw.GetURI() + "/MetricReportDefinitions"},
+						"MetricReports":           map[string]interface{}{"@odata.id": vw.GetURI() + "/MetricReports"},
 					}},
 
 				&domain.UpdateRedfishResourceProperties{
@@ -52,8 +51,8 @@ func RegisterAggregate(s *testaggregate.Service) {
 			return []eh.Command{
 				&domain.CreateRedfishResource{
 					ResourceURI: vw.GetURI(),
-					Type:        "#TelemetryService.v1_0_0.___TODO___FIXME___",
-					Context:     "/redfish/v1/$metadata#TelemetryService.___TODO___FIXME___",
+					Type:        "#MetricReportDefinitionCollection.MetricReportDefinitionCollection",
+					Context:     "/redfish/v1/$metadata#MetricReportDefinitionCollection.MetricReportDefinitionCollection",
 					Privileges: map[string]interface{}{
 						"GET": []string{"Login"},
 					},
@@ -70,8 +69,8 @@ func RegisterAggregate(s *testaggregate.Service) {
 			return []eh.Command{
 				&domain.CreateRedfishResource{
 					ResourceURI: vw.GetURI(),
-					Type:        "#TelemetryService.v1_0_0.___TODO___FIXME___",
-					Context:     "/redfish/v1/$metadata#TelemetryService.___TODO___FIXME___",
+					Type:        "#MetricReportCollection.MetricReportCollection",
+					Context:     "/redfish/v1/$metadata#MetricReportCollection.MetricReportCollection",
 					Privileges: map[string]interface{}{
 						"GET": []string{"Login"},
 					},

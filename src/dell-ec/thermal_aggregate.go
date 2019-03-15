@@ -65,7 +65,7 @@ func RegisterThermalAggregate(s *testaggregate.Service) {
 			return []eh.Command{
 				&domain.CreateRedfishResource{
 					ResourceURI: vw.GetURI(),
-					Type:        "#Thermal.v1_0_2.Temperature",
+					Type:        "#Thermal.v1_0_0.Temperature",
 					Context:     "/redfish/v1/$metadata#Thermal.Thermal",
 					Privileges: map[string]interface{}{
 						"GET":    []string{"Login"},
@@ -83,7 +83,7 @@ func RegisterThermalAggregate(s *testaggregate.Service) {
 						"ReadingCelsius@meta":            vw.Meta(view.GETProperty("sensorReading"), view.GETModel("default")),
 						"Status": map[string]interface{}{
 							"HealthRollup@meta": vw.Meta(view.GETProperty("sensorHealth"), view.GETModel("default")),
-							"State":             "None", //hardcoded
+							"State":             nil, //hardcoded
 							"Health@meta":       vw.Meta(view.GETProperty("sensorHealth"), view.GETModel("default")),
 						},
 						"UpperThresholdCritical@meta":    vw.Meta(view.GETProperty("UpperCriticalThreshold"), view.GETModel("default")),

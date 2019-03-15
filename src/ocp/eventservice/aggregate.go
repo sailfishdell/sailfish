@@ -20,7 +20,7 @@ func RegisterAggregate(s *testaggregate.Service) {
 			return []eh.Command{
 				&domain.CreateRedfishResource{
 					ResourceURI: vw.GetURI(),
-					Type:        "#EventService.v1_0_2.EventService",
+					Type:        "#EventService.v1_1_0.EventService",
 					Context:     "/redfish/v1/$metadata#EventService.EventService",
 					Privileges: map[string]interface{}{
 						"GET":   []string{"Login"},
