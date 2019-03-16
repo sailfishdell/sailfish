@@ -910,7 +910,7 @@ views:
         - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "health", "uniquename": "'am2_health_' + FQDD", "passthru": {"health_fqdd": "'System.Chassis.1#' + FQDD"} }
         - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "inst_power", "uniquename": "'am2_iom_' + FQDD", "passthru": {"DM_FQDD": "FQDD"}}
+          "params": {"modelname": "default", "cfgsection": "inst_power", "uniquename": "'am2_iom_inst_pwr' + FQDD", "passthru": {"DM_FQDD": "FQDD"}}
       "View":
         - "fn": "linkModel"
           "params": {"existing": "default", "linkname": "health"}
@@ -1275,6 +1275,8 @@ awesome_mapper:
     chassis:
       - { SelectEventType: "AttributeUpdated", Select: "data.FQDD == FQDD && data.Name == 'ChassisPowerStatus'",
             ModelUpdate: [ {Property: "power_state", Query: "map_chassis_state(data.Value)"}]}
+      - { SelectEventType: "AttributeUpdated", Select: "data.FQDD == FQDD && data.Name == 'IndicatorLED'",
+            ModelUpdate: [ {Property: "indicator_led", Query: "map_led_value(data.Value)"}]}
 
     fan:
       - { SelectEventType: "FanEvent", Select: "data.ObjectHeader.FQDD == DM_FQDD",
@@ -1444,8 +1446,8 @@ mappings:
         - {Property: "chassis_type",            FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "ChassisType" }
         - {Property: "model",                   FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Model" }
         - {Property: "manufacturer",            FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Manufacturer" }
-        - {Property: "description",             FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Description" }
         - {Property: "indicator_led",           FQDD: "System.Chassis.1", Group: "Info", Index: "1", Name: "IndicatorLED" }
+        - {Property: "description",             FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Description" }
         - {Property: "redundancy_mode",         FQDD: "{FQDD}", Group: "Redundancy", Index: "1", Name: "Mode" }
         - {Property: "redundancy_health_state", FQDD: "{FQDD}", Group: "Redundancy", Index: "1", Name: "State" }
         - {Property: "redundancy_min",          FQDD: "{FQDD}", Group: "Redundancy", Index: "1", Name: "MinNumNeeded" }
@@ -1461,13 +1463,12 @@ mappings:
         - {Property: "model",        FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Model" }
         - {Property: "name",         FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Name" }
         - {Property: "manufacturer", FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Manufacturer" }
+        - {Property: "indicator_led",FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "IndicatorLED" }
         - {Property: "service_tag",  FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "ServiceTag" }
-        - {Property: "indicator_led", FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "IndicatorLED"}
 
     Chassis/System.Chassis:
         - {Property: "asset_tag",    FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "AssetTag" }
         - {Property: "description",  FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Description" }
-        - {Property: "power_state",  FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "ChassisPowerStatus" }
         - {Property: "serial",       FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "SerialNumber" }
         - {Property: "part_number",  FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "PartNumber" }
         - {Property: "chassis_type", FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "ChassisType"}
@@ -1475,7 +1476,6 @@ mappings:
         - {Property: "name",         FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Name" }
         - {Property: "manufacturer", FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Manufacturer" }
         - {Property: "service_tag",  FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "ServiceTag" }
-        - {Property: "indicator_led", FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "IndicatorLED"}
 
     Chassis/Slots:
         - {Property: "slot_config",   FQDD: "System.Chassis.1", Group: "{GROUP}", Index: "{INDEX}", Name: "Config" }
