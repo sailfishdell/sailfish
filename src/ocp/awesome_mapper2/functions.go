@@ -79,6 +79,20 @@ func init() {
 
 			return args[2], nil
 		})
+	AddFunction("map_chassis_state", func(args ...interface{}) (interface{}, error) {
+		switch t := args[0].(string); t {
+		case "Chassis Standby Power State":
+			return "Off", nil
+		case "Chassis Power On State":
+			return "On", nil
+		case "Chassis Powering On State":
+			return "PoweringOn", nil
+		case "Chassis Powering Off State":
+			return "PoweringOff", nil
+		default:
+			return nil, nil
+		}
+	})
 
 	AddFunction("int", func(args ...interface{}) (interface{}, error) {
 		switch t := args[0].(type) {
