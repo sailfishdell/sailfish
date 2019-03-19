@@ -16,6 +16,37 @@ import (
 func inithealth(ctx context.Context, logger log.Logger, ch eh.CommandHandler) {
 	subSystemHealthList := map[string]interface{}{}
 
+  awesome_mapper2.AddFunction("remove_health", func(args ... interface{}) (interface{}, error) {
+    removedEvent, ok := args[0].(*dm_event.IomRemovedData)
+    if !ok {
+			logger.Crit("Mapper configuration error: iom removed event data not passed", "args[0]", args[0], "TYPE", fmt.Sprintf("%T", args[0]))
+			return nil, errors.New("Mapper configuration error: iom removed event data not passed")
+    }
+    aggregateUUID, ok := args[1].(eh.UUID)
+		if !ok {
+			logger.Crit("Mapper configuration error: aggregate UUID not passed", "args[1]", args[1], "TYPE", fmt.Sprintf("%T", args[1]))
+			return nil, errors.New("Mapper configuration error: aggregate UUID not passed")
+    }
+    subsys := removedEvent.Name
+    for key, _ := range subSystemHealthList {
+      if key == subsys {
+        delete(subSystemHealthList, subsys)
+        break
+      }
+    }
+    //TODO: when iom is removed, is a new health event being sent out?
+    // IF NOT: is odatalite updating health? if so this function needs
+    //   to change the health of the component
+    // IF SO: prevent 'generate_new_health' from remaking the subsystem
+
+		ch.HandleCommand(ctx,
+			&domain.RemoveRedfishResourceProperty{
+				ID:         aggregateUUID,
+				Property:   subsys})
+
+    return nil, nil
+  })
+
 	awesome_mapper2.AddFunction("generate_new_health", func(args ...interface{}) (interface{}, error) {
 		healthEvent, ok := args[0].(*dm_event.HealthEventData)
 		if !ok {

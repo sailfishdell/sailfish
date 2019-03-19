@@ -23,6 +23,7 @@ func init() {
 	eh.RegisterCommand(func() eh.Command { return &CreateRedfishResource{} })
 	eh.RegisterCommand(func() eh.Command { return &RemoveRedfishResource{} })
 	eh.RegisterCommand(func() eh.Command { return &UpdateRedfishResourceProperties{} })
+  eh.RegisterCommand(func() eh.Command { return &RemoveRedfishResourceProperty{} })
 	eh.RegisterCommand(func() eh.Command { return &InjectEvent{} })
 }
 
@@ -30,6 +31,7 @@ const (
 	CreateRedfishResourceCommand           = eh.CommandType("internal:RedfishResource:Create")
 	RemoveRedfishResourceCommand           = eh.CommandType("internal:RedfishResource:Remove")
 	UpdateRedfishResourcePropertiesCommand = eh.CommandType("internal:RedfishResourceProperties:Update")
+  RemoveRedfishResourcePropertyCommand   = eh.CommandType("internal:RedfishResourceProperties:Remove")
 	InjectEventCommand                     = eh.CommandType("internal:Event:Inject")
 )
 
@@ -37,6 +39,7 @@ const (
 var _ = eh.Command(&CreateRedfishResource{})
 var _ = eh.Command(&RemoveRedfishResource{})
 var _ = eh.Command(&UpdateRedfishResourceProperties{})
+var _ = eh.Command(&RemoveRedfishResourceProperty{})
 var _ = eh.Command(&InjectEvent{})
 
 var immutableProperties = []string{"@odata.id", "@odata.type", "@odata.context"}
@@ -160,6 +163,31 @@ func (c *RemoveRedfishResource) Handle(ctx context.Context, a *RedfishResourceAg
 		ResourceURI: a.ResourceURI,
 	}, time.Now()))
 	return nil
+}
+
+type RemoveRedfishResourceProperty struct {
+  ID          eh.UUID `json:"id"`
+  Property    string  `eh:"optional"`
+}
+
+// AggregateType satisfies base Aggregate interface
+func (c *RemoveRedfishResourceProperty) AggregateType() eh.AggregateType { return AggregateType }
+
+// AggregateID satisfies base Aggregate interface
+func (c *RemoveRedfishResourceProperty) AggregateID() eh.UUID { return c.ID }
+
+// CommandType satisfies base Command interface
+func (c *RemoveRedfishResourceProperty) CommandType() eh.CommandType {
+	return RemoveRedfishResourcePropertyCommand
+}
+func (c *RemoveRedfishResourceProperty) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
+  properties := a.Properties.Value.(map[string]interface{})
+  for key, _ := range(properties) {
+    if key == c.Property {
+      delete(properties, key)
+    }
+  }
+  return nil
 }
 
 type UpdateRedfishResourceProperties struct {
