@@ -1233,7 +1233,7 @@ awesome_mapper:
       - { SelectEventType: "HealthEvent",
           Select: "true",
           ModelUpdate: [ {Property: "health", Query: "generate_new_health(data, view.GetUUID())"} ]}
-      - { SelectEventType: "IomRemoved",
+      - { SelectEventType: "ComponentRemoved",
           Select: "true",
           ModelUpdate: [ {Property: "health", Query: "remove_health(data, view.GetUUID())"} ]}
 

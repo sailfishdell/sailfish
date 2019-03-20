@@ -14,7 +14,7 @@ const (
 	PowerConsumptionDataObjEvent        = eh.EventType("PowerConsumptionDataObjEvent")
 	AvgPowerConsumptionStatDataObjEvent = eh.EventType("AvgPowerConsumptionStatDataObjEvent")
 	IomCapability                       = eh.EventType("IomCapability")
-  IomRemoved                          = eh.EventType("IomRemoved")
+  ComponentRemoved                    = eh.EventType("ComponentRemoved")
 	FileReadEvent                       = eh.EventType("FileReadEvent")
 	FileLinkEvent                       = eh.EventType("FileLinkEvent")
 	StorageEnclosureEvent               = eh.EventType("StorageEnclosureEvent")
@@ -39,7 +39,7 @@ func init() {
 		return f
 	})
 	eh.RegisterEventData(IomCapability, func() eh.EventData { return &IomCapabilityData{} })
-	eh.RegisterEventData(IomRemoved, func() eh.EventData { return &IomRemovedData{} })
+	eh.RegisterEventData(ComponentRemoved, func() eh.EventData { return &ComponentRemovedData{} })
 	eh.RegisterEventData(StorageAdapterEvent, func() eh.EventData { return &StorageAdapterObjEventData{} })
 	eh.RegisterEventData(StorageEnclosureEvent, func() eh.EventData { return &StorageEnclosureObjEventData{} })
 	eh.RegisterEventData(StoragePhysicalEvent, func() eh.EventData { return &StoragePhysicalObjEventData{} })
@@ -55,7 +55,7 @@ type IomCapabilityData struct {
 	IOMConfig_objects       interface{}
 }
 
-type IomRemovedData struct {
+type ComponentRemovedData struct {
   Name                    string
 }
 
