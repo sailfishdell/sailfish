@@ -846,20 +846,17 @@ views:
         - "fn": "stdFormatters"
           "params":
       "Aggregate": "thermal"
-      "ExecPost": [
-        "instantiate('sensor', 'FQDD', FQDD )",
-      ]
 
   "sensor":
       "Logger": ["module", "Thermal"]
       "Models":
-        "default":  {"unique_name": "'Sensor'"}
+        "default":  {"unique_name": "FQDD" }
       "Controllers":
         - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "sensor", "uniquename": "'am2_sensor_' + FQDD ", "passthru": {"FQDD": "'System.Chassis.1#Temperature.CHASSIS_AMBIENT'" } }
+          "params": {"modelname": "default", "cfgsection": "sensor", "uniquename": "'am2_sensor_' + FQDD ", "passthru": { 'collection_uri': 'view.GetURI()' } }
       "View":
         - "fn": "with_URI"
-          "params": "rooturi + '/Chassis/System.Chassis.1/Sensors/Temperatures/System.Chassis.1#Temperature.CHASSIS_AMBIENT'"
+          "params": "rooturi + '/Chassis/System.Chassis.1/Sensors/Temperatures/' + FQDD"
         - "fn": "withModel"
           "params": {"name": "global_health", "expr": "globalHealthModel"}
         - "fn": "PublishResourceUpdatedEventsForModel"
@@ -1208,6 +1205,9 @@ awesome_mapper:
           ModelUpdate: [ {Property: "fan_uris", Query: "removefromset(model, propname, data.ResourceURI)"} ]}
 
     thermal_sensor:
+      - { SelectEventType: "ThermalSensorEvent",
+          Select: "true",
+          Exec: [ "updateSensorEvent(rooturi + '/Chassis/System.Chassis.1/Sensors/Temperatures', data)" ]}
       - { SelectEventType: "RedfishResource:created",
           Select: "baseuri(data.ResourceURI) == rooturi + '/Chassis/System.Chassis.1/Sensors/Temperatures'",
           ModelUpdate: [ {Property: "temperature_uris", Query: "addtoset(model, propname, data.ResourceURI)"} ]}
@@ -1299,17 +1299,6 @@ awesome_mapper:
                 {Property: "Rotor1rpm", Query: "data.Rotor1rpm" },
                 {Property: "rpm", Query: "int((data.Rotor1rpm+data.Rotor2rpm)/2)" },
                 {Property: "FanStateMask", Query: "data.FanStateMask" }]}
-
-    sensor:
-      - { SelectEventType: "ThermalSensorEvent", Select: "data.ObjectHeader.FQDD == FQDD",
-            ModelUpdate: [
-                {Property: "LowerWarningThreshold", Query: "data.LowerWarningThreshold" },
-                {Property: "UpperWarningThreshold", Query: "data.UpperWarningThreshold" },
-                {Property: "LowerCriticalThreshold", Query: "data.LowerCriticalThreshold" },
-                {Property: "UpperCriticalThreshold", Query: "data.UpperCriticalThreshold" },
-                {Property: "sensorReading", Query: "data.SensorReading" },
-                {Property: "sensorHealth", Query: "map_health_value(data.SensorHealth)" }]}
-
 
     inst_power:
       - { SelectEventType: "InstPowerEvent", Select: "data.FQDD == DM_FQDD",

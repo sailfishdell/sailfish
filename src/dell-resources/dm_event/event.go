@@ -106,6 +106,11 @@ type ThermalSensorEventData struct {
 	SensorHealth           int `json:"sensorHealth"`
 	UpperWarningThreshold  int `json:"upperWarningThreshold"`
 	LowerCriticalThreshold int `json:"lowerCriticalThreshold"`
+    OffsetDeviceName       string `json:"offsetDeviceName"`
+    OffsetDeviceFQDD       string `json:"offsetDeviceFQDD"`
+    OffsetKey              string `json:"offsetKey"`
+    OffsetSensorName       string `json:"offsetSensorName"`
+    OffsetVendorName       string `json:"offsetVendorName"`
 }
 type BaseSoftwareInventoryObjectobj struct {
 	OffsetVersionDependencyArray string `json:"OffsetVersionDependencyArray"`
