@@ -812,6 +812,7 @@ func handleSelect(r *http.Request, d *HTTPCmdProcessedData) *HTTPCmdProcessedDat
 			makesel(&selectQuery, []string{"Name"})
 			makesel(&selectQuery, []string{"Description"})
 			makesel(&selectQuery, []string{"@*"})
+      makesel(&selectQuery, []string{"AttributeRegistry"})
 		}
 	}
 
