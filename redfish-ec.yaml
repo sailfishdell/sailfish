@@ -688,7 +688,7 @@ views:
         - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "chassis", "uniquename": "'system_chassis:' + FQDD", "passthru": {"FQDD" : "FQDD"} }
         - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "health", "uniquename": "'am2_health_' + FQDD", "passthru": {"health_fqdd": "'System.Chassis.1#SubSystem.1#Group.1'"} }
+          "params": {"modelname": "default", "cfgsection": "health", "uniquename": "'am2_health_' + FQDD", "passthru": {"health_fqdd": "'Root'"} }
       "View":
         - "fn": "withModel"
           "params": {"name": "global_health", "expr": "globalHealthModel"}
