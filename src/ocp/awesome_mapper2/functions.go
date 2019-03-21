@@ -406,17 +406,6 @@ func init() {
     }
   })
 
-  AddFunction("map_led_value", func(args ...interface{}) (interface{}, error) {
-    switch t := args[0].(string); t {
-    case "Blink-Off", "BLINK-OFF":
-      return "Lit", nil
-    case "Blink-1", "Blink-2", "BLINK-ON":
-      return "Blinking", nil
-    default:
-      return t, nil
-    return nil, nil
-    }
-  })
 
 	AddFunction("read_file", func(args ...interface{}) (interface{}, error) {
 		lines := ""

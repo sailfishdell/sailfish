@@ -129,8 +129,10 @@ func RegisterAggregate(s *testaggregate.Service) {
 					ResourceURI: vw.GetURI(),
 					Type:        "#LogEntryCollection.LogEntryCollection",
 					Context:     params["rooturi"].(string) + "/$metadata#LogEntryCollection.LogEntryCollection",
+                                        Plugin:      "GenericActionHandler",
 					Privileges: map[string]interface{}{
 						"GET": []string{"Login"},
+                                                "POST": []string{"ConfigureManager"},
 					},
 					Properties: map[string]interface{}{
 						"Description":              "Providing additional health information for the devices which support rolled up health data",

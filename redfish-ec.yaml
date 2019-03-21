@@ -619,6 +619,8 @@ views:
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/Managers/' + FQDD + '/Logs/FaultList'"
+        - "fn": "with_PumpHandledAction"
+          "params": {"name": "fault.add", "uri": "", "timeout": 30}
         - "fn": "stdFormatters"
           "params":
       "Aggregate": "faultlistentrycollection"
@@ -1270,8 +1272,6 @@ awesome_mapper:
     chassis:
       - { SelectEventType: "AttributeUpdated", Select: "data.FQDD == FQDD && data.Name == 'ChassisPowerStatus'",
             ModelUpdate: [ {Property: "power_state", Query: "map_chassis_state(data.Value)"}]}
-      - { SelectEventType: "AttributeUpdated", Select: "data.FQDD == FQDD && data.Name == 'IndicatorLED'",
-            ModelUpdate: [ {Property: "indicator_led", Query: "map_led_value(data.Value)"}]}
 
     fan:
       - { SelectEventType: "FanEvent", Select: "data.ObjectHeader.FQDD == DM_FQDD",
@@ -1371,6 +1371,7 @@ mappings:
         - {Property: "manufacturer",     FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Manufacturer" }
         - {Property: "serial",           FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "SerialNumber" }
         - {Property: "part_number",      FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "PartNumber" }
+        - {Property: "indicator_led",    FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "IndicatorLED" }
         - {Property: "name",             FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Name" }
         - {Property: "sled_profile",     FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "SledProfile" }
         - {Property: "sub_chassis_type", FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "ChassisSubType" }

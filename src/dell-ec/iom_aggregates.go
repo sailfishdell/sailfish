@@ -25,7 +25,7 @@ func RegisterIOMAggregate(s *testaggregate.Service) {
 					Context:     "/redfish/v1/$metadata#ChassisCollection.ChassisCollection/Members/$entity",
 					Privileges: map[string]interface{}{
 						"GET":    []string{"Login"},
-						"POST":   []string{}, // cannot create sub objects
+						"POST":   []string{"ConfigureManager"}, // cannot create sub objects
 						"PUT":    []string{},
 						"PATCH":  []string{"ConfigureManager"},
 						"DELETE": []string{}, // can't be deleted

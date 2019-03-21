@@ -221,12 +221,14 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 				ID:          uuid,
 				ResourceURI: uri,
 				Type:        "#LogEntry.LogEntry",
+				Plugin:      "ECFault",
 				Context:     "/redfish/v1/$metadata#LogEntry.LogEntry",
 				Headers: map[string]string{
 					"Location": uri,
 				},
 				Privileges: map[string]interface{}{
 					"GET": []string{"Login"},
+                                        "DELETE":[]string{"ConfigureManager"},
 				},
 				Properties: map[string]interface{}{
           "Created": cTime,
@@ -520,4 +522,70 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 			}
 		}
 	}()
+}
+
+const (
+	RequestFaultRemove   = eh.EventType("Request:FaultRemove")
+)
+
+
+
+func init() {
+	// implemented
+	eh.RegisterCommand(func() eh.Command { return &FaultDELETE{} })
+	eh.RegisterEventData(RequestFaultRemove, func() eh.EventData { return &RequestFaultRemoveData{} })
+}
+
+const (
+	FaultDELETECommand = eh.CommandType("ECFault:DELETE")
+)
+
+// Static type checking for commands to prevent runtime errors due to typos
+var _ = eh.Command(&FaultDELETE{})
+
+// HTTP DELETE Command
+type FaultDELETE struct {
+	ID    eh.UUID `json:"id"`
+	CmdID eh.UUID `json:"cmdid"`
+}
+
+type RequestFaultRemoveData struct {
+	ID          eh.UUID // id of aggregate
+	CmdID       string 
+	ResourceURI string
+}
+
+func (c *FaultDELETE) AggregateType() eh.AggregateType { return domain.AggregateType }
+func (c *FaultDELETE) AggregateID() eh.UUID            { return c.ID }
+func (c *FaultDELETE) CommandType() eh.CommandType     { return FaultDELETECommand }
+func (c *FaultDELETE) SetAggID(id eh.UUID)             { c.ID = id }
+func (c *FaultDELETE) SetCmdID(id eh.UUID)             { c.CmdID = id }
+func (c *FaultDELETE) Handle(ctx context.Context, a *domain.RedfishResourceAggregate) error {
+	// TODO: "Services may return a representation of the just deleted resource in the response body."
+	// - can create a new CMD for GET with an identical CMD ID. Is that cheating?
+	// TODO: return http 405 status for undeletable objects. right now we use privileges
+
+	//data.Results, _ = ProcessDELETE(ctx, a.Properties, c.Body)
+
+        faultID:=""
+	// send event to trigger delete
+        splitString :=strings.Split(a.ResourceURI, "-")
+        if len(splitString) == 2 {
+            faultID = splitString[1]
+        }
+        fmt.Println(faultID)
+	a.PublishEvent(eh.NewEvent(RequestFaultRemove, &RequestFaultRemoveData{
+		ID:          c.ID,
+		CmdID:       faultID,
+		ResourceURI: a.ResourceURI,
+	}, time.Now()))
+
+	// send http response
+	a.PublishEvent(eh.NewEvent(domain.HTTPCmdProcessed, &domain.HTTPCmdProcessedData{
+		CommandID:  c.CmdID,
+		Results:    map[string]interface{}{},
+		StatusCode: 200,
+		Headers:    map[string]string{},
+	}, time.Now()))
+	return nil
 }
