@@ -162,10 +162,15 @@ func (b breadcrumb) Close() {
 
 type HTTP_code struct {
   err_message []string
+  any_success int
 }
 
 func (e HTTP_code) ErrMessagE() []string {
   return e.err_message
+}
+
+func (e HTTP_code) AnySuccess() int {
+  return e.any_success
 }
 
 func (e HTTP_code) Error() string {
@@ -178,6 +183,7 @@ func (b breadcrumb) UpdateRequest(ctx context.Context, property string, value in
 
   canned_response := `{"RelatedProperties@odata.count": 1, "Message": "%s", "MessageArgs": ["%[2]s"], "Resolution": "Remove the %sproperty from the request body and resubmit the request if the operation failed.", "MessageId": "%s", "MessageArgs@odata.count": 1, "RelatedProperties": ["%[2]s"], "Severity": "Warning"}`
 	b.logger.Info("UpdateRequest", "property", property, "mappingName", b.mappingName)
+  num_success := 0
 
   reqIDs := []eh.UUID{}
   responses := []attributes.AttributeUpdatedData{}
@@ -244,7 +250,7 @@ func (b breadcrumb) UpdateRequest(ctx context.Context, property string, value in
 	}
 
   if (len(reqIDs) == 0) {
-    return nil, HTTP_code{err_message: errs}
+    return nil, HTTP_code{err_message: errs, any_success: num_success}
   }
   timer := time.NewTimer(time.Duration(patch_timeout*len(reqIDs)) * time.Second)
 
@@ -259,6 +265,8 @@ func (b breadcrumb) UpdateRequest(ctx context.Context, property string, value in
           responses = append(responses, *data)
           if (data.Error != "") {
             errs = append(errs, data.Error)
+          } else {
+            num_success = num_success + 1
           }
           break
         }
@@ -267,13 +275,10 @@ func (b breadcrumb) UpdateRequest(ctx context.Context, property string, value in
         e.Done()
       }
       if (len(reqIDs) == 0) {
-        if (len(errs) == 0) {
-          return nil, nil
-        }
-        return nil, HTTP_code{err_message: errs}
+        return nil, HTTP_code{err_message: errs, any_success: num_success}
       }
       case <- timer.C:
-        return nil, HTTP_code{err_message: []string{"Timed out!"}}
+        return nil, HTTP_code{err_message: []string{"Timed out!"}, any_success: num_success}
       case <- ctx.Done():
         return nil, nil
     }

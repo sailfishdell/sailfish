@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"reflect"
+  "fmt"
 )
 
 func (rrp *RedfishResourceProperty) MarshalJSON() ([]byte, error) {
@@ -189,14 +190,19 @@ type objectErrMessages interface {
 	GetObjectErrorMessages() []interface{}
 }
 
-func helper(ctx context.Context, agg *RedfishResourceAggregate, auth *RedfishAuthorizationProperty, e nuEncOpts, v interface{}) error {
+type numSuccess interface {
+  GetNumSuccess() []int
+}
+
+func helper(ctx context.Context, agg *RedfishResourceAggregate, auth *RedfishAuthorizationProperty, encopts nuEncOpts, v interface{}) error {
 	// handle special case of RRP inside RRP.Value of parent
 	if vp, ok := v.(*RedfishResourceProperty); ok {
-		return vp.RunMetaFunctions(ctx, agg, auth, e)
+    return vp.RunMetaFunctions(ctx, agg, auth, encopts)
 	}
 
 	objectErrorMessages := []interface{}{}
 	objectExtendedMessages := []interface{}{}
+  anySuccess := []int{}
 
 	// recurse through maps or slices and recursively call helper on them
 	val := reflect.ValueOf(v)
@@ -204,7 +210,7 @@ func helper(ctx context.Context, agg *RedfishResourceAggregate, auth *RedfishAut
 	case reflect.Map:
 
 		elemType := val.Type().Elem()
-		if e.root {
+    if encopts.root {
 			annotatedKey := "@Message.ExtendedInfo"
 			val.SetMapIndex(reflect.ValueOf(annotatedKey), reflect.Value{})
 			val.SetMapIndex(reflect.ValueOf("error"), reflect.Value{})
@@ -218,9 +224,9 @@ func helper(ctx context.Context, agg *RedfishResourceAggregate, auth *RedfishAut
 			}
 
 			newEncOpts := nuEncOpts{
-				request: e.request,
-				present: e.present,
-				process: e.process,
+				request: encopts.request,
+				present: encopts.present,
+				process: encopts.process,
 				root:    false,
 			}
 
@@ -236,6 +242,10 @@ func helper(ctx context.Context, agg *RedfishResourceAggregate, auth *RedfishAut
 				if err == nil {
 					continue
 				}
+
+        if e, ok := err.(numSuccess); ok {
+          anySuccess = append(anySuccess, e.GetNumSuccess()...)
+        }
 				// annotate at this level
 				propertyExtendedMessages := []interface{}{}
 				if e, ok := err.(propertyExtMessages); ok {
@@ -262,17 +272,23 @@ func helper(ctx context.Context, agg *RedfishResourceAggregate, auth *RedfishAut
 			}
 		}
 
-		if e.root && len(objectExtendedMessages) > 0 {
+		if encopts.root && len(objectExtendedMessages) > 0 {
 			annotatedKey := "@Message.ExtendedInfo"
 			if compatible(reflect.TypeOf(objectExtendedMessages), val.Type().Elem()) {
 				val.SetMapIndex(reflect.ValueOf(annotatedKey), reflect.ValueOf(objectExtendedMessages))
 			}
 		}
 
-
-		if e.root && len(objectErrorMessages) > 0 {
+		if encopts.root && len(objectErrorMessages) > 0 {
 			if agg != nil {
-			      agg.StatusCode = 200 
+        agg.StatusCode = 400
+        fmt.Println(anySuccess)
+        for _, i := range(anySuccess) {
+          if i > 0 {
+            agg.StatusCode = 200
+            break
+          }
+        }
 			}
 			annotatedKey := "error"
 			value := map[string]interface{}{
@@ -293,11 +309,14 @@ func helper(ctx context.Context, agg *RedfishResourceAggregate, auth *RedfishAut
 		for i := 0; i < val.Len(); i++ {
 			sliceVal := val.Index(i)
 			if sliceVal.IsValid() {
-				err := helper(ctx, agg, auth, e, sliceVal.Interface())
+				err := helper(ctx, agg, auth, encopts, sliceVal.Interface())
 				if err == nil {
 					continue
 				}
 
+        if e, ok := err.(numSuccess); ok {
+          anySuccess = append(anySuccess, e.GetNumSuccess()...)
+        }
 				// things to kick up a level
 				if e, ok := err.(objectExtMessages); ok {
 					objectExtendedMessages = append(objectExtendedMessages, e.GetObjectExtendedMessages()...)
@@ -311,11 +330,15 @@ func helper(ctx context.Context, agg *RedfishResourceAggregate, auth *RedfishAut
 		}
 	}
 
+  if (encopts.root) {
+    fmt.Println("agg.StatusCode: ", agg.StatusCode)
+  }
+
 	return &CombinedPropObjInfoError{
 		ObjectExtendedInfoMessages:  *NewObjectExtendedInfoMessages(objectExtendedMessages),
 		ObjectExtendedErrorMessages: *NewObjectExtendedErrorMessages(objectErrorMessages),
+    NumSuccess: *NewNumSuccess(anySuccess),
 	}
-
 }
 
 func compatible(actual, expected reflect.Type) bool {

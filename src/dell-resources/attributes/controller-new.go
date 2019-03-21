@@ -156,10 +156,15 @@ func getAttrValue(m *model.Model, group, gindex, name string) (ret interface{}, 
 
 type HTTP_code struct {
   err_message []string
+  any_success int
 }
 
 func (e HTTP_code) ErrMessage() []string {
   return e.err_message
+}
+
+func (e HTTP_code) AnySuccess() int {
+  return e.any_success
 }
 
 func (e HTTP_code) Error() string {
@@ -177,6 +182,7 @@ func (b *breadcrumb) UpdateRequest(ctx context.Context, property string, value i
   errs := []string{}
   patch_timeout := 3
   canned_response := `{"RelatedProperties@odata.count": 1, "Message": "%s", "MessageArgs": ["%[2]s"], "Resolution": "Remove the %sproperty from the request body and resubmit the request if the operation failed.", "MessageId": "%s", "MessageArgs@odata.count": 1, "RelatedProperties": ["%[2]s"], "Severity": "Warning"}`
+  num_success := 0
 
   l, err := b.s.ew.Listen(ctx, func(event eh.Event) bool {
     if event.EventType() != AttributeUpdated {
@@ -242,7 +248,7 @@ func (b *breadcrumb) UpdateRequest(ctx context.Context, property string, value i
 	}
 
   if (len(reqIDs) == 0) {
-    return nil, HTTP_code{err_message: errs}
+    return nil, HTTP_code{err_message: errs, any_success:num_success}
   }
 
   // create a timer based on number of attributes to be patched
@@ -260,6 +266,8 @@ func (b *breadcrumb) UpdateRequest(ctx context.Context, property string, value i
           responses = append(responses, *data)
           if (data.Error != "") {
             errs = append(errs, data.Error)
+          } else {
+            num_success = num_success + 1
           }
           break
         }
@@ -271,19 +279,16 @@ func (b *breadcrumb) UpdateRequest(ctx context.Context, property string, value i
 
       if (len(reqIDs) == 0) {
         //all reqIDs found
-        if (len(errs) == 0) {
-          return data.Value, nil
-        }
-        http_response := HTTP_code{err_message: errs}
+        http_response := HTTP_code{err_message: errs, any_success: num_success}
         return nil, http_response
       }
 
     case <- timer.C:
       //time out for any attr updated events that we are still waiting for
-      return nil, HTTP_code{err_message: []string{"Timed out!"}}
+      return nil, HTTP_code{err_message: []string{"Timed out!"}, any_success: num_success}
 
     case <- ctx.Done():
-      return nil, nil
+      return nil, HTTP_code{err_message: nil, any_success: num_success}
     }
   }
 }
