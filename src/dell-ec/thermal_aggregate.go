@@ -73,6 +73,22 @@ func updateTemperature (properties map[string]interface{}, key string, value int
      }
 }
 
+func health_map (health int) interface{}{
+
+    switch health {
+    case 0, 1: //other, unknown
+      return nil
+    case 2: //ok
+      return "OK"
+    case 3: //non-critical
+      return "Warning"
+    case 4, 5: //critical, non-recoverable
+      return "Critical"
+    default:
+      return nil
+    }
+}
+
 func initThermalSensor(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.CommandHandler, d *domain.DomainObjects) {
 
     awesome_mapper2.AddFunction("updateSensorEvent", func(args ...interface{}) (interface{}, error) {
@@ -98,9 +114,9 @@ func initThermalSensor(logger log.Logger, instantiateSvc *testaggregate.Service,
                             "MemberId":                         thermalSensorEvent.OffsetDeviceFQDD,
                             "ReadingCelsius":                   nil,
                             "Status": map[string]interface{}{
-                                "HealthRollup":                 thermalSensorEvent.SensorHealth,
+                                "HealthRollup":                 health_map(thermalSensorEvent.SensorHealth),
                                 "State":                        nil, //hardcoded
-                                "Health":                       thermalSensorEvent.SensorHealth,
+                                "Health":                       health_map(thermalSensorEvent.SensorHealth),
                             },
                             "UpperThresholdCritical":           nil,
                             "UpperThresholdNonCritical":        nil,
