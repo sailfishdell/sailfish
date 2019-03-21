@@ -269,9 +269,10 @@ func helper(ctx context.Context, agg *RedfishResourceAggregate, auth *RedfishAut
 			}
 		}
 
+
 		if e.root && len(objectErrorMessages) > 0 {
 			if agg != nil {
-				agg.StatusCode = 400
+			      agg.StatusCode = 200 
 			}
 			annotatedKey := "error"
 			value := map[string]interface{}{
