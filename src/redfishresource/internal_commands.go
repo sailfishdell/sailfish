@@ -397,12 +397,14 @@ func (c *InjectEvent) Handle(ctx context.Context, a *RedfishResourceAggregate) e
 		}
 	}
 
-	e := event.NewSyncEvent(c.Name, trainload, time.Now())
-	e.Add(1)
-	if c.Synchronous {
-		defer e.Wait()
+	if len(trainload) > 0 {
+		e := event.NewSyncEvent(c.Name, trainload, time.Now())
+		e.Add(1)
+		if c.Synchronous {
+			defer e.Wait()
+		}
+		injectChan <- e
 	}
-	injectChan <- e
 
 	return nil
 }
