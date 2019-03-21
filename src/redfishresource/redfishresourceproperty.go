@@ -36,10 +36,14 @@ type RedfishResourceProperty struct {
 	Ephemeral bool
 }
 
-func (rrp *RedfishResourceProperty) Parse(thing interface{}) (ret *RedfishResourceProperty) {
+func (rrp *RedfishResourceProperty) Parse(thing interface{}) {
 	rrp.Lock()
 	defer rrp.Unlock()
-	ret = rrp
+
+	rrp.ParseUnlocked(thing)
+}
+
+func (rrp *RedfishResourceProperty) ParseUnlocked(thing interface{}) {
 	switch thing.(type) {
 	case []interface{}:
 		if _, ok := rrp.Value.([]interface{}); !ok || rrp.Value == nil {
