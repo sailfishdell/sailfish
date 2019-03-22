@@ -14,6 +14,7 @@ require (
 	github.com/looplab/eventhorizon v0.4.0
 	github.com/mattn/go-colorable v0.0.9 // indirect
 	github.com/mattn/go-isatty v0.0.4 // indirect
+	github.com/mattn/go-sqlite3 v1.10.0
 	github.com/mitchellh/go-homedir v1.0.0 // indirect
 	github.com/mitchellh/mapstructure v1.0.0
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect

@@ -76,6 +76,7 @@ func PublishRedfishEvents(ctx context.Context, m propertygetter, eb eh.EventBus)
 							evt.OriginOfCondition == data.OriginOfCondition {
 							log.MustLogger("event_service").Debug("duplicate")
 							found = true
+							break
 						}
 					}
 
@@ -123,7 +124,7 @@ func PublishRedfishEvents(ctx context.Context, m propertygetter, eb eh.EventBus)
 
 				case *domain.RedfishResourceCreatedData:
 					eventData := &RedfishEventData{
-						EventType:         "ResourceCreated",
+						EventType: "ResourceCreated",
 						//TODO MSM BUG: OriginOfCondition for events has to be a string or will be rejected
 						OriginOfCondition: data.ResourceURI,
 					}
@@ -132,7 +133,7 @@ func PublishRedfishEvents(ctx context.Context, m propertygetter, eb eh.EventBus)
 
 				case *domain.RedfishResourceRemovedData:
 					eventData := &RedfishEventData{
-						EventType:         "ResourceRemoved",
+						EventType: "ResourceRemoved",
 						//TODO MSM BUG: OriginOfCondition for events has to be a string or will be rejected
 						OriginOfCondition: data.ResourceURI,
 					}

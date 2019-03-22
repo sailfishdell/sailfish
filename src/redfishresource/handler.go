@@ -3,6 +3,7 @@ package domain
 import (
 	"context"
 	"encoding/json"
+	"encoding/xml"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -242,9 +243,17 @@ func (d *DomainObjects) GetInternalCommandHandler(backgroundCtx context.Context)
 		}
 		r.Body.Close()
 
-		if err := json.Unmarshal(b, &cmd); err != nil {
-			http.Error(w, "could not decode command: "+err.Error(), http.StatusBadRequest)
-			return
+		contentType := r.Header.Get("Content-type")
+		if contentType == "application/xml" {
+			if err := xml.Unmarshal(b, &cmd); err != nil {
+				http.Error(w, "could not decode command: "+err.Error(), http.StatusBadRequest)
+				return
+			}
+		} else {
+			if err := json.Unmarshal(b, &cmd); err != nil {
+				http.Error(w, "could not decode command: "+err.Error(), http.StatusBadRequest)
+				return
+			}
 		}
 
 		// NOTE: Use a new context when handling, else it will be cancelled with
