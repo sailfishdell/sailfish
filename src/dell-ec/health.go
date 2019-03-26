@@ -17,10 +17,10 @@ func inithealth(ctx context.Context, logger log.Logger, ch eh.CommandHandler) {
 	subSystemHealthList := map[string]interface{}{}
 
   awesome_mapper2.AddFunction("remove_health", func(args ... interface{}) (interface{}, error) {
-    removedEvent, ok := args[0].(*dm_event.IomRemovedData)
+    removedEvent, ok := args[0].(*dm_event.ComponentRemovedData)
     if !ok {
-			logger.Crit("Mapper configuration error: iom removed event data not passed", "args[0]", args[0], "TYPE", fmt.Sprintf("%T", args[0]))
-			return nil, errors.New("Mapper configuration error: iom removed event data not passed")
+      logger.Crit("Mapper configuration error: component removed event data not passed", "args[0]", args[0], "TYPE", fmt.Sprintf("%T", args[0]))
+			return nil, errors.New("Mapper configuration error: component removed event data not passed")
     }
     aggregateUUID, ok := args[1].(eh.UUID)
 		if !ok {
