@@ -920,6 +920,8 @@ views:
         - "fn": "stdFormatters"
           "params":
         - "fn": "with_PumpHandledAction"
+          "params": {"name": "iom.getssoinfo", "uri": "/Actions/GetSsoInfo", "timeout": 30}
+        - "fn": "with_PumpHandledAction"
           "params": {"name": "iom.chassis.reset", "uri": "/Actions/Chassis.Reset", "timeout": 30}
         - "fn": "with_PumpHandledAction"
           "params": {"name": "iom.resetpeakpowerconsumption", "uri": "/Actions/Oem/DellChassis.ResetPeakPowerConsumption", "timeout": 30}
