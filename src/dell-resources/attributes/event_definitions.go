@@ -69,9 +69,16 @@ func (ad *AttributeData) Valid(attrVal interface{}) bool {
 }
 
 func (ad *AttributeData) WriteAllowed(attrVal interface{}, auth *domain.RedfishAuthorizationProperty) bool {
-	if !ad.Valid(attrVal) {
-		return false
-	}
+        switch attrVal.(type) {
+   	    case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, uintptr, string, float32, float64:
+               // for patch on Chassis/X
+            default:
+                // for patch on Chassis/X/Attributes
+	        if !ad.Valid(attrVal) {
+	        	return false
+	        }
+        }
+        
 
 	if ad.Privileges.Private ||
 		ad.Privileges.Readonly ||
