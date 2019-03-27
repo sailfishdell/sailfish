@@ -71,7 +71,7 @@ func inithealth(ctx context.Context, logger log.Logger, ch eh.CommandHandler) {
 
     // temporary workaround to filter out mchars health statuses
     // if additional subsystems end up getting incorrectly added, change pump to specify that only 5e, 1401, and 1303 events can be subsystems
-    extra_subsys := []string{"Absent", "SledSystem", "IOM", "Group.1", "CMC.Integrated.1", "CMC.Integrated.2"}
+    extra_subsys := []string{"Absent", "SledSystem", "IOM", "Group.1", "CMC.Integrated.1", "CMC.Integrated.2", "Root"}
     for _, extra := range extra_subsys {
       if extra == subsys {
 			  if _, ok := subSystemHealthList[subsys]; ok { //property exists, delete
