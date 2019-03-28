@@ -40,14 +40,14 @@ func RegisterAggregate(s *testaggregate.Service) {
 			properties := map[string]interface{}{
 				"Id":            params["FQDD"],
 				"Name@meta":     vw.Meta(view.PropGET("slot_name")),
-				"SlotName@meta": vw.Meta(view.PropGET("slot_slotname")),
+				"SlotName@meta": vw.Meta(view.PropGET("slot_slotname"), view.PropPATCH("slot_slotname", "ar_mapper")),
 				"Occupied@meta": vw.Meta(view.PropGET("slot_occupied")),
 				"Config@meta":   vw.Meta(view.PropGET("slot_config")),
 				"Contains@meta": vw.Meta(view.PropGET("slot_contains")),
 			}
 
 			if strings.Contains(params["FQDD"].(string), "SledSlot") {
-				properties["SledProfile@meta"] = vw.Meta(view.PropGET("sled_profile"))
+				properties["SledProfile@meta"] = vw.Meta(view.PropGET("sled_profile"), view.PropPATCH("sled_profile", "ar_mapper"))
 			}
 
 			return []eh.Command{
@@ -57,6 +57,7 @@ func RegisterAggregate(s *testaggregate.Service) {
 					Context:     params["rooturi"].(string) + "/$metadata#DellSlot.DellSlot",
 					Privileges: map[string]interface{}{
 						"GET": []string{"Login"},
+            "PATCH": []string{"ConfigureManager"},
 					},
 					Properties: properties,
 				},
