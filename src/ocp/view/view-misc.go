@@ -109,7 +109,7 @@ func (s *View) PropertyPatch(
 		log.MustLogger("PATCH").Debug("update request", "newval", newval, "err", err)
 		if e, ok := err.(isHTTPCode); ok {
 			//errors reported from patch & formatted correctly
-			err_extendedinfos := []domain.ExtendedInfo{}
+			err_extendedinfos := []interface{}{}
 			for _, err_msg := range e.ErrMessage() {
 				//generted extended error info msg for each err
 				fmt.Println("CAPTURED: ", err_msg)
@@ -122,7 +122,7 @@ func (s *View) PropertyPatch(
 				}
 				err_extendedinfos = append(err_extendedinfos, msg)
 			}
-			oeem := *domain.NewObjectExtendedErrorMessages([]interface{}{err_extendedinfos})
+			oeem := *domain.NewObjectExtendedErrorMessages(err_extendedinfos)
 			return &domain.CombinedPropObjInfoError{
 				ObjectExtendedErrorMessages: oeem,
 			}
