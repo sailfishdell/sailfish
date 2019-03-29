@@ -191,7 +191,7 @@ type objectErrMessages interface {
 }
 
 type numSuccess interface {
-  GetNumSuccess() []int
+  GetNumSuccess() int
 }
 
 func helper(ctx context.Context, agg *RedfishResourceAggregate, auth *RedfishAuthorizationProperty, encopts nuEncOpts, v interface{}) error {
@@ -202,7 +202,7 @@ func helper(ctx context.Context, agg *RedfishResourceAggregate, auth *RedfishAut
 
 	objectErrorMessages := []interface{}{}
 	objectExtendedMessages := []interface{}{}
-  anySuccess := []int{}
+  anySuccess := 0
 
 	// recurse through maps or slices and recursively call helper on them
 	val := reflect.ValueOf(v)
@@ -244,7 +244,10 @@ func helper(ctx context.Context, agg *RedfishResourceAggregate, auth *RedfishAut
 				}
 
         if e, ok := err.(numSuccess); ok {
-          anySuccess = append(anySuccess, e.GetNumSuccess()...)
+          i := e.GetNumSuccess()
+          if i > 0 {
+            anySuccess = anySuccess + 1
+          }
         }
 				// annotate at this level
 				propertyExtendedMessages := []interface{}{}
@@ -282,12 +285,8 @@ func helper(ctx context.Context, agg *RedfishResourceAggregate, auth *RedfishAut
 		if encopts.root && len(objectErrorMessages) > 0 {
 			if agg != nil {
         agg.StatusCode = 400
-        fmt.Println(anySuccess)
-        for _, i := range(anySuccess) {
-          if i > 0 {
-            agg.StatusCode = 200
-            break
-          }
+        if anySuccess > 0 {
+          agg.StatusCode = 200
         }
 			}
 			annotatedKey := "error"
@@ -315,7 +314,10 @@ func helper(ctx context.Context, agg *RedfishResourceAggregate, auth *RedfishAut
 				}
 
         if e, ok := err.(numSuccess); ok {
-          anySuccess = append(anySuccess, e.GetNumSuccess()...)
+          i := e.GetNumSuccess()
+          if i > 0 {
+            anySuccess = anySuccess + 1
+          }
         }
 				// things to kick up a level
 				if e, ok := err.(objectExtMessages); ok {
@@ -337,7 +339,7 @@ func helper(ctx context.Context, agg *RedfishResourceAggregate, auth *RedfishAut
 	return &CombinedPropObjInfoError{
 		ObjectExtendedInfoMessages:  *NewObjectExtendedInfoMessages(objectExtendedMessages),
 		ObjectExtendedErrorMessages: *NewObjectExtendedErrorMessages(objectErrorMessages),
-    NumSuccess: *NewNumSuccess(anySuccess),
+    NumSuccess: anySuccess,
 	}
 }
 

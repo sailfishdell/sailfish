@@ -110,25 +110,6 @@ func (o *ObjectExtendedErrorMessages) Error() string {
 }
 
 //
-// # successes
-//
-
-type NumSuccess struct {
-  num_success []int
-}
-
-func NewNumSuccess(count []int) *NumSuccess {
-  o := &NumSuccess{}
-  o.num_success = make([]int, len(count))
-  copy(o.num_success, count)
-  return o
-}
-
-func (o *NumSuccess) GetNumSuccess() []int {
-  return o.num_success
-}
-
-//
 // combined
 //
 
@@ -136,8 +117,10 @@ type CombinedPropObjInfoError struct {
 	ObjectExtendedErrorMessages
 	ObjectExtendedInfoMessages
 	PropertyExtendedInfoMessages
-  NumSuccess
+  NumSuccess int
 }
+
+func (c *CombinedPropObjInfoError) GetNumSuccess() int { return c.NumSuccess }
 
 func (c *CombinedPropObjInfoError) Error() string { return "combined" }
 
