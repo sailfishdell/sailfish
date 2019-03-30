@@ -6,6 +6,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"net/http"
+	"path"
 	"sync"
 	"time"
 
@@ -146,7 +147,7 @@ func (es *EventService) CreateSubscription(ctx context.Context, logger log.Logge
 		// delete the aggregate
 		defer es.d.CommandHandler.HandleCommand(context.Background(), &domain.RemoveRedfishResource{ID: subView.GetUUID(), ResourceURI: subView.GetURI()})
 		defer listener.Close()
-
+		firstEvents := true
 		for {
 			select {
 			case event := <-listener.Inbox():
@@ -167,6 +168,16 @@ func (es *EventService) CreateSubscription(ctx context.Context, logger log.Logge
 					if esModel.GetProperty("protocol") != "Redfish" {
 						subLogger.Info("Not Redfish Protocol")
 						continue
+					} else if firstEvents {
+						//MSM work around, replay mCHARS faults into events
+						firstEvents = false
+						evt := event.Data()
+						if eventPtr, ok := evt.(*ExternalRedfishEventData); ok {
+							eventlist := makeMCHARSevents(es, ctx)
+							for idx, _ := range eventlist {
+								eventPtr.Events = append(eventPtr.Events, &eventlist[idx])
+							}
+						}
 					}
 					context := esModel.GetProperty("context")
 					eventtypes := esModel.GetProperty("eventTypes")
@@ -232,6 +243,7 @@ func makePOST(dest string, event eh.Event, context interface{}, id eh.UUID, et i
 							RedfishEventData: eachEvent,
 						},
 					)
+
 					// TODO: should be able to configure timeout
 					// TODO: Shore up security for POST
 					client := &http.Client{
@@ -267,4 +279,52 @@ func (es *EventService) PublishResourceUpdatedEventsForModel(ctx context.Context
 		}
 		go es.d.EventBus.PublishEvent(ctx, eh.NewEvent(RedfishEvent, eventData, time.Now()))
 	})
+}
+
+func makeMCHARSevents(es *EventService, ctx context.Context) []RedfishEventData {
+	mCharsUri := "/redfish/v1/Managers/CMC.Integrated.1/Logs/FaultList"
+	uriList := es.d.FindMatchingURIs(func(uri string) bool { return path.Dir(uri) == mCharsUri })
+	returnList := []RedfishEventData{}
+	for _, uri := range uriList {
+		faultAgg, err := es.d.ExpandURI(ctx, uri)
+		if err != nil {
+			continue
+		}
+		mcharsMap, ok := domain.Flatten(faultAgg.Value).(map[string]interface{})
+		if !ok {
+			continue
+		}
+
+		oem, ok := mcharsMap["Oem"].(map[string]interface{})
+		var fqddString string
+		if ok {
+			dell, ok := oem["Dell"].(map[string]interface{})
+			if !ok {
+				continue
+			}
+			fqddString = dell["FQDD"].(string)
+		}
+
+		messArgs, ok := mcharsMap["MessageArgs"].([]interface{})
+		messageArgsStringArray := []string{}
+		if ok {
+			for _, arg := range messArgs {
+				messageArgsStringArray = append(messageArgsStringArray, arg.(string))
+			}
+		}
+
+		mainEvent := RedfishEventData{
+			EventType:         "Alert",
+			EventId:           mcharsMap["Id"].(string),
+			EventTimestamp:    mcharsMap["Created"].(string),
+			Severity:          mcharsMap["Severity"].(string),
+			Message:           mcharsMap["Message"].(string),
+			MessageId:         mcharsMap["MessageId"].(string),
+			MessageArgs:       messageArgsStringArray,
+			OriginOfCondition: fqddString,
+		}
+		//Create an event out of the mCHARS
+		returnList = append(returnList, mainEvent)
+	}
+	return returnList
 }
