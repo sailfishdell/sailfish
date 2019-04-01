@@ -25,8 +25,8 @@ func RegisterAggregate(s *testaggregate.Service) {
 						"GET": []string{"Login"},
 					},
 					Properties: map[string]interface{}{
-						"Id":             "TelemetryService",
-						"Name":           "Telemetry Service",
+						"Id":   "TelemetryService",
+						"Name": "Telemetry Service",
 						"Actions": map[string]interface{}{
 							"#TelemetryService.SubmitTestMetricReport": map[string]interface{}{
 								"target": vw.GetActionURI("submit.test.metric.report"),

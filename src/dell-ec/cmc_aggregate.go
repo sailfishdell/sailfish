@@ -33,7 +33,7 @@ func RegisterCMCAggregate(s *testaggregate.Service) {
 						"ManagerType":              "BMC",     //hardcoded in odatalite
 						"Description":              "BMC",     //hardcoded in odatalite
 						"Model@meta":               vw.Meta(view.PropGET("model")),
-						"DateTime@meta":            map[string]interface{}{"GET": map[string]interface{}{"plugin": "datetime"},"PATCH": map[string]interface{}{"plugin":vw.GetURI(),"property":"time", "controller":"ar_mapper" }},
+						"DateTime@meta":            map[string]interface{}{"GET": map[string]interface{}{"plugin": "datetime"}, "PATCH": map[string]interface{}{"plugin": vw.GetURI(), "property": "time", "controller": "ar_mapper"}},
 						"DateTimeLocalOffset@meta": map[string]interface{}{"GET": map[string]interface{}{"plugin": "datetimezone"}},
 						"FirmwareVersion@meta":     vw.Meta(view.PropGET("firmware_version")),
 						"Links": map[string]interface{}{

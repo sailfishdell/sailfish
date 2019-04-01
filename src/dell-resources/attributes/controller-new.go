@@ -3,17 +3,16 @@ package attributes
 import (
 	"context"
 	"errors"
+	"fmt"
+	eh "github.com/looplab/eventhorizon"
 	"strings"
 	"sync"
 	"time"
-  "fmt"
-	eh "github.com/looplab/eventhorizon"
-
 
 	"github.com/superchalupa/sailfish/src/log"
+	"github.com/superchalupa/sailfish/src/looplab/eventwaiter"
 	"github.com/superchalupa/sailfish/src/ocp/event"
 	"github.com/superchalupa/sailfish/src/ocp/model"
-  "github.com/superchalupa/sailfish/src/looplab/eventwaiter"
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
 )
 
@@ -23,21 +22,21 @@ type Service struct {
 	cache          map[string][]*model.Model
 	logger         log.Logger
 	eb             eh.EventBus
-  ew             waiter
+	ew             waiter
 }
 
 type syncEvent interface {
-  Add(int)
-  Done()
+	Add(int)
+	Done()
 }
 
 type waiter interface {
-  Listen(context.Context, func(eh.Event) bool) (*eventwaiter.EventListener, error)
+	Listen(context.Context, func(eh.Event) bool) (*eventwaiter.EventListener, error)
 }
 
 type listener interface {
-  Inbox() <-chan eh.Event
-  Close()
+	Inbox() <-chan eh.Event
+	Close()
 }
 
 func StartService(ctx context.Context, logger log.Logger, eb eh.EventBus) (*Service, error) {
@@ -53,7 +52,7 @@ func StartService(ctx context.Context, logger log.Logger, eb eh.EventBus) (*Serv
 		logger.Error("Failed to create event stream processor", "err", err)
 		return nil, errors.New("Failed to create stream processor")
 	}
-  ret.ew = &sp.EW
+	ret.ew = &sp.EW
 
 	go sp.RunForever(func(event eh.Event) {
 		data, ok := event.Data().(*AttributeUpdatedData)
@@ -75,10 +74,10 @@ func StartService(ctx context.Context, logger log.Logger, eb eh.EventBus) (*Serv
 				Value:      data.Value,
 			}
 
-      if data.Error == "" {
-        //update property only if no errors & have write privilege
-			  m.ApplyOption(WithAttribute(data.Group, data.Index, data.Name, value))
-      }
+			if data.Error == "" {
+				//update property only if no errors & have write privilege
+				m.ApplyOption(WithAttribute(data.Group, data.Index, data.Name, value))
+			}
 		}
 	})
 
@@ -155,20 +154,20 @@ func getAttrValue(m *model.Model, group, gindex, name string) (ret interface{}, 
 }
 
 type HTTP_code struct {
-  err_message []string
-  any_success int
+	err_message []string
+	any_success int
 }
 
 func (e HTTP_code) ErrMessage() []string {
-  return e.err_message
+	return e.err_message
 }
 
 func (e HTTP_code) AnySuccess() int {
-  return e.any_success
+	return e.any_success
 }
 
 func (e HTTP_code) Error() string {
-  return fmt.Sprintf("Request Error Message: %s", e.err_message)
+	return fmt.Sprintf("Request Error Message: %s", e.err_message)
 }
 
 func (b *breadcrumb) UpdateRequest(ctx context.Context, property string, value interface{}, auth *domain.RedfishAuthorizationProperty) (interface{}, error) {
@@ -177,32 +176,32 @@ func (b *breadcrumb) UpdateRequest(ctx context.Context, property string, value i
 
 	b.s.logger.Debug("UpdateRequest", "property", property, "value", value)
 
-  reqIDs := []eh.UUID{}
-  responses := []AttributeUpdatedData{}
-  errs := []string{}
-  patch_timeout := 3
-  canned_response := `{"RelatedProperties@odata.count": 1, "Message": "%s", "MessageArgs": ["%[2]s"], "Resolution": "Remove the %sproperty from the request body and resubmit the request if the operation failed.", "MessageId": "%s", "MessageArgs@odata.count": 1, "RelatedProperties": ["%[2]s"], "Severity": "Warning"}`
-  num_success := 0
+	reqIDs := []eh.UUID{}
+	responses := []AttributeUpdatedData{}
+	errs := []string{}
+	patch_timeout := 3
+	canned_response := `{"RelatedProperties@odata.count": 1, "Message": "%s", "MessageArgs": ["%[2]s"], "Resolution": "Remove the %sproperty from the request body and resubmit the request if the operation failed.", "MessageId": "%s", "MessageArgs@odata.count": 1, "RelatedProperties": ["%[2]s"], "Severity": "Warning"}`
+	num_success := 0
 
-  l, err := b.s.ew.Listen(ctx, func(event eh.Event) bool {
-    if event.EventType() != AttributeUpdated {
-      return false
-    }
-    _, ok := event.Data().(*AttributeUpdatedData)
-    if !ok {
-      return false
-    }
-    return true
-  })
-  if err != nil {
-    b.s.logger.Error("Could not create listener", "err", err)
-    return nil, errors.New("Failed to make attribute updated event listener")
-  }
-  l.Name = "patch listener"
-  var listener listener
-  listener = l
+	l, err := b.s.ew.Listen(ctx, func(event eh.Event) bool {
+		if event.EventType() != AttributeUpdated {
+			return false
+		}
+		_, ok := event.Data().(*AttributeUpdatedData)
+		if !ok {
+			return false
+		}
+		return true
+	})
+	if err != nil {
+		b.s.logger.Error("Could not create listener", "err", err)
+		return nil, errors.New("Failed to make attribute updated event listener")
+	}
+	l.Name = "patch listener"
+	var listener listener
+	listener = l
 
-  defer listener.Close()
+	defer listener.Close()
 
 	for k, v := range value.(map[string]interface{}) {
 		stuff := strings.Split(k, ".")
@@ -212,25 +211,25 @@ func (b *breadcrumb) UpdateRequest(ctx context.Context, property string, value i
 		//  - validate that it is writable
 		//  - validate that user has permsi
 
-    if (len(stuff) != 3) { // this one is extra wrong
+		if len(stuff) != 3 { // this one is extra wrong
 			b.s.logger.Error("improperly formatted attribute", "Attribute", k)
-      err_msg := fmt.Sprintf("The property %s is not in the list of valid properties for the resource.", k)
-      errs = append(errs, fmt.Sprintf(canned_response, []interface{}{err_msg, k, "unknown ", "Base.1.0.PropertyUnknown"}...))
-      continue
-    }
+			err_msg := fmt.Sprintf("The property %s is not in the list of valid properties for the resource.", k)
+			errs = append(errs, fmt.Sprintf(canned_response, []interface{}{err_msg, k, "unknown ", "Base.1.0.PropertyUnknown"}...))
+			continue
+		}
 		attrVal, ok := getAttrValue(b.m, stuff[0], stuff[1], stuff[2])
 		if !ok {
 			b.s.logger.Error("not found", "Attribute", k)
-      err_msg := fmt.Sprintf("The property %s is not in the list of valid properties for the resource.", k)
-      errs = append(errs, fmt.Sprintf(canned_response, []interface{}{err_msg, k, "unknown ", "Base.1.0.PropertyUnknown"}...))
+			err_msg := fmt.Sprintf("The property %s is not in the list of valid properties for the resource.", k)
+			errs = append(errs, fmt.Sprintf(canned_response, []interface{}{err_msg, k, "unknown ", "Base.1.0.PropertyUnknown"}...))
 			continue
 		}
 
 		var ad AttributeData
 		if !ad.WriteAllowed(attrVal, auth) {
 			b.s.logger.Error("Unable to set", "Attribute", k)
-      err_msg := fmt.Sprintf("The property %s is a read only property and cannot be assigned a value", k)
-      errs = append(errs, fmt.Sprintf(canned_response, []interface{}{err_msg, k, "", "Base.1.0.PropertyNotWritable"}...))
+			err_msg := fmt.Sprintf("The property %s is a read only property and cannot be assigned a value", k)
+			errs = append(errs, fmt.Sprintf(canned_response, []interface{}{err_msg, k, "", "Base.1.0.PropertyNotWritable"}...))
 			continue
 		}
 
@@ -244,53 +243,53 @@ func (b *breadcrumb) UpdateRequest(ctx context.Context, property string, value i
 			Authorization: *auth,
 		}
 		b.s.eb.PublishEvent(ctx, eh.NewEvent(AttributeUpdateRequest, data, time.Now()))
-    reqIDs = append(reqIDs, reqUUID)
+		reqIDs = append(reqIDs, reqUUID)
 	}
 
-  if (len(reqIDs) == 0) {
-    return nil, HTTP_code{err_message: errs, any_success:num_success}
-  }
+	if len(reqIDs) == 0 {
+		return nil, HTTP_code{err_message: errs, any_success: num_success}
+	}
 
-  // create a timer based on number of attributes to be patched
-  timer := time.NewTimer(time.Duration(patch_timeout*len(reqIDs)) * time.Second)
+	// create a timer based on number of attributes to be patched
+	timer := time.NewTimer(time.Duration(patch_timeout*len(reqIDs)) * time.Second)
 
-  for {
-    select {
-    case event := <- listener.Inbox():
-      data, _ := event.Data().(*AttributeUpdatedData)
-      for i, reqID := range reqIDs {
-        if reqID == data.ReqID {
-          //remove found reqid from list
-          reqIDs[i] = reqIDs[len(reqIDs)-1]
-          reqIDs = reqIDs[:len(reqIDs)-1]
-          responses = append(responses, *data)
-          if (data.Error != "") {
-            errs = append(errs, data.Error)
-          } else {
-            num_success = num_success + 1
-          }
-          break
-        }
-      }
+	for {
+		select {
+		case event := <-listener.Inbox():
+			data, _ := event.Data().(*AttributeUpdatedData)
+			for i, reqID := range reqIDs {
+				if reqID == data.ReqID {
+					//remove found reqid from list
+					reqIDs[i] = reqIDs[len(reqIDs)-1]
+					reqIDs = reqIDs[:len(reqIDs)-1]
+					responses = append(responses, *data)
+					if data.Error != "" {
+						errs = append(errs, data.Error)
+					} else {
+						num_success = num_success + 1
+					}
+					break
+				}
+			}
 
-      if e, ok := event.(syncEvent); ok {
-        e.Done()
-      }
+			if e, ok := event.(syncEvent); ok {
+				e.Done()
+			}
 
-      if (len(reqIDs) == 0) {
-        //all reqIDs found
-        http_response := HTTP_code{err_message: errs, any_success: num_success}
-        return nil, http_response
-      }
+			if len(reqIDs) == 0 {
+				//all reqIDs found
+				http_response := HTTP_code{err_message: errs, any_success: num_success}
+				return nil, http_response
+			}
 
-    case <- timer.C:
-      //time out for any attr updated events that we are still waiting for
-      return nil, HTTP_code{err_message: []string{"Timed out!"}, any_success: num_success}
+		case <-timer.C:
+			//time out for any attr updated events that we are still waiting for
+			return nil, HTTP_code{err_message: []string{"Timed out!"}, any_success: num_success}
 
-    case <- ctx.Done():
-      return nil, HTTP_code{err_message: nil, any_success: num_success}
-    }
-  }
+		case <-ctx.Done():
+			return nil, HTTP_code{err_message: nil, any_success: num_success}
+		}
+	}
 }
 
 func (b *breadcrumb) Close() {

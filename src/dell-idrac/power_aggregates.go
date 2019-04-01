@@ -36,11 +36,10 @@ func RegisterAggregate(s *testaggregate.Service) {
 						"PowerSupplies@odata.count@meta": vw.Meta(view.GETProperty("power_supply_uris"), view.GETFormatter("count"), view.GETModel("default")),
 						"PowerControl@meta":              vw.Meta(view.GETProperty("power_control_uris"), view.GETFormatter("expand"), view.GETModel("default")),
 						"PowerControl@odata.count@meta":  vw.Meta(view.GETProperty("power_control_uris"), view.GETFormatter("count"), view.GETModel("default")),
-						"Redundancy":              []interface{}{},
-                                                "Redundancy@odata.count":  0,
-						"Voltages@meta":             vw.Meta(view.GETProperty("voltage_sensor_uris"), view.GETFormatter("expand"), view.GETModel("default")),
-						"Voltages@odata.count@meta": vw.Meta(view.GETProperty("voltage_sensor_uris"), view.GETFormatter("count"), view.GETModel("default")),
-
+						"Redundancy":                     []interface{}{},
+						"Redundancy@odata.count":         0,
+						"Voltages@meta":                  vw.Meta(view.GETProperty("voltage_sensor_uris"), view.GETFormatter("expand"), view.GETModel("default")),
+						"Voltages@odata.count@meta":      vw.Meta(view.GETProperty("voltage_sensor_uris"), view.GETFormatter("count"), view.GETModel("default")),
 					}},
 			}, nil
 		})
@@ -73,7 +72,7 @@ func RegisterAggregate(s *testaggregate.Service) {
 						},
 						"PowerMetrics": map[string]interface{}{
 							"AverageConsumedWatts@meta": vw.Meta(view.PropGET("avgPwrLastMin")),
-							"IntervalInMin":        1,
+							"IntervalInMin":             1,
 							"MaxConsumedWatts@meta":     vw.Meta(view.PropGET("maxPwrLastMin")),
 							"MinConsumedWatts@meta":     vw.Meta(view.PropGET("minPwrLastMin")),
 						},
@@ -104,18 +103,18 @@ func RegisterAggregate(s *testaggregate.Service) {
 						"Assembly": map[string]interface{}{
 							"@odata.id": "/redfish/v1/Chassis/System.Embedded.1/Assembly",
 						},
-						"EfficiencyPercent@meta":    vw.Meta(view.PropGET("efficiency_percent")),
-						"FirmwareVersion@meta":      vw.Meta(view.PropGET("fwVer")),
-						"HotPluggable@meta":         vw.Meta(view.PropGET("hotpluggable")),
-						"InputRanges":               []interface{}{
+						"EfficiencyPercent@meta": vw.Meta(view.PropGET("efficiency_percent")),
+						"FirmwareVersion@meta":   vw.Meta(view.PropGET("fwVer")),
+						"HotPluggable@meta":      vw.Meta(view.PropGET("hotpluggable")),
+						"InputRanges": []interface{}{
 							map[string]interface{}{
-							"InputType@meta":    vw.Meta(view.PropGET("input_pstype")),
-							"MaximumFrequencyHz@meta": vw.Meta(view.PropGET("maximum_frequencyHz")),
-							"MaximumVoltage@meta":	vw.Meta(view.PropGET("maximum_voltage")),
-							"MinimumFrequencyHz@meta": vw.Meta(view.PropGET("minimum_frequencyHz")),
-							"MinimumVoltage@meta": vw.Meta(view.PropGET("minimum_voltage")),
-							"OutputWattage@meta": vw.Meta(view.PropGET("output_wattage")),
-						}},
+								"InputType@meta":          vw.Meta(view.PropGET("input_pstype")),
+								"MaximumFrequencyHz@meta": vw.Meta(view.PropGET("maximum_frequencyHz")),
+								"MaximumVoltage@meta":     vw.Meta(view.PropGET("maximum_voltage")),
+								"MinimumFrequencyHz@meta": vw.Meta(view.PropGET("minimum_frequencyHz")),
+								"MinimumVoltage@meta":     vw.Meta(view.PropGET("minimum_voltage")),
+								"OutputWattage@meta":      vw.Meta(view.PropGET("output_wattage")),
+							}},
 						"InputRanges@odata.count":   1,
 						"LastPowerOutputWatts@meta": vw.Meta(view.PropGET("")),
 						"LineInputVoltage@meta":     vw.Meta(view.PropGET("lineinputVoltage")),
@@ -131,8 +130,8 @@ func RegisterAggregate(s *testaggregate.Service) {
 						"SparePartNumber@meta":      vw.Meta(view.PropGET("sparepartnumber")),
 
 						"Status": map[string]interface{}{
-							"State@meta":        vw.Meta(view.PropGET("obj_state")),
-							"Health@meta":       vw.Meta(view.PropGET("obj_status")),
+							"State@meta":  vw.Meta(view.PropGET("obj_state")),
+							"Health@meta": vw.Meta(view.PropGET("obj_status")),
 						},
 						// this should be a link using getformatter
 						"Redundancy":              []interface{}{},
@@ -144,42 +143,41 @@ func RegisterAggregate(s *testaggregate.Service) {
 		})
 
 	s.RegisterAggregateFunction("voltage_sensor",
-                func(ctx context.Context, subLogger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, vw *view.View, extra interface{}, params map[string]interface{}) ([]eh.Command, error) {
-                        return []eh.Command{
-                                &domain.CreateRedfishResource{
-                                        ResourceURI: vw.GetURI(),
-                                        Type:        "#Power.v1_3_0.Voltage",
-                                        Context:     "/redfish/v1/$metadata#Power.Power",
-                                        Privileges: map[string]interface{}{
-                                                "GET":    []string{"Login"},
-                                                "POST":   []string{}, // cannot create sub objects
-                                                "PUT":    []string{},
-                                                "PATCH":  []string{"ConfigureManager"},
-                                                "DELETE": []string{}, // can't be deleted
-                                        },
-                                        Properties: map[string]interface{}{
-                                                "Name@meta":                     vw.Meta(view.PropGET("name")),
-                                                "MemberId@meta":                 vw.Meta(view.PropGET("unique_name")),
-                                                "LowerThresholdCritical@meta": vw.Meta(view.PropGET("lowerthresholdcritical")),
-                                                "LowerThresholdFatal@meta": vw.Meta(view.PropGET("lowerthresholdfatal")),
-                                                "LowerThresholdNonCritical@meta":  vw.Meta(view.PropGET("lowerthresholdnoncritical")),
-                                                "MaxReadingRange@meta":  vw.Meta(view.PropGET("max_reading_range")),
-						"MinReadingRange@meta":  vw.Meta(view.PropGET("min_reading_range")),
-						"PhysicalContext@meta":  vw.Meta(view.PropGET("physical_context")),
-						"ReadingVolts@meta":  vw.Meta(view.PropGET("reading_volts")),
-						"SensorNumber@meta":  vw.Meta(view.PropGET("sensor_number")),
-						"UpperThresholdCritical@meta":  vw.Meta(view.PropGET("upperthresholdcritical")),
-						"UpperThresholdFatal@meta":  vw.Meta(view.PropGET("upperthresholdfatal")),
-						"UpperThresholdNonCritical@meta":  vw.Meta(view.PropGET("upperthresholdnoncritical")),
-                                                "Status": map[string]interface{}{
-                                                        "State@meta":        vw.Meta(view.PropGET("obj_status")),
-                                                        "Health@meta":       vw.Meta(view.PropGET("obj_status")),
-                                                },
-                                                "RelatedItem@meta":             vw.Meta(view.GETProperty("power_related_items"), view.GETFormatter("formatOdataList"), view.GETModel("default")),
-                                                "RelatedItem@odata.count@meta": vw.Meta(view.GETProperty("power_related_items"), view.GETFormatter("count"), view.GETModel("default")),
-                                        },
-                                }}, nil
-                })
-
+		func(ctx context.Context, subLogger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, vw *view.View, extra interface{}, params map[string]interface{}) ([]eh.Command, error) {
+			return []eh.Command{
+				&domain.CreateRedfishResource{
+					ResourceURI: vw.GetURI(),
+					Type:        "#Power.v1_3_0.Voltage",
+					Context:     "/redfish/v1/$metadata#Power.Power",
+					Privileges: map[string]interface{}{
+						"GET":    []string{"Login"},
+						"POST":   []string{}, // cannot create sub objects
+						"PUT":    []string{},
+						"PATCH":  []string{"ConfigureManager"},
+						"DELETE": []string{}, // can't be deleted
+					},
+					Properties: map[string]interface{}{
+						"Name@meta":                      vw.Meta(view.PropGET("name")),
+						"MemberId@meta":                  vw.Meta(view.PropGET("unique_name")),
+						"LowerThresholdCritical@meta":    vw.Meta(view.PropGET("lowerthresholdcritical")),
+						"LowerThresholdFatal@meta":       vw.Meta(view.PropGET("lowerthresholdfatal")),
+						"LowerThresholdNonCritical@meta": vw.Meta(view.PropGET("lowerthresholdnoncritical")),
+						"MaxReadingRange@meta":           vw.Meta(view.PropGET("max_reading_range")),
+						"MinReadingRange@meta":           vw.Meta(view.PropGET("min_reading_range")),
+						"PhysicalContext@meta":           vw.Meta(view.PropGET("physical_context")),
+						"ReadingVolts@meta":              vw.Meta(view.PropGET("reading_volts")),
+						"SensorNumber@meta":              vw.Meta(view.PropGET("sensor_number")),
+						"UpperThresholdCritical@meta":    vw.Meta(view.PropGET("upperthresholdcritical")),
+						"UpperThresholdFatal@meta":       vw.Meta(view.PropGET("upperthresholdfatal")),
+						"UpperThresholdNonCritical@meta": vw.Meta(view.PropGET("upperthresholdnoncritical")),
+						"Status": map[string]interface{}{
+							"State@meta":  vw.Meta(view.PropGET("obj_status")),
+							"Health@meta": vw.Meta(view.PropGET("obj_status")),
+						},
+						"RelatedItem@meta":             vw.Meta(view.GETProperty("power_related_items"), view.GETFormatter("formatOdataList"), view.GETModel("default")),
+						"RelatedItem@odata.count@meta": vw.Meta(view.GETProperty("power_related_items"), view.GETFormatter("count"), view.GETModel("default")),
+					},
+				}}, nil
+		})
 
 }

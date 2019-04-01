@@ -4,8 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"reflect"
-  "fmt"
 )
 
 func (rrp *RedfishResourceProperty) MarshalJSON() ([]byte, error) {
@@ -191,18 +191,18 @@ type objectErrMessages interface {
 }
 
 type numSuccess interface {
-  GetNumSuccess() int
+	GetNumSuccess() int
 }
 
 func helper(ctx context.Context, agg *RedfishResourceAggregate, auth *RedfishAuthorizationProperty, encopts nuEncOpts, v interface{}) error {
 	// handle special case of RRP inside RRP.Value of parent
 	if vp, ok := v.(*RedfishResourceProperty); ok {
-    return vp.RunMetaFunctions(ctx, agg, auth, encopts)
+		return vp.RunMetaFunctions(ctx, agg, auth, encopts)
 	}
 
 	objectErrorMessages := []interface{}{}
 	objectExtendedMessages := []interface{}{}
-  anySuccess := 0
+	anySuccess := 0
 
 	// recurse through maps or slices and recursively call helper on them
 	val := reflect.ValueOf(v)
@@ -210,7 +210,7 @@ func helper(ctx context.Context, agg *RedfishResourceAggregate, auth *RedfishAut
 	case reflect.Map:
 
 		elemType := val.Type().Elem()
-    if encopts.root {
+		if encopts.root {
 			annotatedKey := "@Message.ExtendedInfo"
 			val.SetMapIndex(reflect.ValueOf(annotatedKey), reflect.Value{})
 			val.SetMapIndex(reflect.ValueOf("error"), reflect.Value{})
@@ -243,12 +243,12 @@ func helper(ctx context.Context, agg *RedfishResourceAggregate, auth *RedfishAut
 					continue
 				}
 
-        if e, ok := err.(numSuccess); ok {
-          i := e.GetNumSuccess()
-          if i > 0 {
-            anySuccess = anySuccess + 1
-          }
-        }
+				if e, ok := err.(numSuccess); ok {
+					i := e.GetNumSuccess()
+					if i > 0 {
+						anySuccess = anySuccess + 1
+					}
+				}
 				// annotate at this level
 				propertyExtendedMessages := []interface{}{}
 				if e, ok := err.(propertyExtMessages); ok {
@@ -284,10 +284,10 @@ func helper(ctx context.Context, agg *RedfishResourceAggregate, auth *RedfishAut
 
 		if encopts.root && len(objectErrorMessages) > 0 {
 			if agg != nil {
-        agg.StatusCode = 400
-        if anySuccess > 0 {
-          agg.StatusCode = 200
-        }
+				agg.StatusCode = 400
+				if anySuccess > 0 {
+					agg.StatusCode = 200
+				}
 			}
 			annotatedKey := "error"
 			value := map[string]interface{}{
@@ -313,12 +313,12 @@ func helper(ctx context.Context, agg *RedfishResourceAggregate, auth *RedfishAut
 					continue
 				}
 
-        if e, ok := err.(numSuccess); ok {
-          i := e.GetNumSuccess()
-          if i > 0 {
-            anySuccess = anySuccess + 1
-          }
-        }
+				if e, ok := err.(numSuccess); ok {
+					i := e.GetNumSuccess()
+					if i > 0 {
+						anySuccess = anySuccess + 1
+					}
+				}
 				// things to kick up a level
 				if e, ok := err.(objectExtMessages); ok {
 					objectExtendedMessages = append(objectExtendedMessages, e.GetObjectExtendedMessages()...)
@@ -332,14 +332,14 @@ func helper(ctx context.Context, agg *RedfishResourceAggregate, auth *RedfishAut
 		}
 	}
 
-  if (encopts.root) {
-    fmt.Println("agg.StatusCode: ", agg.StatusCode)
-  }
+	if encopts.root {
+		fmt.Println("agg.StatusCode: ", agg.StatusCode)
+	}
 
 	return &CombinedPropObjInfoError{
 		ObjectExtendedInfoMessages:  *NewObjectExtendedInfoMessages(objectExtendedMessages),
 		ObjectExtendedErrorMessages: *NewObjectExtendedErrorMessages(objectErrorMessages),
-    NumSuccess: anySuccess,
+		NumSuccess:                  anySuccess,
 	}
 }
 

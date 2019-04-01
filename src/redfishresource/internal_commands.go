@@ -23,7 +23,7 @@ func init() {
 	eh.RegisterCommand(func() eh.Command { return &CreateRedfishResource{} })
 	eh.RegisterCommand(func() eh.Command { return &RemoveRedfishResource{} })
 	eh.RegisterCommand(func() eh.Command { return &UpdateRedfishResourceProperties{} })
-  eh.RegisterCommand(func() eh.Command { return &RemoveRedfishResourceProperty{} })
+	eh.RegisterCommand(func() eh.Command { return &RemoveRedfishResourceProperty{} })
 	eh.RegisterCommand(func() eh.Command { return &InjectEvent{} })
 }
 
@@ -31,7 +31,7 @@ const (
 	CreateRedfishResourceCommand           = eh.CommandType("internal:RedfishResource:Create")
 	RemoveRedfishResourceCommand           = eh.CommandType("internal:RedfishResource:Remove")
 	UpdateRedfishResourcePropertiesCommand = eh.CommandType("internal:RedfishResourceProperties:Update")
-  RemoveRedfishResourcePropertyCommand   = eh.CommandType("internal:RedfishResourceProperties:Remove")
+	RemoveRedfishResourcePropertyCommand   = eh.CommandType("internal:RedfishResourceProperties:Remove")
 	InjectEventCommand                     = eh.CommandType("internal:Event:Inject")
 )
 
@@ -166,8 +166,8 @@ func (c *RemoveRedfishResource) Handle(ctx context.Context, a *RedfishResourceAg
 }
 
 type RemoveRedfishResourceProperty struct {
-  ID          eh.UUID `json:"id"`
-  Property    string  `eh:"optional"`
+	ID       eh.UUID `json:"id"`
+	Property string  `eh:"optional"`
 }
 
 // AggregateType satisfies base Aggregate interface
@@ -181,13 +181,13 @@ func (c *RemoveRedfishResourceProperty) CommandType() eh.CommandType {
 	return RemoveRedfishResourcePropertyCommand
 }
 func (c *RemoveRedfishResourceProperty) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
-  properties := a.Properties.Value.(map[string]interface{})
-  for key, _ := range(properties) {
-    if key == c.Property {
-      delete(properties, key)
-    }
-  }
-  return nil
+	properties := a.Properties.Value.(map[string]interface{})
+	for key, _ := range properties {
+		if key == c.Property {
+			delete(properties, key)
+		}
+	}
+	return nil
 }
 
 type UpdateRedfishResourceProperties struct {

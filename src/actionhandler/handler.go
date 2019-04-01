@@ -26,14 +26,14 @@ const (
 	GenericActionEvent = eh.EventType("GenericActionEvent")
 	POSTCommand        = eh.CommandType("GenericActionHandler:POST")
 	PATCHCommand       = eh.CommandType("GenericActionHandler:PATCH")
-	DELETECommand       = eh.CommandType("GenericActionHandler:DELETE")
+	DELETECommand      = eh.CommandType("GenericActionHandler:DELETE")
 )
 
 type GenericActionEventData struct {
 	ID          eh.UUID // id of aggregate
 	CmdID       eh.UUID
 	ResourceURI string
-	Method	string
+	Method      string
 
 	ActionData interface{}
 }
@@ -73,7 +73,7 @@ func (c *POST) Handle(ctx context.Context, a *domain.RedfishResourceAggregate) e
 		CmdID:       c.CmdID,
 		ResourceURI: a.ResourceURI,
 		ActionData:  c.PostBody,
-		Method:	     c.Method,
+		Method:      c.Method,
 	}, time.Now()))
 	return nil
 }

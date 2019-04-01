@@ -30,17 +30,17 @@ type mapping struct {
 }
 
 type syncEvent interface {
-  Add(int)
-  Done()
+	Add(int)
+	Done()
 }
 
 type waiter interface {
-  Listen(context.Context, func(eh.Event) bool) (*eventwaiter.EventListener, error)
+	Listen(context.Context, func(eh.Event) bool) (*eventwaiter.EventListener, error)
 }
 
 type listener interface {
-  Inbox() <- chan eh.Event
-  Close()
+	Inbox() <-chan eh.Event
+	Close()
 }
 
 // individual mapping: only for bookkeeping
@@ -66,7 +66,7 @@ type ARService struct {
 	hashMu sync.RWMutex
 	hash   map[string][]update
 
-  ew     waiter
+	ew waiter
 }
 
 // post-processed and optimized update
@@ -87,12 +87,12 @@ func StartService(ctx context.Context, logger log.Logger, cfg *viper.Viper, cfgM
 		hash:          make(map[string][]update),
 	}
 
-  sp, err := event.NewESP(ctx, event.MatchAnyEvent(attributes.AttributeUpdated), event.SetListenerName("ar_service"))
-  if err != nil {
-    logger.Error("Failed to create new event stream processor", "err", err)
-    return nil, errors.New("Failed to create ESP")
-  }
-  arservice.ew = &sp.EW
+	sp, err := event.NewESP(ctx, event.MatchAnyEvent(attributes.AttributeUpdated), event.SetListenerName("ar_service"))
+	if err != nil {
+		logger.Error("Failed to create new event stream processor", "err", err)
+		return nil, errors.New("Failed to create ESP")
+	}
+	arservice.ew = &sp.EW
 
 	go sp.RunForever(func(event eh.Event) {
 		data, ok := event.Data().(*attributes.AttributeUpdatedData)
@@ -107,12 +107,12 @@ func StartService(ctx context.Context, logger log.Logger, cfg *viper.Viper, cfgM
 		if arr, ok := arservice.hash[key]; ok {
 			logger.Debug("matched quick hash", "key", key)
 			for _, u := range arr {
-        if data.Error == "" {
-				  logger.Debug("updating property", "property", u.property, "value", data.Value)
-				  u.model.UpdateProperty(u.property, data.Value)
-        } else {
-          logger.Debug("event has error, not updating property", "property", u.property, "error", data.Error)
-        }
+				if data.Error == "" {
+					logger.Debug("updating property", "property", u.property, "value", data.Value)
+					u.model.UpdateProperty(u.property, data.Value)
+				} else {
+					logger.Debug("event has error, not updating property", "property", u.property, "error", data.Error)
+				}
 			}
 		}
 		arservice.hashMu.RUnlock()
@@ -161,54 +161,54 @@ func (b breadcrumb) Close() {
 }
 
 type HTTP_code struct {
-  err_message []string
-  any_success int
+	err_message []string
+	any_success int
 }
 
 func (e HTTP_code) ErrMessage() []string {
-  return e.err_message
+	return e.err_message
 }
 
 func (e HTTP_code) AnySuccess() int {
-  return e.any_success
+	return e.any_success
 }
 
 func (e HTTP_code) Error() string {
-  return fmt.Sprintf("Request Error Message: %s", e.err_message)
+	return fmt.Sprintf("Request Error Message: %s", e.err_message)
 }
 
 func (b breadcrumb) UpdateRequest(ctx context.Context, property string, value interface{}, auth *domain.RedfishAuthorizationProperty) (interface{}, error) {
-  b.ars.hashMu.RLock()
-  defer b.ars.hashMu.RUnlock()
+	b.ars.hashMu.RLock()
+	defer b.ars.hashMu.RUnlock()
 
-  canned_response := `{"RelatedProperties@odata.count": 1, "Message": "%s", "MessageArgs": ["%[2]s"], "Resolution": "Remove the %sproperty from the request body and resubmit the request if the operation failed.", "MessageId": "%s", "MessageArgs@odata.count": 1, "RelatedProperties": ["%[2]s"], "Severity": "Warning"}`
+	canned_response := `{"RelatedProperties@odata.count": 1, "Message": "%s", "MessageArgs": ["%[2]s"], "Resolution": "Remove the %sproperty from the request body and resubmit the request if the operation failed.", "MessageId": "%s", "MessageArgs@odata.count": 1, "RelatedProperties": ["%[2]s"], "Severity": "Warning"}`
 	b.logger.Info("UpdateRequest", "property", property, "mappingName", b.mappingName)
-  num_success := 0
+	num_success := 0
 
-  reqIDs := []eh.UUID{}
-  responses := []attributes.AttributeUpdatedData{}
-  errs := []string{}
-  patch_timeout := 3
+	reqIDs := []eh.UUID{}
+	responses := []attributes.AttributeUpdatedData{}
+	errs := []string{}
+	patch_timeout := 3
 
-  l, err := b.ars.ew.Listen(ctx, func(event eh.Event) bool {
-    if event.EventType() != attributes.AttributeUpdated {
-      return false
-    }
-    _, ok := event.Data().(*attributes.AttributeUpdatedData)
-    if !ok {
-      return false
-    }
-    return true
-  })
-  if err != nil {
-    b.ars.logger.Error("Could not create listener", "err", err)
-    return nil, errors.New("Failed to make attribute updated event listener")
-  }
-  l.Name = "ar patch listener"
-  var listener listener
-  listener = l
+	l, err := b.ars.ew.Listen(ctx, func(event eh.Event) bool {
+		if event.EventType() != attributes.AttributeUpdated {
+			return false
+		}
+		_, ok := event.Data().(*attributes.AttributeUpdatedData)
+		if !ok {
+			return false
+		}
+		return true
+	})
+	if err != nil {
+		b.ars.logger.Error("Could not create listener", "err", err)
+		return nil, errors.New("Failed to make attribute updated event listener")
+	}
+	l.Name = "ar patch listener"
+	var listener listener
+	listener = l
 
-  defer listener.Close()
+	defer listener.Close()
 
 	mappings, ok := b.ars.modelmappings[b.mappingName]
 	if !ok {
@@ -218,19 +218,19 @@ func (b breadcrumb) UpdateRequest(ctx context.Context, property string, value in
 	for _, mapping := range mappings.mappings {
 
 		if property != mapping.Property {
-      b.ars.logger.Error("not found", "Attribute", property)
-      err_msg := fmt.Sprintf("The property %s is not in the list of valid properties for the resource.", property)
-      errs = append(errs, fmt.Sprintf(canned_response, []interface{}{err_msg, property, "unknown ", "Base.1.0.PropertyUnknown"}...))
+			b.ars.logger.Error("not found", "Attribute", property)
+			err_msg := fmt.Sprintf("The property %s is not in the list of valid properties for the resource.", property)
+			errs = append(errs, fmt.Sprintf(canned_response, []interface{}{err_msg, property, "unknown ", "Base.1.0.PropertyUnknown"}...))
 			continue
 		}
 
-    var ad attributes.AttributeData
-    if !ad.WriteAllowed(property, auth) {
-      b.ars.logger.Error("Unable to set", "Attribute", property)
-      err_msg := fmt.Sprintf("The property %s is a read only property and cannot be assigned a value.", property)
-      errs = append(errs, fmt.Sprintf(canned_response, []interface{}{err_msg, property, "", "Base.1.0.PropertyNotWritable"}...))
-      continue
-    }
+		var ad attributes.AttributeData
+		if !ad.WriteAllowed(property, auth) {
+			b.ars.logger.Error("Unable to set", "Attribute", property)
+			err_msg := fmt.Sprintf("The property %s is a read only property and cannot be assigned a value.", property)
+			errs = append(errs, fmt.Sprintf(canned_response, []interface{}{err_msg, property, "", "Base.1.0.PropertyNotWritable"}...))
+			continue
+		}
 
 		mappings.logger.Info("Sending Update Request", "mapping", mapping, "value", value)
 		reqUUID := eh.NewUUID()
@@ -245,44 +245,44 @@ func (b breadcrumb) UpdateRequest(ctx context.Context, property string, value in
 			Authorization: *auth,
 		}
 		b.ars.eb.PublishEvent(ctx, eh.NewEvent(attributes.AttributeUpdateRequest, data, time.Now()))
-    reqIDs = append(reqIDs, reqUUID)
+		reqIDs = append(reqIDs, reqUUID)
 		break
 	}
 
-  if (len(reqIDs) == 0) {
-    return nil, HTTP_code{err_message: errs, any_success: num_success}
-  }
-  timer := time.NewTimer(time.Duration(patch_timeout*len(reqIDs)) * time.Second)
+	if len(reqIDs) == 0 {
+		return nil, HTTP_code{err_message: errs, any_success: num_success}
+	}
+	timer := time.NewTimer(time.Duration(patch_timeout*len(reqIDs)) * time.Second)
 
-  for {
-    select {
-    case event := <- listener.Inbox():
-      data, _ := event.Data().(*attributes.AttributeUpdatedData)
-      for i, reqID := range reqIDs {
-        if reqID == data.ReqID {
-          reqIDs[i] = reqIDs[len(reqIDs)-1]
-          reqIDs = reqIDs[:len(reqIDs)-1]
-          responses = append(responses, *data)
-          if (data.Error != "") {
-            errs = append(errs, data.Error)
-          } else {
-            num_success = num_success + 1
-          }
-          break
-        }
-      }
-      if e, ok := event.(syncEvent); ok {
-        e.Done()
-      }
-      if (len(reqIDs) == 0) {
-        return nil, HTTP_code{err_message: errs, any_success: num_success}
-      }
-      case <- timer.C:
-        return nil, HTTP_code{err_message: []string{"Timed out!"}, any_success: num_success}
-      case <- ctx.Done():
-        return nil, nil
-    }
-  }
+	for {
+		select {
+		case event := <-listener.Inbox():
+			data, _ := event.Data().(*attributes.AttributeUpdatedData)
+			for i, reqID := range reqIDs {
+				if reqID == data.ReqID {
+					reqIDs[i] = reqIDs[len(reqIDs)-1]
+					reqIDs = reqIDs[:len(reqIDs)-1]
+					responses = append(responses, *data)
+					if data.Error != "" {
+						errs = append(errs, data.Error)
+					} else {
+						num_success = num_success + 1
+					}
+					break
+				}
+			}
+			if e, ok := event.(syncEvent); ok {
+				e.Done()
+			}
+			if len(reqIDs) == 0 {
+				return nil, HTTP_code{err_message: errs, any_success: num_success}
+			}
+		case <-timer.C:
+			return nil, HTTP_code{err_message: []string{"Timed out!"}, any_success: num_success}
+		case <-ctx.Done():
+			return nil, nil
+		}
+	}
 }
 
 func (ars *ARService) resetConfig() {

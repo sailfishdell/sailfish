@@ -14,7 +14,7 @@ const (
 	PowerConsumptionDataObjEvent        = eh.EventType("PowerConsumptionDataObjEvent")
 	AvgPowerConsumptionStatDataObjEvent = eh.EventType("AvgPowerConsumptionStatDataObjEvent")
 	IomCapability                       = eh.EventType("IomCapability")
-  ComponentRemoved                    = eh.EventType("ComponentRemoved")
+	ComponentRemoved                    = eh.EventType("ComponentRemoved")
 	FileReadEvent                       = eh.EventType("FileReadEvent")
 	FileLinkEvent                       = eh.EventType("FileLinkEvent")
 	StorageEnclosureEvent               = eh.EventType("StorageEnclosureEvent")
@@ -56,7 +56,7 @@ type IomCapabilityData struct {
 }
 
 type ComponentRemovedData struct {
-  Name                    string
+	Name string
 }
 
 type HealthEventData struct {
@@ -98,66 +98,66 @@ type FanEventData struct {
 
 type ThermalSensorEventData struct {
 	ObjectHeader           DataObjectHeader
-	ReadingValid           int `json:"readingValid"`
-	UpperCriticalThreshold int `json:"upperCriticalThreshold"`
-	SensorReading          int `json:"sensorReadingInt"`
-	LowerWarningThreshold  int `json:"lowerWarningThreshold"`
-	SensorStateMask        int `json:"sensorStateMask"`
-	SensorHealth           int `json:"sensorHealth"`
-	UpperWarningThreshold  int `json:"upperWarningThreshold"`
-	LowerCriticalThreshold int `json:"lowerCriticalThreshold"`
-    OffsetDeviceName       string `json:"offsetDeviceName"`
-    OffsetDeviceFQDD       string `json:"offsetDeviceFQDD"`
-    OffsetKey              string `json:"offsetKey"`
-    OffsetSensorName       string `json:"offsetSensorName"`
-    OffsetVendorName       string `json:"offsetVendorName"`
+	ReadingValid           int    `json:"readingValid"`
+	UpperCriticalThreshold int    `json:"upperCriticalThreshold"`
+	SensorReading          int    `json:"sensorReadingInt"`
+	LowerWarningThreshold  int    `json:"lowerWarningThreshold"`
+	SensorStateMask        int    `json:"sensorStateMask"`
+	SensorHealth           int    `json:"sensorHealth"`
+	UpperWarningThreshold  int    `json:"upperWarningThreshold"`
+	LowerCriticalThreshold int    `json:"lowerCriticalThreshold"`
+	OffsetDeviceName       string `json:"offsetDeviceName"`
+	OffsetDeviceFQDD       string `json:"offsetDeviceFQDD"`
+	OffsetKey              string `json:"offsetKey"`
+	OffsetSensorName       string `json:"offsetSensorName"`
+	OffsetVendorName       string `json:"offsetVendorName"`
 }
 type BaseSoftwareInventoryObjectobj struct {
 	OffsetVersionDependencyArray string `json:"OffsetVersionDependencyArray"`
-	DeviceType		int     `json:"DeviceType"`
-	FQDDOffset		string	`json:"FQDDOffset"`
+	DeviceType                   int    `json:"DeviceType"`
+	FQDDOffset                   string `json:"FQDDOffset"`
 }
 type SlotBasedSoftwareInventoryObjectobj struct {
-	BaseSoftwareInventoryObject	BaseSoftwareInventoryObjectobj	`json:"BaseSoftwareInventoryObject"`
-	SlotNum		int 	`json:"SlotNum"`
-	UniqueID	int     `json:"UniqueID"`
+	BaseSoftwareInventoryObject BaseSoftwareInventoryObjectobj `json:"BaseSoftwareInventoryObject"`
+	SlotNum                     int                            `json:"SlotNum"`
+	UniqueID                    int                            `json:"UniqueID"`
 }
 type PowerSupplyObjEventData struct {
-	ObjectHeader         DataObjectHeader
-	SlotBasedSoftwareInventoryObject      SlotBasedSoftwareInventoryObjectobj     `json:"slotBasedSoftwareInventoryObject"`
-	OutputWatts          int     `json:"outputWatts"`
-	InputRatedWatts      int     `json:"inputRatedWatts"`
-	InputVolts           int     `json:"inputVolts"`
-	PSACOn               float64 `json:"psACOn"`
-	PSSwitchOn           float64 `json:"psSwitchOn"`
-	PSPOK                float64 `json:"psPOK"`
-	PSOn                 float64 `json:"psOn"`
-	PSFanFail            float64 `json:"psFanFail"`
-	PSState              uint16  `json:"psState"`
-	PSType               uint8   `json:"psType"`
-	PSCfgErrType         uint8   `json:"psCfgErrType"`
-	BPMCapable           float64 `json:"bPMCapable"`
-	RatedAmps            uint16  `json:"ratedAmps"`
-	InputStatus          uint8   `json:"inputStatus"`
-	PsuSlot              uint8   `json:"psuSlot"`
-	InstAmps             float64 `json:"instAmps"`
-	PsuCapabilities      uint    `json:"psuCapabilities"`
-	OffsetFwVer          string  `json:"offsetfwVer"`
-	OffsetPSLocation     string  `json:"offsetPSLocation"`
-	BoardProductName     string  `json:"boardProductName"`
-	BoardSerialNumber    string  `json:"boardSerialNumber"`
-	BoardPartNumber      string  `json:"boardPartNumber"`
-	BoardManufacturer    string  `json:"boardManufacturer"`
-	RedundancyStatus     uint8   `json:"redundancyStatus"`
-	UpdateTime           int
-	CurrentInputVolts    int    `json:"currentInputVolts"`
-	MinimumVoltage       uint16 `json:"minimumvoltage"`
-	MaximumVoltage       uint16 `json:"maxmimumvoltage"`
-	MinimumFreqHz        uint8  `json:"minimumfreqhz"`
-	MaximumFreqHz        uint8  `json:"maximumfreqhz"`
-	InitUpdateInProgress uint   `json:"InitupdateInProgress"`
-	U16POutMax           uint16 `json:"u16PoutMax"`
-	LineStatus           uint8  `json:"lineStatus"`
+	ObjectHeader                     DataObjectHeader
+	SlotBasedSoftwareInventoryObject SlotBasedSoftwareInventoryObjectobj `json:"slotBasedSoftwareInventoryObject"`
+	OutputWatts                      int                                 `json:"outputWatts"`
+	InputRatedWatts                  int                                 `json:"inputRatedWatts"`
+	InputVolts                       int                                 `json:"inputVolts"`
+	PSACOn                           float64                             `json:"psACOn"`
+	PSSwitchOn                       float64                             `json:"psSwitchOn"`
+	PSPOK                            float64                             `json:"psPOK"`
+	PSOn                             float64                             `json:"psOn"`
+	PSFanFail                        float64                             `json:"psFanFail"`
+	PSState                          uint16                              `json:"psState"`
+	PSType                           uint8                               `json:"psType"`
+	PSCfgErrType                     uint8                               `json:"psCfgErrType"`
+	BPMCapable                       float64                             `json:"bPMCapable"`
+	RatedAmps                        uint16                              `json:"ratedAmps"`
+	InputStatus                      uint8                               `json:"inputStatus"`
+	PsuSlot                          uint8                               `json:"psuSlot"`
+	InstAmps                         float64                             `json:"instAmps"`
+	PsuCapabilities                  uint                                `json:"psuCapabilities"`
+	OffsetFwVer                      string                              `json:"offsetfwVer"`
+	OffsetPSLocation                 string                              `json:"offsetPSLocation"`
+	BoardProductName                 string                              `json:"boardProductName"`
+	BoardSerialNumber                string                              `json:"boardSerialNumber"`
+	BoardPartNumber                  string                              `json:"boardPartNumber"`
+	BoardManufacturer                string                              `json:"boardManufacturer"`
+	RedundancyStatus                 uint8                               `json:"redundancyStatus"`
+	UpdateTime                       int
+	CurrentInputVolts                int    `json:"currentInputVolts"`
+	MinimumVoltage                   uint16 `json:"minimumvoltage"`
+	MaximumVoltage                   uint16 `json:"maxmimumvoltage"`
+	MinimumFreqHz                    uint8  `json:"minimumfreqhz"`
+	MaximumFreqHz                    uint8  `json:"maximumfreqhz"`
+	InitUpdateInProgress             uint   `json:"InitupdateInProgress"`
+	U16POutMax                       uint16 `json:"u16PoutMax"`
+	LineStatus                       uint8  `json:"lineStatus"`
 }
 
 type PowerConsumptionDataObjEventData struct {
@@ -170,7 +170,7 @@ type PowerConsumptionDataObjEventData struct {
 	MinWatts        int   `json:"minWatts"`
 	MinwReadingTime int64 `json:"minwReadingTime"`
 	PeakHeadRoom    int   `json:"peakHeadRoom"`
-	Maxpower	int   `json:"maxPower"`
+	Maxpower        int   `json:"maxPower"`
 	InstWattsPSU1_2 int   `json:"instWattsPSU1_2"`
 }
 

@@ -11,9 +11,9 @@ import (
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
 )
 
-type isHTTPCode interface{
-  ErrMessage() []string
-  AnySuccess() int
+type isHTTPCode interface {
+	ErrMessage() []string
+	AnySuccess() int
 }
 
 // already locked at aggregate level when we get here
@@ -108,33 +108,33 @@ func (s *View) PropertyPatch(
 	if ok {
 		newval, err := controller.UpdateRequest(ctx, property, body, auth)
 		log.MustLogger("PATCH").Debug("update request", "newval", newval, "err", err)
-    if e, ok := err.(isHTTPCode); ok {
-      any_success := e.AnySuccess()
-      //errors reported from patch & formatted correctly
-      err_extendedinfos := []interface{}{}
-      for _, err_msg := range(e.ErrMessage()) {
-        //generted extended error info msg for each err
-        //de-serialize err_msg here! need to turn from string into map[string]interface{}
-        msg := domain.ExtendedInfo{}
-        err := json.Unmarshal([]byte(err_msg), &msg)
-        if err != nil {
-          log.MustLogger("PATCH").Crit("Error could not be unmarshalled to an EEMI message")
-          return errors.New("Error updating: Could not unmarshal EEMI message")
-        }
-        err_extendedinfos = append(err_extendedinfos, msg)
-      }
-      oeem := *domain.NewObjectExtendedErrorMessages(err_extendedinfos)
-      return &domain.CombinedPropObjInfoError{
-        ObjectExtendedErrorMessages: oeem,
-        NumSuccess: any_success,
-      }
-    } else if err == nil {
-			rrp.Value = newval
-      default_msg := domain.ExtendedInfo{}
-      oeim := *domain.NewObjectExtendedInfoMessages([]interface{}{default_msg.GetDefaultExtendedInfo()})
+		if e, ok := err.(isHTTPCode); ok {
+			any_success := e.AnySuccess()
+			//errors reported from patch & formatted correctly
+			err_extendedinfos := []interface{}{}
+			for _, err_msg := range e.ErrMessage() {
+				//generted extended error info msg for each err
+				//de-serialize err_msg here! need to turn from string into map[string]interface{}
+				msg := domain.ExtendedInfo{}
+				err := json.Unmarshal([]byte(err_msg), &msg)
+				if err != nil {
+					log.MustLogger("PATCH").Crit("Error could not be unmarshalled to an EEMI message")
+					return errors.New("Error updating: Could not unmarshal EEMI message")
+				}
+				err_extendedinfos = append(err_extendedinfos, msg)
+			}
+			oeem := *domain.NewObjectExtendedErrorMessages(err_extendedinfos)
 			return &domain.CombinedPropObjInfoError{
-				ObjectExtendedInfoMessages:   oeim,
-        NumSuccess: 1,
+				ObjectExtendedErrorMessages: oeem,
+				NumSuccess:                  any_success,
+			}
+		} else if err == nil {
+			rrp.Value = newval
+			default_msg := domain.ExtendedInfo{}
+			oeim := *domain.NewObjectExtendedInfoMessages([]interface{}{default_msg.GetDefaultExtendedInfo()})
+			return &domain.CombinedPropObjInfoError{
+				ObjectExtendedInfoMessages: oeim,
+				NumSuccess:                 1,
 			}
 		}
 

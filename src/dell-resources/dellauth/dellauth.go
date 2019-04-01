@@ -68,7 +68,7 @@ func PrivilegeBitsToStrings(required int) []string {
 		if mEval(required, 128) {
 			Privileges = append(Privileges, "TestAlerts")
 		}
-        if mEval(required, 256) {
+		if mEval(required, 256) {
 			Privileges = append(Privileges, "ExecuteDebugCommands")
 		}
 	}

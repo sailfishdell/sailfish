@@ -65,7 +65,7 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 			timeF = 0
 		}
 		createdTime := time.Unix(int64(timeF), 0)
-    cTime := createdTime.Format("2006-01-02T15:04:05-07:00")
+		cTime := createdTime.Format("2006-01-02T15:04:05-07:00")
 
 		severity := logEntry.Severity
 		if logEntry.Severity == "Informational" {
@@ -83,7 +83,7 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 					"GET": []string{"Login"},
 				},
 				Properties: map[string]interface{}{
-          "Created": cTime,
+					"Created":     cTime,
 					"Description": logEntry.Name,
 					"Name":        logEntry.Name,
 					"EntryType":   logEntry.EntryType,
@@ -200,7 +200,7 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 			timeF = 0
 		}
 		createdTime := time.Unix(int64(timeF), 0)
-    cTime := createdTime.Format("2006-01-02T15:04:05-07:00")
+		cTime := createdTime.Format("2006-01-02T15:04:05-07:00")
 
 		uuid := eh.NewUUID()
 		uri := fmt.Sprintf("%s/%s", logUri, faultEntry.Name)
@@ -227,11 +227,11 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 					"Location": uri,
 				},
 				Privileges: map[string]interface{}{
-					"GET": []string{"Login"},
-                                        "DELETE":[]string{"ConfigureManager"},
+					"GET":    []string{"Login"},
+					"DELETE": []string{"ConfigureManager"},
 				},
 				Properties: map[string]interface{}{
-          "Created": cTime,
+					"Created":                 cTime,
 					"Description":             "FaultList Entry " + faultEntry.FQDD,
 					"Name":                    "FaultList Entry " + faultEntry.FQDD,
 					"EntryType":               faultEntry.EntryType,
@@ -269,7 +269,7 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 			timeF = 0
 		}
 		createdTime := time.Unix(int64(timeF), 0)
-    cTime := createdTime.Format("2006-01-02T15:04:05-07:00")
+		cTime := createdTime.Format("2006-01-02T15:04:05-07:00")
 
 		//Create Alert type event:
 
@@ -277,7 +277,7 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 			eh.NewEvent(eventservice.RedfishEvent, &eventservice.RedfishEventData{
 				EventType:      "Alert",
 				EventId:        logEntry.EventId,
-        EventTimestamp: cTime,
+				EventTimestamp: cTime,
 				Severity:       logEntry.Severity,
 				Message:        logEntry.Message,
 				MessageId:      logEntry.MessageID,
@@ -525,10 +525,8 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 }
 
 const (
-	RequestFaultRemove   = eh.EventType("Request:FaultRemove")
+	RequestFaultRemove = eh.EventType("Request:FaultRemove")
 )
-
-
 
 func init() {
 	// implemented
@@ -551,7 +549,7 @@ type FaultDELETE struct {
 
 type RequestFaultRemoveData struct {
 	ID          eh.UUID // id of aggregate
-	CmdID       string 
+	CmdID       string
 	ResourceURI string
 }
 
@@ -567,13 +565,13 @@ func (c *FaultDELETE) Handle(ctx context.Context, a *domain.RedfishResourceAggre
 
 	//data.Results, _ = ProcessDELETE(ctx, a.Properties, c.Body)
 
-        faultID:=""
+	faultID := ""
 	// send event to trigger delete
-        splitString :=strings.Split(a.ResourceURI, "-")
-        if len(splitString) == 2 {
-            faultID = splitString[1]
-        }
-        fmt.Println(faultID)
+	splitString := strings.Split(a.ResourceURI, "-")
+	if len(splitString) == 2 {
+		faultID = splitString[1]
+	}
+	fmt.Println(faultID)
 	a.PublishEvent(eh.NewEvent(RequestFaultRemove, &RequestFaultRemoveData{
 		ID:          c.ID,
 		CmdID:       faultID,

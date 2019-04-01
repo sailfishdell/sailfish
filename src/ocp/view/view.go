@@ -27,7 +27,7 @@ type formatter func(
 	v *View,
 	m *model.Model,
 	rrp *domain.RedfishResourceProperty,
-    auth *domain.RedfishAuthorizationProperty,
+	auth *domain.RedfishAuthorizationProperty,
 	meta map[string]interface{},
 ) error
 

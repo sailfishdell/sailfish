@@ -5,7 +5,7 @@ import (
 	"errors"
 	"sync"
 
-    "github.com/superchalupa/sailfish/src/dell-resources/attributes"
+	"github.com/superchalupa/sailfish/src/dell-resources/attributes"
 	"github.com/superchalupa/sailfish/src/log"
 	"github.com/superchalupa/sailfish/src/ocp/awesome_mapper2"
 	"github.com/superchalupa/sailfish/src/ocp/model"
@@ -91,8 +91,8 @@ func InitTask(logger log.Logger, instantiateSvc *testaggregate.Service) {
 	}
 
 	go func() {
-		var attrModel *model.Model // model from syschas1/attr
-        var ad attributes.AttributeData // for mapping the actual attribute date
+		var attrModel *model.Model      // model from syschas1/attr
+		var ad attributes.AttributeData // for mapping the actual attribute date
 		for {
 			select {
 			case <-trigger:
@@ -192,7 +192,7 @@ func InitTask(logger log.Logger, instantiateSvc *testaggregate.Service) {
 							//this attribute not yet populated
 							continue
 						}
-                        percent := ad.Value
+						percent := ad.Value
 
 						message_raw, ok := namemap["Message1"]
 						if !ok || !ad.Valid(message_raw) {

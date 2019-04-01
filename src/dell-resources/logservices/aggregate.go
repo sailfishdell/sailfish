@@ -25,8 +25,8 @@ func RegisterAggregate(s *testaggregate.Service) {
 						"GET": []string{"Login"},
 					},
 					Properties: map[string]interface{}{
-						"Name":        "Log Service Collection",
-						"Description": "Collection of Log Services for this Manager",
+						"Name":                     "Log Service Collection",
+						"Description":              "Collection of Log Services for this Manager",
 						"Members@meta":             vw.Meta(view.GETProperty("members"), view.GETFormatter("formatOdataList"), view.GETModel("default")), // hard coded for time being due to timing issue
 						"Members@odata.count@meta": vw.Meta(view.GETProperty("members"), view.GETFormatter("count"), view.GETModel("default")),
 					}},
@@ -54,7 +54,7 @@ func RegisterAggregate(s *testaggregate.Service) {
 						},
 						"DateTime@meta":       map[string]interface{}{"GET": map[string]interface{}{"plugin": "datetime"}},
 						"DateTimeLocalOffset": "+00:00",
-						"Id":                  "LC",
+						"Id": "LC",
 						"Actions": map[string]interface{}{
 							"#LogService.ClearLog": map[string]interface{}{
 								"target": vw.GetActionURI("clearlog"),
@@ -129,10 +129,10 @@ func RegisterAggregate(s *testaggregate.Service) {
 					ResourceURI: vw.GetURI(),
 					Type:        "#LogEntryCollection.LogEntryCollection",
 					Context:     params["rooturi"].(string) + "/$metadata#LogEntryCollection.LogEntryCollection",
-                                        Plugin:      "GenericActionHandler",
+					Plugin:      "GenericActionHandler",
 					Privileges: map[string]interface{}{
-						"GET": []string{"Login"},
-                                                "POST": []string{"ConfigureManager"},
+						"GET":  []string{"Login"},
+						"POST": []string{"ConfigureManager"},
 					},
 					Properties: map[string]interface{}{
 						"Description":              "Providing additional health information for the devices which support rolled up health data",

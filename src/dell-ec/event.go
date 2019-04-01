@@ -5,11 +5,11 @@ import (
 )
 
 const (
-	ComponentEvent     eh.EventType = "ComponentEvent"
-	LogEvent           eh.EventType = "LogEvent"
-	FaultEntryAdd      eh.EventType = "FaultEntryAdd"
-	FaultEntryRemove   eh.EventType = "FaultEntryRemove"
-	FaultEntriesClear  eh.EventType = "FaultEntriesClear"
+	ComponentEvent    eh.EventType = "ComponentEvent"
+	LogEvent          eh.EventType = "LogEvent"
+	FaultEntryAdd     eh.EventType = "FaultEntryAdd"
+	FaultEntryRemove  eh.EventType = "FaultEntryRemove"
+	FaultEntriesClear eh.EventType = "FaultEntriesClear"
 )
 
 func init() {
@@ -39,14 +39,14 @@ type LogEventData struct {
 	Severity    string
 	Category    string
 	Action      string
-    FQDD        string
-    LogAlert    string
-    EventId     string
+	FQDD        string
+	LogAlert    string
+	EventId     string
 }
 
 type FaultEntryRmData struct {
-        Id              int
-	Name            string
+	Id   int
+	Name string
 }
 
 type FaultEntryAddData struct {
