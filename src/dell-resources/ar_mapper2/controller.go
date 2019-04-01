@@ -165,7 +165,7 @@ type HTTP_code struct {
   any_success int
 }
 
-func (e HTTP_code) ErrMessagE() []string {
+func (e HTTP_code) ErrMessage() []string {
   return e.err_message
 }
 
