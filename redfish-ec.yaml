@@ -1431,7 +1431,6 @@ mappings:
         - {Property: "chassis_type",            FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "ChassisType" }
         - {Property: "model",                   FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Model" }
         - {Property: "manufacturer",            FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Manufacturer" }
-        - {Property: "indicator_led",           FQDD: "System.Chassis.1", Group: "Info", Index: "1", Name: "IndicatorLED" }
         - {Property: "description",             FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Description" }
         - {Property: "redundancy_mode",         FQDD: "{FQDD}", Group: "Redundancy", Index: "1", Name: "Mode" }
         - {Property: "redundancy_health_state", FQDD: "{FQDD}", Group: "Redundancy", Index: "1", Name: "State" }
@@ -1458,6 +1457,7 @@ mappings:
         - {Property: "part_number",  FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "PartNumber" }
         - {Property: "chassis_type", FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "ChassisType"}
         - {Property: "model",        FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Model" }
+        - {Property: "indicator_led",FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "IndicatorLED" }
         - {Property: "name",         FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Name" }
         - {Property: "manufacturer", FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Manufacturer" }
         - {Property: "service_tag",  FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "ServiceTag" }
