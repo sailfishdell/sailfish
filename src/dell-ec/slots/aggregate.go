@@ -47,7 +47,7 @@ func RegisterAggregate(s *testaggregate.Service) {
 			}
 
 			if strings.Contains(params["FQDD"].(string), "SledSlot") {
-				properties["SledProfile@meta"] = vw.Meta(view.PropGET("sled_profile"), view.PropPATCH("sled_profile", "ar_mapper"))
+        properties["SledProfile@meta"] = map[string]interface{}{"GET": map[string]interface{}{"plugin": vw.GetURI(), "property": "sled_profile"}, "PATCH": map[string]interface{}{"plugin":"SledProfile"}}
 			}
 
 			return []eh.Command{

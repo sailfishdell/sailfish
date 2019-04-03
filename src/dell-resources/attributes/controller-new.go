@@ -179,7 +179,7 @@ func (b *breadcrumb) UpdateRequest(ctx context.Context, property string, value i
 	reqIDs := []eh.UUID{}
 	responses := []AttributeUpdatedData{}
 	errs := []string{}
-	patch_timeout := 3
+	patch_timeout := 10
 	canned_response := `{"RelatedProperties@odata.count": 1, "Message": "%s", "MessageArgs": ["%[2]s"], "Resolution": "Remove the %sproperty from the request body and resubmit the request if the operation failed.", "MessageId": "%s", "MessageArgs@odata.count": 1, "RelatedProperties": ["%[2]s"], "Severity": "Warning"}`
 	num_success := 0
 

@@ -101,6 +101,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	initpowercontrol(logger)
         stdmeta.InitializeSsoinfo(d)
 	telemetryservice.RegisterAggregate(instantiateSvc)
+  stdmeta.SetupSledProfilePlugin(d)
 
 	awesome_mapper2.AddFunction("find_uris_with_basename", func(args ...interface{}) (interface{}, error) {
 		if len(args) < 1 {

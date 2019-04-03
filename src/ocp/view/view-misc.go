@@ -126,11 +126,22 @@ func (s *View) PropertyPatch(
 				}
 				err_extendedinfos = append(err_extendedinfos, msg)
 			}
+
+			default_msg := domain.ExtendedInfo{}
+			oeim := *domain.NewObjectExtendedInfoMessages([]interface{}{default_msg.GetDefaultExtendedInfo()})
 			oeem := *domain.NewObjectExtendedErrorMessages(err_extendedinfos)
-			return &domain.CombinedPropObjInfoError{
-				ObjectExtendedErrorMessages: oeem,
-				NumSuccess:                  any_success,
-			}
+
+      if len(err_extendedinfos) == 0 {
+			  return &domain.CombinedPropObjInfoError{
+				  ObjectExtendedInfoMessages: oeim,
+				  NumSuccess:                 any_success,
+        }
+      } else {
+			  return &domain.CombinedPropObjInfoError{
+				  ObjectExtendedErrorMessages: oeem,
+				  NumSuccess:                  any_success,
+			  }
+      }
 		} else if err == nil {
 			rrp.Value = newval
 			default_msg := domain.ExtendedInfo{}
