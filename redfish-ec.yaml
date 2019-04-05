@@ -510,6 +510,8 @@ views:
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/Managers/' + ParentFQDD + '/CertificateService/CertificateInventory/' + FQDD"
+        - "fn": "with_PumpHandledAction"
+          "params": {"name": "certificates.uploadcert", "uri": "", "timeout": 30}
         - "fn": "stdFormatters"
           "params":
       "Aggregate": "certificate"
