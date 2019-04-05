@@ -20,7 +20,6 @@ func FormatAttributeDump(
 	ctx context.Context,
 	v *view.View,
 	m *model.Model,
-  agg *domain.RedfishResourceAggregate,
 	rrp *domain.RedfishResourceProperty,
 	auth *domain.RedfishAuthorizationProperty,
 	meta map[string]interface{},

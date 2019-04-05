@@ -19,7 +19,6 @@ type isHTTPCode interface {
 // already locked at aggregate level when we get here
 func (s *View) PropertyGet(
 	ctx context.Context,
-  agg *domain.RedfishResourceAggregate,
 	auth *domain.RedfishAuthorizationProperty,
 	rrp *domain.RedfishResourceProperty,
 	meta map[string]interface{},
@@ -62,7 +61,6 @@ func (s *View) PropertyGet(
 			ctx context.Context,
 			v *View,
 			m *model.Model,
-      agg *domain.RedfishResourceAggregate,
 			rrp *domain.RedfishResourceProperty,
 			auth *domain.RedfishAuthorizationProperty,
 			meta map[string]interface{},
@@ -78,12 +76,11 @@ func (s *View) PropertyGet(
 		}
 	}
 
-	return formatterFn(ctx, s,  modelObj, agg, rrp, auth, meta)
+	return formatterFn(ctx, s, modelObj, rrp, auth, meta)
 }
 
 func (s *View) PropertyPatch(
 	ctx context.Context,
-  agg *domain.RedfishResourceAggregate,
 	auth *domain.RedfishAuthorizationProperty,
 	rrp *domain.RedfishResourceProperty,
 	body interface{},

@@ -21,7 +21,6 @@ func (t *hostname) PluginType() domain.PluginType { return hostnamePlugin }
 
 func (t *hostname) PropertyGet(
 	ctx context.Context,
-  agg *domain.RedfishResourceAggregate,
 	auth *domain.RedfishAuthorizationProperty,
 	rrp *domain.RedfishResourceProperty,
 	meta map[string]interface{},
