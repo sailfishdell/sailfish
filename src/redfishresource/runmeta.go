@@ -36,7 +36,7 @@ func NewPatch(ctx context.Context, agg *RedfishResourceAggregate, rrp *RedfishRe
 	return rrp.RunMetaFunctions(ctx, agg, auth, opts)
 }
 
-type nuProcessFn func(context.Context, *RedfishResourceProperty, *RedfishAuthorizationProperty, nuEncOpts) error
+type nuProcessFn func(context.Context, *RedfishResourceAggregate, *RedfishResourceProperty, *RedfishAuthorizationProperty, nuEncOpts) error
 
 type nuEncOpts struct {
 	root    bool
@@ -45,7 +45,7 @@ type nuEncOpts struct {
 	process nuProcessFn
 }
 
-func nuGETfn(ctx context.Context, rrp *RedfishResourceProperty, auth *RedfishAuthorizationProperty, opts nuEncOpts) error {
+func nuGETfn(ctx context.Context, agg *RedfishResourceAggregate, rrp *RedfishResourceProperty, auth *RedfishAuthorizationProperty, opts nuEncOpts) error {
 	meta_t, ok := rrp.Meta["GET"].(map[string]interface{})
 	if !ok {
 		return nil // it's not really an "error" we need upper layers to care about
@@ -63,46 +63,46 @@ func nuGETfn(ctx context.Context, rrp *RedfishResourceProperty, auth *RedfishAut
 
 	if plugin, ok := plugin.(PropGetter); ok {
 		rrp.Ephemeral = true
-		err = plugin.PropertyGet(ctx, auth, rrp, meta_t)
+		err = plugin.PropertyGet(ctx, agg, auth, rrp, meta_t)
 	}
 	return err
 }
 
 type PropGetter interface {
-	PropertyGet(context.Context, *RedfishAuthorizationProperty, *RedfishResourceProperty, map[string]interface{}) error
+	PropertyGet(context.Context, *RedfishResourceAggregate, *RedfishAuthorizationProperty, *RedfishResourceProperty, map[string]interface{}) error
 }
 
 type PropPatcher interface {
-	PropertyPatch(context.Context, *RedfishAuthorizationProperty, *RedfishResourceProperty, interface{}, map[string]interface{}) error
+	PropertyPatch(context.Context, *RedfishResourceAggregate, *RedfishAuthorizationProperty, *RedfishResourceProperty, interface{}, map[string]interface{}) error
 }
 
-func nuPATCHfn(ctx context.Context, rrp *RedfishResourceProperty, auth *RedfishAuthorizationProperty, opts nuEncOpts) error {
+func nuPATCHfn(ctx context.Context, agg *RedfishResourceAggregate, rrp *RedfishResourceProperty, auth *RedfishAuthorizationProperty, opts nuEncOpts) error {
 	if !opts.present {
-		return nuGETfn(ctx, rrp, auth, opts)
+		return nuGETfn(ctx, agg, rrp, auth, opts)
 	}
 
 	meta_t, ok := rrp.Meta["PATCH"].(map[string]interface{})
 	if !ok {
 		ContextLogger(ctx, "property_process").Debug("No PATCH meta", "meta", meta_t)
-		return nuGETfn(ctx, rrp, auth, opts)
+		return nuGETfn(ctx, agg, rrp, auth, opts)
 	}
 
 	pluginName, ok := meta_t["plugin"].(string)
 	if !ok {
 		ContextLogger(ctx, "property_process").Debug("No pluginname in patch meta", "meta", meta_t)
-		return nuGETfn(ctx, rrp, auth, opts)
+		return nuGETfn(ctx, agg, rrp, auth, opts)
 	}
 
 	plugin, err := InstantiatePlugin(PluginType(pluginName))
 	if err != nil {
 		ContextLogger(ctx, "property_process").Debug("No such pluginname", "pluginName", pluginName)
-		return nuGETfn(ctx, rrp, auth, opts)
+		return nuGETfn(ctx, agg, rrp, auth, opts)
 	}
 
 	//ContextLogger(ctx, "property_process").Debug("getting property: PATCH", "value", fmt.Sprintf("%v", rrp.Value), "plugin", plugin)
 	if plugin, ok := plugin.(PropPatcher); ok {
 		//defer ContextLogger(ctx, "property_process").Debug("AFTER getting property: PATCH - type assert success", "value", fmt.Sprintf("%v", rrp.Value))
-		return plugin.PropertyPatch(ctx, auth, rrp, opts.request, meta_t)
+		return plugin.PropertyPatch(ctx, agg, auth, rrp, opts.request, meta_t)
 	} else {
 		panic("coding error: the plugin " + pluginName + " does not implement the Property Patching API")
 	}
@@ -163,7 +163,7 @@ func (rrp *RedfishResourceProperty) RunMetaFunctions(ctx context.Context, agg *R
 	rrp.Lock()
 	defer rrp.Unlock()
 
-	err = e.process(ctx, rrp, auth, e)
+	err = e.process(ctx, agg, rrp, auth, e)
 	if a, ok := err.(stopProcessing); ok && a.ShouldStop() {
 		return
 	}

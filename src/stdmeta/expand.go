@@ -84,6 +84,7 @@ func (t *uriCollection) PluginType() domain.PluginType { return uriCollectionPlu
 
 func (t *uriCollection) PropertyGet(
 	ctx context.Context,
+  agg *domain.RedfishResourceAggregate,
 	auth *domain.RedfishAuthorizationProperty,
 	rrp *domain.RedfishResourceProperty,
 	meta map[string]interface{},
@@ -118,18 +119,19 @@ func (t *uriCollection) PropertyGet(
 	return nil
 }
 
-func MakeFastExpandListFormatter(d *domain.DomainObjects) func(context.Context, *view.View, *model.Model, *domain.RedfishResourceProperty, *domain.RedfishAuthorizationProperty, map[string]interface{}) error {
+func MakeFastExpandListFormatter(d *domain.DomainObjects) func(context.Context, *view.View, *model.Model, *domain.RedfishResourceAggregate, *domain.RedfishResourceProperty, *domain.RedfishAuthorizationProperty, map[string]interface{}) error {
 	return func(
 		ctx context.Context,
 		v *view.View,
 		m *model.Model,
+    agg *domain.RedfishResourceAggregate,
 		rrp *domain.RedfishResourceProperty,
 		auth *domain.RedfishAuthorizationProperty,
 		meta map[string]interface{},
 	) error {
 
 		u := uriCollection{d: d}
-		u.PropertyGet(ctx, auth, rrp, meta)
+		u.PropertyGet(ctx, agg, auth, rrp, meta)
 
 		count, ok := meta["property"].(string)
 		if ok {
@@ -140,11 +142,12 @@ func MakeFastExpandListFormatter(d *domain.DomainObjects) func(context.Context, 
 	}
 }
 
-func MakeExpandListFormatter(d *domain.DomainObjects) func(context.Context, *view.View, *model.Model, *domain.RedfishResourceProperty, *domain.RedfishAuthorizationProperty, map[string]interface{}) error {
+func MakeExpandListFormatter(d *domain.DomainObjects) func(context.Context, *view.View, *model.Model, *domain.RedfishResourceAggregate, *domain.RedfishResourceProperty, *domain.RedfishAuthorizationProperty, map[string]interface{}) error {
 	return func(
 		ctx context.Context,
 		v *view.View,
 		m *model.Model,
+    agg *domain.RedfishResourceAggregate,
 		rrp *domain.RedfishResourceProperty,
 		auth *domain.RedfishAuthorizationProperty,
 		meta map[string]interface{},
@@ -185,11 +188,12 @@ func MakeExpandListFormatter(d *domain.DomainObjects) func(context.Context, *vie
 	}
 }
 
-func MakeExpandOneFormatter(d *domain.DomainObjects) func(context.Context, *view.View, *model.Model, *domain.RedfishResourceProperty, *domain.RedfishAuthorizationProperty, map[string]interface{}) error {
+func MakeExpandOneFormatter(d *domain.DomainObjects) func(context.Context, *view.View, *model.Model, *domain.RedfishResourceAggregate, *domain.RedfishResourceProperty, *domain.RedfishAuthorizationProperty, map[string]interface{}) error {
 	return func(
 		ctx context.Context,
 		v *view.View,
 		m *model.Model,
+    agg *domain.RedfishResourceAggregate,
 		rrp *domain.RedfishResourceProperty,
 		auth *domain.RedfishAuthorizationProperty,
 		meta map[string]interface{},
@@ -214,6 +218,7 @@ func CountFormatter(
 	ctx context.Context,
 	vw *view.View,
 	m *model.Model,
+  agg *domain.RedfishResourceAggregate,
 	rrp *domain.RedfishResourceProperty,
 	auth *domain.RedfishAuthorizationProperty,
 	meta map[string]interface{},
@@ -248,7 +253,7 @@ func CountFormatter(
 	return nil
 }
 
-func FormatOdataList(ctx context.Context, v *view.View, m *model.Model, rrp *domain.RedfishResourceProperty, auth *domain.RedfishAuthorizationProperty, meta map[string]interface{}) error {
+func FormatOdataList(ctx context.Context, v *view.View, m *model.Model, agg *domain.RedfishResourceAggregate, rrp *domain.RedfishResourceProperty, auth *domain.RedfishAuthorizationProperty, meta map[string]interface{}) error {
 	p, ok := meta["property"].(string)
 
 	uris, ok := m.GetPropertyOk(p)
