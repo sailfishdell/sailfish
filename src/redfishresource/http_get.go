@@ -70,7 +70,6 @@ func (c *GET) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 			// TODO: if auth/query doesn't match, we could use results cache to speed up return by re-flattening
 			// TODO: if results cache already pre-queried, re-run query
 
-			fmt.Printf(".")
 			data.Results = a.ResultsCache
 			data.StatusCode = a.StatusCode
 			if c.outChan != nil {
@@ -93,7 +92,6 @@ func (c *GET) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 
 		// if we got here, we need to refresh the data
 		if a.ResultsCache == nil {
-			fmt.Printf("X")
 			NewGet(ctx, a, &a.Properties, c.auth)
 
 			// TODO: flatten results
@@ -107,7 +105,6 @@ func (c *GET) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 				}
 				select {
 				case <-time.After(time.Duration(cacheTime) * time.Second):
-					fmt.Printf("E")
 					a.ResultsCacheMu.Lock()
 
 					// TODO: release ephemerals too
