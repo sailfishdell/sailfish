@@ -116,6 +116,7 @@ func (c *PATCH) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 	NewPatch(ctx, a, &a.Properties, c.auth, c.Body)
 	data.StatusCode = a.StatusCode
 	data.Results = Flatten(a.Properties.Value)
+	a.ResultsCache = nil
 	if c.outChan != nil {
 		c.outChan <- CompletionEvent{event: eh.NewEvent(HTTPCmdProcessed, data, time.Now()), complete: complete}
 	} else {
