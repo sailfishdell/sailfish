@@ -156,7 +156,8 @@ func Flatten(thing interface{}) interface{} {
 		return thing
 	}
 
-	return nil
+	// go vet complains about unreachable code because
+	// return nil
 }
 
 func (rrp *RedfishResourceProperty) RunMetaFunctions(ctx context.Context, agg *RedfishResourceAggregate, auth *RedfishAuthorizationProperty, e nuEncOpts) (err error) {
