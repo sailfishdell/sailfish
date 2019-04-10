@@ -120,5 +120,6 @@ func (c *GET) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 		a.ResultsCacheMu.Unlock()
 	}
 
-	return errors.New("Can't happen why did we get here?")
+	// can't happen and go vet complains, so comment out. leaving here in case anybody asks
+	// return errors.New("Can't happen why did we get here?")
 }
