@@ -904,8 +904,6 @@ views:
           "params": {"modelname": "default", "cfgsection": "Chassis/IOM.Slot", "mappinguniquename": "'iom_mapper:' + FQDD", "AddToView": "ar_mapper"}
         - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "health", "uniquename": "'am2_health_' + FQDD", "passthru": {"health_fqdd": "'System.Chassis.1#' + FQDD"} }
-        - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "inst_power", "uniquename": "'am2_iom_inst_pwr' + FQDD", "passthru": {"DM_FQDD": "FQDD"}}
       "View":
         - "fn": "linkModel"
           "params": {"existing": "default", "linkname": "health"}
@@ -1453,6 +1451,7 @@ mappings:
         - {Property: "manufacturer", FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "Manufacturer" }
         - {Property: "indicator_led",FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "IndicatorLED" }
         - {Property: "service_tag",  FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "ServiceTag" }
+        - {Property: "inst_power",   FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "InstantaneousPower" }
 
     Chassis/System.Chassis:
         - {Property: "asset_tag",    FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "AssetTag" }
