@@ -83,7 +83,7 @@ type FanEventData struct {
 	Fanpwm            float64 `json:"fanpwm"`
 	Key               string
 	FanName           string
-	Fanpwm_int        int `json:"fanpwm_int"`
+	Fanpwm_int        uint `json:"fanpwm_int"`
 	VendorName        string
 	WarningThreshold  int `json:"warningThreshold"`
 	DeviceName        string
