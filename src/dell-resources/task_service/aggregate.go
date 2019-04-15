@@ -150,7 +150,8 @@ func InitTask(logger log.Logger, instantiateSvc *testaggregate.Service) {
 							logger.Debug("Did not get task state as a valid string")
 							continue
 						}
-						if state == "In_Progress" {
+
+						if state != "Completed" {
 							state = "Running"
 						}
 
