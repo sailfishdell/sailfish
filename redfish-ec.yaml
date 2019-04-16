@@ -896,7 +896,7 @@ views:
   "iom":
       "Logger": ["module", "IOM"]
       "Models":
-        "default":  {"unique_name": "FQDD", "managed_by": "array(rooturi + '/Managers/CMC.Integrated.1')"}
+        "default":  {"unique_name": "FQDD", "inst_power": "0", "managed_by": "array(rooturi + '/Managers/CMC.Integrated.1')"}
       "Controllers":
         - "fn": "ARMapper"
           "params": {"modelname": "default", "cfgsection": "firmware/inventory", "mappinguniquename": "'iom_fw_mapper:' + FQDD", "AddToView": "ar_mapper_inv"}
