@@ -13,9 +13,10 @@ func init() {
 	// implemented
 	eh.RegisterCommand(func() eh.Command { return &DELETE{} })
 
+	// GET/PATCH registered in handler.go as they pub on http event bus
+
 	// TODO: not yet implemented
 	eh.RegisterCommand(func() eh.Command { return &PUT{} })
-	eh.RegisterCommand(func() eh.Command { return &PATCH{} })
 	eh.RegisterCommand(func() eh.Command { return &POST{} })
 	eh.RegisterCommand(func() eh.Command { return &HEAD{} })
 	eh.RegisterCommand(func() eh.Command { return &OPTIONS{} })
@@ -79,9 +80,9 @@ type PATCH struct {
 	ID    eh.UUID `json:"id"`
 	CmdID eh.UUID `json:"cmdid"`
 
-	Body    map[string]interface{} `eh:"optional"`
-	auth    *RedfishAuthorizationProperty
-	outChan chan<- CompletionEvent
+	Body         map[string]interface{} `eh:"optional"`
+	auth         *RedfishAuthorizationProperty
+	HTTPEventBus eh.EventBus
 }
 
 func (c *PATCH) AggregateType() eh.AggregateType { return AggregateType }
@@ -89,9 +90,6 @@ func (c *PATCH) AggregateID() eh.UUID            { return c.ID }
 func (c *PATCH) CommandType() eh.CommandType     { return PATCHCommand }
 func (c *PATCH) SetAggID(id eh.UUID)             { c.ID = id }
 func (c *PATCH) SetCmdID(id eh.UUID)             { c.CmdID = id }
-func (c *PATCH) UseEventChan(out chan<- CompletionEvent) {
-	c.outChan = out
-}
 func (c *PATCH) SetUserDetails(a *RedfishAuthorizationProperty) string {
 	c.auth = a
 	return "checkMaster"
@@ -110,18 +108,12 @@ func (c *PATCH) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 		data.Headers[k] = v
 	}
 
-	var complete func()
-	complete = func() { a.ResultsCacheMu.Unlock() }
 	a.ResultsCacheMu.Lock()
+	defer a.ResultsCacheMu.Unlock()
 	NewPatch(ctx, a, &a.Properties, c.auth, c.Body)
-	data.StatusCode = a.StatusCode
 	data.Results = Flatten(a.Properties.Value)
-	a.ResultsCache = nil
-	if c.outChan != nil {
-		c.outChan <- CompletionEvent{event: eh.NewEvent(HTTPCmdProcessed, data, time.Now()), complete: complete}
-	} else {
-		complete()
-	}
+	data.StatusCode = a.StatusCode
+	c.HTTPEventBus.PublishEvent(ctx, eh.NewEvent(HTTPCmdProcessed, data, time.Now()))
 
 	return nil
 }

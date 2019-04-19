@@ -342,7 +342,7 @@ func StartInjectService(logger log.Logger, eb eh.EventBus, ew waiter) {
 	}()
 }
 
-const MAX_CONSOLIDATED_EVENTS = 30
+const MAX_CONSOLIDATED_EVENTS = 10
 
 func (c *InjectEvent) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 	requestLogger := ContextLogger(ctx, "internal_commands").New("module", "inject_event")
@@ -364,6 +364,12 @@ func (c *InjectEvent) Handle(ctx context.Context, a *RedfishResourceAggregate) e
 	// comment out debug prints in the hot path, uncomment for debugging
 	//requestLogger.Debug("InjectEvent - NEW ARRAY INJECT", "events", eventList)
 
+	//debugTrain := false
+	//if len(eventList) >= MAX_CONSOLIDATED_EVENTS {
+	//fmt.Printf("Event list (%s) len (%d) greater than max number of events (%d). Going to break into #(%d) chunks\n", c.Name, len(eventList), MAX_CONSOLIDATED_EVENTS, len(eventList)/MAX_CONSOLIDATED_EVENTS)
+	//debugTrain = true
+	//}
+
 	trainload := []eh.EventData{}
 	for _, eventData := range eventList {
 		data, err := eh.CreateEventData(c.Name)
@@ -371,22 +377,21 @@ func (c *InjectEvent) Handle(ctx context.Context, a *RedfishResourceAggregate) e
 			// this debug statement probably not hit too often, leave enabled for now
 			requestLogger.Info("InjectEvent - event type not registered: injecting raw event.", "event name", c.Name, "error", err)
 			trainload = append(trainload, eventData)
-			continue
+		} else {
+			err = mapstructure.Decode(eventData, &data)
+			if err != nil {
+				requestLogger.Warn("InjectEvent - could not decode event data, skipping event", "error", err, "raw-eventdata", eventData, "dest-event", data)
+				trainload = append(trainload, eventData)
+			} else {
+				trainload = append(trainload, data)
+			}
 		}
-
-		err = mapstructure.Decode(eventData, &data)
-		if err != nil {
-			requestLogger.Warn("InjectEvent - could not decode event data, skipping event", "error", err, "raw-eventdata", eventData, "dest-event", data)
-			trainload = append(trainload, eventData)
-			continue
-		}
-
-		trainload = append(trainload, data)
 		// comment out debug prints in the hot path, uncomment for debugging
 		//requestLogger.Debug("InjectEvent - publishing", "event name", c.Name, "event_data", data)
 
 		// limit number of consolidated events to 30 to prevent overflowing queues and deadlocking
-		if len(trainload) > MAX_CONSOLIDATED_EVENTS {
+		if len(trainload) >= MAX_CONSOLIDATED_EVENTS {
+			//fmt.Printf("Train (%s) leaving early: %d\n", c.Name, len(trainload))
 			e := event.NewSyncEvent(c.Name, trainload, time.Now())
 			e.Add(1)
 			if c.Synchronous {
@@ -398,6 +403,9 @@ func (c *InjectEvent) Handle(ctx context.Context, a *RedfishResourceAggregate) e
 	}
 
 	if len(trainload) > 0 {
+		//if debugTrain {
+		//fmt.Printf("Straggler (%s) roundup: #%d events\n", c.Name, len(trainload))
+		//}
 		e := event.NewSyncEvent(c.Name, trainload, time.Now())
 		e.Add(1)
 		if c.Synchronous {

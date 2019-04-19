@@ -84,6 +84,12 @@ func NewDomainObjects() (*DomainObjects, error) {
 		}
 	})
 
+	eh.RegisterCommand(func() eh.Command {
+		return &PATCH{
+			HTTPEventBus: d.HTTPResultsBus,
+		}
+	})
+
 	// set up our built-in observer
 	d.EventPublisher.AddObserver(&d)
 

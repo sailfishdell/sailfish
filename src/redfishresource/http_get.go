@@ -3,7 +3,7 @@ package domain
 import (
 	"context"
 	//"errors"
-	"fmt"
+	//"fmt"
 	"time"
 
 	eh "github.com/looplab/eventhorizon"
@@ -28,7 +28,6 @@ type GET struct {
 	CmdID        eh.UUID `json:"cmdid"`
 	HTTPEventBus eh.EventBus
 	auth         *RedfishAuthorizationProperty
-	outChan      chan<- CompletionEvent
 }
 
 func (c *GET) AggregateType() eh.AggregateType { return AggregateType }
@@ -36,10 +35,6 @@ func (c *GET) AggregateID() eh.UUID            { return c.ID }
 func (c *GET) CommandType() eh.CommandType     { return GETCommand }
 func (c *GET) SetAggID(id eh.UUID)             { c.ID = id }
 func (c *GET) SetCmdID(id eh.UUID)             { c.CmdID = id }
-
-func (c *GET) UseEventChan(out chan<- CompletionEvent) {
-	c.outChan = out
-}
 
 func (c *GET) SetUserDetails(a *RedfishAuthorizationProperty) string {
 	c.auth = a
@@ -58,65 +53,14 @@ func (c *GET) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 		data.Headers[k] = v
 	}
 
-	var complete func()
-	complete = func() { a.ResultsCacheMu.RUnlock() }
+	// fill in data for cache miss, and then go to the top of the loop
+	a.ResultsCacheMu.Lock()
+	defer a.ResultsCacheMu.Unlock()
 
-	// loop until something interesting happens
-	for {
-		// assume cache HIT
-		a.ResultsCacheMu.RLock()
-		if a.ResultsCache != nil {
-			// TODO: we can compare auth/query and return flattend results
-			// TODO: if auth/query doesn't match, we could use results cache to speed up return by re-flattening
-			// TODO: if results cache already pre-queried, re-run query
+	NewGet(ctx, a, &a.Properties, c.auth)
+	data.Results = Flatten(a.Properties.Value)
+	data.StatusCode = a.StatusCode
+	c.HTTPEventBus.PublishEvent(ctx, eh.NewEvent(HTTPCmdProcessed, data, time.Now()))
 
-			data.Results = a.ResultsCache
-			data.StatusCode = a.StatusCode
-			if c.outChan != nil {
-				c.outChan <- CompletionEvent{event: eh.NewEvent(HTTPCmdProcessed, data, time.Now()), complete: complete}
-			} else {
-				// if we can't send the completion event, we'll leave a lock hanging, so just complete ourselves.
-				complete()
-			}
-			return nil
-		}
-		a.ResultsCacheMu.RUnlock()
-
-		// fill in data for cache miss, and then go to the top of the loop
-		a.ResultsCacheMu.Lock()
-		if a.ResultsCache != nil {
-			// redo the comparo from above because we may be here because
-			// 1) some other thread already updated results cache for us
-			// 2) we couldn't re-use the results cache because something doesnt match up
-		}
-
-		// if we got here, we need to refresh the data
-		if a.ResultsCache == nil {
-			NewGet(ctx, a, &a.Properties, c.auth)
-
-			// TODO: flatten results
-			a.ResultsCache = Flatten(a.Properties.Value)
-			a.ResultsCacheAuth = c.auth
-
-			// simplest possible solution for now
-			go func(cacheTime int) {
-				if cacheTime == 0 {
-					cacheTime = DefaultCacheTime
-				}
-				select {
-				case <-time.After(time.Duration(cacheTime) * time.Second):
-					a.ResultsCacheMu.Lock()
-
-					// TODO: release ephemerals too
-
-					a.ResultsCache = nil
-					a.ResultsCacheMu.Unlock()
-				}
-			}(a.CacheTimeSec)
-		}
-		a.ResultsCacheMu.Unlock()
-	}
-
-	// can't happen and go vet complains, so comment out. leaving here in case anybody asks
-	// return errors.New("Can't happen why did we get here?")
+	return nil
 }

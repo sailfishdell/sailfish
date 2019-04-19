@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
+	//"fmt"
 	"reflect"
 )
 
@@ -331,10 +331,6 @@ func helper(ctx context.Context, agg *RedfishResourceAggregate, auth *RedfishAut
 				// TODO: do annotations make sense here?
 			}
 		}
-	}
-
-	if encopts.root {
-		fmt.Println("agg.StatusCode: ", agg.StatusCode)
 	}
 
 	return &CombinedPropObjInfoError{

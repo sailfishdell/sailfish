@@ -41,11 +41,6 @@ type HTTPParser interface {
 	ParseHTTPRequest(*http.Request) error
 }
 
-// Optimized return
-type EventChanUser interface {
-	UseEventChan(chan<- CompletionEvent)
-}
-
 // NewRedfishHandler is the constructor that returns a new RedfishHandler object.
 func NewRedfishHandler(dobjs *DomainObjects, logger log.Logger, u string, p []string) *RedfishHandler {
 	return &RedfishHandler{UserName: u, Privileges: p, d: dobjs, logger: logger}
@@ -274,11 +269,6 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	directReturnChan := make(chan CompletionEvent, 1)
-	if t, ok := cmd.(EventChanUser); ok {
-		t.UseEventChan(directReturnChan)
-	}
-
 	ctx := WithRequestID(context.Background(), cmdID)
 	if err := rh.d.CommandHandler.HandleCommand(ctx, cmd); err != nil {
 		http.Error(w, "redfish handler could not handle command (type: "+string(cmd.CommandType())+"): "+err.Error(), http.StatusBadRequest)
@@ -292,17 +282,14 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var event eh.Event
 	select {
 	case event = <-l.Inbox():
-		// have to mark the event complete if we don't use Wait and take it off the bus ourselves
-		if evtS, ok := event.(eventRequiresCompletion); ok {
-			evtS.Done()
-		}
 	case <-reqCtx.Done():
 		http.Error(w, "Request cancelled, aborting http response", http.StatusInternalServerError)
 		return
-	case t := <-directReturnChan:
-		defer t.complete()
-		event = t.event
+	}
 
+	// have to mark the event complete if we don't use Wait and take it off the bus ourselves
+	if evtS, ok := event.(eventRequiresCompletion); ok {
+		evtS.Done()
 	}
 
 	data, ok := event.Data().(*HTTPCmdProcessedData)
