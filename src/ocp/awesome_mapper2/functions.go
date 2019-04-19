@@ -94,6 +94,49 @@ func init() {
 		}
 	})
 
+	AddFunction("chk_seq", func(args ...interface{}) (interface{}, error) {
+                var ns int64 = 0 
+
+		model, ok := args[0].(*model.Model)
+		if !ok {
+			return false, errors.New("need model as first arg")
+		}
+
+                property, ok:=args[1].(string)
+		if !ok {
+			return false, errors.New("need string for second arg")
+		}
+                
+
+		switch t:=args[2].(type) {
+		case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, uintptr, float32, float64:
+			ns = int64(reflect.ValueOf(t).Float())
+                default:
+			return false, errors.New("need a number for third arg")
+                }
+
+
+		v, ok := model.GetPropertyOk(property)
+		if !ok || v == nil {
+                    model.UpdateProperty(property, ns)
+                    return true,nil
+                } 
+
+                vint,ok := v.(int64)
+                if !ok{
+			return false, errors.New("need integer")
+
+                }
+
+                if ns > vint {
+                    model.UpdateProperty(property, ns)
+	 	    return true,nil
+                } 
+		return false, errors.New("seq number is below what model has")
+                
+                
+	})
+
 	AddFunction("int", func(args ...interface{}) (interface{}, error) {
 		switch t := args[0].(type) {
 		case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, uintptr:
@@ -270,6 +313,36 @@ func init() {
 		}
 		return strings.HasSuffix(str, suffix), nil
 	})
+	AddFunction("has_prefix", func(args ...interface{}) (interface{}, error) {
+		str, ok := args[0].(string)
+		if !ok {
+			return nil, errors.New("expected a string argument")
+		}
+		prefix, ok := args[1].(string)
+		if !ok {
+			return nil, errors.New("expected a string argument")
+		}
+		return strings.HasPrefix(str, prefix), nil
+	})
+        AddFunction("update_property", func(args ...interface{}) (interface{}, error) {
+		m, ok := args[0].(*model.Model)
+		if !ok {
+			return nil, errors.New("expected a model argument")
+		}
+
+		p, ok := args[1].(string)
+		if !ok {
+			return nil, errors.New("expected a string argument")
+		}
+
+		v, ok := args[2].(string)
+		if !ok {
+			return nil, errors.New("expected a string argument")
+		}
+
+                m.UpdateProperty(p, v)
+                return true, nil
+        })
 	AddFunction("strlen", func(args ...interface{}) (interface{}, error) {
 		length := len(args[0].(string))
 		return (float64)(length), nil
@@ -297,9 +370,6 @@ func init() {
 	})
 	AddFunction("string", func(args ...interface{}) (interface{}, error) {
 		switch t := args[0].(type) {
-		case int, int8, int16, int32, int64:
-			str := strconv.FormatInt(reflect.ValueOf(t).Int(), 10)
-			return str, nil
 		case uint, uint8, uint16, uint32, uint64:
 			str := strconv.FormatUint(reflect.ValueOf(t).Uint(), 10)
 			return str, nil
@@ -308,6 +378,9 @@ func init() {
 			return str, nil
 		case string:
 			return t, nil
+		case int, int8, int16, int32, int64:
+			str := strconv.FormatInt(reflect.ValueOf(t).Int(), 10)
+			return str, nil
 		default:
 			return nil, errors.New("Not an int, float, or string")
 		}
