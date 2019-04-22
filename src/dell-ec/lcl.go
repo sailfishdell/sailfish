@@ -289,6 +289,41 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 		return true, nil
 	})
 
+	awesome_mapper2.AddFunction("health_alert", func(args ...interface{}) (interface{}, error) {
+		ss, ok := args[0].(string)
+		if !ok {
+			logger.Crit("Mapper configuration error: subsystem %s in not a string", "args[0]")
+			return nil, errors.New("Mapper configuration error: subsystem is not a string")
+		}
+
+		health, ok := args[1].(string)
+		if !ok {
+			logger.Crit("Mapper configuration error: health %s in not a string", "args[0]")
+			return nil, errors.New("Mapper configuration error: health is not a string")
+		}
+
+                t := time.Now()
+		cTime := t.Format("2006-01-02T15:04:05-07:00")
+                ma := []string{health}
+
+
+
+		//Create Alert type event:
+		d.EventBus.PublishEvent(context.Background(),
+			eh.NewEvent(eventservice.RedfishEvent, &eventservice.RedfishEventData{
+				EventType:      "Alert",
+				EventId:        "1",
+				EventTimestamp: cTime,
+				Severity:       "Informational",
+				Message:        "The chassis health is " + health,
+				MessageId:      "CMC8550",
+				MessageArgs:    ma,
+				OriginOfCondition: ss,
+			}, time.Now()))
+
+		return true, nil
+	})
+
 	awesome_mapper2.AddFunction("has_swinv_model", func(args ...interface{}) (interface{}, error) {
 		//fmt.Printf("Check to see if the new resource has an 'swinv' model\n")
 

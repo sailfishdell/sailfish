@@ -695,6 +695,8 @@ views:
           "params": {"modelname": "default", "cfgsection": "chassis", "uniquename": "'system_chassis:' + FQDD", "passthru": {"FQDD" : "FQDD"} }
         - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "health", "uniquename": "'am2_health_' + FQDD", "passthru": {"health_fqdd": "'Root'"} }
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "health_alert", "uniquename": "'am2_healtha_' + FQDD", "passthru": {"health_fqdd": "'Root'", "ss": "'MM'" }}
       "View":
         - "fn": "withModel"
           "params": {"name": "global_health", "expr": "globalHealthModel"}
@@ -1352,6 +1354,9 @@ awesome_mapper:
 
     health:
       - { SelectEventType: "HealthEvent", Select: "data.FQDD == health_fqdd", ModelUpdate: [ {Property: "health", Query: "empty_to_null(data.Health)" } ] }
+
+    health_alert:
+      - { SelectEventType: "HealthEvent", Select: "data.FQDD == health_fqdd", Exec: ["health_alert(ss, data.Health)"]}
 
     global_health:
       - { SelectEventType: "HealthEvent", Select: "data.FQDD == 'System.Chassis.1#SubSystem.1#Fan'", ModelUpdate: [ {Property: "fan_rollup", Query: "data.Health" } ] }
