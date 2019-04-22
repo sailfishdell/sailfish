@@ -550,6 +550,8 @@ views:
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/Managers/' + FQDD + '/Logs/Lclog'"
+        - "fn": "with_PumpHandledAction"
+          "params": {"name": "log.add", "uri": "", "timeout": 30}
         - "fn": "stdFormatters"
           "params":
       "Aggregate": "lclogentrycollection"

@@ -71,8 +71,10 @@ func RegisterAggregate(s *testaggregate.Service) {
 					ResourceURI: vw.GetURI(),
 					Type:        "#LogService.v1_0_2.LogService",
 					Context:     params["rooturi"].(string) + "/$metadata#LogService.LogService",
+                                        Plugin:      "GenericActionHandler",
 					Privileges: map[string]interface{}{
 						"GET": []string{"Login"},
+						"POST": []string{"ConfigureManager"},
 					},
 					Properties: map[string]interface{}{
 						"Description": "LC Logs for this manager",
