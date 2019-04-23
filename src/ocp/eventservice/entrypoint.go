@@ -47,8 +47,6 @@ type EventService struct {
 	uploadSvc uploadService
 }
 
-const WorkQueueLen = 10
-
 var GlobalEventService *EventService
 
 func New(ctx context.Context, cfg *viper.Viper, cfgMu *sync.RWMutex, d *domain.DomainObjects, instantiateSvc *testaggregate.Service, actionSvc actionService, uploadSvc uploadService) *EventService {
@@ -174,7 +172,7 @@ func (es *EventService) CreateSubscription(ctx context.Context, logger log.Logge
 						evt := event.Data()
 						if eventPtr, ok := evt.(*ExternalRedfishEventData); ok {
 							eventlist := makeMCHARSevents(es, ctx)
-							for idx, _ := range eventlist {
+							for idx := range eventlist {
 								eventPtr.Events = append(eventPtr.Events, &eventlist[idx])
 							}
 						}
@@ -184,10 +182,7 @@ func (es *EventService) CreateSubscription(ctx context.Context, logger log.Logge
 					memberid := subView.GetUUID()
 					if dest, ok := esModel.GetProperty("destination").(string); ok {
 						subLogger.Info("Send to destination", "dest", dest)
-						select {
-						case es.jc <- makePOST(dest, event, context, memberid, eventtypes):
-						default: // drop the POST if the queue is full
-						}
+						makePOST(es, dest, event, context, memberid, eventtypes)
 					}
 				}
 
@@ -201,34 +196,35 @@ func (es *EventService) CreateSubscription(ctx context.Context, logger log.Logge
 	return subView
 }
 
-func makePOST(dest string, event eh.Event, context interface{}, id eh.UUID, et interface{}) func() {
-	return func() {
-		log.MustLogger("event_service").Info("POST!", "dest", dest, "event", event)
+func makePOST(es *EventService, dest string, event eh.Event, context interface{}, id eh.UUID, et interface{}) {
+	log.MustLogger("event_service").Info("POST!", "dest", dest, "event", event)
 
-		evt := event.Data()
-		if eventPtr, ok := evt.(*ExternalRedfishEventData); ok {
-			eventlist := eventPtr.Events
-			var outputEvents []*RedfishEventData
-			var validEvents []string
-			if validEvents, ok = et.([]string); !ok {
-				//TODO no subscription types are getting to here but right now all clients want Alert only
-				validEvents = []string{"Alert"}
-			}
-			//Keep only the events in the Event Array which match the subscription
-			for _, subevent := range eventlist {
-				if subevent != nil {
-					for _, subvalid := range validEvents {
-						if subevent.EventType == subvalid {
-							outputEvents = append(outputEvents, subevent)
-							break
-						}
+	evt := event.Data()
+	if eventPtr, ok := evt.(*ExternalRedfishEventData); ok {
+		eventlist := eventPtr.Events
+		var outputEvents []*RedfishEventData
+		var validEvents []string
+		if validEvents, ok = et.([]string); !ok {
+			//TODO no subscription types are getting to here but right now all clients want Alert only
+			validEvents = []string{"Alert"}
+		}
+		//Keep only the events in the Event Array which match the subscription
+		for _, subevent := range eventlist {
+			if subevent != nil {
+				for _, subvalid := range validEvents {
+					if subevent.EventType == subvalid {
+						outputEvents = append(outputEvents, subevent)
+						break
 					}
 				}
 			}
-			if len(outputEvents) == 0 {
-				return
-			} else {
-				//TODO put back when MSM is Redfish Event compliant
+		}
+		if len(outputEvents) == 0 {
+			return
+		} else {
+			//TODO put back when MSM is Redfish Event compliant
+			select {
+			case es.jc <- func() {
 				for _, eachEvent := range outputEvents {
 					d, err := json.Marshal(
 						&struct {
@@ -258,16 +254,17 @@ func makePOST(dest string, event eh.Event, context interface{}, id eh.UUID, et i
 					resp, err := client.Do(req)
 					if err != nil {
 						log.MustLogger("event_service").Warn("ERROR POSTING", "err", err)
-						return
+					} else {
+						resp.Body.Close()
 					}
-					resp.Body.Close()
 				}
+			}:
+			default: // drop the POST if the queue is full
+				log.MustLogger("event_service").Crit("External Event Queue Full, dropping")
 			}
-		} else {
-			return
 		}
-
 	}
+	return
 }
 
 func (es *EventService) PublishResourceUpdatedEventsForModel(ctx context.Context, modelName string) view.Option {
