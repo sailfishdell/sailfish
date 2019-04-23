@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"sync"
+        "strings"
 
 	"github.com/superchalupa/sailfish/src/dell-resources/attributes"
 	"github.com/superchalupa/sailfish/src/log"
@@ -39,9 +40,15 @@ func InitTask(logger log.Logger, instantiateSvc *testaggregate.Service) {
 			logger.Crit("Mapper configuration error: task state not passed as string", "args[0]", args[0])
 			return nil, errors.New("Mapper configuration error: task state not passed as string")
 		}
-		if task_state == "In_Progress" {
+
+		if strings.EqualFold(task_state, "Completed") {
+			return "Completed", nil
+		}else if  strings.EqualFold(task_state, "Interrupted") {
+			return "Interrupted", nil
+		}else {
 			return "Running", nil
-		}
+                }
+   
 		return task_state, nil
 	})
 
@@ -151,9 +158,14 @@ func InitTask(logger log.Logger, instantiateSvc *testaggregate.Service) {
 							continue
 						}
 
-						if state != "Completed" {
-							state = "Running"
-						}
+
+                                		if strings.EqualFold(state, "Completed") {
+                                			state = "Completed"
+                                		}else if  strings.EqualFold(state, "Interrupted") {
+                                			state =  "Interrupted"
+                                		}else {
+                                			state = "Running"
+                                                }
 
 						status_raw, ok := namemap["TaskStatus"]
 						if !ok || !ad.Valid(status_raw) {
