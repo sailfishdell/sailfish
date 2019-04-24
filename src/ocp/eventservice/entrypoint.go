@@ -200,71 +200,71 @@ func makePOST(es *EventService, dest string, event eh.Event, context interface{}
 	log.MustLogger("event_service").Info("POST!", "dest", dest, "event", event)
 
 	evt := event.Data()
-	if eventPtr, ok := evt.(*ExternalRedfishEventData); ok {
-		eventlist := eventPtr.Events
-		var outputEvents []*RedfishEventData
-		var validEvents []string
-		if validEvents, ok = et.([]string); !ok {
-			//TODO no subscription types are getting to here but right now all clients want Alert only
-			validEvents = []string{"Alert"}
-		}
-		//Keep only the events in the Event Array which match the subscription
-		for _, subevent := range eventlist {
-			if subevent != nil {
-				for _, subvalid := range validEvents {
-					if subevent.EventType == subvalid {
-						outputEvents = append(outputEvents, subevent)
-						break
-					}
+	eventPtr, ok := evt.(*ExternalRedfishEventData)
+	if !ok {
+		return
+	}
+	eventlist := eventPtr.Events
+	var outputEvents []*RedfishEventData
+	validEvents, ok := et.([]string)
+	if !ok {
+		//TODO no subscription types are getting to here but right now all clients want Alert only
+		validEvents = []string{"Alert"}
+	}
+	//Keep only the events in the Event Array which match the subscription
+	for _, subevent := range eventlist {
+		if subevent != nil {
+			for _, subvalid := range validEvents {
+				if subevent.EventType == subvalid {
+					outputEvents = append(outputEvents, subevent)
+					break
 				}
-			}
-		}
-		if len(outputEvents) == 0 {
-			return
-		} else {
-			//TODO put back when MSM is Redfish Event compliant
-			select {
-			case es.jc <- func() {
-				for _, eachEvent := range outputEvents {
-					d, err := json.Marshal(
-						&struct {
-							Context   interface{} `json:",omitempty"`
-							MemberId  eh.UUID     `json:"MemberId"`
-							ArgsCount int         `json:"MessageArgs@odata.count"`
-							*RedfishEventData
-						}{
-							Context:          context,
-							MemberId:         id,
-							ArgsCount:        len(eachEvent.MessageArgs),
-							RedfishEventData: eachEvent,
-						},
-					)
-
-					// TODO: should be able to configure timeout
-					// TODO: Shore up security for POST
-					client := &http.Client{
-						Timeout: time.Second * 3,
-						Transport: &http.Transport{
-							TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-						},
-					}
-					req, err := http.NewRequest("POST", dest, bytes.NewBuffer(d))
-					req.Header.Add("OData-Version", "4.0")
-					req.Header.Set("Content-Type", "application/json")
-					resp, err := client.Do(req)
-					if err != nil {
-						log.MustLogger("event_service").Warn("ERROR POSTING", "err", err)
-					} else {
-						resp.Body.Close()
-					}
-				}
-			}:
-			default: // drop the POST if the queue is full
-				log.MustLogger("event_service").Crit("External Event Queue Full, dropping")
 			}
 		}
 	}
-	return
+	if len(outputEvents) == 0 {
+		return
+	}
+	//TODO put back when MSM is Redfish Event compliant
+	select {
+	case es.jc <- func() {
+		for _, eachEvent := range outputEvents {
+			d, err := json.Marshal(
+				&struct {
+					Context   interface{} `json:",omitempty"`
+					MemberId  eh.UUID     `json:"MemberId"`
+					ArgsCount int         `json:"MessageArgs@odata.count"`
+					*RedfishEventData
+				}{
+					Context:          context,
+					MemberId:         id,
+					ArgsCount:        len(eachEvent.MessageArgs),
+					RedfishEventData: eachEvent,
+				},
+			)
+
+			// TODO: should be able to configure timeout
+			// TODO: Shore up security for POST
+			client := &http.Client{
+				Timeout: time.Second * 3,
+				Transport: &http.Transport{
+					TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+				},
+			}
+			req, err := http.NewRequest("POST", dest, bytes.NewBuffer(d))
+			req.Header.Add("OData-Version", "4.0")
+			req.Header.Set("Content-Type", "application/json")
+			resp, err := client.Do(req)
+			if err != nil {
+				log.MustLogger("event_service").Warn("ERROR POSTING", "err", err)
+			} else {
+				resp.Body.Close()
+			}
+		}
+	}:
+	default: // drop the POST if the queue is full
+		log.MustLogger("event_service").Crit("External Event Queue Full, dropping")
+	}
 }
 
 func (es *EventService) PublishResourceUpdatedEventsForModel(ctx context.Context, modelName string) view.Option {
