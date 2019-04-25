@@ -3,8 +3,8 @@ package task_service
 import (
 	"context"
 	"errors"
+	"strings"
 	"sync"
-        "strings"
 
 	"github.com/superchalupa/sailfish/src/dell-resources/attributes"
 	"github.com/superchalupa/sailfish/src/log"
@@ -43,12 +43,12 @@ func InitTask(logger log.Logger, instantiateSvc *testaggregate.Service) {
 
 		if strings.EqualFold(task_state, "Completed") {
 			return "Completed", nil
-		}else if  strings.EqualFold(task_state, "Interrupted") {
+		} else if strings.EqualFold(task_state, "Interrupted") {
 			return "Interrupted", nil
-		}else {
+		} else {
 			return "Running", nil
-                }
-   
+		}
+
 		return task_state, nil
 	})
 
@@ -158,14 +158,13 @@ func InitTask(logger log.Logger, instantiateSvc *testaggregate.Service) {
 							continue
 						}
 
-
-                                		if strings.EqualFold(state, "Completed") {
-                                			state = "Completed"
-                                		}else if  strings.EqualFold(state, "Interrupted") {
-                                			state =  "Interrupted"
-                                		}else {
-                                			state = "Running"
-                                                }
+						if strings.EqualFold(state, "Completed") {
+							state = "Completed"
+						} else if strings.EqualFold(state, "Interrupted") {
+							state = "Interrupted"
+						} else {
+							state = "Running"
+						}
 
 						status_raw, ok := namemap["TaskStatus"]
 						if !ok || !ad.Valid(status_raw) {
