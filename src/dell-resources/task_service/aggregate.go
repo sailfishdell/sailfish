@@ -48,8 +48,6 @@ func InitTask(logger log.Logger, instantiateSvc *testaggregate.Service) {
 		} else {
 			return "Running", nil
 		}
-
-		return task_state, nil
 	})
 
 	var syncModels func(m *model.Model, updates []model.Update)
