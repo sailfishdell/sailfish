@@ -84,7 +84,8 @@ func (s *SledProfile) PropertyPatch(
 
 	s.d.EventBus.PublishEvent(ctx, eh.NewEvent(attributes.AttributeUpdateRequest, request_data, time.Now()))
 
-	tmctx, _ := context.WithTimeout(ctx, time.Duration(patch_timeout)*time.Second)
+	tmctx, cancel := context.WithTimeout(ctx, time.Duration(patch_timeout)*time.Second)
+	defer cancel()
 	l, err := s.d.EventWaiter.Listen(tmctx, func(event eh.Event) bool {
 		if event.EventType() != attributes.AttributeUpdated {
 			return false
