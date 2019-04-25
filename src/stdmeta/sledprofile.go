@@ -141,5 +141,4 @@ func (s *SledProfile) PropertyPatch(
 			}
 		}
 	}
-	return nil
 }
