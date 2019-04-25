@@ -368,20 +368,20 @@ type ProbeObjEventData struct {
 type VoltageSensorObjEventData struct {
 	ObjectHeader         DataObjectHeader
 	ProbeThresholds      ProbeThresholdsobj //`json:"ProbeThresholds"`
-	probestatus          int                `json:"probeStatus"`
-	probecapabilities    int                `json:"probeCapabilities"`
-	objextflags          int                `json:"objExtFlags"`
-	offsetkey            string             `mapstructure:"offsetKey"`
-	offsetrealiasedname  string             `mapstructure:"offsetReAliasedName"`
-	offsetfriendlyFQDD   string             `mapstructure:"offsetFriendlyFQDD"`
-	type1maxreadingrange int                `json:"type1MaxReadingRange"`
-	type1minreadingrange int                `json:"type1MinReadingRange"`
-	unitmodifier         int                `json:"unitModifier"`
-	subtype              int                `json:"subType"`
-	probereading         int                `json:"probeReading"`
-	offsettargetdevkey   string             `mapstructure:"offsetTargetDevKey"`
-	sensornumber         int                `mapstructure:"sensorNumber"`
-	initupdateinprogress int                `mapstructure:"InitupdateInProgress"`
+	probestatus          int
+	probecapabilities    int
+	objextflags          int
+	offsetkey            string `mapstructure:"offsetKey"`
+	offsetrealiasedname  string `mapstructure:"offsetReAliasedName"`
+	offsetfriendlyFQDD   string `mapstructure:"offsetFriendlyFQDD"`
+	type1maxreadingrange int
+	type1minreadingrange int
+	unitmodifier         int
+	subtype              int
+	probereading         int
+	offsettargetdevkey   string `mapstructure:"offsetTargetDevKey"`
+	sensornumber         int    `mapstructure:"sensorNumber"`
+	initupdateinprogress int    `mapstructure:"InitupdateInProgress"`
 }
 
 type FileReadEventData struct {
