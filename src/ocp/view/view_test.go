@@ -35,7 +35,7 @@ func TestView(t *testing.T) {
 	for _, subtest := range tests {
 		t.Run(subtest.testname, func(t *testing.T) {
 			domain.NewGet(context.Background(), nil, subtest.input, &domain.RedfishAuthorizationProperty{})
-			output := domain.Flatten(subtest.input.Value)
+			output := domain.Flatten(subtest.input.Value, false)
 
 			assert.EqualValues(t, subtest.expected, output)
 		})

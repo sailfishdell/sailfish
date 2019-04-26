@@ -78,16 +78,18 @@ func parse_map(start map[string]interface{}, props map[string]interface{}) {
 			prop, ok := start[name].(*RedfishResourceProperty)
 			if !ok {
 				prop = &RedfishResourceProperty{}
+				start[name] = prop
 			}
+			prop.Lock()
 			prop.Meta = v.(map[string]interface{})
-			start[name] = prop
+			prop.Unlock()
 		} else {
-			prop, ok := start[k].(*RedfishResourceProperty)
+			prop, ok := v.(*RedfishResourceProperty)
 			if !ok {
 				prop = &RedfishResourceProperty{}
+				start[k] = prop
 			}
 			prop.Parse(v)
-			start[k] = prop
 		}
 	}
 	return

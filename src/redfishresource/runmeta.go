@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
+
 	//"fmt"
 	"reflect"
 )
@@ -113,41 +115,53 @@ type stopProcessing interface {
 }
 
 // this should always be string/int/float, or map/slice. There should never be pointers or other odd data structures in a rrp.
-func Flatten(thing interface{}) interface{} {
+func Flatten(thing interface{}, parentlocked bool) interface{} {
 	// if it's an rrp, return the value
 	if vp, ok := thing.(*RedfishResourceProperty); ok {
-		v := vp.Value
+		vp.RLock()
+		defer vp.RUnlock()
+
+		ret := Flatten(vp.Value, true) // the only instance where we deref value
 		if vp.Ephemeral {
 			vp.Value = nil
 		}
-		return Flatten(v)
+		return ret
 	}
 
 	// recurse through maps or slices and recursively call helper on them
 	val := reflect.ValueOf(thing)
 	switch k := val.Kind(); k {
-	//	case reflect.Ptr:
-	//		fmt.Printf("PTR!\n")
+	case reflect.Ptr:
+		fmt.Printf("ERROR: Detected a pointer in the redfish resource property tree. This is not allowed.\n")
+		return nil
 
 	case reflect.Map:
 		// everything inside of a redfishresourceproperty should fit into a map[string]interface{}
+		if !parentlocked {
+			//fmt.Printf("ERROR: detected a nested map/array inside the redfish resource property tree. This is not allowed, wrap the child in an &RedfishResourceProperty{Value: ...}\n")
+			fmt.Printf("!")
+		}
+
 		ret := map[string]interface{}{}
 		for _, k := range val.MapKeys() {
 			s, ok := k.Interface().(string)
 			v := val.MapIndex(k)
 			if ok && v.IsValid() {
-				ret[s] = Flatten(v.Interface())
+				ret[s] = Flatten(v.Interface(), false)
 			}
 		}
 		return ret
 
 	case reflect.Slice:
+		if !parentlocked {
+			fmt.Printf("PANIC!\n")
+		}
 		// squash every type of array into an []interface{}
 		ret := make([]interface{}, val.Len())
 		for i := 0; i < val.Len(); i++ {
 			sliceVal := val.Index(i)
 			if sliceVal.IsValid() {
-				ret[i] = Flatten(sliceVal.Interface())
+				ret[i] = Flatten(sliceVal.Interface(), false)
 			}
 		}
 		return ret
@@ -155,9 +169,6 @@ func Flatten(thing interface{}) interface{} {
 	default:
 		return thing
 	}
-
-	// go vet complains about unreachable code because
-	// return nil
 }
 
 func (rrp *RedfishResourceProperty) RunMetaFunctions(ctx context.Context, agg *RedfishResourceAggregate, auth *RedfishAuthorizationProperty, e nuEncOpts) (err error) {

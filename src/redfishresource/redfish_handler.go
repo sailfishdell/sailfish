@@ -362,6 +362,9 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func getResourceEtag(ctx context.Context, agg *RedfishResourceAggregate, auth *RedfishAuthorizationProperty) string {
+	agg.ResultsCacheMu.Lock()
+	defer agg.ResultsCacheMu.Unlock()
+
 	v := agg.Properties.Value
 	m, ok := v.(map[string]interface{})
 	if !ok {
@@ -378,7 +381,7 @@ func getResourceEtag(ctx context.Context, agg *RedfishResourceAggregate, auth *R
 	switch t := etagintf.(type) {
 	case *RedfishResourceProperty:
 		NewGet(ctx, agg, t, auth)
-		etagIntf := Flatten(t.Value)
+		etagIntf := Flatten(t, false)
 		etagstr, ok = etagIntf.(string)
 		if !ok {
 			return ""

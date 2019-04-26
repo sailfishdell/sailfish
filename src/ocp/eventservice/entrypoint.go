@@ -287,7 +287,7 @@ func makeMCHARSevents(es *EventService, ctx context.Context) []RedfishEventData 
 		if err != nil {
 			continue
 		}
-		mcharsMap, ok := domain.Flatten(faultAgg.Value).(map[string]interface{})
+		mcharsMap, ok := domain.Flatten(faultAgg, false).(map[string]interface{})
 		if !ok {
 			continue
 		}

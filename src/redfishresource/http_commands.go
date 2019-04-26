@@ -111,7 +111,7 @@ func (c *PATCH) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 	a.ResultsCacheMu.Lock()
 	defer a.ResultsCacheMu.Unlock()
 	NewPatch(ctx, a, &a.Properties, c.auth, c.Body)
-	data.Results = Flatten(a.Properties.Value)
+	data.Results = Flatten(&a.Properties, false)
 	data.StatusCode = a.StatusCode
 	c.HTTPEventBus.PublishEvent(ctx, eh.NewEvent(HTTPCmdProcessed, data, time.Now()))
 

@@ -73,7 +73,7 @@ func (c *POST) Handle(ctx context.Context, a *domain.RedfishResourceAggregate) e
 	redfishResource.ResultsCacheMu.Lock()
 	defer redfishResource.ResultsCacheMu.Unlock()
 	domain.NewGet(ctx, redfishResource, &redfishResource.Properties, c.auth)
-	data.Results = domain.Flatten(redfishResource.Properties.Value)
+	data.Results = domain.Flatten(&redfishResource.Properties, false)
 
 	for k, v := range a.Headers {
 		data.Headers[k] = v
