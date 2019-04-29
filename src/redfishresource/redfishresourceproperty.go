@@ -2,6 +2,7 @@ package domain
 
 import (
 	"net/url"
+	"reflect"
 	"strings"
 	"sync"
 
@@ -44,54 +45,52 @@ func (rrp *RedfishResourceProperty) Parse(thing interface{}) {
 }
 
 func (rrp *RedfishResourceProperty) ParseUnlocked(thing interface{}) {
-	switch thing.(type) {
-	case []interface{}:
-		if _, ok := rrp.Value.([]interface{}); !ok || rrp.Value == nil {
-			rrp.Value = []interface{}{}
-		}
-		rrp.Value = append(rrp.Value.([]interface{}), parse_array(thing.([]interface{}))...)
-	case map[string]interface{}:
+	val := reflect.ValueOf(thing)
+	switch k := val.Kind(); k {
+	case reflect.Map:
 		v, ok := rrp.Value.(map[string]interface{})
 		if !ok || v == nil {
 			rrp.Value = map[string]interface{}{}
+			v = rrp.Value.(map[string]interface{})
 		}
-		parse_map(rrp.Value.(map[string]interface{}), thing.(map[string]interface{}))
+
+		for _, k := range val.MapKeys() {
+			rv := val.MapIndex(k)
+			if !rv.IsValid() {
+				continue
+			}
+			if strings.HasSuffix(k.String(), "@meta") {
+				name := k.String()[:len(k.String())-5]
+				newEntry := &RedfishResourceProperty{}
+				if newEntry.Meta, ok = rv.Interface().(map[string]interface{}); ok {
+					v[name] = newEntry
+				}
+			} else {
+				newEntry := &RedfishResourceProperty{}
+				newEntry.Parse(rv.Interface())
+				v[k.String()] = newEntry
+			}
+
+		}
+
+	case reflect.Slice:
+		if _, ok := rrp.Value.([]interface{}); !ok || rrp.Value == nil {
+			rrp.Value = []interface{}{}
+		}
+
+		for i := 0; i < val.Len(); i++ {
+			sliceVal := val.Index(i)
+			if sliceVal.IsValid() {
+				newEntry := &RedfishResourceProperty{}
+				newEntry.Parse(sliceVal.Interface())
+				rrp.Value = append(rrp.Value.([]interface{}), newEntry)
+			}
+		}
+
 	default:
 		rrp.Value = thing
 	}
-	return
-}
 
-func parse_array(props []interface{}) (ret []interface{}) {
-	for _, v := range props {
-		prop := &RedfishResourceProperty{}
-		prop.Parse(v)
-		ret = append(ret, prop)
-	}
-	return
-}
-
-func parse_map(start map[string]interface{}, props map[string]interface{}) {
-	for k, v := range props {
-		if strings.HasSuffix(k, "@meta") {
-			name := k[:len(k)-5]
-			prop, ok := start[name].(*RedfishResourceProperty)
-			if !ok {
-				prop = &RedfishResourceProperty{}
-				start[name] = prop
-			}
-			prop.Lock()
-			prop.Meta = v.(map[string]interface{})
-			prop.Unlock()
-		} else {
-			prop, ok := v.(*RedfishResourceProperty)
-			if !ok {
-				prop = &RedfishResourceProperty{}
-				start[k] = prop
-			}
-			prop.Parse(v)
-		}
-	}
 	return
 }
 
