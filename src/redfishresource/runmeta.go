@@ -118,8 +118,13 @@ type stopProcessing interface {
 func Flatten(thing interface{}, parentlocked bool) interface{} {
 	// if it's an rrp, return the value
 	if vp, ok := thing.(*RedfishResourceProperty); ok {
-		vp.RLock()
-		defer vp.RUnlock()
+		if vp.Ephemeral {
+			vp.RLock()
+			defer vp.RUnlock()
+		} else {
+			vp.Lock()
+			defer vp.Unlock()
+		}
 
 		ret := Flatten(vp.Value, true) // the only instance where we deref value
 		if vp.Ephemeral {
@@ -138,8 +143,8 @@ func Flatten(thing interface{}, parentlocked bool) interface{} {
 	case reflect.Map:
 		// everything inside of a redfishresourceproperty should fit into a map[string]interface{}
 		if !parentlocked {
-			//fmt.Printf("ERROR: detected a nested map/array inside the redfish resource property tree. This is not allowed, wrap the child in an &RedfishResourceProperty{Value: ...}\n")
-			fmt.Printf("!")
+			fmt.Printf("ERROR: detected a nested map/array inside the redfish resource property tree. This is not allowed, wrap the child in an &RedfishResourceProperty{Value: ...}\n")
+			fmt.Printf("ERROR: The offending keys were: %s\n", k.String())
 		}
 
 		ret := map[string]interface{}{}
