@@ -256,6 +256,8 @@ func CountFormatter(
 func FormatOdataList(ctx context.Context, v *view.View, m *model.Model, agg *domain.RedfishResourceAggregate, rrp *domain.RedfishResourceProperty, auth *domain.RedfishAuthorizationProperty, meta map[string]interface{}) error {
 	p, ok := meta["property"].(string)
 
+	// TODO: have to use m.UnderLock() to do all of this so we dont race
+
 	uris, ok := m.GetPropertyOk(p)
 	if !ok {
 		uris = []string{}
@@ -264,11 +266,14 @@ func FormatOdataList(ctx context.Context, v *view.View, m *model.Model, agg *dom
 	var uriArr []string
 	odata := []interface{}{}
 
+	// make a copy of the array because otherwise we race with anybody else modifying the underlying slice
 	switch u := uris.(type) {
 	case []string:
-		uriArr = u
+		for _, s := range u {
+			uriArr = append(uriArr, s)
+		}
+
 	case []interface{}:
-		uriArr = []string{}
 		for _, i := range u {
 			if s, ok := i.(string); ok {
 				uriArr = append(uriArr, s)
