@@ -3,6 +3,7 @@ package stdmeta
 import (
 	"context"
 	"errors"
+	"fmt"
 	"path"
 	"reflect"
 	"sort"
@@ -255,36 +256,40 @@ func CountFormatter(
 
 func FormatOdataList(ctx context.Context, v *view.View, m *model.Model, agg *domain.RedfishResourceAggregate, rrp *domain.RedfishResourceProperty, auth *domain.RedfishAuthorizationProperty, meta map[string]interface{}) error {
 	p, ok := meta["property"].(string)
-
-	// TODO: have to use m.UnderLock() to do all of this so we dont race
-
-	uris, ok := m.GetPropertyOk(p)
 	if !ok {
-		uris = []string{}
+		panic(fmt.Sprintf("Programming error: malformed aggregate. No property specified for agg: %s", agg))
 	}
-
-	var uriArr []string
 	odata := []interface{}{}
 
-	// make a copy of the array because otherwise we race with anybody else modifying the underlying slice
-	switch u := uris.(type) {
-	case []string:
-		for _, s := range u {
-			uriArr = append(uriArr, s)
+	// have to use m.UnderLock() to do all of this so we dont race with people adding to the underlying slice
+	m.UnderLock(func() {
+		uris, ok := m.GetPropertyOkUnlocked(p)
+		if !ok {
+			uris = []string{}
 		}
 
-	case []interface{}:
-		for _, i := range u {
-			if s, ok := i.(string); ok {
+		var uriArr []string
+
+		// make a copy of the array because otherwise we race with anybody else modifying the underlying slice
+		switch u := uris.(type) {
+		case []string:
+			for _, s := range u {
 				uriArr = append(uriArr, s)
 			}
-		}
-	}
 
-	sort.Strings(uriArr)
-	for _, i := range uriArr {
-		odata = append(odata, &domain.RedfishResourceProperty{Value: map[string]interface{}{"@odata.id": i}})
-	}
+		case []interface{}:
+			for _, i := range u {
+				if s, ok := i.(string); ok {
+					uriArr = append(uriArr, s)
+				}
+			}
+		}
+
+		sort.Strings(uriArr)
+		for _, i := range uriArr {
+			odata = append(odata, &domain.RedfishResourceProperty{Value: map[string]interface{}{"@odata.id": i}})
+		}
+	})
 
 	rrp.Value = odata
 
