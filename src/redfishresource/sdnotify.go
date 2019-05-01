@@ -2,7 +2,6 @@ package domain
 
 import (
 	"errors"
-	"fmt"
 	"io"
 	"net"
 	"os"
@@ -21,7 +20,7 @@ func SimulateSdnotify() *Simulated {
 }
 func (s *Simulated) Close() {}
 func (s *Simulated) Notify(state string) error {
-	fmt.Printf("SD_NOTIFY not available, simulating: %s\n", state)
+	//fmt.Printf("SD_NOTIFY not available, simulating: %s\n", state)
 	return nil
 }
 func (s *Simulated) GetIntervalUsec() int {

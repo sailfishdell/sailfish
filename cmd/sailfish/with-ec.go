@@ -17,6 +17,6 @@ import (
 
 func init() {
 	implementations["dell_ec"] = func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *sync.RWMutex, ch eh.CommandHandler, eb eh.EventBus, d *domain.DomainObjects) Implementation {
-		return dell_ec.New(ctx, logger, cfgMgr, viperMu, ch, eb, d)
+		return dell_ec.New(ctx, logger, cfgMgr, viperMu, d)
 	}
 }

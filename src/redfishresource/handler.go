@@ -129,6 +129,53 @@ func (d *DomainObjects) GetAggregateID(uri string) (id eh.UUID) {
 	return
 }
 
+// VALIDATE TREE - DEBUG ONLY
+func (d *DomainObjects) CheckTree() (id eh.UUID, ok bool) {
+	d.treeMu.RLock()
+	defer d.treeMu.RUnlock()
+
+	injectCmds := 0
+	aggs, _ := d.Repo.FindAll(context.Background())
+	for _, agg := range aggs {
+		if rr, ok := agg.(*RedfishResourceAggregate); ok {
+			checkuri := rr.ResourceURI
+			if id, ok := d.Tree[checkuri]; ok {
+				if id == agg.EntityID() {
+					// found good agg in tree
+				} else {
+					fmt.Printf("Validate %s\n", agg.EntityID())
+					fmt.Printf("\tURI: %s", checkuri)
+					fmt.Printf("\n\tAggregate ID Mismatch! %s != %s\n", id, agg.EntityID())
+					//panic("Aggregate ID Mismatch!")
+				}
+			} else {
+				if string(agg.EntityID()) == string(injectUUID) {
+					injectCmds++
+					// it's an inject command. that's ok
+				} else {
+					fmt.Printf("Validate %s\n", agg.EntityID())
+					fmt.Printf("\tURI: %s", checkuri)
+					fmt.Printf("\n\tNOT IN TREE\n")
+					//panic("Found aggregate that isn't in the tree.")
+				}
+			}
+		} else {
+			fmt.Printf("Validate %s\n", agg.EntityID())
+			fmt.Printf("NOT AN RRA!\n")
+			//panic("Found aggregate in store that isn't a RedfishResourceAggregate")
+		}
+	}
+
+	if len(aggs) != len(d.Tree)+injectCmds || injectCmds > 1 {
+		fmt.Printf("MISMATCH Tree(%d) Aggregates(%d) InjectCmds(%d)\n", len(d.Tree), len(aggs), injectCmds)
+	}
+	//fmt.Printf("Number of inject commands: %d\n", injectCmds)
+	//fmt.Printf("Number of tree objects: %d\n", len(d.Tree))
+	//fmt.Printf("Number of aggregate objects: %d\n", len(aggs))
+
+	return
+}
+
 func (d *DomainObjects) GetAggregateIDOK(uri string) (id eh.UUID, ok bool) {
 	d.treeMu.RLock()
 	defer d.treeMu.RUnlock()

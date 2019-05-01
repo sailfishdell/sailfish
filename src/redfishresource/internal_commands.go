@@ -263,9 +263,11 @@ func (c *InjectEvent) CommandType() eh.CommandType {
 
 var injectChan chan eh.Event
 
-func StartInjectService(logger log.Logger, eb eh.EventBus, ew waiter) {
+func StartInjectService(logger log.Logger, d *DomainObjects) {
 	injectChan = make(chan eh.Event, 100)
 	logger = logger.New("module", "injectservice")
+	eb := d.EventBus
+	ew := d.EventWaiter
 
 	var s closeNotifier
 	s, err := NewSdnotify()
@@ -305,6 +307,7 @@ func StartInjectService(logger log.Logger, eb eh.EventBus, ew waiter) {
 				}
 
 				s.Notify("WATCHDOG=1")
+				d.CheckTree()
 			}
 		}()
 
@@ -349,11 +352,12 @@ func StartInjectService(logger log.Logger, eb eh.EventBus, ew waiter) {
 }
 
 const MAX_CONSOLIDATED_EVENTS = 10
+const injectUUID = eh.UUID("49467bb4-5c1f-473b-0000-00000000000f")
 
 func (c *InjectEvent) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 	requestLogger := ContextLogger(ctx, "internal_commands").New("module", "inject_event")
 
-	a.ID = eh.UUID("49467bb4-5c1f-473b-0000-00000000000f")
+	a.ID = injectUUID
 
 	eventList := []map[string]interface{}{}
 	if len(c.EventData) > 0 {

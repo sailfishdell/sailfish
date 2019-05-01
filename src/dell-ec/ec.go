@@ -50,15 +50,17 @@ type waiter interface {
 
 func (o *ocp) ConfigChangeHandler() { o.configChangeHandler() }
 
-func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, ch eh.CommandHandler, eb eh.EventBus, d *domain.DomainObjects) *ocp {
+func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, d *domain.DomainObjects) *ocp {
 	logger = logger.New("module", "ec")
 	self := &ocp{}
+	ch := d.CommandHandler
+	eb := d.EventBus
 
 	// These three all set up a waiter for the root service to appear, so init root service after.
 	actionhandler.Setup(ctx, ch, eb)
 	uploadhandler.Setup(ctx, ch, eb)
 	event.Setup(ch, eb)
-	domain.StartInjectService(logger, eb, d.EventWaiter)
+	domain.StartInjectService(logger, d)
 	arService, _ := ar_mapper2.StartService(ctx, logger, cfgMgr, cfgMgrMu, eb)
 	actionSvc := ah.StartService(ctx, logger, ch, eb)
 	uploadSvc := uploadhandler.StartService(ctx, logger, ch, eb)
@@ -99,9 +101,9 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	initThermalSensor(logger, instantiateSvc, ch, d)
 	inithealth(ctx, logger, ch,d )
 	initpowercontrol(logger)
-        stdmeta.InitializeSsoinfo(d)
+	stdmeta.InitializeSsoinfo(d)
 	telemetryservice.RegisterAggregate(instantiateSvc)
-  stdmeta.SetupSledProfilePlugin(d)
+	stdmeta.SetupSledProfilePlugin(d)
 
 	awesome_mapper2.AddFunction("find_uris_with_basename", func(args ...interface{}) (interface{}, error) {
 		if len(args) < 1 {
