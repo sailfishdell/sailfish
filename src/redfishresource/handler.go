@@ -194,12 +194,6 @@ func (d *DomainObjects) GetAggregateIDOK(uri string) (id eh.UUID, ok bool) {
 	return
 }
 
-func (d *DomainObjects) SetAggregateID(uri string, ID eh.UUID) {
-	d.treeMu.Lock()
-	defer d.treeMu.Unlock()
-	d.Tree[uri] = ID
-}
-
 func (d *DomainObjects) FindMatchingURIs(matcher func(string) bool) []string {
 	d.treeMu.RLock()
 	defer d.treeMu.RUnlock()
@@ -210,15 +204,6 @@ func (d *DomainObjects) FindMatchingURIs(matcher func(string) bool) []string {
 		}
 	}
 	return ret
-}
-
-func (d *DomainObjects) DeleteResource(ctx context.Context, uri string) {
-	d.treeMu.Lock()
-	defer d.treeMu.Unlock()
-	if UUID, ok := d.Tree[uri]; ok {
-		d.Repo.Remove(ctx, UUID)
-	}
-	delete(d.Tree, uri)
 }
 
 func (d *DomainObjects) ExpandURI(ctx context.Context, uri string) (*RedfishResourceProperty, error) {
@@ -244,25 +229,71 @@ func (d *DomainObjects) Notify(ctx context.Context, event eh.Event) {
 	if event.EventType() == RedfishResourceCreated {
 		if data, ok := event.Data().(*RedfishResourceCreatedData); ok {
 			logger.Info("Create URI", "URI", data.ResourceURI)
-			// First, delete any old resource at that URI
-			d.DeleteResource(ctx, data.ResourceURI)
-			// then attach the new resource
-			d.SetAggregateID(data.ResourceURI, data.ID)
-			// no need to worry about plugins as new plugin should automatically overwrite any old one.
+
+			// Adding a new aggregate to the tree
+			d.treeMu.Lock()
+			defer d.treeMu.Unlock()
+
+			// First, remove any potential older aggregate that resides in the tree at this URI with different UUID
+			if UUID, ok := d.Tree[data.ResourceURI]; ok && UUID != data.ID {
+				// TODO: need to actually run the removeredfishresource command here instead of directly removing resource
+				// TODO: Probably put this command into the inject queue?
+				d.Repo.Remove(ctx, UUID)
+			}
+
+			// Next, attach this aggregate into the tree (possibly overwriting old def)
+			d.Tree[data.ResourceURI] = data.ID
+
+			// check for orphaned aggregates by iterating over all aggregates and finding any that claim to be this resource URI
+			aggs, _ := d.Repo.FindAll(context.Background())
+			for _, agg := range aggs {
+				if rr, ok := agg.(*RedfishResourceAggregate); ok {
+					if rr.ResourceURI == data.ResourceURI && rr.EntityID() != data.ID {
+						fmt.Printf("FOUND ORPHAN, deleting\n")
+						d.Repo.Remove(ctx, rr.EntityID())
+					}
+				}
+			}
+
 		}
 		return
-	}
-	if event.EventType() == RedfishResourceRemoved {
+	} else if event.EventType() == RedfishResourceRemoved {
 		if data, ok := event.Data().(*RedfishResourceRemovedData); ok {
 			logger.Info("Delete URI", "URI", data.ResourceURI)
-			d.DeleteResource(ctx, data.ResourceURI)
-			p, err := InstantiatePlugin(PluginType(data.ResourceURI))
-			type closer interface {
-				Close()
+			d.treeMu.Lock()
+			defer d.treeMu.Unlock()
+
+			// directly remove the aggregate from the aggregate repo
+			d.Repo.Remove(ctx, data.ID)
+
+			UUID, ok := d.Tree[data.ResourceURI]
+
+			// if it's *this* specific aggregate still in the tree, remove it from the tree
+			if ok && UUID == data.ID {
+				delete(d.Tree, data.ResourceURI)
+
+				// remove any plugins linked to the now unlinked agg. Careful here
+				// because if a new aggregate is linked in we dont want to delete the
+				// new plugins that may have already been instantiated
+				p, err := InstantiatePlugin(PluginType(data.ResourceURI))
+				type closer interface {
+					Close()
+				}
+				if err == nil && p != nil {
+					if c, ok := p.(closer); ok {
+						c.Close()
+					}
+				}
 			}
-			if err == nil && p != nil {
-				if c, ok := p.(closer); ok {
-					c.Close()
+
+			// check for orphaned aggregates by iterating over all aggregates and finding any that claim to be this resource URI
+			aggs, _ := d.Repo.FindAll(context.Background())
+			for _, agg := range aggs {
+				if rr, ok := agg.(*RedfishResourceAggregate); ok {
+					if rr.ResourceURI == data.ResourceURI && rr.EntityID() != UUID {
+						fmt.Printf("FOUND ORPHAN, deleting\n")
+						d.Repo.Remove(ctx, rr.EntityID())
+					}
 				}
 			}
 		}
