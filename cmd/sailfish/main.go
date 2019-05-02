@@ -148,6 +148,9 @@ func main() {
 	// all the other command apis.
 	m.PathPrefix("/api/{command}").Handler(internalHandlerFunc)
 
+	// debugging (localhost only)
+	m.Path("/status").Handler(domainObjs.DumpStatus())
+
 	tlscfg := &tls.Config{
 		MinVersion: tls.VersionTLS12,
 		// TODO: cli option to enable/disable

@@ -351,3 +351,47 @@ func (d *DomainObjects) GetInternalCommandHandler(backgroundCtx context.Context)
 		w.WriteHeader(http.StatusOK)
 	})
 }
+
+// DumpStatus is for debugging
+func (d *DomainObjects) DumpStatus() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		w.WriteHeader(http.StatusOK)
+
+		// Adding a new aggregate to the tree
+		d.treeMu.Lock()
+		defer d.treeMu.Unlock()
+
+		// Dump Tree
+		injectCmds := 0
+		orphans := 0
+		fmt.Fprintf(w, "DUMP Aggregate Repository\n")
+		aggs, _ := d.Repo.FindAll(context.Background())
+		for _, agg := range aggs {
+			fmt.Fprintf(w, "================================================\n")
+			if rr, ok := agg.(*RedfishResourceAggregate); ok {
+				fmt.Fprintf(w, "RedfishResourceAggregate: ")
+				treeLookup, ok := d.Tree[rr.ResourceURI]
+				if ok && treeLookup == rr.EntityID() {
+					fmt.Fprintf(w, "OK")
+				} else if ok {
+					orphans++
+					fmt.Fprintf(w, "MISMATCH(tree has id %s)", treeLookup)
+				} else {
+					if agg.EntityID() == injectUUID {
+						fmt.Fprintf(w, "INJECTCMD")
+						injectCmds++
+					}
+				}
+
+				fmt.Fprintf(w, " %s: %s\n", rr.EntityID(), rr.ResourceURI)
+			} else {
+				fmt.Fprintf(w, "UNKNOWN ENTITY: %s\n", rr.EntityID())
+			}
+			fmt.Fprintf(w, "\n\n")
+		}
+
+		fmt.Fprintf(w, "Tree(%d) Aggregates(%d) InjectCmds(%d) Orphans(%d)\n", len(d.Tree), len(aggs), injectCmds, orphans)
+
+	})
+}
