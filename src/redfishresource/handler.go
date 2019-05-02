@@ -392,6 +392,7 @@ func (d *DomainObjects) DumpStatus() http.Handler {
 		}
 
 		fmt.Fprintf(w, "Tree(%d) Aggregates(%d) InjectCmds(%d) Orphans(%d)\n", len(d.Tree), len(aggs), injectCmds, orphans)
+		fmt.Fprintf(w, "InjectChan Q Len = %d\n", len(injectChan))
 
 	})
 }
