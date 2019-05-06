@@ -113,6 +113,7 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// All operations have to be on URLs that exist, so look it up in the tree
 	aggID, ok := rh.d.GetAggregateIDOK(r.URL.Path)
 	if !ok {
+		rh.logger.Warn("Could not find URL", "url", r.URL.Path)
 		http.Error(w, "Could not find URL: "+r.URL.Path, http.StatusNotFound)
 		return
 	}
@@ -141,6 +142,7 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// with a proper error if we couldnt create a command of any kind
 	if cmd == nil {
+		rh.logger.Warn("could not create command", "url", r.URL.Path)
 		http.Error(w, "could not create command", http.StatusBadRequest)
 		return
 	}
@@ -213,6 +215,7 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if authAction != "authorized" {
+		rh.logger.Warn("Not authorized to access this resource.", "url", r.URL.Path)
 		http.Error(w, "Not authorized to access this resource: ", http.StatusMethodNotAllowed)
 		return
 	}
@@ -253,6 +256,7 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return false
 	})
 	if err != nil {
+		rh.logger.Warn("could not create waiter", "err", err.Error(), "url", r.URL.Path)
 		http.Error(w, "could not create waiter"+err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -264,6 +268,7 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if t, ok := cmd.(HTTPParser); ok {
 		err := t.ParseHTTPRequest(r)
 		if err != nil {
+			rh.logger.Warn("Problems parsing http request: ", "err", err.Error(), "url", r.URL.Path)
 			http.Error(w, "Problems parsing http request: "+err.Error(), http.StatusBadRequest)
 			return
 		}
@@ -271,6 +276,7 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	ctx := WithRequestID(context.Background(), cmdID)
 	if err := rh.d.CommandHandler.HandleCommand(ctx, cmd); err != nil {
+		rh.logger.Warn("redfish handler could not handle command", "type", string(cmd.CommandType()), "err", err.Error(), "url", r.URL.Path)
 		http.Error(w, "redfish handler could not handle command (type: "+string(cmd.CommandType())+"): "+err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -283,6 +289,7 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	select {
 	case event = <-l.Inbox():
 	case <-reqCtx.Done():
+		rh.logger.Warn("Request cancelled, aborting http response", "url", r.URL.Path)
 		http.Error(w, "Request cancelled, aborting http response", http.StatusInternalServerError)
 		return
 	}
@@ -294,7 +301,8 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	data, ok := event.Data().(*HTTPCmdProcessedData)
 	if !ok {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		rh.logger.Warn("Did not get an HTTPCmdProcessedData event, that's wierd.", "url", r.URL.Path, "event", event.Data())
+		http.Error(w, "Did not get an HTTPCmdProcessedData event, that's wierd", http.StatusInternalServerError)
 		return
 	}
 
@@ -350,6 +358,7 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	b, err := json.Marshal(data.Results)
 
 	if err != nil {
+		rh.logger.Warn("Error encoding JSON for output: ", "err", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
