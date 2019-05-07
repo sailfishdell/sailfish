@@ -54,7 +54,7 @@ func RegisterAggregate(s *testaggregate.Service) {
 						},
 						"DateTime@meta":       map[string]interface{}{"GET": map[string]interface{}{"plugin": "datetime"}},
 						"DateTimeLocalOffset": "+00:00",
-						"Id": "LC",
+						"Id":                  "LC",
 						"Actions": map[string]interface{}{
 							"#LogService.ClearLog": map[string]interface{}{
 								"target": vw.GetActionURI("clearlog"),
@@ -71,9 +71,9 @@ func RegisterAggregate(s *testaggregate.Service) {
 					ResourceURI: vw.GetURI(),
 					Type:        "#LogService.v1_0_2.LogService",
 					Context:     params["rooturi"].(string) + "/$metadata#LogService.LogService",
-                                        Plugin:      "GenericActionHandler",
+					Plugin:      "GenericActionHandler",
 					Privileges: map[string]interface{}{
-						"GET": []string{"Login"},
+						"GET":  []string{"Login"},
 						"POST": []string{"ConfigureManager"},
 					},
 					Properties: map[string]interface{}{

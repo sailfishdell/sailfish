@@ -70,7 +70,7 @@ func RegisterCertAggregate(s *testaggregate.Service) {
 					Context:     "/redfish/v1/$metadata#DellCertificateInventory.DellCertificateInventory",
 					Plugin:      "GenericActionHandler",
 					Privileges: map[string]interface{}{
-						"GET": []string{"Login"},
+						"GET":  []string{"Login"},
 						"POST": []string{"ConfigureManager"},
 					},
 					Properties: map[string]interface{}{

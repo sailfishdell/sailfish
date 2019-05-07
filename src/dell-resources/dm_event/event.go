@@ -60,9 +60,9 @@ type ComponentRemovedData struct {
 }
 
 type HealthEventData struct {
-	FQDD   string
-	Health string
-	EventSeq         int64 `mapstructure:"event_seq"`
+	FQDD     string
+	Health   string
+	EventSeq int64 `mapstructure:"event_seq"`
 }
 type InstPowerEventData struct {
 	FQDD      string

@@ -2,22 +2,21 @@ package dell_ec
 
 import (
 	"context"
+	"errors"
+	"fmt"
+	"strings"
 	"sync"
-        "errors"
-        "fmt"
-        "strings"
 
 	eh "github.com/looplab/eventhorizon"
 	"github.com/spf13/viper"
 
+	"github.com/superchalupa/sailfish/src/dell-resources/dm_event"
 	"github.com/superchalupa/sailfish/src/log"
 	"github.com/superchalupa/sailfish/src/ocp/awesome_mapper2"
-	"github.com/superchalupa/sailfish/src/dell-resources/dm_event"
 	"github.com/superchalupa/sailfish/src/ocp/testaggregate"
 	"github.com/superchalupa/sailfish/src/ocp/view"
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
 )
-
 
 func RegisterSledAggregate(s *testaggregate.Service) {
 	s.RegisterAggregateFunction("sled",
@@ -173,73 +172,70 @@ func RegisterSledAggregate(s *testaggregate.Service) {
 					},
 
 					Properties: map[string]interface{}{
-               					"Battery": map[string]interface{}{
-                                                      	"Status": map[string]interface{}{
-                                                            "HealthRollup@meta": vw.Meta(view.GETProperty("battery_rollup"), view.GETModel("global_health")),
+						"Battery": map[string]interface{}{
+							"Status": map[string]interface{}{
+								"HealthRollup@meta": vw.Meta(view.GETProperty("battery_rollup"), view.GETModel("global_health")),
 							},
-                                                },
-               					"Fan": map[string]interface{}{
-                                                      "Status": map[string]interface{}{
-                                                            "HealthRollup@meta": vw.Meta(view.GETProperty("fan_rollup"), view.GETModel("global_health")),
-							},
-                                                },
-               					"MM": map[string]interface{}{
-                                                      "Status": map[string]interface{}{
-                                                            "HealthRollup@meta": vw.Meta(view.GETProperty("mm_rollup"), view.GETModel("global_health")),
-							},
-                                                },
-               					"Miscellaneous": map[string]interface{}{
-                                                      "Status": map[string]interface{}{
-                                                            "HealthRollup@meta": vw.Meta(view.GETProperty("misc_rollup"), view.GETModel("global_health")),
-							},
-          					},
-               					"PowerSupply": map[string]interface{}{
-                                                      "Status": map[string]interface{}{
-                                                            "HealthRollup@meta": vw.Meta(view.GETProperty("psu_rollup"), view.GETModel("global_health")),
- 							},
 						},
-               					"Temperature": map[string]interface{}{
-                                                      "Status": map[string]interface{}{
-                                                            "HealthRollup@meta": vw.Meta(view.GETProperty("temperature_rollup"), view.GETModel("global_health")),
+						"Fan": map[string]interface{}{
+							"Status": map[string]interface{}{
+								"HealthRollup@meta": vw.Meta(view.GETProperty("fan_rollup"), view.GETModel("global_health")),
 							},
- 						},
-                                         },
-                                        
-			}}, nil
+						},
+						"MM": map[string]interface{}{
+							"Status": map[string]interface{}{
+								"HealthRollup@meta": vw.Meta(view.GETProperty("mm_rollup"), view.GETModel("global_health")),
+							},
+						},
+						"Miscellaneous": map[string]interface{}{
+							"Status": map[string]interface{}{
+								"HealthRollup@meta": vw.Meta(view.GETProperty("misc_rollup"), view.GETModel("global_health")),
+							},
+						},
+						"PowerSupply": map[string]interface{}{
+							"Status": map[string]interface{}{
+								"HealthRollup@meta": vw.Meta(view.GETProperty("psu_rollup"), view.GETModel("global_health")),
+							},
+						},
+						"Temperature": map[string]interface{}{
+							"Status": map[string]interface{}{
+								"HealthRollup@meta": vw.Meta(view.GETProperty("temperature_rollup"), view.GETModel("global_health")),
+							},
+						},
+					},
+				}}, nil
 		})
 
 }
 
 func remove(s []string, r string) bool {
-     
-    for i, v := range s {
-        ml := len(s) -1
-        if v == r {
-            tmp:=s[ml]
-            s[ml] = s[i]
-            s[i] = tmp
-            s[ml] = ""
-            s = s[:ml]
-            return true
-        }
-    }
-    return false
-}
 
+	for i, v := range s {
+		ml := len(s) - 1
+		if v == r {
+			tmp := s[ml]
+			s[ml] = s[i]
+			s[i] = tmp
+			s[ml] = ""
+			s = s[:ml]
+			return true
+		}
+	}
+	return false
+}
 
 // Contains tells whether a contains x.
 func Contains(a []string, x string) bool {
-        for _, n := range a {
-                if x == n {
-                        return true
-                }
-        }
-        return false
+	for _, n := range a {
+		if x == n {
+			return true
+		}
+	}
+	return false
 }
 
 func inithealth(ctx context.Context, logger log.Logger, ch eh.CommandHandler, d *domain.DomainObjects) {
-        sled_iomL:= []string{}
-
+	sled_iomL := []string{}
 
 	awesome_mapper2.AddFunction("remove_health", func(args ...interface{}) (interface{}, error) {
 		removedEvent, ok := args[0].(*dm_event.ComponentRemovedData)
@@ -264,7 +260,7 @@ func inithealth(ctx context.Context, logger log.Logger, ch eh.CommandHandler, d 
 	})
 
 	awesome_mapper2.AddFunction("add_health_to_subsystem", func(args ...interface{}) (interface{}, error) {
-                // which components can I use to generate subsystem one time..
+		// which components can I use to generate subsystem one time..
 		healthEvent, ok := args[0].(*dm_event.HealthEventData)
 		if !ok {
 			logger.Crit("Mapper configuration error: health event data not passed", "args[1]", args[1], "TYPE", fmt.Sprintf("%T", args[1]))
@@ -274,13 +270,13 @@ func inithealth(ctx context.Context, logger log.Logger, ch eh.CommandHandler, d 
 		s := strings.Split(healthEvent.FQDD, "#")
 		subsys := s[len(s)-1]
 
-                // if iom or sled already in list, exit out, global health automatically updates health
-                // TODO update to a function later
-                if Contains(sled_iomL,subsys){
-                    return nil, nil
-                } else {
-                    sled_iomL = append(sled_iomL, subsys)
-                }
+		// if iom or sled already in list, exit out, global health automatically updates health
+		// TODO update to a function later
+		if Contains(sled_iomL, subsys) {
+			return nil, nil
+		} else {
+			sled_iomL = append(sled_iomL, subsys)
+		}
 
 		aggregateUUID, ok := args[1].(eh.UUID)
 		if !ok {
@@ -288,16 +284,15 @@ func inithealth(ctx context.Context, logger log.Logger, ch eh.CommandHandler, d 
 			return nil, errors.New("Mapper configuration error: aggregate UUID not passed")
 		}
 
-                agg, _ :=d.AggregateStore.Load(context.Background(), domain.AggregateType, aggregateUUID )    
+		agg, _ := d.AggregateStore.Load(context.Background(), domain.AggregateType, aggregateUUID)
 
 		ch.HandleCommand(ctx,
 			&domain.UpdateRedfishResourceProperties{
-				ID:         aggregateUUID,
-				Properties: map[string]interface{}{subsys : 
-                     			map[string]interface{}{
-         					"Status": map[string]interface{}{
-							"HealthRollup@meta" : map[string]interface{}{"GET": map[string]interface{}{"plugin":agg.(*domain.RedfishResourceAggregate).ResourceURI, "property": healthEvent.FQDD, "model": "global_health"}}}}},
-                                })
+				ID: aggregateUUID,
+				Properties: map[string]interface{}{subsys: map[string]interface{}{
+					"Status": map[string]interface{}{
+						"HealthRollup@meta": map[string]interface{}{"GET": map[string]interface{}{"plugin": agg.(*domain.RedfishResourceAggregate).ResourceURI, "property": healthEvent.FQDD, "model": "global_health"}}}}},
+			})
 
 		// to avoid extra memory usage, returning 'nil', but in the future should return subSystemHealthList when we can use it
 		return nil, nil

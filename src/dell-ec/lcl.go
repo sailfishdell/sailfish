@@ -302,22 +302,20 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 			return nil, errors.New("Mapper configuration error: health is not a string")
 		}
 
-                t := time.Now()
+		t := time.Now()
 		cTime := t.Format("2006-01-02T15:04:05-07:00")
-                ma := []string{health}
-
-
+		ma := []string{health}
 
 		//Create Alert type event:
 		d.EventBus.PublishEvent(context.Background(),
 			eh.NewEvent(eventservice.RedfishEvent, &eventservice.RedfishEventData{
-				EventType:      "Alert",
-				EventId:        "1",
-				EventTimestamp: cTime,
-				Severity:       "Informational",
-				Message:        "The chassis health is " + health,
-				MessageId:      "CMC8550",
-				MessageArgs:    ma,
+				EventType:         "Alert",
+				EventId:           "1",
+				EventTimestamp:    cTime,
+				Severity:          "Informational",
+				Message:           "The chassis health is " + health,
+				MessageId:         "CMC8550",
+				MessageArgs:       ma,
 				OriginOfCondition: ss,
 			}, time.Now()))
 

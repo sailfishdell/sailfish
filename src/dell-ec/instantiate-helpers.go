@@ -56,7 +56,7 @@ func AddECInstantiate(l log.Logger, instantiateSvc *testaggregate.Service) {
 		}
 		// have to do this in a goroutine because awesome mapper is locked while it processes events
 		instantiateSvc.Instantiate("manager_cmc_integrated", map[string]interface{}{
-			"FQDD": FQDD,
+			"FQDD":                             FQDD,
 			"exportSystemConfiguration":        view.Action(exportSystemConfiguration),
 			"importSystemConfiguration":        view.Action(importSystemConfiguration),
 			"importSystemConfigurationPreview": view.Action(importSystemConfigurationPreview),

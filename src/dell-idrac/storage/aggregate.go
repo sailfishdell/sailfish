@@ -252,7 +252,7 @@ func RegisterAggregate(s *testaggregate.Service) {
 							},
 							"ManagedBy@odata.count": 1,
 							"PCIeDevices@meta":      map[string]interface{}{
-							//Needs addition
+								//Needs addition
 							},
 							"PCIeDevices@odata.count":  0,
 							"Storage@meta":             vw.Meta(view.GETProperty("storage_uris"), view.GETFormatter("formatOdataList"), view.GETModel("default")),
@@ -382,7 +382,7 @@ func RegisterAggregate(s *testaggregate.Service) {
 							},
 						},
 						"Operations": []map[string]interface{}{
-						//Need to add Operations
+							//Need to add Operations
 						},
 						"OptimumIOSizeBytes@meta": vw.Meta(view.PropGET("optimum_io_size_bytes")),
 						"Status": map[string]interface{}{

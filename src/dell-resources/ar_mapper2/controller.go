@@ -184,13 +184,13 @@ func (b breadcrumb) UpdateRequest(ctx context.Context, property string, value in
 	canned_response := `{"RelatedProperties@odata.count": 1, "Message": "%s", "MessageArgs": ["%[2]s"], "Resolution": "Remove the %sproperty from the request body and resubmit the request if the operation failed.", "MessageId": "%s", "MessageArgs@odata.count": 1, "RelatedProperties": ["%[2]s"], "Severity": "Warning"}`
 	b.logger.Info("UpdateRequest", "property", property, "mappingName", b.mappingName)
 	num_success := 0
-  found_flag := false
+	found_flag := false
 
 	reqIDs := []eh.UUID{}
 	responses := []attributes.AttributeUpdatedData{}
 	errs := []string{}
 	patch_timeout := 10
-  //patch_timeout := 3000
+	//patch_timeout := 3000
 
 	l, err := b.ars.ew.Listen(ctx, func(event eh.Event) bool {
 		if event.EventType() != attributes.AttributeUpdated {
@@ -200,9 +200,9 @@ func (b breadcrumb) UpdateRequest(ctx context.Context, property string, value in
 		if !ok {
 			return false
 		}
-    if data.Name == "SledProfile" {
-      return false
-    }
+		if data.Name == "SledProfile" {
+			return false
+		}
 		return true
 	})
 	if err != nil {
@@ -248,15 +248,15 @@ func (b breadcrumb) UpdateRequest(ctx context.Context, property string, value in
 		}
 		b.ars.eb.PublishEvent(ctx, eh.NewEvent(attributes.AttributeUpdateRequest, data, time.Now()))
 		reqIDs = append(reqIDs, reqUUID)
-    found_flag = true
+		found_flag = true
 		break
 	}
 
-  if !found_flag {
-			b.ars.logger.Error("not found", "Attribute", property)
-			err_msg := fmt.Sprintf("The property %s is not in the list of valid properties for the resource.", property)
-			errs = append(errs, fmt.Sprintf(canned_response, []interface{}{err_msg, property, "unknown ", "Base.1.0.PropertyUnknown"}...))
-  }
+	if !found_flag {
+		b.ars.logger.Error("not found", "Attribute", property)
+		err_msg := fmt.Sprintf("The property %s is not in the list of valid properties for the resource.", property)
+		errs = append(errs, fmt.Sprintf(canned_response, []interface{}{err_msg, property, "unknown ", "Base.1.0.PropertyUnknown"}...))
+	}
 
 	if len(reqIDs) == 0 {
 		return nil, HTTP_code{err_message: errs, any_success: num_success}

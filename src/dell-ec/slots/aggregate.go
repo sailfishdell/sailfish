@@ -47,7 +47,7 @@ func RegisterAggregate(s *testaggregate.Service) {
 			}
 
 			if strings.Contains(params["FQDD"].(string), "SledSlot") {
-        properties["SledProfile@meta"] = map[string]interface{}{"GET": map[string]interface{}{"plugin": vw.GetURI(), "property": "sled_profile"}, "PATCH": map[string]interface{}{"plugin":"SledProfile"}}
+				properties["SledProfile@meta"] = map[string]interface{}{"GET": map[string]interface{}{"plugin": vw.GetURI(), "property": "sled_profile"}, "PATCH": map[string]interface{}{"plugin": "SledProfile"}}
 			}
 
 			return []eh.Command{
@@ -56,8 +56,8 @@ func RegisterAggregate(s *testaggregate.Service) {
 					Type:        "#DellSlot.v1_0_0.DellSlot",
 					Context:     params["rooturi"].(string) + "/$metadata#DellSlot.DellSlot",
 					Privileges: map[string]interface{}{
-						"GET": []string{"Login"},
-            "PATCH": []string{"ConfigureManager"},
+						"GET":   []string{"Login"},
+						"PATCH": []string{"ConfigureManager"},
 					},
 					Properties: properties,
 				},

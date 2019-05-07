@@ -26,7 +26,7 @@ type formatter func(
 	ctx context.Context,
 	v *View,
 	m *model.Model,
-  agg *domain.RedfishResourceAggregate,
+	agg *domain.RedfishResourceAggregate,
 	rrp *domain.RedfishResourceProperty,
 	auth *domain.RedfishAuthorizationProperty,
 	meta map[string]interface{},

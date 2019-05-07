@@ -32,7 +32,7 @@ func RegisterAggregate(s *testaggregate.Service) {
 								"target": vw.GetActionURI("submit.test.metric.report"),
 							},
 						},
-						"Oem": map[string]interface{}{},
+						"Oem":                     map[string]interface{}{},
 						"MetricReportDefinitions": map[string]interface{}{"@odata.id": vw.GetURI() + "/MetricReportDefinitions"},
 						"MetricReports":           map[string]interface{}{"@odata.id": vw.GetURI() + "/MetricReports"},
 					}},
