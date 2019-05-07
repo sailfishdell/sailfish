@@ -142,21 +142,52 @@ func (d *DomainObjects) CheckTree() (id eh.UUID, ok bool) {
 			if id, ok := d.Tree[checkuri]; ok {
 				if id == agg.EntityID() {
 					// found good agg in tree
+					continue
 				} else {
 					fmt.Printf("Validate %s\n", agg.EntityID())
 					fmt.Printf("\tURI: %s", checkuri)
-					fmt.Printf("\n\tAggregate ID Mismatch! %s != %s\n", id, agg.EntityID())
-					//panic("Aggregate ID Mismatch!")
+
+					rr.ResultsCacheMu.Lock()
+					fmt.Printf("\n\tAggregate ID Mismatch! %s != %s  (count: %d)\n", id, agg.EntityID(), rr.checkcount)
+					if rr.checkcount > 0 {
+						fmt.Printf("\n\tCheck expired, assuming hanging aggregate and removing\n")
+						d.Repo.Remove(context.Background(), rr.EntityID())
+					} else {
+						rr.checkcount++
+					}
+					rr.ResultsCacheMu.Unlock()
+
 				}
 			} else {
 				if string(agg.EntityID()) == string(injectUUID) {
-					injectCmds++
 					// it's an inject command. that's ok
+					injectCmds++
 				} else {
+					// aggregate isn't in the tree at that uri
 					fmt.Printf("Validate %s\n", agg.EntityID())
 					fmt.Printf("\tURI: %s", checkuri)
-					fmt.Printf("\n\tNOT IN TREE\n")
-					//panic("Found aggregate that isn't in the tree.")
+					rr.ResultsCacheMu.Lock()
+					fmt.Printf("\n\tNOT IN TREE: %d\n", rr.checkcount)
+					if rr.checkcount > 0 {
+						fmt.Printf("\n\tCheck expired, assuming hanging aggregate and removing\n")
+
+						d.Repo.Remove(context.Background(), rr.EntityID())
+						// remove any plugins linked to the now unlinked agg. Careful here
+						// because if a new aggregate is linked in we dont want to delete the
+						// new plugins that may have already been instantiated
+						p, err := InstantiatePlugin(PluginType(rr.ResourceURI))
+						type closer interface {
+							Close()
+						}
+						if err == nil && p != nil {
+							if c, ok := p.(closer); ok {
+								c.Close()
+							}
+						}
+					} else {
+						rr.checkcount++
+					}
+					rr.ResultsCacheMu.Unlock()
 				}
 			}
 		} else {
@@ -244,19 +275,7 @@ func (d *DomainObjects) Notify(ctx context.Context, event eh.Event) {
 			// Next, attach this aggregate into the tree (possibly overwriting old def)
 			d.Tree[data.ResourceURI] = data.ID
 
-			// check for orphaned aggregates by iterating over all aggregates and finding any that claim to be this resource URI
-			aggs, _ := d.Repo.FindAll(context.Background())
-			for _, agg := range aggs {
-				if rr, ok := agg.(*RedfishResourceAggregate); ok {
-					if rr.ResourceURI == data.ResourceURI && rr.EntityID() != data.ID {
-						fmt.Printf("FOUND ORPHAN, deleting\n")
-						d.Repo.Remove(ctx, rr.EntityID())
-					}
-				}
-			}
-
 		}
-		return
 	} else if event.EventType() == RedfishResourceRemoved {
 		if data, ok := event.Data().(*RedfishResourceRemovedData); ok {
 			logger.Info("Delete URI", "URI", data.ResourceURI)
@@ -285,19 +304,7 @@ func (d *DomainObjects) Notify(ctx context.Context, event eh.Event) {
 					}
 				}
 			}
-
-			// check for orphaned aggregates by iterating over all aggregates and finding any that claim to be this resource URI
-			aggs, _ := d.Repo.FindAll(context.Background())
-			for _, agg := range aggs {
-				if rr, ok := agg.(*RedfishResourceAggregate); ok {
-					if rr.ResourceURI == data.ResourceURI && rr.EntityID() != UUID {
-						fmt.Printf("FOUND ORPHAN, deleting\n")
-						d.Repo.Remove(ctx, rr.EntityID())
-					}
-				}
-			}
 		}
-		return
 	}
 }
 

@@ -36,6 +36,8 @@ type RedfishResourceAggregate struct {
 	// above so that everything can be properly locked
 	PrivilegeMap map[string]interface{}
 	Headers      map[string]string
+
+	checkcount int
 }
 
 // PublishEvent registers an event to be published after the aggregate
