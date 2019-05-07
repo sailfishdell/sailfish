@@ -130,7 +130,7 @@ func init() {
 			model.UpdateProperty(property, ns)
 			return true, nil
 		}
-		return false, errors.New("seq number is below what model has")
+		return false, fmt.Errorf("event seq number (%d) is below model seq (%d)", ns, vint)
 
 	})
 
