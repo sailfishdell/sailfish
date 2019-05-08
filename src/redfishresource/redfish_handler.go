@@ -104,6 +104,59 @@ outer:
 	return
 }
 
+func (rh *RedfishHandler) verifyLocationURL(reqCtx context.Context, url string) bool {
+
+	// check the existance early to avoid setting up listener.
+	_, ok := rh.d.GetAggregateIDOK(url)
+	if ok {
+		// URL exists so just return
+		rh.logger.Debug("Location exists", "URL", url)
+		return ok
+	}
+
+	location_timeout := 10
+	ctx, cancel := context.WithTimeout(reqCtx, time.Duration(location_timeout)*time.Second)
+	defer cancel()
+
+	// to avoid races, set up our listener first
+	listener, err := rh.d.EventWaiter.Listen(ctx, func(event eh.Event) bool {
+		if event.EventType() == RedfishResourceCreated {
+			if data, ok := event.Data().(*RedfishResourceCreatedData); ok {
+				if data.ResourceURI == url {
+					rh.logger.Debug("Location created", "URI", data.ResourceURI)
+					return true
+				}
+			}
+			return false
+		}
+		return false
+	})
+	if err != nil {
+		rh.logger.Error("could not create waiter for location", "err", err.Error(), "url", url)
+		return false
+	}
+	listener.Name = "location update listener"
+	defer listener.Close()
+
+	// make sure we didn't miss the event while creating the listner
+	_, ok = rh.d.GetAggregateIDOK(url)
+	if ok {
+		// URL exists so just return
+		rh.logger.Debug("Location exists", "URL", url)
+		return ok
+	}
+
+	rh.logger.Warn("Location does not exist, wait for it", "URL", url)
+	_, err = listener.Wait(ctx)
+	if err != nil {
+		rh.logger.Error("location wait timed out", "URI", url)
+		return false
+	}
+
+	// location was created
+	return true
+}
+
 // TODO: need to write middleware that would allow different types of encoding on output
 func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Each command needs a unique UUID. We'll use that to listen for the HTTPProcessed Event, which should have a matching UUID.
@@ -329,7 +382,13 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	addEtag(w, data)
 
+	// check if k has 'location' and if so check if URI exists, and if not add a new listener
+	// and wait for it to show up
 	for k, v := range data.Headers {
+		if strings.EqualFold(k, "location") {
+			rh.verifyLocationURL(reqCtx, v)
+		}
+
 		w.Header().Add(k, v)
 	}
 
