@@ -83,12 +83,14 @@ type syncEvent interface {
 
 func (d *privateStateStructure) RunForever(fn func(eh.Event)) {
 	defer d.Close()
+	keepRunning := true
 
-	for {
+	for keepRunning {
 		func() {
 			event, err := d.listener.UnSyncWait(d.ctx)
 			if err != nil {
 				log.MustLogger("eventstream").Info("Shutting down listener", "err", err)
+				keepRunning = false
 				return
 			}
 
@@ -99,6 +101,32 @@ func (d *privateStateStructure) RunForever(fn func(eh.Event)) {
 			}
 
 			fn(event)
+		}()
+	}
+}
+
+func (d *privateStateStructure) RunUntil(fn func(eh.Event) bool) {
+	defer d.Close()
+	keepRunning := true
+
+	for keepRunning {
+		func() {
+			event, err := d.listener.UnSyncWait(d.ctx)
+			if err != nil {
+				log.MustLogger("eventstream").Info("Shutting down listener", "err", err)
+				keepRunning = false
+				return
+			}
+
+			// TODO: separation of concerns: this should be factored out into a middleware of some sort...
+			// now that we are waiting on the listeners, we can .Done() the waitgroup for the eventwaiter itself
+			if e, ok := event.(syncEvent); ok {
+				defer e.Done()
+			}
+
+			if fn(event) {
+				keepRunning = false
+			}
 		}()
 	}
 }
