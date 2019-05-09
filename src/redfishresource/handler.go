@@ -70,10 +70,10 @@ func NewDomainObjects() (*DomainObjects, error) {
 	d.HTTPResultsBus = eventbus.NewEventBus()
 	d.HTTPPublisher = eventpublisher.NewEventPublisher()
 	d.HTTPResultsBus.AddHandler(eh.MatchEvent(HTTPCmdProcessed), d.HTTPPublisher)
+	d.EventBus.AddHandler(eh.MatchEvent(HTTPCmdProcessed), d.HTTPPublisher)
 
 	// hook up http waiter to the other bus for back compat
 	d.HTTPWaiter = eventwaiter.NewEventWaiter(eventwaiter.SetName("HTTP"), eventwaiter.NoAutoRun)
-	d.EventPublisher.AddObserver(d.HTTPWaiter)
 	d.HTTPPublisher.AddObserver(d.HTTPWaiter)
 	go d.HTTPWaiter.Run()
 
