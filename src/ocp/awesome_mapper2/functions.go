@@ -183,18 +183,26 @@ func init() {
 			vStr = v.([]string)
 		}
 
-		ret := []string{}
+		matchIdx := -1
 		for i := range vStr {
 			if vStr[i] == str {
-				ret = vStr[:i]
-				if i+1 < len(vStr) {
-					ret = append(ret, vStr[i+1:]...)
-				}
+				matchIdx = i
 				break
 			}
 		}
+
+		if matchIdx < 0 {
+			return vStr, nil
+		}
+
+		ret := make([]string, 0, len(vStr)-1)
+		ret = vStr[:matchIdx]
+		if matchIdx+1 < len(vStr) {
+			ret = append(ret, vStr[matchIdx+1:]...)
+		}
 		return ret, nil
 	})
+
 	AddFunction("addtoset", func(args ...interface{}) (interface{}, error) {
 		model, ok := args[0].(*model.Model)
 		if !ok {
