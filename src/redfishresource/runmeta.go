@@ -143,8 +143,8 @@ func Flatten(thing interface{}, parentlocked bool) interface{} {
 	case reflect.Map:
 		// everything inside of a redfishresourceproperty should fit into a map[string]interface{}
 		if !parentlocked {
-			fmt.Printf("ERROR: detected a nested map/array inside the redfish resource property tree. This is not allowed, wrap the child in an &RedfishResourceProperty{Value: ...}\n")
-			fmt.Printf("ERROR: The offending keys were: %s\n", k.String())
+			fmt.Printf("ERROR: detected a nested map inside the redfish resource property tree. This is not allowed, wrap the child in an &RedfishResourceProperty{Value: ...}\n")
+			fmt.Printf("ERROR: The offending keys were: %s\n", val.String())
 		}
 
 		ret := map[string]interface{}{}
@@ -159,7 +159,8 @@ func Flatten(thing interface{}, parentlocked bool) interface{} {
 
 	case reflect.Slice:
 		if !parentlocked {
-			fmt.Printf("PANIC!\n")
+			fmt.Printf("ERROR: detected a nested array inside the redfish resource property tree. This is not allowed, wrap the child in an &RedfishResourceProperty{Value: ...}\n")
+			fmt.Printf("ERROR: The offending keys were: %s\n", val.String())
 		}
 		// squash every type of array into an []interface{}
 		ret := make([]interface{}, val.Len())

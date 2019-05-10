@@ -70,10 +70,10 @@ func NewDomainObjects() (*DomainObjects, error) {
 	d.HTTPResultsBus = eventbus.NewEventBus()
 	d.HTTPPublisher = eventpublisher.NewEventPublisher()
 	d.HTTPResultsBus.AddHandler(eh.MatchEvent(HTTPCmdProcessed), d.HTTPPublisher)
+	d.EventBus.AddHandler(eh.MatchEvent(HTTPCmdProcessed), d.HTTPPublisher)
 
 	// hook up http waiter to the other bus for back compat
 	d.HTTPWaiter = eventwaiter.NewEventWaiter(eventwaiter.SetName("HTTP"), eventwaiter.NoAutoRun)
-	d.EventPublisher.AddObserver(d.HTTPWaiter)
 	d.HTTPPublisher.AddObserver(d.HTTPWaiter)
 	go d.HTTPWaiter.Run()
 
@@ -228,10 +228,23 @@ func (d *DomainObjects) GetAggregateIDOK(uri string) (id eh.UUID, ok bool) {
 func (d *DomainObjects) FindMatchingURIs(matcher func(string) bool) []string {
 	d.treeMu.RLock()
 	defer d.treeMu.RUnlock()
-	ret := []string{}
+
+	// slower, but fewer allocations and less garbage created
+	matchCount := 0
 	for uri, _ := range d.Tree {
 		if matcher(uri) {
-			ret = append(ret, uri)
+			matchCount++
+		}
+	}
+
+	ret := make([]string, 0, matchCount)
+	// optimize no match count by not scanning tree again
+	if matchCount > 0 {
+		for uri, _ := range d.Tree {
+			if matcher(uri) {
+				ret = append(ret, uri) // preallocated
+				// TODO: optimize here by decrementing matchcount and early out when we hit last match. be sure no off by one errors
+			}
 		}
 	}
 	return ret

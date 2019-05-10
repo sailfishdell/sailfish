@@ -118,7 +118,7 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	search := []eh.CommandType{}
+	search := make([]eh.CommandType, 0, 3) // 3 == max number of paths listed below, change if we add more
 
 	// load the aggregate for the URL we are operating on
 	agg, err := rh.d.AggregateStore.Load(reqCtx, AggregateType, aggID)
@@ -126,10 +126,10 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	redfishResource, ok := agg.(*RedfishResourceAggregate)
 	if ok {
 		// prepend the plugins to the search path
-		search = append(search, eh.CommandType(redfishResource.ResourceURI+":"+r.Method))
-		search = append(search, eh.CommandType(redfishResource.Plugin+":"+r.Method))
+		search = append(search, eh.CommandType(redfishResource.ResourceURI+":"+r.Method)) // preallocated
+		search = append(search, eh.CommandType(redfishResource.Plugin+":"+r.Method))      // preallocated
 	}
-	search = append(search, eh.CommandType("http:RedfishResource:"+r.Method))
+	search = append(search, eh.CommandType("http:RedfishResource:"+r.Method)) // preallocated
 
 	// search through the commands until we find one that exists
 	var cmd eh.Command
@@ -201,14 +201,17 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		var t []string
 		switch privs := privsToCheck.(type) {
 		case []string:
-			t = append(t, privs...)
+			t = make([]string, 0, len(privs))
+			t = append(t, privs...) // preallocated
 		case []interface{}:
+			t = make([]string, 0, len(privs))
 			for _, v := range privs {
 				if a, ok := v.(string); ok {
-					t = append(t, a)
+					t = append(t, a) // preallocated
 				}
 			}
 		default:
+			t = make([]string, 0, 0)
 		}
 
 		authAction = rh.isAuthorized(t)

@@ -160,17 +160,20 @@ func MakeExpandListFormatter(d *domain.DomainObjects) func(context.Context, *vie
 			uris = []string{}
 		}
 
-		odata := []interface{}{}
+		// possibly *slightly* larger than needed, but not likely. avoids garbage
+		var odata []interface{}
 
 		switch u := uris.(type) {
 		case []string:
+			odata = make([]interface{}, 0, len(u))
 			for _, i := range u {
 				out, err := d.ExpandURI(ctx, i)
 				if err == nil {
-					odata = append(odata, out)
+					odata = append(odata, out) // preallocated
 				}
 			}
 		case []interface{}:
+			odata = make([]interface{}, 0, len(u))
 			for _, i := range u {
 				j, ok := i.(string)
 				if !ok {
@@ -178,9 +181,11 @@ func MakeExpandListFormatter(d *domain.DomainObjects) func(context.Context, *vie
 				}
 				out, err := d.ExpandURI(ctx, j)
 				if err == nil {
-					odata = append(odata, out)
+					odata = append(odata, out) // preallocated
 				}
 			}
+		default:
+			odata = make([]interface{}, 0, 0)
 		}
 
 		rrp.Value = odata
@@ -259,7 +264,6 @@ func FormatOdataList(ctx context.Context, v *view.View, m *model.Model, agg *dom
 	if !ok {
 		panic(fmt.Sprintf("Programming error: malformed aggregate. No property specified for agg: %s", agg))
 	}
-	odata := []interface{}{}
 
 	// have to use m.UnderLock() to do all of this so we dont race with people adding to the underlying slice
 	m.UnderLock(func() {
@@ -268,30 +272,39 @@ func FormatOdataList(ctx context.Context, v *view.View, m *model.Model, agg *dom
 			uris = []string{}
 		}
 
-		var uriArr []string
+		arrLen := 0
+		var odata []interface{}
 
-		// make a copy of the array because otherwise we race with anybody else modifying the underlying slice
+		// check if it's already a []string, if not, make it so and re-set property
+		// sad case, should be rare!
 		switch u := uris.(type) {
 		case []string:
-			for _, s := range u {
-				uriArr = append(uriArr, s)
+			arrLen = len(u)
+			sort.Strings(u)
+			odata = make([]interface{}, 0, arrLen)
+			for _, i := range u {
+				odata = append(odata, &domain.RedfishResourceProperty{Value: map[string]interface{}{"@odata.id": i}}) // preallocated
 			}
-
 		case []interface{}:
+			arrLen = len(u)
+			uriArr := make([]string, 0, arrLen)
+			odata = make([]interface{}, 0, arrLen)
 			for _, i := range u {
 				if s, ok := i.(string); ok {
-					uriArr = append(uriArr, s)
+					uriArr = append(uriArr, s) //preallocated
 				}
 			}
+			sort.Strings(uriArr)
+			uris = uriArr
+			m.UpdatePropertyUnlocked(p, uris)
+			for _, i := range uriArr {
+				odata = append(odata, &domain.RedfishResourceProperty{Value: map[string]interface{}{"@odata.id": i}}) // preallocated
+			}
+		default:
 		}
 
-		sort.Strings(uriArr)
-		for _, i := range uriArr {
-			odata = append(odata, &domain.RedfishResourceProperty{Value: map[string]interface{}{"@odata.id": i}})
-		}
+		rrp.Value = odata
 	})
-
-	rrp.Value = odata
 
 	return nil
 }

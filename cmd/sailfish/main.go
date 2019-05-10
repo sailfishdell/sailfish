@@ -145,6 +145,14 @@ func main() {
 
 	m.PathPrefix("/schemas/v1/").Handler(http.StripPrefix("/schemas/v1/", http.FileServer(http.Dir("./v1/schemas/"))))
 
+	implFn, ok := implementations[cfgMgr.GetString("main.server_name")]
+	if !ok {
+		panic("could not load requested implementation: " + cfgMgr.GetString("main.server_name"))
+	}
+
+	// This starts goroutines that use cfgmgr, so from here on out we need to lock it
+	implFn(ctx, logger, cfgMgr, &cfgMgrMu, domainObjs.CommandHandler, domainObjs.EventBus, domainObjs)
+
 	// all the other command apis.
 	m.PathPrefix("/api/{command}").Handler(internalHandlerFunc)
 
@@ -257,14 +265,6 @@ func main() {
 	logger.Debug("Listening", "module", "main", "addresses", fmt.Sprintf("%v\n", cfgMgr.GetStringSlice("listen")))
 	cfgMgrMu.RUnlock()
 	SdNotify("READY=1")
-
-	implFn, ok := implementations[cfgMgr.GetString("main.server_name")]
-	if !ok {
-		panic("could not load requested implementation: " + cfgMgr.GetString("main.server_name"))
-	}
-
-	// This starts goroutines that use cfgmgr, so from here on out we need to lock it
-	implFn(ctx, logger, cfgMgr, &cfgMgrMu, domainObjs.CommandHandler, domainObjs.EventBus, domainObjs)
 
 	// wait until we get an interrupt (CTRL-C)
 	intr := make(chan os.Signal, 1)

@@ -359,16 +359,16 @@ func (c *InjectEvent) Handle(ctx context.Context, a *RedfishResourceAggregate) e
 
 	a.ID = injectUUID
 
-	eventList := []map[string]interface{}{}
+	eventList := make([]map[string]interface{}, 0, len(c.EventArray)+1)
 	if len(c.EventData) > 0 {
 		// comment out debug prints in the hot path, uncomment for debugging
 		//requestLogger.Debug("InjectEvent - ONE", "events", c.EventData)
-		eventList = append(eventList, c.EventData)
+		eventList = append(eventList, c.EventData) // preallocated
 	}
 	if len(c.EventArray) > 0 {
 		// comment out debug prints in the hot path, uncomment for debugging
 		//requestLogger.Debug("InjectEvent - ARRAY", "events", c.EventArray)
-		eventList = append(eventList, c.EventArray...)
+		eventList = append(eventList, c.EventArray...) // preallocated
 	}
 
 	// comment out debug prints in the hot path, uncomment for debugging
@@ -380,20 +380,20 @@ func (c *InjectEvent) Handle(ctx context.Context, a *RedfishResourceAggregate) e
 	//debugTrain = true
 	//}
 
-	trainload := []eh.EventData{}
+	trainload := make([]eh.EventData, 0, MAX_CONSOLIDATED_EVENTS)
 	for _, eventData := range eventList {
 		data, err := eh.CreateEventData(c.Name)
 		if err != nil {
 			// this debug statement probably not hit too often, leave enabled for now
 			requestLogger.Info("InjectEvent - event type not registered: injecting raw event.", "event name", c.Name, "error", err)
-			trainload = append(trainload, eventData)
+			trainload = append(trainload, eventData) //preallocated
 		} else {
 			err = mapstructure.Decode(eventData, &data)
 			if err != nil {
 				requestLogger.Warn("InjectEvent - could not decode event data, skipping event", "error", err, "raw-eventdata", eventData, "dest-event", data)
-				trainload = append(trainload, eventData)
+				trainload = append(trainload, eventData) //preallocated
 			} else {
-				trainload = append(trainload, data)
+				trainload = append(trainload, data) //preallocated
 			}
 		}
 		// comment out debug prints in the hot path, uncomment for debugging
@@ -407,7 +407,7 @@ func (c *InjectEvent) Handle(ctx context.Context, a *RedfishResourceAggregate) e
 			if c.Synchronous {
 				defer e.Wait()
 			}
-			trainload = []eh.EventData{}
+			trainload = make([]eh.EventData, 0, MAX_CONSOLIDATED_EVENTS)
 			injectChan <- e
 		}
 	}
