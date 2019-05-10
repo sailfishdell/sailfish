@@ -74,7 +74,6 @@ func RegisterAggregate(s *testaggregate.Service) {
 					Privileges: map[string]interface{}{
 						"GET":    []string{"Login"},
 						"POST":   []string{"ConfigureManager"},
-						"PUT":    []string{},
 						"PATCH":  []string{"ConfigureManager"},
 						"DELETE": []string{"ConfigureManager"},
 					},
@@ -144,7 +143,6 @@ func RegisterAggregate(s *testaggregate.Service) {
 					Privileges: map[string]interface{}{
 						"GET":    []string{"Login"},
 						"POST":   []string{"ConfigureManager"},
-						"PUT":    []string{},
 						"PATCH":  []string{"ConfigureManager"},
 						"DELETE": []string{"ConfigureManager"},
 					},
@@ -226,7 +224,6 @@ func RegisterAggregate(s *testaggregate.Service) {
 					Privileges: map[string]interface{}{
 						"GET":    []string{"Login"},
 						"POST":   []string{"ConfigureManager"},
-						"PUT":    []string{},
 						"PATCH":  []string{"ConfigureManager"},
 						"DELETE": []string{"ConfigureManager"},
 					},

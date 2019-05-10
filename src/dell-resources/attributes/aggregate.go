@@ -73,11 +73,8 @@ func RegisterAggregate(s *testaggregate.Service) {
 					Context:     params["rooturi"].(string) + "/$metadata#OemAttributes.OemAttributes",
 
 					Privileges: map[string]interface{}{
-						"GET":    []string{"Login"},
-						"POST":   []string{}, // cannot create sub objects
-						"PUT":    []string{},
-						"PATCH":  []string{"ConfigureManager"},
-						"DELETE": []string{}, // can't be deleted
+						"GET":   []string{"Login"},
+						"PATCH": []string{"ConfigureManager"},
 					},
 					Properties: map[string]interface{}{
 						"Id@meta":           vw.Meta(view.GETProperty("unique_name_attr"), view.GETModel("default")),

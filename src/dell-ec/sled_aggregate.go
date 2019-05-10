@@ -28,11 +28,8 @@ func RegisterSledAggregate(s *testaggregate.Service) {
 					Type:        "#Chassis.v1_0_2.Chassis",
 					Context:     "/redfish/v1/$metadata#ChassisCollection.ChassisCollection/Members/$entity",
 					Privileges: map[string]interface{}{
-						"GET":    []string{"Login"},
-						"POST":   []string{}, // cannot create sub objects
-						"PUT":    []string{},
-						"PATCH":  []string{"ConfigureManager"},
-						"DELETE": []string{}, // can't be deleted
+						"GET":   []string{"Login"},
+						"PATCH": []string{"ConfigureManager"},
 					},
 					Properties: map[string]interface{}{
 						"Id@meta":           vw.Meta(view.GETProperty("unique_name"), view.GETModel("default")),
@@ -90,11 +87,8 @@ func RegisterSledAggregate(s *testaggregate.Service) {
 					Type:        "#Chassis.v1_0_2.Chassis",
 					Context:     "/redfish/v1/$metadata#ChassisCollection.ChassisCollection/Members/$entity",
 					Privileges: map[string]interface{}{
-						"GET":    []string{"Login"},
-						"POST":   []string{}, // cannot create sub objects
-						"PUT":    []string{},
-						"PATCH":  []string{"ConfigureManager"},
-						"DELETE": []string{}, // can't be deleted
+						"GET":   []string{"Login"},
+						"PATCH": []string{"ConfigureManager"},
 					},
 					Properties: map[string]interface{}{
 						"Id@meta":           vw.Meta(view.GETProperty("unique_name"), view.GETModel("default")),

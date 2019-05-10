@@ -91,11 +91,7 @@ func RegisterAggregate(s *testaggregate.Service) {
 					Type:        "#DellPower.v1_0_0.DellPowerTrends",
 					Context:     "/redfish/v1/$metadata#Power.Power",
 					Privileges: map[string]interface{}{
-						"GET":    []string{"Login"},
-						"POST":   []string{}, // cannot create sub objects
-						"PUT":    []string{},
-						"PATCH":  []string{},
-						"DELETE": []string{}, // can't be deleted
+						"GET": []string{"Login"},
 					},
 					Properties: map[string]interface{}{
 						"Name":                        "System Power",
@@ -114,11 +110,7 @@ func RegisterAggregate(s *testaggregate.Service) {
 					Type:        "#DellPower.v1_0_0.DellPowerTrend",
 					Context:     "/redfish/v1/$metadata#Power.Power",
 					Privileges: map[string]interface{}{
-						"GET":    []string{"Login"},
-						"POST":   []string{}, // cannot create sub objects
-						"PUT":    []string{},
-						"PATCH":  []string{},
-						"DELETE": []string{}, // can't be deleted
+						"GET": []string{"Login"},
 					},
 					Properties: map[string]interface{}{
 						"Name":                     "System Power History",
@@ -140,11 +132,8 @@ func RegisterAggregate(s *testaggregate.Service) {
 					Type:        "#Power.v1_0_0.PowerControl",
 					Context:     "/redfish/v1/$metadata#Power.v1_0_0.PowerControl",
 					Privileges: map[string]interface{}{
-						"GET":    []string{"Login"},
-						"POST":   []string{}, // cannot create sub objects
-						"PUT":    []string{},
-						"PATCH":  []string{"ConfigureManager"},
-						"DELETE": []string{}, // can't be deleted
+						"GET":   []string{"Login"},
+						"PATCH": []string{"ConfigureManager"},
 					},
 					Properties: map[string]interface{}{
 						"Name":                     "System Power Control",
@@ -186,11 +175,8 @@ func RegisterAggregate(s *testaggregate.Service) {
 					Type:        "#Power.v1_0_0.PowerSupply",
 					Context:     "/redfish/v1/$metadata#Power.v1_0_0.PowerSupply",
 					Privileges: map[string]interface{}{
-						"GET":    []string{"Login"},
-						"POST":   []string{}, // cannot create sub objects
-						"PUT":    []string{},
-						"PATCH":  []string{"ConfigureManager"},
-						"DELETE": []string{}, // can't be deleted
+						"GET":   []string{"Login"},
+						"PATCH": []string{"ConfigureManager"},
 					},
 					Properties: map[string]interface{}{
 						"Name@meta":               vw.Meta(view.PropGET("name")),

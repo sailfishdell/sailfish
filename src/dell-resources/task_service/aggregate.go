@@ -301,11 +301,8 @@ func RegisterAggregate(s *testaggregate.Service) {
 					Type:        "#TaskService.v1_0_0.TaskService",
 					Context:     params["rooturi"].(string) + "/$metadata#TaskService.TaskService",
 					Privileges: map[string]interface{}{
-						"GET":    []string{"Login"},
-						"POST":   []string{}, // cannot create sub objects
-						"PUT":    []string{},
-						"PATCH":  []string{"ConfigureManager"},
-						"DELETE": []string{}, // can't be deleted
+						"GET":   []string{"Login"},
+						"PATCH": []string{"ConfigureManager"},
 					},
 					Properties: map[string]interface{}{
 						"Id":          "TaskService",
@@ -339,11 +336,8 @@ func RegisterAggregate(s *testaggregate.Service) {
 					Type:        "#TaskCollection.TaskCollection",
 					Context:     params["rooturi"].(string) + "/$metadata#TaskCollection.TaskCollection",
 					Privileges: map[string]interface{}{
-						"GET":    []string{"Login"},
-						"POST":   []string{}, // cannot create sub objects
-						"PUT":    []string{},
-						"PATCH":  []string{"ConfigureManager"},
-						"DELETE": []string{}, // can't be deleted
+						"GET":   []string{"Login"},
+						"PATCH": []string{"ConfigureManager"},
 					},
 					Properties: map[string]interface{}{
 						"Name":                     "Task Collection",
@@ -363,11 +357,8 @@ func RegisterAggregate(s *testaggregate.Service) {
 					Type:        "#Task.v1_0_2.Task",
 					Context:     params["rooturi"].(string) + "/$metadata#Task.Task",
 					Privileges: map[string]interface{}{
-						"GET":    []string{"Login"},
-						"POST":   []string{}, // cannot create sub objects
-						"PUT":    []string{},
-						"PATCH":  []string{"ConfigureManager"},
-						"DELETE": []string{}, // can't be deleted
+						"GET":   []string{"Login"},
+						"PATCH": []string{"ConfigureManager"},
 					},
 					Properties: map[string]interface{}{
 						"Name@meta":            vw.Meta(view.GETProperty("task_name")),

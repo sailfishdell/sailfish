@@ -276,11 +276,8 @@ func RegisterCMCAggregate(s *testaggregate.Service) {
 					Type:        "#Chassis.v1_0_2.Chassis",
 					Context:     "/redfish/v1/$metadata#ChassisCollection.ChassisCollection/Members/$entity",
 					Privileges: map[string]interface{}{
-						"GET":    []string{"Login"},
-						"POST":   []string{}, // cannot create sub objects
-						"PUT":    []string{},
-						"PATCH":  []string{"ConfigureManager"},
-						"DELETE": []string{}, // can't be deleted
+						"GET":   []string{"Login"},
+						"PATCH": []string{"ConfigureManager"},
 					},
 					Properties: map[string]interface{}{
 						"@odata.etag@meta":  vw.Meta(view.GETProperty("etag"), view.GETModel("etag")),
@@ -317,11 +314,8 @@ func RegisterCMCAggregate(s *testaggregate.Service) {
 					Type:        "#Redundancy.v1_0_2.Redundancy",
 					Context:     "/redfish/v1/$metadata#Redundancy.Redundancy",
 					Privileges: map[string]interface{}{
-						"GET":    []string{"Login"},
-						"POST":   []string{}, // cannot create sub objects
-						"PUT":    []string{},
-						"PATCH":  []string{"ConfigureManager"},
-						"DELETE": []string{}, // can't be deleted
+						"GET":   []string{"Login"},
+						"PATCH": []string{"ConfigureManager"},
 					},
 					Properties: map[string]interface{}{
 						"Name":                           "ManagerRedundancy",

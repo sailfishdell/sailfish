@@ -27,11 +27,8 @@ func RegisterThermalAggregate(s *testaggregate.Service) {
 					Type:        "#Thermal.v1_0_2.Thermal",
 					Context:     "/redfish/v1/$metadata#Thermal.Thermal",
 					Privileges: map[string]interface{}{
-						"GET":    []string{"Login"},
-						"POST":   []string{}, // cannot create sub objects
-						"PUT":    []string{},
-						"PATCH":  []string{"ConfigureManager"},
-						"DELETE": []string{}, // can't be deleted
+						"GET":   []string{"Login"},
+						"PATCH": []string{"ConfigureManager"},
 					},
 					Properties: map[string]interface{}{
 						"Id":          "Thermal",
@@ -149,11 +146,7 @@ func initThermalSensor(logger log.Logger, instantiateSvc *testaggregate.Service,
 					Type:        "#Thermal.v1_0_0.Temperature",
 					Context:     "/redfish/v1/$metadata#Thermal.Thermal",
 					Privileges: map[string]interface{}{
-						"GET":    []string{"Login"},
-						"POST":   []string{}, // cannot create sub objects
-						"PUT":    []string{},
-						"PATCH":  []string{},
-						"DELETE": []string{}, // can't be deleted
+						"GET": []string{"Login"},
 					},
 					Properties: sensorProperties,
 				},

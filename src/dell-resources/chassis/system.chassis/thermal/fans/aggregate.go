@@ -22,11 +22,8 @@ func RegisterAggregate(s *testaggregate.Service) {
 					Type:        "#Thermal.v1_0_2.Fan",
 					Context:     "/redfish/v1/$metadata#Thermal.Thermal",
 					Privileges: map[string]interface{}{
-						"GET":    []string{"Login"},
-						"POST":   []string{}, // cannot create sub objects
-						"PUT":    []string{},
-						"PATCH":  []string{"ConfigureManager"},
-						"DELETE": []string{}, // can't be deleted
+						"GET":   []string{"Login"},
+						"PATCH": []string{"ConfigureManager"},
 					},
 					Properties: map[string]interface{}{
 						"Description":   "Represents the properties for Fan and Cooling",

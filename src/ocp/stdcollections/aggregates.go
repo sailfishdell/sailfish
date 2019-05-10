@@ -16,11 +16,7 @@ import (
 func RegisterAggregate(s *testaggregate.Service) {
 
 	stdCollectionPrivs := map[string]interface{}{
-		"GET":    []string{"Login"},
-		"POST":   []string{}, // Read Only
-		"PUT":    []string{}, // Read Only
-		"PATCH":  []string{}, // Read Only
-		"DELETE": []string{}, // can't be deleted
+		"GET": []string{"Login"},
 	}
 
 	s.RegisterAggregateFunction("root",
@@ -118,11 +114,10 @@ func RegisterAggregate(s *testaggregate.Service) {
 					Type:        "#AccountService.v1_0_2.AccountService",
 					Context:     params["rooturi"].(string) + "/$metadata#AccountService.AccountService",
 					Privileges: map[string]interface{}{
-						"GET":    []string{"Login"},
-						"POST":   []string{"ConfigureManager"}, // cannot create sub objects
-						"PUT":    []string{"ConfigureManager"},
-						"PATCH":  []string{"ConfigureManager"},
-						"DELETE": []string{}, // can't be deleted
+						"GET":   []string{"Login"},
+						"POST":  []string{"ConfigureManager"}, // cannot create sub objects
+						"PUT":   []string{"ConfigureManager"},
+						"PATCH": []string{"ConfigureManager"},
 					},
 					Properties: map[string]interface{}{
 						"Id":          "AccountService",
@@ -205,11 +200,7 @@ func AddStandardRoles(ctx context.Context, rootID eh.UUID, rootURI string, ch eh
 			Type:        "#Role.v1_0_2.Role",
 			Context:     rootURI + "/$metadata#Role.Role",
 			Privileges: map[string]interface{}{
-				"GET":    []string{"Login"},
-				"POST":   []string{}, // Read Only
-				"PUT":    []string{}, // Read Only
-				"PATCH":  []string{}, // Read Only
-				"DELETE": []string{}, // can't be deleted
+				"GET": []string{"Login"},
 			},
 			Properties: map[string]interface{}{
 				"Name":         "User Role",
@@ -234,11 +225,7 @@ func AddStandardRoles(ctx context.Context, rootID eh.UUID, rootURI string, ch eh
 			Type:        "#Role.v1_0_2.Role",
 			Context:     rootURI + "/$metadata#Role.Role",
 			Privileges: map[string]interface{}{
-				"GET":    []string{"Login"},
-				"POST":   []string{}, // Read Only
-				"PUT":    []string{}, // Read Only
-				"PATCH":  []string{}, // Read Only
-				"DELETE": []string{}, // can't be deleted
+				"GET": []string{"Login"},
 			},
 			Properties: map[string]interface{}{
 				"Name":         "User Role",
@@ -261,11 +248,7 @@ func AddStandardRoles(ctx context.Context, rootID eh.UUID, rootURI string, ch eh
 			Type:        "#Role.v1_0_2.Role",
 			Context:     rootURI + "/$metadata#Role.Role",
 			Privileges: map[string]interface{}{
-				"GET":    []string{"Login"},
-				"POST":   []string{}, // Read Only
-				"PUT":    []string{}, // Read Only
-				"PATCH":  []string{}, // Read Only
-				"DELETE": []string{}, // can't be deleted
+				"GET": []string{"Login"},
 			},
 			Properties: map[string]interface{}{
 				"Name":         "User Role",

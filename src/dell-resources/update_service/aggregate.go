@@ -27,11 +27,8 @@ func RegisterAggregate(s *testaggregate.Service) {
 					Type:        "#UpdateService.v1_0_0.UpdateService",
 					Context:     params["rooturi"].(string) + "/$metadata#UpdateService.UpdateService",
 					Privileges: map[string]interface{}{
-						"GET":    []string{"Login"},
-						"POST":   []string{}, // cannot create sub objects
-						"PUT":    []string{},
-						"PATCH":  []string{"ConfigureManager"},
-						"DELETE": []string{}, // can't be deleted
+						"GET":   []string{"Login"},
+						"PATCH": []string{"ConfigureManager"},
 					},
 					Properties: map[string]interface{}{
 						"ServiceEnabled": true, //TODO
@@ -79,11 +76,8 @@ func RegisterAggregate(s *testaggregate.Service) {
 					Context:     params["rooturi"].(string) + "/$metadata#SoftwareInventoryCollection.SoftwareInventoryCollection",
 					Plugin:      "GenericUploadHandler",
 					Privileges: map[string]interface{}{
-						"GET":    []string{"Login"},
-						"POST":   []string{"ConfigureManager"},
-						"PUT":    []string{}, // Read Only
-						"PATCH":  []string{}, // Read Only
-						"DELETE": []string{}, // can't be deleted
+						"GET":  []string{"Login"},
+						"POST": []string{"ConfigureManager"},
 					},
 					Properties: map[string]interface{}{
 						"Name":                     "Firmware Inventory Collection",
