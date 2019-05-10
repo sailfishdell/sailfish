@@ -7,7 +7,6 @@ import (
 	"os"
 	"path"
 	"reflect"
-	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -238,62 +237,6 @@ func init() {
 		if !found {
 			vStr = append(vStr, str)
 		}
-		return vStr, nil
-	})
-	AddFunction("reversesorttoset", func(args ...interface{}) (interface{}, error) {
-		model, ok := args[0].(*model.Model)
-		if !ok {
-			return nil, errors.New("need model as first arg")
-		}
-		property, ok := args[1].(string)
-		if !ok {
-			return nil, errors.New("need property name as second arg")
-		}
-		str, ok := args[2].(string)
-		if !ok {
-			return nil, errors.New("need new value as third arg")
-		}
-		v, ok := model.GetPropertyOk(property)
-		if !ok || v == nil {
-			v = []string{}
-		}
-
-		var vStr []string
-
-		switch t := v.(type) {
-		case []string:
-			vStr = t
-		case []interface{}:
-			for _, i := range t {
-				if k, ok := i.(string); ok {
-					vStr = append(vStr, k)
-				}
-			}
-		default:
-			vStr = []string{}
-		}
-
-		found := false
-		for i := range vStr {
-			if vStr[i] == str {
-				found = true
-			}
-		}
-		if !found {
-			if len(vStr) == 0 {
-				vStr = append(vStr, str)
-			} else if CompareURLStrings(str, vStr[0]) {
-				vStr = append([]string{str}, vStr...)
-			} else if CompareURLStrings(vStr[len(vStr)-1], str) {
-				vStr = append(vStr, str)
-			} else {
-				index := sort.Search(len(vStr), func(i int) bool { return CompareURLStrings(str, vStr[i]) })
-				vStr = append(vStr, "")
-				copy(vStr[index+1:], vStr[index:])
-				vStr[index] = str
-			}
-		}
-
 		return vStr, nil
 	})
 	AddFunction("nohash", func(args ...interface{}) (interface{}, error) {
