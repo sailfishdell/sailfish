@@ -16,17 +16,18 @@ type RedfishAuthorizationProperty struct {
 	Query      url.Values
 
 	// pass the supported query options to the backend
-	doFilter   bool
+	// re-arranged to hopefully be more memory efficient
+	skip       int
+	top        int
 	filter     string
+	sel        []string
+	doFilter   bool
 	filterDone bool
 	doTop      bool
-	top        int
 	topDone    bool
 	doSkip     bool
-	skip       int
 	skipDone   bool
 	doSel      bool
-	sel        []string
 	selDone    bool
 }
 
