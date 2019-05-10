@@ -75,7 +75,7 @@ func (rrp *RedfishResourceProperty) ParseUnlocked(thing interface{}) {
 
 	case reflect.Slice:
 		if _, ok := rrp.Value.([]interface{}); !ok || rrp.Value == nil {
-			rrp.Value = []interface{}{}
+			rrp.Value = make([]interface{}, 0, val.Len())
 		}
 
 		for i := 0; i < val.Len(); i++ {
@@ -83,7 +83,7 @@ func (rrp *RedfishResourceProperty) ParseUnlocked(thing interface{}) {
 			if sliceVal.IsValid() {
 				newEntry := &RedfishResourceProperty{}
 				newEntry.Parse(sliceVal.Interface())
-				rrp.Value = append(rrp.Value.([]interface{}), newEntry)
+				rrp.Value = append(rrp.Value.([]interface{}), newEntry) //preallocated
 			}
 		}
 
