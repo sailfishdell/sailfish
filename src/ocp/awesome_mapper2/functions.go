@@ -55,9 +55,9 @@ func init() {
 
 	AddFunction("array",
 		func(args ...interface{}) (interface{}, error) {
-			a := []interface{}{}
+			a := make([]interface{}, 0, len(args))
 			for _, i := range args {
-				a = append(a, i)
+				a = append(a, i) // preallocated
 			}
 			return a, nil
 		})
