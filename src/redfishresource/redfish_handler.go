@@ -582,6 +582,42 @@ func processFilterOneObject(memberInstance map[string]interface{}, filterArray [
 					}
 				}
 
+			} else if filterArray[j].Category == "Created" {
+				//Handle time comparisons
+				memberTime, err := time.Parse(time.RFC3339, localMember)
+				if err != nil {
+					//If there is no : in the time adjustment RFC3339 breaks
+					memberTime, err = time.Parse("2006-01-02T15:04:05-0700", localMember)
+				}
+
+				//Use fallback custom parser because of bug in Go time RFC3339 implementation
+				searchTime, err := time.Parse(time.RFC3339, filterArray[j].SearchTerm)
+				if err != nil {
+					//If there is no : in the time adjustment RFC3339 breaks
+					searchTime, err = time.Parse("2006-01-02T15:04:05-0700", filterArray[j].SearchTerm)
+				}
+				if err == nil {
+					//If we were able to parse the input time with one of the methods
+					switch filterArray[j].Comparator {
+					case GE:
+						keepElement = memberTime.Equal(searchTime)
+						if !keepElement {
+							keepElement = memberTime.After(searchTime)
+						}
+					case GT:
+						keepElement = memberTime.After(searchTime)
+					case LE:
+						keepElement = memberTime.Equal(searchTime)
+						if !keepElement {
+							keepElement = memberTime.Before(searchTime)
+						}
+					case LT:
+						keepElement = memberTime.Before(searchTime)
+					case EQ:
+						keepElement = memberTime.Equal(searchTime)
+					}
+				}
+
 			} else {
 				//fmt.Println(localMember, filterArray[j].SearchTerm, strings.Contains(localMember, filterArray[j].SearchTerm))
 				keepElement = strings.Contains(localMember, filterArray[j].SearchTerm)
@@ -611,37 +647,6 @@ func processFilterOneObject(memberInstance map[string]interface{}, filterArray [
 			for b := 0; b < len(localMember) && !keepElement; b += 1 {
 				localMemberStr := localMember[b].(string)
 				keepElement = strings.Contains(localMemberStr, filterArray[j].SearchTerm)
-			}
-		//========= Time members =======
-		case time.Time:
-			//Handle time comparisons
-			memberTime := localMember
-			//Use fallback custom parser because of bug in Go time RFC3339 implementation
-			searchTime, err := time.Parse(time.RFC3339, filterArray[j].SearchTerm)
-			if err != nil {
-				//If there is no : in the time adjustment RFC3339 breaks
-				searchTime, err = time.Parse("2006-01-02T15:04:05-0700", filterArray[j].SearchTerm)
-			}
-			if err == nil {
-				//If we were able to parse the input time with one of the methods
-				switch filterArray[j].Comparator {
-				case GE:
-					keepElement = memberTime.Equal(searchTime)
-					if !keepElement {
-						keepElement = memberTime.After(searchTime)
-					}
-				case GT:
-					keepElement = memberTime.After(searchTime)
-				case LE:
-					keepElement = memberTime.Equal(searchTime)
-					if !keepElement {
-						keepElement = memberTime.Before(searchTime)
-					}
-				case LT:
-					keepElement = memberTime.Before(searchTime)
-				case EQ:
-					keepElement = memberTime.Equal(searchTime)
-				}
 			}
 		//========= The what?! members =======
 		default:
