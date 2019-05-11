@@ -79,6 +79,46 @@ type PropPatcher interface {
 }
 
 func nuPATCHfn(ctx context.Context, agg *RedfishResourceAggregate, rrp *RedfishResourceProperty, auth *RedfishAuthorizationProperty, opts nuEncOpts) error {
+	
+	bad_json := ExtendedInfo{
+	Message: "The request body submitted was malformed JSON and could not be parsed by the receiving service.",
+	MessageArgs: []string{}, //FIX ME
+	MessageArgsCt: 0, //FIX ME
+	MessageId: "Base.1.0.MalformedJSON",
+	RelatedProperties: []string{}, //FIX ME
+	RelatedPropertiesCt: 0, //FIX ME
+	Resolution: "Ensure that the request body is valid JSON and resubmit the request.",
+	Severity: "Critical",
+	}
+
+	//bad_request := ExtendedInfo{
+	//Message: "The service detected a malformed request body that it was unable to interpret.",
+	//MessageArgs: []string{},
+	//MessageArgsCt: 0,
+	//MessageId: "Base.1.0.UnrecognizedRequestBody",
+	//RelatedProperties: []string{"Attributes"}, //FIX ME
+	//RelatedPropertiesCt: 1, //FIX ME
+	//Resolution: "Correct the request body and resubmit the request if it failed.",
+	//Severity: "Warning",
+	//}
+	
+	if opts.request != nil {
+		if req_map, ok := opts.request.(map[string]interface{}); ok {
+			if val, ok := req_map["ERROR"]; ok {
+				var failed []interface{}
+				if val == "BADJSON" {
+					failed = append(failed, bad_json)
+				}
+				if val == "BADREQUEST" {
+					//failed = append(failed, bad_request)
+				}
+				return &CombinedPropObjInfoError{
+					ObjectExtendedErrorMessages: *NewObjectExtendedErrorMessages(failed),
+					NumSuccess:                 0,
+				}
+			}
+		}
+	}
 	if !opts.present {
 		return nuGETfn(ctx, agg, rrp, auth, opts)
 	}
@@ -253,7 +293,9 @@ func helper(ctx context.Context, agg *RedfishResourceAggregate, auth *RedfishAut
 			if newEncOpts.present {
 				newEncOpts.request, newEncOpts.present = requestBody[k.Interface().(string)]
 			}
-
+			if newEncOpts.request == nil {
+				newEncOpts.request = map[string]interface{}{"ERROR":"BADREQUEST"}
+			}
 			mapVal := val.MapIndex(k)
 			if mapVal.IsValid() {
 				err := helper(ctx, agg, auth, newEncOpts, mapVal.Interface())
