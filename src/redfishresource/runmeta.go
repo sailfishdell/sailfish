@@ -91,16 +91,16 @@ func nuPATCHfn(ctx context.Context, agg *RedfishResourceAggregate, rrp *RedfishR
 	Severity: "Critical",
 	}
 
-	//bad_request := ExtendedInfo{
-	//Message: "The service detected a malformed request body that it was unable to interpret.",
-	//MessageArgs: []string{},
-	//MessageArgsCt: 0,
-	//MessageId: "Base.1.0.UnrecognizedRequestBody",
-	//RelatedProperties: []string{"Attributes"}, //FIX ME
-	//RelatedPropertiesCt: 1, //FIX ME
-	//Resolution: "Correct the request body and resubmit the request if it failed.",
-	//Severity: "Warning",
-	//}
+	bad_request := ExtendedInfo{
+	Message: "The service detected a malformed request body that it was unable to interpret.",
+	MessageArgs: []string{},
+	MessageArgsCt: 0,
+	MessageId: "Base.1.0.UnrecognizedRequestBody",
+	RelatedProperties: []string{"Attributes"}, //FIX ME
+	RelatedPropertiesCt: 1, //FIX ME
+	Resolution: "Correct the request body and resubmit the request if it failed.",
+	Severity: "Warning",
+	}
 	
 	if opts.request != nil {
 		if req_map, ok := opts.request.(map[string]interface{}); ok {
@@ -110,7 +110,7 @@ func nuPATCHfn(ctx context.Context, agg *RedfishResourceAggregate, rrp *RedfishR
 					failed = append(failed, bad_json)
 				}
 				if val == "BADREQUEST" {
-					//failed = append(failed, bad_request)
+					failed = append(failed, bad_request)
 				}
 				return &CombinedPropObjInfoError{
 					ObjectExtendedErrorMessages: *NewObjectExtendedErrorMessages(failed),
@@ -293,7 +293,7 @@ func helper(ctx context.Context, agg *RedfishResourceAggregate, auth *RedfishAut
 			if newEncOpts.present {
 				newEncOpts.request, newEncOpts.present = requestBody[k.Interface().(string)]
 			}
-			if newEncOpts.request == nil {
+			if newEncOpts.request == nil && k.Interface().(string) == "Attributes" {
 				newEncOpts.request = map[string]interface{}{"ERROR":"BADREQUEST"}
 			}
 			mapVal := val.MapIndex(k)

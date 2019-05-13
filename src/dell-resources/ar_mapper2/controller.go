@@ -182,6 +182,7 @@ func (b breadcrumb) UpdateRequest(ctx context.Context, property string, value in
 	defer b.ars.hashMu.RUnlock()
 
 	canned_response := `{"RelatedProperties@odata.count": 1, "Message": "%s", "MessageArgs": ["%[2]s"], "Resolution": "Remove the %sproperty from the request body and resubmit the request if the operation failed.", "MessageId": "%s", "MessageArgs@odata.count": 1, "RelatedProperties": ["%[2]s"], "Severity": "Warning"}`
+	timeout_response := `{"RelatedProperties@odata.count": 0, "Message": "Request Timed Out", "MessageArgs": [], "Resolution": "", "MessageId": "", "MessageArgs@odata.count": 0, "RelatedProperties": [], "Severity": "Error"}`
 	b.logger.Info("UpdateRequest", "property", property, "mappingName", b.mappingName)
 	num_success := 0
 	found_flag := false
@@ -287,7 +288,8 @@ func (b breadcrumb) UpdateRequest(ctx context.Context, property string, value in
 				return nil, HTTP_code{err_message: errs, any_success: num_success}
 			}
 		case <-timer.C:
-			return nil, HTTP_code{err_message: []string{"Timed out!"}, any_success: num_success}
+                        return nil, HTTP_code{err_message: []string{timeout_response}, any_success: num_success}
+
 		case <-ctx.Done():
 			return nil, nil
 		}
