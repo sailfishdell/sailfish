@@ -14,14 +14,3 @@ func UpdateProperty(p string, v interface{}) Option {
 		return nil
 	}
 }
-
-// PropertyOnce is used to set a property, will fail (panic) if somebody else has already set it
-func PropertyOnce(p string, v interface{}) Option {
-	return func(s *Model) error {
-		if _, ok := s.properties[p]; ok {
-			panic("Property " + p + " can only be set once")
-		}
-		s.properties[p] = v
-		return nil
-	}
-}
