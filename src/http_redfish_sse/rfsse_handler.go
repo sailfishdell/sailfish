@@ -55,15 +55,23 @@ func (rh *RedfishSSEHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	l.Name = "RF SSE Listener"
 
-	w.Header().Add("Strict-Transport-Security", "max-age=63072000; includeSubDomains") // for A+ SSL Labs score
 	//w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.Header().Set("OData-Version", "4.0")
 	w.Header().Set("Server", "sailfish")
-
 	w.Header().Set("Content-Type", "text/event-stream")
-	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
+	w.Header().Set("Cache-Control", "no-Store,no-Cache")
+	w.Header().Set("Pragma", "no-cache")
+
+	// security headers
+	w.Header().Add("Strict-Transport-Security", "max-age=63072000; includeSubDomains") // for A+ SSL Labs score
 	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("X-Frame-Options", "DENY")
+	w.Header().Set("X-XSS-Protection", "1; mode=block")
+	w.Header().Set("X-Content-Security-Policy", "default-src 'self'")
+
+	// compatibility headers
+	w.Header().Set("X-UA-Compatible", "IE=11")
 
 	defer r.Body.Close()
 	notify := w.(http.CloseNotifier).CloseNotify()
