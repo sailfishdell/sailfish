@@ -46,12 +46,16 @@ type DomainObjects struct {
 	licenses   []string
 }
 
+// define the starting capacity
+//  	tuned to EC by default. about 330 default entries plus normal max 3k LCL entries
+var INITIAL_CAPACITY int = 3500
+
 // SetupDDDFunctions sets up the full Event Horizon domain
 // returns a handler exposing some of the components.
 func NewDomainObjects() (*DomainObjects, error) {
 	d := DomainObjects{}
 
-	d.Tree = make(map[string]eh.UUID)
+	d.Tree = make(map[string]eh.UUID, INITIAL_CAPACITY)
 
 	// Create the repository and wrap in a version repository.
 	d.Repo = repo.NewRepo()
