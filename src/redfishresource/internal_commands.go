@@ -83,13 +83,12 @@ func (c *CreateRedfishResource) Handle(ctx context.Context, a *RedfishResourceAg
 	if a.Plugin == "" {
 		a.Plugin = "RedfishResource"
 	}
-	a.Headers = map[string]string{}
+	a.Headers = make(map[string]string, len(c.Headers))
 	for k, v := range c.Headers {
 		a.Headers[k] = v
 	}
 
-	a.PrivilegeMap = map[string]interface{}{}
-
+	a.PrivilegeMap = make(map[string]interface{}, len(c.Privileges))
 	for k, v := range c.Privileges {
 		a.PrivilegeMap[k] = v
 	}
@@ -121,9 +120,9 @@ func (c *CreateRedfishResource) Handle(ctx context.Context, a *RedfishResourceAg
 		resourceURI = append(resourceURI, url.PathEscape(x))
 	}
 
-	v["@odata.id"] = &RedfishResourceProperty{Value: strings.Join(resourceURI, "/")}
-	v["@odata.type"] = &RedfishResourceProperty{Value: c.Type}
-	v["@odata.context"] = &RedfishResourceProperty{Value: c.Context}
+	v["@odata.id"] = strings.Join(resourceURI, "/")
+	v["@odata.type"] = c.Type
+	v["@odata.context"] = c.Context
 
 	// send out event that it's created first
 	a.PublishEvent(eh.NewEvent(RedfishResourceCreated, &RedfishResourceCreatedData{
