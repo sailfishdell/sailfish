@@ -984,6 +984,24 @@ views:
           "params":
       "Aggregate": "slotcollection"
 
+  "fanslot":
+      "Logger": ["module", "fanslot"]
+      "Models":
+        "default": {}
+      "Controllers":
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "slot", "uniquename": "'slot:' + FQDD", "passthru": {"FQDD": "FQDD", "ParentFQDD": "ParentFQDD"}}
+        - "fn": "ARMapper"
+          "params": {"modelname": "default", "cfgsection": "Chassis/Slots", "mappinguniquename": "'chassis_slot:' + FQDD", "AddToView": "ar_mapper"}
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "fan_occupied", "uniquename" : "'fan_occupied:' + FQDD", "passthru": {"FQDD" :"FQDD"}}
+      "View":
+        - "fn": "with_URI"
+          "params": " rooturi + '/Chassis/' + ParentFQDD + '/Slots/' + FQDD"
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+      "Aggregate": "slot"
+
   "slot":
       "Logger": ["module", "slot"]
       "Models":
@@ -1282,6 +1300,10 @@ awesome_mapper:
     chassis:
       - { SelectEventType: "AttributeUpdated", Select: "data.FQDD == FQDD && data.Name == 'ChassisPowerStatus'",
             ModelUpdate: [ {Property: "power_state", Query: "map_chassis_state(data.Value)"}]}
+
+    fan_occupied:
+      - { SelectEventType: "AttributeUpdated", Select: "data.Name == 'Occupied' && FQDD == data.Group + '.' + data.Index",
+          ModelUpdate: [ {Property: "Occupied", Query: "add_rm_occupy('slot_occupied', 'Occupied', is_removed(data.Value), view.GetUUID())"} ]}
 
     fan:
       - { SelectEventType: "FanEvent", Select: "data.ObjectHeader.FQDD == DM_FQDD",
