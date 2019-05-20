@@ -97,9 +97,9 @@ func (c *PATCH) SetUserDetails(a *RedfishAuthorizationProperty) string {
 func (c *PATCH) ParseHTTPRequest(r *http.Request) error {
 	json.NewDecoder(r.Body).Decode(&c.Body)
 	if len(c.Body) == 0 {
-		err_body := map[string]interface{}{"Attributes":map[string]interface{}{"ERROR":"BADJSON"}}
+		err_body := map[string]interface{}{"Attributes": map[string]interface{}{"ERROR": "BADJSON"}}
 		c.Body = err_body
- 	}
+	}
 	return nil
 }
 func (c *PATCH) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
