@@ -415,8 +415,17 @@ func (d *DomainObjects) DumpStatus() http.Handler {
 			fmt.Fprintf(w, "\n\n")
 		}
 
+		pluginsMu.Lock()
+		defer pluginsMu.Unlock()
+		fmt.Fprintf(w, "\nPLUGIN DUMP\n")
+		for k, _ := range plugins {
+			fmt.Fprintf(w, "Plugin: %s\n", k)
+		}
+
+		fmt.Fprintf(w, "\nSTATS DUMP\n")
 		fmt.Fprintf(w, "Tree(%d) Aggregates(%d) InjectCmds(%d) Orphans(%d)\n", len(d.Tree), len(aggs), injectCmds, orphans)
 		fmt.Fprintf(w, "InjectChan Q Len = %d\n", len(injectChan))
+		fmt.Fprintf(w, "# PLUGINS = %d\n", len(plugins))
 
 	})
 }
