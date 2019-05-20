@@ -48,9 +48,9 @@ func RegisterCertAggregate(s *testaggregate.Service) {
 					ResourceURI: vw.GetURI(),
 					Type:        "#DellCertificateInventoryCollection.DellCertificateInventoryCollection",
 					Context:     "/redfish/v1/$metadata#DellCertificateInventoryCollection.DellCertificateInventoryCollection",
-				        Plugin:      "GenericActionHandler",
+					Plugin:      "GenericActionHandler",
 					Privileges: map[string]interface{}{
-						"GET": []string{"Login"},
+						"GET":  []string{"Login"},
 						"POST": []string{"ConfigureManager"},
 					},
 					Properties: map[string]interface{}{

@@ -288,7 +288,7 @@ func (b breadcrumb) UpdateRequest(ctx context.Context, property string, value in
 				return nil, HTTP_code{err_message: errs, any_success: num_success}
 			}
 		case <-timer.C:
-                        return nil, HTTP_code{err_message: []string{timeout_response}, any_success: num_success}
+			return nil, HTTP_code{err_message: []string{timeout_response}, any_success: num_success}
 
 		case <-ctx.Done():
 			return nil, nil
