@@ -245,6 +245,7 @@ type InjectEvent struct {
 	ID          eh.UUID                  `json:"id" eh:"optional"`
 	Name        eh.EventType             `json:"name"`
 	Synchronous bool                     `eh:"optional"`
+	Encoding    string                   `eh:"optional" json:"encoding"`
 	EventData   map[string]interface{}   `json:"data" eh:"optional"`
 	EventArray  []map[string]interface{} `json:"event_array" eh:"optional"`
 }
@@ -387,12 +388,17 @@ func (c *InjectEvent) Handle(ctx context.Context, a *RedfishResourceAggregate) e
 			requestLogger.Info("InjectEvent - event type not registered: injecting raw event.", "event name", c.Name, "error", err)
 			trainload = append(trainload, eventData) //preallocated
 		} else {
-			err = mapstructure.Decode(eventData, &data)
-			if err != nil {
-				requestLogger.Warn("InjectEvent - could not decode event data, skipping event", "error", err, "raw-eventdata", eventData, "dest-event", data)
-				trainload = append(trainload, eventData) //preallocated
-			} else {
-				trainload = append(trainload, data) //preallocated
+			if c.Encoding == "json" || c.Encoding == "" {
+				err = mapstructure.Decode(eventData, &data)
+				if err != nil {
+					requestLogger.Warn("InjectEvent - could not decode event data, skipping event", "error", err, "raw-eventdata", eventData, "dest-event", data)
+					trainload = append(trainload, eventData) //preallocated
+				} else {
+					trainload = append(trainload, data) //preallocated
+				}
+			} else if c.Encoding == "binary" {
+				// TODO: somehow decode it!
+				// using 'unsafe' struct decoding examples
 			}
 		}
 		// comment out debug prints in the hot path, uncomment for debugging
