@@ -10,7 +10,8 @@ import (
 )
 
 const (
-	GETCommand       = eh.CommandType("http:RedfishResource:GET")
+	// All of these shortened from "http:RedfishResource:HTTP" to "R:HTTP" to save memory in the aggregate since this is the most common type
+	GETCommand       = eh.CommandType("R:GET")
 	DefaultCacheTime = 5
 )
 

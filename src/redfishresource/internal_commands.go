@@ -80,9 +80,6 @@ func (c *CreateRedfishResource) Handle(ctx context.Context, a *RedfishResourceAg
 	a.ID = c.ID
 	a.ResourceURI = c.ResourceURI
 	a.Plugin = c.Plugin
-	if a.Plugin == "" {
-		a.Plugin = "RedfishResource"
-	}
 	a.Headers = make(map[string]string, len(c.Headers))
 	for k, v := range c.Headers {
 		a.Headers[k] = v

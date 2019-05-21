@@ -182,6 +182,9 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		search = append(search, eh.CommandType(redfishResource.ResourceURI+":"+r.Method)) // preallocated
 		search = append(search, eh.CommandType(redfishResource.Plugin+":"+r.Method))      // preallocated
 	}
+	// short version - save memory
+	search = append(search, eh.CommandType("R:"+r.Method)) // preallocated
+	// long version for backwards compat (old style)
 	search = append(search, eh.CommandType("http:RedfishResource:"+r.Method)) // preallocated
 
 	// search through the commands until we find one that exists
