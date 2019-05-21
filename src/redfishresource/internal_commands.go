@@ -88,9 +88,9 @@ func (c *CreateRedfishResource) Handle(ctx context.Context, a *RedfishResourceAg
 		a.Headers[k] = v
 	}
 
-	a.PrivilegeMap = make(map[string]interface{}, len(c.Privileges))
+	a.PrivilegeMap = make(map[HTTPReqType]interface{}, len(c.Privileges))
 	for k, v := range c.Privileges {
-		a.PrivilegeMap[k] = v
+		a.PrivilegeMap[MapStringToHTTPReq(k)] = v
 	}
 
 	// ensure no collisions

@@ -248,7 +248,7 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	// if command does not implement userdetails setter, we always check privs here
 	if !implementsAuthorization || authAction == "checkMaster" {
-		privsToCheck := redfishResource.PrivilegeMap[r.Method]
+		privsToCheck := redfishResource.PrivilegeMap[MapStringToHTTPReq(r.Method)]
 
 		// convert Privileges from []interface{} to []string (way more code than there should be for something this simple)
 		var t []string

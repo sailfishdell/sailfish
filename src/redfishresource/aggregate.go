@@ -34,7 +34,7 @@ type RedfishResourceAggregate struct {
 
 	// TODO: need accessor functions for all of these just like property stuff
 	// above so that everything can be properly locked
-	PrivilegeMap map[string]interface{}
+	PrivilegeMap map[HTTPReqType]interface{}
 	Headers      map[string]string
 
 	checkcount int
