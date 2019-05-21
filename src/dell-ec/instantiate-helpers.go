@@ -182,15 +182,27 @@ func AddECInstantiate(l log.Logger, instantiateSvc *testaggregate.Service) {
 		}
 		group, index := s[0], s[1]
 
-		// have to do this in a goroutine because awesome mapper is locked while it processes events
-		instantiateSvc.Instantiate("slot",
-			map[string]interface{}{
-				"ParentFQDD": ParentFQDD,
-				"FQDD":       FQDD,
-				"Group":      group, // for ar mapper
-				"Index":      index, // for ar mapper
-			},
-		)
+		if strings.Contains(FQDD, "FanSlot") {
+			instantiateSvc.Instantiate("fanslot",
+				map[string]interface{}{
+					"ParentFQDD": ParentFQDD,
+					"FQDD":       FQDD,
+					"Group":      group, // for ar mapper
+					"Index":      index, // for ar mapper
+				},
+			)
+		} else {
+
+			// have to do this in a goroutine because awesome mapper is locked while it processes events
+			instantiateSvc.Instantiate("slot",
+				map[string]interface{}{
+					"ParentFQDD": ParentFQDD,
+					"FQDD":       FQDD,
+					"Group":      group, // for ar mapper
+					"Index":      index, // for ar mapper
+				},
+			)
+		}
 
 		return true, nil
 	})
