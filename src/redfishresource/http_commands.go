@@ -23,13 +23,14 @@ func init() {
 }
 
 const (
-	DELETECommand = eh.CommandType("http:RedfishResource:DELETE")
+	// All of these shortened from "http:RedfishResource:HTTP" to "R:HTTP" to save memory in the aggregate since this is the most common type
+	DELETECommand = eh.CommandType("R:DELETE")
 
-	PUTCommand     = eh.CommandType("http:RedfishResource:PUT")
-	PATCHCommand   = eh.CommandType("http:RedfishResource:PATCH")
-	POSTCommand    = eh.CommandType("http:RedfishResource:POST")
-	HEADCommand    = eh.CommandType("http:RedfishResource:HEAD")
-	OPTIONSCommand = eh.CommandType("http:RedfishResource:OPTIONS")
+	PUTCommand     = eh.CommandType("R:PUT")
+	PATCHCommand   = eh.CommandType("R:PATCH")
+	POSTCommand    = eh.CommandType("R:POST")
+	HEADCommand    = eh.CommandType("R:HEAD")
+	OPTIONSCommand = eh.CommandType("R:OPTIONS")
 )
 
 // Static type checking for commands to prevent runtime errors due to typos
