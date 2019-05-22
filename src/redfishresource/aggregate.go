@@ -3,6 +3,7 @@ package domain
 import (
 	"context"
 	"sync"
+	"time"
 
 	eh "github.com/looplab/eventhorizon"
 )
@@ -37,7 +38,9 @@ type RedfishResourceAggregate struct {
 	PrivilegeMap map[HTTPReqType]interface{}
 	Headers      map[string]string
 
-	checkcount int
+	// debug and beancounting
+	checkcount int                       // watchdog process uses this to try to do race-free detection of orphan aggregates
+	access     map[HTTPReqType]time.Time // store beancounting about when uri's were accessed
 }
 
 // PublishEvent registers an event to be published after the aggregate

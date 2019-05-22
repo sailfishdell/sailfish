@@ -409,6 +409,9 @@ func (d *DomainObjects) DumpStatus() http.Handler {
 				}
 
 				fmt.Fprintf(w, " %s: %s\n", rr.EntityID(), rr.ResourceURI)
+				for k, v := range rr.access {
+					fmt.Fprintf(w, "\t%s: %s\n", MapHTTPReqToString(k), v)
+				}
 			} else {
 				fmt.Fprintf(w, "UNKNOWN ENTITY: %s\n", rr.EntityID())
 			}
