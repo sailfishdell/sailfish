@@ -11,6 +11,7 @@ set -x
 # statement.
 
 binaries=${binaries:-$(find cmd/* -type d)}
+TAGS=${TAGS:-ec mockup}
 
 for cmd in ${binaries}
 do
