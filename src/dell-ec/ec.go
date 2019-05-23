@@ -104,6 +104,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	stdmeta.InitializeSsoinfo(d)
 	telemetryservice.RegisterAggregate(instantiateSvc)
 	stdmeta.SetupSledProfilePlugin(d)
+	stdmeta.InitializeCertInfo(d)
 
 	awesome_mapper2.AddFunction("find_uris_with_basename", func(args ...interface{}) (interface{}, error) {
 		if len(args) < 1 {
