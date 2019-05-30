@@ -515,7 +515,7 @@ views:
         - "fn": "with_PumpHandledAction"
           "params": {"name": "certificates.uploadcert2", "uri": "", "timeout": 30}
         - "fn": "with_PumpHandledAction"
-          "params": {"name": "certificates.getcert", "uri": "/Actions/GetCertInfo", "timeout": 30}
+          "params": {"name": "certificates.getcert", "uri": "/Actions/GetCertInfo", "timeout": 90}
         - "fn": "stdFormatters"
           "params":
       "Aggregate": "certificate"
