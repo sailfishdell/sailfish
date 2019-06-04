@@ -362,12 +362,12 @@ func (c *InjectEvent) Handle(ctx context.Context, a *RedfishResourceAggregate) e
 	eventList := make([]map[string]interface{}, 0, len(c.EventArray)+1)
 	if len(c.EventData) > 0 {
 		// comment out debug prints in the hot path, uncomment for debugging
-		//requestLogger.Debug("InjectEvent - ONE", "events", c.EventData)
+		requestLogger.Debug("InjectEvent - ONE", "events", c.EventData)
 		eventList = append(eventList, c.EventData) // preallocated
 	}
 	if len(c.EventArray) > 0 {
 		// comment out debug prints in the hot path, uncomment for debugging
-		//requestLogger.Debug("InjectEvent - ARRAY", "events", c.EventArray)
+		requestLogger.Debug("InjectEvent - ARRAY", "events", c.EventArray)
 		eventList = append(eventList, c.EventArray...) // preallocated
 	}
 
@@ -380,6 +380,7 @@ func (c *InjectEvent) Handle(ctx context.Context, a *RedfishResourceAggregate) e
 	//debugTrain = true
 	//}
 
+	fmt.Printf("HELLO WORLD: %s\n", c)
 	trainload := make([]eh.EventData, 0, MAX_CONSOLIDATED_EVENTS)
 	for _, eventData := range eventList {
 		data, err := eh.CreateEventData(c.Name)
@@ -388,6 +389,14 @@ func (c *InjectEvent) Handle(ctx context.Context, a *RedfishResourceAggregate) e
 			requestLogger.Info("InjectEvent - event type not registered: injecting raw event.", "event name", c.Name, "error", err)
 			trainload = append(trainload, eventData) //preallocated
 		} else {
+
+			fmt.Printf("HELLO - decoding event: '%s'\n", c.Encoding)
+			if c.Encoding == "binary" {
+				fmt.Printf("HELLO - I DON'T KNOW WHAT TO DO!\n")
+				// TODO: somehow decode it!
+				// using 'unsafe' struct decoding examples
+			}
+
 			if c.Encoding == "json" || c.Encoding == "" {
 				err = mapstructure.Decode(eventData, &data)
 				if err != nil {
@@ -396,13 +405,11 @@ func (c *InjectEvent) Handle(ctx context.Context, a *RedfishResourceAggregate) e
 				} else {
 					trainload = append(trainload, data) //preallocated
 				}
-			} else if c.Encoding == "binary" {
-				// TODO: somehow decode it!
-				// using 'unsafe' struct decoding examples
 			}
+
 		}
 		// comment out debug prints in the hot path, uncomment for debugging
-		//requestLogger.Debug("InjectEvent - publishing", "event name", c.Name, "event_data", data)
+		requestLogger.Debug("InjectEvent - publishing", "event name", c.Name, "event_data", data)
 
 		// limit number of consolidated events to 30 to prevent overflowing queues and deadlocking
 		if len(trainload) >= MAX_CONSOLIDATED_EVENTS {
