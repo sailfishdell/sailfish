@@ -98,12 +98,13 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	RegisterCertAggregate(instantiateSvc)
 	AddECInstantiate(logger, instantiateSvc)
 	initLCL(logger, instantiateSvc, ch, d)
-	initThermalSensor(ctx, logger, instantiateSvc, ch, d)
+	initThermalSensor(logger, instantiateSvc, ch, d)
 	inithealth(ctx, logger, ch, d)
 	initpowercontrol(logger)
 	stdmeta.InitializeSsoinfo(d)
 	telemetryservice.RegisterAggregate(instantiateSvc)
 	stdmeta.SetupSledProfilePlugin(d)
+	stdmeta.InitializeCertInfo(d)
 
 	awesome_mapper2.AddFunction("find_uris_with_basename", func(args ...interface{}) (interface{}, error) {
 		if len(args) < 1 {

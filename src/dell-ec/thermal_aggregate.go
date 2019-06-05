@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 	"sync"
 
 	"github.com/spf13/viper"
@@ -87,7 +86,7 @@ func health_map(health int) interface{} {
 	}
 }
 
-func initThermalSensor(ctx context.Context, logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.CommandHandler, d *domain.DomainObjects) {
+func initThermalSensor(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.CommandHandler, d *domain.DomainObjects) {
 
 	awesome_mapper2.AddFunction("updateSensorEvent", func(args ...interface{}) (interface{}, error) {
 		sensorUri, ok := args[0].(string)
@@ -167,80 +166,4 @@ func initThermalSensor(ctx context.Context, logger log.Logger, instantiateSvc *t
 		}
 		return true, nil
 	})
-
-	// The function will add or remove the aggregate property from the URL identified by the UUID.
-	// arg[0] - model property name
-	// arg[1] - aggregate property name
-	// arg[2] - true to remove, false to add
-	// arg[3] - UUID
-	awesome_mapper2.AddFunction("add_rm_occupy", func(args ...interface{}) (interface{}, error) {
-		mp, ok := args[0].(string)
-		if !ok {
-			return nil, errors.New("Mapper configuration error: arg[0] is not a string")
-		}
-
-		ap, ok := args[1].(string)
-		if !ok {
-			return nil, errors.New("Mapper configuration error: arg[1] is not a string")
-		}
-
-		rm_prop, ok := args[2].(bool)
-		if !ok {
-			return nil, errors.New("Mapper configuration error: arg[1] is not a bool")
-		}
-
-		aggregateUUID, ok := args[3].(eh.UUID)
-		if !ok {
-			return nil, errors.New("Mapper configuration error: aggregate UUID not passed")
-		}
-
-		agg, _ := d.AggregateStore.Load(context.Background(), domain.AggregateType, aggregateUUID)
-		a, ok := agg.(*domain.RedfishResourceAggregate)
-		if !ok {
-			return nil, errors.New("Resource Aggregate type casting failed")
-		}
-
-		// check if aggregate property is in aggregate
-		data, ok := a.Properties.Value.(map[string]interface{})
-		if !ok {
-			return nil, errors.New("Aggregate Data type casting failed")
-		}
-		_, ok = data[ap]
-
-		if ok && rm_prop == true {
-			ch.HandleCommand(ctx,
-				&domain.RemoveRedfishResourceProperty{
-					ID:       aggregateUUID,
-					Property: ap})
-
-		} else if !ok && rm_prop == false {
-			ch.HandleCommand(ctx,
-				&domain.UpdateRedfishResourceProperties{
-					ID: aggregateUUID,
-					Properties: map[string]interface{}{
-						ap + "@meta": map[string]interface{}{
-							"GET": map[string]interface{}{
-								"plugin": agg.(*domain.RedfishResourceAggregate).ResourceURI, "property": mp, "model": "default",
-							}}}})
-
-		}
-		// else URL resource does not need updating
-
-		return nil, nil
-	})
-
-	awesome_mapper2.AddFunction("is_removed", func(args ...interface{}) (interface{}, error) {
-		val, ok := args[0].(string)
-		if !ok {
-			return nil, errors.New("Mapper configuration error: arg[0] is not a string")
-		}
-
-		if 0 == strings.Compare(val, "Unknown") {
-			return true, nil
-		} else {
-			return false, nil
-		}
-
-	})
-
 }
