@@ -303,12 +303,14 @@ func makePOST(es *EventService, dest string, event eh.Event, context interface{}
 
 func (es *EventService) PublishResourceUpdatedEventsForModel(ctx context.Context, modelName string) view.Option {
 	return view.WatchModel(modelName, func(v *view.View, m *model.Model, updates []model.Update) {
-		eventData := &RedfishEventData{
-			EventType: "ResourceUpdated",
-			//TODO MSM BUG: OriginOfCondition for events has to be a string or will be rejected
-			OriginOfCondition: v.GetURI(),
-		}
-		go es.d.EventBus.PublishEvent(ctx, eh.NewEvent(RedfishEvent, eventData, time.Now()))
+		go func() {
+			eventData := &RedfishEventData{
+				EventType: "ResourceUpdated",
+				//TODO MSM BUG: OriginOfCondition for events has to be a string or will be rejected
+				OriginOfCondition: v.GetURI(),
+			}
+			es.d.EventBus.PublishEvent(ctx, eh.NewEvent(RedfishEvent, eventData, time.Now()))
+		}()
 	})
 }
 
