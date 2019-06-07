@@ -30,6 +30,15 @@ func in_array(a string, list []string) bool {
 	return false
 }
 
+func in_array_index(a string, list []string) int {
+	for i, b := range list {
+		if b == a {
+			return i
+		}
+	}
+	return -1
+}
+
 func link_mapper(fqdd string) string {
 	ret_string := "/redfish/v1/Chassis/System.Chassis.1"
 	if strings.HasPrefix(fqdd, "Fan") {
@@ -158,6 +167,10 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 
 		return nil, nil
 	})
+
+	// Add FaultRemoveEntry to tombstones if processed before FaultAddEntry in FIFO ordering
+	fault_lim := 10
+	var tombstones []string
 	awesome_mapper2.AddFunction("removefaultentry", func(args ...interface{}) (interface{}, error) {
 		logUri, ok := args[0].(string)
 		if !ok {
@@ -176,6 +189,16 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 		id, ok := d.GetAggregateIDOK(uri)
 		if ok {
 			ch.HandleCommand(context.Background(), &domain.RemoveRedfishResource{ID: id})
+		} else {
+
+			if len(tombstones) == fault_lim {
+				tombstones = tombstones[1:]
+			}
+
+			if !in_array(faultEntry.Name, tombstones) {
+				tombstones = append(tombstones, faultEntry.Name)
+			}
+
 		}
 		return true, nil
 	})
@@ -192,6 +215,20 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 		if !ok {
 			logger.Crit("Mapper configuration error: log event data not passed", "args[1]", args[1], "TYPE", fmt.Sprintf("%T", args[1]))
 			return nil, errors.New("Mapper configuration error: log event data not passed")
+		}
+
+		// check if fault remove event is already received.  Can return
+		i := in_array_index(faultEntry.Name, tombstones)
+
+		if i != -1 {
+			fl := len(tombstones) - 1
+			for n := len(tombstones) - 1; n > i && n != 0; n -= 1 {
+				tombstones[n-1] = tombstones[n]
+			}
+
+			tombstones[fl] = ""
+			tombstones = tombstones[:fl]
+			return nil, nil
 		}
 
 		timeF, err := strconv.ParseFloat(faultEntry.Created, 64)
