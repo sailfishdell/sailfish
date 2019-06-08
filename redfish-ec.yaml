@@ -464,7 +464,7 @@ views:
         "instantiate('faultlistservices', 'FQDD', FQDD)",
         #Only instantiate 1 instance of lclog collection, it is too big to keep duplicate and each one generates alerts
         "FQDD == 'CMC.Integrated.1' && instantiate('lclogentrycollection', 'FQDD', FQDD)",
-        "instantiate('faultlistentrycollection', 'FQDD', FQDD)"
+        "instantiate('faultlistentrycollection')"
         ]
 
   "certificateservices":
@@ -626,7 +626,7 @@ views:
           "params": {"modelname": "default", "cfgsection": "faultlist", "uniquename": "'collection_faultlist_' + view.GetURI()", "passthru": {'collection_uri': 'view.GetURI()'} }
       "View":
         - "fn": "with_URI"
-          "params": "rooturi + '/Managers/' + FQDD + '/Logs/FaultList'"
+          "params": "rooturi + '/Managers/CMC.Integrated.1/Logs/FaultList'"
         - "fn": "with_PumpHandledAction"
           "params": {"name": "fault.add", "uri": "", "timeout": 30}
         - "fn": "stdFormatters"
