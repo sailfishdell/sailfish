@@ -1,7 +1,10 @@
 package domain
 
 import (
+	"bytes"
 	"context"
+	"encoding/base64"
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"net/url"
@@ -390,11 +393,28 @@ func (c *InjectEvent) Handle(ctx context.Context, a *RedfishResourceAggregate) e
 			trainload = append(trainload, eventData) //preallocated
 		} else {
 
-			fmt.Printf("HELLO - decoding event: '%s'\n", c.Encoding)
+			// fmt.Printf("HELLO - decoding event: '%s'\n", c.Encoding)
 			if c.Encoding == "binary" {
-				fmt.Printf("HELLO - I DON'T KNOW WHAT TO DO!\n")
-				// TODO: somehow decode it!
-				// using 'unsafe' struct decoding examples
+				// fmt.Printf("HELLO - I DON'T KNOW WHAT TO DO!\n")
+				structdata, err := base64.StdEncoding.DecodeString(eventData["data"].(string))
+				if err != nil {
+					fmt.Printf("ERROR decoding base64 event data: %s", err)
+					continue
+				}
+
+				// fmt.Printf("base64 DECODED STRUCT: '%s'\n", structdata)
+
+				buf := bytes.NewReader(structdata)
+				err = binary.Read(buf, binary.LittleEndian, data)
+				if err != nil {
+					fmt.Printf("binary decode fail: %s\n", err)
+					continue
+				}
+
+				//fmt.Printf("BINARY STRUCT: '%s'\n", data)
+
+				trainload = append(trainload, data) //preallocated
+
 			}
 
 			if c.Encoding == "json" || c.Encoding == "" {
