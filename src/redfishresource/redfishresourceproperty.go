@@ -14,6 +14,8 @@ type RedfishAuthorizationProperty struct {
 	Privileges []string
 	Licenses   []string
 	Query      url.Values
+	Path       string
+	Encode     string
 
 	// pass the supported query options to the backend
 	// re-arranged to hopefully be more memory efficient
@@ -21,6 +23,7 @@ type RedfishAuthorizationProperty struct {
 	top        int
 	filter     string
 	sel        []string
+	selT       bool
 	doFilter   bool
 	filterDone bool
 	doTop      bool
@@ -108,6 +111,7 @@ func (auth *RedfishAuthorizationProperty) VerifyPrivileges(Privileges []string) 
 		//fmt.Println("required auth ", Privileges)
 		//fmt.Println(auth.UserName, " current priv ", auth.Privileges)
 		//fmt.Println("allowed ", authAction)
+
 	}
 
 	return authAction == "authorized"

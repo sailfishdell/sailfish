@@ -53,11 +53,12 @@ type CreateRedfishResource struct {
 	Privileges  map[string]interface{}
 
 	// optional stuff
-	Headers    map[string]string      `eh:"optional"`
-	Plugin     string                 `eh:"optional"`
-	Properties map[string]interface{} `eh:"optional"`
-	Meta       map[string]interface{} `eh:"optional"`
-	Private    map[string]interface{} `eh:"optional"`
+	Headers       map[string]string      `eh:"optional"`
+	Plugin        string                 `eh:"optional"`
+	DefaultFilter string                 `eh:"optional"`
+	Properties    map[string]interface{} `eh:"optional"`
+	Meta          map[string]interface{} `eh:"optional"`
+	Private       map[string]interface{} `eh:"optional"`
 }
 
 // AggregateType satisfies base Aggregate interface
@@ -79,6 +80,7 @@ func (c *CreateRedfishResource) Handle(ctx context.Context, a *RedfishResourceAg
 	}
 	a.ID = c.ID
 	a.ResourceURI = c.ResourceURI
+	a.DefaultFilter = c.DefaultFilter
 	a.Plugin = c.Plugin
 	a.Headers = make(map[string]string, len(c.Headers))
 	for k, v := range c.Headers {

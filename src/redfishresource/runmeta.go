@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 
-	//"fmt"
 	"reflect"
 )
 
@@ -21,6 +20,12 @@ func NewGet(ctx context.Context, agg *RedfishResourceAggregate, rrp *RedfishReso
 		request: nil,
 		process: nuGETfn,
 		root:    true,
+		sel:     auth.sel,
+		path:    "",
+	}
+	// this is to make sure attribute meta gets expanded before filtering in redfish_handler.ServeHTTP
+	if auth.selT {
+		opts.sel = append(opts.sel, "Attributes")
 	}
 
 	return rrp.RunMetaFunctions(ctx, agg, auth, opts)
@@ -33,6 +38,7 @@ func NewPatch(ctx context.Context, agg *RedfishResourceAggregate, rrp *RedfishRe
 		request: body,
 		process: nuPATCHfn,
 		root:    true,
+		path:    "",
 	}
 
 	return rrp.RunMetaFunctions(ctx, agg, auth, opts)
@@ -45,6 +51,8 @@ type nuEncOpts struct {
 	request interface{}
 	present bool
 	process nuProcessFn
+	path    string
+	sel     []string
 }
 
 func nuGETfn(ctx context.Context, agg *RedfishResourceAggregate, rrp *RedfishResourceProperty, auth *RedfishAuthorizationProperty, opts nuEncOpts) error {
@@ -218,6 +226,7 @@ func Flatten(thing interface{}, parentlocked bool) interface{} {
 }
 
 func (rrp *RedfishResourceProperty) RunMetaFunctions(ctx context.Context, agg *RedfishResourceAggregate, auth *RedfishAuthorizationProperty, e nuEncOpts) (err error) {
+
 	rrp.Lock()
 	defer rrp.Unlock()
 
@@ -253,6 +262,8 @@ type numSuccess interface {
 }
 
 func helper(ctx context.Context, agg *RedfishResourceAggregate, auth *RedfishAuthorizationProperty, encopts nuEncOpts, v interface{}) error {
+	var ok bool
+	var path string
 	// handle special case of RRP inside RRP.Value of parent
 	if vp, ok := v.(*RedfishResourceProperty); ok {
 		return vp.RunMetaFunctions(ctx, agg, auth, encopts)
@@ -272,9 +283,17 @@ func helper(ctx context.Context, agg *RedfishResourceAggregate, auth *RedfishAut
 			annotatedKey := "@Message.ExtendedInfo"
 			val.SetMapIndex(reflect.ValueOf(annotatedKey), reflect.Value{})
 			val.SetMapIndex(reflect.ValueOf("error"), reflect.Value{})
+
 		}
 
 		for _, k := range val.MapKeys() {
+
+			if encopts.path == "" {
+				path = k.String()
+			} else {
+				path = encopts.path + "/" + k.String()
+			}
+
 			// first scrub any old extended messages
 			if strK, ok := k.Interface().(string); ok {
 				annotatedKey := strK + "@Message.ExtendedInfo"
@@ -286,6 +305,14 @@ func helper(ctx context.Context, agg *RedfishResourceAggregate, auth *RedfishAut
 				present: encopts.present,
 				process: encopts.process,
 				root:    false,
+			}
+
+			if auth.doSel && encopts.sel != nil {
+				ok, newEncOpts.sel = selectCheck(path, encopts.sel, auth.selT)
+				if !ok {
+					continue
+				}
+				newEncOpts.path = path
 			}
 
 			requestBody, ok := newEncOpts.request.(map[string]interface{})
