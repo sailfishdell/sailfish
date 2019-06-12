@@ -350,11 +350,11 @@ func helper(ctx context.Context, agg *RedfishResourceAggregate, auth *RedfishAut
 				}
 			}
 			annotatedKey := "error"
-			value := map[string]interface{}{
+			value := &RedfishResourceProperty{Value: map[string]interface{}{
 				"code":                  "Base.1.0.GeneralError",
 				"message":               "A general error has occurred. See ExtendedInfo for more information.",
-				"@Message.ExtendedInfo": objectErrorMessages,
-			}
+				"@Message.ExtendedInfo": &RedfishResourceProperty{Value: objectErrorMessages},
+			}}
 			if compatible(reflect.TypeOf(value), val.Type().Elem()) {
 				val.SetMapIndex(reflect.ValueOf(annotatedKey), reflect.ValueOf(value))
 			}
