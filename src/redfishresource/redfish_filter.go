@@ -48,7 +48,12 @@ func (rh *RedfishHandler) SetupAuthorization(r *http.Request, redfishResource *R
 	var qm url.Values
 
 	if r.Method != "GET" {
-		return nil
+		auth := &RedfishAuthorizationProperty{
+			UserName:   rh.UserName,
+			Privileges: rh.Privileges,
+			Licenses:   rh.d.GetLicenses(),
+		}
+		return auth
 	}
 
 	// create query map
