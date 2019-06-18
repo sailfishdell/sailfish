@@ -4,6 +4,8 @@ github.com/Knetic/govaluate
 github.com/davecgh/go-spew/spew
 # github.com/dgrijalva/jwt-go v3.2.0+incompatible
 github.com/dgrijalva/jwt-go
+# github.com/etcd-io/bbolt v1.3.2
+github.com/etcd-io/bbolt
 # github.com/fsnotify/fsnotify v1.4.7
 github.com/fsnotify/fsnotify
 # github.com/go-stack/stack v1.8.0
@@ -31,7 +33,6 @@ github.com/json-iterator/go
 github.com/looplab/eventhorizon
 github.com/looplab/eventhorizon/publisher/local
 github.com/looplab/eventhorizon/commandhandler/aggregate
-github.com/looplab/eventhorizon/repo/memory
 github.com/looplab/eventhorizon/mocks
 # github.com/magiconair/properties v1.8.0
 github.com/magiconair/properties
@@ -39,8 +40,6 @@ github.com/magiconair/properties
 github.com/mattn/go-colorable
 # github.com/mattn/go-isatty v0.0.4
 github.com/mattn/go-isatty
-# github.com/mattn/go-sqlite3 v1.10.0
-github.com/mattn/go-sqlite3
 # github.com/mitchellh/mapstructure v1.0.0
 github.com/mitchellh/mapstructure
 # github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd

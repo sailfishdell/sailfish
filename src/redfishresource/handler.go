@@ -14,8 +14,8 @@ import (
 	eh "github.com/looplab/eventhorizon"
 	"github.com/looplab/eventhorizon/commandhandler/aggregate"
 	eventpublisher "github.com/looplab/eventhorizon/publisher/local"
-	repo "github.com/looplab/eventhorizon/repo/memory"
 	"github.com/superchalupa/sailfish/src/looplab/aggregatestore"
+	repo "github.com/superchalupa/sailfish/src/looplab/bbolt"
 	"github.com/superchalupa/sailfish/src/looplab/eventbus"
 	"github.com/superchalupa/sailfish/src/looplab/eventwaiter"
 )
@@ -409,6 +409,9 @@ func (d *DomainObjects) DumpStatus() http.Handler {
 				}
 
 				fmt.Fprintf(w, " %s: %s\n", rr.EntityID(), rr.ResourceURI)
+				for k, v := range rr.access {
+					fmt.Fprintf(w, "\t%s: %s\n", MapHTTPReqToString(k), v)
+				}
 			} else {
 				fmt.Fprintf(w, "UNKNOWN ENTITY: %s\n", rr.EntityID())
 			}

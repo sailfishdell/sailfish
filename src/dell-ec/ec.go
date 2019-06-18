@@ -79,6 +79,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	ar_mapper2.RegisterARMapper(instantiateSvc, arService)
 	attributes.RegisterController(instantiateSvc, ardumpSvc)
 	stdmeta.RegisterFormatters(instantiateSvc, d)
+  stdmeta.SledVirtualReseatSvc(ctx, logger, eb)
 	registries.RegisterAggregate(instantiateSvc)
 	stdcollections.RegisterAggregate(instantiateSvc)
 	session.RegisterAggregate(instantiateSvc)
@@ -104,6 +105,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	stdmeta.InitializeSsoinfo(d)
 	telemetryservice.RegisterAggregate(instantiateSvc)
 	stdmeta.SetupSledProfilePlugin(d)
+	stdmeta.InitializeCertInfo(d)
 
 	awesome_mapper2.AddFunction("find_uris_with_basename", func(args ...interface{}) (interface{}, error) {
 		if len(args) < 1 {

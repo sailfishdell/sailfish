@@ -263,6 +263,7 @@ func (b breadcrumb) UpdateRequest(ctx context.Context, property string, value in
 		return nil, HTTP_code{err_message: errs, any_success: num_success}
 	}
 	timer := time.NewTimer(time.Duration(patch_timeout*len(reqIDs)) * time.Second)
+	defer timer.Stop()
 
 	for {
 		select {
@@ -275,7 +276,6 @@ func (b breadcrumb) UpdateRequest(ctx context.Context, property string, value in
 			if !ok {
 				continue
 			}
-
 			for i, reqID := range reqIDs {
 				if reqID == data.ReqID {
 					reqIDs[i] = reqIDs[len(reqIDs)-1]
@@ -289,7 +289,6 @@ func (b breadcrumb) UpdateRequest(ctx context.Context, property string, value in
 					break
 				}
 			}
-
 			if len(reqIDs) == 0 {
 				return nil, HTTP_code{err_message: errs, any_success: num_success}
 			}

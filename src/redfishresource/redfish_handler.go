@@ -182,6 +182,9 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		search = append(search, eh.CommandType(redfishResource.ResourceURI+":"+r.Method)) // preallocated
 		search = append(search, eh.CommandType(redfishResource.Plugin+":"+r.Method))      // preallocated
 	}
+	// short version - save memory
+	search = append(search, eh.CommandType("R:"+r.Method)) // preallocated
+	// long version for backwards compat (old style)
 	search = append(search, eh.CommandType("http:RedfishResource:"+r.Method)) // preallocated
 
 	// search through the commands until we find one that exists
@@ -248,7 +251,7 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	// if command does not implement userdetails setter, we always check privs here
 	if !implementsAuthorization || authAction == "checkMaster" {
-		privsToCheck := redfishResource.PrivilegeMap[r.Method]
+		privsToCheck := redfishResource.PrivilegeMap[MapStringToHTTPReq(r.Method)]
 
 		// convert Privileges from []interface{} to []string (way more code than there should be for something this simple)
 		var t []string
@@ -441,6 +444,13 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Length", strconv.Itoa(len(b)))
 	w.Write(b)
 	// END
+
+	redfishResource.ResultsCacheMu.Lock()
+	if redfishResource.access == nil {
+		redfishResource.access = map[HTTPReqType]time.Time{}
+	}
+	redfishResource.access[MapStringToHTTPReq(r.Method)] = time.Now()
+	redfishResource.ResultsCacheMu.Unlock()
 
 	return
 }

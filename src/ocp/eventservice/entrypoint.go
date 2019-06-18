@@ -5,7 +5,9 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"os"
 	"path"
 	"sync"
 	"time"
@@ -140,6 +142,9 @@ func (es *EventService) CreateSubscription(ctx context.Context, logger log.Logge
 		return nil
 	}
 
+	logToEventFile(fmt.Sprintf("%s -- New Subscription created for uri=%s\n", time.Now().UTC().Format(time.UnixDate),
+		subView.GetModel("default").GetProperty("destination").(string)))
+
 	go func() {
 		// close the view when we exit this goroutine
 		defer subView.Close()
@@ -158,6 +163,8 @@ func (es *EventService) CreateSubscription(ctx context.Context, logger log.Logge
 				switch typ := event.EventType(); typ {
 				case domain.RedfishResourceRemoved:
 					subLogger.Info("Cancelling subscription", "uri", subView.GetURI())
+					logToEventFile(fmt.Sprintf("%s -- Subscription removed for uri=%s\n", time.Now().UTC().Format(time.UnixDate),
+						subView.GetModel("default").GetProperty("destination").(string)))
 					cancel()
 					return
 				case ExternalRedfishEvent:
@@ -189,6 +196,8 @@ func (es *EventService) CreateSubscription(ctx context.Context, logger log.Logge
 
 			case <-ctx.Done():
 				subLogger.Debug("context is done: exiting event service publisher")
+				logToEventFile(fmt.Sprintf("%s -- Publisher Exited for uri=%s\n", time.Now().UTC().Format(time.UnixDate),
+					subView.GetModel("default").GetProperty("destination").(string)))
 				return
 			}
 		}
@@ -243,39 +252,69 @@ func makePOST(es *EventService, dest string, event eh.Event, context interface{}
 					RedfishEventData: eachEvent,
 				},
 			)
-
+			if err != nil {
+				log.MustLogger("event_service").Crit("ERROR POSTING", "json.Marshal", err)
+				continue
+			}
 			// TODO: should be able to configure timeout
 			// TODO: Shore up security for POST
 			client := &http.Client{
-				Timeout: time.Second * 3,
+				Timeout: time.Second * 5,
 				Transport: &http.Transport{
 					TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 				},
 			}
-			req, err := http.NewRequest("POST", dest, bytes.NewBuffer(d))
-			req.Header.Add("OData-Version", "4.0")
-			req.Header.Set("Content-Type", "application/json")
-			resp, err := client.Do(req)
-			if err != nil {
-				log.MustLogger("event_service").Warn("ERROR POSTING", "err", err)
-			} else {
-				resp.Body.Close()
+			//Try up to 5 times to send event
+			logToEventFile(fmt.Sprintf("%s -- STARTING to send MessageId=%s to uri=%s\n", time.Now().UTC().Format(time.UnixDate), eachEvent.MessageId, dest))
+			logSent := false
+			for i := 0; i < 5 && !logSent; i++ {
+				//Increasing wait between retries, first time don't wait i==0
+				time.Sleep(time.Duration(i) * 2 * time.Second)
+				req, _ := http.NewRequest("POST", dest, bytes.NewBuffer(d))
+				req.Header.Add("OData-Version", "4.0")
+				req.Header.Set("Content-Type", "application/json")
+				resp, err := client.Do(req)
+				if err != nil {
+					log.MustLogger("event_service").Crit("ERROR POSTING", "MessageId", eachEvent.MessageId, "err", err)
+					logToEventFile(fmt.Sprintf("%s -- ERROR POSTING MessageId=%s to uri=%s attempt=%d err=%s\n", time.Now().UTC().Format(time.UnixDate), eachEvent.MessageId, dest, i+1, err))
+				} else if resp.StatusCode == http.StatusOK ||
+					resp.StatusCode == http.StatusCreated ||
+					resp.StatusCode == http.StatusAccepted ||
+					resp.StatusCode == http.StatusNoContent {
+					//Got a good response end loop
+					logToEventFile(fmt.Sprintf("%s -- Success sent MessageId=%s to uri=%s attempt=%d HTTP Status=%d\n", time.Now().UTC().Format(time.UnixDate), eachEvent.MessageId, dest, i+1, resp.StatusCode))
+					logSent = true
+				} else {
+					//Error code return
+					log.MustLogger("event_service").Crit("ERROR POSTING", "MessageId", eachEvent.MessageId, "StatusCode", resp.StatusCode, "uri", dest)
+					logToEventFile(fmt.Sprintf("%s -- ERROR POSTING MessageId=%s to uri=%s attempt=%d HTTP Status=%d\n", time.Now().UTC().Format(time.UnixDate), eachEvent.MessageId, dest, i+1, resp.StatusCode))
+				}
+				if resp != nil {
+					resp.Body.Close()
+				}
+			}
+			if logSent == false {
+				logToEventFile(fmt.Sprintf("%s -- FAILURE to send MessageId=%s to uri=%s\n", time.Now().UTC().Format(time.UnixDate), eachEvent.MessageId, dest))
+				log.MustLogger("event_service").Crit("ERROR POSTING, DROPPED", "MessageId", eachEvent.MessageId, "uri", dest)
 			}
 		}
 	}:
 	default: // drop the POST if the queue is full
 		log.MustLogger("event_service").Crit("External Event Queue Full, dropping")
+		logToEventFile(fmt.Sprintf("%s -- DROP Messages to uri=%s\n", time.Now().UTC().Format(time.UnixDate), dest))
 	}
 }
 
 func (es *EventService) PublishResourceUpdatedEventsForModel(ctx context.Context, modelName string) view.Option {
 	return view.WatchModel(modelName, func(v *view.View, m *model.Model, updates []model.Update) {
-		eventData := &RedfishEventData{
-			EventType: "ResourceUpdated",
-			//TODO MSM BUG: OriginOfCondition for events has to be a string or will be rejected
-			OriginOfCondition: v.GetURI(),
-		}
-		go es.d.EventBus.PublishEvent(ctx, eh.NewEvent(RedfishEvent, eventData, time.Now()))
+		go func() {
+			eventData := &RedfishEventData{
+				EventType: "ResourceUpdated",
+				//TODO MSM BUG: OriginOfCondition for events has to be a string or will be rejected
+				OriginOfCondition: v.GetURI(),
+			}
+			es.d.EventBus.PublishEvent(ctx, eh.NewEvent(RedfishEvent, eventData, time.Now()))
+		}()
 	})
 }
 
@@ -325,4 +364,15 @@ func makeMCHARSevents(es *EventService, ctx context.Context) []RedfishEventData 
 		returnList = append(returnList, mainEvent)
 	}
 	return returnList
+}
+
+func logToEventFile(msg string) {
+	eventLogFileName := "/var/log/go/sailfish_events.log"
+	logfile, _ := os.OpenFile(eventLogFileName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0640)
+	if logfile != nil {
+		logfile.WriteString(msg)
+		logfile.Close()
+	} else {
+		log.MustLogger("event_service").Crit(msg)
+	}
 }

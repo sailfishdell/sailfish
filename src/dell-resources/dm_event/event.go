@@ -17,10 +17,6 @@ const (
 	ComponentRemoved                    = eh.EventType("ComponentRemoved")
 	FileReadEvent                       = eh.EventType("FileReadEvent")
 	FileLinkEvent                       = eh.EventType("FileLinkEvent")
-	StorageEnclosureEvent               = eh.EventType("StorageEnclosureEvent")
-	StorageAdapterEvent                 = eh.EventType("StorageAdapterEvent")
-	StoragePhysicalEvent                = eh.EventType("StoragePhysicalEvent")
-	StorageVirtualEvent                 = eh.EventType("StorageVirtualEvent")
 	ProbeObjEvent                       = eh.EventType("ProbeObjEvent")
 )
 
@@ -40,10 +36,6 @@ func init() {
 	})
 	eh.RegisterEventData(IomCapability, func() eh.EventData { return &IomCapabilityData{} })
 	eh.RegisterEventData(ComponentRemoved, func() eh.EventData { return &ComponentRemovedData{} })
-	eh.RegisterEventData(StorageAdapterEvent, func() eh.EventData { return &StorageAdapterObjEventData{} })
-	eh.RegisterEventData(StorageEnclosureEvent, func() eh.EventData { return &StorageEnclosureObjEventData{} })
-	eh.RegisterEventData(StoragePhysicalEvent, func() eh.EventData { return &StoragePhysicalObjEventData{} })
-	eh.RegisterEventData(StorageVirtualEvent, func() eh.EventData { return &StorageVirtualObjEventData{} })
 	eh.RegisterEventData(ProbeObjEvent, func() eh.EventData { return &ProbeObjEventData{} })
 }
 
@@ -231,109 +223,6 @@ type RaidObjectHeader struct {
 	AlternateFQDDOffset int     `json:"alternateFQDDOffset"`
 	Flags               int     `json:"flags"`
 	UpdateTime          int     `json:"updateTime"`
-}
-
-type StorageVirtualObjEventData struct {
-	ObjectHeader        DataObjectHeader
-	RaidObjHeader       RaidObjectHeader `mapstructure:"raidObjheader"`
-	BlockSize           int              `mapstructure:"blockSize"`
-	Capacity            int64            `mapstructure:"size"`
-	Encrypted           uint32           `mapstructure:"attributes"`
-	OptimumIoSize       int              `mapstructure:"stripeSize"`
-	VolumeType          uint32           `mapstructure:"raidLevel"`
-	Protocol            int              `mapstructure:"availableProtocols"`
-	Cachecade           int              `mapstructure:"attributes"`
-	DiskCachePolicy     int              `mapstructure:"diskCachePolicy"`
-	LockStatus          int              `mapstructure:"attributes"`
-	MediaType           int              `mapstructure:"attributes"`
-	ReadCachePolicy     int              `mapstructure:"cachePolicy"`
-	SpanDepth           int              `mapstructure:"spanDepth"`
-	SpanLength          int              `mapstructure:"pdsPerSpan"`
-	VirtualDiskTargetID int              `mapstructure:"targetID"`
-	WriteCachePolicy    int              `mapstructure:"cachePolicy"`
-	Id                  string           `mapstructure:"fqdd"`
-	Description         string
-}
-
-type StoragePhysicalObjEventData struct {
-	ObjectHeader              DataObjectHeader
-	RaidObjHeader             RaidSiObjectHeader `mapstructure:"raidSiobjheader"`
-	BlockSize                 int                `mapstructure:"blockSize"`
-	Capacity                  uint64             `mapstructure:"size"`
-	CapableSpeeds             int                `mapstructure:"capableSpeeds"`
-	EncryptionAbility         int                `mapstructure:"attributes"`
-	EncryptionStatus          int                `mapstructure:"securityState"`
-	FailurePredicted          int                `mapstructure:"attributes"`
-	Hotspare                  int                `mapstructure:"hotspare"`
-	Id                        string             `mapstructure:"fqdd"`
-	Manufacturer              string             `mapstructure:"manufactureName"`
-	Model                     string             `mapstructure:"modelName"`
-	MediaType                 int                `mapstructure:"attributes"`
-	NegotiatedSpeed           int                `mapstructure:"negotiatedSpeed"`
-	PartNumber                string             `mapstructure:"ppid"`
-	PredictedMediaLife        int                `mapstructure:"deviceLifeRemaining"`
-	Protocol                  int                `mapstructure:"protocol"`
-	Revision                  string             `mapstructure:"revision"`
-	NominalMediumRotationRate int                `mapstructure:"nominalMediumRotationRate"`
-	Serial                    string             `mapstructure:"serialNumber"`
-	DriveFormFactor           int                `mapstructure:"driveFormFactor"`
-	Connector                 int
-	FreeSize                  uint64 `mapstructure:"freeSize"`
-	ManufacturingDay          uint16 `mapstructure:"manufactureDay"`
-	ManufacturingWeek         uint16 `mapstructure:"manufactureWeek"`
-	ManufacturingYear         uint32 `mapstructure:"manufactureYear"`
-	Ppid                      string `mapstructure:"ppid"`
-	PredictiveFailState       int    `mapstructure:"attributes"`
-	RaidStatus                int    `mapstructure:"raidState"`
-	SasAddress                string `mapstructure:"wwn"`
-	Slot                      int8   `mapstructure:"slot"`
-	UsedSize                  uint64 `mapstructure:"usedSize"`
-}
-
-type StorageAdapterObjEventData struct {
-	ObjectHeader                 DataObjectHeader
-	RaidObjHeader                RaidSiObjectHeader `mapstructure:"raidSiobjheader"`
-	Wwn                          string             `mapstructure:"wwn"`
-	Manufacturer                 string             `mapstructure:"manufacturer"`
-	FirmwareVersion              string             `mapstructure:"firmwareVersion"`
-	Id                           string             `mapstructure:"fqdd"`
-	CapableSpeeds                int                `mapstructure:"capableSpeeds"`
-	CacheSizeInMb                int                `mapstructure:"cacheSize"`
-	CachecadeCapability          int                `mapstructure:"attributes"`
-	ControllerFirmwareVersion    string             `mapstructure:"firmwareVersion"`
-	DeviceCardSlotType           int                `mapstructure:"slotType"`
-	DriverVersion                int                `mapstructure:""`
-	EncryptionCapability         int                `mapstructure:"attributes"`
-	EncryptionMode               int                `mapstructure:"encryptionmode"`
-	PCISlot                      int                `mapstructure:"slot"`
-	Embedded                     int                `mapstructure:"embedded"`
-	PatrolReadState              int                `mapstructure:"prMode"`
-	RollupStatus                 int
-	SecurityStatus               int    `mapstructure:"attributes"`
-	SlicedVDCapability           int    `mapstructure:"attributes"`
-	Model                        string `mapstructure:"fqdd"`
-	SupportedDiskProtocols       int    `mapstructure:"supportedDiskProtocols"`
-	SupportedControllerProtocols int
-}
-
-type StorageEnclosureObjEventData struct {
-	ObjectHeader  DataObjectHeader
-	RaidObjHeader RaidSiObjectHeader `mapstructure:"raidSiobjheader"`
-	AssetTag      string             `mapstructure:"assetTag"`
-	ChassisType   int                `json:"bpType"`
-	DeviceId      string             `mapstructure:"fqdd"`
-	Manufacturer  string             `mapstructure:"manufacturer"`
-	Model         string             `mapstructure:"fqdd"`
-	PartNumber    string             `mapstructure:"ppid"`
-	//PowerState    int                `mapstructure:"drivePower"`
-	Sku        string `mapstructure:"serialNumber"`
-	Serial     string `mapstructure:"serialNumber"`
-	Connector  int    `mapstructure:"port"`
-	ServiceTag string `mapstructure:"serviceTag"`
-	SlotCount  int    `mapstructure:"slotCount"`
-	Version    string `mapstructure:"revision"`
-	WiredOrder int    `mapstructure:"position"`
-	PowerState int    `mapstructure:"powerState"`
 }
 
 type ProbeThresholdsobj struct {

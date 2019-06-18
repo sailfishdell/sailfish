@@ -48,8 +48,10 @@ func RegisterCertAggregate(s *testaggregate.Service) {
 					ResourceURI: vw.GetURI(),
 					Type:        "#DellCertificateInventoryCollection.DellCertificateInventoryCollection",
 					Context:     "/redfish/v1/$metadata#DellCertificateInventoryCollection.DellCertificateInventoryCollection",
+					Plugin:      "GenericActionHandler",
 					Privileges: map[string]interface{}{
-						"GET": []string{"Login"},
+						"GET":  []string{"Login"},
+						"POST": []string{"ConfigureManager"},
 					},
 					Properties: map[string]interface{}{
 						"Name":                     "Certificate Inventory Collection",
@@ -74,7 +76,7 @@ func RegisterCertAggregate(s *testaggregate.Service) {
 						"POST": []string{"ConfigureManager"},
 					},
 					Properties: map[string]interface{}{
-						"Certificate@meta":   vw.Meta(view.PropGET("certificate")),
+						"Certificate@meta":   map[string]interface{}{"GET": map[string]interface{}{"plugin": "certinfo"}},
 						"Description":        "Certificate Inventory Instance",
 						"DownloadFileFormat": "PEM",
 						"Id":                 "FactoryIdentity.1",

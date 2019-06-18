@@ -464,7 +464,7 @@ views:
         "instantiate('faultlistservices', 'FQDD', FQDD)",
         #Only instantiate 1 instance of lclog collection, it is too big to keep duplicate and each one generates alerts
         "FQDD == 'CMC.Integrated.1' && instantiate('lclogentrycollection', 'FQDD', FQDD)",
-        "instantiate('faultlistentrycollection', 'FQDD', FQDD)"
+        "instantiate('faultlistentrycollection')"
         ]
 
   "certificateservices":
@@ -496,6 +496,8 @@ views:
       "View":
         - "fn": "with_URI"
           "params": "parenturi + '/CertificateInventory'"
+        - "fn": "with_PumpHandledAction"
+          "params": {"name": "certificates.uploadcert", "uri": "", "timeout": 30}
         - "fn": "stdFormatters"
           "params":
       "Aggregate": "certificatecollection"
@@ -511,7 +513,9 @@ views:
         - "fn": "with_URI"
           "params": "rooturi + '/Managers/' + ParentFQDD + '/CertificateService/CertificateInventory/' + FQDD"
         - "fn": "with_PumpHandledAction"
-          "params": {"name": "certificates.uploadcert", "uri": "", "timeout": 30}
+          "params": {"name": "certificates.uploadcert2", "uri": "", "timeout": 30}
+        - "fn": "with_PumpHandledAction"
+          "params": {"name": "certificates.getcert", "uri": "/Actions/GetCertInfo", "timeout": 90}
         - "fn": "stdFormatters"
           "params":
       "Aggregate": "certificate"
@@ -622,7 +626,7 @@ views:
           "params": {"modelname": "default", "cfgsection": "faultlist", "uniquename": "'collection_faultlist_' + view.GetURI()", "passthru": {'collection_uri': 'view.GetURI()'} }
       "View":
         - "fn": "with_URI"
-          "params": "rooturi + '/Managers/' + FQDD + '/Logs/FaultList'"
+          "params": "rooturi + '/Managers/CMC.Integrated.1/Logs/FaultList'"
         - "fn": "with_PumpHandledAction"
           "params": {"name": "fault.add", "uri": "", "timeout": 30}
         - "fn": "stdFormatters"
@@ -948,7 +952,7 @@ views:
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
         - "fn": "with_PumpHandledAction"
-          "params": {"name": "IOMConfig_objects", "uri": "", "timeout": 30}
+          "params": {"name": "IOMConfig_objects", "uri": "", "timeout": 300}
       "Aggregate": "iom_config"
 
 
@@ -1284,10 +1288,10 @@ awesome_mapper:
     fan:
       - { SelectEventType: "FanEvent", Select: "data.ObjectHeader.FQDD == DM_FQDD",
             ModelUpdate: [
-                {Property: "fanpwm", Query: "data.Fanpwm" },
+                {Property: "fanpwm", Query: "data.Fanpwm" , Default:-1},
                 {Property: "key", Query: "data.Key" },
                 {Property: "fanname", Query: "data.FanName" },
-                {Property: "Fanpwm_int", Query: "data.Fanpwm_int" },
+                {Property: "Fanpwm_int", Query: "data.Fanpwm_int" , Default: -1},
                 {Property: "VendorName", Query: "data.VendorName" },
                 {Property: "WarningThreshold", Query: "data.WarningThreshold" },
                 {Property: "DeviceName", Query: "data.DeviceName" },
@@ -1295,9 +1299,9 @@ awesome_mapper:
                 {Property: "CriticalThreshold", Query: "data.CriticalThreshold" },
                 {Property: "Fanhealth", Query: "data.Fanhealth" },
                 {Property: "Numrotors", Query: "data.Numrotors" },
-                {Property: "Rotor2rpm", Query: "data.Rotor2rpm" },
-                {Property: "Rotor1rpm", Query: "data.Rotor1rpm" },
-                {Property: "rpm", Query: "int((data.Rotor1rpm+data.Rotor2rpm)/2)" },
+                {Property: "Rotor2rpm", Query: "data.Rotor2rpm" , Default: -1 },
+                {Property: "Rotor1rpm", Query: "data.Rotor1rpm" , Default: -1},
+                {Property: "rpm", Query: "int((data.Rotor1rpm+data.Rotor2rpm)/2)" , Default:-1},
                 {Property: "FanStateMask", Query: "data.FanStateMask" }]}
 
     inst_power:
