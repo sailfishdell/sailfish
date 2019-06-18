@@ -177,7 +177,7 @@ func removeNegSelects(negSl []string, selSl []string) {
 // TODO:  if filter has a query parameter with '$' not supported,  and extended error should be returned with the requested query parameter(s) not supported.
 // RedfishFilter in runmeta would reduce the amount of loops.
 func (rh *RedfishHandler) DoFilter(auth *RedfishAuthorizationProperty, data *HTTPCmdProcessedData) {
-        if auth == nil {
+	if auth == nil {
 		return
 	}
 
