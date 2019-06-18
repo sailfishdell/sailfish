@@ -267,7 +267,15 @@ func (b breadcrumb) UpdateRequest(ctx context.Context, property string, value in
 	for {
 		select {
 		case event := <-listener.Inbox():
-			data, _ := event.Data().(*attributes.AttributeUpdatedData)
+			if e, ok := event.(syncEvent); ok {
+				e.Done()
+			}
+
+			data, ok := event.Data().(*attributes.AttributeUpdatedData)
+			if !ok {
+				continue
+			}
+
 			for i, reqID := range reqIDs {
 				if reqID == data.ReqID {
 					reqIDs[i] = reqIDs[len(reqIDs)-1]
@@ -281,14 +289,12 @@ func (b breadcrumb) UpdateRequest(ctx context.Context, property string, value in
 					break
 				}
 			}
-			if e, ok := event.(syncEvent); ok {
-				e.Done()
-			}
+
 			if len(reqIDs) == 0 {
 				return nil, HTTP_code{err_message: errs, any_success: num_success}
 			}
 		case <-timer.C:
-                        return nil, HTTP_code{err_message: []string{timeout_response}, any_success: num_success}
+			return nil, HTTP_code{err_message: []string{timeout_response}, any_success: num_success}
 
 		case <-ctx.Done():
 			return nil, nil
