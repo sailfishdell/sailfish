@@ -371,16 +371,6 @@ func (c *InjectEvent) Handle(ctx context.Context, a *RedfishResourceAggregate) e
 		eventList = append(eventList, c.EventArray...) // preallocated
 	}
 
-	// comment out debug prints in the hot path, uncomment for debugging
-	//requestLogger.Debug("InjectEvent - NEW ARRAY INJECT", "events", eventList)
-
-	//debugTrain := false
-	//if len(eventList) >= MAX_CONSOLIDATED_EVENTS {
-	//fmt.Printf("Event list (%s) len (%d) greater than max number of events (%d). Going to break into #(%d) chunks\n", c.Name, len(eventList), MAX_CONSOLIDATED_EVENTS, len(eventList)/MAX_CONSOLIDATED_EVENTS)
-	//debugTrain = true
-	//}
-
-	fmt.Printf("HELLO WORLD: %s\n", c)
 	trainload := make([]eh.EventData, 0, MAX_CONSOLIDATED_EVENTS)
 	for _, eventData := range eventList {
 		data, err := eh.CreateEventData(c.Name)
@@ -390,16 +380,12 @@ func (c *InjectEvent) Handle(ctx context.Context, a *RedfishResourceAggregate) e
 			trainload = append(trainload, eventData) //preallocated
 		} else {
 
-			// fmt.Printf("HELLO - decoding event: '%s'\n", c.Encoding)
 			if c.Encoding == "binary" {
-				// fmt.Printf("HELLO - I DON'T KNOW WHAT TO DO!\n")
 				structdata, err := base64.StdEncoding.DecodeString(eventData["data"].(string))
 				if err != nil {
 					fmt.Printf("ERROR decoding base64 event data: %s", err)
 					continue
 				}
-
-				// fmt.Printf("base64 DECODED STRUCT: '%s'\n", structdata)
 
 				buf := bytes.NewReader(structdata)
 				err = binary.Read(buf, binary.LittleEndian, data)
@@ -408,10 +394,7 @@ func (c *InjectEvent) Handle(ctx context.Context, a *RedfishResourceAggregate) e
 					continue
 				}
 
-				//fmt.Printf("BINARY STRUCT: '%s'\n", data)
-
 				trainload = append(trainload, data) //preallocated
-
 			}
 
 			if c.Encoding == "json" || c.Encoding == "" {
