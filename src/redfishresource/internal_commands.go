@@ -157,8 +157,8 @@ func (c *RemoveRedfishResource) AggregateID() eh.UUID { return c.ID }
 func (c *RemoveRedfishResource) CommandType() eh.CommandType { return RemoveRedfishResourceCommand }
 
 func (c *RemoveRedfishResource) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
-	a.ResultsCacheMu.Lock()
-	defer a.ResultsCacheMu.Unlock()
+	a.Lock()
+	defer a.Unlock()
 	a.PublishEvent(eh.NewEvent(RedfishResourceRemoved, &RedfishResourceRemovedData{
 		ID:          c.ID,
 		ResourceURI: a.ResourceURI,
@@ -182,8 +182,8 @@ func (c *RemoveRedfishResourceProperty) CommandType() eh.CommandType {
 	return RemoveRedfishResourcePropertyCommand
 }
 func (c *RemoveRedfishResourceProperty) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
-	a.ResultsCacheMu.Lock()
-	defer a.ResultsCacheMu.Unlock()
+	a.Lock()
+	defer a.Unlock()
 
 	properties := a.Properties.Value.(map[string]interface{})
 	for key, _ := range properties {
@@ -210,8 +210,8 @@ func (c *UpdateRedfishResourceProperties) CommandType() eh.CommandType {
 	return UpdateRedfishResourcePropertiesCommand
 }
 func (c *UpdateRedfishResourceProperties) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
-	a.ResultsCacheMu.Lock()
-	defer a.ResultsCacheMu.Unlock()
+	a.Lock()
+	defer a.Unlock()
 
 	// ensure no collisions with immutable properties
 	for _, p := range immutableProperties {

@@ -32,10 +32,26 @@ type RedfishAuthorizationProperty struct {
 }
 
 type RedfishResourceProperty struct {
-	sync.RWMutex
+	lock      sync.RWMutex
 	Value     interface{}
 	Meta      map[string]interface{}
 	Ephemeral bool
+}
+
+func (rrp *RedfishResourceProperty) Lock() {
+	rrp.lock.Lock()
+}
+
+func (rrp *RedfishResourceProperty) Unlock() {
+	rrp.lock.Unlock()
+}
+
+func (rrp *RedfishResourceProperty) RLock() {
+	rrp.lock.RLock()
+}
+
+func (rrp *RedfishResourceProperty) RUnlock() {
+	rrp.lock.RUnlock()
 }
 
 func (rrp *RedfishResourceProperty) Parse(thing interface{}) {
