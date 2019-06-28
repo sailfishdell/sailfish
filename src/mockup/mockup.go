@@ -93,7 +93,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	//*********************************************************************
 	_, rootView, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, cfgMgrMu, "rootview", map[string]interface{}{
 		"rooturi":                   "/redfish/v1",
-		"submit_test_metric_report": view.Action(telemetryservice.MakeSubmitTestMetricReport(eb)),
+		"submit_test_metric_report": view.Action(telemetryservice.MakeSubmitTestMetricReport(eb, d, ch)),
 	})
 
 	//*********************************************************************
