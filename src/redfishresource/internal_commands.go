@@ -518,6 +518,10 @@ func StartInjectService(logger log.Logger, d *DomainObjects) {
 const MAX_CONSOLIDATED_EVENTS = 10
 const injectUUID = eh.UUID("49467bb4-5c1f-473b-0000-00000000000f")
 
+type Decoder interface {
+	Decode(d map[string]interface{}) error
+}
+
 func (c *InjectEvent) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 	a.ID = injectUUID
 	if len(c.EventData) > 0 || len(c.EventArray) > 0 {
@@ -546,46 +550,9 @@ func (c *InjectEvent) sendToChn(ctx context.Context) error {
 
 	trainload := make([]eh.EventData, 0, MAX_CONSOLIDATED_EVENTS)
 	for _, eventData := range eventList {
-		data, err := eh.CreateEventData(c.Name)
-		if err != nil {
-			// this debug statement probably not hit too often, leave enabled for now
-			requestLogger.Info("InjectEvent - event type not registered: injecting raw event.", "event name", c.Name, "error", err)
-			trainload = append(trainload, eventData) //preallocated
-		} else {
-
-			if c.Encoding == "binary" {
-				structdata, err := base64.StdEncoding.DecodeString(eventData["data"].(string))
-				if err != nil {
-					fmt.Printf("ERROR decoding base64 event data: %s", err)
-					continue
-				}
-
-				buf := bytes.NewReader(structdata)
-				err = binary.Read(buf, binary.LittleEndian, data)
-				if err != nil {
-					fmt.Printf("binary decode fail: %s\n", err)
-					continue
-				}
-
-				trainload = append(trainload, data) //preallocated
-			}
-
-			if c.Encoding == "json" || c.Encoding == "" {
-				err = mapstructure.Decode(eventData, &data)
-				if err != nil {
-					requestLogger.Warn("InjectEvent - could not decode event data, skipping event", "error", err, "raw-eventdata", eventData, "dest-event", data)
-					trainload = append(trainload, eventData) //preallocated
-				} else {
-					trainload = append(trainload, data) //preallocated
-				}
-			}
-
-		}
-		// comment out debug prints in the hot path, uncomment for debugging
-		requestLogger.Debug("InjectEvent - publishing", "event name", c.Name, "event_data", data)
-
 		// limit number of consolidated events to 30 to prevent overflowing queues and deadlocking
 		if len(trainload) >= MAX_CONSOLIDATED_EVENTS {
+			//fmt.Printf("Train (%s) leaving early: %d\n", c.Name, len(trainload))
 			e := event.NewSyncEvent(c.Name, trainload, time.Now())
 			e.Add(1)
 			if c.Synchronous {
@@ -594,6 +561,68 @@ func (c *InjectEvent) sendToChn(ctx context.Context) error {
 			trainload = make([]eh.EventData, 0, MAX_CONSOLIDATED_EVENTS)
 			injectChan <- e
 		}
+
+		// prefer to deserialize directly to a named type
+		data, err := eh.CreateEventData(c.Name)
+
+		// if the named type is not available, publish raw map[string]interface{} as eventData
+		if err != nil {
+			// this debug statement probably not hit too often, leave enabled for now
+			// This is not the preferred path. Consider creating event if we hit this for specific events.
+			requestLogger.Info("InjectEvent - event type not registered: injecting raw event.", "event name", c.Name, "error", err)
+			trainload = append(trainload, eventData) //preallocated
+			continue
+		}
+
+		// check if event wants to deserialize itself with a custom decoder
+		if ds, ok := data.(Decoder); ok {
+			err = ds.Decode(eventData)
+			if err != nil {
+				fmt.Printf("binary decode fail: %s\n", err)
+				continue
+			}
+			trainload = append(trainload, data) //preallocated
+			continue
+		}
+
+		// otherwise use default
+		if c.Encoding == "binary" {
+			structdata, err := base64.StdEncoding.DecodeString(eventData["data"].(string))
+			if err != nil {
+				fmt.Printf("ERROR decoding base64 event data: %s", err)
+				continue
+			}
+
+			buf := bytes.NewReader(structdata)
+			err = binary.Read(buf, binary.LittleEndian, data)
+			if err != nil {
+				fmt.Printf("binary decode fail: %s\n", err)
+				continue
+			}
+
+			trainload = append(trainload, data) //preallocated
+		}
+
+
+		if c.Encoding == "json" || c.Encoding == "" {
+			err = mapstructure.Decode(eventData, &data)
+			if err != nil {
+				requestLogger.Warn("InjectEvent - could not decode event data, skipping event", "error", err, "raw-eventdata", eventData, "dest-event", data)
+				trainload = append(trainload, eventData) //preallocated
+			} else {
+				trainload = append(trainload, data) //preallocated
+			}
+		}
+
+		// limit number of consolidated events to 30 to prevent overflowing queues and deadlocking
+		if len(trainload) >= MAX_CONSOLIDATED_EVENTS {
+			e := event.NewSyncEvent(c.Name, trainload, time.Now())
+			e.Add(1)
+			if c.Synchronous {
+				defer e.Wait()
+			}
+		}
+
 	}
 
 	if len(trainload) > 0 {
