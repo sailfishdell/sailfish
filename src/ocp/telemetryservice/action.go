@@ -77,8 +77,15 @@ func MakeSubmitTestMetricReport(eb eh.EventBus, d *domain.DomainObjects, ch eh.C
 						"@odata.id": "/redfish/v1/TelemetryService/MetricReportDefinitions"},
 				}})
 
-		// need to publish here.
-		responseEvent := eh.NewEvent(eventservice.ExternalRedfishEvent, &data.ActionData, time.Now())
+		eventData := eventservice.RedfishEventData{
+			EventType: "Alert",
+			MessageId: "TST100",
+			Oem : m,
+			//TODO MSM BUG: OriginOfCondition for events has to be a string or will be rejected
+			OriginOfCondition: "/redfish/v1/TelmetryService/MetricReports/" + n,
+		}
+
+		responseEvent := eh.NewEvent(eventservice.RedfishEvent, &eventData, time.Now())
 		eb.PublishEvent(ctx, responseEvent)
 
 		retData.Headers = map[string]string{
