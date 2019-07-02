@@ -1314,7 +1314,7 @@ awesome_mapper:
           ModelUpdate: [ {Property: "power_state", Query: "map_chassis_state(data.Value)"}]}
 
     fan:
-      - { SelectEventType: "FanEvent", Select: "data.ObjectHeader.FQDD == DM_FQDD",
+      - { SelectEventType: "thp_fan_data_object", Select: "DM_FQDD == data.GetStringFromOffset(data.Data.OffsetKey)",
              Process: { "name": "updateFanData", "params":[]}}
 
     inst_power:

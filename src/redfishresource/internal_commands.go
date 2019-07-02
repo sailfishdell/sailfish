@@ -600,11 +600,8 @@ func (c *InjectEvent) sendToChn(ctx context.Context) error {
 				continue
 			}
 
-			trainload = append(trainload, data) //preallocated
-		}
-
-
-		if c.Encoding == "json" || c.Encoding == "" {
+			trainload = append(trainload, buf) //preallocated
+		} else if c.Encoding == "json" || c.Encoding == "" {
 			err = mapstructure.Decode(eventData, &data)
 			if err != nil {
 				requestLogger.Warn("InjectEvent - could not decode event data, skipping event", "error", err, "raw-eventdata", eventData, "dest-event", data)

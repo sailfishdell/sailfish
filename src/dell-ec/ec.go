@@ -38,6 +38,7 @@ import (
 
 	// register all the DM events that are not otherwise pulled in
 	_ "github.com/superchalupa/sailfish/src/dell-resources/dm_event"
+	_ "github.com/superchalupa/sailfish/godefs"
 )
 
 type ocp struct {
