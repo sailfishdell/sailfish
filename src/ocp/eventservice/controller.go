@@ -124,9 +124,10 @@ func PublishRedfishEvents(ctx context.Context, m propertygetter, eb eh.EventBus)
 
 				case *domain.RedfishResourceCreatedData:
 					eventData := &RedfishEventData{
-						EventType: "ResourceCreated",
+						EventType: "ResourceAdded",
 						//TODO MSM BUG: OriginOfCondition for events has to be a string or will be rejected
 						OriginOfCondition: data.ResourceURI,
+						MessageId:         "TST100",
 					}
 
 					eb.PublishEvent(ctx, eh.NewEvent(RedfishEvent, eventData, time.Now()))
@@ -136,6 +137,7 @@ func PublishRedfishEvents(ctx context.Context, m propertygetter, eb eh.EventBus)
 						EventType: "ResourceRemoved",
 						//TODO MSM BUG: OriginOfCondition for events has to be a string or will be rejected
 						OriginOfCondition: data.ResourceURI,
+						MessageId:         "TST100",
 					}
 
 					eb.PublishEvent(ctx, eh.NewEvent(RedfishEvent, eventData, time.Now()))

@@ -87,7 +87,7 @@ func (rh *RedfishSSEHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	sub := eventservice.Subscription{
 		Protocol:    "SSE",
 		Destination: "",
-		EventTypes:  []string{"ResourceUpdated", "ResourceCreated", "ResourceRemoved", "Alert", "StateChanged"},
+		EventTypes:  []string{"ResourceUpdated", "ResourceAdded", "ResourceRemoved", "Alert", "StateChanged"},
 		Context:     rfSubContext,
 	}
 	sseContext, cancel := context.WithCancel(ctx)
