@@ -177,7 +177,7 @@ func removeNegSelects(negSl []string, selSl []string) {
 // TODO:  if filter has a query parameter with '$' not supported,  and extended error should be returned with the requested query parameter(s) not supported.
 // RedfishFilter in runmeta would reduce the amount of loops.
 func (rh *RedfishHandler) DoFilter(auth *RedfishAuthorizationProperty, data *HTTPCmdProcessedData) {
-        if auth == nil {
+	if auth == nil {
 		return
 	}
 
@@ -589,6 +589,21 @@ func handleSelect(a *RedfishAuthorizationProperty, d *HTTPCmdProcessedData) *HTT
 	return d
 }
 
+func isHeader(path string) bool {
+	// something will always need @meta expanstion
+	if strings.Contains(path, "@") ||
+		strings.Contains(path, "Name") ||
+		strings.Contains(path, "Description") ||
+		strings.Contains(path, "Attributes") ||
+		strings.Contains(path, "Id") ||
+		strings.Contains(path, "AttributeRegistry") {
+		return true
+	} else {
+		return false
+	}
+
+}
+
 // designed to be used within runmeta.helper function
 // arg[0] current path within recursion.
 // arg[1] slice of arrays for the select filter.
@@ -597,8 +612,6 @@ func handleSelect(a *RedfishAuthorizationProperty, d *HTTPCmdProcessedData) *HTT
 // return is false with a nil slice
 func selectCheck(path string, selectSl []string, sel_type bool) (bool, []string) {
 	var newselect []string // == nil
-	//var selSl string
-
 	if selectSl == nil {
 		return false, selectSl
 	}

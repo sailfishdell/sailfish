@@ -79,7 +79,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	ar_mapper2.RegisterARMapper(instantiateSvc, arService)
 	attributes.RegisterController(instantiateSvc, ardumpSvc)
 	stdmeta.RegisterFormatters(instantiateSvc, d)
-  stdmeta.SledVirtualReseatSvc(ctx, logger, eb)
+	stdmeta.SledVirtualReseatSvc(ctx, logger, eb)
 	registries.RegisterAggregate(instantiateSvc)
 	stdcollections.RegisterAggregate(instantiateSvc)
 	session.RegisterAggregate(instantiateSvc)
@@ -161,7 +161,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 		map[string]interface{}{
 			"rooturi":                   rooturi,
 			"globalHealthModel":         globalHealthModel,
-			"submit_test_metric_report": view.Action(telemetryservice.MakeSubmitTestMetricReport(eb)),
+			"submit_test_metric_report": view.Action(telemetryservice.MakeSubmitTestMetricReport(eb, d, ch)),
 		})
 
 	//*********************************************************************

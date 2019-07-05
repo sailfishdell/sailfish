@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"path"
 
 	"reflect"
 )
@@ -22,10 +23,6 @@ func NewGet(ctx context.Context, agg *RedfishResourceAggregate, rrp *RedfishReso
 		root:    true,
 		sel:     auth.sel,
 		path:    "",
-	}
-	// this is to make sure attribute meta gets expanded before filtering in redfish_handler.ServeHTTP
-	if auth.selT {
-		opts.sel = append(opts.sel, "Attributes")
 	}
 
 	return rrp.RunMetaFunctions(ctx, agg, auth, opts)
@@ -263,7 +260,6 @@ type numSuccess interface {
 
 func helper(ctx context.Context, agg *RedfishResourceAggregate, auth *RedfishAuthorizationProperty, encopts nuEncOpts, v interface{}) error {
 	var ok bool
-	var path string
 	// handle special case of RRP inside RRP.Value of parent
 	if vp, ok := v.(*RedfishResourceProperty); ok {
 		return vp.RunMetaFunctions(ctx, agg, auth, encopts)
@@ -287,11 +283,12 @@ func helper(ctx context.Context, agg *RedfishResourceAggregate, auth *RedfishAut
 		}
 
 		for _, k := range val.MapKeys() {
-
-			if encopts.path == "" {
-				path = k.String()
-			} else {
-				path = encopts.path + "/" + k.String()
+			newEncOpts := nuEncOpts{
+				request: encopts.request,
+				present: encopts.present,
+				process: encopts.process,
+				root:    false,
+				path:    path.Join(encopts.path, k.String()),
 			}
 
 			// first scrub any old extended messages
@@ -300,19 +297,13 @@ func helper(ctx context.Context, agg *RedfishResourceAggregate, auth *RedfishAut
 				val.SetMapIndex(reflect.ValueOf(annotatedKey), reflect.Value{})
 			}
 
-			newEncOpts := nuEncOpts{
-				request: encopts.request,
-				present: encopts.present,
-				process: encopts.process,
-				root:    false,
-			}
-
-			if auth.doSel && encopts.sel != nil {
-				ok, newEncOpts.sel = selectCheck(path, encopts.sel, auth.selT)
+			// Header information needs to always have the meta expanded
+			if isHeader(newEncOpts.path) {
+			} else if auth.doSel && encopts.sel != nil {
+				ok, newEncOpts.sel = selectCheck(newEncOpts.path, encopts.sel, auth.selT)
 				if !ok {
 					continue
 				}
-				newEncOpts.path = path
 			}
 
 			requestBody, ok := newEncOpts.request.(map[string]interface{})

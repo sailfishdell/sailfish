@@ -14,8 +14,8 @@ import (
 	eh "github.com/looplab/eventhorizon"
 	"github.com/looplab/eventhorizon/commandhandler/aggregate"
 	eventpublisher "github.com/looplab/eventhorizon/publisher/local"
-	repo "github.com/looplab/eventhorizon/repo/memory"
 	"github.com/superchalupa/sailfish/src/looplab/aggregatestore"
+	repo "github.com/superchalupa/sailfish/src/looplab/bbolt"
 	"github.com/superchalupa/sailfish/src/looplab/eventbus"
 	"github.com/superchalupa/sailfish/src/looplab/eventwaiter"
 )
