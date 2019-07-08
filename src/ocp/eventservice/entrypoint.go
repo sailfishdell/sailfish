@@ -142,8 +142,21 @@ func (es *EventService) CreateSubscription(ctx context.Context, logger log.Logge
 		return nil
 	}
 
-	logToEventFile(fmt.Sprintf("%s -- New Subscription created for uri=%s\n", time.Now().UTC().Format(time.UnixDate),
-		subView.GetModel("default").GetProperty("destination").(string)))
+	// get model once
+	esModel := subView.GetModel("default")
+	dest := esModel.GetProperty("destination").(string)
+	prot := esModel.GetProperty("protocol").(string)
+	ctex := esModel.GetProperty("context").(string)
+	eventT := sub.EventTypes
+
+	uuid := subView.GetUUID()
+
+	logS := fmt.Sprintf("%s -- New Subscription created for uri=%s, prot=%s,eventT=%v?\n",
+		time.Now().UTC().Format(time.UnixDate),
+		dest,
+		prot,
+		eventT)
+	logToEventFile(logS)
 
 	go func() {
 		// close the view when we exit this goroutine
@@ -152,6 +165,7 @@ func (es *EventService) CreateSubscription(ctx context.Context, logger log.Logge
 		defer es.d.CommandHandler.HandleCommand(context.Background(), &domain.RemoveRedfishResource{ID: subView.GetUUID(), ResourceURI: subView.GetURI()})
 		defer listener.Close()
 		firstEvents := true
+
 		for {
 			select {
 			case event := <-listener.Inbox():
@@ -164,14 +178,14 @@ func (es *EventService) CreateSubscription(ctx context.Context, logger log.Logge
 				case domain.RedfishResourceRemoved:
 					subLogger.Info("Cancelling subscription", "uri", subView.GetURI())
 					logToEventFile(fmt.Sprintf("%s -- Subscription removed for uri=%s\n", time.Now().UTC().Format(time.UnixDate),
-						subView.GetModel("default").GetProperty("destination").(string)))
+						dest))
 					cancel()
 					return
 				case ExternalRedfishEvent:
 					subLogger.Info(" redfish event processing")
 					// NOTE: we don't actually check to ensure that this is an actual ExternalRedfishEventData specifically because Metric Reports don't currently go through like this.
-					esModel := subView.GetModel("default")
-					if esModel.GetProperty("protocol") != "Redfish" {
+					if prot != "Redfish" {
+
 						subLogger.Info("Not Redfish Protocol")
 						continue
 					} else if firstEvents {
@@ -185,19 +199,16 @@ func (es *EventService) CreateSubscription(ctx context.Context, logger log.Logge
 							}
 						}
 					}
-					context := esModel.GetProperty("context")
-					eventtypes := esModel.GetProperty("eventTypes")
-					memberid := subView.GetUUID()
-					if dest, ok := esModel.GetProperty("destination").(string); ok {
+					if dest != "" {
 						subLogger.Info("Send to destination", "dest", dest)
-						makePOST(es, dest, event, context, memberid, eventtypes)
+						makePOST(es, dest, event, ctex, uuid, eventT)
 					}
 				}
 
 			case <-ctx.Done():
 				subLogger.Debug("context is done: exiting event service publisher")
 				logToEventFile(fmt.Sprintf("%s -- Publisher Exited for uri=%s\n", time.Now().UTC().Format(time.UnixDate),
-					subView.GetModel("default").GetProperty("destination").(string)))
+					dest))
 				return
 			}
 		}
@@ -223,12 +234,10 @@ func makePOST(es *EventService, dest string, event eh.Event, context interface{}
 	}
 	//Keep only the events in the Event Array which match the subscription
 	for _, subevent := range eventlist {
-		if subevent != nil {
-			for _, subvalid := range validEvents {
-				if subevent.EventType == subvalid {
-					outputEvents = append(outputEvents, subevent)
-					break
-				}
+		for _, subvalid := range validEvents {
+			if subevent.EventType == subvalid {
+				outputEvents = append(outputEvents, subevent)
+				break
 			}
 		}
 	}
@@ -312,6 +321,7 @@ func (es *EventService) PublishResourceUpdatedEventsForModel(ctx context.Context
 				EventType: "ResourceUpdated",
 				//TODO MSM BUG: OriginOfCondition for events has to be a string or will be rejected
 				OriginOfCondition: v.GetURI(),
+				MessageId:         "TST100",
 			}
 			es.d.EventBus.PublishEvent(ctx, eh.NewEvent(RedfishEvent, eventData, time.Now()))
 		}()

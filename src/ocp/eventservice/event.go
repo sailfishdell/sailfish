@@ -15,14 +15,15 @@ func init() {
 }
 
 type RedfishEventData struct {
-	EventType         string   `json:",omitempty"`
-	EventId           string   `json:",omitempty"`
-	EventTimestamp    string   `json:",omitempty"`
-	Severity          string   `json:",omitempty"`
-	Message           string   `json:",omitempty"`
-	MessageId         string   `json:",omitempty"`
-	MessageArgs       []string `json:",omitempty"`
-	OriginOfCondition string   `json:",omitempty"`
+	EventType         string                 `json:",omitempty"`
+	EventId           string                 `json:",omitempty"`
+	EventTimestamp    string                 `json:",omitempty"`
+	Severity          string                 `json:",omitempty"`
+	Message           string                 `json:",omitempty"`
+	MessageId         string                 `json:",omitempty"`
+	MessageArgs       []string               `json:",omitempty"`
+	OriginOfCondition string                 `json:",omitempty"`
+	Oem               map[string]interface{} `json:",omitempty"`
 } //TODO MSM BUG: OriginOfCondition for events has to be a string or will be rejected
 
 type ExternalRedfishEventData struct {
