@@ -12,6 +12,8 @@ const (
 
 	RedfishResourcePropertiesUpdated   = eh.EventType("RedfishResourceProperty:updated")
 	RedfishResourcePropertyMetaUpdated = eh.EventType("RedfishResourcePropertyMeta:updated")
+
+  DroppedEvent                        = eh.EventType("DroppedEvent")
 )
 
 func init() {
@@ -31,6 +33,7 @@ func init() {
 		return &RedfishResourcePropertyMetaUpdatedData{}
 	})
 	eh.RegisterEventData(HTTPCmdProcessed, func() eh.EventData { return &HTTPCmdProcessedData{} })
+  eh.RegisterEventData(DroppedEvent, func() eh.EventData { return &DroppedEventData{} })
 }
 
 // RedfishResourceCreatedData is the event data for the RedfishResourceCreated event.
@@ -62,4 +65,9 @@ type HTTPCmdProcessedData struct {
 	Results    interface{}
 	StatusCode int
 	Headers    map[string]string
+}
+
+type DroppedEventData struct {
+  Name        eh.EventType
+  EventSeq    int64
 }
