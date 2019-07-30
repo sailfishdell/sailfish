@@ -29,6 +29,8 @@ type ConfigFileModelUpdate struct {
 
 type ConfigFileMappingEntry struct {
 	Select          string
+	SelectFN        string
+	SelectParams    map[string]interface{}
 	SelectEventType string
 	ModelUpdate     []*ConfigFileModelUpdate
 	Exec            []string
@@ -64,8 +66,8 @@ type MapperParameters struct {
 type MapperConfig struct {
 	sync.RWMutex
 	eventType    eh.EventType
-	selectStr    string
-	selectExpr   *govaluate.EvaluableExpression
+	selectFnStr  string
+	selectFn     selectFunc
 	modelUpdates []*ModelUpdate
 	exec         []*Exec
 	cfg          *ConfigSection
@@ -135,19 +137,24 @@ func (s *Service) NewMapping(ctx context.Context, logger log.Logger, cfg *viper.
 		// transcribe each individual mapper in the config section into our config
 		for _, cfgEntry := range fullSectionMappingList {
 			logger.Info("Add one mapping row", "cfgEntry", cfgEntry, "select", cfgEntry.Select)
+			setupSelectFuncsMu.RLock()
+			setupFn, ok := setupSelectFuncs[cfgEntry.SelectFN]
+			if !ok {
+				setupFn, ok = setupSelectFuncs["govaluate"]
+			}
+			setupSelectFuncsMu.RUnlock()
+			selectFn, err := setupFn(logger.New("cfgName", cfgName), cfgEntry)
 
-			// parse the expression
-			selectExpr, err := govaluate.NewEvaluableExpressionWithFunctions(cfgEntry.Select, functions)
 			if err != nil {
-				logger.Crit("Select construction failed", "select", cfgEntry.Select, "err", err, "cfgName", cfgName)
+				logger.Crit("config setup failed", "err", err)
 				continue
 			}
 
 			mappingsForSection.Lock()
 			mc := &MapperConfig{
 				eventType:    eh.EventType(cfgEntry.SelectEventType),
-				selectStr:    cfgEntry.Select,
-				selectExpr:   selectExpr,
+				selectFnStr:  cfgEntry.Select,
+				selectFn:     selectFn,
 				modelUpdates: []*ModelUpdate{},
 				exec:         []*Exec{},
 				cfg:          mappingsForSection,
@@ -296,8 +303,6 @@ func StartService(ctx context.Context, logger log.Logger, eb eh.EventBus) (*Serv
 				parameters.params["model"] = parameters.model
 				parameters.params["postprocs"] = &postProcs
 
-				val, err := mapping.selectExpr.Evaluate(parameters.params)
-
 				// delete these to save up mem before checking error conditions
 				cleanup := func() {
 					delete(parameters.params, "data")
@@ -305,18 +310,15 @@ func StartService(ctx context.Context, logger log.Logger, eb eh.EventBus) (*Serv
 					delete(parameters.params, "model")
 				}
 
+				val, err := mapping.selectFn(parameters)
+
 				if err != nil {
-					ret.logger.Error("expression failed to evaluate", "err", err, "select", mapping.selectStr, "for config", cfgName)
+					ret.logger.Error("expression failed to evaluate", "err", err, "select", mapping.selectFnStr, "for config", cfgName)
 					cleanup()
 					continue
 				}
-				valBool, ok := val.(bool)
-				if !ok {
-					ret.logger.Info("NOT A BOOL", "cfgName", cfgName, "type", event.EventType(), "select", mapping.selectStr, "val", val)
-					cleanup()
-					continue
-				}
-				if !valBool {
+
+				if !val {
 					// comment out logging in the fast path. uncomment to enable.
 					//ret.logger.Debug("Select did not match", "cfgName", cfgName, "type", event.EventType(), "select", mapping.selectStr, "val", val)
 					cleanup()

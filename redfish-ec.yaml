@@ -1140,7 +1140,9 @@ views:
 awesome_mapper:
     ec_component_events:
       - { SelectEventType: "ComponentEvent",
-          Select: "true",
+	  SelectFN: "true",
+# example for SelectParams until we get a better example
+#	  SelectParams: { "hello": "world" },
           Exec: [
             "data.Type == 'ECIOM'      && addiom(postprocs, data.FQDD)",
             "data.Type == 'ECSled'     && addec_system_modular(postprocs, data.FQDD)",
