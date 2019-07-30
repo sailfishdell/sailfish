@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"strings"
 	"time"
+  "sort"
 
 	eh "github.com/looplab/eventhorizon"
 	"github.com/mitchellh/mapstructure"
@@ -246,6 +247,10 @@ type InjectEvent struct {
 	Synchronous bool                     `eh:"optional"`
 	EventData   map[string]interface{}   `json:"data" eh:"optional"`
 	EventArray  []map[string]interface{} `json:"event_array" eh:"optional"`
+  EventSeq    int64                    `json:"event_seq" eh:"optional"`
+
+
+  ctx context.Context
 }
 
 // AggregateType satisfies base Aggregate interface
@@ -259,10 +264,12 @@ func (c *InjectEvent) CommandType() eh.CommandType {
 	return InjectEventCommand
 }
 
-var injectChan chan eh.Event
+var injectChan chan *InjectEvent
+var injectChanSlice chan eh.Event
 
 func StartInjectService(logger log.Logger, d *DomainObjects) {
-	injectChan = make(chan eh.Event, 100)
+	injectChan = make(chan *InjectEvent, 100)
+  injectChanSlice = make(chan eh.Event, 1)
 	logger = logger.New("module", "injectservice")
 	eb := d.EventBus
 	ew := d.EventWaiter
@@ -316,7 +323,7 @@ func StartInjectService(logger log.Logger, d *DomainObjects) {
 				time.Sleep(time.Duration(interval) * time.Microsecond)
 				data, err := eh.CreateEventData("WatchdogEvent")
 				if err != nil {
-					injectChan <- eh.NewEvent(WatchdogEvent, data, time.Now())
+					injectChanSlice <- eh.NewEvent(WatchdogEvent, data, time.Now())
 				}
 			}
 		}()
@@ -324,59 +331,102 @@ func StartInjectService(logger log.Logger, d *DomainObjects) {
 
 	// goroutine to synchronously handle the event inject queue
 	go func() {
-		startPrinting := false
+    queued := []InjectEvent{}
+    currentSeq := 0
 		for {
-			event := <-injectChan
-			// if (len(injectChan)*10)/(cap(injectChan)*10) > 5 {
-			if len(injectChan) > 20 {
-				startPrinting = true
-			}
-			if startPrinting {
-				logger.Debug("Inject chan congestion", "cap", cap(injectChan), "len", len(injectChan))
-			}
-			if len(injectChan) == 0 {
-				startPrinting = false
-			}
-
-			eb.PublishEvent(context.Background(), event) // in a goroutine (comment for grep purposes)
-
-			// if we get a sync event, we have to pause processing new events until it's completed processing
-			// it may be processing in the background
-			if ev, ok := event.(syncEvent); ok {
-				ev.Wait()
-			}
+      select {
+        case event := <- injectChan:
+          queued = append(queued, *event)
+          try := true
+          for ok := true; ok; ok = try {
+            try = false
+            copy := []InjectEvent{}
+            for _,k := range(queued) {
+              eventSeq := int(k.EventSeq)
+              if (eventSeq == currentSeq + 1) || (currentSeq == 0 && eventSeq == 0) {
+                try = true
+                currentSeq = eventSeq
+                k.sendToChn(k.ctx)
+                //fmt.Println("send to channel, new curr seq:", currentSeq)
+              } else if eventSeq <= currentSeq {
+                dropped_event := &DroppedEventData{
+                  Name: k.Name,
+                  EventSeq: k.EventSeq,
+                }
+                //fmt.Println("Dropped event: ", dropped_event)
+                eb.PublishEvent(k.ctx, eh.NewEvent(DroppedEvent, dropped_event, time.Now()))
+              } else {
+                copy = append(copy, k)
+              }
+            }
+            queued = copy
+          }
+        // on 100 milliseconds without any event received, handle queued events
+        case <- time.After(100*time.Millisecond):
+          sort.SliceStable(queued, func(i, j int) bool {
+            return queued[i].EventSeq < queued[j].EventSeq
+          })
+          copy := []InjectEvent{}
+          flag := false
+          for _,k := range(queued) {
+            eventSeq := int(k.EventSeq)
+            if (eventSeq >= currentSeq) { //= should never be valid but just in case
+              if flag == false {
+                flag = true
+                currentSeq = eventSeq
+                k.sendToChn(k.ctx)
+                //fmt.Println("timeout send to channel, new curr seq:", currentSeq)
+            } else {
+                copy = append(copy, k)
+              }
+            } else {
+              dropped_event := &DroppedEventData{
+                Name: k.Name,
+                EventSeq: k.EventSeq,
+              }
+              //fmt.Println("Dropped event: ", dropped_event)
+              eb.PublishEvent(k.ctx, eh.NewEvent(DroppedEvent, dropped_event, time.Now()))
+            }
+          }
+          queued = copy
+      }
 		}
 	}()
+
+  go func() {
+    for {
+      event := <- injectChanSlice
+      eb.PublishEvent(context.Background(), event)
+      if ev, ok := event.(syncEvent); ok {
+        ev.Wait()
+      }
+    }
+  }()
 }
 
 const MAX_CONSOLIDATED_EVENTS = 10
 const injectUUID = eh.UUID("49467bb4-5c1f-473b-0000-00000000000f")
 
 func (c *InjectEvent) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
-	requestLogger := ContextLogger(ctx, "internal_commands").New("module", "inject_event")
+  a.ID = injectUUID
+  if len(c.EventData) > 0 || len(c.EventArray) > 0 {
+    c.ctx = ctx
+    injectChan <- c
+  }
 
-	a.ID = injectUUID
+  return nil
+}
+
+func (c *InjectEvent) sendToChn(ctx context.Context) error {
+	requestLogger := ContextLogger(ctx, "internal_commands").New("module", "inject_event")
 
 	eventList := make([]map[string]interface{}, 0, len(c.EventArray)+1)
 	if len(c.EventData) > 0 {
-		// comment out debug prints in the hot path, uncomment for debugging
-		//requestLogger.Debug("InjectEvent - ONE", "events", c.EventData)
 		eventList = append(eventList, c.EventData) // preallocated
 	}
 	if len(c.EventArray) > 0 {
-		// comment out debug prints in the hot path, uncomment for debugging
-		//requestLogger.Debug("InjectEvent - ARRAY", "events", c.EventArray)
 		eventList = append(eventList, c.EventArray...) // preallocated
 	}
-
-	// comment out debug prints in the hot path, uncomment for debugging
-	//requestLogger.Debug("InjectEvent - NEW ARRAY INJECT", "events", eventList)
-
-	//debugTrain := false
-	//if len(eventList) >= MAX_CONSOLIDATED_EVENTS {
-	//fmt.Printf("Event list (%s) len (%d) greater than max number of events (%d). Going to break into #(%d) chunks\n", c.Name, len(eventList), MAX_CONSOLIDATED_EVENTS, len(eventList)/MAX_CONSOLIDATED_EVENTS)
-	//debugTrain = true
-	//}
 
 	trainload := make([]eh.EventData, 0, MAX_CONSOLIDATED_EVENTS)
 	for _, eventData := range eventList {
@@ -394,32 +444,21 @@ func (c *InjectEvent) Handle(ctx context.Context, a *RedfishResourceAggregate) e
 				trainload = append(trainload, data) //preallocated
 			}
 		}
-		// comment out debug prints in the hot path, uncomment for debugging
-		//requestLogger.Debug("InjectEvent - publishing", "event name", c.Name, "event_data", data)
-
-		// limit number of consolidated events to 30 to prevent overflowing queues and deadlocking
 		if len(trainload) >= MAX_CONSOLIDATED_EVENTS {
-			//fmt.Printf("Train (%s) leaving early: %d\n", c.Name, len(trainload))
 			e := event.NewSyncEvent(c.Name, trainload, time.Now())
 			e.Add(1)
 			if c.Synchronous {
 				defer e.Wait()
 			}
 			trainload = make([]eh.EventData, 0, MAX_CONSOLIDATED_EVENTS)
-			injectChan <- e
+			injectChanSlice <- e
 		}
 	}
 
 	if len(trainload) > 0 {
-		//if debugTrain {
-		//fmt.Printf("Straggler (%s) roundup: #%d events\n", c.Name, len(trainload))
-		//}
 		e := event.NewSyncEvent(c.Name, trainload, time.Now())
 		e.Add(1)
-		if c.Synchronous {
-			defer e.Wait()
-		}
-		injectChan <- e
+		injectChanSlice <- e
 	}
 
 	return nil
