@@ -5,9 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"sort"
 	"strings"
 	"time"
-  "sort"
 
 	eh "github.com/looplab/eventhorizon"
 	"github.com/mitchellh/mapstructure"
@@ -247,10 +247,9 @@ type InjectEvent struct {
 	Synchronous bool                     `eh:"optional"`
 	EventData   map[string]interface{}   `json:"data" eh:"optional"`
 	EventArray  []map[string]interface{} `json:"event_array" eh:"optional"`
-  EventSeq    int64                    `json:"event_seq" eh:"optional"`
+	EventSeq    int64                    `json:"event_seq" eh:"optional"`
 
-
-  ctx context.Context
+	ctx context.Context
 }
 
 // AggregateType satisfies base Aggregate interface
@@ -269,7 +268,7 @@ var injectChanSlice chan eh.Event
 
 func StartInjectService(logger log.Logger, d *DomainObjects) {
 	injectChan = make(chan *InjectEvent, 100)
-  injectChanSlice = make(chan eh.Event, 1)
+	injectChanSlice = make(chan eh.Event, 1)
 	logger = logger.New("module", "injectservice")
 	eb := d.EventBus
 	ew := d.EventWaiter
@@ -331,90 +330,97 @@ func StartInjectService(logger log.Logger, d *DomainObjects) {
 
 	// goroutine to synchronously handle the event inject queue
 	go func() {
-    queued := []InjectEvent{}
-    currentSeq := 0
+		queued := []InjectEvent{}
+		currentSeq := 0
 		for {
-      select {
-        case event := <- injectChan:
-          queued = append(queued, *event)
-          try := true
-          for ok := true; ok; ok = try {
-            try = false
-            copy := []InjectEvent{}
-            for _,k := range(queued) {
-              eventSeq := int(k.EventSeq)
-              if (eventSeq == currentSeq + 1) || (currentSeq == 0 && eventSeq == 0) {
-                try = true
-                currentSeq = eventSeq
-                k.sendToChn(k.ctx)
-                //fmt.Println("send to channel, new curr seq:", currentSeq)
-              } else if eventSeq <= currentSeq {
-                dropped_event := &DroppedEventData{
-                  Name: k.Name,
-                  EventSeq: k.EventSeq,
-                }
-                //fmt.Println("Dropped event: ", dropped_event)
-                eb.PublishEvent(k.ctx, eh.NewEvent(DroppedEvent, dropped_event, time.Now()))
-              } else {
-                copy = append(copy, k)
-              }
-            }
-            queued = copy
-          }
-        // on 100 milliseconds without any event received, handle queued events
-        case <- time.After(100*time.Millisecond):
-          sort.SliceStable(queued, func(i, j int) bool {
-            return queued[i].EventSeq < queued[j].EventSeq
-          })
-          copy := []InjectEvent{}
-          flag := false
-          for _,k := range(queued) {
-            eventSeq := int(k.EventSeq)
-            if (eventSeq >= currentSeq) { //= should never be valid but just in case
-              if flag == false {
-                flag = true
-                currentSeq = eventSeq
-                k.sendToChn(k.ctx)
-                //fmt.Println("timeout send to channel, new curr seq:", currentSeq)
-            } else {
-                copy = append(copy, k)
-              }
-            } else {
-              dropped_event := &DroppedEventData{
-                Name: k.Name,
-                EventSeq: k.EventSeq,
-              }
-              //fmt.Println("Dropped event: ", dropped_event)
-              eb.PublishEvent(k.ctx, eh.NewEvent(DroppedEvent, dropped_event, time.Now()))
-            }
-          }
-          queued = copy
-      }
+			select {
+			case event := <-injectChan:
+				// on received event, always add to queue
+				queued = append(queued, *event)
+				try := true
+				for try {
+					try = false
+					copy := []InjectEvent{}
+					for _, k := range queued {
+						eventSeq := int(k.EventSeq)
+						if (eventSeq == currentSeq+1) || (currentSeq == 0 && eventSeq == 0) {
+							// match next sequence, or startup sequence events, then continue processing queue
+							try = true
+							currentSeq = eventSeq
+							k.sendToChn(k.ctx)
+						} else if eventSeq <= currentSeq {
+							// drop all old events
+							dropped_event := &DroppedEventData{
+								Name:     k.Name,
+								EventSeq: k.EventSeq,
+							}
+							logger.Info("Event dropped", "Event Name", k.Name, "Sequence Number", k.EventSeq)
+							eb.PublishEvent(k.ctx, eh.NewEvent(DroppedEvent, dropped_event, time.Now()))
+						} else {
+							// only keep events that are greater than the current sequence count
+							copy = append(copy, k)
+						}
+					}
+					queued = copy
+				}
+			// on 100 milliseconds without any event received, handle queued events
+			case <-time.After(100 * time.Millisecond):
+				sort.SliceStable(queued, func(i, j int) bool {
+					return queued[i].EventSeq < queued[j].EventSeq
+				})
+				copy := []InjectEvent{}
+				flag := false
+				for _, k := range queued {
+					eventSeq := int(k.EventSeq)
+					// take the lowest sequenced event that is still greater than the current sequence count
+					if eventSeq >= currentSeq { //= should never be valid but just in case
+						if flag == false {
+							// use this event as the new current sequence count
+							flag = true
+							logger.Info("Current sequence count changed due to timeout", "Old Value", currentSeq, "New Value", eventSeq)
+							currentSeq = eventSeq
+							k.sendToChn(k.ctx)
+						} else {
+							// keep rest of queued events
+							copy = append(copy, k)
+						}
+					} else {
+						// drop all old events
+						dropped_event := &DroppedEventData{
+							Name:     k.Name,
+							EventSeq: k.EventSeq,
+						}
+						logger.Info("Event dropped", "Event Name", k.Name, "Sequence Number", k.EventSeq)
+						eb.PublishEvent(k.ctx, eh.NewEvent(DroppedEvent, dropped_event, time.Now()))
+					}
+				}
+				queued = copy
+			}
 		}
 	}()
 
-  go func() {
-    for {
-      event := <- injectChanSlice
-      eb.PublishEvent(context.Background(), event)
-      if ev, ok := event.(syncEvent); ok {
-        ev.Wait()
-      }
-    }
-  }()
+	go func() {
+		for {
+			event := <-injectChanSlice
+			eb.PublishEvent(context.Background(), event)
+			if ev, ok := event.(syncEvent); ok {
+				ev.Wait()
+			}
+		}
+	}()
 }
 
 const MAX_CONSOLIDATED_EVENTS = 10
 const injectUUID = eh.UUID("49467bb4-5c1f-473b-0000-00000000000f")
 
 func (c *InjectEvent) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
-  a.ID = injectUUID
-  if len(c.EventData) > 0 || len(c.EventArray) > 0 {
-    c.ctx = ctx
-    injectChan <- c
-  }
+	a.ID = injectUUID
+	if len(c.EventData) > 0 || len(c.EventArray) > 0 {
+		c.ctx = ctx
+		injectChan <- c
+	}
 
-  return nil
+	return nil
 }
 
 func (c *InjectEvent) sendToChn(ctx context.Context) error {
