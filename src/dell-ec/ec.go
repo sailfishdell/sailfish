@@ -107,6 +107,43 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	stdmeta.SetupSledProfilePlugin(d)
 	stdmeta.InitializeCertInfo(d)
 
+	awesome_mapper2.AddAM3SelectSetupFunction("isSledProfile", func(logger log.Logger, cfgEntry awesome_mapper2.ConfigFileMappingEntry) (awesome_mapper2.SelectFunc, error) {
+		return func(p *awesome_mapper2.MapperParameters) (bool, error) {
+			data := p.Params["data"].(*attributes.AttributeUpdatedData)
+			model1 := p.Params["model"].(*model.Model)
+			val, ok := model1.GetPropertyOk("slot_contains")
+			if !ok {
+				return false, nil
+			}
+			lhs := (data.FQDD == val)
+
+			rhs := (data.Name == "SledProfile")
+			return (lhs && rhs), nil
+		}, nil
+
+	})
+
+	awesome_mapper2.AddAM3SelectSetupFunction("isTaskState", func(logger log.Logger, cfgEntry awesome_mapper2.ConfigFileMappingEntry) (awesome_mapper2.SelectFunc, error) {
+		return func(p *awesome_mapper2.MapperParameters) (bool, error) {
+			data := p.Params["data"].(*attributes.AttributeUpdatedData)
+			group := p.Params["Group"]
+			index := p.Params["Index"]
+			return (data.Group == group && data.Index == index && data.Name == "TaskState"), nil
+		}, nil
+
+	})
+
+	awesome_mapper2.AddAM3SelectSetupFunction("isRowOrColumn", func(logger log.Logger, cfgEntry awesome_mapper2.ConfigFileMappingEntry) (awesome_mapper2.SelectFunc, error) {
+		return func(p *awesome_mapper2.MapperParameters) (bool, error) {
+			data := p.Params["data"].(*attributes.AttributeUpdatedData)
+			group := p.Params["Group"]
+			index := p.Params["Index"]
+			rowOrColumn := (cfgEntry.SelectParams[0])
+			return (data.FQDD == "System.Chassis.1" && data.Group == group && data.Index == index && data.Name == rowOrColumn), nil
+		}, nil
+
+	})
+
 	awesome_mapper2.AddFunction("find_uris_with_basename", func(args ...interface{}) (interface{}, error) {
 		if len(args) < 1 {
 			return nil, errors.New("need to specify uri to match")

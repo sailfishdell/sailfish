@@ -3,18 +3,15 @@ package awesome_mapper2
 import (
 	"context"
 	"errors"
-	"sync"
-
 	"github.com/Knetic/govaluate"
-	"github.com/spf13/viper"
-
 	eh "github.com/looplab/eventhorizon"
 	eventpublisher "github.com/looplab/eventhorizon/publisher/local"
-
+	"github.com/spf13/viper"
 	"github.com/superchalupa/sailfish/src/log"
 	"github.com/superchalupa/sailfish/src/looplab/eventwaiter"
 	"github.com/superchalupa/sailfish/src/ocp/event"
 	"github.com/superchalupa/sailfish/src/ocp/model"
+	"sync"
 )
 
 // ##################################
@@ -30,7 +27,7 @@ type ConfigFileModelUpdate struct {
 type ConfigFileMappingEntry struct {
 	Select          string
 	SelectFN        string
-	SelectParams    map[string]interface{}
+	SelectParams    []string
 	SelectEventType string
 	ModelUpdate     []*ConfigFileModelUpdate
 	Exec            []string
@@ -60,14 +57,14 @@ type ConfigSection struct {
 
 type MapperParameters struct {
 	model  *model.Model
-	params map[string]interface{}
+	Params map[string]interface{}
 }
 
 type MapperConfig struct {
 	sync.RWMutex
 	eventType    eh.EventType
 	selectFnStr  string
-	selectFn     selectFunc
+	selectFn     SelectFunc
 	modelUpdates []*ModelUpdate
 	exec         []*Exec
 	cfg          *ConfigSection
@@ -91,9 +88,9 @@ func (s *Service) NewMapping(ctx context.Context, logger log.Logger, cfg *viper.
 
 	logger = logger.New("module", "am2")
 
-	instanceParameters := &MapperParameters{model: mdl, params: map[string]interface{}{}}
+	instanceParameters := &MapperParameters{model: mdl, Params: map[string]interface{}{}}
 	for k, v := range parameters {
-		instanceParameters.params[k] = v
+		instanceParameters.Params[k] = v
 	}
 
 	// ###############################################
@@ -297,19 +294,18 @@ func StartService(ctx context.Context, logger log.Logger, eb eh.EventBus) (*Serv
 			for cfgName, parameters := range mapping.cfg.parameters {
 				// comment out logging in the fast path. uncomment to enable.
 				//ret.logger.Debug("am2 check mapping", "type", event.EventType(), "select", mapping.selectStr, "for config", cfgName)
-				parameters.params["type"] = string(event.EventType())
-				parameters.params["data"] = event.Data()
-				parameters.params["event"] = event
-				parameters.params["model"] = parameters.model
-				parameters.params["postprocs"] = &postProcs
-
+				parameters.Params["cfg_params"] = parameters
+				parameters.Params["type"] = string(event.EventType())
+				parameters.Params["data"] = event.Data()
+				parameters.Params["event"] = event
+				parameters.Params["model"] = parameters.model
+				parameters.Params["postprocs"] = &postProcs
 				// delete these to save up mem before checking error conditions
 				cleanup := func() {
-					delete(parameters.params, "data")
-					delete(parameters.params, "event")
-					delete(parameters.params, "model")
+					delete(parameters.Params, "data")
+					delete(parameters.Params, "event")
+					delete(parameters.Params, "model")
 				}
-
 				val, err := mapping.selectFn(parameters)
 
 				if err != nil {
@@ -334,10 +330,11 @@ func StartService(ctx context.Context, logger log.Logger, eb eh.EventBus) (*Serv
 					defer parameters.model.NotifyObservers()
 					defer parameters.model.StartNotifications()
 
-					parameters.params["propname"] = updates.property
-					val, err := updates.queryExpr.Evaluate(parameters.params)
+					parameters.Params["propname"] = updates.property
+					val, err := updates.queryExpr.Evaluate(parameters.Params)
+
 					if err != nil {
-						ret.logger.Error("Expression failed to evaluate", "err", err, "cfgName", cfgName, "type", event.EventType(), "queryString", updates.queryString, "parameters", parameters.params, "val", val)
+						ret.logger.Error("Expression failed to evaluate", "err", err, "cfgName", cfgName, "type", event.EventType(), "queryString", updates.queryString, "parameters", parameters.Params, "val", val)
 						continue
 					}
 					// comment out logging in the fast path. uncomment to enable.
@@ -345,11 +342,11 @@ func StartService(ctx context.Context, logger log.Logger, eb eh.EventBus) (*Serv
 					parameters.model.UpdateProperty(updates.property, val)
 				}
 
-				delete(parameters.params, "propname")
+				delete(parameters.Params, "propname")
 				for _, updates := range mapping.exec {
-					val, err := updates.execExpr.Evaluate(parameters.params)
+					val, err := updates.execExpr.Evaluate(parameters.Params)
 					if err != nil {
-						ret.logger.Error("Expression failed to evaluate", "err", err, "cfgName", cfgName, "type", event.EventType(), "execString", updates.execString, "parameters", parameters.params, "val", val)
+						ret.logger.Error("Expression failed to evaluate", "err", err, "cfgName", cfgName, "type", event.EventType(), "execString", updates.execString, "parameters", parameters.Params, "val", val)
 						continue
 					}
 				}

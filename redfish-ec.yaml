@@ -1158,69 +1158,86 @@ awesome_mapper:
 
     collection:
       - { SelectEventType: "RedfishResource:created",
-          Select: "nohash(data.ResourceURI) && baseuri(data.ResourceURI) == collection_uri ",
+          SelectFN: "uriCheckNoHash",
+	  SelectParams: [ "collection_uri" ],
           ModelUpdate: [ {Property: "members", Query: "addtoset(model, propname, data.ResourceURI)"} ]}
       - { SelectEventType: "RedfishResource:removed",
-          Select: "nohash(data.ResourceURI) && baseuri(data.ResourceURI) == collection_uri ",
+          SelectFN: "uriCheckNoHash",
+          SelectParams: ["collection_uri"],
           ModelUpdate: [ {Property: "members", Query: "removefromset(model, propname, data.ResourceURI)"} ]}
 
     collection_w_hash:
       - { SelectEventType: "RedfishResource:created",
           Select: "baseuri(data.ResourceURI) == collection_uri ",
+          SelectFN: "uriCheckWithHash",
+          SelectParams: ["collection_uri"],
           ModelUpdate: [ {Property: "members", Query: "addtoset(model, propname, data.ResourceURI)"} ]}
       - { SelectEventType: "RedfishResource:removed",
-          Select: "baseuri(data.ResourceURI) == collection_uri ",
+          SelectFN: "uriCheckWithHash",
+          SelectParams: ["collection_uri"],
           ModelUpdate: [ {Property: "members", Query: "removefromset(model, propname, data.ResourceURI)"} ]}
 
     power_supply_uris:
       - { SelectEventType: "RedfishResource:created",
-          Select: "nohash(data.ResourceURI) && baseuri(data.ResourceURI) == rooturi + '/Chassis/' + FQDD + '/Power/PowerSupplies' ",
-          ModelUpdate: [ {Property: "power_supply_uris", Query: "addtoset(model, propname, data.ResourceURI)"} ]}
+          SelectFN: "uriCheckNoHash",
+          SelectParams: ["rooturi","/Chassis/","FQDD","/Power/PowerSupplies"],
+          ModelUpdate: [{Property: "power_supply_uris", Query: "addtoset(model, propname, data.ResourceURI)"} ]}
       - { SelectEventType: "RedfishResource:removed",
-          Select: "nohash(data.ResourceURI) && baseuri(data.ResourceURI) == rooturi + '/Chassis/' + FQDD + '/Power/PowerSupplies' ",
+          SelectFN: "uriCheckNoHash",
+          SelectParams: ["rooturi","/Chassis/","FQDD","/Power/PowerSupplies"],
           ModelUpdate: [ {Property: "power_supply_uris", Query: "removefromset(model, propname, data.ResourceURI)"} ]}
 
     power_control_uris:
       - { SelectEventType: "RedfishResource:created",
-          Select: "nohash(data.ResourceURI) && data.ResourceURI == rooturi + '/Chassis/' + FQDD + '/Power/PowerControl' ",
+          SelectFN: "uriCheckNoHash",
+          SelectParams: ["rooturi","/Chassis/","FQDD","/Power/PowerControl"],
           ModelUpdate: [ {Property: "power_control_uris", Query: "addtoset(model, propname, data.ResourceURI)"} ]}
       - { SelectEventType: "RedfishResource:removed",
-          Select: "nohash(data.ResourceURI) && data.ResourceURI == rooturi + '/Chassis/' + FQDD + '/Power/PowerControl' ",
+          SelectFN: "uriCheckNoHash",
+          SelectParams: ["rooturi","/Chassis/","FQDD","/Power/PowerControl"],
           ModelUpdate: [ {Property: "power_control_uris", Query: "removefromset(model, propname, data.ResourceURI)"} ]}
 
     power_trends_uri:
       - { SelectEventType: "RedfishResource:created",
-          Select: "nohash(data.ResourceURI) && baseuri(data.ResourceURI) == rooturi + '/Chassis/' + FQDD + '/Power/PowerTrends-1' ",
+          SelectFN: "uriCheckNoHash",
+          SelectParams: ["rooturi","/Chassis/","FQDD","/Power/PowerTrends-1"],
           ModelUpdate: [ {Property: "power_trends_uri", Query: "addtoset(model, propname, data.ResourceURI)"} ]}
       - { SelectEventType: "RedfishResource:removed",
-          Select: "nohash(data.ResourceURI) && baseuri(data.ResourceURI) == rooturi + '/Chassis/' + FQDD + '/Power/PowerTrends-1' ",
+          SelectFN: "uriCheckNoHash",
+          SelectParams: ["rooturi","/Chassis/","FQDD","/Power/PowerTrends-1"],
           ModelUpdate: [ {Property: "power_trends_uri", Query: "removefromset(model, propname, data.ResourceURI)"} ]}
 
     trend_histogram_uris:
       - { SelectEventType: "RedfishResource:created",
-          Select: "nohash(data.ResourceURI) && baseuri(data.ResourceURI) == rooturi + '/Chassis/' + FQDD + '/Power/PowerTrends-1' ",
+          SelectFN: "uriCheckNoHash",
+          SelectParams: ["rooturi","/Chassis/","FQDD","/Power/PowerTrends-1"],
           ModelUpdate: [ {Property: "trend_histogram_uris", Query: "addtoset(model, propname, data.ResourceURI)"} ]}
       - { SelectEventType: "RedfishResource:removed",
-          Select: "nohash(data.ResourceURI) && baseuri(data.ResourceURI) == rooturi + '/Chassis/' + FQDD + '/Power/PowerTrends-1' ",
+          SelectFN: "uriCheckNoHash",
+          SelectParams: ["rooturi","/Chassis/","FQDD","/Power/PowerTrends-1"],
           ModelUpdate: [ {Property: "trend_histogram_uris", Query: "removefromset(model, propname, data.ResourceURI)"} ]}
 
     thermal:
       - { SelectEventType: "RedfishResource:created",
-          Select: "nohash(data.ResourceURI) && baseuri(data.ResourceURI) == fanuri",
+          SelectFN: "uriCheckNoHash",
+          SelectParams: ["fanuri"],
           ModelUpdate: [ {Property: "fan_uris", Query: "addtoset(model, propname, data.ResourceURI)"} ]}
       - { SelectEventType: "RedfishResource:removed",
-          Select: "nohash(data.ResourceURI) && baseuri(data.ResourceURI) == fanuri",
+          SelectFN : "uriCheckNoHash",
+          SelectParams: ["rooturi"],
           ModelUpdate: [ {Property: "fan_uris", Query: "removefromset(model, propname, data.ResourceURI)"} ]}
 
     thermal_sensor:
       - { SelectEventType: "ThermalSensorEvent",
-          Select: "true",
+          SelectFN: "true",
           Exec: [ "updateSensorEvent(rooturi + '/Chassis/System.Chassis.1/Sensors/Temperatures', data)" ]}
       - { SelectEventType: "RedfishResource:created",
-          Select: "baseuri(data.ResourceURI) == rooturi + '/Chassis/System.Chassis.1/Sensors/Temperatures'",
+          SelectFN: "uriCheckNoHash",
+          SelectParams: ["rooturi", "/Chassis/System.Chassis.1/Sensors/Temperatures"],
           ModelUpdate: [ {Property: "temperature_uris", Query: "addtoset(model, propname, data.ResourceURI)"} ]}
       - { SelectEventType: "RedfishResource:removed",
-          Select: "baseuri(data.ResourceURI) == rooturi + '/Chassis/System.Chassis.1/Sensors/Temperatures'",
+          SelectFN: "uriCheckNoHash",
+          SelectParams: ["rooturi", "/Chassis/System.Chassis.1/Sensors/Temperatures"],
           ModelUpdate: [ {Property: "temperature_uris", Query: "removefromset(model, propname, data.ResourceURI)"} ]}
 
     lclog:
@@ -1236,13 +1253,13 @@ awesome_mapper:
 
     faultlist:
       - { SelectEventType: "FaultEntryAdd",
-          Select: "true",
+          SelectFN: "true",
           Exec: [ "addfaultentry(collection_uri, data)" ]}
       - { SelectEventType: "FaultEntryRemove",
-          Select: "true",
+          SelectFN: "true",
           Exec: [ "removefaultentry(collection_uri, data)" ]}
       - { SelectEventType: "FaultEntriesClear",
-          Select: "true",
+          SelectFN: "true",
           Exec: [ "clearuris(collection_uri)" ]}
 
     generate_health_status:
@@ -1250,46 +1267,58 @@ awesome_mapper:
           Select: "has_prefix(data.FQDD,'System.Chassis.1#IOM.Slot') || has_prefix(data.FQDD, 'System.Chassis.1#System.Modular')",
           ModelUpdate: [ {Property: "health", Query: "add_health_to_subsystem(data, view.GetUUID())"} ]}
       - { SelectEventType: "ComponentRemoved",
-          Select: "true",
+          SelectFN: "true",
           ModelUpdate: [ {Property: "health", Query: "remove_health(data,view.GetUUID())"} ]}
 
     task_service:
       - { SelectEventType: "RedfishResource:created",
-      Select: "data.ResourceURI == rooturi + '/Chassis/System.Chassis.1/Attributes'",
+          Select: "data.ResourceURI == rooturi + '/Chassis/System.Chassis.1/Attributes'",
           Exec: ["add_attributes(data.ResourceURI)"] }
 
     update_service:
       - { SelectEventType: "RedfishResource:created",
-      Select: "has_swinv_model(data.ResourceURI)",
+          Select: "has_swinv_model(data.ResourceURI)",
           Exec: ["add_swinv(data.ResourceURI)"] }
 
     certificate:
-      - { SelectEventType: "FileReadEvent", Select: "data.URI == 'CertificateInventory' && data.FQDD == FQDD", ModelUpdate: [ { Property: "certificate_signing_request", Query: "empty_to_null(data.Content)" } ] }
-      - { SelectEventType: "FileReadEvent", Select: "data.URI == 'FactoryIdentity' && data.FQDD == FQDD", ModelUpdate: [ { Property: "certificate", Query: "empty_to_null(data.Content)" } ] }
+      - { SelectEventType: "FileReadEvent",
+          Select: "data.URI == 'CertificateInventory' && data.FQDD == FQDD",
+          ModelUpdate: [ { Property: "certificate_signing_request", Query: "empty_to_null(data.Content)" } ] }
+      - { SelectEventType: "FileReadEvent",
+          Select: "data.URI == 'FactoryIdentity' && data.FQDD == FQDD",
+          ModelUpdate: [ { Property: "certificate", Query: "empty_to_null(data.Content)" } ] }
 
     slot:
-      - { SelectEventType: "AttributeUpdated", Select: "(data.FQDD == model.GetPropertyOk(\"slot_contains\")) && data.Name == 'SledProfile'",
-            ModelUpdate: [ {Property: "sled_profile", Query: "data.Value", Default: ""}]}
+      - { SelectEventType: "AttributeUpdated",
+          SelectFN: "isSledProfile",
+          ModelUpdate: [ {Property: "sled_profile", Query: "data.Value", Default: ""}]}
 
     slotconfig:
-      - { SelectEventType: "AttributeUpdated", Select: "data.FQDD == 'System.Chassis.1' && data.Group == Group && data.Index == Index && data.Name == 'Rows'",
-            ModelUpdate: [ {Property: "rows", Query: "string(data.Value)"}]}
-      - { SelectEventType: "AttributeUpdated", Select: "data.FQDD == 'System.Chassis.1' && data.Group == Group && data.Index == Index && data.Name == 'Columns'",
-            ModelUpdate: [ {Property: "columns", Query: "string(data.Value)"}]}
+      - { SelectEventType: "AttributeUpdated",
+          SelectParams: ["Rows"],
+          SelectFN: "isRowOrColumn",
+          ModelUpdate: [ {Property: "rows", Query: "string(data.Value)"}]}
+      - { SelectEventType: "AttributeUpdated",
+          SelectParams: ["Columns"],
+          SelectFN: "isRowOrColumn",
+          ModelUpdate: [ {Property: "columns", Query: "string(data.Value)"}]}
 
     tasks:
-      - { SelectEventType: "AttributeUpdated", Select: "data.Group == Group && data.Index == Index && data.Name == 'TaskState'",
-            ModelUpdate: [ {Property: "task_state", Query: "map_task_state(data.Value)"}]}
+      - { SelectEventType: "AttributeUpdated",
+          SelectFN: "isTaskState",
+          ModelUpdate: [ {Property: "task_state", Query: "map_task_state(data.Value)"}]}
       #- { SelectEventType: "AttributeUpdated", Select: "data.Group == Group && data.Index == Index && (data.Name == 'MessageArg1-1' || data.Name == 'MessageArg1-2' || data.Name == 'MessageArg1-3')",
       #ModelUpdate: #[ {Property: "task_msg_1_args", Query: "update_task_args(data.Value, data.Name)"}]}
 
     chassis:
-      - { SelectEventType: "AttributeUpdated", Select: "data.FQDD == FQDD && data.Name == 'ChassisPowerStatus'",
-            ModelUpdate: [ {Property: "power_state", Query: "map_chassis_state(data.Value)"}]}
+      - { SelectEventType: "AttributeUpdated",
+          Select: "data.FQDD == FQDD && data.Name == 'ChassisPowerStatus'",
+          ModelUpdate: [ {Property: "power_state", Query: "map_chassis_state(data.Value)"}]}
 
     fan:
-      - { SelectEventType: "FanEvent", Select: "data.ObjectHeader.FQDD == DM_FQDD",
-            ModelUpdate: [
+      - { SelectEventType: "FanEvent",
+          Select: "data.ObjectHeader.FQDD == DM_FQDD",
+          ModelUpdate: [
                 {Property: "fanpwm", Query: "data.Fanpwm" , Default:-1},
                 {Property: "key", Query: "data.Key" },
                 {Property: "fanname", Query: "data.FanName" },
@@ -1307,8 +1336,9 @@ awesome_mapper:
                 {Property: "FanStateMask", Query: "data.FanStateMask" }]}
 
     inst_power:
-      - { SelectEventType: "InstPowerEvent", Select: "data.FQDD == DM_FQDD",
-            ModelUpdate: [
+      - { SelectEventType: "InstPowerEvent",
+          Select: "data.FQDD == DM_FQDD",
+          ModelUpdate: [
               {Property: "Instantaneous_Power", Query: "round_2_dec_pl(data.InstPower)", Default: 0}]}
 
     iom_config:
@@ -1321,7 +1351,7 @@ awesome_mapper:
 
 
     power_control:
-      - { SelectEventType: "PowerConsumptionDataObjEvent", Select: "true",
+      - { SelectEventType: "PowerConsumptionDataObjEvent", SelectFN: "true",
             ModelUpdate: [
                 {Property: "energy_consumption_start_time", Query: "epoch_to_date(data.CwStartTime)" },
                 {Property: "energy_consumption_kwh", Query: "int((data.CumulativeWatts)/1000)" },
@@ -1334,14 +1364,19 @@ awesome_mapper:
                 {Property: "consumed_watts", Query: "data.InstWattsPSU1_2" }]}
       # every chassis object is a power related item. add and remove them as they come
       - { SelectEventType: "RedfishResource:created",
-          Select: "nohash(data.ResourceURI) && baseuri(data.ResourceURI) == rooturi + '/Chassis' ",
+          SelectFN: "uriCheckNoHash",
+          SelectParams: ["rooturi", "/Chassis"],
           ModelUpdate: [ {Property: "power_related_items", Query: "addtoset(model, propname, data.ResourceURI)"} ]}
       - { SelectEventType: "RedfishResource:removed",
-          Select: "nohash(data.ResourceURI) && baseuri(data.ResourceURI) == rooturi + '/Chassis' ",
+          SelectFN: "uriCheckNoHash",
+          SelectParams: ["rooturi","/Chassis"],
           ModelUpdate: [ {Property: "power_related_items", Query: "removefromset(model, propname, data.ResourceURI)"} ]}
-      - { SelectEventType: "AttributeUpdated", Select: "data.FQDD == 'System.Chassis.1' && data.Name == 'PowerCapSetting'",
+      - { SelectEventType: "AttributeUpdated",
+          Select: "data.FQDD == 'System.Chassis.1' && data.Name == 'PowerCapSetting'",
+          SelectParams: ["FQDD","System.Chassis.1","Name","PowerCapSetting"],
           Exec: [ "set_power_cap_enable(data.Value)" ]}
-      - { SelectEventType: "AttributeUpdated", Select: "data.FQDD == 'System.Chassis.1' && data.Name == 'PowerCapValue'",
+      - { SelectEventType: "AttributeUpdated",
+          Select: "data.FQDD == 'System.Chassis.1' && data.Name == 'PowerCapValue'",
           ModelUpdate: [ {Property: "limit_in_watts", Query: "check_power_cap(data.Value)"}]}
 
     power_supply:
@@ -1352,7 +1387,7 @@ awesome_mapper:
                 {Property: "obj_status", Query: "map_health_value(data.ObjectHeader.ObjStatus)" }]}
 
     power_trend:
-      - { SelectEventType: "AvgPowerConsumptionStatDataObjEvent", Select: "true",
+      - { SelectEventType: "AvgPowerConsumptionStatDataObjEvent", SelectFN: "true",
             ModelUpdate: [
                 {Property: "average_watts",  Query: "traverse_struct(data, 'AvgPwrLast' + trend)" }, #does not work, trend is not a list?
                 {Property: "max_watts",      Query: "traverse_struct(data, 'MaxPwrLast' + trend)" },
@@ -1361,23 +1396,48 @@ awesome_mapper:
                 {Property: "min_watts_time", Query: "epoch_to_date(traverse_struct(data, 'MinPwrLast' + trend + 'Time'))" }]}
 
     health:
-      - { SelectEventType: "HealthEvent", Select: "(data.FQDD == health_fqdd) && chk_seq(model,'seq',data.EventSeq, data) ", ModelUpdate: [ {Property: "health", Query: "empty_to_null(data.Health)" } ] }
+      - { SelectEventType: "HealthEvent",
+          Select: "(data.FQDD == health_fqdd) && chk_seq(model,'seq',data.EventSeq, data) ",
+          SelectParams: ["health_fqdd","model","seq","EventSeq","data"],
+          ModelUpdate: [ {Property: "health", Query: "empty_to_null(data.Health)" } ] }
 
     health_alert:
       - { SelectEventType: "HealthEvent", Select: "data.FQDD == health_fqdd", Exec: ["health_alert(ss, data.Health)"]}
 
     global_health:
-      - { SelectEventType: "HealthEvent", Select: "(data.FQDD == 'System.Chassis.1#SubSystem.1#Fan') && chk_seq(model,'seq',data.EventSeq, data) ", ModelUpdate: [ {Property: "fan_rollup", Query: "data.Health" } ] }
-      - { SelectEventType: "HealthEvent", Select: "(data.FQDD == 'System.Chassis.1#SubSystem.1#Temperature') && chk_seq(model,'seq',data.EventSeq, data)", ModelUpdate: [ {Property: "temperature_rollup", Query: "data.Health" } ] }
-      - { SelectEventType: "HealthEvent", Select: "(data.FQDD == 'System.Chassis.1#SubSystem.1#MM') && chk_seq(model,'seq',data.EventSeq, data)", ModelUpdate: [ {Property: "mm_rollup", Query: "data.Health" } ] }
-      - { SelectEventType: "HealthEvent", Select: "(data.FQDD == 'System.Chassis.1#SubSystem.1#SledSystem') && chk_seq(model,'seq',data.EventSeq, data)", modelupdate: [ {Property: "sled_rollup", Query: "data.Health" } ] }
-      - { SelectEventType: "HealthEvent", Select: "has_prefix(data.FQDD,'System.Chassis.1#System.Modular') && chk_seq(model, data.FQDD + 'seq',data.EventSeq, data)", Exec: ["update_property(model, data.FQDD, data.Health)"]}
-      - { SelectEventType: "HealthEvent", Select: "has_prefix(data.FQDD,'System.Chassis.1#IOM.Slot') && chk_seq(model,data.FQDD + 'seq',data.EventSeq, data)", Exec: ["update_property(model, data.FQDD, data.Health)"]}
-      - { SelectEventType: "HealthEvent", Select: "(data.FQDD == 'System.Chassis.1#SubSystem.1#PowerSupply') && chk_seq(model,'seq',data.EventSeq, data)", ModelUpdate: [ {Property: "psu_rollup", Query: "data.Health" } ] }
-      - { SelectEventType: "HealthEvent", Select: "(data.FQDD == 'System.Chassis.1#SubSystem.1#CMC') && chk_seq(model,'seq',data.EventSeq, data)", ModelUpdate: [ {Property: "cmc_rollup", Query: "data.Health" } ] }
-      - { SelectEventType: "HealthEvent", Select: "(data.FQDD == 'System.Chassis.1#SubSystem.1#Miscellaneous') && chk_seq(model,'seq',data.EventSeq, data)", ModelUpdate: [ {Property: "misc_rollup", Query: "data.Health" } ] }
-      - { SelectEventType: "HealthEvent", Select: "(data.FQDD == 'System.Chassis.1#SubSystem.1#Battery') && chk_seq(model,'seq',data.EventSeq, data)", ModelUpdate: [ {Property: "battery_rollup", Query: "data.Health" } ] }
-      - { SelectEventType: "HealthEvent", Select: "(data.FQDD == 'System.Chassis.1#SubSystem.1#IOMSubsystem') && chk_seq(model,'seq',data.EventSeq, data)", ModelUpdate: [ {Property: "iom_rollup", Query: "data.Health" } ] }
+      - { SelectEventType: "HealthEvent",
+          Select: "(data.FQDD == 'System.Chassis.1#SubSystem.1#Fan') && chk_seq(model,'seq',data.EventSeq, data) ",
+          ModelUpdate: [ {Property: "fan_rollup", Query: "data.Health" } ] }
+      - { SelectEventType: "HealthEvent",
+          Select: "(data.FQDD == 'System.Chassis.1#SubSystem.1#Temperature') && chk_seq(model,'seq',data.EventSeq, data)",
+          ModelUpdate: [ {Property: "temperature_rollup", Query: "data.Health" } ] }
+      - { SelectEventType: "HealthEvent",
+          Select: "(data.FQDD == 'System.Chassis.1#SubSystem.1#MM') && chk_seq(model,'seq',data.EventSeq, data)",
+          ModelUpdate: [ {Property: "mm_rollup", Query: "data.Health" } ] }
+      - { SelectEventType: "HealthEvent",
+          Select: "(data.FQDD == 'System.Chassis.1#SubSystem.1#SledSystem') && chk_seq(model,'seq',data.EventSeq, data)",
+          modelupdate: [ {Property: "sled_rollup", Query: "data.Health" } ] }
+      - { SelectEventType: "HealthEvent", 
+          Select: "has_prefix(data.FQDD,'System.Chassis.1#System.Modular') && chk_seq(model, data.FQDD + 'seq',data.EventSeq, data)",
+          Exec: ["update_property(model, data.FQDD, data.Health)"]}
+      - { SelectEventType: "HealthEvent",
+          Select: "has_prefix(data.FQDD,'System.Chassis.1#IOM.Slot') && chk_seq(model,data.FQDD + 'seq',data.EventSeq, data)",
+          Exec: ["update_property(model, data.FQDD, data.Health)"]}
+      - { SelectEventType: "HealthEvent", 
+          Select: "(data.FQDD == 'System.Chassis.1#SubSystem.1#PowerSupply') && chk_seq(model,'seq',data.EventSeq, data)",
+          ModelUpdate: [ {Property: "psu_rollup", Query: "data.Health" } ] }
+      - { SelectEventType: "HealthEvent",
+          Select: "(data.FQDD == 'System.Chassis.1#SubSystem.1#CMC') && chk_seq(model,'seq',data.EventSeq, data)",
+          ModelUpdate: [ {Property: "cmc_rollup", Query: "data.Health" } ] }
+      - { SelectEventType: "HealthEvent",
+          Select: "(data.FQDD == 'System.Chassis.1#SubSystem.1#Miscellaneous') && chk_seq(model,'seq',data.EventSeq, data)",
+          ModelUpdate: [ {Property: "misc_rollup", Query: "data.Health" } ] }
+      - { SelectEventType: "HealthEvent",
+          Select: "(data.FQDD == 'System.Chassis.1#SubSystem.1#Battery') && chk_seq(model,'seq',data.EventSeq, data)",
+          ModelUpdate: [ {Property: "battery_rollup", Query: "data.Health" } ] }
+      - { SelectEventType: "HealthEvent",
+          Select: "(data.FQDD == 'System.Chassis.1#SubSystem.1#IOMSubsystem') && chk_seq(model,'seq',data.EventSeq, data)",
+          ModelUpdate: [ {Property: "iom_rollup", Query: "data.Health" } ] }
 
 
 mappings:
