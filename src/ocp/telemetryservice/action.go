@@ -13,7 +13,6 @@ import (
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
 )
 
-
 func MakeSubmitTestMetricReport(eb eh.EventBus, d *domain.DomainObjects, ch eh.CommandHandler) func(context.Context, eh.Event, *domain.HTTPCmdProcessedData) error {
 
 	return func(ctx context.Context, event eh.Event, retData *domain.HTTPCmdProcessedData) error {
@@ -80,7 +79,7 @@ func MakeSubmitTestMetricReport(eb eh.EventBus, d *domain.DomainObjects, ch eh.C
 		eventData := eventservice.RedfishEventData{
 			EventType: "Alert",
 			MessageId: "TST100",
-			Oem : m,
+			Oem:       m,
 			//TODO MSM BUG: OriginOfCondition for events has to be a string or will be rejected
 			OriginOfCondition: "/redfish/v1/TelmetryService/MetricReports/" + n,
 		}
