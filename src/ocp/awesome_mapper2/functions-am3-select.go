@@ -68,7 +68,7 @@ func init() {
 		}, nil
 	})
 
-	AddAM3SelectSetupFunction("govaluate", func(logger log.Logger, cfgEntry ConfigFileMappingEntry) (SelectFunc, error) {
+	AddAM3SelectSetupFunction("govaluate_select", func(logger log.Logger, cfgEntry ConfigFileMappingEntry) (SelectFunc, error) {
 		selectExpr, err := govaluate.NewEvaluableExpressionWithFunctions(cfgEntry.Select, functions)
 		// parse the expression
 		if err != nil {
