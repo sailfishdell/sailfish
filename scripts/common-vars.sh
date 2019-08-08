@@ -43,7 +43,7 @@ set_auth_header() {
         elif [ -n "$X_AUTH_TOKEN" ]; then
             export AUTH_HEADER="X-Auth-Token: $X_AUTH_TOKEN"
         else
-            eval $(scripts/login.sh $user $pass)
+            eval $($scriptdir/login.sh $user $pass)
         fi
     fi
 }
