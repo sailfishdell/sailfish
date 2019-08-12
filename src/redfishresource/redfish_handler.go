@@ -375,19 +375,19 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Write(b)
 	// END
 
-	redfishResource.ResultsCacheMu.Lock()
+	redfishResource.Lock()
 	if redfishResource.access == nil {
 		redfishResource.access = map[HTTPReqType]time.Time{}
 	}
 	redfishResource.access[MapStringToHTTPReq(r.Method)] = time.Now()
-	redfishResource.ResultsCacheMu.Unlock()
+	redfishResource.Unlock()
 
 	return
 }
 
 func getResourceEtag(ctx context.Context, agg *RedfishResourceAggregate, auth *RedfishAuthorizationProperty) string {
-	agg.ResultsCacheMu.Lock()
-	defer agg.ResultsCacheMu.Unlock()
+	agg.Lock()
+	defer agg.Unlock()
 
 	v := agg.Properties.Value
 	m, ok := v.(map[string]interface{})

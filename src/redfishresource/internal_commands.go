@@ -1,7 +1,10 @@
 package domain
 
 import (
+	"bytes"
 	"context"
+	"encoding/base64"
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"net/url"
@@ -157,8 +160,8 @@ func (c *RemoveRedfishResource) AggregateID() eh.UUID { return c.ID }
 func (c *RemoveRedfishResource) CommandType() eh.CommandType { return RemoveRedfishResourceCommand }
 
 func (c *RemoveRedfishResource) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
-	a.ResultsCacheMu.Lock()
-	defer a.ResultsCacheMu.Unlock()
+	a.Lock()
+	defer a.Unlock()
 	a.PublishEvent(eh.NewEvent(RedfishResourceRemoved, &RedfishResourceRemovedData{
 		ID:          c.ID,
 		ResourceURI: a.ResourceURI,
@@ -182,8 +185,8 @@ func (c *RemoveRedfishResourceProperty) CommandType() eh.CommandType {
 	return RemoveRedfishResourcePropertyCommand
 }
 func (c *RemoveRedfishResourceProperty) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
-	a.ResultsCacheMu.Lock()
-	defer a.ResultsCacheMu.Unlock()
+	a.Lock()
+	defer a.Unlock()
 
 	properties := a.Properties.Value.(map[string]interface{})
 	for key, _ := range properties {
@@ -210,8 +213,8 @@ func (c *UpdateRedfishResourceProperties) CommandType() eh.CommandType {
 	return UpdateRedfishResourcePropertiesCommand
 }
 func (c *UpdateRedfishResourceProperties) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
-	a.ResultsCacheMu.Lock()
-	defer a.ResultsCacheMu.Unlock()
+	a.Lock()
+	defer a.Unlock()
 
 	// ensure no collisions with immutable properties
 	for _, p := range immutableProperties {
@@ -245,6 +248,7 @@ type InjectEvent struct {
 	ID          eh.UUID                  `json:"id" eh:"optional"`
 	Name        eh.EventType             `json:"name"`
 	Synchronous bool                     `eh:"optional"`
+	Encoding    string                   `eh:"optional" json:"encoding"`
 	EventData   map[string]interface{}   `json:"data" eh:"optional"`
 	EventArray  []map[string]interface{} `json:"event_array" eh:"optional"`
 	EventSeq    int64                    `json:"event_seq" eh:"optional"`
@@ -428,9 +432,13 @@ func (c *InjectEvent) sendToChn(ctx context.Context) error {
 
 	eventList := make([]map[string]interface{}, 0, len(c.EventArray)+1)
 	if len(c.EventData) > 0 {
+		// comment out debug prints in the hot path, uncomment for debugging
+		requestLogger.Debug("InjectEvent - ONE", "events", c.EventData)
 		eventList = append(eventList, c.EventData) // preallocated
 	}
 	if len(c.EventArray) > 0 {
+		// comment out debug prints in the hot path, uncomment for debugging
+		requestLogger.Debug("InjectEvent - ARRAY", "events", c.EventArray)
 		eventList = append(eventList, c.EventArray...) // preallocated
 	}
 
@@ -442,14 +450,39 @@ func (c *InjectEvent) sendToChn(ctx context.Context) error {
 			requestLogger.Info("InjectEvent - event type not registered: injecting raw event.", "event name", c.Name, "error", err)
 			trainload = append(trainload, eventData) //preallocated
 		} else {
-			err = mapstructure.Decode(eventData, &data)
-			if err != nil {
-				requestLogger.Warn("InjectEvent - could not decode event data, skipping event", "error", err, "raw-eventdata", eventData, "dest-event", data)
-				trainload = append(trainload, eventData) //preallocated
-			} else {
+
+			if c.Encoding == "binary" {
+				structdata, err := base64.StdEncoding.DecodeString(eventData["data"].(string))
+				if err != nil {
+					fmt.Printf("ERROR decoding base64 event data: %s", err)
+					continue
+				}
+
+				buf := bytes.NewReader(structdata)
+				err = binary.Read(buf, binary.LittleEndian, data)
+				if err != nil {
+					fmt.Printf("binary decode fail: %s\n", err)
+					continue
+				}
+
 				trainload = append(trainload, data) //preallocated
 			}
+
+			if c.Encoding == "json" || c.Encoding == "" {
+				err = mapstructure.Decode(eventData, &data)
+				if err != nil {
+					requestLogger.Warn("InjectEvent - could not decode event data, skipping event", "error", err, "raw-eventdata", eventData, "dest-event", data)
+					trainload = append(trainload, eventData) //preallocated
+				} else {
+					trainload = append(trainload, data) //preallocated
+				}
+			}
+
 		}
+		// comment out debug prints in the hot path, uncomment for debugging
+		requestLogger.Debug("InjectEvent - publishing", "event name", c.Name, "event_data", data)
+
+		// limit number of consolidated events to 30 to prevent overflowing queues and deadlocking
 		if len(trainload) >= MAX_CONSOLIDATED_EVENTS {
 			e := event.NewSyncEvent(c.Name, trainload, time.Now())
 			e.Add(1)
