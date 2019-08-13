@@ -1396,48 +1396,23 @@ awesome_mapper:
                 {Property: "min_watts_time", Query: "epoch_to_date(traverse_struct(data, 'MinPwrLast' + trend + 'Time'))" }]}
 
     health:
-      - { SelectEventType: "HealthEvent",
-          Select: "(data.FQDD == health_fqdd) && chk_seq(model,'seq',data.EventSeq, data) ",
-          SelectParams: ["health_fqdd","model","seq","EventSeq","data"],
-          ModelUpdate: [ {Property: "health", Query: "empty_to_null(data.Health)" } ] }
+      - { SelectEventType: "HealthEvent", Select: "data.FQDD == health_fqdd", ModelUpdate: [ {Property: "health", Query: "empty_to_null(data.Health)" } ] }
 
     health_alert:
       - { SelectEventType: "HealthEvent", Select: "data.FQDD == health_fqdd", Exec: ["health_alert(ss, data.Health)"]}
 
     global_health:
-      - { SelectEventType: "HealthEvent",
-          Select: "(data.FQDD == 'System.Chassis.1#SubSystem.1#Fan') && chk_seq(model,'seq',data.EventSeq, data) ",
-          ModelUpdate: [ {Property: "fan_rollup", Query: "data.Health" } ] }
-      - { SelectEventType: "HealthEvent",
-          Select: "(data.FQDD == 'System.Chassis.1#SubSystem.1#Temperature') && chk_seq(model,'seq',data.EventSeq, data)",
-          ModelUpdate: [ {Property: "temperature_rollup", Query: "data.Health" } ] }
-      - { SelectEventType: "HealthEvent",
-          Select: "(data.FQDD == 'System.Chassis.1#SubSystem.1#MM') && chk_seq(model,'seq',data.EventSeq, data)",
-          ModelUpdate: [ {Property: "mm_rollup", Query: "data.Health" } ] }
-      - { SelectEventType: "HealthEvent",
-          Select: "(data.FQDD == 'System.Chassis.1#SubSystem.1#SledSystem') && chk_seq(model,'seq',data.EventSeq, data)",
-          modelupdate: [ {Property: "sled_rollup", Query: "data.Health" } ] }
-      - { SelectEventType: "HealthEvent", 
-          Select: "has_prefix(data.FQDD,'System.Chassis.1#System.Modular') && chk_seq(model, data.FQDD + 'seq',data.EventSeq, data)",
-          Exec: ["update_property(model, data.FQDD, data.Health)"]}
-      - { SelectEventType: "HealthEvent",
-          Select: "has_prefix(data.FQDD,'System.Chassis.1#IOM.Slot') && chk_seq(model,data.FQDD + 'seq',data.EventSeq, data)",
-          Exec: ["update_property(model, data.FQDD, data.Health)"]}
-      - { SelectEventType: "HealthEvent", 
-          Select: "(data.FQDD == 'System.Chassis.1#SubSystem.1#PowerSupply') && chk_seq(model,'seq',data.EventSeq, data)",
-          ModelUpdate: [ {Property: "psu_rollup", Query: "data.Health" } ] }
-      - { SelectEventType: "HealthEvent",
-          Select: "(data.FQDD == 'System.Chassis.1#SubSystem.1#CMC') && chk_seq(model,'seq',data.EventSeq, data)",
-          ModelUpdate: [ {Property: "cmc_rollup", Query: "data.Health" } ] }
-      - { SelectEventType: "HealthEvent",
-          Select: "(data.FQDD == 'System.Chassis.1#SubSystem.1#Miscellaneous') && chk_seq(model,'seq',data.EventSeq, data)",
-          ModelUpdate: [ {Property: "misc_rollup", Query: "data.Health" } ] }
-      - { SelectEventType: "HealthEvent",
-          Select: "(data.FQDD == 'System.Chassis.1#SubSystem.1#Battery') && chk_seq(model,'seq',data.EventSeq, data)",
-          ModelUpdate: [ {Property: "battery_rollup", Query: "data.Health" } ] }
-      - { SelectEventType: "HealthEvent",
-          Select: "(data.FQDD == 'System.Chassis.1#SubSystem.1#IOMSubsystem') && chk_seq(model,'seq',data.EventSeq, data)",
-          ModelUpdate: [ {Property: "iom_rollup", Query: "data.Health" } ] }
+      - { SelectEventType: "HealthEvent", Select: "data.FQDD == 'System.Chassis.1#SubSystem.1#Fan'", ModelUpdate: [ {Property: "fan_rollup", Query: "data.Health" } ] }
+      - { SelectEventType: "HealthEvent", Select: "data.FQDD == 'System.Chassis.1#SubSystem.1#Temperature'", ModelUpdate: [ {Property: "temperature_rollup", Query: "data.Health" } ] }
+      - { SelectEventType: "HealthEvent", Select: "data.FQDD == 'System.Chassis.1#SubSystem.1#MM'", ModelUpdate: [ {Property: "mm_rollup", Query: "data.Health" } ] }
+      - { SelectEventType: "HealthEvent", Select: "data.FQDD == 'System.Chassis.1#SubSystem.1#SledSystem'", modelupdate: [ {Property: "sled_rollup", Query: "data.Health" } ] }
+      - { SelectEventType: "HealthEvent", Select: "has_prefix(data.FQDD,'System.Chassis.1#System.Modular')", Exec: ["update_property(model, data.FQDD, data.Health)"]}
+      - { SelectEventType: "HealthEvent", Select: "has_prefix(data.FQDD,'System.Chassis.1#IOM.Slot')", Exec: ["update_property(model, data.FQDD, data.Health)"]}
+      - { SelectEventType: "HealthEvent", Select: "data.FQDD == 'System.Chassis.1#SubSystem.1#PowerSupply'", ModelUpdate: [ {Property: "psu_rollup", Query: "data.Health" } ] }
+      - { SelectEventType: "HealthEvent", Select: "data.FQDD == 'System.Chassis.1#SubSystem.1#CMC'", ModelUpdate: [ {Property: "cmc_rollup", Query: "data.Health" } ] }
+      - { SelectEventType: "HealthEvent", Select: "data.FQDD == 'System.Chassis.1#SubSystem.1#Miscellaneous'", ModelUpdate: [ {Property: "misc_rollup", Query: "data.Health" } ] }
+      - { SelectEventType: "HealthEvent", Select: "data.FQDD == 'System.Chassis.1#SubSystem.1#Battery'", ModelUpdate: [ {Property: "battery_rollup", Query: "data.Health" } ] }
+      - { SelectEventType: "HealthEvent", Select: "data.FQDD == 'System.Chassis.1#SubSystem.1#IOMSubsystem'", ModelUpdate: [ {Property: "iom_rollup", Query: "data.Health" } ] }
 
 
 mappings:
