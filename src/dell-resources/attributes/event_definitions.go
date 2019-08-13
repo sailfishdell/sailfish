@@ -41,7 +41,6 @@ type AttributeUpdatedData struct {
 	Name       string
 	Value      interface{}
 	Error      string
-	Event_seq  int64
 }
 
 type AttributeUpdateRequestData struct {

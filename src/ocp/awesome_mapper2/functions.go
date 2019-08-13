@@ -93,60 +93,6 @@ func init() {
 		}
 	})
 
-	// Each event from the pump has a sequence number, we only want to update the model with the event information with the latest information.
-	// The sequence number is stored in the model, by the name provided in the second argument.
-	// arguments
-	//	arg 1 : Model
-	//	arg 2 : sequence Name
-	//		The golden rule of thumb is to have a unique sequence name per pump event in a model/location.
-	//		ex:
-	//			3 unique models are updated by only one pump event.
-	//			chk_seq "sequence name"  can have one name "seq", because the sequence name is stored in 3 different models/locations.
-	//
-	//		ex:
-	//			1 model updated by 3 pump events.
-	//			chk_seq "sequence name"  should be unique for each pump event, because the 3 events are stored in one model/location
-	//	arg 3 : sequence number provided by the pump
-	AddFunction("chk_seq", func(args ...interface{}) (interface{}, error) {
-		var ns int64 = 0
-
-		model, ok := args[0].(*model.Model)
-		if !ok {
-			return false, errors.New("need model as first arg")
-		}
-
-		property, ok := args[1].(string)
-		if !ok {
-			return false, errors.New("need string for second arg")
-		}
-
-		switch t := args[2].(type) {
-		case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, uintptr, float32, float64:
-			ns = int64(reflect.ValueOf(t).Float())
-		default:
-			return false, errors.New("need a number for third arg")
-		}
-
-		v, ok := model.GetPropertyOk(property)
-		if !ok || v == nil {
-			model.UpdateProperty(property, ns)
-			return true, nil
-		}
-
-		vint, ok := v.(int64)
-		if !ok {
-			return false, errors.New("need integer")
-
-		}
-
-		if ns >= vint {
-			model.UpdateProperty(property, ns)
-			return true, nil
-		}
-		return false, fmt.Errorf("event seq number (%d) is below model seq (%d)", ns, vint)
-
-	})
-
 	AddFunction("int", func(args ...interface{}) (interface{}, error) {
 		switch t := args[0].(type) {
 		case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, uintptr:

@@ -76,7 +76,7 @@ func StartService(ctx context.Context, logger log.Logger, eb eh.EventBus) (*Serv
 
 			if data.Error == "" {
 				//update property only if no errors & have write privilege
-				m.ApplyOption(WithAttribute(data.Group, data.Index, data.Name, value, data.Event_seq))
+				m.ApplyOption(WithAttribute(data.Group, data.Index, data.Name, value))
 			}
 		}
 	})
