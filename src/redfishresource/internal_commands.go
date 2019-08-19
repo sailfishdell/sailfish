@@ -271,7 +271,7 @@ var injectChanSlice chan *InjectEvent
 var injectChan chan eh.Event
 
 func StartInjectService(logger log.Logger, d *DomainObjects) {
-	injectChanSlice= make(chan *InjectEvent, 100)
+	injectChanSlice = make(chan *InjectEvent, 100)
 	injectChan = make(chan eh.Event, 1)
 	logger = logger.New("module", "injectservice")
 	eb := d.EventBus
@@ -336,9 +336,11 @@ func StartInjectService(logger log.Logger, d *DomainObjects) {
 	go func() {
 		queued := []InjectEvent{}
 		currentSeq := 0
+		sequence_timer := time.NewTimer(1000 * time.Millisecond)
 		for {
 			select {
 			case event := <-injectChanSlice:
+        logger.Info("Event received", "Sequence #", event.EventSeq)
 				// on received event, always add to queue
 				queued = append(queued, *event)
 				try := true
@@ -348,17 +350,19 @@ func StartInjectService(logger log.Logger, d *DomainObjects) {
 					for _, k := range queued {
 						eventSeq := int(k.EventSeq)
 						if (eventSeq == currentSeq+1) || (currentSeq == 0 && eventSeq == 0) {
+							sequence_timer.Stop()
 							// match next sequence, or startup sequence events, then continue processing queue
 							try = true
 							currentSeq = eventSeq
 							k.sendToChn(k.ctx)
+							sequence_timer.Reset(1000 * time.Millisecond)
 						} else if eventSeq <= currentSeq {
 							// drop all old events
 							dropped_event := &DroppedEventData{
 								Name:     k.Name,
 								EventSeq: k.EventSeq,
 							}
-							logger.Warn("Event dropped", "Event Name", k.Name, "Sequence Number", k.EventSeq)
+						  logger.Warn("Event dropped", "Event Name", k.Name, "Sequence Number", k.EventSeq)
 							eb.PublishEvent(k.ctx, eh.NewEvent(DroppedEvent, dropped_event, time.Now()))
 						} else {
 							// only keep events that are greater than the current sequence count
@@ -367,17 +371,17 @@ func StartInjectService(logger log.Logger, d *DomainObjects) {
 					}
 					queued = copy
 				}
-			// on 100 milliseconds without any event received, handle queued events
-			case <-time.After(100 * time.Millisecond):
+				// on 100 milliseconds without any event received, handle queued events
+			case <-sequence_timer.C:
 				sort.SliceStable(queued, func(i, j int) bool {
 					return queued[i].EventSeq < queued[j].EventSeq
 				})
-				copy := []InjectEvent{}
 				flag := false
+        copy := []InjectEvent{}
 				for _, k := range queued {
 					eventSeq := int(k.EventSeq)
 					// take the lowest sequenced event that is still greater than the current sequence count
-					if eventSeq >= currentSeq { //= should never be valid but just in case
+					if eventSeq > currentSeq { //ignore equal seq count
 						if flag == false {
 							// use this event as the new current sequence count
 							flag = true
@@ -385,8 +389,13 @@ func StartInjectService(logger log.Logger, d *DomainObjects) {
 							currentSeq = eventSeq
 							k.sendToChn(k.ctx)
 						} else {
-							// keep rest of queued events
-							copy = append(copy, k)
+							// process rest of events
+							if eventSeq == currentSeq+1 {
+								currentSeq = eventSeq
+								k.sendToChn(k.ctx)
+							} else {
+                copy = append(copy, k)
+							}
 						}
 					} else {
 						// drop all old events
@@ -394,11 +403,13 @@ func StartInjectService(logger log.Logger, d *DomainObjects) {
 							Name:     k.Name,
 							EventSeq: k.EventSeq,
 						}
-						logger.Warn("Event dropped (timeout)", "Event Name", k.Name, "Sequence Number", k.EventSeq)
+						logger.Warn("Event dropped (TIMEOUT)", "Event Name", k.Name, "Sequence Number", k.EventSeq)
 						eb.PublishEvent(k.ctx, eh.NewEvent(DroppedEvent, dropped_event, time.Now()))
 					}
 				}
-				queued = copy
+        queued = copy
+        //logger.Warn("Timeout finished", "New Value", currentSeq)
+				sequence_timer.Reset(1000 * time.Millisecond)
 			}
 		}
 	}()
@@ -429,7 +440,7 @@ func (c *InjectEvent) Handle(ctx context.Context, a *RedfishResourceAggregate) e
 
 func (c *InjectEvent) sendToChn(ctx context.Context) error {
 	requestLogger := ContextLogger(ctx, "internal_commands").New("module", "inject_event")
-  //requestLogger.Crit("SEND TO CHANNEL", "NAME", c.Name, "EVENT SEQ", c.EventSeq)
+	//requestLogger.Crit("SEND TO CHANNEL", "NAME", c.Name, "EVENT SEQ", c.EventSeq)
 
 	eventList := make([]map[string]interface{}, 0, len(c.EventArray)+1)
 	if len(c.EventData) > 0 {
