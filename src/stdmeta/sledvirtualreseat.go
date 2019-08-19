@@ -11,7 +11,7 @@ import (
 	eventpublisher "github.com/looplab/eventhorizon/publisher/local"
 
 	"github.com/superchalupa/sailfish/src/actionhandler"
-	"github.com/superchalupa/sailfish/src/dell-resources/attributes"
+	a "github.com/superchalupa/sailfish/src/dell-resources/attributedef"
 	"github.com/superchalupa/sailfish/src/log"
 	"github.com/superchalupa/sailfish/src/looplab/eventwaiter"
 	"github.com/superchalupa/sailfish/src/ocp/view"
@@ -106,7 +106,7 @@ func SledVirtualReseatSvc(ctx context.Context, logger log.Logger, eb eh.EventBus
 				if val, ok := all_attributes_map["Info"]; ok {
 					if val, ok := val["1"]; ok {
 						if val, ok := val["ChassisSubType"]; ok {
-							attribute_data := val.(attributes.AttributeData)
+							attribute_data := val.(a.AttributeData)
 							chassis_sub_type = attribute_data.Value.(string)
 							flag = true
 						}

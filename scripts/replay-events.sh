@@ -15,8 +15,8 @@ if [ -z "$1" ]; then
 fi
 
 tmpfile=$(mktemp ./TEMP-XXXXXX)
-trap "rm -f $tmpfile" EXIT
-
+trap "rm -f $tmpfile TMP" EXIT
+i=0
 start=$(date +%s)
 total_events_replayed=0
 total_lines=$(wc -l $@ | tail -n1 |  awk '{print $1}' )
@@ -26,7 +26,10 @@ do
   file_lines=$(wc -l $file |  awk '{print $1}')
   events_replayed=0
   while read -u 5 line ; do
-     echo "$line" > $tmpfile
+      echo "$line" > $tmpfile
+      i=$(($i+1))
+      jq  --argjson i "$i" -s '{"event_seq": $i} * .[0]'  $tmpfile > TMP
+      mv TMP  $tmpfile
 
       $CURLCMD --fail -f $BASE/api/Event%3AInject -d  @$tmpfile
 

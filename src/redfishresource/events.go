@@ -11,6 +11,7 @@ const (
 	HTTPCmdProcessed       eh.EventType = "HTTPCmdProcessed"
 
 	RedfishResourcePropertiesUpdated   = eh.EventType("RedfishResourceProperty:updated")
+	RedfishResourcePropertiesUpdated2  = eh.EventType("RedfishResourceProperty:updated2")
 	RedfishResourcePropertyMetaUpdated = eh.EventType("RedfishResourcePropertyMeta:updated")
 
 	DroppedEvent = eh.EventType("DroppedEvent")
@@ -29,6 +30,11 @@ func init() {
 	eh.RegisterEventData(RedfishResourcePropertiesUpdated, func() eh.EventData {
 		return &RedfishResourcePropertiesUpdatedData{}
 	})
+
+	eh.RegisterEventData(RedfishResourcePropertiesUpdated2, func() eh.EventData {
+		return &RedfishResourcePropertiesUpdatedData2{}
+	})
+
 	eh.RegisterEventData(RedfishResourcePropertyMetaUpdated, func() eh.EventData {
 		return &RedfishResourcePropertyMetaUpdatedData{}
 	})
@@ -52,6 +58,12 @@ type RedfishResourcePropertiesUpdatedData struct {
 	ID            eh.UUID `json:"id"     bson:"id"`
 	ResourceURI   string
 	PropertyNames []string
+}
+
+type RedfishResourcePropertiesUpdatedData2 struct {
+	ID            eh.UUID `json:"id"     bson:"id"`
+	ResourceURI   string
+	PropertyNames map[string]interface{}
 }
 
 type RedfishResourcePropertyMetaUpdatedData struct {

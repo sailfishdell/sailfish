@@ -4,7 +4,9 @@ import (
 	"errors"
 	"github.com/Knetic/govaluate"
 	eh "github.com/looplab/eventhorizon"
+	a "github.com/superchalupa/sailfish/src/dell-resources/attributedef"
 	"github.com/superchalupa/sailfish/src/log"
+	"github.com/superchalupa/sailfish/src/ocp/model"
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
 	"path"
 	"strings"
@@ -143,6 +145,43 @@ func init() {
 			rhs := makeRHS(cfg_params, rhsParams)
 			return (lhs == rhs), nil
 
+		}, nil
+
+	})
+
+	AddAM3SelectSetupFunction("isSledProfile", func(logger log.Logger, cfgEntry ConfigFileMappingEntry) (SelectFunc, error) {
+		return func(p *MapperParameters) (bool, error) {
+			data := p.Params["data"].(*a.AttributeUpdatedData)
+			model1 := p.Params["model"].(*model.Model)
+			val, ok := model1.GetPropertyOk("slot_contains")
+			if !ok {
+				return false, nil
+			}
+			lhs := (data.FQDD == val)
+
+			rhs := (data.Name == "SledProfile")
+			return (lhs && rhs), nil
+		}, nil
+
+	})
+
+	AddAM3SelectSetupFunction("isTaskState", func(logger log.Logger, cfgEntry ConfigFileMappingEntry) (SelectFunc, error) {
+		return func(p *MapperParameters) (bool, error) {
+			data := p.Params["data"].(*a.AttributeUpdatedData)
+			group := p.Params["Group"]
+			index := p.Params["Index"]
+			return (data.Group == group && data.Index == index && data.Name == "TaskState"), nil
+		}, nil
+
+	})
+
+	AddAM3SelectSetupFunction("isRowOrColumn", func(logger log.Logger, cfgEntry ConfigFileMappingEntry) (SelectFunc, error) {
+		return func(p *MapperParameters) (bool, error) {
+			data := p.Params["data"].(*a.AttributeUpdatedData)
+			group := p.Params["Group"]
+			index := p.Params["Index"]
+			rowOrColumn := (cfgEntry.SelectParams[0])
+			return (data.FQDD == "System.Chassis.1" && data.Group == group && data.Index == index && data.Name == rowOrColumn), nil
 		}, nil
 
 	})

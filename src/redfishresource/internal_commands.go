@@ -27,22 +27,25 @@ func init() {
 	eh.RegisterCommand(func() eh.Command { return &CreateRedfishResource{} })
 	eh.RegisterCommand(func() eh.Command { return &RemoveRedfishResource{} })
 	eh.RegisterCommand(func() eh.Command { return &UpdateRedfishResourceProperties{} })
+	eh.RegisterCommand(func() eh.Command { return &UpdateRedfishResourceProperties2{} })
 	eh.RegisterCommand(func() eh.Command { return &RemoveRedfishResourceProperty{} })
 	eh.RegisterCommand(func() eh.Command { return &InjectEvent{} })
 }
 
 const (
-	CreateRedfishResourceCommand           = eh.CommandType("internal:RedfishResource:Create")
-	RemoveRedfishResourceCommand           = eh.CommandType("internal:RedfishResource:Remove")
-	UpdateRedfishResourcePropertiesCommand = eh.CommandType("internal:RedfishResourceProperties:Update")
-	RemoveRedfishResourcePropertyCommand   = eh.CommandType("internal:RedfishResourceProperties:Remove")
-	InjectEventCommand                     = eh.CommandType("internal:Event:Inject")
+	CreateRedfishResourceCommand            = eh.CommandType("internal:RedfishResource:Create")
+	RemoveRedfishResourceCommand            = eh.CommandType("internal:RedfishResource:Remove")
+	UpdateRedfishResourcePropertiesCommand  = eh.CommandType("internal:RedfishResourceProperties:Update")
+	UpdateRedfishResourcePropertiesCommand2 = eh.CommandType("internal:RedfishResourceProperties:Update:2")
+	RemoveRedfishResourcePropertyCommand    = eh.CommandType("internal:RedfishResourceProperties:Remove")
+	InjectEventCommand                      = eh.CommandType("internal:Event:Inject")
 )
 
 // Static type checking for commands to prevent runtime errors due to typos
 var _ = eh.Command(&CreateRedfishResource{})
 var _ = eh.Command(&RemoveRedfishResource{})
 var _ = eh.Command(&UpdateRedfishResourceProperties{})
+var _ = eh.Command(&UpdateRedfishResourceProperties2{})
 var _ = eh.Command(&RemoveRedfishResourceProperty{})
 var _ = eh.Command(&InjectEvent{})
 
@@ -162,6 +165,7 @@ func (c *RemoveRedfishResource) CommandType() eh.CommandType { return RemoveRedf
 func (c *RemoveRedfishResource) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 	a.Lock()
 	defer a.Unlock()
+
 	a.PublishEvent(eh.NewEvent(RedfishResourceRemoved, &RedfishResourceRemovedData{
 		ID:          c.ID,
 		ResourceURI: a.ResourceURI,
@@ -194,6 +198,93 @@ func (c *RemoveRedfishResourceProperty) Handle(ctx context.Context, a *RedfishRe
 			delete(properties, key)
 		}
 	}
+	return nil
+}
+
+// toUpdate	{path2key : value}
+type UpdateRedfishResourceProperties2 struct {
+	ID         eh.UUID `json:"id"`
+	Properties map[string]interface{}
+}
+
+// AggregateType satisfies base Aggregate interface
+func (c *UpdateRedfishResourceProperties2) AggregateType() eh.AggregateType { return AggregateType }
+
+// AggregateID satisfies base Aggregate interface
+func (c *UpdateRedfishResourceProperties2) AggregateID() eh.UUID { return c.ID }
+
+// CommandType satisfies base Command interface
+func (c *UpdateRedfishResourceProperties2) CommandType() eh.CommandType {
+	return UpdateRedfishResourcePropertiesCommand2
+}
+
+// aggregate is a.Properties.(RedfishresourceProperty)
+// going through the aggregate it is [map]*RedfishResourceProperty...
+// TODO: When process functions update aggregates directly, and meta is not needed, update ParseLock and here
+// NOTE: only for maps  can be updated to be used for lists
+func updateAgg(a *RedfishResourceAggregate, pathSlice []string, v interface{}) error {
+	loc, ok := a.Properties.Value.(map[string]interface{})
+	if !ok {
+		return errors.New("aggregate was not passed in")
+	}
+
+	len := len(pathSlice) - 1
+	for i, p := range pathSlice {
+		k, ok := loc[p]
+		if !ok {
+			return fmt.Errorf("can not find %s in %+v", p, loc)
+		}
+		switch k.(type) {
+		case *RedfishResourceProperty:
+			k2 := k.(*RedfishResourceProperty)
+			if (len == i) && (k2.Value != v) {
+				k2.Value = v
+			} else if len == i {
+				return nil
+			} else {
+				tmp := k2.Value
+				loc, ok = tmp.(map[string]interface{})
+				if !ok {
+					return fmt.Errorf("type cast to map[string]interface{} errored for %+v", pathSlice)
+				}
+			}
+		default:
+			return fmt.Errorf("agg update for slice %+v, received type %T instead of *RedfishResourceProperty", pathSlice, k)
+		}
+	}
+	return nil
+
+}
+
+//  This is handled by eventhorizon code.
+//  When a CommandHandler "Handle" is called it will retrieve the aggregate from the DB.  and call this Handle. Then save the aggregate 'a' back to the db.  no locking is required..
+func (c *UpdateRedfishResourceProperties2) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
+	requestLogger := ContextLogger(ctx, "UpdateRedfishResourceProperty2")
+
+	d := &RedfishResourcePropertiesUpdatedData2{
+		ID:            c.ID,
+		ResourceURI:   a.ResourceURI,
+		PropertyNames: make(map[string]interface{}),
+	}
+
+	// update properties in aggregate
+	for k, v := range c.Properties {
+		pathSlice := strings.Split(k, "/")
+
+		err := updateAgg(a, pathSlice, v)
+
+		if err == nil {
+			d.PropertyNames[k] = v
+		} else {
+			requestLogger.Error("UpdateRedfishResourceProperty2", "error", err)
+		}
+
+	}
+
+	if len(d.PropertyNames) > 0 {
+		a.PublishEvent(eh.NewEvent(RedfishResourcePropertiesUpdated, d.PropertyNames, time.Now()))
+	}
+
 	return nil
 }
 

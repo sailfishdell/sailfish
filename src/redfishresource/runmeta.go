@@ -13,6 +13,7 @@ import (
 func (rrp *RedfishResourceProperty) MarshalJSON() ([]byte, error) {
 	rrp.RLock()
 	defer rrp.RUnlock()
+
 	return json.Marshal(rrp.Value)
 }
 
@@ -166,9 +167,11 @@ func Flatten(thing interface{}, parentlocked bool) interface{} {
 		if vp.Ephemeral {
 			vp.RLock()
 			defer vp.RUnlock()
+
 		} else {
 			vp.Lock()
 			defer vp.Unlock()
+
 		}
 
 		ret := Flatten(vp.Value, true) // the only instance where we deref value
@@ -223,7 +226,6 @@ func Flatten(thing interface{}, parentlocked bool) interface{} {
 }
 
 func (rrp *RedfishResourceProperty) RunMetaFunctions(ctx context.Context, agg *RedfishResourceAggregate, auth *RedfishAuthorizationProperty, e nuEncOpts) (err error) {
-
 	rrp.Lock()
 	defer rrp.Unlock()
 

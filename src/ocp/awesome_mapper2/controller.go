@@ -10,6 +10,7 @@ import (
 	"github.com/superchalupa/sailfish/src/looplab/eventwaiter"
 	"github.com/superchalupa/sailfish/src/ocp/event"
 	"github.com/superchalupa/sailfish/src/ocp/model"
+	domain "github.com/superchalupa/sailfish/src/redfishresource"
 	"sync"
 )
 
@@ -59,8 +60,10 @@ type ConfigSection struct {
 }
 
 type MapperParameters struct {
+	uuid   eh.UUID
 	model  *model.Model
 	Params map[string]interface{}
+	ctx    context.Context
 }
 
 type MapperConfig struct {
@@ -72,15 +75,19 @@ type MapperConfig struct {
 	cfg         *ConfigSection
 }
 
-func (s *Service) NewMapping(ctx context.Context, logger log.Logger, cfg *viper.Viper, cfgMu *sync.RWMutex, mdl *model.Model, cfgName string, uniqueName string, parameters map[string]interface{}) error {
-
+func (s *Service) NewMapping(ctx context.Context, logger log.Logger, cfg *viper.Viper, cfgMu *sync.RWMutex, mdl *model.Model, cfgName string, uniqueName string, parameters map[string]interface{}, UUID interface{}) error {
+	var instanceParameters *MapperParameters
 	functionsMu.RLock()
 	defer functionsMu.RUnlock()
 
 	logger = logger.New("module", "am2")
 
 	// TODO: this is a candidate to push down into a closure for the actual functions instead of accounting for this at the global level
-	instanceParameters := &MapperParameters{model: mdl, Params: map[string]interface{}{}}
+	if UUID == nil {
+		instanceParameters = &MapperParameters{ctx: ctx, model: mdl, Params: map[string]interface{}{}}
+	} else {
+		instanceParameters = &MapperParameters{ctx: ctx, model: mdl, uuid: UUID.(eh.UUID), Params: map[string]interface{}{}}
+	}
 	for k, v := range parameters {
 		instanceParameters.Params[k] = v
 	}
@@ -154,7 +161,6 @@ func (s *Service) NewMapping(ctx context.Context, logger log.Logger, cfg *viper.
 				cfgEntry.Process = append(cfgEntry.Process, map[string]interface{}{"name": "govaluate_modelupdate", "params": cfgEntry.ModelUpdate})
 				cfgEntry.Process = append(cfgEntry.Process, map[string]interface{}{"name": "govaluate_exec", "params": cfgEntry.Exec})
 			}
-
 			for _, processFnObj := range cfgEntry.Process {
 				fnName, ok := processFnObj["name"].(string)
 				if !ok {
@@ -173,7 +179,7 @@ func (s *Service) NewMapping(ctx context.Context, logger log.Logger, cfg *viper.
 					continue
 				}
 
-				processFn, oneTimeFn, err := setupProcessFn(logger.New("cfgName", cfgName), fnParams.(interface{}))
+				processFn, oneTimeFn, err := setupProcessFn(logger.New("cfgName", cfgName), fnParams)
 				if !ok {
 					logger.Warn("SetupProcessFn failed", "function name", fnName, "error", err)
 					continue
@@ -230,7 +236,7 @@ func (s *Service) NewMapping(ctx context.Context, logger log.Logger, cfg *viper.
 	return nil
 }
 
-func StartService(ctx context.Context, logger log.Logger, eb eh.EventBus) (*Service, error) {
+func StartService(ctx context.Context, logger log.Logger, eb eh.EventBus, ch eh.CommandHandler, d *domain.DomainObjects) (*Service, error) {
 	EventPublisher := eventpublisher.NewEventPublisher()
 	eb.AddHandler(eh.MatchAny(), EventPublisher)
 	EventWaiter := eventwaiter.NewEventWaiter(eventwaiter.SetName("Awesome Mapper2"), eventwaiter.NoAutoRun)
@@ -280,6 +286,7 @@ func StartService(ctx context.Context, logger log.Logger, eb eh.EventBus) (*Serv
 				//ret.logger.Debug("am2 check mapping", "type", event.EventType(), "select", mapping.selectStr, "for config", cfgName)
 
 				// TODO: these lines should probably go...
+				// for govaluate
 				parameters.Params["cfg_params"] = parameters
 				parameters.Params["type"] = string(event.EventType())
 				parameters.Params["data"] = event.Data()
@@ -309,8 +316,8 @@ func StartService(ctx context.Context, logger log.Logger, eb eh.EventBus) (*Serv
 				}
 
 				for _, fn := range mapping.processFn {
-					//err := fn(event, parameters) add only needed parameters
-					err := fn(parameters)
+					// Use Id to update aggregate. oh.. I need versioning now. ugh
+					err := fn(parameters, event, ch, d)
 					if err != nil {
 						ret.logger.Error("expression failed to evaluate", "err", err, "select", mapping.selectFnStr, "for config", cfgName)
 					}

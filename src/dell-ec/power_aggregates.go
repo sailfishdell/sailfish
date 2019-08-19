@@ -2,50 +2,16 @@ package dell_ec
 
 import (
 	"context"
-	"errors"
-	"fmt"
 	"sync"
 
 	eh "github.com/looplab/eventhorizon"
 	"github.com/spf13/viper"
 
 	"github.com/superchalupa/sailfish/src/log"
-	"github.com/superchalupa/sailfish/src/ocp/awesome_mapper2"
 	"github.com/superchalupa/sailfish/src/ocp/testaggregate"
 	"github.com/superchalupa/sailfish/src/ocp/view"
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
 )
-
-func initpowercontrol(logger log.Logger) {
-	powercap_enabled := false
-	awesome_mapper2.AddFunction("set_power_cap_enable", func(args ...interface{}) (interface{}, error) {
-		powercap_setting, ok := args[0].(string)
-		if !ok {
-			logger.Crit("Mapper configuration error: Need power cap setting as a string", "args[0]", args[0], "TYPE", fmt.Sprintf("%T", args[0]))
-			return nil, errors.New("Mapper configuration error: power cap setting not a string")
-		}
-		if powercap_setting == "Enabled" {
-			powercap_enabled = true
-		} else {
-			powercap_enabled = false
-		}
-		return nil, nil
-	})
-
-	awesome_mapper2.AddFunction("check_power_cap", func(args ...interface{}) (interface{}, error) {
-		powercap_value, ok := args[0].(float64)
-		if !ok {
-			logger.Crit("Mapper configuration error: Need power cap value as a number", "args[0]", args[0], "TYPE", fmt.Sprintf("%T", args[0]))
-			return nil, errors.New("Mapper configuration error: power cap value is not a number")
-		}
-		if powercap_enabled == true {
-			return int(powercap_value), nil
-		} else {
-			return 0, nil
-		}
-	})
-
-}
 
 func RegisterAggregate(s *testaggregate.Service) {
 	s.RegisterAggregateFunction("power",
@@ -136,24 +102,25 @@ func RegisterAggregate(s *testaggregate.Service) {
 						"PATCH": []string{"ConfigureManager"},
 					},
 					Properties: map[string]interface{}{
-						"Name":                     "System Power Control",
-						"MemberId":                 "PowerControl",
-						"PowerAvailableWatts@meta": vw.Meta(view.PropGET("headroom_watts")),
-						"PowerCapacityWatts@meta":  vw.Meta(view.PropGET("capacity_watts")), //System.Chassis.1#ChassisPower.1#SystemInputMaxPowerCapacity
-						"PowerConsumedWatts@meta":  vw.Meta(view.PropGET("consumed_watts")),
+						"Name":                    "System Power Control",
+						"MemberId":                "PowerControl",
+						"PowerAvailableWatts":     0,
+						"PowerCapacityWatts@meta": vw.Meta(view.PropGET("capacity_watts")), //System.Chassis.1#ChassisPower.1#SystemInputMaxPowerCapacity
+						"PowerConsumedWatts@meta": vw.Meta(view.PropGET("consumed_watts")),
 
 						"Oem": map[string]interface{}{
 							"EnergyConsumptionStartTime@meta": vw.Meta(view.PropGET("energy_consumption_start_time")),
-							"EnergyConsumptionkWh@meta":       vw.Meta(view.PropGET("energy_consumption_kwh")),
-							"HeadroomWatts@meta":              vw.Meta(view.PropGET("headroom_watts")),
-							"MaxPeakWatts@meta":               vw.Meta(view.PropGET("max_peak_watts")),
-							"MaxPeakWattsTime@meta":           vw.Meta(view.PropGET("max_peak_watts_time")),
-							"MinPeakWatts@meta":               vw.Meta(view.PropGET("min_peak_watts")),
-							"MinPeakWattsTime@meta":           vw.Meta(view.PropGET("min_peak_watts_time")),
-							"PeakHeadroomWatts@meta":          vw.Meta(view.PropGET("peak_headroom_watts")),
+							"EnergyConsumptionkWh":            0,
+							"HeadroomWatts":                   0,
+							"MaxPeakWatts":                    0,
+							"MaxPeakWattsTime":                0,
+							"MinPeakWatts":                    0,
+							"MinPeakWattsTime":                0,
+							"PeakHeadroomWatts":               0,
 						},
+
 						"PowerLimit": map[string]interface{}{
-							"LimitInWatts@meta": vw.Meta(view.PropGET("limit_in_watts")),
+							"LimitInWatts": 0,
 						},
 						"PowerMetrics": map[string]interface{}{
 							"AverageConsumedWatts": 0,
@@ -182,21 +149,21 @@ func RegisterAggregate(s *testaggregate.Service) {
 						"Name@meta":               vw.Meta(view.PropGET("name")),
 						"MemberId@meta":           vw.Meta(view.PropGET("unique_name")),
 						"PowerCapacityWatts@meta": vw.Meta(view.PropGET("capacity_watts")),
-						"LineInputVoltage@meta":   vw.Meta(view.GETProperty("line_input_voltage"), view.GETModel("default")),
+						"LineInputVoltage":        0,
 						"FirmwareVersion@meta":    vw.Meta(view.PropGET("firmware_version")),
 
 						"Status": map[string]interface{}{
-							"HealthRollup@meta": vw.Meta(view.PropGET("obj_status")),
-							"State@meta":        vw.Meta(view.PropGET("state")),
-							"Health@meta":       vw.Meta(view.PropGET("obj_status")),
+							"HealthRollup": "OK",
+							"State@meta":   vw.Meta(view.PropGET("state")),
+							"Health":       "OK",
 						},
 
 						"Oem": map[string]interface{}{
 							"Dell": map[string]interface{}{
-								"@odata.type":       "#DellPower.v1_0_0.DellPowerSupply",
-								"ComponentID@meta":  vw.Meta(view.PropGET("component_id")),
-								"InputCurrent@meta": vw.Meta(view.GETProperty("input_current"), view.GETModel("default")),
-								"Attributes@meta":   vw.Meta(view.GETProperty("attributes"), view.GETFormatter("attributeFormatter"), view.GETModel("default"), view.PropPATCH("attributes", "ar_dump")),
+								"@odata.type":      "#DellPower.v1_0_0.DellPowerSupply",
+								"ComponentID@meta": vw.Meta(view.PropGET("component_id")),
+								"InputCurrent":     0,
+								"Attributes@meta":  vw.Meta(view.GETProperty("attributes"), view.GETFormatter("attributeFormatter"), view.GETModel("default"), view.PropPATCH("attributes", "ar_dump")),
 							},
 						},
 						// this should be a link using getformatter

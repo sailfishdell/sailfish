@@ -65,6 +65,7 @@ func PublishRedfishEvents(ctx context.Context, m propertygetter, eb eh.EventBus)
 				}
 
 				log.MustLogger("event_service").Info("Got event", "event", event)
+				// is RedfishResourceUpdated handled under RedfishEventData?
 				switch data := event.Data().(type) {
 				case *RedfishEventData:
 					// mitigate duplicate messages
