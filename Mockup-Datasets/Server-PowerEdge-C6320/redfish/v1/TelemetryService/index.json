@@ -1,0 +1,19 @@
+{
+   "@odata.type": "#TelemetryService.v1_0_0.TelemetryService",
+   "Name": "Telemetry Service",
+   "@odata.id": "/redfish/v1/TelemetryService",
+   "@odata.context": "/redfish/v1/$metadata#TelemetryService.TelemetryService",
+   "Actions": {
+      "#TelemetryService.SubmitTestMetricReport": {
+         "target": "/redfish/v1/TelemetryService/Actions/TelemetryService.SubmitTestMetricReport"
+      }
+   },
+   "Oem": {},
+   "MetricReports": {
+      "@odata.id": "/redfish/v1/TelemetryService/MetricReports"
+   },
+   "MetricReportDefinitions": {
+      "@odata.id": "/redfish/v1/TelemetryService/MetricReportDefinitions"
+   },
+   "Id": "TelemetryService"
+}

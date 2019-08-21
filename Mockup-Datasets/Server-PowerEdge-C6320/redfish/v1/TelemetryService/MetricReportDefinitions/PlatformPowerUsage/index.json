@@ -1,0 +1,45 @@
+{
+    "@odata.context": "/redfish/v1/$metadata#MetricReportDefinition.MetricReportDefinition",
+    "@odata.id": "/redfish/v1/TelemetryService/MetricReportDefinitions/PlatformPowerUsage",
+    "@odata.type": "#MetricReportDefinition.v1_2_0.MetricReportDefinition",
+    "AppendLimit": 256,
+    "Id": "PlatformPowerUsage",
+    "Links": [],
+    "MetricProperties": [
+        "/redfish/v1/Chassis/{TWild}/Power#/PowerControl/{PWild}/PowerConsumedWatts"
+    ],
+    "MetricReport": {
+        "@odata.id": "/redfish/v1/TelemetryService/MetricReports/PlatformPowerUsage"
+    },
+    "MetricReportDefinitionEnabled@meta": {"PATCH": {"plugin":"MRD"}},
+    "MetricReportDefinitionType": "Periodic",
+    "MetricReportHeartbeatInterval@meta": {"PATCH": {"plugin":"MRD"}},
+    "Name": "Transmit and Log Platform Power Usage",
+    "ReportActions": [
+        "RedfishEvent",
+        "LogToMetricReportsCollection"
+    ],
+    "ReportUpdates": "AppendWrapsWhenFull",
+    "Schedule": {
+        "RecurrenceInterval": "T01:00:00"
+    },
+    "Status": {
+        "State": "Enabled"
+    },
+    "SuppressRepeatedMetricValue": true,
+    "Wildcards": [
+        {
+            "Name": "PWild",
+            "Values": [
+                "0"
+            ]
+        },
+        {
+            "Name": "TWild",
+            "Values": [
+                "Tray_1",
+                "Tray_2"
+            ]
+        }
+    ]
+}

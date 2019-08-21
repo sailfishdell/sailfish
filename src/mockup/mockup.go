@@ -59,6 +59,8 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	session.RegisterAggregate(instantiateSvc)
 	telemetryservice.RegisterAggregate(instantiateSvc)
 
+	stdmeta.MetricReportDefPlugin(ch, d)
+
 	awesome_mapper2.AddFunction("instantiate", func(args ...interface{}) (interface{}, error) {
 		if len(args) < 1 {
 			return nil, errors.New("need to specify cfg section to instantiate")

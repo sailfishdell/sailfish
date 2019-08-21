@@ -103,6 +103,7 @@ func (c *PATCH) ParseHTTPRequest(r *http.Request) error {
 	}
 	return nil
 }
+
 func (c *PATCH) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 	// set up the base response data
 	data := &HTTPCmdProcessedData{

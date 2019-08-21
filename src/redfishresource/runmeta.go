@@ -34,6 +34,7 @@ func NewPatch(ctx context.Context, agg *RedfishResourceAggregate, rrp *RedfishRe
 	// 200 if anything succeeds, 400 if everything fails
 	opts := nuEncOpts{
 		request: body,
+		parse:   body,
 		process: nuPATCHfn,
 		root:    true,
 		path:    "",
@@ -46,6 +47,7 @@ type nuProcessFn func(context.Context, *RedfishResourceAggregate, *RedfishResour
 
 type nuEncOpts struct {
 	root    bool
+	parse   interface{}
 	request interface{}
 	present bool
 	process nuProcessFn
@@ -287,6 +289,7 @@ func helper(ctx context.Context, agg *RedfishResourceAggregate, auth *RedfishAut
 		for _, k := range val.MapKeys() {
 			newEncOpts := nuEncOpts{
 				request: encopts.request,
+				parse:   encopts.parse,
 				present: encopts.present,
 				process: encopts.process,
 				root:    false,
@@ -308,13 +311,13 @@ func helper(ctx context.Context, agg *RedfishResourceAggregate, auth *RedfishAut
 				}
 			}
 
-			requestBody, ok := newEncOpts.request.(map[string]interface{})
+			parseBody, ok := newEncOpts.parse.(map[string]interface{})
 			newEncOpts.present = ok
 			if newEncOpts.present {
-				newEncOpts.request, newEncOpts.present = requestBody[k.Interface().(string)]
+				newEncOpts.parse, newEncOpts.present = parseBody[k.Interface().(string)]
 			}
-			if newEncOpts.request == nil && k.Interface().(string) == "Attributes" {
-				newEncOpts.request = map[string]interface{}{"ERROR": "BADREQUEST"}
+			if newEncOpts.parse == nil && k.Interface().(string) == "Attributes" {
+				newEncOpts.parse = map[string]interface{}{"ERROR": "BADREQUEST"}
 			}
 			mapVal := val.MapIndex(k)
 			if mapVal.IsValid() {

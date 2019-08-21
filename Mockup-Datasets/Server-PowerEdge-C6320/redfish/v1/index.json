@@ -12,6 +12,9 @@
     "Tasks": {
         "@odata.id": "/redfish/v1/TaskService"
     },
+   "TelemetryService": {
+      "@odata.id": "/redfish/v1/TelemetryService"
+   },
     "Chassis": {
         "@odata.id": "/redfish/v1/Chassis"
     },

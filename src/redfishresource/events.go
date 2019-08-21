@@ -1,7 +1,9 @@
 package domain
 
 import (
+	"fmt"
 	eh "github.com/looplab/eventhorizon"
+	"path"
 )
 
 const (
@@ -58,6 +60,28 @@ type RedfishResourcePropertiesUpdatedData struct {
 	ID            eh.UUID `json:"id"     bson:"id"`
 	ResourceURI   string
 	PropertyNames []string
+}
+
+// helper function to convert changes in aggregate format into "PropertyNames" format for RedfishResourcePropertiesUpdateData2
+func Map2Path(pathMap interface{}, pathMapStr map[string]interface{}, pathStr string) {
+	switch pathMap.(type) {
+	case map[string]interface{}:
+		pathMapDefined := pathMap.(map[string]interface{})
+		for keyS, vInterf := range pathMapDefined {
+			path2 := path.Join(pathStr, keyS)
+			Map2Path(vInterf, pathMapStr, path2)
+		}
+
+	case []interface{}:
+		pathMapDefined := pathMap.([]interface{})
+		for i, vInterf := range pathMapDefined {
+			path2 := fmt.Sprintf("%s/%d", pathStr, i)
+			Map2Path(vInterf, pathMapStr, path2)
+		}
+
+	default:
+		pathMapStr[pathStr] = pathMap
+	}
 }
 
 type RedfishResourcePropertiesUpdatedData2 struct {

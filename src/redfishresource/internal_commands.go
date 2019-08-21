@@ -220,9 +220,8 @@ func (c *UpdateRedfishResourceProperties2) CommandType() eh.CommandType {
 
 // aggregate is a.Properties.(RedfishresourceProperty)
 // going through the aggregate it is [map]*RedfishResourceProperty...
-// TODO: When process functions update aggregates directly, and meta is not needed, update ParseLock and here
 // NOTE: only for maps  can be updated to be used for lists
-func updateAgg(a *RedfishResourceAggregate, pathSlice []string, v interface{}) error {
+func UpdateAgg(a *RedfishResourceAggregate, pathSlice []string, v interface{}) error {
 	loc, ok := a.Properties.Value.(map[string]interface{})
 	if !ok {
 		return errors.New("aggregate was not passed in")
@@ -271,7 +270,7 @@ func (c *UpdateRedfishResourceProperties2) Handle(ctx context.Context, a *Redfis
 	for k, v := range c.Properties {
 		pathSlice := strings.Split(k, "/")
 
-		err := updateAgg(a, pathSlice, v)
+		err := UpdateAgg(a, pathSlice, v)
 
 		if err == nil {
 			d.PropertyNames[k] = v
@@ -431,7 +430,7 @@ func StartInjectService(logger log.Logger, d *DomainObjects) {
 		for {
 			select {
 			case event := <-injectChanSlice:
-        logger.Info("Event received", "Sequence #", event.EventSeq)
+				logger.Info("Event received", "Sequence #", event.EventSeq)
 				// on received event, always add to queue
 				queued = append(queued, *event)
 				try := true
@@ -453,7 +452,7 @@ func StartInjectService(logger log.Logger, d *DomainObjects) {
 								Name:     k.Name,
 								EventSeq: k.EventSeq,
 							}
-						  logger.Warn("Event dropped", "Event Name", k.Name, "Sequence Number", k.EventSeq)
+							logger.Warn("Event dropped", "Event Name", k.Name, "Sequence Number", k.EventSeq)
 							eb.PublishEvent(k.ctx, eh.NewEvent(DroppedEvent, dropped_event, time.Now()))
 						} else {
 							// only keep events that are greater than the current sequence count
@@ -468,7 +467,7 @@ func StartInjectService(logger log.Logger, d *DomainObjects) {
 					return queued[i].EventSeq < queued[j].EventSeq
 				})
 				flag := false
-        copy := []InjectEvent{}
+				copy := []InjectEvent{}
 				for _, k := range queued {
 					eventSeq := int(k.EventSeq)
 					// take the lowest sequenced event that is still greater than the current sequence count
@@ -485,7 +484,7 @@ func StartInjectService(logger log.Logger, d *DomainObjects) {
 								currentSeq = eventSeq
 								k.sendToChn(k.ctx)
 							} else {
-                copy = append(copy, k)
+								copy = append(copy, k)
 							}
 						}
 					} else {
@@ -498,8 +497,8 @@ func StartInjectService(logger log.Logger, d *DomainObjects) {
 						eb.PublishEvent(k.ctx, eh.NewEvent(DroppedEvent, dropped_event, time.Now()))
 					}
 				}
-        queued = copy
-        //logger.Warn("Timeout finished", "New Value", currentSeq)
+				queued = copy
+				//logger.Warn("Timeout finished", "New Value", currentSeq)
 				sequence_timer.Reset(1000 * time.Millisecond)
 			}
 		}
