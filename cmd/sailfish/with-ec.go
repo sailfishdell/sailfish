@@ -13,6 +13,8 @@ import (
 
 	log "github.com/superchalupa/sailfish/src/log"
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
+
+	_ "github.com/superchalupa/sailfish/godefs"
 )
 
 func init() {

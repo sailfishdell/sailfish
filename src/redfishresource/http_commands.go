@@ -103,6 +103,7 @@ func (c *PATCH) ParseHTTPRequest(r *http.Request) error {
 	}
 	return nil
 }
+
 func (c *PATCH) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 	// set up the base response data
 	data := &HTTPCmdProcessedData{
@@ -113,8 +114,8 @@ func (c *PATCH) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 		data.Headers[k] = v
 	}
 
-	a.ResultsCacheMu.Lock()
-	defer a.ResultsCacheMu.Unlock()
+	a.Lock()
+	defer a.Unlock()
 	NewPatch(ctx, a, &a.Properties, c.auth, c.Body)
 	data.Results = Flatten(&a.Properties, false)
 	data.StatusCode = a.StatusCode

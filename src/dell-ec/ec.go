@@ -64,7 +64,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	arService, _ := ar_mapper2.StartService(ctx, logger, cfgMgr, cfgMgrMu, eb)
 	actionSvc := ah.StartService(ctx, logger, ch, eb)
 	uploadSvc := uploadhandler.StartService(ctx, logger, ch, eb)
-	am2Svc, _ := awesome_mapper2.StartService(ctx, logger, eb)
+	am2Svc, _ := awesome_mapper2.StartService(ctx, logger, eb, ch, d)
 	ardumpSvc, _ := attributes.StartService(ctx, logger, eb)
 	pumpSvc := NewPumpActionSvc(ctx, logger, eb)
 
@@ -101,10 +101,10 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	initLCL(logger, instantiateSvc, ch, d)
 	initThermalSensor(logger, instantiateSvc, ch, d)
 	inithealth(ctx, logger, ch, d)
-	initpowercontrol(logger)
 	stdmeta.InitializeSsoinfo(d)
 	telemetryservice.RegisterAggregate(instantiateSvc)
 	stdmeta.SetupSledProfilePlugin(d)
+
 	stdmeta.InitializeCertInfo(d)
 
 	awesome_mapper2.AddFunction("find_uris_with_basename", func(args ...interface{}) (interface{}, error) {
@@ -151,7 +151,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	// we can add this model to the views that need to expose it
 	globalHealthModel := model.New()
 	healthLogger := logger.New("module", "health_rollup")
-	am2Svc.NewMapping(ctx, healthLogger, cfgMgr, cfgMgrMu, globalHealthModel, "global_health", "global_health", map[string]interface{}{})
+	am2Svc.NewMapping(ctx, healthLogger, cfgMgr, cfgMgrMu, globalHealthModel, "global_health", "global_health", map[string]interface{}{}, nil)
 
 	//*********************************************************************
 	//  /redfish/v1

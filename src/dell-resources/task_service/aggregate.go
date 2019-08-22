@@ -6,7 +6,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/superchalupa/sailfish/src/dell-resources/attributes"
+	a "github.com/superchalupa/sailfish/src/dell-resources/attributedef"
 	"github.com/superchalupa/sailfish/src/log"
 	"github.com/superchalupa/sailfish/src/ocp/awesome_mapper2"
 	"github.com/superchalupa/sailfish/src/ocp/model"
@@ -96,8 +96,8 @@ func InitTask(logger log.Logger, instantiateSvc *testaggregate.Service) {
 	}
 
 	go func() {
-		var attrModel *model.Model      // model from syschas1/attr
-		var ad attributes.AttributeData // for mapping the actual attribute date
+		var attrModel *model.Model // model from syschas1/attr
+		var ad a.AttributeData     // for mapping the actual attribute date
 		for {
 			select {
 			case <-trigger:

@@ -7,6 +7,7 @@ import (
 
 	"github.com/spf13/viper"
 
+	a "github.com/superchalupa/sailfish/src/dell-resources/attributedef"
 	"github.com/superchalupa/sailfish/src/log"
 	"github.com/superchalupa/sailfish/src/ocp/model"
 	"github.com/superchalupa/sailfish/src/ocp/testaggregate"
@@ -45,7 +46,7 @@ func FormatAttributeDump(
 
 	//fmt.Println(auth)
 
-	var ad AttributeData
+	var ad a.AttributeData
 	res := map[string]interface{}{}
 	for group, v := range attributes {
 		for index, v2 := range v {

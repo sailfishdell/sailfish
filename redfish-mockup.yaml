@@ -2,7 +2,7 @@ main:
     server_name: "mockup"
 
 listen:
-    - https::443
+    - http::443
 
 session:
     timeout: 600

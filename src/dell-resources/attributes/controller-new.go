@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	a "github.com/superchalupa/sailfish/src/dell-resources/attributedef"
 	"github.com/superchalupa/sailfish/src/log"
 	"github.com/superchalupa/sailfish/src/looplab/eventwaiter"
 	"github.com/superchalupa/sailfish/src/ocp/event"
@@ -55,7 +56,7 @@ func StartService(ctx context.Context, logger log.Logger, eb eh.EventBus) (*Serv
 	ret.ew = &sp.EW
 
 	go sp.RunForever(func(event eh.Event) {
-		data, ok := event.Data().(*AttributeUpdatedData)
+		data, ok := event.Data().(*a.AttributeUpdatedData)
 		if !ok {
 			return
 		}
@@ -69,14 +70,14 @@ func StartService(ctx context.Context, logger log.Logger, eb eh.EventBus) (*Serv
 		}
 
 		for _, m := range modelArray {
-			value := AttributeData{
+			value := a.AttributeData{
 				Privileges: data.Privileges,
 				Value:      data.Value,
 			}
 
 			if data.Error == "" {
 				//update property only if no errors & have write privilege
-				m.ApplyOption(WithAttribute(data.Group, data.Index, data.Name, value, data.Event_seq))
+				m.ApplyOption(WithAttribute(data.Group, data.Index, data.Name, value))
 			}
 		}
 	})
@@ -117,8 +118,8 @@ func (s *Service) selectCachedAttributes() func(eh.Event) bool {
 	return func(event eh.Event) bool {
 		s.RLock()
 		defer s.RUnlock()
-		if event.EventType() == AttributeUpdated {
-			if data, ok := event.Data().(*AttributeUpdatedData); ok {
+		if event.EventType() == a.AttributeUpdated {
+			if data, ok := event.Data().(*a.AttributeUpdatedData); ok {
 				if _, ok := s.cache[data.FQDD]; ok {
 					return true
 				}
@@ -177,7 +178,7 @@ func (b *breadcrumb) UpdateRequest(ctx context.Context, property string, value i
 	b.s.logger.Debug("UpdateRequest", "property", property, "value", value)
 
 	reqIDs := []eh.UUID{}
-	responses := []AttributeUpdatedData{}
+	responses := []a.AttributeUpdatedData{}
 	errs := []string{}
 	patch_timeout := 10
 	canned_response := `{"RelatedProperties@odata.count": 1, "Message": "%s", "MessageArgs": ["%[2]s"], "Resolution": "Remove the %sproperty from the request body and resubmit the request if the operation failed.", "MessageId": "%s", "MessageArgs@odata.count": 1, "RelatedProperties": ["%[2]s"], "Severity": "Warning"}`
@@ -185,10 +186,10 @@ func (b *breadcrumb) UpdateRequest(ctx context.Context, property string, value i
 	num_success := 0
 
 	l, err := b.s.ew.Listen(ctx, func(event eh.Event) bool {
-		if event.EventType() != AttributeUpdated {
+		if event.EventType() != a.AttributeUpdated {
 			return false
 		}
-		_, ok := event.Data().(*AttributeUpdatedData)
+		_, ok := event.Data().(*a.AttributeUpdatedData)
 		if !ok {
 			return false
 		}
@@ -226,7 +227,7 @@ func (b *breadcrumb) UpdateRequest(ctx context.Context, property string, value i
 			continue
 		}
 
-		var ad AttributeData
+		var ad a.AttributeData
 		if !ad.WriteAllowed(attrVal, auth) {
 			b.s.logger.Error("Unable to set", "Attribute", k)
 			err_msg := fmt.Sprintf("The property %s is a read only property and cannot be assigned a value", k)
@@ -234,7 +235,7 @@ func (b *breadcrumb) UpdateRequest(ctx context.Context, property string, value i
 			continue
 		}
 
-		data := &AttributeUpdateRequestData{
+		data := &a.AttributeUpdateRequestData{
 			ReqID:         reqUUID,
 			FQDD:          b.s.forwardMapping[b.m][0], // take the first fqdd
 			Group:         stuff[0],
@@ -243,7 +244,7 @@ func (b *breadcrumb) UpdateRequest(ctx context.Context, property string, value i
 			Value:         v,
 			Authorization: *auth,
 		}
-		b.s.eb.PublishEvent(ctx, eh.NewEvent(AttributeUpdateRequest, data, time.Now()))
+		b.s.eb.PublishEvent(ctx, eh.NewEvent(a.AttributeUpdateRequest, data, time.Now()))
 		reqIDs = append(reqIDs, reqUUID)
 	}
 
@@ -257,7 +258,7 @@ func (b *breadcrumb) UpdateRequest(ctx context.Context, property string, value i
 	for {
 		select {
 		case event := <-listener.Inbox():
-			data, _ := event.Data().(*AttributeUpdatedData)
+			data, _ := event.Data().(*a.AttributeUpdatedData)
 			for i, reqID := range reqIDs {
 				if reqID == data.ReqID {
 					//remove found reqid from list

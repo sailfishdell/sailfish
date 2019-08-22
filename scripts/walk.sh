@@ -3,20 +3,21 @@
 set -e
 set -x
 
-scriptdir=$(cd $(dirname $0); pwd)
-. ${scriptdir}/common-vars.sh
-
-set_auth_header
-
 outputdir=${1:-out/}
 skiplist=${2:-}
-
-timingarg="\nTotal request time: %{time_total} seconds for url: %{url_effective}\n"
 
 rm -rf ${outputdir}/ && mkdir ${outputdir}
 LOGFILE=$outputdir/script-output.txt
 exec 1> >(exec -a 'LOGGING TEE' tee $LOGFILE) 2>&1
 TEEPID=$!
+
+scriptdir=$(cd $(dirname $0); pwd)
+. ${scriptdir}/common-vars.sh
+
+set_auth_header
+
+timingarg="\nTotal request time: %{time_total} seconds for url: %{url_effective}\n"
+
 
 cleanup() {
     # close FDs to ensure tee finishes
@@ -51,7 +52,7 @@ do
             continue
         fi
         cat ${OUTFILE}-RAW | jq . > ${OUTFILE}
-        rm ${OUTFILE}-RAW
+        rm ${OUTFILE}-RAW ||:
         cat $OUTFILE | jq -r 'recurse (.[]?) | objects | select(has("@odata.id")) | .["@odata.id"]' | perl -p -i -e 's/(\/#.*)//' | perl -p -i -e 's/(#.*)//' | grep -v JSONSchema >> ${outputdir}/to-visit.txt ||:
         POTENTIALLY_GOT_MORE=1
         echo $url >> ${outputdir}/visited.txt

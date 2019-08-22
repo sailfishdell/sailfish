@@ -17,7 +17,7 @@ import (
 	"github.com/superchalupa/sailfish/src/ocp/model"
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
 
-	"github.com/superchalupa/sailfish/src/dell-resources/attributes"
+	a "github.com/superchalupa/sailfish/src/dell-resources/attributedef"
 )
 
 // what we read from redfish.yaml
@@ -87,7 +87,7 @@ func StartService(ctx context.Context, logger log.Logger, cfg *viper.Viper, cfgM
 		hash:          make(map[string][]update),
 	}
 
-	sp, err := event.NewESP(ctx, event.MatchAnyEvent(attributes.AttributeUpdated), event.SetListenerName("ar_service"))
+	sp, err := event.NewESP(ctx, event.MatchAnyEvent(a.AttributeUpdated), event.SetListenerName("ar_service"))
 	if err != nil {
 		logger.Error("Failed to create new event stream processor", "err", err)
 		return nil, errors.New("Failed to create ESP")
@@ -95,7 +95,7 @@ func StartService(ctx context.Context, logger log.Logger, cfg *viper.Viper, cfgM
 	arservice.ew = &sp.EW
 
 	go sp.RunForever(func(event eh.Event) {
-		data, ok := event.Data().(*attributes.AttributeUpdatedData)
+		data, ok := event.Data().(*a.AttributeUpdatedData)
 		if !ok {
 			return
 		}
@@ -128,7 +128,7 @@ type breadcrumb struct {
 	logger      log.Logger
 }
 
-func (ars *ARService) NewMapping(logger log.Logger, mappingName, cfgsection string, m *model.Model, fgin map[string]string) breadcrumb {
+func (ars *ARService) NewMapping(logger log.Logger, mappingName, cfgsection string, m *model.Model, fgin map[string]string, id eh.UUID) breadcrumb {
 	mm := ModelMappings{
 		logger:         logger.New("module", "ar2"),
 		cfgsect:        cfgsection,
@@ -188,16 +188,16 @@ func (b breadcrumb) UpdateRequest(ctx context.Context, property string, value in
 	found_flag := false
 
 	reqIDs := []eh.UUID{}
-	responses := []attributes.AttributeUpdatedData{}
+	responses := []a.AttributeUpdatedData{}
 	errs := []string{}
 	patch_timeout := 10
 	//patch_timeout := 3000
 
 	l, err := b.ars.ew.Listen(ctx, func(event eh.Event) bool {
-		if event.EventType() != attributes.AttributeUpdated {
+		if event.EventType() != a.AttributeUpdated {
 			return false
 		}
-		data, ok := event.Data().(*attributes.AttributeUpdatedData)
+		data, ok := event.Data().(*a.AttributeUpdatedData)
 		if !ok {
 			return false
 		}
@@ -227,7 +227,7 @@ func (b breadcrumb) UpdateRequest(ctx context.Context, property string, value in
 			continue
 		}
 
-		var ad attributes.AttributeData
+		var ad a.AttributeData
 		if !ad.WriteAllowed(property, auth) {
 			b.ars.logger.Error("Unable to set", "Attribute", property)
 			err_msg := fmt.Sprintf("The property %s is a read only property and cannot be assigned a value.", property)
@@ -238,7 +238,7 @@ func (b breadcrumb) UpdateRequest(ctx context.Context, property string, value in
 		mappings.logger.Info("Sending Update Request", "mapping", mapping, "value", value)
 		reqUUID := eh.NewUUID()
 
-		data := &attributes.AttributeUpdateRequestData{
+		data := &a.AttributeUpdateRequestData{
 			ReqID:         reqUUID,
 			FQDD:          mapping.FQDD,
 			Group:         mapping.Group,
@@ -247,7 +247,7 @@ func (b breadcrumb) UpdateRequest(ctx context.Context, property string, value in
 			Value:         value,
 			Authorization: *auth,
 		}
-		b.ars.eb.PublishEvent(ctx, eh.NewEvent(attributes.AttributeUpdateRequest, data, time.Now()))
+		b.ars.eb.PublishEvent(ctx, eh.NewEvent(a.AttributeUpdateRequest, data, time.Now()))
 		reqIDs = append(reqIDs, reqUUID)
 		found_flag = true
 		break
@@ -272,7 +272,7 @@ func (b breadcrumb) UpdateRequest(ctx context.Context, property string, value in
 				e.Done()
 			}
 
-			data, ok := event.Data().(*attributes.AttributeUpdatedData)
+			data, ok := event.Data().(*a.AttributeUpdatedData)
 			if !ok {
 				continue
 			}

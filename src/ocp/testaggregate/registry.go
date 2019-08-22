@@ -409,7 +409,7 @@ func RegisterAM2(s *Service, am2Svc *am2.Service) {
 		}
 
 		logger.Debug("Creating awesome_mapper2 controller", "modelName", modelNameStr, "cfgSection", cfgSectionStr, "uniqueName", uniqueNameStr)
-		am2Svc.NewMapping(ctx, logger, cfgMgr, cfgMgrMu, vw.GetModel(modelNameStr), cfgSectionStr, uniqueNameStr, parameters)
+		am2Svc.NewMapping(ctx, logger, cfgMgr, cfgMgrMu, vw.GetModel(modelNameStr), cfgSectionStr, uniqueNameStr, parameters, vw.GetUUID())
 
 		return nil
 	})

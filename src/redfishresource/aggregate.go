@@ -30,7 +30,7 @@ type RedfishResourceAggregate struct {
 	Plugin      string
 
 	Properties     RedfishResourceProperty
-	ResultsCacheMu sync.RWMutex
+	resultsCacheMu sync.RWMutex
 	StatusCode     int // http status code for the current state of this object since the last time we've run the meta functions
 	DefaultFilter  string
 
@@ -42,6 +42,22 @@ type RedfishResourceAggregate struct {
 	// debug and beancounting
 	checkcount int                       // watchdog process uses this to try to do race-free detection of orphan aggregates
 	access     map[HTTPReqType]time.Time // store beancounting about when uri's were accessed
+}
+
+func (agg *RedfishResourceAggregate) Lock() {
+	agg.resultsCacheMu.Lock()
+}
+
+func (agg *RedfishResourceAggregate) Unlock() {
+	agg.resultsCacheMu.Unlock()
+}
+
+func (agg *RedfishResourceAggregate) RLock() {
+	agg.resultsCacheMu.RLock()
+}
+
+func (agg *RedfishResourceAggregate) RUnlock() {
+	agg.resultsCacheMu.RUnlock()
 }
 
 // PublishEvent registers an event to be published after the aggregate

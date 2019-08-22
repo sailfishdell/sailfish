@@ -99,7 +99,7 @@ func RegisterARMapper(s *testaggregate.Service, arsvc *ARService) {
 		}
 
 		logger.Debug("Creating ar_mapper2 controller", "modelName", modelNameStr, "cfgSection", cfgSectionStr, "mappingNameStr", mappingNameStr)
-		b := arsvc.NewMapping(logger, mappingNameStr, cfgSectionStr, vw.GetModel(modelNameStr), newparams)
+		b := arsvc.NewMapping(logger, mappingNameStr, cfgSectionStr, vw.GetModel(modelNameStr), newparams, vw.GetUUID())
 
 		if addToViewStr != "" {
 			vw.ApplyOption(view.WithController(addToViewStr, b))

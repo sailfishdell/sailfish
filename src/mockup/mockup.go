@@ -42,7 +42,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	domain.StartInjectService(logger, d)
 	actionSvc := ah.StartService(ctx, logger, ch, eb)
 	uploadSvc := uploadhandler.StartService(ctx, logger, ch, eb)
-	am2Svc, _ := awesome_mapper2.StartService(ctx, logger, eb)
+	am2Svc, _ := awesome_mapper2.StartService(ctx, logger, eb, ch, d)
 	pumpSvc := dell_ec.NewPumpActionSvc(ctx, logger, eb)
 
 	// the package for this is going to change, but this is what makes the various mappers and view functions available
@@ -58,6 +58,8 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	stdcollections.RegisterAggregate(instantiateSvc)
 	session.RegisterAggregate(instantiateSvc)
 	telemetryservice.RegisterAggregate(instantiateSvc)
+
+	stdmeta.MetricReportDefPlugin(ch, d)
 
 	awesome_mapper2.AddFunction("instantiate", func(args ...interface{}) (interface{}, error) {
 		if len(args) < 1 {

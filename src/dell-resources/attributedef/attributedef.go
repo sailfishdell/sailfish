@@ -1,4 +1,4 @@
-package attributes
+package attributedef
 
 import (
 	eh "github.com/looplab/eventhorizon"
@@ -32,6 +32,13 @@ type AttributeData struct {
 	Value      interface{}
 }
 
+type AttributeGetCurrentValueRequestData struct {
+	FQDD  string
+	Group string
+	Index string
+	Name  string
+}
+
 type AttributeUpdatedData struct {
 	Privileges PrivilegeData
 	ReqID      eh.UUID
@@ -41,7 +48,6 @@ type AttributeUpdatedData struct {
 	Name       string
 	Value      interface{}
 	Error      string
-	Event_seq  int64
 }
 
 type AttributeUpdateRequestData struct {
@@ -52,13 +58,6 @@ type AttributeUpdateRequestData struct {
 	Name          string
 	Value         interface{}
 	Authorization domain.RedfishAuthorizationProperty
-}
-
-type AttributeGetCurrentValueRequestData struct {
-	FQDD  string
-	Group string
-	Index string
-	Name  string
 }
 
 func (ad *AttributeData) Valid(attrVal interface{}) bool {

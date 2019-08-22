@@ -3,18 +3,15 @@ package awesome_mapper2
 import (
 	"context"
 	"errors"
-	"sync"
-
-	"github.com/Knetic/govaluate"
-	"github.com/spf13/viper"
-
 	eh "github.com/looplab/eventhorizon"
 	eventpublisher "github.com/looplab/eventhorizon/publisher/local"
-
+	"github.com/spf13/viper"
 	"github.com/superchalupa/sailfish/src/log"
 	"github.com/superchalupa/sailfish/src/looplab/eventwaiter"
 	"github.com/superchalupa/sailfish/src/ocp/event"
 	"github.com/superchalupa/sailfish/src/ocp/model"
+	domain "github.com/superchalupa/sailfish/src/redfishresource"
+	"sync"
 )
 
 // ##################################
@@ -28,10 +25,15 @@ type ConfigFileModelUpdate struct {
 }
 
 type ConfigFileMappingEntry struct {
-	Select          string
 	SelectEventType string
-	ModelUpdate     []*ConfigFileModelUpdate
-	Exec            []string
+
+	SelectFN     string
+	SelectParams []string
+	Select       string
+
+	Process     []map[string]interface{}
+	ModelUpdate []*ConfigFileModelUpdate
+	Exec        []string
 }
 
 // ########################
@@ -52,46 +54,42 @@ type Service struct {
 
 type ConfigSection struct {
 	sync.RWMutex
+	onetimePer []processSetupFunc
 	parameters map[string]*MapperParameters
 	mappings   []*MapperConfig
 }
 
 type MapperParameters struct {
+	uuid   eh.UUID
 	model  *model.Model
-	params map[string]interface{}
+	Params map[string]interface{}
+	ctx    context.Context
 }
 
 type MapperConfig struct {
 	sync.RWMutex
-	eventType    eh.EventType
-	selectStr    string
-	selectExpr   *govaluate.EvaluableExpression
-	modelUpdates []*ModelUpdate
-	exec         []*Exec
-	cfg          *ConfigSection
+	eventType   eh.EventType
+	selectFnStr string
+	selectFn    SelectFunc
+	processFn   []processFunc
+	cfg         *ConfigSection
 }
 
-type ModelUpdate struct {
-	property    string
-	queryString string
-	queryExpr   *govaluate.EvaluableExpression
-	defaultVal  interface{}
-}
-
-type Exec struct {
-	execString string
-	execExpr   *govaluate.EvaluableExpression
-}
-
-func (s *Service) NewMapping(ctx context.Context, logger log.Logger, cfg *viper.Viper, cfgMu *sync.RWMutex, mdl *model.Model, cfgName string, uniqueName string, parameters map[string]interface{}) error {
+func (s *Service) NewMapping(ctx context.Context, logger log.Logger, cfg *viper.Viper, cfgMu *sync.RWMutex, mdl *model.Model, cfgName string, uniqueName string, parameters map[string]interface{}, UUID interface{}) error {
+	var instanceParameters *MapperParameters
 	functionsMu.RLock()
 	defer functionsMu.RUnlock()
 
 	logger = logger.New("module", "am2")
 
-	instanceParameters := &MapperParameters{model: mdl, params: map[string]interface{}{}}
+	// TODO: this is a candidate to push down into a closure for the actual functions instead of accounting for this at the global level
+	if UUID == nil {
+		instanceParameters = &MapperParameters{ctx: ctx, model: mdl, Params: map[string]interface{}{}}
+	} else {
+		instanceParameters = &MapperParameters{ctx: ctx, model: mdl, uuid: UUID.(eh.UUID), Params: map[string]interface{}{}}
+	}
 	for k, v := range parameters {
-		instanceParameters.params[k] = v
+		instanceParameters.Params[k] = v
 	}
 
 	// ###############################################
@@ -135,51 +133,63 @@ func (s *Service) NewMapping(ctx context.Context, logger log.Logger, cfg *viper.
 		// transcribe each individual mapper in the config section into our config
 		for _, cfgEntry := range fullSectionMappingList {
 			logger.Info("Add one mapping row", "cfgEntry", cfgEntry, "select", cfgEntry.Select)
+			setupSelectFuncsMu.RLock()
+			setupSelectFn, ok := setupSelectFuncs[cfgEntry.SelectFN]
+			if !ok {
+				setupSelectFn, ok = setupSelectFuncs["govaluate_select"]
+			}
+			setupSelectFuncsMu.RUnlock()
+			selectFn, err := setupSelectFn(logger.New("cfgName", cfgName), cfgEntry)
 
-			// parse the expression
-			selectExpr, err := govaluate.NewEvaluableExpressionWithFunctions(cfgEntry.Select, functions)
 			if err != nil {
-				logger.Crit("Select construction failed", "select", cfgEntry.Select, "err", err, "cfgName", cfgName)
+				logger.Crit("config setup failed", "err", err)
 				continue
 			}
 
 			mappingsForSection.Lock()
 			mc := &MapperConfig{
-				eventType:    eh.EventType(cfgEntry.SelectEventType),
-				selectStr:    cfgEntry.Select,
-				selectExpr:   selectExpr,
-				modelUpdates: []*ModelUpdate{},
-				exec:         []*Exec{},
-				cfg:          mappingsForSection,
+				eventType:   eh.EventType(cfgEntry.SelectEventType),
+				selectFnStr: cfgEntry.Select,
+				selectFn:    selectFn,
+				processFn:   []processFunc{},
+				cfg:         mappingsForSection,
 			}
 			mappingsForSection.mappings = append(mappingsForSection.mappings, mc)
 
-			for _, modelUpdate := range cfgEntry.ModelUpdate {
-				queryExpr, err := govaluate.NewEvaluableExpressionWithFunctions(modelUpdate.Query, functions)
-				if err != nil {
-					logger.Crit("Query construction failed", "query", modelUpdate.Query, "err", err, "cfgName", cfgName, "select", cfgEntry.Select)
-					continue
-				}
-
-				mc.modelUpdates = append(mc.modelUpdates, &ModelUpdate{
-					property:    modelUpdate.Property,
-					queryString: modelUpdate.Query,
-					queryExpr:   queryExpr,
-					defaultVal:  modelUpdate.Default,
-				})
+			// default Process
+			if len(cfgEntry.Process) == 0 {
+				cfgEntry.Process = append(cfgEntry.Process, map[string]interface{}{"name": "govaluate_modelupdate", "params": cfgEntry.ModelUpdate})
+				cfgEntry.Process = append(cfgEntry.Process, map[string]interface{}{"name": "govaluate_exec", "params": cfgEntry.Exec})
 			}
-
-			for _, exec := range cfgEntry.Exec {
-				execExpr, err := govaluate.NewEvaluableExpressionWithFunctions(exec, functions)
-				if err != nil {
-					logger.Crit("Query construction failed", "exec", exec, "err", err, "cfgName", cfgName, "select", cfgEntry.Select)
+			for _, processFnObj := range cfgEntry.Process {
+				fnName, ok := processFnObj["name"].(string)
+				if !ok {
+					logger.Warn("Process Function name not found")
+					continue
+				}
+				fnParams, ok := processFnObj["params"]
+				if !ok {
+					logger.Warn("Process Function params not found")
 					continue
 				}
 
-				mc.exec = append(mc.exec, &Exec{
-					execString: exec,
-					execExpr:   execExpr,
-				})
+				setupProcessFn, ok := setupProcessFuncs[fnName]
+				if !ok {
+					logger.Warn("SetupProcessFunc not found", "function name", fnName)
+					continue
+				}
+
+				processFn, oneTimeFn, err := setupProcessFn(logger.New("cfgName", cfgName), fnParams)
+				if !ok {
+					logger.Warn("SetupProcessFn failed", "function name", fnName, "error", err)
+					continue
+				}
+
+				mc.processFn = append(mc.processFn, processFn)
+
+				if oneTimeFn != nil {
+					mappingsForSection.onetimePer = append(mappingsForSection.onetimePer, oneTimeFn)
+				}
 			}
 			mappingsForSection.Unlock()
 
@@ -219,30 +229,14 @@ func (s *Service) NewMapping(ctx context.Context, logger log.Logger, cfg *viper.
 	mappingsForSection.parameters[uniqueName] = instanceParameters
 	mappingsForSection.Unlock()
 
-	// no need to set defaults if there is no model to put them in...
-	if mdl == nil {
-		return nil
+	for _, fn := range mappingsForSection.onetimePer {
+		fn(instanceParameters)
 	}
-
-	// now set all of the model default values based on the mapper config
-	mappingsForSection.RLock()
-	for _, mapping := range mappingsForSection.mappings {
-		mdl.StopNotifications()
-		for _, mapperUpdate := range mapping.modelUpdates {
-			//// set model default value if present
-			if mapperUpdate.defaultVal != nil {
-				mdl.UpdateProperty(mapperUpdate.property, mapperUpdate.defaultVal)
-			}
-		}
-		mdl.StartNotifications()
-		mdl.NotifyObservers()
-	}
-	mappingsForSection.RUnlock()
 
 	return nil
 }
 
-func StartService(ctx context.Context, logger log.Logger, eb eh.EventBus) (*Service, error) {
+func StartService(ctx context.Context, logger log.Logger, eb eh.EventBus, ch eh.CommandHandler, d *domain.DomainObjects) (*Service, error) {
 	EventPublisher := eventpublisher.NewEventPublisher()
 	eb.AddHandler(eh.MatchAny(), EventPublisher)
 	EventWaiter := eventwaiter.NewEventWaiter(eventwaiter.SetName("Awesome Mapper2"), eventwaiter.NoAutoRun)
@@ -290,67 +284,47 @@ func StartService(ctx context.Context, logger log.Logger, eb eh.EventBus) (*Serv
 			for cfgName, parameters := range mapping.cfg.parameters {
 				// comment out logging in the fast path. uncomment to enable.
 				//ret.logger.Debug("am2 check mapping", "type", event.EventType(), "select", mapping.selectStr, "for config", cfgName)
-				parameters.params["type"] = string(event.EventType())
-				parameters.params["data"] = event.Data()
-				parameters.params["event"] = event
-				parameters.params["model"] = parameters.model
-				parameters.params["postprocs"] = &postProcs
 
-				val, err := mapping.selectExpr.Evaluate(parameters.params)
+				// TODO: these lines should probably go...
+				// for govaluate
+				parameters.Params["cfg_params"] = parameters
+				parameters.Params["type"] = string(event.EventType())
+				parameters.Params["data"] = event.Data()
+				parameters.Params["event"] = event
+				parameters.Params["model"] = parameters.model
+				parameters.Params["postprocs"] = &postProcs
 
 				// delete these to save up mem before checking error conditions
 				cleanup := func() {
-					delete(parameters.params, "data")
-					delete(parameters.params, "event")
-					delete(parameters.params, "model")
+					delete(parameters.Params, "data")
+					delete(parameters.Params, "event")
+					delete(parameters.Params, "model")
 				}
+				val, err := mapping.selectFn(parameters)
 
 				if err != nil {
-					ret.logger.Error("expression failed to evaluate", "err", err, "select", mapping.selectStr, "for config", cfgName)
+					ret.logger.Error("expression failed to evaluate", "err", err, "select", mapping.selectFnStr, "for config", cfgName)
 					cleanup()
 					continue
 				}
-				valBool, ok := val.(bool)
-				if !ok {
-					ret.logger.Info("NOT A BOOL", "cfgName", cfgName, "type", event.EventType(), "select", mapping.selectStr, "val", val)
-					cleanup()
-					continue
-				}
-				if !valBool {
+
+				if !val {
 					// comment out logging in the fast path. uncomment to enable.
 					//ret.logger.Debug("Select did not match", "cfgName", cfgName, "type", event.EventType(), "select", mapping.selectStr, "val", val)
 					cleanup()
 					continue
 				}
 
+				for _, fn := range mapping.processFn {
+					// Use Id to update aggregate. oh.. I need versioning now. ugh
+					err := fn(parameters, event, ch, d)
+					if err != nil {
+						ret.logger.Error("expression failed to evaluate", "err", err, "select", mapping.selectFnStr, "for config", cfgName)
+					}
+				}
+
 				// comment out logging in the fast path. uncomment to enable.
 				//ret.logger.Info("GOT A MATCH!!!!!")
-
-				for _, updates := range mapping.modelUpdates {
-					parameters.model.StopNotifications()
-					// Note: LIFO order for defer
-					defer parameters.model.NotifyObservers()
-					defer parameters.model.StartNotifications()
-
-					parameters.params["propname"] = updates.property
-					val, err := updates.queryExpr.Evaluate(parameters.params)
-					if err != nil {
-						ret.logger.Error("Expression failed to evaluate", "err", err, "cfgName", cfgName, "type", event.EventType(), "queryString", updates.queryString, "parameters", parameters.params, "val", val)
-						continue
-					}
-					// comment out logging in the fast path. uncomment to enable.
-					//ret.logger.Info("Updating property!", "property", updates.property, "value", val, "Event", event, "EventData", event.Data())
-					parameters.model.UpdateProperty(updates.property, val)
-				}
-
-				delete(parameters.params, "propname")
-				for _, updates := range mapping.exec {
-					val, err := updates.execExpr.Evaluate(parameters.params)
-					if err != nil {
-						ret.logger.Error("Expression failed to evaluate", "err", err, "cfgName", cfgName, "type", event.EventType(), "execString", updates.execString, "parameters", parameters.params, "val", val)
-						continue
-					}
-				}
 
 				cleanup()
 			}

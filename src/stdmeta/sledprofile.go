@@ -8,7 +8,7 @@ import (
 
 	eh "github.com/looplab/eventhorizon"
 
-	"github.com/superchalupa/sailfish/src/dell-resources/attributes"
+	a "github.com/superchalupa/sailfish/src/dell-resources/attributedef"
 	"github.com/superchalupa/sailfish/src/ocp/view"
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
 )
@@ -72,7 +72,7 @@ func (s *SledProfile) PropertyPatch(
 	}
 
 	reqUUID := eh.NewUUID()
-	request_data := &attributes.AttributeUpdateRequestData{
+	request_data := &a.AttributeUpdateRequestData{
 		ReqID:         reqUUID,
 		FQDD:          sled_fqdd,
 		Group:         "Info",
@@ -82,15 +82,15 @@ func (s *SledProfile) PropertyPatch(
 		Authorization: *auth,
 	}
 
-	s.d.EventBus.PublishEvent(ctx, eh.NewEvent(attributes.AttributeUpdateRequest, request_data, time.Now()))
+	s.d.EventBus.PublishEvent(ctx, eh.NewEvent(a.AttributeUpdateRequest, request_data, time.Now()))
 
 	tmctx, cancel := context.WithTimeout(ctx, time.Duration(patch_timeout)*time.Second)
 	defer cancel()
 	l, err := s.d.EventWaiter.Listen(tmctx, func(event eh.Event) bool {
-		if event.EventType() != attributes.AttributeUpdated {
+		if event.EventType() != a.AttributeUpdated {
 			return false
 		}
-		data, ok := event.Data().(*attributes.AttributeUpdatedData)
+		data, ok := event.Data().(*a.AttributeUpdatedData)
 		if !ok {
 			return false
 		}
@@ -112,7 +112,7 @@ func (s *SledProfile) PropertyPatch(
 	if err != nil {
 		return errors.New("TIMED OUT")
 	} else {
-		data, _ := event.Data().(*attributes.AttributeUpdatedData)
+		data, _ := event.Data().(*a.AttributeUpdatedData)
 		err_extendedinfos := []interface{}{}
 
 		if data.Error != "" {

@@ -151,7 +151,7 @@ func (d *DomainObjects) CheckTree() (id eh.UUID, ok bool) {
 					fmt.Printf("Validate %s\n", agg.EntityID())
 					fmt.Printf("\tURI: %s", checkuri)
 
-					rr.ResultsCacheMu.Lock()
+					rr.Lock()
 					fmt.Printf("\n\tAggregate ID Mismatch! %s != %s  (count: %d)\n", id, agg.EntityID(), rr.checkcount)
 					if rr.checkcount > 0 {
 						fmt.Printf("\n\tCheck expired, assuming hanging aggregate and removing\n")
@@ -159,7 +159,7 @@ func (d *DomainObjects) CheckTree() (id eh.UUID, ok bool) {
 					} else {
 						rr.checkcount++
 					}
-					rr.ResultsCacheMu.Unlock()
+					rr.Unlock()
 
 				}
 			} else {
@@ -170,7 +170,7 @@ func (d *DomainObjects) CheckTree() (id eh.UUID, ok bool) {
 					// aggregate isn't in the tree at that uri
 					fmt.Printf("Validate %s\n", agg.EntityID())
 					fmt.Printf("\tURI: %s", checkuri)
-					rr.ResultsCacheMu.Lock()
+					rr.Lock()
 					fmt.Printf("\n\tNOT IN TREE: %d\n", rr.checkcount)
 					if rr.checkcount > 0 {
 						fmt.Printf("\n\tCheck expired, assuming hanging aggregate and removing\n")
@@ -191,7 +191,7 @@ func (d *DomainObjects) CheckTree() (id eh.UUID, ok bool) {
 					} else {
 						rr.checkcount++
 					}
-					rr.ResultsCacheMu.Unlock()
+					rr.Unlock()
 				}
 			}
 		} else {
