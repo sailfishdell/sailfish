@@ -526,8 +526,8 @@ func (c *InjectEvent) Handle(ctx context.Context, a *RedfishResourceAggregate) e
 	//testLogger := ContextLogger(ctx, "internal_commands").New("module", "inject_event")
 	//testLogger.Crit("Event handle", "Sequence", c.EventSeq, "Name", c.Name)
 	a.ID = injectUUID
-		c.ctx = ctx
-		injectChanSlice <- c
+	c.ctx = ctx
+	injectChanSlice <- c
 	return nil
 }
 

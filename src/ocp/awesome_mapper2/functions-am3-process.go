@@ -3,11 +3,10 @@ package awesome_mapper2
 import (
 	"errors"
 	"fmt"
+	"github.com/superchalupa/sailfish/godefs"
 	"strconv"
 	"sync"
 	"time"
-	"github.com/superchalupa/sailfish/godefs"
-
 
 	"github.com/Knetic/govaluate"
 	eh "github.com/looplab/eventhorizon"
@@ -159,7 +158,7 @@ func init() {
 		aggUpdateFn := func(mp *MapperParameters, event eh.Event, ch eh.CommandHandler, d *domain.DomainObjects) error {
 
 			dmobj, ok := event.Data().(*godefs.DMObject)
-			fanobj, ok :=dmobj.Data.(*godefs.DM_thp_fan_data_object)
+			fanobj, ok := dmobj.Data.(*godefs.DM_thp_fan_data_object)
 			if !ok {
 				logger.Error("updateFanData did not have fan event", "type", event.EventType, "data", event.Data())
 				return errors.New("updateFanData did not receive FanEventData")
@@ -169,7 +168,7 @@ func init() {
 				&domain.UpdateRedfishResourceProperties2{
 					ID: mp.uuid,
 					Properties: map[string]interface{}{
-						"Reading":     (fanobj.Rotor1rpm +fanobj.Rotor2rpm) / 2,
+						"Reading":     (fanobj.Rotor1rpm + fanobj.Rotor2rpm) / 2,
 						"Oem/Reading": fanobj.Int,
 					},
 				})

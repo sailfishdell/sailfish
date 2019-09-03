@@ -46,6 +46,7 @@ func RegisterAggregate(s *testaggregate.Service) {
 							"ResourceRemoved",
 							"Alert",
 						},
+						"EventFormatTypes":                      []string{"Event", "MetricReport"},
 						"EventTypesForSubscription@odata.count": 5,
 						"Actions": map[string]interface{}{
 							"#EventService.SubmitTestEvent": map[string]interface{}{

@@ -37,8 +37,8 @@ import (
 	"github.com/superchalupa/sailfish/src/uploadhandler"
 
 	// register all the DM events that are not otherwise pulled in
-	_ "github.com/superchalupa/sailfish/src/dell-resources/dm_event"
 	_ "github.com/superchalupa/sailfish/godefs"
+	_ "github.com/superchalupa/sailfish/src/dell-resources/dm_event"
 )
 
 type ocp struct {
@@ -104,8 +104,8 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	inithealth(ctx, logger, ch, d)
 	stdmeta.InitializeSsoinfo(d)
 	telemetryservice.RegisterAggregate(instantiateSvc)
-	stdmeta.SetupSledProfilePlugin(d)
 
+	stdmeta.SetupSledProfilePlugin(d)
 	stdmeta.InitializeCertInfo(d)
 
 	awesome_mapper2.AddFunction("find_uris_with_basename", func(args ...interface{}) (interface{}, error) {

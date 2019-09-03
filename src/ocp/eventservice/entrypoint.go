@@ -24,6 +24,11 @@ import (
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
 )
 
+type eventBinary struct {
+	id   string
+	data []byte
+}
+
 type viewer interface {
 	GetUUID() eh.UUID
 	GetURI() string
@@ -35,6 +40,14 @@ type actionService interface {
 
 type uploadService interface {
 	WithUpload(context.Context, string, string, view.Upload) view.Option
+}
+
+type SubscriptionCtx struct {
+	firstEvent  bool
+	Destination string
+	Protocol    string
+	EventTypes  []string
+	Context     string
 }
 
 type EventService struct {
@@ -53,7 +66,7 @@ var GlobalEventService *EventService
 
 func New(ctx context.Context, cfg *viper.Viper, cfgMu *sync.RWMutex, d *domain.DomainObjects, instantiateSvc *testaggregate.Service, actionSvc actionService, uploadSvc uploadService) *EventService {
 	EventPublisher := eventpublisher.NewEventPublisher()
-	d.EventBus.AddHandler(eh.MatchAnyEventOf(ExternalRedfishEvent, domain.RedfishResourceRemoved), EventPublisher)
+	d.EventBus.AddHandler(eh.MatchAnyEventOf(ExternalRedfishEvent, domain.RedfishResourceRemoved, ExternalMetricEvent), EventPublisher)
 	EventWaiter := eventwaiter.NewEventWaiter(eventwaiter.SetName("Event Service"), eventwaiter.NoAutoRun)
 	EventPublisher.AddObserver(EventWaiter)
 	go EventWaiter.Run()
@@ -117,16 +130,18 @@ func (es *EventService) CreateSubscription(ctx context.Context, logger log.Logge
 	}))
 
 	// set up listener for the delete event
-	// INFO: this listener will only ever get domain.RedfishResourceRemoved or ExternalRedfishEvent
+	// INFO: this listener will only ever get domain.RedfishResourceRemoved ExternalMetricEvent or ExternalRedfishEvent
 	uri := subView.GetURI()
 	listener, err := es.ew.Listen(ctx,
 		func(event eh.Event) bool {
 			t := event.EventType()
 			// TODO: will need to add metric reports here
 			// TODO: also need to add the whole event coalescing here as well
-			if t == ExternalRedfishEvent {
+			if t == ExternalRedfishEvent ||
+				t == ExternalMetricEvent {
 				return true
 			}
+
 			if t != domain.RedfishResourceRemoved {
 				return false
 			}
@@ -144,10 +159,19 @@ func (es *EventService) CreateSubscription(ctx context.Context, logger log.Logge
 
 	// get model once
 	esModel := subView.GetModel("default")
+
 	dest := esModel.GetProperty("destination").(string)
 	prot := esModel.GetProperty("protocol").(string)
 	ctex := esModel.GetProperty("context").(string)
 	eventT := sub.EventTypes
+
+	subCtx := SubscriptionCtx{
+		true,
+		dest,
+		prot,
+		eventT,
+		ctex,
+	}
 
 	uuid := subView.GetUUID()
 
@@ -164,7 +188,6 @@ func (es *EventService) CreateSubscription(ctx context.Context, logger log.Logge
 		// delete the aggregate
 		defer es.d.CommandHandler.HandleCommand(context.Background(), &domain.RemoveRedfishResource{ID: subView.GetUUID(), ResourceURI: subView.GetURI()})
 		defer listener.Close()
-		firstEvents := true
 
 		for {
 			select {
@@ -172,38 +195,7 @@ func (es *EventService) CreateSubscription(ctx context.Context, logger log.Logge
 				if e, ok := event.(syncEvent); ok {
 					e.Done()
 				}
-
-				subLogger.Debug("Got internal redfish event", "event", event)
-				switch typ := event.EventType(); typ {
-				case domain.RedfishResourceRemoved:
-					subLogger.Info("Cancelling subscription", "uri", subView.GetURI())
-					logToEventFile(fmt.Sprintf("%s -- Subscription removed for uri=%s\n", time.Now().UTC().Format(time.UnixDate),
-						dest))
-					cancel()
-					return
-				case ExternalRedfishEvent:
-					subLogger.Info(" redfish event processing")
-					// NOTE: we don't actually check to ensure that this is an actual ExternalRedfishEventData specifically because Metric Reports don't currently go through like this.
-					if prot != "Redfish" {
-
-						subLogger.Info("Not Redfish Protocol")
-						continue
-					} else if firstEvents {
-						//MSM work around, replay mCHARS faults into events
-						firstEvents = false
-						evt := event.Data()
-						if eventPtr, ok := evt.(*ExternalRedfishEventData); ok {
-							eventlist := makeMCHARSevents(es, ctx)
-							for idx := range eventlist {
-								eventPtr.Events = append(eventPtr.Events, &eventlist[idx])
-							}
-						}
-					}
-					if dest != "" {
-						subLogger.Info("Send to destination", "dest", dest)
-						makePOST(es, dest, event, ctex, uuid, eventT)
-					}
-				}
+				es.evaluateEvent(subLogger, subCtx, event, cancel, subView.GetURI(), uuid, ctx)
 
 			case <-ctx.Done():
 				subLogger.Debug("context is done: exiting event service publisher")
@@ -217,56 +209,93 @@ func (es *EventService) CreateSubscription(ctx context.Context, logger log.Logge
 	return subView
 }
 
-func makePOST(es *EventService, dest string, event eh.Event, context interface{}, id eh.UUID, et interface{}) {
-	log.MustLogger("event_service").Info("POST!", "dest", dest, "event", event)
+func (es *EventService) evaluateEvent(log log.Logger, subCtx SubscriptionCtx, event eh.Event, cancel func(), URI string, uuid eh.UUID, ctx context.Context) {
+	log.Debug("Got internal redfish event", "event", event)
 
-	evt := event.Data()
-	eventPtr, ok := evt.(*ExternalRedfishEventData)
-	if !ok {
+	eventlist := []eventBinary{}
+
+	switch typ := event.EventType(); typ {
+	case domain.RedfishResourceRemoved:
+		log.Info("Cancelling subscription", "uri", URI)
+		logToEventFile(fmt.Sprintf("%s -- Subscription removed for uri=%s\n", time.Now().UTC().Format(time.UnixDate),
+			subCtx.Destination))
+		cancel()
 		return
-	}
-	eventlist := eventPtr.Events
-	var outputEvents []*RedfishEventData
-	validEvents, ok := et.([]string)
-	if !ok {
-		//TODO no subscription types are getting to here but right now all clients want Alert only
-		validEvents = []string{"Alert"}
-	}
-	//Keep only the events in the Event Array which match the subscription
-	for _, subevent := range eventlist {
-		for _, subvalid := range validEvents {
-			if subevent.EventType == subvalid {
-				outputEvents = append(outputEvents, subevent)
-				break
+	case ExternalRedfishEvent:
+		log.Info(" redfish event processing")
+		// NOTE: we don't actually check to ensure that this is an actual ExternalRedfishEventData specifically because Metric Reports don't currently go through like this.
+
+		evt := event.Data()
+		eventPtr, ok := evt.(*ExternalRedfishEventData)
+		if !ok {
+			log.Info("ExternalRedfishEvent does not have ExternalRedfishEventData")
+			return
+		}
+
+		if subCtx.Protocol != "Redfish" {
+			log.Info("Not Redfish Protocol")
+			return
+		}
+
+		if subCtx.firstEvent {
+			//MSM work around, replay mCHARS faults into events
+			subCtx.firstEvent = false
+			redfishevents := makeMCHARSevents(es, ctx)
+
+			for idx := range redfishevents {
+				eventPtr.Events = append(eventPtr.Events, &redfishevents[idx])
 			}
 		}
+
+		if subCtx.Destination != "" {
+			log.Info("Send to destination", "dest", subCtx.Destination)
+			eventlist = makeExternalRedfishEvent(subCtx, eventPtr.Events, uuid)
+			if len(eventlist) == 0 {
+				return
+			}
+			es.postExternalEvent(subCtx, event, eventlist)
+		} else {
+			log.Info("Destination is empty, not sending event")
+		}
+	case ExternalMetricEvent:
+		evt := event.Data()
+		evtPtr, ok := evt.(MetricReportData)
+		if !ok {
+
+			log.Info("ExternalMetricEvent does not have ExternalMetricEventData")
+			return
+		}
+		var id string
+		idtmp, ok := evtPtr.Data["MetricName"]
+		if !ok {
+			id = "unknown"
+		} else {
+			id, ok = idtmp.(string)
+			if !ok {
+				id = "unknown"
+			}
+		}
+
+		jsonBody, err := json.Marshal(evtPtr.Data)
+		if err == nil {
+			eb := eventBinary{
+				id,
+				jsonBody}
+
+			eventlist = append(eventlist, eb)
+			es.postExternalEvent(subCtx, event, eventlist)
+		}
+
 	}
-	if len(outputEvents) == 0 {
-		return
-	}
+}
+
+// Externally POST ExternalRedfishEvent and ExternalMetricReportEvent
+func (es *EventService) postExternalEvent(subCtx SubscriptionCtx, event eh.Event, eventlist []eventBinary) {
 	//TODO put back when MSM is Redfish Event compliant
 	select {
 	case es.jc <- func() {
-		for _, eachEvent := range outputEvents {
-			d, err := json.Marshal(
-				&struct {
-					Context   interface{} `json:",omitempty"`
-					MemberId  eh.UUID     `json:"MemberId"`
-					ArgsCount int         `json:"MessageArgs@odata.count"`
-					*RedfishEventData
-				}{
-					Context:          context,
-					MemberId:         id,
-					ArgsCount:        len(eachEvent.MessageArgs),
-					RedfishEventData: eachEvent,
-				},
-			)
-			if err != nil {
-				log.MustLogger("event_service").Crit("ERROR POSTING", "json.Marshal", err)
-				continue
-			}
-			// TODO: should be able to configure timeout
-			// TODO: Shore up security for POST
+		for _, eachEvent := range eventlist {
+
 			client := &http.Client{
 				Timeout: time.Second * 5,
 				Transport: &http.Transport{
@@ -274,44 +303,82 @@ func makePOST(es *EventService, dest string, event eh.Event, context interface{}
 				},
 			}
 			//Try up to 5 times to send event
-			logToEventFile(fmt.Sprintf("%s -- STARTING to send MessageId=%s to uri=%s\n", time.Now().UTC().Format(time.UnixDate), eachEvent.MessageId, dest))
+			logToEventFile(fmt.Sprintf("%s -- STARTING to send MessageId=%s to uri=%s\n", time.Now().UTC().Format(time.UnixDate), eachEvent.id, subCtx.Destination))
 			logSent := false
 			for i := 0; i < 5 && !logSent; i++ {
 				//Increasing wait between retries, first time don't wait i==0
 				time.Sleep(time.Duration(i) * 2 * time.Second)
-				req, _ := http.NewRequest("POST", dest, bytes.NewBuffer(d))
+				req, _ := http.NewRequest("POST", subCtx.Destination, bytes.NewBuffer(eachEvent.data))
 				req.Header.Add("OData-Version", "4.0")
 				req.Header.Set("Content-Type", "application/json")
 				resp, err := client.Do(req)
 				if err != nil {
-					log.MustLogger("event_service").Crit("ERROR POSTING", "MessageId", eachEvent.MessageId, "err", err)
-					logToEventFile(fmt.Sprintf("%s -- ERROR POSTING MessageId=%s to uri=%s attempt=%d err=%s\n", time.Now().UTC().Format(time.UnixDate), eachEvent.MessageId, dest, i+1, err))
+					log.MustLogger("event_service").Crit("ERROR POSTING", "Id", eachEvent.id, "err", err)
+					logToEventFile(fmt.Sprintf("%s -- ERROR POSTING Id=%s to uri=%s attempt=%d err=%s\n", time.Now().UTC().Format(time.UnixDate), eachEvent.id, subCtx.Destination, i+1, err))
 				} else if resp.StatusCode == http.StatusOK ||
 					resp.StatusCode == http.StatusCreated ||
 					resp.StatusCode == http.StatusAccepted ||
 					resp.StatusCode == http.StatusNoContent {
 					//Got a good response end loop
-					logToEventFile(fmt.Sprintf("%s -- Success sent MessageId=%s to uri=%s attempt=%d HTTP Status=%d\n", time.Now().UTC().Format(time.UnixDate), eachEvent.MessageId, dest, i+1, resp.StatusCode))
+					logToEventFile(fmt.Sprintf("%s -- Success sent Id=%s to uri=%s attempt=%d HTTP Status=%d\n", time.Now().UTC().Format(time.UnixDate), eachEvent.id, subCtx.Destination, i+1, resp.StatusCode))
 					logSent = true
 				} else {
 					//Error code return
-					log.MustLogger("event_service").Crit("ERROR POSTING", "MessageId", eachEvent.MessageId, "StatusCode", resp.StatusCode, "uri", dest)
-					logToEventFile(fmt.Sprintf("%s -- ERROR POSTING MessageId=%s to uri=%s attempt=%d HTTP Status=%d\n", time.Now().UTC().Format(time.UnixDate), eachEvent.MessageId, dest, i+1, resp.StatusCode))
+					log.MustLogger("event_service").Crit("ERROR POSTING", "Id", eachEvent.id, "StatusCode", resp.StatusCode, "uri", subCtx.Destination)
+					logToEventFile(fmt.Sprintf("%s -- ERROR POSTING Id=%s to uri=%s attempt=%d HTTP Status=%d\n", time.Now().UTC().Format(time.UnixDate), eachEvent.id, subCtx.Destination, i+1, resp.StatusCode))
 				}
 				if resp != nil {
 					resp.Body.Close()
 				}
 			}
 			if logSent == false {
-				logToEventFile(fmt.Sprintf("%s -- FAILURE to send MessageId=%s to uri=%s\n", time.Now().UTC().Format(time.UnixDate), eachEvent.MessageId, dest))
-				log.MustLogger("event_service").Crit("ERROR POSTING, DROPPED", "MessageId", eachEvent.MessageId, "uri", dest)
+				logToEventFile(fmt.Sprintf("%s -- FAILURE to send Id=%s to uri=%s\n", time.Now().UTC().Format(time.UnixDate), eachEvent.id, subCtx.Destination))
+				log.MustLogger("event_service").Crit("ERROR POSTING, DROPPED", "Id", eachEvent.id, "uri", subCtx.Destination)
 			}
 		}
 	}:
 	default: // drop the POST if the queue is full
 		log.MustLogger("event_service").Crit("External Event Queue Full, dropping")
-		logToEventFile(fmt.Sprintf("%s -- DROP Messages to uri=%s\n", time.Now().UTC().Format(time.UnixDate), dest))
+		logToEventFile(fmt.Sprintf("%s -- DROP Messages to uri=%s\n", time.Now().UTC().Format(time.UnixDate), subCtx.Destination))
 	}
+}
+
+func makeExternalRedfishEvent(subCtx SubscriptionCtx, events []*RedfishEventData, uuid eh.UUID) []eventBinary {
+	log.MustLogger("event_service").Info("POST!", "dest", subCtx.Destination, "redfish event data", events)
+	eventlist := []eventBinary{}
+
+	if len(subCtx.EventTypes) == 0 {
+		subCtx.EventTypes = append(subCtx.EventTypes, "Alert")
+	}
+
+	//Keep only the events in the Event Array which match the subscription
+	for _, tmpEvent := range events {
+		for _, subvalid := range subCtx.EventTypes {
+			if tmpEvent.EventType == subvalid {
+				jsonBody, err := json.Marshal(&struct {
+					Context   interface{} `json:",omitempty"`
+					MemberId  eh.UUID     `json:"MemberId"`
+					ArgsCount int         `json:"MessageArgs@odata.count"`
+					*RedfishEventData
+				}{
+					Context:          subCtx.Context,
+					MemberId:         uuid,
+					ArgsCount:        len(tmpEvent.MessageArgs),
+					RedfishEventData: tmpEvent,
+				},
+				)
+				if err == nil {
+					id := tmpEvent.MessageId
+					eb := eventBinary{
+						id,
+						jsonBody}
+
+					eventlist = append(eventlist, eb)
+				}
+			}
+		}
+	}
+	return eventlist
 }
 
 func (es *EventService) PublishResourceUpdatedEventsForModel(ctx context.Context, modelName string) view.Option {
