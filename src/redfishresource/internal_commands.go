@@ -424,13 +424,13 @@ func StartInjectService(logger log.Logger, d *DomainObjects) {
 
 	// goroutine to synchronously handle the event inject queue
 	go func() {
-		queued := []InjectEvent{}
+		queued := make([]InjectEvent, 50)
 		currentSeq := 0
-		sequence_timer := time.NewTimer(1000 * time.Millisecond)
+		sequence_timer := time.NewTimer(6000 * time.Millisecond)
 		for {
 			select {
 			case event := <-injectChanSlice:
-				logger.Info("Event received", "Sequence #", event.EventSeq)
+				//logger.Crit("Event received", "Sequence", event.EventSeq, "Name", event.Name)
 				// on received event, always add to queue
 				queued = append(queued, *event)
 				try := true
@@ -445,14 +445,14 @@ func StartInjectService(logger log.Logger, d *DomainObjects) {
 							try = true
 							currentSeq = eventSeq
 							k.sendToChn(k.ctx)
-							sequence_timer.Reset(1000 * time.Millisecond)
+							sequence_timer.Reset(6000 * time.Millisecond)
 						} else if eventSeq <= currentSeq {
 							// drop all old events
 							dropped_event := &DroppedEventData{
 								Name:     k.Name,
 								EventSeq: k.EventSeq,
 							}
-							logger.Warn("Event dropped", "Event Name", k.Name, "Sequence Number", k.EventSeq)
+							logger.Crit("Event dropped", "Event Name", k.Name, "Sequence Number", k.EventSeq)
 							eb.PublishEvent(k.ctx, eh.NewEvent(DroppedEvent, dropped_event, time.Now()))
 						} else {
 							// only keep events that are greater than the current sequence count
@@ -475,7 +475,7 @@ func StartInjectService(logger log.Logger, d *DomainObjects) {
 						if flag == false {
 							// use this event as the new current sequence count
 							flag = true
-							logger.Warn("Current sequence count changed due to timeout", "Old Value", currentSeq, "New Value", eventSeq)
+							logger.Crit("Current sequence count changed due to timeout", "Old Value", currentSeq, "New Value", eventSeq)
 							currentSeq = eventSeq
 							k.sendToChn(k.ctx)
 						} else {
@@ -493,13 +493,13 @@ func StartInjectService(logger log.Logger, d *DomainObjects) {
 							Name:     k.Name,
 							EventSeq: k.EventSeq,
 						}
-						logger.Warn("Event dropped (TIMEOUT)", "Event Name", k.Name, "Sequence Number", k.EventSeq)
+						logger.Crit("Event dropped (timeout)", "Event Name", k.Name, "Sequence Number", k.EventSeq)
 						eb.PublishEvent(k.ctx, eh.NewEvent(DroppedEvent, dropped_event, time.Now()))
 					}
 				}
 				queued = copy
 				//logger.Warn("Timeout finished", "New Value", currentSeq)
-				sequence_timer.Reset(1000 * time.Millisecond)
+				sequence_timer.Reset(6000 * time.Millisecond)
 			}
 		}
 	}()
@@ -523,18 +523,17 @@ type Decoder interface {
 }
 
 func (c *InjectEvent) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
+	//testLogger := ContextLogger(ctx, "internal_commands").New("module", "inject_event")
+	//testLogger.Crit("Event handle", "Sequence", c.EventSeq, "Name", c.Name)
 	a.ID = injectUUID
-	if len(c.EventData) > 0 || len(c.EventArray) > 0 {
 		c.ctx = ctx
 		injectChanSlice <- c
-	}
-
 	return nil
 }
 
 func (c *InjectEvent) sendToChn(ctx context.Context) error {
 	requestLogger := ContextLogger(ctx, "internal_commands").New("module", "inject_event")
-	//requestLogger.Crit("SEND TO CHANNEL", "NAME", c.Name, "EVENT SEQ", c.EventSeq)
+	//requestLogger.Crit("Event sent", "Sequence", c.EventSeq, "Name", c.Name)
 
 	eventList := make([]map[string]interface{}, 0, len(c.EventArray)+1)
 	if len(c.EventData) > 0 {
