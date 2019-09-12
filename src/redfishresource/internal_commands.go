@@ -330,7 +330,7 @@ func StartInjectService(logger log.Logger, d *DomainObjects) {
 
 	// goroutine to synchronously handle the event inject queue
 	go func() {
-		queued := make([]InjectEvent, 50)
+		queued := []InjectEvent{}
 		currentSeq := 0
 		sequence_timer := time.NewTimer(6000 * time.Millisecond)
 		for {
@@ -358,7 +358,7 @@ func StartInjectService(logger log.Logger, d *DomainObjects) {
 								Name:     k.Name,
 								EventSeq: k.EventSeq,
 							}
-							logger.Crit("Event dropped", "Event Name", k.Name, "Sequence Number", k.EventSeq)
+							logger.Crit("Event dropped", "Event Name", k.Name, "Sequence Number", k.EventSeq, "Current Sequence", currentSeq)
 							eb.PublishEvent(k.ctx, eh.NewEvent(DroppedEvent, dropped_event, time.Now()))
 						} else {
 							// only keep events that are greater than the current sequence count
@@ -399,7 +399,7 @@ func StartInjectService(logger log.Logger, d *DomainObjects) {
 							Name:     k.Name,
 							EventSeq: k.EventSeq,
 						}
-						logger.Crit("Event dropped (timeout)", "Event Name", k.Name, "Sequence Number", k.EventSeq)
+						logger.Crit("Event dropped (timeout)", "Event Name", k.Name, "Sequence Number", k.EventSeq, "Current Sequence", currentSeq)
 						eb.PublishEvent(k.ctx, eh.NewEvent(DroppedEvent, dropped_event, time.Now()))
 					}
 				}
