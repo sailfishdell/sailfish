@@ -69,6 +69,8 @@ func RegisterIOMAggregate(s *testaggregate.Service) {
 							"#Chassis.Reset": map[string]interface{}{
 								"ResetType@Redfish.AllowableValues": []string{
 									"On",
+									"ForceOff",
+									"ForceRestart",
 									"GracefulShutdown",
 									"GracefulRestart",
 								},
