@@ -140,6 +140,7 @@ func RegisterSledAggregate(s *testaggregate.Service) {
 								"ResetType@Redfish.AllowableValues": []string{
 									"On",
 									"ForceOff",
+									"ForceRestart",
 									"GracefulShutdown",
 									"GracefulRestart",
 								},
