@@ -8,7 +8,6 @@ const (
 	HealthEvent                         = eh.EventType("HealthEvent")
 	InstPowerEvent                      = eh.EventType("InstPowerEvent")
 	DataManagerEvent                    = eh.EventType("DataManagerEvent")
-	FanEvent                            = eh.EventType("FanEvent")
 	ThermalSensorEvent                  = eh.EventType("ThermalSensorEvent")
 	PowerSupplyObjEvent                 = eh.EventType("PowerSupplyObjEvent")
 	PowerConsumptionDataObjEvent        = eh.EventType("PowerConsumptionDataObjEvent")
@@ -23,7 +22,6 @@ const (
 func init() {
 	eh.RegisterEventData(HealthEvent, func() eh.EventData { return &HealthEventData{} })
 	eh.RegisterEventData(InstPowerEvent, func() eh.EventData { return &InstPowerEventData{} })
-	eh.RegisterEventData(FanEvent, func() eh.EventData { return &FanEventData{} })
 	eh.RegisterEventData(ThermalSensorEvent, func() eh.EventData { return &ThermalSensorEventData{} })
 	eh.RegisterEventData(PowerSupplyObjEvent, func() eh.EventData { return &PowerSupplyObjEventData{} })
 	eh.RegisterEventData(PowerConsumptionDataObjEvent, func() eh.EventData { return &PowerConsumptionDataObjEventData{} })
@@ -69,24 +67,6 @@ type DataObjectHeader struct {
 	ObjFlags        int `mapstructure:"objFlags"`
 	FQDD            string
 	Struct          string
-}
-
-type FanEventData struct {
-	ObjectHeader      DataObjectHeader
-	Fanpwm            float64 `json:"fanpwm"`
-	Key               string
-	FanName           string
-	Fanpwm_int        int `json:"fanpwm_int"`
-	VendorName        string
-	WarningThreshold  int `json:"warningThreshold"`
-	DeviceName        string
-	TachName          string
-	CriticalThreshold int `json:"criticalThreshold"`
-	Fanhealth         int `json:"fanhealth"`
-	Numrotors         int `json:"numrotors"`
-	Rotor2rpm         int `json:"rotor2rpm"`
-	Rotor1rpm         int `json:"rotor1rpm"`
-	FanStateMask      int `json:"fanStateMask"`
 }
 
 type ThermalSensorEventData struct {

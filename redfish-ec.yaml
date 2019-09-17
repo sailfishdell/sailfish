@@ -442,7 +442,7 @@ views:
         - "fn": "with_PumpHandledAction"
           "params": {"name": "manager.reset", "uri": "/Actions/Manager.Reset", "timeout": 30}
         - "fn": "with_PumpHandledAction"
-          "params": {"name": "manager.resettodefaults", "uri": "/Actions/Oem/DellManager.ResetToDefaults", "timeout": 30}
+          "params": {"name": "manager.resettodefaults", "uri": "/Actions/Oem/DellManager.ResetToDefaults", "timeout": 60}
         - "fn": "with_PumpHandledAction"
           "params": {"name": "manager.forcefailover", "uri": "/Actions/Manager.ForceFailover", "timeout": 30}
         - "fn": "WithAction"
@@ -1314,7 +1314,7 @@ awesome_mapper:
           ModelUpdate: [ {Property: "power_state", Query: "map_chassis_state(data.Value)"}]}
 
     fan:
-      - { SelectEventType: "FanEvent", Select: "data.ObjectHeader.FQDD == DM_FQDD",
+      - { SelectEventType: "thp_fan_data_object", Select: "DM_FQDD == data.GetStringFromOffset(data.Data.OffsetKey)",
              Process: { "name": "updateFanData", "params":[]}}
 
     inst_power:

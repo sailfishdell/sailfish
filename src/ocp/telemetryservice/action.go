@@ -18,15 +18,15 @@ func MakeSubmitTestMetricReport(eb eh.EventBus, d *domain.DomainObjects, ch eh.C
 	return func(ctx context.Context, event eh.Event, retData *domain.HTTPCmdProcessedData) error {
 		domain.ContextLogger(ctx, "submit_event").Debug("got test metric report event", "event_data", event.Data())
 
-		data, ok := event.Data().(*ah.GenericActionEventData)
+		d, ok := event.Data().(*ah.GenericActionEventData)
 		if !ok {
 			domain.ContextLogger(ctx, "submit_event").Crit("type assert failed", "event_data", event.Data(), "Type", fmt.Sprintf("%T", event.Data()))
 			return errors.New("Didnt get the right kind of event")
 		}
 
-		m, ok := data.ActionData.(map[string]interface{})
+		m, ok := d.ActionData.(map[string]interface{})
 		if !ok {
-			domain.ContextLogger(ctx, "submit_event").Crit("type assert failed", "event data is not a map[string] interface", data.ActionData, "Type", fmt.Sprintf("%T", data.ActionData))
+			domain.ContextLogger(ctx, "submit_event").Crit("type assert failed", "event data is not a map[string] interface", d.ActionData, "Type", fmt.Sprintf("%T", d.ActionData))
 			return errors.New("Didnt get the right kind of event")
 		}
 
@@ -76,15 +76,8 @@ func MakeSubmitTestMetricReport(eb eh.EventBus, d *domain.DomainObjects, ch eh.C
 						"@odata.id": "/redfish/v1/TelemetryService/MetricReportDefinitions"},
 				}})
 
-		eventData := eventservice.RedfishEventData{
-			EventType: "Alert",
-			MessageId: "TST100",
-			Oem:       m,
-			//TODO MSM BUG: OriginOfCondition for events has to be a string or will be rejected
-			OriginOfCondition: "/redfish/v1/TelmetryService/MetricReports/" + n,
-		}
-
-		responseEvent := eh.NewEvent(eventservice.RedfishEvent, &eventData, time.Now())
+		eventData := eventservice.MetricReportData{Data: m}
+		responseEvent := eh.NewEvent(eventservice.ExternalMetricEvent, eventData, time.Now())
 		eb.PublishEvent(ctx, responseEvent)
 
 		retData.Headers = map[string]string{

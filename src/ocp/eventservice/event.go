@@ -7,11 +7,17 @@ import (
 const (
 	RedfishEvent         = eh.EventType("RedfishEvent")
 	ExternalRedfishEvent = eh.EventType("ExternalRedfishEvent")
+	ExternalMetricEvent  = eh.EventType("ExternalMetricEvent")
 )
 
 func init() {
 	eh.RegisterEventData(RedfishEvent, func() eh.EventData { return &RedfishEventData{} })
 	eh.RegisterEventData(ExternalRedfishEvent, func() eh.EventData { return &ExternalRedfishEventData{} })
+	eh.RegisterEventData(ExternalMetricEvent, func() eh.EventData { return &MetricReportData{} })
+}
+
+type MetricReportData struct {
+	Data map[string]interface{}
 }
 
 type RedfishEventData struct {

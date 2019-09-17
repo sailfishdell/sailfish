@@ -3,6 +3,7 @@ package awesome_mapper2
 import (
 	"errors"
 	"fmt"
+	"github.com/superchalupa/sailfish/godefs"
 	"strconv"
 	"sync"
 	"time"
@@ -155,7 +156,9 @@ func init() {
 	AddAM3ProcessSetupFunction("updateFanData", func(logger log.Logger, processConfig interface{}) (processFunc, processSetupFunc, error) {
 		// Model Update Function
 		aggUpdateFn := func(mp *MapperParameters, event eh.Event, ch eh.CommandHandler, d *domain.DomainObjects) error {
-			data, ok := event.Data().(*dm_event.FanEventData)
+
+			dmobj, ok := event.Data().(*godefs.DMObject)
+			fanobj, ok := dmobj.Data.(*godefs.DM_thp_fan_data_object)
 			if !ok {
 				logger.Error("updateFanData did not have fan event", "type", event.EventType, "data", event.Data())
 				return errors.New("updateFanData did not receive FanEventData")
@@ -165,8 +168,8 @@ func init() {
 				&domain.UpdateRedfishResourceProperties2{
 					ID: mp.uuid,
 					Properties: map[string]interface{}{
-						"Reading":     (data.Rotor1rpm + data.Rotor2rpm) / 2,
-						"Oem/Reading": data.Fanpwm_int,
+						"Reading":     (fanobj.Rotor1rpm + fanobj.Rotor2rpm) / 2,
+						"Oem/Reading": fanobj.Int,
 					},
 				})
 			return nil

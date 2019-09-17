@@ -426,11 +426,11 @@ func StartInjectService(logger log.Logger, d *DomainObjects) {
 	go func() {
 		queued := []InjectEvent{}
 		currentSeq := 0
-		sequence_timer := time.NewTimer(1000 * time.Millisecond)
+		sequence_timer := time.NewTimer(6000 * time.Millisecond)
 		for {
 			select {
 			case event := <-injectChanSlice:
-				logger.Info("Event received", "Sequence #", event.EventSeq)
+				//logger.Crit("Event received", "Sequence", event.EventSeq, "Name", event.Name)
 				// on received event, always add to queue
 				queued = append(queued, *event)
 				try := true
@@ -445,14 +445,14 @@ func StartInjectService(logger log.Logger, d *DomainObjects) {
 							try = true
 							currentSeq = eventSeq
 							k.sendToChn(k.ctx)
-							sequence_timer.Reset(1000 * time.Millisecond)
+							sequence_timer.Reset(6000 * time.Millisecond)
 						} else if eventSeq <= currentSeq {
 							// drop all old events
 							dropped_event := &DroppedEventData{
 								Name:     k.Name,
 								EventSeq: k.EventSeq,
 							}
-							logger.Warn("Event dropped", "Event Name", k.Name, "Sequence Number", k.EventSeq)
+							logger.Crit("Event dropped", "Event Name", k.Name, "Sequence Number", k.EventSeq, "Current Sequence", currentSeq)
 							eb.PublishEvent(k.ctx, eh.NewEvent(DroppedEvent, dropped_event, time.Now()))
 						} else {
 							// only keep events that are greater than the current sequence count
@@ -475,7 +475,7 @@ func StartInjectService(logger log.Logger, d *DomainObjects) {
 						if flag == false {
 							// use this event as the new current sequence count
 							flag = true
-							logger.Warn("Current sequence count changed due to timeout", "Old Value", currentSeq, "New Value", eventSeq)
+							logger.Crit("Current sequence count changed due to timeout", "Old Value", currentSeq, "New Value", eventSeq)
 							currentSeq = eventSeq
 							k.sendToChn(k.ctx)
 						} else {
@@ -493,13 +493,13 @@ func StartInjectService(logger log.Logger, d *DomainObjects) {
 							Name:     k.Name,
 							EventSeq: k.EventSeq,
 						}
-						logger.Warn("Event dropped (TIMEOUT)", "Event Name", k.Name, "Sequence Number", k.EventSeq)
+						logger.Crit("Event dropped (timeout)", "Event Name", k.Name, "Sequence Number", k.EventSeq, "Current Sequence", currentSeq)
 						eb.PublishEvent(k.ctx, eh.NewEvent(DroppedEvent, dropped_event, time.Now()))
 					}
 				}
 				queued = copy
 				//logger.Warn("Timeout finished", "New Value", currentSeq)
-				sequence_timer.Reset(1000 * time.Millisecond)
+				sequence_timer.Reset(6000 * time.Millisecond)
 			}
 		}
 	}()
@@ -518,19 +518,22 @@ func StartInjectService(logger log.Logger, d *DomainObjects) {
 const MAX_CONSOLIDATED_EVENTS = 10
 const injectUUID = eh.UUID("49467bb4-5c1f-473b-0000-00000000000f")
 
-func (c *InjectEvent) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
-	a.ID = injectUUID
-	if len(c.EventData) > 0 || len(c.EventArray) > 0 {
-		c.ctx = ctx
-		injectChanSlice <- c
-	}
+type Decoder interface {
+	Decode(d map[string]interface{}) error
+}
 
+func (c *InjectEvent) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
+	//testLogger := ContextLogger(ctx, "internal_commands").New("module", "inject_event")
+	//testLogger.Crit("Event handle", "Sequence", c.EventSeq, "Name", c.Name)
+	a.ID = injectUUID
+	c.ctx = ctx
+	injectChanSlice <- c
 	return nil
 }
 
 func (c *InjectEvent) sendToChn(ctx context.Context) error {
 	requestLogger := ContextLogger(ctx, "internal_commands").New("module", "inject_event")
-	//requestLogger.Crit("SEND TO CHANNEL", "NAME", c.Name, "EVENT SEQ", c.EventSeq)
+	//requestLogger.Crit("Event sent", "Sequence", c.EventSeq, "Name", c.Name)
 
 	eventList := make([]map[string]interface{}, 0, len(c.EventArray)+1)
 	if len(c.EventData) > 0 {
@@ -546,46 +549,9 @@ func (c *InjectEvent) sendToChn(ctx context.Context) error {
 
 	trainload := make([]eh.EventData, 0, MAX_CONSOLIDATED_EVENTS)
 	for _, eventData := range eventList {
-		data, err := eh.CreateEventData(c.Name)
-		if err != nil {
-			// this debug statement probably not hit too often, leave enabled for now
-			requestLogger.Info("InjectEvent - event type not registered: injecting raw event.", "event name", c.Name, "error", err)
-			trainload = append(trainload, eventData) //preallocated
-		} else {
-
-			if c.Encoding == "binary" {
-				structdata, err := base64.StdEncoding.DecodeString(eventData["data"].(string))
-				if err != nil {
-					fmt.Printf("ERROR decoding base64 event data: %s", err)
-					continue
-				}
-
-				buf := bytes.NewReader(structdata)
-				err = binary.Read(buf, binary.LittleEndian, data)
-				if err != nil {
-					fmt.Printf("binary decode fail: %s\n", err)
-					continue
-				}
-
-				trainload = append(trainload, data) //preallocated
-			}
-
-			if c.Encoding == "json" || c.Encoding == "" {
-				err = mapstructure.Decode(eventData, &data)
-				if err != nil {
-					requestLogger.Warn("InjectEvent - could not decode event data, skipping event", "error", err, "raw-eventdata", eventData, "dest-event", data)
-					trainload = append(trainload, eventData) //preallocated
-				} else {
-					trainload = append(trainload, data) //preallocated
-				}
-			}
-
-		}
-		// comment out debug prints in the hot path, uncomment for debugging
-		requestLogger.Debug("InjectEvent - publishing", "event name", c.Name, "event_data", data)
-
 		// limit number of consolidated events to 30 to prevent overflowing queues and deadlocking
 		if len(trainload) >= MAX_CONSOLIDATED_EVENTS {
+			//fmt.Printf("Train (%s) leaving early: %d\n", c.Name, len(trainload))
 			e := event.NewSyncEvent(c.Name, trainload, time.Now())
 			e.Add(1)
 			if c.Synchronous {
@@ -594,6 +560,65 @@ func (c *InjectEvent) sendToChn(ctx context.Context) error {
 			trainload = make([]eh.EventData, 0, MAX_CONSOLIDATED_EVENTS)
 			injectChan <- e
 		}
+
+		// prefer to deserialize directly to a named type
+		data, err := eh.CreateEventData(c.Name)
+
+		// if the named type is not available, publish raw map[string]interface{} as eventData
+		if err != nil {
+			// this debug statement probably not hit too often, leave enabled for now
+			// This is not the preferred path. Consider creating event if we hit this for specific events.
+			requestLogger.Info("InjectEvent - event type not registered: injecting raw event.", "event name", c.Name, "error", err)
+			trainload = append(trainload, eventData) //preallocated
+			continue
+		}
+
+		// check if event wants to deserialize itself with a custom decoder
+		if ds, ok := data.(Decoder); ok {
+			err = ds.Decode(eventData)
+			if err != nil {
+				fmt.Printf("binary decode fail: %s\n", err)
+				continue
+			}
+			trainload = append(trainload, data) //preallocated
+			continue
+		}
+
+		// otherwise use default
+		if c.Encoding == "binary" {
+			structdata, err := base64.StdEncoding.DecodeString(eventData["data"].(string))
+			if err != nil {
+				fmt.Printf("ERROR decoding base64 event data: %s", err)
+				continue
+			}
+
+			buf := bytes.NewReader(structdata)
+			err = binary.Read(buf, binary.LittleEndian, data)
+			if err != nil {
+				fmt.Printf("binary decode fail: %s\n", err)
+				continue
+			}
+
+			trainload = append(trainload, buf) //preallocated
+		} else if c.Encoding == "json" || c.Encoding == "" {
+			err = mapstructure.Decode(eventData, &data)
+			if err != nil {
+				requestLogger.Warn("InjectEvent - could not decode event data, skipping event", "error", err, "raw-eventdata", eventData, "dest-event", data)
+				trainload = append(trainload, eventData) //preallocated
+			} else {
+				trainload = append(trainload, data) //preallocated
+			}
+		}
+
+		// limit number of consolidated events to 30 to prevent overflowing queues and deadlocking
+		if len(trainload) >= MAX_CONSOLIDATED_EVENTS {
+			e := event.NewSyncEvent(c.Name, trainload, time.Now())
+			e.Add(1)
+			if c.Synchronous {
+				defer e.Wait()
+			}
+		}
+
 	}
 
 	if len(trainload) > 0 {

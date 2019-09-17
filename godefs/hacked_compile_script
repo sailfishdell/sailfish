@@ -1,0 +1,11 @@
+# here is what the recipe build should look like.
+# reference: https://groups.google.com/forum/#!topic/golang-nuts/E2XofArvCD0
+
+do_compile() {
+  cd  /home/michael_e_brown/15g/externalsrc/go-redfish/godefs/
+  export PATH=$PWD:$PATH:/home/michael_e_brown/gobin/bin/
+  unset CPPFLAGS CFLAGS
+  export CPPFLAGS="$(pkg-config --cflags libdcsgen libthermalpop) -I$PKG_CONFIG_SYSROOT_DIR/usr/include"
+  export CFLAGS=
+  GOARCH=arm GOARM=5 go tool cgo -debug-gcc -godefs -- $CPPFLAGS ./fan.go > generated-fan.go
+}
