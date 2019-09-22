@@ -18,8 +18,8 @@ func (rrp *RedfishResourceProperty) MarshalJSON() ([]byte, error) {
 }
 
 func NewGet(ctx context.Context, agg *RedfishResourceAggregate, rrp *RedfishResourceProperty, auth *RedfishAuthorizationProperty) error {
-	opts := nuEncOpts{
-		request: nil,
+	opts := NuEncOpts{
+		Request: nil,
 		process: nuGETfn,
 		root:    true,
 		sel:     auth.sel,
@@ -32,9 +32,9 @@ func NewGet(ctx context.Context, agg *RedfishResourceAggregate, rrp *RedfishReso
 func NewPatch(ctx context.Context, agg *RedfishResourceAggregate, rrp *RedfishResourceProperty, auth *RedfishAuthorizationProperty, body interface{}) error {
 	// Paste in redfish spec stuff here
 	// 200 if anything succeeds, 400 if everything fails
-	opts := nuEncOpts{
-		request: body,
-		parse:   body,
+	opts := NuEncOpts{
+		Request: body,
+		Parse:   body,
 		process: nuPATCHfn,
 		root:    true,
 		path:    "",
@@ -43,19 +43,19 @@ func NewPatch(ctx context.Context, agg *RedfishResourceAggregate, rrp *RedfishRe
 	return rrp.RunMetaFunctions(ctx, agg, auth, opts)
 }
 
-type nuProcessFn func(context.Context, *RedfishResourceAggregate, *RedfishResourceProperty, *RedfishAuthorizationProperty, nuEncOpts) error
+type nuProcessFn func(context.Context, *RedfishResourceAggregate, *RedfishResourceProperty, *RedfishAuthorizationProperty, NuEncOpts) error
 
-type nuEncOpts struct {
+type NuEncOpts struct {
 	root    bool
-	parse   interface{}
-	request interface{}
+	Parse   interface{}
+	Request interface{}
 	present bool
 	process nuProcessFn
 	path    string
 	sel     []string
 }
 
-func nuGETfn(ctx context.Context, agg *RedfishResourceAggregate, rrp *RedfishResourceProperty, auth *RedfishAuthorizationProperty, opts nuEncOpts) error {
+func nuGETfn(ctx context.Context, agg *RedfishResourceAggregate, rrp *RedfishResourceProperty, auth *RedfishAuthorizationProperty, opts NuEncOpts) error {
 	meta_t, ok := rrp.Meta["GET"].(map[string]interface{})
 	if !ok {
 		return nil // it's not really an "error" we need upper layers to care about
@@ -83,10 +83,10 @@ type PropGetter interface {
 }
 
 type PropPatcher interface {
-	PropertyPatch(context.Context, *RedfishResourceAggregate, *RedfishAuthorizationProperty, *RedfishResourceProperty, interface{}, map[string]interface{}) error
+	PropertyPatch(context.Context, *RedfishResourceAggregate, *RedfishAuthorizationProperty, *RedfishResourceProperty, *NuEncOpts, map[string]interface{}) error
 }
 
-func nuPATCHfn(ctx context.Context, agg *RedfishResourceAggregate, rrp *RedfishResourceProperty, auth *RedfishAuthorizationProperty, opts nuEncOpts) error {
+func nuPATCHfn(ctx context.Context, agg *RedfishResourceAggregate, rrp *RedfishResourceProperty, auth *RedfishAuthorizationProperty, opts NuEncOpts) error {
 
 	bad_json := ExtendedInfo{
 		Message:             "The request body submitted was malformed JSON and could not be parsed by the receiving service.",
@@ -110,8 +110,8 @@ func nuPATCHfn(ctx context.Context, agg *RedfishResourceAggregate, rrp *RedfishR
 		Severity:            "Warning",
 	}
 
-	if opts.request != nil {
-		if req_map, ok := opts.request.(map[string]interface{}); ok {
+	if opts.Request != nil {
+		if req_map, ok := opts.Request.(map[string]interface{}); ok {
 			if val, ok := req_map["ERROR"]; ok {
 				var failed []interface{}
 				if val == "BADJSON" {
@@ -152,7 +152,7 @@ func nuPATCHfn(ctx context.Context, agg *RedfishResourceAggregate, rrp *RedfishR
 	//ContextLogger(ctx, "property_process").Debug("getting property: PATCH", "value", fmt.Sprintf("%v", rrp.Value), "plugin", plugin)
 	if plugin, ok := plugin.(PropPatcher); ok {
 		//defer ContextLogger(ctx, "property_process").Debug("AFTER getting property: PATCH - type assert success", "value", fmt.Sprintf("%v", rrp.Value))
-		return plugin.PropertyPatch(ctx, agg, auth, rrp, opts.request, meta_t)
+		return plugin.PropertyPatch(ctx, agg, auth, rrp, &opts, meta_t)
 	} else {
 		panic("coding error: the plugin " + pluginName + " does not implement the Property Patching API")
 	}
@@ -227,7 +227,7 @@ func Flatten(thing interface{}, parentlocked bool) interface{} {
 	}
 }
 
-func (rrp *RedfishResourceProperty) RunMetaFunctions(ctx context.Context, agg *RedfishResourceAggregate, auth *RedfishAuthorizationProperty, e nuEncOpts) (err error) {
+func (rrp *RedfishResourceProperty) RunMetaFunctions(ctx context.Context, agg *RedfishResourceAggregate, auth *RedfishAuthorizationProperty, e NuEncOpts) (err error) {
 	rrp.Lock()
 	defer rrp.Unlock()
 
@@ -262,7 +262,7 @@ type numSuccess interface {
 	GetNumSuccess() int
 }
 
-func helper(ctx context.Context, agg *RedfishResourceAggregate, auth *RedfishAuthorizationProperty, encopts nuEncOpts, v interface{}) error {
+func helper(ctx context.Context, agg *RedfishResourceAggregate, auth *RedfishAuthorizationProperty, encopts NuEncOpts, v interface{}) error {
 	var ok bool
 	// handle special case of RRP inside RRP.Value of parent
 	if vp, ok := v.(*RedfishResourceProperty); ok {
@@ -287,9 +287,9 @@ func helper(ctx context.Context, agg *RedfishResourceAggregate, auth *RedfishAut
 		}
 
 		for _, k := range val.MapKeys() {
-			newEncOpts := nuEncOpts{
-				request: encopts.request,
-				parse:   encopts.parse,
+			newEncOpts := NuEncOpts{
+				Request: encopts.Request,
+				Parse:   encopts.Parse,
 				present: encopts.present,
 				process: encopts.process,
 				root:    false,
@@ -311,13 +311,13 @@ func helper(ctx context.Context, agg *RedfishResourceAggregate, auth *RedfishAut
 				}
 			}
 
-			parseBody, ok := newEncOpts.parse.(map[string]interface{})
+			parseBody, ok := newEncOpts.Parse.(map[string]interface{})
 			newEncOpts.present = ok
 			if newEncOpts.present {
-				newEncOpts.parse, newEncOpts.present = parseBody[k.Interface().(string)]
+				newEncOpts.Parse, newEncOpts.present = parseBody[k.Interface().(string)]
 			}
-			if newEncOpts.parse == nil && k.Interface().(string) == "Attributes" {
-				newEncOpts.parse = map[string]interface{}{"ERROR": "BADREQUEST"}
+			if newEncOpts.Parse == nil && k.Interface().(string) == "Attributes" {
+				newEncOpts.Parse = map[string]interface{}{"ERROR": "BADREQUEST"}
 			}
 			mapVal := val.MapIndex(k)
 			if mapVal.IsValid() {

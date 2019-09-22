@@ -8,22 +8,22 @@ import (
 )
 
 var (
-	MRDPlugin = domain.PluginType("MRD")
+	GenericPlugin= domain.PluginType("Generic")
 )
 
-func MetricReportDefPlugin(ch eh.CommandHandler, d *domain.DomainObjects) {
-	domain.RegisterPlugin(func() domain.Plugin { return &MRD{ch: ch, d: d} })
+func GenericDefPlugin(ch eh.CommandHandler, d *domain.DomainObjects) {
+	domain.RegisterPlugin(func() domain.Plugin { return &Generic{ch: ch, d: d} })
 }
 
-type MRD struct {
+type Generic struct {
 	d  *domain.DomainObjects
 	ch eh.CommandHandler
 }
 
-func (s *MRD) PluginType() domain.PluginType { return MRDPlugin }
+func (s *Generic) PluginType() domain.PluginType { return GenericPlugin }
 
 // run per patch, can't run altogether.
-func (s *MRD) PropertyPatch(
+func (s *Generic) PropertyPatch(
 	ctx context.Context,
 	agg *domain.RedfishResourceAggregate,
 	auth *domain.RedfishAuthorizationProperty,

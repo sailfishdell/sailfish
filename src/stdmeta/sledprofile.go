@@ -37,7 +37,7 @@ func (s *SledProfile) PropertyPatch(
 	agg *domain.RedfishResourceAggregate,
 	auth *domain.RedfishAuthorizationProperty,
 	rrp *domain.RedfishResourceProperty,
-	encopts interface{},
+	encopts *domain.NuEncOpts,
 	meta map[string]interface{},
 ) error {
 	patch_timeout := 10
@@ -78,7 +78,7 @@ func (s *SledProfile) PropertyPatch(
 		Group:         "Info",
 		Index:         "1",
 		Name:          "SledProfile",
-		Value:         encopts,
+		Value:         encopts.Parse,
 		Authorization: *auth,
 	}
 

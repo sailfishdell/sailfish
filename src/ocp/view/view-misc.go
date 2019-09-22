@@ -86,14 +86,14 @@ func (s *View) PropertyPatch(
 	agg *domain.RedfishResourceAggregate,
 	auth *domain.RedfishAuthorizationProperty,
 	rrp *domain.RedfishResourceProperty,
-	body interface{},
+	encopts *domain.NuEncOpts,
 	meta map[string]interface{},
 ) error {
 
 	s.Lock()
 	defer s.Unlock()
 
-	log.MustLogger("PATCH").Debug("PATCH START", "body", body, "meta", meta, "rrp", rrp)
+	log.MustLogger("PATCH").Debug("PATCH START", "body", encopts.Parse, "meta", meta, "rrp", rrp)
 
 	controllerName, ok := meta["controller"].(string)
 	if !ok {
@@ -107,9 +107,11 @@ func (s *View) PropertyPatch(
 		return errors.New(fmt.Sprintf("metadata specifies a nonexistent controller name: %v\n", meta))
 	}
 
+
 	property, ok := meta["property"].(string)
 	if ok {
-		newval, err := controller.UpdateRequest(ctx, property, body, auth)
+
+		newval, err := controller.UpdateRequest(ctx, property, encopts.Parse , auth)
 		log.MustLogger("PATCH").Debug("update request", "newval", newval, "err", err)
 		if e, ok := err.(isHTTPCode); ok {
 			any_success := e.AnySuccess()
