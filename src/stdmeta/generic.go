@@ -25,12 +25,13 @@ func (s *Generic) PluginType() domain.PluginType { return GenericPlugin }
 // run per patch, can't run altogether.
 func (s *Generic) PropertyPatch(
 	ctx context.Context,
+	resp map[string]interface{},
 	agg *domain.RedfishResourceAggregate,
 	auth *domain.RedfishAuthorizationProperty,
 	rrp *domain.RedfishResourceProperty,
 	encopts *domain.NuEncOpts,
 	meta map[string]interface{},
-) error {
+) (error) {
 	pathMapStr := map[string]interface{}{}
 	domain.Map2Path(encopts.Request, pathMapStr, "")
 	for pathStr, value := range pathMapStr {

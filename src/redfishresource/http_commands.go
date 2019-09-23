@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"time"
+	"fmt"
 
 	eh "github.com/looplab/eventhorizon"
 )
@@ -96,7 +97,9 @@ func (c *PATCH) SetUserDetails(a *RedfishAuthorizationProperty) string {
 	return "checkMaster"
 }
 func (c *PATCH) ParseHTTPRequest(r *http.Request) error {
+	// FIX ME I can't handle the conversion if I am only a string!
 	json.NewDecoder(r.Body).Decode(&c.Body)
+	fmt.Println(c.Body)
 	if len(c.Body) == 0 {
 		err_body := map[string]interface{}{"Attributes": map[string]interface{}{"ERROR": "BADJSON"}}
 		c.Body = err_body
@@ -128,6 +131,7 @@ func (c *PATCH) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 	}
 
 	data.StatusCode = a.StatusCode
+
 	c.HTTPEventBus.PublishEvent(ctx, eh.NewEvent(HTTPCmdProcessed, data, time.Now()))
 
 	return nil

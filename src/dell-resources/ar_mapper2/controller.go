@@ -160,23 +160,6 @@ func (b breadcrumb) Close() {
 	b.ars.resetConfig()
 }
 
-type HTTP_code struct {
-	err_message []string
-	any_success int
-}
-
-func (e HTTP_code) ErrMessage() []string {
-	return e.err_message
-}
-
-func (e HTTP_code) AnySuccess() int {
-	return e.any_success
-}
-
-func (e HTTP_code) Error() string {
-	return fmt.Sprintf("Request Error Message: %s", e.err_message)
-}
-
 func (b breadcrumb) UpdateRequest(ctx context.Context, property string, value interface{}, auth *domain.RedfishAuthorizationProperty) (interface{}, error) {
 	b.ars.hashMu.RLock()
 	defer b.ars.hashMu.RUnlock()
@@ -260,7 +243,7 @@ func (b breadcrumb) UpdateRequest(ctx context.Context, property string, value in
 	}
 
 	if len(reqIDs) == 0 {
-		return nil, HTTP_code{err_message: errs, any_success: num_success}
+		return nil, domain.HTTP_code{Err_message: errs, Any_success: num_success}
 	}
 	timer := time.NewTimer(time.Duration(patch_timeout*len(reqIDs)) * time.Second)
 	defer timer.Stop()
@@ -290,10 +273,10 @@ func (b breadcrumb) UpdateRequest(ctx context.Context, property string, value in
 				}
 			}
 			if len(reqIDs) == 0 {
-				return nil, HTTP_code{err_message: errs, any_success: num_success}
+				return nil, domain.HTTP_code{Err_message: errs, Any_success: num_success}
 			}
 		case <-timer.C:
-			return nil, HTTP_code{err_message: []string{timeout_response}, any_success: num_success}
+			return nil, domain.HTTP_code{Err_message: []string{timeout_response}, Any_success: num_success}
 
 		case <-ctx.Done():
 			return nil, nil
