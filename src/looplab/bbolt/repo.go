@@ -107,7 +107,6 @@ func (r *Repo) Save(ctx context.Context, entity eh.Entity) error {
 	encoder := gob.NewEncoder(encodedEntity)
 	err := encoder.Encode(&entity)
 	if err != nil {
-		fmt.Println("error in encoding Entity", err)
 		return eh.RepoError{
 			Err:       eh.ErrCouldNotSaveEntity,
 			BaseErr:   ErrEntityEncodeError,
@@ -118,13 +117,11 @@ func (r *Repo) Save(ctx context.Context, entity eh.Entity) error {
 	r.db.Update(func(tx *bbolt.Tx) error {
 		b, err := tx.CreateBucketIfNotExists([]byte(eh.NamespaceFromContext(ctx)))
 		if err != nil {
-			fmt.Println("Bucket Not Created: ", err)
 			return nil
 		}
 
 		err = b.Put([]byte(entity.EntityID()), encodedEntity.Bytes())
 		if err != nil {
-			fmt.Println("Save error:", err)
 		}
 
 		return err

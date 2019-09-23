@@ -50,8 +50,8 @@ type ComponentRemovedData struct {
 }
 
 type HealthEventData struct {
-	FQDD     string
-	Health   string
+	FQDD   string
+	Health string
 }
 type InstPowerEventData struct {
 	FQDD      string

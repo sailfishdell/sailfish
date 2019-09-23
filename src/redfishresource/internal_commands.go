@@ -258,6 +258,7 @@ func UpdateAgg(a *RedfishResourceAggregate, pathSlice []string, v interface{}) e
 //  This is handled by eventhorizon code.
 //  When a CommandHandler "Handle" is called it will retrieve the aggregate from the DB.  and call this Handle. Then save the aggregate 'a' back to the db.  no locking is required..
 func (c *UpdateRedfishResourceProperties2) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
+
 	requestLogger := ContextLogger(ctx, "UpdateRedfishResourceProperty2")
 
 	d := &RedfishResourcePropertiesUpdatedData2{
@@ -361,7 +362,7 @@ var injectChanSlice chan *InjectEvent
 var injectChan chan eh.Event
 
 // inject event timeout
-var IETIMEOUT time.Duration= 6 * time.Second
+var IETIMEOUT time.Duration = 6 * time.Second
 
 func StartInjectService(logger log.Logger, d *DomainObjects) {
 	injectChanSlice = make(chan *InjectEvent, 100)
@@ -442,7 +443,7 @@ func StartInjectService(logger log.Logger, d *DomainObjects) {
 					copy := []InjectEvent{}
 					for _, k := range queued {
 						// reset sailfish event seq counter
-						if k.EventSeq == -1{
+						if k.EventSeq == -1 {
 							k.EventSeq = 0
 							currentSeq = 0
 						}
@@ -485,7 +486,7 @@ func StartInjectService(logger log.Logger, d *DomainObjects) {
 							// use this event as the new current sequence count
 							flag = true
 							logger.Crit("InjectService: Current sequence count changed due to timeout", "Old Value", currentSeq, "New Value", eventSeq)
-							currentSeq = eventSeq -1 
+							currentSeq = eventSeq - 1
 						}
 
 						if eventSeq == currentSeq+1 {
@@ -535,12 +536,12 @@ func (c *InjectEvent) Handle(ctx context.Context, a *RedfishResourceAggregate) e
 	a.ID = injectUUID
 	c.ctx = ctx
 
-        if c.Synchronous{
-                c.sendToChn(c.ctx)
- 
-        } else {
-                injectChanSlice <- c
-        }
+	if c.Synchronous {
+		c.sendToChn(c.ctx)
+
+	} else {
+		injectChanSlice <- c
+	}
 
 	return nil
 }
@@ -640,9 +641,7 @@ func (c *InjectEvent) sendToChn(ctx context.Context) error {
 		e.Add(1)
 		injectChan <- e
 
-
 	}
-
 
 	return nil
 }

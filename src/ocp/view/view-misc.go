@@ -107,11 +107,10 @@ func (s *View) PropertyPatch(
 		return errors.New(fmt.Sprintf("metadata specifies a nonexistent controller name: %v\n", meta))
 	}
 
-
 	property, ok := meta["property"].(string)
 	if ok {
 
-		newval, err := controller.UpdateRequest(ctx, property, encopts.Parse , auth)
+		newval, err := controller.UpdateRequest(ctx, property, encopts.Parse, auth)
 		log.MustLogger("PATCH").Debug("update request", "newval", newval, "err", err)
 		if e, ok := err.(isHTTPCode); ok {
 			any_success := e.AnySuccess()

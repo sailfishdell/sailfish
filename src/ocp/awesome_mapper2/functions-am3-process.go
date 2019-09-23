@@ -326,8 +326,8 @@ func round2DecPlaces(value float64, nilFlag bool) interface{} {
 	}
 	return val
 }
-func epoch2Date(date int64) time.Time {
-	return time.Unix(date, 0)
+func epoch2Date(date int64) string {
+	return time.Unix(date, 0).String()
 }
 
 func zero2null(value int) interface{} {

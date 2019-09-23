@@ -8,7 +8,7 @@ import (
 )
 
 var (
-	GenericPlugin= domain.PluginType("Generic")
+	GenericPlugin = domain.PluginType("Generic")
 )
 
 func GenericDefPlugin(ch eh.CommandHandler, d *domain.DomainObjects) {
@@ -28,11 +28,11 @@ func (s *Generic) PropertyPatch(
 	agg *domain.RedfishResourceAggregate,
 	auth *domain.RedfishAuthorizationProperty,
 	rrp *domain.RedfishResourceProperty,
-	encopts interface{}, // returns patch json body
+	encopts *domain.NuEncOpts,
 	meta map[string]interface{},
 ) error {
 	pathMapStr := map[string]interface{}{}
-	domain.Map2Path(encopts, pathMapStr, "")
+	domain.Map2Path(encopts.Request, pathMapStr, "")
 	for pathStr, value := range pathMapStr {
 		pathSlice := strings.Split(pathStr, "/")
 		domain.UpdateAgg(agg, pathSlice, value)

@@ -26,10 +26,10 @@ func NewGet(ctx context.Context, agg *RedfishResourceAggregate, rrp *RedfishReso
 		path:    "",
 	}
 
-	return rrp.RunMetaFunctions(ctx, agg, auth, opts)
+	return rrp.runMetaFunctions(ctx, map[string]interface{}{}, agg, auth, opts)
 }
 
-func NewPatch(ctx context.Context, agg *RedfishResourceAggregate, rrp *RedfishResourceProperty, auth *RedfishAuthorizationProperty, body interface{}) error {
+func NewPatch(ctx context.Context, response map[string]interface{}, agg *RedfishResourceAggregate, rrp *RedfishResourceProperty, auth *RedfishAuthorizationProperty, body interface{}) error {
 	// Paste in redfish spec stuff here
 	// 200 if anything succeeds, 400 if everything fails
 	opts := NuEncOpts{
@@ -40,7 +40,7 @@ func NewPatch(ctx context.Context, agg *RedfishResourceAggregate, rrp *RedfishRe
 		path:    "",
 	}
 
-	return rrp.RunMetaFunctions(ctx, agg, auth, opts)
+	return rrp.runMetaFunctions(ctx, map[string]interface{}{}, agg, auth, opts)
 }
 
 type nuProcessFn func(context.Context, *RedfishResourceAggregate, *RedfishResourceProperty, *RedfishAuthorizationProperty, NuEncOpts) error
@@ -227,7 +227,7 @@ func Flatten(thing interface{}, parentlocked bool) interface{} {
 	}
 }
 
-func (rrp *RedfishResourceProperty) RunMetaFunctions(ctx context.Context, agg *RedfishResourceAggregate, auth *RedfishAuthorizationProperty, e NuEncOpts) (err error) {
+func (rrp *RedfishResourceProperty) runMetaFunctions(ctx context.Context, response map[string]interface{}, agg *RedfishResourceAggregate, auth *RedfishAuthorizationProperty, e NuEncOpts) (err error) {
 	rrp.Lock()
 	defer rrp.Unlock()
 
@@ -236,7 +236,7 @@ func (rrp *RedfishResourceProperty) RunMetaFunctions(ctx context.Context, agg *R
 		return
 	}
 
-	helperError := helper(ctx, agg, auth, e, rrp.Value)
+	helperError := helper(ctx, response, agg, auth, e, rrp.Value)
 	// TODO: need to collect messages here
 
 	if err != nil {
@@ -262,11 +262,11 @@ type numSuccess interface {
 	GetNumSuccess() int
 }
 
-func helper(ctx context.Context, agg *RedfishResourceAggregate, auth *RedfishAuthorizationProperty, encopts NuEncOpts, v interface{}) error {
+func helper(ctx context.Context, response map[string]interface{}, agg *RedfishResourceAggregate, auth *RedfishAuthorizationProperty, encopts NuEncOpts, v interface{}) error {
 	var ok bool
 	// handle special case of RRP inside RRP.Value of parent
 	if vp, ok := v.(*RedfishResourceProperty); ok {
-		return vp.RunMetaFunctions(ctx, agg, auth, encopts)
+		return vp.runMetaFunctions(ctx, response, agg, auth, encopts)
 	}
 
 	objectErrorMessages := []interface{}{}
@@ -299,7 +299,7 @@ func helper(ctx context.Context, agg *RedfishResourceAggregate, auth *RedfishAut
 			// first scrub any old extended messages
 			if strK, ok := k.Interface().(string); ok {
 				annotatedKey := strK + "@Message.ExtendedInfo"
-				val.SetMapIndex(reflect.ValueOf(annotatedKey), reflect.Value{})
+				response[annotatedKey] = reflect.Value{}
 			}
 
 			// Header information needs to always have the meta expanded
@@ -321,7 +321,7 @@ func helper(ctx context.Context, agg *RedfishResourceAggregate, auth *RedfishAut
 			}
 			mapVal := val.MapIndex(k)
 			if mapVal.IsValid() {
-				err := helper(ctx, agg, auth, newEncOpts, mapVal.Interface())
+				err := helper(ctx, response, agg, auth, newEncOpts, mapVal.Interface())
 				if err == nil {
 					continue
 				}
@@ -351,10 +351,11 @@ func helper(ctx context.Context, agg *RedfishResourceAggregate, auth *RedfishAut
 					if strK, ok := k.Interface().(string); ok {
 						annotatedKey := strK + "@Message.ExtendedInfo"
 						if compatible(reflect.TypeOf(propertyExtendedMessages), elemType) {
-							val.SetMapIndex(reflect.ValueOf(annotatedKey), reflect.ValueOf(propertyExtendedMessages))
+							response[annotatedKey] = propertyExtendedMessages
 						}
 					}
 				}
+
 			}
 		}
 
@@ -362,6 +363,7 @@ func helper(ctx context.Context, agg *RedfishResourceAggregate, auth *RedfishAut
 			annotatedKey := "@Message.ExtendedInfo"
 			if compatible(reflect.TypeOf(objectExtendedMessages), val.Type().Elem()) {
 				val.SetMapIndex(reflect.ValueOf(annotatedKey), reflect.ValueOf(objectExtendedMessages))
+
 			}
 		}
 
@@ -379,7 +381,7 @@ func helper(ctx context.Context, agg *RedfishResourceAggregate, auth *RedfishAut
 				"@Message.ExtendedInfo": objectErrorMessages,
 			}
 			if compatible(reflect.TypeOf(value), val.Type().Elem()) {
-				val.SetMapIndex(reflect.ValueOf(annotatedKey), reflect.ValueOf(value))
+				response[annotatedKey] = value
 			}
 		} else {
 			if agg != nil {
@@ -391,7 +393,7 @@ func helper(ctx context.Context, agg *RedfishResourceAggregate, auth *RedfishAut
 		for i := 0; i < val.Len(); i++ {
 			sliceVal := val.Index(i)
 			if sliceVal.IsValid() {
-				err := helper(ctx, agg, auth, encopts, sliceVal.Interface())
+				err := helper(ctx, response, agg, auth, encopts, sliceVal.Interface())
 				if err == nil {
 					continue
 				}
