@@ -154,7 +154,6 @@ func getAttrValue(m *model.Model, group, gindex, name string) (ret interface{}, 
 	return value, ok
 }
 
-
 func (b *breadcrumb) UpdateRequest(ctx context.Context, property string, value interface{}, auth *domain.RedfishAuthorizationProperty) (interface{}, error) {
 	b.s.RLock()
 	defer b.s.RUnlock()

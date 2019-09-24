@@ -77,7 +77,6 @@ func (s *View) PropertyGet(
 
 func (s *View) PropertyPatch(
 	ctx context.Context,
-	resp map[string]interface{},
 	agg *domain.RedfishResourceAggregate,
 	auth *domain.RedfishAuthorizationProperty,
 	rrp *domain.RedfishResourceProperty,
@@ -107,15 +106,15 @@ func (s *View) PropertyPatch(
 
 		newval, err := controller.UpdateRequest(ctx, property, encopts.Parse, auth)
 		log.MustLogger("PATCH").Debug("update request", "newval", newval, "err", err)
-	 	if e, ok := err.(domain.HTTP_code); ok {
-			fmt.Println("HSM HTTP code")
-			domain.AddEEMIMessage(resp, agg, "PATCHERROR",&e )
+		if e, ok := err.(domain.HTTP_code); ok {
+			domain.AddEEMIMessage(encopts.HttpResponse, agg, "PATCHERROR", &e)
 
 		} else if err == nil {
 			rrp.Value = newval
-			domain.AddEEMIMessage(resp, agg, "SUCCESS", nil)
-		}else {
-			fmt.Println("HSM unknown type")
+			domain.AddEEMIMessage(encopts.HttpResponse, agg, "SUCCESS", nil)
+		} else {
+			log.MustLogger("PATCH").Debug("controller.UdpateRequest err is an unknown type", err)
+			return errors.New(fmt.Sprintf("controller.UdpateRequest err is an unknown type %t", err))
 		}
 		return nil
 

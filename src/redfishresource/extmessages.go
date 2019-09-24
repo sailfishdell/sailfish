@@ -1,7 +1,6 @@
 package domain
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -47,97 +46,24 @@ func (e *ExtendedInfo) GetExtendedInfo() map[string]interface{} {
 	return info
 }
 
-//
-// property level
-//
-
-type PropertyExtendedInfoMessages struct {
-	propMsgs []interface{}
+type HTTP_code struct {
+	Err_message []string
+	Any_success int
 }
 
-func NewPropertyExtendedInfoMessages(msgs []interface{}) *PropertyExtendedInfoMessages {
-	o := &PropertyExtendedInfoMessages{}
-	o.propMsgs = make([]interface{}, len(msgs))
-	copy(o.propMsgs, msgs)
-	return o
+func (e HTTP_code) ErrMessage() []string {
+	return e.Err_message
 }
 
-func (p *PropertyExtendedInfoMessages) GetPropertyExtendedMessages() []interface{} {
-	return p.propMsgs
+func (e HTTP_code) AnySuccess() int {
+	return e.Any_success
 }
 
-func (o *PropertyExtendedInfoMessages) Error() string {
-	return "ERROR"
+func (e HTTP_code) Error() string {
+	return fmt.Sprintf("Request Error Message: %s", e.Err_message)
 }
 
-//
-// object level
-//
-
-type ObjectExtendedInfoMessages struct {
-	objMsgs []interface{}
-}
-
-func NewObjectExtendedInfoMessages(msgs []interface{}) *ObjectExtendedInfoMessages {
-	o := &ObjectExtendedInfoMessages{}
-	o.objMsgs = make([]interface{}, len(msgs))
-	copy(o.objMsgs, msgs)
-	return o
-}
-
-func (o *ObjectExtendedInfoMessages) GetObjectExtendedMessages() []interface{} {
-	return o.objMsgs
-}
-
-func (o *ObjectExtendedInfoMessages) Error() string {
-	return "ERROR"
-}
-
-//
-// object level err
-//
-
-type ObjectExtendedErrorMessages struct {
-	objErrs []interface{}
-}
-
-func NewObjectExtendedErrorMessages(msgs []interface{}) *ObjectExtendedErrorMessages {
-	o := &ObjectExtendedErrorMessages{}
-	o.objErrs = make([]interface{}, len(msgs))
-	copy(o.objErrs, msgs)
-	return o
-}
-
-func (o *ObjectExtendedErrorMessages) GetObjectErrorMessages() []interface{} {
-	return o.objErrs
-}
-
-func (o *ObjectExtendedErrorMessages) Error() string {
-	return "ERROR"
-}
-
-//
-// combined
-//
-
-type CombinedPropObjInfoError struct {
-	ObjectExtendedErrorMessages
-	ObjectExtendedInfoMessages
-	PropertyExtendedInfoMessages
-	NumSuccess int
-}
-
-func (c *CombinedPropObjInfoError) GetNumSuccess() int { return c.NumSuccess }
-
-func (c *CombinedPropObjInfoError) Error() string { return "combined" }
-
-
-type PropPatcher interface {
-	PropertyPatch(context.Context, map[string]interface{},*RedfishResourceAggregate, *RedfishAuthorizationProperty, *RedfishResourceProperty, *NuEncOpts, map[string]interface{}) error
-}
-
-func AddEEMIMessage(response map[string]interface{}, a *RedfishResourceAggregate, errorType string, errs *HTTP_code) error{
-	fmt.Println("HSM ENteredEEMIM", errorType, errs)
+func AddEEMIMessage(response map[string]interface{}, a *RedfishResourceAggregate, errorType string, errs *HTTP_code) error {
 	bad_json := ExtendedInfo{
 		Message:             "The request body submitted was malformed JSON and could not be parsed by the receiving service.",
 		MessageArgs:         []string{}, //FIX ME
@@ -159,30 +85,28 @@ func AddEEMIMessage(response map[string]interface{}, a *RedfishResourceAggregate
 		Resolution:          "Correct the request body and resubmit the request if it failed.",
 		Severity:            "Warning",
 	}
-	if errorType == "SUCCESS"{
-		fmt.println("HSM E2")
+
+	if errorType == "SUCCESS" {
 		a.StatusCode = 200
 		default_msg := ExtendedInfo{}
-		default_msg.GetDefaultExtendedInfo()
-		addToEEMIList(response , default_msg,true)
-	}else if errorType == "BADJSON"{
-		fmt.println("HSM E3")
-		addToEEMIList(response , bad_json, false)
-	}else if errorType == "BADREQUEST"{
-		fmt.println("HSM E4")
-		addToEEMIList(response , bad_request, false)
-	}else if errorType == "PATCHERROR"{
+		addToEEMIList(response, default_msg, true)
+	} else if errorType == "BADJSON" {
+		a.StatusCode = 400
+		addToEEMIList(response, bad_json, false)
+	} else if errorType == "BADREQUEST" {
+		a.StatusCode = 400
+		addToEEMIList(response, bad_request, false)
+	} else if errorType == "PATCHERROR" {
 		any_success := errs.AnySuccess()
-		if any_success >= 0 {
+		if any_success > 0 {
 			a.StatusCode = 200
 			default_msg := ExtendedInfo{}
-			//default_msg.GetDefaultExtendedInfo()
-			addToEEMIList(response , default_msg,true)
+			addToEEMIList(response, default_msg, true)
+		} else {
+			a.StatusCode = 400
 		}
-			
+
 		for _, err_msg := range errs.ErrMessage() {
-			//generted extended error info msg for each err
-			//de-serialize err_msg here! need to turn from string into map[string]interface{}
 			msg := ExtendedInfo{}
 			err := json.Unmarshal([]byte(err_msg), &msg)
 			if err != nil {
@@ -200,67 +124,39 @@ func AddEEMIMessage(response map[string]interface{}, a *RedfishResourceAggregate
 }
 
 
+func addToEEMIList(response map[string]interface{}, eemi ExtendedInfo, isSuccess bool) {
+	extendedInfoL := &[]map[string]interface{}{}
+	var ok bool
 
-type HTTP_code struct {
-	Err_message []string
-	Any_success int
-}
-
-func (e HTTP_code) ErrMessage() []string {
-	return e.Err_message
-}
-
-func (e HTTP_code) AnySuccess() int {
-	return e.Any_success
-}
-func (e HTTP_code) Error() string {
-	return fmt.Sprintf("Request Error Message: %s", e.Err_message)
-}
-
-func addToEEMIList(response map[string]interface{}, eemi ExtendedInfo, isSuccess bool){
-	fmt.Println("HSM test")
-	var respList []interface{}
-	var respIntf interface{}
-	if isSuccess == false {
-		fmt.Println("HSM 2 test")
-		_, ok:= response["error"]
-		if ok{
-			
-			response["error"] = map[string][]interface{}{ "@Message.ExtendedInfo": []interface{}{}}
-		}
-		
-		fmt.Println("HSM 3 test")
-		respIntf = response["error"]
-		t, ok:= respIntf.(map[string]interface{})
-		if ok {
-		        
-			fmt.Println("error")
-			return
-		}
-		fmt.Println("HSM 4 test")
-		respIntf,ok = t["@Message.ExtendedInfo"]
-	} else {
-		_, ok:= response["@Message.ExtendedInfo"]
-		if ok{
-			response["@Message.ExtendedInfo"] = []interface{}{}
-		}
-		respIntf= response["@Message.ExtendedInfo"]
-	}
-
-	respList, ok := respIntf.([]interface{})
-	if ok {
-		fmt.Println("failed to make slice of interfaces")
+	if isSuccess {
+		response["@Message.ExtendedInfo"] = extendedInfoL
+		*extendedInfoL = append(*extendedInfoL, eemi.GetDefaultExtendedInfo())
 		return
 	}
-	respList = append(respList, eemi.GetExtendedInfo())
-	fmt.Println("HSM respList", respList)
+
+	// not success message
+	response["code"] = "Base.1.0.GeneralError"
+	response["message"] = "A general error has occurred.  See ExtendedInfo for more information"
+
+	t, ok := response["error"]
+	if !ok {
+		response["error"] = map[string]*[]map[string]interface{}{
+			"@Message.ExtendedInfo": extendedInfoL}
+		*extendedInfoL = append(*extendedInfoL, eemi.GetExtendedInfo())
+	} else {
+
+		if !ok {
+			return
+		}
+		t2, ok := t.(map[string]*[]map[string]interface{})
+
+		if !ok {
+			return
+		}
+		t3 := t2["@Message.ExtendedInfo"]
+		*t3 = append(*t3, eemi.GetExtendedInfo())
+
+	}
+
 }
 
-
-
-
-
-
-type PropGetter interface {
-	PropertyGet(context.Context, *RedfishResourceAggregate, *RedfishAuthorizationProperty, *RedfishResourceProperty, map[string]interface{}) error
-}

@@ -78,6 +78,7 @@ func (c *CreateRedfishResource) AggregateID() eh.UUID { return c.ID }
 func (c *CreateRedfishResource) CommandType() eh.CommandType { return CreateRedfishResourceCommand }
 
 func (c *CreateRedfishResource) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
+
 	requestLogger := ContextLogger(ctx, "internal_commands")
 	requestLogger.Info("CreateRedfishResource", "META", a.Properties.Meta)
 

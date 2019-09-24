@@ -33,7 +33,6 @@ type syncEvent interface {
 
 func (s *SledProfile) PropertyPatch(
 	ctx context.Context,
-	response map[string]interface{},
 	agg *domain.RedfishResourceAggregate,
 	auth *domain.RedfishAuthorizationProperty,
 	rrp *domain.RedfishResourceProperty,
@@ -113,13 +112,13 @@ func (s *SledProfile) PropertyPatch(
 	} else {
 		data, _ := event.Data().(*a.AttributeUpdatedData)
 
-		hc :=  domain.HTTP_code{}
+		hc := domain.HTTP_code{}
 		if data.Error != "" {
 			hc.Err_message = append(hc.Err_message, data.Error)
-			domain.AddEEMIMessage(response, agg, "PATCHERROR",&hc)
+			domain.AddEEMIMessage(encopts.HttpResponse, agg, "PATCHERROR", &hc)
 		} else {
-			hc.Any_success = 1 
-			domain.AddEEMIMessage(response, agg, "SUCCESS", &hc)
+			hc.Any_success = 1
+			domain.AddEEMIMessage(encopts.HttpResponse, agg, "SUCCESS", &hc)
 		}
 
 	}
