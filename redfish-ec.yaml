@@ -905,9 +905,12 @@ views:
       "Logger": ["module", "IOM"]
       "Models":
         "default":  {"unique_name": "FQDD", "inst_power": "0", "managed_by": "array(rooturi + '/Managers/CMC.Integrated.1')"}
+        "swinv2":  {"unique_name": "FQDD", "managed_by": "array(rooturi + '/Managers/CMC.Integrated.1')"}
       "Controllers":
         - "fn": "ARMapper"
           "params": {"modelname": "default", "cfgsection": "firmware/inventory", "mappinguniquename": "'iom_fw_mapper:' + FQDD", "AddToView": "ar_mapper_inv"}
+        - "fn": "ARMapper"
+          "params": {"swinv2": "default", "cfgsection": "firmware/inventory/2", "mappinguniquename": "'iom_fw_mapper2:' + FQDD", "AddToView": "ar_mapper_inv"}
         - "fn": "ARMapper"
           "params": {"modelname": "default", "cfgsection": "Chassis/IOM.Slot", "mappinguniquename": "'iom_mapper:' + FQDD", "AddToView": "ar_mapper"}
         - "fn": "AM2"
@@ -921,6 +924,8 @@ views:
           "params": {"existing": "default", "linkname": "swinv"}
         - "fn": "withModel"
           "params": {"name": "global_health", "expr": "globalHealthModel"}
+        - "fn": "withModel"
+          "params": {"name": "swinv2", "expr": "globalHealthModel"}
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
         - "fn": "stdFormatters"
@@ -1404,6 +1409,18 @@ mappings:
         - {Property: "fw_updateable",       FQDD: "{FQDD}", Group: "FWInventory", Index: "1", Name: "Updateable" }
         - {Property: "fw_version",          FQDD: "{FQDD}", Group: "FWInventory", Index: "1", Name: "Version" }
         - {Property: "fw_version_sequence", FQDD: "{FQDD}", Group: "FWInventory", Index: "1", Name: "VersionSequence" }
+
+    firmware/inventory/2:
+        - {Property: "fw_device_class",     FQDD: "{FQDD}", Group: "FWInventory", Index: "2", Name: "DeviceClass" }
+        - {Property: "fw_description",      FQDD: "{FQDD}", Group: "FWInventory", Index: "2", Name: "Description"}
+        - {Property: "fw_device_context",   FQDD: "{FQDD}", Group: "FWInventory", Index: "2", Name: "DeviceContext" }
+        - {Property: "fw_device_instance",  FQDD: "{FQDD}", Group: "FWInventory", Index: "2", Name: "DeviceInstance" }
+        - {Property: "fw_fqdd",             FQDD: "{FQDD}", Group: "FWInventory", Index: "2", Name: "FQDD" }
+        - {Property: "fw_name",             FQDD: "{FQDD}", Group: "FWInventory", Index: "2", Name: "Name" }
+        - {Property: "fw_install_date",     FQDD: "{FQDD}", Group: "FWInventory", Index: "2", Name: "InstallDate" }
+        - {Property: "fw_updateable",       FQDD: "{FQDD}", Group: "FWInventory", Index: "2", Name: "Updateable" }
+        - {Property: "fw_version",          FQDD: "{FQDD}", Group: "FWInventory", Index: "2", Name: "Version" }
+        - {Property: "fw_version_sequence", FQDD: "{FQDD}", Group: "FWInventory", Index: "2", Name: "VersionSequence" }
 
 
     fpga_inventory:
