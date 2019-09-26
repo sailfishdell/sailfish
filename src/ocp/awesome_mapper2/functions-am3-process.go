@@ -237,6 +237,7 @@ func init() {
 		return aggUpdateFn, nil, nil
 	})
 
+	// should not be used until IOMConfig_objects and Capabilities are ironed out
 	AddAM3ProcessSetupFunction("updateIOMConfigData", func(logger log.Logger, processConfig interface{}) (processFunc, processSetupFunc, error) {
 		// Model Update Function
 		aggUpdateFn := func(mp *MapperParameters, event eh.Event, ch eh.CommandHandler, d *domain.DomainObjects) error {

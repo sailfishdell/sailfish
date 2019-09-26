@@ -1325,7 +1325,12 @@ awesome_mapper:
 
     iom_config:
       - { SelectEventType: "IomCapability", Select: "data.Name == FQDD",
-             Process: { "name": "updateIOMConfigData", "params":[]}}
+            ModelUpdate: [
+                {Property: "config", Query: "data.IOMConfig_objects" },
+                {Property: "capabilities", Query: "data.Capabilities" },
+                {Property: "managed", Query: "data.Internal_mgmt_supported" },
+                {Property: "capCount", Query: "data.CapabilitiesCount" }]}
+
 
 
     power_control:
