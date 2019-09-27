@@ -48,7 +48,7 @@ func (r *Repo) Find(ctx context.Context, id eh.UUID) (ret eh.Entity, err error) 
 			// entity doesn't exist: we dont care
 			return nil
 		}
-		decoder := gob.NewDecoder(bytes.NewBuffer(v))
+		decoder := gob.NewDecoder(bytes.NewReader(v))
 		err := decoder.Decode(&ret)
 		if err != nil {
 			// couldnt decode it: academically interesting... why?
@@ -76,7 +76,7 @@ func (r *Repo) FindAll(ctx context.Context) (ret []eh.Entity, err error) {
 			return nil
 		}
 		b.ForEach(func(k, v []byte) error {
-			decoder := gob.NewDecoder(bytes.NewBuffer(v))
+			decoder := gob.NewDecoder(bytes.NewReader(v))
 			err := decoder.Decode(&model)
 			if err != nil {
 				fmt.Println("decode fail: ", err)
