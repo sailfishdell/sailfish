@@ -235,12 +235,12 @@ func UpdateAgg(a *RedfishResourceAggregate, pathSlice []string, v interface{}) e
 		}
 		switch k.(type) {
 		case *RedfishResourceProperty:
-			k2,ok := k.(*RedfishResourceProperty)
+			k2, ok := k.(*RedfishResourceProperty)
 			if !ok {
 				return fmt.Errorf("UpdateAgg Failed, RedfishResourcePropertyFailed")
-			
+
 			}
-			err :=validateValue(v)
+			err := validateValue(v)
 			if err != nil {
 				return err
 			}
@@ -253,7 +253,7 @@ func UpdateAgg(a *RedfishResourceAggregate, pathSlice []string, v interface{}) e
 				tmp := k2.Value
 				loc, ok = tmp.(map[string]interface{})
 				if !ok {
-					return fmt.Errorf("UpdateAgg Failed %s type cast to map[string]interface{} for %+v  errored for %+v", a.ResourceURI, p,pathSlice)
+					return fmt.Errorf("UpdateAgg Failed %s type cast to map[string]interface{} for %+v  errored for %+v", a.ResourceURI, p, pathSlice)
 				}
 			}
 		default:
@@ -265,11 +265,11 @@ func UpdateAgg(a *RedfishResourceAggregate, pathSlice []string, v interface{}) e
 }
 
 func validateValue(val interface{}) error {
-	switch val.(type){
-		case []interface{}, map[string]interface{}: 
-			return fmt.Errorf("Update Agg does not support type %T",val) 
-		default:
-			return nil
+	switch val.(type) {
+	case []interface{}, map[string]interface{}:
+		return fmt.Errorf("Update Agg does not support type %T", val)
+	default:
+		return nil
 	}
 }
 
