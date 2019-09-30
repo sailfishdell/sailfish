@@ -381,7 +381,7 @@ var injectChanSlice chan *InjectEvent
 var injectChan chan eh.Event
 
 // inject event timeout
-var IETIMEOUT time.Duration = 6 * time.Second
+var IETIMEOUT time.Duration = 1 * time.Second
 
 func StartInjectService(logger log.Logger, d *DomainObjects) {
 	injectChanSlice = make(chan *InjectEvent, 100)

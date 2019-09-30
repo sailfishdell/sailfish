@@ -42,10 +42,10 @@ func (rh *RedfishSSEHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	requestLogger.Info("Trying to start RedfishSSE Stream for request.", "context", rfSubContext)
 
 	l, err := rh.d.EventWaiter.Listen(ctx, func(event eh.Event) bool {
-		if event.EventType() != eventservice.ExternalRedfishEvent {
-			return false
+		if event.EventType() == eventservice.ExternalRedfishEvent || event.EventType() == eventservice.ExternalMetricEvent {
+			return true
 		}
-		return true
+		return false
 	})
 	if err != nil {
 		requestLogger.Crit("Could not create an event waiter.", "err", err)
@@ -121,11 +121,11 @@ func (rh *RedfishSSEHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			// TODO: we should encode to output rather than buffering internally in a string
 			fmt.Fprintf(w, "id: %d\n", evt.Id)
 			fmt.Fprintf(w, "data: %s\n\n", d)
-		} else {
+		} else if evt, ok := event.Data().(eventservice.MetricReportData); ok {
 			// Handle metric reports
 			// TODO: find a better way to unify these
 			// sucks that we have to handle these two separately, but for now have to do it this way
-			d, err := json.MarshalIndent(event.Data(), "data: ", "    ")
+			d, err := json.MarshalIndent(evt.Data, "data: ", "    ")
 			if err != nil {
 				requestLogger.Error("MARSHAL SSE (metric report) FAILED", "err", err, "data", event.Data(), "event", event)
 				return

@@ -214,6 +214,15 @@ func (es *EventService) evaluateEvent(log log.Logger, subCtx SubscriptionCtx, ev
 
 	eventlist := []eventBinary{}
 
+	if subCtx.Protocol != "Redfish" {
+		log.Info("Not Redfish Protocol")
+		return
+	}
+	if subCtx.Destination == "" {
+		log.Info("Destination is empty, not sending event")
+		return
+	}
+
 	switch typ := event.EventType(); typ {
 	case domain.RedfishResourceRemoved:
 		log.Info("Cancelling subscription", "uri", URI)
@@ -232,11 +241,6 @@ func (es *EventService) evaluateEvent(log log.Logger, subCtx SubscriptionCtx, ev
 			return
 		}
 
-		if subCtx.Protocol != "Redfish" {
-			log.Info("Not Redfish Protocol")
-			return
-		}
-
 		if subCtx.firstEvent {
 			//MSM work around, replay mCHARS faults into events
 			subCtx.firstEvent = false
@@ -247,16 +251,12 @@ func (es *EventService) evaluateEvent(log log.Logger, subCtx SubscriptionCtx, ev
 			}
 		}
 
-		if subCtx.Destination != "" {
-			log.Info("Send to destination", "dest", subCtx.Destination)
-			eventlist = makeExternalRedfishEvent(subCtx, eventPtr.Events, uuid)
-			if len(eventlist) == 0 {
-				return
-			}
-			es.postExternalEvent(subCtx, event, eventlist)
-		} else {
-			log.Info("Destination is empty, not sending event")
+		eventlist = makeExternalRedfishEvent(subCtx, eventPtr.Events, uuid)
+		if len(eventlist) == 0 {
+			return
 		}
+		es.postExternalEvent(subCtx, event, eventlist)
+
 	case ExternalMetricEvent:
 		evt := event.Data()
 		evtPtr, ok := evt.(MetricReportData)
