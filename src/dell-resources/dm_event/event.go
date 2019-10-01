@@ -11,6 +11,7 @@ const (
 	ThermalSensorEvent                  = eh.EventType("ThermalSensorEvent")
 	PowerSupplyObjEvent                 = eh.EventType("PowerSupplyObjEvent")
 	PowerConsumptionDataObjEvent        = eh.EventType("PowerConsumptionDataObjEvent")
+	FanEvent                            = eh.EventType("FanEvent")
 	AvgPowerConsumptionStatDataObjEvent = eh.EventType("AvgPowerConsumptionStatDataObjEvent")
 	IomCapability                       = eh.EventType("IomCapability")
 	ComponentRemoved                    = eh.EventType("ComponentRemoved")
@@ -28,6 +29,7 @@ func init() {
 	eh.RegisterEventData(AvgPowerConsumptionStatDataObjEvent, func() eh.EventData { return &AvgPowerConsumptionStatDataObjEventData{} })
 	eh.RegisterEventData(FileReadEvent, func() eh.EventData { return &FileReadEventData{} })
 	eh.RegisterEventData(FileLinkEvent, func() eh.EventData { return &FileLinkEventData{} })
+	eh.RegisterEventData(FanEvent, func() eh.EventData { return &FanEventData{} })
 	eh.RegisterEventData(DataManagerEvent, func() eh.EventData {
 		var f DataManagerEventData
 		return f
@@ -94,6 +96,27 @@ type SlotBasedSoftwareInventoryObjectobj struct {
 	SlotNum                     int                            `json:"SlotNum"`
 	UniqueID                    int                            `json:"UniqueID"`
 }
+
+
+type FanEventData struct {
+       ObjectHeader      DataObjectHeader
+       Fanpwm            float64 `json:"fanpwm"`
+       Key               string
+       FanName           string
+       Fanpwm_int        int `json:"fanpwm_int"`
+       VendorName        string
+       WarningThreshold  int `json:"warningThreshold"`
+       DeviceName        string
+       TachName          string
+       CriticalThreshold int `json:"criticalThreshold"`
+       Fanhealth         int `json:"fanhealth"`
+       Numrotors         int `json:"numrotors"`
+       Rotor2rpm         int `json:"rotor2rpm"`
+       Rotor1rpm         int `json:"rotor1rpm"`
+       FanStateMask      int `json:"fanStateMask"`
+}
+
+
 type PowerSupplyObjEventData struct {
 	ObjectHeader                     DataObjectHeader
 	SlotBasedSoftwareInventoryObject SlotBasedSoftwareInventoryObjectobj `json:"slotBasedSoftwareInventoryObject"`
