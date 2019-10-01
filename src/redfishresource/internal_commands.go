@@ -383,6 +383,7 @@ func StartInjectService(logger log.Logger, d *DomainObjects) {
 				})
 
 				flag := false
+        copy := []InjectEvent{}
 				for i, k := range queued {
 					eventSeq := int(k.EventSeq)
 					// take the lowest sequenced event that is still greater than the current sequence count
@@ -398,7 +399,7 @@ func StartInjectService(logger log.Logger, d *DomainObjects) {
 							currentSeq = eventSeq
 							k.sendToChn(k.ctx)
 						} else {
-							queued = queued[i:]
+							copy = queued[i:]
 							break
 						}
 					} else {
@@ -412,6 +413,7 @@ func StartInjectService(logger log.Logger, d *DomainObjects) {
 					}
 				}
 				//logger.Warn("Timeout finished", "New Value", currentSeq)
+        queued = copy
 				sequence_timer.Reset(IETIMEOUT)
 			}
 		}
