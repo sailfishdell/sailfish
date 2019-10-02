@@ -96,8 +96,8 @@ func (c *PATCH) SetUserDetails(a *RedfishAuthorizationProperty) string {
 	return "checkMaster"
 }
 func (c *PATCH) ParseHTTPRequest(r *http.Request) error {
-	json.NewDecoder(r.Body).Decode(&c.Body)
-	if len(c.Body) == 0 {
+	err := json.NewDecoder(r.Body).Decode(&c.Body)
+	if len(c.Body) == 0 || err != nil {
 		err_body := map[string]interface{}{"Attributes": map[string]interface{}{"ERROR": "BADJSON"}}
 		c.Body = err_body
 	}
@@ -128,6 +128,7 @@ func (c *PATCH) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 	}
 
 	data.StatusCode = a.StatusCode
+
 	c.HTTPEventBus.PublishEvent(ctx, eh.NewEvent(HTTPCmdProcessed, data, time.Now()))
 
 	return nil

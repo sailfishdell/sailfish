@@ -154,23 +154,6 @@ func getAttrValue(m *model.Model, group, gindex, name string) (ret interface{}, 
 	return value, ok
 }
 
-type HTTP_code struct {
-	err_message []string
-	any_success int
-}
-
-func (e HTTP_code) ErrMessage() []string {
-	return e.err_message
-}
-
-func (e HTTP_code) AnySuccess() int {
-	return e.any_success
-}
-
-func (e HTTP_code) Error() string {
-	return fmt.Sprintf("Request Error Message: %s", e.err_message)
-}
-
 func (b *breadcrumb) UpdateRequest(ctx context.Context, property string, value interface{}, auth *domain.RedfishAuthorizationProperty) (interface{}, error) {
 	b.s.RLock()
 	defer b.s.RUnlock()
@@ -249,7 +232,7 @@ func (b *breadcrumb) UpdateRequest(ctx context.Context, property string, value i
 	}
 
 	if len(reqIDs) == 0 {
-		return nil, HTTP_code{err_message: errs, any_success: num_success}
+		return nil, domain.HTTP_code{Err_message: errs, Any_success: num_success}
 	}
 
 	// create a timer based on number of attributes to be patched
@@ -280,16 +263,16 @@ func (b *breadcrumb) UpdateRequest(ctx context.Context, property string, value i
 
 			if len(reqIDs) == 0 {
 				//all reqIDs found
-				http_response := HTTP_code{err_message: errs, any_success: num_success}
+				http_response := domain.HTTP_code{Err_message: errs, Any_success: num_success}
 				return nil, http_response
 			}
 
 		case <-timer.C:
 			//time out for any attr updated events that we are still waiting for
-			return nil, HTTP_code{err_message: []string{timeout_response}, any_success: num_success}
+			return nil, domain.HTTP_code{Err_message: []string{timeout_response}, Any_success: num_success}
 
 		case <-ctx.Done():
-			return nil, HTTP_code{err_message: nil, any_success: num_success}
+			return nil, domain.HTTP_code{Err_message: nil, Any_success: num_success}
 		}
 	}
 }

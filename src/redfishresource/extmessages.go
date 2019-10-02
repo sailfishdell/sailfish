@@ -1,5 +1,11 @@
 package domain
 
+import (
+	"encoding/json"
+	"errors"
+	"fmt"
+)
+
 //
 // extended info struct
 //
@@ -40,86 +46,117 @@ func (e *ExtendedInfo) GetExtendedInfo() map[string]interface{} {
 	return info
 }
 
-//
-// property level
-//
-
-type PropertyExtendedInfoMessages struct {
-	propMsgs []interface{}
+type HTTP_code struct {
+	Err_message []string
+	Any_success int
 }
 
-func NewPropertyExtendedInfoMessages(msgs []interface{}) *PropertyExtendedInfoMessages {
-	o := &PropertyExtendedInfoMessages{}
-	o.propMsgs = make([]interface{}, len(msgs))
-	copy(o.propMsgs, msgs)
-	return o
+func (e HTTP_code) ErrMessage() []string {
+	return e.Err_message
 }
 
-func (p *PropertyExtendedInfoMessages) GetPropertyExtendedMessages() []interface{} {
-	return p.propMsgs
+func (e HTTP_code) AnySuccess() int {
+	return e.Any_success
 }
 
-func (o *PropertyExtendedInfoMessages) Error() string {
-	return "ERROR"
+func (e HTTP_code) Error() string {
+	return fmt.Sprintf("Request Error Message: %s", e.Err_message)
 }
 
-//
-// object level
-//
+func AddEEMIMessage(response map[string]interface{}, a *RedfishResourceAggregate, errorType string, errs *HTTP_code) error {
+	bad_json := ExtendedInfo{
+		Message:             "The request body submitted was malformed JSON and could not be parsed by the receiving service.",
+		MessageArgs:         []string{}, //FIX ME
+		MessageArgsCt:       0,          //FIX ME
+		MessageId:           "Base.1.0.MalformedJSON",
+		RelatedProperties:   []string{}, //FIX ME
+		RelatedPropertiesCt: 0,          //FIX ME
+		Resolution:          "Ensure that the request body is valid JSON and resubmit the request.",
+		Severity:            "Critical",
+	}
 
-type ObjectExtendedInfoMessages struct {
-	objMsgs []interface{}
+	bad_request := ExtendedInfo{
+		Message:             "The service detected a malformed request body that it was unable to interpret.",
+		MessageArgs:         []string{},
+		MessageArgsCt:       0,
+		MessageId:           "Base.1.0.UnrecognizedRequestBody",
+		RelatedProperties:   []string{"Attributes"}, //FIX ME
+		RelatedPropertiesCt: 1,                      //FIX ME
+		Resolution:          "Correct the request body and resubmit the request if it failed.",
+		Severity:            "Warning",
+	}
+
+	if errorType == "SUCCESS" {
+		a.StatusCode = 200
+		default_msg := ExtendedInfo{}
+		addToEEMIList(response, default_msg, true)
+	} else if errorType == "BADJSON" {
+		a.StatusCode = 400
+		addToEEMIList(response, bad_json, false)
+	} else if errorType == "BADREQUEST" {
+		a.StatusCode = 400
+		addToEEMIList(response, bad_request, false)
+	} else if errorType == "PATCHERROR" {
+		any_success := errs.AnySuccess()
+		if any_success > 0 {
+			a.StatusCode = 200
+			default_msg := ExtendedInfo{}
+			addToEEMIList(response, default_msg, true)
+		} else {
+			a.StatusCode = 400
+		}
+
+		for _, err_msg := range errs.ErrMessage() {
+			msg := ExtendedInfo{}
+			err := json.Unmarshal([]byte(err_msg), &msg)
+			if err != nil {
+				//log.MustLogger("PATCH").Crit("Error could not be unmarshalled to an EEMI message")
+				return errors.New("Error updating: Could not unmarshal EEMI message")
+			}
+			addToEEMIList(response, msg, false)
+		}
+	}
+
+	if a.StatusCode != 200 {
+		a.StatusCode = 400
+	}
+	return nil
 }
 
-func NewObjectExtendedInfoMessages(msgs []interface{}) *ObjectExtendedInfoMessages {
-	o := &ObjectExtendedInfoMessages{}
-	o.objMsgs = make([]interface{}, len(msgs))
-	copy(o.objMsgs, msgs)
-	return o
+
+func addToEEMIList(response map[string]interface{}, eemi ExtendedInfo, isSuccess bool) {
+	extendedInfoL := &[]map[string]interface{}{}
+	var ok bool
+
+	if isSuccess {
+		response["@Message.ExtendedInfo"] = extendedInfoL
+		*extendedInfoL = append(*extendedInfoL, eemi.GetDefaultExtendedInfo())
+		return
+	}
+
+	// not success message
+	response["code"] = "Base.1.0.GeneralError"
+	response["message"] = "A general error has occurred.  See ExtendedInfo for more information"
+
+	t, ok := response["error"]
+	if !ok {
+		response["error"] = map[string]*[]map[string]interface{}{
+			"@Message.ExtendedInfo": extendedInfoL}
+		*extendedInfoL = append(*extendedInfoL, eemi.GetExtendedInfo())
+	} else {
+
+		if !ok {
+			return
+		}
+		t2, ok := t.(map[string]*[]map[string]interface{})
+
+		if !ok {
+			return
+		}
+		t3 := t2["@Message.ExtendedInfo"]
+		*t3 = append(*t3, eemi.GetExtendedInfo())
+
+	}
+
 }
 
-func (o *ObjectExtendedInfoMessages) GetObjectExtendedMessages() []interface{} {
-	return o.objMsgs
-}
-
-func (o *ObjectExtendedInfoMessages) Error() string {
-	return "ERROR"
-}
-
-//
-// object level err
-//
-
-type ObjectExtendedErrorMessages struct {
-	objErrs []interface{}
-}
-
-func NewObjectExtendedErrorMessages(msgs []interface{}) *ObjectExtendedErrorMessages {
-	o := &ObjectExtendedErrorMessages{}
-	o.objErrs = make([]interface{}, len(msgs))
-	copy(o.objErrs, msgs)
-	return o
-}
-
-func (o *ObjectExtendedErrorMessages) GetObjectErrorMessages() []interface{} {
-	return o.objErrs
-}
-
-func (o *ObjectExtendedErrorMessages) Error() string {
-	return "ERROR"
-}
-
-//
-// combined
-//
-
-type CombinedPropObjInfoError struct {
-	ObjectExtendedErrorMessages
-	ObjectExtendedInfoMessages
-	PropertyExtendedInfoMessages
-	NumSuccess int
-}
-
-func (c *CombinedPropObjInfoError) GetNumSuccess() int { return c.NumSuccess }
-
-func (c *CombinedPropObjInfoError) Error() string { return "combined" }
