@@ -506,11 +506,10 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 						continue
 					}
 
-					updateable, ok := updateableRaw.(string)
-					if !ok || updateable == "" || updateable == "Yes" {
-						updateable = "True"
-					} else {
-						updateable = "False"
+					updateable := false
+					updateableStr, _ := updateableRaw.(string)
+					if strings.EqualFold(updateableStr, "Yes") || strings.EqualFold(updateableStr, "True") {
+						updateable = true
 					}
 
 					installDateRaw, ok := mdl.GetPropertyOk("fw_install_date")
