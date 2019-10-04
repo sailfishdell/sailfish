@@ -267,11 +267,11 @@ var injectChanSlice chan *InjectEvent
 var injectChan chan eh.Event
 
 // inject event timeout
-var IETIMEOUT time.Duration= 6 * time.Second
+var IETIMEOUT time.Duration = 250 * time.Millisecond
 
 func StartInjectService(logger log.Logger, d *DomainObjects) {
 	injectChanSlice = make(chan *InjectEvent, 100)
-	injectChan = make(chan eh.Event, 1)
+	injectChan = make(chan eh.Event, 10)
 	logger = logger.New("module", "injectservice")
 	eb := d.EventBus
 	ew := d.EventWaiter
@@ -327,94 +327,92 @@ func StartInjectService(logger log.Logger, d *DomainObjects) {
 				if err != nil {
 					injectChan <- eh.NewEvent(WatchdogEvent, data, time.Now())
 				}
+
 			}
 		}()
 	}
 
 	// goroutine to synchronously handle the event inject queue
 	go func() {
-		queued := []InjectEvent{}
-		currentSeq := 0
-		sequence_timer := time.NewTimer(IETIMEOUT)
+		queued := []*InjectEvent{}
+		internalSeq := 0
+		// find better way to initialize sequenceTimer
+		sequenceTimer := time.NewTimer(IETIMEOUT)
+		sequenceTimer.Stop()
+		missingEvent := false
+		tries := 0
 		for {
 			select {
 			case event := <-injectChanSlice:
-				//logger.Crit("Event received", "Sequence", event.EventSeq, "Name", event.Name)
-				// on received event, always add to queue
-				queued = append(queued, *event)
-				try := true
-				for try {
-					try = false
-					copy := []InjectEvent{}
-					for _, k := range queued {
-						// reset sailfish event seq counter
-						if k.EventSeq == -1{
-							k.EventSeq = 0
-							currentSeq = 0
-						}
+				//logger.Crit("InjectService Event received", "Sequence", event.EventSeq, "Name", event.Name)
+				queued = append(queued, event)
 
-						eventSeq := int(k.EventSeq)
-						if (eventSeq == currentSeq+1) || (currentSeq == 0 && eventSeq == 0) {
-							sequence_timer.Stop()
-							// match next sequence, or startup sequence events, then continue processing queue
-							try = true
-							currentSeq = eventSeq
-							k.sendToChn(k.ctx)
-							sequence_timer.Reset(IETIMEOUT)
-						} else if eventSeq <= currentSeq {
+				// ordered events are processed.
+				for len(queued) != 0 && missingEvent == false {
+					for _, evtPtr := range queued {
+						// reset sailfish event seq counter
+						if evtPtr.EventSeq == -1 {
+							evtPtr.EventSeq = 0
+							internalSeq = 0
+						}
+						eventSeq := int(evtPtr.EventSeq)
+						//logger.Crit("InjectService: Event start", "Event Name", evtPtr.Name, "Sequence Number", evtPtr.EventSeq, "expected", internalSeq+1)
+
+						if (eventSeq == internalSeq+1) || (internalSeq == 0 && eventSeq == 0) {
+							// process event
+							evtPtr.sendToChn(evtPtr.ctx)
+							internalSeq = eventSeq
+							queued[0] = nil
+							queued = queued[1:]
+						} else if internalSeq >= eventSeq {
 							// drop all old events
 							dropped_event := &DroppedEventData{
-								Name:     k.Name,
-								EventSeq: k.EventSeq,
+								Name:     evtPtr.Name,
+								EventSeq: evtPtr.EventSeq,
 							}
-							logger.Crit("InjectService: Event dropped", "Event Name", k.Name, "Sequence Number", k.EventSeq, "Current Sequence", currentSeq)
-							eb.PublishEvent(k.ctx, eh.NewEvent(DroppedEvent, dropped_event, time.Now()))
+
+							queued[0] = nil
+							queued = queued[1:]
+							logger.Crit("InjectService: Event dropped", "Event Name", evtPtr.Name, "Sequence Number", evtPtr.EventSeq, "expected", internalSeq+1)
+							eb.PublishEvent(evtPtr.ctx, eh.NewEvent(DroppedEvent, dropped_event, time.Now()))
 						} else {
-							// only keep events that are greater than the current sequence count
-							copy = append(copy, k)
+							tries += 1
+							// missing event found, break and stop for loop
+							missingEvent = true
+							sequenceTimer = time.NewTimer(IETIMEOUT)
+							break
 						}
+
 					}
-					queued = copy
 				}
-				// on 100 milliseconds without any event received, handle queued events
-			case <-sequence_timer.C:
+
+			// IETIMEOUT triggered here I will change the current sequence number and let the rest be handled above.
+			case <-sequenceTimer.C:
+				if len(queued) == 0 {
+					sequenceTimer = time.NewTimer(IETIMEOUT)
+					continue
+				}
+
 				sort.SliceStable(queued, func(i, j int) bool {
 					return queued[i].EventSeq < queued[j].EventSeq
 				})
 
-				flag := false
-        copy := []InjectEvent{}
-				for i, k := range queued {
-					eventSeq := int(k.EventSeq)
-					// take the lowest sequenced event that is still greater than the current sequence count
-					if eventSeq > currentSeq { //ignore equal seq count
-						if flag == false {
-							// use this event as the new current sequence count
-							flag = true
-							logger.Crit("InjectService: Current sequence count changed due to timeout", "Old Value", currentSeq, "New Value", eventSeq)
-							currentSeq = eventSeq -1 
-						}
-
-						if eventSeq == currentSeq+1 {
-							currentSeq = eventSeq
-							k.sendToChn(k.ctx)
-						} else {
-							copy = queued[i:]
-							break
-						}
-					} else {
-						// drop all old events
-						dropped_event := &DroppedEventData{
-							Name:     k.Name,
-							EventSeq: k.EventSeq,
-						}
-						logger.Crit("InjectService: Event dropped (timeout)", "Event Name", k.Name, "Sequence Number", k.EventSeq, "Current Sequence", currentSeq)
-						eb.PublishEvent(k.ctx, eh.NewEvent(DroppedEvent, dropped_event, time.Now()))
+				eventSeq := int(queued[0].EventSeq)
+				// event sequence jumped!
+				if eventSeq > internalSeq+1 {
+					if tries < 20 {
+						tries += 1
+						sequenceTimer = time.NewTimer(IETIMEOUT)
+						continue
 					}
+					logger.Crit("InjectService: Event Timer Triggered", "# events", len(queued), "expected", internalSeq+1, "actual", eventSeq)
 				}
-				//logger.Warn("Timeout finished", "New Value", currentSeq)
-        queued = copy
-				sequence_timer.Reset(IETIMEOUT)
+
+				tries = 0
+				missingEvent = false
+				if eventSeq > internalSeq {
+					internalSeq = eventSeq - 1
+				}
 			}
 		}
 	}()
@@ -422,12 +420,21 @@ func StartInjectService(logger log.Logger, d *DomainObjects) {
 	go func() {
 		for {
 			event := <-injectChan
-			eb.PublishEvent(context.Background(), event)
-			if ev, ok := event.(syncEvent); ok {
+
+			ev, ok := event.(syncEvent)
+
+			if event.EventType() == "LogEvent" || !ok {
+				eb.PublishEvent(context.Background(), event)
+				continue
+			}
+			if ok {
+				eb.PublishEvent(context.Background(), event)
 				ev.Wait()
 			}
+
 		}
 	}()
+
 }
 
 const MAX_CONSOLIDATED_EVENTS = 10
@@ -439,19 +446,20 @@ func (c *InjectEvent) Handle(ctx context.Context, a *RedfishResourceAggregate) e
 	a.ID = injectUUID
 	c.ctx = ctx
 
-        if c.Synchronous{
-                c.sendToChn(c.ctx)
- 
-        } else {
-                injectChanSlice <- c
-        }
+	if c.Synchronous {
+		c.sendToChn(c.ctx)
+
+	} else {
+		injectChanSlice <- c
+	}
 
 	return nil
 }
 
 func (c *InjectEvent) sendToChn(ctx context.Context) error {
+
 	requestLogger := ContextLogger(ctx, "internal_commands").New("module", "inject_event")
-	//requestLogger.Crit("Event sent", "Sequence", c.EventSeq, "Name", c.Name)
+	//requestLogger.Crit("InjectService: Event sent", "Sequence", c.EventSeq, "Name", c.Name)
 
 	eventList := make([]map[string]interface{}, 0, len(c.EventArray)+1)
 	if len(c.EventData) > 0 {
@@ -471,20 +479,23 @@ func (c *InjectEvent) sendToChn(ctx context.Context) error {
 		} else {
 			err = mapstructure.Decode(eventData, &data)
 			if err != nil {
-				requestLogger.Warn("InjectEvent - could not decode event data, skipping event", "error", err, "raw-eventdata", eventData, "dest-event", data)
 				trainload = append(trainload, eventData) //preallocated
+				requestLogger.Warn("InjectEvent - could not decode event data, skipping event", "error", err, "raw-eventdata", eventData, "dest-event", data)
 			} else {
 				trainload = append(trainload, data) //preallocated
 			}
 		}
 		if len(trainload) >= MAX_CONSOLIDATED_EVENTS {
 			e := event.NewSyncEvent(c.Name, trainload, time.Now())
+			trainload = make([]eh.EventData, 0, MAX_CONSOLIDATED_EVENTS)
 			e.Add(1)
 			if c.Synchronous {
+				e.Add(1)
 				defer e.Wait()
 			}
-			trainload = make([]eh.EventData, 0, MAX_CONSOLIDATED_EVENTS)
+
 			injectChan <- e
+
 		}
 	}
 
@@ -493,9 +504,7 @@ func (c *InjectEvent) sendToChn(ctx context.Context) error {
 		e.Add(1)
 		injectChan <- e
 
-
 	}
-
 
 	return nil
 }

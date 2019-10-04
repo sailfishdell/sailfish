@@ -213,7 +213,10 @@ func (b *breadcrumb) UpdateRequest(ctx context.Context, property string, value i
 		//  - validate that user has permsi
 
 		if len(stuff) != 3 { // this one is extra wrong
-			b.s.logger.Error("improperly formatted attribute", "Attribute", k)
+			// reduce logging
+			if !strings.HasSuffix(k, "@odata.type") {
+				b.s.logger.Error("improperly formatted attribute", "Attribute", k)
+			}
 			err_msg := fmt.Sprintf("The property %s is not in the list of valid properties for the resource.", k)
 			errs = append(errs, fmt.Sprintf(canned_response, []interface{}{err_msg, k, "unknown ", "Base.1.0.PropertyUnknown"}...))
 			continue

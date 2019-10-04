@@ -328,9 +328,11 @@ func (d *DomainObjects) Notify(ctx context.Context, event eh.Event) {
 // CommandHandler is a HTTP handler for eventhorizon.Commands. Commands must be
 // registered with eventhorizon.RegisterCommand(). It expects a POST with a JSON
 // body that will be unmarshalled into the command.
-func (d *DomainObjects) GetInternalCommandHandler(backgroundCtx context.Context) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func (d *DomainObjects) GetInternalCommandHandler(backgroundCtx context.Context) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
+		vars["command"] = "Event:Inject"
+		mux.SetURLVars(r, vars)
 
 		if r.Method != "POST" {
 			http.Error(w, "unsuported method: "+r.Method, http.StatusMethodNotAllowed)
@@ -349,6 +351,7 @@ func (d *DomainObjects) GetInternalCommandHandler(backgroundCtx context.Context)
 			http.Error(w, "could not read command: "+err.Error(), http.StatusBadRequest)
 			return
 		}
+		//fmt.Printf("Sailfish-pump POST payload is %s\n", b)
 		r.Body.Close()
 
 		contentType := r.Header.Get("Content-type")
@@ -373,7 +376,7 @@ func (d *DomainObjects) GetInternalCommandHandler(backgroundCtx context.Context)
 		}
 
 		w.WriteHeader(http.StatusOK)
-	})
+	}
 }
 
 // DumpStatus is for debugging
