@@ -5,7 +5,8 @@ main:
 listen:
   - unix:sailfish.socket
   - http:localhost:8080
-  - pprof:localhost:9080
+  #  enable pprof only for debuging, it creates a memory leak if used
+  # - pprof:localhost:9080
   # disable direct https listener, uncomment if needed for testing:
   # - https::8443
 
