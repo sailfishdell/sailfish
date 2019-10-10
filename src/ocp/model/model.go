@@ -82,6 +82,7 @@ func (m *Model) StartNotifications() {
 	m.Lock()
 	defer m.Unlock()
 	m.StartNotificationsUnlocked()
+	m.NotifyObserversUnlocked()
 }
 
 func (m *Model) StopNotificationsUnlocked() {
