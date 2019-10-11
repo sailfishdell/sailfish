@@ -196,6 +196,9 @@ func (es *EventService) CreateSubscription(ctx context.Context, logger log.Logge
 					e.Done()
 				}
 				es.evaluateEvent(subLogger, subCtx, event, cancel, subView.GetURI(), uuid, ctx)
+				if subCtx.firstEvent == true {
+					subCtx.firstEvent = false
+				}
 
 			case <-ctx.Done():
 				subLogger.Debug("context is done: exiting event service publisher")
@@ -243,7 +246,6 @@ func (es *EventService) evaluateEvent(log log.Logger, subCtx SubscriptionCtx, ev
 
 		if subCtx.firstEvent {
 			//MSM work around, replay mCHARS faults into events
-			subCtx.firstEvent = false
 			redfishevents := makeMCHARSevents(es, ctx)
 
 			for idx := range redfishevents {
