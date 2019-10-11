@@ -1321,28 +1321,8 @@ awesome_mapper:
           ModelUpdate: [ {Property: "power_state", Query: "map_chassis_state(data.Value)"}]}
 
     fan:
-      - { SelectEventType: "FanEvent",
-          Select: "data.ObjectHeader.FQDD == DM_FQDD",
-          ModelUpdate: [
-                {Property: "fanpwm", Query: "data.Fanpwm" , Default:-1},
-                {Property: "key", Query: "data.Key" },
-                {Property: "fanname", Query: "data.FanName" },
-                {Property: "Fanpwm_int", Query: "data.Fanpwm_int" , Default: -1},
-                {Property: "VendorName", Query: "data.VendorName" },
-                {Property: "WarningThreshold", Query: "data.WarningThreshold" },
-                {Property: "DeviceName", Query: "data.DeviceName" },
-                {Property: "TachName", Query: "data.TachName" },
-                {Property: "CriticalThreshold", Query: "data.CriticalThreshold" },
-                {Property: "Fanhealth", Query: "data.Fanhealth" },
-                {Property: "Numrotors", Query: "data.Numrotors" },
-                {Property: "Rotor2rpm", Query: "data.Rotor2rpm" , Default: -1 },
-                {Property: "Rotor1rpm", Query: "data.Rotor1rpm" , Default: -1},
-                {Property: "rpm", Query: "int((data.Rotor1rpm+data.Rotor2rpm)/2)" , Default:-1},
-                {Property: "FanStateMask", Query: "data.FanStateMask" }]}
-#      - { SelectEventType: "thp_fan_data_object", Select: "DM_FQDD == data.GetStringFromOffset(data.Data.OffsetKey)",
-#             Process: { "name": "updateFanData", "params":[]}}
-
-
+      - { SelectEventType: "thp_fan_data_object", Select: "DM_FQDD == data.GetStringFromOffset(data.Data.OffsetKey)",
+             Process: { "name": "updateFanData", "params":[]}}
 
     inst_power:
       - { SelectEventType: "InstPowerEvent",
@@ -1362,17 +1342,7 @@ awesome_mapper:
 
     power_control:
       - { SelectEventType: "PowerConsumptionDataObjEvent", SelectFN: "true",
-            ModelUpdate: [
-                {Property: "energy_consumption_start_time", Query: "epoch_to_date(data.CwStartTime)" },
-                {Property: "energy_consumption_kwh", Query: "int((data.CumulativeWatts)/1000)" },
-                {Property: "headroom_watts", Query: "data.InstHeadRoom" },
-                {Property: "max_peak_watts", Query: "data.PeakWatts" },
-                {Property: "max_peak_watts_time", Query: "epoch_to_date(data.PwReadingTime)" },
-                {Property: "min_peak_watts", Query: "data.MinWatts" },
-                {Property: "min_peak_watts_time", Query: "epoch_to_date(data.MinwReadingTime)" },
-                {Property: "peak_headroom_watts", Query: "data.PeakHeadRoom" },
-                {Property: "consumed_watts", Query: "data.InstWattsPSU1_2" }]}
-      #       Process: { "name": "updatePwrConsumptionData", "params":[]}}
+             Process: { "name": "updatePwrConsumptionData", "params":[]}}
 
       # every chassis object is a power related item. add and remove them as they come
       - { SelectEventType: "RedfishResource:created",
@@ -1386,22 +1356,14 @@ awesome_mapper:
       - { SelectEventType: "AttributeUpdated",
           Select: "data.FQDD == 'System.Chassis.1' && data.Name == 'PowerCapSetting'",
           SelectParams: ["FQDD","System.Chassis.1","Name","PowerCapSetting"],
-          Exec: [ "set_power_cap_enable(data.Value)" ]}
-#          Process: { "name": "updatePowerCapFlag", "params":[]}}
-
-
+          Process: { "name": "updatePowerCapFlag", "params":[]}}
       - { SelectEventType: "AttributeUpdated",
           Select: "data.FQDD == 'System.Chassis.1' && data.Name == 'PowerCapValue'",
-          ModelUpdate: [ {Property: "limit_in_watts", Query: "check_power_cap(data.Value)"}]}
-          #Process: { "name": "updatePowerLimit", "params":[]}}
+          Process: { "name": "updatePowerLimit", "params":[]}}
 
     power_supply:
       - { SelectEventType: "PowerSupplyObjEvent", Select: "data.ObjectHeader.FQDD == DM_FQDD",
-            ModelUpdate: [
-                {Property: "line_input_voltage", Query: "zero_to_null(data.CurrentInputVolts)" },
-                {Property: "input_current", Query: "zero_to_null(round_2_dec_pl(data.InstAmps))" },
-                {Property: "obj_status", Query: "map_health_value(data.ObjectHeader.ObjStatus)" }]}
-#             Process: { "name": "updatePwrSupplyData", "params":[]}}
+             Process: { "name": "updatePwrSupplyData", "params":[]}}
 
     power_trend:
       - { SelectEventType: "AvgPowerConsumptionStatDataObjEvent", SelectFN: "true",
