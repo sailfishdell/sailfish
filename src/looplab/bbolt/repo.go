@@ -22,8 +22,8 @@ type Repo struct {
 
 // NewRepo creates a new Repo.
 func NewRepo() *Repo {
-	os.Remove("./emmc_db.db")
-	t, err := bbolt.Open("emmc_db.db", 0600, nil)
+	os.Remove("./sailfish.db")
+	t, err := bbolt.Open("sailfish.db", 0600, nil)
 	if err != nil {
 		panic("Failed to start bbolt DB")
 	}
