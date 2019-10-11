@@ -27,7 +27,7 @@ do
   events_replayed=0
   while read -u 5 line ; do
       echo "$line" > $tmpfile
-      jq  --argjson i "$i" -s '{"event_seq": $i} * .[0]'  $tmpfile > TMP
+      jq  --argjson i "$i" '.event_seq=$i'  $tmpfile > TMP
       mv TMP  $tmpfile
       i=$(($i+1))
       cat $tmpfile
