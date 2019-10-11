@@ -95,7 +95,6 @@ func init() {
 				//ret.logger.Info("Updating property!", "property", updates.property, "value", val, "Event", event, "EventData", event.Data())
 				mp.model.UpdateProperty(updates.property, val)
 				mp.model.NotifyObservers()
-				mp.model.StartNotifications()
 			}
 
 			delete(mp.Params, "propname")
@@ -110,7 +109,6 @@ func init() {
 
 			mp.model.StopNotifications()
 			defer mp.model.NotifyObservers()
-			defer mp.model.StartNotifications()
 
 			for _, mapperUpdate := range m {
 				if mapperUpdate.defaultVal != nil {

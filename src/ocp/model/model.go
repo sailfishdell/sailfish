@@ -81,26 +81,26 @@ func (m *Model) StopNotifications() {
 func (m *Model) StartNotifications() {
 	m.Lock()
 	defer m.Unlock()
-	m.StartNotificationsUnlocked()
-	m.NotifyObserversUnlocked()
+	m.startNotificationsUnlocked()
+	m.notifyObserversUnlocked()
 }
 
 func (m *Model) StopNotificationsUnlocked() {
 	m.in_notify = m.in_notify + 1
 }
 
-func (m *Model) StartNotificationsUnlocked() {
+func (m *Model) startNotificationsUnlocked() {
 	m.in_notify = m.in_notify - 1
 }
 
 func (m *Model) NotifyObservers() {
 	m.Lock()
 	defer m.Unlock()
-	m.NotifyObserversUnlocked()
+	m.notifyObserversUnlocked()
 }
 
 // caller must lock
-func (m *Model) NotifyObserversUnlocked() {
+func (m *Model) notifyObserversUnlocked() {
 	// Avoid recursive calls to observers: if an observer does a model update,
 	// we don't call out to observers again. The model is locked the entire
 	// time, so outside entities looking at the model will always see the
@@ -112,7 +112,7 @@ func (m *Model) NotifyObserversUnlocked() {
 		for _, fn := range m.observers {
 			fn(m, updates)
 		}
-		m.StartNotificationsUnlocked()
+		m.startNotificationsUnlocked()
 	}
 }
 
@@ -121,7 +121,7 @@ func (m *Model) NotifyObserversUnlocked() {
 func (s *Model) UpdatePropertyUnlocked(p string, i interface{}) {
 	s.properties[p] = i
 	s.updates = append(s.updates, Update{p, i})
-	s.NotifyObserversUnlocked()
+	s.notifyObserversUnlocked()
 }
 
 // UpdateProperty is used to change properties. It will also notify any
