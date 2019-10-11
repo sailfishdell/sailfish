@@ -2,10 +2,12 @@ package domain
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
 	eh "github.com/looplab/eventhorizon"
+	"github.com/superchalupa/sailfish/src/looplab/aggregatestore"
 )
 
 const AggregateType = eh.AggregateType("RedfishResource")
@@ -114,6 +116,108 @@ func (a *RedfishResourceAggregate) HandleCommand(ctx context.Context, command eh
 	switch command := command.(type) {
 	case RRCmdHandler:
 		return command.Handle(ctx, a)
+	}
+
+	return nil
+}
+
+type CommandHandler struct {
+	t       eh.AggregateType
+	store   aggregatestore.AggregateStore // commands to manage stored aggregates
+	aggChan chan aggregateStoreStatus
+}
+
+// NewCommandHandler creates a new CommandHandler for an aggregate type.
+func NewCommandHandler(t eh.AggregateType, store aggregatestore.AggregateStore) (*CommandHandler, error) {
+
+	h := &CommandHandler{
+		t:       "RedfishResource",
+		store:   store,
+		aggChan: make(chan aggregateStoreStatus, 10),
+	}
+	return h, nil
+}
+
+type aggregateStoreStatus struct {
+	aggStatus eh.Aggregate
+	action    *string
+}
+
+// Saves aggregates in the order they enter the HandleCommand
+func (h *CommandHandler) SaveorDelete(ctx context.Context) {
+
+	chanLen := len(h.aggChan)
+	if chanLen == 0 {
+		return
+	}
+	for chanLen != 0 {
+		chanLen = chanLen - 1
+
+		if chanLen == 0 {
+			return
+		}
+
+		aggS := <-h.aggChan
+
+		agg := aggS.aggStatus
+		action := *aggS.action
+		aggS.action = nil
+
+		if action == "save" {
+			h.store.Save(ctx, agg)
+		} else if action == "del" {
+			h.store.Remove(ctx, agg)
+		} else {
+			fmt.Println("SaveorDelete: dropping", agg.EntityID())
+		}
+	}
+	return
+}
+
+func (h *CommandHandler) HandleCommand(ctx context.Context, cmd eh.Command) error {
+	aggStatus := aggregateStoreStatus{}
+	action := ""
+	aggStatus.action = &action
+	isAction := false
+
+	err := eh.CheckCommand(cmd)
+	if err != nil {
+		return err
+	}
+
+	a, err := h.store.Load(ctx, h.t, cmd.AggregateID())
+	if err != nil {
+		return err
+	} else if a == nil {
+		return eh.ErrAggregateNotFound
+	}
+
+	cmdType := cmd.CommandType()
+	if cmdType == "internal:RedfishResource:Create" ||
+		cmdType == "internal:RedfishResource:Remove" ||
+		cmdType == "internal:RedfishResourceProperties:Update:2" ||
+		cmdType == "internal:RedfishResourceProperties:Update" {
+		aggStatus.aggStatus = a
+
+		if cmd.CommandType() == "internal:RedfishResource:Remove" {
+			*aggStatus.action = "del"
+			h.aggChan <- aggStatus
+		} else {
+			*aggStatus.action = "save"
+			h.aggChan <- aggStatus
+		}
+		isAction = true
+	}
+
+	if err = a.HandleCommand(ctx, cmd); err != nil {
+		if isAction == true {
+			*aggStatus.action = ""
+		}
+		return err
+	}
+
+	if isAction == true {
+		h.SaveorDelete(ctx)
 	}
 
 	return nil

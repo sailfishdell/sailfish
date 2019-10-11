@@ -12,7 +12,6 @@ import (
 
 	"github.com/gorilla/mux"
 	eh "github.com/looplab/eventhorizon"
-	"github.com/looplab/eventhorizon/commandhandler/aggregate"
 	eventpublisher "github.com/looplab/eventhorizon/publisher/local"
 	"github.com/superchalupa/sailfish/src/looplab/aggregatestore"
 	repo "github.com/superchalupa/sailfish/src/looplab/bbolt"
@@ -31,7 +30,7 @@ type DomainObjects struct {
 	Repo           eh.ReadWriteRepo
 	EventBus       eh.EventBus
 	EventWaiter    waiter
-	AggregateStore eh.AggregateStore
+	AggregateStore *aggregatestore.AggregateStore
 	EventPublisher eh.EventPublisher
 
 	// for http returns
@@ -105,7 +104,7 @@ func NewDomainObjects() (*DomainObjects, error) {
 	}
 
 	// Create the aggregate command handler.
-	d.CommandHandler, err = aggregate.NewCommandHandler(AggregateType, d.AggregateStore)
+	d.CommandHandler, err = NewCommandHandler(AggregateType, *d.AggregateStore)
 	if err != nil {
 		return nil, fmt.Errorf("could not create command handler: %s", err)
 	}

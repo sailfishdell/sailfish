@@ -17,6 +17,7 @@ package aggregatestore
 import (
 	"context"
 	"errors"
+	//"fmt"
 
 	eh "github.com/looplab/eventhorizon"
 )
@@ -67,20 +68,48 @@ func (r *AggregateStore) Load(ctx context.Context, aggregateType eh.AggregateTyp
 	return aggregate, nil
 }
 
+type aLock interface {
+	Lock()
+	Unlock()
+}
+
 // Save implements the Save method of the eventhorizon.AggregateStore interface.
 func (r *AggregateStore) Save(ctx context.Context, aggregate eh.Aggregate) error {
-	if err := r.repo.Save(ctx, aggregate); err != nil {
+	var events = []eh.Event{} 
+	publisher, ok := aggregate.(EventPublisher)
+	if ok && r.bus != nil{
+               events = publisher.EventsToPublish()
+	}
+		
+       al, alok := aggregate.(aLock)
+       if alok {
+               //fmt.Println("lock successful")
+               al.Lock()
+       }
+
+	err := r.repo.Save(ctx, aggregate)
+
+       if alok {
+               //fmt.Println("unlock successful")
+               al.Unlock()
+       }
+	if err != nil {
 		return err
 	}
 
-	// Publish events if supported by the aggregate.
-	if publisher, ok := aggregate.(EventPublisher); ok && r.bus != nil {
-		events := publisher.EventsToPublish()
-		publisher.ClearEvents()
-		for _, e := range events {
-			r.bus.PublishEvent(ctx, e)
-		}
-	}
+       // Publish events if supported by the aggregate.
+	if ok && r.bus != nil {
+ 		publisher.ClearEvents()
+               for _, e := range events {
+                       r.bus.PublishEvent(ctx, e)
+               }
+       }
 
-	return nil
+		
+	return nil 
+}
+
+// Save implements the Save method of the eventhorizon.AggregateStore interface.
+func (r *AggregateStore) Remove(ctx context.Context, aggregate eh.Aggregate) error {
+	return r.repo.Remove(ctx, aggregate.EntityID())
 }

@@ -82,6 +82,7 @@ func (c *CreateRedfishResource) Handle(ctx context.Context, a *RedfishResourceAg
 	requestLogger := ContextLogger(ctx, "internal_commands")
 	requestLogger.Info("CreateRedfishResource", "META", a.Properties.Meta)
 
+	a.Lock()
 	if a.ID != eh.UUID("") {
 		requestLogger.Error("Aggregate already exists!", "command", "CreateRedfishResource", "UUID", a.ID, "URI", a.ResourceURI, "request_URI", c.ResourceURI)
 		return errors.New("Already created!")
@@ -121,6 +122,7 @@ func (c *CreateRedfishResource) Handle(ctx context.Context, a *RedfishResourceAg
 	a.Properties.Parse(c.Properties)
 	a.Properties.Meta = c.Meta
 
+
 	var resourceURI []string
 	// preserve slashes
 	for _, x := range strings.Split(c.ResourceURI, "/") {
@@ -130,6 +132,8 @@ func (c *CreateRedfishResource) Handle(ctx context.Context, a *RedfishResourceAg
 	v["@odata.id"] = strings.Join(resourceURI, "/")
 	v["@odata.type"] = c.Type
 	v["@odata.context"] = c.Context
+
+	a.Unlock()
 
 	// send out event that it's created first
 	a.PublishEvent(eh.NewEvent(RedfishResourceCreated, &RedfishResourceCreatedData{
@@ -540,8 +544,7 @@ func StartInjectService(logger log.Logger, d *DomainObjects) {
 			if event.EventType() == "LogEvent" || !ok {
 				eb.PublishEvent(context.Background(), event)
 				continue
-			}
-			if ok {
+			} else {
 				eb.PublishEvent(context.Background(), event)
 				ev.Wait()
 			}

@@ -27,6 +27,8 @@ func NewRepo() *Repo {
 	if err != nil {
 		panic("Failed to start bbolt DB")
 	}
+	// improves performance? HSM may remove
+	//t.FreelistType = bbolt.FreelistMapType
 	return &Repo{db: t}
 }
 
@@ -116,15 +118,17 @@ func (r *Repo) Save(ctx context.Context, entity eh.Entity) error {
 	}
 
 	r.db.Update(func(tx *bbolt.Tx) error {
+
 		b, err := tx.CreateBucketIfNotExists([]byte(eh.NamespaceFromContext(ctx)))
 		if err != nil {
 			fmt.Println("Bucket Not Created: ", err)
 			return nil
 		}
+		fmt.Printf("%+v\n", b.Stats())
 
 		err = b.Put([]byte(entity.EntityID()), encodedEntity.Bytes())
 		if err != nil {
-			fmt.Println("Save error:", err)
+			fmt.Println("Save error:", err, "uuid", entity.EntityID())
 		}
 
 		return err
@@ -142,7 +146,7 @@ func (r *Repo) Remove(ctx context.Context, id eh.UUID) error {
 
 		err := b.Delete([]byte(id))
 		if err != nil {
-			fmt.Println("Delete error", err)
+			fmt.Println("Delete error", err, "uuid", id)
 		}
 		return err
 	})
