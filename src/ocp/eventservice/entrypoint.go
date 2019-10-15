@@ -163,15 +163,15 @@ func (es *EventService) CreateSubscription(ctx context.Context, logger log.Logge
 	dest := esModel.GetProperty("destination").(string)
 	prot := esModel.GetProperty("protocol").(string)
 	ctex := esModel.GetProperty("context").(string)
-	eventT := sub.EventTypes
 
 	subCtx := SubscriptionCtx{
 		true,
 		dest,
 		prot,
-		eventT,
+		[]string{},
 		ctex,
 	}
+	subCtx.EventTypes = append(subCtx.EventTypes,sub.EventTypes...)
 
 	uuid := subView.GetUUID()
 
@@ -179,7 +179,7 @@ func (es *EventService) CreateSubscription(ctx context.Context, logger log.Logge
 		time.Now().UTC().Format(time.UnixDate),
 		dest,
 		prot,
-		eventT)
+		subCtx.EventTypes)
 	logToEventFile(logS)
 
 	go func() {
