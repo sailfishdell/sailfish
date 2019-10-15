@@ -16,6 +16,15 @@ func init() {
 	RegisterInitFN(RegisterRRA)
 }
 
+func (a *RedfishResourceAggregate) HandleCommand(ctx context.Context, command eh.Command) error {
+	switch command := command.(type) {
+	case RRCmdHandler:
+		return command.Handle(ctx, a)
+	}
+
+	return nil
+}
+
 func RegisterRRA(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew waiter) {
 	eh.RegisterAggregate(func(id eh.UUID) eh.Aggregate {
 		return &RedfishResourceAggregate{}
@@ -112,19 +121,10 @@ type RRCmdHandler interface {
 	Handle(ctx context.Context, a *RedfishResourceAggregate) error
 }
 
-func (a *RedfishResourceAggregate) HandleCommand(ctx context.Context, command eh.Command) error {
-	switch command := command.(type) {
-	case RRCmdHandler:
-		return command.Handle(ctx, a)
-	}
-
-	return nil
-}
-
 type CommandHandler struct {
 	t       eh.AggregateType
 	store   aggregatestore.AggregateStore // commands to manage stored aggregates
-	aggChan chan aggregateStoreStatus
+	cmdChan chan aggregateStoreStatus
 }
 
 // NewCommandHandler creates a new CommandHandler for an aggregate type.
@@ -133,20 +133,20 @@ func NewCommandHandler(t eh.AggregateType, store aggregatestore.AggregateStore) 
 	h := &CommandHandler{
 		t:       "RedfishResource",
 		store:   store,
-		aggChan: make(chan aggregateStoreStatus, 10),
+		cmdChan: make(chan aggregateStoreStatus, 10),
 	}
 	return h, nil
 }
 
 type aggregateStoreStatus struct {
 	aggStatus eh.Aggregate
-	action    *string
+	save2DB   *int
 }
 
 // Saves aggregates in the order they enter the HandleCommand
-func (h *CommandHandler) SaveorDelete(ctx context.Context) {
+func (h *CommandHandler) Save2DB(ctx context.Context) {
 
-	chanLen := len(h.aggChan)
+	chanLen := len(h.cmdChan)
 	if chanLen == 0 {
 		return
 	}
@@ -157,28 +157,38 @@ func (h *CommandHandler) SaveorDelete(ctx context.Context) {
 			return
 		}
 
-		aggS := <-h.aggChan
+		aggS := <-h.cmdChan
 
 		agg := aggS.aggStatus
-		action := *aggS.action
-		aggS.action = nil
+		action := *aggS.save2DB
+		aggS.save2DB = nil
 
-		if action == "save" {
-			h.store.Save(ctx, agg)
-		} else if action == "del" {
-			h.store.Remove(ctx, agg)
-		} else {
-			fmt.Println("SaveorDelete: dropping", agg.EntityID())
+		// wait maximum 5 seconds
+		for i := 0; i < 5; i++ {
+			if action == 100 {
+				h.store.Save(ctx, agg)
+				break
+			} else if action == 1 {
+				action = *aggS.save2DB
+				time.Sleep(1 * time.Second)
+			} else if action == 0 {
+				break
+			}
+		}
+
+		if action == 1 {
+			fmt.Println("Process took longer than 5 seconds.  Dropping")
 		}
 	}
-	return
 }
 
 func (h *CommandHandler) HandleCommand(ctx context.Context, cmd eh.Command) error {
 	aggStatus := aggregateStoreStatus{}
-	action := ""
-	aggStatus.action = &action
-	isAction := false
+	// 100 - save
+	// 001 - in progress
+	// 0   - don't process
+	save2db :=001 
+	aggStatus.save2DB = &save2db
 
 	err := eh.CheckCommand(cmd)
 	if err != nil {
@@ -193,32 +203,29 @@ func (h *CommandHandler) HandleCommand(ctx context.Context, cmd eh.Command) erro
 	}
 
 	cmdType := cmd.CommandType()
-	if cmdType == "internal:RedfishResource:Create" ||
-		cmdType == "internal:RedfishResource:Remove" ||
-		cmdType == "internal:RedfishResourceProperties:Update:2" ||
-		cmdType == "internal:RedfishResourceProperties:Update" {
-		aggStatus.aggStatus = a
+	if cmdType == CreateRedfishResourceCommand ||
+		cmdType == UpdateRedfishResourcePropertiesCommand ||
+		cmdType == UpdateRedfishResourcePropertiesCommand2 ||
+		cmdType == RemoveRedfishResourcePropertyCommand {
 
-		if cmd.CommandType() == "internal:RedfishResource:Remove" {
-			*aggStatus.action = "del"
-			h.aggChan <- aggStatus
-		} else {
-			*aggStatus.action = "save"
-			h.aggChan <- aggStatus
-		}
-		isAction = true
+		aggStatus.aggStatus = a
+		h.cmdChan <- aggStatus
+		*aggStatus.save2DB = 101
+
 	}
+
 
 	if err = a.HandleCommand(ctx, cmd); err != nil {
-		if isAction == true {
-			*aggStatus.action = ""
+
+		if *aggStatus.save2DB >= 1 {
+			*aggStatus.save2DB = 0
 		}
 		return err
+	} else {
+		if *aggStatus.save2DB >= 1 {
+			*aggStatus.save2DB-=1
+			h.Save2DB(ctx)
+		}
 	}
-
-	if isAction == true {
-		h.SaveorDelete(ctx)
-	}
-
 	return nil
 }

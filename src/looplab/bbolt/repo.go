@@ -124,7 +124,6 @@ func (r *Repo) Save(ctx context.Context, entity eh.Entity) error {
 			fmt.Println("Bucket Not Created: ", err)
 			return nil
 		}
-		fmt.Printf("%+v\n", b.Stats())
 
 		err = b.Put([]byte(entity.EntityID()), encodedEntity.Bytes())
 		if err != nil {
@@ -159,7 +158,6 @@ func (r *Repo) namespace(ctx context.Context) namespace {
 
 // Repository returns a parent ReadRepo if there is one.
 func Repository(repo eh.ReadRepo) *Repo {
-	fmt.Println("Repository function called")
 	if repo == nil {
 		return nil
 	}

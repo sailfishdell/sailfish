@@ -75,38 +75,36 @@ type aLock interface {
 
 // Save implements the Save method of the eventhorizon.AggregateStore interface.
 func (r *AggregateStore) Save(ctx context.Context, aggregate eh.Aggregate) error {
-	var events = []eh.Event{} 
+	var events = []eh.Event{}
 	publisher, ok := aggregate.(EventPublisher)
-	if ok && r.bus != nil{
-               events = publisher.EventsToPublish()
+	if ok && r.bus != nil {
+		events = publisher.EventsToPublish()
 	}
-		
-       al, alok := aggregate.(aLock)
-       if alok {
-               //fmt.Println("lock successful")
-               al.Lock()
-       }
 
+	al, alok := aggregate.(aLock)
+	if alok {
+		al.Lock()
+	}
+
+	//fmt.Printf("%+v\n", b.Stats())
 	err := r.repo.Save(ctx, aggregate)
 
-       if alok {
-               //fmt.Println("unlock successful")
-               al.Unlock()
-       }
+	if alok {
+		al.Unlock()
+	}
 	if err != nil {
 		return err
 	}
 
-       // Publish events if supported by the aggregate.
+	// Publish events if supported by the aggregate.
 	if ok && r.bus != nil {
- 		publisher.ClearEvents()
-               for _, e := range events {
-                       r.bus.PublishEvent(ctx, e)
-               }
-       }
+		publisher.ClearEvents()
+		for _, e := range events {
+			r.bus.PublishEvent(ctx, e)
+		}
+	}
 
-		
-	return nil 
+	return nil
 }
 
 // Save implements the Save method of the eventhorizon.AggregateStore interface.

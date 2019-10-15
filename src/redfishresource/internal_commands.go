@@ -83,6 +83,7 @@ func (c *CreateRedfishResource) Handle(ctx context.Context, a *RedfishResourceAg
 	requestLogger.Info("CreateRedfishResource", "META", a.Properties.Meta)
 
 	a.Lock()
+	defer a.Unlock()
 	if a.ID != eh.UUID("") {
 		requestLogger.Error("Aggregate already exists!", "command", "CreateRedfishResource", "UUID", a.ID, "URI", a.ResourceURI, "request_URI", c.ResourceURI)
 		return errors.New("Already created!")
@@ -122,7 +123,6 @@ func (c *CreateRedfishResource) Handle(ctx context.Context, a *RedfishResourceAg
 	a.Properties.Parse(c.Properties)
 	a.Properties.Meta = c.Meta
 
-
 	var resourceURI []string
 	// preserve slashes
 	for _, x := range strings.Split(c.ResourceURI, "/") {
@@ -132,8 +132,6 @@ func (c *CreateRedfishResource) Handle(ctx context.Context, a *RedfishResourceAg
 	v["@odata.id"] = strings.Join(resourceURI, "/")
 	v["@odata.type"] = c.Type
 	v["@odata.context"] = c.Context
-
-	a.Unlock()
 
 	// send out event that it's created first
 	a.PublishEvent(eh.NewEvent(RedfishResourceCreated, &RedfishResourceCreatedData{
@@ -227,6 +225,7 @@ func (c *UpdateRedfishResourceProperties2) CommandType() eh.CommandType {
 // going through the aggregate it is [map]*RedfishResourceProperty...
 // NOTE: only for maps  can be updated to be used for lists
 func UpdateAgg(a *RedfishResourceAggregate, pathSlice []string, v interface{}) error {
+	changed := false
 	loc, ok := a.Properties.Value.(map[string]interface{})
 	if !ok {
 		return errors.New("aggregate was not passed in")
@@ -252,6 +251,7 @@ func UpdateAgg(a *RedfishResourceAggregate, pathSlice []string, v interface{}) e
 
 			if (len == i) && (k2.Value != v) {
 				k2.Value = v
+				changed = true
 			} else if len == i {
 				return nil
 			} else {
@@ -265,7 +265,12 @@ func UpdateAgg(a *RedfishResourceAggregate, pathSlice []string, v interface{}) e
 			return fmt.Errorf("agg update for slice %+v, received type %T instead of *RedfishResourceProperty", pathSlice, k)
 		}
 	}
-	return nil
+
+	if changed == true {
+		return fmt.Errorf("No Change")
+	} else {
+		return nil
+	}
 
 }
 
@@ -280,26 +285,26 @@ func validateValue(val interface{}) error {
 
 //  This is handled by eventhorizon code.
 //  When a CommandHandler "Handle" is called it will retrieve the aggregate from the DB.  and call this Handle. Then save the aggregate 'a' back to the db.  no locking is required..
+// provide error when no change made..
 func (c *UpdateRedfishResourceProperties2) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
-
-	requestLogger := ContextLogger(ctx, "UpdateRedfishResourceProperty2")
+	var err error = nil
 
 	d := &RedfishResourcePropertiesUpdatedData2{
 		ID:            c.ID,
 		ResourceURI:   a.ResourceURI,
 		PropertyNames: make(map[string]interface{}),
 	}
+	a.Lock()
+	defer a.Unlock()
 
 	// update properties in aggregate
 	for k, v := range c.Properties {
 		pathSlice := strings.Split(k, "/")
 
-		err := UpdateAgg(a, pathSlice, v)
+		err = UpdateAgg(a, pathSlice, v)
 
 		if err == nil {
 			d.PropertyNames[k] = v
-		} else {
-			requestLogger.Error("UpdateRedfishResourceProperty2", "error", err)
 		}
 
 	}
@@ -307,8 +312,7 @@ func (c *UpdateRedfishResourceProperties2) Handle(ctx context.Context, a *Redfis
 	if len(d.PropertyNames) > 0 {
 		a.PublishEvent(eh.NewEvent(RedfishResourcePropertiesUpdated, d.PropertyNames, time.Now()))
 	}
-
-	return nil
+	return err
 }
 
 type UpdateRedfishResourceProperties struct {
