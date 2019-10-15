@@ -171,7 +171,7 @@ func (es *EventService) CreateSubscription(ctx context.Context, logger log.Logge
 		[]string{},
 		ctex,
 	}
-	subCtx.EventTypes = append(subCtx.EventTypes,sub.EventTypes...)
+	subCtx.EventTypes = append(subCtx.EventTypes, sub.EventTypes...)
 
 	uuid := subView.GetUUID()
 
@@ -234,24 +234,28 @@ func (es *EventService) evaluateEvent(log log.Logger, subCtx SubscriptionCtx, ev
 		log.Info(" redfish event processing")
 		// NOTE: we don't actually check to ensure that this is an actual ExternalRedfishEventData specifically because Metric Reports don't currently go through like this.
 
-		evt := event.Data()
-		eventPtr, ok := evt.(*ExternalRedfishEventData)
+		tmpevt := event.Data()
+
+		// eventPtr is shared btwn go routines(ssehandler), writes should be avoided
+		eventPtr, ok := tmpevt.(*ExternalRedfishEventData)
 		if !ok {
 			log.Info("ExternalRedfishEvent does not have ExternalRedfishEventData")
 			return
 		}
 
+		totalEvents := []*RedfishEventData{}
 		if subCtx.firstEvent {
 			//MSM work around, replay mCHARS faults into events
 			subCtx.firstEvent = false
 			redfishevents := makeMCHARSevents(es, ctx)
 
 			for idx := range redfishevents {
-				eventPtr.Events = append(eventPtr.Events, &redfishevents[idx])
+				totalEvents = append(totalEvents, &redfishevents[idx])
 			}
+			totalEvents = append(totalEvents, eventPtr.Events...)
 		}
 
-		eventlist = makeExternalRedfishEvent(subCtx, eventPtr.Events, uuid)
+		eventlist = makeExternalRedfishEvent(subCtx, totalEvents, uuid)
 		if len(eventlist) == 0 {
 			return
 		}
