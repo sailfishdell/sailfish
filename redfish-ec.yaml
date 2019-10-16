@@ -4,7 +4,8 @@ main:
 
 listen:
   - unix:sailfish.socket
-  - http:localhost:8080
+  # enable 8080 port only for testing, as per NCC audit it needs to be disabled on the build
+  # - http:localhost:8080
   #  enable pprof only for debuging, it creates a memory leak if used
   # - pprof:localhost:9080
   # disable direct https listener, uncomment if needed for testing:
