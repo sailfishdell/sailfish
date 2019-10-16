@@ -911,7 +911,7 @@ views:
         - "fn": "ARMapper"
           "params": {"modelname": "default", "cfgsection": "firmware/inventory", "mappinguniquename": "'iom_fw_mapper:' + FQDD", "AddToView": "ar_mapper_inv"}
         - "fn": "ARMapper"
-          "params": {"swinv2": "default", "cfgsection": "firmware/inventory/2", "mappinguniquename": "'iom_fw_mapper2:' + FQDD", "AddToView": "ar_mapper_inv"}
+          "params": {"modelname": "swinv2", "cfgsection": "firmware/inventory/2", "mappinguniquename": "'iom_fw_mapper2:' + FQDD", "AddToView": "ar_mapper_inv"}
         - "fn": "ARMapper"
           "params": {"modelname": "default", "cfgsection": "Chassis/IOM.Slot", "mappinguniquename": "'iom_mapper:' + FQDD", "AddToView": "ar_mapper"}
         - "fn": "AM2"
@@ -925,8 +925,6 @@ views:
           "params": {"existing": "default", "linkname": "swinv"}
         - "fn": "withModel"
           "params": {"name": "global_health", "expr": "globalHealthModel"}
-        - "fn": "withModel"
-          "params": {"name": "swinv2", "expr": "globalHealthModel"}
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
         - "fn": "stdFormatters"
