@@ -469,7 +469,7 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 					}
 
 					fqdd, ok := fqddRaw.(string)
-					if !ok || fqdd == "" {
+					if !ok || fqdd == "" || fqdd == "unknown" {
 						logger.Debug("swinv DID NOT GET fqdd string with " + uri)
 						continue
 					}
@@ -481,9 +481,9 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 					}
 
 					class, ok := classRaw.(string)
-					if !ok || class == "" {
+					if !ok || class == "" || class == "unknown" {
 						logger.Debug("swinv DID NOT GET class string with " + uri)
-						class = "unknown"
+						continue
 					}
 
 					versionRaw, ok := mdl.GetPropertyOk("fw_version")
@@ -493,9 +493,9 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 					}
 
 					version, ok := versionRaw.(string)
-					if !ok || version == "" {
+					if !ok || version == "" || version == "unknown" {
 						logger.Debug("swinv DID NOT GET version string with " + uri)
-						version = "unknown"
+						continue
 					}
 
 					compVerTuple := "Installed-" + class + "-" + version
@@ -510,6 +510,9 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 					updateableStr, _ := updateableRaw.(string)
 					if strings.EqualFold(updateableStr, "Yes") || strings.EqualFold(updateableStr, "True") {
 						updateable = true
+					} else if updateableStr == "unknown" {
+						logger.Debug("swinv DID NOT GET a good value for updateablestr " + uri)
+						continue
 					}
 
 					installDateRaw, ok := mdl.GetPropertyOk("fw_install_date")
@@ -519,9 +522,13 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 					}
 
 					installDate, ok := installDateRaw.(string)
-					if !ok || installDate == "" {
+					if !ok || installDate == "unknown" {
+						logger.Debug("swinv DID NOT GET class string with " + uri)
+						continue
+					}else if installDate == ""  {
 						logger.Debug("swinv DID NOT GET class string with " + uri)
 						installDate = "1970-01-01T00:00:00Z"
+
 					}
 
 					nameRaw, ok := mdl.GetPropertyOk("fw_name")
@@ -531,9 +538,9 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 					}
 
 					name, ok := nameRaw.(string)
-					if !ok || name == "" {
+					if !ok || name == "" || name == "unknown" {
 						logger.Debug("swinv DID NOT GET name string with " + uri)
-						name = ""
+						continue
 					}
 
 					if _, ok := firmwareInventoryViews[compVerTuple]; !ok {
@@ -554,8 +561,6 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 					if !ok {
 						arr = []string{}
 					}
-					arr = append(arr, fqdd)
-					fqdd_mappings[compVerTuple] = arr
 
 					if !in_array(fqdd, arr) {
 						arr = append(arr, fqdd)
