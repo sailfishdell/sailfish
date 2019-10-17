@@ -105,9 +105,11 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	inithealth(ctx, logger, ch, d)
 	stdmeta.InitializeSsoinfo(d)
 	telemetryservice.RegisterAggregate(instantiateSvc)
+	telemetryservice.New(ctx, logger, ch, d)
 
 	stdmeta.SetupSledProfilePlugin(d)
 	stdmeta.InitializeCertInfo(d)
+	stdmeta.GenericDefPlugin(ch, d)
 
 	godefs.InitGoDef()
 

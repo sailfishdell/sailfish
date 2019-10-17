@@ -5,9 +5,9 @@ main:
 listen:
   - unix:sailfish.socket
   # enable 8080 port only for testing, as per NCC audit it needs to be disabled on the build
-  # - http:localhost:8080
+  #- http::8080
   #  enable pprof only for debuging, it creates a memory leak if used
-  # - pprof:localhost:9080
+  #- pprof:localhost:9080
   # disable direct https listener, uncomment if needed for testing:
   # - https::8443
 
@@ -231,7 +231,7 @@ views:
   "metric_report_definitions":
       "Logger": ["module", "metric_report_definitions"]
       "Models":
-        "default":  {"members": "array()"}
+        "default":   {"members": "array()"}
       "Controllers":
         - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + view.GetURI()", "passthru": {'collection_uri': 'view.GetURI()'} }
@@ -241,6 +241,21 @@ views:
         - "fn": "stdFormatters"
           "params":
       "Aggregate": "metric_report_definitions"
+      "Exec": [
+        "instantiate{'fan_speed_metric_def', 'parenturi',view.GetURI())",
+      ]
+
+  "fan_speed_metric_def":
+      "Logger": ["module", "metric_definition"]
+      "Models":
+        "default":  {"members": "array()"}
+      "View":
+        - "fn": "with_URI"
+          "params": "parenturi + '/FanSpeedRPM'"
+        - "fn": "stdFormatters"
+          "params":
+      "Aggregate": "fanspeedmetricdef"
+
 
   "metric_reports":
       "Logger": ["module", "metric_reports"]
