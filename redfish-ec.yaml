@@ -49,27 +49,7 @@ views:
         #"instantiate('sessionservice')",
         "instantiate('telemetry_service')",
         "instantiate('task_service')",
-        "instantiate('non-compliant', 'FQDD', 'LCD.Chassis.1')",
-        "instantiate('non-compliant','FQDD', 'QuickSync.Chassis.1')",
-        "instantiate('non-compliant', 'FQDD', 'ControlPanel.Chassis.1')",
       ]
-
-  # Needs to be fixed, lcd, quicksync, control_panel is not compliant.
-  "non-compliant":
-      "Logger": ["module", "FQDD"]
-      "Models":
-        "default":  { "unique_name": "FQDD"}
-      "Controllers":
-        - "fn": "ARMapper"
-          "params": {"modelname": "default", "cfgsection": "firmware/inventory", "mappinguniquename": "'fw_mapper_manager:' + FQDD ", "AddToView": "ar_mapper_inv"}
-      "View":
-        - "fn": "linkModel"
-          "params": {"existing": "default", "linkname": "swinv"}
-        - "fn": "with_URI"
-          "params":  " '/redfish/' + FQDD"
-        - "fn": "PublishResourceUpdatedEventsForModel"
-          "params": "default"
-      "Aggregate": "root"
 
   "chassis":
       "Logger": ["module", "Chassis"]
@@ -596,6 +576,12 @@ views:
         - "fn": "with_URI"
           "params": "rooturi + '/UpdateService/FirmwareInventory'"
       "Aggregate": "update_service_firmwareinventory"
+      "ExecPost": [
+        "instantiate('non-compliant', 'FQDD', 'LCD.Chassis.1')",
+        "instantiate('non-compliant', 'FQDD', 'QuickSync.Chassis.1')",
+        "instantiate('non-compliant', 'FQDD', 'ControlPanel.Chassis.1')",
+        "instantiate('non-compliant', 'FQDD', 'RCPUSB.Chassis.1')",
+      ]
 
   "firmware_instance":
       "Logger": ["module", "firmware_instance"]
@@ -1141,6 +1127,23 @@ views:
       "ExecPost": [
         "instantiate('attributes', 'parenturi', rooturi + '/Chassis/' + FQDD, 'FQDD', FQDD)"
         ]
+
+  # Needs to be fixed, lcd, quicksync, control_panel is not compliant.
+  "non-compliant":
+      "Logger": ["module", "FQDD"]
+      "Models":
+        "default":  { "unique_name": "FQDD"}
+      "Controllers":
+        - "fn": "ARMapper"
+          "params": {"modelname": "default", "cfgsection": "firmware/inventory", "mappinguniquename": "'fw_mapper_manager:' + FQDD ", "AddToView": "ar_mapper_inv"}
+      "View":
+        - "fn": "linkModel"
+          "params": {"existing": "default", "linkname": "swinv"}
+        - "fn": "with_URI"
+          "params":  " '/redfish/' + FQDD"
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+      "Aggregate": "root"
 
 awesome_mapper:
     ec_component_events:
