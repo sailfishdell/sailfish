@@ -254,8 +254,9 @@ func (es *EventService) evaluateEvent(log log.Logger, subCtx SubscriptionCtx, ev
 			for idx := range redfishevents {
 				totalEvents = append(totalEvents, &redfishevents[idx])
 			}
-			totalEvents = append(totalEvents, eventPtr.Events...)
 		}
+
+	  totalEvents = append(totalEvents, eventPtr.Events...)
 
 		eventlist = makeExternalRedfishEvent(subCtx, totalEvents, uuid)
 		if len(eventlist) == 0 {
