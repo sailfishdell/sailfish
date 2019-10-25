@@ -421,14 +421,9 @@ func StartInjectService(logger log.Logger, d *DomainObjects) {
 		for {
 			event := <-injectChan
 
+			eb.PublishEvent(context.Background(), event)
 			ev, ok := event.(syncEvent)
-
-			if event.EventType() == "LogEvent" || !ok {
-				eb.PublishEvent(context.Background(), event)
-				continue
-			}
 			if ok {
-				eb.PublishEvent(context.Background(), event)
 				ev.Wait()
 			}
 
@@ -490,7 +485,6 @@ func (c *InjectEvent) sendToChn(ctx context.Context) error {
 			trainload = make([]eh.EventData, 0, MAX_CONSOLIDATED_EVENTS)
 			e.Add(1)
 			if c.Synchronous {
-				e.Add(1)
 				defer e.Wait()
 			}
 
@@ -501,6 +495,9 @@ func (c *InjectEvent) sendToChn(ctx context.Context) error {
 
 	if len(trainload) > 0 {
 		e := event.NewSyncEvent(c.Name, trainload, time.Now())
+		if c.Synchronous {
+			defer e.Wait()
+		}
 		e.Add(1)
 		injectChan <- e
 
