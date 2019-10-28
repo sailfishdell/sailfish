@@ -125,15 +125,17 @@ type CommandHandler struct {
 	t       eh.AggregateType
 	store   aggregatestore.AggregateStore // commands to manage stored aggregates
 	cmdChan chan aggregateStoreStatus
+	bus eh.EventBus
 }
 
 // NewCommandHandler creates a new CommandHandler for an aggregate type.
-func NewCommandHandler(t eh.AggregateType, store aggregatestore.AggregateStore) (*CommandHandler, error) {
+func NewCommandHandler(t eh.AggregateType, store aggregatestore.AggregateStore, bus eh.EventBus) (*CommandHandler, error) {
 
 	h := &CommandHandler{
 		t:       "RedfishResource",
 		store:   store,
 		cmdChan: make(chan aggregateStoreStatus, 10),
+		bus: bus,
 	}
 	return h, nil
 }
@@ -182,6 +184,16 @@ func (h *CommandHandler) Save2DB(ctx context.Context) {
 	}
 }
 
+// EventPublisher is an optional event publisher that can be implemented by
+// aggregates to allow for publishing of events on a successful save.
+type EventPublisher interface {
+	// EventsToPublish returns all events to publish.
+	EventsToPublish() []eh.Event
+	// ClearEvents clears all events after a publish.
+	ClearEvents()
+}
+
+
 func (h *CommandHandler) HandleCommand(ctx context.Context, cmd eh.Command) error {
 	aggStatus := aggregateStoreStatus{}
 	// 100 - save
@@ -227,5 +239,17 @@ func (h *CommandHandler) HandleCommand(ctx context.Context, cmd eh.Command) erro
 			h.Save2DB(ctx)
 		}
 	}
+
+	publisher, ok := a.(EventPublisher)
+	if ok && h.bus != nil {
+		events := publisher.EventsToPublish()
+		publisher.ClearEvents()
+		for _, e := range events {
+			h.bus.PublishEvent(ctx, e)
+		}
+	}
+
+
 	return nil
 }
+

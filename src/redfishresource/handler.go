@@ -98,13 +98,13 @@ func NewDomainObjects() (*DomainObjects, error) {
 
 	// Create the aggregate repository.
 	var err error
-	d.AggregateStore, err = aggregatestore.NewAggregateStore(d.Repo, d.EventBus)
+	d.AggregateStore, err = aggregatestore.NewAggregateStore(d.Repo)
 	if err != nil {
 		return nil, fmt.Errorf("could not create aggregate store: %s", err)
 	}
 
 	// Create the aggregate command handler.
-	d.CommandHandler, err = NewCommandHandler(AggregateType, *d.AggregateStore)
+	d.CommandHandler, err = NewCommandHandler(AggregateType, *d.AggregateStore, d.EventBus)
 	if err != nil {
 		return nil, fmt.Errorf("could not create command handler: %s", err)
 	}

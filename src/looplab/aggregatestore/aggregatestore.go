@@ -36,14 +36,13 @@ type AggregateStore struct {
 }
 
 // NewAggregateStore creates an aggregate store with a read write repo.
-func NewAggregateStore(repo eh.ReadWriteRepo, bus eh.EventBus) (*AggregateStore, error) {
+func NewAggregateStore(repo eh.ReadWriteRepo) (*AggregateStore, error) {
 	if repo == nil {
 		return nil, ErrInvalidRepo
 	}
 
 	d := &AggregateStore{
 		repo: repo,
-		bus:  bus,
 	}
 	return d, nil
 }
@@ -75,33 +74,17 @@ type aLock interface {
 
 // Save implements the Save method of the eventhorizon.AggregateStore interface.
 func (r *AggregateStore) Save(ctx context.Context, aggregate eh.Aggregate) error {
-	var events = []eh.Event{}
-	publisher, ok := aggregate.(EventPublisher)
-	if ok && r.bus != nil {
-		events = publisher.EventsToPublish()
-	}
 
 	al, alok := aggregate.(aLock)
 	if alok {
 		al.Lock()
+		al.Unlock()
 	}
 
 	//fmt.Printf("%+v\n", b.Stats())
 	err := r.repo.Save(ctx, aggregate)
-
-	if alok {
-		al.Unlock()
-	}
 	if err != nil {
 		return err
-	}
-
-	// Publish events if supported by the aggregate.
-	if ok && r.bus != nil {
-		publisher.ClearEvents()
-		for _, e := range events {
-			r.bus.PublishEvent(ctx, e)
-		}
 	}
 
 	return nil

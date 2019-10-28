@@ -18,15 +18,6 @@ import (
 	eh "github.com/looplab/eventhorizon"
 )
 
-// EventPublisher is an optional event publisher that can be implemented by
-// aggregates to allow for publishing of events on a successful save.
-type EventPublisher interface {
-	// EventsToPublish returns all events to publish.
-	EventsToPublish() []eh.Event
-	// ClearEvents clears all events after a publish.
-	ClearEvents()
-}
-
 // SliceEventPublisher is an EventPublisher using a slice to store events.
 type SliceEventPublisher []eh.Event
 
