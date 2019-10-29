@@ -225,7 +225,6 @@ func (c *UpdateRedfishResourceProperties2) CommandType() eh.CommandType {
 // going through the aggregate it is [map]*RedfishResourceProperty...
 // NOTE: only for maps  can be updated to be used for lists
 func UpdateAgg(a *RedfishResourceAggregate, pathSlice []string, v interface{}) error {
-	changed := false
 	loc, ok := a.Properties.Value.(map[string]interface{})
 	if !ok {
 		return errors.New("aggregate was not passed in")
@@ -251,7 +250,6 @@ func UpdateAgg(a *RedfishResourceAggregate, pathSlice []string, v interface{}) e
 
 			if (len == i) && (k2.Value != v) {
 				k2.Value = v
-				changed = true
 			} else if len == i {
 				return nil
 			} else {
@@ -266,11 +264,7 @@ func UpdateAgg(a *RedfishResourceAggregate, pathSlice []string, v interface{}) e
 		}
 	}
 
-	if changed == true {
-		return fmt.Errorf("No Change")
-	} else {
-		return nil
-	}
+	return nil
 
 }
 

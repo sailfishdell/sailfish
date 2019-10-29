@@ -1325,11 +1325,11 @@ awesome_mapper:
       - { SelectEventType: "thp_fan_data_object", Select: "DM_FQDD == data.GetStringFromOffset(data.Data.OffsetKey)",
              Process: { "name": "updateFanData", "params":[]}}
 
+
     inst_power:
       - { SelectEventType: "InstPowerEvent",
-          Select: "data.FQDD == DM_FQDD",
-          ModelUpdate: [
-              {Property: "Instantaneous_Power", Query: "round_2_dec_pl(data.InstPower)", Default: 0}]}
+          Select: "DM_FQDD == data.FQDD",
+                Process: { "name": "updateInstPower", "params":[]}}
 
     iom_config:
       - { SelectEventType: "IomCapability", Select: "data.Name == FQDD",

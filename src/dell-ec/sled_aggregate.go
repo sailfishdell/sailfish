@@ -56,7 +56,7 @@ func RegisterSledAggregate(s *testaggregate.Service) {
 						"Name@meta":       vw.Meta(view.GETProperty("name"), view.GETModel("default")),
 						"Oem": map[string]interface{}{
 							"Dell": map[string]interface{}{
-								"InstPowerConsumption@meta": vw.Meta(view.PropGET("Instantaneous_Power")),
+								"InstPowerConsumption": 0,
 							},
 							"OemChassis": map[string]interface{}{
 								"@odata.id": vw.GetURI() + "/Attributes",
