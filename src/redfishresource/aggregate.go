@@ -125,7 +125,7 @@ type CommandHandler struct {
 	t       eh.AggregateType
 	store   aggregatestore.AggregateStore // commands to manage stored aggregates
 	cmdChan chan aggregateStoreStatus
-	bus eh.EventBus
+	bus     eh.EventBus
 }
 
 // NewCommandHandler creates a new CommandHandler for an aggregate type.
@@ -135,7 +135,7 @@ func NewCommandHandler(t eh.AggregateType, store aggregatestore.AggregateStore, 
 		t:       "RedfishResource",
 		store:   store,
 		cmdChan: make(chan aggregateStoreStatus, 10),
-		bus: bus,
+		bus:     bus,
 	}
 	return h, nil
 }
@@ -193,13 +193,12 @@ type EventPublisher interface {
 	ClearEvents()
 }
 
-
 func (h *CommandHandler) HandleCommand(ctx context.Context, cmd eh.Command) error {
 	aggStatus := aggregateStoreStatus{}
 	// 100 - save
 	// 001 - in progress
 	// 0   - don't process
-	save2db :=001 
+	save2db := 001
 	aggStatus.save2DB = &save2db
 
 	err := eh.CheckCommand(cmd)
@@ -226,7 +225,6 @@ func (h *CommandHandler) HandleCommand(ctx context.Context, cmd eh.Command) erro
 
 	}
 
-
 	if err = a.HandleCommand(ctx, cmd); err != nil {
 
 		if *aggStatus.save2DB >= 1 {
@@ -235,7 +233,7 @@ func (h *CommandHandler) HandleCommand(ctx context.Context, cmd eh.Command) erro
 		return err
 	} else {
 		if *aggStatus.save2DB >= 1 {
-			*aggStatus.save2DB-=1
+			*aggStatus.save2DB -= 1
 			h.Save2DB(ctx)
 		}
 	}
@@ -249,7 +247,5 @@ func (h *CommandHandler) HandleCommand(ctx context.Context, cmd eh.Command) erro
 		}
 	}
 
-
 	return nil
 }
-

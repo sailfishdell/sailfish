@@ -525,7 +525,7 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 					if !ok || installDate == "unknown" {
 						logger.Debug("swinv DID NOT GET class string with " + uri)
 						continue
-					}else if installDate == ""  {
+					} else if installDate == "" {
 						logger.Debug("swinv DID NOT GET class string with " + uri)
 						installDate = "1970-01-01T00:00:00Z"
 

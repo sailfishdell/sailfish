@@ -123,7 +123,6 @@ func AddEEMIMessage(response map[string]interface{}, a *RedfishResourceAggregate
 	return nil
 }
 
-
 func addToEEMIList(response map[string]interface{}, eemi ExtendedInfo, isSuccess bool) {
 	extendedInfoL := &[]map[string]interface{}{}
 	var ok bool
@@ -159,4 +158,3 @@ func addToEEMIList(response map[string]interface{}, eemi ExtendedInfo, isSuccess
 	}
 
 }
-

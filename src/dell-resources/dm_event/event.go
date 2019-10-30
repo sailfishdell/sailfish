@@ -97,25 +97,23 @@ type SlotBasedSoftwareInventoryObjectobj struct {
 	UniqueID                    int                            `json:"UniqueID"`
 }
 
-
 type FanEventData struct {
-       ObjectHeader      DataObjectHeader
-       Fanpwm            float64 `json:"fanpwm"`
-       Key               string
-       FanName           string
-       Fanpwm_int        int `json:"fanpwm_int"`
-       VendorName        string
-       WarningThreshold  int `json:"warningThreshold"`
-       DeviceName        string
-       TachName          string
-       CriticalThreshold int `json:"criticalThreshold"`
-       Fanhealth         int `json:"fanhealth"`
-       Numrotors         int `json:"numrotors"`
-       Rotor2rpm         int `json:"rotor2rpm"`
-       Rotor1rpm         int `json:"rotor1rpm"`
-       FanStateMask      int `json:"fanStateMask"`
+	ObjectHeader      DataObjectHeader
+	Fanpwm            float64 `json:"fanpwm"`
+	Key               string
+	FanName           string
+	Fanpwm_int        int `json:"fanpwm_int"`
+	VendorName        string
+	WarningThreshold  int `json:"warningThreshold"`
+	DeviceName        string
+	TachName          string
+	CriticalThreshold int `json:"criticalThreshold"`
+	Fanhealth         int `json:"fanhealth"`
+	Numrotors         int `json:"numrotors"`
+	Rotor2rpm         int `json:"rotor2rpm"`
+	Rotor1rpm         int `json:"rotor1rpm"`
+	FanStateMask      int `json:"fanStateMask"`
 }
-
 
 type PowerSupplyObjEventData struct {
 	ObjectHeader                     DataObjectHeader
