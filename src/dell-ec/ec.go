@@ -52,7 +52,6 @@ type waiter interface {
 func (o *ocp) ConfigChangeHandler() { o.configChangeHandler() }
 
 func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, d *domain.DomainObjects) *ocp {
-	flag := 1 // code that requires debug
 
 	logger = logger.New("module", "ec")
 	self := &ocp{}
@@ -110,9 +109,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	stdmeta.SetupSledProfilePlugin(d)
 	stdmeta.InitializeCertInfo(d)
 
-	if flag == 0 {
-		godefs.InitGoDef()
-	}
+	godefs.InitGoDef()
 
 	awesome_mapper2.AddFunction("find_uris_with_basename", func(args ...interface{}) (interface{}, error) {
 		if len(args) < 1 {
