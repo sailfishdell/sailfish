@@ -82,7 +82,11 @@ func (rrp *RedfishResourceProperty) ParseUnlocked(thing interface{}) {
 			if strings.HasSuffix(k.String(), "@meta") {
 				name := k.String()[:len(k.String())-5]
 				newEntry := &RedfishResourceProperty{}
-				if newEntry.Meta, ok = rv.Interface().(map[string]interface{}); ok {
+				if vMap, ok := rv.Interface().(map[string]interface{}); ok {
+					if newEntry.Value, ok = vMap["DEFAULT"]; ok {
+						delete(vMap, "DEFAULT")
+					}
+					newEntry.Meta = vMap
 					v[name] = newEntry
 				}
 			} else {
@@ -102,7 +106,7 @@ func (rrp *RedfishResourceProperty) ParseUnlocked(thing interface{}) {
 			sliceVal := val.Index(i)
 			if sliceVal.IsValid() {
 				newEntry := &RedfishResourceProperty{}
-				newEntry.ParseUnlocked(sliceVal.Interface())
+				newEntry.Parse(sliceVal.Interface())
 				rrp.Value = append(rrp.Value.([]interface{}), newEntry) //preallocated
 			}
 		}

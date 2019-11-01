@@ -24,6 +24,7 @@ type syncEvent interface {
 }
 
 func init() {
+	eh.RegisterCommand(func() eh.Command { return &UpdateMetricRedfishResource{} })
 	eh.RegisterCommand(func() eh.Command { return &CreateRedfishResource{} })
 	eh.RegisterCommand(func() eh.Command { return &RemoveRedfishResource{} })
 	eh.RegisterCommand(func() eh.Command { return &UpdateRedfishResourceProperties{} })
@@ -33,12 +34,13 @@ func init() {
 }
 
 const (
-	CreateRedfishResourceCommand            = eh.CommandType("internal:RedfishResource:Create")
-	RemoveRedfishResourceCommand            = eh.CommandType("internal:RedfishResource:Remove")
-	UpdateRedfishResourcePropertiesCommand  = eh.CommandType("internal:RedfishResourceProperties:Update")
-	UpdateRedfishResourcePropertiesCommand2 = eh.CommandType("internal:RedfishResourceProperties:Update:2")
-	RemoveRedfishResourcePropertyCommand    = eh.CommandType("internal:RedfishResourceProperties:Remove")
-	InjectEventCommand                      = eh.CommandType("internal:Event:Inject")
+	CreateRedfishResourceCommand                 = eh.CommandType("internal:RedfishResource:Create")
+	RemoveRedfishResourceCommand                 = eh.CommandType("internal:RedfishResource:Remove")
+	UpdateMetricRedfishResourcePropertiesCommand = eh.CommandType("internal:RedfishResourceProperties:UpdateMetric")
+	UpdateRedfishResourcePropertiesCommand       = eh.CommandType("internal:RedfishResourceProperties:Update")
+	UpdateRedfishResourcePropertiesCommand2      = eh.CommandType("internal:RedfishResourceProperties:Update:2")
+	RemoveRedfishResourcePropertyCommand         = eh.CommandType("internal:RedfishResourceProperties:Remove")
+	InjectEventCommand                           = eh.CommandType("internal:Event:Inject")
 )
 
 // Static type checking for commands to prevent runtime errors due to typos
@@ -223,14 +225,14 @@ func (c *UpdateRedfishResourceProperties2) CommandType() eh.CommandType {
 
 // aggregate is a.Properties.(RedfishresourceProperty)
 // going through the aggregate it is [map]*RedfishResourceProperty...
-// NOTE: only for maps  can be updated to be used for lists
-func UpdateAgg(a *RedfishResourceAggregate, pathSlice []string, v interface{}) error {
+// Updated to append to list.  TODO need a way to clean lists and prevent duplicates
+func UpdateAgg(a *RedfishResourceAggregate, pathSlice []string, v interface{}, appendLimit int) error {
 	loc, ok := a.Properties.Value.(map[string]interface{})
 	if !ok {
-		return errors.New("aggregate was not passed in")
+		return errors.New(fmt.Sprintf("Updateagg: aggregate wis wrong type %T", a.Properties.Value))
 	}
 
-	len := len(pathSlice) - 1
+	plen := len(pathSlice) - 1
 	for i, p := range pathSlice {
 		k, ok := loc[p]
 		if !ok {
@@ -241,16 +243,70 @@ func UpdateAgg(a *RedfishResourceAggregate, pathSlice []string, v interface{}) e
 			k2, ok := k.(*RedfishResourceProperty)
 			if !ok {
 				return fmt.Errorf("UpdateAgg Failed, RedfishResourcePropertyFailed")
-
 			}
-			err := validateValue(v)
-			if err != nil {
-				return err
+			// metric events have the data appended
+			switch v.(type) {
+			case []interface{}, []map[string]interface{}:
+				j := k2.Value.([]interface{})
+				aggSLen := len(j)
+				v2 := v.([]interface{})
+				if aggSLen >= appendLimit {
+					continue
+				}
+				if appendLimit < aggSLen+len(v2) {
+					k2.Parse(v2[appendLimit-aggSLen:])
+				} else {
+					k2.Parse(v2)
+				}
+				k2.Parse(j)
+
+				return nil
+			default:
+				if (plen == i) && (k2.Value != v) {
+					k2.Value = v
+				} else if plen == i {
+					return nil
+				} else {
+					tmp := k2.Value
+					loc, ok = tmp.(map[string]interface{})
+					if !ok {
+						return fmt.Errorf("UpdateAgg Failed %s type cast to map[string]interface{} for %+v  errored for %+v", a.ResourceURI, p, pathSlice)
+					}
+				}
 			}
 
-			if (len == i) && (k2.Value != v) {
-				k2.Value = v
-			} else if len == i {
+		default:
+			return fmt.Errorf("agg update for slice %+v, received type %T instead of *RedfishResourceProperty", pathSlice, k)
+		}
+	}
+	return nil
+
+}
+
+func GetValueinAgg(a *RedfishResourceAggregate, pathSlice []string) interface{} {
+	a.Properties.Lock()
+	defer a.Properties.Unlock()
+	loc, ok := a.Properties.Value.(map[string]interface{})
+	if !ok {
+		return errors.New(fmt.Sprintf("GetValueinAgg: aggregate value is not a map[string]interface{}, but %T", a.Properties.Value))
+	}
+
+	plen := len(pathSlice) - 1
+	for i, p := range pathSlice {
+		k, ok := loc[p]
+		if !ok {
+			return fmt.Errorf("UpdateAgg Failed can not find %s in %+v", p, loc)
+		}
+		switch k.(type) {
+		case *RedfishResourceProperty:
+			k2, ok := k.(*RedfishResourceProperty)
+			if !ok {
+				return fmt.Errorf("UpdateAgg Failed, RedfishResourcePropertyFailed")
+			}
+			// metric events have the data appended
+			if (plen == i) { 
+				return k2.Value
+			} else if plen == i {
 				return nil
 			} else {
 				tmp := k2.Value
@@ -259,6 +315,7 @@ func UpdateAgg(a *RedfishResourceAggregate, pathSlice []string, v interface{}) e
 					return fmt.Errorf("UpdateAgg Failed %s type cast to map[string]interface{} for %+v  errored for %+v", a.ResourceURI, p, pathSlice)
 				}
 			}
+
 		default:
 			return fmt.Errorf("agg update for slice %+v, received type %T instead of *RedfishResourceProperty", pathSlice, k)
 		}
@@ -288,25 +345,55 @@ func (c *UpdateRedfishResourceProperties2) Handle(ctx context.Context, a *Redfis
 		ResourceURI:   a.ResourceURI,
 		PropertyNames: make(map[string]interface{}),
 	}
-	a.Lock()
-	defer a.Unlock()
 
 	// update properties in aggregate
 	for k, v := range c.Properties {
 		pathSlice := strings.Split(k, "/")
 
-		err = UpdateAgg(a, pathSlice, v)
+		err := UpdateAgg(a, pathSlice, v, 0)
 
 		if err == nil {
 			d.PropertyNames[k] = v
 		}
-
 	}
 
 	if len(d.PropertyNames) > 0 {
-		a.PublishEvent(eh.NewEvent(RedfishResourcePropertiesUpdated, d.PropertyNames, time.Now()))
+		a.PublishEvent(eh.NewEvent(RedfishResourcePropertiesUpdated2, d, time.Now()))
 	}
 	return err
+}
+
+type UpdateMetricRedfishResource struct {
+	ID               eh.UUID                `json:"id"`
+	Properties       map[string]interface{} `eh:"optional"`
+	AppendLimit      int
+	ReportUpdateType string
+}
+
+// AggregateType satisfies base Aggregate interface
+func (c *UpdateMetricRedfishResource) AggregateType() eh.AggregateType { return AggregateType }
+
+// AggregateID satisfies base Aggregate interface
+func (c *UpdateMetricRedfishResource) AggregateID() eh.UUID { return c.ID }
+
+// CommandType satisfies base Command interface
+func (c *UpdateMetricRedfishResource) CommandType() eh.CommandType {
+	return UpdateMetricRedfishResourcePropertiesCommand
+}
+
+//reportUpdateType int // 0-AppendStopsWhenFull, 1-AppendWrapsWhenFull, 3- NewReport, 4-Overwrite
+
+// assume AppendStopsWhenFull
+func (c *UpdateMetricRedfishResource) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
+	for k, v := range c.Properties {
+		pathSlice := strings.Split(k, "/")
+		if err := UpdateAgg(a, pathSlice, v, int(c.AppendLimit)); err != nil {
+			fmt.Println("failed to updated agg")
+			return err
+		}
+	}
+
+	return nil
 }
 
 type UpdateRedfishResourceProperties struct {

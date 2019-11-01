@@ -53,8 +53,10 @@ func RegisterAggregate(s *testaggregate.Service) {
 					ResourceURI: vw.GetURI(),
 					Type:        "#MetricReportDefinitionCollection.MetricReportDefinitionCollection",
 					Context:     "/redfish/v1/$metadata#MetricReportDefinitionCollection.MetricReportDefinitionCollection",
+					Plugin:      "TelemetryService",
 					Privileges: map[string]interface{}{
-						"GET": []string{"Login"},
+						"GET":  []string{"Login"},
+						"POST": []string{"ConfigureManager"},
 					},
 					Properties: map[string]interface{}{
 						"Id":                       "MetricReportDefinitions",
@@ -82,5 +84,41 @@ func RegisterAggregate(s *testaggregate.Service) {
 			}, nil
 		})
 
-	return
+	s.RegisterAggregateFunction("fanspeedmetricdef",
+		func(ctx context.Context, subLogger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, vw *view.View, extra interface{}, params map[string]interface{}) ([]eh.Command, error) {
+			// TODO:  dynamically manage MetricProperties
+			return []eh.Command{
+				&domain.CreateRedfishResource{
+					ResourceURI: vw.GetURI(),
+					Type:        "#MetricDefinition.v1_0_0.MetricDefinition",
+					Context:     "/redfish/v1/$metadata#MetricDefinition.MetricDefinition",
+					Privileges: map[string]interface{}{
+						"GET": []string{"Login"},
+					},
+					Properties: map[string]interface{}{
+						"Id":              "FanSpeed",
+						"Name":            "Fan Speed Metric Definition",
+						"MetricType":      "Numeric",
+						"Implementation":  "PhysicalSensor",
+						"PhysicalContext": "Fan",
+						"MetricDataType":  "Decimal",
+						"MetricProperties": []string{
+							"/redfish/v1/Chassis/System.Chassis.1/Sensors/Fans/Fan.Slot.{SlotNumber}#Oem/Reading",
+						},
+						"Units":             "RPM",
+						"Precision":         2,
+						"Accuracy":          1.0,
+						"Calibration":       2,
+						"MinReadingRange":   0.0,
+						"MaxReadingRange":   1000.0,
+						"SensingInterval":   "PT1S",
+						"TimestampAccuracy": "PT1S",
+						"Wildcards": []interface{}{
+							map[string]interface{}{
+								"Name":   "SlotNumber",
+								"Values": []string{"1", "2", "3", "4", "5", "6", "7", "8", "9", "*"},
+							}}}},
+			}, nil
+
+		})
 }

@@ -121,7 +121,7 @@ func main() {
 	chainAuthRFSSE := func(u string, p []string) http.Handler {
 		return http_redfish_sse.NewRedfishSSEHandler(domainObjs, logger, u, p)
 	}
-	m.Path("/redfish_events").Methods("GET").HandlerFunc(
+	m.Path("/redfish/v1/SSE").Methods("GET").HandlerFunc(
 		session.MakeHandlerFunc(logger, domainObjs.EventBus, domainObjs, chainAuthRFSSE, basicauth.MakeHandlerFunc(chainAuthRFSSE, chainAuthRFSSE("UNKNOWN", []string{"Unauthenticated"}))))
 
 	// backend command handling

@@ -2,9 +2,9 @@ package domain
 
 import (
 	"context"
-	"fmt"
 	"sync"
 	"time"
+	//"fmt"
 
 	eh "github.com/looplab/eventhorizon"
 	"github.com/superchalupa/sailfish/src/looplab/aggregatestore"
@@ -122,66 +122,66 @@ type RRCmdHandler interface {
 }
 
 type CommandHandler struct {
-	t       eh.AggregateType
-	store   aggregatestore.AggregateStore // commands to manage stored aggregates
-	cmdChan chan aggregateStoreStatus
-	bus     eh.EventBus
+	sync.RWMutex
+	t        eh.AggregateType
+	store    aggregatestore.AggregateStore // commands to manage stored aggregates
+	cmdSlice []*aggregateStoreStatus
+	bus      eh.EventBus
 }
 
 // NewCommandHandler creates a new CommandHandler for an aggregate type.
 func NewCommandHandler(t eh.AggregateType, store aggregatestore.AggregateStore, bus eh.EventBus) (*CommandHandler, error) {
 
 	h := &CommandHandler{
-		t:       "RedfishResource",
-		store:   store,
-		cmdChan: make(chan aggregateStoreStatus, 10),
-		bus:     bus,
+		t:        "RedfishResource",
+		store:    store,
+		cmdSlice: []*aggregateStoreStatus{},
+		bus:      bus,
 	}
 	return h, nil
 }
 
 type aggregateStoreStatus struct {
+	aggLock   sync.RWMutex
 	aggStatus eh.Aggregate
-	save2DB   *int
+	save2DB   int
+}
+
+func (as *aggregateStoreStatus) Lock() {
+	as.aggLock.Lock()
+}
+
+func (as *aggregateStoreStatus) Unlock() {
+	as.aggLock.Unlock()
 }
 
 // Saves aggregates in the order they enter the HandleCommand
-func (h *CommandHandler) Save2DB(ctx context.Context) {
+func (h *CommandHandler) Save2DB(ctx context.Context, aPtr *aggregateStoreStatus) {
 
-	chanLen := len(h.cmdChan)
-	if chanLen == 0 {
+	h.RLock()
+	defer h.RUnlock()
+	if aPtr != h.cmdSlice[0] {
 		return
 	}
-	for chanLen != 0 {
-		chanLen = chanLen - 1
 
-		if chanLen == 0 {
-			return
-		}
+	cnt := 0
 
-		aggS := <-h.cmdChan
-
-		agg := aggS.aggStatus
-		action := *aggS.save2DB
-		aggS.save2DB = nil
-
-		// wait maximum 5 seconds
-		for i := 0; i < 5; i++ {
-			if action == 100 {
-				h.store.Save(ctx, agg)
-				break
-			} else if action == 1 {
-				action = *aggS.save2DB
-				time.Sleep(1 * time.Second)
-			} else if action == 0 {
-				break
-			}
-		}
+	for i, a := range h.cmdSlice {
+		agg := a.aggStatus
+		action := a.save2DB
 
 		if action == 1 {
-			fmt.Println("Process took longer than 5 seconds.  Dropping")
+			h.store.Save(ctx, agg)
+			h.cmdSlice[i] = nil
+			cnt += 1
+		} else if action == 2 {
+			h.cmdSlice[i] = nil
+			cnt += 1
+		} else {
+			break
 		}
 	}
+	h.cmdSlice = h.cmdSlice[cnt:]
 }
 
 // EventPublisher is an optional event publisher that can be implemented by
@@ -195,11 +195,9 @@ type EventPublisher interface {
 
 func (h *CommandHandler) HandleCommand(ctx context.Context, cmd eh.Command) error {
 	aggStatus := aggregateStoreStatus{}
-	// 100 - save
-	// 001 - in progress
-	// 0   - don't process
-	save2db := 001
-	aggStatus.save2DB = &save2db
+	// 2 - delete
+	// 1 - save
+	// 0   - skip
 
 	err := eh.CheckCommand(cmd)
 	if err != nil {
@@ -217,34 +215,39 @@ func (h *CommandHandler) HandleCommand(ctx context.Context, cmd eh.Command) erro
 	if cmdType == CreateRedfishResourceCommand ||
 		cmdType == UpdateRedfishResourcePropertiesCommand ||
 		cmdType == UpdateRedfishResourcePropertiesCommand2 ||
+		cmdType == UpdateMetricRedfishResourcePropertiesCommand ||
 		cmdType == RemoveRedfishResourcePropertyCommand {
 
 		aggStatus.aggStatus = a
-		h.cmdChan <- aggStatus
-		*aggStatus.save2DB = 101
-
+		aggStatus.save2DB = 1
+		h.Lock()
+		h.cmdSlice = append(h.cmdSlice, &aggStatus)
+		h.Unlock()
 	}
 
 	if err = a.HandleCommand(ctx, cmd); err != nil {
-
-		if *aggStatus.save2DB >= 1 {
-			*aggStatus.save2DB = 0
+		if aggStatus.save2DB >= 1 {
+			aggStatus.save2DB = 2
 		}
 		return err
 	} else {
-		if *aggStatus.save2DB >= 1 {
-			*aggStatus.save2DB -= 1
-			h.Save2DB(ctx)
+		var events []eh.Event
+		publisher, ok := a.(EventPublisher)
+		if ok && h.bus != nil {
+			events = publisher.EventsToPublish()
 		}
-	}
 
-	publisher, ok := a.(EventPublisher)
-	if ok && h.bus != nil {
-		events := publisher.EventsToPublish()
-		publisher.ClearEvents()
-		for _, e := range events {
-			h.bus.PublishEvent(ctx, e)
+		if aggStatus.save2DB >= 1 {
+			h.Save2DB(ctx, &aggStatus)
 		}
+
+		if ok && h.bus != nil {
+			publisher.ClearEvents()
+			for _, e := range events {
+				h.bus.PublishEvent(ctx, e)
+			}
+		}
+
 	}
 
 	return nil
