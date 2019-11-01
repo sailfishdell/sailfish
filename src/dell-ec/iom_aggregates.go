@@ -100,7 +100,7 @@ func RegisterIOMAggregate(s *testaggregate.Service) {
 						"GET":   []string{"Login"},
 						"PATCH": []string{"ConfigureManager"},
 					},
-					DefaultFilter: "$select=!IOMConfig_objects/sso_info", 
+					DefaultFilter: "$select=!IOMConfig_objects/sso_info",
 					Properties: map[string]interface{}{
 						"Id@meta":                       vw.Meta(view.PropGET("unique_name")),
 						"internal_mgmt_supported@meta":  vw.Meta(view.PropGET("managed")),
