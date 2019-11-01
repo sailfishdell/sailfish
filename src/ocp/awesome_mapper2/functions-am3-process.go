@@ -335,6 +335,36 @@ func init() {
 		return aggUpdateFn, nil, nil
 	})
 
+
+	AddAM3ProcessSetupFunction("updatePowerState", func(logger log.Logger, processConfig interface{}) (processFunc, processSetupFunc, error) {
+		aggUpdateFn := func(mp *MapperParameters, event eh.Event, ch eh.CommandHandler, d *domain.DomainObjects) error {
+			data, ok := event.Data().(*a.AttributeUpdatedData)
+			if !ok {
+				logger.Error("updatePowerState not have AttributeUpdated event", "type", event.EventType, "data", event.Data())
+				return errors.New("updatePowerState did not receive AttributeUpdated")
+			}
+
+			//logger.Error("recevied attribute", "type", event.EventType, "data", data.Value)
+
+			powerState, parsed := map_power_state(data.Value)
+			if !parsed {
+				logger.Error("unable to get power state", "type", event.EventType, "data", event.Data())
+			}
+
+			ch.HandleCommand(mp.ctx,
+				&domain.UpdateRedfishResourceProperties2{
+					ID: mp.uuid,
+					Properties: map[string]interface{}{
+						"PowerState": powerState,
+					},
+				})
+
+			return nil
+		}
+
+		return aggUpdateFn, nil, nil
+	})
+
 }
 
 func round2DecPlaces(value float64, nilFlag bool) interface{} {
@@ -378,5 +408,21 @@ func get_health(health int) interface{} {
 		return "Critical"
 	default:
 		return nil
+	}
+}
+
+func map_power_state (value interface{}) (interface{}, bool) {
+
+	switch t, ok := value.(string); t {
+	case "Chassis Standby Power State":
+			return "Off", ok
+	case "Chassis Power On State":
+			return "On", ok
+	case "Chassis Powering On State":
+			return "PoweringOn", ok
+	case "Chassis Powering Off State":
+			return "PoweringOff", ok
+	default:
+			return "", ok
 	}
 }
