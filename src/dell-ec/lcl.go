@@ -554,6 +554,13 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 						})
 						//fmt.Printf("add to list ---------> INSTANTIATED: %s\n", vw.GetURI())
 						firmwareInventoryViews[compVerTuple] = vw
+
+					} else {
+						vw := firmwareInventoryViews[compVerTuple]
+						mdl := vw.GetModel("default")
+						mdl.UpdateProperty("install_date", installDate)
+						mdl.UpdateProperty("updateable", updateable)
+						mdl.UpdateProperty("name",name)
 					}
 
 					// These values are for post processing on Instantiated object
