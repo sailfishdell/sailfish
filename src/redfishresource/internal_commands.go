@@ -548,7 +548,7 @@ func StartInjectService(logger log.Logger, d *DomainObjects) {
 
 }
 
-const MAX_CONSOLIDATED_EVENTS = 10
+const MAX_CONSOLIDATED_EVENTS = 5
 const injectUUID = eh.UUID("49467bb4-5c1f-473b-0000-00000000000f")
 
 type Decoder interface {
