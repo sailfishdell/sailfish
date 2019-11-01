@@ -49,7 +49,7 @@ type Option func(e *EventWaiter) error
 func NewEventWaiter(o ...Option) *EventWaiter {
 	w := EventWaiter{
 		done:       make(chan struct{}),
-		inbox:      make(chan eh.Event, 150),
+		inbox:      make(chan eh.Event, 200),
 		register:   make(chan listener),
 		unregister: make(chan listener),
 		autorun:    true,
