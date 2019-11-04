@@ -1329,7 +1329,7 @@ awesome_mapper:
     tasks:
       - { SelectEventType: "AttributeUpdated",
           SelectFN: "isTaskState",
-          ModelUpdate: [ {Property: "task_state", Query: "map_task_state(data.Value)"}]}
+          Process: { "name": "updateTaskState", "params":[]}}
 
     chassis:
       - { SelectEventType: "AttributeUpdated",

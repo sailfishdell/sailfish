@@ -2,7 +2,6 @@ package task_service
 
 import (
 	"context"
-	"errors"
 	"strings"
 	"sync"
 
@@ -33,22 +32,6 @@ func InitTask(logger log.Logger, instantiateSvc *testaggregate.Service) {
 	  task_arg_name, _ := args[1].(string) //this should always be a string
 	  attributes, ok := attrModel.GetPropertyOkUnlocked("task_msg_1_args")
 	}*/
-
-	awesome_mapper2.AddFunction("map_task_state", func(args ...interface{}) (interface{}, error) {
-		task_state, ok := args[0].(string)
-		if !ok {
-			logger.Crit("Mapper configuration error: task state not passed as string", "args[0]", args[0])
-			return nil, errors.New("Mapper configuration error: task state not passed as string")
-		}
-
-		if strings.EqualFold(task_state, "Completed") {
-			return "Completed", nil
-		} else if strings.EqualFold(task_state, "Interrupted") {
-			return "Interrupted", nil
-		} else {
-			return "Running", nil
-		}
-	})
 
 	var syncModels func(m *model.Model, updates []model.Update)
 	type newtask struct {
@@ -364,7 +347,7 @@ func RegisterAggregate(s *testaggregate.Service) {
 						"Name@meta":            vw.Meta(view.GETProperty("task_name")),
 						"Description":          "Tasks running on EC are listed here",
 						"Id@meta":              vw.Meta(view.GETProperty("task_id")),
-						"TaskState@meta":       vw.Meta(view.GETProperty("task_state")),
+                        "TaskState": "",
 						"TaskStatus@meta":      vw.Meta(view.GETProperty("task_status")),
 						"StartTime@meta":       vw.Meta(view.GETProperty("task_start")),
 						"EndTime@meta":         vw.Meta(view.GETProperty("task_end")),
