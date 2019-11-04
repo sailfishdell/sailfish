@@ -1,0 +1,1 @@
+{"name": "AttributeUpdated", "event_array": [{"FQDD": "System.Chassis.1", "Group": "Info", "Index": "1", "Name": "ChassisPowerStatus", "Value": "Bad State", "Privileges": {"License": 0, "Private": false, "ReadPrivilege": 0, "WritePrivilege": 0, "Readonly": true, "IsSuppressed": false}}], "event_seq": 1}
