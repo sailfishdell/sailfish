@@ -100,7 +100,7 @@ func RegisterAggregate(s *testaggregate.Service) {
 						"Order@meta":        vw.Meta(view.PropGET("order")),
 						"Orientation@meta":  vw.Meta(view.PropGET("orientation")),
 						"ParentConfig@meta": vw.Meta(view.PropGET("parentConfig")),
-						"Rows@meta":         vw.Meta(view.PropGET("rows")),
+						"Rows":              "", //sent as int, should be string
 						"Type@meta":         vw.Meta(view.PropGET("type")),
 					},
 				}}, nil
