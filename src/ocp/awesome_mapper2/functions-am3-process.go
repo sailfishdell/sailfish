@@ -8,6 +8,7 @@ import (
     "strings"
 	"sync"
 	"time"
+    "reflect"
 
 	"github.com/Knetic/govaluate"
 	eh "github.com/looplab/eventhorizon"
@@ -38,6 +39,29 @@ func AddAM3ProcessSetupFunction(name string, fn setupProcessFunc) {
 	setupProcessFuncs[name] = fn
 	setupProcessFuncsMu.Unlock()
 }
+
+
+
+
+type helperFunc func(value interface{}) (interface{}, bool)
+type setupHelperFunc func(logger log.Logger) (helperFunc)
+
+var setupHelperFuncsInit sync.Once
+var setupHelperFuncsMu sync.RWMutex
+var setupHelperFuncs map[string]setupHelperFunc
+
+func InitAM3HelperFunctions() (map[string]setupProcessFunc, *sync.RWMutex) {
+	setupHelperFuncsInit.Do(func() { setupHelperFuncs = map[string]setupHelperFunc{} })
+	return setupProcessFuncs, &setupProcessFuncsMu
+}
+
+func AddAM3HelperFunction (name string, fn setupHelperFunc) {
+    InitAM3HelperFunctions()
+    setupHelperFuncsMu.Lock()
+	setupHelperFuncs[name] = fn
+	setupHelperFuncsMu.Unlock()
+}
+
 
 type ModelUpdate struct {
 	property    string
@@ -395,6 +419,75 @@ func init() {
         return aggUpdateFn, nil, nil
     })
 
+
+    AddAM3ProcessSetupFunction("am3UpdateAttribute", func(logger log.Logger, processConfig interface{}) (processFunc, processSetupFunc, error) {
+        aggUpdateFn := func(mp *MapperParameters, event eh.Event, ch eh.CommandHandler, d *domain.DomainObjects) error {
+            data, ok := event.Data().(*a.AttributeUpdatedData)
+            if !ok {
+                logger.Error("updateAttributeString not have AttributeUpdated event", "type", event.EventType, "data", event.Data())
+                return errors.New("updateAttributeString did not receive AttributeUpdated")
+            }
+
+            // crash if these don't work as it is a confuration error and needs to be
+            // fixed before shipping
+            v := processConfig.(map[interface{}]interface{})
+            helpFunc := v["Helper"].(string)
+            key := v["Field"].(string);
+
+            // Don't crash here if the function cannot convert (it happens)
+            val, parsed := setupHelperFuncs[helpFunc](logger)(data.Value)
+            if !parsed {
+                logger.Error("data", "value", val, "parsed", parsed)
+            }
+
+            ch.HandleCommand(mp.ctx,
+                &domain.UpdateRedfishResourceProperties2{
+                    ID: mp.uuid,
+                    Properties: map[string]interface{}{
+                        key: val,
+                    },
+                })
+
+            return nil
+        }
+
+        return aggUpdateFn, nil, nil
+    })
+
+
+
+
+
+
+
+    /* -----------------------------   Helper functions ------------------------------------- */
+
+
+
+    AddAM3HelperFunction("int_to_string", func(logger log.Logger) helperFunc {
+        helperFn := func(value interface{}) (interface{}, bool) {
+            logger.Debug("AM3 helper", "value", value )
+
+            switch t := value.(type) {
+            case uint, uint8, uint16, uint32, uint64:
+                str := strconv.FormatUint(reflect.ValueOf(t).Uint(), 10)
+                return str, true
+            case float32, float64:
+                str := strconv.FormatFloat(reflect.ValueOf(t).Float(), 'G', -1, 64)
+                return str, true
+            case string:
+                return t, true
+            case int, int8, int16, int32, int64:
+                str := strconv.FormatInt(reflect.ValueOf(t).Int(), 10)
+                return str, true
+            default:
+                return nil, false
+            }
+
+        }
+
+        return helperFn
+    })
 
 }
 

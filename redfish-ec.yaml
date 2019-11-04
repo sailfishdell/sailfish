@@ -1324,7 +1324,7 @@ awesome_mapper:
       - { SelectEventType: "AttributeUpdated",
           SelectParams: ["Columns"],
           SelectFN: "isRowOrColumn",
-          ModelUpdate: [ {Property: "columns", Query: "string(data.Value)"}]}
+          Process: { "name": "am3UpdateAttribute", "params":{"Helper":"int_to_string", "Field":"Columns"}}}
 
     tasks:
       - { SelectEventType: "AttributeUpdated",
