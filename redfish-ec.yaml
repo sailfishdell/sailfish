@@ -1331,7 +1331,7 @@ awesome_mapper:
     tasks:
       - { SelectEventType: "AttributeUpdated",
           SelectFN: "isTaskState",
-          Process: { "name": "updateTaskState", "params":[]}}
+          Process: { "name": "am3AttributeUpdated", "params":{"Helper":"map_task_state", "Field":"TaskState"}}}
 
     chassis:
       - { SelectEventType: "AttributeUpdated",

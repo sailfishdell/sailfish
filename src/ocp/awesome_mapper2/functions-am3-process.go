@@ -390,36 +390,6 @@ func init() {
 		return aggUpdateFn, nil, nil
 	})
 
-    AddAM3ProcessSetupFunction("updateTaskState", func(logger log.Logger, processConfig interface{}) (processFunc, processSetupFunc, error) {
-        aggUpdateFn := func(mp *MapperParameters, event eh.Event, ch eh.CommandHandler, d *domain.DomainObjects) error {
-            data, ok := event.Data().(*a.AttributeUpdatedData)
-            if !ok {
-                logger.Error("updateTaskState not have AttributeUpdated event", "type", event.EventType, "data", event.Data())
-                return errors.New("updateTaskState did not receive AttributeUpdated")
-            }
-
-            //logger.Error("recevied attribute", "type", event.EventType, "data", data.Value)
-
-            state, parsed := map_task_state(data.Value)
-            if !parsed {
-                logger.Error("unable to get task state", "type", event.EventType, "data", event.Data())
-            }
-
-            ch.HandleCommand(mp.ctx,
-                &domain.UpdateRedfishResourceProperties2{
-                    ID: mp.uuid,
-                    Properties: map[string]interface{}{
-                        "TaskState": state,
-                    },
-                })
-
-            return nil
-        }
-
-        return aggUpdateFn, nil, nil
-    })
-
-
     AddAM3ProcessSetupFunction("am3AttributeUpdated", func(logger log.Logger, processConfig interface{}) (processFunc, processSetupFunc, error) {
         aggUpdateFn := func(mp *MapperParameters, event eh.Event, ch eh.CommandHandler, d *domain.DomainObjects) error {
             data, ok := event.Data().(*a.AttributeUpdatedData)
@@ -427,6 +397,8 @@ func init() {
                 logger.Error("Did not have AttributeUpdated event", "type", event.EventType, "data", event.Data())
                 return errors.New("Did not receive AttributeUpdated")
             }
+
+            //logger.Error("Received AttributeUpdatedData event", "value",data.Value)
 
             // crash if these don't work as it is a confuration error and needs to be fixed
             prm := processConfig.(map[interface{}]interface{})
@@ -541,6 +513,24 @@ func init() {
         return helperFn
     })
 
+    AddAM3HelperFunction("map_task_state", func(logger log.Logger) helperFunc {
+        helperFn := func(value interface{}) (interface{}, bool) {
+            logger.Debug("AM3 helper", "value", value )
+
+            task_state, ok := value.(string)
+            if strings.EqualFold(task_state, "Completed") {
+                return "Completed", ok
+            } else if strings.EqualFold(task_state, "Interrupted") {
+                return "Interrupted", ok
+            }
+
+            // default to "Running"
+            return "Running", ok
+        }
+
+        return helperFn
+    })
+
 
 }
 
@@ -604,15 +594,3 @@ func map_power_state (value interface{}) (interface{}, bool) {
 	}
 }
 
-func map_task_state (value interface{}) (interface{}, bool) {
-
-    task_state, ok := value.(string)
-
-    if strings.EqualFold(task_state, "Completed") {
-            return "Completed", ok
-    } else if strings.EqualFold(task_state, "Interrupted") {
-            return "Interrupted", ok
-    } else {
-            return "Running", ok
-    }
-}
