@@ -93,19 +93,6 @@ func init() {
 		}
 	})
 
-	AddFunction("int", func(args ...interface{}) (interface{}, error) {
-		switch t := args[0].(type) {
-		case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, uintptr:
-			return int(reflect.ValueOf(t).Int()), nil
-		case float32, float64:
-			return int(reflect.ValueOf(t).Float()), nil
-		case string:
-			float, err := strconv.ParseFloat(t, 64)
-			return int(float), err
-		default:
-			return nil, errors.New("cant parse non-string")
-		}
-	})
 	AddFunction("removefromset", func(args ...interface{}) (interface{}, error) {
 		model, ok := args[0].(*model.Model)
 		if !ok {

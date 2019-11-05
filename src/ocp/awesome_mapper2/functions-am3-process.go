@@ -338,9 +338,14 @@ func init() {
 }
 
 func round2DecPlaces(value float64, nilFlag bool) interface{} {
+  msm_flag := false
 	if nilFlag == true && value == 0 {
 		return nil
 	}
+
+  if msm_flag {
+    return value
+  }
 
 	vs := fmt.Sprintf("%.2f", value)
 	val, err := strconv.ParseFloat(vs, 2)

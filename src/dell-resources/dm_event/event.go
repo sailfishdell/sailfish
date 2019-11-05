@@ -17,7 +17,6 @@ const (
 	ComponentRemoved                    = eh.EventType("ComponentRemoved")
 	FileReadEvent                       = eh.EventType("FileReadEvent")
 	FileLinkEvent                       = eh.EventType("FileLinkEvent")
-	ProbeObjEvent                       = eh.EventType("ProbeObjEvent")
 )
 
 func init() {
@@ -36,7 +35,6 @@ func init() {
 	})
 	eh.RegisterEventData(IomCapability, func() eh.EventData { return &IomCapabilityData{} })
 	eh.RegisterEventData(ComponentRemoved, func() eh.EventData { return &ComponentRemovedData{} })
-	eh.RegisterEventData(ProbeObjEvent, func() eh.EventData { return &ProbeObjEventData{} })
 }
 
 type IomCapabilityData struct {
@@ -196,82 +194,6 @@ type AvgPowerConsumptionStatDataObjEventData struct {
 	MinPwrLastWeekTime   int64  `json:"minPwrLastWeekTime"`
 	ObjExtFlags          int    `json:"objExtFlags"`
 	OffsetKey            string `json:"offsetKey"`
-}
-
-type RaidSiObjectHeader struct {
-	ObjVersion          int     `json:"objVersion"`
-	ObjName             string  `json:"objName"`
-	ObjAttributes       int     `json:"objAttributes"`
-	PrimaryStatus       int     `json:"primaryStatus"`
-	UpdateTime          int     `json:"updateTime"`
-	SyncTime            float64 `json:"syncTime"`
-	AlternateFQDDOffset int     `json:"alternateFQDDOffset"`
-	Flags               int     `json:"flags"`
-}
-
-type RaidObjectHeader struct {
-	DataObjHeader       DataObjectHeader
-	PrimaryStatus       int     `json:"primaryStatus"`
-	FriendlyFQDDOffset  int     `json:"friendlyFQDDOffset"`
-	SyncTime            float64 `json:"syncTime"`
-	ObjExtFlags         int     `json:"objExtFlags"`
-	ObjAttributes       int     `json:"objAttributes"`
-	ObjName             string  `json:"objName"`
-	KeyOffset           int     `json:"keyOffset"`
-	ObjVersion          int     `json:"objVersion"`
-	FqddOffset          int     `json:"fqddOffset"`
-	AlternateFQDDOffset int     `json:"alternateFQDDOffset"`
-	Flags               int     `json:"flags"`
-	UpdateTime          int     `json:"updateTime"`
-}
-
-type ProbeThresholdsobj struct {
-	UnrThreshold int `json:"unrThreshold"`
-	UcThreshold  int `json:"ucThreshold"`
-	LncThreshold int `json:"lncThreshold"`
-	UncThreshold int `json:"uncThreshold"`
-	LcThreshold  int `json:"lcThreshold"`
-	LnrThreshold int `json:"lnrThreshold"`
-}
-
-type ProbeObjEventData struct {
-	ObjectHeader         DataObjectHeader
-	ProbeThresholds      ProbeThresholdsobj `json:"ProbeThresholds"`
-	OffsetProbeLocation  string             `json:"offsetProbeLocation"`
-	EntityID             int                `json:"entityID"`
-	ProbeStatus          int                `json:"probeStatus"`
-	ProbeCapabilities    int                `json:"probeCapabilities"`
-	ObjExtFlags          int                `json:"objExtFlags"`
-	OffsetKey            string             `json:"offsetKey"`
-	OffsetReAliasedName  string             `json:"offsetReAliasedName"`
-	OffsetFriendlyFQDD   string             `json:"offsetFriendlyFQDD"`
-	Type1MaxReadingRange int                `json:"type1MaxReadingRange"`
-	Type1MinReadingRange int                `json:"type1MinReadingRange"`
-	UnitModifier         int                `json:"unitModifier"`
-	SubType              int                `json:"subType"`
-	ProbeReading         int                `json:"probeReading"`
-	SensorNumber         int                `json:"sensorNumber"`
-	OffsetTargetDevKey   string             `json:"offsetTargetDevKey"`
-	InitupdateInProgress int                `json:"InitupdateInProgress"`
-}
-
-type VoltageSensorObjEventData struct {
-	ObjectHeader         DataObjectHeader
-	ProbeThresholds      ProbeThresholdsobj //`json:"ProbeThresholds"`
-	probestatus          int
-	probecapabilities    int
-	objextflags          int
-	offsetkey            string `mapstructure:"offsetKey"`
-	offsetrealiasedname  string `mapstructure:"offsetReAliasedName"`
-	offsetfriendlyFQDD   string `mapstructure:"offsetFriendlyFQDD"`
-	type1maxreadingrange int
-	type1minreadingrange int
-	unitmodifier         int
-	subtype              int
-	probereading         int
-	offsettargetdevkey   string `mapstructure:"offsetTargetDevKey"`
-	sensornumber         int    `mapstructure:"sensorNumber"`
-	initupdateinprogress int    `mapstructure:"InitupdateInProgress"`
 }
 
 type FileReadEventData struct {
