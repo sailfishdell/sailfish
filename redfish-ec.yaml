@@ -1306,7 +1306,7 @@ awesome_mapper:
     certificate:
       - { SelectEventType: "FileReadEvent",
           Select: "data.URI == 'CertificateInventory' && data.FQDD == FQDD",
-          Process: { "name": "am3FileReadEvent", "params":{"Helper":"empty_to_null", "Field":"CertificateSigningRequest"}}}
+          Process: { "name": "am3FileReadEvent", "params":{"Conv":"empty_to_null", "Field":"CertificateSigningRequest"}}}
       # certificate data is read on demand, not sure of AM3 integration
       - { SelectEventType: "FileReadEvent",
           Select: "data.URI == 'FactoryIdentity' && data.FQDD == FQDD",
@@ -1322,31 +1322,32 @@ awesome_mapper:
       - { SelectEventType: "AttributeUpdated",
           SelectParams: ["Rows"],
           SelectFN: "isRowOrColumn",
-          Process: { "name": "am3AttributeUpdated", "params":{"Helper":"value_to_string", "Field":"Rows"}}}
+          Process: { "name": "am3AttributeUpdated", "params":{"Conv":"value_to_string", "Field":"Rows"}}}
       - { SelectEventType: "AttributeUpdated",
           SelectParams: ["Columns"],
           SelectFN: "isRowOrColumn",
-          Process: { "name": "am3AttributeUpdated", "params":{"Helper":"value_to_string", "Field":"Columns"}}}
+          Process: { "name": "am3AttributeUpdated", "params":{"Conv":"value_to_string", "Field":"Columns"}}}
 
     tasks:
       - { SelectEventType: "AttributeUpdated",
           SelectFN: "isTaskState",
-          Process: { "name": "am3AttributeUpdated", "params":{"Helper":"map_task_state", "Field":"TaskState"}}}
+          Process: { "name": "am3AttributeUpdated", "params":{"Conv":"map_task_state", "Field":"TaskState"}}}
 
     chassis:
       - { SelectEventType: "AttributeUpdated",
           Select: "data.FQDD == FQDD && data.Name == 'ChassisPowerStatus'",
-                Process: { "name": "updatePowerState", "params":[]}}
+          Process: { "name": "am3AttributeUpdated", "params":{"Conv":"map_power_state", "Field":"PowerState"}}}
 
     fan:
-      - { SelectEventType: "thp_fan_data_object", Select: "DM_FQDD == data.GetStringFromOffset(data.Data.OffsetKey)",
-             Process: { "name": "updateFanData", "params":[]}}
+      - { SelectEventType: "thp_fan_data_object",
+          Select: "DM_FQDD == data.GetStringFromOffset(data.Data.OffsetKey)",
+          Process: { "name": "updateFanData", "params":[]}}
 
 
     inst_power:
       - { SelectEventType: "InstPowerEvent",
           Select: "DM_FQDD == data.FQDD",
-                Process: { "name": "updateInstPower", "params":[]}}
+          Process: { "name": "updateInstPower", "params":[]}}
 
     iom_config:
       - { SelectEventType: "IomCapability", Select: "data.Name == FQDD",
