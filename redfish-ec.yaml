@@ -1306,10 +1306,12 @@ awesome_mapper:
     certificate:
       - { SelectEventType: "FileReadEvent",
           Select: "data.URI == 'CertificateInventory' && data.FQDD == FQDD",
-          ModelUpdate: [ { Property: "certificate_signing_request", Query: "empty_to_null(data.Content)" } ] }
+          Process: { "name": "am3FileReadEvent", "params":{"Helper":"empty_to_null", "Field":"CertificateSigningRequest"}}}
+      # certificate data is read on demand, not sure of AM3 integration
       - { SelectEventType: "FileReadEvent",
           Select: "data.URI == 'FactoryIdentity' && data.FQDD == FQDD",
           ModelUpdate: [ { Property: "certificate", Query: "empty_to_null(data.Content)" } ] }
+
 
     slot:
       - { SelectEventType: "AttributeUpdated",
@@ -1320,11 +1322,11 @@ awesome_mapper:
       - { SelectEventType: "AttributeUpdated",
           SelectParams: ["Rows"],
           SelectFN: "isRowOrColumn",
-          Process: { "name": "am3UpdateAttribute", "params":{"Helper":"int_to_string", "Field":"Rows"}}}
+          Process: { "name": "am3AttributeUpdated", "params":{"Helper":"value_to_string", "Field":"Rows"}}}
       - { SelectEventType: "AttributeUpdated",
           SelectParams: ["Columns"],
           SelectFN: "isRowOrColumn",
-          Process: { "name": "am3UpdateAttribute", "params":{"Helper":"int_to_string", "Field":"Columns"}}}
+          Process: { "name": "am3AttributeUpdated", "params":{"Helper":"value_to_string", "Field":"Columns"}}}
 
     tasks:
       - { SelectEventType: "AttributeUpdated",

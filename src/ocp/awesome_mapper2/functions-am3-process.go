@@ -420,24 +420,60 @@ func init() {
     })
 
 
-    AddAM3ProcessSetupFunction("am3UpdateAttribute", func(logger log.Logger, processConfig interface{}) (processFunc, processSetupFunc, error) {
+    AddAM3ProcessSetupFunction("am3AttributeUpdated", func(logger log.Logger, processConfig interface{}) (processFunc, processSetupFunc, error) {
         aggUpdateFn := func(mp *MapperParameters, event eh.Event, ch eh.CommandHandler, d *domain.DomainObjects) error {
             data, ok := event.Data().(*a.AttributeUpdatedData)
             if !ok {
-                logger.Error("updateAttributeString not have AttributeUpdated event", "type", event.EventType, "data", event.Data())
-                return errors.New("updateAttributeString did not receive AttributeUpdated")
+                logger.Error("Did not have AttributeUpdated event", "type", event.EventType, "data", event.Data())
+                return errors.New("Did not receive AttributeUpdated")
             }
 
-            // crash if these don't work as it is a confuration error and needs to be
-            // fixed before shipping
-            v := processConfig.(map[interface{}]interface{})
-            helpFunc := v["Helper"].(string)
-            key := v["Field"].(string);
+            // crash if these don't work as it is a confuration error and needs to be fixed
+            prm := processConfig.(map[interface{}]interface{})
+            key := prm["Field"].(string);
 
-            // Don't crash here if the function cannot convert (it happens)
-            val, parsed := setupHelperFuncs[helpFunc](logger)(data.Value)
-            if !parsed {
-                logger.Error("data", "value", val, "parsed", parsed)
+            // use the attribute value unless a conversion function has been specified
+            val := data.Value
+
+            // the conversion funcation is optional
+            if helpFunc, ok := prm["Helper"].(string); ok {
+                val, ok = setupHelperFuncs[helpFunc](logger)(data.Value)
+                if !ok {
+                    logger.Error("data", "value", val, "parsed", ok)
+                }
+            }
+
+            ch.HandleCommand(mp.ctx,
+                &domain.UpdateRedfishResourceProperties2{
+                    ID: mp.uuid,
+                    Properties: map[string]interface{}{
+                        key: val,
+                    },
+                })
+
+            return nil
+        }
+
+        return aggUpdateFn, nil, nil
+    })
+
+    AddAM3ProcessSetupFunction("am3FileReadEvent", func(logger log.Logger, processConfig interface{}) (processFunc, processSetupFunc, error) {
+        aggUpdateFn := func(mp *MapperParameters, event eh.Event, ch eh.CommandHandler, d *domain.DomainObjects) error {
+            data, ok := event.Data().(*dm_event.FileReadEventData)
+            if !ok {
+                logger.Error("Did not have FileReadEvent event", "type", event.EventType, "data", event.Data())
+                return errors.New("Did not receive FileReadEvent")
+            }
+
+            prm := processConfig.(map[interface{}]interface{})
+            key := prm["Field"].(string);
+            var val interface{} = data.Content
+
+            if helpFunc, ok := prm["Helper"].(string); ok {
+                val, ok = setupHelperFuncs[helpFunc](logger)(val)
+                if !ok {
+                    logger.Error("data", "value", val, "parsed", ok)
+                }
             }
 
             ch.HandleCommand(mp.ctx,
@@ -460,11 +496,14 @@ func init() {
 
 
 
-    /* -----------------------------   Helper functions ------------------------------------- */
+    /*
+                            AM3 Helper functions
 
+        Logic functions to convert the backend data format into a Redfish Spec compliant
+        format that can be consumed.
+    */
 
-
-    AddAM3HelperFunction("int_to_string", func(logger log.Logger) helperFunc {
+    AddAM3HelperFunction("value_to_string", func(logger log.Logger) helperFunc {
         helperFn := func(value interface{}) (interface{}, bool) {
             logger.Debug("AM3 helper", "value", value )
 
@@ -488,6 +527,20 @@ func init() {
 
         return helperFn
     })
+
+    AddAM3HelperFunction("empty_to_null", func(logger log.Logger) helperFunc {
+        helperFn := func(value interface{}) (interface{}, bool) {
+            logger.Debug("AM3 helper", "value", value )
+
+            if value == "" {
+                return nil, true
+            }
+            return value, true
+        }
+
+        return helperFn
+    })
+
 
 }
 
