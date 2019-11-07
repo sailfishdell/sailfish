@@ -304,7 +304,7 @@ func GetValueinAgg(a *RedfishResourceAggregate, pathSlice []string) interface{} 
 				return fmt.Errorf("UpdateAgg Failed, RedfishResourcePropertyFailed")
 			}
 			// metric events have the data appended
-			if (plen == i) { 
+			if plen == i {
 				return k2.Value
 			} else if plen == i {
 				return nil
@@ -338,6 +338,13 @@ func validateValue(val interface{}) error {
 //  When a CommandHandler "Handle" is called it will retrieve the aggregate from the DB.  and call this Handle. Then save the aggregate 'a' back to the db.  no locking is required..
 // provide error when no change made..
 func (c *UpdateRedfishResourceProperties2) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
+
+	if a.ID == eh.UUID("") {
+		requestLogger := ContextLogger(ctx, "internal_commands")
+		requestLogger.Error("Aggregate does not exist!", "UUID", a.ID, "URI", a.ResourceURI)
+		return errors.New("non existent aggregate")
+	}
+
 	var err error = nil
 
 	d := &RedfishResourcePropertiesUpdatedData2{

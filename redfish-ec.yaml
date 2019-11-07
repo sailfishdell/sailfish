@@ -880,8 +880,6 @@ views:
       "Models":
         "default":  {"unique_name": "FQDD" }
       "Controllers":
-        - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "fan", "uniquename": "'am2_fan_' + FQDD + '/' + ChassisFQDD", "passthru": {"DM_FQDD": "ChassisFQDD + '#' + FQDD"}}
         - "fn": "ARMapper"
           "params": {"modelname": "default", "cfgsection": "firmware/inventory", "mappinguniquename": "'firmware_fan_mapper:' + ChassisFQDD + '/' + FQDD", "AddToView": "ar_mapper_inv"}
         - "fn": "ARMapper"
@@ -1356,11 +1354,6 @@ awesome_mapper:
       - { SelectEventType: "AttributeUpdated",
           Select: "data.FQDD == FQDD && data.Name == 'ChassisPowerStatus'",
           Process: { "name": "am3AttributeUpdated", "params":{"Conv":"map_power_state", "Field":"PowerState"}}}
-
-    fan:
-      - { SelectEventType: "thp_fan_data_object",
-          Select: "DM_FQDD == data.GetStringFromOffset(data.Data.OffsetKey)",
-          Process: { "name": "updateFanData", "params":[]}}
 
 
     inst_power:
