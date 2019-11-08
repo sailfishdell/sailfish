@@ -1255,11 +1255,11 @@ awesome_mapper:
           SelectFN: "true",
           Exec: [ "updateSensorEvent(rooturi + '/Chassis/System.Chassis.1/Sensors/Temperatures', data)" ]}
       - { SelectEventType: "RedfishResource:created",
-          SelectFN: "uriCheckNoHash",
+          SelectFN: "uriCheckWithHash",
           SelectParams: ["rooturi", "/Chassis/System.Chassis.1/Sensors/Temperatures"],
           ModelUpdate: [ {Property: "temperature_uris", Query: "addtoset(model, propname, data.ResourceURI)"} ]}
       - { SelectEventType: "RedfishResource:removed",
-          SelectFN: "uriCheckNoHash",
+          SelectFN: "uriCheckWithHash",
           SelectParams: ["rooturi", "/Chassis/System.Chassis.1/Sensors/Temperatures"],
           ModelUpdate: [ {Property: "temperature_uris", Query: "removefromset(model, propname, data.ResourceURI)"} ]}
 
