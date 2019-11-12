@@ -52,7 +52,7 @@ type Implementation interface {
 func main() {
 	flag.StringSliceP("listen", "l", []string{}, "Listen address.  Formats: (http:[ip]:nn, https:[ip]:port)")
 
-	var cfgMgrMu sync.RWMutex
+  var cfgMgrMu sync.RWMutex
 	cfgMgr := viper.New()
 	if err := cfgMgr.BindPFlags(flag.CommandLine); err != nil {
 		fmt.Fprintf(os.Stderr, "Could not bind viper flags: %s\n", err)
@@ -215,6 +215,16 @@ func main() {
 			// HTTP protocol listener
 			// "https:[addr]:port
 			addr := strings.TrimPrefix(listen, "unix:")
+
+      // delete old socket file
+      if _, err := os.Stat(addr); !os.IsNotExist(err){
+        logger.Info("Socket file found, deleting...")
+        err := os.Remove(addr)
+        if err != nil {
+          logger.Error("Could not remove old socket file", "Error", err.Error())
+        }
+      }
+
 			logger.Info("UNIX SOCKET listener starting on " + addr)
 			s := &http.Server{
 				Handler:        loggingHTTPHandler,
