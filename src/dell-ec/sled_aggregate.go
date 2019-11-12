@@ -56,9 +56,12 @@ func RegisterSledAggregate(s *testaggregate.Service) {
 						"Name@meta":       vw.Meta(view.GETProperty("name"), view.GETModel("default")),
 						"Oem": map[string]interface{}{
 							"Dell": map[string]interface{}{
+							  "OemChassis": map[string]interface{}{
+								  "@odata.id": vw.GetURI() + "/Attributes",
+							  },
 								"InstPowerConsumption": 0,
 							},
-							"OemChassis": map[string]interface{}{
+              "OemChassis": map[string]interface{}{ //TODO: Remove for Redfish Compliance
 								"@odata.id": vw.GetURI() + "/Attributes",
 							},
 						},
