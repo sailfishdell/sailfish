@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"sync"
+	"time"
 
 	"github.com/gorilla/mux"
 	eh "github.com/looplab/eventhorizon"
@@ -25,9 +26,14 @@ type waiter interface {
 	Run()
 }
 
+type myRepo interface {
+	eh.ReadWriteRepo
+	IterateCB(ctx context.Context, cb func(context.Context, eh.Entity) error) (err error)
+}
+
 type DomainObjects struct {
 	CommandHandler eh.CommandHandler
-	Repo           eh.ReadWriteRepo
+	Repo           myRepo
 	EventBus       eh.EventBus
 	EventWaiter    waiter
 	AggregateStore *aggregatestore.AggregateStore
@@ -109,6 +115,8 @@ func NewDomainObjects() (*DomainObjects, error) {
 		return nil, fmt.Errorf("could not create command handler: %s", err)
 	}
 
+	go d.CheckTree()
+
 	return &d, nil
 }
 
@@ -134,78 +142,85 @@ func (d *DomainObjects) GetAggregateID(uri string) (id eh.UUID) {
 
 // VALIDATE TREE - DEBUG ONLY
 func (d *DomainObjects) CheckTree() (id eh.UUID, ok bool) {
-	d.treeMu.RLock()
-	defer d.treeMu.RUnlock()
-
-	injectCmds := 0
-	aggs, _ := d.Repo.FindAll(context.Background())
-	for _, agg := range aggs {
-		if rr, ok := agg.(*RedfishResourceAggregate); ok {
-			checkuri := rr.ResourceURI
-			if id, ok := d.Tree[checkuri]; ok {
-				if id == agg.EntityID() {
-					// found good agg in tree
-					continue
-				} else {
-					fmt.Printf("Validate %s\n", agg.EntityID())
-					fmt.Printf("\tURI: %s", checkuri)
-
-					rr.Lock()
-					fmt.Printf("\n\tAggregate ID Mismatch! %s != %s  (count: %d)\n", id, agg.EntityID(), rr.checkcount)
-					if rr.checkcount > 0 {
-						fmt.Printf("\n\tCheck expired, assuming hanging aggregate and removing\n")
-						d.Repo.Remove(context.Background(), rr.EntityID())
+	for {
+		injectCmds := 0
+		// TODO: get actual number of current aggregates.
+		number_of_aggs := 3400
+		seen_aggs := 0
+		d.Repo.IterateCB(context.Background(), func(ctx context.Context, agg eh.Entity) error {
+			time.Sleep(time.Duration(30) * time.Second / time.Duration(number_of_aggs))
+			seen_aggs++
+			if rr, ok := agg.(*RedfishResourceAggregate); ok {
+				checkuri := rr.ResourceURI
+				d.treeMu.RLock()
+				id, ok := d.Tree[checkuri]
+				d.treeMu.RUnlock()
+				if ok {
+					if id == agg.EntityID() {
+						// found good agg in tree... no need to check further stuff
+						return nil
 					} else {
-						rr.checkcount++
-					}
-					rr.Unlock()
+						fmt.Printf("Validate %s\n", agg.EntityID())
+						fmt.Printf("\tURI: %s", checkuri)
 
+						rr.Lock()
+						fmt.Printf("\n\tAggregate ID Mismatch! %s != %s  (count: %d)\n", id, agg.EntityID(), rr.checkcount)
+						if rr.checkcount > 0 {
+							fmt.Printf("\n\tCheck expired, assuming hanging aggregate and removing\n")
+							d.Repo.Remove(context.Background(), rr.EntityID())
+						} else {
+							rr.checkcount++
+						}
+						rr.Unlock()
+
+					}
+				} else {
+					if string(agg.EntityID()) == string(injectUUID) {
+						// it's an inject command. that's ok
+						injectCmds++
+					} else {
+						// aggregate isn't in the tree at that uri
+						fmt.Printf("Validate %s\n", agg.EntityID())
+						fmt.Printf("\tURI: %s", checkuri)
+						rr.Lock()
+						fmt.Printf("\n\tNOT IN TREE: %d\n", rr.checkcount)
+						if rr.checkcount > 0 {
+							fmt.Printf("\n\tCheck expired, assuming hanging aggregate and removing\n")
+
+							d.Repo.Remove(context.Background(), rr.EntityID())
+							// remove any plugins linked to the now unlinked agg. Careful here
+							// because if a new aggregate is linked in we dont want to delete the
+							// new plugins that may have already been instantiated
+							p, err := InstantiatePlugin(PluginType(rr.ResourceURI))
+							type closer interface {
+								Close()
+							}
+							if err == nil && p != nil {
+								if c, ok := p.(closer); ok {
+									c.Close()
+								}
+							}
+						} else {
+							rr.checkcount++
+						}
+						rr.Unlock()
+					}
 				}
 			} else {
-				if string(agg.EntityID()) == string(injectUUID) {
-					// it's an inject command. that's ok
-					injectCmds++
-				} else {
-					// aggregate isn't in the tree at that uri
-					fmt.Printf("Validate %s\n", agg.EntityID())
-					fmt.Printf("\tURI: %s", checkuri)
-					rr.Lock()
-					fmt.Printf("\n\tNOT IN TREE: %d\n", rr.checkcount)
-					if rr.checkcount > 0 {
-						fmt.Printf("\n\tCheck expired, assuming hanging aggregate and removing\n")
-
-						d.Repo.Remove(context.Background(), rr.EntityID())
-						// remove any plugins linked to the now unlinked agg. Careful here
-						// because if a new aggregate is linked in we dont want to delete the
-						// new plugins that may have already been instantiated
-						p, err := InstantiatePlugin(PluginType(rr.ResourceURI))
-						type closer interface {
-							Close()
-						}
-						if err == nil && p != nil {
-							if c, ok := p.(closer); ok {
-								c.Close()
-							}
-						}
-					} else {
-						rr.checkcount++
-					}
-					rr.Unlock()
-				}
+				fmt.Printf("Validate %s\n", agg.EntityID())
+				fmt.Printf("NOT AN RRA!\n")
+				//panic("Found aggregate in store that isn't a RedfishResourceAggregate")
 			}
-		} else {
-			fmt.Printf("Validate %s\n", agg.EntityID())
-			fmt.Printf("NOT AN RRA!\n")
-			//panic("Found aggregate in store that isn't a RedfishResourceAggregate")
-		}
-	}
+			return nil
+		})
 
-	if len(aggs) != len(d.Tree)+injectCmds || injectCmds > 1 {
-		fmt.Printf("MISMATCH Tree(%d) Aggregates(%d) InjectCmds(%d)\n", len(d.Tree), len(aggs), injectCmds)
+		if seen_aggs != len(d.Tree)+injectCmds || injectCmds > 1 {
+			fmt.Printf("MISMATCH Tree(%d) Aggregates(%d) InjectCmds(%d)\n", len(d.Tree), seen_aggs, injectCmds)
+		}
+		//fmt.Printf("Number of inject commands: %d\n", injectCmds)
+		//fmt.Printf("Number of tree objects: %d\n", len(d.Tree))
+		//fmt.Printf("Number of aggregate objects: %d\n", len(seen_aggs))
 	}
-	//fmt.Printf("Number of inject commands: %d\n", injectCmds)
-	//fmt.Printf("Number of tree objects: %d\n", len(d.Tree))
-	//fmt.Printf("Number of aggregate objects: %d\n", len(aggs))
 
 	return
 }
@@ -392,9 +407,11 @@ func (d *DomainObjects) DumpStatus() http.Handler {
 		injectCmds := 0
 		orphans := 0
 		fmt.Fprintf(w, "DUMP Aggregate Repository\n")
-		aggs, _ := d.Repo.FindAll(context.Background())
-		for _, agg := range aggs {
+
+		seen_aggs := 0
+		d.Repo.IterateCB(context.Background(), func(ctx context.Context, agg eh.Entity) error {
 			fmt.Fprintf(w, "================================================\n")
+			seen_aggs++
 			if rr, ok := agg.(*RedfishResourceAggregate); ok {
 				fmt.Fprintf(w, "RedfishResourceAggregate: ")
 				treeLookup, ok := d.Tree[rr.ResourceURI]
@@ -418,7 +435,8 @@ func (d *DomainObjects) DumpStatus() http.Handler {
 				fmt.Fprintf(w, "UNKNOWN ENTITY: %s\n", rr.EntityID())
 			}
 			fmt.Fprintf(w, "\n\n")
-		}
+			return nil
+		})
 
 		pluginsMu.Lock()
 		defer pluginsMu.Unlock()
@@ -428,7 +446,7 @@ func (d *DomainObjects) DumpStatus() http.Handler {
 		}
 
 		fmt.Fprintf(w, "\nSTATS DUMP\n")
-		fmt.Fprintf(w, "Tree(%d) Aggregates(%d) InjectCmds(%d) Orphans(%d)\n", len(d.Tree), len(aggs), injectCmds, orphans)
+		fmt.Fprintf(w, "Tree(%d) Aggregates(%d) InjectCmds(%d) Orphans(%d)\n", len(d.Tree), seen_aggs, injectCmds, orphans)
 		fmt.Fprintf(w, "InjectChan Q Len = %d\n", len(injectChan))
 		fmt.Fprintf(w, "# PLUGINS = %d\n", len(plugins))
 
