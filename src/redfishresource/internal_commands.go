@@ -517,7 +517,6 @@ func StartInjectService(logger log.Logger, d *DomainObjects) {
 				}
 
 				s.Notify("WATCHDOG=1")
-				d.CheckTree()
 			}
 		}()
 
