@@ -905,7 +905,7 @@ views:
         ]
 
 
-  "iom2":
+  "iom":
       "Logger": ["module", "IOM"]
       "Models":
         "default":  {"unique_name": "FQDD",  "managed_by": "array(rooturi + '/Managers/CMC.Integrated.1')"}
@@ -920,9 +920,12 @@ views:
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
       "Aggregate": "iom"
+      "ExecPost": [
+        "instantiate('iom2', 'FQDD', FQDD)",
+        ]
 
 
-  "iom":
+  "iom2":
       "Logger": ["module", "IOM"]
       "Models":
         "default":  {"unique_name": "FQDD", "inst_power": "0", "managed_by": "array(rooturi + '/Managers/CMC.Integrated.1')"}
@@ -958,7 +961,6 @@ views:
       "ExecPost": [
         "instantiate('attributes', 'parenturi', rooturi + '/Chassis/' + FQDD, 'FQDD', FQDD)",
         "instantiate('iom_config', 'FQDD', FQDD)",
-        "instantiate('iom2', 'FQDD', FQDD)",
         ]
 
         
