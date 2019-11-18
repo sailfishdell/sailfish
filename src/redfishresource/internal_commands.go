@@ -602,12 +602,12 @@ func StartInjectService(logger log.Logger, d *DomainObjects) {
 				eventSeq := int(queued[0].EventSeq)
 				// event sequence jumped!
 				if eventSeq > internalSeq+1 {
-					if tries < 20 {
+					if tries < 40 {
 						tries += 1
 						sequenceTimer = time.NewTimer(IETIMEOUT)
 						continue
 					}
-					logger.Crit("InjectService: Event Timer Triggered", "# events", len(queued), "expected", internalSeq+1, "actual", eventSeq)
+					logger.Crit("InjectService: Changing Internal Event Sequence", "# events in queue", len(queued), "before", internalSeq, "after", eventSeq-1)
 				}
 
 				tries = 0
@@ -624,8 +624,11 @@ func StartInjectService(logger log.Logger, d *DomainObjects) {
 			event := <-injectChan
 
 			eb.PublishEvent(context.Background(), event)
+
 			ev, ok := event.(syncEvent)
-			if ok {
+			if event.EventType() == "LogEvent" {
+				// do nothing
+			} else if ok {
 				ev.Wait()
 			}
 
