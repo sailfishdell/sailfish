@@ -566,9 +566,9 @@ views:
         - "fn": "with_URI"
           "params": "rooturi + '/UpdateService'"
         - "fn": "with_PumpHandledAction"
-          "params": {"name": "update.reset", "uri": "/Actions/Oem/DellUpdateService.Reset", "timeout": 30}
+          "params": {"name": "update.reset", "uri": "/Actions/Oem/DellUpdateService.Reset", "timeout": 90}
         - "fn": "with_PumpHandledAction"
-          "params": {"name": "update.syncup", "uri": "/Actions/Oem/DellUpdateService.Syncup", "timeout": 30}
+          "params": {"name": "update.syncup", "uri": "/Actions/Oem/DellUpdateService.Syncup", "timeout": 90}
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
       "Aggregate": "update_service"
