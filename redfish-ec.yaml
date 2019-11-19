@@ -3,7 +3,7 @@ main:
     #options: "openbmc" | "dell_ec" | "mockup"
 
 listen:
-  - unix:sailfish.socket
+   - unix:sailfish.socket
   # enable 8080 port only for testing, as per NCC audit it needs to be disabled on the build
   # - http::8080
   #  enable pprof only for debuging, it creates a memory leak if used
@@ -1157,6 +1157,8 @@ views:
           "params": {"name": "chassis.peripheralmapping", "uri": "/Actions/Oem/DellChassis.PeripheralMapping", "timeout": 30}
         - "fn": "with_PumpHandledAction"
           "params": {"name": "chassis.virtualreseat", "uri": "/Actions/Oem/DellChassis.VirtualReseat", "timeout": 30}
+        - "fn": "with_PumpHandledAction"
+          "params": {"name": "chassis.idracreset", "uri": "/Actions/Oem/DellChassis.iDRACReset", "timeout": 30}
       "Aggregate": "sled"
       "ExecPost": [
         "instantiate('attributes', 'parenturi', rooturi + '/Chassis/' + FQDD, 'FQDD', FQDD)"

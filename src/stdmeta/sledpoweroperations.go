@@ -24,7 +24,7 @@ type Service struct {
 	logger log.Logger
 }
 
-func SledVirtualReseatSvc(ctx context.Context, logger log.Logger, eb eh.EventBus) *Service {
+func SledPwrOperationsSvc(ctx context.Context, logger log.Logger, eb eh.EventBus) *Service {
 	EventPublisher := eventpublisher.NewEventPublisher()
 	eb.AddHandler(eh.MatchEvent(actionhandler.GenericActionEvent), EventPublisher)
 	EventWaiter := eventwaiter.NewEventWaiter(eventwaiter.SetName("Sled Virtual Reseat Waiter"), eventwaiter.NoAutoRun)
@@ -32,7 +32,8 @@ func SledVirtualReseatSvc(ctx context.Context, logger log.Logger, eb eh.EventBus
 	go EventWaiter.Run()
 
 	sled_prefix := "System.Modular"
-	virtual_reseat := "/Actions/Oem/DellChassis.VirtualReseat"
+	virtualReseat := "/Actions/Oem/DellChassis.VirtualReseat"
+	idracReset := "/Actions/Oem/DellChassis.iDRACReset"
 
 	ret := &Service{
 		eb:     eb,
@@ -71,32 +72,36 @@ func SledVirtualReseatSvc(ctx context.Context, logger log.Logger, eb eh.EventBus
 					}
 				}
 
-				if !(strings.Contains(uri, sled_prefix) && strings.Contains(uri, virtual_reseat)) {
+				var resURI string
+				if strings.Contains(uri, sled_prefix) && strings.Contains(uri, virtualReseat) {
+					resURI = strings.Replace(uri, virtualReseat, "", -1)
+				} else if strings.Contains(uri, sled_prefix) && strings.Contains(uri, idracReset) {
+					resURI = strings.Replace(uri, idracReset, "", -1)
+				} else {
 					continue
 				}
 
-				resURI := strings.Replace(uri, virtual_reseat, "", -1)
 				attrURI := resURI + "/Attributes"
 
 				attrv, err := domain.InstantiatePlugin(domain.PluginType(attrURI))
 				if err != nil || attrv == nil {
-					logger.Error("Could not find plugin for resource uri")
+					logger.Error("SledPower: Could not find plugin for resource uri")
 					continue
 				}
 				attrvw, ok := attrv.(*view.View)
 				if !ok {
-					logger.Error("Could not typecast plugin as view")
+					logger.Error("SledPower:Could not typecast plugin as view")
 					continue
 				}
 				attrmdl := attrvw.GetModel("default")
 				if attrmdl == nil {
-					logger.Error("Could not find 'default' model in view")
+					logger.Error("SledPower: Could not find 'default' model in view")
 					continue
 				}
 
 				all_attributes, ok := attrmdl.GetPropertyOk("attributes")
 				if !ok {
-					logger.Error("Could not get list of sled attributes")
+					logger.Error("SledPower: Could not get list of sled attributes")
 					continue
 				}
 
@@ -113,14 +118,14 @@ func SledVirtualReseatSvc(ctx context.Context, logger log.Logger, eb eh.EventBus
 					}
 				}
 				if flag != true {
-					logger.Error("Could not get sled type")
+					logger.Error("SledPower: Could not get sled type")
 					continue
 				}
 
 				re := regexp.MustCompile(`System\.Modular\.(\d+).*`)
 				matches := re.FindSubmatch([]byte(resURI))
 				if len(matches) == 0 {
-					logger.Error("Could not find sled slot number")
+					logger.Error("SledPower: Could not find sled slot number")
 					continue
 				}
 				slot_num := string(matches[len(matches)-1])
