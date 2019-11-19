@@ -74,6 +74,9 @@ func RegisterSledAggregate(s *testaggregate.Service) {
 								"#DellChassis.v1_0_0.VirtualReseat": map[string]interface{}{
 									"target": vw.GetActionURI("chassis.virtualreseat"),
 								},
+								"#DellChassis.v1_0_0.iDRACReset": map[string]interface{}{
+									"target": vw.GetActionURI("chassis.idracreset"),
+								},
 							},
 						},
 					}}}, nil
