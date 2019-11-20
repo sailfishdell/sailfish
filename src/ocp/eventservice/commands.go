@@ -71,8 +71,6 @@ func (c *POST) Handle(ctx context.Context, a *domain.RedfishResourceAggregate) e
 		return errors.New("Wrong aggregate type returned")
 	}
 
-	redfishResource.Lock()
-	defer redfishResource.Unlock()
 	domain.NewGet(subctx, redfishResource, &redfishResource.Properties, c.auth)
 	data.Results = domain.Flatten(&redfishResource.Properties, false)
 

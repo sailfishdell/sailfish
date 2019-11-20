@@ -113,9 +113,6 @@ func (c *PATCH) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 	for k, v := range a.Headers {
 		data.Headers[k] = v
 	}
-	a.Lock()
-	defer a.Unlock()
-
 	tmpResponse := map[string]interface{}{}
 	NewPatch(ctx, tmpResponse, a, &a.Properties, c.auth, c.Body)
 	data.Results = Flatten(&a.Properties, false)

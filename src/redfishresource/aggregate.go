@@ -30,18 +30,16 @@ func RegisterRRA(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew w
 }
 
 type RedfishResourceAggregate struct {
-	events   []eh.Event
-	eventsMu sync.RWMutex
+	events []eh.Event
 
 	// public
 	ID          eh.UUID
 	ResourceURI string
 	Plugin      string
 
-	Properties     RedfishResourceProperty
-	resultsCacheMu sync.RWMutex
-	StatusCode     int // http status code for the current state of this object since the last time we've run the meta functions
-	DefaultFilter  string
+	Properties    RedfishResourceProperty
+	StatusCode    int // http status code for the current state of this object since the last time we've run the meta functions
+	DefaultFilter string
 
 	// TODO: need accessor functions for all of these just like property stuff
 	// above so that everything can be properly locked
@@ -49,36 +47,16 @@ type RedfishResourceAggregate struct {
 	Headers      map[string]string
 }
 
-func (agg *RedfishResourceAggregate) Lock() {
-	agg.resultsCacheMu.Lock()
-}
-
-func (agg *RedfishResourceAggregate) Unlock() {
-	agg.resultsCacheMu.Unlock()
-}
-
-func (agg *RedfishResourceAggregate) RLock() {
-	agg.resultsCacheMu.RLock()
-}
-
-func (agg *RedfishResourceAggregate) RUnlock() {
-	agg.resultsCacheMu.RUnlock()
-}
-
 // PublishEvent registers an event to be published after the aggregate
 // has been successfully saved.
 func (a *RedfishResourceAggregate) PublishEvent(e eh.Event) {
-	a.eventsMu.Lock()
 	a.events = append(a.events, e)
-	a.eventsMu.Unlock()
 }
 
 // EventsToPublish implements the EventsToPublish method of the EventPublisher interface.
 func (a *RedfishResourceAggregate) EventsToPublish() (ret []eh.Event) {
-	a.eventsMu.Lock()
 	ret = a.events
 	a.events = []eh.Event{}
-	a.eventsMu.Unlock()
 	return
 }
 

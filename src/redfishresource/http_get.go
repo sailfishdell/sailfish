@@ -54,10 +54,6 @@ func (c *GET) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 		data.Headers[k] = v
 	}
 
-	// fill in data for cache miss, and then go to the top of the loop
-	a.Lock()
-	defer a.Unlock()
-
 	NewGet(ctx, a, &a.Properties, c.auth)
 	data.Results = Flatten(&a.Properties, false)
 	data.StatusCode = a.StatusCode
