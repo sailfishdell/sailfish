@@ -214,8 +214,11 @@ func (d *DomainObjects) CheckTree() (id eh.UUID, ok bool) {
 			return nil
 		})
 
-		if seen_aggs != len(d.Tree)+injectCmds || injectCmds > 1 {
-			fmt.Printf("MISMATCH Tree(%d) Aggregates(%d) InjectCmds(%d)\n", len(d.Tree), seen_aggs, injectCmds)
+		d.treeMu.RLock()
+		treeSize := len(d.Tree)
+		d.treeMu.RUnlock()
+		if seen_aggs != treeSize+injectCmds || injectCmds > 1 {
+			fmt.Printf("MISMATCH Tree(%d) Aggregates(%d) InjectCmds(%d)\n", treeSize, seen_aggs, injectCmds)
 		}
 		//fmt.Printf("Number of inject commands: %d\n", injectCmds)
 		//fmt.Printf("Number of tree objects: %d\n", len(d.Tree))
