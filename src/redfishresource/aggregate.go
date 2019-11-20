@@ -3,8 +3,6 @@ package domain
 import (
 	"context"
 	"sync"
-	"time"
-	//"fmt"
 
 	eh "github.com/looplab/eventhorizon"
 	"github.com/superchalupa/sailfish/src/looplab/aggregatestore"
@@ -49,10 +47,6 @@ type RedfishResourceAggregate struct {
 	// above so that everything can be properly locked
 	PrivilegeMap map[HTTPReqType]interface{}
 	Headers      map[string]string
-
-	// debug and beancounting
-	checkcount int                       // watchdog process uses this to try to do race-free detection of orphan aggregates
-	access     map[HTTPReqType]time.Time // store beancounting about when uri's were accessed
 }
 
 func (agg *RedfishResourceAggregate) Lock() {

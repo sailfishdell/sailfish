@@ -147,6 +147,11 @@ func (d *DomainObjects) CheckTree() (id eh.UUID, ok bool) {
 		// TODO: get actual number of current aggregates.
 		number_of_aggs := 3400
 		seen_aggs := 0
+
+		d.treeMu.RLock()
+		treeSize := len(d.Tree)
+		d.treeMu.RUnlock()
+
 		d.Repo.IterateCB(context.Background(), func(ctx context.Context, agg eh.Entity) error {
 			time.Sleep(time.Duration(30) * time.Second / time.Duration(number_of_aggs))
 			seen_aggs++
@@ -162,17 +167,7 @@ func (d *DomainObjects) CheckTree() (id eh.UUID, ok bool) {
 					} else {
 						fmt.Printf("Validate %s\n", agg.EntityID())
 						fmt.Printf("\tURI: %s", checkuri)
-
-						rr.Lock()
-						fmt.Printf("\n\tAggregate ID Mismatch! %s != %s  (count: %d)\n", id, agg.EntityID(), rr.checkcount)
-						if rr.checkcount > 0 {
-							fmt.Printf("\n\tCheck expired, assuming hanging aggregate and removing\n")
-							d.Repo.Remove(context.Background(), rr.EntityID())
-						} else {
-							rr.checkcount++
-						}
-						rr.Unlock()
-
+						fmt.Printf("\n\tAggregate ID Mismatch! %s != %s\n", id, agg.EntityID())
 					}
 				} else {
 					if string(agg.EntityID()) == string(injectUUID) {
@@ -182,28 +177,7 @@ func (d *DomainObjects) CheckTree() (id eh.UUID, ok bool) {
 						// aggregate isn't in the tree at that uri
 						fmt.Printf("Validate %s\n", agg.EntityID())
 						fmt.Printf("\tURI: %s", checkuri)
-						rr.Lock()
-						fmt.Printf("\n\tNOT IN TREE: %d\n", rr.checkcount)
-						if rr.checkcount > 0 {
-							fmt.Printf("\n\tCheck expired, assuming hanging aggregate and removing\n")
-
-							d.Repo.Remove(context.Background(), rr.EntityID())
-							// remove any plugins linked to the now unlinked agg. Careful here
-							// because if a new aggregate is linked in we dont want to delete the
-							// new plugins that may have already been instantiated
-							p, err := InstantiatePlugin(PluginType(rr.ResourceURI))
-							type closer interface {
-								Close()
-							}
-							if err == nil && p != nil {
-								if c, ok := p.(closer); ok {
-									c.Close()
-								}
-							}
-						} else {
-							rr.checkcount++
-						}
-						rr.Unlock()
+						fmt.Printf("\n\tIsnt in tree at URI!\n")
 					}
 				}
 			} else {
@@ -214,14 +188,11 @@ func (d *DomainObjects) CheckTree() (id eh.UUID, ok bool) {
 			return nil
 		})
 
-		d.treeMu.RLock()
-		treeSize := len(d.Tree)
-		d.treeMu.RUnlock()
 		if seen_aggs != treeSize+injectCmds || injectCmds > 1 {
 			fmt.Printf("MISMATCH Tree(%d) Aggregates(%d) InjectCmds(%d)\n", treeSize, seen_aggs, injectCmds)
 		}
 		//fmt.Printf("Number of inject commands: %d\n", injectCmds)
-		//fmt.Printf("Number of tree objects: %d\n", len(d.Tree))
+		//fmt.Printf("Number of tree objects: %d\n", treeSize)
 		//fmt.Printf("Number of aggregate objects: %d\n", len(seen_aggs))
 	}
 
@@ -431,9 +402,6 @@ func (d *DomainObjects) DumpStatus() http.Handler {
 				}
 
 				fmt.Fprintf(w, " %s: %s\n", rr.EntityID(), rr.ResourceURI)
-				for k, v := range rr.access {
-					fmt.Fprintf(w, "\t%s: %s\n", MapHTTPReqToString(k), v)
-				}
 			} else {
 				fmt.Fprintf(w, "UNKNOWN ENTITY: %s\n", rr.EntityID())
 			}

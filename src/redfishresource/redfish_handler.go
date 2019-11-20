@@ -375,13 +375,6 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Write(b)
 	// END
 
-	redfishResource.Lock()
-	if redfishResource.access == nil {
-		redfishResource.access = map[HTTPReqType]time.Time{}
-	}
-	redfishResource.access[MapStringToHTTPReq(r.Method)] = time.Now()
-	redfishResource.Unlock()
-
 	return
 }
 
