@@ -16,6 +16,7 @@
 package eventbus
 
 import (
+	"fmt"
 	"context"
 	"sync"
 
@@ -39,10 +40,20 @@ func NewEventBus() *EventBus {
 	return &EventBus{}
 }
 
+
 // PublishEvent implements the PublishEvent method of the eventhorizon.EventBus interface.
 func (b *EventBus) PublishEvent(ctx context.Context, event eh.Event) error {
 	b.handlerMu.RLock()
 	defer b.handlerMu.RUnlock()
+
+	type waiter interface {
+		Done()
+	}
+
+	if e, ok := event.(waiter); ok {
+		defer e.Done()
+	}
+
 
 	for _, h := range b.handlers {
 		if !h.m(event) {
@@ -50,17 +61,11 @@ func (b *EventBus) PublishEvent(ctx context.Context, event eh.Event) error {
 			continue
 		}
 		if err := h.h.HandleEvent(ctx, event); err != nil {
+			fmt.Println("Publish Event Error", err)
 			return err
 		}
 	}
 
-	type waiter interface {
-		Done()
-	}
-
-	if e, ok := event.(waiter); ok {
-		e.Done()
-	}
 
 	return nil
 }
