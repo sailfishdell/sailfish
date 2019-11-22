@@ -2,12 +2,12 @@ package dell_ec
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	eh "github.com/looplab/eventhorizon"
 
 	"github.com/superchalupa/sailfish/godefs"
+	"github.com/superchalupa/sailfish/src/dell-resources/attributedef"
 	"github.com/superchalupa/sailfish/src/log"
 	"github.com/superchalupa/sailfish/src/ocp/am3"
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
@@ -20,10 +20,7 @@ type am3_functions struct {
 }
 
 func addAM3Functions(logger log.Logger, am3Svc *am3.Service, d *domain.DomainObjects) {
-	// for testing
-	am3Svc.AddEventHandler("test", ComponentEvent, func(ev eh.Event) { fmt.Println("hello world!") })
-
-	am3Svc.AddEventHandler("modular_update_fan_data", eh.EventType("thp_fan_data_object"), func(event eh.Event) {
+	am3Svc.AddEventHandler("modular_update_fan_data", godefs.FanEvent, func(event eh.Event) {
 		dmobj, ok := event.Data().(*godefs.DMObject)
 		fanobj, ok := dmobj.Data.(*godefs.DM_thp_fan_data_object)
 		if !ok {
@@ -59,4 +56,12 @@ func addAM3Functions(logger log.Logger, am3Svc *am3.Service, d *domain.DomainObj
 				},
 			})
 	})
+
+	// Start addressing AttributeUpdated Events
+	//attribute_mappings := map[string][]string{}
+	am3Svc.AddEventHandler("redfish_properties_linked_to_config_attributes_setup", domain.RedfishResourceCreated, func(event eh.Event) {
+	})
+	am3Svc.AddEventHandler("redfish_properties_linked_to_config_attributes_delete", domain.RedfishResourceRemoved, func(event eh.Event) {
+	})
+	am3Svc.AddEventHandler("redfish_properties_linked_to_config_attributes_update", attributedef.AttributeUpdated, func(event eh.Event) {})
 }
