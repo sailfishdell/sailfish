@@ -11,9 +11,8 @@
         "Id": "RootService",
         "Name": "Root Service",
         "Description":    "Root Service",
-        "RedfishVersion": "1.1.0",
-        "@odata.etag": "W/\"abc123\"",
-        "MEBTEST": "FOO"
+        "RedfishVersion": "1.2.0",
+        "@odata.etag": "W/\"ABC123\""
       }
     }
   }
