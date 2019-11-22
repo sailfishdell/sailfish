@@ -71,7 +71,8 @@ func nuGETfn(ctx context.Context, agg *RedfishResourceAggregate, rrp *RedfishRes
 
 	pluginName, ok := meta_t["plugin"].(string)
 	if !ok {
-		return errors.New("No plugin in GET")
+		// default to a plugin named after this URI to simplify creating aggregates
+		pluginName = agg.ResourceURI
 	}
 
 	plugin, err := InstantiatePlugin(PluginType(pluginName))
