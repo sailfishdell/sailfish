@@ -3,7 +3,6 @@ package am3
 import (
 	"context"
 	"errors"
-	"sync"
 	"time"
 
 	eh "github.com/looplab/eventhorizon"
@@ -32,14 +31,10 @@ type Service struct {
 	logger        log.Logger
 	eb            eh.EventBus
 	eventhandlers map[eh.EventType]map[string]func(eh.Event)
-
-	// accessed by the event waiter filter in a different goroutine
-	handledEvents   map[eh.EventType]struct{}
-	handledEventsMu *sync.RWMutex
+	handledEvents map[eh.EventType]struct{}
 }
 
 func (s *Service) AddEventHandler(name string, et eh.EventType, fn func(eh.Event)) {
-	// look ma, no locks!
 	s.eb.PublishEvent(context.Background(), eh.NewEvent(ConfigureAM3Event, &ConfigureAM3EventData{name: name, et: et, fn: fn}, time.Now()))
 }
 
@@ -55,10 +50,9 @@ func StartService(ctx context.Context, logger log.Logger, eb eh.EventBus, ch eh.
 
 	var ret *Service
 	ret = &Service{
-		logger:          logger.New("module", "am2"),
-		eb:              eb,
-		handledEventsMu: &sync.RWMutex{},
-		handledEvents:   map[eh.EventType]struct{}{ConfigureAM3Event: struct{}{}},
+		logger:        logger.New("module", "am2"),
+		eb:            eb,
+		handledEvents: map[eh.EventType]struct{}{ConfigureAM3Event: struct{}{}},
 		eventhandlers: map[eh.EventType]map[string]func(eh.Event){
 			ConfigureAM3Event: map[string]func(eh.Event){
 				// This function is run from inside the event loop to configure things.
@@ -73,13 +67,6 @@ func StartService(ctx context.Context, logger log.Logger, eb eh.EventBus, ch eh.
 						}
 						h[config.name] = config.fn
 						ret.eventhandlers[config.et] = h
-
-						ret.handledEventsMu.Lock()
-						defer ret.handledEventsMu.Unlock()
-						ret.handledEvents = map[eh.EventType]struct{}{}
-						for k, _ := range ret.eventhandlers {
-							ret.handledEvents[k] = struct{}{}
-						}
 					}
 				},
 			},
@@ -87,17 +74,27 @@ func StartService(ctx context.Context, logger log.Logger, eb eh.EventBus, ch eh.
 	}
 
 	// stream processor for action events
-	sp, err := event.NewESP(ctx, event.CustomFilter(
+	filter := event.CustomFilter(
 		func(ev eh.Event) bool {
-			ret.handledEventsMu.RLock()
-			defer ret.handledEventsMu.RUnlock()
-			// hash lookup to see if we process this event, should be the fastest way
-			if _, ok := ret.handledEvents[ev.EventType()]; ok {
+			// normal case first: hash lookup to see if we process this event, should be the fastest way
+			typ := ev.EventType()
+			if _, ok := ret.handledEvents[typ]; ok {
+				// self configure... no locks! yay!
+				if typ == ConfigureAM3Event {
+					data, ok := ev.Data().(*ConfigureAM3EventData)
+					if ok {
+						ret.handledEvents[data.et] = struct{}{}
+					}
+				}
+
 				return true
 			}
+
 			return false
-		}),
-		event.SetListenerName("am3"))
+		})
+
+	sp, err := event.NewESP(ctx, filter, event.SetListenerName("am3"))
+
 	if err != nil {
 		ret.logger.Error("Failed to create event stream processor", "err", err)
 		return nil, errors.New("")
