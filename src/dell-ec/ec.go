@@ -117,6 +117,9 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 
 	godefs.InitGoDef()
 
+	// start background tree checking
+	go d.CheckTree()
+
 	awesome_mapper2.AddFunction("find_uris_with_basename", func(args ...interface{}) (interface{}, error) {
 		if len(args) < 1 {
 			return nil, errors.New("need to specify uri to match")

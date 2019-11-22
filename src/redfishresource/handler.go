@@ -115,8 +115,6 @@ func NewDomainObjects() (*DomainObjects, error) {
 		return nil, fmt.Errorf("could not create command handler: %s", err)
 	}
 
-	go d.CheckTree()
-
 	return &d, nil
 }
 
@@ -145,7 +143,7 @@ func (d *DomainObjects) CheckTree() (id eh.UUID, ok bool) {
 	for {
 		injectCmds := 0
 		// TODO: get actual number of current aggregates.
-		number_of_aggs := 3400
+		number_of_aggs := 200 // will take way longer than 30s if we have lots of lclogs. That's ok.
 		seen_aggs := 0
 
 		d.treeMu.RLock()
