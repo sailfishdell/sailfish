@@ -2,7 +2,10 @@ package testaggregate
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
+	"io/ioutil"
 	"sync"
 
 	"github.com/Knetic/govaluate"
@@ -13,6 +16,8 @@ import (
 	"github.com/superchalupa/sailfish/src/ocp/model"
 	"github.com/superchalupa/sailfish/src/ocp/view"
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
+
+	"github.com/mitchellh/mapstructure"
 )
 
 type closer interface {
@@ -85,7 +90,57 @@ func (s *Service) RegisterAggregateFunction(name string, fn aggregateFunc) {
 func (s *Service) GetAggregateFunction(name string) aggregateFunc {
 	s.RLock()
 	defer s.RUnlock()
-	return s.aggregateFunctionsRegistry[name]
+	fn, ok := s.aggregateFunctionsRegistry[name]
+	if ok {
+		return fn
+	}
+
+	return func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, vw *view.View, cfg interface{}, parameters map[string]interface{}) ([]eh.Command, error) {
+		searchPath := cfgMgr.GetStringSlice("main.aggregatesearchpath")
+		for _, p := range searchPath {
+			filecontents, err := ioutil.ReadFile(p + "/" + name + ".json")
+			if err != nil {
+				continue
+			}
+
+			fmt.Printf("Read: %s\n", p+"/"+name+".json")
+			rawjson := []interface{}{}
+			err = json.Unmarshal([]byte(filecontents), &rawjson)
+			if err != nil {
+				fmt.Printf("Error unmarshalling: %s\n", err)
+				continue
+			}
+
+			fmt.Printf("Got JSON: %s\n", rawjson)
+
+			cmds := []eh.Command{}
+			for i := range rawjson {
+				cmdMeta, ok := rawjson[i].(map[string]interface{})
+				if !ok {
+					continue
+				}
+				var cmd eh.Command
+				switch cmdMeta["cmd"] {
+				case "CreateRedfishResource":
+					fmt.Printf("doing a create command\n")
+					createCmd := &domain.CreateRedfishResource{}
+					err = mapstructure.Decode(cmdMeta["data"], createCmd)
+					if err != nil {
+						fmt.Printf("Error decoding: %s\n", err)
+						continue
+					}
+					createCmd.ResourceURI = vw.GetURI()
+					createCmd.Context = vw.GetURI() + createCmd.Context
+					cmd = createCmd
+					fmt.Printf("Added a command: %s\n", cmd)
+				}
+				cmds = append(cmds, cmd)
+			}
+
+			return cmds, nil
+		}
+		return nil, errors.New("Cannot find requested resource")
+	}
 }
 
 type config struct {
