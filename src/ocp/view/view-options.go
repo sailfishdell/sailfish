@@ -14,10 +14,10 @@ func WithDeferRegister() Option {
 	}
 }
 
-func WithURI(name string) Option {
+func WithURI(uri string) Option {
 	return func(s *View) error {
-		s.pluginType = domain.PluginType(name)
-		s.viewURI = name
+		s.pluginType = domain.PluginType(uri)
+		s.viewURI = uri
 		return nil
 	}
 }
