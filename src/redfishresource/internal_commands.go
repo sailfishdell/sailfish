@@ -1,12 +1,10 @@
 package domain
 
 import (
-	"bytes"
 	"context"
-	"encoding/base64"
-	"encoding/binary"
 	"errors"
 	"fmt"
+	"math"
 	"net/url"
 	"sort"
 	"strings"
@@ -21,6 +19,7 @@ import (
 type syncEvent interface {
 	Add(int)
 	Wait()
+	Done()
 }
 
 func init() {
@@ -470,7 +469,7 @@ var IETIMEOUT time.Duration = 250 * time.Millisecond
 
 func StartInjectService(logger log.Logger, d *DomainObjects) {
 	injectChanSlice = make(chan *InjectEvent, 100)
-	injectChan = make(chan eh.Event, 10)
+	injectChan = make(chan eh.Event) // unbuffered!
 	logger = logger.New("module", "injectservice")
 	eb := d.EventBus
 	ew := d.EventWaiter
@@ -482,13 +481,18 @@ func StartInjectService(logger log.Logger, d *DomainObjects) {
 		s = SimulateSdnotify()
 	}
 
-	if interval := s.GetIntervalUsec(); interval == 0 {
-		fmt.Printf("Watchdog interval is not set, so skipping watchdog setup. Set WATCHDOG_USEC to set.\n")
-	} else {
-		fmt.Printf("Setting up watchdog\n")
+	go func() {
+		defer s.Close()
+		interval := s.GetIntervalUsec()
+		if interval == 0 {
+			fmt.Printf("Watchdog interval is not set, so skipping watchdog setup. Set WATCHDOG_USEC to set.\n")
+			return
+		}
 
 		// send watchdogs 3x per interval
+		fmt.Printf("Setting up watchdog\n")
 		interval = interval / 3
+		seq := 0
 
 		// set up listener for the watchdog events
 		listener, err := ew.Listen(context.Background(), func(event eh.Event) bool {
@@ -502,114 +506,121 @@ func StartInjectService(logger log.Logger, d *DomainObjects) {
 			panic("Could not start listener")
 		}
 
-		// goroutine to run sd_notify whenever we see a watchdog event
-		go func() {
-			defer s.Close()
-			for {
-				_, err := listener.Wait(context.Background())
-				if err != nil {
-					fmt.Printf("Watchdog wait exited\n")
-					break
+		// endless loop generating and responding to watchdog events
+		for {
+			select {
+			// pet watchdog when we get an event
+			case ev := <-listener.Inbox():
+				if evtS, ok := ev.(syncEvent); ok {
+					evtS.Done()
 				}
-
 				s.Notify("WATCHDOG=1")
-			}
-		}()
 
-		// goroutine to inject watchdog events
-		go func() {
-			// inject a watchdog event every 10s. It will be processed by a listener elsewhere.
-			for {
-				time.Sleep(time.Duration(interval) * time.Microsecond)
-				data, err := eh.CreateEventData("WatchdogEvent")
-				if err != nil {
-					injectChan <- eh.NewEvent(WatchdogEvent, data, time.Now())
-				}
-
+			// periodically send event on bus to force watchdog
+			case <-time.After(time.Duration(interval) * time.Microsecond):
+				ev := event.NewSyncEvent(WatchdogEvent, &WatchdogEventData{Seq: seq}, time.Now())
+				ev.Add(1)
+				injectChan <- ev
+				seq++
 			}
-		}()
-	}
+		}
+	}()
 
 	// goroutine to synchronously handle the event inject queue
 	go func() {
 		queued := []*InjectEvent{}
-		internalSeq := 0
-		// find better way to initialize sequenceTimer
-		sequenceTimer := time.NewTimer(IETIMEOUT)
-		sequenceTimer.Stop()
-		missingEvent := false
-		tries := 0
-		for {
-			select {
-			case event := <-injectChanSlice:
-				//logger.Crit("InjectService Event received", "Sequence", event.EventSeq, "Name", event.Name)
-				queued = append(queued, event)
+		internalSeq := int64(0)
+		// The 'standard' way to create a stopped timer
+		sequenceTimer := time.NewTimer(math.MaxInt64)
+		if !sequenceTimer.Stop() {
+			<-sequenceTimer.C
+		}
+		timerActive := false
 
-				// ordered events are processed.
-				for len(queued) != 0 && missingEvent == false {
-					for _, evtPtr := range queued {
-						// reset sailfish event seq counter
-						if evtPtr.EventSeq == -1 {
-							evtPtr.EventSeq = 0
-							internalSeq = 0
-						}
-						eventSeq := int(evtPtr.EventSeq)
-						//logger.Crit("InjectService: Event start", "Event Name", evtPtr.Name, "Sequence Number", evtPtr.EventSeq, "expected", internalSeq+1)
+		tryToPublish := func(tryHard bool) {
+			// iterate through our queue until we find a message beyond our current sequence, then stop
+			i := 0
+			for i = 0; i < len(queued); i++ {
+				injectCmd := queued[i]
 
-						if (eventSeq == internalSeq+1) || (internalSeq == 0 && eventSeq == 0) {
-							// process event
-							evtPtr.sendToChn(evtPtr.ctx)
-							internalSeq = eventSeq
-							queued[0] = nil
-							queued = queued[1:]
-						} else if internalSeq >= eventSeq {
-							// drop all old events
-							dropped_event := &DroppedEventData{
-								Name:     evtPtr.Name,
-								EventSeq: evtPtr.EventSeq,
-							}
-
-							queued[0] = nil
-							queued = queued[1:]
-							logger.Crit("InjectService: Event dropped", "Event Name", evtPtr.Name, "Sequence Number", evtPtr.EventSeq, "expected", internalSeq+1)
-							eb.PublishEvent(evtPtr.ctx, eh.NewEvent(DroppedEvent, dropped_event, time.Now()))
-						} else {
-							tries += 1
-							// missing event found, break and stop for loop
-							missingEvent = true
-							sequenceTimer = time.NewTimer(IETIMEOUT)
-							break
-						}
-
-					}
+				// resync to earliest event if needed
+				if injectCmd.EventSeq == -1 {
+					internalSeq = -1
 				}
 
-			// IETIMEOUT triggered here I will change the current sequence number and let the rest be handled above.
-			case <-sequenceTimer.C:
-				if len(queued) == 0 {
-					sequenceTimer = time.NewTimer(IETIMEOUT)
+				if injectCmd.EventSeq < internalSeq {
+					// event is older than last published event, drop
+					dropped_event := &DroppedEventData{
+						Name:     injectCmd.Name,
+						EventSeq: injectCmd.EventSeq,
+					}
+					injectChan <- eh.NewEvent(DroppedEvent, dropped_event, time.Now())
 					continue
 				}
 
-				sort.SliceStable(queued, func(i, j int) bool {
-					return queued[i].EventSeq < queued[j].EventSeq
-				})
-
-				eventSeq := int(queued[0].EventSeq)
-				// event sequence jumped!
-				if eventSeq > internalSeq+1 {
-					if tries < 40 {
-						tries += 1
-						sequenceTimer = time.NewTimer(IETIMEOUT)
-						continue
-					}
-					logger.Crit("InjectService: Changing Internal Event Sequence", "# events in queue", len(queued), "before", internalSeq, "after", eventSeq-1)
+				// if the seq is correct, send it
+				//  or if internal seq has been reset, send and take the identity of that seq
+				//  or if we are in a "force" send all events, send it.
+				if injectCmd.EventSeq == internalSeq || internalSeq == 0 || tryHard {
+					injectCmd.sendToChn(injectCmd.ctx)
+					// command with seq == -1 will "reset". The counter increments to 0 and the next event becomes the new starting sequence
+					internalSeq = injectCmd.EventSeq
+					internalSeq++
+					continue
 				}
 
-				tries = 0
-				missingEvent = false
-				if eventSeq > internalSeq {
-					internalSeq = eventSeq - 1
+				break //  injectCmd.EventSeq > internalSeq, no sense going through the rest
+			}
+
+			// trim off any processed commands
+			queued = append([]*InjectEvent{}, queued[i:]...)
+		}
+
+		for {
+			select {
+			case event := <-injectChanSlice:
+				queued = append(queued, event)
+				if len(queued) > 1 {
+					sort.SliceStable(queued, func(i, j int) bool {
+						return queued[i].EventSeq < queued[j].EventSeq
+					})
+				}
+
+				if len(queued) < 1 {
+					break
+				}
+
+				// queue is sorted, so first event seq can be checked
+				//   any events less than or equal to internalSeq can be dealt with
+				//   either by dropping them or sending them
+				if queued[0].EventSeq <= internalSeq {
+					tryToPublish(false)
+				}
+
+				// oops, we have some left, start a new timer
+				if len(queued) > 0 && !timerActive {
+					sequenceTimer.Reset(IETIMEOUT)
+					timerActive = true
+				}
+
+				// we got everything, stop any timers
+				if len(queued) == 0 && timerActive {
+					if !sequenceTimer.Stop() {
+						<-sequenceTimer.C
+					}
+					timerActive := false
+				}
+
+			case <-sequenceTimer.C:
+				logger.Crit("TIMEOUT waiting for missing sequence events. force send.")
+				// we timed out waiting
+				timerActive = false
+				internalSeq = 0
+				tryToPublish(true)
+
+				// oops, we have some left, start a timer
+				if len(queued) > 0 {
+					sequenceTimer.Reset(IETIMEOUT)
 				}
 			}
 		}
@@ -617,17 +628,19 @@ func StartInjectService(logger log.Logger, d *DomainObjects) {
 
 	go func() {
 		for {
-			event := <-injectChan
+			select {
+			case ev := <-injectChan:
+				eb.PublishEvent(context.Background(), ev)
 
-			eb.PublishEvent(context.Background(), event)
-
-			ev, ok := event.(syncEvent)
-			if event.EventType() == "LogEvent" {
-				// do nothing
-			} else if ok {
-				ev.Wait()
+				ev, ok := ev.(syncEvent)
+				if ok && ev.EventType() != eh.EventType("LogEvent") {
+					ev.Wait()
+				}
+			case <-time.After(time.Duration(5) * time.Second):
+				if len(injectChan) > 0 {
+					fmt.Printf("InjectChan queue: %d / %d\n", len(injectChan), cap(injectChan))
+				}
 			}
-
 		}
 	}()
 
@@ -647,63 +660,69 @@ func (c *InjectEvent) Handle(ctx context.Context, a *RedfishResourceAggregate) e
 	c.ctx = ctx
 
 	if c.Synchronous {
+		//testLogger.Crit("SYNC SEND")
 		c.sendToChn(c.ctx)
 
 	} else {
+		//testLogger.Crit("QUEUEING")
 		injectChanSlice <- c
+		//testLogger.Crit("QUEUED")
 	}
 
 	return nil
 }
 
 func (c *InjectEvent) sendToChn(ctx context.Context) error {
+	//requestLogger := ContextLogger(ctx, "internal_commands").New("module", "inject_event")
+	//requestLogger.Crit("InjectService: preparing event", "Sequence", c.EventSeq, "Name", c.Name)
 
-	requestLogger := ContextLogger(ctx, "internal_commands").New("module", "inject_event")
-	//requestLogger.Crit("InjectService: Event sent", "Sequence", c.EventSeq, "Name", c.Name)
-
+	// we have both single (EventData) and array support. squash them all into an array
 	eventList := make([]map[string]interface{}, 0, len(c.EventArray)+1)
 	if len(c.EventData) > 0 {
-		// comment out debug prints in the hot path, uncomment for debugging
-		requestLogger.Debug("InjectEvent - ONE", "events", c.EventData)
 		eventList = append(eventList, c.EventData) // preallocated
 	}
-	if len(c.EventArray) > 0 {
-		// comment out debug prints in the hot path, uncomment for debugging
-		requestLogger.Debug("InjectEvent - ARRAY", "events", c.EventArray)
-		eventList = append(eventList, c.EventArray...) // preallocated
-	}
+	eventList = append(eventList, c.EventArray...) // preallocated
 
+	waits := []func(){}
+	defer func() {
+		for _, fn := range waits {
+			defer fn()
+		}
+	}()
 	trainload := make([]eh.EventData, 0, MAX_CONSOLIDATED_EVENTS)
-	for _, eventData := range eventList {
+	sendTrain := func(force bool) {
 		// limit number of consolidated events to 30 to prevent overflowing queues and deadlocking
-		if len(trainload) >= MAX_CONSOLIDATED_EVENTS {
-			//fmt.Printf("Train (%s) leaving early: %d\n", c.Name, len(trainload))
+		if force || len(trainload) >= MAX_CONSOLIDATED_EVENTS {
 			e := event.NewSyncEvent(c.Name, trainload, time.Now())
 			e.Add(1)
 			if c.Synchronous {
-				defer e.Wait()
+				waits = append(waits, e.Wait)
 			}
-			trainload = make([]eh.EventData, 0, MAX_CONSOLIDATED_EVENTS)
 			injectChan <- e
+
+			trainload = make([]eh.EventData, 0, MAX_CONSOLIDATED_EVENTS)
 		}
+	}
 
-		// prefer to deserialize directly to a named type
+	for _, eventData := range eventList {
+		// if train is full, send it on its way
+		sendTrain(false)
+
+		// create a new, empty event of the requested type. The data will be deserialized into it.
 		data, err := eh.CreateEventData(c.Name)
-
-		// if the named type is not available, publish raw map[string]interface{} as eventData
 		if err != nil {
-			// this debug statement probably not hit too often, leave enabled for now
-			// This is not the preferred path. Consider creating event if we hit this for specific events.
-			requestLogger.Info("InjectEvent - event type not registered: injecting raw event.", "event name", c.Name, "error", err)
+			// if the named type is not available, publish raw map[string]interface{} as eventData
 			trainload = append(trainload, eventData) //preallocated
 			continue
 		}
 
 		// check if event wants to deserialize itself with a custom decoder
+		// this will handle DM objects
 		if ds, ok := data.(Decoder); ok {
 			err = ds.Decode(eventData)
 			if err != nil {
-				fmt.Printf("binary decode fail: %s\n", err)
+				// failed decode, just send the raw binary data and see what happens
+				trainload = append(trainload, eventData) //preallocated
 				continue
 			}
 			trainload = append(trainload, data) //preallocated
@@ -711,55 +730,19 @@ func (c *InjectEvent) sendToChn(ctx context.Context) error {
 		}
 
 		// otherwise use default
-		if c.Encoding == "binary" {
-			structdata, err := base64.StdEncoding.DecodeString(eventData["data"].(string))
+		if c.Encoding == "json" || c.Encoding == "" {
+			err = mapstructure.Decode(eventData, data)
 			if err != nil {
-				fmt.Printf("ERROR decoding base64 event data: %s", err)
-				continue
-			}
-
-			buf := bytes.NewReader(structdata)
-			err = binary.Read(buf, binary.LittleEndian, data)
-			if err != nil {
-				fmt.Printf("binary decode fail: %s\n", err)
-				continue
-			}
-
-			trainload = append(trainload, buf) //preallocated
-		} else if c.Encoding == "json" || c.Encoding == "" {
-			err = mapstructure.Decode(eventData, &data)
-			if err != nil {
+				// send raw data if it doesn't decode
 				trainload = append(trainload, eventData) //preallocated
-				requestLogger.Warn("InjectEvent - could not decode event data, skipping event", "error", err, "raw-eventdata", eventData, "dest-event", data)
 			} else {
 				trainload = append(trainload, data) //preallocated
 			}
 		}
-
-		// limit number of consolidated events to 30 to prevent overflowing queues and deadlocking
-		if len(trainload) >= MAX_CONSOLIDATED_EVENTS {
-			e := event.NewSyncEvent(c.Name, trainload, time.Now())
-			trainload = make([]eh.EventData, 0, MAX_CONSOLIDATED_EVENTS)
-			e.Add(1)
-			if c.Synchronous {
-				defer e.Wait()
-			}
-
-			injectChan <- e
-
-		}
-
 	}
 
-	if len(trainload) > 0 {
-		e := event.NewSyncEvent(c.Name, trainload, time.Now())
-		if c.Synchronous {
-			defer e.Wait()
-		}
-		e.Add(1)
-		injectChan <- e
-
-	}
+	// finally, force send the final load
+	sendTrain(true)
 
 	return nil
 }
