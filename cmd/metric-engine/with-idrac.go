@@ -26,11 +26,6 @@ const (
 	MetricValueEvent eh.EventType = "MetricValueEvent"
 )
 
-func init() {
-	eh.RegisterEventData(ComponentEvent, func() eh.EventData { return &ComponentEventData{TESTING: "foobar"} })
-	eh.RegisterEventData(MetricValueEvent, func() eh.EventData { return &MetricValueEventData{} })
-}
-
 type ComponentEventData struct {
 	FQDD       string
 	ParentFQDD string
@@ -49,8 +44,13 @@ type MetricValueEventData struct {
 
 func init() {
 	implementations["idrac"] = func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *sync.RWMutex, ch eh.CommandHandler, eb eh.EventBus, d *domain.DomainObjects) Implementation {
+		eh.RegisterEventData(ComponentEvent, func() eh.EventData { return &ComponentEventData{TESTING: "foobar"} })
+		eh.RegisterEventData(MetricValueEvent, func() eh.EventData { return &MetricValueEventData{} })
+
+		// set up the event dispatcher
 		event.Setup(ch, eb)
 		domain.StartInjectService(logger, d)
+		godefs.InitGoDef()
 
 		am3Svc, _ := am3.StartService(ctx, logger.New("module", "AM3"), eb, ch, d)
 		addAM3Functions(logger.New("module", "idrac_am3_functions"), am3Svc, d)
