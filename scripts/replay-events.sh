@@ -5,6 +5,7 @@ set -e
 
 # new default 8080 port for this for speed
 port=${port:-8080}
+forceseq=${forceseq:-1}
 
 scriptdir=$(cd $(dirname $0); pwd)
 . ${scriptdir}/common-vars.sh
@@ -26,13 +27,12 @@ do
   file_lines=$(wc -l $file |  awk '{print $1}')
   events_replayed=0
   while read -u 5 line ; do
-      echo "$line" > $tmpfile
-      jq  --argjson i "$i" '.event_seq=$i'  $tmpfile > TMP
-      mv TMP  $tmpfile
+      if [ "$forceseq" -ne "1" ]; then
+        i=$( echo $line | jq '.event_seq' )
+      fi
+      echo $line | jq  --argjson i "$i" '.event_seq=$i'  | $CURLCMD --fail -f $BASE/api/Event%3AInject -d @-
       i=$(($i+1))
-      cat $tmpfile
 
-      $CURLCMD --fail -f $BASE/api/Event%3AInject -d  @$tmpfile
 
       events_replayed=$(( events_replayed + 1 ))
       total_events_replayed=$(( total_events_replayed + 1 ))
