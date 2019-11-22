@@ -21,7 +21,7 @@ const (
 
 func init() {
 	eh.RegisterEventData(WatchdogEvent, func() eh.EventData {
-		return &struct{}{}
+		return &WatchdogEventData{}
 	})
 	eh.RegisterEventData(RedfishResourceCreated, func() eh.EventData {
 		return &RedfishResourceCreatedData{}
@@ -42,6 +42,10 @@ func init() {
 	})
 	eh.RegisterEventData(HTTPCmdProcessed, func() eh.EventData { return &HTTPCmdProcessedData{} })
 	eh.RegisterEventData(DroppedEvent, func() eh.EventData { return &DroppedEventData{} })
+}
+
+type WatchdogEventData struct {
+	Seq int
 }
 
 // RedfishResourceCreatedData is the event data for the RedfishResourceCreated event.
