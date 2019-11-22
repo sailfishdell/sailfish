@@ -19,27 +19,6 @@ func RegisterAggregate(s *testaggregate.Service) {
 		"GET": []string{"Login"},
 	}
 
-	s.RegisterAggregateFunction("root",
-		func(ctx context.Context, subLogger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, vw *view.View, extra interface{}, params map[string]interface{}) ([]eh.Command, error) {
-			return []eh.Command{
-				&domain.CreateRedfishResource{
-					ResourceURI: vw.GetURI(),
-					Type:        "#ServiceRoot.v1_4_0.ServiceRoot",
-					Context:     vw.GetURI() + "/$metadata#ServiceRoot.ServiceRoot",
-
-					Privileges: map[string]interface{}{
-						"GET": []string{"Unauthenticated"},
-					},
-					Properties: map[string]interface{}{
-						"Id":             "RootService",
-						"Name":           "Root Service",
-						"Description":    "Root Service",
-						"RedfishVersion": "1.1.0",
-						"@odata.etag":    `W/"abc123"`,
-					}},
-			}, nil
-		})
-
 	s.RegisterAggregateFunction("chassis",
 		func(ctx context.Context, subLogger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, vw *view.View, extra interface{}, params map[string]interface{}) ([]eh.Command, error) {
 			return []eh.Command{

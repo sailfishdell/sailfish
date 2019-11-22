@@ -1,0 +1,29 @@
+[
+  {
+    "cmd": "CreateRedfishResource",
+    "data": {
+			"Type":        "#ChassisCollection.ChassisCollection",
+			"Context":     "/redfish/v1/$metadata#ChassisCollection.ChassisCollection",
+					//Privileges:  stdCollectionPrivs,
+      "Privileges": {
+        "GET": ["Unauthenticated"]
+      },
+      "Properties": {
+				"Name":                     "Chassis Collection",
+				"Description":              "Collection of Chassis",
+				"Members@meta":             vw.Meta(view.GETProperty("members"), view.GETFormatter("formatOdataList"), view.GETModel("default")),
+				"Members@odata.count@meta": vw.Meta(view.GETProperty("members"), view.GETFormatter("count"), view.GETModel("default")),
+
+        "@odata.etag": "W/\"ABC123\""
+      }
+    }
+  },
+  {
+    "cmd": "UpdateRedfishResourceProperties",
+    "data": {
+      // fixme: code has to translate this to an agg id
+      "URI": "/redfish/v1",
+      "Properties": {"@odata.id": "##GETURI##"}
+    }
+  }
+]

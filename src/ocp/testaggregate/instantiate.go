@@ -90,11 +90,14 @@ func (s *Service) RegisterAggregateFunction(name string, fn aggregateFunc) {
 func (s *Service) GetAggregateFunction(name string) aggregateFunc {
 	s.RLock()
 	defer s.RUnlock()
+
+	// if we find a registered function, return it
 	fn, ok := s.aggregateFunctionsRegistry[name]
 	if ok {
 		return fn
 	}
 
+	// otherwise return function that will use json file to instantiate
 	return func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, vw *view.View, cfg interface{}, parameters map[string]interface{}) ([]eh.Command, error) {
 		searchPath := cfgMgr.GetStringSlice("main.aggregatesearchpath")
 		for _, p := range searchPath {

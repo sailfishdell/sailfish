@@ -608,7 +608,7 @@ func StartInjectService(logger log.Logger, d *DomainObjects) {
 					if !sequenceTimer.Stop() {
 						<-sequenceTimer.C
 					}
-					timerActive := false
+					timerActive = false
 				}
 
 			case <-sequenceTimer.C:
@@ -632,9 +632,9 @@ func StartInjectService(logger log.Logger, d *DomainObjects) {
 			case ev := <-injectChan:
 				eb.PublishEvent(context.Background(), ev)
 
-				ev, ok := ev.(syncEvent)
+				evS, ok := ev.(syncEvent)
 				if ok && ev.EventType() != eh.EventType("LogEvent") {
-					ev.Wait()
+					evS.Wait()
 				}
 			case <-time.After(time.Duration(5) * time.Second):
 				if len(injectChan) > 0 {
@@ -660,13 +660,10 @@ func (c *InjectEvent) Handle(ctx context.Context, a *RedfishResourceAggregate) e
 	c.ctx = ctx
 
 	if c.Synchronous {
-		//testLogger.Crit("SYNC SEND")
 		c.sendToChn(c.ctx)
 
 	} else {
-		//testLogger.Crit("QUEUEING")
 		injectChanSlice <- c
-		//testLogger.Crit("QUEUED")
 	}
 
 	return nil

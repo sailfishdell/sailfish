@@ -37,7 +37,8 @@ type RedfishResourceAggregate struct {
 	ResourceURI string
 	Plugin      string
 
-	Properties    RedfishResourceProperty
+	Properties RedfishResourceProperty
+
 	StatusCode    int // http status code for the current state of this object since the last time we've run the meta functions
 	DefaultFilter string
 
@@ -45,6 +46,9 @@ type RedfishResourceAggregate struct {
 	// above so that everything can be properly locked
 	PrivilegeMap map[HTTPReqType]interface{}
 	Headers      map[string]string
+
+	MappingData    map[string]interface{}
+	HTTPProcessors map[string]interface{}
 }
 
 // PublishEvent registers an event to be published after the aggregate

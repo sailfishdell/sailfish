@@ -141,17 +141,16 @@ func (d *DomainObjects) GetAggregateID(uri string) (id eh.UUID) {
 // VALIDATE TREE - DEBUG ONLY
 func (d *DomainObjects) CheckTree() (id eh.UUID, ok bool) {
 	for {
-		injectCmds := 0
-		// TODO: get actual number of current aggregates.
-		number_of_aggs := 200 // will take way longer than 30s if we have lots of lclogs. That's ok.
-		seen_aggs := 0
+		// sleep for 30s between loops
+		time.Sleep(time.Duration(120) * time.Second)
 
 		d.treeMu.RLock()
 		treeSize := len(d.Tree)
 		d.treeMu.RUnlock()
 
+		injectCmds := 0
+		seen_aggs := 0
 		d.Repo.IterateCB(context.Background(), func(ctx context.Context, agg eh.Entity) error {
-			time.Sleep(time.Duration(30) * time.Second / time.Duration(number_of_aggs))
 			seen_aggs++
 			if rr, ok := agg.(*RedfishResourceAggregate); ok {
 				checkuri := rr.ResourceURI

@@ -1,13 +1,14 @@
 main:
     server_name: "dell_ec"
     #options: "openbmc" | "dell_ec" | "mockup"
+    aggregatesearchpath: [ "/usr/share/sailfish/aggs/", "aggs/" ]
 
 listen:
   - unix:sailfish.socket
   # enable 8080 port only for testing, as per NCC audit it needs to be disabled on the build
-  # - http::8080
-  #  enable pprof only for debuging, it creates a memory leak if used
-  # - pprof::8443
+  #- http::8080
+  #  enable pprof only for debuging, it causes increased memory consumption. If memprofilerate>0, it will use way more. It's set to 0 in the service file.
+  #- pprof:localhost:9080
   # disable direct https listener, uncomment if needed for testing:
   # - https::8443
 
@@ -274,7 +275,7 @@ views:
   "sessionservice":
       "Logger": ["module", "session"]
       "Models":
-        "default":  {"session_timeout": "30"}
+        "default":  {"session_timeout": "120"}
       "Controllers":
         - "fn": "ARMapper"
           "params": {"modelname": "default", "cfgsection": "SessionService", "mappinguniquename": "rooturi + '/SessionService'", "AddToView": "ar_mapper"}
@@ -1175,7 +1176,7 @@ views:
           "params":  " '/redfish/' + FQDD"
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
-      "Aggregate": "root"
+      "Aggregate": "non-compliant"
 
 awesome_mapper:
     ec_component_events:
