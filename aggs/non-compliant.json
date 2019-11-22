@@ -1,0 +1,16 @@
+[
+  {
+    "cmd": "CreateRedfishResource",
+    "data": {
+      "Type":        "#fake.v1_0_0.fake",
+      "Context":  "/$metadata#fake",
+      "Privileges": {
+        "GET": ["Unauthenticated"]
+      },
+      "Properties": {
+        "Name": "Some non-compliant service",
+        "@odata.etag": "W/\"ABC123\""
+      }
+    }
+  }
+]
