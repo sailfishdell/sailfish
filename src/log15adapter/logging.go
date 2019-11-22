@@ -40,17 +40,19 @@ func InitializeApplicationLogging(logCfgFile string) (logger *MyLogger) {
 
 	// Configuration file
 	if logCfgFile != "" {
-		logger.logCfg.SetConfigFile(logCfgFile)
+		logger.logCfg.SetConfigName(logCfgFile)
 	} else {
 		logger.logCfg.SetConfigName("redfish-logging")
-		logger.logCfg.AddConfigPath(".")
-		logger.logCfg.AddConfigPath("/etc/")
 	}
 
+	// set search paths for configs
+	logger.logCfg.AddConfigPath("/etc/")
+	logger.logCfg.AddConfigPath(".")
+
 	if err := logger.logCfg.ReadInConfig(); err == nil {
-		fmt.Println("log15adapter Using config file:", logger.logCfg.ConfigFileUsed())
+		fmt.Println("log15adapter: Using config file:", logger.logCfg.ConfigFileUsed())
 	} else {
-		fmt.Fprintf(os.Stderr, "Could not read config file: %s\n", err)
+		fmt.Fprintf(os.Stderr, "log15adapter: Could not read config file: %s\n", err)
 	}
 
 	setupLogHandlersFromConfig(logger)
