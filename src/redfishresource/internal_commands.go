@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	eh "github.com/looplab/eventhorizon"
@@ -15,12 +16,6 @@ import (
 	log "github.com/superchalupa/sailfish/src/log"
 	"github.com/superchalupa/sailfish/src/looplab/event"
 )
-
-type syncEvent interface {
-	Add(int)
-	Wait()
-	Done()
-}
 
 func init() {
 	eh.RegisterCommand(func() eh.Command { return &UpdateMetricRedfishResource{} })
@@ -439,15 +434,23 @@ func (c *UpdateRedfishResourceProperties) Handle(ctx context.Context, a *Redfish
 }
 
 type InjectEvent struct {
-	ID          eh.UUID                  `json:"id" eh:"optional"`
-	Name        eh.EventType             `json:"name"`
-	Synchronous bool                     `eh:"optional"`
-	Encoding    string                   `eh:"optional" json:"encoding"`
-	EventData   map[string]interface{}   `json:"data" eh:"optional"`
-	EventArray  []map[string]interface{} `json:"event_array" eh:"optional"`
-	EventSeq    int64                    `json:"event_seq" eh:"optional"`
+	Wg sync.WaitGroup `eh:"optional"`
 
-	ctx context.Context
+	EventSeq   int64                    `json:"event_seq" eh:"optional"`
+	EventData  map[string]interface{}   `json:"data" eh:"optional"`
+	EventArray []map[string]interface{} `json:"event_array" eh:"optional"`
+	ID         eh.UUID                  `json:"id" eh:"optional"`
+	Name       eh.EventType             `json:"name"`
+	Encoding   string                   `eh:"optional" json:"encoding"`
+
+	// EventBarrier is set if this event should block subsequent events until it is processed
+	Barrier bool `eh:"optional"`
+
+	// Synchronous set if POST should not return until the message is processed
+	Synchronous bool `eh:"optional"`
+
+	// context is if the upstream HTTP request is cancelled before we finish (for Synchronous messages)
+	Ctx context.Context `eh:"optional"`
 }
 
 // AggregateType satisfies base Aggregate interface
@@ -461,15 +464,20 @@ func (c *InjectEvent) CommandType() eh.CommandType {
 	return InjectEventCommand
 }
 
+type eventBundle struct {
+	event   event.SyncEvent
+	barrier bool
+}
+
 var injectChanSlice chan *InjectEvent
-var injectChan chan eh.Event
+var injectChan chan *eventBundle
 
 // inject event timeout
 var IETIMEOUT time.Duration = 250 * time.Millisecond
 
 func StartInjectService(logger log.Logger, d *DomainObjects) {
 	injectChanSlice = make(chan *InjectEvent, 100)
-	injectChan = make(chan eh.Event) // unbuffered!
+	injectChan = make(chan *eventBundle, 10)
 	logger = logger.New("module", "injectservice")
 	eb := d.EventBus
 	ew := d.EventWaiter
@@ -511,7 +519,7 @@ func StartInjectService(logger log.Logger, d *DomainObjects) {
 			select {
 			// pet watchdog when we get an event
 			case ev := <-listener.Inbox():
-				if evtS, ok := ev.(syncEvent); ok {
+				if evtS, ok := ev.(event.SyncEvent); ok {
 					evtS.Done()
 				}
 				s.Notify("WATCHDOG=1")
@@ -520,7 +528,8 @@ func StartInjectService(logger log.Logger, d *DomainObjects) {
 			case <-time.After(time.Duration(interval) * time.Microsecond):
 				ev := event.NewSyncEvent(WatchdogEvent, &WatchdogEventData{Seq: seq}, time.Now())
 				ev.Add(1)
-				injectChan <- ev
+				// use watchdogs to clean out cruft. Maybe a good idea, not sure.
+				injectChan <- &eventBundle{ev, true}
 				seq++
 			}
 		}
@@ -554,7 +563,7 @@ func StartInjectService(logger log.Logger, d *DomainObjects) {
 						Name:     injectCmd.Name,
 						EventSeq: injectCmd.EventSeq,
 					}
-					injectChan <- eh.NewEvent(DroppedEvent, dropped_event, time.Now())
+					injectChan <- &eventBundle{event.NewSyncEvent(DroppedEvent, dropped_event, time.Now()), false}
 					continue
 				}
 
@@ -562,7 +571,7 @@ func StartInjectService(logger log.Logger, d *DomainObjects) {
 				//  or if internal seq has been reset, send and take the identity of that seq
 				//  or if we are in a "force" send all events, send it.
 				if injectCmd.EventSeq == internalSeq || internalSeq == 0 || tryHard {
-					injectCmd.sendToChn(injectCmd.ctx)
+					injectCmd.sendToChn()
 					// command with seq == -1 will "reset". The counter increments to 0 and the next event becomes the new starting sequence
 					internalSeq = injectCmd.EventSeq
 					internalSeq++
@@ -579,6 +588,7 @@ func StartInjectService(logger log.Logger, d *DomainObjects) {
 		for {
 			select {
 			case event := <-injectChanSlice:
+				fmt.Printf("POP  injectChanSlice LEN: %s\n", len(injectChanSlice))
 				queued = append(queued, event)
 				if len(queued) > 1 {
 					sort.SliceStable(queued, func(i, j int) bool {
@@ -629,14 +639,14 @@ func StartInjectService(logger log.Logger, d *DomainObjects) {
 	go func() {
 		for {
 			select {
-			case ev := <-injectChan:
-				eb.PublishEvent(context.Background(), ev)
-
-				evS, ok := ev.(syncEvent)
-				if ok && ev.EventType() != eh.EventType("LogEvent") {
-					evS.Wait()
+			case evb := <-injectChan:
+				eb.PublishEvent(context.Background(), evb.event)
+				// barrier is set if this event should block events after it
+				if evb.barrier {
+					evb.event.Wait()
 				}
 			case <-time.After(time.Duration(5) * time.Second):
+				// debug if we start getting full channels
 				if len(injectChan) > 0 {
 					fmt.Printf("InjectChan queue: %d / %d\n", len(injectChan), cap(injectChan))
 				}
@@ -654,22 +664,65 @@ type Decoder interface {
 }
 
 func (c *InjectEvent) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
-	//testLogger := ContextLogger(ctx, "internal_commands").New("module", "inject_event")
-	//testLogger.Crit("Event handle", "Sequence", c.EventSeq, "Name", c.Name)
+	testLogger := ContextLogger(ctx, "internal_commands").New("module", "inject_event")
+	// testLogger.Crit("Event handle", "Sequence", c.EventSeq, "Name", c.Name)
 	a.ID = injectUUID
-	c.ctx = ctx
+	c.Ctx = ctx
 
+	c.Wg.Add(1)
+	fmt.Printf("PUSH injectChanSlice LEN: %s\n", len(injectChanSlice))
+	injectChanSlice <- c
 	if c.Synchronous {
-		c.sendToChn(c.ctx)
-
-	} else {
-		injectChanSlice <- c
+		testLogger.Info("WAIT", "Sequence", c.EventSeq, "Name", c.Name)
+		c.Wg.Wait()
 	}
 
 	return nil
 }
 
-func (c *InjectEvent) sendToChn(ctx context.Context) error {
+// markBarrier will mark specific events as barrier events, ie. that they
+// prevent any events from being added behind it in the queue until it has been
+// fully processed
+//
+// This is somewhat arbitrary and is domain-specific knowledge
+//
+func (c *InjectEvent) markBarrier() {
+	switch c.Name {
+	// can create objects that are needed by subsequent events
+	case "ComponentEvent",
+		"LogEvent",
+		"FaultEntryAdd":
+		c.Barrier = true
+
+		// rare
+		c.Barrier = false
+
+	// these can overwhelm, but want to process quickly
+	case "AttributeUpdated":
+		// just a swag: barrier every 5th one
+		c.Barrier = false
+		if c.EventSeq%5 == 0 {
+			c.Barrier = true
+		}
+
+	case "AvgPowerConsumptionStatDataObjEvent",
+		"FileReadEvent",
+		"FanEvent",
+		"PowerConsumptionDataObjEvent",
+		"PowerSupplyObjEvent",
+		"TemperatureHistoryEvent",
+		"ThermalSensorEvent",
+		"thp_fan_data_object":
+		c.Barrier = false
+
+	// rare events, or events that can't arrive quickly
+	case "HealthEvent", "IomCapability":
+		c.Barrier = false
+
+	}
+}
+
+func (c *InjectEvent) sendToChn() error {
 	//requestLogger := ContextLogger(ctx, "internal_commands").New("module", "inject_event")
 	//requestLogger.Crit("InjectService: preparing event", "Sequence", c.EventSeq, "Name", c.Name)
 
@@ -682,20 +735,27 @@ func (c *InjectEvent) sendToChn(ctx context.Context) error {
 
 	waits := []func(){}
 	defer func() {
+		defer c.Wg.Done() // this is what supports "Synchronous" commands
 		for _, fn := range waits {
 			defer fn()
 		}
 	}()
 	trainload := make([]eh.EventData, 0, MAX_CONSOLIDATED_EVENTS)
 	sendTrain := func(force bool) {
-		// limit number of consolidated events to 30 to prevent overflowing queues and deadlocking
+		// limit number of consolidated events to prevent overflowing queues and deadlocking
 		if force || len(trainload) >= MAX_CONSOLIDATED_EVENTS {
-			e := event.NewSyncEvent(c.Name, trainload, time.Now())
-			e.Add(1)
+			// for now, specific check for events that should be barrier events
+			c.markBarrier()
+
+			e := &eventBundle{event: event.NewSyncEvent(c.Name, trainload, time.Now()), barrier: c.Barrier}
+			e.event.Add(1) // for EVENT "barrier"
 			if c.Synchronous {
-				waits = append(waits, e.Wait)
+				waits = append(waits, e.event.Wait)
 			}
-			injectChan <- e
+			select {
+			case injectChan <- e:
+			case <-c.Ctx.Done():
+			}
 
 			trainload = make([]eh.EventData, 0, MAX_CONSOLIDATED_EVENTS)
 		}
