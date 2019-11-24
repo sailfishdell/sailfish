@@ -1,16 +1,19 @@
 [
   {
-    "cmd": "CreateRedfishResource",
+    "cmd": "RedfishResource:Create",
     "data": {
-      "Type":        "#ServiceRoot.v1_4_0.ServiceRoot",
-      "Context":  "/$metadata#ServiceRoot.ServiceRoot",
+      "ResourceURI": "##GETURI##",
+      "Type": "#ServiceRoot.v1_4_0.ServiceRoot",
+      "Context": "/redfish/v1/$metadata#ServiceRoot.ServiceRoot",
       "Privileges": {
-        "GET": ["Unauthenticated"]
+        "GET": [
+          "Unauthenticated"
+        ]
       },
       "Properties": {
         "Id": "RootService",
         "Name": "Root Service",
-        "Description":    "Root Service",
+        "Description": "Root Service",
         "RedfishVersion": "1.2.0",
         "@odata.etag": "W/\"ABC123\""
       }

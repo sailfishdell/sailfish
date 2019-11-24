@@ -3,28 +3,28 @@
     "cmd": "RedfishResource:Create",
     "data": {
       "ResourceURI": "##GETURI##",
-      "Type": "#ChassisCollection.ChassisCollection",
-      "Context": "/redfish/v1/$metadata#ChassisCollection.ChassisCollection",
+      "Type": "#ManagerCollection.ManagerCollection",
+      "Context": "/redfish/v1/$metadata#ManagerCollection.ManagerCollection",
       "Privileges": {
         "GET": [
           "Login"
         ]
       },
       "Properties": {
-        "Name": "Chassis Collection",
-        "Description": "Collection of Chassis",
+        "Name": "ManagerInstancesCollection",
+        "Description": "Collection of BMCs",
         "Members@meta": {
           "GET": {
             "model": "default",
-            "formatter": "formatOdataList",
-            "property": "members"
+            "property": "members",
+            "formatter": "formatOdataList"
           }
         },
         "Members@odata.count@meta": {
           "GET": {
             "model": "default",
-            "formatter": "count",
-            "property": "members"
+            "property": "members",
+            "formatter": "count"
           }
         },
         "@odata.etag": "W/'ABC123'"
@@ -36,7 +36,7 @@
     "data": {
       "URI": "/redfish/v1",
       "Properties": {
-        "Chassis": {
+        "Managers": {
           "@odata.id": "##GETURI##"
         }
       }
