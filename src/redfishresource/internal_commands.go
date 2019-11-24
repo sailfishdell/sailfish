@@ -2,6 +2,7 @@ package domain
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
@@ -12,7 +13,6 @@ import (
 	"time"
 
 	eh "github.com/looplab/eventhorizon"
-	"github.com/mitchellh/mapstructure"
 	log "github.com/superchalupa/sailfish/src/log"
 	"github.com/superchalupa/sailfish/src/looplab/event"
 )
@@ -436,12 +436,12 @@ func (c *UpdateRedfishResourceProperties) Handle(ctx context.Context, a *Redfish
 type InjectEvent struct {
 	Wg sync.WaitGroup `eh:"optional"`
 
-	EventSeq   int64                    `json:"event_seq" eh:"optional"`
-	EventData  map[string]interface{}   `json:"data" eh:"optional"`
-	EventArray []map[string]interface{} `json:"event_array" eh:"optional"`
-	ID         eh.UUID                  `json:"id" eh:"optional"`
-	Name       eh.EventType             `json:"name"`
-	Encoding   string                   `eh:"optional" json:"encoding"`
+	EventSeq   int64             `json:"event_seq" eh:"optional"`
+	EventData  json.RawMessage   `json:"data" eh:"optional"`
+	EventArray []json.RawMessage `json:"event_array" eh:"optional"`
+	ID         eh.UUID           `json:"id" eh:"optional"`
+	Name       eh.EventType      `json:"name"`
+	Encoding   string            `eh:"optional" json:"encoding"`
 
 	// EventBarrier is set if this event should block subsequent events until it is processed
 	Barrier bool `eh:"optional"`
@@ -600,12 +600,16 @@ func StartInjectService(logger log.Logger, d *DomainObjects) {
 					break
 				}
 
+				fmt.Printf("\tqueue len %d  timer(%s)\n", len(queued), timerActive)
+
 				// queue is sorted, so first event seq can be checked
 				//   any events less than or equal to internalSeq can be dealt with
 				//   either by dropping them or sending them
 				if queued[0].EventSeq <= internalSeq {
 					tryToPublish(false)
 				}
+
+				fmt.Printf("\tqueue len %d  timer(%s)\n", len(queued), timerActive)
 
 				// oops, we have some left, start a new timer
 				if len(queued) > 0 && !timerActive {
@@ -726,13 +730,6 @@ func (c *InjectEvent) sendToChn() error {
 	//requestLogger := ContextLogger(ctx, "internal_commands").New("module", "inject_event")
 	//requestLogger.Crit("InjectService: preparing event", "Sequence", c.EventSeq, "Name", c.Name)
 
-	// we have both single (EventData) and array support. squash them all into an array
-	eventList := make([]map[string]interface{}, 0, len(c.EventArray)+1)
-	if len(c.EventData) > 0 {
-		eventList = append(eventList, c.EventData) // preallocated
-	}
-	eventList = append(eventList, c.EventArray...) // preallocated
-
 	waits := []func(){}
 	defer func() {
 		defer c.Wg.Done() // this is what supports "Synchronous" commands
@@ -743,7 +740,7 @@ func (c *InjectEvent) sendToChn() error {
 	trainload := make([]eh.EventData, 0, MAX_CONSOLIDATED_EVENTS)
 	sendTrain := func(force bool) {
 		// limit number of consolidated events to prevent overflowing queues and deadlocking
-		if force || len(trainload) >= MAX_CONSOLIDATED_EVENTS {
+		if (force && len(trainload) > 0) || len(trainload) >= MAX_CONSOLIDATED_EVENTS {
 			// for now, specific check for events that should be barrier events
 			c.markBarrier()
 
@@ -761,41 +758,53 @@ func (c *InjectEvent) sendToChn() error {
 		}
 	}
 
-	for _, eventData := range eventList {
-		// if train is full, send it on its way
-		sendTrain(false)
-
-		// create a new, empty event of the requested type. The data will be deserialized into it.
+	decode := func(m json.RawMessage) {
+		if m == nil {
+			fmt.Printf("Decode: rawmessage is nil\n")
+			return
+		}
+		var data interface{}
 		data, err := eh.CreateEventData(c.Name)
 		if err != nil {
-			// if the named type is not available, publish raw map[string]interface{} as eventData
-			trainload = append(trainload, eventData) //preallocated
-			continue
+			fmt.Printf("Decode(%s): fallback to map[string]interface{}: %s\n", c.Name, err)
+			data = map[string]interface{}{}
 		}
 
 		// check if event wants to deserialize itself with a custom decoder
 		// this will handle DM objects
 		if ds, ok := data.(Decoder); ok {
+			fmt.Printf("Decode: try Decoder\n")
+			eventData := map[string]interface{}{}
+			err := json.Unmarshal(m, &eventData)
+			if err != nil {
+				fmt.Printf("Decode: unmarshal rawmessage failed: %s\n", err)
+				return
+			}
+
 			err = ds.Decode(eventData)
 			if err != nil {
 				// failed decode, just send the raw binary data and see what happens
+				fmt.Printf("ERROR DECODING EVENT: %s\n", err)
 				trainload = append(trainload, eventData) //preallocated
-				continue
+				return
 			}
 			trainload = append(trainload, data) //preallocated
-			continue
+			return
 		}
 
-		// otherwise use default
-		if c.Encoding == "json" || c.Encoding == "" {
-			err = mapstructure.Decode(eventData, data)
-			if err != nil {
-				// send raw data if it doesn't decode
-				trainload = append(trainload, eventData) //preallocated
-			} else {
-				trainload = append(trainload, data) //preallocated
-			}
+		err = json.Unmarshal(c.EventData, &data)
+		if err != nil {
+			fmt.Printf("Decode message: unmarshal rawmessage failed: %s\n", err)
+			return
 		}
+		trainload = append(trainload, data)
+	}
+
+	// create a new, empty event of the requested type. The data will be deserialized into it.
+	decode(c.EventData)
+	for _, d := range c.EventArray {
+		sendTrain(false)
+		decode(d)
 	}
 
 	// finally, force send the final load
