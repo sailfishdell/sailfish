@@ -30,7 +30,13 @@ do
       if [ "$forceseq" -ne "1" ]; then
         i=$( echo $line | jq '.event_seq' )
       fi
-      echo $line | jq  --argjson i "$i" '.event_seq=$i'  | $CURLCMD --fail -f $BASE/api/Event%3AInject -d @-
+      NOW=$(date --iso-8601=ns)
+      echo $line |
+        jq  --argjson i "$i" ".event_seq=\$i" |
+        jq  --argjson WWW "\"$(date -u +%Y-%m-%dT%H:%M:%S.%NZ)\"" '. | if .data.Timestamp then .data.Timestamp=$WWW else . end' |
+        jq  ". | if .data.MetricValue then .data.MetricValue=\"$RANDOM\" else . end" |
+        $CURLCMD --fail -f $BASE/api/Event%3AInject -d @-
+
       i=$(($i+1))
 
 
