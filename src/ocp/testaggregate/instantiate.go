@@ -290,6 +290,8 @@ func (s *Service) GetAggregateFunction(name string) aggregateFunc {
 			switch cmdType {
 			case domain.CreateRedfishResourceCommand:
 				logger.Debug("doing a create command")
+				createCmd := cmd.(*domain.CreateRedfishResource)
+				createCmd.ID = eh.NewUUID()
 			case domain.UpdateRedfishResourcePropertiesCommand:
 				logger.Debug("doing an update command")
 				updateCmd := cmd.(*domain.UpdateRedfishResourceProperties)

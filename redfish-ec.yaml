@@ -102,20 +102,9 @@ views:
 
   "accountservice":
       "Logger": ["module", "AccountService"]
-      "Models":
-        "default":  {}
       "Controllers":
       "View":
-        - "fn": "with_URI"
-          "params": "rooturi + '/AccountService' "
-        - "fn": "PublishResourceUpdatedEventsForModel"
-          "params": "default"
-        - "fn": "stdFormatters"
-          "params":
       "Aggregate": "accountservice"
-      "ExecPost": [
-        "set_hash_value(serviceglobals, serviceglobalsmu, 'actsvc_id', uuid)",
-        "set_hash_value(serviceglobals, serviceglobalsmu, 'actsvc_uri', view.GetURI())"]
 
   "roles":
       "Logger": ["module", "Roles"]

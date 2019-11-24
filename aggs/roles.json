@@ -1,0 +1,44 @@
+[
+  {
+    "cmd": "RedfishResource:Create",
+    "data": {
+      "ResourceURI": "/redfish/v1/AccountService/Roles",
+      "Type": "#RoleCollection.RoleCollection",
+      "Context": "/redfish/v1/$metadata#RoleCollection.RoleCollection",
+      "Privileges": {
+        "GET": [
+          "Login"
+        ]
+      },
+      "Properties": {
+        "Name": "Roles Collection",
+        "Members@meta": {
+          "GET": {
+            "model": "default",
+            "formatter": "formatOdataList",
+            "property": "members"
+          }
+        },
+        "Members@odata.count@meta": {
+          "GET": {
+            "model": "default",
+            "formatter": "count",
+            "property": "members"
+          }
+        },
+        "@odata.etag": "W/'ABC123'"
+      }
+    }
+  },
+  {
+    "cmd": "RedfishResourceProperties:Update",
+    "data": {
+      "URI": "/redfish/v1/AccountService",
+      "Properties": {
+        "Roles": {
+          "@odata.id": "/redfish/v1/AccountService/Roles"
+        }
+      }
+    }
+  }
+]
