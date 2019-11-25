@@ -1,5 +1,6 @@
 main:
     server_name: "idrac"
+    databasepath: "./mr.db"
 
 listen:
   - unix:metric-engine.socket
