@@ -327,7 +327,7 @@ func (c *UpdateRedfishResourceProperties2) Handle(ctx context.Context, a *Redfis
 
 	if a.ID == eh.UUID("") {
 		requestLogger := ContextLogger(ctx, "internal_commands")
-		requestLogger.Error("Aggregate does not exist!", "UUID", a.ID, "URI", a.ResourceURI)
+		requestLogger.Error("Aggregate does not exist!", "UUID", a.ID, "URI", a.ResourceURI, "COMMAND", c)
 		return errors.New("non existent aggregate")
 	}
 
@@ -485,7 +485,7 @@ func StartInjectService(logger log.Logger, d *DomainObjects) {
 	var s closeNotifier
 	s, err := NewSdnotify()
 	if err != nil {
-		fmt.Printf("Error setting up SD_NOTIFY, using simulation instead: %s\n", err)
+		logger.Crit("Error setting up SD_NOTIFY, using simulation instead", "err", err)
 		s = SimulateSdnotify()
 	}
 
@@ -493,12 +493,12 @@ func StartInjectService(logger log.Logger, d *DomainObjects) {
 		defer s.Close()
 		interval := s.GetIntervalUsec()
 		if interval == 0 {
-			fmt.Printf("Watchdog interval is not set, so skipping watchdog setup. Set WATCHDOG_USEC to set.\n")
+			logger.Crit("Watchdog interval is not set, so skipping watchdog setup. Set WATCHDOG_USEC to set.")
 			return
 		}
 
 		// send watchdogs 3x per interval
-		fmt.Printf("Setting up watchdog\n")
+		logger.Info("Setting up watchdog")
 		interval = interval / 3
 		seq := 0
 
@@ -588,7 +588,9 @@ func StartInjectService(logger log.Logger, d *DomainObjects) {
 		for {
 			select {
 			case event := <-injectChanSlice:
-				fmt.Printf("POP  injectChanSlice LEN: %s\n", len(injectChanSlice))
+				if 100*len(injectChanSlice)/cap(injectChanSlice) > 50 {
+					logger.Debug("POP  injectChanSlice LEN", "len", len(injectChanSlice), "cap", cap(injectChanSlice), "module", "inject")
+				}
 				queued = append(queued, event)
 				if len(queued) > 1 {
 					sort.SliceStable(queued, func(i, j int) bool {
@@ -600,16 +602,12 @@ func StartInjectService(logger log.Logger, d *DomainObjects) {
 					break
 				}
 
-				fmt.Printf("\tqueue len %d  timer(%s)\n", len(queued), timerActive)
-
 				// queue is sorted, so first event seq can be checked
 				//   any events less than or equal to internalSeq can be dealt with
 				//   either by dropping them or sending them
 				if queued[0].EventSeq <= internalSeq {
 					tryToPublish(false)
 				}
-
-				fmt.Printf("\tqueue len %d  timer(%s)\n", len(queued), timerActive)
 
 				// oops, we have some left, start a new timer
 				if len(queued) > 0 && !timerActive {
@@ -674,12 +672,20 @@ func (c *InjectEvent) Handle(ctx context.Context, a *RedfishResourceAggregate) e
 	c.Ctx = ctx
 
 	c.Wg.Add(1)
-	fmt.Printf("PUSH injectChanSlice LEN: %s\n", len(injectChanSlice))
-	injectChanSlice <- c
 	if c.Synchronous {
-		testLogger.Info("WAIT", "Sequence", c.EventSeq, "Name", c.Name)
-		c.Wg.Wait()
+		defer func() {
+			// uncomment these debug statements to debug missing ".Done()" issues. It will tell you which message is stuck.
+			// these are fast path, so lets not leave them enabled unless we need to.
+			//testLogger.Debug("WAIT", "Sequence", c.EventSeq, "Name", c.Name)
+			c.Wg.Wait()
+			//testLogger.Debug("DONE", "Sequence", c.EventSeq, "Name", c.Name)
+		}()
 	}
+
+	if 100*len(injectChanSlice)/cap(injectChanSlice) > 50 {
+		testLogger.Debug("PUSH injectChanSlice LEN", "len", len(injectChanSlice), "cap", cap(injectChanSlice), "module", "inject")
+	}
+	injectChanSlice <- c
 
 	return nil
 }
@@ -697,9 +703,6 @@ func (c *InjectEvent) markBarrier() {
 		"LogEvent",
 		"FaultEntryAdd":
 		c.Barrier = true
-
-		// rare
-		c.Barrier = false
 
 	// these can overwhelm, but want to process quickly
 	case "AttributeUpdated":
@@ -723,11 +726,14 @@ func (c *InjectEvent) markBarrier() {
 	case "HealthEvent", "IomCapability":
 		c.Barrier = false
 
+	default:
+		c.Barrier = true
+
 	}
 }
 
 func (c *InjectEvent) sendToChn() error {
-	//requestLogger := ContextLogger(ctx, "internal_commands").New("module", "inject_event")
+	requestLogger := ContextLogger(c.Ctx, "internal_commands").New("module", "inject_event")
 	//requestLogger.Crit("InjectService: preparing event", "Sequence", c.EventSeq, "Name", c.Name)
 
 	waits := []func(){}
@@ -758,33 +764,31 @@ func (c *InjectEvent) sendToChn() error {
 		}
 	}
 
-	decode := func(m json.RawMessage) {
+	decode := func(eventType eh.EventType, m json.RawMessage) {
 		if m == nil {
-			fmt.Printf("Decode: rawmessage is nil\n")
 			return
 		}
 		var data interface{}
-		data, err := eh.CreateEventData(c.Name)
+		data, err := eh.CreateEventData(eventType)
 		if err != nil {
-			fmt.Printf("Decode(%s): fallback to map[string]interface{}: %s\n", c.Name, err)
+			requestLogger.Info("Decode(%s): fallback to map[string]interface{}", "eventType", eventType, "err", err)
 			data = map[string]interface{}{}
 		}
 
 		// check if event wants to deserialize itself with a custom decoder
 		// this will handle DM objects
 		if ds, ok := data.(Decoder); ok {
-			fmt.Printf("Decode: try Decoder\n")
 			eventData := map[string]interface{}{}
 			err := json.Unmarshal(m, &eventData)
 			if err != nil {
-				fmt.Printf("Decode: unmarshal rawmessage failed: %s\n", err)
+				requestLogger.Warn("Decode: unmarshal rawmessage failed", "err", err)
 				return
 			}
 
 			err = ds.Decode(eventData)
 			if err != nil {
 				// failed decode, just send the raw binary data and see what happens
-				fmt.Printf("ERROR DECODING EVENT: %s\n", err)
+				requestLogger.Warn("Decode error", "err", err)
 				trainload = append(trainload, eventData) //preallocated
 				return
 			}
@@ -792,19 +796,19 @@ func (c *InjectEvent) sendToChn() error {
 			return
 		}
 
-		err = json.Unmarshal(c.EventData, &data)
+		err = json.Unmarshal(m, &data)
 		if err != nil {
-			fmt.Printf("Decode message: unmarshal rawmessage failed: %s\n", err)
+			requestLogger.Warn("Decode message: unmarshal rawmessage failed", "err", err, "RawMessage", string(m))
 			return
 		}
 		trainload = append(trainload, data)
 	}
 
 	// create a new, empty event of the requested type. The data will be deserialized into it.
-	decode(c.EventData)
+	decode(c.Name, c.EventData)
 	for _, d := range c.EventArray {
 		sendTrain(false)
-		decode(d)
+		decode(c.Name, d)
 	}
 
 	// finally, force send the final load
