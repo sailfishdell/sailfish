@@ -559,11 +559,12 @@ func StartInjectService(logger log.Logger, d *DomainObjects) {
 
 				if injectCmd.EventSeq < internalSeq {
 					// event is older than last published event, drop
-					dropped_event := &DroppedEventData{
+					ev := event.NewSyncEvent(DroppedEvent, &DroppedEventData{
 						Name:     injectCmd.Name,
 						EventSeq: injectCmd.EventSeq,
-					}
-					injectChan <- &eventBundle{event.NewSyncEvent(DroppedEvent, dropped_event, time.Now()), false}
+					}, time.Now())
+					ev.Add(1)
+					injectChan <- &eventBundle{ev, false}
 					continue
 				}
 
