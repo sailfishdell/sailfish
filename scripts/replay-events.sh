@@ -5,7 +5,8 @@ set -e
 
 # new default 8080 port for this for speed
 port=${port:-8080}
-forceseq=${forceseq:-1}
+save_existing_seq=${save_existing_seq:-0}
+continuous=${continuous:-0}
 
 scriptdir=$(cd $(dirname $0); pwd)
 . ${scriptdir}/common-vars.sh
@@ -15,19 +16,14 @@ if [ -z "$1" ]; then
     exit 1
 fi
 
-tmpfile=$(mktemp ./TEMP-XXXXXX)
-trap "rm -f $tmpfile TMP" EXIT
-i=-1
-start=$(date +%s)
-total_events_replayed=0
-total_lines=$(wc -l $@ | tail -n1 |  awk '{print $1}' )
-EPS="N/A"
-for file in "$@"
-do
+send_file() {
+  file=$1
   file_lines=$(wc -l $file |  awk '{print $1}')
   events_replayed=0
   while read -u 5 line ; do
-      if [ "$forceseq" -ne "1" ]; then
+      # by default, we resequence the file from -1.
+      # here, if requested, we save the sequence ordering specified in the file
+      if [ "$save_existing_seq" -eq 1 ]; then
         i=$( echo $line | jq '.event_seq' )
       fi
       NOW=$(date --iso-8601=ns)
@@ -51,4 +47,24 @@ do
       if [ -n "$singlestep" ]; then  read -p "Paused" pause; fi
 
   done 5<$file
+}
+
+tmpfile=$(mktemp ./TEMP-XXXXXX)
+trap "rm -f $tmpfile TMP" EXIT
+i=-1
+start=$(date +%s)
+total_events_replayed=0
+total_lines=$(wc -l $@ | tail -n1 |  awk '{print $1}' )
+EPS="N/A"
+
+
+while true
+do
+  for file in "$@"
+  do
+    send_file $file
+  done
+  if [ "$continuous" -ne 1 ]; then
+    break
+  fi
 done
