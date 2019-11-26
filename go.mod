@@ -10,6 +10,7 @@ require (
 	github.com/gorilla/mux v1.6.2
 	github.com/inconshreveable/log15 v0.0.0-20180818164646-67afb5ed74ec
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
+	github.com/jmoiron/sqlx v1.2.0
 	github.com/json-iterator/go v1.1.7
 	github.com/looplab/eventhorizon v0.4.0
 	github.com/mattn/go-colorable v0.0.9 // indirect
