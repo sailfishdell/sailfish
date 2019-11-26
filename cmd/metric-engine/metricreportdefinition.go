@@ -19,13 +19,26 @@ type MRDMetric struct {
 type MetricReportDefinitionData struct {
 	Name                          string
 	MetricReportDefinitionEnabled bool
-	MetricReportDefinitionType    string
+
+	// 'Periodic', 'OnChange', 'OnRequest'
+	MetricReportDefinitionType string
+
+	// only for periodic reports
 	MetricReportHeartbeatInterval time.Duration
-	ReportActions                 []string
-	ReportTimespan                time.Duration
-	ReportUpdates                 []string
-	Schedule                      string // TODO
-	Metrics                       []MRDMetric
+
+	// dont put in duplicate Values for consecutive timestamps
+	Suppress bool
+
+	// 	'LogToMetricReportsCollection', 'RedfishEvent'
+	ReportActions []string
+
+	// 'AppendStopsWhenFull', 'AppendWrapsWhenFull', 'NewReport', 'Overwrite'
+	//  we dont support 'NewReport' (for now?)
+	ReportUpdates []string
+
+	ReportTimespan time.Duration
+	Schedule       string // TODO
+	Metrics        []MRDMetric
 }
 
 type MetricReportDefinition struct {
