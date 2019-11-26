@@ -2,13 +2,17 @@ package main
 
 import (
 	"database/sql"
+	"database/sql/driver"
+	"encoding/json"
 	"fmt"
 	"time"
+
+	"github.com/jmoiron/sqlx"
 
 	log "github.com/superchalupa/sailfish/src/log"
 )
 
-type MRDMetric struct {
+type MRDMetric []struct {
 	CollectionDuration  time.Duration
 	CollectionFunction  string
 	CollectionTimeScope string
@@ -16,9 +20,21 @@ type MRDMetric struct {
 	// future: MetricProperties []struct{}
 }
 
+func (m MRDMetric) Value() (driver.Value, error) {
+	b, err := json.Marshal(m)
+	return b, err
+}
+
+func (m *MRDMetric) Scan(src interface{}) error {
+	return json.Unmarshal(src.([]byte), m)
+}
+
+type ReportActions []string
+
 type MetricReportDefinitionData struct {
-	Name                          string
-	MetricReportDefinitionEnabled bool
+	Name        string `db:"Name"`
+	Enabled     bool   `db:"Enabled"`
+	AppendLimit int    `db:"AppendLimit"`
 
 	// 'Periodic', 'OnChange', 'OnRequest'
 	MetricReportDefinitionType string
@@ -30,130 +46,262 @@ type MetricReportDefinitionData struct {
 	Suppress bool
 
 	// 	'LogToMetricReportsCollection', 'RedfishEvent'
-	ReportActions []string
+	ReportActions ReportActions
 
 	// 'AppendStopsWhenFull', 'AppendWrapsWhenFull', 'NewReport', 'Overwrite'
 	//  we dont support 'NewReport' (for now?)
-	ReportUpdates []string
+	ReportUpdates string
 
 	ReportTimespan time.Duration
-	Schedule       string // TODO
-	Metrics        []MRDMetric
+	Schedule       string    // TODO
+	Metrics        MRDMetric `db:"Metrics"`
 }
 
 type MetricReportDefinition struct {
 	*MetricReportDefinitionData
-	ReportID int64
-	Insert   func(*MetricValueEventData)
+	*MRDFactory
+	logger log.Logger
+	ID     int64 `db:"ID"`
+	loaded bool
 }
 
-func (mrd *MetricReportDefinition) FilterMetricValue(mv *MetricValueEventData) bool {
-	// TODO: construct a reverse map to optimize this
-	for _, m := range mrd.Metrics {
-		if m.MetricID == mv.MetricID {
-			return true
+type MetricMap map[string][]int64
+
+func (MRD *MetricReportDefinition) EnsureMetricValueMeta(mv *MetricValueEventData) (recordID int64, err error) {
+	var stop bool
+	row := MRD.selectMetaRecordID.QueryRow(MRD.ID, mv.MetricID, mv.URI, mv.Property, mv.Context)
+	err = row.Scan(&recordID, &stop)
+	if err != nil || stop != mv.Stop {
+		if err == sql.ErrNoRows || stop != mv.Stop {
+			var res sql.Result
+			res, err = MRD.insertMeta.Exec(MRD.ID, mv.MetricID, mv.URI, mv.Property, mv.Context, mv.Label, mv.Stop, mv.Stop)
+			if err != nil {
+				fmt.Printf("ERROR inserting meta: %s  ", err)
+				return
+			}
+			if stop != mv.Stop {
+				// insertMeta inserts or updates stop, if it was present but not the same as the input, we are done
+				return
+			}
+
+			// if we had to insert new meta record, get the id for that record and return it
+			recordID, err = res.LastInsertId()
+			if err != nil {
+				fmt.Printf("ERROR getting last insert value: %s  ", err)
+				return
+			}
+		} else {
+			MRD.LoadFromDB()
+			MRD.logger.Crit("Error scanning for metric record id", "err", err, "Report", MRD.Name, "metric id", mv.MetricID)
 		}
 	}
-	return false
+	return
 }
 
-type MetricMap map[string][]*MetricReportDefinition
+func (MRD *MetricReportDefinition) InsertMetricValue(mv *MetricValueEventData) {
+	// TODO: implement un-suppress here
+	// TODO: implement suppress here
+	// TODO: honor AppendLimit
+	// TODO: honor AppendStopsWhenFull | AppendWrapsWhenFull | Overwrite
+	// TODO: honor Type=OnChange (send an event?)
+	// TODO: implement calculation functions
+	recordID, err := MRD.EnsureMetricValueMeta(mv)
+	if err != nil {
+		MRD.logger.Crit("ERROR inserting metric meta", "err", err)
+		return
+	}
 
-func (mrd *MetricReportDefinition) UpdateMetricMap(mm MetricMap) {
-	// TODO: when we support more expressive filtering (ie. propery-based), add wildcard entry if needed: mm['*'] = [mrd, ...]
-	for _, m := range mrd.Metrics {
+	_, err = MRD.insertValue.Exec(recordID, mv.Timestamp, mv.MetricValue)
+	if err != nil {
+		MRD.logger.Crit("ERROR inserting value", "err", err)
+		return
+	}
+}
+
+func (MRD *MetricReportDefinition) UpdateMetricMap(mm MetricMap) {
+	// TODO: when we support more expressive filtering (ie. propery-based), add wildcard entry if needed: mm['*'] = [MRD, ...]
+	MRD.LoadFromDB()
+
+	for _, m := range MRD.Metrics {
 		ary, ok := mm[m.MetricID]
 		if !ok {
-			ary = []*MetricReportDefinition{}
+			ary = []int64{}
 		}
-		ary = append(ary, mrd)
+		ary = append(ary, MRD.ID)
 		mm[m.MetricID] = ary
 	}
 }
 
-func (mrd *MetricReportDefinition) Enabled() bool {
-	return mrd.MetricReportDefinitionEnabled
+func (MRD *MetricReportDefinition) IsEnabled() bool {
+	return MRD.Enabled
 }
 
-type MrdFactory struct {
-	database                                    *sql.DB
-	selectMetaRecordID, insertMeta, insertValue *sql.Stmt
+func (MRD *MetricReportDefinition) LoadFromDB() error {
+	if MRD.loaded {
+		return nil
+	}
+
+	err := MRD.database.Get(MRD, `Select Name, Enabled, AppendLimit, Metrics from MetricReportDefinition where ID=?`, MRD.ID)
+	if err != nil {
+		MRD.logger.Crit("failed to load metric report definition from database", "err", err)
+		return err
+	}
+
+	MRD.loaded = true
+	return nil
 }
 
-func NewMRDFactory(database *sql.DB, selectMetaRecordID, insertMeta, insertValue *sql.Stmt) *MrdFactory {
-	return &MrdFactory{database, selectMetaRecordID, insertMeta, insertValue}
+// Factory manages getting/putting into db
+
+type MRDFactory struct {
+	logger             log.Logger
+	database           *sqlx.DB
+	selectMetaRecordID *sqlx.Stmt
+	insertMeta         *sqlx.Stmt
+	insertValue        *sqlx.Stmt
+	mm                 MetricMap
 }
 
-func (f *MrdFactory) New(logger log.Logger, mrdEvData *MetricReportDefinitionData) (MRD *MetricReportDefinition, err error) {
+func NewMRDFactory(logger log.Logger, database *sqlx.DB) (ret *MRDFactory, err error) {
+	ret = &MRDFactory{logger: logger, database: database, mm: MetricMap{}}
+	err = nil
+
+	// =============================================
+	// Find an existing MetricMetaID for this metric
+	// =============================================
+	ret.selectMetaRecordID, err = database.Preparex(
+		`Select ID, stop from MetricValuesMeta where
+			ID=? and
+			metricid=? and
+			uri=?  and
+			property=? and
+			context=?
+			`)
+	if err != nil {
+		logger.Crit("Error Preparing statement for find ID in MetricValuesMeta", "err", err)
+		return
+	}
+
+	// ===================================
+	// Insert for new MetricMetaID
+	// ===================================
+	ret.insertMeta, err = database.Preparex(
+		`INSERT INTO MetricValuesMeta (
+				ReportDefID, metricid, uri, property, context, label, stop
+			) VALUES (?, ?, ?, ?, ?, ?, ?)
+			on conflict (ReportDefID, metricid, uri, property, context) do update SET stop=?`)
+	if err != nil {
+		logger.Crit("Error Preparing statement for meta table insert", "err", err)
+		return
+	}
+
+	// ===================================
+	// Insert one Metric Value record
+	// ===================================
+	ret.insertValue, err = database.Preparex(`INSERT INTO MetricValues (MetricMetaID, Timestamp, MetricValue) VALUES (?, ?, ?)`)
+	if err != nil {
+		logger.Crit("Error Preparing statement for values table insert", "err", err)
+		return
+	}
+
+	return
+}
+
+func (factory *MRDFactory) Delete(mrdEvData *MetricReportDefinitionData) (err error) {
+	statement, err := factory.database.Prepare(`delete from MetricReportDefinition where name==?`)
+	if err != nil {
+		factory.logger.Crit("Error Preparing statement for MetricReportDefinition table delete", "err", err)
+		return
+	}
+	_, err = statement.Exec(mrdEvData.Name)
+	if err != nil {
+		factory.logger.Crit("ERROR deleting MetricReportDefinition", "err", err)
+		return
+	}
+	return
+}
+
+func (factory *MRDFactory) IterReportDefsForMetric(mv *MetricValueEventData, fn func(i *MetricReportDefinition)) {
+	for _, mrd_id := range factory.mm[mv.MetricID] {
+		// "skinny" MRD (not loaded from DB yet)
+		MRD := &MetricReportDefinition{
+			MRDFactory: factory,
+			logger:     factory.logger,
+			ID:         mrd_id,
+		}
+		fn(MRD)
+	}
+}
+
+func (factory *MRDFactory) IterReportDefs(fn func(fn *MetricReportDefinition)) {
+	stmt, err := factory.database.Preparex(
+		`select ID, Name, Enabled, AppendLimit, Metrics from MetricReportDefinition`)
+	if err != nil {
+		factory.logger.Crit("Error preparing", "err", err)
+		return
+	}
+	rows, err := stmt.Queryx()
+	if err != nil {
+		factory.logger.Crit("Error querying", "err", err)
+		return
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		MRD := &MetricReportDefinition{MRDFactory: factory, logger: factory.logger}
+		rows.StructScan(MRD)
+		fn(MRD)
+	}
+}
+
+func (factory *MRDFactory) Update(mrdEvData *MetricReportDefinitionData) (MRD *MetricReportDefinition, err error) {
 	MRD = &MetricReportDefinition{
 		MetricReportDefinitionData: mrdEvData,
+		MRDFactory:                 factory,
+		logger:                     factory.logger,
 	}
 
 	// ===================================
 	// Insert for new report definition
 	// ===================================
-	statement, err := f.database.Prepare(`INSERT INTO MetricReportDefinition (name) VALUES (?)`)
+	tx, err := factory.database.Beginx()
 	if err != nil {
-		logger.Crit("Error Preparing statement for MetricReportDefinition table insert", "err", err)
+		factory.logger.Crit("Error creating transaction to update MRD", "err", err)
 		return
 	}
-	res, err := statement.Exec(MRD.Name)
+
+	// if we error out at all, roll back
+	defer tx.Rollback()
+
+	statement, err := tx.PrepareNamed(
+		`INSERT INTO MetricReportDefinition
+					  ( Name,  Enabled, AppendLimit, Metrics)
+						VALUES (:Name, :Enabled, :AppendLimit, :Metrics)
+		 on conflict(name) do update set Enabled=:Enabled`)
+	if err != nil {
+		factory.logger.Crit("Error Preparing statement for MetricReportDefinition table insert", "err", err)
+		return
+	}
+	res, err := statement.Exec(MRD)
 	if err != nil {
 		fmt.Printf("ERROR inserting MetricReportDefinition: %s  ", err)
 		return
 	}
-	MRD.ReportID, err = res.LastInsertId()
-	if err != nil {
-		fmt.Printf("ERROR getting last insert value for MetricReportDefinition: %s  ", err)
-		return
-	}
-	statement.Close()
-
-	// ==================================================================
-	// insertFn is used to insert individual metric values into storage
-	// ==================================================================
-	MRD.Insert = func(mv *MetricValueEventData) {
-		// TODO: implement un-suppress here
-		success := false
-		defer func() {
-			if success {
-				logit := logger.Info
-				message := "Inserted Metric"
-				if !success {
-					logit = logger.Warn
-					message = "FAILED inserting metric"
-				}
-				logit(message, "Report", MRD.Name, "metric id", mv.MetricID)
-			}
-		}()
-		var recordID int64
-		var stop bool
-		row := f.selectMetaRecordID.QueryRow(MRD.ReportID, mv.MetricID, mv.URI, mv.Property, mv.Context)
-		err := row.Scan(&recordID, &stop)
+	if MRD.ID == 0 {
+		MRD.ID, err = res.LastInsertId()
 		if err != nil {
-			if err == sql.ErrNoRows {
-				res, err := f.insertMeta.Exec(MRD.ReportID, mv.MetricID, mv.URI, mv.Property, mv.Context, mv.Label, mv.Stop, mv.Stop)
-				if err != nil {
-					fmt.Printf("ERROR inserting meta: %s  ", err)
-					return
-				}
-				recordID, err = res.LastInsertId()
-				if err != nil {
-					fmt.Printf("ERROR getting last insert value: %s  ", err)
-					return
-				}
-			} else {
-				logger.Crit("Error scanning for metric record id", "err", err, "Report", MRD.Name, "metric id", mv.MetricID)
-			}
-		}
-
-		_, err = f.insertValue.Exec(recordID, mv.Timestamp, mv.MetricValue)
-		if err != nil {
-			logger.Crit("ERROR inserting value", "err", err)
+			fmt.Printf("ERROR getting last insert value for MetricReportDefinition: %s  ", err)
 			return
 		}
-		success = true
 	}
+	tx.Commit()
+
+	factory.mm = MetricMap{}
+	factory.IterReportDefs(func(mrd *MetricReportDefinition) {
+		mrd.UpdateMetricMap(factory.mm)
+	})
+
+	fmt.Printf("DEBUG: metric map: %s\n", factory.mm)
 
 	return
 }

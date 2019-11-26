@@ -1,43 +1,79 @@
 package main
 
 import (
-	"database/sql"
+	"github.com/jmoiron/sqlx"
 
 	log "github.com/superchalupa/sailfish/src/log"
 )
 
-func createDatabase(logger log.Logger, dbpath string) (database *sql.DB,
-	selectMetaRecordID,
-	insertMeta,
-	insertValue *sql.Stmt,
-	err error) {
+func createDatabase(logger log.Logger, dbpath string) (database *sqlx.DB, err error) {
 
-	database, err = sql.Open("sqlite3", dbpath)
+	database, err = sqlx.Open("sqlite3", dbpath)
 	if err != nil {
 		logger.Crit("Could not open database", "err", err)
 		return
 	}
 
+	// TODO:  enable WAL
+
 	// =======================================
 	// Create the MetricReportDefinition table
 	// =======================================
 	statement, err := database.Prepare(
-		`CREATE TABLE IF NOT EXISTS MetricReportDefinition
+		`
+		-- 0 - use compiled in defaults (1|2)
+		-- 1 - file
+		-- 2 - memory
+		-- likely that 2 may be faster, but corruption is likely on crashes
+		-- for now: store temp stuff in tmpfs. Need to benchmark this vs '2'
+		PRAGMA TEMP_STORE = 1;
+
+		-- TRUNCATE, DELETE, PERSIST, MEMORY, OFF
+		-- Probably cant use PERSIST due to it using more space
+		-- OFF == likely corruption on crashes
+		PRAGMA JOURNAL_MODE = TRUNCATE;
+
+		PRAGMA journal_mode = WAL;
+
+		-- FULL, NORMAL, OFF
+		-- OFF - corruption on OS crash, which we dont care about because it's tmpfs
+		PRAGMA SYNCHRONOUS = OFF;
+
+		-- NORMAL, EXLUSIVE
+		PRAGMA LOCKING_MODE = NORMAL;
+
+		CREATE TABLE IF NOT EXISTS MetricReportDefinition
 				(
-					ReportDefID    INTEGER PRIMARY KEY NOT NULL,
+					ID    INTEGER PRIMARY KEY NOT NULL,
 
 					-- text name of the report definition. used also for the metric report name
 					Name           varcahr(64) UNIQUE,
 
+					Enabled        BOOLEAN,
+					AppendLimit    INTEGER,
+
 					-- type of report: "Periodic", "OnChange", "OnRequest"
-					MetricReportDefinitionType  varcahr(64),
+					Type  varcahr(64),
+
+					Heartbeat      datetime,
+					SuppressDups   BOOLEAN,
 
 					-- the current seq of generated reports
-					ReportSequence integer,
+					Sequence integer,
+
+					-- json array of actions
+					-- 'LogToMetricReportsCollection', 'RedfishEvent'
+					Actions     TEXT,
+
+					-- 'AppendStopsWhenFull', 'AppendWrapsWhenFull', 'NewReport', 'Overwrite'
+					Updates     TEXT,
 
 					-- Only for 'Periodic' reports
 					FirstTimestamp datetime,
-					LastTimestamp  datetime
+					LastTimestamp  datetime,
+
+					-- json array of metrics
+					Metrics  TEXT
 				)`)
 	if err != nil {
 		logger.Crit("Error Preparing statement for reportdefinition table create", "err", err)
@@ -55,8 +91,8 @@ func createDatabase(logger log.Logger, dbpath string) (database *sql.DB,
 	statement, err = database.Prepare(
 		`CREATE TABLE IF NOT EXISTS MetricValuesMeta
 				(
+					ID          				integer unique primary key not null,
 					ReportDefID  				integer not null,
-					MetricMetaID 				integer unique primary key not null,
 
 					-- actually more of a metric name
 					metricid     				varchar(64) not null,
@@ -94,7 +130,7 @@ func createDatabase(logger log.Logger, dbpath string) (database *sql.DB,
 					-- indexes and constraints
 					unique (ReportDefID, metricid, uri, property, context),
 					foreign key (ReportDefID)
-						references MetricReportDefinition (MetricMetaID)
+						references MetricReportDefinition (ID)
 							on delete cascade
 
 				);
@@ -108,6 +144,7 @@ func createDatabase(logger log.Logger, dbpath string) (database *sql.DB,
 		logger.Crit("Error creating table", "err", err)
 		return
 	}
+	statement.Close()
 
 	// =============================
 	// Create the MetricValues table
@@ -121,7 +158,7 @@ func createDatabase(logger log.Logger, dbpath string) (database *sql.DB,
 
 					PRIMARY KEY (MetricMetaID, Timestamp),
 					FOREIGN KEY (MetricMetaID)
-						REFERENCES MetricValuesMeta (MetricMetaID)
+						REFERENCES MetricValuesMeta (ID)
 							ON DELETE CASCADE
 				)`)
 	if err != nil {
@@ -133,6 +170,7 @@ func createDatabase(logger log.Logger, dbpath string) (database *sql.DB,
 		logger.Crit("Error creating table", "err", err)
 		return
 	}
+	statement.Close()
 
 	// ============================
 	// Create the MetricReport view
@@ -142,7 +180,7 @@ func createDatabase(logger log.Logger, dbpath string) (database *sql.DB,
 					select
 						mrd.Name as 'Id',
 						'TODO - ' || mrd.Name || ' - Metric Report Definition' as 'Name',
-						mrd.reportsequence as 'ReportSequence',
+						mrd.Sequence as 'ReportSequence',
 						(
 							select json('[' || group_concat(json_object(
 									'MetricId', mvm.metricid,
@@ -153,10 +191,10 @@ func createDatabase(logger log.Logger, dbpath string) (database *sql.DB,
 										'Label', mvm.label
 									))
 								))  || ']') from MetricValues as mv
-								inner join MetricValuesMeta as mvm on mv.MetricMetaID == mvm.MetricMetaID where mvm.ReportDefID == mrd.ReportDefID
+								inner join MetricValuesMeta as mvm on mv.MetricMetaID == mvm.ID where mvm.ReportDefID == mrd.ID
 					  ) as 'MetricValues',
 						(select count(*) from MetricValues as mv
-								inner join MetricValuesMeta as mvm on mv.MetricMetaID == mvm.MetricMetaID where mvm.ReportDefID == mrd.ReportDefID) as 'MetricValues@odata.count'
+								inner join MetricValuesMeta as mvm on mv.MetricMetaID == mvm.ID where mvm.ReportDefID == mrd.ID) as 'MetricValues@odata.count'
 					from MetricReportDefinition  as mrd
 				`)
 	if err != nil {
@@ -169,6 +207,7 @@ func createDatabase(logger log.Logger, dbpath string) (database *sql.DB,
 		logger.Crit("Error creating table", "err", err)
 		return
 	}
+	statement.Close()
 
 	// =========================================
 	// Create the redfish view MetricReport_JSON
@@ -199,42 +238,7 @@ func createDatabase(logger log.Logger, dbpath string) (database *sql.DB,
 		logger.Crit("Error creating table", "err", err)
 		return
 	}
-
-	// =============================================
-	// Find an existing MetricMetaID for this metric
-	// =============================================
-	selectMetaRecordID, err = database.Prepare(
-		`Select MetricMetaID, stop from MetricValuesMeta where
-			ReportDefID=? and
-			metricid=? and
-			uri=?  and
-			property=? and
-			context=?
-			`)
-	if err != nil {
-		logger.Crit("Error Preparing statement for find MetricMetaID in MetricValuesMeta", "err", err)
-		return
-	}
-
-	// ===================================
-	// Insert for new MetricMetaID
-	// ===================================
-	insertMeta, err = database.Prepare(
-		`INSERT INTO MetricValuesMeta (
-				ReportDefID,
-				metricid, uri, property, context, label, stop
-			) VALUES (?, ?, ?, ?, ?, ?, ?)
-			on conflict (ReportDefID, metricid, uri, property, context) do update SET stop=?`)
-	if err != nil {
-		logger.Crit("Error Preparing statement for meta table insert", "err", err)
-		return
-	}
-
-	insertValue, err = database.Prepare(`INSERT INTO MetricValues (MetricMetaID, Timestamp, MetricValue) VALUES (?, ?, ?)`)
-	if err != nil {
-		logger.Crit("Error Preparing statement for values table insert", "err", err)
-		return
-	}
+	statement.Close()
 
 	return
 }

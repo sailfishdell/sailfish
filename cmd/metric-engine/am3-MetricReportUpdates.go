@@ -22,65 +22,57 @@ func addAM3DatabaseFunctions(logger log.Logger, dbpath string, am3Svc *am3.Servi
 	eh.RegisterEventData(UpdateMetricReportDefinition, func() eh.EventData { return &MetricReportDefinitionData{} })
 
 	fmt.Printf("Creating database: %s\n", dbpath)
-	database, selectMetaRecordID, insertMeta, insertValue, err := createDatabase(logger, dbpath)
+	database, err := createDatabase(logger, dbpath)
 	if err != nil {
 		logger.Crit("Could not create database", "err", err)
 		return
 	}
 
-	MRDFactory := NewMRDFactory(database, selectMetaRecordID, insertMeta, insertValue)
-
-	metricReports := map[string]*MetricReportDefinition{}
-	mm := MetricMap{}
+	MRDFactory, err := NewMRDFactory(logger, database)
+	if err != nil {
+		logger.Crit("Error creating factory", "err", err)
+	}
 
 	am3Svc.AddEventHandler("update_metric_report_definition", UpdateMetricReportDefinition, func(event eh.Event) {
 		reportDef, ok := event.Data().(*MetricReportDefinitionData)
 		if !ok {
-			fmt.Println("should never happen")
+			logger.Crit("Internal program error. Expected a *MetricReportDefinitionData but didn't get one.", "Actual", fmt.Sprintf("%T", event.Data()))
 			return
 		}
 
-		mrd, ok := metricReports[reportDef.Name]
-		if !ok {
-			mrd, err = MRDFactory.New(logger, reportDef)
-			if err != nil {
-				fmt.Println("error creating new report definition")
-				return
-			}
-			metricReports[reportDef.Name] = mrd
+		// create one or update
+		_, err = MRDFactory.Update(reportDef)
+		if err != nil {
+			logger.Crit("Failed to create or update the Report Definition", "Name", reportDef.Name, "err", err)
+			return
 		}
-
-		// TODO: update it, if needed
-
-		mm = MetricMap{}
-		for _, mrd := range metricReports {
-			mrd.UpdateMetricMap(mm)
-		}
-
-		fmt.Printf("Metric Reports: %V\n\n", metricReports)
-		fmt.Printf("Metric Map: %V\n\n", mm)
 	})
 
 	am3Svc.AddEventHandler("delete_metric_report_definition", DeleteMetricReportDefinition, func(event eh.Event) {
 		reportDef, ok := event.Data().(*MetricReportDefinitionData)
 		if !ok {
-			fmt.Println("should never happen")
+			logger.Crit("Internal program error. Expected a *MetricReportDefinitionData but didn't get one.", "Actual", fmt.Sprintf("%T", event.Data()))
 			return
 		}
 
-		// TODO: close prepared statement handles
-		// TODO: delete database records
-		delete(metricReports, reportDef.Name)
+		err := MRDFactory.Delete(reportDef)
+		if err != nil {
+			logger.Crit("Error deleting Metric Report Definition", "Name", reportDef.Name, "err", err)
+		}
 	})
 
 	am3Svc.AddEventHandler("metric_storage", MetricValueEvent, func(event eh.Event) {
 		metricValue, ok := event.Data().(*MetricValueEventData)
 		if !ok {
-			fmt.Println("Should never happen: got a metric value event without metricvalueeventdata:", event.Data())
+			logger.Crit("Internal program error. Expected a *MetricValueEventData but didn't get one.", "Actual", fmt.Sprintf("%T", event.Data()))
 			return
 		}
-		for _, mrd := range mm[metricValue.MetricID] {
-			mrd.Insert(metricValue)
+
+		type valueInserter interface {
+			InsertMetricValue(*MetricValueEventData)
 		}
+		MRDFactory.IterReportDefsForMetric(metricValue, func(mrd *MetricReportDefinition) {
+			mrd.InsertMetricValue(metricValue)
+		})
 	})
 }
