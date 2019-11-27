@@ -1,0 +1,9 @@
+{"name": "startup", "event_seq": -1, "data": {}}
+{"name": "UpdateMetricReportDefinitionEvent","event_seq": 0, "data":{ "Name": "MEB", "Metrics": [ {"MetricID": "M1"}, {"MetricID": "RPMReading"}, {"MetricID": "RPMPct"} ] }}
+{"name": "UpdateMetricReportDefinitionEvent","event_seq": 1, "data":{ "Name": "M1Only", "Metrics": [ {"MetricID": "M1"}] }}
+{"name":"MetricValueEvent","event_seq": 2, "data":{"Timestamp":"2019-11-22T12:45:07.806547128-06:00","MetricID":"M1","MetricValue":"42","URI":"/redfish/v1/M1","Property":"M1","Context":"M1","Label":"fixme label","StablePeriod":false,"ReportPeriod":0,"RepeatPrevious":"","RepeatPreviousSupported":false,"StopSupported":false,"Stop":false}}
+{"name": "thp_fan_data_object", "event_seq": 3, "event_array": [{"data": "igAAAAINAwgCDQIIAAAAAAEAAABEAAAAYAAAAIgAAABsAAAAiQAAAAICAiouZytCTR8AAI8cAAC4EwAAwhQAAAEAAABTeXN0ZW0uQ2hhc3Npcy4xI0Zhbi5TbG90LjMARnJvbnQgRmFuIDMAU3lzdGVtLkNoYXNzaXMuMSNGYW4uU2xvdC4zAAAA", "FQDD": "System.Chassis.1#Fan.Slot.3"}]}
+{"name": "UpdateMetricReportDefinitionEvent","event_seq": 4, "data":{ "Name": "MEB", "Enabled": true, "Metrics": [ {"MetricID": "M1"}, {"MetricID": "RPMReading"}, {"MetricID": "RPMPct"} ] }}
+{"name": "UpdateMetricReportDefinitionEvent","event_seq": 5, "data":{ "Name": "M1Only", "Enabled": true, "Metrics": [ {"MetricID": "M1"}] }}
+{"name":"MetricValueEvent","event_seq": 6, "data":{"Timestamp":"2019-11-22T12:45:07.806547128-06:00","MetricID":"M1","MetricValue":"42","URI":"/redfish/v1/M1","Property":"M1","Context":"M1","Label":"fixme label","StablePeriod":false,"ReportPeriod":0,"RepeatPrevious":"","RepeatPreviousSupported":false,"StopSupported":false,"Stop":false}}
+{"name": "thp_fan_data_object", "event_seq": 7, "event_array": [{"data": "igAAAAINAwgCDQIIAAAAAAEAAABEAAAAYAAAAIgAAABsAAAAiQAAAAICAiouZytCTR8AAI8cAAC4EwAAwhQAAAEAAABTeXN0ZW0uQ2hhc3Npcy4xI0Zhbi5TbG90LjMARnJvbnQgRmFuIDMAU3lzdGVtLkNoYXNzaXMuMSNGYW4uU2xvdC4zAAAA", "FQDD": "System.Chassis.1#Fan.Slot.3"}]}
