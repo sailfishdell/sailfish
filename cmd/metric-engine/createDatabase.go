@@ -19,21 +19,18 @@ func createDatabase(logger log.Logger, dbpath string) (database *sqlx.DB, err er
 	// =======================================
 	// Create the MetricReportDefinition table
 	// =======================================
-	statement, err := database.Prepare(
-		`
+	_, err = database.Exec(`
 		-- 0 - use compiled in defaults (1|2)
 		-- 1 - file
 		-- 2 - memory
 		-- likely that 2 may be faster, but corruption is likely on crashes
 		-- for now: store temp stuff in tmpfs. Need to benchmark this vs '2'
-		PRAGMA TEMP_STORE = 1;
+		PRAGMA TEMP_STORE = 2;
 
 		-- TRUNCATE, DELETE, PERSIST, MEMORY, OFF
 		-- Probably cant use PERSIST due to it using more space
-		-- OFF == likely corruption on crashes
-		PRAGMA JOURNAL_MODE = TRUNCATE;
-
-		PRAGMA journal_mode = WAL;
+		-- OFF == likely corruption on crashes, can't support multiple writers or simultaneous reader/writer
+		-- PRAGMA journal_mode = WAL;
 
 		-- FULL, NORMAL, OFF
 		-- OFF - corruption on OS crash, which we dont care about because it's tmpfs
@@ -41,13 +38,19 @@ func createDatabase(logger log.Logger, dbpath string) (database *sqlx.DB, err er
 
 		-- NORMAL, EXLUSIVE
 		PRAGMA LOCKING_MODE = NORMAL;
+		`)
+	if err != nil {
+		logger.Crit("Error setting database parameters.", "err", err)
+		return
+	}
 
+	_, err = database.Exec(`
 		CREATE TABLE IF NOT EXISTS MetricReportDefinition
 				(
 					ID    INTEGER PRIMARY KEY NOT NULL,
 
 					-- text name of the report definition. used also for the metric report name
-					Name           varcahr(64) UNIQUE,
+					Name           varcahr(64) UNIQUE NOT NULL,
 
 					Enabled        BOOLEAN,
 					AppendLimit    INTEGER,
@@ -76,20 +79,15 @@ func createDatabase(logger log.Logger, dbpath string) (database *sqlx.DB, err er
 					Metrics  TEXT
 				)`)
 	if err != nil {
-		logger.Crit("Error Preparing statement for reportdefinition table create", "err", err)
-		return
-	}
-	_, err = statement.Exec()
-	if err != nil {
-		logger.Crit("Error creating table", "err", err)
+		logger.Crit("Error executing statement for MetricReportDefinition table create", "err", err)
 		return
 	}
 
 	// =================================
 	// Create the MetricValuesMeta table
 	// =================================
-	statement, err = database.Prepare(
-		`CREATE TABLE IF NOT EXISTS MetricValuesMeta
+	_, err = database.Exec(`
+			CREATE TABLE IF NOT EXISTS MetricValuesMeta
 				(
 					ID          				integer unique primary key not null,
 					ReportDefID  				integer not null,
@@ -136,25 +134,19 @@ func createDatabase(logger log.Logger, dbpath string) (database *sqlx.DB, err er
 				);
 			CREATE INDEX idx_metricvaluesmeta_reportdefid on MetricValuesMeta(ReportDefID);`)
 	if err != nil {
-		logger.Crit("Error Preparing statement for meta table create", "err", err)
+		logger.Crit("Error executing statement for MetricValuesMeta table create", "err", err)
 		return
 	}
-	_, err = statement.Exec()
-	if err != nil {
-		logger.Crit("Error creating table", "err", err)
-		return
-	}
-	statement.Close()
 
 	// =============================
 	// Create the MetricValues table
 	// =============================
-	statement, err = database.Prepare(
-		`CREATE TABLE IF NOT EXISTS MetricValues
+	_, err = database.Exec(`
+			CREATE TABLE IF NOT EXISTS MetricValues
 				(
 					MetricMetaID INTEGER NOT NULL,
-					Timestamp    DATETIME,
-					MetricValue  VARCHAR(64),
+					Timestamp    DATETIME NOT NULL,
+					MetricValue  VARCHAR(64) NOT NULL,
 
 					PRIMARY KEY (MetricMetaID, Timestamp),
 					FOREIGN KEY (MetricMetaID)
@@ -162,21 +154,15 @@ func createDatabase(logger log.Logger, dbpath string) (database *sqlx.DB, err er
 							ON DELETE CASCADE
 				)`)
 	if err != nil {
-		logger.Crit("Error Preparing statement for value table create", "err", err)
+		logger.Crit("Error executing statement for MetricValues table create", "err", err)
 		return
 	}
-	_, err = statement.Exec()
-	if err != nil {
-		logger.Crit("Error creating table", "err", err)
-		return
-	}
-	statement.Close()
 
 	// ============================
 	// Create the MetricReport view
 	// ============================
-	statement, err = database.Prepare(
-		`CREATE VIEW IF NOT EXISTS MetricReport_View as
+	_, err = database.Exec(`
+			CREATE VIEW IF NOT EXISTS MetricReport_View as
 					select
 						mrd.Name as 'Id',
 						'TODO - ' || mrd.Name || ' - Metric Report Definition' as 'Name',
@@ -198,21 +184,14 @@ func createDatabase(logger log.Logger, dbpath string) (database *sqlx.DB, err er
 					from MetricReportDefinition  as mrd
 				`)
 	if err != nil {
-		logger.Crit("Error Preparing statement for MetricReport_View create", "err", err)
+		logger.Crit("Error executing statement for MetricReport_View create", "err", err)
 		return
 	}
-
-	_, err = statement.Exec()
-	if err != nil {
-		logger.Crit("Error creating table", "err", err)
-		return
-	}
-	statement.Close()
 
 	// =========================================
 	// Create the redfish view MetricReport_JSON
 	// =========================================
-	statement, err = database.Prepare(
+	_, err = database.Exec(
 		`CREATE VIEW IF NOT EXISTS MetricReport_JSON as
 				select json_object(
 					'@odata.type','#MetricReport.v1_2_0.MetricReport',
@@ -229,16 +208,9 @@ func createDatabase(logger log.Logger, dbpath string) (database *sqlx.DB, err er
 						'/redfish/v1/TelemetryService/MetricReports/' || Id as '@odata.id' from MetricReport_View;
 				`)
 	if err != nil {
-		logger.Crit("Error Preparing statement for JSON view create", "err", err)
+		logger.Crit("Error executing statement for MetricReport_JSON view create", "err", err)
 		return
 	}
-
-	_, err = statement.Exec()
-	if err != nil {
-		logger.Crit("Error creating table", "err", err)
-		return
-	}
-	statement.Close()
 
 	return
 }
