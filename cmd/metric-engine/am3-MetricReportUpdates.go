@@ -21,16 +21,15 @@ const (
 func addAM3DatabaseFunctions(logger log.Logger, dbpath string, am3Svc *am3.Service, d *domain.DomainObjects) {
 	eh.RegisterEventData(UpdateMetricReportDefinition, func() eh.EventData { return &MetricReportDefinitionData{} })
 
-	fmt.Printf("Creating database: %s\n", dbpath)
 	database, err := createDatabase(logger, dbpath)
 	if err != nil {
-		logger.Crit("Could not create database", "err", err)
+		logger.Crit("FATAL: Could not create database", "err", err)
 		return
 	}
 
 	MRDFactory, err := NewMRDFactory(logger, database)
 	if err != nil {
-		logger.Crit("Error creating factory", "err", err)
+		logger.Crit("Error creating report definition factory", "err", err)
 	}
 
 	am3Svc.AddEventHandler("update_metric_report_definition", UpdateMetricReportDefinition, func(event eh.Event) {
@@ -68,9 +67,6 @@ func addAM3DatabaseFunctions(logger log.Logger, dbpath string, am3Svc *am3.Servi
 			return
 		}
 
-		type valueInserter interface {
-			InsertMetricValue(*MetricValueEventData)
-		}
 		MRDFactory.IterReportDefsForMetric(metricValue, func(mrd *MetricReportDefinition) {
 			mrd.InsertMetricValue(metricValue)
 		})
