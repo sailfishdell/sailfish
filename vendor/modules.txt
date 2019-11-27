@@ -54,11 +54,6 @@ github.com/modern-go/reflect2
 github.com/pelletier/go-toml
 # github.com/pmezard/go-difflib v1.0.0
 github.com/pmezard/go-difflib/difflib
-# github.com/spacemonkeygo/openssl v0.0.0-20180913232302-a66df3e4f582
-github.com/spacemonkeygo/openssl
-github.com/spacemonkeygo/openssl/utils
-# github.com/spacemonkeygo/spacelog v0.0.0-20180420211403-2296661a0572
-github.com/spacemonkeygo/spacelog
 # github.com/spf13/afero v1.1.2
 github.com/spf13/afero
 github.com/spf13/afero/mem

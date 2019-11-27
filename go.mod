@@ -19,7 +19,7 @@ require (
 	github.com/mitchellh/go-homedir v1.0.0 // indirect
 	github.com/mitchellh/mapstructure v1.0.0
 	github.com/prometheus/client_golang v1.1.0 // indirect
-	github.com/spacemonkeygo/openssl v0.0.0-20180913232302-a66df3e4f582
+	github.com/spacemonkeygo/openssl v0.0.0-20180913232302-a66df3e4f582 // indirect
 	github.com/spf13/cobra v0.0.3 // indirect
 	github.com/spf13/pflag v1.0.2
 	github.com/spf13/viper v1.2.0
