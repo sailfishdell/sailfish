@@ -390,7 +390,10 @@ func (s *Service) InstantiateFromCfg(ctx context.Context, cfgMgr *viper.Viper, c
 
 	// Instantiate logger
 	s.RLock()
-	subLogger := s.logger.New(config.Logger...)
+	subLogger := s.logger
+	if len(config.Logger) > 0 {
+		subLogger = s.logger.New(config.Logger...)
+	}
 	s.RUnlock()
 	subLogger.Debug("Instantiated new logger")
 
