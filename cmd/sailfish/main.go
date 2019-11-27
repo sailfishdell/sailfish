@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	_ "net/http/pprof"
 	"os"
 	"os/signal"
 	"runtime/debug"
@@ -178,23 +177,26 @@ func main() {
 		fmt.Fprintf(os.Stderr, "No listeners configured! Use the '-l' option to configure a listener!")
 	}
 
-	fmt.Printf("Starting services: %s\n", cfgMgr.GetStringSlice("listen"))
+	type shutdowner interface {
+		Shutdown(context.Context) error
+	}
+	shutdownlist := []shutdowner{}
+	addShutdown := func(name string, srv interface{}) {
+		s, ok := srv.(shutdowner)
+		if !ok {
+			logger.Crit("The requested HTTP server can't be gracefully shutdown at program exit.", "ServerName", name)
+			return
+		}
+		shutdownlist = append(shutdownlist, s)
+	}
 
 	// And finally, start up all of the listeners that we have configured
+	fmt.Printf("Starting services: %s\n", cfgMgr.GetStringSlice("listen"))
 	for _, listen := range cfgMgr.GetStringSlice("listen") {
 		switch {
 		case strings.HasPrefix(listen, "pprof:"):
-			pprofMux := http.DefaultServeMux
-			http.DefaultServeMux = http.NewServeMux()
-			addr := strings.TrimPrefix(listen, "pprof:")
-			s := &http.Server{
-				Addr:    addr,
-				Handler: pprofMux,
-			}
-			logger.Info("PPROF activated with tcp listener: " + addr)
-			go s.ListenAndServe()
-			go handleShutdown(ctx, logger, s)
-
+			pprofListener := runpprof(logger, addShutdown, listen)
+			go pprofListener()
 		case strings.HasPrefix(listen, "http:"):
 			// HTTP protocol listener
 			// "https:[addr]:port
@@ -208,8 +210,10 @@ func main() {
 				// cannot use writetimeout if we are streaming
 				// WriteTimeout:   10 * time.Second,
 			}
-			go func() { logger.Info("Server exited", "err", s.ListenAndServe()) }()
-			go handleShutdown(ctx, logger, s)
+			go func(listen string, s *http.Server) {
+				logger.Crit("Server exited", "listenaddr", listen, "err", s.ListenAndServe())
+			}(listen, s)
+			addShutdown(listen, s)
 
 		case strings.HasPrefix(listen, "unix:"):
 			// HTTP protocol listener
@@ -222,10 +226,13 @@ func main() {
 				ReadTimeout:    100 * time.Second,
 			}
 			unixListener, err := net.Listen("unix", addr)
-			if err == nil {
-				go func() { logger.Info("Server exited", "err", s.Serve(unixListener)) }()
-				go handleShutdown(ctx, logger, s)
+			if err != nil {
+				break
 			}
+			go func(listen string, s *http.Server, l net.Listener) {
+				logger.Crit("Server exited", "listenaddr", listen, "err", s.Serve(l))
+			}(listen, s, unixListener)
+			addShutdown(listen, s)
 
 		case strings.HasPrefix(listen, "https:"):
 			// HTTPS protocol listener
@@ -244,13 +251,10 @@ func main() {
 			}
 			logger.Info("HTTPS listener starting on " + addr)
 			checkCaCerts(logger)
-			go func() { logger.Info("Server exited", "err", s.ListenAndServeTLS("server.crt", "server.key")) }()
-			go handleShutdown(ctx, logger, s)
-		case strings.HasPrefix(listen, "spacemonkey:"):
-			addr := strings.TrimPrefix(listen, "spacemonkey:")
-			logger.Info("SPACEMONKEY listener starting on " + addr)
-			go runSpaceMonkey(addr, loggingHTTPHandler)
-
+			go func(listen string, s *http.Server) {
+				logger.Crit("Server exited", "listenaddr", listen, "err", s.ListenAndServeTLS("server.crt", "server.key"))
+			}(listen, s)
+			addShutdown(listen, s)
 		}
 	}
 
@@ -264,6 +268,16 @@ func main() {
 	<-intr
 	logger.Crit("INTERRUPTED, Cancelling...")
 	cancel()
+
+	// wait up to 10 seconds for active connections
+	shutdownCtx, cancelshutdown := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancelshutdown()
+	for _, s := range shutdownlist {
+		err := s.Shutdown(shutdownCtx)
+		if err != nil {
+			logger.Crit("server wasn't gracefully shutdown.", "err", err)
+		}
+	}
 	logger.Warn("Bye!", "module", "main")
 }
 
@@ -303,29 +317,6 @@ func checkCaCerts(logger log.Logger) {
 		)
 		iterInterfaceIPAddrs(logger, func(ip net.IP) { serverCert.ApplyOption(tlscert.AddSANIP(ip)) })
 		serverCert.Serialize()
-	}
-}
-
-type shutdowner interface {
-	Shutdown(context.Context) error
-}
-
-func handleShutdown(ctx context.Context, logger log.Logger, srv interface{}) error {
-	s, ok := srv.(shutdowner)
-	if !ok {
-		logger.Info("Can't cleanly shutdown listener, it will ungracefully end")
-		return nil
-	}
-
-	for {
-		select {
-		case <-ctx.Done():
-			logger.Info("shutdown server.")
-			if err := s.Shutdown(ctx); err != nil {
-				logger.Info("server_error", "err", err)
-			}
-			return ctx.Err()
-		}
 	}
 }
 
