@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"database/sql/driver"
 	"encoding/json"
-	"fmt"
 	"time"
 
 	"github.com/jmoiron/sqlx"
@@ -72,24 +71,22 @@ func (MRD *MetricReportDefinition) EnsureMetricValueMeta(mv *MetricValueEventDat
 	row := MRD.selectMetaRecordID.QueryRow(MRD.ID, mv.MetricID, mv.URI, mv.Property, mv.Context)
 	err = row.Scan(&recordID, &stop)
 	if err != nil || stop != mv.Stop {
-		if err == sql.ErrNoRows || stop != mv.Stop {
+		if err == sql.ErrNoRows {
 			var res sql.Result
 			res, err = MRD.insertMeta.Exec(MRD.ID, mv.MetricID, mv.URI, mv.Property, mv.Context, mv.Label, mv.Stop, mv.Stop)
 			if err != nil {
-				fmt.Printf("ERROR inserting meta: %s  ", err)
-				return
-			}
-			if stop != mv.Stop {
-				// insertMeta inserts or updates stop, if it was present but not the same as the input, we are done
+				MRD.logger.Crit("ERROR inserting MetricValueMeta", "MetricValueEventData", mv, "MRD.ID", MRD.ID, "err", err)
 				return
 			}
 
 			// if we had to insert new meta record, get the id for that record and return it
 			recordID, err = res.LastInsertId()
 			if err != nil {
-				fmt.Printf("ERROR getting last insert value: %s  ", err)
+				MRD.logger.Crit("ERROR getting last insert value for MetricValueMeta", "MetricValueEventData", mv, "MRD.ID", MRD.ID, "err", err)
 				return
 			}
+		} else if stop != mv.Stop {
+			// TODO: update the stop field
 		} else {
 			MRD.LoadFromDB()
 			MRD.logger.Crit("Error scanning for metric record id", "err", err, "Report", MRD.Name, "metric id", mv.MetricID)
@@ -105,17 +102,33 @@ func (MRD *MetricReportDefinition) InsertMetricValue(mv *MetricValueEventData) {
 	// TODO: honor AppendStopsWhenFull | AppendWrapsWhenFull | Overwrite
 	// TODO: honor Type=OnChange (send an event?)
 	// TODO: implement calculation functions
+
 	recordID, err := MRD.EnsureMetricValueMeta(mv)
 	if err != nil {
 		MRD.logger.Crit("ERROR inserting metric meta", "err", err)
 		return
 	}
 
+	// implement calculations here by using scratchpad area in metricvaluemeta
+	// if calculation period isn't over, set a timer? or should we be completely event based? (probably)
+
+	// overwrite here by "generating" the old report and then adding
+	// Generate(old start, old end)
+
+	// AppendStopsWhenFull by checking # before inserting here
+	// can we do that in the insert query?
 	_, err = MRD.insertValue.Exec(recordID, mv.Timestamp, mv.MetricValue)
 	if err != nil {
 		MRD.logger.Crit("ERROR inserting value", "err", err)
 		return
 	}
+
+	// OnChange here by "generating"
+	// end period == this entry
+
+	// FINAL: remove any entries > append limit
+	//   --> this satisfies AppendWrapsWhenFull
+
 }
 
 func (MRD *MetricReportDefinition) UpdateMetricMap(mm MetricMap) {
@@ -133,7 +146,20 @@ func (MRD *MetricReportDefinition) UpdateMetricMap(mm MetricMap) {
 }
 
 func (MRD *MetricReportDefinition) IsEnabled() bool {
+	MRD.LoadFromDB()
 	return MRD.Enabled
+}
+
+func (MRD *MetricReportDefinition) MatchMetric(mv *MetricValueEventData) bool {
+	MRD.LoadFromDB()
+
+	for _, m := range MRD.Metrics {
+		if m.MetricID == mv.MetricID {
+			return true
+		}
+	}
+
+	return false
 }
 
 func (MRD *MetricReportDefinition) LoadFromDB() error {
@@ -231,6 +257,20 @@ func (factory *MRDFactory) IterReportDefsForMetric(mv *MetricValueEventData, fn 
 		}
 		fn(MRD)
 	}
+
+	for _, mrd_id := range factory.mm["*"] {
+		// "skinny" MRD (not loaded from DB yet)
+		MRD := &MetricReportDefinition{
+			MRDFactory: factory,
+			logger:     factory.logger,
+			ID:         mrd_id,
+		}
+		// have to actually call the match function
+		if MRD.MatchMetric(mv) {
+			fn(MRD)
+		}
+	}
+
 }
 
 func (factory *MRDFactory) IterReportDefs(fn func(fn *MetricReportDefinition)) {
@@ -250,6 +290,7 @@ func (factory *MRDFactory) IterReportDefs(fn func(fn *MetricReportDefinition)) {
 	for rows.Next() {
 		MRD := &MetricReportDefinition{MRDFactory: factory, logger: factory.logger}
 		rows.StructScan(MRD)
+		MRD.loaded = true
 		fn(MRD)
 	}
 }
@@ -284,13 +325,13 @@ func (factory *MRDFactory) Update(mrdEvData *MetricReportDefinitionData) (MRD *M
 	}
 	res, err := statement.Exec(MRD)
 	if err != nil {
-		fmt.Printf("ERROR inserting MetricReportDefinition: %s  ", err)
+		factory.logger.Crit("ERROR inserting MetricReportDefinition", "MetricReportDefinition", MRD, "err", err)
 		return
 	}
 	if MRD.ID == 0 {
 		MRD.ID, err = res.LastInsertId()
 		if err != nil {
-			fmt.Printf("ERROR getting last insert value for MetricReportDefinition: %s  ", err)
+			factory.logger.Crit("ERROR getting last insert value for MetricReportDefinition", "MetricReportDefinition", MRD, "err", err)
 			return
 		}
 	}
@@ -298,10 +339,11 @@ func (factory *MRDFactory) Update(mrdEvData *MetricReportDefinitionData) (MRD *M
 
 	factory.mm = MetricMap{}
 	factory.IterReportDefs(func(mrd *MetricReportDefinition) {
+		if !mrd.IsEnabled() {
+			return
+		}
 		mrd.UpdateMetricMap(factory.mm)
 	})
-
-	fmt.Printf("DEBUG: metric map: %s\n", factory.mm)
 
 	return
 }
