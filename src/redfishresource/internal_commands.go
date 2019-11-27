@@ -498,9 +498,10 @@ func StartInjectService(logger log.Logger, d *DomainObjects) {
 		}
 
 		// send watchdogs 3x per interval
-		logger.Info("Setting up watchdog")
 		interval = interval / 3
 		seq := 0
+
+		logger.Info("Setting up watchdog.", "interval", time.Duration(interval)*time.Microsecond)
 
 		// set up listener for the watchdog events
 		listener, err := ew.Listen(context.Background(), func(event eh.Event) bool {
@@ -552,9 +553,9 @@ func StartInjectService(logger log.Logger, d *DomainObjects) {
 			for i = 0; i < len(queued); i++ {
 				injectCmd := queued[i]
 
-				// resync to earliest event if needed
-				if injectCmd.EventSeq == -1 {
-					internalSeq = -1
+				// force resync on event with '0' seq or less
+				if injectCmd.EventSeq < 1 {
+					internalSeq = injectCmd.EventSeq
 				}
 
 				if injectCmd.EventSeq < internalSeq {
