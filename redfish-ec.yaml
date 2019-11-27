@@ -25,7 +25,6 @@ listen:
 
 views:
   "rootview":
-      "Logger": ["module", "root"]
       "Controllers":
         # This is for dynamic runtime instantiation of new chassis as they appear
         - "fn": "AM2"
@@ -53,7 +52,6 @@ views:
       ]
 
   "chassis":
-      "Logger": ["module", "Chassis"]
       "Models":
         "default":  {"members": "array()"}
       "Controllers":
@@ -69,7 +67,6 @@ views:
       "Aggregate": "chassis"
 
   "systems":
-      "Logger": ["module", "Systems"]
       "Models":
         "default":  {"members": "array()"}
       "Controllers":
@@ -85,7 +82,6 @@ views:
       "Aggregate": "systems"
 
   "managers":
-      "Logger": ["module", "Managers"]
       "Models":
         "default":  {"members": "array()"}
       "Controllers":
@@ -101,13 +97,11 @@ views:
       "Aggregate": "managers"
 
   "accountservice":
-      "Logger": ["module", "AccountService"]
       "Controllers":
       "View":
       "Aggregate": "accountservice"
 
   "roles":
-      "Logger": ["module", "Roles"]
       "Models":
         "default":  {"members": "array()"}
       "Controllers":
@@ -123,7 +117,6 @@ views:
       "Aggregate": "roles"
 
   "accounts":
-      "Logger": ["module", "Accounts"]
       "Models":
         "default":  {"members": "array()"}
       "Controllers":
