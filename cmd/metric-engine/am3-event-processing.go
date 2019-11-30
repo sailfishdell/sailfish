@@ -22,20 +22,11 @@ const (
 )
 
 type MetricValueEventData struct {
-	Timestamp   time.Time
-	MetricID    string
-	MetricValue string
-	URI         string
-	Property    string
-	Context     string
-	Label       string
-
-	StablePeriod            bool
-	ReportPeriod            time.Duration
-	RepeatPrevious          string
-	RepeatPreviousSupported bool
-	StopSupported           bool
-	Stop                    bool
+	Timestamp NanoTime `db:"Timestamp"`
+	Name      string   `db:"Name"`
+	Value     string
+	Property  string `db:"Property"`
+	Context   string `db:"Context"`
 }
 
 func addAM3Functions(logger log.Logger, am3Svc *am3.Service, d *domain.DomainObjects) {
@@ -63,23 +54,19 @@ func addAM3Functions(logger log.Logger, am3Svc *am3.Service, d *domain.DomainObj
 
 		URI := "/redfish/v1/Chassis/" + FQDDParts[0] + "/Sensors/Fans/" + FQDDParts[1]
 		d.EventBus.PublishEvent(context.Background(), eh.NewEvent(MetricValueEvent, &MetricValueEventData{
-			Timestamp:   time.Now(),
-			MetricID:    "RPMReading",
-			MetricValue: fmt.Sprintf("%d", (fanobj.Rotor1rpm+fanobj.Rotor2rpm)/2),
-			URI:         URI,
-			Property:    "Reading",
-			Context:     FullFQDD,
-			Label:       "fixme label",
+			Timestamp: NanoTime{time.Now()},
+			Name:      "RPMReading",
+			Value:     fmt.Sprintf("%d", (fanobj.Rotor1rpm+fanobj.Rotor2rpm)/2),
+			Property:  URI + "#Reading",
+			Context:   FullFQDD,
 		}, time.Now()))
 
 		d.EventBus.PublishEvent(context.Background(), eh.NewEvent(MetricValueEvent, &MetricValueEventData{
-			Timestamp:   time.Now(),
-			MetricID:    "RPMPct",
-			MetricValue: fmt.Sprintf("%d", (fanobj.Int)),
-			URI:         URI,
-			Property:    "OEM/Reading",
-			Context:     FullFQDD,
-			Label:       "fixme label",
+			Timestamp: NanoTime{time.Now()},
+			Name:      "RPMPct",
+			Value:     fmt.Sprintf("%d", (fanobj.Int)),
+			Property:  URI + "#OEM/Reading",
+			Context:   FullFQDD,
 		}, time.Now()))
 
 	})

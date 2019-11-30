@@ -4,9 +4,7 @@ package main
 
 import (
 	"fmt"
-
 	eh "github.com/looplab/eventhorizon"
-	_ "github.com/mattn/go-sqlite3"
 
 	log "github.com/superchalupa/sailfish/src/log"
 	"github.com/superchalupa/sailfish/src/ocp/am3"
@@ -20,6 +18,7 @@ const (
 
 func addAM3DatabaseFunctions(logger log.Logger, dbpath string, am3Svc *am3.Service, d *domain.DomainObjects) {
 	eh.RegisterEventData(UpdateMetricReportDefinition, func() eh.EventData { return &MetricReportDefinitionData{} })
+	eh.RegisterEventData(DeleteMetricReportDefinition, func() eh.EventData { return &MetricReportDefinitionData{} })
 
 	database, err := createDatabase(logger, dbpath)
 	if err != nil {
@@ -35,7 +34,7 @@ func addAM3DatabaseFunctions(logger log.Logger, dbpath string, am3Svc *am3.Servi
 	am3Svc.AddEventHandler("update_metric_report_definition", UpdateMetricReportDefinition, func(event eh.Event) {
 		reportDef, ok := event.Data().(*MetricReportDefinitionData)
 		if !ok {
-			logger.Crit("Internal program error. Expected a *MetricReportDefinitionData but didn't get one.", "Actual", fmt.Sprintf("%T", event.Data()))
+			logger.Crit("Expected a *MetricReportDefinitionData but didn't get one.", "Actual Type", fmt.Sprintf("%T", event.Data()), "Acutal Data", event.Data())
 			return
 		}
 
@@ -50,7 +49,7 @@ func addAM3DatabaseFunctions(logger log.Logger, dbpath string, am3Svc *am3.Servi
 	am3Svc.AddEventHandler("delete_metric_report_definition", DeleteMetricReportDefinition, func(event eh.Event) {
 		reportDef, ok := event.Data().(*MetricReportDefinitionData)
 		if !ok {
-			logger.Crit("Internal program error. Expected a *MetricReportDefinitionData but didn't get one.", "Actual", fmt.Sprintf("%T", event.Data()))
+			logger.Crit("Expected a *MetricReportDefinitionData but didn't get one.", "Actual Type", fmt.Sprintf("%T", event.Data()), "Acutal Data", event.Data())
 			return
 		}
 
@@ -60,15 +59,16 @@ func addAM3DatabaseFunctions(logger log.Logger, dbpath string, am3Svc *am3.Servi
 		}
 	})
 
-	am3Svc.AddEventHandler("metric_storage", MetricValueEvent, func(event eh.Event) {
+	am3Svc.AddEventHandler("store_metric_value", MetricValueEvent, func(event eh.Event) {
 		metricValue, ok := event.Data().(*MetricValueEventData)
 		if !ok {
-			logger.Crit("Internal program error. Expected a *MetricValueEventData but didn't get one.", "Actual", fmt.Sprintf("%T", event.Data()))
+			logger.Crit("Expected a *MetricValueEventData but didn't get one.", "Actual Type", fmt.Sprintf("%T", event.Data()), "Acutal Data", event.Data())
 			return
 		}
 
-		MRDFactory.IterReportDefsForMetric(metricValue, func(mrd *MetricReportDefinition) {
-			mrd.InsertMetricValue(metricValue)
-		})
+		err := MRDFactory.InsertMetricValue(metricValue)
+		if err != nil {
+			logger.Crit("Error inserting Metric Value", "err", err, "metric", metricValue)
+		}
 	})
 }

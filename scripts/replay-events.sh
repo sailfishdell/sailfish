@@ -21,6 +21,14 @@ send_file() {
   file_lines=$(wc -l $file |  awk '{print $1}')
   events_replayed=0
   while read -u 5 line ; do
+
+      # skip comments
+      if [[ $line == //* ]]; then
+          echo COMMENT, SKIPPING: $line
+          continue
+      fi
+
+
       # by default, we resequence the file from -1.
       # here, if requested, we save the sequence ordering specified in the file
       if [ "$save_existing_seq" -eq 1 ]; then

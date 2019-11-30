@@ -24,6 +24,7 @@ require (
 	github.com/spf13/pflag v1.0.2
 	github.com/spf13/viper v1.2.0
 	github.com/stretchr/testify v1.3.0
+	golang.org/x/xerrors v0.0.0-20191011141410-1b5146add898
 )
 
 // replace github.com/looplab/eventhorizon => github.com/superchalupa/eventhorizon v0.0.1
