@@ -3,20 +3,23 @@
 package main
 
 import (
+	"context"
 	"fmt"
+	"time"
+
 	eh "github.com/looplab/eventhorizon"
 
 	log "github.com/superchalupa/sailfish/src/log"
 	"github.com/superchalupa/sailfish/src/ocp/am3"
-	domain "github.com/superchalupa/sailfish/src/redfishresource"
 )
 
 const (
 	UpdateMetricReportDefinition eh.EventType = "UpdateMetricReportDefinitionEvent"
 	DeleteMetricReportDefinition eh.EventType = "DeleteMetricReportDefinitionEvent"
+	DatabaseMaintenance          eh.EventType = "DatabaseMaintenanceEvent"
 )
 
-func addAM3DatabaseFunctions(logger log.Logger, dbpath string, am3Svc *am3.Service, d *domain.DomainObjects) {
+func addAM3DatabaseFunctions(logger log.Logger, dbpath string, am3Svc *am3.Service, d *BusComponents) {
 	eh.RegisterEventData(UpdateMetricReportDefinition, func() eh.EventData { return &MetricReportDefinitionData{} })
 	eh.RegisterEventData(DeleteMetricReportDefinition, func() eh.EventData { return &MetricReportDefinitionData{} })
 
@@ -31,10 +34,30 @@ func addAM3DatabaseFunctions(logger log.Logger, dbpath string, am3Svc *am3.Servi
 		logger.Crit("Error creating report definition factory", "err", err)
 	}
 
-	am3Svc.AddEventHandler("update_metric_report_definition", UpdateMetricReportDefinition, func(event eh.Event) {
+	// periodically optimize and vacuum database
+	go func() {
+		// one minute after startup, vaccum and optimize
+		<-time.After(10 * time.Second)
+		d.GetBus().PublishEvent(context.Background(), eh.NewEvent(DatabaseMaintenance, "vacuum", time.Now()))
+		d.GetBus().PublishEvent(context.Background(), eh.NewEvent(DatabaseMaintenance, "Optimize", time.Now()))
+		for {
+			select {
+			// NOTE: the numbers below are selected as PRIME numbers so that they run at the same time as infrequently as possible
+			// With the default 181/73, they will run concurrently every ~9 days
+			case <-time.After(181 * time.Minute):
+				// optimize every 3 hours or so
+				d.GetBus().PublishEvent(context.Background(), eh.NewEvent(DatabaseMaintenance, "Optimize", time.Now()))
+			case <-time.After(73 * time.Minute):
+				// vaccuum roughly every hour
+				d.GetBus().PublishEvent(context.Background(), eh.NewEvent(DatabaseMaintenance, "vacuum", time.Now()))
+			}
+		}
+	}()
+
+	am3Svc.AddEventHandler("Create/Update Metric Report Definition", UpdateMetricReportDefinition, func(event eh.Event) {
 		reportDef, ok := event.Data().(*MetricReportDefinitionData)
 		if !ok {
-			logger.Crit("Expected a *MetricReportDefinitionData but didn't get one.", "Actual Type", fmt.Sprintf("%T", event.Data()), "Acutal Data", event.Data())
+			logger.Crit("Expected a *MetricReportDefinitionData but didn't get one.", "Actual Type", fmt.Sprintf("%T", event.Data()), "Actual Data", event.Data())
 			return
 		}
 
@@ -46,10 +69,10 @@ func addAM3DatabaseFunctions(logger log.Logger, dbpath string, am3Svc *am3.Servi
 		}
 	})
 
-	am3Svc.AddEventHandler("delete_metric_report_definition", DeleteMetricReportDefinition, func(event eh.Event) {
+	am3Svc.AddEventHandler("Delete Metric Report Definition", DeleteMetricReportDefinition, func(event eh.Event) {
 		reportDef, ok := event.Data().(*MetricReportDefinitionData)
 		if !ok {
-			logger.Crit("Expected a *MetricReportDefinitionData but didn't get one.", "Actual Type", fmt.Sprintf("%T", event.Data()), "Acutal Data", event.Data())
+			logger.Crit("Expected a *MetricReportDefinitionData but didn't get one.", "Actual Type", fmt.Sprintf("%T", event.Data()), "Actual Data", event.Data())
 			return
 		}
 
@@ -59,16 +82,31 @@ func addAM3DatabaseFunctions(logger log.Logger, dbpath string, am3Svc *am3.Servi
 		}
 	})
 
-	am3Svc.AddEventHandler("store_metric_value", MetricValueEvent, func(event eh.Event) {
+	am3Svc.AddEventHandler("Store Metric Value", MetricValueEvent, func(event eh.Event) {
 		metricValue, ok := event.Data().(*MetricValueEventData)
 		if !ok {
-			logger.Crit("Expected a *MetricValueEventData but didn't get one.", "Actual Type", fmt.Sprintf("%T", event.Data()), "Acutal Data", event.Data())
+			logger.Crit("Expected a *MetricValueEventData but didn't get one.", "Actual Type", fmt.Sprintf("%T", event.Data()), "Actual Data", event.Data())
 			return
 		}
 
 		err := MRDFactory.InsertMetricValue(metricValue)
 		if err != nil {
 			logger.Crit("Error inserting Metric Value", "err", err, "metric", metricValue)
+		}
+	})
+
+	am3Svc.AddEventHandler("Database Maintenance", DatabaseMaintenance, func(event eh.Event) {
+		command, ok := event.Data().(string)
+		if !ok {
+			logger.Crit("Expected a command string.", "Actual Type", fmt.Sprintf("%T", event.Data()), "Actual Data", event.Data())
+			return
+		}
+
+		switch command {
+		case "optimize":
+			MRDFactory.Optimize()
+		case "vacuum":
+			MRDFactory.Vacuum()
 		}
 	})
 }

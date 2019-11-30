@@ -38,7 +38,7 @@ send_file() {
       echo $line |
         jq  --argjson i "$i" ".event_seq=\$i" |
         jq  --argjson WWW "\"$(date -u +%Y-%m-%dT%H:%M:%S.%NZ)\"" '. | if .data.Timestamp then .data.Timestamp=$WWW else . end' |
-        jq  ". | if .data.MetricValue then .data.MetricValue=\"$RANDOM\" else . end" |
+        jq  ". | if .name == \"MetricValueEvent\" then if .data.Value then .data.Value=\"$RANDOM\" else . end else . end" |
         $CURLCMD --fail -f $BASE/api/Event%3AInject -d @-
 
       i=$(($i+1))

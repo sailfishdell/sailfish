@@ -86,7 +86,7 @@ func (factory *MRDFactory) Update(mrdEvData *MetricReportDefinitionData) (MRD *M
 		AppendLimit:                1000,
 	}
 
-	fmt.Printf("CREATE/UPDATE metric report definition: %V\n", MRD)
+	factory.logger.Debug("CREATE/UPDATE metric report definition", "MRD", MRD)
 
 	// ===================================
 	// Setup Transaction
@@ -124,23 +124,21 @@ func (factory *MRDFactory) Update(mrdEvData *MetricReportDefinitionData) (MRD *M
 		factory.logger.Crit("Error getting MetricReportDefinition ID", "err", err)
 		return
 	}
-	fmt.Printf("Updated/Inserted Metric Report Definition with ID=%d\n", MRD.ID)
+	factory.logger.Debug("Updated/Inserted Metric Report Definition", "Report Definition ID", MRD.ID, "MRD", MRD)
 
 	//
 	// Update the list of metrics for this report
 	//
 
-	// First, just delete all the existing metric associations (not the actual MetricMeta)
-	fmt.Printf("\tDelete from ReportDefinitionToMetricMeta where ReportDefID=%d\n", MRD.ID)
-	_, err = tx.NamedExec(`delete from ReportDefinitionToMetricMeta where ReportDefID=:id`, map[string]interface{}{"id": MRD.ID})
+	// First, just delete all the existing metric associations (not the actual MetricMeta, then we'll re-create
+	_, err = tx.Exec(`delete from ReportDefinitionToMetricMeta where ReportDefinitionID=:id`, MRD.ID)
 	if err != nil {
-		factory.logger.Crit("Error executing statement deleting metric meta associations for report definition", "err", err, "ID", MRD.ID)
+		factory.logger.Crit("Error executing statement deleting metric meta associations for report definition", "err", err, "Report Definition ID", MRD.ID)
 		return
 	}
 
 	// Then we will create each association one at a time
-	fmt.Printf("\tPreparing to update metrics for report %d...\n", MRD.ID)
-	for i, metric := range MRD.Metrics {
+	for _, metric := range MRD.Metrics {
 		var metaID int64
 		var res sql.Result
 		var statement *sqlx.NamedStmt
@@ -151,7 +149,6 @@ func (factory *MRDFactory) Update(mrdEvData *MetricReportDefinitionData) (MRD *M
 			MRDMetric:    &metric,
 			SuppressDups: MRD.SuppressDups,
 		}
-		fmt.Printf("\t\tUpdating metric %d: %s\n", i, tempMetric)
 
 		// First, Find the MetricMeta
 		statement, err = tx.PrepareNamed(`
@@ -184,17 +181,17 @@ func (factory *MRDFactory) Update(mrdEvData *MetricReportDefinitionData) (MRD *M
 				return
 			}
 
+			factory.logger.Info("Added new MetricMeta", "metric", tempMetric)
 			metaID, _ = res.LastInsertId()
 		}
 
-		fmt.Printf("\tGOT MetricMeta ID=%d and Report ID=%d\n", metaID, MRD.ID)
-
 		// Next cross link MetricMeta to ReportDefinition
-		res, err = tx.Exec(`INSERT INTO ReportDefinitionToMetricMeta (ReportDefID, MetricMetaID) VALUES (?, ?)`, MRD.ID, metaID)
+		res, err = tx.Exec(`INSERT INTO ReportDefinitionToMetricMeta (ReportDefinitionID, MetricMetaID) VALUES (?, ?)`, MRD.ID, metaID)
 		if err != nil {
 			factory.logger.Crit("ERROR inserting metricmeta association", "MetricReportDefinition", MRD, "metric", metric, "err", err)
 			return
 		}
+		factory.logger.Info("Linked Report Def to MetricMeta", "Report Definition ID", MRD.ID, "Meta ID", metaID)
 	}
 
 	// finally, now delete any "orphan" MetricMeta records
@@ -208,9 +205,80 @@ func (factory *MRDFactory) Update(mrdEvData *MetricReportDefinitionData) (MRD *M
 		factory.logger.Crit("Error deleting orphan MetricMeta records", "err", err)
 	}
 
-	fmt.Printf("COMMIT REPORT DEF ID %d\n", MRD.ID)
+	// ReCreate the Metric Report
+	// First, just delete all the existing metric associations (not the actual MetricMeta, then we'll re-create
+	_, err = tx.Exec(`delete from MetricReport where ReportDefinitionID=?`, MRD.ID)
+	if err != nil {
+		factory.logger.Crit("Error deleting metric reports for report definition", "err", err, "Report Definition ID", MRD.ID)
+		return
+	}
 
-	tx.Commit()
+	// Type: Periodic, OnChange, OnRequest
+	// 		Updates: AppendStopsWhenFull | AppendWrapsWhenFull | Overwrite | NewReport
+	//
+	// Periodic:   (-) AppendStopsWhenFull  (-) AppendWrapsWhenFull   (-) Overwrite   (!) NewReport
+	// OnChange:   (-) AppendStopsWhenFull  (-) AppendWrapsWhenFull   (-) Overwrite   (X) NewReport
+	// OnRequest:  (-) AppendStopsWhenFull  (-) AppendWrapsWhenFull   (X) Overwrite   (X) NewReport
+	//
+	// key:
+	// 		(-) makes sense and should be implemented
+	// 		(X) invalid combination, dont accept
+	// 	  (!) makes sense but sort of difficult to implement, so skip for now
+	//    (o) partially implemented
+	//    (*) Done
+	//
+	// behaviour:
+	//    Periodic: (generate a report, then at time interval dump accumulated values)
+	//      --> The Metric Value insert doesn't change reports. Best performance.
+	// 			--> Sequence is updated on period
+	// 		  --> Timestamp is updated on period
+	// 			AppendStopsWhenFull: (Status=Full), StartTimestamp = fixed, EndTimestamp = fixed/updated until full, then fixed
+	//          -- DELETE to clear?
+	// 					-- newer entries fall on floor
+	// 			AppendWrapsWhenFull: (Status=Full), StartTimestamp = NULL until full, then fixed/updated periodically, EndTimestamp = fixed/updated periodically
+	// 					-- older entries fall on floor
+	//      NewReport: insert new MetricReport, setup timestamps  (timestamps = fixed)
+	// 					-- need a policy to delete older reports(?)
+	//      Overwrite: starttimestamp=fixed, endtimestamp=fixed
+	// 				  -- update same metric report
+	//
+	//    OnRequest:  things trickle in as they come
+	//      --> Have to update the report on insert of Metric Value
+	// 			--> Sequence is 0 unless "generated" (trigger)
+	// 		  --> Timestamp is 0 unless "generated" (trigger)
+	// 			AppendStopsWhenFull: continuously update EndTimestamp until full, then fixed
+	//          -- DELETE to clear?
+	// 					-- newer entries fall on floor
+	// 			AppendWrapsWhenFull: EndTimestamp=NULL, continuously update start
+	// 					-- older entries fall on floor
+	//      NewReport: no
+	//      Overwrite: no
+	//
+	// Dont see how this one is different from OnRequest from a behaviour standpoint. Maybe Actions?
+	//    OnChange:  things trickle in as they come
+	//      --> Have to update the report on insert of Metric Value
+	// 			--> Sequence is 0 unless "generated" (trigger)
+	// 		  --> Timestamp is 0 unless "generated" (trigger)
+	// 			AppendStopsWhenFull: continuously update EndTimestamp until full, then fixed
+	//          -- DELETE to clear?
+	// 					-- newer entries fall on floor
+	// 			AppendWrapsWhenFull: EndTimestamp=NULL, continuously update start
+	// 					-- older entries fall on floor
+	//      NewReport: no
+	//      Overwrite: no
+
+	_, err = tx.Exec(`INSERT INTO MetricReport (Name, ReportDefinitionID, Sequence) VALUES (?, ?, ?)`, MRD.Name, MRD.ID, 0)
+	if err != nil {
+		factory.logger.Crit("ERROR inserting MetricReport", "MetricReportDefinition", MRD, "err", err)
+		return
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		factory.logger.Warn("Transaction Committed FAILED for updates to Report Definition", "Report Definition ID", MRD.ID, "err", err)
+		return
+	}
+	factory.logger.Info("Transaction Committed for updates to Report Definition", "Report Definition ID", MRD.ID)
 
 	return
 }
@@ -268,6 +336,20 @@ type MetricMeta struct {
 	LastValue         string   `db:"LastValue"`
 }
 
+func (factory *MRDFactory) Optimize() {
+	_, err := factory.database.Exec("PRAGMA optimize")
+	if err != nil {
+		factory.logger.Crit("Problem optimizing database", "err", err)
+	}
+}
+
+func (factory *MRDFactory) Vacuum() {
+	_, err := factory.database.Exec("vacuum")
+	if err != nil {
+		factory.logger.Crit("Problem vacuuming database", "err", err)
+	}
+}
+
 func (factory *MRDFactory) InsertMetricValue(ev *MetricValueEventData) (err error) {
 	// ===================================
 	// Setup transaction
@@ -281,6 +363,8 @@ func (factory *MRDFactory) InsertMetricValue(ev *MetricValueEventData) (err erro
 	defer tx.Rollback()
 
 	// TODO: cache the MetricMeta(?)
+	// it may speed things up if we cache the MetricMeta in-process rather than going to DB every time.
+	// This should be straightforward because we do all updates in one goroutine, so could add the cache as a factory member
 
 	// First, Find the MetricMeta
 	rows, err := tx.Queryx(`select ID as MetaID, PropertyPattern, Wildcards, CollectionFunction, CollectionDuration from MetricMeta where Name=?`, ev.Name)
@@ -360,9 +444,8 @@ func (factory *MRDFactory) InsertMetricValue(ev *MetricValueEventData) (err erro
 		mm := &MetricMeta{MetricValueEventData: ev}
 		err = rows.StructScan(mm)
 		if err != nil {
-			fmt.Printf("ERROR scanning MM: %s\n", err)
+			factory.logger.Warn("ERROR loading data from database into MetricMeta struct", "err", err, "MetricMeta", mm)
 		}
-		//fmt.Printf("WOULD BE DOING THIS: %s\n", mm)
 
 		if mm.CollectionFunction == "" {
 			mm.ValueToWrite = mm.Value
@@ -375,7 +458,7 @@ func (factory *MRDFactory) InsertMetricValue(ev *MetricValueEventData) (err erro
 			if mm.Timestamp.After(mm.CollectionScratch.Start.Add(mm.CollectionDuration * time.Second)) {
 				// Calculate what we should be dropping in the output
 				saveValue = true
-				fmt.Printf("Collection period done for '%s' -> %d\n", mm.CollectionFunction, mm.InstanceID)
+				factory.logger.Info("Collection period done Metric Instance", "Instance ID", mm.InstanceID, "CollectionFunction", mm.CollectionFunction)
 				switch mm.CollectionFunction {
 				case "Average":
 					mm.ValueToWrite = strconv.FormatFloat(mm.CollectionScratch.Sum/float64(mm.CollectionScratch.Numvalues), 'G', -1, 64)
@@ -399,14 +482,14 @@ func (factory *MRDFactory) InsertMetricValue(ev *MetricValueEventData) (err erro
 
 			val, err := strconv.ParseFloat(mm.Value, 64)
 			if err != nil {
-				fmt.Printf("ERROR converting metric value to numeric")
+				factory.logger.Info("Collection failed on metric because Value couldn't be converted to float. Discarding this metric value from the result.",
+					"Instance ID", mm.InstanceID, "CollectionFunction", mm.CollectionFunction, "Name", mm.Name, "Value", mm.Value, "err", err)
 				continue
-			} else {
-				mm.CollectionScratch.Numvalues++
-				mm.CollectionScratch.Sum += val
-				mm.CollectionScratch.Maximum = math.Max(val, mm.CollectionScratch.Maximum)
-				mm.CollectionScratch.Minimum = math.Min(val, mm.CollectionScratch.Minimum)
 			}
+			mm.CollectionScratch.Numvalues++
+			mm.CollectionScratch.Sum += val
+			mm.CollectionScratch.Maximum = math.Max(val, mm.CollectionScratch.Maximum)
+			mm.CollectionScratch.Minimum = math.Min(val, mm.CollectionScratch.Minimum)
 		}
 
 		if mm.SuppressDups && mm.LastValue == mm.ValueToWrite {

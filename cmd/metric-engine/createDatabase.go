@@ -26,6 +26,7 @@ func createDatabase(logger log.Logger, dbpath string) (database *sqlx.DB, err er
 	database.SetMaxOpenConns(1)
 
 	tables := []struct{ Comment, SQL string }{
+		{"DATABASE SETTINGS", `PRAGMA journal_size_limit=1048576`},
 		{"Create MetricReportDefinition table", `
 		 	CREATE TABLE IF NOT EXISTS MetricReportDefinition
 			(
@@ -60,12 +61,12 @@ func createDatabase(logger log.Logger, dbpath string) (database *sqlx.DB, err er
 		{"Create ReportDefinitionToMetricMeta table", `
 			CREATE TABLE IF NOT EXISTS ReportDefinitionToMetricMeta
 				(
-					ReportDefID 	integer not null,
+					ReportDefinitionID 	integer not null,
 					MetricMetaID 	integer not null,
 
 					-- indexes and constraints
-					primary key (ReportDefID, MetricMetaID)
-					foreign key (ReportDefID)
+					primary key (ReportDefinitionID, MetricMetaID)
+					foreign key (ReportDefinitionID)
 						references MetricReportDefinition (ID)
 							on delete cascade
 					foreign key (MetricMetaID)
@@ -130,10 +131,15 @@ func createDatabase(logger log.Logger, dbpath string) (database *sqlx.DB, err er
 				Name  							VARCHAR(32) PRIMARY KEY UNIQUE NOT NULL,
 				ReportDefinitionID  INTEGER NOT NULL,
 				Sequence 						INTEGER NOT NULL,
+				ReportTimestamp     INTEGER,
 
 				-- cross reference to the start and end timestamps in the MetricValue table
 				StartTimestamp   INTEGER,  -- datetime
-				EndTimestamp 		 INTEGER  -- datetime
+				EndTimestamp 		 INTEGER,  -- datetime
+
+				-- indexes and constraints
+				FOREIGN KEY (ReportDefinitionID)
+					REFERENCES MetricReportDefinition (ReportDefinitionID) ON DELETE CASCADE
 			)`},
 
 		{"Create index for MetricReport table", `
@@ -149,16 +155,29 @@ func createDatabase(logger log.Logger, dbpath string) (database *sqlx.DB, err er
 
 	}
 
-	/*
-		// ============================
-		// Create the MetricReport view
-		// ============================
-		_, err = database.Exec(`
+	// ============================
+	// Create the MetricReport view
+	// ============================
+	_, err = database.Exec(`
 				CREATE VIEW IF NOT EXISTS MetricReport_View as
 						select
-							mrd.Name as 'Id',
-							'TODO - ' || mrd.Name || ' - Metric Report Definition' as 'Name',
-							mrd.Sequence as 'ReportSequence',
+							'#MetricReport.v1_2_0.MetricReport' as [@odata.type],
+							'/redfish/v1/$metadata#MetricReport.MetricReport' as [@odata.context],
+							'/redfish/v1/TelemetryService/MetricReports/' || MR.Name as [@odata.id],
+							MR.Name as 'Id',
+							MR.Sequence as 'Sequence',
+							json_object('@odata.id', '/redfish/v1/TelemetryService/MetricReportDefinitions/' || MR.Name) as 'MetricReportDefinition',
+							MR.Name || ' Metric Report' as 'Name',
+							strftime('%Y-%m-%dT%H:%M:%f', MR.ReportTimestamp) as 'Timestamp'
+						from MetricReport as MR
+						INNER JOIN MetricReportDefinition as MRD ON MR.ReportDefinitionID = MRD.ID
+					`)
+	if err != nil {
+		logger.Crit("Error executing statement for MetricReport_View create", "err", err)
+		return
+	}
+
+	/*
 							(
 								select json('[' || group_concat(json_object(
 										'MetricId', mvm.Name,
@@ -169,16 +188,10 @@ func createDatabase(logger log.Logger, dbpath string) (database *sqlx.DB, err er
 											'Label', mvm.label
 										))
 									))  || ']') from MetricValue as mv
-									inner join MetricMeta as mvm on mv.MetricMetaID == mvm.ID where mvm.ReportDefID == mrd.ID
+									inner join MetricMeta as mvm on mv.MetricMetaID == mvm.ID where mvm.ReportDefinitionID == mrd.ID
 						  ) as 'MetricValues',
 							(select count(*) from MetricValue as mv
-									inner join MetricMeta as mvm on mv.MetricMetaID == mvm.ID where mvm.ReportDefID == mrd.ID) as 'Metric@odata.count'
-						from MetricReportDefinition  as mrd
-					`)
-		if err != nil {
-			logger.Crit("Error executing statement for MetricReport_View create", "err", err)
-			return
-		}
+									inner join MetricMeta as mvm on mv.MetricMetaID == mvm.ID where mvm.ReportDefinitionID == mrd.ID) as 'Metric@odata.count'
 
 		// =========================================
 		// Create the redfish view MetricReport_JSON

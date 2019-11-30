@@ -18,25 +18,37 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/gorilla/mux"
+	eh "github.com/looplab/eventhorizon"
+	eventpublisher "github.com/looplab/eventhorizon/publisher/local"
+	"github.com/superchalupa/sailfish/src/looplab/eventbus"
+	"github.com/superchalupa/sailfish/src/looplab/eventwaiter"
 
+	"github.com/superchalupa/sailfish/src/http_inject"
+	"github.com/superchalupa/sailfish/src/http_sse"
 	log "github.com/superchalupa/sailfish/src/log"
 	applog "github.com/superchalupa/sailfish/src/log15adapter"
-
-	"github.com/superchalupa/sailfish/src/http_sse"
-	domain "github.com/superchalupa/sailfish/src/redfishresource"
-
-	// cert gen
 	"github.com/superchalupa/sailfish/src/tlscert"
-
-	"github.com/superchalupa/sailfish/src/ocp/basicauth"
 )
 
-type implementationFn func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, d *domain.DomainObjects) Implementation
-
-var implementations map[string]implementationFn = map[string]implementationFn{}
-
-type Implementation interface {
+type shutdowner interface {
+	Shutdown(context.Context) error
 }
+
+type waiter interface {
+	Listen(context.Context, func(eh.Event) bool) (*eventwaiter.EventListener, error)
+	Notify(context.Context, eh.Event)
+	Run()
+}
+
+type BusComponents struct {
+	EventBus       eh.EventBus
+	EventWaiter    *eventwaiter.EventWaiter
+	EventPublisher eh.EventPublisher
+}
+
+func (d *BusComponents) GetBus() eh.EventBus                 { return d.EventBus }
+func (d *BusComponents) GetWaiter() *eventwaiter.EventWaiter { return d.EventWaiter }
+func (d *BusComponents) GetPublisher() eh.EventPublisher     { return d.EventPublisher }
 
 func main() {
 	flag.StringSliceP("listen", "l", []string{}, "Listen address.  Formats: (http:[ip]:nn, https:[ip]:port)")
@@ -63,46 +75,143 @@ func main() {
 
 	flag.Parse()
 
-	ctx, cancel := context.WithCancel(context.Background())
-
 	logger := applog.InitializeApplicationLogging("metric-engine")
+	ctx, cancel := context.WithCancel(context.Background())
+	intr := make(chan os.Signal, 1)
+	signal.Notify(intr, os.Interrupt)
+	go func() {
+		// wait until <CTRL>-C
+		<-intr
+		close(intr)
+		logger.Crit("INTERRUPTED, Cancelling...")
+		cancel()
+	}()
 
-	domainObjs, _ := domain.NewDomainObjects()
-	// redo this later to observe events
-	//domainObjs.EventPublisher.AddObserver(logger)
-	domainObjs.CommandHandler = makeLoggingCmdHandler(logger, domainObjs.CommandHandler)
-
-	// This also initializes all of the plugins
-	domain.InitDomain(ctx, domainObjs.CommandHandler, domainObjs.EventBus, domainObjs.EventWaiter)
-
-	// Handle the API.
-	m := mux.NewRouter()
-	loggingHTTPHandler := makeLoggingHTTPHandler(logger, m)
-
-	// SSE
-	chainAuthSSE := func(u string, p []string) http.Handler { return http_sse.NewSSEHandler(domainObjs, logger, u, p) }
-	m.Path("/events").
-		Methods("GET").HandlerFunc(
-		basicauth.MakeHandlerFunc(chainAuthSSE, chainAuthSSE("UNKNOWN", []string{"Unauthenticated"})))
-
-	// backend command handling
-	internalHandlerFunc := domainObjs.GetInternalCommandHandler(ctx)
-
-	implFn, ok := implementations[cfgMgr.GetString("main.server_name")]
-	if !ok {
-		panic("could not load requested implementation: " + cfgMgr.GetString("main.server_name"))
+	d := &BusComponents{
+		EventBus:       eventbus.NewEventBus(),
+		EventPublisher: eventpublisher.NewEventPublisher(),
+		EventWaiter:    eventwaiter.NewEventWaiter(eventwaiter.SetName("Main"), eventwaiter.NoAutoRun),
 	}
 
-	// This starts goroutines that use cfgmgr, so from here on out we need to lock it
-	implFn(ctx, logger, cfgMgr, domainObjs)
+	d.EventBus.AddHandler(eh.MatchAny(), d.EventPublisher)
+	d.EventPublisher.AddObserver(d.EventWaiter)
+	go d.GetWaiter().Run()
 
-	// all the other command apis.
-	m.PathPrefix("/api/{command}").Handler(internalHandlerFunc)
+	injectSvc := http_inject.New(logger, d)
+	injectSvc.Start()
+	setup(ctx, logger, cfgMgr, d)
 
-	// debugging (localhost only)
-	m.Path("/status").Handler(domainObjs.DumpStatus())
+	// Set up HTTP endpoints
+	m := mux.NewRouter()
+	loggingHTTPHandler := makeLoggingHTTPHandler(logger, m)
+	m.Path("/events").Methods("GET").Handler(http_sse.NewSSEHandler(d, logger, "UNKNOWN", []string{"Unauthenticated"}))
+	m.Path("/api/Event:Inject").Methods("POST").Handler(http_inject.NewInjectHandler(d, logger, "UNKNOWNN", []string{"Unauthenticated"}))
 
-	tlscfg := &tls.Config{
+	if len(cfgMgr.GetStringSlice("listen")) == 0 {
+		fmt.Fprintf(os.Stderr, "No listeners configured! Use the '-l' option to configure a listener!")
+	}
+
+	fmt.Printf("Starting services: %s\n", cfgMgr.GetStringSlice("listen"))
+
+	shutdownlist := []shutdowner{}
+	addShutdown := func(name string, srv interface{}) {
+		if srv == nil {
+			return
+		}
+		s, ok := srv.(shutdowner)
+		if !ok {
+			logger.Crit("The requested HTTP server can't be gracefully shutdown at program exit.", "ServerName", name)
+			return
+		}
+		shutdownlist = append(shutdownlist, s)
+	}
+
+	// And finally, start up all of the listeners that we have configured
+	for _, listen := range cfgMgr.GetStringSlice("listen") {
+		switch {
+		case strings.HasPrefix(listen, "pprof:"):
+			addr := strings.TrimPrefix(listen, "pprof:")
+			fn, s := runpprof(logger, addr)
+			addShutdown(listen, s)
+			go fn()
+
+		case strings.HasPrefix(listen, "http:"):
+			// HTTP protocol listener
+			// "https:[addr]:port
+			addr := strings.TrimPrefix(listen, "http:")
+			logger.Info("HTTP listener starting on " + addr)
+			s := &http.Server{
+				Addr:           addr,
+				Handler:        loggingHTTPHandler,
+				MaxHeaderBytes: 1 << 20,
+				ReadTimeout:    100 * time.Second,
+				// cannot use writetimeout if we are streaming
+				// WriteTimeout:   10 * time.Second,
+			}
+			go func() { logger.Info("Server exited", "err", s.ListenAndServe()) }()
+			addShutdown(listen, s)
+
+		case strings.HasPrefix(listen, "unix:"):
+			// HTTP protocol listener
+			// "https:[addr]:port
+			addr := strings.TrimPrefix(listen, "unix:")
+			logger.Info("UNIX SOCKET listener starting on " + addr)
+			s := &http.Server{
+				Handler:        loggingHTTPHandler,
+				MaxHeaderBytes: 1 << 20,
+				ReadTimeout:    100 * time.Second,
+			}
+			unixListener, err := net.Listen("unix", addr)
+			if err == nil {
+				go func() { logger.Info("Server exited", "err", s.Serve(unixListener)) }()
+				addShutdown(listen, s)
+			}
+
+		case strings.HasPrefix(listen, "https:"):
+			// HTTPS protocol listener
+			// "https:[addr]:port,certfile,keyfile
+			addr := strings.TrimPrefix(listen, "https:")
+			s := &http.Server{
+				Addr:           addr,
+				Handler:        loggingHTTPHandler,
+				MaxHeaderBytes: 1 << 20,
+				ReadTimeout:    10 * time.Second,
+				// cannot use writetimeout if we are streaming
+				// WriteTimeout:   10 * time.Second,
+				TLSConfig: getTlsCfg(),
+				// can't remember why this doesn't work... TODO: reason this doesnt work
+				//TLSNextProto:   make(map[string]func(*http.Server, *tls.Conn, http.Handler), 0),
+			}
+			logger.Info("HTTPS listener starting on " + addr)
+			checkCaCerts(logger)
+			go func() { logger.Info("Server exited", "err", s.ListenAndServeTLS("server.crt", "server.key")) }()
+			addShutdown(listen, s)
+
+		}
+	}
+
+	logger.Debug("Listening", "module", "main", "addresses", fmt.Sprintf("%v\n", cfgMgr.GetStringSlice("listen")))
+	injectSvc.Ready()
+
+	// wait until everything is done
+	<-ctx.Done()
+
+	// wait up to 1 second for active connections
+	// SSE bus always "hangs" because there is always an active connection
+	shutdownCtx, cancelshutdown := context.WithTimeout(context.Background(), 1*time.Second)
+	defer cancelshutdown()
+	for _, s := range shutdownlist {
+		err := s.Shutdown(shutdownCtx)
+		if err != nil {
+			logger.Crit("server wasn't gracefully shutdown.", "err", err)
+		}
+	}
+
+	logger.Warn("Bye!", "module", "main")
+}
+
+func getTlsCfg() *tls.Config {
+	return &tls.Config{
 		MinVersion: tls.VersionTLS12,
 		// TODO: cli option to enable/disable
 		// Secure, but way too slow
@@ -123,93 +232,6 @@ func main() {
 			tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
 		},
 	}
-
-	if len(cfgMgr.GetStringSlice("listen")) == 0 {
-		fmt.Fprintf(os.Stderr, "No listeners configured! Use the '-l' option to configure a listener!")
-	}
-
-	fmt.Printf("Starting services: %s\n", cfgMgr.GetStringSlice("listen"))
-
-	// And finally, start up all of the listeners that we have configured
-	for _, listen := range cfgMgr.GetStringSlice("listen") {
-		switch {
-		case strings.HasPrefix(listen, "pprof:"):
-			pprofMux := http.DefaultServeMux
-			http.DefaultServeMux = http.NewServeMux()
-			addr := strings.TrimPrefix(listen, "pprof:")
-			s := &http.Server{
-				Addr:    addr,
-				Handler: pprofMux,
-			}
-			logger.Info("PPROF activated with tcp listener: " + addr)
-			go s.ListenAndServe()
-			go handleShutdown(ctx, logger, s)
-
-		case strings.HasPrefix(listen, "http:"):
-			// HTTP protocol listener
-			// "https:[addr]:port
-			addr := strings.TrimPrefix(listen, "http:")
-			logger.Info("HTTP listener starting on " + addr)
-			s := &http.Server{
-				Addr:           addr,
-				Handler:        loggingHTTPHandler,
-				MaxHeaderBytes: 1 << 20,
-				ReadTimeout:    100 * time.Second,
-				// cannot use writetimeout if we are streaming
-				// WriteTimeout:   10 * time.Second,
-			}
-			go func() { logger.Info("Server exited", "err", s.ListenAndServe()) }()
-			go handleShutdown(ctx, logger, s)
-
-		case strings.HasPrefix(listen, "unix:"):
-			// HTTP protocol listener
-			// "https:[addr]:port
-			addr := strings.TrimPrefix(listen, "unix:")
-			logger.Info("UNIX SOCKET listener starting on " + addr)
-			s := &http.Server{
-				Handler:        loggingHTTPHandler,
-				MaxHeaderBytes: 1 << 20,
-				ReadTimeout:    100 * time.Second,
-			}
-			unixListener, err := net.Listen("unix", addr)
-			if err == nil {
-				go func() { logger.Info("Server exited", "err", s.Serve(unixListener)) }()
-				go handleShutdown(ctx, logger, s)
-			}
-
-		case strings.HasPrefix(listen, "https:"):
-			// HTTPS protocol listener
-			// "https:[addr]:port,certfile,keyfile
-			addr := strings.TrimPrefix(listen, "https:")
-			s := &http.Server{
-				Addr:           addr,
-				Handler:        loggingHTTPHandler,
-				MaxHeaderBytes: 1 << 20,
-				ReadTimeout:    10 * time.Second,
-				// cannot use writetimeout if we are streaming
-				// WriteTimeout:   10 * time.Second,
-				TLSConfig: tlscfg,
-				// can't remember why this doesn't work... TODO: reason this doesnt work
-				//TLSNextProto:   make(map[string]func(*http.Server, *tls.Conn, http.Handler), 0),
-			}
-			logger.Info("HTTPS listener starting on " + addr)
-			checkCaCerts(logger)
-			go func() { logger.Info("Server exited", "err", s.ListenAndServeTLS("server.crt", "server.key")) }()
-			go handleShutdown(ctx, logger, s)
-
-		}
-	}
-
-	logger.Debug("Listening", "module", "main", "addresses", fmt.Sprintf("%v\n", cfgMgr.GetStringSlice("listen")))
-	SdNotify("READY=1")
-
-	// wait until we get an interrupt (CTRL-C)
-	intr := make(chan os.Signal, 1)
-	signal.Notify(intr, os.Interrupt)
-	<-intr
-	logger.Crit("INTERRUPTED, Cancelling...")
-	cancel()
-	logger.Warn("Bye!", "module", "main")
 }
 
 func checkCaCerts(logger log.Logger) {
@@ -249,10 +271,6 @@ func checkCaCerts(logger log.Logger) {
 		iterInterfaceIPAddrs(logger, func(ip net.IP) { serverCert.ApplyOption(tlscert.AddSANIP(ip)) })
 		serverCert.Serialize()
 	}
-}
-
-type shutdowner interface {
-	Shutdown(context.Context) error
 }
 
 func handleShutdown(ctx context.Context, logger log.Logger, srv interface{}) error {

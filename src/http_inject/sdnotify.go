@@ -1,4 +1,4 @@
-package domain
+package http_inject
 
 import (
 	"errors"
@@ -19,7 +19,7 @@ func SimulateSdnotify() *Simulated {
 	return &Simulated{}
 }
 func (s *Simulated) Close() {}
-func (s *Simulated) Notify(state string) error {
+func (s *Simulated) SDNotify(state string) error {
 	//fmt.Printf("SD_NOTIFY not available, simulating: %s\n", state)
 	return nil
 }
@@ -39,9 +39,9 @@ func GetIntervalUsec() int {
 	return interval
 }
 
-type closeNotifier interface {
+type sdNotifier interface {
 	GetIntervalUsec() int
-	Notify(string) error
+	SDNotify(string) error
 	Close()
 }
 
@@ -66,7 +66,7 @@ func (s *Sdnotify) GetIntervalUsec() int {
 	return GetIntervalUsec()
 }
 
-func (s *Sdnotify) Notify(state string) error {
+func (s *Sdnotify) SDNotify(state string) error {
 	_, err := s.conn.Write([]byte(state))
 	return err
 }
