@@ -82,7 +82,6 @@ func main() {
 	go func() {
 		// wait until <CTRL>-C
 		<-intr
-		close(intr)
 		logger.Crit("INTERRUPTED, Cancelling...")
 		cancel()
 	}()

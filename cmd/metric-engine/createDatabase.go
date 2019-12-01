@@ -26,7 +26,13 @@ func createDatabase(logger log.Logger, dbpath string) (database *sqlx.DB, err er
 	database.SetMaxOpenConns(1)
 
 	tables := []struct{ Comment, SQL string }{
-		{"DATABASE SETTINGS", `PRAGMA journal_size_limit=1048576`},
+		{"DATABASE SETTINGS", `
+			PRAGMA journal_size_limit=1048576;
+			PRAGMA foreign_keys = ON;
+			PRAGMA journal_mode = WAL;
+			PRAGMA synchronous = OFF;
+			PRAGMA busy_timeout = 1000;
+			`},
 		{"Create MetricReportDefinition table", `
 		 	CREATE TABLE IF NOT EXISTS MetricReportDefinition
 			(
@@ -109,7 +115,7 @@ func createDatabase(logger log.Logger, dbpath string) (database *sqlx.DB, err er
 				-- indexes and constraints
 				unique (MetaID, Property, Context, Label)
 				FOREIGN KEY (MetaID)
-					REFERENCES MetricInstance (ID) ON DELETE CASCADE
+					REFERENCES MetricMeta (ID) ON DELETE CASCADE
 			);`},
 
 		{"Create MetricValue table", `
@@ -139,7 +145,7 @@ func createDatabase(logger log.Logger, dbpath string) (database *sqlx.DB, err er
 
 				-- indexes and constraints
 				FOREIGN KEY (ReportDefinitionID)
-					REFERENCES MetricReportDefinition (ReportDefinitionID) ON DELETE CASCADE
+					REFERENCES MetricReportDefinition (ID) ON DELETE CASCADE
 			)`},
 
 		{"Create index for MetricReport table", `
@@ -161,14 +167,38 @@ func createDatabase(logger log.Logger, dbpath string) (database *sqlx.DB, err er
 	_, err = database.Exec(`
 				CREATE VIEW IF NOT EXISTS MetricReport_View as
 						select
-							'#MetricReport.v1_2_0.MetricReport' as [@odata.type],
-							'/redfish/v1/$metadata#MetricReport.MetricReport' as [@odata.context],
-							'/redfish/v1/TelemetryService/MetricReports/' || MR.Name as [@odata.id],
 							MR.Name as 'Id',
 							MR.Sequence as 'Sequence',
-							json_object('@odata.id', '/redfish/v1/TelemetryService/MetricReportDefinitions/' || MR.Name) as 'MetricReportDefinition',
+							MRD.Name as 'MRDName',
 							MR.Name || ' Metric Report' as 'Name',
-							strftime('%Y-%m-%dT%H:%M:%f', MR.ReportTimestamp) as 'Timestamp'
+							strftime('%Y-%m-%dT%H:%M:%f', MR.ReportTimestamp) as 'Timestamp',
+							(
+								select
+								  json('[' || group_concat(json_object(
+										'MetricId', MM.Name,
+										'Timestamp', MV.Timestamp,
+										'MetricValue', MV.Value,
+										'OEM', json_object(
+											'Dell', json_object(
+												'Context', MI.Context,
+												'Label', MI.Label
+											)
+										))) || ']' )
+								from MetricValue as MV
+								inner join MetricInstance as MI on MV.InstanceID = MI.ID
+								inner join MetricMeta as MM on MI.MetaID = MM.ID
+								inner join ReportDefinitionToMetricMeta rd2mm on MM.ID = rd2mm.MetricMetaID
+								where rd2mm.ReportDefinitionID = MRD.ID
+								order by MV.Timestamp, MM.Name, MI.Label
+							)	as 'MetricValues',
+							(
+								select count(*)
+								from MetricValue as MV
+								inner join MetricInstance as MI on MV.InstanceID = MI.ID
+								inner join MetricMeta as MM on MI.MetaID = MM.ID
+								inner join ReportDefinitionToMetricMeta rd2mm on MM.ID = rd2mm.MetricMetaID
+								where rd2mm.ReportDefinitionID = MRD.ID
+							) as 'MetricValues@odata.count'
 						from MetricReport as MR
 						INNER JOIN MetricReportDefinition as MRD ON MR.ReportDefinitionID = MRD.ID
 					`)
@@ -177,46 +207,29 @@ func createDatabase(logger log.Logger, dbpath string) (database *sqlx.DB, err er
 		return
 	}
 
-	/*
-							(
-								select json('[' || group_concat(json_object(
-										'MetricId', mvm.Name,
-										'Timestamp', mv.Timestamp,
-										'MetricValue', mv.MetricValue,
-										'OEM', json_object('Dell', json_object(
-											'ContextID', mvm.context,
-											'Label', mvm.label
-										))
-									))  || ']') from MetricValue as mv
-									inner join MetricMeta as mvm on mv.MetricMetaID == mvm.ID where mvm.ReportDefinitionID == mrd.ID
-						  ) as 'MetricValues',
-							(select count(*) from MetricValue as mv
-									inner join MetricMeta as mvm on mv.MetricMetaID == mvm.ID where mvm.ReportDefinitionID == mrd.ID) as 'Metric@odata.count'
-
-		// =========================================
-		// Create the redfish view MetricReport_JSON
-		// =========================================
-		_, err = database.Exec(
-			`CREATE VIEW IF NOT EXISTS MetricReport_JSON as
+	// =========================================
+	// Create the redfish view MetricReport_JSON
+	// =========================================
+	_, err = database.Exec(
+		`CREATE VIEW IF NOT EXISTS MetricReport_Redfish as
 					select json_object(
 						'@odata.type','#MetricReport.v1_2_0.MetricReport',
 						'@odata.context','/redfish/v1/$metadata#MetricReport.MetricReport',
 						'@odata.id',  '/redfish/v1/TelemetryService/MetricReports/' || Id,
 						'Id', Id,
 						'Name',Name,
-						'ReportSequence',ReportSequence,
-						'MetricReportDefinition', json_object('@odata.id','/redfish/v1/TelemetryService/MetricReportDefinitions/' || Id),
+						'ReportSequence',Sequence,
+						'MetricReportDefinition', json_object('@odata.id','/redfish/v1/TelemetryService/MetricReportDefinitions/' || MRDName),
 						'Timestamp',Date('now'),
 						'MetricValues', MetricValues,
 						'MetricValues@odata.count', [MetricValues@odata.count]
-						) as root,
+						) as JSON,
 							'/redfish/v1/TelemetryService/MetricReports/' || Id as '@odata.id' from MetricReport_View;
 					`)
-		if err != nil {
-			logger.Crit("Error executing statement for MetricReport_JSON view create", "err", err)
-			return
-		}
-	*/
+	if err != nil {
+		logger.Crit("Error executing statement for MetricReport_JSON view create", "err", err)
+		return
+	}
 
 	return
 }

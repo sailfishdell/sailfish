@@ -36,20 +36,22 @@ func addAM3DatabaseFunctions(logger log.Logger, dbpath string, am3Svc *am3.Servi
 
 	// periodically optimize and vacuum database
 	go func() {
-		// one minute after startup, vaccum and optimize
-		<-time.After(10 * time.Second)
+		time.Sleep(20 * time.Second)
 		d.GetBus().PublishEvent(context.Background(), eh.NewEvent(DatabaseMaintenance, "vacuum", time.Now()))
-		d.GetBus().PublishEvent(context.Background(), eh.NewEvent(DatabaseMaintenance, "Optimize", time.Now()))
+		d.GetBus().PublishEvent(context.Background(), eh.NewEvent(DatabaseMaintenance, "optimize", time.Now()))
+
+		// NOTE: the numbers below are selected as PRIME numbers so that they run at the same time as infrequently as possible
+		// With the default 181/73, they will run concurrently every ~9 days
+		vacuumTicker := time.NewTicker(time.Duration(73) * time.Minute)
+		optimizeTicker := time.NewTicker(time.Duration(181) * time.Minute)
+		defer vacuumTicker.Stop()
+		defer optimizeTicker.Stop()
 		for {
 			select {
-			// NOTE: the numbers below are selected as PRIME numbers so that they run at the same time as infrequently as possible
-			// With the default 181/73, they will run concurrently every ~9 days
-			case <-time.After(181 * time.Minute):
-				// optimize every 3 hours or so
-				d.GetBus().PublishEvent(context.Background(), eh.NewEvent(DatabaseMaintenance, "Optimize", time.Now()))
-			case <-time.After(73 * time.Minute):
-				// vaccuum roughly every hour
+			case <-vacuumTicker.C:
 				d.GetBus().PublishEvent(context.Background(), eh.NewEvent(DatabaseMaintenance, "vacuum", time.Now()))
+			case <-optimizeTicker.C:
+				d.GetBus().PublishEvent(context.Background(), eh.NewEvent(DatabaseMaintenance, "optimize", time.Now()))
 			}
 		}
 	}()
@@ -85,7 +87,7 @@ func addAM3DatabaseFunctions(logger log.Logger, dbpath string, am3Svc *am3.Servi
 	am3Svc.AddEventHandler("Store Metric Value", MetricValueEvent, func(event eh.Event) {
 		metricValue, ok := event.Data().(*MetricValueEventData)
 		if !ok {
-			logger.Crit("Expected a *MetricValueEventData but didn't get one.", "Actual Type", fmt.Sprintf("%T", event.Data()), "Actual Data", event.Data())
+			logger.Warn("Expected a *MetricValueEventData but didn't get one.", "Actual Type", fmt.Sprintf("%T", event.Data()), "Actual Data", event.Data())
 			return
 		}
 
@@ -98,7 +100,7 @@ func addAM3DatabaseFunctions(logger log.Logger, dbpath string, am3Svc *am3.Servi
 	am3Svc.AddEventHandler("Database Maintenance", DatabaseMaintenance, func(event eh.Event) {
 		command, ok := event.Data().(string)
 		if !ok {
-			logger.Crit("Expected a command string.", "Actual Type", fmt.Sprintf("%T", event.Data()), "Actual Data", event.Data())
+			logger.Warn("Expected a command string.", "Actual Type", fmt.Sprintf("%T", event.Data()), "Actual Data", event.Data())
 			return
 		}
 
@@ -107,6 +109,8 @@ func addAM3DatabaseFunctions(logger log.Logger, dbpath string, am3Svc *am3.Servi
 			MRDFactory.Optimize()
 		case "vacuum":
 			MRDFactory.Vacuum()
+		default:
+			logger.Warn("Unknown database maintenance command string received", "command", command)
 		}
 	})
 }

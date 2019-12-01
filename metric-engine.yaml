@@ -1,6 +1,6 @@
 main:
     server_name: "idrac"
-    databasepath: "file:./mr.db?cache=shared&mode=rwc&_journal_mode=WAL&_busy_timeout=5000&sync=off&foreign_keys=on"
+    databasepath: "file:./mr.db?_foreign_keys=on&cache=shared&mode=rwc"
 
 listen:
   - unix:metric-engine.socket

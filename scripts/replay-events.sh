@@ -5,8 +5,10 @@ set -e
 
 # new default 8080 port for this for speed
 port=${port:-8080}
-save_existing_seq=${save_existing_seq:-0}
 continuous=${continuous:-0}
+update_seq=${update_seq:-1}
+randomize_metrics=${randomize_metrics:-1}
+update_timestamps=${update_timestamps:-1}
 
 scriptdir=$(cd $(dirname $0); pwd)
 . ${scriptdir}/common-vars.sh
@@ -28,21 +30,26 @@ send_file() {
           continue
       fi
 
+      JQCMD=". "
+      JQARGS=""
 
       # by default, we resequence the file from -1.
-      # here, if requested, we save the sequence ordering specified in the file
-      if [ "$save_existing_seq" -eq 1 ]; then
-        i=$( echo $line | jq '.event_seq' )
+      if [ "$update_seq" -eq 1 ]; then
+        JQCMD+="| .event_seq=\$i"
+        JQARGS+="--argjson i $i "
+        i=$(( i + 1 ))
       fi
-      NOW=$(date --iso-8601=ns)
-      echo $line |
-        jq  --argjson i "$i" ".event_seq=\$i" |
-        jq  --argjson WWW "\"$(date -u +%Y-%m-%dT%H:%M:%S.%NZ)\"" '. | if .data.Timestamp then .data.Timestamp=$WWW else . end' |
-        jq  ". | if .name == \"MetricValueEvent\" then if .data.Value then .data.Value=\"$RANDOM\" else . end else . end" |
-        $CURLCMD --fail -f $BASE/api/Event%3AInject -d @-
 
-      i=$(($i+1))
+      if [ "$randomize_metrics" -eq 1 ]; then
+        JQCMD+="| if .name == \"MetricValueEvent\" then if .data.Value then .data.Value=\"$RANDOM\" else . end else . end "
+      fi
 
+      if [ "$update_timestamps" -eq 1 ]; then
+        JQCMD+='| if .data.Timestamp then .data.Timestamp=$WWW else . end '
+        JQARGS+=" --argjson WWW "\"$(date -u +%Y-%m-%dT%H:%M:%S.%NZ)\"""
+      fi
+
+      echo $line | jq $JQARGS "$JQCMD" | $CURLCMD --fail -f $BASE/api/Event%3AInject -d @-
 
       events_replayed=$(( events_replayed + 1 ))
       total_events_replayed=$(( total_events_replayed + 1 ))
