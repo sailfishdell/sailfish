@@ -16,7 +16,7 @@ import (
 	"github.com/superchalupa/sailfish/src/looplab/eventwaiter"
 )
 
-const MAX_QUEUED = 10
+const MAX_QUEUED = 20
 
 type waiter interface {
 	Listen(context.Context, func(eh.Event) bool) (*eventwaiter.EventListener, error)
@@ -145,7 +145,7 @@ func (rh *InjectHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func New(logger log.Logger, d busObjs) (svc *service) {
-	injectCmdQueue = make(chan *InjectCommand, MAX_QUEUED+1)
+	injectCmdQueue = make(chan *InjectCommand, MAX_QUEUED*2)
 	injectChan = make(chan *eventBundle)
 
 	svc = &service{
