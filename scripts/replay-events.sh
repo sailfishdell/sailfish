@@ -9,10 +9,10 @@ continuous=${continuous:-0}
 update_seq=${update_seq:-1}
 randomize_metrics=${randomize_metrics:-1}
 update_timestamps=${update_timestamps:-1}
-random_dup_freq=1
-random_drop_freq=5
-random_switch_freq=20
-max_ooo_messages=8
+random_dup_freq=0
+random_drop_freq=0
+random_switch_freq=0
+max_ooo_messages=0
 i=${force_seq:--1}
 
 scriptdir=$(cd $(dirname $0); pwd)
