@@ -35,7 +35,7 @@ type DomainObjects struct {
 	CommandHandler eh.CommandHandler
 	Repo           myRepo
 	EventBus       eh.EventBus
-	EventWaiter    waiter
+	EventWaiter    *eventwaiter.EventWaiter
 	AggregateStore *aggregatestore.AggregateStore
 	EventPublisher eh.EventPublisher
 
@@ -87,6 +87,7 @@ func NewDomainObjects() (*DomainObjects, error) {
 	go d.HTTPWaiter.Run()
 
 	// set up commands so that they can directly publish to http bus
+	eh.RegisterCommand(func() eh.Command { return &DELETE{} })
 	eh.RegisterCommand(func() eh.Command {
 		return &GET{
 			HTTPEventBus: d.HTTPResultsBus,
@@ -118,6 +119,9 @@ func NewDomainObjects() (*DomainObjects, error) {
 	return &d, nil
 }
 
+func (d *DomainObjects) GetBus() eh.EventBus                 { return d.EventBus }
+func (d *DomainObjects) GetWaiter() *eventwaiter.EventWaiter { return d.EventWaiter }
+func (d *DomainObjects) GetPublisher() eh.EventPublisher     { return d.EventPublisher }
 func (d *DomainObjects) GetLicenses() []string {
 	d.licensesMu.RLock()
 	defer d.licensesMu.RUnlock()
@@ -143,12 +147,12 @@ func (d *DomainObjects) CheckTree() (id eh.UUID, ok bool) {
 	for {
 		// sleep for 30s between loops
 		time.Sleep(time.Duration(120) * time.Second)
+		fmt.Printf("Checking tree\n")
 
 		d.treeMu.RLock()
 		treeSize := len(d.Tree)
 		d.treeMu.RUnlock()
 
-		injectCmds := 0
 		seen_aggs := 0
 		d.Repo.IterateCB(context.Background(), func(ctx context.Context, agg eh.Entity) error {
 			seen_aggs++
@@ -167,15 +171,10 @@ func (d *DomainObjects) CheckTree() (id eh.UUID, ok bool) {
 						fmt.Printf("\n\tAggregate ID Mismatch! %s != %s\n", id, agg.EntityID())
 					}
 				} else {
-					if string(agg.EntityID()) == string(injectUUID) {
-						// it's an inject command. that's ok
-						injectCmds++
-					} else {
-						// aggregate isn't in the tree at that uri
-						fmt.Printf("Validate %s\n", agg.EntityID())
-						fmt.Printf("\tURI: %s", checkuri)
-						fmt.Printf("\n\tIsnt in tree at URI!\n")
-					}
+					// aggregate isn't in the tree at that uri
+					fmt.Printf("Validate %s\n", agg.EntityID())
+					fmt.Printf("\tURI: %s", checkuri)
+					fmt.Printf("\n\tIsnt in tree at URI!\n")
 				}
 			} else {
 				fmt.Printf("Validate %s\n", agg.EntityID())
@@ -185,10 +184,9 @@ func (d *DomainObjects) CheckTree() (id eh.UUID, ok bool) {
 			return nil
 		})
 
-		if seen_aggs != treeSize+injectCmds || injectCmds > 1 {
-			fmt.Printf("MISMATCH Tree(%d) Aggregates(%d) InjectCmds(%d)\n", treeSize, seen_aggs, injectCmds)
+		if seen_aggs != treeSize {
+			fmt.Printf("MISMATCH Tree(%d) Aggregates(%d)\n", treeSize, seen_aggs)
 		}
-		//fmt.Printf("Number of inject commands: %d\n", injectCmds)
 		//fmt.Printf("Number of tree objects: %d\n", treeSize)
 		//fmt.Printf("Number of aggregate objects: %d\n", len(seen_aggs))
 	}
@@ -375,7 +373,6 @@ func (d *DomainObjects) DumpStatus() http.Handler {
 		defer d.treeMu.Unlock()
 
 		// Dump Tree
-		injectCmds := 0
 		orphans := 0
 		fmt.Fprintf(w, "DUMP Aggregate Repository\n")
 
@@ -391,11 +388,6 @@ func (d *DomainObjects) DumpStatus() http.Handler {
 				} else if ok {
 					orphans++
 					fmt.Fprintf(w, "MISMATCH(tree has id %s)", treeLookup)
-				} else {
-					if agg.EntityID() == injectUUID {
-						fmt.Fprintf(w, "INJECTCMD")
-						injectCmds++
-					}
 				}
 
 				fmt.Fprintf(w, " %s: %s\n", rr.EntityID(), rr.ResourceURI)
@@ -414,8 +406,8 @@ func (d *DomainObjects) DumpStatus() http.Handler {
 		}
 
 		fmt.Fprintf(w, "\nSTATS DUMP\n")
-		fmt.Fprintf(w, "Tree(%d) Aggregates(%d) InjectCmds(%d) Orphans(%d)\n", len(d.Tree), seen_aggs, injectCmds, orphans)
-		fmt.Fprintf(w, "InjectChan Q Len = %d\n", len(injectChan))
+		fmt.Fprintf(w, "Tree(%d) Aggregates(%d) Orphans(%d)\n", len(d.Tree), seen_aggs, orphans)
+		//fmt.Fprintf(w, "InjectChan Q Len = %d\n", len(injectChan))
 		fmt.Fprintf(w, "# PLUGINS = %d\n", len(plugins))
 
 	})

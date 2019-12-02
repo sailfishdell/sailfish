@@ -2,19 +2,13 @@ package domain
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"math"
 	"net/url"
-	"sort"
 	"strings"
-	"sync"
 	"time"
 
 	eh "github.com/looplab/eventhorizon"
-	log "github.com/superchalupa/sailfish/src/log"
-	"github.com/superchalupa/sailfish/src/looplab/event"
 )
 
 func init() {
@@ -24,7 +18,6 @@ func init() {
 	eh.RegisterCommand(func() eh.Command { return &UpdateRedfishResourceProperties{} })
 	eh.RegisterCommand(func() eh.Command { return &UpdateRedfishResourceProperties2{} })
 	eh.RegisterCommand(func() eh.Command { return &RemoveRedfishResourceProperty{} })
-	eh.RegisterCommand(func() eh.Command { return &InjectEvent{} })
 }
 
 const (
@@ -34,7 +27,6 @@ const (
 	UpdateRedfishResourcePropertiesCommand       = eh.CommandType("internal:RedfishResourceProperties:Update")
 	UpdateRedfishResourcePropertiesCommand2      = eh.CommandType("internal:RedfishResourceProperties:Update:2")
 	RemoveRedfishResourcePropertyCommand         = eh.CommandType("internal:RedfishResourceProperties:Remove")
-	InjectEventCommand                           = eh.CommandType("internal:Event:Inject")
 )
 
 // Static type checking for commands to prevent runtime errors due to typos
@@ -43,7 +35,6 @@ var _ = eh.Command(&RemoveRedfishResource{})
 var _ = eh.Command(&UpdateRedfishResourceProperties{})
 var _ = eh.Command(&UpdateRedfishResourceProperties2{})
 var _ = eh.Command(&RemoveRedfishResourceProperty{})
-var _ = eh.Command(&InjectEvent{})
 
 var immutableProperties = []string{"@odata.id", "@odata.type", "@odata.context"}
 
@@ -63,6 +54,9 @@ type CreateRedfishResource struct {
 	Meta          map[string]interface{} `eh:"optional"`
 	Private       map[string]interface{} `eh:"optional"`
 }
+
+// ShoudlSave satisfies the ShouldSaver interface to tell CommandHandler to save this to DB
+func (c *CreateRedfishResource) ShouldSave() bool { return true }
 
 // AggregateType satisfies base Aggregate interface
 func (c *CreateRedfishResource) AggregateType() eh.AggregateType { return AggregateType }
@@ -150,6 +144,9 @@ type RemoveRedfishResource struct {
 	ResourceURI string  `eh:"optional"`
 }
 
+// ShoudlSave satisfies the ShouldSaver interface to tell CommandHandler to save this to DB
+func (c *RemoveRedfishResource) ShouldSave() bool { return true }
+
 // AggregateType satisfies base Aggregate interface
 func (c *RemoveRedfishResource) AggregateType() eh.AggregateType { return AggregateType }
 
@@ -171,6 +168,9 @@ type RemoveRedfishResourceProperty struct {
 	ID       eh.UUID `json:"id"`
 	Property string  `eh:"optional"`
 }
+
+// ShoudlSave satisfies the ShouldSaver interface to tell CommandHandler to save this to DB
+func (c *RemoveRedfishResourceProperty) ShouldSave() bool { return true }
 
 // AggregateType satisfies base Aggregate interface
 func (c *RemoveRedfishResourceProperty) AggregateType() eh.AggregateType { return AggregateType }
@@ -197,6 +197,9 @@ type UpdateRedfishResourceProperties2 struct {
 	ID         eh.UUID `json:"id"`
 	Properties map[string]interface{}
 }
+
+// ShoudlSave satisfies the ShouldSaver interface to tell CommandHandler to save this to DB
+func (c *UpdateRedfishResourceProperties2) ShouldSave() bool { return true }
 
 // AggregateType satisfies base Aggregate interface
 func (c *UpdateRedfishResourceProperties2) AggregateType() eh.AggregateType { return AggregateType }
@@ -363,6 +366,9 @@ type UpdateMetricRedfishResource struct {
 	ReportUpdateType string
 }
 
+// ShoudlSave satisfies the ShouldSaver interface to tell CommandHandler to save this to DB
+func (c *UpdateMetricRedfishResource) ShouldSave() bool { return true }
+
 // AggregateType satisfies base Aggregate interface
 func (c *UpdateMetricRedfishResource) AggregateType() eh.AggregateType { return AggregateType }
 
@@ -393,6 +399,9 @@ type UpdateRedfishResourceProperties struct {
 	ID         eh.UUID                `json:"id"`
 	Properties map[string]interface{} `eh:"optional"`
 }
+
+// ShoudlSave satisfies the ShouldSaver interface to tell CommandHandler to save this to DB
+func (c *UpdateRedfishResourceProperties) ShouldSave() bool { return true }
 
 // AggregateType satisfies base Aggregate interface
 func (c *UpdateRedfishResourceProperties) AggregateType() eh.AggregateType { return AggregateType }
@@ -429,392 +438,6 @@ func (c *UpdateRedfishResourceProperties) Handle(ctx context.Context, a *Redfish
 	if len(e.Meta) > 0 {
 		a.PublishEvent(eh.NewEvent(RedfishResourcePropertyMetaUpdated, e, time.Now()))
 	}
-
-	return nil
-}
-
-type InjectEvent struct {
-	Wg sync.WaitGroup `eh:"optional"`
-
-	EventSeq   int64             `json:"event_seq" eh:"optional"`
-	EventData  json.RawMessage   `json:"data" eh:"optional"`
-	EventArray []json.RawMessage `json:"event_array" eh:"optional"`
-	ID         eh.UUID           `json:"id" eh:"optional"`
-	Name       eh.EventType      `json:"name"`
-	Encoding   string            `eh:"optional" json:"encoding"`
-
-	// EventBarrier is set if this event should block subsequent events until it is processed
-	Barrier bool `eh:"optional"`
-
-	// Synchronous set if POST should not return until the message is processed
-	Synchronous bool `eh:"optional"`
-
-	// context is if the upstream HTTP request is cancelled before we finish (for Synchronous messages)
-	Ctx context.Context `eh:"optional"`
-}
-
-// AggregateType satisfies base Aggregate interface
-func (c *InjectEvent) AggregateType() eh.AggregateType { return AggregateType }
-
-// AggregateID satisfies base Aggregate interface
-func (c *InjectEvent) AggregateID() eh.UUID { return c.ID }
-
-// CommandType satisfies base Command interface
-func (c *InjectEvent) CommandType() eh.CommandType {
-	return InjectEventCommand
-}
-
-type eventBundle struct {
-	event   event.SyncEvent
-	barrier bool
-}
-
-var injectChanSlice chan *InjectEvent
-var injectChan chan *eventBundle
-
-// inject event timeout
-var IETIMEOUT time.Duration = 250 * time.Millisecond
-
-func StartInjectService(logger log.Logger, d *DomainObjects) {
-	injectChanSlice = make(chan *InjectEvent, 100)
-	injectChan = make(chan *eventBundle, 10)
-	logger = logger.New("module", "injectservice")
-	eb := d.EventBus
-	ew := d.EventWaiter
-
-	var s closeNotifier
-	s, err := NewSdnotify()
-	if err != nil {
-		logger.Crit("Error setting up SD_NOTIFY, using simulation instead", "err", err)
-		s = SimulateSdnotify()
-	}
-
-	go func() {
-		defer s.Close()
-		interval := s.GetIntervalUsec()
-		if interval == 0 {
-			logger.Crit("Watchdog interval is not set, so skipping watchdog setup. Set WATCHDOG_USEC to set.")
-			return
-		}
-
-		// send watchdogs 3x per interval
-		interval = interval / 3
-		seq := 0
-
-		logger.Info("Setting up watchdog.", "interval", time.Duration(interval)*time.Microsecond)
-
-		// set up listener for the watchdog events
-		listener, err := ew.Listen(context.Background(), func(event eh.Event) bool {
-			if event.EventType() == WatchdogEvent {
-				return true
-			}
-			return false
-		})
-
-		if err != nil {
-			panic("Could not start listener")
-		}
-
-		// endless loop generating and responding to watchdog events
-		for {
-			select {
-			// pet watchdog when we get an event
-			case ev := <-listener.Inbox():
-				if evtS, ok := ev.(event.SyncEvent); ok {
-					evtS.Done()
-				}
-				s.Notify("WATCHDOG=1")
-
-			// periodically send event on bus to force watchdog
-			case <-time.After(time.Duration(interval) * time.Microsecond):
-				ev := event.NewSyncEvent(WatchdogEvent, &WatchdogEventData{Seq: seq}, time.Now())
-				ev.Add(1)
-				// use watchdogs to clean out cruft. Maybe a good idea, not sure.
-				injectChan <- &eventBundle{ev, true}
-				seq++
-			}
-		}
-	}()
-
-	// goroutine to synchronously handle the event inject queue
-	go func() {
-		queued := []*InjectEvent{}
-		internalSeq := int64(0)
-		// The 'standard' way to create a stopped timer
-		sequenceTimer := time.NewTimer(math.MaxInt64)
-		if !sequenceTimer.Stop() {
-			<-sequenceTimer.C
-		}
-		timerActive := false
-
-		tryToPublish := func(tryHard bool) {
-			// iterate through our queue until we find a message beyond our current sequence, then stop
-			i := 0
-			for i = 0; i < len(queued); i++ {
-				injectCmd := queued[i]
-
-				// force resync on event with '0' seq or less
-				if injectCmd.EventSeq < 1 {
-					internalSeq = injectCmd.EventSeq
-				}
-
-				if injectCmd.EventSeq < internalSeq {
-					// event is older than last published event, drop
-					ev := event.NewSyncEvent(DroppedEvent, &DroppedEventData{
-						Name:     injectCmd.Name,
-						EventSeq: injectCmd.EventSeq,
-					}, time.Now())
-					ev.Add(1)
-					injectChan <- &eventBundle{ev, false}
-					continue
-				}
-
-				// if the seq is correct, send it
-				//  or if internal seq has been reset, send and take the identity of that seq
-				//  or if we are in a "force" send all events, send it.
-				if injectCmd.EventSeq == internalSeq || internalSeq == 0 || tryHard {
-					injectCmd.sendToChn()
-					// command with seq == -1 will "reset". The counter increments to 0 and the next event becomes the new starting sequence
-					internalSeq = injectCmd.EventSeq
-					internalSeq++
-					continue
-				}
-
-				break //  injectCmd.EventSeq > internalSeq, no sense going through the rest
-			}
-
-			// trim off any processed commands
-			queued = append([]*InjectEvent{}, queued[i:]...)
-		}
-
-		for {
-			select {
-			case event := <-injectChanSlice:
-				if 100*len(injectChanSlice)/cap(injectChanSlice) > 50 {
-					logger.Debug("POP  injectChanSlice LEN", "len", len(injectChanSlice), "cap", cap(injectChanSlice), "module", "inject")
-				}
-				queued = append(queued, event)
-				if len(queued) > 1 {
-					sort.SliceStable(queued, func(i, j int) bool {
-						return queued[i].EventSeq < queued[j].EventSeq
-					})
-				}
-
-				if len(queued) < 1 {
-					break
-				}
-
-				// queue is sorted, so first event seq can be checked
-				//   any events less than or equal to internalSeq can be dealt with
-				//   either by dropping them or sending them
-				if queued[0].EventSeq <= internalSeq {
-					tryToPublish(false)
-				}
-
-				// oops, we have some left, start a new timer
-				if len(queued) > 0 && !timerActive {
-					sequenceTimer.Reset(IETIMEOUT)
-					timerActive = true
-				}
-
-				// we got everything, stop any timers
-				if len(queued) == 0 && timerActive {
-					if !sequenceTimer.Stop() {
-						<-sequenceTimer.C
-					}
-					timerActive = false
-				}
-
-			case <-sequenceTimer.C:
-				logger.Crit("TIMEOUT waiting for missing sequence events. force send.")
-				// we timed out waiting
-				timerActive = false
-				internalSeq = 0
-				tryToPublish(true)
-
-				// oops, we have some left, start a timer
-				if len(queued) > 0 {
-					sequenceTimer.Reset(IETIMEOUT)
-				}
-			}
-		}
-	}()
-
-	go func() {
-		for {
-			select {
-			case evb := <-injectChan:
-				eb.PublishEvent(context.Background(), evb.event)
-				// barrier is set if this event should block events after it
-				if evb.barrier {
-					evb.event.Wait()
-				}
-			case <-time.After(time.Duration(5) * time.Second):
-				// debug if we start getting full channels
-				if len(injectChan) > 0 {
-					fmt.Printf("InjectChan queue: %d / %d\n", len(injectChan), cap(injectChan))
-				}
-			}
-		}
-	}()
-
-}
-
-const MAX_CONSOLIDATED_EVENTS = 5
-const injectUUID = eh.UUID("49467bb4-5c1f-473b-0000-00000000000f")
-
-type Decoder interface {
-	Decode(d map[string]interface{}) error
-}
-
-func (c *InjectEvent) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
-	testLogger := ContextLogger(ctx, "internal_commands").New("module", "inject_event")
-	// testLogger.Crit("Event handle", "Sequence", c.EventSeq, "Name", c.Name)
-	a.ID = injectUUID
-	c.Ctx = ctx
-
-	c.Wg.Add(1)
-	if c.Synchronous {
-		defer func() {
-			// uncomment these debug statements to debug missing ".Done()" issues. It will tell you which message is stuck.
-			// these are fast path, so lets not leave them enabled unless we need to.
-			//testLogger.Debug("WAIT", "Sequence", c.EventSeq, "Name", c.Name)
-			c.Wg.Wait()
-			//testLogger.Debug("DONE", "Sequence", c.EventSeq, "Name", c.Name)
-		}()
-	}
-
-	if 100*len(injectChanSlice)/cap(injectChanSlice) > 50 {
-		testLogger.Debug("PUSH injectChanSlice LEN", "len", len(injectChanSlice), "cap", cap(injectChanSlice), "module", "inject")
-	}
-	injectChanSlice <- c
-
-	return nil
-}
-
-// markBarrier will mark specific events as barrier events, ie. that they
-// prevent any events from being added behind it in the queue until it has been
-// fully processed
-//
-// This is somewhat arbitrary and is domain-specific knowledge
-//
-func (c *InjectEvent) markBarrier() {
-	switch c.Name {
-	// can create objects that are needed by subsequent events
-	case "ComponentEvent",
-		"LogEvent",
-		"FaultEntryAdd":
-		c.Barrier = true
-
-	// these can overwhelm, but want to process quickly
-	case "AttributeUpdated":
-		// just a swag: barrier every 5th one
-		c.Barrier = false
-		if c.EventSeq%5 == 0 {
-			c.Barrier = true
-		}
-
-	case "AvgPowerConsumptionStatDataObjEvent",
-		"FileReadEvent",
-		"FanEvent",
-		"PowerConsumptionDataObjEvent",
-		"PowerSupplyObjEvent",
-		"TemperatureHistoryEvent",
-		"ThermalSensorEvent",
-		"thp_fan_data_object":
-		c.Barrier = false
-
-	// rare events, or events that can't arrive quickly
-	case "HealthEvent", "IomCapability":
-		c.Barrier = false
-
-	default:
-		c.Barrier = true
-
-	}
-}
-
-func (c *InjectEvent) sendToChn() error {
-	requestLogger := ContextLogger(c.Ctx, "internal_commands").New("module", "inject_event")
-	//requestLogger.Crit("InjectService: preparing event", "Sequence", c.EventSeq, "Name", c.Name)
-
-	waits := []func(){}
-	defer func() {
-		defer c.Wg.Done() // this is what supports "Synchronous" commands
-		for _, fn := range waits {
-			defer fn()
-		}
-	}()
-	trainload := make([]eh.EventData, 0, MAX_CONSOLIDATED_EVENTS)
-	sendTrain := func(force bool) {
-		// limit number of consolidated events to prevent overflowing queues and deadlocking
-		if (force && len(trainload) > 0) || len(trainload) >= MAX_CONSOLIDATED_EVENTS {
-			// for now, specific check for events that should be barrier events
-			c.markBarrier()
-
-			e := &eventBundle{event: event.NewSyncEvent(c.Name, trainload, time.Now()), barrier: c.Barrier}
-			e.event.Add(1) // for EVENT "barrier"
-			if c.Synchronous {
-				waits = append(waits, e.event.Wait)
-			}
-			select {
-			case injectChan <- e:
-			case <-c.Ctx.Done():
-			}
-
-			trainload = make([]eh.EventData, 0, MAX_CONSOLIDATED_EVENTS)
-		}
-	}
-
-	decode := func(eventType eh.EventType, m json.RawMessage) {
-		if m == nil {
-			return
-		}
-		var data interface{}
-		data, err := eh.CreateEventData(eventType)
-		if err != nil {
-			requestLogger.Info("Decode(%s): fallback to map[string]interface{}", "eventType", eventType, "err", err)
-			data = map[string]interface{}{}
-		}
-
-		// check if event wants to deserialize itself with a custom decoder
-		// this will handle DM objects
-		if ds, ok := data.(Decoder); ok {
-			eventData := map[string]interface{}{}
-			err := json.Unmarshal(m, &eventData)
-			if err != nil {
-				requestLogger.Warn("Decode: unmarshal rawmessage failed", "err", err)
-				return
-			}
-
-			err = ds.Decode(eventData)
-			if err != nil {
-				// failed decode, just send the raw binary data and see what happens
-				requestLogger.Warn("Decode error", "err", err)
-				trainload = append(trainload, eventData) //preallocated
-				return
-			}
-			trainload = append(trainload, data) //preallocated
-			return
-		}
-
-		err = json.Unmarshal(m, &data)
-		if err != nil {
-			requestLogger.Warn("Decode message: unmarshal rawmessage failed", "err", err, "RawMessage", string(m))
-			return
-		}
-		trainload = append(trainload, data)
-	}
-
-	// create a new, empty event of the requested type. The data will be deserialized into it.
-	decode(c.Name, c.EventData)
-	for _, d := range c.EventArray {
-		sendTrain(false)
-		decode(c.Name, d)
-	}
-
-	// finally, force send the final load
-	sendTrain(true)
 
 	return nil
 }

@@ -129,7 +129,9 @@ func (c *POST) Handle(ctx context.Context, a *domain.RedfishResourceAggregate) e
 	case string:
 		timeout, _ = strconv.Atoi(t)
 	}
-	c.startSessionDeleteTimer(sessionVw, timeout)
+	// avoid recursive commands by running this in a goroutine that sleeps for a quick sec to allow this to complete
+	// only important in cases of errors
+	go func() { time.Sleep(100); c.startSessionDeleteTimer(sessionVw, timeout) }()
 
 	a.PublishEvent(eh.NewEvent(domain.HTTPCmdProcessed, &domain.HTTPCmdProcessedData{
 		CommandID:  c.CmdID,
@@ -149,7 +151,6 @@ func (c *POST) startSessionDeleteTimer(sessionVw *view.View, timeout int) {
 	sessionUUID := sessionVw.GetUUID()
 	sessionURI := sessionVw.GetURI()
 
-	// INFO: This event waiter is set up to *ONLY* get XAuthTokenRefreshEvents
 	refreshListener, err := c.eventWaiter.Listen(ctx, func(event eh.Event) bool {
 		if event.EventType() != XAuthTokenRefreshEvent {
 			return false
@@ -163,6 +164,7 @@ func (c *POST) startSessionDeleteTimer(sessionVw *view.View, timeout int) {
 	})
 	if err != nil {
 		// immediately expire session if we cannot create a listener
+		//Would be recursive but started from caller goroutine
 		c.commandHandler.HandleCommand(ctx, &domain.RemoveRedfishResource{ID: sessionUUID, ResourceURI: sessionURI})
 		return
 	}
@@ -182,6 +184,7 @@ func (c *POST) startSessionDeleteTimer(sessionVw *view.View, timeout int) {
 	})
 	if err != nil {
 		// immediately expire session if we cannot create a listener
+		//Would be recursive but started from caller goroutine
 		c.commandHandler.HandleCommand(ctx, &domain.RemoveRedfishResource{ID: sessionUUID, ResourceURI: sessionURI})
 		refreshListener.Close()
 		return

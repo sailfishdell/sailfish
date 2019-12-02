@@ -39,7 +39,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	// These three all set up a waiter for the root service to appear, so init root service after.
 	actionhandler.Setup(ctx, ch, eb)
 	event.Setup(ch, eb)
-	domain.StartInjectService(logger, d)
 	actionSvc := ah.StartService(ctx, logger, ch, eb)
 	uploadSvc := uploadhandler.StartService(ctx, logger, ch, eb)
 	am2Svc, _ := awesome_mapper2.StartService(ctx, logger, eb, ch, d)
@@ -106,7 +105,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	// /redfish/v1/Sessions
 	//*********************************************************************
 	_, sessionSvcVw, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, cfgMgrMu, "sessionservice", map[string]interface{}{})
-	session.SetupSessionService(instantiateSvc, sessionSvcVw, ch, eb)
+	session.SetupSessionService(instantiateSvc, sessionSvcVw, d)
 	instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, cfgMgrMu, "sessioncollection", map[string]interface{}{"collection_uri": "/redfish/v1/SessionService/Sessions"})
 
 	//*********************************************************************

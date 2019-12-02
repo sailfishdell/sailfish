@@ -24,6 +24,7 @@ import (
 	log "github.com/superchalupa/sailfish/src/log"
 	applog "github.com/superchalupa/sailfish/src/log15adapter"
 
+	"github.com/superchalupa/sailfish/src/http_inject"
 	"github.com/superchalupa/sailfish/src/http_redfish_sse"
 	"github.com/superchalupa/sailfish/src/http_sse"
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
@@ -90,6 +91,9 @@ func main() {
 	m := mux.NewRouter()
 	loggingHTTPHandler := makeLoggingHTTPHandler(logger, m)
 
+	injectSvc := http_inject.New(logger, domainObjs)
+	injectSvc.Start()
+
 	// per spec: hardcoded output for /redfish to list versions supported.
 	m.Path("/redfish").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
@@ -127,7 +131,7 @@ func main() {
 	internalHandlerFunc := domainObjs.GetInternalCommandHandler(ctx)
 
 	// most-used command is event inject, specify that manually to avoid some regexp memory allocations
-	m.Path("/api/Event:Inject").HandlerFunc(internalHandlerFunc).Methods("POST")
+	m.Path("/api/Event:Inject").Methods("POST").Handler(http_inject.NewInjectHandler(domainObjs, logger, "UNKNOWNN", []string{"Unauthenticated"}))
 
 	//m.PathPrefix("/redfish/").Methods("GET", "PUT", "POST", "PATCH", "DELETE", "HEAD", "OPTIONS").HandlerFunc(handlerFunc)
 
@@ -260,7 +264,7 @@ func main() {
 
 	logger.Debug("Listening", "module", "main", "addresses", fmt.Sprintf("%v\n", cfgMgr.GetStringSlice("listen")))
 	cfgMgrMu.RUnlock()
-	SdNotify("READY=1")
+	injectSvc.Ready()
 
 	// wait until we get an interrupt (CTRL-C)
 	intr := make(chan os.Signal, 1)
@@ -269,8 +273,8 @@ func main() {
 	logger.Crit("INTERRUPTED, Cancelling...")
 	cancel()
 
-	// wait up to 10 seconds for active connections
-	shutdownCtx, cancelshutdown := context.WithTimeout(context.Background(), 10*time.Second)
+	// wait up to 1 second for active connections
+	shutdownCtx, cancelshutdown := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancelshutdown()
 	for _, s := range shutdownlist {
 		err := s.Shutdown(shutdownCtx)

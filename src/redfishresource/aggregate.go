@@ -2,10 +2,8 @@ package domain
 
 import (
 	"context"
-	"sync"
 
 	eh "github.com/looplab/eventhorizon"
-	"github.com/superchalupa/sailfish/src/looplab/aggregatestore"
 )
 
 const AggregateType = eh.AggregateType("RedfishResource")
@@ -46,9 +44,6 @@ type RedfishResourceAggregate struct {
 	// above so that everything can be properly locked
 	PrivilegeMap map[HTTPReqType]interface{}
 	Headers      map[string]string
-
-	MappingData    map[string]interface{}
-	HTTPProcessors map[string]interface{}
 }
 
 // PublishEvent registers an event to be published after the aggregate
@@ -95,136 +90,4 @@ func NewRedfishResourceAggregate(id eh.UUID) *RedfishResourceAggregate {
 
 type RRCmdHandler interface {
 	Handle(ctx context.Context, a *RedfishResourceAggregate) error
-}
-
-type CommandHandler struct {
-	sync.RWMutex
-	t        eh.AggregateType
-	store    aggregatestore.AggregateStore // commands to manage stored aggregates
-	cmdSlice []*aggregateStoreStatus
-	bus      eh.EventBus
-}
-
-// NewCommandHandler creates a new CommandHandler for an aggregate type.
-func NewCommandHandler(t eh.AggregateType, store aggregatestore.AggregateStore, bus eh.EventBus) (*CommandHandler, error) {
-
-	h := &CommandHandler{
-		t:        "RedfishResource",
-		store:    store,
-		cmdSlice: []*aggregateStoreStatus{},
-		bus:      bus,
-	}
-	return h, nil
-}
-
-type aggregateStoreStatus struct {
-	aggLock   sync.RWMutex
-	aggStatus eh.Aggregate
-	save2DB   int
-}
-
-func (as *aggregateStoreStatus) Lock() {
-	as.aggLock.Lock()
-}
-
-func (as *aggregateStoreStatus) Unlock() {
-	as.aggLock.Unlock()
-}
-
-// Saves aggregates in the order they enter the HandleCommand
-func (h *CommandHandler) Save2DB(ctx context.Context, aPtr *aggregateStoreStatus) {
-
-	h.RLock()
-	defer h.RUnlock()
-	if aPtr != h.cmdSlice[0] {
-		return
-	}
-
-	cnt := 0
-
-	for i, a := range h.cmdSlice {
-		agg := a.aggStatus
-		action := a.save2DB
-
-		if action == 1 {
-			h.store.Save(ctx, agg)
-			h.cmdSlice[i] = nil
-			cnt += 1
-		} else if action == 2 {
-			h.cmdSlice[i] = nil
-			cnt += 1
-		} else {
-			break
-		}
-	}
-	h.cmdSlice = h.cmdSlice[cnt:]
-}
-
-// EventPublisher is an optional event publisher that can be implemented by
-// aggregates to allow for publishing of events on a successful save.
-type EventPublisher interface {
-	// EventsToPublish returns all events to publish.
-	EventsToPublish() []eh.Event
-	// ClearEvents clears all events after a publish.
-	ClearEvents()
-}
-
-func (h *CommandHandler) HandleCommand(ctx context.Context, cmd eh.Command) error {
-	aggStatus := aggregateStoreStatus{}
-	// 2 - delete
-	// 1 - save
-	// 0   - skip
-
-	err := eh.CheckCommand(cmd)
-	if err != nil {
-		return err
-	}
-
-	a, err := h.store.Load(ctx, h.t, cmd.AggregateID())
-	if err != nil {
-		return err
-	} else if a == nil {
-		return eh.ErrAggregateNotFound
-	}
-
-	cmdType := cmd.CommandType()
-	if cmdType == CreateRedfishResourceCommand ||
-		cmdType == UpdateRedfishResourcePropertiesCommand ||
-		cmdType == UpdateRedfishResourcePropertiesCommand2 ||
-		cmdType == UpdateMetricRedfishResourcePropertiesCommand ||
-		cmdType == RemoveRedfishResourcePropertyCommand {
-
-		aggStatus.aggStatus = a
-		aggStatus.save2DB = 1
-		h.Lock()
-		h.cmdSlice = append(h.cmdSlice, &aggStatus)
-		h.Unlock()
-	}
-
-	if err = a.HandleCommand(ctx, cmd); err != nil {
-		if aggStatus.save2DB >= 1 {
-			aggStatus.save2DB = 2
-		}
-		return err
-	} else {
-		var events []eh.Event
-		publisher, ok := a.(EventPublisher)
-		if ok && h.bus != nil {
-			events = publisher.EventsToPublish()
-		}
-
-		if aggStatus.save2DB >= 1 {
-			h.Save2DB(ctx, &aggStatus)
-		}
-
-		if ok && h.bus != nil {
-			publisher.ClearEvents()
-			for _, e := range events {
-				h.bus.PublishEvent(ctx, e)
-			}
-		}
-
-	}
-
-	return nil
 }

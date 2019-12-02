@@ -63,12 +63,11 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	actionhandler.Setup(ctx, ch, eb)
 	uploadhandler.Setup(ctx, ch, eb)
 	event.Setup(ch, eb)
-	domain.StartInjectService(logger, d)
 	arService, _ := ar_mapper2.StartService(ctx, logger, cfgMgr, cfgMgrMu, eb)
 	actionSvc := ah.StartService(ctx, logger, ch, eb)
 	uploadSvc := uploadhandler.StartService(ctx, logger, ch, eb)
 	am2Svc, _ := awesome_mapper2.StartService(ctx, logger, eb, ch, d)
-	am3Svc, _ := am3.StartService(ctx, logger, eb, ch, d)
+	am3Svc, _ := am3.StartService(ctx, logger, d)
 	addAM3Functions(logger.New("module", "ec_am3_functions"), am3Svc, d)
 
 	ardumpSvc, _ := attributes.StartService(ctx, logger, eb)
@@ -85,7 +84,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	ar_mapper2.RegisterARMapper(instantiateSvc, arService)
 	attributes.RegisterController(instantiateSvc, ardumpSvc)
 	stdmeta.RegisterFormatters(instantiateSvc, d)
-	stdmeta.SledVirtualReseatSvc(ctx, logger, eb)
+	stdmeta.SledVirtualReseatSvc(ctx, logger, am3Svc, d)
 	registries.RegisterAggregate(instantiateSvc)
 	session.RegisterAggregate(instantiateSvc)
 	eventservice.RegisterAggregate(instantiateSvc)
@@ -180,7 +179,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	// /redfish/v1/Sessions
 	//*********************************************************************
 	_, sessionSvcVw, _ := instantiateSvc.Instantiate("sessionservice", map[string]interface{}{})
-	session.SetupSessionService(instantiateSvc, sessionSvcVw, ch, eb)
+	session.SetupSessionService(instantiateSvc, sessionSvcVw, d)
 	instantiateSvc.Instantiate("sessioncollection", map[string]interface{}{})
 
 	//*********************************************************************

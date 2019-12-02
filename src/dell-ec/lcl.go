@@ -13,6 +13,7 @@ import (
 	eh "github.com/looplab/eventhorizon"
 
 	"github.com/superchalupa/sailfish/src/log"
+	"github.com/superchalupa/sailfish/src/looplab/event"
 	"github.com/superchalupa/sailfish/src/ocp/awesome_mapper2"
 	"github.com/superchalupa/sailfish/src/ocp/eventservice"
 	"github.com/superchalupa/sailfish/src/ocp/model"
@@ -119,20 +120,29 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 
 		uriList := d.FindMatchingURIs(func(uri string) bool { return path.Dir(uri) == logUri })
 
-		sort.Slice(uriList, func(i, j int) bool {
-			idx_i, _ := strconv.Atoi(path.Base(uriList[i]))
-			idx_j, _ := strconv.Atoi(path.Base(uriList[j]))
-			return idx_i > idx_j
-		})
-
 		if len(uriList) > MAX_LOGS {
-			for _, uri := range uriList[MAX_LOGS:] {
-				logger.Debug("too many logs, trimming", "len", len(uriList))
-				id, ok := d.GetAggregateIDOK(uri)
-				if ok {
-					ch.HandleCommand(context.Background(), &domain.RemoveRedfishResource{ID: id})
+			// dont need to sort it until we know we are too long
+			sort.Slice(uriList, func(i, j int) bool {
+				idx_i, _ := strconv.Atoi(path.Base(uriList[i]))
+				idx_j, _ := strconv.Atoi(path.Base(uriList[j]))
+				return idx_i > idx_j
+			})
+
+			logger.Debug("too many logs, trimming", "len", len(uriList))
+			go func(uriList []string) {
+				for _, uri := range uriList {
+					id, ok := d.GetAggregateIDOK(uri)
+					if ok {
+						ev := event.NewSyncEvent(domain.RedfishResourceRemoved, &domain.RedfishResourceRemovedData{
+							ID:          id,
+							ResourceURI: uri,
+						}, time.Now())
+						ev.Add(1)
+						d.EventBus.PublishEvent(context.Background(), ev)
+						ev.Wait()
+					}
 				}
-			}
+			}(uriList[MAX_LOGS:])
 		}
 
 		return true, nil
@@ -147,23 +157,22 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 
 		logger.Debug("Clearing all uris within base_uri", "base_uri", logUri)
 
-		uriList := d.FindMatchingURIs(func(uri string) bool { return path.Dir(uri) == logUri })
-		var idList []eh.UUID
-		for _, uri := range uriList {
-			id, ok := d.GetAggregateIDOK(uri)
-			if ok {
-				idList = append(idList, id)
-			}
-		}
-		go func(toDel []eh.UUID) {
-			for idx, id := range idList {
-				ch.HandleCommand(context.Background(), &domain.RemoveRedfishResource{ID: id})
-				if idx%10 == 0 {
-					//Ugh... but slow it down so we don't flood the queue and deadlock
-					time.Sleep(time.Second / 10)
+		go func() {
+			uriList := d.FindMatchingURIs(func(uri string) bool { return path.Dir(uri) == logUri })
+			for _, uri := range uriList {
+				id, ok := d.GetAggregateIDOK(uri)
+				if ok {
+					ev := event.NewSyncEvent(domain.RedfishResourceRemoved, &domain.RedfishResourceRemovedData{
+						ID:          id,
+						ResourceURI: uri,
+					}, time.Now())
+					ev.Add(1)
+					d.EventBus.PublishEvent(context.Background(), ev)
+					ev.Wait()
+
 				}
 			}
-		}(idList)
+		}()
 
 		return nil, nil
 	})
@@ -560,7 +569,7 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 						mdl := vw.GetModel("default")
 						mdl.UpdateProperty("install_date", installDate)
 						mdl.UpdateProperty("updateable", updateable)
-						mdl.UpdateProperty("name",name)
+						mdl.UpdateProperty("name", name)
 					}
 
 					// These values are for post processing on Instantiated object
