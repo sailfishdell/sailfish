@@ -123,7 +123,7 @@ func createDatabase(logger log.Logger, dbpath string) (database *sqlx.DB, err er
 			(
 				InstanceID INTEGER NOT NULL,
 				Timestamp  INTEGER NOT NULL,
-				Value      VARCHAR(64) NOT NULL,
+				Value      VARCHAR(24) NOT NULL, -- sized to store 64-bit float as string
 
 				-- indexes and constraints
 				PRIMARY KEY (InstanceID, Timestamp),
