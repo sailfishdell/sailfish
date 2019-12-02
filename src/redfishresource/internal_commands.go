@@ -314,7 +314,9 @@ func StartInjectService(logger log.Logger, d *DomainObjects) {
 				}
 
 				s.Notify("WATCHDOG=1")
-				d.CheckTree()
+				// HSM per talks with Josh+MEB, commenting out.
+				// Kibana log searching reveals that CheckTree does not do a repo remove for the past 10 months.
+				//d.CheckTree()
 			}
 		}()
 
@@ -424,9 +426,7 @@ func StartInjectService(logger log.Logger, d *DomainObjects) {
 			eb.PublishEvent(context.Background(), event)
 
 			ev, ok := event.(syncEvent)
-			if event.EventType() == "LogEvent" {
-				// do nothing
-			} else if ok {
+			if ok {
 				ev.Wait()
 			}
 
