@@ -56,6 +56,7 @@ func main() {
 	cfgMgr := viper.New()
 	if err := cfgMgr.BindPFlags(flag.CommandLine); err != nil {
 		fmt.Fprintf(os.Stderr, "Could not bind viper flags: %s\n", err)
+		panic(fmt.Sprintf("Could not bind viper flags: %s", err))
 	}
 	// Environment variables
 	cfgMgr.SetEnvPrefix("ME")
@@ -67,6 +68,7 @@ func main() {
 	cfgMgr.AddConfigPath(".")
 	if err := cfgMgr.ReadInConfig(); err != nil {
 		fmt.Fprintf(os.Stderr, "Could not read config file: %s\n", err)
+		panic(fmt.Sprintf("Could not read config file: %s", err))
 	}
 
 	// Defaults
