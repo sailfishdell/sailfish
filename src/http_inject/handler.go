@@ -107,10 +107,14 @@ func (rh *InjectHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
 	err := decoder.Decode(cmd)
 	if err != nil {
-		requestLogger.Crit("JSON decode failure", "err", err)
+		// Disable hot path debugging: keep commented out code and uncomment for debugging
+		//requestLogger.Crit("JSON decode failure", "err", err)
 		http.Error(w, "could not JSON decode command: "+err.Error(), http.StatusBadRequest)
 		return
 	}
+
+	// Have to write the headers out *AFTER* reading the full body. But do this *BEFORE* doing anything that will take a bunch of time
+	w.WriteHeader(http.StatusOK)
 
 	// ideally, this would all be handled internally by auto-backpressure on the internal queue, but we're not set up to examine the internal queues yet
 	//requestLogger.Debug("PUSH injectCmdQueue LEN", "len", len(injectCmdQueue), "cap", cap(injectCmdQueue), "module", "inject", "cmd", cmd)
@@ -119,9 +123,11 @@ func (rh *InjectHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// manually override barrier settings given by sender in some cases
 	cmd.markBarrier()
 
-	seq := cmd.EventSeq
-	name := cmd.Name
-	requestLogger.Debug("HTTP Handler recieved event. Send to injectCmdQueue.", "EventSeq", seq, "Name", name)
+	// used by commented out debugging
+	//seq := cmd.EventSeq
+	//name := cmd.Name
+	// Disable hot path debugging: keep commented out code and uncomment for debugging
+	//requestLogger.Debug("HTTP Handler recieved event. Send to injectCmdQueue.", "EventSeq", seq, "Name", name)
 
 	// don't do anything with "cmd" *at all* in this go-routine, except .Wait() after this .Add(1)
 	// That means do not access any structure members or anything except .Wait()
@@ -140,8 +146,8 @@ func (rh *InjectHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// fully processed the event before returning. Note, that the event is still
 	// processed if the caller drops the http connection after this point.
 	cmd.Wait()
-	requestLogger.Debug("HTTP Handler returning to caller.", "module", "http_inject", "EventSeq", seq, "Name", name)
-	w.WriteHeader(http.StatusOK)
+	// Disable hot path debugging: keep commented out code and uncomment for debugging
+	//requestLogger.Debug("HTTP Handler returning to caller.", "module", "http_inject", "EventSeq", seq, "Name", name)
 }
 
 func New(logger log.Logger, d busObjs) (svc *service) {
@@ -255,17 +261,23 @@ func (s *service) Start() {
 
 				// force resync on event with '0' seq or less
 				if injectCmd.EventSeq < 1 {
-					s.logger.Debug("Event sent which forced queue resync", "seq", internalSeq, "cmd", injectCmd.Name, "cmdseq", injectCmd.EventSeq, "index", i)
+					// fast path debug statement. comment out unless actively debugging
+					//s.logger.Debug("Event sent which forced queue resync", "seq", internalSeq, "cmd", injectCmd.Name, "cmdseq", injectCmd.EventSeq, "index", i)
 					internalSeq = injectCmd.EventSeq
 				}
 
 				if injectCmd.EventSeq < internalSeq {
-					s.logger.Crit("Dropped out-of sequence message", "seq", internalSeq, "cmd", injectCmd.Name, "cmdseq", injectCmd.EventSeq, "index", i)
 					// event is older than last published event, drop
+					s.logger.Crit("Dropped out-of sequence message", "seq", internalSeq, "cmd", injectCmd.Name, "cmdseq", injectCmd.EventSeq, "index", i)
+
+					// First, if any HTTP handler is waiting on this, mark it done to release that
+					c.Done()
+
 					evt := event.NewSyncEvent(DroppedEvent, &DroppedEventData{
 						Name:     injectCmd.Name,
 						EventSeq: injectCmd.EventSeq,
 					}, time.Now())
+
 					evt.Add(1)
 					injectChan <- &eventBundle{&evt, false}
 					queued[i] = nil
