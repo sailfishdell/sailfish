@@ -16,7 +16,7 @@ import (
 	"github.com/superchalupa/sailfish/src/looplab/eventwaiter"
 )
 
-const MAX_QUEUED = 20
+const MAX_OUT_OF_ORDER_QUEUED = 25
 
 type waiter interface {
 	Listen(context.Context, func(eh.Event) bool) (*eventwaiter.EventListener, error)
@@ -53,7 +53,7 @@ var injectChan chan *eventBundle
 
 // inject event timeout
 //var IETIMEOUT time.Duration = 250 * time.Millisecond
-var IETIMEOUT time.Duration = 2 * time.Second
+var IETIMEOUT time.Duration = 6 * time.Second
 
 type service struct {
 	logger log.Logger
@@ -114,39 +114,43 @@ func (rh *InjectHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// ideally, this would all be handled internally by auto-backpressure on the internal queue, but we're not set up to examine the internal queues yet
 	//requestLogger.Debug("PUSH injectCmdQueue LEN", "len", len(injectCmdQueue), "cap", cap(injectCmdQueue), "module", "inject", "cmd", cmd)
-	sync := cmd.Synchronous
-	if sync {
-		// cancel the send of event through the stack if HTTP request is cancelled
-		cmd.ctx = ctx
-	} else {
-		// otherwise just let it be background
-		cmd.ctx = context.Background()
-	}
+	cmd.ctx = context.Background()
 
 	// manually override barrier settings given by sender in some cases
 	cmd.markBarrier()
 
+	seq := cmd.EventSeq
+	name := cmd.Name
+	requestLogger.Debug("HTTP Handler recieved event. Send to injectCmdQueue.", "EventSeq", seq, "Name", name)
+
 	// don't do anything with "cmd" *at all* in this go-routine, except .Wait() after this .Add(1)
 	// That means do not access any structure members or anything except .Wait()
+	// this is why we copy the seq and name above
 	cmd.Add(1)
-	injectCmdQueue <- cmd
-
-	// For cmd.Synchronous==false: this will either wait until event has made it
-	// through inital command queue and is being processed "in order"(*)
-	//
-	// For cmd.Synchronous==true: this will either wait until event has made it
-	// through inital command queue and all subsequent events that it spawns have
-	// been fully processed.
-	if sync {
-		cmd.Wait()
+	select {
+	// either get this into the queue, or give up if caller drops http connection
+	case injectCmdQueue <- cmd:
+	case <-ctx.Done():
 	}
 
+	// For cmd.Synchronous==false: this will wait until event has made it through
+	// inital command queue and is in the injectChan (which means "in order")
+	//
+	// For cmd.Synchronous==true: this will wait until every event processor has
+	// fully processed the event before returning. Note, that the event is still
+	// processed if the caller drops the http connection after this point.
+	cmd.Wait()
+	requestLogger.Debug("HTTP Handler returning to caller.", "module", "http_inject", "EventSeq", seq, "Name", name)
 	w.WriteHeader(http.StatusOK)
 }
 
 func New(logger log.Logger, d busObjs) (svc *service) {
-	injectCmdQueue = make(chan *InjectCommand, MAX_QUEUED*2)
-	injectChan = make(chan *eventBundle)
+	// if things wedge here, making this queue longer wont do anything useful, so by default make it fully synchronous.
+	injectCmdQueue = make(chan *InjectCommand)
+
+	// everything here is sorted, it's ok to have this be a little longer, as it slows things down if this ever empties
+	// not too big, though, or our max latency takes a big hit
+	injectChan = make(chan *eventBundle, 50)
 
 	svc = &service{
 		logger: logger.New("module", "injectservice"),
@@ -232,7 +236,7 @@ func (s *service) Start() {
 
 	// goroutine to synchronously handle the event inject queue
 	go func() {
-		queued := make([]*InjectCommand, 0, MAX_QUEUED+1)
+		queued := make([]*InjectCommand, 0, MAX_OUT_OF_ORDER_QUEUED+1)
 		internalSeq := int64(0)
 		// The 'standard' way to create a stopped timer
 		sequenceTimer := time.NewTimer(math.MaxInt64)
@@ -300,7 +304,8 @@ func (s *service) Start() {
 			select {
 			case cmd := <-injectCmdQueue:
 				// fast path debug statement. comment out unless actively debugging
-				//s.logger.Debug("POP  injectCmdQueue LEN", "len", len(injectCmdQueue), "cap", cap(injectCmdQueue), "module", "inject", "cmdname", cmd.Name)
+				s.logger.Debug("POP  injectCmdQueue LEN", "len", len(injectCmdQueue), "cap", cap(injectCmdQueue), "module", "inject", "cmdname", cmd.Name, "EventSeq", cmd.EventSeq)
+
 				queued = append(queued, cmd)
 				if len(queued) > 1 {
 					sort.SliceStable(queued, func(i, j int) bool {
@@ -328,7 +333,7 @@ func (s *service) Start() {
 
 				// Don't allow the out of order queue to get too big
 				// Force out the first entry if it's over
-				if len(queued) > MAX_QUEUED {
+				if len(queued) > MAX_OUT_OF_ORDER_QUEUED {
 					// force publish
 					s.logger.Info("Queue exceeds max len, force publish. Implied missing or out of order events present.")
 					tryToPublish(true)
@@ -386,7 +391,7 @@ func (s *service) Start() {
 				}
 			case <-debugOutputTicker.C:
 				// debug if we start getting full channels
-				s.logger.Debug("queue length monitor", "module", "queuemonitor", "len(injectChan)", len(injectChan), "len(injectChan)", cap(injectChan), "len(injectCmdQueue)", len(injectCmdQueue), "cap(injectCmdQueue)", cap(injectCmdQueue))
+				s.logger.Debug("queue length monitor", "module", "queuemonitor", "len(injectChan)", len(injectChan), "cap(injectChan)", cap(injectChan), "len(injectCmdQueue)", len(injectCmdQueue), "cap(injectCmdQueue)", cap(injectCmdQueue))
 			}
 		}
 	}()
@@ -413,11 +418,13 @@ func (c *InjectCommand) markBarrier() {
 		"FaultEntryAdd":
 		c.Barrier = true
 
-	// these can overwhelm, but want to process quickly
+		// force caller synchronous because these can take significant time
+		c.Synchronous = true
+
 	case "AttributeUpdated":
-		// just a swag: barrier every 5th one
+		// these can overwhelm, but want to process quickly
 		c.Barrier = false
-		if c.EventSeq%5 == 0 {
+		if c.EventSeq%2 == 0 {
 			c.Barrier = true
 		}
 
