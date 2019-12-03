@@ -43,7 +43,8 @@ func createDatabase(logger log.Logger, dbpath string) (database *sqlx.DB, err er
 				Type  				TEXT,                 -- type of report: "Periodic", "OnChange", "OnRequest"
 				SuppressDups	BOOLEAN,
 				Actions     	TEXT,                 -- json array of options: 'LogToMetricReportsCollection', 'RedfishEvent'
-				Updates     	TEXT                  -- 'AppendStopsWhenFull', 'AppendWrapsWhenFull', 'NewReport', 'Overwrite'
+				Updates     	TEXT,                 -- 'AppendStopsWhenFull', 'AppendWrapsWhenFull', 'NewReport', 'Overwrite'
+				Schedule      TEXT
 			)`},
 
 		{"Create MetricMeta table", `
@@ -123,21 +124,21 @@ func createDatabase(logger log.Logger, dbpath string) (database *sqlx.DB, err er
 			(
 				InstanceID INTEGER NOT NULL,
 				Timestamp  INTEGER NOT NULL,
-				Value      VARCHAR(24) NOT NULL, -- sized to store 64-bit float as string
+				Value      TEXT    NOT NULL, -- sized to store 64-bit float as string
 
 				-- indexes and constraints
 				PRIMARY KEY (InstanceID, Timestamp),
 				FOREIGN KEY (InstanceID)
 					REFERENCES MetricInstance (ID) ON DELETE CASCADE
-			)`},
+			) WITHOUT ROWID`},
 
 		{"Create MetricReport table", `
 			CREATE TABLE IF NOT EXISTS MetricReport
 			(
-				Name  							VARCHAR(32) PRIMARY KEY UNIQUE NOT NULL,
+				Name  							TEXT PRIMARY KEY UNIQUE NOT NULL,
 				ReportDefinitionID  INTEGER NOT NULL,
 				Sequence 						INTEGER NOT NULL,
-				ReportTimestamp     INTEGER,
+				ReportTimestamp     INTEGER,  -- datetime
 
 				-- cross reference to the start and end timestamps in the MetricValue table
 				StartTimestamp   INTEGER,  -- datetime
@@ -150,6 +151,44 @@ func createDatabase(logger log.Logger, dbpath string) (database *sqlx.DB, err er
 
 		{"Create index for MetricReport table", `
 			CREATE INDEX IF NOT EXISTS metric_report_xref_idx on MetricReport(ReportDefinitionID)`},
+
+		{"Create MetricReport_VALUES (streamable) table.", `
+				CREATE VIEW IF NOT EXISTS MetricReport_VALUES as
+						select
+							MRD.Name as 'MRDName',
+						  MR.Name as 'ReportName',
+							MR.Sequence as 'Sequence',
+							MM.Name as 'MetricID',
+							strftime('%Y-%m-%dT%H:%M:%S.%f', MV.Timestamp/1000000000.0, 'unixepoch' ) as 'Timestamp',
+							MV.Value as 'MetricValue',
+							MI.Context as 'Context',
+							MI.Label as 'Label',
+
+							json_object(
+										'MetricId', MM.Name,
+										'Timestamp', strftime('%Y-%m-%dT%H:%M:%f', MV.Timestamp/1000000000.0, 'unixepoch'),
+										'MetricValue', MV.Value,
+										'OEM', json_object(
+											'Dell', json_object(
+												'Context', MI.Context,
+												'Label', MI.Label
+											)
+										)) || ',' as 'JSON'
+
+						from MetricValue as MV
+						inner join MetricInstance as MI on MV.InstanceID = MI.ID
+						inner join MetricMeta as MM on MI.MetaID = MM.ID
+						inner join ReportDefinitionToMetricMeta rd2mm on MM.ID = rd2mm.MetricMetaID
+						inner join MetricReportDefinition as MRD on rd2mm.ReportDefinitionID = MRD.ID
+						inner join MetricReport as MR on MRD.ID = MR.ReportDefinitionID
+						where rd2mm.ReportDefinitionID = MRD.ID
+							and ( MV.Timestamp >= MR.StartTimestamp OR MR.StartTimestamp is NULL )
+							and ( MV.Timestamp <= MR.EndTimestamp OR MR.EndTimestamp is NULL );
+
+						-- NOTES:
+						-- Can't do order by! Catastrophic results as sqlite reads everything into ram and then sorts.
+						-- THIS BLOWS UP: order by MV.Timestamp, MM.Name, MI.Label
+					`},
 	}
 
 	for _, sqlstmt := range tables {
@@ -163,6 +202,12 @@ func createDatabase(logger log.Logger, dbpath string) (database *sqlx.DB, err er
 
 	// ============================
 	// Create the MetricReport view
+	//
+	// ---> this is a bad idea. it doesn't scale well when report size grows.
+	// This spools the "metricvalues" to a temporary table in RAM and completely
+	// blows up memory usage, getting killed by OOM. This happens when the report
+	// gets large, but the memory usage scales per the report size.
+	//
 	// ============================
 	_, err = database.Exec(`
 				CREATE VIEW IF NOT EXISTS MetricReport_View as
@@ -176,7 +221,7 @@ func createDatabase(logger log.Logger, dbpath string) (database *sqlx.DB, err er
 								select
 								  json('[' || group_concat(json_object(
 										'MetricId', MM.Name,
-										'Timestamp', MV.Timestamp,
+										'Timestamp', strftime('%Y-%m-%dT%H:%M:%f', MV.Timestamp),
 										'MetricValue', MV.Value,
 										'OEM', json_object(
 											'Dell', json_object(
@@ -189,7 +234,8 @@ func createDatabase(logger log.Logger, dbpath string) (database *sqlx.DB, err er
 								inner join MetricMeta as MM on MI.MetaID = MM.ID
 								inner join ReportDefinitionToMetricMeta rd2mm on MM.ID = rd2mm.MetricMetaID
 								where rd2mm.ReportDefinitionID = MRD.ID
-								order by MV.Timestamp, MM.Name, MI.Label
+									and ( MV.Timestamp >= MR.StartTimestamp OR MR.StartTimestamp is NULL )
+									and ( MV.Timestamp <= MR.EndTimestamp OR MR.EndTimestamp is NULL )
 							)	as 'MetricValues',
 							(
 								select count(*)
@@ -209,6 +255,9 @@ func createDatabase(logger log.Logger, dbpath string) (database *sqlx.DB, err er
 
 	// =========================================
 	// Create the redfish view MetricReport_JSON
+	//
+	// --> This is even worse than above due to json
+	//
 	// =========================================
 	_, err = database.Exec(
 		`CREATE VIEW IF NOT EXISTS MetricReport_Redfish as

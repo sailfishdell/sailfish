@@ -40,8 +40,9 @@ type MetricReportDefinitionData struct {
 	Enabled      bool        `db:"Enabled"`
 	Type         string      `db:"Type"` // 'Periodic', 'OnChange', 'OnRequest'
 	SuppressDups bool        `db:"SuppressDups"`
-	Actions      StringArray `db:"Actions"` // 	'LogToMetricReportsCollection', 'RedfishEvent'
-	Updates      string      `db:"Updates"` // 'AppendStopsWhenFull', 'AppendWrapsWhenFull', 'NewReport', 'Overwrite'
+	Actions      StringArray `db:"Actions"`  // 	'LogToMetricReportsCollection', 'RedfishEvent'
+	Updates      string      `db:"Updates"`  // 'AppendStopsWhenFull', 'AppendWrapsWhenFull', 'NewReport', 'Overwrite'
+	Schedule     string      `db:"Schedule"` // period in seconds when type=periodic  TODO: update this to a full schedule object
 	Metrics      []MRDMetric `db:"Metrics" json:"Metrics"`
 }
 
@@ -77,14 +78,31 @@ func (factory *MRDFactory) Delete(mrdEvData *MetricReportDefinitionData) (err er
 	return
 }
 
-func (factory *MRDFactory) Update(mrdEvData *MetricReportDefinitionData) (MRD *MetricReportDefinition, err error) {
-	// Random TODO: need a validation function
-	MRD = &MetricReportDefinition{
+func ValidateMRD(MRD *MetricReportDefinition) {
+	switch MRD.Type {
+	case "Periodic":
+		i, _ := strconv.Atoi(MRD.Schedule)
+		if i < 60 || i > (60*60*24) {
+			MRD.Schedule = "180"
+		}
+	case "OnChange", "OnRequest":
+		MRD.Schedule = "0"
+	default:
+		MRD.Type = "OnRequest"
+		MRD.Schedule = "0"
+	}
+
+}
+
+func (factory *MRDFactory) Update(mrdEvData *MetricReportDefinitionData) (err error) {
+	MRD := &MetricReportDefinition{
 		MetricReportDefinitionData: mrdEvData,
 		MRDFactory:                 factory,
 		logger:                     factory.logger,
 		AppendLimit:                1000,
 	}
+
+	ValidateMRD(MRD)
 
 	factory.logger.Info("CREATE/UPDATE metric report definition", "MRD", MRD)
 
@@ -103,14 +121,15 @@ func (factory *MRDFactory) Update(mrdEvData *MetricReportDefinitionData) (MRD *M
 	// Insert or update existing record
 	_, err = tx.NamedExec(
 		`INSERT INTO MetricReportDefinition
-			( Name,  Enabled, AppendLimit, Type, SuppressDups, Actions, Updates)
-			VALUES (:Name, :Enabled, :AppendLimit, :Type, :SuppressDups, :Actions, :Updates)
+			( Name,  Enabled, AppendLimit, Type, SuppressDups, Actions, Updates, Schedule)
+			VALUES (:Name, :Enabled, :AppendLimit, :Type, :SuppressDups, :Actions, :Updates, :Schedule)
 		 on conflict(Name) do update set
 		 	Enabled=:Enabled,
 			AppendLimit=:AppendLimit,
 			Type=:Type,
 			SuppressDups=:SuppressDups,
 			Actions=:Actions,
+			Schedule=:Schedule,
 			Updates=:Updates
 			`, MRD)
 	if err != nil {
@@ -203,104 +222,6 @@ func (factory *MRDFactory) Update(mrdEvData *MetricReportDefinitionData) (MRD *M
 		factory.logger.Debug("Linked Report Def to MetricMeta", "Report Definition ID", MRD.ID, "Meta ID", metaID, "numrows", numrows, "err", err)
 	}
 
-	// finally, now delete any "orphan" MetricMeta records
-	res, err = tx.Exec(`
-		DELETE FROM MetricMeta WHERE id IN
-		(
-			select mm.ID from MetricMeta as mm
-			  LEFT JOIN ReportDefinitionToMetricMeta as rd2mm on mm.ID = rd2mm.MetricMetaID where rd2mm.MetricMetaID is null
-		)`)
-	if err != nil {
-		factory.logger.Crit("Error deleting orphan MetricMeta records", "err", err)
-		return
-	}
-	numrows, err = res.RowsAffected()
-	if numrows > 0 {
-		factory.logger.Debug("DELETED ORPHANS from MetricMeta", "numrows", numrows, "err", err)
-	} else {
-		factory.logger.Debug("no orphans in MetricMeta", "numrows", numrows, "err", err)
-	}
-
-	// ReCreate the Metric Report
-	// First, just delete all the existing metric associations (not the actual MetricMeta, then we'll re-create
-	res, err = tx.Exec(`delete from MetricReport where ReportDefinitionID=?`, MRD.ID)
-	if err != nil {
-		factory.logger.Crit("Error deleting metric reports for report definition", "err", err, "Report Definition ID", MRD.ID)
-		return
-	}
-	numrows, err = res.RowsAffected()
-	if numrows > 0 {
-		factory.logger.Debug("DELETED rows from MetricReport", "numrows", numrows, "err", err)
-	} else {
-		factory.logger.Debug("no rows to delete from MetricReport", "numrows", numrows, "err", err)
-	}
-
-	// Type: Periodic, OnChange, OnRequest
-	// 		Updates: AppendStopsWhenFull | AppendWrapsWhenFull | Overwrite | NewReport
-	//
-	// Periodic:   (-) AppendStopsWhenFull  (-) AppendWrapsWhenFull   (-) Overwrite   (!) NewReport
-	// OnChange:   (-) AppendStopsWhenFull  (-) AppendWrapsWhenFull   (-) Overwrite   (X) NewReport
-	// OnRequest:  (-) AppendStopsWhenFull  (-) AppendWrapsWhenFull   (X) Overwrite   (X) NewReport
-	//
-	// key:
-	// 		(-) makes sense and should be implemented
-	// 		(X) invalid combination, dont accept
-	// 	  (!) makes sense but sort of difficult to implement, so skip for now
-	//    (o) partially implemented
-	//    (*) Done
-	//
-	// behaviour:
-	//    Periodic: (generate a report, then at time interval dump accumulated values)
-	//      --> The Metric Value insert doesn't change reports. Best performance.
-	// 			--> Sequence is updated on period
-	// 		  --> Timestamp is updated on period
-	// 			AppendStopsWhenFull: (Status=Full), StartTimestamp = fixed, EndTimestamp = fixed/updated until full, then fixed
-	//          -- DELETE to clear?
-	// 					-- newer entries fall on floor
-	// 			AppendWrapsWhenFull: (Status=Full), StartTimestamp = NULL until full, then fixed/updated periodically, EndTimestamp = fixed/updated periodically
-	// 					-- older entries fall on floor
-	//      NewReport: insert new MetricReport, setup timestamps  (timestamps = fixed)
-	// 					-- need a policy to delete older reports(?)
-	//      Overwrite: starttimestamp=fixed, endtimestamp=fixed
-	// 				  -- update same metric report
-	//
-	//    OnRequest:  things trickle in as they come
-	//      --> Have to update the report on insert of Metric Value
-	// 			--> Sequence is 0 unless "generated" (trigger)
-	// 		  --> Timestamp is 0 unless "generated" (trigger)
-	// 			AppendStopsWhenFull: continuously update EndTimestamp until full, then fixed
-	//          -- DELETE to clear?
-	// 					-- newer entries fall on floor
-	// 			AppendWrapsWhenFull: EndTimestamp=NULL, continuously update start
-	// 					-- older entries fall on floor
-	//      NewReport: no
-	//      Overwrite: no
-	//
-	// Dont see how this one is different from OnRequest from a behaviour standpoint. Maybe Actions?
-	//    OnChange:  things trickle in as they come
-	//      --> Have to update the report on insert of Metric Value
-	// 			--> Sequence is 0 unless "generated" (trigger)
-	// 		  --> Timestamp is 0 unless "generated" (trigger)
-	// 			AppendStopsWhenFull: continuously update EndTimestamp until full, then fixed
-	//          -- DELETE to clear?
-	// 					-- newer entries fall on floor
-	// 			AppendWrapsWhenFull: EndTimestamp=NULL, continuously update start
-	// 					-- older entries fall on floor
-	//      NewReport: no
-	//      Overwrite: no
-
-	res, err = tx.Exec(`INSERT INTO MetricReport (Name, ReportDefinitionID, Sequence) VALUES (?, ?, ?)`, MRD.Name, MRD.ID, 0)
-	if err != nil {
-		factory.logger.Crit("ERROR inserting MetricReport", "MetricReportDefinition", MRD, "err", err)
-		return
-	}
-	numrows, err = res.RowsAffected()
-	if numrows > 0 {
-		factory.logger.Debug("Inserted MetricReport rows", "numrows", numrows, "err", err, "Name", MRD.Name, "ID", MRD.ID)
-	} else {
-		factory.logger.Debug("no rows to delete from MetricReport", "numrows", numrows, "err", err, "Name", MRD.Name, "ID", MRD.ID)
-	}
-
 	err = tx.Commit()
 	if err != nil {
 		factory.logger.Crit("FAILED Transaction Commit for updates to Report Definition", "Report Definition ID", MRD.ID, "err", err)
@@ -311,21 +232,150 @@ func (factory *MRDFactory) Update(mrdEvData *MetricReportDefinitionData) (MRD *M
 	return
 }
 
-type NanoTime struct {
+func loadReportDefinition(tx *sqlx.Tx, MRD *MetricReportDefinition) error {
+	// can't use LastInsertId() because it doesn't work on upserts in sqlite
+	query := `
+		SELECT 
+			ID, Name,  Enabled, AppendLimit, Type, SuppressDups, Actions, Updates
+		FROM MetricReportDefinition 
+	`
+	if MRD.ID > 0 {
+		query = query + "WHERE ID=:ID"
+	} else if len(MRD.Name) > 0 {
+		query = query + "WHERE Name=:Name"
+	} else {
+		return xerrors.Errorf("Require either an ID or Name to load a Report Definition, didn't get either")
+	}
+
+	stmt, err := tx.PrepareNamed(query)
+	err = stmt.Get(MRD, MRD)
+	if err != nil {
+		return xerrors.Errorf("Error loading Metric Report Definition %d:(%s) %w", MRD.ID, MRD.Name, err)
+	}
+	return nil
+}
+
+func (factory *MRDFactory) GenerateMetricReport(mrdEvData *MetricReportDefinitionData) (err error) {
+	// ===================================
+	// Setup Transaction
+	// ===================================
+	tx, err := factory.database.Beginx()
+	if err != nil {
+		factory.logger.Crit("Error creating transaction to update MRD", "err", err)
+		return
+	}
+
+	// if we error out at all, roll back
+	defer tx.Rollback()
+
+	MRD := &MetricReportDefinition{
+		MetricReportDefinitionData: &MetricReportDefinitionData{Name: mrdEvData.Name},
+		MRDFactory:                 factory,
+		logger:                     factory.logger,
+	}
+	err = loadReportDefinition(tx, MRD)
+	if err != nil {
+		factory.logger.Crit("Error getting MetricReportDefinition", "err", err, "MRD", MRD)
+		return err
+	}
+
+	if MRD.ID == 0 {
+		factory.logger.Crit("DIDNT PROPERLY LOAD MRD", "err", err, "MRD", MRD)
+		return xerrors.Errorf("Error loading Metric Report Definition %d:(%s) %w", MRD.ID, MRD.Name, err)
+	}
+
+	var res sql.Result
+	var numrows int64
+	if !MRD.Enabled {
+		// Delete metric reports if MRD is disabled
+		res, err = tx.Exec(`delete from MetricReport where ReportDefinitionID=?`, MRD.ID)
+		if err != nil {
+			factory.logger.Crit("Error deleting metric reports for report definition", "err", err, "Report Definition ID", MRD.ID)
+			return
+		}
+		numrows, err = res.RowsAffected()
+		if numrows > 0 {
+			factory.logger.Debug("DELETED rows from MetricReport", "numrows", numrows, "err", err)
+		} else {
+			factory.logger.Debug("no rows to delete from MetricReport", "numrows", numrows, "err", err)
+		}
+		// done!
+		return nil
+	}
+
+	// Create or update the report
+	//  We are going to INSERT a new report, but UPDATE it if it already exists
+	var insertClause string
+	var updateClause string
+	sqlParams := []interface{}{}
+
+	switch MRD.Type {
+	case "Periodic":
+		i, _ := strconv.Atoi(MRD.Schedule)
+		insertClause = fmt.Sprintf("(?, ?, 0, datetime('now', '-%d seconds'), datetime('now'))", i)
+		sqlParams = append(sqlParams, MRD.Name, MRD.ID)
+		updateClause = "update set Sequence=Sequence+1"
+
+	case "OnChange":
+		insertClause = "(?, ?, 0, NULL, NULL)"
+		sqlParams = append(sqlParams, MRD.Name, MRD.ID)
+		updateClause = "nothing"
+
+	case "OnRequest":
+		insertClause = "(?, ?, 0, NULL, NULL)"
+		sqlParams = append(sqlParams, MRD.Name, MRD.ID)
+		updateClause = "nothing"
+
+	default: // INVALID MRD TYPE!
+		// if they dont play by the rules, they get cut
+		MRD.Enabled = false
+		tx.Exec(`delete from MetricReport where ReportDefinitionID=?`, MRD.ID)
+		factory.logger.Crit("Report Definition Type not in allowed values", "Type", MRD.Type)
+		return xerrors.Errorf("Report Definition Type not in allowed values: %s", MRD.Type)
+	}
+	sqlText := `
+				INSERT INTO MetricReport
+					(Name, ReportDefinitionID, Sequence, StartTimestamp, EndTimestamp) values ` + insertClause + `
+				on conflict(Name) do ` + updateClause
+
+	if MRD.Enabled {
+		res, err = tx.Exec(sqlText, sqlParams...)
+		if err != nil {
+			factory.logger.Crit("ERROR inserting MetricReport", "MetricReportDefinition", MRD, "err", err, "sqlText", sqlText, "insertClause", insertClause, "sqlParams", sqlParams, "updateClause", updateClause)
+			return
+		}
+		numrows, err = res.RowsAffected()
+		if numrows > 0 {
+			factory.logger.Debug("Inserted MetricReport rows", "numrows", numrows, "err", err, "Name", MRD.Name, "ID", MRD.ID)
+		} else {
+			factory.logger.Debug("no rows to delete from MetricReport", "numrows", numrows, "err", err, "Name", MRD.Name, "ID", MRD.ID)
+		}
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		factory.logger.Crit("FAILED Transaction Commit for updates to Report Definition", "Report Definition ID", MRD.ID, "err", err)
+		return
+	}
+	factory.logger.Debug("Transaction Committed for updates to Report Definition", "Report Definition ID", MRD.ID)
+	return nil
+}
+
+type SqlTimeInt struct {
 	time.Time
 }
 
-func (m NanoTime) Value() (driver.Value, error) {
+func (m SqlTimeInt) Value() (driver.Value, error) {
 	return m.UnixNano(), nil
 }
 
-func (m *NanoTime) Scan(src interface{}) error {
+func (m *SqlTimeInt) Scan(src interface{}) error {
 	m.Time = time.Unix(0, src.(int64))
 	return nil
 }
 
 type Scratch struct {
-	Start     NanoTime
+	Start     SqlTimeInt
 	Numvalues int
 	Sum       float64
 	Maximum   float64
@@ -356,12 +406,12 @@ type MetricMeta struct {
 	CollectionDuration time.Duration `db:"CollectionDuration"`
 
 	// Instance fields
-	ID                int64    `db:"ID"`
-	InstanceID        int64    `db:"InstanceID"`
-	CollectionScratch Scratch  `db:"CollectionScratch"`
-	SuppressDups      bool     `db:"SuppressDups"`
-	LastTS            NanoTime `db:"LastTS"`
-	LastValue         string   `db:"LastValue"`
+	ID                int64      `db:"ID"`
+	InstanceID        int64      `db:"InstanceID"`
+	CollectionScratch Scratch    `db:"CollectionScratch"`
+	SuppressDups      bool       `db:"SuppressDups"`
+	LastTS            SqlTimeInt `db:"LastTS"`
+	LastValue         string     `db:"LastValue"`
 }
 
 func (factory *MRDFactory) Optimize() {
@@ -465,11 +515,6 @@ func (factory *MRDFactory) InsertMetricValue(ev *MetricValueEventData) (err erro
 	}
 
 	for rows.Next() {
-		// TODO: implement un-suppress
-		// TODO: honor AppendLimit
-		// TODO: honor AppendStopsWhenFull | AppendWrapsWhenFull | Overwrite | NewReport
-		// TODO: honor Type=OnChange (send an event?)
-
 		saveValue := true
 		saveInstance := false
 
@@ -575,4 +620,47 @@ func (factory *MRDFactory) InsertMetricValue(ev *MetricValueEventData) (err erro
 	factory.logger.Info("Transaction Committed for Metric Value insertion")
 
 	return nil
+}
+
+func (factory *MRDFactory) DeleteOrphans() (err error) {
+	factory.logger.Info("Database Maintenance: delete orphans")
+
+	// ===================================
+	// Setup Transaction
+	// ===================================
+	tx, err := factory.database.Beginx()
+	if err != nil {
+		factory.logger.Crit("Error creating transaction to update MRD", "err", err)
+		return
+	}
+	// if we error out at all, roll back
+	defer tx.Rollback()
+
+	// delete any "orphan" MetricMeta records
+	res, err := tx.Exec(`
+		DELETE FROM MetricMeta WHERE id IN
+		(
+			select mm.ID from MetricMeta as mm
+			  LEFT JOIN ReportDefinitionToMetricMeta as rd2mm on mm.ID = rd2mm.MetricMetaID where rd2mm.MetricMetaID is null
+		)`)
+	if err != nil {
+		factory.logger.Crit("Error deleting orphan MetricMeta records", "err", err)
+		return
+	}
+	numrows, err := res.RowsAffected()
+	if numrows > 0 {
+		factory.logger.Info("DELETED ORPHANS from MetricMeta", "numrows", numrows, "err", err)
+	} else {
+		factory.logger.Debug("no orphans in MetricMeta", "numrows", numrows, "err", err)
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		factory.logger.Crit("Transaction Committed FAILED for orphan delete", "err", err)
+		return
+	}
+	factory.logger.Info("Transaction Committed for orphan delete")
+
+	return nil
+
 }

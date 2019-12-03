@@ -21,8 +21,8 @@ const (
 )
 
 type MetricValueEventData struct {
-	Timestamp NanoTime `db:"Timestamp"`
-	Name      string   `db:"Name"`
+	Timestamp SqlTimeInt `db:"Timestamp"`
+	Name      string     `db:"Name"`
 	Value     string
 	Property  string `db:"Property"`
 	Context   string `db:"Context"`
@@ -57,14 +57,14 @@ func addAM3Functions(logger log.Logger, am3Svc *am3.Service, d *BusComponents) {
 			eh.NewEvent(MetricValueEvent,
 				[]eh.EventData{
 					&MetricValueEventData{
-						Timestamp: NanoTime{time.Now()},
+						Timestamp: SqlTimeInt{time.Now()},
 						Name:      "RPMReading",
 						Value:     fmt.Sprintf("%d", (fanobj.Rotor1rpm+fanobj.Rotor2rpm)/2),
 						Property:  URI + "#Reading",
 						Context:   FullFQDD,
 					},
 					&MetricValueEventData{
-						Timestamp: NanoTime{time.Now()},
+						Timestamp: SqlTimeInt{time.Now()},
 						Name:      "RPMPct",
 						Value:     fmt.Sprintf("%d", (fanobj.Int)),
 						Property:  URI + "#OEM/Reading",
