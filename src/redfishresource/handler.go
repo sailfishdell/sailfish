@@ -132,8 +132,8 @@ func (d *DomainObjects) GetLicenses() []string {
 
 func (d *DomainObjects) HasAggregateID(uri string) bool {
 	d.treeMu.RLock()
-	defer d.treeMu.RUnlock()
 	_, ok := d.Tree[uri]
+	d.treeMu.RUnlock()
 	return ok
 }
 
@@ -144,23 +144,24 @@ func (d *DomainObjects) GetAggregateID(uri string) (id eh.UUID) {
 
 // VALIDATE TREE - DEBUG ONLY
 func (d *DomainObjects) CheckTree() (id eh.UUID, ok bool) {
+	var start time.Time
 	for {
-		// sleep for 30s between loops
+		if !start.IsZero() {
+			fmt.Printf("CheckTree run took %s\n", time.Since(start))
+		}
 		time.Sleep(time.Duration(120) * time.Second)
+
+		start = time.Now()
 		fmt.Printf("Checking tree\n")
 
+		seen_aggs := 0
 		d.treeMu.RLock()
 		treeSize := len(d.Tree)
-		d.treeMu.RUnlock()
-
-		seen_aggs := 0
 		d.Repo.IterateCB(context.Background(), func(ctx context.Context, agg eh.Entity) error {
 			seen_aggs++
 			if rr, ok := agg.(*RedfishResourceAggregate); ok {
 				checkuri := rr.ResourceURI
-				d.treeMu.RLock()
 				id, ok := d.Tree[checkuri]
-				d.treeMu.RUnlock()
 				if ok {
 					if id == agg.EntityID() {
 						// found good agg in tree... no need to check further stuff
@@ -183,6 +184,7 @@ func (d *DomainObjects) CheckTree() (id eh.UUID, ok bool) {
 			}
 			return nil
 		})
+		d.treeMu.RUnlock()
 
 		if seen_aggs != treeSize {
 			fmt.Printf("MISMATCH Tree(%d) Aggregates(%d)\n", treeSize, seen_aggs)
@@ -369,8 +371,10 @@ func (d *DomainObjects) DumpStatus() http.Handler {
 		w.WriteHeader(http.StatusOK)
 
 		// Adding a new aggregate to the tree
-		d.treeMu.Lock()
-		defer d.treeMu.Unlock()
+		d.treeMu.RLock()
+		defer d.treeMu.RUnlock()
+		pluginsMu.Lock()
+		defer pluginsMu.Unlock()
 
 		// Dump Tree
 		orphans := 0
@@ -398,8 +402,6 @@ func (d *DomainObjects) DumpStatus() http.Handler {
 			return nil
 		})
 
-		pluginsMu.Lock()
-		defer pluginsMu.Unlock()
 		fmt.Fprintf(w, "\nPLUGIN DUMP\n")
 		for k, _ := range plugins {
 			fmt.Fprintf(w, "Plugin: %s\n", k)
