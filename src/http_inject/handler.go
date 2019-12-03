@@ -78,7 +78,8 @@ func NewInjectHandler(dobjs busObjs, logger log.Logger, u string, p []string) *I
 func (rh *InjectHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	requestID := eh.NewUUID()
 	ctx := WithRequestID(r.Context(), requestID)
-	requestLogger := ContextLogger(ctx, "INJECT")
+	// Disable hot path debugging: keep commented out code and uncomment for debugging
+	//requestLogger := ContextLogger(ctx, "INJECT")
 
 	// set headers first
 	w.Header().Set("OData-Version", "4.0")
@@ -271,7 +272,7 @@ func (s *service) Start() {
 					s.logger.Crit("Dropped out-of sequence message", "seq", internalSeq, "cmd", injectCmd.Name, "cmdseq", injectCmd.EventSeq, "index", i)
 
 					// First, if any HTTP handler is waiting on this, mark it done to release that
-					c.Done()
+					injectCmd.Done()
 
 					evt := event.NewSyncEvent(DroppedEvent, &DroppedEventData{
 						Name:     injectCmd.Name,
