@@ -20,7 +20,6 @@ func SimulateSdnotify() *Simulated {
 }
 func (s *Simulated) Close() {}
 func (s *Simulated) SDNotify(state string) error {
-	//fmt.Printf("SD_NOTIFY not available, simulating: %s\n", state)
 	return nil
 }
 func (s *Simulated) GetIntervalUsec() int {

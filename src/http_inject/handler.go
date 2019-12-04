@@ -204,7 +204,7 @@ func (s *service) Start() {
 		interval = interval / 3
 		seq := 0
 
-		s.logger.Info("Setting up watchdog.", "interval", time.Duration(interval)*time.Microsecond)
+		s.logger.Info("Setting up watchdog.", "interval-in-milliseconds", interval)
 
 		// set up listener for the watchdog events
 		listener, err := s.ew.Listen(context.Background(), func(event eh.Event) bool {
@@ -317,7 +317,7 @@ func (s *service) Start() {
 			select {
 			case cmd := <-injectCmdQueue:
 				// fast path debug statement. comment out unless actively debugging
-				s.logger.Debug("POP  injectCmdQueue LEN", "len", len(injectCmdQueue), "cap", cap(injectCmdQueue), "module", "inject", "cmdname", cmd.Name, "EventSeq", cmd.EventSeq)
+				//s.logger.Debug("POP  injectCmdQueue LEN", "len", len(injectCmdQueue), "cap", cap(injectCmdQueue), "module", "inject", "cmdname", cmd.Name, "EventSeq", cmd.EventSeq)
 
 				queued = append(queued, cmd)
 				if len(queued) > 1 {
@@ -340,15 +340,15 @@ func (s *service) Start() {
 					// fast path debug statement. comment out unless actively debugging
 					//s.logger.Debug("Stuff to publish!")
 					tryToPublish(false)
-				} else {
-					s.logger.Debug("OUT OF ORDER", "internalseq", internalSeq, "msgseq", queued[len(queued)-1].EventSeq)
-				}
+				} //else {
+				//s.logger.Debug("OUT OF ORDER", "internalseq", internalSeq, "msgseq", queued[len(queued)-1].EventSeq)
+				//}
 
 				// Don't allow the out of order queue to get too big
 				// Force out the first entry if it's over
 				if len(queued) > MAX_OUT_OF_ORDER_QUEUED {
 					// force publish
-					s.logger.Info("Queue exceeds max len, force publish. Implied missing or out of order events present.")
+					//s.logger.Info("Queue exceeds max len, force publish. Implied missing or out of order events present.")
 					tryToPublish(true)
 				}
 
@@ -384,7 +384,7 @@ func (s *service) Start() {
 
 				// we have some left, start a new timer
 				if len(queued) > 0 && !timerActive {
-					s.logger.Debug("OUT OF ORDER: Set timer to empty queue!")
+					//s.logger.Debug("OUT OF ORDER: Set timer to empty queue!")
 					sequenceTimer.Reset(IETIMEOUT)
 					timerActive = true
 				}
@@ -404,7 +404,7 @@ func (s *service) Start() {
 				}
 			case <-debugOutputTicker.C:
 				// debug if we start getting full channels
-				s.logger.Debug("queue length monitor", "module", "queuemonitor", "len(injectChan)", len(injectChan), "cap(injectChan)", cap(injectChan), "len(injectCmdQueue)", len(injectCmdQueue), "cap(injectCmdQueue)", cap(injectCmdQueue))
+				//s.logger.Debug("queue length monitor", "module", "queuemonitor", "len(injectChan)", len(injectChan), "cap(injectChan)", cap(injectChan), "len(injectCmdQueue)", len(injectCmdQueue), "cap(injectCmdQueue)", cap(injectCmdQueue))
 			}
 		}
 	}()
@@ -462,7 +462,7 @@ func (c *InjectCommand) markBarrier() {
 }
 
 func (c *InjectCommand) sendToChn() error {
-	requestLogger := ContextLogger(c.ctx, "internal_commands").New("module", "inject_event")
+	//requestLogger := ContextLogger(c.ctx, "internal_commands").New("module", "inject_event")
 	//requestLogger.Crit("InjectService: preparing event", "Sequence", c.EventSeq, "Name", c.Name)
 
 	waits := []func(){}
@@ -497,14 +497,14 @@ func (c *InjectCommand) sendToChn() error {
 		select {
 		case injectChan <- &eventBundle{&evt, c.Barrier}:
 		case <-c.ctx.Done():
-			requestLogger.Info("CONTEXT CANCELLED! Discarding trainload", "err", c.ctx.Err(), "trainload", trainload, "EventName", c.Name)
+			//requestLogger.Info("CONTEXT CANCELLED! Discarding trainload", "err", c.ctx.Err(), "trainload", trainload, "EventName", c.Name)
 		}
 	}
 
 	// accumulate decode events in trainload slice, then send as it gets full
-	c.appendDecode(requestLogger, &trainload, c.Name, c.EventData)
+	c.appendDecode(&trainload, c.Name, c.EventData)
 	for _, d := range c.EventArray {
-		c.appendDecode(requestLogger, &trainload, c.Name, d)
+		c.appendDecode(&trainload, c.Name, d)
 		if len(trainload) >= MAX_CONSOLIDATED_EVENTS {
 			sendTrain(trainload)
 			trainload = make([]eh.EventData, 0, MAX_CONSOLIDATED_EVENTS)
@@ -516,7 +516,8 @@ func (c *InjectCommand) sendToChn() error {
 	return nil
 }
 
-func (c *InjectCommand) appendDecode(requestLogger log.Logger, trainload *[]eh.EventData, eventType eh.EventType, m json.RawMessage) {
+func (c *InjectCommand) appendDecode(trainload *[]eh.EventData, eventType eh.EventType, m json.RawMessage) {
+	requestLogger := ContextLogger(c.ctx, "internal_commands").New("module", "inject_event")
 	if m == nil {
 		// not worth logging unless debugging something wierd
 		// requestLogger.Info("Decode: nil message", "eventType", eventType)
