@@ -366,21 +366,25 @@ func (ars *ARService) loadConfig(mappingName string) {
 	ars.logger.Info("Loading Config", "mappingName", mappingName, "configsection", ars.modelmappings[mappingName].cfgsect, "mappings", newmaps)
 
 	modelmapping := ars.modelmappings[mappingName]
+
+	realmaps := make([]mapping, 0, len(newmaps))
 	for _, mm := range newmaps {
-		if mm.FQDD == "{FQDD}" {
-			mm.FQDD = modelmapping.requestedFQDD
-			//ars.logger.Debug("Replacing {FQDD} with real fqdd", "fqdd", mm.FQDD)
+		newentry := mm
+		if newentry.FQDD == "{FQDD}" {
+			ars.logger.Debug("Replacing {FQDD} with real fqdd", "fqdd", newentry.FQDD, "real_fqdd", modelmapping.requestedFQDD)
+			newentry.FQDD = modelmapping.requestedFQDD
 		}
-		if mm.Group == "{GROUP}" {
-			mm.Group = modelmapping.requestedGroup
-			//ars.logger.Debug("Replacing {GROUP} with real group", "group", mm.Group)
+		if newentry.Group == "{GROUP}" {
+			ars.logger.Debug("Replacing {GROUP} with real group", "group", newentry.Group, "real_group", modelmapping.requestedGroup)
+			newentry.Group = modelmapping.requestedGroup
 		}
-		if mm.Index == "{INDEX}" {
-			mm.Index = modelmapping.requestedIndex
-			//ars.logger.Debug("Replacing {INDEX} with real index", "index", mm.Index)
+		if newentry.Index == "{INDEX}" {
+			ars.logger.Debug("Replacing {INDEX} with real index", "index", newentry.Index, "real_index", modelmapping.requestedIndex)
+			newentry.Index = modelmapping.requestedIndex
 		}
+		realmaps = append(realmaps, newentry)
 	}
-	modelmapping.mappings = newmaps
+	modelmapping.mappings = realmaps
 	modelmapping.loaded = true
 	ars.modelmappings[mappingName] = modelmapping
 
