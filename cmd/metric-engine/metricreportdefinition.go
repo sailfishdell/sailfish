@@ -68,13 +68,15 @@ func NewMRDFactory(logger log.Logger, database *sqlx.DB) (ret *MRDFactory, err e
 }
 
 func (factory *MRDFactory) Delete(mrdEvData *MetricReportDefinitionData) (err error) {
-	res, err := factory.database.Exec(`delete from MetricReportDefinition where name=?`, mrdEvData.Name)
+	_, err = factory.database.Exec(`delete from MetricReportDefinition where name=?`, mrdEvData.Name)
 	if err != nil {
 		factory.logger.Crit("ERROR deleting MetricReportDefinition", "err", err, "Name", mrdEvData.Name)
 		return
 	}
-	numrows, err := res.RowsAffected()
-	factory.logger.Debug("DELETED rows from MetricReportDefinition", "numrows", numrows, "err", err)
+	// Debugging commented out to fixup heap usage
+	// change "_" to "res" above, add := if uncommenting this
+	//numrows, err := res.RowsAffected()
+	//factory.logger.Debug("DELETED rows from MetricReportDefinition", "numrows", numrows, "err", err)
 	return
 }
 
@@ -104,7 +106,7 @@ func (factory *MRDFactory) Update(mrdEvData *MetricReportDefinitionData) (err er
 
 	ValidateMRD(MRD)
 
-	factory.logger.Info("CREATE/UPDATE metric report definition", "MRD", MRD)
+	//factory.logger.Info("CREATE/UPDATE metric report definition", "MRD", MRD)
 
 	// ===================================
 	// Setup Transaction
@@ -133,7 +135,7 @@ func (factory *MRDFactory) Update(mrdEvData *MetricReportDefinitionData) (err er
 			Updates=:Updates
 			`, MRD)
 	if err != nil {
-		factory.logger.Crit("ERROR inserting MetricReportDefinition", "MetricReportDefinition", MRD, "err", err)
+		//factory.logger.Crit("ERROR inserting MetricReportDefinition", "MetricReportDefinition", MRD, "err", err)
 		return
 	}
 
@@ -143,20 +145,22 @@ func (factory *MRDFactory) Update(mrdEvData *MetricReportDefinitionData) (err er
 		factory.logger.Crit("Error getting MetricReportDefinition ID", "err", err)
 		return
 	}
-	factory.logger.Info("Updated/Inserted Metric Report Definition", "Report Definition ID", MRD.ID, "MRD", MRD)
+	factory.logger.Info("Updated/Inserted Metric Report Definition", "Report Definition ID", MRD.ID, "MRD_NAME", MRD.Name)
 
 	//
 	// Update the list of metrics for this report
 	//
 
 	// First, just delete all the existing metric associations (not the actual MetricMeta, then we'll re-create
-	res, err := tx.Exec(`delete from ReportDefinitionToMetricMeta where ReportDefinitionID=:id`, MRD.ID)
+	_, err = tx.Exec(`delete from ReportDefinitionToMetricMeta where ReportDefinitionID=:id`, MRD.ID)
 	if err != nil {
 		factory.logger.Crit("Error executing statement deleting metric meta associations for report definition", "err", err, "Report Definition ID", MRD.ID)
 		return
 	}
-	numrows, err := res.RowsAffected()
-	factory.logger.Debug("DELETED rows from ReportDefinitionToMetricMeta", "numrows", numrows, "err", err)
+	// Debugging commented out to fixup heap usage
+	// change "_" to "res" above, add := if uncommenting this
+	//numrows, err := res.RowsAffected()
+	//factory.logger.Debug("DELETED rows from ReportDefinitionToMetricMeta", "numrows", numrows, "err", err)
 
 	// Then we will create each association one at a time
 	for _, metric := range MRD.Metrics {
@@ -189,7 +193,7 @@ func (factory *MRDFactory) Update(mrdEvData *MetricReportDefinitionData) (err er
 		err = statement.Get(&metaID, tempMetric)
 		if err != nil {
 			if !xerrors.Is(err, sql.ErrNoRows) {
-				factory.logger.Crit("Error getting MetricMeta ID", "err", err, "metric", tempMetric)
+				//factory.logger.Crit("Error getting MetricMeta ID", "err", err, "metric", tempMetric)
 				return
 			}
 			// Insert new MetricMeta if it doesn't already exist per above
@@ -199,27 +203,29 @@ func (factory *MRDFactory) Update(mrdEvData *MetricReportDefinitionData) (err er
 			VALUES (:Name, :SuppressDups, '',  '', :CollectionFunction, :CollectionDuration)
 			`, tempMetric)
 			if err != nil {
-				factory.logger.Crit("ERROR inserting MetricMeta", "MetricReportDefinition", MRD, "metric", tempMetric, "err", err)
+				//factory.logger.Crit("ERROR inserting MetricMeta", "MetricReportDefinition", MRD, "metric", tempMetric, "err", err)
 				return
 			}
 
 			metaID, err = res.LastInsertId()
 			if err != nil {
-				factory.logger.Crit("Error getting last inserted row ID for MetricMeta", "err", err, "metric", tempMetric)
+				//factory.logger.Crit("Error getting last inserted row ID for MetricMeta", "err", err, "metric", tempMetric)
 				return
 			}
-			numrows, err := res.RowsAffected()
-			factory.logger.Info("Added new MetricMeta", "MetaID", metaID, "metric", tempMetric, "numrows", numrows, "err", err)
+			// Debugging commented out to fixup heap usage
+			//numrows, err := res.RowsAffected()
+			//factory.logger.Info("Added new MetricMeta", "MetaID", metaID, "metric", tempMetric, "numrows", numrows, "err", err)
 		}
 
 		// Next cross link MetricMeta to ReportDefinition
 		res, err = tx.Exec(`INSERT INTO ReportDefinitionToMetricMeta (ReportDefinitionID, MetricMetaID) VALUES (?, ?)`, MRD.ID, metaID)
 		if err != nil {
-			factory.logger.Crit("ERROR inserting metricmeta association", "MetricReportDefinition", MRD, "metric", metric, "err", err)
+			//factory.logger.Crit("ERROR inserting metricmeta association", "MetricReportDefinition", MRD, "metric", metric, "err", err)
 			return
 		}
-		numrows, err := res.RowsAffected()
-		factory.logger.Debug("Linked Report Def to MetricMeta", "Report Definition ID", MRD.ID, "Meta ID", metaID, "numrows", numrows, "err", err)
+		// Debugging commented out to fixup heap usage
+		//numrows, err := res.RowsAffected()
+		//factory.logger.Debug("Linked Report Def to MetricMeta", "Report Definition ID", MRD.ID, "Meta ID", metaID, "numrows", numrows, "err", err)
 	}
 
 	err = tx.Commit()
@@ -235,9 +241,9 @@ func (factory *MRDFactory) Update(mrdEvData *MetricReportDefinitionData) (err er
 func loadReportDefinition(tx *sqlx.Tx, MRD *MetricReportDefinition) error {
 	// can't use LastInsertId() because it doesn't work on upserts in sqlite
 	query := `
-		SELECT 
+		SELECT
 			ID, Name,  Enabled, AppendLimit, Type, SuppressDups, Actions, Updates
-		FROM MetricReportDefinition 
+		FROM MetricReportDefinition
 	`
 	if MRD.ID > 0 {
 		query = query + "WHERE ID=:ID"
@@ -275,30 +281,33 @@ func (factory *MRDFactory) GenerateMetricReport(mrdEvData *MetricReportDefinitio
 	}
 	err = loadReportDefinition(tx, MRD)
 	if err != nil {
-		factory.logger.Crit("Error getting MetricReportDefinition", "err", err, "MRD", MRD)
+		//factory.logger.Crit("Error getting MetricReportDefinition", "err", err, "MRD", MRD)
 		return err
 	}
 
 	if MRD.ID == 0 {
-		factory.logger.Crit("DIDNT PROPERLY LOAD MRD", "err", err, "MRD", MRD)
+		//factory.logger.Crit("DIDNT PROPERLY LOAD MRD", "err", err, "MRD", MRD)
 		return xerrors.Errorf("Error loading Metric Report Definition %d:(%s) %w", MRD.ID, MRD.Name, err)
 	}
+	ID := MRD.ID
 
-	var res sql.Result
-	var numrows int64
+	//var res sql.Result
+	//var numrows int64
 	if !MRD.Enabled {
 		// Delete metric reports if MRD is disabled
-		res, err = tx.Exec(`delete from MetricReport where ReportDefinitionID=?`, MRD.ID)
+		_, err = tx.Exec(`delete from MetricReport where ReportDefinitionID=?`, ID)
 		if err != nil {
-			factory.logger.Crit("Error deleting metric reports for report definition", "err", err, "Report Definition ID", MRD.ID)
+			//factory.logger.Crit("Error deleting metric reports for report definition", "err", err, "Report Definition ID", ID)
 			return
 		}
-		numrows, err = res.RowsAffected()
-		if numrows > 0 {
-			factory.logger.Debug("DELETED rows from MetricReport", "numrows", numrows, "err", err)
-		} else {
-			factory.logger.Debug("no rows to delete from MetricReport", "numrows", numrows, "err", err)
-		}
+		// Debugging commented out to fixup heap usage
+		// uncomment 'res' declaration above if uncommenting this
+		//numrows, err = res.RowsAffected()
+		//if numrows > 0 {
+		//	factory.logger.Debug("DELETED rows from MetricReport", "numrows", numrows, "err", err)
+		//} else {
+		//	factory.logger.Debug("no rows to delete from MetricReport", "numrows", numrows, "err", err)
+		//}
 		// done!
 		return nil
 	}
@@ -313,24 +322,24 @@ func (factory *MRDFactory) GenerateMetricReport(mrdEvData *MetricReportDefinitio
 	case "Periodic":
 		i, _ := strconv.Atoi(MRD.Schedule)
 		insertClause = fmt.Sprintf("(?, ?, 0, datetime('now', '-%d seconds'), datetime('now'))", i)
-		sqlParams = append(sqlParams, MRD.Name, MRD.ID)
+		sqlParams = append(sqlParams, MRD.Name, ID)
 		updateClause = "update set Sequence=Sequence+1"
 
 	case "OnChange":
 		insertClause = "(?, ?, 0, NULL, NULL)"
-		sqlParams = append(sqlParams, MRD.Name, MRD.ID)
+		sqlParams = append(sqlParams, MRD.Name, ID)
 		updateClause = "nothing"
 
 	case "OnRequest":
 		insertClause = "(?, ?, 0, NULL, NULL)"
-		sqlParams = append(sqlParams, MRD.Name, MRD.ID)
+		sqlParams = append(sqlParams, MRD.Name, ID)
 		updateClause = "nothing"
 
 	default: // INVALID MRD TYPE!
 		// if they dont play by the rules, they get cut
-		MRD.Enabled = false
-		tx.Exec(`delete from MetricReport where ReportDefinitionID=?`, MRD.ID)
 		factory.logger.Crit("Report Definition Type not in allowed values", "Type", MRD.Type)
+		MRD.Enabled = false
+		tx.Exec(`delete from MetricReport where ReportDefinitionID=?`, ID)
 		return xerrors.Errorf("Report Definition Type not in allowed values: %s", MRD.Type)
 	}
 	sqlText := `
@@ -339,25 +348,25 @@ func (factory *MRDFactory) GenerateMetricReport(mrdEvData *MetricReportDefinitio
 				on conflict(Name) do ` + updateClause
 
 	if MRD.Enabled {
-		res, err = tx.Exec(sqlText, sqlParams...)
+		_, err = tx.Exec(sqlText, sqlParams...)
 		if err != nil {
-			factory.logger.Crit("ERROR inserting MetricReport", "MetricReportDefinition", MRD, "err", err, "sqlText", sqlText, "insertClause", insertClause, "sqlParams", sqlParams, "updateClause", updateClause)
+			//factory.logger.Crit("ERROR inserting MetricReport", "MetricReportDefinition", MRD, "err", err, "sqlText", sqlText, "insertClause", insertClause, "sqlParams", sqlParams, "updateClause", updateClause)
 			return
 		}
-		numrows, err = res.RowsAffected()
-		if numrows > 0 {
-			factory.logger.Debug("Inserted MetricReport rows", "numrows", numrows, "err", err, "Name", MRD.Name, "ID", MRD.ID)
-		} else {
-			factory.logger.Debug("no rows to delete from MetricReport", "numrows", numrows, "err", err, "Name", MRD.Name, "ID", MRD.ID)
-		}
+		//numrows, err = res.RowsAffected()
+		//if numrows > 0 {
+		//	factory.logger.Debug("Inserted MetricReport rows", "numrows", numrows, "err", err, "Name", MRD.Name, "ID", ID)
+		//} else {
+		//	factory.logger.Debug("no rows to delete from MetricReport", "numrows", numrows, "err", err, "Name", MRD.Name, "ID", ID)
+		//}
 	}
 
 	err = tx.Commit()
 	if err != nil {
-		factory.logger.Crit("FAILED Transaction Commit for updates to Report Definition", "Report Definition ID", MRD.ID, "err", err)
+		factory.logger.Crit("FAILED Transaction Commit for updates to Report Definition", "Report Definition ID", ID, "err", err)
 		return
 	}
-	factory.logger.Debug("Transaction Committed for updates to Report Definition", "Report Definition ID", MRD.ID)
+	factory.logger.Debug("Transaction Committed for updates to Report Definition", "Report Definition ID", ID)
 	return nil
 }
 
@@ -459,7 +468,7 @@ func (factory *MRDFactory) InsertMetricValue(ev *MetricValueEventData) (err erro
 		mm := &MetricMeta{MetricValueEventData: ev}
 		err = rows.StructScan(mm)
 		if err != nil {
-			factory.logger.Crit("Error scanning metric meta for event", "err", err, "metric", ev)
+			//factory.logger.Crit("Error scanning metric meta for event", "err", err, "metric", ev)
 			continue
 		}
 
@@ -485,7 +494,7 @@ func (factory *MRDFactory) InsertMetricValue(ev *MetricValueEventData) (err erro
 		 	on conflict(MetaID, Property, Context, Label) do nothing
 			`, mm)
 		if err != nil {
-			factory.logger.Crit("Error inserting new MetricInstance", "err", err, "mm", mm)
+			//factory.logger.Crit("Error inserting new MetricInstance", "err", err, "mm", mm)
 			return
 		}
 	}
@@ -521,7 +530,7 @@ func (factory *MRDFactory) InsertMetricValue(ev *MetricValueEventData) (err erro
 		mm := &MetricMeta{MetricValueEventData: ev}
 		err = rows.StructScan(mm)
 		if err != nil {
-			factory.logger.Crit("ERROR loading data from database into MetricMeta struct", "err", err, "MetricMeta", mm)
+			//factory.logger.Crit("ERROR loading data from database into MetricMeta struct", "err", err, "MetricMeta", mm)
 			continue
 		}
 
@@ -560,8 +569,8 @@ func (factory *MRDFactory) InsertMetricValue(ev *MetricValueEventData) (err erro
 
 			val, err := strconv.ParseFloat(mm.Value, 64)
 			if err != nil {
-				factory.logger.Warn("Collection failed on metric because Value couldn't be converted to float. Discarding this metric value from the result.",
-					"Instance ID", mm.InstanceID, "CollectionFunction", mm.CollectionFunction, "Name", mm.Name, "Value", mm.Value, "err", err)
+				//factory.logger.Warn("Collection failed on metric because Value couldn't be converted to float. Discarding this metric value from the result.",
+				//	"Instance ID", mm.InstanceID, "CollectionFunction", mm.CollectionFunction, "Name", mm.Name, "Value", mm.Value, "err", err)
 				continue
 			}
 			mm.CollectionScratch.Numvalues++
@@ -581,23 +590,23 @@ func (factory *MRDFactory) InsertMetricValue(ev *MetricValueEventData) (err erro
 				saveInstance = true
 			}
 
-			var res sql.Result
-			var numrows int64
-			res, err = tx.NamedExec(`
+			//var res sql.Result
+			//var numrows int64
+			_, err = tx.NamedExec(`
 					INSERT INTO MetricValue
 						( InstanceID, Timestamp, Value )
 						VALUES (:InstanceID, :Timestamp, :Value )
 					`, mm)
 			if err != nil {
-				factory.logger.Crit("ERROR inserting MetricValue", "MetaID", mm.MetaID, "InstanceID", mm.InstanceID, "err", err)
+				//factory.logger.Crit("ERROR inserting MetricValue", "MetaID", mm.MetaID, "InstanceID", mm.InstanceID, "err", err)
 				return
 			}
-			numrows, err = res.RowsAffected()
-			if numrows > 0 {
-				factory.logger.Debug("Inserted MetricValue rows", "numrows", numrows, "err", err, "MetaID", mm.MetaID, "InstanceID", mm.InstanceID)
-			} else {
-				factory.logger.Warn("no rows to insert MetricValue", "numrows", numrows, "err", err, "MetaID", mm.MetaID, "InstanceID", mm.InstanceID)
-			}
+			//numrows, err = res.RowsAffected()
+			//if numrows > 0 {
+			//	factory.logger.Debug("Inserted MetricValue rows", "numrows", numrows, "err", err, "MetaID", mm.MetaID, "InstanceID", mm.InstanceID)
+			//} else {
+			//	factory.logger.Warn("no rows to insert MetricValue", "numrows", numrows, "err", err, "MetaID", mm.MetaID, "InstanceID", mm.InstanceID)
+			//}
 		}
 
 		if saveInstance {
@@ -637,7 +646,7 @@ func (factory *MRDFactory) DeleteOrphans() (err error) {
 	defer tx.Rollback()
 
 	// delete any "orphan" MetricMeta records
-	res, err := tx.Exec(`
+	_, err = tx.Exec(`
 		DELETE FROM MetricMeta WHERE id IN
 		(
 			select mm.ID from MetricMeta as mm
@@ -647,12 +656,12 @@ func (factory *MRDFactory) DeleteOrphans() (err error) {
 		factory.logger.Crit("Error deleting orphan MetricMeta records", "err", err)
 		return
 	}
-	numrows, err := res.RowsAffected()
-	if numrows > 0 {
-		factory.logger.Info("DELETED ORPHANS from MetricMeta", "numrows", numrows, "err", err)
-	} else {
-		factory.logger.Debug("no orphans in MetricMeta", "numrows", numrows, "err", err)
-	}
+	//numrows, err := res.RowsAffected()
+	//if numrows > 0 {
+	//	factory.logger.Info("DELETED ORPHANS from MetricMeta", "numrows", numrows, "err", err)
+	//} else {
+	//	factory.logger.Debug("no orphans in MetricMeta", "numrows", numrows, "err", err)
+	//}
 
 	err = tx.Commit()
 	if err != nil {

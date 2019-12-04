@@ -4,7 +4,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	eh "github.com/looplab/eventhorizon"
@@ -63,7 +62,7 @@ func addAM3DatabaseFunctions(logger log.Logger, dbpath string, am3Svc *am3.Servi
 	am3Svc.AddEventHandler("Create/Update Metric Report Definition", UpdateMetricReportDefinition, func(event eh.Event) {
 		reportDef, ok := event.Data().(*MetricReportDefinitionData)
 		if !ok {
-			logger.Crit("Expected a *MetricReportDefinitionData but didn't get one.", "Actual Type", fmt.Sprintf("%T", event.Data()), "Actual Data", event.Data())
+			//logger.Crit("Expected a *MetricReportDefinitionData but didn't get one.", "Actual Type", fmt.Sprintf("%T", event.Data()), "Actual Data", event.Data())
 			return
 		}
 
@@ -90,7 +89,7 @@ func addAM3DatabaseFunctions(logger log.Logger, dbpath string, am3Svc *am3.Servi
 	am3Svc.AddEventHandler("Delete Metric Report Definition", DeleteMetricReportDefinition, func(event eh.Event) {
 		reportDef, ok := event.Data().(*MetricReportDefinitionData)
 		if !ok {
-			logger.Crit("Expected a *MetricReportDefinitionData but didn't get one.", "Actual Type", fmt.Sprintf("%T", event.Data()), "Actual Data", event.Data())
+			//logger.Crit("Expected a *MetricReportDefinitionData but didn't get one.", "Actual Type", fmt.Sprintf("%T", event.Data()), "Actual Data", event.Data())
 			return
 		}
 
@@ -109,20 +108,21 @@ func addAM3DatabaseFunctions(logger log.Logger, dbpath string, am3Svc *am3.Servi
 	am3Svc.AddEventHandler("Store Metric Value", MetricValueEvent, func(event eh.Event) {
 		metricValue, ok := event.Data().(*MetricValueEventData)
 		if !ok {
-			logger.Warn("Expected a *MetricValueEventData but didn't get one.", "Actual Type", fmt.Sprintf("%T", event.Data()), "Actual Data", event.Data())
+			//logger.Warn("Expected a *MetricValueEventData but didn't get one.", "Actual Type", fmt.Sprintf("%T", event.Data()), "Actual Data", event.Data())
 			return
 		}
 
 		err := MRDFactory.InsertMetricValue(metricValue)
 		if err != nil {
-			logger.Crit("Error inserting Metric Value", "err", err, "metric", metricValue)
+			//logger.Crit("Error inserting Metric Value", "err", err, "metric", metricValue)
+			return
 		}
 	})
 
 	am3Svc.AddEventHandler("Generate Metric Report", GenerateMetricReport, func(event eh.Event) {
 		reportDef, ok := event.Data().(*MetricReportDefinitionData)
 		if !ok {
-			logger.Crit("Expected a *MetricReportDefinitionData but didn't get one.", "Actual Type", fmt.Sprintf("%T", event.Data()), "Actual Data", event.Data())
+			//logger.Crit("Expected a *MetricReportDefinitionData but didn't get one.", "Actual Type", fmt.Sprintf("%T", event.Data()), "Actual Data", event.Data())
 			return
 		}
 
@@ -200,14 +200,14 @@ func addAM3DatabaseFunctions(logger log.Logger, dbpath string, am3Svc *am3.Servi
 		localReportDefCopy := *reportDef
 		err := MRDFactory.GenerateMetricReport(&localReportDefCopy)
 		if err != nil {
-			logger.Crit("Error generating metric report", "err", err, "ReportDefintion", reportDef)
+			//logger.Crit("Error generating metric report", "err", err, "ReportDefintion", reportDef)
 		}
 	})
 
 	am3Svc.AddEventHandler("Database Maintenance", DatabaseMaintenance, func(event eh.Event) {
 		command, ok := event.Data().(string)
 		if !ok {
-			logger.Warn("Expected a command string.", "Actual Type", fmt.Sprintf("%T", event.Data()), "Actual Data", event.Data())
+			//logger.Warn("Expected a command string.", "Actual Type", fmt.Sprintf("%T", event.Data()), "Actual Data", event.Data())
 			return
 		}
 
@@ -243,6 +243,8 @@ func addAM3DatabaseFunctions(logger log.Logger, dbpath string, am3Svc *am3.Servi
 			//   inner join MetricReport as MR on MRD.ID = MR.ReportDefinitionID
 			// WHERE
 			//   MV.Timestamp < (insert query to get oldest metric report begin timestamp)
+			//
+			// TODO: MRDFactory.DeleteOrphans()
 
 		default:
 			logger.Warn("Unknown database maintenance command string received", "command", command)
