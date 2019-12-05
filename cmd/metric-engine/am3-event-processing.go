@@ -30,6 +30,8 @@ type MetricValueEventData struct {
 
 func addAM3Functions(logger log.Logger, am3Svc *am3.Service, d *BusComponents) {
 	eh.RegisterEventData(MetricValueEvent, func() eh.EventData { return &MetricValueEventData{} })
+	godefs.InitGoDef()
+
 	am3Svc.AddEventHandler("modular_update_fan_data", eh.EventType("thp_fan_data_object"), func(event eh.Event) {
 		dmobj, ok := event.Data().(*godefs.DMObject)
 		fanobj, ok := dmobj.Data.(*godefs.DM_thp_fan_data_object)
