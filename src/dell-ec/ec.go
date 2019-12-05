@@ -168,10 +168,9 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	//*********************************************************************
 	//  /redfish/v1
 	//*********************************************************************
-	rooturi := "/redfish/v1"
 	_, rootView, _ := instantiateSvc.Instantiate("rootview",
 		map[string]interface{}{
-			"rooturi":                   rooturi,
+			"rooturi":                   "/redfish/v1",
 			"globalHealthModel":         globalHealthModel,
 			"submit_test_metric_report": view.Action(telemetryservice.MakeSubmitTestMetricReport(eb, d, ch)),
 		})
