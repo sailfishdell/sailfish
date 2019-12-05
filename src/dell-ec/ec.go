@@ -23,6 +23,7 @@ import (
 	"github.com/superchalupa/sailfish/src/dell-resources/update_service"
 	"github.com/superchalupa/sailfish/src/log"
 	"github.com/superchalupa/sailfish/src/looplab/eventwaiter"
+	"github.com/superchalupa/sailfish/src/ocp/am3"
 	"github.com/superchalupa/sailfish/src/ocp/awesome_mapper2"
 	"github.com/superchalupa/sailfish/src/ocp/event"
 	"github.com/superchalupa/sailfish/src/ocp/eventservice"
@@ -62,16 +63,18 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	actionhandler.Setup(ctx, ch, eb)
 	uploadhandler.Setup(ctx, ch, eb)
 	event.Setup(ch, eb)
-	domain.StartInjectService(logger, d)
 	arService, _ := ar_mapper2.StartService(ctx, logger, cfgMgr, cfgMgrMu, eb)
 	actionSvc := ah.StartService(ctx, logger, ch, eb)
 	uploadSvc := uploadhandler.StartService(ctx, logger, ch, eb)
 	am2Svc, _ := awesome_mapper2.StartService(ctx, logger, eb, ch, d)
+	am3Svc, _ := am3.StartService(ctx, logger, d)
+	addAM3Functions(logger.New("module", "ec_am3_functions"), am3Svc, d)
+
 	ardumpSvc, _ := attributes.StartService(ctx, logger, eb)
 	pumpSvc := NewPumpActionSvc(ctx, logger, eb)
 
 	// the package for this is going to change, but this is what makes the various mappers and view functions available
-	instantiateSvc := testaggregate.New(ctx, logger, cfgMgr, cfgMgrMu, ch)
+	instantiateSvc := testaggregate.New(ctx, logger, cfgMgr, cfgMgrMu, d)
 	evtSvc := eventservice.New(ctx, cfgMgr, cfgMgrMu, d, instantiateSvc, actionSvc, uploadSvc)
 	testaggregate.RegisterWithURI(instantiateSvc)
 	testaggregate.RegisterPublishEvents(instantiateSvc, evtSvc)
@@ -83,7 +86,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	stdmeta.RegisterFormatters(instantiateSvc, d)
 	stdmeta.SledPwrOperationsSvc(ctx, logger, eb)
 	registries.RegisterAggregate(instantiateSvc)
-	stdcollections.RegisterAggregate(instantiateSvc)
 	session.RegisterAggregate(instantiateSvc)
 	eventservice.RegisterAggregate(instantiateSvc)
 	slots.RegisterAggregate(instantiateSvc)
@@ -112,6 +114,10 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	stdmeta.GenericDefPlugin(ch, d)
 
 	godefs.InitGoDef()
+
+	// start background tree checking
+	// disable for now
+	//go d.CheckTree()
 
 	awesome_mapper2.AddFunction("find_uris_with_basename", func(args ...interface{}) (interface{}, error) {
 		if len(args) < 1 {
@@ -174,7 +180,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	// /redfish/v1/Sessions
 	//*********************************************************************
 	_, sessionSvcVw, _ := instantiateSvc.Instantiate("sessionservice", map[string]interface{}{})
-	session.SetupSessionService(instantiateSvc, sessionSvcVw, ch, eb)
+	session.SetupSessionService(instantiateSvc, sessionSvcVw, d)
 	instantiateSvc.Instantiate("sessioncollection", map[string]interface{}{})
 
 	//*********************************************************************

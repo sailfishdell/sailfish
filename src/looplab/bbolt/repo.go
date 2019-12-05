@@ -70,6 +70,28 @@ func (r *Repo) Find(ctx context.Context, id eh.UUID) (ret eh.Entity, err error) 
 }
 
 // FindAll implements the FindAll method of the eventhorizon.ReadRepo interface.
+func (r *Repo) IterateCB(ctx context.Context, cb func(context.Context, eh.Entity) error) (err error) {
+	var entity eh.Entity
+	r.db.View(func(tx *bbolt.Tx) error {
+		b := tx.Bucket([]byte(eh.NamespaceFromContext(ctx)))
+		if b == nil {
+			return nil
+		}
+		b.ForEach(func(k, v []byte) error {
+			decoder := gob.NewDecoder(bytes.NewReader(v))
+			err := decoder.Decode(&entity)
+			if err != nil {
+				fmt.Println("decode fail: ", err)
+				return nil
+			}
+			return cb(ctx, entity)
+		})
+		return nil
+	})
+	return nil
+}
+
+// FindAll implements the FindAll method of the eventhorizon.ReadRepo interface.
 func (r *Repo) FindAll(ctx context.Context) (ret []eh.Entity, err error) {
 	var model eh.Entity
 	r.db.View(func(tx *bbolt.Tx) error {

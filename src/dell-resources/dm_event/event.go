@@ -59,11 +59,11 @@ type InstPowerEventData struct {
 }
 
 type DataObjectHeader struct {
-	ObjStatus       int `mapstructure:"objStatus"`
-	ObjSize         int `mapstructure:"objSize"`
-	ObjType         int `mapstructure:"objType"`
-	RefreshInterval int `mapstructure:"refreshInterval"`
-	ObjFlags        int `mapstructure:"objFlags"`
+	ObjStatus       int `mapstructure:"objStatus",json:"objStatus"`
+	ObjSize         int `mapstructure:"objSize",json:"objSize"`
+	ObjType         int `mapstructure:"objType",json:"objType"`
+	RefreshInterval int `mapstructure:"refreshInterval",json:"refreshInterval"`
+	ObjFlags        int `mapstructure:"objFlags",json:"objFlags"`
 	FQDD            string
 	Struct          string
 }

@@ -17,7 +17,7 @@ package aggregatestore
 import (
 	"context"
 	"errors"
-	//"fmt"
+	"golang.org/x/xerrors"
 
 	eh "github.com/looplab/eventhorizon"
 )
@@ -32,7 +32,6 @@ var ErrInvalidAggregate = errors.New("invalid aggregate")
 // loading and saving aggregates.
 type AggregateStore struct {
 	repo eh.ReadWriteRepo
-	bus  eh.EventBus
 }
 
 // NewAggregateStore creates an aggregate store with a read write repo.
@@ -67,27 +66,13 @@ func (r *AggregateStore) Load(ctx context.Context, aggregateType eh.AggregateTyp
 	return aggregate, nil
 }
 
-type aLock interface {
-	Lock()
-	Unlock()
-}
-
 // Save implements the Save method of the eventhorizon.AggregateStore interface.
 func (r *AggregateStore) Save(ctx context.Context, aggregate eh.Aggregate) error {
-
-	al, alok := aggregate.(aLock)
-	if alok {
-		al.Lock()
-		al.Unlock()
-	}
-
-	//fmt.Printf("%+v\n", b.Stats())
 	err := r.repo.Save(ctx, aggregate)
 	if err != nil {
-		return err
+		err = xerrors.Errorf("Repo save failed: %w", err)
 	}
-
-	return nil
+	return err
 }
 
 // Save implements the Save method of the eventhorizon.AggregateStore interface.

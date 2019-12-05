@@ -42,6 +42,9 @@ func InitTask(logger log.Logger, instantiateSvc *testaggregate.Service) {
 	trigger := make(chan struct{})
 	taskViews := map[string]*view.View{}
 
+	// TODO: (from MEB, code review note):
+	// 			Not sure about the design here. need more comments. Looks like we are watching a single model at a time?
+
 	//add system.chassis.1/attributes
 	awesome_mapper2.AddFunction("add_attributes", func(args ...interface{}) (interface{}, error) {
 		resourceURI, ok := args[0].(string)
@@ -347,7 +350,7 @@ func RegisterAggregate(s *testaggregate.Service) {
 						"Name@meta":            vw.Meta(view.GETProperty("task_name")),
 						"Description":          "Tasks running on EC are listed here",
 						"Id@meta":              vw.Meta(view.GETProperty("task_id")),
-                        "TaskState": "",
+						"TaskState":            "",
 						"TaskStatus@meta":      vw.Meta(view.GETProperty("task_status")),
 						"StartTime@meta":       vw.Meta(view.GETProperty("task_start")),
 						"EndTime@meta":         vw.Meta(view.GETProperty("task_end")),

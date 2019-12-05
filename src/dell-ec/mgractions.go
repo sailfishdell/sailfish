@@ -226,22 +226,3 @@ func makePumpHandledUpload(name string, maxtimeout int, eb eh.EventBus) func(con
 		return nil
 	}
 }
-
-func exportSystemConfiguration(ctx context.Context, event eh.Event, retData *domain.HTTPCmdProcessedData) error {
-	fmt.Printf("\n\nBMC Export System Configuration\n\n")
-	retData.Results = map[string]interface{}{"msg": "BMC Export System Configuration!"}
-	retData.StatusCode = 200
-	return nil
-}
-func importSystemConfiguration(ctx context.Context, event eh.Event, retData *domain.HTTPCmdProcessedData) error {
-	fmt.Printf("\n\nBMC Import System Configuration\n\n")
-	retData.Results = map[string]interface{}{"msg": "BMC Import System Configuration!"}
-	retData.StatusCode = 200
-	return nil
-}
-func importSystemConfigurationPreview(ctx context.Context, event eh.Event, retData *domain.HTTPCmdProcessedData) error {
-	fmt.Printf("\n\nBMC Import System Configuration Preview\n\n")
-	retData.Results = map[string]interface{}{"msg": "BMC Import System Configuration Preview!"}
-	retData.StatusCode = 200
-	return nil
-}

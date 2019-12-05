@@ -1,0 +1,51 @@
+[
+  {
+    "cmd": "RedfishResource:Create",
+    "data": {
+      "ResourceURI": "/redfish/v1/AccountService",
+      "Type": "#AccountService.v1_0_2.AccountService",
+      "Context": "/redfish/v1/$metadata#AccountService.AccountService",
+      "Privileges": {
+        "GET": [
+          "Login"
+        ],
+        "POST": [
+          "ConfigureManager"
+        ],
+        "PUT": [
+          "ConfigureManager"
+        ],
+        "PATCH": [
+          "ConfigureManager"
+        ]
+      },
+      "Properties": {
+        "@odata.etag": "W/'ABC123'",
+        "Id": "AccountService",
+        "Name": "Account Service",
+        "Description": "Account Service",
+        "Status": {
+          "State": "Enabled",
+          "Health": "OK"
+        },
+        "ServiceEnabled": true,
+        "AuthFailureLoggingThreshold": 3,
+        "MinPasswordLength": 8,
+        "AccountLockoutThreshold": 5,
+        "AccountLockoutDuration": 30,
+        "AccountLockoutCounterResetAfter": 30
+      }
+    }
+  },
+  {
+    "cmd": "RedfishResourceProperties:Update",
+    "data": {
+      "URI": "/redfish/v1",
+      "Properties": {
+        "AccountService": {
+          "@odata.id": "/redfish/v1/AccountService"
+        }
+      }
+    }
+  }
+]

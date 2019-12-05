@@ -15,10 +15,15 @@ type DMObject struct {
 }
 
 func (mp *DMObject) Decode(eventData map[string]interface{}) error {
-
-
 	// TODO: assert string
-	structdata, err := base64.StdEncoding.DecodeString(eventData["data"].(string))
+	data, ok := eventData["data"].(string)
+	if !ok {
+		fmt.Printf("ERROR getting binary data!")
+		fmt.Printf("DATA: %s\n", eventData)
+		return errors.New("data error")
+	}
+
+	structdata, err := base64.StdEncoding.DecodeString(data)
 	if err != nil {
 		fmt.Printf("ERROR decoding base64 event data: %s", err)
 		return errors.New("base64 decode fail")

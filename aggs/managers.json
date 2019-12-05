@@ -1,0 +1,45 @@
+[
+  {
+    "cmd": "RedfishResource:Create",
+    "data": {
+      "ResourceURI": "##GETURI##",
+      "Type": "#ManagerCollection.ManagerCollection",
+      "Context": "/redfish/v1/$metadata#ManagerCollection.ManagerCollection",
+      "Privileges": {
+        "GET": [
+          "Login"
+        ]
+      },
+      "Properties": {
+        "Name": "ManagerInstancesCollection",
+        "Description": "Collection of BMCs",
+        "Members@meta": {
+          "GET": {
+            "model": "default",
+            "property": "members",
+            "formatter": "formatOdataList"
+          }
+        },
+        "Members@odata.count@meta": {
+          "GET": {
+            "model": "default",
+            "property": "members",
+            "formatter": "count"
+          }
+        },
+        "@odata.etag": "W/'ABC123'"
+      }
+    }
+  },
+  {
+    "cmd": "RedfishResourceProperties:Update",
+    "data": {
+      "URI": "/redfish/v1",
+      "Properties": {
+        "Managers": {
+          "@odata.id": "##GETURI##"
+        }
+      }
+    }
+  }
+]

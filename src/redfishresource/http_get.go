@@ -18,11 +18,6 @@ const (
 // Static type checking for commands to prevent runtime errors due to typos
 var _ = eh.Command(&GET{})
 
-type CompletionEvent struct {
-	event    eh.Event
-	complete func()
-}
-
 // HTTP GET Command
 type GET struct {
 	ID           eh.UUID `json:"id"`
@@ -31,6 +26,7 @@ type GET struct {
 	auth         *RedfishAuthorizationProperty
 }
 
+func (c *GET) ShouldSave() bool                { return false }
 func (c *GET) AggregateType() eh.AggregateType { return AggregateType }
 func (c *GET) AggregateID() eh.UUID            { return c.ID }
 func (c *GET) CommandType() eh.CommandType     { return GETCommand }
@@ -53,10 +49,6 @@ func (c *GET) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 	for k, v := range a.Headers {
 		data.Headers[k] = v
 	}
-
-	// fill in data for cache miss, and then go to the top of the loop
-	a.Lock()
-	defer a.Unlock()
 
 	NewGet(ctx, a, &a.Properties, c.auth)
 	data.Results = Flatten(&a.Properties, false)

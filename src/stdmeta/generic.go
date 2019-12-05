@@ -61,6 +61,7 @@ func (s *GenericBool) PropertyPatch(
 	pathMapStr := map[string]interface{}{}
 	domain.Map2Path(encopts.Request, pathMapStr, "")
 
+	//TODO: ILLEGAL_RECURSIVE_COMMAND
 	s.ch.HandleCommand(ctx,
 		&domain.UpdateRedfishResourceProperties2{
 			ID:         agg.ID,

@@ -1,0 +1,5 @@
+{ "name": "MetricValueEvent", "data": { "Timestamp": "2019-11-22T12:45:07.806547128-06:00", "Name": "M1", "Value": "12", "Property": "/redfish/v1/M1#M1", "Context": "M1"} }
+{ "name": "MetricValueEvent", "data": { "Timestamp": "2019-11-22T12:45:07.806547128-06:00", "Name": "M1", "Value": "21", "Property": "/redfish/v1/M1#M1", "Context": "M1" } }
+{ "name": "thp_fan_data_object", "event_array": [ { "data": "igAAAAINAwgCDQIIAAAAAAEAAABEAAAAYAAAAIgAAABsAAAAiQAAAAICAiouZytCTR8AAI8cAAC4EwAAwhQAAAEAAABTeXN0ZW0uQ2hhc3Npcy4xI0Zhbi5TbG90LjMARnJvbnQgRmFuIDMAU3lzdGVtLkNoYXNzaXMuMSNGYW4uU2xvdC4zAAAA", "FQDD": "System.Chassis.1#Fan.Slot.3" } ] }
+{ "name": "MetricValueEvent", "data": { "Timestamp": "2019-11-22T12:45:07.806547128-06:00", "Name": "M1", "Value": "15", "Property": "/redfish/v1/M1#M1", "Context": "M1" } }
+{ "name": "thp_fan_data_object", "event_array": [ { "data": "igAAAAINAwgCDQIIAAAAAAEAAABEAAAAYAAAAIgAAABsAAAAiQAAAAICAiouZytCTR8AAI8cAAC4EwAAwhQAAAEAAABTeXN0ZW0uQ2hhc3Npcy4xI0Zhbi5TbG90LjMARnJvbnQgRmFuIDMAU3lzdGVtLkNoYXNzaXMuMSNGYW4uU2xvdC4zAAAA", "FQDD": "System.Chassis.1#Fan.Slot.3" } ] }

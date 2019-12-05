@@ -7,11 +7,17 @@ import (
 
 	eh "github.com/looplab/eventhorizon"
 	log "github.com/superchalupa/sailfish/src/log"
-	domain "github.com/superchalupa/sailfish/src/redfishresource"
+	"github.com/superchalupa/sailfish/src/looplab/eventwaiter"
 )
 
+type busObjs interface {
+	GetBus() eh.EventBus
+	GetWaiter() *eventwaiter.EventWaiter
+	GetPublisher() eh.EventPublisher
+}
+
 // NewSSEHandler constructs a new SSEHandler with the given username and privileges.
-func NewSSEHandler(dobjs *domain.DomainObjects, logger log.Logger, u string, p []string) *SSEHandler {
+func NewSSEHandler(dobjs busObjs, logger log.Logger, u string, p []string) *SSEHandler {
 	return &SSEHandler{UserName: u, Privileges: p, d: dobjs, logger: logger}
 }
 
@@ -19,14 +25,14 @@ func NewSSEHandler(dobjs *domain.DomainObjects, logger log.Logger, u string, p [
 type SSEHandler struct {
 	UserName   string
 	Privileges []string
-	d          *domain.DomainObjects
+	d          busObjs
 	logger     log.Logger
 }
 
 func (rh *SSEHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	requestID := eh.NewUUID()
-	ctx := domain.WithRequestID(r.Context(), requestID)
-	requestLogger := domain.ContextLogger(ctx, "sse_handler")
+	ctx := WithRequestID(r.Context(), requestID)
+	requestLogger := ContextLogger(ctx, "sse_handler")
 	requestLogger.Info("Trying to start SSE Stream for request.")
 
 	defer r.Body.Close()
@@ -40,7 +46,7 @@ func (rh *SSEHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// TODO: need to worry about privileges: probably should do the privilege checks in the Listener
 	// to avoid races, set up our listener first
-	l, err := rh.d.EventWaiter.Listen(ctx, func(event eh.Event) bool {
+	l, err := rh.d.GetWaiter().Listen(ctx, func(event eh.Event) bool {
 		return true
 	})
 	if err != nil {

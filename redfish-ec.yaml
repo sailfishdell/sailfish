@@ -1,13 +1,14 @@
 main:
     server_name: "dell_ec"
     #options: "openbmc" | "dell_ec" | "mockup"
+    aggregatesearchpath: [ "/usr/share/sailfish/aggs/", "aggs/" ]
 
 listen:
    - unix:sailfish.socket
   # enable 8080 port only for testing, as per NCC audit it needs to be disabled on the build
-  # - http::8080
-  #  enable pprof only for debuging, it creates a memory leak if used
-  # - pprof::8443
+  #- http::8080
+  #  enable pprof only for debuging, it causes increased memory consumption. If memprofilerate>0, it will use way more. It's set to 0 in the service file.
+  #- pprof:localhost:9080
   # disable direct https listener, uncomment if needed for testing:
   # - https::8443
 
@@ -24,7 +25,6 @@ listen:
 
 views:
   "rootview":
-      "Logger": ["module", "root"]
       "Controllers":
         # This is for dynamic runtime instantiation of new chassis as they appear
         - "fn": "AM2"
@@ -52,7 +52,6 @@ views:
       ]
 
   "chassis":
-      "Logger": ["module", "Chassis"]
       "Models":
         "default":  {"members": "array()"}
       "Controllers":
@@ -68,7 +67,6 @@ views:
       "Aggregate": "chassis"
 
   "systems":
-      "Logger": ["module", "Systems"]
       "Models":
         "default":  {"members": "array()"}
       "Controllers":
@@ -84,7 +82,6 @@ views:
       "Aggregate": "systems"
 
   "managers":
-      "Logger": ["module", "Managers"]
       "Models":
         "default":  {"members": "array()"}
       "Controllers":
@@ -100,24 +97,11 @@ views:
       "Aggregate": "managers"
 
   "accountservice":
-      "Logger": ["module", "AccountService"]
-      "Models":
-        "default":  {}
       "Controllers":
       "View":
-        - "fn": "with_URI"
-          "params": "rooturi + '/AccountService' "
-        - "fn": "PublishResourceUpdatedEventsForModel"
-          "params": "default"
-        - "fn": "stdFormatters"
-          "params":
       "Aggregate": "accountservice"
-      "ExecPost": [
-        "set_hash_value(serviceglobals, serviceglobalsmu, 'actsvc_id', uuid)",
-        "set_hash_value(serviceglobals, serviceglobalsmu, 'actsvc_uri', view.GetURI())"]
 
   "roles":
-      "Logger": ["module", "Roles"]
       "Models":
         "default":  {"members": "array()"}
       "Controllers":
@@ -133,7 +117,6 @@ views:
       "Aggregate": "roles"
 
   "accounts":
-      "Logger": ["module", "Accounts"]
       "Models":
         "default":  {"members": "array()"}
       "Controllers":
@@ -274,7 +257,7 @@ views:
   "sessionservice":
       "Logger": ["module", "session"]
       "Models":
-        "default":  {"session_timeout": "30"}
+        "default":  {"session_timeout": "120"}
       "Controllers":
         - "fn": "ARMapper"
           "params": {"modelname": "default", "cfgsection": "SessionService", "mappinguniquename": "rooturi + '/SessionService'", "AddToView": "ar_mapper"}
@@ -442,12 +425,12 @@ views:
           "params": {"name": "manager.resettodefaults", "uri": "/Actions/Oem/DellManager.ResetToDefaults", "timeout": 60}
         - "fn": "with_PumpHandledAction"
           "params": {"name": "manager.forcefailover", "uri": "/Actions/Manager.ForceFailover", "timeout": 30}
-        - "fn": "WithAction"
-          "params": {"name": "manager.exportsystemconfig", "uri": "/Actions/Oem/EID_674_Manager.ExportSystemConfiguration", "actionFunction": "exportSystemConfiguration"}
-        - "fn": "WithAction"
-          "params": {"name": "manager.importsystemconfig", "uri": "/Actions/Oem/EID_674_Manager.ImportSystemConfiguration", "actionFunction": "importSystemConfiguration"}
-        - "fn": "WithAction"
-          "params": {"name": "manager.importsystemconfigpreview", "uri": "/Actions/Oem/EID_674_Manager.ImportSystemConfigurationPreview", "actionFunction": "importSystemConfigurationPreview"}
+#        - "fn": "WithAction"
+#          "params": {"name": "manager.exportsystemconfig", "uri": "/Actions/Oem/EID_674_Manager.ExportSystemConfiguration", "actionFunction": "exportSystemConfiguration"}
+#        - "fn": "WithAction"
+#          "params": {"name": "manager.importsystemconfig", "uri": "/Actions/Oem/EID_674_Manager.ImportSystemConfiguration", "actionFunction": "importSystemConfiguration"}
+#        - "fn": "WithAction"
+#          "params": {"name": "manager.importsystemconfigpreview", "uri": "/Actions/Oem/EID_674_Manager.ImportSystemConfigurationPreview", "actionFunction": "importSystemConfigurationPreview"}
         - "fn": "etag"
           "params": []
       "Aggregate": "manager_cmc_integrated"
@@ -880,8 +863,6 @@ views:
       "Models":
         "default":  {"unique_name": "FQDD" }
       "Controllers":
-        - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "fan", "uniquename": "'am2_fan_' + FQDD + '/' + ChassisFQDD", "passthru": {"DM_FQDD": "ChassisFQDD + '#' + FQDD"}}
         - "fn": "ARMapper"
           "params": {"modelname": "default", "cfgsection": "firmware/inventory", "mappinguniquename": "'firmware_fan_mapper:' + ChassisFQDD + '/' + FQDD", "AddToView": "ar_mapper_inv"}
         - "fn": "ARMapper"
@@ -1179,7 +1160,7 @@ views:
           "params":  " '/redfish/' + FQDD"
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
-      "Aggregate": "root"
+      "Aggregate": "non-compliant"
 
 awesome_mapper:
     ec_component_events:
@@ -1358,11 +1339,6 @@ awesome_mapper:
       - { SelectEventType: "AttributeUpdated",
           Select: "data.FQDD == FQDD && data.Name == 'ChassisPowerStatus'",
           Process: { "name": "am3AttributeUpdated", "params":{"Conv":"map_power_state", "Field":"PowerState"}}}
-
-    fan:
-      - { SelectEventType: "thp_fan_data_object",
-          Select: "DM_FQDD == data.GetStringFromOffset(data.Data.OffsetKey)",
-          Process: { "name": "updateFanData", "params":[]}}
 
 
     inst_power:
