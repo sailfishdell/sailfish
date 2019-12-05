@@ -49,7 +49,7 @@ func StartService(ctx context.Context, logger log.Logger, d BusObjs) (*Service, 
 	eh.RegisterEventData(ConfigureAM3Event, func() eh.EventData { return &ConfigureAM3EventData{} })
 	var ret *Service
 	ret = &Service{
-		logger:        logger.New("module", "am2"),
+		logger:        logger.New("module", "am3"),
 		eb:            d.GetBus(),
 		handledEvents: map[eh.EventType]struct{}{ConfigureAM3Event: struct{}{}},
 		eventhandlers: map[eh.EventType]map[string]func(eh.Event){

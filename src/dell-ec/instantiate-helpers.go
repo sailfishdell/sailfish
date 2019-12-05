@@ -56,6 +56,9 @@ func AddECInstantiate(l log.Logger, instantiateSvc *testaggregate.Service) {
 		}
 		instantiateSvc.Instantiate("manager_cmc_integrated", map[string]interface{}{
 			"FQDD": FQDD,
+			"exportSystemConfiguration":        view.Action(exportSystemConfiguration),
+                        "importSystemConfiguration":        view.Action(importSystemConfiguration),
+                        "importSystemConfigurationPreview": view.Action(importSystemConfigurationPreview),
 		})
 
 		return true, nil

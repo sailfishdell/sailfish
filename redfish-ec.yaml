@@ -425,12 +425,12 @@ views:
           "params": {"name": "manager.resettodefaults", "uri": "/Actions/Oem/DellManager.ResetToDefaults", "timeout": 60}
         - "fn": "with_PumpHandledAction"
           "params": {"name": "manager.forcefailover", "uri": "/Actions/Manager.ForceFailover", "timeout": 30}
-#        - "fn": "WithAction"
-#          "params": {"name": "manager.exportsystemconfig", "uri": "/Actions/Oem/EID_674_Manager.ExportSystemConfiguration", "actionFunction": "exportSystemConfiguration"}
-#        - "fn": "WithAction"
-#          "params": {"name": "manager.importsystemconfig", "uri": "/Actions/Oem/EID_674_Manager.ImportSystemConfiguration", "actionFunction": "importSystemConfiguration"}
-#        - "fn": "WithAction"
-#          "params": {"name": "manager.importsystemconfigpreview", "uri": "/Actions/Oem/EID_674_Manager.ImportSystemConfigurationPreview", "actionFunction": "importSystemConfigurationPreview"}
+        - "fn": "WithAction"
+          "params": {"name": "manager.exportsystemconfig", "uri": "/Actions/Oem/EID_674_Manager.ExportSystemConfiguration", "actionFunction": "exportSystemConfiguration"}
+        - "fn": "WithAction"
+          "params": {"name": "manager.importsystemconfig", "uri": "/Actions/Oem/EID_674_Manager.ImportSystemConfiguration", "actionFunction": "importSystemConfiguration"}
+        - "fn": "WithAction"
+          "params": {"name": "manager.importsystemconfigpreview", "uri": "/Actions/Oem/EID_674_Manager.ImportSystemConfigurationPreview", "actionFunction": "importSystemConfigurationPreview"}
         - "fn": "etag"
           "params": []
       "Aggregate": "manager_cmc_integrated"
