@@ -54,8 +54,8 @@ func createDatabase(logger log.Logger, dbpath string) (database *sqlx.DB, err er
 			CREATE TABLE IF NOT EXISTS MetricMeta
 			(
 				ID          				INTEGER UNIQUE PRIMARY KEY NOT NULL,
-				Name        				TEXT NOT NULL,
-				SuppressDups 				BOOLEAN NOT NULL,
+				Name        				TEXT,
+				SuppressDups 				BOOLEAN NOT NULL DEFAULT true,
 				PropertyPattern   	TEXT,   -- /redfish/v1/some/uri/{with}/{wildcards}#Property
 				Wildcards        		TEXT,   --{"wildcard": ["array","of", "possible", "replacements"], "with": ["another", "list", "of", "replacements"]}
 				CollectionFunction 	TEXT not null,   -- "sum", "avg", "min", "max"

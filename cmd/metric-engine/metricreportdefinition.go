@@ -32,7 +32,8 @@ type MRDMetric struct {
 	Name               string        `db:"Name" json:"MetricID"`
 	CollectionDuration time.Duration `db:"CollectionDuration"`
 	CollectionFunction string        `db:"CollectionFunction"`
-	// TODO: properties and wildcards
+	PropertyPattern    string        `db:"PropertyPattern"`
+	Wildcards          StringArray   `db:"Wildcards"`
 }
 
 type MetricReportDefinitionData struct {
@@ -180,8 +181,8 @@ func (factory *MRDFactory) Update(mrdEvData *MetricReportDefinitionData) (err er
 			select ID from MetricMeta where
 				Name=:Name and
 				SuppressDups=:SuppressDups and
-				PropertyPattern='' and
-				Wildcards='' and
+				PropertyPattern=:PropertyPattern and
+				Wildcards=:Wildcards and
 				CollectionFunction=:CollectionFunction and
 				CollectionDuration=:CollectionDuration
 		`)
@@ -200,7 +201,7 @@ func (factory *MRDFactory) Update(mrdEvData *MetricReportDefinitionData) (err er
 			res, err = tx.NamedExec(
 				`INSERT INTO MetricMeta
 			( Name, SuppressDups, PropertyPattern, Wildcards, CollectionFunction, CollectionDuration)
-			VALUES (:Name, :SuppressDups, '',  '', :CollectionFunction, :CollectionDuration)
+			VALUES (:Name, :SuppressDups, :PropertyPattern,  :Wildcards, :CollectionFunction, :CollectionDuration)
 			`, tempMetric)
 			if err != nil {
 				//factory.logger.Crit("ERROR inserting MetricMeta", "MetricReportDefinition", MRD, "metric", tempMetric, "err", err)
@@ -458,7 +459,7 @@ func (factory *MRDFactory) InsertMetricValue(ev *MetricValueEventData) (err erro
 	// This should be straightforward because we do all updates in one goroutine, so could add the cache as a factory member
 
 	// First, Find the MetricMeta
-	rows, err := tx.Queryx(`select ID as MetaID, PropertyPattern, Wildcards, CollectionFunction, CollectionDuration from MetricMeta where Name=?`, ev.Name)
+	rows, err := tx.Queryx(`select ID as MetaID, PropertyPattern, Wildcards, CollectionFunction, CollectionDuration from MetricMeta where ? Like Name`, ev.Name)
 	if err != nil {
 		factory.logger.Crit("Error querying for MetricMeta", "err", err)
 		return
@@ -472,7 +473,10 @@ func (factory *MRDFactory) InsertMetricValue(ev *MetricValueEventData) (err erro
 			continue
 		}
 
-		// TODO: check PropertyPattern/Wildcards
+		if len(mm.PropertyPattern) > 0 && mm.PropertyPattern != ev.Property {
+			// TODO: IMPLEMENT WILDCARD CHECKS
+			continue
+		}
 
 		// Construct label and Scratch space
 		if mm.CollectionFunction != "" {
@@ -514,7 +518,7 @@ func (factory *MRDFactory) InsertMetricValue(ev *MetricValueEventData) (err erro
 		from MetricInstance as MI
 			inner join MetricMeta as MM on MI.MetaID = MM.ID
 		where
-			MM.Name=:Name and
+		  :Name like MM.Name and
 			MI.Property=:Property and
 			MI.Context=:Context
 		`, mm)
