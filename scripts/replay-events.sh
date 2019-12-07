@@ -32,7 +32,7 @@ send_file() {
   while read -u 5 line ; do
 
       # skip comments
-      if [[ $line == //* ]]; then
+      if [[ $line == //* || $line == '' ]]; then
           echo COMMENT, SKIPPING: $line
           continue
       fi
@@ -79,7 +79,7 @@ send_file() {
       fi
 
       if [[ "$update_timestamps" -eq 1 ]]; then
-        JQCMD+='| if .data.Timestamp then .data.Timestamp=$WWW else . end '
+        JQCMD+='|  if .name == "MetricValueEvent" then if .data.Timestamp then .data.Timestamp=$WWW else . end else . end'
         JQARGS+=" --argjson WWW "\"$(date -u +%Y-%m-%dT%H:%M:%S.%NZ)\"""
       fi
 

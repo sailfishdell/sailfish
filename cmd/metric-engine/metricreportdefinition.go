@@ -26,7 +26,8 @@ func (m *StringArray) Scan(src interface{}) error {
 	return json.Unmarshal(src.([]byte), m)
 }
 
-// Validation: It's assumed that Duration is parsed on ingress. The ingress format is (Redfish Duration): -?P(\d+D)?(T(\d+H)?(\d+M)?(\d+(.\d+)?S)?)?
+// Validation: It's assumed that Duration is parsed on ingress. The ingress
+// format is (Redfish Duration): -?P(\d+D)?(T(\d+H)?(\d+M)?(\d+(.\d+)?S)?)?
 // When it gets to this struct, it needs to be expressed in Seconds.
 type MRDMetric struct {
 	Name               string        `db:"Name" json:"MetricID"`
@@ -41,10 +42,14 @@ type MetricReportDefinitionData struct {
 	Enabled      bool        `db:"Enabled"`
 	Type         string      `db:"Type"` // 'Periodic', 'OnChange', 'OnRequest'
 	SuppressDups bool        `db:"SuppressDups"`
-	Actions      StringArray `db:"Actions"`  // 	'LogToMetricReportsCollection', 'RedfishEvent'
-	Updates      string      `db:"Updates"`  // 'AppendStopsWhenFull', 'AppendWrapsWhenFull', 'NewReport', 'Overwrite'
-	Schedule     string      `db:"Schedule"` // period in seconds when type=periodic  TODO: update this to a full schedule object
-	Metrics      []MRDMetric `db:"Metrics" json:"Metrics"`
+	Actions      StringArray `db:"Actions"` // 	'LogToMetricReportsCollection', 'RedfishEvent'
+	Updates      string      `db:"Updates"` // 'AppendStopsWhenFull', 'AppendWrapsWhenFull', 'NewReport', 'Overwrite'
+
+	// Validation: It's assumed that Period is parsed on ingress. Redfish
+	// "Schedule" object is flexible, but we'll allow only period in seconds for
+	// now When it gets to this struct, it needs to be expressed in Seconds.
+	Period  int64       `db:"Period"` // period in seconds when type=periodic
+	Metrics []MRDMetric `db:"Metrics" json:"Metrics"`
 }
 
 type MetricReportDefinition struct {
@@ -60,6 +65,8 @@ type MetricReportDefinition struct {
 type MRDFactory struct {
 	logger   log.Logger
 	database *sqlx.DB
+
+	MetricTSHWM SqlTimeInt
 }
 
 func NewMRDFactory(logger log.Logger, database *sqlx.DB) (ret *MRDFactory, err error) {
@@ -74,25 +81,20 @@ func (factory *MRDFactory) Delete(mrdEvData *MetricReportDefinitionData) (err er
 		factory.logger.Crit("ERROR deleting MetricReportDefinition", "err", err, "Name", mrdEvData.Name)
 		return
 	}
-	// Debugging commented out to fixup heap usage
-	// change "_" to "res" above, add := if uncommenting this
-	//numrows, err := res.RowsAffected()
-	//factory.logger.Debug("DELETED rows from MetricReportDefinition", "numrows", numrows, "err", err)
 	return
 }
 
 func ValidateMRD(MRD *MetricReportDefinition) {
 	switch MRD.Type {
 	case "Periodic":
-		i, _ := strconv.Atoi(MRD.Schedule)
-		if i < 60 || i > (60*60*24) {
-			MRD.Schedule = "180"
+		if MRD.Period < 60 || MRD.Period > (60*60*24) {
+			MRD.Period = 180 // period can be 60s to 24hrs. if outside that range, make it 3 minutes.
 		}
 	case "OnChange", "OnRequest":
-		MRD.Schedule = "0"
+		MRD.Period = 0
 	default:
 		MRD.Type = "OnRequest"
-		MRD.Schedule = "0"
+		MRD.Period = 0
 	}
 
 }
@@ -124,15 +126,15 @@ func (factory *MRDFactory) Update(mrdEvData *MetricReportDefinitionData) (err er
 	// Insert or update existing record
 	_, err = tx.NamedExec(
 		`INSERT INTO MetricReportDefinition
-			( Name,  Enabled, AppendLimit, Type, SuppressDups, Actions, Updates, Schedule)
-			VALUES (:Name, :Enabled, :AppendLimit, :Type, :SuppressDups, :Actions, :Updates, :Schedule)
+			( Name,  Enabled, AppendLimit, Type, SuppressDups, Actions, Updates, Period)
+			VALUES (:Name, :Enabled, :AppendLimit, :Type, :SuppressDups, :Actions, :Updates, :Period)
 		 on conflict(Name) do update set
 		 	Enabled=:Enabled,
 			AppendLimit=:AppendLimit,
 			Type=:Type,
 			SuppressDups=:SuppressDups,
 			Actions=:Actions,
-			Schedule=:Schedule,
+			Period=:Period,
 			Updates=:Updates
 			`, MRD)
 	if err != nil {
@@ -268,8 +270,7 @@ func (factory *MRDFactory) GenerateMetricReport(mrdEvData *MetricReportDefinitio
 	// ===================================
 	tx, err := factory.database.Beginx()
 	if err != nil {
-		factory.logger.Crit("Error creating transaction to update MRD", "err", err)
-		return
+		return xerrors.Errorf("Error creating transaction to update MRD: %w", err)
 	}
 
 	// if we error out at all, roll back
@@ -282,34 +283,20 @@ func (factory *MRDFactory) GenerateMetricReport(mrdEvData *MetricReportDefinitio
 	}
 	err = loadReportDefinition(tx, MRD)
 	if err != nil {
-		//factory.logger.Crit("Error getting MetricReportDefinition", "err", err, "MRD", MRD)
-		return err
+		return xerrors.Errorf("Error getting MetricReportDefinition: ID(%s) NAME(%s) err: %w", MRD.ID, MRD.Name, err)
 	}
 
 	if MRD.ID == 0 {
-		//factory.logger.Crit("DIDNT PROPERLY LOAD MRD", "err", err, "MRD", MRD)
 		return xerrors.Errorf("Error loading Metric Report Definition %d:(%s) %w", MRD.ID, MRD.Name, err)
 	}
 	ID := MRD.ID
 
-	//var res sql.Result
-	//var numrows int64
 	if !MRD.Enabled {
 		// Delete metric reports if MRD is disabled
 		_, err = tx.Exec(`delete from MetricReport where ReportDefinitionID=?`, ID)
 		if err != nil {
-			//factory.logger.Crit("Error deleting metric reports for report definition", "err", err, "Report Definition ID", ID)
-			return
+			return xerrors.Errorf("Error deleting MetricReport for ReportDefinitionID(%d): %w", ID, err)
 		}
-		// Debugging commented out to fixup heap usage
-		// uncomment 'res' declaration above if uncommenting this
-		//numrows, err = res.RowsAffected()
-		//if numrows > 0 {
-		//	factory.logger.Debug("DELETED rows from MetricReport", "numrows", numrows, "err", err)
-		//} else {
-		//	factory.logger.Debug("no rows to delete from MetricReport", "numrows", numrows, "err", err)
-		//}
-		// done!
 		return nil
 	}
 
@@ -321,10 +308,63 @@ func (factory *MRDFactory) GenerateMetricReport(mrdEvData *MetricReportDefinitio
 
 	switch MRD.Type {
 	case "Periodic":
-		i, _ := strconv.Atoi(MRD.Schedule)
-		insertClause = fmt.Sprintf("(?, ?, 0, datetime('now', '-%d seconds'), datetime('now'))", i)
-		sqlParams = append(sqlParams, MRD.Name, ID)
-		updateClause = "update set Sequence=Sequence+1"
+
+		// ON initial insert:
+		// New:
+		//    NAME="MRD.Name + TS"
+		//    fallthrough
+		// Overwrite:
+		//     insert new report: END = HWM,  START=HWM-period
+		// AppendStopsWhenFull
+		//    select count(*), max(MV.TS) from MV ... join ... order by MV.TS limit APPENDLIMIT
+		//    END=max
+		//    if count<appendlimit: END=NULL
+		// 		insert new report: START=NULL
+		// AppendWrapsWhenFull
+		//    select count(*), min(MV.TS) from MV ... join ... order by MV.TS REVERSE limit APPENDLIMIT
+		// 		START=min
+		//    if count<appendlimit: START=NULL
+		//    Insert new report: END=NULL
+		//
+		// ON UPDATE:
+		// 1) last-end-ts := current EndTimestamp.
+		//
+		// New:
+		//    NAME="MRD.Name + TS"
+		//   	if EndTimestamp+Period < HWM: DONE
+		//  	insert new report: END=HWM, START=last-end-ts
+		// Overwrite:
+		//   	if EndTimestamp+Period < HWM: DONE
+		// 		update END=HWM, START=last-end-ts
+		// AppendStopsWhenFull
+		//   	select count(*), max(MV.TS) from MV ... join ... order by MV.TS limit APPENDLIMIT
+		//   	END=max
+		//   	if count<appendlimit: END=NULL
+		// 		UPDATE report: START=NULL END=$end
+		// AppendWrapsWhenFull
+		//    select count(*), min(MV.TS) from MV ... join ... order by MV.TS REVERSE limit APPENDLIMIT
+		// 		START=min
+		//    if count<appendlimit: START=NULL
+		//    UPDATE report: END=NULL  START=$start
+		//
+
+		_ = `select
+					count(*) as count,
+					min(mv.Timestamp) as min,
+					max(mv.Timestamp) as max,
+				from MetricValue as MV
+				inner join MetricInstance as MI on MV.InstanceID = MI.ID
+				inner join MetricMeta as MM on MI.MetaID = MM.ID
+				inner join ReportDefinitionToMetricMeta rd2mm on MM.ID = rd2mm.MetricMetaID
+				inner join MetricReportDefinition as MRD on rd2mm.ReportDefinitionID = MRD.ID
+				`
+
+		switch MRD.Updates {
+		case "AppendStopsWhenFull", "AppendWrapsWhenFull", "NewReport", "Overwrite":
+			insertClause = "(?, ?, 0, 0, NULL)"
+			updateClause = "update set Sequence=Sequence+1, StartTimestamp=EndTimestamp, EndTimestamp=?"
+			sqlParams = append(sqlParams, MRD.Name, ID, factory.MetricTSHWM)
+		}
 
 	case "OnChange":
 		insertClause = "(?, ?, 0, NULL, NULL)"
@@ -348,18 +388,10 @@ func (factory *MRDFactory) GenerateMetricReport(mrdEvData *MetricReportDefinitio
 					(Name, ReportDefinitionID, Sequence, StartTimestamp, EndTimestamp) values ` + insertClause + `
 				on conflict(Name) do ` + updateClause
 
-	if MRD.Enabled {
-		_, err = tx.Exec(sqlText, sqlParams...)
-		if err != nil {
-			//factory.logger.Crit("ERROR inserting MetricReport", "MetricReportDefinition", MRD, "err", err, "sqlText", sqlText, "insertClause", insertClause, "sqlParams", sqlParams, "updateClause", updateClause)
-			return
-		}
-		//numrows, err = res.RowsAffected()
-		//if numrows > 0 {
-		//	factory.logger.Debug("Inserted MetricReport rows", "numrows", numrows, "err", err, "Name", MRD.Name, "ID", ID)
-		//} else {
-		//	factory.logger.Debug("no rows to delete from MetricReport", "numrows", numrows, "err", err, "Name", MRD.Name, "ID", ID)
-		//}
+	_, err = tx.Exec(sqlText, sqlParams...)
+	if err != nil {
+		factory.logger.Crit("ERROR inserting MetricReport", "MetricReportDefinition", MRD, "err", err, "sqlText", sqlText, "insertClause", insertClause, "sqlParams", sqlParams, "updateClause", updateClause)
+		return
 	}
 
 	err = tx.Commit()
@@ -624,6 +656,8 @@ func (factory *MRDFactory) InsertMetricValue(ev *MetricValueEventData) (err erro
 			}
 		}
 	}
+
+	factory.MetricTSHWM = mm.Timestamp
 
 	err = tx.Commit()
 	if err != nil {

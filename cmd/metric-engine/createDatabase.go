@@ -44,7 +44,7 @@ func createDatabase(logger log.Logger, dbpath string) (database *sqlx.DB, err er
 				SuppressDups	BOOLEAN,
 				Actions     	TEXT,                 -- json array of options: 'LogToMetricReportsCollection', 'RedfishEvent'
 				Updates     	TEXT,                 -- 'AppendStopsWhenFull', 'AppendWrapsWhenFull', 'NewReport', 'Overwrite'
-				Schedule      TEXT
+				Period        INTEGER
 			)`},
 
 		{"Create MetricMeta table", `
