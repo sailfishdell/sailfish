@@ -7,176 +7,220 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	eh "github.com/looplab/eventhorizon"
+	"golang.org/x/xerrors"
 
 	log "github.com/superchalupa/sailfish/src/log"
 )
 
-type HWM struct {
-	query  *sqlx.Stmt
-	lastTS int64
+type LegacyMeta struct {
+	query    *sqlx.Stmt
+	lastTS   int64
+	importFn func(string) error
 }
 
 type LegacyFactory struct {
-	logger    log.Logger
-	database  *sqlx.DB
-	legacyHWM map[string]HWM
-	bus       eh.EventBus
+	logger   log.Logger
+	database *sqlx.DB
+	legacy   map[string]LegacyMeta
+	bus      eh.EventBus
 }
 
-func NewLegacyFactory(logger log.Logger, database *sqlx.DB, d *BusComponents) (ret *LegacyFactory, err error) {
+func NewLegacyFactory(logger log.Logger, database *sqlx.DB, d *BusComponents) (*LegacyFactory, error) {
+	ret := &LegacyFactory{}
+	ret.logger = logger
+	ret.database = database
+	ret.bus = d.GetBus()
+	ret.legacy = map[string]LegacyMeta{
+		"AggregationMetrics":   LegacyMeta{importFn: func(n string) error { return ret.ImportByColumn(n) }},
+		"CPUMemMetrics":        LegacyMeta{importFn: func(n string) error { return ret.ImportByColumn(n) }},
+		"CPURegisters":         LegacyMeta{importFn: func(n string) error { return ret.ImportByColumn(n) }},
+		"CUPS":                 LegacyMeta{importFn: func(n string) error { return ret.ImportByColumn(n) }},
+		"FCSensor":             LegacyMeta{importFn: func(n string) error { return ret.ImportByColumn(n) }},
+		"FPGASensor":           LegacyMeta{importFn: func(n string) error { return ret.ImportByColumn(n) }},
+		"FanSensor":            LegacyMeta{importFn: func(n string) error { return ret.ImportByColumn(n) }},
+		"GPUMetrics":           LegacyMeta{importFn: func(n string) error { return ret.ImportByColumn(n) }},
+		"GPUStatistics":        LegacyMeta{importFn: func(n string) error { return ret.ImportByColumn(n) }},
+		"MemorySensor":         LegacyMeta{importFn: func(n string) error { return ret.ImportByColumn(n) }},
+		"NICSensor":            LegacyMeta{importFn: func(n string) error { return ret.ImportByColumn(n) }},
+		"NICStatistics":        LegacyMeta{importFn: func(n string) error { return ret.ImportByColumn(n) }},
+		"NVMeSMARTData":        LegacyMeta{importFn: func(n string) error { return ret.ImportByColumn(n) }},
+		"PSUMetrics":           LegacyMeta{importFn: func(n string) error { return ret.ImportByColumn(n) }},
+		"PowerMetrics":         LegacyMeta{importFn: func(n string) error { return ret.ImportByColumn(n) }},
+		"PowerStatistics":      LegacyMeta{importFn: func(n string) error { return ret.ImportByColumn(n) }},
+		"StorageDiskSMARTData": LegacyMeta{importFn: func(n string) error { return ret.ImportByColumn(n) }},
+		"StorageSensor":        LegacyMeta{importFn: func(n string) error { return ret.ImportByColumn(n) }},
+		"ThermalMetrics":       LegacyMeta{importFn: func(n string) error { return ret.ImportByColumn(n) }},
 
-	ret = &LegacyFactory{
-		logger: logger, database: database,
-		bus: d.GetBus(),
-		legacyHWM: map[string]HWM{
-			"AggregationMetrics":   HWM{lastTS: 0},
-			"CPUMemMetrics":        HWM{lastTS: 0},
-			"CPURegisters":         HWM{lastTS: 0},
-			"CUPS":                 HWM{lastTS: 0},
-			"FCSensor":             HWM{lastTS: 0},
-			"FPGASensor":           HWM{lastTS: 0},
-			"FanSensor":            HWM{lastTS: 0},
-			"GPUMetrics":           HWM{lastTS: 0},
-			"GPUStatistics":        HWM{lastTS: 0},
-			"MemorySensor":         HWM{lastTS: 0},
-			"NICSensor":            HWM{lastTS: 0},
-			"NICStatistics":        HWM{lastTS: 0},
-			"NVMeSMARTData":        HWM{lastTS: 0},
-			"PSUMetrics":           HWM{lastTS: 0},
-			"PowerMetrics":         HWM{lastTS: 0},
-			"PowerStatistics":      HWM{lastTS: 0},
-			"StorageDiskSMARTData": HWM{lastTS: 0},
-			"StorageSensor":        HWM{lastTS: 0},
-			"ThermalMetrics":       HWM{lastTS: 0},
-		},
-
-		// These tables require special handling because they formatted differently. :(
-		//		legacyHWM: map[string]HWM{
-		//  		"CPUSensor":            HWM{lastTS: 0},
-		//			"Sensor":               HWM{lastTS: 0},
-		// 			"ThermalSensor":        HWM{lastTS: 0},
-		//		}
+		// dont' have an importer here yet. Please write one
+		"CPUSensor":     LegacyMeta{importFn: func(n string) error { return ret.ImportERROR(n) }},
+		"Sensor":        LegacyMeta{importFn: func(n string) error { return ret.ImportERROR(n) }},
+		"ThermalSensor": LegacyMeta{importFn: func(n string) error { return ret.ImportERROR(n) }},
 	}
-	err = nil
-	return
+
+	// These tables require special handling because they formatted differently. :(
+	//		legacy: map[string]HWM{
+	//		}
+	return ret, nil
 }
 
-func (l *LegacyFactory) Import() error {
-	for legacyTableName, hwm := range l.legacyHWM {
-		fmt.Printf("IMPORTING... %s\n", legacyTableName)
+func (l *LegacyFactory) Import(legacyTableName string) error {
+	meta, ok := l.legacy[legacyTableName]
+	if !ok {
+		return xerrors.Errorf("Legacy table %s not set up in meta struct", legacyTableName)
+	}
 
-		if hwm.query == nil {
-			querytext := `select * from ` + legacyTableName + ` where __Last_Update_TS > ?;`
-			q, err := l.database.Preparex(querytext)
-			if err != nil {
-				l.logger.Crit("Prepare failed", "err", err, "legacyTableName", legacyTableName)
-				continue
-			}
-			hwm.query = q
+	if meta.importFn == nil {
+		return xerrors.Errorf("Legacy table %s present in meta, but has no import function specified.", legacyTableName)
+	}
+
+	return l.legacy[legacyTableName].importFn(legacyTableName)
+}
+
+func (l *LegacyFactory) ImportERROR(legacyTableName string) error {
+	fmt.Printf("DONT YET KNOW HOW TO IMPORT: %s\n", legacyTableName)
+	return xerrors.New("UNKNOWN IMPORT")
+}
+
+func (l *LegacyFactory) IterLegacyTables(fn func(string) error) error {
+	for legacyTableName, _ := range l.legacy {
+		err := fn(legacyTableName)
+		if err != nil {
+			return xerrors.Errorf("Stopped iteration due to iteration function returning error: %w", err)
+		}
+	}
+	return nil
+}
+
+func (l *LegacyFactory) PrepareAll() error {
+	return l.IterLegacyTables(func(legacyTableName string) error {
+		var err error
+		legacyMeta := l.legacy[legacyTableName]
+
+		querytext := `select * from ` + legacyTableName + ` where __Last_Update_TS > ?;`
+		legacyMeta.query, err = l.database.Preparex(querytext)
+		if err != nil {
+			return xerrors.Errorf("Prepare failed for %s: %w", legacyTableName, err)
 		}
 
-		rows, err := hwm.query.Queryx(hwm.lastTS)
+		l.legacy[legacyTableName] = legacyMeta
+		return nil
+	})
+}
+
+func (l *LegacyFactory) ImportByColumn(legacyTableName string) (err error) {
+	events := []eh.EventData{}
+	defer func() { fmt.Printf("Emitted %d events for table %s (err: %s)\n", len(events), legacyTableName, err) }()
+
+	legacyMeta, ok := l.legacy[legacyTableName]
+	if !ok {
+		err = xerrors.Errorf("WTF?")
+		return
+	}
+
+	if legacyMeta.query == nil {
+		err = xerrors.Errorf("DIDN'T PREPARE!")
+		return
+	}
+
+	rows, err := legacyMeta.query.Queryx(legacyMeta.lastTS)
+	if err != nil {
+		err = xerrors.Errorf("query failed for %s: %w", legacyTableName, err)
+		return
+	}
+
+	var fqddmaps []*FQDDMappingData
+	for rows.Next() {
+		mm := map[string]interface{}{}
+		err = rows.MapScan(mm)
 		if err != nil {
-			l.logger.Crit("Error querying for metrics", "err", err, "legacyTableName", legacyTableName)
+			l.logger.Crit("Error mapscan", "err", err, "legacyTableName", legacyTableName)
 			continue
 		}
 
-		events := []eh.EventData{}
-		var fqddmaps []*FQDDMappingData
-		for rows.Next() {
-			mm := map[string]interface{}{}
-			err = rows.MapScan(mm)
-			if err != nil {
-				l.logger.Crit("Error mapscan", "err", err, "legacyTableName", legacyTableName)
+		// ================================================
+		// fields we don't need for the new implementation
+		delete(mm, "__ISO_8601_TS")
+		delete(mm, "__State_Marker")
+
+		// ================================================
+		// Timestamp for metrics in this row
+		LastTS, ok := mm["__Last_Update_TS"].(int64)
+		if !ok {
+			l.logger.Crit("last ts not int64", "legacyTableName", legacyTableName, "mm", mm)
+			continue
+		}
+		if LastTS > legacyMeta.lastTS {
+			legacyMeta.lastTS = LastTS
+		}
+		delete(mm, "__Last_Update_TS")
+
+		// ================================================
+		// Human-readable friendly FQDD for this row
+		FriendlyFQDDBytes, ok := mm["FriendlyFQDD"].([]byte)
+		if !ok {
+			l.logger.Crit("friendly fqdd not string", "legacyTableName", legacyTableName, "mm", mm)
+			continue
+		}
+		delete(mm, "FriendlyFQDD")
+		FriendlyFQDD := string(FriendlyFQDDBytes)
+
+		// ================================================
+		// FQDD for this row
+		FQDDBytes, ok := mm["UNIQUEID"].([]byte)
+		if !ok {
+			l.logger.Crit("friendly fqdd not string", "legacyTableName", legacyTableName, "mm", mm)
+			continue
+		}
+		delete(mm, "UNIQUEID")
+		FQDD := string(FQDDBytes)
+
+		// ================================================
+		// NOW: for each COLUMN, we emit a MetricValueEvent with the above TS/FQDD/etc
+		for key, value := range mm {
+			switch key {
+			// if one of the tables has this info in it, it requires special handling and must be moved to a different handler
+			// This shouldn't be hit after we finish going through this, so this code should be removed from the final handler
+			case "DeviceId", "SensorName", "__UnitModifier", "MetricPrefix":
+				l.logger.Crit("FOUND A BAD TABLE. Take it out of the legacy table list, it needs special handling.", "legacyTableName", legacyTableName, "key", key)
 				continue
 			}
 
-			// ================================================
-			// fields we don't need for the new implementation
-			delete(mm, "__ISO_8601_TS")
-			delete(mm, "__State_Marker")
-
-			// ================================================
-			// Timestamp for metrics in this row
-			LastTS, ok := mm["__Last_Update_TS"].(int64)
-			if !ok {
-				l.logger.Crit("last ts not int64", "legacyTableName", legacyTableName, "mm", mm)
-				continue
-			}
-			if LastTS > hwm.lastTS {
-				hwm.lastTS = LastTS
-			}
-			delete(mm, "__Last_Update_TS")
-
-			// ================================================
-			// Human-readable friendly FQDD for this row
-			FriendlyFQDDBytes, ok := mm["FriendlyFQDD"].([]byte)
-			if !ok {
-				l.logger.Crit("friendly fqdd not string", "legacyTableName", legacyTableName, "mm", mm)
-				continue
-			}
-			delete(mm, "FriendlyFQDD")
-			FriendlyFQDD := string(FriendlyFQDDBytes)
-
-			// ================================================
-			// FQDD for this row
-			FQDDBytes, ok := mm["UNIQUEID"].([]byte)
-			if !ok {
-				l.logger.Crit("friendly fqdd not string", "legacyTableName", legacyTableName, "mm", mm)
-				continue
-			}
-			delete(mm, "UNIQUEID")
-			FQDD := string(FQDDBytes)
-
-			// ================================================
-			// NOW: for each COLUMN, we emit a MetricValueEvent with the above TS/FQDD/etc
-			for key, value := range mm {
-				switch key {
-				// if one of the tables has this info in it, it requires special handling and must be moved to a different handler
-				// This shouldn't be hit after we finish going through this, so this code should be removed from the final handler
-				case "DeviceId", "SensorName", "__UnitModifier", "MetricPrefix":
-					l.logger.Crit("FOUND A BAD TABLE. Take it out of the legacy table list, it needs special handling.", "legacyTableName", legacyTableName, "key", key)
+			if value != nil {
+				abyteVal, ok := value.([]byte)
+				if !ok {
+					fmt.Printf("The value(%s) for key(%s) isnt a []byte, skipping...\n", value, key)
 					continue
 				}
-
-				if value != nil {
-					abyteVal, ok := value.([]byte)
-					if !ok {
-						fmt.Printf("The value(%s) for key(%s) isnt a []byte, skipping...\n", value, key)
-						continue
-					}
-					mm[key] = string(abyteVal)
-					events = append(events, &MetricValueEventData{
-						Timestamp: SqlTimeInt{time.Unix(LastTS, 0)},
-						Name:      key,
-						Value:     string(abyteVal),
-						Context:   FQDD,
-						Property:  "LEGACY:" + legacyTableName,
-					})
-				}
-			}
-
-			l.legacyHWM[legacyTableName] = hwm
-
-			// Add a new friendly fqdd mapping. Only add each mapping once
-			if FQDD != FriendlyFQDD {
-				found := false
-				for _, f := range fqddmaps {
-					if FQDD == f.FQDD && FriendlyFQDD == f.FriendlyName {
-						found = true
-					}
-				}
-				if !found {
-					fqddmaps = append(fqddmaps, &FQDDMappingData{FQDD: FQDD, FriendlyName: FriendlyFQDD})
-				}
+				mm[key] = string(abyteVal)
+				events = append(events, &MetricValueEventData{
+					Timestamp: SqlTimeInt{time.Unix(LastTS, 0)},
+					Name:      key,
+					Value:     string(abyteVal),
+					Context:   FQDD,
+					Property:  "LEGACY:" + legacyTableName,
+				})
 			}
 		}
-		fmt.Printf("\tEmitted %d events for table %s\n", len(events), legacyTableName)
-		if len(fqddmaps) > 0 {
-			l.bus.PublishEvent(context.Background(), eh.NewEvent(FriendlyFQDDMapping, fqddmaps, time.Now()))
+
+		l.legacy[legacyTableName] = legacyMeta
+
+		// Add a new friendly fqdd mapping. Only add each mapping once
+		if FQDD != FriendlyFQDD {
+			found := false
+			for _, f := range fqddmaps {
+				if FQDD == f.FQDD && FriendlyFQDD == f.FriendlyName {
+					found = true
+				}
+			}
+			if !found {
+				fqddmaps = append(fqddmaps, &FQDDMappingData{FQDD: FQDD, FriendlyName: FriendlyFQDD})
+			}
 		}
-		l.bus.PublishEvent(context.Background(), eh.NewEvent(MetricValueEvent, events, time.Now()))
 	}
+	if len(fqddmaps) > 0 {
+		l.bus.PublishEvent(context.Background(), eh.NewEvent(FriendlyFQDDMapping, fqddmaps, time.Now()))
+	}
+	l.bus.PublishEvent(context.Background(), eh.NewEvent(MetricValueEvent, events, time.Now()))
 
 	return nil
 }

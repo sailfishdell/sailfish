@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -17,6 +18,10 @@ const (
 	LegacyDatabaseEvent eh.EventType = "LegacyDatabaseEvent"
 )
 
+type LegacyDatabseEventData struct {
+	TableName string
+}
+
 func addAM3LegacyDatabaseFunctions(logger log.Logger, dbpath string, am3Svc *am3.Service, d *BusComponents) {
 	database, err := sqlx.Open("sqlite3", dbpath)
 	if err != nil {
@@ -24,18 +29,19 @@ func addAM3LegacyDatabaseFunctions(logger log.Logger, dbpath string, am3Svc *am3
 		return
 	}
 
-	// run sqlite with only one connection to avoid locking issues
-	// If we run in WAL mode, you can only do one connection. Seems like a base
-	// library limitation that's reflected up into the golang implementation.
-	// SO: we will ensure that we have ONLY ONE GOROUTINE that does transactions
-	// This isn't a terrible limitation as it is sort of what we want to do
-	// anyways.
+	// legacy db not opened in WAL mode... in fact should be read-only, so this isn't really necessary, I think
 	database.SetMaxOpenConns(1)
 
 	LegacyFactory, err := NewLegacyFactory(logger, database, d)
 	if err != nil {
 		logger.Crit("Error creating legacy integration", "err", err)
 		database.Close()
+		return
+	}
+
+	err = LegacyFactory.PrepareAll()
+	if err != nil {
+		logger.Crit("Error preparing legacy queries", "err", err)
 		return
 	}
 
@@ -66,22 +72,29 @@ func addAM3LegacyDatabaseFunctions(logger log.Logger, dbpath string, am3Svc *am3
 	am3Svc.AddEventHandler("Import Legacy Metric Values", LegacyDatabaseEvent, func(event eh.Event) {
 		command, ok := event.Data().(string)
 		if !ok {
-			logger.Crit("Legacy Metric DB message handler got an invalid data event", "event", event)
+			logger.Crit("Legacy Metric DB message handler got an invalid data event", "event", event, "eventdata", event.Data())
 			command = "import"
 		}
 
-		switch command {
-		case "start_timed_import":
+		switch {
+		case command == "start_timed_import":
 			start()
 			return
 
-		// TODO: make this a per-table import so we can have separate timers per
-		case "import":
-			err = LegacyFactory.Import()
+		case strings.HasPrefix(command, "import:"):
+			LegacyFactory.Import(command[7:])
+			return
+
+		case command == "import_all":
+			err := LegacyFactory.IterLegacyTables(func(s string) error {
+				return d.GetBus().PublishEvent(context.Background(), eh.NewEvent(LegacyDatabaseEvent, "import:"+s, time.Now()))
+			})
 			if err != nil {
-				logger.Crit("Failed to import legacy metrics", "err", err)
+				logger.Crit("Iteraton failed over legacy tables", "err", err)
 				return
 			}
+		default:
+			logger.Crit("GOT A COMMAND THAT I CANT HANDLE", "command", command)
 		}
 	})
 }

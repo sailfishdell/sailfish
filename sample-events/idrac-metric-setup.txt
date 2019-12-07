@@ -31,7 +31,8 @@
 { "name": "UpdateMetricReportDefinitionEvent", "data": { "Name": "UBER-REPORT",  "Enabled": true, "Type": "OnRequest",  "SuppressDups": false , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"], "Updates": "AppendStopsWhenFull", "Metrics": [ {"MetricID":"%"}] } }
 //
 // Do a single import of legacy data
-{ "name": "LegacyDatabaseEvent", "data": "import" }
+{ "name": "LegacyDatabaseEvent", "data": "import_all"}
+
 
 
 //
