@@ -168,9 +168,11 @@ func New(logger log.Logger, d busObjs) (svc *service) {
 
 	s, err := NewSdnotify()
 	if err != nil {
-		logger.Warn("Error setting up SD_NOTIFY, using simulation instead", "err", err)
+		logger.Warn("Running using simulation SD_NOTIFY", "err", err)
 		return
 	}
+
+	// override the simulated sdnotify with the real one, if available
 	svc.sd = s
 
 	return
