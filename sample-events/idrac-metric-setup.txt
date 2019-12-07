@@ -1,4 +1,40 @@
 { "name": "startup", "event_seq": -1, "data": {} }
+
+//
+// START - LEGACY MAPPINGS START HERE
+//    We will import 'legacy' timeseries db data here. That way, when we import "newer" metrics manually, below, it will trigger report generation because the timestamps of those messages will be newer
+//
+{ "name": "UpdateMetricReportDefinitionEvent", "data": { "Name": "CPUMemMetrics",        "Enabled": true, "Type": "Periodic", "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"], "Updates": "Overwrite", "Metrics": [{"MetricID": "%", "PropertyPattern": "LEGACY:AggregationMetrics"}]}}
+{ "name": "UpdateMetricReportDefinitionEvent", "data": { "Name": "CPUMemMetrics",        "Enabled": true, "Type": "Periodic", "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"], "Updates": "Overwrite", "Metrics": [{"MetricID": "%", "PropertyPattern": "LEGACY:CPUMemMetrics"}]}}
+{ "name": "UpdateMetricReportDefinitionEvent", "data": { "Name": "CPURegisters",         "Enabled": true, "Type": "Periodic", "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"], "Updates": "Overwrite", "Metrics": [{"MetricID": "%", "PropertyPattern": "LEGACY:CPURegisters"}]}}
+{ "name": "UpdateMetricReportDefinitionEvent", "data": { "Name": "CPUSensor",            "Enabled": true, "Type": "Periodic", "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"], "Updates": "Overwrite", "Metrics": [{"MetricID": "%", "PropertyPattern": "LEGACY:CPUSensor"}]}}
+{ "name": "UpdateMetricReportDefinitionEvent", "data": { "Name": "CUPS",                 "Enabled": true, "Type": "Periodic", "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"], "Updates": "Overwrite", "Metrics": [{"MetricID": "%", "PropertyPattern": "LEGACY:CUPS"}]}}
+{ "name": "UpdateMetricReportDefinitionEvent", "data": { "Name": "FCSensor",             "Enabled": true, "Type": "Periodic", "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"], "Updates": "Overwrite", "Metrics": [{"MetricID": "%", "PropertyPattern": "LEGACY:FCSensor"}]}}
+{ "name": "UpdateMetricReportDefinitionEvent", "data": { "Name": "FPGASensor",           "Enabled": true, "Type": "Periodic", "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"], "Updates": "Overwrite", "Metrics": [{"MetricID": "%", "PropertyPattern": "LEGACY:FPGASensor"}]}}
+{ "name": "UpdateMetricReportDefinitionEvent", "data": { "Name": "FanSensor",            "Enabled": true, "Type": "Periodic", "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"], "Updates": "Overwrite", "Metrics": [{"MetricID": "%", "PropertyPattern": "LEGACY:FanSensor"}]}}
+{ "name": "UpdateMetricReportDefinitionEvent", "data": { "Name": "GPUMetrics",           "Enabled": true, "Type": "Periodic", "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"], "Updates": "Overwrite", "Metrics": [{"MetricID": "%", "PropertyPattern": "LEGACY:GPUMetrics"}]}}
+{ "name": "UpdateMetricReportDefinitionEvent", "data": { "Name": "GPUStatistics",        "Enabled": true, "Type": "Periodic", "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"], "Updates": "Overwrite", "Metrics": [{"MetricID": "%", "PropertyPattern": "LEGACY:GPUStatistics"}]}}
+{ "name": "UpdateMetricReportDefinitionEvent", "data": { "Name": "MemorySensor",         "Enabled": true, "Type": "Periodic", "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"], "Updates": "Overwrite", "Metrics": [{"MetricID": "%", "PropertyPattern": "LEGACY:MemorySensor"}]}}
+{ "name": "UpdateMetricReportDefinitionEvent", "data": { "Name": "NICSensor",            "Enabled": true, "Type": "Periodic", "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"], "Updates": "Overwrite", "Metrics": [{"MetricID": "%", "PropertyPattern": "LEGACY:NICSensor"}]}}
+{ "name": "UpdateMetricReportDefinitionEvent", "data": { "Name": "NICStatistics",        "Enabled": true, "Type": "Periodic", "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"], "Updates": "Overwrite", "Metrics": [{"MetricID": "%", "PropertyPattern": "LEGACY:NICStatistics"}]}}
+{ "name": "UpdateMetricReportDefinitionEvent", "data": { "Name": "NVMeSMARTData",        "Enabled": true, "Type": "Periodic", "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"], "Updates": "Overwrite", "Metrics": [{"MetricID": "%", "PropertyPattern": "LEGACY:NVMeSMARTData"}]}}
+{ "name": "UpdateMetricReportDefinitionEvent", "data": { "Name": "PSUMetrics",           "Enabled": true, "Type": "Periodic", "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"], "Updates": "Overwrite", "Metrics": [{"MetricID": "%", "PropertyPattern": "LEGACY:PSUMetrics"}]}}
+{ "name": "UpdateMetricReportDefinitionEvent", "data": { "Name": "PowerMetrics",         "Enabled": true, "Type": "Periodic", "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"], "Updates": "Overwrite", "Metrics": [{"MetricID": "%", "PropertyPattern": "LEGACY:PowerMetrics"}]}}
+{ "name": "UpdateMetricReportDefinitionEvent", "data": { "Name": "PowerStatistics",      "Enabled": true, "Type": "Periodic", "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"], "Updates": "Overwrite", "Metrics": [{"MetricID": "%", "PropertyPattern": "LEGACY:PowerStatistics"}]}}
+{ "name": "UpdateMetricReportDefinitionEvent", "data": { "Name": "Sensor",               "Enabled": true, "Type": "Periodic", "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"], "Updates": "Overwrite", "Metrics": [{"MetricID": "%", "PropertyPattern": "LEGACY:Sensor"}]}}
+{ "name": "UpdateMetricReportDefinitionEvent", "data": { "Name": "StorageDiskSMARTData", "Enabled": true, "Type": "Periodic", "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"], "Updates": "Overwrite", "Metrics": [{"MetricID": "%", "PropertyPattern": "LEGACY:StorageDiskSMARTData"}]}}
+{ "name": "UpdateMetricReportDefinitionEvent", "data": { "Name": "StorageSensor",        "Enabled": true, "Type": "Periodic", "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"], "Updates": "Overwrite", "Metrics": [{"MetricID": "%", "PropertyPattern": "LEGACY:StorageSensor"}]}}
+{ "name": "UpdateMetricReportDefinitionEvent", "data": { "Name": "ThermalMetrics",       "Enabled": true, "Type": "Periodic", "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"], "Updates": "Overwrite", "Metrics": [{"MetricID": "%", "PropertyPattern": "LEGACY:ThermalMetrics"}]}}
+{ "name": "UpdateMetricReportDefinitionEvent", "data": { "Name": "ThermalSensor",        "Enabled": true, "Type": "Periodic", "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"], "Updates": "Overwrite", "Metrics": [{"MetricID": "%", "PropertyPattern": "LEGACY:ThermalSensor"}]}}
+//
+// This is a debug report
+{ "name": "UpdateMetricReportDefinitionEvent", "data": { "Name": "UBER-REPORT",  "Enabled": true, "Type": "OnRequest",  "SuppressDups": false , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"], "Updates": "AppendStopsWhenFull", "Metrics": [ {"MetricID":"%"}] } }
+//
+// Do a single import of legacy data
+{ "name": "LegacyDatabaseEvent", "data": "import" }
+
+
+//
 // create sacrificial reports
 { "name": "UpdateMetricReportDefinitionEvent", "data": { "Name": "SHOULD_DELETE_Periodic_SF_RE_LTMRC_ASWF",  "Enabled": true, "Type": "Periodic",  "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"], "Updates": "AppendStopsWhenFull", "Metrics": [ { "MetricID": "M1" }, { "MetricID": "RPMReading" }, { "MetricID": "RPMPct" } ] } }
 { "name": "UpdateMetricReportDefinitionEvent", "data": { "Name": "SHOULD_DELETE_Periodic_SF_RE_LTMRC_AWWF",  "Enabled": true, "Type": "Periodic",  "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"], "Updates": "AppendWrapsWhenFull", "Metrics": [ { "MetricID": "M1" }, { "MetricID": "RPMReading" }, { "MetricID": "RPMPct" } ] } }
@@ -61,6 +97,7 @@
 { "name": "thp_fan_data_object", "event_array": [ { "data": "igAAAAINAwgCDQIIAAAAAAEAAABEAAAAYAAAAIgAAABsAAAAiQAAAAICAiouZytCTR8AAI8cAAC4EwAAwhQAAAEAAABTeXN0ZW0uQ2hhc3Npcy4xI0Zhbi5TbG90LjMARnJvbnQgRmFuIDMAU3lzdGVtLkNoYXNzaXMuMSNGYW4uU2xvdC4zAAAA", "FQDD": "System.Chassis.1#Fan.Slot.3" } ] }
 { "name": "thp_fan_data_object", "event_array": [ { "data": "igAAAAINAwgCDQIIAAAAAAEAAABEAAAAYAAAAIgAAABsAAAAiQAAAAICAiouZytCTR8AAI8cAAC4EwAAwhQAAAEAAABTeXN0ZW0uQ2hhc3Npcy4xI0Zhbi5TbG90LjMARnJvbnQgRmFuIDMAU3lzdGVtLkNoYXNzaXMuMSNGYW4uU2xvdC4zAAAA", "FQDD": "System.Chassis.1#Fan.Slot.3" } ] }
 { "name": "thp_fan_data_object", "event_array": [ { "data": "igAAAAINAwgCDQIIAAAAAAEAAABEAAAAYAAAAIgAAABsAAAAiQAAAAICAiouZytCTR8AAI8cAAC4EwAAwhQAAAEAAABTeXN0ZW0uQ2hhc3Npcy4xI0Zhbi5TbG90LjMARnJvbnQgRmFuIDMAU3lzdGVtLkNoYXNzaXMuMSNGYW4uU2xvdC4zAAAA", "FQDD": "System.Chassis.1#Fan.Slot.3" } ] }
-{ "name": "thp_fan_data_object", "event_array": [ { "data": "igAAAAINAwgCDQIIAAAAAAEAAABEAAAAYAAAAIgAAABsAAAAiQAAAAICAiouZytCTR8AAI8cAAC4EwAAwhQAAAEAAABTeXN0ZW0uQ2hhc3Npcy4xI0Zhbi5TbG90LjMARnJvbnQgRmFuIDMAU3lzdGVtLkNoYXNzaXMuMSNGYW4uU2xvdC4zAAAA", "FQDD": "System.Chassis.1#Fan.Slot.3" } ] }
+{ "name": "thp_fan_data_object", "Synchronous": true, "Barrier": true, "event_array": [ { "data": "igAAAAINAwgCDQIIAAAAAAEAAABEAAAAYAAAAIgAAABsAAAAiQAAAAICAiouZytCTR8AAI8cAAC4EwAAwhQAAAEAAABTeXN0ZW0uQ2hhc3Npcy4xI0Zhbi5TbG90LjMARnJvbnQgRmFuIDMAU3lzdGVtLkNoYXNzaXMuMSNGYW4uU2xvdC4zAAAA", "FQDD": "System.Chassis.1#Fan.Slot.3" } ] }
+//
 // synchonize and wait until everything finishes
 { "name": "startup", "Synchronous": true, "Barrier": true, "data": {} }
