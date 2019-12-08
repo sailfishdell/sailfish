@@ -106,6 +106,7 @@ func createDatabase(logger log.Logger, dbpath string) (database *sqlx.DB, err er
 			(
 				ID          				integer unique primary key not null,
 				MetaID      			  integer not null,
+				Name 								TEXT not null, -- actual metric name
 				Property            TEXT not null, -- URI#Property
 				Context      				TEXT not null, -- usually FQDD
 				Label        				TEXT not null, -- "friendly FQDD" + "metric name" + "collectionfn"
@@ -114,7 +115,7 @@ func createDatabase(logger log.Logger, dbpath string) (database *sqlx.DB, err er
 				LastValue  					TEXT not null,    -- Used to quickly suppress dups for this instance
 
 				-- indexes and constraints
-				unique (MetaID, Property, Context, Label)
+				unique (MetaID, Name, Property, Context, Label)
 				FOREIGN KEY (MetaID)
 					REFERENCES MetricMeta (ID) ON DELETE CASCADE
 			);`},
@@ -137,7 +138,7 @@ func createDatabase(logger log.Logger, dbpath string) (database *sqlx.DB, err er
 			(
 				InstanceID INTEGER NOT NULL,
 				Timestamp  INTEGER NOT NULL,
-				Value      INTEGER NOT NULL, -- sized to store 64-bit float as string
+				Value      INTEGER NOT NULL,
 
 				-- indexes and constraints
 				PRIMARY KEY (InstanceID, Timestamp),
@@ -150,7 +151,20 @@ func createDatabase(logger log.Logger, dbpath string) (database *sqlx.DB, err er
 			(
 				InstanceID INTEGER NOT NULL,
 				Timestamp  INTEGER NOT NULL,
-				Value      REAL    NOT NULL, -- sized to store 64-bit float as string
+				Value      REAL    NOT NULL,
+
+				-- indexes and constraints
+				PRIMARY KEY (InstanceID, Timestamp),
+				FOREIGN KEY (InstanceID)
+					REFERENCES MetricInstance (ID) ON DELETE CASCADE
+			) WITHOUT ROWID`},
+
+		{"Create MetricValueText table", `
+			CREATE TABLE IF NOT EXISTS MetricValueText
+			(
+				InstanceID INTEGER NOT NULL,
+				Timestamp  INTEGER NOT NULL,
+				Value      TEXT    NOT NULL,
 
 				-- indexes and constraints
 				PRIMARY KEY (InstanceID, Timestamp),
@@ -178,42 +192,66 @@ func createDatabase(logger log.Logger, dbpath string) (database *sqlx.DB, err er
 		{"Create index for MetricReport table", `
 			CREATE INDEX IF NOT EXISTS metric_report_xref_idx on MetricReport(ReportDefinitionID)`},
 
+		{"Create MetricReport_FastValues (streamable) table.", `
+				CREATE VIEW IF NOT EXISTS MetricReport_FastValues as
+					select
+						MRD.Name as 'MRDName',
+						MR.Name as 'ReportName',
+						MR.Sequence as 'Sequence',
+						MI.Name as 'MetricID',
+						MV.Timestamp as 'Timestamp',
+						MV.Value as 'MetricValue',
+						MI.Context as 'Context',
+						MI.Label as 'Label'
+					from MetricValue as MV
+					inner join MetricInstance as MI on MV.InstanceID = MI.ID
+					inner join MetricMeta as MM on MI.MetaID = MM.ID
+					inner join ReportDefinitionToMetricMeta as rd2mm on MM.ID = rd2mm.MetricMetaID
+					inner join MetricReportDefinition as MRD on rd2mm.ReportDefinitionID = MRD.ID
+					inner join MetricReport as MR on MRD.ID = MR.ReportDefinitionID
+					where ( MV.Timestamp >= MR.StartTimestamp OR MR.StartTimestamp is NULL )
+						and ( MV.Timestamp <= MR.EndTimestamp OR MR.EndTimestamp is NULL );
+					`},
+
+		/*
+			select MR.Name as Name, MRD.AppendLimit as f, count(MV.Timestamp) as count, max(MV.Timestamp) as MaxTS, min(MV.Timestamp) as MinTS,
+				(
+					select ts from (
+					select iMV.Timestamp as ts, row_number() over (order by iMV.Timestamp) as rn
+					from MetricValue as iMV
+					inner join MetricInstance as iMI on iMV.InstanceID = iMI.ID
+					inner join MetricMeta as iMM on iMI.MetaID = iMM.ID
+					inner join ReportDefinitionToMetricMeta ird2mm on iMM.ID = ird2mm.MetricMetaID
+					inner join MetricReportDefinition as iMRD on ird2mm.ReportDefinitionID = iMRD.ID
+					inner join MetricReport as iMR on iMRD.ID = iMR.ReportDefinitionID
+					where iMR.Name = MR.Name
+				) where rn = MRD.AppendLimit
+				) as MaxALTS
+			from MetricValue as MV
+			inner join MetricInstance as MI on MV.InstanceID = MI.ID
+			inner join MetricMeta as MM on MI.MetaID = MM.ID
+			inner join ReportDefinitionToMetricMeta rd2mm on MM.ID = rd2mm.MetricMetaID
+			inner join MetricReportDefinition as MRD on rd2mm.ReportDefinitionID = MRD.ID
+			inner join MetricReport as MR on MRD.ID = MR.ReportDefinitionID
+			group by MR.Name;
+		*/
+
 		{"Create MetricReport_VALUES (streamable) table.", `
 				CREATE VIEW IF NOT EXISTS MetricReport_VALUES as
-						select
-							MRD.Name as 'MRDName',
-						  MR.Name as 'ReportName',
-							MR.Sequence as 'Sequence',
-							MM.Name as 'MetricID',
-							strftime('%Y-%m-%dT%H:%M:%S.%f', MV.Timestamp/1000000000.0, 'unixepoch' ) as 'Timestamp',
-							MV.Value as 'MetricValue',
-							MI.Context as 'Context',
-							MI.Label as 'Label',
-
+						SELECT
+						  ReportName as 'ReportName',
 							json_object(
-										'MetricId', MM.Name,
-										'Timestamp', strftime('%Y-%m-%dT%H:%M:%f', MV.Timestamp/1000000000.0, 'unixepoch'),
-										'MetricValue', MV.Value,
+										'MetricId', MetricID,
+										'Timestamp', strftime('%Y-%m-%dT%H:%M:%f', Timestamp/1000000000.0, 'unixepoch'),
+										'MetricValue', MetricValue,
 										'OEM', json_object(
 											'Dell', json_object(
-												'Context', MI.Context,
-												'Label', MI.Label
+												'Context', Context,
+												'Label', Label
 											)
 										)) || ',' as 'JSON'
 
-						from MetricValue as MV
-						inner join MetricInstance as MI on MV.InstanceID = MI.ID
-						inner join MetricMeta as MM on MI.MetaID = MM.ID
-						inner join ReportDefinitionToMetricMeta rd2mm on MM.ID = rd2mm.MetricMetaID
-						inner join MetricReportDefinition as MRD on rd2mm.ReportDefinitionID = MRD.ID
-						inner join MetricReport as MR on MRD.ID = MR.ReportDefinitionID
-						where rd2mm.ReportDefinitionID = MRD.ID
-							and ( MV.Timestamp >= MR.StartTimestamp OR MR.StartTimestamp is NULL )
-							and ( MV.Timestamp <= MR.EndTimestamp OR MR.EndTimestamp is NULL );
-
-						-- NOTES:
-						-- Can't do order by! Catastrophic results as sqlite reads everything into ram and then sorts.
-						-- THIS BLOWS UP: order by MV.Timestamp, MM.Name, MI.Label
+						from MetricReport_FastValues;
 					`},
 	}
 

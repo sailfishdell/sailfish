@@ -73,24 +73,22 @@ func addAM3DatabaseFunctions(logger log.Logger, dbpath string, am3Svc *am3.Servi
 			return
 		}
 
-		// After we've done the adjustments to ReportDefinitionToMetricMeta, there
-		// might be orphan rows.  Schedule the database maintenace task to take
-		// care of them. This will run *after* we've updated the report and return
-		// from this function.
-		d.GetBus().PublishEvent(context.Background(), eh.NewEvent(DatabaseMaintenance, "delete orphans", time.Now()))
-
 		// Can't write to event sent in, so make a local copy
 		localReportDefCopy := *reportDef
-		err = MRDFactory.Update(&localReportDefCopy)
+		err = MRDFactory.UpdateMRD(&localReportDefCopy)
 		if err != nil {
 			logger.Crit("Failed to create or update the Report Definition", "Name", reportDef.Name, "err", err)
 			return
 		}
 
 		// After we've set up the basic reports, let's go ahead and generate them for the first time
-		// re-publishing this event cannot re-use the same "reportDef" we originally get, because it will cross goroutines and will be a data race
-		// ALSO: there might be intermetdiate events that change the database, which means that reportdef may be out of date
 		d.GetBus().PublishEvent(context.Background(), eh.NewEvent(GenerateMetricReport, &MetricReportDefinitionData{Name: reportDef.Name}, time.Now()))
+
+		// After we've done the adjustments to ReportDefinitionToMetricMeta, there
+		// might be orphan rows.  Schedule the database maintenace task to take
+		// care of them. This will run *after* we've updated the report and return
+		// from this function.
+		d.GetBus().PublishEvent(context.Background(), eh.NewEvent(DatabaseMaintenance, "delete orphans", time.Now()))
 	})
 
 	am3Svc.AddEventHandler("Delete Metric Report Definition", DeleteMetricReportDefinition, func(event eh.Event) {
@@ -120,6 +118,12 @@ func addAM3DatabaseFunctions(logger log.Logger, dbpath string, am3Svc *am3.Servi
 		}
 
 		err := MRDFactory.InsertMetricValue(metricValue)
+		if err != nil {
+			//logger.Crit("Error inserting Metric Value", "err", err, "metric", metricValue)
+			return
+		}
+
+		err = MRDFactory.FastCheckForNeededMRUpdates()
 		if err != nil {
 			//logger.Crit("Error inserting Metric Value", "err", err, "metric", metricValue)
 			return

@@ -51,15 +51,12 @@ func NewLegacyFactory(logger log.Logger, database *sqlx.DB, d *BusComponents) (*
 		"StorageSensor":        LegacyMeta{importFn: func(n string) error { return ret.ImportByColumn(n) }},
 		"ThermalMetrics":       LegacyMeta{importFn: func(n string) error { return ret.ImportByColumn(n) }},
 
+		// These tables require special handling because they formatted differently. :(
 		// dont' have an importer here yet. Please write one
 		"CPUSensor":     LegacyMeta{importFn: func(n string) error { return ret.ImportERROR(n) }},
 		"Sensor":        LegacyMeta{importFn: func(n string) error { return ret.ImportERROR(n) }},
 		"ThermalSensor": LegacyMeta{importFn: func(n string) error { return ret.ImportERROR(n) }},
 	}
-
-	// These tables require special handling because they formatted differently. :(
-	//		legacy: map[string]HWM{
-	//		}
 	return ret, nil
 }
 
@@ -95,6 +92,10 @@ func (l *LegacyFactory) PrepareAll() error {
 	return l.IterLegacyTables(func(legacyTableName string) error {
 		var err error
 		legacyMeta := l.legacy[legacyTableName]
+		if legacyMeta.query != nil {
+			// already prepared, that's ok
+			return nil
+		}
 
 		querytext := `select * from ` + legacyTableName + ` where __Last_Update_TS > ?;`
 		legacyMeta.query, err = l.database.Preparex(querytext)
@@ -109,16 +110,22 @@ func (l *LegacyFactory) PrepareAll() error {
 
 func (l *LegacyFactory) ImportByColumn(legacyTableName string) (err error) {
 	events := []eh.EventData{}
-	defer func() { fmt.Printf("Emitted %d events for table %s (err: %s)\n", len(events), legacyTableName, err) }()
+	defer func() {
+		if err == nil {
+			fmt.Printf("Emitted %d events for table %s\n", len(events), legacyTableName)
+		} else {
+			fmt.Printf("Emitted %d events for table %s (err: %s)\n", len(events), legacyTableName, err)
+		}
+	}()
 
 	legacyMeta, ok := l.legacy[legacyTableName]
 	if !ok {
-		err = xerrors.Errorf("WTF?")
+		err = xerrors.Errorf("Somehow got called with a table name not in our supported tables list.")
 		return
 	}
 
 	if legacyMeta.query == nil {
-		err = xerrors.Errorf("DIDN'T PREPARE!")
+		err = xerrors.Errorf("SQL query wasn't prepared for %s!", legacyTableName)
 		return
 	}
 
@@ -218,9 +225,9 @@ func (l *LegacyFactory) ImportByColumn(legacyTableName string) (err error) {
 		}
 	}
 	if len(fqddmaps) > 0 {
-		l.bus.PublishEvent(context.Background(), eh.NewEvent(FriendlyFQDDMapping, fqddmaps, time.Now()))
+		_ = l.bus.PublishEvent(context.Background(), eh.NewEvent(FriendlyFQDDMapping, fqddmaps, time.Now()))
 	}
-	l.bus.PublishEvent(context.Background(), eh.NewEvent(MetricValueEvent, events, time.Now()))
+	err = l.bus.PublishEvent(context.Background(), eh.NewEvent(MetricValueEvent, events, time.Now()))
 
 	return nil
 }
