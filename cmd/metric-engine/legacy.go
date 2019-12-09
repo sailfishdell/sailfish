@@ -97,7 +97,7 @@ func (l *LegacyFactory) PrepareAll() error {
 			return nil
 		}
 
-		querytext := `select * from ` + legacyTableName + ` where __Last_Update_TS > ?;`
+		querytext := `select * from ` + legacyTableName + ` where __Last_Update_TS > ? order by __Last_Update_TS;`
 		legacyMeta.query, err = l.database.Preparex(querytext)
 		if err != nil {
 			return xerrors.Errorf("Prepare failed for %s: %w", legacyTableName, err)

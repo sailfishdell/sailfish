@@ -111,6 +111,7 @@ func createDatabase(logger log.Logger, dbpath string) (database *sqlx.DB, err er
 				Context      				TEXT not null, -- usually FQDD
 				Label        				TEXT not null, -- "friendly FQDD" + "metric name" + "collectionfn"
 				CollectionScratch   TEXT not null, -- Scratch space used by calculation functions
+				FlushTime           INTEGER,       -- Time at which any aggregated data should be flushed
 				LastTS 							INTEGER not null, -- Used to quickly suppress dups for this instance
 				LastValue  					TEXT not null,    -- Used to quickly suppress dups for this instance
 
@@ -192,12 +193,10 @@ func createDatabase(logger log.Logger, dbpath string) (database *sqlx.DB, err er
 		{"Create index for MetricReport table", `
 			CREATE INDEX IF NOT EXISTS metric_report_xref_idx on MetricReport(ReportDefinitionID)`},
 
-		{"Create MetricReport_FastValues (streamable) table.", `
-				CREATE VIEW IF NOT EXISTS MetricReport_FastValues as
+		{"Create MetricValueByReport (streamable) table.", `
+				CREATE VIEW IF NOT EXISTS MetricValueByReport as
 					select
-						MRD.Name as 'MRDName',
-						MR.Name as 'ReportName',
-						MR.Sequence as 'Sequence',
+					  rd2mm.ReportDefinitionID as 'MRDID',
 						MI.Name as 'MetricID',
 						MV.Timestamp as 'Timestamp',
 						MV.Value as 'MetricValue',
@@ -207,11 +206,187 @@ func createDatabase(logger log.Logger, dbpath string) (database *sqlx.DB, err er
 					inner join MetricInstance as MI on MV.InstanceID = MI.ID
 					inner join MetricMeta as MM on MI.MetaID = MM.ID
 					inner join ReportDefinitionToMetricMeta as rd2mm on MM.ID = rd2mm.MetricMetaID
-					inner join MetricReportDefinition as MRD on rd2mm.ReportDefinitionID = MRD.ID
-					inner join MetricReport as MR on MRD.ID = MR.ReportDefinitionID
-					where ( MV.Timestamp >= MR.StartTimestamp OR MR.StartTimestamp is NULL )
-						and ( MV.Timestamp <= MR.EndTimestamp OR MR.EndTimestamp is NULL );
 					`},
+
+		{"Create MetricValueByReport_JSON (streamable) table.", `
+				CREATE VIEW IF NOT EXISTS MetricValueByReport_JSON as
+						SELECT
+						  MRDID,
+							Timestamp,
+							json_object(
+										'MetricId', MetricID,
+										'Timestamp', strftime('%Y-%m-%dT%H:%M:%f', Timestamp/1000000000.0, 'unixepoch'),
+										'MetricValue', MetricValue,
+										'OEM', json_object(
+											'Dell', json_object(
+												'Context', Context,
+												'Label', Label
+											)
+										)) as 'JSON'
+
+						from MetricValueByReport
+						-- Can't order by timestamp without using more memory the more records we have
+						-- This blows up slower than the final table
+						-- order by Timestamp
+					`},
+
+		// This looks ugly as heck, but so far it's the thing that scales best. It still doesn't stream out, it uses increasing memory depending on the number of rows
+		{"Create the Redfish Metric Report", `
+				CREATE VIEW IF NOT EXISTS MetricReport_experiment as
+				select
+					MR.Name as ReportName,
+					'/redfish/v1/TelemetryService/MetricReports/' || MR.Name as '@odata.id',
+					('{' ||
+							' "@odata.type": "#MetricReport.v1_2_0.MetricReport",' ||
+							' "@odata.context": "/redfish/v1/$metadata#MetricReport.MetricReport",' ||
+							' "@odata.id": "/redfish/v1/TelemetryService/MetricReports/' || MR.Name || '",' ||
+							' "Id": "' || MR.Name || '",' ||
+							' "Name": "' || MR.Name || ' Metric Report",' ||
+							' "ReportSequence": ' || Sequence || ',' ||
+							' "Timestamp": ' || strftime('"%Y-%m-%dT%H:%M:%f"', MR.ReportTimestamp/1000000000.0, 'unixepoch') || ', ' ||
+							' "MetricReportDefinition": {"@odata.id": "/redfish/v1/TelemetryService/MetricReportDefinitions/' || MRD.Name || '"}, ' ||
+							' "MetricValues": [') as JSON
+				from MetricReport as MR
+				inner join MetricReportDefinition as MRD on MR.ReportDefinitionID = MRD.ID
+				UNION ALL
+				select
+					MR.Name as ReportName,
+					'/redfish/v1/TelemetryService/MetricReports/' || MR.Name as '@odata.id',
+					(
+							select group_concat(JSON)
+							from MetricValueByReport_JSON as MVRJ
+							where MVRJ.MRDID=MR.ReportDefinitionID
+				  			and ( MVRJ.Timestamp >= MR.StartTimestamp OR MR.StartTimestamp is NULL )
+								and ( MVRJ.Timestamp <= MR.EndTimestamp OR MR.EndTimestamp is NULL )
+					) as JSON
+				from MetricReport as MR
+				inner join MetricReportDefinition as MRD on MR.ReportDefinitionID = MRD.ID
+				UNION ALL
+				select
+					MR.Name as ReportName,
+					'/redfish/v1/TelemetryService/MetricReports/' || MR.Name as '@odata.id',
+					('], "MetricValues@odata.count": ')
+				from MetricReport as MR
+				inner join MetricReportDefinition as MRD on MR.ReportDefinitionID = MRD.ID
+				UNION ALL
+				select
+					MR.Name as ReportName,
+					'/redfish/v1/TelemetryService/MetricReports/' || MR.Name as '@odata.id',
+					(select count(*)
+							from MetricValueByReport_JSON as MVRJ
+							where MVRJ.MRDID=MR.ReportDefinitionID
+				  			and ( MVRJ.Timestamp >= MR.StartTimestamp OR MR.StartTimestamp is NULL )
+								and ( MVRJ.Timestamp <= MR.EndTimestamp OR MR.EndTimestamp is NULL )) as JSON
+				from MetricReport as MR
+				inner join MetricReportDefinition as MRD on MR.ReportDefinitionID = MRD.ID
+				UNION ALL
+				select
+					MR.Name as ReportName,
+					'/redfish/v1/TelemetryService/MetricReports/' || MR.Name as '@odata.id',
+					('}')
+				from MetricReport as MR
+				inner join MetricReportDefinition as MRD on MR.ReportDefinitionID = MRD.ID
+			`},
+
+		// DOES NOT SCALE
+		//   Exact same memory usage as the unscalable original
+		{"Create the Redfish Metric Report", `
+				CREATE VIEW IF NOT EXISTS MetricReport_Redfish as
+				select
+					MR.Name as ReportName,
+					'/redfish/v1/TelemetryService/MetricReports/' || MR.Name as '@odata.id',
+					('{' ||
+							' "@odata.type": "#MetricReport.v1_2_0.MetricReport",' ||
+							' "@odata.context": "/redfish/v1/$metadata#MetricReport.MetricReport",' ||
+							' "@odata.id": "/redfish/v1/TelemetryService/MetricReports/' || MR.Name || '",' ||
+							' "Id": "' || MR.Name || '",' ||
+							' "Name": "' || MR.Name || ' Metric Report",' ||
+							' "ReportSequence": ' || Sequence || ',' ||
+							' "Timestamp": ' || strftime('"%Y-%m-%dT%H:%M:%f"', MR.ReportTimestamp/1000000000.0, 'unixepoch') || ', ' ||
+							' "MetricReportDefinition": {"@odata.id": "/redfish/v1/TelemetryService/MetricReportDefinitions/' || MRD.Name || '"}, ' ||
+							' "MetricValues": [' || (
+									select group_concat(JSON)
+									from MetricValueByReport_JSON as MVRJ
+									where MVRJ.MRDID=MR.ReportDefinitionID
+						  			and ( MVRJ.Timestamp >= MR.StartTimestamp OR MR.StartTimestamp is NULL )
+										and ( MVRJ.Timestamp <= MR.EndTimestamp OR MR.EndTimestamp is NULL )
+								) || '],' ||
+							' "MetricValues@odata.count": ' || (
+									select count(*)
+									from MetricValueByReport as MVR
+									where MVR.MRDID=MR.ReportDefinitionID
+						  			and ( MVR.Timestamp >= MR.StartTimestamp OR MR.StartTimestamp is NULL )
+										and ( MVR.Timestamp <= MR.EndTimestamp OR MR.EndTimestamp is NULL )
+						) ||
+						'}'
+					) as JSON
+				from MetricReport as MR
+				inner join MetricReportDefinition as MRD on MR.ReportDefinitionID = MRD.ID
+			`},
+
+		// These next two are known to blow up memory usage for large output. Included for comparison purposes only.
+		// DONT USE THESE
+		//   They are here for reference only to compare old/new
+		{"UNscalable", `
+					CREATE VIEW IF NOT EXISTS MetricReport_UNSCALABLE_VIEW as
+							select
+								MR.Name as 'Id',
+								MR.Sequence as 'Sequence',
+								MR.Name || ' Metric Report' as 'Name',
+								strftime('%Y-%m-%dT%H:%M:%f', MR.ReportTimestamp/1000000000.0, 'unixepoch') as 'Timestamp',
+								MRD.Name as 'MRDName',
+								(
+									select
+									  json('[' || group_concat(json_object(
+											'MetricId', MI.Name,
+											'Timestamp', strftime('%Y-%m-%dT%H:%M:%f', MV.Timestamp/1000000000.0, 'unixepoch'),
+											'MetricValue', MV.Value,
+											'OEM', json_object(
+												'Dell', json_object(
+													'Context', MI.Context,
+													'Label', MI.Label
+												)
+											))) || ']' )
+									from MetricValue as MV
+									inner join MetricInstance as MI on MV.InstanceID = MI.ID
+									inner join MetricMeta as MM on MI.MetaID = MM.ID
+									inner join ReportDefinitionToMetricMeta rd2mm on MM.ID = rd2mm.MetricMetaID
+									where rd2mm.ReportDefinitionID = MRD.ID
+										and ( MV.Timestamp >= MR.StartTimestamp OR MR.StartTimestamp is NULL )
+										and ( MV.Timestamp <= MR.EndTimestamp OR MR.EndTimestamp is NULL )
+								)	as 'MetricValues',
+								(
+									select count(*)
+									from MetricValue as MV
+									inner join MetricInstance as MI on MV.InstanceID = MI.ID
+									inner join MetricMeta as MM on MI.MetaID = MM.ID
+									inner join ReportDefinitionToMetricMeta rd2mm on MM.ID = rd2mm.MetricMetaID
+									where rd2mm.ReportDefinitionID = MRD.ID
+										and ( MV.Timestamp >= MR.StartTimestamp OR MR.StartTimestamp is NULL )
+										and ( MV.Timestamp <= MR.EndTimestamp OR MR.EndTimestamp is NULL )
+								) as 'MetricValues@odata.count'
+							from MetricReport as MR
+							INNER JOIN MetricReportDefinition as MRD ON MR.ReportDefinitionID = MRD.ID
+			`},
+		{"Unscalable redfish", `
+				CREATE VIEW IF NOT EXISTS MetricReport_UNSCALABLE_Redfish as
+						select json_object(
+							'@odata.type','#MetricReport.v1_2_0.MetricReport',
+							'@odata.context','/redfish/v1/$metadata#MetricReport.MetricReport',
+							'@odata.id',  '/redfish/v1/TelemetryService/MetricReports/' || Id,
+							'Id', Id,
+							'Name',Name,
+							'ReportSequence',Sequence,
+							'Timestamp',Timestamp,
+							'MetricReportDefinition', json_object('@odata.id','/redfish/v1/TelemetryService/MetricReportDefinitions/' || MRDName),
+							'MetricValues', MetricValues,
+							'MetricValues@odata.count', [MetricValues@odata.count]
+							) as JSON,
+								'/redfish/v1/TelemetryService/MetricReports/' || Id as '@odata.id' from MetricReport_UNSCALABLE_VIEW;
+			`},
+
+		/*
+		 */
 
 		/*
 			select MR.Name as Name, MRD.AppendLimit as f, count(MV.Timestamp) as count, max(MV.Timestamp) as MaxTS, min(MV.Timestamp) as MinTS,
@@ -236,23 +411,6 @@ func createDatabase(logger log.Logger, dbpath string) (database *sqlx.DB, err er
 			group by MR.Name;
 		*/
 
-		{"Create MetricReport_VALUES (streamable) table.", `
-				CREATE VIEW IF NOT EXISTS MetricReport_VALUES as
-						SELECT
-						  ReportName as 'ReportName',
-							json_object(
-										'MetricId', MetricID,
-										'Timestamp', strftime('%Y-%m-%dT%H:%M:%f', Timestamp/1000000000.0, 'unixepoch'),
-										'MetricValue', MetricValue,
-										'OEM', json_object(
-											'Dell', json_object(
-												'Context', Context,
-												'Label', Label
-											)
-										)) || ',' as 'JSON'
-
-						from MetricReport_FastValues;
-					`},
 	}
 
 	for _, sqlstmt := range tables {
@@ -319,63 +477,6 @@ func createDatabase(logger log.Logger, dbpath string) (database *sqlx.DB, err er
 			return
 		}
 
-		// =========================================
-		// Create the redfish view MetricReport_JSON
-		//
-		// --> This is even worse than above due to json
-		//
-		// =========================================
-		_, err = database.Exec(
-			`CREATE VIEW IF NOT EXISTS MetricReport_HEADER as
-						select
-						'{ ' || '"@odata.type": "#MetricReport.v1_2_0.MetricReport", ' ||
-							'"@odata.context: "/redfish/v1/$metadata#MetricReport.MetricReport", ' ||
-							'"@odata.id": "/redfish/v1/TelemetryService/MetricReports/' || Id || '", ' ||
-							'"Id": "' || Id || '", ' ||
-							'"Name", "' || Name || '", ' ||
-							'"ReportSequence": "' || Sequence || '", ' ||
-							'"MetricReportDefinition": {"@odata.id": "/redfish/v1/TelemetryService/MetricReportDefinitions/' || MRDName || '"}, ' ||
-
-							'"Timestamp": "' || Sequence || '", ' ||
-							'Timestamp',Date('now'),
-
-							) as JSON,
-								'/redfish/v1/TelemetryService/MetricReports/' || Id as '@odata.id'
-
-							from MetricReport_View;
-						`)
-		if err != nil {
-			logger.Crit("Error executing statement for MetricReport_JSON view create", "err", err)
-			return
-		}
-
-
-
-		Metrics: [
-		{"MetricID": "ThermalReading", "CollectionFunction": "Average", "CollecitonDuration": "20s"},
-		{"MetricID": "ThermalReading", "CollectionFunction": "Minimum", "CollecitonDuration": "20s"},
-		{"MetricID": "ThermalReading", "CollectionFunction": "Maximum", "CollecitonDuration": "20s"},
-		{"MetricID": "CPUCups", "CollectionFunction": "Average", "CollecitonDuration": "40s"},
-		{"MetricID": "RPMReading", "CollectionFunction": "Average", "CollecitonDuration": "60s"},
-		]
-
-
-		MetricValue -
-			TS - 1   value  - 1
-			TS - 2   value  - 1.5
-			TS - 2   value  - 1.5
-			TS - 4   value  - 1.5
-			TS - 5   value  - 1.5
-			TS - 8   value  - 1.5
-
-		Report XYZ1 : BeginTimestamp=2 EndTimestamp=5
-		Report XYZ2 : BeginTimestamp=1 EndTimestamp=5
-		Report XYZ1 : BeginTimestamp=2 EndTimestamp=8
-
-		"Generate" a report (pseudocode) - Periodic report , time period = 60s
-			Update MetricReport where ReportName == 'foo'  set BeginTimestamp = EndTimestamp, EndTimestamp = datetime('now');
-
-			" ... select from MetricValue .... where Timestamp >= report.BeginTimestamp and Timestamp < Report.EndTimestamp;
 
 
 		_, err = database.Exec(

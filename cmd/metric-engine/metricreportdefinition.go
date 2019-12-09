@@ -277,7 +277,7 @@ func (factory *MRDFactory) IterMRD(checkFn func(MRD *MetricReportDefinition) boo
 func (l *MRDFactory) FastCheckForNeededMRUpdates() error {
 	for MRName, val := range l.NextMRTS {
 		if l.MetricTSHWM.After(val.Time) {
-			fmt.Println("FCFNMU(", l.MetricTSHWM, "): MR(", MRName, ") OLD:", val.Time)
+			fmt.Println("GEN - CUR_HWM(", l.MetricTSHWM, "): MR(", MRName, ")")
 			l.GenerateMetricReport(&MetricReportDefinitionData{Name: MRName})
 		}
 	}
@@ -378,8 +378,9 @@ func (factory *MRDFactory) GenerateMetricReport(mrdEvData *MetricReportDefinitio
 	switch MRD.Type {
 	case "Periodic":
 		//TODO: implement AppendLimit
-		sqlargs["Start"] = factory.MetricTSHWM.Add(-time.Duration(MRD.Period) * time.Second)
-		sqlargs["End"] = factory.MetricTSHWM
+		sqlargs["Start"] = factory.MetricTSHWM.Add(-time.Duration(MRD.Period) * time.Second).UnixNano()
+		sqlargs["End"] = factory.MetricTSHWM.UnixNano()
+		sqlargs["ReportTimestamp"] = factory.MetricTSHWM.UnixNano()
 		factory.NextMRTS[MRD.Name] = SqlTimeInt{factory.MetricTSHWM.Add(time.Duration(MRD.Period) * time.Second)}
 
 		switch MRD.Updates {
@@ -388,17 +389,18 @@ func (factory *MRDFactory) GenerateMetricReport(mrdEvData *MetricReportDefinitio
 			// TODO for appendlimit: unclear on what to do for Periodic/NewReport that exceeds AppendLimit
 			//    --> Proposed: *trigger* new report when AppendLimit exceeded. Would need to scan reports for appendlimit somehow
 			//        This would happen outside of this code, so this code wouldn't need to change
-			SQL = `INSERT INTO MetricReport (Name, ReportDefinitionID, Sequence, StartTimestamp, EndTimestamp)
-				values (:Name, :MRDID, :Sequence, :Start, :End)`
+			SQL = `INSERT INTO MetricReport (Name, ReportDefinitionID, Sequence, ReportTimestamp, StartTimestamp, EndTimestamp)
+			values (:Name, :MRDID, :Sequence, :ReportTimestamp, :Start, :End)`
 
 		case /*Periodic*/ "Overwrite":
 			// TODO for appendlimit: unclear on what to do for Periodic/OverWrite that exceeds AppendLimit
 			//    --> Proposed: *trigger* new report when AppendLimit exceeded. Would need to scan reports for appendlimit somehow
 			//        This would happen outside of this code, so this code wouldn't need to change
-			SQL = `INSERT INTO MetricReport (Name, ReportDefinitionID, Sequence, StartTimestamp, EndTimestamp)
-				values (:Name, :MRDID, :Sequence, :Start, :End)
+			SQL = `INSERT INTO MetricReport (Name, ReportDefinitionID, Sequence, ReportTimestamp, StartTimestamp, EndTimestamp)
+			values (:Name, :MRDID, :Sequence, :ReportTimestamp, :Start, :End)
 				on conflict(Name) do update
 				set Sequence=Sequence+1,
+				  ReportTimestamp=:ReportTimestamp,
 					StartTimestamp=EndTimestamp,
 					EndTimestamp=:End`
 
@@ -406,10 +408,11 @@ func (factory *MRDFactory) GenerateMetricReport(mrdEvData *MetricReportDefinitio
 			// periodic/appendstops basically just periodically appends data to an existing report
 			// TODO: need to simply skip if count(*) exceeds appendlimit
 			//     select count(*) from metricreport where name=:name
-			SQL = `INSERT INTO MetricReport (Name, ReportDefinitionID, Sequence, StartTimestamp, EndTimestamp)
-			values (:Name, :MRDID, :Sequence, :Start, :End)
+			SQL = `INSERT INTO MetricReport (Name, ReportDefinitionID, Sequence, ReportTimestamp, StartTimestamp, EndTimestamp)
+			values (:Name, :MRDID, :Sequence, :ReportTimestamp, :Start, :End)
 				on conflict(Name) do update
 				set Sequence=Sequence+1,
+				  ReportTimestamp=:ReportTimestamp,
 					StartTimestamp=EndTimestamp,
 					EndTimestamp=:End`
 
@@ -420,16 +423,17 @@ func (factory *MRDFactory) GenerateMetricReport(mrdEvData *MetricReportDefinitio
 			//       if count > appendlimit
 			//           select ts from metricreport where rownum=appendlimit
 			//       update metricreport set startsequence=ts
-			SQL = `INSERT INTO MetricReport (Name, ReportDefinitionID, Sequence, StartTimestamp, EndTimestamp)
-			values (:Name, :MRDID, :Sequence, :Start, NULL)
+			SQL = `INSERT INTO MetricReport (Name, ReportDefinitionID, Sequence, ReportTimestamp, StartTimestamp, EndTimestamp)
+			values (:Name, :MRDID, :Sequence, :ReportTimestamp, :Start, NULL)
 				on conflict(Name) do update
 				set Sequence=Sequence+1,
+				  ReportTimestamp=:ReportTimestamp,
 					EndTimestamp=:End`
 		}
 
 	case "OnChange":
-		SQL = `INSERT INTO MetricReport (Name, ReportDefinitionID, Sequence, StartTimestamp, EndTimestamp)
-				values (:Name, :MRDID, :Sequence, NULL, NULL) on conflict(name) do nothing`
+		SQL = `INSERT INTO MetricReport (Name, ReportDefinitionID, Sequence, ReportTimestamp, StartTimestamp, EndTimestamp)
+				values (:Name, :MRDID, :Sequence, 0, NULL, NULL) on conflict(name) do nothing`
 		// factory.NextMRTS ?
 		switch MRD.Updates {
 		case /*OnChange*/ "NewReport":
@@ -441,8 +445,8 @@ func (factory *MRDFactory) GenerateMetricReport(mrdEvData *MetricReportDefinitio
 		}
 
 	case "OnRequest":
-		SQL = `INSERT INTO MetricReport (Name, ReportDefinitionID, Sequence, StartTimestamp, EndTimestamp)
-				values (:Name, :MRDID, :Sequence, NULL, NULL) on conflict(name) do nothing`
+		SQL = `INSERT INTO MetricReport (Name, ReportDefinitionID, Sequence, ReportTimestamp, StartTimestamp, EndTimestamp)
+				values (:Name, :MRDID, :Sequence, 0, NULL, NULL) on conflict(name) do nothing`
 		// factory.NextMRTS ?
 		switch MRD.Updates {
 		case /*OnRequest*/ "NewReport":
@@ -494,7 +498,6 @@ func (m *SqlTimeInt) Scan(src interface{}) error {
 }
 
 type Scratch struct {
-	Start     SqlTimeInt
 	Numvalues int
 	Sum       float64
 	Maximum   float64
@@ -528,6 +531,7 @@ type MetricMeta struct {
 	ID                int64      `db:"ID"`
 	InstanceID        int64      `db:"InstanceID"`
 	CollectionScratch Scratch    `db:"CollectionScratch"`
+	FlushTime         SqlTimeInt `db:"FlushTime"`
 	SuppressDups      bool       `db:"SuppressDups"`
 	LastTS            SqlTimeInt `db:"LastTS"`
 	LastValue         string     `db:"LastValue"`
@@ -590,7 +594,7 @@ func (factory *MRDFactory) InsertMetricValue(ev *MetricValueEventData) (err erro
 		// Construct label and Scratch space
 		if mm.CollectionFunction != "" {
 			mm.Label = fmt.Sprintf("%s - %s - %s", mm.Context, mm.Name, mm.CollectionFunction)
-			mm.CollectionScratch.Start = mm.Timestamp
+			mm.FlushTime = SqlTimeInt{mm.Timestamp.Add(mm.CollectionDuration * time.Second)}
 			mm.CollectionScratch.Sum = 0
 			mm.CollectionScratch.Numvalues = 0
 			mm.CollectionScratch.Maximum = -math.MaxFloat64
@@ -602,8 +606,8 @@ func (factory *MRDFactory) InsertMetricValue(ev *MetricValueEventData) (err erro
 		// create instances for each metric meta corresponding to this metric value
 		_, err = tx.NamedExec(`
 			INSERT INTO MetricInstance
-				(MetaID, Name, Property, Context, Label, CollectionScratch, LastValue, LastTS)
-				VALUES (:MetaID, :Name, :Property, :Context, :Label, :CollectionScratch, '', 0)
+				(MetaID, Name, Property, Context, Label, CollectionScratch, LastValue, LastTS, FlushTime)
+				VALUES (:MetaID, :Name, :Property, :Context, :Label, :CollectionScratch, '', 0, :FlushTime)
 				on conflict(MetaID, Name, Property, Context, Label) do nothing
 			`, mm)
 		if err != nil {
@@ -620,6 +624,7 @@ func (factory *MRDFactory) InsertMetricValue(ev *MetricValueEventData) (err erro
 			MI.CollectionScratch,
 			MI.LastTS,
 			MI.LastValue,
+			MI.FlushTime,
 			MM.SuppressDups,
 			MM.CollectionFunction,
 			MM.CollectionDuration
@@ -651,11 +656,8 @@ func (factory *MRDFactory) InsertMetricValue(ev *MetricValueEventData) (err erro
 		} else {
 			saveValue = false
 			saveInstance = true
-			// TODO - IDEA: also mark "FlushTime" in MetricInstance so we can query quickly for metrics where flushtime < MetricTSHWM and flush them
-
 			// has the period expired?
-			// TODO: if the next measurement wont come in before the end of collection duration, drop in the measurement (? - can we do this?)
-			if mm.Timestamp.After(mm.CollectionScratch.Start.Add(mm.CollectionDuration * time.Second)) {
+			if mm.Timestamp.After(mm.FlushTime.Time) {
 				// Calculate what we should be dropping in the output
 				saveValue = true
 				factory.logger.Info("Collection period done Metric Instance", "Instance ID", mm.InstanceID, "CollectionFunction", mm.CollectionFunction)
@@ -673,7 +675,8 @@ func (factory *MRDFactory) InsertMetricValue(ev *MetricValueEventData) (err erro
 				}
 
 				// now, reset everything
-				mm.CollectionScratch.Start = mm.Timestamp
+				// TODO: need a separate query to find all Metrics with HWM > FlushTime and flush them
+				mm.FlushTime = SqlTimeInt{mm.Timestamp.Add(mm.CollectionDuration * time.Second)}
 				mm.CollectionScratch.Sum = 0
 				mm.CollectionScratch.Numvalues = 0
 				mm.CollectionScratch.Maximum = -math.MaxFloat64
@@ -693,6 +696,8 @@ func (factory *MRDFactory) InsertMetricValue(ev *MetricValueEventData) (err erro
 		}
 
 		if mm.SuppressDups && mm.LastValue == mm.ValueToWrite {
+			// No need to flush out new value, however instance may or may not need
+			// flushing depending on above.
 			saveValue = false
 		}
 
@@ -715,22 +720,19 @@ func (factory *MRDFactory) InsertMetricValue(ev *MetricValueEventData) (err erro
 
 		if saveInstance {
 			_, err = tx.NamedExec(`
-				UPDATE MetricInstance SET LastTS=:LastTS, LastValue=:LastValue, CollectionScratch=:CollectionScratch
+			UPDATE MetricInstance SET LastTS=:LastTS, LastValue=:LastValue, CollectionScratch=:CollectionScratch, FlushTime=:FlushTime
 					WHERE ID=:InstanceID
 					`, mm)
 			if err != nil {
-				factory.logger.Crit("ERROR updating MetricInstance", "MetaID", mm.MetaID, "InstanceID", mm.InstanceID, "err", err)
-				return
+				return xerrors.Errorf("Failed to update MetricInstance(%d) with MetricMeta(%d): %w", mm.InstanceID, mm.MetaID, err)
 			}
 		}
 	}
 
 	err = tx.Commit()
 	if err != nil {
-		factory.logger.Crit("Transaction Committed FAILED for Metric Value insertion", "err", err)
-		return
+		return xerrors.Errorf("Commit failed: %w", err)
 	}
-	factory.logger.Info("Transaction Committed for Metric Value insertion", "new ts hwm", mm.Timestamp)
 	factory.MetricTSHWM = mm.Timestamp
 
 	return nil
