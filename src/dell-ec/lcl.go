@@ -425,19 +425,20 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 			return false, nil
 		}
 
-		mdls := vw.GetModels("swinv")
-		if mdls == nil {
+		mdlMap := vw.GetModels("swinv")
+		if len(mdlMap) == 0 {
 			return false, nil
 		}
 
-		for _, mdl := range mdls {
-			//fmt.Printf("passing swinv to channel with uri %s\n", resourceURI)
-			mdl.AddObserver("swinv", syncModels)
+		mdls := []*model.Model{}
+
+		for mdlName, mdl := range mdlMap {
+			mdl.AddObserver(mdlName, syncModels)
+			mdls = append(mdls, mdl)
 		}
 
 		newchan <- newfirm{resourceURI, mdls}
 
-		//fmt.Printf("URI is in %s\n", resourceURI)
 		return true, nil
 	})
 
@@ -458,8 +459,12 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 			select {
 			case <-trigger:
 			case n := <-newchan:
+				_, ok := swinvList[n.uri]
+				if ok {
+					swinvList[n.uri] = append(swinvList[n.uri], n.mdls...)
+				} else {
 				swinvList[n.uri] = n.mdls
-				//fmt.Printf("NEW model from URI: %s\n", n.uri)
+				}
 				continue
 			}
 
@@ -470,7 +475,6 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 			// need to iterate through models.  With the same work flow below.. When iteration is complete... need to add uris and fqdds to model.
 			for uri, mdls := range swinvList {
 				for _, mdl := range mdls {
-					//fmt.Printf("swinvList uri is %s\n", uri)
 					fqddRaw, ok := mdl.GetPropertyOk("fw_fqdd")
 					if !ok || fqddRaw == nil {
 						logger.Debug("swinv DID NOT GET fqdd raw with " + uri)
@@ -566,10 +570,24 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 
 					} else {
 						vw := firmwareInventoryViews[compVerTuple]
-						mdl := vw.GetModel("default")
-						mdl.UpdateProperty("install_date", installDate)
-						mdl.UpdateProperty("updateable", updateable)
-						mdl.UpdateProperty("name", name)
+
+						firmMdl:= vw.GetModel("default")
+
+						tIntf, ok := firmMdl.GetPropertyOk("install_date")
+						if !ok {
+							continue	
+						}
+
+						tStr, ok := tIntf.(string)
+						if !ok{
+							continue
+						}
+
+						t, _ := time.Parse(time.RFC3339,tStr)
+						tBefore, _ := time.Parse(time.RFC3339,installDate)
+						if !tBefore.Before(t) {
+							firmMdl.UpdateProperty("install_date", installDate)
+						}
 					}
 
 					// These values are for post processing on Instantiated object
@@ -599,16 +617,16 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 
 			for compVerTuple, arr := range fqdd_mappings {
 				vw := firmwareInventoryViews[compVerTuple]
-				mdl := vw.GetModel("default")
-				if mdl != nil {
-					mdl.UpdateProperty("fqdd_list", arr)
+				firmMdl := vw.GetModel("default")
+				if firmMdl != nil {
+					firmMdl.UpdateProperty("fqdd_list", arr)
 				}
 			}
 
 			for compVerTuple, arr := range uri_mappings {
 				vw := firmwareInventoryViews[compVerTuple]
-				mdl := vw.GetModel("default")
-				mdl.UpdateProperty("related_list", arr)
+				firmMdl := vw.GetModel("default")
+				firmMdl.UpdateProperty("related_list", arr)
 			}
 		}
 	}()

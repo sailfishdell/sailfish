@@ -889,27 +889,8 @@ views:
   "iom":
       "Logger": ["module", "IOM"]
       "Models":
-        "default":  {"unique_name": "FQDD",  "managed_by": "array(rooturi + '/Managers/CMC.Integrated.1')"}
-      "Controllers":
-        - "fn": "ARMapper"
-          "params": {"modelname": "default", "cfgsection": "firmware/inventory/2", "mappinguniquename": "'iom_fw_mapper2:' + FQDD", "AddToView": "ar_mapper_inv"}
-      "View":
-        - "fn": "linkModel"
-          "params": {"existing": "default", "linkname": "swinv"}
-        - "fn": "with_URI"
-          "params": "rooturi + '/Chassis/' + FQDD "
-        - "fn": "PublishResourceUpdatedEventsForModel"
-          "params": "default"
-      "Aggregate": "iom"
-      "ExecPost": [
-        "instantiate('iom2', 'FQDD', FQDD)",
-        ]
-
-
-  "iom2":
-      "Logger": ["module", "IOM"]
-      "Models":
         "default":  {"unique_name": "FQDD", "inst_power": "0", "managed_by": "array(rooturi + '/Managers/CMC.Integrated.1')"}
+        "swinv2":  {"unique_name": "FQDD",  "managed_by": "array(rooturi + '/Managers/CMC.Integrated.1')"}
       "Controllers":
         - "fn": "ARMapper"
           "params": {"modelname": "default", "cfgsection": "firmware/inventory", "mappinguniquename": "'iom_fw_mapper:' + FQDD", "AddToView": "ar_mapper_inv"}
@@ -917,6 +898,8 @@ views:
           "params": {"modelname": "default", "cfgsection": "Chassis/IOM.Slot", "mappinguniquename": "'iom_mapper:' + FQDD", "AddToView": "ar_mapper"}
         - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "health", "uniquename": "'am2_health_' + FQDD", "passthru": {"health_fqdd": "'System.Chassis.1#' + FQDD"} }
+        - "fn": "ARMapper"
+          "params": {"modelname": "swinv2", "cfgsection": "firmware/inventory/2", "mappinguniquename": "'iom_fw_mapper2:' + FQDD", "AddToView": "ar_mapper_inv"}
       "View":
         - "fn": "linkModel"
           "params": {"existing": "default", "linkname": "health"}
