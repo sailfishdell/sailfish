@@ -121,19 +121,6 @@ func createDatabase(logger log.Logger, dbpath string) (database *sqlx.DB, err er
 					REFERENCES MetricMeta (ID) ON DELETE CASCADE
 			);`},
 
-		{"Create MetricValue table", `
-			CREATE TABLE IF NOT EXISTS MetricValue
-			(
-				InstanceID INTEGER NOT NULL,
-				Timestamp  INTEGER NOT NULL,
-				Value      TEXT    NOT NULL, -- sized to store 64-bit float as string
-
-				-- indexes and constraints
-				PRIMARY KEY (InstanceID, Timestamp),
-				FOREIGN KEY (InstanceID)
-					REFERENCES MetricInstance (ID) ON DELETE CASCADE
-			) WITHOUT ROWID`},
-
 		{"Create MetricValueInt table", `
 			CREATE TABLE IF NOT EXISTS MetricValueInt
 			(
@@ -172,6 +159,15 @@ func createDatabase(logger log.Logger, dbpath string) (database *sqlx.DB, err er
 				FOREIGN KEY (InstanceID)
 					REFERENCES MetricInstance (ID) ON DELETE CASCADE
 			) WITHOUT ROWID`},
+
+		{"Create MetricValue View", `
+			CREATE View IF NOT EXISTS MetricValue as
+				select InstanceID, Timestamp, Value from MetricValueText
+				union all
+				select InstanceID, Timestamp, Value from MetricValueInt
+				union all
+				select InstanceID, Timestamp, Value from MetricValueReal
+			 `},
 
 		{"Create MetricReport table", `
 			CREATE TABLE IF NOT EXISTS MetricReport

@@ -708,11 +708,29 @@ func (factory *MRDFactory) InsertMetricValue(ev *MetricValueEventData) (err erro
 				saveInstance = true
 			}
 
-			_, err = tx.NamedExec(`
-					INSERT INTO MetricValue
-						( InstanceID, Timestamp, Value )
-						VALUES (:InstanceID, :Timestamp, :Value )
-					`, mm)
+			args := []interface{}{mm.InstanceID, mm.Timestamp}
+			tableName := "MetricValueText"
+			for {
+				// Put into optimized tables, if possible. Try INT first, as it will error out for a float(1.0) value, but not vice versa
+				intVal, err := strconv.ParseInt(mm.Value, 10, 64)
+				if err == nil {
+					tableName = "MetricValueInt"
+					args = append(args, intVal)
+					break
+				}
+
+				floatVal, err := strconv.ParseFloat(mm.Value, 64)
+				if err == nil {
+					tableName = "MetricValueReal"
+					args = append(args, floatVal)
+					break
+				}
+
+				args = append(args, mm.Value)
+				break
+			}
+
+			_, err = tx.Exec(fmt.Sprintf(`INSERT INTO %s (InstanceID, Timestamp, Value) VALUES (?, ?, ?)`, tableName), args...)
 			if err != nil {
 				return xerrors.Errorf("Error inserting MetricValue for MetricInstance(%d)/MetricMeta(%d): %w", mm.InstanceID, mm.MetaID, err)
 			}
