@@ -1,5 +1,3 @@
-// +build idrac
-
 package main
 
 import (
