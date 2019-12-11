@@ -132,7 +132,7 @@ func createDatabase(logger log.Logger, dbpath string) (database *sqlx.DB, err er
 				PRIMARY KEY (InstanceID, Timestamp),
 				FOREIGN KEY (InstanceID)
 					REFERENCES MetricInstance (ID) ON DELETE CASCADE
-			) WITHOUT ROWID`},
+			) WITHOUT ROWID;`},
 
 		{"Create MetricValueReal table", `
 			CREATE TABLE IF NOT EXISTS MetricValueReal
@@ -145,7 +145,7 @@ func createDatabase(logger log.Logger, dbpath string) (database *sqlx.DB, err er
 				PRIMARY KEY (InstanceID, Timestamp),
 				FOREIGN KEY (InstanceID)
 					REFERENCES MetricInstance (ID) ON DELETE CASCADE
-			) WITHOUT ROWID`},
+			) WITHOUT ROWID;`},
 
 		{"Create MetricValueText table", `
 			CREATE TABLE IF NOT EXISTS MetricValueText
@@ -158,7 +158,7 @@ func createDatabase(logger log.Logger, dbpath string) (database *sqlx.DB, err er
 				PRIMARY KEY (InstanceID, Timestamp),
 				FOREIGN KEY (InstanceID)
 					REFERENCES MetricInstance (ID) ON DELETE CASCADE
-			) WITHOUT ROWID`},
+			) WITHOUT ROWID;`},
 
 		{"Create MetricValue View", `
 			CREATE View IF NOT EXISTS MetricValue as
@@ -226,6 +226,79 @@ func createDatabase(logger log.Logger, dbpath string) (database *sqlx.DB, err er
 						-- order by Timestamp
 					`},
 
+		// DOES NOT SCALE
+		//   Exact same memory usage as the unscalable original
+		{"Create the Redfish Metric Report", `
+				CREATE VIEW IF NOT EXISTS MetricReport_Redfish as
+				select
+					'/redfish/v1/TelemetryService/MetricReports/' || MR.Name as '@odata.id',
+					('{' ||
+							' "@odata.type": "#MetricReport.v1_2_0.MetricReport",' ||
+							' "@odata.context": "/redfish/v1/$metadata#MetricReport.MetricReport",' ||
+							' "@odata.id": "/redfish/v1/TelemetryService/MetricReports/' || MR.Name || '",' ||
+							' "Id": "' || MR.Name || '",' ||
+							' "Name": "' || MR.Name || ' Metric Report",' ||
+							' "ReportSequence": ' || Sequence || ',' ||
+							' "Timestamp": ' || strftime('"%Y-%m-%dT%H:%M:%f"', MR.ReportTimestamp/1000000000.0, 'unixepoch') || ', ' ||
+							' "MetricReportDefinition": {"@odata.id": "/redfish/v1/TelemetryService/MetricReportDefinitions/' || MRD.Name || '"}, ' ||
+							' "MetricValues": [' || (
+									select group_concat(JSON)
+									from MetricValueByReport_JSON as MVRJ
+									where MVRJ.MRDID=MR.ReportDefinitionID
+						  			and ( MVRJ.Timestamp >= MR.StartTimestamp OR MR.StartTimestamp is NULL )
+										and ( MVRJ.Timestamp <= MR.EndTimestamp OR MR.EndTimestamp is NULL )
+								) || '],' ||
+							' "MetricValues@odata.count": ' || (
+									select count(*)
+									from MetricValueByReport as MVR
+									where MVR.MRDID=MR.ReportDefinitionID
+						  			and ( MVR.Timestamp >= MR.StartTimestamp OR MR.StartTimestamp is NULL )
+										and ( MVR.Timestamp <= MR.EndTimestamp OR MR.EndTimestamp is NULL )
+						) ||
+						'}'
+					) as root
+				from MetricReport as MR
+				inner join MetricReportDefinition as MRD on MR.ReportDefinitionID = MRD.ID
+				`}, // TODO: index on the odata.id field above
+
+		{"Create the Redfish Metric Report VIEW for backwards compat with older telemetry service", `
+				CREATE VIEW IF NOT EXISTS AggregationMetricsMRView_json as select * from MetricReport_Redfish;
+				CREATE VIEW IF NOT EXISTS CPUMemMetricsMRView_json as select * from MetricReport_Redfish;
+				CREATE VIEW IF NOT EXISTS CPURegistersMRView_json as select * from MetricReport_Redfish;
+				CREATE VIEW IF NOT EXISTS CPUSensorMRView_json as select * from MetricReport_Redfish;
+				CREATE VIEW IF NOT EXISTS CUPSMRView_json as select * from MetricReport_Redfish;
+				CREATE VIEW IF NOT EXISTS FCSensorMRView_json as select * from MetricReport_Redfish;
+				CREATE VIEW IF NOT EXISTS FPGASensorMRView_json as select * from MetricReport_Redfish;
+				CREATE VIEW IF NOT EXISTS FanSensorMRView_json as select * from MetricReport_Redfish;
+				CREATE VIEW IF NOT EXISTS GPUMetricsMRView_json as select * from MetricReport_Redfish;
+				CREATE VIEW IF NOT EXISTS GPUStatisticsMRView_json as select * from MetricReport_Redfish;
+				CREATE VIEW IF NOT EXISTS MemorySensorMRView_json as select * from MetricReport_Redfish;
+				CREATE VIEW IF NOT EXISTS NICSensorMRView_json as select * from MetricReport_Redfish;
+				CREATE VIEW IF NOT EXISTS NICStatisticsMRView_json as select * from MetricReport_Redfish;
+				CREATE VIEW IF NOT EXISTS NVMeSMARTDataMRView_json as select * from MetricReport_Redfish;
+				CREATE VIEW IF NOT EXISTS PSUMetricsMRView_json as select * from MetricReport_Redfish;
+				CREATE VIEW IF NOT EXISTS PowerMetricsMRView_json as select * from MetricReport_Redfish;
+				CREATE VIEW IF NOT EXISTS PowerStatisticsMRView_json as select * from MetricReport_Redfish;
+				CREATE VIEW IF NOT EXISTS SensorMRView_json as select * from MetricReport_Redfish;
+				CREATE VIEW IF NOT EXISTS StorageDiskSMARTDataMRView_json as select * from MetricReport_Redfish;
+				CREATE VIEW IF NOT EXISTS StorageSensorMRView_json as select * from MetricReport_Redfish;
+				CREATE VIEW IF NOT EXISTS ThermalSensorMRView_json as select * from  MetricReport_Redfish;
+				CREATE VIEW IF NOT EXISTS ThermalMetricsMRView_json as select * from  MetricReport_Redfish;
+
+				CREATE VIEW IF NOT EXISTS TelemetryLogServiceLCLogview_json as select * from MetricReport_Redfish;
+				CREATE VIEW IF NOT EXISTS MetricDefinitionCollectionView_json as select * from MetricReport_Redfish;
+				CREATE VIEW IF NOT EXISTS MetricDefinitionView_json as select * from MetricReport_Redfish;
+				CREATE VIEW IF NOT EXISTS MetricReportCollectionView_json as select * from MetricReport_Redfish;
+				CREATE VIEW IF NOT EXISTS MetricReportDefinitionCollectionView_json as select * from MetricReport_Redfish;
+				CREATE VIEW IF NOT EXISTS TelemetryServiceView_json as select * from MetricReport_Redfish;
+				`},
+
+		//================================================================================================================
+		//
+		// For reference only from here down: different experiments to see if we can use constant memory to output reports
+		//
+		//================================================================================================================
+
 		// This looks ugly as heck, but so far it's the thing that scales best. It still doesn't stream out, it uses increasing memory depending on the number of rows
 		{"Create the Redfish Metric Report", `
 				CREATE VIEW IF NOT EXISTS MetricReport_experiment as
@@ -280,42 +353,6 @@ func createDatabase(logger log.Logger, dbpath string) (database *sqlx.DB, err er
 					MR.Name as ReportName,
 					'/redfish/v1/TelemetryService/MetricReports/' || MR.Name as '@odata.id',
 					('}')
-				from MetricReport as MR
-				inner join MetricReportDefinition as MRD on MR.ReportDefinitionID = MRD.ID
-			`},
-
-		// DOES NOT SCALE
-		//   Exact same memory usage as the unscalable original
-		{"Create the Redfish Metric Report", `
-				CREATE VIEW IF NOT EXISTS MetricReport_Redfish as
-				select
-					MR.Name as ReportName,
-					'/redfish/v1/TelemetryService/MetricReports/' || MR.Name as '@odata.id',
-					('{' ||
-							' "@odata.type": "#MetricReport.v1_2_0.MetricReport",' ||
-							' "@odata.context": "/redfish/v1/$metadata#MetricReport.MetricReport",' ||
-							' "@odata.id": "/redfish/v1/TelemetryService/MetricReports/' || MR.Name || '",' ||
-							' "Id": "' || MR.Name || '",' ||
-							' "Name": "' || MR.Name || ' Metric Report",' ||
-							' "ReportSequence": ' || Sequence || ',' ||
-							' "Timestamp": ' || strftime('"%Y-%m-%dT%H:%M:%f"', MR.ReportTimestamp/1000000000.0, 'unixepoch') || ', ' ||
-							' "MetricReportDefinition": {"@odata.id": "/redfish/v1/TelemetryService/MetricReportDefinitions/' || MRD.Name || '"}, ' ||
-							' "MetricValues": [' || (
-									select group_concat(JSON)
-									from MetricValueByReport_JSON as MVRJ
-									where MVRJ.MRDID=MR.ReportDefinitionID
-						  			and ( MVRJ.Timestamp >= MR.StartTimestamp OR MR.StartTimestamp is NULL )
-										and ( MVRJ.Timestamp <= MR.EndTimestamp OR MR.EndTimestamp is NULL )
-								) || '],' ||
-							' "MetricValues@odata.count": ' || (
-									select count(*)
-									from MetricValueByReport as MVR
-									where MVR.MRDID=MR.ReportDefinitionID
-						  			and ( MVR.Timestamp >= MR.StartTimestamp OR MR.StartTimestamp is NULL )
-										and ( MVR.Timestamp <= MR.EndTimestamp OR MR.EndTimestamp is NULL )
-						) ||
-						'}'
-					) as JSON
 				from MetricReport as MR
 				inner join MetricReportDefinition as MRD on MR.ReportDefinitionID = MRD.ID
 			`},
