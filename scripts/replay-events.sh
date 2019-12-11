@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 set -e
 #set -x
@@ -30,13 +30,6 @@ send_file() {
   file_lines=$(wc -l $file |  awk '{print $1}')
   events_replayed=0
   while read -u 5 line ; do
-
-      # skip comments
-      if [[ $line == //* || $line == '' ]]; then
-          echo COMMENT, SKIPPING: $line
-          continue
-      fi
-
       JQCMD=". "
       JQARGS=""
 
@@ -100,7 +93,7 @@ send_file() {
 
       if [[ -n "$singlestep" ]]; then  read -p "Paused" pause; fi
 
-  done 5<$file
+    done 5< <( cat $file | perl -n -e 'print unless /^\s*(\/\/.*)*$/ ' | jq -c .)
 }
 
 start=$(date +%s)
