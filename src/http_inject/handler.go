@@ -332,7 +332,6 @@ func (s *service) Start() {
 
 				if len(queued) < 1 {
 					panic("Somehow we added a command to the queue but now have nothing in the queue. This can't happen.")
-					break
 				}
 
 				// queue is sorted, so first event seq can be checked
