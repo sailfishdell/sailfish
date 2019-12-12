@@ -285,6 +285,7 @@ func (l *MRDFactory) FastCheckForNeededMRUpdates() error {
 }
 
 func (l *MRDFactory) SlowCheckForNeededMRUpdates() error {
+	// TODO: not yet complete
 	return l.IterMRD(
 		func(MRD *MetricReportDefinition) bool { return true },
 		func(MRD *MetricReportDefinition) error {
@@ -305,7 +306,6 @@ func (l *MRDFactory) SlowCheckForNeededMRUpdates() error {
 			}
 			return nil
 		})
-	return nil
 }
 
 func loadReportDefinition(tx *sqlx.Tx, MRD *MetricReportDefinition) error {
@@ -385,12 +385,14 @@ func (factory *MRDFactory) GenerateMetricReport(mrdEvData *MetricReportDefinitio
 
 		switch MRD.Updates {
 		case /*Periodic*/ "NewReport":
-			sqlargs["Name"] = fmt.Sprintf("%s - %s", MRD.Name, factory.MetricTSHWM.Time)
+			sqlargs["Name"] = fmt.Sprintf("%s-%s", MRD.Name, factory.MetricTSHWM.Time.UTC().Format(time.RFC3339))
 			// TODO for appendlimit: unclear on what to do for Periodic/NewReport that exceeds AppendLimit
 			//    --> Proposed: *trigger* new report when AppendLimit exceeded. Would need to scan reports for appendlimit somehow
 			//        This would happen outside of this code, so this code wouldn't need to change
 			SQL = `INSERT INTO MetricReport (Name, ReportDefinitionID, Sequence, ReportTimestamp, StartTimestamp, EndTimestamp)
-			values (:Name, :MRDID, :Sequence, :ReportTimestamp, :Start, :End)`
+			values (:Name, :MRDID, ifnull((select max(sequence)+1 from MetricReport where ReportDefinitionID=:MRDID), 0), :ReportTimestamp, :Start, :End);
+			delete from metricreport
+			where name in (select name from MetricReport where sequence+2 < (select max(sequence) from MetricReport as mr2 where mr2.sequence=sequence));`
 
 		case /*Periodic*/ "Overwrite":
 			// TODO for appendlimit: unclear on what to do for Periodic/OverWrite that exceeds AppendLimit
@@ -802,6 +804,46 @@ func (factory *MRDFactory) DeleteOrphans() (err error) {
 		_, err = tx.Exec(sql)
 		if err != nil {
 			return xerrors.Errorf("Critical error performing orphan op '%s': %w", op, err)
+		}
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return xerrors.Errorf("Failed transaction commit: %w", err)
+	}
+
+	return nil
+}
+
+var deleteops = []string{
+	// The metric value tables should hold ~500k entries.
+	`delete from MetricValueInt where Timestamp > (select Timestamp from MetricValueInt order by Timestamp Limit 1 Offset 200000);`,
+	`delete from MetricValueReal where Timestamp > (select Timestamp from MetricValueReal order by Timestamp Limit 1 Offset 200000);`,
+	`delete from MetricValueText where Timestamp > (select Timestamp from MetricValueText order by Timestamp Limit 1 Offset 200000);`,
+
+	// Only should have max 3 "new" reports per Metric Report Definition
+	`delete from metricreport where name in (select name from MetricReport where sequence+3 < (select max(sequence) from MetricReport as mr2 where mr2.sequence=sequence));`,
+}
+
+func (factory *MRDFactory) DeleteOldestValues() (err error) {
+	factory.logger.Info("Database Maintenance: Delete Oldest Metric Values")
+
+	// ===================================
+	// Setup Transaction
+	// ===================================
+	tx, err := factory.database.Beginx()
+	if err != nil {
+		factory.logger.Crit("Error creating transaction to update MRD", "err", err)
+		return
+	}
+	// if we error out at all, roll back
+	defer tx.Rollback()
+
+	// run all the delete ops
+	for _, sql := range deleteops {
+		_, err = tx.Exec(sql)
+		if err != nil {
+			return xerrors.Errorf("Critical error performing delete from Metric Value table -> '%s': %w", sql, err)
 		}
 	}
 

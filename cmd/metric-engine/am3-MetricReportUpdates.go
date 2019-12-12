@@ -48,13 +48,17 @@ func addAM3DatabaseFunctions(logger log.Logger, dbpath string, am3Svc *am3.Servi
 		d.GetBus().PublishEvent(context.Background(), eh.NewEvent(DatabaseMaintenance, "optimize", time.Now()))
 
 		// NOTE: the numbers below are selected as PRIME numbers so that they run at the same time as infrequently as possible
-		// With the default 181/73, they will run concurrently every ~9 days
-		vacuumTicker := time.NewTicker(time.Duration(73) * time.Minute)
-		optimizeTicker := time.NewTicker(time.Duration(181) * time.Minute)
+		// With the default 73/3607/10831, they will run concurrently every ~90 years.
+		cleanValuesTicker := time.NewTicker(time.Duration(73) * time.Second) // once a minute
+		vacuumTicker := time.NewTicker(time.Duration(3607) * time.Second)    // once an hour (-ish)
+		optimizeTicker := time.NewTicker(time.Duration(10831) * time.Minute) // once every three hours
+		defer cleanValuesTicker.Stop()
 		defer vacuumTicker.Stop()
 		defer optimizeTicker.Stop()
 		for {
 			select {
+			case <-cleanValuesTicker.C:
+				d.GetBus().PublishEvent(context.Background(), eh.NewEvent(DatabaseMaintenance, "clean values", time.Now()))
 			case <-vacuumTicker.C:
 				d.GetBus().PublishEvent(context.Background(), eh.NewEvent(DatabaseMaintenance, "vacuum", time.Now()))
 			case <-optimizeTicker.C:
@@ -226,6 +230,9 @@ func addAM3DatabaseFunctions(logger log.Logger, dbpath string, am3Svc *am3.Servi
 
 		case "vacuum":
 			MRDFactory.Vacuum()
+
+		case "clean values":
+			MRDFactory.DeleteOldestValues()
 
 		case "delete orphans":
 			// TODO: delete orphans of all kinds.

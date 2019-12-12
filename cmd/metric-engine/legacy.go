@@ -15,7 +15,7 @@ import (
 type LegacyMeta struct {
 	query    *sqlx.Stmt
 	lastTS   int64
-	importFn func(string) error
+	importFn func(string) (bool, error)
 }
 
 type LegacyFactory struct {
@@ -31,51 +31,51 @@ func NewLegacyFactory(logger log.Logger, database *sqlx.DB, d *BusComponents) (*
 	ret.database = database
 	ret.bus = d.GetBus()
 	ret.legacy = map[string]LegacyMeta{
-		"AggregationMetrics":   LegacyMeta{importFn: func(n string) error { return ret.ImportByColumn(n) }},
-		"CPUMemMetrics":        LegacyMeta{importFn: func(n string) error { return ret.ImportByColumn(n) }},
-		"CPURegisters":         LegacyMeta{importFn: func(n string) error { return ret.ImportByColumn(n) }},
-		"CUPS":                 LegacyMeta{importFn: func(n string) error { return ret.ImportByColumn(n) }},
-		"FCSensor":             LegacyMeta{importFn: func(n string) error { return ret.ImportByColumn(n) }},
-		"FPGASensor":           LegacyMeta{importFn: func(n string) error { return ret.ImportByColumn(n) }},
-		"FanSensor":            LegacyMeta{importFn: func(n string) error { return ret.ImportByColumn(n) }},
-		"GPUMetrics":           LegacyMeta{importFn: func(n string) error { return ret.ImportByColumn(n) }},
-		"GPUStatistics":        LegacyMeta{importFn: func(n string) error { return ret.ImportByColumn(n) }},
-		"MemorySensor":         LegacyMeta{importFn: func(n string) error { return ret.ImportByColumn(n) }},
-		"NICSensor":            LegacyMeta{importFn: func(n string) error { return ret.ImportByColumn(n) }},
-		"NICStatistics":        LegacyMeta{importFn: func(n string) error { return ret.ImportByColumn(n) }},
-		"NVMeSMARTData":        LegacyMeta{importFn: func(n string) error { return ret.ImportByColumn(n) }},
-		"PSUMetrics":           LegacyMeta{importFn: func(n string) error { return ret.ImportByColumn(n) }},
-		"PowerMetrics":         LegacyMeta{importFn: func(n string) error { return ret.ImportByColumn(n) }},
-		"PowerStatistics":      LegacyMeta{importFn: func(n string) error { return ret.ImportByColumn(n) }},
-		"StorageDiskSMARTData": LegacyMeta{importFn: func(n string) error { return ret.ImportByColumn(n) }},
-		"StorageSensor":        LegacyMeta{importFn: func(n string) error { return ret.ImportByColumn(n) }},
-		"ThermalMetrics":       LegacyMeta{importFn: func(n string) error { return ret.ImportByColumn(n) }},
+		"AggregationMetrics":   LegacyMeta{importFn: func(n string) (bool, error) { return ret.ImportByColumn(n) }},
+		"CPUMemMetrics":        LegacyMeta{importFn: func(n string) (bool, error) { return ret.ImportByColumn(n) }},
+		"CPURegisters":         LegacyMeta{importFn: func(n string) (bool, error) { return ret.ImportByColumn(n) }},
+		"CUPS":                 LegacyMeta{importFn: func(n string) (bool, error) { return ret.ImportByColumn(n) }},
+		"FCSensor":             LegacyMeta{importFn: func(n string) (bool, error) { return ret.ImportByColumn(n) }},
+		"FPGASensor":           LegacyMeta{importFn: func(n string) (bool, error) { return ret.ImportByColumn(n) }},
+		"FanSensor":            LegacyMeta{importFn: func(n string) (bool, error) { return ret.ImportByColumn(n) }},
+		"GPUMetrics":           LegacyMeta{importFn: func(n string) (bool, error) { return ret.ImportByColumn(n) }},
+		"GPUStatistics":        LegacyMeta{importFn: func(n string) (bool, error) { return ret.ImportByColumn(n) }},
+		"MemorySensor":         LegacyMeta{importFn: func(n string) (bool, error) { return ret.ImportByColumn(n) }},
+		"NICSensor":            LegacyMeta{importFn: func(n string) (bool, error) { return ret.ImportByColumn(n) }},
+		"NICStatistics":        LegacyMeta{importFn: func(n string) (bool, error) { return ret.ImportByColumn(n) }},
+		"NVMeSMARTData":        LegacyMeta{importFn: func(n string) (bool, error) { return ret.ImportByColumn(n) }},
+		"PSUMetrics":           LegacyMeta{importFn: func(n string) (bool, error) { return ret.ImportByColumn(n) }},
+		"PowerMetrics":         LegacyMeta{importFn: func(n string) (bool, error) { return ret.ImportByColumn(n) }},
+		"PowerStatistics":      LegacyMeta{importFn: func(n string) (bool, error) { return ret.ImportByColumn(n) }},
+		"StorageDiskSMARTData": LegacyMeta{importFn: func(n string) (bool, error) { return ret.ImportByColumn(n) }},
+		"StorageSensor":        LegacyMeta{importFn: func(n string) (bool, error) { return ret.ImportByColumn(n) }},
+		"ThermalMetrics":       LegacyMeta{importFn: func(n string) (bool, error) { return ret.ImportByColumn(n) }},
 
 		// These tables require special handling because they formatted differently. :(
 		// dont' have an importer here yet. Please write one
-		"CPUSensor":     LegacyMeta{importFn: func(n string) error { return ret.ImportERROR(n) }},
-		"Sensor":        LegacyMeta{importFn: func(n string) error { return ret.ImportERROR(n) }},
-		"ThermalSensor": LegacyMeta{importFn: func(n string) error { return ret.ImportERROR(n) }},
+		"CPUSensor":     LegacyMeta{importFn: func(n string) (bool, error) { return ret.ImportERROR(n) }},
+		"Sensor":        LegacyMeta{importFn: func(n string) (bool, error) { return ret.ImportERROR(n) }},
+		"ThermalSensor": LegacyMeta{importFn: func(n string) (bool, error) { return ret.ImportERROR(n) }},
 	}
 	return ret, nil
 }
 
-func (l *LegacyFactory) Import(legacyTableName string) error {
+func (l *LegacyFactory) Import(legacyTableName string) (more bool, err error) {
 	meta, ok := l.legacy[legacyTableName]
 	if !ok {
-		return xerrors.Errorf("Legacy table %s not set up in meta struct", legacyTableName)
+		return false, xerrors.Errorf("Legacy table %s not set up in meta struct", legacyTableName)
 	}
 
 	if meta.importFn == nil {
-		return xerrors.Errorf("Legacy table %s present in meta, but has no import function specified.", legacyTableName)
+		return false, xerrors.Errorf("Legacy table %s present in meta, but has no import function specified.", legacyTableName)
 	}
 
 	return l.legacy[legacyTableName].importFn(legacyTableName)
 }
 
-func (l *LegacyFactory) ImportERROR(legacyTableName string) error {
+func (l *LegacyFactory) ImportERROR(legacyTableName string) (more bool, err error) {
 	fmt.Printf("DONT YET KNOW HOW TO IMPORT: %s\n", legacyTableName)
-	return xerrors.New("UNKNOWN IMPORT")
+	return false, xerrors.New("UNKNOWN IMPORT")
 }
 
 func (l *LegacyFactory) IterLegacyTables(fn func(string) error) error {
@@ -108,13 +108,15 @@ func (l *LegacyFactory) PrepareAll() error {
 	})
 }
 
-func (l *LegacyFactory) ImportByColumn(legacyTableName string) (err error) {
+func (l *LegacyFactory) ImportByColumn(legacyTableName string) (more bool, err error) {
+	more = false
+	err = nil
 	events := []eh.EventData{}
 	defer func() {
 		if err == nil {
-			fmt.Printf("Emitted %d events for table %s\n", len(events), legacyTableName)
+			fmt.Printf("Emitted %d events for table %s. MORE: %s\n", len(events), legacyTableName, more)
 		} else {
-			fmt.Printf("Emitted %d events for table %s (err: %s)\n", len(events), legacyTableName, err)
+			fmt.Printf("Emitted %d events for table %s. MORE(%s) (err: %s)\n", len(events), legacyTableName, more, err)
 		}
 	}()
 
@@ -206,6 +208,10 @@ func (l *LegacyFactory) ImportByColumn(legacyTableName string) (err error) {
 					Context:   FQDD,
 					Property:  "LEGACY:" + legacyTableName,
 				})
+				if len(events) > 30 {
+					more = true
+					break
+				}
 			}
 		}
 
@@ -229,5 +235,5 @@ func (l *LegacyFactory) ImportByColumn(legacyTableName string) (err error) {
 	}
 	err = l.bus.PublishEvent(context.Background(), eh.NewEvent(MetricValueEvent, events, time.Now()))
 
-	return nil
+	return more, nil
 }

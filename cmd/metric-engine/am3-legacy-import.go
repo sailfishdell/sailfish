@@ -82,7 +82,14 @@ func addAM3LegacyDatabaseFunctions(logger log.Logger, dbpath string, am3Svc *am3
 			return
 
 		case strings.HasPrefix(command, "import:"):
-			LegacyFactory.Import(command[7:])
+			more, err := LegacyFactory.Import(command[7:])
+			if err != nil {
+				logger.Crit("Import failed over legacy tables", "import", command, "err", err)
+				return
+			}
+			if more {
+				d.GetBus().PublishEvent(context.Background(), eh.NewEvent(LegacyDatabaseEvent, command, time.Now()))
+			}
 			return
 
 		case command == "import_all":
