@@ -30,5 +30,8 @@ func setup(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, d *BusCo
 	// Import metrics from the legacy telemetryservice database
 	addAM3LegacyDatabaseFunctions(logger.New("module", "legacy_sql_am3_functions"), cfgMgr.GetString("main.legacydatabasepath"), am3Svc, d)
 
+	// Import metrics from the legacy telemetryservice database
+	addAM3cgo(logger.New("module", "cgo"), am3Svc, d)
+
 	return
 }
