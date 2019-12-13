@@ -63,7 +63,7 @@ return 0;
 }
 
 
-int start_zloop() {
+int start_cgo_event_loop() {
     int status = 0;
     dds_input_options_t daemon_options = {0};
     dds_context_t *daemon_ddsc = NULL;

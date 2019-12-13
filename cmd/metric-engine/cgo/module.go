@@ -8,9 +8,7 @@ import (
 )
 
 /*
-
-#include <stdio.h>
-void start_zloop();
+void start_cgo_event_loop();
 */
 // #cgo pkg-config: libdds
 import "C"
@@ -23,5 +21,5 @@ type BusComponents interface {
 
 func AddAM3cgo(logger log.Logger, am3Svc *am3.Service, d BusComponents) {
 	logger.Crit("CGO ENABLED")
-	go C.start_zloop()
+	go C.start_cgo_event_loop()
 }
