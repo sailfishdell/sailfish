@@ -26,7 +26,7 @@ type MetricValueEventData struct {
 	Context   string `db:"Context"`
 }
 
-func addAM3Functions(logger log.Logger, am3Svc *am3.Service, d *BusComponents) {
+func addAM3ConversionFunctions(logger log.Logger, am3Svc *am3.Service, d *BusComponents) {
 	eh.RegisterEventData(MetricValueEvent, func() eh.EventData { return &MetricValueEventData{} })
 	godefs.InitGoDef()
 

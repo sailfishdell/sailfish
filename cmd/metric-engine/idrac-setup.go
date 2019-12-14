@@ -18,20 +18,28 @@ func setup(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, d *BusCo
 		panic("main.databasepath not set in config, cannot continue.")
 	}
 
-	am3Svc, _ := am3.StartService(ctx, logger.New("module", "AM3"), d)
+	// 3 instances of AM3 service. This means we can run 3 concurrent message processing loops in 3 different goroutines
 
-	// Generic "Events" -> "Metric Value Event"
-	// This mapper will listen for any generic event on the bus, examine it and output Metrics
-	addAM3Functions(logger.New("module", "metric_am3_functions"), am3Svc, d)
+	// Processing loop 1:
+	// 		-- cgo events
+	// 		-- generic event conversions into MetricValue. NO DATABASE ACCESS
+	am3Svc_n1, _ := am3.StartService(ctx, logger.New("module", "AM3"), "conversion mapper", d)
+	addAM3cgo(logger.New("module", "cgo"), am3Svc_n1, d)
+	addAM3ConversionFunctions(logger.New("module", "conversions"), am3Svc_n1, d)
 
-	// Store Metric Value Events in the database
-	addAM3DatabaseFunctions(logger.New("module", "sql_am3_functions"), cfgMgr.GetString("main.databasepath"), am3Svc, d)
+	// Processing loop 2:
+	//  	-- "New" DB access
+	am3Svc_n2, _ := am3.StartService(ctx, logger.New("module", "AM3"), "database", d)
+	addAM3DatabaseFunctions(logger.New("module", "sql_am3_functions"), cfgMgr.GetString("main.databasepath"), am3Svc_n2, d)
 
-	// Import metrics from the legacy telemetryservice database
-	addAM3LegacyDatabaseFunctions(logger.New("module", "legacy_sql_am3_functions"), cfgMgr.GetString("main.legacydatabasepath"), am3Svc, d)
+	// Processing loop 3:
+	//  	-- Legacy Telemetry DB access
+	am3Svc_n3, _ := am3.StartService(ctx, logger.New("module", "AM3"), "legacy database", d)
+	addAM3LegacyDatabaseFunctions(logger.New("module", "legacy_sql_am3_functions"), cfgMgr.GetString("main.legacydatabasepath"), am3Svc_n3, d)
 
-	// Import metrics from the legacy telemetryservice database
-	addAM3cgo(logger.New("module", "cgo"), am3Svc, d)
+	// Processing loop 4:
+	//  	-- FUTURE: UDB access
+	//am3Svc_n4, _ := am3.StartService(ctx, logger.New("module", "AM3"), "udb database", d)
 
 	return
 }

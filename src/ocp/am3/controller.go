@@ -15,9 +15,10 @@ const (
 )
 
 type ConfigureAM3EventData struct {
-	name string
-	et   eh.EventType
-	fn   func(eh.Event)
+	serviceName string
+	name        string
+	et          eh.EventType
+	fn          func(eh.Event)
 }
 
 type Service struct {
@@ -25,10 +26,11 @@ type Service struct {
 	eb            eh.EventBus
 	eventhandlers map[eh.EventType]map[string]func(eh.Event)
 	handledEvents map[eh.EventType]struct{}
+	serviceName   string
 }
 
 func (s *Service) AddEventHandler(name string, et eh.EventType, fn func(eh.Event)) {
-	s.eb.PublishEvent(context.Background(), eh.NewEvent(ConfigureAM3Event, &ConfigureAM3EventData{name: name, et: et, fn: fn}, time.Now()))
+	s.eb.PublishEvent(context.Background(), eh.NewEvent(ConfigureAM3Event, &ConfigureAM3EventData{serviceName: s.serviceName, name: name, et: et, fn: fn}, time.Now()))
 }
 
 type waiter interface {
@@ -45,10 +47,10 @@ type BusObjs interface {
 	GetPublisher() eh.EventPublisher
 }
 
-func StartService(ctx context.Context, logger log.Logger, d BusObjs) (*Service, error) {
-	eh.RegisterEventData(ConfigureAM3Event, func() eh.EventData { return &ConfigureAM3EventData{} })
+func StartService(ctx context.Context, logger log.Logger, name string, d BusObjs) (*Service, error) {
 	var ret *Service
 	ret = &Service{
+		serviceName:   name,
 		logger:        logger.New("module", "am3"),
 		eb:            d.GetBus(),
 		handledEvents: map[eh.EventType]struct{}{ConfigureAM3Event: struct{}{}},
@@ -59,7 +61,7 @@ func StartService(ctx context.Context, logger log.Logger, d BusObjs) (*Service, 
 				// and not concurrently running
 				"setup": func(ev eh.Event) {
 					config := ev.Data().(*ConfigureAM3EventData)
-					if config != nil {
+					if config != nil && config.serviceName == ret.serviceName {
 						h, ok := ret.eventhandlers[config.et]
 						if !ok {
 							h = map[string]func(eh.Event){}

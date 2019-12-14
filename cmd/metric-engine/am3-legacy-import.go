@@ -54,8 +54,9 @@ func addAM3LegacyDatabaseFunctions(logger log.Logger, dbpath string, am3Svc *am3
 	go func() {
 		importWait.Wait()
 		fmt.Printf("STARTING IMPORT LOOP\n")
+		// This is a separate goroutine. CANNOT call into the LegacyFactory or it will data race!
 		// do one immediate import
-		d.GetBus().PublishEvent(context.Background(), eh.NewEvent(LegacyDatabaseEvent, "import", time.Now()))
+		d.GetBus().PublishEvent(context.Background(), eh.NewEvent(LegacyDatabaseEvent, "import_all", time.Now()))
 
 		// then start a 10s loop
 		legacyImportTimer := time.NewTicker(time.Duration(10) * time.Second)
@@ -63,7 +64,7 @@ func addAM3LegacyDatabaseFunctions(logger log.Logger, dbpath string, am3Svc *am3
 		for {
 			select {
 			case <-legacyImportTimer.C:
-				d.GetBus().PublishEvent(context.Background(), eh.NewEvent(LegacyDatabaseEvent, "import", time.Now()))
+				d.GetBus().PublishEvent(context.Background(), eh.NewEvent(LegacyDatabaseEvent, "import_all", time.Now()))
 			}
 		}
 	}()
