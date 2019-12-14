@@ -108,15 +108,19 @@ func (l *LegacyFactory) PrepareAll() error {
 	})
 }
 
+const maximport = 50
+
 func (l *LegacyFactory) ImportByColumn(legacyTableName string) (more bool, err error) {
 	more = false
 	err = nil
 	events := []eh.EventData{}
 	defer func() {
 		if err == nil {
-			fmt.Printf("Emitted %d events for table %s. MORE: %s\n", len(events), legacyTableName, more)
+			if len(events) > 0 {
+				fmt.Printf("Emitted %d events for table %s. MORE(%t)\n", len(events), legacyTableName, more)
+			}
 		} else {
-			fmt.Printf("Emitted %d events for table %s. MORE(%s) (err: %s)\n", len(events), legacyTableName, more, err)
+			fmt.Printf("Emitted %d events for table %s. MORE(%t) (err: %s)\n", len(events), legacyTableName, more, err)
 		}
 	}()
 
@@ -136,6 +140,7 @@ func (l *LegacyFactory) ImportByColumn(legacyTableName string) (more bool, err e
 		err = xerrors.Errorf("query failed for %s: %w", legacyTableName, err)
 		return
 	}
+	defer rows.Close()
 
 	var fqddmaps []*FQDDMappingData
 	for rows.Next() {
@@ -208,10 +213,6 @@ func (l *LegacyFactory) ImportByColumn(legacyTableName string) (more bool, err e
 					Context:   FQDD,
 					Property:  "LEGACY:" + legacyTableName,
 				})
-				if len(events) > 30 {
-					more = true
-					break
-				}
 			}
 		}
 
@@ -228,6 +229,12 @@ func (l *LegacyFactory) ImportByColumn(legacyTableName string) (more bool, err e
 			if !found {
 				fqddmaps = append(fqddmaps, &FQDDMappingData{FQDD: FQDD, FriendlyName: FriendlyFQDD})
 			}
+		}
+
+		// dont add too many events
+		if len(events) > maximport {
+			more = true
+			break
 		}
 	}
 	if len(fqddmaps) > 0 {
