@@ -50,7 +50,7 @@ static dds_input_config_attr_t ec_config_attr_tbl[] = {
 
 int32_t wd_timer( zloop_t *reactor, int32_t timer_id, void *user_data )
 {
-printf("wd_timer!\n");
+//printf("wd_timer!\n");
 return 0;
 }
 
