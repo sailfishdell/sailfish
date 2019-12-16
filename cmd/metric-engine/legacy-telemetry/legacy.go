@@ -1,4 +1,4 @@
-package main
+package legacy_telemetry
 
 import (
 	"context"
@@ -9,6 +9,7 @@ import (
 	eh "github.com/looplab/eventhorizon"
 	"golang.org/x/xerrors"
 
+	. "github.com/superchalupa/sailfish/cmd/metric-engine/metric"
 	log "github.com/superchalupa/sailfish/src/log"
 )
 
@@ -25,7 +26,7 @@ type LegacyFactory struct {
 	bus      eh.EventBus
 }
 
-func NewLegacyFactory(logger log.Logger, database *sqlx.DB, d *BusComponents) (*LegacyFactory, error) {
+func NewLegacyFactory(logger log.Logger, database *sqlx.DB, d BusComponents) (*LegacyFactory, error) {
 	ret := &LegacyFactory{}
 	ret.logger = logger
 	ret.database = database

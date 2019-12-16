@@ -9,25 +9,14 @@ import (
 	eh "github.com/looplab/eventhorizon"
 	_ "github.com/mattn/go-sqlite3"
 
+	. "github.com/superchalupa/sailfish/cmd/metric-engine/metric"
 	"github.com/superchalupa/sailfish/godefs"
 	log "github.com/superchalupa/sailfish/src/log"
 	"github.com/superchalupa/sailfish/src/ocp/am3"
 )
 
-const (
-	MetricValueEvent eh.EventType = "MetricValueEvent"
-)
-
-type MetricValueEventData struct {
-	Timestamp SqlTimeInt `db:"Timestamp"`
-	Name      string     `db:"Name"`
-	Value     string
-	Property  string `db:"Property"`
-	Context   string `db:"Context"`
-}
-
 func addAM3ConversionFunctions(logger log.Logger, am3Svc *am3.Service, d *BusComponents) {
-	eh.RegisterEventData(MetricValueEvent, func() eh.EventData { return &MetricValueEventData{} })
+	RegisterEvent()
 	godefs.InitGoDef()
 
 	am3Svc.AddEventHandler("modular_update_fan_data", eh.EventType("thp_fan_data_object"), func(event eh.Event) {

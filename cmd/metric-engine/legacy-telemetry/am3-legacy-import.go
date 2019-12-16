@@ -1,4 +1,4 @@
-package main
+package legacy_telemetry
 
 import (
 	"context"
@@ -16,13 +16,25 @@ import (
 
 const (
 	LegacyDatabaseEvent eh.EventType = "LegacyDatabaseEvent"
+	FriendlyFQDDMapping eh.EventType = "FriendlyFQDDMapping"
 )
 
 type LegacyDatabseEventData struct {
 	TableName string
 }
 
-func addAM3LegacyDatabaseFunctions(logger log.Logger, dbpath string, am3Svc *am3.Service, d *BusComponents) {
+type BusComponents interface {
+	GetBus() eh.EventBus
+}
+
+type FQDDMappingData struct {
+	FQDD         string
+	FriendlyName string
+}
+
+func RegisterAM3(logger log.Logger, dbpath string, am3Svc *am3.Service, d BusComponents) {
+	eh.RegisterEventData(FriendlyFQDDMapping, func() eh.EventData { return &FQDDMappingData{} })
+
 	database, err := sqlx.Open("sqlite3", dbpath)
 	if err != nil {
 		logger.Crit("Could not open legacy database", "err", err)

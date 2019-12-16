@@ -8,6 +8,8 @@ import (
 
 	log "github.com/superchalupa/sailfish/src/log"
 	"github.com/superchalupa/sailfish/src/ocp/am3"
+
+	"github.com/superchalupa/sailfish/cmd/metric-engine/legacy-telemetry"
 )
 
 func setup(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, d *BusComponents) {
@@ -35,7 +37,7 @@ func setup(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, d *BusCo
 	// Processing loop 3:
 	//  	-- Legacy Telemetry DB access
 	am3Svc_n3, _ := am3.StartService(ctx, logger.New("module", "AM3"), "legacy database", d)
-	addAM3LegacyDatabaseFunctions(logger.New("module", "legacy_sql_am3_functions"), cfgMgr.GetString("main.legacydatabasepath"), am3Svc_n3, d)
+	legacy_telemetry.RegisterAM3(logger.New("module", "legacy_sql_am3_functions"), cfgMgr.GetString("main.legacydatabasepath"), am3Svc_n3, d)
 
 	// Processing loop 4:
 	//  	-- FUTURE: UDB access

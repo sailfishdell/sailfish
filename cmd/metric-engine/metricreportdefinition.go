@@ -12,6 +12,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	"golang.org/x/xerrors"
 
+	. "github.com/superchalupa/sailfish/cmd/metric-engine/metric"
 	log "github.com/superchalupa/sailfish/src/log"
 )
 
@@ -455,19 +456,6 @@ func (factory *MRDFactory) GenerateMetricReport(mrdEvData *MetricReportDefinitio
 		return xerrors.Errorf("Failed transaction commit for Metric Report Update(%d): %w", ID, err)
 	}
 	factory.logger.Debug("Transaction Committed for updates to Report Definition", "Report Definition ID", ID)
-	return nil
-}
-
-type SqlTimeInt struct {
-	time.Time
-}
-
-func (m SqlTimeInt) Value() (driver.Value, error) {
-	return m.UnixNano(), nil
-}
-
-func (m *SqlTimeInt) Scan(src interface{}) error {
-	m.Time = time.Unix(0, src.(int64))
 	return nil
 }
 
