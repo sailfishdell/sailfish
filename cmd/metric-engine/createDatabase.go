@@ -169,6 +169,12 @@ func createDatabase(logger log.Logger, dbpath string) (database *sqlx.DB, err er
 				select InstanceID, Timestamp, Value from MetricValueReal
 			 `},
 
+		{"Create index for MetricValue table", `
+			CREATE INDEX IF NOT EXISTS metric_value_int_ts_xref_idx on MetricValueInt(Timestamp);
+			CREATE INDEX IF NOT EXISTS metric_value_real_ts_xref_idx on MetricValueReal(Timestamp);
+			CREATE INDEX IF NOT EXISTS metric_value_text_ts_xref_idx on MetricValueText(Timestamp);
+			`},
+
 		{"Create MetricReport table", `
 			CREATE TABLE IF NOT EXISTS MetricReport
 			(
@@ -220,7 +226,7 @@ func createDatabase(logger log.Logger, dbpath string) (database *sqlx.DB, err er
 		// DOES NOT SCALE:  This uses a temp table to spool the metric values. memory usage scales with # of records output.
 		//                 BECAUSE OF THE "ORDER BY" for the MetricValueByReport table!
 		{"Create the Redfish Periodic {NewReport, Overwrite} Metric Report", `
-				DROP VIEW IF EXISTS MetricReportPeriodic1_Redfish ; create view MetricReportPeriodic1_Redfish as
+				DROP VIEW IF EXISTS MetricReport_Stops_Redfish ; create view MetricReportPeriodic1_Redfish as
 				select
 					'/redfish/v1/TelemetryService/MetricReports/' || MR.Name as '@odata.id',
 					('{' ||
@@ -241,20 +247,23 @@ func createDatabase(logger log.Logger, dbpath string) (database *sqlx.DB, err er
 										select JSON
 										from MetricValueByReport as MVR
 										where MVR.MRDID=MR.ReportDefinitionID
-											and ( MVR.Timestamp >= MR.StartTimestamp OR MR.StartTimestamp is NULL )
-											order by MVR.InstanceID ASC, MVR.Timestamp ASC
-											limit 1000
+											and ( MVR.Timestamp > MR.StartTimestamp OR MR.StartTimestamp is NULL )
+											and ( MVR.Timestamp <= MR.EndTimestamp OR MR.EndTimestamp is NULL )
+											order by MVR.Timestamp ASC
+											limit 3000
 									) AS a )
 						|| '}'
 					) as root
 				from MetricReport as MR
 				inner join MetricReportDefinition as MRD on MR.ReportDefinitionID = MRD.ID
-				where MRD.Type = 'Periodic' and ( MRD.Updates = "NewReport" or MRD.Updates = "Overwrite" or MRD.Updates = "AppendStopsWhenFull")
+				where (MRD.Type = 'Periodic' and ( MRD.Updates = "NewReport" or MRD.Updates = "Overwrite" or MRD.Updates = "AppendStopsWhenFull"))
+				   or (MRD.Type = 'OnRequest' and MRD.Updates = "AppendStopsWhenFull")
+				   or (MRD.Type = 'OnChange' and MRD.Updates = "AppendStopsWhenFull")
 				`},
 
 		// DOES NOT SCALE:  This uses a temp table to spool the metric values. memory usage scales with # of records output.
 		{"Create the Redfish Periodic AppendWrapsWhenFull Metric Report", `
-				DROP VIEW IF EXISTS MetricReportPeriodic2_Redfish ; create view MetricReportPeriodic2_Redfish as
+				DROP VIEW IF EXISTS MetricReport_Wraps_Redfish ; create view MetricReportPeriodic2_Redfish as
 				select
 					'/redfish/v1/TelemetryService/MetricReports/' || MR.Name as '@odata.id',
 					('{' ||
@@ -275,61 +284,26 @@ func createDatabase(logger log.Logger, dbpath string) (database *sqlx.DB, err er
 										select JSON
 										from MetricValueByReport as MVR
 										where MVR.MRDID=MR.ReportDefinitionID
-											and ( MVR.Timestamp >= MR.StartTimestamp OR MR.StartTimestamp is NULL )
-											order by MVR.InstanceID ASC, MVR.Timestamp DESC
-											limit 1000
+											and ( MVR.Timestamp > MR.StartTimestamp OR MR.StartTimestamp is NULL )
+											and ( MVR.Timestamp <= MR.EndTimestamp OR MR.EndTimestamp is NULL )
+											order by MVR.Timestamp DESC
+											limit 3000
 									) AS a )
 						|| '}'
 					) as root
 				from MetricReport as MR
 				inner join MetricReportDefinition as MRD on MR.ReportDefinitionID = MRD.ID
-				where MRD.Type = 'Periodic' and ( MRD.Updates = "AppendWrapsWhenFull" )
-				`},
-
-		// This is the table that generates redfish output for OnRequest metric reports
-		// REQUISITE:
-		//
-		// DOES NOT SCALE:  This uses a temp table to spool the metric values. memory usage scales with # of records output.
-		{"Create the Redfish OnRequest Metric Report", `
-				DROP VIEW IF EXISTS MetricReportOnRequest_Redfish ; create view MetricReportOnRequest_Redfish as
-				select
-					'/redfish/v1/TelemetryService/MetricReports/' || MR.Name as '@odata.id',
-					('{' ||
-							' "@odata.type": "#MetricReport.v1_2_0.MetricReport",' ||
-							' "@odata.context": "/redfish/v1/$metadata#MetricReport.MetricReport",' ||
-							' "@odata.id": "/redfish/v1/TelemetryService/MetricReports/' || MR.Name || '",' ||
-							' "Id": "' || MR.Name || '",' ||
-							' "Name": "' || MR.Name || ' Metric Report",' ||
-							' "ReportSequence": ' || Sequence || ',' ||
-							' "Timestamp": ' || strftime('"%Y-%m-%dT%H:%M:%f"', MR.ReportTimestamp/1000000000.0, 'unixepoch') || ', ' ||
-							' "MetricReportDefinition": {"@odata.id": "/redfish/v1/TelemetryService/MetricReportDefinitions/' || MRD.Name || '"}, ' ||
-								(
-									SELECT
-										' "MetricValues":  [' ||  group_concat(a.JSON) || '], ' ||
-										' "MetricValues@odata.count": ' ||  count(*)
-									FROM
-									(
-										select JSON
-										from MetricValueByReport as MVR
-										where MVR.MRDID=MR.ReportDefinitionID
-											and ( MVR.Timestamp >= MR.StartTimestamp OR MR.StartTimestamp is NULL )
-											order by MVR.InstanceID ASC, MVR.Timestamp DESC
-									) AS a)
-						|| '}'
-					) as root
-				from MetricReport as MR
-				inner join MetricReportDefinition as MRD on MR.ReportDefinitionID = MRD.ID
-				where ( MRD.Type = 'OnRequest' or MRD.Type = 'OnChange' )
+				where (MRD.Type = 'Periodic' and  MRD.Updates = "AppendWrapsWhenFull" )
+				   or (MRD.Type = 'OnRequest' and MRD.Updates = "AppendWrapsWhenFull")
+				   or (MRD.Type = 'OnChange' and MRD.Updates = "AppendWrapsWhenFull")
 				`},
 
 		// This is the table that creates a uniform table name to gather *any* metric report, regardless of type
 		{"Create the Redfish Metric Report", `
 				DROP VIEW IF EXISTS MetricReport_Redfish ; create view MetricReport_Redfish as
-				select * from MetricReportOnRequest_Redfish
+				select * from MetricReport_Wraps_Redfish
 					UNION ALL
-				select * from MetricReportPeriodic1_Redfish   -- periodic newreport/overwrite
-					UNION ALL
-				select * from MetricReportPeriodic2_Redfish   -- periodic appenstopswhenfull
+				select * from MetricReport_Stops_Redfish
 				`},
 
 		/*
