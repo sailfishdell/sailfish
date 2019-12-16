@@ -34,7 +34,7 @@ func createDatabase(logger log.Logger, dbpath string) (database *sqlx.DB, err er
 			PRAGMA busy_timeout = 1000;
 			`},
 		{"Create MetricReportDefinition table", `
-		 	CREATE TABLE IF NOT EXISTS MetricReportDefinition
+			CREATE TABLE IF NOT EXISTS MetricReportDefinition
 			(
 				ID    INTEGER PRIMARY KEY NOT NULL,
 				Name        	TEXT UNIQUE NOT NULL, -- Name of the metric report defintion. This is what shows up in the collection
@@ -48,7 +48,7 @@ func createDatabase(logger log.Logger, dbpath string) (database *sqlx.DB, err er
 			)`},
 
 		{"Create MetricMeta table", `
-	  	-- These always exist
+			-- These always exist
 			-- They are created when the report is created
 			-- multiple reports can link to the same MetricMeta (many to many relationship)
 			CREATE TABLE IF NOT EXISTS MetricMeta
@@ -324,14 +324,14 @@ func createDatabase(logger log.Logger, dbpath string) (database *sqlx.DB, err er
 										select json_group_array(JSON)
 										from MetricValueByReport_JSON as MVRJ
 										where MVRJ.MRDID=MR.ReportDefinitionID
-							  			and ( MVRJ.Timestamp >= MR.StartTimestamp OR MR.StartTimestamp is NULL )
+											and ( MVRJ.Timestamp >= MR.StartTimestamp OR MR.StartTimestamp is NULL )
 											and ( MVRJ.Timestamp <= MR.EndTimestamp OR MR.EndTimestamp is NULL )
 									) || ',' ||
 								' "MetricValues@odata.count": ' || (
 										select count(*)
 										from MetricValueByReport as MVR
 										where MVR.MRDID=MR.ReportDefinitionID
-							  			and ( MVR.Timestamp >= MR.StartTimestamp OR MR.StartTimestamp is NULL )
+											and ( MVR.Timestamp >= MR.StartTimestamp OR MR.StartTimestamp is NULL )
 											and ( MVR.Timestamp <= MR.EndTimestamp OR MR.EndTimestamp is NULL )
 							) ||
 							'}'

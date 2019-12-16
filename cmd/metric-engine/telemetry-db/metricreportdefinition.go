@@ -131,7 +131,7 @@ func (factory *MRDFactory) UpdateMRD(mrdEvData *MetricReportDefinitionData) (err
 			( Name,  Enabled, AppendLimit, Type, SuppressDups, Actions, Updates, Period)
 			VALUES (:Name, :Enabled, :AppendLimit, :Type, :SuppressDups, :Actions, :Updates, :Period)
 		 on conflict(Name) do update set
-		 	Enabled=:Enabled,
+			Enabled=:Enabled,
 			AppendLimit=:AppendLimit,
 			Type=:Type,
 			SuppressDups=:SuppressDups,
@@ -723,13 +723,13 @@ var orphanOps = map[string]string{
 			DELETE FROM MetricMeta WHERE id IN
 			(
 				select mm.ID from MetricMeta as mm
-			  	LEFT JOIN ReportDefinitionToMetricMeta as rd2mm on mm.ID = rd2mm.MetricMetaID where rd2mm.MetricMetaID is null
+					LEFT JOIN ReportDefinitionToMetricMeta as rd2mm on mm.ID = rd2mm.MetricMetaID where rd2mm.MetricMetaID is null
 			)`,
 	"Delete Orphan MetricInstance": `
 			DELETE FROM MetricInstance WHERE id IN
 			(
 				select MI.ID from MetricInstance as MI
-			  	LEFT JOIN MetricMeta as MM on MM.ID = MI.MetaID where MM.ID is null
+					LEFT JOIN MetricMeta as MM on MM.ID = MI.MetaID where MM.ID is null
 			)`,
 
 	// delete orphans of all kinds.

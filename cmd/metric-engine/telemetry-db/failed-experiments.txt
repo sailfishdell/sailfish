@@ -34,7 +34,7 @@ The purpose of this doc is to document a few experimental sql table designs that
 							select group_concat(JSON)
 							from MetricValueByReport_JSON as MVRJ
 							where MVRJ.MRDID=MR.ReportDefinitionID
-				  			and ( MVRJ.Timestamp >= MR.StartTimestamp OR MR.StartTimestamp is NULL )
+                and ( MVRJ.Timestamp >= MR.StartTimestamp OR MR.StartTimestamp is NULL )
 								and ( MVRJ.Timestamp <= MR.EndTimestamp OR MR.EndTimestamp is NULL )
 					) as JSON
 				from MetricReport as MR
@@ -53,7 +53,7 @@ The purpose of this doc is to document a few experimental sql table designs that
 					(select count(*)
 							from MetricValueByReport_JSON as MVRJ
 							where MVRJ.MRDID=MR.ReportDefinitionID
-				  			and ( MVRJ.Timestamp >= MR.StartTimestamp OR MR.StartTimestamp is NULL )
+                and ( MVRJ.Timestamp >= MR.StartTimestamp OR MR.StartTimestamp is NULL )
 								and ( MVRJ.Timestamp <= MR.EndTimestamp OR MR.EndTimestamp is NULL )) as JSON
 				from MetricReport as MR
 				inner join MetricReportDefinition as MRD on MR.ReportDefinitionID = MRD.ID
