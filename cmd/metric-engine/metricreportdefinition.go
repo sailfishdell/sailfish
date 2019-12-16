@@ -389,10 +389,10 @@ func (factory *MRDFactory) GenerateMetricReport(mrdEvData *MetricReportDefinitio
 			// TODO for appendlimit: unclear on what to do for Periodic/NewReport that exceeds AppendLimit
 			//    --> Proposed: *trigger* new report when AppendLimit exceeded. Would need to scan reports for appendlimit somehow
 			//        This would happen outside of this code, so this code wouldn't need to change
+			// NOTE: we should only have a maximum of 3 total reports per MetricReportDefinition, so delete any >3 after creating new report
 			SQL = `INSERT INTO MetricReport (Name, ReportDefinitionID, Sequence, ReportTimestamp, StartTimestamp, EndTimestamp)
 			values (:Name, :MRDID, ifnull((select max(sequence)+1 from MetricReport where ReportDefinitionID=:MRDID), 0), :ReportTimestamp, :Start, :End);
-			delete from metricreport
-			where name in (select name from MetricReport where sequence+2 < (select max(sequence) from MetricReport as mr2 where mr2.sequence=sequence));`
+			delete from MetricReport where name in (select name from (select MR.name as Name, MR.ReportDefinitionID, MR.sequence as seq, max(MR2.Sequence) as ms from MetricReport as MR left join MetricReport as MR2 on MR.ReportDefinitionID = MR2.ReportDefinitionID group by MR.Name) where seq+2<ms)`
 
 		case /*Periodic*/ "Overwrite":
 			// TODO for appendlimit: unclear on what to do for Periodic/OverWrite that exceeds AppendLimit
@@ -406,37 +406,22 @@ func (factory *MRDFactory) GenerateMetricReport(mrdEvData *MetricReportDefinitio
 					StartTimestamp=EndTimestamp,
 					EndTimestamp=:End`
 
-		case /*Periodic*/ "AppendStopsWhenFull":
+		case /*Periodic*/ "AppendStopsWhenFull", "AppendWrapsWhenFull":
 			// periodic/appendstops basically just periodically appends data to an existing report
-			// TODO: need to simply skip if count(*) exceeds appendlimit
-			//     select count(*) from metricreport where name=:name
+			// The "STOPS"/"WRAPS" (*will be) implemented in the VIEW:
+			//    order by timestamp ASC LIMIT :appendlimit ("STOPS")
+			//    order by timestamp DESC LIMIT :appendlimit ("WRAPS")
 			SQL = `INSERT INTO MetricReport (Name, ReportDefinitionID, Sequence, ReportTimestamp, StartTimestamp, EndTimestamp)
 			values (:Name, :MRDID, :Sequence, :ReportTimestamp, :Start, :End)
-				on conflict(Name) do update
-				set Sequence=Sequence+1,
-				  ReportTimestamp=:ReportTimestamp,
-					StartTimestamp=EndTimestamp,
-					EndTimestamp=:End`
-
-		case /*Periodic*/ "AppendWrapsWhenFull":
-			// periodic/appendstops basically just periodically appends data to an existing report
-			// TODO: need to adjust the StartTimestamp if count() > appendlimit
-			//       select count(*) from metricreport where name=:name
-			//       if count > appendlimit
-			//           select ts from metricreport where rownum=appendlimit
-			//       update metricreport set startsequence=ts
-			SQL = `INSERT INTO MetricReport (Name, ReportDefinitionID, Sequence, ReportTimestamp, StartTimestamp, EndTimestamp)
-			values (:Name, :MRDID, :Sequence, :ReportTimestamp, :Start, NULL)
 				on conflict(Name) do update
 				set Sequence=Sequence+1,
 				  ReportTimestamp=:ReportTimestamp,
 					EndTimestamp=:End`
 		}
 
-	case "OnChange":
+	case "OnChange", "OnRequest":
 		SQL = `INSERT INTO MetricReport (Name, ReportDefinitionID, Sequence, ReportTimestamp, StartTimestamp, EndTimestamp)
 				values (:Name, :MRDID, :Sequence, 0, NULL, NULL) on conflict(name) do nothing`
-		// factory.NextMRTS ?
 		switch MRD.Updates {
 		case /*OnChange*/ "NewReport":
 			SQL = ""
@@ -444,19 +429,6 @@ func (factory *MRDFactory) GenerateMetricReport(mrdEvData *MetricReportDefinitio
 			SQL = ""
 		case /*OnChange*/ "AppendStopsWhenFull":
 		case /*OnChange*/ "AppendWrapsWhenFull":
-		}
-
-	case "OnRequest":
-		SQL = `INSERT INTO MetricReport (Name, ReportDefinitionID, Sequence, ReportTimestamp, StartTimestamp, EndTimestamp)
-				values (:Name, :MRDID, :Sequence, 0, NULL, NULL) on conflict(name) do nothing`
-		// factory.NextMRTS ?
-		switch MRD.Updates {
-		case /*OnRequest*/ "NewReport":
-			SQL = ""
-		case /*OnRequest*/ "Overwrite":
-			SQL = ""
-		case /*OnRequest*/ "AppendStopsWhenFull":
-		case /*OnRequest*/ "AppendWrapsWhenFull":
 		}
 
 	default:
@@ -817,12 +789,12 @@ func (factory *MRDFactory) DeleteOrphans() (err error) {
 
 var deleteops = []string{
 	// The metric value tables should hold ~500k entries.
-	`delete from MetricValueInt where Timestamp > (select Timestamp from MetricValueInt order by Timestamp Limit 1 Offset 200000);`,
-	`delete from MetricValueReal where Timestamp > (select Timestamp from MetricValueReal order by Timestamp Limit 1 Offset 200000);`,
-	`delete from MetricValueText where Timestamp > (select Timestamp from MetricValueText order by Timestamp Limit 1 Offset 200000);`,
+	`delete from MetricValueInt where Timestamp > (select Timestamp from MetricValueInt order by Timestamp Limit 1 Offset 100000);`,
+	`delete from MetricValueReal where Timestamp > (select Timestamp from MetricValueReal order by Timestamp Limit 1 Offset 100000);`,
+	`delete from MetricValueText where Timestamp > (select Timestamp from MetricValueText order by Timestamp Limit 1 Offset 50000);`,
 
 	// Only should have max 3 "new" reports per Metric Report Definition
-	`delete from metricreport where name in (select name from MetricReport where sequence+3 < (select max(sequence) from MetricReport as mr2 where mr2.sequence=sequence));`,
+	`delete from MetricReport where name in (select name from (select MR.name as Name, MR.ReportDefinitionID, MR.sequence as seq, max(MR2.Sequence) as ms from MetricReport as MR left join MetricReport as MR2 on MR.ReportDefinitionID = MR2.ReportDefinitionID group by MR.Name) where seq+2<ms)`,
 }
 
 func (factory *MRDFactory) DeleteOldestValues() (err error) {
