@@ -1,4 +1,4 @@
-package main
+package event_conversions
 
 import (
 	"context"
@@ -15,7 +15,11 @@ import (
 	"github.com/superchalupa/sailfish/src/ocp/am3"
 )
 
-func addAM3ConversionFunctions(logger log.Logger, am3Svc *am3.Service, d *BusComponents) {
+type BusComponents interface {
+	GetBus() eh.EventBus
+}
+
+func RegisterAM3(logger log.Logger, am3Svc *am3.Service, d BusComponents) {
 	RegisterEvent()
 	godefs.InitGoDef()
 
@@ -42,7 +46,7 @@ func addAM3ConversionFunctions(logger log.Logger, am3Svc *am3.Service, d *BusCom
 		URI := "/redfish/v1/Chassis/" + FQDDParts[0] + "/Sensors/Fans/" + FQDDParts[1]
 
 		// NOTE: publish can accept an array of EventData to reduce callbacks (recommended)
-		d.EventBus.PublishEvent(context.Background(),
+		d.GetBus().PublishEvent(context.Background(),
 			eh.NewEvent(MetricValueEvent,
 				[]eh.EventData{
 					&MetricValueEventData{

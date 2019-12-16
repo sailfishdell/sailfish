@@ -9,7 +9,9 @@ import (
 	log "github.com/superchalupa/sailfish/src/log"
 	"github.com/superchalupa/sailfish/src/ocp/am3"
 
-	"github.com/superchalupa/sailfish/cmd/metric-engine/legacy-telemetry"
+	"github.com/superchalupa/sailfish/cmd/metric-engine/events-to-metrics"
+	"github.com/superchalupa/sailfish/cmd/metric-engine/telemetry-db"
+	"github.com/superchalupa/sailfish/cmd/metric-engine/telemetry-legacy"
 )
 
 func setup(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, d *BusComponents) {
@@ -27,12 +29,12 @@ func setup(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, d *BusCo
 	// 		-- generic event conversions into MetricValue. NO DATABASE ACCESS
 	am3Svc_n1, _ := am3.StartService(ctx, logger.New("module", "AM3"), "conversion mapper", d)
 	addAM3cgo(logger.New("module", "cgo"), am3Svc_n1, d)
-	addAM3ConversionFunctions(logger.New("module", "conversions"), am3Svc_n1, d)
+	event_conversions.RegisterAM3(logger.New("module", "conversions"), am3Svc_n1, d)
 
 	// Processing loop 2:
 	//  	-- "New" DB access
 	am3Svc_n2, _ := am3.StartService(ctx, logger.New("module", "AM3"), "database", d)
-	addAM3DatabaseFunctions(logger.New("module", "sql_am3_functions"), cfgMgr.GetString("main.databasepath"), am3Svc_n2, d)
+	telemetry.RegisterAM3(logger.New("module", "sql_am3_functions"), cfgMgr.GetString("main.databasepath"), am3Svc_n2, d)
 
 	// Processing loop 3:
 	//  	-- Legacy Telemetry DB access

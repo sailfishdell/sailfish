@@ -1,4 +1,4 @@
-package main
+package telemetry
 
 import (
 	"context"
@@ -18,7 +18,11 @@ const (
 	GenerateMetricReport         eh.EventType = "GenerateMetricReport"
 )
 
-func addAM3DatabaseFunctions(logger log.Logger, dbpath string, am3Svc *am3.Service, d *BusComponents) {
+type BusComponents interface {
+	GetBus() eh.EventBus
+}
+
+func RegisterAM3(logger log.Logger, dbpath string, am3Svc *am3.Service, d BusComponents) {
 	eh.RegisterEventData(UpdateMetricReportDefinition, func() eh.EventData { return &MetricReportDefinitionData{} })
 	eh.RegisterEventData(DeleteMetricReportDefinition, func() eh.EventData { return &MetricReportDefinitionData{} })
 	eh.RegisterEventData(GenerateMetricReport, func() eh.EventData { return &MetricReportDefinitionData{} })
