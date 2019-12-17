@@ -9,7 +9,8 @@ import (
 )
 
 const (
-	MetricValueEvent eh.EventType = "MetricValueEvent"
+	MetricValueEvent    eh.EventType = "MetricValueEvent"
+	FriendlyFQDDMapping eh.EventType = "FriendlyFQDDMapping"
 )
 
 type SqlTimeInt struct {
@@ -33,10 +34,16 @@ type MetricValueEventData struct {
 	Context   string `db:"Context"`
 }
 
+type FQDDMappingData struct {
+	FQDD         string
+	FriendlyName string
+}
+
 var reglock = sync.Once{}
 
 func RegisterEvent() {
 	reglock.Do(func() {
 		eh.RegisterEventData(MetricValueEvent, func() eh.EventData { return &MetricValueEventData{} })
+		eh.RegisterEventData(FriendlyFQDDMapping, func() eh.EventData { return &FQDDMappingData{} })
 	})
 }

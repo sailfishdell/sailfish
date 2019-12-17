@@ -39,6 +39,7 @@ func RegisterAM3(logger log.Logger, dbpath string, am3Svc *am3.Service, d BusCom
 	}
 
 	// periodically optimize and vacuum database
+	var clockHWM time.Time
 	go func() {
 		// run once after startup. give a few seconds so we dont slow boot up
 		time.Sleep(20 * time.Second)
@@ -49,10 +50,14 @@ func RegisterAM3(logger log.Logger, dbpath string, am3Svc *am3.Service, d BusCom
 		// With the default 73/3607/10831, they will run concurrently every ~90 years.
 		cleanValuesTicker := time.NewTicker(time.Duration(73) * time.Second) // once a minute
 		vacuumTicker := time.NewTicker(time.Duration(3607) * time.Second)    // once an hour (-ish)
-		optimizeTicker := time.NewTicker(time.Duration(10831) * time.Minute) // once every three hours
+		optimizeTicker := time.NewTicker(time.Duration(10831) * time.Second) // once every three hours
+
+		// slightly more than once a second. Idea here is to give messages a chance to drive teh clock
+		clockTicker := time.NewTicker(time.Duration(1181) * time.Millisecond)
 		defer cleanValuesTicker.Stop()
 		defer vacuumTicker.Stop()
 		defer optimizeTicker.Stop()
+		defer clockTicker.Stop()
 		for {
 			select {
 			case <-cleanValuesTicker.C:
@@ -61,6 +66,8 @@ func RegisterAM3(logger log.Logger, dbpath string, am3Svc *am3.Service, d BusCom
 				d.GetBus().PublishEvent(context.Background(), eh.NewEvent(DatabaseMaintenance, "vacuum", time.Now()))
 			case <-optimizeTicker.C:
 				d.GetBus().PublishEvent(context.Background(), eh.NewEvent(DatabaseMaintenance, "optimize", time.Now()))
+			case <-clockTicker.C:
+				d.GetBus().PublishEvent(context.Background(), eh.NewEvent(DatabaseMaintenance, "publish clock", time.Now()))
 			}
 		}
 	}()
@@ -117,6 +124,10 @@ func RegisterAM3(logger log.Logger, dbpath string, am3Svc *am3.Service, d BusCom
 			return
 		}
 
+		if clockHWM.Before(metricValue.Timestamp) {
+			clockHWM = metricValue.Timestamp
+		}
+
 		err := MRDFactory.InsertMetricValue(metricValue)
 		if err != nil {
 			//logger.Crit("Error inserting Metric Value", "err", err, "metric", metricValue)
@@ -138,72 +149,36 @@ func RegisterAM3(logger log.Logger, dbpath string, am3Svc *am3.Service, d BusCom
 		}
 
 		// TODO: implement un-suppress
-		// TODO: honor AppendLimit
-		// TODO: honor AppendStopsWhenFull | AppendWrapsWhenFull | Overwrite | NewReport
-		//
-		// All of the above basically are for when we "generate" a report.
-		// Periodic reports arent affected
-		// For onchange and onrequest reports, we need to periodically adjust the begin timestamp
-		// Then, after we've updated all the reports, we can clean out old metric values
-		// SO:
-		//   bottom line is that we dont' need to do anything with append limits when inserting a metric value.
-		//   we'll need to find and generate reports when we finish doing metrics
-		//
-		// Report generation: This basically means setting the begin/end timestamps
 
 		// Type: Periodic, OnChange, OnRequest
 		// 		Updates: AppendStopsWhenFull | AppendWrapsWhenFull | Overwrite | NewReport
 		//
-		// Periodic:   (-) AppendStopsWhenFull  (-) AppendWrapsWhenFull   (-) Overwrite   (!) NewReport
-		// OnChange:   (-) AppendStopsWhenFull  (-) AppendWrapsWhenFull   (-) Overwrite   (X) NewReport
-		// OnRequest:  (-) AppendStopsWhenFull  (-) AppendWrapsWhenFull   (X) Overwrite   (X) NewReport
+		// Periodic:   (*) AppendStopsWhenFull  (*) AppendWrapsWhenFull   (*) Overwrite   (*) NewReport
+		// OnChange:   (*) AppendStopsWhenFull  (*) AppendWrapsWhenFull   (?) Overwrite   (X) NewReport
+		// OnRequest:  (*) AppendStopsWhenFull  (*) AppendWrapsWhenFull   (X) Overwrite   (X) NewReport
 		//
 		// key:
+		//    (*) Done
 		// 		(-) makes sense and should be implemented
 		// 		(X) invalid combination, dont accept
-		// 	  (!) makes sense but sort of difficult to implement, so skip for now
-		//    (o) partially implemented
-		//    (*) Done
+		//    (?) Not sure if this makes sense
 		//
-		// AppendLimit proposal: Let the user set this on a per-report basis. Ensure that the aggregate value of all is <= 450k
+		// AppendLimit: due to limitations in sqlite, this is a fixed limit that is a global setting that is applied when we create the VIEW
 		//
 		// behaviour:
 		//    Periodic: (generate a report, then at time interval dump accumulated values)
 		//      --> The Metric Value insert doesn't change reports. Best performance.
 		// 			--> Sequence is updated on period
 		// 		  --> Timestamp is updated on period
-		// 			AppendStopsWhenFull: (Status=Full), StartTimestamp = fixed, EndTimestamp = fixed/updated until full, then fixed
-		//          -- DELETE to clear?
-		// 					-- newer entries fall on floor
-		// 			AppendWrapsWhenFull: (Status=Full), StartTimestamp = NULL until full, then fixed/updated periodically, EndTimestamp = fixed/updated periodically
-		// 					-- older entries fall on floor
-		//      NewReport: insert new MetricReport, setup timestamps  (timestamps = fixed)
-		// 					-- need a policy to delete older reports(?)
+		// 			AppendStopsWhenFull: StartTimestamp = fixed, EndTimestamp = fixed
+		// 			AppendWrapsWhenFull: StartTimestamp = fixed, EndTimestamp = fixed
+		//      NewReport:  StartTimestamp = fixed, EndTimestamp = fixed
+		// 					-- only keeps at most 3 reports, deletes oldest
 		//      Overwrite: starttimestamp=fixed, endtimestamp=fixed
-		// 				  -- update same metric report
 		//
-		//    OnRequest:  things trickle in as they come
-		//      --> Have to update the report on insert of Metric Value
-		// 			--> Sequence is 0 unless "generated" (trigger)
-		// 		  --> Timestamp is 0 unless "generated" (trigger)
-		// 			AppendStopsWhenFull: endtimestamp = null until full, then fix to stop date
-		//          -- DELETE to clear?
-		// 					-- newer entries fall on floor
-		// 			AppendWrapsWhenFull: EndTimestamp=NULL, continuously update start
-		// 					-- older entries fall on floor
-		//      NewReport: no
-		//      Overwrite: no
-		//
-		// Dont see how this one is different from OnRequest from a behaviour standpoint. Maybe Actions?
-		//    OnChange:  things trickle in as they come
-		//      --> Have to update the report on insert of Metric Value
-		// 			--> Sequence is 0 unless "generated" (trigger)
-		// 		  --> Timestamp is 0 unless "generated" (trigger)
-		// 			AppendStopsWhenFull: continuously update EndTimestamp until full, then fixed
-		//          -- DELETE to clear?
-		// 					-- newer entries fall on floor
-		// 			AppendWrapsWhenFull: EndTimestamp=NULL, continuously update start
-		// 					-- older entries fall on floor
+		//    OnRequest/OnChange:  things trickle in as they come
+		// 			AppendStopsWhenFull: StartTimestamp=fixed
+		// 			AppendWrapsWhenFull: StartTimestamp=fixed
 		//      NewReport: no
 		//      Overwrite: no
 
@@ -229,18 +204,10 @@ func RegisterAM3(logger log.Logger, dbpath string, am3Svc *am3.Service, d BusCom
 		case "vacuum":
 			MRDFactory.Vacuum()
 
-		case "clean values":
+		case "clean values": // keep us under database size limits
 			MRDFactory.DeleteOldestValues()
 
-		case "delete orphans":
-			// TODO: delete orphans of all kinds.
-			//   Metric Report Definitions (MRD) are the source of truth
-			// 		-- Delete any ReportDefinitionToMetricMeta that doesn't match an MRD
-			// 		-- Delete any ReportDefinitionToMetricMeta that doesn't match a MetricMeta
-			// 		-- Delete any MetricMeta that doesnt have a ReportDefinitionToMetricMeta entry
-			//    -- Delete any MetricInstance without MetricMeta
-			//    -- Delete any MetricValue without MetricInstance
-			//
+		case "delete orphans": // see factory comment for details.
 			MRDFactory.DeleteOrphans()
 
 		case "prune unused metric values":

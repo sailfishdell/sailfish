@@ -9,7 +9,6 @@
 { "name": "UpdateMetricReportDefinitionEvent", "data": { "Name": "CPUMemMetrics",        "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"], "Metrics": [{"MetricID": "%", "PropertyPattern": "LEGACY:CPUMemMetrics"}]}}
 { "name": "UpdateMetricReportDefinitionEvent", "data": { "Name": "CPURegisters",         "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"], "Metrics": [{"MetricID": "%", "PropertyPattern": "LEGACY:CPURegisters"}]}}
 { "name": "UpdateMetricReportDefinitionEvent", "data": { "Name": "CPUSensor",            "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"], "Metrics": [{"MetricID": "%", "PropertyPattern": "LEGACY:CPUSensor"}]}}
-{ "name": "UpdateMetricReportDefinitionEvent", "data": { "Name": "CUPS",                 "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"], "Metrics": [{"MetricID": "%", "PropertyPattern": "LEGACY:CUPS"}]}}
 { "name": "UpdateMetricReportDefinitionEvent", "data": { "Name": "FCSensor",             "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"], "Metrics": [{"MetricID": "%", "PropertyPattern": "LEGACY:FCSensor"}]}}
 { "name": "UpdateMetricReportDefinitionEvent", "data": { "Name": "FPGASensor",           "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"], "Metrics": [{"MetricID": "%", "PropertyPattern": "LEGACY:FPGASensor"}]}}
 { "name": "UpdateMetricReportDefinitionEvent", "data": { "Name": "FanSensor",            "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"], "Metrics": [{"MetricID": "%", "PropertyPattern": "LEGACY:FanSensor"}]}}
@@ -28,6 +27,12 @@
 { "name": "UpdateMetricReportDefinitionEvent", "data": { "Name": "ThermalMetrics",       "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"], "Metrics": [{"MetricID": "%", "PropertyPattern": "LEGACY:ThermalMetrics"}]}}
 { "name": "UpdateMetricReportDefinitionEvent", "data": { "Name": "ThermalSensor",        "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"], "Metrics": [{"MetricID": "%", "PropertyPattern": "LEGACY:ThermalSensor"}]}}
 
+// DONE
+// FYI:
+//    PropertyPattern "Legacy:CUPS" will import metrics from the dump from the legacy DB
+//    The MetricID will import from the sensor table dump
+{ "name": "UpdateMetricReportDefinitionEvent", "data": { "Name": "CUPS",                 "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"], "Metrics": [{"MetricID": "%", "PropertyPattern": "LEGACY:CUPS"}, {"MetricID": "IOUsage"}, {"MetricID": "MemoryUsage"}, {"MetricID": "SystemUsage"},{"MetricID": "CPUUsage"}]}}
+
 //
 // Debug reports
 //
@@ -41,7 +46,24 @@
 //
 // Do a single import of legacy data
 //
-{ "name": "LegacyDatabaseEvent", "data": "import_all"}
+// { "name": "LegacyDatabaseEvent", "data": "import_all"}
+
+// Import UDB data
+{ "name": "UDBDatabaseEvent", "data": "import:Sensor:iDRAC.Embedded.1#PS2Voltage"}
+{ "name": "UDBDatabaseEvent", "data": "import:Sensor:iDRAC.Embedded.1#SystemBoardIOUsage"}
+{ "name": "UDBDatabaseEvent", "data": "import:Sensor:iDRAC.Embedded.1#SystemBoardMEMUsage"}
+{ "name": "UDBDatabaseEvent", "data": "import:Sensor:iDRAC.Embedded.1#SystemBoardSYSUsage"}
+{ "name": "UDBDatabaseEvent", "data": "import:Sensor:iDRAC.Embedded.1#SystemBoardCPUUsage"}
+{ "name": "UDBDatabaseEvent", "data": "import:Sensor:0x17||Fan.Embedded.1"}
+{ "name": "UDBDatabaseEvent", "data": "import:Sensor:0x17||Fan.Embedded.2"}
+{ "name": "UDBDatabaseEvent", "data": "import:Sensor:0x17||Fan.Embedded.3"}
+{ "name": "UDBDatabaseEvent", "data": "import:Sensor:0x17||Fan.Embedded.4"}
+{ "name": "UDBDatabaseEvent", "data": "import:Sensor:0x17||Fan.Embedded.5"}
+{ "name": "UDBDatabaseEvent", "data": "import:Sensor:iDRAC.Embedded.1#CPU1Temp"}
+{ "name": "UDBDatabaseEvent", "data": "import:Sensor:iDRAC.Embedded.1#SystemBoardInletTemp"}
+{ "name": "UDBDatabaseEvent", "data": "import:Sensor:0x17||Fan.Embedded.6"}
+{ "name": "UDBDatabaseEvent", "data": "import:Sensor:iDRAC.Embedded.1#SystemBoardExhaustTemp"}
+
 
 //
 // start timer to periodically import

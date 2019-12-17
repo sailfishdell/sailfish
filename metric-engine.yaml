@@ -2,6 +2,8 @@ main:
     server_name: "idrac"
     databasepath: "file:./mr.db?_foreign_keys=on&cache=shared&mode=rwc"
     legacydatabasepath: "file:./telemetry_timeseries_database.db?_foreign_keys=on&cache=shared&mode=rwc"
+    udbdatabasepath: "file:./DMLiveObjectDatabase.db?_foreign_keys=on&cache=shared&mode=rwc"
+    shmdatabasepath: "file:./SHM.db?_foreign_keys=on&cache=shared&mode=rwc"
 
 listen:
   - unix:metric-engine.socket

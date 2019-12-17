@@ -12,6 +12,7 @@ import (
 	"github.com/superchalupa/sailfish/cmd/metric-engine/events-to-metrics"
 	"github.com/superchalupa/sailfish/cmd/metric-engine/telemetry-db"
 	"github.com/superchalupa/sailfish/cmd/metric-engine/telemetry-legacy"
+	"github.com/superchalupa/sailfish/cmd/metric-engine/udb"
 )
 
 func setup(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, d *BusComponents) {
@@ -27,23 +28,24 @@ func setup(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, d *BusCo
 	// Processing loop 1:
 	// 		-- cgo events
 	// 		-- generic event conversions into MetricValue. NO DATABASE ACCESS
-	am3Svc_n1, _ := am3.StartService(ctx, logger.New("module", "AM3"), "conversion mapper", d)
+	am3Svc_n1, _ := am3.StartService(ctx, logger.New("module", "AM3_N1"), "conversion mapper", d)
 	addAM3cgo(logger.New("module", "cgo"), am3Svc_n1, d)
 	event_conversions.RegisterAM3(logger.New("module", "conversions"), am3Svc_n1, d)
 
 	// Processing loop 2:
 	//  	-- "New" DB access
-	am3Svc_n2, _ := am3.StartService(ctx, logger.New("module", "AM3"), "database", d)
+	am3Svc_n2, _ := am3.StartService(ctx, logger.New("module", "AM3_DB"), "database", d)
 	telemetry.RegisterAM3(logger.New("module", "sql_am3_functions"), cfgMgr.GetString("main.databasepath"), am3Svc_n2, d)
 
 	// Processing loop 3:
 	//  	-- Legacy Telemetry DB access
-	am3Svc_n3, _ := am3.StartService(ctx, logger.New("module", "AM3"), "legacy database", d)
+	am3Svc_n3, _ := am3.StartService(ctx, logger.New("module", "AM3_Legacy_DB"), "legacy database", d)
 	legacy_telemetry.RegisterAM3(logger.New("module", "legacy_sql_am3_functions"), cfgMgr.GetString("main.legacydatabasepath"), am3Svc_n3, d)
 
 	// Processing loop 4:
 	//  	-- FUTURE: UDB access
-	//am3Svc_n4, _ := am3.StartService(ctx, logger.New("module", "AM3"), "udb database", d)
+	am3Svc_n4, _ := am3.StartService(ctx, logger.New("module", "AM3_UDB"), "udb database", d)
+	udb.RegisterAM3(logger.New("module", "udb_am3_functions"), cfgMgr.GetString("main.udbdatabasepath"), am3Svc_n4, d)
 
 	return
 }

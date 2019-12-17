@@ -226,7 +226,7 @@ func createDatabase(logger log.Logger, dbpath string) (database *sqlx.DB, err er
 		// DOES NOT SCALE:  This uses a temp table to spool the metric values. memory usage scales with # of records output.
 		//                 BECAUSE OF THE "ORDER BY" for the MetricValueByReport table!
 		{"Create the Redfish Periodic {NewReport, Overwrite} Metric Report", `
-				DROP VIEW IF EXISTS MetricReport_Stops_Redfish ; create view MetricReportPeriodic1_Redfish as
+				DROP VIEW IF EXISTS MetricReport_Stops_Redfish ; create view MetricReport_Stops_Redfish as
 				select
 					'/redfish/v1/TelemetryService/MetricReports/' || MR.Name as '@odata.id',
 					('{' ||
@@ -263,7 +263,7 @@ func createDatabase(logger log.Logger, dbpath string) (database *sqlx.DB, err er
 
 		// DOES NOT SCALE:  This uses a temp table to spool the metric values. memory usage scales with # of records output.
 		{"Create the Redfish Periodic AppendWrapsWhenFull Metric Report", `
-				DROP VIEW IF EXISTS MetricReport_Wraps_Redfish ; create view MetricReportPeriodic2_Redfish as
+				DROP VIEW IF EXISTS MetricReport_Wraps_Redfish ; create view MetricReport_Wraps_Redfish as
 				select
 					'/redfish/v1/TelemetryService/MetricReports/' || MR.Name as '@odata.id',
 					('{' ||
@@ -300,7 +300,7 @@ func createDatabase(logger log.Logger, dbpath string) (database *sqlx.DB, err er
 
 		// This is the table that creates a uniform table name to gather *any* metric report, regardless of type
 		{"Create the Redfish Metric Report", `
-				DROP VIEW IF EXISTS MetricReport_Redfish ; create view MetricReport_Redfish as
+				DROP VIEW IF EXISTS MetricReport_JSON ; create view MetricReport_JSON as
 				select * from MetricReport_Wraps_Redfish
 					UNION ALL
 				select * from MetricReport_Stops_Redfish
