@@ -1,0 +1,44 @@
+
+	//-- TODO later for MetricInstance. Features needed;
+	//-- 		On a per-metric instance basis, need to store the "period" for that metric
+	//--    When we put in a new metric, see if there were previous DUPS suppressed and expand them, IFF suppressdups==false
+	//--    When we generate a report, see if there are any suppressed dups at the end of the report and expand them IFF suppressdups==false
+	//--
+	//--    Allow upstream to tell us when metrics stop
+	//--       IFF suppressed=false
+	//--       Go through and expand last metric
+
+	/*
+		{"Create the Redfish Metric Report Definition view", `
+				DROP VIEW IF EXISTS MetricReportDefinition_Redfish ; create view MetricReportDefinition_Redfish as
+				select
+					'/redfish/v1/TelemetryService/MetricReportDefinitions/' || MR.Name as '@odata.id',
+					('{' ||
+							' "@odata.type": "#MetricReport.v1_2_0.MetricReport",' ||
+							' "@odata.context": "/redfish/v1/$metadata#MetricReport.MetricReport",' ||
+							' "@odata.id": "/redfish/v1/TelemetryService/MetricReports/' || MR.Name || '",' ||
+							' "Id": "' || MR.Name || '",' ||
+							' "Name": "' || MR.Name || ' Metric Report",' ||
+							' "ReportSequence": ' || Sequence || ',' ||
+							' "Timestamp": ' || strftime('"%Y-%m-%dT%H:%M:%f"', MR.ReportTimestamp/1000000000.0, 'unixepoch') || ', ' ||
+							' "MetricReportDefinition": {"@odata.id": "/redfish/v1/TelemetryService/MetricReportDefinitions/' || MRD.Name || '"}, ' ||
+							' "MetricValues": ' || (
+									select json_group_array(JSON)
+									from MetricValueByReport_JSON as MVRJ
+									where MVRJ.MRDID=MR.ReportDefinitionID
+										and ( MVRJ.Timestamp >= MR.StartTimestamp OR MR.StartTimestamp is NULL )
+										and ( MVRJ.Timestamp <= MR.EndTimestamp OR MR.EndTimestamp is NULL )
+								) || ',' ||
+							' "MetricValues@odata.count": ' || (
+									select count(*)
+									from MetricValueByReport as MVR
+									where MVR.MRDID=MR.ReportDefinitionID
+										and ( MVR.Timestamp >= MR.StartTimestamp OR MR.StartTimestamp is NULL )
+										and ( MVR.Timestamp <= MR.EndTimestamp OR MR.EndTimestamp is NULL )
+						) ||
+						'}'
+					) as root
+				from MetricReport as MR
+				inner join MetricReportDefinition as MRD on MR.ReportDefinitionID = MRD.ID
+				`}, // TODO: index on the odata.id field above
+	*/

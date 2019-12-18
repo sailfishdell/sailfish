@@ -26,7 +26,7 @@ import (
 	"github.com/superchalupa/sailfish/src/http_inject"
 	"github.com/superchalupa/sailfish/src/http_sse"
 	log "github.com/superchalupa/sailfish/src/log"
-	applog "github.com/superchalupa/sailfish/src/log15adapter"
+	"github.com/superchalupa/sailfish/src/log15adapter"
 	"github.com/superchalupa/sailfish/src/tlscert"
 )
 
@@ -77,7 +77,9 @@ func main() {
 
 	flag.Parse()
 
-	logger := applog.InitializeApplicationLogging("metric-engine")
+	logger := log15adapter.Make()
+	logger.SetupLogHandlersFromConfig(cfgMgr)
+
 	ctx, cancel := context.WithCancel(context.Background())
 	intr := make(chan os.Signal, 1)
 	signal.Notify(intr, os.Interrupt)

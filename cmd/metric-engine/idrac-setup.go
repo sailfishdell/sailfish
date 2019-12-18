@@ -35,7 +35,7 @@ func setup(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, d *BusCo
 	// Processing loop 2:
 	//  	-- "New" DB access
 	am3Svc_n2, _ := am3.StartService(ctx, logger.New("module", "AM3_DB"), "database", d)
-	telemetry.RegisterAM3(logger.New("module", "sql_am3_functions"), cfgMgr.GetString("main.databasepath"), am3Svc_n2, d)
+	telemetry.RegisterAM3(logger.New("module", "sql_am3_functions"), cfgMgr, am3Svc_n2, d)
 
 	// Processing loop 3:
 	//  	-- Legacy Telemetry DB access

@@ -2,9 +2,12 @@ package telemetry
 
 import (
 	"context"
+	"fmt"
 	"time"
 
+	"github.com/jmoiron/sqlx"
 	eh "github.com/looplab/eventhorizon"
+	"github.com/spf13/viper"
 
 	. "github.com/superchalupa/sailfish/cmd/metric-engine/metric"
 	log "github.com/superchalupa/sailfish/src/log"
@@ -22,15 +25,34 @@ type BusComponents interface {
 	GetBus() eh.EventBus
 }
 
-func RegisterAM3(logger log.Logger, dbpath string, am3Svc *am3.Service, d BusComponents) {
+func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Service, d BusComponents) {
 	eh.RegisterEventData(UpdateMetricReportDefinition, func() eh.EventData { return &MetricReportDefinitionData{} })
 	eh.RegisterEventData(DeleteMetricReportDefinition, func() eh.EventData { return &MetricReportDefinitionData{} })
 	eh.RegisterEventData(GenerateMetricReport, func() eh.EventData { return &MetricReportDefinitionData{} })
 
-	database, err := createDatabase(logger, dbpath)
+	database, err := sqlx.Open("sqlite3", cfg.GetString("main.databasepath"))
 	if err != nil {
-		logger.Crit("FATAL: Could not create database", "err", err)
+		logger.Crit("Could not open database", "err", err)
 		return
+	}
+
+	// run sqlite with only one connection to avoid locking issues
+	// If we run in WAL mode, you can only do one connection. Seems like a base
+	// library limitation that's reflected up into the golang implementation.
+	// SO: we will ensure that we have ONLY ONE GOROUTINE that does transactions
+	// This isn't a terrible limitation as it is sort of what we want to do
+	// anyways.
+	database.SetMaxOpenConns(1)
+
+	// Create tables and views from sql stored in our YAML
+	for _, sqltext := range cfg.GetStringSlice("createdb") {
+		fmt.Printf("Running database create step: %s\n", sqltext)
+		_, err = database.Exec(sqltext)
+		if err != nil {
+			logger.Crit("Error executing setup SQL", "err", err, "sql", sqltext)
+			return
+		}
+
 	}
 
 	MRDFactory, err := NewMRDFactory(logger, database)
