@@ -36,39 +36,24 @@
 //
 // Debug reports
 //
-{ "name": "UpdateMetricReportDefinitionEvent", "data": { "Name": "UBER-REPORT-wrap",  "Enabled": true, "Type": "OnRequest", "Updates": "AppendStopsWhenFull",  "SuppressDups": false , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"], "Metrics": [ {"MetricID":"%"}] } }
-{ "name": "UpdateMetricReportDefinitionEvent", "data": { "Name": "UBER-REPORT-stop",  "Enabled": true, "Type": "OnRequest", "Updates": "AppendWrapsWhenFull",  "SuppressDups": false , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"], "Metrics": [ {"MetricID":"%"}] } }
-{ "name": "UpdateMetricReportDefinitionEvent", "data": { "Name": "UBER-REPORT-PERIODIC-wrap",  "Enabled": true, "Type": "Periodic", "Updates": "AppendStopsWhenFull",  "SuppressDups": false , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"], "Metrics": [ {"MetricID":"%"}] } }
-{ "name": "UpdateMetricReportDefinitionEvent", "data": { "Name": "UBER-REPORT-PERIODIC-stop",  "Enabled": true, "Type": "Periodic", "Updates": "AppendWrapsWhenFull",  "SuppressDups": false , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"], "Metrics": [ {"MetricID":"%"}] } }
-{ "name": "UpdateMetricReportDefinitionEvent", "data": { "Name": "UBER-COLL-PERIODIC-OVW",  "Enabled": true, "Type": "Periodic",  "Period": 60, "Updates": "Overwrite", "SuppressDups": false , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"], "Metrics": [ {"MetricID":"%", "CollectionFunction": "Average", "CollectionDuration": 10}] } }
-{ "name": "UpdateMetricReportDefinitionEvent", "data": { "Name": "UBER-COLL-PERIODIC-NEW",  "Enabled": true, "Type": "Periodic",  "Period": 60, "Updates": "NewReport", "SuppressDups": false , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"], "Metrics": [ {"MetricID":"%", "CollectionFunction": "Average", "CollectionDuration": 10}] } }
+{ "name": "UpdateMetricReportDefinitionEvent", "data": { "Name": "UBER-REPORT-wrap",          "Enabled": true, "Type": "OnRequest", "Updates": "AppendStopsWhenFull",  "SuppressDups": false , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"], "Metrics": [ {"MetricID":"%"}] } }
+{ "name": "UpdateMetricReportDefinitionEvent", "data": { "Name": "UBER-REPORT-stop",          "Enabled": true, "Type": "OnRequest", "Updates": "AppendWrapsWhenFull",  "SuppressDups": false , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"], "Metrics": [ {"MetricID":"%"}] } }
+{ "name": "UpdateMetricReportDefinitionEvent", "data": { "Name": "UBER-COLL-PERIODIC-NEW",    "Enabled": true, "Type": "Periodic",  "Period": 60, "Updates": "NewReport", "SuppressDups": false , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"], "Metrics": [ {"MetricID":"%", "CollectionFunction": "Average", "CollectionDuration": 10}] } }
+{ "name": "UpdateMetricReportDefinitionEvent", "data": { "Name": "UBER-COLL-PERIODIC-OVW",    "Enabled": true, "Type": "Periodic",  "Period": 60, "Updates": "Overwrite", "SuppressDups": false , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"], "Metrics": [ {"MetricID":"%", "CollectionFunction": "Average", "CollectionDuration": 10}] } }
+{ "name": "UpdateMetricReportDefinitionEvent", "data": { "Name": "UBER-REPORT-PERIODIC-wrap", "Enabled": true, "Type": "Periodic",  "Period": 60, "Updates": "AppendStopsWhenFull",  "SuppressDups": false , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"], "Metrics": [ {"MetricID":"%"}] } }
+{ "name": "UpdateMetricReportDefinitionEvent", "data": { "Name": "UBER-REPORT-PERIODIC-stop", "Enabled": true, "Type": "Periodic",  "Period": 60, "Updates": "AppendWrapsWhenFull",  "SuppressDups": false , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"], "Metrics": [ {"MetricID":"%"}] } }
 
 //
 // Do a single import of legacy data
-//
 // { "name": "LegacyDatabaseEvent", "data": "import_all"}
-
-// Import UDB data
-{ "name": "UDBDatabaseEvent", "data": "import:Sensor:iDRAC.Embedded.1#PS2Voltage"}
-{ "name": "UDBDatabaseEvent", "data": "import:Sensor:iDRAC.Embedded.1#SystemBoardIOUsage"}
-{ "name": "UDBDatabaseEvent", "data": "import:Sensor:iDRAC.Embedded.1#SystemBoardMEMUsage"}
-{ "name": "UDBDatabaseEvent", "data": "import:Sensor:iDRAC.Embedded.1#SystemBoardSYSUsage"}
-{ "name": "UDBDatabaseEvent", "data": "import:Sensor:iDRAC.Embedded.1#SystemBoardCPUUsage"}
-{ "name": "UDBDatabaseEvent", "data": "import:Sensor:0x17||Fan.Embedded.1"}
-{ "name": "UDBDatabaseEvent", "data": "import:Sensor:0x17||Fan.Embedded.2"}
-{ "name": "UDBDatabaseEvent", "data": "import:Sensor:0x17||Fan.Embedded.3"}
-{ "name": "UDBDatabaseEvent", "data": "import:Sensor:0x17||Fan.Embedded.4"}
-{ "name": "UDBDatabaseEvent", "data": "import:Sensor:0x17||Fan.Embedded.5"}
-{ "name": "UDBDatabaseEvent", "data": "import:Sensor:iDRAC.Embedded.1#CPU1Temp"}
-{ "name": "UDBDatabaseEvent", "data": "import:Sensor:iDRAC.Embedded.1#SystemBoardInletTemp"}
-{ "name": "UDBDatabaseEvent", "data": "import:Sensor:0x17||Fan.Embedded.6"}
-{ "name": "UDBDatabaseEvent", "data": "import:Sensor:iDRAC.Embedded.1#SystemBoardExhaustTemp"}
-
 
 //
 // start timer to periodically import
+// { "name": "LegacyDatabaseEvent", "data": "start_timed_import"}
+
 //
-//{ "name": "LegacyDatabaseEvent", "data": "start_timed_import"}
+// Import UDB data
+// { "name": "UDBDatabaseEvent", "data": "import:Sensor"}
 
 // synchonize and wait until everything finishes
 { "name": "startup", "Synchronous": true, "Barrier": true, "data": {} }

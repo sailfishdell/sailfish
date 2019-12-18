@@ -238,7 +238,7 @@ func createDatabase(logger log.Logger, dbpath string) (database *sqlx.DB, err er
 							' "ReportSequence": ' || Sequence || ',' ||
 							' "Timestamp": ' || strftime('"%Y-%m-%dT%H:%M:%f"', MR.ReportTimestamp/1000000000.0, 'unixepoch') || ', ' ||
 							' "MetricReportDefinition": {"@odata.id": "/redfish/v1/TelemetryService/MetricReportDefinitions/' || MRD.Name || '"}, ' ||
-								(
+								ifnull((
 									SELECT
 										' "MetricValues":  [' ||  group_concat(a.JSON) || '], ' ||
 										' "MetricValues@odata.count": ' ||  count(*)
@@ -251,14 +251,12 @@ func createDatabase(logger log.Logger, dbpath string) (database *sqlx.DB, err er
 											and ( MVR.Timestamp <= MR.EndTimestamp OR MR.EndTimestamp is NULL )
 											order by MVR.Timestamp ASC
 											limit 3000
-									) AS a )
+										) AS a ), ' "MetricValues":  [], "MetricValues@odata.count": 0 ')
 						|| '}'
 					) as root
 				from MetricReport as MR
 				inner join MetricReportDefinition as MRD on MR.ReportDefinitionID = MRD.ID
-				where (MRD.Type = 'Periodic' and ( MRD.Updates = "NewReport" or MRD.Updates = "Overwrite" or MRD.Updates = "AppendStopsWhenFull"))
-				   or (MRD.Type = 'OnRequest' and MRD.Updates = "AppendStopsWhenFull")
-				   or (MRD.Type = 'OnChange' and MRD.Updates = "AppendStopsWhenFull")
+				where MRD.Updates != "AppendWrapsWhenFull"
 				`},
 
 		// DOES NOT SCALE:  This uses a temp table to spool the metric values. memory usage scales with # of records output.
@@ -275,7 +273,7 @@ func createDatabase(logger log.Logger, dbpath string) (database *sqlx.DB, err er
 							' "ReportSequence": ' || Sequence || ',' ||
 							' "Timestamp": ' || strftime('"%Y-%m-%dT%H:%M:%f"', MR.ReportTimestamp/1000000000.0, 'unixepoch') || ', ' ||
 							' "MetricReportDefinition": {"@odata.id": "/redfish/v1/TelemetryService/MetricReportDefinitions/' || MRD.Name || '"}, ' ||
-								(
+								ifnull((
 									SELECT
 										' "MetricValues":  [' ||  group_concat(a.JSON) || '], ' ||
 										' "MetricValues@odata.count": ' ||  count(*)
@@ -288,14 +286,12 @@ func createDatabase(logger log.Logger, dbpath string) (database *sqlx.DB, err er
 											and ( MVR.Timestamp <= MR.EndTimestamp OR MR.EndTimestamp is NULL )
 											order by MVR.Timestamp DESC
 											limit 3000
-									) AS a )
+									) AS a ), '')
 						|| '}'
 					) as root
 				from MetricReport as MR
 				inner join MetricReportDefinition as MRD on MR.ReportDefinitionID = MRD.ID
-				where (MRD.Type = 'Periodic' and  MRD.Updates = "AppendWrapsWhenFull" )
-				   or (MRD.Type = 'OnRequest' and MRD.Updates = "AppendWrapsWhenFull")
-				   or (MRD.Type = 'OnChange' and MRD.Updates = "AppendWrapsWhenFull")
+				where MRD.Updates = "AppendWrapsWhenFull"
 				`},
 
 		// This is the table that creates a uniform table name to gather *any* metric report, regardless of type

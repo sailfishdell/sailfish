@@ -1,7 +1,9 @@
 package udb
 
 import (
+	"context"
 	"strings"
+	"time"
 
 	"github.com/jmoiron/sqlx"
 	eh "github.com/looplab/eventhorizon"
@@ -29,7 +31,7 @@ func RegisterAM3(logger log.Logger, dbpath string, am3Svc *am3.Service, d BusCom
 		return
 	}
 
-	// udb db not opened in WAL mode... in fact should be read-only, so this isn't really necessary, I think
+	// udb db not opened in WAL mode... in fact should be read-only, so this isn't really necessary, but might as well
 	database.SetMaxOpenConns(1)
 
 	UDBFactory, err := NewUDBFactory(logger, database, d)
@@ -44,6 +46,19 @@ func RegisterAM3(logger log.Logger, dbpath string, am3Svc *am3.Service, d BusCom
 		logger.Crit("Error preparing udb queries", "err", err)
 		return
 	}
+
+	// for now, trigger automatic imports on a periodic basis
+	go func() {
+		importTicker := time.NewTicker(5 * time.Second)
+		time.Sleep(1 * time.Second)
+		defer importTicker.Stop()
+		for {
+			select {
+			case <-importTicker.C:
+				d.GetBus().PublishEvent(context.Background(), eh.NewEvent(UDBDatabaseEvent, "import:Sensor", time.Now()))
+			}
+		}
+	}()
 
 	// Create a new Metric Report Definition, or update an existing one
 	am3Svc.AddEventHandler("Import UDB Metric Values", UDBDatabaseEvent, func(event eh.Event) {

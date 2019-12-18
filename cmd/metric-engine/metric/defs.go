@@ -29,9 +29,9 @@ func (m *SqlTimeInt) Scan(src interface{}) error {
 type MetricValueEventData struct {
 	Timestamp SqlTimeInt `db:"Timestamp"`
 	Name      string     `db:"Name"`
-	Value     string
-	Property  string `db:"Property"`
-	Context   string `db:"Context"`
+	Value     string     `db:"Value"`
+	Property  string     `db:"Property"`
+	Context   string     `db:"Context"`
 }
 
 type FQDDMappingData struct {

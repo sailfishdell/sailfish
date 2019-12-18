@@ -40,6 +40,7 @@ func RegisterAM3(logger log.Logger, dbpath string, am3Svc *am3.Service, d BusCom
 
 	// periodically optimize and vacuum database
 	var clockHWM time.Time
+	const clockPeriod = 1181 * time.Millisecond
 	go func() {
 		// run once after startup. give a few seconds so we dont slow boot up
 		time.Sleep(20 * time.Second)
@@ -48,12 +49,12 @@ func RegisterAM3(logger log.Logger, dbpath string, am3Svc *am3.Service, d BusCom
 
 		// NOTE: the numbers below are selected as PRIME numbers so that they run at the same time as infrequently as possible
 		// With the default 73/3607/10831, they will run concurrently every ~90 years.
-		cleanValuesTicker := time.NewTicker(time.Duration(73) * time.Second) // once a minute
-		vacuumTicker := time.NewTicker(time.Duration(3607) * time.Second)    // once an hour (-ish)
-		optimizeTicker := time.NewTicker(time.Duration(10831) * time.Second) // once every three hours
+		cleanValuesTicker := time.NewTicker(73 * time.Second) // once a minute
+		vacuumTicker := time.NewTicker(3607 * time.Second)    // once an hour (-ish)
+		optimizeTicker := time.NewTicker(10831 * time.Second) // once every three hours (-ish)
 
 		// slightly more than once a second. Idea here is to give messages a chance to drive teh clock
-		clockTicker := time.NewTicker(time.Duration(1181) * time.Millisecond)
+		clockTicker := time.NewTicker(clockPeriod)
 		defer cleanValuesTicker.Stop()
 		defer vacuumTicker.Stop()
 		defer optimizeTicker.Stop()
@@ -124,8 +125,8 @@ func RegisterAM3(logger log.Logger, dbpath string, am3Svc *am3.Service, d BusCom
 			return
 		}
 
-		if clockHWM.Before(metricValue.Timestamp) {
-			clockHWM = metricValue.Timestamp
+		if clockHWM.Before(metricValue.Timestamp.Time) {
+			clockHWM = metricValue.Timestamp.Time
 		}
 
 		err := MRDFactory.InsertMetricValue(metricValue)
@@ -154,33 +155,30 @@ func RegisterAM3(logger log.Logger, dbpath string, am3Svc *am3.Service, d BusCom
 		// 		Updates: AppendStopsWhenFull | AppendWrapsWhenFull | Overwrite | NewReport
 		//
 		// Periodic:   (*) AppendStopsWhenFull  (*) AppendWrapsWhenFull   (*) Overwrite   (*) NewReport
-		// OnChange:   (*) AppendStopsWhenFull  (*) AppendWrapsWhenFull   (?) Overwrite   (X) NewReport
-		// OnRequest:  (*) AppendStopsWhenFull  (*) AppendWrapsWhenFull   (X) Overwrite   (X) NewReport
+		// OnChange:   (*) AppendStopsWhenFull  (*) AppendWrapsWhenFull   (?) Overwrite   (?) NewReport
+		// OnRequest:  (*) AppendStopsWhenFull  (*) AppendWrapsWhenFull   (?) Overwrite   (?) NewReport
 		//
 		// key:
 		//    (*) Done
 		// 		(-) makes sense and should be implemented
 		// 		(X) invalid combination, dont accept
-		//    (?) Not sure if this makes sense
+		//    (?) Not sure if this makes sense - more study needed
 		//
 		// AppendLimit: due to limitations in sqlite, this is a fixed limit that is a global setting that is applied when we create the VIEW
 		//
 		// behaviour:
-		//    Periodic: (generate a report, then at time interval dump accumulated values)
+		//    Periodic: (on time interval, dump accumulated values into report. report can either be new/clean (for overwrite/newreport), or added to existing)
 		//      --> The Metric Value insert doesn't change reports. Best performance.
 		// 			--> Sequence is updated on period
 		// 		  --> Timestamp is updated on period
-		// 			AppendStopsWhenFull: StartTimestamp = fixed, EndTimestamp = fixed
-		// 			AppendWrapsWhenFull: StartTimestamp = fixed, EndTimestamp = fixed
-		//      NewReport:  StartTimestamp = fixed, EndTimestamp = fixed
-		// 					-- only keeps at most 3 reports, deletes oldest
-		//      Overwrite: starttimestamp=fixed, endtimestamp=fixed
+		// 			--> For all reports: StartTimestamp and EndTimestamp are always fixed.
+		//      NewReport:  only keeps at most 3 reports, deletes oldest
 		//
 		//    OnRequest/OnChange:  things trickle in as they come
 		// 			AppendStopsWhenFull: StartTimestamp=fixed
 		// 			AppendWrapsWhenFull: StartTimestamp=fixed
-		//      NewReport: no
-		//      Overwrite: no
+		//      NewReport: not supported
+		//      Overwrite: not supported
 
 		// Can't write to event sent in, so make a local copy
 		localReportDefCopy := *reportDef
@@ -198,6 +196,9 @@ func RegisterAM3(logger log.Logger, dbpath string, am3Svc *am3.Service, d BusCom
 		}
 
 		switch command {
+		case "publish clock":
+			d.GetBus().PublishEvent(context.Background(), eh.NewEvent(MetricValueEvent, &MetricValueEventData{Timestamp: SqlTimeInt{clockHWM.Add(clockPeriod)}, Name: "clockupdate"}, time.Now()))
+
 		case "optimize":
 			MRDFactory.Optimize()
 
@@ -212,7 +213,6 @@ func RegisterAM3(logger log.Logger, dbpath string, am3Svc *am3.Service, d BusCom
 
 		case "prune unused metric values":
 			// TODO: Delete any MetricValues that are not part of a MetricReport or that wont be part of a report soon (periodic)
-			// This will be difficult(TM)
 			//
 			// select
 			//   MV.rowid, MV.InstanceID, MV.Timestamp
