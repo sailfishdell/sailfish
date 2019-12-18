@@ -14,6 +14,28 @@ listen:
   # disable direct https listener, uncomment if needed for testing:
   # - https::8443
 
+udb:
+  Sensor: "
+			SELECT
+			  cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
+			  case
+				  when SensorType = 0 then 'InvalidMetric'
+					when SensorType = 1 then
+					case
+						when DeviceID = 'iDRAC.Embedded.1#SystemBoardCPUUsage' then 'CPUUsage'
+						when DeviceID = 'iDRAC.Embedded.1#SystemBoardSYSUsage' then 'SystemUsage'
+						when DeviceID = 'iDRAC.Embedded.1#SystemBoardMEMUsage' then 'MemoryUsage'
+						when DeviceID = 'iDRAC.Embedded.1#SystemBoardIOUsage'  then 'IOUsage'
+					end
+					when SensorType = 2 then 'TemperatureReading'
+					when SensorType = 3 then 'VoltageReading'
+					when SensorType = 5 then 'RPMReading'
+				end as Name,
+				CurrentReading as Value,
+				ElementName as Context
+			FROM CIMVIEW_DCIM_NumericSensor;`
+      "
+
 # Logging levels:
 # debug, info, warn, error, crit
 #

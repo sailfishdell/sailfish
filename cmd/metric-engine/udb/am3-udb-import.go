@@ -7,6 +7,7 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	eh "github.com/looplab/eventhorizon"
+	"github.com/spf13/viper"
 
 	log "github.com/superchalupa/sailfish/src/log"
 	"github.com/superchalupa/sailfish/src/ocp/am3"
@@ -24,7 +25,8 @@ type BusComponents interface {
 	GetBus() eh.EventBus
 }
 
-func RegisterAM3(logger log.Logger, dbpath string, am3Svc *am3.Service, d BusComponents) {
+func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Service, d BusComponents) {
+	dbpath := cfg.GetString("main.udbdatabasepath")
 	database, err := sqlx.Open("sqlite3", dbpath)
 	if err != nil {
 		logger.Crit("Could not open udb database", "err", err)
@@ -34,14 +36,14 @@ func RegisterAM3(logger log.Logger, dbpath string, am3Svc *am3.Service, d BusCom
 	// udb db not opened in WAL mode... in fact should be read-only, so this isn't really necessary, but might as well
 	database.SetMaxOpenConns(1)
 
-	UDBFactory, err := NewUDBFactory(logger, database, d)
+	UDBFactory, err := NewUDBFactory(logger, database, d, cfg)
 	if err != nil {
 		logger.Crit("Error creating udb integration", "err", err)
 		database.Close()
 		return
 	}
 
-	UDBFactory.PrepareAll()
+	UDBFactory.PrepareAll(cfg)
 	if err != nil {
 		logger.Crit("Error preparing udb queries", "err", err)
 		return

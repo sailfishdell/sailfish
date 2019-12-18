@@ -45,7 +45,7 @@ func setup(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, d *BusCo
 	// Processing loop 4:
 	//  	-- FUTURE: UDB access
 	am3Svc_n4, _ := am3.StartService(ctx, logger.New("module", "AM3_UDB"), "udb database", d)
-	udb.RegisterAM3(logger.New("module", "udb_am3_functions"), cfgMgr.GetString("main.udbdatabasepath"), am3Svc_n4, d)
+	udb.RegisterAM3(logger.New("module", "udb_am3_functions"), cfgMgr, am3Svc_n4, d)
 
 	return
 }

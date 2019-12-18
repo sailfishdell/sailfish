@@ -2,12 +2,12 @@ package udb
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
 	"github.com/jmoiron/sqlx"
 	eh "github.com/looplab/eventhorizon"
+	"github.com/spf13/viper"
 	"golang.org/x/xerrors"
 
 	. "github.com/superchalupa/sailfish/cmd/metric-engine/metric"
@@ -15,7 +15,6 @@ import (
 )
 
 type UDBMeta struct {
-	queryStr string
 	query    *sqlx.Stmt
 	importFn func(string, ...string) error
 }
@@ -27,38 +26,13 @@ type UDBFactory struct {
 	bus      eh.EventBus
 }
 
-func NewUDBFactory(logger log.Logger, database *sqlx.DB, d BusComponents) (*UDBFactory, error) {
+func NewUDBFactory(logger log.Logger, database *sqlx.DB, d BusComponents, cfg *viper.Viper) (*UDBFactory, error) {
 	ret := &UDBFactory{}
 	ret.logger = logger
 	ret.database = database
 	ret.bus = d.GetBus()
 	ret.udb = map[string]UDBMeta{
-		"Sensor": UDBMeta{
-			// it's basically a VIEW...
-			queryStr: `
-			SELECT
-			  cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
-			  case
-				  when SensorType = 0 then "InvalidMetric"
-					when SensorType = 1 then
-					case
-						when DeviceID = "iDRAC.Embedded.1#SystemBoardCPUUsage" then "CPUUsage"
-						when DeviceID = "iDRAC.Embedded.1#SystemBoardSYSUsage" then "SystemUsage"
-						when DeviceID = "iDRAC.Embedded.1#SystemBoardMEMUsage" then "MemoryUsage"
-						when DeviceID = "iDRAC.Embedded.1#SystemBoardIOUsage"  then "IOUsage"
-					end
-					when SensorType = 2 then "TemperatureReading"
-					when SensorType = 3 then "VoltageReading"
-					when SensorType = 5 then "RPMReading"
-				end as Name,
-				CurrentReading as Value,
-				'/redfish/v1/Dell/Systems/System.Embedded.1/DellNumericSensorCollection/' || DeviceID as Property,  -- needs to be URI encoded, but close enough for now
-				ElementName as Context   -- FriendlyFQDD
-				-- COMMENT OUT UNTIL WE HAVE A DEST TO RECEIVE THIS: DeviceID as FQDD,
-			FROM CIMVIEW_DCIM_NumericSensor;`,
-			//where DeviceID = ? ;`,
-			importFn: func(n string, args ...string) error { return ret.ImportByMetricValue(n, args...) },
-		},
+		"Sensor": UDBMeta{importFn: func(n string, args ...string) error { return ret.ImportByMetricValue(n, args...) }},
 	}
 	return ret, nil
 }
@@ -91,7 +65,7 @@ func (l *UDBFactory) IterUDBTables(fn func(string) error) error {
 	return nil
 }
 
-func (l *UDBFactory) PrepareAll() error {
+func (l *UDBFactory) PrepareAll(cfg *viper.Viper) error {
 	err := l.IterUDBTables(func(udbImportName string) error {
 		var err error
 		udbMeta := l.udb[udbImportName]
@@ -100,17 +74,12 @@ func (l *UDBFactory) PrepareAll() error {
 			return nil
 		}
 
-		if udbMeta.queryStr == "" {
-			// no query string, that's not ok
-			return errors.New("Prepare failed for (%s)... missing query string")
-		}
-
-		udbMeta.query, err = l.database.Preparex(udbMeta.queryStr)
+		sqlText := cfg.GetString("udb." + udbImportName)
+		udbMeta.query, err = l.database.Preparex(sqlText)
 		if err != nil {
-			fmt.Printf("Prepare failed for %s: %s\n", udbImportName, err)
-			return xerrors.Errorf("Prepare failed for %s: %w", udbImportName, err)
+			fmt.Printf("Prepare failed for %s: SQL(%s) %s\n", udbImportName, sqlText, err)
+			return xerrors.Errorf("Prepare SQL(%s) failed for %s: %w", udbImportName, sqlText, err)
 		}
-		udbMeta.queryStr = ""
 
 		l.udb[udbImportName] = udbMeta
 		return nil
@@ -141,7 +110,7 @@ func (l *UDBFactory) ImportByMetricValue(udbImportName string, args ...string) (
 	}
 
 	if udbMeta.query == nil {
-		err = xerrors.Errorf("SQL query wasn't prepared for %s! QUERY(%s)", udbImportName, udbMeta.queryStr)
+		err = xerrors.Errorf("SQL query wasn't prepared for %s!", udbImportName)
 		return
 	}
 
