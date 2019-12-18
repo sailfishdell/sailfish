@@ -13,12 +13,6 @@ import (
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
 )
 
-type am3_functions struct {
-	name string
-	et   eh.EventType
-	fn   func(eh.Event)
-}
-
 func addAM3Functions(logger log.Logger, am3Svc *am3.Service, d *domain.DomainObjects) {
 	am3Svc.AddEventHandler("modular_update_fan_data", godefs.FanEvent, func(event eh.Event) {
 		dmobj, ok := event.Data().(*godefs.DMObject)
