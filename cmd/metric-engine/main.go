@@ -108,11 +108,15 @@ func main() {
 	m.Path("/events").Methods("GET").Handler(http_sse.NewSSEHandler(d, logger, "UNKNOWN", []string{"Unauthenticated"}))
 	m.Path("/api/Event:Inject").Methods("POST").Handler(http_inject.NewInjectHandler(d, logger, "UNKNOWNN", []string{"Unauthenticated"}))
 
-	if len(cfgMgr.GetStringSlice("listen")) == 0 {
+	listen_addrs := cfgMgr.GetStringSlice("listen")
+	if len(listen_addrs) == 0 {
 		fmt.Fprintf(os.Stderr, "No listeners configured! Use the '-l' option to configure a listener!")
 	}
 
-	fmt.Printf("Starting services: %s\n", cfgMgr.GetStringSlice("listen"))
+	// tell the runtime it can release this memory
+	cfgMgr = nil
+
+	fmt.Printf("Starting services: %s\n", listen_addrs)
 
 	shutdownlist := []shutdowner{}
 	addShutdown := func(name string, srv interface{}) {
@@ -128,7 +132,7 @@ func main() {
 	}
 
 	// And finally, start up all of the listeners that we have configured
-	for _, listen := range cfgMgr.GetStringSlice("listen") {
+	for _, listen := range listen_addrs {
 		switch {
 		case strings.HasPrefix(listen, "pprof:"):
 			addr := strings.TrimPrefix(listen, "pprof:")
@@ -191,7 +195,7 @@ func main() {
 		}
 	}
 
-	logger.Debug("Listening", "module", "main", "addresses", fmt.Sprintf("%v\n", cfgMgr.GetStringSlice("listen")))
+	logger.Debug("Listening", "module", "main", "addresses", fmt.Sprintf("%v\n", listen_addrs))
 	injectSvc.Ready()
 
 	// wait until everything is done
