@@ -59,8 +59,7 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Service, d Bus
 	}
 
 	// periodically optimize and vacuum database
-	var clockHWM time.Time
-	const clockPeriod = 1181 * time.Millisecond
+	const clockPeriod = 5100 * time.Millisecond
 	go func() {
 		// run once after startup. give a few seconds so we dont slow boot up
 		time.Sleep(20 * time.Second)
@@ -73,8 +72,9 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Service, d Bus
 		vacuumTicker := time.NewTicker(3607 * time.Second)    // once an hour (-ish)
 		optimizeTicker := time.NewTicker(10831 * time.Second) // once every three hours (-ish)
 
-		// slightly more than once a second. Idea here is to give messages a chance to drive teh clock
+		// slightly more than once every 5s. Idea here is to give messages a chance to drive the clock
 		clockTicker := time.NewTicker(clockPeriod)
+
 		defer cleanValuesTicker.Stop()
 		defer vacuumTicker.Stop()
 		defer optimizeTicker.Stop()
@@ -145,16 +145,15 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Service, d Bus
 			return
 		}
 
-		if clockHWM.Before(metricValue.Timestamp.Time) {
-			clockHWM = metricValue.Timestamp.Time
-		}
-
 		err := MRDFactory.InsertMetricValue(metricValue)
 		if err != nil {
 			//logger.Crit("Error inserting Metric Value", "err", err, "metric", metricValue)
 			return
 		}
 
+		if MRDFactory.MetricTSHWM.Before(metricValue.Timestamp.Time) {
+			MRDFactory.MetricTSHWM = metricValue.Timestamp
+		}
 		err = MRDFactory.FastCheckForNeededMRUpdates()
 		if err != nil {
 			//logger.Crit("Error inserting Metric Value", "err", err, "metric", metricValue)
@@ -208,6 +207,7 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Service, d Bus
 		}
 	})
 
+	lastHWM := time.Time{}
 	am3Svc.AddEventHandler("Database Maintenance", DatabaseMaintenance, func(event eh.Event) {
 		command, ok := event.Data().(string)
 		if !ok {
@@ -217,7 +217,17 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Service, d Bus
 
 		switch command {
 		case "publish clock":
-			d.GetBus().PublishEvent(context.Background(), eh.NewEvent(MetricValueEvent, &MetricValueEventData{Timestamp: SqlTimeInt{clockHWM.Add(clockPeriod)}, Name: "clockupdate"}, time.Now()))
+			// here we generate an artificial tick and check for report generation in the case where no other event has happened to trigger it in the last period
+			if MRDFactory.MetricTSHWM.Before(lastHWM.Add(clockPeriod)) {
+				MRDFactory.MetricTSHWM = SqlTimeInt{lastHWM.Add(clockPeriod)}
+				err = MRDFactory.FastCheckForNeededMRUpdates()
+				if err != nil {
+					//logger.Crit("Error inserting Metric Value", "err", err, "metric", metricValue)
+					return
+				}
+			} else {
+				lastHWM = MRDFactory.MetricTSHWM.Time
+			}
 
 		case "optimize":
 			MRDFactory.Optimize()

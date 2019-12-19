@@ -713,7 +713,6 @@ func (factory *MRDFactory) InsertMetricValue(ev *MetricValueEventData) (err erro
 	if err != nil {
 		return xerrors.Errorf("Commit failed: %w", err)
 	}
-	factory.MetricTSHWM = mm.Timestamp
 
 	return nil
 }
