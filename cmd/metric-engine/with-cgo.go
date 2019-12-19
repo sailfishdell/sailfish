@@ -1,4 +1,5 @@
 // +build cgo
+// +build idrac_cgo_integration
 // +build arm
 
 package main
@@ -11,4 +12,8 @@ import (
 
 func addAM3cgo(logger log.Logger, am3Svc *am3.Service, d *BusComponents) {
 	cgo.AddAM3cgo(logger, am3Svc, d)
+}
+
+func cgoShutdown() {
+	cgo.Shutdown()
 }

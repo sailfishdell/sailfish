@@ -1,7 +1,5 @@
-
 #include <stdio.h>
 #include <libdds.h>
-
 
 int32_t wd_timer( zloop_t *reactor, int32_t timer_id, void *user_data );
 int32_t first_timer( zloop_t *reactor, int32_t timer_id, void *user_data );

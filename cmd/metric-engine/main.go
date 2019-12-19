@@ -202,6 +202,7 @@ func main() {
 
 	// wait until everything is done
 	<-ctx.Done()
+	shutdown()
 
 	// wait up to 1 second for active connections
 	// SSE bus always "hangs" because there is always an active connection

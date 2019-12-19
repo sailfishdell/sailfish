@@ -49,3 +49,7 @@ func setup(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, d *BusCo
 
 	return
 }
+
+func shutdown() {
+	cgoShutdown()
+}

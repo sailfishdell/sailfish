@@ -1,4 +1,4 @@
-// +build !cgo !arm
+// +build !cgo !arm !idrac_cgo_integration
 
 package main
 
@@ -9,4 +9,8 @@ import (
 
 func addAM3cgo(logger log.Logger, am3Svc *am3.Service, d *BusComponents) {
 	logger.Crit("CGO DISABLED")
+}
+
+func cgoShutdown() {
+	// no-op
 }
