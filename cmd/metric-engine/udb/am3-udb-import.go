@@ -26,12 +26,27 @@ type BusComponents interface {
 }
 
 func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Service, d BusComponents) {
-	dbpath := cfg.GetString("main.udbdatabasepath")
-	database, err := sqlx.Open("sqlite3", dbpath)
+	database, err := sqlx.Open("sqlite3", ":memory:")
 	if err != nil {
 		logger.Crit("Could not open udb database", "err", err)
 		return
 	}
+
+	// attach SHM db
+	attach := "Attach '" + cfg.GetString("main.udbdatabasepath") + "' as udbdm"
+	_, err = database.Exec(attach)
+	if err != nil {
+		logger.Crit("Could not attach UDB database", "udbpath", cfg.GetString("main.udbdatabasepath"), "attach", attach, "err", err)
+		return
+	}
+	attach = "Attach '" + cfg.GetString("main.smdatabasepath") + "' as udbsm"
+	_, err = database.Exec(attach)
+	if err != nil {
+		logger.Crit("Could not attach SM database", "smpath", cfg.GetString("main.smdatabasepath"), "attach", attach, "err", err)
+		return
+	}
+	_, err = database.Exec("PRAGMA query_only = 1")
+	_, err = database.Exec("PRAGMA busy_timeout = 1000")
 
 	// udb db not opened in WAL mode... in fact should be read-only, so this isn't really necessary, but might as well
 	database.SetMaxOpenConns(1)
