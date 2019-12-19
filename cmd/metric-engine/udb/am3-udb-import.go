@@ -2,6 +2,7 @@ package udb
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"time"
 
@@ -34,15 +35,17 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Service, d Bus
 
 	// attach SHM db
 	attach := "Attach '" + cfg.GetString("main.udbdatabasepath") + "' as udbdm"
+	fmt.Println(attach)
 	_, err = database.Exec(attach)
 	if err != nil {
-		logger.Crit("Could not attach UDB database", "udbpath", cfg.GetString("main.udbdatabasepath"), "attach", attach, "err", err)
+		logger.Crit("Could not attach UDB database", "attach", attach, "err", err)
 		return
 	}
-	attach = "Attach '" + cfg.GetString("main.smdatabasepath") + "' as udbsm"
+	attach = "Attach '" + cfg.GetString("main.shmdatabasepath") + "' as udbsm"
+	fmt.Println(attach)
 	_, err = database.Exec(attach)
 	if err != nil {
-		logger.Crit("Could not attach SM database", "smpath", cfg.GetString("main.smdatabasepath"), "attach", attach, "err", err)
+		logger.Crit("Could not attach SM database", "attach", attach, "err", err)
 		return
 	}
 	_, err = database.Exec("PRAGMA query_only = 1")

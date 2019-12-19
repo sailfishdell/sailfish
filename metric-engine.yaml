@@ -15,6 +15,75 @@ listen:
   # - https::8443
 
 UDB-Metric-Import:
+  PSU-Sensor:
+    # TODO: UNDERLYING TABLE NEEDS HWM. need feature to select by HWM
+    Type: MetricColumns
+    ScanInterval: 10
+    Query: |
+      SELECT
+        cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
+        friendlyFQDD as Context,
+        '/redfish/v1/FIXME' || FriendlyFQDD as Property,
+
+        Temperature as 'Metric-TemperatureReading',
+        FanSpeed as 'Metric-RPMReading'
+      FROM TblsPSUMetrics
+
+  Storage-Sensor:
+    # TODO: UNDERLYING TABLE NEEDS HWM. need feature to select by HWM
+    Type: DirectMetric
+    ScanInterval: 10
+    Query: |
+      SELECT
+        cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
+        friendlyFQDD as Context,
+        '/redfish/v1/FIXME' || FriendlyFQDD as Property,
+        'TemperatureReading' as Name,
+        CurrentReading as Value
+      FROM TblsStorageSensor
+
+  Memory-Sensor:
+    # TODO: UNDERLYING TABLE NEEDS HWM. need feature to select by HWM
+    Type: DirectMetric
+    ScanInterval: 10
+    Query: |
+      SELECT
+        cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
+        friendlyFQDD as Context,
+        '/redfish/v1/FIXME' || FriendlyFQDD as Property,
+        'TemperatureReading' as Name,
+        CurrentReading as Value
+      FROM TblsMemorySensor
+
+  FPGA-Sensor:
+    # TODO: UNDERLYING TABLE NEEDS HWM. need feature to select by HWM
+    Type: DirectMetric
+    ScanInterval: 10
+    Query: |
+      SELECT
+        cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
+        friendlyFQDD as Context,
+        '/redfish/v1/FIXME' || FriendlyFQDD as Property,
+        'TemperatureReading' as Name,
+        CurrentReading as Value
+      FROM TblsFPGASensor
+
+  Aggregation-Metrics:
+    # TODO: UNDERLYING TABLE NEEDS HWM. need feature to select by HWM
+    Type: MetricColumns
+    ScanInterval: 10
+    Query: |
+      SELECT
+        -- only artificial available for now
+        cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
+        FriendlyFQDD as Context,
+        '/redfish/v1/FIXME' || FQDD as Property,
+
+        SystemMaxPowerConsumption as 'Metric-SystemMaxPowerConsumption',
+        SystemMaxInletTempHour as 'Metric-SystemMaxInletTempHour',
+        SystemAvgInletTempHour as 'Metric-SystemAvgInletTempHour'
+      FROM udbsm.TblsAggregationMetrics
+
   SMART-NVME:
     # TODO: need feature to select by HWM
     Type: MetricColumns
