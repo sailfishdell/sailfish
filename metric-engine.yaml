@@ -15,13 +15,43 @@ listen:
   # - https::8443
 
 UDB-Metric-Import:
+  GPU:
+    # TODO: can use this column: SingleRecordEtag
+    # TODO: need feature to select by HWM
+    Type: MetricColumns
+    ScanInterval: 10
+    Query: |
+      -- (FriendlyFQDD,ThermalAlertState,SecondaryTemperature,PrimaryTemperature,PowerSupplyStatus,PowerConsumption,PowerBrakeState,MemoryTemperature,GPUStatus,GPUHealth,BoardTemperature,BoardPowerSupplyStatus)
+      SELECT
+        -- We can artificially generate 'now' timestamps for each record, or use StatisticTime
+        -- cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
+        SingleRecordEtag * 1000000000 as Timestamp,
+        FQDD as Context,
+         '/redfish/v1/FIXME/' || FQDD as Property,
+
+        ThermalAlertState as 'Metric-ThermalAlertState',
+        SecondaryGpuTemp as 'Metric-SecondaryGpuTemp',
+        PrimaryGpuTemp as 'Metric-PrimaryGpuTemp',
+        PowerSupplyStatus as 'Metric-PowerSupplyStatus',
+        PowerConsumption as 'Metric-PowerConsumption',
+        PowerBrakeState as 'Metric-PowerBrakeState',
+        MemoryTemp as 'Metric-MemoryTemp',
+        GPUStatus as 'Metric-GPUStatus',
+        GPUHealth as 'Metric-GPUHealth',
+        BoardTemp as 'Metric-BoardTemp',
+        BoardPowerSupplyStatus as 'Metric-BoardPowerSupplyStatus'
+      FROM TblGPUHealthObj
+
   NICPortStats:
-    # COULD USE THIS: StatisticTime
+    # TODO: COULD USE THIS: StatisticTime
+    # TODO: need feature to select by HWM
     Type: MetricColumns
     ScanInterval: 10
     Query: |
       SELECT
-        cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
+        -- We can artificially generate 'now' timestamps for each record, or use StatisticTime
+        -- cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
+        StatisticTime * 1000000000 as Timestamp,
         FQDD as Context,
          '/redfish/v1/FIXME/' || FQDD as Property,
 
@@ -67,12 +97,13 @@ UDB-Metric-Import:
         FCOEPktRxCount as 'Metric-FCOEPktRxCount',
         FCOELinkFailures as 'Metric-FCOELinkFailures',
         FCCRCErrorCount as 'Metric-FCCRCErrorCount',
-        DiscardedPkts as 'Metric-DiscardedPkts'
+        DiscardedPkts as 'Metric-DiscardedPkts',
 
-        --case when Temperature is not null then Temperature as 'Metric-TemperatureReading' end
-        --'TemperatureStatus'      ,
-        --'VoltageValue'
-        --'VoltageStatus'          ,
+        -- These dont seem to be populated in the embedded nics that I see. Possibly this is there for add-in cards
+        Temperature as 'Metric-TemperatureReading',
+        VoltageValue as 'Metric-VoltageReading'
+
+        -- These are somewhat interesting in the underlying table. Need to see if we can output these as well
         --'RXInputPower'
         --'RXInputPowerStatus'     ,
         --'TXBiasCurrent'
