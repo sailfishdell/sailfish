@@ -15,6 +15,54 @@ listen:
   # - https::8443
 
 UDB-Metric-Import:
+  CurrentCUPS:
+    # TODO: UNDERLYING TABLE NEEDS HWM. need feature to select by HWM
+    Type: MetricColumns
+    ScanInterval: 10
+    Query: |
+      SELECT
+        cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
+        friendlyFQDD as Context,
+        '/redfish/v1/FIXME' || FriendlyFQDD as Property,
+
+        SystemCupsCurrent as 'Metric-SystemUsage',
+        MemoryCupsCurrent as 'Metric-MemoryUsage',
+        IoCupsCurrent as 'Metric-IOUsage',
+        CpuCupsCurrent as 'Metric-CPUUsage'
+      FROM TblsCurrentCUPS
+
+  PowerStatistics:
+    # TODO: UNDERLYING TABLE NEEDS HWM. need feature to select by HWM
+    Type: MetricColumns
+    ScanInterval: 10
+    Query: |
+      SELECT
+        cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
+        friendlyFQDD as Context,
+        '/redfish/v1/FIXME' || FriendlyFQDD as Property,
+
+        LastWeekMinPowerTime as 'Metric-LastWeekMinPowerTime',
+        LastWeekMinPower as 'Metric-LastWeekMinPower',
+        LastWeekMaxPowerTime as 'Metric-LastWeekMaxPowerTime',
+        LastWeekMaxPower as 'Metric-LastWeekMaxPower',
+        LastWeekAvgPower as 'Metric-LastWeekAvgPower',
+        LastMinuteMinPowerTime as 'Metric-LastMinuteMinPowerTime',
+        LastMinuteMinPower as 'Metric-LastMinuteMinPower',
+        LastMinuteMaxPowerTime as 'Metric-LastMinuteMaxPowerTime',
+        LastMinuteMaxPower as 'Metric-LastMinuteMaxPower',
+        LastMinuteAvgPower as 'Metric-LastMinuteAvgPower',
+        LastHourMinPowerTime as 'Metric-LastHourMinPowerTime',
+        LastHourMinPower as 'Metric-LastHourMinPower',
+        LastHourMaxPowerTime as 'Metric-LastHourMaxPowerTime',
+        LastHourMaxPower as 'Metric-LastHourMaxPower',
+        LastHourAvgPower as 'Metric-LastHourAvgPower',
+        LastDayMinPowerTime as 'Metric-LastDayMinPowerTime',
+        LastDayMinPower as 'Metric-LastDayMinPower',
+        LastDayMaxPowerTime as 'Metric-LastDayMaxPowerTime',
+        LastDayMaxPower as 'Metric-LastDayMaxPower',
+        LastDayAvgPower as 'Metric-LastDayAvgPower'
+      FROM TblsPowerStatistics
+
   PowerMetrics:
     # TODO: UNDERLYING TABLE NEEDS HWM. need feature to select by HWM
     Type: MetricColumns
