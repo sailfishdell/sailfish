@@ -2,7 +2,6 @@ package telemetry
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/jmoiron/sqlx"
@@ -46,7 +45,6 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Service, d Bus
 
 	// Create tables and views from sql stored in our YAML
 	for _, sqltext := range cfg.GetStringSlice("createdb") {
-		fmt.Printf("Running database create step: %s\n", sqltext)
 		_, err = database.Exec(sqltext)
 		if err != nil {
 			logger.Crit("Error executing setup SQL", "err", err, "sql", sqltext)

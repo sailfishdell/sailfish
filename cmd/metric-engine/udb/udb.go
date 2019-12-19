@@ -17,6 +17,7 @@ import (
 type UDBMeta struct {
 	query    *sqlx.Stmt
 	importFn func(string, ...string) error
+	interval int64
 }
 
 type UDBFactory struct {
@@ -31,10 +32,65 @@ func NewUDBFactory(logger log.Logger, database *sqlx.DB, d BusComponents, cfg *v
 	ret.logger = logger
 	ret.database = database
 	ret.bus = d.GetBus()
-	ret.udb = map[string]UDBMeta{
-		"Sensor": UDBMeta{importFn: func(n string, args ...string) error { return ret.ImportByMetricValue(n, args...) }},
+	ret.udb = map[string]UDBMeta{}
+
+	impFns := map[string]func(string, ...string) error{
+		"DirectMetric": func(n string, args ...string) error { return ret.ImportByMetricValue(n, args...) },
+		"Error":        func(n string, args ...string) error { return ret.ImportERROR(n, args...) },
 	}
+
+	for k, v := range cfg.GetStringMap("UDB-Metric-Import") {
+		fmt.Printf("Loading config for %s\n", k)
+		settings, ok := v.(map[string]interface{})
+		if !ok {
+			fmt.Printf("\tcouldnt type assert\n")
+			continue
+		}
+		Type, ok := settings["type"].(string)
+		if !ok {
+			fmt.Printf("\tNo type!\n")
+			continue
+		}
+
+		Query, ok := settings["query"].(string)
+		if !ok {
+			fmt.Printf("\tNo Query!\n")
+			continue
+		}
+
+		Interval, ok := settings["scaninterval"].(int)
+		if !ok {
+			fmt.Printf("\tNo scaninterval!\n")
+			continue
+		}
+
+		query, err := database.Preparex(Query)
+		if err != nil {
+			fmt.Printf("Prepare failed for %s: SQL(%s) %s\n", k, Query, err)
+			continue
+		}
+
+		_, ok = impFns[Type]
+		if !ok {
+			Type = "Error"
+		}
+		ret.udb[k] = UDBMeta{importFn: impFns[Type], query: query, interval: int64(Interval)}
+	}
+
 	return ret, nil
+}
+
+func (l *UDBFactory) ConditionalImport(udbImportName string) (err error) {
+	meta, ok := l.udb[udbImportName]
+	if !ok {
+		return xerrors.Errorf("UDB table %s not set up in meta struct", udbImportName)
+	}
+
+	if time.Now().Unix()%meta.interval != 0 {
+		return
+	}
+
+	return l.udb[udbImportName].importFn(udbImportName, []string{}...)
 }
 
 func (l *UDBFactory) Import(udbImportName string, args ...string) (err error) {
@@ -43,11 +99,7 @@ func (l *UDBFactory) Import(udbImportName string, args ...string) (err error) {
 		return xerrors.Errorf("UDB table %s not set up in meta struct", udbImportName)
 	}
 
-	if meta.importFn == nil {
-		return xerrors.Errorf("UDB table %s present in meta, but has no import function specified.", udbImportName)
-	}
-
-	return l.udb[udbImportName].importFn(udbImportName, args...)
+	return meta.importFn(udbImportName, args...)
 }
 
 func (l *UDBFactory) ImportERROR(udbImportName string, args ...string) (err error) {
@@ -63,29 +115,6 @@ func (l *UDBFactory) IterUDBTables(fn func(string) error) error {
 		}
 	}
 	return nil
-}
-
-func (l *UDBFactory) PrepareAll(cfg *viper.Viper) error {
-	err := l.IterUDBTables(func(udbImportName string) error {
-		var err error
-		udbMeta := l.udb[udbImportName]
-		if udbMeta.query != nil {
-			// already prepared, that's ok
-			return nil
-		}
-
-		sqlText := cfg.GetString("udb." + udbImportName)
-		udbMeta.query, err = l.database.Preparex(sqlText)
-		if err != nil {
-			fmt.Printf("Prepare failed for %s: SQL(%s) %s\n", udbImportName, sqlText, err)
-			return xerrors.Errorf("Prepare SQL(%s) failed for %s: %w", udbImportName, sqlText, err)
-		}
-
-		l.udb[udbImportName] = udbMeta
-		return nil
-	})
-
-	return err
 }
 
 const maximport = 50

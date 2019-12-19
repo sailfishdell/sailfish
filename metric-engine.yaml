@@ -2,17 +2,54 @@ main:
     server_name: "idrac"
     databasepath: "file:./mr.db?_foreign_keys=on&cache=shared&mode=rwc"
     legacydatabasepath: "file:./telemetry_timeseries_database.db?_foreign_keys=on&cache=shared&mode=rwc"
-    udbdatabasepath: "file:./DMLiveObjectDatabase.db?_foreign_keys=on&cache=shared&mode=rwc"
-    shmdatabasepath: "file:./SHM.db?_foreign_keys=on&cache=shared&mode=rwc"
+    udbdatabasepath: "./DMLiveObjectDatabase.db"
+    shmdatabasepath: "./SHM.db"
 
 listen:
-  - unix:metric-engine.socket
+  - unix:me.socket
   # enable 8080 port only for testing, as per NCC audit it needs to be disabled on the build
   - http::8081
   #  enable pprof only for debuging, it causes increased memory consumption. If memprofilerate>0, it will use way more. It's set to 0 in the service file.
   - pprof:localhost:9081
   # disable direct https listener, uncomment if needed for testing:
   # - https::8443
+
+UDB-Metric-Import:
+  Fan:
+    Type: DirectMetric
+    ScanInterval: 10
+    Query: |
+      SELECT
+         cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
+         'RPMReading' as Name,
+         VariableSpeed as Value,
+         '/redfish/v1/FIXME/' || FQDD as Property,
+         FriendlyFQDD as Context
+      from TblFanExtObj
+  Sensor:
+    Type: DirectMetric
+    ScanInterval: 5
+    Query: |
+      SELECT
+        cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
+        case
+          when SensorType = 0 then 'InvalidMetric'
+          when SensorType = 1 then
+          case
+            when DeviceID = 'iDRAC.Embedded.1#SystemBoardCPUUsage' then 'CPUUsage'
+            when DeviceID = 'iDRAC.Embedded.1#SystemBoardSYSUsage' then 'SystemUsage'
+            when DeviceID = 'iDRAC.Embedded.1#SystemBoardMEMUsage' then 'MemoryUsage'
+            when DeviceID = 'iDRAC.Embedded.1#SystemBoardIOUsage'  then 'IOUsage'
+          end
+          when SensorType = 2 then 'TemperatureReading'
+          when SensorType = 3 then 'VoltageReading'
+          when SensorType = 5 then 'RPMReading'
+        end as Name,
+        CurrentReading as Value,
+        '/redfish/v1/Dell/Systems/System.Embedded.1/DellNumericSensorCollection/' || DeviceID as Property,  -- needs to be URI encoded, but close enough for now
+        ElementName as Context  -- FriendlyFQDD
+        -- DeviceID as FQDD, -- COMMENT OUT UNTIL WE HAVE A DEST TO RECEIVE THIS: DeviceID as FQDD
+      FROM CIMVIEW_DCIM_NumericSensor;`
 
 createdb:
   - "PRAGMA journal_size_limit=1048576;"
@@ -301,29 +338,6 @@ createdb:
         -- DROP VIEW IF EXISTS MetricDefinitionView_json ; create view MetricDefinitionView_json as select * from MetricReport_Redfish;
         -- DROP VIEW IF EXISTS MetricReportCollectionView_json ; create view MetricReportCollectionView_json as select * from MetricReport_Redfish;
         -- DROP VIEW IF EXISTS MetricReportDefinitionCollectionView_json ; create view MetricReportDefinitionCollectionView_json as select * from MetricReport_Redfish;
-
-udb:
-  Sensor: |
-      SELECT
-        cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
-        case
-          when SensorType = 0 then 'InvalidMetric'
-          when SensorType = 1 then
-          case
-            when DeviceID = 'iDRAC.Embedded.1#SystemBoardCPUUsage' then 'CPUUsage'
-            when DeviceID = 'iDRAC.Embedded.1#SystemBoardSYSUsage' then 'SystemUsage'
-            when DeviceID = 'iDRAC.Embedded.1#SystemBoardMEMUsage' then 'MemoryUsage'
-            when DeviceID = 'iDRAC.Embedded.1#SystemBoardIOUsage'  then 'IOUsage'
-          end
-          when SensorType = 2 then 'TemperatureReading'
-          when SensorType = 3 then 'VoltageReading'
-          when SensorType = 5 then 'RPMReading'
-        end as Name,
-        CurrentReading as Value,
-        '/redfish/v1/Dell/Systems/System.Embedded.1/DellNumericSensorCollection/' || DeviceID as Property,  -- needs to be URI encoded, but close enough for now
-        ElementName as Context  -- FriendlyFQDD
-        -- DeviceID as FQDD, -- COMMENT OUT UNTIL WE HAVE A DEST TO RECEIVE THIS: DeviceID as FQDD
-      FROM CIMVIEW_DCIM_NumericSensor;`
 
 # Logging levels:
 # debug, info, warn, error, crit

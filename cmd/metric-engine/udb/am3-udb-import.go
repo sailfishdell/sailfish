@@ -43,21 +43,15 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Service, d Bus
 		return
 	}
 
-	UDBFactory.PrepareAll(cfg)
-	if err != nil {
-		logger.Crit("Error preparing udb queries", "err", err)
-		return
-	}
-
 	// for now, trigger automatic imports on a periodic basis
 	go func() {
-		importTicker := time.NewTicker(5 * time.Second)
+		importTicker := time.NewTicker(1 * time.Second)
 		time.Sleep(1 * time.Second)
 		defer importTicker.Stop()
 		for {
 			select {
 			case <-importTicker.C:
-				d.GetBus().PublishEvent(context.Background(), eh.NewEvent(UDBDatabaseEvent, "import:Sensor", time.Now()))
+				d.GetBus().PublishEvent(context.Background(), eh.NewEvent(UDBDatabaseEvent, "import", time.Now()))
 			}
 		}
 	}()
@@ -79,6 +73,12 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Service, d Bus
 				logger.Crit("Import failed over udb tables", "import", command, "err", err)
 				return
 			}
+
+		case command == "import":
+			UDBFactory.IterUDBTables(func(name string) error {
+				UDBFactory.ConditionalImport(name)
+				return nil
+			})
 
 		default:
 			logger.Crit("GOT A COMMAND THAT I CANT HANDLE", "command", command)
