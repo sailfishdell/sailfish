@@ -506,6 +506,10 @@ func (factory *MRDFactory) Optimize() {
 	if err != nil {
 		factory.logger.Crit("Problem optimizing database", "err", err)
 	}
+	_, err = factory.database.Exec("PRAGMA shrink_memory")
+	if err != nil {
+		factory.logger.Crit("Problem shrinking memory", "err", err)
+	}
 }
 
 func (factory *MRDFactory) Vacuum() {
@@ -514,6 +518,10 @@ func (factory *MRDFactory) Vacuum() {
 	_, err := factory.database.Exec("vacuum")
 	if err != nil {
 		factory.logger.Crit("Problem vacuuming database", "err", err)
+	}
+	_, err = factory.database.Exec("PRAGMA shrink_memory")
+	if err != nil {
+		factory.logger.Crit("Problem shrinking memory", "err", err)
 	}
 }
 
