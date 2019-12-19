@@ -179,7 +179,7 @@ func (l *UDBFactory) ImportByColumn(udbImportName string, args ...string) (err e
 				continue
 			}
 			if v == nil {
-				fmt.Printf("Skipping nil Metric: %s\n", k)
+				//fmt.Printf("Skipping nil Metric: %s\n", k)
 				continue
 			}
 			event.Name = k[7:]
