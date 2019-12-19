@@ -15,6 +15,71 @@ listen:
   # - https::8443
 
 UDB-Metric-Import:
+  PowerMetrics:
+    # TODO: UNDERLYING TABLE NEEDS HWM. need feature to select by HWM
+    Type: MetricColumns
+    ScanInterval: 10
+    Query: |
+      SELECT
+        cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
+        friendlyFQDD as Context,
+        '/redfish/v1/FIXME' || FriendlyFQDD as Property,
+
+        TotalStoragePower as 'Metric-TotalStoragePower',
+        TotalPciePower as 'Metric-TotalPciePower',
+        TotalMemoryPower as 'Metric-TotalMemoryPower',
+        TotalFanPower as 'Metric-TotalFanPower',
+        TotalCPUPower as 'Metric-TotalCPUPower',
+        SystemPwrConsumption as 'Metric-SystemPowerConsumption',
+        SystemHeadRoomInstantaneous as 'Metric-SystemHeadRoomInstantaneous',
+        CurrentSystemOutputPower as 'Metric-SystemOutputPower',
+        CurrentSystemInputPower as 'Metric-SystemInputPower'
+      FROM TblsPowerMetrics
+
+  ThermalMetrics:
+    # TODO: UNDERLYING TABLE NEEDS HWM. need feature to select by HWM
+    Type: MetricColumns
+    ScanInterval: 10
+    Query: |
+      SELECT
+        cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
+        friendlyFQDD as Context,
+        '/redfish/v1/FIXME' || FriendlyFQDD as Property,
+
+        TotalPSUHeatDissipation as 'Metric-TotalPSUHeatDissipation',
+        SysRackTempDelta as 'Metric-SysRackTempDelta',
+        SysNetAirflow as 'Metric-SysNetAirflow',
+        SysAirflowUtilization as 'Metric-SysAirflowUtilization',
+        SysAirflowPerSysInputPower as 'Metric-SysAirflowPerSysInputPower',
+        SysAirflowPerFanPower as 'Metric-SysAirflowPerFanPower',
+        SysAirFlowEfficiency as 'Metric-SysAirFlowEfficiency',
+        PowerToCoolRatio as 'Metric-PowerToCoolRatio',
+        PSUEfficiency as 'Metric-PSUEfficiency',
+        ITUE as 'Metric-ITUE',
+        ComputePower as 'Metric-ComputePower'
+      FROM TblsThermalMetrics
+
+  CPUMem:
+    # TODO: UNDERLYING TABLE NEEDS HWM. need feature to select by HWM
+    Type: MetricColumns
+    ScanInterval: 10
+    Query: |
+      SELECT
+        cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
+        friendlyFQDD as Context,
+        '/redfish/v1/FIXME' || FriendlyFQDD as Property,
+
+        CpuMemoryMetrics_DOT_NonC0ResidencyLow_DOT_value as 'Metric-NonC0ResidencyLow',
+        CpuMemoryMetrics_DOT_NonC0ResidencyHigh_DOT_value as 'Metric-NonC0ResidencyHigh',
+        CpuMemoryMetrics_DOT_CUPSIIOBandwidthPort3_DOT_value as 'Metric-CUPSIIOBandwidthPort3',
+        CpuMemoryMetrics_DOT_CUPSIIOBandwidthPort2_DOT_value as 'Metric-CUPSIIOBandwidthPort2',
+        CpuMemoryMetrics_DOT_CUPSIIOBandwidthPort1_DOT_value as 'Metric-CUPSIIOBandwidthPort1',
+        CpuMemoryMetrics_DOT_CUPSIIOBandwidthPort0_DOT_value as 'Metric-CUPSIIOBandwidthPort0',
+        CpuMemoryMetrics_DOT_CUPSIIOBandwidthDMI_DOT_value as 'Metric-CUPSIIOBandwidthDMI',
+        CpuMemoryMetrics_DOT_CPUC0ResidencyLow_DOT_value as 'Metric-CPUC0ResidencyLow',
+        CpuMemoryMetrics_DOT_CPUC0ResidencyHigh_DOT_value as 'Metric-CPUC0ResidencyHigh'
+      FROM TblsCpuMemMetrics
+
   PSU-Sensor:
     # TODO: UNDERLYING TABLE NEEDS HWM. need feature to select by HWM
     Type: MetricColumns
