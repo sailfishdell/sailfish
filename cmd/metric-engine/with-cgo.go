@@ -10,6 +10,5 @@ import (
 )
 
 func addAM3cgo(logger log.Logger, am3Svc *am3.Service, d *BusComponents) {
-	logger.Crit("MAIN CGO ENABLED")
 	cgo.AddAM3cgo(logger, am3Svc, d)
 }
