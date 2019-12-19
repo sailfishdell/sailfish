@@ -15,13 +15,110 @@ listen:
   # - https::8443
 
 UDB-Metric-Import:
-  GPU:
-    # TODO: can use this column: SingleRecordEtag
+  SMART-NVME:
     # TODO: need feature to select by HWM
     Type: MetricColumns
     ScanInterval: 10
     Query: |
-      -- (FriendlyFQDD,ThermalAlertState,SecondaryTemperature,PrimaryTemperature,PowerSupplyStatus,PowerConsumption,PowerBrakeState,MemoryTemperature,GPUStatus,GPUHealth,BoardTemperature,BoardPowerSupplyStatus)
+      SELECT
+        -- We can artificially generate 'now' timestamps for each record, or use SingleRecordEtag
+        -- also: lastUpdatedDateTime and SingleRecordEtag both are there. Which to use? use singlerecordetag for now...
+        -- cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
+        SingleRecordEtag * 1000000000 as Timestamp,
+        FQDD as Context,
+         '/redfish/v1/FIXME/' || FQDD as Property,
+
+        smartData_DOT_percentageUsed as 'Metric-PercentageUsed',
+        smartData_DOT_criticalWarning as 'Metric-CriticalWarning',
+        smartData_DOT_compositeTemparature as 'Metric-CompositeTemperature',
+        smartData_DOT_compositeTemparature as 'Metric-TemperatureReading',                  -- Add standard TemperatureReading metric
+        smartData_DOT_availableSpareThreshold as 'Metric-AvailableSpareThreshold',
+        smartData_DOT_availableSpare as 'Metric-AvailableSpare',
+        smartData_DOT_UnsafeShutdowns_DOT_Upper as 'Metric-UnsafeShutdownsUpper',
+        smartData_DOT_UnsafeShutdowns_DOT_Lower as 'Metric-UnsafeShutdownsLower',
+        smartData_DOT_PowerOnHours_DOT_Upper as 'Metric-PowerOnHoursUpper',
+        smartData_DOT_PowerOnHours_DOT_Lower as 'Metric-PowerOnHoursLower',
+        smartData_DOT_PowerCycles_DOT_Upper as 'Metric-PowerCyclesUpper',
+        smartData_DOT_PowerCycles_DOT_Lower as 'Metric-PowerCyclesLower',
+        smartData_DOT_NumOfErrorInfoLogEntries_DOT_Upper as 'Metric-NumOfErrorInfoLogEntriesUpper',
+        smartData_DOT_NumOfErrorInfoLogEntries_DOT_Lower as 'Metric-NumOfErrorInfoLogEntriesLower',
+        smartData_DOT_MediaAndDataIntegrityErrs_DOT_Upper as 'Metric-MediaDataIntegrityErrorsUpper',
+        smartData_DOT_MediaAndDataIntegrityErrs_DOT_Lower as 'Metric-MediaDataIntegrityErrorsLower',
+        smartData_DOT_HostWriteCmds_DOT_Upper as 'Metric-HostWriteCommandsUpper',
+        smartData_DOT_HostWriteCmds_DOT_Lower as 'Metric-HostWriteCommandsLower',
+        smartData_DOT_HostReadCmds_DOT_Upper as 'Metric-HostReadCommandsUpper',
+        smartData_DOT_HostReadCmds_DOT_Lower as 'Metric-HostReadCommandsLower',
+        smartData_DOT_DataUnitsWritten_DOT_Upper as 'Metric-DataUnitsWrittenUpper',
+        smartData_DOT_DataUnitsWritten_DOT_Lower as 'Metric-DataUnitsWrittenLower',
+        smartData_DOT_DataUnitsRead_DOT_Upper as 'Metric-DataUnitsReadUpper',
+        smartData_DOT_DataUnitsRead_DOT_Lower as 'Metric-DataUnitsReadLower',
+        smartData_DOT_ControllerBusyTime_DOT_Upper as 'Metric-ControllerBusyTimeUpper',
+        smartData_DOT_ControllerBusyTime_DOT_Lower as 'Metric-ControllerBusyTimeLower'
+      FROM TblRAID_PDSmartData_NVMe
+
+  SMART-SAS:
+    # TODO: need feature to select by HWM
+    Type: MetricColumns
+    ScanInterval: 10
+    Query: |
+      SELECT
+        smartData_DOT_volatileMemoryBackupSourceFailures as 'Metric-VolatileMemoryBackupSourceFailures',
+        smartData_DOT_usedReservedBlockCount as 'Metric-UsedReservedBlockCount',
+        smartData_DOT_unusedReservedBlockCount as 'Metric-UnusedReservedBlockCount',
+        smartData_DOT_uncorrectableLBACount as 'Metric-UncorrectableLBACount',
+        smartData_DOT_uncorrectableErrorCount as 'Metric-UncorrectableErrorCount',
+        smartData_DOT_reallocatedBlockCount as 'Metric-ReallocatedBlockCount',
+        smartData_DOT_readErrorDate as 'Metric-ReadErrorRate',
+        smartData_DOT_programFailCount as 'Metric-ProgramFailCount',
+        smartData_DOT_powerOnHours as 'Metric-PowerOnHours',
+        smartData_DOT_powerCycleCount as 'Metric-PowerCycleCount',
+        smartData_DOT_percentDriveLifeRemaining as 'Metric-PercentDriveLifeRemaining',
+        smartData_DOT_mediaWriteCount as 'Metric-MediaWriteCount',
+        smartData_DOT_exceptionModeStatus as 'Metric-ExceptionModeStatus',
+        smartData_DOT_eraseFailCount as 'Metric-EraseFailCount',
+        smartData_DOT_driveTemperature as 'Metric-DriveTemperature',
+        smartData_DOT_driveTemperature as 'Metric-TemperatureReading',                        -- Add temperature reading standard metric
+        smartData_DOT_currentPendingSectorCount as 'Metric-CurrentPendingSectorCount',
+        smartData_DOT_commandTimeout as 'Metric-CommandTimeout',
+        smartData_DOT_ECCERate as 'Metric-ECCERate',
+        smartData_DOT_CRCErrorCount as 'Metric-CRCErrorCount'
+      FROM TblRAID_PDSmartData_SAS_SATA
+
+  GPU-Statistics:
+    # TODO: need feature to select by HWM
+    Type: MetricColumns
+    ScanInterval: 10
+    Query: |
+      SELECT
+        -- We can artificially generate 'now' timestamps for each record, or use SingleRecordEtag
+        -- cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
+        SingleRecordEtag * 1000000000 as Timestamp,
+        FQDD as Context,
+         '/redfish/v1/FIXME/' || FQDD as Property,
+
+        SBERetiredPages as 'Metric-SBERetiredPages',
+        SBECounterGRTex as 'Metric-SBECounterGRTex',
+        SBECounterGRRF as 'Metric-SBECounterGRRF',
+        SBECounterGRL1CacheorSHM as 'Metric-SBECounterGRL1CacheorSHM',
+        SBECounterFBL2Cache as 'Metric-SBECounterFBL2Cache',
+        SBECounterFB as 'Metric-SBECounterFB',
+        DBERetiredPages as 'Metric-DBERetiredPages',
+        DBECounterGRTex as 'Metric-DBECounterGRTex',
+        DBECounterGRTex as 'Metric-DBECounterGRTex',
+        DBECounterGRRF as 'Metric-DBECounterGRRF',
+        DBECounterGRL1CacheorSHM as 'Metric-DBECounterGRL1CacheorSHM',
+        DBECounterFBL2Cache as 'Metric-DBECounterFBL2Cache',
+        DBECounterFB as 'Metric-DBECounterFB',
+        CumulativeSBECounterGR as 'Metric-CumulativeSBECounterGR',
+        CumulativeDBECounterGR as 'Metric-CumulativeDBECounterGR',
+        CumulativeDBECounterFB as 'Metric-CumulativeDBECounterFB'
+      FROM TblGPUStatisticsObj
+
+  GPU-Health:
+    # TODO: need feature to select by HWM
+    Type: MetricColumns
+    ScanInterval: 10
+    Query: |
       SELECT
         -- We can artificially generate 'now' timestamps for each record, or use SingleRecordEtag
         -- cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
@@ -43,7 +140,6 @@ UDB-Metric-Import:
       FROM TblGPUHealthObj
 
   NICPortStats:
-    # TODO: COULD USE THIS: StatisticTime
     # TODO: need feature to select by HWM
     Type: MetricColumns
     ScanInterval: 10
@@ -114,6 +210,7 @@ UDB-Metric-Import:
       FROM CIMVIEW_DCIM_NICStatistics
 
   HIITempSensors:
+    # TODO: need feature to select by HWM
     Type: DirectMetric
     ScanInterval: 10
     Query: |
@@ -128,6 +225,7 @@ UDB-Metric-Import:
       FROM TblHIISensorInfo_obj
 
   Fan:
+    # TODO: need feature to select by HWM
     Type: DirectMetric
     ScanInterval: 10
     Query: |
