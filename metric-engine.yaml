@@ -15,6 +15,85 @@ listen:
   # - https::8443
 
 UDB-Metric-Import:
+  NICPortStats:
+    # COULD USE THIS: StatisticTime
+    Type: MetricColumns
+    ScanInterval: 10
+    Query: |
+      SELECT
+        cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
+        FQDD as Context,
+         '/redfish/v1/FIXME/' || FQDD as Property,
+
+        TxUnicast as 'Metric-TxUnicast',
+        TxPauseXONFrames as 'Metric-TxPauseXONFrames',
+        TxPauseXOFFFrames as 'Metric-TxPauseXOFFFrames',
+        TxMutlicast as 'Metric-TxMutlicast',
+        TxErrorPktSingleCollision as 'Metric-TxErrorPktSingleCollision',
+        TxErrorPktMultipleCollision as 'Metric-TxErrorPktMultipleCollision',
+        TxErrorPktLateCollision as 'Metric-TxErrorPktLateCollision',
+        TxErrorPktExcessiveCollision as 'Metric-TxErrorPktExcessiveCollision',
+        TxBytes as 'Metric-TxBytes',
+        TxBroadcast as 'Metric-TxBroadcast',
+        RxUnicast as 'Metric-RxUnicast',
+        RxRuntPkt as 'Metric-RxRuntPkt',
+        RxPauseXONFrames as 'Metric-RxPauseXONFrames',
+        RxPauseXOFFFrames as 'Metric-RxPauseXOFFFrames',
+        RxMutlicast as 'Metric-RxMutlicast',
+        RxJabberPkt as 'Metric-RxJabberPkt',
+        RxFalseCarrierDetection as 'Metric-RxFalseCarrierDetection',
+        RxErrorPktFCSErrors as 'Metric-RxErrorPktFCSErrors',
+        RxErrorPktAlignmentErrors as 'Metric-RxErrorPktAlignmentErrors',
+        RxBytes as 'Metric-RxBytes',
+        RxBroadcast as 'Metric-RxBroadcast',
+        RDMATxTotalWritePkts as 'Metric-RDMATxTotalWritePkts',
+        RDMATxTotalSendPkts as 'Metric-RDMATxTotalSendPkts',
+        RDMATxTotalReadReqPkts as 'Metric-RDMATxTotalReadReqPkts',
+        RDMATxTotalPackets as 'Metric-RDMATxTotalPackets',
+        RDMATxTotalBytes as 'Metric-RDMATxTotalBytes',
+        RDMATotalProtocolErrors as 'Metric-RDMATotalProtocolErrors',
+        RDMATotalProtectionErrors as 'Metric-RDMATotalProtectionErrors',
+        RDMARxTotalPackets as 'Metric-RDMARxTotalPackets',
+        RDMARxTotalBytes as 'Metric-RDMARxTotalBytes',
+        PartitionOSDriverState as 'Metric-PartitionOSDriverState',
+        PartitionLinkStatus as 'Metric-PartitionLinkStatus',
+        OSDriverState as 'Metric-OSDriverState',
+        LinkStatus as 'Metric-LinkStatus',
+        LanUnicastPktTXCount as 'Metric-LanUnicastPktTXCount',
+        LanUnicastPktRXCount as 'Metric-LanUnicastPktRXCount',
+        LanFCSRxErrors as 'Metric-LanFCSRxErrors',
+        FCOERxPktDroppedCount as 'Metric-FCOERxPktDroppedCount',
+        FCOEPktTxCount as 'Metric-FCOEPktTxCount',
+        FCOEPktRxCount as 'Metric-FCOEPktRxCount',
+        FCOELinkFailures as 'Metric-FCOELinkFailures',
+        FCCRCErrorCount as 'Metric-FCCRCErrorCount',
+        DiscardedPkts as 'Metric-DiscardedPkts'
+
+        --case when Temperature is not null then Temperature as 'Metric-TemperatureReading' end
+        --'TemperatureStatus'      ,
+        --'VoltageValue'
+        --'VoltageStatus'          ,
+        --'RXInputPower'
+        --'RXInputPowerStatus'     ,
+        --'TXBiasCurrent'
+        --'TXBiasCurrentStatus'    ,
+        --'TXOutputPower'
+        --'TXOutputPowerStatus'
+
+      FROM CIMVIEW_DCIM_NICStatistics
+
+  HIITempSensors:
+    Type: DirectMetric
+    ScanInterval: 10
+    Query: |
+      SELECT
+         cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
+         "TemperatureReading" as Name,
+         currentTemp as Value,
+         '/redfish/v1/FIXME/' || FQDD as Property,
+         FriendlyFQDD as Context
+       FROM TblHIISensorInfo_obj
+
   Fan:
     Type: DirectMetric
     ScanInterval: 10
@@ -26,6 +105,7 @@ UDB-Metric-Import:
          '/redfish/v1/FIXME/' || FQDD as Property,
          FriendlyFQDD as Context
       from TblFanExtObj
+
   Sensor:
     Type: DirectMetric
     ScanInterval: 5
