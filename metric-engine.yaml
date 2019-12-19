@@ -23,7 +23,7 @@ UDB-Metric-Import:
     Query: |
       -- (FriendlyFQDD,ThermalAlertState,SecondaryTemperature,PrimaryTemperature,PowerSupplyStatus,PowerConsumption,PowerBrakeState,MemoryTemperature,GPUStatus,GPUHealth,BoardTemperature,BoardPowerSupplyStatus)
       SELECT
-        -- We can artificially generate 'now' timestamps for each record, or use StatisticTime
+        -- We can artificially generate 'now' timestamps for each record, or use SingleRecordEtag
         -- cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
         SingleRecordEtag * 1000000000 as Timestamp,
         FQDD as Context,
@@ -118,23 +118,27 @@ UDB-Metric-Import:
     ScanInterval: 10
     Query: |
       SELECT
-         cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
-         "TemperatureReading" as Name,
-         currentTemp as Value,
-         '/redfish/v1/FIXME/' || FQDD as Property,
-         FriendlyFQDD as Context
-       FROM TblHIISensorInfo_obj
+        -- We can artificially generate 'now' timestamps for each record, or use SingleRecordEtag
+        --cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
+        SingleRecordEtag * 1000000000 as Timestamp,
+        "TemperatureReading" as Name,
+        currentTemp as Value,
+        '/redfish/v1/FIXME/' || FQDD as Property,
+        FriendlyFQDD as Context
+      FROM TblHIISensorInfo_obj
 
   Fan:
     Type: DirectMetric
     ScanInterval: 10
     Query: |
       SELECT
-         cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
-         'RPMReading' as Name,
-         VariableSpeed as Value,
-         '/redfish/v1/FIXME/' || FQDD as Property,
-         FriendlyFQDD as Context
+        -- We can artificially generate 'now' timestamps for each record, or use SingleRecordEtag
+        -- cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
+        SingleRecordEtag * 1000000000 as Timestamp,
+        'RPMReading' as Name,
+        VariableSpeed as Value,
+        '/redfish/v1/FIXME/' || FQDD as Property,
+        FriendlyFQDD as Context
       from TblFanExtObj
 
   Sensor:
@@ -157,7 +161,8 @@ UDB-Metric-Import:
           when SensorType = 5 then 'RPMReading'
         end as Name,
         CurrentReading as Value,
-        '/redfish/v1/Dell/Systems/System.Embedded.1/DellNumericSensorCollection/' || DeviceID as Property,  -- needs to be URI encoded, but close enough for now
+        -- '/redfish/v1/Dell/Systems/System.Embedded.1/DellNumericSensorCollection/' || DeviceID as Property,  -- needs to be URI encoded, but close enough for now
+        printf('/redfish/v1/Dell/Systems/System.Embedded.1/DellNumericSensor/%s', replace(replace(DeviceID, '|', '_0x7c_') , '#', '_0x23_')) as Property,
         ElementName as Context  -- FriendlyFQDD
         -- DeviceID as FQDD, -- COMMENT OUT UNTIL WE HAVE A DEST TO RECEIVE THIS: DeviceID as FQDD
       FROM CIMVIEW_DCIM_NumericSensor;`
