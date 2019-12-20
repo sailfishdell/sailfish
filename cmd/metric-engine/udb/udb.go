@@ -157,6 +157,8 @@ const maximport = 50
 //   Each column that is a metric has to have its column name prefixed with "Metric-"
 //   Timestamps are constructed based on the "Timestamp" column
 //   Metric Context is constructed based on the "Context" column
+//   Metric FQDD is constructed based on the "FQDD" column
+//   Metric FriendlyFQDD is constructed based on the "FriendlyFQDD" column
 //   Property paths are constructed by appending '#<metricname>' to the "Property" column
 func (l *UDBFactory) ImportByColumn(udbImportName string) (err error) {
 	err = nil
@@ -197,12 +199,36 @@ func (l *UDBFactory) ImportByColumn(udbImportName string) (err error) {
 			continue
 		}
 
-		ts := mm["Timestamp"].(int64)
+		ts, ok := mm["Timestamp"].(int64)
 		delete(mm, "Timestamp")
-		metricCtx := string(mm["Context"].([]byte))
+
+		var metricCtx string
+		metricCtxB, ok := mm["Context"].([]byte)
+		if ok {
+			metricCtx = string(metricCtxB)
+		}
 		delete(mm, "Context")
-		property := string(mm["Property"].([]byte))
+
+		var property string
+		propertyB, ok := mm["Property"].([]byte)
+		if ok {
+			property = string(propertyB)
+		}
 		delete(mm, "Property")
+
+		var fqdd string
+		fqddB, ok := mm["FQDD"].([]byte)
+		if ok {
+			fqdd = string(fqddB)
+		}
+		delete(mm, "FQDD")
+
+		var friendlyfqdd string
+		friendlyfqddB, ok := mm["FriendlyFQDD"].([]byte)
+		if ok {
+			friendlyfqdd = string(friendlyfqddB)
+		}
+		delete(mm, "FriendlyFQDD")
 
 		if ts > udbMeta.HWM {
 			udbMeta.HWM = ts
@@ -210,18 +236,30 @@ func (l *UDBFactory) ImportByColumn(udbImportName string) (err error) {
 		}
 
 		for k, v := range mm {
-			event := &MetricValueEventData{Timestamp: SqlTimeInt{time.Unix(0, ts)}, Context: metricCtx}
-			if !strings.HasPrefix(k, "Metric-") {
-				fmt.Printf("Skipping %s\n", k)
-				continue
-			}
 			if v == nil {
-				//fmt.Printf("Skipping nil Metric: %s\n", k)
+				// we dont add NULL metrics
 				continue
 			}
-			event.Name = k[7:]
-			event.Value = fmt.Sprintf("%v", v)
-			event.Property = property + "#" + k[7:]
+
+			if !strings.HasPrefix(k, "Metric-") {
+				// not a metric
+				continue
+			}
+
+			metricName := k[7:]
+			event := &MetricValueEventData{
+				Timestamp:    SqlTimeInt{time.Unix(0, ts)},
+				Context:      metricCtx,
+				FQDD:         fqdd,
+				FriendlyFQDD: friendlyfqdd,
+				Name:         metricName,
+				Value:        fmt.Sprintf("%v", v),
+				Property:     property + "#" + metricName,
+			}
+
+			if mts, ok := mm["Timestamp-"+metricName].(int64); ok {
+				event.Timestamp = SqlTimeInt{time.Unix(0, mts)}
+			}
 
 			events = append(events, event)
 			if len(events) > maximport {

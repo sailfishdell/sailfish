@@ -35,16 +35,22 @@ UDB-Metric-Import:
     WaitInterval: 5
     Query: |
       SELECT
-        cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
-        friendlyFQDD as Context,
+        friendlyFQDD as FriendlyFQDD,
+        FQDD as FQDD,
         '/redfish/v1/FIXME' || FriendlyFQDD as Property,
 
+        SystemCupsTimeStamp * 1000000000 as 'Timestamp-SystemUsage',
         SystemCupsCurrent as 'Metric-SystemUsage',
+
+        MemoryCupsTimeStamp * 1000000000 as 'Timestamp-MemoryUsage',
         MemoryCupsCurrent as 'Metric-MemoryUsage',
+
+        IoCupsTimestamp * 1000000000 as 'Timestamp-IOUsage',
         IoCupsCurrent as 'Metric-IOUsage',
+
+        CpuCupsCollectionTime * 1000000000 as 'Timestamp-CPUUsage',
         CpuCupsCurrent as 'Metric-CPUUsage'
       FROM TblsCurrentCUPS
-      WHERE Timestamp > :HWM
 
   PowerStatistics:
     # TODO: UNDERLYING TABLE NEEDS HWM. need feature to select by HWM
