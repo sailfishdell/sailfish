@@ -21,6 +21,7 @@ type UDBMeta struct {
 	HWM        int64 `db:"HWM"`
 	lastImport time.Time
 	interval   int64
+	dbChange   map[string]map[string]struct{}
 }
 
 type UDBFactory struct {
@@ -47,65 +48,68 @@ func NewUDBFactory(logger log.Logger, database *sqlx.DB, d BusComponents, cfg *v
 		"Error": func(n string, args ...string) error { return ret.ImportERROR(n, args...) },
 	}
 
+	// Parse the YAML file to set up database imports
 	for k, v := range cfg.GetStringMap("UDB-Metric-Import") {
 		fmt.Printf("Loading config for %s\n", k)
+
+		meta := UDBMeta{}
+
 		settings, ok := v.(map[string]interface{})
 		if !ok {
-			fmt.Printf("\tcouldnt type assert\n")
-			continue
-		}
-		Type, ok := settings["type"].(string)
-		if !ok {
-			fmt.Printf("\tNo type!\n")
+			logger.Crit("SKIPPING: Config file section settings malformed.", "Section", "UDB-Metric-Import", "key", k, "malformed-value", v)
 			continue
 		}
 
 		Query, ok := settings["query"].(string)
 		if !ok {
-			fmt.Printf("\tNo Query!\n")
+			logger.Crit("SKIPPING: Config file section missing SQL QUERY - 'query' key missing.", "Section", "UDB-Metric-Import", "key", k, "malformed-value", v)
 			continue
 		}
 
-		Interval, ok := settings["scaninterval"].(int)
-		if !ok {
-			fmt.Printf("\tNo scaninterval!\n")
-			continue
-		}
-
-		query, err := database.PrepareNamed(Query)
+		var err error
+		meta.query, err = database.PrepareNamed(Query)
 		if err != nil {
-			fmt.Printf("Prepare failed for %s: SQL(%s) %s\n", k, Query, err)
+			logger.Crit("SKIPPING: SQL Query PREPARE failed", "Section", "UDB-Metric-Import", "key", k, "QUERY", Query, "err", err)
 			continue
+		}
+
+		Type, ok := settings["type"].(string)
+		if !ok {
+			Type = "MetricColumns" // default
 		}
 
 		_, ok = impFns[Type]
 		if !ok {
-			Type = "Error"
+			logger.Crit("SKIPPING: No such Type", "Section", "UDB-Metric-Import", "key", k, "Type", Type)
+			continue
 		}
 
-		ret.udb[k] = UDBMeta{
-			importFn: impFns[Type],
-			query:    query,
-			interval: int64(Interval),
+		interval, ok := settings["scaninterval"].(int)
+		if !ok {
+			interval = 0
 		}
+		meta.interval = int64(interval)
+
+		err = cfg.UnmarshalKey("UDB-Metric-Import."+k+".DBChange", &meta.dbChange)
+		if err != nil {
+			fmt.Printf("parsing error for dbchange: %s\n", err)
+		}
+
+		meta.importFn = impFns[Type]
+		ret.udb[k] = meta
 	}
 
 	return ret, nil
 }
 
-func (l *UDBFactory) ConditionalImport(udbImportName string) (err error) {
+func (l *UDBFactory) ConditionalImport(udbImportName string, meta UDBMeta) (err error) {
 	now := time.Now()
-
-	meta, ok := l.udb[udbImportName]
-	if !ok {
-		return xerrors.Errorf("UDB table %s not set up in meta struct", udbImportName)
-	}
-
 	if now.Before(meta.lastImport.Add(time.Duration(meta.interval) * time.Second)) {
 		return
 	}
 
 	meta.lastImport = now
+	l.udb[udbImportName] = meta
 	return l.udb[udbImportName].importFn(udbImportName, []string{}...)
 }
 
@@ -115,7 +119,25 @@ func (l *UDBFactory) Import(udbImportName string, args ...string) (err error) {
 		return xerrors.Errorf("UDB table %s not set up in meta struct", udbImportName)
 	}
 
+	meta.lastImport = time.Now()
 	return meta.importFn(udbImportName, args...)
+}
+
+func (l *UDBFactory) DBChanged(database, table string) (err error) {
+	return l.IterUDBTables(func(udbImportName string, meta UDBMeta) error {
+		tbls, ok := meta.dbChange[database]
+		if !ok {
+			return nil
+		}
+		_, ok = tbls[table]
+		if !ok {
+			return nil
+		}
+		fmt.Printf("Change notification for DB(%s) Table(%s) triggered update for %s\n", database, table, udbImportName)
+		meta.lastImport = time.Now()
+		l.udb[udbImportName] = meta
+		return meta.importFn(udbImportName, []string{}...)
+	})
 }
 
 func (l *UDBFactory) ImportERROR(udbImportName string, args ...string) (err error) {
@@ -123,9 +145,9 @@ func (l *UDBFactory) ImportERROR(udbImportName string, args ...string) (err erro
 	return xerrors.New("UNKNOWN IMPORT")
 }
 
-func (l *UDBFactory) IterUDBTables(fn func(string) error) error {
-	for udbImportName, _ := range l.udb {
-		err := fn(udbImportName)
+func (l *UDBFactory) IterUDBTables(fn func(string, UDBMeta) error) error {
+	for udbImportName, meta := range l.udb {
+		err := fn(udbImportName, meta)
 		if err != nil {
 			return xerrors.Errorf("Stopped iteration due to iteration function returning error: %w", err)
 		}

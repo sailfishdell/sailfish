@@ -1,9 +1,10 @@
 main:
-    server_name: "idrac"
-    databasepath: "file:./mr.db?_foreign_keys=on&cache=shared&mode=rwc"
-    legacydatabasepath: "file:./telemetry_timeseries_database.db?_foreign_keys=on&cache=shared&mode=rwc"
-    udbdatabasepath: "file:DMLiveObjectDatabase.db?cache=shared&_foreign_keys=off&mode=ro"
-    shmdatabasepath: "file:SHM.db?cache=shared&_foreign_keys=off&mode=ro"
+    server_name: idrac
+    databasepath: file:mr.db?_foreign_keys=on&cache=shared&mode=rwc
+    legacydatabasepath: file:telemetry_timeseries_database.db?_foreign_keys=on&cache=shared&mode=rw
+    udbdatabasepath: file:DMLiveObjectDatabase.db?cache=shared&_foreign_keys=off&mode=ro
+    shmdatabasepath: file:SHM.db?cache=shared&_foreign_keys=off&mode=ro
+    udbnotifypipe: dbtdbipcpipe
 
 listen:
   - unix:me.socket
@@ -27,7 +28,10 @@ UDB-Metric-Import:
   CurrentCUPS:
     # TODO: UNDERLYING TABLE NEEDS HWM. need feature to select by HWM
     Type: MetricColumns
-    ScanInterval: 10
+    DBChange:
+      SHM.db:
+        TblsCurrentCUPS:
+    ScanInterval: 0
     Query: |
       SELECT
         cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
@@ -44,7 +48,10 @@ UDB-Metric-Import:
   PowerStatistics:
     # TODO: UNDERLYING TABLE NEEDS HWM. need feature to select by HWM
     Type: MetricColumns
-    ScanInterval: 600
+    DBChange:
+      SHM.db:
+        TblsPowerStatistics:
+    ScanInterval: 0
     Query: |
       SELECT
         cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
@@ -77,7 +84,10 @@ UDB-Metric-Import:
   PowerMetrics:
     # TODO: UNDERLYING TABLE NEEDS HWM. need feature to select by HWM
     Type: MetricColumns
-    ScanInterval: 10
+    DBChange:
+      SHM.db:
+        TblsPowerMetrics:
+    ScanInterval: 0
     Query: |
       SELECT
         cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
@@ -99,7 +109,10 @@ UDB-Metric-Import:
   ThermalMetrics:
     # TODO: UNDERLYING TABLE NEEDS HWM. need feature to select by HWM
     Type: MetricColumns
-    ScanInterval: 10
+    DBChange:
+      SHM.db:
+        TblsThermalMetrics:
+    ScanInterval: 0
     Query: |
       SELECT
         cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
@@ -123,7 +136,10 @@ UDB-Metric-Import:
   CPUMem:
     # TODO: UNDERLYING TABLE NEEDS HWM. need feature to select by HWM
     Type: MetricColumns
-    ScanInterval: 5
+    DBChange:
+      SHM.db:
+        TblsCpuMemMetrics:
+    ScanInterval: 0
     Query: |
       SELECT
         cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
@@ -145,7 +161,10 @@ UDB-Metric-Import:
   PSU-Sensor:
     # TODO: UNDERLYING TABLE NEEDS HWM. need feature to select by HWM
     Type: MetricColumns
-    ScanInterval: 10
+    DBChange:
+      SHM.db:
+        TblsPSUMetrics:
+    ScanInterval: 0
     Query: |
       SELECT
         cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
@@ -159,50 +178,62 @@ UDB-Metric-Import:
 
   Storage-Sensor:
     # TODO: UNDERLYING TABLE NEEDS HWM. need feature to select by HWM
-    Type: DirectMetric
-    ScanInterval: 600
+    Type: MetricColumns
+    DBChange:
+      SHM.db:
+        TblsStorageSensor:
+    ScanInterval: 0
     Query: |
       SELECT
         cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
         friendlyFQDD as Context,
         '/redfish/v1/FIXME' || FriendlyFQDD as Property,
-        'TemperatureReading' as Name,
-        CurrentReading as Value
+
+        CurrentReading as 'Metric-TemperatureReading'
       FROM TblsStorageSensor
       WHERE Timestamp > :HWM
 
   Memory-Sensor:
     # TODO: UNDERLYING TABLE NEEDS HWM. need feature to select by HWM
-    Type: DirectMetric
-    ScanInterval: 10
+    Type: MetricColumns
+    DBChange:
+      SHM.db:
+        TblsMemorySensor:
+    ScanInterval: 0
     Query: |
       SELECT
         cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
         friendlyFQDD as Context,
         '/redfish/v1/FIXME' || FriendlyFQDD as Property,
-        'TemperatureReading' as Name,
-        CurrentReading as Value
+
+        CurrentReading as 'Metric-TemperatureReading'
       FROM TblsMemorySensor
       WHERE Timestamp > :HWM
 
   FPGA-Sensor:
     # TODO: UNDERLYING TABLE NEEDS HWM. need feature to select by HWM
-    Type: DirectMetric
-    ScanInterval: 10
+    Type: MetricColumns
+    DBChange:
+      SHM.db:
+        TblsFPGASensor:
+    ScanInterval: 0
     Query: |
       SELECT
         cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
         friendlyFQDD as Context,
         '/redfish/v1/FIXME' || FriendlyFQDD as Property,
-        'TemperatureReading' as Name,
-        CurrentReading as Value
+
+        CurrentReading as 'Metric-TemperatureReading'
       FROM TblsFPGASensor
       WHERE Timestamp > :HWM
 
   Aggregation-Metrics:
     # TODO: UNDERLYING TABLE NEEDS HWM. need feature to select by HWM
     Type: MetricColumns
-    ScanInterval: 600
+    DBChange:
+      SHM.db:
+        TblsAggregationMetrics:
+    ScanInterval: 0
     Query: |
       SELECT
         -- only artificial available for now
@@ -213,11 +244,14 @@ UDB-Metric-Import:
         SystemMaxPowerConsumption as 'Metric-SystemMaxPowerConsumption',
         SystemMaxInletTempHour as 'Metric-SystemMaxInletTempHour',
         SystemAvgInletTempHour as 'Metric-SystemAvgInletTempHour'
-      FROM udbsm.TblsAggregationMetrics
+      FROM TblsAggregationMetrics
       WHERE Timestamp > :HWM
 
   SMART-NVME:
     Type: MetricColumns
+    DBChange:
+      DMLiveObjectDatabase.db:
+        TblRAID_PDSmartData_NVMe:
     ScanInterval: 600
     Query: |
       SELECT
@@ -260,6 +294,9 @@ UDB-Metric-Import:
   SMART-SAS:
     Type: MetricColumns
     ScanInterval: 600
+    DBChange:
+      DMLiveObjectDatabase.db:
+        TblRAID_PDSmartData_SAS_SATA:
     Query: |
       SELECT
         SingleRecordEtag * 1000000000 as Timestamp,
@@ -292,6 +329,9 @@ UDB-Metric-Import:
   GPU-Statistics:
     Type: MetricColumns
     ScanInterval: 10
+    DBChange:
+      DMLiveObjectDatabase.db:
+        TblGPUStatisticsObj:
     Query: |
       SELECT
         -- We can artificially generate 'now' timestamps for each record, or use SingleRecordEtag
@@ -322,6 +362,9 @@ UDB-Metric-Import:
   GPU-Health:
     Type: MetricColumns
     ScanInterval: 10
+    DBChange:
+      DMLiveObjectDatabase.db:
+        TblGPUHealthObj:
     Query: |
       SELECT
         -- We can artificially generate 'now' timestamps for each record, or use SingleRecordEtag
@@ -347,6 +390,13 @@ UDB-Metric-Import:
   NICPortStats:
     Type: MetricColumns
     ScanInterval: 10
+    # CIMVIEW_DCIM_NICStatistics is a VIEW, so do dbchange on the underlying table
+    DBChange:
+      DMLiveObjectDatabase.db:
+        TblNic_Port_Stats_Obj:
+        TblNic_Partition_Stats_Obj:
+        TblSfp_Sensor_Obj:
+        TblNic_RDMA_Stats_Obj:
     Query: |
       SELECT
         -- We can artificially generate 'now' timestamps for each record, or use StatisticTime
@@ -415,38 +465,49 @@ UDB-Metric-Import:
       WHERE Timestamp > :HWM
 
   HIITempSensors:
-    Type: DirectMetric
+    Type: MetricColumns
     ScanInterval: 10
+    DBChange:
+      DMLiveObjectDatabase.db:
+        TblHIISensorInfo_obj:
     Query: |
       SELECT
         -- We can artificially generate 'now' timestamps for each record, or use SingleRecordEtag
         --cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
         SingleRecordEtag * 1000000000 as Timestamp,
-        "TemperatureReading" as Name,
-        currentTemp as Value,
+        FriendlyFQDD as Context,
         '/redfish/v1/FIXME/' || FQDD as Property,
-        FriendlyFQDD as Context
+
+        currentTemp as 'Metric-TemperatureReading'
       FROM TblHIISensorInfo_obj
       WHERE Timestamp > :HWM
 
   Fan:
-    Type: DirectMetric
+    Type: MetricColumns
     ScanInterval: 10
+    DBChange:
+      DMLiveObjectDatabase.db:
+        TblFanExtObj:
     Query: |
       SELECT
         -- We can artificially generate 'now' timestamps for each record, or use SingleRecordEtag
         -- cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
         SingleRecordEtag * 1000000000 as Timestamp,
-        'RPMReading' as Name,
-        VariableSpeed as Value,
+        FriendlyFQDD as Context,
         '/redfish/v1/FIXME/' || FQDD as Property,
-        FriendlyFQDD as Context
+
+        VariableSpeed as 'Metric-RPMReading'
       from TblFanExtObj
       WHERE Timestamp > :HWM
 
   Sensor:
     Type: DirectMetric
     ScanInterval: 5
+    # CIMVIEW_DCIM_NumericSensor is a view, do db change notifications on underlying tables
+    DBChange:
+      DMLiveObjectDatabase.db:
+        TblProbeObj:
+        ActiveOIDMapping:
     Query: |
       SELECT
         cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
@@ -473,6 +534,11 @@ UDB-Metric-Import:
   PSSensor:
     # TODO: UNDERLYING TABLE NEEDS HWM. need feature to select by HWM
     Type: DirectMetric
+    # CIMVIEW_DCIM_PSNumericSensor is view, do db change on underlying tables
+    DBChange:
+      DMLiveObjectDatabase.db:
+        TblProbeObj:
+        ActiveOIDMapping:
     ScanInterval: 10
     Query: |
       SELECT

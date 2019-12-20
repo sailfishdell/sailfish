@@ -1,9 +1,15 @@
 package udb
 
 import (
+	"bufio"
+	"bytes"
 	"context"
 	"fmt"
+	"io"
+	"os"
+	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/jmoiron/sqlx"
@@ -15,6 +21,7 @@ import (
 
 const (
 	UDBDatabaseEvent eh.EventType = "UDBDatabaseEvent"
+	UDBChangeEvent   eh.EventType = "UDBChangeEvent"
 )
 
 type BusComponents interface {
@@ -72,6 +79,8 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc EventHandlingServic
 		return
 	}
 
+	go handleUDBNotifyPipe(logger, cfg, d)
+
 	// for now, trigger automatic imports on a periodic basis (5s for now, we can up to 1s later to catch power stuff)
 	go func() {
 		importTicker := time.NewTicker(5 * time.Second)
@@ -104,8 +113,8 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc EventHandlingServic
 			}
 
 		case command == "import":
-			UDBFactory.IterUDBTables(func(name string) error {
-				UDBFactory.ConditionalImport(name)
+			UDBFactory.IterUDBTables(func(name string, meta UDBMeta) error {
+				UDBFactory.ConditionalImport(name, meta)
 				return nil
 			})
 
@@ -113,4 +122,103 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc EventHandlingServic
 			logger.Crit("GOT A COMMAND THAT I CANT HANDLE", "command", command)
 		}
 	})
+
+	am3Svc.AddEventHandler("UDB Change Notification", UDBChangeEvent, func(event eh.Event) {
+		notify, ok := event.Data().(*changeNotify)
+		if !ok {
+			logger.Crit("UDB Change Notifier message handler got an invalid data event", "event", event, "eventdata", event.Data())
+			return
+		}
+		fmt.Printf("GOT a UDB change notification for DB(%s) Table(%s) ROWID(%d)\n", notify.database, notify.table, notify.rowid)
+		UDBFactory.DBChanged(strings.ToLower(notify.database), strings.ToLower(notify.table))
+	})
+}
+
+type changeNotify struct {
+	database  string
+	table     string
+	rowid     int64
+	operation int64
+}
+
+func handleUDBNotifyPipe(logger log.Logger, cfg *viper.Viper, d BusComponents) {
+	pipePath := cfg.GetString("main.udbnotifypipe")
+
+	fmt.Printf("STARTING UDB NOTIFY PIPE HANDLER\n")
+	// Data format we get:
+	//    DB                      TBL                  ROWID     operationid
+	// ||DMLiveObjectDatabase.db|TblNic_Port_Stats_Obj|167445167|23||
+
+	err := syscall.Mkfifo(pipePath, 0660)
+	if err != nil && !os.IsExist(err) {
+		logger.Warn("Error creating UDB pipe", "err", err)
+	}
+
+	file, err := os.OpenFile(pipePath, os.O_CREATE, os.ModeNamedPipe)
+	if err != nil {
+		logger.Crit("Error opening UDB pipe", "err", err)
+	}
+
+	defer file.Close()
+
+	// The reader of the named pipe gets an EOF when the last writer exits to
+	// avoid this, we'll simply open it ourselves for writing and never close it.
+	// This will ensure the pipe stays around forever without eof.
+
+	nullWriter, err := os.OpenFile(pipePath, os.O_WRONLY, os.ModeNamedPipe)
+	if err != nil {
+		logger.Crit("Error opening UDB pipe for (placeholder) write", "err", err)
+	}
+
+	defer nullWriter.Close()
+
+	n := &changeNotify{}
+	split := func(data []byte, atEOF bool) (advance int, token []byte, err error) {
+		if atEOF {
+			return 0, nil, io.EOF
+		}
+		start := bytes.Index(data, []byte("||"))
+		if start == -1 {
+			// didnt find starting ||, skip over everything
+			return len(data), nil, nil
+		}
+
+		end := bytes.Index(data[start+2:], []byte("||"))
+		if end == -1 {
+			// didnt find ending ||
+			return 0, nil, nil
+		}
+
+		// adjust 'end' here to take into account that we indexed off the start+2
+		// of the data array
+		fields := bytes.Split(data[start+2:end+start+2], []byte("|"))
+		if len(fields) != 4 {
+			n.database = ""
+			n.table = ""
+			n.rowid = 0
+			n.operation = 0
+			// skip over starting || plus any intervening data, leave the trailing || as potential start of next record
+			return start + end + 2, []byte("s"), nil
+		}
+
+		n.database = string(fields[0])
+		n.table = string(fields[1])
+		n.rowid, _ = strconv.ParseInt(string(fields[2]), 10, 64)
+		n.operation, _ = strconv.ParseInt(string(fields[3]), 10, 64)
+
+		// consume the whole thing
+		return start + 2 + end + 2, []byte("t"), nil
+	}
+
+	s := bufio.NewScanner(file)
+	s.Split(split)
+	for s.Scan() {
+		if s.Text() == "t" {
+			// publish change notification
+			d.GetBus().PublishEvent(context.Background(), eh.NewEvent(UDBChangeEvent, n, time.Now()))
+			// new struct for the next notify so we dont have data races while other goroutines process the struct above
+			n = &changeNotify{}
+		}
+	}
+	return
 }
