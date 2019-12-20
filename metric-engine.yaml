@@ -4,7 +4,7 @@ main:
     legacydatabasepath: file:telemetry_timeseries_database.db?_foreign_keys=on&cache=shared&mode=rw
     udbdatabasepath: file:DMLiveObjectDatabase.db?cache=shared&_foreign_keys=off&mode=ro
     shmdatabasepath: file:SHM.db?cache=shared&_foreign_keys=off&mode=ro
-    udbnotifypipe: dbtdbipcpipe
+    udbnotifypipe: udbtdbipcpipe
 
 listen:
   - unix:me.socket
@@ -32,6 +32,7 @@ UDB-Metric-Import:
       SHM.db:
         TblsCurrentCUPS:
     ScanInterval: 0
+    WaitInterval: 5
     Query: |
       SELECT
         cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
@@ -52,6 +53,7 @@ UDB-Metric-Import:
       SHM.db:
         TblsPowerStatistics:
     ScanInterval: 0
+    WaitInterval: 5
     Query: |
       SELECT
         cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
@@ -88,6 +90,7 @@ UDB-Metric-Import:
       SHM.db:
         TblsPowerMetrics:
     ScanInterval: 0
+    WaitInterval: 5
     Query: |
       SELECT
         cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
@@ -113,6 +116,7 @@ UDB-Metric-Import:
       SHM.db:
         TblsThermalMetrics:
     ScanInterval: 0
+    WaitInterval: 5
     Query: |
       SELECT
         cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
@@ -140,6 +144,7 @@ UDB-Metric-Import:
       SHM.db:
         TblsCpuMemMetrics:
     ScanInterval: 0
+    WaitInterval: 5
     Query: |
       SELECT
         cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
@@ -165,6 +170,7 @@ UDB-Metric-Import:
       SHM.db:
         TblsPSUMetrics:
     ScanInterval: 0
+    WaitInterval: 5
     Query: |
       SELECT
         cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
@@ -183,6 +189,7 @@ UDB-Metric-Import:
       SHM.db:
         TblsStorageSensor:
     ScanInterval: 0
+    WaitInterval: 5
     Query: |
       SELECT
         cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
@@ -200,6 +207,7 @@ UDB-Metric-Import:
       SHM.db:
         TblsMemorySensor:
     ScanInterval: 0
+    WaitInterval: 5
     Query: |
       SELECT
         cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
@@ -217,6 +225,7 @@ UDB-Metric-Import:
       SHM.db:
         TblsFPGASensor:
     ScanInterval: 0
+    WaitInterval: 5
     Query: |
       SELECT
         cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
@@ -234,6 +243,7 @@ UDB-Metric-Import:
       SHM.db:
         TblsAggregationMetrics:
     ScanInterval: 0
+    WaitInterval: 5
     Query: |
       SELECT
         -- only artificial available for now
@@ -253,6 +263,7 @@ UDB-Metric-Import:
       DMLiveObjectDatabase.db:
         TblRAID_PDSmartData_NVMe:
     ScanInterval: 600
+    WaitInterval: 5
     Query: |
       SELECT
         -- We can artificially generate 'now' timestamps for each record, or use SingleRecordEtag
@@ -294,6 +305,7 @@ UDB-Metric-Import:
   SMART-SAS:
     Type: MetricColumns
     ScanInterval: 600
+    WaitInterval: 5
     DBChange:
       DMLiveObjectDatabase.db:
         TblRAID_PDSmartData_SAS_SATA:
@@ -329,6 +341,7 @@ UDB-Metric-Import:
   GPU-Statistics:
     Type: MetricColumns
     ScanInterval: 10
+    WaitInterval: 5
     DBChange:
       DMLiveObjectDatabase.db:
         TblGPUStatisticsObj:
@@ -362,6 +375,7 @@ UDB-Metric-Import:
   GPU-Health:
     Type: MetricColumns
     ScanInterval: 10
+    WaitInterval: 5
     DBChange:
       DMLiveObjectDatabase.db:
         TblGPUHealthObj:
@@ -389,7 +403,9 @@ UDB-Metric-Import:
 
   NICPortStats:
     Type: MetricColumns
-    ScanInterval: 10
+    # TODO: UNDERLYING TABLE NEEDS HWM. need feature to select by HWM
+    ScanInterval: 0
+    WaitInterval: 5
     # CIMVIEW_DCIM_NICStatistics is a VIEW, so do dbchange on the underlying table
     DBChange:
       DMLiveObjectDatabase.db:
@@ -467,6 +483,7 @@ UDB-Metric-Import:
   HIITempSensors:
     Type: MetricColumns
     ScanInterval: 10
+    WaitInterval: 5
     DBChange:
       DMLiveObjectDatabase.db:
         TblHIISensorInfo_obj:
@@ -485,6 +502,7 @@ UDB-Metric-Import:
   Fan:
     Type: MetricColumns
     ScanInterval: 10
+    WaitInterval: 5
     DBChange:
       DMLiveObjectDatabase.db:
         TblFanExtObj:
@@ -502,7 +520,9 @@ UDB-Metric-Import:
 
   Sensor:
     Type: DirectMetric
-    ScanInterval: 5
+    # TODO: UNDERLYING TABLE NEEDS HWM. need feature to select by HWM
+    ScanInterval: 0
+    WaitInterval: 5
     # CIMVIEW_DCIM_NumericSensor is a view, do db change notifications on underlying tables
     DBChange:
       DMLiveObjectDatabase.db:
@@ -539,7 +559,8 @@ UDB-Metric-Import:
       DMLiveObjectDatabase.db:
         TblProbeObj:
         ActiveOIDMapping:
-    ScanInterval: 10
+    ScanInterval: 0
+    WaitInterval: 5
     Query: |
       SELECT
         cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,

@@ -15,6 +15,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	eh "github.com/looplab/eventhorizon"
 	"github.com/spf13/viper"
+	"github.com/superchalupa/sailfish/src/looplab/event"
 
 	log "github.com/superchalupa/sailfish/src/log"
 )
@@ -88,7 +89,7 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc EventHandlingServic
 		for {
 			select {
 			case <-importTicker.C:
-				d.GetBus().PublishEvent(context.Background(), eh.NewEvent(UDBDatabaseEvent, "import", time.Now()))
+				d.GetBus().PublishEvent(context.Background(), eh.NewEvent(UDBDatabaseEvent, "periodic_import", time.Now()))
 			}
 		}
 	}()
@@ -102,19 +103,9 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc EventHandlingServic
 		}
 
 		switch {
-		// Trigger one specific import unconditionally
-		case strings.HasPrefix(command, "import:"):
-			parts := strings.Split(command, ":")
-
-			err := UDBFactory.Import(parts[1], parts[2:]...)
-			if err != nil {
-				logger.Crit("Import failed over udb tables", "import", command, "err", err)
-				return
-			}
-
-		case command == "import":
+		case command == "periodic_import":
 			UDBFactory.IterUDBTables(func(name string, meta UDBMeta) error {
-				UDBFactory.ConditionalImport(name, meta)
+				UDBFactory.ConditionalImport(name, meta, true)
 				return nil
 			})
 
@@ -129,7 +120,6 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc EventHandlingServic
 			logger.Crit("UDB Change Notifier message handler got an invalid data event", "event", event, "eventdata", event.Data())
 			return
 		}
-		fmt.Printf("GOT a UDB change notification for DB(%s) Table(%s) ROWID(%d)\n", notify.database, notify.table, notify.rowid)
 		UDBFactory.DBChanged(strings.ToLower(notify.database), strings.ToLower(notify.table))
 	})
 }
@@ -215,7 +205,10 @@ func handleUDBNotifyPipe(logger log.Logger, cfg *viper.Viper, d BusComponents) {
 	for s.Scan() {
 		if s.Text() == "t" {
 			// publish change notification
-			d.GetBus().PublishEvent(context.Background(), eh.NewEvent(UDBChangeEvent, n, time.Now()))
+			evt := event.NewSyncEvent(UDBChangeEvent, n, time.Now())
+			evt.Add(1)
+			d.GetBus().PublishEvent(context.Background(), evt)
+			evt.Wait()
 			// new struct for the next notify so we dont have data races while other goroutines process the struct above
 			n = &changeNotify{}
 		}

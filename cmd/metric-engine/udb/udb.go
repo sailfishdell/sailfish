@@ -16,12 +16,13 @@ import (
 )
 
 type UDBMeta struct {
-	query      *sqlx.NamedStmt
-	importFn   func(string, ...string) error
-	HWM        int64 `db:"HWM"`
-	lastImport time.Time
-	interval   int64
-	dbChange   map[string]map[string]struct{}
+	query        *sqlx.NamedStmt
+	importFn     func(string) error
+	HWM          int64 `db:"HWM"`
+	lastImport   time.Time
+	waitInterval int64
+	scanInterval int64
+	dbChange     map[string]map[string]struct{}
 }
 
 type UDBFactory struct {
@@ -38,14 +39,10 @@ func NewUDBFactory(logger log.Logger, database *sqlx.DB, d BusComponents, cfg *v
 	ret.bus = d.GetBus()
 	ret.udb = map[string]UDBMeta{}
 
-	impFns := map[string]func(string, ...string) error{
-		"DirectMetric":  func(n string, args ...string) error { return ret.ImportByMetricValue(n, args...) },
-		"MetricColumns": func(n string, args ...string) error { return ret.ImportByColumn(n, args...) },
-		"MetricColumnsHWM": func(n string, args ...string) error {
-			args = append([]string{"WithHWM"}, args...)
-			return ret.ImportByColumn(n, args...)
-		},
-		"Error": func(n string, args ...string) error { return ret.ImportERROR(n, args...) },
+	impFns := map[string]func(string) error{
+		"DirectMetric":  func(n string) error { return ret.ImportByMetricValue(n) },
+		"MetricColumns": func(n string) error { return ret.ImportByColumn(n) },
+		"Error":         func(n string) error { return ret.ImportERROR(n) },
 	}
 
 	// Parse the YAML file to set up database imports
@@ -84,11 +81,17 @@ func NewUDBFactory(logger log.Logger, database *sqlx.DB, d BusComponents, cfg *v
 			continue
 		}
 
-		interval, ok := settings["scaninterval"].(int)
+		scanInterval, ok := settings["scaninterval"].(int)
 		if !ok {
-			interval = 0
+			scanInterval = 0
 		}
-		meta.interval = int64(interval)
+		meta.scanInterval = int64(scanInterval)
+
+		waitInterval, ok := settings["waitinterval"].(int)
+		if !ok {
+			waitInterval = 5
+		}
+		meta.waitInterval = int64(waitInterval)
 
 		err = cfg.UnmarshalKey("UDB-Metric-Import."+k+".DBChange", &meta.dbChange)
 		if err != nil {
@@ -102,25 +105,21 @@ func NewUDBFactory(logger log.Logger, database *sqlx.DB, d BusComponents, cfg *v
 	return ret, nil
 }
 
-func (l *UDBFactory) ConditionalImport(udbImportName string, meta UDBMeta) (err error) {
+func (l *UDBFactory) ConditionalImport(udbImportName string, meta UDBMeta, periodic bool) (err error) {
 	now := time.Now()
-	if now.Before(meta.lastImport.Add(time.Duration(meta.interval) * time.Second)) {
+	if periodic && meta.scanInterval == 0 {
+		return
+	}
+	if periodic && now.Before(meta.lastImport.Add(time.Duration(meta.scanInterval)*time.Second)) {
+		return
+	}
+	if now.Before(meta.lastImport.Add(time.Duration(meta.waitInterval) * time.Second)) {
 		return
 	}
 
 	meta.lastImport = now
 	l.udb[udbImportName] = meta
-	return l.udb[udbImportName].importFn(udbImportName, []string{}...)
-}
-
-func (l *UDBFactory) Import(udbImportName string, args ...string) (err error) {
-	meta, ok := l.udb[udbImportName]
-	if !ok {
-		return xerrors.Errorf("UDB table %s not set up in meta struct", udbImportName)
-	}
-
-	meta.lastImport = time.Now()
-	return meta.importFn(udbImportName, args...)
+	return l.udb[udbImportName].importFn(udbImportName)
 }
 
 func (l *UDBFactory) DBChanged(database, table string) (err error) {
@@ -133,14 +132,11 @@ func (l *UDBFactory) DBChanged(database, table string) (err error) {
 		if !ok {
 			return nil
 		}
-		fmt.Printf("Change notification for DB(%s) Table(%s) triggered update for %s\n", database, table, udbImportName)
-		meta.lastImport = time.Now()
-		l.udb[udbImportName] = meta
-		return meta.importFn(udbImportName, []string{}...)
+		return l.ConditionalImport(udbImportName, meta, false)
 	})
 }
 
-func (l *UDBFactory) ImportERROR(udbImportName string, args ...string) (err error) {
+func (l *UDBFactory) ImportERROR(udbImportName string) (err error) {
 	fmt.Printf("DONT YET KNOW HOW TO IMPORT: %s\n", udbImportName)
 	return xerrors.New("UNKNOWN IMPORT")
 }
@@ -162,7 +158,7 @@ const maximport = 50
 //   Timestamps are constructed based on the "Timestamp" column
 //   Metric Context is constructed based on the "Context" column
 //   Property paths are constructed by appending '#<metricname>' to the "Property" column
-func (l *UDBFactory) ImportByColumn(udbImportName string, args ...string) (err error) {
+func (l *UDBFactory) ImportByColumn(udbImportName string) (err error) {
 	err = nil
 	events := []eh.EventData{}
 	defer func() {
@@ -241,7 +237,7 @@ func (l *UDBFactory) ImportByColumn(udbImportName string, args ...string) (err e
 	return nil
 }
 
-func (l *UDBFactory) ImportByMetricValue(udbImportName string, args ...string) (err error) {
+func (l *UDBFactory) ImportByMetricValue(udbImportName string) (err error) {
 	err = nil
 	events := []eh.EventData{}
 	defer func() {
