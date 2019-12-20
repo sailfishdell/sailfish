@@ -2,8 +2,8 @@ main:
     server_name: "idrac"
     databasepath: "file:./mr.db?_foreign_keys=on&cache=shared&mode=rwc"
     legacydatabasepath: "file:./telemetry_timeseries_database.db?_foreign_keys=on&cache=shared&mode=rwc"
-    udbdatabasepath: "./DMLiveObjectDatabase.db"
-    shmdatabasepath: "./SHM.db"
+    udbdatabasepath: "file:DMLiveObjectDatabase.db?cache=shared&_foreign_keys=off&mode=ro"
+    shmdatabasepath: "file:SHM.db?cache=shared&_foreign_keys=off&mode=ro"
 
 listen:
   - unix:me.socket
@@ -13,6 +13,15 @@ listen:
   - pprof::9081
   # disable direct https listener, uncomment if needed for testing:
   # - https::8443
+
+
+##############################################
+##
+## MEB Questions: why do we have separate CurrentCUPS from the CIMVIEW_DCIM_NumericSensor table?
+##
+## TODO: CIMVIEW_DCIM_NumericSensorPS table -> make sure we are importing the metrics we need from here
+##
+##############################################
 
 UDB-Metric-Import:
   CurrentCUPS:
@@ -30,11 +39,12 @@ UDB-Metric-Import:
         IoCupsCurrent as 'Metric-IOUsage',
         CpuCupsCurrent as 'Metric-CPUUsage'
       FROM TblsCurrentCUPS
+      WHERE Timestamp > :HWM
 
   PowerStatistics:
     # TODO: UNDERLYING TABLE NEEDS HWM. need feature to select by HWM
     Type: MetricColumns
-    ScanInterval: 10
+    ScanInterval: 600
     Query: |
       SELECT
         cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
@@ -62,6 +72,7 @@ UDB-Metric-Import:
         LastDayMaxPower as 'Metric-LastDayMaxPower',
         LastDayAvgPower as 'Metric-LastDayAvgPower'
       FROM TblsPowerStatistics
+      WHERE Timestamp > :HWM
 
   PowerMetrics:
     # TODO: UNDERLYING TABLE NEEDS HWM. need feature to select by HWM
@@ -83,6 +94,7 @@ UDB-Metric-Import:
         CurrentSystemOutputPower as 'Metric-SystemOutputPower',
         CurrentSystemInputPower as 'Metric-SystemInputPower'
       FROM TblsPowerMetrics
+      WHERE Timestamp > :HWM
 
   ThermalMetrics:
     # TODO: UNDERLYING TABLE NEEDS HWM. need feature to select by HWM
@@ -106,11 +118,12 @@ UDB-Metric-Import:
         ITUE as 'Metric-ITUE',
         ComputePower as 'Metric-ComputePower'
       FROM TblsThermalMetrics
+      WHERE Timestamp > :HWM
 
   CPUMem:
     # TODO: UNDERLYING TABLE NEEDS HWM. need feature to select by HWM
     Type: MetricColumns
-    ScanInterval: 10
+    ScanInterval: 5
     Query: |
       SELECT
         cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
@@ -127,6 +140,7 @@ UDB-Metric-Import:
         CpuMemoryMetrics_DOT_CPUC0ResidencyLow_DOT_value as 'Metric-CPUC0ResidencyLow',
         CpuMemoryMetrics_DOT_CPUC0ResidencyHigh_DOT_value as 'Metric-CPUC0ResidencyHigh'
       FROM TblsCpuMemMetrics
+      WHERE Timestamp > :HWM
 
   PSU-Sensor:
     # TODO: UNDERLYING TABLE NEEDS HWM. need feature to select by HWM
@@ -141,11 +155,12 @@ UDB-Metric-Import:
         Temperature as 'Metric-TemperatureReading',
         FanSpeed as 'Metric-RPMReading'
       FROM TblsPSUMetrics
+      WHERE Timestamp > :HWM
 
   Storage-Sensor:
     # TODO: UNDERLYING TABLE NEEDS HWM. need feature to select by HWM
     Type: DirectMetric
-    ScanInterval: 10
+    ScanInterval: 600
     Query: |
       SELECT
         cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
@@ -154,6 +169,7 @@ UDB-Metric-Import:
         'TemperatureReading' as Name,
         CurrentReading as Value
       FROM TblsStorageSensor
+      WHERE Timestamp > :HWM
 
   Memory-Sensor:
     # TODO: UNDERLYING TABLE NEEDS HWM. need feature to select by HWM
@@ -167,6 +183,7 @@ UDB-Metric-Import:
         'TemperatureReading' as Name,
         CurrentReading as Value
       FROM TblsMemorySensor
+      WHERE Timestamp > :HWM
 
   FPGA-Sensor:
     # TODO: UNDERLYING TABLE NEEDS HWM. need feature to select by HWM
@@ -180,11 +197,12 @@ UDB-Metric-Import:
         'TemperatureReading' as Name,
         CurrentReading as Value
       FROM TblsFPGASensor
+      WHERE Timestamp > :HWM
 
   Aggregation-Metrics:
     # TODO: UNDERLYING TABLE NEEDS HWM. need feature to select by HWM
     Type: MetricColumns
-    ScanInterval: 10
+    ScanInterval: 600
     Query: |
       SELECT
         -- only artificial available for now
@@ -196,15 +214,15 @@ UDB-Metric-Import:
         SystemMaxInletTempHour as 'Metric-SystemMaxInletTempHour',
         SystemAvgInletTempHour as 'Metric-SystemAvgInletTempHour'
       FROM udbsm.TblsAggregationMetrics
+      WHERE Timestamp > :HWM
 
   SMART-NVME:
-    # TODO: need feature to select by HWM
     Type: MetricColumns
-    ScanInterval: 10
+    ScanInterval: 600
     Query: |
       SELECT
         -- We can artificially generate 'now' timestamps for each record, or use SingleRecordEtag
-        -- also: lastUpdatedDateTime and SingleRecordEtag both are there. Which to use? use singlerecordetag for now...
+        -- also, lastUpdatedDateTime and SingleRecordEtag both are there. Which to use? use singlerecordetag for now...
         -- cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
         SingleRecordEtag * 1000000000 as Timestamp,
         FQDD as Context,
@@ -237,13 +255,17 @@ UDB-Metric-Import:
         smartData_DOT_ControllerBusyTime_DOT_Upper as 'Metric-ControllerBusyTimeUpper',
         smartData_DOT_ControllerBusyTime_DOT_Lower as 'Metric-ControllerBusyTimeLower'
       FROM TblRAID_PDSmartData_NVMe
+      WHERE Timestamp > :HWM
 
   SMART-SAS:
-    # TODO: need feature to select by HWM
     Type: MetricColumns
-    ScanInterval: 10
+    ScanInterval: 600
     Query: |
       SELECT
+        SingleRecordEtag * 1000000000 as Timestamp,
+        FQDD as Context,
+         '/redfish/v1/FIXME/' || FQDD as Property,
+
         smartData_DOT_volatileMemoryBackupSourceFailures as 'Metric-VolatileMemoryBackupSourceFailures',
         smartData_DOT_usedReservedBlockCount as 'Metric-UsedReservedBlockCount',
         smartData_DOT_unusedReservedBlockCount as 'Metric-UnusedReservedBlockCount',
@@ -265,9 +287,9 @@ UDB-Metric-Import:
         smartData_DOT_ECCERate as 'Metric-ECCERate',
         smartData_DOT_CRCErrorCount as 'Metric-CRCErrorCount'
       FROM TblRAID_PDSmartData_SAS_SATA
+      WHERE Timestamp > :HWM
 
   GPU-Statistics:
-    # TODO: need feature to select by HWM
     Type: MetricColumns
     ScanInterval: 10
     Query: |
@@ -295,9 +317,9 @@ UDB-Metric-Import:
         CumulativeDBECounterGR as 'Metric-CumulativeDBECounterGR',
         CumulativeDBECounterFB as 'Metric-CumulativeDBECounterFB'
       FROM TblGPUStatisticsObj
+      WHERE Timestamp > :HWM
 
   GPU-Health:
-    # TODO: need feature to select by HWM
     Type: MetricColumns
     ScanInterval: 10
     Query: |
@@ -320,9 +342,9 @@ UDB-Metric-Import:
         BoardTemp as 'Metric-BoardTemp',
         BoardPowerSupplyStatus as 'Metric-BoardPowerSupplyStatus'
       FROM TblGPUHealthObj
+      WHERE Timestamp > :HWM
 
   NICPortStats:
-    # TODO: need feature to select by HWM
     Type: MetricColumns
     ScanInterval: 10
     Query: |
@@ -390,9 +412,9 @@ UDB-Metric-Import:
         --'TXOutputPowerStatus'
 
       FROM CIMVIEW_DCIM_NICStatistics
+      WHERE Timestamp > :HWM
 
   HIITempSensors:
-    # TODO: need feature to select by HWM
     Type: DirectMetric
     ScanInterval: 10
     Query: |
@@ -405,9 +427,9 @@ UDB-Metric-Import:
         '/redfish/v1/FIXME/' || FQDD as Property,
         FriendlyFQDD as Context
       FROM TblHIISensorInfo_obj
+      WHERE Timestamp > :HWM
 
   Fan:
-    # TODO: need feature to select by HWM
     Type: DirectMetric
     ScanInterval: 10
     Query: |
@@ -420,6 +442,7 @@ UDB-Metric-Import:
         '/redfish/v1/FIXME/' || FQDD as Property,
         FriendlyFQDD as Context
       from TblFanExtObj
+      WHERE Timestamp > :HWM
 
   Sensor:
     Type: DirectMetric
@@ -428,7 +451,6 @@ UDB-Metric-Import:
       SELECT
         cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
         case
-          when SensorType = 0 then 'InvalidMetric'
           when SensorType = 1 then
           case
             when DeviceID = 'iDRAC.Embedded.1#SystemBoardCPUUsage' then 'CPUUsage'
@@ -439,16 +461,44 @@ UDB-Metric-Import:
           when SensorType = 2 then 'TemperatureReading'
           when SensorType = 3 then 'VoltageReading'
           when SensorType = 5 then 'RPMReading'
+          else "InvalidMetric-" || SensorType
         end as Name,
         CurrentReading as Value,
-        -- '/redfish/v1/Dell/Systems/System.Embedded.1/DellNumericSensorCollection/' || DeviceID as Property,  -- needs to be URI encoded, but close enough for now
         printf('/redfish/v1/Dell/Systems/System.Embedded.1/DellNumericSensor/%s', replace(replace(DeviceID, '|', '_0x7c_') , '#', '_0x23_')) as Property,
         ElementName as Context  -- FriendlyFQDD
-        -- DeviceID as FQDD, -- COMMENT OUT UNTIL WE HAVE A DEST TO RECEIVE THIS: DeviceID as FQDD
-      FROM CIMVIEW_DCIM_NumericSensor;`
+        -- DeviceID as FQDD, -- COMMENT OUT UNTIL WE HAVE A DEST TO RECEIVE THIS--> DeviceID as FQDD
+      FROM CIMVIEW_DCIM_NumericSensor
+      WHERE Timestamp > :HWM
+
+  PSSensor:
+    # TODO: UNDERLYING TABLE NEEDS HWM. need feature to select by HWM
+    Type: DirectMetric
+    ScanInterval: 10
+    Query: |
+      SELECT
+        cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
+        case SensorType
+          when 13 then
+          case
+            when DeviceID = 'iDRAC.Embedded.1#SystemBoardPwrConsumption' then 'SystemBoardPowerConsumption'
+            when Description = "Power Supply Power Consumption" then "WattsReading"
+            else 'InvalidMetric-' || DeviceID
+          end
+          else "InvalidMetric-" || SensorType
+        end as Name,
+        CurrentReading as Value,
+        printf('/redfish/v1/Dell/Systems/System.Embedded.1/DellPSNumericSensor/%s', replace(replace(DeviceID, '|', '_0x7c_') , '#', '_0x23_')) as Property,
+        ElementName as Context  -- FriendlyFQDD
+        -- DeviceID as FQDD, -- COMMENT OUT UNTIL WE HAVE A DEST TO RECEIVE THIS--> DeviceID as FQDD
+      FROM CIMVIEW_DCIM_PSNumericSensor
+      WHERE Timestamp > :HWM
 
 createdb:
-  - "PRAGMA journal_size_limit=1048576;"
+  # This bumps memory usage by 10MB for some unknown reason
+  #  - "PRAGMA cache_size=4096;"
+  # Need to try this one out:
+  #  - "PRAGMA cache_size=0;"
+  - "PRAGMA journal_size_limit=4096;"
   - "PRAGMA foreign_keys = ON;"
   - "PRAGMA journal_mode = WAL;"
   - "PRAGMA synchronous = OFF;"

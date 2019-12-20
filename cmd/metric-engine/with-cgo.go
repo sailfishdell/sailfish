@@ -10,7 +10,7 @@ import (
 )
 
 func cgoStartup(logger log.Logger, d *BusComponents) {
-	cgo.cgoStartup(logger, d)
+	cgo.CGOStartup(logger, d)
 }
 
 func cgoShutdown() {

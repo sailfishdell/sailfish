@@ -16,9 +16,11 @@ import (
 )
 
 type UDBMeta struct {
-	query    *sqlx.Stmt
-	importFn func(string, ...string) error
-	interval int64
+	query      *sqlx.NamedStmt
+	importFn   func(string, ...string) error
+	HWM        int64 `db:"HWM"`
+	lastImport time.Time
+	interval   int64
 }
 
 type UDBFactory struct {
@@ -38,7 +40,11 @@ func NewUDBFactory(logger log.Logger, database *sqlx.DB, d BusComponents, cfg *v
 	impFns := map[string]func(string, ...string) error{
 		"DirectMetric":  func(n string, args ...string) error { return ret.ImportByMetricValue(n, args...) },
 		"MetricColumns": func(n string, args ...string) error { return ret.ImportByColumn(n, args...) },
-		"Error":         func(n string, args ...string) error { return ret.ImportERROR(n, args...) },
+		"MetricColumnsHWM": func(n string, args ...string) error {
+			args = append([]string{"WithHWM"}, args...)
+			return ret.ImportByColumn(n, args...)
+		},
+		"Error": func(n string, args ...string) error { return ret.ImportERROR(n, args...) },
 	}
 
 	for k, v := range cfg.GetStringMap("UDB-Metric-Import") {
@@ -66,7 +72,7 @@ func NewUDBFactory(logger log.Logger, database *sqlx.DB, d BusComponents, cfg *v
 			continue
 		}
 
-		query, err := database.Preparex(Query)
+		query, err := database.PrepareNamed(Query)
 		if err != nil {
 			fmt.Printf("Prepare failed for %s: SQL(%s) %s\n", k, Query, err)
 			continue
@@ -76,22 +82,30 @@ func NewUDBFactory(logger log.Logger, database *sqlx.DB, d BusComponents, cfg *v
 		if !ok {
 			Type = "Error"
 		}
-		ret.udb[k] = UDBMeta{importFn: impFns[Type], query: query, interval: int64(Interval)}
+
+		ret.udb[k] = UDBMeta{
+			importFn: impFns[Type],
+			query:    query,
+			interval: int64(Interval),
+		}
 	}
 
 	return ret, nil
 }
 
 func (l *UDBFactory) ConditionalImport(udbImportName string) (err error) {
+	now := time.Now()
+
 	meta, ok := l.udb[udbImportName]
 	if !ok {
 		return xerrors.Errorf("UDB table %s not set up in meta struct", udbImportName)
 	}
 
-	if meta.interval == 0 || time.Now().Unix()%meta.interval != 0 {
+	if now.Before(meta.lastImport.Add(time.Duration(meta.interval) * time.Second)) {
 		return
 	}
 
+	meta.lastImport = now
 	return l.udb[udbImportName].importFn(udbImportName, []string{}...)
 }
 
@@ -150,7 +164,7 @@ func (l *UDBFactory) ImportByColumn(udbImportName string, args ...string) (err e
 		return
 	}
 
-	rows, err := udbMeta.query.Queryx()
+	rows, err := udbMeta.query.Queryx(udbMeta)
 	if err != nil {
 		err = xerrors.Errorf("query failed for %s: %w", udbImportName, err)
 		return
@@ -171,6 +185,11 @@ func (l *UDBFactory) ImportByColumn(udbImportName string, args ...string) (err e
 		delete(mm, "Context")
 		property := string(mm["Property"].([]byte))
 		delete(mm, "Property")
+
+		if ts > udbMeta.HWM {
+			udbMeta.HWM = ts
+			l.udb[udbImportName] = udbMeta
+		}
 
 		for k, v := range mm {
 			event := &MetricValueEventData{Timestamp: SqlTimeInt{time.Unix(0, ts)}, Context: metricCtx}
@@ -224,7 +243,7 @@ func (l *UDBFactory) ImportByMetricValue(udbImportName string, args ...string) (
 		return
 	}
 
-	rows, err := udbMeta.query.Queryx()
+	rows, err := udbMeta.query.Queryx(udbMeta)
 	if err != nil {
 		err = xerrors.Errorf("query failed for %s: %w", udbImportName, err)
 		return
@@ -237,6 +256,11 @@ func (l *UDBFactory) ImportByMetricValue(udbImportName string, args ...string) (
 		if err != nil {
 			l.logger.Crit("Error scanning row into MetricEvent", "err", err, "udbImportName", udbImportName)
 			continue
+		}
+
+		if ts := event.Timestamp.UnixNano(); ts > udbMeta.HWM {
+			udbMeta.HWM = ts
+			l.udb[udbImportName] = udbMeta
 		}
 
 		events = append(events, event)

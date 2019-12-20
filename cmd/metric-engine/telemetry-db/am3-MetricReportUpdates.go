@@ -59,7 +59,10 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Service, d Bus
 	}
 
 	// periodically optimize and vacuum database
-	const clockPeriod = 5100 * time.Millisecond
+	const clockPeriod = 10100 * time.Millisecond
+	// slightly more than once every 5s. Idea here is to give messages a chance to drive the clock
+	clockTicker := time.NewTicker(clockPeriod)
+
 	go func() {
 		// run once after startup. give a few seconds so we dont slow boot up
 		time.Sleep(20 * time.Second)
@@ -71,9 +74,6 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Service, d Bus
 		cleanValuesTicker := time.NewTicker(73 * time.Second) // once a minute
 		vacuumTicker := time.NewTicker(3607 * time.Second)    // once an hour (-ish)
 		optimizeTicker := time.NewTicker(10831 * time.Second) // once every three hours (-ish)
-
-		// slightly more than once every 5s. Idea here is to give messages a chance to drive the clock
-		clockTicker := time.NewTicker(clockPeriod)
 
 		defer cleanValuesTicker.Stop()
 		defer vacuumTicker.Stop()

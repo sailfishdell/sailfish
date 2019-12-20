@@ -3,8 +3,6 @@ package cgo
 import (
 	eh "github.com/looplab/eventhorizon"
 	log "github.com/superchalupa/sailfish/src/log"
-	"github.com/superchalupa/sailfish/src/looplab/eventwaiter"
-	"github.com/superchalupa/sailfish/src/ocp/am3"
 )
 
 /*
@@ -32,11 +30,9 @@ import "C"
 
 type BusComponents interface {
 	GetBus() eh.EventBus
-	GetWaiter() *eventwaiter.EventWaiter
-	GetPublisher() eh.EventPublisher
 }
 
-func AddAM3cgo(logger log.Logger, am3Svc *am3.Service, d BusComponents) {
+func CGOStartup(logger log.Logger, d BusComponents) {
 	logger.Crit("CGO ENABLED")
 	C.start_czmq()
 	go C.start_cgo_event_loop()
