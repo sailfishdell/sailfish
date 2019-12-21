@@ -14,6 +14,7 @@ import (
 )
 
 const (
+	AddMetricReportDefinition    eh.EventType = "AddMetricReportDefinitionEvent"
 	UpdateMetricReportDefinition eh.EventType = "UpdateMetricReportDefinitionEvent"
 	DeleteMetricReportDefinition eh.EventType = "DeleteMetricReportDefinitionEvent"
 	DatabaseMaintenance          eh.EventType = "DatabaseMaintenanceEvent"
@@ -25,6 +26,7 @@ type BusComponents interface {
 }
 
 func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Service, d BusComponents) {
+	eh.RegisterEventData(AddMetricReportDefinition, func() eh.EventData { return &MetricReportDefinitionData{} })
 	eh.RegisterEventData(UpdateMetricReportDefinition, func() eh.EventData { return &MetricReportDefinitionData{} })
 	eh.RegisterEventData(DeleteMetricReportDefinition, func() eh.EventData { return &MetricReportDefinitionData{} })
 	eh.RegisterEventData(GenerateMetricReport, func() eh.EventData { return &MetricReportDefinitionData{} })
@@ -94,7 +96,7 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Service, d Bus
 	}()
 
 	// Create a new Metric Report Definition, or update an existing one
-	am3Svc.AddEventHandler("Create/Update Metric Report Definition", UpdateMetricReportDefinition, func(event eh.Event) {
+	updateDef := func(event eh.Event) {
 		reportDef, ok := event.Data().(*MetricReportDefinitionData)
 		if !ok {
 			//logger.Crit("Expected a *MetricReportDefinitionData but didn't get one.", "Actual Type", fmt.Sprintf("%T", event.Data()), "Actual Data", event.Data())
@@ -117,7 +119,9 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Service, d Bus
 		// care of them. This will run *after* we've updated the report and return
 		// from this function.
 		d.GetBus().PublishEvent(context.Background(), eh.NewEvent(DatabaseMaintenance, "delete orphans", time.Now()))
-	})
+	}
+	am3Svc.AddEventHandler("Create Metric Report Definition", AddMetricReportDefinition, updateDef)
+	am3Svc.AddEventHandler("Update Metric Report Definition", UpdateMetricReportDefinition, updateDef)
 
 	am3Svc.AddEventHandler("Delete Metric Report Definition", DeleteMetricReportDefinition, func(event eh.Event) {
 		reportDef, ok := event.Data().(*MetricReportDefinitionData)
