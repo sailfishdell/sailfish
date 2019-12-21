@@ -1156,7 +1156,6 @@ createdb:
       DROP VIEW IF EXISTS MetricReport_Stops_Redfish;
       CREATE VIEW MetricReport_Stops_Redfish AS
         select
-          '/redfish/v1/TelemetryService/MetricReports/' || MR.Name as '@odata.id',
           ('{' ||
               ' "@odata.type": "#MetricReport.v1_2_0.MetricReport",' ||
               ' "@odata.context": "/redfish/v1/$metadata#MetricReport.MetricReport",' ||
@@ -1181,7 +1180,8 @@ createdb:
                       limit 3000
                     ) AS a ), ' "MetricValues":  [], "MetricValues@odata.count": 0 ')
             || '}'
-          ) as root
+          ) as root,
+          '/redfish/v1/TelemetryService/MetricReports/' || MR.Name as '@odata.id'
         from MetricReport as MR
         inner join MetricReportDefinition as MRD on MR.ReportDefinitionID = MRD.ID
         where MRD.Updates != "AppendWrapsWhenFull"
@@ -1191,7 +1191,6 @@ createdb:
       DROP VIEW IF EXISTS MetricReport_Wraps_Redfish;
       CREATE VIEW MetricReport_Wraps_Redfish as
       select
-        '/redfish/v1/TelemetryService/MetricReports/' || MR.Name as '@odata.id',
         ('{' ||
             ' "@odata.type": "#MetricReport.v1_2_0.MetricReport",' ||
             ' "@odata.context": "/redfish/v1/$metadata#MetricReport.MetricReport",' ||
@@ -1216,7 +1215,8 @@ createdb:
                     limit 3000
                 ) AS a ), '')
           || '}'
-        ) as root
+        ) as root,
+        '/redfish/v1/TelemetryService/MetricReports/' || MR.Name as '@odata.id'
       from MetricReport as MR
       inner join MetricReportDefinition as MRD on MR.ReportDefinitionID = MRD.ID
       where MRD.Updates = 'AppendWrapsWhenFull'
@@ -1225,9 +1225,9 @@ createdb:
       -- This is the table that creates a uniform table name to gather *any* metric report, regardless of type
       DROP VIEW IF EXISTS MetricReport_JSON;
       CREATE VIEW MetricReport_JSON as
-        select * from MetricReport_Wraps_Redfish
+        select root, [@odata.id] from MetricReport_Wraps_Redfish
           UNION ALL
-        select * from MetricReport_Stops_Redfish
+        select root, [@odata.id] from MetricReport_Stops_Redfish
 
   - |
       DROP VIEW IF EXISTS MetricReportCollection_JSON;
@@ -1336,37 +1336,49 @@ createdb:
           ) as root,
           '/redfish/v1/TelemetryService/MetricReportDefinitions' as [@odata.id]
 
+  - |
+      -- This is the table that creates a uniform table name to gather *any* metric report, regardless of type
+      DROP VIEW IF EXISTS JSON;
+      CREATE VIEW JSON as
+        select root, [@odata.id] from MetricReportDefinitionCollection_JSON
+          UNION ALL
+        select root, [@odata.id] from MetricReportDefinition_JSON
+          UNION ALL
+        select root, [@odata.id] from MetricReportCollection_JSON
+          UNION ALL
+        select root, [@odata.id] from MetricReport_JSON
 
   - |
-        DROP VIEW IF EXISTS AggregationMetricsMRView_json ; create view AggregationMetricsMRView_json as select * from MetricReport_Redfish;
-        DROP VIEW IF EXISTS CPUMemMetricsMRView_json ; create view CPUMemMetricsMRView_json as select * from MetricReport_Redfish;
-        DROP VIEW IF EXISTS CPURegistersMRView_json ; create view CPURegistersMRView_json as select * from MetricReport_Redfish;
-        DROP VIEW IF EXISTS CPUSensorMRView_json ; create view CPUSensorMRView_json as select * from MetricReport_Redfish;
-        DROP VIEW IF EXISTS CUPSMRView_json ; create view CUPSMRView_json as select * from MetricReport_Redfish;
-        DROP VIEW IF EXISTS FCSensorMRView_json ; create view FCSensorMRView_json as select * from MetricReport_Redfish;
-        DROP VIEW IF EXISTS FPGASensorMRView_json ; create view FPGASensorMRView_json as select * from MetricReport_Redfish;
-        DROP VIEW IF EXISTS FanSensorMRView_json ; create view FanSensorMRView_json as select * from MetricReport_Redfish;
-        DROP VIEW IF EXISTS GPUMetricsMRView_json ; create view GPUMetricsMRView_json as select * from MetricReport_Redfish;
-        DROP VIEW IF EXISTS GPUStatisticsMRView_json ; create view GPUStatisticsMRView_json as select * from MetricReport_Redfish;
-        DROP VIEW IF EXISTS MemorySensorMRView_json ; create view MemorySensorMRView_json as select * from MetricReport_Redfish;
-        DROP VIEW IF EXISTS NICSensorMRView_json ; create view NICSensorMRView_json as select * from MetricReport_Redfish;
-        DROP VIEW IF EXISTS NICStatisticsMRView_json ; create view NICStatisticsMRView_json as select * from MetricReport_Redfish;
-        DROP VIEW IF EXISTS NVMeSMARTDataMRView_json ; create view NVMeSMARTDataMRView_json as select * from MetricReport_Redfish;
-        DROP VIEW IF EXISTS PSUMetricsMRView_json ; create view PSUMetricsMRView_json as select * from MetricReport_Redfish;
-        DROP VIEW IF EXISTS PowerMetricsMRView_json ; create view PowerMetricsMRView_json as select * from MetricReport_Redfish;
-        DROP VIEW IF EXISTS PowerStatisticsMRView_json ; create view PowerStatisticsMRView_json as select * from MetricReport_Redfish;
-        DROP VIEW IF EXISTS SensorMRView_json ; create view SensorMRView_json as select * from MetricReport_Redfish;
-        DROP VIEW IF EXISTS StorageDiskSMARTDataMRView_json ; create view StorageDiskSMARTDataMRView_json as select * from MetricReport_Redfish;
-        DROP VIEW IF EXISTS StorageSensorMRView_json ; create view StorageSensorMRView_json as select * from MetricReport_Redfish;
-        DROP VIEW IF EXISTS ThermalSensorMRView_json ; create view ThermalSensorMRView_json as select * from  MetricReport_Redfish;
-        DROP VIEW IF EXISTS ThermalMetricsMRView_json ; create view ThermalMetricsMRView_json as select * from  MetricReport_Redfish;
+        DROP VIEW IF EXISTS AggregationMetricsMRView_json ; create view AggregationMetricsMRView_json as select * from JSON;
+        DROP VIEW IF EXISTS CPUMemMetricsMRView_json ; create view CPUMemMetricsMRView_json as select * from JSON;
+        DROP VIEW IF EXISTS CPURegistersMRView_json ; create view CPURegistersMRView_json as select * from JSON;
+        DROP VIEW IF EXISTS CPUSensorMRView_json ; create view CPUSensorMRView_json as select * from JSON;
+        DROP VIEW IF EXISTS CUPSMRView_json ; create view CUPSMRView_json as select * from JSON;
+        DROP VIEW IF EXISTS FCSensorMRView_json ; create view FCSensorMRView_json as select * from JSON;
+        DROP VIEW IF EXISTS FPGASensorMRView_json ; create view FPGASensorMRView_json as select * from JSON;
+        DROP VIEW IF EXISTS FanSensorMRView_json ; create view FanSensorMRView_json as select * from JSON;
+        DROP VIEW IF EXISTS GPUMetricsMRView_json ; create view GPUMetricsMRView_json as select * from JSON;
+        DROP VIEW IF EXISTS GPUStatisticsMRView_json ; create view GPUStatisticsMRView_json as select * from JSON;
+        DROP VIEW IF EXISTS MemorySensorMRView_json ; create view MemorySensorMRView_json as select * from JSON;
+        DROP VIEW IF EXISTS NICSensorMRView_json ; create view NICSensorMRView_json as select * from JSON;
+        DROP VIEW IF EXISTS NICStatisticsMRView_json ; create view NICStatisticsMRView_json as select * from JSON;
+        DROP VIEW IF EXISTS NVMeSMARTDataMRView_json ; create view NVMeSMARTDataMRView_json as select * from JSON;
+        DROP VIEW IF EXISTS PSUMetricsMRView_json ; create view PSUMetricsMRView_json as select * from JSON;
+        DROP VIEW IF EXISTS PowerMetricsMRView_json ; create view PowerMetricsMRView_json as select * from JSON;
+        DROP VIEW IF EXISTS PowerStatisticsMRView_json ; create view PowerStatisticsMRView_json as select * from JSON;
+        DROP VIEW IF EXISTS SensorMRView_json ; create view SensorMRView_json as select * from JSON;
+        DROP VIEW IF EXISTS StorageDiskSMARTDataMRView_json ; create view StorageDiskSMARTDataMRView_json as select * from JSON;
+        DROP VIEW IF EXISTS StorageSensorMRView_json ; create view StorageSensorMRView_json as select * from JSON;
+        DROP VIEW IF EXISTS ThermalSensorMRView_json ; create view ThermalSensorMRView_json as select * from  JSON;
+        DROP VIEW IF EXISTS ThermalMetricsMRView_json ; create view ThermalMetricsMRView_json as select * from  JSON;
 
-        -- DROP VIEW IF EXISTS TelemetryServiceView_json ; create view TelemetryServiceView_json as select * from MetricReport_Redfish;
-        -- DROP VIEW IF EXISTS TelemetryLogServiceLCLogview_json ; create view TelemetryLogServiceLCLogview_json as select * from MetricReport_Redfish;
-        -- DROP VIEW IF EXISTS MetricDefinitionCollectionView_json ; create view MetricDefinitionCollectionView_json as select * from MetricReport_Redfish;
-        -- DROP VIEW IF EXISTS MetricDefinitionView_json ; create view MetricDefinitionView_json as select * from MetricReport_Redfish;
-        -- DROP VIEW IF EXISTS MetricReportCollectionView_json ; create view MetricReportCollectionView_json as select * from MetricReport_Redfish;
-        -- DROP VIEW IF EXISTS MetricReportDefinitionCollectionView_json ; create view MetricReportDefinitionCollectionView_json as select * from MetricReport_Redfish;
+        DROP VIEW IF EXISTS MetricDefinitionCollectionView_json ; create view MetricDefinitionCollectionView_json as select * from JSON;
+        DROP VIEW IF EXISTS MetricDefinitionView_json ; create view MetricDefinitionView_json as select * from JSON;
+        DROP VIEW IF EXISTS MetricReportCollectionView_json ; create view MetricReportCollectionView_json as select * from JSON;
+        DROP VIEW IF EXISTS MetricReportDefinitionCollectionView_json ; create view MetricReportDefinitionCollectionView_json as select * from JSON;
+
+        -- DROP VIEW IF EXISTS TelemetryServiceView_json ; create view TelemetryServiceView_json as select * from JSON;
+        -- DROP VIEW IF EXISTS TelemetryLogServiceLCLogview_json ; create view TelemetryLogServiceLCLogview_json as select * from JSON;
 
 # Logging levels:
 # debug, info, warn, error, crit
