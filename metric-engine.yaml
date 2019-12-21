@@ -34,107 +34,254 @@ Startup-Events:
         "Metrics": []
       }
   - name: AddMetricReportDefinition
+    # TODO: Need to limit this to CPU via FQDD
     data: |
       {
         "Name": "CPUSensor",            "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [{"MetricID": "%", "PropertyPattern": "LEGACY:CPUSensor"}]
+        "Metrics": [{"MetricID": "TemperatureReading"}]
       }
   - name: AddMetricReportDefinition
+    # TODO: Need to limit this to FC via FQDD
     data: |
       {
         "Name": "FCSensor",             "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [{"MetricID": "%", "PropertyPattern": "LEGACY:FCSensor"}]
+        "Metrics": [{"MetricID": "TemperatureReading"}]
       }
   - name: AddMetricReportDefinition
+    # TODO: Need to limit this to FPGA via FQDD
     data: |
       {
         "Name": "FPGASensor",           "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [{"MetricID": "%", "PropertyPattern": "LEGACY:FPGASensor"}]
-      }
-
-  - name: AddMetricReportDefinition
-    data: |
-      {
-        "Name": "GPUMetrics",           "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [{"MetricID": "%", "PropertyPattern": "LEGACY:GPUMetrics"}]
+        "Metrics": [{"MetricID": "TemperatureReading"}]
       }
   - name: AddMetricReportDefinition
-    data: |
-      {
-        "Name": "GPUStatistics",        "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [{"MetricID": "%", "PropertyPattern": "LEGACY:GPUStatistics"}]
-      }
-  - name: AddMetricReportDefinition
+    # TODO: need to limit this to memory via FQDD
     data: |
       {
         "Name": "MemorySensor",         "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [{"MetricID": "%", "PropertyPattern": "LEGACY:MemorySensor"}]
+        "Metrics": [{"MetricID": "TemperatureReading"}]
       }
   - name: AddMetricReportDefinition
+    # TODO: need to limit this to memory via FQDD
     data: |
       {
         "Name": "NICSensor",            "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [{"MetricID": "%", "PropertyPattern": "LEGACY:NICSensor"}]
+        "Metrics": [{"MetricID": "TemperatureReading"}]
       }
   - name: AddMetricReportDefinition
+    # TODO: need to limit this to NIC via FQDD
     data: |
       {
         "Name": "NICStatistics",        "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [{"MetricID": "%", "PropertyPattern": "LEGACY:NICStatistics"}]
+        "Metrics": [
+              { "MetricId": "DiscardedPkts" },
+              { "MetricId": "FCCRCErrorCount" },
+              { "MetricId": "FCOELinkFailures" },
+              { "MetricId": "FCOEPktRxCount" },
+              { "MetricId": "FCOEPktTxCount" },
+              { "MetricId": "FCOERxPktDroppedCount" },
+              { "MetricId": "LanFCSRxErrors" },
+              { "MetricId": "LanUnicastPktRxCount" },
+              { "MetricId": "LanUnicastPktTxCount" },
+              { "MetricId": "LinkStatus" },
+              { "MetricId": "OSDriverState" },
+              { "MetricId": "PartitionLinkStatus" },
+              { "MetricId": "PartitionOSDriverState" },
+              { "MetricId": "RDMARxTotalBytes" },
+              { "MetricId": "RDMARxTotalPackets" },
+              { "MetricId": "RDMATotalProtectionErrors" },
+              { "MetricId": "RDMATotalProtocolErrors" },
+              { "MetricId": "RDMATxTotalBytes" },
+              { "MetricId": "RDMATxTotalPackets" },
+              { "MetricId": "RDMATxTotalReadReqPkts" },
+              { "MetricId": "RDMATxTotalSendPkts" },
+              { "MetricId": "RDMATxTotalWritePkts" },
+              { "MetricId": "RxBroadcast" },
+              { "MetricId": "RxBytes" },
+              { "MetricId": "RxErrorPktAlignmentErrors" },
+              { "MetricId": "RxErrorPktFCSErrors" },
+              { "MetricId": "RxFalseCarrierDetection" },
+              { "MetricId": "RxJabberPkt" },
+              { "MetricId": "RxMutlicast" },
+              { "MetricId": "RxPauseXOFFFrames" },
+              { "MetricId": "RxPauseXONFrames" },
+              { "MetricId": "RxRuntPkt" },
+              { "MetricId": "RxUnicast" },
+              { "MetricId": "TxBroadcast" },
+              { "MetricId": "TxBytes" },
+              { "MetricId": "TxErrorPktExcessiveCollision" },
+              { "MetricId": "TxErrorPktLateCollision" },
+              { "MetricId": "TxErrorPktMultipleCollision" },
+              { "MetricId": "TxErrorPktSingleCollision" },
+              { "MetricId": "TxMutlicast" },
+              { "MetricId": "TxPauseXOFFFrames" },
+              { "MetricId": "TxPauseXONFrames" },
+              { "MetricId": "TxUnicast" }
+        ]
       }
   - name: AddMetricReportDefinition
+    # TODO: need to limit this to NVME via FQDD
     data: |
       {
         "Name": "NVMeSMARTData",        "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [{"MetricID": "%", "PropertyPattern": "LEGACY:NVMeSMARTData"}]
+        "Metrics": [
+          { "MetricId": "AvailableSpare" },
+          { "MetricId": "AvailableSpareThreshold" },
+          { "MetricId": "CompositeTemparature" },
+          { "MetricId": "ControllerBusyTimeLower" },
+          { "MetricId": "ControllerBusyTimeUpper" },
+          { "MetricId": "CriticalWarning" },
+          { "MetricId": "DataUnitsReadLower" },
+          { "MetricId": "DataUnitsReadUpper" },
+          { "MetricId": "DataUnitsWrittenLower" },
+          { "MetricId": "DataUnitsWrittenUpper" },
+          { "MetricId": "HostReadCommandsLower" },
+          { "MetricId": "HostReadCommandsUpper" },
+          { "MetricId": "HostWriteCommandsLower" },
+          { "MetricId": "HostWriteCommandsUpper" },
+          { "MetricId": "MediaDataIntegrityErrorsLower" },
+          { "MetricId": "MediaDataIntegrityErrorsUpper" },
+          { "MetricId": "NumOfErrorInfoLogEntriesLower" },
+          { "MetricId": "NumOfErrorInfoLogEntriesUpper" },
+          { "MetricId": "PercentageUsed" },
+          { "MetricId": "PowerCyclesLower" },
+          { "MetricId": "PowerCyclesUpper" },
+          { "MetricId": "PowerOnHoursLower" },
+          { "MetricId": "PowerOnHoursUpper" },
+          { "MetricId": "UnsafeShutdownsLower" },
+          { "MetricId": "UnsafeShutdownsUpper" }
+        ]
       }
   - name: AddMetricReportDefinition
+    # TODO: limit to PSU via FQDD
     data: |
       {
         "Name": "PSUMetrics",           "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [{"MetricID": "%", "PropertyPattern": "LEGACY:PSUMetrics"}]
+        "Metrics": [
+          { "MetricId": "FanSpeed" },
+          { "MetricId": "Temperature" }
+        ]
       }
   - name: AddMetricReportDefinition
     data: |
       {
         "Name": "PowerMetrics",         "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [{"MetricID": "%", "PropertyPattern": "LEGACY:PowerMetrics"}]
+        "Metrics": [
+          { "MetricId": "SystemHeadRoomInstantaneous" },
+          { "MetricId": "SystemInputPower" },
+          { "MetricId": "SystemOutputPower" },
+          { "MetricId": "SystemPowerConsumption" },
+          { "MetricId": "TotalCPUPower" },
+          { "MetricId": "TotalFanPower" },
+          { "MetricId": "TotalMemoryPower" },
+          { "MetricId": "TotalPciePower" },
+          { "MetricId": "TotalStoragePower" }
+        ]
       }
   - name: AddMetricReportDefinition
     data: |
       {
         "Name": "PowerStatistics",      "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [{"MetricID": "%", "PropertyPattern": "LEGACY:PowerStatistics"}]
+        "Metrics": [
+          { "MetricId": "LastDayAvgPower" },
+          { "MetricId": "LastDayMaxPower" },
+          { "MetricId": "LastDayMaxPowerTime" },
+          { "MetricId": "LastDayMinPower" },
+          { "MetricId": "LastDayMinPowerTime" },
+          { "MetricId": "LastHourAvgPower" },
+          { "MetricId": "LastHourMaxPower" },
+          { "MetricId": "LastHourMaxPowerTime" },
+          { "MetricId": "LastHourMinPower" },
+          { "MetricId": "LastHourMinPowerTime" },
+          { "MetricId": "LastMinuteAvgPower" },
+          { "MetricId": "LastMinuteMaxPower" },
+          { "MetricId": "LastMinuteMaxPowerTime" },
+          { "MetricId": "LastMinuteMinPower" },
+          { "MetricId": "LastMinuteMinPowerTime" },
+          { "MetricId": "LastWeekAvgPower" },
+          { "MetricId": "LastWeekMaxPower" },
+          { "MetricId": "LastWeekMaxPowerTime" },
+          { "MetricId": "LastWeekMinPower" },
+          { "MetricId": "LastWeekMinPowerTime" }
+        ]
       }
   - name: AddMetricReportDefinition
     data: |
       {
         "Name": "Sensor",               "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [{"MetricID": "%", "PropertyPattern": "LEGACY:Sensor"}]
+        "Metrics": [
+          { "MetricId": "AmpsReading" },
+          { "MetricId": "CPUUsagePctReading" },
+          { "MetricId": "IOUsagePctReading" },
+          { "MetricId": "MemoryUsagePctReading" },
+          { "MetricId": "RPMReading" },
+          { "MetricId": "SystemUsagePctReading" },
+          { "MetricId": "TemperatureReading" },
+          { "MetricId": "VoltageReading" },
+          { "MetricId": "WattsReading" }
+        ]
       }
   - name: AddMetricReportDefinition
+    # TODO: limit via FQDD to disks
     data: |
       {
         "Name": "StorageDiskSMARTData", "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [{"MetricID": "%", "PropertyPattern": "LEGACY:StorageDiskSMARTData"}]
+        "Metrics": [
+          { "MetricId": "CRCErrorCount" },
+          { "MetricId": "CommandTimeout" },
+          { "MetricId": "CurrentPendingSectorCount" },
+          { "MetricId": "DriveTemperature" },
+          { "MetricId": "ECCERate" },
+          { "MetricId": "EraseFailCount" },
+          { "MetricId": "ExceptionModeStatus" },
+          { "MetricId": "MediaWriteCount" },
+          { "MetricId": "PercentDriveLifeRemaining" },
+          { "MetricId": "PowerCycleCount" },
+          { "MetricId": "PowerOnHours" },
+          { "MetricId": "ProgramFailCount" },
+          { "MetricId": "ReadErrorRate" },
+          { "MetricId": "ReallocatedBlockCount" },
+          { "MetricId": "UncorrectableErrorCount" },
+          { "MetricId": "UncorrectableLBACount" },
+          { "MetricId": "UnusedReservedBlockCount" },
+          { "MetricId": "UsedReservedBlockCount" },
+          { "MetricId": "VolatileMemoryBackupSourceFailures" }
+        ]
       }
   - name: AddMetricReportDefinition
+    # TODO: limit to storage via FQDD
     data: |
       {
         "Name": "StorageSensor",        "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [{"MetricID": "%", "PropertyPattern": "LEGACY:StorageSensor"}]
+        "Metrics": [
+          { "MetricId": "TemperatureReading" }
+        ]
       }
   - name: AddMetricReportDefinition
     data: |
       {
         "Name": "ThermalMetrics",       "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [{"MetricID": "%", "PropertyPattern": "LEGACY:ThermalMetrics"}]
+        "Metrics": [
+          { "MetricId": "ComputePower" },
+          { "MetricId": "ITUE" },
+          { "MetricId": "PSUEfficiency" },
+          { "MetricId": "PowerToCoolRatio" },
+          { "MetricId": "SysAirFlowEfficiency" },
+          { "MetricId": "SysAirflowPerFanPower" },
+          { "MetricId": "SysAirflowPerSysInputPower" },
+          { "MetricId": "SysAirflowUtilization" },
+          { "MetricId": "SysNetAirflow" },
+          { "MetricId": "SysRackTempDelta" },
+          { "MetricId": "TotalPSUHeatDissipation" }
+        ]
       }
   - name: AddMetricReportDefinition
     data: |
       {
         "Name": "ThermalSensor",        "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [{"MetricID": "%", "PropertyPattern": "LEGACY:ThermalSensor"}]
+        "Metrics": [
+          { "MetricId": "TemperatureReading" }
+        ]
       }
 
 
@@ -189,6 +336,47 @@ Startup-Events:
       {
         "Name": "FanSensor",            "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
         "Metrics": [{"MetricID": "RPMReading"}]
+      }
+  - name: AddMetricReportDefinition
+    data: |
+      {
+        "Name": "GPUMetrics",           "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
+        "Metrics": [
+              { "MetricId": "BoardPowerSupplyStatus" },
+              { "MetricId": "BoardTemperature" },
+              { "MetricId": "GPUHealth" },
+              { "MetricId": "GPUStatus" },
+              { "MetricId": "MemoryTemperature" },
+              { "MetricId": "PowerBrakeState" },
+              { "MetricId": "PowerConsumption" },
+              { "MetricId": "PowerSupplyStatus" },
+              { "MetricId": "PrimaryTemperature" },
+              { "MetricId": "SecondaryTemperature" },
+              { "MetricId": "ThermalAlertState" }
+        ]
+      }
+  - name: AddMetricReportDefinition
+    data: |
+      {
+        "Name": "GPUStatistics",        "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
+        "Metrics": [
+              { "MetricId": "CumulativeDBECounterFB" },
+              { "MetricId": "CumulativeDBECounterGR" },
+              { "MetricId": "CumulativeSBECounterFB" },
+              { "MetricId": "CumulativeSBECounterGR" },
+              { "MetricId": "DBECounterFB" },
+              { "MetricId": "DBECounterFBL2Cache" },
+              { "MetricId": "DBECounterGRL1Cache" },
+              { "MetricId": "DBECounterGRRF" },
+              { "MetricId": "DBECounterGRTex" },
+              { "MetricId": "DBERetiredPages" },
+              { "MetricId": "SBECounterFB" },
+              { "MetricId": "SBECounterFBL2Cache" },
+              { "MetricId": "SBECounterGRL1Cache" },
+              { "MetricId": "SBECounterGRRF" },
+              { "MetricId": "SBECounterGRTex" },
+              { "MetricId": "SBERetiredPages" }
+        ]
       }
 
   ###########################################################################3

@@ -10,17 +10,5 @@
 { "name": "UpdateMetricReportDefinitionEvent", "data": { "Name": "UBER-REPORT-PERIODIC-wrap", "Enabled": true, "Type": "Periodic",  "Period": 60, "Updates": "AppendStopsWhenFull",  "SuppressDups": false , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"], "Metrics": [ {"MetricID":"%"}] } }
 { "name": "UpdateMetricReportDefinitionEvent", "data": { "Name": "UBER-REPORT-PERIODIC-stop", "Enabled": true, "Type": "Periodic",  "Period": 60, "Updates": "AppendWrapsWhenFull",  "SuppressDups": false , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"], "Metrics": [ {"MetricID":"%"}] } }
 
-//
-// Do a single import of legacy data
-// { "name": "LegacyDatabaseEvent", "data": "import_all"}
-
-//
-// start timer to periodically import
-// { "name": "LegacyDatabaseEvent", "data": "start_timed_import"}
-
-//
-// Import UDB data
-// { "name": "UDBDatabaseEvent", "data": "import:Sensor"}
-
 // synchonize and wait until everything finishes
 { "name": "startup", "Synchronous": true, "Barrier": true, "data": {} }
