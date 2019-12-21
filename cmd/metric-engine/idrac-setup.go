@@ -61,6 +61,7 @@ func setup(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, d *BusCo
 			logger.Crit("SKIPPING: Config file section missing event name- 'name' key missing.", "Section", section, "index", i, "malformed-value", v)
 			continue
 		}
+		eventType := eh.EventType(name + "Event")
 
 		dataString, ok := settings["data"].(string)
 		if !ok {
@@ -68,8 +69,7 @@ func setup(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, d *BusCo
 			continue
 		}
 
-		fmt.Printf("\tStartup Event: %s\n", name)
-		eventData, err := eh.CreateEventData(eh.EventType(name + "Event"))
+		eventData, err := eh.CreateEventData(eventType)
 		if err != nil {
 			logger.Crit("SKIPPING: couldnt instantiate event", "Section", section, "index", i, "malformed-value", v, "event", name, "err", err)
 			continue
@@ -81,7 +81,8 @@ func setup(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, d *BusCo
 			continue
 		}
 
-		evt := event.NewSyncEvent(eh.EventType(name), eventData, time.Now())
+		fmt.Printf("\tStartup Event: %s\n", name)
+		evt := event.NewSyncEvent(eventType, eventData, time.Now())
 		evt.Add(1)
 		d.GetBus().PublishEvent(context.Background(), evt)
 		evt.Wait()
