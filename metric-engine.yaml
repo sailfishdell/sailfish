@@ -1,7 +1,6 @@
 main:
     server_name: idrac
-    databasepath: file:mr.db?_foreign_keys=on&cache=shared&mode=rwc
-    legacydatabasepath: file:telemetry_timeseries_database.db?_foreign_keys=on&cache=shared&mode=rw
+    databasepath: file:telemetry_timeseries_database.db?_foreign_keys=on&cache=shared&mode=rwc
     udbdatabasepath: file:DMLiveObjectDatabase.db?cache=shared&_foreign_keys=off&mode=ro
     shmdatabasepath: file:SHM.db?cache=shared&_foreign_keys=off&mode=ro
     udbnotifypipe: udbtdbipcpipe
@@ -24,9 +23,118 @@ listen:
 ##
 ##############################################
 
+Startup-Events:
+  ###########################################################################3
+  ## TODO Legacy reports
+  ###########################################################################3
+  - name: AddMetricReportDefinition
+    data: |
+      { "Name": "AggregationMetrics",   "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"], "Metrics": [{"MetricID": "%", "PropertyPattern": "LEGACY:AggregationMetrics"}]}
+  - name: AddMetricReportDefinition
+    data: |
+      { "Name": "CPUMemMetrics",        "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"], "Metrics": [{"MetricID": "%", "PropertyPattern": "LEGACY:CPUMemMetrics"}]}
+  - name: AddMetricReportDefinition
+    data: |
+      { "Name": "CPURegisters",         "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"], "Metrics": [{"MetricID": "%", "PropertyPattern": "LEGACY:CPURegisters"}]}
+  - name: AddMetricReportDefinition
+    data: |
+      { "Name": "CPUSensor",            "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"], "Metrics": [{"MetricID": "%", "PropertyPattern": "LEGACY:CPUSensor"}]}
+  - name: AddMetricReportDefinition
+    data: |
+      { "Name": "FCSensor",             "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"], "Metrics": [{"MetricID": "%", "PropertyPattern": "LEGACY:FCSensor"}]}
+  - name: AddMetricReportDefinition
+    data: |
+      { "Name": "FPGASensor",           "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"], "Metrics": [{"MetricID": "%", "PropertyPattern": "LEGACY:FPGASensor"}]}
+  - name: AddMetricReportDefinition
+    data: |
+      { "Name": "FanSensor",            "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"], "Metrics": [{"MetricID": "%", "PropertyPattern": "LEGACY:FanSensor"}]}
+  - name: AddMetricReportDefinition
+    data: |
+      { "Name": "GPUMetrics",           "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"], "Metrics": [{"MetricID": "%", "PropertyPattern": "LEGACY:GPUMetrics"}]}
+  - name: AddMetricReportDefinition
+    data: |
+      { "Name": "GPUStatistics",        "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"], "Metrics": [{"MetricID": "%", "PropertyPattern": "LEGACY:GPUStatistics"}]}
+  - name: AddMetricReportDefinition
+    data: |
+      { "Name": "MemorySensor",         "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"], "Metrics": [{"MetricID": "%", "PropertyPattern": "LEGACY:MemorySensor"}]}
+  - name: AddMetricReportDefinition
+    data: |
+      { "Name": "NICSensor",            "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"], "Metrics": [{"MetricID": "%", "PropertyPattern": "LEGACY:NICSensor"}]}
+  - name: AddMetricReportDefinition
+    data: |
+      { "Name": "NICStatistics",        "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"], "Metrics": [{"MetricID": "%", "PropertyPattern": "LEGACY:NICStatistics"}]}
+  - name: AddMetricReportDefinition
+    data: |
+      { "Name": "NVMeSMARTData",        "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"], "Metrics": [{"MetricID": "%", "PropertyPattern": "LEGACY:NVMeSMARTData"}]}
+  - name: AddMetricReportDefinition
+    data: |
+      { "Name": "PSUMetrics",           "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"], "Metrics": [{"MetricID": "%", "PropertyPattern": "LEGACY:PSUMetrics"}]}
+  - name: AddMetricReportDefinition
+    data: |
+      { "Name": "PowerMetrics",         "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"], "Metrics": [{"MetricID": "%", "PropertyPattern": "LEGACY:PowerMetrics"}]}
+  - name: AddMetricReportDefinition
+    data: |
+      { "Name": "PowerStatistics",      "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"], "Metrics": [{"MetricID": "%", "PropertyPattern": "LEGACY:PowerStatistics"}]}
+  - name: AddMetricReportDefinition
+    data: |
+      { "Name": "Sensor",               "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"], "Metrics": [{"MetricID": "%", "PropertyPattern": "LEGACY:Sensor"}]}
+  - name: AddMetricReportDefinition
+    data: |
+      { "Name": "StorageDiskSMARTData", "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"], "Metrics": [{"MetricID": "%", "PropertyPattern": "LEGACY:StorageDiskSMARTData"}]}
+  - name: AddMetricReportDefinition
+    data: |
+      { "Name": "StorageSensor",        "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"], "Metrics": [{"MetricID": "%", "PropertyPattern": "LEGACY:StorageSensor"}]}
+  - name: AddMetricReportDefinition
+    data: |
+      { "Name": "ThermalMetrics",       "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"], "Metrics": [{"MetricID": "%", "PropertyPattern": "LEGACY:ThermalMetrics"}]}
+  - name: AddMetricReportDefinition
+    data: |
+      { "Name": "ThermalSensor",        "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"], "Metrics": [{"MetricID": "%", "PropertyPattern": "LEGACY:ThermalSensor"}]}
+
+
+  ###########################################################################3
+  ## COMPLETE AND WORKING Legacy reports
+  ###########################################################################3
+  - name: AddMetricReportDefinition
+    data: |
+      {
+        "Name": "CUPS",
+        "Enabled": true,
+        "Type": "Periodic",
+        "Period": 60,
+        "Updates": "Overwrite",
+        "SuppressDups": true ,
+        "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
+        "Metrics": [
+          {"MetricID": "IOUsage"},
+          {"MetricID": "MemoryUsage"},
+          {"MetricID": "SystemUsage"},
+          {"MetricID": "CPUUsage"}
+        ]
+      }
+
+  ###########################################################################3
+  ## NEW reports
+  ###########################################################################3
+  - name: AddMetricReportDefinition
+    data: |
+      {
+        "Name": "Thermal",
+        "Enabled": true,
+        "Type": "Periodic",
+        "Period": 60,
+        "Updates": "NewReport",
+        "SuppressDups": true ,
+        "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
+        "Metrics": [
+          {"MetricID": "TemperatureReading"},
+          {"MetricID": "RPMReading"}
+         ]
+       }
+
 UDB-Metric-Import:
   CurrentCUPS:
-    # TODO: UNDERLYING TABLE NEEDS HWM. need feature to select by HWM
+    # TODO: UNDERLYING TABLE NEEDS HWM.
     Type: MetricColumns
     DBChange:
       SHM.db:
@@ -53,7 +161,7 @@ UDB-Metric-Import:
       FROM TblsCurrentCUPS
 
   PowerStatistics:
-    # TODO: UNDERLYING TABLE NEEDS HWM. need feature to select by HWM
+    # TODO: UNDERLYING TABLE NEEDS HWM.
     Type: MetricColumns
     DBChange:
       SHM.db:
@@ -90,7 +198,7 @@ UDB-Metric-Import:
       WHERE Timestamp > :HWM
 
   PowerMetrics:
-    # TODO: UNDERLYING TABLE NEEDS HWM. need feature to select by HWM
+    # TODO: UNDERLYING TABLE NEEDS HWM.
     Type: MetricColumns
     DBChange:
       SHM.db:
@@ -110,13 +218,17 @@ UDB-Metric-Import:
         TotalCPUPower as 'Metric-TotalCPUPower',
         SystemPwrConsumption as 'Metric-SystemPowerConsumption',
         SystemHeadRoomInstantaneous as 'Metric-SystemHeadRoomInstantaneous',
+
+        CurrentSystemOutputTimeStamp * 1000000000 as 'Timestamp-SystemOutputPower',
         CurrentSystemOutputPower as 'Metric-SystemOutputPower',
+
+        CurrentSystemInputPowerTimeStamp * 1000000000 as 'Timestamp-SystemInputPower',
         CurrentSystemInputPower as 'Metric-SystemInputPower'
       FROM TblsPowerMetrics
       WHERE Timestamp > :HWM
 
   ThermalMetrics:
-    # TODO: UNDERLYING TABLE NEEDS HWM. need feature to select by HWM
+    # TODO: UNDERLYING TABLE NEEDS HWM.
     Type: MetricColumns
     DBChange:
       SHM.db:
@@ -144,7 +256,7 @@ UDB-Metric-Import:
       WHERE Timestamp > :HWM
 
   CPUMem:
-    # TODO: UNDERLYING TABLE NEEDS HWM. need feature to select by HWM
+    # TODO: UNDERLYING TABLE NEEDS HWM.
     Type: MetricColumns
     DBChange:
       SHM.db:
@@ -170,7 +282,7 @@ UDB-Metric-Import:
       WHERE Timestamp > :HWM
 
   PSU-Sensor:
-    # TODO: UNDERLYING TABLE NEEDS HWM. need feature to select by HWM
+    # TODO: UNDERLYING TABLE NEEDS HWM.
     Type: MetricColumns
     DBChange:
       SHM.db:
@@ -189,7 +301,7 @@ UDB-Metric-Import:
       WHERE Timestamp > :HWM
 
   Storage-Sensor:
-    # TODO: UNDERLYING TABLE NEEDS HWM. need feature to select by HWM
+    # TODO: UNDERLYING TABLE NEEDS HWM.
     Type: MetricColumns
     DBChange:
       SHM.db:
@@ -207,7 +319,7 @@ UDB-Metric-Import:
       WHERE Timestamp > :HWM
 
   Memory-Sensor:
-    # TODO: UNDERLYING TABLE NEEDS HWM. need feature to select by HWM
+    # TODO: UNDERLYING TABLE NEEDS HWM.
     Type: MetricColumns
     DBChange:
       SHM.db:
@@ -225,7 +337,7 @@ UDB-Metric-Import:
       WHERE Timestamp > :HWM
 
   FPGA-Sensor:
-    # TODO: UNDERLYING TABLE NEEDS HWM. need feature to select by HWM
+    # TODO: UNDERLYING TABLE NEEDS HWM.
     Type: MetricColumns
     DBChange:
       SHM.db:
@@ -243,7 +355,7 @@ UDB-Metric-Import:
       WHERE Timestamp > :HWM
 
   Aggregation-Metrics:
-    # TODO: UNDERLYING TABLE NEEDS HWM. need feature to select by HWM
+    # TODO: UNDERLYING TABLE NEEDS HWM.
     Type: MetricColumns
     DBChange:
       SHM.db:
@@ -409,7 +521,7 @@ UDB-Metric-Import:
 
   NICPortStats:
     Type: MetricColumns
-    # TODO: UNDERLYING TABLE NEEDS HWM. need feature to select by HWM
+    # TODO: UNDERLYING TABLE NEEDS HWM.
     ScanInterval: 0
     WaitInterval: 5
     # CIMVIEW_DCIM_NICStatistics is a VIEW, so do dbchange on the underlying table
@@ -526,7 +638,7 @@ UDB-Metric-Import:
 
   Sensor:
     Type: DirectMetric
-    # TODO: UNDERLYING TABLE NEEDS HWM. need feature to select by HWM
+    # TODO: UNDERLYING TABLE NEEDS HWM.
     ScanInterval: 0
     WaitInterval: 5
     # CIMVIEW_DCIM_NumericSensor is a view, do db change notifications on underlying tables
@@ -558,7 +670,7 @@ UDB-Metric-Import:
       WHERE Timestamp > :HWM
 
   PSSensor:
-    # TODO: UNDERLYING TABLE NEEDS HWM. need feature to select by HWM
+    # TODO: UNDERLYING TABLE NEEDS HWM.
     Type: DirectMetric
     # CIMVIEW_DCIM_PSNumericSensor is view, do db change on underlying tables
     DBChange:
@@ -599,15 +711,18 @@ createdb:
   - |
       CREATE TABLE IF NOT EXISTS MetricReportDefinition
       (
-        ID    INTEGER PRIMARY KEY NOT NULL,
-        Name          TEXT UNIQUE NOT NULL, -- Name of the metric report defintion. This is what shows up in the collection
-        Enabled       BOOLEAN,
-        AppendLimit   INTEGER,
-        Type          TEXT,                 -- type of report: 'Periodic', 'OnChange', 'OnRequest'
-        SuppressDups  BOOLEAN,
-        Actions       TEXT,                 -- json array of options: 'LogToMetricReportsCollection', 'RedfishEvent'
-        Updates       TEXT,                 -- 'AppendStopsWhenFull', 'AppendWrapsWhenFull', 'NewReport', 'Overwrite'
-        Period        INTEGER
+        ID           INTEGER PRIMARY KEY NOT NULL,
+        Name         TEXT UNIQUE NOT NULL, -- Name of the metric report defintion. This is what shows up in the collection
+        ShortDesc    TEXT,
+        LongDesc     TEXT,
+        Enabled      BOOLEAN,
+        AppendLimit  INTEGER,
+        Type         TEXT,                 -- type of report: 'Periodic', 'OnChange', 'OnRequest'
+        SuppressDups BOOLEAN,
+        Actions      TEXT,                 -- json array of options: 'LogToMetricReportsCollection', 'RedfishEvent'
+        Updates      TEXT,                 -- 'AppendStopsWhenFull', 'AppendWrapsWhenFull', 'NewReport', 'Overwrite'
+        Period       INTEGER,
+        Hidden       INTEGER               -- Not displayed to the user, only for internal use
       )
 
   - |
@@ -616,13 +731,14 @@ createdb:
       -- multiple reports can link to the same MetricMeta (many to many relationship)
       CREATE TABLE IF NOT EXISTS MetricMeta
       (
-        ID                  INTEGER UNIQUE PRIMARY KEY NOT NULL,
-        Name                TEXT,
-        SuppressDups         BOOLEAN NOT NULL DEFAULT true,
-        PropertyPattern     TEXT,   -- /redfish/v1/some/uri/{with}/{wildcards}#Property
-        Wildcards            TEXT,   --{'wildcard': ['array','of', 'possible', 'replacements'], 'with': ['another', 'list', 'of', 'replacements']}
-        CollectionFunction   TEXT not null,   -- 'sum', 'avg', 'min', 'max'
-        CollectionDuration  INTEGER,
+        ID                 INTEGER UNIQUE PRIMARY KEY NOT NULL,
+        Name               TEXT,
+        SuppressDups       BOOLEAN NOT NULL DEFAULT true,
+        FQDDPattern        TEXT,   -- Dell OEM extension to sort based on FQDD patterns
+        PropertyPattern    TEXT,   -- /redfish/v1/some/uri/{with}/{wildcards}#Property
+        Wildcards          TEXT,   --{'wildcard': ['array','of', 'possible', 'replacements'], 'with': ['another', 'list', 'of', 'replacements']}
+        CollectionFunction TEXT not null,   -- 'sum', 'avg', 'min', 'max'
+        CollectionDuration INTEGER,
 
         -- indexes and constraints
         unique (Name, SuppressDups, PropertyPattern, Wildcards, CollectionFunction, CollectionDuration)
@@ -805,7 +921,7 @@ createdb:
         where MRD.Updates != "AppendWrapsWhenFull"
 
   - |
-      -- DOES NOT SCALE:  This uses a temp table to spool the metric values. memory usage scales with # of records output.\n
+      -- DOES NOT SCALE:  This uses a temp table to spool the metric values. memory usage scales with # of records output.
       DROP VIEW IF EXISTS MetricReport_Wraps_Redfish;
       CREATE VIEW MetricReport_Wraps_Redfish as
       select
@@ -846,6 +962,114 @@ createdb:
         select * from MetricReport_Wraps_Redfish
           UNION ALL
         select * from MetricReport_Stops_Redfish
+
+  - |
+      DROP VIEW IF EXISTS MetricReportCollection_JSON;
+      CREATE VIEW MetricReportCollection_JSON as
+        select
+          json_object(
+            '@odata.context', '/redfish/v1/$metadata#MetricReportCollection.MetricReportCollection',
+            '@odata.id', '/redfish/v1/TelemetryService/MetricReports',
+            '@odata.type', '#MetricReportCollection.MetricReportCollection',
+            'Name', 'MetricReports',
+            'Members',
+            (
+            select
+              json_group_array( json_object('@odata.id', [@odata.id]) )
+            from MetricReport_JSON
+            )
+          ) as root,
+          '/redfish/v1/TelemetryService/MetricReports' as [@odata.id]
+
+  - |
+      DROP VIEW IF EXISTS MetricReportDefinition_JSON;
+      CREATE VIEW MetricReportDefinition_JSON as
+        select
+          json_object(
+            '@odata.type', '#MetricReportDefinition.v1_2_0.MetricReportDefinition',
+            '@odata.context', '/redfish/v1/$metadata#MetricReportDefinition.MetricReportDefinition',
+            '@odata.id', '/redfish/v1/TelemetryService/MetricReportDefinitions/' || Name,
+            'Id', Name,
+            'Name', ifnull(ShortDesc, Name || ' Metric Report Definition'),
+            'Description',  LongDesc,
+            'MetricReportDefinitionType', Type,
+            'Schedule', json_object(
+              'RecurrenceInterval', 'PT' || (Period/(3600)) || 'H' || ((Period/60)%60) || 'M' || (Period%60) || 'S'
+            ),
+            'ReportUpdates', Updates,
+            'ReportActions', json(Actions),
+            'ReportActions@odata.count', json_array_length(json(Actions)),
+            'AppendLimit', 3000,
+
+            'MetricReport', json((
+                select
+                  json_object( '@odata.id', '/redfish/v1/TelemetryService/MetricReports/' || Name )
+                from MetricReport as MR
+                where MR.ReportDefinitionID = MetricReportDefinition.ID
+                order by MR.Sequence DESC
+                LIMIT 1
+                )),
+            -- TODO: not yet implemented
+            --'Wildcards', [],
+            --'Wildcards@odata.count', 0,
+            'Metrics', json((
+              select
+                json_group_array(
+                  json_object(
+                      'MetricID', MM.Name,
+                      'MetricProperties', MM.PropertyPattern,   -- TODO: this is wrong, as it should be an array
+                      'CollectionFunction', MM.CollectionFunction,
+                      'CollectionDuration', MM.CollectionDuration,
+                      'OEM', json_object(
+                        'Dell', json_object(
+                          'FQDD', ifnull(MM.FQDDPattern, '')
+                        )
+                      )
+                  )
+                )
+              from MetricMeta as MM
+              left join  ReportDefinitionToMetricMeta as rd2mm on rd2mm.MetricMetaID = MM.ID
+              where rd2mm.ReportDefinitionID = MetricReportDefinition.ID
+            )),
+            'Metrics@odata.count', (
+              select
+                count(*)
+              from MetricMeta as MM
+              left join  ReportDefinitionToMetricMeta as rd2mm on rd2mm.MetricMetaID = MM.ID
+              where rd2mm.ReportDefinitionID = MetricReportDefinition.ID
+            )
+          ) as root,
+          '/redfish/v1/TelemetryService/MetricReportDefinitions/' || Name as [@odata.id]
+        from MetricReportDefinition
+
+        -- SuppressDups  BOOLEAN,
+        -- Enabled       BOOLEAN,
+
+        -- ID    INTEGER PRIMARY KEY NOT NULL,
+        -- Name          TEXT UNIQUE NOT NULL, -- Name of the metric report defintion. This is what shows up in the collection
+        -- AppendLimit   INTEGER,
+        -- Type          TEXT,                 -- type of report: 'Periodic', 'OnChange', 'OnRequest'
+        -- Actions       TEXT,                 -- json array of options: 'LogToMetricReportsCollection', 'RedfishEvent'
+        -- Updates       TEXT,                 -- 'AppendStopsWhenFull', 'AppendWrapsWhenFull', 'NewReport', 'Overwrite'
+        -- Period        INTEGER
+
+  - |
+      DROP VIEW IF EXISTS MetricReportDefinitionCollection_JSON;
+      CREATE VIEW MetricReportDefinitionCollection_JSON as
+        select
+          json_object(
+            "@odata.context", "/redfish/v1/$metadata#MetricReportDefinitionCollection.MetricReportDefinitionCollection",
+            "@odata.id", "/redfish/v1/TelemetryService/MetricReportDefinitions",
+            "@odata.type", "#MetricReportDefinitionCollection.MetricReportDefinitionCollection",
+            "Name", "MetricReportDefinitions",
+            'Members', (
+              select
+                json_group_array( json_object('@odata.id', [@odata.id]) )
+              from MetricReportDefinition_JSON
+            )
+          ) as root,
+          '/redfish/v1/TelemetryService/MetricReportDefinitions' as [@odata.id]
+
 
   - |
         DROP VIEW IF EXISTS AggregationMetricsMRView_json ; create view AggregationMetricsMRView_json as select * from MetricReport_Redfish;
