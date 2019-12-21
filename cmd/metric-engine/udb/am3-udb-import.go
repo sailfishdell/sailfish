@@ -115,20 +115,20 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc EventHandlingServic
 	})
 
 	am3Svc.AddEventHandler("UDB Change Notification", UDBChangeEvent, func(event eh.Event) {
-		notify, ok := event.Data().(*changeNotify)
+		notify, ok := event.Data().(*ChangeNotify)
 		if !ok {
 			logger.Crit("UDB Change Notifier message handler got an invalid data event", "event", event, "eventdata", event.Data())
 			return
 		}
-		UDBFactory.DBChanged(strings.ToLower(notify.database), strings.ToLower(notify.table))
+		UDBFactory.DBChanged(strings.ToLower(notify.Database), strings.ToLower(notify.Table))
 	})
 }
 
-type changeNotify struct {
-	database  string
-	table     string
-	rowid     int64
-	operation int64
+type ChangeNotify struct {
+	Database  string
+	Table     string
+	Rowid     int64
+	Operation int64
 }
 
 func handleUDBNotifyPipe(logger log.Logger, cfg *viper.Viper, d BusComponents) {
@@ -162,7 +162,7 @@ func handleUDBNotifyPipe(logger log.Logger, cfg *viper.Viper, d BusComponents) {
 
 	defer nullWriter.Close()
 
-	n := &changeNotify{}
+	n := &ChangeNotify{}
 	split := func(data []byte, atEOF bool) (advance int, token []byte, err error) {
 		if atEOF {
 			return 0, nil, io.EOF
@@ -183,18 +183,18 @@ func handleUDBNotifyPipe(logger log.Logger, cfg *viper.Viper, d BusComponents) {
 		// of the data array
 		fields := bytes.Split(data[start+2:end+start+2], []byte("|"))
 		if len(fields) != 4 {
-			n.database = ""
-			n.table = ""
-			n.rowid = 0
-			n.operation = 0
+			n.Database = ""
+			n.Table = ""
+			n.Rowid = 0
+			n.Operation = 0
 			// skip over starting || plus any intervening data, leave the trailing || as potential start of next record
 			return start + end + 2, []byte("s"), nil
 		}
 
-		n.database = string(fields[0])
-		n.table = string(fields[1])
-		n.rowid, _ = strconv.ParseInt(string(fields[2]), 10, 64)
-		n.operation, _ = strconv.ParseInt(string(fields[3]), 10, 64)
+		n.Database = string(fields[0])
+		n.Table = string(fields[1])
+		n.Rowid, _ = strconv.ParseInt(string(fields[2]), 10, 64)
+		n.Operation, _ = strconv.ParseInt(string(fields[3]), 10, 64)
 
 		// consume the whole thing
 		return start + 2 + end + 2, []byte("t"), nil
@@ -210,7 +210,7 @@ func handleUDBNotifyPipe(logger log.Logger, cfg *viper.Viper, d BusComponents) {
 			d.GetBus().PublishEvent(context.Background(), evt)
 			evt.Wait()
 			// new struct for the next notify so we dont have data races while other goroutines process the struct above
-			n = &changeNotify{}
+			n = &ChangeNotify{}
 		}
 	}
 	return

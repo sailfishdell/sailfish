@@ -34,6 +34,7 @@ type MRDMetric struct {
 	Name               string        `db:"Name" json:"MetricID"`
 	CollectionDuration time.Duration `db:"CollectionDuration"`
 	CollectionFunction string        `db:"CollectionFunction"`
+	FQDDPattern        string        `db:"FQDDPattern"`
 	PropertyPattern    string        `db:"PropertyPattern"`
 	Wildcards          StringArray   `db:"Wildcards"`
 }
@@ -178,6 +179,7 @@ func (factory *MRDFactory) UpdateMRD(mrdEvData *MetricReportDefinitionData) (err
 			select ID from MetricMeta where
 				Name=:Name and
 				SuppressDups=:SuppressDups and
+				FQDDPattern=:FQDDPattern and
 				PropertyPattern=:PropertyPattern and
 				Wildcards=:Wildcards and
 				CollectionFunction=:CollectionFunction and
@@ -190,14 +192,13 @@ func (factory *MRDFactory) UpdateMRD(mrdEvData *MetricReportDefinitionData) (err
 		err = statement.Get(&metaID, tempMetric)
 		if err != nil {
 			if !xerrors.Is(err, sql.ErrNoRows) {
-				//factory.logger.Crit("Error getting MetricMeta ID", "err", err, "metric", tempMetric)
 				return
 			}
 			// Insert new MetricMeta if it doesn't already exist per above
 			res, err = tx.NamedExec(
 				`INSERT INTO MetricMeta
-			( Name, SuppressDups, PropertyPattern, Wildcards, CollectionFunction, CollectionDuration)
-			VALUES (:Name, :SuppressDups, :PropertyPattern,  :Wildcards, :CollectionFunction, :CollectionDuration)
+			          ( Name,  SuppressDups,  FQDDPattern,  PropertyPattern,  Wildcards,  CollectionFunction,  CollectionDuration)
+			   VALUES (:Name, :SuppressDups, :FQDDPattern, :PropertyPattern, :Wildcards, :CollectionFunction, :CollectionDuration)
 			`, tempMetric)
 			if err != nil {
 				return xerrors.Errorf("Error inserting MetricMeta(%s) for MRD(%s): %w", tempMetric, MRD, err)
@@ -484,6 +485,7 @@ type MetricMeta struct {
 	// Meta fields
 	Label              string        `db:"Label"`
 	MetaID             int64         `db:"MetaID"`
+	FQDDPattern        string        `db:"FQDDPattern"`
 	PropertyPattern    string        `db:"PropertyPattern"`
 	Wildcards          string        `db:"Wildcards"`
 	CollectionFunction string        `db:"CollectionFunction"`
@@ -542,7 +544,15 @@ func (factory *MRDFactory) InsertMetricValue(ev *MetricValueEventData) (err erro
 	// This should be straightforward because we do all updates in one goroutine, so could add the cache as a factory member
 
 	// First, Find the MetricMeta
-	rows, err := tx.Queryx(`select ID as MetaID, PropertyPattern, Wildcards, CollectionFunction, CollectionDuration from MetricMeta where ? Like Name`, ev.Name)
+	rows, err := tx.NamedQuery(`
+			select
+				ID as MetaID, FQDDPattern, PropertyPattern, Wildcards, CollectionFunction, CollectionDuration
+			from MetricMeta
+			where
+				(:Name Like Name or Name is NULL or Name = '') and
+				(:FQDD like FQDDPattern or FQDDPattern is NULL or FQDDPattern = '') and
+				(:Property like PropertyPattern or PropertyPattern is NULL or PropertyPattern = '')
+				`, ev)
 	if err != nil {
 		factory.logger.Crit("Error querying for MetricMeta", "err", err)
 		return
@@ -556,10 +566,8 @@ func (factory *MRDFactory) InsertMetricValue(ev *MetricValueEventData) (err erro
 			continue
 		}
 
-		if len(mm.PropertyPattern) > 0 && mm.PropertyPattern != ev.Property {
-			// TODO: IMPLEMENT WILDCARD CHECKS
-			continue
-		}
+		// TODO: Implement more specific wildcard matching
+		// TODO: Need to look up friendly fqdd (FOR LABEL)
 
 		// Construct label and Scratch space
 		if mm.CollectionFunction != "" {
@@ -576,9 +584,9 @@ func (factory *MRDFactory) InsertMetricValue(ev *MetricValueEventData) (err erro
 		// create instances for each metric meta corresponding to this metric value
 		_, err = tx.NamedExec(`
 			INSERT INTO MetricInstance
-				(MetaID, Name, Property, Context, Label, CollectionScratch, LastValue, LastTS, FlushTime)
-				VALUES (:MetaID, :Name, :Property, :Context, :Label, :CollectionScratch, '', 0, :FlushTime)
-				on conflict(MetaID, Name, Property, Context, Label) do nothing
+				       ( MetaID,  Name,  FQDD,  Property,  Context,  Function,  Label,  CollectionScratch, LastValue, LastTS,  FlushTime)
+				VALUES (:MetaID, :Name, :FQDD, :Property, :Context, :CollectionFunction, :Label, :CollectionScratch, '',        0,      :FlushTime)
+				on conflict(MetaID, Name, FQDD, Property, Context, Function) do nothing
 			`, mm)
 		if err != nil {
 			return xerrors.Errorf("Error inserting MetricInstance(%s): %w", mm, err)
@@ -601,7 +609,8 @@ func (factory *MRDFactory) InsertMetricValue(ev *MetricValueEventData) (err erro
 		from MetricInstance as MI
 			inner join MetricMeta as MM on MI.MetaID = MM.ID
 		where
-		  :Name like MM.Name and
+			MM.Name=:Name and
+			MI.FQDD=:FQDD and
 			MI.Property=:Property and
 			MI.Context=:Context
 		`, mm)
@@ -617,15 +626,15 @@ func (factory *MRDFactory) InsertMetricValue(ev *MetricValueEventData) (err erro
 		mm := &MetricMeta{MetricValueEventData: ev}
 		err = rows.StructScan(mm)
 		if err != nil {
-			//factory.logger.Crit("ERROR loading data from database into MetricMeta struct", "err", err, "MetricMeta", mm)
+			factory.logger.Crit("Error querying for MetricInstance", "err", err)
 			continue
 		}
 
-		if mm.CollectionFunction == "" {
-			mm.ValueToWrite = mm.Value
-		} else {
+		floatVal, floatErr := strconv.ParseFloat(mm.Value, 64)
+		if floatErr != nil && mm.CollectionFunction != "" {
 			saveValue = false
 			saveInstance = true
+
 			// has the period expired?
 			if mm.Timestamp.After(mm.FlushTime.Time) {
 				// Calculate what we should be dropping in the output
@@ -633,15 +642,15 @@ func (factory *MRDFactory) InsertMetricValue(ev *MetricValueEventData) (err erro
 				factory.logger.Info("Collection period done Metric Instance", "Instance ID", mm.InstanceID, "CollectionFunction", mm.CollectionFunction)
 				switch mm.CollectionFunction {
 				case "Average":
-					mm.ValueToWrite = strconv.FormatFloat(mm.CollectionScratch.Sum/float64(mm.CollectionScratch.Numvalues), 'G', -1, 64)
+					mm.Value = strconv.FormatFloat(mm.CollectionScratch.Sum/float64(mm.CollectionScratch.Numvalues), 'G', -1, 64)
 				case "Maximum":
-					mm.ValueToWrite = strconv.FormatFloat(mm.CollectionScratch.Maximum, 'G', -1, 64)
+					mm.Value = strconv.FormatFloat(mm.CollectionScratch.Maximum, 'G', -1, 64)
 				case "Minimum":
-					mm.ValueToWrite = strconv.FormatFloat(mm.CollectionScratch.Minimum, 'G', -1, 64)
+					mm.Value = strconv.FormatFloat(mm.CollectionScratch.Minimum, 'G', -1, 64)
 				case "Summation":
-					mm.ValueToWrite = strconv.FormatFloat(mm.CollectionScratch.Sum, 'G', -1, 64)
+					mm.Value = strconv.FormatFloat(mm.CollectionScratch.Sum, 'G', -1, 64)
 				default:
-					mm.ValueToWrite = "Invalid or Unsupported CollectionFunction"
+					mm.Value = "Invalid or Unsupported CollectionFunction"
 				}
 
 				// now, reset everything
@@ -653,19 +662,14 @@ func (factory *MRDFactory) InsertMetricValue(ev *MetricValueEventData) (err erro
 				mm.CollectionScratch.Minimum = math.MaxFloat64
 			}
 
-			val, err := strconv.ParseFloat(mm.Value, 64)
-			if err != nil {
-				//factory.logger.Warn("Collection failed on metric because Value couldn't be converted to float. Discarding this metric value from the result.",
-				//	"Instance ID", mm.InstanceID, "CollectionFunction", mm.CollectionFunction, "Name", mm.Name, "Value", mm.Value, "err", err)
-				continue
-			}
+			// floatVal was saved, above.
 			mm.CollectionScratch.Numvalues++
-			mm.CollectionScratch.Sum += val
-			mm.CollectionScratch.Maximum = math.Max(val, mm.CollectionScratch.Maximum)
-			mm.CollectionScratch.Minimum = math.Min(val, mm.CollectionScratch.Minimum)
+			mm.CollectionScratch.Sum += floatVal
+			mm.CollectionScratch.Maximum = math.Max(floatVal, mm.CollectionScratch.Maximum)
+			mm.CollectionScratch.Minimum = math.Min(floatVal, mm.CollectionScratch.Minimum)
 		}
 
-		if mm.SuppressDups && mm.LastValue == mm.ValueToWrite {
+		if mm.SuppressDups && mm.LastValue == mm.Value {
 			// No need to flush out new value, however instance may or may not need
 			// flushing depending on above.
 			saveValue = false
@@ -673,7 +677,7 @@ func (factory *MRDFactory) InsertMetricValue(ev *MetricValueEventData) (err erro
 
 		if saveValue {
 			if mm.SuppressDups {
-				mm.LastValue = mm.ValueToWrite
+				mm.LastValue = mm.Value
 				mm.LastTS = mm.Timestamp
 				saveInstance = true
 			}
@@ -689,8 +693,8 @@ func (factory *MRDFactory) InsertMetricValue(ev *MetricValueEventData) (err erro
 					break
 				}
 
-				floatVal, err := strconv.ParseFloat(mm.Value, 64)
-				if err == nil {
+				// re-use already parsed floatVal above
+				if floatErr == nil {
 					tableName = "MetricValueReal"
 					args = append(args, floatVal)
 					break

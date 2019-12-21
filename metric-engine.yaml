@@ -24,191 +24,162 @@ listen:
 ##############################################
 
 Startup-Events:
+  # PowerStatistics, PowerMetrics, 0x17||Fan.Embedded.6, NIC.Integrated.1-2-1
+
   ###########################################################################3
   ## TODO Legacy reports
   ###########################################################################3
   - name: AddMetricReportDefinition
     data: |
       {
-        "Name": "CPURegisters",         "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
+        "Name": "CPURegisters",         "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false, "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
         "Metrics": []
       }
   - name: AddMetricReportDefinition
-    # TODO: Need to limit this to CPU via FQDD
     data: |
       {
-        "Name": "CPUSensor",            "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [{"MetricID": "TemperatureReading"}]
+        "Name": "CPUSensor",            "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false, "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
+        "Metrics": [{"MetricID": "TemperatureReading", "FQDDPattern": "iDRAC.Embedded.1#CPU%Temp"}]
       }
   - name: AddMetricReportDefinition
     # TODO: Need to limit this to FC via FQDD
     data: |
       {
-        "Name": "FCSensor",             "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [{"MetricID": "TemperatureReading"}]
+        "Name": "FCSensor",             "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false, "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
+        "Metrics": [{"MetricID": "TemperatureReading", "FQDDPattern": "%"}]
       }
   - name: AddMetricReportDefinition
     # TODO: Need to limit this to FPGA via FQDD
     data: |
       {
-        "Name": "FPGASensor",           "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [{"MetricID": "TemperatureReading"}]
+        "Name": "FPGASensor",           "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false, "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
+        "Metrics": [{"MetricID": "TemperatureReading", "FQDDPattern": "%"}]
       }
   - name: AddMetricReportDefinition
-    # TODO: need to limit this to memory via FQDD
     data: |
       {
-        "Name": "MemorySensor",         "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [{"MetricID": "TemperatureReading"}]
+        "Name": "MemorySensor",         "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false, "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
+        "Metrics": [{"MetricID": "TemperatureReading", "FQDDPattern": "DIMM.Socket.%"}]
       }
   - name: AddMetricReportDefinition
-    # TODO: need to limit this to memory via FQDD
     data: |
       {
-        "Name": "NICSensor",            "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [{"MetricID": "TemperatureReading"}]
+        "Name": "NICSensor",            "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false, "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
+        "Metrics": [{"MetricID": "TemperatureReading", "FQDDPattern": "NIC.%"}]
       }
   - name: AddMetricReportDefinition
-    # TODO: need to limit this to NIC via FQDD
     data: |
       {
-        "Name": "NICStatistics",        "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
+        "Name": "NICStatistics",        "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false, "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
         "Metrics": [
-              { "MetricId": "DiscardedPkts" },
-              { "MetricId": "FCCRCErrorCount" },
-              { "MetricId": "FCOELinkFailures" },
-              { "MetricId": "FCOEPktRxCount" },
-              { "MetricId": "FCOEPktTxCount" },
-              { "MetricId": "FCOERxPktDroppedCount" },
-              { "MetricId": "LanFCSRxErrors" },
-              { "MetricId": "LanUnicastPktRxCount" },
-              { "MetricId": "LanUnicastPktTxCount" },
-              { "MetricId": "LinkStatus" },
-              { "MetricId": "OSDriverState" },
-              { "MetricId": "PartitionLinkStatus" },
-              { "MetricId": "PartitionOSDriverState" },
-              { "MetricId": "RDMARxTotalBytes" },
-              { "MetricId": "RDMARxTotalPackets" },
-              { "MetricId": "RDMATotalProtectionErrors" },
-              { "MetricId": "RDMATotalProtocolErrors" },
-              { "MetricId": "RDMATxTotalBytes" },
-              { "MetricId": "RDMATxTotalPackets" },
-              { "MetricId": "RDMATxTotalReadReqPkts" },
-              { "MetricId": "RDMATxTotalSendPkts" },
-              { "MetricId": "RDMATxTotalWritePkts" },
-              { "MetricId": "RxBroadcast" },
-              { "MetricId": "RxBytes" },
-              { "MetricId": "RxErrorPktAlignmentErrors" },
-              { "MetricId": "RxErrorPktFCSErrors" },
-              { "MetricId": "RxFalseCarrierDetection" },
-              { "MetricId": "RxJabberPkt" },
-              { "MetricId": "RxMutlicast" },
-              { "MetricId": "RxPauseXOFFFrames" },
-              { "MetricId": "RxPauseXONFrames" },
-              { "MetricId": "RxRuntPkt" },
-              { "MetricId": "RxUnicast" },
-              { "MetricId": "TxBroadcast" },
-              { "MetricId": "TxBytes" },
-              { "MetricId": "TxErrorPktExcessiveCollision" },
-              { "MetricId": "TxErrorPktLateCollision" },
-              { "MetricId": "TxErrorPktMultipleCollision" },
-              { "MetricId": "TxErrorPktSingleCollision" },
-              { "MetricId": "TxMutlicast" },
-              { "MetricId": "TxPauseXOFFFrames" },
-              { "MetricId": "TxPauseXONFrames" },
-              { "MetricId": "TxUnicast" }
-        ]
-      }
-  - name: AddMetricReportDefinition
-    # TODO: need to limit this to NVME via FQDD
-    data: |
-      {
-        "Name": "NVMeSMARTData",        "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [
-          { "MetricId": "AvailableSpare" },
-          { "MetricId": "AvailableSpareThreshold" },
-          { "MetricId": "CompositeTemparature" },
-          { "MetricId": "ControllerBusyTimeLower" },
-          { "MetricId": "ControllerBusyTimeUpper" },
-          { "MetricId": "CriticalWarning" },
-          { "MetricId": "DataUnitsReadLower" },
-          { "MetricId": "DataUnitsReadUpper" },
-          { "MetricId": "DataUnitsWrittenLower" },
-          { "MetricId": "DataUnitsWrittenUpper" },
-          { "MetricId": "HostReadCommandsLower" },
-          { "MetricId": "HostReadCommandsUpper" },
-          { "MetricId": "HostWriteCommandsLower" },
-          { "MetricId": "HostWriteCommandsUpper" },
-          { "MetricId": "MediaDataIntegrityErrorsLower" },
-          { "MetricId": "MediaDataIntegrityErrorsUpper" },
-          { "MetricId": "NumOfErrorInfoLogEntriesLower" },
-          { "MetricId": "NumOfErrorInfoLogEntriesUpper" },
-          { "MetricId": "PercentageUsed" },
-          { "MetricId": "PowerCyclesLower" },
-          { "MetricId": "PowerCyclesUpper" },
-          { "MetricId": "PowerOnHoursLower" },
-          { "MetricId": "PowerOnHoursUpper" },
-          { "MetricId": "UnsafeShutdownsLower" },
-          { "MetricId": "UnsafeShutdownsUpper" }
-        ]
-      }
-  - name: AddMetricReportDefinition
-    # TODO: limit to PSU via FQDD
-    data: |
-      {
-        "Name": "PSUMetrics",           "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [
-          { "MetricId": "FanSpeed" },
-          { "MetricId": "Temperature" }
+          { "MetricId": "DiscardedPkts", "FQDDPattern": "NIC.%"},
+          { "MetricId": "FCCRCErrorCount", "FQDDPattern": "NIC.%"},
+          { "MetricId": "FCOELinkFailures", "FQDDPattern": "NIC.%"},
+          { "MetricId": "FCOEPktRxCount", "FQDDPattern": "NIC.%"},
+          { "MetricId": "FCOEPktTxCount", "FQDDPattern": "NIC.%"},
+          { "MetricId": "FCOERxPktDroppedCount", "FQDDPattern": "NIC.%"},
+          { "MetricId": "LanFCSRxErrors", "FQDDPattern": "NIC.%"},
+          { "MetricId": "LanUnicastPktRxCount", "FQDDPattern": "NIC.%"},
+          { "MetricId": "LanUnicastPktTxCount", "FQDDPattern": "NIC.%"},
+          { "MetricId": "LinkStatus", "FQDDPattern": "NIC.%"},
+          { "MetricId": "OSDriverState", "FQDDPattern": "NIC.%"},
+          { "MetricId": "PartitionLinkStatus", "FQDDPattern": "NIC.%"},
+          { "MetricId": "PartitionOSDriverState", "FQDDPattern": "NIC.%"},
+          { "MetricId": "RDMARxTotalBytes", "FQDDPattern": "NIC.%"},
+          { "MetricId": "RDMARxTotalPackets", "FQDDPattern": "NIC.%"},
+          { "MetricId": "RDMATotalProtectionErrors", "FQDDPattern": "NIC.%"},
+          { "MetricId": "RDMATotalProtocolErrors", "FQDDPattern": "NIC.%"},
+          { "MetricId": "RDMATxTotalBytes", "FQDDPattern": "NIC.%"},
+          { "MetricId": "RDMATxTotalPackets", "FQDDPattern": "NIC.%"},
+          { "MetricId": "RDMATxTotalReadReqPkts", "FQDDPattern": "NIC.%"},
+          { "MetricId": "RDMATxTotalSendPkts", "FQDDPattern": "NIC.%"},
+          { "MetricId": "RDMATxTotalWritePkts", "FQDDPattern": "NIC.%"},
+          { "MetricId": "RxBroadcast", "FQDDPattern": "NIC.%"},
+          { "MetricId": "RxBytes", "FQDDPattern": "NIC.%"},
+          { "MetricId": "RxErrorPktAlignmentErrors", "FQDDPattern": "NIC.%"},
+          { "MetricId": "RxErrorPktFCSErrors", "FQDDPattern": "NIC.%"},
+          { "MetricId": "RxFalseCarrierDetection", "FQDDPattern": "NIC.%"},
+          { "MetricId": "RxJabberPkt", "FQDDPattern": "NIC.%"},
+          { "MetricId": "RxMutlicast", "FQDDPattern": "NIC.%"},
+          { "MetricId": "RxPauseXOFFFrames", "FQDDPattern": "NIC.%"},
+          { "MetricId": "RxPauseXONFrames", "FQDDPattern": "NIC.%"},
+          { "MetricId": "RxRuntPkt", "FQDDPattern": "NIC.%"},
+          { "MetricId": "RxUnicast", "FQDDPattern": "NIC.%"},
+          { "MetricId": "TxBroadcast", "FQDDPattern": "NIC.%"},
+          { "MetricId": "TxBytes", "FQDDPattern": "NIC.%"},
+          { "MetricId": "TxErrorPktExcessiveCollision", "FQDDPattern": "NIC.%"},
+          { "MetricId": "TxErrorPktLateCollision", "FQDDPattern": "NIC.%"},
+          { "MetricId": "TxErrorPktMultipleCollision", "FQDDPattern": "NIC.%"},
+          { "MetricId": "TxErrorPktSingleCollision", "FQDDPattern": "NIC.%"},
+          { "MetricId": "TxMutlicast", "FQDDPattern": "NIC.%"},
+          { "MetricId": "TxPauseXOFFFrames", "FQDDPattern": "NIC.%"},
+          { "MetricId": "TxPauseXONFrames", "FQDDPattern": "NIC.%"},
+          { "MetricId": "TxUnicast", "FQDDPattern": "NIC.%"}
         ]
       }
   - name: AddMetricReportDefinition
     data: |
       {
-        "Name": "PowerMetrics",         "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
+        "Name": "NVMeSMARTData",        "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false, "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
         "Metrics": [
-          { "MetricId": "SystemHeadRoomInstantaneous" },
-          { "MetricId": "SystemInputPower" },
-          { "MetricId": "SystemOutputPower" },
-          { "MetricId": "SystemPowerConsumption" },
-          { "MetricId": "TotalCPUPower" },
-          { "MetricId": "TotalFanPower" },
-          { "MetricId": "TotalMemoryPower" },
-          { "MetricId": "TotalPciePower" },
-          { "MetricId": "TotalStoragePower" }
+          { "FQDDPattern": "SMARTData:%PCIeExtender%" },
+
+          { "MetricId": "AvailableSpare", "FQDDPattern": "SMARTData:%" },
+          { "MetricId": "AvailableSpareThreshold", "FQDDPattern": "SMARTData:%" },
+          { "MetricId": "CompositeTemparature", "FQDDPattern": "SMARTData:%" },
+          { "MetricId": "ControllerBusyTimeLower", "FQDDPattern": "SMARTData:%" },
+          { "MetricId": "ControllerBusyTimeUpper", "FQDDPattern": "SMARTData:%" },
+          { "MetricId": "CriticalWarning", "FQDDPattern": "SMARTData:%" },
+          { "MetricId": "DataUnitsReadLower", "FQDDPattern": "SMARTData:%" },
+          { "MetricId": "DataUnitsReadUpper", "FQDDPattern": "SMARTData:%" },
+          { "MetricId": "DataUnitsWrittenLower", "FQDDPattern": "SMARTData:%" },
+          { "MetricId": "DataUnitsWrittenUpper", "FQDDPattern": "SMARTData:%" },
+          { "MetricId": "HostReadCommandsLower", "FQDDPattern": "SMARTData:%" },
+          { "MetricId": "HostReadCommandsUpper", "FQDDPattern": "SMARTData:%" },
+          { "MetricId": "HostWriteCommandsLower", "FQDDPattern": "SMARTData:%" },
+          { "MetricId": "HostWriteCommandsUpper", "FQDDPattern": "SMARTData:%" },
+          { "MetricId": "MediaDataIntegrityErrorsLower", "FQDDPattern": "SMARTData:%" },
+          { "MetricId": "MediaDataIntegrityErrorsUpper", "FQDDPattern": "SMARTData:%" },
+          { "MetricId": "NumOfErrorInfoLogEntriesLower", "FQDDPattern": "SMARTData:%" },
+          { "MetricId": "NumOfErrorInfoLogEntriesUpper", "FQDDPattern": "SMARTData:%" },
+          { "MetricId": "PercentageUsed", "FQDDPattern": "SMARTData:%" },
+          { "MetricId": "PowerCyclesLower", "FQDDPattern": "SMARTData:%" },
+          { "MetricId": "PowerCyclesUpper", "FQDDPattern": "SMARTData:%" },
+          { "MetricId": "PowerOnHoursLower", "FQDDPattern": "SMARTData:%" },
+          { "MetricId": "PowerOnHoursUpper", "FQDDPattern": "SMARTData:%" },
+          { "MetricId": "UnsafeShutdownsLower", "FQDDPattern": "SMARTData:%" },
+          { "MetricId": "UnsafeShutdownsUpper", "FQDDPattern": "SMARTData:%" }
         ]
       }
   - name: AddMetricReportDefinition
     data: |
       {
-        "Name": "PowerStatistics",      "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
+        "Name": "PSUMetrics",           "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false, "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
         "Metrics": [
-          { "MetricId": "LastDayAvgPower" },
-          { "MetricId": "LastDayMaxPower" },
-          { "MetricId": "LastDayMaxPowerTime" },
-          { "MetricId": "LastDayMinPower" },
-          { "MetricId": "LastDayMinPowerTime" },
-          { "MetricId": "LastHourAvgPower" },
-          { "MetricId": "LastHourMaxPower" },
-          { "MetricId": "LastHourMaxPowerTime" },
-          { "MetricId": "LastHourMinPower" },
-          { "MetricId": "LastHourMinPowerTime" },
-          { "MetricId": "LastMinuteAvgPower" },
-          { "MetricId": "LastMinuteMaxPower" },
-          { "MetricId": "LastMinuteMaxPowerTime" },
-          { "MetricId": "LastMinuteMinPower" },
-          { "MetricId": "LastMinuteMinPowerTime" },
-          { "MetricId": "LastWeekAvgPower" },
-          { "MetricId": "LastWeekMaxPower" },
-          { "MetricId": "LastWeekMaxPowerTime" },
-          { "MetricId": "LastWeekMinPower" },
-          { "MetricId": "LastWeekMinPowerTime" }
+          { "MetricId": "FanSpeed", "FQDDPattern": "PSU.Slot.%" },
+          { "MetricId": "Temperature", "FQDDPattern": "PSU.Slot.%" }
         ]
       }
   - name: AddMetricReportDefinition
     data: |
       {
-        "Name": "Sensor",               "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
+        "Name": "PowerMetrics",         "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false, "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
+        "Metrics": [
+          { "FQDDPattern": "PowerMetrics" }
+        ]
+      }
+  - name: AddMetricReportDefinition
+    data: |
+      {
+        "Name": "PowerStatistics",      "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false, "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
+        "Metrics": [
+          { "FQDDPattern": "PowerStatistics" }
+        ]
+      }
+  - name: AddMetricReportDefinition
+    data: |
+      {
+        "Name": "Sensor",               "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false, "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
         "Metrics": [
           { "MetricId": "AmpsReading" },
           { "MetricId": "CPUUsagePctReading" },
@@ -222,125 +193,9 @@ Startup-Events:
         ]
       }
   - name: AddMetricReportDefinition
-    # TODO: limit via FQDD to disks
     data: |
       {
-        "Name": "StorageDiskSMARTData", "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [
-          { "MetricId": "CRCErrorCount" },
-          { "MetricId": "CommandTimeout" },
-          { "MetricId": "CurrentPendingSectorCount" },
-          { "MetricId": "DriveTemperature" },
-          { "MetricId": "ECCERate" },
-          { "MetricId": "EraseFailCount" },
-          { "MetricId": "ExceptionModeStatus" },
-          { "MetricId": "MediaWriteCount" },
-          { "MetricId": "PercentDriveLifeRemaining" },
-          { "MetricId": "PowerCycleCount" },
-          { "MetricId": "PowerOnHours" },
-          { "MetricId": "ProgramFailCount" },
-          { "MetricId": "ReadErrorRate" },
-          { "MetricId": "ReallocatedBlockCount" },
-          { "MetricId": "UncorrectableErrorCount" },
-          { "MetricId": "UncorrectableLBACount" },
-          { "MetricId": "UnusedReservedBlockCount" },
-          { "MetricId": "UsedReservedBlockCount" },
-          { "MetricId": "VolatileMemoryBackupSourceFailures" }
-        ]
-      }
-  - name: AddMetricReportDefinition
-    # TODO: limit to storage via FQDD
-    data: |
-      {
-        "Name": "StorageSensor",        "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [
-          { "MetricId": "TemperatureReading" }
-        ]
-      }
-  - name: AddMetricReportDefinition
-    data: |
-      {
-        "Name": "ThermalMetrics",       "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [
-          { "MetricId": "ComputePower" },
-          { "MetricId": "ITUE" },
-          { "MetricId": "PSUEfficiency" },
-          { "MetricId": "PowerToCoolRatio" },
-          { "MetricId": "SysAirFlowEfficiency" },
-          { "MetricId": "SysAirflowPerFanPower" },
-          { "MetricId": "SysAirflowPerSysInputPower" },
-          { "MetricId": "SysAirflowUtilization" },
-          { "MetricId": "SysNetAirflow" },
-          { "MetricId": "SysRackTempDelta" },
-          { "MetricId": "TotalPSUHeatDissipation" }
-        ]
-      }
-  - name: AddMetricReportDefinition
-    data: |
-      {
-        "Name": "ThermalSensor",        "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [
-          { "MetricId": "TemperatureReading" }
-        ]
-      }
-
-
-  ###########################################################################3
-  ## COMPLETE AND WORKING Legacy reports
-  ###########################################################################3
-  - name: AddMetricReportDefinition
-    data: |
-      {
-        "Name": "AggregationMetrics",   "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [
-          { "MetricId": "SystemAvgInletTempHour" },
-          { "MetricId": "SystemMaxInletTempHour" },
-          { "MetricId": "SystemMaxPowerConsumption" }
-         ]
-      }
-  - name: AddMetricReportDefinition
-    data: |
-      {
-        "Name": "CPUMemMetrics",        "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [
-          { "MetricId": "CPUC0ResidencyHigh" },
-          { "MetricId": "CPUC0ResidencyLow" },
-          { "MetricId": "CUPSIIOBandwidthDMI" },
-          { "MetricId": "CUPSIIOBandwidthPort0" },
-          { "MetricId": "CUPSIIOBandwidthPort1" },
-          { "MetricId": "CUPSIIOBandwidthPort2" },
-          { "MetricId": "CUPSIIOBandwidthPort3" },
-          { "MetricId": "NonC0ResidencyHigh" },
-          { "MetricId": "NonC0ResidencyLow" }
-         ]
-      }
-  - name: AddMetricReportDefinition
-    data: |
-      {
-        "Name": "CUPS",
-        "Enabled": true,
-        "Type": "Periodic",
-        "Period": 60,
-        "Updates": "Overwrite",
-        "SuppressDups": true ,
-        "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [
-          {"MetricID": "IOUsage"},
-          {"MetricID": "MemoryUsage"},
-          {"MetricID": "SystemUsage"},
-          {"MetricID": "CPUUsage"}
-        ]
-      }
-  - name: AddMetricReportDefinition
-    data: |
-      {
-        "Name": "FanSensor",            "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [{"MetricID": "RPMReading"}]
-      }
-  - name: AddMetricReportDefinition
-    data: |
-      {
-        "Name": "GPUMetrics",           "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
+        "Name": "GPUMetrics",           "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false, "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
         "Metrics": [
               { "MetricId": "BoardPowerSupplyStatus" },
               { "MetricId": "BoardTemperature" },
@@ -358,26 +213,139 @@ Startup-Events:
   - name: AddMetricReportDefinition
     data: |
       {
-        "Name": "GPUStatistics",        "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": true , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
+        "Name": "AggregationMetrics",   "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false, "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
         "Metrics": [
-              { "MetricId": "CumulativeDBECounterFB" },
-              { "MetricId": "CumulativeDBECounterGR" },
-              { "MetricId": "CumulativeSBECounterFB" },
-              { "MetricId": "CumulativeSBECounterGR" },
-              { "MetricId": "DBECounterFB" },
-              { "MetricId": "DBECounterFBL2Cache" },
-              { "MetricId": "DBECounterGRL1Cache" },
-              { "MetricId": "DBECounterGRRF" },
-              { "MetricId": "DBECounterGRTex" },
-              { "MetricId": "DBERetiredPages" },
-              { "MetricId": "SBECounterFB" },
-              { "MetricId": "SBECounterFBL2Cache" },
-              { "MetricId": "SBECounterGRL1Cache" },
-              { "MetricId": "SBECounterGRRF" },
-              { "MetricId": "SBECounterGRTex" },
-              { "MetricId": "SBERetiredPages" }
+          { "MetricId": "SystemAvgInletTempHour" },
+          { "MetricId": "SystemMaxInletTempHour" },
+          { "MetricId": "SystemMaxPowerConsumption" }
+         ]
+      }
+  - name: AddMetricReportDefinition
+    data: |
+      {
+        "Name": "CPUMemMetrics",        "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false, "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
+        "Metrics": [
+          { "MetricId": "CPUC0ResidencyHigh", "FQDDPattern": "CPU.Socket.%" },
+          { "MetricId": "CPUC0ResidencyLow", "FQDDPattern": "CPU.Socket.%" },
+          { "MetricId": "CUPSIIOBandwidthDMI", "FQDDPattern": "CPU.Socket.%" },
+          { "MetricId": "CUPSIIOBandwidthPort0", "FQDDPattern": "CPU.Socket.%" },
+          { "MetricId": "CUPSIIOBandwidthPort1", "FQDDPattern": "CPU.Socket.%" },
+          { "MetricId": "CUPSIIOBandwidthPort2", "FQDDPattern": "CPU.Socket.%" },
+          { "MetricId": "CUPSIIOBandwidthPort3", "FQDDPattern": "CPU.Socket.%" },
+          { "MetricId": "NonC0ResidencyHigh", "FQDDPattern": "CPU.Socket.%" },
+          { "MetricId": "NonC0ResidencyLow", "FQDDPattern": "CPU.Socket.%" }
+         ]
+      }
+  - name: AddMetricReportDefinition
+    data: |
+      {
+        "Name": "CUPS",
+        "Enabled": true,
+        "Type": "Periodic",
+        "Period": 60,
+        "Updates": "Overwrite",
+        "SuppressDups": false,
+        "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
+        "Metrics": [
+          {"FQDDPattern": "CUPS"},
+          {"MetricID": "IOUsage", "FQDDPattern": "CUPS"},
+          {"MetricID": "MemoryUsage", "FQDDPattern": "CUPS"},
+          {"MetricID": "SystemUsage", "FQDDPattern": "CUPS"},
+          {"MetricID": "CPUUsage", "FQDDPattern": "CUPS"}
         ]
       }
+  - name: AddMetricReportDefinition
+    data: |
+      {
+        "Name": "FanSensor",            "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false, "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
+        "Metrics": [{"MetricID": "RPMReading", "FQDDPattern": "Fan.%"}]
+      }
+  - name: AddMetricReportDefinition
+    data: |
+      {
+        "Name": "GPUStatistics",        "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false, "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
+        "Metrics": [
+          { "MetricId": "CumulativeDBECounterFB", "FQDDPattern": "Video.Slot.%" },
+          { "MetricId": "CumulativeDBECounterGR", "FQDDPattern": "Video.Slot.%" },
+          { "MetricId": "CumulativeSBECounterFB", "FQDDPattern": "Video.Slot.%" },
+          { "MetricId": "CumulativeSBECounterGR", "FQDDPattern": "Video.Slot.%" },
+          { "MetricId": "DBECounterFB", "FQDDPattern": "Video.Slot.%" },
+          { "MetricId": "DBECounterFBL2Cache", "FQDDPattern": "Video.Slot.%" },
+          { "MetricId": "DBECounterGRL1Cache", "FQDDPattern": "Video.Slot.%" },
+          { "MetricId": "DBECounterGRRF", "FQDDPattern": "Video.Slot.%" },
+          { "MetricId": "DBECounterGRTex", "FQDDPattern": "Video.Slot.%" },
+          { "MetricId": "DBERetiredPages", "FQDDPattern": "Video.Slot.%" },
+          { "MetricId": "SBECounterFB", "FQDDPattern": "Video.Slot.%" },
+          { "MetricId": "SBECounterFBL2Cache", "FQDDPattern": "Video.Slot.%" },
+          { "MetricId": "SBECounterGRL1Cache", "FQDDPattern": "Video.Slot.%" },
+          { "MetricId": "SBECounterGRRF", "FQDDPattern": "Video.Slot.%" },
+          { "MetricId": "SBECounterGRTex", "FQDDPattern": "Video.Slot.%" },
+          { "MetricId": "SBERetiredPages", "FQDDPattern": "Video.Slot.%" }
+        ]
+      }
+
+  - name: AddMetricReportDefinition
+    data: |
+      {
+        "Name": "ThermalSensor",        "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false, "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
+        "Metrics": [
+          { "MetricId": "TemperatureReading", "FQDDPattern": "iDRAC.Embedded.1#SystemBoardInletTemp" }
+        ]
+      }
+  - name: AddMetricReportDefinition
+    data: |
+      {
+        "Name": "StorageDiskSMARTData", "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false, "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
+        "Metrics": [
+          { "MetricId": "CRCErrorCount", "FQDDPattern": "SMARTData:%" },
+          { "MetricId": "CommandTimeout", "FQDDPattern": "SMARTData:%" },
+          { "MetricId": "CurrentPendingSectorCount", "FQDDPattern": "SMARTData:%" },
+          { "MetricId": "DriveTemperature", "FQDDPattern": "SMARTData:%" },
+          { "MetricId": "ECCERate", "FQDDPattern": "SMARTData:%" },
+          { "MetricId": "EraseFailCount", "FQDDPattern": "SMARTData:%" },
+          { "MetricId": "ExceptionModeStatus", "FQDDPattern": "SMARTData:%" },
+          { "MetricId": "MediaWriteCount", "FQDDPattern": "SMARTData:%" },
+          { "MetricId": "PercentDriveLifeRemaining", "FQDDPattern": "SMARTData:%" },
+          { "MetricId": "PowerCycleCount", "FQDDPattern": "SMARTData:%" },
+          { "MetricId": "PowerOnHours", "FQDDPattern": "SMARTData:%" },
+          { "MetricId": "ProgramFailCount", "FQDDPattern": "SMARTData:%" },
+          { "MetricId": "ReadErrorRate", "FQDDPattern": "SMARTData:%" },
+          { "MetricId": "ReallocatedBlockCount", "FQDDPattern": "SMARTData:%" },
+          { "MetricId": "UncorrectableErrorCount", "FQDDPattern": "SMARTData:%" },
+          { "MetricId": "UncorrectableLBACount", "FQDDPattern": "SMARTData:%" },
+          { "MetricId": "UnusedReservedBlockCount", "FQDDPattern": "SMARTData:%" },
+          { "MetricId": "UsedReservedBlockCount", "FQDDPattern": "SMARTData:%" },
+          { "MetricId": "VolatileMemoryBackupSourceFailures", "FQDDPattern": "SMARTData:%" }
+        ]
+      }
+  - name: AddMetricReportDefinition
+    data: |
+      {
+        "Name": "StorageSensor",        "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false, "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
+        "Metrics": [
+          { "MetricId": "TemperatureReading", "FQDDPattern": "Disk.%" }
+        ]
+      }
+  - name: AddMetricReportDefinition
+    data: |
+      {
+        "Name": "ThermalMetrics",       "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false, "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
+        "Metrics": [
+          { "FQDDPattern": "Thermal" },
+          { "MetricId": "ComputePower", "FQDDPattern": "Thermal" },
+          { "MetricId": "ITUE", "FQDDPattern": "Thermal" },
+          { "MetricId": "PSUEfficiency", "FQDDPattern": "Thermal" },
+          { "MetricId": "PowerToCoolRatio", "FQDDPattern": "Thermal" },
+          { "MetricId": "SysAirFlowEfficiency", "FQDDPattern": "Thermal" },
+          { "MetricId": "SysAirflowPerFanPower", "FQDDPattern": "Thermal" },
+          { "MetricId": "SysAirflowPerSysInputPower", "FQDDPattern": "Thermal" },
+          { "MetricId": "SysAirflowUtilization", "FQDDPattern": "Thermal" },
+          { "MetricId": "SysNetAirflow", "FQDDPattern": "Thermal" },
+          { "MetricId": "SysRackTempDelta", "FQDDPattern": "Thermal" },
+          { "MetricId": "TotalPSUHeatDissipation", "FQDDPattern": "Thermal" }
+        ]
+      }
+
 
   ###########################################################################3
   ## NEW reports
@@ -390,13 +358,27 @@ Startup-Events:
         "Type": "Periodic",
         "Period": 60,
         "Updates": "NewReport",
-        "SuppressDups": true ,
+        "SuppressDups": true,
         "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
         "Metrics": [
           {"MetricID": "TemperatureReading"},
           {"MetricID": "RPMReading"}
          ]
        }
+  - name: AddMetricReportDefinition
+    data: |
+      {
+        "Name": "SMARTData",
+        "Enabled": true,
+        "Type": "Periodic",
+        "Period": 60,
+        "Updates": "Overwrite",
+        "SuppressDups": false,
+        "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
+        "Metrics": [
+          { "FQDDPattern": "SMARTData:%" }
+        ]
+      }
 
 UDB-Metric-Import:
   CurrentCUPS:
@@ -412,6 +394,7 @@ UDB-Metric-Import:
         friendlyFQDD as FriendlyFQDD,
         FQDD as FQDD,
         '/redfish/v1/FIXME' || FriendlyFQDD as Property,
+        friendlyFQDD as Context,
 
         SystemCupsTimeStamp * 1000000000 as 'Timestamp-SystemUsage',
         SystemCupsCurrent as 'Metric-SystemUsage',
@@ -439,6 +422,8 @@ UDB-Metric-Import:
         cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
         friendlyFQDD as Context,
         '/redfish/v1/FIXME' || FriendlyFQDD as Property,
+        friendlyFQDD as FriendlyFQDD,
+        FQDD as FQDD,
 
         LastWeekMinPowerTime as 'Metric-LastWeekMinPowerTime',
         LastWeekMinPower as 'Metric-LastWeekMinPower',
@@ -476,6 +461,8 @@ UDB-Metric-Import:
         cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
         friendlyFQDD as Context,
         '/redfish/v1/FIXME' || FriendlyFQDD as Property,
+        friendlyFQDD as FriendlyFQDD,
+        FQDD as FQDD,
 
         TotalStoragePower as 'Metric-TotalStoragePower',
         TotalPciePower as 'Metric-TotalPciePower',
@@ -506,6 +493,8 @@ UDB-Metric-Import:
         cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
         friendlyFQDD as Context,
         '/redfish/v1/FIXME' || FriendlyFQDD as Property,
+        friendlyFQDD as FriendlyFQDD,
+        FQDD as FQDD,
 
         TotalPSUHeatDissipation as 'Metric-TotalPSUHeatDissipation',
         SysRackTempDelta as 'Metric-SysRackTempDelta',
@@ -534,6 +523,8 @@ UDB-Metric-Import:
         cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
         friendlyFQDD as Context,
         '/redfish/v1/FIXME' || FriendlyFQDD as Property,
+        friendlyFQDD as FriendlyFQDD,
+        FQDD as FQDD,
 
         CpuMemoryMetrics_DOT_NonC0ResidencyLow_DOT_value as 'Metric-NonC0ResidencyLow',
         CpuMemoryMetrics_DOT_NonC0ResidencyHigh_DOT_value as 'Metric-NonC0ResidencyHigh',
@@ -560,6 +551,8 @@ UDB-Metric-Import:
         cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
         friendlyFQDD as Context,
         '/redfish/v1/FIXME' || FriendlyFQDD as Property,
+        friendlyFQDD as FriendlyFQDD,
+        FQDD as FQDD,
 
         Temperature as 'Metric-TemperatureReading',
         FanSpeed as 'Metric-RPMReading'
@@ -579,6 +572,8 @@ UDB-Metric-Import:
         cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
         friendlyFQDD as Context,
         '/redfish/v1/FIXME' || FriendlyFQDD as Property,
+        friendlyFQDD as FriendlyFQDD,
+        FQDD as FQDD,
 
         CurrentReading as 'Metric-TemperatureReading'
       FROM TblsStorageSensor
@@ -597,6 +592,8 @@ UDB-Metric-Import:
         cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
         friendlyFQDD as Context,
         '/redfish/v1/FIXME' || FriendlyFQDD as Property,
+        friendlyFQDD as FriendlyFQDD,
+        FQDD as FQDD,
 
         CurrentReading as 'Metric-TemperatureReading'
       FROM TblsMemorySensor
@@ -615,6 +612,8 @@ UDB-Metric-Import:
         cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
         friendlyFQDD as Context,
         '/redfish/v1/FIXME' || FriendlyFQDD as Property,
+        friendlyFQDD as FriendlyFQDD,
+        FQDD as FQDD,
 
         CurrentReading as 'Metric-TemperatureReading'
       FROM TblsFPGASensor
@@ -634,6 +633,8 @@ UDB-Metric-Import:
         cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
         FriendlyFQDD as Context,
         '/redfish/v1/FIXME' || FQDD as Property,
+        friendlyFQDD as FriendlyFQDD,
+        FQDD as FQDD,
 
         SystemMaxPowerConsumption as 'Metric-SystemMaxPowerConsumption',
         SystemMaxInletTempHour as 'Metric-SystemMaxInletTempHour',
@@ -656,6 +657,8 @@ UDB-Metric-Import:
         SingleRecordEtag * 1000000000 as Timestamp,
         FQDD as Context,
          '/redfish/v1/FIXME/' || FQDD as Property,
+        friendlyFQDD as FriendlyFQDD,
+        FQDD as FQDD,
 
         smartData_DOT_percentageUsed as 'Metric-PercentageUsed',
         smartData_DOT_criticalWarning as 'Metric-CriticalWarning',
@@ -698,6 +701,8 @@ UDB-Metric-Import:
         SingleRecordEtag * 1000000000 as Timestamp,
         FQDD as Context,
          '/redfish/v1/FIXME/' || FQDD as Property,
+        friendlyFQDD as FriendlyFQDD,
+        FQDD as FQDD,
 
         smartData_DOT_volatileMemoryBackupSourceFailures as 'Metric-VolatileMemoryBackupSourceFailures',
         smartData_DOT_usedReservedBlockCount as 'Metric-UsedReservedBlockCount',
@@ -736,6 +741,7 @@ UDB-Metric-Import:
         SingleRecordEtag * 1000000000 as Timestamp,
         FQDD as Context,
          '/redfish/v1/FIXME/' || FQDD as Property,
+        FQDD as FQDD,
 
         SBERetiredPages as 'Metric-SBERetiredPages',
         SBECounterGRTex as 'Metric-SBECounterGRTex',
@@ -770,6 +776,7 @@ UDB-Metric-Import:
         SingleRecordEtag * 1000000000 as Timestamp,
         FQDD as Context,
          '/redfish/v1/FIXME/' || FQDD as Property,
+        FQDD as FQDD,
 
         ThermalAlertState as 'Metric-ThermalAlertState',
         SecondaryGpuTemp as 'Metric-SecondaryGpuTemp',
@@ -804,6 +811,7 @@ UDB-Metric-Import:
         StatisticTime * 1000000000 as Timestamp,
         FQDD as Context,
          '/redfish/v1/FIXME/' || FQDD as Property,
+        FQDD as FQDD,
 
         TxUnicast as 'Metric-TxUnicast',
         TxPauseXONFrames as 'Metric-TxPauseXONFrames',
@@ -878,6 +886,8 @@ UDB-Metric-Import:
         SingleRecordEtag * 1000000000 as Timestamp,
         FriendlyFQDD as Context,
         '/redfish/v1/FIXME/' || FQDD as Property,
+        friendlyFQDD as FriendlyFQDD,
+        FQDD as FQDD,
 
         currentTemp as 'Metric-TemperatureReading'
       FROM TblHIISensorInfo_obj
@@ -897,6 +907,8 @@ UDB-Metric-Import:
         SingleRecordEtag * 1000000000 as Timestamp,
         FriendlyFQDD as Context,
         '/redfish/v1/FIXME/' || FQDD as Property,
+        friendlyFQDD as FriendlyFQDD,
+        FQDD as FQDD,
 
         VariableSpeed as 'Metric-RPMReading'
       from TblFanExtObj
@@ -905,6 +917,7 @@ UDB-Metric-Import:
   Sensor:
     Type: DirectMetric
     # TODO: UNDERLYING TABLE NEEDS HWM.
+    # TODO: Underlying view table missing FQDD, need to add
     ScanInterval: 0
     WaitInterval: 5
     # CIMVIEW_DCIM_NumericSensor is a view, do db change notifications on underlying tables
@@ -930,8 +943,9 @@ UDB-Metric-Import:
         end as Name,
         CurrentReading as Value,
         printf('/redfish/v1/Dell/Systems/System.Embedded.1/DellNumericSensor/%s', replace(replace(DeviceID, '|', '_0x7c_') , '#', '_0x23_')) as Property,
-        ElementName as Context  -- FriendlyFQDD
-        -- DeviceID as FQDD, -- COMMENT OUT UNTIL WE HAVE A DEST TO RECEIVE THIS--> DeviceID as FQDD
+        ElementName as Context,
+        DeviceID as FQDD,
+        ElementName as FriendlyFQDD
       FROM CIMVIEW_DCIM_NumericSensor
       WHERE Timestamp > :HWM
 
@@ -959,8 +973,9 @@ UDB-Metric-Import:
         end as Name,
         CurrentReading as Value,
         printf('/redfish/v1/Dell/Systems/System.Embedded.1/DellPSNumericSensor/%s', replace(replace(DeviceID, '|', '_0x7c_') , '#', '_0x23_')) as Property,
-        ElementName as Context  -- FriendlyFQDD
-        -- DeviceID as FQDD, -- COMMENT OUT UNTIL WE HAVE A DEST TO RECEIVE THIS--> DeviceID as FQDD
+        ElementName as Context,
+        DeviceID as FQDD,
+        ElementName as FriendlyFQDD
       FROM CIMVIEW_DCIM_PSNumericSensor
       WHERE Timestamp > :HWM
 
@@ -1007,7 +1022,7 @@ createdb:
         CollectionDuration INTEGER,
 
         -- indexes and constraints
-        unique (Name, SuppressDups, PropertyPattern, Wildcards, CollectionFunction, CollectionDuration)
+        unique (Name, SuppressDups, FQDDPattern, PropertyPattern, Wildcards, CollectionFunction, CollectionDuration)
       )
 
   - |
@@ -1038,19 +1053,21 @@ createdb:
       --           insert into MetricValue (ID, TS, Value)
       CREATE TABLE IF NOT EXISTS MetricInstance
       (
-        ID                  integer unique primary key not null,
-        MetaID              integer not null,
-        Name                 TEXT not null, -- actual metric name
-        Property            TEXT not null, -- URI#Property
-        Context              TEXT not null, -- usually FQDD
-        Label                TEXT not null, -- 'friendly FQDD' + 'metric name' + 'collectionfn'
-        CollectionScratch   TEXT not null, -- Scratch space used by calculation functions
-        FlushTime           INTEGER,       -- Time at which any aggregated data should be flushed
-        LastTS               INTEGER not null, -- Used to quickly suppress dups for this instance
-        LastValue            TEXT not null,    -- Used to quickly suppress dups for this instance
+        ID                INTEGER NOT NULL PRIMARY KEY,
+        MetaID            INTEGER NOT NULL,
+        Name              TEXT    NOT NULL, -- actual metric name
+        FQDD              TEXT    NOT NULL,
+        Property          TEXT    NOT NULL, -- URI#Property
+        Context           TEXT    NOT NULL, -- usually FQDD
+        Function          TEXT    NOT NULL,
+        Label             TEXT    NOT NULL, -- 'friendly FQDD' + 'metric name' + 'collectionfn'
+        CollectionScratch TEXT    NOT NULL, -- Scratch space used by calculation functions
+        FlushTime         INTEGER,          -- Time at which any aggregated data should be flushed
+        LastTS            INTEGER NOT NULL, -- Used to quickly suppress dups for this instance
+        LastValue         TEXT    NOT NULL, -- Used to quickly suppress dups for this instance
 
         -- indexes and constraints
-        unique (MetaID, Name, Property, Context, Label)
+        unique (MetaID, Name, FQDD, Property, Context, Function)
         FOREIGN KEY (MetaID)
           REFERENCES MetricMeta (ID) ON DELETE CASCADE
       )
@@ -1349,36 +1366,36 @@ createdb:
         select root, [@odata.id] from MetricReport_JSON
 
   - |
-        DROP VIEW IF EXISTS AggregationMetricsMRView_json ; create view AggregationMetricsMRView_json as select * from JSON;
-        DROP VIEW IF EXISTS CPUMemMetricsMRView_json ; create view CPUMemMetricsMRView_json as select * from JSON;
-        DROP VIEW IF EXISTS CPURegistersMRView_json ; create view CPURegistersMRView_json as select * from JSON;
-        DROP VIEW IF EXISTS CPUSensorMRView_json ; create view CPUSensorMRView_json as select * from JSON;
-        DROP VIEW IF EXISTS CUPSMRView_json ; create view CUPSMRView_json as select * from JSON;
-        DROP VIEW IF EXISTS FCSensorMRView_json ; create view FCSensorMRView_json as select * from JSON;
-        DROP VIEW IF EXISTS FPGASensorMRView_json ; create view FPGASensorMRView_json as select * from JSON;
-        DROP VIEW IF EXISTS FanSensorMRView_json ; create view FanSensorMRView_json as select * from JSON;
-        DROP VIEW IF EXISTS GPUMetricsMRView_json ; create view GPUMetricsMRView_json as select * from JSON;
-        DROP VIEW IF EXISTS GPUStatisticsMRView_json ; create view GPUStatisticsMRView_json as select * from JSON;
-        DROP VIEW IF EXISTS MemorySensorMRView_json ; create view MemorySensorMRView_json as select * from JSON;
-        DROP VIEW IF EXISTS NICSensorMRView_json ; create view NICSensorMRView_json as select * from JSON;
-        DROP VIEW IF EXISTS NICStatisticsMRView_json ; create view NICStatisticsMRView_json as select * from JSON;
-        DROP VIEW IF EXISTS NVMeSMARTDataMRView_json ; create view NVMeSMARTDataMRView_json as select * from JSON;
-        DROP VIEW IF EXISTS PSUMetricsMRView_json ; create view PSUMetricsMRView_json as select * from JSON;
-        DROP VIEW IF EXISTS PowerMetricsMRView_json ; create view PowerMetricsMRView_json as select * from JSON;
-        DROP VIEW IF EXISTS PowerStatisticsMRView_json ; create view PowerStatisticsMRView_json as select * from JSON;
-        DROP VIEW IF EXISTS SensorMRView_json ; create view SensorMRView_json as select * from JSON;
-        DROP VIEW IF EXISTS StorageDiskSMARTDataMRView_json ; create view StorageDiskSMARTDataMRView_json as select * from JSON;
-        DROP VIEW IF EXISTS StorageSensorMRView_json ; create view StorageSensorMRView_json as select * from JSON;
-        DROP VIEW IF EXISTS ThermalSensorMRView_json ; create view ThermalSensorMRView_json as select * from  JSON;
-        DROP VIEW IF EXISTS ThermalMetricsMRView_json ; create view ThermalMetricsMRView_json as select * from  JSON;
+        DROP VIEW IF EXISTS AggregationMetricsMRView_json ; create view AggregationMetricsMRView_json as select * from JSON where [@odata.id] = '/redfish/v1/TelemetryService/MetricReports/AggregationMetrics';
+        DROP VIEW IF EXISTS CPUMemMetricsMRView_json ; create view CPUMemMetricsMRView_json as select * from JSON where [@odata.id] = '/redfish/v1/TelemetryService/MetricReports/CPUMemMetrics';
+        DROP VIEW IF EXISTS CPURegistersMRView_json ; create view CPURegistersMRView_json as select * from JSON where [@odata.id] = '/redfish/v1/TelemetryService/MetricReports/CPURegisters';
+        DROP VIEW IF EXISTS CPUSensorMRView_json ; create view CPUSensorMRView_json as select * from JSON where [@odata.id] = '/redfish/v1/TelemetryService/MetricReports/CPUSensor';
+        DROP VIEW IF EXISTS CUPSMRView_json ; create view CUPSMRView_json as select * from JSON where [@odata.id] = '/redfish/v1/TelemetryService/MetricReports/CUPS';
+        DROP VIEW IF EXISTS FCSensorMRView_json ; create view FCSensorMRView_json as select * from JSON where [@odata.id] = '/redfish/v1/TelemetryService/MetricReports/FCSensor';
+        DROP VIEW IF EXISTS FPGASensorMRView_json ; create view FPGASensorMRView_json as select * from JSON where [@odata.id] = '/redfish/v1/TelemetryService/MetricReports/FPGASensor';
+        DROP VIEW IF EXISTS FanSensorMRView_json ; create view FanSensorMRView_json as select * from JSON where [@odata.id] = '/redfish/v1/TelemetryService/MetricReports/FanSensor';
+        DROP VIEW IF EXISTS GPUMetricsMRView_json ; create view GPUMetricsMRView_json as select * from JSON where [@odata.id] = '/redfish/v1/TelemetryService/MetricReports/GPUMetrics';
+        DROP VIEW IF EXISTS GPUStatisticsMRView_json ; create view GPUStatisticsMRView_json as select * from JSON where [@odata.id] = '/redfish/v1/TelemetryService/MetricReports/GPUStatistics';
+        DROP VIEW IF EXISTS MemorySensorMRView_json ; create view MemorySensorMRView_json as select * from JSON where [@odata.id] = '/redfish/v1/TelemetryService/MetricReports/MemorySensor';
+        DROP VIEW IF EXISTS NICSensorMRView_json ; create view NICSensorMRView_json as select * from JSON where [@odata.id] = '/redfish/v1/TelemetryService/MetricReports/NICSensor';
+        DROP VIEW IF EXISTS NICStatisticsMRView_json ; create view NICStatisticsMRView_json as select * from JSON where [@odata.id] = '/redfish/v1/TelemetryService/MetricReports/NICStatistics';
+        DROP VIEW IF EXISTS NVMeSMARTDataMRView_json ; create view NVMeSMARTDataMRView_json as select * from JSON where [@odata.id] = '/redfish/v1/TelemetryService/MetricReports/NVMeSMARTData';
+        DROP VIEW IF EXISTS PSUMetricsMRView_json ; create view PSUMetricsMRView_json as select * from JSON where [@odata.id] = '/redfish/v1/TelemetryService/MetricReports/PSUMetrics';
+        DROP VIEW IF EXISTS PowerMetricsMRView_json ; create view PowerMetricsMRView_json as select * from JSON where [@odata.id] = '/redfish/v1/TelemetryService/MetricReports/PowerMetrics';
+        DROP VIEW IF EXISTS PowerStatisticsMRView_json ; create view PowerStatisticsMRView_json as select * from JSON where [@odata.id] = '/redfish/v1/TelemetryService/MetricReports/PowerStatistics';
+        DROP VIEW IF EXISTS SensorMRView_json ; create view SensorMRView_json as select * from JSON where [@odata.id] = '/redfish/v1/TelemetryService/MetricReports/Sensor';
+        DROP VIEW IF EXISTS StorageDiskSMARTDataMRView_json ; create view StorageDiskSMARTDataMRView_json as select * from JSON where [@odata.id] = '/redfish/v1/TelemetryService/MetricReports/StorageDiskSMARTData';
+        DROP VIEW IF EXISTS StorageSensorMRView_json ; create view StorageSensorMRView_json as select * from JSON where [@odata.id] = '/redfish/v1/TelemetryService/MetricReports/StorageSensor';
+        DROP VIEW IF EXISTS ThermalSensorMRView_json ; create view ThermalSensorMRView_json as select * from  JSON where [@odata.id] = '/redfish/v1/TelemetryService/MetricReports/ThermalSensor';
+        DROP VIEW IF EXISTS ThermalMetricsMRView_json ; create view ThermalMetricsMRView_json as select * from  JSON where [@odata.id] = '/redfish/v1/TelemetryService/MetricReports/ThermalMetrics';
 
-        DROP VIEW IF EXISTS MetricDefinitionCollectionView_json ; create view MetricDefinitionCollectionView_json as select * from JSON;
-        DROP VIEW IF EXISTS MetricDefinitionView_json ; create view MetricDefinitionView_json as select * from JSON;
-        DROP VIEW IF EXISTS MetricReportCollectionView_json ; create view MetricReportCollectionView_json as select * from JSON;
-        DROP VIEW IF EXISTS MetricReportDefinitionCollectionView_json ; create view MetricReportDefinitionCollectionView_json as select * from JSON;
+        DROP VIEW IF EXISTS MetricReportCollectionView_json ; create view MetricReportCollectionView_json as select * from JSON where [@odata.id] = '/redfish/v1/TelemetryService/MetricReports';
+        DROP VIEW IF EXISTS MetricReportDefinitionCollectionView_json ; create view MetricReportDefinitionCollectionView_json as select * from JSON where [@odata.id] = '/redfish/v1/TelemetryService/MetricReportDefinition';
 
-        -- DROP VIEW IF EXISTS TelemetryServiceView_json ; create view TelemetryServiceView_json as select * from JSON;
-        -- DROP VIEW IF EXISTS TelemetryLogServiceLCLogview_json ; create view TelemetryLogServiceLCLogview_json as select * from JSON;
+        DROP VIEW IF EXISTS MetricDefinitionCollectionView_json ; -- create view MetricDefinitionCollectionView_json as select * from JSON  where [@odata.id] = '/redfish/v1/TelemetryService/MetricDefinition';
+        DROP VIEW IF EXISTS MetricDefinitionView_json ; -- create view MetricDefinitionView_json as select * from JSON where [@odata.id] = '/redfish/v1/TelemetryService/MetricReportDefinition';
+        DROP VIEW IF EXISTS TelemetryServiceView_json ; -- create view TelemetryServiceView_json as select * from JSON;
+        DROP VIEW IF EXISTS TelemetryLogServiceLCLogview_json ; -- create view TelemetryLogServiceLCLogview_json as select * from JSON;
 
 # Logging levels:
 # debug, info, warn, error, crit

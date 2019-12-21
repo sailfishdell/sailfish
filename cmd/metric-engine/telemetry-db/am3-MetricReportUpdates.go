@@ -99,7 +99,6 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Service, d Bus
 	updateDef := func(event eh.Event) {
 		reportDef, ok := event.Data().(*MetricReportDefinitionData)
 		if !ok {
-			//logger.Crit("Expected a *MetricReportDefinitionData but didn't get one.", "Actual Type", fmt.Sprintf("%T", event.Data()), "Actual Data", event.Data())
 			return
 		}
 
@@ -126,7 +125,6 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Service, d Bus
 	am3Svc.AddEventHandler("Delete Metric Report Definition", DeleteMetricReportDefinition, func(event eh.Event) {
 		reportDef, ok := event.Data().(*MetricReportDefinitionData)
 		if !ok {
-			//logger.Crit("Expected a *MetricReportDefinitionData but didn't get one.", "Actual Type", fmt.Sprintf("%T", event.Data()), "Actual Data", event.Data())
 			return
 		}
 
@@ -145,13 +143,12 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Service, d Bus
 	am3Svc.AddEventHandler("Store Metric Value", MetricValueEvent, func(event eh.Event) {
 		metricValue, ok := event.Data().(*MetricValueEventData)
 		if !ok {
-			//logger.Warn("Expected a *MetricValueEventData but didn't get one.", "Actual Type", fmt.Sprintf("%T", event.Data()), "Actual Data", event.Data())
 			return
 		}
 
 		err := MRDFactory.InsertMetricValue(metricValue)
 		if err != nil {
-			//logger.Crit("Error inserting Metric Value", "err", err, "metric", metricValue)
+			logger.Crit("Error Inserting Metric Value", "Metric", metricValue, "err", err)
 			return
 		}
 
@@ -160,7 +157,6 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Service, d Bus
 		}
 		err = MRDFactory.FastCheckForNeededMRUpdates()
 		if err != nil {
-			//logger.Crit("Error inserting Metric Value", "err", err, "metric", metricValue)
 			return
 		}
 	})
@@ -168,7 +164,6 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Service, d Bus
 	am3Svc.AddEventHandler("Generate Metric Report", GenerateMetricReport, func(event eh.Event) {
 		reportDef, ok := event.Data().(*MetricReportDefinitionData)
 		if !ok {
-			//logger.Crit("Expected a *MetricReportDefinitionData but didn't get one.", "Actual Type", fmt.Sprintf("%T", event.Data()), "Actual Data", event.Data())
 			return
 		}
 
@@ -207,7 +202,7 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Service, d Bus
 		localReportDefCopy := *reportDef
 		err := MRDFactory.GenerateMetricReport(&localReportDefCopy)
 		if err != nil {
-			//logger.Crit("Error generating metric report", "err", err, "ReportDefintion", reportDef)
+			logger.Crit("Error generating metric report", "err", err, "ReportDefintion", localReportDefCopy)
 		}
 	})
 
@@ -215,7 +210,6 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Service, d Bus
 	am3Svc.AddEventHandler("Database Maintenance", DatabaseMaintenance, func(event eh.Event) {
 		command, ok := event.Data().(string)
 		if !ok {
-			//logger.Warn("Expected a command string.", "Actual Type", fmt.Sprintf("%T", event.Data()), "Actual Data", event.Data())
 			return
 		}
 
@@ -226,7 +220,6 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Service, d Bus
 				MRDFactory.MetricTSHWM = SqlTimeInt{lastHWM.Add(clockPeriod)}
 				err = MRDFactory.FastCheckForNeededMRUpdates()
 				if err != nil {
-					//logger.Crit("Error inserting Metric Value", "err", err, "metric", metricValue)
 					return
 				}
 			} else {
