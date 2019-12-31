@@ -24,50 +24,165 @@ listen:
 ##############################################
 
 Startup-Events:
-  # PowerStatistics, PowerMetrics, 0x17||Fan.Embedded.6, NIC.Integrated.1-2-1
-
   ###########################################################################3
-  ## TODO Legacy reports
+  ## Legacy reports
   ###########################################################################3
   - name: AddMetricReportDefinition
+    # TODO: Device Poll Frequency: 60
+    # "TelemetryAggregationMetrics.1.ReportInterval": 0,
     data: |
       {
-        "Name": "CPURegisters",         "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false, "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": []
+        "Name": "AggregationMetrics",   "Enabled": true, "Type": "OnRequest", "Updates": "AppendWrapsWhenFull", "SuppressDups": false, "Actions": [],
+        "Metrics": [
+          { "MetricId": "SystemAvgInletTempHour" },
+          { "MetricId": "SystemMaxInletTempHour" },
+          { "MetricId": "SystemMaxPowerConsumption" }
+         ]
       }
+
   - name: AddMetricReportDefinition
+    # TODO: Device Poll Frequency: 5
+    # "TelemetryCPUMemMetrics.1.ReportInterval": 60,
+    data: |
+      {
+        "Name": "CPUMemMetrics",        "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false, "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
+        "Metrics": [
+          { "MetricId": "CPUC0ResidencyHigh", "FQDDPattern": "CPU.Socket.%" },
+          { "MetricId": "CPUC0ResidencyLow", "FQDDPattern": "CPU.Socket.%" },
+          { "MetricId": "CUPSIIOBandwidthDMI", "FQDDPattern": "CPU.Socket.%" },
+          { "MetricId": "CUPSIIOBandwidthPort0", "FQDDPattern": "CPU.Socket.%" },
+          { "MetricId": "CUPSIIOBandwidthPort1", "FQDDPattern": "CPU.Socket.%" },
+          { "MetricId": "CUPSIIOBandwidthPort2", "FQDDPattern": "CPU.Socket.%" },
+          { "MetricId": "CUPSIIOBandwidthPort3", "FQDDPattern": "CPU.Socket.%" },
+          { "MetricId": "NonC0ResidencyHigh", "FQDDPattern": "CPU.Socket.%" },
+          { "MetricId": "NonC0ResidencyLow", "FQDDPattern": "CPU.Socket.%" }
+         ]
+      }
+
+  - name: AddMetricReportDefinition
+    # "TelemetryCPURegisters.1.ReportInterval": 0,
+    data: |
+      { "Name": "CPURegisters",         "Enabled": true, "Type": "OnChange", "Updates": "AppendWrapsWhenFull", "SuppressDups": true, "Actions": [], "Metrics": [] }
+
+  - name: AddMetricReportDefinition
+    # TODO: Device Poll Frequency: 5
+    # "TelemetryCPUSensor.1.ReportInterval": 60,
     data: |
       {
         "Name": "CPUSensor",            "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false, "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [{"MetricID": "TemperatureReading", "FQDDPattern": "iDRAC.Embedded.1#CPU%Temp"}]
+        "Metrics": [
+          {"MetricID": "TemperatureReading", "FQDDPattern": "iDRAC.Embedded.1#CPU%Temp"},
+          {"MetricID": "TemperatureReading", "FQDDPattern": "CPU.Socket.%"}
+        ]
       }
+
+  - name: AddMetricReportDefinition
+    # TODO: Device Poll Frequency: 5
+    # "TelemetryCUPS.1.ReportInterval": 60,
+    data: |
+      {
+        "Name": "CUPS", "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false,
+        "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
+        "Metrics": [ {"FQDDPattern": "CUPS"} ]
+      }
+
+  - name: AddMetricReportDefinition
+    # TODO: Device Poll Frequency: 5
+    # "TelemetryFanSensor.1.ReportInterval": 60,
+    data: |
+      {
+        "Name": "FanSensor",            "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false, "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
+        "Metrics": [{"MetricID": "RPMReading", "FQDDPattern": "Fan.%"}]
+      }
+
   - name: AddMetricReportDefinition
     # TODO: Need to limit this to FC via FQDD
+    # TODO: Device Poll Frequency: 5
+    # "TelemetryFCSensor.1.ReportInterval": 60,
     data: |
       {
         "Name": "FCSensor",             "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false, "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
         "Metrics": [{"MetricID": "TemperatureReading", "FQDDPattern": "%"}]
       }
+
   - name: AddMetricReportDefinition
     # TODO: Need to limit this to FPGA via FQDD
+    # TODO: Device Poll Frequency: 5
+    # "TelemetryFPGASensor.1.ReportInterval": 60,
     data: |
       {
         "Name": "FPGASensor",           "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false, "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
         "Metrics": [{"MetricID": "TemperatureReading", "FQDDPattern": "%"}]
       }
+
   - name: AddMetricReportDefinition
+    # TODO: Device Poll Frequency: 5
+    # "TelemetryGPUMetrics.1.ReportInterval": 60,
+    data: |
+      {
+        "Name": "GPUMetrics",           "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false, "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
+        "Metrics": [
+              { "MetricId": "BoardPowerSupplyStatus" },
+              { "MetricId": "BoardTemperature" },
+              { "MetricId": "GPUHealth" },
+              { "MetricId": "GPUStatus" },
+              { "MetricId": "MemoryTemperature" },
+              { "MetricId": "PowerBrakeState" },
+              { "MetricId": "PowerConsumption" },
+              { "MetricId": "PowerSupplyStatus" },
+              { "MetricId": "PrimaryTemperature" },
+              { "MetricId": "SecondaryTemperature" },
+              { "MetricId": "ThermalAlertState" }
+        ]
+      }
+
+  - name: AddMetricReportDefinition
+    # TODO: Device Poll Frequency: 600
+    # "TelemetryGPUStatistics.1.ReportInterval": 600,
+    data: |
+      {
+        "Name": "GPUStatistics",        "Enabled": true, "Type": "Periodic", "Period": 600, "Updates": "Overwrite", "SuppressDups": false, "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
+        "Metrics": [
+          { "MetricId": "CumulativeDBECounterFB", "FQDDPattern": "Video.Slot.%" },
+          { "MetricId": "CumulativeDBECounterGR", "FQDDPattern": "Video.Slot.%" },
+          { "MetricId": "CumulativeSBECounterFB", "FQDDPattern": "Video.Slot.%" },
+          { "MetricId": "CumulativeSBECounterGR", "FQDDPattern": "Video.Slot.%" },
+          { "MetricId": "DBECounterFB", "FQDDPattern": "Video.Slot.%" },
+          { "MetricId": "DBECounterFBL2Cache", "FQDDPattern": "Video.Slot.%" },
+          { "MetricId": "DBECounterGRL1Cache", "FQDDPattern": "Video.Slot.%" },
+          { "MetricId": "DBECounterGRRF", "FQDDPattern": "Video.Slot.%" },
+          { "MetricId": "DBECounterGRTex", "FQDDPattern": "Video.Slot.%" },
+          { "MetricId": "DBERetiredPages", "FQDDPattern": "Video.Slot.%" },
+          { "MetricId": "SBECounterFB", "FQDDPattern": "Video.Slot.%" },
+          { "MetricId": "SBECounterFBL2Cache", "FQDDPattern": "Video.Slot.%" },
+          { "MetricId": "SBECounterGRL1Cache", "FQDDPattern": "Video.Slot.%" },
+          { "MetricId": "SBECounterGRRF", "FQDDPattern": "Video.Slot.%" },
+          { "MetricId": "SBECounterGRTex", "FQDDPattern": "Video.Slot.%" },
+          { "MetricId": "SBERetiredPages", "FQDDPattern": "Video.Slot.%" }
+        ]
+      }
+
+  - name: AddMetricReportDefinition
+    # TODO: Device Poll Frequency: 5
+    # "TelemetryMemorySensor.1.ReportInterval": 60,
     data: |
       {
         "Name": "MemorySensor",         "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false, "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
         "Metrics": [{"MetricID": "TemperatureReading", "FQDDPattern": "DIMM.Socket.%"}]
       }
+
   - name: AddMetricReportDefinition
+    # TODO: Device Poll Frequency: 5
+    # "TelemetryNICSensor.1.ReportInterval": 60,
     data: |
       {
         "Name": "NICSensor",            "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false, "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
         "Metrics": [{"MetricID": "TemperatureReading", "FQDDPattern": "NIC.%"}]
       }
+
   - name: AddMetricReportDefinition
+    # TODO: Device Poll Frequency: 60
+    # "TelemetryNICStatistics.1.ReportInterval": 60,
     data: |
       {
         "Name": "NICStatistics",        "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false, "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
@@ -117,10 +232,13 @@ Startup-Events:
           { "MetricId": "TxUnicast", "FQDDPattern": "NIC.%"}
         ]
       }
+
   - name: AddMetricReportDefinition
+    # TODO: Device Poll Frequency: 3600
+    # "TelemetryNVMeSMARTData.1.ReportInterval": 3600,
     data: |
       {
-        "Name": "NVMeSMARTData",        "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false, "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
+        "Name": "NVMeSMARTData",        "Enabled": true, "Type": "Periodic", "Period": 3600, "Updates": "Overwrite", "SuppressDups": false, "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
         "Metrics": [
           { "FQDDPattern": "SMARTData:%PCIeExtender%" },
 
@@ -151,7 +269,32 @@ Startup-Events:
           { "MetricId": "UnsafeShutdownsUpper", "FQDDPattern": "SMARTData:%" }
         ]
       }
+
   - name: AddMetricReportDefinition
+    # TODO: Device Poll Frequency: 5
+    # "TelemetryPowerMetrics.1.ReportInterval": 60,
+    data: |
+      {
+        "Name": "PowerMetrics",         "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false, "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
+        "Metrics": [
+          { "FQDDPattern": "PowerMetrics" }
+        ]
+      }
+
+  - name: AddMetricReportDefinition
+    # TODO: Device Poll Frequency: 60
+    # "TelemetryPowerStatistics.1.ReportInterval": 60,
+    data: |
+      {
+        "Name": "PowerStatistics",      "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false, "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
+        "Metrics": [
+          { "FQDDPattern": "PowerStatistics" }
+        ]
+      }
+
+  - name: AddMetricReportDefinition
+    # TODO: Device Poll Frequency: 60
+    # "TelemetryPSUMetrics.1.ReportInterval": 60,
     data: |
       {
         "Name": "PSUMetrics",           "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false, "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
@@ -160,23 +303,10 @@ Startup-Events:
           { "MetricId": "Temperature", "FQDDPattern": "PSU.Slot.%" }
         ]
       }
+
   - name: AddMetricReportDefinition
-    data: |
-      {
-        "Name": "PowerMetrics",         "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false, "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [
-          { "FQDDPattern": "PowerMetrics" }
-        ]
-      }
-  - name: AddMetricReportDefinition
-    data: |
-      {
-        "Name": "PowerStatistics",      "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false, "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [
-          { "FQDDPattern": "PowerStatistics" }
-        ]
-      }
-  - name: AddMetricReportDefinition
+    # TODO: Device Poll Frequency: 5
+    # "TelemetrySensor.1.ReportInterval": 60,
     data: |
       {
         "Name": "Sensor",               "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false, "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
@@ -192,110 +322,13 @@ Startup-Events:
           { "MetricId": "WattsReading" }
         ]
       }
-  - name: AddMetricReportDefinition
-    data: |
-      {
-        "Name": "GPUMetrics",           "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false, "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [
-              { "MetricId": "BoardPowerSupplyStatus" },
-              { "MetricId": "BoardTemperature" },
-              { "MetricId": "GPUHealth" },
-              { "MetricId": "GPUStatus" },
-              { "MetricId": "MemoryTemperature" },
-              { "MetricId": "PowerBrakeState" },
-              { "MetricId": "PowerConsumption" },
-              { "MetricId": "PowerSupplyStatus" },
-              { "MetricId": "PrimaryTemperature" },
-              { "MetricId": "SecondaryTemperature" },
-              { "MetricId": "ThermalAlertState" }
-        ]
-      }
-  - name: AddMetricReportDefinition
-    data: |
-      {
-        "Name": "AggregationMetrics",   "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false, "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [
-          { "MetricId": "SystemAvgInletTempHour" },
-          { "MetricId": "SystemMaxInletTempHour" },
-          { "MetricId": "SystemMaxPowerConsumption" }
-         ]
-      }
-  - name: AddMetricReportDefinition
-    data: |
-      {
-        "Name": "CPUMemMetrics",        "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false, "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [
-          { "MetricId": "CPUC0ResidencyHigh", "FQDDPattern": "CPU.Socket.%" },
-          { "MetricId": "CPUC0ResidencyLow", "FQDDPattern": "CPU.Socket.%" },
-          { "MetricId": "CUPSIIOBandwidthDMI", "FQDDPattern": "CPU.Socket.%" },
-          { "MetricId": "CUPSIIOBandwidthPort0", "FQDDPattern": "CPU.Socket.%" },
-          { "MetricId": "CUPSIIOBandwidthPort1", "FQDDPattern": "CPU.Socket.%" },
-          { "MetricId": "CUPSIIOBandwidthPort2", "FQDDPattern": "CPU.Socket.%" },
-          { "MetricId": "CUPSIIOBandwidthPort3", "FQDDPattern": "CPU.Socket.%" },
-          { "MetricId": "NonC0ResidencyHigh", "FQDDPattern": "CPU.Socket.%" },
-          { "MetricId": "NonC0ResidencyLow", "FQDDPattern": "CPU.Socket.%" }
-         ]
-      }
-  - name: AddMetricReportDefinition
-    data: |
-      {
-        "Name": "CUPS",
-        "Enabled": true,
-        "Type": "Periodic",
-        "Period": 60,
-        "Updates": "Overwrite",
-        "SuppressDups": false,
-        "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [
-          {"FQDDPattern": "CUPS"},
-          {"MetricID": "IOUsage", "FQDDPattern": "CUPS"},
-          {"MetricID": "MemoryUsage", "FQDDPattern": "CUPS"},
-          {"MetricID": "SystemUsage", "FQDDPattern": "CUPS"},
-          {"MetricID": "CPUUsage", "FQDDPattern": "CUPS"}
-        ]
-      }
-  - name: AddMetricReportDefinition
-    data: |
-      {
-        "Name": "FanSensor",            "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false, "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [{"MetricID": "RPMReading", "FQDDPattern": "Fan.%"}]
-      }
-  - name: AddMetricReportDefinition
-    data: |
-      {
-        "Name": "GPUStatistics",        "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false, "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [
-          { "MetricId": "CumulativeDBECounterFB", "FQDDPattern": "Video.Slot.%" },
-          { "MetricId": "CumulativeDBECounterGR", "FQDDPattern": "Video.Slot.%" },
-          { "MetricId": "CumulativeSBECounterFB", "FQDDPattern": "Video.Slot.%" },
-          { "MetricId": "CumulativeSBECounterGR", "FQDDPattern": "Video.Slot.%" },
-          { "MetricId": "DBECounterFB", "FQDDPattern": "Video.Slot.%" },
-          { "MetricId": "DBECounterFBL2Cache", "FQDDPattern": "Video.Slot.%" },
-          { "MetricId": "DBECounterGRL1Cache", "FQDDPattern": "Video.Slot.%" },
-          { "MetricId": "DBECounterGRRF", "FQDDPattern": "Video.Slot.%" },
-          { "MetricId": "DBECounterGRTex", "FQDDPattern": "Video.Slot.%" },
-          { "MetricId": "DBERetiredPages", "FQDDPattern": "Video.Slot.%" },
-          { "MetricId": "SBECounterFB", "FQDDPattern": "Video.Slot.%" },
-          { "MetricId": "SBECounterFBL2Cache", "FQDDPattern": "Video.Slot.%" },
-          { "MetricId": "SBECounterGRL1Cache", "FQDDPattern": "Video.Slot.%" },
-          { "MetricId": "SBECounterGRRF", "FQDDPattern": "Video.Slot.%" },
-          { "MetricId": "SBECounterGRTex", "FQDDPattern": "Video.Slot.%" },
-          { "MetricId": "SBERetiredPages", "FQDDPattern": "Video.Slot.%" }
-        ]
-      }
 
   - name: AddMetricReportDefinition
+    #"TelemetryStorageDiskSMARTData.1.ReportInterval": 3600,
+    # TODO: Device Poll Frequency: 3600
     data: |
       {
-        "Name": "ThermalSensor",        "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false, "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [
-          { "MetricId": "TemperatureReading", "FQDDPattern": "iDRAC.Embedded.1#SystemBoardInletTemp" }
-        ]
-      }
-  - name: AddMetricReportDefinition
-    data: |
-      {
-        "Name": "StorageDiskSMARTData", "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false, "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
+        "Name": "StorageDiskSMARTData", "Enabled": true, "Type": "Periodic", "Period": 3600, "Updates": "Overwrite", "SuppressDups": false, "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
         "Metrics": [
           { "MetricId": "CRCErrorCount", "FQDDPattern": "SMARTData:%" },
           { "MetricId": "CommandTimeout", "FQDDPattern": "SMARTData:%" },
@@ -318,7 +351,10 @@ Startup-Events:
           { "MetricId": "VolatileMemoryBackupSourceFailures", "FQDDPattern": "SMARTData:%" }
         ]
       }
+
   - name: AddMetricReportDefinition
+    # TODO: Device Poll Frequency: 5
+    # "TelemetryStorageSensor.1.ReportInterval": 60,
     data: |
       {
         "Name": "StorageSensor",        "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false, "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
@@ -326,10 +362,13 @@ Startup-Events:
           { "MetricId": "TemperatureReading", "FQDDPattern": "Disk.%" }
         ]
       }
+
   - name: AddMetricReportDefinition
+    # TODO: Device Poll Frequency: 5
+    # "TelemetryThermalMetrics.1.ReportInterval": 5,
     data: |
       {
-        "Name": "ThermalMetrics",       "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false, "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
+        "Name": "ThermalMetrics",       "Enabled": true, "Type": "Periodic", "Period": 5, "Updates": "Overwrite", "SuppressDups": false, "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
         "Metrics": [
           { "FQDDPattern": "Thermal" },
           { "MetricId": "ComputePower", "FQDDPattern": "Thermal" },
@@ -343,6 +382,18 @@ Startup-Events:
           { "MetricId": "SysNetAirflow", "FQDDPattern": "Thermal" },
           { "MetricId": "SysRackTempDelta", "FQDDPattern": "Thermal" },
           { "MetricId": "TotalPSUHeatDissipation", "FQDDPattern": "Thermal" }
+        ]
+      }
+
+  - name: AddMetricReportDefinition
+    # TODO: Device Poll Frequency: 5
+    # "TelemetryThermalSensor.1.ReportInterval": 60,
+    data: |
+      {
+        "Name": "ThermalSensor",        "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false, "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
+        "Metrics": [
+          { "MetricId": "TemperatureReading", "FQDDPattern": "iDRAC.Embedded.1#SystemBoardInletTemp" },
+          { "MetricId": "TemperatureReading", "FQDDPattern": "iDRAC.Embedded.1#SystemBoardExhaustTemp" }
         ]
       }
 
@@ -371,8 +422,8 @@ Startup-Events:
         "Name": "SMARTData",
         "Enabled": true,
         "Type": "Periodic",
-        "Period": 60,
-        "Updates": "Overwrite",
+        "Period": 3600,
+        "Updates": "NewReport",
         "SuppressDups": false,
         "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
         "Metrics": [
