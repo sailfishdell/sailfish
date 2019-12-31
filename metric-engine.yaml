@@ -1205,7 +1205,7 @@ createdb:
             rd2mm.ReportDefinitionID as MRDID,
             json_object(
               'MetricId', MI.Name,
-              'Timestamp', strftime('%Y-%m-%dT%H:%M:%f', MV.Timestamp/1000000000.0, 'unixepoch'),
+              'Timestamp', strftime('%Y-%m-%dT%H:%M:%fZ', MV.Timestamp/1000000000.0, 'unixepoch'),
               'MetricValue', MV.Value,
               'OEM', json_object(
                 'Dell', json_object(
@@ -1538,10 +1538,10 @@ createdb:
 
         DROP VIEW IF EXISTS MetricReportCollectionView_json ; create view MetricReportCollectionView_json as select * from JSON where [@odata.id] = '/redfish/v1/TelemetryService/MetricReports';
         DROP VIEW IF EXISTS MetricReportDefinitionCollectionView_json ; create view MetricReportDefinitionCollectionView_json as select * from JSON where [@odata.id] = '/redfish/v1/TelemetryService/MetricReportDefinitions';
+        DROP VIEW IF EXISTS TelemetryServiceView_json ; create view TelemetryServiceView_json as select * from JSON where [@odata.id] = '/redfish/v1/TelemetryService';
 
         DROP VIEW IF EXISTS MetricDefinitionCollectionView_json ; -- create view MetricDefinitionCollectionView_json as select * from JSON  where [@odata.id] = '/redfish/v1/TelemetryService/MetricDefinitions';
         DROP VIEW IF EXISTS MetricDefinitionView_json ;           -- create view MetricDefinitionView_json as select * from JSON where [@odata.id] = '/redfish/v1/TelemetryService/MetricDefinitions/';
-        DROP VIEW IF EXISTS TelemetryServiceView_json ;           -- create view TelemetryServiceView_json as select * from JSON;
         DROP VIEW IF EXISTS TelemetryLogServiceLCLogview_json ;   -- create view TelemetryLogServiceLCLogview_json as select * from JSON;
 
 # Logging levels:
