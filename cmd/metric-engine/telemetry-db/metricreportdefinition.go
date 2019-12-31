@@ -571,14 +571,14 @@ func (factory *MRDFactory) InsertMetricValue(ev *MetricValueEventData) (err erro
 
 		// Construct label and Scratch space
 		if mm.CollectionFunction != "" {
-			mm.Label = fmt.Sprintf("%s - %s - %s", mm.Context, mm.Name, mm.CollectionFunction)
+			mm.Label = fmt.Sprintf("%s %s - %s", mm.Context, mm.Name, mm.CollectionFunction)
 			mm.FlushTime = SqlTimeInt{mm.Timestamp.Add(mm.CollectionDuration * time.Second)}
 			mm.CollectionScratch.Sum = 0
 			mm.CollectionScratch.Numvalues = 0
 			mm.CollectionScratch.Maximum = -math.MaxFloat64
 			mm.CollectionScratch.Minimum = math.MaxFloat64
 		} else {
-			mm.Label = fmt.Sprintf("%s - %s", mm.Context, mm.Name)
+			mm.Label = fmt.Sprintf("%s %s", mm.Context, mm.Name)
 		}
 
 		// create instances for each metric meta corresponding to this metric value
