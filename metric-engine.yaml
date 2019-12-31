@@ -435,11 +435,14 @@ UDB-Metric-Import:
   CurrentCUPS:
     # TODO: UNDERLYING TABLE NEEDS HWM.
     Type: MetricColumns
+    # disable change driven scan on this table in favor of just doing clockwork 5s scan
+    # Because the timestamps are driven from data in the table, we dont need to worry about adding duplicate entries
+    # as there is a unique constraint on metricvalue on instance/timestamp.
     DBChange:
       SHM.db:
         TblsCurrentCUPS:
-    ScanInterval: 0
-    WaitInterval: 5
+    ScanInterval: 3
+    WaitInterval: 1
     Query: |
       SELECT
         friendlyFQDD as FriendlyFQDD,
@@ -448,17 +451,45 @@ UDB-Metric-Import:
         friendlyFQDD as Context,
 
         SystemCupsTimeStamp * 1000000000 as 'Timestamp-SystemUsage',
-        SystemCupsCurrent as 'Metric-SystemUsage',
+        SystemCupsCurrent as 'Metric-SystemUsage'
+      FROM TblsCurrentCUPS
+      where [Timestamp-SystemUsage] > :HWM
+      UNION ALL
+
+      SELECT
+        friendlyFQDD as FriendlyFQDD,
+        FQDD as FQDD,
+        '/redfish/v1/FIXME' || FriendlyFQDD as Property,
+        friendlyFQDD as Context,
 
         MemoryCupsTimeStamp * 1000000000 as 'Timestamp-MemoryUsage',
-        MemoryCupsCurrent as 'Metric-MemoryUsage',
+        MemoryCupsCurrent as 'Metric-MemoryUsage'
+      FROM TblsCurrentCUPS
+      where [Timestamp-MemoryUsage] > :HWM
+      UNION ALL
+
+      SELECT
+        friendlyFQDD as FriendlyFQDD,
+        FQDD as FQDD,
+        '/redfish/v1/FIXME' || FriendlyFQDD as Property,
+        friendlyFQDD as Context,
 
         IoCupsTimestamp * 1000000000 as 'Timestamp-IOUsage',
-        IoCupsCurrent as 'Metric-IOUsage',
+        IoCupsCurrent as 'Metric-IOUsage'
+      FROM TblsCurrentCUPS
+      where [Timestamp-IOUsage] > :HWM
+      UNION ALL
+
+      SELECT
+        friendlyFQDD as FriendlyFQDD,
+        FQDD as FQDD,
+        '/redfish/v1/FIXME' || FriendlyFQDD as Property,
+        friendlyFQDD as Context,
 
         CpuCupsCollectionTime * 1000000000 as 'Timestamp-CPUUsage',
         CpuCupsCurrent as 'Metric-CPUUsage'
       FROM TblsCurrentCUPS
+      where [Timestamp-CPUUsage] > :HWM
 
   PowerStatistics:
     # TODO: UNDERLYING TABLE NEEDS HWM.
@@ -467,7 +498,8 @@ UDB-Metric-Import:
       SHM.db:
         TblsPowerStatistics:
     ScanInterval: 0
-    WaitInterval: 5
+    WaitInterval: 50
+    # There is a TblAvgPowerConsumptionStatDataObj, why aren't we using that?
     Query: |
       SELECT
         cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
@@ -965,7 +997,7 @@ UDB-Metric-Import:
       from TblFanExtObj
       WHERE Timestamp > :HWM
 
-  Sensor:
+  RAWSensor:
     Type: DirectMetric
     # TODO: UNDERLYING TABLE NEEDS HWM.
     # TODO: Underlying view table missing FQDD, need to add
@@ -977,6 +1009,88 @@ UDB-Metric-Import:
         TblProbeObj:
         ActiveOIDMapping:
     Query: |
+      SELECT
+        SingleRecordEtag * 1000000000 as Timestamp,
+        ProbeLocation as Context,
+
+        Key as FQDD,
+        ProbeLocation as FriendlyFQDD,
+
+        -- property not quite right, as PS sensors are an exception
+        printf('/redfish/v1/Dell/Systems/System.Embedded.1/DellNumericSensor/%s', replace(replace(Key, '|', '_0x7c_') , '#', '_0x23_')) as Property,
+
+        CASE ObjType
+        WHEN 0x16 then 'TemperatureReading'
+        WHEN 0x17 then 'RPMReading'
+        WHEN 0x18 then 'VoltageReading'
+        WHEN 0x19 then
+          CASE subtype
+            WHEN 0x17 THEN 'AmpsReading'
+            WHEN 0x19 THEN 'WattsReading'
+            WHEN 0x18 THEN 'AmpsReading'
+            WHEN 0x1a THEN 'WattsReading'
+          END
+        WHEN 56 then
+          CASE key
+          WHEN 'iDRAC.Embedded.1#SystemBoardCPUUsage' then 'CPUUsage'
+          WHEN 'iDRAC.Embedded.1#SystemBoardSYSUsage' then 'SystemUsage'
+          WHEN 'iDRAC.Embedded.1#SystemBoardMEMUsage' then 'MemoryUsage'
+          WHEN 'iDRAC.Embedded.1#SystemBoardIOUsage'  then 'IOUsage'
+          END
+        END as Name,
+
+        -- manually expand x^y since sqlite is missing a pow() or exp() function
+        CASE UnitModifier
+        WHEN -6 THEN (1.0 * ProbeReading) * 1000000
+        WHEN -5 THEN (1.0 * ProbeReading) * 100000
+        WHEN -4 THEN (1.0 * ProbeReading) * 10000
+        WHEN -3 THEN (1.0 * ProbeReading) * 1000
+        WHEN -2 THEN (1.0 * ProbeReading) * 100
+        WHEN -1 THEN (1.0 * ProbeReading) * 10
+        WHEN 0 THEN (1.0 * ProbeReading)
+        WHEN 1 THEN (1.0 * ProbeReading) / 10.0
+        WHEN 2 THEN (1.0 * ProbeReading) / 100.0
+        WHEN 3 THEN (1.0 * ProbeReading) / 1000.0
+        WHEN 4 THEN (1.0 * ProbeReading) / 10000.0
+        WHEN 5 THEN (1.0 * ProbeReading) / 100000.0
+        WHEN 6 THEN (1.0 * ProbeReading) / 1000000.0
+        END as Value
+
+      FROM TblProbeObj
+      left join
+        ActiveOIDMapping on TblProbeObj.OID = ActiveOIDMapping.OID
+      WHERE
+        Timestamp > :HWM AND (
+          -- <dchipobj.h>
+          -- TEMPERATURE_OBJ_TYPE (0x16) // ProbeObj
+          ( ObjType = 0x16 and subtype=0x05 ) or
+
+          -- FAN_OBJ_TYPE         (0x17) // ProbeObj
+          ( ObjType = 0x17 and (subtype=0x01 or subtype=0x03)) or
+
+          -- VOLTAGE_OBJ_TYPE     (0x18) // ProbeObj
+          --   All voltage subtypes that give actual readings
+          ( ObjType = 0x18 and ((SubType >= 0x01 and SubType <= 0x0F) or subType = 0x1C) ) or
+
+          -- CURRENT_OBJ_TYPE     (0x19) // ProbeObj
+          ( ObjType = 0x19 ) or
+
+          ( ObjType = 0x38 )    -- USAGE_OBJ_TYPE       (0x38) // CPU Utilization
+        )
+
+  Sensor:
+    Type: DISABLE-DirectMetric
+    # TODO: UNDERLYING TABLE NEEDS HWM.
+    # TODO: Underlying view table missing FQDD, need to add
+    ScanInterval: 0
+    WaitInterval: 5
+    # CIMVIEW_DCIM_NumericSensor is a view, do db change notifications on underlying tables
+    DBChange:
+      DMLiveObjectDatabase.db:
+        TblProbeObj:
+        ActiveOIDMapping:
+    Query: SELECT 1
+    disable-Query: |
       SELECT
         cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
         case
@@ -992,7 +1106,26 @@ UDB-Metric-Import:
           when SensorType = 5 then 'RPMReading'
           else "InvalidMetric-" || SensorType
         end as Name,
-        CurrentReading as Value,
+
+        -- manually expand x^y since sqlite is missing a pow() or exp() function
+        -- TODO: check that the positive/negative is correct here since this might be reversed
+        CASE UnitModifier
+        WHEN -6 THEN (1.0 * CurrentReading) * 1000000
+        WHEN -5 THEN (1.0 * CurrentReading) * 100000
+        WHEN -4 THEN (1.0 * CurrentReading) * 10000
+        WHEN -3 THEN (1.0 * CurrentReading) * 1000
+        WHEN -2 THEN (1.0 * CurrentReading) * 100
+        WHEN -1 THEN (1.0 * CurrentReading) * 10
+        WHEN 0 THEN (1.0 * CurrentReading)
+        WHEN 1 THEN (1.0 * CurrentReading) / 10.0
+        WHEN 2 THEN (1.0 * CurrentReading) / 100.0
+        WHEN 3 THEN (1.0 * CurrentReading) / 1000.0
+        WHEN 4 THEN (1.0 * CurrentReading) / 10000.0
+        WHEN 5 THEN (1.0 * CurrentReading) / 100000.0
+        WHEN 6 THEN (1.0 * CurrentReading) / 1000000.0
+        END as Value
+
+
         printf('/redfish/v1/Dell/Systems/System.Embedded.1/DellNumericSensor/%s', replace(replace(DeviceID, '|', '_0x7c_') , '#', '_0x23_')) as Property,
         ElementName as Context,
         DeviceID as FQDD,
@@ -1002,7 +1135,7 @@ UDB-Metric-Import:
 
   PSSensor:
     # TODO: UNDERLYING TABLE NEEDS HWM.
-    Type: DirectMetric
+    Type: DISABLE-DirectMetric
     # CIMVIEW_DCIM_PSNumericSensor is view, do db change on underlying tables
     DBChange:
       DMLiveObjectDatabase.db:
@@ -1010,7 +1143,8 @@ UDB-Metric-Import:
         ActiveOIDMapping:
     ScanInterval: 0
     WaitInterval: 5
-    Query: |
+    Query: SELECT 1
+    disable-Query: |
       SELECT
         cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
         case SensorType
@@ -1022,7 +1156,25 @@ UDB-Metric-Import:
           end
           else "InvalidMetric-" || SensorType
         end as Name,
-        CurrentReading as Value,
+
+        -- manually expand x^y since sqlite is missing a pow() or exp() function
+        -- TODO: check that the positive/negative is correct here since this might be reversed
+        CASE UnitModifier
+        WHEN -6 THEN (1.0 * CurrentReading) * 1000000
+        WHEN -5 THEN (1.0 * CurrentReading) * 100000
+        WHEN -4 THEN (1.0 * CurrentReading) * 10000
+        WHEN -3 THEN (1.0 * CurrentReading) * 1000
+        WHEN -2 THEN (1.0 * CurrentReading) * 100
+        WHEN -1 THEN (1.0 * CurrentReading) * 10
+        WHEN 0 THEN (1.0 * CurrentReading)
+        WHEN 1 THEN (1.0 * CurrentReading) / 10.0
+        WHEN 2 THEN (1.0 * CurrentReading) / 100.0
+        WHEN 3 THEN (1.0 * CurrentReading) / 1000.0
+        WHEN 4 THEN (1.0 * CurrentReading) / 10000.0
+        WHEN 5 THEN (1.0 * CurrentReading) / 100000.0
+        WHEN 6 THEN (1.0 * CurrentReading) / 1000000.0
+        END as Value
+
         printf('/redfish/v1/Dell/Systems/System.Embedded.1/DellPSNumericSensor/%s', replace(replace(DeviceID, '|', '_0x7c_') , '#', '_0x23_')) as Property,
         ElementName as Context,
         DeviceID as FQDD,
