@@ -1168,8 +1168,8 @@ createdb:
           inner join ReportDefinitionToMetricMeta as rd2mm on MM.ID = rd2mm.MetricMetaID;
 
   - |
-      -- DOES NOT SCALE:  This uses a temp table to spool the metric values. memory usage scales with # of records output.\n
-      --                 BECAUSE OF THE 'ORDER BY' for the MetricValueByReport table!\n
+      -- DOES NOT SCALE:  This uses a temp table to spool the metric values. memory usage scales with # of records output.
+      --                 BECAUSE OF THE 'ORDER BY' for the MetricValueByReport table!
       DROP VIEW IF EXISTS MetricReport_Stops_Redfish;
       CREATE VIEW MetricReport_Stops_Redfish AS
         select
@@ -1180,7 +1180,7 @@ createdb:
               ' "Id": "' || MR.Name || '",' ||
               ' "Name": "' || MR.Name || ' Metric Report",' ||
               ' "ReportSequence": ' || Sequence || ',' ||
-              ' "Timestamp": ' || strftime('"%Y-%m-%dT%H:%M:%f"', MR.ReportTimestamp/1000000000.0, 'unixepoch') || ', ' ||
+              ' "Timestamp": ' || strftime('"%Y-%m-%dT%H:%M:%fZ"', MR.ReportTimestamp/1000000000.0, 'unixepoch') || ', ' ||
               ' "MetricReportDefinition": {"@odata.id": "/redfish/v1/TelemetryService/MetricReportDefinitions/' || MRD.Name || '"}, ' ||
                 ifnull((
                   SELECT
@@ -1215,7 +1215,7 @@ createdb:
             ' "Id": "' || MR.Name || '",' ||
             ' "Name": "' || MR.Name || ' Metric Report",' ||
             ' "ReportSequence": ' || Sequence || ',' ||
-            ' "Timestamp": ' || strftime('"%Y-%m-%dT%H:%M:%f"', MR.ReportTimestamp/1000000000.0, 'unixepoch') || ', ' ||
+            ' "Timestamp": ' || strftime('"%Y-%m-%dT%H:%M:%fZ"', MR.ReportTimestamp/1000000000.0, 'unixepoch') || ', ' ||
             ' "MetricReportDefinition": {"@odata.id": "/redfish/v1/TelemetryService/MetricReportDefinitions/' || MRD.Name || '"}, ' ||
               ifnull((
                 SELECT
@@ -1268,73 +1268,86 @@ createdb:
       DROP VIEW IF EXISTS MetricReportDefinition_JSON;
       CREATE VIEW MetricReportDefinition_JSON as
         select
-          json_object(
-            '@odata.type', '#MetricReportDefinition.v1_2_0.MetricReportDefinition',
-            '@odata.context', '/redfish/v1/$metadata#MetricReportDefinition.MetricReportDefinition',
-            '@odata.id', '/redfish/v1/TelemetryService/MetricReportDefinitions/' || Name,
-            'Id', Name,
-            'Name', ifnull(ShortDesc, Name || ' Metric Report Definition'),
-            'Description',  LongDesc,
-            'MetricReportDefinitionType', Type,
-            'Schedule', json_object(
-              'RecurrenceInterval', 'PT' || (Period/(3600)) || 'H' || ((Period/60)%60) || 'M' || (Period%60) || 'S'
-            ),
-            'ReportUpdates', Updates,
-            'ReportActions', json(Actions),
-            'ReportActions@odata.count', json_array_length(json(Actions)),
-            'AppendLimit', 3000,
+          (
+          '{' ||
+          ' "@odata.type": "#MetricReportDefinition.v1_2_0.MetricReportDefinition",' ||
+          ' "@odata.context": "/redfish/v1/$metadata#MetricReportDefinition.MetricReportDefinition",' ||
+          ' "@odata.id": "/redfish/v1/TelemetryService/MetricReportDefinitions/' || Name || '",' ||
+          ' "Id": "' || name || '",' ||
+          ' "Name": "' ||  ifnull(shortdesc, name || ' metric report definition') || '",' ||
+          ' "Description": "' ||  ifnull(LongDesc, name || ' metric report definition') || '",' ||
+            -- Hardcoded/fixed due to limitations in SQLITE query engine. LIMIT must be a constant
+          ' "AppendLimit": 3000,' ||
+          ' "MetricReportDefinitionEnabled": ' || case Enabled when 1 then json('true') else json('false') end || ',' ||
+          ' "MetricReportDefinitionType": "' || Type || '",' ||
+          ' "MetricReportDefinitionType@Redfish.AllowableValues": ' || json_array('Periodic', 'OnChange', 'OnRequest') || ', ' ||
+          ' "MetricReportHeartbeatInterval": null,' ||
+          ' "SuppressRepeatedMetricValue": ' || case SuppressDups when 1 then json('true') else json('false') end || ',' ||
+          ' "ReportUpdates": "' || Updates || '", ' ||
+          ' "ReportUpdates@Redfish.AllowableValues": ' || json_array('AppendStopsWhenFull', 'AppendWrapsWhenFull', 'NewReport', 'Overwrite') || ", " ||
 
-            'MetricReport', json((
+          ' "ReportActions": ' || json(Actions) || ',' ||
+          ' "ReportActions@odata.count": ' || json_array_length(json(Actions)) || ',' ||
+          ' "ReportActions@Redfish.AllowableValues": ' || json_array('LogToMetricReportsCollection', 'RedfishEvent') || ',' ||
+          case Type
+          when 'Periodic' then
+          ' "Schedule": ' || json_object(
+              'RecurrenceInterval', 'PT' || (Period/(3600)) || 'H' || ((Period/60)%60) || 'M' || (Period%60) || 'S'
+            ) || ','
+          else ''
+          end ||
+          ' "MetricReport": ' || json((
                 select
                   json_object( '@odata.id', '/redfish/v1/TelemetryService/MetricReports/' || Name )
                 from MetricReport as MR
                 where MR.ReportDefinitionID = MetricReportDefinition.ID
                 order by MR.Sequence DESC
                 LIMIT 1
-                )),
-            -- TODO: not yet implemented
-            --'Wildcards', [],
-            --'Wildcards@odata.count', 0,
-            'Metrics', json((
+                )) || ',' ||
+          ifnull((
+            SELECT
+            ' "Metrics": ' ||  json('[' ||  group_concat(a.JSON) || ']') || ',' ||
+            ' "Metrics@odata.count": ' ||  count(*)
+            FROM
+            (
               select
-                json_group_array(
-                  json_object(
-                      'MetricID', MM.Name,
-                      'MetricProperties', MM.PropertyPattern,   -- TODO: this is wrong, as it should be an array
-                      'CollectionFunction', MM.CollectionFunction,
-                      'CollectionDuration', MM.CollectionDuration,
-                      'OEM', json_object(
-                        'Dell', json_object(
-                          'FQDD', ifnull(MM.FQDDPattern, '')
-                        )
-                      )
+                (
+                 '{' ||
+                 ' "MetricID": "' || MM.Name || '"' ||
+
+                 case MM.PropertyPattern
+                 when '' then ''
+                 else
+                 -- TODO: this is wrong, as it should be an array
+                 ', "MetricProperties": "' || MM.PropertyPattern ||'"'
+                 end ||
+
+                 case MM.CollectionFunction
+                 when '' then ''
+                 else
+                  ', "CollectionFunction": "' || MM.CollectionFunction || '"' ||
+                  ', "CollectionDuration": "' || MM.CollectionDuration || '"'
+                 end ||
+
+                 case MM.FQDDPattern
+                 when '' then ''
+                 else
+                 ', "OEM": ' || json_object(
+                    'Dell', json_object(
+                      'FQDD', MM.FQDDPattern
+                    )
                   )
-                )
+                 end ||
+                 '}'
+                ) as JSON
               from MetricMeta as MM
               left join  ReportDefinitionToMetricMeta as rd2mm on rd2mm.MetricMetaID = MM.ID
               where rd2mm.ReportDefinitionID = MetricReportDefinition.ID
-            )),
-            'Metrics@odata.count', (
-              select
-                count(*)
-              from MetricMeta as MM
-              left join  ReportDefinitionToMetricMeta as rd2mm on rd2mm.MetricMetaID = MM.ID
-              where rd2mm.ReportDefinitionID = MetricReportDefinition.ID
-            )
+              ) AS a ), '"Metrics": [], "Metrics@odata.count": 0' ) ||
+          '}'
           ) as root,
           '/redfish/v1/TelemetryService/MetricReportDefinitions/' || Name as [@odata.id]
         from MetricReportDefinition
-
-        -- SuppressDups  BOOLEAN,
-        -- Enabled       BOOLEAN,
-
-        -- ID    INTEGER PRIMARY KEY NOT NULL,
-        -- Name          TEXT UNIQUE NOT NULL, -- Name of the metric report defintion. This is what shows up in the collection
-        -- AppendLimit   INTEGER,
-        -- Type          TEXT,                 -- type of report: 'Periodic', 'OnChange', 'OnRequest'
-        -- Actions       TEXT,                 -- json array of options: 'LogToMetricReportsCollection', 'RedfishEvent'
-        -- Updates       TEXT,                 -- 'AppendStopsWhenFull', 'AppendWrapsWhenFull', 'NewReport', 'Overwrite'
-        -- Period        INTEGER
 
   - |
       DROP VIEW IF EXISTS MetricReportDefinitionCollection_JSON;
@@ -1354,6 +1367,36 @@ createdb:
           '/redfish/v1/TelemetryService/MetricReportDefinitions' as [@odata.id]
 
   - |
+      DROP VIEW IF EXISTS TelemetryService_JSON;
+      CREATE VIEW TelemetryService_JSON as
+      select
+        json_object(
+          '@odata.context', '/redfish/v1/$metadata#TelemetryService.TelemetryService',
+          '@odata.id', '/redfish/v1/TelemetryService',
+          '@odata.type', '#TelemetryService.v1_1_1.TelemetryService',
+          'Actions', json_object(
+            '#TelemetryService.SubmitTestMetricReport', json_object(
+              'target', '/redfish/v1/TelemetryService/Actions/TelemetryService.SubmitTestMetricReport'
+            )
+          ),
+          'Id', 'TelemetryService',
+          'Name', 'TelemetryService',
+          'MetricDefinitions', json_object(
+            '@odata.id', '/redfish/v1/TelemetryService/MetricDefinitions'
+          ),
+          'MetricReportDefinitions', json_object(
+            '@odata.id', '/redfish/v1/TelemetryService/MetricReportDefinitions'
+          ),
+          'MetricReports', json_object(
+            '@odata.id', '/redfish/v1/TelemetryService/MetricReports'
+          ),
+          'Triggers', json_object(
+            '@odata.id', '/redfish/v1/TelemetryService/Triggers'
+          )
+        ) as root,
+        '/redfish/v1/TelemetryService' as [@odata.id]
+
+  - |
       -- This is the table that creates a uniform table name to gather *any* metric report, regardless of type
       DROP VIEW IF EXISTS JSON;
       CREATE VIEW JSON as
@@ -1364,6 +1407,59 @@ createdb:
         select root, [@odata.id] from MetricReportCollection_JSON
           UNION ALL
         select root, [@odata.id] from MetricReport_JSON
+          UNION ALL
+        select root, [@odata.id] from TelemetryService_JSON
+
+# Backwards compat stuff to get the fcgi_rfsql to work
+  - |
+      DROP VIEW IF EXISTS TblMetricReportItems;
+      CREATE VIEW         TblMetricReportItems AS
+        SELECT
+          Name as ResourceType,
+          '/redfish/v1/TelemetryService/MetricReports/' || Name as '@odata.id'
+        FROM
+          MetricReport;
+
+  - |
+      DROP VIEW IF EXISTS TblMetricReportDefinitionItems;
+      CREATE VIEW         TblMetricReportDefinitionItems AS
+        SELECT
+          Name as ResourceType,
+          '/redfish/v1/TelemetryService/MetricReportDefinitions/' || Name as '@odata.id'
+        FROM
+          MetricReportDefinitions;
+
+  - |
+      DROP VIEW IF EXISTS TblTelemetryAttributesRFEnable;
+      CREATE VIEW         TblTelemetryAttributesRFEnable AS
+        SELECT
+          'Enabled' as CurrentValue,
+          'iDRAC.Embedded.1#Redfish.1#Enable' as Key
+
+  - |
+      DROP VIEW IF EXISTS TblTelemetryAttributesTelemEnable;
+      CREATE VIEW         TblTelemetryAttributesTelemEnable AS
+        SELECT
+          'Enabled' as CurrentValue,
+          'iDRAC.Embedded.1#Telemetry.1#EnableTelemetry' as Key
+
+  - |
+      DROP VIEW IF EXISTS TblTelemetryAttributesREPORT;
+      CREATE VIEW         TblTelemetryAttributesREPORT AS
+        SELECT
+          'Enabled' as CurrentValue,
+          'iDRAC.Embedded.1#Telemetry' || Name || '.1#EnableTelemetry'  as Key
+        FROM
+          MetricReport
+
+  - |
+      DROP VIEW IF EXISTS TblTelemetryAttributes;
+      CREATE VIEW         TblTelemetryAttributes AS
+        SELECT * FROM TblTelemetryAttributesREPORT
+        UNION ALL
+        SELECT * FROM TblTelemetryAttributesRFEnable
+        UNION ALL
+        SELECT * FROM TblTelemetryAttributesTelemEnable
 
   - |
         DROP VIEW IF EXISTS AggregationMetricsMRView_json ; create view AggregationMetricsMRView_json as select * from JSON where [@odata.id] = '/redfish/v1/TelemetryService/MetricReports/AggregationMetrics';
@@ -1390,12 +1486,12 @@ createdb:
         DROP VIEW IF EXISTS ThermalMetricsMRView_json ; create view ThermalMetricsMRView_json as select * from  JSON where [@odata.id] = '/redfish/v1/TelemetryService/MetricReports/ThermalMetrics';
 
         DROP VIEW IF EXISTS MetricReportCollectionView_json ; create view MetricReportCollectionView_json as select * from JSON where [@odata.id] = '/redfish/v1/TelemetryService/MetricReports';
-        DROP VIEW IF EXISTS MetricReportDefinitionCollectionView_json ; create view MetricReportDefinitionCollectionView_json as select * from JSON where [@odata.id] = '/redfish/v1/TelemetryService/MetricReportDefinition';
+        DROP VIEW IF EXISTS MetricReportDefinitionCollectionView_json ; create view MetricReportDefinitionCollectionView_json as select * from JSON where [@odata.id] = '/redfish/v1/TelemetryService/MetricReportDefinitions';
 
-        DROP VIEW IF EXISTS MetricDefinitionCollectionView_json ; -- create view MetricDefinitionCollectionView_json as select * from JSON  where [@odata.id] = '/redfish/v1/TelemetryService/MetricDefinition';
-        DROP VIEW IF EXISTS MetricDefinitionView_json ; -- create view MetricDefinitionView_json as select * from JSON where [@odata.id] = '/redfish/v1/TelemetryService/MetricReportDefinition';
-        DROP VIEW IF EXISTS TelemetryServiceView_json ; -- create view TelemetryServiceView_json as select * from JSON;
-        DROP VIEW IF EXISTS TelemetryLogServiceLCLogview_json ; -- create view TelemetryLogServiceLCLogview_json as select * from JSON;
+        DROP VIEW IF EXISTS MetricDefinitionCollectionView_json ; -- create view MetricDefinitionCollectionView_json as select * from JSON  where [@odata.id] = '/redfish/v1/TelemetryService/MetricDefinitions';
+        DROP VIEW IF EXISTS MetricDefinitionView_json ;           -- create view MetricDefinitionView_json as select * from JSON where [@odata.id] = '/redfish/v1/TelemetryService/MetricDefinitions/';
+        DROP VIEW IF EXISTS TelemetryServiceView_json ;           -- create view TelemetryServiceView_json as select * from JSON;
+        DROP VIEW IF EXISTS TelemetryLogServiceLCLogview_json ;   -- create view TelemetryLogServiceLCLogview_json as select * from JSON;
 
 # Logging levels:
 # debug, info, warn, error, crit
