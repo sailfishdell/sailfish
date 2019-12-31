@@ -202,6 +202,11 @@ func (l *UDBFactory) ImportByColumn(udbImportName string) (err error) {
 		ts, ok := mm["Timestamp"].(int64)
 		delete(mm, "Timestamp")
 
+		if ts > udbMeta.HWM {
+			udbMeta.HWM = ts
+			l.udb[udbImportName] = udbMeta
+		}
+
 		var metricCtx string
 		metricCtxB, ok := mm["Context"].([]byte)
 		if ok {
@@ -230,11 +235,6 @@ func (l *UDBFactory) ImportByColumn(udbImportName string) (err error) {
 		}
 		delete(mm, "FriendlyFQDD")
 
-		if ts > udbMeta.HWM {
-			udbMeta.HWM = ts
-			l.udb[udbImportName] = udbMeta
-		}
-
 		for k, v := range mm {
 			if v == nil {
 				// we dont add NULL metrics
@@ -259,6 +259,11 @@ func (l *UDBFactory) ImportByColumn(udbImportName string) (err error) {
 
 			if mts, ok := mm["Timestamp-"+metricName].(int64); ok {
 				event.Timestamp = SqlTimeInt{time.Unix(0, mts)}
+				if mts > udbMeta.HWM {
+					udbMeta.HWM = mts
+					l.udb[udbImportName] = udbMeta
+				}
+
 			}
 
 			events = append(events, event)
