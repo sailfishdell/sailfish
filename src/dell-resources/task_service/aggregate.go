@@ -17,7 +17,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-func InitTask(logger log.Logger, instantiateSvc *testaggregate.Service) {
+func InitTask(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.CommandHandler, ctx context.Context) {
 
 	//TODO: figure out what exactly updating the args should actually do
 	/*awesome_mapper2.AddFunction("update_task_args", func (args ... interface{}) (interface{}, error) {
@@ -258,8 +258,8 @@ func InitTask(logger log.Logger, instantiateSvc *testaggregate.Service) {
 								"task_id":         id,
 								"task_msg_1_args": msg_args,
 								"task_name":       name,
-								"task_state":      state,
 								"task_status":     status,
+								"task_state":      "",
 								"task_start":      start_time,
 								"task_end":        end_time,
 								"task_percent":    percent,
@@ -269,6 +269,14 @@ func InitTask(logger log.Logger, instantiateSvc *testaggregate.Service) {
 								"Index":           index,
 							})
 							taskViews[id] = vw
+
+							ch.HandleCommand(ctx,
+								&domain.UpdateRedfishResourceProperties2{
+									ID: vw.GetUUID(),
+									Properties: map[string]interface{}{
+										"TaskState": state,
+									},
+								})
 						}
 					}
 				}
