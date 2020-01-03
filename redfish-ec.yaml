@@ -6,9 +6,9 @@ main:
 listen:
    - unix:sailfish.socket
   # enable 8080 port only for testing, as per NCC audit it needs to be disabled on the build
-  #- http::8080
+  # - http::8080
   #  enable pprof only for debuging, it causes increased memory consumption. If memprofilerate>0, it will use way more. It's set to 0 in the service file.
-  #- pprof:localhost:9080
+  # - pprof:localhost:9080
   # disable direct https listener, uncomment if needed for testing:
   # - https::8443
 
@@ -1247,6 +1247,8 @@ awesome_mapper:
           SelectFN: "uriCheckWithHash",
           SelectParams: ["rooturi", "/Chassis/System.Chassis.1/Sensors/Temperatures"],
           ModelUpdate: [ {Property: "temperature_uris", Query: "removefromset(model, propname, data.ResourceURI)"} ]}
+      # thermal health data handled in AM3
+
 
     lclog:
       - { SelectEventType: "LogEvent",
@@ -1271,9 +1273,6 @@ awesome_mapper:
           Exec: [ "clearuris(collection_uri)" ]}
 
     generate_health_status:
-      - { SelectEventType: "HealthEvent",
-          Select: "has_prefix(data.FQDD,'System.Chassis.1#IOM.Slot') || has_prefix(data.FQDD, 'System.Chassis.1#System.Modular')",
-          ModelUpdate: [ {Property: "health", Query: "add_health_to_subsystem(data, view.GetUUID())"} ]}
       - { SelectEventType: "ComponentRemoved",
           SelectFN: "true",
           ModelUpdate: [ {Property: "health", Query: "remove_health(data,view.GetUUID())"} ]}
@@ -1374,23 +1373,13 @@ awesome_mapper:
                 {Property: "min_watts_time", Query: "epoch_to_date(traverse_struct(data, 'MinPwrLast' + trend + 'Time'))" }]}
 
     health:
-      - { SelectEventType: "HealthEvent", Select: "data.FQDD == health_fqdd", ModelUpdate: [ {Property: "health", Query: "empty_to_null(data.Health)" } ] }
+        #TODO: remoove this once global health model is gone
 
     health_alert:
       - { SelectEventType: "HealthEvent", Select: "data.FQDD == health_fqdd", Exec: ["health_alert(ss, data.Health)"]}
 
     global_health:
-      - { SelectEventType: "HealthEvent", Select: "data.FQDD == 'System.Chassis.1#SubSystem.1#Fan'", ModelUpdate: [ {Property: "fan_rollup", Query: "data.Health" } ] }
-      - { SelectEventType: "HealthEvent", Select: "data.FQDD == 'System.Chassis.1#SubSystem.1#Temperature'", ModelUpdate: [ {Property: "temperature_rollup", Query: "data.Health" } ] }
-      - { SelectEventType: "HealthEvent", Select: "data.FQDD == 'System.Chassis.1#SubSystem.1#MM'", ModelUpdate: [ {Property: "mm_rollup", Query: "data.Health" } ] }
-      - { SelectEventType: "HealthEvent", Select: "data.FQDD == 'System.Chassis.1#SubSystem.1#SledSystem'", modelupdate: [ {Property: "sled_rollup", Query: "data.Health" } ] }
-      - { SelectEventType: "HealthEvent", Select: "has_prefix(data.FQDD,'System.Chassis.1#System.Modular')", Exec: ["update_property(model, data.FQDD, data.Health)"]}
-      - { SelectEventType: "HealthEvent", Select: "has_prefix(data.FQDD,'System.Chassis.1#IOM.Slot')", Exec: ["update_property(model, data.FQDD, data.Health)"]}
-      - { SelectEventType: "HealthEvent", Select: "data.FQDD == 'System.Chassis.1#SubSystem.1#PowerSupply'", ModelUpdate: [ {Property: "psu_rollup", Query: "data.Health" } ] }
-      - { SelectEventType: "HealthEvent", Select: "data.FQDD == 'System.Chassis.1#SubSystem.1#CMC'", ModelUpdate: [ {Property: "cmc_rollup", Query: "data.Health" } ] }
-      - { SelectEventType: "HealthEvent", Select: "data.FQDD == 'System.Chassis.1#SubSystem.1#Miscellaneous'", ModelUpdate: [ {Property: "misc_rollup", Query: "data.Health" } ] }
-      - { SelectEventType: "HealthEvent", Select: "data.FQDD == 'System.Chassis.1#SubSystem.1#Battery'", ModelUpdate: [ {Property: "battery_rollup", Query: "data.Health" } ] }
-      - { SelectEventType: "HealthEvent", Select: "data.FQDD == 'System.Chassis.1#SubSystem.1#IOMSubsystem'", ModelUpdate: [ {Property: "iom_rollup", Query: "data.Health" } ] }
+        #TODO: remoove this once global health model is gone
 
 
 mappings:
