@@ -1089,8 +1089,7 @@ UDB-Metric-Import:
       DMLiveObjectDatabase.db:
         TblProbeObj:
         ActiveOIDMapping:
-    Query: SELECT 1
-    disable-Query: |
+    Query: |
       SELECT
         cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
         case
@@ -1110,21 +1109,20 @@ UDB-Metric-Import:
         -- manually expand x^y since sqlite is missing a pow() or exp() function
         -- TODO: check that the positive/negative is correct here since this might be reversed
         CASE UnitModifier
-        WHEN -6 THEN (1.0 * CurrentReading) * 1000000
-        WHEN -5 THEN (1.0 * CurrentReading) * 100000
-        WHEN -4 THEN (1.0 * CurrentReading) * 10000
-        WHEN -3 THEN (1.0 * CurrentReading) * 1000
-        WHEN -2 THEN (1.0 * CurrentReading) * 100
-        WHEN -1 THEN (1.0 * CurrentReading) * 10
-        WHEN 0 THEN (1.0 * CurrentReading)
-        WHEN 1 THEN (1.0 * CurrentReading) / 10.0
-        WHEN 2 THEN (1.0 * CurrentReading) / 100.0
-        WHEN 3 THEN (1.0 * CurrentReading) / 1000.0
-        WHEN 4 THEN (1.0 * CurrentReading) / 10000.0
-        WHEN 5 THEN (1.0 * CurrentReading) / 100000.0
-        WHEN 6 THEN (1.0 * CurrentReading) / 1000000.0
-        END as Value
-
+        WHEN -6 THEN CurrentReading * 1000000.0
+        WHEN -5 THEN CurrentReading * 100000.0
+        WHEN -4 THEN CurrentReading * 10000.0
+        WHEN -3 THEN CurrentReading * 1000.0
+        WHEN -2 THEN CurrentReading * 100.0
+        WHEN -1 THEN CurrentReading * 10.0
+        WHEN 0 THEN CurrentReading * 1.0
+        WHEN 1 THEN CurrentReading / 10.0
+        WHEN 2 THEN CurrentReading / 100.0
+        WHEN 3 THEN CurrentReading / 1000.0
+        WHEN 4 THEN CurrentReading / 10000.0
+        WHEN 5 THEN CurrentReading / 100000.0
+        WHEN 6 THEN CurrentReading / 1000000.0
+        END as Value,
 
         printf('/redfish/v1/Dell/Systems/System.Embedded.1/DellNumericSensor/%s', replace(replace(DeviceID, '|', '_0x7c_') , '#', '_0x23_')) as Property,
         ElementName as Context,
@@ -1143,8 +1141,7 @@ UDB-Metric-Import:
         ActiveOIDMapping:
     ScanInterval: 0
     WaitInterval: 5
-    Query: SELECT 1
-    disable-Query: |
+    Query: |
       SELECT
         cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
         case SensorType
@@ -1160,20 +1157,20 @@ UDB-Metric-Import:
         -- manually expand x^y since sqlite is missing a pow() or exp() function
         -- TODO: check that the positive/negative is correct here since this might be reversed
         CASE UnitModifier
-        WHEN -6 THEN (1.0 * CurrentReading) * 1000000
-        WHEN -5 THEN (1.0 * CurrentReading) * 100000
-        WHEN -4 THEN (1.0 * CurrentReading) * 10000
-        WHEN -3 THEN (1.0 * CurrentReading) * 1000
-        WHEN -2 THEN (1.0 * CurrentReading) * 100
-        WHEN -1 THEN (1.0 * CurrentReading) * 10
-        WHEN 0 THEN (1.0 * CurrentReading)
-        WHEN 1 THEN (1.0 * CurrentReading) / 10.0
-        WHEN 2 THEN (1.0 * CurrentReading) / 100.0
-        WHEN 3 THEN (1.0 * CurrentReading) / 1000.0
-        WHEN 4 THEN (1.0 * CurrentReading) / 10000.0
-        WHEN 5 THEN (1.0 * CurrentReading) / 100000.0
-        WHEN 6 THEN (1.0 * CurrentReading) / 1000000.0
-        END as Value
+        WHEN -6 THEN CurrentReading * 1000000.0
+        WHEN -5 THEN CurrentReading * 100000.0
+        WHEN -4 THEN CurrentReading * 10000.0
+        WHEN -3 THEN CurrentReading * 1000.0
+        WHEN -2 THEN CurrentReading * 100.0
+        WHEN -1 THEN CurrentReading * 10.0
+        WHEN 0 THEN CurrentReading * 1.0
+        WHEN 1 THEN CurrentReading / 10.0
+        WHEN 2 THEN CurrentReading / 100.0
+        WHEN 3 THEN CurrentReading / 1000.0
+        WHEN 4 THEN CurrentReading / 10000.0
+        WHEN 5 THEN CurrentReading / 100000.0
+        WHEN 6 THEN CurrentReading / 1000000.0
+        END as Value,
 
         printf('/redfish/v1/Dell/Systems/System.Embedded.1/DellPSNumericSensor/%s', replace(replace(DeviceID, '|', '_0x7c_') , '#', '_0x23_')) as Property,
         ElementName as Context,
@@ -1207,6 +1204,17 @@ createdb:
         Updates      TEXT,                 -- 'AppendStopsWhenFull', 'AppendWrapsWhenFull', 'NewReport', 'Overwrite'
         Period       INTEGER,
         Hidden       INTEGER               -- Not displayed to the user, only for internal use
+      )
+
+  - |
+      CREATE TABLE IF NOT EXISTS MetricDefinition
+      (
+        ID      INTEGER PRIMARY KEY,
+        Name    TEXT UNIQUE NOT NULL,
+        Accuracy REAL,
+        Calculable TEXT, -- 'NonCalculatable', 'NonSummable', 'Summable'
+        CalculationAlgorithm TEXT,
+
       )
 
   - |

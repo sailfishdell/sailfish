@@ -9,7 +9,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"syscall"
 	"time"
 
 	"github.com/jmoiron/sqlx"
@@ -58,19 +57,24 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc EventHandlingServic
 		return
 	}
 
-	// we have a separate goroutine for this, so we should be safe to busy-wait
+	// ensure nothing we do will ever modify the source
 	_, err = database.Exec("PRAGMA query_only = 1")
+	// we have a separate goroutine for this, so we should be safe to busy-wait
 	_, err = database.Exec("PRAGMA busy_timeout = 1000")
-	//_, err = database.Exec("PRAGMA cache_size = 0")
-	//_, err = database.Exec("PRAGMA udbdm.cache_size = 0")
-	//_, err = database.Exec("PRAGMA udbsm.cache_size = 0")
-	//_, err = database.Exec("PRAGMA mmap_size = 0")
+	// don't ever run sync() or friends
 	_, err = database.Exec("PRAGMA synchronous = off")
 	_, err = database.Exec("PRAGMA       journal_mode  = off")
 	_, err = database.Exec("PRAGMA udbdm.journal_mode  = off")
 	_, err = database.Exec("PRAGMA udbsm.journal_mode  = off")
 
-	// udb db not opened in WAL mode... in fact should be read-only, so this isn't really necessary, but might as well
+	// these increase memory usage, so disable until we get good values for these
+	//_, err = database.Exec("PRAGMA cache_size = 0")
+	//_, err = database.Exec("PRAGMA udbdm.cache_size = 0")
+	//_, err = database.Exec("PRAGMA udbsm.cache_size = 0")
+	//_, err = database.Exec("PRAGMA mmap_size = 0")
+
+	// we have only one thread doing updates, so one connection should be
+	// fine. keeps sqlite from opening new connections un-necessarily
 	database.SetMaxOpenConns(1)
 
 	UDBFactory, err := NewUDBFactory(logger, database, d, cfg)
@@ -139,7 +143,7 @@ func handleUDBNotifyPipe(logger log.Logger, cfg *viper.Viper, d BusComponents) {
 	//    DB                      TBL                  ROWID     operationid
 	// ||DMLiveObjectDatabase.db|TblNic_Port_Stats_Obj|167445167|23||
 
-	err := syscall.Mkfifo(pipePath, 0660)
+	err := makeFifo(pipePath, 0660)
 	if err != nil && !os.IsExist(err) {
 		logger.Warn("Error creating UDB pipe", "err", err)
 	}
@@ -151,7 +155,7 @@ func handleUDBNotifyPipe(logger log.Logger, cfg *viper.Viper, d BusComponents) {
 
 	defer file.Close()
 
-	// The reader of the named pipe gets an EOF when the last writer exits to
+	// The reader of the named pipe gets an EOF when the last writer exits. To
 	// avoid this, we'll simply open it ourselves for writing and never close it.
 	// This will ensure the pipe stays around forever without eof.
 
@@ -160,6 +164,7 @@ func handleUDBNotifyPipe(logger log.Logger, cfg *viper.Viper, d BusComponents) {
 		logger.Crit("Error opening UDB pipe for (placeholder) write", "err", err)
 	}
 
+	// this function doesn't return (on purpose), so this defer won't do much. That's ok, we'll keep it in case we change things around in the future
 	defer nullWriter.Close()
 
 	n := &ChangeNotify{}
