@@ -1,7 +1,5 @@
 package model
 
-import ()
-
 //  Options: these are construction-time functional options that can be passed
 //  to the constructor, or after construction, you can pass them with
 //  ApplyOptions

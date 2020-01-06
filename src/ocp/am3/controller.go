@@ -53,9 +53,9 @@ func StartService(ctx context.Context, logger log.Logger, name string, d BusObjs
 		serviceName:   name,
 		logger:        logger.New("module", "am3"),
 		eb:            d.GetBus(),
-		handledEvents: map[eh.EventType]struct{}{ConfigureAM3Event: struct{}{}},
+		handledEvents: map[eh.EventType]struct{}{ConfigureAM3Event: {}},
 		eventhandlers: map[eh.EventType]map[string]func(eh.Event){
-			ConfigureAM3Event: map[string]func(eh.Event){
+			ConfigureAM3Event: {
 				// This function is run from inside the event loop to configure things.
 				// No need for locks as everything is guaranteed to be single-threaded
 				// and not concurrently running

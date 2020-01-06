@@ -1,7 +1,5 @@
 package eventservice
 
-import ()
-
 // This will eventually need to be more flexible
 
 type Job func()

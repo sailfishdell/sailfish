@@ -184,7 +184,7 @@ func (c *RemoveRedfishResourceProperty) CommandType() eh.CommandType {
 }
 func (c *RemoveRedfishResourceProperty) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 	properties := a.Properties.Value.(map[string]interface{})
-	for key, _ := range properties {
+	for key := range properties {
 		if key == c.Property {
 			delete(properties, key)
 		}

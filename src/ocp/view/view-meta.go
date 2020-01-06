@@ -1,7 +1,5 @@
 package view
 
-import ()
-
 type MetaInt map[string]interface{}
 type MetaOption func(*View, MetaInt) error
 

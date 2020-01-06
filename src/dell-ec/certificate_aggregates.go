@@ -25,10 +25,10 @@ func RegisterCertAggregate(s *testaggregate.Service) {
 						"GET": []string{"Login"},
 					},
 					Properties: map[string]interface{}{
-						"Id":                             "CertificateService",
-						"Name":                           "Certificate Service",
-						"Description":                    "Represents the properties of Certificate Service",
-                        "CertificateSigningRequest":      nil,
+						"Id":                        "CertificateService",
+						"Name":                      "Certificate Service",
+						"Description":               "Represents the properties of Certificate Service",
+						"CertificateSigningRequest": nil,
 						"Actions": map[string]interface{}{
 							"#DellCertificateService.GenerateCSR": map[string]interface{}{
 								"target": vw.GetActionURI("certificates.generatecsr"),

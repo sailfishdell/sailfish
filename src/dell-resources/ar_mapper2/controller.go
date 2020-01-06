@@ -313,7 +313,7 @@ func (b breadcrumb) UpdateRequest(ctx context.Context, property string, value in
 func (ars *ARService) optimizeHash() {
 	ars.mappingsMu.Lock()
 	defer ars.mappingsMu.Unlock()
-	for k, _ := range ars.modelmappings {
+	for k := range ars.modelmappings {
 		ars.loadConfig(k)
 	}
 

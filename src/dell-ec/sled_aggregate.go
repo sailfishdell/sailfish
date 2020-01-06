@@ -56,12 +56,12 @@ func RegisterSledAggregate(s *testaggregate.Service) {
 						"Name@meta":       vw.Meta(view.GETProperty("name"), view.GETModel("default")),
 						"Oem": map[string]interface{}{
 							"Dell": map[string]interface{}{
-							  "OemChassis": map[string]interface{}{
-								  "@odata.id": vw.GetURI() + "/Attributes",
-							  },
+								"OemChassis": map[string]interface{}{
+									"@odata.id": vw.GetURI() + "/Attributes",
+								},
 								"InstPowerConsumption": 0,
 							},
-              "OemChassis": map[string]interface{}{ //TODO: Remove for Redfish Compliance
+							"OemChassis": map[string]interface{}{ //TODO: Remove for Redfish Compliance
 								"@odata.id": vw.GetURI() + "/Attributes",
 							},
 						},
@@ -106,7 +106,7 @@ func RegisterSledAggregate(s *testaggregate.Service) {
 						"Name@meta":         vw.Meta(view.GETProperty("name"), view.GETModel("default")),
 						"AssetTag@meta":     vw.Meta(view.GETProperty("asset_tag"), view.GETModel("default")),
 						"Description@meta":  vw.Meta(view.GETProperty("description"), view.GETModel("default")),
-						"PowerState":  "",
+						"PowerState":        "",
 
 						"IndicatorLED@meta": vw.Meta(view.GETModel("default"), view.PropPATCH("indicator_led", "ar_mapper"), view.GETProperty("indicator_led")),
 						"SKU@meta":          vw.Meta(view.GETProperty("service_tag"), view.GETModel("default")),

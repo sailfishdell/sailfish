@@ -239,10 +239,10 @@ func (b *breadcrumb) UpdateRequest(ctx context.Context, property string, value i
 	}
 
 	// create a timer based on number of attributes to be patched
-  total_timeout := patch_timeout*len(reqIDs)
-  if (total_timeout < 30) {
-    total_timeout = 30
-  }
+	total_timeout := patch_timeout * len(reqIDs)
+	if total_timeout < 30 {
+		total_timeout = 30
+	}
 	timer := time.NewTimer(time.Duration(total_timeout) * time.Second)
 
 	for {

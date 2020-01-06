@@ -55,10 +55,10 @@ func AddECInstantiate(l log.Logger, instantiateSvc *testaggregate.Service) {
 			return nil, errors.New("Need a string fqdd for addec_system_modular(), but didnt get one")
 		}
 		instantiateSvc.Instantiate("manager_cmc_integrated", map[string]interface{}{
-			"FQDD": FQDD,
+			"FQDD":                             FQDD,
 			"exportSystemConfiguration":        view.Action(exportSystemConfiguration),
-                        "importSystemConfiguration":        view.Action(importSystemConfiguration),
-                        "importSystemConfigurationPreview": view.Action(importSystemConfigurationPreview),
+			"importSystemConfiguration":        view.Action(importSystemConfiguration),
+			"importSystemConfigurationPreview": view.Action(importSystemConfigurationPreview),
 		})
 
 		return true, nil

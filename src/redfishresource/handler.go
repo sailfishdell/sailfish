@@ -220,7 +220,7 @@ func (d *DomainObjects) FindMatchingURIs(matcher func(string) bool) []string {
 
 	// slower, but fewer allocations and less garbage created
 	matchCount := 0
-	for uri, _ := range d.Tree {
+	for uri := range d.Tree {
 		if matcher(uri) {
 			matchCount++
 		}
@@ -229,7 +229,7 @@ func (d *DomainObjects) FindMatchingURIs(matcher func(string) bool) []string {
 	ret := make([]string, 0, matchCount)
 	// optimize no match count by not scanning tree again
 	if matchCount > 0 {
-		for uri, _ := range d.Tree {
+		for uri := range d.Tree {
 			if matcher(uri) {
 				ret = append(ret, uri) // preallocated
 				// TODO: optimize here by decrementing matchcount and early out when we hit last match. be sure no off by one errors
@@ -403,7 +403,7 @@ func (d *DomainObjects) DumpStatus() http.Handler {
 		})
 
 		fmt.Fprintf(w, "\nPLUGIN DUMP\n")
-		for k, _ := range plugins {
+		for k := range plugins {
 			fmt.Fprintf(w, "Plugin: %s\n", k)
 		}
 
