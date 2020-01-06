@@ -218,6 +218,7 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Service, d Bus
 			// here we generate an artificial tick and check for report generation in the case where no other event has happened to trigger it in the last period
 			if MRDFactory.MetricTSHWM.Before(lastHWM.Add(clockPeriod)) {
 				MRDFactory.MetricTSHWM = SqlTimeInt{lastHWM.Add(clockPeriod)}
+				fmt.Printf("Set HWM from tick: %s\n", MRDFactory.MetricTSHWM)
 				err = MRDFactory.FastCheckForNeededMRUpdates()
 				if err != nil {
 					return
