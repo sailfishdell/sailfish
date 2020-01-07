@@ -51,9 +51,8 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Service, d Bus
 		_, err = database.Exec(sqltext)
 		if err != nil {
 			logger.Crit("Error executing setup SQL", "err", err, "sql", sqltext)
-			return
+			panic("Cannot set up telemetry timeseries DB! ABORTING: " + err.Error())
 		}
-
 	}
 
 	MRDFactory, err := NewMRDFactory(logger, database)
