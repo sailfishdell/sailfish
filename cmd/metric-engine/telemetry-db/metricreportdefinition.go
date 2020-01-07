@@ -277,9 +277,11 @@ func (factory *MRDFactory) IterMRD(checkFn func(MRD *MetricReportDefinition) boo
 }
 
 func (l *MRDFactory) FastCheckForNeededMRUpdates() error {
+	//fmt.Println("test CUR_HWM(", l.MetricTSHWM, ")")
 	for MRName, val := range l.NextMRTS {
+		//fmt.Println("\t", val.Time.Sub(l.MetricTSHWM.Time), " - ", val, MRName)
 		if l.MetricTSHWM.After(val.Time) {
-			fmt.Println("GEN - CUR_HWM(", l.MetricTSHWM, "): MR(", MRName, ")")
+			fmt.Println("GEN -", MRName)
 			l.GenerateMetricReport(&MetricReportDefinitionData{Name: MRName})
 		}
 	}
@@ -379,7 +381,7 @@ func (factory *MRDFactory) GenerateMetricReport(mrdEvData *MetricReportDefinitio
 
 	switch MRD.Type {
 	case "Periodic":
-		//TODO: implement AppendLimit
+		// FYI: adding a negative number, as ".Sub()" does something *completely different*.
 		sqlargs["Start"] = factory.MetricTSHWM.Add(-time.Duration(MRD.Period) * time.Second).UnixNano()
 		sqlargs["End"] = factory.MetricTSHWM.UnixNano()
 		sqlargs["ReportTimestamp"] = factory.MetricTSHWM.UnixNano()
