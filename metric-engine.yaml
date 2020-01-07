@@ -518,14 +518,16 @@ Startup-Events:
 
 UDB-Metric-Import:
   CurrentCUPS:
-    # TODO: UNDERLYING TABLE NEEDS HWM.
     Type: MetricColumns
-    # disable change driven scan on this table in favor of just doing clockwork 5s scan
-    # Because the timestamps are driven from data in the table, we dont need to worry about adding duplicate entries
-    # as there is a unique constraint on metricvalue on instance/timestamp.
-    DBChange:
-      SHM.db:
-        TblsCurrentCUPS:
+    # disable change driven scan on this table in favor of just doing clockwork 3s scan
+    # The sensor interval on this is supposed to be 5s, so we'll scan the table
+    # slightly faster than that to ensure we never miss an interval
+    # Because the timestamps are driven from data in the table, we dont need to
+    # worry about adding duplicate entries as there is a unique constraint on
+    # metricvalue on instance/timestamp.
+    #    DBChange:
+    #      SHM.db:
+    #        TblsCurrentCUPS:
     ScanInterval: 3
     WaitInterval: 1
     Query: |
