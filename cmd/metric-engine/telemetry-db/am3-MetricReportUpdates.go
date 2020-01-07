@@ -61,8 +61,8 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Service, d Bus
 	}
 
 	// periodically optimize and vacuum database
-	const clockPeriod = 10100 * time.Millisecond
-	// slightly more than once every 5s. Idea here is to give messages a chance to drive the clock
+	// slightly more than once every 1s. Idea here is to give messages a chance to drive the clock
+	const clockPeriod = 1069 * time.Millisecond
 	clockTicker := time.NewTicker(clockPeriod)
 
 	go func() {
@@ -109,9 +109,10 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Service, d Bus
 			logger.Crit("Failed to create or update the Report Definition", "Name", reportDef.Name, "err", err)
 			return
 		}
-
-		// After we've set up the basic reports, let's go ahead and generate them for the first time
-		d.GetBus().PublishEvent(context.Background(), eh.NewEvent(GenerateMetricReport, &MetricReportDefinitionData{Name: reportDef.Name}, time.Now()))
+		err := MRDFactory.GenerateMetricReport(&localReportDefCopy)
+		if err != nil {
+			logger.Crit("Error generating metric report", "err", err, "ReportDefintion", localReportDefCopy)
+		}
 
 		// After we've done the adjustments to ReportDefinitionToMetricMeta, there
 		// might be orphan rows.  Schedule the database maintenace task to take
@@ -140,6 +141,7 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Service, d Bus
 		}
 	})
 
+	lastHWM := time.Time{}
 	am3Svc.AddEventHandler("Store Metric Value", MetricValueEvent, func(event eh.Event) {
 		metricValue, ok := event.Data().(*MetricValueEventData)
 		if !ok {
@@ -152,12 +154,16 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Service, d Bus
 			return
 		}
 
-		if MRDFactory.MetricTSHWM.Before(metricValue.Timestamp.Time) {
-			MRDFactory.MetricTSHWM = metricValue.Timestamp
+		delta := MRDFactory.MetricTSHWM.Time.Sub(metricValue.Timestamp.Time)
+		//fmt.Printf("Value Event TS: %s  HWM: %s  delta: %s\n", metricValue.Timestamp.Time, MRDFactory.MetricTSHWM.Time, delta)
+
+		if delta > (1*time.Hour) || delta < -(1*time.Hour) {
+			fmt.Printf("Value Event TIME ERROR - We should never get events this far off current HWM: %V\n", metricValue)
 		}
-		err = MRDFactory.FastCheckForNeededMRUpdates()
-		if err != nil {
-			return
+
+		if MRDFactory.MetricTSHWM.Before(metricValue.Timestamp.Time) {
+			//fmt.Printf("Set HWM from Value Event TS: %s  HWM: %s  delta: %s\n", metricValue.Timestamp.Time, MRDFactory.MetricTSHWM.Time, delta)
+			MRDFactory.MetricTSHWM = metricValue.Timestamp
 		}
 	})
 
@@ -169,35 +175,6 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Service, d Bus
 
 		// TODO: implement un-suppress
 
-		// Type: Periodic, OnChange, OnRequest
-		// 		Updates: AppendStopsWhenFull | AppendWrapsWhenFull | Overwrite | NewReport
-		//
-		// Periodic:   (*) AppendStopsWhenFull  (*) AppendWrapsWhenFull   (*) Overwrite   (*) NewReport
-		// OnChange:   (*) AppendStopsWhenFull  (*) AppendWrapsWhenFull   (?) Overwrite   (?) NewReport
-		// OnRequest:  (*) AppendStopsWhenFull  (*) AppendWrapsWhenFull   (?) Overwrite   (?) NewReport
-		//
-		// key:
-		//    (*) Done
-		// 		(-) makes sense and should be implemented
-		// 		(X) invalid combination, dont accept
-		//    (?) Not sure if this makes sense - more study needed
-		//
-		// AppendLimit: due to limitations in sqlite, this is a fixed limit that is a global setting that is applied when we create the VIEW
-		//
-		// behaviour:
-		//    Periodic: (on time interval, dump accumulated values into report. report can either be new/clean (for overwrite/newreport), or added to existing)
-		//      --> The Metric Value insert doesn't change reports. Best performance.
-		// 			--> Sequence is updated on period
-		// 		  --> Timestamp is updated on period
-		// 			--> For all reports: StartTimestamp and EndTimestamp are always fixed.
-		//      NewReport:  only keeps at most 3 reports, deletes oldest
-		//
-		//    OnRequest/OnChange:  things trickle in as they come
-		// 			AppendStopsWhenFull: StartTimestamp=fixed
-		// 			AppendWrapsWhenFull: StartTimestamp=fixed
-		//      NewReport: not supported
-		//      Overwrite: not supported
-
 		// Can't write to event sent in, so make a local copy
 		localReportDefCopy := *reportDef
 		err := MRDFactory.GenerateMetricReport(&localReportDefCopy)
@@ -206,7 +183,6 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Service, d Bus
 		}
 	})
 
-	lastHWM := time.Time{}
 	am3Svc.AddEventHandler("Database Maintenance", DatabaseMaintenance, func(event eh.Event) {
 		command, ok := event.Data().(string)
 		if !ok {
@@ -215,17 +191,13 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Service, d Bus
 
 		switch command {
 		case "publish clock":
-			// here we generate an artificial tick and check for report generation in the case where no other event has happened to trigger it in the last period
-			if MRDFactory.MetricTSHWM.Before(lastHWM.Add(clockPeriod)) {
-				MRDFactory.MetricTSHWM = SqlTimeInt{lastHWM.Add(clockPeriod)}
-				fmt.Printf("Set HWM from tick: %s\n", MRDFactory.MetricTSHWM)
-				err = MRDFactory.FastCheckForNeededMRUpdates()
-				if err != nil {
-					return
-				}
-			} else {
-				lastHWM = MRDFactory.MetricTSHWM.Time
+			// if no events come in during time between clock publishes, we'll artificially bump HWM forward.
+			if MRDFactory.MetricTSHWM.Equal(lastHWM) {
+				//fmt.Printf("SET HWM FROM TICK: hwm(%s) - last(%s) = %d period(%d)\n", MRDFactory.MetricTSHWM, lastHWM, lastHWM.Sub(MRDFactory.MetricTSHWM.Time), clockPeriod)
+				MRDFactory.MetricTSHWM = SqlTimeInt{MRDFactory.MetricTSHWM.Add(clockPeriod)}
 			}
+			lastHWM = MRDFactory.MetricTSHWM.Time
+			MRDFactory.FastCheckForNeededMRUpdates()
 
 		case "optimize":
 			MRDFactory.Optimize()
