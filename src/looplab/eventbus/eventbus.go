@@ -16,8 +16,8 @@
 package eventbus
 
 import (
-	"fmt"
 	"context"
+	"fmt"
 	"sync"
 
 	eh "github.com/looplab/eventhorizon"
@@ -40,7 +40,6 @@ func NewEventBus() *EventBus {
 	return &EventBus{}
 }
 
-
 // PublishEvent implements the PublishEvent method of the eventhorizon.EventBus interface.
 func (b *EventBus) PublishEvent(ctx context.Context, event eh.Event) error {
 	b.handlerMu.RLock()
@@ -54,7 +53,6 @@ func (b *EventBus) PublishEvent(ctx context.Context, event eh.Event) error {
 		defer e.Done()
 	}
 
-
 	for _, h := range b.handlers {
 		if !h.m(event) {
 			// Ignore events that does not match.
@@ -65,7 +63,6 @@ func (b *EventBus) PublishEvent(ctx context.Context, event eh.Event) error {
 			return err
 		}
 	}
-
 
 	return nil
 }

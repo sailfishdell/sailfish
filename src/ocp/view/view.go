@@ -141,7 +141,7 @@ func (s *View) GetModels(sub_name string) map[string]*model.Model {
 		}
 	}
 
-	return modelMatch 
+	return modelMatch
 }
 
 func (s *View) GetController(name string) controller {

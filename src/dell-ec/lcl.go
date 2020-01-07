@@ -562,20 +562,20 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 					} else {
 						vw := firmwareInventoryViews[compVerTuple]
 
-						firmMdl:= vw.GetModel("default")
+						firmMdl := vw.GetModel("default")
 
 						tIntf, ok := firmMdl.GetPropertyOk("install_date")
 						if !ok {
-							continue	
-						}
-
-						tStr, ok := tIntf.(string)
-						if !ok{
 							continue
 						}
 
-						t, _ := time.Parse(time.RFC3339,tStr)
-						tBefore, _ := time.Parse(time.RFC3339,installDate)
+						tStr, ok := tIntf.(string)
+						if !ok {
+							continue
+						}
+
+						t, _ := time.Parse(time.RFC3339, tStr)
+						tBefore, _ := time.Parse(time.RFC3339, installDate)
 						if !tBefore.Before(t) {
 							firmMdl.UpdateProperty("install_date", installDate)
 						}
