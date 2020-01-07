@@ -614,7 +614,6 @@ UDB-Metric-Import:
         LastDayMaxPower as 'Metric-LastDayMaxPower',
         LastDayAvgPower as 'Metric-LastDayAvgPower'
       FROM TblsPowerStatistics
-      WHERE Timestamp > :HWM
 
   PowerMetrics:
     # TODO: UNDERLYING TABLE NEEDS HWM.
@@ -646,7 +645,6 @@ UDB-Metric-Import:
         CurrentSystemInputPowerTimeStamp * 1000000000 as 'Timestamp-SystemInputPower',
         CurrentSystemInputPower as 'Metric-SystemInputPower'
       FROM TblsPowerMetrics
-      WHERE Timestamp > :HWM
 
   ThermalMetrics:
     # TODO: UNDERLYING TABLE NEEDS HWM.
@@ -676,7 +674,6 @@ UDB-Metric-Import:
         ITUE as 'Metric-ITUE',
         ComputePower as 'Metric-ComputePower'
       FROM TblsThermalMetrics
-      WHERE Timestamp > :HWM
 
   CPUMem:
     # TODO: UNDERLYING TABLE NEEDS HWM.
@@ -704,7 +701,6 @@ UDB-Metric-Import:
         CpuMemoryMetrics_DOT_CPUC0ResidencyLow_DOT_value as 'Metric-CPUC0ResidencyLow',
         CpuMemoryMetrics_DOT_CPUC0ResidencyHigh_DOT_value as 'Metric-CPUC0ResidencyHigh'
       FROM TblsCpuMemMetrics
-      WHERE Timestamp > :HWM
 
   PSU-Sensor:
     # TODO: UNDERLYING TABLE NEEDS HWM.
@@ -725,7 +721,6 @@ UDB-Metric-Import:
         Temperature as 'Metric-TemperatureReading',
         FanSpeed as 'Metric-RPMReading'
       FROM TblsPSUMetrics
-      WHERE Timestamp > :HWM
 
   Storage-Sensor:
     # TODO: UNDERLYING TABLE NEEDS HWM.
@@ -745,7 +740,6 @@ UDB-Metric-Import:
 
         CurrentReading as 'Metric-TemperatureReading'
       FROM TblsStorageSensor
-      WHERE Timestamp > :HWM
 
   Memory-Sensor:
     # TODO: UNDERLYING TABLE NEEDS HWM.
@@ -765,7 +759,6 @@ UDB-Metric-Import:
 
         CurrentReading as 'Metric-TemperatureReading'
       FROM TblsMemorySensor
-      WHERE Timestamp > :HWM
 
   FPGA-Sensor:
     # TODO: UNDERLYING TABLE NEEDS HWM.
@@ -785,7 +778,6 @@ UDB-Metric-Import:
 
         CurrentReading as 'Metric-TemperatureReading'
       FROM TblsFPGASensor
-      WHERE Timestamp > :HWM
 
   Aggregation-Metrics:
     # TODO: UNDERLYING TABLE NEEDS HWM.
@@ -808,7 +800,6 @@ UDB-Metric-Import:
         SystemMaxInletTempHour as 'Metric-SystemMaxInletTempHour',
         SystemAvgInletTempHour as 'Metric-SystemAvgInletTempHour'
       FROM TblsAggregationMetrics
-      WHERE Timestamp > :HWM
 
   SMART-NVME:
     Type: MetricColumns
@@ -904,8 +895,6 @@ UDB-Metric-Import:
         TblGPUStatisticsObj:
     Query: |
       SELECT
-        -- We can artificially generate 'now' timestamps for each record, or use SingleRecordEtag
-        -- cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
         SingleRecordEtag * 1000000000 as Timestamp,
         FQDD as Context,
          '/redfish/v1/FIXME/' || FQDD as Property,
@@ -939,8 +928,6 @@ UDB-Metric-Import:
         TblGPUHealthObj:
     Query: |
       SELECT
-        -- We can artificially generate 'now' timestamps for each record, or use SingleRecordEtag
-        -- cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
         SingleRecordEtag * 1000000000 as Timestamp,
         FQDD as Context,
          '/redfish/v1/FIXME/' || FQDD as Property,
@@ -974,8 +961,6 @@ UDB-Metric-Import:
         TblNic_RDMA_Stats_Obj:
     Query: |
       SELECT
-        -- We can artificially generate 'now' timestamps for each record, or use StatisticTime
-        -- cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
         StatisticTime * 1000000000 as Timestamp,
         FQDD as Context,
          '/redfish/v1/FIXME/' || FQDD as Property,
@@ -1049,8 +1034,6 @@ UDB-Metric-Import:
         TblHIISensorInfo_obj:
     Query: |
       SELECT
-        -- We can artificially generate 'now' timestamps for each record, or use SingleRecordEtag
-        --cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
         SingleRecordEtag * 1000000000 as Timestamp,
         FriendlyFQDD as Context,
         '/redfish/v1/FIXME/' || FQDD as Property,
@@ -1070,9 +1053,7 @@ UDB-Metric-Import:
         TblFanExtObj:
     Query: |
       SELECT
-        -- We can artificially generate 'now' timestamps for each record, or use SingleRecordEtag
-        -- cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
-        SingleRecordEtag * 1000000000 as Timestamp,
+        UpdateTime * 1000000000 as Timestamp,
         FriendlyFQDD as Context,
         '/redfish/v1/FIXME/' || FQDD as Property,
         friendlyFQDD as FriendlyFQDD,
@@ -1269,11 +1250,11 @@ createdb:
   #  - "PRAGMA cache_size=4096;"
   # Need to try this one out:
   #  - "PRAGMA cache_size=0;"
+  - "PRAGMA busy_timeout = 1000;"
   - "PRAGMA journal_size_limit=4096;"
   - "PRAGMA foreign_keys = ON;"
   - "PRAGMA journal_mode = WAL;"
   - "PRAGMA synchronous = OFF;"
-  - "PRAGMA busy_timeout = 1000;"
   - |
       CREATE TABLE IF NOT EXISTS MetricReportDefinition
       (
@@ -1298,8 +1279,7 @@ createdb:
         Name    TEXT UNIQUE NOT NULL,
         Accuracy REAL,
         Calculable TEXT, -- 'NonCalculatable', 'NonSummable', 'Summable'
-        CalculationAlgorithm TEXT,
-
+        CalculationAlgorithm TEXT
       )
 
   - |
@@ -1723,7 +1703,7 @@ createdb:
           Name as ResourceType,
           '/redfish/v1/TelemetryService/MetricReportDefinitions/' || Name as '@odata.id'
         FROM
-          MetricReportDefinitions;
+          MetricReportDefinition;
 
   - |
       DROP VIEW IF EXISTS TblTelemetryAttributesRFEnable;
