@@ -30,6 +30,11 @@ Startup-Events:
   - name: AddMetricReportDefinition
     # TODO: Device Poll Frequency: 60
     # "TelemetryAggregationMetrics.1.ReportInterval": 0,
+    # AUDIT:
+    #   [X] HAS DATA
+    #   [ ] Correct Metric IDs
+    #   [ ] Correct # of data points
+    #   [ ] Data correct
     data: |
       {
         "Name": "AggregationMetrics",   "Enabled": true, "Type": "OnRequest", "Updates": "AppendWrapsWhenFull", "SuppressDups": false, "Actions": [],
@@ -43,6 +48,11 @@ Startup-Events:
   - name: AddMetricReportDefinition
     # TODO: Device Poll Frequency: 5
     # "TelemetryCPUMemMetrics.1.ReportInterval": 60,
+    # AUDIT:
+    #   [X] HAS DATA
+    #   [ ] Correct Metric IDs
+    #   [ ] Correct # of data points
+    #   [ ] Data correct
     data: |
       {
         "Name": "CPUMemMetrics",        "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false, "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
@@ -67,6 +77,11 @@ Startup-Events:
   - name: AddMetricReportDefinition
     # TODO: Device Poll Frequency: 5
     # "TelemetryCPUSensor.1.ReportInterval": 60,
+    # AUDIT:
+    #   [!] HAS DATA
+    #   [ ] Correct Metric IDs
+    #   [ ] Correct # of data points
+    #   [ ] Data correct
     data: |
       {
         "Name": "CPUSensor",            "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false, "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
@@ -79,6 +94,11 @@ Startup-Events:
   - name: AddMetricReportDefinition
     # TODO: Device Poll Frequency: 5
     # "TelemetryCUPS.1.ReportInterval": 60,
+    # AUDIT:
+    #   [!] HAS DATA
+    #   [ ] Correct Metric IDs
+    #   [ ] Correct # of data points
+    #   [ ] Data correct
     data: |
       {
         "Name": "CUPS", "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false,
@@ -89,6 +109,11 @@ Startup-Events:
   - name: AddMetricReportDefinition
     # TODO: Device Poll Frequency: 5
     # "TelemetryFanSensor.1.ReportInterval": 60,
+    # AUDIT:
+    #   [X] HAS DATA
+    #   [ ] Correct Metric IDs
+    #   [ ] Correct # of data points
+    #   [ ] Data correct
     data: |
       {
         "Name": "FanSensor",            "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false, "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
@@ -165,6 +190,11 @@ Startup-Events:
   - name: AddMetricReportDefinition
     # TODO: Device Poll Frequency: 5
     # "TelemetryMemorySensor.1.ReportInterval": 60,
+    # AUDIT:
+    #   [!] HAS DATA
+    #   [ ] Correct Metric IDs
+    #   [ ] Correct # of data points
+    #   [ ] Data correct
     data: |
       {
         "Name": "MemorySensor",         "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false, "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
@@ -174,6 +204,11 @@ Startup-Events:
   - name: AddMetricReportDefinition
     # TODO: Device Poll Frequency: 5
     # "TelemetryNICSensor.1.ReportInterval": 60,
+    # AUDIT:
+    #   [X] HAS DATA
+    #   [ ] Correct Metric IDs
+    #   [ ] Correct # of data points
+    #   [ ] Data correct
     data: |
       {
         "Name": "NICSensor",            "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false, "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
@@ -183,6 +218,11 @@ Startup-Events:
   - name: AddMetricReportDefinition
     # TODO: Device Poll Frequency: 60
     # "TelemetryNICStatistics.1.ReportInterval": 60,
+    # AUDIT:
+    #   [X] HAS DATA
+    #   [ ] Correct Metric IDs
+    #   [ ] Correct # of data points
+    #   [ ] Data correct
     data: |
       {
         "Name": "NICStatistics",        "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false, "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
@@ -236,6 +276,11 @@ Startup-Events:
   - name: AddMetricReportDefinition
     # TODO: Device Poll Frequency: 3600
     # "TelemetryNVMeSMARTData.1.ReportInterval": 3600,
+    # AUDIT:
+    #   [!] HAS DATA
+    #   [ ] Correct Metric IDs
+    #   [ ] Correct # of data points
+    #   [ ] Data correct
     data: |
       {
         "Name": "NVMeSMARTData",        "Enabled": true, "Type": "Periodic", "Period": 3600, "Updates": "Overwrite", "SuppressDups": false, "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
@@ -273,6 +318,11 @@ Startup-Events:
   - name: AddMetricReportDefinition
     # TODO: Device Poll Frequency: 5
     # "TelemetryPowerMetrics.1.ReportInterval": 60,
+    # AUDIT:
+    #   [!] HAS DATA
+    #   [ ] Correct Metric IDs
+    #   [ ] Correct # of data points
+    #   [ ] Data correct
     data: |
       {
         "Name": "PowerMetrics",         "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false, "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
@@ -284,6 +334,11 @@ Startup-Events:
   - name: AddMetricReportDefinition
     # TODO: Device Poll Frequency: 60
     # "TelemetryPowerStatistics.1.ReportInterval": 60,
+    # AUDIT:
+    #   [!] HAS DATA
+    #   [ ] Correct Metric IDs
+    #   [ ] Correct # of data points
+    #   [ ] Data correct
     data: |
       {
         "Name": "PowerStatistics",      "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false, "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
@@ -295,6 +350,11 @@ Startup-Events:
   - name: AddMetricReportDefinition
     # TODO: Device Poll Frequency: 60
     # "TelemetryPSUMetrics.1.ReportInterval": 60,
+    # AUDIT:
+    #   [!] HAS DATA
+    #   [ ] Correct Metric IDs
+    #   [ ] Correct # of data points
+    #   [ ] Data correct
     data: |
       {
         "Name": "PSUMetrics",           "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false, "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
@@ -307,6 +367,11 @@ Startup-Events:
   - name: AddMetricReportDefinition
     # TODO: Device Poll Frequency: 5
     # "TelemetrySensor.1.ReportInterval": 60,
+    # AUDIT:
+    #   [X] HAS DATA
+    #   [ ] Correct Metric IDs
+    #   [ ] Correct # of data points
+    #   [ ] Data correct
     data: |
       {
         "Name": "Sensor",               "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false, "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
@@ -326,6 +391,11 @@ Startup-Events:
   - name: AddMetricReportDefinition
     #"TelemetryStorageDiskSMARTData.1.ReportInterval": 3600,
     # TODO: Device Poll Frequency: 3600
+    # AUDIT:
+    #   [!] HAS DATA
+    #   [ ] Correct Metric IDs
+    #   [ ] Correct # of data points
+    #   [ ] Data correct
     data: |
       {
         "Name": "StorageDiskSMARTData", "Enabled": true, "Type": "Periodic", "Period": 3600, "Updates": "Overwrite", "SuppressDups": false, "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
@@ -355,6 +425,11 @@ Startup-Events:
   - name: AddMetricReportDefinition
     # TODO: Device Poll Frequency: 5
     # "TelemetryStorageSensor.1.ReportInterval": 60,
+    # AUDIT:
+    #   [!] HAS DATA
+    #   [ ] Correct Metric IDs
+    #   [ ] Correct # of data points
+    #   [ ] Data correct
     data: |
       {
         "Name": "StorageSensor",        "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false, "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
@@ -366,6 +441,11 @@ Startup-Events:
   - name: AddMetricReportDefinition
     # TODO: Device Poll Frequency: 5
     # "TelemetryThermalMetrics.1.ReportInterval": 5,
+    # AUDIT:
+    #   [X] HAS DATA
+    #   [ ] Correct Metric IDs
+    #   [ ] Correct # of data points
+    #   [ ] Data correct
     data: |
       {
         "Name": "ThermalMetrics",       "Enabled": true, "Type": "Periodic", "Period": 5, "Updates": "Overwrite", "SuppressDups": false, "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
@@ -388,6 +468,11 @@ Startup-Events:
   - name: AddMetricReportDefinition
     # TODO: Device Poll Frequency: 5
     # "TelemetryThermalSensor.1.ReportInterval": 60,
+    # AUDIT:
+    #   [!] HAS DATA
+    #   [ ] Correct Metric IDs
+    #   [ ] Correct # of data points
+    #   [ ] Data correct
     data: |
       {
         "Name": "ThermalSensor",        "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false, "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
