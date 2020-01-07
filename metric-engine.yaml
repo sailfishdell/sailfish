@@ -641,10 +641,16 @@ UDB-Metric-Import:
         SystemPwrConsumption as 'Metric-SystemPowerConsumption',
         SystemHeadRoomInstantaneous as 'Metric-SystemHeadRoomInstantaneous',
 
-        CurrentSystemOutputTimeStamp * 1000000000 as 'Timestamp-SystemOutputPower',
+        -- BUG IN UNDERLYING CODE -> this time stamp is reported in local time!
+        -- THIS IS WRONG. WE HAVE TO FIX THIS UP HERE, BUT IT SHOULD BE FIXED IN UNDERLYING CODE
+        -- CurrentSystemOutputTimeStamp * 1000000000 as 'Timestamp-SystemOutputPower',
+        strftime('%s', CurrentSystemOutputTimeStamp * 1.0, 'unixepoch', 'utc') as 'Timestamp-SystemOutputPower',
         CurrentSystemOutputPower as 'Metric-SystemOutputPower',
 
-        CurrentSystemInputPowerTimeStamp * 1000000000 as 'Timestamp-SystemInputPower',
+        -- BUG IN UNDERLYING CODE -> this time stamp is reported in local time!
+        -- THIS IS WRONG. WE HAVE TO FIX THIS UP HERE, BUT IT SHOULD BE FIXED IN UNDERLYING CODE
+        -- CurrentSystemInputPowerTimeStamp * 1000000000 as 'Timestamp-SystemInputPower',
+        strftime('%s', CurrentSystemInputPowerTimeStamp * 1.0, 'unixepoch', 'utc') as 'Timestamp-SystemInputPower',
         CurrentSystemInputPower as 'Metric-SystemInputPower'
       FROM TblsPowerMetrics
 
