@@ -16,6 +16,8 @@ import (
 	"github.com/spf13/viper"
 	"github.com/superchalupa/sailfish/src/looplab/event"
 
+	"github.com/superchalupa/sailfish/cmd/metric-engine/telemetry-db"
+
 	log "github.com/superchalupa/sailfish/src/log"
 )
 
@@ -86,36 +88,13 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc EventHandlingServic
 
 	go handleUDBNotifyPipe(logger, cfg, d)
 
-	// for now, trigger automatic imports on a periodic basis (5s for now, we can up to 1s later to catch power stuff)
-	go func() {
-		importTicker := time.NewTicker(5 * time.Second)
-		defer importTicker.Stop()
-		for {
-			select {
-			case <-importTicker.C:
-				d.GetBus().PublishEvent(context.Background(), eh.NewEvent(UDBDatabaseEvent, "periodic_import", time.Now()))
-			}
-		}
-	}()
-
 	// This is the event to trigger UDB imports
-	am3Svc.AddEventHandler("Import UDB Metric Values", UDBDatabaseEvent, func(event eh.Event) {
-		command, ok := event.Data().(string)
-		if !ok {
-			logger.Crit("UDB Metric DB message handler got an invalid data event", "event", event, "eventdata", event.Data())
-			return
-		}
-
-		switch {
-		case command == "periodic_import":
-			UDBFactory.IterUDBTables(func(name string, meta UDBMeta) error {
-				UDBFactory.ConditionalImport(name, meta, true)
-				return nil
-			})
-
-		default:
-			logger.Crit("GOT A COMMAND THAT I CANT HANDLE", "command", command)
-		}
+	am3Svc.AddEventHandler("Import UDB Metric Values", telemetry.DatabaseMaintenance, func(event eh.Event) {
+		// TODO: get smarter about this. We ought to calculate time until next report and set a timer for that
+		UDBFactory.IterUDBTables(func(name string, meta UDBMeta) error {
+			UDBFactory.ConditionalImport(name, meta, true)
+			return nil
+		})
 	})
 
 	am3Svc.AddEventHandler("UDB Change Notification", UDBChangeEvent, func(event eh.Event) {
