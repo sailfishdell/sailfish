@@ -1,8 +1,8 @@
 main:
     server_name: idrac
-    databasepath: file:telemetry_timeseries_database.db?_foreign_keys=on&cache=shared&mode=rwc
-    udbdatabasepath: file:DMLiveObjectDatabase.db?cache=shared&_foreign_keys=off&mode=ro
-    shmdatabasepath: file:SHM.db?cache=shared&_foreign_keys=off&mode=ro
+    databasepath: file:telemetry_timeseries_database.db?_foreign_keys=on&cache=shared&mode=rwc&_busy_timeout=1000
+    udbdatabasepath: file:DMLiveObjectDatabase.db?cache=shared&_foreign_keys=off&mode=ro&_busy_timeout=1000
+    shmdatabasepath: file:SHM.db?cache=shared&_foreign_keys=off&mode=ro&_busy_timeout=1000
     udbnotifypipe: udbtdbipcpipe
 
 listen:
