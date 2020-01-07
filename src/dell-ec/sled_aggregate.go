@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 	"sync"
 
 	eh "github.com/looplab/eventhorizon"
@@ -48,9 +47,9 @@ func RegisterSledAggregate(s *testaggregate.Service) {
 						},
 
 						"Status": map[string]interface{}{
-							"HealthRollup@meta": vw.Meta(view.PropGET("health")),
+							"HealthRollup":      nil,
 							"State":             "Enabled", //hardcoded
-							"Health@meta":       vw.Meta(view.PropGET("health")),
+							"Health":            nil,
 						},
 						"PartNumber@meta": vw.Meta(view.GETProperty("part_number"), view.GETModel("default")),
 						"Name@meta":       vw.Meta(view.GETProperty("name"), view.GETModel("default")),
@@ -117,9 +116,9 @@ func RegisterSledAggregate(s *testaggregate.Service) {
 						},
 
 						"Status": map[string]interface{}{
-							"HealthRollup@meta": vw.Meta(view.PropGET("health")),
+							"HealthRollup": nil,
 							"State":             "Enabled", //hardcoded
-							"Health@meta":       vw.Meta(view.PropGET("health")),
+							"Health":       nil,
 						},
 
 						"Power":   map[string]interface{}{"@odata.id": vw.GetURI() + "/Power"},
@@ -175,32 +174,32 @@ func RegisterSledAggregate(s *testaggregate.Service) {
 					Properties: map[string]interface{}{
 						"Battery": map[string]interface{}{
 							"Status": map[string]interface{}{
-								"HealthRollup@meta": vw.Meta(view.GETProperty("battery_rollup"), view.GETModel("global_health")),
+								"HealthRollup": nil,
 							},
 						},
 						"Fan": map[string]interface{}{
 							"Status": map[string]interface{}{
-								"HealthRollup@meta": vw.Meta(view.GETProperty("fan_rollup"), view.GETModel("global_health")),
+								"HealthRollup": nil,
 							},
 						},
 						"MM": map[string]interface{}{
 							"Status": map[string]interface{}{
-								"HealthRollup@meta": vw.Meta(view.GETProperty("mm_rollup"), view.GETModel("global_health")),
+								"HealthRollup": nil,
 							},
 						},
 						"Miscellaneous": map[string]interface{}{
 							"Status": map[string]interface{}{
-								"HealthRollup@meta": vw.Meta(view.GETProperty("misc_rollup"), view.GETModel("global_health")),
+								"HealthRollup": nil,
 							},
 						},
 						"PowerSupply": map[string]interface{}{
 							"Status": map[string]interface{}{
-								"HealthRollup@meta": vw.Meta(view.GETProperty("psu_rollup"), view.GETModel("global_health")),
+								"HealthRollup": nil,
 							},
 						},
 						"Temperature": map[string]interface{}{
 							"Status": map[string]interface{}{
-								"HealthRollup@meta": vw.Meta(view.GETProperty("temperature_rollup"), view.GETModel("global_health")),
+								"HealthRollup": nil,
 							},
 						},
 					},
@@ -260,43 +259,5 @@ func inithealth(ctx context.Context, logger log.Logger, ch eh.CommandHandler, d 
 		return nil, nil
 	})
 
-	awesome_mapper2.AddFunction("add_health_to_subsystem", func(args ...interface{}) (interface{}, error) {
-		// which components can I use to generate subsystem one time..
-		healthEvent, ok := args[0].(*dm_event.HealthEventData)
-		if !ok {
-			logger.Crit("Mapper configuration error: health event data not passed", "args[1]", args[1], "TYPE", fmt.Sprintf("%T", args[1]))
-			return nil, errors.New("Mapper configuration error: health event data not passed")
-		}
-
-		s := strings.Split(healthEvent.FQDD, "#")
-		subsys := s[len(s)-1]
-
-		// if iom or sled already in list, exit out, global health automatically updates health
-		// TODO update to a function later
-		if Contains(sled_iomL, subsys) {
-			return nil, nil
-		} else {
-			sled_iomL = append(sled_iomL, subsys)
-		}
-
-		aggregateUUID, ok := args[1].(eh.UUID)
-		if !ok {
-			logger.Crit("Mapper configuration error: aggregate UUID not passed", "args[1]", args[1], "TYPE", fmt.Sprintf("%T", args[1]))
-			return nil, errors.New("Mapper configuration error: aggregate UUID not passed")
-		}
-
-		agg, _ := d.AggregateStore.Load(context.Background(), domain.AggregateType, aggregateUUID)
-
-		ch.HandleCommand(ctx,
-			&domain.UpdateRedfishResourceProperties{
-				ID: aggregateUUID,
-				Properties: map[string]interface{}{subsys: map[string]interface{}{
-					"Status": map[string]interface{}{
-						"HealthRollup@meta": map[string]interface{}{"GET": map[string]interface{}{"plugin": agg.(*domain.RedfishResourceAggregate).ResourceURI, "property": healthEvent.FQDD, "model": "global_health"}}}}},
-			})
-
-		// to avoid extra memory usage, returning 'nil', but in the future should return subSystemHealthList when we can use it
-		return nil, nil
-	})
 
 }

@@ -46,14 +46,14 @@ func RegisterThermalAggregate(s *testaggregate.Service) {
 							"EID_674": map[string]interface{}{
 								"FansSummary": map[string]interface{}{
 									"Status": map[string]interface{}{
-										"HealthRollup@meta": vw.Meta(view.GETProperty("fan_rollup"), view.GETModel("global_health")),
-										"Health@meta":       vw.Meta(view.GETProperty("fan_rollup"), view.GETModel("global_health")),
+										"HealthRollup": nil,
+										"Health":       nil,
 									},
 								},
 								"TemperaturesSummary": map[string]interface{}{
 									"Status": map[string]interface{}{
-										"HealthRollup@meta": vw.Meta(view.GETProperty("temperature_rollup"), view.GETModel("global_health")),
-										"Health@meta":       vw.Meta(view.GETProperty("temperature_rollup"), view.GETModel("global_health")),
+										"HealthRollup": nil,
+										"Health":       nil,
 									},
 								},
 							},

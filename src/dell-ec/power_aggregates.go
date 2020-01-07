@@ -38,7 +38,7 @@ func RegisterAggregate(s *testaggregate.Service) {
 							"Dell": map[string]interface{}{
 								"PowerSuppliesSummary": map[string]interface{}{
 									"Status": map[string]interface{}{
-										"HealthRollup@meta": vw.Meta(view.GETProperty("psu_rollup"), view.GETModel("global_health")),
+										"HealthRollup": nil,
 									},
 								},
 								"PowerTrends@meta":             vw.Meta(view.GETProperty("power_trends_uri"), view.GETFormatter("expand"), view.GETModel("default")),

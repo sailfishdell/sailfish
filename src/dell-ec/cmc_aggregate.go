@@ -79,8 +79,8 @@ func RegisterCMCAggregate(s *testaggregate.Service) {
 						},
 
 						"Status": map[string]interface{}{
-							"Health@meta":       vw.Meta(view.PropGET("health")),
-							"HealthRollup@meta": vw.Meta(view.PropGET("health")),
+							"Health":       nil,
+							"HealthRollup": nil,
 							"State@meta":        vw.Meta(view.PropGET("health_state")),
 						},
 
@@ -293,9 +293,9 @@ func RegisterCMCAggregate(s *testaggregate.Service) {
 						"Description@meta":  vw.Meta(view.PropGET("description")),
 						"Links":             map[string]interface{}{},
 						"Status": map[string]interface{}{
-							"HealthRollup@meta": vw.Meta(view.PropGET("health")),
+							"HealthRollup": nil,
 							"State@meta":        vw.Meta(view.PropGET("health_state")),
-							"Health@meta":       vw.Meta(view.PropGET("health")),
+							"Health":       nil,
 						},
 						"IndicatorLED": "Blinking", // static.  MSM does a patch operation and reads from attributes
 						"Oem": map[string]interface{}{
@@ -325,8 +325,8 @@ func RegisterCMCAggregate(s *testaggregate.Service) {
 						"RedundancySet@meta":             vw.Meta(view.GETProperty("redundancy_set"), view.GETFormatter("formatOdataList"), view.GETModel("default")),
 						"RedundancySet@odata.count@meta": vw.Meta(view.GETProperty("redundancy_set"), view.GETFormatter("count"), view.GETModel("default")),
 						"Status": map[string]interface{}{
-							"Health@meta":       vw.Meta(view.PropGET("health")),
-							"HealthRollup@meta": vw.Meta(view.PropGET("health")),
+							"Health":       nil,
+							"HealthRollup": nil,
 							"State@meta":        vw.Meta(view.PropGET("health_state")),
 						},
 					},

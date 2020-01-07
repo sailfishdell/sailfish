@@ -225,7 +225,8 @@ func UpdateAgg(a *RedfishResourceAggregate, pathSlice []string, v interface{}, a
 	for i, p := range pathSlice {
 		k, ok := loc[p]
 		if !ok {
-			return fmt.Errorf("UpdateAgg Failed can not find %s in %+v", p, loc)
+			loc[p] = &RedfishResourceProperty{}
+			k = loc[p]
 		}
 		switch k.(type) {
 		case *RedfishResourceProperty:
@@ -248,19 +249,22 @@ func UpdateAgg(a *RedfishResourceAggregate, pathSlice []string, v interface{}, a
 					k2.Parse(v2)
 				}
 				k2.Parse(j)
-
 				return nil
 			default:
-				if (plen == i) && (k2.Value != v) {
+				if plen != i {
+					if k2.Value == nil {
+						loc = map[string]interface{}{}
+						k2.Value = loc
+						continue
+					} else {
+						tmp :=k2.Value
+						loc, ok = tmp.(map[string]interface{})
+					}
+
+				} else if (plen == i) && (k2.Value != v) {
 					k2.Value = v
 				} else if plen == i {
 					return nil
-				} else {
-					tmp := k2.Value
-					loc, ok = tmp.(map[string]interface{})
-					if !ok {
-						return fmt.Errorf("UpdateAgg Failed %s type cast to map[string]interface{} for %+v  errored for %+v", a.ResourceURI, p, pathSlice)
-					}
 				}
 			}
 

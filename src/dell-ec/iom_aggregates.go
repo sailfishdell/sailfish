@@ -48,9 +48,9 @@ func RegisterIOMAggregate(s *testaggregate.Service) {
 						"SKU@meta":          vw.Meta(view.PropGET("service_tag"), view.PropPATCH("service_tag", "ar_mapper")),
 						"IndicatorLED@meta": vw.Meta(view.GETProperty("indicator_led"), view.GETModel("default"), view.PropPATCH("indicator_led", "ar_mapper")),
 						"Status": map[string]interface{}{
-							"HealthRollup@meta": vw.Meta(view.PropGET("health")),
+							"HealthRollup":      nil,
 							"State":             "Enabled", //hard coded
-							"Health@meta":       vw.Meta(view.PropGET("health")),
+							"Health":            nil,
 						},
 						"Oem": map[string]interface{}{
 							"Dell": map[string]interface{}{
