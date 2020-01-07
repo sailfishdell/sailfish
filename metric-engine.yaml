@@ -648,6 +648,11 @@ UDB-Metric-Import:
 
   ThermalMetrics:
     # TODO: UNDERLYING TABLE NEEDS HWM.
+    # AUDIT:
+    #   [X] HAS DATA
+    #   [ ] Correct Metric IDs
+    #   [ ] Correct # of data points
+    #   [ ] Data correct
     Type: MetricColumns
     DBChange:
       SHM.db:
@@ -677,6 +682,11 @@ UDB-Metric-Import:
 
   CPUMem:
     # TODO: UNDERLYING TABLE NEEDS HWM.
+    # AUDIT:
+    #   [X] HAS DATA
+    #   [ ] Correct Metric IDs
+    #   [ ] Correct # of data points
+    #   [ ] Data correct
     Type: MetricColumns
     DBChange:
       SHM.db:
@@ -781,6 +791,11 @@ UDB-Metric-Import:
 
   Aggregation-Metrics:
     # TODO: UNDERLYING TABLE NEEDS HWM.
+    # AUDIT:
+    #   [X] HAS DATA
+    #   [ ] Correct Metric IDs
+    #   [ ] Correct # of data points
+    #   [ ] Data correct
     Type: MetricColumns
     DBChange:
       SHM.db:
