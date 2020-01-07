@@ -73,11 +73,39 @@ func RegisterSledAggregate(s *testaggregate.Service) {
 									},
 									"target": vw.GetActionURI("chassis.peripheralmapping"),
 								},
-								"#DellChassis.v1_0_0.VirtualReseat": map[string]interface{}{
-									"target": vw.GetActionURI("chassis.virtualreseat"),
-								},
 								"#DellChassis.v1_0_0.iDRACReset": map[string]interface{}{
+                  "SledType@Redfish.AllowableValues": []string{
+                    "compute",
+                    "storage",
+                  },
+                  "SledLoc@Redfish.AllowableValues": []int{ //technically range of ints 1-8
+                    1,
+                    2,
+                    3,
+                    4,
+                    5,
+                    6,
+                    7,
+                    8,
+                  },
 									"target": vw.GetActionURI("chassis.idracreset"),
+                },
+								"#DellChassis.v1_0_0.VirtualReseat": map[string]interface{}{
+                  "SledType@Redfish.AllowableValues": []string{
+                    "compute",
+                    "storage",
+                  },
+                  "SledLoc@Redfish.AllowableValues": []int{ //technically range of ints 1-8
+                    1,
+                    2,
+                    3,
+                    4,
+                    5,
+                    6,
+                    7,
+                    8,
+                  },
+									"target": vw.GetActionURI("chassis.virtualreseat"),
 								},
 							},
 						},
@@ -154,6 +182,7 @@ func RegisterSledAggregate(s *testaggregate.Service) {
 							"Oem": map[string]interface{}{
 								"#DellChassis.v1_0_0.MSMConfigBackup": map[string]interface{}{
 									"target": vw.GetUploadURI("msmconfigbackup"),
+                  //has list of files as passed-in parameters
 								},
 							},
 						},
