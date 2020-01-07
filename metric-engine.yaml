@@ -912,10 +912,8 @@ UDB-Metric-Import:
 
   GPU-Statistics:
     Type: MetricColumns
-    # underlying table has no HWM, so can't scan or we duplicate data
-    # only go off change events for now
-    # FIXME: underlying table needs HWM
-    ScanInterval: 0
+    # SingleRecordEtag is the underlying HWM, so we can scan the table more often
+    ScanInterval: 30
     WaitInterval: 1
     DBChange:
       DMLiveObjectDatabase.db:
@@ -948,6 +946,7 @@ UDB-Metric-Import:
 
   GPU-Health:
     Type: MetricColumns
+    # SingleRecordEtag is the underlying HWM, so we can scan the table more often
     ScanInterval: 10
     WaitInterval: 5
     DBChange:
@@ -976,8 +975,8 @@ UDB-Metric-Import:
 
   NICPortStats:
     Type: MetricColumns
-    # TODO: UNDERLYING TABLE NEEDS HWM.
-    ScanInterval: 0
+    # statistictime is the underlying HWM, so we can scan the table slightly more often
+    ScanInterval: 30
     WaitInterval: 5
     # CIMVIEW_DCIM_NICStatistics is a VIEW, so do dbchange on the underlying table
     DBChange:
