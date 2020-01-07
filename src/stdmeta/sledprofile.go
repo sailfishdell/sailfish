@@ -2,7 +2,6 @@ package stdmeta
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"time"
 
@@ -37,12 +36,11 @@ func (s *SledProfile) PropertyPatch(
 	agg *domain.RedfishResourceAggregate,
 	auth *domain.RedfishAuthorizationProperty,
 	rrp *domain.RedfishResourceProperty,
-	encopts interface{},
+	encopts *domain.NuEncOpts,
 	meta map[string]interface{},
 ) error {
 	patch_timeout := 10
 	//patch_timeout := 30000
-	any_success := 0
 
 	resURI := agg.ResourceURI
 
@@ -78,7 +76,7 @@ func (s *SledProfile) PropertyPatch(
 		Group:         "Info",
 		Index:         "1",
 		Name:          "SledProfile",
-		Value:         encopts,
+		Value:         encopts.Parse,
 		Authorization: *auth,
 	}
 
@@ -113,32 +111,15 @@ func (s *SledProfile) PropertyPatch(
 		return errors.New("TIMED OUT")
 	} else {
 		data, _ := event.Data().(*attributes.AttributeUpdatedData)
-		err_extendedinfos := []interface{}{}
 
+		hc := domain.HTTP_code{}
 		if data.Error != "" {
-			msg := domain.ExtendedInfo{}
-			err := json.Unmarshal([]byte(data.Error), &msg)
-			if err != nil {
-				return errors.New("Error updating: Could not unmarshal EEMI message")
-			}
-			err_extendedinfos = append(err_extendedinfos, msg)
+			hc.Err_message = append(hc.Err_message, data.Error)
+			domain.AddEEMIMessage(encopts.HttpResponse, agg, "PATCHERROR", &hc)
 		} else {
-			any_success = 1
-		}
-
-		if any_success > 0 {
-			default_msg := domain.ExtendedInfo{}
-			oeim := *domain.NewObjectExtendedInfoMessages([]interface{}{default_msg.GetDefaultExtendedInfo()})
-			return &domain.CombinedPropObjInfoError{
-				ObjectExtendedInfoMessages: oeim,
-				NumSuccess:                 any_success,
-			}
-		} else {
-			oeem := *domain.NewObjectExtendedErrorMessages(err_extendedinfos)
-			return &domain.CombinedPropObjInfoError{
-				ObjectExtendedErrorMessages: oeem,
-				NumSuccess:                  any_success,
-			}
+			hc.Any_success = 1
+			domain.AddEEMIMessage(encopts.HttpResponse, agg, "SUCCESS", &hc)
 		}
 	}
+	return nil
 }

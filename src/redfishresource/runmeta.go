@@ -17,7 +17,7 @@ func (rrp *RedfishResourceProperty) MarshalJSON() ([]byte, error) {
 }
 
 func NewGet(ctx context.Context, agg *RedfishResourceAggregate, rrp *RedfishResourceProperty, auth *RedfishAuthorizationProperty) error {
-	opts := nuEncOpts{
+	opts := NuEncOpts{
 		request: nil,
 		process: nuGETfn,
 		root:    true,
@@ -25,34 +25,41 @@ func NewGet(ctx context.Context, agg *RedfishResourceAggregate, rrp *RedfishReso
 		path:    "",
 	}
 
-	return rrp.RunMetaFunctions(ctx, agg, auth, opts)
+	return rrp.runMetaFunctions(ctx, agg, auth, opts)
 }
 
-func NewPatch(ctx context.Context, agg *RedfishResourceAggregate, rrp *RedfishResourceProperty, auth *RedfishAuthorizationProperty, body interface{}) error {
+func NewPatch(ctx context.Context, response map[string]interface{}, agg *RedfishResourceAggregate, rrp *RedfishResourceProperty, auth *RedfishAuthorizationProperty, body interface{}) error {
 	// Paste in redfish spec stuff here
 	// 200 if anything succeeds, 400 if everything fails
-	opts := nuEncOpts{
-		request: body,
-		process: nuPATCHfn,
-		root:    true,
-		path:    "",
+	opts := NuEncOpts{
+		request:      body,
+		Parse:        body,
+		process:      nuPATCHfn,
+		HttpResponse: response,
+		root:         true,
+		path:         "",
 	}
 
-	return rrp.RunMetaFunctions(ctx, agg, auth, opts)
+	return rrp.runMetaFunctions(ctx, agg, auth, opts)
 }
 
-type nuProcessFn func(context.Context, *RedfishResourceAggregate, *RedfishResourceProperty, *RedfishAuthorizationProperty, nuEncOpts) error
+type nuProcessFn func(context.Context, *RedfishResourceAggregate, *RedfishResourceProperty, *RedfishAuthorizationProperty, NuEncOpts) error
 
-type nuEncOpts struct {
-	root    bool
-	request interface{}
-	present bool
-	process nuProcessFn
-	path    string
-	sel     []string
+type NuEncOpts struct {
+	root         bool
+	Parse        interface{}
+	request      interface{}
+	present      bool
+	HttpResponse map[string]interface{}
+	process      nuProcessFn
+	path         string
+	sel          []string
+}
+type PropGetter interface {
+	PropertyGet(context.Context, *RedfishResourceAggregate, *RedfishAuthorizationProperty, *RedfishResourceProperty, map[string]interface{}) error
 }
 
-func nuGETfn(ctx context.Context, agg *RedfishResourceAggregate, rrp *RedfishResourceProperty, auth *RedfishAuthorizationProperty, opts nuEncOpts) error {
+func nuGETfn(ctx context.Context, agg *RedfishResourceAggregate, rrp *RedfishResourceProperty, auth *RedfishAuthorizationProperty, opts NuEncOpts) error {
 	meta_t, ok := rrp.Meta["GET"].(map[string]interface{})
 	if !ok {
 		return nil // it's not really an "error" we need upper layers to care about
@@ -75,52 +82,23 @@ func nuGETfn(ctx context.Context, agg *RedfishResourceAggregate, rrp *RedfishRes
 	return err
 }
 
-type PropGetter interface {
-	PropertyGet(context.Context, *RedfishResourceAggregate, *RedfishAuthorizationProperty, *RedfishResourceProperty, map[string]interface{}) error
-}
-
 type PropPatcher interface {
-	PropertyPatch(context.Context, *RedfishResourceAggregate, *RedfishAuthorizationProperty, *RedfishResourceProperty, interface{}, map[string]interface{}) error
+	PropertyPatch(context.Context, *RedfishResourceAggregate, *RedfishAuthorizationProperty, *RedfishResourceProperty, *NuEncOpts, map[string]interface{}) error
 }
 
-func nuPATCHfn(ctx context.Context, agg *RedfishResourceAggregate, rrp *RedfishResourceProperty, auth *RedfishAuthorizationProperty, opts nuEncOpts) error {
-
-	bad_json := ExtendedInfo{
-		Message:             "The request body submitted was malformed JSON and could not be parsed by the receiving service.",
-		MessageArgs:         []string{}, //FIX ME
-		MessageArgsCt:       0,          //FIX ME
-		MessageId:           "Base.1.0.MalformedJSON",
-		RelatedProperties:   []string{}, //FIX ME
-		RelatedPropertiesCt: 0,          //FIX ME
-		Resolution:          "Ensure that the request body is valid JSON and resubmit the request.",
-		Severity:            "Critical",
-	}
-
-	bad_request := ExtendedInfo{
-		Message:             "The service detected a malformed request body that it was unable to interpret.",
-		MessageArgs:         []string{},
-		MessageArgsCt:       0,
-		MessageId:           "Base.1.0.UnrecognizedRequestBody",
-		RelatedProperties:   []string{"Attributes"}, //FIX ME
-		RelatedPropertiesCt: 1,                      //FIX ME
-		Resolution:          "Correct the request body and resubmit the request if it failed.",
-		Severity:            "Warning",
-	}
+func nuPATCHfn(ctx context.Context, agg *RedfishResourceAggregate, rrp *RedfishResourceProperty, auth *RedfishAuthorizationProperty, opts NuEncOpts) error {
 
 	if opts.request != nil {
 		if req_map, ok := opts.request.(map[string]interface{}); ok {
 			if val, ok := req_map["ERROR"]; ok {
-				var failed []interface{}
-				if val == "BADJSON" {
-					failed = append(failed, bad_json)
+				valStr, ok := val.(string)
+				if !ok {
+					fmt.Println("something is wrong")
+					return nil
 				}
-				if val == "BADREQUEST" {
-					failed = append(failed, bad_request)
-				}
-				return &CombinedPropObjInfoError{
-					ObjectExtendedErrorMessages: *NewObjectExtendedErrorMessages(failed),
-					NumSuccess:                  0,
-				}
+				AddEEMIMessage(opts.HttpResponse, agg, valStr, nil)
+				return nil
+
 			}
 		}
 	}
@@ -149,10 +127,11 @@ func nuPATCHfn(ctx context.Context, agg *RedfishResourceAggregate, rrp *RedfishR
 	//ContextLogger(ctx, "property_process").Debug("getting property: PATCH", "value", fmt.Sprintf("%v", rrp.Value), "plugin", plugin)
 	if plugin, ok := plugin.(PropPatcher); ok {
 		//defer ContextLogger(ctx, "property_process").Debug("AFTER getting property: PATCH - type assert success", "value", fmt.Sprintf("%v", rrp.Value))
-		return plugin.PropertyPatch(ctx, agg, auth, rrp, opts.request, meta_t)
+		plugin.PropertyPatch(ctx, agg, auth, rrp, &opts, meta_t)
 	} else {
 		panic("coding error: the plugin " + pluginName + " does not implement the Property Patching API")
 	}
+	return nil
 }
 
 type stopProcessing interface {
@@ -222,7 +201,7 @@ func Flatten(thing interface{}, parentlocked bool) interface{} {
 	}
 }
 
-func (rrp *RedfishResourceProperty) RunMetaFunctions(ctx context.Context, agg *RedfishResourceAggregate, auth *RedfishAuthorizationProperty, e nuEncOpts) (err error) {
+func (rrp *RedfishResourceProperty) runMetaFunctions(ctx context.Context, agg *RedfishResourceAggregate, auth *RedfishAuthorizationProperty, e NuEncOpts) (err error) {
 
 	rrp.Lock()
 	defer rrp.Unlock()
@@ -242,59 +221,27 @@ func (rrp *RedfishResourceProperty) RunMetaFunctions(ctx context.Context, agg *R
 	}
 }
 
-type propertyExtMessages interface {
-	GetPropertyExtendedMessages() []interface{}
-}
-
-type objectExtMessages interface {
-	GetObjectExtendedMessages() []interface{}
-}
-
-type objectErrMessages interface {
-	GetObjectErrorMessages() []interface{}
-}
-
-type numSuccess interface {
-	GetNumSuccess() int
-}
-
-func helper(ctx context.Context, agg *RedfishResourceAggregate, auth *RedfishAuthorizationProperty, encopts nuEncOpts, v interface{}) error {
+func helper(ctx context.Context, agg *RedfishResourceAggregate, auth *RedfishAuthorizationProperty, encopts NuEncOpts, v interface{}) error {
 	var ok bool
 	// handle special case of RRP inside RRP.Value of parent
 	if vp, ok := v.(*RedfishResourceProperty); ok {
-		return vp.RunMetaFunctions(ctx, agg, auth, encopts)
+		return vp.runMetaFunctions(ctx, agg, auth, encopts)
 	}
-
-	objectErrorMessages := []interface{}{}
-	objectExtendedMessages := []interface{}{}
-	anySuccess := 0
 
 	// recurse through maps or slices and recursively call helper on them
 	val := reflect.ValueOf(v)
 	switch k := val.Kind(); k {
 	case reflect.Map:
 
-		elemType := val.Type().Elem()
-		if encopts.root {
-			annotatedKey := "@Message.ExtendedInfo"
-			val.SetMapIndex(reflect.ValueOf(annotatedKey), reflect.Value{})
-			val.SetMapIndex(reflect.ValueOf("error"), reflect.Value{})
-
-		}
-
 		for _, k := range val.MapKeys() {
-			newEncOpts := nuEncOpts{
-				request: encopts.request,
-				present: encopts.present,
-				process: encopts.process,
-				root:    false,
-				path:    path.Join(encopts.path, k.String()),
-			}
-
-			// first scrub any old extended messages
-			if strK, ok := k.Interface().(string); ok {
-				annotatedKey := strK + "@Message.ExtendedInfo"
-				val.SetMapIndex(reflect.ValueOf(annotatedKey), reflect.Value{})
+			newEncOpts := NuEncOpts{
+				request:      encopts.request,
+				Parse:        encopts.Parse,
+				present:      encopts.present,
+				process:      encopts.process,
+				HttpResponse: encopts.HttpResponse,
+				root:         false,
+				path:         path.Join(encopts.path, k.String()),
 			}
 
 			// Header information needs to always have the meta expanded
@@ -306,13 +253,13 @@ func helper(ctx context.Context, agg *RedfishResourceAggregate, auth *RedfishAut
 				}
 			}
 
-			requestBody, ok := newEncOpts.request.(map[string]interface{})
+			requestBody, ok := newEncOpts.Parse.(map[string]interface{})
 			newEncOpts.present = ok
 			if newEncOpts.present {
-				newEncOpts.request, newEncOpts.present = requestBody[k.Interface().(string)]
+				newEncOpts.Parse, newEncOpts.present = requestBody[k.Interface().(string)]
 			}
-			if newEncOpts.request == nil && k.Interface().(string) == "Attributes" {
-				newEncOpts.request = map[string]interface{}{"ERROR": "BADREQUEST"}
+			if newEncOpts.Parse == nil && k.Interface().(string) == "Attributes" {
+				newEncOpts.Parse = map[string]interface{}{"ERROR": "BADREQUEST"}
 			}
 			mapVal := val.MapIndex(k)
 			if mapVal.IsValid() {
@@ -320,65 +267,6 @@ func helper(ctx context.Context, agg *RedfishResourceAggregate, auth *RedfishAut
 				if err == nil {
 					continue
 				}
-
-				if e, ok := err.(numSuccess); ok {
-					i := e.GetNumSuccess()
-					if i > 0 {
-						anySuccess = anySuccess + 1
-					}
-				}
-				// annotate at this level
-				propertyExtendedMessages := []interface{}{}
-				if e, ok := err.(propertyExtMessages); ok {
-					propertyExtendedMessages = append(propertyExtendedMessages, e.GetPropertyExtendedMessages()...)
-				}
-				// things to kick up a level
-				if e, ok := err.(objectExtMessages); ok {
-					objectExtendedMessages = append(objectExtendedMessages, e.GetObjectExtendedMessages()...)
-				}
-				if e, ok := err.(objectErrMessages); ok {
-					objectErrorMessages = append(objectErrorMessages, e.GetObjectErrorMessages()...)
-				}
-
-				// TODO: add generic annotation support
-
-				if len(propertyExtendedMessages) > 0 {
-					if strK, ok := k.Interface().(string); ok {
-						annotatedKey := strK + "@Message.ExtendedInfo"
-						if compatible(reflect.TypeOf(propertyExtendedMessages), elemType) {
-							val.SetMapIndex(reflect.ValueOf(annotatedKey), reflect.ValueOf(propertyExtendedMessages))
-						}
-					}
-				}
-			}
-		}
-
-		if encopts.root && len(objectExtendedMessages) > 0 {
-			annotatedKey := "@Message.ExtendedInfo"
-			if compatible(reflect.TypeOf(objectExtendedMessages), val.Type().Elem()) {
-				val.SetMapIndex(reflect.ValueOf(annotatedKey), reflect.ValueOf(objectExtendedMessages))
-			}
-		}
-
-		if encopts.root && len(objectErrorMessages) > 0 {
-			if agg != nil {
-				agg.StatusCode = 400
-				if anySuccess > 0 {
-					agg.StatusCode = 200
-				}
-			}
-			annotatedKey := "error"
-			value := map[string]interface{}{
-				"code":                  "Base.1.0.GeneralError",
-				"message":               "A general error has occurred. See ExtendedInfo for more information.",
-				"@Message.ExtendedInfo": objectErrorMessages,
-			}
-			if compatible(reflect.TypeOf(value), val.Type().Elem()) {
-				val.SetMapIndex(reflect.ValueOf(annotatedKey), reflect.ValueOf(value))
-			}
-		} else {
-			if agg != nil {
-				agg.StatusCode = 200
 			}
 		}
 
@@ -390,31 +278,10 @@ func helper(ctx context.Context, agg *RedfishResourceAggregate, auth *RedfishAut
 				if err == nil {
 					continue
 				}
-
-				if e, ok := err.(numSuccess); ok {
-					i := e.GetNumSuccess()
-					if i > 0 {
-						anySuccess = anySuccess + 1
-					}
-				}
-				// things to kick up a level
-				if e, ok := err.(objectExtMessages); ok {
-					objectExtendedMessages = append(objectExtendedMessages, e.GetObjectExtendedMessages()...)
-				}
-				if e, ok := err.(objectErrMessages); ok {
-					objectErrorMessages = append(objectErrorMessages, e.GetObjectErrorMessages()...)
-				}
-
-				// TODO: do annotations make sense here?
 			}
 		}
 	}
-
-	return &CombinedPropObjInfoError{
-		ObjectExtendedInfoMessages:  *NewObjectExtendedInfoMessages(objectExtendedMessages),
-		ObjectExtendedErrorMessages: *NewObjectExtendedErrorMessages(objectErrorMessages),
-		NumSuccess:                  anySuccess,
-	}
+	return nil
 }
 
 func compatible(actual, expected reflect.Type) bool {
