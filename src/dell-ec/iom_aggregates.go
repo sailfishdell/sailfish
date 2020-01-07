@@ -83,6 +83,9 @@ func RegisterIOMAggregate(s *testaggregate.Service) {
 								"#DellChassis.v1_0_0.VirtualReseat": map[string]interface{}{
 									"target": vw.GetActionURI("iom.virtualreseat"),
 								},
+                "#DellChassis.v1_0_0.GetSSOInfo":map[string]interface{}{
+                  "target": vw.GetActionURI("iom.getssoinfo"),
+                },
 							},
 						},
 					}}}, nil
@@ -100,13 +103,13 @@ func RegisterIOMAggregate(s *testaggregate.Service) {
 						"GET":   []string{"Login"},
 						"PATCH": []string{"ConfigureManager"},
 					},
-					DefaultFilter: "$select=!IOMConfig_objects/sso_info",
+					DefaultFilter: "$select=!IOMConfig_objects/sso_info", //remove when ready
 					Properties: map[string]interface{}{
 						"Id@meta":                       vw.Meta(view.PropGET("unique_name")),
 						"internal_mgmt_supported@meta":  vw.Meta(view.PropGET("managed")),
 						"IOMConfig_objects@meta":        vw.Meta(view.PropGET("config")),
-						"Capabilities@meta":             vw.Meta(view.PropGET("capabilities")),
-						"Capabilities@odata.count@meta": vw.Meta(view.PropGET("capCount")),
+						"Capabilities@meta":             vw.Meta(view.PropGET("capabilities")), //remove when ready
+						"Capabilities@odata.count@meta": vw.Meta(view.PropGET("capCount")), //remove when ready
 					}}}, nil
 		})
 
