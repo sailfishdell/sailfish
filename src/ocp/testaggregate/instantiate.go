@@ -209,7 +209,7 @@ func walk(v reflect.Value, visitor func(string, interface{}, func(interface{})))
 	case reflect.Chan, reflect.Func:
 		// no-op
 	default:
-		fmt.Printf("TYPE: %V\n", v)
+		fmt.Printf("TYPE: %+v\n", v)
 		panic("DONT KNOW WHAT TO DO!")
 	}
 }
@@ -319,7 +319,7 @@ func (s *Service) GetAggregateFunction(name string) aggregateFunc {
 					continue // continue for loop
 				}
 			default:
-				panic(fmt.Sprintf("Unsupported command. Please add code to deal with this command in instantiate.go.  --> %v", cmd))
+				panic(fmt.Sprintf("Unsupported command. Please add code to deal with this command in instantiate.go.  --> %+v", cmd))
 			}
 
 			logger.Info("Made a command", "command", cmd)

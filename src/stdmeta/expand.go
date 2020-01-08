@@ -262,7 +262,7 @@ func CountFormatter(
 func FormatOdataList(ctx context.Context, v *view.View, m *model.Model, agg *domain.RedfishResourceAggregate, rrp *domain.RedfishResourceProperty, auth *domain.RedfishAuthorizationProperty, meta map[string]interface{}) error {
 	p, ok := meta["property"].(string)
 	if !ok {
-		panic(fmt.Sprintf("Programming error: malformed aggregate. No property specified for agg: %s", agg))
+		panic(fmt.Sprintf("Programming error: malformed aggregate. No property specified for agg: %+v", agg))
 	}
 
 	// have to use m.UnderLock() to do all of this so we dont race with people adding to the underlying slice
