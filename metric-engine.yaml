@@ -1714,6 +1714,7 @@ createdb:
 
 # Backwards compat stuff to get the fcgi_rfsql to work
   - |
+      DROP TABLE IF EXISTS TblMetricReportItems;
       DROP VIEW IF EXISTS TblMetricReportItems;
       CREATE VIEW         TblMetricReportItems AS
         SELECT
