@@ -174,29 +174,6 @@ func init() {
 		}, nil, nil
 	})
 
-	AddAM3ProcessSetupFunction("updateInstPower", func(logger log.Logger, processConfig interface{}) (processFunc, processSetupFunc, error) {
-		aggUpdateFn := func(mp *MapperParameters, event eh.Event, ch eh.CommandHandler, d *domain.DomainObjects) error {
-			data, ok := event.Data().(*dm_event.InstPowerEventData)
-			if !ok {
-				logger.Error("updateInstPower not have InstPowerEventData event", "type", event.EventType, "data", event.Data())
-				return errors.New("updateInstPower did not receive InstPowerEventData")
-			}
-
-			instPower := round2DecPlaces(data.InstPower, false)
-
-			ch.HandleCommand(mp.ctx,
-				&domain.UpdateRedfishResourceProperties2{
-					ID: mp.uuid,
-					Properties: map[string]interface{}{
-						"Oem/Dell/InstPowerConsumption": instPower,
-					},
-				})
-
-			return nil
-		}
-
-		return aggUpdateFn, nil, nil
-	})
 
 	AddAM3ProcessSetupFunction("updatePwrConsumptionData", func(logger log.Logger, processConfig interface{}) (processFunc, processSetupFunc, error) {
 		// Model Update Function

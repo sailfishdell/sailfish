@@ -55,7 +55,7 @@ func RegisterIOMAggregate(s *testaggregate.Service) {
 						"Oem": map[string]interface{}{
 							"Dell": map[string]interface{}{
 								"ServiceTag@meta":           vw.Meta(view.PropGET("service_tag"), view.PropPATCH("service_tag", "ar_mapper")),
-								"InstPowerConsumption@meta": vw.Meta(view.PropGET("inst_power")),
+								"InstPowerConsumption": 0, 
 								"OemChassis": map[string]interface{}{
 									"@odata.id": vw.GetURI() + "/Attributes",
 								},

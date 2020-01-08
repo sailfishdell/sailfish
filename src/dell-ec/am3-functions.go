@@ -51,6 +51,34 @@ func addAM3Functions(logger log.Logger, am3Svc *am3.Service, d *domain.DomainObj
 				},
 			})
 	})
+	am3Svc.AddEventHandler("InstPowerFn", dm_event.InstPowerEvent, func(event eh.Event) {
+		data, ok := event.Data().(*dm_event.InstPowerEventData)
+		if !ok {
+			logger.Error("updateFanData did not have fan event", "type", event.EventType, "data", event.Data())
+			return
+		}
+		
+		
+		FQDD:= data.FQDD 
+		arr := strings.Split(FQDD, "#")
+		// FQDD can be either IOM.Slot.X or System.Chassis.1#System.Modular.X#Power
+		if len(arr) != 1{
+			FQDD = arr[1]
+		}
+			
+		pwr:= data.InstPower 
+
+		URI := "/redfish/v1/Chassis/" + FQDD
+		uuid, ok := d.GetAggregateIDOK(URI)
+
+		d.CommandHandler.HandleCommand(context.Background(),
+			&domain.UpdateRedfishResourceProperties2{
+				ID: uuid,
+				Properties: map[string]interface{}{
+					"Oem/Dell/InstPowerConsumption": pwr,
+				},
+			})
+	})
 
     am3Svc.AddEventHandler("healthEventHandler", dm_event.HealthEvent, func(event eh.Event) {
         blackList := [] string {"Group.1", "IOM","SledSystem"}

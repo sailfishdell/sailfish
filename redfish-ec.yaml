@@ -1106,8 +1106,6 @@ views:
           "params": {"modelname": "default", "cfgsection": "Chassis/System.Modular", "mappinguniquename": "'sled_mapper:' + FQDD", "AddToView": "ar_mapper"}
         - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "health", "uniquename": "'am2_health_' + FQDD", "passthru": {"health_fqdd": "'System.Chassis.1#' + FQDD" } }
-        - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "inst_power", "uniquename": "'am2_sled_' + FQDD", "passthru": {"DM_FQDD": "'System.Chassis.1#' + FQDD + '#Power'"}}
       "View":
         - "fn": "linkModel"
           "params": {"existing": "default", "linkname": "health"}
@@ -1324,11 +1322,6 @@ awesome_mapper:
           Select: "data.FQDD == FQDD && data.Name == 'ChassisPowerStatus'",
           Process: { "name": "am3AttributeUpdated", "params":{"Conv":"map_power_state", "Field":"PowerState"}}}
 
-
-    inst_power:
-      - { SelectEventType: "InstPowerEvent",
-          Select: "DM_FQDD == data.FQDD",
-          Process: { "name": "updateInstPower", "params":[]}}
 
     iom_config:
       - { SelectEventType: "IomCapability", Select: "data.Name == FQDD",
