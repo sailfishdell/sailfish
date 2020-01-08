@@ -192,8 +192,6 @@ func (d *DomainObjects) CheckTree() (id eh.UUID, ok bool) {
 		//fmt.Printf("Number of tree objects: %d\n", treeSize)
 		//fmt.Printf("Number of aggregate objects: %d\n", len(seen_aggs))
 	}
-
-	return
 }
 
 func (d *DomainObjects) GetAggregateIDOK(uri string) (id eh.UUID, ok bool) {
