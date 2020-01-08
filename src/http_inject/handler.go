@@ -20,7 +20,6 @@ const MAX_OUT_OF_ORDER_QUEUED = 25
 
 type waiter interface {
 	Listen(context.Context, func(eh.Event) bool) (*eventwaiter.EventListener, error)
-	Notify(context.Context, eh.Event)
 }
 
 type busObjs interface {
@@ -48,132 +47,119 @@ type eventBundle struct {
 	barrier bool
 }
 
-var injectCmdQueue chan *InjectCommand
-var injectChan chan *eventBundle
-
 // inject event timeout
 //var IETIMEOUT time.Duration = 250 * time.Millisecond
 var IETIMEOUT time.Duration = 6 * time.Second
 
 type service struct {
-	logger log.Logger
-	sd     sdNotifier
-	eb     eh.EventBus
-	ew     *eventwaiter.EventWaiter
-}
-
-// SSEHandler struct holds authentication/authorization data as well as the domain variables
-type InjectHandler struct {
-	UserName   string
-	Privileges []string
-	d          busObjs
-	logger     log.Logger
+	logger         log.Logger
+	sd             sdNotifier
+	eb             eh.EventBus
+	ew             *eventwaiter.EventWaiter
+	injectCmdQueue chan *InjectCommand
+	injectChan     chan *eventBundle
 }
 
 // NewInjectHandler constructs a new InjectHandler with the given username and privileges.
-func NewInjectHandler(dobjs busObjs, logger log.Logger, u string, p []string) *InjectHandler {
-	return &InjectHandler{UserName: u, Privileges: p, d: dobjs, logger: logger}
-}
-
-func (rh *InjectHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	requestID := eh.NewUUID()
-	ctx := WithRequestID(r.Context(), requestID)
-	// Disable hot path debugging: keep commented out code and uncomment for debugging
-	//requestLogger := ContextLogger(ctx, "INJECT")
-
-	// set headers first
-	w.Header().Set("OData-Version", "4.0")
-	w.Header().Set("Server", "sailfish")
-	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Connection", "keep-alive")
-	w.Header().Set("Cache-Control", "no-Store,no-Cache")
-	w.Header().Set("Pragma", "no-cache")
-
-	// security headers
-	w.Header().Add("Strict-Transport-Security", "max-age=63072000; includeSubDomains") // for A+ SSL Labs score
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("X-Frame-Options", "DENY")
-	w.Header().Set("X-XSS-Protection", "1; mode=block")
-	w.Header().Set("X-Content-Security-Policy", "default-src 'self'")
-	w.Header().Set("X-Content-Type-Options", "nosniff")
-
-	// compatibility headers
-	w.Header().Set("X-UA-Compatible", "IE=11")
-
-	// TODO: query option for extra debug print
-
-	cmd := &InjectCommand{}
-
-	defer r.Body.Close()
-	decoder := json.NewDecoder(r.Body)
-	err := decoder.Decode(cmd)
-	if err != nil {
+func (s *service) GetHandlerFunc() func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		requestID := eh.NewUUID()
+		ctx := WithRequestID(r.Context(), requestID)
 		// Disable hot path debugging: keep commented out code and uncomment for debugging
-		//requestLogger.Crit("JSON decode failure", "err", err)
-		http.Error(w, "could not JSON decode command: "+err.Error(), http.StatusBadRequest)
-		return
+		requestLogger := ContextLogger(ctx, "INJECT")
+
+		// set headers first
+		w.Header().Set("OData-Version", "4.0")
+		w.Header().Set("Server", "sailfish")
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Connection", "keep-alive")
+		w.Header().Set("Cache-Control", "no-Store,no-Cache")
+		w.Header().Set("Pragma", "no-cache")
+
+		// security headers
+		w.Header().Add("Strict-Transport-Security", "max-age=63072000; includeSubDomains") // for A+ SSL Labs score
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("X-Frame-Options", "DENY")
+		w.Header().Set("X-XSS-Protection", "1; mode=block")
+		w.Header().Set("X-Content-Security-Policy", "default-src 'self'")
+		w.Header().Set("X-Content-Type-Options", "nosniff")
+
+		// compatibility headers
+		w.Header().Set("X-UA-Compatible", "IE=11")
+
+		// TODO: query option for extra debug print
+
+		cmd := &InjectCommand{}
+
+		defer r.Body.Close()
+		decoder := json.NewDecoder(r.Body)
+		err := decoder.Decode(cmd)
+		if err != nil {
+			requestLogger.Crit("HTTP Inject Event JSON decode failure", "err", err)
+			http.Error(w, "could not JSON decode command: "+err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		// Have to write the headers out *AFTER* reading the full body. But do this *BEFORE* doing anything that will take a bunch of time
+		w.WriteHeader(http.StatusOK)
+
+		//requestLogger.Debug("PUSH injectCmdQueue LEN", "len", len(injectCmdQueue), "cap", cap(injectCmdQueue), "module", "inject", "cmd", cmd)
+		cmd.ctx = context.Background()
+
+		// manually override barrier settings given by sender in some cases
+		cmd.markBarrier()
+
+		// used by commented out debugging
+		//seq := cmd.EventSeq
+		//name := cmd.Name
+		// Disable hot path debugging: keep commented out code and uncomment for debugging
+		//requestLogger.Debug("HTTP Handler recieved event. Send to injectCmdQueue.", "EventSeq", seq, "Name", name)
+
+		// don't do anything with "cmd" *at all* in this go-routine, except .Wait() after this .Add(1)
+		// That means do not access any structure members or anything except .Wait()
+		// this is why we copy the seq and name above
+		cmd.Add(1)
+		select {
+		// either get this into the queue, or give up if caller drops http connection
+		case s.injectCmdQueue <- cmd:
+			// make sure we don't add the .Wait() until after we know it's being
+			// processed by the other side. Otherwise the context cancel (below, the
+			// case <-c.ctx.Done()) will keep the message from being sent from our
+			// side, and then we'll .Wait() for something that can never be .Done()
+
+			// For cmd.Synchronous==false: this will wait until event has made it through
+			// inital command queue and is in the injectChan (which means "in order")
+			//
+			// For cmd.Synchronous==true: this will wait until every event processor has
+			// fully processed the event before returning. Note, that the event is still
+			// processed if the caller drops the http connection after this point.
+			cmd.Wait()
+		case <-ctx.Done():
+		}
+
+		// Disable hot path debugging: keep commented out code and uncomment for debugging
+		//requestLogger.Debug("HTTP Handler returning to caller.", "module", "http_inject", "EventSeq", seq, "Name", name)
 	}
-
-	// Have to write the headers out *AFTER* reading the full body. But do this *BEFORE* doing anything that will take a bunch of time
-	w.WriteHeader(http.StatusOK)
-
-	// ideally, this would all be handled internally by auto-backpressure on the internal queue, but we're not set up to examine the internal queues yet
-	//requestLogger.Debug("PUSH injectCmdQueue LEN", "len", len(injectCmdQueue), "cap", cap(injectCmdQueue), "module", "inject", "cmd", cmd)
-	cmd.ctx = context.Background()
-
-	// manually override barrier settings given by sender in some cases
-	cmd.markBarrier()
-
-	// used by commented out debugging
-	//seq := cmd.EventSeq
-	//name := cmd.Name
-	// Disable hot path debugging: keep commented out code and uncomment for debugging
-	//requestLogger.Debug("HTTP Handler recieved event. Send to injectCmdQueue.", "EventSeq", seq, "Name", name)
-
-	// don't do anything with "cmd" *at all* in this go-routine, except .Wait() after this .Add(1)
-	// That means do not access any structure members or anything except .Wait()
-	// this is why we copy the seq and name above
-	cmd.Add(1)
-	select {
-	// either get this into the queue, or give up if caller drops http connection
-	case injectCmdQueue <- cmd:
-	case <-ctx.Done():
-	}
-
-	// For cmd.Synchronous==false: this will wait until event has made it through
-	// inital command queue and is in the injectChan (which means "in order")
-	//
-	// For cmd.Synchronous==true: this will wait until every event processor has
-	// fully processed the event before returning. Note, that the event is still
-	// processed if the caller drops the http connection after this point.
-	cmd.Wait()
-	// Disable hot path debugging: keep commented out code and uncomment for debugging
-	//requestLogger.Debug("HTTP Handler returning to caller.", "module", "http_inject", "EventSeq", seq, "Name", name)
 }
 
 func New(logger log.Logger, d busObjs) (svc *service) {
-	// if things wedge here, making this queue longer wont do anything useful, so by default make it fully synchronous.
-	injectCmdQueue = make(chan *InjectCommand)
-
-	// everything here is sorted, it's ok to have this be a little longer, as it slows things down if this ever empties
-	// not too big, though, or our max latency takes a big hit
-	injectChan = make(chan *eventBundle, 50)
-
 	svc = &service{
 		logger: logger.New("module", "injectservice"),
-		sd:     SimulateSdnotify(),
 		eb:     d.GetBus(),
 		ew:     d.GetWaiter(),
+		// if things wedge here, making this queue longer wont do anything useful, so by default make it fully synchronous.
+		injectCmdQueue: make(chan *InjectCommand),
+		// everything here is sorted, it's ok to have this be a little longer, as it slows things down if this ever empties
+		// not too big, though, or our max latency takes a big hit
+		injectChan: make(chan *eventBundle, 50),
 	}
 
-	s, err := NewSdnotify()
+	var err error
+	svc.sd, err = NewSdnotify()
 	if err != nil {
 		logger.Warn("Running using simulation SD_NOTIFY", "err", err)
-		return
+		svc.sd = SimulateSdnotify()
 	}
-
-	// override the simulated sdnotify with the real one, if available
-	svc.sd = s
 
 	return
 }
@@ -237,7 +223,7 @@ func (s *service) Start() {
 				evt := event.NewSyncEvent(WatchdogEvent, &WatchdogEventData{Seq: seq}, time.Now())
 				evt.Add(1)
 				// use watchdogs with barrier set to periodically clean the queues out
-				injectChan <- &eventBundle{&evt, true}
+				s.injectChan <- &eventBundle{&evt, true}
 				seq++
 			}
 		}
@@ -282,7 +268,7 @@ func (s *service) Start() {
 					}, time.Now())
 
 					evt.Add(1)
-					injectChan <- &eventBundle{&evt, false}
+					s.injectChan <- &eventBundle{&evt, false}
 					queued[i] = nil
 					continue
 				}
@@ -301,7 +287,7 @@ func (s *service) Start() {
 				if doSend {
 					// fast path debug statement. comment out unless actively debugging
 					//	s.logger.Debug("Send", "seq", internalSeq, "cmd", injectCmd.Name, "cmdseq", injectCmd.EventSeq, "index", i)
-					injectCmd.sendToChn()
+					injectCmd.sendToChn(s.injectChan)
 					internalSeq = injectCmd.EventSeq
 					internalSeq++
 					queued[i] = nil
@@ -317,9 +303,9 @@ func (s *service) Start() {
 
 		for {
 			select {
-			case cmd := <-injectCmdQueue:
+			case cmd := <-s.injectCmdQueue:
 				// fast path debug statement. comment out unless actively debugging
-				//s.logger.Debug("POP  injectCmdQueue LEN", "len", len(injectCmdQueue), "cap", cap(injectCmdQueue), "module", "inject", "cmdname", cmd.Name, "EventSeq", cmd.EventSeq)
+				//s.logger.Debug("POP  injectCmdQueue LEN", "len", len(s.injectCmdQueue), "cap", cap(s.injectCmdQueue), "module", "inject", "cmdname", cmd.Name, "EventSeq", cmd.EventSeq)
 
 				queued = append(queued, cmd)
 				if len(queued) > 1 {
@@ -394,18 +380,19 @@ func (s *service) Start() {
 	}()
 
 	go func() {
-		debugOutputTicker := time.NewTicker(5 * time.Second)
+		//debugOutputTicker := time.NewTicker(5 * time.Second)
 		for {
 			select {
-			case evb := <-injectChan:
+			case evb := <-s.injectChan:
 				s.eb.PublishEvent(context.Background(), *evb.event)
 				// barrier is set if this event should block events after it
 				if evb.barrier {
 					evb.event.Wait()
 				}
-			case <-debugOutputTicker.C:
+				// comment out so we don't spam logs, but leave in place so it can be uncommented for debugging
+				//case <-debugOutputTicker.C:
 				// debug if we start getting full channels
-				//s.logger.Debug("queue length monitor", "module", "queuemonitor", "len(injectChan)", len(injectChan), "cap(injectChan)", cap(injectChan), "len(injectCmdQueue)", len(injectCmdQueue), "cap(injectCmdQueue)", cap(injectCmdQueue))
+				//s.logger.Debug("queue length monitor", "module", "queuemonitor", "len(s.injectChan)", len(s.injectChan), "cap(s.injectChan)", cap(s.injectChan), "len(s.injectCmdQueue)", len(s.injectCmdQueue), "cap(s.injectCmdQueue)", cap(s.injectCmdQueue))
 			}
 		}
 	}()
@@ -462,15 +449,12 @@ func (c *InjectCommand) markBarrier() {
 	}
 }
 
-func (c *InjectCommand) sendToChn() error {
+func (c *InjectCommand) sendToChn(injectChan chan *eventBundle) error {
 	//requestLogger := ContextLogger(c.ctx, "internal_commands").New("module", "inject_event")
 	//requestLogger.Crit("InjectService: preparing event", "Sequence", c.EventSeq, "Name", c.Name)
 
 	waits := []func(){}
 	defer func() {
-		// run the Command .Done() after we've sent all the commands from the "command" queue to the "event" queue (but not yet published).
-		// After the HTTP POST has returned, caller knows that this event is being processed "in order", but might not yet be finished.
-		defer c.Done()
 		for _, fn := range waits {
 			// These are a queue of .Wait() for individual internal Published events.
 			// If the command is Synchronous=true, then these are added. These will
@@ -480,8 +464,12 @@ func (c *InjectCommand) sendToChn() error {
 			// If the command is Synchronous, that means that after the HTTP POST has
 			// returned, caller knows that the event has been fully processed by all
 			// goroutines that are listening for it.
-			defer fn()
+			fn()
 		}
+
+		// run the Command .Done() after we've sent all the commands from the "command" queue to the "event" queue (but not yet published).
+		// After the HTTP POST has returned, caller knows that this event is being processed "in order", but might not yet be finished.
+		c.Done()
 	}()
 
 	trainload := make([]eh.EventData, 0, MAX_CONSOLIDATED_EVENTS)
@@ -492,11 +480,15 @@ func (c *InjectCommand) sendToChn() error {
 
 		evt := event.NewSyncEvent(c.Name, trainload, time.Now())
 		evt.Add(1)
-		if c.Synchronous {
-			waits = append(waits, evt.Wait)
-		}
 		select {
 		case injectChan <- &eventBundle{&evt, c.Barrier}:
+			// make sure we don't add the .Wait() until after we know it's being
+			// processed by the other side. Otherwise the context cancel (below, the
+			// case <-c.ctx.Done()) will keep the message from being sent from our
+			// side, and then we'll .Wait() for something that can never be .Done()
+			if c.Synchronous {
+				waits = append(waits, evt.Wait)
+			}
 		case <-c.ctx.Done():
 			//requestLogger.Info("CONTEXT CANCELLED! Discarding trainload", "err", c.ctx.Err(), "trainload", trainload, "EventName", c.Name)
 		}

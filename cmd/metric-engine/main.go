@@ -108,7 +108,7 @@ func main() {
 	m := mux.NewRouter()
 	loggingHTTPHandler := makeLoggingHTTPHandler(logger, m)
 	m.Path("/events").Methods("GET").Handler(http_sse.NewSSEHandler(d, logger, "UNKNOWN", []string{"Unauthenticated"}))
-	m.Path("/api/Event:Inject").Methods("POST").Handler(http_inject.NewInjectHandler(d, logger, "UNKNOWNN", []string{"Unauthenticated"}))
+	m.Path("/api/Event:Inject").Methods("POST").HandlerFunc(injectSvc.GetHandlerFunc())
 
 	listen_addrs := cfgMgr.GetStringSlice("listen")
 	if len(listen_addrs) == 0 {

@@ -133,28 +133,26 @@ func main() {
 	internalHandlerFunc := domainObjs.GetInternalCommandHandler(ctx)
 
 	// most-used command is event inject, specify that manually to avoid some regexp memory allocations
-	m.Path("/api/Event:Inject").Methods("POST").Handler(http_inject.NewInjectHandler(domainObjs, logger, "UNKNOWNN", []string{"Unauthenticated"}))
+	m.Path("/api/Event:Inject").Methods("POST").HandlerFunc(injectSvc.GetHandlerFunc())
 
-	//m.PathPrefix("/redfish/").Methods("GET", "PUT", "POST", "PATCH", "DELETE", "HEAD", "OPTIONS").HandlerFunc(handlerFunc)
+	// All of the /redfish apis
+	m.PathPrefix("/redfish/").Methods("GET", "PUT", "POST", "PATCH", "DELETE", "HEAD", "OPTIONS").HandlerFunc(handlerFunc)
 
 	// serve up the schema XML
-	m.MatcherFunc(func(r *http.Request, rm *mux.RouteMatch) bool { return strings.HasPrefix(r.URL.Path, "/redfish/") }).HandlerFunc(handlerFunc)
-
 	m.PathPrefix("/schemas/v1/").Handler(http.StripPrefix("/schemas/v1/", http.FileServer(http.Dir("./v1/schemas/"))))
-
-	implFn, ok := implementations[cfgMgr.GetString("main.server_name")]
-	if !ok {
-		panic("could not load requested implementation: " + cfgMgr.GetString("main.server_name"))
-	}
-
-	// This starts goroutines that use cfgmgr, so from here on out we need to lock it
-	implFn(ctx, logger, cfgMgr, &cfgMgrMu, domainObjs.CommandHandler, domainObjs.EventBus, domainObjs)
 
 	// all the other command apis.
 	m.PathPrefix("/api/{command}").Handler(internalHandlerFunc)
 
 	// debugging (localhost only)
 	m.Path("/status").Handler(domainObjs.DumpStatus())
+
+	// This starts goroutines that use cfgmgr, so from here on out we need to lock it
+	implFn, ok := implementations[cfgMgr.GetString("main.server_name")]
+	if !ok {
+		panic("could not load implementation specified in main.server_name: " + cfgMgr.GetString("main.server_name"))
+	}
+	implFn(ctx, logger, cfgMgr, &cfgMgrMu, domainObjs.CommandHandler, domainObjs.EventBus, domainObjs)
 
 	tlscfg := &tls.Config{
 		MinVersion: tls.VersionTLS12,
@@ -178,11 +176,6 @@ func main() {
 		},
 	}
 
-	cfgMgrMu.RLock()
-	if len(cfgMgr.GetStringSlice("listen")) == 0 {
-		fmt.Fprintf(os.Stderr, "No listeners configured! Use the '-l' option to configure a listener!")
-	}
-
 	type shutdowner interface {
 		Shutdown(context.Context) error
 	}
@@ -197,8 +190,15 @@ func main() {
 	}
 
 	// And finally, start up all of the listeners that we have configured
-	fmt.Printf("Starting services: %s\n", cfgMgr.GetStringSlice("listen"))
-	for _, listen := range cfgMgr.GetStringSlice("listen") {
+	cfgMgrMu.RLock()
+	listeners := cfgMgr.GetStringSlice("listen")
+	if len(listeners) == 0 {
+		fmt.Fprintf(os.Stderr, "No listeners configured! Use the '-l' option to configure a listener!")
+	}
+	cfgMgrMu.RUnlock()
+
+	fmt.Printf("Starting services: %s\n", listeners)
+	for _, listen := range listeners {
 		switch {
 		case strings.HasPrefix(listen, "pprof:"):
 			pprofListener := runpprof(logger, addShutdown, listen)
@@ -226,14 +226,14 @@ func main() {
 			// "https:[addr]:port
 			addr := strings.TrimPrefix(listen, "unix:")
 
-            // delete old socket file
-            if _, err := os.Stat(addr); !os.IsNotExist(err){
-                logger.Info("Socket file found, deleting...")
-                err := os.Remove(addr)
-                if err != nil {
-                    logger.Error("Could not remove old socket file", "Error", err.Error())
-                }
-            }
+			// delete old socket file
+			if _, err := os.Stat(addr); !os.IsNotExist(err) {
+				logger.Info("Socket file found, deleting...")
+				err := os.Remove(addr)
+				if err != nil {
+					logger.Error("Could not remove old socket file", "Error", err.Error())
+				}
+			}
 
 			logger.Info("UNIX SOCKET listener starting on " + addr)
 			s := &http.Server{
@@ -274,8 +274,7 @@ func main() {
 		}
 	}
 
-	logger.Debug("Listening", "module", "main", "addresses", fmt.Sprintf("%v\n", cfgMgr.GetStringSlice("listen")))
-	cfgMgrMu.RUnlock()
+	logger.Debug("Listening", "module", "main", "addresses", fmt.Sprintf("%v\n", listeners))
 	injectSvc.Ready()
 
 	// wait until we get an interrupt (CTRL-C)
