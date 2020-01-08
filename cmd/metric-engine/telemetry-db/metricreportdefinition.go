@@ -385,7 +385,7 @@ func (factory *MRDFactory) GenerateMetricReport(mrdEvData *MetricReportDefinitio
 		sqlargs["Start"] = factory.MetricTSHWM.Add(-time.Duration(MRD.Period) * time.Second).UnixNano()
 		sqlargs["End"] = factory.MetricTSHWM.UnixNano()
 		sqlargs["ReportTimestamp"] = factory.MetricTSHWM.UnixNano()
-		factory.NextMRTS[MRD.Name] = SqlTimeInt{factory.MetricTSHWM.Add(time.Duration(MRD.Period) * time.Second)}
+		factory.NextMRTS[MRD.Name] = SqlTimeInt{Time: factory.MetricTSHWM.Add(time.Duration(MRD.Period) * time.Second)}
 
 		switch MRD.Updates {
 		case /*Periodic*/ "NewReport":
@@ -574,7 +574,7 @@ func (factory *MRDFactory) InsertMetricValue(ev *MetricValueEventData) (err erro
 		// Construct label and Scratch space
 		if mm.CollectionFunction != "" {
 			mm.Label = fmt.Sprintf("%s %s - %s", mm.Context, mm.Name, mm.CollectionFunction)
-			mm.FlushTime = SqlTimeInt{mm.Timestamp.Add(mm.CollectionDuration * time.Second)}
+			mm.FlushTime = SqlTimeInt{Time: mm.Timestamp.Add(mm.CollectionDuration * time.Second)}
 			mm.CollectionScratch.Sum = 0
 			mm.CollectionScratch.Numvalues = 0
 			mm.CollectionScratch.Maximum = -math.MaxFloat64
@@ -657,7 +657,7 @@ func (factory *MRDFactory) InsertMetricValue(ev *MetricValueEventData) (err erro
 
 				// now, reset everything
 				// TODO: need a separate query to find all Metrics with HWM > FlushTime and flush them
-				mm.FlushTime = SqlTimeInt{mm.Timestamp.Add(mm.CollectionDuration * time.Second)}
+				mm.FlushTime = SqlTimeInt{Time: mm.Timestamp.Add(mm.CollectionDuration * time.Second)}
 				mm.CollectionScratch.Sum = 0
 				mm.CollectionScratch.Numvalues = 0
 				mm.CollectionScratch.Maximum = -math.MaxFloat64

@@ -248,7 +248,7 @@ func (l *UDBFactory) ImportByColumn(udbImportName string) (err error) {
 
 			metricName := k[7:]
 			event := &MetricValueEventData{
-				Timestamp:    SqlTimeInt{time.Unix(0, ts)},
+				Timestamp:    SqlTimeInt{Time: time.Unix(0, ts)},
 				Context:      metricCtx,
 				FQDD:         fqdd,
 				FriendlyFQDD: friendlyfqdd,
@@ -258,7 +258,7 @@ func (l *UDBFactory) ImportByColumn(udbImportName string) (err error) {
 			}
 
 			if mts, ok := mm["Timestamp-"+metricName].(int64); ok {
-				event.Timestamp = SqlTimeInt{time.Unix(0, mts)}
+				event.Timestamp = SqlTimeInt{Time: time.Unix(0, mts)}
 				if mts > udbMeta.HWM {
 					udbMeta.HWM = mts
 					l.udb[udbImportName] = udbMeta

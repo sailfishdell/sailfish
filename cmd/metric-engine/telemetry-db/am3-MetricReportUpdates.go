@@ -158,7 +158,7 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Service, d Bus
 		//fmt.Printf("Value Event TS: %s  HWM: %s  delta: %s\n", metricValue.Timestamp.Time, MRDFactory.MetricTSHWM.Time, delta)
 
 		if delta > (1*time.Hour) || delta < -(1*time.Hour) {
-			fmt.Printf("Value Event TIME ERROR - We should never get events this far off current HWM: %V\n", metricValue)
+			fmt.Printf("Value Event TIME ERROR - We should never get events this far off (delta: %d) current HWM. Metric: %+v\n", delta, metricValue)
 		}
 
 		if MRDFactory.MetricTSHWM.Before(metricValue.Timestamp.Time) {
@@ -194,7 +194,7 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Service, d Bus
 			// if no events come in during time between clock publishes, we'll artificially bump HWM forward.
 			if MRDFactory.MetricTSHWM.Equal(lastHWM) {
 				//fmt.Printf("SET HWM FROM TICK: hwm(%s) - last(%s) = %d period(%d)\n", MRDFactory.MetricTSHWM, lastHWM, lastHWM.Sub(MRDFactory.MetricTSHWM.Time), clockPeriod)
-				MRDFactory.MetricTSHWM = SqlTimeInt{MRDFactory.MetricTSHWM.Add(clockPeriod)}
+				MRDFactory.MetricTSHWM = SqlTimeInt{Time: MRDFactory.MetricTSHWM.Add(clockPeriod)}
 			}
 			lastHWM = MRDFactory.MetricTSHWM.Time
 			MRDFactory.FastCheckForNeededMRUpdates()
