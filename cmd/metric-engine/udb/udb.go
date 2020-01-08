@@ -2,6 +2,7 @@ package udb
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -11,7 +12,7 @@ import (
 	"github.com/spf13/viper"
 	"golang.org/x/xerrors"
 
-	. "github.com/superchalupa/sailfish/cmd/metric-engine/metric"
+	"github.com/superchalupa/sailfish/cmd/metric-engine/metric"
 	log "github.com/superchalupa/sailfish/src/log"
 )
 
@@ -40,9 +41,10 @@ func NewUDBFactory(logger log.Logger, database *sqlx.DB, d BusComponents, cfg *v
 	ret.udb = map[string]UDBMeta{}
 
 	impFns := map[string]func(string) error{
-		"DirectMetric":  func(n string) error { return ret.ImportByMetricValue(n) },
-		"MetricColumns": func(n string) error { return ret.ImportByColumn(n) },
-		"Error":         func(n string) error { return ret.ImportERROR(n) },
+		"DISABLE-DirectMetric": func(n string) error { return errors.New("DISABLED") },
+		"DirectMetric":         func(n string) error { return ret.ImportByMetricValue(n) },
+		"MetricColumns":        func(n string) error { return ret.ImportByColumn(n) },
+		"Error":                func(n string) error { return ret.ImportERROR(n) },
 	}
 
 	// Parse the YAML file to set up database imports
@@ -199,7 +201,7 @@ func (l *UDBFactory) ImportByColumn(udbImportName string) (err error) {
 			continue
 		}
 
-		ts, ok := mm["Timestamp"].(int64)
+		ts := getInt64(mm, "Timestamp")
 		delete(mm, "Timestamp")
 
 		if ts > udbMeta.HWM {
@@ -207,32 +209,16 @@ func (l *UDBFactory) ImportByColumn(udbImportName string) (err error) {
 			l.udb[udbImportName] = udbMeta
 		}
 
-		var metricCtx string
-		metricCtxB, ok := mm["Context"].([]byte)
-		if ok {
-			metricCtx = string(metricCtxB)
-		}
+		metricCtx := getString(mm, "Context")
 		delete(mm, "Context")
 
-		var property string
-		propertyB, ok := mm["Property"].([]byte)
-		if ok {
-			property = string(propertyB)
-		}
+		property := getString(mm, "Property")
 		delete(mm, "Property")
 
-		var fqdd string
-		fqddB, ok := mm["FQDD"].([]byte)
-		if ok {
-			fqdd = string(fqddB)
-		}
+		fqdd := getString(mm, "FQDD")
 		delete(mm, "FQDD")
 
-		var friendlyfqdd string
-		friendlyfqddB, ok := mm["FriendlyFQDD"].([]byte)
-		if ok {
-			friendlyfqdd = string(friendlyfqddB)
-		}
+		friendlyfqdd := getString(mm, "FriendlyFQDD")
 		delete(mm, "FriendlyFQDD")
 
 		for k, v := range mm {
@@ -247,8 +233,8 @@ func (l *UDBFactory) ImportByColumn(udbImportName string) (err error) {
 			}
 
 			metricName := k[7:]
-			event := &MetricValueEventData{
-				Timestamp:    SqlTimeInt{Time: time.Unix(0, ts)},
+			event := &metric.MetricValueEventData{
+				Timestamp:    metric.SqlTimeInt{Time: time.Unix(0, ts)},
 				Context:      metricCtx,
 				FQDD:         fqdd,
 				FriendlyFQDD: friendlyfqdd,
@@ -258,23 +244,22 @@ func (l *UDBFactory) ImportByColumn(udbImportName string) (err error) {
 			}
 
 			if mts, ok := mm["Timestamp-"+metricName].(int64); ok {
-				event.Timestamp = SqlTimeInt{Time: time.Unix(0, mts)}
+				event.Timestamp = metric.SqlTimeInt{Time: time.Unix(0, mts)}
 				if mts > udbMeta.HWM {
 					udbMeta.HWM = mts
 					l.udb[udbImportName] = udbMeta
 				}
-
 			}
 
 			events = append(events, event)
 			if len(events) > maximport {
-				l.bus.PublishEvent(context.Background(), eh.NewEvent(MetricValueEvent, events, time.Now()))
+				l.bus.PublishEvent(context.Background(), eh.NewEvent(metric.MetricValueEvent, events, time.Now()))
 				events = []eh.EventData{}
 			}
 		}
 	}
 	if len(events) > 0 {
-		l.bus.PublishEvent(context.Background(), eh.NewEvent(MetricValueEvent, events, time.Now()))
+		l.bus.PublishEvent(context.Background(), eh.NewEvent(metric.MetricValueEvent, events, time.Now()))
 	}
 
 	return nil
@@ -312,7 +297,7 @@ func (l *UDBFactory) ImportByMetricValue(udbImportName string) (err error) {
 	defer rows.Close()
 
 	for rows.Next() {
-		event := &MetricValueEventData{}
+		event := &metric.MetricValueEventData{}
 		err = rows.StructScan(event)
 		if err != nil {
 			l.logger.Crit("Error scanning row into MetricEvent", "err", err, "udbImportName", udbImportName)
@@ -326,12 +311,12 @@ func (l *UDBFactory) ImportByMetricValue(udbImportName string) (err error) {
 
 		events = append(events, event)
 		if len(events) > maximport {
-			l.bus.PublishEvent(context.Background(), eh.NewEvent(MetricValueEvent, events, time.Now()))
+			l.bus.PublishEvent(context.Background(), eh.NewEvent(metric.MetricValueEvent, events, time.Now()))
 			events = []eh.EventData{}
 		}
 	}
 	if len(events) > 0 {
-		l.bus.PublishEvent(context.Background(), eh.NewEvent(MetricValueEvent, events, time.Now()))
+		l.bus.PublishEvent(context.Background(), eh.NewEvent(metric.MetricValueEvent, events, time.Now()))
 	}
 
 	return nil
@@ -341,6 +326,14 @@ func getString(mm map[string]interface{}, name string) (ret string) {
 	byt, ok := mm[name].([]byte)
 	if ok {
 		ret = string(byt)
+	}
+	return
+}
+
+func getInt64(mm map[string]interface{}, name string) (ret int64) {
+	byt, ok := mm[name]
+	if ok {
+		ret = byt.(int64)
 	}
 	return
 }
