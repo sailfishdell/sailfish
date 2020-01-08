@@ -59,21 +59,26 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc EventHandlingServic
 		return
 	}
 
-	// ensure nothing we do will ever modify the source
-	_, err = database.Exec("PRAGMA query_only = 1")
 	// we have a separate goroutine for this, so we should be safe to busy-wait
-	_, err = database.Exec("PRAGMA busy_timeout = 1000")
-	// don't ever run sync() or friends
-	_, err = database.Exec("PRAGMA synchronous = off")
-	_, err = database.Exec("PRAGMA       journal_mode  = off")
-	_, err = database.Exec("PRAGMA udbdm.journal_mode  = off")
-	_, err = database.Exec("PRAGMA udbsm.journal_mode  = off")
-
-	// these increase memory usage, so disable until we get good values for these
-	//_, err = database.Exec("PRAGMA cache_size = 0")
-	//_, err = database.Exec("PRAGMA udbdm.cache_size = 0")
-	//_, err = database.Exec("PRAGMA udbsm.cache_size = 0")
-	//_, err = database.Exec("PRAGMA mmap_size = 0")
+	_, err = database.Exec(`
+		-- ensure nothing we do will ever modify the source
+		PRAGMA query_only = 1;
+		-- should be set in connection string, but just in case:
+		PRAGMA busy_timeout = 1000;
+	  -- don't ever run sync() or friends
+		PRAGMA synchronous = off;
+		PRAGMA       journal_mode  = off;
+		PRAGMA udbdm.journal_mode  = off;
+		PRAGMA udbsm.journal_mode  = off;
+	  -- these seem to increase memory usage, so disable until we get good values for these
+		-- PRAGMA cache_size = 0;
+		-- PRAGMA udbdm.cache_size = 0;
+		-- PRAGMA PRAGMA udbsm.cache_size = 0;
+		-- PRAGMA mmap_size = 0;
+		`)
+	if err != nil {
+		panic("Could not set up initial UDB database parameters: " + err.Error())
+	}
 
 	// we have only one thread doing updates, so one connection should be
 	// fine. keeps sqlite from opening new connections un-necessarily
