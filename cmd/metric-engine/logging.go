@@ -1,15 +1,12 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/gorilla/mux"
 	mylog "github.com/superchalupa/sailfish/src/log"
-
-	eh "github.com/looplab/eventhorizon"
 )
 
 func makeLoggingHTTPHandler(l mylog.Logger, m http.Handler) http.HandlerFunc {
@@ -27,13 +24,5 @@ func makeLoggingHTTPHandler(l mylog.Logger, m http.Handler) http.HandlerFunc {
 			)
 		}(time.Now())
 		m.ServeHTTP(w, r)
-	})
-}
-
-// Create a tiny logging middleware for the command handler.
-func makeLoggingCmdHandler(l mylog.Logger, originalHandler eh.CommandHandler) eh.CommandHandler {
-	return eh.CommandHandlerFunc(func(ctx context.Context, cmd eh.Command) error {
-		l.Debug("Executed Command", "Type", cmd.CommandType(), "CMD", fmt.Sprintf("%v", cmd))
-		return originalHandler.HandleCommand(ctx, cmd)
 	})
 }

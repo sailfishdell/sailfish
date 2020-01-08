@@ -87,8 +87,6 @@ func setup(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, d *BusCo
 		d.GetBus().PublishEvent(context.Background(), evt)
 		evt.Wait()
 	}
-
-	return
 }
 
 func shutdown() {

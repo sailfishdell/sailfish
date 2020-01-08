@@ -34,12 +34,6 @@ type shutdowner interface {
 	Shutdown(context.Context) error
 }
 
-type waiter interface {
-	Listen(context.Context, func(eh.Event) bool) (*eventwaiter.EventListener, error)
-	Notify(context.Context, eh.Event)
-	Run()
-}
-
 type BusComponents struct {
 	EventBus       eh.EventBus
 	EventWaiter    *eventwaiter.EventWaiter
@@ -278,25 +272,6 @@ func checkCaCerts(logger log.Logger) {
 		)
 		iterInterfaceIPAddrs(logger, func(ip net.IP) { serverCert.ApplyOption(tlscert.AddSANIP(ip)) })
 		serverCert.Serialize()
-	}
-}
-
-func handleShutdown(ctx context.Context, logger log.Logger, srv interface{}) error {
-	s, ok := srv.(shutdowner)
-	if !ok {
-		logger.Info("Can't cleanly shutdown listener, it will ungracefully end")
-		return nil
-	}
-
-	for {
-		select {
-		case <-ctx.Done():
-			logger.Info("shutdown server.")
-			if err := s.Shutdown(ctx); err != nil {
-				logger.Info("server_error", "err", err)
-			}
-			return ctx.Err()
-		}
 	}
 }
 
