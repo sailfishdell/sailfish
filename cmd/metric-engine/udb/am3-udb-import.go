@@ -205,5 +205,4 @@ func handleUDBNotifyPipe(logger log.Logger, cfg *viper.Viper, d BusComponents) {
 			n = &ChangeNotify{}
 		}
 	}
-	return
 }
