@@ -666,7 +666,7 @@ UDB-Metric-Import:
       SHM.db:
         TblsThermalMetrics:
     ScanInterval: 0
-    WaitInterval: 5
+    WaitInterval: 1
     Query: |
       SELECT
         cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
