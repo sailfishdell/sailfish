@@ -71,7 +71,7 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Service, d Bus
 		d.GetBus().PublishEvent(context.Background(), eh.NewEvent(DatabaseMaintenance, "vacuum", time.Now()))
 		d.GetBus().PublishEvent(context.Background(), eh.NewEvent(DatabaseMaintenance, "optimize", time.Now()))
 
-		// NOTE: the numbers below are selected as PRIME numbers so that they run at the same time as infrequently as possible
+		// NOTE: the numbers below are selected as PRIME numbers so that they run concurrently as infrequently as possible
 		// With the default 73/3607/10831, they will run concurrently every ~90 years.
 		cleanValuesTicker := time.NewTicker(73 * time.Second) // once a minute
 		vacuumTicker := time.NewTicker(3607 * time.Second)    // once an hour (-ish)
