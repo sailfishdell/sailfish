@@ -534,7 +534,7 @@ UDB-Metric-Import:
       SELECT
         friendlyFQDD as FriendlyFQDD,
         FQDD as FQDD,
-        '/redfish/v1/FIXME' || FriendlyFQDD as Property,
+        '/redfish/v1/FIXME/' || FriendlyFQDD as Property,
         friendlyFQDD as Context,
 
         SystemCupsTimeStamp * 1000000000 as 'Timestamp-SystemUsage',
@@ -546,7 +546,7 @@ UDB-Metric-Import:
       SELECT
         friendlyFQDD as FriendlyFQDD,
         FQDD as FQDD,
-        '/redfish/v1/FIXME' || FriendlyFQDD as Property,
+        '/redfish/v1/FIXME/' || FriendlyFQDD as Property,
         friendlyFQDD as Context,
 
         MemoryCupsTimeStamp * 1000000000 as 'Timestamp-MemoryUsage',
@@ -558,7 +558,7 @@ UDB-Metric-Import:
       SELECT
         friendlyFQDD as FriendlyFQDD,
         FQDD as FQDD,
-        '/redfish/v1/FIXME' || FriendlyFQDD as Property,
+        '/redfish/v1/FIXME/' || FriendlyFQDD as Property,
         friendlyFQDD as Context,
 
         IoCupsTimestamp * 1000000000 as 'Timestamp-IOUsage',
@@ -570,7 +570,7 @@ UDB-Metric-Import:
       SELECT
         friendlyFQDD as FriendlyFQDD,
         FQDD as FQDD,
-        '/redfish/v1/FIXME' || FriendlyFQDD as Property,
+        '/redfish/v1/FIXME/' || FriendlyFQDD as Property,
         friendlyFQDD as Context,
 
         CpuCupsCollectionTime * 1000000000 as 'Timestamp-CPUUsage',
@@ -591,7 +591,7 @@ UDB-Metric-Import:
       SELECT
         cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
         friendlyFQDD as Context,
-        '/redfish/v1/FIXME' || FriendlyFQDD as Property,
+        '/redfish/v1/FIXME/' || FriendlyFQDD as Property,
         friendlyFQDD as FriendlyFQDD,
         FQDD as FQDD,
 
@@ -629,7 +629,7 @@ UDB-Metric-Import:
       SELECT
         cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
         friendlyFQDD as Context,
-        '/redfish/v1/FIXME' || FriendlyFQDD as Property,
+        '/redfish/v1/FIXME/' || FriendlyFQDD as Property,
         friendlyFQDD as FriendlyFQDD,
         FQDD as FQDD,
 
@@ -671,7 +671,7 @@ UDB-Metric-Import:
       SELECT
         cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
         friendlyFQDD as Context,
-        '/redfish/v1/FIXME' || FriendlyFQDD as Property,
+        '/redfish/v1/FIXME/' || FriendlyFQDD as Property,
         friendlyFQDD as FriendlyFQDD,
         FQDD as FQDD,
 
@@ -705,7 +705,7 @@ UDB-Metric-Import:
       SELECT
         cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
         friendlyFQDD as Context,
-        '/redfish/v1/FIXME' || FriendlyFQDD as Property,
+        '/redfish/v1/FIXME/' || FriendlyFQDD as Property,
         friendlyFQDD as FriendlyFQDD,
         FQDD as FQDD,
 
@@ -732,7 +732,7 @@ UDB-Metric-Import:
       SELECT
         cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
         friendlyFQDD as Context,
-        '/redfish/v1/FIXME' || FriendlyFQDD as Property,
+        '/redfish/v1/FIXME/' || FriendlyFQDD as Property,
         friendlyFQDD as FriendlyFQDD,
         FQDD as FQDD,
 
@@ -752,7 +752,7 @@ UDB-Metric-Import:
       SELECT
         cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
         friendlyFQDD as Context,
-        '/redfish/v1/FIXME' || FriendlyFQDD as Property,
+        '/redfish/v1/FIXME/' || FriendlyFQDD as Property,
         friendlyFQDD as FriendlyFQDD,
         FQDD as FQDD,
 
@@ -771,7 +771,7 @@ UDB-Metric-Import:
       SELECT
         cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
         friendlyFQDD as Context,
-        '/redfish/v1/FIXME' || FriendlyFQDD as Property,
+        '/redfish/v1/FIXME/' || FriendlyFQDD as Property,
         friendlyFQDD as FriendlyFQDD,
         FQDD as FQDD,
 
@@ -790,7 +790,7 @@ UDB-Metric-Import:
       SELECT
         cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
         friendlyFQDD as Context,
-        '/redfish/v1/FIXME' || FriendlyFQDD as Property,
+        '/redfish/v1/FIXME/' || FriendlyFQDD as Property,
         friendlyFQDD as FriendlyFQDD,
         FQDD as FQDD,
 
@@ -815,7 +815,7 @@ UDB-Metric-Import:
         -- only artificial available for now
         cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
         FriendlyFQDD as Context,
-        '/redfish/v1/FIXME' || FQDD as Property,
+        '/redfish/v1/FIXME/' || FQDD as Property,
         friendlyFQDD as FriendlyFQDD,
         FQDD as FQDD,
 
@@ -1715,7 +1715,9 @@ createdb:
 # Backwards compat stuff to get the fcgi_rfsql to work
   - |
       DROP TABLE IF EXISTS TblMetricReportItems;
+  - |
       DROP VIEW IF EXISTS TblMetricReportItems;
+  - |
       CREATE VIEW         TblMetricReportItems AS
         SELECT
           Name as ResourceType,
@@ -1724,7 +1726,10 @@ createdb:
           MetricReport;
 
   - |
+      DROP TABLE IF EXISTS TblMetricReportDefinitionItems;
+  - |
       DROP VIEW IF EXISTS TblMetricReportDefinitionItems;
+  - |
       CREATE VIEW         TblMetricReportDefinitionItems AS
         SELECT
           Name as ResourceType,
