@@ -122,7 +122,6 @@ type ChangeNotify struct {
 func handleUDBNotifyPipe(logger log.Logger, cfg *viper.Viper, d BusComponents) {
 	pipePath := cfg.GetString("main.udbnotifypipe")
 
-	fmt.Printf("STARTING UDB NOTIFY PIPE HANDLER\n")
 	// Data format we get:
 	//    DB                      TBL                  ROWID     operationid
 	// ||DMLiveObjectDatabase.db|TblNic_Port_Stats_Obj|167445167|23||
@@ -188,6 +187,10 @@ func handleUDBNotifyPipe(logger log.Logger, cfg *viper.Viper, d BusComponents) {
 		// consume the whole thing
 		return start + 2 + end + 2, []byte("t"), nil
 	}
+
+	// give everything a chance to settle before we start processing
+	time.Sleep(1 * time.Second)
+	fmt.Printf("STARTING UDB NOTIFY PIPE HANDLER\n")
 
 	s := bufio.NewScanner(file)
 	s.Split(split)
