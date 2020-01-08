@@ -91,8 +91,8 @@ func (factory *MRDFactory) Delete(mrdEvData *MetricReportDefinitionData) (err er
 func ValidateMRD(MRD *MetricReportDefinition) {
 	switch MRD.Type {
 	case "Periodic":
-		if MRD.Period < 60 || MRD.Period > (60*60*24) {
-			MRD.Period = 180 // period can be 60s to 24hrs. if outside that range, make it 3 minutes.
+		if MRD.Period < 5 || MRD.Period > (60*60*2) {
+			MRD.Period = 180 // period can be 5s to 2hrs. if outside that range, make it 3 minutes.
 		}
 	case "OnChange", "OnRequest":
 		MRD.Period = 0
