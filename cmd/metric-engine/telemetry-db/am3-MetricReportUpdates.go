@@ -89,6 +89,8 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Service, d Bus
 				d.GetBus().PublishEvent(context.Background(), eh.NewEvent(DatabaseMaintenance, "vacuum", time.Now()))
 			case <-optimizeTicker.C:
 				d.GetBus().PublishEvent(context.Background(), eh.NewEvent(DatabaseMaintenance, "optimize", time.Now()))
+				// doesn't have to happen often, but should happen occasionally just in case
+				d.GetBus().PublishEvent(context.Background(), eh.NewEvent(DatabaseMaintenance, "delete orphans", time.Now()))
 			case <-clockTicker.C:
 				d.GetBus().PublishEvent(context.Background(), eh.NewEvent(DatabaseMaintenance, "publish clock", time.Now()))
 			}
@@ -115,10 +117,8 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Service, d Bus
 		}
 
 		// After we've done the adjustments to ReportDefinitionToMetricMeta, there
-		// might be orphan rows.  Schedule the database maintenace task to take
-		// care of them. This will run *after* we've updated the report and return
-		// from this function.
-		d.GetBus().PublishEvent(context.Background(), eh.NewEvent(DatabaseMaintenance, "delete orphans", time.Now()))
+		// might be orphan rows.
+		MRDFactory.DeleteOrphans()
 	}
 	am3Svc.AddEventHandler("Create Metric Report Definition", AddMetricReportDefinition, updateDef)
 	am3Svc.AddEventHandler("Update Metric Report Definition", UpdateMetricReportDefinition, updateDef)
@@ -129,16 +129,11 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Service, d Bus
 			return
 		}
 
-		// After we've done the adjustments to ReportDefinitionToMetricMeta, there
-		// might be orphan rows.  Schedule the database maintenace task to take
-		// care of them. This will run *after* we've updated the report and return
-		// from this function.
-		d.GetBus().PublishEvent(context.Background(), eh.NewEvent(DatabaseMaintenance, "delete orphans", time.Now()))
-
 		err := MRDFactory.Delete(reportDef)
 		if err != nil {
 			logger.Crit("Error deleting Metric Report Definition", "Name", reportDef.Name, "err", err)
 		}
+		MRDFactory.DeleteOrphans()
 	})
 
 	lastHWM := time.Time{}
@@ -225,7 +220,8 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Service, d Bus
 			// WHERE
 			//   MV.Timestamp < (insert query to get oldest metric report begin timestamp)
 			//
-			// TODO: MRDFactory.DeleteOrphans()
+			MRDFactory.DeleteOldestValues()
+			MRDFactory.DeleteOrphans()
 
 		default:
 			logger.Warn("Unknown database maintenance command string received", "command", command)
