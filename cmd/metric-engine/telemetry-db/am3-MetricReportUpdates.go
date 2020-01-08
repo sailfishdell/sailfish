@@ -20,6 +20,9 @@ const (
 	DeleteMetricReportDefinition eh.EventType = "DeleteMetricReportDefinitionEvent"
 	DatabaseMaintenance          eh.EventType = "DatabaseMaintenanceEvent"
 	GenerateMetricReport         eh.EventType = "GenerateMetricReport"
+
+	// slightly more than once every 1s. Idea here is to give messages a chance to drive the clock
+	clockPeriod = 1069 * time.Millisecond
 )
 
 type BusComponents interface {
@@ -60,19 +63,15 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Service, d Bus
 		logger.Crit("Error creating report definition factory", "err", err)
 	}
 
-	// periodically optimize and vacuum database
-	// slightly more than once every 1s. Idea here is to give messages a chance to drive the clock
-	const clockPeriod = 1069 * time.Millisecond
-	clockTicker := time.NewTicker(clockPeriod)
-
 	go func() {
 		// run once after startup. give a few seconds so we dont slow boot up
-		time.Sleep(20 * time.Second)
+		time.Sleep(1 * time.Second)
 		d.GetBus().PublishEvent(context.Background(), eh.NewEvent(DatabaseMaintenance, "vacuum", time.Now()))
 		d.GetBus().PublishEvent(context.Background(), eh.NewEvent(DatabaseMaintenance, "optimize", time.Now()))
 
 		// NOTE: the numbers below are selected as PRIME numbers so that they run concurrently as infrequently as possible
 		// With the default 73/3607/10831, they will run concurrently every ~90 years.
+		clockTicker := time.NewTicker(clockPeriod)
 		cleanValuesTicker := time.NewTicker(73 * time.Second) // once a minute
 		vacuumTicker := time.NewTicker(3607 * time.Second)    // once an hour (-ish)
 		optimizeTicker := time.NewTicker(10831 * time.Second) // once every three hours (-ish)
@@ -150,14 +149,12 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Service, d Bus
 		}
 
 		delta := MRDFactory.MetricTSHWM.Time.Sub(metricValue.Timestamp.Time)
-		//fmt.Printf("Value Event TS: %s  HWM: %s  delta: %s\n", metricValue.Timestamp.Time, MRDFactory.MetricTSHWM.Time, delta)
 
-		if !MRDFactory.MetricTSHWM.IsZero() && (delta > (1*time.Hour) || delta < -(1*time.Hour)) {
-			fmt.Printf("Value Event TIME ERROR - We should never get events this far off (delta: %d) current HWM. Metric: %+v\n", delta, metricValue)
+		if (!MRDFactory.MetricTSHWM.IsZero()) && (delta > (1*time.Hour) || delta < -(1*time.Hour)) {
+			fmt.Printf("Metric Value Event TIME ERROR - We should never get events this far off current HWM (delta: %d). This is likely a problem with the underlying data or the import. Common is the underlying data being in 'localtime' rather than UTC, which must be fixed. Metric: %+v\n", delta, metricValue)
 		}
 
 		if MRDFactory.MetricTSHWM.Before(metricValue.Timestamp.Time) {
-			//fmt.Printf("Set HWM from Value Event TS: %s  HWM: %s  delta: %s\n", metricValue.Timestamp.Time, MRDFactory.MetricTSHWM.Time, delta)
 			MRDFactory.MetricTSHWM = metricValue.Timestamp
 		}
 	})
@@ -187,8 +184,8 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Service, d Bus
 		switch command {
 		case "publish clock":
 			// if no events come in during time between clock publishes, we'll artificially bump HWM forward.
-			if MRDFactory.MetricTSHWM.Equal(lastHWM) {
-				//fmt.Printf("SET HWM FROM TICK: hwm(%s) - last(%s) = %d period(%d)\n", MRDFactory.MetricTSHWM, lastHWM, lastHWM.Sub(MRDFactory.MetricTSHWM.Time), clockPeriod)
+			// if time is uninitialized, wait for an event to come in to set it
+			if (!MRDFactory.MetricTSHWM.IsZero()) && MRDFactory.MetricTSHWM.Equal(lastHWM) {
 				MRDFactory.MetricTSHWM = SqlTimeInt{Time: MRDFactory.MetricTSHWM.Add(clockPeriod)}
 			}
 			lastHWM = MRDFactory.MetricTSHWM.Time
