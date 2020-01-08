@@ -157,7 +157,7 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Service, d Bus
 		delta := MRDFactory.MetricTSHWM.Time.Sub(metricValue.Timestamp.Time)
 		//fmt.Printf("Value Event TS: %s  HWM: %s  delta: %s\n", metricValue.Timestamp.Time, MRDFactory.MetricTSHWM.Time, delta)
 
-		if delta > (1*time.Hour) || delta < -(1*time.Hour) {
+		if MRDFactory.MetricTSHWM.Equal(time.Time{}) && (delta > (1*time.Hour) || delta < -(1*time.Hour)) {
 			fmt.Printf("Value Event TIME ERROR - We should never get events this far off (delta: %d) current HWM. Metric: %+v\n", delta, metricValue)
 		}
 
