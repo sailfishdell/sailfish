@@ -656,11 +656,6 @@ UDB-Metric-Import:
 
   ThermalMetrics:
     # TODO: UNDERLYING TABLE NEEDS HWM.
-    # AUDIT:
-    #   [X] HAS DATA
-    #   [ ] Correct Metric IDs
-    #   [ ] Correct # of data points
-    #   [ ] Data correct
     Type: MetricColumns
     DBChange:
       SHM.db:
@@ -690,11 +685,6 @@ UDB-Metric-Import:
 
   CPUMem:
     # TODO: UNDERLYING TABLE NEEDS HWM.
-    # AUDIT:
-    #   [X] HAS DATA
-    #   [ ] Correct Metric IDs
-    #   [ ] Correct # of data points
-    #   [ ] Data correct
     Type: MetricColumns
     DBChange:
       SHM.db:
@@ -799,11 +789,6 @@ UDB-Metric-Import:
 
   Aggregation-Metrics:
     # TODO: UNDERLYING TABLE NEEDS HWM.
-    # AUDIT:
-    #   [X] HAS DATA
-    #   [ ] Correct Metric IDs
-    #   [ ] Correct # of data points
-    #   [ ] Data correct
     Type: MetricColumns
     DBChange:
       SHM.db:
@@ -1091,15 +1076,11 @@ UDB-Metric-Import:
 
   RAWSensor:
     Type: DirectMetric
-    # TODO: UNDERLYING TABLE NEEDS HWM.
-    # TODO: Underlying view table missing FQDD, need to add
     ScanInterval: 0
     WaitInterval: 5
-    # CIMVIEW_DCIM_NumericSensor is a view, do db change notifications on underlying tables
     DBChange:
       DMLiveObjectDatabase.db:
         TblProbeObj:
-        ActiveOIDMapping:
     Query: |
       SELECT
         SingleRecordEtag * 1000000000 as Timestamp,
@@ -1180,7 +1161,6 @@ UDB-Metric-Import:
     DBChange:
       DMLiveObjectDatabase.db:
         TblProbeObj:
-        ActiveOIDMapping:
     Query: |
       SELECT
         cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
@@ -1230,7 +1210,6 @@ UDB-Metric-Import:
     DBChange:
       DMLiveObjectDatabase.db:
         TblProbeObj:
-        ActiveOIDMapping:
     ScanInterval: 0
     WaitInterval: 5
     Query: |
@@ -1318,13 +1297,14 @@ createdb:
         Name               TEXT,
         SuppressDups       BOOLEAN NOT NULL DEFAULT true,
         FQDDPattern        TEXT,   -- Dell OEM extension to sort based on FQDD patterns
+        SourcePattern TEXT,   -- Dell OEM extension to sort based on where we got the data from
         PropertyPattern    TEXT,   -- /redfish/v1/some/uri/{with}/{wildcards}#Property
         Wildcards          TEXT,   --{'wildcard': ['array','of', 'possible', 'replacements'], 'with': ['another', 'list', 'of', 'replacements']}
         CollectionFunction TEXT not null,   -- 'sum', 'avg', 'min', 'max'
         CollectionDuration INTEGER,
 
         -- indexes and constraints
-        unique (Name, SuppressDups, FQDDPattern, PropertyPattern, Wildcards, CollectionFunction, CollectionDuration)
+        unique (Name, SuppressDups, FQDDPattern, SourcePattern, PropertyPattern, Wildcards, CollectionFunction, CollectionDuration)
       )
 
   - |

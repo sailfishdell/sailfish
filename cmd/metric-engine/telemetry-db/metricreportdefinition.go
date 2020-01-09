@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math"
 	"strconv"
+	"strings"
 	"time"
 
 	"database/sql"
@@ -35,6 +36,7 @@ type MRDMetric struct {
 	CollectionDuration time.Duration `db:"CollectionDuration"`
 	CollectionFunction string        `db:"CollectionFunction"`
 	FQDDPattern        string        `db:"FQDDPattern"`
+	SourcePattern      string        `db:"SourcePattern"`
 	PropertyPattern    string        `db:"PropertyPattern"`
 	Wildcards          StringArray   `db:"Wildcards"`
 }
@@ -108,7 +110,7 @@ func (factory *MRDFactory) UpdateMRD(mrdEvData *MetricReportDefinitionData) (err
 		MetricReportDefinitionData: mrdEvData,
 		MRDFactory:                 factory,
 		logger:                     factory.logger,
-		AppendLimit:                1000,
+		AppendLimit:                3000,
 	}
 
 	ValidateMRD(MRD)
@@ -180,6 +182,7 @@ func (factory *MRDFactory) UpdateMRD(mrdEvData *MetricReportDefinitionData) (err
 				Name=:Name and
 				SuppressDups=:SuppressDups and
 				FQDDPattern=:FQDDPattern and
+				SourcePattern=:SourcePattern and
 				PropertyPattern=:PropertyPattern and
 				Wildcards=:Wildcards and
 				CollectionFunction=:CollectionFunction and
@@ -197,8 +200,8 @@ func (factory *MRDFactory) UpdateMRD(mrdEvData *MetricReportDefinitionData) (err
 			// Insert new MetricMeta if it doesn't already exist per above
 			res, err = tx.NamedExec(
 				`INSERT INTO MetricMeta
-			          ( Name,  SuppressDups,  FQDDPattern,  PropertyPattern,  Wildcards,  CollectionFunction,  CollectionDuration)
-			   VALUES (:Name, :SuppressDups, :FQDDPattern, :PropertyPattern, :Wildcards, :CollectionFunction, :CollectionDuration)
+			          ( Name,  SuppressDups,  FQDDPattern,  SourcePattern,  PropertyPattern,  Wildcards,  CollectionFunction,  CollectionDuration)
+				 VALUES (:Name, :SuppressDups, :FQDDPattern, :SourcePattern, :PropertyPattern, :Wildcards, :CollectionFunction, :CollectionDuration)
 			`, tempMetric)
 			if err != nil {
 				return xerrors.Errorf("Error inserting MetricMeta(%s) for MRD(%s): %w", tempMetric, MRD, err)
@@ -222,6 +225,11 @@ func (factory *MRDFactory) UpdateMRD(mrdEvData *MetricReportDefinitionData) (err
 		return xerrors.Errorf("Transaction failed commit for MRD(%d): %w", MRD.ID, err)
 	}
 	factory.logger.Debug("Transaction Committed for updates to Report Definition", "Report Definition ID", MRD.ID)
+
+	// If this is a periodic report, put it in the NextMRTS map so it'll get updated on the next report period
+	if MRD.Type == "Periodic" {
+		factory.NextMRTS[MRD.Name] = SqlTimeInt{Time: factory.MetricTSHWM.Add(time.Duration(MRD.Period) * time.Second)}
+	}
 
 	return
 }
@@ -488,6 +496,7 @@ type MetricMeta struct {
 	Label              string        `db:"Label"`
 	MetaID             int64         `db:"MetaID"`
 	FQDDPattern        string        `db:"FQDDPattern"`
+	SourcePattern      string        `db:"SourcePattern"`
 	PropertyPattern    string        `db:"PropertyPattern"`
 	Wildcards          string        `db:"Wildcards"`
 	CollectionFunction string        `db:"CollectionFunction"`
@@ -548,11 +557,12 @@ func (factory *MRDFactory) InsertMetricValue(ev *MetricValueEventData) (err erro
 	// First, Find the MetricMeta
 	rows, err := tx.NamedQuery(`
 			select
-				ID as MetaID, FQDDPattern, PropertyPattern, Wildcards, CollectionFunction, CollectionDuration
+				ID as MetaID, FQDDPattern, SourcePattern, PropertyPattern, Wildcards, CollectionFunction, CollectionDuration
 			from MetricMeta
 			where
 				(:Name Like Name or Name is NULL or Name = '') and
 				(:FQDD like FQDDPattern or FQDDPattern is NULL or FQDDPattern = '') and
+				(:Source like SourcePattern or SourcePattern is NULL or SourcePattern = '') and
 				(:Property like PropertyPattern or PropertyPattern is NULL or PropertyPattern = '')
 				`, ev)
 	if err != nil {
@@ -586,12 +596,14 @@ func (factory *MRDFactory) InsertMetricValue(ev *MetricValueEventData) (err erro
 		// create instances for each metric meta corresponding to this metric value
 		_, err = tx.NamedExec(`
 			INSERT INTO MetricInstance
-				       ( MetaID,  Name,  FQDD,  Property,  Context,  Function,  Label,  CollectionScratch, LastValue, LastTS,  FlushTime)
-				VALUES (:MetaID, :Name, :FQDD, :Property, :Context, :CollectionFunction, :Label, :CollectionScratch, '',        0,      :FlushTime)
-				on conflict(MetaID, Name, FQDD, Property, Context, Function) do nothing
+				         ( MetaID,  Name,  FQDD,  Property,  Context,  Function,            Label,  CollectionScratch, LastValue, LastTS,  FlushTime)
+				  VALUES (:MetaID, :Name, :FQDD, :Property, :Context, :CollectionFunction, :Label, :CollectionScratch, '',        0,      :FlushTime)
 			`, mm)
 		if err != nil {
-			return xerrors.Errorf("Error inserting MetricInstance(%s): %w", mm, err)
+			// It's ok if sqlite squawks about trying to insert dups here
+			if !strings.HasPrefix(err.Error(), "UNIQUE constraint failed") {
+				return xerrors.Errorf("Error inserting MetricInstance(%s): %w", mm, err)
+			}
 		}
 	}
 
@@ -611,7 +623,7 @@ func (factory *MRDFactory) InsertMetricValue(ev *MetricValueEventData) (err erro
 		from MetricInstance as MI
 			inner join MetricMeta as MM on MI.MetaID = MM.ID
 		where
-			MM.Name=:Name and
+			MI.Name=:Name and
 			MI.FQDD=:FQDD and
 			MI.Property=:Property and
 			MI.Context=:Context
@@ -628,7 +640,7 @@ func (factory *MRDFactory) InsertMetricValue(ev *MetricValueEventData) (err erro
 		mm := &MetricMeta{MetricValueEventData: ev}
 		err = rows.StructScan(mm)
 		if err != nil {
-			factory.logger.Crit("Error querying for MetricInstance", "err", err)
+			factory.logger.Crit("Error scanning struct result for MetricInstance query", "err", err)
 			continue
 		}
 
