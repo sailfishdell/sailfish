@@ -20,7 +20,6 @@ const (
 	UpdateMetricReportDefinition eh.EventType = "UpdateMetricReportDefinitionEvent"
 	DeleteMetricReportDefinition eh.EventType = "DeleteMetricReportDefinitionEvent"
 	DatabaseMaintenance          eh.EventType = "DatabaseMaintenanceEvent"
-	GenerateMetricReport         eh.EventType = "GenerateMetricReport"
 
 	// slightly more than once every 1s. Idea here is to give messages a chance to drive the clock
 	clockPeriod = 1069 * time.Millisecond
@@ -34,7 +33,6 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Service, d Bus
 	eh.RegisterEventData(AddMetricReportDefinition, func() eh.EventData { return &MetricReportDefinitionData{} })
 	eh.RegisterEventData(UpdateMetricReportDefinition, func() eh.EventData { return &MetricReportDefinitionData{} })
 	eh.RegisterEventData(DeleteMetricReportDefinition, func() eh.EventData { return &MetricReportDefinitionData{} })
-	eh.RegisterEventData(GenerateMetricReport, func() eh.EventData { return &MetricReportDefinitionData{} })
 
 	database, err := sqlx.Open("sqlite3", cfg.GetString("main.databasepath"))
 	if err != nil {
@@ -120,10 +118,6 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Service, d Bus
 			logger.Crit("Failed to create or update the Report Definition", "Name", reportDef.Name, "err", err)
 			return
 		}
-		err := MRDFactory.GenerateMetricReport(&localReportDefCopy)
-		if err != nil {
-			logger.Crit("Error generating metric report", "err", err, "ReportDefintion", localReportDefCopy)
-		}
 
 		// After we've done the adjustments to ReportDefinitionToMetricMeta, there
 		// might be orphan rows.
@@ -161,27 +155,11 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Service, d Bus
 		delta := MRDFactory.MetricTSHWM.Time.Sub(metricValue.Timestamp.Time)
 
 		if (!MRDFactory.MetricTSHWM.IsZero()) && (delta > (1*time.Hour) || delta < -(1*time.Hour)) {
-			fmt.Printf("Metric Value Event TIME ERROR - We should never get events this far off current HWM (delta: %d). This is likely a problem with the underlying data or the import. Common is the underlying data being in 'localtime' rather than UTC, which must be fixed. Metric: %+v\n", time.Duration(delta), metricValue)
+			fmt.Printf("Metric Value Event TIME ERROR - We should never get events this far off current HWM (delta: %s). This is likely a problem with the underlying data or the import. Common is the underlying data being in 'localtime' rather than UTC, which must be fixed. Metric: %+v\n", time.Duration(delta), metricValue)
 		}
 
 		if MRDFactory.MetricTSHWM.Before(metricValue.Timestamp.Time) {
 			MRDFactory.MetricTSHWM = metricValue.Timestamp
-		}
-	})
-
-	am3Svc.AddEventHandler("Generate Metric Report", GenerateMetricReport, func(event eh.Event) {
-		reportDef, ok := event.Data().(*MetricReportDefinitionData)
-		if !ok {
-			return
-		}
-
-		// TODO: implement un-suppress
-
-		// Can't write to event sent in, so make a local copy
-		localReportDefCopy := *reportDef
-		err := MRDFactory.GenerateMetricReport(&localReportDefCopy)
-		if err != nil {
-			logger.Crit("Error generating metric report", "err", err, "ReportDefintion", localReportDefCopy)
 		}
 	})
 
@@ -193,12 +171,19 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Service, d Bus
 
 		switch command {
 		case "publish clock":
+			// if no events have kickstarted the clock, bail
+			if MRDFactory.MetricTSHWM.IsZero() {
+				break
+			}
+
 			// if no events come in during time between clock publishes, we'll artificially bump HWM forward.
 			// if time is uninitialized, wait for an event to come in to set it
-			if (!MRDFactory.MetricTSHWM.IsZero()) && MRDFactory.MetricTSHWM.Equal(lastHWM) {
+			if MRDFactory.MetricTSHWM.Equal(lastHWM) {
 				MRDFactory.MetricTSHWM = SqlTimeInt{Time: MRDFactory.MetricTSHWM.Add(clockPeriod)}
 			}
 			lastHWM = MRDFactory.MetricTSHWM.Time
+
+			// Generate any metric reports that need it
 			MRDFactory.FastCheckForNeededMRUpdates()
 
 		case "optimize":
