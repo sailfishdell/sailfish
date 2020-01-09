@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+  "regexp"
 
 	eh "github.com/looplab/eventhorizon"
 
@@ -40,13 +41,88 @@ func in_array_index(a string, list []string) int {
 	return -1
 }
 
-func link_mapper(fqdd string) string {
+func front_panel_message(fqdd string, message string) string {
+  ret_string := "/redfish/v1/Chassis/System.Chassis.1"
+  ear := map[string][]string{}
+  left_ear := map[string][]string{ //left ear: LCD, LED
+    "LCD.Chassis.1":{"LCD"},
+    "LED.Chassis.1":{"LED"},
+  }
+  right_ear := map[string][]string{ //right ear: RCPUSB, QuickSync, RSPI, RTC (RSPI, RTC not implemented yet)
+    "RCPUSB.Chassis.1":{"RCPUSB", "RCP USB"},
+    "QuickSync.Chassis.1":{"Quick Sync", "QuickSync"},
+    "RSPI.Chassis.1":{"RSPI"},
+    "RTC.Chassis.1":{"RTC"},
+  }
+
+  if strings.Contains(fqdd, "Leftear") {
+    ear = left_ear
+  } else if strings.Contains(fqdd, "Rightear") {
+    ear = right_ear
+  }
+
+  for key, value := range ear {
+    for _, query := range(value) {
+      if strings.Contains(message, query) { //search log message for key words to determine actual origin location
+        ret_string = "/redfish/v1/Chassis/" + key
+      }
+    }
+  }
+
+  ret_string = "/redfish/v1/Chassis/System.Chassis.1" //always return system.chassis.1 for now
+  return ret_string
+}
+
+func link_mapper(fqdd string, message string) string {
 	ret_string := "/redfish/v1/Chassis/System.Chassis.1"
-	if strings.HasPrefix(fqdd, "Fan") {
-		ret_string += "/Sensors/Fans/" + fqdd
-	} else if strings.HasPrefix(fqdd, "PSU") {
-		ret_string += "/Sensors/PowerSupplies/" + fqdd
-	}
+
+  //Below sections are non-compliant or non-existant, and are not part of the tree
+  //TODO: Point to correct tree path once front panel URIs exist and have valid locations in the tree
+  noncompliant := []string{"RCPUSB", "RSPI", "RTC", "ControlPanel", "QuickSync", "LCD", "LED", "Frontpanel"}
+
+  chassis_subparts := []string{"IOM.Slot", "System.Modular", "iDRAC.Embedded", "CMC.Integrated", "Fan.Slot", "PSU.Slot", "Temperature.NODE_AMBIENT", "System.Chassis"}
+  FQDD_parts := strings.Split(fqdd, "#")
+
+  for i, _ := range(FQDD_parts) {
+    FQDD_part := FQDD_parts[len(FQDD_parts)-1-i]
+    for _, k := range(chassis_subparts) {
+      if strings.Contains(FQDD_part, k) {
+        pattern := strings.Replace(k, `.`, `\.`, -1)+`\.(\w+)`
+        re := regexp.MustCompile(pattern)
+        FQDD_matched := string(re.Find([]byte(FQDD_part)))
+        if FQDD_matched == "CMC.Integrated.0" {
+          FQDD_matched = "CMC.Integrated.1"
+        } else if k == "iDRAC.Embedded" {
+          FQDD_matched = strings.Replace(FQDD_matched, "iDRAC.Embedded", "System.Modular", -1)
+        }
+
+        if k == "Fan.Slot" {
+          ret_string += "/Sensors/Fans/" + FQDD_matched
+        } else if k == "PSU.Slot" {
+          ret_string += "/Sensors/PowerSupplies/" + FQDD_matched
+        } else if k == "Temperature.NODE_AMBIENT" {
+          ret_string += "/Sensors/Temperatures/System.Chassis.1%23" + FQDD_matched
+        } else {
+          ret_string = "/redfish/v1/Chassis/" + FQDD_matched
+        }
+        goto early_out
+      }
+    }
+    for _, k := range(noncompliant) {
+      if strings.Contains(FQDD_part, k) {
+        if k == "Frontpanel" {
+          ret_string = front_panel_message(fqdd, message)
+        }
+        ret_string = "/redfish/v1/Chassis/" + k + ".Chassis.1" //Not part of tree yet
+        goto early_out
+      }
+    }
+    if FQDD_part == "Temperature.CHASSIS_AMBIENT" {
+      ret_string += "/Sensors/Temperatures/System.Chassis.1%23" + FQDD_part
+      goto early_out
+    }
+  }
+early_out:
 	return ret_string
 }
 
@@ -100,7 +176,7 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 					"Id":          logEntry.Id,
 					"Links": map[string]interface{}{
 						"OriginOfCondition": map[string]interface{}{
-							"@odata.id": link_mapper(logEntry.FQDD),
+							"@odata.id": link_mapper(logEntry.FQDD, logEntry.Message),
 						},
 					},
 					"MessageArgs@odata.count": len(logEntry.MessageArgs),
