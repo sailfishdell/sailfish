@@ -13,7 +13,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	"golang.org/x/xerrors"
 
-	. "github.com/superchalupa/sailfish/cmd/metric-engine/metric"
+	"github.com/superchalupa/sailfish/cmd/metric-engine/metric"
 	log "github.com/superchalupa/sailfish/src/log"
 )
 
@@ -62,7 +62,6 @@ type MetricReportDefinition struct {
 	AppendLimit int   `db:"AppendLimit"`
 	ID          int64 `db:"ID"`
 	logger      log.Logger
-	loaded      bool
 }
 
 // Factory manages getting/putting into db
@@ -70,12 +69,12 @@ type MRDFactory struct {
 	logger   log.Logger
 	database *sqlx.DB
 
-	MetricTSHWM SqlTimeInt            // high water mark for received metrics
-	NextMRTS    map[string]SqlTimeInt // next timestamp where we need to generate a report
+	MetricTSHWM metric.SqlTimeInt            // high water mark for received metrics
+	NextMRTS    map[string]metric.SqlTimeInt // next timestamp where we need to generate a report
 }
 
 func NewMRDFactory(logger log.Logger, database *sqlx.DB) (ret *MRDFactory, err error) {
-	ret = &MRDFactory{logger: logger, database: database, NextMRTS: map[string]SqlTimeInt{}}
+	ret = &MRDFactory{logger: logger, database: database, NextMRTS: map[string]metric.SqlTimeInt{}}
 	err = nil
 	return
 }
@@ -214,7 +213,7 @@ func (factory *MRDFactory) UpdateMRD(mrdEvData *MetricReportDefinitionData) (err
 		}
 
 		// Next cross link MetricMeta to ReportDefinition
-		res, err = tx.Exec(`INSERT INTO ReportDefinitionToMetricMeta (ReportDefinitionID, MetricMetaID) VALUES (?, ?)`, MRD.ID, metaID)
+		_, err = tx.Exec(`INSERT INTO ReportDefinitionToMetricMeta (ReportDefinitionID, MetricMetaID) VALUES (?, ?)`, MRD.ID, metaID)
 		if err != nil {
 			return xerrors.Errorf("Error while inserting MetricMeta(%s) association for MRD(%s): %w", metric, MRD, err)
 		}
@@ -228,7 +227,7 @@ func (factory *MRDFactory) UpdateMRD(mrdEvData *MetricReportDefinitionData) (err
 
 	// If this is a periodic report, put it in the NextMRTS map so it'll get updated on the next report period
 	if MRD.Type == "Periodic" {
-		factory.NextMRTS[MRD.Name] = SqlTimeInt{Time: factory.MetricTSHWM.Add(time.Duration(MRD.Period) * time.Second)}
+		factory.NextMRTS[MRD.Name] = metric.SqlTimeInt{Time: factory.MetricTSHWM.Add(time.Duration(MRD.Period) * time.Second)}
 	}
 
 	return
@@ -248,6 +247,9 @@ func (factory *MRDFactory) IterMRD(checkFn func(MRD *MetricReportDefinition) boo
 			ID, Name,  Enabled, AppendLimit, Type, SuppressDups, Actions, Updates
 		FROM MetricReportDefinition
 	`)
+	if err != nil {
+		return xerrors.Errorf("Prepare Query error for MRD: %w", err)
+	}
 
 	// First, Find the MetricMeta
 	rows, err := stmt.Queryx()
@@ -335,6 +337,9 @@ func loadReportDefinition(tx *sqlx.Tx, MRD *MetricReportDefinition) error {
 	}
 
 	stmt, err := tx.PrepareNamed(query)
+	if err != nil {
+		return xerrors.Errorf("Prepare Error for query(%s) ERR: %w", query, err)
+	}
 	err = stmt.Get(MRD, MRD)
 	if err != nil {
 		return xerrors.Errorf("Error loading Metric Report Definition %d:(%s) %w", MRD.ID, MRD.Name, err)
@@ -393,7 +398,7 @@ func (factory *MRDFactory) GenerateMetricReport(mrdEvData *MetricReportDefinitio
 		sqlargs["Start"] = factory.MetricTSHWM.Add(-time.Duration(MRD.Period) * time.Second).UnixNano()
 		sqlargs["End"] = factory.MetricTSHWM.UnixNano()
 		sqlargs["ReportTimestamp"] = factory.MetricTSHWM.UnixNano()
-		factory.NextMRTS[MRD.Name] = SqlTimeInt{Time: factory.MetricTSHWM.Add(time.Duration(MRD.Period) * time.Second)}
+		factory.NextMRTS[MRD.Name] = metric.SqlTimeInt{Time: factory.MetricTSHWM.Add(time.Duration(MRD.Period) * time.Second)}
 
 		switch MRD.Updates {
 		case /*Periodic*/ "NewReport":
@@ -489,7 +494,7 @@ func (m *Scratch) Scan(src interface{}) error {
 
 // Fusion structure: Meta + Instance + MetricValueEvent
 type MetricMeta struct {
-	*MetricValueEventData
+	*metric.MetricValueEventData
 	ValueToWrite string `db:"Value"`
 
 	// Meta fields
@@ -503,13 +508,13 @@ type MetricMeta struct {
 	CollectionDuration time.Duration `db:"CollectionDuration"`
 
 	// Instance fields
-	ID                int64      `db:"ID"`
-	InstanceID        int64      `db:"InstanceID"`
-	CollectionScratch Scratch    `db:"CollectionScratch"`
-	FlushTime         SqlTimeInt `db:"FlushTime"`
-	SuppressDups      bool       `db:"SuppressDups"`
-	LastTS            SqlTimeInt `db:"LastTS"`
-	LastValue         string     `db:"LastValue"`
+	ID                int64             `db:"ID"`
+	InstanceID        int64             `db:"InstanceID"`
+	CollectionScratch Scratch           `db:"CollectionScratch"`
+	FlushTime         metric.SqlTimeInt `db:"FlushTime"`
+	SuppressDups      bool              `db:"SuppressDups"`
+	LastTS            metric.SqlTimeInt `db:"LastTS"`
+	LastValue         string            `db:"LastValue"`
 }
 
 func (factory *MRDFactory) Optimize() {
@@ -538,7 +543,7 @@ func (factory *MRDFactory) Vacuum() {
 	}
 }
 
-func (factory *MRDFactory) InsertMetricValue(ev *MetricValueEventData) (err error) {
+func (factory *MRDFactory) InsertMetricValue(ev *metric.MetricValueEventData) (err error) {
 	// ===================================
 	// Setup transaction
 	// ===================================
@@ -584,7 +589,7 @@ func (factory *MRDFactory) InsertMetricValue(ev *MetricValueEventData) (err erro
 		// Construct label and Scratch space
 		if mm.CollectionFunction != "" {
 			mm.Label = fmt.Sprintf("%s %s - %s", mm.Context, mm.Name, mm.CollectionFunction)
-			mm.FlushTime = SqlTimeInt{Time: mm.Timestamp.Add(mm.CollectionDuration * time.Second)}
+			mm.FlushTime = metric.SqlTimeInt{Time: mm.Timestamp.Add(mm.CollectionDuration * time.Second)}
 			mm.CollectionScratch.Sum = 0
 			mm.CollectionScratch.Numvalues = 0
 			mm.CollectionScratch.Maximum = -math.MaxFloat64
@@ -669,7 +674,7 @@ func (factory *MRDFactory) InsertMetricValue(ev *MetricValueEventData) (err erro
 
 				// now, reset everything
 				// TODO: need a separate query to find all Metrics with HWM > FlushTime and flush them
-				mm.FlushTime = SqlTimeInt{Time: mm.Timestamp.Add(mm.CollectionDuration * time.Second)}
+				mm.FlushTime = metric.SqlTimeInt{Time: mm.Timestamp.Add(mm.CollectionDuration * time.Second)}
 				mm.CollectionScratch.Sum = 0
 				mm.CollectionScratch.Numvalues = 0
 				mm.CollectionScratch.Maximum = -math.MaxFloat64

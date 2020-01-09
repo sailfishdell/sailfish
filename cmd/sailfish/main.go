@@ -102,7 +102,9 @@ func main() {
 		w.Write([]byte("{\n\t\"v1\": \"/redfish/v1/\"\n}\n"))
 	})
 	// per spec: redirect /redfish/ to /redfish/v1
-	m.Path("/redfish/").HandlerFunc(func(w http.ResponseWriter, r *http.Request) { http.Redirect(w, r, "/redfish/v1", 301) })
+	m.Path("/redfish/").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "/redfish/v1", http.StatusMovedPermanently)
+	})
 
 	// some static files that we should generate at some point
 	m.Path("/redfish/v1/$metadata").HandlerFunc(func(w http.ResponseWriter, r *http.Request) { http.ServeFile(w, r, "v1/metadata.xml") })

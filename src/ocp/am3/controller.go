@@ -33,10 +33,6 @@ func (s *Service) AddEventHandler(name string, et eh.EventType, fn func(eh.Event
 	s.eb.PublishEvent(context.Background(), eh.NewEvent(ConfigureAM3Event, &ConfigureAM3EventData{serviceName: s.serviceName, name: name, et: et, fn: fn}, time.Now()))
 }
 
-type waiter interface {
-	Listen(context.Context, func(eh.Event) bool) (*eventwaiter.EventListener, error)
-}
-
 type syncEvent interface {
 	Done()
 }
@@ -95,7 +91,7 @@ func StartService(ctx context.Context, logger log.Logger, name string, d BusObjs
 
 	listener, err := d.GetWaiter().Listen(ctx, filter)
 	if err != nil {
-		return nil, errors.New("Couldnt listen")
+		return nil, errors.New("couldnt listen")
 	}
 	listener.Name = "am3"
 

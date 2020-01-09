@@ -10,7 +10,7 @@ import (
 	eh "github.com/looplab/eventhorizon"
 	"github.com/spf13/viper"
 
-	. "github.com/superchalupa/sailfish/cmd/metric-engine/metric"
+	"github.com/superchalupa/sailfish/cmd/metric-engine/metric"
 	log "github.com/superchalupa/sailfish/src/log"
 	"github.com/superchalupa/sailfish/src/ocp/am3"
 )
@@ -140,8 +140,8 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Service, d Bus
 	})
 
 	lastHWM := time.Time{}
-	am3Svc.AddEventHandler("Store Metric Value", MetricValueEvent, func(event eh.Event) {
-		metricValue, ok := event.Data().(*MetricValueEventData)
+	am3Svc.AddEventHandler("Store Metric Value", metric.MetricValueEvent, func(event eh.Event) {
+		metricValue, ok := event.Data().(*metric.MetricValueEventData)
 		if !ok {
 			return
 		}
@@ -179,7 +179,7 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Service, d Bus
 			// if no events come in during time between clock publishes, we'll artificially bump HWM forward.
 			// if time is uninitialized, wait for an event to come in to set it
 			if MRDFactory.MetricTSHWM.Equal(lastHWM) {
-				MRDFactory.MetricTSHWM = SqlTimeInt{Time: MRDFactory.MetricTSHWM.Add(clockPeriod)}
+				MRDFactory.MetricTSHWM = metric.SqlTimeInt{Time: MRDFactory.MetricTSHWM.Add(clockPeriod)}
 			}
 			lastHWM = MRDFactory.MetricTSHWM.Time
 

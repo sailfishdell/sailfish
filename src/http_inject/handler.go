@@ -18,10 +18,6 @@ import (
 
 const MAX_OUT_OF_ORDER_QUEUED = 25
 
-type waiter interface {
-	Listen(context.Context, func(eh.Event) bool) (*eventwaiter.EventListener, error)
-}
-
 type busObjs interface {
 	GetBus() eh.EventBus
 	GetWaiter() *eventwaiter.EventWaiter
@@ -196,10 +192,7 @@ func (s *service) Start() {
 
 		// set up listener for the watchdog events
 		listener, err := s.ew.Listen(context.Background(), func(event eh.Event) bool {
-			if event.EventType() == WatchdogEvent {
-				return true
-			}
-			return false
+			return event.EventType() == WatchdogEvent
 		})
 
 		if err != nil {
@@ -380,23 +373,14 @@ func (s *service) Start() {
 	}()
 
 	go func() {
-		//debugOutputTicker := time.NewTicker(5 * time.Second)
-		for {
-			select {
-			case evb := <-s.injectChan:
-				s.eb.PublishEvent(context.Background(), *evb.event)
-				// barrier is set if this event should block events after it
-				if evb.barrier {
-					evb.event.Wait()
-				}
-				// comment out so we don't spam logs, but leave in place so it can be uncommented for debugging
-				//case <-debugOutputTicker.C:
-				// debug if we start getting full channels
-				//s.logger.Debug("queue length monitor", "module", "queuemonitor", "len(s.injectChan)", len(s.injectChan), "cap(s.injectChan)", cap(s.injectChan), "len(s.injectCmdQueue)", len(s.injectCmdQueue), "cap(s.injectCmdQueue)", cap(s.injectCmdQueue))
+		for evb := range s.injectChan {
+			s.eb.PublishEvent(context.Background(), *evb.event)
+			// barrier is set if this event should block events after it
+			if evb.barrier {
+				evb.event.Wait()
 			}
 		}
 	}()
-
 }
 
 const MAX_CONSOLIDATED_EVENTS = 5
@@ -554,5 +538,4 @@ func (c *InjectCommand) appendDecode(trainload *[]eh.EventData, eventType eh.Eve
 	// fast path, avoid logging unless debugging
 	//requestLogger.Debug("Decode: normal json decode added to trainload", "data", data)
 	*trainload = append(*trainload, data)
-	return
 }
