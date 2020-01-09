@@ -31,60 +31,54 @@ Startup-Events:
     # TODO: Device Poll Frequency: 60
     # "TelemetryAggregationMetrics.1.ReportInterval": 0,
     # AUDIT:
-    #   [X] HAS DATA
+    #   [!] HAS DATA
+    #       --> RESOURCE NOT FOUND
     #   [ ] Correct Metric IDs
     #   [ ] Correct # of data points
     #   [ ] Data correct
     data: |
       {
-        "Name": "AggregationMetrics",   "Enabled": true, "Type": "OnRequest", "Updates": "AppendWrapsWhenFull", "SuppressDups": false, "Actions": [],
-        "Metrics": [
-          { "MetricId": "SystemAvgInletTempHour" },
-          { "MetricId": "SystemMaxInletTempHour" },
-          { "MetricId": "SystemMaxPowerConsumption" }
-         ]
+        "Name": "AggregationMetrics",   "Enabled": true, "Type": "OnRequest", "Updates": "AppendWrapsWhenFull", "SuppressDups": false,
+        "Actions": [],
+        "Metrics": [ { "SourcePattern": "aggregation-metrics" } ]
       }
 
   - name: AddMetricReportDefinition
     # TODO: Device Poll Frequency: 5
     # "TelemetryCPUMemMetrics.1.ReportInterval": 60,
     # AUDIT:
-    #   [X] HAS DATA
+    #   [x] HAS DATA
     #   [ ] Correct Metric IDs
     #   [ ] Correct # of data points
     #   [ ] Data correct
     data: |
       {
-        "Name": "CPUMemMetrics",        "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false, "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [
-          { "MetricId": "CPUC0ResidencyHigh", "FQDDPattern": "CPU.Socket.%" },
-          { "MetricId": "CPUC0ResidencyLow", "FQDDPattern": "CPU.Socket.%" },
-          { "MetricId": "CUPSIIOBandwidthDMI", "FQDDPattern": "CPU.Socket.%" },
-          { "MetricId": "CUPSIIOBandwidthPort0", "FQDDPattern": "CPU.Socket.%" },
-          { "MetricId": "CUPSIIOBandwidthPort1", "FQDDPattern": "CPU.Socket.%" },
-          { "MetricId": "CUPSIIOBandwidthPort2", "FQDDPattern": "CPU.Socket.%" },
-          { "MetricId": "CUPSIIOBandwidthPort3", "FQDDPattern": "CPU.Socket.%" },
-          { "MetricId": "NonC0ResidencyHigh", "FQDDPattern": "CPU.Socket.%" },
-          { "MetricId": "NonC0ResidencyLow", "FQDDPattern": "CPU.Socket.%" }
-         ]
+        "Name": "CPUMemMetrics",        "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false,
+        "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
+        "Metrics": [ { "SourcePattern": "cpumem" } ]
       }
 
   - name: AddMetricReportDefinition
     # "TelemetryCPURegisters.1.ReportInterval": 0,
     data: |
-      { "Name": "CPURegisters",         "Enabled": true, "Type": "OnChange", "Updates": "AppendWrapsWhenFull", "SuppressDups": true, "Actions": [], "Metrics": [] }
+      { "Name": "CPURegisters",         "Enabled": true, "Type": "OnChange", "Updates": "AppendWrapsWhenFull", "SuppressDups": true,
+        "Actions": [],
+        "Metrics": []
+      }
 
   - name: AddMetricReportDefinition
     # TODO: Device Poll Frequency: 5
     # "TelemetryCPUSensor.1.ReportInterval": 60,
     # AUDIT:
-    #   [!] HAS DATA
+    #   [.] HAS DATA
+    #       --> Empty report
     #   [ ] Correct Metric IDs
     #   [ ] Correct # of data points
     #   [ ] Data correct
     data: |
       {
-        "Name": "CPUSensor",            "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false, "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
+        "Name": "CPUSensor",            "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false,
+        "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
         "Metrics": [
           {"MetricID": "TemperatureReading", "FQDDPattern": "iDRAC.Embedded.1#CPU%Temp"},
           {"MetricID": "TemperatureReading", "FQDDPattern": "CPU.Socket.%"}
@@ -95,7 +89,9 @@ Startup-Events:
     # TODO: Device Poll Frequency: 5
     # "TelemetryCUPS.1.ReportInterval": 60,
     # AUDIT:
-    #   [!] HAS DATA
+    #   [.] HAS DATA
+    #       --> Empty report
+    #       --> Sailaja's idrac seems that the underlying cups table isn't being populated.
     #   [ ] Correct Metric IDs
     #   [ ] Correct # of data points
     #   [ ] Data correct
@@ -103,115 +99,127 @@ Startup-Events:
       {
         "Name": "CUPS", "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false,
         "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [ {"FQDDPattern": "CUPS"} ]
+        "Metrics": [ { "SourcePattern": "cups" } ]
       }
 
   - name: AddMetricReportDefinition
     # TODO: Device Poll Frequency: 5
     # "TelemetryFanSensor.1.ReportInterval": 60,
     # AUDIT:
-    #   [X] HAS DATA
+    #   [x] HAS DATA
     #   [ ] Correct Metric IDs
     #   [ ] Correct # of data points
     #   [ ] Data correct
     data: |
       {
-        "Name": "FanSensor",            "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false, "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [{"MetricID": "RPMReading", "FQDDPattern": "Fan.%"}]
+        "Name": "FanSensor",            "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false,
+        "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
+        "Metrics": [ { "SourcePattern": "fan" } ]
       }
 
   - name: AddMetricReportDefinition
     # TODO: Need to limit this to FC via FQDD
     # TODO: Device Poll Frequency: 5
     # "TelemetryFCSensor.1.ReportInterval": 60,
+    # AUDIT:
+    #   [.] HAS DATA
+    #       --> No FC in Sailaja's machine
+    #       --> The metrics listed below *PROBABLY* have the wrong FQDDPattern anyways.
+    #   [ ] Correct Metric IDs
+    #   [ ] Correct # of data points
+    #   [ ] Data correct
+    #
+    # TODO: NOT SURE IF THE FQDDPATTERN IS RIGHT, DONT HAVE AN EXAMPLE
     data: |
       {
-        "Name": "FCSensor",             "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false, "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [{"MetricID": "TemperatureReading", "FQDDPattern": "%"}]
+        "Name": "FCSensor",             "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false,
+        "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
+        "Metrics": [{"MetricID": "TemperatureReading", "FQDDPattern": "FC.%"}]
       }
 
   - name: AddMetricReportDefinition
     # TODO: Need to limit this to FPGA via FQDD
     # TODO: Device Poll Frequency: 5
     # "TelemetryFPGASensor.1.ReportInterval": 60,
+    # AUDIT:
+    #   [.] HAS DATA
+    #       --> No FPGA in Sailaja's machine
+    #   [ ] Correct Metric IDs
+    #   [ ] Correct # of data points
+    #   [ ] Data correct
     data: |
       {
-        "Name": "FPGASensor",           "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false, "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [{"MetricID": "TemperatureReading", "FQDDPattern": "%"}]
+        "Name": "FPGASensor",           "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false,
+        "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
+        "Metrics": [ { "SourcePattern": "fpga-sensor" } ]
       }
 
   - name: AddMetricReportDefinition
     # TODO: Device Poll Frequency: 5
     # "TelemetryGPUMetrics.1.ReportInterval": 60,
+    # AUDIT:
+    #   [.] HAS DATA
+    #       --> No GPU in Sailaja's machine
+    #   [ ] Correct Metric IDs
+    #   [ ] Correct # of data points
+    #   [ ] Data correct
     data: |
       {
-        "Name": "GPUMetrics",           "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false, "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [
-              { "MetricId": "BoardPowerSupplyStatus" },
-              { "MetricId": "BoardTemperature" },
-              { "MetricId": "GPUHealth" },
-              { "MetricId": "GPUStatus" },
-              { "MetricId": "MemoryTemperature" },
-              { "MetricId": "PowerBrakeState" },
-              { "MetricId": "PowerConsumption" },
-              { "MetricId": "PowerSupplyStatus" },
-              { "MetricId": "PrimaryTemperature" },
-              { "MetricId": "SecondaryTemperature" },
-              { "MetricId": "ThermalAlertState" }
-        ]
+        "Name": "GPUMetrics",           "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false,
+        "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
+        "Metrics": [ { "SourcePattern": "gpu-health" } ]
       }
 
   - name: AddMetricReportDefinition
     # TODO: Device Poll Frequency: 600
     # "TelemetryGPUStatistics.1.ReportInterval": 600,
+    # AUDIT:
+    #   [.] HAS DATA
+    #       --> No GPU in Sailaja's machine
+    #   [ ] Correct Metric IDs
+    #   [ ] Correct # of data points
+    #   [ ] Data correct
     data: |
       {
-        "Name": "GPUStatistics",        "Enabled": true, "Type": "Periodic", "Period": 600, "Updates": "Overwrite", "SuppressDups": false, "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [
-          { "MetricId": "CumulativeDBECounterFB", "FQDDPattern": "Video.Slot.%" },
-          { "MetricId": "CumulativeDBECounterGR", "FQDDPattern": "Video.Slot.%" },
-          { "MetricId": "CumulativeSBECounterFB", "FQDDPattern": "Video.Slot.%" },
-          { "MetricId": "CumulativeSBECounterGR", "FQDDPattern": "Video.Slot.%" },
-          { "MetricId": "DBECounterFB", "FQDDPattern": "Video.Slot.%" },
-          { "MetricId": "DBECounterFBL2Cache", "FQDDPattern": "Video.Slot.%" },
-          { "MetricId": "DBECounterGRL1Cache", "FQDDPattern": "Video.Slot.%" },
-          { "MetricId": "DBECounterGRRF", "FQDDPattern": "Video.Slot.%" },
-          { "MetricId": "DBECounterGRTex", "FQDDPattern": "Video.Slot.%" },
-          { "MetricId": "DBERetiredPages", "FQDDPattern": "Video.Slot.%" },
-          { "MetricId": "SBECounterFB", "FQDDPattern": "Video.Slot.%" },
-          { "MetricId": "SBECounterFBL2Cache", "FQDDPattern": "Video.Slot.%" },
-          { "MetricId": "SBECounterGRL1Cache", "FQDDPattern": "Video.Slot.%" },
-          { "MetricId": "SBECounterGRRF", "FQDDPattern": "Video.Slot.%" },
-          { "MetricId": "SBECounterGRTex", "FQDDPattern": "Video.Slot.%" },
-          { "MetricId": "SBERetiredPages", "FQDDPattern": "Video.Slot.%" }
-        ]
+        "Name": "GPUStatistics",        "Enabled": true, "Type": "Periodic", "Period": 600, "Updates": "Overwrite", "SuppressDups": false,
+        "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
+        "Metrics": [ { "SourcePattern": "gpu-statistics" } ]
       }
 
   - name: AddMetricReportDefinition
     # TODO: Device Poll Frequency: 5
     # "TelemetryMemorySensor.1.ReportInterval": 60,
     # AUDIT:
-    #   [!] HAS DATA
+    #   [.] HAS DATA
+    #       --> empty report, should have data
+    #       --> not getting udb events for memory sensor table updates?
     #   [ ] Correct Metric IDs
     #   [ ] Correct # of data points
     #   [ ] Data correct
     data: |
       {
-        "Name": "MemorySensor",         "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false, "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [{"MetricID": "TemperatureReading", "FQDDPattern": "DIMM.Socket.%"}]
+        "Name": "MemorySensor",         "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false,
+        "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
+        "Metrics": [
+          {"MetricID": "TemperatureReading", "FQDDPattern": "DIMM.Socket.%"},
+          { "SourcePattern": "memory-sensor" }
+        ]
       }
 
   - name: AddMetricReportDefinition
     # TODO: Device Poll Frequency: 5
     # "TelemetryNICSensor.1.ReportInterval": 60,
     # AUDIT:
-    #   [X] HAS DATA
+    #   [x] HAS DATA
     #   [ ] Correct Metric IDs
     #   [ ] Correct # of data points
     #   [ ] Data correct
+    #
+    # Gets data from hiitempsensors query
     data: |
       {
-        "Name": "NICSensor",            "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false, "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
+        "Name": "NICSensor",            "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false,
+        "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
         "Metrics": [{"MetricID": "TemperatureReading", "FQDDPattern": "NIC.%"}]
       }
 
@@ -219,263 +227,153 @@ Startup-Events:
     # TODO: Device Poll Frequency: 60
     # "TelemetryNICStatistics.1.ReportInterval": 60,
     # AUDIT:
-    #   [X] HAS DATA
+    #   [x] HAS DATA
     #   [ ] Correct Metric IDs
     #   [ ] Correct # of data points
     #   [ ] Data correct
     data: |
       {
-        "Name": "NICStatistics",        "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false, "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [
-          { "MetricId": "DiscardedPkts", "FQDDPattern": "NIC.%"},
-          { "MetricId": "FCCRCErrorCount", "FQDDPattern": "NIC.%"},
-          { "MetricId": "FCOELinkFailures", "FQDDPattern": "NIC.%"},
-          { "MetricId": "FCOEPktRxCount", "FQDDPattern": "NIC.%"},
-          { "MetricId": "FCOEPktTxCount", "FQDDPattern": "NIC.%"},
-          { "MetricId": "FCOERxPktDroppedCount", "FQDDPattern": "NIC.%"},
-          { "MetricId": "LanFCSRxErrors", "FQDDPattern": "NIC.%"},
-          { "MetricId": "LanUnicastPktRxCount", "FQDDPattern": "NIC.%"},
-          { "MetricId": "LanUnicastPktTxCount", "FQDDPattern": "NIC.%"},
-          { "MetricId": "LinkStatus", "FQDDPattern": "NIC.%"},
-          { "MetricId": "OSDriverState", "FQDDPattern": "NIC.%"},
-          { "MetricId": "PartitionLinkStatus", "FQDDPattern": "NIC.%"},
-          { "MetricId": "PartitionOSDriverState", "FQDDPattern": "NIC.%"},
-          { "MetricId": "RDMARxTotalBytes", "FQDDPattern": "NIC.%"},
-          { "MetricId": "RDMARxTotalPackets", "FQDDPattern": "NIC.%"},
-          { "MetricId": "RDMATotalProtectionErrors", "FQDDPattern": "NIC.%"},
-          { "MetricId": "RDMATotalProtocolErrors", "FQDDPattern": "NIC.%"},
-          { "MetricId": "RDMATxTotalBytes", "FQDDPattern": "NIC.%"},
-          { "MetricId": "RDMATxTotalPackets", "FQDDPattern": "NIC.%"},
-          { "MetricId": "RDMATxTotalReadReqPkts", "FQDDPattern": "NIC.%"},
-          { "MetricId": "RDMATxTotalSendPkts", "FQDDPattern": "NIC.%"},
-          { "MetricId": "RDMATxTotalWritePkts", "FQDDPattern": "NIC.%"},
-          { "MetricId": "RxBroadcast", "FQDDPattern": "NIC.%"},
-          { "MetricId": "RxBytes", "FQDDPattern": "NIC.%"},
-          { "MetricId": "RxErrorPktAlignmentErrors", "FQDDPattern": "NIC.%"},
-          { "MetricId": "RxErrorPktFCSErrors", "FQDDPattern": "NIC.%"},
-          { "MetricId": "RxFalseCarrierDetection", "FQDDPattern": "NIC.%"},
-          { "MetricId": "RxJabberPkt", "FQDDPattern": "NIC.%"},
-          { "MetricId": "RxMutlicast", "FQDDPattern": "NIC.%"},
-          { "MetricId": "RxPauseXOFFFrames", "FQDDPattern": "NIC.%"},
-          { "MetricId": "RxPauseXONFrames", "FQDDPattern": "NIC.%"},
-          { "MetricId": "RxRuntPkt", "FQDDPattern": "NIC.%"},
-          { "MetricId": "RxUnicast", "FQDDPattern": "NIC.%"},
-          { "MetricId": "TxBroadcast", "FQDDPattern": "NIC.%"},
-          { "MetricId": "TxBytes", "FQDDPattern": "NIC.%"},
-          { "MetricId": "TxErrorPktExcessiveCollision", "FQDDPattern": "NIC.%"},
-          { "MetricId": "TxErrorPktLateCollision", "FQDDPattern": "NIC.%"},
-          { "MetricId": "TxErrorPktMultipleCollision", "FQDDPattern": "NIC.%"},
-          { "MetricId": "TxErrorPktSingleCollision", "FQDDPattern": "NIC.%"},
-          { "MetricId": "TxMutlicast", "FQDDPattern": "NIC.%"},
-          { "MetricId": "TxPauseXOFFFrames", "FQDDPattern": "NIC.%"},
-          { "MetricId": "TxPauseXONFrames", "FQDDPattern": "NIC.%"},
-          { "MetricId": "TxUnicast", "FQDDPattern": "NIC.%"}
-        ]
+        "Name": "NICStatistics",        "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false,
+        "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
+        "Metrics": [ { "SourcePattern": "nicportstats" } ]
       }
 
   - name: AddMetricReportDefinition
     # TODO: Device Poll Frequency: 3600
     # "TelemetryNVMeSMARTData.1.ReportInterval": 3600,
     # AUDIT:
-    #   [!] HAS DATA
+    #   [.] HAS DATA
+    #       --> sailaja's machine has no NVME
     #   [ ] Correct Metric IDs
     #   [ ] Correct # of data points
     #   [ ] Data correct
     data: |
       {
-        "Name": "NVMeSMARTData",        "Enabled": true, "Type": "Periodic", "Period": 3600, "Updates": "Overwrite", "SuppressDups": false, "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [
-          { "FQDDPattern": "SMARTData:%PCIeExtender%" },
-
-          { "MetricId": "AvailableSpare", "FQDDPattern": "SMARTData:%" },
-          { "MetricId": "AvailableSpareThreshold", "FQDDPattern": "SMARTData:%" },
-          { "MetricId": "CompositeTemparature", "FQDDPattern": "SMARTData:%" },
-          { "MetricId": "ControllerBusyTimeLower", "FQDDPattern": "SMARTData:%" },
-          { "MetricId": "ControllerBusyTimeUpper", "FQDDPattern": "SMARTData:%" },
-          { "MetricId": "CriticalWarning", "FQDDPattern": "SMARTData:%" },
-          { "MetricId": "DataUnitsReadLower", "FQDDPattern": "SMARTData:%" },
-          { "MetricId": "DataUnitsReadUpper", "FQDDPattern": "SMARTData:%" },
-          { "MetricId": "DataUnitsWrittenLower", "FQDDPattern": "SMARTData:%" },
-          { "MetricId": "DataUnitsWrittenUpper", "FQDDPattern": "SMARTData:%" },
-          { "MetricId": "HostReadCommandsLower", "FQDDPattern": "SMARTData:%" },
-          { "MetricId": "HostReadCommandsUpper", "FQDDPattern": "SMARTData:%" },
-          { "MetricId": "HostWriteCommandsLower", "FQDDPattern": "SMARTData:%" },
-          { "MetricId": "HostWriteCommandsUpper", "FQDDPattern": "SMARTData:%" },
-          { "MetricId": "MediaDataIntegrityErrorsLower", "FQDDPattern": "SMARTData:%" },
-          { "MetricId": "MediaDataIntegrityErrorsUpper", "FQDDPattern": "SMARTData:%" },
-          { "MetricId": "NumOfErrorInfoLogEntriesLower", "FQDDPattern": "SMARTData:%" },
-          { "MetricId": "NumOfErrorInfoLogEntriesUpper", "FQDDPattern": "SMARTData:%" },
-          { "MetricId": "PercentageUsed", "FQDDPattern": "SMARTData:%" },
-          { "MetricId": "PowerCyclesLower", "FQDDPattern": "SMARTData:%" },
-          { "MetricId": "PowerCyclesUpper", "FQDDPattern": "SMARTData:%" },
-          { "MetricId": "PowerOnHoursLower", "FQDDPattern": "SMARTData:%" },
-          { "MetricId": "PowerOnHoursUpper", "FQDDPattern": "SMARTData:%" },
-          { "MetricId": "UnsafeShutdownsLower", "FQDDPattern": "SMARTData:%" },
-          { "MetricId": "UnsafeShutdownsUpper", "FQDDPattern": "SMARTData:%" }
-        ]
+        "Name": "NVMeSMARTData",        "Enabled": true, "Type": "Periodic", "Period": 3600, "Updates": "Overwrite", "SuppressDups": false,
+        "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
+        "Metrics": [ { "SourcePattern": "smart-nvme" } ]
       }
 
   - name: AddMetricReportDefinition
     # TODO: Device Poll Frequency: 5
     # "TelemetryPowerMetrics.1.ReportInterval": 60,
     # AUDIT:
-    #   [!] HAS DATA
+    #   [x] HAS DATA
     #   [ ] Correct Metric IDs
     #   [ ] Correct # of data points
     #   [ ] Data correct
     data: |
       {
-        "Name": "PowerMetrics",         "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false, "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [
-          { "FQDDPattern": "PowerMetrics" }
-        ]
+        "Name": "PowerMetrics",         "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false,
+        "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
+        "Metrics": [ { "SourcePattern": "powermetrics" } ]
       }
 
   - name: AddMetricReportDefinition
     # TODO: Device Poll Frequency: 60
     # "TelemetryPowerStatistics.1.ReportInterval": 60,
     # AUDIT:
-    #   [!] HAS DATA
+    #   [x] HAS DATA
     #   [ ] Correct Metric IDs
     #   [ ] Correct # of data points
     #   [ ] Data correct
     data: |
       {
-        "Name": "PowerStatistics",      "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false, "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [
-          { "FQDDPattern": "PowerStatistics" }
-        ]
+        "Name": "PowerStatistics",      "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false,
+        "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
+        "Metrics": [ { "SourcePattern": "powerstatistics" } ]
       }
 
   - name: AddMetricReportDefinition
     # TODO: Device Poll Frequency: 60
     # "TelemetryPSUMetrics.1.ReportInterval": 60,
     # AUDIT:
-    #   [!] HAS DATA
+    #   [x] HAS DATA
     #   [ ] Correct Metric IDs
     #   [ ] Correct # of data points
     #   [ ] Data correct
     data: |
       {
-        "Name": "PSUMetrics",           "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false, "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [
-          { "MetricId": "FanSpeed", "FQDDPattern": "PSU.Slot.%" },
-          { "MetricId": "Temperature", "FQDDPattern": "PSU.Slot.%" }
-        ]
+        "Name": "PSUMetrics",           "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false,
+        "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
+        "Metrics": [ { "SourcePattern": "psu-sensor" } ]
       }
 
   - name: AddMetricReportDefinition
     # TODO: Device Poll Frequency: 5
     # "TelemetrySensor.1.ReportInterval": 60,
     # AUDIT:
-    #   [X] HAS DATA
+    #   [x] HAS DATA
+    #       --> looks like it's missing some data, or that the data isn't updated often enough from the source
     #   [ ] Correct Metric IDs
     #   [ ] Correct # of data points
     #   [ ] Data correct
     data: |
       {
-        "Name": "Sensor",               "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false, "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [
-          { "MetricId": "AmpsReading" },
-          { "MetricId": "CPUUsagePctReading" },
-          { "MetricId": "IOUsagePctReading" },
-          { "MetricId": "MemoryUsagePctReading" },
-          { "MetricId": "RPMReading" },
-          { "MetricId": "SystemUsagePctReading" },
-          { "MetricId": "TemperatureReading" },
-          { "MetricId": "VoltageReading" },
-          { "MetricId": "WattsReading" }
-        ]
+        "Name": "Sensor",               "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false,
+        "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
+        "Metrics": [ { "SourcePattern": "rawsensor" } ]
       }
 
   - name: AddMetricReportDefinition
     #"TelemetryStorageDiskSMARTData.1.ReportInterval": 3600,
     # TODO: Device Poll Frequency: 3600
     # AUDIT:
-    #   [!] HAS DATA
+    #   [.] HAS DATA
+    #       --> no sas drives on sailaja's machine? (this seems unlikely)
     #   [ ] Correct Metric IDs
     #   [ ] Correct # of data points
     #   [ ] Data correct
     data: |
       {
-        "Name": "StorageDiskSMARTData", "Enabled": true, "Type": "Periodic", "Period": 3600, "Updates": "Overwrite", "SuppressDups": false, "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [
-          { "MetricId": "CRCErrorCount", "FQDDPattern": "SMARTData:%" },
-          { "MetricId": "CommandTimeout", "FQDDPattern": "SMARTData:%" },
-          { "MetricId": "CurrentPendingSectorCount", "FQDDPattern": "SMARTData:%" },
-          { "MetricId": "DriveTemperature", "FQDDPattern": "SMARTData:%" },
-          { "MetricId": "ECCERate", "FQDDPattern": "SMARTData:%" },
-          { "MetricId": "EraseFailCount", "FQDDPattern": "SMARTData:%" },
-          { "MetricId": "ExceptionModeStatus", "FQDDPattern": "SMARTData:%" },
-          { "MetricId": "MediaWriteCount", "FQDDPattern": "SMARTData:%" },
-          { "MetricId": "PercentDriveLifeRemaining", "FQDDPattern": "SMARTData:%" },
-          { "MetricId": "PowerCycleCount", "FQDDPattern": "SMARTData:%" },
-          { "MetricId": "PowerOnHours", "FQDDPattern": "SMARTData:%" },
-          { "MetricId": "ProgramFailCount", "FQDDPattern": "SMARTData:%" },
-          { "MetricId": "ReadErrorRate", "FQDDPattern": "SMARTData:%" },
-          { "MetricId": "ReallocatedBlockCount", "FQDDPattern": "SMARTData:%" },
-          { "MetricId": "UncorrectableErrorCount", "FQDDPattern": "SMARTData:%" },
-          { "MetricId": "UncorrectableLBACount", "FQDDPattern": "SMARTData:%" },
-          { "MetricId": "UnusedReservedBlockCount", "FQDDPattern": "SMARTData:%" },
-          { "MetricId": "UsedReservedBlockCount", "FQDDPattern": "SMARTData:%" },
-          { "MetricId": "VolatileMemoryBackupSourceFailures", "FQDDPattern": "SMARTData:%" }
-        ]
+        "Name": "StorageDiskSMARTData", "Enabled": true, "Type": "Periodic", "Period": 3600, "Updates": "Overwrite", "SuppressDups": false,
+        "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
+        "Metrics": [ { "SourcePattern": "smart-sas" } ]
       }
 
   - name: AddMetricReportDefinition
     # TODO: Device Poll Frequency: 5
     # "TelemetryStorageSensor.1.ReportInterval": 60,
     # AUDIT:
-    #   [!] HAS DATA
+    #   [.] HAS DATA
+    #       --> empty report. Missing HW?
     #   [ ] Correct Metric IDs
     #   [ ] Correct # of data points
     #   [ ] Data correct
     data: |
       {
-        "Name": "StorageSensor",        "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false, "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [
-          { "MetricId": "TemperatureReading", "FQDDPattern": "Disk.%" }
-        ]
+        "Name": "StorageSensor",        "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false,
+        "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
+        "Metrics": [ { "SourcePattern": "storage-sensor" } ]
       }
 
   - name: AddMetricReportDefinition
     # TODO: Device Poll Frequency: 5
     # "TelemetryThermalMetrics.1.ReportInterval": 5,
     # AUDIT:
-    #   [X] HAS DATA
+    #   [x] HAS DATA
     #   [ ] Correct Metric IDs
     #   [ ] Correct # of data points
     #   [ ] Data correct
     data: |
       {
-        "Name": "ThermalMetrics",       "Enabled": true, "Type": "Periodic", "Period": 5, "Updates": "Overwrite", "SuppressDups": false, "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [
-          { "FQDDPattern": "Thermal" },
-          { "MetricId": "ComputePower", "FQDDPattern": "Thermal" },
-          { "MetricId": "ITUE", "FQDDPattern": "Thermal" },
-          { "MetricId": "PSUEfficiency", "FQDDPattern": "Thermal" },
-          { "MetricId": "PowerToCoolRatio", "FQDDPattern": "Thermal" },
-          { "MetricId": "SysAirFlowEfficiency", "FQDDPattern": "Thermal" },
-          { "MetricId": "SysAirflowPerFanPower", "FQDDPattern": "Thermal" },
-          { "MetricId": "SysAirflowPerSysInputPower", "FQDDPattern": "Thermal" },
-          { "MetricId": "SysAirflowUtilization", "FQDDPattern": "Thermal" },
-          { "MetricId": "SysNetAirflow", "FQDDPattern": "Thermal" },
-          { "MetricId": "SysRackTempDelta", "FQDDPattern": "Thermal" },
-          { "MetricId": "TotalPSUHeatDissipation", "FQDDPattern": "Thermal" }
-        ]
-      }
+        "Name": "ThermalMetrics",       "Enabled": true, "Type": "Periodic", "Period": 5, "Updates": "Overwrite", "SuppressDups": false,
+        "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
+        "Metrics": [ { "SourcePattern": "thermalmetrics" } ] }
 
   - name: AddMetricReportDefinition
     # TODO: Device Poll Frequency: 5
     # "TelemetryThermalSensor.1.ReportInterval": 60,
     # AUDIT:
-    #   [!] HAS DATA
+    #   [.] HAS DATA
+    #       --> this one really should have data, but it's empty
     #   [ ] Correct Metric IDs
     #   [ ] Correct # of data points
     #   [ ] Data correct
     data: |
       {
-        "Name": "ThermalSensor",        "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false, "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
+        "Name": "ThermalSensor",        "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false,
+        "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
         "Metrics": [
           { "MetricId": "TemperatureReading", "FQDDPattern": "iDRAC.Embedded.1#SystemBoardInletTemp" },
           { "MetricId": "TemperatureReading", "FQDDPattern": "iDRAC.Embedded.1#SystemBoardExhaustTemp" }
@@ -1038,8 +936,8 @@ UDB-Metric-Import:
 
   HIITempSensors:
     Type: MetricColumns
-    ScanInterval: 10
-    WaitInterval: 5
+    ScanInterval: 0
+    WaitInterval: 1
     DBChange:
       DMLiveObjectDatabase.db:
         TblHIISensorInfo_obj:
@@ -1057,8 +955,8 @@ UDB-Metric-Import:
 
   Fan:
     Type: MetricColumns
-    ScanInterval: 10
-    WaitInterval: 5
+    ScanInterval: 0
+    WaitInterval: 1
     DBChange:
       DMLiveObjectDatabase.db:
         TblFanExtObj:
