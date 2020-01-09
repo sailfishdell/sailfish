@@ -93,9 +93,19 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc EventHandlingServic
 
 	go handleUDBNotifyPipe(logger, cfg, d)
 
-	// This is the event to trigger UDB imports. We will only attach it after a second to let all startup settle before we start processing imports
+	// This is the event to trigger UDB imports. We will only attach it after a second to let all startup settle before we start processing imports from UDB from UDB
 	go func() {
 		time.Sleep(1 * time.Second)
+
+		// Do a 1 time unconditional import
+		fmt.Printf("Initial Import\n")
+		UDBFactory.IterUDBTables(func(name string, meta UDBMeta) error {
+			UDBFactory.ConditionalImport(name, meta, false)
+			return nil
+		})
+		fmt.Printf("Initial Import Done\n")
+
+		// set up the event handler that will do periodic imports every ~1s.
 		am3Svc.AddEventHandler("Import UDB Metric Values", telemetry.DatabaseMaintenance, func(event eh.Event) {
 			// TODO: get smarter about this. We ought to calculate time until next report and set a timer for that
 			UDBFactory.IterUDBTables(func(name string, meta UDBMeta) error {
