@@ -34,6 +34,7 @@ type MetricValueEventData struct {
 	Context      string     `db:"Context"`
 	FQDD         string     `db:"FQDD"`
 	FriendlyFQDD string     `db:"FriendlyFQDD"`
+	Source       string     `db:"Source"`
 }
 
 type FQDDMappingData struct {

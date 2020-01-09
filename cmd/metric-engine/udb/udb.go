@@ -241,6 +241,7 @@ func (l *UDBFactory) ImportByColumn(udbImportName string) (err error) {
 				Name:         metricName,
 				Value:        fmt.Sprintf("%v", v),
 				Property:     property + "#" + metricName,
+				Source:       udbImportName,
 			}
 
 			if mts, ok := mm["Timestamp-"+metricName].(int64); ok {
@@ -297,7 +298,9 @@ func (l *UDBFactory) ImportByMetricValue(udbImportName string) (err error) {
 	defer rows.Close()
 
 	for rows.Next() {
-		event := &metric.MetricValueEventData{}
+		event := &metric.MetricValueEventData{
+			Source: udbImportName,
+		}
 		err = rows.StructScan(event)
 		if err != nil {
 			l.logger.Crit("Error scanning row into MetricEvent", "err", err, "udbImportName", udbImportName)
