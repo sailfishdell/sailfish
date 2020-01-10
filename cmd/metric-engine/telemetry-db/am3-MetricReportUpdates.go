@@ -53,11 +53,11 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Service, d Bus
 		if err != nil {
 			// ignore drop errors if we are migrating from old telemetry db
 			if strings.HasPrefix(err.Error(), "use DROP VIEW") {
-				logger.Warn("Error executing setup SQL", "err", err, "sql", sqltext)
+				logger.Info("Ignoring SQL error dropping view", "err", err, "sql", sqltext)
 				continue
 			}
 			if strings.HasPrefix(err.Error(), "use DROP TABLE") {
-				logger.Warn("Error executing setup SQL", "err", err, "sql", sqltext)
+				logger.Info("Ignoring SQL error dropping table", "err", err, "sql", sqltext)
 				continue
 			}
 			logger.Crit("Error executing setup SQL", "err", err, "sql", sqltext)
