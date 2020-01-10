@@ -66,17 +66,47 @@ type MetricReportDefinition struct {
 
 // Factory manages getting/putting into db
 type MRDFactory struct {
-	logger   log.Logger
-	database *sqlx.DB
+	logger      log.Logger
+	database    *sqlx.DB
+	preparedSql map[string]*sqlx.NamedStmt
 
 	MetricTSHWM metric.SqlTimeInt            // high water mark for received metrics
 	NextMRTS    map[string]metric.SqlTimeInt // next timestamp where we need to generate a report
 }
 
-func NewMRDFactory(logger log.Logger, database *sqlx.DB) (ret *MRDFactory, err error) {
-	ret = &MRDFactory{logger: logger, database: database, NextMRTS: map[string]metric.SqlTimeInt{}}
-	err = nil
-	return
+func (factory *MRDFactory) prepare(name, sql string) error {
+	_, ok := factory.preparedSql[name]
+	if !ok {
+		insert, err := factory.database.PrepareNamed(sql)
+		if err != nil {
+			return xerrors.Errorf("Failed to prepare query(%s) with SQL (%s): %w", name, sql, err)
+		}
+		factory.preparedSql[name] = insert
+	}
+	return nil
+}
+
+func NewMRDFactory(logger log.Logger, database *sqlx.DB) (*MRDFactory, error) {
+	factory := &MRDFactory{logger: logger, database: database, NextMRTS: map[string]metric.SqlTimeInt{}, preparedSql: map[string]*sqlx.NamedStmt{}}
+
+	// ===================================
+	// Ensure all statements are prepared
+	// ===================================
+	factory.prepare("MRD_Insert",
+		`INSERT INTO MetricReportDefinition
+				       ( Name,  Enabled, AppendLimit, Type, SuppressDups, Actions, Updates, Period)
+				VALUES (:Name, :Enabled, :AppendLimit, :Type, :SuppressDups, :Actions, :Updates, :Period)
+		 on conflict(Name) do update set
+				Enabled=:Enabled,
+				AppendLimit=:AppendLimit,
+				Type=:Type,
+				SuppressDups=:SuppressDups,
+				Actions=:Actions,
+				Period=:Period,
+				Updates=:Updates
+			`)
+
+	return factory, nil
 }
 
 func (factory *MRDFactory) Delete(mrdEvData *MetricReportDefinitionData) (err error) {
@@ -127,20 +157,7 @@ func (factory *MRDFactory) UpdateMRD(mrdEvData *MetricReportDefinitionData) (err
 	// if we error out at all, roll back
 	defer tx.Rollback()
 
-	// Insert or update existing record
-	_, err = tx.NamedExec(
-		`INSERT INTO MetricReportDefinition
-			( Name,  Enabled, AppendLimit, Type, SuppressDups, Actions, Updates, Period)
-			VALUES (:Name, :Enabled, :AppendLimit, :Type, :SuppressDups, :Actions, :Updates, :Period)
-		 on conflict(Name) do update set
-			Enabled=:Enabled,
-			AppendLimit=:AppendLimit,
-			Type=:Type,
-			SuppressDups=:SuppressDups,
-			Actions=:Actions,
-			Period=:Period,
-			Updates=:Updates
-			`, MRD)
+	_, err = tx.NamedStmt(factory.preparedSql["MRD_Insert"]).Exec(MRD)
 	if err != nil {
 		return xerrors.Errorf("Error inserting MRD(%s): %w", MRD, err)
 	}
