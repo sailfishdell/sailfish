@@ -29,14 +29,17 @@ func (m *SqlTimeInt) Scan(src interface{}) error {
 }
 
 type MetricValueEventData struct {
-	Timestamp    SqlTimeInt `db:"Timestamp"`
-	Name         string     `db:"Name"`
-	Value        string     `db:"Value"`
-	Property     string     `db:"Property"`
-	Context      string     `db:"Context"`
-	FQDD         string     `db:"FQDD"`
-	FriendlyFQDD string     `db:"FriendlyFQDD"`
-	Source       string     `db:"Source"`
+	Timestamp           SqlTimeInt `db:"Timestamp"`
+	Name                string     `db:"Name"`
+	Value               string     `db:"Value"`
+	Property            string     `db:"Property"`
+	Context             string     `db:"Context"`
+	FQDD                string     `db:"FQDD"`
+	FriendlyFQDD        string     `db:"FriendlyFQDD"`
+	Source              string     `db:"Source"`
+	RequiresExpand      bool
+	SensorInterval      uint64
+	SensorIntervalSlack uint64
 }
 
 type FQDDMappingData struct {

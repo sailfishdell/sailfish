@@ -74,18 +74,6 @@ type MRDFactory struct {
 	NextMRTS    map[string]metric.SqlTimeInt // next timestamp where we need to generate a report
 }
 
-func (factory *MRDFactory) prepare(name, sql string) error {
-	_, ok := factory.preparedSql[name]
-	if !ok {
-		insert, err := factory.database.PrepareNamed(sql)
-		if err != nil {
-			return xerrors.Errorf("Failed to prepare query(%s) with SQL (%s): %w", name, sql, err)
-		}
-		factory.preparedSql[name] = insert
-	}
-	return nil
-}
-
 func NewMRDFactory(logger log.Logger, database *sqlx.DB) (*MRDFactory, error) {
 	factory := &MRDFactory{logger: logger, database: database, NextMRTS: map[string]metric.SqlTimeInt{}, preparedSql: map[string]*sqlx.NamedStmt{}}
 
@@ -106,14 +94,41 @@ func NewMRDFactory(logger log.Logger, database *sqlx.DB) (*MRDFactory, error) {
 				Updates=:Updates
 			`)
 
+	factory.prepare("MRD_select_idbyname", `SELECT ID FROM MetricReportDefinition where Name=:Name`)
+	factory.prepare("Find_MM", `
+			select ID from MetricMeta where
+				Name=:Name and
+				SuppressDups=:SuppressDups and
+				FQDDPattern=:FQDDPattern and
+				SourcePattern=:SourcePattern and
+				PropertyPattern=:PropertyPattern and
+				Wildcards=:Wildcards and
+				CollectionFunction=:CollectionFunction and
+				CollectionDuration=:CollectionDuration
+		`)
 	return factory, nil
+}
+
+func (factory *MRDFactory) prepare(name, sql string) error {
+	_, ok := factory.preparedSql[name]
+	if !ok {
+		insert, err := factory.database.PrepareNamed(sql)
+		if err != nil {
+			return xerrors.Errorf("Failed to prepare query(%s) with SQL (%s): %w", name, sql, err)
+		}
+		factory.preparedSql[name] = insert
+	}
+	return nil
+}
+
+func (factory *MRDFactory) getsql(tx *sqlx.Tx, name string) *sqlx.NamedStmt {
+	return tx.NamedStmt(factory.preparedSql[name])
 }
 
 func (factory *MRDFactory) Delete(mrdEvData *MetricReportDefinitionData) (err error) {
 	_, err = factory.database.Exec(`delete from MetricReportDefinition where name=?`, mrdEvData.Name)
 	if err != nil {
 		factory.logger.Crit("ERROR deleting MetricReportDefinition", "err", err, "Name", mrdEvData.Name)
-		return
 	}
 	delete(factory.NextMRTS, mrdEvData.Name)
 	return
@@ -157,13 +172,13 @@ func (factory *MRDFactory) UpdateMRD(mrdEvData *MetricReportDefinitionData) (err
 	// if we error out at all, roll back
 	defer tx.Rollback()
 
-	_, err = tx.NamedStmt(factory.preparedSql["MRD_Insert"]).Exec(MRD)
+	_, err = factory.getsql(tx, "MRD_Insert").Exec(MRD)
 	if err != nil {
 		return xerrors.Errorf("Error inserting MRD(%s): %w", MRD, err)
 	}
 
 	// can't use LastInsertId() because it doesn't work on upserts in sqlite
-	err = tx.Get(&MRD.ID, `SELECT ID FROM MetricReportDefinition where Name=?`, MRD.Name)
+	err = factory.getsql(tx, "MRD_select_idbyname").Get(&MRD.ID, MRD)
 	if err != nil {
 		return xerrors.Errorf("Error getting MRD ID for %s: %w", MRD.Name, err)
 	}
@@ -193,25 +208,10 @@ func (factory *MRDFactory) UpdateMRD(mrdEvData *MetricReportDefinitionData) (err
 		}
 
 		// First, Find the MetricMeta
-		statement, err = tx.PrepareNamed(`
-			select ID from MetricMeta where
-				Name=:Name and
-				SuppressDups=:SuppressDups and
-				FQDDPattern=:FQDDPattern and
-				SourcePattern=:SourcePattern and
-				PropertyPattern=:PropertyPattern and
-				Wildcards=:Wildcards and
-				CollectionFunction=:CollectionFunction and
-				CollectionDuration=:CollectionDuration
-		`)
-		if err != nil {
-			return xerrors.Errorf("Error getting MRD ID: %w", err)
-		}
-
-		err = statement.Get(&metaID, tempMetric)
+		err = factory.getsql(tx, "Find_MM").Get(&metaID, tempMetric)
 		if err != nil {
 			if !xerrors.Is(err, sql.ErrNoRows) {
-				return
+				return xerrors.Errorf("Error running query to find MetricMeta(%+v) for MRD(%s): %w", tempMetric, MRD, err)
 			}
 			// Insert new MetricMeta if it doesn't already exist per above
 			res, err = tx.NamedExec(
