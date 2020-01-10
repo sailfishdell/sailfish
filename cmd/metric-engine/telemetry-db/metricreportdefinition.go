@@ -286,38 +286,23 @@ func (factory *MRDFactory) IterMRD(checkFn func(MRD *MetricReportDefinition) boo
 	return nil
 }
 
-func (l *MRDFactory) FastCheckForNeededMRUpdates() error {
-	//fmt.Println("test CUR_HWM(", l.MetricTSHWM, ")")
+func (l *MRDFactory) FastCheckForNeededMRUpdates() ([]string, error) {
+	generatedList := []string{}
 	for MRName, val := range l.NextMRTS {
-		//fmt.Println("\t", val.Time.Sub(l.MetricTSHWM.Time), " - ", val, MRName)
 		if l.MetricTSHWM.After(val.Time) {
 			fmt.Println("GEN -", MRName)
-			l.GenerateMetricReport(&MetricReportDefinitionData{Name: MRName})
+			l.GenerateMetricReport(MRName)
+			generatedList = append(generatedList, MRName)
 		}
 	}
-	return nil
+	return generatedList, nil
 }
 
 func (l *MRDFactory) SlowCheckForNeededMRUpdates() error {
-	// TODO: not yet complete
 	return l.IterMRD(
-		func(MRD *MetricReportDefinition) bool { return true },
+		func(MRD *MetricReportDefinition) bool { return MRD.Type == "Periodic" },
 		func(MRD *MetricReportDefinition) error {
 			fmt.Println("(FAKE) Check for MR Report Updates:", MRD.Name)
-			switch MRD.Type {
-			case "Periodic":
-				switch MRD.Updates {
-				case "AppendStopsWhenFull", "AppendWrapsWhenFull", "NewReport", "Overwrite":
-				}
-			case "OnRequest":
-				switch MRD.Updates {
-				case "AppendStopsWhenFull", "AppendWrapsWhenFull", "NewReport", "Overwrite":
-				}
-			case "OnChange":
-				switch MRD.Updates {
-				case "AppendStopsWhenFull", "AppendWrapsWhenFull", "NewReport", "Overwrite":
-				}
-			}
 			return nil
 		})
 }
@@ -347,7 +332,7 @@ func loadReportDefinition(tx *sqlx.Tx, MRD *MetricReportDefinition) error {
 	return nil
 }
 
-func (factory *MRDFactory) GenerateMetricReport(mrdEvData *MetricReportDefinitionData) (err error) {
+func (factory *MRDFactory) GenerateMetricReport(name string) (err error) {
 	// ===================================
 	// Setup Transaction
 	// ===================================
@@ -360,7 +345,7 @@ func (factory *MRDFactory) GenerateMetricReport(mrdEvData *MetricReportDefinitio
 	defer tx.Rollback()
 
 	MRD := &MetricReportDefinition{
-		MetricReportDefinitionData: &MetricReportDefinitionData{Name: mrdEvData.Name},
+		MetricReportDefinitionData: &MetricReportDefinitionData{Name: name},
 		MRDFactory:                 factory,
 		logger:                     factory.logger,
 	}

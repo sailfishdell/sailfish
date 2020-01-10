@@ -163,6 +163,21 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Service, d Bus
 		}
 	})
 
+	am3Svc.AddEventHandler("Request Generation of a Metric Report", metric.RequestReport, func(event eh.Event) {
+		report, ok := event.Data().(*metric.RequestReportData)
+		if !ok {
+			return
+		}
+
+		// input event is a pointer to shared data struct, dont directly use, make a copy
+		name := report.Name
+		err := MRDFactory.GenerateMetricReport(name)
+		if err != nil {
+			logger.Crit("Error generating metric report", "err", err, "ReportDefintion", name)
+		}
+		d.GetBus().PublishEvent(context.Background(), eh.NewEvent(metric.ReportGenerated, metric.ReportGeneratedData{Name: name}, time.Now()))
+	})
+
 	am3Svc.AddEventHandler("Database Maintenance", DatabaseMaintenance, func(event eh.Event) {
 		command, ok := event.Data().(string)
 		if !ok {
@@ -184,7 +199,10 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Service, d Bus
 			lastHWM = MRDFactory.MetricTSHWM.Time
 
 			// Generate any metric reports that need it
-			MRDFactory.FastCheckForNeededMRUpdates()
+			reportList, _ := MRDFactory.FastCheckForNeededMRUpdates()
+			for _, report := range reportList {
+				d.GetBus().PublishEvent(context.Background(), eh.NewEvent(metric.ReportGenerated, metric.ReportGeneratedData{Name: report}, time.Now()))
+			}
 
 		case "optimize":
 			MRDFactory.Optimize()
