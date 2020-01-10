@@ -21,8 +21,7 @@ const (
 	DeleteMetricReportDefinition eh.EventType = "DeleteMetricReportDefinitionEvent"
 	DatabaseMaintenance          eh.EventType = "DatabaseMaintenanceEvent"
 
-	// slightly more than once every 1s. Idea here is to give messages a chance to drive the clock
-	clockPeriod = 1069 * time.Millisecond
+	clockPeriod = 1000 * time.Millisecond
 )
 
 type BusComponents interface {
@@ -79,7 +78,7 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Service, d Bus
 
 		// NOTE: the numbers below are selected as PRIME numbers so that they run concurrently as infrequently as possible
 		// With the default 73/3607/10831, they will run concurrently every ~90 years.
-		clockTicker := time.NewTicker(clockPeriod)
+		clockTicker := time.NewTicker(clockPeriod)            // unfortunately every second, otherwise report generation drifts.
 		cleanValuesTicker := time.NewTicker(73 * time.Second) // once a minute
 		vacuumTicker := time.NewTicker(3607 * time.Second)    // once an hour (-ish)
 		optimizeTicker := time.NewTicker(10831 * time.Second) // once every three hours (-ish)
