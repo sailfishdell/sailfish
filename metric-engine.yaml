@@ -99,7 +99,7 @@ Startup-Events:
       {
         "Name": "CUPS", "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false,
         "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [ { "SourcePattern": "cups" } ]
+        "Metrics": [ { "SourcePattern": "currentcups" } ]
       }
 
   - name: AddMetricReportDefinition
@@ -416,7 +416,7 @@ Startup-Events:
 
 UDB-Metric-Import:
   CurrentCUPS:
-    Type: MetricColumns
+    Type: DirectMetric
     DBChange:
       SHM.db:
         TblsCurrentCUPS:
@@ -429,10 +429,11 @@ UDB-Metric-Import:
         '/redfish/v1/FIXME/' || FriendlyFQDD as Property,
         friendlyFQDD as Context,
 
-        SystemCupsTimeStamp * 1000000000 as 'Timestamp-SystemUsage',
-        SystemCupsCurrent as 'Metric-SystemUsage'
+        SystemCupsTimeStamp * 1000000000 as Timestamp,
+        SystemCupsCurrent as Value,
+        'SystemUsage' as Name
       FROM TblsCurrentCUPS
-      where [Timestamp-SystemUsage] > :HWM
+      where Timestamp > :HWM
       UNION ALL
 
       SELECT
@@ -441,10 +442,11 @@ UDB-Metric-Import:
         '/redfish/v1/FIXME/' || FriendlyFQDD as Property,
         friendlyFQDD as Context,
 
-        MemoryCupsTimeStamp * 1000000000 as 'Timestamp-MemoryUsage',
-        MemoryCupsCurrent as 'Metric-MemoryUsage'
+        MemoryCupsTimeStamp * 1000000000 as Timestamp,
+        MemoryCupsCurrent as Value,
+        'MemoryUsage' as Name
       FROM TblsCurrentCUPS
-      where [Timestamp-MemoryUsage] > :HWM
+      where Timestamp > :HWM
       UNION ALL
 
       SELECT
@@ -453,10 +455,11 @@ UDB-Metric-Import:
         '/redfish/v1/FIXME/' || FriendlyFQDD as Property,
         friendlyFQDD as Context,
 
-        IoCupsTimestamp * 1000000000 as 'Timestamp-IOUsage',
-        IoCupsCurrent as 'Metric-IOUsage'
+        IoCupsTimestamp * 1000000000 as Timestamp,
+        IoCupsCurrent as Value,
+        'IOUsage' as Name
       FROM TblsCurrentCUPS
-      where [Timestamp-IOUsage] > :HWM
+      where Timestamp > :HWM
       UNION ALL
 
       SELECT
@@ -465,10 +468,11 @@ UDB-Metric-Import:
         '/redfish/v1/FIXME/' || FriendlyFQDD as Property,
         friendlyFQDD as Context,
 
-        CpuCupsCollectionTime * 1000000000 as 'Timestamp-CPUUsage',
-        CpuCupsCurrent as 'Metric-CPUUsage'
+        CpuCupsCollectionTime * 1000000000 as Timestamp,
+        CpuCupsCurrent as Value,
+        'CPUUsage' as Name
       FROM TblsCurrentCUPS
-      where [Timestamp-CPUUsage] > :HWM
+      where Timestamp > :HWM
 
   PowerStatistics:
     # TODO: UNDERLYING TABLE NEEDS HWM.
