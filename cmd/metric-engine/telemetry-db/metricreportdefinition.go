@@ -57,6 +57,9 @@ type MetricReportDefinitionData struct {
 	Metrics []MRDMetric `db:"Metrics" json:"Metrics"`
 }
 
+// MetricReportDefinition represents a DB record for a metric report
+// definition. Basically adds ID and a static AppendLimit (for now, until we
+// can figure out how to make this dynamic).
 type MetricReportDefinition struct {
 	*MetricReportDefinitionData
 	AppendLimit int   `db:"AppendLimit"`
@@ -74,6 +77,7 @@ type MRDFactory struct {
 	NextMRTS    map[string]metric.SqlTimeInt // next timestamp where we need to generate a report
 }
 
+// NewMRDFactory is the constructor for the base telemetry service functionality
 func NewMRDFactory(logger log.Logger, database *sqlx.DB, cfg *viper.Viper) (*MRDFactory, error) {
 	// make sure not to store the 'cfg' passed in. That would be Bad.
 
@@ -102,6 +106,11 @@ func NewMRDFactory(logger log.Logger, database *sqlx.DB, cfg *viper.Viper) (*MRD
 	return factory, nil
 }
 
+// prepareNamed will insert prepared sql statements into the namedstmt cache
+//  Prefer using NamedStmts if there are a lot of variables to interpolate into
+//  a query. Be aware that there is a very small overhead as sqlx uses
+//  reflection to pull the names. For *very* performance critical code, use
+//  regular sqlx.Stmt via MRDFactory.prepareSqlx()
 func (factory *MRDFactory) prepareNamed(name, sql string) error {
 	_, ok := factory.preparedNamedSql[name]
 	if !ok {
@@ -114,14 +123,17 @@ func (factory *MRDFactory) prepareNamed(name, sql string) error {
 	return nil
 }
 
+// getNamedSqlTx will pull a prepared statement and add it to the current transaction
 func (factory *MRDFactory) getNamedSqlTx(tx *sqlx.Tx, name string) *sqlx.NamedStmt {
 	return tx.NamedStmt(factory.preparedNamedSql[name])
 }
 
+// getNamedSql will return a prepared statement. Don't use this if you have a currently active transaction or you will deadlock!
 func (factory *MRDFactory) getNamedSql(name string) *sqlx.NamedStmt {
 	return factory.preparedNamedSql[name]
 }
 
+// prepareNamed will insert prepared sql statements into the stmt cache
 func (factory *MRDFactory) prepareSqlx(name, sql string) error {
 	_, ok := factory.preparedSql[name]
 	if !ok {
@@ -134,10 +146,12 @@ func (factory *MRDFactory) prepareSqlx(name, sql string) error {
 	return nil
 }
 
+// getNamedSqlTx will pull a prepared statement and add it to the current transaction
 func (factory *MRDFactory) getSqlxTx(tx *sqlx.Tx, name string) *sqlx.Stmt {
 	return tx.Stmtx(factory.preparedSql[name])
 }
 
+// getSqlx will return a prepared statement. Don't use this if you have a currently active transaction or you will deadlock!
 func (factory *MRDFactory) getSqlx(name string) *sqlx.Stmt {
 	return factory.preparedSql[name]
 }
