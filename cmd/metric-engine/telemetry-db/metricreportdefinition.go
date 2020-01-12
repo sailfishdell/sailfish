@@ -66,21 +66,28 @@ type MetricReportDefinition struct {
 
 // Factory manages getting/putting into db
 type MRDFactory struct {
-	logger      log.Logger
-	database    *sqlx.DB
-	preparedSql map[string]*sqlx.NamedStmt
+	logger           log.Logger
+	database         *sqlx.DB
+	preparedNamedSql map[string]*sqlx.NamedStmt
+	preparedSql      map[string]*sqlx.Stmt
 
 	MetricTSHWM metric.SqlTimeInt            // high water mark for received metrics
 	NextMRTS    map[string]metric.SqlTimeInt // next timestamp where we need to generate a report
 }
 
 func NewMRDFactory(logger log.Logger, database *sqlx.DB) (*MRDFactory, error) {
-	factory := &MRDFactory{logger: logger, database: database, NextMRTS: map[string]metric.SqlTimeInt{}, preparedSql: map[string]*sqlx.NamedStmt{}}
+	factory := &MRDFactory{
+		logger:           logger,
+		database:         database,
+		NextMRTS:         map[string]metric.SqlTimeInt{},
+		preparedNamedSql: map[string]*sqlx.NamedStmt{},
+		preparedSql:      map[string]*sqlx.Stmt{},
+	}
 
 	// ===================================
 	// Ensure all statements are prepared
 	// ===================================
-	factory.prepare("MRD_Insert",
+	factory.prepareNamed("MRD_Insert",
 		`INSERT INTO MetricReportDefinition
 				       ( Name,  Enabled, AppendLimit, Type, SuppressDups, Actions, Updates, Period)
 				VALUES (:Name, :Enabled, :AppendLimit, :Type, :SuppressDups, :Actions, :Updates, :Period)
@@ -94,8 +101,8 @@ func NewMRDFactory(logger log.Logger, database *sqlx.DB) (*MRDFactory, error) {
 				Updates=:Updates
 			`)
 
-	factory.prepare("MRD_select_idbyname", `SELECT ID FROM MetricReportDefinition where Name=:Name`)
-	factory.prepare("Find_MM", `
+	factory.prepareSqlx("MRD_select_idbyname", `SELECT ID FROM MetricReportDefinition where Name=?`)
+	factory.prepareNamed("Find_MM", `
 			select ID from MetricMeta where
 				Name=:Name and
 				SuppressDups=:SuppressDups and
@@ -106,13 +113,44 @@ func NewMRDFactory(logger log.Logger, database *sqlx.DB) (*MRDFactory, error) {
 				CollectionFunction=:CollectionFunction and
 				CollectionDuration=:CollectionDuration
 		`)
+
+	factory.prepareSqlx("Delete_MRD", `delete from MetricReportDefinition where name=?`)
+
+	factory.prepareSqlx("Delete_MRD_assoc", `delete from ReportDefinitionToMetricMeta where ReportDefinitionID=?`)
+
+	factory.prepareNamed("Insert_MM", `
+		INSERT INTO MetricMeta
+			     ( Name,  SuppressDups,  FQDDPattern,  SourcePattern,  PropertyPattern,  Wildcards,  CollectionFunction,  CollectionDuration)
+		VALUES (:Name, :SuppressDups, :FQDDPattern, :SourcePattern, :PropertyPattern, :Wildcards, :CollectionFunction, :CollectionDuration)`)
+
+	factory.prepareSqlx("Insert_MM_assoc", `INSERT INTO ReportDefinitionToMetricMeta (ReportDefinitionID, MetricMetaID) VALUES (?, ?)`)
 	return factory, nil
 }
 
-func (factory *MRDFactory) prepare(name, sql string) error {
-	_, ok := factory.preparedSql[name]
+func (factory *MRDFactory) prepareNamed(name, sql string) error {
+	_, ok := factory.preparedNamedSql[name]
 	if !ok {
 		insert, err := factory.database.PrepareNamed(sql)
+		if err != nil {
+			return xerrors.Errorf("Failed to prepare query(%s) with SQL (%s): %w", name, sql, err)
+		}
+		factory.preparedNamedSql[name] = insert
+	}
+	return nil
+}
+
+func (factory *MRDFactory) getNamedSqlTx(tx *sqlx.Tx, name string) *sqlx.NamedStmt {
+	return tx.NamedStmt(factory.preparedNamedSql[name])
+}
+
+func (factory *MRDFactory) getNamedSql(name string) *sqlx.NamedStmt {
+	return factory.preparedNamedSql[name]
+}
+
+func (factory *MRDFactory) prepareSqlx(name, sql string) error {
+	_, ok := factory.preparedSql[name]
+	if !ok {
+		insert, err := factory.database.Preparex(sql)
 		if err != nil {
 			return xerrors.Errorf("Failed to prepare query(%s) with SQL (%s): %w", name, sql, err)
 		}
@@ -121,12 +159,16 @@ func (factory *MRDFactory) prepare(name, sql string) error {
 	return nil
 }
 
-func (factory *MRDFactory) getsql(tx *sqlx.Tx, name string) *sqlx.NamedStmt {
-	return tx.NamedStmt(factory.preparedSql[name])
+func (factory *MRDFactory) getSqlxTx(tx *sqlx.Tx, name string) *sqlx.Stmt {
+	return tx.Stmtx(factory.preparedSql[name])
+}
+
+func (factory *MRDFactory) getSqlx(name string) *sqlx.Stmt {
+	return factory.preparedSql[name]
 }
 
 func (factory *MRDFactory) Delete(mrdEvData *MetricReportDefinitionData) (err error) {
-	_, err = factory.database.Exec(`delete from MetricReportDefinition where name=?`, mrdEvData.Name)
+	_, err = factory.getSqlx("Delete_MRD").Exec(mrdEvData.Name)
 	if err != nil {
 		factory.logger.Crit("ERROR deleting MetricReportDefinition", "err", err, "Name", mrdEvData.Name)
 	}
@@ -172,13 +214,13 @@ func (factory *MRDFactory) UpdateMRD(mrdEvData *MetricReportDefinitionData) (err
 	// if we error out at all, roll back
 	defer tx.Rollback()
 
-	_, err = factory.getsql(tx, "MRD_Insert").Exec(MRD)
+	_, err = factory.getNamedSqlTx(tx, "MRD_Insert").Exec(MRD)
 	if err != nil {
 		return xerrors.Errorf("Error inserting MRD(%s): %w", MRD, err)
 	}
 
 	// can't use LastInsertId() because it doesn't work on upserts in sqlite
-	err = factory.getsql(tx, "MRD_select_idbyname").Get(&MRD.ID, MRD)
+	err = factory.getSqlxTx(tx, "MRD_select_idbyname").Get(&MRD.ID, MRD.Name)
 	if err != nil {
 		return xerrors.Errorf("Error getting MRD ID for %s: %w", MRD.Name, err)
 	}
@@ -189,7 +231,7 @@ func (factory *MRDFactory) UpdateMRD(mrdEvData *MetricReportDefinitionData) (err
 	//
 
 	// First, just delete all the existing metric associations (not the actual MetricMeta, then we'll re-create
-	_, err = tx.Exec(`delete from ReportDefinitionToMetricMeta where ReportDefinitionID=:id`, MRD.ID)
+	_, err = factory.getSqlxTx(tx, "Delete_MRD_assoc").Exec(MRD.ID)
 	if err != nil {
 		return xerrors.Errorf("Error deleting rd2mm for MRD(%d): %w", MRD.ID, err)
 	}
@@ -198,7 +240,6 @@ func (factory *MRDFactory) UpdateMRD(mrdEvData *MetricReportDefinitionData) (err
 	for _, metric := range MRD.Metrics {
 		var metaID int64
 		var res sql.Result
-		var statement *sqlx.NamedStmt
 		tempMetric := struct {
 			*MRDMetric
 			SuppressDups bool `db:"SuppressDups"`
@@ -208,17 +249,13 @@ func (factory *MRDFactory) UpdateMRD(mrdEvData *MetricReportDefinitionData) (err
 		}
 
 		// First, Find the MetricMeta
-		err = factory.getsql(tx, "Find_MM").Get(&metaID, tempMetric)
+		err = factory.getNamedSqlTx(tx, "Find_MM").Get(&metaID, tempMetric)
 		if err != nil {
 			if !xerrors.Is(err, sql.ErrNoRows) {
 				return xerrors.Errorf("Error running query to find MetricMeta(%+v) for MRD(%s): %w", tempMetric, MRD, err)
 			}
 			// Insert new MetricMeta if it doesn't already exist per above
-			res, err = tx.NamedExec(
-				`INSERT INTO MetricMeta
-			          ( Name,  SuppressDups,  FQDDPattern,  SourcePattern,  PropertyPattern,  Wildcards,  CollectionFunction,  CollectionDuration)
-				 VALUES (:Name, :SuppressDups, :FQDDPattern, :SourcePattern, :PropertyPattern, :Wildcards, :CollectionFunction, :CollectionDuration)
-			`, tempMetric)
+			res, err = factory.getNamedSqlTx(tx, "Insert_MM").Exec(tempMetric)
 			if err != nil {
 				return xerrors.Errorf("Error inserting MetricMeta(%s) for MRD(%s): %w", tempMetric, MRD, err)
 			}
@@ -230,7 +267,7 @@ func (factory *MRDFactory) UpdateMRD(mrdEvData *MetricReportDefinitionData) (err
 		}
 
 		// Next cross link MetricMeta to ReportDefinition
-		_, err = tx.Exec(`INSERT INTO ReportDefinitionToMetricMeta (ReportDefinitionID, MetricMetaID) VALUES (?, ?)`, MRD.ID, metaID)
+		_, err = factory.getSqlxTx(tx, "Insert_MM_assoc").Exec(MRD.ID, metaID)
 		if err != nil {
 			return xerrors.Errorf("Error while inserting MetricMeta(%s) association for MRD(%s): %w", metric, MRD, err)
 		}
