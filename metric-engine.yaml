@@ -1186,6 +1186,12 @@ internal:
              ( Name,  SuppressDups,  FQDDPattern,  SourcePattern,  PropertyPattern,  Wildcards,  CollectionFunction,  CollectionDuration)
       VALUES (:Name, :SuppressDups, :FQDDPattern, :SourcePattern, :PropertyPattern, :Wildcards, :CollectionFunction, :CollectionDuration)
 
+    find_mrd_by_id: |
+      SELECT ID, Name,  Enabled, AppendLimit, Type, SuppressDups, Actions, Updates, Period FROM MetricReportDefinition where ID=:ID
+
+    find_mrd_by_name: |
+      SELECT ID, Name,  Enabled, AppendLimit, Type, SuppressDups, Actions, Updates, Period FROM MetricReportDefinition where Name=:Name
+
   sqlx:
     mrd_select_idbyname: SELECT ID FROM MetricReportDefinition where Name=?
 
@@ -1194,6 +1200,8 @@ internal:
     delete_mm_assoc: delete from ReportDefinitionToMetricMeta where ReportDefinitionID=?
 
     insert_mm_assoc: INSERT INTO ReportDefinitionToMetricMeta (ReportDefinitionID, MetricMetaID) VALUES (?, ?)
+
+    query_mrds: SELECT ID, Name,  Enabled, AppendLimit, Type, SuppressDups, Actions, Updates FROM MetricReportDefinition
 
 createdb:
   # This bumps memory usage by 10MB for some unknown reason

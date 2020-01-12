@@ -274,23 +274,18 @@ func (factory *MRDFactory) UpdateMRD(mrdEvData *MetricReportDefinitionData) (err
 
 var StopIter = xerrors.New("Stop Iteration")
 
+// IterMRD will run fn() for every MRD in the DB.
+//    TODO: pass in the TX to fn()
+// 	  TO Consider: add an error return to allow rollback a single iter?
 func (factory *MRDFactory) IterMRD(checkFn func(MRD *MetricReportDefinition) bool, fn func(MRD *MetricReportDefinition) error) error {
 	return WrapWithTX(factory.database, func(tx *sqlx.Tx) error {
-		stmt, err := tx.Preparex(`
-		SELECT
-			ID, Name,  Enabled, AppendLimit, Type, SuppressDups, Actions, Updates
-		FROM MetricReportDefinition
-	`)
-		if err != nil {
-			return xerrors.Errorf("Prepare Query error for MRD: %w", err)
-		}
-
-		// First, Find the MetricMeta
-		rows, err := stmt.Queryx()
+		// set up query for the MRD
+		rows, err := factory.getSqlxTx(tx, "query_mrds").Queryx()
 		if err != nil {
 			return xerrors.Errorf("Query error for MRD: %w", err)
 		}
 
+		// iterate over everything the query returns
 		for rows.Next() {
 			MRD := &MetricReportDefinition{
 				MetricReportDefinitionData: &MetricReportDefinitionData{},
@@ -310,7 +305,6 @@ func (factory *MRDFactory) IterMRD(checkFn func(MRD *MetricReportDefinition) boo
 				}
 			}
 		}
-
 		return nil
 	})
 }
@@ -319,42 +313,44 @@ func (l *MRDFactory) FastCheckForNeededMRUpdates() ([]string, error) {
 	generatedList := []string{}
 	for MRName, val := range l.NextMRTS {
 		if l.MetricTSHWM.After(val.Time) {
-			fmt.Println("GEN -", MRName)
-			l.GenerateMetricReport(MRName)
+			fmt.Printf("GEN - %s - ", MRName)
+			err := l.GenerateMetricReport(MRName)
+			if err != nil {
+				fmt.Printf("ERROR: %s\n", err)
+				continue
+			}
+			fmt.Printf("OK\n")
 			generatedList = append(generatedList, MRName)
 		}
 	}
 	return generatedList, nil
 }
 
-func (l *MRDFactory) SlowCheckForNeededMRUpdates() error {
-	return l.IterMRD(
+func (factory *MRDFactory) SlowCheckForNeededMRUpdates() ([]string, error) {
+	factory.IterMRD(
 		func(MRD *MetricReportDefinition) bool { return MRD.Type == "Periodic" },
 		func(MRD *MetricReportDefinition) error {
-			fmt.Println("(FAKE) Check for MR Report Updates:", MRD.Name)
+			if _, ok := factory.NextMRTS[MRD.Name]; !ok {
+				// setup nextmrts if it's not already in the list. Should never happen with current code structure
+				fmt.Printf("Adding schedule for report. Shouldnt ever happen. Name(%s)\n", MRD.Name)
+				factory.NextMRTS[MRD.Name] = metric.SqlTimeInt{}
+			}
 			return nil
 		})
+	return factory.FastCheckForNeededMRUpdates()
 }
 
-func loadReportDefinition(tx *sqlx.Tx, MRD *MetricReportDefinition) error {
-	query := `
-		SELECT
-			ID, Name,  Enabled, AppendLimit, Type, SuppressDups, Actions, Updates, Period
-		FROM MetricReportDefinition
-	`
+func (factory *MRDFactory) loadReportDefinition(tx *sqlx.Tx, MRD *MetricReportDefinition) error {
+	var err error
+
 	if MRD.ID > 0 {
-		query = query + "WHERE ID=:ID"
+		err = factory.getNamedSqlTx(tx, "find_mrd_by_id").Get(MRD, MRD)
 	} else if len(MRD.Name) > 0 {
-		query = query + "WHERE Name=:Name"
+		err = factory.getNamedSqlTx(tx, "find_mrd_by_name").Get(MRD, MRD)
 	} else {
 		return xerrors.Errorf("Require either an ID or Name to load a Report Definition, didn't get either")
 	}
 
-	stmt, err := tx.PrepareNamed(query)
-	if err != nil {
-		return xerrors.Errorf("Prepare Error for query(%s) ERR: %w", query, err)
-	}
-	err = stmt.Get(MRD, MRD)
 	if err != nil {
 		return xerrors.Errorf("Error loading Metric Report Definition %d:(%s) %w", MRD.ID, MRD.Name, err)
 	}
@@ -376,14 +372,11 @@ func (factory *MRDFactory) GenerateMetricReport(name string) (err error) {
 	MRD := &MetricReportDefinition{
 		MetricReportDefinitionData: &MetricReportDefinitionData{Name: name},
 	}
-	err = loadReportDefinition(tx, MRD)
-	if err != nil {
+	err = factory.loadReportDefinition(tx, MRD)
+	if err != nil || MRD.ID == 0 {
 		return xerrors.Errorf("Error getting MetricReportDefinition: ID(%s) NAME(%s) err: %w", MRD.ID, MRD.Name, err)
 	}
 
-	if MRD.ID == 0 {
-		return xerrors.Errorf("Error loading Metric Report Definition %d:(%s) %w", MRD.ID, MRD.Name, err)
-	}
 	ID := MRD.ID
 
 	if !MRD.Enabled {

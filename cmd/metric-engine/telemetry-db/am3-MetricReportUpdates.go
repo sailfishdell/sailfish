@@ -154,7 +154,8 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Service, d Bus
 		delta := MRDFactory.MetricTSHWM.Time.Sub(metricValue.Timestamp.Time)
 
 		if (!MRDFactory.MetricTSHWM.IsZero()) && (delta > (1*time.Hour) || delta < -(1*time.Hour)) {
-			fmt.Printf("Metric Value Event TIME ERROR - We should never get events this far off current HWM (delta: %s). This is likely a problem with the underlying data or the import. Common is the underlying data being in 'localtime' rather than UTC, which must be fixed. Metric: %+v\n", time.Duration(delta), metricValue)
+			// fmt.Printf("Warning: Metric Value Event TIME ERROR - We should never get events this far off current HWM (delta: %s). This is likely a problem with the underlying data or the import. Common is the underlying data being in 'localtime' rather than UTC, which must be fixed. Metric: %+v\n", time.Duration(delta), metricValue)
+			fmt.Printf("Warning: Metric Value Event TIME ERROR - (delta: %s)  Metric: %+v\n", time.Duration(delta), metricValue)
 		}
 
 		if MRDFactory.MetricTSHWM.Before(metricValue.Timestamp.Time) {
