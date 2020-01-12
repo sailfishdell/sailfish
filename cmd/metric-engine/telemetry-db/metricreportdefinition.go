@@ -364,12 +364,12 @@ func (factory *MRDFactory) IterMRD(checkFn func(MRD *MetricReportDefinition) boo
 	})
 }
 
-func (l *MRDFactory) FastCheckForNeededMRUpdates() ([]string, error) {
+func (factory *MRDFactory) FastCheckForNeededMRUpdates() ([]string, error) {
 	generatedList := []string{}
-	for MRName, val := range l.NextMRTS {
-		if l.MetricTSHWM.After(val.Time) {
+	for MRName, val := range factory.NextMRTS {
+		if factory.MetricTSHWM.After(val.Time) {
 			fmt.Printf("GEN - %s - ", MRName)
-			err := l.GenerateMetricReport(MRName)
+			err := factory.GenerateMetricReport(MRName)
 			if err != nil {
 				fmt.Printf("ERROR: %s\n", err)
 				continue
