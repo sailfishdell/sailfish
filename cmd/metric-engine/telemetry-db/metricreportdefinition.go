@@ -561,32 +561,6 @@ type MetricMeta struct {
 	LastValue         string            `db:"LastValue"`
 }
 
-func (factory *MRDFactory) Optimize() {
-	factory.logger.Debug("Optimizing database - start")
-	defer factory.logger.Debug("Optimizing database - done")
-	_, err := factory.database.Exec("PRAGMA optimize")
-	if err != nil {
-		factory.logger.Crit("Problem optimizing database", "err", err)
-	}
-	_, err = factory.database.Exec("PRAGMA shrink_memory")
-	if err != nil {
-		factory.logger.Crit("Problem shrinking memory", "err", err)
-	}
-}
-
-func (factory *MRDFactory) Vacuum() {
-	factory.logger.Debug("Vacuuming database - start")
-	defer factory.logger.Debug("Vacuuming database - done")
-	_, err := factory.database.Exec("vacuum")
-	if err != nil {
-		factory.logger.Crit("Problem vacuuming database", "err", err)
-	}
-	_, err = factory.database.Exec("PRAGMA shrink_memory")
-	if err != nil {
-		factory.logger.Crit("Problem shrinking memory", "err", err)
-	}
-}
-
 func (factory *MRDFactory) InsertMetricValue(ev *metric.MetricValueEventData) (err error) {
 	// ===================================
 	// Setup transaction
@@ -887,4 +861,30 @@ func (factory *MRDFactory) DeleteOldestValues() (err error) {
 	}
 
 	return nil
+}
+
+func (factory *MRDFactory) Optimize() {
+	factory.logger.Debug("Optimizing database - start")
+	defer factory.logger.Debug("Optimizing database - done")
+	_, err := factory.database.Exec("PRAGMA optimize")
+	if err != nil {
+		factory.logger.Crit("Problem optimizing database", "err", err)
+	}
+	_, err = factory.database.Exec("PRAGMA shrink_memory")
+	if err != nil {
+		factory.logger.Crit("Problem shrinking memory", "err", err)
+	}
+}
+
+func (factory *MRDFactory) Vacuum() {
+	factory.logger.Debug("Vacuuming database - start")
+	defer factory.logger.Debug("Vacuuming database - done")
+	_, err := factory.database.Exec("vacuum")
+	if err != nil {
+		factory.logger.Crit("Problem vacuuming database", "err", err)
+	}
+	_, err = factory.database.Exec("PRAGMA shrink_memory")
+	if err != nil {
+		factory.logger.Crit("Problem shrinking memory", "err", err)
+	}
 }
