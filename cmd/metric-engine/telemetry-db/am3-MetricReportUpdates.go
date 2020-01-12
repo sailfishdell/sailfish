@@ -32,6 +32,7 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Service, d Bus
 	eh.RegisterEventData(AddMetricReportDefinition, func() eh.EventData { return &MetricReportDefinitionData{} })
 	eh.RegisterEventData(UpdateMetricReportDefinition, func() eh.EventData { return &MetricReportDefinitionData{} })
 	eh.RegisterEventData(DeleteMetricReportDefinition, func() eh.EventData { return &MetricReportDefinitionData{} })
+	eh.RegisterEventData(DatabaseMaintenance, func() eh.EventData { return "" })
 
 	database, err := sqlx.Open("sqlite3", cfg.GetString("main.databasepath"))
 	if err != nil {
@@ -201,6 +202,12 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Service, d Bus
 		}
 
 		switch command {
+		case "resync to db":
+			reportList, _ := MRDFactory.SlowCheckForNeededMRUpdates()
+			for _, report := range reportList {
+				d.GetBus().PublishEvent(context.Background(), eh.NewEvent(metric.ReportGenerated, metric.ReportGeneratedData{Name: report}, time.Now()))
+			}
+
 		case "publish clock":
 			// if no events have kickstarted the clock, bail
 			if MRDFactory.MetricTSHWM.IsZero() {

@@ -430,6 +430,9 @@ Startup-Events:
         ]
       }
 
+  - name: DatabaseMaintenance
+    data: "resync to db"
+
 UDB-Metric-Import:
   CurrentCUPS:
     Type: DirectMetric
