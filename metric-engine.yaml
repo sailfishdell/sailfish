@@ -1255,6 +1255,41 @@ internal:
       INSERT INTO MetricReport (Name, ReportDefinitionID, Sequence, ReportTimestamp, StartTimestamp, EndTimestamp)
         values (:Name, :MRDID, :Sequence, 0, NULL, NULL) on conflict(name) do nothing
 
+    find_metric_meta: |
+      SELECT
+        ID AS MetaID, FQDDPattern, SourcePattern, PropertyPattern, Wildcards, CollectionFunction, CollectionDuration
+      FROM MetricMeta
+      WHERE
+        (:Name LIKE Name OR Name is NULL OR Name = '') AND
+        (:FQDD LIKE FQDDPattern OR FQDDPattern is NULL OR FQDDPattern = '') AND
+        (:Source LIKE SourcePattern OR SourcePattern is NULL OR SourcePattern = '') AND
+        (:Property LIKE PropertyPattern OR PropertyPattern is NULL OR PropertyPattern = '')
+
+    insert_metric_instance: |
+      INSERT INTO MetricInstance
+                 ( MetaID,  Name,  FQDD,  Property,  Context,  Function,            Label,  CollectionScratch, LastValue, LastTS,  FlushTime)
+          VALUES (:MetaID, :Name, :FQDD, :Property, :Context, :CollectionFunction, :Label, :CollectionScratch, '',        0,      :FlushTime)
+
+    iterate_metric_instance: |
+      select
+        MI.ID as InstanceID,
+        MI.MetaID,
+        MI.CollectionScratch,
+        MI.LastTS,
+        MI.LastValue,
+        MI.FlushTime,
+        MM.SuppressDups,
+        MM.CollectionFunction,
+        MM.CollectionDuration
+      from MetricInstance as MI
+        inner join MetricMeta as MM on MI.MetaID = MM.ID
+      where
+        MI.Name=:Name and
+        MI.FQDD=:FQDD and
+        MI.Property=:Property and
+        MI.Context=:Context
+
+
   sqlx:
     mrd_select_idbyname: SELECT ID FROM MetricReportDefinition where Name=?
 
@@ -1322,6 +1357,10 @@ internal:
 
     find_mrd_by_name: |
       SELECT ID, Name,  Enabled, AppendLimit, Type, SuppressDups, Actions, Updates, Period FROM MetricReportDefinition where Name=?
+
+    insert_mv_int:  INSERT INTO MetricValueInt  (InstanceID, Timestamp, Value) VALUES (?, ?, ?)
+    insert_mv_real: INSERT INTO MetricValueReal (InstanceID, Timestamp, Value) VALUES (?, ?, ?)
+    insert_mv_text: INSERT INTO MetricValueText (InstanceID, Timestamp, Value) VALUES (?, ?, ?)
 
 createdb:
   # This bumps memory usage by 10MB for some unknown reason

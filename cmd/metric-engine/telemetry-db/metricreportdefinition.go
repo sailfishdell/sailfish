@@ -557,16 +557,7 @@ func (factory *MRDFactory) InsertMetricValue(ev *metric.MetricValueEventData) (e
 	// This should be straightforward because we do all updates in one goroutine, so could add the cache as a factory member
 
 	// First, Find the MetricMeta
-	rows, err := tx.NamedQuery(`
-			select
-				ID as MetaID, FQDDPattern, SourcePattern, PropertyPattern, Wildcards, CollectionFunction, CollectionDuration
-			from MetricMeta
-			where
-				(:Name Like Name or Name is NULL or Name = '') and
-				(:FQDD like FQDDPattern or FQDDPattern is NULL or FQDDPattern = '') and
-				(:Source like SourcePattern or SourcePattern is NULL or SourcePattern = '') and
-				(:Property like PropertyPattern or PropertyPattern is NULL or PropertyPattern = '')
-				`, ev)
+	rows, err := factory.getNamedSqlTx(tx, "find_metric_meta").Queryx(ev)
 	if err != nil {
 		factory.logger.Crit("Error querying for MetricMeta", "err", err)
 		return
@@ -596,11 +587,7 @@ func (factory *MRDFactory) InsertMetricValue(ev *metric.MetricValueEventData) (e
 		}
 
 		// create instances for each metric meta corresponding to this metric value
-		_, err = tx.NamedExec(`
-			INSERT INTO MetricInstance
-				         ( MetaID,  Name,  FQDD,  Property,  Context,  Function,            Label,  CollectionScratch, LastValue, LastTS,  FlushTime)
-				  VALUES (:MetaID, :Name, :FQDD, :Property, :Context, :CollectionFunction, :Label, :CollectionScratch, '',        0,      :FlushTime)
-			`, mm)
+		_, err = factory.getNamedSqlTx(tx, "insert_metric_instance").Exec(mm)
 		if err != nil {
 			// It's ok if sqlite squawks about trying to insert dups here
 			if !strings.HasPrefix(err.Error(), "UNIQUE constraint failed") {
@@ -611,25 +598,7 @@ func (factory *MRDFactory) InsertMetricValue(ev *metric.MetricValueEventData) (e
 
 	// And now, foreach MetricInstance, insert MetricValue
 	mm := &MetricMeta{MetricValueEventData: ev}
-	rows, err = tx.NamedQuery(`
-		select
-		  MI.ID as InstanceID,
-			MI.MetaID,
-			MI.CollectionScratch,
-			MI.LastTS,
-			MI.LastValue,
-			MI.FlushTime,
-			MM.SuppressDups,
-			MM.CollectionFunction,
-			MM.CollectionDuration
-		from MetricInstance as MI
-			inner join MetricMeta as MM on MI.MetaID = MM.ID
-		where
-			MI.Name=:Name and
-			MI.FQDD=:FQDD and
-			MI.Property=:Property and
-			MI.Context=:Context
-		`, mm)
+	rows, err = factory.getNamedSqlTx(tx, "iterate_metric_instance").Queryx(mm)
 	if err != nil {
 		factory.logger.Crit("Error querying for MetricMeta", "err", err)
 		return
@@ -699,19 +668,19 @@ func (factory *MRDFactory) InsertMetricValue(ev *metric.MetricValueEventData) (e
 			}
 
 			args := []interface{}{mm.InstanceID, mm.Timestamp}
-			tableName := "MetricValueText"
+			sql := "insert_mv_text"
 			for {
 				// Put into optimized tables, if possible. Try INT first, as it will error out for a float(1.0) value, but not vice versa
 				intVal, err := strconv.ParseInt(mm.Value, 10, 64)
 				if err == nil {
-					tableName = "MetricValueInt"
+					sql = "insert_mv_int"
 					args = append(args, intVal)
 					break
 				}
 
 				// re-use already parsed floatVal above
 				if floatErr == nil {
-					tableName = "MetricValueReal"
+					sql = "insert_mv_real"
 					args = append(args, floatVal)
 					break
 				}
@@ -720,7 +689,7 @@ func (factory *MRDFactory) InsertMetricValue(ev *metric.MetricValueEventData) (e
 				break
 			}
 
-			_, err = tx.Exec(fmt.Sprintf(`INSERT INTO %s (InstanceID, Timestamp, Value) VALUES (?, ?, ?)`, tableName), args...)
+			_, err = factory.getSqlxTx(tx, sql).Exec(args...)
 			if err != nil {
 				return xerrors.Errorf("Error inserting MetricValue for MetricInstance(%d)/MetricMeta(%d): %w", mm.InstanceID, mm.MetaID, err)
 			}
