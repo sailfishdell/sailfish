@@ -385,10 +385,10 @@ func (factory *MRDFactory) SlowCheckForNeededMRUpdates() ([]string, error) {
 	factory.IterMRD(
 		func(MRD *MetricReportDefinition) bool { return MRD.Type == "Periodic" },
 		func(MRD *MetricReportDefinition) error {
-			if _, ok := factory.NextMRTS[MRD.Name]; !ok {
-				// setup nextmrts if it's not already in the list. Should never happen with current code structure
-				fmt.Printf("Adding schedule for report. Shouldnt ever happen. Name(%s)\n", MRD.Name)
+			if _, ok := factory.NextMRTS[MRD.Name]; MRD.Enabled && !ok {
 				factory.NextMRTS[MRD.Name] = metric.SqlTimeInt{}
+			} else if !MRD.Enabled {
+				delete(factory.NextMRTS, MRD.Name)
 			}
 			return nil
 		})
