@@ -73,6 +73,7 @@ type MRDFactory struct {
 	preparedNamedSql map[string]*sqlx.NamedStmt
 	preparedSql      map[string]*sqlx.Stmt
 	deleteops        []string
+	orphanops        []string
 
 	MetricTSHWM metric.SqlTimeInt            // high water mark for received metrics
 	NextMRTS    map[string]metric.SqlTimeInt // next timestamp where we need to generate a report
@@ -89,6 +90,7 @@ func NewMRDFactory(logger log.Logger, database *sqlx.DB, cfg *viper.Viper) (*MRD
 		preparedNamedSql: map[string]*sqlx.NamedStmt{},
 		preparedSql:      map[string]*sqlx.Stmt{},
 		deleteops:        cfg.GetStringSlice("main.deleteops"),
+		orphanops:        cfg.GetStringSlice("main.orphanops"),
 	}
 
 	// Create tables and views from sql stored in our YAML
@@ -782,61 +784,17 @@ func (factory *MRDFactory) InsertMetricValue(ev *metric.MetricValueEventData) (e
 	return nil
 }
 
-var orphanOps = map[string]string{
-	"Delete Orphan MetricMeta": `
-			DELETE FROM MetricMeta WHERE id IN
-			(
-				select mm.ID from MetricMeta as mm
-					LEFT JOIN ReportDefinitionToMetricMeta as rd2mm on mm.ID = rd2mm.MetricMetaID where rd2mm.MetricMetaID is null
-			)`,
-	"Delete Orphan MetricInstance": `
-			DELETE FROM MetricInstance WHERE id IN
-			(
-				select MI.ID from MetricInstance as MI
-					LEFT JOIN MetricMeta as MM on MM.ID = MI.MetaID where MM.ID is null
-			)`,
-
-	// delete orphans of all kinds.
-	//   Metric Report Definitions (MRD) are the source of truth
-	//    .. Delete any ReportDefinitionToMetricMeta that doesn't match an MRD
-	//    .. Delete any ReportDefinitionToMetricMeta that doesn't match a MetricMeta
-	//    XX Delete any MetricMeta that doesnt have a ReportDefinitionToMetricMeta entry
-	//    oo Delete any MetricInstance without MetricMeta
-	//    .. Delete any MetricValue without MetricInstance
-	//
-	// XX = complete
-	// .. = Should be covered by foreign key cascade delete
-	// oo = Should be covered by foreign key cascade delete, but double check
-}
-
 func (factory *MRDFactory) DeleteOrphans() (err error) {
 	factory.logger.Info("Database Maintenance: delete orphans")
-
-	// ===================================
-	// Setup Transaction
-	// ===================================
-	tx, err := factory.database.Beginx()
-	if err != nil {
-		factory.logger.Crit("Error creating transaction to update MRD", "err", err)
-		return
-	}
-	// if we error out at all, roll back
-	defer tx.Rollback()
-
-	// run all the delete ops
-	for op, sql := range orphanOps {
-		_, err = tx.Exec(sql)
-		if err != nil {
-			return xerrors.Errorf("Critical error performing orphan op '%s': %w", op, err)
+	return WrapWithTX(factory.database, func(tx *sqlx.Tx) error {
+		for _, sql := range factory.orphanops {
+			_, err = factory.getSqlxTx(tx, sql).Exec()
+			if err != nil {
+				return xerrors.Errorf("Critical error performing orphan cleanup-> '%s': %w", sql, err)
+			}
 		}
-	}
-
-	err = tx.Commit()
-	if err != nil {
-		return xerrors.Errorf("Failed transaction commit: %w", err)
-	}
-
-	return nil
+		return nil
+	})
 }
 
 func (factory *MRDFactory) DeleteOldestValues() (err error) {
@@ -845,7 +803,7 @@ func (factory *MRDFactory) DeleteOldestValues() (err error) {
 		for _, sql := range factory.deleteops {
 			_, err = factory.getSqlxTx(tx, sql).Exec()
 			if err != nil {
-				return xerrors.Errorf("Critical error performing delete from Metric Value table -> '%s': %w", sql, err)
+				return xerrors.Errorf("Critical error performing value cleanup -> '%s': %w", sql, err)
 			}
 		}
 		return nil

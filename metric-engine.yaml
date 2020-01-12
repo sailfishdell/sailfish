@@ -6,6 +6,7 @@ main:
     udbnotifypipe: udbtdbipcpipe
     # list of prepared internal.sqlx statements to run to clean up old metric values
     deleteops: ["delete_mvi", "delete_mvr", "delete_mvt", "delete_old_mr"]
+    orphanops: ["delete_orphan_metricinstance", "delete_orphan_metricmeta"]
 
 listen:
   #- unix:me.socket
@@ -1250,6 +1251,32 @@ internal:
             MR.Name
         )
         WHERE Seq+2<ms
+      )
+
+# delete orphans of all kinds.
+#   Metric Report Definitions (MRD) are the source of truth
+#    .. Delete any ReportDefinitionToMetricMeta that doesn't match an MRD
+#    .. Delete any ReportDefinitionToMetricMeta that doesn't match a MetricMeta
+#    XX Delete any MetricMeta that doesnt have a ReportDefinitionToMetricMeta entry
+#    oo Delete any MetricInstance without MetricMeta
+#    .. Delete any MetricValue without MetricInstance
+#
+# XX = complete
+# .. = Should be covered by foreign key cascade delete
+# oo = Should be covered by foreign key cascade delete, but double check
+
+    delete_orphan_metricmeta: |
+      DELETE FROM MetricMeta WHERE id IN
+      (
+        select mm.ID from MetricMeta as mm
+          LEFT JOIN ReportDefinitionToMetricMeta as rd2mm on mm.ID = rd2mm.MetricMetaID where rd2mm.MetricMetaID is null
+      )
+
+    delete_orphan_metricinstance: |
+      DELETE FROM MetricInstance WHERE id IN
+      (
+        select MI.ID from MetricInstance as MI
+          LEFT JOIN MetricMeta as MM on MM.ID = MI.MetaID where MM.ID is null
       )
 
 createdb:
