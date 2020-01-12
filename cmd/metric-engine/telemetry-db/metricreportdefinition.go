@@ -59,10 +59,8 @@ type MetricReportDefinitionData struct {
 
 type MetricReportDefinition struct {
 	*MetricReportDefinitionData
-	*MRDFactory
 	AppendLimit int   `db:"AppendLimit"`
 	ID          int64 `db:"ID"`
-	logger      log.Logger
 }
 
 // Factory manages getting/putting into db
@@ -170,22 +168,11 @@ func ValidateMRD(MRD *MetricReportDefinition) {
 
 }
 
-func (factory *MRDFactory) UpdateMRD(mrdEvData *MetricReportDefinitionData) (err error) {
-	MRD := &MetricReportDefinition{
-		MetricReportDefinitionData: mrdEvData,
-		MRDFactory:                 factory,
-		logger:                     factory.logger,
-		AppendLimit:                3000,
-	}
-
-	ValidateMRD(MRD)
-	// this record will be added back in when the report is created later
-	delete(factory.NextMRTS, MRD.Name)
-
+func WrapWithTX(db *sqlx.DB, fn func(tx *sqlx.Tx) error) (err error) {
 	// ===================================
 	// Setup Transaction
 	// ===================================
-	tx, err := factory.database.Beginx()
+	tx, err := db.Beginx()
 	if err != nil {
 		return xerrors.Errorf("Transaction create failed: %w", err)
 	}
@@ -193,130 +180,139 @@ func (factory *MRDFactory) UpdateMRD(mrdEvData *MetricReportDefinitionData) (err
 	// if we error out at all, roll back
 	defer tx.Rollback()
 
-	_, err = factory.getNamedSqlTx(tx, "mrd_insert").Exec(MRD)
+	err = fn(tx)
 	if err != nil {
-		return xerrors.Errorf("Error inserting MRD(%s): %w", MRD, err)
-	}
-
-	// can't use LastInsertId() because it doesn't work on upserts in sqlite
-	err = factory.getSqlxTx(tx, "mrd_select_idbyname").Get(&MRD.ID, MRD.Name)
-	if err != nil {
-		return xerrors.Errorf("Error getting MRD ID for %s: %w", MRD.Name, err)
-	}
-	factory.logger.Info("Updated/Inserted Metric Report Definition", "Report Definition ID", MRD.ID, "MRD_NAME", MRD.Name)
-
-	//=================================================
-	// Update the list of metrics for this report
-	//
-
-	// First, just delete all the existing metric associations (not the actual MetricMeta, then we'll re-create
-	_, err = factory.getSqlxTx(tx, "delete_mm_assoc").Exec(MRD.ID)
-	if err != nil {
-		return xerrors.Errorf("Error deleting rd2mm for MRD(%d): %w", MRD.ID, err)
-	}
-
-	// Then we will create each association one at a time
-	for _, metric := range MRD.Metrics {
-		var metaID int64
-		var res sql.Result
-		tempMetric := struct {
-			*MRDMetric
-			SuppressDups bool `db:"SuppressDups"`
-		}{
-			MRDMetric:    &metric,
-			SuppressDups: MRD.SuppressDups,
-		}
-
-		// First, Find the MetricMeta
-		err = factory.getNamedSqlTx(tx, "find_mm").Get(&metaID, tempMetric)
-		if err != nil {
-			if !xerrors.Is(err, sql.ErrNoRows) {
-				return xerrors.Errorf("Error running query to find MetricMeta(%+v) for MRD(%s): %w", tempMetric, MRD, err)
-			}
-			// Insert new MetricMeta if it doesn't already exist per above
-			res, err = factory.getNamedSqlTx(tx, "insert_mm").Exec(tempMetric)
-			if err != nil {
-				return xerrors.Errorf("Error inserting MetricMeta(%s) for MRD(%s): %w", tempMetric, MRD, err)
-			}
-
-			metaID, err = res.LastInsertId()
-			if err != nil {
-				return xerrors.Errorf("Error from LastInsertID for MetricMeta(%s): %w", tempMetric, err)
-			}
-		}
-
-		// Next cross link MetricMeta to ReportDefinition
-		_, err = factory.getSqlxTx(tx, "insert_mm_assoc").Exec(MRD.ID, metaID)
-		if err != nil {
-			return xerrors.Errorf("Error while inserting MetricMeta(%s) association for MRD(%s): %w", metric, MRD, err)
-		}
+		return xerrors.Errorf("Failing Transaction because inner function returned error: %w", err)
 	}
 
 	err = tx.Commit()
 	if err != nil {
-		return xerrors.Errorf("Transaction failed commit for MRD(%d): %w", MRD.ID, err)
-	}
-	factory.logger.Debug("Transaction Committed for updates to Report Definition", "Report Definition ID", MRD.ID)
-
-	// If this is a periodic report, put it in the NextMRTS map so it'll get updated on the next report period
-	if MRD.Type == "Periodic" {
-		factory.NextMRTS[MRD.Name] = metric.SqlTimeInt{Time: factory.MetricTSHWM.Add(time.Duration(MRD.Period) * time.Second)}
+		return xerrors.Errorf("FAILED transaction commit: %w", err)
 	}
 
-	return
+	return nil
+}
+
+func (factory *MRDFactory) UpdateMRD(mrdEvData *MetricReportDefinitionData) (err error) {
+	return WrapWithTX(factory.database, func(tx *sqlx.Tx) error {
+		MRD := &MetricReportDefinition{
+			MetricReportDefinitionData: mrdEvData,
+			AppendLimit:                3000,
+		}
+
+		ValidateMRD(MRD)
+		// this record will be added back in when the report is created later
+		delete(factory.NextMRTS, MRD.Name)
+
+		_, err = factory.getNamedSqlTx(tx, "mrd_insert").Exec(MRD)
+		if err != nil {
+			return xerrors.Errorf("Error inserting MRD(%s): %w", MRD, err)
+		}
+
+		// can't use LastInsertId() because it doesn't work on upserts in sqlite
+		err = factory.getSqlxTx(tx, "mrd_select_idbyname").Get(&MRD.ID, MRD.Name)
+		if err != nil {
+			return xerrors.Errorf("Error getting MRD ID for %s: %w", MRD.Name, err)
+		}
+		factory.logger.Info("Updated/Inserted Metric Report Definition", "Report Definition ID", MRD.ID, "MRD_NAME", MRD.Name)
+
+		//=================================================
+		// Update the list of metrics for this report
+		//
+
+		// First, just delete all the existing metric associations (not the actual MetricMeta, then we'll re-create
+		_, err = factory.getSqlxTx(tx, "delete_mm_assoc").Exec(MRD.ID)
+		if err != nil {
+			return xerrors.Errorf("Error deleting rd2mm for MRD(%d): %w", MRD.ID, err)
+		}
+
+		// Then we will create each association one at a time
+		for _, metric := range MRD.Metrics {
+			var metaID int64
+			var res sql.Result
+			tempMetric := struct {
+				*MRDMetric
+				SuppressDups bool `db:"SuppressDups"`
+			}{
+				MRDMetric:    &metric,
+				SuppressDups: MRD.SuppressDups,
+			}
+
+			// First, Find the MetricMeta
+			err = factory.getNamedSqlTx(tx, "find_mm").Get(&metaID, tempMetric)
+			if err != nil {
+				if !xerrors.Is(err, sql.ErrNoRows) {
+					return xerrors.Errorf("Error running query to find MetricMeta(%+v) for MRD(%s): %w", tempMetric, MRD, err)
+				}
+				// Insert new MetricMeta if it doesn't already exist per above
+				res, err = factory.getNamedSqlTx(tx, "insert_mm").Exec(tempMetric)
+				if err != nil {
+					return xerrors.Errorf("Error inserting MetricMeta(%s) for MRD(%s): %w", tempMetric, MRD, err)
+				}
+
+				metaID, err = res.LastInsertId()
+				if err != nil {
+					return xerrors.Errorf("Error from LastInsertID for MetricMeta(%s): %w", tempMetric, err)
+				}
+			}
+
+			// Next cross link MetricMeta to ReportDefinition
+			_, err = factory.getSqlxTx(tx, "insert_mm_assoc").Exec(MRD.ID, metaID)
+			if err != nil {
+				return xerrors.Errorf("Error while inserting MetricMeta(%s) association for MRD(%s): %w", metric, MRD, err)
+			}
+		}
+
+		// If this is a periodic report, put it in the NextMRTS map so it'll get updated on the next report period
+		if MRD.Type == "Periodic" {
+			factory.NextMRTS[MRD.Name] = metric.SqlTimeInt{Time: factory.MetricTSHWM.Add(time.Duration(MRD.Period) * time.Second)}
+		}
+
+		return nil
+	})
 }
 
 var StopIter = xerrors.New("Stop Iteration")
 
 func (factory *MRDFactory) IterMRD(checkFn func(MRD *MetricReportDefinition) bool, fn func(MRD *MetricReportDefinition) error) error {
-	tx, err := factory.database.Beginx()
-	if err != nil {
-		return xerrors.Errorf("Error creating transaction to update MRD: %w", err)
-	}
-	defer tx.Rollback()
-
-	stmt, err := tx.Preparex(`
+	return WrapWithTX(factory.database, func(tx *sqlx.Tx) error {
+		stmt, err := tx.Preparex(`
 		SELECT
 			ID, Name,  Enabled, AppendLimit, Type, SuppressDups, Actions, Updates
 		FROM MetricReportDefinition
 	`)
-	if err != nil {
-		return xerrors.Errorf("Prepare Query error for MRD: %w", err)
-	}
-
-	// First, Find the MetricMeta
-	rows, err := stmt.Queryx()
-	if err != nil {
-		return xerrors.Errorf("Query error for MRD: %w", err)
-	}
-
-	for rows.Next() {
-		MRD := &MetricReportDefinition{
-			MetricReportDefinitionData: &MetricReportDefinitionData{},
-			MRDFactory:                 factory,
-			logger:                     factory.logger,
-		}
-		err = rows.StructScan(MRD)
 		if err != nil {
-			return xerrors.Errorf("scan error: %w", err)
+			return xerrors.Errorf("Prepare Query error for MRD: %w", err)
 		}
-		if checkFn(MRD) {
-			err = fn(MRD)
-			if xerrors.Is(err, StopIter) {
-				break
-			}
-			if err != nil {
-				// this rolls back the transaction
-				return xerrors.Errorf("STOP ITER WITH ERROR --> Iter FN returned error: %w", err)
-			}
-		}
-	}
 
-	err = tx.Commit()
-	if err != nil {
-		return xerrors.Errorf("Failed transaction commit: %w", err)
-	}
-	return nil
+		// First, Find the MetricMeta
+		rows, err := stmt.Queryx()
+		if err != nil {
+			return xerrors.Errorf("Query error for MRD: %w", err)
+		}
+
+		for rows.Next() {
+			MRD := &MetricReportDefinition{
+				MetricReportDefinitionData: &MetricReportDefinitionData{},
+			}
+			err = rows.StructScan(MRD)
+			if err != nil {
+				return xerrors.Errorf("scan error: %w", err)
+			}
+			if checkFn(MRD) {
+				err = fn(MRD)
+				if xerrors.Is(err, StopIter) {
+					break
+				}
+				if err != nil {
+					// this rolls back the transaction
+					return xerrors.Errorf("STOP ITER WITH ERROR --> Iter FN returned error: %w", err)
+				}
+			}
+		}
+
+		return nil
+	})
 }
 
 func (l *MRDFactory) FastCheckForNeededMRUpdates() ([]string, error) {
@@ -379,8 +375,6 @@ func (factory *MRDFactory) GenerateMetricReport(name string) (err error) {
 
 	MRD := &MetricReportDefinition{
 		MetricReportDefinitionData: &MetricReportDefinitionData{Name: name},
-		MRDFactory:                 factory,
-		logger:                     factory.logger,
 	}
 	err = loadReportDefinition(tx, MRD)
 	if err != nil {
