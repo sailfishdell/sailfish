@@ -65,7 +65,7 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Service, d Bus
 		}
 	}
 
-	MRDFactory, err := NewMRDFactory(logger, database)
+	MRDFactory, err := NewMRDFactory(logger, database, cfg)
 	if err != nil {
 		logger.Crit("Error creating report definition factory", "err", err)
 	}

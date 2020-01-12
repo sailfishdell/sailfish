@@ -11,6 +11,7 @@ import (
 	"database/sql"
 	"database/sql/driver"
 	"github.com/jmoiron/sqlx"
+	"github.com/spf13/viper"
 	"golang.org/x/xerrors"
 
 	"github.com/superchalupa/sailfish/cmd/metric-engine/metric"
@@ -75,7 +76,9 @@ type MRDFactory struct {
 	NextMRTS    map[string]metric.SqlTimeInt // next timestamp where we need to generate a report
 }
 
-func NewMRDFactory(logger log.Logger, database *sqlx.DB) (*MRDFactory, error) {
+func NewMRDFactory(logger log.Logger, database *sqlx.DB, cfg *viper.Viper) (*MRDFactory, error) {
+	// make sure not to store the 'cfg' passed in. That would be Bad.
+
 	factory := &MRDFactory{
 		logger:           logger,
 		database:         database,
@@ -84,46 +87,22 @@ func NewMRDFactory(logger log.Logger, database *sqlx.DB) (*MRDFactory, error) {
 		preparedSql:      map[string]*sqlx.Stmt{},
 	}
 
-	// ===================================
-	// Ensure all statements are prepared
-	// ===================================
-	factory.prepareNamed("MRD_Insert",
-		`INSERT INTO MetricReportDefinition
-				       ( Name,  Enabled, AppendLimit, Type, SuppressDups, Actions, Updates, Period)
-				VALUES (:Name, :Enabled, :AppendLimit, :Type, :SuppressDups, :Actions, :Updates, :Period)
-		 on conflict(Name) do update set
-				Enabled=:Enabled,
-				AppendLimit=:AppendLimit,
-				Type=:Type,
-				SuppressDups=:SuppressDups,
-				Actions=:Actions,
-				Period=:Period,
-				Updates=:Updates
-			`)
+	// Create tables and views from sql stored in our YAML
+	for name, sql := range cfg.GetStringMapString("internal.namedsql") {
+		fmt.Printf("PREPARING NamedStmt named(%s) SQL: %s\n", name, sql)
+		err := factory.prepareNamed(name, sql)
+		if err != nil {
+			return nil, xerrors.Errorf("Failed to prepare sql query from config yaml. Section(internal.namedsql) Name(%s), SQL(%s). Err: %w", name, sql, err)
+		}
+	}
+	for name, sql := range cfg.GetStringMapString("internal.sqlx") {
+		fmt.Printf("PREPARING Stmt name(%s) SQL: %s\n", name, sql)
+		err := factory.prepareSqlx(name, sql)
+		if err != nil {
+			return nil, xerrors.Errorf("Failed to prepare sql query from config yaml. Section(internal.sqlx) Name(%s), SQL(%s). Err: %w", name, sql, err)
+		}
+	}
 
-	factory.prepareSqlx("MRD_select_idbyname", `SELECT ID FROM MetricReportDefinition where Name=?`)
-	factory.prepareNamed("Find_MM", `
-			select ID from MetricMeta where
-				Name=:Name and
-				SuppressDups=:SuppressDups and
-				FQDDPattern=:FQDDPattern and
-				SourcePattern=:SourcePattern and
-				PropertyPattern=:PropertyPattern and
-				Wildcards=:Wildcards and
-				CollectionFunction=:CollectionFunction and
-				CollectionDuration=:CollectionDuration
-		`)
-
-	factory.prepareSqlx("Delete_MRD", `delete from MetricReportDefinition where name=?`)
-
-	factory.prepareSqlx("Delete_MRD_assoc", `delete from ReportDefinitionToMetricMeta where ReportDefinitionID=?`)
-
-	factory.prepareNamed("Insert_MM", `
-		INSERT INTO MetricMeta
-			     ( Name,  SuppressDups,  FQDDPattern,  SourcePattern,  PropertyPattern,  Wildcards,  CollectionFunction,  CollectionDuration)
-		VALUES (:Name, :SuppressDups, :FQDDPattern, :SourcePattern, :PropertyPattern, :Wildcards, :CollectionFunction, :CollectionDuration)`)
-
-	factory.prepareSqlx("Insert_MM_assoc", `INSERT INTO ReportDefinitionToMetricMeta (ReportDefinitionID, MetricMetaID) VALUES (?, ?)`)
 	return factory, nil
 }
 
@@ -168,7 +147,7 @@ func (factory *MRDFactory) getSqlx(name string) *sqlx.Stmt {
 }
 
 func (factory *MRDFactory) Delete(mrdEvData *MetricReportDefinitionData) (err error) {
-	_, err = factory.getSqlx("Delete_MRD").Exec(mrdEvData.Name)
+	_, err = factory.getSqlx("delete_mrd").Exec(mrdEvData.Name)
 	if err != nil {
 		factory.logger.Crit("ERROR deleting MetricReportDefinition", "err", err, "Name", mrdEvData.Name)
 	}
@@ -214,13 +193,13 @@ func (factory *MRDFactory) UpdateMRD(mrdEvData *MetricReportDefinitionData) (err
 	// if we error out at all, roll back
 	defer tx.Rollback()
 
-	_, err = factory.getNamedSqlTx(tx, "MRD_Insert").Exec(MRD)
+	_, err = factory.getNamedSqlTx(tx, "mrd_insert").Exec(MRD)
 	if err != nil {
 		return xerrors.Errorf("Error inserting MRD(%s): %w", MRD, err)
 	}
 
 	// can't use LastInsertId() because it doesn't work on upserts in sqlite
-	err = factory.getSqlxTx(tx, "MRD_select_idbyname").Get(&MRD.ID, MRD.Name)
+	err = factory.getSqlxTx(tx, "mrd_select_idbyname").Get(&MRD.ID, MRD.Name)
 	if err != nil {
 		return xerrors.Errorf("Error getting MRD ID for %s: %w", MRD.Name, err)
 	}
@@ -231,7 +210,7 @@ func (factory *MRDFactory) UpdateMRD(mrdEvData *MetricReportDefinitionData) (err
 	//
 
 	// First, just delete all the existing metric associations (not the actual MetricMeta, then we'll re-create
-	_, err = factory.getSqlxTx(tx, "Delete_MRD_assoc").Exec(MRD.ID)
+	_, err = factory.getSqlxTx(tx, "delete_mm_assoc").Exec(MRD.ID)
 	if err != nil {
 		return xerrors.Errorf("Error deleting rd2mm for MRD(%d): %w", MRD.ID, err)
 	}
@@ -249,13 +228,13 @@ func (factory *MRDFactory) UpdateMRD(mrdEvData *MetricReportDefinitionData) (err
 		}
 
 		// First, Find the MetricMeta
-		err = factory.getNamedSqlTx(tx, "Find_MM").Get(&metaID, tempMetric)
+		err = factory.getNamedSqlTx(tx, "find_mm").Get(&metaID, tempMetric)
 		if err != nil {
 			if !xerrors.Is(err, sql.ErrNoRows) {
 				return xerrors.Errorf("Error running query to find MetricMeta(%+v) for MRD(%s): %w", tempMetric, MRD, err)
 			}
 			// Insert new MetricMeta if it doesn't already exist per above
-			res, err = factory.getNamedSqlTx(tx, "Insert_MM").Exec(tempMetric)
+			res, err = factory.getNamedSqlTx(tx, "insert_mm").Exec(tempMetric)
 			if err != nil {
 				return xerrors.Errorf("Error inserting MetricMeta(%s) for MRD(%s): %w", tempMetric, MRD, err)
 			}
@@ -267,7 +246,7 @@ func (factory *MRDFactory) UpdateMRD(mrdEvData *MetricReportDefinitionData) (err
 		}
 
 		// Next cross link MetricMeta to ReportDefinition
-		_, err = factory.getSqlxTx(tx, "Insert_MM_assoc").Exec(MRD.ID, metaID)
+		_, err = factory.getSqlxTx(tx, "insert_mm_assoc").Exec(MRD.ID, metaID)
 		if err != nil {
 			return xerrors.Errorf("Error while inserting MetricMeta(%s) association for MRD(%s): %w", metric, MRD, err)
 		}

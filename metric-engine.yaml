@@ -1146,6 +1146,53 @@ UDB-Metric-Import:
       FROM CIMVIEW_DCIM_PSNumericSensor
       WHERE Timestamp > :HWM
 
+internal:
+  # we can put the sql statements that we use internally in metric engine here
+  # two benefits:
+  #   - reduced binary size: we get rid of the sql string from the process memory space
+  #   - increased performance: get rid of the internal prepares that are done by the database driver, especially helps in inner loops
+  #
+  # Be aware: Viper will lower case all names of config keys, so just them here as lower case or people might get confused.
+  #
+  namedsql:
+    mrd_insert: |
+      INSERT INTO MetricReportDefinition
+               ( Name,  Enabled, AppendLimit, Type, SuppressDups, Actions, Updates, Period)
+        VALUES (:Name, :Enabled, :AppendLimit, :Type, :SuppressDups, :Actions, :Updates, :Period)
+      on conflict(Name) do update set
+        Enabled=:Enabled,
+        AppendLimit=:AppendLimit,
+        Type=:Type,
+        SuppressDups=:SuppressDups,
+        Actions=:Actions,
+        Period=:Period,
+        Updates=:Updates
+
+    find_mm: |
+      select ID from MetricMeta where
+        Name=:Name and
+        SuppressDups=:SuppressDups and
+        FQDDPattern=:FQDDPattern and
+        SourcePattern=:SourcePattern and
+        PropertyPattern=:PropertyPattern and
+        Wildcards=:Wildcards and
+        CollectionFunction=:CollectionFunction and
+        CollectionDuration=:CollectionDuration
+
+    insert_mm: |
+      INSERT INTO MetricMeta
+             ( Name,  SuppressDups,  FQDDPattern,  SourcePattern,  PropertyPattern,  Wildcards,  CollectionFunction,  CollectionDuration)
+      VALUES (:Name, :SuppressDups, :FQDDPattern, :SourcePattern, :PropertyPattern, :Wildcards, :CollectionFunction, :CollectionDuration)
+
+  sqlx:
+    mrd_select_idbyname: SELECT ID FROM MetricReportDefinition where Name=?
+
+    delete_mrd: delete from MetricReportDefinition where name=?
+
+    delete_mm_assoc: delete from ReportDefinitionToMetricMeta where ReportDefinitionID=?
+
+    insert_mm_assoc: INSERT INTO ReportDefinitionToMetricMeta (ReportDefinitionID, MetricMetaID) VALUES (?, ?)
+
 createdb:
   # This bumps memory usage by 10MB for some unknown reason
   #  - "PRAGMA cache_size=4096;"
