@@ -335,7 +335,9 @@ Startup-Events:
     # TODO: Device Poll Frequency: 5
     # "TelemetryStorageSensor.1.ReportInterval": 60,
     # AUDIT:
-    #   [.] HAS DATA
+    #   [!] HAS DATA
+    #       --> Has data initially, but source only sends changes, so the data goes stale
+    #       --> TODO: need the "expand" feature to replay dups
     #       --> empty report. Missing HW?
     #   [ ] Correct Metric IDs
     #   [ ] Correct # of data points
