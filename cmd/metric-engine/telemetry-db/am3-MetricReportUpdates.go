@@ -103,8 +103,26 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Service, d Bus
 		}
 	}()
 
-	// Create a new Metric Report Definition, or update an existing one
-	updateDef := func(event eh.Event) {
+	am3Svc.AddEventHandler("Create Metric Report Definition", AddMetricReportDefinition, func(event eh.Event) {
+		reportDef, ok := event.Data().(*MetricReportDefinitionData)
+		if !ok {
+			return
+		}
+
+		// Can't write to event sent in, so make a local copy
+		localReportDefCopy := *reportDef
+		err = MRDFactory.AddMRD(&localReportDefCopy)
+		if err != nil {
+			logger.Crit("Failed to create or update the Report Definition", "Name", reportDef.Name, "err", err)
+			return
+		}
+
+		// After we've done the adjustments to ReportDefinitionToMetricMeta, there
+		// might be orphan rows.
+		MRDFactory.DeleteOrphans()
+	})
+
+	am3Svc.AddEventHandler("Update Metric Report Definition", UpdateMetricReportDefinition, func(event eh.Event) {
 		reportDef, ok := event.Data().(*MetricReportDefinitionData)
 		if !ok {
 			return
@@ -121,9 +139,7 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Service, d Bus
 		// After we've done the adjustments to ReportDefinitionToMetricMeta, there
 		// might be orphan rows.
 		MRDFactory.DeleteOrphans()
-	}
-	am3Svc.AddEventHandler("Create Metric Report Definition", AddMetricReportDefinition, updateDef)
-	am3Svc.AddEventHandler("Update Metric Report Definition", UpdateMetricReportDefinition, updateDef)
+	})
 
 	am3Svc.AddEventHandler("Delete Metric Report Definition", DeleteMetricReportDefinition, func(event eh.Event) {
 		reportDef, ok := event.Data().(*MetricReportDefinitionData)

@@ -390,6 +390,19 @@ Startup-Events:
     data: |
       {
         "Name": "Thermal",
+        "Enabled": false,
+        "Type": "Periodic",
+        "Period": 61,
+        "Updates": "NewReport",
+        "SuppressDups": true,
+        "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
+        "Metrics": []
+       }
+
+  - name: UpdateMetricReportDefinition
+    data: |
+      {
+        "Name": "Thermal",
         "Enabled": true,
         "Type": "Periodic",
         "Period": 60,
@@ -401,11 +414,12 @@ Startup-Events:
           {"MetricID": "RPMReading"}
          ]
        }
+
   - name: AddMetricReportDefinition
     data: |
       {
         "Name": "SMARTData",
-        "Enabled": true,
+        "Enabled": false,
         "Type": "Periodic",
         "Period": 3600,
         "Updates": "NewReport",
@@ -1161,7 +1175,10 @@ internal:
       INSERT INTO MetricReportDefinition
                ( Name,  Enabled, AppendLimit, Type, SuppressDups, Actions, Updates, Period)
         VALUES (:Name, :Enabled, :AppendLimit, :Type, :SuppressDups, :Actions, :Updates, :Period)
-      on conflict(Name) do update set
+
+    mrd_update: |
+      UPDATE MetricReportDefinition
+      SET
         Enabled=:Enabled,
         AppendLimit=:AppendLimit,
         Type=:Type,
@@ -1169,6 +1186,8 @@ internal:
         Actions=:Actions,
         Period=:Period,
         Updates=:Updates
+      WHERE
+        Name=:Name
 
     find_mm: |
       select ID from MetricMeta where
