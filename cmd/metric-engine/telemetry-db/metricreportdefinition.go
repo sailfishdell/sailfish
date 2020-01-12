@@ -72,6 +72,7 @@ type MRDFactory struct {
 	database         *sqlx.DB
 	preparedNamedSql map[string]*sqlx.NamedStmt
 	preparedSql      map[string]*sqlx.Stmt
+	deleteops        []string
 
 	MetricTSHWM metric.SqlTimeInt            // high water mark for received metrics
 	NextMRTS    map[string]metric.SqlTimeInt // next timestamp where we need to generate a report
@@ -87,6 +88,7 @@ func NewMRDFactory(logger log.Logger, database *sqlx.DB, cfg *viper.Viper) (*MRD
 		NextMRTS:         map[string]metric.SqlTimeInt{},
 		preparedNamedSql: map[string]*sqlx.NamedStmt{},
 		preparedSql:      map[string]*sqlx.Stmt{},
+		deleteops:        cfg.GetStringSlice("main.deleteops"),
 	}
 
 	// Create tables and views from sql stored in our YAML
@@ -837,44 +839,17 @@ func (factory *MRDFactory) DeleteOrphans() (err error) {
 	return nil
 }
 
-var deleteops = []string{
-	// The metric value tables should hold ~500k entries.
-	`delete from MetricValueInt where Timestamp > (select Timestamp from MetricValueInt order by Timestamp Limit 1 Offset 100000);`,
-	`delete from MetricValueReal where Timestamp > (select Timestamp from MetricValueReal order by Timestamp Limit 1 Offset 100000);`,
-	`delete from MetricValueText where Timestamp > (select Timestamp from MetricValueText order by Timestamp Limit 1 Offset 50000);`,
-
-	// Only should have max 3 "new" reports per Metric Report Definition
-	`delete from MetricReport where name in (select name from (select MR.name as Name, MR.ReportDefinitionID, MR.sequence as seq, max(MR2.Sequence) as ms from MetricReport as MR left join MetricReport as MR2 on MR.ReportDefinitionID = MR2.ReportDefinitionID group by MR.Name) where seq+2<ms)`,
-}
-
 func (factory *MRDFactory) DeleteOldestValues() (err error) {
 	factory.logger.Info("Database Maintenance: Delete Oldest Metric Values")
-
-	// ===================================
-	// Setup Transaction
-	// ===================================
-	tx, err := factory.database.Beginx()
-	if err != nil {
-		factory.logger.Crit("Error creating transaction to update MRD", "err", err)
-		return
-	}
-	// if we error out at all, roll back
-	defer tx.Rollback()
-
-	// run all the delete ops
-	for _, sql := range deleteops {
-		_, err = tx.Exec(sql)
-		if err != nil {
-			return xerrors.Errorf("Critical error performing delete from Metric Value table -> '%s': %w", sql, err)
+	return WrapWithTX(factory.database, func(tx *sqlx.Tx) error {
+		for _, sql := range factory.deleteops {
+			_, err = factory.getSqlxTx(tx, sql).Exec()
+			if err != nil {
+				return xerrors.Errorf("Critical error performing delete from Metric Value table -> '%s': %w", sql, err)
+			}
 		}
-	}
-
-	err = tx.Commit()
-	if err != nil {
-		return xerrors.Errorf("Failed transaction commit: %w", err)
-	}
-
-	return nil
+		return nil
+	})
 }
 
 func (factory *MRDFactory) Optimize() {
