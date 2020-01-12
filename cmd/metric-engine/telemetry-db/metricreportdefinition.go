@@ -87,14 +87,12 @@ func NewMRDFactory(logger log.Logger, database *sqlx.DB, cfg *viper.Viper) (*MRD
 
 	// Create tables and views from sql stored in our YAML
 	for name, sql := range cfg.GetStringMapString("internal.namedsql") {
-		fmt.Printf("PREPARING NamedStmt named(%s) SQL: %s\n", name, sql)
 		err := factory.prepareNamed(name, sql)
 		if err != nil {
 			return nil, xerrors.Errorf("Failed to prepare sql query from config yaml. Section(internal.namedsql) Name(%s), SQL(%s). Err: %w", name, sql, err)
 		}
 	}
 	for name, sql := range cfg.GetStringMapString("internal.sqlx") {
-		fmt.Printf("PREPARING Stmt name(%s) SQL: %s\n", name, sql)
 		err := factory.prepareSqlx(name, sql)
 		if err != nil {
 			return nil, xerrors.Errorf("Failed to prepare sql query from config yaml. Section(internal.sqlx) Name(%s), SQL(%s). Err: %w", name, sql, err)
