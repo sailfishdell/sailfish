@@ -96,7 +96,7 @@ func main() {
 
 func init() {
 	go func() {
-		t := time.Tick(time.Second * 30)
+		t := time.Tick(time.Second * 120)
 		for {
 			<-t
 			debug.FreeOSMemory()
