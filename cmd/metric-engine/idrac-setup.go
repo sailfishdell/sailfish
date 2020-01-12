@@ -77,8 +77,8 @@ func setup(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, d *BusCo
 
 		err = json.Unmarshal([]byte(dataString), &eventData)
 		if err != nil {
-			logger.Crit("SKIPPING: error parsing event data", "Section", section, "index", i, "malformed-value", v, "event", name, "data", dataString, "err", err)
-			continue
+			// well if it doesn't unmarshall, try to just send it as a string (Used for sending DatabaseMaintenance events.
+			eventData = dataString
 		}
 
 		fmt.Printf("\tStartup Event: %s\n", name)
