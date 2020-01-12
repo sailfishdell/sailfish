@@ -1227,6 +1227,31 @@ internal:
 
     query_mrds: SELECT ID, Name,  Enabled, AppendLimit, Type, SuppressDups, Actions, Updates FROM MetricReportDefinition
 
+    delete_mvi: delete from MetricValueInt where Timestamp > (select Timestamp from MetricValueInt order by Timestamp Limit 1 Offset 100000)
+    delete_mvr: delete from MetricValueReal where Timestamp > (select Timestamp from MetricValueReal order by Timestamp Limit 1 Offset 100000)
+    delete_mvt: delete from MetricValueText where Timestamp > (select Timestamp from MetricValueText order by Timestamp Limit 1 Offset 50000)
+    delete_old_mr: |
+      --// Only should have max 3 "new" reports per Metric Report Definition
+      -- somewhat complicated query, but not too bad...
+      DELETE FROM MetricReport WHERE Name IN (
+        SELECT
+          Name
+        FROM (
+          SELECT
+            MR.name AS Name,
+            MR.ReportDefinitionID,
+            MR.sequence AS Seq,
+            MAX(MR2.Sequence) AS Ms
+          FROM
+            MetricReport AS MR
+          LEFT JOIN
+            MetricReport AS MR2 ON MR.ReportDefinitionID = MR2.ReportDefinitionID
+          GROUP BY
+            MR.Name
+        )
+        WHERE Seq+2<ms
+      )
+
 createdb:
   # This bumps memory usage by 10MB for some unknown reason
   #  - "PRAGMA cache_size=4096;"
