@@ -471,8 +471,8 @@ func (factory *MRDFactory) GenerateMetricReport(tx *sqlx.Tx, name string) (err e
 		case "OnChange", "OnRequest":
 			sqlargs["Start"] = factory.MetricTSHWM.UnixNano()
 			switch MRD.Updates {
-			case /*OnChange*/ "NewReport":
-			case /*OnChange*/ "Overwrite":
+			case /*OnChange*/ "NewReport": // invalid, so delete!
+			case /*OnChange*/ "Overwrite": // invalid, so delete!
 			case /*OnChange*/ "AppendStopsWhenFull":
 				SQL = "genreport_onstar_append"
 			case /*OnChange*/ "AppendWrapsWhenFull":
