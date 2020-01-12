@@ -188,7 +188,7 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Service, d Bus
 
 		// input event is a pointer to shared data struct, dont directly use, make a copy
 		name := report.Name
-		err := MRDFactory.GenerateMetricReport(name)
+		err := MRDFactory.GenerateMetricReport(nil, name)
 		if err != nil {
 			logger.Crit("Error generating metric report", "err", err, "ReportDefintion", name)
 		}

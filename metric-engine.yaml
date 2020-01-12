@@ -1211,11 +1211,49 @@ internal:
              ( Name,  SuppressDups,  FQDDPattern,  SourcePattern,  PropertyPattern,  Wildcards,  CollectionFunction,  CollectionDuration)
       VALUES (:Name, :SuppressDups, :FQDDPattern, :SourcePattern, :PropertyPattern, :Wildcards, :CollectionFunction, :CollectionDuration)
 
-    find_mrd_by_id: |
-      SELECT ID, Name,  Enabled, AppendLimit, Type, SuppressDups, Actions, Updates, Period FROM MetricReportDefinition where ID=:ID
+    delete_mr_by_id: delete from MetricReport where ReportDefinitionID=:MRDID
 
-    find_mrd_by_name: |
-      SELECT ID, Name,  Enabled, AppendLimit, Type, SuppressDups, Actions, Updates, Period FROM MetricReportDefinition where Name=:Name
+    genreport_periodic_newreport: |
+      INSERT INTO MetricReport
+              (Name, ReportDefinitionID, Sequence, ReportTimestamp, StartTimestamp, EndTimestamp)
+      VALUES (:Name, :MRDID, IFNULL((SELECT MAX(sequence)+1 FROM MetricReport WHERE ReportDefinitionID=:MRDID), 0), :ReportTimestamp, :Start, :End);
+      DELETE FROM MetricReport
+      WHERE Name IN (
+        SELECT name FROM (
+          SELECT
+            MR.name AS Name,
+            MR.ReportDefinitionID,
+            MR.sequence AS Seq,
+            MAX(MR2.Sequence) AS MS
+          FROM MetricReport AS MR
+          LEFT JOIN MetricReport AS MR2
+          ON MR.ReportDefinitionID = MR2.ReportDefinitionID
+          GROUP BY MR.Name
+        )
+        WHERE seq+2<MS
+      )
+
+    genreport_periodic_overwrite: |
+      INSERT INTO MetricReport
+             (Name, ReportDefinitionID, Sequence, ReportTimestamp, StartTimestamp, EndTimestamp)
+      VALUES (:Name, :MRDID, :Sequence, :ReportTimestamp, :Start, :End)
+      ON CONFLICT(Name) DO UPDATE
+      SET Sequence=Sequence+1,
+          ReportTimestamp=:ReportTimestamp,
+          StartTimestamp=EndTimestamp,
+          EndTimestamp=:End
+
+    genreport_periodic_append: |
+      INSERT INTO MetricReport (Name, ReportDefinitionID, Sequence, ReportTimestamp, StartTimestamp, EndTimestamp)
+      values (:Name, :MRDID, :Sequence, :ReportTimestamp, :Start, :End)
+      on conflict(Name) do update
+      set Sequence=Sequence+1,
+          ReportTimestamp=:ReportTimestamp,
+          EndTimestamp=:End
+
+    genreport_onstar_append: |
+      INSERT INTO MetricReport (Name, ReportDefinitionID, Sequence, ReportTimestamp, StartTimestamp, EndTimestamp)
+        values (:Name, :MRDID, :Sequence, 0, NULL, NULL) on conflict(name) do nothing
 
   sqlx:
     mrd_select_idbyname: SELECT ID FROM MetricReportDefinition where Name=?
@@ -1242,7 +1280,7 @@ internal:
             MR.name AS Name,
             MR.ReportDefinitionID,
             MR.sequence AS Seq,
-            MAX(MR2.Sequence) AS Ms
+            MAX(MR2.Sequence) AS MS
           FROM
             MetricReport AS MR
           LEFT JOIN
@@ -1250,7 +1288,7 @@ internal:
           GROUP BY
             MR.Name
         )
-        WHERE Seq+2<ms
+        WHERE Seq+2<MS
       )
 
 # delete orphans of all kinds.
@@ -1278,6 +1316,12 @@ internal:
         select MI.ID from MetricInstance as MI
           LEFT JOIN MetricMeta as MM on MM.ID = MI.MetaID where MM.ID is null
       )
+
+    find_mrd_by_id: |
+      SELECT ID, Name,  Enabled, AppendLimit, Type, SuppressDups, Actions, Updates, Period FROM MetricReportDefinition where ID=?
+
+    find_mrd_by_name: |
+      SELECT ID, Name,  Enabled, AppendLimit, Type, SuppressDups, Actions, Updates, Period FROM MetricReportDefinition where Name=?
 
 createdb:
   # This bumps memory usage by 10MB for some unknown reason
