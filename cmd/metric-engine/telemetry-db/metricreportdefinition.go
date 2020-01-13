@@ -74,6 +74,8 @@ type MRDFactory struct {
 	preparedSql      map[string]*sqlx.Stmt
 	deleteops        []string
 	orphanops        []string
+	optimizeops      []string
+	vacuumops        []string
 
 	MetricTSHWM metric.SqlTimeInt            // high water mark for received metrics
 	NextMRTS    map[string]metric.SqlTimeInt // next timestamp where we need to generate a report
@@ -91,9 +93,11 @@ func NewMRDFactory(logger log.Logger, database *sqlx.DB, cfg *viper.Viper) (*MRD
 		preparedSql:      map[string]*sqlx.Stmt{},
 		deleteops:        cfg.GetStringSlice("main.deleteops"),
 		orphanops:        cfg.GetStringSlice("main.orphanops"),
+		optimizeops:      cfg.GetStringSlice("main.optimizeops"),
+		vacuumops:        cfg.GetStringSlice("main.vacuumops"),
 	}
 
-	// Create tables and views from sql stored in our YAML
+	// create prepared sql from yaml sql strings
 	for name, sql := range cfg.GetStringMapString("internal.namedsql") {
 		err := factory.prepareNamed(name, sql)
 		if err != nil {
@@ -129,7 +133,7 @@ func (factory *MRDFactory) prepareNamed(name, sql string) error {
 
 // getNamedSqlTx will pull a prepared statement and add it to the current transaction
 func (factory *MRDFactory) getNamedSqlTx(tx *sqlx.Tx, name string) *sqlx.NamedStmt {
-	return tx.NamedStmt(factory.preparedNamedSql[name])
+	return tx.NamedStmt(factory.getNamedSql(name))
 }
 
 // getNamedSql will return a prepared statement. Don't use this if you have a currently active transaction or you will deadlock!
@@ -152,7 +156,7 @@ func (factory *MRDFactory) prepareSqlx(name, sql string) error {
 
 // getNamedSqlTx will pull a prepared statement and add it to the current transaction
 func (factory *MRDFactory) getSqlxTx(tx *sqlx.Tx, name string) *sqlx.Stmt {
-	return tx.Stmtx(factory.preparedSql[name])
+	return tx.Stmtx(factory.getSqlx(name))
 }
 
 // getSqlx will return a prepared statement. Don't use this if you have a currently active transaction or you will deadlock!
@@ -160,6 +164,7 @@ func (factory *MRDFactory) getSqlx(name string) *sqlx.Stmt {
 	return factory.preparedSql[name]
 }
 
+// Delete will delete the requested MRD from the database
 func (factory *MRDFactory) Delete(mrdEvData *MetricReportDefinitionData) (err error) {
 	_, err = factory.getSqlx("delete_mrd").Exec(mrdEvData.Name)
 	if err != nil {
@@ -169,6 +174,7 @@ func (factory *MRDFactory) Delete(mrdEvData *MetricReportDefinitionData) (err er
 	return
 }
 
+// ValidateMRD will ensure the Type is valid enum and Period is within allowed ranges for Periodic
 func ValidateMRD(MRD *MetricReportDefinition) {
 	switch MRD.Type {
 	case "Periodic":
@@ -209,8 +215,23 @@ func WrapWithTX(db *sqlx.DB, fn func(tx *sqlx.Tx) error) (err error) {
 	return nil
 }
 
+func WrapWithTXOrPassIn(db *sqlx.DB, tx *sqlx.Tx, fn func(tx *sqlx.Tx) error) (err error) {
+	if tx != nil {
+		return fn(tx)
+	}
+	return WrapWithTX(db, fn)
+}
+
+func (factory *MRDFactory) WrapWithTX(fn func(tx *sqlx.Tx) error) error {
+	return WrapWithTX(factory.database, fn)
+}
+
+func (factory *MRDFactory) WrapWithTXOrPassIn(tx *sqlx.Tx, fn func(tx *sqlx.Tx) error) error {
+	return WrapWithTXOrPassIn(factory.database, tx, fn)
+}
+
 func (factory *MRDFactory) UpdateMRD(mrdEvData *MetricReportDefinitionData) (err error) {
-	return WrapWithTX(factory.database, func(tx *sqlx.Tx) error {
+	return factory.WrapWithTX(func(tx *sqlx.Tx) error {
 		newMRD := *mrdEvData
 		MRD := &MetricReportDefinition{
 			MetricReportDefinitionData: mrdEvData,
@@ -253,7 +274,7 @@ func (factory *MRDFactory) UpdateMRD(mrdEvData *MetricReportDefinitionData) (err
 }
 
 func (factory *MRDFactory) AddMRD(mrdEvData *MetricReportDefinitionData) (err error) {
-	return WrapWithTX(factory.database, func(tx *sqlx.Tx) error {
+	return factory.WrapWithTX(func(tx *sqlx.Tx) error {
 		MRD := &MetricReportDefinition{
 			MetricReportDefinitionData: mrdEvData,
 			AppendLimit:                3000,
@@ -344,7 +365,7 @@ var StopIter = xerrors.New("Stop Iteration")
 //    TODO: pass in the TX to fn()
 // 	  TO Consider: add an error return to allow rollback a single iter?
 func (factory *MRDFactory) IterMRD(checkFn func(MRD *MetricReportDefinition) bool, fn func(MRD *MetricReportDefinition) error) error {
-	return WrapWithTX(factory.database, func(tx *sqlx.Tx) error {
+	return factory.WrapWithTX(func(tx *sqlx.Tx) error {
 		// set up query for the MRD
 		rows, err := factory.getSqlxTx(tx, "query_mrds").Queryx()
 		if err != nil {
@@ -424,7 +445,7 @@ func (factory *MRDFactory) loadReportDefinition(tx *sqlx.Tx, MRD *MetricReportDe
 }
 
 func (factory *MRDFactory) GenerateMetricReport(tx *sqlx.Tx, name string) (err error) {
-	fn := func(tx *sqlx.Tx) error {
+	return factory.WrapWithTXOrPassIn(tx, func(tx *sqlx.Tx) error {
 		MRD := &MetricReportDefinition{
 			MetricReportDefinitionData: &MetricReportDefinitionData{Name: name},
 		}
@@ -491,11 +512,7 @@ func (factory *MRDFactory) GenerateMetricReport(tx *sqlx.Tx, name string) (err e
 		}
 
 		return nil
-	}
-	if tx != nil {
-		return fn(tx)
-	}
-	return WrapWithTX(factory.database, fn)
+	})
 }
 
 type Scratch struct {
@@ -545,7 +562,7 @@ func (factory *MRDFactory) InsertMetricValue(ev *metric.MetricValueEventData) (e
 	// it may speed things up if we cache the MetricMeta in-process rather than going to DB every time.
 	// This should be straightforward because we do all updates in one goroutine, so could add the cache as a factory member
 
-	return WrapWithTX(factory.database, func(tx *sqlx.Tx) error {
+	return factory.WrapWithTX(func(tx *sqlx.Tx) error {
 		// First, Find the MetricMeta
 		rows, err := factory.getNamedSqlTx(tx, "find_metric_meta").Queryx(ev)
 		if err != nil {
@@ -694,9 +711,9 @@ func (factory *MRDFactory) InsertMetricValue(ev *metric.MetricValueEventData) (e
 	})
 }
 
-func (factory *MRDFactory) runSQLFromList(entrylog string, sqllist []string, errorlog string) (err error) {
+func (factory *MRDFactory) runSQLFromList(sqllist []string, entrylog string, errorlog string) (err error) {
 	factory.logger.Info(entrylog)
-	return WrapWithTX(factory.database, func(tx *sqlx.Tx) error {
+	return factory.WrapWithTX(func(tx *sqlx.Tx) error {
 		for _, sql := range sqllist {
 			_, err = factory.getSqlxTx(tx, sql).Exec()
 			if err != nil {
@@ -708,34 +725,17 @@ func (factory *MRDFactory) runSQLFromList(entrylog string, sqllist []string, err
 }
 
 func (factory *MRDFactory) DeleteOrphans() (err error) {
-	return factory.runSQLFromList("Database Maintenance: delete orphans", factory.orphanops, "Critical error performing orphan cleanup-> '%s': %w")
+	return factory.runSQLFromList(factory.orphanops, "Database Maintenance: Delete Orphans", "Orphan cleanup failed-> '%s': %w")
 }
+
 func (factory *MRDFactory) DeleteOldestValues() (err error) {
-	return factory.runSQLFromList("Database Maintenance:  Delete Oldest Metric Values", factory.deleteops, "Critical error performing value cleanup-> '%s': %w")
+	return factory.runSQLFromList(factory.deleteops, "Database Maintenance: Delete Oldest Metric Values", "Value cleanup failed-> '%s': %w")
 }
 
-func (factory *MRDFactory) Optimize() {
-	factory.logger.Debug("Optimizing database - start")
-	defer factory.logger.Debug("Optimizing database - done")
-	_, err := factory.database.Exec("PRAGMA optimize")
-	if err != nil {
-		factory.logger.Crit("Problem optimizing database", "err", err)
-	}
-	_, err = factory.database.Exec("PRAGMA shrink_memory")
-	if err != nil {
-		factory.logger.Crit("Problem shrinking memory", "err", err)
-	}
+func (factory *MRDFactory) Vacuum() error {
+	return factory.runSQLFromList(factory.vacuumops, "Database Maintenance: Vacuum", "Vacuum failed-> '%s': %w")
 }
 
-func (factory *MRDFactory) Vacuum() {
-	factory.logger.Debug("Vacuuming database - start")
-	defer factory.logger.Debug("Vacuuming database - done")
-	_, err := factory.database.Exec("vacuum")
-	if err != nil {
-		factory.logger.Crit("Problem vacuuming database", "err", err)
-	}
-	_, err = factory.database.Exec("PRAGMA shrink_memory")
-	if err != nil {
-		factory.logger.Crit("Problem shrinking memory", "err", err)
-	}
+func (factory *MRDFactory) Optimize() error {
+	return factory.runSQLFromList(factory.optimizeops, "Database Maintenance: Optimize", "Optimization failed-> '%s': %w")
 }
