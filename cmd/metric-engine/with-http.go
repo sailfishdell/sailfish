@@ -24,6 +24,10 @@ import (
 	"github.com/superchalupa/sailfish/src/tlscert"
 )
 
+type shutdowner interface {
+	Shutdown(context.Context) error
+}
+
 type service struct {
 	shutdownlist []shutdowner
 	logger       log.Logger
@@ -71,7 +75,9 @@ func starthttp(logger log.Logger, cfgMgr *viper.Viper, d *BusComponents) (ret *s
 		case strings.HasPrefix(listen, "pprof:"):
 			addr := strings.TrimPrefix(listen, "pprof:")
 			fn, s := runpprof(logger, addr)
-			addShutdown(listen, s)
+			if s != nil {
+				addShutdown(listen, s)
+			}
 			go fn()
 
 		case strings.HasPrefix(listen, "http:"):

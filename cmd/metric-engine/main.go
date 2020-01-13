@@ -19,10 +19,6 @@ import (
 	"github.com/superchalupa/sailfish/src/log15adapter"
 )
 
-type shutdowner interface {
-	Shutdown(context.Context) error
-}
-
 type BusComponents struct {
 	EventBus       eh.EventBus
 	EventWaiter    *eventwaiter.EventWaiter

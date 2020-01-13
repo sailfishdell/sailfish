@@ -1,4 +1,5 @@
 // +build pprof
+// +build http
 
 package main
 
@@ -12,7 +13,7 @@ import (
 	log "github.com/superchalupa/sailfish/src/log"
 )
 
-func runpprof(logger log.Logger, listen string) (func(), shutdowner) {
+func runpprof(logger log.Logger, listen string) (func(), *http.Server) {
 	logger.Crit("PPROF ENABLED")
 	// the _ import of pprof will attach to the default global http servemux
 	// so just serve off that one
