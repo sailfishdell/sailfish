@@ -36,8 +36,8 @@ func FormatAttributeDump(
 		return errors.New("fallback")
 	}
 
-	m.Lock()
-	defer m.Unlock()
+	m.RLock()
+	defer m.RUnlock()
 	attributes, ok := m.GetPropertyUnlocked(prop).(map[string]map[string]map[string]interface{})
 	if !ok {
 		rrp.Value = map[string]interface{}{}
