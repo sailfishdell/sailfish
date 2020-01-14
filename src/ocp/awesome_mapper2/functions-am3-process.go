@@ -321,7 +321,7 @@ func init() {
 			data, ok := event.Data().(*a.AttributeUpdatedData)
 			if !ok {
 				logger.Error("Did not have AttributeUpdated event", "type", event.EventType, "data", event.Data())
-				return errors.New("Did not receive AttributeUpdated")
+				return errors.New("did not receive AttributeUpdated")
 			}
 
 			//logger.Error("Received AttributeUpdatedData event", "value",data.Value)
@@ -360,7 +360,7 @@ func init() {
 			data, ok := event.Data().(*dm_event.FileReadEventData)
 			if !ok {
 				logger.Error("Did not have FileReadEvent event", "type", event.EventType, "data", event.Data())
-				return errors.New("Did not receive FileReadEvent")
+				return errors.New("did not receive FileReadEvent")
 			}
 
 			param := processConfig.(map[interface{}]interface{})

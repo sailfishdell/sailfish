@@ -20,7 +20,7 @@ func MakeSubmitTestEvent(eb eh.EventBus) func(context.Context, eh.Event, *domain
 		data, ok := event.Data().(*ah.GenericActionEventData)
 		if !ok {
 			domain.ContextLogger(ctx, "submit_event").Crit("type assert failed", "event_data", event.Data(), "Type", fmt.Sprintf("%T", event.Data()))
-			return errors.New("Didnt get the right kind of event")
+			return errors.New("didnt get the right kind of event")
 		}
 
 		redfishEvent := &RedfishEventData{}

@@ -22,13 +22,13 @@ func MakeSubmitTestMetricReport(eb eh.EventBus, d *domain.DomainObjects, ch eh.C
 		d, ok := event.Data().(*ah.GenericActionEventData)
 		if !ok {
 			domain.ContextLogger(ctx, "submit_event").Crit("type assert failed", "event_data", event.Data(), "Type", fmt.Sprintf("%T", event.Data()))
-			return errors.New("Didnt get the right kind of event")
+			return errors.New("didnt get the right kind of event")
 		}
 
 		m, ok := d.ActionData.(map[string]interface{})
 		if !ok {
 			domain.ContextLogger(ctx, "submit_event").Crit("type assert failed", "event data is not a map[string] interface", d.ActionData, "Type", fmt.Sprintf("%T", d.ActionData))
-			return errors.New("Didnt get the right kind of event")
+			return errors.New("didnt get the right kind of event")
 		}
 
 		name, ok := m["MetricName"]

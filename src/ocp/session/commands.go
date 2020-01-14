@@ -101,7 +101,7 @@ func (c *POST) Handle(ctx context.Context, a *domain.RedfishResourceAggregate) e
 			"Login",
 		)
 	} else {
-		return errors.New("Could not verify username/password")
+		return errors.New("could not verify username/password")
 	}
 
 	// instantiate here

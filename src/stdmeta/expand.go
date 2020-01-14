@@ -231,7 +231,7 @@ func CountFormatter(
 ) error {
 	p, ok := meta["property"].(string)
 	if !ok {
-		return errors.New("property name to operate on not passed in meta.")
+		return errors.New("property name to operate on not passed in meta")
 	}
 
 	arr := m.GetProperty(p)

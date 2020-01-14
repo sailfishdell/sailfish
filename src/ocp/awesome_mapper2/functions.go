@@ -277,7 +277,7 @@ func init() {
 			str := strconv.FormatInt(reflect.ValueOf(t).Int(), 10)
 			return str, nil
 		default:
-			return nil, errors.New("Not an int, float, or string")
+			return nil, errors.New("not an int, float, or string")
 		}
 	})
 	AddFunction("round_2_dec_pl", func(args ...interface{}) (interface{}, error) {
@@ -370,7 +370,7 @@ func init() {
 		case 4, 5: //critical, non-recoverable
 			return "Critical", nil
 		default:
-			return nil, errors.New("Invalid object status")
+			return nil, errors.New("invalid object status")
 		}
 	})
 

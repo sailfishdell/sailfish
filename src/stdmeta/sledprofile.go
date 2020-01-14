@@ -46,27 +46,27 @@ func (s *SledProfile) PropertyPatch(
 
 	v, err := domain.InstantiatePlugin(domain.PluginType(resURI))
 	if err != nil || v == nil {
-		return errors.New("Could not find plugin for resource uri")
+		return errors.New("could not find plugin for resource uri")
 	}
 
 	vw, ok := v.(*view.View)
 	if !ok {
-		return errors.New("Could not typecast plugin as view")
+		return errors.New("could not typecast plugin as view")
 	}
 
 	mdl := vw.GetModel("default")
 	if mdl == nil {
-		return errors.New("Could not find 'default' model in view")
+		return errors.New("could not find 'default' model in view")
 	}
 
 	sled_fqdd_raw, ok := mdl.GetPropertyOk("slot_contains")
 	if !ok {
-		return errors.New("Could not get 'slot_contains' property from model")
+		return errors.New("could not get 'slot_contains' property from model")
 	}
 
 	sled_fqdd, ok := sled_fqdd_raw.(string)
 	if !ok {
-		return errors.New("Could not typecast sled_fqdd into string")
+		return errors.New("could not typecast sled_fqdd into string")
 	}
 
 	reqUUID := eh.NewUUID()
@@ -101,14 +101,14 @@ func (s *SledProfile) PropertyPatch(
 		return true
 	})
 	if err != nil {
-		return errors.New("Failed to make attribute updated event listener")
+		return errors.New("failed to make attribute updated event listener")
 	}
 	l.Name = "sledprofile patch listener"
 	defer l.Close()
 
 	event, err := l.Wait(tmctx)
 	if err != nil {
-		return errors.New("TIMED OUT")
+		return errors.New("timed out")
 	} else {
 		data, _ := event.Data().(*a.AttributeUpdatedData)
 
