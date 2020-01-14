@@ -25,7 +25,7 @@ import (
 	"github.com/superchalupa/sailfish/src/log"
 )
 
-type listener interface {
+type Listener interface {
 	GetID() eh.UUID
 	ConsumeEventFromWaiter(event eh.Event)
 	CloseInbox()
@@ -36,8 +36,8 @@ type EventWaiter struct {
 	name       string
 	done       chan struct{}
 	inbox      chan eh.Event
-	register   chan listener
-	unregister chan listener
+	register   chan Listener
+	unregister chan Listener
 	autorun    bool
 	logger     log.Logger
 }
@@ -49,8 +49,8 @@ func NewEventWaiter(o ...Option) *EventWaiter {
 	w := EventWaiter{
 		done:       make(chan struct{}),
 		inbox:      make(chan eh.Event, 200),
-		register:   make(chan listener),
-		unregister: make(chan listener),
+		register:   make(chan Listener),
+		unregister: make(chan Listener),
 		autorun:    true,
 	}
 
@@ -96,7 +96,7 @@ func (w *EventWaiter) ApplyOption(options ...Option) error {
 }
 
 func (w *EventWaiter) Run() {
-	listeners := map[eh.UUID]listener{}
+	listeners := map[eh.UUID]Listener{}
 	startPrinting := false
 	for {
 		select {
@@ -156,10 +156,10 @@ func (w *EventWaiter) Listen(ctx context.Context, match func(eh.Event) bool) (*E
 	return NewListener(ctx, w.logger, w, match), nil
 }
 
-func (w *EventWaiter) RegisterListener(l listener) {
+func (w *EventWaiter) RegisterListener(l Listener) {
 	w.register <- l
 }
 
-func (w *EventWaiter) UnRegisterListener(l listener) {
+func (w *EventWaiter) UnRegisterListener(l Listener) {
 	w.unregister <- l
 }
