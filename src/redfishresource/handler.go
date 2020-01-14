@@ -20,12 +20,6 @@ import (
 	"github.com/superchalupa/sailfish/src/looplab/eventwaiter"
 )
 
-type waiter interface {
-	Listen(context.Context, func(eh.Event) bool) (*eventwaiter.EventListener, error)
-	Notify(context.Context, eh.Event)
-	Run()
-}
-
 type myRepo interface {
 	eh.ReadWriteRepo
 	IterateCB(ctx context.Context, cb func(context.Context, eh.Entity) error) (err error)
@@ -42,7 +36,7 @@ type DomainObjects struct {
 	// for http returns
 	HTTPResultsBus eh.EventBus
 	HTTPPublisher  eh.EventPublisher
-	HTTPWaiter     waiter
+	HTTPWaiter     *eventwaiter.EventWaiter
 
 	treeMu sync.RWMutex
 	Tree   map[string]eh.UUID
@@ -70,10 +64,9 @@ func NewDomainObjects() (*DomainObjects, error) {
 	d.EventPublisher = eventpublisher.NewEventPublisher()
 	d.EventBus.AddHandler(eh.MatchAny(), d.EventPublisher)
 
-	ew := eventwaiter.NewEventWaiter(eventwaiter.SetName("Main"), eventwaiter.NoAutoRun)
-	d.EventWaiter = ew
+	d.EventWaiter = eventwaiter.NewEventWaiter(eventwaiter.SetName("Main"), eventwaiter.NoAutoRun)
 	d.EventPublisher.AddObserver(d.EventWaiter)
-	go ew.Run()
+	go d.EventWaiter.Run()
 
 	// specific event bus to handle returns from http
 	d.HTTPResultsBus = eventbus.NewEventBus()

@@ -11,9 +11,7 @@ import (
 )
 
 type busObjs interface {
-	GetBus() eh.EventBus
 	GetWaiter() *eventwaiter.EventWaiter
-	GetPublisher() eh.EventPublisher
 }
 
 // NewSSEHandler constructs a new SSEHandler with the given username and privileges.
@@ -35,7 +33,7 @@ func (rh *SSEHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	requestLogger := ContextLogger(ctx, "sse_handler")
 	requestLogger.Info("Trying to start SSE Stream for request.")
 
-	defer r.Body.Close()
+	r.Body.Close()
 
 	flusher, ok := w.(http.Flusher)
 	if !ok {
@@ -44,17 +42,9 @@ func (rh *SSEHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO: need to worry about privileges: probably should do the privilege checks in the Listener
-	// to avoid races, set up our listener first
-	l, err := rh.d.GetWaiter().Listen(ctx, func(event eh.Event) bool {
+	l := eventwaiter.NewListener(ctx, requestLogger, rh.d.GetWaiter(), func(event eh.Event) bool {
 		return true
 	})
-	if err != nil {
-		requestLogger.Crit("Could not create an event waiter.", "err", err)
-		http.Error(w, "could not create waiter"+err.Error(), http.StatusInternalServerError)
-		return
-	}
-
 	l.Name = "SSE Listener"
 
 	// set headers first
@@ -85,17 +75,7 @@ func (rh *SSEHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	flusher.Flush()
 
-	for {
-		event, err := l.Wait(ctx)
-		if err != nil {
-			requestLogger.Error("Wait exited", "err", err)
-			break
-		}
-
-		if event == nil {
-			continue
-		}
-
+	l.ProcessEvents(ctx, func(event eh.Event) {
 		d, err := json.Marshal(
 			&struct {
 				Name string      `json:"name"`
@@ -107,11 +87,12 @@ func (rh *SSEHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		)
 		if err != nil {
 			requestLogger.Error("MARSHAL SSE FAILED", "err", err, "data", event.Data(), "event", event)
+			return
 		}
 		fmt.Fprintf(w, "data: %s\n\n", d)
 
 		flusher.Flush()
-	}
+	})
 
 	requestLogger.Debug("Closed session")
 }

@@ -8,8 +8,10 @@ import (
 
 const AggregateType = eh.AggregateType("RedfishResource")
 
-func init() {
-	RegisterInitFN(RegisterRRA)
+func InitDomain(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew interface{} /*unused*/) {
+	eh.RegisterAggregate(func(id eh.UUID) eh.Aggregate {
+		return &RedfishResourceAggregate{}
+	})
 }
 
 func (a *RedfishResourceAggregate) HandleCommand(ctx context.Context, command eh.Command) error {
@@ -19,12 +21,6 @@ func (a *RedfishResourceAggregate) HandleCommand(ctx context.Context, command eh
 	}
 
 	return nil
-}
-
-func RegisterRRA(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew waiter) {
-	eh.RegisterAggregate(func(id eh.UUID) eh.Aggregate {
-		return &RedfishResourceAggregate{}
-	})
 }
 
 type RedfishResourceAggregate struct {
