@@ -176,6 +176,12 @@ func (c *POST) Handle(ctx context.Context, a *domain.RedfishResourceAggregate) e
 	return nil
 }
 
+type prop interface {
+	GetProperty(string) interface{}
+}
+
+type handler func(context.Context, eh.Event, *domain.HTTPCmdProcessedData) error
+
 type uploadrunner interface {
 	GetUpload(string) view.Upload
 }
