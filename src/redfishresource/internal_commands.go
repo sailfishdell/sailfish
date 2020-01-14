@@ -257,7 +257,7 @@ func UpdateAgg(a *RedfishResourceAggregate, pathSlice []string, v interface{}, a
 						k2.Value = loc
 						continue
 					} else {
-						tmp :=k2.Value
+						tmp := k2.Value
 						loc, ok = tmp.(map[string]interface{})
 					}
 
