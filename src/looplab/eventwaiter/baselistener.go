@@ -21,8 +21,8 @@ type BaseEventListener struct {
 }
 
 type EW interface {
-	RegisterListener(listener)
-	UnRegisterListener(listener)
+	RegisterListener(Listener)
+	UnRegisterListener(Listener)
 }
 
 func NewBaseListener(ctx context.Context, log log.Logger, ew EW, match func(eh.Event) bool) *BaseEventListener {
