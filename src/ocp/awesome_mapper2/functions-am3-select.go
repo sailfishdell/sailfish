@@ -113,7 +113,7 @@ func init() {
 			lhs := baseuri(str)
 			cfg_params, ok := p.Params["cfg_params"].(*MapperParameters)
 			if !ok {
-				return false, errors.New("No mapperparameters found")
+				return false, errors.New("no mapperparameters found")
 			}
 			rhsParams := cfgEntry.SelectParams
 			rhs := makeRHS(cfg_params, rhsParams)
@@ -160,7 +160,7 @@ func init() {
 
 			cfg_params, ok := p.Params["cfg_params"].(*MapperParameters)
 			if !ok {
-				return false, errors.New("No mapperparameters found")
+				return false, errors.New("no mapperparameters found")
 			}
 			rhsParams := cfgEntry.SelectParams
 			rhs := makeRHS(cfg_params, rhsParams)

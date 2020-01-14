@@ -25,7 +25,7 @@ func MakeMaker(l log.Logger, name string, fn func(args ...interface{}) (interfac
 
 		uniqueName, ok := args[1].(string)
 		if !ok {
-			return nil, errors.New("Need a string fqdd for addslot(), but didnt get one")
+			return nil, errors.New("need a string fqdd for addslot(), but didnt get one")
 		}
 		l.Debug("called add"+name+" from mapper", "uniqueName", uniqueName)
 
@@ -52,7 +52,7 @@ func AddECInstantiate(l log.Logger, instantiateSvc *testaggregate.Service) {
 	MakeMaker(l, "manager_cmc_integrated", func(args ...interface{}) (interface{}, error) {
 		FQDD, ok := args[0].(string)
 		if !ok {
-			return nil, errors.New("Need a string fqdd for addec_system_modular(), but didnt get one")
+			return nil, errors.New("need a string fqdd for addec_system_modular(), but didnt get one")
 		}
 		instantiateSvc.Instantiate("manager_cmc_integrated", map[string]interface{}{
 			"FQDD":                             FQDD,
@@ -67,7 +67,7 @@ func AddECInstantiate(l log.Logger, instantiateSvc *testaggregate.Service) {
 	MakeMaker(l, "system_chassis", func(args ...interface{}) (interface{}, error) {
 		FQDD, ok := args[0].(string)
 		if !ok {
-			return nil, errors.New("Need a string fqdd for addec_system_modular(), but didnt get one")
+			return nil, errors.New("need a string fqdd for addec_system_modular(), but didnt get one")
 		}
 		instantiateSvc.Instantiate("system_chassis", map[string]interface{}{
 			"FQDD":                   FQDD,
@@ -81,7 +81,7 @@ func AddECInstantiate(l log.Logger, instantiateSvc *testaggregate.Service) {
 	MakeMaker(l, "chassis_cmc_integrated", func(args ...interface{}) (interface{}, error) {
 		FQDD, ok := args[0].(string)
 		if !ok {
-			return nil, errors.New("Need a string fqdd for addec_system_modular(), but didnt get one")
+			return nil, errors.New("need a string fqdd for addec_system_modular(), but didnt get one")
 		}
 		instantiateSvc.Instantiate("chassis_cmc_integrated", map[string]interface{}{"FQDD": FQDD})
 
@@ -91,7 +91,7 @@ func AddECInstantiate(l log.Logger, instantiateSvc *testaggregate.Service) {
 	MakeMaker(l, "ec_system_modular", func(args ...interface{}) (interface{}, error) {
 		FQDD, ok := args[0].(string)
 		if !ok {
-			return nil, errors.New("Need a string fqdd for addec_system_modular(), but didnt get one")
+			return nil, errors.New("need a string fqdd for addec_system_modular(), but didnt get one")
 		}
 		instantiateSvc.Instantiate("sled", map[string]interface{}{"FQDD": FQDD})
 
@@ -101,7 +101,7 @@ func AddECInstantiate(l log.Logger, instantiateSvc *testaggregate.Service) {
 	MakeMaker(l, "iom", func(args ...interface{}) (interface{}, error) {
 		FQDD, ok := args[0].(string)
 		if !ok {
-			return nil, errors.New("Need a string fqdd for addiom(), but didnt get one")
+			return nil, errors.New("need a string fqdd for addiom(), but didnt get one")
 		}
 		instantiateSvc.Instantiate("iom", map[string]interface{}{"FQDD": FQDD})
 
@@ -111,11 +111,11 @@ func AddECInstantiate(l log.Logger, instantiateSvc *testaggregate.Service) {
 	MakeMaker(l, "ecfan", func(args ...interface{}) (interface{}, error) {
 		ParentFQDD, ok := args[1].(string)
 		if !ok {
-			return nil, errors.New("Need a string fqdd for addecfan(), but didnt get one")
+			return nil, errors.New("need a string fqdd for addecfan(), but didnt get one")
 		}
 		FQDD, ok := args[2].(string)
 		if !ok {
-			return nil, errors.New("Need a string fqdd for addecfan(), but didnt get one")
+			return nil, errors.New("need a string fqdd for addecfan(), but didnt get one")
 		}
 
 		instantiateSvc.Instantiate("fan",
@@ -131,11 +131,11 @@ func AddECInstantiate(l log.Logger, instantiateSvc *testaggregate.Service) {
 	MakeMaker(l, "ecpsu", func(args ...interface{}) (interface{}, error) {
 		ParentFQDD, ok := args[1].(string)
 		if !ok {
-			return nil, errors.New("Need a string fqdd for addecpsu(), but didnt get one")
+			return nil, errors.New("need a string fqdd for addecpsu(), but didnt get one")
 		}
 		FQDD, ok := args[2].(string)
 		if !ok {
-			return nil, errors.New("Need a string fqdd for addecpsu(), but didnt get one")
+			return nil, errors.New("need a string fqdd for addecpsu(), but didnt get one")
 		}
 
 		instantiateSvc.Instantiate("psu_slot",
@@ -162,16 +162,16 @@ func AddECInstantiate(l log.Logger, instantiateSvc *testaggregate.Service) {
 	MakeMaker(l, "slot", func(args ...interface{}) (interface{}, error) {
 		ParentFQDD, ok := args[1].(string)
 		if !ok {
-			return nil, errors.New("Need a string fqdd for addidrac_storage_instance(), but didnt get one")
+			return nil, errors.New("need a string fqdd for addidrac_storage_instance(), but didnt get one")
 		}
 		FQDD, ok := args[2].(string)
 		if !ok {
-			return nil, errors.New("Need a string fqdd for addidrac_storage_instance(), but didnt get one")
+			return nil, errors.New("need a string fqdd for addidrac_storage_instance(), but didnt get one")
 		}
 
 		s := strings.Split(FQDD, ".")
 		if len(s) < 2 {
-			return nil, errors.New("Invalid FQDD")
+			return nil, errors.New("invalid FQDD")
 		}
 		group, index := s[0], s[1]
 
@@ -190,16 +190,16 @@ func AddECInstantiate(l log.Logger, instantiateSvc *testaggregate.Service) {
 	MakeMaker(l, "slotconfig", func(args ...interface{}) (interface{}, error) {
 		ParentFQDD, ok := args[1].(string)
 		if !ok {
-			return nil, errors.New("Need a string fqdd for addidrac_storage_instance(), but didnt get one")
+			return nil, errors.New("need a string fqdd for addidrac_storage_instance(), but didnt get one")
 		}
 		FQDD, ok := args[2].(string)
 		if !ok {
-			return nil, errors.New("Need a string fqdd for addidrac_storage_instance(), but didnt get one")
+			return nil, errors.New("need a string fqdd for addidrac_storage_instance(), but didnt get one")
 		}
 
 		s := strings.Split(FQDD, ".")
 		if len(s) < 2 {
-			return nil, errors.New("Invalid FQDD")
+			return nil, errors.New("invalid FQDD")
 		}
 		group, index := s[0], s[1]
 
@@ -218,11 +218,11 @@ func AddECInstantiate(l log.Logger, instantiateSvc *testaggregate.Service) {
 	MakeMaker(l, "certificate", func(args ...interface{}) (interface{}, error) {
 		ParentFQDD, ok := args[1].(string)
 		if !ok {
-			return nil, errors.New("Need a string fqdd for addcertificate(), but didnt get one")
+			return nil, errors.New("need a string fqdd for addcertificate(), but didnt get one")
 		}
 		FQDD, ok := args[2].(string)
 		if !ok {
-			return nil, errors.New("Need a string fqdd for addcertificate(), but didnt get one")
+			return nil, errors.New("need a string fqdd for addcertificate(), but didnt get one")
 		}
 
 		instantiateSvc.Instantiate("certificate",

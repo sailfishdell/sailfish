@@ -19,7 +19,7 @@ func RegisterARMapper(s *testaggregate.Service, arsvc *ARService) {
 		cfgParams, ok := cfg.(map[interface{}]interface{})
 		if !ok {
 			logger.Crit("Failed to type assert cfg to string", "cfg", cfg)
-			return errors.New("Failed to type assert expression to string")
+			return errors.New("failed to type assert expression to string")
 		}
 
 		// ctx, logger, viper, *model, cfg_name, params
@@ -61,7 +61,7 @@ func RegisterARMapper(s *testaggregate.Service, arsvc *ARService) {
 		expr, err := govaluate.NewEvaluableExpressionWithFunctions(mappingUniqueNameStr, functions)
 		if err != nil {
 			logger.Crit("Failed to create evaluable expression", "expr", expr, "err", err)
-			return errors.New("Failed to create evaluable expression")
+			return errors.New("failed to create evaluable expression")
 		}
 		mappingName, err := expr.Evaluate(parameters)
 		if err != nil {

@@ -63,12 +63,12 @@ func (c *POST) Handle(ctx context.Context, a *domain.RedfishResourceAggregate) e
 	agg, err := c.d.AggregateStore.Load(subctx, domain.AggregateType, view.GetUUID())
 	if err != nil {
 		a.PublishEvent(eh.NewEvent(domain.HTTPCmdProcessed, data, time.Now()))
-		return errors.New("Could not load subscription aggregate")
+		return errors.New("could not load subscription aggregate")
 	}
 	redfishResource, ok := agg.(*domain.RedfishResourceAggregate)
 	if !ok {
 		a.PublishEvent(eh.NewEvent(domain.HTTPCmdProcessed, data, time.Now()))
-		return errors.New("Wrong aggregate type returned")
+		return errors.New("wrong aggregate type returned")
 	}
 
 	domain.NewGet(subctx, redfishResource, &redfishResource.Properties, c.auth)

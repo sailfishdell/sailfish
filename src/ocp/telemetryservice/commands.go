@@ -66,24 +66,24 @@ func (c *POST) Handle(ctx context.Context, a *domain.RedfishResourceAggregate) e
 	bl, mruuid, mrduuid := c.ts.CreateMetricReportDefinition(ctx, c.MRD, data)
 	if bl == false {
 		a.PublishEvent(eh.NewEvent(domain.HTTPCmdProcessed, data, time.Now()))
-		return errors.New("Could not create MRD")
+		return errors.New("could not create MRD")
 	}
 
 	agg, err := c.d.AggregateStore.Load(ctx, domain.AggregateType, mrduuid)
 	if err != nil {
 		a.PublishEvent(eh.NewEvent(domain.HTTPCmdProcessed, data, time.Now()))
-		return errors.New("Could not load subscription aggregate")
+		return errors.New("could not load subscription aggregate")
 	}
 	redfishResource, ok := agg.(*domain.RedfishResourceAggregate)
 	if !ok {
 		a.PublishEvent(eh.NewEvent(domain.HTTPCmdProcessed, data, time.Now()))
-		return errors.New("Wrong aggregate type returned")
+		return errors.New("wrong aggregate type returned")
 	}
 
 	agg, err = c.d.AggregateStore.Load(ctx, domain.AggregateType, mruuid)
 	if err != nil {
 		a.PublishEvent(eh.NewEvent(domain.HTTPCmdProcessed, data, time.Now()))
-		return errors.New("Could not load subscription aggregate")
+		return errors.New("could not load subscription aggregate")
 	}
 
 	//redfishResource.Lock()

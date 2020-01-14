@@ -101,13 +101,13 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 		logUri, ok := args[0].(string)
 		if !ok {
 			logger.Crit("Mapper configuration error: uri not passed as string", "args[0]", args[0])
-			return nil, errors.New("Mapper configuration error: uri not passed as string")
+			return nil, errors.New("mapper configuration error: uri not passed as string")
 		}
 
 		logEntry, ok := args[1].(*LogEventData)
 		if !ok {
 			logger.Crit("Mapper configuration error: log event data not passed", "args[1]", args[1], "TYPE", fmt.Sprintf("%T", args[1]))
-			return nil, errors.New("Mapper configuration error: log event data not passed")
+			return nil, errors.New("mapper configuration error: log event data not passed")
 		}
 
 		uuid := eh.NewUUID()
@@ -196,7 +196,7 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 		logUri, ok := args[0].(string)
 		if !ok {
 			logger.Crit("Mapper configuration error: uri not passed as string", "args[0]", args[0])
-			return nil, errors.New("Mapper configuration error: uri not passed as string")
+			return nil, errors.New("mapper configuration error: uri not passed as string")
 		}
 
 		logger.Debug("Clearing all uris within base_uri", "base_uri", logUri)
@@ -228,12 +228,12 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 		logUri, ok := args[0].(string)
 		if !ok {
 			logger.Crit("Mapper configuration error: uri not passed as string", "args[0]", args[0])
-			return nil, errors.New("Mapper configuration error: uri not passed as string")
+			return nil, errors.New("mapper configuration error: uri not passed as string")
 		}
 		faultEntry, ok := args[1].(*FaultEntryRmData)
 		if !ok {
 			logger.Crit("Mapper configuration error: log event data not passed", "args[1]", args[1], "TYPE", fmt.Sprintf("%T", args[1]))
-			return nil, errors.New("Mapper configuration error: log event data not passed")
+			return nil, errors.New("mapper configuration error: log event data not passed")
 		}
 
 		uri := fmt.Sprintf("%s/%s", logUri, faultEntry.Name)
@@ -261,13 +261,13 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 		//fmt.Printf("%s", logUri)
 		if !ok {
 			logger.Crit("Mapper configuration error: uri not passed as string", "args[0]", args[0])
-			return nil, errors.New("Mapper configuration error: uri not passed as string")
+			return nil, errors.New("mapper configuration error: uri not passed as string")
 		}
 
 		faultEntry, ok := args[1].(*FaultEntryAddData)
 		if !ok {
 			logger.Crit("Mapper configuration error: log event data not passed", "args[1]", args[1], "TYPE", fmt.Sprintf("%T", args[1]))
-			return nil, errors.New("Mapper configuration error: log event data not passed")
+			return nil, errors.New("mapper configuration error: log event data not passed")
 		}
 
 		// check if fault remove event is already received.  Can return
@@ -350,7 +350,7 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 		logEntry, ok := args[0].(*LogEventData)
 		if !ok {
 			logger.Crit("Mapper configuration error: log event data not passed", "args[1]", args[1], "TYPE", fmt.Sprintf("%T", args[1]))
-			return nil, errors.New("Mapper configuration error: log event data not passed")
+			return nil, errors.New("mapper configuration error: log event data not passed")
 		}
 
 		timeF, err := strconv.ParseFloat(logEntry.Created, 64)
@@ -383,13 +383,13 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 		ss, ok := args[0].(string)
 		if !ok {
 			logger.Crit("Mapper configuration error: subsystem %s in not a string", "args[0]")
-			return nil, errors.New("Mapper configuration error: subsystem is not a string")
+			return nil, errors.New("mapper configuration error: subsystem is not a string")
 		}
 
 		health, ok := args[1].(string)
 		if !ok {
 			logger.Crit("Mapper configuration error: health %s in not a string", "args[0]")
-			return nil, errors.New("Mapper configuration error: health is not a string")
+			return nil, errors.New("mapper configuration error: health is not a string")
 		}
 
 		t := time.Now()

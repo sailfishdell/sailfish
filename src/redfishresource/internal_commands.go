@@ -74,7 +74,7 @@ func (c *CreateRedfishResource) Handle(ctx context.Context, a *RedfishResourceAg
 
 	if a.ID != eh.UUID("") {
 		requestLogger.Error("Aggregate already exists!", "command", "CreateRedfishResource", "UUID", a.ID, "URI", a.ResourceURI, "request_URI", c.ResourceURI)
-		return errors.New("Already created!")
+		return errors.New("already created!")
 	}
 	a.ID = c.ID
 	a.ResourceURI = c.ResourceURI
@@ -218,7 +218,7 @@ func (c *UpdateRedfishResourceProperties2) CommandType() eh.CommandType {
 func UpdateAgg(a *RedfishResourceAggregate, pathSlice []string, v interface{}, appendLimit int) error {
 	loc, ok := a.Properties.Value.(map[string]interface{})
 	if !ok {
-		return errors.New(fmt.Sprintf("Updateagg: aggregate wis wrong type %T", a.Properties.Value))
+		return fmt.Errorf("updateagg: property is wrong type %T", a.Properties.Value)
 	}
 
 	plen := len(pathSlice) - 1
@@ -232,7 +232,7 @@ func UpdateAgg(a *RedfishResourceAggregate, pathSlice []string, v interface{}, a
 		case *RedfishResourceProperty:
 			k2, ok := k.(*RedfishResourceProperty)
 			if !ok {
-				return fmt.Errorf("UpdateAgg Failed, RedfishResourcePropertyFailed")
+				return errors.New("updateAgg Failed, RedfishResourcePropertyFailed")
 			}
 			// metric events have the data appended
 			switch v.(type) {
@@ -281,7 +281,7 @@ func GetValueinAgg(a *RedfishResourceAggregate, pathSlice []string) interface{} 
 	defer a.Properties.Unlock()
 	loc, ok := a.Properties.Value.(map[string]interface{})
 	if !ok {
-		return errors.New(fmt.Sprintf("GetValueinAgg: aggregate value is not a map[string]interface{}, but %T", a.Properties.Value))
+		return errors.New(fmt.Sprintf("getValueinAgg: aggregate value is not a map[string]interface{}, but %T", a.Properties.Value))
 	}
 
 	plen := len(pathSlice) - 1

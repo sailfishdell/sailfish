@@ -110,7 +110,7 @@ func (s *Service) NewMapping(ctx context.Context, logger log.Logger, cfg *viper.
 		k := cfg.Sub("awesome_mapper")
 		if k == nil {
 			logger.Warn("missing config file section: 'awesome_mapper'")
-			return errors.New("Missing config section 'awesome_mapper'")
+			return errors.New("missing config section 'awesome_mapper'")
 		}
 		// we have a struct that mirrors what is supposed to be in the config, pull it directly in
 		err := k.UnmarshalKey(cfgName, &fullSectionMappingList)

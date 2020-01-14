@@ -36,7 +36,7 @@ func RegisterPumpUpload(s *Service, uploadSvc uploadService, pumpSvc pumpService
 		cfgParams, ok := cfg.(map[interface{}]interface{})
 		if !ok {
 			logger.Error("Failed to type assert cfg to string", "cfg", cfg)
-			return errors.New("Failed to type assert expression to string")
+			return errors.New("failed to type assert expression to string")
 		}
 
 		actionName, ok := cfgParams["name"]
@@ -84,7 +84,7 @@ func RegisterPumpAction(s *Service, actionSvc actionService, pumpSvc pumpService
 		cfgParams, ok := cfg.(map[interface{}]interface{})
 		if !ok {
 			logger.Error("Failed to type assert cfg to string", "cfg", cfg)
-			return errors.New("Failed to type assert expression to string")
+			return errors.New("failed to type assert expression to string")
 		}
 
 		actionName, ok := cfgParams["name"]
@@ -130,7 +130,7 @@ func RegisterPumpAction(s *Service, actionSvc actionService, pumpSvc pumpService
 		cfgParams, ok := cfg.(map[interface{}]interface{})
 		if !ok {
 			logger.Error("Failed to type assert cfg to string", "cfg", cfg)
-			return errors.New("Failed to type assert expression to string")
+			return errors.New("failed to type assert expression to string")
 		}
 
 		actionName, ok := cfgParams["name"]
@@ -158,7 +158,7 @@ func RegisterPumpAction(s *Service, actionSvc actionService, pumpSvc pumpService
 		modelAction, ok := cfgParams["actionFunction"]
 		if !ok {
 			logger.Error("Config file missing model name for action", "cfg", cfg)
-			return errors.New("Config file missing model name for action")
+			return errors.New("config file missing model name for action")
 		}
 		modelActionStr, ok := modelAction.(string)
 		if !ok {
@@ -170,7 +170,7 @@ func RegisterPumpAction(s *Service, actionSvc actionService, pumpSvc pumpService
 		if err != nil {
 			logger.Error("Failed to create evaluable expression", "expr", expr, "err", err)
 			functionsMu.RUnlock()
-			return errors.New("Failed to create evaluable expression")
+			return errors.New("failed to create evaluable expression")
 		}
 		action, err := expr.Evaluate(parameters)
 		functionsMu.RUnlock()
@@ -181,7 +181,7 @@ func RegisterPumpAction(s *Service, actionSvc actionService, pumpSvc pumpService
 		actionFn, ok := action.(view.Action)
 		if !ok {
 			logger.Error("Could not type assert to action function", "expr", expr)
-			return errors.New("Could not type assert to action function")
+			return errors.New("could not type assert to action function")
 		}
 
 		logger.Info("WithAction", "name", actionName, "exprStr", modelActionStr)
@@ -194,7 +194,7 @@ func RegisterPumpAction(s *Service, actionSvc actionService, pumpSvc pumpService
 		cfgParams, ok := cfg.(map[interface{}]interface{})
 		if !ok {
 			logger.Error("Failed to type assert cfg to string", "cfg", cfg)
-			return errors.New("Failed to type assert expression to string")
+			return errors.New("failed to type assert expression to string")
 		}
 
 		modelName, ok := cfgParams["name"]
@@ -223,7 +223,7 @@ func RegisterPumpAction(s *Service, actionSvc actionService, pumpSvc pumpService
 		if err != nil {
 			functionsMu.RUnlock()
 			logger.Error("Failed to create evaluable expression", "expr", expr, "err", err)
-			return errors.New("Failed to create evaluable expression")
+			return errors.New("failed to create evaluable expression")
 		}
 		modelVar, err := expr.Evaluate(parameters)
 		functionsMu.RUnlock()
@@ -241,7 +241,7 @@ func RegisterPumpAction(s *Service, actionSvc actionService, pumpSvc pumpService
 		cfgParams, ok := cfg.(map[interface{}]interface{})
 		if !ok {
 			logger.Error("Failed to type assert cfg to string", "cfg", cfg)
-			return errors.New("Failed to type assert expression to string")
+			return errors.New("failed to type assert expression to string")
 		}
 
 		existing, ok := cfgParams["existing"]
@@ -276,7 +276,7 @@ func RegisterPumpAction(s *Service, actionSvc actionService, pumpSvc pumpService
 		cfgParams, ok := cfg.([]interface{})
 		if !ok {
 			logger.Error("Failed to type assert cfg to string", "cfg", cfg)
-			return errors.New("Failed to type assert expression to string")
+			return errors.New("failed to type assert expression to string")
 		}
 
 		strList := []string{}
@@ -299,14 +299,14 @@ func RegisterWithURI(s *Service) {
 		exprStr, ok := cfg.(string)
 		if !ok {
 			logger.Error("Failed to type assert cfg to string", "cfg", cfg)
-			return errors.New("Failed to type assert expression to string")
+			return errors.New("failed to type assert expression to string")
 		}
 		functionsMu.RLock()
 		expr, err := govaluate.NewEvaluableExpressionWithFunctions(exprStr, functions)
 		if err != nil {
 			logger.Error("Failed to create evaluable expression", "expr", exprStr, "err", err)
 			functionsMu.RUnlock()
-			return errors.New("Failed to create evaluable expression")
+			return errors.New("failed to create evaluable expression")
 		}
 		uri, err := expr.Evaluate(parameters)
 		functionsMu.RUnlock()
@@ -332,7 +332,7 @@ func RegisterPublishEvents(s *Service, evtSvc EventService) {
 		modelName, ok := cfg.(string)
 		if !ok {
 			logger.Error("Failed to type assert cfg to string", "cfg", cfg)
-			return errors.New("Failed to type assert expression to string")
+			return errors.New("failed to type assert expression to string")
 		}
 
 		logger.Debug("Running PublishResourceUpdatedEventsForModel", "modelName", modelName)
@@ -347,7 +347,7 @@ func RegisterAM2(s *Service, am2Svc *am2.Service) {
 		cfgParams, ok := cfg.(map[interface{}]interface{})
 		if !ok {
 			logger.Error("Failed to type assert cfg to string", "cfg", cfg)
-			return errors.New("Failed to type assert expression to string")
+			return errors.New("failed to type assert expression to string")
 		}
 
 		// ctx, logger, viper, *model, cfg_name, params
@@ -363,23 +363,23 @@ func RegisterAM2(s *Service, am2Svc *am2.Service) {
 		cfgSection, ok := cfgParams["cfgsection"]
 		if !ok {
 			logger.Error("Required parameter 'cfgsection' missing, cannot continue")
-			return errors.New("Required parameter 'cfgsection' missing, cannot continue")
+			return errors.New("required parameter 'cfgsection' missing, cannot continue")
 		}
 		cfgSectionStr, ok := cfgSection.(string)
 		if !ok {
 			logger.Error("Required parameter 'cfgsection' could not be cast to string")
-			return errors.New("Required parameter 'cfgsection' could not be cast to string")
+			return errors.New("required parameter 'cfgsection' could not be cast to string")
 		}
 
 		uniqueName, ok := cfgParams["uniquename"]
 		if !ok {
 			logger.Error("Required parameter 'uniquename' missing, cannot continue")
-			return errors.New("Required parameter 'uniquename' missing, cannot continue")
+			return errors.New("required parameter 'uniquename' missing, cannot continue")
 		}
 		uniqueNameStr, ok := uniqueName.(string)
 		if !ok {
 			logger.Error("Required parameter 'uniquename' could not be cast to string")
-			return errors.New("Required parameter 'uniquename' could not be cast to string")
+			return errors.New("required parameter 'uniquename' could not be cast to string")
 		}
 
 		functionsMu.RLock()

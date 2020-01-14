@@ -17,7 +17,7 @@ func RegisterController(s *testaggregate.Service, arsvc *Service) {
 		cfgParams, ok := cfg.(map[interface{}]interface{})
 		if !ok {
 			logger.Crit("Failed to type assert cfg to string", "cfg", cfg)
-			return errors.New("Failed to type assert expression to string")
+			return errors.New("failed to type assert expression to string")
 		}
 
 		// ctx, logger, viper, *model, cfg_name, params

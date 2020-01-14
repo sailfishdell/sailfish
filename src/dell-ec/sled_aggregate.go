@@ -270,12 +270,12 @@ func inithealth(ctx context.Context, logger log.Logger, ch eh.CommandHandler, d 
 		removedEvent, ok := args[0].(*dm_event.ComponentRemovedData)
 		if !ok {
 			logger.Crit("Mapper configuration error: component removed event data not passed", "args[0]", args[0], "TYPE", fmt.Sprintf("%T", args[0]))
-			return nil, errors.New("Mapper configuration error: component removed event data not passed")
+			return nil, errors.New("mapper configuration error: component removed event data not passed")
 		}
 		aggregateUUID, ok := args[1].(eh.UUID)
 		if !ok {
 			logger.Crit("Mapper configuration error: aggregate UUID not passed", "args[1]", args[1], "TYPE", fmt.Sprintf("%T", args[1]))
-			return nil, errors.New("Mapper configuration error: aggregate UUID not passed")
+			return nil, errors.New("mapper configuration error: aggregate UUID not passed")
 		}
 		subsys := removedEvent.Name
 		remove(sled_iomL, subsys)

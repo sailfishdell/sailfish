@@ -74,7 +74,7 @@ func MakeHandlerFunc(logger log.Logger, eb eh.EventBus, getter IDGetter, withUse
 			if !foundCache {
 				token, err := jwt.ParseWithClaims(xauthtoken, &RedfishClaims{}, func(token *jwt.Token) (interface{}, error) {
 					if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-						return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
+						return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 					}
 					return SECRET, nil
 				})
