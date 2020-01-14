@@ -29,17 +29,7 @@ type mapping struct {
 }
 
 type syncEvent interface {
-	Add(int)
 	Done()
-}
-
-type waiter interface {
-	Listen(context.Context, func(eh.Event) bool) (*eventwaiter.EventListener, error)
-}
-
-type listener interface {
-	Inbox() <-chan eh.Event
-	Close()
 }
 
 // individual mapping: only for bookkeeping
@@ -66,7 +56,7 @@ type ARService struct {
 	hash      map[string][]update
 	hashDirty bool
 
-	ew waiter
+	ew *eventwaiter.EventWaiter
 }
 
 // post-processed and optimized update
@@ -95,7 +85,7 @@ func StartService(ctx context.Context, logger log.Logger, cfg *viper.Viper, cfgM
 		ew:            d.GetWaiter(),
 	}
 
-	listener := eventwaiter.NewListener(ctx, logger, d.GetWaiter(), func(ev eh.Event) bool {
+	listener := eventwaiter.NewListener(ctx, logger, arservice.ew, func(ev eh.Event) bool {
 		return ev.EventType() == a.AttributeUpdated
 	})
 	// never calling listener.Close() because we can't shut this down
@@ -161,12 +151,6 @@ func (ars *ARService) NewMapping(logger log.Logger, mappingName, cfgsection stri
 	ars.hashDirty = true
 	ars.hashMu.Unlock()
 
-	//ars.loadConfig(mappingName)
-
-	// ars.logger.Info("updating mappings", "mappings", c.mappings)
-	// c.createModelProperties(ctx)
-	// go c.initialStartupBootstrap(ctx)
-
 	return breadcrumb{ars: ars, mappingName: mappingName}
 }
 
@@ -184,6 +168,7 @@ func (b breadcrumb) Close() {
 func (b breadcrumb) UpdateRequest(ctx context.Context, property string, value interface{}, auth *domain.RedfishAuthorizationProperty) (interface{}, error) {
 	b.ars.mappingsMu.RLock()
 	needsUnlock := true
+	// defer so that we unlock on panic and dont lock everything up, but need to support unlock earlier
 	defer func() {
 		if needsUnlock {
 			b.ars.mappingsMu.RUnlock()
@@ -202,7 +187,7 @@ func (b breadcrumb) UpdateRequest(ctx context.Context, property string, value in
 	patch_timeout := 10
 	//patch_timeout := 3000
 
-	l, err := b.ars.ew.Listen(ctx, func(event eh.Event) bool {
+	listener := eventwaiter.NewListener(ctx, b.ars.logger, b.ars.ew, func(event eh.Event) bool {
 		if event.EventType() != a.AttributeUpdated {
 			return false
 		}
@@ -215,14 +200,7 @@ func (b breadcrumb) UpdateRequest(ctx context.Context, property string, value in
 		}
 		return true
 	})
-	if err != nil {
-		b.ars.logger.Error("Could not create listener", "err", err)
-		return nil, errors.New("Failed to make attribute updated event listener")
-	}
-	l.Name = "ar patch listener"
-	var listener listener
-	listener = l
-
+	listener.Name = "ar patch listener"
 	defer listener.Close()
 
 	mappings, ok := b.ars.modelmappings[b.mappingName]
@@ -275,43 +253,36 @@ func (b breadcrumb) UpdateRequest(ctx context.Context, property string, value in
 	if len(reqIDs) == 0 {
 		return nil, domain.HTTP_code{Err_message: errs, Any_success: num_success}
 	}
-	timer := time.NewTimer(time.Duration(patch_timeout*len(reqIDs)) * time.Second)
-	defer timer.Stop()
 
-	for {
-		select {
-		case event := <-listener.Inbox():
-			if e, ok := event.(syncEvent); ok {
-				e.Done()
-			}
-
-			data, ok := event.Data().(*a.AttributeUpdatedData)
-			if !ok {
-				continue
-			}
-			for i, reqID := range reqIDs {
-				if reqID == data.ReqID {
-					reqIDs[i] = reqIDs[len(reqIDs)-1]
-					reqIDs = reqIDs[:len(reqIDs)-1]
-					responses = append(responses, *data)
-					if data.Error != "" {
-						errs = append(errs, data.Error)
-					} else {
-						num_success = num_success + 1
-					}
-					break
-				}
-			}
-			if len(reqIDs) == 0 {
-				return nil, domain.HTTP_code{Err_message: errs, Any_success: num_success}
-			}
-		case <-timer.C:
-			return nil, domain.HTTP_code{Err_message: []string{timeout_response}, Any_success: num_success}
-
-		case <-ctx.Done():
-			return nil, nil
+	// set up ret for default (timeout). If ProcessEvents() doesn't reset ret to a succes, this is what goes out
+	ret := domain.HTTP_code{Err_message: []string{timeout_response}, Any_success: num_success}
+	timedCtx, cancel := context.WithTimeout(ctx, time.Duration(patch_timeout*len(reqIDs))*time.Second)
+	defer cancel()
+	listener.ProcessEvents(timedCtx, func(event eh.Event) {
+		data, ok := event.Data().(*a.AttributeUpdatedData)
+		if !ok {
+			return
 		}
-	}
+		for i, reqID := range reqIDs {
+			if reqID == data.ReqID {
+				reqIDs[i] = reqIDs[len(reqIDs)-1]
+				reqIDs = reqIDs[:len(reqIDs)-1]
+				responses = append(responses, *data)
+				if data.Error != "" {
+					errs = append(errs, data.Error)
+				} else {
+					num_success = num_success + 1
+				}
+				break
+			}
+		}
+		if len(reqIDs) == 0 {
+			ret = domain.HTTP_code{Err_message: errs, Any_success: num_success}
+			cancel()
+		}
+	})
+
+	return nil, ret
 }
 
 func (ars *ARService) optimizeHash() {
