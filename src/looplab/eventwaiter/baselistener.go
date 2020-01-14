@@ -26,7 +26,7 @@ type EW interface {
 }
 
 func NewBaseListener(ctx context.Context, log log.Logger, ew EW, match func(eh.Event) bool) *BaseEventListener {
-	listenerCtx, cancel := context.WithCancel(context.Background())
+	listenerCtx, cancel := context.WithCancel(ctx)
 	return &BaseEventListener{
 		listenerInbox: make(chan eh.Event, 20),
 		Name:          "unnamed",
@@ -108,6 +108,8 @@ func (l *BaseEventListener) ProcessEvents(ctx context.Context, fn func(events eh
 		case <-ctx.Done():
 			return ctx.Err()
 		case <-l.ctx.Done():
+			// shut down listener if the listener main context is closed
+			l.Close()
 			return l.ctx.Err()
 		}
 	}
