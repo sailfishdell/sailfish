@@ -145,13 +145,9 @@ func selectSetup(auth *RedfishAuthorizationProperty, selectSl []string) {
 		removeNegSelects(negSl, totSl)
 		auth.sel = totSl
 	}
-
-	return
-
 }
 
 func cleanNegSelects(negSl []string) {
-
 	for _, n := range negSl {
 		n = n[1:]
 	}
@@ -316,7 +312,7 @@ func processFilterOneObject(memberInstance map[string]interface{}, filterArray [
 
 	for j := 0; j < len(filterArray); j += 1 {
 		currentMember, rc := getCategoryValue(memberInstance, filterArray[j].Category)
-		if rc == false {
+		if !rc {
 			return false
 		}
 
@@ -544,7 +540,7 @@ type Matcher interface {
 }
 
 func handleSelect(a *RedfishAuthorizationProperty, d *HTTPCmdProcessedData) *HTTPCmdProcessedData {
-	if !a.doSel || a.selT == false { // negative select is handled internally, but can be added here!
+	if !a.doSel || !a.selT { // negative select is handled internally, but can be added here!
 		return d
 	}
 
@@ -618,9 +614,9 @@ func selectCheck(path string, selectSl []string, sel_type bool) (bool, []string)
 
 	for i := 0; i < len(selectSl); i++ {
 		selM := selectSl[i]
-		if sel_type == true && (strings.HasPrefix(selM, path) || strings.HasPrefix(path, selM)) { //positive select
+		if sel_type && (strings.HasPrefix(selM, path) || strings.HasPrefix(path, selM)) { //positive select
 			newselect = append(newselect, selM)
-		} else if sel_type == false && !strings.HasPrefix(path, selM) { // negative select
+		} else if !sel_type && !strings.HasPrefix(path, selM) { // negative select
 			newselect = append(newselect, selM)
 		}
 

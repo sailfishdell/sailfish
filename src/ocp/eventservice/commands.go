@@ -8,6 +8,7 @@ import (
 	"time"
 
 	eh "github.com/looplab/eventhorizon"
+	"github.com/superchalupa/sailfish/src/log"
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
 )
 
@@ -52,7 +53,7 @@ func (c *POST) ParseHTTPRequest(r *http.Request) error {
 }
 func (c *POST) Handle(ctx context.Context, a *domain.RedfishResourceAggregate) error {
 	subctx, cancel := context.WithCancel(ctx)
-	view := c.es.CreateSubscription(subctx, domain.ContextLogger(subctx, "eventservice"), c.Sub, cancel)
+	view := c.es.CreateSubscription(subctx, log.ContextLogger(subctx, "eventservice"), c.Sub, cancel)
 
 	data := &domain.HTTPCmdProcessedData{
 		CommandID:  c.CmdID,

@@ -28,10 +28,6 @@ type mapping struct {
 	Name     string
 }
 
-type syncEvent interface {
-	Done()
-}
-
 // individual mapping: only for bookkeeping
 type ModelMappings struct {
 	mappings       []mapping

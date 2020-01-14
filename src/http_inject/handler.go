@@ -60,9 +60,9 @@ type service struct {
 func (s *service) GetHandlerFunc() func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		requestID := eh.NewUUID()
-		ctx := WithRequestID(r.Context(), requestID)
+		ctx := log.WithRequestID(r.Context(), requestID)
 		// Disable hot path debugging: keep commented out code and uncomment for debugging
-		requestLogger := ContextLogger(ctx, "INJECT")
+		requestLogger := log.ContextLogger(ctx, "INJECT")
 
 		// set headers first
 		w.Header().Set("OData-Version", "4.0")
@@ -434,7 +434,7 @@ func (c *InjectCommand) markBarrier() {
 }
 
 func (c *InjectCommand) sendToChn(injectChan chan *eventBundle) error {
-	//requestLogger := ContextLogger(c.ctx, "internal_commands").New("module", "inject_event")
+	//requestLogger := log.ContextLogger(c.ctx, "internal_commands").New("module", "inject_event")
 	//requestLogger.Crit("InjectService: preparing event", "Sequence", c.EventSeq, "Name", c.Name)
 
 	waits := []func(){}
@@ -494,7 +494,7 @@ func (c *InjectCommand) sendToChn(injectChan chan *eventBundle) error {
 }
 
 func (c *InjectCommand) appendDecode(trainload *[]eh.EventData, eventType eh.EventType, m json.RawMessage) {
-	requestLogger := ContextLogger(c.ctx, "internal_commands").New("module", "inject_event")
+	requestLogger := log.ContextLogger(c.ctx, "internal_commands").New("module", "inject_event")
 	if m == nil {
 		// not worth logging unless debugging something wierd
 		// requestLogger.Info("Decode: nil message", "eventType", eventType)

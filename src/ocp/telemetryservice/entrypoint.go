@@ -307,7 +307,7 @@ func (ts *TelemetryService) StartTelemetryService(ctx context.Context) error {
 }
 
 func (ts *TelemetryService) CreateMetricReportDefinition(ctx context.Context, mrd MetricReportDefinition, data *domain.HTTPCmdProcessedData) (bool, eh.UUID, eh.UUID) {
-	domain.ContextLogger(ctx, "submit_mrd").Debug("got test metric report event", "event_data", mrd)
+	log.ContextLogger(ctx, "submit_mrd").Debug("got test metric report event", "event_data", mrd)
 	errmmsg := ""
 	errmFmt := "%s, "
 

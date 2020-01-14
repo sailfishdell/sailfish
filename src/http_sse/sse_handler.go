@@ -29,11 +29,9 @@ type SSEHandler struct {
 
 func (rh *SSEHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	requestID := eh.NewUUID()
-	ctx := WithRequestID(r.Context(), requestID)
-	requestLogger := ContextLogger(ctx, "sse_handler")
+	ctx := log.WithRequestID(r.Context(), requestID)
+	requestLogger := log.ContextLogger(ctx, "sse_handler")
 	requestLogger.Info("Trying to start SSE Stream for request.")
-
-	r.Body.Close()
 
 	flusher, ok := w.(http.Flusher)
 	if !ok {
@@ -41,6 +39,9 @@ func (rh *SSEHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Streaming unsupported!", http.StatusInternalServerError)
 		return
 	}
+
+	r.Body.Close()
+	flusher.Flush()
 
 	l := eventwaiter.NewListener(ctx, requestLogger, rh.d.GetWaiter(), func(event eh.Event) bool {
 		return true
@@ -65,15 +66,6 @@ func (rh *SSEHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// compatibility headers
 	w.Header().Set("X-UA-Compatible", "IE=11")
-
-	notify := w.(http.CloseNotifier).CloseNotify()
-	go func() {
-		<-notify
-		requestLogger.Debug("http session closed, closing down context")
-		l.Close()
-	}()
-
-	flusher.Flush()
 
 	l.ProcessEvents(ctx, func(event eh.Event) {
 		d, err := json.Marshal(

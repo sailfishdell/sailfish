@@ -1,10 +1,9 @@
-package http_inject
+package log
 
 import (
 	"context"
 
 	eh "github.com/looplab/eventhorizon"
-	"github.com/superchalupa/sailfish/src/log"
 )
 
 type requestIDType int
@@ -25,8 +24,8 @@ func WithSessionID(ctx context.Context, sessionID eh.UUID) context.Context {
 }
 
 // ContextLogger returns a logger and adds as much info as possible obtained from the context
-func ContextLogger(ctx context.Context, module string, opts ...interface{}) log.Logger {
-	newLogger := log.MustLogger(module)
+func ContextLogger(ctx context.Context, module string, opts ...interface{}) Logger {
+	newLogger := MustLogger(module)
 	if ctx != nil {
 		ctxRqID := ctx.Value(requestIDKey)
 		if ctxRqID != nil {

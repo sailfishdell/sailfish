@@ -196,7 +196,7 @@ func (es *EventService) CreateSubscription(ctx context.Context, logger log.Logge
 					e.Done()
 				}
 				es.evaluateEvent(subLogger, subCtx, event, cancel, subView.GetURI(), uuid, ctx)
-				if subCtx.firstEvent == true {
+				if subCtx.firstEvent {
 					subCtx.firstEvent = false
 				}
 
@@ -337,7 +337,7 @@ func (es *EventService) postExternalEvent(subCtx SubscriptionCtx, event eh.Event
 					resp.Body.Close()
 				}
 			}
-			if logSent == false {
+			if !logSent {
 				logToEventFile(fmt.Sprintf("%s -- FAILURE to send Id=%s to uri=%s\n", time.Now().UTC().Format(time.UnixDate), eachEvent.id, subCtx.Destination))
 				log.MustLogger("event_service").Crit("ERROR POSTING, DROPPED", "Id", eachEvent.id, "uri", subCtx.Destination)
 			}
