@@ -35,6 +35,10 @@ type handler struct {
 	h eh.EventHandler
 }
 
+type syncEvent interface {
+	Done()
+}
+
 // NewEventBus creates a EventBus.
 func NewEventBus() *EventBus {
 	return &EventBus{}
@@ -45,17 +49,13 @@ func (b *EventBus) PublishEvent(ctx context.Context, event eh.Event) error {
 	b.handlerMu.RLock()
 	defer b.handlerMu.RUnlock()
 
-	type waiter interface {
-		Done()
-	}
-
-	if e, ok := event.(waiter); ok {
+	if e, ok := event.(syncEvent); ok {
 		defer e.Done()
 	}
 
 	for _, h := range b.handlers {
 		if !h.m(event) {
-			// Ignore events that does not match.
+			// Ignore events that do not match.
 			continue
 		}
 		if err := h.h.HandleEvent(ctx, event); err != nil {
