@@ -557,12 +557,12 @@ type MetricMeta struct {
 	LastValue         string            `db:"LastValue"`
 }
 
-func (factory *MRDFactory) InsertMetricValue(ev *metric.MetricValueEventData) (err error) {
+func (factory *MRDFactory) InsertMetricValue(tx *sqlx.Tx, ev *metric.MetricValueEventData) (err error) {
 	// TODO: consider cache the MetricMeta(?)
 	// it may speed things up if we cache the MetricMeta in-process rather than going to DB every time.
 	// This should be straightforward because we do all updates in one goroutine, so could add the cache as a factory member
 
-	return factory.WrapWithTX(func(tx *sqlx.Tx) error {
+	return factory.WrapWithTXOrPassIn(tx, func(tx *sqlx.Tx) error {
 		// First, Find the MetricMeta
 		rows, err := factory.getNamedSqlTx(tx, "find_metric_meta").Queryx(ev)
 		if err != nil {

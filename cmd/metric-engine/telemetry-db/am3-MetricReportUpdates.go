@@ -156,28 +156,37 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Service, d Bus
 	})
 
 	lastHWM := time.Time{}
-	am3Svc.AddEventHandler("Store Metric Value", metric.MetricValueEvent, func(event eh.Event) {
-		metricValue, ok := event.Data().(*metric.MetricValueEventData)
-		if !ok {
-			return
-		}
+	am3Svc.AddMultiHandler("Store Metric Value(s)", metric.MetricValueEvent, func(event eh.Event) {
+		MRDFactory.WrapWithTX(func(tx *sqlx.Tx) error {
+			dataArray, ok := event.Data().([]eh.EventData)
+			if !ok {
+				return nil
+			}
+			for _, eventData := range dataArray {
+				metricValue, ok := eventData.(*metric.MetricValueEventData)
+				if !ok {
+					continue
+				}
 
-		err := MRDFactory.InsertMetricValue(metricValue)
-		if err != nil {
-			logger.Crit("Error Inserting Metric Value", "Metric", metricValue, "err", err)
-			return
-		}
+				err := MRDFactory.InsertMetricValue(tx, metricValue)
+				if err != nil {
+					logger.Crit("Error Inserting Metric Value", "Metric", metricValue, "err", err)
+					continue
+				}
 
-		delta := MRDFactory.MetricTSHWM.Time.Sub(metricValue.Timestamp.Time)
+				delta := MRDFactory.MetricTSHWM.Time.Sub(metricValue.Timestamp.Time)
 
-		if (!MRDFactory.MetricTSHWM.IsZero()) && (delta > (1*time.Hour) || delta < -(1*time.Hour)) {
-			// fmt.Printf("Warning: Metric Value Event TIME ERROR - We should never get events this far off current HWM (delta: %s). This is likely a problem with the underlying data or the import. Common is the underlying data being in 'localtime' rather than UTC, which must be fixed. Metric: %+v\n", time.Duration(delta), metricValue)
-			fmt.Printf("Warning: Metric Value Event TIME ERROR - (delta: %s)  Metric: %+v\n", time.Duration(delta), metricValue)
-		}
+				if (!MRDFactory.MetricTSHWM.IsZero()) && (delta > (1*time.Hour) || delta < -(1*time.Hour)) {
+					// if you see this warning consistently, check the import to ensure it's using UTC and not localtime
+					fmt.Printf("Warning: Metric Value Event TIME OFF >1hr - (delta: %s)  Metric: %+v\n", time.Duration(delta), metricValue)
+				}
 
-		if MRDFactory.MetricTSHWM.Before(metricValue.Timestamp.Time) {
-			MRDFactory.MetricTSHWM = metricValue.Timestamp
-		}
+				if MRDFactory.MetricTSHWM.Before(metricValue.Timestamp.Time) {
+					MRDFactory.MetricTSHWM = metricValue.Timestamp
+				}
+			}
+			return nil
+		})
 	})
 
 	am3Svc.AddEventHandler("Request Generation of a Metric Report", metric.RequestReport, func(event eh.Event) {
