@@ -15,7 +15,6 @@ import (
 	dell_ec "github.com/superchalupa/sailfish/src/dell-ec"
 	"github.com/superchalupa/sailfish/src/dell-resources/registries"
 	"github.com/superchalupa/sailfish/src/log"
-	"github.com/superchalupa/sailfish/src/looplab/eventwaiter"
 	"github.com/superchalupa/sailfish/src/ocp/awesome_mapper2"
 	"github.com/superchalupa/sailfish/src/ocp/eventservice"
 	"github.com/superchalupa/sailfish/src/ocp/session"
@@ -28,21 +27,14 @@ import (
 	"github.com/superchalupa/sailfish/src/uploadhandler"
 )
 
-type waiter interface {
-	Listen(context.Context, func(eh.Event) bool) (*eventwaiter.EventListener, error)
-}
-
 func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, ch eh.CommandHandler, eb eh.EventBus, d *domain.DomainObjects) {
 	logger = logger.New("module", "ec")
 
-	// These three all set up a waiter for the root service to appear, so init root service after.
 	actionhandler.Setup(ctx, ch, eb)
 	actionSvc := ah.StartService(ctx, logger, d)
 	uploadSvc := uploadhandler.StartService(ctx, logger, d)
 	am2Svc, _ := awesome_mapper2.StartService(ctx, logger, eb, ch, d)
 	pumpSvc := dell_ec.NewPumpActionSvc(ctx, logger, eb)
-
-	// the package for this is going to change, but this is what makes the various mappers and view functions available
 	instantiateSvc := testaggregate.New(ctx, logger, cfgMgr, cfgMgrMu, d)
 	evtSvc := eventservice.New(ctx, cfgMgr, cfgMgrMu, d, instantiateSvc, actionSvc, uploadSvc)
 	eventservice.RegisterAggregate(instantiateSvc)
