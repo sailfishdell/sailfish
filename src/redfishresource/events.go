@@ -57,17 +57,15 @@ type RedfishResourcePropertiesUpdatedData struct {
 
 // helper function to convert changes in aggregate format into "PropertyNames" format for RedfishResourcePropertiesUpdateData2
 func Map2Path(pathMap interface{}, pathMapStr map[string]interface{}, pathStr string) {
-	switch pathMap.(type) {
+	switch pathMapCast := pathMap.(type) {
 	case map[string]interface{}:
-		pathMapDefined := pathMap.(map[string]interface{})
-		for keyS, vInterf := range pathMapDefined {
+		for keyS, vInterf := range pathMapCast {
 			path2 := path.Join(pathStr, keyS)
 			Map2Path(vInterf, pathMapStr, path2)
 		}
 
 	case []interface{}:
-		pathMapDefined := pathMap.([]interface{})
-		for i, vInterf := range pathMapDefined {
+		for i, vInterf := range pathMapCast {
 			path2 := fmt.Sprintf("%s/%d", pathStr, i)
 			Map2Path(vInterf, pathMapStr, path2)
 		}

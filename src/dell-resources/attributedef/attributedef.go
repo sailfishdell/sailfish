@@ -62,10 +62,7 @@ type AttributeUpdateRequestData struct {
 
 func (ad *AttributeData) Valid(attrVal interface{}) bool {
 	err := mapstructure.Decode(attrVal, ad)
-	if err != nil {
-		return false
-	}
-	return true
+	return err == nil
 }
 
 func (ad *AttributeData) WriteAllowed(attrVal interface{}, auth *domain.RedfishAuthorizationProperty) bool {

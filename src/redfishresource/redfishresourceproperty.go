@@ -19,19 +19,15 @@ type RedfishAuthorizationProperty struct {
 
 	// pass the supported query options to the backend
 	// re-arranged to hopefully be more memory efficient
-	skip       int
-	top        int
-	filter     string
-	sel        []string
-	selT       bool
-	doFilter   bool
-	filterDone bool
-	doTop      bool
-	topDone    bool
-	doSkip     bool
-	skipDone   bool
-	doSel      bool
-	selDone    bool
+	skip     int
+	top      int
+	filter   string
+	sel      []string
+	selT     bool
+	doFilter bool
+	doTop    bool
+	doSkip   bool
+	doSel    bool
 }
 
 type RedfishResourceProperty struct {
@@ -119,22 +115,12 @@ func (rrp *RedfishResourceProperty) ParseUnlocked(thing interface{}) {
 }
 
 func (auth *RedfishAuthorizationProperty) VerifyPrivileges(Privileges []string) bool {
-
 	rh := &RedfishHandler{
 		UserName:   auth.UserName,
 		Privileges: auth.Privileges,
 	}
 
-	authAction := rh.isAuthorized(Privileges)
-
-	if authAction != "authorized" {
-		//fmt.Println("required auth ", Privileges)
-		//fmt.Println(auth.UserName, " current priv ", auth.Privileges)
-		//fmt.Println("allowed ", authAction)
-
-	}
-
-	return authAction == "authorized"
+	return rh.isAuthorized(Privileges) == "authorized"
 }
 
 func (auth *RedfishAuthorizationProperty) VerifyPrivilegeBits(requiredPrivs int) bool {

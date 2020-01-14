@@ -41,10 +41,7 @@ func SledPwrOperationsSvc(ctx context.Context, logger log.Logger, eb eh.EventBus
 	}
 
 	listener, err := EventWaiter.Listen(ctx, func(event eh.Event) bool {
-		if event.EventType() == actionhandler.GenericActionEvent {
-			return true
-		}
-		return false
+		return event.EventType() == actionhandler.GenericActionEvent
 	})
 	if err != nil {
 		return nil
@@ -117,7 +114,7 @@ func SledPwrOperationsSvc(ctx context.Context, logger log.Logger, eb eh.EventBus
 						}
 					}
 				}
-				if flag != true {
+				if !flag {
 					logger.Error("SledPower: Could not get sled type")
 					continue
 				}

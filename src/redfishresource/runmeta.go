@@ -8,6 +8,8 @@ import (
 	"path"
 
 	"reflect"
+
+	"github.com/superchalupa/sailfish/src/log"
 )
 
 func (rrp *RedfishResourceProperty) MarshalJSON() ([]byte, error) {
@@ -110,25 +112,25 @@ func nuPATCHfn(ctx context.Context, agg *RedfishResourceAggregate, rrp *RedfishR
 
 	meta_t, ok := rrp.Meta["PATCH"].(map[string]interface{})
 	if !ok {
-		ContextLogger(ctx, "property_process").Debug("No PATCH meta", "meta", meta_t)
+		log.ContextLogger(ctx, "property_process").Debug("No PATCH meta", "meta", meta_t)
 		return nuGETfn(ctx, agg, rrp, auth, opts)
 	}
 
 	pluginName, ok := meta_t["plugin"].(string)
 	if !ok {
-		ContextLogger(ctx, "property_process").Debug("No pluginname in patch meta", "meta", meta_t)
+		log.ContextLogger(ctx, "property_process").Debug("No pluginname in patch meta", "meta", meta_t)
 		return nuGETfn(ctx, agg, rrp, auth, opts)
 	}
 
 	plugin, err := InstantiatePlugin(PluginType(pluginName))
 	if err != nil {
-		ContextLogger(ctx, "property_process").Debug("No such pluginname", "pluginName", pluginName)
+		log.ContextLogger(ctx, "property_process").Debug("No such pluginname", "pluginName", pluginName)
 		return nuGETfn(ctx, agg, rrp, auth, opts)
 	}
 
-	//ContextLogger(ctx, "property_process").Debug("getting property: PATCH", "value", fmt.Sprintf("%v", rrp.Value), "plugin", plugin)
+	//log.ContextLogger(ctx, "property_process").Debug("getting property: PATCH", "value", fmt.Sprintf("%v", rrp.Value), "plugin", plugin)
 	if plugin, ok := plugin.(PropPatcher); ok {
-		//defer ContextLogger(ctx, "property_process").Debug("AFTER getting property: PATCH - type assert success", "value", fmt.Sprintf("%v", rrp.Value))
+		//defer log.ContextLogger(ctx, "property_process").Debug("AFTER getting property: PATCH - type assert success", "value", fmt.Sprintf("%v", rrp.Value))
 		plugin.PropertyPatch(ctx, agg, auth, rrp, &opts, meta_t)
 	} else {
 		panic("coding error: the plugin " + pluginName + " does not implement the Property Patching API")
@@ -286,17 +288,4 @@ func helper(ctx context.Context, agg *RedfishResourceAggregate, auth *RedfishAut
 	}
 
 	return nil
-}
-
-func compatible(actual, expected reflect.Type) bool {
-	if actual == nil {
-		k := expected.Kind()
-		return k == reflect.Chan ||
-			k == reflect.Func ||
-			k == reflect.Interface ||
-			k == reflect.Map ||
-			k == reflect.Ptr ||
-			k == reflect.Slice
-	}
-	return actual.AssignableTo(expected)
 }

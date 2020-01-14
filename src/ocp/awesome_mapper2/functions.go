@@ -55,11 +55,7 @@ func init() {
 
 	AddFunction("array",
 		func(args ...interface{}) (interface{}, error) {
-			a := make([]interface{}, 0, len(args))
-			for _, i := range args {
-				a = append(a, i) // preallocated
-			}
-			return a, nil
+			return append(make([]interface{}, 0, len(args)), args...), nil // preallocated
 		})
 
 	AddFunction("set_hash_value",

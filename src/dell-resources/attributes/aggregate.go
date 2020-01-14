@@ -44,8 +44,6 @@ func FormatAttributeDump(
 		return nil
 	}
 
-	//fmt.Println(auth)
-
 	var ad a.AttributeData
 	res := map[string]interface{}{}
 	for group, v := range attributes {
@@ -53,8 +51,6 @@ func FormatAttributeDump(
 			for name, value := range v2 {
 				if ad.ReadAllowed(value, auth) {
 					res[group+"."+index+"."+name] = ad.Value
-				} else {
-					//fmt.Println("skipping ", group+"."+index+"."+name)
 				}
 			}
 		}

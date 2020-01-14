@@ -14,6 +14,7 @@ import (
 	"github.com/gorilla/mux"
 	eh "github.com/looplab/eventhorizon"
 	eventpublisher "github.com/looplab/eventhorizon/publisher/local"
+	"github.com/superchalupa/sailfish/src/log"
 	"github.com/superchalupa/sailfish/src/looplab/aggregatestore"
 	repo "github.com/superchalupa/sailfish/src/looplab/bbolt"
 	"github.com/superchalupa/sailfish/src/looplab/eventbus"
@@ -249,7 +250,7 @@ func (d *DomainObjects) ExpandURI(ctx context.Context, uri string) (*RedfishReso
 
 // Notify implements the Notify method of the EventObserver interface.
 func (d *DomainObjects) Notify(ctx context.Context, event eh.Event) {
-	logger := ContextLogger(ctx, "domain")
+	logger := log.ContextLogger(ctx, "domain")
 	logger.Debug("EVENT", "event", event, "data", event.Data())
 	if event.EventType() == RedfishResourceCreated {
 		if data, ok := event.Data().(*RedfishResourceCreatedData); ok {

@@ -60,11 +60,10 @@ func debugError(r *http.Request) {
 
 func octetStreamUploadHandler(c *POST, r *http.Request) error {
 	var localFile string
-	var uploadFile string
 
 	// no file specified so just use the upload name so the
 	// action needs to be based on the URL.
-	uploadFile = "octet_stream.file"
+	uploadFile := "octet_stream.file"
 
 	// prepare the destination file (tmpfile name)
 	dst, err := ioutil.TempFile(".", UploadDir+"/upld")
@@ -176,12 +175,6 @@ func (c *POST) Handle(ctx context.Context, a *domain.RedfishResourceAggregate) e
 	}, time.Now()))
 	return nil
 }
-
-type prop interface {
-	GetProperty(string) interface{}
-}
-
-type handler func(context.Context, eh.Event, *domain.HTTPCmdProcessedData) error
 
 type uploadrunner interface {
 	GetUpload(string) view.Upload

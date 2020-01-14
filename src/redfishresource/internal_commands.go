@@ -9,6 +9,7 @@ import (
 	"time"
 
 	eh "github.com/looplab/eventhorizon"
+	"github.com/superchalupa/sailfish/src/log"
 )
 
 func init() {
@@ -69,12 +70,12 @@ func (c *CreateRedfishResource) CommandType() eh.CommandType { return CreateRedf
 
 func (c *CreateRedfishResource) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 
-	requestLogger := ContextLogger(ctx, "internal_commands")
+	requestLogger := log.ContextLogger(ctx, "internal_commands")
 	requestLogger.Info("CreateRedfishResource", "META", a.Properties.Meta)
 
 	if a.ID != eh.UUID("") {
 		requestLogger.Error("Aggregate already exists!", "command", "CreateRedfishResource", "UUID", a.ID, "URI", a.ResourceURI, "request_URI", c.ResourceURI)
-		return errors.New("already created!")
+		return errors.New("already created")
 	}
 	a.ID = c.ID
 	a.ResourceURI = c.ResourceURI
@@ -281,7 +282,7 @@ func GetValueinAgg(a *RedfishResourceAggregate, pathSlice []string) interface{} 
 	defer a.Properties.Unlock()
 	loc, ok := a.Properties.Value.(map[string]interface{})
 	if !ok {
-		return errors.New(fmt.Sprintf("getValueinAgg: aggregate value is not a map[string]interface{}, but %T", a.Properties.Value))
+		return fmt.Errorf("getValueinAgg: aggregate value is not a map[string]interface{}, but %T", a.Properties.Value)
 	}
 
 	plen := len(pathSlice) - 1
@@ -318,22 +319,13 @@ func GetValueinAgg(a *RedfishResourceAggregate, pathSlice []string) interface{} 
 
 }
 
-func validateValue(val interface{}) error {
-	switch val.(type) {
-	case []interface{}, map[string]interface{}:
-		return fmt.Errorf("Update Agg does not support type %T", val)
-	default:
-		return nil
-	}
-}
-
 //  This is handled by eventhorizon code.
 //  When a CommandHandler "Handle" is called it will retrieve the aggregate from the DB.  and call this Handle. Then save the aggregate 'a' back to the db.  no locking is required..
 // provide error when no change made..
 func (c *UpdateRedfishResourceProperties2) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 
 	if a.ID == eh.UUID("") {
-		requestLogger := ContextLogger(ctx, "internal_commands")
+		requestLogger := log.ContextLogger(ctx, "internal_commands")
 		requestLogger.Error("Aggregate does not exist!", "UUID", a.ID, "URI", a.ResourceURI, "COMMAND", c)
 		return errors.New("non existent aggregate")
 	}

@@ -8,12 +8,16 @@ import (
 
 	eh "github.com/looplab/eventhorizon"
 	log "github.com/superchalupa/sailfish/src/log"
+	"github.com/superchalupa/sailfish/src/looplab/eventwaiter"
 	"github.com/superchalupa/sailfish/src/ocp/eventservice"
-	domain "github.com/superchalupa/sailfish/src/redfishresource"
 )
 
+type busObjs interface {
+	GetWaiter() *eventwaiter.EventWaiter
+}
+
 // NewRedfishSSEHandler constructs a new RedfishSSEHandler with the given username and privileges.
-func NewRedfishSSEHandler(dobjs *domain.DomainObjects, logger log.Logger, u string, p []string) *RedfishSSEHandler {
+func NewRedfishSSEHandler(dobjs busObjs, logger log.Logger, u string, p []string) *RedfishSSEHandler {
 	return &RedfishSSEHandler{UserName: u, Privileges: p, d: dobjs, logger: logger}
 }
 
@@ -21,14 +25,14 @@ func NewRedfishSSEHandler(dobjs *domain.DomainObjects, logger log.Logger, u stri
 type RedfishSSEHandler struct {
 	UserName   string
 	Privileges []string
-	d          *domain.DomainObjects
+	d          busObjs
 	logger     log.Logger
 }
 
 func (rh *RedfishSSEHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	requestID := eh.NewUUID()
-	ctx := domain.WithRequestID(r.Context(), requestID)
-	requestLogger := domain.ContextLogger(ctx, "redfish_sse_handler")
+	ctx := log.WithRequestID(r.Context(), requestID)
+	requestLogger := log.ContextLogger(ctx, "redfish_sse_handler")
 
 	flusher, ok := w.(http.Flusher)
 	if !ok {
@@ -41,17 +45,9 @@ func (rh *RedfishSSEHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	requestLogger.Info("Trying to start RedfishSSE Stream for request.", "context", rfSubContext)
 
-	l, err := rh.d.EventWaiter.Listen(ctx, func(event eh.Event) bool {
-		if event.EventType() == eventservice.ExternalRedfishEvent || event.EventType() == eventservice.ExternalMetricEvent {
-			return true
-		}
-		return false
+	l := eventwaiter.NewListener(ctx, requestLogger, rh.d.GetWaiter(), func(event eh.Event) bool {
+		return event.EventType() == eventservice.ExternalRedfishEvent || event.EventType() == eventservice.ExternalMetricEvent
 	})
-	if err != nil {
-		requestLogger.Crit("Could not create an event waiter.", "err", err)
-		http.Error(w, "could not create waiter"+err.Error(), http.StatusInternalServerError)
-		return
-	}
 
 	l.Name = "RF SSE Listener"
 
@@ -74,14 +70,7 @@ func (rh *RedfishSSEHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// compatibility headers
 	w.Header().Set("X-UA-Compatible", "IE=11")
 
-	defer r.Body.Close()
-	notify := w.(http.CloseNotifier).CloseNotify()
-	go func() {
-		<-notify
-		requestLogger.Debug("http session closed, closing down context")
-		l.Close()
-	}()
-
+	r.Body.Close()
 	flusher.Flush()
 
 	sub := eventservice.Subscription{
@@ -91,50 +80,41 @@ func (rh *RedfishSSEHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		Context:     rfSubContext,
 	}
 	sseContext, cancel := context.WithCancel(ctx)
-	view := eventservice.GlobalEventService.CreateSubscription(sseContext, requestLogger, sub, cancel)
-	_ = view
+	eventservice.GlobalEventService.CreateSubscription(sseContext, requestLogger, sub, cancel)
 
-	for {
-		event, err := l.Wait(sseContext)
-		if err != nil {
-			requestLogger.Warn("Context was cancelled.", "err", err)
-			break
+	// stream the output using an encoder
+	outputEncoder := json.NewEncoder(w)
+	outputEncoder.SetIndent("data: ", "    ")
+
+	l.ProcessEvents(sseContext, func(event eh.Event) {
+		var err error
+		switch evt := event.Data().(type) {
+		// TODO: find a better way to unify these
+		// sucks that we have to handle these two separately, but for now have to do it this way
+		case *eventservice.ExternalRedfishEventData: // regular redfish events
+			// initial header
+			fmt.Fprintf(w, "id: %d\ndata: ", evt.Id)
+			err = outputEncoder.Encode(&struct {
+				*eventservice.ExternalRedfishEventData
+				Context string `json:",omitempty"`
+			}{
+				ExternalRedfishEventData: evt,
+				Context:                  rfSubContext,
+			})
+
+		case eventservice.MetricReportData: // metric reports
+			err = outputEncoder.Encode(evt)
 		}
 
-		if evt, ok := event.Data().(*eventservice.ExternalRedfishEventData); ok {
-			// Handle redfish events
-			d, err := json.MarshalIndent(
-				&struct {
-					*eventservice.ExternalRedfishEventData
-					Context string `json:",omitempty"`
-				}{
-					ExternalRedfishEventData: evt,
-					Context:                  rfSubContext,
-				},
-				"data: ", "    ",
-			)
-
-			if err != nil {
-				requestLogger.Error("MARSHAL SSE (event) FAILED", "err", err, "data", event.Data(), "event", event)
-				return
-			}
-			// TODO: we should encode to output rather than buffering internally in a string
-			fmt.Fprintf(w, "id: %d\n", evt.Id)
-			fmt.Fprintf(w, "data: %s\n\n", d)
-		} else if evt, ok := event.Data().(eventservice.MetricReportData); ok {
-			// Handle metric reports
-			// TODO: find a better way to unify these
-			// sucks that we have to handle these two separately, but for now have to do it this way
-			d, err := json.MarshalIndent(evt.Data, "data: ", "    ")
-			if err != nil {
-				requestLogger.Error("MARSHAL SSE (metric report) FAILED", "err", err, "data", event.Data(), "event", event)
-				return
-			}
-			fmt.Fprintf(w, "data: %s\n\n", d)
+		// extra trailing newline for SSE protocol compliance
+		fmt.Fprintf(w, "\n")
+		if err != nil {
+			requestLogger.Error("MARSHAL SSE (event) FAILED", "err", err, "data", event.Data(), "event", event)
+			return
 		}
 
 		flusher.Flush()
-	}
+	})
 
 	requestLogger.Debug("Closed session")
 }

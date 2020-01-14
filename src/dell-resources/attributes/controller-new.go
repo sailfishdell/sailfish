@@ -29,11 +29,6 @@ type syncEvent interface {
 	Done()
 }
 
-type listener interface {
-	Inbox() <-chan eh.Event
-	Close()
-}
-
 type BusObjs interface {
 	GetBus() eh.EventBus
 	GetWaiter() *eventwaiter.EventWaiter
@@ -156,7 +151,6 @@ func (b *breadcrumb) UpdateRequest(ctx context.Context, property string, value i
 	b.s.logger.Debug("UpdateRequest", "property", property, "value", value)
 
 	reqIDs := []eh.UUID{}
-	responses := []a.AttributeUpdatedData{}
 	errs := []string{}
 	patch_timeout := 10
 	canned_response := `{"RelatedProperties@odata.count": 1, "Message": "%s", "MessageArgs": ["%[2]s"], "Resolution": "Remove the %sproperty from the request body and resubmit the request if the operation failed.", "MessageId": "%s", "MessageArgs@odata.count": 1, "RelatedProperties": ["%[2]s"], "Severity": "Warning"}`
@@ -238,7 +232,6 @@ func (b *breadcrumb) UpdateRequest(ctx context.Context, property string, value i
 					//remove found reqid from list
 					reqIDs[i] = reqIDs[len(reqIDs)-1]
 					reqIDs = reqIDs[:len(reqIDs)-1]
-					responses = append(responses, *data)
 					if data.Error != "" {
 						errs = append(errs, data.Error)
 					} else {

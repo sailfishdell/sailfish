@@ -296,7 +296,7 @@ func init() {
 			}
 			powerlimit := 0
 
-			if powercap_enabled == true {
+			if powercap_enabled {
 				powerlimit, ok = data.Value.(int)
 				if !ok {
 					return errors.New("power limit is not an integer")
@@ -476,7 +476,7 @@ func init() {
 
 func round2DecPlaces(value float64, nilFlag bool) interface{} {
 	msm_flag := false
-	if nilFlag == true && value == 0 {
+	if nilFlag && value == 0 {
 		return nil
 	}
 
