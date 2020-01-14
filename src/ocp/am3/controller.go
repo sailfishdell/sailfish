@@ -2,7 +2,6 @@ package am3
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	eh "github.com/looplab/eventhorizon"
@@ -12,6 +11,7 @@ import (
 
 const (
 	ConfigureAM3Event = eh.EventType("ConfigureAM3Event")
+	ConfigureAM3Multi = eh.EventType("ConfigureAM3Multi")
 )
 
 type ConfigureAM3EventData struct {
@@ -25,6 +25,7 @@ type Service struct {
 	logger        log.Logger
 	eb            eh.EventBus
 	eventhandlers map[eh.EventType]map[string]func(eh.Event)
+	multihandlers map[eh.EventType]map[string]func(eh.Event)
 	handledEvents map[eh.EventType]struct{}
 	serviceName   string
 }
@@ -33,14 +34,13 @@ func (s *Service) AddEventHandler(name string, et eh.EventType, fn func(eh.Event
 	s.eb.PublishEvent(context.Background(), eh.NewEvent(ConfigureAM3Event, &ConfigureAM3EventData{serviceName: s.serviceName, name: name, et: et, fn: fn}, time.Now()))
 }
 
-type syncEvent interface {
-	Done()
+func (s *Service) AddMultiHandler(name string, et eh.EventType, fn func(eh.Event)) {
+	s.eb.PublishEvent(context.Background(), eh.NewEvent(ConfigureAM3Multi, &ConfigureAM3EventData{serviceName: s.serviceName, name: name, et: et, fn: fn}, time.Now()))
 }
 
 type BusObjs interface {
 	GetBus() eh.EventBus
 	GetWaiter() *eventwaiter.EventWaiter
-	GetPublisher() eh.EventPublisher
 }
 
 func StartService(ctx context.Context, logger log.Logger, name string, d BusObjs) (*Service, error) {
@@ -49,12 +49,13 @@ func StartService(ctx context.Context, logger log.Logger, name string, d BusObjs
 		serviceName:   name,
 		logger:        logger.New("module", "am3"),
 		eb:            d.GetBus(),
-		handledEvents: map[eh.EventType]struct{}{ConfigureAM3Event: {}},
+		handledEvents: map[eh.EventType]struct{}{ConfigureAM3Event: {}, ConfigureAM3Multi: {}},
+		multihandlers: map[eh.EventType]map[string]func(eh.Event){},
 		eventhandlers: map[eh.EventType]map[string]func(eh.Event){
 			ConfigureAM3Event: {
-				// This function is run from inside the event loop to configure things.
-				// No need for locks as everything is guaranteed to be single-threaded
-				// and not concurrently running
+				// These functions are run from inside the event loop to configure
+				// things.  No need for locks as everything is guaranteed to be
+				// single-threaded and not concurrently running
 				"setup": func(ev eh.Event) {
 					config := ev.Data().(*ConfigureAM3EventData)
 					if config != nil && config.serviceName == ret.serviceName {
@@ -67,56 +68,58 @@ func StartService(ctx context.Context, logger log.Logger, name string, d BusObjs
 					}
 				},
 			},
+			ConfigureAM3Multi: {
+				"setup": func(ev eh.Event) {
+					config := ev.Data().(*ConfigureAM3EventData)
+					if config != nil && config.serviceName == ret.serviceName {
+						h, ok := ret.multihandlers[config.et]
+						if !ok {
+							h = map[string]func(eh.Event){}
+						}
+						h[config.name] = config.fn
+						ret.multihandlers[config.et] = h
+					}
+				},
+			},
 		},
 	}
 
 	// stream processor for action events
-	filter := func(ev eh.Event) bool {
+	listener := eventwaiter.NewMultiListener(ctx, logger, d.GetWaiter(), func(ev eh.Event) bool {
 		// normal case first: hash lookup to see if we process this event, should be the fastest way
 		typ := ev.EventType()
 		if _, ok := ret.handledEvents[typ]; ok {
 			// self configure... no locks! yay!
-			if typ == ConfigureAM3Event {
-				data, ok := ev.Data().(*ConfigureAM3EventData)
-				if ok {
-					ret.handledEvents[data.et] = struct{}{}
+			if typ == ConfigureAM3Event || typ == ConfigureAM3Multi {
+				dataArray, _ := ev.Data().([]eh.EventData)
+				for _, data := range dataArray {
+					if d, ok := data.(*ConfigureAM3EventData); ok {
+						ret.handledEvents[d.et] = struct{}{}
+					}
 				}
 			}
-
 			return true
 		}
-
 		return false
-	}
+	})
 
-	listener, err := d.GetWaiter().Listen(ctx, filter)
-	if err != nil {
-		return nil, errors.New("couldnt listen")
-	}
 	listener.Name = "am3"
 
 	go func() {
 		defer listener.Close()
-		keepRunning := true
-		for keepRunning {
-			func() {
-				event, err := listener.UnSyncWait(ctx)
-				if e, ok := event.(syncEvent); ok {
-					defer e.Done()
+		// ProcessEvents handles sync events .Done() for us. We don't need to care
+		listener.ProcessEvents(ctx, func(event eh.Event) {
+			t := event.EventType()
+			for _, fn := range ret.eventhandlers[t] {
+				for _, eventData := range event.Data().([]eh.EventData) {
+					fn(eh.NewEvent(t, eventData, event.Timestamp()))
 				}
-				if err != nil {
-					log.MustLogger("eventstream").Info("Shutting down listener", "err", err)
-					keepRunning = false
-					return
-				}
+			}
 
-				for name, fn := range ret.eventhandlers[event.EventType()] {
-					ret.logger.Info("Running handler", "name", name)
-					fn(event)
-				}
-
-			}()
-		}
+			for _, fn := range ret.multihandlers[t] {
+				fn(event)
+			}
+		})
 	}()
 
 	return ret, nil

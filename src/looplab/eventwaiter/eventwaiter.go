@@ -2,6 +2,7 @@
 // modifications Copyright (c) 2018 - Dell EMC
 //  - don't drop events
 //  - rework the api between waiter and listener so they aren't so incestuous
+//  - rework api to be less circular
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,17 +20,15 @@ package eventwaiter
 
 import (
 	"context"
-	"fmt"
 
 	eh "github.com/looplab/eventhorizon"
 	"github.com/superchalupa/sailfish/src/log"
-	myevent "github.com/superchalupa/sailfish/src/looplab/event"
 )
 
 type listener interface {
 	GetID() eh.UUID
-	processEvent(event eh.Event)
-	closeInbox()
+	ConsumeEventFromWaiter(event eh.Event)
+	CloseInbox()
 }
 
 // EventWaiter waits for certain events to match a criteria.
@@ -109,7 +108,7 @@ func (w *EventWaiter) Run() {
 			// Check for existence to avoid closing channel twice.
 			if _, ok := listeners[l.GetID()]; ok {
 				delete(listeners, l.GetID())
-				l.closeInbox()
+				l.CloseInbox()
 			}
 		case event := <-w.inbox:
 			if len(w.inbox) > 25 {
@@ -122,8 +121,7 @@ func (w *EventWaiter) Run() {
 				startPrinting = false
 			}
 			for _, l := range listeners {
-
-				l.processEvent(event)
+				l.ConsumeEventFromWaiter(event)
 			}
 
 			// TODO: separation of concerns: this should be factored out into a middleware of some sort...
@@ -145,165 +143,23 @@ type syncEvent interface {
 // Notify implements the eventhorizon.EventObserver.Notify method which forwards
 // events to the waiters so that they can match the events.
 func (w *EventWaiter) Notify(ctx context.Context, event eh.Event) {
-
 	// TODO: separation of concerns: this should be factored out into a middleware of some sort...
 	if e, ok := event.(syncEvent); ok {
-		//fmt.Printf("ADD(1) in eventwaiter Notify\n")
 		e.Add(1)
 	}
 
 	w.inbox <- event
 }
 
-// Listen waits unil the match function returns true for an event, or the context
-// deadline expires. The match function can be used to filter or otherwise select
-// interesting events by analysing the event data.
+// Listen creates a new listener that will consume events from the waiter and call back for interesting ones
 func (w *EventWaiter) Listen(ctx context.Context, match func(eh.Event) bool) (*EventListener, error) {
-	l := &EventListener{
-		Name:             "unnamed",
-		id:               eh.NewUUID(),
-		singleEventInbox: make(chan eh.Event, 20),
-		match:            match,
-		unregister:       w.unregister,
-		logger:           w.logger,
-	}
-
-	w.RegisterListener(l)
-
-	return l, nil
+	return NewListener(ctx, w.logger, w, match), nil
 }
 
 func (w *EventWaiter) RegisterListener(l listener) {
 	w.register <- l
 }
 
-// EventListener receives events from an EventWaiter.
-type EventListener struct {
-	Name             string
-	id               eh.UUID
-	singleEventInbox chan eh.Event
-	match            func(eh.Event) bool
-	unregister       chan listener
-	eventType        *eh.EventType
-	startPrinting    bool
-	logger           log.Logger
-}
-
-func (l *EventListener) SetSingleEventType(t eh.EventType) {
-	l.eventType = &t
-}
-
-func (l *EventListener) GetID() eh.UUID { return l.id }
-
-func (l *EventListener) processEvent(event eh.Event) {
-	t := event.EventType()
-	if l.eventType != nil && *l.eventType != t {
-		// early return
-		return
-	}
-
-	eventDataArray, ok := event.Data().([]eh.EventData)
-	if ok {
-		for _, data := range eventDataArray {
-
-			var oneEvent eh.Event
-			if _, ok := event.(myevent.SyncEvent); ok {
-				newEv := myevent.NewSyncEvent(t, data, event.Timestamp())
-				newEv.WaitGroup = event.(myevent.SyncEvent).WaitGroup
-				oneEvent = newEv
-			} else {
-				oneEvent = eh.NewEvent(t, data, event.Timestamp())
-			}
-
-			if l.match(oneEvent) {
-				// TODO: separation of concerns: this should be factored out into a middleware of some sort...
-				// now that we are waiting on the listeners, we can .Done() the waitgroup for the eventwaiter itself
-				if e, ok := oneEvent.(syncEvent); ok {
-					//fmt.Printf("ADD(1) in listener processEvent\n")
-					e.Add(1)
-				}
-				l.singleEventInbox <- oneEvent
-			}
-		}
-	} else {
-		if l.match(event) {
-			// TODO: separation of concerns: this should be factored out into a middleware of some sort...
-			// now that we are waiting on the listeners, we can .Done() the waitgroup for the eventwaiter itself
-			if e, ok := event.(syncEvent); ok {
-				//fmt.Printf("ADD(1) in listener processEvent\n")
-				e.Add(1)
-			}
-			l.singleEventInbox <- event
-		}
-	}
-}
-
-// Wait waits for the event to arrive.
-func (l *EventListener) Wait(ctx context.Context) (eh.Event, error) {
-	select {
-	case event := <-l.singleEventInbox:
-		if len(l.singleEventInbox) > 25 {
-			l.startPrinting = true
-		}
-		if l.startPrinting && l.logger != nil {
-			l.logger.Debug("Event Listener congestion", "len", len(l.singleEventInbox), "cap", cap(l.singleEventInbox), "name", l.Name)
-		}
-		if len(l.singleEventInbox) == 0 {
-			l.startPrinting = false
-		}
-
-		// TODO: separation of concerns: this should be factored out into a middleware of some sort...
-		// now that we are waiting on the listeners, we can .Done() the waitgroup for the eventwaiter itself
-		if e, ok := event.(syncEvent); ok {
-			e.Done()
-			//defer fmt.Printf("Done in Wait()\n")
-		}
-
-		return event, nil
-	case <-ctx.Done():
-		return nil, ctx.Err()
-	}
-}
-
-// Wait waits for the event to arrive.
-func (l *EventListener) UnSyncWait(ctx context.Context) (eh.Event, error) {
-	select {
-	case event := <-l.singleEventInbox:
-		if len(l.singleEventInbox) > 25 {
-			l.startPrinting = true
-		}
-		if l.startPrinting && l.logger != nil {
-			l.logger.Debug("Event Listener congestion", "len", len(l.singleEventInbox), "cap", cap(l.singleEventInbox), "name", l.Name)
-		}
-		if len(l.singleEventInbox) == 0 {
-			l.startPrinting = false
-		}
-
-		return event, nil
-	case <-ctx.Done():
-		return nil, ctx.Err()
-	}
-}
-
-// Inbox returns the channel that events will be delivered on so that you can integrate into your own select() if needed.
-func (l *EventListener) Inbox() <-chan eh.Event {
-	return l.singleEventInbox
-}
-
-// Close stops listening for more events.
-func (l *EventListener) Close() {
-	l.unregister <- l
-}
-
-// close the inbox
-func (l *EventListener) closeInbox() {
-	close(l.singleEventInbox)
-
-	// closing inbox that may have some inbound events. go ahead and mark them all done
-	for event := range l.singleEventInbox {
-		if e, ok := event.(syncEvent); ok {
-			e.Done()
-			fmt.Printf("Completed orphan event! %s\n", event.EventType())
-		}
-	}
+func (w *EventWaiter) UnRegisterListener(l listener) {
+	w.unregister <- l
 }
