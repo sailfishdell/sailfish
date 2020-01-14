@@ -26,7 +26,8 @@ type busObjs interface {
 
 type InjectCommand struct {
 	sync.WaitGroup
-	ctx context.Context
+	ctx   context.Context
+	resCh chan bool
 
 	EventSeq    int64             `json:"event_seq"`
 	EventData   json.RawMessage   `json:"data"`
@@ -85,7 +86,10 @@ func (s *service) GetHandlerFunc() func(http.ResponseWriter, *http.Request) {
 
 		// TODO: query option for extra debug print
 
-		cmd := &InjectCommand{}
+		cmd := &InjectCommand{
+			ctx:   context.Background(),
+			resCh: make(chan bool),
+		}
 
 		defer r.Body.Close()
 		decoder := json.NewDecoder(r.Body)
@@ -96,11 +100,7 @@ func (s *service) GetHandlerFunc() func(http.ResponseWriter, *http.Request) {
 			return
 		}
 
-		// Have to write the headers out *AFTER* reading the full body. But do this *BEFORE* doing anything that will take a bunch of time
-		w.WriteHeader(http.StatusOK)
-
 		//requestLogger.Debug("PUSH injectCmdQueue LEN", "len", len(injectCmdQueue), "cap", cap(injectCmdQueue), "module", "inject", "cmd", cmd)
-		cmd.ctx = context.Background()
 
 		// manually override barrier settings given by sender in some cases
 		cmd.markBarrier()
@@ -115,6 +115,7 @@ func (s *service) GetHandlerFunc() func(http.ResponseWriter, *http.Request) {
 		// That means do not access any structure members or anything except .Wait()
 		// this is why we copy the seq and name above
 		cmd.Add(1)
+		success := false
 		select {
 		// either get this into the queue, or give up if caller drops http connection
 		case s.injectCmdQueue <- cmd:
@@ -122,6 +123,9 @@ func (s *service) GetHandlerFunc() func(http.ResponseWriter, *http.Request) {
 			// processed by the other side. Otherwise the context cancel (below, the
 			// case <-c.ctx.Done()) will keep the message from being sent from our
 			// side, and then we'll .Wait() for something that can never be .Done()
+
+			// we will get an indication if this event is dropped through this channel
+			success = <-cmd.resCh
 
 			// For cmd.Synchronous==false: this will wait until event has made it through
 			// inital command queue and is in the injectChan (which means "in order")
@@ -131,6 +135,13 @@ func (s *service) GetHandlerFunc() func(http.ResponseWriter, *http.Request) {
 			// processed if the caller drops the http connection after this point.
 			cmd.Wait()
 		case <-ctx.Done():
+		}
+
+		// Have to write the headers out *AFTER* reading the full body. But do this *BEFORE* doing anything that will take a bunch of time
+		if success {
+			w.WriteHeader(http.StatusOK)
+		} else {
+			http.Error(w, "DROPPED MESSAGE", http.StatusBadRequest)
 		}
 
 		// Disable hot path debugging: keep commented out code and uncomment for debugging
@@ -252,6 +263,9 @@ func (s *service) Start() {
 					// event is older than last published event, drop
 					s.logger.Crit("Dropped out-of sequence message", "seq", internalSeq, "cmd", injectCmd.Name, "cmdseq", injectCmd.EventSeq, "index", i)
 
+					// tell http handler we dropped this message
+					injectCmd.resCh <- false
+
 					// First, if any HTTP handler is waiting on this, mark it done to release that
 					injectCmd.Done()
 
@@ -280,6 +294,7 @@ func (s *service) Start() {
 				if doSend {
 					// fast path debug statement. comment out unless actively debugging
 					//	s.logger.Debug("Send", "seq", internalSeq, "cmd", injectCmd.Name, "cmdseq", injectCmd.EventSeq, "index", i)
+					injectCmd.resCh <- true
 					injectCmd.sendToChn(s.injectChan)
 					internalSeq = injectCmd.EventSeq
 					internalSeq++
