@@ -12,7 +12,6 @@ import (
 	eh "github.com/looplab/eventhorizon"
 
 	"github.com/superchalupa/sailfish/src/actionhandler"
-	ah "github.com/superchalupa/sailfish/src/actionhandler"
 	"github.com/superchalupa/sailfish/src/dell-ec/slots"
 	"github.com/superchalupa/sailfish/src/dell-resources/ar_mapper2"
 	"github.com/superchalupa/sailfish/src/dell-resources/attributes"
@@ -25,7 +24,6 @@ import (
 	"github.com/superchalupa/sailfish/src/looplab/eventwaiter"
 	"github.com/superchalupa/sailfish/src/ocp/am3"
 	"github.com/superchalupa/sailfish/src/ocp/awesome_mapper2"
-	"github.com/superchalupa/sailfish/src/ocp/event"
 	"github.com/superchalupa/sailfish/src/ocp/eventservice"
 	"github.com/superchalupa/sailfish/src/ocp/model"
 	"github.com/superchalupa/sailfish/src/ocp/session"
@@ -62,15 +60,14 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	// These three all set up a waiter for the root service to appear, so init root service after.
 	actionhandler.Setup(ctx, ch, eb)
 	uploadhandler.Setup(ctx, ch, eb)
-	event.Setup(ch, eb)
-	arService, _ := ar_mapper2.StartService(ctx, logger, cfgMgr, cfgMgrMu, eb)
-	actionSvc := ah.StartService(ctx, logger, ch, eb)
-	uploadSvc := uploadhandler.StartService(ctx, logger, ch, eb)
+	arService, _ := ar_mapper2.StartService(ctx, logger, cfgMgr, cfgMgrMu, d)
+	actionSvc := actionhandler.StartService(ctx, logger, d)
+	uploadSvc := uploadhandler.StartService(ctx, logger, d)
 	am2Svc, _ := awesome_mapper2.StartService(ctx, logger, eb, ch, d)
 	am3Svc, _ := am3.StartService(ctx, logger, "am3 base service", d)
 	addAM3Functions(logger.New("module", "ec_am3_functions"), am3Svc, d)
 
-	ardumpSvc, _ := attributes.StartService(ctx, logger, eb)
+	ardumpSvc, _ := attributes.StartService(ctx, logger, d)
 	pumpSvc := NewPumpActionSvc(ctx, logger, eb)
 
 	// the package for this is going to change, but this is what makes the various mappers and view functions available
@@ -105,7 +102,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	initLCL(logger, instantiateSvc, ch, d)
 	initThermalSensor(logger, instantiateSvc, ch, d)
 	inithealth(ctx, logger, ch, d)
-  stdmeta.InitializeSsoinfo(d) //remove when ready
+	stdmeta.InitializeSsoinfo(d) //remove when ready
 	telemetryservice.RegisterAggregate(instantiateSvc)
 	telemetryservice.New(ctx, logger, ch, d)
 

@@ -14,7 +14,7 @@ import (
 	eh "github.com/looplab/eventhorizon"
 
 	"github.com/superchalupa/sailfish/src/log"
-	"github.com/superchalupa/sailfish/src/ocp/event"
+	"github.com/superchalupa/sailfish/src/looplab/eventwaiter"
 	"github.com/superchalupa/sailfish/src/ocp/view"
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
 )
@@ -176,20 +176,6 @@ func (c *POST) Handle(ctx context.Context, a *domain.RedfishResourceAggregate) e
 	return nil
 }
 
-func SelectUpload(uri string) func(eh.Event) bool {
-	return func(event eh.Event) bool {
-		if event.EventType() != GenericUploadEvent {
-			return false
-		}
-		if data, ok := event.Data().(*GenericUploadEventData); ok {
-			if data.ResourceURI == uri {
-				return true
-			}
-		}
-		return false
-	}
-}
-
 type prop interface {
 	GetProperty(string) interface{}
 }
@@ -212,25 +198,25 @@ type Service struct {
 	uploads map[string]*registration
 }
 
-func StartService(ctx context.Context, logger log.Logger, ch eh.CommandHandler, eb eh.EventBus) *Service {
+type BusObjs interface {
+	GetBus() eh.EventBus
+	GetWaiter() *eventwaiter.EventWaiter
+	GetCommandHandler() eh.CommandHandler
+}
+
+func StartService(ctx context.Context, logger log.Logger, d BusObjs) *Service {
 	ret := &Service{
-		ch:      ch,
-		eb:      eb,
+		ch:      d.GetCommandHandler(),
+		eb:      d.GetBus(),
 		uploads: map[string]*registration{},
 	}
 
-	// stream processor for upload events
-	sp, err := event.NewESP(ctx, event.CustomFilter(func(ev eh.Event) bool {
-		if ev.EventType() == GenericUploadEvent {
-			return true
-		}
-		return false
-	}), event.SetListenerName("uploadhandler"))
-	if err != nil {
-		logger.Error("Failed to create event stream processor", "err", err)
-		return nil
-	}
-	go sp.RunForever(func(event eh.Event) {
+	listener := eventwaiter.NewListener(ctx, logger, d.GetWaiter(), func(ev eh.Event) bool {
+		return ev.EventType() == GenericUploadEvent
+	})
+	// never calling listener.Close() because we can't shut this down
+
+	go listener.ProcessEvents(ctx, func(event eh.Event) {
 		eventData := &domain.HTTPCmdProcessedData{
 			CommandID:  event.Data().(*GenericUploadEventData).CmdID,
 			Results:    map[string]interface{}{"msg": "Not Implemented"},
@@ -272,7 +258,7 @@ func StartService(ctx context.Context, logger log.Logger, ch eh.CommandHandler, 
 		}
 		if eventData.StatusCode != 0 {
 			responseEvent := eh.NewEvent(domain.HTTPCmdProcessed, eventData, time.Now())
-			go eb.PublishEvent(ctx, responseEvent)
+			go ret.eb.PublishEvent(ctx, responseEvent)
 		}
 	})
 

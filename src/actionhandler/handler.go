@@ -10,7 +10,7 @@ import (
 	eh "github.com/looplab/eventhorizon"
 
 	"github.com/superchalupa/sailfish/src/log"
-	"github.com/superchalupa/sailfish/src/ocp/event"
+	"github.com/superchalupa/sailfish/src/looplab/eventwaiter"
 	"github.com/superchalupa/sailfish/src/ocp/view"
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
 )
@@ -100,25 +100,25 @@ type Service struct {
 	actions map[string]*registration
 }
 
-func StartService(ctx context.Context, logger log.Logger, ch eh.CommandHandler, eb eh.EventBus) *Service {
+type BusObjs interface {
+	GetBus() eh.EventBus
+	GetWaiter() *eventwaiter.EventWaiter
+	GetCommandHandler() eh.CommandHandler
+}
+
+func StartService(ctx context.Context, logger log.Logger, d BusObjs) *Service {
 	ret := &Service{
-		ch:      ch,
-		eb:      eb,
+		ch:      d.GetCommandHandler(),
+		eb:      d.GetBus(),
 		actions: map[string]*registration{},
 	}
 
 	// stream processor for action events
-	sp, err := event.NewESP(ctx, event.CustomFilter(func(ev eh.Event) bool {
-		if ev.EventType() == GenericActionEvent {
-			return true
-		}
-		return false
-	}), event.SetListenerName("actionhandler"))
-	if err != nil {
-		logger.Error("Failed to create event stream processor", "err", err)
-		return nil
-	}
-	go sp.RunForever(func(event eh.Event) {
+	listener := eventwaiter.NewListener(ctx, logger, d.GetWaiter(), func(ev eh.Event) bool {
+		return ev.EventType() == GenericActionEvent
+	})
+
+	go listener.ProcessEvents(ctx, func(event eh.Event) {
 		eventData := &domain.HTTPCmdProcessedData{
 			CommandID:  event.Data().(*GenericActionEventData).CmdID,
 			Results:    map[string]interface{}{"msg": "Not Implemented"},
@@ -153,7 +153,7 @@ func StartService(ctx context.Context, logger log.Logger, ch eh.CommandHandler, 
 		}
 		if eventData.StatusCode != 0 {
 			responseEvent := eh.NewEvent(domain.HTTPCmdProcessed, eventData, time.Now())
-			go eb.PublishEvent(ctx, responseEvent)
+			go ret.eb.PublishEvent(ctx, responseEvent)
 		}
 	})
 

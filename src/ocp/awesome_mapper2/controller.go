@@ -3,15 +3,13 @@ package awesome_mapper2
 import (
 	"context"
 	"errors"
+	"sync"
+
 	eh "github.com/looplab/eventhorizon"
-	eventpublisher "github.com/looplab/eventhorizon/publisher/local"
 	"github.com/spf13/viper"
 	"github.com/superchalupa/sailfish/src/log"
 	"github.com/superchalupa/sailfish/src/looplab/eventwaiter"
-	"github.com/superchalupa/sailfish/src/ocp/event"
 	"github.com/superchalupa/sailfish/src/ocp/model"
-	domain "github.com/superchalupa/sailfish/src/redfishresource"
-	"sync"
 )
 
 // ##################################
@@ -236,12 +234,7 @@ func (s *Service) NewMapping(ctx context.Context, logger log.Logger, cfg *viper.
 	return nil
 }
 
-func StartService(ctx context.Context, logger log.Logger, eb eh.EventBus, ch eh.CommandHandler, d *domain.DomainObjects) (*Service, error) {
-	EventPublisher := eventpublisher.NewEventPublisher()
-	eb.AddHandler(eh.MatchAny(), EventPublisher)
-	EventWaiter := eventwaiter.NewEventWaiter(eventwaiter.SetName("Awesome Mapper2"), eventwaiter.NoAutoRun)
-	EventPublisher.AddObserver(EventWaiter)
-	go EventWaiter.Run()
+func StartService(ctx context.Context, logger log.Logger, eb eh.EventBus, ch eh.CommandHandler, d BusObjs) (*Service, error) {
 
 	ret := &Service{
 		logger:     logger.New("module", "am2"),
@@ -249,27 +242,18 @@ func StartService(ctx context.Context, logger log.Logger, eb eh.EventBus, ch eh.
 		hash:       map[eh.EventType][]*MapperConfig{},
 	}
 
-	// stream processor for action events
-	sp, err := event.NewESP(ctx, event.CustomFilter(
-		func(ev eh.Event) bool {
-			ret.RLock()
-			defer ret.RUnlock()
+	listener := eventwaiter.NewListener(ctx, logger, d.GetWaiter(), func(ev eh.Event) bool {
+		ret.RLock()
+		defer ret.RUnlock()
 
-			// hash lookup to see if we process this event, should be the fastest way
-			// comment out logging in the fast path. uncomment to enable.
-			//ret.logger.Debug("am2 check event FILTER", "type", ev.EventType())
-			if _, ok := ret.hash[ev.EventType()]; ok {
-				return true
-			}
-			return false
-		}),
-		event.SetListenerName("awesome_mapper"))
-	if err != nil {
-		ret.logger.Error("Failed to create event stream processor", "err", err)
-		return nil, errors.New("")
-	}
+		// hash lookup to see if we process this event, should be the fastest way
+		// comment out logging in the fast path. uncomment to enable.
+		//ret.logger.Debug("am2 check event FILTER", "type", ev.EventType())
+		_, ok := ret.hash[ev.EventType()]
+		return ok
+	})
 
-	go sp.RunForever(func(event eh.Event) {
+	go listener.ProcessEvents(ctx, func(event eh.Event) {
 		ret.RLock()
 		mappings := ret.hash[event.EventType()]
 		ret.RUnlock()
