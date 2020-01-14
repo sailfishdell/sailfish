@@ -15,12 +15,19 @@ import (
 	a "github.com/superchalupa/sailfish/src/dell-resources/attributedef"
 	"github.com/superchalupa/sailfish/src/dell-resources/dm_event"
 	"github.com/superchalupa/sailfish/src/log"
+	"github.com/superchalupa/sailfish/src/looplab/eventwaiter"
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
 )
 
 type setupProcessFunc func(log.Logger, interface{}) (processFunc, processSetupFunc, error)
 
-type processFunc func(p *MapperParameters, e eh.Event, ch eh.CommandHandler, d *domain.DomainObjects) error
+type BusObjs interface {
+	GetBus() eh.EventBus
+	GetWaiter() *eventwaiter.EventWaiter
+	GetCommandHandler() eh.CommandHandler
+}
+
+type processFunc func(p *MapperParameters, e eh.Event, ch eh.CommandHandler, d BusObjs) error
 type processSetupFunc func(p *MapperParameters) error
 
 var setupProcessFuncsInit sync.Once
@@ -104,7 +111,7 @@ func init() {
 		}
 
 		// Model Update Function
-		modelUpdateFn := func(mp *MapperParameters, event eh.Event, ch eh.CommandHandler, d *domain.DomainObjects) error {
+		modelUpdateFn := func(mp *MapperParameters, event eh.Event, ch eh.CommandHandler, d BusObjs) error {
 
 			for _, updates := range m {
 				mp.model.StopNotifications()
@@ -162,7 +169,7 @@ func init() {
 			execExprSlice = append(execExprSlice, execExpr)
 		}
 
-		return func(mp *MapperParameters, event eh.Event, ch eh.CommandHandler, d *domain.DomainObjects) error {
+		return func(mp *MapperParameters, event eh.Event, ch eh.CommandHandler, d BusObjs) error {
 			for _, ee := range execExprSlice {
 				val, err := ee.Evaluate(mp.Params)
 				if err != nil {
@@ -174,10 +181,9 @@ func init() {
 		}, nil, nil
 	})
 
-
 	AddAM3ProcessSetupFunction("updatePwrConsumptionData", func(logger log.Logger, processConfig interface{}) (processFunc, processSetupFunc, error) {
 		// Model Update Function
-		aggUpdateFn := func(mp *MapperParameters, event eh.Event, ch eh.CommandHandler, d *domain.DomainObjects) error {
+		aggUpdateFn := func(mp *MapperParameters, event eh.Event, ch eh.CommandHandler, d BusObjs) error {
 			data, ok := event.Data().(*dm_event.PowerConsumptionDataObjEventData)
 			if !ok {
 				logger.Error("updatePwrConsumptionData not have PowerConsumptionDataObjEvent event", "type", event.EventType, "data", event.Data())
@@ -207,7 +213,7 @@ func init() {
 
 	AddAM3ProcessSetupFunction("updatePwrSupplyData", func(logger log.Logger, processConfig interface{}) (processFunc, processSetupFunc, error) {
 		// Model Update Function
-		aggUpdateFn := func(mp *MapperParameters, event eh.Event, ch eh.CommandHandler, d *domain.DomainObjects) error {
+		aggUpdateFn := func(mp *MapperParameters, event eh.Event, ch eh.CommandHandler, d BusObjs) error {
 			data, ok := event.Data().(*dm_event.PowerSupplyObjEventData)
 			if !ok {
 				logger.Error("updatePowerSupplyObjEvent does not have PowerSupplyObjEvent event", "type", event.EventType, "data", event.Data())
@@ -237,7 +243,7 @@ func init() {
 	// should not be used until IOMConfig_objects and Capabilities are ironed out
 	AddAM3ProcessSetupFunction("updateIOMConfigData", func(logger log.Logger, processConfig interface{}) (processFunc, processSetupFunc, error) {
 		// Model Update Function
-		aggUpdateFn := func(mp *MapperParameters, event eh.Event, ch eh.CommandHandler, d *domain.DomainObjects) error {
+		aggUpdateFn := func(mp *MapperParameters, event eh.Event, ch eh.CommandHandler, d BusObjs) error {
 			data, ok := event.Data().(*dm_event.IomCapabilityData)
 			if !ok {
 				logger.Error("updateIOMConfigData does not have IOMCapabilityData event", "type", event.EventType, "data", event.Data())
@@ -262,7 +268,7 @@ func init() {
 	powercap_enabled := false
 	AddAM3ProcessSetupFunction("updatePowerCapFlag", func(logger log.Logger, processConfig interface{}) (processFunc, processSetupFunc, error) {
 		// Model Update Function
-		aggUpdateFn := func(mp *MapperParameters, event eh.Event, ch eh.CommandHandler, d *domain.DomainObjects) error {
+		aggUpdateFn := func(mp *MapperParameters, event eh.Event, ch eh.CommandHandler, d BusObjs) error {
 			data, ok := event.Data().(*a.AttributeUpdatedData)
 			if !ok {
 				logger.Error("updatePowerCapFlag does not have AttributeUpdated event", "type", event.EventType, "data", event.Data())
@@ -282,7 +288,7 @@ func init() {
 
 	AddAM3ProcessSetupFunction("updatePowerLimit", func(logger log.Logger, processConfig interface{}) (processFunc, processSetupFunc, error) {
 		// Model Update Function
-		aggUpdateFn := func(mp *MapperParameters, event eh.Event, ch eh.CommandHandler, d *domain.DomainObjects) error {
+		aggUpdateFn := func(mp *MapperParameters, event eh.Event, ch eh.CommandHandler, d BusObjs) error {
 			data, ok := event.Data().(*a.AttributeUpdatedData)
 			if !ok {
 				logger.Error("updatePowerLimit does not have AttributeUpdated event", "type", event.EventType, "data", event.Data())
@@ -311,7 +317,7 @@ func init() {
 	})
 
 	AddAM3ProcessSetupFunction("am3AttributeUpdated", func(logger log.Logger, processConfig interface{}) (processFunc, processSetupFunc, error) {
-		aggUpdateFn := func(mp *MapperParameters, event eh.Event, ch eh.CommandHandler, d *domain.DomainObjects) error {
+		aggUpdateFn := func(mp *MapperParameters, event eh.Event, ch eh.CommandHandler, d BusObjs) error {
 			data, ok := event.Data().(*a.AttributeUpdatedData)
 			if !ok {
 				logger.Error("Did not have AttributeUpdated event", "type", event.EventType, "data", event.Data())
@@ -350,7 +356,7 @@ func init() {
 	})
 
 	AddAM3ProcessSetupFunction("am3FileReadEvent", func(logger log.Logger, processConfig interface{}) (processFunc, processSetupFunc, error) {
-		aggUpdateFn := func(mp *MapperParameters, event eh.Event, ch eh.CommandHandler, d *domain.DomainObjects) error {
+		aggUpdateFn := func(mp *MapperParameters, event eh.Event, ch eh.CommandHandler, d BusObjs) error {
 			data, ok := event.Data().(*dm_event.FileReadEventData)
 			if !ok {
 				logger.Error("Did not have FileReadEvent event", "type", event.EventType, "data", event.Data())

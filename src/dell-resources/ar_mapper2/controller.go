@@ -13,7 +13,6 @@ import (
 
 	"github.com/superchalupa/sailfish/src/log"
 	"github.com/superchalupa/sailfish/src/looplab/eventwaiter"
-	"github.com/superchalupa/sailfish/src/ocp/event"
 	"github.com/superchalupa/sailfish/src/ocp/model"
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
 
@@ -76,27 +75,32 @@ type update struct {
 	property string
 }
 
-func StartService(ctx context.Context, logger log.Logger, cfg *viper.Viper, cfgMu *sync.RWMutex, eb eh.EventBus) (*ARService, error) {
+type BusObjs interface {
+	GetBus() eh.EventBus
+	GetWaiter() *eventwaiter.EventWaiter
+	GetCommandHandler() eh.CommandHandler
+}
+
+func StartService(ctx context.Context, logger log.Logger, cfg *viper.Viper, cfgMu *sync.RWMutex, d BusObjs) (*ARService, error) {
 	logger = logger.New("module", "ar2")
 
 	arservice := &ARService{
-		eb:            eb,
+		eb:            d.GetBus(),
 		cfg:           cfg,
 		cfgMu:         cfgMu,
 		logger:        logger,
 		modelmappings: make(map[string]ModelMappings),
 		hash:          make(map[string][]update),
 		hashDirty:     true,
+		ew:            d.GetWaiter(),
 	}
 
-	sp, err := event.NewESP(ctx, event.MatchAnyEvent(a.AttributeUpdated), event.SetListenerName("ar_service"))
-	if err != nil {
-		logger.Error("Failed to create new event stream processor", "err", err)
-		return nil, errors.New("Failed to create ESP")
-	}
-	arservice.ew = &sp.EW
+	listener := eventwaiter.NewListener(ctx, logger, d.GetWaiter(), func(ev eh.Event) bool {
+		return ev.EventType() == a.AttributeUpdated
+	})
+	// never calling listener.Close() because we can't shut this down
 
-	go sp.RunForever(func(event eh.Event) {
+	go listener.ProcessEvents(ctx, func(event eh.Event) {
 		data, ok := event.Data().(*a.AttributeUpdatedData)
 		if !ok {
 			return

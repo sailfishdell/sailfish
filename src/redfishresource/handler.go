@@ -119,9 +119,10 @@ func NewDomainObjects() (*DomainObjects, error) {
 	return &d, nil
 }
 
-func (d *DomainObjects) GetBus() eh.EventBus                 { return d.EventBus }
-func (d *DomainObjects) GetWaiter() *eventwaiter.EventWaiter { return d.EventWaiter }
-func (d *DomainObjects) GetPublisher() eh.EventPublisher     { return d.EventPublisher }
+func (d *DomainObjects) GetBus() eh.EventBus                  { return d.EventBus }
+func (d *DomainObjects) GetWaiter() *eventwaiter.EventWaiter  { return d.EventWaiter }
+func (d *DomainObjects) GetPublisher() eh.EventPublisher      { return d.EventPublisher }
+func (d *DomainObjects) GetCommandHandler() eh.CommandHandler { return d.CommandHandler }
 func (d *DomainObjects) GetLicenses() []string {
 	d.licensesMu.RLock()
 	defer d.licensesMu.RUnlock()

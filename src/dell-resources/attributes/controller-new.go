@@ -2,7 +2,6 @@ package attributes
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	eh "github.com/looplab/eventhorizon"
 	"strings"
@@ -12,7 +11,6 @@ import (
 	a "github.com/superchalupa/sailfish/src/dell-resources/attributedef"
 	"github.com/superchalupa/sailfish/src/log"
 	"github.com/superchalupa/sailfish/src/looplab/eventwaiter"
-	"github.com/superchalupa/sailfish/src/ocp/event"
 	"github.com/superchalupa/sailfish/src/ocp/model"
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
 )
@@ -23,7 +21,7 @@ type Service struct {
 	cache          map[string][]*model.Model
 	logger         log.Logger
 	eb             eh.EventBus
-	ew             waiter
+	ew             eventwaiter.EW
 }
 
 type syncEvent interface {
@@ -31,31 +29,28 @@ type syncEvent interface {
 	Done()
 }
 
-type waiter interface {
-	Listen(context.Context, func(eh.Event) bool) (*eventwaiter.EventListener, error)
-}
-
 type listener interface {
 	Inbox() <-chan eh.Event
 	Close()
 }
 
-func StartService(ctx context.Context, logger log.Logger, eb eh.EventBus) (*Service, error) {
+type BusObjs interface {
+	GetBus() eh.EventBus
+	GetWaiter() *eventwaiter.EventWaiter
+}
+
+func StartService(ctx context.Context, logger log.Logger, d BusObjs) (*Service, error) {
 	ret := &Service{
 		forwardMapping: map[*model.Model][]string{},
 		cache:          map[string][]*model.Model{},
 		logger:         logger,
-		eb:             eb,
+		eb:             d.GetBus(),
+		ew:             d.GetWaiter(),
 	}
-	// stream processor for action events
-	sp, err := event.NewESP(ctx, event.CustomFilter(ret.selectCachedAttributes()), event.SetListenerName("NEW_attributes"))
-	if err != nil {
-		logger.Error("Failed to create event stream processor", "err", err)
-		return nil, errors.New("Failed to create stream processor")
-	}
-	ret.ew = &sp.EW
 
-	go sp.RunForever(func(event eh.Event) {
+	listener := eventwaiter.NewListener(ctx, logger, d.GetWaiter(), ret.selectCachedAttributes())
+
+	go listener.ProcessEvents(ctx, func(event eh.Event) {
 		data, ok := event.Data().(*a.AttributeUpdatedData)
 		if !ok {
 			return
@@ -168,24 +163,13 @@ func (b *breadcrumb) UpdateRequest(ctx context.Context, property string, value i
 	timeout_response := `{"RelatedProperties@odata.count": 0, "Message": "Request Timed Out", "MessageArgs": [], "Resolution": "", "MessageId": "", "MessageArgs@odata.count": 0, "RelatedProperties": [], "Severity": "Error"}`
 	num_success := 0
 
-	l, err := b.s.ew.Listen(ctx, func(event eh.Event) bool {
-		if event.EventType() != a.AttributeUpdated {
+	listener := eventwaiter.NewListener(ctx, b.s.logger, b.s.ew, func(ev eh.Event) bool {
+		if ev.EventType() != a.AttributeUpdated {
 			return false
 		}
-		_, ok := event.Data().(*a.AttributeUpdatedData)
-		if !ok {
-			return false
-		}
-		return true
+		_, ok := ev.Data().(*a.AttributeUpdatedData)
+		return ok
 	})
-	if err != nil {
-		b.s.logger.Error("Could not create listener", "err", err)
-		return nil, errors.New("Failed to make attribute updated event listener")
-	}
-	l.Name = "patch listener"
-	var listener listener
-	listener = l
-
 	defer listener.Close()
 
 	for k, v := range value.(map[string]interface{}) {

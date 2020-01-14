@@ -17,7 +17,6 @@ import (
 	"github.com/superchalupa/sailfish/src/log"
 	"github.com/superchalupa/sailfish/src/looplab/eventwaiter"
 	"github.com/superchalupa/sailfish/src/ocp/awesome_mapper2"
-	"github.com/superchalupa/sailfish/src/ocp/event"
 	"github.com/superchalupa/sailfish/src/ocp/eventservice"
 	"github.com/superchalupa/sailfish/src/ocp/session"
 	"github.com/superchalupa/sailfish/src/ocp/stdcollections"
@@ -38,9 +37,8 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 
 	// These three all set up a waiter for the root service to appear, so init root service after.
 	actionhandler.Setup(ctx, ch, eb)
-	event.Setup(ch, eb)
-	actionSvc := ah.StartService(ctx, logger, ch, eb)
-	uploadSvc := uploadhandler.StartService(ctx, logger, ch, eb)
+	actionSvc := ah.StartService(ctx, logger, d)
+	uploadSvc := uploadhandler.StartService(ctx, logger, d)
 	am2Svc, _ := awesome_mapper2.StartService(ctx, logger, eb, ch, d)
 	pumpSvc := dell_ec.NewPumpActionSvc(ctx, logger, eb)
 
