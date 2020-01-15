@@ -145,18 +145,20 @@ func (s *service) GetHandlerFunc() func(http.ResponseWriter, *http.Request) {
 		}
 
 		// Have to write the headers out *AFTER* reading the full body. But do this *BEFORE* doing anything that will take a bunch of time
-		now := time.Now()
-		args := []interface{}{cmd.Name, cmd.EventSeq, now.Sub(cmd.ingestTime), now.Sub(cmd.sendTime), cmd.ingestTime.Sub(cmd.sendTime)}
+
+		// Uncomment the two lines below and the lines in the if/else below to enable comprehensive command timing dumps
+		//now := time.Now()
+		//args := []interface{}{cmd.Name, cmd.EventSeq, now.Sub(cmd.ingestTime), now.Sub(cmd.sendTime), cmd.ingestTime.Sub(cmd.sendTime)}
 		if success {
 			w.WriteHeader(http.StatusOK)
-			fmtstr := "Command(%s) SEQ(%d) queued (%s) (%s) (%s)\n"
-			fmt.Printf(fmtstr, args...)
-			fmt.Fprintf(w, fmtstr, args...)
+			//fmtstr := "Command(%s) SEQ(%d) queued (%s) (%s) (%s)\n"
+			//fmt.Printf(fmtstr, args...)
+			//fmt.Fprintf(w, fmtstr, args...)
 		} else {
 			http.Error(w, "DROPPED MESSAGE", http.StatusBadRequest)
-			fmtstr := "Command(%s) SEQ(%d) DROPPED (%s) (%s) (%s)\n"
-			fmt.Printf(fmtstr, args...)
-			fmt.Fprintf(w, fmtstr, args...)
+			//fmtstr := "Command(%s) SEQ(%d) DROPPED (%s) (%s) (%s)\n"
+			//fmt.Printf(fmtstr, args...)
+			//fmt.Fprintf(w, fmtstr, args...)
 		}
 
 		// Disable hot path debugging: keep commented out code and uncomment for debugging
