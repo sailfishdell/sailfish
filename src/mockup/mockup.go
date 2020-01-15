@@ -12,7 +12,6 @@ import (
 
 	"github.com/superchalupa/sailfish/src/actionhandler"
 	ah "github.com/superchalupa/sailfish/src/actionhandler"
-	dell_ec "github.com/superchalupa/sailfish/src/dell-ec"
 	"github.com/superchalupa/sailfish/src/dell-resources/registries"
 	"github.com/superchalupa/sailfish/src/log"
 	"github.com/superchalupa/sailfish/src/ocp/awesome_mapper2"
@@ -34,14 +33,12 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	actionSvc := ah.StartService(ctx, logger, d)
 	uploadSvc := uploadhandler.StartService(ctx, logger, d)
 	am2Svc, _ := awesome_mapper2.StartService(ctx, logger, eb, ch, d)
-	pumpSvc := dell_ec.NewPumpActionSvc(ctx, logger, eb)
 	instantiateSvc := testaggregate.New(ctx, logger, cfgMgr, cfgMgrMu, d)
 	evtSvc := eventservice.New(ctx, cfgMgr, cfgMgrMu, d, instantiateSvc, actionSvc, uploadSvc)
 	eventservice.RegisterAggregate(instantiateSvc)
 	testaggregate.RegisterWithURI(instantiateSvc)
 	testaggregate.RegisterPublishEvents(instantiateSvc, evtSvc)
 	testaggregate.RegisterAM2(instantiateSvc, am2Svc)
-	testaggregate.RegisterPumpAction(instantiateSvc, actionSvc, pumpSvc)
 	registries.RegisterAggregate(instantiateSvc)
 	stdmeta.RegisterFormatters(instantiateSvc, d)
 	session.RegisterAggregate(instantiateSvc)

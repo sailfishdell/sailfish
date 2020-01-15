@@ -9,8 +9,6 @@ import (
 
 	"github.com/spf13/viper"
 
-	eh "github.com/looplab/eventhorizon"
-
 	"github.com/superchalupa/sailfish/src/actionhandler"
 	"github.com/superchalupa/sailfish/src/dell-ec/slots"
 	"github.com/superchalupa/sailfish/src/dell-resources/ar_mapper2"
@@ -21,7 +19,6 @@ import (
 	"github.com/superchalupa/sailfish/src/dell-resources/task_service"
 	"github.com/superchalupa/sailfish/src/dell-resources/update_service"
 	"github.com/superchalupa/sailfish/src/log"
-	"github.com/superchalupa/sailfish/src/looplab/eventwaiter"
 	"github.com/superchalupa/sailfish/src/ocp/am3"
 	"github.com/superchalupa/sailfish/src/ocp/awesome_mapper2"
 	"github.com/superchalupa/sailfish/src/ocp/eventservice"
@@ -44,10 +41,6 @@ type ocp struct {
 	configChangeHandler func()
 }
 
-type waiter interface {
-	Listen(context.Context, func(eh.Event) bool) (*eventwaiter.EventListener, error)
-}
-
 func (o *ocp) ConfigChangeHandler() { o.configChangeHandler() }
 
 func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, d *domain.DomainObjects) *ocp {
@@ -57,7 +50,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	ch := d.CommandHandler
 	eb := d.EventBus
 
-	// These three all set up a waiter for the root service to appear, so init root service after.
 	actionhandler.Setup(ctx, ch, eb)
 	uploadhandler.Setup(ctx, ch, eb)
 	arService, _ := ar_mapper2.StartService(ctx, logger, cfgMgr, cfgMgrMu, d)
@@ -68,7 +60,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	addAM3Functions(logger.New("module", "ec_am3_functions"), am3Svc, d)
 
 	ardumpSvc, _ := attributes.StartService(ctx, logger, d)
-	pumpSvc := NewPumpActionSvc(ctx, logger, eb)
+	pumpSvc := NewPumpActionSvc(ctx, logger, d)
 
 	// the package for this is going to change, but this is what makes the various mappers and view functions available
 	instantiateSvc := testaggregate.New(ctx, logger, cfgMgr, cfgMgrMu, d)
