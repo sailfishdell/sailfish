@@ -26,17 +26,20 @@ type busObjs interface {
 
 type InjectCommand struct {
 	sync.WaitGroup
-	ctx   context.Context
-	resCh chan bool
+	ctx        context.Context
+	resCh      chan bool
+	sendTime   time.Time
+	ingestTime time.Time
 
-	EventSeq    int64             `json:"event_seq"`
-	EventData   json.RawMessage   `json:"data"`
-	EventArray  []json.RawMessage `json:"event_array"`
-	ID          eh.UUID           `json:"id"`
-	Name        eh.EventType      `json:"name"`
-	Encoding    string            `json:"encoding"`
-	Barrier     bool              `json:"barrier"`     // EventBarrier is set if this event should block subsequent events until it is processed
-	Synchronous bool              `json:"Synchronous"` // Synchronous set if POST should not return until the message is processed
+	EventSeq     int64             `json:"event_seq"`
+	EventData    json.RawMessage   `json:"data"`
+	EventArray   []json.RawMessage `json:"event_array"`
+	ID           eh.UUID           `json:"id"`
+	Name         eh.EventType      `json:"name"`
+	Encoding     string            `json:"encoding"`
+	Barrier      bool              `json:"barrier"`     // EventBarrier is set if this event should block subsequent events until it is processed
+	Synchronous  bool              `json:"Synchronous"` // Synchronous set if POST should not return until the message is processed
+	PumpSendTime int64             `json:"PumpSendTime"`
 }
 
 type eventBundle struct {
@@ -100,6 +103,10 @@ func (s *service) GetHandlerFunc() func(http.ResponseWriter, *http.Request) {
 			return
 		}
 
+		// mark when we receive it
+		cmd.ingestTime = time.Now()
+		cmd.sendTime = time.Unix(cmd.PumpSendTime, 0)
+
 		//requestLogger.Debug("PUSH injectCmdQueue LEN", "len", len(injectCmdQueue), "cap", cap(injectCmdQueue), "module", "inject", "cmd", cmd)
 
 		// manually override barrier settings given by sender in some cases
@@ -138,10 +145,18 @@ func (s *service) GetHandlerFunc() func(http.ResponseWriter, *http.Request) {
 		}
 
 		// Have to write the headers out *AFTER* reading the full body. But do this *BEFORE* doing anything that will take a bunch of time
+		now := time.Now()
+		args := []interface{}{cmd.Name, cmd.EventSeq, now.Sub(cmd.ingestTime), now.Sub(cmd.sendTime), cmd.ingestTime.Sub(cmd.sendTime)}
 		if success {
 			w.WriteHeader(http.StatusOK)
+			fmtstr := "Command(%s) SEQ(%d) queued (%s) (%s) (%s)\n"
+			fmt.Printf(fmtstr, args...)
+			fmt.Fprintf(w, fmtstr, args...)
 		} else {
 			http.Error(w, "DROPPED MESSAGE", http.StatusBadRequest)
+			fmtstr := "Command(%s) SEQ(%d) DROPPED (%s) (%s) (%s)\n"
+			fmt.Printf(fmtstr, args...)
+			fmt.Fprintf(w, fmtstr, args...)
 		}
 
 		// Disable hot path debugging: keep commented out code and uncomment for debugging
@@ -471,6 +486,27 @@ func (c *InjectCommand) sendToChn(injectChan chan *eventBundle) error {
 		c.Done()
 	}()
 
+	totalTrains := 0
+	doneTrains := 0
+	waitForEvent := func(evt event.SyncEvent) func() {
+		return func() {
+			doneTrains++
+			if c.Synchronous {
+				evt.Wait()
+				// UNCOMMENT THE LINES HERE TO GET COMPREHENSIVE METRICS FOR TIMINGS FOR PROCESSING EACH EVENT
+				// We should do Prometheus metrics RIGHT HERE
+				//fmt.Printf("\tevent %s %d#%d/%d DONE:  ingest: %s  total: %s\n", c.Name, c.EventSeq, totalTrains, doneTrains, time.Now().Sub(c.ingestTime), time.Now().Sub(c.sendTime))
+				//} else {
+				// spawn a goroutine to wait for processing to complete since caller declines to wait.
+				//go func(t, d int) {
+				//	evt.Wait()
+				// AND We should do Prometheus metrics RIGHT HERE
+				//	fmt.Printf("\tevent %s %d#%d/%d DONE:  ingest: %s  total: %s\n", c.Name, c.EventSeq, totalTrains, doneTrains, time.Now().Sub(c.ingestTime), time.Now().Sub(c.sendTime))
+				//}(totalTrains, doneTrains)
+			}
+		}
+	}
+
 	trainload := make([]eh.EventData, 0, MAX_CONSOLIDATED_EVENTS)
 	sendTrain := func([]eh.EventData) {
 		if len(trainload) == 0 {
@@ -485,9 +521,8 @@ func (c *InjectCommand) sendToChn(injectChan chan *eventBundle) error {
 			// processed by the other side. Otherwise the context cancel (below, the
 			// case <-c.ctx.Done()) will keep the message from being sent from our
 			// side, and then we'll .Wait() for something that can never be .Done()
-			if c.Synchronous {
-				waits = append(waits, evt.Wait)
-			}
+			totalTrains++
+			waits = append(waits, waitForEvent(evt))
 		case <-c.ctx.Done():
 			//requestLogger.Info("CONTEXT CANCELLED! Discarding trainload", "err", c.ctx.Err(), "trainload", trainload, "EventName", c.Name)
 		}
