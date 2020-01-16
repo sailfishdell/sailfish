@@ -7,7 +7,7 @@ listen:
    - unix:sailfish.socket
    - pipeinput:sailfish.pipe
   # enable 8080 port only for testing, as per NCC audit it needs to be disabled on the build
-  # - http::8080
+   - http::8080
   #  enable pprof only for debuging, it causes increased memory consumption. If memprofilerate>0, it will use way more. It's set to 0 in the service file.
   # - pprof:localhost:9080
   # disable direct https listener, uncomment if needed for testing:
@@ -742,8 +742,6 @@ views:
           "params": {"modelname": "default", "cfgsection": "firmware/inventory", "mappinguniquename": "'fw_mapper:' + PowerType + '/' + ChassisFQDD + '_' + FQDD", "AddToView": "ar_mapper_inv"}
         - "fn": "ARMapper"
           "params": {"modelname": "default", "cfgsection": "PSU/PSU.Slot", "mappinguniquename": "'chassis_psu_mapper:' + PowerType + '/' + ChassisFQDD + '_' + FQDD ", "AddToView": "ar_mapper"}
-        - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "power_supply", "uniquename": "'am2_chassis_psu_' + PowerType + '_' + FQDD", "passthru": { "DM_FQDD" : "DM_FQDD" } }
         - "fn": "ARDumper"
           "params": {"modelname": "default", "AddToView": true, "passthru": {"fqddlist": "array(FQDD)"}}
       "View":
@@ -1325,9 +1323,7 @@ awesome_mapper:
           Select: "data.FQDD == 'System.Chassis.1' && data.Name == 'PowerCapValue'",
           Process: { "name": "updatePowerLimit", "params":[]}}
 
-    power_supply:
-      - { SelectEventType: "PowerSupplyObjEvent", Select: "data.ObjectHeader.FQDD == DM_FQDD",
-             Process: { "name": "updatePwrSupplyData", "params":[]}}
+    power_supply: #WORKING ON AM3
 
     health:
         #TODO: remoove this once global health model is gone

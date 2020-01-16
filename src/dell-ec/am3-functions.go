@@ -2,6 +2,9 @@ package dell_ec
 
 import (
 	"context"
+	"strings"
+  "regexp"
+
 	eh "github.com/looplab/eventhorizon"
 	"github.com/superchalupa/sailfish/src/dell-resources/dm_event"
 	"github.com/superchalupa/sailfish/src/ocp/telemetryservice"
@@ -227,14 +230,12 @@ func addAM3Functions(logger log.Logger, am3Svc *am3.Service, d *domain.DomainObj
 			logger.Error("updateFanData did not have fan event", "type", event.EventType, "data", event.Data())
 			return
 		}
-
 		FQDD := data.FQDD
 		arr := strings.Split(FQDD, "#")
 		// FQDD can be either IOM.Slot.X or System.Chassis.1#System.Modular.X#Power
 		if len(arr) != 1 {
 			FQDD = arr[1]
 		}
-
 		pwr := data.InstPower
 
 		URI := "/redfish/v1/Chassis/" + FQDD
@@ -378,13 +379,86 @@ func addAM3Functions(logger log.Logger, am3Svc *am3.Service, d *domain.DomainObj
 		}
 	})
 
-	// Start addressing AttributeUpdated Events
-	//attribute_mappings := map[string][]string{}
-	am3Svc.AddEventHandler("redfish_properties_linked_to_config_attributes_setup", domain.RedfishResourceCreated, func(event eh.Event) {
-	})
-	am3Svc.AddEventHandler("redfish_properties_linked_to_config_attributes_delete", domain.RedfishResourceRemoved, func(event eh.Event) {
-	})
-	am3Svc.AddEventHandler("redfish_properties_linked_to_config_attributes_update", attributedef.AttributeUpdated, func(event eh.Event) {})
+  am3Svc.AddEventHandler("PowerSupplyEventFn", dm_event.PowerSupplyObjEvent, func(event eh.Event) {
+    data, ok := event.Data().(*dm_event.PowerSupplyObjEventData)
+    if !ok {
+      logger.Error("Power Supply Event Data did not have a power supply event", "type", event.EventType, "data", event.Data())
+      return
+    }
+
+    var inputvolts interface{}
+    var inputcurrent interface{}
+    var health interface{}
+
+    //FQDD = System.Chassis.1#PowerSupply.4
+    //URI1 = System.Chassis.1/Power/PowerSupplies/PSU.Slot.4
+    //URI2 = System.Chassis.1/Sensors/PowerSupplies/PSU.Slot.4
+    FQDD := data.ObjectHeader.FQDD
+    re := regexp.MustCompile(`PowerSupply\.(\w+)`)
+    matches := re.FindSubmatch([]byte(FQDD))
+    if len(matches) == 0 {
+      logger.Error("Power Supply Event Data FQDD did not match System.Chassis.1#PowerSupply.### format", "FQDD", FQDD)
+      return
+    }
+    PSU_slot := string(matches[len(matches)-1])
+
+    if data.CurrentInputVolts != 0 {
+      inputvolts = data.CurrentInputVolts
+    } else {
+      inputvolts = nil
+    }
+    if data.InstAmps != 0 { //limit to 2 decimal places
+      inputcurrent = data.InstAmps
+    } else {
+      inputcurrent = nil
+    }
+    switch data.ObjectHeader.ObjStatus {
+    case 2:
+      health = "OK"
+    case 3:
+      health = "Warning"
+    case 4:
+      health = "Critical"
+    default:
+      health = nil
+    }
+
+		sensors_URI := "/redfish/v1/Chassis/System.Chassis.1/Sensors/PowerSupplies/PSU.Slot." + PSU_slot
+		sensors_uuid, ok := d.GetAggregateIDOK(sensors_URI)
+    if !ok {
+      logger.Error("URI not found", "URI", sensors_URI)
+    } else {
+      d.CommandHandler.HandleCommand(context.Background(),
+        &domain.UpdateRedfishResourceProperties2{
+          ID: sensors_uuid,
+          Properties: map[string]interface{}{
+            "LineInputVoltage":      inputvolts,
+            "Oem/Dell/InputCurrent": inputcurrent,
+            "Status/HealthRollup":   health,
+            "Status/Health":         health,
+          },
+      })
+    }
+
+    power_URI := "/redfish/v1/Chassis/System.Chassis.1/Power/PowerSupplies/PSU.Slot." + PSU_slot
+    power_uuid, ok := d.GetAggregateIDOK(power_URI)
+    if !ok {
+      logger.Error("URI not found", "URI", power_URI)
+    } else {
+      d.CommandHandler.HandleCommand(context.Background(),
+        &domain.UpdateRedfishResourceProperties2{
+          ID: power_uuid,
+          Properties: map[string]interface{}{
+            "LineInputVoltage":      inputvolts,
+            "Oem/Dell/InputCurrent": inputcurrent,
+            "Status/HealthRollup":   health,
+            "Status/Health":         health,
+          },
+      })
+    }
+
+  })
+
 }
 
 // TODO: these need to be moved into a common  location (they don't really belong here)

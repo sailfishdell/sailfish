@@ -181,29 +181,30 @@ func init() {
 		}, nil, nil
 	})
 
-	AddAM3ProcessSetupFunction("updatePwrSupplyData", func(logger log.Logger, processConfig interface{}) (processFunc, processSetupFunc, error) {
+	AddAM3ProcessSetupFunction("updatePwrConsumptionData", func(logger log.Logger, processConfig interface{}) (processFunc, processSetupFunc, error) {
 		// Model Update Function
 		aggUpdateFn := func(mp *MapperParameters, event eh.Event, ch eh.CommandHandler, d BusObjs) error {
-			data, ok := event.Data().(*dm_event.PowerSupplyObjEventData)
+			data, ok := event.Data().(*dm_event.PowerConsumptionDataObjEventData)
 			if !ok {
-				logger.Error("updatePowerSupplyObjEvent does not have PowerSupplyObjEvent event", "type", event.EventType, "data", event.Data())
-				return errors.New("updatePowerSupplyObjEvent did not receive PowerSupplyObjEvent")
+				logger.Error("updatePwrConsumptionData not have PowerConsumptionDataObjEvent event", "type", event.EventType, "data", event.Data())
+				return errors.New("updatePwrConsumptionData did not receive PowerConsumptionDataObjEventData")
 			}
-
-			inputvolts := zero2null(data.CurrentInputVolts)
-			inputcurrent := round2DecPlaces(data.InstAmps, true)
-			health := get_health(data.ObjectHeader.ObjStatus)
-
 			ch.HandleCommand(mp.ctx,
 				&domain.UpdateRedfishResourceProperties2{
 					ID: mp.uuid,
 					Properties: map[string]interface{}{
-						"LineInputVoltage":      inputvolts,
-						"Oem/Dell/InputCurrent": inputcurrent,
-						"Status/HealthRollup":   health,
-						"Status/Health":         health,
+						"Oem/EnergyConsumptionStartTime": epoch2Date(data.CwStartTime),
+						"Oem/EnergyConsumptionkWh":       int(data.CumulativeWatts / 1000),
+						"Oem/MaxPeakWatts":               data.PeakWatts,
+						"Oem/MaxPeakWattsTime":           epoch2Date(data.PwReadingTime),
+						"Oem/MinPeakWatts":               data.MinWatts,
+						"Oem/MinPeakWattsTime":           epoch2Date(data.MinwReadingTime),
+						"Oem/PeakHeadroomWatts":          data.PeakHeadRoom,
+						"PowerConsumedWatts":             data.InstWattsPSU1_2,
+						"PowerAvailableWatts":            data.PeakHeadRoom,
 					},
 				})
+
 			return nil
 		}
 
