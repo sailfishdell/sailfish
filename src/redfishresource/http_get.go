@@ -52,7 +52,6 @@ func (c *GET) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
 
 	NewGet(ctx, a, &a.Properties, c.auth)
 	data.Results = Flatten(&a.Properties, false)
-	data.StatusCode = a.StatusCode
 	c.HTTPEventBus.PublishEvent(ctx, eh.NewEvent(HTTPCmdProcessed, data, time.Now()))
 
 	return nil
