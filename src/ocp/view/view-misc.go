@@ -3,7 +3,7 @@ package view
 import (
 	"context"
 	"errors"
-	"fmt"
+	"golang.org/x/xerrors"
 
 	"github.com/superchalupa/sailfish/src/log"
 	"github.com/superchalupa/sailfish/src/ocp/model"
@@ -92,13 +92,13 @@ func (s *View) PropertyPatch(
 	controllerName, ok := meta["controller"].(string)
 	if !ok {
 		log.MustLogger("PATCH").Debug("metadata is missing the controller name", "meta", meta)
-		return errors.New(fmt.Sprintf("metadata is missing the controller name: %v\n", meta))
+		return xerrors.Errorf("metadata is missing the controller name: %v\n", meta)
 	}
 
 	controller, ok := s.controllers[controllerName]
 	if !ok {
 		log.MustLogger("PATCH").Debug("metadata specifies a nonexistent controller name", "meta", meta)
-		return errors.New(fmt.Sprintf("metadata specifies a nonexistent controller name: %v\n", meta))
+		return xerrors.Errorf("metadata specifies a nonexistent controller name: %v\n", meta)
 	}
 
 	property, ok := meta["property"].(string)
@@ -114,11 +114,11 @@ func (s *View) PropertyPatch(
 			domain.AddEEMIMessage(encopts.HttpResponse, agg, "SUCCESS", nil)
 		} else {
 			log.MustLogger("PATCH").Debug("controller.UdpateRequest err is an unknown type", err)
-			return errors.New(fmt.Sprintf("controller.UdpateRequest err is an unknown type %t", err))
+			return xerrors.Errorf("controller.UdpateRequest err is an unknown type %t", err)
 		}
 		return nil
 
 	}
 
-	return errors.New("Error updating: no property specified")
+	return errors.New("error updating: no property specified")
 }

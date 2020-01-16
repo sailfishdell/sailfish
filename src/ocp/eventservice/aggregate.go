@@ -133,6 +133,4 @@ func RegisterAggregate(s *testaggregate.Service) {
 					}},
 			}, nil
 		})
-
-	return
 }

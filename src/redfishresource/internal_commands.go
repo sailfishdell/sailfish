@@ -300,8 +300,6 @@ func GetValueinAgg(a *RedfishResourceAggregate, pathSlice []string) interface{} 
 			// metric events have the data appended
 			if plen == i {
 				return k2.Value
-			} else if plen == i {
-				return nil
 			} else {
 				tmp := k2.Value
 				loc, ok = tmp.(map[string]interface{})

@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/superchalupa/sailfish/src/log"
+	"golang.org/x/xerrors"
 )
 
 // Option is the type for functional options to the constructor NewCert or to reset runtime options in a cert via ApplyOption()
@@ -272,9 +273,7 @@ func SignWithCA(ca *mycert) Option {
 // AddSANDNSName will add Subject Alternate Names for the specified DNS address string
 func AddSANDNSName(names ...string) Option {
 	return func(c *mycert) error {
-		for _, name := range names {
-			c.cert.DNSNames = append(c.cert.DNSNames, name)
-		}
+		c.cert.DNSNames = append(c.cert.DNSNames, names...)
 		return nil
 	}
 }
@@ -292,9 +291,7 @@ func AddSANIPAddress(ips ...string) Option {
 // AddSANIP will add Subject Alternate Names for the given net.IP address.
 func AddSANIP(ips ...net.IP) Option {
 	return func(c *mycert) error {
-		for _, ip := range ips {
-			c.cert.IPAddresses = append(c.cert.IPAddresses, ip)
-		}
+		c.cert.IPAddresses = append(c.cert.IPAddresses, ips...)
 		return nil
 	}
 }
@@ -337,11 +334,17 @@ func (c *mycert) Serialize() error {
 
 	// Public key
 	certOut, err := os.OpenFile(c.fileBase+".crt", os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0664)
+	if err != nil {
+		return xerrors.Errorf("certificate creation failed: failed to write public key(%s): %w", c.fileBase+".crt", err)
+	}
 	pem.Encode(certOut, &pem.Block{Type: "CERTIFICATE", Bytes: certB})
 	certOut.Close()
 
 	// Private key
 	keyOut, err := os.OpenFile(c.fileBase+".key", os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
+	if err != nil {
+		return xerrors.Errorf("certificate creation failed: failed to write private key(%s): %w", c.fileBase+".key", err)
+	}
 	pem.Encode(keyOut, pemBlockForKey(c.priv))
 	keyOut.Close()
 	return nil

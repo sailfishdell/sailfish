@@ -134,7 +134,8 @@ func (s *Service) NewMapping(ctx context.Context, logger log.Logger, cfg *viper.
 			setupSelectFuncsMu.RLock()
 			setupSelectFn, ok := setupSelectFuncs[cfgEntry.SelectFN]
 			if !ok {
-				setupSelectFn, ok = setupSelectFuncs["govaluate_select"]
+				// fallback if choice not found
+				setupSelectFn = setupSelectFuncs["govaluate_select"]
 			}
 			setupSelectFuncsMu.RUnlock()
 			selectFn, err := setupSelectFn(logger.New("cfgName", cfgName), cfgEntry)

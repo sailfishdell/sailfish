@@ -124,8 +124,7 @@ func init() {
 			return vStr, nil
 		}
 
-		ret := make([]string, 0, len(vStr)-1)
-		ret = vStr[:matchIdx]
+		ret := vStr[:matchIdx]
 		if matchIdx+1 < len(vStr) {
 			ret = append(ret, vStr[matchIdx+1:]...) //preallocated
 		}

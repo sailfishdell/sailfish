@@ -32,7 +32,6 @@ type aggregateFunc func(ctx context.Context, logger log.Logger, cfgMgr *viper.Vi
 
 type Service struct {
 	sync.RWMutex
-	ctx                         context.Context
 	logger                      log.Logger
 	d                           *domain.DomainObjects
 	ch                          eh.CommandHandler
@@ -314,7 +313,7 @@ func (s *Service) GetAggregateFunction(name string) aggregateFunc {
 				continue
 			}
 
-			if filecontents == nil || len(filecontents) == 0 {
+			if len(filecontents) == 0 {
 				continue
 			}
 
@@ -328,8 +327,8 @@ func (s *Service) GetAggregateFunction(name string) aggregateFunc {
 			break
 		}
 
-		if rawjson == nil || len(rawjson) == 0 {
-			return nil, errors.New("Cannot find requested resource")
+		if len(rawjson) == 0 {
+			return nil, errors.New("cannot find requested resource")
 		}
 
 		logger.Debug("Got JSON", "rawjson", rawjson)

@@ -13,8 +13,6 @@ import (
 	bbolt "github.com/etcd-io/bbolt"
 )
 
-type namespace string
-
 // Repo implements an in memory repository of read models.
 type Repo struct {
 	db *bbolt.DB
@@ -172,10 +170,6 @@ func (r *Repo) Remove(ctx context.Context, id eh.UUID) error {
 		return err
 	})
 	return nil
-}
-
-func (r *Repo) namespace(ctx context.Context) namespace {
-	return namespace(eh.NamespaceFromContext(ctx))
 }
 
 // Repository returns a parent ReadRepo if there is one.

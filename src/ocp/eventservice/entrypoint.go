@@ -29,11 +29,6 @@ type eventBinary struct {
 	data []byte
 }
 
-type viewer interface {
-	GetUUID() eh.UUID
-	GetURI() string
-}
-
 type actionService interface {
 	WithAction(context.Context, string, string, view.Action) view.Option
 }
@@ -59,7 +54,6 @@ type EventService struct {
 	wrap      func(string, map[string]interface{}) (log.Logger, *view.View, error)
 	addparam  func(map[string]interface{}) map[string]interface{}
 	actionSvc actionService
-	uploadSvc uploadService
 }
 
 var GlobalEventService *EventService
