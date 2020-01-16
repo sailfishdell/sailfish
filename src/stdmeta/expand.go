@@ -266,7 +266,7 @@ func FormatOdataList(ctx context.Context, v *view.View, m *model.Model, agg *dom
 	}
 
 	// have to use m.UnderLock() to do all of this so we dont race with people adding to the underlying slice
-	m.UnderLock(func() {
+	m.UnderRLock(func() {
 		uris, ok := m.GetPropertyOkUnlocked(p)
 		if !ok {
 			uris = []string{}

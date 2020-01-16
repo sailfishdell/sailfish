@@ -9,12 +9,14 @@ import (
 	"reflect"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/Knetic/govaluate"
 	eh "github.com/looplab/eventhorizon"
 	"github.com/spf13/viper"
 
 	"github.com/superchalupa/sailfish/src/log"
+	"github.com/superchalupa/sailfish/src/looplab/eventwaiter"
 	"github.com/superchalupa/sailfish/src/ocp/model"
 	"github.com/superchalupa/sailfish/src/ocp/view"
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
@@ -34,6 +36,8 @@ type Service struct {
 	logger                      log.Logger
 	d                           *domain.DomainObjects
 	ch                          eh.CommandHandler
+	eb                          eh.EventBus
+	ew                          *eventwaiter.EventWaiter
 	cfgMgr                      *viper.Viper
 	cfgMgrMu                    *sync.RWMutex
 	viewFunctionsRegistry       map[string]viewFunc
@@ -43,12 +47,33 @@ type Service struct {
 	serviceGlobalsMu            sync.RWMutex
 }
 
-func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, d *domain.DomainObjects) *Service {
-	return &Service{
-		ctx:                         ctx,
+type am3Service interface {
+	AddEventHandler(name string, et eh.EventType, fn func(eh.Event))
+}
+
+const instantiate = eh.EventType("instantiate")
+const instantiateResponse = eh.EventType("instantiate-response")
+
+type InstantiateData struct {
+	CmdID  eh.UUID
+	Name   string
+	Params map[string]interface{}
+}
+
+type InstantiateResponseData struct {
+	CmdID eh.UUID
+	Log   log.Logger
+	View  *view.View
+	Err   error
+}
+
+func New(logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, d *domain.DomainObjects, am3Svc am3Service) *Service {
+	ret := &Service{
 		logger:                      logger,
 		d:                           d,
-		ch:                          d.CommandHandler,
+		eb:                          d.GetBus(),
+		ch:                          d.GetCommandHandler(),
+		ew:                          d.GetWaiter(),
 		cfgMgr:                      cfgMgr,
 		cfgMgrMu:                    cfgMgrMu,
 		viewFunctionsRegistry:       map[string]viewFunc{},
@@ -56,6 +81,56 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 		aggregateFunctionsRegistry:  map[string]aggregateFunc{},
 		serviceGlobals:              map[string]interface{}{},
 	}
+
+	am3Svc.AddEventHandler("Instaniate", instantiate, func(event eh.Event) {
+		idata, ok := event.Data().(*InstantiateData)
+		if !ok {
+			fmt.Printf("BAD INSTANTIATE: %+v\n", event.Data())
+			return
+		}
+		go func() {
+			resp := &InstantiateResponseData{CmdID: idata.CmdID}
+			resp.Log, resp.View, resp.Err = ret.internalInstantiate(idata.Name, idata.Params)
+			ret.eb.PublishEvent(context.Background(), eh.NewEvent(instantiateResponse, resp, time.Now()))
+		}()
+	})
+
+	return ret
+}
+
+func (s *Service) InstantiateNoRet(name string, parameters map[string]interface{}) {
+	cmdId := eh.NewUUID()
+	s.eb.PublishEvent(context.Background(), eh.NewEvent(instantiate, &InstantiateData{CmdID: cmdId, Name: name, Params: parameters}, time.Now()))
+}
+
+// Instantiate publishes an event to request the instantiate and then waits for the respone message
+func (s *Service) Instantiate(name string, parameters map[string]interface{}) (log.Logger, *view.View, error) {
+	cmdId := eh.NewUUID()
+	s.eb.PublishEvent(context.Background(), eh.NewEvent(instantiate, &InstantiateData{CmdID: cmdId, Name: name, Params: parameters}, time.Now()))
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel() // ensure we always cancel
+	listener := eventwaiter.NewListener(ctx, s.logger, s.ew, func(ev eh.Event) bool {
+		if ev.EventType() != instantiateResponse {
+			return false
+		}
+		if data, ok := ev.Data().(*InstantiateResponseData); ok {
+			return cmdId == data.CmdID
+		}
+		return false
+	})
+	defer listener.Close()
+	event, err := listener.Wait(ctx)
+	cancel()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	data, ok := event.Data().(*InstantiateResponseData)
+	if !ok {
+		return nil, nil, errors.New("bad event reception")
+	}
+	return data.Log, data.View, data.Err
 }
 
 func (s *Service) RegisterViewFunction(name string, fn viewFunc) {
@@ -339,7 +414,7 @@ type config struct {
 	ExecPost    []string
 }
 
-// InstantiateFromCfg will set up logger, model, view, controllers, aggregates from the config file
+// internalInstaniate will set up logger, model, view, controllers, aggregates from the config file
 // 	- name should be a key in the Views section of cfgMgr
 // 	- cfgMgr is the config file
 // 	- parameters is a dictionary of key/value pairs that
@@ -347,12 +422,11 @@ type config struct {
 //            key should have the same names as config struct above
 //
 
-func (s *Service) Instantiate(name string, parameters map[string]interface{}) (log.Logger, *view.View, error) {
-	return s.InstantiateFromCfg(s.ctx, s.cfgMgr, s.cfgMgrMu, name, parameters)
-}
-
-func (s *Service) InstantiateFromCfg(ctx context.Context, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, name string, parameters map[string]interface{}) (l log.Logger, v *view.View, e error) {
+func (s *Service) internalInstantiate(name string, parameters map[string]interface{}) (l log.Logger, v *view.View, e error) {
 	s.logger.Info("Instantiate", "name", name)
+	cfgMgr := s.cfgMgr
+	cfgMgrMu := s.cfgMgrMu
+	ctx := context.Background()
 
 	newParams := map[string]interface{}{}
 	for k, v := range parameters {
@@ -521,7 +595,7 @@ func (s *Service) InstantiateFromCfg(ctx context.Context, cfgMgr *viper.Viper, c
 			if c, ok := cmd.(*domain.CreateRedfishResource); ok {
 				c.ID = vw.GetUUID()
 			}
-			s.ch.HandleCommand(ctx, cmd)
+			s.ch.HandleCommand(context.Background(), cmd)
 		}
 	}()
 

@@ -120,7 +120,7 @@ func (s *Service) selectCachedAttributes() func(eh.Event) bool {
 }
 
 func getAttrValue(m *model.Model, group, gindex, name string) (ret interface{}, ok bool) {
-	attributes, ok := m.GetPropertyOkUnlocked("attributes")
+	attributes, ok := m.GetPropertyOk("attributes")
 	if !ok {
 		return nil, ok
 	}
@@ -183,6 +183,7 @@ func (b *breadcrumb) UpdateRequest(ctx context.Context, property string, value i
 			errs = append(errs, fmt.Sprintf(canned_response, []interface{}{err_msg, k, "unknown ", "Base.1.0.PropertyUnknown"}...))
 			continue
 		}
+		// getAttrValue assumes model is locked
 		attrVal, ok := getAttrValue(b.m, stuff[0], stuff[1], stuff[2])
 		if !ok {
 			b.s.logger.Error("not found", "Attribute", k)
