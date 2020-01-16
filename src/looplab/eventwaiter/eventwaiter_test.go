@@ -41,10 +41,7 @@ func TestEventWaiter(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 	l, err := w.Listen(ctx, func(event eh.Event) bool {
-		if event.EventType() == mocks.EventType {
-			return true
-		}
-		return false
+		return event.EventType() == mocks.EventType
 	})
 	if err != nil {
 		t.Fatal(err)

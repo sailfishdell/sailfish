@@ -106,7 +106,6 @@ func MakeHandlerFunc(logger log.Logger, eb eh.EventBus, getter IDGetter, withUse
 		} else {
 			chain.ServeHTTP(rw, req)
 		}
-		return
 	}
 }
 

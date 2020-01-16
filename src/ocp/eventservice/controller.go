@@ -16,10 +16,6 @@ import (
 const defaultMaxEventsToQueue = 50
 const defaultQueueTimeMs = 400 * time.Millisecond
 
-type waiter interface {
-	Listen(context.Context, func(eh.Event) bool) (*eventwaiter.EventListener, error)
-}
-
 type propertygetter interface {
 	GetPropertyOk(string) (interface{}, bool)
 }

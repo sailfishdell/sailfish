@@ -18,11 +18,6 @@ import (
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
 )
 
-type syncEvent interface {
-	Add(int)
-	Done()
-}
-
 type LoginRequest struct {
 	UserName string
 	Password string
@@ -192,6 +187,4 @@ func (c *POST) startSessionDeleteTimer(sessionVw *view.View, timeout int) {
 		}
 		timer.Reset(duration)
 	})
-
-	return
 }

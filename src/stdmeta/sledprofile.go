@@ -26,11 +26,6 @@ type SledProfile struct {
 
 func (s *SledProfile) PluginType() domain.PluginType { return SledProfilePlugin }
 
-type syncEvent interface {
-	Add(int)
-	Done()
-}
-
 func (s *SledProfile) PropertyPatch(
 	ctx context.Context,
 	agg *domain.RedfishResourceAggregate,

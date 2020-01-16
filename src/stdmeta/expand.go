@@ -185,7 +185,7 @@ func MakeExpandListFormatter(d *domain.DomainObjects) func(context.Context, *vie
 				}
 			}
 		default:
-			odata = make([]interface{}, 0, 0)
+			odata = make([]interface{}, 0)
 		}
 
 		rrp.Value = odata

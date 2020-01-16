@@ -67,11 +67,12 @@ func octetStreamUploadHandler(c *POST, r *http.Request) error {
 
 	// prepare the destination file (tmpfile name)
 	dst, err := ioutil.TempFile(".", UploadDir+"/upld")
-	defer dst.Close()
 	if err != nil {
 		fmt.Printf("\nunable to create upload file, %s\n", err)
 		return err
 	}
+	defer dst.Close()
+
 	localFile = dst.Name()
 	c.Files[uploadFile] = localFile
 
@@ -140,11 +141,11 @@ func (c *POST) ParseHTTPRequest(r *http.Request) error {
 
 		// prepare the destination file (tmpfile name)
 		dst, err := ioutil.TempFile(".", UploadDir+"/upld")
-		defer dst.Close()
 		if err != nil {
 			fmt.Printf("\nunable to create upload file, %s\n", err)
 			return err
 		}
+		defer dst.Close()
 		localFile = dst.Name()
 		c.Files[uploadFile] = localFile
 

@@ -64,7 +64,7 @@ func (c *POST) Handle(ctx context.Context, a *domain.RedfishResourceAggregate) e
 		Headers:    map[string]string{}}
 
 	bl, mruuid, mrduuid := c.ts.CreateMetricReportDefinition(ctx, c.MRD, data)
-	if bl == false {
+	if !bl {
 		a.PublishEvent(eh.NewEvent(domain.HTTPCmdProcessed, data, time.Now()))
 		return errors.New("could not create MRD")
 	}

@@ -136,7 +136,7 @@ func RegisterPumpAction(s *Service, actionSvc actionService, pumpSvc pumpService
 		actionName, ok := cfgParams["name"]
 		if !ok {
 			logger.Error("Config file missing action name for action", "cfg", cfg)
-			return fmt.Errorf("Config file missing action name for action: %s", cfgParams)
+			return fmt.Errorf("config file missing action name for action: %s", cfgParams)
 		}
 		actionNameStr, ok := actionName.(string)
 		if !ok {
@@ -397,7 +397,7 @@ func RegisterAM2(s *Service, am2Svc *am2.Service) {
 		}
 
 		uniqueNameStr, ok = uniqueName.(string)
-		if err != nil {
+		if !ok {
 			logger.Error("could not cast result to string", "uniqueName", uniqueName)
 			return errors.New("could not cast result to string")
 		}

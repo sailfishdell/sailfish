@@ -110,8 +110,6 @@ func (rrp *RedfishResourceProperty) ParseUnlocked(thing interface{}) {
 	default:
 		rrp.Value = thing
 	}
-
-	return
 }
 
 func (auth *RedfishAuthorizationProperty) VerifyPrivileges(Privileges []string) bool {

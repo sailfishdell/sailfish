@@ -237,26 +237,20 @@ func RegisterSledAggregate(s *testaggregate.Service) {
 
 }
 
-func remove(s []string, r string) bool {
-
+func remove(s []string, r string) []string {
 	for i, v := range s {
-		ml := len(s) - 1
 		if v == r {
-			tmp := s[ml]
-			s[ml] = s[i]
-			s[i] = tmp
-			s[ml] = ""
-			s = s[:ml]
-			return true
+			s[i] = s[len(s)-1]
+			return s[:len(s)-1]
 		}
 	}
-	return false
+	return s
 }
 
 // Contains tells whether a contains x.
 func Contains(a []string, x string) bool {
-	for _, n := range a {
-		if x == n {
+	for i := range a {
+		if x == a[i] {
 			return true
 		}
 	}
@@ -278,7 +272,7 @@ func inithealth(ctx context.Context, logger log.Logger, ch eh.CommandHandler, d 
 			return nil, errors.New("mapper configuration error: aggregate UUID not passed")
 		}
 		subsys := removedEvent.Name
-		remove(sled_iomL, subsys)
+		sled_iomL = remove(sled_iomL, subsys)
 
 		ch.HandleCommand(ctx,
 			&domain.RemoveRedfishResourceProperty{
@@ -287,6 +281,5 @@ func inithealth(ctx context.Context, logger log.Logger, ch eh.CommandHandler, d 
 
 		return nil, nil
 	})
-
 
 }

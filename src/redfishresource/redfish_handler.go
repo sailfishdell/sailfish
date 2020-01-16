@@ -139,6 +139,13 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// load the aggregate for the URL we are operating on
 	agg, err := rh.d.AggregateStore.Load(reqCtx, AggregateType, aggID)
+	if err != nil {
+		// can only happen if we race between previous GetAggregateIDOK() and here
+		rh.logger.Warn("Could not LOAD URL", "url", r.URL.Path, "err", err)
+		http.Error(w, "Could not LOAD URL: "+r.URL.Path+"  ERR("+err.Error()+")", http.StatusNotFound)
+		return
+	}
+
 	// type assertion to get real aggregate
 	redfishResource, ok := agg.(*RedfishResourceAggregate)
 	if ok {
@@ -204,7 +211,7 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 		default:
-			t = make([]string, 0, 0)
+			t = make([]string, 0)
 		}
 
 		authAction = rh.isAuthorized(t)
@@ -374,8 +381,6 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Length", strconv.Itoa(len(b)))
 	w.Write(b)
 	// END
-
-	return
 }
 
 func getResourceEtag(ctx context.Context, agg *RedfishResourceAggregate, auth *RedfishAuthorizationProperty) string {

@@ -73,7 +73,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	ar_mapper2.RegisterARMapper(instantiateSvc, arService)
 	attributes.RegisterController(instantiateSvc, ardumpSvc)
 	stdmeta.RegisterFormatters(instantiateSvc, d)
-	stdmeta.SledPwrOperationsSvc(ctx, logger, eb)
+	stdmeta.SledPwrOperationsSvc(ctx, logger, d)
 	registries.RegisterAggregate(instantiateSvc)
 	session.RegisterAggregate(instantiateSvc)
 	eventservice.RegisterAggregate(instantiateSvc)
