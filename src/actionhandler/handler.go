@@ -120,7 +120,6 @@ func StartService(ctx context.Context, logger log.Logger, d BusObjs) *Service {
 			Headers:    map[string]string{},
 		}
 
-		logger.Crit("Action running!")
 		var handler view.Action
 		if data, ok := event.Data().(*GenericActionEventData); ok {
 			ret.RLock()
@@ -132,11 +131,9 @@ func StartService(ctx context.Context, logger log.Logger, d BusObjs) *Service {
 				return
 			}
 			handler = reg.view.GetAction(reg.actionName)
-			logger.Crit("URI", "uri", data.ResourceURI)
+			logger.Crit("Action Running", "uri", data.ResourceURI,"handler",handler)
 
 		}
-
-		logger.Crit("handler", "handler", handler)
 
 		// only send out our pre-canned response if no handler exists (above), or if handler sets the event status code to 0
 		// for example, if data pump is going to directly send an httpcmdprocessed.

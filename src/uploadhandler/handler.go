@@ -121,7 +121,8 @@ func (c *POST) ParseHTTPRequest(r *http.Request) error {
 	if err != nil {
 		fmt.Printf("\nno reader %s\n", err)
 		httputil.DumpRequest(r, false)
-		debugError(r)
+		// sailfish logs go to EMMC.  oauth token can not be printed there
+		// debugError(r)
 		return octetStreamUploadHandler(c, r)
 		//return err
 	}

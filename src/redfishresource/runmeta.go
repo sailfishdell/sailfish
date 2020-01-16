@@ -65,7 +65,6 @@ type PropGetter interface {
 }
 
 func nuGETfn(ctx context.Context, agg *RedfishResourceAggregate, rrp *RedfishResourceProperty, auth *RedfishAuthorizationProperty, opts NuEncOpts) error {
-
 	meta_t, ok := rrp.Meta["GET"].(map[string]interface{})
 	if !ok {
 		return nil // it's not really an "error" we need upper layers to care about

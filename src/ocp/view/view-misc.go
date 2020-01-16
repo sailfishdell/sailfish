@@ -103,7 +103,6 @@ func (s *View) PropertyPatch(
 
 	property, ok := meta["property"].(string)
 	if ok {
-
 		newval, err := controller.UpdateRequest(ctx, property, encopts.Parse, auth)
 		log.MustLogger("PATCH").Debug("update request", "newval", newval, "err", err)
 		if e, ok := err.(domain.HTTP_code); ok {
