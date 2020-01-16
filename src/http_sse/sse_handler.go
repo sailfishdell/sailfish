@@ -78,7 +78,7 @@ func (rh *SSEHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			},
 		)
 		if err != nil {
-			requestLogger.Error("MARSHAL SSE FAILED", "err", err, "data", event.Data(), "event", event)
+			requestLogger.Debug("Failed to marshal SSE event (expected for some events)", "err", err, "data", event.Data(), "event", event)
 			return
 		}
 		fmt.Fprintf(w, "data: %s\n\n", d)
