@@ -182,7 +182,7 @@ func (rh *RedfishHandler) DoFilter(auth *RedfishAuthorizationProperty, data *HTT
 	}
 
 	if auth.doSel {
-		data = handleSelect(auth, data)
+		handleSelect(auth, data)
 	}
 }
 
@@ -666,6 +666,4 @@ func copySelect(dest, src interface{}, selAry [][]Matcher) {
 			destM[k] = v
 		}
 	}
-
-	return
 }
