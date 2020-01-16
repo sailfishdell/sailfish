@@ -79,7 +79,7 @@ func New(ctx context.Context, cfg *viper.Viper, cfgMu *sync.RWMutex, d *domain.D
 		jc:        CreateWorkers(100, 6),
 		actionSvc: actionSvc,
 		wrap: func(name string, params map[string]interface{}) (log.Logger, *view.View, error) {
-			return instantiateSvc.InstantiateFromCfg(ctx, cfg, cfgMu, name, params)
+			return instantiateSvc.Instantiate(name, params)
 		},
 	}
 
@@ -101,12 +101,12 @@ func (es *EventService) StartEventService(ctx context.Context, logger log.Logger
 		return
 	}
 
-	_, esView, _ := instantiateSvc.InstantiateFromCfg(ctx, es.cfg, es.cfgMu, "eventservice", es.addparam(map[string]interface{}{
+	_, esView, _ := instantiateSvc.Instantiate("eventservice", es.addparam(map[string]interface{}{
 		"submittestevent": view.Action(MakeSubmitTestEvent(es.d.EventBus)),
 	}))
 	params["eventsvc_id"] = esView.GetUUID()
 	params["eventsvc_uri"] = esView.GetURI()
-	instantiateSvc.InstantiateFromCfg(ctx, es.cfg, es.cfgMu, "subscriptioncollection", es.addparam(map[string]interface{}{
+	instantiateSvc.InstantiateNoRet("subscriptioncollection", es.addparam(map[string]interface{}{
 		"collection_uri": "/redfish/v1/EventService/Subscriptions",
 	}))
 

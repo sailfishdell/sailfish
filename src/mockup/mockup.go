@@ -14,6 +14,7 @@ import (
 	ah "github.com/superchalupa/sailfish/src/actionhandler"
 	"github.com/superchalupa/sailfish/src/dell-resources/registries"
 	"github.com/superchalupa/sailfish/src/log"
+	"github.com/superchalupa/sailfish/src/ocp/am3"
 	"github.com/superchalupa/sailfish/src/ocp/awesome_mapper2"
 	"github.com/superchalupa/sailfish/src/ocp/eventservice"
 	"github.com/superchalupa/sailfish/src/ocp/session"
@@ -33,7 +34,8 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	actionSvc := ah.StartService(ctx, logger, d)
 	uploadSvc := uploadhandler.StartService(ctx, logger, d)
 	am2Svc, _ := awesome_mapper2.StartService(ctx, logger, eb, ch, d)
-	instantiateSvc := testaggregate.New(ctx, logger, cfgMgr, cfgMgrMu, d)
+	am3Svc, _ := am3.StartService(ctx, logger, "am3 base service", d)
+	instantiateSvc := testaggregate.New(logger, cfgMgr, cfgMgrMu, d, am3Svc)
 	evtSvc := eventservice.New(ctx, cfgMgr, cfgMgrMu, d, instantiateSvc, actionSvc, uploadSvc)
 	eventservice.RegisterAggregate(instantiateSvc)
 	testaggregate.RegisterWithURI(instantiateSvc)
@@ -68,7 +70,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 			}
 		}
 
-		instantiateSvc.Instantiate(cfgStr, params)
+		instantiateSvc.InstantiateNoRet(cfgStr, params)
 		return true, nil
 	})
 
@@ -78,7 +80,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	//*********************************************************************
 	//  /redfish/v1
 	//*********************************************************************
-	_, rootView, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, cfgMgrMu, "rootview", map[string]interface{}{
+	_, rootView, _ := instantiateSvc.Instantiate("rootview", map[string]interface{}{
 		"rooturi":                   "/redfish/v1",
 		"submit_test_metric_report": view.Action(telemetryservice.MakeSubmitTestMetricReport(eb, d, ch)),
 	})
@@ -91,9 +93,9 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	//*********************************************************************
 	// /redfish/v1/Sessions
 	//*********************************************************************
-	_, sessionSvcVw, _ := instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, cfgMgrMu, "sessionservice", map[string]interface{}{})
+	_, sessionSvcVw, _ := instantiateSvc.Instantiate("sessionservice", map[string]interface{}{})
 	session.SetupSessionService(instantiateSvc, sessionSvcVw, d)
-	instantiateSvc.InstantiateFromCfg(ctx, cfgMgr, cfgMgrMu, "sessioncollection", map[string]interface{}{"collection_uri": "/redfish/v1/SessionService/Sessions"})
+	instantiateSvc.InstantiateNoRet("sessioncollection", map[string]interface{}{"collection_uri": "/redfish/v1/SessionService/Sessions"})
 
 	//*********************************************************************
 	// /redfish/v1/EventService

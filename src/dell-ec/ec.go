@@ -63,7 +63,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	pumpSvc := NewPumpActionSvc(ctx, logger, d)
 
 	// the package for this is going to change, but this is what makes the various mappers and view functions available
-	instantiateSvc := testaggregate.New(ctx, logger, cfgMgr, cfgMgrMu, d)
+	instantiateSvc := testaggregate.New(logger, cfgMgr, cfgMgrMu, d, am3Svc)
 	evtSvc := eventservice.New(ctx, cfgMgr, cfgMgrMu, d, instantiateSvc, actionSvc, uploadSvc)
 	testaggregate.RegisterWithURI(instantiateSvc)
 	testaggregate.RegisterPublishEvents(instantiateSvc, evtSvc)
@@ -143,7 +143,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 			}
 		}
 
-		instantiateSvc.Instantiate(cfgStr, params)
+		instantiateSvc.InstantiateNoRet(cfgStr, params)
 		return true, nil
 	})
 
@@ -169,7 +169,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	//*********************************************************************
 	_, sessionSvcVw, _ := instantiateSvc.Instantiate("sessionservice", map[string]interface{}{})
 	session.SetupSessionService(instantiateSvc, sessionSvcVw, d)
-	instantiateSvc.Instantiate("sessioncollection", map[string]interface{}{})
+	instantiateSvc.InstantiateNoRet("sessioncollection", map[string]interface{}{})
 
 	//*********************************************************************
 	//  Standard redfish roles
@@ -189,7 +189,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 		"base_registry":     []map[string]string{{"Language": "En", "Uri": "/redfish/v1/Registries/BaseMessages/BaseRegistry.v1_0_0.json", "PublicationUri": "http://www.dmtf.org/sites/default/files/standards/documents/DSP8011_1.0.0a.json"}},
 		"mgr_attr_registry": []map[string]string{{"Language": "En", "Uri": "/redfish/v1/Registries/ManagerAttributeRegistry/ManagerAttributeRegistry.v1_0_0.json"}},
 	} {
-		instantiateSvc.Instantiate(regName, map[string]interface{}{"location": location})
+		instantiateSvc.InstantiateNoRet(regName, map[string]interface{}{"location": location})
 	}
 
 	_, updSvcVw, _ := instantiateSvc.Instantiate("update_service", map[string]interface{}{})
