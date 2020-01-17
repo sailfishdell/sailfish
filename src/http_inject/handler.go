@@ -105,7 +105,13 @@ func (s *service) GetHandlerFunc() func(http.ResponseWriter, *http.Request) {
 
 		// mark when we receive it
 		cmd.ingestTime = time.Now()
-		cmd.sendTime = time.Unix(cmd.PumpSendTime, 0)
+		// handle time in seconds or in nanoseconds. 32 bit time goes to 4billion,
+		// if it's more it must be nanoseconds
+		if cmd.PumpSendTime < 5000000000 {
+			cmd.sendTime = time.Unix(cmd.PumpSendTime, 0)
+		} else {
+			cmd.sendTime = time.Unix(0, cmd.PumpSendTime)
+		}
 
 		//requestLogger.Debug("PUSH injectCmdQueue LEN", "len", len(injectCmdQueue), "cap", cap(injectCmdQueue), "module", "inject", "cmd", cmd)
 
