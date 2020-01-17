@@ -1191,11 +1191,11 @@ awesome_mapper:
 
     power_control_uris:
       - { SelectEventType: "RedfishResource:created",
-          SelectFN: "uriCheckNoHash",
+          SelectFN: "uriEquals",
           SelectParams: ["rooturi","/Chassis/","FQDD","/Power/PowerControl"],
           ModelUpdate: [ {Property: "power_control_uris", Query: "addtoset(model, propname, data.ResourceURI)"} ]}
       - { SelectEventType: "RedfishResource:removed",
-          SelectFN: "uriCheckNoHash",
+          SelectFN: "uriEquals",
           SelectParams: ["rooturi","/Chassis/","FQDD","/Power/PowerControl"],
           ModelUpdate: [ {Property: "power_control_uris", Query: "removefromset(model, propname, data.ResourceURI)"} ]}
 
