@@ -301,12 +301,12 @@ func (factory *MRDFactory) UpdateMRD(mrdEvData *MetricReportDefinitionData) (err
 			return xerrors.Errorf("Error Updating MetricMeta for MRD(%+v): %w", MRD, err)
 		}
 
-		if MRD.Type == "Periodic" && MRD.Period != newMRD.Period && MRD.Enabled {
+		// insert the first (probably empty) report
+		factory.InsertMetricReport(tx, MRD.Name)
+
+		if MRD.Type == "Periodic" && MRD.Period != newMRD.Period {
 			// If this is a periodic report, put it in the NextMRTS map so it'll get updated on the next report period
 			factory.NextMRTS[MRD.Name] = metric.SqlTimeInt{Time: factory.MetricTSHWM.Add(time.Duration(newMRD.Period) * time.Second)}
-		} else if MRD.Type != "Periodic" && MRD.Enabled {
-			// If it's not periodic, generate it
-			factory.GenerateMetricReport(tx, MRD.Name)
 		}
 
 		return nil
@@ -339,12 +339,16 @@ func (factory *MRDFactory) AddMRD(mrdEvData *MetricReportDefinitionData) (err er
 			return xerrors.Errorf("Error Updating MetricMeta for MRD(%d): %w", MRD.ID, err)
 		}
 
+		if !MRD.Enabled {
+			return nil
+		}
+
+		// insert the first (probably empty) report
+		factory.InsertMetricReport(tx, MRD.Name)
+
 		// If this is a periodic report, put it in the NextMRTS map so it'll get updated on the next report period
-		if MRD.Type == "Periodic" && MRD.Enabled {
+		if MRD.Type == "Periodic" {
 			factory.NextMRTS[MRD.Name] = metric.SqlTimeInt{Time: factory.MetricTSHWM.Add(time.Duration(MRD.Period) * time.Second)}
-		} else if MRD.Enabled {
-			// If it's not periodic, generate it
-			factory.GenerateMetricReport(tx, MRD.Name)
 		}
 
 		return nil
@@ -401,10 +405,8 @@ func (factory *MRDFactory) UpdateMMList(tx *sqlx.Tx, MRD *MetricReportDefinition
 
 var StopIter = xerrors.New("Stop Iteration")
 
-// IterMRD will run fn() for every MRD in the DB.
-//    TODO: pass in the TX to fn()
-// 	  TO Consider: add an error return to allow rollback a single iter?
-func (factory *MRDFactory) IterMRD(checkFn func(MRD *MetricReportDefinition) bool, fn func(MRD *MetricReportDefinition) error) error {
+// IterMRD will run fn() for every MRD in the DB. Passes in a Transaction so function can update DB if needed
+func (factory *MRDFactory) IterMRD(checkFn func(tx *sqlx.Tx, MRD *MetricReportDefinition) bool, fn func(tx *sqlx.Tx, MRD *MetricReportDefinition) error) error {
 	return factory.WrapWithTX(func(tx *sqlx.Tx) error {
 		// set up query for the MRD
 		rows, err := factory.getSqlxTx(tx, "query_mrds").Queryx()
@@ -421,8 +423,8 @@ func (factory *MRDFactory) IterMRD(checkFn func(MRD *MetricReportDefinition) boo
 			if err != nil {
 				return xerrors.Errorf("scan error: %w", err)
 			}
-			if checkFn(MRD) {
-				err = fn(MRD)
+			if checkFn(tx, MRD) {
+				err = fn(tx, MRD)
 				if xerrors.Is(err, StopIter) {
 					break
 				}
@@ -453,17 +455,35 @@ func (factory *MRDFactory) FastCheckForNeededMRUpdates() ([]string, error) {
 	return generatedList, nil
 }
 
-func (factory *MRDFactory) SlowCheckForNeededMRUpdates() ([]string, error) {
+// SyncNextMRTSWithDB will clear the .NextMRTS cache and re-populate it
+func (factory *MRDFactory) SyncNextMRTSWithDB() ([]string, error) {
+	// scan through the database for enabled metric report definitions that are periodic and populate cache
+	newMRTS := map[string]metric.SqlTimeInt{}
 	factory.IterMRD(
-		func(MRD *MetricReportDefinition) bool { return MRD.Type == "Periodic" },
-		func(MRD *MetricReportDefinition) error {
-			if _, ok := factory.NextMRTS[MRD.Name]; MRD.Enabled && !ok {
-				factory.NextMRTS[MRD.Name] = metric.SqlTimeInt{}
-			} else if !MRD.Enabled {
-				delete(factory.NextMRTS, MRD.Name)
+		func(tx *sqlx.Tx, MRD *MetricReportDefinition) bool { return MRD.Type == "Periodic" && MRD.Enabled },
+		func(tx *sqlx.Tx, MRD *MetricReportDefinition) error {
+			if _, ok := newMRTS[MRD.Name]; !ok {
+				newMRTS[MRD.Name] = metric.SqlTimeInt{}
 			}
 			return nil
 		})
+	// first, ensure that everything in current .NextMRTS is still alive. Delete if not.
+	fmt.Printf("newMRTS: %+v\n", newMRTS)
+	fmt.Printf("nextMRTS: %+v\n", factory.NextMRTS)
+	for k := range factory.NextMRTS {
+		if _, ok := newMRTS[k]; ok {
+			// delete from new if it already exists in old, simplifies next loop
+			delete(newMRTS, k)
+			continue
+		}
+		fmt.Printf("Report disappeared or disabled, deleting NextMRTS from cache: %s\n", k)
+		delete(factory.NextMRTS, k)
+	}
+	// next, pull in any new. newMRTS should only have new entries left
+	for k, v := range newMRTS {
+		fmt.Printf("Synced NextMRTS from DB: %s\n", k)
+		factory.NextMRTS[k] = v
+	}
 	return factory.FastCheckForNeededMRUpdates()
 }
 
@@ -484,6 +504,56 @@ func (factory *MRDFactory) loadReportDefinition(tx *sqlx.Tx, MRD *MetricReportDe
 	return nil
 }
 
+func (factory *MRDFactory) InsertMetricReport(tx *sqlx.Tx, name string) (err error) {
+	return factory.WrapWithTXOrPassIn(tx, func(tx *sqlx.Tx) error {
+		MRD := &MetricReportDefinition{
+			MetricReportDefinitionData: &MetricReportDefinitionData{Name: name},
+		}
+		err = factory.loadReportDefinition(tx, MRD)
+		if err != nil || MRD.ID == 0 {
+			return xerrors.Errorf("Error getting MetricReportDefinition: ID(%s) NAME(%s) err: %w", MRD.ID, MRD.Name, err)
+		}
+
+		sqlargs := map[string]interface{}{
+			"Name":  MRD.Name,
+			"MRDID": MRD.ID,
+			// default to "OnRequest" start, reset 'start' for periodic below
+			// FYI: using .Add() with a negative number, as ".Sub()" does something *completely different*.
+			"Start":           factory.MetricTSHWM.Add(-time.Duration(MRD.TimeSpan) * time.Second).UnixNano(),
+			"ReportTimestamp": factory.MetricTSHWM.UnixNano(),
+		}
+
+		// Overwrite report name for NewReport
+		if MRD.Updates == "NewReport" {
+			sqlargs["Name"] = fmt.Sprintf("%s-%s", MRD.Name, factory.MetricTSHWM.Time.UTC().Format(time.RFC3339))
+		}
+
+		if MRD.Type == "Periodic" {
+			// FYI: using .Add() with a negative number, as ".Sub()" does something *completely different*.
+			sqlargs["Start"] = factory.MetricTSHWM.Add(-time.Duration(MRD.Period) * time.Second).UnixNano()
+			factory.NextMRTS[MRD.Name] = metric.SqlTimeInt{Time: factory.MetricTSHWM.Add(time.Duration(MRD.Period) * time.Second)}
+		}
+
+		// Delete all generated reports and reset everything
+		_, err = factory.getNamedSqlTx(tx, "delete_mr_by_id").Exec(sqlargs)
+		if err != nil {
+			return xerrors.Errorf("ERROR deleting MetricReport. MRD(%+v) args(%+v): %w", MRD, sqlargs, err)
+		}
+
+		// nothing left to do if it's not enabled
+		if !MRD.Enabled {
+			return nil
+		}
+
+		_, err = factory.getNamedSqlTx(tx, "insert_report").Exec(sqlargs)
+		if err != nil {
+			return xerrors.Errorf("ERROR inserting MetricReport. MRD(%+v) args(%+v): %w", MRD, sqlargs, err)
+		}
+
+		return nil
+	})
+}
+
 func (factory *MRDFactory) GenerateMetricReport(tx *sqlx.Tx, name string) (err error) {
 	return factory.WrapWithTXOrPassIn(tx, func(tx *sqlx.Tx) error {
 		MRD := &MetricReportDefinition{
@@ -495,60 +565,34 @@ func (factory *MRDFactory) GenerateMetricReport(tx *sqlx.Tx, name string) (err e
 		}
 
 		// default to deleting all the reports... only actually does this if any params are invalid
-		SQL := "delete_mr_by_id"
+		SQL := []string{"update_report_ts_seq"}
 		sqlargs := map[string]interface{}{
-			"Name":     MRD.Name,
-			"MRDID":    MRD.ID,
-			"Sequence": 0,
-			"Start":    0,
-			"End":      0,
+			"Name":  MRD.Name,
+			"MRDID": MRD.ID,
+			// default to "OnRequest" start, reset 'start' for periodic below
+			// FYI: using .Add() with a negative number, as ".Sub()" does something *completely different*.
+			"Start":           factory.MetricTSHWM.Add(-time.Duration(MRD.TimeSpan) * time.Second).UnixNano(),
+			"ReportTimestamp": factory.MetricTSHWM.UnixNano(),
 		}
 
-		switch MRD.Type {
-		case "Periodic":
-			// FYI: .Add() a negative number, as ".Sub()" does something *completely different*.
-			sqlargs["Start"] = factory.MetricTSHWM.Add(-time.Duration(MRD.Period) * time.Second).UnixNano()
-			sqlargs["End"] = factory.MetricTSHWM.UnixNano()
-			sqlargs["ReportTimestamp"] = factory.MetricTSHWM.UnixNano()
+		switch MRD.Updates {
+		case "NewReport":
+			SQL = []string{"insert_report", "keep_only_3_reports"}
+			sqlargs["Name"] = fmt.Sprintf("%s-%s", MRD.Name, factory.MetricTSHWM.Time.UTC().Format(time.RFC3339))
+		case "Overwrite":
+			SQL = []string{"update_report_set_start_to_prev_timestamp", "update_report_ts_seq"}
+		}
+
+		if MRD.Type == "Periodic" {
 			factory.NextMRTS[MRD.Name] = metric.SqlTimeInt{Time: factory.MetricTSHWM.Add(time.Duration(MRD.Period) * time.Second)}
-
-			switch MRD.Updates {
-			case /*Periodic*/ "NewReport":
-				sqlargs["Name"] = fmt.Sprintf("%s-%s", MRD.Name, factory.MetricTSHWM.Time.UTC().Format(time.RFC3339))
-				// NOTE: we should only have a maximum of 3 total reports per
-				// MetricReportDefinition, so the sql here deletes any >3 after
-				// creating new report
-				SQL = "genreport_periodic_newreport"
-
-			case /*Periodic*/ "Overwrite":
-				SQL = "genreport_periodic_overwrite"
-
-			case /*Periodic*/ "AppendStopsWhenFull", "AppendWrapsWhenFull":
-				// periodic/appendstops basically just periodically appends data to an existing report
-				// The "STOPS"/"WRAPS" implemented in the VIEW by order and limit statements
-				SQL = "genreport_periodic_append"
-			}
-
-		case "OnChange", "OnRequest":
-			sqlargs["Start"] = factory.MetricTSHWM.UnixNano()
-			switch MRD.Updates {
-			case /*OnChange*/ "NewReport": // invalid, so delete!
-			case /*OnChange*/ "Overwrite": // invalid, so delete!
-			case /*OnChange*/ "AppendStopsWhenFull":
-				SQL = "genreport_onstar_append"
-			case /*OnChange*/ "AppendWrapsWhenFull":
-				SQL = "genreport_onstar_append"
-			}
 		}
 
-		if !MRD.Enabled {
-			SQL = "delete_mr_by_id"
-		}
-
-		fmt.Printf("SQL(%s) ", SQL)
-		_, err = factory.getNamedSqlTx(tx, SQL).Exec(sqlargs)
-		if err != nil {
-			return xerrors.Errorf("ERROR inserting MetricReport. MRD(%+v) sql(%s), args(%+v): %w", MRD, SQL, sqlargs, err)
+		for _, sql := range SQL {
+			fmt.Printf("SQL(%s) ", sql)
+			_, err = factory.getNamedSqlTx(tx, sql).Exec(sqlargs)
+			if err != nil {
+				return xerrors.Errorf("ERROR inserting MetricReport. MRD(%+v) sql(%s), args(%+v): %w", MRD, SQL, sqlargs, err)
+			}
 		}
 
 		return nil
