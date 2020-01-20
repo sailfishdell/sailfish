@@ -212,7 +212,7 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Service, d Bus
 
 		switch command {
 		case "resync to db":
-			reportList, _ := MRDFactory.SlowCheckForNeededMRUpdates()
+			reportList, _ := MRDFactory.SyncNextMRTSWithDB()
 			for _, report := range reportList {
 				d.GetBus().PublishEvent(context.Background(), eh.NewEvent(metric.ReportGenerated, metric.ReportGeneratedData{Name: report}, time.Now()))
 			}

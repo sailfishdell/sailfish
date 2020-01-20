@@ -1215,10 +1215,18 @@ internal:
 
     delete_mr_by_id: delete from MetricReport where ReportDefinitionID=:MRDID
 
-    genreport_periodic_newreport: |
+    insert_report: |
+      -- TODO Need to also max the value from the starttimestamp with the passed in start value
       INSERT INTO MetricReport
-              (Name, ReportDefinitionID, Sequence, ReportTimestamp, StartTimestamp, EndTimestamp)
-      VALUES (:Name, :MRDID, IFNULL((SELECT MAX(sequence)+1 FROM MetricReport WHERE ReportDefinitionID=:MRDID), 0), :ReportTimestamp, :Start, :End);
+              (Name, ReportDefinitionID, ReportTimestamp, Sequence, StartTimestamp)
+      VALUES (
+        :Name, :MRDID, :ReportTimestamp,
+        IFNULL((SELECT MAX(sequence)+1 FROM MetricReport WHERE ReportDefinitionID=:MRDID), 0),
+        IFNULL((SELECT MAX(StartTimestamp) FROM MetricReport WHERE ReportDefinitionID=:MRDID), :Start)
+        );
+
+    keep_only_3_reports: |
+      -- Ensure there are max 3 reports (NO-OP except for Type=NewReport... thats ok)
       DELETE FROM MetricReport
       WHERE Name IN (
         SELECT name FROM (
@@ -1233,29 +1241,18 @@ internal:
           GROUP BY MR.Name
         )
         WHERE seq+2<MS
-      )
+      );
 
-    genreport_periodic_overwrite: |
-      INSERT INTO MetricReport
-             (Name, ReportDefinitionID, Sequence, ReportTimestamp, StartTimestamp, EndTimestamp)
-      VALUES (:Name, :MRDID, :Sequence, :ReportTimestamp, :Start, :End)
-      ON CONFLICT(Name) DO UPDATE
-      SET Sequence=Sequence+1,
-          ReportTimestamp=:ReportTimestamp,
-          StartTimestamp=EndTimestamp,
-          EndTimestamp=:End
+    update_report_set_start_to_prev_timestamp: |
+      UPDATE MetricReport
+      SET StartTimestamp = ReportTimestamp
+      WHERE Name = :Name
 
-    genreport_periodic_append: |
-      INSERT INTO MetricReport (Name, ReportDefinitionID, Sequence, ReportTimestamp, StartTimestamp, EndTimestamp)
-      values (:Name, :MRDID, :Sequence, :ReportTimestamp, :Start, :End)
-      on conflict(Name) do update
-      set Sequence=Sequence+1,
-          ReportTimestamp=:ReportTimestamp,
-          EndTimestamp=:End
-
-    genreport_onstar_append: |
-      INSERT INTO MetricReport (Name, ReportDefinitionID, Sequence, ReportTimestamp, StartTimestamp, EndTimestamp)
-        values (:Name, :MRDID, :Sequence, 0, NULL, NULL) on conflict(name) do nothing
+    update_report_ts_seq: |
+      UPDATE MetricReport
+      SET ReportTimestamp = :ReportTimestamp,
+          Sequence = Sequence + 1
+      WHERE Name = :Name
 
     find_metric_meta: |
       SELECT
@@ -1530,14 +1527,11 @@ createdb:
   - |
       CREATE TABLE IF NOT EXISTS MetricReport
       (
-        Name                TEXT PRIMARY KEY UNIQUE NOT NULL,
-        ReportDefinitionID  INTEGER NOT NULL,
-        Sequence             INTEGER NOT NULL,
-        ReportTimestamp     INTEGER,  -- datetime
-
-        -- cross reference to the start and end timestamps in the MetricValue table
-        StartTimestamp   INTEGER,  -- datetime
-        EndTimestamp      INTEGER,  -- datetime
+        Name               TEXT PRIMARY KEY UNIQUE NOT NULL,
+        ReportDefinitionID INTEGER NOT NULL,
+        Sequence           INTEGER NOT NULL DEFAULT 0,
+        StartTimestamp     INTEGER NOT NULL DEFAULT (strftime('unixepoch', 'now') * 1000000000.0),
+        ReportTimestamp    INTEGER NOT NULL DEFAULT (strftime('unixepoch', 'now') * 1000000000.0),
 
         -- indexes and constraints
         FOREIGN KEY (ReportDefinitionID)
@@ -1547,14 +1541,36 @@ createdb:
       CREATE INDEX IF NOT EXISTS metric_report_xref_idx on MetricReport(ReportDefinitionID);
 
   - |
-      -- this view is scalable: it will stream out without using extra memory
-      -- IFF(!) you do NOT 'ORDER BY'
+      DROP VIEW IF EXISTS MetricReport_calculated;;
+      CREATE VIEW IF NOT EXISTS MetricReport_calculated as
+        SELECT
+          Name,
+          ReportDefinitionID,
+          Sequence,
+          MRD.TimeSpan as TimeSpan,
+
+          CASE MRD.Type
+          WHEN 'Periodic' OR 'OnChange' THEN ReportTimestamp
+          WHEN 'OnRequest' THEN strftime('unixepoch', 'now') * 1000000000.0
+          END as ReportTimestamp,
+
+          CASE MRD.Type
+          WHEN 'Periodic' OR 'OnChange' THEN StartTimestamp
+          WHEN 'OnRequest' THEN (strftime('unixepoch', 'now') * 1000000000.0 - MRD.TimeSpan)
+          END as StartTimestamp
+
+        FROM
+          MetricReport
+        INNER JOIN MetricReportDefinition as MRD on MRD.ID = ReportDefinitionID
+
+  - |
+      -- TODO: check scalability of this view
       DROP VIEW IF EXISTS MetricValueByReport;
       CREATE VIEW MetricValueByReport as
         select
+            MR.ID as MRID,
             MV.InstanceID,
             MV.Timestamp,
-            rd2mm.ReportDefinitionID as MRDID,
             json_object(
               'MetricId', MI.Name,
               'Timestamp', strftime('%Y-%m-%dT%H:%M:%fZ', MV.Timestamp/1000000000.0, 'unixepoch'),
@@ -1565,51 +1581,21 @@ createdb:
                   'Label', MI.Label
                 )
             )) as 'JSON'
-          from MetricValue as MV
+          from MetricValue_calculated as MV
           inner join MetricInstance as MI on MV.InstanceID = MI.ID
           inner join MetricMeta as MM on MI.MetaID = MM.ID
-          inner join ReportDefinitionToMetricMeta as rd2mm on MM.ID = rd2mm.MetricMetaID;
+          inner join ReportDefinitionToMetricMeta as rd2mm on MM.ID = rd2mm.MetricMetaID
+          inner join MetricReport_calculated as MR on MRDID = MR.ReportDefinitionID
+          WHERE
+                ( MV.Timestamp > MR.StartTimestamp OR MR.StartTimestamp = 0 )
+            and ( MV.Timestamp > (MR.ReportTimestamp - MR.TimeSpan*1000000000.0 ) OR MR.TimeSpan = 0)
+            and ( MV.Timestamp <= MR.ReportTimestamp OR MR.ReportTimestamp = 0)
 
   - |
       -- DOES NOT SCALE:  This uses a temp table to spool the metric values. memory usage scales with # of records output.
-      --                 BECAUSE OF THE 'ORDER BY' for the MetricValueByReport table!
-      DROP VIEW IF EXISTS MetricReport_Stops_Redfish;
-      CREATE VIEW MetricReport_Stops_Redfish AS
-        select
-          ('{' ||
-              ' "@odata.type": "#MetricReport.v1_2_0.MetricReport",' ||
-              ' "@odata.context": "/redfish/v1/$metadata#MetricReport.MetricReport",' ||
-              ' "@odata.id": "/redfish/v1/TelemetryService/MetricReports/' || MR.Name || '",' ||
-              ' "Id": "' || MR.Name || '",' ||
-              ' "Name": "' || MR.Name || ' Metric Report",' ||
-              ' "ReportSequence": ' || Sequence || ',' ||
-              ' "Timestamp": ' || strftime('"%Y-%m-%dT%H:%M:%fZ"', MR.ReportTimestamp/1000000000.0, 'unixepoch') || ', ' ||
-              ' "MetricReportDefinition": {"@odata.id": "/redfish/v1/TelemetryService/MetricReportDefinitions/' || MRD.Name || '"}, ' ||
-                ifnull((
-                  SELECT
-                    ' "MetricValues":  [' ||  group_concat(a.JSON) || '], ' ||
-                    ' "MetricValues@odata.count": ' ||  count(*)
-                  FROM
-                  (
-                    select JSON
-                    from MetricValueByReport as MVR
-                    where MVR.MRDID=MR.ReportDefinitionID
-                      and ( MVR.Timestamp > MR.StartTimestamp OR MR.StartTimestamp is NULL )
-                      and ( MVR.Timestamp <= MR.EndTimestamp OR MR.EndTimestamp is NULL )
-                      order by MVR.Timestamp ASC
-                      limit 3000
-                    ) AS a ), ' "MetricValues":  [], "MetricValues@odata.count": 0 ')
-            || '}'
-          ) as root,
-          '/redfish/v1/TelemetryService/MetricReports/' || MR.Name as '@odata.id'
-        from MetricReport as MR
-        inner join MetricReportDefinition as MRD on MR.ReportDefinitionID = MRD.ID
-        where MRD.Updates != "AppendWrapsWhenFull"
-
-  - |
-      -- DOES NOT SCALE:  This uses a temp table to spool the metric values. memory usage scales with # of records output.
-      DROP VIEW IF EXISTS MetricReport_Wraps_Redfish;
-      CREATE VIEW MetricReport_Wraps_Redfish as
+      DROP VIEW IF EXISTS MetricReport_JSON;
+      DROP VIEW IF EXISTS MetricReport_JSON;
+      CREATE VIEW MetricReport_JSON as
       select
         ('{' ||
             ' "@odata.type": "#MetricReport.v1_2_0.MetricReport",' ||
@@ -1617,7 +1603,8 @@ createdb:
             ' "@odata.id": "/redfish/v1/TelemetryService/MetricReports/' || MR.Name || '",' ||
             ' "Id": "' || MR.Name || '",' ||
             ' "Name": "' || MR.Name || ' Metric Report",' ||
-            ' "ReportSequence": ' || Sequence || ',' ||
+            -- TODO: update this so we only output ReportSequence for Periodic and OnChange reports
+            -- ' "ReportSequence": ' || json_quote(Sequence) || ',' ||
             ' "Timestamp": ' || strftime('"%Y-%m-%dT%H:%M:%fZ"', MR.ReportTimestamp/1000000000.0, 'unixepoch') || ', ' ||
             ' "MetricReportDefinition": {"@odata.id": "/redfish/v1/TelemetryService/MetricReportDefinitions/' || MRD.Name || '"}, ' ||
               ifnull((
@@ -1628,26 +1615,15 @@ createdb:
                 (
                   select JSON
                   from MetricValueByReport as MVR
-                  where MVR.MRDID=MR.ReportDefinitionID
-                    and ( MVR.Timestamp > MR.StartTimestamp OR MR.StartTimestamp is NULL )
-                    and ( MVR.Timestamp <= MR.EndTimestamp OR MR.EndTimestamp is NULL )
+                  where MVR.MRID=MR.ID
                     order by MVR.Timestamp DESC
-                    limit 3000
+                    limit 24000
                 ) AS a ), '')
           || '}'
         ) as root,
         '/redfish/v1/TelemetryService/MetricReports/' || MR.Name as '@odata.id'
       from MetricReport as MR
       inner join MetricReportDefinition as MRD on MR.ReportDefinitionID = MRD.ID
-      where MRD.Updates = 'AppendWrapsWhenFull'
-
-  - |
-      -- This is the table that creates a uniform table name to gather *any* metric report, regardless of type
-      DROP VIEW IF EXISTS MetricReport_JSON;
-      CREATE VIEW MetricReport_JSON as
-        select root, [@odata.id] from MetricReport_Wraps_Redfish
-          UNION ALL
-        select root, [@odata.id] from MetricReport_Stops_Redfish
 
   - |
       DROP VIEW IF EXISTS MetricReportCollection_JSON;
@@ -1686,6 +1662,7 @@ createdb:
           ' "MetricReportDefinitionType@Redfish.AllowableValues": ' || json_array('Periodic', 'OnChange', 'OnRequest') || ', ' ||
           ' "MetricReportHeartbeatInterval": null,' ||
           ' "SuppressRepeatedMetricValue": ' || case SuppressDups when 1 then json('true') else json('false') end || ',' ||
+          ' "ReportTimespan": "PT' || (TimeSpan/(3600)) || 'H' || ((TimeSpan/60)%60) || 'M' || (TimeSpan%60) || 'S' || '", ' ||
           ' "ReportUpdates": "' || Updates || '", ' ||
           ' "ReportUpdates@Redfish.AllowableValues": ' || json_array('AppendStopsWhenFull', 'AppendWrapsWhenFull', 'NewReport', 'Overwrite') || ", " ||
 
