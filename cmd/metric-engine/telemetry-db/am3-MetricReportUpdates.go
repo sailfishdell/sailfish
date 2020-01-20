@@ -157,6 +157,7 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Service, d Bus
 
 	lastHWM := time.Time{}
 	am3Svc.AddMultiHandler("Store Metric Value(s)", metric.MetricValueEvent, func(event eh.Event) {
+		instancesUpdated := map[int64]struct{}{}
 		MRDFactory.WrapWithTX(func(tx *sqlx.Tx) error {
 			dataArray, ok := event.Data().([]eh.EventData)
 			if !ok {
@@ -168,7 +169,7 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Service, d Bus
 					continue
 				}
 
-				err := MRDFactory.InsertMetricValue(tx, metricValue)
+				err := MRDFactory.InsertMetricValue(tx, metricValue, instancesUpdated)
 				if err != nil {
 					logger.Crit("Error Inserting Metric Value", "Metric", metricValue, "err", err)
 					continue
@@ -187,6 +188,11 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Service, d Bus
 			}
 			return nil
 		})
+		// this will set MRDFactory.NextMRTS = -1 for any reports that have changes
+		err := MRDFactory.CheckOnChangeReports(nil, instancesUpdated)
+		if err != nil {
+			logger.Crit("Error Finding OnChange Reports for metrics", "instancesUpdated", instancesUpdated, "err", err)
+		}
 	})
 
 	am3Svc.AddEventHandler("Request Generation of a Metric Report", metric.RequestReport, func(event eh.Event) {
@@ -212,7 +218,14 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Service, d Bus
 
 		switch command {
 		case "resync to db":
-			reportList, _ := MRDFactory.SyncNextMRTSWithDB()
+			// First, check existing expiry... ensure we dont drop any OnChange (NextMRTS==-1) reports that might have been marked
+			reportList, _ := MRDFactory.FastCheckForNeededMRUpdates()
+			for _, report := range reportList {
+				d.GetBus().PublishEvent(context.Background(), eh.NewEvent(metric.ReportGenerated, metric.ReportGeneratedData{Name: report}, time.Now()))
+			}
+
+			// next, go through database and delete any NextMRTS that arent present and reload
+			reportList, _ = MRDFactory.SyncNextMRTSWithDB()
 			for _, report := range reportList {
 				d.GetBus().PublishEvent(context.Background(), eh.NewEvent(metric.ReportGenerated, metric.ReportGeneratedData{Name: report}, time.Now()))
 			}
