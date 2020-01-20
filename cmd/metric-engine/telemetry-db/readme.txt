@@ -27,3 +27,33 @@
 //      NewReport: not supported
 //      Overwrite: not supported
 
+
+
+
+
+		//   Periodic,  AppendWraps:     ++ 	Now()            			-- (don't update)
+		//   Periodic,  AppendStops:     ++ 	Now()            			-- (don't update)
+		//   Periodic,  NewReport  :          - never udpated 		  -
+		//   Periodic,  Overwrite  :     ++ 	Now() 					  		Prev ReportTimestamp
+		//   OnChange,  AppendWraps:     ++ 	Now()             		-- (don't update)
+		//   OnChange,  AppendStops:     ++ 	Now()             		-- (don't update)
+		//   OnChange,  NewReport  :          - never udpated 		  -
+		//   OnChange,  Overwrite  :     ++ 	Now() 								Prev ReportTimestamp
+		//   OnRequest, IMPLICIT   :  		    - never updated 		  -
+		//
+		// SQL List:
+		//   - Set Start to ReportTimestamp
+		//   - Update ReportTS
+		// 	 - Update SEQ
+
+		// query:
+		//   Periodic,  AppendWraps:    seq 	End=ReportTimeStamp   Start=Start
+		//   Periodic,  AppendStops:    seq 	End=ReportTimeStamp   Start=Start
+		//   Periodic,  NewReport  :    seq 	End=ReportTimeStamp   Start=Start
+		//   Periodic,  Overwrite  :    seq 	End=ReportTimeStamp   Start=Start
+		//   OnChange,  AppendWraps:    seq 	End=ReportTimeStamp   Start=End - TimeSpan
+		//   OnChange,  AppendStops:    seq 	End=ReportTimeStamp   Start=End - TimeSpan
+		//   OnChange,  NewReport  :    seq 	End=ReportTimeStamp   Start=End - TimeSpan
+		//   OnChange,  Overwrite  :    seq 	End=ReportTimeStamp   Start=End - TimeSpan
+		//   OnRequest, IMPLICIT   : 		seq 	End=Now() 						Start=End - TimeSpan
+

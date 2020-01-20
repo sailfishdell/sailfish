@@ -1679,7 +1679,7 @@ createdb:
           ' "Name": "' ||  ifnull(shortdesc, name || ' metric report definition') || '",' ||
           ' "Description": "' ||  ifnull(LongDesc, name || ' metric report definition') || '",' ||
             -- Hardcoded/fixed due to limitations in SQLITE query engine. LIMIT must be a constant
-          ' "AppendLimit": 3000,' ||
+          ' "AppendLimit": 24000,' ||
           ' "MetricReportDefinitionEnabled": ' || case Enabled when 1 then json('true') else json('false') end || ',' ||
           ' "MetricReportDefinitionType": "' || Type || '",' ||
           ' "MetricReportDefinitionType@Redfish.AllowableValues": ' || json_array('Periodic', 'OnChange', 'OnRequest') || ', ' ||
