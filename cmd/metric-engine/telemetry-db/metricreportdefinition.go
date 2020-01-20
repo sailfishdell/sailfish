@@ -97,6 +97,10 @@ func NewMRDFactory(logger log.Logger, database *sqlx.DB, cfg *viper.Viper) (*MRD
 		vacuumops:        cfg.GetStringSlice("main.vacuumops"),
 	}
 
+	// SQLX can have SQL with '?' interpolation or ":Name" interpolation. They
+	// are differnet datatypes, so instead of storing in an interface{} and type
+	// assert, just have two differnt hashes to map prepared queries of each type
+
 	// create prepared sql from yaml sql strings
 	for name, sql := range cfg.GetStringMapString("internal.namedsql") {
 		err := factory.prepareNamed(name, sql)
@@ -104,6 +108,7 @@ func NewMRDFactory(logger log.Logger, database *sqlx.DB, cfg *viper.Viper) (*MRD
 			return nil, xerrors.Errorf("Failed to prepare sql query from config yaml. Section(internal.namedsql) Name(%s), SQL(%s). Err: %w", name, sql, err)
 		}
 	}
+	// create prepared sql from yaml sql strings
 	for name, sql := range cfg.GetStringMapString("internal.sqlx") {
 		err := factory.prepareSqlx(name, sql)
 		if err != nil {
@@ -136,7 +141,9 @@ func (factory *MRDFactory) getNamedSqlTx(tx *sqlx.Tx, name string) *sqlx.NamedSt
 	return tx.NamedStmt(factory.getNamedSql(name))
 }
 
-// getNamedSql will return a prepared statement. Don't use this if you have a currently active transaction or you will deadlock!
+// getNamedSql will return a prepared statement. It's prepared against the
+// database directly. Don't use this if you have a currently active transaction
+// or you will deadlock! (use getNamedSqlTx())
 func (factory *MRDFactory) getNamedSql(name string) *sqlx.NamedStmt {
 	return factory.preparedNamedSql[name]
 }
@@ -159,7 +166,9 @@ func (factory *MRDFactory) getSqlxTx(tx *sqlx.Tx, name string) *sqlx.Stmt {
 	return tx.Stmtx(factory.getSqlx(name))
 }
 
-// getSqlx will return a prepared statement. Don't use this if you have a currently active transaction or you will deadlock!
+// getSqlx will return a prepared statement. It was prepared directly against
+// the databse. Don't use this if you have a currently active transaction or
+// you will deadlock! (use getSqlxTx())
 func (factory *MRDFactory) getSqlx(name string) *sqlx.Stmt {
 	return factory.preparedSql[name]
 }
