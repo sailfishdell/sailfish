@@ -32,9 +32,6 @@ import (
 	// cert gen
 	"github.com/superchalupa/sailfish/src/tlscert"
 
-	// load plugins (auto-register)
-	_ "github.com/superchalupa/sailfish/src/stdmeta"
-
 	// load idrac plugins
 
 	"github.com/superchalupa/sailfish/src/dell-resources/dellauth"
