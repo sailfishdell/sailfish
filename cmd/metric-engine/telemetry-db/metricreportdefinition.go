@@ -583,6 +583,7 @@ func (factory *MRDFactory) GenerateMetricReport(tx *sqlx.Tx, name string) (err e
 			SQL = []string{"update_report_set_start_to_prev_timestamp", "update_report_ts_seq"}
 		}
 
+		delete(factory.NextMRTS, MRD.Name)
 		if MRD.Type == "Periodic" {
 			factory.NextMRTS[MRD.Name] = metric.SqlTimeInt{Time: factory.MetricTSHWM.Add(time.Duration(MRD.Period) * time.Second)}
 		}
@@ -597,6 +598,25 @@ func (factory *MRDFactory) GenerateMetricReport(tx *sqlx.Tx, name string) (err e
 
 		return nil
 	})
+}
+
+func (factory *MRDFactory) CheckOnChangeReports(tx *sqlx.Tx, instancesUpdated map[int64]struct{}) error {
+	err := factory.WrapWithTXOrPassIn(tx, func(tx *sqlx.Tx) error {
+		for mmInstanceID := range instancesUpdated {
+			instanceChangeList := []string{}
+			err := factory.getSqlxTx(tx, "find_onchange_mrd_by_mm_instance").Select(&instanceChangeList, mmInstanceID)
+			if err != nil {
+				return xerrors.Errorf("Error getting changed reports by instance: %w", err)
+			}
+			for _, name := range instanceChangeList {
+				// bogus timestamp that will always match
+				factory.NextMRTS[name] = metric.SqlTimeInt{Time: time.Time{}.Add(time.Duration(1))}
+			}
+		}
+		return nil
+	})
+
+	return err
 }
 
 type Scratch struct {
@@ -641,7 +661,7 @@ type MetricMeta struct {
 	LastValue         string            `db:"LastValue"`
 }
 
-func (factory *MRDFactory) InsertMetricValue(tx *sqlx.Tx, ev *metric.MetricValueEventData) (err error) {
+func (factory *MRDFactory) InsertMetricValue(tx *sqlx.Tx, ev *metric.MetricValueEventData, instancesUpdated map[int64]struct{}) (err error) {
 	// TODO: consider cache the MetricMeta(?)
 	// it may speed things up if we cache the MetricMeta in-process rather than going to DB every time.
 	// This should be straightforward because we do all updates in one goroutine, so could add the cache as a factory member
@@ -755,6 +775,9 @@ func (factory *MRDFactory) InsertMetricValue(tx *sqlx.Tx, ev *metric.MetricValue
 					mm.LastTS = mm.Timestamp
 					saveInstance = true
 				}
+
+				// report change hook. let caller know which instances were updated so they can look up reports
+				instancesUpdated[mm.InstanceID] = struct{}{}
 
 				args := []interface{}{mm.InstanceID, mm.Timestamp}
 				sql := "insert_mv_text"

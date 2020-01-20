@@ -1294,6 +1294,15 @@ internal:
       WHERE ID=:InstanceID
 
   sqlx:
+    find_onchange_mrd_by_mm_instance: |
+      select
+        MRD.Name
+      from MetricReportDefinition as MRD
+      inner join ReportDefinitionToMetricMeta as rd2mm on MRD.ID = rd2mm.ReportDefinitionID
+      inner join MetricMeta as MM on rd2mm.MetricMetaID = MM.ID
+      inner join MetricInstance as MI on MM.ID = MI.MetaID
+      where MRD.Type = "OnChange" and MI.ID = ?
+
     mrd_select_idbyname: SELECT ID FROM MetricReportDefinition where Name=?
 
     delete_mrd: delete from MetricReportDefinition where name=?
