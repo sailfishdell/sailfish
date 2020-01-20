@@ -1393,8 +1393,9 @@ createdb:
         SuppressDups BOOLEAN,
         Actions      TEXT,                 -- json array of options: 'LogToMetricReportsCollection', 'RedfishEvent'
         Updates      TEXT,                 -- 'AppendStopsWhenFull', 'AppendWrapsWhenFull', 'NewReport', 'Overwrite'
-        Period       INTEGER,
-        Hidden       INTEGER               -- Not displayed to the user, only for internal use
+        Period       INTEGER not null default 0,
+        TimeSpan     INTEGER not null default 0,
+        Hidden       BOOLEAN               -- Not displayed to the user, only for internal use
       )
 
   - |

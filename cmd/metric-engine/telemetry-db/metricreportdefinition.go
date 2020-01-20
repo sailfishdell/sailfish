@@ -50,6 +50,13 @@ type MetricReportDefinitionData struct {
 	Actions      StringArray `db:"Actions"` // 	'LogToMetricReportsCollection', 'RedfishEvent'
 	Updates      string      `db:"Updates"` // 'AppendStopsWhenFull', 'AppendWrapsWhenFull', 'NewReport', 'Overwrite'
 
+	// Validation: It's assumed that TimeSpan is parsed on ingress. MRD Schema
+	// specifies TimeSpan as a duration.
+	// Represents number of seconds worth of metrics in a report. Metrics will be
+	// reported from the Report generation as the "End" and metrics must have
+	// timestamp > max(End-timespan, report start)
+	TimeSpan int64 `db:"TimeSpan"`
+
 	// Validation: It's assumed that Period is parsed on ingress. Redfish
 	// "Schedule" object is flexible, but we'll allow only period in seconds for
 	// now When it gets to this struct, it needs to be expressed in Seconds.
@@ -183,18 +190,42 @@ func (factory *MRDFactory) Delete(mrdEvData *MetricReportDefinitionData) (err er
 	return
 }
 
-// ValidateMRD will ensure the Type is valid enum and Period is within allowed ranges for Periodic
+// ValidateMRD: Validate Type, Period, and Timespan.
+// will ensure the Type is valid enum and Period is within allowed ranges for Periodic
 func ValidateMRD(MRD *MetricReportDefinition) {
 	switch MRD.Type {
 	case "Periodic":
 		if MRD.Period < 5 || MRD.Period > (60*60*2) {
 			MRD.Period = 180 // period can be 5s to 2hrs. if outside that range, make it 3 minutes.
 		}
-	case "OnChange", "OnRequest":
+		// legal to leave TimeSpan == 0 for Periodic
+		// Min 60s, Max 2hr  -- default to 1hr if outside range
+		if MRD.TimeSpan != 0 && (MRD.TimeSpan < 60 || MRD.TimeSpan > (60*60*2)) {
+			MRD.TimeSpan = 60 * 60
+		}
+
+	case "OnChange":
 		MRD.Period = 0
+		// Min 60s, Max 2hr  -- default to 1hr if outside range
+		if MRD.TimeSpan < 60 || MRD.TimeSpan > (60*60*2) {
+			MRD.TimeSpan = 60 * 60
+		}
+
+	case "OnRequest":
+		MRD.Period = 0
+		// Min 60s, Max 2hr  -- default to 1hr if outside range
+		if MRD.TimeSpan < 60 || MRD.TimeSpan > (60*60*2) {
+			MRD.TimeSpan = 60 * 60
+		}
+		// Implicitly force appendwraps and log actions, as other combinations dont make sense
+		MRD.Updates = "AppendWrapsWhenFull"
+		MRD.Actions = []string{"LogToMetricReportsCollection"}
+
 	default:
-		MRD.Type = "invalid"
+		MRD.Type = "OnRequest"
+		MRD.Enabled = false
 		MRD.Period = 0
+		MRD.TimeSpan = 5 * 60 // default to 5 minutes
 	}
 
 }
