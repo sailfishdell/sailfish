@@ -781,24 +781,18 @@ func (factory *MRDFactory) InsertMetricValue(tx *sqlx.Tx, ev *metric.MetricValue
 
 				args := []interface{}{mm.InstanceID, mm.Timestamp}
 				sql := "insert_mv_text"
-				for {
-					// Put into optimized tables, if possible. Try INT first, as it will error out for a float(1.0) value, but not vice versa
-					intVal, err := strconv.ParseInt(mm.Value, 10, 64)
-					if err == nil {
-						sql = "insert_mv_int"
-						args = append(args, intVal)
-						break
-					}
 
+				// Put into optimized tables, if possible. Try INT first, as it will error out for a float(1.0) value, but not vice versa
+				intVal, err := strconv.ParseInt(mm.Value, 10, 64)
+				if err == nil {
+					sql = "insert_mv_int"
+					args = append(args, intVal)
+				} else if floatErr == nil {
 					// re-use already parsed floatVal above
-					if floatErr == nil {
-						sql = "insert_mv_real"
-						args = append(args, floatVal)
-						break
-					}
-
+					sql = "insert_mv_real"
+					args = append(args, floatVal)
+				} else {
 					args = append(args, mm.Value)
-					break
 				}
 
 				_, err = factory.getSqlxTx(tx, sql).Exec(args...)
