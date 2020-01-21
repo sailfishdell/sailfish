@@ -110,6 +110,9 @@ func NewMRDFactory(logger log.Logger, database *sqlx.DB, cfg *viper.Viper) (*MRD
 
 	// create prepared sql from yaml sql strings
 	for name, sql := range cfg.GetStringMapString("internal.namedsql") {
+		if strings.HasPrefix(name, "noop") {
+			continue
+		}
 		err := factory.prepareNamed(name, sql)
 		if err != nil {
 			return nil, xerrors.Errorf("Failed to prepare sql query from config yaml. Section(internal.namedsql) Name(%s), SQL(%s). Err: %w", name, sql, err)
@@ -117,6 +120,9 @@ func NewMRDFactory(logger log.Logger, database *sqlx.DB, cfg *viper.Viper) (*MRD
 	}
 	// create prepared sql from yaml sql strings
 	for name, sql := range cfg.GetStringMapString("internal.sqlx") {
+		if strings.HasPrefix(name, "noop") {
+			continue
+		}
 		err := factory.prepareSqlx(name, sql)
 		if err != nil {
 			return nil, xerrors.Errorf("Failed to prepare sql query from config yaml. Section(internal.sqlx) Name(%s), SQL(%s). Err: %w", name, sql, err)
