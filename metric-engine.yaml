@@ -509,7 +509,7 @@ UDB-Metric-Import:
     # There is a TblAvgPowerConsumptionStatDataObj, why aren't we using that?
     Query: |
       SELECT
-        cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
+        cast( (julianday('now') - 2440587.5)*86400 * 1000000000 as integer) as Timestamp,
         friendlyFQDD as Context,
         '/redfish/v1/FIXME/' || FriendlyFQDD as Property,
         friendlyFQDD as FriendlyFQDD,
@@ -547,7 +547,7 @@ UDB-Metric-Import:
     WaitInterval: 5
     Query: |
       SELECT
-        cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
+        cast( (julianday('now') - 2440587.5)*86400 * 1000000000 as integer) as Timestamp,
         friendlyFQDD as Context,
         '/redfish/v1/FIXME/' || FriendlyFQDD as Property,
         friendlyFQDD as FriendlyFQDD,
@@ -564,13 +564,13 @@ UDB-Metric-Import:
         -- BUG IN UNDERLYING CODE -> this time stamp is reported in local time!
         -- THIS IS WRONG. WE HAVE TO FIX THIS UP HERE, BUT IT SHOULD BE FIXED IN UNDERLYING CODE
         -- CurrentSystemOutputTimeStamp * 1000000000 as 'Timestamp-SystemOutputPower',
-        strftime('%s', CurrentSystemOutputTimeStamp * 1.0, 'unixepoch', 'utc') as 'Timestamp-SystemOutputPower',
+        strftime('%s', CurrentSystemOutputTimeStamp, 'unixepoch', 'utc') as 'Timestamp-SystemOutputPower',
         CurrentSystemOutputPower as 'Metric-SystemOutputPower',
 
         -- BUG IN UNDERLYING CODE -> this time stamp is reported in local time!
         -- THIS IS WRONG. WE HAVE TO FIX THIS UP HERE, BUT IT SHOULD BE FIXED IN UNDERLYING CODE
         -- CurrentSystemInputPowerTimeStamp * 1000000000 as 'Timestamp-SystemInputPower',
-        strftime('%s', CurrentSystemInputPowerTimeStamp * 1.0, 'unixepoch', 'utc') as 'Timestamp-SystemInputPower',
+        strftime('%s', CurrentSystemInputPowerTimeStamp, 'unixepoch', 'utc') as 'Timestamp-SystemInputPower',
         CurrentSystemInputPower as 'Metric-SystemInputPower'
       FROM TblsPowerMetrics
 
@@ -584,7 +584,7 @@ UDB-Metric-Import:
     WaitInterval: 1
     Query: |
       SELECT
-        cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
+        cast( (julianday('now') - 2440587.5)*86400 * 1000000000 as integer) as Timestamp,
         friendlyFQDD as Context,
         '/redfish/v1/FIXME/' || FriendlyFQDD as Property,
         friendlyFQDD as FriendlyFQDD,
@@ -613,7 +613,7 @@ UDB-Metric-Import:
     WaitInterval: 5
     Query: |
       SELECT
-        cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
+        cast( (julianday('now') - 2440587.5)*86400 * 1000000000 as integer) as Timestamp,
         friendlyFQDD as Context,
         '/redfish/v1/FIXME/' || FriendlyFQDD as Property,
         friendlyFQDD as FriendlyFQDD,
@@ -640,7 +640,7 @@ UDB-Metric-Import:
     WaitInterval: 5
     Query: |
       SELECT
-        cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
+        cast( (julianday('now') - 2440587.5)*86400 * 1000000000 as integer) as Timestamp,
         friendlyFQDD as Context,
         '/redfish/v1/FIXME/' || FriendlyFQDD as Property,
         friendlyFQDD as FriendlyFQDD,
@@ -660,7 +660,7 @@ UDB-Metric-Import:
     WaitInterval: 5
     Query: |
       SELECT
-        cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
+        cast( (julianday('now') - 2440587.5)*86400 * 1000000000 as integer) as Timestamp,
         friendlyFQDD as Context,
         '/redfish/v1/FIXME/' || FriendlyFQDD as Property,
         friendlyFQDD as FriendlyFQDD,
@@ -679,7 +679,7 @@ UDB-Metric-Import:
     WaitInterval: 5
     Query: |
       SELECT
-        cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
+        cast( (julianday('now') - 2440587.5)*86400 * 1000000000 as integer) as Timestamp,
         friendlyFQDD as Context,
         '/redfish/v1/FIXME/' || FriendlyFQDD as Property,
         friendlyFQDD as FriendlyFQDD,
@@ -698,7 +698,7 @@ UDB-Metric-Import:
     WaitInterval: 5
     Query: |
       SELECT
-        cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
+        cast( (julianday('now') - 2440587.5)*86400 * 1000000000 as integer) as Timestamp,
         friendlyFQDD as Context,
         '/redfish/v1/FIXME/' || FriendlyFQDD as Property,
         friendlyFQDD as FriendlyFQDD,
@@ -718,7 +718,7 @@ UDB-Metric-Import:
     Query: |
       SELECT
         -- only artificial available for now
-        cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
+        cast( (julianday('now') - 2440587.5)*86400 * 1000000000 as integer) as Timestamp,
         FriendlyFQDD as Context,
         '/redfish/v1/FIXME/' || FQDD as Property,
         friendlyFQDD as FriendlyFQDD,
@@ -1034,19 +1034,19 @@ UDB-Metric-Import:
 
         -- manually expand x^y since sqlite is missing a pow() or exp() function
         CASE UnitModifier
-        WHEN -6 THEN (1.0 * ProbeReading) * 1000000
-        WHEN -5 THEN (1.0 * ProbeReading) * 100000
-        WHEN -4 THEN (1.0 * ProbeReading) * 10000
-        WHEN -3 THEN (1.0 * ProbeReading) * 1000
-        WHEN -2 THEN (1.0 * ProbeReading) * 100
-        WHEN -1 THEN (1.0 * ProbeReading) * 10
-        WHEN 0 THEN (1.0 * ProbeReading)
-        WHEN 1 THEN (1.0 * ProbeReading) / 10.0
-        WHEN 2 THEN (1.0 * ProbeReading) / 100.0
-        WHEN 3 THEN (1.0 * ProbeReading) / 1000.0
-        WHEN 4 THEN (1.0 * ProbeReading) / 10000.0
-        WHEN 5 THEN (1.0 * ProbeReading) / 100000.0
-        WHEN 6 THEN (1.0 * ProbeReading) / 1000000.0
+        WHEN -6 THEN ProbeReading * 1000000.0
+        WHEN -5 THEN ProbeReading * 100000.0
+        WHEN -4 THEN ProbeReading * 10000.0
+        WHEN -3 THEN ProbeReading * 1000.0
+        WHEN -2 THEN ProbeReading * 100.0
+        WHEN -1 THEN ProbeReading * 10.0
+        WHEN  0 THEN ProbeReading * 1.0
+        WHEN  1 THEN ProbeReading / 10.0
+        WHEN  2 THEN ProbeReading / 100.0
+        WHEN  3 THEN ProbeReading / 1000.0
+        WHEN  4 THEN ProbeReading / 10000.0
+        WHEN  5 THEN ProbeReading / 100000.0
+        WHEN  6 THEN ProbeReading / 1000000.0
         END as Value
 
       FROM TblProbeObj
@@ -1083,7 +1083,7 @@ UDB-Metric-Import:
         TblProbeObj:
     Query: |
       SELECT
-        cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
+        cast( (julianday('now') - 2440587.5)*86400 * 1000000000 as integer) as Timestamp,
         case
           when SensorType = 1 then
           case
@@ -1107,13 +1107,13 @@ UDB-Metric-Import:
         WHEN -3 THEN CurrentReading * 1000.0
         WHEN -2 THEN CurrentReading * 100.0
         WHEN -1 THEN CurrentReading * 10.0
-        WHEN 0 THEN CurrentReading * 1.0
-        WHEN 1 THEN CurrentReading / 10.0
-        WHEN 2 THEN CurrentReading / 100.0
-        WHEN 3 THEN CurrentReading / 1000.0
-        WHEN 4 THEN CurrentReading / 10000.0
-        WHEN 5 THEN CurrentReading / 100000.0
-        WHEN 6 THEN CurrentReading / 1000000.0
+        WHEN  0 THEN CurrentReading * 1.0
+        WHEN  1 THEN CurrentReading / 10.0
+        WHEN  2 THEN CurrentReading / 100.0
+        WHEN  3 THEN CurrentReading / 1000.0
+        WHEN  4 THEN CurrentReading / 10000.0
+        WHEN  5 THEN CurrentReading / 100000.0
+        WHEN  6 THEN CurrentReading / 1000000.0
         END as Value,
 
         printf('/redfish/v1/Dell/Systems/System.Embedded.1/DellNumericSensor/%s', replace(replace(DeviceID, '|', '_0x7c_') , '#', '_0x23_')) as Property,
@@ -1134,7 +1134,7 @@ UDB-Metric-Import:
     WaitInterval: 5
     Query: |
       SELECT
-        cast( (julianday('now') - 2440587.5)*86400.0 * 1000000000 as integer) as Timestamp,
+        cast( (julianday('now') - 2440587.5)*86400 * 1000000000 as integer) as Timestamp,
         case SensorType
           when 13 then
           case
@@ -1154,13 +1154,13 @@ UDB-Metric-Import:
         WHEN -3 THEN CurrentReading * 1000.0
         WHEN -2 THEN CurrentReading * 100.0
         WHEN -1 THEN CurrentReading * 10.0
-        WHEN 0 THEN CurrentReading * 1.0
-        WHEN 1 THEN CurrentReading / 10.0
-        WHEN 2 THEN CurrentReading / 100.0
-        WHEN 3 THEN CurrentReading / 1000.0
-        WHEN 4 THEN CurrentReading / 10000.0
-        WHEN 5 THEN CurrentReading / 100000.0
-        WHEN 6 THEN CurrentReading / 1000000.0
+        WHEN  0 THEN CurrentReading * 1.0
+        WHEN  1 THEN CurrentReading / 10.0
+        WHEN  2 THEN CurrentReading / 100.0
+        WHEN  3 THEN CurrentReading / 1000.0
+        WHEN  4 THEN CurrentReading / 10000.0
+        WHEN  5 THEN CurrentReading / 100000.0
+        WHEN  6 THEN CurrentReading / 1000000.0
         END as Value,
 
         printf('/redfish/v1/Dell/Systems/System.Embedded.1/DellPSNumericSensor/%s', replace(replace(DeviceID, '|', '_0x7c_') , '#', '_0x23_')) as Property,
@@ -1539,8 +1539,8 @@ createdb:
         Name               TEXT PRIMARY KEY UNIQUE NOT NULL,
         ReportDefinitionID INTEGER NOT NULL,
         Sequence           INTEGER NOT NULL DEFAULT 0,
-        StartTimestamp     INTEGER NOT NULL DEFAULT (strftime('unixepoch', 'now') * 1000000000.0),
-        ReportTimestamp    INTEGER NOT NULL DEFAULT (strftime('unixepoch', 'now') * 1000000000.0),
+        StartTimestamp     INTEGER NOT NULL DEFAULT (strftime('%s', 'now') * 1000000000),
+        ReportTimestamp    INTEGER NOT NULL DEFAULT (strftime('%s', 'now') * 1000000000),
 
         -- indexes and constraints
         FOREIGN KEY (ReportDefinitionID)
@@ -1559,13 +1559,17 @@ createdb:
           MRD.TimeSpan as TimeSpan,
 
           CASE MRD.Type
-          WHEN 'Periodic' OR 'OnChange' THEN ReportTimestamp
-          WHEN 'OnRequest' THEN strftime('unixepoch', 'now') * 1000000000.0
+          WHEN 'Periodic' THEN ReportTimestamp
+          WHEN 'OnChange' THEN ReportTimestamp
+          WHEN 'OnRequest' THEN cast( (julianday('now') - 2440587.5)*86400 * 1000000000 as integer)
+          ELSE 'INVALID'
           END as ReportTimestamp,
 
           CASE MRD.Type
-          WHEN 'Periodic' OR 'OnChange' THEN StartTimestamp
-          WHEN 'OnRequest' THEN (strftime('unixepoch', 'now') * 1000000000.0 - MRD.TimeSpan)
+          WHEN 'Periodic' THEN StartTimestamp
+          WHEN 'OnChange' THEN StartTimestamp
+          WHEN 'OnRequest' THEN cast( (julianday('now') - 2440587.5)*86400 * 1000000000 - MRD.TimeSpan as integer)
+          ELSE 'INVALID'
           END as StartTimestamp
 
         FROM MetricReport as MR
@@ -1581,7 +1585,7 @@ createdb:
           MV.Timestamp,
           json_object(
               'MetricId', MI.Name,
-              'Timestamp', strftime('%Y-%m-%dT%H:%M:%fZ', MV.Timestamp/1000000000.0, 'unixepoch'),
+              'Timestamp', strftime('%Y-%m-%dT%H:%M:%fZ', MV.Timestamp/1000000000, 'unixepoch'),
               'MetricValue', MV.Value,
               'OEM', json_object(
                 'Dell', json_object(
@@ -1596,7 +1600,7 @@ createdb:
         inner join MetricReport_calculated as MR on rd2mm.ReportDefinitionID = MR.ReportDefinitionID
         WHERE
               ( MV.Timestamp > MR.StartTimestamp OR MR.StartTimestamp = 0 )
-          and ( MV.Timestamp > (MR.ReportTimestamp - MR.TimeSpan*1000000000.0 ) OR MR.TimeSpan = 0)
+          and ( MV.Timestamp > (MR.ReportTimestamp - MR.TimeSpan*1000000000 ) OR MR.TimeSpan = 0)
           and ( MV.Timestamp <= MR.ReportTimestamp OR MR.ReportTimestamp = 0)
 
   - |
@@ -1613,7 +1617,7 @@ createdb:
             ' "Name": "' || MR.Name || ' Metric Report",' ||
             -- TODO: update this so we only output ReportSequence for Periodic and OnChange reports
             -- ' "ReportSequence": ' || json_quote(Sequence) || ',' ||
-            ' "Timestamp": ' || strftime('"%Y-%m-%dT%H:%M:%fZ"', MR.ReportTimestamp/1000000000.0, 'unixepoch') || ', ' ||
+            ' "Timestamp": ' || strftime('"%Y-%m-%dT%H:%M:%fZ"', MR.ReportTimestamp/1000000000, 'unixepoch') || ', ' ||
             ' "MetricReportDefinition": {"@odata.id": "/redfish/v1/TelemetryService/MetricReportDefinitions/' || MRD.Name || '"}, ' ||
               ifnull((
                 SELECT
