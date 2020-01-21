@@ -102,123 +102,127 @@ func (s *Service) NewMapping(ctx context.Context, logger log.Logger, cfg *viper.
 		// otherwise we need to load it from the config file
 		logger.Info("Loading config for mapping from config file", "cfgName", cfgName)
 
-		cfgMu.Lock()
-		defer cfgMu.Unlock()
+		err := func() error {
+			cfgMu.Lock()
+			defer cfgMu.Unlock()
+			s.Lock()
+			defer s.Unlock()
 
-		// Pull out the section from YAML config file
-		fullSectionMappingList := []ConfigFileMappingEntry{}
-		k := cfg.Sub("awesome_mapper")
-		if k == nil {
-			logger.Warn("missing config file section: 'awesome_mapper'")
-			return errors.New("missing config section 'awesome_mapper'")
-		}
-		// we have a struct that mirrors what is supposed to be in the config, pull it directly in
-		err := k.UnmarshalKey(cfgName, &fullSectionMappingList)
-		if err != nil {
-			logger.Warn("unmarshal failed", "err", err)
-			return errors.New("unmarshal failed")
-		}
-		logger.Debug("updating mappings", "mappings", fullSectionMappingList)
-
-		mappingsForSection = &ConfigSection{
-			parameters: map[string]*MapperParameters{},
-			mappings:   []*MapperConfig{},
-		}
-		s.Lock()
-		s.cfgSection[cfgName] = mappingsForSection
-		s.Unlock()
-
-		// transcribe each individual mapper in the config section into our config
-		for _, cfgEntry := range fullSectionMappingList {
-			logger.Info("Add one mapping row", "cfgEntry", cfgEntry, "select", cfgEntry.Select)
-			setupSelectFuncsMu.RLock()
-			setupSelectFn, ok := setupSelectFuncs[cfgEntry.SelectFN]
-			if !ok {
-				// fallback if choice not found
-				setupSelectFn = setupSelectFuncs["govaluate_select"]
+			// Pull out the section from YAML config file
+			fullSectionMappingList := []ConfigFileMappingEntry{}
+			k := cfg.Sub("awesome_mapper")
+			if k == nil {
+				logger.Warn("missing config file section: 'awesome_mapper'")
+				return errors.New("missing config section 'awesome_mapper'")
 			}
-			setupSelectFuncsMu.RUnlock()
-			selectFn, err := setupSelectFn(logger.New("cfgName", cfgName), cfgEntry)
-
+			// we have a struct that mirrors what is supposed to be in the config, pull it directly in
+			err := k.UnmarshalKey(cfgName, &fullSectionMappingList)
 			if err != nil {
-				logger.Crit("config setup failed", "err", err)
-				continue
+				logger.Warn("unmarshal failed", "err", err)
+				return errors.New("unmarshal failed")
 			}
+			logger.Debug("updating mappings", "mappings", fullSectionMappingList)
 
-			mappingsForSection.Lock()
-			mc := &MapperConfig{
-				eventType:   eh.EventType(cfgEntry.SelectEventType),
-				selectFnStr: cfgEntry.Select,
-				selectFn:    selectFn,
-				processFn:   []processFunc{},
-				cfg:         mappingsForSection,
+			mappingsForSection = &ConfigSection{
+				parameters: map[string]*MapperParameters{},
+				mappings:   []*MapperConfig{},
 			}
-			mappingsForSection.mappings = append(mappingsForSection.mappings, mc)
+			s.cfgSection[cfgName] = mappingsForSection
 
-			// default Process
-			if len(cfgEntry.Process) == 0 {
-				cfgEntry.Process = append(cfgEntry.Process, map[string]interface{}{"name": "govaluate_modelupdate", "params": cfgEntry.ModelUpdate})
-				cfgEntry.Process = append(cfgEntry.Process, map[string]interface{}{"name": "govaluate_exec", "params": cfgEntry.Exec})
-			}
-			for _, processFnObj := range cfgEntry.Process {
-				fnName, ok := processFnObj["name"].(string)
+			// transcribe each individual mapper in the config section into our config
+			for _, cfgEntry := range fullSectionMappingList {
+				logger.Info("Add one mapping row", "cfgEntry", cfgEntry, "select", cfgEntry.Select)
+				setupSelectFuncsMu.RLock()
+				setupSelectFn, ok := setupSelectFuncs[cfgEntry.SelectFN]
 				if !ok {
-					logger.Warn("Process Function name not found")
-					continue
+					// fallback if choice not found
+					setupSelectFn = setupSelectFuncs["govaluate_select"]
 				}
-				fnParams, ok := processFnObj["params"]
-				if !ok {
-					logger.Warn("Process Function params not found")
+				setupSelectFuncsMu.RUnlock()
+				selectFn, err := setupSelectFn(logger.New("cfgName", cfgName), cfgEntry)
+
+				if err != nil {
+					logger.Crit("config setup failed", "err", err)
 					continue
 				}
 
-				setupProcessFn, ok := setupProcessFuncs[fnName]
-				if !ok {
-					logger.Warn("SetupProcessFunc not found", "function name", fnName)
-					continue
+				mappingsForSection.Lock()
+				mc := &MapperConfig{
+					eventType:   eh.EventType(cfgEntry.SelectEventType),
+					selectFnStr: cfgEntry.Select,
+					selectFn:    selectFn,
+					processFn:   []processFunc{},
+					cfg:         mappingsForSection,
 				}
+				mappingsForSection.mappings = append(mappingsForSection.mappings, mc)
 
-				processFn, oneTimeFn, err := setupProcessFn(logger.New("cfgName", cfgName), fnParams)
-				if !ok {
-					logger.Warn("SetupProcessFn failed", "function name", fnName, "error", err)
-					continue
+				// default Process
+				if len(cfgEntry.Process) == 0 {
+					cfgEntry.Process = append(cfgEntry.Process, map[string]interface{}{"name": "govaluate_modelupdate", "params": cfgEntry.ModelUpdate})
+					cfgEntry.Process = append(cfgEntry.Process, map[string]interface{}{"name": "govaluate_exec", "params": cfgEntry.Exec})
 				}
+				for _, processFnObj := range cfgEntry.Process {
+					fnName, ok := processFnObj["name"].(string)
+					if !ok {
+						logger.Warn("Process Function name not found")
+						continue
+					}
+					fnParams, ok := processFnObj["params"]
+					if !ok {
+						logger.Warn("Process Function params not found")
+						continue
+					}
 
-				mc.processFn = append(mc.processFn, processFn)
+					setupProcessFn, ok := setupProcessFuncs[fnName]
+					if !ok {
+						logger.Warn("SetupProcessFunc not found", "function name", fnName)
+						continue
+					}
 
-				if oneTimeFn != nil {
-					mappingsForSection.onetimePer = append(mappingsForSection.onetimePer, oneTimeFn)
+					processFn, oneTimeFn, err := setupProcessFn(logger.New("cfgName", cfgName), fnParams)
+					if !ok {
+						logger.Warn("SetupProcessFn failed", "function name", fnName, "error", err)
+						continue
+					}
+
+					mc.processFn = append(mc.processFn, processFn)
+
+					if oneTimeFn != nil {
+						mappingsForSection.onetimePer = append(mappingsForSection.onetimePer, oneTimeFn)
+					}
 				}
+				mappingsForSection.Unlock()
+
 			}
-			mappingsForSection.Unlock()
 
+			// and then optimize by rebuilding the event indexed hash
+			logger.Info("start Optimize hash", "s.cfgSection", s.cfgSection)
+			for k := range s.hash {
+				delete(s.hash, k)
+			}
+
+			for name, cfgSection := range s.cfgSection {
+				cfgSection.RLock()
+				logger.Info("Optimize hash", "LEN", len(cfgSection.mappings), "section", name, "config", cfgSection, "mappings", cfgSection.mappings)
+
+				for index, singleMapping := range cfgSection.mappings {
+					logger.Info("Add entry for event type", "eventType", singleMapping.eventType, "index", index)
+
+					typeArray, ok := s.hash[singleMapping.eventType]
+					if !ok {
+						typeArray = []*MapperConfig{}
+					}
+
+					typeArray = append(typeArray, singleMapping)
+					s.hash[singleMapping.eventType] = typeArray
+				}
+				cfgSection.RUnlock()
+			}
+			return nil
+		}()
+		if err != nil {
+			return err
 		}
-
-		// and then optimize by rebuilding the event indexed hash
-		logger.Info("start Optimize hash", "s.cfgSection", s.cfgSection)
-		s.Lock()
-		for k := range s.hash {
-			delete(s.hash, k)
-		}
-
-		for name, cfgSection := range s.cfgSection {
-			cfgSection.RLock()
-			logger.Info("Optimize hash", "LEN", len(cfgSection.mappings), "section", name, "config", cfgSection, "mappings", cfgSection.mappings)
-
-			for index, singleMapping := range cfgSection.mappings {
-				logger.Info("Add entry for event type", "eventType", singleMapping.eventType, "index", index)
-
-				typeArray, ok := s.hash[singleMapping.eventType]
-				if !ok {
-					typeArray = []*MapperConfig{}
-				}
-
-				typeArray = append(typeArray, singleMapping)
-				s.hash[singleMapping.eventType] = typeArray
-			}
-			cfgSection.RUnlock()
-		}
-		s.Unlock()
 	}
 
 	logger.Debug("UPDATE MODEL")
