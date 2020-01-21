@@ -87,11 +87,9 @@ func New(logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, d *doma
 			fmt.Printf("BAD INSTANTIATE: %+v\n", event.Data())
 			return
 		}
-		go func() {
-			resp := &InstantiateResponseData{CmdID: idata.CmdID}
-			resp.Log, resp.View, resp.Err = ret.internalInstantiate(idata.Name, idata.Params)
-			ret.eb.PublishEvent(context.Background(), eh.NewEvent(instantiateResponse, resp, time.Now()))
-		}()
+		resp := &InstantiateResponseData{CmdID: idata.CmdID}
+		resp.Log, resp.View, resp.Err = ret.internalInstantiate(idata.Name, idata.Params)
+		ret.eb.PublishEvent(context.Background(), eh.NewEvent(instantiateResponse, resp, time.Now()))
 	})
 
 	return ret
