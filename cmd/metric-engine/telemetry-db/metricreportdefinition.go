@@ -29,19 +29,6 @@ func (m *StringArray) Scan(src interface{}) error {
 	return json.Unmarshal(src.([]byte), m)
 }
 
-// Validation: It's assumed that Duration is parsed on ingress. The ingress
-// format is (Redfish Duration): -?P(\d+D)?(T(\d+H)?(\d+M)?(\d+(.\d+)?S)?)?
-// When it gets to this struct, it needs to be expressed in Seconds.
-type MRDMetric struct {
-	Name               string        `db:"Name" json:"MetricID"`
-	CollectionDuration time.Duration `db:"CollectionDuration"`
-	CollectionFunction string        `db:"CollectionFunction"`
-	FQDDPattern        string        `db:"FQDDPattern"`
-	SourcePattern      string        `db:"SourcePattern"`
-	PropertyPattern    string        `db:"PropertyPattern"`
-	Wildcards          StringArray   `db:"Wildcards"`
-}
-
 type MetricReportDefinitionData struct {
 	Name         string      `db:"Name"`
 	Enabled      bool        `db:"Enabled"`
@@ -60,8 +47,8 @@ type MetricReportDefinitionData struct {
 	// Validation: It's assumed that Period is parsed on ingress. Redfish
 	// "Schedule" object is flexible, but we'll allow only period in seconds for
 	// now When it gets to this struct, it needs to be expressed in Seconds.
-	Period  int64       `db:"Period"` // period in seconds when type=periodic
-	Metrics []MRDMetric `db:"Metrics" json:"Metrics"`
+	Period  int64           `db:"Period"` // period in seconds when type=periodic
+	Metrics []RawMetricMeta `db:"Metrics" json:"Metrics"`
 }
 
 // MetricReportDefinition represents a DB record for a metric report
@@ -375,11 +362,11 @@ func (factory *MRDFactory) UpdateMMList(tx *sqlx.Tx, MRD *MetricReportDefinition
 		var metaID int64
 		var res sql.Result
 		tempMetric := struct {
-			*MRDMetric
+			*RawMetricMeta
 			SuppressDups bool `db:"SuppressDups"`
 		}{
-			MRDMetric:    &metric,
-			SuppressDups: MRD.SuppressDups,
+			RawMetricMeta: &metric,
+			SuppressDups:  MRD.SuppressDups,
 		}
 
 		// First, Find the MetricMeta
@@ -642,29 +629,38 @@ func (m *Scratch) Scan(src interface{}) error {
 	return nil
 }
 
-// Fusion structure: Meta + Instance + MetricValueEvent
-type MetricMeta struct {
-	*metric.MetricValueEventData
-	ValueToWrite string `db:"Value"`
-
+// Validation: It's assumed that Duration is parsed on ingress. The ingress
+// format is (Redfish Duration): -?P(\d+D)?(T(\d+H)?(\d+M)?(\d+(.\d+)?S)?)?
+// When it gets to this struct, it needs to be expressed in Seconds.
+type RawMetricMeta struct {
 	// Meta fields
-	Label              string        `db:"Label"`
-	MetaID             int64         `db:"MetaID"`
+	MetaID             int64         `db:"MetaID" json:"MetricID"`
+	NamePattern        string        `db:"NamePattern"`
 	FQDDPattern        string        `db:"FQDDPattern"`
 	SourcePattern      string        `db:"SourcePattern"`
 	PropertyPattern    string        `db:"PropertyPattern"`
-	Wildcards          string        `db:"Wildcards"`
+	Wildcards          StringArray   `db:"Wildcards"`
 	CollectionFunction string        `db:"CollectionFunction"`
 	CollectionDuration time.Duration `db:"CollectionDuration"`
+}
 
-	// Instance fields
-	ID                int64             `db:"ID"`
+type RawMetricInstance struct {
+	// Instance fields. Rest of the MetricInstance fields are in the MetricValue
+	Label             string            `db:"Label"`
 	InstanceID        int64             `db:"InstanceID"`
 	CollectionScratch Scratch           `db:"CollectionScratch"`
 	FlushTime         metric.SqlTimeInt `db:"FlushTime"`
-	SuppressDups      bool              `db:"SuppressDups"`
 	LastTS            metric.SqlTimeInt `db:"LastTS"`
 	LastValue         string            `db:"LastValue"`
+}
+
+// Fusion structure: Meta + Instance + MetricValueEvent
+type MetricMeta struct {
+	*metric.MetricValueEventData
+	*RawMetricMeta
+	*RawMetricInstance
+	ValueToWrite string `db:"Value"`
+	SuppressDups bool   `db:"SuppressDups"`
 }
 
 func (factory *MRDFactory) InsertMetricValue(tx *sqlx.Tx, ev *metric.MetricValueEventData, instancesUpdated map[int64]struct{}) (err error) {
@@ -673,17 +669,22 @@ func (factory *MRDFactory) InsertMetricValue(tx *sqlx.Tx, ev *metric.MetricValue
 	// This should be straightforward because we do all updates in one goroutine, so could add the cache as a factory member
 
 	return factory.WrapWithTXOrPassIn(tx, func(tx *sqlx.Tx) error {
-		// First, Find the MetricMeta
+		// LONG TERM: This query and the for{} loop below needs to be optimized out
 		rows, err := factory.getNamedSqlTx(tx, "find_metric_meta").Queryx(ev)
 		if err != nil {
 			return xerrors.Errorf("Error querying for MetricMeta: %w", err)
 		}
 
+		// First, iterate over the MetricMeta to generate MetricInstance
+		// Need to figure out a way to optimize this out for the common case
+		// IDEA: have a bool in Metric Instance: complete
+		//       On udpate of MRD: flip complete=false
+		// On insert, iter metric instance, if not found or complete=false, go back and scan metric meta. Otherwise we can assume we are good
 		for rows.Next() {
-			mm := &MetricMeta{MetricValueEventData: ev}
+			mm := &MetricMeta{MetricValueEventData: ev, RawMetricMeta: &RawMetricMeta{}, RawMetricInstance: &RawMetricInstance{}}
 			err = rows.StructScan(mm)
 			if err != nil {
-				//factory.logger.Crit("Error scanning metric meta for event", "err", err, "metric", ev)
+				factory.logger.Crit("Error scanning metric meta for event", "err", err, "metric", ev)
 				continue
 			}
 
@@ -703,17 +704,30 @@ func (factory *MRDFactory) InsertMetricValue(tx *sqlx.Tx, ev *metric.MetricValue
 			}
 
 			// create instances for each metric meta corresponding to this metric value
-			_, err = factory.getNamedSqlTx(tx, "insert_metric_instance").Exec(mm)
+			res, err := factory.getNamedSqlTx(tx, "insert_metric_instance").Exec(mm)
 			if err != nil {
 				// It's ok if sqlite squawks about trying to insert dups here
 				if !strings.HasPrefix(err.Error(), "UNIQUE constraint failed") {
 					return xerrors.Errorf("Error inserting MetricInstance(%s): %w", mm, err)
 				}
+				err = factory.getNamedSqlTx(tx, "find_metric_instance").Get(mm, mm)
+				if err != nil {
+					return xerrors.Errorf("Error getting MetricInstance(%s) InstanceID: %w", mm, err)
+				}
+			} else {
+				mm.InstanceID, err = res.LastInsertId()
+				if err != nil {
+					return xerrors.Errorf("Error getting last insert ID for MetricInstance(%s): %w", mm, err)
+				}
+			}
+			_, err = factory.getSqlxTx(tx, "insert_mi_assoc").Exec(mm.MetaID, mm.InstanceID)
+			if err != nil && !strings.HasPrefix(err.Error(), "UNIQUE constraint failed") {
+				return xerrors.Errorf("Error inserting Association for MetricInstance(%s): %w", mm, err)
 			}
 		}
 
 		// And now, foreach MetricInstance, insert MetricValue
-		mm := &MetricMeta{MetricValueEventData: ev}
+		mm := &MetricMeta{MetricValueEventData: ev, RawMetricMeta: &RawMetricMeta{}, RawMetricInstance: &RawMetricInstance{}}
 		rows, err = factory.getNamedSqlTx(tx, "iterate_metric_instance").Queryx(mm)
 		if err != nil {
 			return xerrors.Errorf("Error querying MetricInstance(%s): %w", mm, err)
@@ -723,7 +737,7 @@ func (factory *MRDFactory) InsertMetricValue(tx *sqlx.Tx, ev *metric.MetricValue
 			saveValue := true
 			saveInstance := false
 
-			mm := &MetricMeta{MetricValueEventData: ev}
+			mm := &MetricMeta{MetricValueEventData: ev, RawMetricMeta: &RawMetricMeta{}, RawMetricInstance: &RawMetricInstance{}}
 			err = rows.StructScan(mm)
 			if err != nil {
 				factory.logger.Crit("Error scanning struct result for MetricInstance query", "err", err)
@@ -785,31 +799,33 @@ func (factory *MRDFactory) InsertMetricValue(tx *sqlx.Tx, ev *metric.MetricValue
 				// report change hook. let caller know which instances were updated so they can look up reports
 				instancesUpdated[mm.InstanceID] = struct{}{}
 
-				args := []interface{}{mm.InstanceID, mm.Timestamp}
-				sql := "insert_mv_text"
+				var sql string
+				var args []interface{}
 
 				// Put into optimized tables, if possible. Try INT first, as it will error out for a float(1.0) value, but not vice versa
 				intVal, err := strconv.ParseInt(mm.Value, 10, 64)
 				if err == nil {
 					sql = "insert_mv_int"
-					args = append(args, intVal)
-				} else if floatErr == nil {
-					// re-use already parsed floatVal above
+					args = []interface{}{mm.InstanceID, mm.Timestamp, intVal}
+
+				} else if floatErr == nil { // re-use already parsed floatVal above
 					sql = "insert_mv_real"
-					args = append(args, floatVal)
+					args = []interface{}{mm.InstanceID, mm.Timestamp, floatVal}
+
 				} else {
-					args = append(args, mm.Value)
+					sql = "insert_mv_text"
+					args = []interface{}{mm.InstanceID, mm.Timestamp, mm.Value}
 				}
 
 				_, err = factory.getSqlxTx(tx, sql).Exec(args...)
 				if err != nil {
-					return xerrors.Errorf("Error inserting MetricValue for MetricInstance(%d)/MetricMeta(%d): %w", mm.InstanceID, mm.MetaID, err)
+					return xerrors.Errorf("Error inserting MetricValue for MetricInstance(%d)/MetricMeta(%d), ARGS: %+v: %w", mm.InstanceID, mm.MetaID, args, err)
 				}
 			}
 
 			if saveInstance {
 				_, err = factory.getNamedSqlTx(tx, "update_metric_instance").Exec(mm)
-				if err != nil {
+				if err != nil && !strings.HasPrefix(err.Error(), "UNIQUE constraint failed") {
 					return xerrors.Errorf("Failed to update MetricInstance(%d) with MetricMeta(%d): %w", mm.InstanceID, mm.MetaID, err)
 				}
 			}
