@@ -5,7 +5,7 @@ main:
     shmdatabasepath: file:SHM.db?cache=shared&_foreign_keys=off&mode=ro&_busy_timeout=1000
     udbnotifypipe: udbtdbipcpipe
     # list of prepared internal.sqlx statements to run to clean up old metric values
-    deleteops: ["delete_mvi", "delete_mvr", "delete_mvt", "delete_old_mr"]
+    deleteops: ["delete_mvi", "delete_mvr", "delete_mvt", "delete_old_mr", "delete_old_mv_int", "delete_old_mv_real", "delete_old_mv_text"]
     orphanops: ["delete_orphan_metricinstance", "delete_orphan_metricmeta"]
     optimizeops: ["optimize", "shrink"]
     vacuumops: ["vacuum", "shrink"]
@@ -1338,6 +1338,14 @@ internal:
         WHERE Seq+2<MS
       )
 
+    delete_old_mv_int: |
+      delete from MetricValueInt where (InstanceID, Timestamp) IN (select SMVI.InstanceID, SMVI.TimeStamp from MetricValueInt as SMVI left join OldestMetricInstanceInReportInt as MITR on SMVI.InstanceID = MITR.InstanceID  where SMVI.Timestamp < MITR.MinTS)
+    delete_old_mv_real: |
+      delete from MetricValueReal where (InstanceID, Timestamp) IN (select SMVI.InstanceID, SMVI.TimeStamp from MetricValueReal as SMVI left join OldestMetricInstanceInReportReal as MITR on SMVI.InstanceID = MITR.InstanceID  where SMVI.Timestamp < MITR.MinTS)
+    delete_old_mv_text: |
+      delete from MetricValueText where (InstanceID, Timestamp) IN (select SMVI.InstanceID, SMVI.TimeStamp from MetricValueText as SMVI left join OldestMetricInstanceInReportText as MITR on SMVI.InstanceID = MITR.InstanceID  where SMVI.Timestamp < MITR.MinTS)
+
+
     # delete orphans of all kinds.
     #   Metric Report Definitions (MRD) are the source of truth
     #    .. Delete any ReportDefinitionToMetricMeta that doesn't match an MRD
@@ -1602,6 +1610,57 @@ createdb:
               ( MV.Timestamp > MR.StartTimestamp OR MR.StartTimestamp = 0 )
           and ( MV.Timestamp > (MR.ReportTimestamp - MR.TimeSpan*1000000000 ) OR MR.TimeSpan = 0)
           and ( MV.Timestamp <= MR.ReportTimestamp OR MR.ReportTimestamp = 0)
+
+  - |
+      -- TODO: check scalability of this view
+      DROP VIEW IF EXISTS OldestMetricInstanceInReportInt;
+      CREATE VIEW OldestMetricInstanceInReportInt as
+        select
+          MV.InstanceID as InstanceID,
+          min(mv.timestamp) as MinTS
+        from MetricValueInt as MV
+        inner join MetricInstance as MI on MV.InstanceID = MI.ID
+        inner join MetricMeta as MM on MI.MetaID = MM.ID
+        inner join ReportDefinitionToMetricMeta as rd2mm on MM.ID = rd2mm.MetricMetaID
+        inner join MetricReport_calculated as MR on MR.ReportDefinitionID = rd2mm.ReportDefinitionID
+        WHERE
+              ( MV.Timestamp > MR.StartTimestamp OR MR.StartTimestamp = 0 )
+          and ( MV.Timestamp > (MR.ReportTimestamp - MR.TimeSpan*1000000000 ) OR MR.TimeSpan = 0)
+        group by MV.InstanceID
+
+  - |
+      -- TODO: check scalability of this view
+      DROP VIEW IF EXISTS OldestMetricInstanceInReportReal;
+      CREATE VIEW OldestMetricInstanceInReportReal as
+        select
+          MV.InstanceID as InstanceID,
+          min(mv.timestamp) as MinTS
+        from MetricValueReal as MV
+        inner join MetricInstance as MI on MV.InstanceID = MI.ID
+        inner join MetricMeta as MM on MI.MetaID = MM.ID
+        inner join ReportDefinitionToMetricMeta as rd2mm on MM.ID = rd2mm.MetricMetaID
+        inner join MetricReport_calculated as MR on MR.ReportDefinitionID = rd2mm.ReportDefinitionID
+        WHERE
+              ( MV.Timestamp > MR.StartTimestamp OR MR.StartTimestamp = 0 )
+          and ( MV.Timestamp > (MR.ReportTimestamp - MR.TimeSpan*1000000000 ) OR MR.TimeSpan = 0)
+        group by MV.InstanceID
+
+  - |
+      -- TODO: check scalability of this view
+      DROP VIEW IF EXISTS OldestMetricInstanceInReportText;
+      CREATE VIEW OldestMetricInstanceInReportText as
+        select
+          MV.InstanceID as InstanceID,
+          min(mv.timestamp) as MinTS
+        from MetricValueText as MV
+        inner join MetricInstance as MI on MV.InstanceID = MI.ID
+        inner join MetricMeta as MM on MI.MetaID = MM.ID
+        inner join ReportDefinitionToMetricMeta as rd2mm on MM.ID = rd2mm.MetricMetaID
+        inner join MetricReport_calculated as MR on MR.ReportDefinitionID = rd2mm.ReportDefinitionID
+        WHERE
+              ( MV.Timestamp > MR.StartTimestamp OR MR.StartTimestamp = 0 )
+          and ( MV.Timestamp > (MR.ReportTimestamp - MR.TimeSpan*1000000000 ) OR MR.TimeSpan = 0)
+        group by MV.InstanceID
 
   - |
       -- DOES NOT SCALE:  This uses a temp table to spool the metric values. memory usage scales with # of records output.
