@@ -129,7 +129,7 @@ func (s *Service) selectCachedAttributes() func(eh.Event) bool {
 }
 
 func getAttrValue(m *model.Model, group, gindex, name string) (ret interface{}, ok bool) {
-	attributes, ok := m.GetPropertyOkUnlocked("attributes")
+	attributes, ok := m.GetPropertyOk("attributes")
 	if !ok {
 		return nil, ok
 	}
