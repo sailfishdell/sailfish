@@ -1553,9 +1553,9 @@ createdb:
       DROP VIEW IF EXISTS MetricReport_calculated;;
       CREATE VIEW IF NOT EXISTS MetricReport_calculated as
         SELECT
-          Name,
-          ReportDefinitionID,
-          Sequence,
+          MR.Name as Name,
+          MR.ReportDefinitionID,
+          MR.Sequence,
           MRD.TimeSpan as TimeSpan,
 
           CASE MRD.Type
@@ -1568,19 +1568,18 @@ createdb:
           WHEN 'OnRequest' THEN (strftime('unixepoch', 'now') * 1000000000.0 - MRD.TimeSpan)
           END as StartTimestamp
 
-        FROM
-          MetricReport
-        INNER JOIN MetricReportDefinition as MRD on MRD.ID = ReportDefinitionID
+        FROM MetricReport as MR
+        INNER JOIN MetricReportDefinition as MRD on MRD.ID = MR.ReportDefinitionID
 
   - |
       -- TODO: check scalability of this view
       DROP VIEW IF EXISTS MetricValueByReport;
       CREATE VIEW MetricValueByReport as
         select
-            MR.ID as MRID,
-            MV.InstanceID,
-            MV.Timestamp,
-            json_object(
+          MR.Name as Name,
+          MV.InstanceID,
+          MV.Timestamp,
+          json_object(
               'MetricId', MI.Name,
               'Timestamp', strftime('%Y-%m-%dT%H:%M:%fZ', MV.Timestamp/1000000000.0, 'unixepoch'),
               'MetricValue', MV.Value,
@@ -1589,16 +1588,16 @@ createdb:
                   'Context', MI.Context,
                   'Label', MI.Label
                 )
-            )) as 'JSON'
-          from MetricValue_calculated as MV
-          inner join MetricInstance as MI on MV.InstanceID = MI.ID
-          inner join MetricMeta as MM on MI.MetaID = MM.ID
-          inner join ReportDefinitionToMetricMeta as rd2mm on MM.ID = rd2mm.MetricMetaID
-          inner join MetricReport_calculated as MR on MRDID = MR.ReportDefinitionID
-          WHERE
-                ( MV.Timestamp > MR.StartTimestamp OR MR.StartTimestamp = 0 )
-            and ( MV.Timestamp > (MR.ReportTimestamp - MR.TimeSpan*1000000000.0 ) OR MR.TimeSpan = 0)
-            and ( MV.Timestamp <= MR.ReportTimestamp OR MR.ReportTimestamp = 0)
+          )) as 'JSON'
+        from MetricValue as MV
+        inner join MetricInstance as MI on MV.InstanceID = MI.ID
+        inner join MetricMeta as MM on MI.MetaID = MM.ID
+        inner join ReportDefinitionToMetricMeta as rd2mm on MM.ID = rd2mm.MetricMetaID
+        inner join MetricReport_calculated as MR on rd2mm.ReportDefinitionID = MR.ReportDefinitionID
+        WHERE
+              ( MV.Timestamp > MR.StartTimestamp OR MR.StartTimestamp = 0 )
+          and ( MV.Timestamp > (MR.ReportTimestamp - MR.TimeSpan*1000000000.0 ) OR MR.TimeSpan = 0)
+          and ( MV.Timestamp <= MR.ReportTimestamp OR MR.ReportTimestamp = 0)
 
   - |
       -- DOES NOT SCALE:  This uses a temp table to spool the metric values. memory usage scales with # of records output.
@@ -1624,15 +1623,15 @@ createdb:
                 (
                   select JSON
                   from MetricValueByReport as MVR
-                  where MVR.MRID=MR.ID
+                  where MVR.Name=MR.Name
                     order by MVR.Timestamp DESC
                     limit 24000
                 ) AS a ), '')
           || '}'
         ) as root,
         '/redfish/v1/TelemetryService/MetricReports/' || MR.Name as '@odata.id'
-      from MetricReport as MR
-      inner join MetricReportDefinition as MRD on MR.ReportDefinitionID = MRD.ID
+      from MetricReport_calculated as MR
+      inner join MetricReportDefinition as MRD on MRD.ID = MR.ReportDefinitionID
 
   - |
       DROP VIEW IF EXISTS MetricReportCollection_JSON;
