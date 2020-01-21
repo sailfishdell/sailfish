@@ -262,19 +262,6 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Service, d Bus
 			MRDFactory.DeleteOrphans()
 
 		case "prune unused metric values":
-			// TODO: Delete any MetricValues that are not part of a MetricReport or that wont be part of a report soon (periodic)
-			//
-			// select
-			//   MV.rowid, MV.InstanceID, MV.Timestamp
-			// from metricvalue as MV
-			//   inner join metricinstance as MI on MV.InstanceID = MI.ID
-			//   inner join metricmeta as MM on MI.MetricMetaID = MM.ID
-			//   inner join ReportDefinitionToMetricMeta as rd2mm on MM.ID = rd2mm.MetricMetaID
-			//   inner join MetricReportDefinition as MRD on rd2mm.ReportDefinitionID = MRD.ID
-			//   inner join MetricReport as MR on MRD.ID = MR.ReportDefinitionID
-			// WHERE
-			//   MV.Timestamp < (insert query to get oldest metric report begin timestamp)
-			//
 			MRDFactory.DeleteOldestValues()
 			MRDFactory.DeleteOrphans()
 
