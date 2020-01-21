@@ -5,7 +5,7 @@ main:
     shmdatabasepath: file:SHM.db?cache=shared&_foreign_keys=off&mode=ro&_busy_timeout=1000
     udbnotifypipe: udbtdbipcpipe
     # list of prepared internal.sqlx statements to run to clean up old metric values
-    deleteops: ["delete_mvi", "delete_mvr", "delete_mvt", "delete_old_mr", "delete_old_mv_int", "delete_old_mv_real", "delete_old_mv_text"]
+    deleteops: ["delete_mvi", "delete_mvr", "delete_mvt", "delete_old_mr", "delete_old_mv"]
     orphanops: ["delete_orphan_metricinstance", "delete_orphan_metricmeta"]
     optimizeops: ["optimize", "shrink"]
     vacuumops: ["vacuum", "shrink"]
@@ -1181,7 +1181,7 @@ internal:
   namedsql:
     mrd_insert: |
       INSERT INTO MetricReportDefinition
-               ( Name,  Enabled, AppendLimit, Type, SuppressDups, Actions, Updates, Period)
+               ( Name,  Enabled,  AppendLimit,  Type,  SuppressDups,  Actions,  Updates,  Period)
         VALUES (:Name, :Enabled, :AppendLimit, :Type, :SuppressDups, :Actions, :Updates, :Period)
 
     mrd_update: |
@@ -1199,7 +1199,7 @@ internal:
 
     find_mm: |
       select ID from MetricMeta where
-        Name=:Name and
+        NamePattern=:NamePattern and
         SuppressDups=:SuppressDups and
         FQDDPattern=:FQDDPattern and
         SourcePattern=:SourcePattern and
@@ -1210,8 +1210,8 @@ internal:
 
     insert_mm: |
       INSERT INTO MetricMeta
-             ( Name,  SuppressDups,  FQDDPattern,  SourcePattern,  PropertyPattern,  Wildcards,  CollectionFunction,  CollectionDuration)
-      VALUES (:Name, :SuppressDups, :FQDDPattern, :SourcePattern, :PropertyPattern, :Wildcards, :CollectionFunction, :CollectionDuration)
+             ( NamePattern,  SuppressDups,  FQDDPattern,  SourcePattern,  PropertyPattern,  Wildcards,  CollectionFunction,  CollectionDuration)
+      VALUES (:NamePattern, :SuppressDups, :FQDDPattern, :SourcePattern, :PropertyPattern, :Wildcards, :CollectionFunction, :CollectionDuration)
 
     delete_mr_by_id: delete from MetricReport where ReportDefinitionID=:MRDID
 
@@ -1256,32 +1256,43 @@ internal:
 
     find_metric_meta: |
       SELECT
-        ID AS MetaID, FQDDPattern, SourcePattern, PropertyPattern, Wildcards, CollectionFunction, CollectionDuration
+        ID AS MetaID, FQDDPattern, SourcePattern, PropertyPattern, Wildcards, CollectionFunction, CollectionDuration, SuppressDups
       FROM MetricMeta
       WHERE
-        (:Name LIKE Name OR Name is NULL OR Name = '') AND
+        (:Name LIKE NamePattern OR NamePattern is NULL OR NamePattern = '') AND
         (:FQDD LIKE FQDDPattern OR FQDDPattern is NULL OR FQDDPattern = '') AND
         (:Source LIKE SourcePattern OR SourcePattern is NULL OR SourcePattern = '') AND
         (:Property LIKE PropertyPattern OR PropertyPattern is NULL OR PropertyPattern = '')
 
     insert_metric_instance: |
       INSERT INTO MetricInstance
-                 ( MetaID,  Name,  FQDD,  Property,  Context,  Function,            Label,  CollectionScratch, LastValue, LastTS,  FlushTime)
-          VALUES (:MetaID, :Name, :FQDD, :Property, :Context, :CollectionFunction, :Label, :CollectionScratch, '',        0,      :FlushTime)
+             ( Name,  FQDD,  Property,  Context,  Function,            Label,  CollectionScratch, LastValue, LastTS,  FlushTime,  SuppressDups)
+      VALUES (:Name, :FQDD, :Property, :Context, :CollectionFunction, :Label, :CollectionScratch, '',        0,      :FlushTime, :SuppressDups)
+
+    find_metric_instance: |
+      select
+        MI.ID as InstanceID
+      from MetricInstance as MI
+      where
+        MI.Name=:Name and
+        MI.FQDD=:FQDD and
+        MI.Property=:Property and
+        MI.Context=:Context and
+        MI.Function=:CollectionFunction
 
     iterate_metric_instance: |
-      select
+      select distinct
         MI.ID as InstanceID,
-        MI.MetaID,
         MI.CollectionScratch,
         MI.LastTS,
         MI.LastValue,
         MI.FlushTime,
-        MM.SuppressDups,
+        MI.SuppressDups,
         MM.CollectionFunction,
         MM.CollectionDuration
       from MetricInstance as MI
-        inner join MetricMeta as MM on MI.MetaID = MM.ID
+        inner join MetricMetaToInstance as MMTI on MI.ID = MMTI.InstanceID
+        inner join MetricMeta as MM on MMTI.MetaID = MM.ID
       where
         MI.Name=:Name and
         MI.FQDD=:FQDD and
@@ -1299,9 +1310,8 @@ internal:
         MRD.Name
       from MetricReportDefinition as MRD
       inner join ReportDefinitionToMetricMeta as rd2mm on MRD.ID = rd2mm.ReportDefinitionID
-      inner join MetricMeta as MM on rd2mm.MetricMetaID = MM.ID
-      inner join MetricInstance as MI on MM.ID = MI.MetaID
-      where MRD.Type = "OnChange" and MI.ID = ?
+      inner join MetricMetaToInstance as MMTI on rd2mm.MetaID = MMTI.MetaID
+      where MRD.Type = "OnChange" and MMTI.InstanceID = ?
 
     mrd_select_idbyname: SELECT ID FROM MetricReportDefinition where Name=?
 
@@ -1309,7 +1319,8 @@ internal:
 
     delete_mm_assoc: delete from ReportDefinitionToMetricMeta where ReportDefinitionID=?
 
-    insert_mm_assoc: INSERT INTO ReportDefinitionToMetricMeta (ReportDefinitionID, MetricMetaID) VALUES (?, ?)
+    insert_mm_assoc: INSERT INTO ReportDefinitionToMetricMeta (ReportDefinitionID, MetaID) VALUES (?, ?)
+    insert_mi_assoc: INSERT INTO MetricMetaToInstance (MetaID, InstanceID) VALUES (?, ?)
 
     query_mrds: SELECT ID, Name,  Enabled, AppendLimit, Type, SuppressDups, Actions, Updates FROM MetricReportDefinition
 
@@ -1338,12 +1349,28 @@ internal:
         WHERE Seq+2<MS
       )
 
-    delete_old_mv_int: |
-      delete from MetricValueInt where (InstanceID, Timestamp) IN (select SMVI.InstanceID, SMVI.TimeStamp from MetricValueInt as SMVI left join OldestMetricInstanceInReportInt as MITR on SMVI.InstanceID = MITR.InstanceID  where SMVI.Timestamp < MITR.MinTS)
-    delete_old_mv_real: |
-      delete from MetricValueReal where (InstanceID, Timestamp) IN (select SMVI.InstanceID, SMVI.TimeStamp from MetricValueReal as SMVI left join OldestMetricInstanceInReportReal as MITR on SMVI.InstanceID = MITR.InstanceID  where SMVI.Timestamp < MITR.MinTS)
-    delete_old_mv_text: |
-      delete from MetricValueText where (InstanceID, Timestamp) IN (select SMVI.InstanceID, SMVI.TimeStamp from MetricValueText as SMVI left join OldestMetricInstanceInReportText as MITR on SMVI.InstanceID = MITR.InstanceID  where SMVI.Timestamp < MITR.MinTS)
+    delete_old_mv: |
+      delete from MetricValueInt where (InstanceID, Timestamp) IN
+      (
+        select MVI.InstanceID, MVI.TimeStamp
+        from MetricValueInt as MVI
+        left join OldestMetricInstanceInReportInt as MITR on MVI.InstanceID = MITR.InstanceID
+        where MVI.Timestamp < MITR.MinTS
+      );
+      delete from MetricValueReal where (InstanceID, Timestamp) IN
+      (
+        select MVR.InstanceID, MVR.TimeStamp
+        from MetricValueReal as MVR
+        left join OldestMetricInstanceInReportReal as MITR on MVR.InstanceID = MITR.InstanceID
+        where MVR.Timestamp < MITR.MinTS
+      );
+      delete from MetricValueText where (InstanceID, Timestamp) IN
+      (
+        select MVT.InstanceID, MVT.TimeStamp
+        from MetricValueText as MVT
+        left join OldestMetricInstanceInReportText as MITR on MVT.InstanceID = MITR.InstanceID
+        where MVT.Timestamp < MITR.MinTS
+      );
 
 
     # delete orphans of all kinds.
@@ -1361,14 +1388,14 @@ internal:
       DELETE FROM MetricMeta WHERE id IN
       (
         select mm.ID from MetricMeta as mm
-          LEFT JOIN ReportDefinitionToMetricMeta as rd2mm on mm.ID = rd2mm.MetricMetaID where rd2mm.MetricMetaID is null
+          LEFT JOIN ReportDefinitionToMetricMeta as rd2mm on mm.ID = rd2mm.MetaID where rd2mm.MetaID is null
       )
 
     delete_orphan_metricinstance: |
       DELETE FROM MetricInstance WHERE id IN
       (
-        select MI.ID from MetricInstance as MI
-          LEFT JOIN MetricMeta as MM on MM.ID = MI.MetaID where MM.ID is null
+        select MI.ID as InstanceID from MetricInstance as MI
+          LEFT JOIN MetricMetaToInstance as MMTI on MMTI.InstanceID = MI.ID where MMTI.InstanceID is null
       )
 
     find_mrd_by_id: |
@@ -1429,65 +1456,73 @@ createdb:
       CREATE TABLE IF NOT EXISTS MetricMeta
       (
         ID                 INTEGER UNIQUE PRIMARY KEY NOT NULL,
-        Name               TEXT,
         SuppressDups       BOOLEAN NOT NULL DEFAULT true,
+        NamePattern        TEXT,
         FQDDPattern        TEXT,   -- Dell OEM extension to sort based on FQDD patterns
-        SourcePattern TEXT,   -- Dell OEM extension to sort based on where we got the data from
+        SourcePattern      TEXT,   -- Dell OEM extension to sort based on where we got the data from
         PropertyPattern    TEXT,   -- /redfish/v1/some/uri/{with}/{wildcards}#Property
         Wildcards          TEXT,   --{'wildcard': ['array','of', 'possible', 'replacements'], 'with': ['another', 'list', 'of', 'replacements']}
         CollectionFunction TEXT not null,   -- 'sum', 'avg', 'min', 'max'
         CollectionDuration INTEGER,
 
         -- indexes and constraints
-        unique (Name, SuppressDups, FQDDPattern, SourcePattern, PropertyPattern, Wildcards, CollectionFunction, CollectionDuration)
+        unique (NamePattern, SuppressDups, FQDDPattern, SourcePattern, PropertyPattern, Wildcards, CollectionFunction, CollectionDuration)
       )
 
   - |
       CREATE TABLE IF NOT EXISTS ReportDefinitionToMetricMeta
         (
           ReportDefinitionID   integer not null,
-          MetricMetaID   integer not null,
+          MetaID               integer not null,
 
           -- indexes and constraints
-          primary key (ReportDefinitionID, MetricMetaID)
+          primary key (ReportDefinitionID, MetaID)
           foreign key (ReportDefinitionID)
             references MetricReportDefinition (ID)
               on delete cascade
-          foreign key (MetricMetaID)
+          foreign key (MetaID)
             references MetricMeta (ID)
               on delete cascade
-        )
-  - "CREATE INDEX IF NOT EXISTS report_definition_2_metric_meta_metric_meta_id_idx ON ReportDefinitionToMetricMeta(MetricMetaID)"
+        );
+        CREATE INDEX IF NOT EXISTS report_definition_2_metric_meta_metric_meta_id_idx ON ReportDefinitionToMetricMeta(MetaID)
+
   - |
-      -- Created on demand as metrics come in
-      -- Algorithm:
-      -- On new MetricValueEvent:
-      --   foreach select * from MetricMeta where mm.Name == event.Name
-      --      if match_property(mm.property, event.Property)
-      --        select ID from MetricInstance join metricmeta on metricinstance.MetaID == metricmeta.ID
-      --        or insert into MetricInstance (based on MetricMeta), Get inserted ID
-      --         then:
-      --           insert into MetricValue (ID, TS, Value)
       CREATE TABLE IF NOT EXISTS MetricInstance
       (
         ID                INTEGER NOT NULL PRIMARY KEY,
-        MetaID            INTEGER NOT NULL,
         Name              TEXT    NOT NULL, -- actual metric name
         FQDD              TEXT    NOT NULL,
         Property          TEXT    NOT NULL, -- URI#Property
+        Source            TEXT    NOT NULL DEFAULT '',
         Context           TEXT    NOT NULL, -- usually FQDD
         Function          TEXT    NOT NULL,
         Label             TEXT    NOT NULL, -- 'friendly FQDD' + 'metric name' + 'collectionfn'
+        SuppressDups      BOOLEAN NOT NULL default true,
         CollectionScratch TEXT    NOT NULL, -- Scratch space used by calculation functions
         FlushTime         INTEGER,          -- Time at which any aggregated data should be flushed
         LastTS            INTEGER NOT NULL, -- Used to quickly suppress dups for this instance
         LastValue         TEXT    NOT NULL, -- Used to quickly suppress dups for this instance
 
         -- indexes and constraints
-        unique (MetaID, Name, FQDD, Property, Context, Function)
-        FOREIGN KEY (MetaID)
-          REFERENCES MetricMeta (ID) ON DELETE CASCADE
+        unique (Name, FQDD, Property, Context, Function, SuppressDups)
       )
+
+  - |
+      CREATE TABLE IF NOT EXISTS MetricMetaToInstance
+      (
+        MetaID      integer not null,
+        InstanceID  integer not null,
+
+        -- indexes and constraints
+        primary key (InstanceID, MetaID)
+        foreign key (InstanceID)
+          references MetricInstance (ID)
+            on delete cascade
+        foreign key (MetaID)
+          references MetricMeta (ID)
+            on delete cascade
+      );
+      CREATE INDEX IF NOT EXISTS metric_meta_to_instance_metaid_idx ON MetricMetaToInstance(InstanceID)
 
   - |
       CREATE TABLE IF NOT EXISTS MetricValueInt
@@ -1554,17 +1589,16 @@ createdb:
         FOREIGN KEY (ReportDefinitionID)
           REFERENCES MetricReportDefinition (ID) ON DELETE CASCADE
       );
-
       CREATE INDEX IF NOT EXISTS metric_report_xref_idx on MetricReport(ReportDefinitionID);
 
   - |
+      -- all queries to display to the user should use this one, as timestamp fields are 'correct'
       DROP VIEW IF EXISTS MetricReport_calculated;;
       CREATE VIEW IF NOT EXISTS MetricReport_calculated as
         SELECT
           MR.Name as Name,
           MR.ReportDefinitionID,
           MR.Sequence,
-          MRD.TimeSpan as TimeSpan,
 
           CASE MRD.Type
           WHEN 'Periodic' THEN ReportTimestamp
@@ -1574,8 +1608,16 @@ createdb:
           END as ReportTimestamp,
 
           CASE MRD.Type
-          WHEN 'Periodic' THEN StartTimestamp
-          WHEN 'OnChange' THEN StartTimestamp
+          WHEN 'Periodic' THEN
+            CASE MRD.TimeSpan
+            WHEN 0 THEN StartTimestamp
+            ELSE ReportTimestamp - MRD.TimeSpan * 1000000000
+            END
+          WHEN 'OnChange' THEN
+            CASE MRD.TimeSpan
+            WHEN 0 THEN StartTimestamp
+            ELSE ReportTimestamp - MRD.TimeSpan * 1000000000
+            END
           WHEN 'OnRequest' THEN cast( (julianday('now') - 2440587.5)*86400 * 1000000000 - MRD.TimeSpan as integer)
           ELSE 'INVALID'
           END as StartTimestamp
@@ -1584,7 +1626,7 @@ createdb:
         INNER JOIN MetricReportDefinition as MRD on MRD.ID = MR.ReportDefinitionID
 
   - |
-      -- TODO: check scalability of this view
+      -- TODO: check scalability of this view (should be scalable)
       DROP VIEW IF EXISTS MetricValueByReport;
       CREATE VIEW MetricValueByReport as
         select
@@ -1601,48 +1643,41 @@ createdb:
                   'Label', MI.Label
                 )
           )) as 'JSON'
-        from MetricValue as MV
-        inner join MetricInstance as MI on MV.InstanceID = MI.ID
-        inner join MetricMeta as MM on MI.MetaID = MM.ID
-        inner join ReportDefinitionToMetricMeta as rd2mm on MM.ID = rd2mm.MetricMetaID
-        inner join MetricReport_calculated as MR on rd2mm.ReportDefinitionID = MR.ReportDefinitionID
+        from MetricReport_calculated as MR
+        inner join ReportDefinitionToMetricMeta as rd2mm on MR.ReportDefinitionID = rd2mm.ReportDefinitionID
+        inner join MetricMetaToInstance as MMTI on rd2mm.MetaID = MMTI.MetaID
+        inner join MetricInstance as MI on MMTI.InstanceID = MI.ID
+        inner join MetricValue as MV on MI.ID = MV.InstanceID
         WHERE
-              ( MV.Timestamp > MR.StartTimestamp OR MR.StartTimestamp = 0 )
-          and ( MV.Timestamp > (MR.ReportTimestamp - MR.TimeSpan*1000000000 ) OR MR.TimeSpan = 0)
-          and ( MV.Timestamp <= MR.ReportTimestamp OR MR.ReportTimestamp = 0)
+          ( MV.Timestamp > MR.StartTimestamp ) AND
+          ( MV.Timestamp <= MR.ReportTimestamp )
 
   - |
-      -- TODO: check scalability of this view
+      -- TODO: check scalability of this view (PROBABLY DOESNT SCALE DUE TO GROUP BY)
       DROP VIEW IF EXISTS OldestMetricInstanceInReportInt;
       CREATE VIEW OldestMetricInstanceInReportInt as
         select
           MV.InstanceID as InstanceID,
           min(mv.timestamp) as MinTS
         from MetricValueInt as MV
-        inner join MetricInstance as MI on MV.InstanceID = MI.ID
-        inner join MetricMeta as MM on MI.MetaID = MM.ID
-        inner join ReportDefinitionToMetricMeta as rd2mm on MM.ID = rd2mm.MetricMetaID
+        inner join MetricMetaToInstance as MMTI on MV.InstanceID = MMTI.InstanceID
+        inner join ReportDefinitionToMetricMeta as rd2mm on MMTI.MetaID = rd2mm.MetaID
         inner join MetricReport_calculated as MR on MR.ReportDefinitionID = rd2mm.ReportDefinitionID
-        WHERE
-              ( MV.Timestamp > MR.StartTimestamp OR MR.StartTimestamp = 0 )
-          and ( MV.Timestamp > (MR.ReportTimestamp - MR.TimeSpan*1000000000 ) OR MR.TimeSpan = 0)
+        WHERE MV.Timestamp > MR.StartTimestamp
         group by MV.InstanceID
 
   - |
-      -- TODO: check scalability of this view
+      -- TODO: check scalability of this view (PROBABLY DOESNT SCALE DUE TO GROUP BY)
       DROP VIEW IF EXISTS OldestMetricInstanceInReportReal;
       CREATE VIEW OldestMetricInstanceInReportReal as
         select
           MV.InstanceID as InstanceID,
           min(mv.timestamp) as MinTS
         from MetricValueReal as MV
-        inner join MetricInstance as MI on MV.InstanceID = MI.ID
-        inner join MetricMeta as MM on MI.MetaID = MM.ID
-        inner join ReportDefinitionToMetricMeta as rd2mm on MM.ID = rd2mm.MetricMetaID
+        inner join MetricMetaToInstance as MMTI on MV.InstanceID = MMTI.InstanceID
+        inner join ReportDefinitionToMetricMeta as rd2mm on MMTI.MetaID = rd2mm.MetaID
         inner join MetricReport_calculated as MR on MR.ReportDefinitionID = rd2mm.ReportDefinitionID
-        WHERE
-              ( MV.Timestamp > MR.StartTimestamp OR MR.StartTimestamp = 0 )
-          and ( MV.Timestamp > (MR.ReportTimestamp - MR.TimeSpan*1000000000 ) OR MR.TimeSpan = 0)
+        WHERE MV.Timestamp > MR.StartTimestamp
         group by MV.InstanceID
 
   - |
@@ -1653,13 +1688,10 @@ createdb:
           MV.InstanceID as InstanceID,
           min(mv.timestamp) as MinTS
         from MetricValueText as MV
-        inner join MetricInstance as MI on MV.InstanceID = MI.ID
-        inner join MetricMeta as MM on MI.MetaID = MM.ID
-        inner join ReportDefinitionToMetricMeta as rd2mm on MM.ID = rd2mm.MetricMetaID
+        inner join MetricMetaToInstance as MMTI on MV.InstanceID = MMTI.InstanceID
+        inner join ReportDefinitionToMetricMeta as rd2mm on MMTI.MetaID = rd2mm.MetaID
         inner join MetricReport_calculated as MR on MR.ReportDefinitionID = rd2mm.ReportDefinitionID
-        WHERE
-              ( MV.Timestamp > MR.StartTimestamp OR MR.StartTimestamp = 0 )
-          and ( MV.Timestamp > (MR.ReportTimestamp - MR.TimeSpan*1000000000 ) OR MR.TimeSpan = 0)
+        WHERE MV.Timestamp > MR.StartTimestamp
         group by MV.InstanceID
 
   - |
@@ -1689,7 +1721,7 @@ createdb:
                   where MVR.Name=MR.Name
                     order by MVR.Timestamp DESC
                     limit 24000
-                ) AS a ), '')
+                  ) AS a ),  ' "MetricValues":  [], "MetricValues@odata.count":  0 ')
           || '}'
         ) as root,
         '/redfish/v1/TelemetryService/MetricReports/' || MR.Name as '@odata.id'
@@ -1764,7 +1796,7 @@ createdb:
               select
                 (
                  '{' ||
-                 ' "MetricID": "' || MM.Name || '"' ||
+                 ' "MetricID": "' || MM.NamePattern || '"' ||
 
                  case MM.PropertyPattern
                  when '' then ''
@@ -1792,7 +1824,7 @@ createdb:
                  '}'
                 ) as JSON
               from MetricMeta as MM
-              left join  ReportDefinitionToMetricMeta as rd2mm on rd2mm.MetricMetaID = MM.ID
+              left join  ReportDefinitionToMetricMeta as rd2mm on rd2mm.MetaID = MM.ID
               where rd2mm.ReportDefinitionID = MetricReportDefinition.ID
               ) AS a ), '"Metrics": [], "Metrics@odata.count": 0' ) ||
           '}'
@@ -1861,7 +1893,7 @@ createdb:
           UNION ALL
         select root, [@odata.id] from TelemetryService_JSON
 
-# Backwards compat stuff to get the fcgi_rfsql to work
+# Backwards compat stuff to get the fcgi_rfsql to work. Drop the tables in a separate statement because it can error out (and be ignored)
   - |
       DROP TABLE IF EXISTS TblMetricReportItems;
   - |
@@ -1874,6 +1906,7 @@ createdb:
         FROM
           MetricReport;
 
+# Backwards compat stuff to get the fcgi_rfsql to work. Drop the tables in a separate statement because it can error out (and be ignored)
   - |
       DROP TABLE IF EXISTS TblMetricReportDefinitionItems;
   - |
