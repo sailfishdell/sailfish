@@ -81,11 +81,10 @@ func setup(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, d *BusCo
 			eventData = dataString
 		}
 
-		fmt.Printf("\tStartup Event: %s\n", name)
+		fmt.Printf("\tPublishing Startup Event (%s)\n", name)
 		evt := event.NewSyncEvent(eventType, eventData, time.Now())
 		evt.Add(1)
 		d.GetBus().PublishEvent(context.Background(), evt)
-		evt.Wait()
 	}
 }
 
