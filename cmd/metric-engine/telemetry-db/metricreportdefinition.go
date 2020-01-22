@@ -666,6 +666,71 @@ func (factory *MRDFactory) CheckOnChangeReports(tx *sqlx.Tx, instancesUpdated ma
 	return err
 }
 
+func (factory *MRDFactory) GenerateMetricReport(tx *sqlx.Tx, name string) (err error) {
+	return factory.WrapWithTXOrPassIn(tx, func(tx *sqlx.Tx) error {
+		MRD := &MetricReportDefinition{
+			MetricReportDefinitionData: &MetricReportDefinitionData{Name: name},
+		}
+		err = factory.loadReportDefinition(tx, MRD)
+		if err != nil || MRD.ID == 0 {
+			return xerrors.Errorf("Error getting MetricReportDefinition: ID(%s) NAME(%s) err: %w", MRD.ID, MRD.Name, err)
+		}
+
+		// default to deleting all the reports... only actually does this if any params are invalid
+		SQL := []string{"update_report_ts_seq"}
+		sqlargs := map[string]interface{}{
+			"Name":  MRD.Name,
+			"MRDID": MRD.ID,
+			// default to "OnRequest" start, reset 'start' for periodic below
+			// FYI: using .Add() with a negative number, as ".Sub()" does something *completely different*.
+			"Start":           factory.MetricTSHWM.Add(-time.Duration(MRD.TimeSpan) * time.Second).UnixNano(),
+			"ReportTimestamp": factory.MetricTSHWM.UnixNano(),
+		}
+
+		switch MRD.Updates {
+		case "NewReport":
+			SQL = []string{"insert_report", "keep_only_3_reports"}
+			sqlargs["Name"] = fmt.Sprintf("%s-%s", MRD.Name, factory.MetricTSHWM.Time.UTC().Format(time.RFC3339))
+		case "Overwrite":
+			SQL = []string{"update_report_set_start_to_prev_timestamp", "update_report_ts_seq"}
+		}
+
+		delete(factory.NextMRTS, MRD.Name)
+		if MRD.Type == "Periodic" {
+			factory.NextMRTS[MRD.Name] = metric.SqlTimeInt{Time: factory.MetricTSHWM.Add(time.Duration(MRD.Period) * time.Second)}
+		}
+
+		for _, sql := range SQL {
+			fmt.Printf("SQL(%s) ", sql)
+			_, err = factory.getNamedSqlTx(tx, sql).Exec(sqlargs)
+			if err != nil {
+				return xerrors.Errorf("ERROR inserting MetricReport. MRD(%+v) sql(%s), args(%+v): %w", MRD, SQL, sqlargs, err)
+			}
+		}
+
+		return nil
+	})
+}
+
+func (factory *MRDFactory) CheckOnChangeReports(tx *sqlx.Tx, instancesUpdated map[int64]struct{}) error {
+	err := factory.WrapWithTXOrPassIn(tx, func(tx *sqlx.Tx) error {
+		for mmInstanceID := range instancesUpdated {
+			instanceChangeList := []string{}
+			err := factory.getSqlxTx(tx, "find_onchange_mrd_by_mm_instance").Select(&instanceChangeList, mmInstanceID)
+			if err != nil {
+				return xerrors.Errorf("Error getting changed reports by instance: %w", err)
+			}
+			for _, name := range instanceChangeList {
+				// bogus timestamp that will always match
+				factory.NextMRTS[name] = metric.SqlTimeInt{Time: time.Time{}.Add(time.Duration(1))}
+			}
+		}
+		return nil
+	})
+
+	return err
+}
+
 type Scratch struct {
 	Numvalues int
 	Sum       float64
