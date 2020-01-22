@@ -1181,8 +1181,8 @@ internal:
   namedsql:
     mrd_insert: |
       INSERT INTO MetricReportDefinition
-               ( Name,  Enabled,  AppendLimit,  Type,  SuppressDups,  Actions,  Updates,  Period)
-        VALUES (:Name, :Enabled, :AppendLimit, :Type, :SuppressDups, :Actions, :Updates, :Period)
+               ( Name,  Enabled,  AppendLimit,  Type,  SuppressDups,  Actions,  Updates,  Period,  TimeSpan)
+        VALUES (:Name, :Enabled, :AppendLimit, :Type, :SuppressDups, :Actions, :Updates, :Period, :TimeSpan)
 
     mrd_update: |
       UPDATE MetricReportDefinition
@@ -1193,7 +1193,8 @@ internal:
         SuppressDups=:SuppressDups,
         Actions=:Actions,
         Period=:Period,
-        Updates=:Updates
+        Updates=:Updates,
+        TimeSpan=:TimeSpan
       WHERE
         Name=:Name
 
@@ -1252,6 +1253,11 @@ internal:
       UPDATE MetricReport
       SET ReportTimestamp = :ReportTimestamp,
           Sequence = Sequence + 1
+      WHERE Name = :Name
+
+    update_report_start: |
+      UPDATE MetricReport
+      SET StartTimestamp = :Start
       WHERE Name = :Name
 
     find_metric_meta: |
@@ -1604,7 +1610,7 @@ createdb:
           WHEN 'Periodic' THEN ReportTimestamp
           WHEN 'OnChange' THEN ReportTimestamp
           WHEN 'OnRequest' THEN cast( (julianday('now') - 2440587.5)*86400 * 1000000000 as integer)
-          ELSE 'INVALID'
+          ELSE 0
           END as ReportTimestamp,
 
           CASE MRD.Type
@@ -1613,13 +1619,9 @@ createdb:
             WHEN 0 THEN StartTimestamp
             ELSE ReportTimestamp - MRD.TimeSpan * 1000000000
             END
-          WHEN 'OnChange' THEN
-            CASE MRD.TimeSpan
-            WHEN 0 THEN StartTimestamp
-            ELSE ReportTimestamp - MRD.TimeSpan * 1000000000
-            END
+          WHEN 'OnChange' THEN ReportTimestamp - MRD.TimeSpan * 1000000000
           WHEN 'OnRequest' THEN cast( (julianday('now') - 2440587.5)*86400 * 1000000000 - MRD.TimeSpan as integer)
-          ELSE 'INVALID'
+          ELSE 0
           END as StartTimestamp
 
         FROM MetricReport as MR

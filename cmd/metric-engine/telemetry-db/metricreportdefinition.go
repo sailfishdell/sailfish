@@ -183,32 +183,45 @@ func (factory *MRDFactory) Delete(mrdEvData *MetricReportDefinitionData) (err er
 	return
 }
 
+const (
+	MinPeriod       = 5
+	MaxPeriod       = 2 * 60 * 60
+	DefaultPeriod   = 180
+	MinTimeSpan     = 60
+	MaxTimeSpan     = 4 * 60 * 60
+	DefaultTimeSpan = MaxTimeSpan
+)
+
 // ValidateMRD: Validate Type, Period, and Timespan.
-// will ensure the Type is valid enum and Period is within allowed ranges for Periodic
+// - ensure the Type is valid enum
+// - ensure Period is within allowed ranges for Periodic
+// - ensure TimeSpan is set when required
 func ValidateMRD(MRD *MetricReportDefinition) {
 	switch MRD.Type {
 	case "Periodic":
-		if MRD.Period < 5 || MRD.Period > (60*60*2) {
-			MRD.Period = 180 // period can be 5s to 2hrs. if outside that range, make it 3 minutes.
+		if MRD.Period < MinPeriod || MRD.Period > MaxPeriod {
+			MRD.Period = DefaultPeriod
 		}
-		// legal to leave TimeSpan == 0 for Periodic
-		// Min 60s, Max 2hr  -- default to 1hr if outside range
-		if MRD.TimeSpan != 0 && (MRD.TimeSpan < 60 || MRD.TimeSpan > (60*60*2)) {
-			MRD.TimeSpan = 60 * 60
+		switch MRD.Updates {
+		case "AppendWrapsWhenFull", "AppendStopsWhenFull":
+			// must have timespan for Append*
+			if MRD.TimeSpan < MinTimeSpan || MRD.TimeSpan > MaxTimeSpan {
+				MRD.TimeSpan = DefaultTimeSpan
+			}
+		case "Overwrite":
+		case "NewReport":
 		}
 
 	case "OnChange":
 		MRD.Period = 0
-		// Min 60s, Max 2hr  -- default to 1hr if outside range
-		if MRD.TimeSpan < 60 || MRD.TimeSpan > (60*60*2) {
-			MRD.TimeSpan = 60 * 60
+		if MRD.TimeSpan < MinTimeSpan || MRD.TimeSpan > MaxTimeSpan {
+			MRD.TimeSpan = DefaultTimeSpan
 		}
 
 	case "OnRequest":
 		MRD.Period = 0
-		// Min 60s, Max 2hr  -- default to 1hr if outside range
-		if MRD.TimeSpan < 60 || MRD.TimeSpan > (60*60*2) {
-			MRD.TimeSpan = 60 * 60
+		if MRD.TimeSpan < MinTimeSpan || MRD.TimeSpan > MaxTimeSpan {
+			MRD.TimeSpan = DefaultTimeSpan
 		}
 		// Implicitly force appendwraps and log actions, as other combinations dont make sense
 		MRD.Updates = "AppendWrapsWhenFull"
@@ -218,7 +231,7 @@ func ValidateMRD(MRD *MetricReportDefinition) {
 		MRD.Type = "OnRequest"
 		MRD.Enabled = false
 		MRD.Period = 0
-		MRD.TimeSpan = 5 * 60 // default to 5 minutes
+		MRD.TimeSpan = DefaultTimeSpan
 	}
 
 }
@@ -265,6 +278,8 @@ func (factory *MRDFactory) WrapWithTXOrPassIn(tx *sqlx.Tx, fn func(tx *sqlx.Tx) 
 
 func (factory *MRDFactory) UpdateMRD(mrdEvData *MetricReportDefinitionData) (err error) {
 	return factory.WrapWithTX(func(tx *sqlx.Tx) error {
+		// TODO: Emit an error response message if the metric report definition does not exist
+
 		newMRD := *mrdEvData
 		MRD := &MetricReportDefinition{
 			MetricReportDefinitionData: mrdEvData,
@@ -279,8 +294,8 @@ func (factory *MRDFactory) UpdateMRD(mrdEvData *MetricReportDefinitionData) (err
 			return xerrors.Errorf("Error getting MetricReportDefinition: ID(%s) NAME(%s) err: %w", MRD.ID, MRD.Name, err)
 		}
 
-		// delete from periodic trigger list first, it'll get added back below if everything checks out
-		if newMRD.Type != "Periodic" && MRD.Enabled {
+		// if new type isn't periodic, delete nextmrts
+		if newMRD.Type != "Periodic" {
 			delete(factory.NextMRTS, MRD.Name)
 		}
 
@@ -294,8 +309,16 @@ func (factory *MRDFactory) UpdateMRD(mrdEvData *MetricReportDefinitionData) (err
 			return xerrors.Errorf("Error Updating MetricMeta for MRD(%+v): %w", MRD, err)
 		}
 
+		if !MRD.Enabled {
+			// we are done if report not enabled
+			return nil
+		}
+
 		// insert the first (probably empty) report
-		factory.InsertMetricReport(tx, MRD.Name)
+		err = factory.InsertMetricReport(tx, MRD.Name)
+		if err != nil {
+			return xerrors.Errorf("Error Inserting Metric Report MRD(%+v): %w", MRD, err)
+		}
 
 		if MRD.Type == "Periodic" && MRD.Period != newMRD.Period {
 			// If this is a periodic report, put it in the NextMRTS map so it'll get updated on the next report period
@@ -308,6 +331,8 @@ func (factory *MRDFactory) UpdateMRD(mrdEvData *MetricReportDefinitionData) (err
 
 func (factory *MRDFactory) AddMRD(mrdEvData *MetricReportDefinitionData) (err error) {
 	return factory.WrapWithTX(func(tx *sqlx.Tx) error {
+		// TODO: Emit an error response message if the metric report definition already exists
+
 		MRD := &MetricReportDefinition{
 			MetricReportDefinitionData: mrdEvData,
 			AppendLimit:                3000,
@@ -320,6 +345,11 @@ func (factory *MRDFactory) AddMRD(mrdEvData *MetricReportDefinitionData) (err er
 
 		res, err := factory.getNamedSqlTx(tx, "mrd_insert").Exec(MRD)
 		if err != nil {
+			if strings.HasPrefix(err.Error(), "UNIQUE constraint failed") {
+				// too verbose, but possibly uncomment for debugging
+				//return xerrors.Errorf("Cannot ADD already existing MRD(%s).", MRD.Name)
+				return nil
+			}
 			return xerrors.Errorf("Error inserting MRD(%s): %w", MRD, err)
 		}
 		MRD.ID, err = res.LastInsertId()
@@ -337,7 +367,10 @@ func (factory *MRDFactory) AddMRD(mrdEvData *MetricReportDefinitionData) (err er
 		}
 
 		// insert the first (probably empty) report
-		factory.InsertMetricReport(tx, MRD.Name)
+		err = factory.InsertMetricReport(tx, MRD.Name)
+		if err != nil {
+			return xerrors.Errorf("Error Inserting Metric Report MRD(%+v): %w", MRD, err)
+		}
 
 		// If this is a periodic report, put it in the NextMRTS map so it'll get updated on the next report period
 		if MRD.Type == "Periodic" {
@@ -371,10 +404,11 @@ func (factory *MRDFactory) UpdateMMList(tx *sqlx.Tx, MRD *MetricReportDefinition
 
 		// First, Find the MetricMeta
 		err = factory.getNamedSqlTx(tx, "find_mm").Get(&metaID, tempMetric)
-		if err != nil {
-			if !xerrors.Is(err, sql.ErrNoRows) {
-				return xerrors.Errorf("Error running query to find MetricMeta(%+v) for MRD(%s): %w", tempMetric, MRD, err)
-			}
+		if err != nil && !xerrors.Is(err, sql.ErrNoRows) {
+			return xerrors.Errorf("Error running query to find MetricMeta(%+v) for MRD(%s): %w", tempMetric, MRD, err)
+		}
+
+		if err != nil && xerrors.Is(err, sql.ErrNoRows) {
 			// Insert new MetricMeta if it doesn't already exist per above
 			res, err = factory.getNamedSqlTx(tx, "insert_mm").Exec(tempMetric)
 			if err != nil {
@@ -461,20 +495,16 @@ func (factory *MRDFactory) SyncNextMRTSWithDB() ([]string, error) {
 			return nil
 		})
 	// first, ensure that everything in current .NextMRTS is still alive. Delete if not.
-	fmt.Printf("newMRTS: %+v\n", newMRTS)
-	fmt.Printf("nextMRTS: %+v\n", factory.NextMRTS)
 	for k := range factory.NextMRTS {
 		if _, ok := newMRTS[k]; ok {
 			// delete from new if it already exists in old, simplifies next loop
 			delete(newMRTS, k)
 			continue
 		}
-		fmt.Printf("Report disappeared or disabled, deleting NextMRTS from cache: %s\n", k)
 		delete(factory.NextMRTS, k)
 	}
 	// next, pull in any new. newMRTS should only have new entries left
 	for k, v := range newMRTS {
-		fmt.Printf("Synced NextMRTS from DB: %s\n", k)
 		factory.NextMRTS[k] = v
 	}
 	return factory.FastCheckForNeededMRUpdates()
@@ -508,23 +538,25 @@ func (factory *MRDFactory) InsertMetricReport(tx *sqlx.Tx, name string) (err err
 		}
 
 		sqlargs := map[string]interface{}{
-			"Name":  MRD.Name,
-			"MRDID": MRD.ID,
-			// default to "OnRequest" start, reset 'start' for periodic below
-			// FYI: using .Add() with a negative number, as ".Sub()" does something *completely different*.
-			"Start":           factory.MetricTSHWM.Add(-time.Duration(MRD.TimeSpan) * time.Second).UnixNano(),
+			"Name":            MRD.Name,
+			"MRDID":           MRD.ID,
 			"ReportTimestamp": factory.MetricTSHWM.UnixNano(),
 		}
 
 		// Overwrite report name for NewReport
 		if MRD.Updates == "NewReport" {
-			sqlargs["Name"] = fmt.Sprintf("%s-%s", MRD.Name, factory.MetricTSHWM.Time.UTC().Format(time.RFC3339))
+			// NO NEED TO INSERT INITIAL NULL REPORT, AS THIS WILL FIX ITSELF WHEN ITS GENERATED
+			return nil
 		}
 
-		if MRD.Type == "Periodic" {
+		switch MRD.Type {
+		case "Periodic":
 			// FYI: using .Add() with a negative number, as ".Sub()" does something *completely different*.
 			sqlargs["Start"] = factory.MetricTSHWM.Add(-time.Duration(MRD.Period) * time.Second).UnixNano()
 			factory.NextMRTS[MRD.Name] = metric.SqlTimeInt{Time: factory.MetricTSHWM.Add(time.Duration(MRD.Period) * time.Second)}
+		case "OnChange", "OnRequest":
+			// FYI: using .Add() with a negative number, as ".Sub()" does something *completely different*.
+			sqlargs["Start"] = factory.MetricTSHWM.Add(-time.Duration(MRD.TimeSpan) * time.Second).UnixNano()
 		}
 
 		// Delete all generated reports and reset everything
@@ -560,25 +592,43 @@ func (factory *MRDFactory) GenerateMetricReport(tx *sqlx.Tx, name string) (err e
 		// default to deleting all the reports... only actually does this if any params are invalid
 		SQL := []string{"update_report_ts_seq"}
 		sqlargs := map[string]interface{}{
-			"Name":  MRD.Name,
-			"MRDID": MRD.ID,
-			// default to "OnRequest" start, reset 'start' for periodic below
-			// FYI: using .Add() with a negative number, as ".Sub()" does something *completely different*.
-			"Start":           factory.MetricTSHWM.Add(-time.Duration(MRD.TimeSpan) * time.Second).UnixNano(),
+			"Name":            MRD.Name,
+			"MRDID":           MRD.ID,
 			"ReportTimestamp": factory.MetricTSHWM.UnixNano(),
 		}
 
-		switch MRD.Updates {
-		case "NewReport":
-			SQL = []string{"insert_report", "keep_only_3_reports"}
-			sqlargs["Name"] = fmt.Sprintf("%s-%s", MRD.Name, factory.MetricTSHWM.Time.UTC().Format(time.RFC3339))
-		case "Overwrite":
-			SQL = []string{"update_report_set_start_to_prev_timestamp", "update_report_ts_seq"}
-		}
-
 		delete(factory.NextMRTS, MRD.Name)
-		if MRD.Type == "Periodic" {
+		switch MRD.Type {
+		case "Periodic":
+			// FYI: using .Add() with a negative number, as ".Sub()" does something *completely different*.
 			factory.NextMRTS[MRD.Name] = metric.SqlTimeInt{Time: factory.MetricTSHWM.Add(time.Duration(MRD.Period) * time.Second)}
+			switch MRD.Updates {
+			case "NewReport":
+				SQL = []string{"insert_report", "keep_only_3_reports"}
+				sqlargs["Start"] = factory.MetricTSHWM.Add(-time.Duration(MRD.Period) * time.Second).UnixNano()
+				sqlargs["Name"] = fmt.Sprintf("%s-%s", MRD.Name, factory.MetricTSHWM.Time.UTC().Format(time.RFC3339))
+			case "Overwrite":
+				SQL = []string{"update_report_set_start_to_prev_timestamp", "update_report_ts_seq"}
+			case "AppendWrapsWhenFull":
+				SQL = []string{"update_report_ts_seq"}
+			case "AppendStopsWhenFull":
+				SQL = []string{"update_report_ts_seq"}
+			}
+		case "OnChange":
+			switch MRD.Updates {
+			case "NewReport":
+				SQL = []string{"insert_report", "keep_only_3_reports"}
+				sqlargs["Name"] = fmt.Sprintf("%s-%s", MRD.Name, factory.MetricTSHWM.Time.UTC().Format(time.RFC3339))
+			case "Overwrite":
+				SQL = []string{"update_report_start", "update_report_ts_seq"}
+				// FYI: using .Add() with a negative number, as ".Sub()" does something *completely different*.
+				sqlargs["Start"] = factory.MetricTSHWM.Add(-time.Duration(MRD.TimeSpan) * time.Second).UnixNano()
+			case "AppendWrapsWhenFull":
+				SQL = []string{"update_report_ts_seq"}
+			case "AppendStopsWhenFull":
+				SQL = []string{"update_report_ts_seq"}
+			}
+		default:
 		}
 
 		for _, sql := range SQL {
@@ -602,8 +652,12 @@ func (factory *MRDFactory) CheckOnChangeReports(tx *sqlx.Tx, instancesUpdated ma
 				return xerrors.Errorf("Error getting changed reports by instance: %w", err)
 			}
 			for _, name := range instanceChangeList {
-				// bogus timestamp that will always match
-				factory.NextMRTS[name] = metric.SqlTimeInt{Time: time.Time{}.Add(time.Duration(1))}
+				if _, ok := factory.NextMRTS[name]; ok {
+					continue
+				}
+				// ensure we generate report at most every 5 seconds by scheduling generation for 5s from now
+				// Set up to generate report in 5
+				factory.NextMRTS[name] = metric.SqlTimeInt{Time: factory.MetricTSHWM.Add(5 * time.Second)}
 			}
 		}
 		return nil
@@ -634,8 +688,8 @@ func (m *Scratch) Scan(src interface{}) error {
 // When it gets to this struct, it needs to be expressed in Seconds.
 type RawMetricMeta struct {
 	// Meta fields
-	MetaID             int64         `db:"MetaID" json:"MetricID"`
-	NamePattern        string        `db:"NamePattern"`
+	MetaID             int64         `db:"MetaID"`
+	NamePattern        string        `db:"NamePattern" json:"MetricID"`
 	FQDDPattern        string        `db:"FQDDPattern"`
 	SourcePattern      string        `db:"SourcePattern"`
 	PropertyPattern    string        `db:"PropertyPattern"`
@@ -819,7 +873,9 @@ func (factory *MRDFactory) InsertMetricValue(tx *sqlx.Tx, ev *metric.MetricValue
 
 				_, err = factory.getSqlxTx(tx, sql).Exec(args...)
 				if err != nil {
-					return xerrors.Errorf("Error inserting MetricValue for MetricInstance(%d)/MetricMeta(%d), ARGS: %+v: %w", mm.InstanceID, mm.MetaID, args, err)
+					if !strings.HasPrefix(err.Error(), "UNIQUE constraint failed") {
+						return xerrors.Errorf("Error inserting MetricValue for MetricInstance(%d)/MetricMeta(%d), ARGS: %+v: %w", mm.InstanceID, mm.MetaID, args, err)
+					}
 				}
 			}
 
