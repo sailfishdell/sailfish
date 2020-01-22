@@ -1223,7 +1223,7 @@ internal:
       VALUES (
         :Name, :MRDID, :ReportTimestamp,
         IFNULL((SELECT MAX(sequence)+1 FROM MetricReport WHERE ReportDefinitionID=:MRDID), 0),
-        IFNULL((SELECT MAX(StartTimestamp) FROM MetricReport WHERE ReportDefinitionID=:MRDID), :Start)
+        IFNULL((SELECT MAX(ReportTimestamp) FROM MetricReport WHERE ReportDefinitionID=:MRDID), :Start)
         );
 
     keep_only_3_reports: |
