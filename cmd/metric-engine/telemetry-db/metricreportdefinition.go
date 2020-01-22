@@ -197,35 +197,44 @@ const (
 // - ensure Period is within allowed ranges for Periodic
 // - ensure TimeSpan is set when required
 func ValidateMRD(MRD *MetricReportDefinition) {
-	switch MRD.Type {
-	case "Periodic":
-		if MRD.Period < MinPeriod || MRD.Period > MaxPeriod {
+	PeriodMust := func(b bool) {
+		if !b {
 			MRD.Period = DefaultPeriod
 		}
+	}
+	TimeSpanMust := func(b bool) {
+		if !b {
+			MRD.Period = DefaultPeriod
+		}
+	}
+
+	// Globally: everything has to be within limits, or zero where allowed
+	PeriodMust(MRD.Period <= MaxPeriod)
+	PeriodMust(MRD.Period >= MinPeriod || MRD.Period == 0)
+	TimeSpanMust(MRD.TimeSpan <= MaxTimeSpan)
+	TimeSpanMust(MRD.TimeSpan >= MinTimeSpan || MRD.TimeSpan == 0)
+
+	switch MRD.Type {
+	case "Periodic":
+		PeriodMust(MRD.Period > 0) // periodic reports must have nonzero period
+
 		switch MRD.Updates {
 		case "AppendWrapsWhenFull", "AppendStopsWhenFull":
-			// must have timespan for Append*
-			if MRD.TimeSpan < MinTimeSpan || MRD.TimeSpan > MaxTimeSpan {
-				MRD.TimeSpan = DefaultTimeSpan
-			}
+			TimeSpanMust(MRD.TimeSpan > 0) // all Append* reports must have nonzero TimeSpan
 		case "Overwrite":
 		case "NewReport":
 		}
 
 	case "OnChange":
-		MRD.Period = 0
-		if MRD.TimeSpan < MinTimeSpan || MRD.TimeSpan > MaxTimeSpan {
-			MRD.TimeSpan = DefaultTimeSpan
-		}
+		MRD.Period = 0                            // Period must be zero for OnChange
+		TimeSpanMust(MRD.TimeSpan >= MinTimeSpan) // OnChange requires nonzero TimeSpan
 
 	case "OnRequest":
-		MRD.Period = 0
-		if MRD.TimeSpan < MinTimeSpan || MRD.TimeSpan > MaxTimeSpan {
-			MRD.TimeSpan = DefaultTimeSpan
-		}
-		// Implicitly force appendwraps and log actions, as other combinations dont make sense
+		// Implicitly force Updates/Actions/Period, validate TimeSpan
 		MRD.Updates = "AppendWrapsWhenFull"
 		MRD.Actions = []string{"LogToMetricReportsCollection"}
+		MRD.Period = 0                            // Period must be zero for OnChange
+		TimeSpanMust(MRD.TimeSpan >= MinTimeSpan) // OnRequest requires nonzero TimeSpan
 
 	default:
 		MRD.Type = "OnRequest"
@@ -283,7 +292,7 @@ func (factory *MRDFactory) UpdateMRD(mrdEvData *MetricReportDefinitionData) (err
 		newMRD := *mrdEvData
 		MRD := &MetricReportDefinition{
 			MetricReportDefinitionData: mrdEvData,
-			AppendLimit:                3000,
+			AppendLimit:                24000,
 		}
 
 		ValidateMRD(MRD)
