@@ -292,7 +292,7 @@ func (factory *MRDFactory) UpdateMRD(mrdEvData *MetricReportDefinitionData) (err
 		newMRD := *mrdEvData
 		MRD := &MetricReportDefinition{
 			MetricReportDefinitionData: mrdEvData,
-			AppendLimit:                3000,
+			AppendLimit:                24000,
 		}
 
 		ValidateMRD(MRD)
