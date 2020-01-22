@@ -250,19 +250,25 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Service, d Bus
 			}
 
 		case "optimize":
+			fmt.Printf("Running scheduled database optimization\n")
 			MRDFactory.Optimize()
 
 		case "vacuum":
+			fmt.Printf("Running scheduled database storage recovery\n")
 			MRDFactory.Vacuum()
 
 		case "clean values": // keep us under database size limits
+			fmt.Printf("Running scheduled cleanup of the stored Metric Values\n")
 			MRDFactory.DeleteOldestValues()
 
 		case "delete orphans": // see factory comment for details.
+			fmt.Printf("Running scheduled database consistency cleanup\n")
 			MRDFactory.DeleteOrphans()
 
 		case "prune unused metric values":
+			fmt.Printf("Running scheduled cleanup of the stored Metric Values\n")
 			MRDFactory.DeleteOldestValues()
+			fmt.Printf("Running scheduled database consistency cleanup\n")
 			MRDFactory.DeleteOrphans()
 
 		default:
