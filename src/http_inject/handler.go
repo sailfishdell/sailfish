@@ -156,12 +156,12 @@ func (s *service) GetHandlerFunc() func(http.ResponseWriter, *http.Request) {
 		//now := time.Now()
 		//args := []interface{}{cmd.Name, cmd.EventSeq, now.Sub(cmd.ingestTime), now.Sub(cmd.sendTime), cmd.ingestTime.Sub(cmd.sendTime)}
 		if success {
-			w.WriteHeader(http.StatusOK)
+			http.Error(w, "Processed event", http.StatusOK)
 			//fmtstr := "Command(%s) SEQ(%d) queued (%s) (%s) (%s)\n"
 			//fmt.Printf(fmtstr, args...)
 			//fmt.Fprintf(w, fmtstr, args...)
 		} else {
-			http.Error(w, "DROPPED MESSAGE", http.StatusBadRequest)
+			http.Error(w, "DROPPED MESSAGE", http.StatusFailedDependency)
 			//fmtstr := "Command(%s) SEQ(%d) DROPPED (%s) (%s) (%s)\n"
 			//fmt.Printf(fmtstr, args...)
 			//fmt.Fprintf(w, fmtstr, args...)
