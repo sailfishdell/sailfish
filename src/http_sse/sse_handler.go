@@ -47,6 +47,7 @@ func (rh *SSEHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return true
 	})
 	l.Name = "SSE Listener"
+	defer l.Close()
 
 	// set headers first
 	w.Header().Set("OData-Version", "4.0")
@@ -67,7 +68,7 @@ func (rh *SSEHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// compatibility headers
 	w.Header().Set("X-UA-Compatible", "IE=11")
 
-	l.ProcessEvents(ctx, func(event eh.Event) {
+	err := l.ProcessEvents(ctx, func(event eh.Event) {
 		d, err := json.Marshal(
 			&struct {
 				Name string      `json:"name"`
@@ -85,6 +86,8 @@ func (rh *SSEHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 		flusher.Flush()
 	})
+
+	fmt.Printf("Internal SSE event bus closed: %s\n", err)
 
 	requestLogger.Debug("Closed session")
 }
