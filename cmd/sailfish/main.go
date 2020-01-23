@@ -68,6 +68,16 @@ func main() {
 		panic(fmt.Sprintf("Could not read config file: %s", err))
 	}
 
+	// Local config for running from the build tree
+	if FileExists("local-redfish.yaml") {
+		fmt.Fprintf(os.Stderr, "Reading local-redfish.yaml config\n")
+		cfgMgr.SetConfigFile("local-redfish.yaml")
+		if err := cfgMgr.MergeInConfig(); err != nil {
+			fmt.Fprintf(os.Stderr, "Error reading local config file: %s\n", err)
+			panic(fmt.Sprintf("Error reading local config file: %s", err))
+		}
+	}
+
 	// Defaults
 	cfgMgr.SetDefault("listen", []string{"https::8443"})
 	cfgMgr.SetDefault("main.server_name", "mockup")
@@ -356,6 +366,14 @@ func iterInterfaceIPAddrs(logger log.Logger, fn func(net.IP)) {
 			fn(ip)
 		}
 	}
+}
+
+func FileExists(fn string) bool {
+	fd, err := os.Stat(fn)
+	if os.IsNotExist(err) {
+		return false
+	}
+	return !fd.IsDir()
 }
 
 func init() {

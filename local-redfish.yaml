@@ -1,0 +1,11 @@
+main:
+    aggregatesearchpath: [ "aggs/" ]
+
+listen:
+   - unix:sailfish.socket
+  # enable 8080 port only for testing, as per NCC audit it needs to be disabled on the build
+   - http::8080
+  #  enable pprof only for debuging, it causes increased memory consumption. If memprofilerate>0, it will use way more. It's set to 0 in the service file.
+   - pprof:localhost:9080
+  # disable direct https listener, uncomment if needed for testing:
+  # - https::8443
