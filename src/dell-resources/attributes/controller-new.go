@@ -44,6 +44,7 @@ func StartService(ctx context.Context, logger log.Logger, d BusObjs) (*Service, 
 	}
 
 	listener := eventwaiter.NewListener(ctx, logger, d.GetWaiter(), ret.selectCachedAttributes())
+	// never calling listener.Close() because we can't shut this down
 
 	go listener.ProcessEvents(ctx, func(event eh.Event) {
 		data, ok := event.Data().(*a.AttributeUpdatedData)

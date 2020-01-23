@@ -111,6 +111,7 @@ func StartService(ctx context.Context, logger log.Logger, d BusObjs) *Service {
 	listener := eventwaiter.NewListener(ctx, logger, d.GetWaiter(), func(ev eh.Event) bool {
 		return ev.EventType() == GenericActionEvent
 	})
+	// never calling listener.Close() because we can't shut this down
 
 	go listener.ProcessEvents(ctx, func(event eh.Event) {
 		eventData := &domain.HTTPCmdProcessedData{
@@ -131,7 +132,7 @@ func StartService(ctx context.Context, logger log.Logger, d BusObjs) *Service {
 				return
 			}
 			handler = reg.view.GetAction(reg.actionName)
-			logger.Crit("Action Running", "uri", data.ResourceURI,"handler",handler)
+			logger.Crit("Action Running", "uri", data.ResourceURI, "handler", handler)
 
 		}
 
