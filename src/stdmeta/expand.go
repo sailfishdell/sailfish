@@ -266,7 +266,7 @@ func FormatOdataList(ctx context.Context, v *view.View, m *model.Model, agg *dom
 	}
 
 	// called for missing property or wrong type
-	sadpath := func() error {
+	sadPath := func() error {
 		m.UnderLock(func() {
 			uris, ok := m.GetPropertyOkUnlocked(p)
 			if !ok {
@@ -309,26 +309,36 @@ func FormatOdataList(ctx context.Context, v *view.View, m *model.Model, agg *dom
 	// first, we try to use the scalable, fast Read Lock, then if we have to
 	// reformat, take the write lock and redo it
 
-	// check property exists
-	uris, ok := m.GetPropertyOk(p)
-	if !ok {
-		return sadpath()
-	}
+	doSadPath := false
+	// have to do all the operations under a lock since the GetProperty returns slice that is shared underlying data
+	m.UnderRLock(func() {
+		// check property exists
+		uris, ok := m.GetPropertyOkUnlocked(p)
+		if !ok {
+			doSadPath = true
+			return
+		}
 
-	// check if it's a []string
-	u, ok := uris.([]string)
-	if !ok {
-		return sadpath()
-	}
+		// check if it's a []string
+		u, ok := uris.([]string)
+		if !ok {
+			doSadPath = true
+			return
+		}
 
-	// check if it's sorted
-	if !sort.StringsAreSorted(u) {
-		return sadpath()
-	}
+		// check if it's sorted
+		if !sort.StringsAreSorted(u) {
+			doSadPath = true
+			return
+		}
 
-	rrp.Value = make([]interface{}, 0, len(u))
-	for _, i := range u {
-		rrp.Value = append(rrp.Value.([]interface{}), &domain.RedfishResourceProperty{Value: map[string]interface{}{"@odata.id": i}}) // preallocated
+		rrp.Value = make([]interface{}, 0, len(u))
+		for _, i := range u {
+			rrp.Value = append(rrp.Value.([]interface{}), &domain.RedfishResourceProperty{Value: map[string]interface{}{"@odata.id": i}}) // preallocated
+		}
+	})
+	if doSadPath {
+		sadPath()
 	}
 	return nil
 }
