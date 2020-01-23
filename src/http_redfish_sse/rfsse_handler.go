@@ -50,6 +50,7 @@ func (rh *RedfishSSEHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	})
 
 	l.Name = "RF SSE Listener"
+	defer l.Close()
 
 	//w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.Header().Set("OData-Version", "4.0")
