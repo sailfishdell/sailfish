@@ -1272,12 +1272,12 @@ internal:
 
     insert_metric_instance: |
       INSERT INTO MetricInstance
-             ( Name,  FQDD,  Property,  Context,  Function,            Label,  CollectionScratch, LastValue, LastTS,  FlushTime,  SuppressDups)
-      VALUES (:Name, :FQDD, :Property, :Context, :CollectionFunction, :Label, :CollectionScratch, '',        0,      :FlushTime, :SuppressDups)
+             ( Name,  FQDD,  Property,  Context,  Function,            Label,  CollectionScratch, LastValue, LastTS,  FlushTime,  SuppressDups, Dirty)
+      VALUES (:Name, :FQDD, :Property, :Context, :CollectionFunction, :Label, :CollectionScratch, '',        0,      :FlushTime, :SuppressDups, false)
 
     find_metric_instance: |
       select
-        MI.ID as InstanceID
+        MI.ID as InstanceID,
       from MetricInstance as MI
       where
         MI.Name=:Name and
@@ -1285,6 +1285,12 @@ internal:
         MI.Property=:Property and
         MI.Context=:Context and
         MI.Function=:CollectionFunction
+
+    set_metric_instance_dirty: |
+      UPDATE MetricInstance set Dirty=true
+
+    set_metric_instance_clean: |
+      UPDATE MetricInstance set Dirty=false where ID=:InstanceID
 
     iterate_metric_instance: |
       select distinct
@@ -1295,7 +1301,8 @@ internal:
         MI.FlushTime,
         MI.SuppressDups,
         MM.CollectionFunction,
-        MM.CollectionDuration
+        MM.CollectionDuration,
+        MI.Dirty
       from MetricInstance as MI
         inner join MetricMetaToInstance as MMTI on MI.ID = MMTI.InstanceID
         inner join MetricMeta as MM on MMTI.MetaID = MM.ID
@@ -1508,6 +1515,7 @@ createdb:
         FlushTime         INTEGER,          -- Time at which any aggregated data should be flushed
         LastTS            INTEGER NOT NULL, -- Used to quickly suppress dups for this instance
         LastValue         TEXT    NOT NULL, -- Used to quickly suppress dups for this instance
+        Dirty             BOOLEAN NOT NULL DEFAULT TRUE, -- set to dirty any time MRD changes, clean once a metric has been processed
 
         -- indexes and constraints
         unique (Name, FQDD, Property, Context, Function, SuppressDups)
