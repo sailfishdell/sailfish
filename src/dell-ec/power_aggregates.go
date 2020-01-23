@@ -81,11 +81,11 @@ func RegisterAggregate(s *testaggregate.Service) {
 					Properties: map[string]interface{}{
 						"Name":                     "System Power History",
 						"MemberId":                 "PowerHistogram",
-						"HistoryMaxWattsTime@meta": vw.Meta(view.GETProperty("max_watts_time"), view.GETModel("default")),
-						"HistoryMaxWatts@meta":     vw.Meta(view.GETProperty("max_watts"), view.GETModel("default")),
-						"HistoryMinWattsTime@meta": vw.Meta(view.GETProperty("min_watts_time"), view.GETModel("default")),
-						"HistoryMinWatts@meta":     vw.Meta(view.GETProperty("min_watts"), view.GETModel("default")),
-						"HistoryAverageWatts@meta": vw.Meta(view.GETProperty("average_watts"), view.GETModel("default")),
+						"HistoryMaxWattsTime": nil,
+						"HistoryMaxWatts":     0,
+						"HistoryMinWattsTime": nil,
+						"HistoryMinWatts":     0,
+						"HistoryAverageWatts": 0,
 					}},
 			}, nil
 		})
@@ -109,7 +109,7 @@ func RegisterAggregate(s *testaggregate.Service) {
 						"PowerConsumedWatts@meta": vw.Meta(view.PropGET("consumed_watts")),
 
 						"Oem": map[string]interface{}{
-							"EnergyConsumptionStartTime@meta": vw.Meta(view.PropGET("energy_consumption_start_time")),
+							"EnergyConsumptionStartTime@meta": 0,
 							"EnergyConsumptionkWh":            0,
 							"HeadroomWatts":                   0,
 							"MaxPeakWatts":                    0,

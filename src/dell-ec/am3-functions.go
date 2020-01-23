@@ -2,16 +2,18 @@ package dell_ec
 
 import (
 	"context"
-	"strings"
-
 	eh "github.com/looplab/eventhorizon"
 	"github.com/superchalupa/sailfish/src/dell-resources/dm_event"
 	"github.com/superchalupa/sailfish/src/ocp/telemetryservice"
+	"reflect"
+	"strings"
+	"time"
 
 	"github.com/superchalupa/sailfish/godefs"
 	"github.com/superchalupa/sailfish/src/dell-resources/attributedef"
 	"github.com/superchalupa/sailfish/src/log"
 	"github.com/superchalupa/sailfish/src/ocp/am3"
+	"github.com/superchalupa/sailfish/src/ocp/eventservice"
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
 )
 
@@ -92,6 +94,133 @@ func addAM3Functions(logger log.Logger, am3Svc *am3.Service, d *domain.DomainObj
 				}})
 	})
 
+	am3Svc.AddEventHandler("MMHealthAlertFn", dm_event.HealthEvent, func(event eh.Event) {
+		data, ok := event.Data().(*dm_event.HealthEventData)
+		if !ok {
+			logger.Error("Health  event did not have health event data", "type", event.EventType, "data", event.Data())
+			return
+		}
+		FQDD := data.FQDD
+
+		if FQDD != "Root" {
+			return
+		}
+
+		Health := data.Health
+		SubSystem := "MM"
+
+		t := time.Now()
+		cTime := t.Format("2006-01-02T15:04:05-07:00")
+		ma := []string{Health}
+
+		//Create Alert type event:
+		d.EventBus.PublishEvent(context.Background(),
+			eh.NewEvent(eventservice.RedfishEvent, &eventservice.RedfishEventData{
+				EventType:         "Alert",
+				EventId:           "1",
+				EventTimestamp:    cTime,
+				Severity:          "Informational",
+				Message:           "The chassis health is " + Health,
+				MessageId:         "CMC8550",
+				MessageArgs:       ma,
+				OriginOfCondition: SubSystem,
+			}, time.Now()))
+
+	})
+
+	am3Svc.AddEventHandler("AvgPowerConsumptionFn", dm_event.AvgPowerConsumptionStatDataObjEvent, func(event eh.Event) {
+		data, ok := event.Data().(*dm_event.AvgPowerConsumptionStatDataObjEventData)
+		if !ok {
+			logger.Error("Avg Power consumption data event did not have power consumption data", "type", event.EventType, "data", event.Data())
+			return
+		}
+
+		trendList := []string{"Hour", "Day", "Week"}
+		FQDD := data.ObjectHeader.FQDD
+		FQDDParts := strings.SplitN(FQDD, "#", 2)
+		if len(FQDDParts) < 2 {
+			logger.Error("Got an avg powerconsumption data object with an FQDD that had no hash. Shouldnt happen", "FQDD", FQDD)
+			return
+		}
+
+		for _, trend := range trendList {
+			URI := "/redfish/v1/Chassis/" + FQDDParts[0] + "/Power/PowerTrends-1/Last" + trend
+			uuid, ok := d.GetAggregateIDOK(URI)
+			if !ok {
+				logger.Error("aggregate does not exist at URI to update", "URI", URI)
+				continue
+			}
+			d.CommandHandler.HandleCommand(context.Background(),
+				&domain.UpdateRedfishResourceProperties2{
+					ID: uuid,
+					Properties: map[string]interface{}{
+						"HistoryMaxWattsTime": interface_to_date(traverse_struct(data, "MaxPwrLast"+trend+"Time")),
+						"HistoryMinWattsTime": interface_to_date(traverse_struct(data, "MinPwrLast"+trend+"Time")),
+						"HistoryMinWatts":     traverse_struct(data, "MinPwrLast"+trend),
+						"HistoryMaxWatts":     traverse_struct(data, "MaxPwrLast"+trend),
+						"HistoryAverageWatts": traverse_struct(data, "AvgPwrLast"+trend),
+					},
+				})
+		}
+	})
+
+	am3Svc.AddEventHandler("PowerConsumptionFn", dm_event.PowerConsumptionDataObjEvent, func(event eh.Event) {
+		data, ok := event.Data().(*dm_event.PowerConsumptionDataObjEventData)
+		if !ok {
+			logger.Error("Powerconsumptiondata event did not have power consumption data", "type", event.EventType, "data", event.Data())
+			return
+		}
+
+		FQDD := data.ObjectHeader.FQDD
+		FQDDParts := strings.SplitN(FQDD, "#", 2)
+		if len(FQDDParts) < 2 {
+			logger.Error("Got a powerconsumption data object with an FQDD that had no hash. Shouldnt happen", "FQDD", FQDD)
+			return
+		}
+
+		URI := "/redfish/v1/Chassis/" + FQDDParts[0] + "/Power/PowerControl"
+		uuid, ok := d.GetAggregateIDOK(URI)
+		if !ok {
+			logger.Error("aggregate does not exist at URI to update", "URI", URI)
+			return
+		}
+		d.CommandHandler.HandleCommand(context.Background(),
+			&domain.UpdateRedfishResourceProperties2{
+				ID: uuid,
+				Properties: map[string]interface{}{
+					"Oem/EnergyConsumptionStartTime": epoch2Date(data.CwStartTime),
+					"Oem/EnergyConsumptionkWh":       int(data.CumulativeWatts / 1000),
+					"Oem/MaxPeakWatts":               data.PeakWatts,
+					"Oem/MaxPeakWattsTime":           epoch2Date(data.PwReadingTime),
+					"Oem/MinPeakWatts":               data.MinWatts,
+					"Oem/MinPeakWattsTime":           epoch2Date(data.MinwReadingTime),
+					"Oem/PeakHeadroomWatts":          data.PeakHeadRoom,
+					"Oem/HeadroomWatts":              data.InstHeadRoom,
+					"PowerConsumedWatts":             data.InstWattsPSU1_2,
+					"PowerAvailableWatts":            data.PeakHeadRoom,
+				},
+			})
+	})
+
+	am3Svc.AddEventHandler("ComponentRemovedFn", dm_event.ComponentRemoved, func(event eh.Event) {
+		data, ok := event.Data().(*dm_event.ComponentRemovedData)
+		if !ok {
+			logger.Error("Component Removed event did not have remove event data", "type", event.EventType, "data", event.Data())
+			return
+		}
+		URI := "/redfish/v1/Chassis/System.Chassis.1/SubSystemHealth"
+		uuid, ok := d.GetAggregateIDOK(URI)
+		if !ok {
+			logger.Error("aggregate does not exist at URI to update", "URI", URI)
+			return
+		}
+		subsys := data.Name
+		d.CommandHandler.HandleCommand(context.Background(),
+			&domain.RemoveRedfishResourceProperty{
+				ID:       uuid,
+				Property: subsys})
+	})
+
 	am3Svc.AddEventHandler("InstPowerFn", dm_event.InstPowerEvent, func(event eh.Event) {
 		data, ok := event.Data().(*dm_event.InstPowerEventData)
 		if !ok {
@@ -122,6 +251,50 @@ func addAM3Functions(logger log.Logger, am3Svc *am3.Service, d *domain.DomainObj
 					"Oem/Dell/InstPowerConsumption": pwr,
 				},
 			})
+	})
+
+	am3Svc.AddEventHandler("FileReadEventFn", dm_event.FileReadEvent, func(event eh.Event) {
+		data, ok := event.Data().(*dm_event.FileReadEventData)
+		if !ok {
+			logger.Error("File Read Event Data did not have event data", "type", event.EventType, "data", event.Data())
+			return
+		}
+		key := ""
+		FQDD := data.FQDD
+		URI := "/redfish/v1/Managers/" + FQDD + "/CertificateService"
+		switch {
+		case !strings.Contains(data.FQDD, "CMC.Integrated"):
+			return
+		case strings.Contains(data.URI, "FactoryIdentity"):
+			// Certificate is read directly.
+			return
+		case data.URI == "CertificateInventory":
+			key = "CertificateSigningRequest"
+		default:
+			logger.Debug("FileReadEvent data does not meet filter criteria", "URI", data.URI)
+			return
+		}
+		uuid, ok := d.GetAggregateIDOK(URI)
+		if !ok {
+			logger.Error("aggregate does not exist at URI to update", "URI", URI)
+			return
+		}
+
+		var val interface{} = data.Content
+		val, ok = empty_to_null(val)
+		if !ok {
+			logger.Error("Converting to NULL failed", "URI", URI)
+			return
+		}
+
+		d.CommandHandler.HandleCommand(context.Background(),
+			&domain.UpdateRedfishResourceProperties2{
+				ID: uuid,
+				Properties: map[string]interface{}{
+					key: val,
+				},
+			})
+
 	})
 
 	am3Svc.AddEventHandler("healthEventHandler", dm_event.HealthEvent, func(event eh.Event) {
@@ -234,4 +407,26 @@ func empty_to_null(value interface{}) (interface{}, bool) {
 		return nil, true
 	}
 	return value, true
+}
+
+func epoch2Date(date int64) string {
+	return time.Unix(date, 0).String()
+}
+
+func traverse_struct(s interface{}, n string) interface{} {
+	r := reflect.ValueOf(s)
+	s = reflect.Indirect(r).FieldByName(n).Interface()
+
+	// have to return float64 for all numeric types
+	switch t := s.(type) {
+	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, uintptr:
+		return float64(reflect.ValueOf(t).Int())
+	case float32, float64:
+		return float64(reflect.ValueOf(t).Float())
+	default:
+		return s
+	}
+}
+func interface_to_date(arg interface{}) interface{} {
+	return time.Unix(int64(arg.(float64)), 0).Format(time.RFC3339)
 }

@@ -482,8 +482,6 @@ views:
       "Models":
         "default":  {}
       "Controllers":
-        - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "certificate", "uniquename": "'certificate_' + ParentFQDD", "passthru": {'FQDD': 'ParentFQDD'} }
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/Managers/' + ParentFQDD + '/CertificateService/CertificateInventory/' + FQDD"
@@ -682,8 +680,6 @@ views:
           "params": {"modelname": "default", "cfgsection": "chassis", "uniquename": "'system_chassis:' + FQDD", "passthru": {"FQDD" : "FQDD"} }
         - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "health", "uniquename": "'am2_health_' + FQDD", "passthru": {"health_fqdd": "'Root'"} }
-        - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "health_alert", "uniquename": "'am2_healtha_' + FQDD", "passthru": {"health_fqdd": "'Root'", "ss": "'MM'" }}
       "View":
         - "fn": "withModel"
           "params": {"name": "global_health", "expr": "globalHealthModel"}
@@ -774,7 +770,7 @@ views:
         - "fn": "ARMapper"
           "params": {"modelname": "default", "cfgsection": "Chassis/System.Chassis/Power", "mappinguniquename": "'chassis_power_ctrl_mapper:' + FQDD", "AddToView": "ar_mapper"}
         - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "power_control", "uniquename": "'am2_chassis_power_control_' + FQDD" }
+          "params": {"modelname": "default", "cfgsection": "power_control", "uniquename": "'am2_chassis_power_control_' + FQDD" } 
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/Chassis/' + FQDD + '/Power/PowerControl'"
@@ -805,8 +801,6 @@ views:
       "Models":
         "default":  {}
       "Controllers":
-        - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "power_trend", "uniquename": "'am2_power_hist_chassis_' + trend", "passthru": {"trend":"trend"} }
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/Chassis/' + FQDD + '/Power/PowerTrends-1/Last'+trend"
@@ -1267,11 +1261,6 @@ awesome_mapper:
           SelectFN: "true",
           Exec: [ "clearuris(collection_uri)" ]}
 
-    generate_health_status:
-      - { SelectEventType: "ComponentRemoved",
-          SelectFN: "true",
-          ModelUpdate: [ {Property: "health", Query: "remove_health(data,view.GetUUID())"} ]}
-
     task_service:
       - { SelectEventType: "RedfishResource:created",
           Select: "data.ResourceURI == rooturi + '/Chassis/System.Chassis.1/Attributes'",
@@ -1281,16 +1270,6 @@ awesome_mapper:
       - { SelectEventType: "RedfishResource:created",
           Select: "has_swinv_model(data.ResourceURI)",
           Exec: ["add_swinv(data.ResourceURI)"] }
-
-    certificate:
-      - { SelectEventType: "FileReadEvent",
-          Select: "data.URI == 'CertificateInventory' && data.FQDD == FQDD",
-          Process: { "name": "am3FileReadEvent", "params":{"Conv":"empty_to_null", "Field":"CertificateSigningRequest"}}}
-      # certificate data is read on demand, not sure of AM3 integration
-      - { SelectEventType: "FileReadEvent",
-          Select: "data.URI == 'FactoryIdentity' && data.FQDD == FQDD",
-          ModelUpdate: [ { Property: "certificate", Query: "empty_to_null(data.Content)" } ] }
-
 
     slot:
       - { SelectEventType: "AttributeUpdated",
@@ -1329,9 +1308,6 @@ awesome_mapper:
 
 
     power_control:
-      - { SelectEventType: "PowerConsumptionDataObjEvent", SelectFN: "true",
-             Process: { "name": "updatePwrConsumptionData", "params":[]}}
-
       # every chassis object is a power related item. add and remove them as they come
       - { SelectEventType: "RedfishResource:created",
           SelectFN: "uriCheckNoHash",
@@ -1353,20 +1329,11 @@ awesome_mapper:
       - { SelectEventType: "PowerSupplyObjEvent", Select: "data.ObjectHeader.FQDD == DM_FQDD",
              Process: { "name": "updatePwrSupplyData", "params":[]}}
 
-    power_trend:
-      - { SelectEventType: "AvgPowerConsumptionStatDataObjEvent", SelectFN: "true",
-            ModelUpdate: [
-                {Property: "average_watts",  Query: "traverse_struct(data, 'AvgPwrLast' + trend)" }, #does not work, trend is not a list?
-                {Property: "max_watts",      Query: "traverse_struct(data, 'MaxPwrLast' + trend)" },
-                {Property: "min_watts",      Query: "traverse_struct(data, 'MinPwrLast' + trend)" },
-                {Property: "max_watts_time", Query: "epoch_to_date(traverse_struct(data, 'MaxPwrLast' + trend + 'Time'))" },
-                {Property: "min_watts_time", Query: "epoch_to_date(traverse_struct(data, 'MinPwrLast' + trend + 'Time'))" }]}
-
     health:
         #TODO: remoove this once global health model is gone
 
-    health_alert:
-      - { SelectEventType: "HealthEvent", Select: "data.FQDD == health_fqdd", Exec: ["health_alert(ss, data.Health)"]}
+    #health_alert:
+    #  - { SelectEventType: "HealthEvent", Select: "data.FQDD == health_fqdd", Exec: ["health_alert(ss, data.Health)"]}
 
     global_health:
         #TODO: remoove this once global health model is gone

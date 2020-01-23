@@ -181,36 +181,6 @@ func init() {
 		}, nil, nil
 	})
 
-	AddAM3ProcessSetupFunction("updatePwrConsumptionData", func(logger log.Logger, processConfig interface{}) (processFunc, processSetupFunc, error) {
-		// Model Update Function
-		aggUpdateFn := func(mp *MapperParameters, event eh.Event, ch eh.CommandHandler, d BusObjs) error {
-			data, ok := event.Data().(*dm_event.PowerConsumptionDataObjEventData)
-			if !ok {
-				logger.Error("updatePwrConsumptionData not have PowerConsumptionDataObjEvent event", "type", event.EventType, "data", event.Data())
-				return errors.New("updatePwrConsumptionData did not receive PowerConsumptionDataObjEventData")
-			}
-			ch.HandleCommand(mp.ctx,
-				&domain.UpdateRedfishResourceProperties2{
-					ID: mp.uuid,
-					Properties: map[string]interface{}{
-						"Oem/EnergyConsumptionStartTime": epoch2Date(data.CwStartTime),
-						"Oem/EnergyConsumptionkWh":       int(data.CumulativeWatts / 1000),
-						"Oem/MaxPeakWatts":               data.PeakWatts,
-						"Oem/MaxPeakWattsTime":           epoch2Date(data.PwReadingTime),
-						"Oem/MinPeakWatts":               data.MinWatts,
-						"Oem/MinPeakWattsTime":           epoch2Date(data.MinwReadingTime),
-						"Oem/PeakHeadroomWatts":          data.PeakHeadRoom,
-						"PowerConsumedWatts":             data.InstWattsPSU1_2,
-						"PowerAvailableWatts":            data.PeakHeadRoom,
-					},
-				})
-
-			return nil
-		}
-
-		return aggUpdateFn, nil, nil
-	})
-
 	AddAM3ProcessSetupFunction("updatePwrSupplyData", func(logger log.Logger, processConfig interface{}) (processFunc, processSetupFunc, error) {
 		// Model Update Function
 		aggUpdateFn := func(mp *MapperParameters, event eh.Event, ch eh.CommandHandler, d BusObjs) error {
@@ -336,39 +306,6 @@ func init() {
 			// the conversion funcation is optional
 			if helpFunc, ok := param[CONV_FUNC_KEY].(string); ok {
 				val, ok = setupConvFuncs[helpFunc](logger)(data.Value)
-				if !ok {
-					logger.Error("data", "value", val, "parsed", ok)
-				}
-			}
-
-			ch.HandleCommand(mp.ctx,
-				&domain.UpdateRedfishResourceProperties2{
-					ID: mp.uuid,
-					Properties: map[string]interface{}{
-						key: val,
-					},
-				})
-
-			return nil
-		}
-
-		return aggUpdateFn, nil, nil
-	})
-
-	AddAM3ProcessSetupFunction("am3FileReadEvent", func(logger log.Logger, processConfig interface{}) (processFunc, processSetupFunc, error) {
-		aggUpdateFn := func(mp *MapperParameters, event eh.Event, ch eh.CommandHandler, d BusObjs) error {
-			data, ok := event.Data().(*dm_event.FileReadEventData)
-			if !ok {
-				logger.Error("Did not have FileReadEvent event", "type", event.EventType, "data", event.Data())
-				return errors.New("did not receive FileReadEvent")
-			}
-
-			param := processConfig.(map[interface{}]interface{})
-			key := param[CONV_VALUE_KEY].(string)
-			var val interface{} = data.Content
-
-			if helpFunc, ok := param[CONV_FUNC_KEY].(string); ok {
-				val, ok = setupConvFuncs[helpFunc](logger)(val)
 				if !ok {
 					logger.Error("data", "value", val, "parsed", ok)
 				}
