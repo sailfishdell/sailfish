@@ -265,46 +265,70 @@ func FormatOdataList(ctx context.Context, v *view.View, m *model.Model, agg *dom
 		panic(fmt.Sprintf("Programming error: malformed aggregate. No property specified for agg: %s", agg))
 	}
 
-	// have to use m.UnderLock() to do all of this so we dont race with people adding to the underlying slice
-	m.UnderLock(func() {
-		uris, ok := m.GetPropertyOkUnlocked(p)
-		if !ok {
-			uris = []string{}
-		}
-
-		arrLen := 0
-		var odata []interface{}
-
-		// check if it's already a []string, if not, make it so and re-set property
-		// sad case, should be rare!
-		switch u := uris.(type) {
-		case []string:
-			arrLen = len(u)
-			sort.Strings(u)
-			odata = make([]interface{}, 0, arrLen)
-			for _, i := range u {
-				odata = append(odata, &domain.RedfishResourceProperty{Value: map[string]interface{}{"@odata.id": i}}) // preallocated
+	// called for missing property or wrong type
+	sadpath := func() error {
+		m.UnderLock(func() {
+			uris, ok := m.GetPropertyOkUnlocked(p)
+			if !ok {
+				uris = []string{}
 			}
-		case []interface{}:
-			arrLen = len(u)
-			uriArr := make([]string, 0, arrLen)
-			odata = make([]interface{}, 0, arrLen)
-			for _, i := range u {
-				if s, ok := i.(string); ok {
-					uriArr = append(uriArr, s) //preallocated
+
+			switch u := uris.(type) {
+			case []string:
+				// we get here if the array isn't sorted. need to sort
+				sort.Strings(u)
+
+			case []interface{}:
+				// we get here if source is []interface{}, need to convert type to []string
+				uriArr := make([]string, 0, len(u))
+				for _, i := range u {
+					if s, ok := i.(string); ok {
+						uriArr = append(uriArr, s) //preallocated
+					}
 				}
+				sort.Strings(uriArr)
+				uris = uriArr
+			default:
+				// we get here if things are really wrong, just reset everything to an empty array
+				uris = []string{}
 			}
-			sort.Strings(uriArr)
-			uris = uriArr
+
 			m.UpdatePropertyUnlocked(p, uris)
-			for _, i := range uriArr {
+			u := uris.([]string) // guaranteeed to be []string here
+			odata := make([]interface{}, 0, len(u))
+			for _, i := range u {
 				odata = append(odata, &domain.RedfishResourceProperty{Value: map[string]interface{}{"@odata.id": i}}) // preallocated
 			}
-		default:
-		}
+			rrp.Value = odata
+		})
+		return nil
+	}
 
-		rrp.Value = odata
-	})
+	// we may have an []interface{} or an []string, if the former, we have to "fix" it by converting from []interface{} to []string
+	// we cant fix under read lock, need to take write lock. So, try happy path
+	// first, we try to use the scalable, fast Read Lock, then if we have to
+	// reformat, take the write lock and redo it
 
+	// check property exists
+	uris, ok := m.GetPropertyOk(p)
+	if !ok {
+		return sadpath()
+	}
+
+	// check if it's a []string
+	u, ok := uris.([]string)
+	if !ok {
+		return sadpath()
+	}
+
+	// check if it's sorted
+	if !sort.StringsAreSorted(u) {
+		return sadpath()
+	}
+
+	rrp.Value = make([]interface{}, 0, len(u))
+	for _, i := range u {
+		rrp.Value = append(rrp.Value.([]interface{}), &domain.RedfishResourceProperty{Value: map[string]interface{}{"@odata.id": i}}) // preallocated
+	}
 	return nil
 }
