@@ -54,15 +54,15 @@ type NuEncOpts struct {
 	Parse        interface{}
 	Request      interface{}
 	present      bool
-	process      nuProcessFn
 	HttpResponse map[string]interface{}
+	process      nuProcessFn
 	path         string
 	sel          []string
 }
-
 type PropGetter interface {
 	PropertyGet(context.Context, *RedfishResourceAggregate, *RedfishAuthorizationProperty, *RedfishResourceProperty, map[string]interface{}) error
 }
+
 
 func nuGETfn(ctx context.Context, agg *RedfishResourceAggregate, rrp *RedfishResourceProperty, auth *RedfishAuthorizationProperty, opts NuEncOpts) error {
 	meta_t, ok := rrp.Meta["GET"].(map[string]interface{})
