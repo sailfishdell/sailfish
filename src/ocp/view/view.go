@@ -127,6 +127,10 @@ func (s *View) GetURI() string {
 func (s *View) GetModel(name string) *model.Model {
 	s.RLock()
 	defer s.RUnlock()
+	return s.GetModelUnlocked(name)
+}
+
+func (s *View) GetModelUnlocked(name string) *model.Model {
 	return s.models[name]
 }
 

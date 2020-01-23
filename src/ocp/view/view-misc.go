@@ -33,7 +33,8 @@ func (s *View) PropertyGet(
 		modelName = "default"
 	}
 
-	modelObj := s.GetModel(modelName)
+	// already have lock, used *Unlocked api
+	modelObj := s.GetModelUnlocked(modelName)
 	if modelObj == nil {
 		log.MustLogger("GET").Debug("metadata specifies a nonexistent model name", "meta", meta, "view", s)
 		return errors.New("metadata specifies a nonexistent model name")
