@@ -966,12 +966,13 @@ func (factory *MRDFactory) doInsertMetricValue(tx *sqlx.Tx, ev *metric.MetricVal
 
 func (factory *MRDFactory) runSQLFromList(sqllist []string, entrylog string, errorlog string) (err error) {
 	factory.logger.Info(entrylog)
-	return factory.WrapWithTX(func(tx *sqlx.Tx) error {
-		fmt.Printf("Run %s\n", entrylog)
-		for _, sql := range sqllist {
+	fmt.Printf("Run %s\n", entrylog)
+	for _, sql := range sqllist {
+		factory.WrapWithTX(func(tx *sqlx.Tx) error {
 			fmt.Printf("\tsql(%s)", sql)
 			res, err := factory.getSqlxTx(tx, sql).Exec()
 			if err != nil {
+				fmt.Printf("ERROR: %s\n", err)
 				return xerrors.Errorf(errorlog, sql, err)
 			}
 			rows, err := res.RowsAffected()
@@ -980,9 +981,10 @@ func (factory *MRDFactory) runSQLFromList(sqllist []string, entrylog string, err
 			} else {
 				fmt.Printf("->%d rows, err(<nil>)\n", rows)
 			}
-		}
-		return nil
-	})
+			return nil
+		})
+	}
+	return nil
 }
 
 func (factory *MRDFactory) DeleteOrphans() (err error) {
@@ -994,7 +996,22 @@ func (factory *MRDFactory) DeleteOldestValues() (err error) {
 }
 
 func (factory *MRDFactory) Vacuum() error {
-	return factory.runSQLFromList(factory.vacuumops, "Database Maintenance: Vacuum", "Vacuum failed-> '%s': %w")
+	// cant vacuum inside a transaction
+	factory.logger.Info("Database Maintenance: Vacuum")
+	for _, sql := range factory.vacuumops {
+		res, err := factory.getSqlx(sql).Exec()
+		if err != nil {
+			fmt.Printf("Vacuum failed-> '%s': %s", sql, err)
+			return xerrors.Errorf("Vacuum failed-> '%s': %w", sql, err)
+		}
+		rows, err := res.RowsAffected()
+		if err != nil {
+			fmt.Printf("%s->%d rows, err(%s)\n", sql, rows, err)
+		} else {
+			fmt.Printf("%s->%d rows, no errors\n", sql, rows)
+		}
+	}
+	return nil
 }
 
 func (factory *MRDFactory) Optimize() error {
