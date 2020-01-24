@@ -678,15 +678,22 @@ func (factory *MRDFactory) GenerateMetricReport(tx *sqlx.Tx, name string) (err e
 func (factory *MRDFactory) CheckOnChangeReports(tx *sqlx.Tx, instancesUpdated map[int64]struct{}) error {
 	err := factory.WrapWithTXOrPassIn(tx, func(tx *sqlx.Tx) error {
 		for mmInstanceID := range instancesUpdated {
-			instanceChangeList := []string{}
-			err := factory.getSqlxTx(tx, "find_onchange_mrd_by_mm_instance").Select(&instanceChangeList, mmInstanceID)
+			rows, err := factory.getSqlxTx(tx, "find_onchange_mrd_by_mm_instance").Queryx(mmInstanceID)
 			if err != nil {
 				return xerrors.Errorf("Error getting changed reports by instance: %w", err)
 			}
-			for _, name := range instanceChangeList {
+			for rows.Next() {
+				var name string
+				err = rows.Scan(&name)
+				if err != nil {
+					fmt.Printf("ERROR: %s\n", err)
+					continue
+				}
+
 				if _, ok := factory.NextMRTS[name]; ok {
 					continue
 				}
+
 				// ensure we generate report at most every 5 seconds by scheduling generation for 5s from previous report
 				factory.NextMRTS[name] = factory.LastMRTS[name].Add(5 * time.Second)
 			}
