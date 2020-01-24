@@ -66,14 +66,14 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc EventHandlingServic
 		-- should be set in connection string, but just in case:
 		PRAGMA busy_timeout = 1000;
 	  -- don't ever run sync() or friends
-		PRAGMA synchronous = off;
-		PRAGMA       journal_mode  = off;
-		PRAGMA udbdm.journal_mode  = off;
-		PRAGMA udbsm.journal_mode  = off;
+		-- PRAGMA synchronous = off;
+		-- PRAGMA       journal_mode  = off;
+		-- PRAGMA udbdm.journal_mode  = off;
+		-- PRAGMA udbsm.journal_mode  = off;
 	  -- these seem to increase memory usage, so disable until we get good values for these
 		-- PRAGMA cache_size = 0;
 		-- PRAGMA udbdm.cache_size = 0;
-		-- PRAGMA PRAGMA udbsm.cache_size = 0;
+		-- PRAGMA udbsm.cache_size = 0;
 		-- PRAGMA mmap_size = 0;
 		`)
 	if err != nil {
