@@ -957,10 +957,18 @@ func (factory *MRDFactory) doInsertMetricValue(tx *sqlx.Tx, ev *metric.MetricVal
 func (factory *MRDFactory) runSQLFromList(sqllist []string, entrylog string, errorlog string) (err error) {
 	factory.logger.Info(entrylog)
 	return factory.WrapWithTX(func(tx *sqlx.Tx) error {
+		fmt.Printf("Run %s\n", entrylog)
 		for _, sql := range sqllist {
-			_, err = factory.getSqlxTx(tx, sql).Exec()
+			fmt.Printf("\tsql(%s)", sql)
+			res, err := factory.getSqlxTx(tx, sql).Exec()
 			if err != nil {
 				return xerrors.Errorf(errorlog, sql, err)
+			}
+			rows, err := res.RowsAffected()
+			if err != nil {
+				fmt.Printf("->%d rows, err(%s)\n", rows, err)
+			} else {
+				fmt.Printf("->%d rows, err(<nil>)\n", rows)
 			}
 		}
 		return nil
