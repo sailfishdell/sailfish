@@ -459,17 +459,18 @@ func (factory *MRDFactory) IterMRD(checkFn func(tx *sqlx.Tx, MRD *MetricReportDe
 			return xerrors.Errorf("Query error for MRD: %w", err)
 		}
 
+		MRD := MetricReportDefinition{
+			MetricReportDefinitionData: &MetricReportDefinitionData{},
+		}
+
 		// iterate over everything the query returns
 		for rows.Next() {
-			MRD := &MetricReportDefinition{
-				MetricReportDefinitionData: &MetricReportDefinitionData{},
-			}
-			err = rows.StructScan(MRD)
+			err = rows.StructScan(&MRD)
 			if err != nil {
 				return xerrors.Errorf("scan error: %w", err)
 			}
-			if checkFn(tx, MRD) {
-				err = fn(tx, MRD)
+			if checkFn(tx, &MRD) {
+				err = fn(tx, &MRD)
 				if xerrors.Is(err, StopIter) {
 					break
 				}
@@ -846,19 +847,21 @@ func (factory *MRDFactory) doInsertMetricValue(tx *sqlx.Tx, ev *metric.MetricVal
 	err = factory.WrapWithTXOrPassIn(tx, func(tx *sqlx.Tx) error {
 
 		// And now, foreach MetricInstance, insert MetricValue
-		mm := &MetricMeta{MetricValueEventData: ev, RawMetricMeta: &RawMetricMeta{}, RawMetricInstance: &RawMetricInstance{}}
-		rows, err := factory.getNamedSqlxTx(tx, "iterate_metric_instance").Queryx(mm)
+		rows, err := factory.getNamedSqlxTx(tx, "iterate_metric_instance").Queryx(ev)
 		if err != nil {
-			return xerrors.Errorf("Error querying MetricInstance(%s): %w", mm, err)
+			return xerrors.Errorf("Error querying MetricInstance(%s): %w", ev, err)
 		}
+
+		rmm := RawMetricMeta{}
+		rmi := RawMetricInstance{}
+		mm := MetricMeta{MetricValueEventData: ev, RawMetricMeta: &rmm, RawMetricInstance: &rmi}
 
 		for rows.Next() {
 			saveValue := true
 			saveInstance := false
 			foundInstance = true
 
-			mm := &MetricMeta{MetricValueEventData: ev, RawMetricMeta: &RawMetricMeta{}, RawMetricInstance: &RawMetricInstance{}}
-			err = rows.StructScan(mm)
+			err = rows.StructScan(&mm)
 			if err != nil {
 				factory.logger.Crit("Error scanning struct result for MetricInstance query", "err", err)
 				continue
