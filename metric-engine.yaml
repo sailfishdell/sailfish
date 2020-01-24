@@ -19,10 +19,10 @@ sql_lists:
       - "delete_mvi"
       - "delete_mvr"
       - "delete_mvt"
-      - "vacuum"
       - "shrink"
     orphanops: ["delete_orphan_metricinstance", "delete_orphan_metricmeta"]
     optimizeops: ["optimize", "shrink"]
+    # can't vacuum inside a transaction, so dont bother putting vacuum in any of the above statements
     vacuumops: ["vacuum", "shrink"]
 
 # metric engine has no HTTP/HTTPS or PPROF listeners by default. Copy from the local-metric-engine.yaml if this is needed in production

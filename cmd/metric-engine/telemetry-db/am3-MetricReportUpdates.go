@@ -175,7 +175,7 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Service, d Bus
 					continue
 				}
 
-				delta := MRDFactory.MetricTSHWM.Time.Sub(metricValue.Timestamp.Time)
+				delta := MRDFactory.MetricTSHWM.Sub(metricValue.Timestamp.Time)
 
 				if (!MRDFactory.MetricTSHWM.IsZero()) && (delta > (1*time.Hour) || delta < -(1*time.Hour)) {
 					// if you see this warning consistently, check the import to ensure it's using UTC and not localtime
@@ -183,7 +183,7 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Service, d Bus
 				}
 
 				if MRDFactory.MetricTSHWM.Before(metricValue.Timestamp.Time) {
-					MRDFactory.MetricTSHWM = metricValue.Timestamp
+					MRDFactory.MetricTSHWM = metricValue.Timestamp.Time
 				}
 			}
 			return nil
@@ -239,9 +239,9 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Service, d Bus
 			// if no events come in during time between clock publishes, we'll artificially bump HWM forward.
 			// if time is uninitialized, wait for an event to come in to set it
 			if MRDFactory.MetricTSHWM.Equal(lastHWM) {
-				MRDFactory.MetricTSHWM = metric.SqlTimeInt{Time: MRDFactory.MetricTSHWM.Add(clockPeriod)}
+				MRDFactory.MetricTSHWM = MRDFactory.MetricTSHWM.Add(clockPeriod)
 			}
-			lastHWM = MRDFactory.MetricTSHWM.Time
+			lastHWM = MRDFactory.MetricTSHWM
 
 			// Generate any metric reports that need it
 			reportList, _ := MRDFactory.FastCheckForNeededMRUpdates()
