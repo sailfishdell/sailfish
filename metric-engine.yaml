@@ -1410,15 +1410,14 @@ internal:
     vacuum: vacuum
 
 createdb:
-  # This bumps memory usage by 10MB for some unknown reason
-  #  - "PRAGMA cache_size=4096;"
-  # Need to try this one out:
-  #  - "PRAGMA cache_size=0;"
   - "PRAGMA busy_timeout = 1000;"
-  - "PRAGMA journal_size_limit=4096;"
+  - "PRAGMA journal_size_limit=512;"
   - "PRAGMA foreign_keys = ON;"
   - "PRAGMA journal_mode = WAL;"
   - "PRAGMA synchronous = OFF;"
+    # Need to test these for impacts to RAM and CPU usage:
+  #  - "PRAGMA cache_size=4096;"
+  #  - "PRAGMA cache_size=0;"
   - |
       CREATE TABLE IF NOT EXISTS MetricReportDefinition
       (
