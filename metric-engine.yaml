@@ -6,7 +6,20 @@ main:
 
 sql_lists:
     # list of prepared internal.sqlx statements to run to clean up old metric values
-    deleteops: ["delete_mvi", "delete_mvr", "delete_mvt", "delete_old_mr", "delete_old_mv"]
+    deleteops:
+      # first delete any old reports
+      # ensure that each report has at most 3 copies
+      - "delete_old_mr"
+      # then, delete the oldest metrics that are not in any reports
+      - "delete_old_mvi"
+      - "delete_old_mvr"
+      - "delete_old_mvt"
+      # then find metric #100,000 (sorted by age), and delete everything older than that
+      - "delete_mvi"
+      - "delete_mvr"
+      - "delete_mvt"
+      - "vacuum"
+      - "shrink"
     orphanops: ["delete_orphan_metricinstance", "delete_orphan_metricmeta"]
     optimizeops: ["optimize", "shrink"]
     vacuumops: ["vacuum", "shrink"]
@@ -392,19 +405,6 @@ Startup-Events:
     data: |
       {
         "Name": "Thermal",
-        "Enabled": false,
-        "Type": "Periodic",
-        "Period": 61,
-        "Updates": "NewReport",
-        "SuppressDups": true,
-        "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": []
-       }
-
-  - name: UpdateMetricReportDefinition
-    data: |
-      {
-        "Name": "Thermal",
         "Enabled": true,
         "Type": "Periodic",
         "Period": 60,
@@ -416,21 +416,6 @@ Startup-Events:
           {"MetricID": "RPMReading"}
          ]
        }
-
-  - name: AddMetricReportDefinition
-    data: |
-      {
-        "Name": "SMARTData",
-        "Enabled": false,
-        "Type": "Periodic",
-        "Period": 3600,
-        "Updates": "NewReport",
-        "SuppressDups": false,
-        "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [
-          { "FQDDPattern": "SMARTData:%" }
-        ]
-      }
 
   - name: DatabaseMaintenance
     data: "resync to db"
@@ -1359,7 +1344,7 @@ internal:
         WHERE Seq+2<MS
       )
 
-    delete_old_mv: |
+    delete_old_mvi: |
       delete from MetricValueInt where (InstanceID, Timestamp) IN
       (
         select MVI.InstanceID, MVI.TimeStamp
@@ -1367,6 +1352,7 @@ internal:
         left join OldestMetricInstanceInReportInt as MITR on MVI.InstanceID = MITR.InstanceID
         where MVI.Timestamp < MITR.MinTS
       );
+    delete_old_mvr: |
       delete from MetricValueReal where (InstanceID, Timestamp) IN
       (
         select MVR.InstanceID, MVR.TimeStamp
@@ -1374,6 +1360,7 @@ internal:
         left join OldestMetricInstanceInReportReal as MITR on MVR.InstanceID = MITR.InstanceID
         where MVR.Timestamp < MITR.MinTS
       );
+    delete_old_mvt: |
       delete from MetricValueText where (InstanceID, Timestamp) IN
       (
         select MVT.InstanceID, MVT.TimeStamp
