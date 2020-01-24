@@ -14,3 +14,7 @@ cscope.out
 sailfish
 perm/upld*
 sailfish.db
+telemetry.db*
+
+# files commonly copied that shouldnt be added
+data/
