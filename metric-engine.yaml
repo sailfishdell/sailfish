@@ -1,24 +1,21 @@
 main:
-    server_name: idrac
-    databasepath: file:telemetry_timeseries_database.db?_foreign_keys=on&cache=shared&mode=rwc&_busy_timeout=1000
-    udbdatabasepath: file:DMLiveObjectDatabase.db?cache=shared&_foreign_keys=off&mode=ro&_busy_timeout=1000
-    shmdatabasepath: file:SHM.db?cache=shared&_foreign_keys=off&mode=ro&_busy_timeout=1000
-    udbnotifypipe: udbtdbipcpipe
+    databasepath: file:/run/telemetryservice/telemetry_timeseries_database.db?_foreign_keys=on&cache=shared&mode=rwc&_busy_timeout=1000
+    udbdatabasepath: file:/run/unifieddatabase/DMLiveObjectDatabase.db?cache=shared&_foreign_keys=off&mode=ro&_busy_timeout=1000
+    shmdatabasepath: file:/run/unifieddatabase/SHM.db?cache=shared&_foreign_keys=off&mode=ro&_busy_timeout=1000
+    udbnotifypipe: /run/telemetryservice/udbtdbipcpipe
+
+sql_lists:
     # list of prepared internal.sqlx statements to run to clean up old metric values
     deleteops: ["delete_mvi", "delete_mvr", "delete_mvt", "delete_old_mr", "delete_old_mv"]
     orphanops: ["delete_orphan_metricinstance", "delete_orphan_metricmeta"]
     optimizeops: ["optimize", "shrink"]
     vacuumops: ["vacuum", "shrink"]
 
-listen:
-  #- unix:me.socket
-  # enable 8080 port only for testing, as per NCC audit it needs to be disabled on the build
-  - http::8081
+# metric engine has no HTTP/HTTPS or PPROF listeners by default. Copy from the local-metric-engine.yaml if this is needed in production
+listen: [
   #  enable pprof only for debuging, it causes increased memory consumption. If memprofilerate>0, it will use way more. It's set to 0 in the service file.
-  - pprof::9081
-  # disable direct https listener, uncomment if needed for testing:
-  # - https::8443
-
+  #"pprof::9081"
+  ]
 
 ##############################################
 ##
@@ -1277,7 +1274,7 @@ internal:
 
     find_metric_instance: |
       select
-        MI.ID as InstanceID,
+        MI.ID as InstanceID
       from MetricInstance as MI
       where
         MI.Name=:Name and
@@ -1637,6 +1634,7 @@ createdb:
 
   - |
       -- TODO: check scalability of this view (should be scalable)
+      -- This doesnt have ORDER BY or LIMIT, so it wont by itself limit output, but that also means it will stream.
       DROP VIEW IF EXISTS MetricValueByReport;
       CREATE VIEW MetricValueByReport as
         select

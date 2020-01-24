@@ -85,10 +85,10 @@ func NewMRDFactory(logger log.Logger, database *sqlx.DB, cfg *viper.Viper) (*MRD
 		NextMRTS:         map[string]metric.SqlTimeInt{},
 		preparedNamedSql: map[string]*sqlx.NamedStmt{},
 		preparedSql:      map[string]*sqlx.Stmt{},
-		deleteops:        cfg.GetStringSlice("main.deleteops"),
-		orphanops:        cfg.GetStringSlice("main.orphanops"),
-		optimizeops:      cfg.GetStringSlice("main.optimizeops"),
-		vacuumops:        cfg.GetStringSlice("main.vacuumops"),
+		deleteops:        cfg.GetStringSlice("sql_lists.deleteops"),
+		orphanops:        cfg.GetStringSlice("sql_lists.orphanops"),
+		optimizeops:      cfg.GetStringSlice("sql_lists.optimizeops"),
+		vacuumops:        cfg.GetStringSlice("sql_lists.vacuumops"),
 	}
 
 	// SQLX can have SQL with '?' interpolation or ":Name" interpolation. They
@@ -136,15 +136,15 @@ func (factory *MRDFactory) prepareNamed(name, sql string) error {
 	return nil
 }
 
-// getNamedSqlTx will pull a prepared statement and add it to the current transaction
-func (factory *MRDFactory) getNamedSqlTx(tx *sqlx.Tx, name string) *sqlx.NamedStmt {
-	return tx.NamedStmt(factory.getNamedSql(name))
+// getNamedSqlxTx will pull a prepared statement and add it to the current transaction
+func (factory *MRDFactory) getNamedSqlxTx(tx *sqlx.Tx, name string) *sqlx.NamedStmt {
+	return tx.NamedStmt(factory.getNamedSqlx(name))
 }
 
-// getNamedSql will return a prepared statement. It's prepared against the
+// getNamedSqlxTx will return a prepared statement. It's prepared against the
 // database directly. Don't use this if you have a currently active transaction
-// or you will deadlock! (use getNamedSqlTx())
-func (factory *MRDFactory) getNamedSql(name string) *sqlx.NamedStmt {
+// or you will deadlock! (use getNamedSqlxTx())
+func (factory *MRDFactory) getNamedSqlx(name string) *sqlx.NamedStmt {
 	return factory.preparedNamedSql[name]
 }
 
@@ -161,7 +161,7 @@ func (factory *MRDFactory) prepareSqlx(name, sql string) error {
 	return nil
 }
 
-// getNamedSqlTx will pull a prepared statement and add it to the current transaction
+// getNamedSqlxTx will pull a prepared statement and add it to the current transaction
 func (factory *MRDFactory) getSqlxTx(tx *sqlx.Tx, name string) *sqlx.Stmt {
 	return tx.Stmtx(factory.getSqlx(name))
 }
@@ -308,7 +308,7 @@ func (factory *MRDFactory) UpdateMRD(mrdEvData *MetricReportDefinitionData) (err
 			delete(factory.NextMRTS, MRD.Name)
 		}
 
-		_, err = factory.getNamedSqlTx(tx, "mrd_update").Exec(MetricReportDefinition{MetricReportDefinitionData: &newMRD, AppendLimit: 3000})
+		_, err = factory.getNamedSqlxTx(tx, "mrd_update").Exec(MetricReportDefinition{MetricReportDefinitionData: &newMRD, AppendLimit: 3000})
 		if err != nil {
 			return xerrors.Errorf("Error updating MRD(%+v): %w", mrdEvData, err)
 		}
@@ -352,7 +352,7 @@ func (factory *MRDFactory) AddMRD(mrdEvData *MetricReportDefinitionData) (err er
 		// stop processing any periodic report gen for this report. restart IFF report successfully added back
 		delete(factory.NextMRTS, MRD.Name)
 
-		res, err := factory.getNamedSqlTx(tx, "mrd_insert").Exec(MRD)
+		res, err := factory.getNamedSqlxTx(tx, "mrd_insert").Exec(MRD)
 		if err != nil {
 			if strings.HasPrefix(err.Error(), "UNIQUE constraint failed") {
 				// too verbose, but possibly uncomment for debugging
@@ -399,6 +399,12 @@ func (factory *MRDFactory) UpdateMMList(tx *sqlx.Tx, MRD *MetricReportDefinition
 		return xerrors.Errorf("Error deleting rd2mm for MRD(%d): %w", MRD.ID, err)
 	}
 
+	// Set all metric instances dirty so we can pick up any new associations
+	_, err = factory.getNamedSqlxTx(tx, "set_metric_instance_dirty").Exec(map[string]interface{}{})
+	if err != nil {
+		return xerrors.Errorf("Error setting metric instances dirty: %w", err)
+	}
+
 	// Then we will create each association one at a time
 	for _, metric := range MRD.Metrics {
 		var metaID int64
@@ -412,14 +418,14 @@ func (factory *MRDFactory) UpdateMMList(tx *sqlx.Tx, MRD *MetricReportDefinition
 		}
 
 		// First, Find the MetricMeta
-		err = factory.getNamedSqlTx(tx, "find_mm").Get(&metaID, tempMetric)
+		err = factory.getNamedSqlxTx(tx, "find_mm").Get(&metaID, tempMetric)
 		if err != nil && !xerrors.Is(err, sql.ErrNoRows) {
 			return xerrors.Errorf("Error running query to find MetricMeta(%+v) for MRD(%s): %w", tempMetric, MRD, err)
 		}
 
 		if err != nil && xerrors.Is(err, sql.ErrNoRows) {
 			// Insert new MetricMeta if it doesn't already exist per above
-			res, err = factory.getNamedSqlTx(tx, "insert_mm").Exec(tempMetric)
+			res, err = factory.getNamedSqlxTx(tx, "insert_mm").Exec(tempMetric)
 			if err != nil {
 				return xerrors.Errorf("Error inserting MetricMeta(%s) for MRD(%s): %w", tempMetric, MRD, err)
 			}
@@ -569,7 +575,7 @@ func (factory *MRDFactory) InsertMetricReport(tx *sqlx.Tx, name string) (err err
 		}
 
 		// Delete all generated reports and reset everything
-		_, err = factory.getNamedSqlTx(tx, "delete_mr_by_id").Exec(sqlargs)
+		_, err = factory.getNamedSqlxTx(tx, "delete_mr_by_id").Exec(sqlargs)
 		if err != nil {
 			return xerrors.Errorf("ERROR deleting MetricReport. MRD(%+v) args(%+v): %w", MRD, sqlargs, err)
 		}
@@ -579,7 +585,7 @@ func (factory *MRDFactory) InsertMetricReport(tx *sqlx.Tx, name string) (err err
 			return nil
 		}
 
-		_, err = factory.getNamedSqlTx(tx, "insert_report").Exec(sqlargs)
+		_, err = factory.getNamedSqlxTx(tx, "insert_report").Exec(sqlargs)
 		if err != nil {
 			return xerrors.Errorf("ERROR inserting MetricReport. MRD(%+v) args(%+v): %w", MRD, sqlargs, err)
 		}
@@ -642,7 +648,7 @@ func (factory *MRDFactory) GenerateMetricReport(tx *sqlx.Tx, name string) (err e
 
 		for _, sql := range SQL {
 			fmt.Printf("SQL(%s) ", sql)
-			_, err = factory.getNamedSqlTx(tx, sql).Exec(sqlargs)
+			_, err = factory.getNamedSqlxTx(tx, sql).Exec(sqlargs)
 			if err != nil {
 				return xerrors.Errorf("ERROR inserting MetricReport. MRD(%+v) sql(%s), args(%+v): %w", MRD, SQL, sqlargs, err)
 			}
@@ -715,6 +721,7 @@ type RawMetricInstance struct {
 	FlushTime         metric.SqlTimeInt `db:"FlushTime"`
 	LastTS            metric.SqlTimeInt `db:"LastTS"`
 	LastValue         string            `db:"LastValue"`
+	Dirty             bool              `db:"Dirty"`
 }
 
 // Fusion structure: Meta + Instance + MetricValueEvent
@@ -726,23 +733,14 @@ type MetricMeta struct {
 	SuppressDups bool   `db:"SuppressDups"`
 }
 
-func (factory *MRDFactory) InsertMetricValue(tx *sqlx.Tx, ev *metric.MetricValueEventData, instancesUpdated map[int64]struct{}) (err error) {
-	// TODO: consider cache the MetricMeta(?)
-	// it may speed things up if we cache the MetricMeta in-process rather than going to DB every time.
-	// This should be straightforward because we do all updates in one goroutine, so could add the cache as a factory member
-
-	return factory.WrapWithTXOrPassIn(tx, func(tx *sqlx.Tx) error {
-		// LONG TERM: This query and the for{} loop below needs to be optimized out
-		rows, err := factory.getNamedSqlTx(tx, "find_metric_meta").Queryx(ev)
+func (factory *MRDFactory) InsertMetricInstance(tx *sqlx.Tx, ev *metric.MetricValueEventData) (instancesCreated int, err error) {
+	err = factory.WrapWithTXOrPassIn(tx, func(tx *sqlx.Tx) error {
+		rows, err := factory.getNamedSqlxTx(tx, "find_metric_meta").Queryx(ev)
 		if err != nil {
 			return xerrors.Errorf("Error querying for MetricMeta: %w", err)
 		}
 
 		// First, iterate over the MetricMeta to generate MetricInstance
-		// Need to figure out a way to optimize this out for the common case
-		// IDEA: have a bool in Metric Instance: complete
-		//       On udpate of MRD: flip complete=false
-		// On insert, iter metric instance, if not found or complete=false, go back and scan metric meta. Otherwise we can assume we are good
 		for rows.Next() {
 			mm := &MetricMeta{MetricValueEventData: ev, RawMetricMeta: &RawMetricMeta{}, RawMetricInstance: &RawMetricInstance{}}
 			err = rows.StructScan(mm)
@@ -767,13 +765,13 @@ func (factory *MRDFactory) InsertMetricValue(tx *sqlx.Tx, ev *metric.MetricValue
 			}
 
 			// create instances for each metric meta corresponding to this metric value
-			res, err := factory.getNamedSqlTx(tx, "insert_metric_instance").Exec(mm)
+			res, err := factory.getNamedSqlxTx(tx, "insert_metric_instance").Exec(mm)
 			if err != nil {
 				// It's ok if sqlite squawks about trying to insert dups here
 				if !strings.HasPrefix(err.Error(), "UNIQUE constraint failed") {
 					return xerrors.Errorf("Error inserting MetricInstance(%s): %w", mm, err)
 				}
-				err = factory.getNamedSqlTx(tx, "find_metric_instance").Get(mm, mm)
+				err = factory.getNamedSqlxTx(tx, "find_metric_instance").Get(mm, mm)
 				if err != nil {
 					return xerrors.Errorf("Error getting MetricInstance(%s) InstanceID: %w", mm, err)
 				}
@@ -782,16 +780,59 @@ func (factory *MRDFactory) InsertMetricValue(tx *sqlx.Tx, ev *metric.MetricValue
 				if err != nil {
 					return xerrors.Errorf("Error getting last insert ID for MetricInstance(%s): %w", mm, err)
 				}
+				instancesCreated++
 			}
 			_, err = factory.getSqlxTx(tx, "insert_mi_assoc").Exec(mm.MetaID, mm.InstanceID)
 			if err != nil && !strings.HasPrefix(err.Error(), "UNIQUE constraint failed") {
 				return xerrors.Errorf("Error inserting Association for MetricInstance(%s): %w", mm, err)
 			}
+			_, err = factory.getNamedSqlxTx(tx, "set_metric_instance_clean").Exec(mm)
+			if err != nil {
+				return xerrors.Errorf("Error setting metric instance (%d) clean: %w", mm.InstanceID, err)
+			}
 		}
+		return nil
+	})
+
+	return instancesCreated, err
+}
+
+func (factory *MRDFactory) InsertMetricValue(tx *sqlx.Tx, ev *metric.MetricValueEventData, instancesUpdated map[int64]struct{}) (err error) {
+	return factory.WrapWithTXOrPassIn(tx, func(tx *sqlx.Tx) error {
+		// Optimized, so this logic isn't as straightforward as it could be.
+		//
+		// iterate over instances and insert
+		// if we find an instance and it is clean, we know that we are done (ie. there are no reports with metric meta that we need to insert an instance for)
+		// if we find an instance and it is dirty, we know a report has been added/updated and we potentially need to see if there is a metric meta we need to find and insert an instance for
+		// if we do not find any instances, it could be because there is no report that contains this meta. Or, it could be because we simply haven't put in a metric instance for this value yet
+		foundInstance, dirty, err := factory.doInsertMetricValue(tx, ev, instancesUpdated)
+		if err != nil {
+			return err
+		}
+		if dirty || !foundInstance {
+			instancesCreated, err := factory.InsertMetricInstance(tx, ev)
+			if err != nil {
+				return err
+			}
+			if instancesCreated > 0 {
+				_, _, err := factory.doInsertMetricValue(tx, ev, instancesUpdated)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	})
+}
+
+func (factory *MRDFactory) doInsertMetricValue(tx *sqlx.Tx, ev *metric.MetricValueEventData, instancesUpdated map[int64]struct{}) (foundInstance, dirty bool, err error) {
+	dirty = false
+	foundInstance = false
+	err = factory.WrapWithTXOrPassIn(tx, func(tx *sqlx.Tx) error {
 
 		// And now, foreach MetricInstance, insert MetricValue
 		mm := &MetricMeta{MetricValueEventData: ev, RawMetricMeta: &RawMetricMeta{}, RawMetricInstance: &RawMetricInstance{}}
-		rows, err = factory.getNamedSqlTx(tx, "iterate_metric_instance").Queryx(mm)
+		rows, err := factory.getNamedSqlxTx(tx, "iterate_metric_instance").Queryx(mm)
 		if err != nil {
 			return xerrors.Errorf("Error querying MetricInstance(%s): %w", mm, err)
 		}
@@ -799,12 +840,17 @@ func (factory *MRDFactory) InsertMetricValue(tx *sqlx.Tx, ev *metric.MetricValue
 		for rows.Next() {
 			saveValue := true
 			saveInstance := false
+			foundInstance = true
 
 			mm := &MetricMeta{MetricValueEventData: ev, RawMetricMeta: &RawMetricMeta{}, RawMetricInstance: &RawMetricInstance{}}
 			err = rows.StructScan(mm)
 			if err != nil {
 				factory.logger.Crit("Error scanning struct result for MetricInstance query", "err", err)
 				continue
+			}
+
+			if mm.Dirty {
+				dirty = true
 			}
 
 			floatVal, floatErr := strconv.ParseFloat(mm.Value, 64)
@@ -889,7 +935,7 @@ func (factory *MRDFactory) InsertMetricValue(tx *sqlx.Tx, ev *metric.MetricValue
 			}
 
 			if saveInstance {
-				_, err = factory.getNamedSqlTx(tx, "update_metric_instance").Exec(mm)
+				_, err = factory.getNamedSqlxTx(tx, "update_metric_instance").Exec(mm)
 				if err != nil && !strings.HasPrefix(err.Error(), "UNIQUE constraint failed") {
 					return xerrors.Errorf("Failed to update MetricInstance(%d) with MetricMeta(%d): %w", mm.InstanceID, mm.MetaID, err)
 				}
@@ -897,6 +943,7 @@ func (factory *MRDFactory) InsertMetricValue(tx *sqlx.Tx, ev *metric.MetricValue
 		}
 		return nil
 	})
+	return foundInstance, dirty, err
 }
 
 func (factory *MRDFactory) runSQLFromList(sqllist []string, entrylog string, errorlog string) (err error) {

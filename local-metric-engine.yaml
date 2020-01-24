@@ -1,0 +1,109 @@
+main:
+    databasepath: file:telemetry_timeseries_database.db?_foreign_keys=on&cache=shared&mode=rwc&_busy_timeout=1000
+    udbdatabasepath: file:DMLiveObjectDatabase.db?cache=shared&_foreign_keys=off&mode=ro&_busy_timeout=1000
+    shmdatabasepath: file:SHM.db?cache=shared&_foreign_keys=off&mode=ro&_busy_timeout=1000
+    udbnotifypipe: udbtdbipcpipe
+
+listen:
+  #- unix:me.socket
+  # enable 8080 port only for testing, as per NCC audit it needs to be disabled on the build
+  - http::8081
+  #  enable pprof only for debuging, it causes increased memory consumption. If memprofilerate>0, it will use way more. It's set to 0 in the service file.
+  - pprof::9081
+  # disable direct https listener, uncomment if needed for testing:
+  # - https::8443
+
+Startup-Events:
+
+  # this is to test the report definition update codepath
+  - name: UpdateMetricReportDefinition
+    data: |
+      {
+        "Name": "Thermal",
+        "Enabled": true,
+        "Type": "Periodic",
+        "Period": 60,
+        "Updates": "NewReport",
+        "SuppressDups": true,
+        "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
+        "Metrics": [
+          {"MetricID": "TemperatureReading"},
+          {"MetricID": "RPMReading"}
+         ]
+       }
+
+
+  # Test the update sad path
+  - name: UpdateMetricReportDefinition
+    data: |
+      {
+        "Name": "nonexistent",
+        "Enabled": true,
+        "Type": "Periodic",
+        "Period": 60,
+        "Updates": "NewReport",
+        "SuppressDups": true,
+        "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
+        "Metrics": [
+          {"MetricID": "TemperatureReading"},
+          {"MetricID": "RPMReading"}
+         ]
+       }
+
+  # this one is added as Disabled to ensure that disabled report processing is good. We can enable it later.
+  - name: AddMetricReportDefinition
+    data: |
+      {
+        "Name": "SMARTData",
+        "Enabled": false,
+        "Type": "Periodic",
+        "Period": 3600,
+        "Updates": "NewReport",
+        "SuppressDups": false,
+        "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
+        "Metrics": [
+          { "FQDDPattern": "SMARTData:%" }
+        ]
+      }
+
+  - name: AddMetricReportDefinition
+    data: |
+      {
+        "Name": "UBER-PER-WRAP",
+        "Enabled": true,
+        "Type": "Periodic",
+        "Period": 60,
+        "TimeSpan": 180,
+        "Updates": "AppendWrapsWhenFull",
+        "SuppressDups": true,
+        "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
+        "Metrics": [ {"MetricID": "%"} ]
+       }
+
+  - name: AddMetricReportDefinition
+    data: |
+      {
+        "Name": "UBER-ONREQ",
+        "Enabled": true,
+        "Type": "OnRequest",
+        "Period": 0,
+        "TimeSpan": 60,
+        "Updates": "AppendWrapsWhenFull",
+        "SuppressDups": true,
+        "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
+        "Metrics": [ {"MetricID": "%"} ]
+       }
+
+  - name: AddMetricReportDefinition
+    data: |
+      {
+        "Name": "UBER-ONCHG",
+        "Enabled": true,
+        "Type": "OnChange",
+        "Period": 0,
+        "TimeSpan": 60,
+        "Updates": "AppendWrapsWhenFull",
+        "SuppressDups": true,
+        "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
+        "Metrics": [ {"MetricID": "%"} ]
+       }
