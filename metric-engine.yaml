@@ -375,7 +375,7 @@ Startup-Events:
     #   [ ] Data correct
     data: |
       {
-        "Name": "ThermalMetrics",       "Enabled": true, "Type": "Periodic", "Period": 5, "Updates": "Overwrite", "SuppressDups": false,
+        "Name": "ThermalMetrics",       "Enabled": true, "Type": "OnChange", "TimeSpan": 60, "Period": 5, "Updates": "Overwrite", "SuppressDups": false,
         "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
         "Metrics": [ { "SourcePattern": "thermalmetrics" } ] }
 
