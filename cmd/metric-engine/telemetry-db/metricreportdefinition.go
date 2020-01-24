@@ -654,6 +654,14 @@ func (factory *MRDFactory) GenerateMetricReport(tx *sqlx.Tx, name string) (err e
 			}
 		}
 
+		// TODO:
+		// after we update the metric report, we can query the MetricValueByReport
+		// to see if there are any rows for this report. If there are no rows in
+		// this report, we can return an error to roll back the transaction and
+		// "un-generate" the report.
+		// ex: select count(*) from MetricValueByReport where name=?
+		// This will automatically ensure we dont send out any notifications for that report
+
 		return nil
 	})
 }
