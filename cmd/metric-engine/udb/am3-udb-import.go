@@ -91,7 +91,7 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc EventHandlingServic
 		return
 	}
 
-	go handleUDBNotifyPipe(logger, cfg, d)
+	go handleUDBNotifyPipe(logger, cfg.GetString("main.udbnotifypipe"), d)
 
 	// This is the event to trigger UDB imports. We will only attach it after a second to let all startup settle before we start processing imports from UDB from UDB
 	go func() {
@@ -132,9 +132,7 @@ type ChangeNotify struct {
 	Operation int64
 }
 
-func handleUDBNotifyPipe(logger log.Logger, cfg *viper.Viper, d BusComponents) {
-	pipePath := cfg.GetString("main.udbnotifypipe")
-
+func handleUDBNotifyPipe(logger log.Logger, pipePath string, d BusComponents) {
 	// Data format we get:
 	//    DB                      TBL                  ROWID     operationid
 	// ||DMLiveObjectDatabase.db|TblNic_Port_Stats_Obj|167445167|23||
