@@ -95,12 +95,12 @@ func RegisterAggregate(s *testaggregate.Service) {
 					Properties: map[string]interface{}{
 						"Id":                params["FQDD"],
 						"Name":              params["FQDD"],
-						"Columns@meta":      vw.Meta(view.PropGET("columns")),  //sent as int, should be string
+						"Columns":           "",                                //sent as int, should be string
 						"Location@meta":     vw.Meta(view.PropGET("location")), //sent as int, should be string
 						"Order@meta":        vw.Meta(view.PropGET("order")),
 						"Orientation@meta":  vw.Meta(view.PropGET("orientation")),
 						"ParentConfig@meta": vw.Meta(view.PropGET("parentConfig")),
-						"Rows@meta":         vw.Meta(view.PropGET("rows")),
+						"Rows":              "", //sent as int, should be string
 						"Type@meta":         vw.Meta(view.PropGET("type")),
 					},
 				}}, nil

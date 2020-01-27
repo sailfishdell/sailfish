@@ -3,8 +3,9 @@ package awesome_mapper2
 import (
 	"errors"
 	"fmt"
-	"github.com/superchalupa/sailfish/godefs"
+	"reflect"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -14,12 +15,19 @@ import (
 	a "github.com/superchalupa/sailfish/src/dell-resources/attributedef"
 	"github.com/superchalupa/sailfish/src/dell-resources/dm_event"
 	"github.com/superchalupa/sailfish/src/log"
+	"github.com/superchalupa/sailfish/src/looplab/eventwaiter"
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
 )
 
 type setupProcessFunc func(log.Logger, interface{}) (processFunc, processSetupFunc, error)
 
-type processFunc func(p *MapperParameters, e eh.Event, ch eh.CommandHandler, d *domain.DomainObjects) error
+type BusObjs interface {
+	GetBus() eh.EventBus
+	GetWaiter() *eventwaiter.EventWaiter
+	GetCommandHandler() eh.CommandHandler
+}
+
+type processFunc func(p *MapperParameters, e eh.Event, ch eh.CommandHandler, d BusObjs) error
 type processSetupFunc func(p *MapperParameters) error
 
 var setupProcessFuncsInit sync.Once
@@ -36,6 +44,28 @@ func AddAM3ProcessSetupFunction(name string, fn setupProcessFunc) {
 	setupProcessFuncsMu.Lock()
 	setupProcessFuncs[name] = fn
 	setupProcessFuncsMu.Unlock()
+}
+
+const CONV_FUNC_KEY = "Conv"
+const CONV_VALUE_KEY = "Field"
+
+type convFunc func(value interface{}) (interface{}, bool)
+type setupConvFunc func(logger log.Logger) convFunc
+
+var setupConvFuncsInit sync.Once
+var setupConvFuncsMu sync.RWMutex
+var setupConvFuncs map[string]setupConvFunc
+
+func InitAM3ConversionFunctions() (map[string]setupProcessFunc, *sync.RWMutex) {
+	setupConvFuncsInit.Do(func() { setupConvFuncs = map[string]setupConvFunc{} })
+	return setupProcessFuncs, &setupProcessFuncsMu
+}
+
+func AddAM3ConversionFunction(name string, fn setupConvFunc) {
+	InitAM3ConversionFunctions()
+	setupConvFuncsMu.Lock()
+	setupConvFuncs[name] = fn
+	setupConvFuncsMu.Unlock()
 }
 
 type ModelUpdate struct {
@@ -81,7 +111,7 @@ func init() {
 		}
 
 		// Model Update Function
-		modelUpdateFn := func(mp *MapperParameters, event eh.Event, ch eh.CommandHandler, d *domain.DomainObjects) error {
+		modelUpdateFn := func(mp *MapperParameters, event eh.Event, ch eh.CommandHandler, d BusObjs) error {
 
 			for _, updates := range m {
 				mp.model.StopNotifications()
@@ -94,7 +124,6 @@ func init() {
 				// comment out logging in the fast path. uncomment to enable.
 				//ret.logger.Info("Updating property!", "property", updates.property, "value", val, "Event", event, "EventData", event.Data())
 				mp.model.UpdateProperty(updates.property, val)
-				mp.model.NotifyObservers()
 				mp.model.StartNotifications()
 			}
 
@@ -109,7 +138,6 @@ func init() {
 			}
 
 			mp.model.StopNotifications()
-			defer mp.model.NotifyObservers()
 			defer mp.model.StartNotifications()
 
 			for _, mapperUpdate := range m {
@@ -141,7 +169,7 @@ func init() {
 			execExprSlice = append(execExprSlice, execExpr)
 		}
 
-		return func(mp *MapperParameters, event eh.Event, ch eh.CommandHandler, d *domain.DomainObjects) error {
+		return func(mp *MapperParameters, event eh.Event, ch eh.CommandHandler, d BusObjs) error {
 			for _, ee := range execExprSlice {
 				val, err := ee.Evaluate(mp.Params)
 				if err != nil {
@@ -153,34 +181,9 @@ func init() {
 		}, nil, nil
 	})
 
-	AddAM3ProcessSetupFunction("updateFanData", func(logger log.Logger, processConfig interface{}) (processFunc, processSetupFunc, error) {
-		// Model Update Function
-		aggUpdateFn := func(mp *MapperParameters, event eh.Event, ch eh.CommandHandler, d *domain.DomainObjects) error {
-
-			dmobj, ok := event.Data().(*godefs.DMObject)
-			fanobj, ok := dmobj.Data.(*godefs.DM_thp_fan_data_object)
-			if !ok {
-				logger.Error("updateFanData did not have fan event", "type", event.EventType, "data", event.Data())
-				return errors.New("updateFanData did not receive FanEventData")
-			}
-
-			ch.HandleCommand(mp.ctx,
-				&domain.UpdateRedfishResourceProperties2{
-					ID: mp.uuid,
-					Properties: map[string]interface{}{
-						"Reading":     (fanobj.Rotor1rpm + fanobj.Rotor2rpm) / 2,
-						"Oem/Reading": fanobj.Int,
-					},
-				})
-			return nil
-		}
-
-		return aggUpdateFn, nil, nil
-	})
-
 	AddAM3ProcessSetupFunction("updatePwrConsumptionData", func(logger log.Logger, processConfig interface{}) (processFunc, processSetupFunc, error) {
 		// Model Update Function
-		aggUpdateFn := func(mp *MapperParameters, event eh.Event, ch eh.CommandHandler, d *domain.DomainObjects) error {
+		aggUpdateFn := func(mp *MapperParameters, event eh.Event, ch eh.CommandHandler, d BusObjs) error {
 			data, ok := event.Data().(*dm_event.PowerConsumptionDataObjEventData)
 			if !ok {
 				logger.Error("updatePwrConsumptionData not have PowerConsumptionDataObjEvent event", "type", event.EventType, "data", event.Data())
@@ -210,7 +213,7 @@ func init() {
 
 	AddAM3ProcessSetupFunction("updatePwrSupplyData", func(logger log.Logger, processConfig interface{}) (processFunc, processSetupFunc, error) {
 		// Model Update Function
-		aggUpdateFn := func(mp *MapperParameters, event eh.Event, ch eh.CommandHandler, d *domain.DomainObjects) error {
+		aggUpdateFn := func(mp *MapperParameters, event eh.Event, ch eh.CommandHandler, d BusObjs) error {
 			data, ok := event.Data().(*dm_event.PowerSupplyObjEventData)
 			if !ok {
 				logger.Error("updatePowerSupplyObjEvent does not have PowerSupplyObjEvent event", "type", event.EventType, "data", event.Data())
@@ -237,9 +240,10 @@ func init() {
 		return aggUpdateFn, nil, nil
 	})
 
+	// should not be used until IOMConfig_objects and Capabilities are ironed out
 	AddAM3ProcessSetupFunction("updateIOMConfigData", func(logger log.Logger, processConfig interface{}) (processFunc, processSetupFunc, error) {
 		// Model Update Function
-		aggUpdateFn := func(mp *MapperParameters, event eh.Event, ch eh.CommandHandler, d *domain.DomainObjects) error {
+		aggUpdateFn := func(mp *MapperParameters, event eh.Event, ch eh.CommandHandler, d BusObjs) error {
 			data, ok := event.Data().(*dm_event.IomCapabilityData)
 			if !ok {
 				logger.Error("updateIOMConfigData does not have IOMCapabilityData event", "type", event.EventType, "data", event.Data())
@@ -264,7 +268,7 @@ func init() {
 	powercap_enabled := false
 	AddAM3ProcessSetupFunction("updatePowerCapFlag", func(logger log.Logger, processConfig interface{}) (processFunc, processSetupFunc, error) {
 		// Model Update Function
-		aggUpdateFn := func(mp *MapperParameters, event eh.Event, ch eh.CommandHandler, d *domain.DomainObjects) error {
+		aggUpdateFn := func(mp *MapperParameters, event eh.Event, ch eh.CommandHandler, d BusObjs) error {
 			data, ok := event.Data().(*a.AttributeUpdatedData)
 			if !ok {
 				logger.Error("updatePowerCapFlag does not have AttributeUpdated event", "type", event.EventType, "data", event.Data())
@@ -284,7 +288,7 @@ func init() {
 
 	AddAM3ProcessSetupFunction("updatePowerLimit", func(logger log.Logger, processConfig interface{}) (processFunc, processSetupFunc, error) {
 		// Model Update Function
-		aggUpdateFn := func(mp *MapperParameters, event eh.Event, ch eh.CommandHandler, d *domain.DomainObjects) error {
+		aggUpdateFn := func(mp *MapperParameters, event eh.Event, ch eh.CommandHandler, d BusObjs) error {
 			data, ok := event.Data().(*a.AttributeUpdatedData)
 			if !ok {
 				logger.Error("updatePowerLimit does not have AttributeUpdated event", "type", event.EventType, "data", event.Data())
@@ -292,7 +296,7 @@ func init() {
 			}
 			powerlimit := 0
 
-			if powercap_enabled == true {
+			if powercap_enabled {
 				powerlimit, ok = data.Value.(int)
 				if !ok {
 					return errors.New("power limit is not an integer")
@@ -312,11 +316,172 @@ func init() {
 		return aggUpdateFn, nil, nil
 	})
 
+	AddAM3ProcessSetupFunction("am3AttributeUpdated", func(logger log.Logger, processConfig interface{}) (processFunc, processSetupFunc, error) {
+		aggUpdateFn := func(mp *MapperParameters, event eh.Event, ch eh.CommandHandler, d BusObjs) error {
+			data, ok := event.Data().(*a.AttributeUpdatedData)
+			if !ok {
+				logger.Error("Did not have AttributeUpdated event", "type", event.EventType, "data", event.Data())
+				return errors.New("did not receive AttributeUpdated")
+			}
+
+			//logger.Error("Received AttributeUpdatedData event", "value",data.Value)
+
+			// crash if these don't work as it is a confuration error and needs to be fixed
+			param := processConfig.(map[interface{}]interface{})
+			key := param[CONV_VALUE_KEY].(string)
+
+			// use the attribute value unless a conversion function has been specified
+			val := data.Value
+
+			// the conversion funcation is optional
+			if helpFunc, ok := param[CONV_FUNC_KEY].(string); ok {
+				val, ok = setupConvFuncs[helpFunc](logger)(data.Value)
+				if !ok {
+					logger.Error("data", "value", val, "parsed", ok)
+				}
+			}
+
+			ch.HandleCommand(mp.ctx,
+				&domain.UpdateRedfishResourceProperties2{
+					ID: mp.uuid,
+					Properties: map[string]interface{}{
+						key: val,
+					},
+				})
+
+			return nil
+		}
+
+		return aggUpdateFn, nil, nil
+	})
+
+	AddAM3ProcessSetupFunction("am3FileReadEvent", func(logger log.Logger, processConfig interface{}) (processFunc, processSetupFunc, error) {
+		aggUpdateFn := func(mp *MapperParameters, event eh.Event, ch eh.CommandHandler, d BusObjs) error {
+			data, ok := event.Data().(*dm_event.FileReadEventData)
+			if !ok {
+				logger.Error("Did not have FileReadEvent event", "type", event.EventType, "data", event.Data())
+				return errors.New("did not receive FileReadEvent")
+			}
+
+			param := processConfig.(map[interface{}]interface{})
+			key := param[CONV_VALUE_KEY].(string)
+			var val interface{} = data.Content
+
+			if helpFunc, ok := param[CONV_FUNC_KEY].(string); ok {
+				val, ok = setupConvFuncs[helpFunc](logger)(val)
+				if !ok {
+					logger.Error("data", "value", val, "parsed", ok)
+				}
+			}
+
+			ch.HandleCommand(mp.ctx,
+				&domain.UpdateRedfishResourceProperties2{
+					ID: mp.uuid,
+					Properties: map[string]interface{}{
+						key: val,
+					},
+				})
+
+			return nil
+		}
+
+		return aggUpdateFn, nil, nil
+	})
+
+	/*
+	                       AM3 Conversion functions
+
+	   Logic functions to convert the backend data format into a Redfish Spec compliant
+	   format that can be consumed.
+	*/
+
+	AddAM3ConversionFunction("value_to_string", func(logger log.Logger) convFunc {
+		convFn := func(value interface{}) (interface{}, bool) {
+			logger.Debug("AM3 conversion", "value", value)
+
+			switch t := value.(type) {
+			case uint, uint8, uint16, uint32, uint64:
+				str := strconv.FormatUint(reflect.ValueOf(t).Uint(), 10)
+				return str, true
+			case float32, float64:
+				str := strconv.FormatFloat(reflect.ValueOf(t).Float(), 'G', -1, 64)
+				return str, true
+			case string:
+				return t, true
+			case int, int8, int16, int32, int64:
+				str := strconv.FormatInt(reflect.ValueOf(t).Int(), 10)
+				return str, true
+			default:
+				return nil, false
+			}
+
+		}
+
+		return convFn
+	})
+
+	AddAM3ConversionFunction("empty_to_null", func(logger log.Logger) convFunc {
+		convFn := func(value interface{}) (interface{}, bool) {
+			logger.Debug("AM3 conversion", "value", value)
+
+			if value == "" {
+				return nil, true
+			}
+			return value, true
+		}
+
+		return convFn
+	})
+
+	AddAM3ConversionFunction("map_task_state", func(logger log.Logger) convFunc {
+		convFn := func(value interface{}) (interface{}, bool) {
+			logger.Debug("AM3 conversion", "value", value)
+
+			task_state, ok := value.(string)
+			if strings.EqualFold(task_state, "Completed") {
+				return "Completed", ok
+			} else if strings.EqualFold(task_state, "Interrupted") {
+				return "Interrupted", ok
+			}
+
+			// default to "Running"
+			return "Running", ok
+		}
+
+		return convFn
+	})
+
+	AddAM3ConversionFunction("map_power_state", func(logger log.Logger) convFunc {
+		convFn := func(value interface{}) (interface{}, bool) {
+			logger.Debug("AM3 conversion", "value", value)
+
+			switch t, ok := value.(string); t {
+			case "Chassis Standby Power State":
+				return "Off", ok
+			case "Chassis Power On State":
+				return "On", ok
+			case "Chassis Powering On State":
+				return "PoweringOn", ok
+			case "Chassis Powering Off State":
+				return "PoweringOff", ok
+			default:
+				return "", ok
+			}
+		}
+
+		return convFn
+	})
+
 }
 
 func round2DecPlaces(value float64, nilFlag bool) interface{} {
-	if nilFlag == true && value == 0 {
+	msm_flag := false
+	if nilFlag && value == 0 {
 		return nil
+	}
+
+	if msm_flag {
+		return value
 	}
 
 	vs := fmt.Sprintf("%.2f", value)
@@ -326,8 +491,8 @@ func round2DecPlaces(value float64, nilFlag bool) interface{} {
 	}
 	return val
 }
-func epoch2Date(date int64) time.Time {
-	return time.Unix(date, 0)
+func epoch2Date(date int64) string {
+	return time.Unix(date, 0).String()
 }
 
 func zero2null(value int) interface{} {

@@ -51,7 +51,7 @@ const (
 )
 const Sizeof_DM_thp_fan_data_object = 0x44
 
-func init() {
+func InitGoDef() {
 
 	eh.RegisterEventData(FanEvent, func() eh.EventData {
 		return &DMObject{

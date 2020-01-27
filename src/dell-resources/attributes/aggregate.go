@@ -36,15 +36,13 @@ func FormatAttributeDump(
 		return errors.New("fallback")
 	}
 
-	m.Lock()
-	defer m.Unlock()
+	m.RLock()
+	defer m.RUnlock()
 	attributes, ok := m.GetPropertyUnlocked(prop).(map[string]map[string]map[string]interface{})
 	if !ok {
 		rrp.Value = map[string]interface{}{}
 		return nil
 	}
-
-	//fmt.Println(auth)
 
 	var ad a.AttributeData
 	res := map[string]interface{}{}
@@ -53,8 +51,6 @@ func FormatAttributeDump(
 			for name, value := range v2 {
 				if ad.ReadAllowed(value, auth) {
 					res[group+"."+index+"."+name] = ad.Value
-				} else {
-					//fmt.Println("skipping ", group+"."+index+"."+name)
 				}
 			}
 		}

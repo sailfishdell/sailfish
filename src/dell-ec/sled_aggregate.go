@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 	"sync"
 
 	eh "github.com/looplab/eventhorizon"
@@ -48,17 +47,20 @@ func RegisterSledAggregate(s *testaggregate.Service) {
 						},
 
 						"Status": map[string]interface{}{
-							"HealthRollup@meta": vw.Meta(view.PropGET("health")),
-							"State":             "Enabled", //hardcoded
-							"Health@meta":       vw.Meta(view.PropGET("health")),
+							"HealthRollup": nil,
+							"State":        "Enabled", //hardcoded
+							"Health":       nil,
 						},
 						"PartNumber@meta": vw.Meta(view.GETProperty("part_number"), view.GETModel("default")),
 						"Name@meta":       vw.Meta(view.GETProperty("name"), view.GETModel("default")),
 						"Oem": map[string]interface{}{
 							"Dell": map[string]interface{}{
-								"InstPowerConsumption@meta": vw.Meta(view.PropGET("Instantaneous_Power")),
+								"OemChassis": map[string]interface{}{
+									"@odata.id": vw.GetURI() + "/Attributes",
+								},
+								"InstPowerConsumption": 0,
 							},
-							"OemChassis": map[string]interface{}{
+							"OemChassis": map[string]interface{}{ //TODO: Remove for Redfish Compliance
 								"@odata.id": vw.GetURI() + "/Attributes",
 							},
 						},
@@ -71,7 +73,38 @@ func RegisterSledAggregate(s *testaggregate.Service) {
 									},
 									"target": vw.GetActionURI("chassis.peripheralmapping"),
 								},
+								"#DellChassis.v1_0_0.iDRACReset": map[string]interface{}{
+									"SledType@Redfish.AllowableValues": []string{
+										"compute",
+										"storage",
+									},
+									"SledLoc@Redfish.AllowableValues": []int{ //technically range of ints 1-8
+										1,
+										2,
+										3,
+										4,
+										5,
+										6,
+										7,
+										8,
+									},
+									"target": vw.GetActionURI("chassis.idracreset"),
+								},
 								"#DellChassis.v1_0_0.VirtualReseat": map[string]interface{}{
+									"SledType@Redfish.AllowableValues": []string{
+										"compute",
+										"storage",
+									},
+									"SledLoc@Redfish.AllowableValues": []int{ //technically range of ints 1-8
+										1,
+										2,
+										3,
+										4,
+										5,
+										6,
+										7,
+										8,
+									},
 									"target": vw.GetActionURI("chassis.virtualreseat"),
 								},
 							},
@@ -100,7 +133,7 @@ func RegisterSledAggregate(s *testaggregate.Service) {
 						"Name@meta":         vw.Meta(view.GETProperty("name"), view.GETModel("default")),
 						"AssetTag@meta":     vw.Meta(view.GETProperty("asset_tag"), view.GETModel("default")),
 						"Description@meta":  vw.Meta(view.GETProperty("description"), view.GETModel("default")),
-						"PowerState@meta":   vw.Meta(view.GETProperty("power_state"), view.GETModel("default")),
+						"PowerState":        "",
 
 						"IndicatorLED@meta": vw.Meta(view.GETModel("default"), view.PropPATCH("indicator_led", "ar_mapper"), view.GETProperty("indicator_led")),
 						"SKU@meta":          vw.Meta(view.GETProperty("service_tag"), view.GETModel("default")),
@@ -111,9 +144,9 @@ func RegisterSledAggregate(s *testaggregate.Service) {
 						},
 
 						"Status": map[string]interface{}{
-							"HealthRollup@meta": vw.Meta(view.PropGET("health")),
-							"State":             "Enabled", //hardcoded
-							"Health@meta":       vw.Meta(view.PropGET("health")),
+							"HealthRollup": nil,
+							"State":        "Enabled", //hardcoded
+							"Health":       nil,
 						},
 
 						"Power":   map[string]interface{}{"@odata.id": vw.GetURI() + "/Power"},
@@ -149,6 +182,7 @@ func RegisterSledAggregate(s *testaggregate.Service) {
 							"Oem": map[string]interface{}{
 								"#DellChassis.v1_0_0.MSMConfigBackup": map[string]interface{}{
 									"target": vw.GetUploadURI("msmconfigbackup"),
+									//has list of files as passed-in parameters
 								},
 							},
 						},
@@ -169,32 +203,32 @@ func RegisterSledAggregate(s *testaggregate.Service) {
 					Properties: map[string]interface{}{
 						"Battery": map[string]interface{}{
 							"Status": map[string]interface{}{
-								"HealthRollup@meta": vw.Meta(view.GETProperty("battery_rollup"), view.GETModel("global_health")),
+								"HealthRollup": nil,
 							},
 						},
 						"Fan": map[string]interface{}{
 							"Status": map[string]interface{}{
-								"HealthRollup@meta": vw.Meta(view.GETProperty("fan_rollup"), view.GETModel("global_health")),
+								"HealthRollup": nil,
 							},
 						},
 						"MM": map[string]interface{}{
 							"Status": map[string]interface{}{
-								"HealthRollup@meta": vw.Meta(view.GETProperty("mm_rollup"), view.GETModel("global_health")),
+								"HealthRollup": nil,
 							},
 						},
 						"Miscellaneous": map[string]interface{}{
 							"Status": map[string]interface{}{
-								"HealthRollup@meta": vw.Meta(view.GETProperty("misc_rollup"), view.GETModel("global_health")),
+								"HealthRollup": nil,
 							},
 						},
 						"PowerSupply": map[string]interface{}{
 							"Status": map[string]interface{}{
-								"HealthRollup@meta": vw.Meta(view.GETProperty("psu_rollup"), view.GETModel("global_health")),
+								"HealthRollup": nil,
 							},
 						},
 						"Temperature": map[string]interface{}{
 							"Status": map[string]interface{}{
-								"HealthRollup@meta": vw.Meta(view.GETProperty("temperature_rollup"), view.GETModel("global_health")),
+								"HealthRollup": nil,
 							},
 						},
 					},
@@ -203,26 +237,20 @@ func RegisterSledAggregate(s *testaggregate.Service) {
 
 }
 
-func remove(s []string, r string) bool {
-
+func remove(s []string, r string) []string {
 	for i, v := range s {
-		ml := len(s) - 1
 		if v == r {
-			tmp := s[ml]
-			s[ml] = s[i]
-			s[i] = tmp
-			s[ml] = ""
-			s = s[:ml]
-			return true
+			s[i] = s[len(s)-1]
+			return s[:len(s)-1]
 		}
 	}
-	return false
+	return s
 }
 
 // Contains tells whether a contains x.
 func Contains(a []string, x string) bool {
-	for _, n := range a {
-		if x == n {
+	for i := range a {
+		if x == a[i] {
 			return true
 		}
 	}
@@ -236,60 +264,21 @@ func inithealth(ctx context.Context, logger log.Logger, ch eh.CommandHandler, d 
 		removedEvent, ok := args[0].(*dm_event.ComponentRemovedData)
 		if !ok {
 			logger.Crit("Mapper configuration error: component removed event data not passed", "args[0]", args[0], "TYPE", fmt.Sprintf("%T", args[0]))
-			return nil, errors.New("Mapper configuration error: component removed event data not passed")
+			return nil, errors.New("mapper configuration error: component removed event data not passed")
 		}
 		aggregateUUID, ok := args[1].(eh.UUID)
 		if !ok {
 			logger.Crit("Mapper configuration error: aggregate UUID not passed", "args[1]", args[1], "TYPE", fmt.Sprintf("%T", args[1]))
-			return nil, errors.New("Mapper configuration error: aggregate UUID not passed")
+			return nil, errors.New("mapper configuration error: aggregate UUID not passed")
 		}
 		subsys := removedEvent.Name
-		remove(sled_iomL, subsys)
+		sled_iomL = remove(sled_iomL, subsys)
 
 		ch.HandleCommand(ctx,
 			&domain.RemoveRedfishResourceProperty{
 				ID:       aggregateUUID,
 				Property: subsys})
 
-		return nil, nil
-	})
-
-	awesome_mapper2.AddFunction("add_health_to_subsystem", func(args ...interface{}) (interface{}, error) {
-		// which components can I use to generate subsystem one time..
-		healthEvent, ok := args[0].(*dm_event.HealthEventData)
-		if !ok {
-			logger.Crit("Mapper configuration error: health event data not passed", "args[1]", args[1], "TYPE", fmt.Sprintf("%T", args[1]))
-			return nil, errors.New("Mapper configuration error: health event data not passed")
-		}
-
-		s := strings.Split(healthEvent.FQDD, "#")
-		subsys := s[len(s)-1]
-
-		// if iom or sled already in list, exit out, global health automatically updates health
-		// TODO update to a function later
-		if Contains(sled_iomL, subsys) {
-			return nil, nil
-		} else {
-			sled_iomL = append(sled_iomL, subsys)
-		}
-
-		aggregateUUID, ok := args[1].(eh.UUID)
-		if !ok {
-			logger.Crit("Mapper configuration error: aggregate UUID not passed", "args[1]", args[1], "TYPE", fmt.Sprintf("%T", args[1]))
-			return nil, errors.New("Mapper configuration error: aggregate UUID not passed")
-		}
-
-		agg, _ := d.AggregateStore.Load(context.Background(), domain.AggregateType, aggregateUUID)
-
-		ch.HandleCommand(ctx,
-			&domain.UpdateRedfishResourceProperties{
-				ID: aggregateUUID,
-				Properties: map[string]interface{}{subsys: map[string]interface{}{
-					"Status": map[string]interface{}{
-						"HealthRollup@meta": map[string]interface{}{"GET": map[string]interface{}{"plugin": agg.(*domain.RedfishResourceAggregate).ResourceURI, "property": healthEvent.FQDD, "model": "global_health"}}}}},
-			})
-
-		// to avoid extra memory usage, returning 'nil', but in the future should return subSystemHealthList when we can use it
 		return nil, nil
 	})
 

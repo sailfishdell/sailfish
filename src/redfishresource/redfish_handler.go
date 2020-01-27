@@ -125,7 +125,7 @@ func (rh *RedfishHandler) verifyLocationURL(reqCtx context.Context, url string) 
 func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Each command needs a unique UUID. We'll use that to listen for the HTTPProcessed Event, which should have a matching UUID.
 	cmdID := eh.NewUUID()
-	reqCtx := WithRequestID(r.Context(), cmdID)
+	reqCtx := log.WithRequestID(r.Context(), cmdID)
 
 	// All operations have to be on URLs that exist, so look it up in the tree
 	aggID, ok := rh.d.GetAggregateIDOK(r.URL.Path)
@@ -139,6 +139,13 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// load the aggregate for the URL we are operating on
 	agg, err := rh.d.AggregateStore.Load(reqCtx, AggregateType, aggID)
+	if err != nil {
+		// can only happen if we race between previous GetAggregateIDOK() and here
+		rh.logger.Warn("Could not LOAD URL", "url", r.URL.Path, "err", err)
+		http.Error(w, "Could not LOAD URL: "+r.URL.Path+"  ERR("+err.Error()+")", http.StatusNotFound)
+		return
+	}
+
 	// type assertion to get real aggregate
 	redfishResource, ok := agg.(*RedfishResourceAggregate)
 	if ok {
@@ -204,7 +211,7 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 		default:
-			t = make([]string, 0, 0)
+			t = make([]string, 0)
 		}
 
 		authAction = rh.isAuthorized(t)
@@ -271,7 +278,7 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	ctx := WithRequestID(context.Background(), cmdID)
+	ctx := log.WithRequestID(context.Background(), cmdID)
 
 	if err := rh.d.CommandHandler.HandleCommand(ctx, cmd); err != nil {
 		rh.logger.Warn("redfish handler could not handle command", "type", string(cmd.CommandType()), "err", err.Error(), "url", r.URL.Path, "resource", redfishResource, "cmd", cmd)
@@ -374,21 +381,9 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Length", strconv.Itoa(len(b)))
 	w.Write(b)
 	// END
-
-	redfishResource.Lock()
-	if redfishResource.access == nil {
-		redfishResource.access = map[HTTPReqType]time.Time{}
-	}
-	redfishResource.access[MapStringToHTTPReq(r.Method)] = time.Now()
-	redfishResource.Unlock()
-
-	return
 }
 
 func getResourceEtag(ctx context.Context, agg *RedfishResourceAggregate, auth *RedfishAuthorizationProperty) string {
-	agg.Lock()
-	defer agg.Unlock()
-
 	v := agg.Properties.Value
 	m, ok := v.(map[string]interface{})
 	if !ok {

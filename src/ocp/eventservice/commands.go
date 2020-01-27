@@ -8,6 +8,7 @@ import (
 	"time"
 
 	eh "github.com/looplab/eventhorizon"
+	"github.com/superchalupa/sailfish/src/log"
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
 )
 
@@ -51,7 +52,8 @@ func (c *POST) ParseHTTPRequest(r *http.Request) error {
 	return nil
 }
 func (c *POST) Handle(ctx context.Context, a *domain.RedfishResourceAggregate) error {
-	view := c.es.CreateSubscription(ctx, domain.ContextLogger(ctx, "eventservice"), c.Sub, func() {})
+	subctx, cancel := context.WithCancel(ctx)
+	view := c.es.CreateSubscription(subctx, log.ContextLogger(subctx, "eventservice"), c.Sub, cancel)
 
 	data := &domain.HTTPCmdProcessedData{
 		CommandID:  c.CmdID,
@@ -59,20 +61,18 @@ func (c *POST) Handle(ctx context.Context, a *domain.RedfishResourceAggregate) e
 		StatusCode: 500,
 		Headers:    map[string]string{}}
 
-	agg, err := c.d.AggregateStore.Load(ctx, domain.AggregateType, view.GetUUID())
+	agg, err := c.d.AggregateStore.Load(subctx, domain.AggregateType, view.GetUUID())
 	if err != nil {
 		a.PublishEvent(eh.NewEvent(domain.HTTPCmdProcessed, data, time.Now()))
-		return errors.New("Could not load subscription aggregate")
+		return errors.New("could not load subscription aggregate")
 	}
 	redfishResource, ok := agg.(*domain.RedfishResourceAggregate)
 	if !ok {
 		a.PublishEvent(eh.NewEvent(domain.HTTPCmdProcessed, data, time.Now()))
-		return errors.New("Wrong aggregate type returned")
+		return errors.New("wrong aggregate type returned")
 	}
 
-	redfishResource.Lock()
-	defer redfishResource.Unlock()
-	domain.NewGet(ctx, redfishResource, &redfishResource.Properties, c.auth)
+	domain.NewGet(subctx, redfishResource, &redfishResource.Properties, c.auth)
 	data.Results = domain.Flatten(&redfishResource.Properties, false)
 
 	for k, v := range a.Headers {

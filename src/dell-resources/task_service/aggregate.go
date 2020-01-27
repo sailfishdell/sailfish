@@ -2,7 +2,6 @@ package task_service
 
 import (
 	"context"
-	"errors"
 	"strings"
 	"sync"
 
@@ -18,7 +17,28 @@ import (
 	"github.com/spf13/viper"
 )
 
-func InitTask(logger log.Logger, instantiateSvc *testaggregate.Service) {
+// helper
+func getValidString(namemap, params map[string]interface{}, srcName, paramName string, invalid []string) bool {
+	var ad a.AttributeData // for mapping the actual attribute date
+	raw, ok := namemap[srcName]
+	if !ok || !ad.Valid(raw) {
+		return false
+	}
+	s, ok := ad.Value.(string)
+	if !ok {
+		return false
+	}
+	for _, bad := range invalid {
+		if s == bad {
+			return false
+		}
+	}
+
+	params[paramName] = s
+	return true
+}
+
+func InitTask(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.CommandHandler, ctx context.Context) {
 
 	//TODO: figure out what exactly updating the args should actually do
 	/*awesome_mapper2.AddFunction("update_task_args", func (args ... interface{}) (interface{}, error) {
@@ -34,22 +54,6 @@ func InitTask(logger log.Logger, instantiateSvc *testaggregate.Service) {
 	  attributes, ok := attrModel.GetPropertyOkUnlocked("task_msg_1_args")
 	}*/
 
-	awesome_mapper2.AddFunction("map_task_state", func(args ...interface{}) (interface{}, error) {
-		task_state, ok := args[0].(string)
-		if !ok {
-			logger.Crit("Mapper configuration error: task state not passed as string", "args[0]", args[0])
-			return nil, errors.New("Mapper configuration error: task state not passed as string")
-		}
-
-		if strings.EqualFold(task_state, "Completed") {
-			return "Completed", nil
-		} else if strings.EqualFold(task_state, "Interrupted") {
-			return "Interrupted", nil
-		} else {
-			return "Running", nil
-		}
-	})
-
 	var syncModels func(m *model.Model, updates []model.Update)
 	type newtask struct {
 		uri string
@@ -57,7 +61,9 @@ func InitTask(logger log.Logger, instantiateSvc *testaggregate.Service) {
 	}
 	newchan := make(chan newtask, 30)
 	trigger := make(chan struct{})
-	taskViews := map[string]*view.View{}
+
+	// TODO: (from MEB, code review note):
+	// 			Not sure about the design here. need more comments. Looks like we are watching a single model at a time?
 
 	//add system.chassis.1/attributes
 	awesome_mapper2.AddFunction("add_attributes", func(args ...interface{}) (interface{}, error) {
@@ -96,6 +102,7 @@ func InitTask(logger log.Logger, instantiateSvc *testaggregate.Service) {
 	}
 
 	go func() {
+		taskViews := map[string]*view.View{}
 		var attrModel *model.Model // model from syschas1/attr
 		var ad a.AttributeData     // for mapping the actual attribute date
 		for {
@@ -107,6 +114,12 @@ func InitTask(logger log.Logger, instantiateSvc *testaggregate.Service) {
 			}
 
 			//group index name
+
+			// For the UnderRLock() code, DO AS LITTLE WORK AS POSSIBLE or we risk deadlocks
+			// in particular, instantiate() is *terrible* as it touches everything
+			// gather the data and do those things outside the lock
+			instantiateList := []map[string]interface{}{}
+
 			attrModel.UnderRLock(func() {
 				attributes, ok := attrModel.GetPropertyOkUnlocked("attributes")
 				if !ok {
@@ -122,79 +135,46 @@ func InitTask(logger log.Logger, instantiateSvc *testaggregate.Service) {
 
 				// don't allow a task to be created until it has all of its properties populated
 				for groupid, taskMap := range taskMaps {
+				inner:
 					for index, namemap := range taskMap {
-						id_raw, ok := namemap["Id"]
-						if !ok || !ad.Valid(id_raw) {
-							//this attribute not yet populated
-							continue
-						}
-						id, ok := ad.Value.(string)
-						if !ok || id == "" || id == "unknown" {
-							logger.Debug("Did not get task ID as a valid string")
-							continue
+						params := map[string]interface{}{}
+						params["Group"] = groups[groupid]
+						params["Index"] = index
+						params["task_state"] = ""
+
+						for _, v := range []struct {
+							src     string
+							dst     string
+							invalid []string
+						}{
+							{"Id", "task_id", []string{"", "unknown"}},
+							{"Name", "task_name", []string{""}},
+							{"TaskState", "STATE", []string{""}},
+							{"TaskStatus", "task_status", []string{""}},
+							{"StartTime", "task_start", []string{""}},
+							{"EndTime", "task_end", []string{""}},
+							{"Message1", "task_msg_1", []string{""}},
+							{"MessageID1", "task_msg_1_id", []string{""}},
+							{"MessageArg1-1", "a1", []string{}},
+							{"MessageArg1-2", "a2", []string{}},
+							{"MessageArg1-3", "a3", []string{}},
+						} {
+							if !getValidString(namemap, params, v.src, v.dst, v.invalid) {
+								logger.Debug("Failed to parse valid string", "src", v.src, "dst", v.dst)
+								continue inner
+							}
+							// early out for tasks we already have
+							if _, ok := taskViews[params["task_id"].(string)]; ok {
+								continue inner
+							}
 						}
 
-						name_raw, ok := namemap["Name"]
-						if !ok || !ad.Valid(name_raw) {
-							//this attribute not yet populated
-							continue
-						}
-						name, ok := ad.Value.(string)
-						if !ok || name == "" {
-							logger.Debug("Did not get task name as a valid string")
-							continue
-						}
-
-						state_raw, ok := namemap["TaskState"]
-						if !ok || !ad.Valid(state_raw) {
-							//this attribute not yet populated
-							continue
-						}
-						state, ok := ad.Value.(string)
-						if !ok || state == "" {
-							logger.Debug("Did not get task state as a valid string")
-							continue
-						}
-
-						if strings.EqualFold(state, "Completed") {
-							state = "Completed"
-						} else if strings.EqualFold(state, "Interrupted") {
-							state = "Interrupted"
+						if strings.EqualFold(params["STATE"].(string), "Completed") {
+							params["STATE"] = "Completed"
+						} else if strings.EqualFold(params["STATE"].(string), "Interrupted") {
+							params["STATE"] = "Interrupted"
 						} else {
-							state = "Running"
-						}
-
-						status_raw, ok := namemap["TaskStatus"]
-						if !ok || !ad.Valid(status_raw) {
-							//this attribute not yet populated
-							continue
-						}
-						status, ok := ad.Value.(string)
-						if !ok || status == "" {
-							logger.Debug("Did not get task status as a valid string")
-							continue
-						}
-
-						start_time_raw, ok := namemap["StartTime"]
-						if !ok || !ad.Valid(start_time_raw) {
-							//this attribute not yet populated
-							continue
-						}
-						start_time, ok := ad.Value.(string)
-						if !ok || start_time == "" {
-							logger.Debug("Did not get task start time as a valid string")
-							continue
-						}
-
-						end_time_raw, ok := namemap["EndTime"]
-						if !ok || !ad.Valid(end_time_raw) {
-							//this attribute not yet populated
-							continue
-						}
-						end_time, ok := ad.Value.(string)
-						if !ok || end_time == "" {
-							logger.Debug("Did not get task end time as a valid string")
-							continue
+							params["STATE"] = "Running"
 						}
 
 						percent_raw, ok := namemap["PercentComplete"]
@@ -202,91 +182,34 @@ func InitTask(logger log.Logger, instantiateSvc *testaggregate.Service) {
 							//this attribute not yet populated
 							continue
 						}
-						percent := ad.Value
-
-						message_raw, ok := namemap["Message1"]
-						if !ok || !ad.Valid(message_raw) {
-							//this attribute not yet populated
-							continue
-						}
-						message, ok := ad.Value.(string)
-						if !ok || message == "" {
-							logger.Debug("Did not get task message as a valid string")
-							continue
-						}
-
-						message_id_raw, ok := namemap["MessageID1"]
-						if !ok || !ad.Valid(message_id_raw) {
-							//this attribute not yet populated
-							continue
-						}
-						message_id, ok := ad.Value.(string)
-						if !ok || message_id == "" {
-							logger.Debug("Did not get task message ID as a valid string")
-							continue
-						}
-
-						msg_args_1_raw, ok := namemap["MessageArg1-1"]
-						if !ok || !ad.Valid(msg_args_1_raw) {
-							continue
-						}
-						msg_args_1, ok := ad.Value.(string)
-						if !ok {
-							logger.Debug("Did not get msg args 1 as a string")
-							continue
-						}
-
-						msg_args_2_raw, ok := namemap["MessageArg1-2"]
-						if !ok || !ad.Valid(msg_args_2_raw) {
-							continue
-						}
-						msg_args_2, ok := ad.Value.(string)
-						if !ok {
-							logger.Debug("Did not get msg args 2 as a string")
-							continue
-						}
-						msg_args_3_raw, ok := namemap["MessageArg1-3"]
-						if !ok || !ad.Valid(msg_args_3_raw) {
-							continue
-						}
-						msg_args_3, ok := ad.Value.(string)
-						if !ok {
-							logger.Debug("Did not get msg args 3 as a string")
-							continue
-						}
+						params["task_percent"] = ad.Value
 
 						var msg_args []string
-						if msg_args_1 != "" {
-							msg_args = append(msg_args, msg_args_1)
+						for _, msg := range []string{"a1", "a2", "a3"} {
+							if params[msg].(string) != "" {
+								msg_args = append(msg_args, msg)
+							}
 						}
-						if msg_args_2 != "" {
-							msg_args = append(msg_args, msg_args_2)
-						}
-						if msg_args_3 != "" {
-							msg_args = append(msg_args, msg_args_3)
-						}
+						params["task_msg_1_args"] = msg_args
 
-						if _, ok := taskViews[id]; !ok {
-							//instantiate and add to map of task views
-							_, vw, _ := instantiateSvc.Instantiate("task", map[string]interface{}{
-								"task_id":         id,
-								"task_msg_1_args": msg_args,
-								"task_name":       name,
-								"task_state":      state,
-								"task_status":     status,
-								"task_start":      start_time,
-								"task_end":        end_time,
-								"task_percent":    percent,
-								"task_msg_1":      message,
-								"task_msg_1_id":   message_id,
-								"Group":           groups[groupid],
-								"Index":           index,
-							})
-							taskViews[id] = vw
+						if _, ok := taskViews[params["task_id"].(string)]; !ok {
+							// Add it to the pile to instantiate, then do it outside the lock
+							instantiateList = append(instantiateList, params)
 						}
 					}
 				}
 			})
+
+			for _, params := range instantiateList {
+				_, vw, _ := instantiateSvc.Instantiate("task", params)
+				taskViews[params["task_id"].(string)] = vw
+				ch.HandleCommand(ctx,
+					&domain.UpdateRedfishResourceProperties2{
+						ID: vw.GetUUID(),
+						Properties: map[string]interface{}{
+							"TaskState": params["STATE"],
+						}})
+			}
 		}
 	}()
 }
@@ -364,7 +287,7 @@ func RegisterAggregate(s *testaggregate.Service) {
 						"Name@meta":            vw.Meta(view.GETProperty("task_name")),
 						"Description":          "Tasks running on EC are listed here",
 						"Id@meta":              vw.Meta(view.GETProperty("task_id")),
-						"TaskState@meta":       vw.Meta(view.GETProperty("task_state")),
+						"TaskState":            "",
 						"TaskStatus@meta":      vw.Meta(view.GETProperty("task_status")),
 						"StartTime@meta":       vw.Meta(view.GETProperty("task_start")),
 						"EndTime@meta":         vw.Meta(view.GETProperty("task_end")),

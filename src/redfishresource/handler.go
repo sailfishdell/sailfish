@@ -9,35 +9,35 @@ import (
 	"io/ioutil"
 	"net/http"
 	"sync"
+	"time"
 
 	"github.com/gorilla/mux"
 	eh "github.com/looplab/eventhorizon"
-	"github.com/looplab/eventhorizon/commandhandler/aggregate"
 	eventpublisher "github.com/looplab/eventhorizon/publisher/local"
+	"github.com/superchalupa/sailfish/src/log"
 	"github.com/superchalupa/sailfish/src/looplab/aggregatestore"
 	repo "github.com/superchalupa/sailfish/src/looplab/bbolt"
 	"github.com/superchalupa/sailfish/src/looplab/eventbus"
 	"github.com/superchalupa/sailfish/src/looplab/eventwaiter"
 )
 
-type waiter interface {
-	Listen(context.Context, func(eh.Event) bool) (*eventwaiter.EventListener, error)
-	Notify(context.Context, eh.Event)
-	Run()
+type myRepo interface {
+	eh.ReadWriteRepo
+	IterateCB(ctx context.Context, cb func(context.Context, eh.Entity) error) (err error)
 }
 
 type DomainObjects struct {
 	CommandHandler eh.CommandHandler
-	Repo           eh.ReadWriteRepo
+	Repo           myRepo
 	EventBus       eh.EventBus
-	EventWaiter    waiter
-	AggregateStore eh.AggregateStore
+	EventWaiter    *eventwaiter.EventWaiter
+	AggregateStore *aggregatestore.AggregateStore
 	EventPublisher eh.EventPublisher
 
 	// for http returns
 	HTTPResultsBus eh.EventBus
 	HTTPPublisher  eh.EventPublisher
-	HTTPWaiter     waiter
+	HTTPWaiter     *eventwaiter.EventWaiter
 
 	treeMu sync.RWMutex
 	Tree   map[string]eh.UUID
@@ -65,10 +65,9 @@ func NewDomainObjects() (*DomainObjects, error) {
 	d.EventPublisher = eventpublisher.NewEventPublisher()
 	d.EventBus.AddHandler(eh.MatchAny(), d.EventPublisher)
 
-	ew := eventwaiter.NewEventWaiter(eventwaiter.SetName("Main"), eventwaiter.NoAutoRun)
-	d.EventWaiter = ew
+	d.EventWaiter = eventwaiter.NewEventWaiter(eventwaiter.SetName("Main"), eventwaiter.NoAutoRun)
 	d.EventPublisher.AddObserver(d.EventWaiter)
-	go ew.Run()
+	go d.EventWaiter.Run()
 
 	// specific event bus to handle returns from http
 	d.HTTPResultsBus = eventbus.NewEventBus()
@@ -82,6 +81,7 @@ func NewDomainObjects() (*DomainObjects, error) {
 	go d.HTTPWaiter.Run()
 
 	// set up commands so that they can directly publish to http bus
+	eh.RegisterCommand(func() eh.Command { return &DELETE{} })
 	eh.RegisterCommand(func() eh.Command {
 		return &GET{
 			HTTPEventBus: d.HTTPResultsBus,
@@ -99,13 +99,13 @@ func NewDomainObjects() (*DomainObjects, error) {
 
 	// Create the aggregate repository.
 	var err error
-	d.AggregateStore, err = aggregatestore.NewAggregateStore(d.Repo, d.EventBus)
+	d.AggregateStore, err = aggregatestore.NewAggregateStore(d.Repo)
 	if err != nil {
 		return nil, fmt.Errorf("could not create aggregate store: %s", err)
 	}
 
 	// Create the aggregate command handler.
-	d.CommandHandler, err = aggregate.NewCommandHandler(AggregateType, d.AggregateStore)
+	d.CommandHandler, err = NewCommandHandler(AggregateType, *d.AggregateStore, d.EventBus)
 	if err != nil {
 		return nil, fmt.Errorf("could not create command handler: %s", err)
 	}
@@ -113,6 +113,10 @@ func NewDomainObjects() (*DomainObjects, error) {
 	return &d, nil
 }
 
+func (d *DomainObjects) GetBus() eh.EventBus                  { return d.EventBus }
+func (d *DomainObjects) GetWaiter() *eventwaiter.EventWaiter  { return d.EventWaiter }
+func (d *DomainObjects) GetPublisher() eh.EventPublisher      { return d.EventPublisher }
+func (d *DomainObjects) GetCommandHandler() eh.CommandHandler { return d.CommandHandler }
 func (d *DomainObjects) GetLicenses() []string {
 	d.licensesMu.RLock()
 	defer d.licensesMu.RUnlock()
@@ -123,8 +127,8 @@ func (d *DomainObjects) GetLicenses() []string {
 
 func (d *DomainObjects) HasAggregateID(uri string) bool {
 	d.treeMu.RLock()
-	defer d.treeMu.RUnlock()
 	_, ok := d.Tree[uri]
+	d.treeMu.RUnlock()
 	return ok
 }
 
@@ -135,80 +139,54 @@ func (d *DomainObjects) GetAggregateID(uri string) (id eh.UUID) {
 
 // VALIDATE TREE - DEBUG ONLY
 func (d *DomainObjects) CheckTree() (id eh.UUID, ok bool) {
-	d.treeMu.RLock()
-	defer d.treeMu.RUnlock()
+	var start time.Time
+	for {
+		if !start.IsZero() {
+			fmt.Printf("CheckTree run took %s\n", time.Since(start))
+		}
+		time.Sleep(time.Duration(120) * time.Second)
 
-	injectCmds := 0
-	aggs, _ := d.Repo.FindAll(context.Background())
-	for _, agg := range aggs {
-		if rr, ok := agg.(*RedfishResourceAggregate); ok {
-			checkuri := rr.ResourceURI
-			if id, ok := d.Tree[checkuri]; ok {
-				if id == agg.EntityID() {
-					// found good agg in tree
-					continue
-				} else {
-					fmt.Printf("Validate %s\n", agg.EntityID())
-					fmt.Printf("\tURI: %s", checkuri)
+		start = time.Now()
+		fmt.Printf("Checking tree\n")
 
-					rr.Lock()
-					fmt.Printf("\n\tAggregate ID Mismatch! %s != %s  (count: %d)\n", id, agg.EntityID(), rr.checkcount)
-					if rr.checkcount > 0 {
-						fmt.Printf("\n\tCheck expired, assuming hanging aggregate and removing\n")
-						d.Repo.Remove(context.Background(), rr.EntityID())
+		seen_aggs := 0
+		d.treeMu.RLock()
+		treeSize := len(d.Tree)
+		d.Repo.IterateCB(context.Background(), func(ctx context.Context, agg eh.Entity) error {
+			seen_aggs++
+			if rr, ok := agg.(*RedfishResourceAggregate); ok {
+				checkuri := rr.ResourceURI
+				id, ok := d.Tree[checkuri]
+				if ok {
+					if id == agg.EntityID() {
+						// found good agg in tree... no need to check further stuff
+						return nil
 					} else {
-						rr.checkcount++
+						fmt.Printf("Validate %s\n", agg.EntityID())
+						fmt.Printf("\tURI: %s", checkuri)
+						fmt.Printf("\n\tAggregate ID Mismatch! %s != %s\n", id, agg.EntityID())
 					}
-					rr.Unlock()
-
-				}
-			} else {
-				if string(agg.EntityID()) == string(injectUUID) {
-					// it's an inject command. that's ok
-					injectCmds++
 				} else {
 					// aggregate isn't in the tree at that uri
 					fmt.Printf("Validate %s\n", agg.EntityID())
 					fmt.Printf("\tURI: %s", checkuri)
-					rr.Lock()
-					fmt.Printf("\n\tNOT IN TREE: %d\n", rr.checkcount)
-					if rr.checkcount > 0 {
-						fmt.Printf("\n\tCheck expired, assuming hanging aggregate and removing\n")
-
-						d.Repo.Remove(context.Background(), rr.EntityID())
-						// remove any plugins linked to the now unlinked agg. Careful here
-						// because if a new aggregate is linked in we dont want to delete the
-						// new plugins that may have already been instantiated
-						p, err := InstantiatePlugin(PluginType(rr.ResourceURI))
-						type closer interface {
-							Close()
-						}
-						if err == nil && p != nil {
-							if c, ok := p.(closer); ok {
-								c.Close()
-							}
-						}
-					} else {
-						rr.checkcount++
-					}
-					rr.Unlock()
+					fmt.Printf("\n\tIsnt in tree at URI!\n")
 				}
+			} else {
+				fmt.Printf("Validate %s\n", agg.EntityID())
+				fmt.Printf("NOT AN RRA!\n")
+				//panic("Found aggregate in store that isn't a RedfishResourceAggregate")
 			}
-		} else {
-			fmt.Printf("Validate %s\n", agg.EntityID())
-			fmt.Printf("NOT AN RRA!\n")
-			//panic("Found aggregate in store that isn't a RedfishResourceAggregate")
+			return nil
+		})
+		d.treeMu.RUnlock()
+
+		if seen_aggs != treeSize {
+			fmt.Printf("MISMATCH Tree(%d) Aggregates(%d)\n", treeSize, seen_aggs)
 		}
+		//fmt.Printf("Number of tree objects: %d\n", treeSize)
+		//fmt.Printf("Number of aggregate objects: %d\n", len(seen_aggs))
 	}
-
-	if len(aggs) != len(d.Tree)+injectCmds || injectCmds > 1 {
-		fmt.Printf("MISMATCH Tree(%d) Aggregates(%d) InjectCmds(%d)\n", len(d.Tree), len(aggs), injectCmds)
-	}
-	//fmt.Printf("Number of inject commands: %d\n", injectCmds)
-	//fmt.Printf("Number of tree objects: %d\n", len(d.Tree))
-	//fmt.Printf("Number of aggregate objects: %d\n", len(aggs))
-
-	return
 }
 
 func (d *DomainObjects) GetAggregateIDOK(uri string) (id eh.UUID, ok bool) {
@@ -235,7 +213,7 @@ func (d *DomainObjects) FindMatchingURIs(matcher func(string) bool) []string {
 
 	// slower, but fewer allocations and less garbage created
 	matchCount := 0
-	for uri, _ := range d.Tree {
+	for uri := range d.Tree {
 		if matcher(uri) {
 			matchCount++
 		}
@@ -244,7 +222,7 @@ func (d *DomainObjects) FindMatchingURIs(matcher func(string) bool) []string {
 	ret := make([]string, 0, matchCount)
 	// optimize no match count by not scanning tree again
 	if matchCount > 0 {
-		for uri, _ := range d.Tree {
+		for uri := range d.Tree {
 			if matcher(uri) {
 				ret = append(ret, uri) // preallocated
 				// TODO: optimize here by decrementing matchcount and early out when we hit last match. be sure no off by one errors
@@ -272,7 +250,7 @@ func (d *DomainObjects) ExpandURI(ctx context.Context, uri string) (*RedfishReso
 
 // Notify implements the Notify method of the EventObserver interface.
 func (d *DomainObjects) Notify(ctx context.Context, event eh.Event) {
-	logger := ContextLogger(ctx, "domain")
+	logger := log.ContextLogger(ctx, "domain")
 	logger.Debug("EVENT", "event", event, "data", event.Data())
 	if event.EventType() == RedfishResourceCreated {
 		if data, ok := event.Data().(*RedfishResourceCreatedData); ok {
@@ -328,9 +306,11 @@ func (d *DomainObjects) Notify(ctx context.Context, event eh.Event) {
 // CommandHandler is a HTTP handler for eventhorizon.Commands. Commands must be
 // registered with eventhorizon.RegisterCommand(). It expects a POST with a JSON
 // body that will be unmarshalled into the command.
-func (d *DomainObjects) GetInternalCommandHandler(backgroundCtx context.Context) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func (d *DomainObjects) GetInternalCommandHandler(backgroundCtx context.Context) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
+		vars["command"] = "Event:Inject"
+		mux.SetURLVars(r, vars)
 
 		if r.Method != "POST" {
 			http.Error(w, "unsuported method: "+r.Method, http.StatusMethodNotAllowed)
@@ -349,6 +329,7 @@ func (d *DomainObjects) GetInternalCommandHandler(backgroundCtx context.Context)
 			http.Error(w, "could not read command: "+err.Error(), http.StatusBadRequest)
 			return
 		}
+		//fmt.Printf("Sailfish-pump POST payload is %s\n", b)
 		r.Body.Close()
 
 		contentType := r.Header.Get("Content-type")
@@ -373,7 +354,7 @@ func (d *DomainObjects) GetInternalCommandHandler(backgroundCtx context.Context)
 		}
 
 		w.WriteHeader(http.StatusOK)
-	})
+	}
 }
 
 // DumpStatus is for debugging
@@ -383,16 +364,19 @@ func (d *DomainObjects) DumpStatus() http.Handler {
 		w.WriteHeader(http.StatusOK)
 
 		// Adding a new aggregate to the tree
-		d.treeMu.Lock()
-		defer d.treeMu.Unlock()
+		d.treeMu.RLock()
+		defer d.treeMu.RUnlock()
+		pluginsMu.Lock()
+		defer pluginsMu.Unlock()
 
 		// Dump Tree
-		injectCmds := 0
 		orphans := 0
 		fmt.Fprintf(w, "DUMP Aggregate Repository\n")
-		aggs, _ := d.Repo.FindAll(context.Background())
-		for _, agg := range aggs {
+
+		seen_aggs := 0
+		d.Repo.IterateCB(context.Background(), func(ctx context.Context, agg eh.Entity) error {
 			fmt.Fprintf(w, "================================================\n")
+			seen_aggs++
 			if rr, ok := agg.(*RedfishResourceAggregate); ok {
 				fmt.Fprintf(w, "RedfishResourceAggregate: ")
 				treeLookup, ok := d.Tree[rr.ResourceURI]
@@ -401,33 +385,24 @@ func (d *DomainObjects) DumpStatus() http.Handler {
 				} else if ok {
 					orphans++
 					fmt.Fprintf(w, "MISMATCH(tree has id %s)", treeLookup)
-				} else {
-					if agg.EntityID() == injectUUID {
-						fmt.Fprintf(w, "INJECTCMD")
-						injectCmds++
-					}
 				}
 
 				fmt.Fprintf(w, " %s: %s\n", rr.EntityID(), rr.ResourceURI)
-				for k, v := range rr.access {
-					fmt.Fprintf(w, "\t%s: %s\n", MapHTTPReqToString(k), v)
-				}
 			} else {
 				fmt.Fprintf(w, "UNKNOWN ENTITY: %s\n", rr.EntityID())
 			}
 			fmt.Fprintf(w, "\n\n")
-		}
+			return nil
+		})
 
-		pluginsMu.Lock()
-		defer pluginsMu.Unlock()
 		fmt.Fprintf(w, "\nPLUGIN DUMP\n")
-		for k, _ := range plugins {
+		for k := range plugins {
 			fmt.Fprintf(w, "Plugin: %s\n", k)
 		}
 
 		fmt.Fprintf(w, "\nSTATS DUMP\n")
-		fmt.Fprintf(w, "Tree(%d) Aggregates(%d) InjectCmds(%d) Orphans(%d)\n", len(d.Tree), len(aggs), injectCmds, orphans)
-		fmt.Fprintf(w, "InjectChan Q Len = %d\n", len(injectChan))
+		fmt.Fprintf(w, "Tree(%d) Aggregates(%d) Orphans(%d)\n", len(d.Tree), seen_aggs, orphans)
+		//fmt.Fprintf(w, "InjectChan Q Len = %d\n", len(injectChan))
 		fmt.Fprintf(w, "# PLUGINS = %d\n", len(plugins))
 
 	})

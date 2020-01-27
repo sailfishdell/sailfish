@@ -29,11 +29,6 @@ type eventBinary struct {
 	data []byte
 }
 
-type viewer interface {
-	GetUUID() eh.UUID
-	GetURI() string
-}
-
 type actionService interface {
 	WithAction(context.Context, string, string, view.Action) view.Option
 }
@@ -59,7 +54,6 @@ type EventService struct {
 	wrap      func(string, map[string]interface{}) (log.Logger, *view.View, error)
 	addparam  func(map[string]interface{}) map[string]interface{}
 	actionSvc actionService
-	uploadSvc uploadService
 }
 
 var GlobalEventService *EventService
@@ -79,7 +73,7 @@ func New(ctx context.Context, cfg *viper.Viper, cfgMu *sync.RWMutex, d *domain.D
 		jc:        CreateWorkers(100, 6),
 		actionSvc: actionSvc,
 		wrap: func(name string, params map[string]interface{}) (log.Logger, *view.View, error) {
-			return instantiateSvc.InstantiateFromCfg(ctx, cfg, cfgMu, name, params)
+			return instantiateSvc.Instantiate(name, params)
 		},
 	}
 
@@ -101,12 +95,12 @@ func (es *EventService) StartEventService(ctx context.Context, logger log.Logger
 		return
 	}
 
-	_, esView, _ := instantiateSvc.InstantiateFromCfg(ctx, es.cfg, es.cfgMu, "eventservice", es.addparam(map[string]interface{}{
+	_, esView, _ := instantiateSvc.Instantiate("eventservice", es.addparam(map[string]interface{}{
 		"submittestevent": view.Action(MakeSubmitTestEvent(es.d.EventBus)),
 	}))
 	params["eventsvc_id"] = esView.GetUUID()
 	params["eventsvc_uri"] = esView.GetURI()
-	instantiateSvc.InstantiateFromCfg(ctx, es.cfg, es.cfgMu, "subscriptioncollection", es.addparam(map[string]interface{}{
+	instantiateSvc.InstantiateNoRet("subscriptioncollection", es.addparam(map[string]interface{}{
 		"collection_uri": "/redfish/v1/EventService/Subscriptions",
 	}))
 
@@ -163,15 +157,15 @@ func (es *EventService) CreateSubscription(ctx context.Context, logger log.Logge
 	dest := esModel.GetProperty("destination").(string)
 	prot := esModel.GetProperty("protocol").(string)
 	ctex := esModel.GetProperty("context").(string)
-	eventT := sub.EventTypes
 
 	subCtx := SubscriptionCtx{
 		true,
 		dest,
 		prot,
-		eventT,
+		[]string{},
 		ctex,
 	}
+	subCtx.EventTypes = append(subCtx.EventTypes, sub.EventTypes...)
 
 	uuid := subView.GetUUID()
 
@@ -179,7 +173,7 @@ func (es *EventService) CreateSubscription(ctx context.Context, logger log.Logge
 		time.Now().UTC().Format(time.UnixDate),
 		dest,
 		prot,
-		eventT)
+		subCtx.EventTypes)
 	logToEventFile(logS)
 
 	go func() {
@@ -196,6 +190,9 @@ func (es *EventService) CreateSubscription(ctx context.Context, logger log.Logge
 					e.Done()
 				}
 				es.evaluateEvent(subLogger, subCtx, event, cancel, subView.GetURI(), uuid, ctx)
+				if subCtx.firstEvent {
+					subCtx.firstEvent = false
+				}
 
 			case <-ctx.Done():
 				subLogger.Debug("context is done: exiting event service publisher")
@@ -214,6 +211,15 @@ func (es *EventService) evaluateEvent(log log.Logger, subCtx SubscriptionCtx, ev
 
 	eventlist := []eventBinary{}
 
+	if subCtx.Protocol != "Redfish" {
+		log.Info("Not Redfish Protocol")
+		return
+	}
+	if subCtx.Destination == "" {
+		log.Info("Destination is empty, not sending event")
+		return
+	}
+
 	switch typ := event.EventType(); typ {
 	case domain.RedfishResourceRemoved:
 		log.Info("Cancelling subscription", "uri", URI)
@@ -225,38 +231,32 @@ func (es *EventService) evaluateEvent(log log.Logger, subCtx SubscriptionCtx, ev
 		log.Info(" redfish event processing")
 		// NOTE: we don't actually check to ensure that this is an actual ExternalRedfishEventData specifically because Metric Reports don't currently go through like this.
 
-		evt := event.Data()
-		eventPtr, ok := evt.(*ExternalRedfishEventData)
+		tmpevt := event.Data()
+
+		// eventPtr is shared btwn go routines(ssehandler), writes should be avoided
+		eventPtr, ok := tmpevt.(*ExternalRedfishEventData)
 		if !ok {
 			log.Info("ExternalRedfishEvent does not have ExternalRedfishEventData")
 			return
 		}
 
-		if subCtx.Protocol != "Redfish" {
-			log.Info("Not Redfish Protocol")
-			return
-		}
-
+		totalEvents := []*RedfishEventData{}
 		if subCtx.firstEvent {
 			//MSM work around, replay mCHARS faults into events
-			subCtx.firstEvent = false
 			redfishevents := makeMCHARSevents(es, ctx)
 
 			for idx := range redfishevents {
-				eventPtr.Events = append(eventPtr.Events, &redfishevents[idx])
+				totalEvents = append(totalEvents, &redfishevents[idx])
 			}
 		}
+		totalEvents = append(totalEvents, eventPtr.Events...)
 
-		if subCtx.Destination != "" {
-			log.Info("Send to destination", "dest", subCtx.Destination)
-			eventlist = makeExternalRedfishEvent(subCtx, eventPtr.Events, uuid)
-			if len(eventlist) == 0 {
-				return
-			}
-			es.postExternalEvent(subCtx, event, eventlist)
-		} else {
-			log.Info("Destination is empty, not sending event")
+		eventlist = makeExternalRedfishEvent(subCtx, totalEvents, uuid)
+		if len(eventlist) == 0 {
+			return
 		}
+		es.postExternalEvent(subCtx, event, eventlist)
+
 	case ExternalMetricEvent:
 		evt := event.Data()
 		evtPtr, ok := evt.(MetricReportData)
@@ -331,7 +331,7 @@ func (es *EventService) postExternalEvent(subCtx SubscriptionCtx, event eh.Event
 					resp.Body.Close()
 				}
 			}
-			if logSent == false {
+			if !logSent {
 				logToEventFile(fmt.Sprintf("%s -- FAILURE to send Id=%s to uri=%s\n", time.Now().UTC().Format(time.UnixDate), eachEvent.id, subCtx.Destination))
 				log.MustLogger("event_service").Crit("ERROR POSTING, DROPPED", "Id", eachEvent.id, "uri", subCtx.Destination)
 			}

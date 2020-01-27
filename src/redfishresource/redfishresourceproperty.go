@@ -19,19 +19,15 @@ type RedfishAuthorizationProperty struct {
 
 	// pass the supported query options to the backend
 	// re-arranged to hopefully be more memory efficient
-	skip       int
-	top        int
-	filter     string
-	sel        []string
-	selT       bool
-	doFilter   bool
-	filterDone bool
-	doTop      bool
-	topDone    bool
-	doSkip     bool
-	skipDone   bool
-	doSel      bool
-	selDone    bool
+	skip     int
+	top      int
+	filter   string
+	sel      []string
+	selT     bool
+	doFilter bool
+	doTop    bool
+	doSkip   bool
+	doSel    bool
 }
 
 type RedfishResourceProperty struct {
@@ -82,7 +78,11 @@ func (rrp *RedfishResourceProperty) ParseUnlocked(thing interface{}) {
 			if strings.HasSuffix(k.String(), "@meta") {
 				name := k.String()[:len(k.String())-5]
 				newEntry := &RedfishResourceProperty{}
-				if newEntry.Meta, ok = rv.Interface().(map[string]interface{}); ok {
+				if vMap, ok := rv.Interface().(map[string]interface{}); ok {
+					if newEntry.Value, ok = vMap["DEFAULT"]; ok {
+						delete(vMap, "DEFAULT")
+					}
+					newEntry.Meta = vMap
 					v[name] = newEntry
 				}
 			} else {
@@ -102,7 +102,7 @@ func (rrp *RedfishResourceProperty) ParseUnlocked(thing interface{}) {
 			sliceVal := val.Index(i)
 			if sliceVal.IsValid() {
 				newEntry := &RedfishResourceProperty{}
-				newEntry.ParseUnlocked(sliceVal.Interface())
+				newEntry.Parse(sliceVal.Interface())
 				rrp.Value = append(rrp.Value.([]interface{}), newEntry) //preallocated
 			}
 		}
@@ -110,27 +110,15 @@ func (rrp *RedfishResourceProperty) ParseUnlocked(thing interface{}) {
 	default:
 		rrp.Value = thing
 	}
-
-	return
 }
 
 func (auth *RedfishAuthorizationProperty) VerifyPrivileges(Privileges []string) bool {
-
 	rh := &RedfishHandler{
 		UserName:   auth.UserName,
 		Privileges: auth.Privileges,
 	}
 
-	authAction := rh.isAuthorized(Privileges)
-
-	if authAction != "authorized" {
-		//fmt.Println("required auth ", Privileges)
-		//fmt.Println(auth.UserName, " current priv ", auth.Privileges)
-		//fmt.Println("allowed ", authAction)
-
-	}
-
-	return authAction == "authorized"
+	return rh.isAuthorized(Privileges) == "authorized"
 }
 
 func (auth *RedfishAuthorizationProperty) VerifyPrivilegeBits(requiredPrivs int) bool {

@@ -1,0 +1,1 @@
+{ "name": "FileReadEvent", "data": {"Content": "-----BEGIN CERTIFICATE-----HELLO_WORLD-----END CERTIFICATE-----", "URI": "CertificateInventory", "FQDD": "CMC.Integrated.1"}, "event_seq": 1}

@@ -1,4 +1,4 @@
-package stdmeta
+package stdmeta //remove file when ready
 
 import (
 	"context"

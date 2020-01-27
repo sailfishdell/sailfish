@@ -25,13 +25,16 @@ func RegisterCertAggregate(s *testaggregate.Service) {
 						"GET": []string{"Login"},
 					},
 					Properties: map[string]interface{}{
-						"Id":                             "CertificateService",
-						"Name":                           "Certificate Service",
-						"Description":                    "Represents the properties of Certificate Service",
-						"CertificateSigningRequest@meta": vw.Meta(view.PropGET("certificate_signing_request")),
+						"Id":                        "CertificateService",
+						"Name":                      "Certificate Service",
+						"Description":               "Represents the properties of Certificate Service",
+						"CertificateSigningRequest": nil,
 						"Actions": map[string]interface{}{
 							"#DellCertificateService.GenerateCSR": map[string]interface{}{
 								"target": vw.GetActionURI("certificates.generatecsr"),
+                "Type@Redfish.AllowableValues": []string{
+                 "FactoryIdentity",
+                },
 							},
 						},
 						"CertificateInventory": map[string]interface{}{
@@ -82,6 +85,11 @@ func RegisterCertAggregate(s *testaggregate.Service) {
 						"Id":                 "FactoryIdentity.1",
 						"Name":               "Factory Identity Certificate",
 						"Type":               "FactoryIdentity",
+						"Actions": map[string]interface{}{
+							"#DellCertificateService.GetCertInfo": map[string]interface{}{
+								"target": vw.GetActionURI("certificates.getcert"),
+              },
+            },
 					},
 				}}, nil
 		})

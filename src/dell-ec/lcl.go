@@ -9,10 +9,12 @@ import (
 	"strconv"
 	"strings"
 	"time"
+  "regexp"
 
 	eh "github.com/looplab/eventhorizon"
 
 	"github.com/superchalupa/sailfish/src/log"
+	"github.com/superchalupa/sailfish/src/looplab/event"
 	"github.com/superchalupa/sailfish/src/ocp/awesome_mapper2"
 	"github.com/superchalupa/sailfish/src/ocp/eventservice"
 	"github.com/superchalupa/sailfish/src/ocp/model"
@@ -39,13 +41,56 @@ func in_array_index(a string, list []string) int {
 	return -1
 }
 
+// Noncompliant FQDDs: RCPUSB, RSPI, RTC, ControlPanel, QuickSync, LCD, LED, Frontpanel
+// As there is no plan to add actual tree paths for noncompliant URIs, noncompliant FQDDs
+// will return the System.Chassis.1 URI.
+// If they are added, frontpanel FQDDS will have to check the message for key words to
+// determine the correct origin paths
 func link_mapper(fqdd string) string {
-	ret_string := "/redfish/v1/Chassis/System.Chassis.1"
-	if strings.HasPrefix(fqdd, "Fan") {
-		ret_string += "/Sensors/Fans/" + fqdd
-	} else if strings.HasPrefix(fqdd, "PSU") {
-		ret_string += "/Sensors/PowerSupplies/" + fqdd
-	}
+  // All FQDD tree paths branch from /redfish/v1/Chassis
+	ret_string := "/redfish/v1/Chassis/"
+
+  chassis_subparts := []string{`IOM\.Slot`, `System\.Modular`, `iDRAC\.Embedded`, `CMC\.Integrated`, `Fan\.Slot`, `PSU\.Slot`, `Temperature\.NODE_AMBIENT`, `Temperature\.CHASSIS_AMBIENT`, `System\.Chassis`}
+  FQDD_parts := strings.Split(fqdd, "#")
+
+  for i, _ := range(FQDD_parts) {
+    // Let right-most FQDD part take precedence, look for matching subparts
+    FQDD_part := FQDD_parts[len(FQDD_parts)-1-i]
+    for _, k := range(chassis_subparts) {
+        // Find matching chassis subpart with any slot numbers
+        re := regexp.MustCompile(k+`\.*\w*`)
+        matched := re.Find([]byte(FQDD_part))
+        if matched == nil {
+          continue
+        }
+        FQDD_matched := string(matched)
+
+        // Substitute matches for corrected versions
+        if FQDD_matched == "CMC.Integrated.0" {
+          FQDD_matched = "CMC.Integrated.1"
+        } else if k == `iDRAC\.Embedded` {
+          FQDD_matched = strings.Replace(FQDD_matched, "iDRAC.Embedded", "System.Modular", -1)
+        }
+
+        // Fans, PSUs, and temperatures have specific paths off System.Chassis.1
+        if k == `Fan\.Slot` {
+          ret_string += "System.Chassis.1/Sensors/Fans/" + FQDD_matched
+        } else if k == `PSU\.Slot` {
+          ret_string += "System.Chassis.1/Sensors/PowerSupplies/" + FQDD_matched
+        } else if k == `Temperature\.NODE_AMBIENT` || k == `Temperature\.CHASSIS_AMBIENT` {
+          ret_string += "System.Chassis.1/Sensors/Temperatures/System.Chassis.1%23" + FQDD_matched
+        } else {
+          ret_string += FQDD_matched
+        }
+
+        // If a matching subpart with valid tree path is found, return
+        goto early_out
+    }
+  }
+  // For all other FQDDs, default to System.Chassis.1 path (including all noncompliant URIs)
+  ret_string += "System.Chassis.1"
+
+early_out:
 	return ret_string
 }
 
@@ -56,13 +101,13 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 		logUri, ok := args[0].(string)
 		if !ok {
 			logger.Crit("Mapper configuration error: uri not passed as string", "args[0]", args[0])
-			return nil, errors.New("Mapper configuration error: uri not passed as string")
+			return nil, errors.New("mapper configuration error: uri not passed as string")
 		}
 
 		logEntry, ok := args[1].(*LogEventData)
 		if !ok {
 			logger.Crit("Mapper configuration error: log event data not passed", "args[1]", args[1], "TYPE", fmt.Sprintf("%T", args[1]))
-			return nil, errors.New("Mapper configuration error: log event data not passed")
+			return nil, errors.New("mapper configuration error: log event data not passed")
 		}
 
 		uuid := eh.NewUUID()
@@ -119,20 +164,29 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 
 		uriList := d.FindMatchingURIs(func(uri string) bool { return path.Dir(uri) == logUri })
 
-		sort.Slice(uriList, func(i, j int) bool {
-			idx_i, _ := strconv.Atoi(path.Base(uriList[i]))
-			idx_j, _ := strconv.Atoi(path.Base(uriList[j]))
-			return idx_i > idx_j
-		})
-
 		if len(uriList) > MAX_LOGS {
-			for _, uri := range uriList[MAX_LOGS:] {
-				logger.Debug("too many logs, trimming", "len", len(uriList))
-				id, ok := d.GetAggregateIDOK(uri)
-				if ok {
-					ch.HandleCommand(context.Background(), &domain.RemoveRedfishResource{ID: id})
+			// dont need to sort it until we know we are too long
+			sort.Slice(uriList, func(i, j int) bool {
+				idx_i, _ := strconv.Atoi(path.Base(uriList[i]))
+				idx_j, _ := strconv.Atoi(path.Base(uriList[j]))
+				return idx_i > idx_j
+			})
+
+			logger.Debug("too many logs, trimming", "len", len(uriList))
+			go func(uriList []string) {
+				for _, uri := range uriList {
+					id, ok := d.GetAggregateIDOK(uri)
+					if ok {
+						ev := event.NewSyncEvent(domain.RedfishResourceRemoved, &domain.RedfishResourceRemovedData{
+							ID:          id,
+							ResourceURI: uri,
+						}, time.Now())
+						ev.Add(1)
+						d.EventBus.PublishEvent(context.Background(), ev)
+						ev.Wait()
+					}
 				}
-			}
+			}(uriList[MAX_LOGS:])
 		}
 
 		return true, nil
@@ -142,28 +196,27 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 		logUri, ok := args[0].(string)
 		if !ok {
 			logger.Crit("Mapper configuration error: uri not passed as string", "args[0]", args[0])
-			return nil, errors.New("Mapper configuration error: uri not passed as string")
+			return nil, errors.New("mapper configuration error: uri not passed as string")
 		}
 
 		logger.Debug("Clearing all uris within base_uri", "base_uri", logUri)
 
-		uriList := d.FindMatchingURIs(func(uri string) bool { return path.Dir(uri) == logUri })
-		var idList []eh.UUID
-		for _, uri := range uriList {
-			id, ok := d.GetAggregateIDOK(uri)
-			if ok {
-				idList = append(idList, id)
-			}
-		}
-		go func(toDel []eh.UUID) {
-			for idx, id := range idList {
-				ch.HandleCommand(context.Background(), &domain.RemoveRedfishResource{ID: id})
-				if idx%10 == 0 {
-					//Ugh... but slow it down so we don't flood the queue and deadlock
-					time.Sleep(time.Second / 10)
+		go func() {
+			uriList := d.FindMatchingURIs(func(uri string) bool { return path.Dir(uri) == logUri })
+			for _, uri := range uriList {
+				id, ok := d.GetAggregateIDOK(uri)
+				if ok {
+					ev := event.NewSyncEvent(domain.RedfishResourceRemoved, &domain.RedfishResourceRemovedData{
+						ID:          id,
+						ResourceURI: uri,
+					}, time.Now())
+					ev.Add(1)
+					d.EventBus.PublishEvent(context.Background(), ev)
+					ev.Wait()
+
 				}
 			}
-		}(idList)
+		}()
 
 		return nil, nil
 	})
@@ -175,12 +228,12 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 		logUri, ok := args[0].(string)
 		if !ok {
 			logger.Crit("Mapper configuration error: uri not passed as string", "args[0]", args[0])
-			return nil, errors.New("Mapper configuration error: uri not passed as string")
+			return nil, errors.New("mapper configuration error: uri not passed as string")
 		}
 		faultEntry, ok := args[1].(*FaultEntryRmData)
 		if !ok {
 			logger.Crit("Mapper configuration error: log event data not passed", "args[1]", args[1], "TYPE", fmt.Sprintf("%T", args[1]))
-			return nil, errors.New("Mapper configuration error: log event data not passed")
+			return nil, errors.New("mapper configuration error: log event data not passed")
 		}
 
 		uri := fmt.Sprintf("%s/%s", logUri, faultEntry.Name)
@@ -208,13 +261,13 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 		//fmt.Printf("%s", logUri)
 		if !ok {
 			logger.Crit("Mapper configuration error: uri not passed as string", "args[0]", args[0])
-			return nil, errors.New("Mapper configuration error: uri not passed as string")
+			return nil, errors.New("mapper configuration error: uri not passed as string")
 		}
 
 		faultEntry, ok := args[1].(*FaultEntryAddData)
 		if !ok {
 			logger.Crit("Mapper configuration error: log event data not passed", "args[1]", args[1], "TYPE", fmt.Sprintf("%T", args[1]))
-			return nil, errors.New("Mapper configuration error: log event data not passed")
+			return nil, errors.New("mapper configuration error: log event data not passed")
 		}
 
 		// check if fault remove event is already received.  Can return
@@ -297,7 +350,7 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 		logEntry, ok := args[0].(*LogEventData)
 		if !ok {
 			logger.Crit("Mapper configuration error: log event data not passed", "args[1]", args[1], "TYPE", fmt.Sprintf("%T", args[1]))
-			return nil, errors.New("Mapper configuration error: log event data not passed")
+			return nil, errors.New("mapper configuration error: log event data not passed")
 		}
 
 		timeF, err := strconv.ParseFloat(logEntry.Created, 64)
@@ -330,13 +383,13 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 		ss, ok := args[0].(string)
 		if !ok {
 			logger.Crit("Mapper configuration error: subsystem %s in not a string", "args[0]")
-			return nil, errors.New("Mapper configuration error: subsystem is not a string")
+			return nil, errors.New("mapper configuration error: subsystem is not a string")
 		}
 
 		health, ok := args[1].(string)
 		if !ok {
 			logger.Crit("Mapper configuration error: health %s in not a string", "args[0]")
-			return nil, errors.New("Mapper configuration error: health is not a string")
+			return nil, errors.New("mapper configuration error: health is not a string")
 		}
 
 		t := time.Now()
@@ -416,19 +469,20 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 			return false, nil
 		}
 
-		mdls := vw.GetModels("swinv")
-		if mdls == nil {
+		mdlMap := vw.GetModels("swinv")
+		if len(mdlMap) == 0 {
 			return false, nil
 		}
 
-		for _, mdl := range mdls {
-			//fmt.Printf("passing swinv to channel with uri %s\n", resourceURI)
-			mdl.AddObserver("swinv", syncModels)
+		mdls := []*model.Model{}
+
+		for mdlName, mdl := range mdlMap {
+			mdl.AddObserver(mdlName, syncModels)
+			mdls = append(mdls, mdl)
 		}
 
 		newchan <- newfirm{resourceURI, mdls}
 
-		//fmt.Printf("URI is in %s\n", resourceURI)
 		return true, nil
 	})
 
@@ -449,8 +503,12 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 			select {
 			case <-trigger:
 			case n := <-newchan:
-				swinvList[n.uri] = n.mdls
-				//fmt.Printf("NEW model from URI: %s\n", n.uri)
+				_, ok := swinvList[n.uri]
+				if ok {
+					swinvList[n.uri] = append(swinvList[n.uri], n.mdls...)
+				} else {
+					swinvList[n.uri] = n.mdls
+				}
 				continue
 			}
 
@@ -461,7 +519,6 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 			// need to iterate through models.  With the same work flow below.. When iteration is complete... need to add uris and fqdds to model.
 			for uri, mdls := range swinvList {
 				for _, mdl := range mdls {
-					//fmt.Printf("swinvList uri is %s\n", uri)
 					fqddRaw, ok := mdl.GetPropertyOk("fw_fqdd")
 					if !ok || fqddRaw == nil {
 						logger.Debug("swinv DID NOT GET fqdd raw with " + uri)
@@ -469,7 +526,7 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 					}
 
 					fqdd, ok := fqddRaw.(string)
-					if !ok || fqdd == "" {
+					if !ok || fqdd == "" || fqdd == "unknown" {
 						logger.Debug("swinv DID NOT GET fqdd string with " + uri)
 						continue
 					}
@@ -481,9 +538,9 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 					}
 
 					class, ok := classRaw.(string)
-					if !ok || class == "" {
+					if !ok || class == "" || class == "unknown" {
 						logger.Debug("swinv DID NOT GET class string with " + uri)
-						class = "unknown"
+						continue
 					}
 
 					versionRaw, ok := mdl.GetPropertyOk("fw_version")
@@ -493,9 +550,9 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 					}
 
 					version, ok := versionRaw.(string)
-					if !ok || version == "" {
+					if !ok || version == "" || version == "unknown" {
 						logger.Debug("swinv DID NOT GET version string with " + uri)
-						version = "unknown"
+						continue
 					}
 
 					compVerTuple := "Installed-" + class + "-" + version
@@ -506,11 +563,13 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 						continue
 					}
 
-					updateable, ok := updateableRaw.(string)
-					if !ok || updateable == "" || updateable == "Yes" {
-						updateable = "True"
-					} else {
-						updateable = "False"
+					updateable := false
+					updateableStr, _ := updateableRaw.(string)
+					if strings.EqualFold(updateableStr, "Yes") || strings.EqualFold(updateableStr, "True") {
+						updateable = true
+					} else if updateableStr == "unknown" {
+						logger.Debug("swinv DID NOT GET a good value for updateablestr " + uri)
+						continue
 					}
 
 					installDateRaw, ok := mdl.GetPropertyOk("fw_install_date")
@@ -520,9 +579,13 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 					}
 
 					installDate, ok := installDateRaw.(string)
-					if !ok || installDate == "" {
+					if !ok || installDate == "unknown" {
+						logger.Debug("swinv DID NOT GET class string with " + uri)
+						continue
+					} else if installDate == "" {
 						logger.Debug("swinv DID NOT GET class string with " + uri)
 						installDate = "1970-01-01T00:00:00Z"
+
 					}
 
 					nameRaw, ok := mdl.GetPropertyOk("fw_name")
@@ -532,9 +595,9 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 					}
 
 					name, ok := nameRaw.(string)
-					if !ok || name == "" {
+					if !ok || name == "" || name == "unknown" {
 						logger.Debug("swinv DID NOT GET name string with " + uri)
-						name = ""
+						continue
 					}
 
 					if _, ok := firmwareInventoryViews[compVerTuple]; !ok {
@@ -548,6 +611,27 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 						})
 						//fmt.Printf("add to list ---------> INSTANTIATED: %s\n", vw.GetURI())
 						firmwareInventoryViews[compVerTuple] = vw
+
+					} else {
+						vw := firmwareInventoryViews[compVerTuple]
+
+						firmMdl := vw.GetModel("default")
+
+						tIntf, ok := firmMdl.GetPropertyOk("install_date")
+						if !ok {
+							continue
+						}
+
+						tStr, ok := tIntf.(string)
+						if !ok {
+							continue
+						}
+
+						t, _ := time.Parse(time.RFC3339, tStr)
+						tBefore, _ := time.Parse(time.RFC3339, installDate)
+						if !tBefore.Before(t) {
+							firmMdl.UpdateProperty("install_date", installDate)
+						}
 					}
 
 					// These values are for post processing on Instantiated object
@@ -555,8 +639,6 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 					if !ok {
 						arr = []string{}
 					}
-					arr = append(arr, fqdd)
-					fqdd_mappings[compVerTuple] = arr
 
 					if !in_array(fqdd, arr) {
 						arr = append(arr, fqdd)
@@ -579,16 +661,16 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 
 			for compVerTuple, arr := range fqdd_mappings {
 				vw := firmwareInventoryViews[compVerTuple]
-				mdl := vw.GetModel("default")
-				if mdl != nil {
-					mdl.UpdateProperty("fqdd_list", arr)
+				firmMdl := vw.GetModel("default")
+				if firmMdl != nil {
+					firmMdl.UpdateProperty("fqdd_list", arr)
 				}
 			}
 
 			for compVerTuple, arr := range uri_mappings {
 				vw := firmwareInventoryViews[compVerTuple]
-				mdl := vw.GetModel("default")
-				mdl.UpdateProperty("related_list", arr)
+				firmMdl := vw.GetModel("default")
+				firmMdl.UpdateProperty("related_list", arr)
 			}
 		}
 	}()

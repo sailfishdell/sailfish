@@ -7,11 +7,15 @@ import (
 
 	eh "github.com/looplab/eventhorizon"
 	log "github.com/superchalupa/sailfish/src/log"
-	domain "github.com/superchalupa/sailfish/src/redfishresource"
+	"github.com/superchalupa/sailfish/src/looplab/eventwaiter"
 )
 
+type busObjs interface {
+	GetWaiter() *eventwaiter.EventWaiter
+}
+
 // NewSSEHandler constructs a new SSEHandler with the given username and privileges.
-func NewSSEHandler(dobjs *domain.DomainObjects, logger log.Logger, u string, p []string) *SSEHandler {
+func NewSSEHandler(dobjs busObjs, logger log.Logger, u string, p []string) *SSEHandler {
 	return &SSEHandler{UserName: u, Privileges: p, d: dobjs, logger: logger}
 }
 
@@ -19,17 +23,15 @@ func NewSSEHandler(dobjs *domain.DomainObjects, logger log.Logger, u string, p [
 type SSEHandler struct {
 	UserName   string
 	Privileges []string
-	d          *domain.DomainObjects
+	d          busObjs
 	logger     log.Logger
 }
 
 func (rh *SSEHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	requestID := eh.NewUUID()
-	ctx := domain.WithRequestID(r.Context(), requestID)
-	requestLogger := domain.ContextLogger(ctx, "sse_handler")
+	ctx := log.WithRequestID(r.Context(), requestID)
+	requestLogger := log.ContextLogger(ctx, "sse_handler")
 	requestLogger.Info("Trying to start SSE Stream for request.")
-
-	defer r.Body.Close()
 
 	flusher, ok := w.(http.Flusher)
 	if !ok {
@@ -38,18 +40,14 @@ func (rh *SSEHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO: need to worry about privileges: probably should do the privilege checks in the Listener
-	// to avoid races, set up our listener first
-	l, err := rh.d.EventWaiter.Listen(ctx, func(event eh.Event) bool {
+	r.Body.Close()
+	flusher.Flush()
+
+	l := eventwaiter.NewListener(ctx, requestLogger, rh.d.GetWaiter(), func(event eh.Event) bool {
 		return true
 	})
-	if err != nil {
-		requestLogger.Crit("Could not create an event waiter.", "err", err)
-		http.Error(w, "could not create waiter"+err.Error(), http.StatusInternalServerError)
-		return
-	}
-
 	l.Name = "SSE Listener"
+	defer l.Close()
 
 	// set headers first
 	w.Header().Set("OData-Version", "4.0")
@@ -70,26 +68,7 @@ func (rh *SSEHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// compatibility headers
 	w.Header().Set("X-UA-Compatible", "IE=11")
 
-	notify := w.(http.CloseNotifier).CloseNotify()
-	go func() {
-		<-notify
-		requestLogger.Debug("http session closed, closing down context")
-		l.Close()
-	}()
-
-	flusher.Flush()
-
-	for {
-		event, err := l.Wait(ctx)
-		if err != nil {
-			requestLogger.Error("Wait exited", "err", err)
-			break
-		}
-
-		if event == nil {
-			continue
-		}
-
+	err := l.ProcessEvents(ctx, func(event eh.Event) {
 		d, err := json.Marshal(
 			&struct {
 				Name string      `json:"name"`
@@ -100,12 +79,15 @@ func (rh *SSEHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			},
 		)
 		if err != nil {
-			requestLogger.Error("MARSHAL SSE FAILED", "err", err, "data", event.Data(), "event", event)
+			requestLogger.Debug("Failed to marshal SSE event (expected for some events)", "err", err, "data", event.Data(), "event", event)
+			return
 		}
 		fmt.Fprintf(w, "data: %s\n\n", d)
 
 		flusher.Flush()
-	}
+	})
+
+	fmt.Printf("Internal SSE event bus closed: %s\n", err)
 
 	requestLogger.Debug("Closed session")
 }

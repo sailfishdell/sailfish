@@ -9,10 +9,7 @@ import (
 
 	"github.com/spf13/viper"
 
-	eh "github.com/looplab/eventhorizon"
-
 	"github.com/superchalupa/sailfish/src/actionhandler"
-	ah "github.com/superchalupa/sailfish/src/actionhandler"
 	"github.com/superchalupa/sailfish/src/dell-ec/slots"
 	"github.com/superchalupa/sailfish/src/dell-resources/ar_mapper2"
 	"github.com/superchalupa/sailfish/src/dell-resources/attributes"
@@ -22,9 +19,8 @@ import (
 	"github.com/superchalupa/sailfish/src/dell-resources/task_service"
 	"github.com/superchalupa/sailfish/src/dell-resources/update_service"
 	"github.com/superchalupa/sailfish/src/log"
-	"github.com/superchalupa/sailfish/src/looplab/eventwaiter"
+	"github.com/superchalupa/sailfish/src/ocp/am3"
 	"github.com/superchalupa/sailfish/src/ocp/awesome_mapper2"
-	"github.com/superchalupa/sailfish/src/ocp/event"
 	"github.com/superchalupa/sailfish/src/ocp/eventservice"
 	"github.com/superchalupa/sailfish/src/ocp/model"
 	"github.com/superchalupa/sailfish/src/ocp/session"
@@ -37,7 +33,7 @@ import (
 	"github.com/superchalupa/sailfish/src/uploadhandler"
 
 	// register all the DM events that are not otherwise pulled in
-	_ "github.com/superchalupa/sailfish/godefs"
+	"github.com/superchalupa/sailfish/godefs"
 	_ "github.com/superchalupa/sailfish/src/dell-resources/dm_event"
 )
 
@@ -45,32 +41,29 @@ type ocp struct {
 	configChangeHandler func()
 }
 
-type waiter interface {
-	Listen(context.Context, func(eh.Event) bool) (*eventwaiter.EventListener, error)
-}
-
 func (o *ocp) ConfigChangeHandler() { o.configChangeHandler() }
 
 func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, d *domain.DomainObjects) *ocp {
+
 	logger = logger.New("module", "ec")
 	self := &ocp{}
 	ch := d.CommandHandler
 	eb := d.EventBus
 
-	// These three all set up a waiter for the root service to appear, so init root service after.
 	actionhandler.Setup(ctx, ch, eb)
 	uploadhandler.Setup(ctx, ch, eb)
-	event.Setup(ch, eb)
-	domain.StartInjectService(logger, d)
-	arService, _ := ar_mapper2.StartService(ctx, logger, cfgMgr, cfgMgrMu, eb)
-	actionSvc := ah.StartService(ctx, logger, ch, eb)
-	uploadSvc := uploadhandler.StartService(ctx, logger, ch, eb)
+	arService, _ := ar_mapper2.StartService(ctx, logger, cfgMgr, cfgMgrMu, d)
+	actionSvc := actionhandler.StartService(ctx, logger, d)
+	uploadSvc := uploadhandler.StartService(ctx, logger, d)
 	am2Svc, _ := awesome_mapper2.StartService(ctx, logger, eb, ch, d)
-	ardumpSvc, _ := attributes.StartService(ctx, logger, eb)
-	pumpSvc := NewPumpActionSvc(ctx, logger, eb)
+	am3Svc, _ := am3.StartService(ctx, logger, "am3 base service", d)
+	addAM3Functions(logger.New("module", "ec_am3_functions"), am3Svc, d)
+
+	ardumpSvc, _ := attributes.StartService(ctx, logger, d)
+	pumpSvc := NewPumpActionSvc(ctx, logger, d)
 
 	// the package for this is going to change, but this is what makes the various mappers and view functions available
-	instantiateSvc := testaggregate.New(ctx, logger, cfgMgr, cfgMgrMu, ch)
+	instantiateSvc := testaggregate.New(logger, cfgMgr, cfgMgrMu, d, am3Svc)
 	evtSvc := eventservice.New(ctx, cfgMgr, cfgMgrMu, d, instantiateSvc, actionSvc, uploadSvc)
 	testaggregate.RegisterWithURI(instantiateSvc)
 	testaggregate.RegisterPublishEvents(instantiateSvc, evtSvc)
@@ -80,9 +73,8 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	ar_mapper2.RegisterARMapper(instantiateSvc, arService)
 	attributes.RegisterController(instantiateSvc, ardumpSvc)
 	stdmeta.RegisterFormatters(instantiateSvc, d)
-	stdmeta.SledVirtualReseatSvc(ctx, logger, eb)
+	stdmeta.SledPwrOperationsSvc(ctx, logger, d)
 	registries.RegisterAggregate(instantiateSvc)
-	stdcollections.RegisterAggregate(instantiateSvc)
 	session.RegisterAggregate(instantiateSvc)
 	eventservice.RegisterAggregate(instantiateSvc)
 	slots.RegisterAggregate(instantiateSvc)
@@ -90,7 +82,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	attributes.RegisterAggregate(instantiateSvc)
 	update_service.RegisterAggregate(instantiateSvc)
 	task_service.RegisterAggregate(instantiateSvc)
-	task_service.InitTask(logger, instantiateSvc)
+	task_service.InitTask(logger, instantiateSvc, ch, ctx)
 	fans.RegisterAggregate(instantiateSvc)
 	RegisterAggregate(instantiateSvc)
 	RegisterIOMAggregate(instantiateSvc)
@@ -102,11 +94,19 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	initLCL(logger, instantiateSvc, ch, d)
 	initThermalSensor(logger, instantiateSvc, ch, d)
 	inithealth(ctx, logger, ch, d)
-	stdmeta.InitializeSsoinfo(d)
+	stdmeta.InitializeSsoinfo(d) //remove when ready
 	telemetryservice.RegisterAggregate(instantiateSvc)
+	telemetryservice.New(ctx, logger, ch, d)
 
 	stdmeta.SetupSledProfilePlugin(d)
 	stdmeta.InitializeCertInfo(d)
+	stdmeta.GenericDefPlugin(ch, d)
+
+	godefs.InitGoDef()
+
+	// start background tree checking
+	// disable for now
+	//go d.CheckTree()
 
 	awesome_mapper2.AddFunction("find_uris_with_basename", func(args ...interface{}) (interface{}, error) {
 		if len(args) < 1 {
@@ -143,7 +143,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 			}
 		}
 
-		instantiateSvc.Instantiate(cfgStr, params)
+		instantiateSvc.InstantiateNoRet(cfgStr, params)
 		return true, nil
 	})
 
@@ -157,10 +157,9 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	//*********************************************************************
 	//  /redfish/v1
 	//*********************************************************************
-	rooturi := "/redfish/v1"
 	_, rootView, _ := instantiateSvc.Instantiate("rootview",
 		map[string]interface{}{
-			"rooturi":                   rooturi,
+			"rooturi":                   "/redfish/v1",
 			"globalHealthModel":         globalHealthModel,
 			"submit_test_metric_report": view.Action(telemetryservice.MakeSubmitTestMetricReport(eb, d, ch)),
 		})
@@ -169,8 +168,8 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	// /redfish/v1/Sessions
 	//*********************************************************************
 	_, sessionSvcVw, _ := instantiateSvc.Instantiate("sessionservice", map[string]interface{}{})
-	session.SetupSessionService(instantiateSvc, sessionSvcVw, ch, eb)
-	instantiateSvc.Instantiate("sessioncollection", map[string]interface{}{})
+	session.SetupSessionService(instantiateSvc, sessionSvcVw, d)
+	instantiateSvc.InstantiateNoRet("sessioncollection", map[string]interface{}{})
 
 	//*********************************************************************
 	//  Standard redfish roles
@@ -190,7 +189,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 		"base_registry":     []map[string]string{{"Language": "En", "Uri": "/redfish/v1/Registries/BaseMessages/BaseRegistry.v1_0_0.json", "PublicationUri": "http://www.dmtf.org/sites/default/files/standards/documents/DSP8011_1.0.0a.json"}},
 		"mgr_attr_registry": []map[string]string{{"Language": "En", "Uri": "/redfish/v1/Registries/ManagerAttributeRegistry/ManagerAttributeRegistry.v1_0_0.json"}},
 	} {
-		instantiateSvc.Instantiate(regName, map[string]interface{}{"location": location})
+		instantiateSvc.InstantiateNoRet(regName, map[string]interface{}{"location": location})
 	}
 
 	_, updSvcVw, _ := instantiateSvc.Instantiate("update_service", map[string]interface{}{})

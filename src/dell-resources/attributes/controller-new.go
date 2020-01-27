@@ -2,7 +2,6 @@ package attributes
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	eh "github.com/looplab/eventhorizon"
 	"strings"
@@ -12,7 +11,6 @@ import (
 	a "github.com/superchalupa/sailfish/src/dell-resources/attributedef"
 	"github.com/superchalupa/sailfish/src/log"
 	"github.com/superchalupa/sailfish/src/looplab/eventwaiter"
-	"github.com/superchalupa/sailfish/src/ocp/event"
 	"github.com/superchalupa/sailfish/src/ocp/model"
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
 )
@@ -23,7 +21,7 @@ type Service struct {
 	cache          map[string][]*model.Model
 	logger         log.Logger
 	eb             eh.EventBus
-	ew             waiter
+	ew             eventwaiter.EW
 }
 
 type syncEvent interface {
@@ -31,31 +29,24 @@ type syncEvent interface {
 	Done()
 }
 
-type waiter interface {
-	Listen(context.Context, func(eh.Event) bool) (*eventwaiter.EventListener, error)
+type BusObjs interface {
+	GetBus() eh.EventBus
+	GetWaiter() *eventwaiter.EventWaiter
 }
 
-type listener interface {
-	Inbox() <-chan eh.Event
-	Close()
-}
-
-func StartService(ctx context.Context, logger log.Logger, eb eh.EventBus) (*Service, error) {
+func StartService(ctx context.Context, logger log.Logger, d BusObjs) (*Service, error) {
 	ret := &Service{
 		forwardMapping: map[*model.Model][]string{},
 		cache:          map[string][]*model.Model{},
 		logger:         logger,
-		eb:             eb,
+		eb:             d.GetBus(),
+		ew:             d.GetWaiter(),
 	}
-	// stream processor for action events
-	sp, err := event.NewESP(ctx, event.CustomFilter(ret.selectCachedAttributes()), event.SetListenerName("NEW_attributes"))
-	if err != nil {
-		logger.Error("Failed to create event stream processor", "err", err)
-		return nil, errors.New("Failed to create stream processor")
-	}
-	ret.ew = &sp.EW
 
-	go sp.RunForever(func(event eh.Event) {
+	listener := eventwaiter.NewListener(ctx, logger, d.GetWaiter(), ret.selectCachedAttributes())
+	// never calling listener.Close() because we can't shut this down
+
+	go listener.ProcessEvents(ctx, func(event eh.Event) {
 		data, ok := event.Data().(*a.AttributeUpdatedData)
 		if !ok {
 			return
@@ -130,7 +121,7 @@ func (s *Service) selectCachedAttributes() func(eh.Event) bool {
 }
 
 func getAttrValue(m *model.Model, group, gindex, name string) (ret interface{}, ok bool) {
-	attributes, ok := m.GetPropertyOkUnlocked("attributes")
+	attributes, ok := m.GetPropertyOk("attributes")
 	if !ok {
 		return nil, ok
 	}
@@ -154,23 +145,6 @@ func getAttrValue(m *model.Model, group, gindex, name string) (ret interface{}, 
 	return value, ok
 }
 
-type HTTP_code struct {
-	err_message []string
-	any_success int
-}
-
-func (e HTTP_code) ErrMessage() []string {
-	return e.err_message
-}
-
-func (e HTTP_code) AnySuccess() int {
-	return e.any_success
-}
-
-func (e HTTP_code) Error() string {
-	return fmt.Sprintf("Request Error Message: %s", e.err_message)
-}
-
 func (b *breadcrumb) UpdateRequest(ctx context.Context, property string, value interface{}, auth *domain.RedfishAuthorizationProperty) (interface{}, error) {
 	b.s.RLock()
 	defer b.s.RUnlock()
@@ -178,31 +152,19 @@ func (b *breadcrumb) UpdateRequest(ctx context.Context, property string, value i
 	b.s.logger.Debug("UpdateRequest", "property", property, "value", value)
 
 	reqIDs := []eh.UUID{}
-	responses := []a.AttributeUpdatedData{}
 	errs := []string{}
 	patch_timeout := 10
 	canned_response := `{"RelatedProperties@odata.count": 1, "Message": "%s", "MessageArgs": ["%[2]s"], "Resolution": "Remove the %sproperty from the request body and resubmit the request if the operation failed.", "MessageId": "%s", "MessageArgs@odata.count": 1, "RelatedProperties": ["%[2]s"], "Severity": "Warning"}`
 	timeout_response := `{"RelatedProperties@odata.count": 0, "Message": "Request Timed Out", "MessageArgs": [], "Resolution": "", "MessageId": "", "MessageArgs@odata.count": 0, "RelatedProperties": [], "Severity": "Error"}`
 	num_success := 0
 
-	l, err := b.s.ew.Listen(ctx, func(event eh.Event) bool {
-		if event.EventType() != a.AttributeUpdated {
+	listener := eventwaiter.NewListener(ctx, b.s.logger, b.s.ew, func(ev eh.Event) bool {
+		if ev.EventType() != a.AttributeUpdated {
 			return false
 		}
-		_, ok := event.Data().(*a.AttributeUpdatedData)
-		if !ok {
-			return false
-		}
-		return true
+		_, ok := ev.Data().(*a.AttributeUpdatedData)
+		return ok
 	})
-	if err != nil {
-		b.s.logger.Error("Could not create listener", "err", err)
-		return nil, errors.New("Failed to make attribute updated event listener")
-	}
-	l.Name = "patch listener"
-	var listener listener
-	listener = l
-
 	defer listener.Close()
 
 	for k, v := range value.(map[string]interface{}) {
@@ -214,11 +176,15 @@ func (b *breadcrumb) UpdateRequest(ctx context.Context, property string, value i
 		//  - validate that user has permsi
 
 		if len(stuff) != 3 { // this one is extra wrong
-			b.s.logger.Error("improperly formatted attribute", "Attribute", k)
+			// reduce logging
+			if !strings.HasSuffix(k, "@odata.type") {
+				b.s.logger.Error("improperly formatted attribute", "Attribute", k)
+			}
 			err_msg := fmt.Sprintf("The property %s is not in the list of valid properties for the resource.", k)
 			errs = append(errs, fmt.Sprintf(canned_response, []interface{}{err_msg, k, "unknown ", "Base.1.0.PropertyUnknown"}...))
 			continue
 		}
+		// getAttrValue assumes model is locked
 		attrVal, ok := getAttrValue(b.m, stuff[0], stuff[1], stuff[2])
 		if !ok {
 			b.s.logger.Error("not found", "Attribute", k)
@@ -249,11 +215,15 @@ func (b *breadcrumb) UpdateRequest(ctx context.Context, property string, value i
 	}
 
 	if len(reqIDs) == 0 {
-		return nil, HTTP_code{err_message: errs, any_success: num_success}
+		return nil, domain.HTTP_code{Err_message: errs, Any_success: num_success}
 	}
 
 	// create a timer based on number of attributes to be patched
-	timer := time.NewTimer(time.Duration(patch_timeout*len(reqIDs)) * time.Second)
+	total_timeout := patch_timeout * len(reqIDs)
+	if total_timeout < 30 {
+		total_timeout = 30
+	}
+	timer := time.NewTimer(time.Duration(total_timeout) * time.Second)
 
 	for {
 		select {
@@ -264,7 +234,6 @@ func (b *breadcrumb) UpdateRequest(ctx context.Context, property string, value i
 					//remove found reqid from list
 					reqIDs[i] = reqIDs[len(reqIDs)-1]
 					reqIDs = reqIDs[:len(reqIDs)-1]
-					responses = append(responses, *data)
 					if data.Error != "" {
 						errs = append(errs, data.Error)
 					} else {
@@ -280,16 +249,16 @@ func (b *breadcrumb) UpdateRequest(ctx context.Context, property string, value i
 
 			if len(reqIDs) == 0 {
 				//all reqIDs found
-				http_response := HTTP_code{err_message: errs, any_success: num_success}
+				http_response := domain.HTTP_code{Err_message: errs, Any_success: num_success}
 				return nil, http_response
 			}
 
 		case <-timer.C:
 			//time out for any attr updated events that we are still waiting for
-			return nil, HTTP_code{err_message: []string{timeout_response}, any_success: num_success}
+			return nil, domain.HTTP_code{Err_message: []string{timeout_response}, Any_success: num_success}
 
 		case <-ctx.Done():
-			return nil, HTTP_code{err_message: nil, any_success: num_success}
+			return nil, domain.HTTP_code{Err_message: nil, Any_success: num_success}
 		}
 	}
 }

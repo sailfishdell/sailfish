@@ -10,12 +10,12 @@ set -x
 # with //build +simulation comments at the beginning, before the package
 # statement.
 
-binaries=${binaries:-$(find cmd/* -type d)}
-TAGS=${TAGS:-ec mockup}
+binaries=${binaries:-./cmd/sailfish}
+TAGS=${TAGS:-ec}
 
 for cmd in ${binaries}
 do
-    go build -tags "simulation $TAGS" "$@" github.com/superchalupa/sailfish/$cmd
+    go build -mod=vendor -tags "$TAGS" "$@" github.com/superchalupa/sailfish/$cmd
 done
 echo
 

@@ -2,19 +2,13 @@ package view
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
-	"fmt"
+	"golang.org/x/xerrors"
 
 	"github.com/superchalupa/sailfish/src/log"
 	"github.com/superchalupa/sailfish/src/ocp/model"
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
 )
-
-type isHTTPCode interface {
-	ErrMessage() []string
-	AnySuccess() int
-}
 
 // already locked at aggregate level when we get here
 func (s *View) PropertyGet(
@@ -39,7 +33,8 @@ func (s *View) PropertyGet(
 		modelName = "default"
 	}
 
-	modelObj := s.GetModel(modelName)
+	// already have lock, used *Unlocked api
+	modelObj := s.GetModelUnlocked(modelName)
 	if modelObj == nil {
 		log.MustLogger("GET").Debug("metadata specifies a nonexistent model name", "meta", meta, "view", s)
 		return errors.New("metadata specifies a nonexistent model name")
@@ -86,74 +81,44 @@ func (s *View) PropertyPatch(
 	agg *domain.RedfishResourceAggregate,
 	auth *domain.RedfishAuthorizationProperty,
 	rrp *domain.RedfishResourceProperty,
-	body interface{},
+	encopts *domain.NuEncOpts,
 	meta map[string]interface{},
 ) error {
 
 	s.Lock()
 	defer s.Unlock()
 
-	log.MustLogger("PATCH").Debug("PATCH START", "body", body, "meta", meta, "rrp", rrp)
+	log.MustLogger("PATCH").Debug("PATCH START", "body", encopts.Parse, "meta", meta, "rrp", rrp)
 
 	controllerName, ok := meta["controller"].(string)
 	if !ok {
 		log.MustLogger("PATCH").Debug("metadata is missing the controller name", "meta", meta)
-		return errors.New(fmt.Sprintf("metadata is missing the controller name: %v\n", meta))
+		return xerrors.Errorf("metadata is missing the controller name: %v\n", meta)
 	}
 
 	controller, ok := s.controllers[controllerName]
 	if !ok {
 		log.MustLogger("PATCH").Debug("metadata specifies a nonexistent controller name", "meta", meta)
-		return errors.New(fmt.Sprintf("metadata specifies a nonexistent controller name: %v\n", meta))
+		return xerrors.Errorf("metadata specifies a nonexistent controller name: %v\n", meta)
 	}
 
 	property, ok := meta["property"].(string)
 	if ok {
-		newval, err := controller.UpdateRequest(ctx, property, body, auth)
+		newval, err := controller.UpdateRequest(ctx, property, encopts.Parse, auth)
 		log.MustLogger("PATCH").Debug("update request", "newval", newval, "err", err)
-		if e, ok := err.(isHTTPCode); ok {
-			any_success := e.AnySuccess()
-			//errors reported from patch & formatted correctly
-			err_extendedinfos := []interface{}{}
-			for _, err_msg := range e.ErrMessage() {
-				//generted extended error info msg for each err
-				//de-serialize err_msg here! need to turn from string into map[string]interface{}
-				msg := domain.ExtendedInfo{}
-				err := json.Unmarshal([]byte(err_msg), &msg)
-				if err != nil {
-					log.MustLogger("PATCH").Crit("Error could not be unmarshalled to an EEMI message")
-					return errors.New("Error updating: Could not unmarshal EEMI message")
-				}
-				err_extendedinfos = append(err_extendedinfos, msg)
-			}
+		if e, ok := err.(domain.HTTP_code); ok {
+			domain.AddEEMIMessage(encopts.HttpResponse, agg, "PATCHERROR", &e)
 
-			default_msg := domain.ExtendedInfo{}
-			oeim := *domain.NewObjectExtendedInfoMessages([]interface{}{default_msg.GetDefaultExtendedInfo()})
-			oeem := *domain.NewObjectExtendedErrorMessages(err_extendedinfos)
-
-			if len(err_extendedinfos) == 0 {
-				return &domain.CombinedPropObjInfoError{
-					ObjectExtendedInfoMessages: oeim,
-					NumSuccess:                 any_success,
-				}
-			} else {
-				return &domain.CombinedPropObjInfoError{
-					ObjectExtendedErrorMessages: oeem,
-					NumSuccess:                  any_success,
-				}
-			}
 		} else if err == nil {
 			rrp.Value = newval
-			default_msg := domain.ExtendedInfo{}
-			oeim := *domain.NewObjectExtendedInfoMessages([]interface{}{default_msg.GetDefaultExtendedInfo()})
-			return &domain.CombinedPropObjInfoError{
-				ObjectExtendedInfoMessages: oeim,
-				NumSuccess:                 1,
-			}
+			domain.AddEEMIMessage(encopts.HttpResponse, agg, "SUCCESS", nil)
+		} else {
+			log.MustLogger("PATCH").Debug("controller.UdpateRequest err is an unknown type", err)
+			return xerrors.Errorf("controller.UdpateRequest err is an unknown type %t", err)
 		}
+		return nil
 
-		return errors.New("Error updating: patch error message not formatted properly")
 	}
 
-	return errors.New("Error updating: no property specified")
+	return errors.New("error updating: no property specified")
 }

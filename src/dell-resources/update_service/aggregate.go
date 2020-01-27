@@ -49,9 +49,16 @@ func RegisterAggregate(s *testaggregate.Service) {
 							"Oem": map[string]interface{}{
 								"#DellUpdateService.v1_0_0.DellUpdateService.Reset": map[string]interface{}{
 									"target": vw.GetActionURI("update.reset"),
+									"TargetURI@Redfish.AllowableValues": []string{
+										"CMC.Integrated.1",
+										"CMC.Integrated.2",
+									},
 								},
 								"#DellUpdateService.v1_0_0.DellUpdateService.Syncup": map[string]interface{}{
 									"target": vw.GetActionURI("update.syncup"),
+								},
+								"#DellUpdateService.v1_0_0.FirmwareUpdate": map[string]interface{}{
+									"target": vw.GetActionURI("update.update"),
 								},
 							},
 						},
@@ -124,6 +131,4 @@ func RegisterAggregate(s *testaggregate.Service) {
 					}},
 			}, nil
 		})
-
-	return
 }

@@ -2,7 +2,6 @@ package stdmeta
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"time"
 
@@ -27,48 +26,42 @@ type SledProfile struct {
 
 func (s *SledProfile) PluginType() domain.PluginType { return SledProfilePlugin }
 
-type syncEvent interface {
-	Add(int)
-	Done()
-}
-
 func (s *SledProfile) PropertyPatch(
 	ctx context.Context,
 	agg *domain.RedfishResourceAggregate,
 	auth *domain.RedfishAuthorizationProperty,
 	rrp *domain.RedfishResourceProperty,
-	encopts interface{},
+	encopts *domain.NuEncOpts,
 	meta map[string]interface{},
 ) error {
 	patch_timeout := 10
 	//patch_timeout := 30000
-	any_success := 0
 
 	resURI := agg.ResourceURI
 
 	v, err := domain.InstantiatePlugin(domain.PluginType(resURI))
 	if err != nil || v == nil {
-		return errors.New("Could not find plugin for resource uri")
+		return errors.New("could not find plugin for resource uri")
 	}
 
 	vw, ok := v.(*view.View)
 	if !ok {
-		return errors.New("Could not typecast plugin as view")
+		return errors.New("could not typecast plugin as view")
 	}
 
 	mdl := vw.GetModel("default")
 	if mdl == nil {
-		return errors.New("Could not find 'default' model in view")
+		return errors.New("could not find 'default' model in view")
 	}
 
 	sled_fqdd_raw, ok := mdl.GetPropertyOk("slot_contains")
 	if !ok {
-		return errors.New("Could not get 'slot_contains' property from model")
+		return errors.New("could not get 'slot_contains' property from model")
 	}
 
 	sled_fqdd, ok := sled_fqdd_raw.(string)
 	if !ok {
-		return errors.New("Could not typecast sled_fqdd into string")
+		return errors.New("could not typecast sled_fqdd into string")
 	}
 
 	reqUUID := eh.NewUUID()
@@ -78,7 +71,7 @@ func (s *SledProfile) PropertyPatch(
 		Group:         "Info",
 		Index:         "1",
 		Name:          "SledProfile",
-		Value:         encopts,
+		Value:         encopts.Parse,
 		Authorization: *auth,
 	}
 
@@ -103,42 +96,26 @@ func (s *SledProfile) PropertyPatch(
 		return true
 	})
 	if err != nil {
-		return errors.New("Failed to make attribute updated event listener")
+		return errors.New("failed to make attribute updated event listener")
 	}
 	l.Name = "sledprofile patch listener"
 	defer l.Close()
 
 	event, err := l.Wait(tmctx)
 	if err != nil {
-		return errors.New("TIMED OUT")
+		return errors.New("timed out")
 	} else {
 		data, _ := event.Data().(*a.AttributeUpdatedData)
-		err_extendedinfos := []interface{}{}
 
+		hc := domain.HTTP_code{}
 		if data.Error != "" {
-			msg := domain.ExtendedInfo{}
-			err := json.Unmarshal([]byte(data.Error), &msg)
-			if err != nil {
-				return errors.New("Error updating: Could not unmarshal EEMI message")
-			}
-			err_extendedinfos = append(err_extendedinfos, msg)
+			hc.Err_message = append(hc.Err_message, data.Error)
+			domain.AddEEMIMessage(encopts.HttpResponse, agg, "PATCHERROR", &hc)
 		} else {
-			any_success = 1
+			hc.Any_success = 1
+			domain.AddEEMIMessage(encopts.HttpResponse, agg, "SUCCESS", &hc)
 		}
 
-		if any_success > 0 {
-			default_msg := domain.ExtendedInfo{}
-			oeim := *domain.NewObjectExtendedInfoMessages([]interface{}{default_msg.GetDefaultExtendedInfo()})
-			return &domain.CombinedPropObjInfoError{
-				ObjectExtendedInfoMessages: oeim,
-				NumSuccess:                 any_success,
-			}
-		} else {
-			oeem := *domain.NewObjectExtendedErrorMessages(err_extendedinfos)
-			return &domain.CombinedPropObjInfoError{
-				ObjectExtendedErrorMessages: oeem,
-				NumSuccess:                  any_success,
-			}
-		}
 	}
+	return nil
 }

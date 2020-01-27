@@ -34,6 +34,4 @@ func EnhanceAggregate(ctx context.Context, v *view.View, ch eh.CommandHandler) {
 			ID:         v.GetUUID(),
 			Properties: properties,
 		})
-
-	return
 }

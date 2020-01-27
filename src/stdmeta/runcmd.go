@@ -33,7 +33,7 @@ func (t *runCmd) PropertyGet(
 	cmd, ok := meta["CMD"].(string)
 	if !ok {
 		fmt.Printf("Misconfigured runcmd plugin: CMD not set\n")
-		return errors.New("Misconfigured runcmd plugin: CMD not set")
+		return errors.New("misconfigured runcmd plugin: CMD not set")
 	}
 
 	// convert args to something we can pass to command

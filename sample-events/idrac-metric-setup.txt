@@ -1,0 +1,14 @@
+{ "name": "startup", "event_seq": -1, "data": {} }
+
+//
+// Debug reports
+//
+{ "name": "UpdateMetricReportDefinitionEvent", "data": { "Name": "UBER-REPORT-wrap",          "Enabled": true, "Type": "OnRequest", "Updates": "AppendStopsWhenFull",  "SuppressDups": false , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"], "Metrics": [ {"MetricID":"%"}] } }
+{ "name": "UpdateMetricReportDefinitionEvent", "data": { "Name": "UBER-REPORT-stop",          "Enabled": true, "Type": "OnRequest", "Updates": "AppendWrapsWhenFull",  "SuppressDups": false , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"], "Metrics": [ {"MetricID":"%"}] } }
+{ "name": "UpdateMetricReportDefinitionEvent", "data": { "Name": "UBER-COLL-PERIODIC-NEW",    "Enabled": true, "Type": "Periodic",  "Period": 60, "Updates": "NewReport", "SuppressDups": false , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"], "Metrics": [ {"MetricID":"%", "CollectionFunction": "Average", "CollectionDuration": 10}] } }
+{ "name": "UpdateMetricReportDefinitionEvent", "data": { "Name": "UBER-COLL-PERIODIC-OVW",    "Enabled": true, "Type": "Periodic",  "Period": 60, "Updates": "Overwrite", "SuppressDups": false , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"], "Metrics": [ {"MetricID":"%", "CollectionFunction": "Average", "CollectionDuration": 10}] } }
+{ "name": "UpdateMetricReportDefinitionEvent", "data": { "Name": "UBER-REPORT-PERIODIC-wrap", "Enabled": true, "Type": "Periodic",  "Period": 60, "Updates": "AppendStopsWhenFull",  "SuppressDups": false , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"], "Metrics": [ {"MetricID":"%"}] } }
+{ "name": "UpdateMetricReportDefinitionEvent", "data": { "Name": "UBER-REPORT-PERIODIC-stop", "Enabled": true, "Type": "Periodic",  "Period": 60, "Updates": "AppendWrapsWhenFull",  "SuppressDups": false , "Actions": ["RedfishEvent", "LogToMetricReportsCollection"], "Metrics": [ {"MetricID":"%"}] } }
+
+// synchonize and wait until everything finishes
+{ "name": "startup", "Synchronous": true, "Barrier": true, "data": {} }

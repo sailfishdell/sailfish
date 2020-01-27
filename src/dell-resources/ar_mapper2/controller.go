@@ -13,7 +13,6 @@ import (
 
 	"github.com/superchalupa/sailfish/src/log"
 	"github.com/superchalupa/sailfish/src/looplab/eventwaiter"
-	"github.com/superchalupa/sailfish/src/ocp/event"
 	"github.com/superchalupa/sailfish/src/ocp/model"
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
 
@@ -29,29 +28,15 @@ type mapping struct {
 	Name     string
 }
 
-type syncEvent interface {
-	Add(int)
-	Done()
-}
-
-type waiter interface {
-	Listen(context.Context, func(eh.Event) bool) (*eventwaiter.EventListener, error)
-}
-
-type listener interface {
-	Inbox() <-chan eh.Event
-	Close()
-}
-
 // individual mapping: only for bookkeeping
 type ModelMappings struct {
-	logger         log.Logger
 	mappings       []mapping
 	cfgsect        string
 	model          *model.Model
 	requestedFQDD  string
 	requestedGroup string
 	requestedIndex string
+	loaded         bool
 }
 
 type ARService struct {
@@ -63,10 +48,11 @@ type ARService struct {
 	mappingsMu    sync.RWMutex
 	modelmappings map[string]ModelMappings
 
-	hashMu sync.RWMutex
-	hash   map[string][]update
+	hashMu    sync.RWMutex
+	hash      map[string][]update
+	hashDirty bool
 
-	ew waiter
+	ew *eventwaiter.EventWaiter
 }
 
 // post-processed and optimized update
@@ -75,26 +61,32 @@ type update struct {
 	property string
 }
 
-func StartService(ctx context.Context, logger log.Logger, cfg *viper.Viper, cfgMu *sync.RWMutex, eb eh.EventBus) (*ARService, error) {
+type BusObjs interface {
+	GetBus() eh.EventBus
+	GetWaiter() *eventwaiter.EventWaiter
+	GetCommandHandler() eh.CommandHandler
+}
+
+func StartService(ctx context.Context, logger log.Logger, cfg *viper.Viper, cfgMu *sync.RWMutex, d BusObjs) (*ARService, error) {
 	logger = logger.New("module", "ar2")
 
 	arservice := &ARService{
-		eb:            eb,
+		eb:            d.GetBus(),
 		cfg:           cfg,
 		cfgMu:         cfgMu,
 		logger:        logger,
 		modelmappings: make(map[string]ModelMappings),
 		hash:          make(map[string][]update),
+		hashDirty:     true,
+		ew:            d.GetWaiter(),
 	}
 
-	sp, err := event.NewESP(ctx, event.MatchAnyEvent(a.AttributeUpdated), event.SetListenerName("ar_service"))
-	if err != nil {
-		logger.Error("Failed to create new event stream processor", "err", err)
-		return nil, errors.New("Failed to create ESP")
-	}
-	arservice.ew = &sp.EW
+	listener := eventwaiter.NewListener(ctx, logger, arservice.ew, func(ev eh.Event) bool {
+		return ev.EventType() == a.AttributeUpdated
+	})
+	// never calling listener.Close() because we can't shut this down
 
-	go sp.RunForever(func(event eh.Event) {
+	go listener.ProcessEvents(ctx, func(event eh.Event) {
 		data, ok := event.Data().(*a.AttributeUpdatedData)
 		if !ok {
 			return
@@ -102,7 +94,17 @@ func StartService(ctx context.Context, logger log.Logger, cfg *viper.Viper, cfgM
 
 		logger.Debug("processing event", "event", event)
 		key := fmt.Sprintf("%s:%s:%s:%s", data.FQDD, data.Group, data.Index, data.Name)
+
 		arservice.hashMu.RLock()
+		if arservice.hashDirty {
+
+			arservice.hashMu.RUnlock()
+
+			// drop locks before calling
+			arservice.optimizeHash()
+
+			arservice.hashMu.RLock()
+		}
 
 		if arr, ok := arservice.hash[key]; ok {
 			logger.Debug("matched quick hash", "key", key)
@@ -125,31 +127,27 @@ func StartService(ctx context.Context, logger log.Logger, cfg *viper.Viper, cfgM
 type breadcrumb struct {
 	ars         *ARService
 	mappingName string
-	logger      log.Logger
 }
 
 func (ars *ARService) NewMapping(logger log.Logger, mappingName, cfgsection string, m *model.Model, fgin map[string]string, id eh.UUID) breadcrumb {
 	mm := ModelMappings{
-		logger:         logger.New("module", "ar2"),
 		cfgsect:        cfgsection,
 		model:          m,
 		mappings:       []mapping{},
 		requestedFQDD:  fgin["FQDD"],
 		requestedGroup: fgin["Group"],
 		requestedIndex: fgin["Index"],
+		loaded:         false,
 	}
 
 	ars.mappingsMu.Lock()
 	ars.modelmappings[mappingName] = mm
 	ars.mappingsMu.Unlock()
+	ars.hashMu.Lock()
+	ars.hashDirty = true
+	ars.hashMu.Unlock()
 
-	ars.loadConfig(mappingName)
-
-	// ars.logger.Info("updating mappings", "mappings", c.mappings)
-	// c.createModelProperties(ctx)
-	// go c.initialStartupBootstrap(ctx)
-
-	return breadcrumb{ars: ars, mappingName: mappingName, logger: logger}
+	return breadcrumb{ars: ars, mappingName: mappingName}
 }
 
 func (b breadcrumb) Close() {
@@ -157,33 +155,25 @@ func (b breadcrumb) Close() {
 	delete(b.ars.modelmappings, b.mappingName)
 	b.ars.mappingsMu.Unlock()
 
-	b.ars.resetConfig()
-}
-
-type HTTP_code struct {
-	err_message []string
-	any_success int
-}
-
-func (e HTTP_code) ErrMessage() []string {
-	return e.err_message
-}
-
-func (e HTTP_code) AnySuccess() int {
-	return e.any_success
-}
-
-func (e HTTP_code) Error() string {
-	return fmt.Sprintf("Request Error Message: %s", e.err_message)
+	b.ars.logger.Info("CLOSE on breadcrumb. SETTING HASH DIRTY", "mappingName", b.mappingName)
+	b.ars.hashMu.Lock()
+	b.ars.hashDirty = true
+	b.ars.hashMu.Unlock()
 }
 
 func (b breadcrumb) UpdateRequest(ctx context.Context, property string, value interface{}, auth *domain.RedfishAuthorizationProperty) (interface{}, error) {
-	b.ars.hashMu.RLock()
-	defer b.ars.hashMu.RUnlock()
+	b.ars.mappingsMu.RLock()
+	needsUnlock := true
+	// defer so that we unlock on panic and dont lock everything up, but need to support unlock earlier
+	defer func() {
+		if needsUnlock {
+			b.ars.mappingsMu.RUnlock()
+		}
+	}()
 
 	canned_response := `{"RelatedProperties@odata.count": 1, "Message": "%s", "MessageArgs": ["%[2]s"], "Resolution": "Remove the %sproperty from the request body and resubmit the request if the operation failed.", "MessageId": "%s", "MessageArgs@odata.count": 1, "RelatedProperties": ["%[2]s"], "Severity": "Warning"}`
 	timeout_response := `{"RelatedProperties@odata.count": 0, "Message": "Request Timed Out", "MessageArgs": [], "Resolution": "", "MessageId": "", "MessageArgs@odata.count": 0, "RelatedProperties": [], "Severity": "Error"}`
-	b.logger.Info("UpdateRequest", "property", property, "mappingName", b.mappingName)
+	b.ars.logger.Info("UpdateRequest", "property", property, "mappingName", b.mappingName)
 	num_success := 0
 	found_flag := false
 
@@ -193,7 +183,7 @@ func (b breadcrumb) UpdateRequest(ctx context.Context, property string, value in
 	patch_timeout := 10
 	//patch_timeout := 3000
 
-	l, err := b.ars.ew.Listen(ctx, func(event eh.Event) bool {
+	listener := eventwaiter.NewListener(ctx, b.ars.logger, b.ars.ew, func(event eh.Event) bool {
 		if event.EventType() != a.AttributeUpdated {
 			return false
 		}
@@ -206,14 +196,7 @@ func (b breadcrumb) UpdateRequest(ctx context.Context, property string, value in
 		}
 		return true
 	})
-	if err != nil {
-		b.ars.logger.Error("Could not create listener", "err", err)
-		return nil, errors.New("Failed to make attribute updated event listener")
-	}
-	l.Name = "ar patch listener"
-	var listener listener
-	listener = l
-
+	listener.Name = "ar patch listener"
 	defer listener.Close()
 
 	mappings, ok := b.ars.modelmappings[b.mappingName]
@@ -235,7 +218,7 @@ func (b breadcrumb) UpdateRequest(ctx context.Context, property string, value in
 			continue
 		}
 
-		mappings.logger.Info("Sending Update Request", "mapping", mapping, "value", value)
+		b.ars.logger.Info("Sending Update Request", "mapping", mapping, "value", value)
 		reqUUID := eh.NewUUID()
 
 		data := &a.AttributeUpdateRequestData{
@@ -253,6 +236,10 @@ func (b breadcrumb) UpdateRequest(ctx context.Context, property string, value in
 		break
 	}
 
+	// we could be locked a very long time if this listener is slow, so unlock now and tell the defer not to bother
+	b.ars.mappingsMu.RUnlock()
+	needsUnlock = false
+
 	if !found_flag {
 		b.ars.logger.Error("not found", "Attribute", property)
 		err_msg := fmt.Sprintf("The property %s is not in the list of valid properties for the resource.", property)
@@ -260,66 +247,75 @@ func (b breadcrumb) UpdateRequest(ctx context.Context, property string, value in
 	}
 
 	if len(reqIDs) == 0 {
-		return nil, HTTP_code{err_message: errs, any_success: num_success}
+		return nil, domain.HTTP_code{Err_message: errs, Any_success: num_success}
 	}
-	timer := time.NewTimer(time.Duration(patch_timeout*len(reqIDs)) * time.Second)
-	defer timer.Stop()
 
-	for {
-		select {
-		case event := <-listener.Inbox():
-			if e, ok := event.(syncEvent); ok {
-				e.Done()
-			}
-
-			data, ok := event.Data().(*a.AttributeUpdatedData)
-			if !ok {
-				continue
-			}
-			for i, reqID := range reqIDs {
-				if reqID == data.ReqID {
-					reqIDs[i] = reqIDs[len(reqIDs)-1]
-					reqIDs = reqIDs[:len(reqIDs)-1]
-					responses = append(responses, *data)
-					if data.Error != "" {
-						errs = append(errs, data.Error)
-					} else {
-						num_success = num_success + 1
-					}
-					break
-				}
-			}
-			if len(reqIDs) == 0 {
-				return nil, HTTP_code{err_message: errs, any_success: num_success}
-			}
-		case <-timer.C:
-			return nil, HTTP_code{err_message: []string{timeout_response}, any_success: num_success}
-
-		case <-ctx.Done():
-			return nil, nil
+	// set up ret for default (timeout). If ProcessEvents() doesn't reset ret to a succes, this is what goes out
+	ret := domain.HTTP_code{Err_message: []string{timeout_response}, Any_success: num_success}
+	timedCtx, cancel := context.WithTimeout(ctx, time.Duration(patch_timeout*len(reqIDs))*time.Second)
+	defer cancel()
+	listener.ProcessEvents(timedCtx, func(event eh.Event) {
+		data, ok := event.Data().(*a.AttributeUpdatedData)
+		if !ok {
+			return
 		}
-	}
+		for i, reqID := range reqIDs {
+			if reqID == data.ReqID {
+				reqIDs[i] = reqIDs[len(reqIDs)-1]
+				reqIDs = reqIDs[:len(reqIDs)-1]
+				responses = append(responses, *data)
+				if data.Error != "" {
+					errs = append(errs, data.Error)
+				} else {
+					num_success = num_success + 1
+				}
+				break
+			}
+		}
+		if len(reqIDs) == 0 {
+			ret = domain.HTTP_code{Err_message: errs, Any_success: num_success}
+			cancel()
+		}
+	})
+
+	return nil, ret
 }
 
-func (ars *ARService) resetConfig() {
+func (ars *ARService) optimizeHash() {
+	ars.mappingsMu.Lock()
+	defer ars.mappingsMu.Unlock()
+	for k := range ars.modelmappings {
+		ars.loadConfig(k)
+	}
+
 	ars.hashMu.Lock()
-	// clear out old mappings in preparation
+	defer ars.hashMu.Unlock()
+
+	// clear out old optimized hash in preparation
 	for k := range ars.hash {
 		delete(ars.hash, k)
 	}
-	ars.hashMu.Unlock()
 
-	for k, _ := range ars.modelmappings {
-		ars.loadConfig(k)
+	for _, mapping := range ars.modelmappings {
+		for _, mm := range mapping.mappings {
+			mapstring := fmt.Sprintf("%s:%s:%s:%s", mm.FQDD, mm.Group, mm.Index, mm.Name)
+			updArr, ok := ars.hash[mapstring]
+			if !ok {
+				updArr = []update{}
+			}
+			updArr = append(updArr, update{model: mapping.model, property: mm.Property})
+			ars.hash[mapstring] = updArr
+		}
 	}
+	ars.hashDirty = false
+	ars.logger.Info("finished optimizing hash", "len(hash)", len(ars.hash), "hash", ars.hash)
 }
 
-// this is the function that viper will call whenever the configuration changes at runtime
+// loadConfig must be called with ars.mappingsMu!
 func (ars *ARService) loadConfig(mappingName string) {
-	ars.mappingsMu.Lock()
-	defer ars.mappingsMu.Unlock()
-	ars.hashMu.Lock()
-	defer ars.hashMu.Unlock()
+	if ars.modelmappings[mappingName].loaded {
+		return
+	}
 
 	ars.logger.Info("Updating Config")
 
@@ -332,48 +328,36 @@ func (ars *ARService) loadConfig(mappingName string) {
 		return
 	}
 
-	k := mappingName
 	newmaps := []mapping{}
-	err := subCfg.UnmarshalKey(ars.modelmappings[k].cfgsect, &newmaps)
+	err := subCfg.UnmarshalKey(ars.modelmappings[mappingName].cfgsect, &newmaps)
 	if err != nil {
-		ars.logger.Warn("unamrshal failed", "err", err)
+		ars.logger.Warn("Unmarshal failed", "err", err)
 	}
 
-	ars.logger.Info("Loading Config", "mappingName", k, "configsection", ars.modelmappings[k].cfgsect, "mappings", newmaps)
+	ars.logger.Info("Loading Config", "mappingName", mappingName, "configsection", ars.modelmappings[mappingName].cfgsect, "mappings", newmaps)
 
-	for mappingIdx, mm := range newmaps {
-		if mm.FQDD == "{FQDD}" {
-			mm.FQDD = ars.modelmappings[k].requestedFQDD
-			ars.modelmappings[k].logger.Debug("Replacing {FQDD} with real fqdd", "fqdd", mm.FQDD)
+	modelmapping := ars.modelmappings[mappingName]
+
+	realmaps := make([]mapping, 0, len(newmaps))
+	for _, mm := range newmaps {
+		newentry := mm
+		if newentry.FQDD == "{FQDD}" {
+			ars.logger.Debug("Replacing {FQDD} with real fqdd", "fqdd", newentry.FQDD, "real_fqdd", modelmapping.requestedFQDD)
+			newentry.FQDD = modelmapping.requestedFQDD
 		}
-		if mm.Group == "{GROUP}" {
-			mm.Group = ars.modelmappings[k].requestedGroup
-			ars.modelmappings[k].logger.Debug("Replacing {GROUP} with real group", "group", mm.Group)
+		if newentry.Group == "{GROUP}" {
+			ars.logger.Debug("Replacing {GROUP} with real group", "group", newentry.Group, "real_group", modelmapping.requestedGroup)
+			newentry.Group = modelmapping.requestedGroup
 		}
-		if mm.Index == "{INDEX}" {
-			mm.Index = ars.modelmappings[k].requestedIndex
-			ars.modelmappings[k].logger.Debug("Replacing {INDEX} with real index", "index", mm.Index)
+		if newentry.Index == "{INDEX}" {
+			ars.logger.Debug("Replacing {INDEX} with real index", "index", newentry.Index, "real_index", modelmapping.requestedIndex)
+			newentry.Index = modelmapping.requestedIndex
 		}
-
-		modelmapping := ars.modelmappings[k]
-		modelmapping.mappings = append(ars.modelmappings[k].mappings, mm)
-		ars.modelmappings[k] = modelmapping
-
-		mapstring := fmt.Sprintf("%s:%s:%s:%s",
-			ars.modelmappings[k].mappings[mappingIdx].FQDD,
-			ars.modelmappings[k].mappings[mappingIdx].Group,
-			ars.modelmappings[k].mappings[mappingIdx].Index,
-			ars.modelmappings[k].mappings[mappingIdx].Name,
-		)
-		updArr, ok := ars.hash[mapstring]
-		if !ok {
-			updArr = []update{}
-		}
-
-		updArr = append(updArr, update{model: ars.modelmappings[k].model, property: mm.Property})
-		ars.hash[mapstring] = updArr
-
-		ars.logger.Info("Updated config array", "update_array", updArr)
-		ars.logger.Info("finished optimizing hash", "hash", ars.hash)
+		realmaps = append(realmaps, newentry)
 	}
+	modelmapping.mappings = realmaps
+	modelmapping.loaded = true
+	ars.modelmappings[mappingName] = modelmapping
+
+	ars.logger.Info("Loaded Config", "mappingName", mappingName, "configsection", ars.modelmappings[mappingName].cfgsect, "mappings", ars.modelmappings[mappingName].mappings)
 }

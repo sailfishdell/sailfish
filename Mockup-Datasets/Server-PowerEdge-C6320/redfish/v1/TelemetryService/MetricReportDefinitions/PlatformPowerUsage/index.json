@@ -11,9 +11,9 @@
     "MetricReport": {
         "@odata.id": "/redfish/v1/TelemetryService/MetricReports/PlatformPowerUsage"
     },
-    "MetricReportDefinitionEnabled@meta": {"PATCH": {"plugin":"MRD"}},
+    "MetricReportDefinitionEnabled@meta": {"PATCH": {"plugin":"Generic"}},
     "MetricReportDefinitionType": "Periodic",
-    "MetricReportHeartbeatInterval@meta": {"PATCH": {"plugin":"MRD"}},
+    "MetricReportHeartbeatInterval@meta": {"PATCH": {"plugin":"Generic"}},
     "Name": "Transmit and Log Platform Power Usage",
     "ReportActions": [
         "RedfishEvent",

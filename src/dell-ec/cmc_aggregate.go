@@ -79,8 +79,8 @@ func RegisterCMCAggregate(s *testaggregate.Service) {
 						},
 
 						"Status": map[string]interface{}{
-							"Health@meta":       vw.Meta(view.PropGET("health")),
-							"HealthRollup@meta": vw.Meta(view.PropGET("health")),
+							"Health":       nil,
+							"HealthRollup": nil,
 							"State@meta":        vw.Meta(view.PropGET("health_state")),
 						},
 
@@ -104,162 +104,6 @@ func RegisterCMCAggregate(s *testaggregate.Service) {
 										"Default",
 									},
 									"target": vw.GetActionURI("manager.resettodefaults"),
-								},
-								"OemManager.v1_0_0#OemManager.ExportSystemConfiguration": map[string]interface{}{
-									"ExportFormat@Redfish.AllowableValues": []string{
-										"XML",
-										"JSON",
-									},
-									"ExportUse@Redfish.AllowableValues": []string{
-										"Default",
-										"Clone",
-										"Replace",
-									},
-									"IncludeInExport@Redfish.AllowableValues": []string{
-										"Default",
-										"IncludeReadOnly",
-										"IncludePasswordHashValues",
-										"IncludeReadOnly,IncludePasswordHashValues",
-									},
-									"ShareParameters": map[string]interface{}{
-										"IgnoreCertificateWarning@Redfish.AllowableValues": []string{
-											"Disabled",
-											"Enabled",
-										},
-										"ProxySupport@Redfish.AllowableValues": []string{
-											"Disabled",
-											"EnabledProxyDefault",
-											"Enabled",
-										},
-										"ProxyType@Redfish.AllowableValues": []string{
-											"HTTP",
-											"SOCKS4",
-										},
-										"ShareParameters@Redfish.AllowableValues": []string{
-											"IPAddress",
-											"ShareName",
-											"FileName",
-											"UserName",
-											"Password",
-											"Workgroup",
-											"ProxyServer",
-											"ProxyUserName",
-											"ProxyPassword",
-											"ProxyPort",
-										},
-										"ShareType@Redfish.AllowableValues": []string{
-											"NFS",
-											"CIFS",
-											"HTTP",
-											"HTTPS",
-										},
-										"Target@Redfish.AllowableValues": []string{
-											"ALL",
-											"IDRAC",
-											"BIOS",
-											"NIC",
-											"RAID",
-										},
-									},
-									"target": vw.GetActionURI("manager.exportsystemconfig"),
-								},
-								"OemManager.v1_0_0#OemManager.ImportSystemConfiguration": map[string]interface{}{
-									"HostPowerState@Redfish.AllowableValues": []string{
-										"On",
-										"Off",
-									},
-									"ImportSystemConfiguration@Redfish.AllowableValues": []string{
-										"TimeToWait",
-										"ImportBuffer",
-									},
-									"ShareParameters": map[string]interface{}{
-										"IgnoreCertificateWarning@Redfish.AllowableValues": []string{
-											"Disabled",
-											"Enabled",
-										},
-										"ProxySupport@Redfish.AllowableValues": []string{
-											"Disabled",
-											"EnabledProxyDefault",
-											"Enabled",
-										},
-										"ProxyType@Redfish.AllowableValues": []string{
-											"HTTP",
-											"SOCKS4",
-										},
-										"ShareParameters@Redfish.AllowableValues": []string{
-											"IPAddress",
-											"ShareName",
-											"FileName",
-											"UserName",
-											"Password",
-											"Workgroup",
-											"ProxyServer",
-											"ProxyUserName",
-											"ProxyPassword",
-											"ProxyPort",
-										},
-										"ShareType@Redfish.AllowableValues": []string{
-											"NFS",
-											"CIFS",
-											"HTTP",
-											"HTTPS",
-										},
-										"Target@Redfish.AllowableValues": []string{
-											"ALL",
-											"IDRAC",
-											"BIOS",
-											"NIC",
-											"RAID",
-										},
-									},
-									"ShutdownType@Redfish.AllowableValues": []string{
-										"Graceful",
-										"Forced",
-										"NoReboot",
-									},
-									"target": vw.GetActionURI("manager.importsystemconfig"),
-								},
-								"OemManager.v1_0_0#OemManager.ImportSystemConfigurationPreview": map[string]interface{}{
-									"ImportSystemConfigurationPreview@Redfish.AllowableValues": []string{
-										"ImportBuffer",
-									},
-									"ShareParameters": map[string]interface{}{
-										"IgnoreCertificateWarning@Redfish.AllowableValues": []string{
-											"Disabled",
-											"Enabled",
-										},
-										"ProxySupport@Redfish.AllowableValues": []string{
-											"Disabled",
-											"EnabledProxyDefault",
-											"Enabled",
-										},
-										"ProxyType@Redfish.AllowableValues": []string{
-											"HTTP",
-											"SOCKS4",
-										},
-										"ShareParameters@Redfish.AllowableValues": []string{
-											"IPAddress",
-											"ShareName",
-											"FileName",
-											"UserName",
-											"Password",
-											"Workgroup",
-											"ProxyServer",
-											"ProxyUserName",
-											"ProxyPassword",
-											"ProxyPort",
-										},
-										"ShareType@Redfish.AllowableValues": []string{
-											"NFS",
-											"CIFS",
-											"HTTP",
-											"HTTPS",
-										},
-										"Target@Redfish.AllowableValues": []string{
-											"ALL",
-										},
-									},
-									"target": vw.GetActionURI("manager.importsystemconfigpreview"),
 								},
 							},
 						},
@@ -293,9 +137,9 @@ func RegisterCMCAggregate(s *testaggregate.Service) {
 						"Description@meta":  vw.Meta(view.PropGET("description")),
 						"Links":             map[string]interface{}{},
 						"Status": map[string]interface{}{
-							"HealthRollup@meta": vw.Meta(view.PropGET("health")),
+							"HealthRollup": nil,
 							"State@meta":        vw.Meta(view.PropGET("health_state")),
-							"Health@meta":       vw.Meta(view.PropGET("health")),
+							"Health":       nil,
 						},
 						"IndicatorLED": "Blinking", // static.  MSM does a patch operation and reads from attributes
 						"Oem": map[string]interface{}{
@@ -325,8 +169,8 @@ func RegisterCMCAggregate(s *testaggregate.Service) {
 						"RedundancySet@meta":             vw.Meta(view.GETProperty("redundancy_set"), view.GETFormatter("formatOdataList"), view.GETModel("default")),
 						"RedundancySet@odata.count@meta": vw.Meta(view.GETProperty("redundancy_set"), view.GETFormatter("count"), view.GETModel("default")),
 						"Status": map[string]interface{}{
-							"Health@meta":       vw.Meta(view.PropGET("health")),
-							"HealthRollup@meta": vw.Meta(view.PropGET("health")),
+							"Health":       nil,
+							"HealthRollup": nil,
 							"State@meta":        vw.Meta(view.PropGET("health_state")),
 						},
 					},

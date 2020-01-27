@@ -21,7 +21,7 @@ type MetricReportData struct {
 }
 
 type RedfishEventData struct {
-	EventType         string                 `json:",omitempty"`
+	EventType         string
 	EventId           string                 `json:",omitempty"`
 	EventTimestamp    string                 `json:",omitempty"`
 	Severity          string                 `json:",omitempty"`

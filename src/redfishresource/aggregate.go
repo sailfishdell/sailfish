@@ -2,78 +2,56 @@ package domain
 
 import (
 	"context"
-	"sync"
-	"time"
 
 	eh "github.com/looplab/eventhorizon"
 )
 
 const AggregateType = eh.AggregateType("RedfishResource")
 
-func init() {
-	RegisterInitFN(RegisterRRA)
-}
-
-func RegisterRRA(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew waiter) {
+func InitDomain(ctx context.Context, ch eh.CommandHandler, eb eh.EventBus, ew interface{} /*unused*/) {
 	eh.RegisterAggregate(func(id eh.UUID) eh.Aggregate {
 		return &RedfishResourceAggregate{}
 	})
 }
 
+func (a *RedfishResourceAggregate) HandleCommand(ctx context.Context, command eh.Command) error {
+	switch command := command.(type) {
+	case RRCmdHandler:
+		return command.Handle(ctx, a)
+	}
+
+	return nil
+}
+
 type RedfishResourceAggregate struct {
-	events   []eh.Event
-	eventsMu sync.RWMutex
+	events []eh.Event
 
 	// public
 	ID          eh.UUID
 	ResourceURI string
 	Plugin      string
 
-	Properties     RedfishResourceProperty
-	resultsCacheMu sync.RWMutex
-	StatusCode     int // http status code for the current state of this object since the last time we've run the meta functions
-	DefaultFilter  string
+	Properties RedfishResourceProperty
+
+	StatusCode    int // http status code for the current state of this object since the last time we've run the meta functions
+	DefaultFilter string
 
 	// TODO: need accessor functions for all of these just like property stuff
 	// above so that everything can be properly locked
 	PrivilegeMap map[HTTPReqType]interface{}
 	Headers      map[string]string
-
-	// debug and beancounting
-	checkcount int                       // watchdog process uses this to try to do race-free detection of orphan aggregates
-	access     map[HTTPReqType]time.Time // store beancounting about when uri's were accessed
-}
-
-func (agg *RedfishResourceAggregate) Lock() {
-	agg.resultsCacheMu.Lock()
-}
-
-func (agg *RedfishResourceAggregate) Unlock() {
-	agg.resultsCacheMu.Unlock()
-}
-
-func (agg *RedfishResourceAggregate) RLock() {
-	agg.resultsCacheMu.RLock()
-}
-
-func (agg *RedfishResourceAggregate) RUnlock() {
-	agg.resultsCacheMu.RUnlock()
 }
 
 // PublishEvent registers an event to be published after the aggregate
 // has been successfully saved.
 func (a *RedfishResourceAggregate) PublishEvent(e eh.Event) {
-	a.eventsMu.Lock()
 	a.events = append(a.events, e)
-	a.eventsMu.Unlock()
 }
 
 // EventsToPublish implements the EventsToPublish method of the EventPublisher interface.
 func (a *RedfishResourceAggregate) EventsToPublish() (ret []eh.Event) {
-	a.eventsMu.Lock()
 	ret = a.events
 	a.events = []eh.Event{}
-	a.eventsMu.Unlock()
 	return
 }
 
@@ -108,13 +86,4 @@ func NewRedfishResourceAggregate(id eh.UUID) *RedfishResourceAggregate {
 
 type RRCmdHandler interface {
 	Handle(ctx context.Context, a *RedfishResourceAggregate) error
-}
-
-func (a *RedfishResourceAggregate) HandleCommand(ctx context.Context, command eh.Command) error {
-	switch command := command.(type) {
-	case RRCmdHandler:
-		return command.Handle(ctx, a)
-	}
-
-	return nil
 }

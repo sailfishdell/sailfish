@@ -113,14 +113,35 @@ func init() {
 			lhs := baseuri(str)
 			cfg_params, ok := p.Params["cfg_params"].(*MapperParameters)
 			if !ok {
+				return false, errors.New("no mapperparameters found")
+			}
+			rhsParams := cfgEntry.SelectParams
+			rhs := makeRHS(cfg_params, rhsParams)
+			return (lhs == rhs), nil
+		}, nil
+
+	})
+
+	AddAM3SelectSetupFunction("uriEquals", func(logger log.Logger, cfgEntry ConfigFileMappingEntry) (SelectFunc, error) {
+		//with hash version
+		return func(p *MapperParameters) (bool, error) {
+			var str string
+			switch data := p.Params["data"].(type) {
+			case *domain.RedfishResourceCreatedData:
+				str = data.ResourceURI
+			case *domain.RedfishResourceRemovedData:
+				str = data.ResourceURI
+			default:
+				return false, errors.New("unknown data type")
+			}
+			cfg_params, ok := p.Params["cfg_params"].(*MapperParameters)
+			if !ok {
 				return false, errors.New("No mapperparameters found")
 			}
 			rhsParams := cfgEntry.SelectParams
 			rhs := makeRHS(cfg_params, rhsParams)
-
-			return (lhs == rhs), nil
+			return (str == rhs), nil
 		}, nil
-
 	})
 
 	AddAM3SelectSetupFunction("uriCheckWithHash", func(logger log.Logger, cfgEntry ConfigFileMappingEntry) (SelectFunc, error) {
@@ -139,7 +160,7 @@ func init() {
 
 			cfg_params, ok := p.Params["cfg_params"].(*MapperParameters)
 			if !ok {
-				return false, errors.New("No mapperparameters found")
+				return false, errors.New("no mapperparameters found")
 			}
 			rhsParams := cfgEntry.SelectParams
 			rhs := makeRHS(cfg_params, rhsParams)

@@ -1,11 +1,14 @@
 main:
     server_name: "dell_ec"
     #options: "openbmc" | "dell_ec" | "mockup"
+    aggregatesearchpath: [ "/usr/share/sailfish/aggs/", "aggs/" ]
 
 listen:
-  - unix:sailfish.socket
-  - http:localhost:8080
-  - pprof:localhost:9080
+   - unix:sailfish.socket
+  # enable 8080 port only for testing, as per NCC audit it needs to be disabled on the build
+  # - http::8080
+  #  enable pprof only for debuging, it causes increased memory consumption. If memprofilerate>0, it will use way more. It's set to 0 in the service file.
+  # - pprof:localhost:9080
   # disable direct https listener, uncomment if needed for testing:
   # - https::8443
 
@@ -22,7 +25,6 @@ listen:
 
 views:
   "rootview":
-      "Logger": ["module", "root"]
       "Controllers":
         # This is for dynamic runtime instantiation of new chassis as they appear
         - "fn": "AM2"
@@ -47,30 +49,9 @@ views:
         #"instantiate('sessionservice')",
         "instantiate('telemetry_service')",
         "instantiate('task_service')",
-        "instantiate('non-compliant', 'FQDD', 'LCD.Chassis.1')",
-        "instantiate('non-compliant','FQDD', 'QuickSync.Chassis.1')",
-        "instantiate('non-compliant', 'FQDD', 'ControlPanel.Chassis.1')",
       ]
 
-  # Needs to be fixed, lcd, quicksync, control_panel is not compliant.
-  "non-compliant":
-      "Logger": ["module", "FQDD"]
-      "Models":
-        "default":  { "unique_name": "FQDD"}
-      "Controllers":
-        - "fn": "ARMapper"
-          "params": {"modelname": "default", "cfgsection": "firmware/inventory", "mappinguniquename": "'fw_mapper_manager:' + FQDD ", "AddToView": "ar_mapper_inv"}
-      "View":
-        - "fn": "linkModel"
-          "params": {"existing": "default", "linkname": "swinv"}
-        - "fn": "with_URI"
-          "params":  " '/redfish/' + FQDD"
-        - "fn": "PublishResourceUpdatedEventsForModel"
-          "params": "default"
-      "Aggregate": "root"
-
   "chassis":
-      "Logger": ["module", "Chassis"]
       "Models":
         "default":  {"members": "array()"}
       "Controllers":
@@ -86,7 +67,6 @@ views:
       "Aggregate": "chassis"
 
   "systems":
-      "Logger": ["module", "Systems"]
       "Models":
         "default":  {"members": "array()"}
       "Controllers":
@@ -102,7 +82,6 @@ views:
       "Aggregate": "systems"
 
   "managers":
-      "Logger": ["module", "Managers"]
       "Models":
         "default":  {"members": "array()"}
       "Controllers":
@@ -118,24 +97,11 @@ views:
       "Aggregate": "managers"
 
   "accountservice":
-      "Logger": ["module", "AccountService"]
-      "Models":
-        "default":  {}
       "Controllers":
       "View":
-        - "fn": "with_URI"
-          "params": "rooturi + '/AccountService' "
-        - "fn": "PublishResourceUpdatedEventsForModel"
-          "params": "default"
-        - "fn": "stdFormatters"
-          "params":
       "Aggregate": "accountservice"
-      "ExecPost": [
-        "set_hash_value(serviceglobals, serviceglobalsmu, 'actsvc_id', uuid)",
-        "set_hash_value(serviceglobals, serviceglobalsmu, 'actsvc_uri', view.GetURI())"]
 
   "roles":
-      "Logger": ["module", "Roles"]
       "Models":
         "default":  {"members": "array()"}
       "Controllers":
@@ -151,7 +117,6 @@ views:
       "Aggregate": "roles"
 
   "accounts":
-      "Logger": ["module", "Accounts"]
       "Models":
         "default":  {"members": "array()"}
       "Controllers":
@@ -249,7 +214,7 @@ views:
   "metric_report_definitions":
       "Logger": ["module", "metric_report_definitions"]
       "Models":
-        "default":  {"members": "array()"}
+        "default":   {"members": "array()"}
       "Controllers":
         - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + view.GetURI()", "passthru": {'collection_uri': 'view.GetURI()'} }
@@ -259,6 +224,21 @@ views:
         - "fn": "stdFormatters"
           "params":
       "Aggregate": "metric_report_definitions"
+      "Exec": [
+        "instantiate{'fan_speed_metric_def', 'parenturi',view.GetURI())",
+      ]
+
+  "fan_speed_metric_def":
+      "Logger": ["module", "metric_definition"]
+      "Models":
+        "default":  {"members": "array()"}
+      "View":
+        - "fn": "with_URI"
+          "params": "parenturi + '/FanSpeedRPM'"
+        - "fn": "stdFormatters"
+          "params":
+      "Aggregate": "fanspeedmetricdef"
+
 
   "metric_reports":
       "Logger": ["module", "metric_reports"]
@@ -277,7 +257,7 @@ views:
   "sessionservice":
       "Logger": ["module", "session"]
       "Models":
-        "default":  {"session_timeout": "30"}
+        "default":  {"session_timeout": "120"}
       "Controllers":
         - "fn": "ARMapper"
           "params": {"modelname": "default", "cfgsection": "SessionService", "mappinguniquename": "rooturi + '/SessionService'", "AddToView": "ar_mapper"}
@@ -445,12 +425,6 @@ views:
           "params": {"name": "manager.resettodefaults", "uri": "/Actions/Oem/DellManager.ResetToDefaults", "timeout": 60}
         - "fn": "with_PumpHandledAction"
           "params": {"name": "manager.forcefailover", "uri": "/Actions/Manager.ForceFailover", "timeout": 30}
-        - "fn": "WithAction"
-          "params": {"name": "manager.exportsystemconfig", "uri": "/Actions/Oem/EID_674_Manager.ExportSystemConfiguration", "actionFunction": "exportSystemConfiguration"}
-        - "fn": "WithAction"
-          "params": {"name": "manager.importsystemconfig", "uri": "/Actions/Oem/EID_674_Manager.ImportSystemConfiguration", "actionFunction": "importSystemConfiguration"}
-        - "fn": "WithAction"
-          "params": {"name": "manager.importsystemconfigpreview", "uri": "/Actions/Oem/EID_674_Manager.ImportSystemConfigurationPreview", "actionFunction": "importSystemConfigurationPreview"}
         - "fn": "etag"
           "params": []
       "Aggregate": "manager_cmc_integrated"
@@ -569,9 +543,11 @@ views:
         - "fn": "with_URI"
           "params": "rooturi + '/UpdateService'"
         - "fn": "with_PumpHandledAction"
-          "params": {"name": "update.reset", "uri": "/Actions/Oem/DellUpdateService.Reset", "timeout": 30}
+          "params": {"name": "update.reset", "uri": "/Actions/Oem/DellUpdateService.Reset", "timeout": 90}
         - "fn": "with_PumpHandledAction"
-          "params": {"name": "update.syncup", "uri": "/Actions/Oem/DellUpdateService.Syncup", "timeout": 30}
+          "params": {"name": "update.syncup", "uri": "/Actions/Oem/DellUpdateService.Syncup", "timeout": 90}
+        - "fn": "with_PumpHandledAction"
+          "params": {"name": "update.update", "uri": "/Actions/Oem/FirmwareUpdate", "timeout": 90}
         - "fn": "PublishResourceUpdatedEventsForModel"
           "params": "default"
       "Aggregate": "update_service"
@@ -594,6 +570,12 @@ views:
         - "fn": "with_URI"
           "params": "rooturi + '/UpdateService/FirmwareInventory'"
       "Aggregate": "update_service_firmwareinventory"
+      "ExecPost": [
+        "instantiate('non-compliant', 'FQDD', 'LCD.Chassis.1')",
+        "instantiate('non-compliant', 'FQDD', 'QuickSync.Chassis.1')",
+        "instantiate('non-compliant', 'FQDD', 'ControlPanel.Chassis.1')",
+        "instantiate('non-compliant', 'FQDD', 'RCPUSB.Chassis.1')",
+      ]
 
   "firmware_instance":
       "Logger": ["module", "firmware_instance"]
@@ -877,8 +859,6 @@ views:
       "Models":
         "default":  {"unique_name": "FQDD" }
       "Controllers":
-        - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "fan", "uniquename": "'am2_fan_' + FQDD + '/' + ChassisFQDD", "passthru": {"DM_FQDD": "ChassisFQDD + '#' + FQDD"}}
         - "fn": "ARMapper"
           "params": {"modelname": "default", "cfgsection": "firmware/inventory", "mappinguniquename": "'firmware_fan_mapper:' + ChassisFQDD + '/' + FQDD", "AddToView": "ar_mapper_inv"}
         - "fn": "ARMapper"
@@ -901,10 +881,12 @@ views:
         "instantiate('attributes', 'parenturi', rooturi + '/Chassis/' + ChassisFQDD + '/Sensors/Fans/' + FQDD, 'FQDD', FQDD)",
         ]
 
+
   "iom":
       "Logger": ["module", "IOM"]
       "Models":
         "default":  {"unique_name": "FQDD", "inst_power": "0", "managed_by": "array(rooturi + '/Managers/CMC.Integrated.1')"}
+        "swinv2":  {"unique_name": "FQDD",  "managed_by": "array(rooturi + '/Managers/CMC.Integrated.1')"}
       "Controllers":
         - "fn": "ARMapper"
           "params": {"modelname": "default", "cfgsection": "firmware/inventory", "mappinguniquename": "'iom_fw_mapper:' + FQDD", "AddToView": "ar_mapper_inv"}
@@ -912,6 +894,8 @@ views:
           "params": {"modelname": "default", "cfgsection": "Chassis/IOM.Slot", "mappinguniquename": "'iom_mapper:' + FQDD", "AddToView": "ar_mapper"}
         - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "health", "uniquename": "'am2_health_' + FQDD", "passthru": {"health_fqdd": "'System.Chassis.1#' + FQDD"} }
+        - "fn": "ARMapper"
+          "params": {"modelname": "swinv2", "cfgsection": "firmware/inventory/2", "mappinguniquename": "'iom_fw_mapper2:' + FQDD", "AddToView": "ar_mapper_inv"}
       "View":
         - "fn": "linkModel"
           "params": {"existing": "default", "linkname": "health"}
@@ -939,6 +923,7 @@ views:
         "instantiate('iom_config', 'FQDD', FQDD)",
         ]
 
+        
   "iom_config":
       "Logger": ["module", "IOM_Config"]
       "Models":
@@ -1115,8 +1100,6 @@ views:
           "params": {"modelname": "default", "cfgsection": "Chassis/System.Modular", "mappinguniquename": "'sled_mapper:' + FQDD", "AddToView": "ar_mapper"}
         - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "health", "uniquename": "'am2_health_' + FQDD", "passthru": {"health_fqdd": "'System.Chassis.1#' + FQDD" } }
-        - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "inst_power", "uniquename": "'am2_sled_' + FQDD", "passthru": {"DM_FQDD": "'System.Chassis.1#' + FQDD + '#Power'"}}
       "View":
         - "fn": "linkModel"
           "params": {"existing": "default", "linkname": "health"}
@@ -1132,10 +1115,29 @@ views:
           "params": {"name": "chassis.peripheralmapping", "uri": "/Actions/Oem/DellChassis.PeripheralMapping", "timeout": 30}
         - "fn": "with_PumpHandledAction"
           "params": {"name": "chassis.virtualreseat", "uri": "/Actions/Oem/DellChassis.VirtualReseat", "timeout": 30}
+        - "fn": "with_PumpHandledAction"
+          "params": {"name": "chassis.idracreset", "uri": "/Actions/Oem/DellChassis.iDRACReset", "timeout": 30}
       "Aggregate": "sled"
       "ExecPost": [
         "instantiate('attributes', 'parenturi', rooturi + '/Chassis/' + FQDD, 'FQDD', FQDD)"
         ]
+
+  # Needs to be fixed, lcd, quicksync, control_panel is not compliant.
+  "non-compliant":
+      "Logger": ["module", "FQDD"]
+      "Models":
+        "default":  { "unique_name": "FQDD"}
+      "Controllers":
+        - "fn": "ARMapper"
+          "params": {"modelname": "default", "cfgsection": "firmware/inventory", "mappinguniquename": "'fw_mapper_manager:' + FQDD ", "AddToView": "ar_mapper_inv"}
+      "View":
+        - "fn": "linkModel"
+          "params": {"existing": "default", "linkname": "swinv"}
+        - "fn": "with_URI"
+          "params":  " '/redfish/' + FQDD"
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+      "Aggregate": "non-compliant"
 
 awesome_mapper:
     ec_component_events:
@@ -1189,11 +1191,11 @@ awesome_mapper:
 
     power_control_uris:
       - { SelectEventType: "RedfishResource:created",
-          SelectFN: "uriCheckNoHash",
+          SelectFN: "uriEquals",
           SelectParams: ["rooturi","/Chassis/","FQDD","/Power/PowerControl"],
           ModelUpdate: [ {Property: "power_control_uris", Query: "addtoset(model, propname, data.ResourceURI)"} ]}
       - { SelectEventType: "RedfishResource:removed",
-          SelectFN: "uriCheckNoHash",
+          SelectFN: "uriEquals",
           SelectParams: ["rooturi","/Chassis/","FQDD","/Power/PowerControl"],
           ModelUpdate: [ {Property: "power_control_uris", Query: "removefromset(model, propname, data.ResourceURI)"} ]}
 
@@ -1232,13 +1234,15 @@ awesome_mapper:
           SelectFN: "true",
           Exec: [ "updateSensorEvent(rooturi + '/Chassis/System.Chassis.1/Sensors/Temperatures', data)" ]}
       - { SelectEventType: "RedfishResource:created",
-          SelectFN: "uriCheckNoHash",
+          SelectFN: "uriCheckWithHash",
           SelectParams: ["rooturi", "/Chassis/System.Chassis.1/Sensors/Temperatures"],
           ModelUpdate: [ {Property: "temperature_uris", Query: "addtoset(model, propname, data.ResourceURI)"} ]}
       - { SelectEventType: "RedfishResource:removed",
-          SelectFN: "uriCheckNoHash",
+          SelectFN: "uriCheckWithHash",
           SelectParams: ["rooturi", "/Chassis/System.Chassis.1/Sensors/Temperatures"],
           ModelUpdate: [ {Property: "temperature_uris", Query: "removefromset(model, propname, data.ResourceURI)"} ]}
+      # thermal health data handled in AM3
+
 
     lclog:
       - { SelectEventType: "LogEvent",
@@ -1263,9 +1267,6 @@ awesome_mapper:
           Exec: [ "clearuris(collection_uri)" ]}
 
     generate_health_status:
-      - { SelectEventType: "HealthEvent",
-          Select: "has_prefix(data.FQDD,'System.Chassis.1#IOM.Slot') || has_prefix(data.FQDD, 'System.Chassis.1#System.Modular')",
-          ModelUpdate: [ {Property: "health", Query: "add_health_to_subsystem(data, view.GetUUID())"} ]}
       - { SelectEventType: "ComponentRemoved",
           SelectFN: "true",
           ModelUpdate: [ {Property: "health", Query: "remove_health(data,view.GetUUID())"} ]}
@@ -1283,10 +1284,12 @@ awesome_mapper:
     certificate:
       - { SelectEventType: "FileReadEvent",
           Select: "data.URI == 'CertificateInventory' && data.FQDD == FQDD",
-          ModelUpdate: [ { Property: "certificate_signing_request", Query: "empty_to_null(data.Content)" } ] }
+          Process: { "name": "am3FileReadEvent", "params":{"Conv":"empty_to_null", "Field":"CertificateSigningRequest"}}}
+      # certificate data is read on demand, not sure of AM3 integration
       - { SelectEventType: "FileReadEvent",
           Select: "data.URI == 'FactoryIdentity' && data.FQDD == FQDD",
           ModelUpdate: [ { Property: "certificate", Query: "empty_to_null(data.Content)" } ] }
+
 
     slot:
       - { SelectEventType: "AttributeUpdated",
@@ -1297,35 +1300,31 @@ awesome_mapper:
       - { SelectEventType: "AttributeUpdated",
           SelectParams: ["Rows"],
           SelectFN: "isRowOrColumn",
-          ModelUpdate: [ {Property: "rows", Query: "string(data.Value)"}]}
+          Process: { "name": "am3AttributeUpdated", "params":{"Conv":"value_to_string", "Field":"Rows"}}}
       - { SelectEventType: "AttributeUpdated",
           SelectParams: ["Columns"],
           SelectFN: "isRowOrColumn",
-          ModelUpdate: [ {Property: "columns", Query: "string(data.Value)"}]}
+          Process: { "name": "am3AttributeUpdated", "params":{"Conv":"value_to_string", "Field":"Columns"}}}
 
     tasks:
       - { SelectEventType: "AttributeUpdated",
           SelectFN: "isTaskState",
-          ModelUpdate: [ {Property: "task_state", Query: "map_task_state(data.Value)"}]}
+          Process: { "name": "am3AttributeUpdated", "params":{"Conv":"map_task_state", "Field":"TaskState"}}}
 
     chassis:
       - { SelectEventType: "AttributeUpdated",
           Select: "data.FQDD == FQDD && data.Name == 'ChassisPowerStatus'",
-          ModelUpdate: [ {Property: "power_state", Query: "map_chassis_state(data.Value)"}]}
+          Process: { "name": "am3AttributeUpdated", "params":{"Conv":"map_power_state", "Field":"PowerState"}}}
 
-    fan:
-      - { SelectEventType: "thp_fan_data_object", Select: "DM_FQDD == data.GetStringFromOffset(data.Data.OffsetKey)",
-             Process: { "name": "updateFanData", "params":[]}}
-
-    inst_power:
-      - { SelectEventType: "InstPowerEvent",
-          Select: "data.FQDD == DM_FQDD",
-          ModelUpdate: [
-              {Property: "Instantaneous_Power", Query: "round_2_dec_pl(data.InstPower)", Default: 0}]}
 
     iom_config:
       - { SelectEventType: "IomCapability", Select: "data.Name == FQDD",
-             Process: { "name": "updateIOMConfigData", "params":[]}}
+            ModelUpdate: [
+                {Property: "config", Query: "data.IOMConfig_objects" },
+                {Property: "capabilities", Query: "data.Capabilities" },
+                {Property: "managed", Query: "data.Internal_mgmt_supported" },
+                {Property: "capCount", Query: "data.CapabilitiesCount" }]}
+
 
 
     power_control:
@@ -1363,23 +1362,13 @@ awesome_mapper:
                 {Property: "min_watts_time", Query: "epoch_to_date(traverse_struct(data, 'MinPwrLast' + trend + 'Time'))" }]}
 
     health:
-      - { SelectEventType: "HealthEvent", Select: "data.FQDD == health_fqdd", ModelUpdate: [ {Property: "health", Query: "empty_to_null(data.Health)" } ] }
+        #TODO: remoove this once global health model is gone
 
     health_alert:
       - { SelectEventType: "HealthEvent", Select: "data.FQDD == health_fqdd", Exec: ["health_alert(ss, data.Health)"]}
 
     global_health:
-      - { SelectEventType: "HealthEvent", Select: "data.FQDD == 'System.Chassis.1#SubSystem.1#Fan'", ModelUpdate: [ {Property: "fan_rollup", Query: "data.Health" } ] }
-      - { SelectEventType: "HealthEvent", Select: "data.FQDD == 'System.Chassis.1#SubSystem.1#Temperature'", ModelUpdate: [ {Property: "temperature_rollup", Query: "data.Health" } ] }
-      - { SelectEventType: "HealthEvent", Select: "data.FQDD == 'System.Chassis.1#SubSystem.1#MM'", ModelUpdate: [ {Property: "mm_rollup", Query: "data.Health" } ] }
-      - { SelectEventType: "HealthEvent", Select: "data.FQDD == 'System.Chassis.1#SubSystem.1#SledSystem'", modelupdate: [ {Property: "sled_rollup", Query: "data.Health" } ] }
-      - { SelectEventType: "HealthEvent", Select: "has_prefix(data.FQDD,'System.Chassis.1#System.Modular')", Exec: ["update_property(model, data.FQDD, data.Health)"]}
-      - { SelectEventType: "HealthEvent", Select: "has_prefix(data.FQDD,'System.Chassis.1#IOM.Slot')", Exec: ["update_property(model, data.FQDD, data.Health)"]}
-      - { SelectEventType: "HealthEvent", Select: "data.FQDD == 'System.Chassis.1#SubSystem.1#PowerSupply'", ModelUpdate: [ {Property: "psu_rollup", Query: "data.Health" } ] }
-      - { SelectEventType: "HealthEvent", Select: "data.FQDD == 'System.Chassis.1#SubSystem.1#CMC'", ModelUpdate: [ {Property: "cmc_rollup", Query: "data.Health" } ] }
-      - { SelectEventType: "HealthEvent", Select: "data.FQDD == 'System.Chassis.1#SubSystem.1#Miscellaneous'", ModelUpdate: [ {Property: "misc_rollup", Query: "data.Health" } ] }
-      - { SelectEventType: "HealthEvent", Select: "data.FQDD == 'System.Chassis.1#SubSystem.1#Battery'", ModelUpdate: [ {Property: "battery_rollup", Query: "data.Health" } ] }
-      - { SelectEventType: "HealthEvent", Select: "data.FQDD == 'System.Chassis.1#SubSystem.1#IOMSubsystem'", ModelUpdate: [ {Property: "iom_rollup", Query: "data.Health" } ] }
+        #TODO: remoove this once global health model is gone
 
 
 mappings:
@@ -1408,6 +1397,18 @@ mappings:
         - {Property: "fw_updateable",       FQDD: "{FQDD}", Group: "FWInventory", Index: "1", Name: "Updateable" }
         - {Property: "fw_version",          FQDD: "{FQDD}", Group: "FWInventory", Index: "1", Name: "Version" }
         - {Property: "fw_version_sequence", FQDD: "{FQDD}", Group: "FWInventory", Index: "1", Name: "VersionSequence" }
+
+    firmware/inventory/2:
+        - {Property: "fw_device_class",     FQDD: "{FQDD}", Group: "FWInventory", Index: "2", Name: "DeviceClass" }
+        - {Property: "fw_description",      FQDD: "{FQDD}", Group: "FWInventory", Index: "2", Name: "Description"}
+        - {Property: "fw_device_context",   FQDD: "{FQDD}", Group: "FWInventory", Index: "2", Name: "DeviceContext" }
+        - {Property: "fw_device_instance",  FQDD: "{FQDD}", Group: "FWInventory", Index: "2", Name: "DeviceInstance" }
+        - {Property: "fw_fqdd",             FQDD: "{FQDD}", Group: "FWInventory", Index: "2", Name: "FQDD" }
+        - {Property: "fw_name",             FQDD: "{FQDD}", Group: "FWInventory", Index: "2", Name: "Name" }
+        - {Property: "fw_install_date",     FQDD: "{FQDD}", Group: "FWInventory", Index: "2", Name: "InstallDate" }
+        - {Property: "fw_updateable",       FQDD: "{FQDD}", Group: "FWInventory", Index: "2", Name: "Updateable" }
+        - {Property: "fw_version",          FQDD: "{FQDD}", Group: "FWInventory", Index: "2", Name: "Version" }
+        - {Property: "fw_version_sequence", FQDD: "{FQDD}", Group: "FWInventory", Index: "2", Name: "VersionSequence" }
 
 
     fpga_inventory:

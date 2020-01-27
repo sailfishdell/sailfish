@@ -12,6 +12,7 @@ fi
 ssh-copy-id root@${host}
 GOARCH=arm GOARM=5 go build -mod=vendor ./cmd/sailfish || exit 1
 
+ssh root@${host} setenforce 0 
 ssh root@${host} iptables -D EC_INPUT_CHAIN -j DROP
 ssh root@${host} iptables -D EC_INPUT_CHAIN 4
 ssh root@${host} umount /etc/redfish.yaml

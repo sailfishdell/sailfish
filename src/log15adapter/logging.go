@@ -16,8 +16,6 @@ import (
 // MyLogger is a centralized point for application logging that we will pass throughout the system
 type MyLogger struct {
 	log.Logger
-	logCfg   *viper.Viper
-	logCfgMu sync.Mutex
 }
 
 // New is the logger constructor which initializes an instance
@@ -27,45 +25,50 @@ func (l *MyLogger) New(ctx ...interface{}) mylog.Logger {
 	}
 }
 
-func InitializeApplicationLogging(logCfgFile string) (logger *MyLogger) {
-	logger = &MyLogger{
-		Logger:   log.New(),
-		logCfg:   viper.New(),
-		logCfgMu: sync.Mutex{},
+func Make() *MyLogger {
+	return &MyLogger{
+		Logger: log.New(),
 	}
+}
 
+func InitializeApplicationLogging(logCfgFile string) (logger *MyLogger) {
 	// Environment variables
-	logger.logCfg.SetEnvPrefix("RFLOGGING")
-	logger.logCfg.AutomaticEnv()
+	logCfg := viper.New()
+	logCfg.SetEnvPrefix("RFLOGGING")
+	logCfg.AutomaticEnv()
 
 	// Configuration file
 	if logCfgFile != "" {
-		logger.logCfg.SetConfigFile(logCfgFile)
+		logCfg.SetConfigName(logCfgFile)
 	} else {
-		logger.logCfg.SetConfigName("redfish-logging")
-		logger.logCfg.AddConfigPath(".")
-		logger.logCfg.AddConfigPath("/etc/")
+		logCfg.SetConfigName("redfish-logging")
 	}
 
-	if err := logger.logCfg.ReadInConfig(); err == nil {
-		fmt.Println("log15adapter Using config file:", logger.logCfg.ConfigFileUsed())
+	// set search paths for configs
+	logCfg.AddConfigPath("/etc/")
+	logCfg.AddConfigPath(".")
+
+	if err := logCfg.ReadInConfig(); err == nil {
+		fmt.Println("log15adapter: Using config file:", logCfg.ConfigFileUsed())
 	} else {
-		fmt.Fprintf(os.Stderr, "Could not read config file: %s\n", err)
+		fmt.Fprintf(os.Stderr, "log15adapter: Could not read config file: %s\n", err)
 	}
 
-	setupLogHandlersFromConfig(logger)
-
-	mylog.GlobalLogger = logger
-
-	logger.logCfg.OnConfigChange(func(e fsnotify.Event) {
-		logger.logCfgMu.Lock()
-		defer logger.logCfgMu.Unlock()
-		logger.Info("CONFIG file changed", "config_file", e.Name)
-		setupLogHandlersFromConfig(logger)
-	})
-	logger.logCfg.WatchConfig()
+	logger = Make()
+	logger.SetupLogHandlersFromConfig(logCfg)
+	logger.ActivateConfigWatcher(logCfg)
 
 	return
+}
+
+func (l *MyLogger) ActivateConfigWatcher(logCfg *viper.Viper) {
+	logCfg.OnConfigChange(func(e fsnotify.Event) {
+		l.Info("CONFIG file changed", "config_file", e.Name)
+		l.SetupLogHandlersFromConfig(logCfg)
+		// free up memory after
+		//logCfg.Reset()
+	})
+	logCfg.WatchConfig()
 }
 
 type LoggingConfig struct {
@@ -77,11 +80,10 @@ type LoggingConfig struct {
 	ModulesToEnable []map[string]string
 }
 
-func setupLogHandlersFromConfig(l *MyLogger) {
-
+func (l *MyLogger) SetupLogHandlersFromConfig(logCfg *viper.Viper) {
 	LogConfig := []LoggingConfig{}
 
-	err := l.logCfg.UnmarshalKey("logs", &LogConfig)
+	err := logCfg.UnmarshalKey("logs", &LogConfig)
 	if err != nil {
 		log.Crit("Could not unmarshal logs key", "err", err)
 	}
@@ -157,6 +159,10 @@ func setupLogHandlersFromConfig(l *MyLogger) {
 	}
 
 	l.SetHandler(log.MultiHandler(topLevelHandlers...))
+
+	if mylog.GlobalLogger == nil {
+		mylog.GlobalLogger = l
+	}
 }
 
 type orhandler struct {

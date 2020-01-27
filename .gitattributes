@@ -1,0 +1,7 @@
+*.go    text filter=gofmt eol=lf
+.gitattributs text
+*.sh    text eol=lf
+hooks/* text
+sample-events/*  text eol=lf
+sample-events/unittest/*  text eol=lf
+.gitattributes text eol=lf

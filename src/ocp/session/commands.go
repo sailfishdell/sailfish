@@ -11,16 +11,12 @@ import (
 
 	jwt "github.com/dgrijalva/jwt-go"
 	eh "github.com/looplab/eventhorizon"
+	"github.com/superchalupa/sailfish/src/log"
 	"github.com/superchalupa/sailfish/src/looplab/eventwaiter"
 	"github.com/superchalupa/sailfish/src/ocp/model"
 	"github.com/superchalupa/sailfish/src/ocp/view"
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
 )
-
-type syncEvent interface {
-	Add(int)
-	Done()
-}
 
 type LoginRequest struct {
 	UserName string
@@ -46,15 +42,11 @@ const (
 	POSTCommand = eh.CommandType("SessionService:POST")
 )
 
-type waiter interface {
-	Listen(context.Context, func(eh.Event) bool) (*eventwaiter.EventListener, error)
-}
-
 // HTTP POST Command
 type POST struct {
 	model          *model.Model
 	commandHandler eh.CommandHandler
-	eventWaiter    waiter
+	eventWaiter    *eventwaiter.EventWaiter
 	svcWrapper     func(map[string]interface{}) *view.View
 
 	ID      eh.UUID           `json:"id"`
@@ -101,7 +93,7 @@ func (c *POST) Handle(ctx context.Context, a *domain.RedfishResourceAggregate) e
 			"Login",
 		)
 	} else {
-		return errors.New("Could not verify username/password")
+		return errors.New("could not verify username/password")
 	}
 
 	// instantiate here
@@ -129,7 +121,9 @@ func (c *POST) Handle(ctx context.Context, a *domain.RedfishResourceAggregate) e
 	case string:
 		timeout, _ = strconv.Atoi(t)
 	}
-	c.startSessionDeleteTimer(sessionVw, timeout)
+
+	// avoid recursive commands by running this in a goroutine. only important in cases of errors
+	go c.startSessionDeleteTimer(sessionVw, timeout)
 
 	a.PublishEvent(eh.NewEvent(domain.HTTPCmdProcessed, &domain.HTTPCmdProcessedData{
 		CommandID:  c.CmdID,
@@ -148,75 +142,49 @@ func (c *POST) startSessionDeleteTimer(sessionVw *view.View, timeout int) {
 	ctx := context.Background()
 	sessionUUID := sessionVw.GetUUID()
 	sessionURI := sessionVw.GetURI()
+	logger := log.MustLogger("session")
 
-	// INFO: This event waiter is set up to *ONLY* get XAuthTokenRefreshEvents
-	refreshListener, err := c.eventWaiter.Listen(ctx, func(event eh.Event) bool {
-		if event.EventType() != XAuthTokenRefreshEvent {
-			return false
-		}
-		if data, ok := event.Data().(*XAuthTokenRefreshData); ok {
-			if data.SessionURI == sessionURI {
-				return true
+	newCtx, cancel := context.WithCancel(ctx)
+	duration := time.Duration(timeout) * time.Second
+	timer := time.AfterFunc(duration, func() {
+		// cancel the listener
+		cancel()
+		// delete the session
+		c.commandHandler.HandleCommand(context.Background(), &domain.RemoveRedfishResource{ID: sessionUUID, ResourceURI: sessionURI})
+	})
+
+	listener := eventwaiter.NewListener(newCtx, logger, c.eventWaiter, func(event eh.Event) bool {
+		switch event.EventType() {
+		case XAuthTokenRefreshEvent:
+			if data, ok := event.Data().(*XAuthTokenRefreshData); ok {
+				if data.SessionURI == sessionURI {
+					// Got a token refresh, let ProcessEvents refresh the timer
+					return true
+				}
+			}
+		case domain.RedfishResourceRemoved:
+			if data, ok := event.Data().(*domain.RedfishResourceRemovedData); ok {
+				if data.ResourceURI == sessionURI {
+					// Our session was deleted, we're done
+					// cancel the context that will pop us out of ProcessEvents()
+					cancel()
+
+					// and stop the timer, no need to send the delete, it's already gone
+					if !timer.Stop() {
+						<-timer.C
+					}
+				}
 			}
 		}
 		return false
 	})
-	if err != nil {
-		// immediately expire session if we cannot create a listener
-		c.commandHandler.HandleCommand(ctx, &domain.RemoveRedfishResource{ID: sessionUUID, ResourceURI: sessionURI})
-		return
-	}
 
-	refreshListener.Name = "refresh listener"
+	defer listener.Close()
 
-	deleteListener, err := c.eventWaiter.Listen(ctx, func(event eh.Event) bool {
-		if event.EventType() != domain.RedfishResourceRemoved {
-			return false
+	listener.ProcessEvents(newCtx, func(ev eh.Event) {
+		if !timer.Stop() {
+			<-timer.C
 		}
-		if data, ok := event.Data().(*domain.RedfishResourceRemovedData); ok {
-			if data.ResourceURI == sessionURI {
-				return true
-			}
-		}
-		return false
+		timer.Reset(duration)
 	})
-	if err != nil {
-		// immediately expire session if we cannot create a listener
-		c.commandHandler.HandleCommand(ctx, &domain.RemoveRedfishResource{ID: sessionUUID, ResourceURI: sessionURI})
-		refreshListener.Close()
-		return
-	}
-
-	deleteListener.Name = "delete listener"
-
-	// start a background task to delete session after expiry
-	go func() {
-		defer deleteListener.Close()
-		defer refreshListener.Close()
-
-		// loop forever
-		for {
-			select {
-			case event := <-refreshListener.Inbox():
-				// have to mark the event complete if we don't use Wait and take it off the bus ourselves
-				if e, ok := event.(syncEvent); ok {
-					e.Done()
-				}
-
-				continue // still alive for now! start over again...
-			case event := <-deleteListener.Inbox():
-				// have to mark the event complete if we don't use Wait and take it off the bus ourselves
-				if e, ok := event.(syncEvent); ok {
-					e.Done()
-				}
-
-				return // it's gone, all done here
-			case <-time.After(time.Duration(timeout) * time.Second):
-				c.commandHandler.HandleCommand(ctx, &domain.RemoveRedfishResource{ID: sessionUUID, ResourceURI: sessionURI})
-				return //exit goroutine
-			}
-		}
-	}()
-
-	return
 }

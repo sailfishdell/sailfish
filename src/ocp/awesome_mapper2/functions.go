@@ -55,11 +55,7 @@ func init() {
 
 	AddFunction("array",
 		func(args ...interface{}) (interface{}, error) {
-			a := make([]interface{}, 0, len(args))
-			for _, i := range args {
-				a = append(a, i) // preallocated
-			}
-			return a, nil
+			return append(make([]interface{}, 0, len(args)), args...), nil // preallocated
 		})
 
 	AddFunction("set_hash_value",
@@ -93,19 +89,6 @@ func init() {
 		}
 	})
 
-	AddFunction("int", func(args ...interface{}) (interface{}, error) {
-		switch t := args[0].(type) {
-		case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, uintptr:
-			return int(reflect.ValueOf(t).Int()), nil
-		case float32, float64:
-			return int(reflect.ValueOf(t).Float()), nil
-		case string:
-			float, err := strconv.ParseFloat(t, 64)
-			return int(float), err
-		default:
-			return nil, errors.New("cant parse non-string")
-		}
-	})
 	AddFunction("removefromset", func(args ...interface{}) (interface{}, error) {
 		model, ok := args[0].(*model.Model)
 		if !ok {
@@ -141,8 +124,7 @@ func init() {
 			return vStr, nil
 		}
 
-		ret := make([]string, 0, len(vStr)-1)
-		ret = vStr[:matchIdx]
+		ret := vStr[:matchIdx]
 		if matchIdx+1 < len(vStr) {
 			ret = append(ret, vStr[matchIdx+1:]...) //preallocated
 		}
@@ -290,7 +272,7 @@ func init() {
 			str := strconv.FormatInt(reflect.ValueOf(t).Int(), 10)
 			return str, nil
 		default:
-			return nil, errors.New("Not an int, float, or string")
+			return nil, errors.New("not an int, float, or string")
 		}
 	})
 	AddFunction("round_2_dec_pl", func(args ...interface{}) (interface{}, error) {
@@ -383,7 +365,7 @@ func init() {
 		case 4, 5: //critical, non-recoverable
 			return "Critical", nil
 		default:
-			return nil, errors.New("Invalid object status")
+			return nil, errors.New("invalid object status")
 		}
 	})
 

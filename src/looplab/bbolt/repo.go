@@ -13,8 +13,6 @@ import (
 	bbolt "github.com/etcd-io/bbolt"
 )
 
-type namespace string
-
 // Repo implements an in memory repository of read models.
 type Repo struct {
 	db *bbolt.DB
@@ -22,11 +20,13 @@ type Repo struct {
 
 // NewRepo creates a new Repo.
 func NewRepo() *Repo {
-	os.Remove("./emmc_db.db")
-	t, err := bbolt.Open("emmc_db.db", 0600, nil)
+	os.Remove("./sailfish.db")
+	t, err := bbolt.Open("sailfish.db", 0600, nil)
 	if err != nil {
 		panic("Failed to start bbolt DB")
 	}
+	// improves performance? HSM may remove
+	//t.FreelistType = bbolt.FreelistMapType
 	return &Repo{db: t}
 }
 
@@ -48,7 +48,7 @@ func (r *Repo) Find(ctx context.Context, id eh.UUID) (ret eh.Entity, err error) 
 			// entity doesn't exist: we dont care
 			return nil
 		}
-		decoder := gob.NewDecoder(bytes.NewBuffer(v))
+		decoder := gob.NewDecoder(bytes.NewReader(v))
 		err := decoder.Decode(&ret)
 		if err != nil {
 			// couldnt decode it: academically interesting... why?
@@ -68,6 +68,28 @@ func (r *Repo) Find(ctx context.Context, id eh.UUID) (ret eh.Entity, err error) 
 }
 
 // FindAll implements the FindAll method of the eventhorizon.ReadRepo interface.
+func (r *Repo) IterateCB(ctx context.Context, cb func(context.Context, eh.Entity) error) (err error) {
+	var entity eh.Entity
+	r.db.View(func(tx *bbolt.Tx) error {
+		b := tx.Bucket([]byte(eh.NamespaceFromContext(ctx)))
+		if b == nil {
+			return nil
+		}
+		b.ForEach(func(k, v []byte) error {
+			decoder := gob.NewDecoder(bytes.NewReader(v))
+			err := decoder.Decode(&entity)
+			if err != nil {
+				fmt.Println("decode fail: ", err)
+				return nil
+			}
+			return cb(ctx, entity)
+		})
+		return nil
+	})
+	return nil
+}
+
+// FindAll implements the FindAll method of the eventhorizon.ReadRepo interface.
 func (r *Repo) FindAll(ctx context.Context) (ret []eh.Entity, err error) {
 	var model eh.Entity
 	r.db.View(func(tx *bbolt.Tx) error {
@@ -76,7 +98,7 @@ func (r *Repo) FindAll(ctx context.Context) (ret []eh.Entity, err error) {
 			return nil
 		}
 		b.ForEach(func(k, v []byte) error {
-			decoder := gob.NewDecoder(bytes.NewBuffer(v))
+			decoder := gob.NewDecoder(bytes.NewReader(v))
 			err := decoder.Decode(&model)
 			if err != nil {
 				fmt.Println("decode fail: ", err)
@@ -116,6 +138,7 @@ func (r *Repo) Save(ctx context.Context, entity eh.Entity) error {
 	}
 
 	r.db.Update(func(tx *bbolt.Tx) error {
+
 		b, err := tx.CreateBucketIfNotExists([]byte(eh.NamespaceFromContext(ctx)))
 		if err != nil {
 			fmt.Println("Bucket Not Created: ", err)
@@ -124,7 +147,7 @@ func (r *Repo) Save(ctx context.Context, entity eh.Entity) error {
 
 		err = b.Put([]byte(entity.EntityID()), encodedEntity.Bytes())
 		if err != nil {
-			fmt.Println("Save error:", err)
+			fmt.Println("Save error:", err, "uuid", entity.EntityID())
 		}
 
 		return err
@@ -142,20 +165,15 @@ func (r *Repo) Remove(ctx context.Context, id eh.UUID) error {
 
 		err := b.Delete([]byte(id))
 		if err != nil {
-			fmt.Println("Delete error", err)
+			fmt.Println("Delete error", err, "uuid", id)
 		}
 		return err
 	})
 	return nil
 }
 
-func (r *Repo) namespace(ctx context.Context) namespace {
-	return namespace(eh.NamespaceFromContext(ctx))
-}
-
 // Repository returns a parent ReadRepo if there is one.
 func Repository(repo eh.ReadRepo) *Repo {
-	fmt.Println("Repository function called")
 	if repo == nil {
 		return nil
 	}

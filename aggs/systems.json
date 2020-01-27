@@ -1,0 +1,45 @@
+[
+  {
+    "cmd": "RedfishResource:Create",
+    "data": {
+      "ResourceURI": "##GETURI##",
+      "Type": "#ComputerSystemCollection.ComputerSystemCollection",
+      "Context": "/redfish/v1/$metadata#ComputerSystemCollection.ComputerSystemCollection",
+      "Privileges": {
+        "GET": [
+          "Login"
+        ]
+      },
+      "Properties": {
+        "Name": "Computer System Collection",
+        "Description": "Collection of Chassis",
+        "Members@meta": {
+          "GET": {
+            "model": "default",
+            "property": "members",
+            "formatter": "formatOdataList"
+          }
+        },
+        "Members@odata.count@meta": {
+          "GET": {
+            "model": "default",
+            "property": "members",
+            "formatter": "count"
+          }
+        },
+        "@odata.etag": "W/'ABC123'"
+      }
+    }
+  },
+  {
+    "cmd": "RedfishResourceProperties:Update",
+    "data": {
+      "URI": "/redfish/v1",
+      "Properties": {
+        "Systems": {
+          "@odata.id": "##GETURI##"
+        }
+      }
+    }
+  }
+]

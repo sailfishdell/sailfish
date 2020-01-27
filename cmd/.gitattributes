@@ -1,0 +1,1 @@
+*.go    text filter=gofmt eol=lf

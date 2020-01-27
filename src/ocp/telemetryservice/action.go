@@ -5,10 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"time"
+	//"strings"
 
 	eh "github.com/looplab/eventhorizon"
 
 	ah "github.com/superchalupa/sailfish/src/actionhandler"
+	"github.com/superchalupa/sailfish/src/log"
 	"github.com/superchalupa/sailfish/src/ocp/eventservice"
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
 )
@@ -16,30 +18,30 @@ import (
 func MakeSubmitTestMetricReport(eb eh.EventBus, d *domain.DomainObjects, ch eh.CommandHandler) func(context.Context, eh.Event, *domain.HTTPCmdProcessedData) error {
 
 	return func(ctx context.Context, event eh.Event, retData *domain.HTTPCmdProcessedData) error {
-		domain.ContextLogger(ctx, "submit_event").Debug("got test metric report event", "event_data", event.Data())
+		log.ContextLogger(ctx, "submit_event").Debug("got test metric report event", "event_data", event.Data())
 
 		d, ok := event.Data().(*ah.GenericActionEventData)
 		if !ok {
-			domain.ContextLogger(ctx, "submit_event").Crit("type assert failed", "event_data", event.Data(), "Type", fmt.Sprintf("%T", event.Data()))
-			return errors.New("Didnt get the right kind of event")
+			log.ContextLogger(ctx, "submit_event").Crit("type assert failed", "event_data", event.Data(), "Type", fmt.Sprintf("%T", event.Data()))
+			return errors.New("didnt get the right kind of event")
 		}
 
 		m, ok := d.ActionData.(map[string]interface{})
 		if !ok {
-			domain.ContextLogger(ctx, "submit_event").Crit("type assert failed", "event data is not a map[string] interface", d.ActionData, "Type", fmt.Sprintf("%T", d.ActionData))
-			return errors.New("Didnt get the right kind of event")
+			log.ContextLogger(ctx, "submit_event").Crit("type assert failed", "event data is not a map[string] interface", d.ActionData, "Type", fmt.Sprintf("%T", d.ActionData))
+			return errors.New("didnt get the right kind of event")
 		}
 
 		name, ok := m["MetricName"]
 		if !ok {
-			domain.ContextLogger(ctx, "submit_event").Crit("metric report name is not provided", "event_data", event.Data())
+			log.ContextLogger(ctx, "submit_event").Crit("metric report name is not provided", "event_data", event.Data())
 			retData.StatusCode = 400
 			retData.Results = map[string]interface{}{"msg": "MetricName is not present"}
 			return errors.New("metric report name is not provided")
 		}
 		n, ok := name.(string)
 		if !ok {
-			domain.ContextLogger(ctx, "submit_event").Crit("metric report name is not a string", "event_data", event.Data())
+			log.ContextLogger(ctx, "submit_event").Crit("metric report name is not a string", "event_data", event.Data())
 			retData.StatusCode = 400
 			retData.Results = map[string]interface{}{"msg": "MetricName is not a string"}
 			return errors.New("metric report name is not a string")
@@ -47,7 +49,7 @@ func MakeSubmitTestMetricReport(eb eh.EventBus, d *domain.DomainObjects, ch eh.C
 
 		mVal, ok := m["MetricValues"]
 		if !ok {
-			domain.ContextLogger(ctx, "submit_event").Crit("metric report values is not provided", "event_data", event.Data())
+			log.ContextLogger(ctx, "submit_event").Crit("metric report values is not provided", "event_data", event.Data())
 			retData.StatusCode = 400
 			retData.Results = map[string]interface{}{"msg": "MetricValues is not present"}
 			// I wonder what the default is if an error returns

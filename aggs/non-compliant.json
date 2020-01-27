@@ -1,0 +1,19 @@
+[
+  {
+    "cmd": "RedfishResource:Create",
+    "data": {
+      "ResourceURI": "##GETURI##",
+      "Type": "#fake.v1_0_0.fake",
+      "Context": "/redfish/v1/$metadata#fake",
+      "Privileges": {
+        "GET": [
+          "Login"
+        ]
+      },
+      "Properties": {
+        "Name": "Some non-compliant uri that needs to be fixed",
+        "@odata.etag": "W/\"ABC123\""
+      }
+    }
+  }
+]

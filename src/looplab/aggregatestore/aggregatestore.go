@@ -17,6 +17,7 @@ package aggregatestore
 import (
 	"context"
 	"errors"
+	"golang.org/x/xerrors"
 
 	eh "github.com/looplab/eventhorizon"
 )
@@ -31,18 +32,16 @@ var ErrInvalidAggregate = errors.New("invalid aggregate")
 // loading and saving aggregates.
 type AggregateStore struct {
 	repo eh.ReadWriteRepo
-	bus  eh.EventBus
 }
 
 // NewAggregateStore creates an aggregate store with a read write repo.
-func NewAggregateStore(repo eh.ReadWriteRepo, bus eh.EventBus) (*AggregateStore, error) {
+func NewAggregateStore(repo eh.ReadWriteRepo) (*AggregateStore, error) {
 	if repo == nil {
 		return nil, ErrInvalidRepo
 	}
 
 	d := &AggregateStore{
 		repo: repo,
-		bus:  bus,
 	}
 	return d, nil
 }
@@ -69,18 +68,14 @@ func (r *AggregateStore) Load(ctx context.Context, aggregateType eh.AggregateTyp
 
 // Save implements the Save method of the eventhorizon.AggregateStore interface.
 func (r *AggregateStore) Save(ctx context.Context, aggregate eh.Aggregate) error {
-	if err := r.repo.Save(ctx, aggregate); err != nil {
-		return err
+	err := r.repo.Save(ctx, aggregate)
+	if err != nil {
+		err = xerrors.Errorf("Repo save failed: %w", err)
 	}
+	return err
+}
 
-	// Publish events if supported by the aggregate.
-	if publisher, ok := aggregate.(EventPublisher); ok && r.bus != nil {
-		events := publisher.EventsToPublish()
-		publisher.ClearEvents()
-		for _, e := range events {
-			r.bus.PublishEvent(ctx, e)
-		}
-	}
-
-	return nil
+// Save implements the Save method of the eventhorizon.AggregateStore interface.
+func (r *AggregateStore) Remove(ctx context.Context, aggregate eh.Aggregate) error {
+	return r.repo.Remove(ctx, aggregate.EntityID())
 }

@@ -127,21 +127,25 @@ func (s *View) GetURI() string {
 func (s *View) GetModel(name string) *model.Model {
 	s.RLock()
 	defer s.RUnlock()
+	return s.GetModelUnlocked(name)
+}
+
+func (s *View) GetModelUnlocked(name string) *model.Model {
 	return s.models[name]
 }
 
 // will return models that has the passed in substring
-func (s *View) GetModels(sub_name string) []*model.Model {
-	namearr := []*model.Model{}
+func (s *View) GetModels(sub_name string) map[string]*model.Model {
+	modelMatch := map[string]*model.Model{}
 	s.RLock()
 	defer s.RUnlock()
 	for n, m := range s.models {
 		if strings.Contains(n, sub_name) {
-			namearr = append(namearr, m)
+			modelMatch[n] = m
 		}
 	}
 
-	return namearr
+	return modelMatch
 }
 
 func (s *View) GetController(name string) controller {

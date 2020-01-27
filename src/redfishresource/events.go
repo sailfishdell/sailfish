@@ -7,7 +7,6 @@ import (
 )
 
 const (
-	WatchdogEvent                       = eh.EventType("Watchdog")
 	RedfishResourceCreated              = eh.EventType("RedfishResource:created")
 	RedfishResourceRemoved              = eh.EventType("RedfishResource:removed")
 	HTTPCmdProcessed       eh.EventType = "HTTPCmdProcessed"
@@ -15,14 +14,9 @@ const (
 	RedfishResourcePropertiesUpdated   = eh.EventType("RedfishResourceProperty:updated")
 	RedfishResourcePropertiesUpdated2  = eh.EventType("RedfishResourceProperty:updated2")
 	RedfishResourcePropertyMetaUpdated = eh.EventType("RedfishResourcePropertyMeta:updated")
-
-	DroppedEvent = eh.EventType("DroppedEvent")
 )
 
 func init() {
-	eh.RegisterEventData(WatchdogEvent, func() eh.EventData {
-		return &struct{}{}
-	})
 	eh.RegisterEventData(RedfishResourceCreated, func() eh.EventData {
 		return &RedfishResourceCreatedData{}
 	})
@@ -41,7 +35,6 @@ func init() {
 		return &RedfishResourcePropertyMetaUpdatedData{}
 	})
 	eh.RegisterEventData(HTTPCmdProcessed, func() eh.EventData { return &HTTPCmdProcessedData{} })
-	eh.RegisterEventData(DroppedEvent, func() eh.EventData { return &DroppedEventData{} })
 }
 
 // RedfishResourceCreatedData is the event data for the RedfishResourceCreated event.
@@ -64,17 +57,15 @@ type RedfishResourcePropertiesUpdatedData struct {
 
 // helper function to convert changes in aggregate format into "PropertyNames" format for RedfishResourcePropertiesUpdateData2
 func Map2Path(pathMap interface{}, pathMapStr map[string]interface{}, pathStr string) {
-	switch pathMap.(type) {
+	switch pathMapCast := pathMap.(type) {
 	case map[string]interface{}:
-		pathMapDefined := pathMap.(map[string]interface{})
-		for keyS, vInterf := range pathMapDefined {
+		for keyS, vInterf := range pathMapCast {
 			path2 := path.Join(pathStr, keyS)
 			Map2Path(vInterf, pathMapStr, path2)
 		}
 
 	case []interface{}:
-		pathMapDefined := pathMap.([]interface{})
-		for i, vInterf := range pathMapDefined {
+		for i, vInterf := range pathMapCast {
 			path2 := fmt.Sprintf("%s/%d", pathStr, i)
 			Map2Path(vInterf, pathMapStr, path2)
 		}
@@ -101,9 +92,4 @@ type HTTPCmdProcessedData struct {
 	Results    interface{}
 	StatusCode int
 	Headers    map[string]string
-}
-
-type DroppedEventData struct {
-	Name     eh.EventType
-	EventSeq int64
 }

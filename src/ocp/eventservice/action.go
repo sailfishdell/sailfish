@@ -10,17 +10,18 @@ import (
 	"github.com/mitchellh/mapstructure"
 
 	ah "github.com/superchalupa/sailfish/src/actionhandler"
+	"github.com/superchalupa/sailfish/src/log"
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
 )
 
 func MakeSubmitTestEvent(eb eh.EventBus) func(context.Context, eh.Event, *domain.HTTPCmdProcessedData) error {
 	return func(ctx context.Context, event eh.Event, retData *domain.HTTPCmdProcessedData) error {
-		domain.ContextLogger(ctx, "submit_event").Debug("got test event", "event_data", event.Data())
+		log.ContextLogger(ctx, "submit_event").Debug("got test event", "event_data", event.Data())
 
 		data, ok := event.Data().(*ah.GenericActionEventData)
 		if !ok {
-			domain.ContextLogger(ctx, "submit_event").Crit("type assert failed", "event_data", event.Data(), "Type", fmt.Sprintf("%T", event.Data()))
-			return errors.New("Didnt get the right kind of event")
+			log.ContextLogger(ctx, "submit_event").Crit("type assert failed", "event_data", event.Data(), "Type", fmt.Sprintf("%T", event.Data()))
+			return errors.New("didnt get the right kind of event")
 		}
 
 		redfishEvent := &RedfishEventData{}
