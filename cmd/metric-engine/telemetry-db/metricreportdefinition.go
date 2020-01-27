@@ -747,8 +747,8 @@ type RawMetricInstance struct {
 	LastValue         string            `db:"LastValue"`
 	Dirty             bool              `db:"Dirty"`
 	MIRequiresExpand  bool              `db:"MIRequiresExpand"`
-	MISensorInterval  uint64            `db:"MISensorInterval"`
-	MISensorSlack     uint64            `db:"MISensorSlack"`
+	MISensorInterval  time.Duration     `db:"MISensorInterval"`
+	MISensorSlack     time.Duration     `db:"MISensorSlack"`
 }
 
 // Fusion structure: Meta + Instance + MetricValueEvent
@@ -984,31 +984,32 @@ func (factory *MRDFactory) doInsertMetricValue(tx *sqlx.Tx, ev *metric.MetricVal
 		/// make sure that lastts is set and not the unix zero time
 		after := !mm.LastTS.IsZero()
 		after = after && !mm.LastTS.Equal(time.Unix(0, 0))
-		after = after && mm.Timestamp.After(mm.LastTS.Add(time.Duration(mm.MISensorInterval+mm.MISensorSlack)*time.Second))
+		after = after && mm.Timestamp.After(mm.LastTS.Add(mm.MISensorInterval+mm.MISensorSlack))
 		if mm.MIRequiresExpand && !mm.SuppressDups && after {
 			saveInstance = true
 			missingInterval := mm.Timestamp.Sub(mm.LastTS.Time) // .Sub() returns a Duration!
 			if missingInterval > (time.Duration(1) * time.Hour) {
 				// avoid disasters like filling in metrics since 1970...
 				missingInterval = time.Duration(1) * time.Hour // fill in a max of one hour of metrics
-				fmt.Printf("\tAdjusted missingInterval to 1 hr\n")
+				fmt.Printf("\tMissed interval too large, max 1hr or missing metrics: Adjusted missingInterval to 1 hr\n")
 			}
 
-			numExpand := int64(missingInterval/(time.Duration(mm.MISensorInterval)*time.Second)) - 1
 			fmt.Printf("DOING EXPAND For Instance(%d-%s) num(%d) lastts(%s) ts(%s) expand(%t) suppress(%t) after(%t) interval(%d) missingInterval(%d)\n",
-				mm.InstanceID, mm.Name, numExpand, mm.LastTS, mm.Timestamp, mm.MIRequiresExpand, mm.SuppressDups, after, mm.MISensorInterval, missingInterval)
+				mm.InstanceID, mm.Name, int64(missingInterval/(mm.MISensorInterval))-1, mm.LastTS, mm.Timestamp, mm.MIRequiresExpand, mm.SuppressDups, after, mm.MISensorInterval, missingInterval)
 
-			savedTS := mm.Timestamp.Time
+			savedTS := mm.Timestamp
 			savedValue := mm.Value
 			mm.Value = mm.LastValue
 			// loop over putting the same Metric Value in (ie. LastValue), but updating the timestamp
-			mm.Timestamp = metric.SqlTimeInt{Time: mm.LastTS.Add(time.Duration(mm.MISensorInterval) * time.Second)} // .Add() a negative to go backwards
-			for mm.Timestamp.Before(savedTS.Add(-time.Duration(mm.MISensorInterval+mm.MISensorSlack) * time.Second)) {
+			mm.Timestamp = metric.SqlTimeInt{Time: mm.Timestamp.Add(-missingInterval + mm.MISensorInterval)}
+
+			// TODO: we could smooth this out a bit more rather than just jumping by sensorinterval
+			for mm.Timestamp.Before(savedTS.Time.Add(-mm.MISensorSlack)) {
 				fmt.Printf("\tts(%s)\n", mm.Timestamp)
 				_, err = pumpMV(mm)
-				mm.Timestamp = metric.SqlTimeInt{Time: mm.Timestamp.Add(time.Duration(mm.MISensorInterval) * time.Second)} // .Add() a negative to go backwards
+				mm.Timestamp = metric.SqlTimeInt{Time: mm.Timestamp.Add(mm.MISensorInterval)} // .Add() a negative to go backwards
 			}
-			mm.Timestamp = metric.SqlTimeInt{Time: savedTS}
+			mm.Timestamp = savedTS
 			mm.Value = savedValue
 		}
 

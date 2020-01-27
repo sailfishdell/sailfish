@@ -225,10 +225,10 @@ func (l *UDBFactory) ImportByColumn(udbImportName string) (err error) {
 		delete(mm, "RequiresExpand")
 		expand := expandI == 1
 
-		interval := getInt64(mm, "SensorInterval")
+		interval := time.Duration(getInt64(mm, "SensorInterval"))
 		delete(mm, "SensorInterval")
 
-		slack := getInt64(mm, "SensorSlack")
+		slack := time.Duration(getInt64(mm, "SensorSlack"))
 		delete(mm, "SensorSlack")
 
 		for k, v := range mm {

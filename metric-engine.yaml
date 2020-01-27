@@ -572,6 +572,9 @@ UDB-Metric-Import:
         '/redfish/v1/FIXME/' || FriendlyFQDD as Property,
         friendlyFQDD as FriendlyFQDD,
         FQDD as FQDD,
+        1000000000 as 'SensorInterval',
+         500000000 as 'SensorSlack',
+        true as 'RequiresExpand',
 
         TotalPSUHeatDissipation as 'Metric-TotalPSUHeatDissipation',
         SysRackTempDelta as 'Metric-SysRackTempDelta',
@@ -593,7 +596,7 @@ UDB-Metric-Import:
       SHM.db:
         TblsCpuMemMetrics:
     ScanInterval: 0
-    WaitInterval: 5
+    WaitInterval: 4
     Query: |
       SELECT
         cast( (julianday('now') - 2440587.5)*86400 * 1000000000 as integer) as Timestamp,
