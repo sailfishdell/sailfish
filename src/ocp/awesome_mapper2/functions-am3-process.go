@@ -193,7 +193,7 @@ func init() {
 				&domain.UpdateRedfishResourceProperties2{
 					ID: mp.uuid,
 					Properties: map[string]interface{}{
-						"Oem/EnergyConsumptionStartTime": data.CwStartTime,
+						"Oem/EnergyConsumptionStartTime": epoch2Date(data.CwStartTime),
 						"Oem/EnergyConsumptionkWh":       int(data.CumulativeWatts / 1000),
 						"Oem/MaxPeakWatts":               data.PeakWatts,
 						"Oem/MaxPeakWattsTime":           epoch2Date(data.PwReadingTime),
