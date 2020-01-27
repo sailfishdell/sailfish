@@ -169,7 +169,7 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Service, d Bus
 					continue
 				}
 
-				err := MRDFactory.InsertMetricValue(tx, metricValue, instancesUpdated)
+				err := MRDFactory.InsertMetricValue(tx, metricValue, func(instanceid int64) { instancesUpdated[instanceid] = struct{}{} })
 				if err != nil {
 					logger.Crit("Error Inserting Metric Value", "Metric", metricValue, "err", err)
 					continue
@@ -188,7 +188,8 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Service, d Bus
 			}
 			return nil
 		})
-		// this will set MRDFactory.NextMRTS = -1 for any reports that have changes
+
+		// this will set MRDFactory.NextMRTS = MRDFactory.LastMRTS+5s for any reports that have changes
 		err := MRDFactory.CheckOnChangeReports(nil, instancesUpdated)
 		if err != nil {
 			logger.Crit("Error Finding OnChange Reports for metrics", "instancesUpdated", instancesUpdated, "err", err)

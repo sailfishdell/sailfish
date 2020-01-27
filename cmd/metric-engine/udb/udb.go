@@ -221,6 +221,16 @@ func (l *UDBFactory) ImportByColumn(udbImportName string) (err error) {
 		friendlyfqdd := getString(mm, "FriendlyFQDD")
 		delete(mm, "FriendlyFQDD")
 
+		expandI := getInt64(mm, "RequiresExpand")
+		delete(mm, "RequiresExpand")
+		expand := expandI == 1
+
+		interval := getInt64(mm, "SensorInterval")
+		delete(mm, "SensorInterval")
+
+		slack := getInt64(mm, "SensorSlack")
+		delete(mm, "SensorSlack")
+
 		for k, v := range mm {
 			if v == nil {
 				// we dont add NULL metrics
@@ -234,14 +244,17 @@ func (l *UDBFactory) ImportByColumn(udbImportName string) (err error) {
 
 			metricName := k[7:]
 			event := &metric.MetricValueEventData{
-				Timestamp:    metric.SqlTimeInt{Time: time.Unix(0, ts)},
-				Context:      metricCtx,
-				FQDD:         fqdd,
-				FriendlyFQDD: friendlyfqdd,
-				Name:         metricName,
-				Value:        fmt.Sprintf("%v", v),
-				Property:     property + "#" + metricName,
-				Source:       udbImportName,
+				Timestamp:        metric.SqlTimeInt{Time: time.Unix(0, ts)},
+				Context:          metricCtx,
+				FQDD:             fqdd,
+				FriendlyFQDD:     friendlyfqdd,
+				Name:             metricName,
+				Value:            fmt.Sprintf("%v", v),
+				Property:         property + "#" + metricName,
+				Source:           udbImportName,
+				MVRequiresExpand: expand,
+				MVSensorSlack:    slack,
+				MVSensorInterval: interval,
 			}
 
 			if mts, ok := mm["Timestamp-"+metricName].(int64); ok {

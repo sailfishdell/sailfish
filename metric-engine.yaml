@@ -1255,8 +1255,8 @@ internal:
 
     insert_metric_instance: |
       INSERT INTO MetricInstance
-             ( Name,  FQDD,  Property,  Context,  Function,            Label,  CollectionScratch, LastValue, LastTS,  FlushTime,  SuppressDups, Dirty)
-      VALUES (:Name, :FQDD, :Property, :Context, :CollectionFunction, :Label, :CollectionScratch, '',        0,      :FlushTime, :SuppressDups, false)
+             ( Name,  FQDD,  Property,  Context,  Function,            Label,  CollectionScratch, LastValue, LastTS,  FlushTime,  SuppressDups, Dirty,    RequiresExpand,    SensorInterval,    SensorSlack)
+      VALUES (:Name, :FQDD, :Property, :Context, :CollectionFunction, :Label, :CollectionScratch, '',        0,      :FlushTime, :SuppressDups, false, :MVRequiresExpand, :MVSensorInterval, :MVSensorSlack)
 
     find_metric_instance: |
       select
@@ -1285,7 +1285,10 @@ internal:
         MI.SuppressDups,
         MM.CollectionFunction,
         MM.CollectionDuration,
-        MI.Dirty
+        MI.Dirty,
+        MI.RequiresExpand as MIRequiresExpand,
+        MI.SensorInterval as MISensorInterval,
+        MI.SensorSlack    as MISensorSlack
       from MetricInstance as MI
         inner join MetricMetaToInstance as MMTI on MI.ID = MMTI.InstanceID
         inner join MetricMeta as MM on MMTI.MetaID = MM.ID

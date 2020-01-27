@@ -38,8 +38,8 @@ type MetricValueEventData struct {
 	FriendlyFQDD     string     `db:"FriendlyFQDD"`
 	Source           string     `db:"Source"`
 	MVRequiresExpand bool       `db:"MVRequiresExpand"`
-	MVSensorInterval uint64     `db:"MVSensorInterval"`
-	MVSensorSlack    uint64     `db:"MVSensorSlack"`
+	MVSensorInterval int64      `db:"MVSensorInterval"`
+	MVSensorSlack    int64      `db:"MVSensorSlack"`
 }
 
 type FQDDMappingData struct {

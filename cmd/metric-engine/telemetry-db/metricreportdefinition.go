@@ -677,8 +677,9 @@ func (factory *MRDFactory) GenerateMetricReport(tx *sqlx.Tx, name string) (err e
 
 func (factory *MRDFactory) CheckOnChangeReports(tx *sqlx.Tx, instancesUpdated map[int64]struct{}) error {
 	err := factory.WrapWithTXOrPassIn(tx, func(tx *sqlx.Tx) error {
+		query := factory.getSqlxTx(tx, "find_onchange_mrd_by_mm_instance")
 		for mmInstanceID := range instancesUpdated {
-			rows, err := factory.getSqlxTx(tx, "find_onchange_mrd_by_mm_instance").Queryx(mmInstanceID)
+			rows, err := query.Queryx(mmInstanceID)
 			if err != nil {
 				return xerrors.Errorf("Error getting changed reports by instance: %w", err)
 			}
@@ -745,19 +746,27 @@ type RawMetricInstance struct {
 	LastTS            metric.SqlTimeInt `db:"LastTS"`
 	LastValue         string            `db:"LastValue"`
 	Dirty             bool              `db:"Dirty"`
+	MIRequiresExpand  bool              `db:"MIRequiresExpand"`
+	MISensorInterval  uint64            `db:"MISensorInterval"`
+	MISensorSlack     uint64            `db:"MISensorSlack"`
 }
 
 // Fusion structure: Meta + Instance + MetricValueEvent
 type MetricMeta struct {
-	*metric.MetricValueEventData
-	*RawMetricMeta
-	*RawMetricInstance
+	metric.MetricValueEventData
+	RawMetricMeta
+	RawMetricInstance
 	ValueToWrite string `db:"Value"`
 	SuppressDups bool   `db:"SuppressDups"`
 }
 
 func (factory *MRDFactory) InsertMetricInstance(tx *sqlx.Tx, ev *metric.MetricValueEventData) (instancesCreated int, err error) {
 	err = factory.WrapWithTXOrPassIn(tx, func(tx *sqlx.Tx) error {
+		insert_metric_instance := factory.getNamedSqlxTx(tx, "insert_metric_instance")
+		find_metric_instance := factory.getNamedSqlxTx(tx, "find_metric_instance")
+		set_metric_instance_clean := factory.getNamedSqlxTx(tx, "set_metric_instance_clean")
+		insert_mi_assoc := factory.getSqlxTx(tx, "insert_mi_assoc")
+
 		rows, err := factory.getNamedSqlxTx(tx, "find_metric_meta").Queryx(ev)
 		if err != nil {
 			return xerrors.Errorf("Error querying for MetricMeta: %w", err)
@@ -765,7 +774,7 @@ func (factory *MRDFactory) InsertMetricInstance(tx *sqlx.Tx, ev *metric.MetricVa
 
 		// First, iterate over the MetricMeta to generate MetricInstance
 		for rows.Next() {
-			mm := &MetricMeta{MetricValueEventData: ev, RawMetricMeta: &RawMetricMeta{}, RawMetricInstance: &RawMetricInstance{}}
+			mm := &MetricMeta{MetricValueEventData: *ev}
 			err = rows.StructScan(mm)
 			if err != nil {
 				factory.logger.Crit("Error scanning metric meta for event", "err", err, "metric", ev)
@@ -788,13 +797,13 @@ func (factory *MRDFactory) InsertMetricInstance(tx *sqlx.Tx, ev *metric.MetricVa
 			}
 
 			// create instances for each metric meta corresponding to this metric value
-			res, err := factory.getNamedSqlxTx(tx, "insert_metric_instance").Exec(mm)
+			res, err := insert_metric_instance.Exec(mm)
 			if err != nil {
 				// It's ok if sqlite squawks about trying to insert dups here
 				if !strings.HasPrefix(err.Error(), "UNIQUE constraint failed") {
 					return xerrors.Errorf("Error inserting MetricInstance(%s): %w", mm, err)
 				}
-				err = factory.getNamedSqlxTx(tx, "find_metric_instance").Get(mm, mm)
+				err = find_metric_instance.Get(mm, mm)
 				if err != nil {
 					return xerrors.Errorf("Error getting MetricInstance(%s) InstanceID: %w", mm, err)
 				}
@@ -805,11 +814,11 @@ func (factory *MRDFactory) InsertMetricInstance(tx *sqlx.Tx, ev *metric.MetricVa
 				}
 				instancesCreated++
 			}
-			_, err = factory.getSqlxTx(tx, "insert_mi_assoc").Exec(mm.MetaID, mm.InstanceID)
+			_, err = insert_mi_assoc.Exec(mm.MetaID, mm.InstanceID)
 			if err != nil && !strings.HasPrefix(err.Error(), "UNIQUE constraint failed") {
 				return xerrors.Errorf("Error inserting Association for MetricInstance(%s): %w", mm, err)
 			}
-			_, err = factory.getNamedSqlxTx(tx, "set_metric_instance_clean").Exec(mm)
+			_, err = set_metric_instance_clean.Exec(mm)
 			if err != nil {
 				return xerrors.Errorf("Error setting metric instance (%d) clean: %w", mm.InstanceID, err)
 			}
@@ -820,7 +829,7 @@ func (factory *MRDFactory) InsertMetricInstance(tx *sqlx.Tx, ev *metric.MetricVa
 	return instancesCreated, err
 }
 
-func (factory *MRDFactory) InsertMetricValue(tx *sqlx.Tx, ev *metric.MetricValueEventData, instancesUpdated map[int64]struct{}) (err error) {
+func (factory *MRDFactory) InsertMetricValue(tx *sqlx.Tx, ev *metric.MetricValueEventData, updatedInstance func(int64)) (err error) {
 	return factory.WrapWithTXOrPassIn(tx, func(tx *sqlx.Tx) error {
 		// Optimized, so this logic isn't as straightforward as it could be.
 		//
@@ -828,7 +837,7 @@ func (factory *MRDFactory) InsertMetricValue(tx *sqlx.Tx, ev *metric.MetricValue
 		// if we find an instance and it is clean, we know that we are done (ie. there are no reports with metric meta that we need to insert an instance for)
 		// if we find an instance and it is dirty, we know a report has been added/updated and we potentially need to see if there is a metric meta we need to find and insert an instance for
 		// if we do not find any instances, it could be because there is no report that contains this meta. Or, it could be because we simply haven't put in a metric instance for this value yet
-		foundInstance, dirty, err := factory.doInsertMetricValue(tx, ev, instancesUpdated)
+		foundInstance, dirty, err := factory.doInsertMetricValue(tx, ev, updatedInstance)
 		if err != nil {
 			return err
 		}
@@ -838,7 +847,7 @@ func (factory *MRDFactory) InsertMetricValue(tx *sqlx.Tx, ev *metric.MetricValue
 				return err
 			}
 			if instancesCreated > 0 {
-				_, _, err := factory.doInsertMetricValue(tx, ev, instancesUpdated)
+				_, _, err := factory.doInsertMetricValue(tx, ev, updatedInstance)
 				if err != nil {
 					return err
 				}
@@ -848,127 +857,172 @@ func (factory *MRDFactory) InsertMetricValue(tx *sqlx.Tx, ev *metric.MetricValue
 	})
 }
 
-func (factory *MRDFactory) doInsertMetricValue(tx *sqlx.Tx, ev *metric.MetricValueEventData, instancesUpdated map[int64]struct{}) (foundInstance, dirty bool, err error) {
-	dirty = false
-	foundInstance = false
-	err = factory.WrapWithTXOrPassIn(tx, func(tx *sqlx.Tx) error {
-
+func (factory *MRDFactory) IterMetricInstance(tx *sqlx.Tx, mm *MetricMeta, fn func(*MetricMeta) error) error {
+	return factory.WrapWithTXOrPassIn(tx, func(tx *sqlx.Tx) error {
 		// And now, foreach MetricInstance, insert MetricValue
-		rows, err := factory.getNamedSqlxTx(tx, "iterate_metric_instance").Queryx(ev)
+		rows, err := factory.getNamedSqlxTx(tx, "iterate_metric_instance").Queryx(mm)
 		if err != nil {
-			return xerrors.Errorf("Error querying MetricInstance(%s): %w", ev, err)
+			return xerrors.Errorf("Error querying MetricInstance(%s): %w", mm, err)
 		}
-
-		rmm := RawMetricMeta{}
-		rmi := RawMetricInstance{}
-		mm := MetricMeta{MetricValueEventData: ev, RawMetricMeta: &rmm, RawMetricInstance: &rmi}
-
 		for rows.Next() {
-			saveValue := true
-			saveInstance := false
-			foundInstance = true
-
-			err = rows.StructScan(&mm)
+			err = rows.StructScan(mm)
 			if err != nil {
 				factory.logger.Crit("Error scanning struct result for MetricInstance query", "err", err)
 				continue
 			}
-
-			if mm.Dirty {
-				dirty = true
-			}
-
-			floatVal, floatErr := strconv.ParseFloat(mm.Value, 64)
-			if floatErr != nil && mm.CollectionFunction != "" {
-				saveValue = false
-				saveInstance = true
-
-				// has the period expired?
-				if mm.Timestamp.After(mm.FlushTime.Time) {
-					// Calculate what we should be dropping in the output
-					saveValue = true
-					factory.logger.Info("Collection period done Metric Instance", "Instance ID", mm.InstanceID, "CollectionFunction", mm.CollectionFunction)
-					switch mm.CollectionFunction {
-					case "Average":
-						mm.Value = strconv.FormatFloat(mm.CollectionScratch.Sum/float64(mm.CollectionScratch.Numvalues), 'G', -1, 64)
-					case "Maximum":
-						mm.Value = strconv.FormatFloat(mm.CollectionScratch.Maximum, 'G', -1, 64)
-					case "Minimum":
-						mm.Value = strconv.FormatFloat(mm.CollectionScratch.Minimum, 'G', -1, 64)
-					case "Summation":
-						mm.Value = strconv.FormatFloat(mm.CollectionScratch.Sum, 'G', -1, 64)
-					default:
-						mm.Value = "Invalid or Unsupported CollectionFunction"
-					}
-
-					// now, reset everything
-					// TODO: need a separate query to find all Metrics with HWM > FlushTime and flush them
-					mm.FlushTime = metric.SqlTimeInt{Time: mm.Timestamp.Add(mm.CollectionDuration * time.Second)}
-					mm.CollectionScratch.Sum = 0
-					mm.CollectionScratch.Numvalues = 0
-					mm.CollectionScratch.Maximum = -math.MaxFloat64
-					mm.CollectionScratch.Minimum = math.MaxFloat64
-				}
-
-				// floatVal was saved, above.
-				mm.CollectionScratch.Numvalues++
-				mm.CollectionScratch.Sum += floatVal
-				mm.CollectionScratch.Maximum = math.Max(floatVal, mm.CollectionScratch.Maximum)
-				mm.CollectionScratch.Minimum = math.Min(floatVal, mm.CollectionScratch.Minimum)
-			}
-
-			if mm.SuppressDups && mm.LastValue == mm.Value {
-				// No need to flush out new value, however instance may or may not need
-				// flushing depending on above.
-				saveValue = false
-			}
-
-			if saveValue {
-				if mm.SuppressDups {
-					mm.LastValue = mm.Value
-					mm.LastTS = mm.Timestamp
-					saveInstance = true
-				}
-
-				// report change hook. let caller know which instances were updated so they can look up reports
-				instancesUpdated[mm.InstanceID] = struct{}{}
-
-				var sql string
-				var args []interface{}
-
-				// Put into optimized tables, if possible. Try INT first, as it will error out for a float(1.0) value, but not vice versa
-				intVal, err := strconv.ParseInt(mm.Value, 10, 64)
-				if err == nil {
-					sql = "insert_mv_int"
-					args = []interface{}{mm.InstanceID, mm.Timestamp, intVal}
-
-				} else if floatErr == nil { // re-use already parsed floatVal above
-					sql = "insert_mv_real"
-					args = []interface{}{mm.InstanceID, mm.Timestamp, floatVal}
-
-				} else {
-					sql = "insert_mv_text"
-					args = []interface{}{mm.InstanceID, mm.Timestamp, mm.Value}
-				}
-
-				_, err = factory.getSqlxTx(tx, sql).Exec(args...)
-				if err != nil {
-					if !strings.HasPrefix(err.Error(), "UNIQUE constraint failed") {
-						return xerrors.Errorf("Error inserting MetricValue for MetricInstance(%d)/MetricMeta(%d), ARGS: %+v: %w", mm.InstanceID, mm.MetaID, args, err)
-					}
-				}
-			}
-
-			if saveInstance {
-				_, err = factory.getNamedSqlxTx(tx, "update_metric_instance").Exec(mm)
-				if err != nil && !strings.HasPrefix(err.Error(), "UNIQUE constraint failed") {
-					return xerrors.Errorf("Failed to update MetricInstance(%d) with MetricMeta(%d): %w", mm.InstanceID, mm.MetaID, err)
-				}
+			err := fn(mm)
+			if err != nil {
+				return err
 			}
 		}
 		return nil
 	})
-	return foundInstance, dirty, err
+}
+
+func (factory *MRDFactory) doInsertMetricValue(tx *sqlx.Tx, ev *metric.MetricValueEventData, updatedInstance func(int64)) (foundInstance, dirty bool, err error) {
+	dirty = false
+	foundInstance = false
+	insert_mv_int := factory.getSqlxTx(tx, "insert_mv_int")
+	insert_mv_real := factory.getSqlxTx(tx, "insert_mv_real")
+	insert_mv_text := factory.getSqlxTx(tx, "insert_mv_text")
+	update_metric_instance := factory.getNamedSqlxTx(tx, "update_metric_instance")
+
+	// same for every instance, lift out of the for loop
+	mm := MetricMeta{MetricValueEventData: *ev}
+	floatVal, floatErr := strconv.ParseFloat(mm.Value, 64)
+	saveInstance := false
+
+	pumpMV := func(mm *MetricMeta) (bool, error) {
+		saveValue := true
+		if floatErr != nil && mm.CollectionFunction != "" {
+			saveValue = false
+			saveInstance = true
+
+			// has the period expired?
+			if mm.Timestamp.After(mm.FlushTime.Time) {
+				// Calculate what we should be dropping in the output
+				saveValue = true
+				factory.logger.Info("Collection period done Metric Instance", "Instance ID", mm.InstanceID, "CollectionFunction", mm.CollectionFunction)
+				switch mm.CollectionFunction {
+				case "Average":
+					mm.Value = strconv.FormatFloat(mm.CollectionScratch.Sum/float64(mm.CollectionScratch.Numvalues), 'G', -1, 64)
+				case "Maximum":
+					mm.Value = strconv.FormatFloat(mm.CollectionScratch.Maximum, 'G', -1, 64)
+				case "Minimum":
+					mm.Value = strconv.FormatFloat(mm.CollectionScratch.Minimum, 'G', -1, 64)
+				case "Summation":
+					mm.Value = strconv.FormatFloat(mm.CollectionScratch.Sum, 'G', -1, 64)
+				default:
+					mm.Value = "Invalid or Unsupported CollectionFunction"
+				}
+
+				// now, reset everything
+				// TODO: need a separate query to find all Metrics with HWM > FlushTime and flush them
+				mm.FlushTime = metric.SqlTimeInt{Time: mm.Timestamp.Add(mm.CollectionDuration * time.Second)}
+				mm.CollectionScratch.Sum = 0
+				mm.CollectionScratch.Numvalues = 0
+				mm.CollectionScratch.Maximum = -math.MaxFloat64
+				mm.CollectionScratch.Minimum = math.MaxFloat64
+			}
+
+			// floatVal was saved, above.
+			mm.CollectionScratch.Numvalues++
+			mm.CollectionScratch.Sum += floatVal
+			mm.CollectionScratch.Maximum = math.Max(floatVal, mm.CollectionScratch.Maximum)
+			mm.CollectionScratch.Minimum = math.Min(floatVal, mm.CollectionScratch.Minimum)
+		}
+
+		if mm.SuppressDups && mm.LastValue == mm.Value {
+			// No need to flush out new value, however instance may or may not need
+			// flushing depending on above.
+			saveValue = false
+		}
+
+		if saveValue {
+			var insertMV *sqlx.Stmt
+			var args []interface{}
+
+			mm.LastTS = mm.Timestamp
+			mm.LastValue = mm.Value
+
+			// Put into optimized tables, if possible. Try INT first, as it will error out for a float(1.0) value, but not vice versa
+			intVal, err := strconv.ParseInt(mm.Value, 10, 64)
+			if err == nil {
+				insertMV = insert_mv_int
+				args = []interface{}{mm.InstanceID, mm.Timestamp, intVal}
+
+			} else if floatErr == nil { // re-use already parsed floatVal above
+				insertMV = insert_mv_real
+				args = []interface{}{mm.InstanceID, mm.Timestamp, floatVal}
+
+			} else {
+				insertMV = insert_mv_text
+				args = []interface{}{mm.InstanceID, mm.Timestamp, mm.Value}
+			}
+
+			_, err = insertMV.Exec(args...)
+			if err != nil {
+				if !strings.HasPrefix(err.Error(), "UNIQUE constraint failed") {
+					return saveValue, xerrors.Errorf("Error inserting MetricValue for MetricInstance(%d)/MetricMeta(%d), ARGS: %+v: %w", mm.InstanceID, mm.MetaID, args, err)
+				}
+			}
+			// report change hook. let caller know which instances were updated so they can look up reports for OnChange
+			updatedInstance(mm.InstanceID)
+		}
+		return saveValue, nil
+	}
+
+	factory.IterMetricInstance(tx, &mm, func(mm *MetricMeta) error {
+		foundInstance = true
+		if mm.Dirty {
+			dirty = true
+		}
+
+		saveInstance = false
+
+		// Here we are going to expand any metrics that were skipped by upstream
+		/// make sure that lastts is set and not the unix zero time
+		after := !mm.LastTS.IsZero()
+		after = after && !mm.LastTS.Equal(time.Unix(0, 0))
+		after = after && mm.Timestamp.After(mm.LastTS.Add(time.Duration(mm.MISensorInterval+mm.MISensorSlack)*time.Second))
+		if mm.MIRequiresExpand && !mm.SuppressDups && after {
+			saveInstance = true
+			missingInterval := mm.Timestamp.Sub(mm.LastTS.Time) // .Sub() returns a Duration!
+			if missingInterval > (time.Duration(1) * time.Hour) {
+				// avoid disasters like filling in metrics since 1970...
+				missingInterval = time.Duration(1) * time.Hour // fill in a max of one hour of metrics
+				fmt.Printf("\tAdjusted missingInterval to 1 hr\n")
+			}
+
+			numExpand := int64(missingInterval/(time.Duration(mm.MISensorInterval)*time.Second)) - 1
+			fmt.Printf("DOING EXPAND For Instance(%d-%s) num(%d) lastts(%s) ts(%s) expand(%t) suppress(%t) after(%t) interval(%d) missingInterval(%d)\n",
+				mm.InstanceID, mm.Name, numExpand, mm.LastTS, mm.Timestamp, mm.MIRequiresExpand, mm.SuppressDups, after, mm.MISensorInterval, missingInterval)
+
+			savedTS := mm.Timestamp.Time
+			savedValue := mm.Value
+			mm.Value = mm.LastValue
+			// loop over putting the same Metric Value in (ie. LastValue), but updating the timestamp
+			mm.Timestamp = metric.SqlTimeInt{Time: mm.LastTS.Add(time.Duration(mm.MISensorInterval) * time.Second)} // .Add() a negative to go backwards
+			for mm.Timestamp.Before(savedTS.Add(-time.Duration(mm.MISensorInterval+mm.MISensorSlack) * time.Second)) {
+				fmt.Printf("\tts(%s)\n", mm.Timestamp)
+				_, err = pumpMV(mm)
+				mm.Timestamp = metric.SqlTimeInt{Time: mm.Timestamp.Add(time.Duration(mm.MISensorInterval) * time.Second)} // .Add() a negative to go backwards
+			}
+			mm.Timestamp = metric.SqlTimeInt{Time: savedTS}
+			mm.Value = savedValue
+		}
+
+		curr, err := pumpMV(mm)
+		if curr || saveInstance {
+			_, err = update_metric_instance.Exec(mm)
+			if err != nil && !strings.HasPrefix(err.Error(), "UNIQUE constraint failed") {
+				return xerrors.Errorf("Failed to update MetricInstance(%d) with MetricMeta(%d): %w", mm.InstanceID, mm.MetaID, err)
+			}
+		}
+		return nil
+	})
+
+	return
 }
 
 func (factory *MRDFactory) runSQLFromList(sqllist []string, entrylog string, errorlog string) (err error) {
