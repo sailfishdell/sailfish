@@ -1421,19 +1421,21 @@ createdb:
   - |
       CREATE TABLE IF NOT EXISTS MetricReportDefinition
       (
-        ID           INTEGER PRIMARY KEY NOT NULL,
-        Name         TEXT UNIQUE NOT NULL, -- Name of the metric report defintion. This is what shows up in the collection
-        ShortDesc    TEXT,
-        LongDesc     TEXT,
-        Enabled      BOOLEAN,
-        AppendLimit  INTEGER,
-        Type         TEXT,                 -- type of report: 'Periodic', 'OnChange', 'OnRequest'
-        SuppressDups BOOLEAN,
-        Actions      TEXT,                 -- json array of options: 'LogToMetricReportsCollection', 'RedfishEvent'
-        Updates      TEXT,                 -- 'AppendStopsWhenFull', 'AppendWrapsWhenFull', 'NewReport', 'Overwrite'
-        Period       INTEGER not null default 0,
-        TimeSpan     INTEGER not null default 0,
-        Hidden       BOOLEAN               -- Not displayed to the user, only for internal use
+        ID                INTEGER PRIMARY KEY NOT NULL,
+        Name              TEXT UNIQUE NOT NULL, -- Name of the metric report defintion. This is what shows up in the collection
+        ShortDesc         TEXT,
+        LongDesc          TEXT,
+        Enabled           BOOLEAN,
+        AppendLimit       INTEGER,
+        Type              TEXT,                 -- type of report: 'Periodic', 'OnChange', 'OnRequest'
+        SuppressDups      BOOLEAN,
+        Actions           TEXT,                 -- json array of options: 'LogToMetricReportsCollection', 'RedfishEvent'
+        Updates           TEXT,                 -- 'AppendStopsWhenFull', 'AppendWrapsWhenFull', 'NewReport', 'Overwrite'
+        Period            INTEGER not null default 0,
+        TimeSpan          INTEGER not null default 0,
+        HeartbeatInterval INTEGER NOT NULL DEFAULT 0,
+        NextHeartbeatTS   INTEGER NOT NULL DEFAULT 0,
+        Hidden            BOOLEAN               -- Not displayed to the user, only for internal use
       )
 
   - |
@@ -1499,6 +1501,10 @@ createdb:
         FlushTime         INTEGER,          -- Time at which any aggregated data should be flushed
         LastTS            INTEGER NOT NULL, -- Used to quickly suppress dups for this instance
         LastValue         TEXT    NOT NULL, -- Used to quickly suppress dups for this instance
+        RequiresExpand    BOOLEAN NOT NULL DEFAULT TRUE, -- should we automatically expand gaps
+        SensorInterval    INTEGER NOT NULL DEFAULT 5,    -- set to the backend interval
+        SensorSlack       INTEGER NOT NULL DEFAULT 1,    -- how much subsequent timestamps can drift
+        SourceTraceInfo   TEXT    NOT NULL DEFAULT '',   -- DB:ROWID -- can look for sqlite operation==(delete) and turn off sensor interval
         Dirty             BOOLEAN NOT NULL DEFAULT TRUE, -- set to dirty any time MRD changes, clean once a metric has been processed
 
         -- indexes and constraints
