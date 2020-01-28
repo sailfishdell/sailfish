@@ -572,8 +572,9 @@ UDB-Metric-Import:
         '/redfish/v1/FIXME/' || FriendlyFQDD as Property,
         friendlyFQDD as FriendlyFQDD,
         FQDD as FQDD,
-        1000000000 as 'SensorInterval',
-         500000000 as 'SensorSlack',
+        -- expect 5 second interval, give it +/- 1s
+        5000000000 as 'SensorInterval',
+        1000000000 as 'SensorSlack',
         true as 'RequiresExpand',
 
         TotalPSUHeatDissipation as 'Metric-TotalPSUHeatDissipation',
