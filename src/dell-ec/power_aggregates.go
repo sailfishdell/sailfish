@@ -25,15 +25,18 @@ func RegisterAggregate(s *testaggregate.Service) {
 						"GET": []string{"Login"},
 					},
 					Properties: map[string]interface{}{
-						"Id":          "Power",
-						"Description": "Power",
-						"Name":        "Power",
-						"@odata.etag": `W/"abc123"`,
-
-						"PowerSupplies@meta":             vw.Meta(view.GETProperty("power_supply_uris"), view.GETFormatter("expand"), view.GETModel("default")),
-						"PowerSupplies@odata.count@meta": vw.Meta(view.GETProperty("power_supply_uris"), view.GETFormatter("count"), view.GETModel("default")),
-						"PowerControl@meta":              vw.Meta(view.GETProperty("power_control_uris"), view.GETFormatter("expand"), view.GETModel("default")),
-						"PowerControl@odata.count@meta":  vw.Meta(view.GETProperty("power_control_uris"), view.GETFormatter("count"), view.GETModel("default")),
+						"Id":                        "Power",
+						"Description":               "Power",
+						"Name":                      "Power",
+						"@odata.etag":               `W/"abc123"`,
+						"PowerSupplies":             []interface{}{},
+						"PowerSupplies@odata.count": 0,
+						"PowerControl":              []interface{}{},
+						"PowerControl@odata.count":  0,
+						//"PowerSupplies@meta":             vw.Meta(view.GETProperty("power_supply_uris"), view.GETFormatter("expand"), view.GETModel("default")),
+						//"PowerSupplies@odata.count@meta": vw.Meta(view.GETProperty("power_supply_uris"), view.GETFormatter("count"), view.GETModel("default")),
+						//"PowerControl@meta":              vw.Meta(view.GETProperty("power_control_uris"), view.GETFormatter("expand"), view.GETModel("default")),
+						//"PowerControl@odata.count@meta":  vw.Meta(view.GETProperty("power_control_uris"), view.GETFormatter("count"), view.GETModel("default")),
 						"Oem": map[string]interface{}{
 							"Dell": map[string]interface{}{
 								"PowerSuppliesSummary": map[string]interface{}{
@@ -41,8 +44,10 @@ func RegisterAggregate(s *testaggregate.Service) {
 										"HealthRollup": nil,
 									},
 								},
-								"PowerTrends@meta":             vw.Meta(view.GETProperty("power_trends_uri"), view.GETFormatter("expand"), view.GETModel("default")),
-								"PowerTrends@odata.count@meta": vw.Meta(view.GETProperty("power_trends_uri"), view.GETFormatter("count"), view.GETModel("default")),
+								"PowerTrends":             []interface{}{},
+								"PowerTrends@odata.count": 0,
+								//"PowerTrends@meta":             vw.Meta(view.GETProperty("power_trends_uri"), view.GETFormatter("expand"), view.GETModel("default")),
+								//"PowerTrends@odata.count@meta": vw.Meta(view.GETProperty("power_trends_uri"), view.GETFormatter("count"), view.GETModel("default")),
 							},
 						}}},
 			}, nil
@@ -60,10 +65,12 @@ func RegisterAggregate(s *testaggregate.Service) {
 						"GET": []string{"Login"},
 					},
 					Properties: map[string]interface{}{
-						"Name":                        "System Power",
-						"MemberId":                    "PowerHistogram",
-						"histograms@meta":             vw.Meta(view.GETProperty("trend_histogram_uris"), view.GETFormatter("expand"), view.GETModel("default")),
-						"histograms@odata.count@meta": vw.Meta(view.GETProperty("trend_histogram_uris"), view.GETFormatter("count"), view.GETModel("default")),
+						"Name":                   "System Power",
+						"MemberId":               "PowerHistogram",
+						"histograms":             []interface{}{},
+						"histograms@odata.count": 0,
+						//"histograms@meta":             vw.Meta(view.GETProperty("trend_histogram_uris"), view.GETFormatter("expand"), view.GETModel("default")),
+						//"histograms@odata.count@meta": vw.Meta(view.GETProperty("trend_histogram_uris"), view.GETFormatter("count"), view.GETModel("default")),
 					}},
 			}, nil
 		})
@@ -128,8 +135,10 @@ func RegisterAggregate(s *testaggregate.Service) {
 							"MaxConsumedWatts":     0,
 							"MinConsumedWatts":     0,
 						},
-						"RelatedItem@meta":             vw.Meta(view.GETProperty("power_related_items"), view.GETFormatter("formatOdataList"), view.GETModel("default")),
-						"RelatedItem@odata.count@meta": vw.Meta(view.GETProperty("power_related_items"), view.GETFormatter("count"), view.GETModel("default")),
+						"RelatedItem":             []interface{}{},
+						"RelatedItem@odata.count": 0,
+						//"RelatedItem@meta":             vw.Meta(view.GETProperty("power_related_items"), view.GETFormatter("formatOdataList"), view.GETModel("default")),
+						//"RelatedItem@odata.count@meta": vw.Meta(view.GETProperty("power_related_items"), view.GETFormatter("count"), view.GETModel("default")),
 					},
 				}}, nil
 		})

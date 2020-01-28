@@ -265,8 +265,8 @@ func RegisterAggregate(s *testaggregate.Service) {
 					Properties: map[string]interface{}{
 						"Name":                     "Task Collection",
 						"Description":              "Collection of Tasks",
-						"Members@meta":             vw.Meta(view.GETProperty("members"), view.GETFormatter("formatOdataList"), view.GETModel("default")),
-						"Members@odata.count@meta": vw.Meta(view.GETProperty("members"), view.GETFormatter("count"), view.GETModel("default")),
+						"Members":                  []interface{}{},
+						"Members@odata.count":      0,
 					}},
 			}, nil
 		})

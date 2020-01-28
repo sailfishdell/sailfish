@@ -13,20 +13,8 @@
       "Properties": {
         "Name": "Computer System Collection",
         "Description": "Collection of Chassis",
-        "Members@meta": {
-          "GET": {
-            "model": "default",
-            "property": "members",
-            "formatter": "formatOdataList"
-          }
-        },
-        "Members@odata.count@meta": {
-          "GET": {
-            "model": "default",
-            "property": "members",
-            "formatter": "count"
-          }
-        },
+        "Members": [],
+        "Members@odata.count": 0,
         "@odata.etag": "W/'ABC123'"
       }
     }

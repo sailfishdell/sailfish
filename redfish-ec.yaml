@@ -56,8 +56,6 @@ views:
       "Models":
         "default":  {"members": "array()"}
       "Controllers":
-        - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + view.GetURI()", "passthru": {'collection_uri': 'view.GetURI()'} }
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/Chassis'"
@@ -136,8 +134,6 @@ views:
       "Models":
         "default":  {"members": "array()"}
       "Controllers":
-        - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + view.GetURI()", "passthru": {'collection_uri': 'view.GetURI()'} }
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/Systems'"
@@ -151,8 +147,6 @@ views:
       "Models":
         "default":  {"members": "array()"}
       "Controllers":
-        - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + view.GetURI()", "passthru": {'collection_uri': 'view.GetURI()'} }
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/Managers'"
@@ -171,8 +165,6 @@ views:
       "Models":
         "default":  {"members": "array()"}
       "Controllers":
-        - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + view.GetURI()", "passthru": {'collection_uri': 'view.GetURI()'} }
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/AccountService/Roles'"
@@ -186,8 +178,6 @@ views:
       "Models":
         "default":  {"members": "array()"}
       "Controllers":
-        - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + view.GetURI()", "passthru": {'collection_uri': 'view.GetURI()'} }
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/AccountService/Accounts'"
@@ -225,8 +215,6 @@ views:
       "Models":
         "default": {"members": "array()"}
       "Controllers":
-        - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + view.GetURI()", "passthru": {'collection_uri': 'view.GetURI()'} }
       "View":
         - "fn": "with_URI"
           "params": "eventsvc_uri + '/Subscriptions'"
@@ -255,6 +243,67 @@ views:
           "params":
       "Aggregate": "subscription"
 
+  "telemetry_service":
+      "Logger": ["module", "telemetry_service"]
+      "Models":
+        "default": {}
+      "Controllers":
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/TelemetryService'"
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+        - "fn": "etag"
+          "params": []
+        - "fn": "WithAction"
+          "params": {"name": "submit.test.metric.report", "uri": "/Actions/TelemetryService.SubmitTestMetricReport", "actionFunction": "submittestmetricreport"}
+        - "fn": "linkModel"
+          "params": {"existing": "default", "linkname": "etag"}
+      "Aggregate": "telemetry_service"
+      "ExecPost": [
+        "instantiate('metric_report_definitions', 'parenturi', view.GetURI())",
+        "instantiate('metric_reports', 'parenturi', view.GetURI())",
+      ]
+
+  "metric_report_definitions":
+      "Logger": ["module", "metric_report_definitions"]
+      "Models":
+        "default":   {"members": "array()"}
+      "Controllers":
+      "View":
+        - "fn": "with_URI"
+          "params": "parenturi + '/MetricReportDefinitions'"
+        - "fn": "stdFormatters"
+          "params":
+      "Aggregate": "metric_report_definitions"
+      "Exec": [
+        "instantiate{'fan_speed_metric_def', 'parenturi',view.GetURI())",
+      ]
+
+  "fan_speed_metric_def":
+      "Logger": ["module", "metric_definition"]
+      "Models":
+        "default":  {"members": "array()"}
+      "View":
+        - "fn": "with_URI"
+          "params": "parenturi + '/FanSpeedRPM'"
+        - "fn": "stdFormatters"
+          "params":
+      "Aggregate": "fanspeedmetricdef"
+
+
+  "metric_reports":
+      "Logger": ["module", "metric_reports"]
+      "Models":
+        "default":  {"members": "array()"}
+      "Controllers":
+      "View":
+        - "fn": "with_URI"
+          "params": "parenturi + '/MetricReports'"
+        - "fn": "stdFormatters"
+          "params":
+      "Aggregate": "metric_reports"
+
   "sessionservice":
       "Logger": ["module", "session"]
       "Models":
@@ -280,8 +329,6 @@ views:
       "Models":
         "default":  {"members": "array()"}
       "Controllers":
-        - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + view.GetURI()", "passthru": {'collection_uri': 'view.GetURI()'} }
         - "fn": "ARMapper"
           "params": {"modelname": "default", "cfgsection": "SessionService", "mappinguniquename": "rooturi + '/SessionService/Sessions'", "AddToView": "ar_mapper"}
       "View":
@@ -307,8 +354,6 @@ views:
       "Models":
         "default":  {"members": "array()"}
       "Controllers":
-        - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + view.GetURI()", "passthru": {'collection_uri': 'view.GetURI()'} }
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/Registries'"
@@ -466,8 +511,6 @@ views:
       "Models":
         "default":  {}
       "Controllers":
-        - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + view.GetURI()", "passthru": {'collection_uri': 'view.GetURI()'} }
       "View":
         - "fn": "with_URI"
           "params": "parenturi + '/CertificateInventory'"
@@ -498,8 +541,6 @@ views:
       "Models":
         "default":  {"members": "array()"}
       "Controllers":
-        - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + view.GetURI()", "passthru": {'collection_uri': "'/redfish/v1/Managers/' + FQDD + '/LogServices'"} }
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/Managers/' + FQDD + '/LogServices'"
@@ -561,8 +602,6 @@ views:
       "Controllers":
         - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "update_service", "uniquename": "'firmware_inventory'" }
-        - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + view.GetURI()", "passthru": {'collection_uri': 'view.GetURI()'} }
       "View":
         - "fn": "stdFormatters"
           "params":
@@ -601,10 +640,6 @@ views:
       "Models":
         "default":  {"members": "array()"}
       "Controllers":
-        - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "collection_w_hash", "uniquename": "'collection_' + view.GetURI()", "passthru": {'collection_uri': 'view.GetURI()'} }
-        - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "faultlist", "uniquename": "'collection_faultlist_' + view.GetURI()", "passthru": {'collection_uri': 'view.GetURI()'} }
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/Managers/CMC.Integrated.1/Logs/FaultList'"
@@ -953,8 +988,6 @@ views:
       "Models":
         "default": {"members": "array()"}
       "Controllers":
-        - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + view.GetURI()", "passthru": {'collection_uri': 'view.GetURI()'} }
       "View":
         - "fn": "with_URI"
           "params": "parenturi + '/Slots'"
@@ -986,8 +1019,6 @@ views:
       "Models":
         "default": {"members": "array()"}
       "Controllers":
-        - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + view.GetURI()", "passthru": {'collection_uri': 'view.GetURI()'} }
       "View":
         - "fn": "with_URI"
           "params": "parenturi + '/SlotConfigs'"
@@ -1033,8 +1064,6 @@ views:
       "Controllers":
         - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "task_service", "uniquename": "'task_service'"}
-        - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + view.GetURI()", "passthru": {'collection_uri': 'view.GetURI()'} }
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/TaskService/Tasks'"
@@ -1151,7 +1180,7 @@ awesome_mapper:
             "data.Type == 'SlotConfig' && addslotconfig(postprocs, data.ParentFQDD + ':' + data.FQDD, data.ParentFQDD, data.FQDD)",
                 ]}
 
-    collection:
+    collection: #INPROGRESS ODATALIST
       - { SelectEventType: "RedfishResource:created",
           SelectFN: "uriCheckNoHash",
 	  SelectParams: [ "collection_uri" ],
@@ -1161,7 +1190,7 @@ awesome_mapper:
           SelectParams: ["collection_uri"],
           ModelUpdate: [ {Property: "members", Query: "removefromset(model, propname, data.ResourceURI)"} ]}
 
-    collection_w_hash:
+    collection_w_hash: #INPROGRESS ODATALIST
       - { SelectEventType: "RedfishResource:created",
           Select: "baseuri(data.ResourceURI) == collection_uri ",
           SelectFN: "uriCheckWithHash",
@@ -1172,7 +1201,7 @@ awesome_mapper:
           SelectParams: ["collection_uri"],
           ModelUpdate: [ {Property: "members", Query: "removefromset(model, propname, data.ResourceURI)"} ]}
 
-    power_supply_uris:
+    power_supply_uris: #INPROGRESS EXPAND
       - { SelectEventType: "RedfishResource:created",
           SelectFN: "uriCheckNoHash",
           SelectParams: ["rooturi","/Chassis/","FQDD","/Power/PowerSupplies"],
@@ -1182,7 +1211,7 @@ awesome_mapper:
           SelectParams: ["rooturi","/Chassis/","FQDD","/Power/PowerSupplies"],
           ModelUpdate: [ {Property: "power_supply_uris", Query: "removefromset(model, propname, data.ResourceURI)"} ]}
 
-    power_control_uris:
+    power_control_uris: #INPROGRESS EXPAND
       - { SelectEventType: "RedfishResource:created",
           SelectFN: "uriEquals",
           SelectParams: ["rooturi","/Chassis/","FQDD","/Power/PowerControl"],
@@ -1192,7 +1221,7 @@ awesome_mapper:
           SelectParams: ["rooturi","/Chassis/","FQDD","/Power/PowerControl"],
           ModelUpdate: [ {Property: "power_control_uris", Query: "removefromset(model, propname, data.ResourceURI)"} ]}
 
-    power_trends_uri:
+    power_trends_uri: #INPROGRESS EXPAND
       - { SelectEventType: "RedfishResource:created",
           SelectFN: "uriCheckNoHash",
           SelectParams: ["rooturi","/Chassis/","FQDD","/Power/PowerTrends-1"],
@@ -1202,7 +1231,7 @@ awesome_mapper:
           SelectParams: ["rooturi","/Chassis/","FQDD","/Power/PowerTrends-1"],
           ModelUpdate: [ {Property: "power_trends_uri", Query: "removefromset(model, propname, data.ResourceURI)"} ]}
 
-    trend_histogram_uris:
+    trend_histogram_uris: #INPROGRESS EXPAND
       - { SelectEventType: "RedfishResource:created",
           SelectFN: "uriCheckNoHash",
           SelectParams: ["rooturi","/Chassis/","FQDD","/Power/PowerTrends-1"],
@@ -1212,7 +1241,7 @@ awesome_mapper:
           SelectParams: ["rooturi","/Chassis/","FQDD","/Power/PowerTrends-1"],
           ModelUpdate: [ {Property: "trend_histogram_uris", Query: "removefromset(model, propname, data.ResourceURI)"} ]}
 
-    thermal:
+    thermal: #INPROGRESS EXPAND
       - { SelectEventType: "RedfishResource:created",
           SelectFN: "uriCheckNoHash",
           SelectParams: ["fanuri"],
@@ -1222,7 +1251,7 @@ awesome_mapper:
           SelectParams: ["rooturi"],
           ModelUpdate: [ {Property: "fan_uris", Query: "removefromset(model, propname, data.ResourceURI)"} ]}
 
-    thermal_sensor:
+    thermal_sensor: #INPROGRESS EXPAND
       - { SelectEventType: "ThermalSensorEvent",
           SelectFN: "true",
           Exec: [ "updateSensorEvent(rooturi + '/Chassis/System.Chassis.1/Sensors/Temperatures', data)" ]}
@@ -1305,7 +1334,10 @@ awesome_mapper:
 
 
 
-    power_control:
+    power_control: #INPROGRESS ODATALIST
+      - { SelectEventType: "PowerConsumptionDataObjEvent", SelectFN: "true",
+             Process: { "name": "updatePwrConsumptionData", "params":[]}}
+
       # every chassis object is a power related item. add and remove them as they come
       - { SelectEventType: "RedfishResource:created",
           SelectFN: "uriCheckNoHash",
@@ -1323,7 +1355,14 @@ awesome_mapper:
           Select: "data.FQDD == 'System.Chassis.1' && data.Name == 'PowerCapValue'",
           Process: { "name": "updatePowerLimit", "params":[]}}
 
-    power_supply: #WORKING ON AM3
+    power_trend:
+      - { SelectEventType: "AvgPowerConsumptionStatDataObjEvent", SelectFN: "true",
+            ModelUpdate: [
+                {Property: "average_watts",  Query: "traverse_struct(data, 'AvgPwrLast' + trend)" }, #does not work, trend is not a list?
+                {Property: "max_watts",      Query: "traverse_struct(data, 'MaxPwrLast' + trend)" },
+                {Property: "min_watts",      Query: "traverse_struct(data, 'MinPwrLast' + trend)" },
+                {Property: "max_watts_time", Query: "epoch_to_date(traverse_struct(data, 'MaxPwrLast' + trend + 'Time'))" },
+                {Property: "min_watts_time", Query: "epoch_to_date(traverse_struct(data, 'MinPwrLast' + trend + 'Time'))" }]}
 
     health:
         #TODO: remoove this once global health model is gone

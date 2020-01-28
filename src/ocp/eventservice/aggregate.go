@@ -94,8 +94,8 @@ func RegisterAggregate(s *testaggregate.Service) {
 					Properties: map[string]interface{}{
 						"Name":                     "Event Subscriptions Collection",
 						"Description":              "List of Event subscriptions",
-						"Members@meta":             vw.Meta(view.GETProperty("members"), view.GETFormatter("formatOdataList"), view.GETModel("default")),
-						"Members@odata.count@meta": vw.Meta(view.GETProperty("members"), view.GETFormatter("count"), view.GETModel("default")),
+						"Members@meta":             []interface{}{},
+						"Members@odata.count":      0,
 					}},
 
 				&domain.UpdateRedfishResourceProperties{

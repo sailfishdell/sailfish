@@ -57,7 +57,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	uploadSvc := uploadhandler.StartService(ctx, logger, d)
 	am2Svc, _ := awesome_mapper2.StartService(ctx, logger, eb, ch, d)
 	am3Svc, _ := am3.StartService(ctx, logger, "am3 base service", d)
-	addAM3Functions(logger.New("module", "ec_am3_functions"), am3Svc, d)
+	addAM3Functions(logger.New("module", "ec_am3_functions"), am3Svc, d, ctx)
 
 	// here introduce new initial event handling
 	ardumpSvc, _ := attributes.StartService(ctx, logger, d)

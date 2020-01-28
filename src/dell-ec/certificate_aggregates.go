@@ -59,8 +59,8 @@ func RegisterCertAggregate(s *testaggregate.Service) {
 					Properties: map[string]interface{}{
 						"Name":                     "Certificate Inventory Collection",
 						"Description":              "Collection of Certificate Inventory",
-						"Members@meta":             vw.Meta(view.GETProperty("members"), view.GETFormatter("formatOdataList"), view.GETModel("default")),
-						"Members@odata.count@meta": vw.Meta(view.GETProperty("members"), view.GETFormatter("count"), view.GETModel("default")),
+						"Members":                  []interface{}{},
+						"Members@odata.count":      0,
 					},
 				}}, nil
 		})

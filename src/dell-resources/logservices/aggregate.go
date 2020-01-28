@@ -27,8 +27,8 @@ func RegisterAggregate(s *testaggregate.Service) {
 					Properties: map[string]interface{}{
 						"Name":                     "Log Service Collection",
 						"Description":              "Collection of Log Services for this Manager",
-						"Members@meta":             vw.Meta(view.GETProperty("members"), view.GETFormatter("formatOdataList"), view.GETModel("default")), // hard coded for time being due to timing issue
-						"Members@odata.count@meta": vw.Meta(view.GETProperty("members"), view.GETFormatter("count"), view.GETModel("default")),
+						"Members":                  []interface{}{},
+						"Members@odata.count":      0,
 					}},
 			}, nil
 		})
@@ -139,8 +139,8 @@ func RegisterAggregate(s *testaggregate.Service) {
 					Properties: map[string]interface{}{
 						"Description":              "Providing additional health information for the devices which support rolled up health data",
 						"Name":                     "FaultList Entries Collection",
-						"Members@meta":             vw.Meta(view.GETProperty("members"), view.GETFormatter("expand"), view.GETModel("default")),
-						"Members@odata.count@meta": vw.Meta(view.GETProperty("members"), view.GETFormatter("count"), view.GETModel("default")),
+						"Members":                  []interface{}{},
+						"Members@odata.count":      0,
 					}},
 			}, nil
 		})

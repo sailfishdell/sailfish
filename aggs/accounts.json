@@ -12,20 +12,8 @@
       },
       "Properties": {
         "Name": "Accounts Collection",
-        "Members@meta": {
-          "GET": {
-            "model": "default",
-            "formatter": "formatOdataList",
-            "property": "members"
-          }
-        },
-        "Members@odata.count@meta": {
-          "GET": {
-            "model": "default",
-            "formatter": "count",
-            "property": "members"
-          }
-        },
+        "Members": [],
+        "Members@odata.count": 0,
         "@odata.etag": "W/'ABC123'"
       }
     }

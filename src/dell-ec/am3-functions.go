@@ -4,6 +4,8 @@ import (
 	"context"
 	"strings"
   "regexp"
+  "fmt"
+  "net/url"
 
 	eh "github.com/looplab/eventhorizon"
 	"github.com/superchalupa/sailfish/src/dell-resources/dm_event"
@@ -20,7 +22,25 @@ import (
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
 )
 
-func addAM3Functions(logger log.Logger, am3Svc *am3.Service, d *domain.DomainObjects) {
+type Collection struct{
+  Prefix        string
+  URI           string
+  Property      string
+  Format        string
+  SpecialCase   string
+}
+
+type AttributeLink struct{
+  FQDD          string
+  FullURI       string
+  CollectionURI string
+  Property      string
+}
+
+var collections []Collection
+var attributeLinks []AttributeLink
+
+func addAM3Functions(logger log.Logger, am3Svc *am3.Service, d *domain.DomainObjects, ctx context.Context) {
 	am3Svc.AddEventHandler("modular_update_fan_data", godefs.FanEvent, func(event eh.Event) {
 		dmobj, ok1 := event.Data().(*godefs.DMObject)
 		fanobj, ok2 := dmobj.Data.(*godefs.DM_thp_fan_data_object)
@@ -379,6 +399,286 @@ func addAM3Functions(logger log.Logger, am3Svc *am3.Service, d *domain.DomainObj
 		}
 	})
 
+  attributeLinks = []AttributeLink { 
+    //THESE ONLY WORK BECAUSE THE AGGREGATES ARE CREATED VIA COMPONENT EVENT, AND NOT VIA ATTRIBUTE UPDATED EVENT
+    //IF ATTRIBUTE UPDATED EVENT CREATED THE RESOURCE AND TRIGGERED A COLLECTION UPDATE, POTENTIAL DATA RACE?
+    {FQDD: `PSU\.Slot\.\d+`,
+     FullURI: "/redfish/v1/Chassis/System.Chassis.1/Power/PowerSupplies",
+     CollectionURI: "/redfish/v1/Chassis/System.Chassis.1/Power",
+     Property: "PowerSupplies",
+    },
+  }
+
+  // Start addressing AttributeUpdated Events
+  //attribute_mappings := map[string][]string{}
+  am3Svc.AddEventHandler("AttributeUpdatedFn", attributedef.AttributeUpdated, func(event eh.Event) {
+    data, ok := event.Data().(*attributedef.AttributeUpdatedData)
+    if !ok {
+      logger.Error("Attribute Updated event did not match", "type", event.EventType, "data", event.Data())
+      return
+    }
+
+    fqdd := data.FQDD
+    for _, a := range(attributeLinks) {
+      re := regexp.MustCompile(a.FQDD)
+      if !re.Match([]byte(fqdd)) {
+        continue
+      }
+
+      collection_uuid, ok := d.GetAggregateIDOK(a.CollectionURI)
+      if !ok {
+        logger.Error("URI not found", "URI", a.CollectionURI)
+        continue
+      }
+
+      fullURI := a.FullURI+"/"+fqdd
+      fmt.Println("Full URI: ", fullURI)
+      updated_uuid, ok := d.GetAggregateIDOK(fullURI)
+      if !ok {
+        logger.Error("URI not found", "URI", fullURI)
+        continue
+      }
+      agg, _ := d.AggregateStore.Load(ctx, domain.AggregateType, updated_uuid)
+      redfishResource, ok := agg.(*domain.RedfishResourceAggregate)
+      if !ok {
+        logger.Error("wrong aggregate type returned")
+        continue
+      }
+      results := domain.Flatten(&redfishResource.Properties, false)
+      targetMap := results.(map[string]interface{})
+
+      fmt.Println("updated_uuid: ", collection_uuid)
+      fmt.Println("targetMap: ", targetMap)
+
+    }
+
+
+  })
+
+
+  collections = []Collection{
+    {Prefix: "/redfish/v1/Chassis/System.Chassis.1/Sensors/Temperatures",
+     URI: "/redfish/v1/Chassis/System.Chassis.1/Thermal",
+     Property: "Temperatures",
+     Format: "expand"},
+
+    {Prefix: "/redfish/v1/Chassis/System.Chassis.1/Sensors/Fans",
+     URI: "/redfish/v1/Chassis/System.Chassis.1/Thermal",
+     Property: "Fans",
+     Format: "expand"},
+
+    {Prefix: "/redfish/v1/Chassis/System.Chassis.1/PowerControl",
+     URI: "/redfish/v1/Chassis/System.Chassis.1/Power",
+     Property: "PowerControl",
+     Format: "expand",
+     SpecialCase: "equals"}, //Special case
+
+    {Prefix: "/redfish/v1/Chassis/System.Chassis.1/Power/PowerSupplies",
+     URI: "/redfish/v1/Chassis/System.Chassis.1/Power",
+     Property: "PowerSupplies",
+     Format: "expand"},
+
+    {Prefix: "/redfish/v1/Chassis/System.Chassis.1/Power/PowerTrends-1",
+     URI: "/redfish/v1/Chassis/System.Chassis.1/Power",
+     Property: "Oem/Dell/PowerTrends",
+     Format: "expand"},
+
+    {Prefix: "/redfish/v1/Chassis/System.Chassis.1/Power/PowerTrends-1",
+     URI: "/redfish/v1/Chassis/System.Chassis.1/Power/PowerTrends-1",
+     Property: "histograms",
+     Format: "expand"},
+
+    {Prefix: "/redfish/v1/Chassis",
+     URI: "/redfish/v1/Chassis/System.Chassis.1/Power/PowerControl",
+     Property: "RelatedItem",
+     Format: "formatOdataList"},
+
+    {Prefix: "/redfish/v1/Chassis",
+     URI: "/redfish/v1/Chassis",
+     Property: "Members",
+     Format: "formatOdataList"},
+
+    {Prefix: "/redfish/v1/Managers",
+     URI: "/redfish/v1/Managers",
+     Property: "Members",
+     Format: "formatOdataList"},
+
+    {Prefix: "/redfish/v1/AccountService/Accounts",
+     URI: "/redfish/v1/AccountService/Accounts",
+     Property: "Members",
+     Format: "formatOdataList"},
+
+    {Prefix: "/redfish/v1/Systems",
+     URI: "/redfish/v1/Systems",
+     Property: "Members",
+     Format: "formatOdataList"},
+
+    {Prefix: "/redfish/v1/AccountService/Roles",
+     URI: "/redfish/v1/AccountService/Roles",
+     Property: "Members",
+     Format: "formatOdataList"},
+
+    {Prefix: "/redfish/v1/EventService/Subscriptions",
+     URI: "/redfish/v1/EventService/Subscriptions",
+     Property: "Members",
+     Format: "formatOdataList"},
+
+     {Prefix: "/redfish/v1/TelemetryService/MetricReportDefinitions",
+     URI: "/redfish/v1/TelemetryService/MetricReportDefinitions",
+     Property: "Members",
+     Format: "formatOdataList"},
+
+     {Prefix: "/redfish/v1/TelemetryService/MetricReports",
+     URI: "/redfish/v1/TelemetryService/MetricReports",
+     Property: "Members",
+     Format: "formatOdataList"},
+
+     {Prefix: "/redfish/v1/SessionService/Sessions",
+     URI: "/redfish/v1/SessionService/Sessions",
+     Property: "Members",
+     Format: "formatOdataList"},
+
+     {Prefix: "/redfish/v1/Registries",
+     URI: "/redfish/v1/Registries",
+     Property: "Members",
+     Format: "formatOdataList"},
+
+     {Prefix: "/redfish/v1/Managers/CMC.Integrated.1/CertificateService/CertificateInventory",
+     URI: "/redfish/v1/Managers/CMC.Integrated.1/CertificateService/CertificateInventory",
+     Property: "Members",
+     Format: "formatOdataList"},
+
+     {Prefix: "/redfish/v1/Managers/CMC.Integrated.2/CertificateService/CertificateInventory",
+     URI: "/redfish/v1/Managers/CMC.Integrated.2/CertificateService/CertificateInventory",
+     Property: "Members",
+     Format: "formatOdataList"},
+
+     {Prefix: "/redfish/v1/Managers/CMC.Integrated.1/LogServices",
+     URI: "/redfish/v1/Managers/CMC.Integrated.1/LogServices",
+     Property: "Members",
+     Format: "formatOdataList"},
+
+     {Prefix: "/redfish/v1/Managers/CMC.Integrated.2/LogServices",
+     URI: "/redfish/v1/Managers/CMC.Integrated.2/LogServices",
+     Property: "Members",
+     Format: "formatOdataList"},
+
+     {Prefix: "/redfish/v1/UpdateService/FirmwareInventory",
+     URI: "/redfish/v1/UpdateService/FirmwareInventory",
+     Property: "Members",
+     Format: "formatOdataList"},
+
+     {Prefix: "/redfish/v1/Chassis/System.Chassis.1/Slots",
+     URI: "/redfish/v1/Chassis/System.Chassis.1/Slots",
+     Property: "Members",
+     Format: "formatOdataList"},
+
+     {Prefix: "/redfish/v1/Chassis/System.Chassis.1/SlotConfigs",
+     URI: "/redfish/v1/Chassis/System.Chassis.1/SlotConfigs",
+     Property: "Members",
+     Format: "formatOdataList"},
+
+     {Prefix: "/redfish/v1/TaskService/Tasks",
+     URI: "/redfish/v1/TaskService/Tasks",
+     Property: "Members",
+     Format: "formatOdataList"},
+
+     {Prefix: "/redfish/v1/Managers/CMC.Integrated.1/Logs/FaultList'",
+     URI: "/redfish/v1/Managers/CMC.Integrated.1/Logs/FaultList'",
+     Property: "Members",
+     Format: "formatOdataList"},
+  }
+
+  am3Svc.AddEventHandler("ResourceCreatedFn", domain.RedfishResourceCreated, func(event eh.Event) {
+    data, ok := event.Data().(*domain.RedfishResourceCreatedData)
+    if !ok {
+      logger.Error("Redfish Resource Created event did not match", "type", event.EventType, "data", event.Data())
+      return
+    }
+
+    created_uri := format_uri(data.ResourceURI)
+    fmt.Println("Resource Created: ", created_uri)
+
+    for _, c := range(collections) {
+      targetMap := map[string]interface{}{}
+      parent := parent_uri(created_uri)
+      if c.SpecialCase == "equals" && created_uri == c.Prefix {
+        //special handling for PowerControl
+        parent = created_uri
+      }
+      if parent != c.Prefix {
+        continue
+      }
+      collection_uuid, ok := d.GetAggregateIDOK(c.URI)
+      if !ok {
+        logger.Error("URI not found", "URI", c.URI)
+        continue
+      }
+
+      if c.Format == "expand" {
+        created_uuid, ok := d.GetAggregateIDOK(data.ResourceURI)
+        if !ok {
+          logger.Error("Created URI not found", "URI", data.ResourceURI)
+          continue
+        }
+        agg, _ := d.AggregateStore.Load(ctx, domain.AggregateType, created_uuid)
+        redfishResource, ok := agg.(*domain.RedfishResourceAggregate)
+        if !ok {
+          logger.Error("wrong aggregate type returned")
+          continue
+        }
+
+        results := domain.Flatten(&redfishResource.Properties, false)
+        targetMap = results.(map[string]interface{})
+      }
+
+      d.CommandHandler.HandleCommand(context.Background(),
+        &domain.UpdateRedfishResourceCollection{
+          ID: collection_uuid,
+          Properties: map[string]interface{}{
+            c.Property:                created_uri,
+            c.Property+"@odata.count": 1,
+          },
+          Format: c.Format,
+          TargetMap: targetMap,
+      })
+    }
+
+  })
+
+  am3Svc.AddEventHandler("ResourceRemovedFn", domain.RedfishResourceRemoved, func(event eh.Event) {
+    data, ok := event.Data().(*domain.RedfishResourceRemovedData)
+    if !ok {
+      logger.Error("Redfish Resource Removed event did not match", "type", event.EventType, "data", event.Data())
+      return
+    }
+
+    removed_uri := format_uri(data.ResourceURI)
+    fmt.Println("Resource Removed: ", removed_uri)
+
+    for _, c := range(collections) {
+      parent := parent_uri(removed_uri)
+      if parent != c.Prefix  {
+        continue
+      }
+      collection_uuid, ok := d.GetAggregateIDOK(c.URI)
+      if !ok {
+        logger.Error("URI not found", "URI", c.URI)
+        return
+      }
+      d.CommandHandler.HandleCommand(context.Background(),
+        &domain.UpdateRedfishResourceCollection{
+          ID: collection_uuid,
+          Properties: map[string]interface{}{
+            c.Property:                removed_uri,
+            c.Property+"@odata.count": -1,
+          },
+          Format: "remove",
+          TargetMap: map[string]interface{}{},
+      })
+    }
+  })
+
   am3Svc.AddEventHandler("PowerSupplyEventFn", dm_event.PowerSupplyObjEvent, func(event eh.Event) {
     data, ok := event.Data().(*dm_event.PowerSupplyObjEventData)
     if !ok {
@@ -501,6 +801,20 @@ func traverse_struct(s interface{}, n string) interface{} {
 		return s
 	}
 }
+
 func interface_to_date(arg interface{}) interface{} {
 	return time.Unix(int64(arg.(float64)), 0).Format(time.RFC3339)
+}
+
+func format_uri(resource_uri string) string {
+    split := strings.Split(resource_uri, "/")
+    right := split[len(split)-1]
+    formatted_uri := strings.Replace(resource_uri, right, url.QueryEscape(right), 1)
+    return formatted_uri
+}
+
+func parent_uri(resource_uri string) string {
+    split := strings.Split(resource_uri, "/")
+    parent_uri := strings.Join(split[:len(split)-1], "/")
+    return parent_uri
 }

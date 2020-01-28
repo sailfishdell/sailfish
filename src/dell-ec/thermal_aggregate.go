@@ -31,16 +31,19 @@ func RegisterThermalAggregate(s *testaggregate.Service) {
 						"PATCH": []string{"ConfigureManager"},
 					},
 					Properties: map[string]interface{}{
-						"Id":          "Thermal",
-						"Name":        "Thermal",
-						"Description": "Represents the properties for Temperature and Cooling",
-
-						"Fans@meta":                     vw.Meta(view.GETProperty("fan_uris"), view.GETFormatter("expand"), view.GETModel("default")),
-						"Fans@odata.count@meta":         vw.Meta(view.GETProperty("fan_uris"), view.GETFormatter("count"), view.GETModel("default")),
-						"Temperatures@meta":             vw.Meta(view.GETProperty("temperature_uris"), view.GETFormatter("expand"), view.GETModel("default")),
-						"Temperatures@odata.count@meta": vw.Meta(view.GETProperty("temperature_uris"), view.GETFormatter("count"), view.GETModel("default")),
-						"Redundancy@meta":               vw.Meta(view.GETProperty("redundancy_uris"), view.GETFormatter("expand"), view.GETModel("default")),
-						"Redundancy@odata.count@meta":   vw.Meta(view.GETProperty("redundancy_uris"), view.GETFormatter("count"), view.GETModel("default")),
+						"Id":                       "Thermal",
+						"Name":                     "Thermal",
+						"Description":              "Represents the properties for Temperature and Cooling",
+						"Fans":                     []interface{}{},
+						"Fans@odata.count":         0,
+						"Temperatures":             []interface{}{},
+						"Temperatures@odata.count": 0,
+						//"Fans@meta":                     vw.Meta(view.GETProperty("fan_uris"), view.GETFormatter("expand"), view.GETModel("default")),
+						//"Fans@odata.count@meta":         vw.Meta(view.GETProperty("fan_uris"), view.GETFormatter("count"), view.GETModel("default")),
+						//"Temperatures@meta":             vw.Meta(view.GETProperty("temperature_uris"), view.GETFormatter("expand"), view.GETModel("default")),
+						//"Temperatures@odata.count@meta": vw.Meta(view.GETProperty("temperature_uris"), view.GETFormatter("count"), view.GETModel("default")),
+						"Redundancy@meta":             vw.Meta(view.GETProperty("redundancy_uris"), view.GETFormatter("expand"), view.GETModel("default")),
+						"Redundancy@odata.count@meta": vw.Meta(view.GETProperty("redundancy_uris"), view.GETFormatter("count"), view.GETModel("default")),
 
 						"Oem": map[string]interface{}{
 							"EID_674": map[string]interface{}{
