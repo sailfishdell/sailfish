@@ -12,6 +12,7 @@ import (
 
 	"github.com/superchalupa/sailfish/src/actionhandler"
 	ah "github.com/superchalupa/sailfish/src/actionhandler"
+	dell_ec "github.com/superchalupa/sailfish/src/dell-ec"
 	"github.com/superchalupa/sailfish/src/dell-resources/registries"
 	"github.com/superchalupa/sailfish/src/log"
 	"github.com/superchalupa/sailfish/src/ocp/am3"
@@ -47,6 +48,8 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	telemetryservice.RegisterAggregate(instantiateSvc)
 
 	stdmeta.GenericDefPlugin(ch, d)
+	pumpSvc := dell_ec.NewPumpActionSvc(ctx, logger, d)
+	testaggregate.RegisterPumpAction(instantiateSvc, actionSvc, pumpSvc)
 
 	awesome_mapper2.AddFunction("instantiate", func(args ...interface{}) (interface{}, error) {
 		if len(args) < 1 {
