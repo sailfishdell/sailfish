@@ -309,8 +309,6 @@ func (d *DomainObjects) Notify(ctx context.Context, event eh.Event) {
 func (d *DomainObjects) GetInternalCommandHandler(backgroundCtx context.Context) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
-		vars["command"] = "Event:Inject"
-		mux.SetURLVars(r, vars)
 
 		if r.Method != "POST" {
 			http.Error(w, "unsuported method: "+r.Method, http.StatusMethodNotAllowed)
