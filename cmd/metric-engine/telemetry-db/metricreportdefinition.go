@@ -665,6 +665,31 @@ func (factory *MRDFactory) GenerateMetricReport(tx *sqlx.Tx, name string) (err e
 		// MetricInstance associated with this report and do an Expand to ensure
 		// that all metrics have values they should have if they were source
 		// squelched.
+		// And now, foreach MetricInstance, insert MetricValue
+		if !MRD.SuppressDups {
+			fmt.Printf("EXPAND -")
+			rows, err := factory.getNamedSqlxTx(tx, "iterate_metric_instance_for_report").Queryx(MRD)
+			if err != nil {
+				return xerrors.Errorf("Error querying MetricInstance for report MRD(%s): %w", MRD, err)
+			}
+			for rows.Next() {
+				mm := MetricMeta{}
+				err = rows.StructScan(&mm)
+				if err != nil {
+					factory.logger.Crit("Error scanning struct result for MetricInstance query", "err", err)
+					continue
+				}
+				mm.Timestamp = metric.SqlTimeInt{Time: factory.MetricTSHWM}
+				mm.Value = mm.LastValue
+
+				fmt.Printf(" (%d)", mm.InstanceID)
+				err = factory.doInsertMetricValueForInstance(tx, &mm, func(int64) {}, true)
+				if err != nil {
+					factory.logger.Crit("Error query", "err", err)
+					continue
+				}
+			}
+		}
 
 		// TODO:
 		// after we update the metric report, we can query the MetricValueByReport
@@ -886,13 +911,8 @@ func (factory *MRDFactory) IterMetricInstance(tx *sqlx.Tx, mm *MetricMeta, fn fu
 	})
 }
 
-func (factory *MRDFactory) doInsertMetricValue(tx *sqlx.Tx, ev *metric.MetricValueEventData, updatedInstance func(int64)) (foundInstance, dirty bool, err error) {
-	dirty = false
-	foundInstance = false
+func (factory *MRDFactory) doInsertMetricValueForInstance(tx *sqlx.Tx, mm *MetricMeta, updatedInstance func(int64), expandOnly bool) (err error) {
 	update_metric_instance := factory.getNamedSqlxTx(tx, "update_metric_instance")
-
-	// same for every instance, lift out of the for loop
-	mm := MetricMeta{MetricValueEventData: *ev}
 
 	pumpMV := func(tx *sqlx.Tx, mm *MetricMeta) (saveValue bool, saveInstance bool, err error) {
 		saveValue = true
@@ -979,59 +999,74 @@ func (factory *MRDFactory) doInsertMetricValue(tx *sqlx.Tx, ev *metric.MetricVal
 		return saveValue, saveInstance, nil
 	}
 
-	factory.IterMetricInstance(tx, &mm, func(mm *MetricMeta) error {
+	// Here we are going to expand any metrics that were skipped by upstream
+	/// make sure that lastts is set and not the unix zero time
+	after := !mm.LastTS.IsZero()
+	after = after && !mm.LastTS.Equal(time.Unix(0, 0))
+	after = after && mm.Timestamp.After(mm.LastTS.Add(mm.MISensorInterval+mm.MISensorSlack))
+	if mm.MIRequiresExpand && !mm.SuppressDups && after {
+		missingInterval := mm.Timestamp.Sub(mm.LastTS.Time) // .Sub() returns a Duration!
+		if missingInterval > (time.Duration(1) * time.Hour) {
+			// avoid disasters like filling in metrics since 1970...
+			missingInterval = time.Duration(1) * time.Hour // fill in a max of one hour of metrics
+			fmt.Printf("\tMissed interval too large, max 1hr or missing metrics: Adjusted missingInterval to 1 hr\n")
+		}
+
+		fmt.Printf("DOING EXPAND For Instance(%d-%s) num(%d) lastts(%s) ts(%s) expand(%t) suppress(%t) after(%t) interval(%d) missingInterval(%d)\n",
+			mm.InstanceID, mm.Name, int64(missingInterval/(mm.MISensorInterval))-1, mm.LastTS, mm.Timestamp, mm.MIRequiresExpand, mm.SuppressDups, after, mm.MISensorInterval, missingInterval)
+
+		savedTS := mm.Timestamp
+		savedValue := mm.Value
+		mm.Value = mm.LastValue
+
+		// loop over putting the same Metric Value in (ie. LastValue), but updating the timestamp
+		mm.Timestamp = metric.SqlTimeInt{Time: mm.Timestamp.Add(-missingInterval + mm.MISensorInterval)}
+
+		// TODO: we could smooth this out a bit more rather than just jumping by sensorinterval
+		for mm.Timestamp.Before(savedTS.Time.Add(-mm.MISensorSlack)) {
+			fmt.Printf("\tts(%s)\n", mm.Timestamp)
+			_, _, err = pumpMV(tx, mm)
+			mm.Timestamp = metric.SqlTimeInt{Time: mm.Timestamp.Add(mm.MISensorInterval)} // .Add() a negative to go backwards
+		}
+		mm.Timestamp = savedTS
+		mm.Value = savedValue
+		// note here: if we end up expanding, we'll certainly also be saving
+		// latest, so no need to save instance for each expand loop, the instance
+		// will be saved below. If this prior changes above, we need to ensure
+		// instance is saved
+	}
+
+	if expandOnly {
+		return
+	}
+
+	_, saveInstance, err := pumpMV(tx, mm)
+	if saveInstance {
+		_, err = update_metric_instance.Exec(mm)
+		if err != nil && !strings.HasPrefix(err.Error(), "UNIQUE constraint failed") {
+			err = xerrors.Errorf("Failed to update MetricInstance(%d) with MetricMeta(%d): %w", mm.InstanceID, mm.MetaID, err)
+			return
+		}
+	}
+
+	return
+}
+
+func (factory *MRDFactory) doInsertMetricValue(tx *sqlx.Tx, ev *metric.MetricValueEventData, updatedInstance func(int64)) (foundInstance, dirty bool, err error) {
+	dirty = false
+	foundInstance = false
+	mm := MetricMeta{MetricValueEventData: *ev}
+	err = factory.IterMetricInstance(tx, &mm, func(mm *MetricMeta) error {
 		foundInstance = true
 		if mm.Dirty {
 			dirty = true
 		}
-
-		// Here we are going to expand any metrics that were skipped by upstream
-		/// make sure that lastts is set and not the unix zero time
-		after := !mm.LastTS.IsZero()
-		after = after && !mm.LastTS.Equal(time.Unix(0, 0))
-		after = after && mm.Timestamp.After(mm.LastTS.Add(mm.MISensorInterval+mm.MISensorSlack))
-		if mm.MIRequiresExpand && !mm.SuppressDups && after {
-			missingInterval := mm.Timestamp.Sub(mm.LastTS.Time) // .Sub() returns a Duration!
-			if missingInterval > (time.Duration(1) * time.Hour) {
-				// avoid disasters like filling in metrics since 1970...
-				missingInterval = time.Duration(1) * time.Hour // fill in a max of one hour of metrics
-				fmt.Printf("\tMissed interval too large, max 1hr or missing metrics: Adjusted missingInterval to 1 hr\n")
-			}
-
-			fmt.Printf("DOING EXPAND For Instance(%d-%s) num(%d) lastts(%s) ts(%s) expand(%t) suppress(%t) after(%t) interval(%d) missingInterval(%d)\n",
-				mm.InstanceID, mm.Name, int64(missingInterval/(mm.MISensorInterval))-1, mm.LastTS, mm.Timestamp, mm.MIRequiresExpand, mm.SuppressDups, after, mm.MISensorInterval, missingInterval)
-
-			savedTS := mm.Timestamp
-			savedValue := mm.Value
-			mm.Value = mm.LastValue
-
-			// loop over putting the same Metric Value in (ie. LastValue), but updating the timestamp
-			mm.Timestamp = metric.SqlTimeInt{Time: mm.Timestamp.Add(-missingInterval + mm.MISensorInterval)}
-
-			// TODO: we could smooth this out a bit more rather than just jumping by sensorinterval
-			for mm.Timestamp.Before(savedTS.Time.Add(-mm.MISensorSlack)) {
-				fmt.Printf("\tts(%s)\n", mm.Timestamp)
-				_, _, err = pumpMV(tx, mm)
-				mm.Timestamp = metric.SqlTimeInt{Time: mm.Timestamp.Add(mm.MISensorInterval)} // .Add() a negative to go backwards
-			}
-			mm.Timestamp = savedTS
-			mm.Value = savedValue
-			// note here: if we end up expanding, we'll certainly also be saving
-			// latest, so no need to save instance for each expand loop, the instance
-			// will be saved below. If this prior changes above, we need to ensure
-			// instance is saved
-		}
-
-		_, saveInstance, err := pumpMV(tx, mm)
-		if saveInstance {
-			_, err = update_metric_instance.Exec(mm)
-			if err != nil && !strings.HasPrefix(err.Error(), "UNIQUE constraint failed") {
-				return xerrors.Errorf("Failed to update MetricInstance(%d) with MetricMeta(%d): %w", mm.InstanceID, mm.MetaID, err)
-			}
+		err := factory.doInsertMetricValueForInstance(tx, mm, updatedInstance, false)
+		if err != nil {
+			return xerrors.Errorf("Instance(%+v) insert failed: %w", mm, err)
 		}
 		return nil
 	})
-
 	return
 }
 

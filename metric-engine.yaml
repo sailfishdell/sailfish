@@ -497,6 +497,9 @@ UDB-Metric-Import:
         '/redfish/v1/FIXME/' || FriendlyFQDD as Property,
         friendlyFQDD as FriendlyFQDD,
         FQDD as FQDD,
+        5000000000 as 'SensorInterval',  -- 5s interval w/ 1s slack
+        1000000000 as 'SensorSlack',
+        true as 'RequiresExpand',
 
         LastWeekMinPowerTime as 'Metric-LastWeekMinPowerTime',
         LastWeekMinPower as 'Metric-LastWeekMinPower',
@@ -535,6 +538,9 @@ UDB-Metric-Import:
         '/redfish/v1/FIXME/' || FriendlyFQDD as Property,
         friendlyFQDD as FriendlyFQDD,
         FQDD as FQDD,
+        5000000000 as 'SensorInterval',  -- 5s interval w/ 1s slack
+        1000000000 as 'SensorSlack',
+        true as 'RequiresExpand',
 
         TotalStoragePower as 'Metric-TotalStoragePower',
         TotalPciePower as 'Metric-TotalPciePower',
@@ -573,7 +579,7 @@ UDB-Metric-Import:
         friendlyFQDD as FriendlyFQDD,
         FQDD as FQDD,
         -- expect 5 second interval, give it +/- 1s
-        5000000000 as 'SensorInterval',
+        5000000000 as 'SensorInterval',  -- 5s interval w/ 1s slack
         1000000000 as 'SensorSlack',
         true as 'RequiresExpand',
 
@@ -605,6 +611,9 @@ UDB-Metric-Import:
         '/redfish/v1/FIXME/' || FriendlyFQDD as Property,
         friendlyFQDD as FriendlyFQDD,
         FQDD as FQDD,
+        5000000000 as 'SensorInterval',  -- 5s interval w/ 1s slack
+        1000000000 as 'SensorSlack',
+        true as 'RequiresExpand',
 
         CpuMemoryMetrics_DOT_NonC0ResidencyLow_DOT_value as 'Metric-NonC0ResidencyLow',
         CpuMemoryMetrics_DOT_NonC0ResidencyHigh_DOT_value as 'Metric-NonC0ResidencyHigh',
@@ -632,6 +641,9 @@ UDB-Metric-Import:
         '/redfish/v1/FIXME/' || FriendlyFQDD as Property,
         friendlyFQDD as FriendlyFQDD,
         FQDD as FQDD,
+        5000000000 as 'SensorInterval',  -- 5s interval w/ 1s slack
+        1000000000 as 'SensorSlack',
+        true as 'RequiresExpand',
 
         Temperature as 'Metric-TemperatureReading',
         FanSpeed as 'Metric-RPMReading'
@@ -652,6 +664,9 @@ UDB-Metric-Import:
         '/redfish/v1/FIXME/' || FriendlyFQDD as Property,
         friendlyFQDD as FriendlyFQDD,
         FQDD as FQDD,
+        5000000000 as 'SensorInterval',  -- 5s interval w/ 1s slack
+        1000000000 as 'SensorSlack',
+        true as 'RequiresExpand',
 
         CurrentReading as 'Metric-TemperatureReading'
       FROM TblsStorageSensor
@@ -671,6 +686,9 @@ UDB-Metric-Import:
         '/redfish/v1/FIXME/' || FriendlyFQDD as Property,
         friendlyFQDD as FriendlyFQDD,
         FQDD as FQDD,
+        5000000000 as 'SensorInterval',  -- 5s interval w/ 1s slack
+        1000000000 as 'SensorSlack',
+        true as 'RequiresExpand',
 
         CurrentReading as 'Metric-TemperatureReading'
       FROM TblsMemorySensor
@@ -690,6 +708,9 @@ UDB-Metric-Import:
         '/redfish/v1/FIXME/' || FriendlyFQDD as Property,
         friendlyFQDD as FriendlyFQDD,
         FQDD as FQDD,
+        5000000000 as 'SensorInterval',  -- 5s interval w/ 1s slack
+        1000000000 as 'SensorSlack',
+        true as 'RequiresExpand',
 
         CurrentReading as 'Metric-TemperatureReading'
       FROM TblsFPGASensor
@@ -710,6 +731,9 @@ UDB-Metric-Import:
         '/redfish/v1/FIXME/' || FQDD as Property,
         friendlyFQDD as FriendlyFQDD,
         FQDD as FQDD,
+        60000000000 as 'SensorInterval',  -- 60s interval w/ 10s slack
+        10000000000 as 'SensorSlack',
+        true as 'RequiresExpand',
 
         SystemMaxPowerConsumption as 'Metric-SystemMaxPowerConsumption',
         SystemMaxInletTempHour as 'Metric-SystemMaxInletTempHour',
@@ -1301,6 +1325,28 @@ internal:
         MI.FQDD=:FQDD and
         MI.Property=:Property and
         MI.Context=:Context
+
+    iterate_metric_instance_for_report: |
+      select distinct
+        MI.ID as InstanceID,
+        MI.CollectionScratch,
+        MI.LastTS,
+        MI.LastValue,
+        MI.FlushTime,
+        MI.SuppressDups,
+        MM.CollectionFunction,
+        MM.CollectionDuration,
+        MI.Dirty,
+        MI.RequiresExpand as MIRequiresExpand,
+        MI.SensorInterval as MISensorInterval,
+        MI.SensorSlack    as MISensorSlack
+      from MetricInstance as MI
+      inner join MetricMetaToInstance as MMTI on MI.ID = MMTI.InstanceID
+      inner join MetricMeta as MM on MMTI.MetaID = MM.ID
+      inner join ReportDefinitionToMetricMeta as rd2mm on MMTI.MetaID = rd2mm.MetaID
+      where
+        rd2mm.ReportDefinitionID = :ID
+
 
     update_metric_instance: |
       UPDATE MetricInstance
