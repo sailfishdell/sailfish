@@ -142,6 +142,7 @@ func main() {
 	internalHandlerFunc := domainObjs.GetInternalCommandHandler(ctx)
 
 	// most-used command is event inject, specify that manually to avoid some regexp memory allocations
+
 	m.Path("/api/Event:Inject").Methods("POST").HandlerFunc(injectSvc.GetHandlerFunc())
 
 	// All of the /redfish apis
@@ -151,7 +152,7 @@ func main() {
 	m.PathPrefix("/schemas/v1/").Handler(http.StripPrefix("/schemas/v1/", http.FileServer(http.Dir("./v1/schemas/"))))
 
 	// all the other command apis.
-	m.PathPrefix("/api/{command}").Handler(internalHandlerFunc)
+	 m.PathPrefix("/api/{command}").Methods("POST").Handler(internalHandlerFunc)
 
 	// debugging (localhost only)
 	m.Path("/status").Handler(domainObjs.DumpStatus())
