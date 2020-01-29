@@ -661,6 +661,12 @@ func (factory *MRDFactory) GenerateMetricReport(tx *sqlx.Tx, name string) (err e
 		}
 
 		// TODO:
+		// Now that we've generated the report, we can iterate over the
+		// MetricInstance associated with this report and do an Expand to ensure
+		// that all metrics have values they should have if they were source
+		// squelched.
+
+		// TODO:
 		// after we update the metric report, we can query the MetricValueByReport
 		// to see if there are any rows for this report. If there are no rows in
 		// this report, we can return an error to roll back the transaction and
@@ -696,6 +702,7 @@ func (factory *MRDFactory) CheckOnChangeReports(tx *sqlx.Tx, instancesUpdated ma
 				}
 
 				// ensure we generate report at most every 5 seconds by scheduling generation for 5s from previous report
+				// this will immediately generate if the report is older than 5s
 				factory.NextMRTS[name] = factory.LastMRTS[name].Add(5 * time.Second)
 			}
 		}
@@ -882,18 +889,15 @@ func (factory *MRDFactory) IterMetricInstance(tx *sqlx.Tx, mm *MetricMeta, fn fu
 func (factory *MRDFactory) doInsertMetricValue(tx *sqlx.Tx, ev *metric.MetricValueEventData, updatedInstance func(int64)) (foundInstance, dirty bool, err error) {
 	dirty = false
 	foundInstance = false
-	insert_mv_int := factory.getSqlxTx(tx, "insert_mv_int")
-	insert_mv_real := factory.getSqlxTx(tx, "insert_mv_real")
-	insert_mv_text := factory.getSqlxTx(tx, "insert_mv_text")
 	update_metric_instance := factory.getNamedSqlxTx(tx, "update_metric_instance")
 
 	// same for every instance, lift out of the for loop
 	mm := MetricMeta{MetricValueEventData: *ev}
-	floatVal, floatErr := strconv.ParseFloat(mm.Value, 64)
-	saveInstance := false
 
-	pumpMV := func(mm *MetricMeta) (bool, error) {
-		saveValue := true
+	pumpMV := func(tx *sqlx.Tx, mm *MetricMeta) (saveValue bool, saveInstance bool, err error) {
+		saveValue = true
+		saveInstance = false
+		floatVal, floatErr := strconv.ParseFloat(mm.Value, 64)
 		if floatErr != nil && mm.CollectionFunction != "" {
 			saveValue = false
 			saveInstance = true
@@ -942,34 +946,37 @@ func (factory *MRDFactory) doInsertMetricValue(tx *sqlx.Tx, ev *metric.MetricVal
 			var insertMV *sqlx.Stmt
 			var args []interface{}
 
+			// if the value changes, we change lastts/lastvalue so basically always have to update the instance.
+			// This seems like an opportunity (TODO) to optimize, but no immediately obvious way to do this.
+			saveInstance = true
 			mm.LastTS = mm.Timestamp
 			mm.LastValue = mm.Value
 
 			// Put into optimized tables, if possible. Try INT first, as it will error out for a float(1.0) value, but not vice versa
 			intVal, err := strconv.ParseInt(mm.Value, 10, 64)
 			if err == nil {
-				insertMV = insert_mv_int
+				insertMV = factory.getSqlxTx(tx, "insert_mv_int")
 				args = []interface{}{mm.InstanceID, mm.Timestamp, intVal}
 
 			} else if floatErr == nil { // re-use already parsed floatVal above
-				insertMV = insert_mv_real
+				insertMV = factory.getSqlxTx(tx, "insert_mv_real")
 				args = []interface{}{mm.InstanceID, mm.Timestamp, floatVal}
 
 			} else {
-				insertMV = insert_mv_text
+				insertMV = factory.getSqlxTx(tx, "insert_mv_text")
 				args = []interface{}{mm.InstanceID, mm.Timestamp, mm.Value}
 			}
 
 			_, err = insertMV.Exec(args...)
 			if err != nil {
 				if !strings.HasPrefix(err.Error(), "UNIQUE constraint failed") {
-					return saveValue, xerrors.Errorf("Error inserting MetricValue for MetricInstance(%d)/MetricMeta(%d), ARGS: %+v: %w", mm.InstanceID, mm.MetaID, args, err)
+					return saveValue, saveInstance, xerrors.Errorf("Error inserting MetricValue for MetricInstance(%d)/MetricMeta(%d), ARGS: %+v: %w", mm.InstanceID, mm.MetaID, args, err)
 				}
 			}
 			// report change hook. let caller know which instances were updated so they can look up reports for OnChange
 			updatedInstance(mm.InstanceID)
 		}
-		return saveValue, nil
+		return saveValue, saveInstance, nil
 	}
 
 	factory.IterMetricInstance(tx, &mm, func(mm *MetricMeta) error {
@@ -978,15 +985,12 @@ func (factory *MRDFactory) doInsertMetricValue(tx *sqlx.Tx, ev *metric.MetricVal
 			dirty = true
 		}
 
-		saveInstance = false
-
 		// Here we are going to expand any metrics that were skipped by upstream
 		/// make sure that lastts is set and not the unix zero time
 		after := !mm.LastTS.IsZero()
 		after = after && !mm.LastTS.Equal(time.Unix(0, 0))
 		after = after && mm.Timestamp.After(mm.LastTS.Add(mm.MISensorInterval+mm.MISensorSlack))
 		if mm.MIRequiresExpand && !mm.SuppressDups && after {
-			saveInstance = true
 			missingInterval := mm.Timestamp.Sub(mm.LastTS.Time) // .Sub() returns a Duration!
 			if missingInterval > (time.Duration(1) * time.Hour) {
 				// avoid disasters like filling in metrics since 1970...
@@ -1000,21 +1004,26 @@ func (factory *MRDFactory) doInsertMetricValue(tx *sqlx.Tx, ev *metric.MetricVal
 			savedTS := mm.Timestamp
 			savedValue := mm.Value
 			mm.Value = mm.LastValue
+
 			// loop over putting the same Metric Value in (ie. LastValue), but updating the timestamp
 			mm.Timestamp = metric.SqlTimeInt{Time: mm.Timestamp.Add(-missingInterval + mm.MISensorInterval)}
 
 			// TODO: we could smooth this out a bit more rather than just jumping by sensorinterval
 			for mm.Timestamp.Before(savedTS.Time.Add(-mm.MISensorSlack)) {
 				fmt.Printf("\tts(%s)\n", mm.Timestamp)
-				_, err = pumpMV(mm)
+				_, _, err = pumpMV(tx, mm)
 				mm.Timestamp = metric.SqlTimeInt{Time: mm.Timestamp.Add(mm.MISensorInterval)} // .Add() a negative to go backwards
 			}
 			mm.Timestamp = savedTS
 			mm.Value = savedValue
+			// note here: if we end up expanding, we'll certainly also be saving
+			// latest, so no need to save instance for each expand loop, the instance
+			// will be saved below. If this prior changes above, we need to ensure
+			// instance is saved
 		}
 
-		curr, err := pumpMV(mm)
-		if curr || saveInstance {
+		_, saveInstance, err := pumpMV(tx, mm)
+		if saveInstance {
 			_, err = update_metric_instance.Exec(mm)
 			if err != nil && !strings.HasPrefix(err.Error(), "UNIQUE constraint failed") {
 				return xerrors.Errorf("Failed to update MetricInstance(%d) with MetricMeta(%d): %w", mm.InstanceID, mm.MetaID, err)
