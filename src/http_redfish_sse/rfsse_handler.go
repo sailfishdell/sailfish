@@ -104,7 +104,8 @@ func (rh *RedfishSSEHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			})
 
 		case eventservice.MetricReportData: // metric reports
-			err = outputEncoder.Encode(evt)
+			fmt.Fprintf(w, "data: ")
+			err = outputEncoder.Encode(evt.Data)
 		}
 
 		// extra trailing newline for SSE protocol compliance
