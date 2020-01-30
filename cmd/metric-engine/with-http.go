@@ -33,7 +33,7 @@ type service struct {
 	logger       log.Logger
 }
 
-func starthttp(logger log.Logger, cfgMgr *viper.Viper, d *BusComponents) (ret *service) {
+func starthttp(logger log.Logger, cfgMgr *viper.Viper, d *busComponents) (ret *service) {
 	injectSvc := http_inject.New(logger, d)
 	injectSvc.Start()
 

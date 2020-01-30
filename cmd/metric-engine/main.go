@@ -19,15 +19,15 @@ import (
 	"github.com/superchalupa/sailfish/src/log15adapter"
 )
 
-type BusComponents struct {
+type busComponents struct {
 	EventBus       eh.EventBus
 	EventWaiter    *eventwaiter.EventWaiter
 	EventPublisher eh.EventPublisher
 }
 
-func (d *BusComponents) GetBus() eh.EventBus                 { return d.EventBus }
-func (d *BusComponents) GetWaiter() *eventwaiter.EventWaiter { return d.EventWaiter }
-func (d *BusComponents) GetPublisher() eh.EventPublisher     { return d.EventPublisher }
+func (d *busComponents) GetBus() eh.EventBus                 { return d.EventBus }
+func (d *busComponents) GetWaiter() *eventwaiter.EventWaiter { return d.EventWaiter }
+func (d *busComponents) GetPublisher() eh.EventPublisher     { return d.EventPublisher }
 
 func main() {
 	flag.StringSliceP("listen", "l", []string{}, "Listen address.  Formats: (http:[ip]:nn, https:[ip]:port)")
@@ -51,7 +51,7 @@ func main() {
 	}
 
 	// Local config for running from the build tree
-	if FileExists("local-metric-engine.yaml") {
+	if fileExists("local-metric-engine.yaml") {
 		fmt.Fprintf(os.Stderr, "Reading local-metric-engine.yaml config\n")
 		cfgMgr.SetConfigFile("local-metric-engine.yaml")
 		if err := cfgMgr.MergeInConfig(); err != nil {
@@ -75,7 +75,7 @@ func main() {
 		cancel()
 	}()
 
-	d := &BusComponents{
+	d := &busComponents{
 		EventBus:       eventbus.NewEventBus(),
 		EventPublisher: eventpublisher.NewEventPublisher(),
 		EventWaiter:    eventwaiter.NewEventWaiter(eventwaiter.SetName("Main"), eventwaiter.NoAutoRun),
@@ -99,7 +99,7 @@ func main() {
 	logger.Warn("Bye!", "module", "main")
 }
 
-func FileExists(fn string) bool {
+func fileExists(fn string) bool {
 	fd, err := os.Stat(fn)
 	if os.IsNotExist(err) {
 		return false

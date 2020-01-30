@@ -6,7 +6,7 @@ import (
 	log "github.com/superchalupa/sailfish/src/log"
 )
 
-func cgoStartup(logger log.Logger, d *BusComponents) {
+func cgoStartup(logger log.Logger, d *busComponents) {
 	logger.Crit("CGO DISABLED")
 }
 

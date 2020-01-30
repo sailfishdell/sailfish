@@ -9,27 +9,35 @@ import (
 )
 
 const (
-	MetricValueEvent    eh.EventType = "MetricValueEvent"
+	// MetricValueEvent is the const for the eh Event
+	MetricValueEvent eh.EventType = "MetricValueEvent"
+	// FriendlyFQDDMapping is the const for the eh Event
 	FriendlyFQDDMapping eh.EventType = "FriendlyFQDDMapping"
-	RequestReport       eh.EventType = "RequestReport"
-	ReportGenerated     eh.EventType = "ReportGenerated"
+	// RequestReport is the const for the eh Event
+	RequestReport eh.EventType = "RequestReport"
+	// ReportGenerated is the const for the eh Event
+	ReportGenerated eh.EventType = "ReportGenerated"
 )
 
-type SqlTimeInt struct {
+// SQLTimeInt is a wrapper around golang time that serializes and deserializes 64-bit nanosecond time rather than the default 32-bit second
+type SQLTimeInt struct {
 	time.Time
 }
 
-func (m SqlTimeInt) Value() (driver.Value, error) {
+// Value is the required interface to implement the sql marshalling
+func (m SQLTimeInt) Value() (driver.Value, error) {
 	return m.UnixNano(), nil
 }
 
-func (m *SqlTimeInt) Scan(src interface{}) error {
+// Scan is the required interface to implement the sql unmarshalling
+func (m *SQLTimeInt) Scan(src interface{}) error {
 	m.Time = time.Unix(0, src.(int64))
 	return nil
 }
 
+// MetricValueEventData is the data structure to hold everything needed to represent a metric value measurement on the event bus
 type MetricValueEventData struct {
-	Timestamp        SqlTimeInt    `db:"Timestamp"`
+	Timestamp        SQLTimeInt    `db:"Timestamp"`
 	Name             string        `db:"Name"`
 	Value            string        `db:"Value"`
 	Property         string        `db:"Property"`
@@ -42,21 +50,25 @@ type MetricValueEventData struct {
 	MVSensorSlack    time.Duration `db:"MVSensorSlack"`
 }
 
+// FQDDMappingData is the event data structure to transmit fqdd mappings on the event bus
 type FQDDMappingData struct {
 	FQDD         string
 	FriendlyName string
 }
 
+// RequestReportData is the event data structure to tell which report names to generate
 type RequestReportData struct {
 	Name string
 }
 
+// ReportGeneratedData is the event data structure emitted after reports are generated
 type ReportGeneratedData struct {
 	Name string
 }
 
 var reglock = sync.Once{}
 
+// RegisterEvent should be called once during initialization to register event types with event horizon
 func RegisterEvent() {
 	reglock.Do(func() {
 		eh.RegisterEventData(MetricValueEvent, func() eh.EventData { return &MetricValueEventData{} })

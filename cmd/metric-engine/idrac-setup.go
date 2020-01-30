@@ -18,7 +18,7 @@ import (
 	"github.com/superchalupa/sailfish/cmd/metric-engine/udb"
 )
 
-func setup(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, d *BusComponents) {
+func setup(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, d *busComponents) {
 	// 2 instances of AM3 service. This means we can run concurrent message processing loops in 2 different goroutines
 	// Each goroutine has exclusive access to its database
 
@@ -27,13 +27,13 @@ func setup(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, d *BusCo
 
 	// Processing loop 2:
 	//  	-- "New" DB access
-	am3Svc_n2, _ := am3.StartService(ctx, logger.New("module", "AM3_DB"), "database", d)
-	telemetry.RegisterAM3(logger.New("module", "sql_am3_functions"), cfgMgr, am3Svc_n2, d)
+	am3SvcN2, _ := am3.StartService(ctx, logger.New("module", "AM3_DB"), "database", d)
+	telemetry.StartupTelemetryBase(logger.New("module", "sql_am3_functions"), cfgMgr, am3SvcN2, d)
 
 	// Processing loop 3:
 	//  	-- UDB access
-	am3Svc_n3, _ := am3.StartService(ctx, logger.New("module", "AM3_UDB"), "udb database", d)
-	udb.RegisterAM3(logger.New("module", "udb_am3_functions"), cfgMgr, am3Svc_n3, d)
+	am3SvcN3, _ := am3.StartService(ctx, logger.New("module", "AM3_UDB"), "udb database", d)
+	udb.StartupUDBImport(logger.New("module", "udb_am3_functions"), cfgMgr, am3SvcN3, d)
 
 	injectStartupEvents := func(section string) {
 		fmt.Printf("Processing Startup Events from %s\n", section)

@@ -16,7 +16,7 @@ import (
 	log "github.com/superchalupa/sailfish/src/log"
 )
 
-type UDBMeta struct {
+type dataSource struct {
 	query        *sqlx.NamedStmt
 	importFn     func(string) error
 	HWM          int64 `db:"HWM"`
@@ -26,32 +26,32 @@ type UDBMeta struct {
 	dbChange     map[string]map[string]struct{}
 }
 
-type UDBFactory struct {
+type dataImporter struct {
 	logger   log.Logger
 	database *sqlx.DB
-	udb      map[string]UDBMeta
+	udb      map[string]dataSource
 	bus      eh.EventBus
 }
 
-func NewUDBFactory(logger log.Logger, database *sqlx.DB, d BusComponents, cfg *viper.Viper) (*UDBFactory, error) {
-	ret := &UDBFactory{}
+func newImportManager(logger log.Logger, database *sqlx.DB, d busComponents, cfg *viper.Viper) (*dataImporter, error) {
+	ret := &dataImporter{}
 	ret.logger = logger
 	ret.database = database
 	ret.bus = d.GetBus()
-	ret.udb = map[string]UDBMeta{}
+	ret.udb = map[string]dataSource{}
 
 	impFns := map[string]func(string) error{
 		"DISABLE-DirectMetric": func(n string) error { return errors.New("DISABLED") },
-		"DirectMetric":         func(n string) error { return ret.ImportByMetricValue(n) },
-		"MetricColumns":        func(n string) error { return ret.ImportByColumn(n) },
-		"Error":                func(n string) error { return ret.ImportERROR(n) },
+		"DirectMetric":         func(n string) error { return ret.importByMetricValue(n) },
+		"MetricColumns":        func(n string) error { return ret.importByColumn(n) },
+		"Error":                func(n string) error { return ret.importERROR(n) },
 	}
 
 	// Parse the YAML file to set up database imports
 	for k, v := range cfg.GetStringMap("UDB-Metric-Import") {
 		fmt.Printf("Loading config for %s\n", k)
 
-		meta := UDBMeta{}
+		meta := dataSource{}
 
 		settings, ok := v.(map[string]interface{})
 		if !ok {
@@ -107,7 +107,7 @@ func NewUDBFactory(logger log.Logger, database *sqlx.DB, d BusComponents, cfg *v
 	return ret, nil
 }
 
-func (l *UDBFactory) ConditionalImport(udbImportName string, meta UDBMeta, periodic bool) (err error) {
+func (l *dataImporter) conditionalImport(udbImportName string, meta dataSource, periodic bool) (err error) {
 	now := time.Now()
 	if periodic && meta.scanInterval == 0 {
 		return
@@ -124,8 +124,8 @@ func (l *UDBFactory) ConditionalImport(udbImportName string, meta UDBMeta, perio
 	return l.udb[udbImportName].importFn(udbImportName)
 }
 
-func (l *UDBFactory) DBChanged(database, table string) (err error) {
-	return l.IterUDBTables(func(udbImportName string, meta UDBMeta) error {
+func (l *dataImporter) dbChanged(database, table string) (err error) {
+	return l.iterUDBTables(func(udbImportName string, meta dataSource) error {
 		tbls, ok := meta.dbChange[database]
 		if !ok {
 			return nil
@@ -134,16 +134,16 @@ func (l *UDBFactory) DBChanged(database, table string) (err error) {
 		if !ok {
 			return nil
 		}
-		return l.ConditionalImport(udbImportName, meta, false)
+		return l.conditionalImport(udbImportName, meta, false)
 	})
 }
 
-func (l *UDBFactory) ImportERROR(udbImportName string) (err error) {
+func (l *dataImporter) importERROR(udbImportName string) (err error) {
 	fmt.Printf("DONT YET KNOW HOW TO IMPORT: %s\n", udbImportName)
 	return xerrors.New("UNKNOWN IMPORT")
 }
 
-func (l *UDBFactory) IterUDBTables(fn func(string, UDBMeta) error) error {
+func (l *dataImporter) iterUDBTables(fn func(string, dataSource) error) error {
 	for udbImportName, meta := range l.udb {
 		err := fn(udbImportName, meta)
 		if err != nil {
@@ -153,7 +153,7 @@ func (l *UDBFactory) IterUDBTables(fn func(string, UDBMeta) error) error {
 	return nil
 }
 
-const maximport = 50
+const maximport = 200
 
 // ImportByColumn will import a database rows where each column is a different metric.
 //   Each column that is a metric has to have its column name prefixed with "Metric-"
@@ -162,7 +162,7 @@ const maximport = 50
 //   Metric FQDD is constructed based on the "FQDD" column
 //   Metric FriendlyFQDD is constructed based on the "FriendlyFQDD" column
 //   Property paths are constructed by appending '#<metricname>' to the "Property" column
-func (l *UDBFactory) ImportByColumn(udbImportName string) (err error) {
+func (l *dataImporter) importByColumn(udbImportName string) (err error) {
 	err = nil
 	events := []eh.EventData{}
 	defer func() {
@@ -175,18 +175,18 @@ func (l *UDBFactory) ImportByColumn(udbImportName string) (err error) {
 		}
 	}()
 
-	udbMeta, ok := l.udb[udbImportName]
+	dataSource, ok := l.udb[udbImportName]
 	if !ok {
 		err = xerrors.Errorf("Somehow got called with a table name not in our supported tables list.")
 		return
 	}
 
-	if udbMeta.query == nil {
+	if dataSource.query == nil {
 		err = xerrors.Errorf("SQL query wasn't prepared for %s!", udbImportName)
 		return
 	}
 
-	rows, err := udbMeta.query.Queryx(udbMeta)
+	rows, err := dataSource.query.Queryx(dataSource)
 	if err != nil {
 		err = xerrors.Errorf("query failed for %s: %w", udbImportName, err)
 		return
@@ -204,9 +204,9 @@ func (l *UDBFactory) ImportByColumn(udbImportName string) (err error) {
 		ts := getInt64(mm, "Timestamp")
 		delete(mm, "Timestamp")
 
-		if ts > udbMeta.HWM {
-			udbMeta.HWM = ts
-			l.udb[udbImportName] = udbMeta
+		if ts > dataSource.HWM {
+			dataSource.HWM = ts
+			l.udb[udbImportName] = dataSource
 		}
 
 		metricCtx := getString(mm, "Context")
@@ -244,7 +244,7 @@ func (l *UDBFactory) ImportByColumn(udbImportName string) (err error) {
 
 			metricName := k[7:]
 			event := &metric.MetricValueEventData{
-				Timestamp:        metric.SqlTimeInt{Time: time.Unix(0, ts)},
+				Timestamp:        metric.SQLTimeInt{Time: time.Unix(0, ts)},
 				Context:          metricCtx,
 				FQDD:             fqdd,
 				FriendlyFQDD:     friendlyfqdd,
@@ -258,10 +258,10 @@ func (l *UDBFactory) ImportByColumn(udbImportName string) (err error) {
 			}
 
 			if mts, ok := mm["Timestamp-"+metricName].(int64); ok {
-				event.Timestamp = metric.SqlTimeInt{Time: time.Unix(0, mts)}
-				if mts > udbMeta.HWM {
-					udbMeta.HWM = mts
-					l.udb[udbImportName] = udbMeta
+				event.Timestamp = metric.SQLTimeInt{Time: time.Unix(0, mts)}
+				if mts > dataSource.HWM {
+					dataSource.HWM = mts
+					l.udb[udbImportName] = dataSource
 				}
 			}
 
@@ -279,7 +279,7 @@ func (l *UDBFactory) ImportByColumn(udbImportName string) (err error) {
 	return nil
 }
 
-func (l *UDBFactory) ImportByMetricValue(udbImportName string) (err error) {
+func (l *dataImporter) importByMetricValue(udbImportName string) (err error) {
 	err = nil
 	events := []eh.EventData{}
 	defer func() {
@@ -292,18 +292,18 @@ func (l *UDBFactory) ImportByMetricValue(udbImportName string) (err error) {
 		}
 	}()
 
-	udbMeta, ok := l.udb[udbImportName]
+	dataSource, ok := l.udb[udbImportName]
 	if !ok {
 		err = xerrors.Errorf("Somehow got called with a table name not in our supported tables list.")
 		return
 	}
 
-	if udbMeta.query == nil {
+	if dataSource.query == nil {
 		err = xerrors.Errorf("SQL query wasn't prepared for %s!", udbImportName)
 		return
 	}
 
-	rows, err := udbMeta.query.Queryx(udbMeta)
+	rows, err := dataSource.query.Queryx(dataSource)
 	if err != nil {
 		err = xerrors.Errorf("query failed for %s: %w", udbImportName, err)
 		return
@@ -320,9 +320,9 @@ func (l *UDBFactory) ImportByMetricValue(udbImportName string) (err error) {
 			continue
 		}
 
-		if ts := event.Timestamp.UnixNano(); ts > udbMeta.HWM {
-			udbMeta.HWM = ts
-			l.udb[udbImportName] = udbMeta
+		if ts := event.Timestamp.UnixNano(); ts > dataSource.HWM {
+			dataSource.HWM = ts
+			l.udb[udbImportName] = dataSource
 		}
 
 		events = append(events, event)

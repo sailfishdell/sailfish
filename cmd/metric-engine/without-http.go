@@ -11,7 +11,7 @@ import (
 type service struct {
 }
 
-func starthttp(logger log.Logger, cfgMgr *viper.Viper, d *BusComponents) *service {
+func starthttp(logger log.Logger, cfgMgr *viper.Viper, d *busComponents) *service {
 	return &service{}
 }
 

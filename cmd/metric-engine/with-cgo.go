@@ -9,8 +9,8 @@ import (
 	log "github.com/superchalupa/sailfish/src/log"
 )
 
-func cgoStartup(logger log.Logger, d *BusComponents) {
-	cgo.CGOStartup(logger, d)
+func cgoStartup(logger log.Logger, d *busComponents) {
+	cgo.Startup(logger, d)
 }
 
 func cgoShutdown() {

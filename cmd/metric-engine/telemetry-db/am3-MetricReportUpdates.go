@@ -15,24 +15,31 @@ import (
 	"github.com/superchalupa/sailfish/src/ocp/am3"
 )
 
+// constants to refer to event types
 const (
 	AddMetricReportDefinition    eh.EventType = "AddMetricReportDefinitionEvent"
 	UpdateMetricReportDefinition eh.EventType = "UpdateMetricReportDefinitionEvent"
 	DeleteMetricReportDefinition eh.EventType = "DeleteMetricReportDefinitionEvent"
 	DatabaseMaintenance          eh.EventType = "DatabaseMaintenanceEvent"
+)
 
+// "configuration" -- TODO: need to move to config file
+const (
 	clockPeriod = 1000 * time.Millisecond
 )
 
-type BusComponents interface {
+type busComponents interface {
 	GetBus() eh.EventBus
 }
 
-func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Service, d BusComponents) {
+// StartupTelemetryBase registers event handlers with the awesome mapper and
+// starts up timers and maintenance goroutines
+func StartupTelemetryBase(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Service, d busComponents) {
 	eh.RegisterEventData(AddMetricReportDefinition, func() eh.EventData { return &MetricReportDefinitionData{} })
 	eh.RegisterEventData(UpdateMetricReportDefinition, func() eh.EventData { return &MetricReportDefinitionData{} })
 	eh.RegisterEventData(DeleteMetricReportDefinition, func() eh.EventData { return &MetricReportDefinitionData{} })
 	eh.RegisterEventData(DatabaseMaintenance, func() eh.EventData { return "" })
+	metric.RegisterEvent()
 
 	database, err := sqlx.Open("sqlite3", cfg.GetString("main.databasepath"))
 	if err != nil {
@@ -66,7 +73,7 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Service, d Bus
 		}
 	}
 
-	MRDFactory, err := NewMRDFactory(logger, database, cfg)
+	telemetryMgr, err := newTelemetryManager(logger, database, cfg)
 	if err != nil {
 		logger.Crit("Error creating report definition factory", "err", err)
 	}
@@ -112,7 +119,7 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Service, d Bus
 
 		// Can't write to event sent in, so make a local copy
 		localReportDefCopy := *reportDef
-		err = MRDFactory.AddMRD(&localReportDefCopy)
+		err = telemetryMgr.addMRD(&localReportDefCopy)
 		if err != nil {
 			logger.Crit("Failed to create or update the Report Definition", "Name", reportDef.Name, "err", err)
 			return
@@ -120,7 +127,7 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Service, d Bus
 
 		// After we've done the adjustments to ReportDefinitionToMetricMeta, there
 		// might be orphan rows.
-		MRDFactory.DeleteOrphans()
+		telemetryMgr.DeleteOrphans()
 	})
 
 	am3Svc.AddEventHandler("Update Metric Report Definition", UpdateMetricReportDefinition, func(event eh.Event) {
@@ -131,7 +138,7 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Service, d Bus
 
 		// Can't write to event sent in, so make a local copy
 		localReportDefCopy := *reportDef
-		err = MRDFactory.UpdateMRD(&localReportDefCopy)
+		err = telemetryMgr.updateMRD(&localReportDefCopy)
 		if err != nil {
 			logger.Crit("Failed to create or update the Report Definition", "Name", reportDef.Name, "err", err)
 			return
@@ -139,7 +146,7 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Service, d Bus
 
 		// After we've done the adjustments to ReportDefinitionToMetricMeta, there
 		// might be orphan rows.
-		MRDFactory.DeleteOrphans()
+		telemetryMgr.DeleteOrphans()
 	})
 
 	am3Svc.AddEventHandler("Delete Metric Report Definition", DeleteMetricReportDefinition, func(event eh.Event) {
@@ -148,17 +155,17 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Service, d Bus
 			return
 		}
 
-		err := MRDFactory.Delete(reportDef)
+		err := telemetryMgr.deleteMRD(reportDef)
 		if err != nil {
 			logger.Crit("Error deleting Metric Report Definition", "Name", reportDef.Name, "err", err)
 		}
-		MRDFactory.DeleteOrphans()
+		telemetryMgr.DeleteOrphans()
 	})
 
 	lastHWM := time.Time{}
 	am3Svc.AddMultiHandler("Store Metric Value(s)", metric.MetricValueEvent, func(event eh.Event) {
 		instancesUpdated := map[int64]struct{}{}
-		MRDFactory.WrapWithTX(func(tx *sqlx.Tx) error {
+		telemetryMgr.wrapWithTX(func(tx *sqlx.Tx) error {
 			dataArray, ok := event.Data().([]eh.EventData)
 			if !ok {
 				return nil
@@ -169,28 +176,28 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Service, d Bus
 					continue
 				}
 
-				err := MRDFactory.InsertMetricValue(tx, metricValue, func(instanceid int64) { instancesUpdated[instanceid] = struct{}{} })
+				err := telemetryMgr.InsertMetricValue(tx, metricValue, func(instanceid int64) { instancesUpdated[instanceid] = struct{}{} })
 				if err != nil {
 					logger.Crit("Error Inserting Metric Value", "Metric", metricValue, "err", err)
 					continue
 				}
 
-				delta := MRDFactory.MetricTSHWM.Sub(metricValue.Timestamp.Time)
+				delta := telemetryMgr.MetricTSHWM.Sub(metricValue.Timestamp.Time)
 
-				if (!MRDFactory.MetricTSHWM.IsZero()) && (delta > (1*time.Hour) || delta < -(1*time.Hour)) {
+				if (!telemetryMgr.MetricTSHWM.IsZero()) && (delta > (1*time.Hour) || delta < -(1*time.Hour)) {
 					// if you see this warning consistently, check the import to ensure it's using UTC and not localtime
 					fmt.Printf("Warning: Metric Value Event TIME OFF >1hr - (delta: %s)  Metric: %+v\n", time.Duration(delta), metricValue)
 				}
 
-				if MRDFactory.MetricTSHWM.Before(metricValue.Timestamp.Time) {
-					MRDFactory.MetricTSHWM = metricValue.Timestamp.Time
+				if telemetryMgr.MetricTSHWM.Before(metricValue.Timestamp.Time) {
+					telemetryMgr.MetricTSHWM = metricValue.Timestamp.Time
 				}
 			}
 			return nil
 		})
 
-		// this will set MRDFactory.NextMRTS = MRDFactory.LastMRTS+5s for any reports that have changes
-		err := MRDFactory.CheckOnChangeReports(nil, instancesUpdated)
+		// this will set telemetryMgr.NextMRTS = telemetryMgr.LastMRTS+5s for any reports that have changes
+		err := telemetryMgr.CheckOnChangeReports(nil, instancesUpdated)
 		if err != nil {
 			logger.Crit("Error Finding OnChange Reports for metrics", "instancesUpdated", instancesUpdated, "err", err)
 		}
@@ -204,7 +211,7 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Service, d Bus
 
 		// input event is a pointer to shared data struct, dont directly use, make a copy
 		name := report.Name
-		err := MRDFactory.GenerateMetricReport(nil, name)
+		err := telemetryMgr.GenerateMetricReport(nil, name)
 		if err != nil {
 			logger.Crit("Error generating metric report", "err", err, "ReportDefintion", name)
 		}
@@ -220,57 +227,57 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Service, d Bus
 		switch command {
 		case "resync to db":
 			// First, check existing expiry... ensure we dont drop any OnChange (NextMRTS==-1) reports that might have been marked
-			reportList, _ := MRDFactory.FastCheckForNeededMRUpdates()
+			reportList, _ := telemetryMgr.FastCheckForNeededMRUpdates()
 			for _, report := range reportList {
 				d.GetBus().PublishEvent(context.Background(), eh.NewEvent(metric.ReportGenerated, metric.ReportGeneratedData{Name: report}, time.Now()))
 			}
 
 			// next, go through database and delete any NextMRTS that arent present and reload
-			reportList, _ = MRDFactory.SyncNextMRTSWithDB()
+			reportList, _ = telemetryMgr.syncNextMRTSWithDB()
 			for _, report := range reportList {
 				d.GetBus().PublishEvent(context.Background(), eh.NewEvent(metric.ReportGenerated, metric.ReportGeneratedData{Name: report}, time.Now()))
 			}
 
 		case "publish clock":
 			// if no events have kickstarted the clock, bail
-			if MRDFactory.MetricTSHWM.IsZero() {
+			if telemetryMgr.MetricTSHWM.IsZero() {
 				break
 			}
 
 			// if no events come in during time between clock publishes, we'll artificially bump HWM forward.
 			// if time is uninitialized, wait for an event to come in to set it
-			if MRDFactory.MetricTSHWM.Equal(lastHWM) {
-				MRDFactory.MetricTSHWM = MRDFactory.MetricTSHWM.Add(clockPeriod)
+			if telemetryMgr.MetricTSHWM.Equal(lastHWM) {
+				telemetryMgr.MetricTSHWM = telemetryMgr.MetricTSHWM.Add(clockPeriod)
 			}
-			lastHWM = MRDFactory.MetricTSHWM
+			lastHWM = telemetryMgr.MetricTSHWM
 
 			// Generate any metric reports that need it
-			reportList, _ := MRDFactory.FastCheckForNeededMRUpdates()
+			reportList, _ := telemetryMgr.FastCheckForNeededMRUpdates()
 			for _, report := range reportList {
 				d.GetBus().PublishEvent(context.Background(), eh.NewEvent(metric.ReportGenerated, metric.ReportGeneratedData{Name: report}, time.Now()))
 			}
 
 		case "optimize":
 			fmt.Printf("Running scheduled database optimization\n")
-			MRDFactory.Optimize()
+			telemetryMgr.Optimize()
 
 		case "vacuum":
 			fmt.Printf("Running scheduled database storage recovery\n")
-			MRDFactory.Vacuum()
+			telemetryMgr.Vacuum()
 
 		case "clean values": // keep us under database size limits
 			fmt.Printf("Running scheduled cleanup of the stored Metric Values\n")
-			MRDFactory.DeleteOldestValues()
+			telemetryMgr.DeleteOldestValues()
 
 		case "delete orphans": // see factory comment for details.
 			fmt.Printf("Running scheduled database consistency cleanup\n")
-			MRDFactory.DeleteOrphans()
+			telemetryMgr.DeleteOrphans()
 
 		case "prune unused metric values":
 			fmt.Printf("Running scheduled cleanup of the stored Metric Values\n")
-			MRDFactory.DeleteOldestValues()
+			telemetryMgr.DeleteOldestValues()
 			fmt.Printf("Running scheduled database consistency cleanup\n")
-			MRDFactory.DeleteOrphans()
+			telemetryMgr.DeleteOrphans()
 
 		default:
 			logger.Warn("Unknown database maintenance command string received", "command", command)

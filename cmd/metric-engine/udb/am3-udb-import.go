@@ -22,19 +22,19 @@ import (
 )
 
 const (
-	UDBDatabaseEvent eh.EventType = "UDBDatabaseEvent"
-	UDBChangeEvent   eh.EventType = "UDBChangeEvent"
+	udbChangeEvent eh.EventType = "UDBChangeEvent"
 )
 
-type BusComponents interface {
+type busComponents interface {
 	GetBus() eh.EventBus
 }
 
-type EventHandlingService interface {
+type eventHandlingService interface {
 	AddEventHandler(string, eh.EventType, func(eh.Event))
 }
 
-func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc EventHandlingService, d BusComponents) {
+// StartupUDBImport will attach event handlers to handle import UDB import
+func StartupUDBImport(logger log.Logger, cfg *viper.Viper, am3Svc eventHandlingService, d busComponents) {
 	database, err := sqlx.Open("sqlite3", ":memory:")
 	if err != nil {
 		logger.Crit("Could not open udb database", "err", err)
@@ -84,7 +84,7 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc EventHandlingServic
 	// fine. keeps sqlite from opening new connections un-necessarily
 	database.SetMaxOpenConns(1)
 
-	UDBFactory, err := NewUDBFactory(logger, database, d, cfg)
+	dataImporter, err := newImportManager(logger, database, d, cfg)
 	if err != nil {
 		logger.Crit("Error creating udb integration", "err", err)
 		database.Close()
@@ -99,8 +99,8 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc EventHandlingServic
 
 		// Do a 1 time unconditional import
 		fmt.Printf("Initial Import\n")
-		UDBFactory.IterUDBTables(func(name string, meta UDBMeta) error {
-			UDBFactory.ConditionalImport(name, meta, false)
+		dataImporter.iterUDBTables(func(name string, src dataSource) error {
+			dataImporter.conditionalImport(name, src, false)
 			return nil
 		})
 		fmt.Printf("Initial Import Done\n")
@@ -108,31 +108,31 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc EventHandlingServic
 		// set up the event handler that will do periodic imports every ~1s.
 		am3Svc.AddEventHandler("Import UDB Metric Values", telemetry.DatabaseMaintenance, func(event eh.Event) {
 			// TODO: get smarter about this. We ought to calculate time until next report and set a timer for that
-			UDBFactory.IterUDBTables(func(name string, meta UDBMeta) error {
-				UDBFactory.ConditionalImport(name, meta, true)
+			dataImporter.iterUDBTables(func(name string, src dataSource) error {
+				dataImporter.conditionalImport(name, src, true)
 				return nil
 			})
 		})
 	}()
 
-	am3Svc.AddEventHandler("UDB Change Notification", UDBChangeEvent, func(event eh.Event) {
-		notify, ok := event.Data().(*ChangeNotify)
+	am3Svc.AddEventHandler("UDB Change Notification", udbChangeEvent, func(event eh.Event) {
+		notify, ok := event.Data().(*changeNotify)
 		if !ok {
 			logger.Crit("UDB Change Notifier message handler got an invalid data event", "event", event, "eventdata", event.Data())
 			return
 		}
-		UDBFactory.DBChanged(strings.ToLower(notify.Database), strings.ToLower(notify.Table))
+		dataImporter.dbChanged(strings.ToLower(notify.Database), strings.ToLower(notify.Table))
 	})
 }
 
-type ChangeNotify struct {
+type changeNotify struct {
 	Database  string
 	Table     string
 	Rowid     int64
 	Operation int64
 }
 
-func handleUDBNotifyPipe(logger log.Logger, pipePath string, d BusComponents) {
+func handleUDBNotifyPipe(logger log.Logger, pipePath string, d busComponents) {
 	// Data format we get:
 	//    DB                      TBL                  ROWID     operationid
 	// ||DMLiveObjectDatabase.db|TblNic_Port_Stats_Obj|167445167|23||
@@ -161,7 +161,7 @@ func handleUDBNotifyPipe(logger log.Logger, pipePath string, d BusComponents) {
 	// this function doesn't return (on purpose), so this defer won't do much. That's ok, we'll keep it in case we change things around in the future
 	defer nullWriter.Close()
 
-	n := &ChangeNotify{}
+	n := &changeNotify{}
 	split := func(data []byte, atEOF bool) (advance int, token []byte, err error) {
 		if atEOF {
 			return 0, nil, io.EOF
@@ -208,12 +208,12 @@ func handleUDBNotifyPipe(logger log.Logger, pipePath string, d BusComponents) {
 	for s.Scan() {
 		if s.Text() == "t" {
 			// publish change notification
-			evt := event.NewSyncEvent(UDBChangeEvent, n, time.Now())
+			evt := event.NewSyncEvent(udbChangeEvent, n, time.Now())
 			evt.Add(1)
 			d.GetBus().PublishEvent(context.Background(), evt)
 			evt.Wait()
 			// new struct for the next notify so we dont have data races while other goroutines process the struct above
-			n = &ChangeNotify{}
+			n = &changeNotify{}
 		}
 	}
 }

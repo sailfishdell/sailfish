@@ -28,16 +28,18 @@ void stop_czmq() {
 // #cgo pkg-config: libdds libczmq
 import "C"
 
-type BusComponents interface {
+type busComponents interface {
 	GetBus() eh.EventBus
 }
 
-func CGOStartup(logger log.Logger, d BusComponents) {
+// Startup will start up the C event loop. Call once.
+func Startup(logger log.Logger, d busComponents) {
 	logger.Crit("CGO ENABLED")
 	C.start_czmq()
 	go C.start_cgo_event_loop()
 }
 
+// Shutdown is to cleanly shut down the C event loop
 func Shutdown() {
 	C.stop_czmq()
 }

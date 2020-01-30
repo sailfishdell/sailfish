@@ -18,17 +18,21 @@ import (
 	log "github.com/superchalupa/sailfish/src/log"
 )
 
+// StringArray is a type specifically to help marshal data into a single json string going into the database
 type StringArray []string
 
+// Value is the sql marshaller
 func (m StringArray) Value() (driver.Value, error) {
 	b, err := json.Marshal(m)
 	return b, err
 }
 
+// Scan is the sql unmarshaller
 func (m *StringArray) Scan(src interface{}) error {
 	return json.Unmarshal(src.([]byte), m)
 }
 
+// MetricReportDefinitionData is the eh event data for adding a new report definition
 type MetricReportDefinitionData struct {
 	Name         string      `db:"Name"`
 	Enabled      bool        `db:"Enabled"`
@@ -61,11 +65,11 @@ type MetricReportDefinition struct {
 }
 
 // Factory manages getting/putting into db
-type MRDFactory struct {
+type telemetryManager struct {
 	logger           log.Logger
 	database         *sqlx.DB
-	preparedNamedSql map[string]*sqlx.NamedStmt
-	preparedSql      map[string]*sqlx.Stmt
+	preparedNamedSQL map[string]*sqlx.NamedStmt
+	preparedSQL      map[string]*sqlx.Stmt
 	deleteops        []string
 	orphanops        []string
 	optimizeops      []string
@@ -76,17 +80,17 @@ type MRDFactory struct {
 	LastMRTS    map[string]time.Time // last report timestamp
 }
 
-// NewMRDFactory is the constructor for the base telemetry service functionality
-func NewMRDFactory(logger log.Logger, database *sqlx.DB, cfg *viper.Viper) (*MRDFactory, error) {
+// newTelemetryManager is the constructor for the base telemetry service functionality
+func newTelemetryManager(logger log.Logger, database *sqlx.DB, cfg *viper.Viper) (*telemetryManager, error) {
 	// make sure not to store the 'cfg' passed in. That would be Bad.
 
-	factory := &MRDFactory{
+	factory := &telemetryManager{
 		logger:           logger,
 		database:         database,
 		NextMRTS:         map[string]time.Time{},
 		LastMRTS:         map[string]time.Time{},
-		preparedNamedSql: map[string]*sqlx.NamedStmt{},
-		preparedSql:      map[string]*sqlx.Stmt{},
+		preparedNamedSQL: map[string]*sqlx.NamedStmt{},
+		preparedSQL:      map[string]*sqlx.Stmt{},
 		deleteops:        cfg.GetStringSlice("sql_lists.deleteops"),
 		orphanops:        cfg.GetStringSlice("sql_lists.orphanops"),
 		optimizeops:      cfg.GetStringSlice("sql_lists.optimizeops"),
@@ -112,7 +116,7 @@ func NewMRDFactory(logger log.Logger, database *sqlx.DB, cfg *viper.Viper) (*MRD
 		if strings.HasPrefix(name, "noop") {
 			continue
 		}
-		err := factory.prepareSqlx(name, sql)
+		err := factory.prepareSQLX(name, sql)
 		if err != nil {
 			return nil, xerrors.Errorf("Failed to prepare sql query from config yaml. Section(internal.sqlx) Name(%s), SQL(%s). Err: %w", name, sql, err)
 		}
@@ -125,58 +129,58 @@ func NewMRDFactory(logger log.Logger, database *sqlx.DB, cfg *viper.Viper) (*MRD
 //  Prefer using NamedStmts if there are a lot of variables to interpolate into
 //  a query. Be aware that there is a very small overhead as sqlx uses
 //  reflection to pull the names. For *very* performance critical code, use
-//  regular sqlx.Stmt via MRDFactory.prepareSqlx()
-func (factory *MRDFactory) prepareNamed(name, sql string) error {
-	_, ok := factory.preparedNamedSql[name]
+//  regular sqlx.Stmt via telemetryManager.prepareSQLX()
+func (factory *telemetryManager) prepareNamed(name, sql string) error {
+	_, ok := factory.preparedNamedSQL[name]
 	if !ok {
 		insert, err := factory.database.PrepareNamed(sql)
 		if err != nil {
 			return xerrors.Errorf("Failed to prepare query(%s) with SQL (%s): %w", name, sql, err)
 		}
-		factory.preparedNamedSql[name] = insert
+		factory.preparedNamedSQL[name] = insert
 	}
 	return nil
 }
 
-// getNamedSqlxTx will pull a prepared statement and add it to the current transaction
-func (factory *MRDFactory) getNamedSqlxTx(tx *sqlx.Tx, name string) *sqlx.NamedStmt {
-	return tx.NamedStmt(factory.getNamedSqlx(name))
+// getNamedSQLXTx will pull a prepared statement and add it to the current transaction
+func (factory *telemetryManager) getNamedSQLXTx(tx *sqlx.Tx, name string) *sqlx.NamedStmt {
+	return tx.NamedStmt(factory.getNamedSQLX(name))
 }
 
-// getNamedSqlxTx will return a prepared statement. It's prepared against the
+// getNamedSQLXTx will return a prepared statement. It's prepared against the
 // database directly. Don't use this if you have a currently active transaction
-// or you will deadlock! (use getNamedSqlxTx())
-func (factory *MRDFactory) getNamedSqlx(name string) *sqlx.NamedStmt {
-	return factory.preparedNamedSql[name]
+// or you will deadlock! (use getNamedSQLXTx())
+func (factory *telemetryManager) getNamedSQLX(name string) *sqlx.NamedStmt {
+	return factory.preparedNamedSQL[name]
 }
 
 // prepareNamed will insert prepared sql statements into the stmt cache
-func (factory *MRDFactory) prepareSqlx(name, sql string) error {
-	_, ok := factory.preparedSql[name]
+func (factory *telemetryManager) prepareSQLX(name, sql string) error {
+	_, ok := factory.preparedSQL[name]
 	if !ok {
 		insert, err := factory.database.Preparex(sql)
 		if err != nil {
 			return xerrors.Errorf("Failed to prepare query(%s) with SQL (%s): %w", name, sql, err)
 		}
-		factory.preparedSql[name] = insert
+		factory.preparedSQL[name] = insert
 	}
 	return nil
 }
 
-// getNamedSqlxTx will pull a prepared statement and add it to the current transaction
-func (factory *MRDFactory) getSqlxTx(tx *sqlx.Tx, name string) *sqlx.Stmt {
+// getNamedSQLXTx will pull a prepared statement and add it to the current transaction
+func (factory *telemetryManager) getSqlxTx(tx *sqlx.Tx, name string) *sqlx.Stmt {
 	return tx.Stmtx(factory.getSqlx(name))
 }
 
 // getSqlx will return a prepared statement. It was prepared directly against
 // the databse. Don't use this if you have a currently active transaction or
 // you will deadlock! (use getSqlxTx())
-func (factory *MRDFactory) getSqlx(name string) *sqlx.Stmt {
-	return factory.preparedSql[name]
+func (factory *telemetryManager) getSqlx(name string) *sqlx.Stmt {
+	return factory.preparedSQL[name]
 }
 
-// Delete will delete the requested MRD from the database
-func (factory *MRDFactory) Delete(mrdEvData *MetricReportDefinitionData) (err error) {
+// deleteMRD will delete the requested MRD from the database
+func (factory *telemetryManager) deleteMRD(mrdEvData *MetricReportDefinitionData) (err error) {
 	_, err = factory.getSqlx("delete_mrd").Exec(mrdEvData.Name)
 	if err != nil {
 		factory.logger.Crit("ERROR deleting MetricReportDefinition", "err", err, "Name", mrdEvData.Name)
@@ -186,6 +190,7 @@ func (factory *MRDFactory) Delete(mrdEvData *MetricReportDefinitionData) (err er
 	return
 }
 
+// "Configuration" constants that TODO need to move to be read from cfg file
 const (
 	MinPeriod       = 5
 	MaxPeriod       = 2 * 60 * 60
@@ -195,11 +200,11 @@ const (
 	DefaultTimeSpan = MaxTimeSpan
 )
 
-// ValidateMRD: Validate Type, Period, and Timespan.
+// validateMRD will validate (and fix/set defaults) for MRD -> Validate Type, Period, and Timespan.
 // - ensure the Type is valid enum
 // - ensure Period is within allowed ranges for Periodic
 // - ensure TimeSpan is set when required
-func ValidateMRD(MRD *MetricReportDefinition) {
+func validateMRD(MRD *MetricReportDefinition) {
 	PeriodMust := func(b bool) {
 		if !b {
 			MRD.Period = DefaultPeriod
@@ -248,7 +253,7 @@ func ValidateMRD(MRD *MetricReportDefinition) {
 
 }
 
-func WrapWithTX(db *sqlx.DB, fn func(tx *sqlx.Tx) error) (err error) {
+func wrapWithTX(db *sqlx.DB, fn func(tx *sqlx.Tx) error) (err error) {
 	// ===================================
 	// Setup Transaction
 	// ===================================
@@ -273,23 +278,23 @@ func WrapWithTX(db *sqlx.DB, fn func(tx *sqlx.Tx) error) (err error) {
 	return nil
 }
 
-func WrapWithTXOrPassIn(db *sqlx.DB, tx *sqlx.Tx, fn func(tx *sqlx.Tx) error) (err error) {
+func wrapWithTXOrPassIn(db *sqlx.DB, tx *sqlx.Tx, fn func(tx *sqlx.Tx) error) (err error) {
 	if tx != nil {
 		return fn(tx)
 	}
-	return WrapWithTX(db, fn)
+	return wrapWithTX(db, fn)
 }
 
-func (factory *MRDFactory) WrapWithTX(fn func(tx *sqlx.Tx) error) error {
-	return WrapWithTX(factory.database, fn)
+func (factory *telemetryManager) wrapWithTX(fn func(tx *sqlx.Tx) error) error {
+	return wrapWithTX(factory.database, fn)
 }
 
-func (factory *MRDFactory) WrapWithTXOrPassIn(tx *sqlx.Tx, fn func(tx *sqlx.Tx) error) error {
-	return WrapWithTXOrPassIn(factory.database, tx, fn)
+func (factory *telemetryManager) wrapWithTXOrPassIn(tx *sqlx.Tx, fn func(tx *sqlx.Tx) error) error {
+	return wrapWithTXOrPassIn(factory.database, tx, fn)
 }
 
-func (factory *MRDFactory) UpdateMRD(mrdEvData *MetricReportDefinitionData) (err error) {
-	return factory.WrapWithTX(func(tx *sqlx.Tx) error {
+func (factory *telemetryManager) updateMRD(mrdEvData *MetricReportDefinitionData) (err error) {
+	return factory.wrapWithTX(func(tx *sqlx.Tx) error {
 		// TODO: Emit an error response message if the metric report definition does not exist
 
 		newMRD := *mrdEvData
@@ -298,7 +303,7 @@ func (factory *MRDFactory) UpdateMRD(mrdEvData *MetricReportDefinitionData) (err
 			AppendLimit:                24000,
 		}
 
-		ValidateMRD(MRD)
+		validateMRD(MRD)
 
 		// load the old values
 		err = factory.loadReportDefinition(tx, MRD)
@@ -311,12 +316,12 @@ func (factory *MRDFactory) UpdateMRD(mrdEvData *MetricReportDefinitionData) (err
 			delete(factory.NextMRTS, MRD.Name)
 		}
 
-		_, err = factory.getNamedSqlxTx(tx, "mrd_update").Exec(MetricReportDefinition{MetricReportDefinitionData: &newMRD, AppendLimit: 3000})
+		_, err = factory.getNamedSQLXTx(tx, "mrd_update").Exec(MetricReportDefinition{MetricReportDefinitionData: &newMRD, AppendLimit: 3000})
 		if err != nil {
 			return xerrors.Errorf("Error updating MRD(%+v): %w", mrdEvData, err)
 		}
 
-		err = factory.UpdateMMList(tx, MRD)
+		err = factory.updateMMList(tx, MRD)
 		if err != nil {
 			return xerrors.Errorf("Error Updating MetricMeta for MRD(%+v): %w", MRD, err)
 		}
@@ -341,8 +346,8 @@ func (factory *MRDFactory) UpdateMRD(mrdEvData *MetricReportDefinitionData) (err
 	})
 }
 
-func (factory *MRDFactory) AddMRD(mrdEvData *MetricReportDefinitionData) (err error) {
-	return factory.WrapWithTX(func(tx *sqlx.Tx) error {
+func (factory *telemetryManager) addMRD(mrdEvData *MetricReportDefinitionData) (err error) {
+	return factory.wrapWithTX(func(tx *sqlx.Tx) error {
 		// TODO: Emit an error response message if the metric report definition already exists
 
 		MRD := &MetricReportDefinition{
@@ -350,12 +355,12 @@ func (factory *MRDFactory) AddMRD(mrdEvData *MetricReportDefinitionData) (err er
 			AppendLimit:                3000,
 		}
 
-		ValidateMRD(MRD)
+		validateMRD(MRD)
 
 		// stop processing any periodic report gen for this report. restart IFF report successfully added back
 		delete(factory.NextMRTS, MRD.Name)
 
-		res, err := factory.getNamedSqlxTx(tx, "mrd_insert").Exec(MRD)
+		res, err := factory.getNamedSQLXTx(tx, "mrd_insert").Exec(MRD)
 		if err != nil {
 			if strings.HasPrefix(err.Error(), "UNIQUE constraint failed") {
 				// too verbose, but possibly uncomment for debugging
@@ -369,7 +374,7 @@ func (factory *MRDFactory) AddMRD(mrdEvData *MetricReportDefinitionData) (err er
 			return xerrors.Errorf("Couldnt get ID for inserted MRD(%+v): %w", MRD, err)
 		}
 
-		err = factory.UpdateMMList(tx, MRD)
+		err = factory.updateMMList(tx, MRD)
 		if err != nil {
 			return xerrors.Errorf("Error Updating MetricMeta for MRD(%d): %w", MRD.ID, err)
 		}
@@ -393,7 +398,7 @@ func (factory *MRDFactory) AddMRD(mrdEvData *MetricReportDefinitionData) (err er
 	})
 }
 
-func (factory *MRDFactory) UpdateMMList(tx *sqlx.Tx, MRD *MetricReportDefinition) (err error) {
+func (factory *telemetryManager) updateMMList(tx *sqlx.Tx, MRD *MetricReportDefinition) (err error) {
 	//=================================================
 	// Update the list of metrics for this report
 	// First, just delete all the existing metric associations (not the actual MetricMeta, then we'll re-create
@@ -403,7 +408,7 @@ func (factory *MRDFactory) UpdateMMList(tx *sqlx.Tx, MRD *MetricReportDefinition
 	}
 
 	// Set all metric instances dirty so we can pick up any new associations
-	_, err = factory.getNamedSqlxTx(tx, "set_metric_instance_dirty").Exec(map[string]interface{}{})
+	_, err = factory.getNamedSQLXTx(tx, "set_metric_instance_dirty").Exec(map[string]interface{}{})
 	if err != nil {
 		return xerrors.Errorf("Error setting metric instances dirty: %w", err)
 	}
@@ -421,14 +426,14 @@ func (factory *MRDFactory) UpdateMMList(tx *sqlx.Tx, MRD *MetricReportDefinition
 		}
 
 		// First, Find the MetricMeta
-		err = factory.getNamedSqlxTx(tx, "find_mm").Get(&metaID, tempMetric)
+		err = factory.getNamedSQLXTx(tx, "find_mm").Get(&metaID, tempMetric)
 		if err != nil && !xerrors.Is(err, sql.ErrNoRows) {
 			return xerrors.Errorf("Error running query to find MetricMeta(%+v) for MRD(%s): %w", tempMetric, MRD, err)
 		}
 
 		if err != nil && xerrors.Is(err, sql.ErrNoRows) {
 			// Insert new MetricMeta if it doesn't already exist per above
-			res, err = factory.getNamedSqlxTx(tx, "insert_mm").Exec(tempMetric)
+			res, err = factory.getNamedSQLXTx(tx, "insert_mm").Exec(tempMetric)
 			if err != nil {
 				return xerrors.Errorf("Error inserting MetricMeta(%s) for MRD(%s): %w", tempMetric, MRD, err)
 			}
@@ -448,11 +453,12 @@ func (factory *MRDFactory) UpdateMMList(tx *sqlx.Tx, MRD *MetricReportDefinition
 	return nil
 }
 
+// StopIter is the specific error to raise to cause iteration to stop without returning an error
 var StopIter = xerrors.New("Stop Iteration")
 
-// IterMRD will run fn() for every MRD in the DB. Passes in a Transaction so function can update DB if needed
-func (factory *MRDFactory) IterMRD(checkFn func(tx *sqlx.Tx, MRD *MetricReportDefinition) bool, fn func(tx *sqlx.Tx, MRD *MetricReportDefinition) error) error {
-	return factory.WrapWithTX(func(tx *sqlx.Tx) error {
+// iterMRD will run fn() for every MRD in the DB. Passes in a Transaction so function can update DB if needed
+func (factory *telemetryManager) iterMRD(checkFn func(tx *sqlx.Tx, MRD *MetricReportDefinition) bool, fn func(tx *sqlx.Tx, MRD *MetricReportDefinition) error) error {
+	return factory.wrapWithTX(func(tx *sqlx.Tx) error {
 		// set up query for the MRD
 		rows, err := factory.getSqlxTx(tx, "query_mrds").Queryx()
 		if err != nil {
@@ -484,7 +490,7 @@ func (factory *MRDFactory) IterMRD(checkFn func(tx *sqlx.Tx, MRD *MetricReportDe
 	})
 }
 
-func (factory *MRDFactory) FastCheckForNeededMRUpdates() ([]string, error) {
+func (factory *telemetryManager) FastCheckForNeededMRUpdates() ([]string, error) {
 	generatedList := []string{}
 	for MRName, val := range factory.NextMRTS {
 		if factory.MetricTSHWM.After(val) {
@@ -501,11 +507,11 @@ func (factory *MRDFactory) FastCheckForNeededMRUpdates() ([]string, error) {
 	return generatedList, nil
 }
 
-// SyncNextMRTSWithDB will clear the .NextMRTS cache and re-populate it
-func (factory *MRDFactory) SyncNextMRTSWithDB() ([]string, error) {
+// syncNextMRTSWithDB will clear the .NextMRTS cache and re-populate it
+func (factory *telemetryManager) syncNextMRTSWithDB() ([]string, error) {
 	// scan through the database for enabled metric report definitions that are periodic and populate cache
 	newMRTS := map[string]time.Time{}
-	factory.IterMRD(
+	factory.iterMRD(
 		func(tx *sqlx.Tx, MRD *MetricReportDefinition) bool { return MRD.Type == "Periodic" && MRD.Enabled },
 		func(tx *sqlx.Tx, MRD *MetricReportDefinition) error {
 			if _, ok := newMRTS[MRD.Name]; !ok {
@@ -529,7 +535,7 @@ func (factory *MRDFactory) SyncNextMRTSWithDB() ([]string, error) {
 	return factory.FastCheckForNeededMRUpdates()
 }
 
-func (factory *MRDFactory) loadReportDefinition(tx *sqlx.Tx, MRD *MetricReportDefinition) error {
+func (factory *telemetryManager) loadReportDefinition(tx *sqlx.Tx, MRD *MetricReportDefinition) error {
 	var err error
 
 	if MRD.ID > 0 {
@@ -546,8 +552,8 @@ func (factory *MRDFactory) loadReportDefinition(tx *sqlx.Tx, MRD *MetricReportDe
 	return nil
 }
 
-func (factory *MRDFactory) InsertMetricReport(tx *sqlx.Tx, name string) (err error) {
-	return factory.WrapWithTXOrPassIn(tx, func(tx *sqlx.Tx) error {
+func (factory *telemetryManager) InsertMetricReport(tx *sqlx.Tx, name string) (err error) {
+	return factory.wrapWithTXOrPassIn(tx, func(tx *sqlx.Tx) error {
 		MRD := &MetricReportDefinition{
 			MetricReportDefinitionData: &MetricReportDefinitionData{Name: name},
 		}
@@ -579,7 +585,7 @@ func (factory *MRDFactory) InsertMetricReport(tx *sqlx.Tx, name string) (err err
 		}
 
 		// Delete all generated reports and reset everything
-		_, err = factory.getNamedSqlxTx(tx, "delete_mr_by_id").Exec(sqlargs)
+		_, err = factory.getNamedSQLXTx(tx, "delete_mr_by_id").Exec(sqlargs)
 		if err != nil {
 			return xerrors.Errorf("ERROR deleting MetricReport. MRD(%+v) args(%+v): %w", MRD, sqlargs, err)
 		}
@@ -589,7 +595,7 @@ func (factory *MRDFactory) InsertMetricReport(tx *sqlx.Tx, name string) (err err
 			return nil
 		}
 
-		_, err = factory.getNamedSqlxTx(tx, "insert_report").Exec(sqlargs)
+		_, err = factory.getNamedSQLXTx(tx, "insert_report").Exec(sqlargs)
 		if err != nil {
 			return xerrors.Errorf("ERROR inserting MetricReport. MRD(%+v) args(%+v): %w", MRD, sqlargs, err)
 		}
@@ -600,8 +606,8 @@ func (factory *MRDFactory) InsertMetricReport(tx *sqlx.Tx, name string) (err err
 	})
 }
 
-func (factory *MRDFactory) GenerateMetricReport(tx *sqlx.Tx, name string) (err error) {
-	return factory.WrapWithTXOrPassIn(tx, func(tx *sqlx.Tx) error {
+func (factory *telemetryManager) GenerateMetricReport(tx *sqlx.Tx, name string) (err error) {
+	return factory.wrapWithTXOrPassIn(tx, func(tx *sqlx.Tx) error {
 		MRD := &MetricReportDefinition{
 			MetricReportDefinitionData: &MetricReportDefinitionData{Name: name},
 		}
@@ -654,7 +660,7 @@ func (factory *MRDFactory) GenerateMetricReport(tx *sqlx.Tx, name string) (err e
 
 		for _, sql := range SQL {
 			fmt.Printf("SQL(%s) ", sql)
-			_, err = factory.getNamedSqlxTx(tx, sql).Exec(sqlargs)
+			_, err = factory.getNamedSQLXTx(tx, sql).Exec(sqlargs)
 			if err != nil {
 				return xerrors.Errorf("ERROR inserting MetricReport. MRD(%+v) sql(%s), args(%+v): %w", MRD, SQL, sqlargs, err)
 			}
@@ -668,7 +674,7 @@ func (factory *MRDFactory) GenerateMetricReport(tx *sqlx.Tx, name string) (err e
 		// And now, foreach MetricInstance, insert MetricValue
 		if !MRD.SuppressDups {
 			fmt.Printf("EXPAND -")
-			rows, err := factory.getNamedSqlxTx(tx, "iterate_metric_instance_for_report").Queryx(MRD)
+			rows, err := factory.getNamedSQLXTx(tx, "iterate_metric_instance_for_report").Queryx(MRD)
 			if err != nil {
 				return xerrors.Errorf("Error querying MetricInstance for report MRD(%s): %w", MRD, err)
 			}
@@ -679,7 +685,7 @@ func (factory *MRDFactory) GenerateMetricReport(tx *sqlx.Tx, name string) (err e
 					factory.logger.Crit("Error scanning struct result for MetricInstance query", "err", err)
 					continue
 				}
-				mm.Timestamp = metric.SqlTimeInt{Time: factory.MetricTSHWM}
+				mm.Timestamp = metric.SQLTimeInt{Time: factory.MetricTSHWM}
 				mm.Value = mm.LastValue
 
 				fmt.Printf(" (%d)", mm.InstanceID)
@@ -706,8 +712,8 @@ func (factory *MRDFactory) GenerateMetricReport(tx *sqlx.Tx, name string) (err e
 	})
 }
 
-func (factory *MRDFactory) CheckOnChangeReports(tx *sqlx.Tx, instancesUpdated map[int64]struct{}) error {
-	err := factory.WrapWithTXOrPassIn(tx, func(tx *sqlx.Tx) error {
+func (factory *telemetryManager) CheckOnChangeReports(tx *sqlx.Tx, instancesUpdated map[int64]struct{}) error {
+	err := factory.wrapWithTXOrPassIn(tx, func(tx *sqlx.Tx) error {
 		query := factory.getSqlxTx(tx, "find_onchange_mrd_by_mm_instance")
 		for mmInstanceID := range instancesUpdated {
 			rows, err := query.Queryx(mmInstanceID)
@@ -737,6 +743,7 @@ func (factory *MRDFactory) CheckOnChangeReports(tx *sqlx.Tx, instancesUpdated ma
 	return err
 }
 
+// Scratch is a helper type to serialize data into database
 type Scratch struct {
 	Numvalues int
 	Sum       float64
@@ -744,16 +751,19 @@ type Scratch struct {
 	Minimum   float64
 }
 
+// Value implements the value interface to marshal to sql
 func (m Scratch) Value() (driver.Value, error) {
 	b, err := json.Marshal(m)
 	return b, err
 }
 
+// Scan implements the scan interface to unmarshall from sql
 func (m *Scratch) Scan(src interface{}) error {
 	json.Unmarshal(src.([]byte), m)
 	return nil
 }
 
+// RawMetricMeta is a sub structure to help serialize stuff to db. it containst the stuff we are putting in or taking out of DB for Meta.
 // Validation: It's assumed that Duration is parsed on ingress. The ingress
 // format is (Redfish Duration): -?P(\d+D)?(T(\d+H)?(\d+M)?(\d+(.\d+)?S)?)?
 // When it gets to this struct, it needs to be expressed in Seconds.
@@ -769,13 +779,14 @@ type RawMetricMeta struct {
 	CollectionDuration time.Duration `db:"CollectionDuration"`
 }
 
+// RawMetricInstance is a sub structure to help serialize stuff to db. it containst the stuff we are putting in or taking out of DB for Instance.
 type RawMetricInstance struct {
 	// Instance fields. Rest of the MetricInstance fields are in the MetricValue
 	Label             string            `db:"Label"`
 	InstanceID        int64             `db:"InstanceID"`
 	CollectionScratch Scratch           `db:"CollectionScratch"`
-	FlushTime         metric.SqlTimeInt `db:"FlushTime"`
-	LastTS            metric.SqlTimeInt `db:"LastTS"`
+	FlushTime         metric.SQLTimeInt `db:"FlushTime"`
+	LastTS            metric.SQLTimeInt `db:"LastTS"`
 	LastValue         string            `db:"LastValue"`
 	Dirty             bool              `db:"Dirty"`
 	MIRequiresExpand  bool              `db:"MIRequiresExpand"`
@@ -783,7 +794,7 @@ type RawMetricInstance struct {
 	MISensorSlack     time.Duration     `db:"MISensorSlack"`
 }
 
-// Fusion structure: Meta + Instance + MetricValueEvent
+// MetricMeta is a fusion structure: Meta + Instance + MetricValueEvent
 type MetricMeta struct {
 	metric.MetricValueEventData
 	RawMetricMeta
@@ -792,14 +803,14 @@ type MetricMeta struct {
 	SuppressDups bool   `db:"SuppressDups"`
 }
 
-func (factory *MRDFactory) InsertMetricInstance(tx *sqlx.Tx, ev *metric.MetricValueEventData) (instancesCreated int, err error) {
-	err = factory.WrapWithTXOrPassIn(tx, func(tx *sqlx.Tx) error {
-		insert_metric_instance := factory.getNamedSqlxTx(tx, "insert_metric_instance")
-		find_metric_instance := factory.getNamedSqlxTx(tx, "find_metric_instance")
-		set_metric_instance_clean := factory.getNamedSqlxTx(tx, "set_metric_instance_clean")
-		insert_mi_assoc := factory.getSqlxTx(tx, "insert_mi_assoc")
+func (factory *telemetryManager) InsertMetricInstance(tx *sqlx.Tx, ev *metric.MetricValueEventData) (instancesCreated int, err error) {
+	err = factory.wrapWithTXOrPassIn(tx, func(tx *sqlx.Tx) error {
+		insertMetricInstance := factory.getNamedSQLXTx(tx, "insert_metric_instance")
+		findMetricInstance := factory.getNamedSQLXTx(tx, "find_metric_instance")
+		setMetricInstanceClean := factory.getNamedSQLXTx(tx, "set_metric_instance_clean")
+		insertMIAssoc := factory.getSqlxTx(tx, "insert_mi_assoc")
 
-		rows, err := factory.getNamedSqlxTx(tx, "find_metric_meta").Queryx(ev)
+		rows, err := factory.getNamedSQLXTx(tx, "find_metric_meta").Queryx(ev)
 		if err != nil {
 			return xerrors.Errorf("Error querying for MetricMeta: %w", err)
 		}
@@ -819,7 +830,7 @@ func (factory *MRDFactory) InsertMetricInstance(tx *sqlx.Tx, ev *metric.MetricVa
 			// Construct label and Scratch space
 			if mm.CollectionFunction != "" {
 				mm.Label = fmt.Sprintf("%s %s - %s", mm.Context, mm.Name, mm.CollectionFunction)
-				mm.FlushTime = metric.SqlTimeInt{Time: mm.Timestamp.Add(mm.CollectionDuration * time.Second)}
+				mm.FlushTime = metric.SQLTimeInt{Time: mm.Timestamp.Add(mm.CollectionDuration * time.Second)}
 				mm.CollectionScratch.Sum = 0
 				mm.CollectionScratch.Numvalues = 0
 				mm.CollectionScratch.Maximum = -math.MaxFloat64
@@ -829,13 +840,13 @@ func (factory *MRDFactory) InsertMetricInstance(tx *sqlx.Tx, ev *metric.MetricVa
 			}
 
 			// create instances for each metric meta corresponding to this metric value
-			res, err := insert_metric_instance.Exec(mm)
+			res, err := insertMetricInstance.Exec(mm)
 			if err != nil {
 				// It's ok if sqlite squawks about trying to insert dups here
 				if !strings.HasPrefix(err.Error(), "UNIQUE constraint failed") {
 					return xerrors.Errorf("Error inserting MetricInstance(%s): %w", mm, err)
 				}
-				err = find_metric_instance.Get(mm, mm)
+				err = findMetricInstance.Get(mm, mm)
 				if err != nil {
 					return xerrors.Errorf("Error getting MetricInstance(%s) InstanceID: %w", mm, err)
 				}
@@ -846,11 +857,11 @@ func (factory *MRDFactory) InsertMetricInstance(tx *sqlx.Tx, ev *metric.MetricVa
 				}
 				instancesCreated++
 			}
-			_, err = insert_mi_assoc.Exec(mm.MetaID, mm.InstanceID)
+			_, err = insertMIAssoc.Exec(mm.MetaID, mm.InstanceID)
 			if err != nil && !strings.HasPrefix(err.Error(), "UNIQUE constraint failed") {
 				return xerrors.Errorf("Error inserting Association for MetricInstance(%s): %w", mm, err)
 			}
-			_, err = set_metric_instance_clean.Exec(mm)
+			_, err = setMetricInstanceClean.Exec(mm)
 			if err != nil {
 				return xerrors.Errorf("Error setting metric instance (%d) clean: %w", mm.InstanceID, err)
 			}
@@ -861,8 +872,8 @@ func (factory *MRDFactory) InsertMetricInstance(tx *sqlx.Tx, ev *metric.MetricVa
 	return instancesCreated, err
 }
 
-func (factory *MRDFactory) InsertMetricValue(tx *sqlx.Tx, ev *metric.MetricValueEventData, updatedInstance func(int64)) (err error) {
-	return factory.WrapWithTXOrPassIn(tx, func(tx *sqlx.Tx) error {
+func (factory *telemetryManager) InsertMetricValue(tx *sqlx.Tx, ev *metric.MetricValueEventData, updatedInstance func(int64)) (err error) {
+	return factory.wrapWithTXOrPassIn(tx, func(tx *sqlx.Tx) error {
 		// Optimized, so this logic isn't as straightforward as it could be.
 		//
 		// iterate over instances and insert
@@ -889,10 +900,10 @@ func (factory *MRDFactory) InsertMetricValue(tx *sqlx.Tx, ev *metric.MetricValue
 	})
 }
 
-func (factory *MRDFactory) IterMetricInstance(tx *sqlx.Tx, mm *MetricMeta, fn func(*MetricMeta) error) error {
-	return factory.WrapWithTXOrPassIn(tx, func(tx *sqlx.Tx) error {
+func (factory *telemetryManager) IterMetricInstance(tx *sqlx.Tx, mm *MetricMeta, fn func(*MetricMeta) error) error {
+	return factory.wrapWithTXOrPassIn(tx, func(tx *sqlx.Tx) error {
 		// And now, foreach MetricInstance, insert MetricValue
-		rows, err := factory.getNamedSqlxTx(tx, "iterate_metric_instance").Queryx(mm)
+		rows, err := factory.getNamedSQLXTx(tx, "iterate_metric_instance").Queryx(mm)
 		if err != nil {
 			return xerrors.Errorf("Error querying MetricInstance(%s): %w", mm, err)
 		}
@@ -911,8 +922,8 @@ func (factory *MRDFactory) IterMetricInstance(tx *sqlx.Tx, mm *MetricMeta, fn fu
 	})
 }
 
-func (factory *MRDFactory) doInsertMetricValueForInstance(tx *sqlx.Tx, mm *MetricMeta, updatedInstance func(int64), expandOnly bool) (err error) {
-	update_metric_instance := factory.getNamedSqlxTx(tx, "update_metric_instance")
+func (factory *telemetryManager) doInsertMetricValueForInstance(tx *sqlx.Tx, mm *MetricMeta, updatedInstance func(int64), expandOnly bool) (err error) {
+	updateMetricInstance := factory.getNamedSQLXTx(tx, "update_metric_instance")
 
 	pumpMV := func(tx *sqlx.Tx, mm *MetricMeta) (saveValue bool, saveInstance bool, err error) {
 		saveValue = true
@@ -942,7 +953,7 @@ func (factory *MRDFactory) doInsertMetricValueForInstance(tx *sqlx.Tx, mm *Metri
 
 				// now, reset everything
 				// TODO: need a separate query to find all Metrics with HWM > FlushTime and flush them
-				mm.FlushTime = metric.SqlTimeInt{Time: mm.Timestamp.Add(mm.CollectionDuration * time.Second)}
+				mm.FlushTime = metric.SQLTimeInt{Time: mm.Timestamp.Add(mm.CollectionDuration * time.Second)}
 				mm.CollectionScratch.Sum = 0
 				mm.CollectionScratch.Numvalues = 0
 				mm.CollectionScratch.Maximum = -math.MaxFloat64
@@ -1020,13 +1031,13 @@ func (factory *MRDFactory) doInsertMetricValueForInstance(tx *sqlx.Tx, mm *Metri
 		mm.Value = mm.LastValue
 
 		// loop over putting the same Metric Value in (ie. LastValue), but updating the timestamp
-		mm.Timestamp = metric.SqlTimeInt{Time: mm.Timestamp.Add(-missingInterval + mm.MISensorInterval)}
+		mm.Timestamp = metric.SQLTimeInt{Time: mm.Timestamp.Add(-missingInterval + mm.MISensorInterval)}
 
 		// TODO: we could smooth this out a bit more rather than just jumping by sensorinterval
 		for mm.Timestamp.Before(savedTS.Time.Add(-mm.MISensorSlack)) {
 			fmt.Printf("\tts(%s)\n", mm.Timestamp)
 			_, _, err = pumpMV(tx, mm)
-			mm.Timestamp = metric.SqlTimeInt{Time: mm.Timestamp.Add(mm.MISensorInterval)} // .Add() a negative to go backwards
+			mm.Timestamp = metric.SQLTimeInt{Time: mm.Timestamp.Add(mm.MISensorInterval)} // .Add() a negative to go backwards
 		}
 		mm.Timestamp = savedTS
 		mm.Value = savedValue
@@ -1042,7 +1053,7 @@ func (factory *MRDFactory) doInsertMetricValueForInstance(tx *sqlx.Tx, mm *Metri
 
 	_, saveInstance, err := pumpMV(tx, mm)
 	if saveInstance {
-		_, err = update_metric_instance.Exec(mm)
+		_, err = updateMetricInstance.Exec(mm)
 		if err != nil && !strings.HasPrefix(err.Error(), "UNIQUE constraint failed") {
 			err = xerrors.Errorf("Failed to update MetricInstance(%d) with MetricMeta(%d): %w", mm.InstanceID, mm.MetaID, err)
 			return
@@ -1052,7 +1063,7 @@ func (factory *MRDFactory) doInsertMetricValueForInstance(tx *sqlx.Tx, mm *Metri
 	return
 }
 
-func (factory *MRDFactory) doInsertMetricValue(tx *sqlx.Tx, ev *metric.MetricValueEventData, updatedInstance func(int64)) (foundInstance, dirty bool, err error) {
+func (factory *telemetryManager) doInsertMetricValue(tx *sqlx.Tx, ev *metric.MetricValueEventData, updatedInstance func(int64)) (foundInstance, dirty bool, err error) {
 	dirty = false
 	foundInstance = false
 	mm := MetricMeta{MetricValueEventData: *ev}
@@ -1070,11 +1081,11 @@ func (factory *MRDFactory) doInsertMetricValue(tx *sqlx.Tx, ev *metric.MetricVal
 	return
 }
 
-func (factory *MRDFactory) runSQLFromList(sqllist []string, entrylog string, errorlog string) (err error) {
+func (factory *telemetryManager) runSQLFromList(sqllist []string, entrylog string, errorlog string) (err error) {
 	factory.logger.Info(entrylog)
 	fmt.Printf("Run %s\n", entrylog)
 	for _, sql := range sqllist {
-		factory.WrapWithTX(func(tx *sqlx.Tx) error {
+		factory.wrapWithTX(func(tx *sqlx.Tx) error {
 			fmt.Printf("\tsql(%s)", sql)
 			res, err := factory.getSqlxTx(tx, sql).Exec()
 			if err != nil {
@@ -1093,15 +1104,15 @@ func (factory *MRDFactory) runSQLFromList(sqllist []string, entrylog string, err
 	return nil
 }
 
-func (factory *MRDFactory) DeleteOrphans() (err error) {
+func (factory *telemetryManager) DeleteOrphans() (err error) {
 	return factory.runSQLFromList(factory.orphanops, "Database Maintenance: Delete Orphans", "Orphan cleanup failed-> '%s': %w")
 }
 
-func (factory *MRDFactory) DeleteOldestValues() (err error) {
+func (factory *telemetryManager) DeleteOldestValues() (err error) {
 	return factory.runSQLFromList(factory.deleteops, "Database Maintenance: Delete Oldest Metric Values", "Value cleanup failed-> '%s': %w")
 }
 
-func (factory *MRDFactory) Vacuum() error {
+func (factory *telemetryManager) Vacuum() error {
 	// cant vacuum inside a transaction
 	factory.logger.Info("Database Maintenance: Vacuum")
 	for _, sql := range factory.vacuumops {
@@ -1120,6 +1131,6 @@ func (factory *MRDFactory) Vacuum() error {
 	return nil
 }
 
-func (factory *MRDFactory) Optimize() error {
+func (factory *telemetryManager) Optimize() error {
 	return factory.runSQLFromList(factory.optimizeops, "Database Maintenance: Optimize", "Optimization failed-> '%s': %w")
 }
