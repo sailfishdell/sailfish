@@ -6,7 +6,6 @@ import (
 	"context"
 	"sync"
 
-	eh "github.com/looplab/eventhorizon"
 	"github.com/spf13/viper"
 
 	"github.com/superchalupa/sailfish/src/dell-ec"
@@ -18,7 +17,7 @@ import (
 )
 
 func init() {
-	implementations["dell_ec"] = func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *sync.RWMutex, ch eh.CommandHandler, eb eh.EventBus, d *domain.DomainObjects) Implementation {
+	implementations["dell_ec"] = func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *sync.RWMutex, d *domain.DomainObjects) interface{} {
 		return dell_ec.New(ctx, logger, cfgMgr, viperMu, d)
 	}
 }

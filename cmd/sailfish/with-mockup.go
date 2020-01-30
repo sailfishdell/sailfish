@@ -6,7 +6,6 @@ import (
 	"context"
 	"sync"
 
-	eh "github.com/looplab/eventhorizon"
 	"github.com/spf13/viper"
 
 	log "github.com/superchalupa/sailfish/src/log"
@@ -15,8 +14,8 @@ import (
 )
 
 func init() {
-	implementations["mockup"] = func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *sync.RWMutex, ch eh.CommandHandler, eb eh.EventBus, d *domain.DomainObjects) Implementation {
-		mockup.New(ctx, logger, cfgMgr, viperMu, ch, eb, d)
+	implementations["mockup"] = func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *sync.RWMutex, d *domain.DomainObjects) interface{} {
+		mockup.New(ctx, logger, cfgMgr, viperMu, d.CommandHandler, d.GetBus(), d)
 		return nil
 	}
 }

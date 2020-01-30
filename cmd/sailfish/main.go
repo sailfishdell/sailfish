@@ -19,8 +19,6 @@ import (
 
 	"github.com/gorilla/mux"
 
-	eh "github.com/looplab/eventhorizon"
-
 	log "github.com/superchalupa/sailfish/src/log"
 	applog "github.com/superchalupa/sailfish/src/log15adapter"
 
@@ -39,12 +37,9 @@ import (
 	"github.com/superchalupa/sailfish/src/ocp/session"
 )
 
-type implementationFn func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *sync.RWMutex, ch eh.CommandHandler, eb eh.EventBus, d *domain.DomainObjects) Implementation
+type implementationFn func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *sync.RWMutex, d *domain.DomainObjects) interface{}
 
-var implementations map[string]implementationFn = map[string]implementationFn{}
-
-type Implementation interface {
-}
+var implementations = map[string]implementationFn{}
 
 func main() {
 	flag.StringSliceP("listen", "l", []string{}, "Listen address.  Formats: (http:[ip]:nn, https:[ip]:port)")
@@ -69,7 +64,7 @@ func main() {
 	}
 
 	// Local config for running from the build tree
-	if FileExists("local-redfish.yaml") {
+	if fileExists("local-redfish.yaml") {
 		fmt.Fprintf(os.Stderr, "Reading local-redfish.yaml config\n")
 		cfgMgr.SetConfigFile("local-redfish.yaml")
 		if err := cfgMgr.MergeInConfig(); err != nil {
@@ -152,7 +147,7 @@ func main() {
 	m.PathPrefix("/schemas/v1/").Handler(http.StripPrefix("/schemas/v1/", http.FileServer(http.Dir("./v1/schemas/"))))
 
 	// all the other command apis.
-	 m.PathPrefix("/api/{command}").Methods("POST").Handler(internalHandlerFunc)
+	m.PathPrefix("/api/{command}").Methods("POST").Handler(internalHandlerFunc)
 
 	// debugging (localhost only)
 	m.Path("/status").Handler(domainObjs.DumpStatus())
@@ -162,7 +157,7 @@ func main() {
 	if !ok {
 		panic("could not load implementation specified in main.server_name: " + cfgMgr.GetString("main.server_name"))
 	}
-	implFn(ctx, logger, cfgMgr, &cfgMgrMu, domainObjs.CommandHandler, domainObjs.EventBus, domainObjs)
+	implFn(ctx, logger, cfgMgr, &cfgMgrMu, domainObjs)
 
 	tlscfg := &tls.Config{
 		MinVersion: tls.VersionTLS12,
@@ -369,7 +364,7 @@ func iterInterfaceIPAddrs(logger log.Logger, fn func(net.IP)) {
 	}
 }
 
-func FileExists(fn string) bool {
+func fileExists(fn string) bool {
 	fd, err := os.Stat(fn)
 	if os.IsNotExist(err) {
 		return false
