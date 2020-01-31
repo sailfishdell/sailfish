@@ -1,3 +1,7 @@
+// +build cgo
+// +build idrac_cgo_integration
+// +build arm
+
 package cgo
 
 import (
