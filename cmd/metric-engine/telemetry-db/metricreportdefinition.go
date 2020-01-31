@@ -151,7 +151,11 @@ func (factory *telemetryManager) getNamedSQLXTx(tx *sqlx.Tx, name string) *sqlx.
 // database directly. Don't use this if you have a currently active transaction
 // or you will deadlock! (use getNamedSQLXTx())
 func (factory *telemetryManager) getNamedSQLX(name string) *sqlx.NamedStmt {
-	return factory.preparedNamedSQL[name]
+	sql, ok := factory.preparedNamedSQL[name]
+	if !ok {
+		panic("tried to look up nonexistent sql query: " + name + ". Is the config file up to date, or was there a syntax error in that query?")
+	}
+	return sql
 }
 
 // prepareNamed will insert prepared sql statements into the stmt cache
@@ -176,7 +180,11 @@ func (factory *telemetryManager) getSqlxTx(tx *sqlx.Tx, name string) *sqlx.Stmt 
 // the databse. Don't use this if you have a currently active transaction or
 // you will deadlock! (use getSqlxTx())
 func (factory *telemetryManager) getSqlx(name string) *sqlx.Stmt {
-	return factory.preparedSQL[name]
+	sql, ok := factory.preparedSQL[name]
+	if !ok {
+		panic("tried to look up nonexistent sql query: " + name + ". Is the config file up to date, or was there a syntax error in that query?")
+	}
+	return sql
 }
 
 // deleteMRD will delete the requested MRD from the database
