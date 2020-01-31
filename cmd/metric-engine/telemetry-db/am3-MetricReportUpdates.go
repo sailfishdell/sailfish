@@ -26,7 +26,12 @@ const (
 
 // "configuration" -- TODO: need to move to config file
 const (
-	clockPeriod = 1000 * time.Millisecond
+	clockPeriod             = 1000 * time.Millisecond
+	startupWaitTime         = 1 * time.Second
+	cleanMVTime             = 73 * time.Second
+	vacuumTime              = 3607 * time.Second
+	optimizeTime            = 10831 * time.Second
+	maxMetricTimestampDelta = 1 * time.Hour
 )
 
 type busComponents interface {
@@ -80,7 +85,7 @@ func StartupTelemetryBase(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Servi
 
 	go func() {
 		// run once after startup. give a few seconds so we dont slow boot up
-		time.Sleep(1 * time.Second)
+		time.Sleep(startupWaitTime)
 		err := d.GetBus().PublishEvent(context.Background(), eh.NewEvent(DatabaseMaintenance, "vacuum", time.Now()))
 		if err != nil {
 			logger.Crit("Error publishing event", "err", err)
@@ -92,10 +97,10 @@ func StartupTelemetryBase(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Servi
 
 		// NOTE: the numbers below are selected as PRIME numbers so that they run concurrently as infrequently as possible
 		// With the default 73/3607/10831, they will run concurrently every ~90 years.
-		clockTicker := time.NewTicker(clockPeriod)            // unfortunately every second, otherwise report generation drifts.
-		cleanValuesTicker := time.NewTicker(73 * time.Second) // once a minute
-		vacuumTicker := time.NewTicker(3607 * time.Second)    // once an hour (-ish)
-		optimizeTicker := time.NewTicker(10831 * time.Second) // once every three hours (-ish)
+		clockTicker := time.NewTicker(clockPeriod)       // unfortunately every second, otherwise report generation drifts.
+		cleanValuesTicker := time.NewTicker(cleanMVTime) // once a minute
+		vacuumTicker := time.NewTicker(vacuumTime)       // once an hour (-ish)
+		optimizeTicker := time.NewTicker(optimizeTime)   // once every three hours (-ish)
 
 		defer cleanValuesTicker.Stop()
 		defer vacuumTicker.Stop()
@@ -210,7 +215,7 @@ func StartupTelemetryBase(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Servi
 
 				delta := telemetryMgr.MetricTSHWM.Sub(metricValue.Timestamp.Time)
 
-				if (!telemetryMgr.MetricTSHWM.IsZero()) && (delta > (1*time.Hour) || delta < -(1*time.Hour)) {
+				if (!telemetryMgr.MetricTSHWM.IsZero()) && (delta > maxMetricTimestampDelta || delta < -maxMetricTimestampDelta) {
 					// if you see this warning consistently, check the import to ensure it's using UTC and not localtime
 					fmt.Printf("Warning: Metric Value Event TIME OFF >1hr - (delta: %s)  Metric: %+v\n", delta, metricValue)
 				}

@@ -55,21 +55,18 @@ func newImportManager(logger log.Logger, database *sqlx.DB, d busComponents, cfg
 
 		settings, ok := v.(map[string]interface{})
 		if !ok {
-			logger.Crit("SKIPPING: Config file section settings malformed.", "Section", "UDB-Metric-Import", "key", k, "malformed-value", v)
-			continue
+			return nil, fmt.Errorf("config file malformed. Section(%s) key(%s) value(%s)", "UDB-Metric-Import", k, v)
 		}
 
 		Query, ok := settings["query"].(string)
 		if !ok {
-			logger.Crit("SKIPPING: Config file section missing SQL QUERY - 'query' key missing.", "Section", "UDB-Metric-Import", "key", k, "malformed-value", v)
-			continue
+			return nil, fmt.Errorf("missing or malformed query from config file. Section(%s) key(%s) value(%s)", "UDB-Metric-Import", k, v)
 		}
 
 		var err error
 		meta.query, err = database.PrepareNamed(Query)
 		if err != nil {
-			logger.Crit("SKIPPING: SQL Query PREPARE failed", "Section", "UDB-Metric-Import", "key", k, "QUERY", Query, "err", err)
-			continue
+			return nil, xerrors.Errorf("prepare() failed for query Section(%s), key(%s), sql query(%s): %w", "UDB-Metric-Import", k, Query, err)
 		}
 
 		Type, ok := settings["type"].(string)
@@ -79,8 +76,7 @@ func newImportManager(logger log.Logger, database *sqlx.DB, d busComponents, cfg
 
 		_, ok = impFns[Type]
 		if !ok {
-			logger.Crit("SKIPPING: No such Type", "Section", "UDB-Metric-Import", "key", k, "Type", Type)
-			continue
+			return nil, fmt.Errorf("requested IMPL func doesn't exist. Section(%s), key(%s), Requested func(%s). Available funcs: %+v", "UDB-Metric-Import", k, Type, impFns)
 		}
 
 		scanInterval, ok := settings["scaninterval"].(int)
@@ -97,7 +93,7 @@ func newImportManager(logger log.Logger, database *sqlx.DB, d busComponents, cfg
 
 		err = cfg.UnmarshalKey("UDB-Metric-Import."+k+".DBChange", &meta.dbChange)
 		if err != nil {
-			fmt.Printf("parsing error for dbchange: %s\n", err)
+			return nil, xerrors.Errorf("parse error trying to read the DBChange key(%s): %w", "UDB-Metric-Import."+k+".DBChange", err)
 		}
 
 		meta.importFn = impFns[Type]

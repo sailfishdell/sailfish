@@ -19,6 +19,10 @@ import (
 	"github.com/superchalupa/sailfish/src/log15adapter"
 )
 
+const (
+	startupWaitTime = 10 * time.Second
+)
+
 type busComponents struct {
 	EventBus       eh.EventBus
 	EventWaiter    *eventwaiter.EventWaiter
@@ -88,7 +92,7 @@ func main() {
 	setup(ctx, logger, cfgMgr, d)
 	h := starthttp(logger, cfgMgr, d)
 
-	time.Sleep(10 * time.Second)
+	time.Sleep(startupWaitTime)
 	debug.FreeOSMemory()
 
 	// wait until everything is done
