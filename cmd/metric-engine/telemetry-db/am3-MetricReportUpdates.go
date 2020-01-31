@@ -81,8 +81,14 @@ func StartupTelemetryBase(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Servi
 	go func() {
 		// run once after startup. give a few seconds so we dont slow boot up
 		time.Sleep(1 * time.Second)
-		d.GetBus().PublishEvent(context.Background(), eh.NewEvent(DatabaseMaintenance, "vacuum", time.Now()))
-		d.GetBus().PublishEvent(context.Background(), eh.NewEvent(DatabaseMaintenance, "optimize", time.Now()))
+		err := d.GetBus().PublishEvent(context.Background(), eh.NewEvent(DatabaseMaintenance, "vacuum", time.Now()))
+		if err != nil {
+			logger.Crit("Error publishing event", "err", err)
+		}
+		err = d.GetBus().PublishEvent(context.Background(), eh.NewEvent(DatabaseMaintenance, "optimize", time.Now()))
+		if err != nil {
+			logger.Crit("Error publishing event", "err", err)
+		}
 
 		// NOTE: the numbers below are selected as PRIME numbers so that they run concurrently as infrequently as possible
 		// With the default 73/3607/10831, they will run concurrently every ~90 years.
@@ -96,17 +102,24 @@ func StartupTelemetryBase(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Servi
 		defer optimizeTicker.Stop()
 		defer clockTicker.Stop()
 		for {
+			var err error
 			select {
 			case <-cleanValuesTicker.C:
-				d.GetBus().PublishEvent(context.Background(), eh.NewEvent(DatabaseMaintenance, "clean values", time.Now()))
+				err = d.GetBus().PublishEvent(context.Background(), eh.NewEvent(DatabaseMaintenance, "clean values", time.Now()))
 			case <-vacuumTicker.C:
-				d.GetBus().PublishEvent(context.Background(), eh.NewEvent(DatabaseMaintenance, "vacuum", time.Now()))
+				err = d.GetBus().PublishEvent(context.Background(), eh.NewEvent(DatabaseMaintenance, "vacuum", time.Now()))
 			case <-optimizeTicker.C:
-				d.GetBus().PublishEvent(context.Background(), eh.NewEvent(DatabaseMaintenance, "optimize", time.Now()))
-				// doesn't have to happen often, but should happen occasionally just in case
-				d.GetBus().PublishEvent(context.Background(), eh.NewEvent(DatabaseMaintenance, "delete orphans", time.Now()))
+				err = d.GetBus().PublishEvent(context.Background(), eh.NewEvent(DatabaseMaintenance, "optimize", time.Now()))
+				if err != nil {
+					logger.Crit("Error publishing event", "err", err)
+				}
+				// should never happen, but run occasionally just in case
+				err = d.GetBus().PublishEvent(context.Background(), eh.NewEvent(DatabaseMaintenance, "delete orphans", time.Now()))
 			case <-clockTicker.C:
-				d.GetBus().PublishEvent(context.Background(), eh.NewEvent(DatabaseMaintenance, "publish clock", time.Now()))
+				err = d.GetBus().PublishEvent(context.Background(), eh.NewEvent(DatabaseMaintenance, "publish clock", time.Now()))
+			}
+			if err != nil {
+				logger.Crit("Error publishing event", "err", err)
 			}
 		}
 	}()
@@ -127,7 +140,10 @@ func StartupTelemetryBase(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Servi
 
 		// After we've done the adjustments to ReportDefinitionToMetricMeta, there
 		// might be orphan rows.
-		telemetryMgr.DeleteOrphans()
+		err = telemetryMgr.DeleteOrphans()
+		if err != nil {
+			logger.Crit("Orphan delete failed", "err", err)
+		}
 	})
 
 	am3Svc.AddEventHandler("Update Metric Report Definition", UpdateMetricReportDefinition, func(event eh.Event) {
@@ -146,7 +162,10 @@ func StartupTelemetryBase(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Servi
 
 		// After we've done the adjustments to ReportDefinitionToMetricMeta, there
 		// might be orphan rows.
-		telemetryMgr.DeleteOrphans()
+		err = telemetryMgr.DeleteOrphans()
+		if err != nil {
+			logger.Crit("Orphan delete failed", "err", err)
+		}
 	})
 
 	am3Svc.AddEventHandler("Delete Metric Report Definition", DeleteMetricReportDefinition, func(event eh.Event) {
@@ -159,13 +178,20 @@ func StartupTelemetryBase(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Servi
 		if err != nil {
 			logger.Crit("Error deleting Metric Report Definition", "Name", reportDef.Name, "err", err)
 		}
-		telemetryMgr.DeleteOrphans()
+		err = telemetryMgr.DeleteOrphans()
+		if err != nil {
+			logger.Crit("Orphan delete failed", "err", err)
+		}
 	})
 
 	lastHWM := time.Time{}
 	am3Svc.AddMultiHandler("Store Metric Value(s)", metric.MetricValueEvent, func(event eh.Event) {
+		// This is a MULTI Handler! This function is called with an ARRAY of event
+		// data, not the normal single event data.  This means we can wrap the
+		// insert in a transaction and insert everything in the array in a single
+		// transaction for a good performance boost.
 		instancesUpdated := map[int64]struct{}{}
-		telemetryMgr.wrapWithTX(func(tx *sqlx.Tx) error {
+		err = telemetryMgr.wrapWithTX(func(tx *sqlx.Tx) error {
 			dataArray, ok := event.Data().([]eh.EventData)
 			if !ok {
 				return nil
@@ -195,6 +221,9 @@ func StartupTelemetryBase(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Servi
 			}
 			return nil
 		})
+		if err != nil {
+			logger.Crit("critical error storing metric value", "err", err)
+		}
 
 		// this will set telemetryMgr.NextMRTS = telemetryMgr.LastMRTS+5s for any reports that have changes
 		err := telemetryMgr.CheckOnChangeReports(nil, instancesUpdated)
@@ -215,7 +244,10 @@ func StartupTelemetryBase(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Servi
 		if err != nil {
 			logger.Crit("Error generating metric report", "err", err, "ReportDefintion", name)
 		}
-		d.GetBus().PublishEvent(context.Background(), eh.NewEvent(metric.ReportGenerated, metric.ReportGeneratedData{Name: name}, time.Now()))
+		err = d.GetBus().PublishEvent(context.Background(), eh.NewEvent(metric.ReportGenerated, metric.ReportGeneratedData{Name: name}, time.Now()))
+		if err != nil {
+			logger.Crit("Error publishing event", "err", err)
+		}
 	})
 
 	am3Svc.AddEventHandler("Database Maintenance", DatabaseMaintenance, func(event eh.Event) {
@@ -229,13 +261,19 @@ func StartupTelemetryBase(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Servi
 			// First, check existing expiry... ensure we dont drop any OnChange (NextMRTS==-1) reports that might have been marked
 			reportList, _ := telemetryMgr.FastCheckForNeededMRUpdates()
 			for _, report := range reportList {
-				d.GetBus().PublishEvent(context.Background(), eh.NewEvent(metric.ReportGenerated, metric.ReportGeneratedData{Name: report}, time.Now()))
+				err := d.GetBus().PublishEvent(context.Background(), eh.NewEvent(metric.ReportGenerated, metric.ReportGeneratedData{Name: report}, time.Now()))
+				if err != nil {
+					logger.Crit("Error publishing event", "err", err)
+				}
 			}
 
 			// next, go through database and delete any NextMRTS that arent present and reload
 			reportList, _ = telemetryMgr.syncNextMRTSWithDB()
 			for _, report := range reportList {
-				d.GetBus().PublishEvent(context.Background(), eh.NewEvent(metric.ReportGenerated, metric.ReportGeneratedData{Name: report}, time.Now()))
+				err := d.GetBus().PublishEvent(context.Background(), eh.NewEvent(metric.ReportGenerated, metric.ReportGeneratedData{Name: report}, time.Now()))
+				if err != nil {
+					logger.Crit("Error publishing event", "err", err)
+				}
 			}
 
 		case "publish clock":
@@ -254,30 +292,51 @@ func StartupTelemetryBase(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Servi
 			// Generate any metric reports that need it
 			reportList, _ := telemetryMgr.FastCheckForNeededMRUpdates()
 			for _, report := range reportList {
-				d.GetBus().PublishEvent(context.Background(), eh.NewEvent(metric.ReportGenerated, metric.ReportGeneratedData{Name: report}, time.Now()))
+				err := d.GetBus().PublishEvent(context.Background(), eh.NewEvent(metric.ReportGenerated, metric.ReportGeneratedData{Name: report}, time.Now()))
+				if err != nil {
+					logger.Crit("Error publishing event", "err", err)
+				}
 			}
 
 		case "optimize":
 			fmt.Printf("Running scheduled database optimization\n")
-			telemetryMgr.Optimize()
+			err = telemetryMgr.Optimize()
+			if err != nil {
+				logger.Crit("Optimize failed", "err", err)
+			}
 
 		case "vacuum":
 			fmt.Printf("Running scheduled database storage recovery\n")
-			telemetryMgr.Vacuum()
+			err = telemetryMgr.Vacuum()
+			if err != nil {
+				logger.Crit("Vacuum failed", "err", err)
+			}
 
 		case "clean values": // keep us under database size limits
 			fmt.Printf("Running scheduled cleanup of the stored Metric Values\n")
-			telemetryMgr.DeleteOldestValues()
+			err = telemetryMgr.DeleteOldestValues()
+			if err != nil {
+				logger.Crit("DeleteOldestValues failed.", "err", err)
+			}
 
 		case "delete orphans": // see factory comment for details.
 			fmt.Printf("Running scheduled database consistency cleanup\n")
-			telemetryMgr.DeleteOrphans()
+			err = telemetryMgr.DeleteOrphans()
+			if err != nil {
+				logger.Crit("Orphan delete failed", "err", err)
+			}
 
 		case "prune unused metric values":
 			fmt.Printf("Running scheduled cleanup of the stored Metric Values\n")
-			telemetryMgr.DeleteOldestValues()
+			err = telemetryMgr.DeleteOldestValues()
+			if err != nil {
+				logger.Crit("DeleteOldestValues failed.", "err", err)
+			}
 			fmt.Printf("Running scheduled database consistency cleanup\n")
-			telemetryMgr.DeleteOrphans()
+			err = telemetryMgr.DeleteOrphans()
+			if err != nil {
+				logger.Crit("Orphan delete failed", "err", err)
+			}
 
 		default:
 			logger.Warn("Unknown database maintenance command string received", "command", command)
