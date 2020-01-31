@@ -99,19 +99,23 @@ func StartupUDBImport(logger log.Logger, cfg *viper.Viper, am3Svc eventHandlingS
 
 		// Do a 1 time unconditional import
 		fmt.Printf("Initial Import\n")
-		dataImporter.iterUDBTables(func(name string, src dataSource) error {
-			dataImporter.conditionalImport(name, src, false)
-			return nil
+		err := dataImporter.iterUDBTables(func(name string, src dataSource) error {
+			return dataImporter.conditionalImport(name, src, false)
 		})
+		if err != nil {
+			logger.Crit("Error from import", "err", err)
+		}
 		fmt.Printf("Initial Import Done\n")
 
 		// set up the event handler that will do periodic imports every ~1s.
 		am3Svc.AddEventHandler("Import UDB Metric Values", telemetry.DatabaseMaintenance, func(event eh.Event) {
 			// TODO: get smarter about this. We ought to calculate time until next report and set a timer for that
-			dataImporter.iterUDBTables(func(name string, src dataSource) error {
-				dataImporter.conditionalImport(name, src, true)
-				return nil
+			err := dataImporter.iterUDBTables(func(name string, src dataSource) error {
+				return dataImporter.conditionalImport(name, src, true)
 			})
+			if err != nil {
+				logger.Crit("Error from import", "err", err)
+			}
 		})
 	}()
 
@@ -121,7 +125,10 @@ func StartupUDBImport(logger log.Logger, cfg *viper.Viper, am3Svc eventHandlingS
 			logger.Crit("UDB Change Notifier message handler got an invalid data event", "event", event, "eventdata", event.Data())
 			return
 		}
-		dataImporter.dbChanged(strings.ToLower(notify.Database), strings.ToLower(notify.Table))
+		err := dataImporter.dbChanged(strings.ToLower(notify.Database), strings.ToLower(notify.Table))
+		if err != nil {
+			logger.Crit("Error checking if database changed", "err", err, "notify", notify)
+		}
 	})
 }
 
@@ -210,7 +217,10 @@ func handleUDBNotifyPipe(logger log.Logger, pipePath string, d busComponents) {
 			// publish change notification
 			evt := event.NewSyncEvent(udbChangeEvent, n, time.Now())
 			evt.Add(1)
-			d.GetBus().PublishEvent(context.Background(), evt)
+			err := d.GetBus().PublishEvent(context.Background(), evt)
+			if err != nil {
+				logger.Crit("Error publishing event to internal event bus. Should never happen!", "err", err)
+			}
 			evt.Wait()
 			// new struct for the next notify so we dont have data races while other goroutines process the struct above
 			n = &changeNotify{}

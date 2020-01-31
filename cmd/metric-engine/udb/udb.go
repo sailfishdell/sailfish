@@ -267,13 +267,19 @@ func (l *dataImporter) importByColumn(udbImportName string) (err error) {
 
 			events = append(events, event)
 			if len(events) > maximport {
-				l.bus.PublishEvent(context.Background(), eh.NewEvent(metric.MetricValueEvent, events, time.Now()))
+				err := l.bus.PublishEvent(context.Background(), eh.NewEvent(metric.MetricValueEvent, events, time.Now()))
+				if err != nil {
+					l.logger.Crit("Error publishing event to internal event bus. Should never happen!", "err", err)
+				}
 				events = []eh.EventData{}
 			}
 		}
 	}
 	if len(events) > 0 {
-		l.bus.PublishEvent(context.Background(), eh.NewEvent(metric.MetricValueEvent, events, time.Now()))
+		err := l.bus.PublishEvent(context.Background(), eh.NewEvent(metric.MetricValueEvent, events, time.Now()))
+		if err != nil {
+			l.logger.Crit("Error publishing event to internal event bus. Should never happen!", "err", err)
+		}
 	}
 
 	return nil
@@ -327,12 +333,18 @@ func (l *dataImporter) importByMetricValue(udbImportName string) (err error) {
 
 		events = append(events, event)
 		if len(events) > maximport {
-			l.bus.PublishEvent(context.Background(), eh.NewEvent(metric.MetricValueEvent, events, time.Now()))
+			err := l.bus.PublishEvent(context.Background(), eh.NewEvent(metric.MetricValueEvent, events, time.Now()))
+			if err != nil {
+				l.logger.Crit("Error publishing event to internal event bus. Should never happen!", "err", err)
+			}
 			events = []eh.EventData{}
 		}
 	}
 	if len(events) > 0 {
-		l.bus.PublishEvent(context.Background(), eh.NewEvent(metric.MetricValueEvent, events, time.Now()))
+		err := l.bus.PublishEvent(context.Background(), eh.NewEvent(metric.MetricValueEvent, events, time.Now()))
+		if err != nil {
+			l.logger.Crit("Error publishing event to internal event bus. Should never happen!", "err", err)
+		}
 	}
 
 	return nil
