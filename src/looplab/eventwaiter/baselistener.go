@@ -8,6 +8,11 @@ import (
 	myevent "github.com/superchalupa/sailfish/src/looplab/event"
 )
 
+// TODO: read from config or accept as override?
+const (
+	defaultInboxLen = 20
+)
+
 // BaseEventListener receives events from an EventWaiter.
 type BaseEventListener struct {
 	listenerInbox chan eh.Event
@@ -28,7 +33,7 @@ type EW interface {
 func NewBaseListener(ctx context.Context, log log.Logger, ew EW, match func(eh.Event) bool) *BaseEventListener {
 	listenerCtx, cancel := context.WithCancel(ctx)
 	return &BaseEventListener{
-		listenerInbox: make(chan eh.Event, 20),
+		listenerInbox: make(chan eh.Event, defaultInboxLen),
 		Name:          "unnamed",
 		id:            eh.NewUUID(),
 		match:         match,

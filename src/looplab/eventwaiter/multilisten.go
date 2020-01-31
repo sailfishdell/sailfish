@@ -36,9 +36,7 @@ func (l *MultiEventListener) ConsumeEventFromWaiter(event eh.Event) {
 	if isArray {
 		// already an array ([]eh.EventData)
 		EventToSend = event
-
 	} else {
-
 		// create an array ([]eh.EventData)
 		t := event.EventType()
 		if isSync {

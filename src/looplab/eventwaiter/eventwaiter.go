@@ -25,6 +25,11 @@ import (
 	"github.com/superchalupa/sailfish/src/log"
 )
 
+// TODO: accept override or read from config?
+const (
+	defaultWaiterQueueLen = 200
+)
+
 type Listener interface {
 	GetID() eh.UUID
 	ConsumeEventFromWaiter(event eh.Event)
@@ -48,7 +53,7 @@ type Option func(e *EventWaiter) error
 func NewEventWaiter(o ...Option) *EventWaiter {
 	w := EventWaiter{
 		done:       make(chan struct{}),
-		inbox:      make(chan eh.Event, 200),
+		inbox:      make(chan eh.Event, defaultWaiterQueueLen),
 		register:   make(chan Listener),
 		unregister: make(chan Listener),
 		autorun:    true,
@@ -130,7 +135,6 @@ func (w *EventWaiter) Run() {
 				//fmt.Printf("Done in listener\n")
 				e.Done()
 			}
-
 		}
 	}
 }
