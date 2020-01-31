@@ -274,10 +274,14 @@ func wrapWithTX(db *sqlx.DB, fn func(tx *sqlx.Tx) error) (err error) {
 	// if an error happens, that's really wierd and there isn't much we can do
 	// about it. Probably have some database inconsistency, so panic() seems like
 	// the only real option. Telemetry service should restart in this case
+	committed := false
 	defer func() {
+		if committed {
+			return
+		}
 		err := tx.Rollback()
 		if err != nil {
-			panic("database rollback failed, something is very wrong: " + err.Error())
+			panic(fmt.Sprintf("database rollback failed(%T), something is very wrong: %s", err, err))
 		}
 	}()
 
@@ -290,6 +294,7 @@ func wrapWithTX(db *sqlx.DB, fn func(tx *sqlx.Tx) error) (err error) {
 	if err != nil {
 		return xerrors.Errorf("FAILED transaction commit: %w", err)
 	}
+	committed = true
 
 	return nil
 }
