@@ -9,6 +9,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	eh "github.com/looplab/eventhorizon"
 	"github.com/spf13/viper"
+	"golang.org/x/xerrors"
 
 	"github.com/superchalupa/sailfish/cmd/metric-engine/metric"
 	log "github.com/superchalupa/sailfish/src/log"
@@ -34,7 +35,7 @@ type busComponents interface {
 
 // StartupTelemetryBase registers event handlers with the awesome mapper and
 // starts up timers and maintenance goroutines
-func StartupTelemetryBase(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Service, d busComponents) {
+func StartupTelemetryBase(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Service, d busComponents) error {
 	eh.RegisterEventData(AddMetricReportDefinition, func() eh.EventData { return &MetricReportDefinitionData{} })
 	eh.RegisterEventData(UpdateMetricReportDefinition, func() eh.EventData { return &MetricReportDefinitionData{} })
 	eh.RegisterEventData(DeleteMetricReportDefinition, func() eh.EventData { return &MetricReportDefinitionData{} })
@@ -43,8 +44,7 @@ func StartupTelemetryBase(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Servi
 
 	database, err := sqlx.Open("sqlite3", cfg.GetString("main.databasepath"))
 	if err != nil {
-		logger.Crit("Could not open database", "err", err)
-		return
+		return xerrors.Errorf("could not open database(%s): %w", cfg.GetString("main.databasepath"))
 	}
 
 	// run sqlite with only one connection to avoid locking issues
@@ -75,7 +75,7 @@ func StartupTelemetryBase(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Servi
 
 	telemetryMgr, err := newTelemetryManager(logger, database, cfg)
 	if err != nil {
-		logger.Crit("Error creating report definition factory", "err", err)
+		return xerrors.Errorf("telemetry manager initialization failed: %w", err)
 	}
 
 	go func() {
@@ -283,4 +283,6 @@ func StartupTelemetryBase(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Servi
 			logger.Warn("Unknown database maintenance command string received", "command", command)
 		}
 	})
+
+	return nil
 }
