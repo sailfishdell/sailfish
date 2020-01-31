@@ -42,9 +42,9 @@ func newImportManager(logger log.Logger, database *sqlx.DB, d busComponents, cfg
 
 	impFns := map[string]func(string) error{
 		"DISABLE-DirectMetric": func(n string) error { return errors.New("DISABLED") },
-		"DirectMetric":         func(n string) error { return ret.importByMetricValue(n) },
-		"MetricColumns":        func(n string) error { return ret.importByColumn(n) },
-		"Error":                func(n string) error { return ret.importERROR(n) },
+		"DirectMetric":         ret.importByMetricValue,
+		"MetricColumns":        ret.importByColumn,
+		"Error":                ret.importERROR,
 	}
 
 	// Parse the YAML file to set up database imports
