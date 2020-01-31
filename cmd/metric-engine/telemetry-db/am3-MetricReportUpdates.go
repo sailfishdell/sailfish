@@ -212,7 +212,7 @@ func StartupTelemetryBase(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Servi
 
 				if (!telemetryMgr.MetricTSHWM.IsZero()) && (delta > (1*time.Hour) || delta < -(1*time.Hour)) {
 					// if you see this warning consistently, check the import to ensure it's using UTC and not localtime
-					fmt.Printf("Warning: Metric Value Event TIME OFF >1hr - (delta: %s)  Metric: %+v\n", time.Duration(delta), metricValue)
+					fmt.Printf("Warning: Metric Value Event TIME OFF >1hr - (delta: %s)  Metric: %+v\n", delta, metricValue)
 				}
 
 				if telemetryMgr.MetricTSHWM.Before(metricValue.Timestamp.Time) {

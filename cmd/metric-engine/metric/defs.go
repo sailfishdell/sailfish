@@ -8,15 +8,26 @@ import (
 	eh "github.com/looplab/eventhorizon"
 )
 
+// definitions for all of the event horizon event names
 const (
-	// MetricValueEvent is the const for the eh Event
-	MetricValueEvent eh.EventType = "MetricValueEvent"
-	// FriendlyFQDDMapping is the const for the eh Event
+	MetricValueEvent    eh.EventType = "MetricValueEvent"
 	FriendlyFQDDMapping eh.EventType = "FriendlyFQDDMapping"
-	// RequestReport is the const for the eh Event
-	RequestReport eh.EventType = "RequestReport"
-	// ReportGenerated is the const for the eh Event
-	ReportGenerated eh.EventType = "ReportGenerated"
+	RequestReport       eh.EventType = "RequestReport"
+	ReportGenerated     eh.EventType = "ReportGenerated"
+)
+
+// some report types/updates that we use in many places, make a const to save memory
+const (
+	// Types
+	Periodic  = "Periodic"
+	OnChange  = "OnChange"
+	OnRequest = "OnRequest"
+
+	// Updates
+	Overwrite           = "Overwrite"
+	NewReport           = "NewReport"
+	AppendStopsWhenFull = "AppendStopsWhenFull"
+	AppendWrapsWhenFull = "AppendWrapsWhenFull"
 )
 
 // SQLTimeInt is a wrapper around golang time that serializes and deserializes 64-bit nanosecond time rather than the default 32-bit second
