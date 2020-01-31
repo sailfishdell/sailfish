@@ -282,6 +282,15 @@ func main() {
 	logger.Debug("Listening", "module", "main", "addresses", fmt.Sprintf("%v\n", listeners))
 	injectSvc.Ready()
 
+	// start periodically forcing OS memory free
+	go func() {
+		t := time.Tick(time.Second * 30)
+		for {
+			<-t
+			debug.FreeOSMemory()
+		}
+	}()
+
 	// wait until we get an interrupt (CTRL-C)
 	intr := make(chan os.Signal, 1)
 	signal.Notify(intr, os.Interrupt)
@@ -370,14 +379,4 @@ func fileExists(fn string) bool {
 		return false
 	}
 	return !fd.IsDir()
-}
-
-func init() {
-	go func() {
-		t := time.Tick(time.Second * 30)
-		for {
-			<-t
-			debug.FreeOSMemory()
-		}
-	}()
 }
