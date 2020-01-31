@@ -43,8 +43,8 @@ func main() {
 
 	// Configuration file
 	cfgMgr.SetConfigName("metric-engine")
-	cfgMgr.AddConfigPath("/etc/")
 	cfgMgr.AddConfigPath(".")
+	cfgMgr.AddConfigPath("/etc/")
 	if err := cfgMgr.ReadInConfig(); err != nil {
 		fmt.Fprintf(os.Stderr, "Could not read config file: %s\n", err)
 		panic(fmt.Sprintf("Could not read config file: %s", err))
