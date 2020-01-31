@@ -85,7 +85,10 @@ func setup(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, d *busCo
 			fmt.Printf("\tPublishing Startup Event (%s)\n", name)
 			evt := event.NewSyncEvent(eventType, eventData, time.Now())
 			evt.Add(1)
-			d.GetBus().PublishEvent(context.Background(), evt)
+			err = d.GetBus().PublishEvent(context.Background(), evt)
+			if err != nil {
+				logger.Crit("Error publishing event to internal event bus, should never happen!", "err", err)
+			}
 		}
 	}
 
