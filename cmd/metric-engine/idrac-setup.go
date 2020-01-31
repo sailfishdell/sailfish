@@ -28,7 +28,10 @@ func setup(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, d *busCo
 	// Processing loop 2:
 	//  	-- "New" DB access
 	am3SvcN2, _ := am3.StartService(ctx, logger.New("module", "AM3_DB"), "database", d)
-	telemetry.StartupTelemetryBase(logger.New("module", "sql_am3_functions"), cfgMgr, am3SvcN2, d)
+	err := telemetry.StartupTelemetryBase(logger.New("module", "sql_am3_functions"), cfgMgr, am3SvcN2, d)
+	if err != nil {
+		panic("Error initializing: " + err.Error())
+	}
 
 	// Processing loop 3:
 	//  	-- UDB access
