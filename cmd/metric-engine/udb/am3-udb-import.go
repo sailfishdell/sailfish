@@ -14,9 +14,10 @@ import (
 	"github.com/jmoiron/sqlx"
 	eh "github.com/looplab/eventhorizon"
 	"github.com/spf13/viper"
-	"github.com/superchalupa/sailfish/src/looplab/event"
+	"golang.org/x/xerrors"
 
 	"github.com/superchalupa/sailfish/cmd/metric-engine/telemetry-db"
+	"github.com/superchalupa/sailfish/src/looplab/event"
 
 	log "github.com/superchalupa/sailfish/src/log"
 )
@@ -93,14 +94,20 @@ func StartupUDBImport(logger log.Logger, cfg *viper.Viper, am3Svc eventHandlingS
 
 	go handleUDBNotifyPipe(logger, cfg.GetString("main.udbnotifypipe"), d)
 
-	// This is the event to trigger UDB imports. We will only attach it after a second to let all startup settle before we start processing imports from UDB from UDB
+	// This is the event to trigger UDB imports. We will only attach it after a
+	// second to let all startup settle before we start processing imports from
+	// UDB from UDB
 	go func() {
 		time.Sleep(1 * time.Second)
 
 		// Do a 1 time unconditional import
 		fmt.Printf("Initial Import\n")
 		err := dataImporter.iterUDBTables(func(name string, src dataSource) error {
-			return dataImporter.conditionalImport(name, src, false)
+			err := dataImporter.conditionalImport(name, src, false)
+			if err != nil && err.Error() != "DISABLED" {
+				return xerrors.Errorf("error from import of report(%s): %w", name, err)
+			}
+			return nil
 		})
 		if err != nil {
 			logger.Crit("Error from import", "err", err)
@@ -111,7 +118,11 @@ func StartupUDBImport(logger log.Logger, cfg *viper.Viper, am3Svc eventHandlingS
 		am3Svc.AddEventHandler("Import UDB Metric Values", telemetry.DatabaseMaintenance, func(event eh.Event) {
 			// TODO: get smarter about this. We ought to calculate time until next report and set a timer for that
 			err := dataImporter.iterUDBTables(func(name string, src dataSource) error {
-				return dataImporter.conditionalImport(name, src, true)
+				err := dataImporter.conditionalImport(name, src, true)
+				if err != nil && err.Error() != "DISABLED" {
+					return xerrors.Errorf("error from import of report(%s): %w", name, err)
+				}
+				return nil
 			})
 			if err != nil {
 				logger.Crit("Error from import", "err", err)

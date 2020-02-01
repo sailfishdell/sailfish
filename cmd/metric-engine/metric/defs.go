@@ -2,7 +2,6 @@ package metric
 
 import (
 	"database/sql/driver"
-	"sync"
 	"time"
 
 	eh "github.com/looplab/eventhorizon"
@@ -77,14 +76,10 @@ type ReportGeneratedData struct {
 	Name string
 }
 
-var reglock = sync.Once{}
-
-// RegisterEvent should be called once during initialization to register event types with event horizon
+// RegisterEvent should be called only once during initialization to register event types with event horizon
 func RegisterEvent() {
-	reglock.Do(func() {
-		eh.RegisterEventData(MetricValueEvent, func() eh.EventData { return &MetricValueEventData{} })
-		eh.RegisterEventData(FriendlyFQDDMapping, func() eh.EventData { return &FQDDMappingData{} })
-		eh.RegisterEventData(RequestReport, func() eh.EventData { return &RequestReportData{} })
-		eh.RegisterEventData(ReportGenerated, func() eh.EventData { return &ReportGeneratedData{} })
-	})
+	eh.RegisterEventData(MetricValueEvent, func() eh.EventData { return &MetricValueEventData{} })
+	eh.RegisterEventData(FriendlyFQDDMapping, func() eh.EventData { return &FQDDMappingData{} })
+	eh.RegisterEventData(RequestReport, func() eh.EventData { return &RequestReportData{} })
+	eh.RegisterEventData(ReportGenerated, func() eh.EventData { return &ReportGeneratedData{} })
 }

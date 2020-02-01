@@ -76,7 +76,9 @@ func newImportManager(logger log.Logger, database *sqlx.DB, d busComponents, cfg
 
 		_, ok = impFns[Type]
 		if !ok {
-			return nil, fmt.Errorf("requested IMPL func doesn't exist. Section(%s), key(%s), Requested func(%s). Available funcs: %+v", "UDB-Metric-Import", k, Type, impFns)
+			return nil, fmt.Errorf(
+				"requested IMPL func doesn't exist. Section(%s), key(%s), Requested func(%s). Available funcs: %+v", "UDB-Metric-Import",
+				k, Type, impFns)
 		}
 
 		scanInterval, ok := settings["scaninterval"].(int)

@@ -14,18 +14,24 @@ import (
 	"github.com/superchalupa/sailfish/src/looplab/event"
 	"github.com/superchalupa/sailfish/src/ocp/am3"
 
+	"github.com/superchalupa/sailfish/cmd/metric-engine/metric"
 	"github.com/superchalupa/sailfish/cmd/metric-engine/telemetry-db"
 	"github.com/superchalupa/sailfish/cmd/metric-engine/udb"
 )
 
 func setup(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, d *busComponents) {
-	// 2 instances of AM3 service. This means we can run concurrent message processing loops in 2 different goroutines
-	// Each goroutine has exclusive access to its database
+	// register global metric events with event horizon
+	metric.RegisterEvent()
 
-	// 		-- cgo events
+	// cgo will start up its own thread and event processing loop
 	cgoStartup(logger.New("module", "cgo"), d)
 
-	// Processing loop 2:
+	// We are going to initialize 2 instances of AM3 service.  This means we can
+	// run concurrent message processing loops in 2 different goroutines Each
+	// goroutine has exclusive access to its database, so we'll be able to
+	// simultaneously do ops on each DB
+
+	// Processing loop 1:
 	//  	-- "New" DB access
 	am3SvcN2, _ := am3.StartService(ctx, logger.New("module", "AM3_DB"), "database", d)
 	err := telemetry.StartupTelemetryBase(logger.New("module", "sql_am3_functions"), cfgMgr, am3SvcN2, d)
@@ -33,7 +39,7 @@ func setup(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, d *busCo
 		panic("Error initializing: " + err.Error())
 	}
 
-	// Processing loop 3:
+	// Processing loop 2:
 	//  	-- UDB access
 	am3SvcN3, _ := am3.StartService(ctx, logger.New("module", "AM3_UDB"), "udb database", d)
 	udb.StartupUDBImport(logger.New("module", "udb_am3_functions"), cfgMgr, am3SvcN3, d)
