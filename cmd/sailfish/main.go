@@ -22,9 +22,9 @@ import (
 	log "github.com/superchalupa/sailfish/src/log"
 	applog "github.com/superchalupa/sailfish/src/log15adapter"
 
-	"github.com/superchalupa/sailfish/src/http_inject"
 	"github.com/superchalupa/sailfish/src/http_redfish_sse"
 	"github.com/superchalupa/sailfish/src/http_sse"
+	"github.com/superchalupa/sailfish/src/httpinject"
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
 
 	// cert gen
@@ -95,7 +95,7 @@ func main() {
 	m := mux.NewRouter()
 	loggingHTTPHandler := makeLoggingHTTPHandler(logger, m)
 
-	injectSvc := http_inject.New(logger, domainObjs)
+	injectSvc := httpinject.New(logger, domainObjs)
 	injectSvc.Start()
 
 	// per spec: hardcoded output for /redfish to list versions supported.

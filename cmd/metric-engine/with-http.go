@@ -18,8 +18,8 @@ import (
 
 	"github.com/gorilla/mux"
 
-	"github.com/superchalupa/sailfish/src/http_inject"
 	"github.com/superchalupa/sailfish/src/http_sse"
+	"github.com/superchalupa/sailfish/src/httpinject"
 	log "github.com/superchalupa/sailfish/src/log"
 	"github.com/superchalupa/sailfish/src/tlscert"
 )
@@ -34,7 +34,7 @@ type service struct {
 }
 
 func starthttp(logger log.Logger, cfgMgr *viper.Viper, d *busComponents) (ret *service) {
-	injectSvc := http_inject.New(logger, d)
+	injectSvc := httpinject.New(logger, d)
 	injectSvc.Start()
 
 	// Set up HTTP endpoints

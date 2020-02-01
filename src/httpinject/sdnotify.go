@@ -1,4 +1,4 @@
-package http_inject
+package httpinject
 
 import (
 	"errors"
@@ -45,7 +45,6 @@ type sdNotifier interface {
 }
 
 func NewSdnotify() (*Sdnotify, error) {
-
 	name := os.Getenv("NOTIFY_SOCKET")
 	if name == "" {
 		return nil, errors.New("NOTIFY_SOCKET environment variable not set")

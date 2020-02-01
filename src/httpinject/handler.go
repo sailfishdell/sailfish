@@ -1,4 +1,4 @@
-package http_inject
+package httpinject
 
 import (
 	"context"
@@ -16,7 +16,15 @@ import (
 	"github.com/superchalupa/sailfish/src/looplab/eventwaiter"
 )
 
-const MAX_OUT_OF_ORDER_QUEUED = 25
+// some constants... many of these should be read from config
+const (
+	watchdogsPerInterval  = 3
+	maxOOOMessages        = 25
+	outOfOrderTimeout     = 6 * time.Second
+	maxConsolidatedEvents = 5
+	maxUint               = ^int32(0)
+	maxQueuedInjectEvents = 50
+)
 
 type busObjs interface {
 	GetBus() eh.EventBus
@@ -47,10 +55,6 @@ type eventBundle struct {
 	barrier bool
 }
 
-// inject event timeout
-//var IETIMEOUT time.Duration = 250 * time.Millisecond
-var IETIMEOUT time.Duration = 6 * time.Second
-
 type service struct {
 	logger         log.Logger
 	sd             sdNotifier
@@ -59,6 +63,8 @@ type service struct {
 	injectCmdQueue chan *InjectCommand
 	injectChan     chan *eventBundle
 }
+
+var reglock = sync.Once{}
 
 // NewInjectHandler constructs a new InjectHandler with the given username and privileges.
 func (s *service) GetHandlerFunc() func(http.ResponseWriter, *http.Request) {
@@ -107,7 +113,7 @@ func (s *service) GetHandlerFunc() func(http.ResponseWriter, *http.Request) {
 		cmd.ingestTime = time.Now()
 		// handle time in seconds or in nanoseconds. 32 bit time goes to 4billion,
 		// if it's more it must be nanoseconds
-		if cmd.PumpSendTime < 5000000000 {
+		if cmd.PumpSendTime < int64(maxUint) {
 			cmd.sendTime = time.Unix(cmd.PumpSendTime, 0)
 		} else {
 			cmd.sendTime = time.Unix(0, cmd.PumpSendTime)
@@ -122,7 +128,7 @@ func (s *service) GetHandlerFunc() func(http.ResponseWriter, *http.Request) {
 		//seq := cmd.EventSeq
 		//name := cmd.Name
 		// Disable hot path debugging: keep commented out code and uncomment for debugging
-		//requestLogger.Debug("HTTP Handler recieved event. Send to injectCmdQueue.", "EventSeq", seq, "Name", name)
+		//requestLogger.Debug("HTTP Handler received event. Send to injectCmdQueue.", "EventSeq", seq, "Name", name)
 
 		// don't do anything with "cmd" *at all* in this go-routine, except .Wait() after this .Add(1)
 		// That means do not access any structure members or anything except .Wait()
@@ -141,7 +147,7 @@ func (s *service) GetHandlerFunc() func(http.ResponseWriter, *http.Request) {
 			success = <-cmd.resCh
 
 			// For cmd.Synchronous==false: this will wait until event has made it through
-			// inital command queue and is in the injectChan (which means "in order")
+			// initial command queue and is in the injectChan (which means "in order")
 			//
 			// For cmd.Synchronous==true: this will wait until every event processor has
 			// fully processed the event before returning. Note, that the event is still
@@ -168,11 +174,16 @@ func (s *service) GetHandlerFunc() func(http.ResponseWriter, *http.Request) {
 		}
 
 		// Disable hot path debugging: keep commented out code and uncomment for debugging
-		//requestLogger.Debug("HTTP Handler returning to caller.", "module", "http_inject", "EventSeq", seq, "Name", name)
+		//requestLogger.Debug("HTTP Handler returning to caller.", "module", "httpinject", "EventSeq", seq, "Name", name)
 	}
 }
 
 func New(logger log.Logger, d busObjs) (svc *service) {
+	reglock.Do(func() {
+		eh.RegisterEventData(WatchdogEvent, func() eh.EventData { return &WatchdogEventData{} })
+		eh.RegisterEventData(DroppedEvent, func() eh.EventData { return &DroppedEventData{} })
+	})
+
 	svc = &service{
 		logger: logger.New("module", "injectservice"),
 		eb:     d.GetBus(),
@@ -181,7 +192,7 @@ func New(logger log.Logger, d busObjs) (svc *service) {
 		injectCmdQueue: make(chan *InjectCommand),
 		// everything here is sorted, it's ok to have this be a little longer, as it slows things down if this ever empties
 		// not too big, though, or our max latency takes a big hit
-		injectChan: make(chan *eventBundle, 50),
+		injectChan: make(chan *eventBundle, maxQueuedInjectEvents),
 	}
 
 	var err error
@@ -198,230 +209,232 @@ func (s *service) Ready() {
 	s.sd.SDNotify("READY=1")
 }
 
+func (s *service) watchdog() {
+	defer s.sd.Close()
+	interval := s.sd.GetIntervalUsec()
+	if interval == 0 {
+		interval = 30000000
+	}
+
+	// send watchdogs 3x per interval
+	interval /= watchdogsPerInterval
+	seq := 0
+
+	s.logger.Info("Setting up watchdog.", "interval-in-milliseconds", interval)
+
+	// set up listener for the watchdog events
+	listener, err := s.ew.Listen(context.Background(), func(event eh.Event) bool {
+		return event.EventType() == WatchdogEvent
+	})
+
+	if err != nil {
+		panic("Could not start listener")
+	}
+
+	// endless loop generating and responding to watchdog events
+	watchdogTicker := time.NewTicker(time.Duration(interval) * time.Microsecond)
+	defer watchdogTicker.Stop()
+	for {
+		select {
+		// pet watchdog when we get an event
+		case ev := <-listener.Inbox():
+			if evtS, ok := ev.(event.SyncEvent); ok {
+				evtS.Done()
+			}
+			s.sd.SDNotify("WATCHDOG=1")
+
+		// periodically send event on bus to force watchdog
+		case <-watchdogTicker.C:
+			evt := event.NewSyncEvent(WatchdogEvent, &WatchdogEventData{Seq: seq}, time.Now())
+			evt.Add(1)
+			// use watchdogs with barrier set to periodically clean the queues out
+			s.injectChan <- &eventBundle{&evt, true}
+			seq++
+		}
+	}
+}
+
+func (s *service) handleInjectQueue() {
+	queued := make([]*InjectCommand, 0, maxOOOMessages+1)
+	internalSeq := int64(0)
+	// The 'standard' way to create a stopped timer
+	sequenceTimer := time.NewTimer(math.MaxInt64)
+	if !sequenceTimer.Stop() {
+		<-sequenceTimer.C
+	}
+	timerActive := false
+
+	tryToPublish := func(forceSend bool) {
+		// iterate through our queue until we find a message beyond our current sequence, then stop
+		i := 0
+		for i = len(queued) - 1; i >= 0; i-- {
+			injectCmd := queued[i]
+			// fast path debug statement. comment out unless actively debugging
+			//s.logger.Info("PROCESS QUEUE EVENT", "seq", internalSeq, "cmd", injectCmd.Name, "cmdseq", injectCmd.EventSeq, "index", i)
+
+			// force resync on event with '0' seq or less
+			if injectCmd.EventSeq < 1 {
+				// fast path debug statement. comment out unless actively debugging
+				//s.logger.Debug("Event sent which forced queue resync", "seq", internalSeq, "cmd", injectCmd.Name, "cmdseq", injectCmd.EventSeq, "index", i)
+				internalSeq = injectCmd.EventSeq
+			}
+
+			if injectCmd.EventSeq < internalSeq {
+				// event is older than last published event, drop
+				s.logger.Crit("Dropped out-of sequence message", "seq", internalSeq, "cmd", injectCmd.Name, "cmdseq", injectCmd.EventSeq, "index", i)
+
+				// tell http handler we dropped this message
+				injectCmd.resCh <- false
+
+				// First, if any HTTP handler is waiting on this, mark it done to release that
+				injectCmd.Done()
+
+				evt := event.NewSyncEvent(DroppedEvent, &DroppedEventData{
+					Name:     injectCmd.Name,
+					EventSeq: injectCmd.EventSeq,
+				}, time.Now())
+
+				evt.Add(1)
+				s.injectChan <- &eventBundle{&evt, false}
+				queued[i] = nil
+				continue
+			}
+
+			// if the seq is correct, send it
+			//  or if internal seq has been reset, send and take the identity of that seq
+			doSend := false
+			if injectCmd.EventSeq == internalSeq || internalSeq <= 0 {
+				doSend = true
+			} else if forceSend {
+				// force up to one event to be sent out of order
+				forceSend = false
+				doSend = true
+			}
+
+			if doSend {
+				// fast path debug statement. comment out unless actively debugging
+				//	s.logger.Debug("Send", "seq", internalSeq, "cmd", injectCmd.Name, "cmdseq", injectCmd.EventSeq, "index", i)
+				injectCmd.resCh <- true
+				injectCmd.sendToChn(s.injectChan)
+				internalSeq = injectCmd.EventSeq
+				internalSeq++
+				queued[i] = nil
+				continue
+			}
+
+			break //  injectCmd.EventSeq > internalSeq, no sense going through the rest
+		}
+
+		// trim off any processed commands
+		queued = queued[:i+1]
+	}
+
+	for {
+		select {
+		case cmd := <-s.injectCmdQueue:
+			// fast path debug statement. comment out unless actively debugging
+			//s.logger.Debug("POP  injectCmdQueue LEN", "len",
+			//len(s.injectCmdQueue), "cap", cap(s.injectCmdQueue), "module",
+			//"inject", "cmdname", cmd.Name, "EventSeq", cmd.EventSeq)
+
+			queued = append(queued, cmd)
+			if len(queued) > 1 {
+				sort.SliceStable(queued, func(i, j int) bool {
+					return queued[i].EventSeq > queued[j].EventSeq
+				})
+				// fast path debug statement. comment out unless actively debugging
+				//s.logger.Info("SOME STUFF QUEUED!", "len", len(queued), "FIRST_SEQ", queued[len(queued)-1].EventSeq)
+			}
+
+			if len(queued) < 1 {
+				panic("Somehow we added a command to the queue but now have nothing in the queue. This can't happen.")
+			}
+
+			// queue is sorted, so first event seq can be checked
+			//   any events less than or equal to internalSeq can be dealt with
+			//   either by dropping them or sending them
+			if queued[len(queued)-1].EventSeq <= internalSeq {
+				// fast path debug statement. comment out unless actively debugging
+				//s.logger.Debug("Stuff to publish!")
+				tryToPublish(false)
+			} //else {
+			//s.logger.Debug("OUT OF ORDER", "internalseq", internalSeq, "msgseq", queued[len(queued)-1].EventSeq)
+			//}
+
+			// Don't allow the out of order queue to get too big
+			// Force out the first entry if it's over
+			if len(queued) > maxOOOMessages {
+				// force publish
+				//s.logger.Info("Queue exceeds max len, force publish. Implied missing or out of order events present.")
+				tryToPublish(true)
+			}
+
+			// oops, we have some left, start a new timer
+			if len(queued) > 0 && !timerActive {
+				// SEMI-fast path debug statement. comment out unless actively debugging
+				//s.logger.Debug("OUT OF ORDER: Set timer to empty queue!")
+				sequenceTimer.Reset(outOfOrderTimeout)
+				timerActive = true
+				break // no need to test subsequent if statements, they can't be true
+			}
+
+			// we got everything, stop any timers
+			if len(queued) == 0 && timerActive {
+				// SEMI-fast path debug statement. comment out unless actively debugging
+				//s.logger.Debug("STOP TIMER. queue empty")
+				if !sequenceTimer.Stop() {
+					<-sequenceTimer.C
+				}
+				timerActive = false
+			}
+
+		case <-sequenceTimer.C:
+			warnstr := fmt.Sprintf("TIMEOUT waiting for event sequence %d. QUEUE: ", internalSeq)
+			for i, q := range queued {
+				warnstr += fmt.Sprintf(" IDX(%d)/SEQ(%d)", i, q.EventSeq)
+			}
+			s.logger.Warn(warnstr)
+
+			timerActive = false
+			internalSeq = 0    // force sync to first message
+			tryToPublish(true) // Force the first message out
+
+			// we have some left, start a new timer
+			if len(queued) > 0 && !timerActive {
+				//s.logger.Debug("OUT OF ORDER: Set timer to empty queue!")
+				sequenceTimer.Reset(outOfOrderTimeout)
+				timerActive = true
+			}
+		}
+	}
+}
+
+func (s *service) sentEventsToInternalBus() {
+	for evb := range s.injectChan {
+		s.eb.PublishEvent(context.Background(), *evb.event)
+		// barrier is set if this event should block events after it
+		if evb.barrier {
+			evb.event.Wait()
+		}
+	}
+}
+
 func (s *service) Start() {
 	// This service starts three (3) goroutines
 	//
 	// The first is a watchdog goroutine that sends events and then receives its
 	// own events to ping the systemd watchdog
-	//
+	go s.watchdog()
+
 	// The second gets the raw inject commands from HTTP and tries to ensure that
 	// they are in the correct order before sending them on the event bus
-	//
+	go s.handleInjectQueue()
+
 	// The third takes the ordered inject events and publishes them on the
 	// internal event bus. it also is responsible for ensuring that event
 	// barriers are respected.
-
-	go func() {
-		defer s.sd.Close()
-		interval := s.sd.GetIntervalUsec()
-		if interval == 0 {
-			interval = 30000000
-		}
-
-		// send watchdogs 3x per interval
-		interval = interval / 3
-		seq := 0
-
-		s.logger.Info("Setting up watchdog.", "interval-in-milliseconds", interval)
-
-		// set up listener for the watchdog events
-		listener, err := s.ew.Listen(context.Background(), func(event eh.Event) bool {
-			return event.EventType() == WatchdogEvent
-		})
-
-		if err != nil {
-			panic("Could not start listener")
-		}
-
-		// endless loop generating and responding to watchdog events
-		watchdogTicker := time.NewTicker(time.Duration(interval) * time.Microsecond)
-		defer watchdogTicker.Stop()
-		for {
-			select {
-			// pet watchdog when we get an event
-			case ev := <-listener.Inbox():
-				if evtS, ok := ev.(event.SyncEvent); ok {
-					evtS.Done()
-				}
-				s.sd.SDNotify("WATCHDOG=1")
-
-			// periodically send event on bus to force watchdog
-			case <-watchdogTicker.C:
-				evt := event.NewSyncEvent(WatchdogEvent, &WatchdogEventData{Seq: seq}, time.Now())
-				evt.Add(1)
-				// use watchdogs with barrier set to periodically clean the queues out
-				s.injectChan <- &eventBundle{&evt, true}
-				seq++
-			}
-		}
-	}()
-
-	// goroutine to synchronously handle the event inject queue
-	go func() {
-		queued := make([]*InjectCommand, 0, MAX_OUT_OF_ORDER_QUEUED+1)
-		internalSeq := int64(0)
-		// The 'standard' way to create a stopped timer
-		sequenceTimer := time.NewTimer(math.MaxInt64)
-		if !sequenceTimer.Stop() {
-			<-sequenceTimer.C
-		}
-		timerActive := false
-
-		tryToPublish := func(forceSend bool) {
-			// iterate through our queue until we find a message beyond our current sequence, then stop
-			i := 0
-			for i = len(queued) - 1; i >= 0; i-- {
-				injectCmd := queued[i]
-				// fast path debug statement. comment out unless actively debugging
-				//s.logger.Info("PROCESS QUEUE EVENT", "seq", internalSeq, "cmd", injectCmd.Name, "cmdseq", injectCmd.EventSeq, "index", i)
-
-				// force resync on event with '0' seq or less
-				if injectCmd.EventSeq < 1 {
-					// fast path debug statement. comment out unless actively debugging
-					//s.logger.Debug("Event sent which forced queue resync", "seq", internalSeq, "cmd", injectCmd.Name, "cmdseq", injectCmd.EventSeq, "index", i)
-					internalSeq = injectCmd.EventSeq
-				}
-
-				if injectCmd.EventSeq < internalSeq {
-					// event is older than last published event, drop
-					s.logger.Crit("Dropped out-of sequence message", "seq", internalSeq, "cmd", injectCmd.Name, "cmdseq", injectCmd.EventSeq, "index", i)
-
-					// tell http handler we dropped this message
-					injectCmd.resCh <- false
-
-					// First, if any HTTP handler is waiting on this, mark it done to release that
-					injectCmd.Done()
-
-					evt := event.NewSyncEvent(DroppedEvent, &DroppedEventData{
-						Name:     injectCmd.Name,
-						EventSeq: injectCmd.EventSeq,
-					}, time.Now())
-
-					evt.Add(1)
-					s.injectChan <- &eventBundle{&evt, false}
-					queued[i] = nil
-					continue
-				}
-
-				// if the seq is correct, send it
-				//  or if internal seq has been reset, send and take the identity of that seq
-				doSend := false
-				if injectCmd.EventSeq == internalSeq || internalSeq <= 0 {
-					doSend = true
-				} else if forceSend {
-					// force up to one event to be sent out of order
-					forceSend = false
-					doSend = true
-				}
-
-				if doSend {
-					// fast path debug statement. comment out unless actively debugging
-					//	s.logger.Debug("Send", "seq", internalSeq, "cmd", injectCmd.Name, "cmdseq", injectCmd.EventSeq, "index", i)
-					injectCmd.resCh <- true
-					injectCmd.sendToChn(s.injectChan)
-					internalSeq = injectCmd.EventSeq
-					internalSeq++
-					queued[i] = nil
-					continue
-				}
-
-				break //  injectCmd.EventSeq > internalSeq, no sense going through the rest
-			}
-
-			// trim off any processed commands
-			queued = queued[:i+1]
-		}
-
-		for {
-			select {
-			case cmd := <-s.injectCmdQueue:
-				// fast path debug statement. comment out unless actively debugging
-				//s.logger.Debug("POP  injectCmdQueue LEN", "len", len(s.injectCmdQueue), "cap", cap(s.injectCmdQueue), "module", "inject", "cmdname", cmd.Name, "EventSeq", cmd.EventSeq)
-
-				queued = append(queued, cmd)
-				if len(queued) > 1 {
-					sort.SliceStable(queued, func(i, j int) bool {
-						return queued[i].EventSeq > queued[j].EventSeq
-					})
-					// fast path debug statement. comment out unless actively debugging
-					//s.logger.Info("SOME STUFF QUEUED!", "len", len(queued), "FIRST_SEQ", queued[len(queued)-1].EventSeq)
-				}
-
-				if len(queued) < 1 {
-					panic("Somehow we added a command to the queue but now have nothing in the queue. This can't happen.")
-				}
-
-				// queue is sorted, so first event seq can be checked
-				//   any events less than or equal to internalSeq can be dealt with
-				//   either by dropping them or sending them
-				if queued[len(queued)-1].EventSeq <= internalSeq {
-					// fast path debug statement. comment out unless actively debugging
-					//s.logger.Debug("Stuff to publish!")
-					tryToPublish(false)
-				} //else {
-				//s.logger.Debug("OUT OF ORDER", "internalseq", internalSeq, "msgseq", queued[len(queued)-1].EventSeq)
-				//}
-
-				// Don't allow the out of order queue to get too big
-				// Force out the first entry if it's over
-				if len(queued) > MAX_OUT_OF_ORDER_QUEUED {
-					// force publish
-					//s.logger.Info("Queue exceeds max len, force publish. Implied missing or out of order events present.")
-					tryToPublish(true)
-				}
-
-				// oops, we have some left, start a new timer
-				if len(queued) > 0 && !timerActive {
-					// SEMI-fast path debug statement. comment out unless actively debugging
-					//s.logger.Debug("OUT OF ORDER: Set timer to empty queue!")
-					sequenceTimer.Reset(IETIMEOUT)
-					timerActive = true
-					break // no need to test subsequent if statements, they can't be true
-				}
-
-				// we got everything, stop any timers
-				if len(queued) == 0 && timerActive {
-					// SEMI-fast path debug statement. comment out unless actively debugging
-					//s.logger.Debug("STOP TIMER. queue empty")
-					if !sequenceTimer.Stop() {
-						<-sequenceTimer.C
-					}
-					timerActive = false
-				}
-
-			case <-sequenceTimer.C:
-				warnstr := fmt.Sprintf("TIMEOUT waiting for event sequence %d. QUEUE: ", internalSeq)
-				for i, q := range queued {
-					warnstr += fmt.Sprintf(" IDX(%d)/SEQ(%d)", i, q.EventSeq)
-				}
-				s.logger.Warn(warnstr)
-
-				timerActive = false
-				internalSeq = 0    // force sync to first message
-				tryToPublish(true) // Force the first message out
-
-				// we have some left, start a new timer
-				if len(queued) > 0 && !timerActive {
-					//s.logger.Debug("OUT OF ORDER: Set timer to empty queue!")
-					sequenceTimer.Reset(IETIMEOUT)
-					timerActive = true
-				}
-			}
-		}
-	}()
-
-	go func() {
-		for evb := range s.injectChan {
-			s.eb.PublishEvent(context.Background(), *evb.event)
-			// barrier is set if this event should block events after it
-			if evb.barrier {
-				evb.event.Wait()
-			}
-		}
-	}()
+	go s.sentEventsToInternalBus()
 }
-
-const MAX_CONSOLIDATED_EVENTS = 5
 
 type Decoder interface {
 	Decode(d map[string]interface{}) error
@@ -467,7 +480,6 @@ func (c *InjectCommand) markBarrier() {
 
 	default:
 		c.Barrier = true
-
 	}
 }
 
@@ -515,7 +527,7 @@ func (c *InjectCommand) sendToChn(injectChan chan *eventBundle) error {
 		}
 	}
 
-	trainload := make([]eh.EventData, 0, MAX_CONSOLIDATED_EVENTS)
+	trainload := make([]eh.EventData, 0, maxConsolidatedEvents)
 	sendTrain := func([]eh.EventData) {
 		if len(trainload) == 0 {
 			return
@@ -540,9 +552,9 @@ func (c *InjectCommand) sendToChn(injectChan chan *eventBundle) error {
 	c.appendDecode(&trainload, c.Name, c.EventData)
 	for _, d := range c.EventArray {
 		c.appendDecode(&trainload, c.Name, d)
-		if len(trainload) >= MAX_CONSOLIDATED_EVENTS {
+		if len(trainload) >= maxConsolidatedEvents {
 			sendTrain(trainload)
-			trainload = make([]eh.EventData, 0, MAX_CONSOLIDATED_EVENTS)
+			trainload = make([]eh.EventData, 0, maxConsolidatedEvents)
 		}
 	}
 	// finally, send the final (partial) load
@@ -554,7 +566,7 @@ func (c *InjectCommand) sendToChn(injectChan chan *eventBundle) error {
 func (c *InjectCommand) appendDecode(trainload *[]eh.EventData, eventType eh.EventType, m json.RawMessage) {
 	requestLogger := log.ContextLogger(c.ctx, "internal_commands").New("module", "inject_event")
 	if m == nil {
-		// not worth logging unless debugging something wierd
+		// not worth logging unless debugging something weird
 		// requestLogger.Info("Decode: nil message", "eventType", eventType)
 		return
 	}
