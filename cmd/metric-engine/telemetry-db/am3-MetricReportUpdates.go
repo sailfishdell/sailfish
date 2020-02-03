@@ -22,6 +22,7 @@ const (
 	UpdateMetricReportDefinition eh.EventType = "UpdateMetricReportDefinitionEvent"
 	DeleteMetricReportDefinition eh.EventType = "DeleteMetricReportDefinitionEvent"
 	DatabaseMaintenance          eh.EventType = "DatabaseMaintenanceEvent"
+	PublishClock                 eh.EventType = "PublishClockEvent"
 )
 
 // "configuration" -- TODO: need to move to config file
@@ -78,7 +79,7 @@ func backgroundTasks(logger log.Logger, bus eh.EventBus) {
 			// orphans should never happen outside of a delete/update, so this is really just in case
 			err = bus.PublishEvent(context.Background(), eh.NewEvent(DatabaseMaintenance, "delete orphans", time.Now()))
 		case <-clockTicker.C:
-			err = bus.PublishEvent(context.Background(), eh.NewEvent(DatabaseMaintenance, "publish clock", time.Now()))
+			err = bus.PublishEvent(context.Background(), eh.NewEvent(PublishClock, nil, time.Now()))
 		}
 		// common log for most of the publish events in the select statement above
 		logPublishError(logger, err)
@@ -129,13 +130,30 @@ func StartupTelemetryBase(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Servi
 		return xerrors.Errorf("telemetry manager initialization failed: %w", err)
 	}
 
-	go backgroundTasks(logger, d.GetBus())
-	AddCreateMRDHandler(logger, telemetryMgr, am3Svc, d.GetBus())
-	AddUpdateMRDHandler(logger, telemetryMgr, am3Svc, d.GetBus())
-	AddDeleteMRDHandler(logger, telemetryMgr, am3Svc, d.GetBus())
-	AddReportGenHandler(logger, telemetryMgr, am3Svc, d.GetBus())
-	AddMVHandler(logger, telemetryMgr, am3Svc, d.GetBus())
-	AddMaintenanceHandler(logger, telemetryMgr, am3Svc, d.GetBus())
+	bus := d.GetBus()
+	go backgroundTasks(logger, bus)
+	AddCreateMRDHandler(logger, telemetryMgr, am3Svc, bus)
+	AddUpdateMRDHandler(logger, telemetryMgr, am3Svc, bus)
+	AddDeleteMRDHandler(logger, telemetryMgr, am3Svc, bus)
+	AddReportGenHandler(logger, telemetryMgr, am3Svc, bus)
+	AddMVHandler(logger, telemetryMgr, am3Svc, bus)
+	AddClockHandler(logger, telemetryMgr, am3Svc, bus)
+	AddMaintenanceHandler(logger, telemetryMgr, am3Svc, bus)
+
+	// sync ourselves to the database on startup
+	// First, check existing expiry... ensure we dont drop any OnChange (NextMRTS==-1) reports that might have been marked
+	reportList, _ := telemetryMgr.FastCheckForNeededMRUpdates()
+	for _, report := range reportList {
+		err = bus.PublishEvent(context.Background(), eh.NewEvent(metric.ReportGenerated, metric.ReportGeneratedData{Name: report}, time.Now()))
+		logPublishError(logger, err)
+	}
+
+	// next, go through database and delete any NextMRTS that arent present and reload
+	reportList, _ = telemetryMgr.syncNextMRTSWithDB()
+	for _, report := range reportList {
+		err = bus.PublishEvent(context.Background(), eh.NewEvent(metric.ReportGenerated, metric.ReportGeneratedData{Name: report}, time.Now()))
+		logPublishError(logger, err)
+	}
 
 	return nil
 }
@@ -278,9 +296,33 @@ func AddMVHandler(logger log.Logger, telemetryMgr *telemetryManager, am3Svc even
 	})
 }
 
+func AddClockHandler(logger log.Logger, telemetryMgr *telemetryManager, am3Svc eventHandler, bus eh.EventBus) {
+	lastHWM := time.Time{}
+	am3Svc.AddEventHandler("Clock", PublishClock, func(event eh.Event) {
+		// if no events have kickstarted the clock, bail
+		if telemetryMgr.MetricTSHWM.IsZero() {
+			return
+		}
+
+		// if no events come in during time between clock publishes, we'll artificially bump HWM forward.
+		// if time is uninitialized, wait for an event to come in to set it
+		if telemetryMgr.MetricTSHWM.Equal(lastHWM) {
+			telemetryMgr.MetricTSHWM = telemetryMgr.MetricTSHWM.Add(clockPeriod)
+		}
+		lastHWM = telemetryMgr.MetricTSHWM
+
+		// Generate any metric reports that need it
+		reportList, _ := telemetryMgr.FastCheckForNeededMRUpdates()
+		var err error
+		for _, report := range reportList {
+			err = bus.PublishEvent(context.Background(), eh.NewEvent(metric.ReportGenerated, metric.ReportGeneratedData{Name: report}, time.Now()))
+			logPublishError(logger, err)
+		}
+	})
+}
+
 func AddMaintenanceHandler(logger log.Logger, telemetryMgr *telemetryManager, am3Svc eventHandler, bus eh.EventBus) {
 	// close over lastHWM
-	lastHWM := time.Time{}
 	am3Svc.AddEventHandler("Database Maintenance", DatabaseMaintenance, func(event eh.Event) {
 		command, ok := event.Data().(string)
 		if !ok {
@@ -289,41 +331,6 @@ func AddMaintenanceHandler(logger log.Logger, telemetryMgr *telemetryManager, am
 		var err error
 
 		switch command {
-		case "resync to db":
-			// First, check existing expiry... ensure we dont drop any OnChange (NextMRTS==-1) reports that might have been marked
-			reportList, _ := telemetryMgr.FastCheckForNeededMRUpdates()
-			for _, report := range reportList {
-				err = bus.PublishEvent(context.Background(), eh.NewEvent(metric.ReportGenerated, metric.ReportGeneratedData{Name: report}, time.Now()))
-				logPublishError(logger, err)
-			}
-
-			// next, go through database and delete any NextMRTS that arent present and reload
-			reportList, _ = telemetryMgr.syncNextMRTSWithDB()
-			for _, report := range reportList {
-				err = bus.PublishEvent(context.Background(), eh.NewEvent(metric.ReportGenerated, metric.ReportGeneratedData{Name: report}, time.Now()))
-				logPublishError(logger, err)
-			}
-
-		case "publish clock":
-			// if no events have kickstarted the clock, bail
-			if telemetryMgr.MetricTSHWM.IsZero() {
-				break
-			}
-
-			// if no events come in during time between clock publishes, we'll artificially bump HWM forward.
-			// if time is uninitialized, wait for an event to come in to set it
-			if telemetryMgr.MetricTSHWM.Equal(lastHWM) {
-				telemetryMgr.MetricTSHWM = telemetryMgr.MetricTSHWM.Add(clockPeriod)
-			}
-			lastHWM = telemetryMgr.MetricTSHWM
-
-			// Generate any metric reports that need it
-			reportList, _ := telemetryMgr.FastCheckForNeededMRUpdates()
-			for _, report := range reportList {
-				err = bus.PublishEvent(context.Background(), eh.NewEvent(metric.ReportGenerated, metric.ReportGeneratedData{Name: report}, time.Now()))
-				logPublishError(logger, err)
-			}
-
 		case "optimize":
 			fmt.Printf("Running scheduled database optimization\n")
 			err = telemetryMgr.Optimize()

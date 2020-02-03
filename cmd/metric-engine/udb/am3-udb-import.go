@@ -94,16 +94,12 @@ func StartupUDBImport(logger log.Logger, cfg *viper.Viper, am3Svc eventHandlingS
 
 	go handleUDBNotifyPipe(logger, cfg.GetString("main.udbnotifypipe"), d)
 
-	// This is the event to trigger UDB imports. We will only attach it after a
-	// second to let all startup settle before we start processing imports from
-	// UDB from UDB
-	go func() {
-		time.Sleep(1 * time.Second)
-
-		// Do a 1 time unconditional import
-		fmt.Printf("Initial Import\n")
+	// set up the event handler that will do periodic imports every ~1s.
+	periodic := false
+	am3Svc.AddEventHandler("Import UDB Metric Values", telemetry.PublishClock, func(event eh.Event) {
+		// TODO: get smarter about this. We ought to calculate time until next report and set a timer for that
 		err := dataImporter.iterUDBTables(func(name string, src dataSource) error {
-			err := dataImporter.conditionalImport(name, src, false)
+			err := dataImporter.conditionalImport(name, src, periodic)
 			if err != nil && err.Error() != "DISABLED" {
 				return xerrors.Errorf("error from import of report(%s): %w", name, err)
 			}
@@ -112,23 +108,9 @@ func StartupUDBImport(logger log.Logger, cfg *viper.Viper, am3Svc eventHandlingS
 		if err != nil {
 			logger.Crit("Error from import", "err", err)
 		}
-		fmt.Printf("Initial Import Done\n")
-
-		// set up the event handler that will do periodic imports every ~1s.
-		am3Svc.AddEventHandler("Import UDB Metric Values", telemetry.DatabaseMaintenance, func(event eh.Event) {
-			// TODO: get smarter about this. We ought to calculate time until next report and set a timer for that
-			err := dataImporter.iterUDBTables(func(name string, src dataSource) error {
-				err := dataImporter.conditionalImport(name, src, true)
-				if err != nil && err.Error() != "DISABLED" {
-					return xerrors.Errorf("error from import of report(%s): %w", name, err)
-				}
-				return nil
-			})
-			if err != nil {
-				logger.Crit("Error from import", "err", err)
-			}
-		})
-	}()
+		// the very first import will force full import, then after that, it will be 'periodic=true'
+		periodic = true
+	})
 
 	am3Svc.AddEventHandler("UDB Change Notification", udbChangeEvent, func(event eh.Event) {
 		notify, ok := event.Data().(*changeNotify)
