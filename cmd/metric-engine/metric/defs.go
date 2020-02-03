@@ -9,7 +9,7 @@ import (
 
 // definitions for all of the event horizon event names
 const (
-	MetricValueEvent    eh.EventType = "MetricValueEvent"
+	MetricValueEvent    eh.EventType = "MetricValueEvent" //nolint: golint // disable 'stutter' lint warning because this is legitimately a Metric Value Event
 	FriendlyFQDDMapping eh.EventType = "FriendlyFQDDMapping"
 	RequestReport       eh.EventType = "RequestReport"
 	ReportGenerated     eh.EventType = "ReportGenerated"
@@ -46,7 +46,7 @@ func (m *SQLTimeInt) Scan(src interface{}) error {
 }
 
 // MetricValueEventData is the data structure to hold everything needed to represent a metric value measurement on the event bus
-type MetricValueEventData struct {
+type MetricValueEventData struct { //nolint: golint // complains about stuttering name 'metric' module with Metric prefix. It is a Metric Value event
 	Timestamp        SQLTimeInt    `db:"Timestamp"`
 	Name             string        `db:"Name"`
 	Value            string        `db:"Value"`
