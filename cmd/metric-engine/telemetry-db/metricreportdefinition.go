@@ -1150,6 +1150,7 @@ func (factory *telemetryManager) runSQLFromList(sqllist []string, entrylog strin
 	factory.logger.Info(entrylog)
 	fmt.Printf("Run %s\n", entrylog)
 	for _, sqlName := range sqllist {
+		sqlName := sqlName // make scopelint happy
 		err := factory.wrapWithTX(func(tx *sqlx.Tx) error {
 			fmt.Printf("\tsql(%s)", sqlName)
 			res, err := factory.getSQLXTx(tx, sqlName).Exec()
