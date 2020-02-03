@@ -161,6 +161,9 @@ func handleUDBNotifyPipe(logger log.Logger, pipePath string, d busComponents) {
 	// this function doesn't return (on purpose), so this defer won't do much. That's ok, we'll keep it in case we change things around in the future
 	defer nullWriter.Close()
 
+	// This is the number of '|' separated fields in a correct record
+	const numChangeFields = 4
+
 	n := &changeNotify{}
 	split := func(data []byte, atEOF bool) (advance int, token []byte, err error) {
 		if atEOF {
@@ -181,7 +184,7 @@ func handleUDBNotifyPipe(logger log.Logger, pipePath string, d busComponents) {
 		// adjust 'end' here to take into account that we indexed off the start+2
 		// of the data array
 		fields := bytes.Split(data[start+2:end+start+2], []byte("|"))
-		if len(fields) != 4 {
+		if len(fields) != numChangeFields {
 			n.Database = ""
 			n.Table = ""
 			n.Rowid = 0
