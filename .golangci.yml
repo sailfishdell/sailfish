@@ -37,9 +37,26 @@ linters:
     - unused
     - varcheck
     - whitespace
+    - gocognit
+    - gochecknoglobals
+    - maligned
+    - prealloc
 
-  annoying-so-disable:
-    - lll
+linters-settings:
+  lll:
+    # max line length, lines longer will be reported.
+    line-length: 150
+    # '\t' is counted as 1 character by default, and can be changed with the tab-width option
+    tab-width: 2
+  gomnd:
+    settings:
+      mnd:
+        checks: argument,case,condition,return,operation,assign
+        #ignored-numbers: 0,1
+
+  maligned:
+    # print struct with more effective memory layout or not, false by default
+    suggest-new: true
 
 comment: |
   Enabled by your configuration linters:

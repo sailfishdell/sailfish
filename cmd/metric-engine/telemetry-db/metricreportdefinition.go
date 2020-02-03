@@ -522,7 +522,7 @@ func (factory *telemetryManager) iterMRD(
 				}
 				if err != nil {
 					// this rolls back the transaction
-					return xerrors.Errorf("sTOP ITER WITH ERROR --> Iter FN returned error: %w", err)
+					return xerrors.Errorf("STOP ITER WITH ERROR --> Iter FN returned error: %w", err)
 				}
 			}
 		}
@@ -1079,9 +1079,9 @@ func (factory *telemetryManager) doInsertMetricValueForInstance(
 		}
 
 		fmt.Printf(
-			"DOING EXPAND For Instance(%d-%s) num(%d) lastts(%s) ts(%s) expand(%t) suppress(%t) after(%t) interval(%d) missingInterval(%d)\n",
-			mm.InstanceID, mm.Name, int64(missingInterval/(mm.MISensorInterval))-1,
-			mm.LastTS, mm.Timestamp, mm.MIRequiresExpand, mm.SuppressDups,
+			"EXPAND Instance(%d-%s) lastts(%s) e(%t) s(%t) a(%t) i(%s) m(%s)\n",
+			mm.InstanceID, mm.Name,
+			mm.LastTS, mm.MIRequiresExpand, mm.SuppressDups,
 			after, mm.MISensorInterval, missingInterval)
 
 		savedTS := mm.Timestamp

@@ -100,7 +100,7 @@ func StartupUDBImport(logger log.Logger, cfg *viper.Viper, am3Svc eventHandlingS
 		// TODO: get smarter about this. We ought to calculate time until next report and set a timer for that
 		err := dataImporter.iterUDBTables(func(name string, src dataSource) error {
 			err := dataImporter.conditionalImport(name, src, periodic)
-			if err != nil && err.Error() != "DISABLED" {
+			if err != nil && err != disabled {
 				return xerrors.Errorf("error from import of report(%s): %w", name, err)
 			}
 			return nil

@@ -2,7 +2,6 @@ package udb
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -15,6 +14,16 @@ import (
 	"github.com/superchalupa/sailfish/cmd/metric-engine/metric"
 	log "github.com/superchalupa/sailfish/src/log"
 )
+
+// probably should be a configuration item
+const maximport = 200
+
+type constErr string
+
+func (e constErr) Error() string { return string(e) }
+
+const disabled = constErr("importer disabled")
+const stopIter = constErr("stop iteration")
 
 type dataSource struct {
 	query        *sqlx.NamedStmt
@@ -41,7 +50,7 @@ func newImportManager(logger log.Logger, database *sqlx.DB, d busComponents, cfg
 	ret.udb = map[string]dataSource{}
 
 	impFns := map[string]func(string) error{
-		"DISABLE-DirectMetric": func(n string) error { return errors.New("DISABLED") },
+		"DISABLE-DirectMetric": func(n string) error { return disabled },
 		"DirectMetric":         ret.importByMetricValue,
 		"MetricColumns":        ret.importByColumn,
 		"Error":                ret.importERROR,
@@ -144,14 +153,31 @@ func (l *dataImporter) importERROR(udbImportName string) (err error) {
 func (l *dataImporter) iterUDBTables(fn func(string, dataSource) error) error {
 	for udbImportName, meta := range l.udb {
 		err := fn(udbImportName, meta)
-		if err != nil {
+		if err != nil && err != disabled && err != stopIter {
 			return xerrors.Errorf("Stopped iteration due to iteration function returning error: %w", err)
 		}
 	}
 	return nil
 }
 
-const maximport = 200
+func (l *dataImporter) condSetHWM(udbImportName string, ts int64) {
+	dataSource := l.udb[udbImportName]
+	if ts > dataSource.HWM {
+		dataSource.HWM = ts
+		l.udb[udbImportName] = dataSource
+	}
+}
+
+func (l *dataImporter) send(events *[]eh.EventData) {
+	if len(*events) == 0 {
+		return
+	}
+	err := l.bus.PublishEvent(context.Background(), eh.NewEvent(metric.MetricValueEvent, *events, time.Now()))
+	if err != nil {
+		l.logger.Crit("Error publishing event to internal event bus. Should never happen!", "err", err)
+	}
+	*events = []eh.EventData{}
+}
 
 // ImportByColumn will import a database rows where each column is a different metric.
 //   Each column that is a metric has to have its column name prefixed with "Metric-"
@@ -163,31 +189,27 @@ const maximport = 200
 func (l *dataImporter) importByColumn(udbImportName string) (err error) {
 	err = nil
 	events := []eh.EventData{}
-	defer func() {
+	totalEvents := 0
+	totalRows := 0
+	defer func(totalEvents *int, totalRows *int, udbImportName string) {
 		if err == nil {
-			if len(events) > 0 {
-				fmt.Printf("Emitted %d events for table %s.\n", len(events), udbImportName)
+			if *totalEvents > 0 {
+				fmt.Printf("Processed %d rows. Emitted %d events for table(%s).\n", *totalRows, *totalEvents, udbImportName)
 			}
 		} else {
-			fmt.Printf("Emitted %d events for table %s. (err: %s)\n", len(events), udbImportName, err)
+			fmt.Printf("Processed %d rows. Emitted %d events for table(%s). ERROR(%s).\n", *totalRows, *totalEvents, udbImportName, err)
 		}
-	}()
+	}(&totalEvents, &totalRows, udbImportName)
 
 	dataSource, ok := l.udb[udbImportName]
 	if !ok {
-		err = xerrors.Errorf("Somehow got called with a table name not in our supported tables list.")
-		return
+		return xerrors.Errorf("Somehow got called with a table name not in our supported tables list.")
 	}
 
-	if dataSource.query == nil {
-		err = xerrors.Errorf("SQL query wasn't prepared for %s!", udbImportName)
-		return
-	}
-
+	// if query isn't prepared, this will panic. That'll need to get fixed, as it's a config file error.
 	rows, err := dataSource.query.Queryx(dataSource)
 	if err != nil {
-		err = xerrors.Errorf("query failed for %s: %w", udbImportName, err)
-		return
+		return xerrors.Errorf("query failed for %s: %w", udbImportName, err)
 	}
 	defer rows.Close()
 
@@ -198,36 +220,23 @@ func (l *dataImporter) importByColumn(udbImportName string) (err error) {
 			l.logger.Crit("Error scanning row into MetricEvent", "err", err, "udbImportName", udbImportName)
 			continue
 		}
+		totalRows++
 
 		ts := getInt64(mm, "Timestamp")
-		delete(mm, "Timestamp")
+		l.condSetHWM(udbImportName, ts)
 
-		if ts > dataSource.HWM {
-			dataSource.HWM = ts
-			l.udb[udbImportName] = dataSource
+		baseEvent := metric.MetricValueEventData{
+			Timestamp:        metric.SQLTimeInt{Time: time.Unix(0, ts)},
+			Context:          getString(mm, "Context"),
+			FQDD:             getString(mm, "FQDD"),
+			FriendlyFQDD:     getString(mm, "FriendlyFQDD"),
+			Source:           udbImportName,
+			MVRequiresExpand: getInt64(mm, "RequiresExpand") == 1,
+			MVSensorSlack:    time.Duration(getInt64(mm, "SensorSlack")),
+			MVSensorInterval: time.Duration(getInt64(mm, "SensorInterval")),
 		}
 
-		metricCtx := getString(mm, "Context")
-		delete(mm, "Context")
-
 		property := getString(mm, "Property")
-		delete(mm, "Property")
-
-		fqdd := getString(mm, "FQDD")
-		delete(mm, "FQDD")
-
-		friendlyfqdd := getString(mm, "FriendlyFQDD")
-		delete(mm, "FriendlyFQDD")
-
-		expandI := getInt64(mm, "RequiresExpand")
-		delete(mm, "RequiresExpand")
-		expand := expandI == 1
-
-		interval := time.Duration(getInt64(mm, "SensorInterval"))
-		delete(mm, "SensorInterval")
-
-		slack := time.Duration(getInt64(mm, "SensorSlack"))
-		delete(mm, "SensorSlack")
 
 		for k, v := range mm {
 			if v == nil {
@@ -241,44 +250,23 @@ func (l *dataImporter) importByColumn(udbImportName string) (err error) {
 			}
 
 			metricName := k[7:]
-			event := &metric.MetricValueEventData{
-				Timestamp:        metric.SQLTimeInt{Time: time.Unix(0, ts)},
-				Context:          metricCtx,
-				FQDD:             fqdd,
-				FriendlyFQDD:     friendlyfqdd,
-				Name:             metricName,
-				Value:            fmt.Sprintf("%v", v),
-				Property:         property + "#" + metricName,
-				Source:           udbImportName,
-				MVRequiresExpand: expand,
-				MVSensorSlack:    slack,
-				MVSensorInterval: interval,
-			}
+			eventToSend := baseEvent
+			eventToSend.Property = property + "#" + metricName
+			eventToSend.Value = fmt.Sprintf("%v", v)
 
 			if mts, ok := mm["Timestamp-"+metricName].(int64); ok {
-				event.Timestamp = metric.SQLTimeInt{Time: time.Unix(0, mts)}
-				if mts > dataSource.HWM {
-					dataSource.HWM = mts
-					l.udb[udbImportName] = dataSource
-				}
+				l.condSetHWM(udbImportName, mts)
+				eventToSend.Timestamp = metric.SQLTimeInt{Time: time.Unix(0, mts)}
 			}
 
-			events = append(events, event)
+			totalEvents++
+			events = append(events, &eventToSend)
 			if len(events) > maximport {
-				err := l.bus.PublishEvent(context.Background(), eh.NewEvent(metric.MetricValueEvent, events, time.Now()))
-				if err != nil {
-					l.logger.Crit("Error publishing event to internal event bus. Should never happen!", "err", err)
-				}
-				events = []eh.EventData{}
+				l.send(&events)
 			}
 		}
 	}
-	if len(events) > 0 {
-		err := l.bus.PublishEvent(context.Background(), eh.NewEvent(metric.MetricValueEvent, events, time.Now()))
-		if err != nil {
-			l.logger.Crit("Error publishing event to internal event bus. Should never happen!", "err", err)
-		}
-	}
+	l.send(&events)
 
 	return nil
 }
@@ -302,11 +290,7 @@ func (l *dataImporter) importByMetricValue(udbImportName string) (err error) {
 		return
 	}
 
-	if dataSource.query == nil {
-		err = xerrors.Errorf("SQL query wasn't prepared for %s!", udbImportName)
-		return
-	}
-
+	// we'll panic here if query isn't prepared or if there was a syntax error in config file
 	rows, err := dataSource.query.Queryx(dataSource)
 	if err != nil {
 		err = xerrors.Errorf("query failed for %s: %w", udbImportName, err)
