@@ -13,7 +13,6 @@ import (
 
 	"github.com/superchalupa/sailfish/cmd/metric-engine/metric"
 	log "github.com/superchalupa/sailfish/src/log"
-	"github.com/superchalupa/sailfish/src/ocp/am3"
 )
 
 // constants to refer to event types
@@ -42,7 +41,14 @@ type busComponents interface {
 	GetBus() eh.EventBus
 }
 
-func logPublishError(logger log.Logger, err error) {
+type eventHandler interface {
+	AddEventHandler(string, eh.EventType, func(eh.Event))
+	AddMultiHandler(string, eh.EventType, func(eh.Event))
+}
+
+// publishHelper will log/eat the error from PublishEvent since we can't do anything useful with it
+func publishHelper(logger log.Logger, bus eh.EventBus, event eh.Event) {
+	err := bus.PublishEvent(context.Background(), event)
 	if err != nil {
 		logger.Crit("Error publishing event. This should never happen!", "err", err)
 	}
@@ -51,11 +57,8 @@ func logPublishError(logger log.Logger, err error) {
 func backgroundTasks(logger log.Logger, bus eh.EventBus) {
 	// run once after startup. give a few seconds so we dont slow boot up
 	time.Sleep(startupWaitTime)
-	err := bus.PublishEvent(context.Background(), eh.NewEvent(DatabaseMaintenance, "vacuum", time.Now()))
-	logPublishError(logger, err)
-
-	err = bus.PublishEvent(context.Background(), eh.NewEvent(DatabaseMaintenance, "optimize", time.Now()))
-	logPublishError(logger, err)
+	publishHelper(logger, bus, eh.NewEvent(DatabaseMaintenance, "vacuum", time.Now()))
+	publishHelper(logger, bus, eh.NewEvent(DatabaseMaintenance, "optimize", time.Now()))
 
 	clockTicker := time.NewTicker(clockPeriod)       // unfortunately every second, otherwise report generation drifts.
 	cleanValuesTicker := time.NewTicker(cleanMVTime) // once a minute
@@ -67,28 +70,25 @@ func backgroundTasks(logger log.Logger, bus eh.EventBus) {
 	defer optimizeTicker.Stop()
 	defer clockTicker.Stop()
 	for {
-		var err error
 		select {
 		case <-cleanValuesTicker.C:
-			err = bus.PublishEvent(context.Background(), eh.NewEvent(DatabaseMaintenance, "clean values", time.Now()))
+			publishHelper(logger, bus, eh.NewEvent(DatabaseMaintenance, "clean values", time.Now()))
 		case <-vacuumTicker.C:
-			err = bus.PublishEvent(context.Background(), eh.NewEvent(DatabaseMaintenance, "vacuum", time.Now()))
+			publishHelper(logger, bus, eh.NewEvent(DatabaseMaintenance, "vacuum", time.Now()))
 		case <-optimizeTicker.C:
-			err = bus.PublishEvent(context.Background(), eh.NewEvent(DatabaseMaintenance, "optimize", time.Now()))
-			logPublishError(logger, err)
+			publishHelper(logger, bus, eh.NewEvent(DatabaseMaintenance, "optimize", time.Now()))
 			// orphans should never happen outside of a delete/update, so this is really just in case
-			err = bus.PublishEvent(context.Background(), eh.NewEvent(DatabaseMaintenance, "delete orphans", time.Now()))
+			publishHelper(logger, bus, eh.NewEvent(DatabaseMaintenance, "delete orphans", time.Now()))
 		case <-clockTicker.C:
-			err = bus.PublishEvent(context.Background(), eh.NewEvent(PublishClock, nil, time.Now()))
+			publishHelper(logger, bus, eh.NewEvent(PublishClock, nil, time.Now()))
 		}
 		// common log for most of the publish events in the select statement above
-		logPublishError(logger, err)
 	}
 }
 
 // StartupTelemetryBase registers event handlers with the awesome mapper and
 // starts up timers and maintenance goroutines
-func StartupTelemetryBase(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Service, d busComponents) error {
+func StartupTelemetryBase(logger log.Logger, cfg *viper.Viper, am3Svc eventHandler, d busComponents) error {
 	eh.RegisterEventData(AddMetricReportDefinition, func() eh.EventData { return &MetricReportDefinitionData{} })
 	eh.RegisterEventData(UpdateMetricReportDefinition, func() eh.EventData { return &MetricReportDefinitionData{} })
 	eh.RegisterEventData(DeleteMetricReportDefinition, func() eh.EventData { return &MetricReportDefinitionData{} })
@@ -99,11 +99,8 @@ func StartupTelemetryBase(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Servi
 		return xerrors.Errorf("could not open database(%s): %w", cfg.GetString("main.databasepath"))
 	}
 
-	// run sqlite with only one connection to avoid locking issues
-	// If we run in WAL mode, you can only do one connection. Seems like a base
-	// library limitation that's reflected up into the golang implementation.
-	// SO: we will ensure that we have ONLY ONE GOROUTINE that does transactions
-	// This isn't a terrible limitation as it is sort of what we want to do
+	// If we run in WAL mode, you can only do one connection. Seems like a base library limitation that's reflected up into the golang implementation.
+	// SO: we will ensure that we have ONLY ONE GOROUTINE that does transactions  This isn't a terrible limitation as it is sort of what we want to do
 	// anyways.
 	database.SetMaxOpenConns(1)
 
@@ -112,12 +109,8 @@ func StartupTelemetryBase(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Servi
 		_, err = database.Exec(sqltext)
 		if err != nil {
 			// ignore drop errors if we are migrating from old telemetry db
-			if strings.HasPrefix(err.Error(), "use DROP VIEW") {
-				logger.Info("Ignoring SQL error dropping view", "err", err, "sql", sqltext)
-				continue
-			}
-			if strings.HasPrefix(err.Error(), "use DROP TABLE") {
-				logger.Info("Ignoring SQL error dropping table", "err", err, "sql", sqltext)
+			if strings.HasPrefix(err.Error(), "use DROP") {
+				logger.Info("Ignoring SQL error dropping table/view", "err", err, "sql", sqltext)
 				continue
 			}
 			logger.Crit("Error executing setup SQL", "err", err, "sql", sqltext)
@@ -132,39 +125,33 @@ func StartupTelemetryBase(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Servi
 
 	bus := d.GetBus()
 	go backgroundTasks(logger, bus)
-	AddCreateMRDHandler(logger, telemetryMgr, am3Svc, bus)
-	AddUpdateMRDHandler(logger, telemetryMgr, am3Svc, bus)
-	AddDeleteMRDHandler(logger, telemetryMgr, am3Svc, bus)
-	AddReportGenHandler(logger, telemetryMgr, am3Svc, bus)
-	AddMVHandler(logger, telemetryMgr, am3Svc, bus)
-	AddClockHandler(logger, telemetryMgr, am3Svc, bus)
-	AddMaintenanceHandler(logger, telemetryMgr, am3Svc, bus)
+	am3Svc.AddEventHandler("Create Metric Report Definition", AddMetricReportDefinition, MakeHandlerCreateMRD(logger, telemetryMgr, bus))
+	am3Svc.AddEventHandler("Update Metric Report Definition", UpdateMetricReportDefinition, MakeHandlerUpdateMRD(logger, telemetryMgr, bus))
+	am3Svc.AddEventHandler("Delete Metric Report Definition", DeleteMetricReportDefinition, MakeHandlerDeleteMRD(logger, telemetryMgr, bus))
+	am3Svc.AddEventHandler("Generate Metric Report", metric.RequestReport, MakeHandlerGenReport(logger, telemetryMgr, bus))
+	am3Svc.AddEventHandler("Clock", PublishClock, MakeHandlerClock(logger, telemetryMgr, bus))
+	am3Svc.AddEventHandler("Database Maintenance", DatabaseMaintenance, MakeHandlerMaintenance(logger, telemetryMgr, bus))
+
+	// multi handler
+	am3Svc.AddMultiHandler("Store Metric Value(s)", metric.MetricValueEvent, MakeHandlerMV(logger, telemetryMgr, bus))
 
 	// sync ourselves to the database on startup
-	// First, check existing expiry... ensure we dont drop any OnChange (NextMRTS==-1) reports that might have been marked
 	reportList, _ := telemetryMgr.FastCheckForNeededMRUpdates()
 	for _, report := range reportList {
-		err = bus.PublishEvent(context.Background(), eh.NewEvent(metric.ReportGenerated, metric.ReportGeneratedData{Name: report}, time.Now()))
-		logPublishError(logger, err)
+		publishHelper(logger, bus, eh.NewEvent(metric.ReportGenerated, metric.ReportGeneratedData{Name: report}, time.Now()))
 	}
 
 	// next, go through database and delete any NextMRTS that arent present and reload
 	reportList, _ = telemetryMgr.syncNextMRTSWithDB()
 	for _, report := range reportList {
-		err = bus.PublishEvent(context.Background(), eh.NewEvent(metric.ReportGenerated, metric.ReportGeneratedData{Name: report}, time.Now()))
-		logPublishError(logger, err)
+		publishHelper(logger, bus, eh.NewEvent(metric.ReportGenerated, metric.ReportGeneratedData{Name: report}, time.Now()))
 	}
 
 	return nil
 }
 
-type eventHandler interface {
-	AddEventHandler(string, eh.EventType, func(eh.Event))
-	AddMultiHandler(string, eh.EventType, func(eh.Event))
-}
-
-func AddCreateMRDHandler(logger log.Logger, telemetryMgr *telemetryManager, am3Svc eventHandler, bus eh.EventBus) {
-	am3Svc.AddEventHandler("Create Metric Report Definition", AddMetricReportDefinition, func(event eh.Event) {
+func MakeHandlerCreateMRD(logger log.Logger, telemetryMgr *telemetryManager, bus eh.EventBus) func(eh.Event) {
+	return func(event eh.Event) {
 		reportDef, ok := event.Data().(*MetricReportDefinitionData)
 		if !ok {
 			return
@@ -184,11 +171,11 @@ func AddCreateMRDHandler(logger log.Logger, telemetryMgr *telemetryManager, am3S
 		if err != nil {
 			logger.Crit("Orphan delete failed", "err", err)
 		}
-	})
+	}
 }
 
-func AddUpdateMRDHandler(logger log.Logger, telemetryMgr *telemetryManager, am3Svc eventHandler, bus eh.EventBus) {
-	am3Svc.AddEventHandler("Update Metric Report Definition", UpdateMetricReportDefinition, func(event eh.Event) {
+func MakeHandlerUpdateMRD(logger log.Logger, telemetryMgr *telemetryManager, bus eh.EventBus) func(eh.Event) {
+	return func(event eh.Event) {
 		reportDef, ok := event.Data().(*MetricReportDefinitionData)
 		if !ok {
 			return
@@ -208,11 +195,11 @@ func AddUpdateMRDHandler(logger log.Logger, telemetryMgr *telemetryManager, am3S
 		if err != nil {
 			logger.Crit("Orphan delete failed", "err", err)
 		}
-	})
+	}
 }
 
-func AddDeleteMRDHandler(logger log.Logger, telemetryMgr *telemetryManager, am3Svc eventHandler, bus eh.EventBus) {
-	am3Svc.AddEventHandler("Delete Metric Report Definition", DeleteMetricReportDefinition, func(event eh.Event) {
+func MakeHandlerDeleteMRD(logger log.Logger, telemetryMgr *telemetryManager, bus eh.EventBus) func(eh.Event) {
+	return func(event eh.Event) {
 		reportDef, ok := event.Data().(*MetricReportDefinitionData)
 		if !ok {
 			return
@@ -226,11 +213,11 @@ func AddDeleteMRDHandler(logger log.Logger, telemetryMgr *telemetryManager, am3S
 		if err != nil {
 			logger.Crit("Orphan delete failed", "err", err)
 		}
-	})
+	}
 }
 
-func AddReportGenHandler(logger log.Logger, telemetryMgr *telemetryManager, am3Svc eventHandler, bus eh.EventBus) {
-	am3Svc.AddEventHandler("Request Generation of a Metric Report", metric.RequestReport, func(event eh.Event) {
+func MakeHandlerGenReport(logger log.Logger, telemetryMgr *telemetryManager, bus eh.EventBus) func(eh.Event) {
+	return func(event eh.Event) {
 		report, ok := event.Data().(*metric.RequestReportData)
 		if !ok {
 			return
@@ -242,13 +229,12 @@ func AddReportGenHandler(logger log.Logger, telemetryMgr *telemetryManager, am3S
 		if err != nil {
 			logger.Crit("Error generating metric report", "err", err, "ReportDefintion", name)
 		}
-		err = bus.PublishEvent(context.Background(), eh.NewEvent(metric.ReportGenerated, metric.ReportGeneratedData{Name: name}, time.Now()))
-		logPublishError(logger, err)
-	})
+		publishHelper(logger, bus, eh.NewEvent(metric.ReportGenerated, metric.ReportGeneratedData{Name: name}, time.Now()))
+	}
 }
 
-func AddMVHandler(logger log.Logger, telemetryMgr *telemetryManager, am3Svc eventHandler, bus eh.EventBus) {
-	am3Svc.AddMultiHandler("Store Metric Value(s)", metric.MetricValueEvent, func(event eh.Event) {
+func MakeHandlerMV(logger log.Logger, telemetryMgr *telemetryManager, bus eh.EventBus) func(eh.Event) {
+	return func(event eh.Event) {
 		// This is a MULTI Handler! This function is called with an ARRAY of event
 		// data, not the normal single event data.  This means we can wrap the
 		// insert in a transaction and insert everything in the array in a single
@@ -293,12 +279,13 @@ func AddMVHandler(logger log.Logger, telemetryMgr *telemetryManager, am3Svc even
 		if err != nil {
 			logger.Crit("Error Finding OnChange Reports for metrics", "instancesUpdated", instancesUpdated, "err", err)
 		}
-	})
+	}
 }
 
-func AddClockHandler(logger log.Logger, telemetryMgr *telemetryManager, am3Svc eventHandler, bus eh.EventBus) {
+func MakeHandlerClock(logger log.Logger, telemetryMgr *telemetryManager, bus eh.EventBus) func(eh.Event) {
+	// close over lastHWM
 	lastHWM := time.Time{}
-	am3Svc.AddEventHandler("Clock", PublishClock, func(event eh.Event) {
+	return func(event eh.Event) {
 		// if no events have kickstarted the clock, bail
 		if telemetryMgr.MetricTSHWM.IsZero() {
 			return
@@ -313,17 +300,14 @@ func AddClockHandler(logger log.Logger, telemetryMgr *telemetryManager, am3Svc e
 
 		// Generate any metric reports that need it
 		reportList, _ := telemetryMgr.FastCheckForNeededMRUpdates()
-		var err error
 		for _, report := range reportList {
-			err = bus.PublishEvent(context.Background(), eh.NewEvent(metric.ReportGenerated, metric.ReportGeneratedData{Name: report}, time.Now()))
-			logPublishError(logger, err)
+			publishHelper(logger, bus, eh.NewEvent(metric.ReportGenerated, metric.ReportGeneratedData{Name: report}, time.Now()))
 		}
-	})
+	}
 }
 
-func AddMaintenanceHandler(logger log.Logger, telemetryMgr *telemetryManager, am3Svc eventHandler, bus eh.EventBus) {
-	// close over lastHWM
-	am3Svc.AddEventHandler("Database Maintenance", DatabaseMaintenance, func(event eh.Event) {
+func MakeHandlerMaintenance(logger log.Logger, telemetryMgr *telemetryManager, bus eh.EventBus) func(eh.Event) {
+	return func(event eh.Event) {
 		command, ok := event.Data().(string)
 		if !ok {
 			return
@@ -374,5 +358,5 @@ func AddMaintenanceHandler(logger log.Logger, telemetryMgr *telemetryManager, am
 		default:
 			logger.Warn("Unknown database maintenance command string received", "command", command)
 		}
-	})
+	}
 }

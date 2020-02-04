@@ -710,12 +710,7 @@ func (factory *telemetryManager) GenerateMetricReport(tx *sqlx.Tx, name string) 
 			}
 		}
 
-		// TODO:
-		// Now that we've generated the report, we can iterate over the
-		// MetricInstance associated with this report and do an Expand to ensure
-		// that all metrics have values they should have if they were source
-		// squelched.
-		// And now, foreach MetricInstance, insert MetricValue
+		// after generation, iterate over MetricInstances and Expand
 		if !MRD.SuppressDups {
 			fmt.Printf("EXPAND -")
 			rows, err := factory.getNamedSQLXTx(tx, "iterate_metric_instance_for_report").Queryx(MRD)
@@ -742,12 +737,8 @@ func (factory *telemetryManager) GenerateMetricReport(tx *sqlx.Tx, name string) 
 		}
 
 		// TODO:
-		// after we update the metric report, we can query the MetricValueByReport
-		// to see if there are any rows for this report. If there are no rows in
-		// this report, we can return an error to roll back the transaction and
-		// "un-generate" the report.
-		// ex: select count(*) from MetricValueByReport where name=?
-		// This will automatically ensure we dont send out any notifications for that report
+		// Query the MetricValueByReport to see if there are any rows for this report. If there are no rows in
+		// this report, error out to cancel transaction and pretend nothing happened
 
 		// do this after we are sure metric report is generated
 		factory.LastMRTS[MRD.Name] = factory.MetricTSHWM.Add(time.Duration(0))
@@ -850,6 +841,9 @@ type MetricMeta struct {
 	SuppressDups bool   `db:"SuppressDups"`
 }
 
+// TODO: Implement more specific wildcard matching
+// TODO: Need to look up friendly fqdd (FOR LABEL)
+//  Both of the above TODO should happen in the for rows.Next() {...} loop
 func (factory *telemetryManager) InsertMetricInstance(tx *sqlx.Tx, ev *metric.MetricValueEventData) (instancesCreated int, err error) {
 	err = factory.wrapWithTXOrPassIn(tx, func(tx *sqlx.Tx) error {
 		insertMetricInstance := factory.getNamedSQLXTx(tx, "insert_metric_instance")
@@ -871,10 +865,8 @@ func (factory *telemetryManager) InsertMetricInstance(tx *sqlx.Tx, ev *metric.Me
 				continue
 			}
 
-			// TODO: Implement more specific wildcard matching
-			// TODO: Need to look up friendly fqdd (FOR LABEL)
-
 			// Construct label and Scratch space
+			mm.Label = fmt.Sprintf("%s %s", mm.Context, mm.Name)
 			if mm.CollectionFunction != "" {
 				mm.Label = fmt.Sprintf("%s %s - %s", mm.Context, mm.Name, mm.CollectionFunction)
 				mm.FlushTime = metric.SQLTimeInt{Time: mm.Timestamp.Add(mm.CollectionDuration * time.Second)}
@@ -882,8 +874,6 @@ func (factory *telemetryManager) InsertMetricInstance(tx *sqlx.Tx, ev *metric.Me
 				mm.CollectionScratch.Numvalues = 0
 				mm.CollectionScratch.Maximum = -math.MaxFloat64
 				mm.CollectionScratch.Minimum = math.MaxFloat64
-			} else {
-				mm.Label = fmt.Sprintf("%s %s", mm.Context, mm.Name)
 			}
 
 			// create instances for each metric meta corresponding to this metric value
@@ -975,18 +965,18 @@ func (factory *telemetryManager) IterMetricInstance(tx *sqlx.Tx, mm *MetricMeta,
 	})
 }
 
-func (factory *telemetryManager) pumpMV(tx *sqlx.Tx, mm *MetricMeta, updatedInstance func(int64)) (saveInstance bool, err error) {
-	saveValue := true
+func (factory *telemetryManager) handleAggregatedMV(mm *MetricMeta, floatVal float64, floatErr error) (saveValue, saveInstance bool) {
+	saveValue = true
 	saveInstance = false
-	floatVal, floatErr := strconv.ParseFloat(mm.Value, 64)
-	if floatErr != nil && mm.CollectionFunction != "" {
-		saveValue = false
+	if floatErr != nil && mm.CollectionFunction != "" { // handle aggregated: custom sum/min/max metrics
+		saveValue = false // by default, we wont save values if aggregation is happening unless we pass the flush timeout
 		saveInstance = true
 
-		// has the period expired?
+		// We aggregate values in the instance until the collection duration expires for that metric
+		// TODO: need a separate query to find all Metrics with HWM > FlushTime and flush them
 		if mm.Timestamp.After(mm.FlushTime.Time) {
 			// Calculate what we should be dropping in the output
-			saveValue = true
+			saveValue = true // time to flush the value out now
 			factory.logger.Info("Collection period done Metric Instance", "Instance ID", mm.InstanceID, "CollectionFunction", mm.CollectionFunction)
 			switch mm.CollectionFunction {
 			case "Average":
@@ -1001,8 +991,7 @@ func (factory *telemetryManager) pumpMV(tx *sqlx.Tx, mm *MetricMeta, updatedInst
 				mm.Value = "Invalid or Unsupported CollectionFunction"
 			}
 
-			// now, reset everything
-			// TODO: need a separate query to find all Metrics with HWM > FlushTime and flush them
+			// now, reset everything to be ready for the next metric value
 			mm.FlushTime = metric.SQLTimeInt{Time: mm.Timestamp.Add(mm.CollectionDuration * time.Second)}
 			mm.CollectionScratch.Sum = 0
 			mm.CollectionScratch.Numvalues = 0
@@ -1010,54 +999,65 @@ func (factory *telemetryManager) pumpMV(tx *sqlx.Tx, mm *MetricMeta, updatedInst
 			mm.CollectionScratch.Minimum = math.MaxFloat64
 		}
 
-		// floatVal was saved, above.
 		mm.CollectionScratch.Numvalues++
-		mm.CollectionScratch.Sum += floatVal
+		mm.CollectionScratch.Sum += floatVal // floatVal was saved, above.
 		mm.CollectionScratch.Maximum = math.Max(floatVal, mm.CollectionScratch.Maximum)
 		mm.CollectionScratch.Minimum = math.Min(floatVal, mm.CollectionScratch.Minimum)
 	}
+	return saveValue, saveInstance
+}
+
+func (factory *telemetryManager) insertOneMVRow(tx *sqlx.Tx, mm *MetricMeta, updatedInstance func(int64), floatVal float64, floatErr error) error {
+	var insertMV *sqlx.Stmt
+	var args []interface{}
+
+	// if the value changes, we change lastts/lastvalue so basically always have to update the instance.
+	// This seems like an opportunity to optimize, but no immediately obvious way to do this.
+	mm.LastTS = mm.Timestamp
+	mm.LastValue = mm.Value
+
+	// Put into optimized tables, if possible. Try INT first, as it will error out for a float(1.0) value, but not vice versa
+	intVal, err := strconv.ParseInt(mm.Value, 10, 64)
+	switch {
+	case err == nil:
+		insertMV = factory.getSQLXTx(tx, "insert_mv_int")
+		args = []interface{}{mm.InstanceID, mm.Timestamp, intVal}
+	case floatErr == nil: // re-use already parsed floatVal above
+		insertMV = factory.getSQLXTx(tx, "insert_mv_real")
+		args = []interface{}{mm.InstanceID, mm.Timestamp, floatVal}
+	default:
+		insertMV = factory.getSQLXTx(tx, "insert_mv_text")
+		args = []interface{}{mm.InstanceID, mm.Timestamp, mm.Value}
+	}
+
+	_, err = insertMV.Exec(args...)
+	if err != nil {
+		if !strings.HasPrefix(err.Error(), "UNIQUE constraint failed") {
+			return xerrors.Errorf(
+				"Error inserting MetricValue for MetricInstance(%d)/MetricMeta(%d), ARGS: %+v: %w",
+				mm.InstanceID, mm.MetaID, args, err)
+		}
+	}
+	// report change hook. let caller know which instances were updated so they can look up reports for OnChange
+	updatedInstance(mm.InstanceID)
+	return nil
+}
+
+func (factory *telemetryManager) pumpMV(tx *sqlx.Tx, mm *MetricMeta, updatedInstance func(int64)) (bool, error) {
+	// optimization: try to parse as float first, we can re-use this later in many cases
+	floatVal, floatErr := strconv.ParseFloat(mm.Value, 64)
+
+	// handle the aggregation functions, if requested by user for this metric instance (sum, avg, min, max)
+	saveValue, saveInstance := factory.handleAggregatedMV(mm, floatVal, floatErr)
 
 	if mm.SuppressDups && mm.LastValue == mm.Value {
-		// No need to flush out new value, however instance may or may not need
-		// flushing depending on above.
+		// if value is same as previous report and this report is suppressing dups, no need to save
 		saveValue = false
 	}
 
 	if saveValue {
-		var insertMV *sqlx.Stmt
-		var args []interface{}
-
-		// if the value changes, we change lastts/lastvalue so basically always have to update the instance.
-		// This seems like an opportunity (TODO) to optimize, but no immediately obvious way to do this.
-		saveInstance = true
-		mm.LastTS = mm.Timestamp
-		mm.LastValue = mm.Value
-
-		// Put into optimized tables, if possible. Try INT first, as it will error out for a float(1.0) value, but not vice versa
-		intVal, err := strconv.ParseInt(mm.Value, 10, 64)
-		switch {
-		case err == nil:
-			insertMV = factory.getSQLXTx(tx, "insert_mv_int")
-			args = []interface{}{mm.InstanceID, mm.Timestamp, intVal}
-		case floatErr == nil: // re-use already parsed floatVal above
-			insertMV = factory.getSQLXTx(tx, "insert_mv_real")
-			args = []interface{}{mm.InstanceID, mm.Timestamp, floatVal}
-		default:
-			insertMV = factory.getSQLXTx(tx, "insert_mv_text")
-			args = []interface{}{mm.InstanceID, mm.Timestamp, mm.Value}
-		}
-
-		_, err = insertMV.Exec(args...)
-		if err != nil {
-			if !strings.HasPrefix(err.Error(), "UNIQUE constraint failed") {
-				return saveInstance,
-					xerrors.Errorf(
-						"Error inserting MetricValue for MetricInstance(%d)/MetricMeta(%d), ARGS: %+v: %w",
-						mm.InstanceID, mm.MetaID, args, err)
-			}
-		}
-		// report change hook. let caller know which instances were updated so they can look up reports for OnChange
-		updatedInstance(mm.InstanceID)
+		// if we are saving the value, definitely need to stave the instance as well
+		return true, factory.insertOneMVRow(tx, mm, updatedInstance, floatVal, floatErr)
 	}
 	return saveInstance, nil
 }
@@ -1080,9 +1080,7 @@ func (factory *telemetryManager) doInsertMetricValueForInstance(
 
 		fmt.Printf(
 			"EXPAND Instance(%d-%s) lastts(%s) e(%t) s(%t) a(%t) i(%s) m(%s)\n",
-			mm.InstanceID, mm.Name,
-			mm.LastTS, mm.MIRequiresExpand, mm.SuppressDups,
-			after, mm.MISensorInterval, missingInterval)
+			mm.InstanceID, mm.Name, mm.LastTS, mm.MIRequiresExpand, mm.SuppressDups, after, mm.MISensorInterval, missingInterval)
 
 		savedTS := mm.Timestamp
 		savedValue := mm.Value
@@ -1091,7 +1089,7 @@ func (factory *telemetryManager) doInsertMetricValueForInstance(
 		// loop over putting the same Metric Value in (ie. LastValue), but updating the timestamp
 		mm.Timestamp = metric.SQLTimeInt{Time: mm.Timestamp.Add(-missingInterval + mm.MISensorInterval)}
 
-		// TODO: we could smooth this out a bit more rather than just jumping by sensorinterval
+		// TODO: we could use math to smooth this out a bit more rather than just jumping by sensorinterval
 		for mm.Timestamp.Before(savedTS.Time.Add(-mm.MISensorSlack)) {
 			fmt.Printf("\tts(%s)\n", mm.Timestamp)
 			_, err = factory.pumpMV(tx, mm, updatedInstance)
@@ -1102,10 +1100,6 @@ func (factory *telemetryManager) doInsertMetricValueForInstance(
 		}
 		mm.Timestamp = savedTS
 		mm.Value = savedValue
-		// note here: if we end up expanding, we'll certainly also be saving
-		// latest, so no need to save instance for each expand loop, the instance
-		// will be saved below. If this prior changes above, we need to ensure
-		// instance is saved
 	}
 
 	if expandOnly {

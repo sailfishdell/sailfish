@@ -28,11 +28,22 @@ const stopIter = constErr("stop iteration")
 type dataSource struct {
 	query        *sqlx.NamedStmt
 	importFn     func(string) error
-	HWM          int64 `db:"HWM"`
-	lastImport   time.Time
-	waitInterval int64
-	scanInterval int64
+	HWM          int64             `db:"HWM"`
+	lastImport   metric.SQLTimeInt `db:"LastImportTime"`
+	waitInterval time.Duration
+	scanInterval time.Duration
 	dbChange     map[string]map[string]struct{}
+}
+
+// dataSourceConfig mirrors exactly what we expect in the config file yaml.
+// we'll unmarshal to this, then validate/parse into a dataSource which has
+// more semantic meaning.
+type dataSourceConfig struct {
+	Type         string
+	Query        string
+	WaitInterval int64
+	ScanInterval int64
+	DBChange     map[string]map[string]struct{}
 }
 
 type dataImporter struct {
@@ -43,11 +54,12 @@ type dataImporter struct {
 }
 
 func newImportManager(logger log.Logger, database *sqlx.DB, d busComponents, cfg *viper.Viper) (*dataImporter, error) {
-	ret := &dataImporter{}
-	ret.logger = logger
-	ret.database = database
-	ret.bus = d.GetBus()
-	ret.udb = map[string]dataSource{}
+	ret := &dataImporter{
+		logger:   logger,
+		database: database,
+		bus:      d.GetBus(),
+		udb:      map[string]dataSource{},
+	}
 
 	impFns := map[string]func(string) error{
 		"DISABLE-DirectMetric": func(n string) error { return disabled },
@@ -57,61 +69,49 @@ func newImportManager(logger log.Logger, database *sqlx.DB, d busComponents, cfg
 	}
 
 	// Parse the YAML file to set up database imports
-	for k, v := range cfg.GetStringMap("UDB-Metric-Import") {
+	subcfg := cfg.Sub("UDB-Metric-Import")
+	if subcfg == nil {
+		return nil, xerrors.Errorf("config file parse error. missing secion 'UDB-Metric-Import'")
+	}
+
+	for k := range subcfg.AllSettings() {
 		fmt.Printf("Loading config for %s\n", k)
-
-		meta := dataSource{}
-
-		settings, ok := v.(map[string]interface{})
-		if !ok {
-			return nil, fmt.Errorf("config file malformed. Section(%s) key(%s) value(%s)", "UDB-Metric-Import", k, v)
-		}
-
-		Query, ok := settings["query"].(string)
-		if !ok {
-			return nil, fmt.Errorf("missing or malformed query from config file. Section(%s) key(%s) value(%s)", "UDB-Metric-Import", k, v)
-		}
-
-		var err error
-		meta.query, err = database.PrepareNamed(Query)
+		// todo: defaults before unmarshal?
+		settings, err := unmarshalSourceCfg(subcfg.Sub(k))
 		if err != nil {
-			return nil, xerrors.Errorf("prepare() failed for query Section(%s), key(%s), sql query(%s): %w", "UDB-Metric-Import", k, Query, err)
+			return nil, xerrors.Errorf("failed to parse config section(UDB-Metric-Import.%s): %s", k, err)
 		}
 
-		Type, ok := settings["type"].(string)
-		if !ok {
-			Type = "MetricColumns" // default
+		meta := dataSource{
+			scanInterval: time.Duration(settings.ScanInterval) * time.Second,
+			waitInterval: time.Duration(settings.WaitInterval) * time.Second,
+			dbChange:     settings.DBChange,
 		}
 
-		_, ok = impFns[Type]
-		if !ok {
+		meta.query, err = database.PrepareNamed(settings.Query)
+		if err != nil {
+			return nil, xerrors.Errorf("prepare() failed for query Section(%s), key(%s), sql query(%s): %w", "UDB-Metric-Import", k, settings.Query, err)
+		}
+
+		var ok bool
+		if meta.importFn, ok = impFns[settings.Type]; !ok {
 			return nil, fmt.Errorf(
-				"requested IMPL func doesn't exist. Section(%s), key(%s), Requested func(%s). Available funcs: %+v", "UDB-Metric-Import",
-				k, Type, impFns)
+				"config error, nonexistent func. Section(%s), key(%s), func(%s). Available: %+v", "UDB-Metric-Import", k, settings.Type, impFns)
 		}
 
-		scanInterval, ok := settings["scaninterval"].(int)
-		if !ok {
-			scanInterval = 0
-		}
-		meta.scanInterval = int64(scanInterval)
-
-		waitInterval, ok := settings["waitinterval"].(int)
-		if !ok {
-			waitInterval = 5
-		}
-		meta.waitInterval = int64(waitInterval)
-
-		err = cfg.UnmarshalKey("UDB-Metric-Import."+k+".DBChange", &meta.dbChange)
-		if err != nil {
-			return nil, xerrors.Errorf("parse error trying to read the DBChange key(%s): %w", "UDB-Metric-Import."+k+".DBChange", err)
-		}
-
-		meta.importFn = impFns[Type]
 		ret.udb[k] = meta
 	}
 
 	return ret, nil
+}
+
+func unmarshalSourceCfg(cfg *viper.Viper) (*dataSourceConfig, error) {
+	cfg.SetDefault("Type", "MetricColumns")
+	cfg.SetDefault("WaitInterval", "5")
+	cfg.SetDefault("ScanInterval", "0")
+	settings := dataSourceConfig{}
+	err := cfg.Unmarshal(&settings)
+	return &settings, err
 }
 
 func (l *dataImporter) conditionalImport(udbImportName string, meta dataSource, periodic bool) (err error) {
@@ -119,14 +119,14 @@ func (l *dataImporter) conditionalImport(udbImportName string, meta dataSource, 
 	if periodic && meta.scanInterval == 0 {
 		return
 	}
-	if periodic && now.Before(meta.lastImport.Add(time.Duration(meta.scanInterval)*time.Second)) {
+	if periodic && now.Before(meta.lastImport.Add(meta.scanInterval)) {
 		return
 	}
-	if now.Before(meta.lastImport.Add(time.Duration(meta.waitInterval) * time.Second)) {
+	if now.Before(meta.lastImport.Add(meta.waitInterval)) {
 		return
 	}
 
-	meta.lastImport = now
+	meta.lastImport.Time = now
 	l.udb[udbImportName] = meta
 	return l.udb[udbImportName].importFn(udbImportName)
 }
@@ -160,7 +160,7 @@ func (l *dataImporter) iterUDBTables(fn func(string, dataSource) error) error {
 	return nil
 }
 
-func (l *dataImporter) condSetHWM(udbImportName string, ts int64) {
+func (l *dataImporter) condSetHWMForSource(udbImportName string, ts int64) {
 	dataSource := l.udb[udbImportName]
 	if ts > dataSource.HWM {
 		dataSource.HWM = ts
@@ -187,27 +187,25 @@ func (l *dataImporter) send(events *[]eh.EventData) {
 //   Metric FriendlyFQDD is constructed based on the "FriendlyFQDD" column
 //   Property paths are constructed by appending '#<metricname>' to the "Property" column
 func (l *dataImporter) importByColumn(udbImportName string) (err error) {
-	err = nil
-	events := []eh.EventData{}
 	totalEvents := 0
 	totalRows := 0
-	defer func(totalEvents *int, totalRows *int, udbImportName string) {
-		if err == nil {
-			if *totalEvents > 0 {
-				fmt.Printf("Processed %d rows. Emitted %d events for table(%s).\n", *totalRows, *totalEvents, udbImportName)
-			}
-		} else {
-			fmt.Printf("Processed %d rows. Emitted %d events for table(%s). ERROR(%s).\n", *totalRows, *totalEvents, udbImportName, err)
+	err = l.wrappedImportByColumn(udbImportName, &totalEvents, &totalRows)
+	if err == nil {
+		if totalEvents > 0 {
+			fmt.Printf("Processed %d rows. Emitted %d events from source='%s'.\n", totalRows, totalEvents, udbImportName)
 		}
-	}(&totalEvents, &totalRows, udbImportName)
-
-	dataSource, ok := l.udb[udbImportName]
-	if !ok {
-		return xerrors.Errorf("Somehow got called with a table name not in our supported tables list.")
+	} else {
+		fmt.Printf("Processed %d rows. Emitted %d events from source='%s'. ERROR(%s).\n", totalRows, totalEvents, udbImportName, err)
 	}
 
-	// if query isn't prepared, this will panic. That'll need to get fixed, as it's a config file error.
-	rows, err := dataSource.query.Queryx(dataSource)
+	return err
+}
+
+func (l *dataImporter) wrappedImportByColumn(udbImportName string, totalEvents *int, totalRows *int) (err error) {
+	events := []eh.EventData{}
+	dataSource := l.udb[udbImportName] // will panic if we get called with invalid name, that would be a programming error
+
+	rows, err := dataSource.query.Queryx(dataSource) // panic if query not prepared, can't happen
 	if err != nil {
 		return xerrors.Errorf("query failed for %s: %w", udbImportName, err)
 	}
@@ -220,10 +218,11 @@ func (l *dataImporter) importByColumn(udbImportName string) (err error) {
 			l.logger.Crit("Error scanning row into MetricEvent", "err", err, "udbImportName", udbImportName)
 			continue
 		}
-		totalRows++
+		*totalRows++
 
+		property := getString(mm, "Property")
 		ts := getInt64(mm, "Timestamp")
-		l.condSetHWM(udbImportName, ts)
+		l.condSetHWMForSource(udbImportName, ts)
 
 		baseEvent := metric.MetricValueEventData{
 			Timestamp:        metric.SQLTimeInt{Time: time.Unix(0, ts)},
@@ -236,30 +235,22 @@ func (l *dataImporter) importByColumn(udbImportName string) (err error) {
 			MVSensorInterval: time.Duration(getInt64(mm, "SensorInterval")),
 		}
 
-		property := getString(mm, "Property")
-
 		for k, v := range mm {
-			if v == nil {
-				// we dont add NULL metrics
-				continue
+			if v == nil || !strings.HasPrefix(k, "Metric-") {
+				continue // we dont add NULL metrics or things without Metric- prefix
 			}
 
-			if !strings.HasPrefix(k, "Metric-") {
-				// not a metric
-				continue
-			}
-
-			metricName := k[7:]
+			metricName := k[len("Metric-"):]
 			eventToSend := baseEvent
 			eventToSend.Property = property + "#" + metricName
 			eventToSend.Value = fmt.Sprintf("%v", v)
 
 			if mts, ok := mm["Timestamp-"+metricName].(int64); ok {
-				l.condSetHWM(udbImportName, mts)
+				l.condSetHWMForSource(udbImportName, mts)
 				eventToSend.Timestamp = metric.SQLTimeInt{Time: time.Unix(0, mts)}
 			}
 
-			totalEvents++
+			*totalEvents++
 			events = append(events, &eventToSend)
 			if len(events) > maximport {
 				l.send(&events)

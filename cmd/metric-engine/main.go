@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
-	"runtime/debug"
-	"time"
 
 	flag "github.com/spf13/pflag"
 	"github.com/spf13/viper"
@@ -17,10 +15,6 @@ import (
 	"github.com/superchalupa/sailfish/src/looplab/eventwaiter"
 
 	"github.com/superchalupa/sailfish/src/log15adapter"
-)
-
-const (
-	startupWaitTime = 10 * time.Second
 )
 
 type busComponents struct {
@@ -38,19 +32,16 @@ func main() {
 
 	cfgMgr := viper.New()
 	if err := cfgMgr.BindPFlags(flag.CommandLine); err != nil {
-		fmt.Fprintf(os.Stderr, "Could not bind viper flags: %s\n", err)
 		panic(fmt.Sprintf("Could not bind viper flags: %s", err))
 	}
-	// Environment variables
-	cfgMgr.SetEnvPrefix("ME")
-	cfgMgr.AutomaticEnv()
+	cfgMgr.SetEnvPrefix("ME") // set up viper env variable mappings
+	cfgMgr.AutomaticEnv()     // automatically pull in overrides from env
 
-	// Configuration file
+	// load main config file
 	cfgMgr.SetConfigName("metric-engine")
 	cfgMgr.AddConfigPath(".")
 	cfgMgr.AddConfigPath("/etc/")
 	if err := cfgMgr.ReadInConfig(); err != nil {
-		fmt.Fprintf(os.Stderr, "Could not read config file: %s\n", err)
 		panic(fmt.Sprintf("Could not read config file: %s", err))
 	}
 
@@ -59,16 +50,13 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Reading local-metric-engine.yaml config\n")
 		cfgMgr.SetConfigFile("local-metric-engine.yaml")
 		if err := cfgMgr.MergeInConfig(); err != nil {
-			fmt.Fprintf(os.Stderr, "Error reading local config file: %s\n", err)
 			panic(fmt.Sprintf("Error reading local config file: %s", err))
 		}
 	}
-
-	flag.Parse()
+	flag.Parse() // read command line flags after config files
 
 	logger := log15adapter.Make()
 	logger.SetupLogHandlersFromConfig(cfgMgr)
-
 	ctx, cancel := context.WithCancel(context.Background())
 	intr := make(chan os.Signal, 1)
 	signal.Notify(intr, os.Interrupt)
@@ -89,18 +77,12 @@ func main() {
 	d.EventPublisher.AddObserver(d.EventWaiter)
 	go d.GetWaiter().Run()
 
-	setup(ctx, logger, cfgMgr, d)
-	h := starthttp(logger, cfgMgr, d)
+	setup(ctx, logger, cfgMgr, d)     // set up idrac specific
+	h := starthttp(logger, cfgMgr, d) // (optional) startup of http services
 
-	time.Sleep(startupWaitTime)
-	debug.FreeOSMemory()
-
-	// wait until everything is done
-	<-ctx.Done()
-	shutdown()
-	h.shutdown()
-
-	logger.Warn("Bye!", "module", "main")
+	<-ctx.Done() // wait until everything is done
+	shutdown()   // shut down idrac stuff
+	h.shutdown() // shut down http servers
 }
 
 func fileExists(fn string) bool {

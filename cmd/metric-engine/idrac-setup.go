@@ -36,76 +36,78 @@ func setup(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, d *busCo
 	am3SvcN2, _ := am3.StartService(ctx, logger.New("module", "AM3_DB"), "database", d)
 	err := telemetry.StartupTelemetryBase(logger.New("module", "sql_am3_functions"), cfgMgr, am3SvcN2, d)
 	if err != nil {
-		panic("Error initializing: " + err.Error())
+		panic("Error initializing base telemetry subsystem: " + err.Error())
 	}
 
 	// Processing loop 2:
 	//  	-- UDB access
 	am3SvcN3, _ := am3.StartService(ctx, logger.New("module", "AM3_UDB"), "udb database", d)
-	udb.StartupUDBImport(logger.New("module", "udb_am3_functions"), cfgMgr, am3SvcN3, d)
-
-	injectStartupEvents := func(section string) {
-		fmt.Printf("Processing Startup Events from %s\n", section)
-		startup := cfgMgr.Get(section)
-		if startup == nil {
-			logger.Warn("SKIPPING: no startup events found")
-			return
-		}
-		events, ok := startup.([]interface{})
-		if !ok {
-			logger.Crit("SKIPPING: Startup Events skipped - malformed.", "Section", section, "malformed-value", startup)
-			return
-		}
-		for i, v := range events {
-			settings, ok := v.(map[interface{}]interface{})
-			if !ok {
-				logger.Crit("SKIPPING: malformed event. Expected map", "Section", section, "index", i, "malformed-value", v, "TYPE", fmt.Sprintf("%T", v))
-				continue
-			}
-
-			name, ok := settings["name"].(string)
-			if !ok {
-				logger.Crit("SKIPPING: Config file section missing event name- 'name' key missing.", "Section", section, "index", i, "malformed-value", v)
-				continue
-			}
-			eventType := eh.EventType(name + "Event")
-
-			dataString, ok := settings["data"].(string)
-			if !ok {
-				logger.Crit("SKIPPING: Config file section missing event name- 'data' key missing.", "Section", section, "index", i, "malformed-value", v)
-				continue
-			}
-
-			eventData, err := eh.CreateEventData(eventType)
-			if err != nil {
-				logger.Crit("SKIPPING: couldnt instantiate event", "Section", section, "index", i, "malformed-value", v, "event", name, "err", err)
-				continue
-			}
-
-			err = json.Unmarshal([]byte(dataString), &eventData)
-			if err != nil {
-				// well if it doesn't unmarshall, try to just send it as a string (Used for sending DatabaseMaintenance events.
-				eventData = dataString
-			}
-
-			fmt.Printf("\tPublishing Startup Event (%s)\n", name)
-			evt := event.NewSyncEvent(eventType, eventData, time.Now())
-			evt.Add(1)
-			err = d.GetBus().PublishEvent(context.Background(), evt)
-			if err != nil {
-				logger.Crit("Error publishing event to internal event bus, should never happen!", "err", err)
-			}
-		}
+	err = udb.StartupUDBImport(logger.New("module", "udb_am3_functions"), cfgMgr, am3SvcN3, d)
+	if err != nil {
+		panic("Error initializing UDB Import subsystem: " + err.Error())
 	}
 
 	// After we have our event loops set up,
 	// Read the config file and process any startup events that are listed
 	startup := cfgMgr.GetStringSlice("main.startup")
 	for _, section := range startup {
-		injectStartupEvents(section)
+		injectStartupEvents(logger, cfgMgr, section, d.GetBus())
 	}
 }
 
+func injectStartupEvents(logger log.Logger, cfgMgr *viper.Viper, section string, bus eh.EventBus) {
+	fmt.Printf("Processing Startup Events from %s\n", section)
+	startup := cfgMgr.Get(section)
+	if startup == nil {
+		logger.Warn("SKIPPING: no startup events found")
+		return
+	}
+	events, ok := startup.([]interface{})
+	if !ok {
+		logger.Crit("SKIPPING: Startup Events skipped - malformed.", "Section", section, "malformed-value", startup)
+		return
+	}
+	for i, v := range events {
+		settings, ok := v.(map[interface{}]interface{})
+		if !ok {
+			logger.Crit("SKIPPING: malformed event. Expected map", "Section", section, "index", i, "malformed-value", v, "TYPE", fmt.Sprintf("%T", v))
+			continue
+		}
+
+		name, ok := settings["name"].(string)
+		if !ok {
+			logger.Crit("SKIPPING: Config file section missing event name- 'name' key missing.", "Section", section, "index", i, "malformed-value", v)
+			continue
+		}
+		eventType := eh.EventType(name + "Event")
+
+		dataString, ok := settings["data"].(string)
+		if !ok {
+			logger.Crit("SKIPPING: Config file section missing event name- 'data' key missing.", "Section", section, "index", i, "malformed-value", v)
+			continue
+		}
+
+		eventData, err := eh.CreateEventData(eventType)
+		if err != nil {
+			logger.Crit("SKIPPING: couldnt instantiate event", "Section", section, "index", i, "malformed-value", v, "event", name, "err", err)
+			continue
+		}
+
+		err = json.Unmarshal([]byte(dataString), &eventData)
+		if err != nil {
+			// well if it doesn't unmarshall, try to just send it as a string (Used for sending DatabaseMaintenance events.
+			eventData = dataString
+		}
+
+		fmt.Printf("\tPublishing Startup Event (%s)\n", name)
+		evt := event.NewSyncEvent(eventType, eventData, time.Now())
+		evt.Add(1)
+		err = bus.PublishEvent(context.Background(), evt)
+		if err != nil {
+			logger.Crit("Error publishing event to internal event bus, should never happen!", "err", err)
+		}
+	}
+}
 func shutdown() {
 	cgoShutdown()
 }
