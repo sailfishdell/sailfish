@@ -43,7 +43,7 @@ type dataSourceConfig struct {
 	Query        string
 	WaitInterval int64
 	ScanInterval int64
-	DBChange     interface{}
+	DBChange     map[string]map[string]struct{}
 }
 
 type dataImporter struct {
@@ -76,7 +76,6 @@ func newImportManager(logger log.Logger, database *sqlx.DB, d busComponents, cfg
 
 	for k := range subcfg.AllSettings() {
 		fmt.Printf("Loading config for %s\n", k)
-		// todo: defaults before unmarshal?
 		settings, err := unmarshalSourceCfg(subcfg.Sub(k))
 		if err != nil {
 			return nil, xerrors.Errorf("failed to parse config section(UDB-Metric-Import.%s): %s", k, err)
@@ -85,26 +84,17 @@ func newImportManager(logger log.Logger, database *sqlx.DB, d busComponents, cfg
 		meta := dataSource{
 			scanInterval: time.Duration(settings.ScanInterval) * time.Second,
 			waitInterval: time.Duration(settings.WaitInterval) * time.Second,
-			dbChange:     map[string]map[string]struct{}{},
+			dbChange:     settings.DBChange,
 		}
 
-		// slight differenct in types, so manually set from cfg (map[string]interface{})
-		dbchangemap, ok := settings.DBChange.(map[string]interface{})
-		if ok {
-			for database, v := range dbchangemap {
-				vi := v.(map[string]interface{})
-				meta.dbChange[database] = map[string]struct{}{}
-				for table := range vi {
-					meta.dbChange[database][table] = struct{}{}
-				}
-			}
-		}
+		//fmt.Printf("DEBUG: dbchange: %+v\n", meta.dbChange)
 
 		meta.query, err = database.PrepareNamed(settings.Query)
 		if err != nil {
 			return nil, xerrors.Errorf("prepare() failed for query Section(%s), key(%s), sql query(%s): %w", "UDB-Metric-Import", k, settings.Query, err)
 		}
 
+		var ok bool
 		if meta.importFn, ok = impFns[settings.Type]; !ok {
 			return nil, fmt.Errorf(
 				"config error, nonexistent func. Section(%s), key(%s), func(%s). Available: %+v", "UDB-Metric-Import", k, settings.Type, impFns)
@@ -122,7 +112,15 @@ func unmarshalSourceCfg(cfg *viper.Viper) (*dataSourceConfig, error) {
 	cfg.SetDefault("ScanInterval", "0")
 	settings := dataSourceConfig{}
 	err := cfg.Unmarshal(&settings)
-	settings.DBChange = cfg.GetStringMap("dbchange")
+	if err != nil {
+		return nil, err
+	}
+
+	// have to specifically unmarshal dbchange for some wierd reason
+	err = cfg.UnmarshalKey("dbchange", &settings.DBChange)
+	if err != nil {
+		return nil, err
+	}
 	return &settings, err
 }
 
