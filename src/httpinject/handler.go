@@ -64,6 +64,30 @@ type service struct {
 	injectChan     chan *eventBundle
 }
 
+func (s *service) GetCommandCh() chan *InjectCommand {
+	return s.injectCmdQueue
+}
+
+func NewInjectCommand() *InjectCommand {
+	return &InjectCommand{
+		ctx:        context.Background(),
+		resCh:      make(chan bool),
+		ingestTime: time.Now(),
+	}
+}
+
+func (cmd *InjectCommand) GetResCh() chan bool {
+	return cmd.resCh
+}
+
+func (cmd *InjectCommand) SetPumpSendTime() {
+	if cmd.PumpSendTime < int64(maxUint) {
+		cmd.sendTime = time.Unix(cmd.PumpSendTime, 0)
+	} else {
+		cmd.sendTime = time.Unix(0, cmd.PumpSendTime)
+	}
+}
+
 var reglock = sync.Once{}
 
 // NewInjectHandler constructs a new InjectHandler with the given username and privileges.
@@ -122,7 +146,7 @@ func (s *service) GetHandlerFunc() func(http.ResponseWriter, *http.Request) {
 		//requestLogger.Debug("PUSH injectCmdQueue LEN", "len", len(injectCmdQueue), "cap", cap(injectCmdQueue), "module", "inject", "cmd", cmd)
 
 		// manually override barrier settings given by sender in some cases
-		cmd.markBarrier()
+		cmd.MarkBarrier()
 
 		// used by commented out debugging
 		//seq := cmd.EventSeq
@@ -440,13 +464,13 @@ type Decoder interface {
 	Decode(d map[string]interface{}) error
 }
 
-// markBarrier will mark specific events as barrier events, ie. that they
+// MarkBarrier will mark specific events as barrier events, ie. that they
 // prevent any events from being added behind it in the queue until it has been
 // fully processed
 //
 // This is somewhat arbitrary and is domain-specific knowledge
 //
-func (c *InjectCommand) markBarrier() {
+func (c *InjectCommand) MarkBarrier() {
 	switch c.Name {
 	// can create objects that are needed by subsequent events
 	case "ComponentEvent",
