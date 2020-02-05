@@ -7,6 +7,9 @@ import (
 	eh "github.com/looplab/eventhorizon"
 )
 
+// the purpose of this file is to contain all of the Event type definitions and
+// structure definitions for the data for the events
+
 // definitions for all of the event horizon event names
 const (
 	// this legitimately should be called a "Metric Value Event", so disable golint stutter wraning
