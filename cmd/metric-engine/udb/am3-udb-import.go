@@ -95,28 +95,20 @@ func StartupUDBImport(logger log.Logger, cfg *viper.Viper, am3Svc eventHandlingS
 
 	bus := d.GetBus()
 	// set up the event handler that will do periodic imports every ~1s.
-	am3Svc.AddEventHandler("Import UDB Metric Values", telemetry.PublishClock, MakeHandlerUDBImport(logger, dataImporter, bus))
+	am3Svc.AddEventHandler("Import UDB Metric Values", telemetry.PublishClock, MakeHandlerUDBPeriodicImport(logger, dataImporter, bus))
 	am3Svc.AddEventHandler("UDB Change Notification", udbChangeEvent, MakeHandlerUDBChangeNotify(logger, dataImporter, bus))
 
 	return nil
 }
 
-func MakeHandlerUDBImport(logger log.Logger, dataImporter *dataImporter, bus eh.EventBus) func(eh.Event) {
+func MakeHandlerUDBPeriodicImport(logger log.Logger, dataImporter *dataImporter, bus eh.EventBus) func(eh.Event) {
 	// close over periodic... first iteration will do forced, nonperiodic import, rest will always do periodic import
 	periodic := false
 	return func(event eh.Event) {
-		// TODO: get smarter about this. We ought to calculate time until next report and set a timer for that
-		err := dataImporter.iterUDBTables(func(name string, src dataSource) error {
-			err := dataImporter.conditionalImport(name, src, periodic)
-			if err != nil && err != disabled {
-				return xerrors.Errorf("error from import of report(%s): %w", name, err)
-			}
-			return nil
-		})
+		err := dataImporter.runImport(periodic)
 		if err != nil {
-			logger.Crit("Error from import", "err", err)
+			logger.Crit("Error running import", "err", err)
 		}
-		// the very first import will force full import, then after that, it will be 'periodic=true'
 		periodic = true
 	}
 }
@@ -128,7 +120,7 @@ func MakeHandlerUDBChangeNotify(logger log.Logger, dataImporter *dataImporter, b
 			logger.Crit("UDB Change Notifier message handler got an invalid data event", "event", event, "eventdata", event.Data())
 			return
 		}
-		err := dataImporter.dbChanged(strings.ToLower(notify.Database), strings.ToLower(notify.Table))
+		err := dataImporter.runImportForUDBChange(strings.ToLower(notify.Database), strings.ToLower(notify.Table))
 		if err != nil {
 			logger.Crit("Error checking if database changed", "err", err, "notify", notify)
 		}
@@ -145,18 +137,13 @@ type changeNotify struct {
 // This is the number of '|' separated fields in a correct record
 const numChangeFields = 4
 
-// publishHelper will log/eat the error from PublishEvent since we can't do anything useful with it
-func publishHelper(logger log.Logger, bus eh.EventBus, event eh.Event) {
-	err := bus.PublishEvent(context.Background(), event)
-	if err != nil {
-		logger.Crit("Error publishing event. This should never happen!", "err", err)
-	}
-}
-
 func publishAndWait(logger log.Logger, bus eh.EventBus, et eh.EventType, data eh.EventData) {
 	evt := event.NewSyncEvent(et, data, time.Now())
 	evt.Add(1)
-	publishHelper(logger, bus, evt)
+	err := bus.PublishEvent(context.Background(), evt)
+	if err != nil {
+		logger.Crit("Error publishing event. This should never happen!", "err", err)
+	}
 	evt.Wait()
 }
 

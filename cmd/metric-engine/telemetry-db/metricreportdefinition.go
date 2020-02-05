@@ -660,7 +660,7 @@ func (factory *telemetryManager) GenerateMetricReport(tx *sqlx.Tx, name string) 
 			return xerrors.Errorf("error getting MetricReportDefinition: ID(%s) NAME(%s) err: %w", MRD.ID, MRD.Name, err)
 		}
 
-		// default to deleting all the reports... only actually does this if any params are invalid
+		// default to just updating the report sequence number
 		SQL := []string{"update_report_ts_seq"}
 		sqlargs := map[string]interface{}{
 			"Name":            MRD.Name,
@@ -680,10 +680,8 @@ func (factory *telemetryManager) GenerateMetricReport(tx *sqlx.Tx, name string) 
 				sqlargs["Name"] = fmt.Sprintf("%s-%s", MRD.Name, factory.MetricTSHWM.UTC().Format(time.RFC3339))
 			case metric.Overwrite:
 				SQL = []string{"update_report_set_start_to_prev_timestamp", "update_report_ts_seq"}
-			case metric.AppendWrapsWhenFull:
-				SQL = []string{"update_report_ts_seq"}
-			case metric.AppendStopsWhenFull:
-				SQL = []string{"update_report_ts_seq"}
+			case metric.AppendWrapsWhenFull: // default sql list is ok
+			case metric.AppendStopsWhenFull: // default sql list is ok
 			}
 		case metric.OnChange:
 			switch MRD.Updates {
@@ -694,10 +692,8 @@ func (factory *telemetryManager) GenerateMetricReport(tx *sqlx.Tx, name string) 
 				SQL = []string{"update_report_start", "update_report_ts_seq"}
 				// FYI: using .Add() with a negative number, as ".Sub()" does something *completely different*.
 				sqlargs["Start"] = factory.MetricTSHWM.Add(-time.Duration(MRD.TimeSpan) * time.Second).UnixNano()
-			case metric.AppendWrapsWhenFull:
-				SQL = []string{"update_report_ts_seq"}
-			case metric.AppendStopsWhenFull:
-				SQL = []string{"update_report_ts_seq"}
+			case metric.AppendWrapsWhenFull: // default sql list is ok
+			case metric.AppendStopsWhenFull: // default sql list is ok
 			}
 		default:
 		}

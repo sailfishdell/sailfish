@@ -43,7 +43,7 @@ type dataSourceConfig struct {
 	Query        string
 	WaitInterval int64
 	ScanInterval int64
-	DBChange     map[string]map[string]struct{}
+	DBChange     interface{}
 }
 
 type dataImporter struct {
@@ -85,7 +85,19 @@ func newImportManager(logger log.Logger, database *sqlx.DB, d busComponents, cfg
 		meta := dataSource{
 			scanInterval: time.Duration(settings.ScanInterval) * time.Second,
 			waitInterval: time.Duration(settings.WaitInterval) * time.Second,
-			dbChange:     settings.DBChange,
+			dbChange:     map[string]map[string]struct{}{},
+		}
+
+		// slight differenct in types, so manually set from cfg (map[string]interface{})
+		dbchangemap, ok := settings.DBChange.(map[string]interface{})
+		if ok {
+			for database, v := range dbchangemap {
+				vi := v.(map[string]interface{})
+				meta.dbChange[database] = map[string]struct{}{}
+				for table := range vi {
+					meta.dbChange[database][table] = struct{}{}
+				}
+			}
 		}
 
 		meta.query, err = database.PrepareNamed(settings.Query)
@@ -93,7 +105,6 @@ func newImportManager(logger log.Logger, database *sqlx.DB, d busComponents, cfg
 			return nil, xerrors.Errorf("prepare() failed for query Section(%s), key(%s), sql query(%s): %w", "UDB-Metric-Import", k, settings.Query, err)
 		}
 
-		var ok bool
 		if meta.importFn, ok = impFns[settings.Type]; !ok {
 			return nil, fmt.Errorf(
 				"config error, nonexistent func. Section(%s), key(%s), func(%s). Available: %+v", "UDB-Metric-Import", k, settings.Type, impFns)
@@ -111,6 +122,7 @@ func unmarshalSourceCfg(cfg *viper.Viper) (*dataSourceConfig, error) {
 	cfg.SetDefault("ScanInterval", "0")
 	settings := dataSourceConfig{}
 	err := cfg.Unmarshal(&settings)
+	settings.DBChange = cfg.GetStringMap("dbchange")
 	return &settings, err
 }
 
@@ -131,8 +143,20 @@ func (l *dataImporter) conditionalImport(udbImportName string, meta dataSource, 
 	return l.udb[udbImportName].importFn(udbImportName)
 }
 
-func (l *dataImporter) dbChanged(database, table string) (err error) {
-	return l.iterUDBTables(func(udbImportName string, meta dataSource) error {
+func (l *dataImporter) runImport(periodic bool) error {
+	// TODO: get smarter about this. We ought to calculate time until next report and set a timer for that
+	return l.iterUDBSources(func(name string, src dataSource) error {
+		err := l.conditionalImport(name, src, periodic)
+		if err != nil && !xerrors.Is(err, disabled) {
+			return xerrors.Errorf("error from import of report(%s): %w", name, err)
+		}
+		return nil
+	})
+}
+
+func (l *dataImporter) runImportForUDBChange(database, table string) (err error) {
+	return l.iterUDBSources(func(udbImportName string, meta dataSource) error {
+		//fmt.Printf("UDB CHANGE: %s/%s", udbImportName, database)
 		tbls, ok := meta.dbChange[database]
 		if !ok {
 			return nil
@@ -146,11 +170,11 @@ func (l *dataImporter) dbChanged(database, table string) (err error) {
 }
 
 func (l *dataImporter) importERROR(udbImportName string) (err error) {
-	fmt.Printf("DONT YET KNOW HOW TO IMPORT: %s\n", udbImportName)
+	//fmt.Printf("DONT YET KNOW HOW TO IMPORT: %s\n", udbImportName)
 	return xerrors.New("UNKNOWN IMPORT")
 }
 
-func (l *dataImporter) iterUDBTables(fn func(string, dataSource) error) error {
+func (l *dataImporter) iterUDBSources(fn func(string, dataSource) error) error {
 	for udbImportName, meta := range l.udb {
 		err := fn(udbImportName, meta)
 		if err != nil && err != disabled && err != stopIter {
