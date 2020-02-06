@@ -471,8 +471,10 @@ UDB-Metric-Import:
         '/redfish/v1/FIXME/' || FriendlyFQDD as Property,
         friendlyFQDD as FriendlyFQDD,
         FQDD as FQDD,
-        5000000000 as 'SensorInterval',  -- 5s interval w/ 1s slack
-        1000000000 as 'SensorSlack',
+
+        -- MEB - 2020-02-07 - observed 10s normal with outliers at 17s, 24s. possibly suppressed upstream
+        10000000000 as 'SensorInterval',
+        2000000000 as 'SensorSlack',
         true as 'RequiresExpand',
 
         LastWeekMinPowerTime as 'Metric-LastWeekMinPowerTime',
@@ -512,7 +514,10 @@ UDB-Metric-Import:
         '/redfish/v1/FIXME/' || FriendlyFQDD as Property,
         friendlyFQDD as FriendlyFQDD,
         FQDD as FQDD,
-        5000000000 as 'SensorInterval',  -- 5s interval w/ 1s slack
+
+        -- MEB - 2/7/2020 - observed 5s, 10s, 15s, and 30s intervals. possibly suppressed upstream
+        -- setting 5s sensor interval for now
+        5000000000 as 'SensorInterval',  -- 5s interval w/ 2s slack
         1000000000 as 'SensorSlack',
         true as 'RequiresExpand',
 
@@ -552,8 +557,9 @@ UDB-Metric-Import:
         '/redfish/v1/FIXME/' || FriendlyFQDD as Property,
         friendlyFQDD as FriendlyFQDD,
         FQDD as FQDD,
-        -- expect 5 second interval, give it +/- 1s
-        5000000000 as 'SensorInterval',  -- 5s interval w/ 1s slack
+
+        -- MEB - 2020-02-07 - observed 5s, 10s, 15s, 20s, 25s interals. Typical is 5s. Possibly suppressed upstream
+        5000000000 as 'SensorInterval',
         1000000000 as 'SensorSlack',
         true as 'RequiresExpand',
 
@@ -585,7 +591,9 @@ UDB-Metric-Import:
         '/redfish/v1/FIXME/' || FriendlyFQDD as Property,
         friendlyFQDD as FriendlyFQDD,
         FQDD as FQDD,
-        5000000000 as 'SensorInterval',  -- 5s interval w/ 1s slack
+
+        -- MEB 2020-02-07 - observed mostly reliable 5s intervals. Sometimes 10s. Possibly suppressed upstream
+        5000000000 as 'SensorInterval',
         1000000000 as 'SensorSlack',
         true as 'RequiresExpand',
 
@@ -615,8 +623,10 @@ UDB-Metric-Import:
         '/redfish/v1/FIXME/' || FriendlyFQDD as Property,
         friendlyFQDD as FriendlyFQDD,
         FQDD as FQDD,
-        5000000000 as 'SensorInterval',  -- 5s interval w/ 1s slack
-        1000000000 as 'SensorSlack',
+
+        -- MEB 2020-02-07 - observed mostly reliable 5s intervals. Sometimes 10s. Possibly suppressed upstream
+        10000000000 as 'SensorInterval',  -- 5s interval w/ 1s slack
+        2000000000 as 'SensorSlack',
         true as 'RequiresExpand',
 
         Temperature as 'Metric-TemperatureReading',
@@ -638,8 +648,12 @@ UDB-Metric-Import:
         '/redfish/v1/FIXME/' || FriendlyFQDD as Property,
         friendlyFQDD as FriendlyFQDD,
         FQDD as FQDD,
-        5000000000 as 'SensorInterval',  -- 5s interval w/ 1s slack
-        1000000000 as 'SensorSlack',
+
+        -- MEB 2020-02-07 - TODO -> Need info from Sailaja about the intervals here
+        -- My data set has no recurrence on these values, bug in telemetrypop? Or are they really not changing? Too much suppression happening.
+        -- TODO: FIXME: going to hardcode this as 20s for now
+        20000000000 as 'SensorInterval',
+        4000000000 as 'SensorSlack',
         true as 'RequiresExpand',
 
         CurrentReading as 'Metric-TemperatureReading'
@@ -660,8 +674,12 @@ UDB-Metric-Import:
         '/redfish/v1/FIXME/' || FriendlyFQDD as Property,
         friendlyFQDD as FriendlyFQDD,
         FQDD as FQDD,
-        5000000000 as 'SensorInterval',  -- 5s interval w/ 1s slack
-        1000000000 as 'SensorSlack',
+
+        -- MEB 2020-02-07 - TODO -> Need info from Sailaja about the intervals here
+        -- My data set has no recurrence on these values, bug in telemetrypop? Or are they really not changing? Too much suppression happening.
+        -- TODO: FIXME: going to hardcode this as 20s for now
+        20000000000 as 'SensorInterval',
+        4000000000 as 'SensorSlack',
         true as 'RequiresExpand',
 
         CurrentReading as 'Metric-TemperatureReading'
@@ -682,8 +700,12 @@ UDB-Metric-Import:
         '/redfish/v1/FIXME/' || FriendlyFQDD as Property,
         friendlyFQDD as FriendlyFQDD,
         FQDD as FQDD,
-        5000000000 as 'SensorInterval',  -- 5s interval w/ 1s slack
-        1000000000 as 'SensorSlack',
+
+        -- MEB 2020-02-07 - TODO -> Need info from Sailaja about the intervals here
+        -- No hardware in MEB test machine. Need info.
+        -- TODO: FIXME: going to hardcode this as 20s for now
+        20000000000 as 'SensorInterval',  -- 5s interval w/ 1s slack
+        4000000000 as 'SensorSlack',
         true as 'RequiresExpand',
 
         CurrentReading as 'Metric-TemperatureReading'
@@ -705,8 +727,11 @@ UDB-Metric-Import:
         '/redfish/v1/FIXME/' || FQDD as Property,
         friendlyFQDD as FriendlyFQDD,
         FQDD as FQDD,
-        60000000000 as 'SensorInterval',  -- 60s interval w/ 10s slack
-        10000000000 as 'SensorSlack',
+
+        -- MEB 2020-02-07 - observed ~60s regular intervals here, but occasional 5s. WTF?
+        -- TODO: investigate sensor interval here
+        60000000000 as 'SensorInterval',
+        5000000000 as 'SensorSlack',
         true as 'RequiresExpand',
 
         SystemMaxPowerConsumption as 'Metric-SystemMaxPowerConsumption',
@@ -882,6 +907,11 @@ UDB-Metric-Import:
          '/redfish/v1/FIXME/' || FQDD as Property,
         FQDD as FQDD,
 
+        -- MEB 2020-02-07 - observed 5s intervals
+        5000000000 as 'SensorInterval',  -- 5s interval w/ 1s slack
+        2000000000 as 'SensorSlack',
+        true as 'RequiresExpand',
+
         TxUnicast as 'Metric-TxUnicast',
         TxPauseXONFrames as 'Metric-TxPauseXONFrames',
         TxPauseXOFFFrames as 'Metric-TxPauseXOFFFrames',
@@ -1015,6 +1045,7 @@ UDB-Metric-Import:
           WHEN 'iDRAC.Embedded.1#SystemBoardMEMUsage' then 'MemoryUsage'
           WHEN 'iDRAC.Embedded.1#SystemBoardIOUsage'  then 'IOUsage'
           END
+        ELSE 'IGNORE'
         END as Name,
 
         -- manually expand x^y since sqlite is missing a pow() or exp() function
@@ -1038,23 +1069,8 @@ UDB-Metric-Import:
       left join
         ActiveOIDMapping on TblProbeObj.OID = ActiveOIDMapping.OID
       WHERE
-        Timestamp > :HWM AND (
-          -- <dchipobj.h>
-          -- TEMPERATURE_OBJ_TYPE (0x16) // ProbeObj
-          ( ObjType = 0x16 and subtype=0x05 ) or
-
-          -- FAN_OBJ_TYPE         (0x17) // ProbeObj
-          ( ObjType = 0x17 and (subtype=0x01 or subtype=0x03)) or
-
-          -- VOLTAGE_OBJ_TYPE     (0x18) // ProbeObj
-          --   All voltage subtypes that give actual readings
-          ( ObjType = 0x18 and ((SubType >= 0x01 and SubType <= 0x0F) or subType = 0x1C) ) or
-
-          -- CURRENT_OBJ_TYPE     (0x19) // ProbeObj
-          ( ObjType = 0x19 ) or
-
-          ( ObjType = 0x38 )    -- USAGE_OBJ_TYPE       (0x38) // CPU Utilization
-        )
+        Timestamp > :HWM AND
+        Name != 'IGNORE'
 
   Sensor:
     Type: DISABLE-DirectMetric
@@ -1305,6 +1321,8 @@ internal:
     iterate_metric_instance_for_report: |
       select distinct
         MI.ID as InstanceID,
+        MI.Source as Source,
+        MI.Name as Name,
         MI.CollectionScratch,
         MI.LastTS,
         MI.LastValue,
