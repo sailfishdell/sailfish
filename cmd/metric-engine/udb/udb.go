@@ -28,8 +28,9 @@ const stopIter = constErr("stop iteration")
 type dataSource struct {
 	query        *sqlx.NamedStmt
 	importFn     func(string) error
-	HWM          int64             `db:"HWM"`
-	lastImport   metric.SQLTimeInt `db:"LastImportTime"`
+	HWM          int64 `db:"HWM"`
+	lastImport   time.Time
+	nextImport   time.Time
 	waitInterval time.Duration
 	scanInterval time.Duration
 	dbChange     map[string]map[string]struct{}
@@ -116,7 +117,7 @@ func unmarshalSourceCfg(cfg *viper.Viper) (*dataSourceConfig, error) {
 		return nil, err
 	}
 
-	// have to specifically unmarshal dbchange for some wierd reason
+	// have to specifically unmarshal dbchange for some weird reason
 	err = cfg.UnmarshalKey("dbchange", &settings.DBChange)
 	if err != nil {
 		return nil, err
@@ -126,17 +127,24 @@ func unmarshalSourceCfg(cfg *viper.Viper) (*dataSourceConfig, error) {
 
 func (l *dataImporter) conditionalImport(udbImportName string, meta dataSource, periodic bool) (err error) {
 	now := time.Now()
-	if periodic && meta.scanInterval == 0 {
-		return
-	}
-	if periodic && now.Before(meta.lastImport.Add(meta.scanInterval)) {
-		return
-	}
-	if now.Before(meta.lastImport.Add(meta.waitInterval)) {
-		return
+
+	if meta.nextImport.IsZero() || now.Before(meta.nextImport) {
+		if periodic && meta.scanInterval == 0 {
+			return
+		}
+		if periodic && now.Before(meta.lastImport.Add(meta.scanInterval)) {
+			return
+		}
+		if now.Before(meta.lastImport.Add(meta.waitInterval)) {
+			return
+		}
 	}
 
-	meta.lastImport.Time = now
+	meta.lastImport = now
+	meta.nextImport = time.Time{}
+	if meta.scanInterval > 0 {
+		meta.nextImport = now.Add(meta.scanInterval)
+	}
 	l.udb[udbImportName] = meta
 	return l.udb[udbImportName].importFn(udbImportName)
 }
@@ -154,7 +162,6 @@ func (l *dataImporter) runImport(periodic bool) error {
 
 func (l *dataImporter) runImportForUDBChange(database, table string) (err error) {
 	return l.iterUDBSources(func(udbImportName string, meta dataSource) error {
-		//fmt.Printf("UDB CHANGE: %s/%s", udbImportName, database)
 		tbls, ok := meta.dbChange[database]
 		if !ok {
 			return nil
@@ -163,12 +170,14 @@ func (l *dataImporter) runImportForUDBChange(database, table string) (err error)
 		if !ok {
 			return nil
 		}
+		// force import either immediately or at the next wait interval depending on how long it's been
+		meta.nextImport = meta.lastImport.Add(meta.waitInterval)
 		return l.conditionalImport(udbImportName, meta, false)
 	})
 }
 
+//nolint:unparam // has to conform to API
 func (l *dataImporter) importERROR(udbImportName string) (err error) {
-	//fmt.Printf("DONT YET KNOW HOW TO IMPORT: %s\n", udbImportName)
 	return xerrors.New("UNKNOWN IMPORT")
 }
 

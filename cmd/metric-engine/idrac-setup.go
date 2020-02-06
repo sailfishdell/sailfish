@@ -39,6 +39,14 @@ func setup(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, d *busCo
 		panic("Error initializing base telemetry subsystem: " + err.Error())
 	}
 
+	// After base event loop, process startup events. They all belong to the base loop.
+	// config file main.startup specifies the section(s) that have the list of events
+	cfgMgr.SetDefault("main.startup", "startup-events")
+	startup := cfgMgr.GetStringSlice("main.startup")
+	for _, section := range startup {
+		injectStartupEvents(logger, cfgMgr, section, d.GetBus())
+	}
+
 	// Processing loop 2:
 	//  	-- UDB access
 	am3SvcN3, _ := am3.StartService(ctx, logger.New("module", "AM3_UDB"), "udb database", d)
@@ -47,12 +55,7 @@ func setup(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, d *busCo
 		panic("Error initializing UDB Import subsystem: " + err.Error())
 	}
 
-	// After we have our event loops set up,
-	// Read the config file and process any startup events that are listed
-	startup := cfgMgr.GetStringSlice("main.startup")
-	for _, section := range startup {
-		injectStartupEvents(logger, cfgMgr, section, d.GetBus())
-	}
+	// if UDB event loop needs any events (none currently), then we could have a separate list and process that list here.
 }
 
 func injectStartupEvents(logger log.Logger, cfgMgr *viper.Viper, section string, bus eh.EventBus) {

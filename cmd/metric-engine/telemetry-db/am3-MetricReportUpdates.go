@@ -26,13 +26,12 @@ const (
 
 // "configuration" -- TODO: need to move to config file
 const (
-	startupWaitTime         = 1 * time.Second
 	clockPeriod             = 1000 * time.Millisecond
 	maxMetricTimestampDelta = 1 * time.Hour
 
 	// NOTE: the numbers below are selected as PRIME numbers so that they run concurrently as infrequently as possible
 	// With the default 73/3607/10831, they will run concurrently every ~90 years.
-	cleanMVTime  = 73 * time.Second
+	cleanMVTime  = 307 * time.Second
 	vacuumTime   = 3607 * time.Second
 	optimizeTime = 10831 * time.Second
 )
@@ -55,15 +54,10 @@ func publishHelper(logger log.Logger, bus eh.EventBus, event eh.Event) {
 }
 
 func backgroundTasks(logger log.Logger, bus eh.EventBus) {
-	// run once after startup. give a few seconds so we dont slow boot up
-	time.Sleep(startupWaitTime)
-	publishHelper(logger, bus, eh.NewEvent(DatabaseMaintenance, "vacuum", time.Now()))
-	publishHelper(logger, bus, eh.NewEvent(DatabaseMaintenance, "optimize", time.Now()))
-
-	clockTicker := time.NewTicker(clockPeriod)       // unfortunately every second, otherwise report generation drifts.
-	cleanValuesTicker := time.NewTicker(cleanMVTime) // once a minute
-	vacuumTicker := time.NewTicker(vacuumTime)       // once an hour (-ish)
-	optimizeTicker := time.NewTicker(optimizeTime)   // once every three hours (-ish)
+	clockTicker := time.NewTicker(clockPeriod)
+	cleanValuesTicker := time.NewTicker(cleanMVTime)
+	vacuumTicker := time.NewTicker(vacuumTime)
+	optimizeTicker := time.NewTicker(optimizeTime)
 
 	defer cleanValuesTicker.Stop()
 	defer vacuumTicker.Stop()
@@ -77,12 +71,10 @@ func backgroundTasks(logger log.Logger, bus eh.EventBus) {
 			publishHelper(logger, bus, eh.NewEvent(DatabaseMaintenance, "vacuum", time.Now()))
 		case <-optimizeTicker.C:
 			publishHelper(logger, bus, eh.NewEvent(DatabaseMaintenance, "optimize", time.Now()))
-			// orphans should never happen outside of a delete/update, so this is really just in case
-			publishHelper(logger, bus, eh.NewEvent(DatabaseMaintenance, "delete orphans", time.Now()))
+			publishHelper(logger, bus, eh.NewEvent(DatabaseMaintenance, "delete orphans", time.Now())) // belt and suspenders
 		case <-clockTicker.C:
 			publishHelper(logger, bus, eh.NewEvent(PublishClock, nil, time.Now()))
 		}
-		// common log for most of the publish events in the select statement above
 	}
 }
 
@@ -94,13 +86,18 @@ func StartupTelemetryBase(logger log.Logger, cfg *viper.Viper, am3Svc eventHandl
 	eh.RegisterEventData(DeleteMetricReportDefinition, func() eh.EventData { return &MetricReportDefinitionData{} })
 	eh.RegisterEventData(DatabaseMaintenance, func() eh.EventData { return "" })
 
+	cfg.SetDefault("main.databasepath",
+		"file:/run/telemetryservice/telemetry_timeseries_database.db?_foreign_keys=on&cache=shared&mode=rwc&_busy_timeout=1000")
+
 	database, err := sqlx.Open("sqlite3", cfg.GetString("main.databasepath"))
 	if err != nil {
 		return xerrors.Errorf("could not open database(%s): %w", cfg.GetString("main.databasepath"))
 	}
 
-	// If we run in WAL mode, you can only do one connection. Seems like a base library limitation that's reflected up into the golang implementation.
-	// SO: we will ensure that we have ONLY ONE GOROUTINE that does transactions  This isn't a terrible limitation as it is sort of what we want to do
+	// If we run in WAL mode, you can only do one connection. Seems like a base
+	// library limitation that's reflected up into the golang implementation.
+	// SO: we will ensure that we have ONLY ONE GOROUTINE that does transactions.
+	// This isn't a terrible limitation as it is sort of what we want to do
 	// anyways.
 	database.SetMaxOpenConns(1)
 
@@ -108,13 +105,12 @@ func StartupTelemetryBase(logger log.Logger, cfg *viper.Viper, am3Svc eventHandl
 	for _, sqltext := range cfg.GetStringSlice("createdb") {
 		_, err = database.Exec(sqltext)
 		if err != nil {
-			// ignore drop errors if we are migrating from old telemetry db
+			// ignore drop errors. can happen if we have old telemetry db and are ok
 			if strings.HasPrefix(err.Error(), "use DROP") {
 				logger.Info("Ignoring SQL error dropping table/view", "err", err, "sql", sqltext)
 				continue
 			}
-			logger.Crit("Error executing setup SQL", "err", err, "sql", sqltext)
-			panic("Cannot set up telemetry timeseries DB! ABORTING: " + err.Error())
+			return xerrors.Errorf("Error running DB Create statement. SQL: %s: ERROR: %w", sqltext, err)
 		}
 	}
 
@@ -124,7 +120,6 @@ func StartupTelemetryBase(logger log.Logger, cfg *viper.Viper, am3Svc eventHandl
 	}
 
 	bus := d.GetBus()
-	go backgroundTasks(logger, bus)
 	am3Svc.AddEventHandler("Create Metric Report Definition", AddMetricReportDefinition, MakeHandlerCreateMRD(logger, telemetryMgr, bus))
 	am3Svc.AddEventHandler("Update Metric Report Definition", UpdateMetricReportDefinition, MakeHandlerUpdateMRD(logger, telemetryMgr, bus))
 	am3Svc.AddEventHandler("Delete Metric Report Definition", DeleteMetricReportDefinition, MakeHandlerDeleteMRD(logger, telemetryMgr, bus))
@@ -135,20 +130,14 @@ func StartupTelemetryBase(logger log.Logger, cfg *viper.Viper, am3Svc eventHandl
 	// multi handler
 	am3Svc.AddMultiHandler("Store Metric Value(s)", metric.MetricValueEvent, MakeHandlerMV(logger, telemetryMgr, bus))
 
-	// sync with what may already be in database on startup
-	reportList, err := telemetryMgr.syncNextMRTSWithDB()
-	if err != nil {
-		return xerrors.Errorf("telemetry sync to DB failed: %w", err)
-	}
-	for _, report := range reportList {
-		publishHelper(logger, bus, eh.NewEvent(metric.ReportGenerated, metric.ReportGeneratedData{Name: report}, time.Now()))
-	}
+	// database cleanup on start
+	telemetryMgr.DeleteOrphans()      //nolint:errcheck
+	telemetryMgr.DeleteOldestValues() //nolint:errcheck
+	telemetryMgr.Optimize()           //nolint:errcheck
+	telemetryMgr.Vacuum()             //nolint:errcheck
 
-	// and do database cleanup on start
-	telemetryMgr.DeleteOrphans()
-	telemetryMgr.DeleteOldestValues()
-	telemetryMgr.Optimize()
-	telemetryMgr.Vacuum()
+	// start background thread publishing regular maintenance tasks
+	go backgroundTasks(logger, bus)
 
 	return nil
 }

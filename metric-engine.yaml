@@ -1,29 +1,5 @@
-main:
-    databasepath: file:/run/telemetryservice/telemetry_timeseries_database.db?_foreign_keys=on&cache=shared&mode=rwc&_busy_timeout=1000
-    udbdatabasepath: file:/run/unifieddatabase/DMLiveObjectDatabase.db?cache=shared&_foreign_keys=off&mode=ro&_busy_timeout=1000
-    shmdatabasepath: file:/run/unifieddatabase/SHM.db?cache=shared&_foreign_keys=off&mode=ro&_busy_timeout=1000
-    udbnotifypipe: /run/telemetryservice/udbtdbipcpipe
-    startup: ["startup-events"]
-
-sql_lists:
-    # list of prepared internal.sqlx statements to run to clean up old metric values
-    deleteops:
-      # first delete any old reports
-      # ensure that each report has at most 3 copies
-      - "delete_old_mr"
-      # then, delete the oldest metrics that are not in any reports
-      - "delete_old_mvi"
-      - "delete_old_mvr"
-      - "delete_old_mvt"
-      # then find metric #100,000 (sorted by age), and delete everything older than that
-      - "delete_mvi"
-      - "delete_mvr"
-      - "delete_mvt"
-      - "shrink"
-    orphanops: ["delete_orphan_metricinstance", "delete_orphan_metricmeta"]
-    optimizeops: ["optimize", "shrink"]
-    # can't vacuum inside a transaction, so dont bother putting vacuum in any of the above statements
-    vacuumops: ["vacuum", "shrink"]
+# main:  # we now have default values for everything here in the code. Can override on an as-needed basis
+# udb: # moved udb-related paths under this top-level key. everything is in programtic defaults in code and can be overridden here
 
 # metric engine has no HTTP/HTTPS or PPROF listeners by default. Copy from the local-metric-engine.yaml if this is needed in production
 listen:
@@ -55,8 +31,8 @@ Startup-Events:
     #   [ ] Data correct
     data: |
       {
-        "Name": "AggregationMetrics",   "Enabled": true, "Type": "OnRequest", "Updates": "AppendWrapsWhenFull", "SuppressDups": false,
-        "Actions": [],
+        "Name": "AggregationMetrics",   "Enabled": true, "Type": "OnRequest", "TimeSpan": 60000000000, "Updates": "AppendWrapsWhenFull", "SuppressDups": false,
+        "Actions": ["LogToMetricReportsCollection"],
         "Metrics": [ { "SourcePattern": "aggregation-metrics" } ]
       }
 
@@ -376,7 +352,7 @@ Startup-Events:
     #   [ ] Data correct
     data: |
       {
-        "Name": "ThermalMetrics",       "Enabled": true, "Type": "OnChange", "TimeSpan": 60, "Period": 5, "Updates": "Overwrite", "SuppressDups": false,
+        "Name": "ThermalMetrics",       "Enabled": true, "Type": "OnChange", "TimeSpan": 60000000000, "Period": 5, "Updates": "Overwrite", "SuppressDups": false,
         "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
         "Metrics": [ { "SourcePattern": "thermalmetrics" } ] }
 
@@ -1354,6 +1330,18 @@ internal:
       WHERE ID=:InstanceID
 
   sqlx:
+    count_report_records: |
+        select
+          count(*)
+        from MetricReport_calculated as MR
+        inner join ReportDefinitionToMetricMeta as rd2mm on MR.ReportDefinitionID = rd2mm.ReportDefinitionID
+        inner join MetricMetaToInstance as MMTI on rd2mm.MetaID = MMTI.MetaID
+        inner join MetricValue as MV on MMTI.InstanceID = MV.InstanceID
+        WHERE
+          ( MR.Name = ? ) AND
+          ( MV.Timestamp > MR.StartTimestamp ) AND
+          ( MV.Timestamp <= MR.ReportTimestamp )
+
     find_onchange_mrd_by_mm_instance: |
       select
         MRD.Name
@@ -1429,7 +1417,7 @@ internal:
     #    .. Delete any ReportDefinitionToMetricMeta that doesn't match an MRD
     #    .. Delete any ReportDefinitionToMetricMeta that doesn't match a MetricMeta
     #    XX Delete any MetricMeta that doesnt have a ReportDefinitionToMetricMeta entry
-    #    oo Delete any MetricInstance without MetricMeta
+    #    XX Delete any MetricInstance that doesnt have a MetricMetaToInstance entry
     #    .. Delete any MetricValue without MetricInstance
     #
     # XX = complete
@@ -1658,20 +1646,21 @@ createdb:
           MR.Sequence,
 
           CASE MRD.Type
-          WHEN 'Periodic' THEN ReportTimestamp
-          WHEN 'OnChange' THEN ReportTimestamp
+          WHEN 'Periodic' THEN MR.ReportTimestamp
+          WHEN 'OnChange' THEN MR.ReportTimestamp
           WHEN 'OnRequest' THEN cast( (julianday('now') - 2440587.5)*86400 * 1000000000 as integer)
           ELSE 0
           END as ReportTimestamp,
 
           CASE MRD.Type
           WHEN 'Periodic' THEN
-            CASE MRD.TimeSpan
-            WHEN 0 THEN StartTimestamp
-            ELSE ReportTimestamp - MRD.TimeSpan * 1000000000
+            CASE
+            WHEN MRD.TimeSpan = 0 THEN MR.StartTimestamp
+            WHEN MR.ReportTimestamp - MRD.TimeSpan > MR.StartTimestamp THEN  MR.ReportTimestamp - MRD.TimeSpan
+            ELSE StartTimestamp
             END
-          WHEN 'OnChange' THEN ReportTimestamp - MRD.TimeSpan * 1000000000
-          WHEN 'OnRequest' THEN cast( (julianday('now') - 2440587.5)*86400 * 1000000000 - MRD.TimeSpan * 1000000000 as integer)
+          WHEN 'OnChange' THEN ReportTimestamp - MRD.TimeSpan
+          WHEN 'OnRequest' THEN cast( (julianday('now') - 2440587.5)*86400 * 1000000000 - MRD.TimeSpan as integer)
           ELSE 0
           END as StartTimestamp
 
@@ -1760,8 +1749,11 @@ createdb:
             ' "@odata.id": "/redfish/v1/TelemetryService/MetricReports/' || MR.Name || '",' ||
             ' "Id": "' || MR.Name || '",' ||
             ' "Name": "' || MR.Name || ' Metric Report",' ||
-            -- TODO: update this so we only output ReportSequence for Periodic and OnChange reports
-            -- ' "ReportSequence": ' || json_quote(Sequence) || ',' ||
+            CASE MRD.Type
+            WHEN 'Periodic' THEN ' "ReportSequence": ' || json_quote(Sequence) || ','
+            WHEN 'OnChange' THEN ' "ReportSequence": ' || json_quote(Sequence) || ','
+            ELSE ''
+            END ||
             ' "Timestamp": ' || strftime('"%Y-%m-%dT%H:%M:%fZ"', MR.ReportTimestamp/1000000000, 'unixepoch') || ', ' ||
             ' "MetricReportDefinition": {"@odata.id": "/redfish/v1/TelemetryService/MetricReportDefinitions/' || MRD.Name || '"}, ' ||
               ifnull((
@@ -1784,6 +1776,11 @@ createdb:
       inner join MetricReportDefinition as MRD on MRD.ID = MR.ReportDefinitionID
 
   - |
+      -- DOES NOT SCALE:  This uses a temp table to spool the metric values. memory usage scales with # of records output.
+      -- do not expect to have scaling issues with this table as we will
+      -- generally have a low number of metric reports. just something to be aware
+      -- of. Hopefully we can fix the design in the future to be more scalable
+      -- (ie. not use sqlite to output redfish)
       DROP VIEW IF EXISTS MetricReportCollection_JSON;
       CREATE VIEW MetricReportCollection_JSON as
         select
@@ -1821,7 +1818,7 @@ createdb:
           ' "MetricReportDefinitionType@Redfish.AllowableValues": ' || json_array('Periodic', 'OnChange', 'OnRequest') || ', ' ||
           ' "MetricReportHeartbeatInterval": null,' ||
           ' "SuppressRepeatedMetricValue": ' || case SuppressDups when 1 then json('true') else json('false') end || ',' ||
-          ' "ReportTimespan": "PT' || (TimeSpan/(3600)) || 'H' || ((TimeSpan/60)%60) || 'M' || (TimeSpan%60) || 'S' || '", ' ||
+          ' "ReportTimespan": "PT' || (TimeSpan/(3600000000000)) || 'H' || ((TimeSpan/60000000000)%60) || 'M' || ((TimeSpan/1000000000)%60) || 'S' || '", ' ||
           ' "ReportUpdates": "' || Updates || '", ' ||
           ' "ReportUpdates@Redfish.AllowableValues": ' || json_array('AppendStopsWhenFull', 'AppendWrapsWhenFull', 'NewReport', 'Overwrite') || ", " ||
 

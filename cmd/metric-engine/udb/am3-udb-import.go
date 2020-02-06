@@ -49,13 +49,18 @@ type eventHandlingService interface {
 
 // StartupUDBImport will attach event handlers to handle import UDB import
 func StartupUDBImport(logger log.Logger, cfg *viper.Viper, am3Svc eventHandlingService, d busComponents) error {
+	// setup programatic defaults. can be overridden in config file
+	cfg.SetDefault("udb.udbdatabasepath", "file:/run/unifieddatabase/DMLiveObjectDatabase.db?cache=shared&_foreign_keys=off&mode=ro&_busy_timeout=1000")
+	cfg.SetDefault("udb.shmdatabasepath", "file:/run/unifieddatabase/SHM.db?cache=shared&_foreign_keys=off&mode=ro&_busy_timeout=1000")
+	cfg.SetDefault("udb.udbnotifypipe", "/run/telemetryservice/udbtdbipcpipe")
+
 	database, err := sqlx.Open("sqlite3", ":memory:")
 	if err != nil {
 		return xerrors.Errorf("Could not create empty in-memory sqlite database: %w", err)
 	}
 
 	// attach UDB db
-	attach := "Attach '" + cfg.GetString("main.udbdatabasepath") + "' as udbdm"
+	attach := "Attach '" + cfg.GetString("udb.udbdatabasepath") + "' as udbdm"
 	fmt.Println(attach)
 	_, err = database.Exec(attach)
 	if err != nil {
@@ -63,7 +68,7 @@ func StartupUDBImport(logger log.Logger, cfg *viper.Viper, am3Svc eventHandlingS
 	}
 
 	// attach SHM db
-	attach = "Attach '" + cfg.GetString("main.shmdatabasepath") + "' as udbsm"
+	attach = "Attach '" + cfg.GetString("udb.shmdatabasepath") + "' as udbsm"
 	fmt.Println(attach)
 	_, err = database.Exec(attach)
 	if err != nil {
@@ -91,12 +96,13 @@ func StartupUDBImport(logger log.Logger, cfg *viper.Viper, am3Svc eventHandlingS
 		return xerrors.Errorf("Error creating udb integration: %w", err)
 	}
 
-	go handleUDBNotifyPipe(logger, cfg.GetString("main.udbnotifypipe"), d)
-
 	bus := d.GetBus()
 	// set up the event handler that will do periodic imports every ~1s.
 	am3Svc.AddEventHandler("Import UDB Metric Values", telemetry.PublishClock, MakeHandlerUDBPeriodicImport(logger, dataImporter, bus))
 	am3Svc.AddEventHandler("UDB Change Notification", udbChangeEvent, MakeHandlerUDBChangeNotify(logger, dataImporter, bus))
+
+	// handle UDB notifications
+	go handleUDBNotifyPipe(logger, cfg.GetString("udb.udbnotifypipe"), d)
 
 	return nil
 }
