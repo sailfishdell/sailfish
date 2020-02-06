@@ -275,6 +275,7 @@ func (l *dataImporter) wrappedImportByColumn(udbImportName string, totalEvents *
 			eventToSend := baseEvent
 			eventToSend.Property = property + "#" + metricName
 			eventToSend.Value = fmt.Sprintf("%v", v)
+			eventToSend.Name = metricName
 
 			if mts, ok := mm["Timestamp-"+metricName].(int64); ok {
 				l.condSetHWMForSource(udbImportName, mts)
