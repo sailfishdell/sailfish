@@ -390,16 +390,12 @@ func (factory *telemetryManager) updateMRD(mrdEvData *MetricReportDefinitionData
 func (factory *telemetryManager) addMRD(mrdEvData *MetricReportDefinitionData) (err error) {
 	return factory.wrapWithTX(func(tx *sqlx.Tx) error {
 		// TODO: Emit an error response message if the metric report definition already exists
-
 		mrd := &MetricReportDefinition{
 			MetricReportDefinitionData: mrdEvData,
 			AppendLimit:                appendLimit,
 		}
 
 		validateMRD(mrd)
-
-		// stop processing any periodic report gen for this report. restart IFF report successfully added back
-		delete(factory.NextMRTS, mrd.Name)
 
 		res, err := factory.getNamedSQLXTx(tx, "mrd_insert").Exec(mrd)
 		if err != nil {
@@ -419,6 +415,10 @@ func (factory *telemetryManager) addMRD(mrdEvData *MetricReportDefinitionData) (
 		if err != nil {
 			return xerrors.Errorf("error Updating MetricMeta for MRD(%d): %w", mrd.ID, err)
 		}
+
+		// stop processing any periodic report gen for this report. restart IFF report successfully added back
+		// do this after the mrd_insert sql query above so we dont stop processing reports just because of a constraint violation
+		delete(factory.NextMRTS, mrd.Name)
 
 		if !mrd.Enabled {
 			return nil
@@ -562,6 +562,7 @@ func (factory *telemetryManager) syncNextMRTSWithDB() ([]string, error) {
 	if err != nil {
 		factory.logger.Crit("Error scanning through database metric report definitions", "err", err)
 	}
+
 	// first, ensure that everything in current .NextMRTS is still alive. Delete if not.
 	for k := range factory.NextMRTS {
 		if _, ok := newMRTS[k]; ok {
@@ -826,6 +827,7 @@ type RawMetricInstance struct {
 	MIRequiresExpand  bool              `db:"MIRequiresExpand"`
 	MISensorInterval  time.Duration     `db:"MISensorInterval"`
 	MISensorSlack     time.Duration     `db:"MISensorSlack"`
+	HasAssocMM        bool              `db:"HasAssocMM"`
 }
 
 // MetricMeta is a fusion structure: Meta + Instance + MetricValueEvent
@@ -861,42 +863,46 @@ func (factory *telemetryManager) InsertMetricInstance(tx *sqlx.Tx, ev *metric.Me
 				continue
 			}
 
-			// Construct label and Scratch space
+			// Construct label and Scratch space - (validate and audit this to make sure labels match legacy)
 			mm.Label = fmt.Sprintf("%s %s", mm.Context, mm.Name)
+			mm.FlushTime = metric.SQLTimeInt{Time: mm.Timestamp.Add(mm.CollectionDuration * time.Second)}
+			mm.CollectionScratch.Sum = 0
+			mm.CollectionScratch.Numvalues = 0
+			mm.CollectionScratch.Maximum = -math.MaxFloat64
+			mm.CollectionScratch.Minimum = math.MaxFloat64
 			if mm.CollectionFunction != "" {
-				mm.Label = fmt.Sprintf("%s %s - %s", mm.Context, mm.Name, mm.CollectionFunction)
-				mm.FlushTime = metric.SQLTimeInt{Time: mm.Timestamp.Add(mm.CollectionDuration * time.Second)}
-				mm.CollectionScratch.Sum = 0
-				mm.CollectionScratch.Numvalues = 0
-				mm.CollectionScratch.Maximum = -math.MaxFloat64
-				mm.CollectionScratch.Minimum = math.MaxFloat64
+				mm.Label = mm.Label + fmt.Sprintf("- %s (%s)", mm.CollectionFunction, mm.CollectionDuration)
 			}
 
-			// create instances for each metric meta corresponding to this metric value
-			res, err := insertMetricInstance.Exec(mm)
+			err = findMetricInstance.Get(mm, mm)
 			if err != nil {
-				// It's ok if sqlite squawks about trying to insert dups here
-				if !strings.HasPrefix(err.Error(), "UNIQUE constraint failed") {
+				// slow path: this path generally should be once per instance, so lifetime rarely run
+				// create instances for each metric meta corresponding to this metric value
+				res, err := insertMetricInstance.Exec(mm)
+				if err != nil {
 					return xerrors.Errorf("error inserting MetricInstance(%s): %w", mm, err)
 				}
-				err = findMetricInstance.Get(mm, mm)
-				if err != nil {
-					return xerrors.Errorf("error getting MetricInstance(%s) InstanceID: %w", mm, err)
-				}
-			} else {
 				mm.InstanceID, err = res.LastInsertId()
 				if err != nil {
 					return xerrors.Errorf("error getting last insert ID for MetricInstance(%s): %w", mm, err)
 				}
+				fmt.Printf("Created new MetricInstance(%d)\n", mm.InstanceID)
 				instancesCreated++
 			}
-			_, err = insertMIAssoc.Exec(mm.MetaID, mm.InstanceID)
-			if err != nil && !strings.HasPrefix(err.Error(), "UNIQUE constraint failed") {
-				return xerrors.Errorf("error inserting Association for MetricInstance(%s): %w", mm, err)
+
+			if !mm.HasAssocMM {
+				fmt.Printf("INSERTING MetricMeta(%d) ASSOCIATION for MetricInstance(%d)\n", mm.MetaID, mm.InstanceID)
+				_, err = insertMIAssoc.Exec(mm.MetaID, mm.InstanceID) // slow path: should be rare
+				if err != nil && !strings.HasPrefix(err.Error(), "UNIQUE constraint failed") {
+					return xerrors.Errorf("error inserting Association for MetricInstance(%s): %w", mm, err)
+				}
 			}
-			_, err = setMetricInstanceClean.Exec(mm)
-			if err != nil {
-				return xerrors.Errorf("error setting metric instance (%d) clean: %w", mm.InstanceID, err)
+			if mm.Dirty {
+				fmt.Printf("Setting Instance(%d) Clean\n", mm.InstanceID)
+				_, err = setMetricInstanceClean.Exec(mm) // slow path
+				if err != nil {
+					return xerrors.Errorf("error setting metric instance (%d) clean: %w", mm.InstanceID, err)
+				}
 			}
 		}
 		return nil
@@ -907,7 +913,8 @@ func (factory *telemetryManager) InsertMetricInstance(tx *sqlx.Tx, ev *metric.Me
 
 func (factory *telemetryManager) InsertMetricValue(tx *sqlx.Tx, ev *metric.MetricValueEventData, updatedInstance func(int64)) (err error) {
 	return factory.wrapWithTXOrPassIn(tx, func(tx *sqlx.Tx) error {
-		// Optimized, so this logic isn't as straightforward as it could be.
+		// Optimized, so this logic is slightly twisted from the straightforward
+		// implementation
 		//
 		// - iterate over instances and insert
 		// - if we find an instance and it is clean, we know that we are done (ie.
@@ -1063,6 +1070,7 @@ func (factory *telemetryManager) doInsertMetricValueForInstance(
 	updatedInstance func(int64), expandOnly bool) (err error) {
 	// Here we are going to expand any metrics that were skipped by upstream
 	/// make sure that lastts is set and not the unix zero time
+	saveInstance := false
 	after := !mm.LastTS.IsZero()
 	after = after && !mm.LastTS.Equal(time.Unix(0, 0))
 	after = after && mm.Timestamp.After(mm.LastTS.Add(mm.MISensorInterval+mm.MISensorSlack))
@@ -1087,10 +1095,13 @@ func (factory *telemetryManager) doInsertMetricValueForInstance(
 
 		// TODO: we could use math to smooth this out a bit more rather than just jumping by sensorinterval
 		for mm.Timestamp.Before(savedTS.Time.Add(-mm.MISensorSlack)) {
-			fmt.Printf("\tts(%s)\n", mm.Timestamp)
-			_, err = factory.pumpMV(tx, mm, updatedInstance)
+			//fmt.Printf("\tts(%s)\n", mm.Timestamp)
+			thisLoopSaveInstance, err := factory.pumpMV(tx, mm, updatedInstance)
 			if err != nil {
 				factory.logger.Crit("Error inserting metric value", "err", err)
+			}
+			if thisLoopSaveInstance {
+				saveInstance = true
 			}
 			mm.Timestamp = metric.SQLTimeInt{Time: mm.Timestamp.Add(mm.MISensorInterval)} // .Add() a negative to go backwards
 		}
@@ -1098,13 +1109,11 @@ func (factory *telemetryManager) doInsertMetricValueForInstance(
 		mm.Value = savedValue
 	}
 
-	if expandOnly {
-		return nil
-	}
-
-	saveInstance, err := factory.pumpMV(tx, mm, updatedInstance)
-	if err != nil {
-		factory.logger.Crit("Error inserting metric value", "err", err)
+	if !expandOnly {
+		saveInstance, err = factory.pumpMV(tx, mm, updatedInstance)
+		if err != nil {
+			factory.logger.Crit("Error inserting metric value", "err", err)
+		}
 	}
 	if saveInstance {
 		_, err = factory.getNamedSQLXTx(tx, "update_metric_instance").Exec(mm)

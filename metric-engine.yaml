@@ -1286,7 +1286,9 @@ internal:
 
     find_metric_instance: |
       select
-        MI.ID as InstanceID
+        MI.ID as InstanceID,
+        MI.Dirty as Dirty,
+        (select count(*) from MetricMetaToInstance as MMTI where MMTI.InstanceID = MI.ID and MMTI.MetaID = :MetaID) as HasAssocMM
       from MetricInstance as MI
       where
         MI.Name=:Name and
@@ -1474,19 +1476,19 @@ createdb:
       (
         ID                INTEGER PRIMARY KEY NOT NULL,
         Name              TEXT UNIQUE NOT NULL, -- Name of the metric report defintion. This is what shows up in the collection
-        ShortDesc         TEXT,
-        LongDesc          TEXT,
-        Enabled           BOOLEAN,
-        AppendLimit       INTEGER,
-        Type              TEXT,                 -- type of report: 'Periodic', 'OnChange', 'OnRequest'
-        SuppressDups      BOOLEAN,
-        Actions           TEXT,                 -- json array of options: 'LogToMetricReportsCollection', 'RedfishEvent'
-        Updates           TEXT,                 -- 'AppendStopsWhenFull', 'AppendWrapsWhenFull', 'NewReport', 'Overwrite'
+        ShortDesc         TEXT not null default '',
+        LongDesc          TEXT not null default '',
+        Enabled           BOOLEAN not null default false,
+        AppendLimit       INTEGER not null default 24000,
+        Type              TEXT not null default 'OnRequest',           -- type of report: 'Periodic', 'OnChange', 'OnRequest'
+        SuppressDups      BOOLEAN not null default true,
+        Actions           TEXT not null default '[]',                  -- json array of options: 'LogToMetricReportsCollection', 'RedfishEvent'
+        Updates           TEXT not null default 'AppendWrapsWhenFull', -- 'AppendStopsWhenFull', 'AppendWrapsWhenFull', 'NewReport', 'Overwrite'
         Period            INTEGER not null default 0,
         TimeSpan          INTEGER not null default 0,
         HeartbeatInterval INTEGER NOT NULL DEFAULT 0,
         NextHeartbeatTS   INTEGER NOT NULL DEFAULT 0,
-        Hidden            BOOLEAN               -- Not displayed to the user, only for internal use
+        Hidden            BOOLEAN NOT NULL DEFAULT FALSE -- Not displayed to the user, only for internal use
       )
 
   - |
@@ -1669,7 +1671,7 @@ createdb:
             ELSE ReportTimestamp - MRD.TimeSpan * 1000000000
             END
           WHEN 'OnChange' THEN ReportTimestamp - MRD.TimeSpan * 1000000000
-          WHEN 'OnRequest' THEN cast( (julianday('now') - 2440587.5)*86400 * 1000000000 - MRD.TimeSpan as integer)
+          WHEN 'OnRequest' THEN cast( (julianday('now') - 2440587.5)*86400 * 1000000000 - MRD.TimeSpan * 1000000000 as integer)
           ELSE 0
           END as StartTimestamp
 
@@ -1776,7 +1778,8 @@ createdb:
                   ) AS a ),  ' "MetricValues":  [], "MetricValues@odata.count":  0 ')
           || '}'
         ) as root,
-        '/redfish/v1/TelemetryService/MetricReports/' || MR.Name as '@odata.id'
+        '/redfish/v1/TelemetryService/MetricReports/' || MR.Name as '@odata.id',
+        Hidden as Hidden
       from MetricReport_calculated as MR
       inner join MetricReportDefinition as MRD on MRD.ID = MR.ReportDefinitionID
 
@@ -1794,6 +1797,7 @@ createdb:
             select
               json_group_array( json_object('@odata.id', [@odata.id]) )
             from MetricReport_JSON
+            where Hidden != true
             )
           ) as root,
           '/redfish/v1/TelemetryService/MetricReports' as [@odata.id]
@@ -1881,7 +1885,8 @@ createdb:
               ) AS a ), '"Metrics": [], "Metrics@odata.count": 0' ) ||
           '}'
           ) as root,
-          '/redfish/v1/TelemetryService/MetricReportDefinitions/' || Name as [@odata.id]
+          '/redfish/v1/TelemetryService/MetricReportDefinitions/' || Name as [@odata.id],
+          Hidden as Hidden
         from MetricReportDefinition
 
   - |
@@ -1897,6 +1902,7 @@ createdb:
               select
                 json_group_array( json_object('@odata.id', [@odata.id]) )
               from MetricReportDefinition_JSON
+              where Hidden != true
             )
           ) as root,
           '/redfish/v1/TelemetryService/MetricReportDefinitions' as [@odata.id]

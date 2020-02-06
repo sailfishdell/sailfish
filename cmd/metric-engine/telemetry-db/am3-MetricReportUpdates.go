@@ -135,17 +135,20 @@ func StartupTelemetryBase(logger log.Logger, cfg *viper.Viper, am3Svc eventHandl
 	// multi handler
 	am3Svc.AddMultiHandler("Store Metric Value(s)", metric.MetricValueEvent, MakeHandlerMV(logger, telemetryMgr, bus))
 
-	// sync ourselves to the database on startup
-	reportList, _ := telemetryMgr.FastCheckForNeededMRUpdates()
+	// sync with what may already be in database on startup
+	reportList, err := telemetryMgr.syncNextMRTSWithDB()
+	if err != nil {
+		return xerrors.Errorf("telemetry sync to DB failed: %w", err)
+	}
 	for _, report := range reportList {
 		publishHelper(logger, bus, eh.NewEvent(metric.ReportGenerated, metric.ReportGeneratedData{Name: report}, time.Now()))
 	}
 
-	// next, go through database and delete any NextMRTS that arent present and reload
-	reportList, _ = telemetryMgr.syncNextMRTSWithDB()
-	for _, report := range reportList {
-		publishHelper(logger, bus, eh.NewEvent(metric.ReportGenerated, metric.ReportGeneratedData{Name: report}, time.Now()))
-	}
+	// and do database cleanup on start
+	telemetryMgr.DeleteOrphans()
+	telemetryMgr.DeleteOldestValues()
+	telemetryMgr.Optimize()
+	telemetryMgr.Vacuum()
 
 	return nil
 }
