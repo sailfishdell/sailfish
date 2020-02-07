@@ -89,19 +89,19 @@ func AddEEMIMessage(response map[string]interface{}, a *RedfishResourceAggregate
 	if errorType == "SUCCESS" {
 		a.StatusCode = 200
 		default_msg := ExtendedInfo{}
-		addToEEMIList(response, default_msg, true)
+		AddToEEMIList(response, default_msg, true)
 	} else if errorType == "BADJSON" {
 		a.StatusCode = 400
-		addToEEMIList(response, bad_json, false)
+		AddToEEMIList(response, bad_json, false)
 	} else if errorType == "BADREQUEST" {
 		a.StatusCode = 400
-		addToEEMIList(response, bad_request, false)
+		AddToEEMIList(response, bad_request, false)
 	} else if errorType == "PATCHERROR" {
 		any_success := errs.AnySuccess()
 		if any_success > 0 {
 			a.StatusCode = 200
 			default_msg := ExtendedInfo{}
-			addToEEMIList(response, default_msg, true)
+			AddToEEMIList(response, default_msg, true)
 		} else {
 			a.StatusCode = 400
 		}
@@ -113,7 +113,7 @@ func AddEEMIMessage(response map[string]interface{}, a *RedfishResourceAggregate
 				//log.MustLogger("PATCH").Crit("Error could not be unmarshalled to an EEMI message")
 				return errors.New("Error updating: Could not unmarshal EEMI message")
 			}
-			addToEEMIList(response, msg, false)
+			AddToEEMIList(response, msg, false)
 		}
 	}
 
@@ -123,7 +123,7 @@ func AddEEMIMessage(response map[string]interface{}, a *RedfishResourceAggregate
 	return nil
 }
 
-func addToEEMIList(response map[string]interface{}, eemi ExtendedInfo, isSuccess bool) {
+func AddToEEMIList(response map[string]interface{}, eemi ExtendedInfo, isSuccess bool) {
 	extendedInfoL := &[]map[string]interface{}{}
 	var ok bool
 

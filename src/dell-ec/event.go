@@ -20,6 +20,7 @@ func init() {
 	eh.RegisterEventData(FaultEntriesClear, func() eh.EventData { return &struct{}{} })
 }
 
+
 type ComponentEventData struct {
 	Id         string
 	Type       string

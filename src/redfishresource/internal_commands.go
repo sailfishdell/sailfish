@@ -13,7 +13,6 @@ import (
 )
 
 func init() {
-	eh.RegisterCommand(func() eh.Command { return &UpdateMetricRedfishResource{} })
 	eh.RegisterCommand(func() eh.Command { return &CreateRedfishResource{} })
 	eh.RegisterCommand(func() eh.Command { return &RemoveRedfishResource{} })
 	eh.RegisterCommand(func() eh.Command { return &UpdateRedfishResourceProperties{} })
@@ -24,7 +23,6 @@ func init() {
 const (
 	CreateRedfishResourceCommand                 = eh.CommandType("internal:RedfishResource:Create")
 	RemoveRedfishResourceCommand                 = eh.CommandType("internal:RedfishResource:Remove")
-	UpdateMetricRedfishResourcePropertiesCommand = eh.CommandType("internal:RedfishResourceProperties:UpdateMetric")
 	UpdateRedfishResourcePropertiesCommand       = eh.CommandType("internal:RedfishResourceProperties:Update")
 	UpdateRedfishResourcePropertiesCommand2      = eh.CommandType("internal:RedfishResourceProperties:Update:2")
 	RemoveRedfishResourcePropertyCommand         = eh.CommandType("internal:RedfishResourceProperties:Remove")
@@ -106,6 +104,7 @@ func (c *CreateRedfishResource) Handle(ctx context.Context, a *RedfishResourceAg
 		ResourceURI: a.ResourceURI,
 		Meta:        map[string]interface{}{},
 	}
+
 
 	v := map[string]interface{}{}
 	a.Properties.Value = v
@@ -196,6 +195,7 @@ func (c *RemoveRedfishResourceProperty) Handle(ctx context.Context, a *RedfishRe
 // toUpdate	{path2key : value}
 type UpdateRedfishResourceProperties2 struct {
 	ID         eh.UUID `json:"id"`
+	ResourceURI string  `eh:"optional"`
 	Properties map[string]interface{}
 }
 
@@ -277,43 +277,43 @@ func UpdateAgg(a *RedfishResourceAggregate, pathSlice []string, v interface{}, a
 
 }
 
-func GetValueinAgg(a *RedfishResourceAggregate, pathSlice []string) interface{} {
+func GetValueinAgg(a *RedfishResourceAggregate, pathSlice []string) (interface{},error) {
 	a.Properties.Lock()
 	defer a.Properties.Unlock()
 	loc, ok := a.Properties.Value.(map[string]interface{})
 	if !ok {
-		return fmt.Errorf("getValueinAgg: aggregate value is not a map[string]interface{}, but %T", a.Properties.Value)
+		return nil,fmt.Errorf("getValueinAgg: aggregate value is not a map[string]interface{}, but %T", a.Properties.Value)
 	}
 
 	plen := len(pathSlice) - 1
 	for i, p := range pathSlice {
 		k, ok := loc[p]
 		if !ok {
-			return fmt.Errorf("UpdateAgg Failed can not find %s in %+v", p, loc)
+			return nil, fmt.Errorf("UpdateAgg Failed can not find %s in %+v", p, loc)
 		}
 		switch k.(type) {
 		case *RedfishResourceProperty:
 			k2, ok := k.(*RedfishResourceProperty)
 			if !ok {
-				return fmt.Errorf("UpdateAgg Failed, RedfishResourcePropertyFailed")
+				return nil, fmt.Errorf("UpdateAgg Failed, RedfishResourcePropertyFailed")
 			}
 			// metric events have the data appended
 			if plen == i {
-				return k2.Value
+				return k2.Value, nil
 			} else {
 				tmp := k2.Value
 				loc, ok = tmp.(map[string]interface{})
 				if !ok {
-					return fmt.Errorf("UpdateAgg Failed %s type cast to map[string]interface{} for %+v  errored for %+v", a.ResourceURI, p, pathSlice)
+					return nil, fmt.Errorf("UpdateAgg Failed %s type cast to map[string]interface{} for %+v  errored for %+v", a.ResourceURI, p, pathSlice)
 				}
 			}
 
 		default:
-			return fmt.Errorf("agg update for slice %+v, received type %T instead of *RedfishResourceProperty", pathSlice, k)
+			return nil, fmt.Errorf("agg update for slice %+v, received type %T instead of *RedfishResourceProperty", pathSlice, k)
 		}
 	}
 
-	return nil
+	return nil, fmt.Errorf("path not found", "path", pathSlice)
 
 }
 
@@ -353,41 +353,6 @@ func (c *UpdateRedfishResourceProperties2) Handle(ctx context.Context, a *Redfis
 	return err
 }
 
-type UpdateMetricRedfishResource struct {
-	ID               eh.UUID                `json:"id"`
-	Properties       map[string]interface{} `eh:"optional"`
-	AppendLimit      int
-	ReportUpdateType string
-}
-
-// ShoudlSave satisfies the ShouldSaver interface to tell CommandHandler to save this to DB
-func (c *UpdateMetricRedfishResource) ShouldSave() bool { return true }
-
-// AggregateType satisfies base Aggregate interface
-func (c *UpdateMetricRedfishResource) AggregateType() eh.AggregateType { return AggregateType }
-
-// AggregateID satisfies base Aggregate interface
-func (c *UpdateMetricRedfishResource) AggregateID() eh.UUID { return c.ID }
-
-// CommandType satisfies base Command interface
-func (c *UpdateMetricRedfishResource) CommandType() eh.CommandType {
-	return UpdateMetricRedfishResourcePropertiesCommand
-}
-
-//reportUpdateType int // 0-AppendStopsWhenFull, 1-AppendWrapsWhenFull, 3- NewReport, 4-Overwrite
-
-// assume AppendStopsWhenFull
-func (c *UpdateMetricRedfishResource) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
-	for k, v := range c.Properties {
-		pathSlice := strings.Split(k, "/")
-		if err := UpdateAgg(a, pathSlice, v, int(c.AppendLimit)); err != nil {
-			fmt.Println("failed to updated agg")
-			return err
-		}
-	}
-
-	return nil
-}
 
 type UpdateRedfishResourceProperties struct {
 	ID         eh.UUID                `json:"id"`

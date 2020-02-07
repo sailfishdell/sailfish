@@ -45,7 +45,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	registries.RegisterAggregate(instantiateSvc)
 	stdmeta.RegisterFormatters(instantiateSvc, d)
 	session.RegisterAggregate(instantiateSvc)
-	telemetryservice.RegisterAggregate(instantiateSvc)
 
 	stdmeta.GenericDefPlugin(ch, d)
 	pumpSvc := dell_ec.NewPumpActionSvc(ctx, logger, d)

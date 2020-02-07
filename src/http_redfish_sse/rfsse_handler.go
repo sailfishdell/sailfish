@@ -1,10 +1,10 @@
 package http_redfish_sse
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"context"
 
 	eh "github.com/looplab/eventhorizon"
 	log "github.com/superchalupa/sailfish/src/log"

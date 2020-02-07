@@ -1,0 +1,494 @@
+package telemetryservice
+// todo need to return an error for bad MRD and for dup MRD
+
+
+
+import (
+	"regexp"
+	"context"
+	"fmt"
+	"strings"
+	//"sync"
+	"errors"
+	"sort"
+	"golang.org/x/xerrors"
+
+	eh "github.com/looplab/eventhorizon"
+	domain "github.com/superchalupa/sailfish/src/redfishresource"
+)
+
+func getMRURL(ID string) string {
+	return "/redfish/v1/TelemetryService/MetricReport/" + ID
+}
+
+func getMRDURL(ID string) string {
+	return "/redfish/v1/TelemetryService/MetricReportDefinition/" + ID
+}
+
+// internal functions
+// apply wild cards to property and return list of expanded properties
+func (ts * TelemetryReference) expandProps(metricID string, prop string, mapWC map[string][]string) []string {
+	propT := []string{}
+	if !strings.Contains(prop, "{"){
+		propT = append(propT, prop) 
+		return propT
+	}
+
+	
+	for key, vals := range(mapWC) {
+		for i:=0; i < len(vals) ; i ++ {
+			if vals[i] == "*"{
+				MM, error := ts.getMDMetricData(metricID) 
+				if error != nil {
+					fmt.Println(error)
+				}
+				MD_WC := MM.wcValues
+				for j:=0; j < len(MM.wcValues) ; j ++ {
+					if MD_WC[j] == "*"{
+						MD_WC[j] = MD_WC[len(MM.wcValues)-1] 
+						MD_WC =MD_WC[len(MM.wcValues) -2:]
+					}
+				}
+				mapWC[key] = MD_WC
+				break
+			}
+		}
+	}
+				
+	for key, vals :=range(mapWC) {
+		if strings.Contains(prop, key){
+			for i:=0 ; i < len(vals) ; i ++ {
+				propT =append(propT,
+					strings.Replace(prop, key, vals[i] , 1))
+			}
+		}
+	}
+	return propT
+}
+
+func initTelemetryNotebook(ctx context.Context, d *domain.DomainObjects) *TelemetryReference{
+	telemetryConfig :=TelemetryReference{
+		mrds: map[string]MRDmeta{},
+		// {URL: {path to prop: []MRDmeta}
+		// metric property = hiohiohoi{hiohio}
+		// i guess make regex of MRDMEta and apply that to prop..  
+		metric2MRD: map[string]map[string] []*MRDmeta{},
+		ctx: ctx, 
+		d: d,
+	}
+
+	return &telemetryConfig
+}
+
+
+type MRDmeta struct {
+	mrdEnabled bool
+	UUID  eh.UUID // MRD ID
+	metrics map[string][]string // {metric id: md prop}
+	wildcard map[string][]string // { Name: {Value: in_use}}
+}
+
+// not goroutine safe
+// designed to be used only in TelemetryService
+type TelemetryReference struct {
+	// collection of MRD information
+	mrds map[string]MRDmeta
+
+	// used to check if UpdatedRedfishresource event has metrics
+	metric2MRD map[string]map[string] []*MRDmeta// metricprop: MRD_ID  
+	ctx context.Context
+	d *domain.DomainObjects
+
+}
+
+
+// find a better place for me.. DRY
+func getRedfishAggregate(ctx context.Context, d *domain.DomainObjects, id eh.UUID) (*domain.RedfishResourceAggregate, error){
+	agg, err := d.AggregateStore.Load(ctx, domain.AggregateType, id)
+	if err != nil {
+		return nil, errors.New("could not load subscription aggregate")
+	}
+	redfishResource, ok := agg.(*domain.RedfishResourceAggregate)
+	if !ok {
+		return nil, errors.New("wrong aggregate type returned")
+	}
+	return redfishResource, nil
+} 
+
+
+var rgx = regexp.MustCompile(`\{(.*?)\}`)
+// getValidMetrics from RedfishResourcePropertiesUpdated2 data.   
+func (ts *TelemetryReference) getValidMetrics(data *domain.RedfishResourcePropertiesUpdatedData2)map[string]map[string]interface{}{
+	propMatchMap := map[string]map[string]interface{}{}
+	fmt.Println(data.ResourceURI)
+	fmt.Println(ts.metric2MRD)
+	propsinMRD,ok := ts.metric2MRD[data.ResourceURI]
+	if !ok {
+		return nil	
+	}
+	fmt.Println("data is for ", data.ResourceURI)
+
+	// check if the props are added.
+	for propPath, val := range data.PropertyNames{
+		fmt.Println("prop path ", propPath, "MRD Props", propsinMRD)
+		MRDs, ok := propsinMRD[propPath]
+		if !ok {
+			continue
+		}
+		
+		for i:=0; i < len(MRDs); i ++ {
+			if MRDs[i].mrdEnabled{
+				// find metric id
+				mID := ""
+
+				fmt.Println("looking for metric id of ", data.ResourceURI + "#" + propPath)
+				for metricid, m:= range(MRDs[i].metrics){
+					for j:=0; j < len(m); j++ {
+						wc := rgx.FindString(m[j])
+						slice:= strings.Split(m[j], wc)
+						prop:= data.ResourceURI + "#" + propPath
+						if strings.Contains(prop, slice[0]) && strings.Contains(prop, slice[1]){
+						  mID = metricid
+						  fmt.Println(mID)
+						  break
+						}
+					}
+				}
+				fmt.Println("FOUND METRIC ID", mID)
+
+				_, ok :=propMatchMap[mID] 
+				if ok { 
+					propMatchMap[mID][propPath] = val
+				} else {
+					propMatchMap[mID]= map[string]interface{}{propPath: val}
+				}
+			}
+		}
+	}	
+	return propMatchMap
+}
+
+
+
+//metric2MRD = {URL: {prop: [&MRD], prop: [&MRD]}
+// 
+//	mdID2Prop map[string]string // {metric id: md prop}
+// create one function to add prop and MRD to prop2MRD, also to add prop to MRD
+// When MRD POST arrives.  Clean and Validate MRD contents with existing MDs
+// rc : false - MRD has no good metrics 
+// rc : true  - MRD has at least one good metric/metricproperty
+func (ts *TelemetryReference) CleanAndValidateMRD(data *MRDData) ( bool ){
+	// validate metric ids 
+	idx := 0 // output index
+	for i, _ := range data.Metrics  {
+		fmt.Println("\n", data.Metrics, "\n")
+		MRDmetric:=data.Metrics[i]
+		fmt.Println(MRDmetric)
+		// see if I get the MD data correctly
+		if MRDmetric.MetricID == "" {
+			fmt.Println("bad ata", MRDmetric)
+			continue
+		}
+		MM, err :=ts.getMDMetricData(MRDmetric.MetricID )
+		if err != nil {
+			fmt.Println("metric is not present in MD, skip")
+			// metric is not present in MD, skip adding 
+			continue
+		}else {
+			// removes bad metric data
+			cleanMRDMetric(MM, &MRDmetric)
+			if len(MRDmetric.MetricProperties) == 0 {
+				fmt.Println("metric prop is empty")
+				// metric properties is empty. skip adding 
+				continue
+			}else {
+				fmt.Println("good metric data!")
+				// good metric data
+				data.Metrics[idx] = MRDmetric
+				idx++
+			}
+				
+		}
+	}
+	if idx != 0 {
+		data.Metrics = data.Metrics[:idx]
+		return true // pass
+	}else {
+		fmt.Println("metrics array is empty")
+		return false
+	}
+
+}
+
+
+// does not validate MRD wildcards
+// validates MRD properties match metric id.
+// wonder where I should put the expanded properties.. 
+// rc: false - Metric does not have a good property 
+// 	true - Metric has at least one good property
+func cleanMRDMetric(MM MDmeta, MRDmetric *Metric) bool {
+	reString:= MM.prop
+	substr:=  strings.Join(MM.wcValues, `\b|`)  + `\b`
+	fmt.Println(substr)
+	strings.Replace(reString, MM.wcName , substr, -1)
+	fmt.Println(reString)
+	re := regexp.MustCompile(reString)
+	
+	idx:=0
+	for i:=0; i < len(MRDmetric.MetricProperties);i++ {
+		MRDprop:= MRDmetric.MetricProperties[i]
+		if MRDprop == MM.prop{
+			MRDmetric.MetricProperties[idx] = MM.prop
+			idx++
+		} else if re.MatchString(MRDprop){
+			MRDmetric.MetricProperties[idx] = MM.prop
+			idx++
+		} else {
+			// MRD metric isn't compatible 
+			continue
+		}
+	}
+	if idx == 0 {
+		return false
+	}else {
+		MRDmetric.MetricProperties= MRDmetric.MetricProperties[:idx]
+		return true
+	}
+}
+
+			
+
+			
+			
+			
+		
+		
+
+type MDmeta struct {
+	metricId string
+	wcName string
+	wcValues []string
+	prop  string
+}
+
+// returns 
+func (ts *TelemetryReference) getMDMetricData (metricID string)(MDmeta, error){
+	MM := MDmeta{}
+	MM.metricId = metricID
+	MD:= "/redfish/v1/TelemetryService/MetricDefinitions/"
+	mduuid, ok := ts.d.GetAggregateIDOK(MD + metricID)
+	fmt.Println(MD + metricID)
+	if !ok{
+	 	return MM, errors.New("Can not get UUID for "  + MD + metricID)	
+	} 
+
+	rra, err:=getRedfishAggregate(ts.ctx, ts.d, mduuid)
+	if err != nil {
+		fmt.Println("MD AGG not found", mduuid)
+		return  MM, xerrors.Errorf( "MD Aggregate not found %s", mduuid) 
+	}
+
+	loc, ok := rra.Properties.Value.(map[string]interface{})
+	if !ok {
+		fmt.Println("MD Properties.Value is not map[string]interface{}")
+		return MM, errors.New("Wildcards are not in []interface{} format")
+	}
+
+	wcIntf := domain.Flatten(loc["Wildcards"], false)
+	wcIntf2, ok:= wcIntf.([]interface{})
+	if !ok {
+		fmt.Printf("Wildcards are not in []interface{} they are in %TEND\n", wcIntf)
+		return MM, errors.New("Wildcards are not in []interface{} format")
+	}
+	if len(wcIntf2)> 1 {
+		return MM, xerrors.Errorf("MD has more than one wildcard")
+	}
+	wcMap, ok := wcIntf2[0].(map[string]interface{})
+	if !ok {
+		fmt.Printf("Wildcard is not in map[string]interfface but in %T\n", wcIntf2[0])
+		return MM, errors.New("wildcard not in map format")
+	}
+
+	key, ok1 :=wcMap["Name"].(string)
+	values, ok2:=wcMap["Values"].([]string)
+	if ok1 && ok2 {
+		MM.wcName = key
+		MM.wcValues = values
+	}
+
+	props := domain.Flatten(loc["MetricProperties"], false).([]interface{})
+	if len(props) > 1{
+		fmt.Println("MD MEtricProperties has more than one value!")
+	 	return MM, errors.New("MD has more than one MetricProperties")	
+	}
+	propIntf :=props[0]
+	MM.prop = propIntf.(string) 
+	
+
+	return MM, nil
+
+}
+
+
+func (ts *TelemetryReference) MRDConfigAdd ( data *MRDData ){
+	fmt.Println("MRDConfigUp add")
+	mapWC := map[string][]string{}
+	for i:=0; i< len(data.Wildcards) ; i ++ {
+		key:= data.Wildcards[i].Name
+		values:= data.Wildcards[i].Values
+		_, ok := mapWC[key]
+		if !ok {
+			mapWC[key] = values
+		} else {
+			mapWC[key] = append(mapWC[key], values...)
+		}
+	}
+
+	// delete WC dups
+	// might move this to cleanup and validation
+	for _, vals:=range(mapWC){
+		sort.Strings(vals)
+		idx:=0
+		lastVal :=vals[0]
+		for i:=1; i < len(vals); i++ {
+			// ultimate wild card
+			if vals[i] == "*"{
+				vals[0] = "*"
+				idx = 1
+				break
+			}
+		
+			if vals[i] == lastVal{
+				// skip	
+			} else {
+				lastVal = vals[i]	
+				idx++
+			} 
+		}
+		vals = vals[:idx]
+		fmt.Println("values", vals)
+	}
+
+	// metric ids and metricproperties are validated when MRD is first created
+	// so keeping Props and metric id for reference when MRD is patched.
+
+        metricMap := map[string][]string{}
+        for _, metric := range(data.Metrics) {
+               metricMap[metric.MetricID] = metric.MetricProperties
+	}
+        
+	fmt.Println("metricMap", metricMap)
+
+	MM := MRDmeta{
+		UUID : 	data.UUID,
+		mrdEnabled: 	data.MetricReportDefinitionEnabled,	
+		wildcard:  	mapWC,	
+		metrics:        metricMap,	
+	}
+	ts.mrds[data.Id] = MM 
+
+
+
+	// update metricstoProp used for incoming aggregate changes. 
+	for _, props:= range(metricMap){
+		ts.add2metric2MRD(data.Id,props, mapWC, &MM)
+	}	
+}
+	
+			
+
+func (ts *TelemetryReference) MRDConfigDelete( URI string ){
+	fmt.Println("before delete", ts.metric2MRD)
+	mrdid :=strings.Trim(URI, "/redfish/v1/TelemetryService/MetricReportDefinitions/")	
+
+	_, ok := ts.mrds[mrdid]
+	if !ok {
+		fmt.Println("ERROR: ", URI,"is not recognized in TelemetryService Config")
+	}
+
+	propT := []string{}
+	// get all props in mrd.
+	for _, props := range(ts.mrds[mrdid].metrics){
+		for i:=0; i<len(props); i++ {
+			propT= append(propT, ts.expandProps(mrdid, props[i], ts.mrds[mrdid].wildcard)...)
+		}
+	}
+
+
+	// cleanup metric2MRD
+	// delete mrd props in metric2MRD
+	for i:=0; i< len(propT) ; i ++ {
+		strSplit :=strings.Split(propT[i], "#")
+		url:=strSplit[0]
+		prop :=strSplit[1]
+		// for wild card characters need to expand when inputting inside...
+		if len(ts.metric2MRD[url][prop] ) == 1{
+			delete(ts.metric2MRD[url],prop)
+			continue	
+		}
+
+		MRDs:= ts.metric2MRD[url][ propT[i]]
+		for j:=0; j < len(MRDs); j++ {
+			mrd := ts.mrds[mrdid]
+			if MRDs[j] == &mrd{
+				ml := len(ts.metric2MRD[url][prop]) - 1
+				ts.metric2MRD[url][prop][j] = ts.metric2MRD[url][prop][ml] 
+				ts.metric2MRD[url][prop] = ts.metric2MRD[url][prop][ml-1:]
+				break
+			}
+		}
+	}
+	delete(ts.mrds, mrdid)
+	fmt.Println("after delete", ts.metric2MRD)
+}
+
+
+func (ts *TelemetryReference) MRDConfigUpdate( URI string ){
+	// update items - metrics, wildcards -- schema says no to wildcards this is likely incorrect
+	// update Enabled val as well.
+	//here MRD is updated...
+	// use UpdateRedfishResourceudpate2... to update agg.
+}
+
+
+
+//// list of props are expanded with wildcards, and added to the TelemetryConfigDB metric2MRD
+// so my new plan... may be to instead!  do re compilation... but need to get URLs in.. 
+// Also need to know all the MD values.. huh maybe I need to collect MDs just so I know all their values?  no  I only need it for the MDS retrieved in MRD.
+
+// UpdateRedfish Resource.. validate uuid is in MRD..
+// continue
+// map[uuid][prop]...  
+// If I see '*' then I get MD.. to get all values.  
+// 
+//{url: {prop: []MRDmeta}}
+func (ts *TelemetryReference) add2metric2MRD(metricid string, props []string, wc map[string][]string, mrdMeta *MRDmeta){
+	fmt.Println("entered add2metric2MRD")
+	for i:=0; i< len(props) ; i++{
+		// expand wildcards now simplify
+		propT:= ts.expandProps(metricid, props[i], wc)
+		for j:=0; j  < len(propT); j++{
+			if strings.Contains(propT[j], "#"){
+				split :=strings.Split(propT[j], "#")
+				url := split[0]
+				prop :=split[1]
+				_, ok := ts.metric2MRD[url]
+				if ok {
+
+					ts.metric2MRD[url][prop] = append(ts.metric2MRD[url][prop], mrdMeta)
+					
+				} else {	
+					_, ok :=ts.metric2MRD[url][prop]
+					if ok {
+						ts.metric2MRD[url][prop] = append(ts.metric2MRD[url][prop], mrdMeta)
+					} else {
+						ts.metric2MRD[url] = map[string][]*MRDmeta{ prop: {mrdMeta}}
+					}
+				}
+			}
+		}
+	}
+	fmt.Println(ts.metric2MRD)
+}
+
+

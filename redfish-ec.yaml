@@ -2,6 +2,7 @@ main:
     server_name: "dell_ec"
     #options: "openbmc" | "dell_ec" | "mockup"
     aggregatesearchpath: [ "/usr/share/sailfish/aggs/", "aggs/" ]
+    startup: ["startup-events"]
 
 listen:
    - unix:sailfish.socket
@@ -23,6 +24,422 @@ listen:
 #
 
 
+Startup-Events:
+  - name: AddMetricDefinition
+    data: |
+      {
+        "Calibration": 2,
+        "Id": "FanSpeedPercent",
+        "Implementation": "PhysicalSensor",
+        "MaxReadingRange": 100,
+        "MetricDataType": "Percentage",
+        "MetricProperties": [ "/redfish/v1/Chassis/System.Chassis.1/Sensors/Fans/Fan.Slot.{SlotNumber}#Oem/Dell/Reading"],
+        "MetricType": "Numeric",
+        "MinReadingRange": 0,
+        "Name": "Fan Speed in Percent Metric Definition",
+        "Accuracy": 1,
+        "PhysicalContext": "Fan",
+        "Precision": 2,
+        "SensingInterval": "PT1S",
+        "TimestampAccuracy": "PT1S",
+                "Units": "%", 
+                "Wildcards": [{
+                    "Name": "SlotNumber",
+                    "Values": [
+                        "1",
+                        "2",
+                        "3",
+                        "4",
+                        "5",
+                        "6",
+                        "7",
+                        "8",
+                        "9",
+                        "*"
+                    ]
+                }]
+            }
+
+  - name: AddMetricDefinition
+    data: |
+         {
+           "Calibration": 2,
+           "Id": "FanSpeedRPM",
+           "Implementation": "PhysicalSensor",
+           "MaxReadingRange": 1000,
+           "MetricDataType": "Decimal",
+           "MetricProperties": [ "/redfish/v1/Chassis/System.Chassis.1/Sensors/Fans/Fan.Slot.{SlotNumber}#/Oem/Reading"],
+           "MetricType": "Numeric",
+           "MinReadingRange": 0,
+           "Name": "Fan RPM Speed Metric Definition",
+           "Accuracy": 1,
+           "PhysicalContext": "Fan",
+           "Precision": 2,
+           "SensingInterval": "PT1S",
+           "TimestampAccuracy": "PT1S",
+               "Units": "RPM",
+               "Wildcards": [{
+                   "Name": "SlotNumber",
+                   "Values": [
+                       "1",
+                       "2",
+                       "3",
+                       "4",
+                       "5",
+                       "6",
+                       "7",
+                       "8",
+                       "9",
+                       "*"
+                   ]
+               }]
+           }
+
+  - name: AddMetricDefinition
+    data: |
+        {      
+             "Accuracy": 1,
+             "Calibration": 2, 
+             "Id": "PSUInputVoltage", 
+             "Implementation": "PhysicalSensor", 
+             "MaxReadingRange": 1000, 
+             "MetricDataType": "Decimal", 
+             "MetricProperties": [
+                 "/redfish/v1/Chassis/System.Chassis.1/Power/PowerSupplies/PSU.Slot.{SlotNumber}/LineInputVoltage"
+             ], 
+             "MetricType": "Numeric", 
+             "MinReadingRange": 0, 
+             "Name": "PSU Input Voltage", 
+             "PhysicalContext": "PSU", 
+             "Precision": 2, 
+             "SensingInterval": "PT1S", 
+             "TimestampAccuracy": "PT1S", 
+             "Units": "V", 
+             "Wildcards": [{
+                 "Name": "SlotNumber", 
+                 "Values": [
+                     "1", 
+                     "2", 
+                     "3", 
+                     "4", 
+                     "5", 
+                     "6", 
+                     "*"
+                 ]
+             }]
+         } 
+
+  - name: AddMetricDefinition
+    data: |
+       {       
+           "Accuracy": 1, 
+           "Calibration": 2, 
+           "Id": "PSUInputCurrent", 
+           "Implementation": "PhysicalSensor", 
+           "MaxReadingRange": 1000, 
+           "MetricDataType": "Decimal", 
+           "MetricProperties": [
+               "/redfish/v1/Chassis/System.Chassis.1/Power/PowerSupplies/PSU.Slot.{SlotNumber}#/Oem/Dell/InputCurrent"
+           ], 
+           "MetricType": "Numeric", 
+           "MinReadingRange": 0, 
+           "Name": "PSU Input Current",
+           "PhysicalContext": "PSU",
+           "Precision": 2,
+           "SensingInterval": "PT1S",
+           "TimestampAccuracy": "PT1S",
+           "Units": "RPM",
+           "Wildcards": [{
+               "Name": "SlotNumber",
+               "Values": [
+                   "1",
+                   "2",
+                   "3",
+                   "4",
+                   "5",
+                   "6",
+                   "*"
+               ]
+           }]
+        }
+
+
+  - name: AddMetricDefinition
+    data: |
+        {
+           "Accuracy": 1,
+           "Calibration": 2,
+           "Id": "ChassisReadingCelsius",
+           "Implementation": "PhysicalSensor",
+           "MaxReadingRange": 1000,
+           "MetricDataType": "Decimal",
+           "MetricProperties": [
+               "/redfish/v1/Chassis/System.Chassis.1/Sensors/Temperatures/System.Chassis.1%23Temperature.{Sensor}#/ReadingCelsius"
+           ],
+           "MetricType": "Numeric",
+           "MinReadingRange": 0,
+           "Name": "Overall Chassis or Storage Sled Temperature Metric Definition",
+           "PhysicalContext": "Chassis",
+           "Precision": 2,
+           "SensingInterval": "PT1S",
+           "TimestampAccuracy": "PT1S",
+           "Units": "Celsius",
+           "Wildcards": [{
+               "Name": "Sensor",
+               "Values": [
+                   "CHASSIS_AMBIENT",
+                   "NODE_AMBIENT.1",
+                   "NODE_AMBIENT.2",
+                   "NODE_AMBIENT.3",
+                   "NODE_AMBIENT.4",
+                   "NODE_AMBIENT.5",
+                   "NODE_AMBIENT.6",
+                   "NODE_AMBIENT.7",
+                   "NODE_AMBIENT.8",
+                   "*"
+               ]
+           }]
+        }
+
+#        {
+#        }
+
+  - name: AddMetricDefinition
+    data: |
+        {
+           "Accuracy": 1,
+           "Calibration": 2,
+           "Id": "ChassisUpperThresholdNonCrit",
+           "Implementation": "PhysicalSensor",
+           "MaxReadingRange": 1000,
+           "MetricDataType": "Decimal",
+           "MetricProperties": [
+               "/redfish/v1/Chassis/System.Chassis.1/Sensors/Temperatures/System.Chassis.1%23Temperature.{Sensor}#/UpperThresholdNonCritical"
+           ],
+           "MetricType": "Numeric",
+           "MinReadingRange": 0,
+           "PhysicalContext": "Chassis",
+           "Precision": 2,
+           "SensingInterval": "PT1S",
+           "TimestampAccuracy": "PT1S",
+           "Units": "Celsius", 
+           "Wildcards": [{
+               "Name": "Sensor", 
+               "Values": [
+                   "CHASSIS_AMBIENT", 
+                   "NODE_AMBIENT.1", 
+                   "NODE_AMBIENT.2", 
+                   "NODE_AMBIENT.3", 
+                   "NODE_AMBIENT.4", 
+                   "NODE_AMBIENT.5", 
+                   "NODE_AMBIENT.6", 
+                   "NODE_AMBIENT.7", 
+                   "NODE_AMBIENT.8", 
+                   "*"
+               ]
+           }]
+         } 
+
+  - name: AddMetricDefinition
+    data: |
+            {
+                    "Accuracy": 1, 
+                    "Calibration": 2, 
+                    "Id": "ChassisUpperThresholdCrit", 
+                    "Implementation": "PhysicalSensor", 
+                    "MaxReadingRange": 1000, 
+                    "MetricDataType": "Decimal", 
+                    "MetricProperties": [
+                        "/redfish/v1/Chassis/System.Chassis.1/Sensors/Temperatures/System.Chassis.1%23Temperature.{Sensor}#/UpperThresholdCritical"
+                    ], 
+                    "MetricType": "Numeric", 
+                    "MinReadingRange": 0, 
+                    "Name": "Overall Chassis or Storage Sled Upper Threshold Critical Metric Definition", 
+                    "PhysicalContext": "Chassis", 
+                    "Precision": 2, 
+                    "SensingInterval": "PT1S", 
+                    "Units": "Celsius", 
+                    "Wildcards": [{
+                        "Name": "Sensor", 
+                        "Values": [
+                            "CHASSIS_AMBIENT", 
+                            "NODE_AMBIENT.1", 
+                            "NODE_AMBIENT.2", 
+                            "NODE_AMBIENT.3", 
+                            "NODE_AMBIENT.4", 
+                            "NODE_AMBIENT.5", 
+                            "NODE_AMBIENT.6", 
+                            "NODE_AMBIENT.7", 
+                            "NODE_AMBIENT.8", 
+                            "*"
+                        ]
+                    }]
+                } 
+
+  - name: AddMetricDefinition
+    data: |
+            {
+                "Accuracy": 1, 
+                "Calibration": 2, 
+                "Id": "ChassisLowerThresholdNonCrit", 
+                "Implementation": "PhysicalSensor", 
+                "MaxReadingRange": 1000, 
+                "MetricDataType": "Decimal", 
+                "MetricProperties": [
+                    "/redfish/v1/Chassis/System.Chassis.1/Sensors/Temperatures/System.Chassis.1%23Temperature.{Sensor}#/LowerThresholdNonCritical"
+                ], 
+                "MetricType": "Numeric", 
+                "MinReadingRange": 0, 
+                "Name": "Overall Chassis or Storage Sled Lower Threshold Non Critical Metric Definition", 
+                "PhysicalContext": "Chassis", 
+                "Precision": 2, 
+                "SensingInterval": "PT1S", 
+                "Units": "Celsius", 
+                    "TimestampAccuracy": "PT1S", 
+                    "Wildcards": [{
+                        "Name": "Sensor", 
+                        "Values": [
+                            "CHASSIS_AMBIENT", 
+                            "NODE_AMBIENT.1", 
+                            "NODE_AMBIENT.2", 
+                            "NODE_AMBIENT.4", 
+                            "NODE_AMBIENT.5", 
+                            "NODE_AMBIENT.6", 
+                            "NODE_AMBIENT.7", 
+                            "NODE_AMBIENT.8", 
+                            "*"
+                        ]
+                    }]
+                } 
+
+  - name: AddMetricDefinition
+    data: |
+           {
+                    "Accuracy": 1, 
+                    "Calibration": 2, 
+                    "Id": "ChassisLowerThresholdCrit", 
+                    "Implementation": "PhysicalSensor", 
+                    "MaxReadingRange": 1000, 
+                    "MetricDataType": "Decimal", 
+                    "MetricProperties": [
+                        "/redfish/v1/Chassis/System.Chassis.1/Sensors/Temperatures/System.Chassis.1%23Temperature.{Sensor}#/LowerThresholdCritical"
+                    ], 
+                    "MetricType": "Numeric", 
+                    "MinReadingRange": 0, 
+                    "Name": "Overall Chassis or Storage Sled Upper Threshold Non Critical Metric Definition", 
+                    "PhysicalContext": "Chassis", 
+                    "Precision": 2, 
+                    "SensingInterval": "PT1S", 
+                    "TimestampAccuracy": "PT1S", 
+                    "Units": "Celsius", 
+                    "Wildcards": [{
+                        "Name": "Sensor", 
+                        "Values": [
+                            "CHASSIS_AMBIENT", 
+                            "NODE_AMBIENT.1", 
+                            "NODE_AMBIENT.2", 
+                            "NODE_AMBIENT.4", 
+                            "NODE_AMBIENT.5", 
+                            "NODE_AMBIENT.6", 
+                            "NODE_AMBIENT.7", 
+                            "NODE_AMBIENT.8", 
+                            "*"
+                        ]
+                    }]
+                } 
+
+  - name: AddMetricDefinition
+    data: |
+            {
+                    "Accuracy": 1, 
+                    "Calibration": 2, 
+                    "Id": "ChassisHistoryMinPower", 
+                    "Implementation": "?????", 
+                    "MaxReadingRange": 1000, 
+                    "MetricDataType": "Decimal", 
+                    "MetricProperties": [
+                        "/redfish/v1/Chassis/System.Chassis.1/Power/PowerTrends-1/Last{timeDuration}#/HistoryMinWatts"
+                    ], 
+                    "MetricType": "Numeric", 
+                    "MinReadingRange": 0, 
+                    "Name": "Chassis History Min Power", 
+                    "PhysicalContext": "Chassis", 
+                    "Precision": 2, 
+                    "SensingInterval": "PT1S", 
+                    "TimestampAccuracy": "PT1S", 
+                    "Units": "Watts", 
+                    "Wildcards": [{
+                        "Name": "timeDuration", 
+                        "Values": [
+                            "Week", 
+                            "Day", 
+                            "Month", 
+                            "*"
+                        ]
+                    }]
+                }
+
+  - name: AddMetricDefinition
+    data: |
+            {
+                    "Accuracy": 1, 
+                    "Calibration": 2, 
+                    "Id": "ChassisHistoryMaxPower", 
+                    "Implementation": "?????", 
+                    "MaxReadingRange": 1000, 
+                    "MetricDataType": "Decimal", 
+                    "MetricProperties": [
+                        "/redfish/v1/Chassis/System.Chassis.1/Power/PowerTrends-1/Last{timeDuration}#/HistoryMaxWatts"
+                    ], 
+                    "MetricType": "Numeric", 
+                    "MinReadingRange": 0, 
+                    "Name": "Chassis History Max Power", 
+                    "PhysicalContext": "Chassis", 
+                    "Precision": 2, 
+                    "SensingInterval": "PT1S", 
+                    "TimestampAccuracy": "PT1S", 
+                    "Units": "Watts", 
+                    "Wildcards": [{
+                        "Name": "timeDuration", 
+                        "Values": [
+                            "Week", 
+                            "Day", 
+                            "Month", 
+                            "*"
+                        ]
+                    }]
+                } 
+
+  - name: AddMetricDefinition
+    data: |
+            {
+                    "Accuracy": 1, 
+                    "Calibration": 2, 
+                    "Id": "ChassisHistoryAvgPower", 
+                    "Implementation": "?????", 
+                    "MaxReadingRange": 1000, 
+                    "MetricDataType": "Decimal", 
+                    "MetricProperties": [
+                        "/redfish/v1/Chassis/System.Chassis.1/Power/PowerTrends-1/Last{timeDuration}#/HistoryAverageWatts"
+                    ], 
+                    "MetricType": "Numeric", 
+                    "MinReadingRange": 0, 
+                    "Name": "Average of Chassis Power History", 
+                    "PhysicalContext": "Chassis", 
+                    "Precision": 2, 
+                    "SensingInterval": "PT1S", 
+                    "TimestampAccuracy": "PT1S", 
+                    "Units": "Watts", 
+                    "Wildcards": [{
+                        "Name": "timeDuration", 
+                        "Values": [
+                            "Week", 
+                            "Day", 
+                            "Month", 
+                            "*"
+                        ]
+                    }]
+                } 
 
 views:
   "rootview":
@@ -46,10 +463,11 @@ views:
         "instantiate('roles')",
         "instantiate('accounts')",
         "instantiate('registries')",
+        "instantiate('telemetry_service')",
         # we will eventually enable sessionservice, but need to do some work in ec.go to enable it first
         #"instantiate('sessionservice')",
-        "instantiate('telemetry_service')",
         "instantiate('task_service')",
+
       ]
 
   "chassis":
@@ -66,6 +484,71 @@ views:
         - "fn": "stdFormatters"
           "params":
       "Aggregate": "chassis"
+
+  "telemetry_service":
+      "Logger": ["module", "telemetry_service"]
+      "Models":
+        "default": {}
+      "Controllers":
+      "View":
+        - "fn": "with_URI"
+          "params": "rooturi + '/TelemetryService'"
+        - "fn": "PublishResourceUpdatedEventsForModel"
+          "params": "default"
+        - "fn": "etag"
+          "params": []
+        - "fn": "WithAction"
+          "params": {"name": "submit.test.metric.report", "uri": "/Actions/TelemetryService.SubmitTestMetricReport", "actionFunction": "submittestmetricreport"}
+        - "fn": "linkModel"
+          "params": {"existing": "default", "linkname": "etag"}
+      "Aggregate": "telemetry"
+      "ExecPost": [
+        "instantiate('metric_definitions', 'parenturi', view.GetURI())",
+        "instantiate('metric_report_definitions', 'parenturi', view.GetURI())",
+        "instantiate('metric_reports', 'parenturi', view.GetURI())",
+      ]
+
+  "metric_definitions":
+      "Logger": ["module", "telemetry"]
+      "Models":
+        "default":   {"members": "array()"}
+      "Controllers":
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + view.GetURI()", "passthru": {'collection_uri': 'view.GetURI()'} }
+      "View":
+        - "fn": "with_URI"
+          "params": "parenturi + '/MetricDefinitions'"
+        - "fn": "stdFormatters"
+          "params":
+      "Aggregate": "telemetryMD"
+
+  "metric_report_definitions":
+      "Logger": ["module", "telemetry"]
+      "Models":
+        "default":   {"members": "array()"}
+      "Controllers":
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + view.GetURI()", "passthru": {'collection_uri': 'view.GetURI()'} }
+      "View":
+        - "fn": "with_URI"
+          "params": "parenturi + '/MetricReportDefinitions'"
+        - "fn": "stdFormatters"
+          "params":
+      "Aggregate": "telemetryMRD"
+
+  "metric_reports":
+      "Logger": ["module", "metric_reports"]
+      "Models":
+        "default":  {"members": "array()"}
+      "Controllers":
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + view.GetURI()", "passthru": {'collection_uri': 'view.GetURI()'} }
+      "View":
+        - "fn": "with_URI"
+          "params": "parenturi + '/MetricReports'"
+        - "fn": "stdFormatters"
+          "params":
+      "Aggregate": "telemetryMR"
 
   "systems":
       "Models":
@@ -189,71 +672,6 @@ views:
         - "fn": "stdFormatters"
           "params":
       "Aggregate": "subscription"
-
-  "telemetry_service":
-      "Logger": ["module", "telemetry_service"]
-      "Models":
-        "default": {}
-      "Controllers":
-      "View":
-        - "fn": "with_URI"
-          "params": "rooturi + '/TelemetryService'"
-        - "fn": "PublishResourceUpdatedEventsForModel"
-          "params": "default"
-        - "fn": "etag"
-          "params": []
-        - "fn": "WithAction"
-          "params": {"name": "submit.test.metric.report", "uri": "/Actions/TelemetryService.SubmitTestMetricReport", "actionFunction": "submittestmetricreport"}
-        - "fn": "linkModel"
-          "params": {"existing": "default", "linkname": "etag"}
-      "Aggregate": "telemetry_service"
-      "ExecPost": [
-        "instantiate('metric_report_definitions', 'parenturi', view.GetURI())",
-        "instantiate('metric_reports', 'parenturi', view.GetURI())",
-      ]
-
-  "metric_report_definitions":
-      "Logger": ["module", "metric_report_definitions"]
-      "Models":
-        "default":   {"members": "array()"}
-      "Controllers":
-        - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + view.GetURI()", "passthru": {'collection_uri': 'view.GetURI()'} }
-      "View":
-        - "fn": "with_URI"
-          "params": "parenturi + '/MetricReportDefinitions'"
-        - "fn": "stdFormatters"
-          "params":
-      "Aggregate": "metric_report_definitions"
-      "Exec": [
-        "instantiate{'fan_speed_metric_def', 'parenturi',view.GetURI())",
-      ]
-
-  "fan_speed_metric_def":
-      "Logger": ["module", "metric_definition"]
-      "Models":
-        "default":  {"members": "array()"}
-      "View":
-        - "fn": "with_URI"
-          "params": "parenturi + '/FanSpeedRPM'"
-        - "fn": "stdFormatters"
-          "params":
-      "Aggregate": "fanspeedmetricdef"
-
-
-  "metric_reports":
-      "Logger": ["module", "metric_reports"]
-      "Models":
-        "default":  {"members": "array()"}
-      "Controllers":
-        - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + view.GetURI()", "passthru": {'collection_uri': 'view.GetURI()'} }
-      "View":
-        - "fn": "with_URI"
-          "params": "parenturi + '/MetricReports'"
-        - "fn": "stdFormatters"
-          "params":
-      "Aggregate": "metric_reports"
 
   "sessionservice":
       "Logger": ["module", "session"]
@@ -924,7 +1342,7 @@ views:
         "instantiate('iom_config', 'FQDD', FQDD)",
         ]
 
-        
+
   "iom_config":
       "Logger": ["module", "IOM_Config"]
       "Models":

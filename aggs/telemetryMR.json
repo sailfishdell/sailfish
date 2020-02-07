@@ -1,0 +1,20 @@
+[
+    {
+        "cmd": "RedfishResource:Create", 
+        "data": {
+            "Context": "/redfish/v1/$metadata#MetricReportCollection.MetricReportCollection", 
+            "Privileges": {
+                "GET": [
+                    "Login"
+                ]
+            }, 
+            "Properties": {
+                "Id": "MetricReports", 
+                "Members": [], 
+                "Members@odata.count": 0
+            }, 
+            "ResourceURI": "/redfish/v1/TelemetryService/MetricReports", 
+            "Type": "#MetricReportCollection.MetricReportCollection"
+        }
+    }
+]

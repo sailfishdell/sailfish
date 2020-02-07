@@ -49,6 +49,12 @@ type RedfishResourceRemovedData struct {
 	ResourceURI string
 }
 
+type WC struct {
+	Name string
+	Values []string
+}
+
+
 type RedfishResourcePropertiesUpdatedData struct {
 	ID            eh.UUID `json:"id"     bson:"id"`
 	ResourceURI   string

@@ -1,0 +1,36 @@
+[
+    {
+        "cmd": "RedfishResource:Create", 
+        "data": {
+            "Context": "/redfish/v1/$metadata#MetricReportDefinitionCollection.MetricReportDefinitionCollection", 
+	"Plugin": "TelemetryService",
+            "Privileges": {
+                "GET": [
+                    "Login"
+                ], 
+                "POST": [
+                    "ConfigureManager"
+                ]
+            }, 
+            "Properties": {
+                "Id": "MetricReportDefinitions", 
+                "Members@meta": {
+                    "GET": {
+                        "formatter": "formatOdataList", 
+                        "model": "default", 
+                        "property": "members"
+                    }
+                }, 
+                "Members@odata.count@meta": {
+                    "GET": {
+                        "formatter": "count", 
+                        "model": "default", 
+                        "property": "members"
+                    }
+                }
+            }, 
+            "ResourceURI": "##GETURI##", 
+            "Type": "#MetricReportDefinitionCollection.MetricReportDefinitionCollection"
+        }
+    }
+]

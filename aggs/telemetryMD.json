@@ -1,0 +1,32 @@
+[
+    {
+        "cmd": "RedfishResource:Create", 
+        "data": {
+            "Context": "/redfish/v1/$metadata#MetricDefinitionCollection.MetricDefinitionCollection", 
+            "Privileges": {
+                "GET": [
+                    "Login"
+                ]
+            }, 
+            "Properties": {
+                "Id": "MetricDefinitions", 
+        "Members@meta": {
+          "GET": {
+            "model": "default",
+            "formatter": "formatOdataList",
+            "property": "members"
+          }
+        },
+        "Members@odata.count@meta": {
+          "GET": {
+            "model": "default",
+            "formatter": "count",
+            "property": "members"
+          }
+	}
+            }, 
+            "ResourceURI": "##GETURI##",
+            "Type": "#MetricDefinitionCollection.MetricDefinitionCollection"
+        }
+    }
+]

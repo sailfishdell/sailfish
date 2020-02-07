@@ -16,5 +16,6 @@ func init() {
 	gob.Register(&RedfishResourceProperty{})
 	gob.Register(map[string]interface{}{})
 	gob.Register([]interface{}{})
+	gob.Register(WC{})
 	gob.Register(eh.UUID(""))
 }

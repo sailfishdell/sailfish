@@ -22,11 +22,13 @@ import (
 	log "github.com/superchalupa/sailfish/src/log"
 	applog "github.com/superchalupa/sailfish/src/log15adapter"
 
+	eh "github.com/looplab/eventhorizon"
 	"github.com/superchalupa/sailfish/src/http_redfish_sse"
 	"github.com/superchalupa/sailfish/src/http_sse"
 	"github.com/superchalupa/sailfish/src/httpinject"
 	"github.com/superchalupa/sailfish/src/rawjsonstream"
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
+	"github.com/superchalupa/sailfish/src/ocp/telemetryservice"
 
 	// cert gen
 	"github.com/superchalupa/sailfish/src/tlscert"
@@ -122,8 +124,9 @@ func main() {
 			basicauth.MakeHandlerFunc(chainAuth,
 				chainAuth("UNKNOWN", []string{"Unauthenticated"}))))
 
+	nofilterfn := func (ev eh.Event ) bool { return true}
 	// SSE
-	chainAuthSSE := func(u string, p []string) http.Handler { return http_sse.NewSSEHandler(domainObjs, logger, u, p) }
+	chainAuthSSE := func(u string, p []string) http.Handler { return http_sse.NewSSEHandler(domainObjs, logger, u, p, nofilterfn) }
 	m.Path("/events").Methods("GET").HandlerFunc(
 		session.MakeHandlerFunc(logger, domainObjs.EventBus, domainObjs, chainAuthSSE, basicauth.MakeHandlerFunc(chainAuthSSE, chainAuthSSE("UNKNOWN", []string{"Unauthenticated"}))))
 
@@ -131,10 +134,21 @@ func main() {
 	chainAuthRFSSE := func(u string, p []string) http.Handler {
 		return http_redfish_sse.NewRedfishSSEHandler(domainObjs, logger, u, p)
 	}
-	m.Path("/redfish/v1/SSE").Methods("GET").HandlerFunc(
+	m.Path("/redfish/v1/EventService/SSE").Methods("GET").HandlerFunc(
 		session.MakeHandlerFunc(logger, domainObjs.EventBus, domainObjs, chainAuthRFSSE, basicauth.MakeHandlerFunc(chainAuthRFSSE, chainAuthRFSSE("UNKNOWN", []string{"Unauthenticated"}))))
 
-	// backend command handling
+
+	MetricFilterfn := func (ev eh.Event ) bool { 
+		return ev.EventType() == telemetryservice.MetricValueEvent
+	}
+
+	chainAuthMetricSSE := func(u string, p []string) http.Handler { return http_sse.NewSSEHandler(domainObjs, logger, u, p, MetricFilterfn ) }
+	m.Path("/redfish/v1/TelemetryService/metricevents").Methods("GET").HandlerFunc(
+		session.MakeHandlerFunc(logger, domainObjs.EventBus, domainObjs, chainAuthMetricSSE, basicauth.MakeHandlerFunc(chainAuthMetricSSE, chainAuthMetricSSE("UNKNOWN", []string{"Unauthenticated"}))))
+
+
+
+	//// backend command handling
 	internalHandlerFunc := domainObjs.GetInternalCommandHandler(ctx)
 
 	// most-used command is event inject, specify that manually to avoid some regexp memory allocations

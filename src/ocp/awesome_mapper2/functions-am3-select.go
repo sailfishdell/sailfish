@@ -37,7 +37,7 @@ func baseuri(resourceURI string) interface{} {
 }
 
 func nohash(resourceURI string) bool {
-	if i := strings.Index(resourceURI, "#"); i > -1 {
+	if strings.Contains(resourceURI, "#") {
 		return false
 	}
 	return true
@@ -202,7 +202,7 @@ func init() {
 			group := p.Params["Group"]
 			index := p.Params["Index"]
 			rowOrColumn := (cfgEntry.SelectParams[0])
-			return (data.FQDD == "System.Chassis.1" && data.Group == group && data.Index == index && data.Name == rowOrColumn), nil
+			return (data.FQDD == "System.hassis.1" && data.Group == group && data.Index == index && data.Name == rowOrColumn), nil
 		}, nil
 
 	})

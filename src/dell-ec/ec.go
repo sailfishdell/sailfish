@@ -50,6 +50,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	ch := d.CommandHandler
 	eb := d.EventBus
 
+
 	actionhandler.Setup(ctx, ch, eb)
 	uploadhandler.Setup(ctx, ch, eb)
 	arService, _ := ar_mapper2.StartService(ctx, logger, cfgMgr, cfgMgrMu, d)
@@ -59,17 +60,21 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	am3Svc, _ := am3.StartService(ctx, logger, "am3 base service", d)
 	addAM3Functions(logger.New("module", "ec_am3_functions"), am3Svc, d)
 
+	// here introduce new initial event handling
 	ardumpSvc, _ := attributes.StartService(ctx, logger, d)
 	pumpSvc := NewPumpActionSvc(ctx, logger, d)
+
 
 	// the package for this is going to change, but this is what makes the various mappers and view functions available
 	instantiateSvc := testaggregate.New(logger, cfgMgr, cfgMgrMu, d, am3Svc)
 	evtSvc := eventservice.New(ctx, cfgMgr, cfgMgrMu, d, instantiateSvc, actionSvc, uploadSvc)
+
 	testaggregate.RegisterWithURI(instantiateSvc)
 	testaggregate.RegisterPublishEvents(instantiateSvc, evtSvc)
 	testaggregate.RegisterAM2(instantiateSvc, am2Svc)
 	testaggregate.RegisterPumpAction(instantiateSvc, actionSvc, pumpSvc)
 	testaggregate.RegisterPumpUpload(instantiateSvc, uploadSvc, pumpSvc)
+
 	ar_mapper2.RegisterARMapper(instantiateSvc, arService)
 	attributes.RegisterController(instantiateSvc, ardumpSvc)
 	stdmeta.RegisterFormatters(instantiateSvc, d)
@@ -95,12 +100,13 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	initThermalSensor(logger, instantiateSvc, ch, d)
 	inithealth(ctx, logger, ch, d)
 	stdmeta.InitializeSsoinfo(d) //remove when ready
-	telemetryservice.RegisterAggregate(instantiateSvc)
-	telemetryservice.New(ctx, logger, ch, d)
 
 	stdmeta.SetupSledProfilePlugin(d)
 	stdmeta.InitializeCertInfo(d)
 	stdmeta.GenericDefPlugin(ch, d)
+
+	// telemetry service is up before aggs/*json are executed
+	telemetryservice.New(ctx, logger, ch, d)
 
 	godefs.InitGoDef()
 
@@ -201,6 +207,10 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	// VIPER Config:
 	// pull the config from the YAML file to populate some static config options
 	self.configChangeHandler = func() {}
+
+	// send startup events
+	setup(ctx, logger, cfgMgr, d)
+
 
 	return self
 }

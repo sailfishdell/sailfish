@@ -6,6 +6,7 @@ import (
 
 	eh "github.com/looplab/eventhorizon"
 	"github.com/superchalupa/sailfish/src/dell-resources/dm_event"
+	"github.com/superchalupa/sailfish/src/ocp/telemetryservice"
 
 	"github.com/superchalupa/sailfish/godefs"
 	"github.com/superchalupa/sailfish/src/dell-resources/attributedef"
@@ -51,6 +52,46 @@ func addAM3Functions(logger log.Logger, am3Svc *am3.Service, d *domain.DomainObj
 				},
 			})
 	})
+
+	MD := "/redfish/v1/TelemetryService/MetricDefinitions/"
+	am3Svc.AddEventHandler("add_MD", telemetryservice.AddMDEvent, func(event eh.Event) {
+		mdobj, ok1 := event.Data().(*telemetryservice.AddMDData)
+		if !ok1 {
+			logger.Error("AddMDEvent did not have AddMDData", "type", event.EventType, "data", event.Data())
+			return
+		}
+
+		wcMaps := []map[string]interface{}{}
+		for i:=0; i < len(mdobj.Wildcards); i++ {
+			wcMaps= append(wcMaps, map[string]interface{}{"Name": mdobj.Wildcards[i].Name, "Values": mdobj.Wildcards[i].Values})
+		}
+		uuid := eh.NewUUID()
+
+		d.CommandHandler.HandleCommand(
+			context.Background(),
+			&domain.CreateRedfishResource{
+				ID: uuid,
+				Type: "#TelemetryService.v1_0_0.TelemetryService", 
+				ResourceURI: MD + mdobj.Id,
+            			Context: "/redfish/v1/$metadata#MetricDefinition.MetricDefinition",
+				Privileges: map[string]interface{}{
+					"GET": []string{"Login"},
+				},
+				Properties: map[string]interface{}{
+					"Accuracy": mdobj.Accuracy,
+					"Calibration": mdobj.Calibration, 
+					"Id": mdobj.Id, 
+					"Implementation": mdobj.Implementation, 
+					"MaxReadingRange": mdobj.MaxReadingRange, 
+					"MetricDataType": mdobj.MetricDataType,
+					"MetricProperties": mdobj.MetricProperties, 
+					"MetricType": mdobj.MetricType,
+					"MinReadingRange": mdobj.MinReadingRange,
+					"Name": mdobj.Name,
+					"Wildcards": wcMaps,
+		}})
+	})
+
 	am3Svc.AddEventHandler("InstPowerFn", dm_event.InstPowerEvent, func(event eh.Event) {
 		data, ok := event.Data().(*dm_event.InstPowerEventData)
 		if !ok {

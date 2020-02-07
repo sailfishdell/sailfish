@@ -15,8 +15,8 @@ type busObjs interface {
 }
 
 // NewSSEHandler constructs a new SSEHandler with the given username and privileges.
-func NewSSEHandler(dobjs busObjs, logger log.Logger, u string, p []string) *SSEHandler {
-	return &SSEHandler{UserName: u, Privileges: p, d: dobjs, logger: logger}
+func NewSSEHandler(dobjs busObjs, logger log.Logger, u string, p []string, evtFilterFn func(ev eh.Event) bool ) *SSEHandler {
+	return &SSEHandler{UserName: u, Privileges: p, d: dobjs, logger: logger, evtFilterFn :evtFilterFn }
 }
 
 // SSEHandler struct holds authentication/authorization data as well as the domain variables
@@ -25,6 +25,7 @@ type SSEHandler struct {
 	Privileges []string
 	d          busObjs
 	logger     log.Logger
+	evtFilterFn func(ev eh.Event) bool  
 }
 
 func (rh *SSEHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -32,7 +33,6 @@ func (rh *SSEHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx := log.WithRequestID(r.Context(), requestID)
 	requestLogger := log.ContextLogger(ctx, "sse_handler")
 	requestLogger.Info("Trying to start SSE Stream for request.")
-
 	flusher, ok := w.(http.Flusher)
 	if !ok {
 		requestLogger.Crit("Streaming is not supported by the underlying http handler.")
@@ -44,7 +44,7 @@ func (rh *SSEHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	flusher.Flush()
 
 	l := eventwaiter.NewListener(ctx, requestLogger, rh.d.GetWaiter(), func(event eh.Event) bool {
-		return true
+		return rh.evtFilterFn(event) 
 	})
 	l.Name = "SSE Listener"
 	defer l.Close()

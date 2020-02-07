@@ -89,6 +89,7 @@ func New(logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, d *doma
 		}
 		resp := &InstantiateResponseData{CmdID: idata.CmdID}
 		resp.Log, resp.View, resp.Err = ret.internalInstantiate(idata.Name, idata.Params)
+		fmt.Println(resp.Err)
 		ret.eb.PublishEvent(context.Background(), eh.NewEvent(instantiateResponse, resp, time.Now()))
 	})
 
@@ -530,6 +531,7 @@ func (s *Service) internalInstantiate(name string, parameters map[string]interfa
 		fn(ctx, subLogger, cfgMgr, cfgMgrMu, vw, viewFnParams, newParams)
 	}
 
+	fmt.Println("Instantiate before controller URI", vw.GetURI(), "UUID", vw.GetUUID())
 	// Instantiate controllers
 	for _, controllerFn := range config.Controllers {
 		controllerFnName, ok := controllerFn["fn"]
@@ -562,6 +564,7 @@ func (s *Service) internalInstantiate(name string, parameters map[string]interfa
 			c.Close()
 		}
 	}
+	fmt.Println("Instantiate URI", vw.GetURI(), "UUID", vw.GetUUID())
 
 	// register the plugin
 	domain.RegisterPlugin(func() domain.Plugin { return vw })
@@ -587,14 +590,22 @@ func (s *Service) internalInstantiate(name string, parameters map[string]interfa
 			return
 		}
 		// We can get one or more commands back, handle them
+		first:=true
 		for _, cmd := range cmds {
 			// if it's a resource create command, use the view ID for that
 			if c, ok := cmd.(*domain.CreateRedfishResource); ok {
-				c.ID = vw.GetUUID()
+				if first {
+					c.ID = vw.GetUUID()
+					first = false
+				} else {
+					c.ID = eh.NewUUID()
+				}
+			
 			}
 			s.ch.HandleCommand(context.Background(), cmd)
 		}
 	}()
+	fmt.Println("Instantiate before Exec URI", vw.GetURI(), "UUID", vw.GetUUID())
 
 	// Run any POST commands
 	for _, execStr := range config.ExecPost {
@@ -614,6 +625,7 @@ func (s *Service) internalInstantiate(name string, parameters map[string]interfa
 			continue
 		}
 	}
+	fmt.Println("Instantiate Exec URI", vw.GetURI(), "UUID", vw.GetUUID())
 
 	return subLogger, vw, nil
 }
