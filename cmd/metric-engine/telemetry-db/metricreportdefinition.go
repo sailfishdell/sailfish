@@ -390,6 +390,12 @@ func (factory *telemetryManager) updateMRD(mrdEvData *MetricReportDefinitionData
 
 		// insert the first (probably empty) report
 		factory.PendingInsert[mrd.Name] = true
+		if mrd.Type == metric.OnRequest { // have to actually insert the onrequest now because there is no "generation" for them
+			err = factory.InsertMetricReport(tx, mrd.Name)
+			if err != nil {
+				return xerrors.Errorf("error Inserting Metric Report MRD(%+v): %w", mrd, err)
+			}
+		}
 
 		if mrd.Type == metric.Periodic && mrd.Period != newMRD.Period {
 			// If this is a periodic report, put it in the NextMRTS map so it'll get updated on the next report period
@@ -439,6 +445,12 @@ func (factory *telemetryManager) addMRD(mrdEvData *MetricReportDefinitionData) (
 
 		// insert the first (probably empty) report
 		factory.PendingInsert[mrd.Name] = true
+		if mrd.Type == metric.OnRequest { // have to actually insert the onrequest now because there is no "generation" for them
+			err = factory.InsertMetricReport(tx, mrd.Name)
+			if err != nil {
+				return xerrors.Errorf("error Inserting Metric Report MRD(%+v): %w", mrd, err)
+			}
+		}
 
 		// If this is a periodic report, put it in the NextMRTS map so it'll get updated on the next report period
 		if mrd.Type == metric.Periodic {
@@ -652,6 +664,7 @@ func (factory *telemetryManager) InsertMetricReport(tx *sqlx.Tx, name string) (e
 
 		// nothing left to do if it's not enabled
 		if !mrd.Enabled {
+			delete(factory.PendingInsert, mrd.Name)
 			return nil
 		}
 
@@ -661,6 +674,7 @@ func (factory *telemetryManager) InsertMetricReport(tx *sqlx.Tx, name string) (e
 		}
 
 		factory.LastMRTS[mrd.Name] = factory.MetricTSHWM
+		delete(factory.PendingInsert, mrd.Name)
 
 		return nil
 	})
