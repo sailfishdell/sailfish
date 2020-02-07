@@ -471,8 +471,10 @@ UDB-Metric-Import:
         '/redfish/v1/FIXME/' || FriendlyFQDD as Property,
         friendlyFQDD as FriendlyFQDD,
         FQDD as FQDD,
-        5000000000 as 'SensorInterval',  -- 5s interval w/ 1s slack
-        1000000000 as 'SensorSlack',
+
+        -- MEB - 2020-02-07 - observed 10s normal with outliers at 17s, 24s. possibly suppressed upstream
+        10000000000 as 'SensorInterval',
+        2000000000 as 'SensorSlack',
         true as 'RequiresExpand',
 
         LastWeekMinPowerTime as 'Metric-LastWeekMinPowerTime',
@@ -512,7 +514,10 @@ UDB-Metric-Import:
         '/redfish/v1/FIXME/' || FriendlyFQDD as Property,
         friendlyFQDD as FriendlyFQDD,
         FQDD as FQDD,
-        5000000000 as 'SensorInterval',  -- 5s interval w/ 1s slack
+
+        -- MEB - 2/7/2020 - observed 5s, 10s, 15s, and 30s intervals. possibly suppressed upstream
+        -- setting 5s sensor interval for now
+        5000000000 as 'SensorInterval',  -- 5s interval w/ 2s slack
         1000000000 as 'SensorSlack',
         true as 'RequiresExpand',
 
@@ -552,8 +557,9 @@ UDB-Metric-Import:
         '/redfish/v1/FIXME/' || FriendlyFQDD as Property,
         friendlyFQDD as FriendlyFQDD,
         FQDD as FQDD,
-        -- expect 5 second interval, give it +/- 1s
-        5000000000 as 'SensorInterval',  -- 5s interval w/ 1s slack
+
+        -- MEB - 2020-02-07 - observed 5s, 10s, 15s, 20s, 25s interals. Typical is 5s. Possibly suppressed upstream
+        5000000000 as 'SensorInterval',
         1000000000 as 'SensorSlack',
         true as 'RequiresExpand',
 
@@ -585,7 +591,9 @@ UDB-Metric-Import:
         '/redfish/v1/FIXME/' || FriendlyFQDD as Property,
         friendlyFQDD as FriendlyFQDD,
         FQDD as FQDD,
-        5000000000 as 'SensorInterval',  -- 5s interval w/ 1s slack
+
+        -- MEB 2020-02-07 - observed mostly reliable 5s intervals. Sometimes 10s. Possibly suppressed upstream
+        5000000000 as 'SensorInterval',
         1000000000 as 'SensorSlack',
         true as 'RequiresExpand',
 
@@ -615,8 +623,10 @@ UDB-Metric-Import:
         '/redfish/v1/FIXME/' || FriendlyFQDD as Property,
         friendlyFQDD as FriendlyFQDD,
         FQDD as FQDD,
-        5000000000 as 'SensorInterval',  -- 5s interval w/ 1s slack
-        1000000000 as 'SensorSlack',
+
+        -- MEB 2020-02-07 - observed mostly reliable 5s intervals. Sometimes 10s. Possibly suppressed upstream
+        10000000000 as 'SensorInterval',  -- 5s interval w/ 1s slack
+        2000000000 as 'SensorSlack',
         true as 'RequiresExpand',
 
         Temperature as 'Metric-TemperatureReading',
@@ -638,8 +648,12 @@ UDB-Metric-Import:
         '/redfish/v1/FIXME/' || FriendlyFQDD as Property,
         friendlyFQDD as FriendlyFQDD,
         FQDD as FQDD,
-        5000000000 as 'SensorInterval',  -- 5s interval w/ 1s slack
-        1000000000 as 'SensorSlack',
+
+        -- MEB 2020-02-07 - TODO -> Need info from Sailaja about the intervals here
+        -- My data set has no recurrence on these values, bug in telemetrypop? Or are they really not changing? Too much suppression happening.
+        -- TODO FIXME - going to hardcode this as 20s for now
+        20000000000 as 'SensorInterval',
+        4000000000 as 'SensorSlack',
         true as 'RequiresExpand',
 
         CurrentReading as 'Metric-TemperatureReading'
@@ -660,8 +674,12 @@ UDB-Metric-Import:
         '/redfish/v1/FIXME/' || FriendlyFQDD as Property,
         friendlyFQDD as FriendlyFQDD,
         FQDD as FQDD,
-        5000000000 as 'SensorInterval',  -- 5s interval w/ 1s slack
-        1000000000 as 'SensorSlack',
+
+        -- MEB 2020-02-07 - TODO -> Need info from Sailaja about the intervals here
+        -- My data set has no recurrence on these values, bug in telemetrypop? Or are they really not changing? Too much suppression happening.
+        -- TODO FIXME - going to hardcode this as 20s for now
+        20000000000 as 'SensorInterval',
+        4000000000 as 'SensorSlack',
         true as 'RequiresExpand',
 
         CurrentReading as 'Metric-TemperatureReading'
@@ -682,8 +700,12 @@ UDB-Metric-Import:
         '/redfish/v1/FIXME/' || FriendlyFQDD as Property,
         friendlyFQDD as FriendlyFQDD,
         FQDD as FQDD,
-        5000000000 as 'SensorInterval',  -- 5s interval w/ 1s slack
-        1000000000 as 'SensorSlack',
+
+        -- MEB 2020-02-07 - TODO -> Need info from Sailaja about the intervals here
+        -- No hardware in MEB test machine. Need info.
+        -- TODO FIXME - going to hardcode this as 20s for now
+        20000000000 as 'SensorInterval',  -- 5s interval w/ 1s slack
+        4000000000 as 'SensorSlack',
         true as 'RequiresExpand',
 
         CurrentReading as 'Metric-TemperatureReading'
@@ -705,8 +727,11 @@ UDB-Metric-Import:
         '/redfish/v1/FIXME/' || FQDD as Property,
         friendlyFQDD as FriendlyFQDD,
         FQDD as FQDD,
-        60000000000 as 'SensorInterval',  -- 60s interval w/ 10s slack
-        10000000000 as 'SensorSlack',
+
+        -- MEB 2020-02-07 - observed ~60s regular intervals here, but occasional 5s. WTF?
+        -- TODO - investigate sensor interval here
+        60000000000 as 'SensorInterval',
+        5000000000 as 'SensorSlack',
         true as 'RequiresExpand',
 
         SystemMaxPowerConsumption as 'Metric-SystemMaxPowerConsumption',
@@ -882,6 +907,11 @@ UDB-Metric-Import:
          '/redfish/v1/FIXME/' || FQDD as Property,
         FQDD as FQDD,
 
+        -- MEB 2020-02-07 - observed 5s intervals
+        5000000000 as 'SensorInterval',  -- 5s interval w/ 1s slack
+        2000000000 as 'SensorSlack',
+        true as 'RequiresExpand',
+
         TxUnicast as 'Metric-TxUnicast',
         TxPauseXONFrames as 'Metric-TxPauseXONFrames',
         TxPauseXOFFFrames as 'Metric-TxPauseXOFFFrames',
@@ -1015,6 +1045,7 @@ UDB-Metric-Import:
           WHEN 'iDRAC.Embedded.1#SystemBoardMEMUsage' then 'MemoryUsage'
           WHEN 'iDRAC.Embedded.1#SystemBoardIOUsage'  then 'IOUsage'
           END
+        ELSE 'IGNORE'
         END as Name,
 
         -- manually expand x^y since sqlite is missing a pow() or exp() function
@@ -1038,23 +1069,8 @@ UDB-Metric-Import:
       left join
         ActiveOIDMapping on TblProbeObj.OID = ActiveOIDMapping.OID
       WHERE
-        Timestamp > :HWM AND (
-          -- <dchipobj.h>
-          -- TEMPERATURE_OBJ_TYPE (0x16) // ProbeObj
-          ( ObjType = 0x16 and subtype=0x05 ) or
-
-          -- FAN_OBJ_TYPE         (0x17) // ProbeObj
-          ( ObjType = 0x17 and (subtype=0x01 or subtype=0x03)) or
-
-          -- VOLTAGE_OBJ_TYPE     (0x18) // ProbeObj
-          --   All voltage subtypes that give actual readings
-          ( ObjType = 0x18 and ((SubType >= 0x01 and SubType <= 0x0F) or subType = 0x1C) ) or
-
-          -- CURRENT_OBJ_TYPE     (0x19) // ProbeObj
-          ( ObjType = 0x19 ) or
-
-          ( ObjType = 0x38 )    -- USAGE_OBJ_TYPE       (0x38) // CPU Utilization
-        )
+        Timestamp > :HWM AND
+        Name != 'IGNORE'
 
   Sensor:
     Type: DISABLE-DirectMetric
@@ -1250,20 +1266,22 @@ internal:
         ID AS MetaID, FQDDPattern, SourcePattern, PropertyPattern, Wildcards, CollectionFunction, CollectionDuration, SuppressDups
       FROM MetricMeta
       WHERE
-        (:Name LIKE NamePattern OR NamePattern is NULL OR NamePattern = '') AND
-        (:FQDD LIKE FQDDPattern OR FQDDPattern is NULL OR FQDDPattern = '') AND
-        (:Source LIKE SourcePattern OR SourcePattern is NULL OR SourcePattern = '') AND
-        (:Property LIKE PropertyPattern OR PropertyPattern is NULL OR PropertyPattern = '')
+        (:Name LIKE NamePattern OR NamePattern = '') AND
+        (:FQDD LIKE FQDDPattern OR FQDDPattern = '') AND
+        (:Source LIKE SourcePattern OR SourcePattern = '') AND
+        (:Property LIKE PropertyPattern OR PropertyPattern = '')
 
     insert_metric_instance: |
       INSERT INTO MetricInstance
-             ( Name,  FQDD,  Property,  Context,  Function,            Label,  CollectionScratch, LastValue, LastTS,  FlushTime,  SuppressDups, Dirty,    RequiresExpand,    SensorInterval,    SensorSlack)
-      VALUES (:Name, :FQDD, :Property, :Context, :CollectionFunction, :Label, :CollectionScratch, '',        0,      :FlushTime, :SuppressDups, false, :MVRequiresExpand, :MVSensorInterval, :MVSensorSlack)
+             ( Name,  FQDD,  Property,  Context,  Function,                      Duration,  Label,  CollectionScratch, LastValue, LastTS,  FlushTime,  SuppressDups, Dirty,    RequiresExpand,    SensorInterval,    SensorSlack,  Source)
+      VALUES (:Name, :FQDD, :Property, :Context, :CollectionFunction, :CollectionDuration, :Label, :CollectionScratch, '',        0,      :FlushTime, :SuppressDups, false, :MVRequiresExpand, :MVSensorInterval, :MVSensorSlack, :Source)
 
     find_metric_instance: |
       select
         MI.ID as InstanceID,
         MI.Dirty as Dirty,
+        MI.Source as Source,
+        MI.Name as Name,
         (select count(*) from MetricMetaToInstance as MMTI where MMTI.InstanceID = MI.ID and MMTI.MetaID = :MetaID) as HasAssocMM
       from MetricInstance as MI
       where
@@ -1271,7 +1289,8 @@ internal:
         MI.FQDD=:FQDD and
         MI.Property=:Property and
         MI.Context=:Context and
-        MI.Function=:CollectionFunction
+        MI.Function=:CollectionFunction and
+        MI.Duration=:CollectionDuration
 
     set_metric_instance_dirty: |
       UPDATE MetricInstance set Dirty=true
@@ -1287,15 +1306,13 @@ internal:
         MI.LastValue,
         MI.FlushTime,
         MI.SuppressDups,
-        MM.CollectionFunction,
-        MM.CollectionDuration,
+        MI.Function as CollectionFunction,
+        MI.Duration as CollectionDuration,
         MI.Dirty,
         MI.RequiresExpand as MIRequiresExpand,
         MI.SensorInterval as MISensorInterval,
         MI.SensorSlack    as MISensorSlack
       from MetricInstance as MI
-        inner join MetricMetaToInstance as MMTI on MI.ID = MMTI.InstanceID
-        inner join MetricMeta as MM on MMTI.MetaID = MM.ID
       where
         MI.Name=:Name and
         MI.FQDD=:FQDD and
@@ -1305,20 +1322,21 @@ internal:
     iterate_metric_instance_for_report: |
       select distinct
         MI.ID as InstanceID,
+        MI.Source as Source,
+        MI.Name as Name,
         MI.CollectionScratch,
         MI.LastTS,
         MI.LastValue,
         MI.FlushTime,
         MI.SuppressDups,
-        MM.CollectionFunction,
-        MM.CollectionDuration,
+        MI.Function as CollectionFunction,
+        MI.Duration as CollectionDuration,
         MI.Dirty,
         MI.RequiresExpand as MIRequiresExpand,
         MI.SensorInterval as MISensorInterval,
         MI.SensorSlack    as MISensorSlack
       from MetricInstance as MI
       inner join MetricMetaToInstance as MMTI on MI.ID = MMTI.InstanceID
-      inner join MetricMeta as MM on MMTI.MetaID = MM.ID
       inner join ReportDefinitionToMetricMeta as rd2mm on MMTI.MetaID = rd2mm.MetaID
       where
         rd2mm.ReportDefinitionID = :ID
@@ -1497,13 +1515,13 @@ createdb:
       (
         ID                 INTEGER UNIQUE PRIMARY KEY NOT NULL,
         SuppressDups       BOOLEAN NOT NULL DEFAULT true,
-        NamePattern        TEXT,
-        FQDDPattern        TEXT,   -- Dell OEM extension to sort based on FQDD patterns
-        SourcePattern      TEXT,   -- Dell OEM extension to sort based on where we got the data from
-        PropertyPattern    TEXT,   -- /redfish/v1/some/uri/{with}/{wildcards}#Property
-        Wildcards          TEXT,   --{'wildcard': ['array','of', 'possible', 'replacements'], 'with': ['another', 'list', 'of', 'replacements']}
-        CollectionFunction TEXT not null,   -- 'sum', 'avg', 'min', 'max'
-        CollectionDuration INTEGER,
+        NamePattern        TEXT NOT NULL DEFAULT "",
+        FQDDPattern        TEXT NOT NULL DEFAULT "",   -- Dell OEM extension to sort based on FQDD patterns
+        SourcePattern      TEXT NOT NULL DEFAULT "",   -- Dell OEM extension to sort based on where we got the data from
+        PropertyPattern    TEXT NOT NULL DEFAULT "",   -- /redfish/v1/some/uri/{with}/{wildcards}#Property
+        Wildcards          TEXT NOT NULL DEFAULT "",   --{'wildcard': ['array','of', 'possible', 'replacements'], 'with': ['another', 'list', 'of', 'replacements']}
+        CollectionFunction TEXT not null DEFAULT "",   -- 'sum', 'avg', 'min', 'max'
+        CollectionDuration INTEGER NOT NULL DEFAULT 0,
 
         -- indexes and constraints
         unique (NamePattern, SuppressDups, FQDDPattern, SourcePattern, PropertyPattern, Wildcards, CollectionFunction, CollectionDuration)
@@ -1536,6 +1554,7 @@ createdb:
         Source            TEXT    NOT NULL DEFAULT '',
         Context           TEXT    NOT NULL, -- usually FQDD
         Function          TEXT    NOT NULL,
+        Duration          INTEGER NOT NULL DEFAULT 0,
         Label             TEXT    NOT NULL, -- 'friendly FQDD' + 'metric name' + 'collectionfn'
         SuppressDups      BOOLEAN NOT NULL default true,
         CollectionScratch TEXT    NOT NULL, -- Scratch space used by calculation functions
@@ -1543,13 +1562,13 @@ createdb:
         LastTS            INTEGER NOT NULL, -- Used to quickly suppress dups for this instance
         LastValue         TEXT    NOT NULL, -- Used to quickly suppress dups for this instance
         RequiresExpand    BOOLEAN NOT NULL DEFAULT TRUE, -- should we automatically expand gaps
-        SensorInterval    INTEGER NOT NULL DEFAULT 5,    -- set to the backend interval
-        SensorSlack       INTEGER NOT NULL DEFAULT 1,    -- how much subsequent timestamps can drift
+        SensorInterval    INTEGER NOT NULL DEFAULT 0,    -- set to the backend interval
+        SensorSlack       INTEGER NOT NULL DEFAULT 0,    -- how much subsequent timestamps can drift
         SourceTraceInfo   TEXT    NOT NULL DEFAULT '',   -- DB:ROWID -- can look for sqlite operation==(delete) and turn off sensor interval
         Dirty             BOOLEAN NOT NULL DEFAULT TRUE, -- set to dirty any time MRD changes, clean once a metric has been processed
 
         -- indexes and constraints
-        unique (Name, FQDD, Property, Context, Function, SuppressDups)
+        unique (Name, FQDD, Property, Context, Function, Duration, SuppressDups)
       )
 
   - |

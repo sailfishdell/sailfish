@@ -90,7 +90,7 @@ func StartupUDBImport(logger log.Logger, cfg *viper.Viper, am3Svc eventHandlingS
 	// fine. keeps sqlite from opening new connections un-necessarily
 	database.SetMaxOpenConns(1)
 
-	dataImporter, err := newImportManager(logger, database, d, cfg)
+	importMgr, err := newImportManager(logger, database, d, cfg)
 	if err != nil {
 		database.Close()
 		return xerrors.Errorf("Error creating udb integration: %w", err)
@@ -98,8 +98,8 @@ func StartupUDBImport(logger log.Logger, cfg *viper.Viper, am3Svc eventHandlingS
 
 	bus := d.GetBus()
 	// set up the event handler that will do periodic imports every ~1s.
-	am3Svc.AddEventHandler("Import UDB Metric Values", telemetry.PublishClock, MakeHandlerUDBPeriodicImport(logger, dataImporter, bus))
-	am3Svc.AddEventHandler("UDB Change Notification", udbChangeEvent, MakeHandlerUDBChangeNotify(logger, dataImporter, bus))
+	am3Svc.AddEventHandler("Import UDB Metric Values", telemetry.PublishClock, MakeHandlerUDBPeriodicImport(logger, importMgr, bus))
+	am3Svc.AddEventHandler("UDB Change Notification", udbChangeEvent, MakeHandlerUDBChangeNotify(logger, importMgr, bus))
 
 	// handle UDB notifications
 	go handleUDBNotifyPipe(logger, cfg.GetString("udb.udbnotifypipe"), d)
@@ -107,11 +107,11 @@ func StartupUDBImport(logger log.Logger, cfg *viper.Viper, am3Svc eventHandlingS
 	return nil
 }
 
-func MakeHandlerUDBPeriodicImport(logger log.Logger, dataImporter *dataImporter, bus eh.EventBus) func(eh.Event) {
+func MakeHandlerUDBPeriodicImport(logger log.Logger, importMgr *importManager, bus eh.EventBus) func(eh.Event) {
 	// close over periodic... first iteration will do forced, nonperiodic import, rest will always do periodic import
 	periodic := false
 	return func(event eh.Event) {
-		err := dataImporter.runImport(periodic)
+		err := importMgr.runPeriodicImports(periodic)
 		if err != nil {
 			logger.Crit("Error running import", "err", err)
 		}
@@ -119,14 +119,14 @@ func MakeHandlerUDBPeriodicImport(logger log.Logger, dataImporter *dataImporter,
 	}
 }
 
-func MakeHandlerUDBChangeNotify(logger log.Logger, dataImporter *dataImporter, bus eh.EventBus) func(eh.Event) {
+func MakeHandlerUDBChangeNotify(logger log.Logger, importMgr *importManager, bus eh.EventBus) func(eh.Event) {
 	return func(event eh.Event) {
 		notify, ok := event.Data().(*changeNotify)
 		if !ok {
 			logger.Crit("UDB Change Notifier message handler got an invalid data event", "event", event, "eventdata", event.Data())
 			return
 		}
-		err := dataImporter.runImportForUDBChange(strings.ToLower(notify.Database), strings.ToLower(notify.Table))
+		err := importMgr.runUDBChangeImports(strings.ToLower(notify.Database), strings.ToLower(notify.Table))
 		if err != nil {
 			logger.Crit("Error checking if database changed", "err", err, "notify", notify)
 		}
