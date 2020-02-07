@@ -124,9 +124,11 @@ func main() {
 			basicauth.MakeHandlerFunc(chainAuth,
 				chainAuth("UNKNOWN", []string{"Unauthenticated"}))))
 
-	nofilterfn := func (ev eh.Event ) bool { return true}
+	nofilterfn := func(ev eh.Event) bool { return true }
 	// SSE
-	chainAuthSSE := func(u string, p []string) http.Handler { return http_sse.NewSSEHandler(domainObjs, logger, u, p, nofilterfn) }
+	chainAuthSSE := func(u string, p []string) http.Handler {
+		return http_sse.NewSSEHandler(domainObjs, logger, u, p, nofilterfn)
+	}
 	m.Path("/events").Methods("GET").HandlerFunc(
 		session.MakeHandlerFunc(logger, domainObjs.EventBus, domainObjs, chainAuthSSE, basicauth.MakeHandlerFunc(chainAuthSSE, chainAuthSSE("UNKNOWN", []string{"Unauthenticated"}))))
 
@@ -137,16 +139,15 @@ func main() {
 	m.Path("/redfish/v1/EventService/SSE").Methods("GET").HandlerFunc(
 		session.MakeHandlerFunc(logger, domainObjs.EventBus, domainObjs, chainAuthRFSSE, basicauth.MakeHandlerFunc(chainAuthRFSSE, chainAuthRFSSE("UNKNOWN", []string{"Unauthenticated"}))))
 
-
-	MetricFilterfn := func (ev eh.Event ) bool { 
+	MetricFilterfn := func(ev eh.Event) bool {
 		return ev.EventType() == telemetryservice.MetricValueEvent
 	}
 
-	chainAuthMetricSSE := func(u string, p []string) http.Handler { return http_sse.NewSSEHandler(domainObjs, logger, u, p, MetricFilterfn ) }
-	m.Path("/redfish/v1/TelemetryService/metricevents").Methods("GET").HandlerFunc(
+	chainAuthMetricSSE := func(u string, p []string) http.Handler {
+		return http_sse.NewSSEHandler(domainObjs, logger, u, p, MetricFilterfn)
+	}
+	m.Path("/redfish/v1/TelemetryService/SSE").Methods("GET").HandlerFunc(
 		session.MakeHandlerFunc(logger, domainObjs.EventBus, domainObjs, chainAuthMetricSSE, basicauth.MakeHandlerFunc(chainAuthMetricSSE, chainAuthMetricSSE("UNKNOWN", []string{"Unauthenticated"}))))
-
-
 
 	//// backend command handling
 	internalHandlerFunc := domainObjs.GetInternalCommandHandler(ctx)

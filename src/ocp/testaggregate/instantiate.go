@@ -587,7 +587,7 @@ func (s *Service) internalInstantiate(name string, parameters map[string]interfa
 			return
 		}
 		// We can get one or more commands back, handle them
-		first:=true
+		first := true
 		for _, cmd := range cmds {
 			// if it's a resource create command, use the view ID for that
 			if c, ok := cmd.(*domain.CreateRedfishResource); ok {
@@ -597,7 +597,7 @@ func (s *Service) internalInstantiate(name string, parameters map[string]interfa
 				} else {
 					c.ID = eh.NewUUID()
 				}
-			
+
 			}
 			s.ch.HandleCommand(context.Background(), cmd)
 		}

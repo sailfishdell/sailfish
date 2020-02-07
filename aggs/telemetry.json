@@ -1,35 +1,46 @@
 [
-    {
-        "cmd": "RedfishResource:Create", 
-        "data": {
-            "Context": "/redfish/v1/$metadata#TelemetryService.TelemetryService", 
-            "Privileges": {
-                "GET": [
-                    "Login"
-                ]
-            }, 
-            "Properties": {
-                "Actions": {
-                    "#TelemetryService.SubmitTestMetricReport": {
-                        "target": "/redfish/v1/TelemetryService/Actions/TelemetryService.SubmitTestMetricReport"
-                    }
-                }, 
-                "Id": "TelemetryService", 
-                "Name": "Telemetry Service", 
-                "Oem": {
-                    "MetricDefinitions": [
-                        "/redfish/v1/TelemetryService/MetricDefinitions"
-                    ], 
-                    "MetricReportDefinitions": [
-                        "/redfish/v1/TelemetryService/MetricReportDefinitions"
-                    ], 
-                    "MetricReports": [
-                        "/redfish/v1/TelemetryService/MetricReports"
-                    ]
-                }
-            }, 
-            "ResourceURI": "/redfish/v1/TelemetryService", 
-            "Type": "#TelemetryService.v1_0_0.TelemetryService"
+  {
+    "cmd": "RedfishResource:Create",
+    "data": {
+      "Context": "/redfish/v1/$metadata#TelemetryService.TelemetryService",
+      "Privileges": {
+        "GET": [
+          "Login"
+        ]
+      },
+      "Properties": {
+        "Actions": {
+          "#TelemetryService.SubmitTestMetricReport": {
+            "target": "/redfish/v1/TelemetryService/Actions/TelemetryService.SubmitTestMetricReport"
+          }
+        },
+        "Id": "TelemetryService",
+        "Name": "Telemetry Service",
+        "Oem": {
+          "MetricDefinitions": [
+            "/redfish/v1/TelemetryService/MetricDefinitions"
+          ],
+          "MetricReportDefinitions": [
+            "/redfish/v1/TelemetryService/MetricReportDefinitions"
+          ],
+          "MetricReports": [
+            "/redfish/v1/TelemetryService/MetricReports"
+          ]
         }
+      },
+      "ResourceURI": "/redfish/v1/TelemetryService",
+      "Type": "#TelemetryService.v1_0_0.TelemetryService"
     }
+  },
+  {
+    "cmd": "RedfishResourceProperties:Update",
+    "data": {
+      "URI": "/redfish/v1",
+      "Properties": {
+        "Chassis": {
+          "@odata.id": "##GETURI##"
+        }
+      }
+    }
+  }
 ]

@@ -16,23 +16,20 @@ const (
 	POSTCommand = eh.CommandType("TelemetryService:POST")
 )
 
-
 // HTTP POST Command
 type POST struct {
 	ts   *TelemetryService
 	d    *domain.DomainObjects
 	auth *domain.RedfishAuthorizationProperty
 
-	MRD     MRDData 	
-	ID      eh.UUID                `json:"id"`
-	CmdID   eh.UUID                `json:"cmdid"`
-	Headers map[string]string      `eh:"optional"`
+	MRD     MRDData
+	ID      eh.UUID           `json:"id"`
+	CmdID   eh.UUID           `json:"cmdid"`
+	Headers map[string]string `eh:"optional"`
 }
-
 
 // Static type checking for commands to prevent runtime errors due to typos
 var _ = eh.Command(&POST{})
-
 
 func (c *POST) AggregateType() eh.AggregateType { return domain.AggregateType }
 func (c *POST) AggregateID() eh.UUID            { return c.ID }
@@ -54,7 +51,6 @@ func (c *POST) Handle(ctx context.Context, a *domain.RedfishResourceAggregate) e
 		Results:    map[string]interface{}{"msg": "Error creating metric report definition"},
 		StatusCode: 500,
 		Headers:    map[string]string{}}
-
 
 	bl, mrduuid := c.ts.CreateMetricReportDefinition(ctx, c.MRD, data)
 	if !bl {
@@ -86,5 +82,3 @@ func (c *POST) Handle(ctx context.Context, a *domain.RedfishResourceAggregate) e
 
 	return nil
 }
-
-

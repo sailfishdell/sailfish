@@ -50,7 +50,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	ch := d.CommandHandler
 	eb := d.EventBus
 
-
 	actionhandler.Setup(ctx, ch, eb)
 	uploadhandler.Setup(ctx, ch, eb)
 	arService, _ := ar_mapper2.StartService(ctx, logger, cfgMgr, cfgMgrMu, d)
@@ -63,7 +62,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	// here introduce new initial event handling
 	ardumpSvc, _ := attributes.StartService(ctx, logger, d)
 	pumpSvc := NewPumpActionSvc(ctx, logger, d)
-
 
 	// the package for this is going to change, but this is what makes the various mappers and view functions available
 	instantiateSvc := testaggregate.New(logger, cfgMgr, cfgMgrMu, d, am3Svc)
@@ -209,8 +207,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	self.configChangeHandler = func() {}
 
 	// send startup events
-	setup(ctx, logger, cfgMgr, d)
-
+	setup(logger, d)
 
 	return self
 }

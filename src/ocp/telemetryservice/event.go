@@ -7,8 +7,8 @@ import (
 
 const (
 	MetricValueEvent eh.EventType = "MetricValueEvent"
-	AddMDEvent 	eh.EventType = "AddMetricDefinitionEvent"
-	AddedMRDEvent 	eh.EventType = "AddMetricReportDefinitionEvent"
+	AddMDEvent       eh.EventType = "AddMetricDefinitionEvent"
+	AddedMRDEvent    eh.EventType = "AddMetricReportDefinitionEvent"
 )
 
 func init() {
@@ -19,50 +19,47 @@ func init() {
 
 // Properties should be in the format pathtoprop : prop_value
 type MetricValueEventData struct {
-	MetricId         string
-	MetricValue      interface{} 
-	Timestamp        string
-	MetricProperty   string
+	Value    interface{}
+	Timestamp      string
+	Property string
+	PropertyID string
 }
 
-
 type MRDData struct {
-	UUID			      eh.UUID
+	UUID                          eh.UUID
 	Id                            string
 	Description                   string
 	Name                          string
-	Metrics			      []Metric
+	Metrics                       []Metric
 	MetricReportDefinitionType    string
 	MetricReportDefinitionEnabled bool
 	MetricReportHeartbeatInterval string
 	SuppressRepeatedMetricValue   bool
 	Wildcards                     []domain.WC
-
 }
 type Metric struct {
-	MetricProperties 	[]string
-	MetricID		string
-	CollectionDuration	string
-	CollectionFunction	string
-	CollectionTimeScope	string
+	MetricProperties    []string
+	MetricID            string
+	CollectionDuration  string
+	CollectionFunction  string
+	CollectionTimeScope string
 }
 
-type AddMDData struct{
-	Accuracy int
-	Calibration int
-	Id 		string
-	Implementation string
-	MaxReadingRange int
-	MetricDataType string
-	MetricProperties []string
-	MetricType	string
-	MinReadingRange int
-	Name	string
-	PhysicalContext string
-	Precision int
-	SensingInterval string
+type AddMDData struct {
+	Accuracy          int
+	Calibration       int
+	Id                string
+	Implementation    string
+	MaxReadingRange   int
+	MetricDataType    string
+	MetricProperties  []string
+	MetricType        string
+	MinReadingRange   int
+	Name              string
+	PhysicalContext   string
+	Precision         int
+	SensingInterval   string
 	TimestampAccuracy string
-	Units	string
-	Wildcards []domain.WC
+	Units             string
+	Wildcards         []domain.WC
 }
-

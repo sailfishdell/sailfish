@@ -1,9 +1,10 @@
-package dell_ec 
+package dell_ec
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"time"
 
 	eh "github.com/looplab/eventhorizon"
@@ -11,18 +12,34 @@ import (
 
 	log "github.com/superchalupa/sailfish/src/log"
 	"github.com/superchalupa/sailfish/src/looplab/event"
- 	domain "github.com/superchalupa/sailfish/src/redfishresource"
-
+	domain "github.com/superchalupa/sailfish/src/redfishresource"
 )
 
-func setup(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, d *domain.DomainObjects) {
-	// 2 instances of AM3 service. This means we can run concurrent message processing loops in 2 different goroutines
-	// Each goroutine has exclusive access to its database
-	
+func getStartupFileContents(logger log.Logger, d *domain.DomainObjects) *viper.Viper {
+	cfgMgr := viper.New()
+	// Environment variables
+	cfgMgr.SetEnvPrefix("startup")
+	cfgMgr.AutomaticEnv()
+
+	// Configuration file
+	cfgMgr.SetConfigName("redfish-startup")
+	cfgMgr.AddConfigPath(".")
+	cfgMgr.AddConfigPath("/etc/")
+	if err := cfgMgr.ReadInConfig(); err != nil {
+		fmt.Fprintf(os.Stderr, "Could not read config file: %s\n", err)
+		panic(fmt.Sprintf("Could not read config file: %s", err))
+	}
+
+	return cfgMgr
+}
+
+func setup(logger log.Logger, d *domain.DomainObjects) {
+	// get start up events
+	setupCfg := getStartupFileContents(logger, d)
 
 	injectStartupEvents := func(section string) {
 		fmt.Printf("Processing Startup Events from %s\n", section)
-		startup := cfgMgr.Get(section)
+		startup := setupCfg.Get(section)
 		if startup == nil {
 			logger.Warn("SKIPPING: no startup events found")
 			return
@@ -45,7 +62,6 @@ func setup(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, d *domai
 				continue
 			}
 			eventType := eh.EventType(name + "Event")
-
 
 			dataString, ok := settings["data"].(string)
 			if !ok {
@@ -75,7 +91,7 @@ func setup(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, d *domai
 
 	// After we have our event loops set up,
 	// Read the config file and process any startup events that are listed
-	startup := cfgMgr.GetStringSlice("main.startup")
+	startup := setupCfg.GetStringSlice("main.startup")
 	for _, section := range startup {
 		injectStartupEvents(section)
 	}

@@ -62,34 +62,34 @@ func addAM3Functions(logger log.Logger, am3Svc *am3.Service, d *domain.DomainObj
 		}
 
 		wcMaps := []map[string]interface{}{}
-		for i:=0; i < len(mdobj.Wildcards); i++ {
-			wcMaps= append(wcMaps, map[string]interface{}{"Name": mdobj.Wildcards[i].Name, "Values": mdobj.Wildcards[i].Values})
+		for i := 0; i < len(mdobj.Wildcards); i++ {
+			wcMaps = append(wcMaps, map[string]interface{}{"Name": mdobj.Wildcards[i].Name, "Values": mdobj.Wildcards[i].Values})
 		}
 		uuid := eh.NewUUID()
 
 		d.CommandHandler.HandleCommand(
 			context.Background(),
 			&domain.CreateRedfishResource{
-				ID: uuid,
-				Type: "#TelemetryService.v1_0_0.TelemetryService", 
+				ID:          uuid,
+				Type:        "#TelemetryService.v1_0_0.TelemetryService",
 				ResourceURI: MD + mdobj.Id,
-            			Context: "/redfish/v1/$metadata#MetricDefinition.MetricDefinition",
+				Context:     "/redfish/v1/$metadata#MetricDefinition.MetricDefinition",
 				Privileges: map[string]interface{}{
 					"GET": []string{"Login"},
 				},
 				Properties: map[string]interface{}{
-					"Accuracy": mdobj.Accuracy,
-					"Calibration": mdobj.Calibration, 
-					"Id": mdobj.Id, 
-					"Implementation": mdobj.Implementation, 
-					"MaxReadingRange": mdobj.MaxReadingRange, 
-					"MetricDataType": mdobj.MetricDataType,
-					"MetricProperties": mdobj.MetricProperties, 
-					"MetricType": mdobj.MetricType,
-					"MinReadingRange": mdobj.MinReadingRange,
-					"Name": mdobj.Name,
-					"Wildcards": wcMaps,
-		}})
+					"Accuracy":         mdobj.Accuracy,
+					"Calibration":      mdobj.Calibration,
+					"Id":               mdobj.Id,
+					"Implementation":   mdobj.Implementation,
+					"MaxReadingRange":  mdobj.MaxReadingRange,
+					"MetricDataType":   mdobj.MetricDataType,
+					"MetricProperties": mdobj.MetricProperties,
+					"MetricType":       mdobj.MetricType,
+					"MinReadingRange":  mdobj.MinReadingRange,
+					"Name":             mdobj.Name,
+					"Wildcards":        wcMaps,
+				}})
 	})
 
 	am3Svc.AddEventHandler("InstPowerFn", dm_event.InstPowerEvent, func(event eh.Event) {

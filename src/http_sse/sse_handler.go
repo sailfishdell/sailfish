@@ -15,17 +15,17 @@ type busObjs interface {
 }
 
 // NewSSEHandler constructs a new SSEHandler with the given username and privileges.
-func NewSSEHandler(dobjs busObjs, logger log.Logger, u string, p []string, evtFilterFn func(ev eh.Event) bool ) *SSEHandler {
-	return &SSEHandler{UserName: u, Privileges: p, d: dobjs, logger: logger, evtFilterFn :evtFilterFn }
+func NewSSEHandler(dobjs busObjs, logger log.Logger, u string, p []string, evtFilterFn func(ev eh.Event) bool) *SSEHandler {
+	return &SSEHandler{UserName: u, Privileges: p, d: dobjs, logger: logger, evtFilterFn: evtFilterFn}
 }
 
 // SSEHandler struct holds authentication/authorization data as well as the domain variables
 type SSEHandler struct {
-	UserName   string
-	Privileges []string
-	d          busObjs
-	logger     log.Logger
-	evtFilterFn func(ev eh.Event) bool  
+	UserName    string
+	Privileges  []string
+	d           busObjs
+	logger      log.Logger
+	evtFilterFn func(ev eh.Event) bool
 }
 
 func (rh *SSEHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -44,7 +44,7 @@ func (rh *SSEHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	flusher.Flush()
 
 	l := eventwaiter.NewListener(ctx, requestLogger, rh.d.GetWaiter(), func(event eh.Event) bool {
-		return rh.evtFilterFn(event) 
+		return rh.evtFilterFn(event)
 	})
 	l.Name = "SSE Listener"
 	defer l.Close()

@@ -50,10 +50,9 @@ type RedfishResourceRemovedData struct {
 }
 
 type WC struct {
-	Name string
+	Name   string
 	Values []string
 }
-
 
 type RedfishResourcePropertiesUpdatedData struct {
 	ID            eh.UUID `json:"id"     bson:"id"`

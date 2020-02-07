@@ -87,6 +87,4 @@ func MakeSubmitTestMetricReport(eb eh.EventBus, d *domain.DomainObjects, ch eh.C
 		return nil
 	}
 
-
 }
-

@@ -31,7 +31,7 @@ func RegisterAggregate(s *testaggregate.Service) {
 						"Id":                 "EventService",
 						"Name":               "Event Service",
 						"Description":        "Event Service represents the properties for the service",
-						"ServerSentEventUri": "/redfish/v1/SSE",
+						"ServerSentEventUri": "/redfish/v1/EventService/SSE",
 						"Status": map[string]interface{}{
 							"HealthRollup": "OK", //hardcoded
 							"Health":       "OK", //hardcoded

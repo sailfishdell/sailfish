@@ -21,11 +21,11 @@ func init() {
 }
 
 const (
-	CreateRedfishResourceCommand                 = eh.CommandType("internal:RedfishResource:Create")
-	RemoveRedfishResourceCommand                 = eh.CommandType("internal:RedfishResource:Remove")
-	UpdateRedfishResourcePropertiesCommand       = eh.CommandType("internal:RedfishResourceProperties:Update")
-	UpdateRedfishResourcePropertiesCommand2      = eh.CommandType("internal:RedfishResourceProperties:Update:2")
-	RemoveRedfishResourcePropertyCommand         = eh.CommandType("internal:RedfishResourceProperties:Remove")
+	CreateRedfishResourceCommand            = eh.CommandType("internal:RedfishResource:Create")
+	RemoveRedfishResourceCommand            = eh.CommandType("internal:RedfishResource:Remove")
+	UpdateRedfishResourcePropertiesCommand  = eh.CommandType("internal:RedfishResourceProperties:Update")
+	UpdateRedfishResourcePropertiesCommand2 = eh.CommandType("internal:RedfishResourceProperties:Update:2")
+	RemoveRedfishResourcePropertyCommand    = eh.CommandType("internal:RedfishResourceProperties:Remove")
 )
 
 // Static type checking for commands to prevent runtime errors due to typos
@@ -104,7 +104,6 @@ func (c *CreateRedfishResource) Handle(ctx context.Context, a *RedfishResourceAg
 		ResourceURI: a.ResourceURI,
 		Meta:        map[string]interface{}{},
 	}
-
 
 	v := map[string]interface{}{}
 	a.Properties.Value = v
@@ -194,9 +193,9 @@ func (c *RemoveRedfishResourceProperty) Handle(ctx context.Context, a *RedfishRe
 
 // toUpdate	{path2key : value}
 type UpdateRedfishResourceProperties2 struct {
-	ID         eh.UUID `json:"id"`
+	ID          eh.UUID `json:"id"`
 	ResourceURI string  `eh:"optional"`
-	Properties map[string]interface{}
+	Properties  map[string]interface{}
 }
 
 // ShoudlSave satisfies the ShouldSaver interface to tell CommandHandler to save this to DB
@@ -277,12 +276,12 @@ func UpdateAgg(a *RedfishResourceAggregate, pathSlice []string, v interface{}, a
 
 }
 
-func GetValueinAgg(a *RedfishResourceAggregate, pathSlice []string) (interface{},error) {
+func GetValueinAgg(a *RedfishResourceAggregate, pathSlice []string) (interface{}, error) {
 	a.Properties.Lock()
 	defer a.Properties.Unlock()
 	loc, ok := a.Properties.Value.(map[string]interface{})
 	if !ok {
-		return nil,fmt.Errorf("getValueinAgg: aggregate value is not a map[string]interface{}, but %T", a.Properties.Value)
+		return nil, fmt.Errorf("getValueinAgg: aggregate value is not a map[string]interface{}, but %T", a.Properties.Value)
 	}
 
 	plen := len(pathSlice) - 1
@@ -352,7 +351,6 @@ func (c *UpdateRedfishResourceProperties2) Handle(ctx context.Context, a *Redfis
 	}
 	return err
 }
-
 
 type UpdateRedfishResourceProperties struct {
 	ID         eh.UUID                `json:"id"`

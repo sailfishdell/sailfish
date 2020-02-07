@@ -67,7 +67,6 @@ func (r *AggregateStore) Load(ctx context.Context, aggregateType eh.AggregateTyp
 	return aggregate, nil
 }
 
-
 // Save implements the Save method of the eventhorizon.AggregateStore interface.
 func (r *AggregateStore) Save(ctx context.Context, aggregate eh.Aggregate) error {
 	err := r.repo.Save(ctx, aggregate)
