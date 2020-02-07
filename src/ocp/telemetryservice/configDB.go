@@ -120,17 +120,13 @@ var rgx = regexp.MustCompile(`\{(.*?)\}`)
 // getValidMetrics from RedfishResourcePropertiesUpdated2 data.   
 func (ts *TelemetryReference) getValidMetrics(data *domain.RedfishResourcePropertiesUpdatedData2)map[string]map[string]interface{}{
 	propMatchMap := map[string]map[string]interface{}{}
-	fmt.Println(data.ResourceURI)
-	fmt.Println(ts.metric2MRD)
 	propsinMRD,ok := ts.metric2MRD[data.ResourceURI]
 	if !ok {
 		return nil	
 	}
-	fmt.Println("data is for ", data.ResourceURI)
 
 	// check if the props are added.
 	for propPath, val := range data.PropertyNames{
-		fmt.Println("prop path ", propPath, "MRD Props", propsinMRD)
 		MRDs, ok := propsinMRD[propPath]
 		if !ok {
 			continue
@@ -141,7 +137,6 @@ func (ts *TelemetryReference) getValidMetrics(data *domain.RedfishResourceProper
 				// find metric id
 				mID := ""
 
-				fmt.Println("looking for metric id of ", data.ResourceURI + "#" + propPath)
 				for metricid, m:= range(MRDs[i].metrics){
 					for j:=0; j < len(m); j++ {
 						wc := rgx.FindString(m[j])
@@ -149,12 +144,11 @@ func (ts *TelemetryReference) getValidMetrics(data *domain.RedfishResourceProper
 						prop:= data.ResourceURI + "#" + propPath
 						if strings.Contains(prop, slice[0]) && strings.Contains(prop, slice[1]){
 						  mID = metricid
-						  fmt.Println(mID)
 						  break
 						}
 					}
 				}
-				fmt.Println("FOUND METRIC ID", mID)
+				//fmt.Println("FOUND METRIC ID", mID)
 
 				_, ok :=propMatchMap[mID] 
 				if ok { 
@@ -181,12 +175,10 @@ func (ts *TelemetryReference) CleanAndValidateMRD(data *MRDData) ( bool ){
 	// validate metric ids 
 	idx := 0 // output index
 	for i, _ := range data.Metrics  {
-		fmt.Println("\n", data.Metrics, "\n")
 		MRDmetric:=data.Metrics[i]
-		fmt.Println(MRDmetric)
 		// see if I get the MD data correctly
 		if MRDmetric.MetricID == "" {
-			fmt.Println("bad ata", MRDmetric)
+			fmt.Println("MRD has bad data", MRDmetric)
 			continue
 		}
 		MM, err :=ts.getMDMetricData(MRDmetric.MetricID )
@@ -202,7 +194,6 @@ func (ts *TelemetryReference) CleanAndValidateMRD(data *MRDData) ( bool ){
 				// metric properties is empty. skip adding 
 				continue
 			}else {
-				fmt.Println("good metric data!")
 				// good metric data
 				data.Metrics[idx] = MRDmetric
 				idx++
@@ -214,7 +205,6 @@ func (ts *TelemetryReference) CleanAndValidateMRD(data *MRDData) ( bool ){
 		data.Metrics = data.Metrics[:idx]
 		return true // pass
 	}else {
-		fmt.Println("metrics array is empty")
 		return false
 	}
 
@@ -229,9 +219,7 @@ func (ts *TelemetryReference) CleanAndValidateMRD(data *MRDData) ( bool ){
 func cleanMRDMetric(MM MDmeta, MRDmetric *Metric) bool {
 	reString:= MM.prop
 	substr:=  strings.Join(MM.wcValues, `\b|`)  + `\b`
-	fmt.Println(substr)
 	strings.Replace(reString, MM.wcName , substr, -1)
-	fmt.Println(reString)
 	re := regexp.MustCompile(reString)
 	
 	idx:=0
@@ -277,7 +265,6 @@ func (ts *TelemetryReference) getMDMetricData (metricID string)(MDmeta, error){
 	MM.metricId = metricID
 	MD:= "/redfish/v1/TelemetryService/MetricDefinitions/"
 	mduuid, ok := ts.d.GetAggregateIDOK(MD + metricID)
-	fmt.Println(MD + metricID)
 	if !ok{
 	 	return MM, errors.New("Can not get UUID for "  + MD + metricID)	
 	} 
@@ -318,7 +305,6 @@ func (ts *TelemetryReference) getMDMetricData (metricID string)(MDmeta, error){
 
 	props := domain.Flatten(loc["MetricProperties"], false).([]interface{})
 	if len(props) > 1{
-		fmt.Println("MD MEtricProperties has more than one value!")
 	 	return MM, errors.New("MD has more than one MetricProperties")	
 	}
 	propIntf :=props[0]
@@ -331,7 +317,6 @@ func (ts *TelemetryReference) getMDMetricData (metricID string)(MDmeta, error){
 
 
 func (ts *TelemetryReference) MRDConfigAdd ( data *MRDData ){
-	fmt.Println("MRDConfigUp add")
 	mapWC := map[string][]string{}
 	for i:=0; i< len(data.Wildcards) ; i ++ {
 		key:= data.Wildcards[i].Name
@@ -366,7 +351,6 @@ func (ts *TelemetryReference) MRDConfigAdd ( data *MRDData ){
 			} 
 		}
 		vals = vals[:idx]
-		fmt.Println("values", vals)
 	}
 
 	// metric ids and metricproperties are validated when MRD is first created
@@ -377,7 +361,7 @@ func (ts *TelemetryReference) MRDConfigAdd ( data *MRDData ){
                metricMap[metric.MetricID] = metric.MetricProperties
 	}
         
-	fmt.Println("metricMap", metricMap)
+	//fmt.Println("metricMap", metricMap)
 
 	MM := MRDmeta{
 		UUID : 	data.UUID,
@@ -398,12 +382,11 @@ func (ts *TelemetryReference) MRDConfigAdd ( data *MRDData ){
 			
 
 func (ts *TelemetryReference) MRDConfigDelete( URI string ){
-	fmt.Println("before delete", ts.metric2MRD)
-	mrdid :=strings.Trim(URI, "/redfish/v1/TelemetryService/MetricReportDefinitions/")	
+	mrdid :=strings.TrimLeft(URI, "/redfish/v1/TelemetryService/MetricReportDefinitions/")	
 
-	_, ok := ts.mrds[mrdid]
+	mrd, ok := ts.mrds[mrdid]
 	if !ok {
-		fmt.Println("ERROR: ", URI,"is not recognized in TelemetryService Config")
+		fmt.Println("ERROR: ", URI,"is not recognized in TelemetryService Config", mrdid, ts.mrds)
 	}
 
 	propT := []string{}
@@ -421,25 +404,27 @@ func (ts *TelemetryReference) MRDConfigDelete( URI string ){
 		strSplit :=strings.Split(propT[i], "#")
 		url:=strSplit[0]
 		prop :=strSplit[1]
+		propMRDs := ts.metric2MRD[url][prop]
 		// for wild card characters need to expand when inputting inside...
-		if len(ts.metric2MRD[url][prop] ) == 1{
-			delete(ts.metric2MRD[url],prop)
+		if len(propMRDs ) == 1 && propMRDs[0].UUID == mrd.UUID{
+			if len(ts.metric2MRD[url]) == 1 {
+				delete(ts.metric2MRD, url)
+			}else {
+				delete(ts.metric2MRD[url],prop)
+			}
 			continue	
 		}
 
-		MRDs:= ts.metric2MRD[url][ propT[i]]
-		for j:=0; j < len(MRDs); j++ {
-			mrd := ts.mrds[mrdid]
-			if MRDs[j] == &mrd{
-				ml := len(ts.metric2MRD[url][prop]) - 1
+		for j:=0; j < len(propMRDs); j++ {
+			if propMRDs[j].UUID == mrd.UUID{
+				ml := len(propMRDs) - 1
 				ts.metric2MRD[url][prop][j] = ts.metric2MRD[url][prop][ml] 
-				ts.metric2MRD[url][prop] = ts.metric2MRD[url][prop][ml-1:]
+				ts.metric2MRD[url][prop] = ts.metric2MRD[url][prop][:ml-1]
 				break
 			}
 		}
 	}
 	delete(ts.mrds, mrdid)
-	fmt.Println("after delete", ts.metric2MRD)
 }
 
 
@@ -463,7 +448,6 @@ func (ts *TelemetryReference) MRDConfigUpdate( URI string ){
 // 
 //{url: {prop: []MRDmeta}}
 func (ts *TelemetryReference) add2metric2MRD(metricid string, props []string, wc map[string][]string, mrdMeta *MRDmeta){
-	fmt.Println("entered add2metric2MRD")
 	for i:=0; i< len(props) ; i++{
 		// expand wildcards now simplify
 		propT:= ts.expandProps(metricid, props[i], wc)
@@ -488,7 +472,6 @@ func (ts *TelemetryReference) add2metric2MRD(metricid string, props []string, wc
 			}
 		}
 	}
-	fmt.Println(ts.metric2MRD)
 }
 
 

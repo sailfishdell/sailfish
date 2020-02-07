@@ -19,35 +19,6 @@ var (
 	tele_md = domain.PluginType("certinfo")
 )
 
-//const (
-//	telemetry_MD = eh.EventType("MD")
-//	telemetry_MRD = eh.EventType("MRD")
-//)
-//
-//
-//func init() {
-//	eh.RegisterEventData(telemetry_MD, func() eh.EventData { return &MetricDefinition })
-//}
-//
-//
-//type telemetry_MD struct {
-//	Description string
-//	EntryType   string
-//	Id          int
-//	Created     string
-//	Message     string
-//	MessageArgs []string
-//	MessageID   string
-//	Name        string
-//	Severity    string
-//	Category    string
-//	Action      string
-//	FQDD        string
-//	LogAlert    string
-//	EventId     string
-//}
-
-
 type syncEvent interface {
 	Done()
 }
@@ -107,78 +78,6 @@ func New(ctx context.Context, logger log.Logger, chdler eh.CommandHandler, d *do
 	return ret
 }
 
-//func (ts *TelemetryService) setMRDConfig(Id string, mrUUID eh.UUID, mrdUUID eh.UUID, mrURI string, mrdURI string, mrdEnabled bool, mrdType string, PropL []string) {
-//	//var mrdP *mrdConfig = nil
-//	for i := 0; i < len(ts.mrdConfigL); i++ {
-//		if ts.mrdConfigL[i].name == Id {
-//			mrdP = &ts.mrdConfigL[i]
-//			break
-//		}
-//	}
-//
-//	if mrdP == nil {
-//		ts.mrdConfigL = append(ts.mrdConfigL, mrdConfig{
-//			name:    Id,
-//			mrUUID:  mrUUID,
-//			mrdUUID: mrdUUID,
-//			mrURI:   mrURI,
-//			mrdURI:  mrdURI,
-//			config: mrdPatch{
-//				mrdEnabled: mrdEnabled,
-//				mrdType:    mrdType,
-//			}})
-//		mrdP = &ts.mrdConfigL[len(ts.mrdConfigL)-1]
-//
-//	} else {
-//		ts.deleteMRDConfig(mrdP)
-//
-//		mrdP.name = Id
-//		mrdP.mrdUUID = mrdUUID
-//		mrdP.mrdURI = mrdURI
-//		mrdP.config.mrdEnabled = mrdEnabled
-//		mrdP.config.mrdType = mrdType
-//		mrdP.mrUUID = mrUUID
-//		mrdP.mrURI = mrURI
-//	}
-//
-//	for i := 0; i < len(PropL); i++ {
-//		pS := PropL[i]
-//		_, ok := ts.metric2Report[pS]
-//		if ok {
-//			ts.metric2Report[pS] = append(ts.metric2Report[pS], mrdP)
-//		} else {
-//			ts.metric2Report[pS] = []*mrdConfig{mrdP}
-//		}
-//	}
-//
-//}
-
-//func (ts *TelemetryService) deleteMRDConfig(mrdP *mrdConfig) {
-//	for key, val := range ts.metric2Report {
-//		for i := 0; i < len(val); i++ {
-//			if val[i] == mrdP {
-//				if len(val) == 1 {
-//					val[i] = nil
-//					val = nil
-//				} else {
-//					tmp := val[i]
-//					val[i] = val[0]
-//					val[0] = tmp
-//					val[0] = nil
-//
-//					val = val[1:]
-//				}
-//
-//			}
-//
-//			if len(val) == 0 {
-//				delete(ts.metric2Report, key)
-//			}
-//		}
-//
-//	}
-//}
-
 // EC Sailfish sends MetricValueEvents northbound for consumption.  
 // MSM Sailfish handles MetricValueEvents and create corresponding MR, and MR events
 func (ts *TelemetryService) sendMetricEvent(ctx context.Context,  metricID string, metricValue interface{}, metricProp string ) {
@@ -226,7 +125,6 @@ func (ts *TelemetryService) StartTelemetryService(ctx context.Context) error {
 	go listener.ProcessEvents(ctx, func(event eh.Event) {
 		switch typ := event.EventType(); typ {
 		case AddedMRDEvent:
-			fmt.Println("RECEIVED ADDED MRD %T", event.Data())
 	 		if data, ok := event.Data().(*MRDData); ok {
 				ts.nb.MRDConfigAdd( data)
 			}
@@ -239,7 +137,6 @@ func (ts *TelemetryService) StartTelemetryService(ctx context.Context) error {
 				} else {
 					// send metrics that are part of MRD
 					metrics:= ts.nb.getValidMetrics( data)
-					fmt.Println("valid metrics", metrics)
 
 					for metricid, PV:= range(metrics){
 						for prop, value:= range(PV){
@@ -290,7 +187,6 @@ func (ts *TelemetryService) CreateMetricReportDefinition(ctx context.Context, mr
 	}
 	if errmmsg != "" {
 		domain.AddToEEMIList(data.Results.(map[string]interface{}), bad_request, false)
-		fmt.Println(data.Results)
 		data.StatusCode = 400
 		return false, "" 
 	}
@@ -301,7 +197,6 @@ func (ts *TelemetryService) CreateMetricReportDefinition(ctx context.Context, mr
 	ok := ts.nb.CleanAndValidateMRD(&mrd )
 	if !ok {
 		domain.AddToEEMIList(data.Results.(map[string]interface{}), bad_request, false)
-		fmt.Println(data.Results)
 		data.StatusCode = 400
 		return false, ""
 	}
@@ -342,7 +237,7 @@ func (ts *TelemetryService) CreateMetricReportDefinition(ctx context.Context, mr
 					"DEFAULT": mrd.MetricReportDefinitionEnabled,
 					"PATCH": map[string]interface{}{
 						"plugin": "GenericBool"}},
-				"Metrics": metricSlice, 
+				"Metrics": metricSlice,
 				"SuppressRepeatedMetricValue@meta": map[string]interface{}{
 					"DEFAULT": mrd.SuppressRepeatedMetricValue,
 					"PATCH": map[string]interface{}{

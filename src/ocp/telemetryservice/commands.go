@@ -51,7 +51,7 @@ func (c *POST) Handle(ctx context.Context, a *domain.RedfishResourceAggregate) e
 
 	data := &domain.HTTPCmdProcessedData{
 		CommandID:  c.CmdID,
-		Results:    map[string]interface{}{"msg": "Error creating subscription"},
+		Results:    map[string]interface{}{"msg": "Error creating metric report definition"},
 		StatusCode: 500,
 		Headers:    map[string]string{}}
 
