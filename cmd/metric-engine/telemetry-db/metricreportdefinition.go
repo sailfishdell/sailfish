@@ -1098,8 +1098,8 @@ func (factory *telemetryManager) doInsertMetricValueForInstance(
 		}
 
 		fmt.Printf(
-			"EXPAND Instance(%d-%s) lastts(%s) e(%t) s(%t) a(%t) i(%s) m(%s)\n",
-			mm.InstanceID, mm.Name, mm.LastTS, mm.MIRequiresExpand, mm.SuppressDups, after, mm.MISensorInterval, missingInterval)
+			"EXPAND Instance(%s-%d-%s) lastts(%s) e(%t) s(%t) a(%t) i(%s) m(%s)\n",
+			mm.Source, mm.InstanceID, mm.Name, mm.LastTS, mm.MIRequiresExpand, mm.SuppressDups, after, mm.MISensorInterval, missingInterval)
 
 		savedTS := mm.Timestamp
 		savedValue := mm.Value
