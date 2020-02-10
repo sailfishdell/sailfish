@@ -1347,19 +1347,17 @@ internal:
       SET LastTS=:LastTS, LastValue=:LastValue, CollectionScratch=:CollectionScratch, FlushTime=:FlushTime
       WHERE ID=:InstanceID
 
-  sqlx:
     count_report_records: |
         select
-          count(*)
-        from MetricReport_calculated as MR
-        inner join ReportDefinitionToMetricMeta as rd2mm on MR.ReportDefinitionID = rd2mm.ReportDefinitionID
-        inner join MetricMetaToInstance as MMTI on rd2mm.MetaID = MMTI.MetaID
-        inner join MetricValue as MV on MMTI.InstanceID = MV.InstanceID
+          count(*) as Count
+        from MetricValue as MV
+        inner join MetricMetaToInstance as MMTI on MV.InstanceID = MMTI.InstanceID
+        inner join ReportDefinitionToMetricMeta as rd2mm on MMTI.MetaID = rd2mm.MetaID
         WHERE
-          ( MR.Name = ? ) AND
-          ( MV.Timestamp > MR.StartTimestamp ) AND
-          ( MV.Timestamp <= MR.ReportTimestamp )
+          ( rd2mm.ReportDefinitionID = :MRDID ) AND
+          ( MV.Timestamp > :Start )
 
+  sqlx:
     find_onchange_mrd_by_mm_instance: |
       select
         MRD.Name

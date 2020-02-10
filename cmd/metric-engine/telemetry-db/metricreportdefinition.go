@@ -388,14 +388,9 @@ func (factory *telemetryManager) updateMRD(mrdEvData *MetricReportDefinitionData
 			return nil
 		}
 
-		// insert the first (probably empty) report
+		// let the next clock tick trigger generations and insert
 		factory.PendingInsert[mrd.Name] = true
-		if mrd.Type == metric.OnRequest { // have to actually insert the onrequest now because there is no "generation" for them
-			err = factory.InsertMetricReport(tx, mrd.Name)
-			if err != nil {
-				return xerrors.Errorf("error Inserting Metric Report MRD(%+v): %w", mrd, err)
-			}
-		}
+		factory.NextMRTS[mrd.Name] = time.Time{}
 
 		if mrd.Type == metric.Periodic && mrd.Period != newMRD.Period {
 			// If this is a periodic report, put it in the NextMRTS map so it'll get updated on the next report period
@@ -445,12 +440,7 @@ func (factory *telemetryManager) addMRD(mrdEvData *MetricReportDefinitionData) (
 
 		// insert the first (probably empty) report
 		factory.PendingInsert[mrd.Name] = true
-		if mrd.Type == metric.OnRequest { // have to actually insert the onrequest now because there is no "generation" for them
-			err = factory.InsertMetricReport(tx, mrd.Name)
-			if err != nil {
-				return xerrors.Errorf("error Inserting Metric Report MRD(%+v): %w", mrd, err)
-			}
-		}
+		factory.NextMRTS[mrd.Name] = time.Time{}
 
 		// If this is a periodic report, put it in the NextMRTS map so it'll get updated on the next report period
 		if mrd.Type == metric.Periodic {
@@ -603,6 +593,8 @@ func (factory *telemetryManager) SyncInternalStateFromDB() error {
 		factory.NextMRTS[k] = v
 	}
 
+	// TODO: need to set PendingInsert on any MRD that doesn't have an MR
+
 	return nil
 }
 
@@ -624,62 +616,6 @@ func (factory *telemetryManager) loadReportDefinition(tx *sqlx.Tx, mrd *MetricRe
 	return nil
 }
 
-func (factory *telemetryManager) InsertMetricReport(tx *sqlx.Tx, name string) (err error) {
-	return factory.wrapWithTXOrPassIn(tx, func(tx *sqlx.Tx) error {
-		mrd := &MetricReportDefinition{
-			MetricReportDefinitionData: &MetricReportDefinitionData{Name: name},
-		}
-		err = factory.loadReportDefinition(tx, mrd)
-		if err != nil || mrd.ID == 0 {
-			return xerrors.Errorf("error getting MetricReportDefinition: ID(%s) NAME(%s) err: %w", mrd.ID, mrd.Name, err)
-		}
-
-		sqlargs := map[string]interface{}{
-			"Name":            mrd.Name,
-			"MRDID":           mrd.ID,
-			"ReportTimestamp": factory.MetricTSHWM.UnixNano(),
-		}
-
-		// Overwrite report name for NewReport
-		if mrd.Updates == metric.NewReport {
-			// NO NEED TO INSERT INITIAL NULL REPORT, AS THIS WILL FIX ITSELF WHEN ITS GENERATED
-			return nil
-		}
-
-		switch mrd.Type {
-		case metric.Periodic:
-			// FYI: using .Add() with a negative number, as ".Sub()" does something *completely different*.
-			sqlargs["Start"] = factory.MetricTSHWM.Add(-time.Duration(mrd.Period) * time.Second).UnixNano()
-			factory.NextMRTS[mrd.Name] = factory.MetricTSHWM.Add(time.Duration(mrd.Period) * time.Second)
-		case metric.OnChange, metric.OnRequest:
-			// FYI: using .Add() with a negative number, as ".Sub()" does something *completely different*.
-			sqlargs["Start"] = factory.MetricTSHWM.Add(-mrd.TimeSpan).UnixNano()
-		}
-
-		// Delete all generated reports and reset everything
-		_, err = factory.getNamedSQLXTx(tx, "delete_mr_by_id").Exec(sqlargs)
-		if err != nil {
-			return xerrors.Errorf("error deleting MetricReport. MRD(%+v) args(%+v): %w", mrd, sqlargs, err)
-		}
-
-		// nothing left to do if it's not enabled
-		if !mrd.Enabled {
-			delete(factory.PendingInsert, mrd.Name)
-			return nil
-		}
-
-		_, err = factory.getNamedSQLXTx(tx, "insert_report").Exec(sqlargs)
-		if err != nil {
-			return xerrors.Errorf("error inserting MetricReport. MRD(%+v) args(%+v): %w", mrd, sqlargs, err)
-		}
-
-		factory.LastMRTS[mrd.Name] = factory.MetricTSHWM
-		delete(factory.PendingInsert, mrd.Name)
-
-		return nil
-	})
-}
-
 func (factory *telemetryManager) GenerateMetricReport(tx *sqlx.Tx, name string) (err error) {
 	return factory.wrapWithTXOrPassIn(tx, func(tx *sqlx.Tx) error {
 		MRD := &MetricReportDefinition{
@@ -690,8 +626,21 @@ func (factory *telemetryManager) GenerateMetricReport(tx *sqlx.Tx, name string) 
 			return xerrors.Errorf("error getting MetricReportDefinition: ID(%s) NAME(%s) err: %w", MRD.ID, MRD.Name, err)
 		}
 
-		// default to just updating the report sequence number
-		SQL := []string{"update_report_ts_seq"}
+		SQL := []string{}
+		restorePendingInsert := false
+		if factory.PendingInsert[MRD.Name] {
+			restorePendingInsert = true
+			delete(factory.PendingInsert, MRD.Name)
+			// redo the report insert the next time around if we error out of this function
+			defer func() {
+				if restorePendingInsert {
+					factory.PendingInsert[MRD.Name] = true
+				}
+			}()
+			SQL = append(SQL, "delete_mr_by_id")
+			SQL = append(SQL, "insert_report")
+		}
+
 		sqlargs := map[string]interface{}{
 			"Name":            MRD.Name,
 			"MRDID":           MRD.ID,
@@ -702,36 +651,34 @@ func (factory *telemetryManager) GenerateMetricReport(tx *sqlx.Tx, name string) 
 		switch MRD.Type {
 		case metric.Periodic:
 			factory.NextMRTS[MRD.Name] = factory.MetricTSHWM.Add(time.Duration(MRD.Period) * time.Second)
+			sqlargs["Start"] = factory.MetricTSHWM.Add(-time.Duration(MRD.Period) * time.Second).UnixNano()
 			switch MRD.Updates {
 			case metric.NewReport:
-				sqlargs["Start"] = factory.MetricTSHWM.Add(-time.Duration(MRD.Period) * time.Second).UnixNano()
 				sqlargs["Name"] = fmt.Sprintf("%s-%s", MRD.Name, factory.MetricTSHWM.UTC().Format(time.RFC3339))
 				SQL = []string{"insert_report", "keep_only_3_reports"}
 			case metric.Overwrite:
-				SQL = []string{"update_report_set_start_to_prev_timestamp", "update_report_ts_seq"}
+				SQL = append(SQL, "update_report_set_start_to_prev_timestamp")
+				SQL = append(SQL, "update_report_ts_seq")
 			case metric.AppendWrapsWhenFull: // default sql list is ok
+				SQL = append(SQL, "update_report_ts_seq")
 			case metric.AppendStopsWhenFull: // default sql list is ok
+				SQL = append(SQL, "update_report_ts_seq")
 			}
-		case metric.OnChange:
+		case metric.OnChange, metric.OnRequest:
+			sqlargs["Start"] = factory.MetricTSHWM.Add(-MRD.TimeSpan).UnixNano()
 			switch MRD.Updates {
 			case metric.NewReport:
 				sqlargs["Name"] = fmt.Sprintf("%s-%s", MRD.Name, factory.MetricTSHWM.UTC().Format(time.RFC3339))
 				SQL = []string{"insert_report", "keep_only_3_reports"}
 			case metric.Overwrite:
-				sqlargs["Start"] = factory.MetricTSHWM.Add(-MRD.TimeSpan).UnixNano()
-				SQL = []string{"update_report_start", "update_report_ts_seq"}
+				SQL = append(SQL, "update_report_start")
+				SQL = append(SQL, "update_report_ts_seq")
 			case metric.AppendWrapsWhenFull: // default sql list is ok
+				SQL = append(SQL, "update_report_ts_seq")
 			case metric.AppendStopsWhenFull: // default sql list is ok
+				SQL = append(SQL, "update_report_ts_seq")
 			}
 		default:
-		}
-
-		if factory.PendingInsert[MRD.Name] {
-			delete(factory.PendingInsert, MRD.Name)
-			err = factory.InsertMetricReport(tx, MRD.Name)
-			if err != nil {
-				return xerrors.Errorf("error Inserting Metric Report MRD(%+v): %w", MRD, err)
-			}
 		}
 
 		for _, sql := range SQL {
@@ -743,8 +690,9 @@ func (factory *telemetryManager) GenerateMetricReport(tx *sqlx.Tx, name string) 
 		}
 
 		// after generation, iterate over MetricInstances and Expand
+		totalRows := 0
 		if !MRD.SuppressDups {
-			fmt.Printf("EXPAND -")
+			//fmt.Printf("EXPAND -")
 			rows, err := factory.getNamedSQLXTx(tx, "iterate_metric_instance_for_report").Queryx(MRD)
 			if err != nil {
 				return xerrors.Errorf("error querying MetricInstance for report MRD(%s): %w", MRD, err)
@@ -759,31 +707,35 @@ func (factory *telemetryManager) GenerateMetricReport(tx *sqlx.Tx, name string) 
 				mm.Timestamp = metric.SQLTimeInt{Time: factory.MetricTSHWM}
 				mm.Value = mm.LastValue
 
-				fmt.Printf(" (%d)", mm.InstanceID)
-				err = factory.doInsertMetricValueForInstance(tx, &mm, func(int64) {}, true)
+				mvRowsInserted, err := factory.doInsertMetricValueForInstance(tx, &mm, func(int64) {}, true)
+				totalRows += mvRowsInserted
 				if err != nil {
 					factory.logger.Crit("Error query", "err", err)
 					continue
 				}
+				//fmt.Printf(" (%d-%d)", mm.InstanceID, mvRowsInserted)
 			}
 		}
+		//fmt.Printf(" totalExpand(%d)", totalRows)
 
 		// TODO:
 		// Query the MetricValueByReport to see if there are any rows for this report. If there are no rows in
 		// this report, error out to cancel transaction and pretend nothing happened
-		count := int64(0)
-		err = factory.getSQLXTx(tx, "count_report_records").Get(&count, MRD.Name)
-		if err != nil {
-			return xerrors.Errorf("error executing query count_report_records: %w", err)
+		if MRD.Type != metric.OnRequest {
+			count := int64(0)
+			err = factory.getNamedSQLXTx(tx, "count_report_records").Get(&count, sqlargs)
+			if err != nil {
+				return xerrors.Errorf("error executing query count_report_records: %w", err)
+			}
+			fmt.Printf(" RECORDS(%s)->%d ", sqlargs["Name"], count)
+			if count == 0 {
+				return xerrors.Errorf("Report %s has no records, aborting generation.", MRD.Name)
+			}
 		}
-		fmt.Printf(" RECORDS(%d) ", count)
-		// can't quite do this yet, as it's reporting (0) count and aborting in some instances that it should not, still investigating
-		//		if count == 0 {
-		//			return xerrors.Errorf("Report %s has no records, aborting generation.", MRD.Name)
-		//		}
 
 		// do this after we are sure metric report is generated
 		factory.LastMRTS[MRD.Name] = factory.MetricTSHWM
+		restorePendingInsert = false
 
 		return nil
 	})
@@ -1070,7 +1022,7 @@ func (factory *telemetryManager) insertOneMVRow(tx *sqlx.Tx, mm *MetricMeta, upd
 	return nil
 }
 
-func (factory *telemetryManager) pumpMV(tx *sqlx.Tx, mm *MetricMeta, updatedInstance func(int64), expandOnly bool) (bool, error) {
+func (factory *telemetryManager) pumpMV(tx *sqlx.Tx, mm *MetricMeta, updatedInstance func(int64), expandOnly bool) (bool, bool, error) {
 	// optimization: try to parse as float first, we can re-use this later in many cases
 	floatVal, floatErr := strconv.ParseFloat(mm.Value, 64)
 
@@ -1084,19 +1036,19 @@ func (factory *telemetryManager) pumpMV(tx *sqlx.Tx, mm *MetricMeta, updatedInst
 
 	// if we are supposed to be doing only expansion, we'll only save the value if it's an aggregated value that has passed the flush time
 	if expandOnly && !aggregated {
-		return saveInstance, nil
+		return false, saveInstance, nil
 	}
 
 	if saveValue {
 		// if we are saving the value, definitely need to stave the instance as well
-		return true, factory.insertOneMVRow(tx, mm, updatedInstance, floatVal, floatErr)
+		return true, true, factory.insertOneMVRow(tx, mm, updatedInstance, floatVal, floatErr)
 	}
-	return saveInstance, nil
+	return saveValue, saveInstance, nil
 }
 
 func (factory *telemetryManager) doInsertMetricValueForInstance(
 	tx *sqlx.Tx, mm *MetricMeta,
-	updatedInstance func(int64), expandOnly bool) (err error) {
+	updatedInstance func(int64), expandOnly bool) (numInserted int, err error) {
 	// Here we are going to expand any metrics that were skipped by upstream
 	/// make sure that lastts is set and not the unix zero time
 	saveInstance := false
@@ -1125,9 +1077,12 @@ func (factory *telemetryManager) doInsertMetricValueForInstance(
 		// TODO: we could use math to smooth this out a bit more rather than just jumping by sensorinterval
 		for mm.Timestamp.Before(savedTS.Time.Add(-mm.MISensorSlack)) {
 			//			fmt.Printf("\tts(%s)\n", mm.Timestamp)
-			_, err := factory.pumpMV(tx, mm, updatedInstance, false)
+			inserted, _, err := factory.pumpMV(tx, mm, updatedInstance, false)
 			if err != nil {
 				factory.logger.Crit("Error inserting metric value", "err", err)
+			}
+			if inserted {
+				numInserted++
 			}
 			mm.Timestamp = metric.SQLTimeInt{Time: mm.Timestamp.Add(mm.MISensorInterval)} // .Add() a negative to go backwards
 		}
@@ -1135,18 +1090,22 @@ func (factory *telemetryManager) doInsertMetricValueForInstance(
 		mm.Value = savedValue
 	}
 
-	saveInstance, err = factory.pumpMV(tx, mm, updatedInstance, expandOnly)
+	inserted := false
+	inserted, saveInstance, err = factory.pumpMV(tx, mm, updatedInstance, expandOnly)
 	if err != nil {
 		factory.logger.Crit("Error inserting metric value", "err", err)
+	}
+	if inserted {
+		numInserted++
 	}
 	if saveInstance {
 		_, err = factory.getNamedSQLXTx(tx, "update_metric_instance").Exec(mm)
 		if err != nil && !strings.HasPrefix(err.Error(), "UNIQUE constraint failed") {
-			return xerrors.Errorf("Failed to update MetricInstance(%d) with MetricMeta(%d): %w", mm.InstanceID, mm.MetaID, err)
+			return 0, xerrors.Errorf("Failed to update MetricInstance(%d) with MetricMeta(%d): %w", mm.InstanceID, mm.MetaID, err)
 		}
 	}
 
-	return nil
+	return numInserted, nil
 }
 
 func (factory *telemetryManager) doInsertMetricValue(
@@ -1160,7 +1119,7 @@ func (factory *telemetryManager) doInsertMetricValue(
 		if mm.Dirty {
 			dirty = true
 		}
-		err := factory.doInsertMetricValueForInstance(tx, mm, updatedInstance, false)
+		_, err := factory.doInsertMetricValueForInstance(tx, mm, updatedInstance, false)
 		if err != nil {
 			return xerrors.Errorf("Instance(%+v) insert failed: %w", mm, err)
 		}
