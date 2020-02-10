@@ -5,11 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"path"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
-  "regexp"
 
 	eh "github.com/looplab/eventhorizon"
 
@@ -47,48 +47,48 @@ func in_array_index(a string, list []string) int {
 // If they are added, frontpanel FQDDS will have to check the message for key words to
 // determine the correct origin paths
 func link_mapper(fqdd string) string {
-  // All FQDD tree paths branch from /redfish/v1/Chassis
+	// All FQDD tree paths branch from /redfish/v1/Chassis
 	ret_string := "/redfish/v1/Chassis/"
 
-  chassis_subparts := []string{`IOM\.Slot`, `System\.Modular`, `iDRAC\.Embedded`, `CMC\.Integrated`, `Fan\.Slot`, `PSU\.Slot`, `Temperature\.NODE_AMBIENT`, `Temperature\.CHASSIS_AMBIENT`, `System\.Chassis`}
-  FQDD_parts := strings.Split(fqdd, "#")
+	chassis_subparts := []string{`IOM\.Slot`, `System\.Modular`, `iDRAC\.Embedded`, `CMC\.Integrated`, `Fan\.Slot`, `PSU\.Slot`, `Temperature\.NODE_AMBIENT`, `Temperature\.CHASSIS_AMBIENT`, `System\.Chassis`}
+	FQDD_parts := strings.Split(fqdd, "#")
 
-  for i, _ := range(FQDD_parts) {
-    // Let right-most FQDD part take precedence, look for matching subparts
-    FQDD_part := FQDD_parts[len(FQDD_parts)-1-i]
-    for _, k := range(chassis_subparts) {
-        // Find matching chassis subpart with any slot numbers
-        re := regexp.MustCompile(k+`\.*\w*`)
-        matched := re.Find([]byte(FQDD_part))
-        if matched == nil {
-          continue
-        }
-        FQDD_matched := string(matched)
+	for i, _ := range FQDD_parts {
+		// Let right-most FQDD part take precedence, look for matching subparts
+		FQDD_part := FQDD_parts[len(FQDD_parts)-1-i]
+		for _, k := range chassis_subparts {
+			// Find matching chassis subpart with any slot numbers
+			re := regexp.MustCompile(k + `\.*\w*`)
+			matched := re.Find([]byte(FQDD_part))
+			if matched == nil {
+				continue
+			}
+			FQDD_matched := string(matched)
 
-        // Substitute matches for corrected versions
-        if FQDD_matched == "CMC.Integrated.0" {
-          FQDD_matched = "CMC.Integrated.1"
-        } else if k == `iDRAC\.Embedded` {
-          FQDD_matched = strings.Replace(FQDD_matched, "iDRAC.Embedded", "System.Modular", -1)
-        }
+			// Substitute matches for corrected versions
+			if FQDD_matched == "CMC.Integrated.0" {
+				FQDD_matched = "CMC.Integrated.1"
+			} else if k == `iDRAC\.Embedded` {
+				FQDD_matched = strings.Replace(FQDD_matched, "iDRAC.Embedded", "System.Modular", -1)
+			}
 
-        // Fans, PSUs, and temperatures have specific paths off System.Chassis.1
-        if k == `Fan\.Slot` {
-          ret_string += "System.Chassis.1/Sensors/Fans/" + FQDD_matched
-        } else if k == `PSU\.Slot` {
-          ret_string += "System.Chassis.1/Sensors/PowerSupplies/" + FQDD_matched
-        } else if k == `Temperature\.NODE_AMBIENT` || k == `Temperature\.CHASSIS_AMBIENT` {
-          ret_string += "System.Chassis.1/Sensors/Temperatures/System.Chassis.1%23" + FQDD_matched
-        } else {
-          ret_string += FQDD_matched
-        }
+			// Fans, PSUs, and temperatures have specific paths off System.Chassis.1
+			if k == `Fan\.Slot` {
+				ret_string += "System.Chassis.1/Sensors/Fans/" + FQDD_matched
+			} else if k == `PSU\.Slot` {
+				ret_string += "System.Chassis.1/Sensors/PowerSupplies/" + FQDD_matched
+			} else if k == `Temperature\.NODE_AMBIENT` || k == `Temperature\.CHASSIS_AMBIENT` {
+				ret_string += "System.Chassis.1/Sensors/Temperatures/System.Chassis.1%23" + FQDD_matched
+			} else {
+				ret_string += FQDD_matched
+			}
 
-        // If a matching subpart with valid tree path is found, return
-        goto early_out
-    }
-  }
-  // For all other FQDDs, default to System.Chassis.1 path (including all noncompliant URIs)
-  ret_string += "System.Chassis.1"
+			// If a matching subpart with valid tree path is found, return
+			goto early_out
+		}
+	}
+	// For all other FQDDs, default to System.Chassis.1 path (including all noncompliant URIs)
+	ret_string += "System.Chassis.1"
 
 early_out:
 	return ret_string

@@ -6,6 +6,7 @@ require (
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/etcd-io/bbolt v1.3.2
 	github.com/fsnotify/fsnotify v1.4.7
+	github.com/go-stack/stack v1.8.0 // indirect
 	github.com/gorilla/context v1.1.1 // indirect
 	github.com/gorilla/mux v1.6.2
 	github.com/inconshreveable/log15 v0.0.0-20180818164646-67afb5ed74ec
@@ -18,6 +19,8 @@ require (
 	github.com/mattn/go-sqlite3 v1.10.0
 	github.com/mitchellh/go-homedir v1.0.0 // indirect
 	github.com/mitchellh/mapstructure v1.0.0
+	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
+	github.com/modern-go/reflect2 v1.0.1 // indirect
 	github.com/prometheus/client_golang v1.1.0 // indirect
 	github.com/spacemonkeygo/openssl v0.0.0-20180913232302-a66df3e4f582 // indirect
 	github.com/spf13/cobra v0.0.3 // indirect

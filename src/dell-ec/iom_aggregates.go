@@ -48,14 +48,14 @@ func RegisterIOMAggregate(s *testaggregate.Service) {
 						"SKU@meta":          vw.Meta(view.PropGET("service_tag"), view.PropPATCH("service_tag", "ar_mapper")),
 						"IndicatorLED@meta": vw.Meta(view.GETProperty("indicator_led"), view.GETModel("default"), view.PropPATCH("indicator_led", "ar_mapper")),
 						"Status": map[string]interface{}{
-							"HealthRollup":      nil,
-							"State":             "Enabled", //hard coded
-							"Health":            nil,
+							"HealthRollup": nil,
+							"State":        "Enabled", //hard coded
+							"Health":       nil,
 						},
 						"Oem": map[string]interface{}{
 							"Dell": map[string]interface{}{
-								"ServiceTag@meta":           vw.Meta(view.PropGET("service_tag"), view.PropPATCH("service_tag", "ar_mapper")),
-								"InstPowerConsumption": 0, 
+								"ServiceTag@meta":      vw.Meta(view.PropGET("service_tag"), view.PropPATCH("service_tag", "ar_mapper")),
+								"InstPowerConsumption": 0,
 								"OemChassis": map[string]interface{}{
 									"@odata.id": vw.GetURI() + "/Attributes",
 								},
@@ -83,9 +83,9 @@ func RegisterIOMAggregate(s *testaggregate.Service) {
 								"#DellChassis.v1_0_0.VirtualReseat": map[string]interface{}{
 									"target": vw.GetActionURI("iom.virtualreseat"),
 								},
-                "#DellChassis.v1_0_0.GetSSOInfo":map[string]interface{}{
-                  "target": vw.GetActionURI("iom.getssoinfo"),
-                },
+								"#DellChassis.v1_0_0.GetSSOInfo": map[string]interface{}{
+									"target": vw.GetActionURI("iom.getssoinfo"),
+								},
 							},
 						},
 					}}}, nil
@@ -109,7 +109,7 @@ func RegisterIOMAggregate(s *testaggregate.Service) {
 						"internal_mgmt_supported@meta":  vw.Meta(view.PropGET("managed")),
 						"IOMConfig_objects@meta":        vw.Meta(view.PropGET("config")),
 						"Capabilities@meta":             vw.Meta(view.PropGET("capabilities")), //remove when ready
-						"Capabilities@odata.count@meta": vw.Meta(view.PropGET("capCount")), //remove when ready
+						"Capabilities@odata.count@meta": vw.Meta(view.PropGET("capCount")),     //remove when ready
 					}}}, nil
 		})
 

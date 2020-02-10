@@ -81,7 +81,7 @@ func RegisterCMCAggregate(s *testaggregate.Service) {
 						"Status": map[string]interface{}{
 							"Health":       nil,
 							"HealthRollup": nil,
-							"State@meta":        vw.Meta(view.PropGET("health_state")),
+							"State@meta":   vw.Meta(view.PropGET("health_state")),
 						},
 
 						"Actions": map[string]interface{}{
@@ -138,7 +138,7 @@ func RegisterCMCAggregate(s *testaggregate.Service) {
 						"Links":             map[string]interface{}{},
 						"Status": map[string]interface{}{
 							"HealthRollup": nil,
-							"State@meta":        vw.Meta(view.PropGET("health_state")),
+							"State@meta":   vw.Meta(view.PropGET("health_state")),
 							"Health":       nil,
 						},
 						"IndicatorLED": "Blinking", // static.  MSM does a patch operation and reads from attributes
@@ -171,7 +171,7 @@ func RegisterCMCAggregate(s *testaggregate.Service) {
 						"Status": map[string]interface{}{
 							"Health":       nil,
 							"HealthRollup": nil,
-							"State@meta":        vw.Meta(view.PropGET("health_state")),
+							"State@meta":   vw.Meta(view.PropGET("health_state")),
 						},
 					},
 				}}, nil

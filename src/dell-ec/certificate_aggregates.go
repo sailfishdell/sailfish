@@ -32,9 +32,9 @@ func RegisterCertAggregate(s *testaggregate.Service) {
 						"Actions": map[string]interface{}{
 							"#DellCertificateService.GenerateCSR": map[string]interface{}{
 								"target": vw.GetActionURI("certificates.generatecsr"),
-                "Type@Redfish.AllowableValues": []string{
-                 "FactoryIdentity",
-                },
+								"Type@Redfish.AllowableValues": []string{
+									"FactoryIdentity",
+								},
 							},
 						},
 						"CertificateInventory": map[string]interface{}{
@@ -88,8 +88,8 @@ func RegisterCertAggregate(s *testaggregate.Service) {
 						"Actions": map[string]interface{}{
 							"#DellCertificateService.GetCertInfo": map[string]interface{}{
 								"target": vw.GetActionURI("certificates.getcert"),
-              },
-            },
+							},
+						},
 					},
 				}}, nil
 		})
