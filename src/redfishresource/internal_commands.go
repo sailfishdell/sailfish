@@ -323,8 +323,9 @@ func UpdateCollection(a *RedfishResourceAggregate, pathSlice []string, v interfa
 				return errors.New("UpdateCollection Failed, RedfishResourcePropertyFailed")
 			}
 			aggValue := GetValueinAgg(a, pathSlice)
-			if strings.Contains(p, "@odata.count") { //TODO: if value already exists in list, do not change count
-				fmt.Println("orig@odata.count: ", aggValue)
+			if strings.Contains(p, "@odata.count") {
+				//TODO: if value already exists in list, do not change count
+				//"Members@odata.count" is overwritten in redfish_filter.go
 				aggInt, ok1 := aggValue.(int)
 				vInt, ok2 := v.(int)
 				if !ok1 || !ok2 {
@@ -333,7 +334,8 @@ func UpdateCollection(a *RedfishResourceAggregate, pathSlice []string, v interfa
 				k2.Value = aggInt + vInt
 				continue
 			}
-			aggSlice, ok1 := aggValue.([]interface{})
+			proto := Flatten(aggValue, true)
+			aggSlice, ok1 := proto.([]interface{})
 			vStr, ok2 := v.(string)
 			if !ok || !ok2 {
 				return fmt.Errorf("Type assert failed, interface list assertion: %s, string assertion: %s", ok1, ok2)
@@ -347,21 +349,23 @@ func UpdateCollection(a *RedfishResourceAggregate, pathSlice []string, v interfa
 			switch format {
 			case "expand": //TODO: expand values will not be updated if the original agg is updated
 				if index == -1 {
-					aggSlice = append(aggSlice, &RedfishResourceProperty{Value:vMap})
-					k2.Value = &RedfishResourceProperty{Value:aggSlice}
+					aggSlice = append(aggSlice, vMap)
 				} else { // replace expanded uri with updated version
-					aggSlice[index] = &RedfishResourceProperty{Value:vMap}
-					k2.Value = &RedfishResourceProperty{Value: aggSlice}
+					aggSlice[index] = vMap
 				}
+				k2.Value = []interface{}{}
+				k2.Parse(aggSlice)
 			case "formatOdataList":
 				if index == -1 {
-					aggSlice = append(aggSlice, &RedfishResourceProperty{Value:map[string]interface{}{"@odata.id":vStr}})
-					k2.Value = &RedfishResourceProperty{Value: aggSlice}
+					aggSlice = append(aggSlice, map[string]interface{}{"@odata.id":vStr})
+					k2.Value = []interface{}{}
+					k2.Parse(aggSlice)
 				}
 			case "remove":
 				if index >= 0 {
 					aggSlice = append(aggSlice[:index], aggSlice[index+1:]...)
-					k2.Value = &RedfishResourceProperty{Value: aggSlice}
+					k2.Value = []interface{}{}
+					k2.Parse(aggSlice)
 				}
 			default:
 				return errors.New("Unrecognized format")
@@ -389,7 +393,7 @@ func locationOf(array []interface{}, target_uri interface{}) (location int, ok b
 		} else {
 			entry_map, ok := entry.(map[string]interface{})
 			if !ok {
-				break //how did this even happen?
+				break
 			}
 			uri, ok := entry_map["@odata.id"]
 			if !ok {

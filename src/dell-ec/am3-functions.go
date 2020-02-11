@@ -6,6 +6,10 @@ import (
   "regexp"
   "fmt"
   "net/url"
+  "path"
+  "sort"
+  "strconv"
+  "time"
 
 	eh "github.com/looplab/eventhorizon"
 	"github.com/superchalupa/sailfish/src/dell-resources/dm_event"
@@ -14,6 +18,9 @@ import (
 	"strings"
 	"time"
 
+  ev "github.com/superchalupa/sailfish/src/looplab/event"
+  "github.com/superchalupa/sailfish/src/ocp/eventservice"
+	"github.com/superchalupa/sailfish/src/dell-resources/dm_event"
 	"github.com/superchalupa/sailfish/godefs"
 	"github.com/superchalupa/sailfish/src/dell-resources/attributedef"
 	"github.com/superchalupa/sailfish/src/log"
@@ -399,7 +406,150 @@ func addAM3Functions(logger log.Logger, am3Svc *am3.Service, d *domain.DomainObj
 		}
 	})
 
-  attributeLinks = []AttributeLink { 
+
+  am3Svc.AddEventHandler("LogEventFn", LogEvent, func(event eh.Event) {
+    data, ok := event.Data().(*LogEventData)
+    if !ok {
+      logger.Error("LogEvent did not match", "type", event.EventType, "data", event.Data())
+      return
+    }
+
+    operation := data.LogAlert
+    collection_uri := "/redfish/v1/Managers/CMC.Integrated.1/Logs/Lclog"
+    MAX_LOGS := 3000
+
+    if strings.Contains(operation, "log") {
+      uuid := eh.NewUUID()
+      uri := fmt.Sprintf("%s/%d", collection_uri, data.Id)
+
+      timeF, err := strconv.ParseFloat(data.Created, 64)
+      if err != nil {
+        logger.Debug("LCLOG: Time information can not be parsed", "time", data.Created, "err", err, "set time to", 0)
+        timeF = 0
+      }
+      createdTime := time.Unix(int64(timeF), 0)
+      cTime := createdTime.Format("2006-01-02T15:04:05-07:00")
+
+      severity := data.Severity
+      if data.Severity == "Informational" {
+        severity = "OK"
+      }
+
+      d.CommandHandler.HandleCommand(
+        context.Background(),
+        &domain.CreateRedfishResource{
+          ID:          uuid,
+          ResourceURI: uri,
+          Type:        "#LogEntry.v1_0_2.LogEntry",
+          Context:     "/redfish/v1/$metadata#LogEntry.LogEntry",
+          Privileges: map[string]interface{}{
+            "GET": []string{"Login"},
+          },
+          Properties: map[string]interface{}{
+            "Created":     cTime,
+            "Description": data.Name,
+            "Name":        data.Name,
+            "EntryType":   data.EntryType,
+            "Id":          data.Id,
+            "Links": map[string]interface{}{
+              "OriginOfCondition": map[string]interface{}{
+                "@odata.id": link_mapper(data.FQDD),
+              },
+            },
+            "MessageArgs@odata.count": len(data.MessageArgs),
+            "MessageArgs":             data.MessageArgs,
+            "Message":                 data.Message,
+            "MessageId":               data.MessageID,
+            "Oem": map[string]interface{}{
+              "Dell": map[string]interface{}{
+                "@odata.type": "#DellLogEntry.v1_0_0.LogEntrySummary",
+                "Category":    data.Category,
+                "FQDD":        data.FQDD,
+              }},
+            "OemRecordFormat": "Dell",
+            "Severity":        severity,
+            "Action":          data.Action,
+          }})
+
+      uriList := d.FindMatchingURIs(func(uri string) bool { return path.Dir(uri) == collection_uri })
+      fmt.Println("LEN URLIST: ", len(uriList))
+
+      if len(uriList) > MAX_LOGS {
+        // dont need to sort it until we know we are too long
+        sort.Slice(uriList, func(i, j int) bool {
+          idx_i, _ := strconv.Atoi(path.Base(uriList[i]))
+          idx_j, _ := strconv.Atoi(path.Base(uriList[j]))
+          return idx_i > idx_j
+        })
+
+        logger.Debug("too many logs, trimming", "len", len(uriList))
+        go func(uriList []string) {
+          for _, uri := range uriList {
+            id, ok := d.GetAggregateIDOK(uri)
+            if ok {
+              ev := ev.NewSyncEvent(domain.RedfishResourceRemoved, &domain.RedfishResourceRemovedData{
+                ID:          id,
+                ResourceURI: uri,
+              }, time.Now())
+              ev.Add(1)
+              d.EventBus.PublishEvent(context.Background(), ev)
+              ev.Wait()
+            }
+          }
+        }(uriList[MAX_LOGS:])
+      }
+
+    }
+
+    if strings.Contains(operation, "alert") {
+      timeF, err := strconv.ParseFloat(data.Created, 64)
+      if err != nil {
+        logger.Debug("Mapper configuration error: Time information can not be parsed", "time", data.Created, "err", err, "set time to", 0)
+        timeF = 0
+      }
+      createdTime := time.Unix(int64(timeF), 0)
+      cTime := createdTime.Format("2006-01-02T15:04:05-07:00")
+
+      //Create Alert type event:
+
+      d.EventBus.PublishEvent(context.Background(),
+        eh.NewEvent(eventservice.RedfishEvent, &eventservice.RedfishEventData{
+          EventType:      "Alert",
+          EventId:        data.EventId,
+          EventTimestamp: cTime,
+          Severity:       data.Severity,
+          Message:        data.Message,
+          MessageId:      data.MessageID,
+          MessageArgs:    data.MessageArgs,
+          //TODO MSM BUG: OriginOfCondition for events has to be a string or will be rejected
+          OriginOfCondition: data.FQDD,
+        }, time.Now()))
+    }
+
+    if strings.Contains(operation, "clear") {
+      logger.Debug("Clearing all uris within base_uri", "base_uri", collection_uri)
+
+      go func() {
+        uriList := d.FindMatchingURIs(func(uri string) bool { return path.Dir(uri) == collection_uri })
+        for _, uri := range uriList {
+          id, ok := d.GetAggregateIDOK(uri)
+          if ok {
+            ev := ev.NewSyncEvent(domain.RedfishResourceRemoved, &domain.RedfishResourceRemovedData{
+              ID: id,
+              ResourceURI: uri,
+            }, time.Now())
+            ev.Add(1)
+            d.EventBus.PublishEvent(context.Background(), ev)
+            ev.Wait()
+          }
+        }
+      }()
+    }
+
+  })
+
+
+  attributeLinks = []AttributeLink {
     //THESE ONLY WORK BECAUSE THE AGGREGATES ARE CREATED VIA COMPONENT EVENT, AND NOT VIA ATTRIBUTE UPDATED EVENT
     //IF ATTRIBUTE UPDATED EVENT CREATED THE RESOURCE AND TRIGGERED A COLLECTION UPDATE, POTENTIAL DATA RACE?
     {FQDD: `PSU\.Slot\.\d+`,
@@ -457,7 +607,7 @@ func addAM3Functions(logger log.Logger, am3Svc *am3.Service, d *domain.DomainObj
 
 
   collections = []Collection{
-    {Prefix: "/redfish/v1/Chassis/System.Chassis.1/Sensors/Temperatures",
+    /*{Prefix: "/redfish/v1/Chassis/System.Chassis.1/Sensors/Temperatures",
      URI: "/redfish/v1/Chassis/System.Chassis.1/Thermal",
      Property: "Temperatures",
      Format: "expand"},
@@ -486,6 +636,12 @@ func addAM3Functions(logger log.Logger, am3Svc *am3.Service, d *domain.DomainObj
     {Prefix: "/redfish/v1/Chassis/System.Chassis.1/Power/PowerTrends-1",
      URI: "/redfish/v1/Chassis/System.Chassis.1/Power/PowerTrends-1",
      Property: "histograms",
+     Format: "expand"},*/
+
+     //Is allowed because already created logs can't have their values changed
+    {Prefix: "/redfish/v1/Managers/CMC.Integrated.1/Logs/Lclog",
+     URI: "/redfish/v1/Managers/CMC.Integrated.1/Logs/Lclog",
+     Property: "Members",
      Format: "expand"},
 
     {Prefix: "/redfish/v1/Chassis",

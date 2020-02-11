@@ -1266,16 +1266,16 @@ awesome_mapper:
       # thermal health data handled in AM3
 
 
-    lclog:
-      - { SelectEventType: "LogEvent",
-          Select: "data.LogAlert == 'log' || data.LogAlert == 'log alert'",
-          Exec: [ "addlclog(collection_uri, data)" ]}
-      - { SelectEventType: "LogEvent",
-          Select: "data.LogAlert == 'alert' || data.LogAlert == 'log alert'",
-          Exec: [ "firealert(data)" ]}
-      - { SelectEventType: "LogEvent",
-          Select: "data.LogAlert == 'clear'",
-          Exec: [ "clearuris(collection_uri)" ]}
+    lclog: # INPROGRESS EXPAND (ALLOWED)
+    #- { SelectEventType: "LogEvent",
+    #     Select: "data.LogAlert == 'log' || data.LogAlert == 'log alert'",
+    #     Exec: [ "addlclog(collection_uri, data)" ]}
+    # - { SelectEventType: "LogEvent",
+    #     Select: "data.LogAlert == 'alert' || data.LogAlert == 'log alert'",
+    #     Exec: [ "firealert(data)" ]}
+    # - { SelectEventType: "LogEvent",
+    #     Select: "data.LogAlert == 'clear'",
+    #     Exec: [ "clearuris(collection_uri)" ]}
 
     faultlist:
       - { SelectEventType: "FaultEntryAdd",

@@ -14,7 +14,6 @@ import (
 	eh "github.com/looplab/eventhorizon"
 
 	"github.com/superchalupa/sailfish/src/log"
-	"github.com/superchalupa/sailfish/src/looplab/event"
 	"github.com/superchalupa/sailfish/src/ocp/awesome_mapper2"
 	"github.com/superchalupa/sailfish/src/ocp/eventservice"
 	"github.com/superchalupa/sailfish/src/ocp/model"
@@ -95,132 +94,6 @@ early_out:
 }
 
 func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.CommandHandler, d *domain.DomainObjects) {
-	MAX_LOGS := 3000
-
-	awesome_mapper2.AddFunction("addlclog", func(args ...interface{}) (interface{}, error) {
-		logUri, ok := args[0].(string)
-		if !ok {
-			logger.Crit("Mapper configuration error: uri not passed as string", "args[0]", args[0])
-			return nil, errors.New("mapper configuration error: uri not passed as string")
-		}
-
-		logEntry, ok := args[1].(*LogEventData)
-		if !ok {
-			logger.Crit("Mapper configuration error: log event data not passed", "args[1]", args[1], "TYPE", fmt.Sprintf("%T", args[1]))
-			return nil, errors.New("mapper configuration error: log event data not passed")
-		}
-
-		uuid := eh.NewUUID()
-		uri := fmt.Sprintf("%s/%d", logUri, logEntry.Id)
-
-		timeF, err := strconv.ParseFloat(logEntry.Created, 64)
-		if err != nil {
-			logger.Debug("LCLOG: Time information can not be parsed", "time", logEntry.Created, "err", err, "set time to", 0)
-			timeF = 0
-		}
-		createdTime := time.Unix(int64(timeF), 0)
-		cTime := createdTime.Format("2006-01-02T15:04:05-07:00")
-
-		severity := logEntry.Severity
-		if logEntry.Severity == "Informational" {
-			severity = "OK"
-		}
-
-		ch.HandleCommand(
-			context.Background(),
-			&domain.CreateRedfishResource{
-				ID:          uuid,
-				ResourceURI: uri,
-				Type:        "#LogEntry.v1_0_2.LogEntry",
-				Context:     "/redfish/v1/$metadata#LogEntry.LogEntry",
-				Privileges: map[string]interface{}{
-					"GET": []string{"Login"},
-				},
-				Properties: map[string]interface{}{
-					"Created":     cTime,
-					"Description": logEntry.Name,
-					"Name":        logEntry.Name,
-					"EntryType":   logEntry.EntryType,
-					"Id":          logEntry.Id,
-					"Links": map[string]interface{}{
-						"OriginOfCondition": map[string]interface{}{
-							"@odata.id": link_mapper(logEntry.FQDD),
-						},
-					},
-					"MessageArgs@odata.count": len(logEntry.MessageArgs),
-					"MessageArgs":             logEntry.MessageArgs,
-					"Message":                 logEntry.Message,
-					"MessageId":               logEntry.MessageID,
-					"Oem": map[string]interface{}{
-						"Dell": map[string]interface{}{
-							"@odata.type": "#DellLogEntry.v1_0_0.LogEntrySummary",
-							"Category":    logEntry.Category,
-							"FQDD":        logEntry.FQDD,
-						}},
-					"OemRecordFormat": "Dell",
-					"Severity":        severity,
-					"Action":          logEntry.Action,
-				}})
-
-		uriList := d.FindMatchingURIs(func(uri string) bool { return path.Dir(uri) == logUri })
-
-		if len(uriList) > MAX_LOGS {
-			// dont need to sort it until we know we are too long
-			sort.Slice(uriList, func(i, j int) bool {
-				idx_i, _ := strconv.Atoi(path.Base(uriList[i]))
-				idx_j, _ := strconv.Atoi(path.Base(uriList[j]))
-				return idx_i > idx_j
-			})
-
-			logger.Debug("too many logs, trimming", "len", len(uriList))
-			go func(uriList []string) {
-				for _, uri := range uriList {
-					id, ok := d.GetAggregateIDOK(uri)
-					if ok {
-						ev := event.NewSyncEvent(domain.RedfishResourceRemoved, &domain.RedfishResourceRemovedData{
-							ID:          id,
-							ResourceURI: uri,
-						}, time.Now())
-						ev.Add(1)
-						d.EventBus.PublishEvent(context.Background(), ev)
-						ev.Wait()
-					}
-				}
-			}(uriList[MAX_LOGS:])
-		}
-
-		return true, nil
-	})
-
-	awesome_mapper2.AddFunction("clearuris", func(args ...interface{}) (interface{}, error) {
-		logUri, ok := args[0].(string)
-		if !ok {
-			logger.Crit("Mapper configuration error: uri not passed as string", "args[0]", args[0])
-			return nil, errors.New("mapper configuration error: uri not passed as string")
-		}
-
-		logger.Debug("Clearing all uris within base_uri", "base_uri", logUri)
-
-		go func() {
-			uriList := d.FindMatchingURIs(func(uri string) bool { return path.Dir(uri) == logUri })
-			for _, uri := range uriList {
-				id, ok := d.GetAggregateIDOK(uri)
-				if ok {
-					ev := event.NewSyncEvent(domain.RedfishResourceRemoved, &domain.RedfishResourceRemovedData{
-						ID:          id,
-						ResourceURI: uri,
-					}, time.Now())
-					ev.Add(1)
-					d.EventBus.PublishEvent(context.Background(), ev)
-					ev.Wait()
-
-				}
-			}
-		}()
-
-		return nil, nil
-	})
-
 	// Add FaultRemoveEntry to tombstones if processed before FaultAddEntry in FIFO ordering
 	fault_lim := 10
 	var tombstones []string
@@ -342,39 +215,6 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 					"Action":          faultEntry.Action,
 					"Links":           map[string]interface{}{},
 				}})
-
-		return true, nil
-	})
-
-	awesome_mapper2.AddFunction("firealert", func(args ...interface{}) (interface{}, error) {
-		logEntry, ok := args[0].(*LogEventData)
-		if !ok {
-			logger.Crit("Mapper configuration error: log event data not passed", "args[1]", args[1], "TYPE", fmt.Sprintf("%T", args[1]))
-			return nil, errors.New("mapper configuration error: log event data not passed")
-		}
-
-		timeF, err := strconv.ParseFloat(logEntry.Created, 64)
-		if err != nil {
-			logger.Debug("Mapper configuration error: Time information can not be parsed", "time", logEntry.Created, "err", err, "set time to", 0)
-			timeF = 0
-		}
-		createdTime := time.Unix(int64(timeF), 0)
-		cTime := createdTime.Format("2006-01-02T15:04:05-07:00")
-
-		//Create Alert type event:
-
-		d.EventBus.PublishEvent(context.Background(),
-			eh.NewEvent(eventservice.RedfishEvent, &eventservice.RedfishEventData{
-				EventType:      "Alert",
-				EventId:        logEntry.EventId,
-				EventTimestamp: cTime,
-				Severity:       logEntry.Severity,
-				Message:        logEntry.Message,
-				MessageId:      logEntry.MessageID,
-				MessageArgs:    logEntry.MessageArgs,
-				//TODO MSM BUG: OriginOfCondition for events has to be a string or will be rejected
-				OriginOfCondition: logEntry.FQDD,
-			}, time.Now()))
 
 		return true, nil
 	})
