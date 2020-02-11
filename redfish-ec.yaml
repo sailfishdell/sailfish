@@ -102,7 +102,7 @@ views:
           "params": "parenturi + '/MetricDefinitions'"
         - "fn": "stdFormatters"
           "params":
-      "Aggregate": "telemetryMD"
+      "Aggregate": "MD-collection"
 
   "metric_report_definitions":
       "Logger": ["module", "telemetry"]
@@ -116,7 +116,7 @@ views:
           "params": "parenturi + '/MetricReportDefinitions'"
         - "fn": "stdFormatters"
           "params":
-      "Aggregate": "telemetryMRD"
+      "Aggregate": "MRD-collection"
 
   "metric_reports":
       "Logger": ["module", "metric_reports"]
@@ -130,7 +130,7 @@ views:
           "params": "parenturi + '/MetricReports'"
         - "fn": "stdFormatters"
           "params":
-      "Aggregate": "telemetryMR"
+      "Aggregate": "MR-collection"
 
   "systems":
       "Models":

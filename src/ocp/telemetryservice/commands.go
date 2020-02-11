@@ -55,14 +55,14 @@ func (c *POST) Handle(ctx context.Context, a *domain.RedfishResourceAggregate) e
 	bl, mrduuid := c.ts.CreateMetricReportDefinition(ctx, c.MRD, data)
 	if !bl {
 		a.PublishEvent(eh.NewEvent(domain.HTTPCmdProcessed, data, time.Now()))
-		return errors.New("could not create MRD")
+		return nil 
 	}
 
 	// validates MRD is created successfully
 	agg, err := c.d.AggregateStore.Load(ctx, domain.AggregateType, mrduuid)
 	if err != nil {
 		a.PublishEvent(eh.NewEvent(domain.HTTPCmdProcessed, data, time.Now()))
-		return errors.New("could not load subscription aggregate")
+		return errors.New("could not load MRD aggregate")
 	}
 
 	redfishResource, ok := agg.(*domain.RedfishResourceAggregate)
@@ -72,7 +72,17 @@ func (c *POST) Handle(ctx context.Context, a *domain.RedfishResourceAggregate) e
 	}
 
 	domain.NewGet(ctx, redfishResource, &redfishResource.Properties, c.auth)
-	data.Results = domain.Flatten(&redfishResource.Properties, false)
+	tmpResponse := domain.Flatten(&redfishResource.Properties, false)
+
+	r, ok := tmpResponse.(map[string]interface{})
+	if ok {
+		r2 := data.Results.(map[string]interface{})
+		for k, v := range r{
+		    r2[k] = v
+		}
+	}
+
+	data.StatusCode = a.StatusCode
 
 	for k, v := range a.Headers {
 		data.Headers[k] = v

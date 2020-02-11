@@ -144,11 +144,11 @@ func (ts *TelemetryService) StartTelemetryService(ctx context.Context) error {
 func (ts *TelemetryService) CreateMetricReportDefinition(ctx context.Context, mrd MRDData, data *domain.HTTPCmdProcessedData) (bool, eh.UUID) {
 
 	bad_request := domain.ExtendedInfo{
-		Message:             "The service detected a malformed request body that it was unable to interpret.",
+		Message:             "There are no valid metric properties and metric ids",
 		MessageArgs:         []string{},
 		MessageArgsCt:       0,
 		MessageId:           "Base.1.0.UnrecognizedRequestBody",
-		RelatedProperties:   []string{"Attributes"}, //FIX ME
+		RelatedProperties:   []string{"MetricReportDefinitions"}, //FIX ME
 		RelatedPropertiesCt: 1,                      //FIX ME
 		Resolution:          "Correct the request body and resubmit the request if it failed.",
 		Severity:            "Warning",
@@ -159,7 +159,7 @@ func (ts *TelemetryService) CreateMetricReportDefinition(ctx context.Context, mr
 	errmFmt := "%s, "
 
 	if mrd.Id == "" {
-		errmmsg += fmt.Sprintf(errmFmt, "Id")
+		errmmsg += fmt.Sprintf(errmFmt, "Id ")
 	}
 
 	if len(mrd.Metrics) == 0 {
@@ -167,9 +167,10 @@ func (ts *TelemetryService) CreateMetricReportDefinition(ctx context.Context, mr
 	}
 
 	if mrd.MetricReportDefinitionType == "" {
-		errmmsg += fmt.Sprintf(errmFmt, "MetricReportDefinitionType")
+		errmmsg += fmt.Sprintf(errmFmt, "MetricReportDefinitionType ")
 	}
 	if errmmsg != "" {
+		bad_request.Message = errmmsg[:len(errmmsg)-2] + "is missing"
 		domain.AddToEEMIList(data.Results.(map[string]interface{}), bad_request, false)
 		data.StatusCode = 400
 		return false, ""
@@ -178,11 +179,15 @@ func (ts *TelemetryService) CreateMetricReportDefinition(ctx context.Context, mr
 	mrdURL := "/redfish/v1/TelemetryService/MetricReportDefinitions/" + mrd.Id
 
 	// Check if MRD metric properties are related to a existing MD, or metric id
-	ok := ts.nb.CleanAndValidateMRD(&mrd)
+	ok, errmsg := ts.nb.CleanAndValidateMRD(&mrd)
 	if !ok {
+		bad_request.Message = errmsg
 		domain.AddToEEMIList(data.Results.(map[string]interface{}), bad_request, false)
 		data.StatusCode = 400
 		return false, ""
+	} else if errmsg != "" {
+		bad_request.Message = errmsg
+		domain.AddToEEMIList(data.Results.(map[string]interface{}), bad_request, false)
 	}
 
 	metricSlice := []map[string]interface{}{}
@@ -232,9 +237,9 @@ func (ts *TelemetryService) CreateMetricReportDefinition(ctx context.Context, mr
 		})
 
 	default_msg := domain.ExtendedInfo{}
+	data.Results = default_msg.GetDefaultExtendedInfo()
 
 	data.StatusCode = 201
-	data.Results = default_msg.GetDefaultExtendedInfo()
 	// send cleaned up MRD as a telemetry reference point
 	ts.d.EventBus.PublishEvent(ctx, eh.NewEvent(AddedMRDEvent, &mrd, time.Now()))
 	return true, mrduuid

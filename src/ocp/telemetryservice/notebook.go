@@ -159,26 +159,26 @@ func (ts *NoteBook) getValidMetrics(data *domain.RedfishResourcePropertiesUpdate
 // When MRD POST arrives.  Clean and Validate MRD contents with existing MDs
 // rc : false - MRD has no good metrics
 // rc : true  - MRD has at least one good metric/metricproperty
-func (ts *NoteBook) CleanAndValidateMRD(data *MRDData) bool {
+func (ts *NoteBook) CleanAndValidateMRD(data *MRDData) (bool , string){
 	// validate metric ids
 	idx := 0 // output index
+	errmsg := ""
 	for i, _ := range data.Metrics {
 		MRDmetric := data.Metrics[i]
 		// see if I get the MD data correctly
 		if MRDmetric.MetricID == "" {
-			fmt.Println("MRD has bad data", MRDmetric)
+			errmsg += "a metric id is empty, "
 			continue
 		}
 		MM, err := ts.getMDMetricData(MRDmetric.MetricID)
 		if err != nil {
-			fmt.Println("metric is not present in MD, skip")
+			errmsg += "a metric is not present in MD, "
 			// metric is not present in MD, skip adding
 			continue
 		} else {
 			// removes bad metric data
-			cleanMRDMetric(MM, &MRDmetric)
+			errmsg+=cleanMRDMetric(MM, &MRDmetric)
 			if len(MRDmetric.MetricProperties) == 0 {
-				fmt.Println("metric prop is empty")
 				// metric properties is empty. skip adding
 				continue
 			} else {
@@ -189,11 +189,13 @@ func (ts *NoteBook) CleanAndValidateMRD(data *MRDData) bool {
 
 		}
 	}
-	if idx != 0 {
-		data.Metrics = data.Metrics[:idx]
-		return true // pass
+
+	data.Metrics = data.Metrics[:idx]
+
+	if idx == 0 {
+		return false, errmsg
 	} else {
-		return false
+		return true, errmsg
 	}
 
 }
@@ -201,11 +203,12 @@ func (ts *NoteBook) CleanAndValidateMRD(data *MRDData) bool {
 // MRD wildcard validation is not done for now.
 // rc: false - Metric does not have a good property
 // 	true - Metric has at least one good property
-func cleanMRDMetric(MM MDmeta, MRDmetric *Metric) bool {
+func cleanMRDMetric(MM MDmeta, MRDmetric *Metric) string{
 	reString := MM.prop
 	substr := strings.Join(MM.wcValues, `\b|`) + `\b`
 	strings.Replace(reString, MM.wcName, substr, -1)
 	re := regexp.MustCompile(reString)
+	errmsg := ""
 
 	idx := 0
 	for i := 0; i < len(MRDmetric.MetricProperties); i++ {
@@ -217,16 +220,13 @@ func cleanMRDMetric(MM MDmeta, MRDmetric *Metric) bool {
 			MRDmetric.MetricProperties[idx] = MM.prop
 			idx++
 		} else {
-			// MRD metric isn't compatible
+			errmsg +="property " + MRDprop + " is not valid, "
 			continue
 		}
 	}
-	if idx == 0 {
-		return false
-	} else {
-		MRDmetric.MetricProperties = MRDmetric.MetricProperties[:idx]
-		return true
-	}
+	MRDmetric.MetricProperties = MRDmetric.MetricProperties[:idx]
+	return errmsg
+
 }
 
 func (ts *NoteBook) getMDMetricData(metricID string) (MDmeta, error) {
