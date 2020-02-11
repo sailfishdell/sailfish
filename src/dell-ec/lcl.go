@@ -7,7 +7,6 @@ import (
 	"path"
 	"regexp"
 	"sort"
-	"strconv"
 	"strings"
 	"time"
 
@@ -21,24 +20,6 @@ import (
 	"github.com/superchalupa/sailfish/src/ocp/view"
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
 )
-
-func in_array(a string, list []string) bool {
-	for _, b := range list {
-		if b == a {
-			return true
-		}
-	}
-	return false
-}
-
-func in_array_index(a string, list []string) int {
-	for i, b := range list {
-		if b == a {
-			return i
-		}
-	}
-	return -1
-}
 
 // Noncompliant FQDDs: RCPUSB, RSPI, RTC, ControlPanel, QuickSync, LCD, LED, Frontpanel
 // As there is no plan to add actual tree paths for noncompliant URIs, noncompliant FQDDs
@@ -94,131 +75,6 @@ early_out:
 }
 
 func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.CommandHandler, d *domain.DomainObjects) {
-	// Add FaultRemoveEntry to tombstones if processed before FaultAddEntry in FIFO ordering
-	fault_lim := 10
-	var tombstones []string
-	awesome_mapper2.AddFunction("removefaultentry", func(args ...interface{}) (interface{}, error) {
-		logUri, ok := args[0].(string)
-		if !ok {
-			logger.Crit("Mapper configuration error: uri not passed as string", "args[0]", args[0])
-			return nil, errors.New("mapper configuration error: uri not passed as string")
-		}
-		faultEntry, ok := args[1].(*FaultEntryRmData)
-		if !ok {
-			logger.Crit("Mapper configuration error: log event data not passed", "args[1]", args[1], "TYPE", fmt.Sprintf("%T", args[1]))
-			return nil, errors.New("mapper configuration error: log event data not passed")
-		}
-
-		uri := fmt.Sprintf("%s/%s", logUri, faultEntry.Name)
-		//fmt.Printf("%s/%s", logUri, faultEntry.Name)
-
-		id, ok := d.GetAggregateIDOK(uri)
-		if ok {
-			ch.HandleCommand(context.Background(), &domain.RemoveRedfishResource{ID: id})
-		} else {
-
-			if len(tombstones) == fault_lim {
-				tombstones = tombstones[1:]
-			}
-
-			if !in_array(faultEntry.Name, tombstones) {
-				tombstones = append(tombstones, faultEntry.Name)
-			}
-
-		}
-		return true, nil
-	})
-
-	awesome_mapper2.AddFunction("addfaultentry", func(args ...interface{}) (interface{}, error) {
-		logUri, ok := args[0].(string)
-		//fmt.Printf("%s", logUri)
-		if !ok {
-			logger.Crit("Mapper configuration error: uri not passed as string", "args[0]", args[0])
-			return nil, errors.New("mapper configuration error: uri not passed as string")
-		}
-
-		faultEntry, ok := args[1].(*FaultEntryAddData)
-		if !ok {
-			logger.Crit("Mapper configuration error: log event data not passed", "args[1]", args[1], "TYPE", fmt.Sprintf("%T", args[1]))
-			return nil, errors.New("mapper configuration error: log event data not passed")
-		}
-
-		// check if fault remove event is already received.  Can return
-		i := in_array_index(faultEntry.Name, tombstones)
-
-		if i != -1 {
-			fl := len(tombstones) - 1
-			for n := len(tombstones) - 1; n > i && n != 0; n -= 1 {
-				tombstones[n-1] = tombstones[n]
-			}
-
-			tombstones[fl] = ""
-			tombstones = tombstones[:fl]
-			return nil, nil
-		}
-
-		timeF, err := strconv.ParseFloat(faultEntry.Created, 64)
-		if err != nil {
-			logger.Debug("Mapper configuration error: Time information can not be parsed", "time", faultEntry.Created, "err", err, "set time to", 0)
-			timeF = 0
-		}
-		createdTime := time.Unix(int64(timeF), 0)
-		cTime := createdTime.Format("2006-01-02T15:04:05-07:00")
-
-		uuid := eh.NewUUID()
-		uri := fmt.Sprintf("%s/%s", logUri, faultEntry.Name)
-		//fmt.Printf("%s/%s", logUri, faultEntry.Name)
-
-		// when mchars is restarted, it clears faults and expects old faults to be recreated.
-		// skip re-creating old faults if this happens.
-		aggID, ok := d.GetAggregateIDOK(uri)
-		if ok {
-			logger.Info("URI already exists, skipping add log", "aggID", aggID, "uri", uri)
-			// not returning error because that will unnecessarily freak out govaluate when there really isn't an error we care about at that level
-			return nil, nil
-		}
-
-		ch.HandleCommand(
-			context.Background(),
-			&domain.CreateRedfishResource{
-				ID:          uuid,
-				ResourceURI: uri,
-				Type:        "#LogEntry.LogEntry",
-				Plugin:      "ECFault",
-				Context:     "/redfish/v1/$metadata#LogEntry.LogEntry",
-				Headers: map[string]string{
-					"Location": uri,
-				},
-				Privileges: map[string]interface{}{
-					"GET":    []string{"Login"},
-					"DELETE": []string{"ConfigureManager"},
-				},
-				Properties: map[string]interface{}{
-					"Created":                 cTime,
-					"Description":             "FaultList Entry " + faultEntry.FQDD,
-					"Name":                    "FaultList Entry " + faultEntry.FQDD,
-					"EntryType":               faultEntry.EntryType,
-					"Id":                      faultEntry.Name,
-					"MessageArgs":             faultEntry.MessageArgs,
-					"MessageArgs@odata.count": len(faultEntry.MessageArgs),
-					"Message":                 faultEntry.Message,
-					"MessageId":               faultEntry.MessageID,
-					"Category":                faultEntry.Category,
-					"Oem": map[string]interface{}{
-						"Dell": map[string]interface{}{
-							"@odata.type": "#DellLogEntry.v1_0_0.LogEntrySummary",
-							"FQDD":        faultEntry.FQDD,
-							"SubSystem":   faultEntry.SubSystem,
-						}},
-					"OemRecordFormat": "Dell",
-					"Severity":        faultEntry.Severity,
-					"Action":          faultEntry.Action,
-					"Links":           map[string]interface{}{},
-				}})
-
-		return true, nil
-	})
-
 	awesome_mapper2.AddFunction("health_alert", func(args ...interface{}) (interface{}, error) {
 		ss, ok := args[0].(string)
 		if !ok {

@@ -303,7 +303,6 @@ func UpdateAgg(a *RedfishResourceAggregate, pathSlice []string, v interface{}, a
 
 }
 
-// like UpdateAgg but uglier!
 func UpdateCollection(a *RedfishResourceAggregate, pathSlice []string, v interface{}, format string, vMap map[string]interface{}) error {
 	loc, ok := a.Properties.Value.(map[string]interface{})
 	if !ok {

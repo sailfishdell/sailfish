@@ -406,6 +406,133 @@ func addAM3Functions(logger log.Logger, am3Svc *am3.Service, d *domain.DomainObj
 		}
 	})
 
+  fault_lim := 10
+  var tombstones []string
+  fault_collection_uri := "/redfish/v1/Managers/CMC.Integrated.1/Logs/FaultList"
+
+  am3Svc.AddEventHandler("FaultEntryAddFn", FaultEntryAdd, func(event eh.Event) {
+    data, ok := event.Data().(*FaultEntryAddData)
+    if !ok {
+      logger.Error("FaultEntryAdd event did not match", "type", event.EventType, "data", event.Data())
+      return
+    }
+
+    // check if fault remove event is already received. Can return
+    i := in_array_index(data.Name, tombstones)
+
+    if i != -1 {
+      fl := len(tombstones) - 1
+      for n := len(tombstones) - 1; n > i && n != 0; n -= 1 {
+        tombstones[n-1] = tombstones[n]
+      }
+      tombstones[fl] = ""
+      tombstones = tombstones[:fl]
+      return
+    }
+
+    timeF, err := strconv.ParseFloat(data.Created, 64)
+    if err != nil {
+      logger.Debug("Mapper configuration error: Time information can not be parsed", "time", data.Created, "err", err, "set time to", 0)
+      timeF = 0
+    }
+    createdTime := time.Unix(int64(timeF), 0)
+    cTime := createdTime.Format("2006-01-02T15:04:05-07:00")
+
+    uuid := eh.NewUUID()
+    uri := fmt.Sprintf("%s/%s", fault_collection_uri, data.Name)
+
+    // when mchars is restarted, it clears faults and expects old faults to be recreated.
+    // skip re-creating old faults if this happens.
+    aggID, ok := d.GetAggregateIDOK(uri)
+    if ok {
+      logger.Info("URI already exists, skipping add log", "aggID", aggID, "uri", uri)
+      // not returning error because that will unnecessarily freak out govaluate when there really isn't an error we care about at that level
+      return
+    }
+
+    d.CommandHandler.HandleCommand(
+      context.Background(),
+      &domain.CreateRedfishResource{
+        ID:          uuid,
+        ResourceURI: uri,
+        Type:        "#LogEntry.LogEntry",
+        Plugin:      "ECFault",
+        Context:     "/redfish/v1/$metadata#LogEntry.LogEntry",
+        Headers: map[string]string{
+          "Location": uri,
+        },
+        Privileges: map[string]interface{}{
+          "GET":    []string{"Login"},
+          "DELETE": []string{"ConfigureManager"},
+        },
+        Properties: map[string]interface{}{
+          "Created":                 cTime,
+          "Description":             "FaultList Entry " + data.FQDD,
+          "Name":                    "FaultList Entry " + data.FQDD,
+          "EntryType":               data.EntryType,
+          "Id":                      data.Name,
+          "MessageArgs":             data.MessageArgs,
+          "MessageArgs@odata.count": len(data.MessageArgs),
+          "Message":                 data.Message,
+          "MessageId":               data.MessageID,
+          "Category":                data.Category,
+          "Oem": map[string]interface{}{
+            "Dell": map[string]interface{}{
+              "@odata.type": "#DellLogEntry.v1_0_0.LogEntrySummary",
+              "FQDD":        data.FQDD,
+              "SubSystem":   data.SubSystem,
+            }},
+          "OemRecordFormat": "Dell",
+          "Severity":        data.Severity,
+          "Action":          data.Action,
+          "Links":           map[string]interface{}{},
+        }})
+
+  })
+
+  am3Svc.AddEventHandler("FaultEntryRemoveFn", FaultEntryRemove, func(event eh.Event) {
+    data, ok := event.Data().(*FaultEntryRmData)
+    if !ok {
+      logger.Error("FaultEntryRemove event did not match", "type", event.EventType, "data", event.Data())
+      return
+    }
+
+    uri := fmt.Sprintf("%s/%s", fault_collection_uri, data.Name)
+
+    id, ok := d.GetAggregateIDOK(uri)
+    if ok {
+      d.CommandHandler.HandleCommand(context.Background(), &domain.RemoveRedfishResource{ID: id})
+    } else {
+      if len(tombstones) == fault_lim {
+        tombstones = tombstones[1:]
+      }
+
+      if !in_array(data.Name, tombstones) {
+        tombstones = append(tombstones, data.Name)
+      }
+    }
+
+  })
+
+  am3Svc.AddEventHandler("FaultEntriesClearFn", FaultEntriesClear, func(event eh.Event) {
+    logger.Debug("Clearing all uris within base_uri", "base_uri", fault_collection_uri)
+
+    go func() {
+      uriList := d.FindMatchingURIs(func(uri string) bool { return path.Dir(uri) == fault_collection_uri })
+      for _, uri := range uriList {
+        id, ok := d.GetAggregateIDOK(uri)
+        if ok {
+          ev := ev.NewSyncEvent(domain.RedfishResourceRemoved, &domain.RedfishResourceRemovedData{
+            ID: id,
+            ResourceURI: uri,
+          }, time.Now())
+          ev.Add(1)
+          d.EventBus.PublishEvent(context.Background(), ev)
+          ev.Wait()
+        }
+      }
+    }()
+  })
 
   am3Svc.AddEventHandler("LogEventFn", LogEvent, func(event eh.Event) {
     data, ok := event.Data().(*LogEventData)
@@ -601,8 +728,6 @@ func addAM3Functions(logger log.Logger, am3Svc *am3.Service, d *domain.DomainObj
       fmt.Println("targetMap: ", targetMap)
 
     }
-
-
   })
 
 
@@ -641,6 +766,12 @@ func addAM3Functions(logger log.Logger, am3Svc *am3.Service, d *domain.DomainObj
      //Is allowed because already created logs can't have their values changed
     {Prefix: "/redfish/v1/Managers/CMC.Integrated.1/Logs/Lclog",
      URI: "/redfish/v1/Managers/CMC.Integrated.1/Logs/Lclog",
+     Property: "Members",
+     Format: "expand"},
+
+     //Is allowed because already created faults can't have their values changed
+    {Prefix: "/redfish/v1/Managers/CMC.Integrated.1/Logs/FaultList",
+     URI: "/redfish/v1/Managers/CMC.Integrated.1/Logs/FaultList",
      Property: "Members",
      Format: "expand"},
 
@@ -914,7 +1045,6 @@ func addAM3Functions(logger log.Logger, am3Svc *am3.Service, d *domain.DomainObj
     }
 
   })
-
 }
 
 // TODO: these need to be moved into a common  location (they don't really belong here)
@@ -973,4 +1103,22 @@ func parent_uri(resource_uri string) string {
     split := strings.Split(resource_uri, "/")
     parent_uri := strings.Join(split[:len(split)-1], "/")
     return parent_uri
+}
+
+func in_array(a string, list []string) bool {
+  for _, b := range list {
+    if b == a {
+      return true
+    }
+  }
+  return false
+}
+
+func in_array_index(a string, list []string) int {
+  for i, b := range list {
+    if b == a {
+      return i
+    }
+  }
+  return -1
 }

@@ -1267,7 +1267,7 @@ awesome_mapper:
 
 
     lclog: # INPROGRESS EXPAND (ALLOWED)
-    #- { SelectEventType: "LogEvent",
+    # - { SelectEventType: "LogEvent",
     #     Select: "data.LogAlert == 'log' || data.LogAlert == 'log alert'",
     #     Exec: [ "addlclog(collection_uri, data)" ]}
     # - { SelectEventType: "LogEvent",
