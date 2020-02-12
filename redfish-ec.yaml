@@ -563,8 +563,6 @@ views:
       "Models":
         "default":  {}
       "Controllers":
-        - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "lclog", "uniquename": "'addlog_lclog_' + view.GetURI()", "passthru": {'collection_uri': 'view.GetURI()'} }
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/Managers/' + FQDD + '/Logs/Lclog'"
@@ -761,11 +759,11 @@ views:
           "params":
       "Aggregate": "power"
       "ExecPost": [
+        "instantiate('power_control', 'FQDD', FQDD )",
         "instantiate('power_trends', 'FQDD', FQDD)",
         "instantiate('power_histogram', 'FQDD', FQDD, 'trend', 'Hour')",
         "instantiate('power_histogram', 'FQDD', FQDD, 'trend', 'Day')",
         "instantiate('power_histogram', 'FQDD', FQDD, 'trend', 'Week')",
-        "instantiate('power_control', 'FQDD', FQDD )",
         ]
 
   "psu_slot":
@@ -1265,7 +1263,6 @@ awesome_mapper:
           ModelUpdate: [ {Property: "temperature_uris", Query: "removefromset(model, propname, data.ResourceURI)"} ]}
       # thermal health data handled in AM3
 
-
     lclog: # INPROGRESS EXPAND (ALLOWED)
     # - { SelectEventType: "LogEvent",
     #     Select: "data.LogAlert == 'log' || data.LogAlert == 'log alert'",
@@ -1287,6 +1284,7 @@ awesome_mapper:
       - { SelectEventType: "FaultEntriesClear",
           SelectFN: "true",
           Exec: [ "clearuris(collection_uri)" ]}
+
 
     task_service:
       - { SelectEventType: "RedfishResource:created",

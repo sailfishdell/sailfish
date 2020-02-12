@@ -22,7 +22,6 @@ import (
   "github.com/superchalupa/sailfish/src/ocp/eventservice"
 	"github.com/superchalupa/sailfish/src/dell-resources/dm_event"
 	"github.com/superchalupa/sailfish/godefs"
-	"github.com/superchalupa/sailfish/src/dell-resources/attributedef"
 	"github.com/superchalupa/sailfish/src/log"
 	"github.com/superchalupa/sailfish/src/ocp/am3"
 	"github.com/superchalupa/sailfish/src/ocp/eventservice"
@@ -599,7 +598,6 @@ func addAM3Functions(logger log.Logger, am3Svc *am3.Service, d *domain.DomainObj
           }})
 
       uriList := d.FindMatchingURIs(func(uri string) bool { return path.Dir(uri) == collection_uri })
-      fmt.Println("LEN URLIST: ", len(uriList))
 
       if len(uriList) > MAX_LOGS {
         // dont need to sort it until we know we are too long
@@ -676,9 +674,7 @@ func addAM3Functions(logger log.Logger, am3Svc *am3.Service, d *domain.DomainObj
   })
 
 
-  attributeLinks = []AttributeLink {
-    //THESE ONLY WORK BECAUSE THE AGGREGATES ARE CREATED VIA COMPONENT EVENT, AND NOT VIA ATTRIBUTE UPDATED EVENT
-    //IF ATTRIBUTE UPDATED EVENT CREATED THE RESOURCE AND TRIGGERED A COLLECTION UPDATE, POTENTIAL DATA RACE?
+  /*attributeLinks = []AttributeLink {
     {FQDD: `PSU\.Slot\.\d+`,
      FullURI: "/redfish/v1/Chassis/System.Chassis.1/Power/PowerSupplies",
      CollectionURI: "/redfish/v1/Chassis/System.Chassis.1/Power",
@@ -686,8 +682,6 @@ func addAM3Functions(logger log.Logger, am3Svc *am3.Service, d *domain.DomainObj
     },
   }
 
-  // Start addressing AttributeUpdated Events
-  //attribute_mappings := map[string][]string{}
   am3Svc.AddEventHandler("AttributeUpdatedFn", attributedef.AttributeUpdated, func(event eh.Event) {
     data, ok := event.Data().(*attributedef.AttributeUpdatedData)
     if !ok {
@@ -709,7 +703,6 @@ func addAM3Functions(logger log.Logger, am3Svc *am3.Service, d *domain.DomainObj
       }
 
       fullURI := a.FullURI+"/"+fqdd
-      fmt.Println("Full URI: ", fullURI)
       updated_uuid, ok := d.GetAggregateIDOK(fullURI)
       if !ok {
         logger.Error("URI not found", "URI", fullURI)
@@ -724,11 +717,8 @@ func addAM3Functions(logger log.Logger, am3Svc *am3.Service, d *domain.DomainObj
       results := domain.Flatten(&redfishResource.Properties, false)
       targetMap := results.(map[string]interface{})
 
-      fmt.Println("updated_uuid: ", collection_uuid)
-      fmt.Println("targetMap: ", targetMap)
-
     }
-  })
+  })*/
 
 
   collections = []Collection{
