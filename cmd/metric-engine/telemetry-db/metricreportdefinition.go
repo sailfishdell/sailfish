@@ -284,7 +284,7 @@ func validateMRD(mrd *MetricReportDefinition) {
 	case metric.OnRequest:
 		// Implicitly force Updates/Actions/Period, validate TimeSpan
 		mrd.Updates = metric.AppendWrapsWhenFull
-		mrd.Actions = []string{"LogToMetricReportsCollection"}
+		mrd.Actions = []string{}
 		mrd.Period = 0                            // Period must be zero for OnChange
 		TimeSpanMust(mrd.TimeSpan >= MinTimeSpan) // OnRequest requires nonzero TimeSpan
 
