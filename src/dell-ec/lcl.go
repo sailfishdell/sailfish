@@ -13,6 +13,7 @@ import (
 
 	"github.com/superchalupa/sailfish/src/log"
 	"github.com/superchalupa/sailfish/src/ocp/awesome_mapper2"
+  "github.com/superchalupa/sailfish/src/ocp/am3"
 	"github.com/superchalupa/sailfish/src/ocp/eventservice"
 	"github.com/superchalupa/sailfish/src/ocp/model"
 	"github.com/superchalupa/sailfish/src/ocp/testaggregate"
@@ -73,7 +74,7 @@ early_out:
 	return ret_string
 }
 
-func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.CommandHandler, d *domain.DomainObjects) {
+func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, am3Svc *am3.Service, ch eh.CommandHandler, d *domain.DomainObjects) {
 	awesome_mapper2.AddFunction("health_alert", func(args ...interface{}) (interface{}, error) {
 		ss, ok := args[0].(string)
 		if !ok {
@@ -107,38 +108,6 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 		return true, nil
 	})
 
-	awesome_mapper2.AddFunction("has_swinv_model", func(args ...interface{}) (interface{}, error) {
-		//fmt.Printf("Check to see if the new resource has an 'swinv' model\n")
-
-		resourceURI, ok := args[0].(string)
-		if !ok || resourceURI == "" {
-			//fmt.Printf("has_swinv: no resource uri passed or not string\n")
-			return false, nil
-		}
-
-		//fmt.Printf("has_swinv URI (%s)\n", resourceURI)
-
-		v, err := domain.InstantiatePlugin(domain.PluginType(resourceURI))
-		if err != nil || v == nil {
-			//fmt.Printf("has_swinv couldn't instantiate view for URI (%s): %s\n", resourceURI, err)
-			return false, nil
-		}
-
-		vw, ok := v.(*view.View)
-		if !ok {
-			//fmt.Printf("has_swinv instantiated non-view\n")
-			return false, nil
-		}
-
-		mdl := vw.GetModel("swinv")
-		if mdl == nil {
-			//fmt.Printf("has_swinv NO SWINV MODEL (not an error)\n")
-			return false, nil
-		}
-
-		return true, nil
-	})
-
 	var syncModels func(m *model.Model, updates []model.Update)
 	type newfirm struct {
 		uri  string
@@ -148,25 +117,33 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 	trigger := make(chan struct{})
 	firmwareInventoryViews := map[string]*view.View{}
 
-	awesome_mapper2.AddFunction("add_swinv", func(args ...interface{}) (interface{}, error) {
-		resourceURI, ok := args[0].(string)
-		if !ok || resourceURI == "" {
-			return false, nil
-		}
+  am3Svc.AddEventHandler("AddSwinv", domain.RedfishResourceCreated, func(event eh.Event) {
+    data, ok := event.Data().(*domain.RedfishResourceCreatedData)
+    if !ok {
+      logger.Error("Redfish Resource Created event did not match", "type", event.EventType, "data", event.Data())
+      return
+    }
+
+    resourceURI := format_uri(data.ResourceURI)
 
 		v, err := domain.InstantiatePlugin(domain.PluginType(resourceURI))
 		if err != nil || v == nil {
-			return false, nil
+			return
 		}
 
 		vw, ok := v.(*view.View)
 		if !ok {
-			return false, nil
+			return
+		}
+
+		mdl := vw.GetModel("swinv")
+		if mdl == nil {
+			return
 		}
 
 		mdlMap := vw.GetModels("swinv")
 		if len(mdlMap) == 0 {
-			return false, nil
+			return
 		}
 
 		mdls := []*model.Model{}
@@ -177,8 +154,6 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 		}
 
 		newchan <- newfirm{resourceURI, mdls}
-
-		return true, nil
 	})
 
 	syncModels = func(m *model.Model, updates []model.Update) {

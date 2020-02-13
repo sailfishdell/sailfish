@@ -598,8 +598,6 @@ views:
       "Models":
         "default": {}
       "Controllers":
-        - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "update_service", "uniquename": "'firmware_inventory'" }
       "View":
         - "fn": "stdFormatters"
           "params":
@@ -1060,8 +1058,6 @@ views:
       "Models":
         "default": {}
       "Controllers":
-        - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "task_service", "uniquename": "'task_service'"}
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/TaskService/Tasks'"
@@ -1285,16 +1281,14 @@ awesome_mapper:
           SelectFN: "true",
           Exec: [ "clearuris(collection_uri)" ]}
 
-
-    task_service:
-      - { SelectEventType: "RedfishResource:created",
-          Select: "data.ResourceURI == rooturi + '/Chassis/System.Chassis.1/Attributes'",
-          Exec: ["add_attributes(data.ResourceURI)"] }
-
-    update_service:
-      - { SelectEventType: "RedfishResource:created",
-          Select: "has_swinv_model(data.ResourceURI)",
-          Exec: ["add_swinv(data.ResourceURI)"] }
+    certificate:
+      - { SelectEventType: "FileReadEvent",
+          Select: "data.URI == 'CertificateInventory' && data.FQDD == FQDD",
+          Process: { "name": "am3FileReadEvent", "params":{"Conv":"empty_to_null", "Field":"CertificateSigningRequest"}}}
+      # certificate data is read on demand, not sure of AM3 integration
+      - { SelectEventType: "FileReadEvent",
+          Select: "data.URI == 'FactoryIdentity' && data.FQDD == FQDD",
+          ModelUpdate: [ { Property: "certificate", Query: "empty_to_null(data.Content)" } ] }
 
     slot:
       - { SelectEventType: "AttributeUpdated",

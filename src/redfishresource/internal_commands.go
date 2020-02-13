@@ -340,27 +340,20 @@ func UpdateCollection(a *RedfishResourceAggregate, pathSlice []string, v interfa
 				return fmt.Errorf("Type assert failed, interface list assertion: %s, string assertion: %s", ok1, ok2)
 			}
 
-			index, ok := locationOf(aggSlice, vStr)
-			if !ok {
-				return errors.New("slice elements not formatted properly")
-			}
-
 			switch format {
 			case "expand": //TODO: expand values will not be updated if the original agg is updated
-				if index == -1 {
-					aggSlice = append(aggSlice, vMap)
-				} else { // replace expanded uri with updated version
-					aggSlice[index] = vMap
-				}
+				aggSlice = append(aggSlice, vMap)
 				k2.Value = []interface{}{}
 				k2.Parse(aggSlice)
 			case "formatOdataList":
-				if index == -1 {
-					aggSlice = append(aggSlice, map[string]interface{}{"@odata.id":vStr})
-					k2.Value = []interface{}{}
-					k2.Parse(aggSlice)
-				}
+				aggSlice = append(aggSlice, map[string]interface{}{"@odata.id":vStr})
+				k2.Value = []interface{}{}
+				k2.Parse(aggSlice)
 			case "remove":
+				index, ok := locationOf(aggSlice, vStr)
+				if !ok {
+					return errors.New("slice elements not formatted properly")
+				}
 				if index >= 0 {
 					aggSlice = append(aggSlice[:index], aggSlice[index+1:]...)
 					k2.Value = []interface{}{}
@@ -403,10 +396,6 @@ func locationOf(array []interface{}, target_uri interface{}) (location int, ok b
 				break
 			}
 		}
-	}
-
-	if location >= 0 {
-		fmt.Println("TARGET URI ", target_uri, " IS ALREADY PRESENT IN THE SLICE")
 	}
 
 	return

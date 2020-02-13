@@ -85,7 +85,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	attributes.RegisterAggregate(instantiateSvc)
 	update_service.RegisterAggregate(instantiateSvc)
 	task_service.RegisterAggregate(instantiateSvc)
-	task_service.InitTask(logger, instantiateSvc, ch, ctx)
+	task_service.InitTask(logger, instantiateSvc, am3Svc, ch, ctx)
 	fans.RegisterAggregate(instantiateSvc)
 	RegisterAggregate(instantiateSvc)
 	RegisterIOMAggregate(instantiateSvc)
@@ -94,7 +94,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	RegisterCMCAggregate(instantiateSvc)
 	RegisterCertAggregate(instantiateSvc)
 	AddECInstantiate(logger, instantiateSvc)
-	initLCL(logger, instantiateSvc, ch, d)
+	initLCL(logger, instantiateSvc, am3Svc, ch, d)
 	initThermalSensor(logger, instantiateSvc, ch, d)
 	inithealth(ctx, logger, ch, d)
 	stdmeta.InitializeSsoinfo(d) //remove when ready

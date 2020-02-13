@@ -7,7 +7,7 @@ import (
 
 	a "github.com/superchalupa/sailfish/src/dell-resources/attributedef"
 	"github.com/superchalupa/sailfish/src/log"
-	"github.com/superchalupa/sailfish/src/ocp/awesome_mapper2"
+  "github.com/superchalupa/sailfish/src/ocp/am3"
 	"github.com/superchalupa/sailfish/src/ocp/model"
 	"github.com/superchalupa/sailfish/src/ocp/testaggregate"
 	"github.com/superchalupa/sailfish/src/ocp/view"
@@ -38,7 +38,7 @@ func getValidString(namemap, params map[string]interface{}, srcName, paramName s
 	return true
 }
 
-func InitTask(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.CommandHandler, ctx context.Context) {
+func InitTask(logger log.Logger, instantiateSvc *testaggregate.Service, am3Svc *am3.Service, ch eh.CommandHandler, ctx context.Context) {
 
 	//TODO: figure out what exactly updating the args should actually do
 	/*awesome_mapper2.AddFunction("update_task_args", func (args ... interface{}) (interface{}, error) {
@@ -66,32 +66,36 @@ func InitTask(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Co
 	// 			Not sure about the design here. need more comments. Looks like we are watching a single model at a time?
 
 	//add system.chassis.1/attributes
-	awesome_mapper2.AddFunction("add_attributes", func(args ...interface{}) (interface{}, error) {
-		resourceURI, ok := args[0].(string)
-		if !ok || resourceURI == "" {
-			return false, nil
-		}
+  am3Svc.AddEventHandler("add_attributes", domain.RedfishResourceCreated, func(event eh.Event) {
+    data, ok := event.Data().(*domain.RedfishResourceCreatedData)
+    if !ok {
+      logger.Error("Redfish Resource Created event did not match", "type", event.EventType, "data", event.Data())
+      return
+    }
+
+    resourceURI := data.ResourceURI
+    if resourceURI != "/redfish/v1/Chassis/System.Chassis.1/Attributes" {
+      return
+    }
 
 		v, err := domain.InstantiatePlugin(domain.PluginType(resourceURI))
 		if err != nil || v == nil {
-			return false, nil
+			return
 		}
 
 		vw, ok := v.(*view.View)
 		if !ok {
-			return false, nil
+			return
 		}
 
 		mdl := vw.GetModel("default")
 		if mdl == nil {
-			return false, nil
+			return
 		}
 
 		mdl.AddObserver("task", syncModels)
 
 		newchan <- newtask{resourceURI, mdl} //model is created, fire a notification
-
-		return true, nil
 	})
 
 	syncModels = func(m *model.Model, updates []model.Update) { //whenever this model is updated, fire a notification
