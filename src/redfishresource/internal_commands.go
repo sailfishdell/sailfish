@@ -12,7 +12,6 @@ import (
 	"github.com/superchalupa/sailfish/src/log"
 )
 
-//!!!!!!!!!!!!!FORMAT INDENTATION!!!!!!!!!!!!!//
 
 func init() {
 	eh.RegisterCommand(func() eh.Command { return &CreateRedfishResource{} })
@@ -219,10 +218,10 @@ func (c *UpdateRedfishResourceProperties2) CommandType() eh.CommandType {
 }
 
 type UpdateRedfishResourceCollection struct {
-	ID            eh.UUID `json:"id"`
-	Properties    map[string]interface{}
-	Format        string
-	TargetMap 	  map[string]interface{}
+	ID         eh.UUID `json:"id"`
+	Properties map[string]interface{}
+	Format     string
+	TargetMap  map[string]interface{}
 }
 
 // ShoudlSave satisfies the ShouldSaver interface to tell CommandHandler to save this to DB
@@ -345,8 +344,20 @@ func UpdateCollection(a *RedfishResourceAggregate, pathSlice []string, v interfa
 				aggSlice = append(aggSlice, vMap)
 				k2.Value = []interface{}{}
 				k2.Parse(aggSlice)
+			case "expand_prepend":
+				aggSlice = append(aggSlice, map[string]interface{}{})
+				copy(aggSlice[1:], aggSlice)
+				aggSlice[0] = vMap
+				k2.Value = []interface{}{}
+				k2.Parse(aggSlice)
 			case "formatOdataList":
-				aggSlice = append(aggSlice, map[string]interface{}{"@odata.id":vStr})
+				aggSlice = append(aggSlice, map[string]interface{}{"@odata.id": vStr})
+				k2.Value = []interface{}{}
+				k2.Parse(aggSlice)
+			case "formatOdataList_prepend":
+				aggSlice = append(aggSlice, map[string]interface{}{})
+				copy(aggSlice[1:], aggSlice)
+				aggSlice[0] = map[string]interface{}{"@odata.id": vStr}
 				k2.Value = []interface{}{}
 				k2.Parse(aggSlice)
 			case "remove":
@@ -354,6 +365,7 @@ func UpdateCollection(a *RedfishResourceAggregate, pathSlice []string, v interfa
 				if !ok {
 					return errors.New("slice elements not formatted properly")
 				}
+				//fmt.Println("Index of ", vStr, ": ", index)
 				if index >= 0 {
 					aggSlice = append(aggSlice[:index], aggSlice[index+1:]...)
 					k2.Value = []interface{}{}
@@ -406,38 +418,38 @@ func GetValueinAgg(a *RedfishResourceAggregate, pathSlice []string) interface{} 
 	defer a.Properties.Unlock()
 	loc, ok := a.Properties.Value.(map[string]interface{})
 	if !ok {
-		return nil, fmt.Errorf("getValueinAgg: aggregate value is not a map[string]interface{}, but %T", a.Properties.Value)
+		return fmt.Errorf("getValueinAgg: aggregate value is not a map[string]interface{}, but %T", a.Properties.Value)
 	}
 
 	plen := len(pathSlice) - 1
 	for i, p := range pathSlice {
 		k, ok := loc[p]
 		if !ok {
-			return nil, fmt.Errorf("UpdateAgg Failed can not find %s in %+v", p, loc)
+			return fmt.Errorf("UpdateAgg Failed can not find %s in %+v", p, loc)
 		}
 		switch k.(type) {
 		case *RedfishResourceProperty:
 			k2, ok := k.(*RedfishResourceProperty)
 			if !ok {
-				return nil, fmt.Errorf("UpdateAgg Failed, RedfishResourcePropertyFailed")
+				return fmt.Errorf("UpdateAgg Failed, RedfishResourcePropertyFailed")
 			}
 			// metric events have the data appended
 			if plen == i {
-				return k2.Value, nil
+				return k2.Value
 			} else {
 				tmp := k2.Value
 				loc, ok = tmp.(map[string]interface{})
 				if !ok {
-					return nil, fmt.Errorf("UpdateAgg Failed %s type cast to map[string]interface{} for %+v  errored for %+v", a.ResourceURI, p, pathSlice)
+					return fmt.Errorf("UpdateAgg Failed %s type cast to map[string]interface{} for %+v  errored for %+v", a.ResourceURI, p, pathSlice)
 				}
 			}
 
 		default:
-			return nil, fmt.Errorf("agg update for slice %+v, received type %T instead of *RedfishResourceProperty", pathSlice, k)
+			return fmt.Errorf("agg update for slice %+v, received type %T instead of *RedfishResourceProperty", pathSlice, k)
 		}
 	}
 
-	return nil, fmt.Errorf("path not found", "path", pathSlice)
+	return fmt.Errorf("path not found", "path", pathSlice)
 
 }
 
@@ -507,7 +519,6 @@ func (c *UpdateRedfishResourceCollection) Handle(ctx context.Context, a *Redfish
 	}
 	return err
 }
-
 
 type UpdateMetricRedfishResource struct {
 	ID               eh.UUID                `json:"id"`
