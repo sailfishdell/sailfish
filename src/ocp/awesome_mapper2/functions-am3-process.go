@@ -236,57 +236,6 @@ func init() {
 		return aggUpdateFn, nil, nil
 	})
 
-	powercap_enabled := false
-	AddAM3ProcessSetupFunction("updatePowerCapFlag", func(logger log.Logger, processConfig interface{}) (processFunc, processSetupFunc, error) {
-		// Model Update Function
-		aggUpdateFn := func(mp *MapperParameters, event eh.Event, ch eh.CommandHandler, d BusObjs) error {
-			data, ok := event.Data().(*a.AttributeUpdatedData)
-			if !ok {
-				logger.Error("updatePowerCapFlag does not have AttributeUpdated event", "type", event.EventType, "data", event.Data())
-				return errors.New("updatePowerCapFlag did not receive AttributeUpdated event")
-			}
-
-			if data.Value == "Enabled" {
-				powercap_enabled = true
-			} else {
-				powercap_enabled = false
-			}
-			return nil
-		}
-
-		return aggUpdateFn, nil, nil
-	})
-
-	AddAM3ProcessSetupFunction("updatePowerLimit", func(logger log.Logger, processConfig interface{}) (processFunc, processSetupFunc, error) {
-		// Model Update Function
-		aggUpdateFn := func(mp *MapperParameters, event eh.Event, ch eh.CommandHandler, d BusObjs) error {
-			data, ok := event.Data().(*a.AttributeUpdatedData)
-			if !ok {
-				logger.Error("updatePowerLimit does not have AttributeUpdated event", "type", event.EventType, "data", event.Data())
-				return errors.New("updatePowerLimit not receive AttributeUpdated")
-			}
-			powerlimit := 0
-
-			if powercap_enabled {
-				powerlimit, ok = data.Value.(int)
-				if !ok {
-					return errors.New("power limit is not an integer")
-				}
-			}
-
-			ch.HandleCommand(mp.ctx,
-				&domain.UpdateRedfishResourceProperties2{
-					ID: mp.uuid,
-					Properties: map[string]interface{}{
-						"PowerLimit/LimitInWatts": powerlimit,
-					},
-				})
-
-			return nil
-		}
-		return aggUpdateFn, nil, nil
-	})
-
 	AddAM3ProcessSetupFunction("am3AttributeUpdated", func(logger log.Logger, processConfig interface{}) (processFunc, processSetupFunc, error) {
 		aggUpdateFn := func(mp *MapperParameters, event eh.Event, ch eh.CommandHandler, d BusObjs) error {
 			data, ok := event.Data().(*a.AttributeUpdatedData)

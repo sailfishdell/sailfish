@@ -17,6 +17,7 @@ import (
 	"github.com/superchalupa/sailfish/src/ocp/telemetryservice"
 
 	"github.com/superchalupa/sailfish/godefs"
+	"github.com/superchalupa/sailfish/src/dell-resources/attributedef"
 	"github.com/superchalupa/sailfish/src/log"
 	ev "github.com/superchalupa/sailfish/src/looplab/event"
 	"github.com/superchalupa/sailfish/src/ocp/am3"
@@ -276,6 +277,150 @@ func addAM3Functions(logger log.Logger, am3Svc *am3.Service, d *domain.DomainObj
 			})
 	})
 
+	powercap_enabled := false
+	am3Svc.AddEventHandler("Am3AttributeUpdatedFn", attributedef.AttributeUpdated, func(event eh.Event) {
+		data, ok := event.Data().(*attributedef.AttributeUpdatedData)
+		if !ok {
+			logger.Error("Attribute Updated Event did not have event data", "type", event.EventType, "data", event.Data())
+			return
+		}
+		URI := ""
+		FQDD := data.FQDD
+		name := data.Name
+		value := data.Value
+		key := ""
+		switch {
+
+		case isRowOrColumn(FQDD, name, "Rows"):
+			value, ok = value_to_string(value)
+			if !ok {
+				logger.Error("data", "value", value, "parsed", ok)
+			}
+
+			key = "Rows"
+			URI = "/redfish/v1/Chassis/System.Chassis.1/SlotConfigs/SlotConfig." + data.Index
+			break
+
+		case isRowOrColumn(FQDD, name, "Columns"):
+			value, ok = value_to_string(value)
+			if !ok {
+				logger.Error("data", "value", value, "parsed", ok)
+			}
+			key = "Columns"
+			URI = "/redfish/v1/Chassis/System.Chassis.1/SlotConfigs/SlotConfig." + data.Index
+			break
+
+		case isSledProfile(FQDD, name):
+			key = "SledProfile"
+			FQDDParts := strings.SplitN(FQDD, ".", 3)
+			if len(FQDDParts) < 3 {
+				logger.Error("Got a wrong sled profile FQDD", "FQDD", FQDD)
+				return
+			}
+			// FQDDParts will be like ["System", "Modular", "1a"]
+			// More Validity checks
+			if len(FQDDParts[2]) > 1 {
+				return
+			}
+			if _, err := strconv.Atoi(FQDDParts[2]); err != nil {
+				return
+			}
+
+			URI = "/redfish/v1/Chassis/System.Chassis.1/Slots/SledSlot." + FQDDParts[2]
+			break
+
+		case name == "PowerCapSetting" && FQDD == "System.Chassis.1":
+			value, ok = value.(string)
+			if !ok {
+				logger.Error("power cap is not a string")
+				return
+			}
+			updatePowerCapFlag(value.(string), &powercap_enabled)
+			return
+
+		case name == "PowerCapValue" && FQDD == "System.Chassis.1":
+			key = "PowerLimit/LimitInWatts"
+			powerlimit := 0
+			if powercap_enabled {
+				powerlimit, ok = data.Value.(int)
+				if !ok {
+					logger.Error("power limit is not an integer")
+					return
+				}
+			}
+
+			value = powerlimit
+			URI = "/redfish/v1/Chassis/System.Chassis.1/Power/PowerControl"
+			break
+
+		case name == "ChassisPowerStatus" && FQDD == "System.Chassis.1":
+			key = "PowerState"
+			value, ok = value.(string)
+			if !ok {
+				logger.Error("power state is not a string")
+				return
+			}
+			value = map_power_state(value.(string))
+			URI = "/redfish/v1/Chassis/" + FQDD
+			break
+		default:
+			return
+
+		}
+
+		uuid, ok := d.GetAggregateIDOK(URI)
+		if !ok {
+			logger.Error("Attribute not present at URI for attribute update", "FQDD", FQDD, "URI", URI)
+			return
+		}
+
+		d.CommandHandler.HandleCommand(context.Background(),
+			&domain.UpdateRedfishResourceProperties2{
+				ID: uuid,
+				Properties: map[string]interface{}{
+					key: value,
+				},
+			})
+	})
+
+	am3Svc.AddEventHandler("IomCapabilityFn", dm_event.IomCapability, func(event eh.Event) {
+		data, ok := event.Data().(*dm_event.IomCapabilityData)
+		if !ok {
+			logger.Error("Iom Capability event did not have Iom capability event data", "type", event.EventType, "data", event.Data())
+			return
+		}
+
+		FQDD := data.Name
+		if !strings.Contains(FQDD, "IOM.Slot.") {
+			return
+		}
+		URI := "/redfish/v1/Chassis/" + FQDD + "/IOMConfiguration"
+		uuid, ok := d.GetAggregateIDOK(URI)
+		if !ok {
+			logger.Error("Got am iomcapability event object for something that doesn't appear in our redfish tree", "FQDD", FQDD, "Calculated URI", URI)
+			return
+		}
+
+		capabilities := data.Capabilities
+		config_objects := data.IOMConfig_objects
+		rrp_config_objects := &domain.RedfishResourceProperty{Value: config_objects}
+		rrp_config_objects.Parse(config_objects)
+		rrp_capabilities := &domain.RedfishResourceProperty{Value: config_objects}
+		rrp_capabilities.Parse(capabilities)
+		d.CommandHandler.HandleCommand(context.Background(),
+			&domain.UpdateRedfishResourceProperties2{
+				ID: uuid,
+				Properties: map[string]interface{}{
+					"Id":                       FQDD,
+					"internal_mgmt_supported":  data.Internal_mgmt_supported,
+					"IOMConfig_objects":        rrp_config_objects,
+					"Capabilities":             rrp_capabilities, 
+					"Capabilities@odata.count": data.CapabilitiesCount,
+				},
+			})
+
+	})
+
 	am3Svc.AddEventHandler("FileReadEventFn", dm_event.FileReadEvent, func(event eh.Event) {
 		data, ok := event.Data().(*dm_event.FileReadEventData)
 		if !ok {
@@ -318,6 +463,81 @@ func addAM3Functions(logger log.Logger, am3Svc *am3.Service, d *domain.DomainObj
 				},
 			})
 
+	})
+
+	am3Svc.AddEventHandler("ThermalSensorEventFn", dm_event.ThermalSensorEvent, func(event eh.Event) {
+		data, ok := event.Data().(*dm_event.ThermalSensorEventData)
+		if !ok {
+			logger.Error("Thermal sensor event did not have thermal event data", "type", event.EventType, "data", event.Data())
+			return
+		}
+		FQDD := data.ObjectHeader.FQDD
+		sensorUri := "/redfish/v1/Chassis/System.Chassis.1/Sensors/Temperatures/" + FQDD
+
+		// create the sensor properties, the temperatures are set to nil to start, values that are not
+		// -128 are left nil.
+		var sensorProperties = map[string]interface{}{
+			"Name":                      data.OffsetDeviceName,
+			"Description":               "Represents the properties for Temperature and Cooling",
+			"LowerThresholdCritical":    nil,
+			"LowerThresholdNonCritical": nil,
+			"MemberId":                  data.OffsetDeviceFQDD,
+			"ReadingCelsius":            nil,
+			"Status": map[string]interface{}{
+				"HealthRollup": health_map(data.SensorHealth),
+				"State":        nil, //hardcoded
+				"Health":       health_map(data.SensorHealth),
+			},
+
+			"Status/HealthRollup":       health_map(data.SensorHealth),
+			"Status/State":              nil, //hardcoded
+			"Status/Health":             health_map(data.SensorHealth),
+			"UpperThresholdCritical":    nil,
+			"UpperThresholdNonCritical": nil,
+		}
+		// update temperatures.
+		updateTemperature(sensorProperties, "ReadingCelsius", data.SensorReading)
+		updateTemperature(sensorProperties, "LowerThresholdCritical", data.LowerCriticalThreshold)
+		updateTemperature(sensorProperties, "LowerThresholdNonCritical", data.LowerWarningThreshold)
+		updateTemperature(sensorProperties, "UpperThresholdCritical", data.UpperCriticalThreshold)
+		updateTemperature(sensorProperties, "UpperThresholdNonCritical", data.UpperWarningThreshold)
+
+		// remove any existing one
+		id, ok := d.GetAggregateIDOK(sensorUri)
+		if ok && !((data.SensorStateMask & 1) == 1) {
+			// exists and needs to be removed
+			logger.Debug("remove sensor", "id", id, "ok", ok, "URI", sensorUri)
+			d.CommandHandler.HandleCommand(context.Background(), &domain.RemoveRedfishResource{ID: id})
+		} else if !ok && ((data.SensorStateMask & 1) == 1) {
+			// doesn't exist but neeeds to be added
+			uuid := eh.NewUUID()
+			logger.Debug("Need to add a sensor", "id", id, "ok", ok, "uuid", uuid, "URI", sensorUri)
+			d.CommandHandler.HandleCommand(
+				context.Background(),
+				&domain.CreateRedfishResource{
+					ID:          uuid,
+					ResourceURI: sensorUri,
+					Type:        "#Thermal.v1_0_0.Temperature",
+					Context:     "/redfish/v1/$metadata#Thermal.Thermal",
+					Privileges: map[string]interface{}{
+						"GET": []string{"Login"},
+					},
+					Properties: sensorProperties,
+				},
+			)
+		} else if ok && ((data.SensorStateMask & 1) == 1) {
+			// exists and needs to be updated
+			logger.Debug("update sensor", "id", id, "URI", sensorUri)
+
+			// only update the values from the sensor event, the rest can stay (they won't change)
+			d.CommandHandler.HandleCommand(
+				context.Background(),
+				&domain.UpdateRedfishResourceProperties{
+					ID:         id,
+					Properties: sensorProperties,
+				},
+			)
+		}
 	})
 
 	am3Svc.AddEventHandler("healthEventHandler", dm_event.HealthEvent, func(event eh.Event) {
@@ -1116,4 +1336,56 @@ func in_array_index(a string, list []string) int {
 		}
 	}
 	return -1
+}
+
+func isSledProfile(FQDD string, Name string) bool {
+	lhs := strings.Contains(FQDD, "System.Modular.")
+	rhs := (Name == "SledProfile")
+	return (lhs && rhs)
+}
+
+func updatePowerCapFlag(Value string, powercap_enabled *bool) {
+
+	if Value == "Enabled" {
+		*powercap_enabled = true
+	} else {
+		*powercap_enabled = false
+	}
+}
+
+func map_power_state(value string) string {
+	switch value {
+	case "Chassis Standby Power State":
+		return "Off"
+	case "Chassis Power On State":
+		return "On"
+	case "Chassis Powering On State":
+		return "PoweringOn"
+	case "Chassis Powering Off State":
+		return "PoweringOff"
+	default:
+		return ""
+	}
+}
+
+func isRowOrColumn(FQDD interface{}, Name interface{}, rowOrColumn interface{}) bool {
+	return (FQDD == "System.Chassis.1" && Name == rowOrColumn)
+}
+
+func value_to_string(value interface{}) (interface{}, bool) {
+	switch t := value.(type) {
+	case uint, uint8, uint16, uint32, uint64:
+		str := strconv.FormatUint(reflect.ValueOf(t).Uint(), 10)
+		return str, true
+	case float32, float64:
+		str := strconv.FormatFloat(reflect.ValueOf(t).Float(), 'G', -1, 64)
+		return str, true
+	case string:
+		return t, true
+	case int, int8, int16, int32, int64:
+		str := strconv.FormatInt(reflect.ValueOf(t).Int(), 10)
+		return str, true
+	default:
+		return nil, false
+	}
 }

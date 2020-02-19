@@ -647,8 +647,6 @@ views:
         - "fn": "ARMapper"
           "params": {"modelname": "default", "cfgsection": "Chassis/System.Chassis", "mappinguniquename": "'system_chassis:' + FQDD ", "AddToView": "ar_mapper"}
         - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "chassis", "uniquename": "'system_chassis:' + FQDD", "passthru": {"FQDD" : "FQDD"} }
-        - "fn": "AM2"
           "params": {"modelname": "default", "cfgsection": "health", "uniquename": "'am2_health_' + FQDD", "passthru": {"health_fqdd": "'Root'"} }
       "View":
         - "fn": "withModel"
@@ -892,8 +890,6 @@ views:
       "Models":
         "default":  {"unique_name": "FQDD" }
       "Controllers":
-        - "fn": "AM2"
-          "params": {"modelname": "default", "cfgsection": "iom_config", "uniquename": "'am2_iom_config_' + FQDD" }
       "View":
         - "fn": "with_URI"
           "params": "rooturi + '/Chassis/' + FQDD + '/IOMConfiguration'"
@@ -1185,9 +1181,6 @@ awesome_mapper:
           ModelUpdate: [ {Property: "fan_uris", Query: "removefromset(model, propname, data.ResourceURI)"} ]}
 
     thermal_sensor:
-      - { SelectEventType: "ThermalSensorEvent",
-          SelectFN: "true",
-          Exec: [ "updateSensorEvent(rooturi + '/Chassis/System.Chassis.1/Sensors/Temperatures', data)" ]}
       - { SelectEventType: "RedfishResource:created",
           SelectFN: "uriCheckWithHash",
           SelectParams: ["rooturi", "/Chassis/System.Chassis.1/Sensors/Temperatures"],
@@ -1204,41 +1197,10 @@ awesome_mapper:
           Select: "data.URI == 'FactoryIdentity' && data.FQDD == FQDD",
           ModelUpdate: [ { Property: "certificate", Query: "empty_to_null(data.Content)" } ] }
 
-
-
-    slot:
-      - { SelectEventType: "AttributeUpdated",
-          SelectFN: "isSledProfile",
-          ModelUpdate: [ {Property: "sled_profile", Query: "data.Value", Default: ""}]}
-
-    slotconfig:
-      - { SelectEventType: "AttributeUpdated",
-          SelectParams: ["Rows"],
-          SelectFN: "isRowOrColumn",
-          Process: { "name": "am3AttributeUpdated", "params":{"Conv":"value_to_string", "Field":"Rows"}}}
-      - { SelectEventType: "AttributeUpdated",
-          SelectParams: ["Columns"],
-          SelectFN: "isRowOrColumn",
-          Process: { "name": "am3AttributeUpdated", "params":{"Conv":"value_to_string", "Field":"Columns"}}}
-
     tasks:
       - { SelectEventType: "AttributeUpdated",
           SelectFN: "isTaskState",
           Process: { "name": "am3AttributeUpdated", "params":{"Conv":"map_task_state", "Field":"TaskState"}}}
-
-    chassis:
-      - { SelectEventType: "AttributeUpdated",
-          Select: "data.FQDD == FQDD && data.Name == 'ChassisPowerStatus'",
-          Process: { "name": "am3AttributeUpdated", "params":{"Conv":"map_power_state", "Field":"PowerState"}}}
-
-
-    iom_config:
-      - { SelectEventType: "IomCapability", Select: "data.Name == FQDD",
-            ModelUpdate: [
-                {Property: "config", Query: "data.IOMConfig_objects" },
-                {Property: "capabilities", Query: "data.Capabilities" },
-                {Property: "managed", Query: "data.Internal_mgmt_supported" },
-                {Property: "capCount", Query: "data.CapabilitiesCount" }]}
 
 
 
@@ -1246,14 +1208,6 @@ awesome_mapper:
       - { SelectEventType: "PowerConsumptionDataObjEvent", SelectFN: "true",
              Process: { "name": "updatePwrConsumptionData", "params":[]}}
 
-      # every chassis object is a power related item. add and remove them as they come
-      - { SelectEventType: "AttributeUpdated",
-          Select: "data.FQDD == 'System.Chassis.1' && data.Name == 'PowerCapSetting'",
-          SelectParams: ["FQDD","System.Chassis.1","Name","PowerCapSetting"],
-          Process: { "name": "updatePowerCapFlag", "params":[]}}
-      - { SelectEventType: "AttributeUpdated",
-          Select: "data.FQDD == 'System.Chassis.1' && data.Name == 'PowerCapValue'",
-          Process: { "name": "updatePowerLimit", "params":[]}}
 
     power_trend:
       - { SelectEventType: "AvgPowerConsumptionStatDataObjEvent", SelectFN: "true",

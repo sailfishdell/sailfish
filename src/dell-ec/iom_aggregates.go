@@ -105,11 +105,11 @@ func RegisterIOMAggregate(s *testaggregate.Service) {
 					},
 					DefaultFilter: "$select=!IOMConfig_objects/sso_info", //remove when ready
 					Properties: map[string]interface{}{
-						"Id@meta":                       vw.Meta(view.PropGET("unique_name")),
-						"internal_mgmt_supported@meta":  vw.Meta(view.PropGET("managed")),
-						"IOMConfig_objects@meta":        vw.Meta(view.PropGET("config")),
-						"Capabilities@meta":             vw.Meta(view.PropGET("capabilities")), //remove when ready
-						"Capabilities@odata.count@meta": vw.Meta(view.PropGET("capCount")),     //remove when ready
+						"Id":                       0, 
+						"internal_mgmt_supported":  "", 
+						"IOMConfig_objects":        []interface{}{},
+						"Capabilities":             []interface{}{}, //remove when ready
+						"Capabilities@odata.count": 0,
 					}}}, nil
 		})
 

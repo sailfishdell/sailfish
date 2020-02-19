@@ -95,7 +95,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	RegisterCertAggregate(instantiateSvc)
 	AddECInstantiate(logger, instantiateSvc)
 	initLCL(logger, instantiateSvc, am3Svc, ch, d)
-	initThermalSensor(logger, instantiateSvc, ch, d)
 	inithealth(ctx, logger, ch, d)
 	stdmeta.InitializeSsoinfo(d) //remove when ready
 
