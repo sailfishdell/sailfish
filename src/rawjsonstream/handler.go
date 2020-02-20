@@ -49,10 +49,18 @@ func StartPipeHandler(logger log.Logger, pipePath string, d busComponents, s inp
 	// so the easiest to code alternative is the one-json-object-per-line model. No newlines allowed inside json.
 
 	scanner := bufio.NewReader(file)
+outer:
 	for {
-		line, _, err := scanner.ReadLine()
-		if err == io.EOF {
-			break // should never happen
+		readLine := true
+		line := []byte{}
+		for readLine {
+			raw_line, isPrefix, err := scanner.ReadLine()
+			readLine = isPrefix
+			line = append(line, raw_line...)
+			if err == io.EOF {
+				fmt.Printf("Got EOF while reading from pipe")
+				break outer // should never happen
+			}
 		}
 		fmt.Printf("Raw line      : %s\n", line)
 
