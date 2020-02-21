@@ -55,7 +55,7 @@ func (c *POST) Handle(ctx context.Context, a *domain.RedfishResourceAggregate) e
 	bl, mrduuid := c.ts.CreateMetricReportDefinition(ctx, c.MRD, data)
 	if !bl {
 		a.PublishEvent(eh.NewEvent(domain.HTTPCmdProcessed, data, time.Now()))
-		return nil 
+		return nil
 	}
 
 	// validates MRD is created successfully
@@ -77,8 +77,8 @@ func (c *POST) Handle(ctx context.Context, a *domain.RedfishResourceAggregate) e
 	r, ok := tmpResponse.(map[string]interface{})
 	if ok {
 		r2 := data.Results.(map[string]interface{})
-		for k, v := range r{
-		    r2[k] = v
+		for k, v := range r {
+			r2[k] = v
 		}
 	}
 

@@ -1,6 +1,5 @@
 package telemetryservice
 
-
 import (
 	"context"
 	"fmt"
@@ -14,7 +13,6 @@ import (
 	eh "github.com/looplab/eventhorizon"
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
 )
-
 
 // internal functions
 // apply wild cards to property and return list of expanded properties
@@ -75,10 +73,9 @@ type MDmeta struct {
 	prop     string
 }
 
-
 func initTelemetryNotebook(ctx context.Context, d *domain.DomainObjects) *NoteBook {
 	telemetryConfig := NoteBook{
-		mrds: map[string]MRDmeta{},
+		mrds:       map[string]MRDmeta{},
 		metric2MRD: map[string]map[string][]*MRDmeta{},
 		ctx:        ctx,
 		d:          d,
@@ -89,13 +86,12 @@ func initTelemetryNotebook(ctx context.Context, d *domain.DomainObjects) *NoteBo
 
 type MRDmeta struct {
 	mrdEnabled bool
-	UUID       eh.UUID             
+	UUID       eh.UUID
 	metrics    map[string][]string // {metric id:[] md prop}
 	wildcard   map[string][]string // { WC Name: []WC Values}
 }
 
-
-// find a better place for me.. 
+// find a better place for me..
 func getRedfishAggregate(ctx context.Context, d *domain.DomainObjects, id eh.UUID) (*domain.RedfishResourceAggregate, error) {
 	agg, err := d.AggregateStore.Load(ctx, domain.AggregateType, id)
 	if err != nil {
@@ -137,7 +133,7 @@ func (ts *NoteBook) getValidMetrics(data *domain.RedfishResourcePropertiesUpdate
 					for j := 0; j < len(m); j++ {
 						wc := rgx.FindString(m[j])
 						slice := strings.Split(m[j], wc)
-						prop := data.ResourceURI + "#" +propPath
+						prop := data.ResourceURI + "#" + propPath
 						if strings.Contains(prop, slice[0]) && strings.Contains(prop, slice[1]) {
 							mID = metricid
 							break
@@ -161,7 +157,7 @@ func (ts *NoteBook) getValidMetrics(data *domain.RedfishResourcePropertiesUpdate
 // When MRD POST arrives.  Clean and Validate MRD contents with existing MDs
 // rc : false - MRD has no good metrics
 // rc : true  - MRD has at least one good metric/metricproperty
-func (ts *NoteBook) CleanAndValidateMRD(data *MRDData) (bool , string){
+func (ts *NoteBook) CleanAndValidateMRD(data *MRDData) (bool, string) {
 	// validate metric ids
 	idx := 0 // output index
 	errmsg := ""
@@ -179,7 +175,7 @@ func (ts *NoteBook) CleanAndValidateMRD(data *MRDData) (bool , string){
 			continue
 		} else {
 			// removes bad metric data
-			errmsg+=cleanMRDMetric(MM, &MRDmetric)
+			errmsg += cleanMRDMetric(MM, &MRDmetric)
 			if len(MRDmetric.MetricProperties) == 0 {
 				// metric properties is empty. skip adding
 				continue
@@ -205,7 +201,7 @@ func (ts *NoteBook) CleanAndValidateMRD(data *MRDData) (bool , string){
 // MRD wildcard validation is not done for now.
 // rc: false - Metric does not have a good property
 // 	true - Metric has at least one good property
-func cleanMRDMetric(MM MDmeta, MRDmetric *Metric) string{
+func cleanMRDMetric(MM MDmeta, MRDmetric *Metric) string {
 	reString := MM.prop
 	substr := strings.Join(MM.wcValues, `\b|`) + `\b`
 	strings.Replace(reString, MM.wcName, substr, -1)
@@ -222,7 +218,7 @@ func cleanMRDMetric(MM MDmeta, MRDmetric *Metric) string{
 			MRDmetric.MetricProperties[idx] = MM.prop
 			idx++
 		} else {
-			errmsg +="property " + MRDprop + " is not valid, "
+			errmsg += "property " + MRDprop + " is not valid, "
 			continue
 		}
 	}
@@ -393,7 +389,7 @@ func (ts *NoteBook) MRDConfigDelete(URI string) {
 	delete(ts.mrds, mrdid)
 }
 
-// For MRD PATCH requests.. 
+// For MRD PATCH requests..
 // TODO
 func (ts *NoteBook) MRDConfigUpdate(URI string) {
 	// update items - metrics, wildcards -- schema says no to wildcards this is likely incorrect
@@ -416,14 +412,14 @@ func (ts *NoteBook) add2metric2MRD(metricid string, props []string, wc map[strin
 				_, ok := ts.metric2MRD[url]
 				if !ok {
 					ts.metric2MRD[url] = map[string][]*MRDmeta{prop: []*MRDmeta{}}
-				} 
-				_, ok =ts.metric2MRD[url][prop]
-				if !ok { 
+				}
+				_, ok = ts.metric2MRD[url][prop]
+				if !ok {
 					ts.metric2MRD[url][prop] = []*MRDmeta{}
 				}
 				//fmt.Println("adding new prop to metric 2MRD", url, prop, mrdMeta)
 				ts.metric2MRD[url][prop] = append(ts.metric2MRD[url][prop], mrdMeta)
-				
+
 			}
 		}
 	}

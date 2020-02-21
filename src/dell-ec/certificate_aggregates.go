@@ -80,7 +80,7 @@ func RegisterCertAggregate(s *testaggregate.Service) {
 					},
 					Properties: map[string]interface{}{
 
-						"Certificate@meta":    map[string]interface{}{"GET": map[string]interface{}{"plugin": "certinfo"}},
+						"Certificate@meta":   map[string]interface{}{"GET": map[string]interface{}{"plugin": "certinfo"}},
 						"Description":        "Certificate Inventory Instance",
 						"DownloadFileFormat": "PEM",
 						"Id":                 "FactoryIdentity.1",

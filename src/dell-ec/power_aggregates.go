@@ -78,8 +78,8 @@ func RegisterAggregate(s *testaggregate.Service) {
 						"GET": []string{"Login"},
 					},
 					Properties: map[string]interface{}{
-						"Name":                     "System Power History",
-						"MemberId":                 "PowerHistogram",
+						"Name":                "System Power History",
+						"MemberId":            "PowerHistogram",
 						"HistoryMaxWattsTime": nil,
 						"HistoryMaxWatts":     0,
 						"HistoryMinWattsTime": nil,

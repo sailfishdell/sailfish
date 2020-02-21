@@ -43,7 +43,6 @@ type mrdPatch struct {
 	//	wildCard map[string][]string
 }
 
-
 func New(ctx context.Context, logger log.Logger, chdler eh.CommandHandler, d *domain.DomainObjects) *TelemetryService {
 	logger = logger.New("module", "telemetry")
 	EventPublisher := eventpublisher.NewEventPublisher()
@@ -57,7 +56,7 @@ func New(ctx context.Context, logger log.Logger, chdler eh.CommandHandler, d *do
 		ew: EventWaiter,
 		ch: chdler,
 
-		nb: initTelemetryNotebook(ctx, d),
+		nb:     initTelemetryNotebook(ctx, d),
 		logger: logger,
 	}
 
@@ -68,13 +67,12 @@ func New(ctx context.Context, logger log.Logger, chdler eh.CommandHandler, d *do
 // EC Sailfish sends MetricValueEvents northbound for consumption into Metric Reports.
 func (ts *TelemetryService) sendMetricEvent(ctx context.Context, metricID string, metricValue interface{}, metricProp string) {
 
-
 	eventData := &MetricValueEventData{
 		// metric id is related to the ID
-		PropertyID:       metricID,
-		Value:    metricValue,
-		Timestamp:      time.Now().UTC().Format("2006-01-02T15:04:05-07:00"),
-		Property: metricProp,
+		PropertyID: metricID,
+		Value:      metricValue,
+		Timestamp:  time.Now().UTC().Format("2006-01-02T15:04:05-07:00"),
+		Property:   metricProp,
 	}
 	ts.d.EventBus.PublishEvent(ctx, eh.NewEvent(MetricValueEvent, eventData, time.Now()))
 }
@@ -149,7 +147,7 @@ func (ts *TelemetryService) CreateMetricReportDefinition(ctx context.Context, mr
 		MessageArgsCt:       0,
 		MessageId:           "Base.1.0.UnrecognizedRequestBody",
 		RelatedProperties:   []string{"MetricReportDefinitions"}, //FIX ME
-		RelatedPropertiesCt: 1,                      //FIX ME
+		RelatedPropertiesCt: 1,                                   //FIX ME
 		Resolution:          "Correct the request body and resubmit the request if it failed.",
 		Severity:            "Warning",
 	}

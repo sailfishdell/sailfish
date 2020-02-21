@@ -19,9 +19,9 @@ func init() {
 
 // Properties should be in the format pathtoprop : prop_value
 type MetricValueEventData struct {
-	Value    interface{}
-	Timestamp      string
-	Property string
+	Value      interface{}
+	Timestamp  string
+	Property   string
 	PropertyID string
 }
 

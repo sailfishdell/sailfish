@@ -26,9 +26,9 @@ import (
 	"github.com/superchalupa/sailfish/src/http_redfish_sse"
 	"github.com/superchalupa/sailfish/src/http_sse"
 	"github.com/superchalupa/sailfish/src/httpinject"
+	"github.com/superchalupa/sailfish/src/ocp/telemetryservice"
 	"github.com/superchalupa/sailfish/src/rawjsonstream"
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
-	"github.com/superchalupa/sailfish/src/ocp/telemetryservice"
 
 	// cert gen
 	"github.com/superchalupa/sailfish/src/tlscert"
