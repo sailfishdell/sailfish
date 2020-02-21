@@ -46,7 +46,7 @@ Startup-Events:
            "Implementation": "PhysicalSensor",
            "MaxReadingRange": 1000,
            "MetricDataType": "Decimal",
-           "MetricProperties": [ "/redfish/v1/Chassis/System.Chassis.1/Sensors/Fans/Fan.Slot.{SlotNumber}#/Oem/Reading"],
+           "MetricProperties": [ "/redfish/v1/Chassis/System.Chassis.1/Sensors/Fans/Fan.Slot.{SlotNumber}#Oem/Reading"],
            "MetricType": "Numeric",
            "MinReadingRange": 0,
            "Name": "Fan RPM Speed Metric Definition",
@@ -83,7 +83,7 @@ Startup-Events:
              "MaxReadingRange": 1000, 
              "MetricDataType": "Decimal", 
              "MetricProperties": [
-                 "/redfish/v1/Chassis/System.Chassis.1/Power/PowerSupplies/PSU.Slot.{SlotNumber}/LineInputVoltage"
+                 "/redfish/v1/Chassis/System.Chassis.1/Power/PowerSupplies/PSU.Slot.{SlotNumber}#LineInputVoltage"
              ], 
              "MetricType": "Numeric", 
              "MinReadingRange": 0, 
@@ -117,7 +117,7 @@ Startup-Events:
            "MaxReadingRange": 1000, 
            "MetricDataType": "Decimal", 
            "MetricProperties": [
-               "/redfish/v1/Chassis/System.Chassis.1/Power/PowerSupplies/PSU.Slot.{SlotNumber}#/Oem/Dell/InputCurrent"
+               "/redfish/v1/Chassis/System.Chassis.1/Power/PowerSupplies/PSU.Slot.{SlotNumber}#Oem/Dell/InputCurrent"
            ], 
            "MetricType": "Numeric", 
            "MinReadingRange": 0, 
@@ -152,7 +152,7 @@ Startup-Events:
            "MaxReadingRange": 1000,
            "MetricDataType": "Decimal",
            "MetricProperties": [
-               "/redfish/v1/Chassis/System.Chassis.1/Sensors/Temperatures/System.Chassis.1%23Temperature.{Sensor}#/ReadingCelsius"
+               "/redfish/v1/Chassis/System.Chassis.1/Sensors/Temperatures/System.Chassis.1%23Temperature.{Sensor}#ReadingCelsius"
            ],
            "MetricType": "Numeric",
            "MinReadingRange": 0,
@@ -192,7 +192,7 @@ Startup-Events:
            "MaxReadingRange": 1000,
            "MetricDataType": "Decimal",
            "MetricProperties": [
-               "/redfish/v1/Chassis/System.Chassis.1/Sensors/Temperatures/System.Chassis.1%23Temperature.{Sensor}#/UpperThresholdNonCritical"
+               "/redfish/v1/Chassis/System.Chassis.1/Sensors/Temperatures/System.Chassis.1%23Temperature.{Sensor}#UpperThresholdNonCritical"
            ],
            "MetricType": "Numeric",
            "MinReadingRange": 0,
@@ -228,7 +228,7 @@ Startup-Events:
                     "MaxReadingRange": 1000, 
                     "MetricDataType": "Decimal", 
                     "MetricProperties": [
-                        "/redfish/v1/Chassis/System.Chassis.1/Sensors/Temperatures/System.Chassis.1%23Temperature.{Sensor}#/UpperThresholdCritical"
+                        "/redfish/v1/Chassis/System.Chassis.1/Sensors/Temperatures/System.Chassis.1%23Temperature.{Sensor}#UpperThresholdCritical"
                     ], 
                     "MetricType": "Numeric", 
                     "MinReadingRange": 0, 
@@ -264,7 +264,7 @@ Startup-Events:
                 "MaxReadingRange": 1000, 
                 "MetricDataType": "Decimal", 
                 "MetricProperties": [
-                    "/redfish/v1/Chassis/System.Chassis.1/Sensors/Temperatures/System.Chassis.1%23Temperature.{Sensor}#/LowerThresholdNonCritical"
+                    "/redfish/v1/Chassis/System.Chassis.1/Sensors/Temperatures/System.Chassis.1%23Temperature.{Sensor}#LowerThresholdNonCritical"
                 ], 
                 "MetricType": "Numeric", 
                 "MinReadingRange": 0, 
@@ -300,7 +300,7 @@ Startup-Events:
                     "MaxReadingRange": 1000, 
                     "MetricDataType": "Decimal", 
                     "MetricProperties": [
-                        "/redfish/v1/Chassis/System.Chassis.1/Sensors/Temperatures/System.Chassis.1%23Temperature.{Sensor}#/LowerThresholdCritical"
+                        "/redfish/v1/Chassis/System.Chassis.1/Sensors/Temperatures/System.Chassis.1%23Temperature.{Sensor}#LowerThresholdCritical"
                     ], 
                     "MetricType": "Numeric", 
                     "MinReadingRange": 0, 
@@ -336,7 +336,7 @@ Startup-Events:
                     "MaxReadingRange": 1000, 
                     "MetricDataType": "Decimal", 
                     "MetricProperties": [
-                        "/redfish/v1/Chassis/System.Chassis.1/Power/PowerTrends-1/Last{timeDuration}#/HistoryMinWatts"
+                        "/redfish/v1/Chassis/System.Chassis.1/Power/PowerTrends-1/Last{timeDuration}#HistoryMinWatts"
                     ], 
                     "MetricType": "Numeric", 
                     "MinReadingRange": 0, 
@@ -367,7 +367,7 @@ Startup-Events:
                     "MaxReadingRange": 1000, 
                     "MetricDataType": "Decimal", 
                     "MetricProperties": [
-                        "/redfish/v1/Chassis/System.Chassis.1/Power/PowerTrends-1/Last{timeDuration}#/HistoryMaxWatts"
+                        "/redfish/v1/Chassis/System.Chassis.1/Power/PowerTrends-1/Last{timeDuration}#HistoryMaxWatts"
                     ], 
                     "MetricType": "Numeric", 
                     "MinReadingRange": 0, 
@@ -398,7 +398,7 @@ Startup-Events:
                     "MaxReadingRange": 1000, 
                     "MetricDataType": "Decimal", 
                     "MetricProperties": [
-                        "/redfish/v1/Chassis/System.Chassis.1/Power/PowerTrends-1/Last{timeDuration}#/HistoryAverageWatts"
+                        "/redfish/v1/Chassis/System.Chassis.1/Power/PowerTrends-1/Last{timeDuration}#HistoryAverageWatts"
                     ], 
                     "MetricType": "Numeric", 
                     "MinReadingRange": 0, 

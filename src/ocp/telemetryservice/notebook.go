@@ -118,6 +118,7 @@ func (ts *NoteBook) getValidMetrics(data *domain.RedfishResourcePropertiesUpdate
 	if !ok {
 		return nil
 	}
+	//fmt.Println(data.ResourceURI, "metric is found")
 
 	// check if the props are added.
 	for propPath, val := range data.PropertyNames {
@@ -125,6 +126,7 @@ func (ts *NoteBook) getValidMetrics(data *domain.RedfishResourcePropertiesUpdate
 		if !ok {
 			continue
 		}
+		//fmt.Println("prop check", propPath, propsinMRD)
 
 		for i := 0; i < len(MRDs); i++ {
 			if MRDs[i].mrdEnabled {
@@ -135,7 +137,7 @@ func (ts *NoteBook) getValidMetrics(data *domain.RedfishResourcePropertiesUpdate
 					for j := 0; j < len(m); j++ {
 						wc := rgx.FindString(m[j])
 						slice := strings.Split(m[j], wc)
-						prop := data.ResourceURI + "#" + propPath
+						prop := data.ResourceURI + "#" +propPath
 						if strings.Contains(prop, slice[0]) && strings.Contains(prop, slice[1]) {
 							mID = metricid
 							break
@@ -406,23 +408,22 @@ func (ts *NoteBook) add2metric2MRD(metricid string, props []string, wc map[strin
 		// expand wildcards now simplify
 		propT := ts.expandProps(metricid, props[i], wc)
 		for j := 0; j < len(propT); j++ {
+			//fmt.Println(propT[j])
 			if strings.Contains(propT[j], "#") {
 				split := strings.Split(propT[j], "#")
 				url := split[0]
 				prop := split[1]
 				_, ok := ts.metric2MRD[url]
-				if ok {
-
-					ts.metric2MRD[url][prop] = append(ts.metric2MRD[url][prop], mrdMeta)
-
-				} else {
-					_, ok := ts.metric2MRD[url][prop]
-					if ok {
-						ts.metric2MRD[url][prop] = append(ts.metric2MRD[url][prop], mrdMeta)
-					} else {
-						ts.metric2MRD[url] = map[string][]*MRDmeta{prop: {mrdMeta}}
-					}
+				if !ok {
+					ts.metric2MRD[url] = map[string][]*MRDmeta{prop: []*MRDmeta{}}
+				} 
+				_, ok =ts.metric2MRD[url][prop]
+				if !ok { 
+					ts.metric2MRD[url][prop] = []*MRDmeta{}
 				}
+				//fmt.Println("adding new prop to metric 2MRD", url, prop, mrdMeta)
+				ts.metric2MRD[url][prop] = append(ts.metric2MRD[url][prop], mrdMeta)
+				
 			}
 		}
 	}
