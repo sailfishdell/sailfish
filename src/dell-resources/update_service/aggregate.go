@@ -87,10 +87,10 @@ func RegisterAggregate(s *testaggregate.Service) {
 						"POST": []string{"ConfigureManager"},
 					},
 					Properties: map[string]interface{}{
-						"Name":                     "Firmware Inventory Collection",
-						"Description":              "Collection of Firmware Inventory",
-						"Members":                  []interface{}{},
-						"Members@odata.count":      0,
+						"Name":                "Firmware Inventory Collection",
+						"Description":         "Collection of Firmware Inventory",
+						"Members":             []interface{}{},
+						"Members@odata.count": 0,
 					}},
 			}, nil
 		})

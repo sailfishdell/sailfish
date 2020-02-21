@@ -12,8 +12,8 @@ import (
 	eh "github.com/looplab/eventhorizon"
 
 	"github.com/superchalupa/sailfish/src/log"
+	"github.com/superchalupa/sailfish/src/ocp/am3"
 	"github.com/superchalupa/sailfish/src/ocp/awesome_mapper2"
-  "github.com/superchalupa/sailfish/src/ocp/am3"
 	"github.com/superchalupa/sailfish/src/ocp/eventservice"
 	"github.com/superchalupa/sailfish/src/ocp/model"
 	"github.com/superchalupa/sailfish/src/ocp/testaggregate"
@@ -117,14 +117,14 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, am3Svc *a
 	trigger := make(chan struct{})
 	firmwareInventoryViews := map[string]*view.View{}
 
-  am3Svc.AddEventHandler("AddSwinv", domain.RedfishResourceCreated, func(event eh.Event) {
-    data, ok := event.Data().(*domain.RedfishResourceCreatedData)
-    if !ok {
-      logger.Error("Redfish Resource Created event did not match", "type", event.EventType, "data", event.Data())
-      return
-    }
+	am3Svc.AddEventHandler("AddSwinv", domain.RedfishResourceCreated, func(event eh.Event) {
+		data, ok := event.Data().(*domain.RedfishResourceCreatedData)
+		if !ok {
+			logger.Error("Redfish Resource Created event did not match", "type", event.EventType, "data", event.Data())
+			return
+		}
 
-    resourceURI := format_uri(data.ResourceURI)
+		resourceURI := format_uri(data.ResourceURI)
 
 		v, err := domain.InstantiatePlugin(domain.PluginType(resourceURI))
 		if err != nil || v == nil {

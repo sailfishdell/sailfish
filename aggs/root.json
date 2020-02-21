@@ -15,7 +15,10 @@
         "Name": "Root Service",
         "Description": "Root Service",
         "RedfishVersion": "1.2.0",
-        "@odata.etag": "W/\"ABC123\""
+        "@odata.etag": "W/\"ABC123\"",
+        "EventService": {
+          "@odata.id": "/redfish/v1/EventService"
+        }
       }
     }
   }

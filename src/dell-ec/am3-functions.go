@@ -818,11 +818,10 @@ func addAM3Functions(logger log.Logger, am3Svc *am3.Service, d *domain.DomainObj
 							"OemRecordFormat": "Dell",
 							"Severity":        severity,
 							"Action":          data.Action,
-				}})
-
+						}})
 
 				uriList := d.FindMatchingURIs(func(uri string) bool { return path.Dir(uri) == collection_uri })
-				if len(uriList)> MAX_LOGS {
+				if len(uriList) > MAX_LOGS {
 					// dont need to sort it until we know we are too long
 					sort.Slice(uriList, func(i, j int) bool {
 						idx_i, _ := strconv.Atoi(path.Base(uriList[i]))

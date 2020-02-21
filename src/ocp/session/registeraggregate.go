@@ -63,9 +63,9 @@ func RegisterAggregate(s *testaggregate.Service) {
 						"DELETE": []string{"ConfigureSelf"},
 					},
 					Properties: map[string]interface{}{
-						"Name":                     "Session Collection",
-						"Members":                  []interface{}{},
-						"Members@odata.count":      0,
+						"Name":                "Session Collection",
+						"Members":             []interface{}{},
+						"Members@odata.count": 0,
 					},
 				},
 				&domain.UpdateRedfishResourceProperties{

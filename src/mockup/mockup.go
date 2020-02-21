@@ -33,10 +33,10 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 
 	actionhandler.Setup(ctx, ch, eb)
 	actionSvc := ah.StartService(ctx, logger, d)
-	uploadSvc := uploadhandler.StartService(ctx, logger, d)
 	am2Svc, _ := awesome_mapper2.StartService(ctx, logger, eb, ch, d)
 	am3Svc, _ := am3.StartService(ctx, logger, "am3 base service", d)
 	instantiateSvc := testaggregate.New(logger, cfgMgr, cfgMgrMu, d, am3Svc)
+	uploadSvc := uploadhandler.StartService(ctx, logger, d)
 	evtSvc := eventservice.New(ctx, cfgMgr, cfgMgrMu, d, instantiateSvc, actionSvc, uploadSvc)
 	eventservice.RegisterAggregate(instantiateSvc)
 	testaggregate.RegisterWithURI(instantiateSvc)

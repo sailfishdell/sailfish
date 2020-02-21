@@ -25,10 +25,10 @@ func RegisterAggregate(s *testaggregate.Service) {
 						"GET": []string{"Login"},
 					},
 					Properties: map[string]interface{}{
-						"Name":                     "Log Service Collection",
-						"Description":              "Collection of Log Services for this Manager",
-						"Members":                  []interface{}{},
-						"Members@odata.count":      0,
+						"Name":                "Log Service Collection",
+						"Description":         "Collection of Log Services for this Manager",
+						"Members":             []interface{}{},
+						"Members@odata.count": 0,
 					}},
 			}, nil
 		})
@@ -138,10 +138,10 @@ func RegisterAggregate(s *testaggregate.Service) {
 						"POST": []string{"ConfigureManager"},
 					},
 					Properties: map[string]interface{}{
-						"Description":              "Providing additional health information for the devices which support rolled up health data",
-						"Name":                     "FaultList Entries Collection",
-						"Members":                  []interface{}{},
-						"Members@odata.count":      0,
+						"Description":         "Providing additional health information for the devices which support rolled up health data",
+						"Name":                "FaultList Entries Collection",
+						"Members":             []interface{}{},
+						"Members@odata.count": 0,
 					}},
 			}, nil
 		})

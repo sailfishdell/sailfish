@@ -7,6 +7,7 @@ require (
 	github.com/etcd-io/bbolt v1.3.2
 	github.com/fsnotify/fsnotify v1.4.7
 	github.com/go-stack/stack v1.8.0 // indirect
+	github.com/go-stomp/stomp v2.0.5+incompatible // indirect
 	github.com/gorilla/context v1.1.1 // indirect
 	github.com/gorilla/mux v1.6.2
 	github.com/inconshreveable/log15 v0.0.0-20180818164646-67afb5ed74ec

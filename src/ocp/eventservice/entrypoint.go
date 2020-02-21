@@ -66,15 +66,15 @@ func New(ctx context.Context, cfg *viper.Viper, cfgMu *sync.RWMutex, d *domain.D
 	go EventWaiter.Run()
 
 	ret := &EventService{
-		d:         d,
-		ew:        EventWaiter,
-		cfg:       cfg,
-		cfgMu:     cfgMu,
-		jc:        CreateWorkers(100, 6),
-		actionSvc: actionSvc,
+		d:     d,
+		ew:    EventWaiter,
+		cfg:   cfg,
+		cfgMu: cfgMu,
+		jc:    CreateWorkers(100, 6),
 		wrap: func(name string, params map[string]interface{}) (log.Logger, *view.View, error) {
 			return instantiateSvc.Instantiate(name, params)
 		},
+		actionSvc: actionSvc,
 	}
 
 	GlobalEventService = ret

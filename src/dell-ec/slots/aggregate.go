@@ -27,9 +27,9 @@ func RegisterAggregate(s *testaggregate.Service) {
 						"GET": []string{"Login"},
 					},
 					Properties: map[string]interface{}{
-						"Name":                     "DellSlotsCollection",
-						"Members":                  []interface{}{},
-						"Members@odata.count":      0,
+						"Name":                "DellSlotsCollection",
+						"Members":             []interface{}{},
+						"Members@odata.count": 0,
 					}},
 			}, nil
 		})
@@ -75,9 +75,9 @@ func RegisterAggregate(s *testaggregate.Service) {
 						"GET": []string{"Login"},
 					},
 					Properties: map[string]interface{}{
-						"Name":                     "DellSlotConfigsCollection",
-						"Members":                  []interface{}{},
-						"Members@odata.count":      0,
+						"Name":                "DellSlotConfigsCollection",
+						"Members":             []interface{}{},
+						"Members@odata.count": 0,
 					}},
 			}, nil
 		})

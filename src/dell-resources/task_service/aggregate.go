@@ -7,7 +7,7 @@ import (
 
 	a "github.com/superchalupa/sailfish/src/dell-resources/attributedef"
 	"github.com/superchalupa/sailfish/src/log"
-  "github.com/superchalupa/sailfish/src/ocp/am3"
+	"github.com/superchalupa/sailfish/src/ocp/am3"
 	"github.com/superchalupa/sailfish/src/ocp/model"
 	"github.com/superchalupa/sailfish/src/ocp/testaggregate"
 	"github.com/superchalupa/sailfish/src/ocp/view"
@@ -66,17 +66,17 @@ func InitTask(logger log.Logger, instantiateSvc *testaggregate.Service, am3Svc *
 	// 			Not sure about the design here. need more comments. Looks like we are watching a single model at a time?
 
 	//add system.chassis.1/attributes
-  am3Svc.AddEventHandler("add_attributes", domain.RedfishResourceCreated, func(event eh.Event) {
-    data, ok := event.Data().(*domain.RedfishResourceCreatedData)
-    if !ok {
-      logger.Error("Redfish Resource Created event did not match", "type", event.EventType, "data", event.Data())
-      return
-    }
+	am3Svc.AddEventHandler("add_attributes", domain.RedfishResourceCreated, func(event eh.Event) {
+		data, ok := event.Data().(*domain.RedfishResourceCreatedData)
+		if !ok {
+			logger.Error("Redfish Resource Created event did not match", "type", event.EventType, "data", event.Data())
+			return
+		}
 
-    resourceURI := data.ResourceURI
-    if resourceURI != "/redfish/v1/Chassis/System.Chassis.1/Attributes" {
-      return
-    }
+		resourceURI := data.ResourceURI
+		if resourceURI != "/redfish/v1/Chassis/System.Chassis.1/Attributes" {
+			return
+		}
 
 		v, err := domain.InstantiatePlugin(domain.PluginType(resourceURI))
 		if err != nil || v == nil {
@@ -267,10 +267,10 @@ func RegisterAggregate(s *testaggregate.Service) {
 						"PATCH": []string{"ConfigureManager"},
 					},
 					Properties: map[string]interface{}{
-						"Name":                     "Task Collection",
-						"Description":              "Collection of Tasks",
-						"Members":                  []interface{}{},
-						"Members@odata.count":      0,
+						"Name":                "Task Collection",
+						"Description":         "Collection of Tasks",
+						"Members":             []interface{}{},
+						"Members@odata.count": 0,
 					}},
 			}, nil
 		})

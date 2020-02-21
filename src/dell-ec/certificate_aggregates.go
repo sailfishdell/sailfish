@@ -57,10 +57,10 @@ func RegisterCertAggregate(s *testaggregate.Service) {
 						"POST": []string{"ConfigureManager"},
 					},
 					Properties: map[string]interface{}{
-						"Name":                     "Certificate Inventory Collection",
-						"Description":              "Collection of Certificate Inventory",
-						"Members":                  []interface{}{},
-						"Members@odata.count":      0,
+						"Name":                "Certificate Inventory Collection",
+						"Description":         "Collection of Certificate Inventory",
+						"Members":             []interface{}{},
+						"Members@odata.count": 0,
 					},
 				}}, nil
 		})

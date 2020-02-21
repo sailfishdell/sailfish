@@ -12,7 +12,6 @@ import (
 	"github.com/superchalupa/sailfish/src/log"
 )
 
-
 func init() {
 	eh.RegisterCommand(func() eh.Command { return &CreateRedfishResource{} })
 	eh.RegisterCommand(func() eh.Command { return &RemoveRedfishResource{} })
