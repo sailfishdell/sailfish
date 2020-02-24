@@ -224,6 +224,8 @@ func main() {
 		case strings.HasPrefix(listen, "pprof:"):
 			pprofListener := runpprof(logger, addShutdown, listen)
 			go pprofListener()
+
+
 		case strings.HasPrefix(listen, "http:"):
 			// HTTP protocol listener
 			// "https:[addr]:port

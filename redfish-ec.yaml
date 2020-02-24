@@ -1198,14 +1198,13 @@ awesome_mapper:
           ModelUpdate: [ {Property: "temperature_uris", Query: "removefromset(model, propname, data.ResourceURI)"} ]}
       # thermal health data handled in AM3
 
-    certificate:
-      - { SelectEventType: "FileReadEvent",
-          Select: "data.URI == 'CertificateInventory' && data.FQDD == FQDD",
-          Process: { "name": "am3FileReadEvent", "params":{"Conv":"empty_to_null", "Field":"CertificateSigningRequest"}}}
       # certificate data is read on demand, not sure of AM3 integration
+    certificate:
       - { SelectEventType: "FileReadEvent",
           Select: "data.URI == 'FactoryIdentity' && data.FQDD == FQDD",
           ModelUpdate: [ { Property: "certificate", Query: "empty_to_null(data.Content)" } ] }
+
+
 
     slot:
       - { SelectEventType: "AttributeUpdated",

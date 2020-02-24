@@ -384,7 +384,7 @@ func addAM3Functions(logger log.Logger, am3Svc *am3.Service, d *domain.DomainObj
 		for _, URI := range urlList {
 			uuid, ok := d.GetAggregateIDOK(URI[0])
 			if !ok {
-				logger.Error("URI not found", "URI", URI[0])
+				logger.Error("healthEventHandler: URI not found", "URI", URI[0])
 				continue
 			}
 
@@ -546,9 +546,9 @@ func addAM3Functions(logger log.Logger, am3Svc *am3.Service, d *domain.DomainObj
 
 			aggID, ok := d.GetAggregateIDOK(uri)
 			if ok {
-				logger.Crit("URI already exists, skipping add log", "aggID", aggID, "uri", uri)
+				logger.Debug("URI already exists, skipping add log", "aggID", aggID, "uri", uri)
 			} else {
-				logger.Crit("URI is new and can be added", "URI", uri)
+				logger.Debug("URI is new and can be added", "URI", uri)
 
 				timeF, err := strconv.ParseFloat(data.Created, 64)
 				if err != nil {
@@ -563,7 +563,7 @@ func addAM3Functions(logger log.Logger, am3Svc *am3.Service, d *domain.DomainObj
 					severity = "OK"
 				}
 
-				d.CommandHandler.HandleCommand(
+				go d.CommandHandler.HandleCommand(
 					context.Background(),
 					&domain.CreateRedfishResource{
 						ID:          uuid,
@@ -599,9 +599,9 @@ func addAM3Functions(logger log.Logger, am3Svc *am3.Service, d *domain.DomainObj
 							"Action":          data.Action,
 				}})
 
-				uriList := d.FindMatchingURIs(func(uri string) bool { return path.Dir(uri) == collection_uri })
 
-				if len(uriList) > MAX_LOGS {
+				uriList := d.FindMatchingURIs(func(uri string) bool { return path.Dir(uri) == collection_uri })
+				if len(uriList)> MAX_LOGS {
 					// dont need to sort it until we know we are too long
 					sort.Slice(uriList, func(i, j int) bool {
 						idx_i, _ := strconv.Atoi(path.Base(uriList[i]))
@@ -699,14 +699,14 @@ func addAM3Functions(logger log.Logger, am3Svc *am3.Service, d *domain.DomainObj
 
 	      collection_uuid, ok := d.GetAggregateIDOK(a.CollectionURI)
 	      if !ok {
-	        logger.Error("URI not found", "URI", a.CollectionURI)
+	        logger.Error("AttributedUpdatedFn: Collection URI not found", "URI", a.CollectionURI)
 	        continue
 	      }
 
 	      fullURI := a.FullURI+"/"+fqdd
 	      updated_uuid, ok := d.GetAggregateIDOK(fullURI)
 	      if !ok {
-	        logger.Error("URI not found", "URI", fullURI)
+	        logger.Error("AttributedUpdatedFn: URI not found", "URI", fullURI)
 	        continue
 	      }
 	      agg, _ := d.AggregateStore.Load(ctx, domain.AggregateType, updated_uuid)
@@ -889,14 +889,14 @@ func addAM3Functions(logger log.Logger, am3Svc *am3.Service, d *domain.DomainObj
 			}
 			collection_uuid, ok := d.GetAggregateIDOK(c.URI)
 			if !ok {
-				logger.Error("URI not found", "URI", c.URI)
+				logger.Error("ResourceCreatedFn: URI not found", "URI", c.URI)
 				continue
 			}
 
 			if c.Format == "expand" {
 				created_uuid, ok := d.GetAggregateIDOK(data.ResourceURI)
 				if !ok {
-					logger.Error("Created URI not found", "URI", data.ResourceURI)
+					logger.Error("ResourceCreatedFn: Created URI not found", "URI", data.ResourceURI)
 					continue
 				}
 				agg, _ := d.AggregateStore.Load(ctx, domain.AggregateType, created_uuid)
@@ -914,7 +914,7 @@ func addAM3Functions(logger log.Logger, am3Svc *am3.Service, d *domain.DomainObj
 				c.Format += "_prepend"
 			}
 
-			d.CommandHandler.HandleCommand(context.Background(),
+			go d.CommandHandler.HandleCommand(context.Background(),
 				&domain.UpdateRedfishResourceCollection{
 					ID: collection_uuid,
 					Properties: map[string]interface{}{
@@ -961,6 +961,7 @@ func addAM3Functions(logger log.Logger, am3Svc *am3.Service, d *domain.DomainObj
 		}
 	})
 
+	powerRE := regexp.MustCompile(`PowerSupply\.(\w+)`)
 	am3Svc.AddEventHandler("PowerSupplyEventFn", dm_event.PowerSupplyObjEvent, func(event eh.Event) {
 		data, ok := event.Data().(*dm_event.PowerSupplyObjEventData)
 		if !ok {
@@ -976,8 +977,7 @@ func addAM3Functions(logger log.Logger, am3Svc *am3.Service, d *domain.DomainObj
 		//URI1 = System.Chassis.1/Power/PowerSupplies/PSU.Slot.4
 		//URI2 = System.Chassis.1/Sensors/PowerSupplies/PSU.Slot.4
 		FQDD := data.ObjectHeader.FQDD
-		re := regexp.MustCompile(`PowerSupply\.(\w+)`)
-		matches := re.FindSubmatch([]byte(FQDD))
+		matches := powerRE.FindSubmatch([]byte(FQDD))
 		if len(matches) == 0 {
 			logger.Error("Power Supply Event Data FQDD did not match System.Chassis.1#PowerSupply.### format", "FQDD", FQDD)
 			return
@@ -1008,9 +1008,9 @@ func addAM3Functions(logger log.Logger, am3Svc *am3.Service, d *domain.DomainObj
 		sensors_URI := "/redfish/v1/Chassis/System.Chassis.1/Sensors/PowerSupplies/PSU.Slot." + PSU_slot
 		sensors_uuid, ok := d.GetAggregateIDOK(sensors_URI)
 		if !ok {
-			logger.Error("URI not found", "URI", sensors_URI)
+			logger.Error("PowerSupplyEventFn: URI not found", "URI", sensors_URI)
 		} else {
-			d.CommandHandler.HandleCommand(context.Background(),
+			go d.CommandHandler.HandleCommand(context.Background(),
 				&domain.UpdateRedfishResourceProperties2{
 					ID: sensors_uuid,
 					Properties: map[string]interface{}{
@@ -1025,9 +1025,9 @@ func addAM3Functions(logger log.Logger, am3Svc *am3.Service, d *domain.DomainObj
 		power_URI := "/redfish/v1/Chassis/System.Chassis.1/Power/PowerSupplies/PSU.Slot." + PSU_slot
 		power_uuid, ok := d.GetAggregateIDOK(power_URI)
 		if !ok {
-			logger.Error("URI not found", "URI", power_URI)
+			logger.Error("PowerSupplyEventFn: URI not found", "URI", power_URI)
 		} else {
-			d.CommandHandler.HandleCommand(context.Background(),
+			go d.CommandHandler.HandleCommand(context.Background(),
 				&domain.UpdateRedfishResourceProperties2{
 					ID: power_uuid,
 					Properties: map[string]interface{}{
