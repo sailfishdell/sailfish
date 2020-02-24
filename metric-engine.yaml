@@ -889,7 +889,7 @@ UDB-Metric-Import:
       WHERE Timestamp > :HWM
 
   NICPortStats:
-    Type: MetricColumns
+    Type: DISABLED
     # statistictime is the underlying HWM, so we can scan the table slightly more often
     ScanInterval: 30
     WaitInterval: 5
