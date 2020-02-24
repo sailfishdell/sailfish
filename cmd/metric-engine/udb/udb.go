@@ -44,7 +44,7 @@ func newImportManager(logger log.Logger, database *sqlx.DB, d busComponents, cfg
 		// if this panics, the config is messed up. Not going to protect against malformed config here.
 		fn, ok := createFns[settings.(map[string]interface{})["type"].(string)]
 		if !ok {
-			fmt.Printf("Couldnot find type in the funciton map- %s\n", settings.(map[string]interface{})["type"].(string))
+			fmt.Printf("Couldnot find type in the function map- %s\n", settings.(map[string]interface{})["type"].(string))
 			continue
 		}
 		meta, err := fn(logger, database, d, subcfg.Sub(k), k)

@@ -1073,7 +1073,7 @@ UDB-Metric-Import:
         Name != 'IGNORE'
 
   Sensor:
-    Type: DISABLE-DirectMetric
+    Type: DISABLED
     # TODO: UNDERLYING TABLE NEEDS HWM.
     # TODO: Underlying view table missing FQDD, need to add
     ScanInterval: 0
@@ -1126,7 +1126,7 @@ UDB-Metric-Import:
 
   PSSensor:
     # TODO: UNDERLYING TABLE NEEDS HWM.
-    Type: DISABLE-DirectMetric
+    Type: DISABLED
     # CIMVIEW_DCIM_PSNumericSensor is view, do db change on underlying tables
     DBChange:
       DMLiveObjectDatabase.db:
