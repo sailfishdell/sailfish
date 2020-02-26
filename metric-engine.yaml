@@ -1627,6 +1627,7 @@ createdb:
 
   - |
       CREATE View IF NOT EXISTS MetricValue as
+        -- order is important here. dont re-arrange these, or you will break things
         select InstanceID, Timestamp, Value from MetricValueText
         union all
         select InstanceID, Timestamp, Value from MetricValueInt
