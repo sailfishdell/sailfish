@@ -92,7 +92,7 @@ type BaseSoftwareInventoryObjectobj struct {
 type SlotBasedSoftwareInventoryObjectobj struct {
 	BaseSoftwareInventoryObject BaseSoftwareInventoryObjectobj `json:"BaseSoftwareInventoryObject"`
 	SlotNum                     int                            `json:"SlotNum"`
-	UniqueID                    int                            `json:"UniqueID"`
+	UniqueID                    float64                        `json:"UniqueID"`
 }
 
 type FanEventData struct {
@@ -153,16 +153,16 @@ type PowerSupplyObjEventData struct {
 
 type PowerConsumptionDataObjEventData struct {
 	ObjectHeader    DataObjectHeader
-	CwStartTime     int64 `json:"cwStartTime"`
-	CumulativeWatts int   `json:"cumulativeWatts"`
-	InstHeadRoom    int   `json:"instHeadRoom"`
-	PeakWatts       int   `json:"peakWatts"`
-	PwReadingTime   int64 `json:"pwReadingTime"`
-	MinWatts        int   `json:"minWatts"`
-	MinwReadingTime int64 `json:"minwReadingTime"`
-	PeakHeadRoom    int   `json:"peakHeadRoom"`
-	Maxpower        int   `json:"maxPower"`
-	InstWattsPSU1_2 int   `json:"instWattsPSU1_2"`
+	CwStartTime     float64 `json:"cwStartTime"`
+	CumulativeWatts int     `json:"cumulativeWatts"`
+	InstHeadRoom    int     `json:"instHeadRoom"`
+	PeakWatts       int     `json:"peakWatts"`
+	PwReadingTime   float64 `json:"pwReadingTime"`
+	MinWatts        int     `json:"minWatts"`
+	MinwReadingTime float64 `json:"minwReadingTime"`
+	PeakHeadRoom    int     `json:"peakHeadRoom"`
+	Maxpower        int     `json:"maxPower"`
+	InstWattsPSU1_2 int     `json:"instWattsPSU1_2"`
 }
 
 type AvgPowerConsumptionStatDataObjEventData struct {
@@ -176,22 +176,22 @@ type AvgPowerConsumptionStatDataObjEventData struct {
 	DeviceType           int    `json:"deviceType"`
 	MaxPwrConsByInterval int    `json:"maxPwrConsByInterval"`
 	MaxPwrLastDay        int    `json:"maxPwrLastDay"`
-	MaxPwrLastDayTime    int64  `json:"maxPwrLastDayTime"`
+	MaxPwrLastDayTime    float64`json:"maxPwrLastDayTime"`
 	MaxPwrLastHour       int    `json:"maxPwrLastHour"`
-	MaxPwrLastHourTime   int64  `json:"maxPwrLastHourTime"`
+	MaxPwrLastHourTime   float64`json:"maxPwrLastHourTime"`
 	MaxPwrLastMin        int    `json:"maxPwrLastMin"`
-	MaxPwrLastMinTime    int64  `json:"maxPwrLastMinTime"`
+	MaxPwrLastMinTime    float64`json:"maxPwrLastMinTime"`
 	MaxPwrLastWeek       int    `json:"maxPwrLastWeek"`
-	MaxPwrLastWeekTime   int64  `json:"maxPwrLastWeekTime"`
+	MaxPwrLastWeekTime   float64`json:"maxPwrLastWeekTime"`
 	MinPwrConsByInterval int    `json:"minPwrConsByInterval"`
 	MinPwrLastDay        int    `json:"minPwrLastDay"`
-	MinPwrLastDayTime    int64  `json:"minPwrLastDayTime"`
+	MinPwrLastDayTime    float64`json:"minPwrLastDayTime"`
 	MinPwrLastHour       int    `json:"minPwrLastHour"`
-	MinPwrLastHourTime   int64  `json:"minPwrLastHourTime"`
+	MinPwrLastHourTime   float64`json:"minPwrLastHourTime"`
 	MinPwrLastMin        int    `json:"minPwrLastMin"`
-	MinPwrLastMinTime    int64  `json:"minPwrLastMinTime"`
+	MinPwrLastMinTime    float64`json:"minPwrLastMinTime"`
 	MinPwrLastWeek       int    `json:"minPwrLastWeek"`
-	MinPwrLastWeekTime   int64  `json:"minPwrLastWeekTime"`
+	MinPwrLastWeekTime   float64`json:"minPwrLastWeekTime"`
 	ObjExtFlags          int    `json:"objExtFlags"`
 	OffsetKey            string `json:"offsetKey"`
 }

@@ -213,12 +213,12 @@ func addAM3Functions(logger log.Logger, am3Svc *am3.Service, d *domain.DomainObj
 			&domain.UpdateRedfishResourceProperties2{
 				ID: uuid,
 				Properties: map[string]interface{}{
-					"Oem/EnergyConsumptionStartTime": epoch2Date(data.CwStartTime),
+					"Oem/EnergyConsumptionStartTime": epoch2Date(int64(data.CwStartTime)),
 					"Oem/EnergyConsumptionkWh":       int(data.CumulativeWatts / 1000),
 					"Oem/MaxPeakWatts":               data.PeakWatts,
-					"Oem/MaxPeakWattsTime":           epoch2Date(data.PwReadingTime),
+					"Oem/MaxPeakWattsTime":           epoch2Date(int64(data.PwReadingTime)),
 					"Oem/MinPeakWatts":               data.MinWatts,
-					"Oem/MinPeakWattsTime":           epoch2Date(data.MinwReadingTime),
+					"Oem/MinPeakWattsTime":           epoch2Date(int64(data.MinwReadingTime)),
 					"Oem/PeakHeadroomWatts":          data.PeakHeadRoom,
 					"Oem/HeadroomWatts":              data.InstHeadRoom,
 					"PowerConsumedWatts":             data.InstWattsPSU1_2,
