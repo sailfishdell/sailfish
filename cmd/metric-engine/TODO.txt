@@ -1,0 +1,54 @@
+
+Things that have to be done by Halo B:
+- recipe - yocto recipe and update the build source list
+- MATF
+
+Needed to start Validation:
+ -- Metric Reports via (PULL, SSE, RSYSLOG, POST)
+ -- Triggers
+
+- triggers - output on named pipes when reports are generated
+- triggers - allow external process to do trigger
+
+
+Things we can do after Validation starts:
+- update the MRD with the metric id list (so that the MetricReportDefinition has accurate "MetricID" list)
+- UDB delete of device (stop expansion of metrics when device removed)
+- UDB config sync with attributes (enable/disable and Report Interval)
+  - Enable or disable MRD when we see the config attribute changes
+
+- metric definitions
+  - create metric definition telemetry tables
+  - export existing metric definitiosn (already done?) - use json from halo
+  - create metric definition JSON view
+  - create the metric definition collection view
+  - add views to JSON union all
+
+- Update the redfish teams
+  - /usr/share/redfish/rf_resource_info.db
+  - Need to adjust recor
+
+Needed: internal instrumentation for any dropped metricvalue
+
+Post Halo B:
+ - Inject from ISM (PCR into halo B if telemetry team totally rocks and finishes everything in time)
+
+# non-blocking validation tasks
+# need to distinguish different metric instances with different durations
+# validate and audit the "Label" field to see
+
+# non-blocking
+- fixup the naming 'factory' should go away
+
+# optional: if we want to support customer specifying "Property":
+Property: /redfish/v1/Chassis/{chasname}/Power#{psuname}/temperature
+Wildcards [  {"chasname": ["1", "2", "3"] }, {"psuname": ["psu1", "psu2"] } ]
+
+
+# insert vs find metric instance
+
+
+Random other things:
+  - Add an OEM section to the Telemetry service to report the list of valid SOURCES
+  - Add an OEM section to the Telemetry service to report the list of valid FQDDs that have metric instances
+  - Add an OEM section to the Telemetry service to report the list of active metric instances
