@@ -17,6 +17,7 @@ import (
 	"github.com/superchalupa/sailfish/cmd/metric-engine/metric"
 	"github.com/superchalupa/sailfish/cmd/metric-engine/telemetry-db"
 	"github.com/superchalupa/sailfish/cmd/metric-engine/udb"
+	"github.com/superchalupa/sailfish/cmd/metric-engine/triggers"
 )
 
 func setup(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, d *busComponents) {
@@ -53,6 +54,12 @@ func setup(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, d *busCo
 	err = udb.StartupUDBImport(logger.New("module", "udb_am3_functions"), cfgMgr, am3SvcN3, d)
 	if err != nil {
 		panic("Error initializing UDB Import subsystem: " + err.Error())
+	}
+
+	//-- Trigger processing
+	err = triggers.StartupTriggerProcessing(logger.New("module", "trigger_am3_functions"), cfgMgr, am3SvcN2, d)
+	if err != nil {
+		panic("Error initializing trigger processing subsystem: " + err.Error())
 	}
 
 	// if UDB event loop needs any events (none currently), then we could have a separate list and process that list here.
