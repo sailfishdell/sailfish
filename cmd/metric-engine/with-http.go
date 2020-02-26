@@ -22,6 +22,8 @@ import (
 	"github.com/superchalupa/sailfish/src/httpinject"
 	log "github.com/superchalupa/sailfish/src/log"
 	"github.com/superchalupa/sailfish/src/tlscert"
+
+	eh "github.com/looplab/eventhorizon"
 )
 
 type shutdowner interface {
@@ -40,7 +42,7 @@ func starthttp(logger log.Logger, cfgMgr *viper.Viper, d *busComponents) (ret *s
 	// Set up HTTP endpoints
 	m := mux.NewRouter()
 	loggingHTTPHandler := makeLoggingHTTPHandler(logger, m)
-	m.Path("/events").Methods("GET").Handler(http_sse.NewSSEHandler(d, logger, "UNKNOWN", []string{"Unauthenticated"}))
+	m.Path("/events").Methods("GET").Handler(http_sse.NewSSEHandler(d, logger, "UNKNOWN", []string{"Unauthenticated"}, func(eh.Event) bool { return true }))
 	m.Path("/api/Event:Inject").Methods("POST").HandlerFunc(injectSvc.GetHandlerFunc())
 
 	listen_addrs := cfgMgr.GetStringSlice("listen")
