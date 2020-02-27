@@ -221,7 +221,7 @@ func MakeHandlerGenReport(logger log.Logger, telemetryMgr *telemetryManager, bus
 		if err != nil {
 			logger.Crit("Error generating metric report", "err", err, "ReportDefintion", name)
 		}
-		publishHelper(logger, bus, eh.NewEvent(metric.ReportGenerated, metric.ReportGeneratedData{Name: name}, time.Now()))
+		publishHelper(logger, bus, eh.NewEvent(metric.ReportGenerated, &metric.ReportGeneratedData{Name: name}, time.Now()))
 	}
 }
 
@@ -293,7 +293,7 @@ func MakeHandlerClock(logger log.Logger, telemetryMgr *telemetryManager, bus eh.
 		// Generate any metric reports that need it
 		reportList, _ := telemetryMgr.FastCheckForNeededMRUpdates()
 		for _, report := range reportList {
-			publishHelper(logger, bus, eh.NewEvent(metric.ReportGenerated, metric.ReportGeneratedData{Name: report}, time.Now()))
+			publishHelper(logger, bus, eh.NewEvent(metric.ReportGenerated, &metric.ReportGeneratedData{Name: report}, time.Now()))
 		}
 	}
 }
