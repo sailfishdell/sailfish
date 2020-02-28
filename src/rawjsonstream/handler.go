@@ -62,7 +62,6 @@ outer:
 				break outer // should never happen
 			}
 		}
-		fmt.Printf("Raw line      : %s\n", line)
 
 		cmd := httpinject.NewInjectCommand()
 		decoder := json.NewDecoder(bytes.NewReader(line))
@@ -71,6 +70,7 @@ outer:
 
 		if err != nil {
 			fmt.Printf("error decoding stream json: %s\n", err)
+			fmt.Printf("failed line: %s\n", line)
 			continue
 		}
 
@@ -82,15 +82,17 @@ outer:
 			continue
 		}
 
+		//Enable commented out lines for debugging
+
 		cmd.Add(1)
 		cmd.EventSeq = seq
 		seq++
-		fmt.Printf("Send to ch(%d): %+v\n", cmd.EventSeq, cmd)
+		//fmt.Printf("Send to ch(%d): %+v\n", cmd.EventSeq, cmd)
 		s.GetCommandCh() <- cmd
-		fmt.Printf("Check on q : %d\n", cmd.EventSeq)
-		success := <-cmd.GetResCh()
-		fmt.Printf("Waiting for: %d - %t\n", cmd.EventSeq, success)
+		//fmt.Printf("Check on q : %d\n", cmd.EventSeq)
+		<-cmd.GetResCh()
+		//fmt.Printf("Waiting for: %d - %t\n", cmd.EventSeq)
 		cmd.Wait()
-		fmt.Printf("DONE       : %d - %t\n", cmd.EventSeq, success)
+		//fmt.Printf("DONE       : %d - %t\n", cmd.EventSeq)
 	}
 }
