@@ -45,6 +45,7 @@ views:
         "instantiate('roles')",
         "instantiate('accounts')",
         "instantiate('registries')",
+        "instantiate('power_control', 'FQDD', 'System.Chassis.1')",
         # we will eventually enable sessionservice, but need to do some work in ec.go to enable it first
         #"instantiate('sessionservice')",
         "instantiate('telemetry_service')",
@@ -739,7 +740,6 @@ views:
         "instantiate('power_histogram', 'FQDD', FQDD, 'trend', 'Hour')",
         "instantiate('power_histogram', 'FQDD', FQDD, 'trend', 'Day')",
         "instantiate('power_histogram', 'FQDD', FQDD, 'trend', 'Week')",
-        "instantiate('power_control', 'FQDD', FQDD )",
         ]
 
   "psu_slot":
