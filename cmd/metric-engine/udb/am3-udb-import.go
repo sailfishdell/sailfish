@@ -153,45 +153,43 @@ func publishAndWait(logger log.Logger, bus eh.EventBus, et eh.EventType, data eh
 	evt.Wait()
 }
 
-func makeSplitFunc() (*changeNotify, func([]byte, bool) (int, []byte, error)) {
-	n := &changeNotify{}
-	split := func(data []byte, atEOF bool) (advance int, token []byte, err error) {
-		if atEOF {
-			return 0, nil, io.EOF
-		}
-		start := bytes.Index(data, []byte("||"))
-		if start == -1 {
-			// didnt find starting ||, skip over everything
-			return len(data), nil, nil
-		}
-
-		end := bytes.Index(data[start+2:], []byte("||"))
-		if end == -1 {
-			// didnt find ending ||
-			return 0, nil, nil
-		}
-
-		// adjust 'end' here to take into account that we indexed off the start+2
-		// of the data array
-		fields := bytes.Split(data[start+2:end+start+2], []byte("|"))
-		if len(fields) != numChangeFields {
-			n.Database = ""
-			n.Table = ""
-			n.Rowid = 0
-			n.Operation = 0
-			// skip over starting || plus any intervening data, leave the trailing || as potential start of next record
-			return start + end + 2, []byte("s"), nil
-		}
-
-		n.Database = string(fields[0])
-		n.Table = string(fields[1])
-		n.Rowid, _ = strconv.ParseInt(string(fields[2]), 10, 64)
-		n.Operation, _ = strconv.ParseInt(string(fields[3]), 10, 64)
-
-		// consume the whole thing
-		return start + 2 + end + 2, []byte("t"), nil
+func splitUDBNotify(data []byte, atEOF bool) (advance int, token []byte, err error) {
+	if atEOF {
+		fmt.Printf("EOF\n")
+		return 0, nil, io.EOF
 	}
-	return n, split
+	start := bytes.Index(data, []byte("||"))
+	if start == -1 { // didnt find starting ||, skip over everything
+		fmt.Printf("DEBUG (shouldnt happen): NO STARTING ||: len(%v), bytes(%+v), string(%v)\n", len(data), data, string(data))
+		return len(data), data, nil
+	}
+
+	if len(data) < start+1 { // not enough data, read some more
+		// this can happen in normal operations
+		//fmt.Printf("DEBUG (can happen): NEED MORE DATA len(%v), start(%v)\n", len(data), start)
+		return 0, nil, nil
+	}
+
+	if start > 0 {
+		fmt.Printf("DEBUG (shouldnt happen): JUNK start(%v): %v\n", start, string(data[0:start]))
+		return start, data[0:0], nil
+	}
+
+	end := bytes.Index(data[start+1:], []byte("||"))
+	if end == -1 { // didnt find ending ||, read some more
+		// this can happen in normal operations
+		//fmt.Printf("DEBUG (can happen): NO ENDING ||, NEED MORE. len(%v), start(%v), end(%v): %+v\n", len(data), start, end, string(data))
+		return 0, nil, nil
+	}
+
+	if end == 0 { // got a ||| or ||||, consume 1 byte at a time
+		fmt.Printf("DEBUG (shouldnt happen): GOT ||| or ||||, skip 2. len(%v), start(%v), end(%v): %v\n", len(data), start, end, data[start:end])
+		return 1, data[0:0], nil
+	}
+
+	// consume everything between start and end markers
+	//fmt.Printf("CONSUME: %v - %v : %v\n", start, end, string(data[start:start+1+end+2]))
+	return start + 1 + end + 2, data[start+2 : start+1+end], nil
 }
 
 // handleUDBNotifyPipe will handle the notification events from UDB on the
@@ -226,12 +224,22 @@ func handleUDBNotifyPipe(logger log.Logger, pipePath string, d busComponents) {
 	// defer .Close() to keep linters happy. Inside we know we never exit...
 	defer nullWriter.Close()
 
-	n, split := makeSplitFunc()
 	s := bufio.NewScanner(file)
-	s.Split(split)
+	s.Split(splitUDBNotify)
 	for s.Scan() {
-		if s.Text() == "t" {
-			publishAndWait(logger, d.GetBus(), udbChangeEvent, n)
+		fields := bytes.Split(s.Bytes(), []byte("|"))
+		if len(fields) != numChangeFields {
+			fmt.Printf("DEBUG (shouldnt happen): GOT MISMATCH(%v!=%v): %v\n", len(fields), numChangeFields, s.Text())
+			continue
 		}
+
+		n := changeNotify{
+			Database: string(fields[0]),
+			Table:    string(fields[1]),
+		}
+		n.Rowid, _ = strconv.ParseInt(string(fields[2]), 10, 64)
+		n.Operation, _ = strconv.ParseInt(string(fields[3]), 10, 64)
+
+		publishAndWait(logger, d.GetBus(), udbChangeEvent, &n)
 	}
 }
