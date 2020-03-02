@@ -44,10 +44,12 @@ func (meta *importByColumn) doImport() (err error) {
 	observedInterval := time.Since(meta.lastImport)
 	if err == nil {
 		if totalEvents > 0 {
-			fmt.Printf("ByColumn Processed %d rows. Emitted %d events from source='%s' observed interval=%s.\n", totalRows, totalEvents, meta.sourceName, observedInterval)
+			fmt.Printf("ByColumn Processed %d rows. Emitted %d events from source='%s' observed interval=%s.\n",
+				totalRows, totalEvents, meta.sourceName, observedInterval)
 		}
 	} else {
-		fmt.Printf("ByColumn Processed %d rows. Emitted %d events from source='%s' observed interval=%s. ERROR(%s).\n", totalRows, totalEvents, meta.sourceName, observedInterval, err)
+		fmt.Printf("ByColumn Processed %d rows. Emitted %d events from source='%s' observed interval=%s. ERROR(%s).\n",
+			totalRows, totalEvents, meta.sourceName, observedInterval, err)
 	}
 
 	return err

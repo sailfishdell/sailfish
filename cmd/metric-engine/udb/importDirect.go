@@ -38,10 +38,12 @@ func (meta *importDirect) doImport() (err error) {
 		observedInterval := time.Since(meta.lastImport)
 		if err == nil {
 			if totalRows > 0 {
-				fmt.Printf("DirectMetric Processed %d rows. Emitted %d events from source='%s' observed interval=%s.\n", totalRows, totalEvents, meta.sourceName, observedInterval)
+				fmt.Printf("DirectMetric Processed %d rows. Emitted %d events from source='%s' observed interval=%s.\n",
+					totalRows, totalEvents, meta.sourceName, observedInterval)
 			}
 		} else {
-			fmt.Printf("DirectMetric Processed %d rows. Emitted %d events from source='%s' observed interval=%s. ERROR(%s).\n", totalRows, totalEvents, meta.sourceName, observedInterval, err)
+			fmt.Printf("DirectMetric Processed %d rows. Emitted %d events from source='%s' observed interval=%s. ERROR(%s).\n",
+				totalRows, totalEvents, meta.sourceName, observedInterval, err)
 		}
 	}()
 
