@@ -1134,7 +1134,7 @@ func addAM3Functions(logger log.Logger, am3Svc *am3.Service, d *domain.DomainObj
 				c.Format += "_prepend"
 			}
 
-			go d.CommandHandler.HandleCommand(context.Background(),
+			d.CommandHandler.HandleCommand(context.Background(),
 				&domain.UpdateRedfishResourceCollection{
 					ID: collection_uuid,
 					Properties: map[string]interface{}{

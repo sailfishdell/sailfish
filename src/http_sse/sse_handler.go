@@ -69,13 +69,14 @@ func (rh *SSEHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("X-UA-Compatible", "IE=11")
 
 	err := l.ProcessEvents(ctx, func(event eh.Event) {
+		data:=event.Data()
 		d, err := json.Marshal(
 			&struct {
 				Name string      `json:"name"`
 				Data interface{} `json:"data"`
 			}{
 				Name: string(event.EventType()),
-				Data: event.Data(),
+				Data: data,
 			},
 		)
 		if err != nil {
