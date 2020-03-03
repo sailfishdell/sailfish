@@ -1,6 +1,8 @@
 run:
   skip_dirs:
     - src
+  modules-download-mode: vendor
+
 linters:
   enable:
     - bodyclose

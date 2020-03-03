@@ -1,11 +1,11 @@
 // +build linux
 
-package udb
+package syscalls
 
 import (
 	"syscall"
 )
 
-func makeFifo(pipePath string, mode uint32) error {
+func MakeFifo(pipePath string, mode uint32) error {
 	return syscall.Mkfifo(pipePath, mode)
 }

@@ -16,6 +16,7 @@ import (
 	"github.com/spf13/viper"
 	"golang.org/x/xerrors"
 
+	"github.com/superchalupa/sailfish/cmd/metric-engine/syscalls"
 	"github.com/superchalupa/sailfish/cmd/metric-engine/telemetry-db"
 	"github.com/superchalupa/sailfish/src/looplab/event"
 
@@ -204,7 +205,7 @@ func splitUDBNotify(data []byte, atEOF bool) (advance int, token []byte, err err
 // This will ensure the pipe stays around forever without eof... That's what
 // nullWriter is for, below.
 func handleUDBNotifyPipe(logger log.Logger, pipePath string, d busComponents) {
-	err := makeFifo(pipePath, 0660)
+	err := syscalls.MakeFifo(pipePath, 0660)
 	if err != nil && !os.IsExist(err) {
 		logger.Warn("Error creating UDB pipe", "err", err)
 	}
