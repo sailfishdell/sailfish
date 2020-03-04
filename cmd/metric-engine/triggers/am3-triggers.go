@@ -33,32 +33,34 @@ type eventHandlingService interface {
 	AddEventHandler(string, eh.EventType, func(eh.Event))
 }
 
-// StartupUDBImport will attach event handlers to handle import UDB import
+// StartupTriggerProcessing will attach event handlers to handle subscriber events
 func StartupTriggerProcessing(logger log.Logger, cfg *viper.Viper, am3Svc eventHandlingService, d busComponents) error {
 	// setup programatic defaults. can be overridden in config file
 	cfg.SetDefault("triggers.clientIPCPipe", "/var/run/telemetryservice/telsubandlclnotifypipe")
 	cfg.SetDefault("triggers.subList", "/var/run/telemetryservice/telsvc_subscriptioninfo.json")
 
-	// handle UDB notifications
+	// handle Subscription and LCL event related notifications
 	go handleSubscriptionsAndLCLNotify(logger, cfg, d, am3Svc)
 
 	return nil
 }
 
 func getSubscribers(logger log.Logger, subFilePath string) (subscriberMap map[string]*os.File) {
+	activeSubs := make(map[string]*os.File)
 	subscribers, err := ioutil.ReadFile(subFilePath)
 	if err != nil {
-		logger.Crit("Error initializing base telemetry subsystem: " + err.Error())
+		logger.Info("There are no active telemetry subscriptions : " + err.Error())
+		return activeSubs
 	}
-
-	activeSubs := make(map[string]*os.File)
 
 	var subs interface{}
 	jsonErr := json.Unmarshal(subscribers, &subs)
 	if jsonErr != nil {
 		// Unmarshal failed. graceful return to accommodate future subscriptions
-		logger.Crit("Subscription file unmarshal failed ", "err", jsonErr)
+		logger.Warn("Subscription file unmarshal failed ", "err", jsonErr)
+		return activeSubs
 	}
+
 	subMap := subs.(map[string]interface{})
 	for k, pipePath := range subMap {
 		switch pipePath := pipePath.(type) {
@@ -66,7 +68,8 @@ func getSubscribers(logger log.Logger, subFilePath string) (subscriberMap map[st
 			fmt.Printf("Identified subscriber %s - %s \n", k, pipePath)
 			subWriter, err := os.OpenFile(pipePath, os.O_RDWR, os.ModeNamedPipe)
 			if err != nil {
-				logger.Crit("Error client subscription named pipe", "err", err)
+				//We gracefully continue and process other subscriptions
+				logger.Warn("Error client subscription named pipe", "err", err)
 			}
 			activeSubs[k] = subWriter
 		default:
@@ -81,7 +84,7 @@ func closeActiveSubs(logger log.Logger, activeSubs map[string]*os.File) {
 	for k, openFile := range activeSubs {
 		err := openFile.Close()
 		if err != nil {
-			logger.Crit("Clean-up - pipe close failed - ", "err", err)
+			logger.Warn("Clean-up - pipe close failed - ", "err", err)
 		}
 		delete(activeSubs, k)
 	}
@@ -103,7 +106,7 @@ func MakeHandlerReportGenerated(logger log.Logger, subscriberMap map[string]*os.
 			fmt.Printf("Report due trigger to subscriber %s - %s \n", k, reportName)
 			nBytes, writeErr := subWriter.WriteString(fmt.Sprintf("|%s|", reportName))
 			if writeErr != nil {
-				logger.Crit("Trigger notification to subscriber failed - ", "err", writeErr, "Num bytes ", nBytes)
+				logger.Warn("Trigger notification to subscriber failed - ", "err", writeErr, "Num bytes ", nBytes)
 			}
 		}
 	}
@@ -135,27 +138,31 @@ func MakeHandlerSubscribe(logger log.Logger, activeSubs map[string]*os.File,
 				event, "eventdata", event.Data())
 			return
 		}
-
-		subscribers, err := ioutil.ReadFile(subFilePath)
-		if err != nil {
-			logger.Crit("Error initializing base telemetry subsystem: " + err.Error())
-			return
-		}
-
 		//Update the subscriber map file with new subscriber,
 		//which is maintained for persistency of
 		//subscription across internal process restarts.
 		subscribedPipe := strings.ToLower(notify.namedPipeName)
+		key := fmt.Sprintf("subscriber-%s", randomString(keyRandomIDLen))
 
 		var subs interface{}
-		jsonErr := json.Unmarshal(subscribers, &subs)
-		if jsonErr != nil {
-			// Unmarshal failed. graceful return to accommodate future subscriptions
-			logger.Crit("Subscription file unmarshal failed ", "err", jsonErr)
+		var subMap map[string]interface{}
+
+		subscribers, err := ioutil.ReadFile(subFilePath)
+		if err != nil {
+			logger.Info("There are no active telemetry subscriptions : " + err.Error())
+		} else {
+			jsonErr := json.Unmarshal(subscribers, &subs)
+			if jsonErr != nil {
+				// Unmarshal failed. graceful return to accommodate future subscriptions
+				logger.Warn("Subscription file unmarshal failed ", "err", jsonErr)
+			}
+		}
+		if subs != nil {
+			subMap = subs.(map[string]interface{})
+		} else {
+			subMap = make(map[string]interface{})
 		}
 
-		subMap := subs.(map[string]interface{})
-		key := fmt.Sprintf("subscriber-%s", randomString(keyRandomIDLen))
 		subMap[key] = subscribedPipe
 		jsonSubscriberMap, _ := json.Marshal(subMap)
 		subFile, err := os.Create(subFilePath)
@@ -165,7 +172,7 @@ func MakeHandlerSubscribe(logger log.Logger, activeSubs map[string]*os.File,
 		}
 		nBytes, writeErr := subFile.Write(jsonSubscriberMap)
 		if writeErr != nil {
-			logger.Crit("Subscription file update failed ", "err", writeErr, "Num bytes ", nBytes)
+			logger.Warn("Subscription file update failed ", "err", writeErr, "Num bytes ", nBytes)
 		}
 		subFile.Close()
 
@@ -173,8 +180,11 @@ func MakeHandlerSubscribe(logger log.Logger, activeSubs map[string]*os.File,
 		subWriter, err := os.OpenFile(subscribedPipe, os.O_RDWR, os.ModeNamedPipe)
 		if err != nil {
 			logger.Crit("Error client subscription named pipe", "err", err)
+		} else {
+			activeSubs[key] = subWriter
+
+			//The file handles are closed at exit
 		}
-		activeSubs[key] = subWriter
 	}
 }
 
@@ -183,14 +193,14 @@ func MakeHandlerUnsubscribe(logger log.Logger, activeSubs map[string]*os.File,
 	return func(event eh.Event) {
 		notify, ok := event.Data().(*subscriptionData)
 		if !ok {
-			logger.Crit("Trigger report generated handler got an invalid data event", "event",
+			logger.Crit("Unsubscribe request handler got an invalid data event", "event",
 				event, "eventdata", event.Data())
 			return
 		}
 
 		subscribers, err := ioutil.ReadFile(subFilePath)
 		if err != nil {
-			logger.Crit("Error initializing base telemetry subsystem: " + err.Error())
+			logger.Crit("Subscriber map file does not exist : " + err.Error())
 			return
 		}
 
@@ -211,7 +221,7 @@ func MakeHandlerUnsubscribe(logger log.Logger, activeSubs map[string]*os.File,
 				//Update the active subscriber map
 				err := activeSubs[k].Close()
 				if err != nil {
-					logger.Crit("Unsubscribed pipe close failed - ", "err", err)
+					logger.Warn("Unsubscribed pipe close failed - ", "err", err)
 				}
 				delete(activeSubs, k)
 			}
@@ -221,12 +231,11 @@ func MakeHandlerUnsubscribe(logger log.Logger, activeSubs map[string]*os.File,
 		subFile, err := os.Create(subFilePath)
 		if err != nil {
 			logger.Crit("Error creating the subscriber map file : " + err.Error())
-			return
-		}
-
-		nBytes, writeErr := subFile.Write(jsonSubscriberMap)
-		if writeErr != nil {
-			logger.Crit("Subscription file write failed ", "err", writeErr, "Num bytes ", nBytes)
+		} else {
+			nBytes, writeErr := subFile.Write(jsonSubscriberMap)
+			if writeErr != nil {
+				logger.Crit("Subscription file write failed ", "err", writeErr, "Num bytes ", nBytes)
+			}
 		}
 
 		subFile.Close()
@@ -315,18 +324,18 @@ func handleSubscriptionsAndLCLNotify(logger log.Logger, cfg *viper.Viper, d busC
 	pipePath := cfg.GetString("triggers.clientIPCPipe")
 	err := syscalls.MakeFifo(pipePath, 0660)
 	if err != nil && !os.IsExist(err) {
-		logger.Warn("Error creating UDB pipe", "err", err)
+		logger.Warn("Error creating Trigger (un)sub and LCL events IPC pipe", "err", err)
 	}
 
 	file, err := os.OpenFile(pipePath, os.O_CREATE, os.ModeNamedPipe)
 	if err != nil {
-		logger.Crit("Error opening UDB pipe", "err", err)
+		logger.Crit("Error opening Trigger (un)sub and LCL events IPC pipe", "err", err)
 	}
 	defer file.Close()
 
 	nullWriter, err := os.OpenFile(pipePath, os.O_WRONLY, os.ModeNamedPipe)
 	if err != nil {
-		logger.Crit("Error opening UDB pipe for (placeholder) write", "err", err)
+		logger.Crit("Error opening Trigger (un)sub and LCL events IPC  pipe for (placeholder) write", "err", err)
 	}
 	// defer .Close() to keep linters happy. Inside we know we never exit...
 	defer nullWriter.Close()
