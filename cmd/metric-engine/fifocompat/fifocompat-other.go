@@ -1,6 +1,6 @@
 // +build !linux
 
-package syscalls
+package fifocompat
 
 import (
 	"errors"

@@ -14,8 +14,8 @@ import (
 	eh "github.com/looplab/eventhorizon"
 	"github.com/spf13/viper"
 
+	"github.com/superchalupa/sailfish/cmd/metric-engine/fifocompat"
 	"github.com/superchalupa/sailfish/cmd/metric-engine/metric"
-	"github.com/superchalupa/sailfish/cmd/metric-engine/syscalls"
 
 	log "github.com/superchalupa/sailfish/src/log"
 )
@@ -34,13 +34,26 @@ type eventHandlingService interface {
 }
 
 // StartupTriggerProcessing will attach event handlers to handle subscriber events
-func StartupTriggerProcessing(logger log.Logger, cfg *viper.Viper, am3Svc eventHandlingService, d busComponents) error {
+func StartupTriggerProcessing(logger log.Logger, cfg *viper.Viper, am3Svc eventHandlingService,
+	d busComponents) error {
 	// setup programatic defaults. can be overridden in config file
 	cfg.SetDefault("triggers.clientIPCPipe", "/var/run/telemetryservice/telsubandlclnotifypipe")
 	cfg.SetDefault("triggers.subList", "/var/run/telemetryservice/telsvc_subscriptioninfo.json")
 
+	// fetch the active subscriber list on startup
+	subscriberListFile := cfg.GetString("triggers.subList")
+	activeSubs := getSubscribers(logger, subscriberListFile)
+	// enable closing active subscription handles
+	defer closeActiveSubs(logger, activeSubs)
+
+	//Setup event handlers for
+	//  - Metric reprot generated event
+	//  - New subscription request event
+	//  - New unsubscription request event
+	setupEventHandlers(logger, d.GetBus(), am3Svc, activeSubs, subscriberListFile)
+
 	// handle Subscription and LCL event related notifications
-	go handleSubscriptionsAndLCLNotify(logger, cfg, d, am3Svc)
+	go handleSubscriptionsAndLCLNotify(logger, cfg.GetString("triggers.clientIPCPipe"), d.GetBus())
 
 	return nil
 }
@@ -304,25 +317,10 @@ func processSubscriptionsOrLCLNotify(logger log.Logger, bus eh.EventBus, scanTex
 // avoid this, we'll simply open it ourselves for writing and never close it.
 // This will ensure the pipe stays around forever without eof... That's what
 // nullWriter is for, below.
-func handleSubscriptionsAndLCLNotify(logger log.Logger, cfg *viper.Viper, d busComponents,
-	am3Svc eventHandlingService) {
-	subscriberListFile := cfg.GetString("triggers.subList")
-
-	activeSubs := getSubscribers(logger, subscriberListFile)
-	defer closeActiveSubs(logger, activeSubs)
-
-	bus := d.GetBus()
-
-	//Setup event handlers for
-	//  - Metric reprot generated event
-	//  - New subscription request event
-	//  - New unsubscription request event
-	setupEventHandlers(logger, bus, am3Svc, activeSubs, subscriberListFile)
-
+func handleSubscriptionsAndLCLNotify(logger log.Logger, pipePath string, bus eh.EventBus) {
 	//Start listening on the client subscription named pipe IPC for
 	//subscribe/unsubscribe and LCL event notifications
-	pipePath := cfg.GetString("triggers.clientIPCPipe")
-	err := syscalls.MakeFifo(pipePath, 0660)
+	err := fifocompat.MakeFifo(pipePath, 0660)
 	if err != nil && !os.IsExist(err) {
 		logger.Warn("Error creating Trigger (un)sub and LCL events IPC pipe", "err", err)
 	}
