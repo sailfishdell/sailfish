@@ -73,7 +73,7 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 			logger.Debug("LCLOG: Time information can not be parsed", "time", logEntry.Created, "err", err, "set time to", 0)
 			timeF = 0
 		}
-		createdTime := time.Unix(int64(timeF), 0)
+		createdTime := time.Unix(int64(timeF), 0).UTC()
 		cTime := createdTime.Format("2006-01-02T15:04:05-07:00")
 
 		severity := logEntry.Severity
@@ -236,7 +236,7 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 			logger.Debug("Mapper configuration error: Time information can not be parsed", "time", faultEntry.Created, "err", err, "set time to", 0)
 			timeF = 0
 		}
-		createdTime := time.Unix(int64(timeF), 0)
+		createdTime := time.Unix( int64(timeF),0).UTC()
 		cTime := createdTime.Format("2006-01-02T15:04:05-07:00")
 
 		uuid := eh.NewUUID()
@@ -305,7 +305,7 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 			logger.Debug("Mapper configuration error: Time information can not be parsed", "time", logEntry.Created, "err", err, "set time to", 0)
 			timeF = 0
 		}
-		createdTime := time.Unix(int64(timeF), 0)
+		createdTime := time.Unix(int64(timeF), 0).UTC()
 		cTime := createdTime.Format("2006-01-02T15:04:05-07:00")
 
 		//Create Alert type event:
