@@ -7,14 +7,9 @@ udb:
     udbnotifypipe: /dev/null
     startup: ["startup-events", "addon-events"]
 
-listen:
-  #- unix:me.socket
-  # enable 8080 port only for testing, as per NCC audit it needs to be disabled on the build
-  - http::8081
-  #  enable pprof only for debuging, it causes increased memory consumption. If memprofilerate>0, it will use way more. It's set to 0 in the service file.
-  - pprof::9081
-  # disable direct https listener, uncomment if needed for testing:
-  # - https::8443
+pprof: [ "unix:data/http.socket" ]
+SSE: [ "unix:data/http.socket" ]
+Redfish: [ "unix:data/http.socket" ]
 
 Addon-Events:
   # this is to test the report definition update codepath

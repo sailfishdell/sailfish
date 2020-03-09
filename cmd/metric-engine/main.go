@@ -5,12 +5,14 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"sync"
 
 	flag "github.com/spf13/pflag"
 	"github.com/spf13/viper"
 
 	eh "github.com/looplab/eventhorizon"
 	eventpublisher "github.com/looplab/eventhorizon/publisher/local"
+	log "github.com/superchalupa/sailfish/src/log"
 	"github.com/superchalupa/sailfish/src/looplab/eventbus"
 	"github.com/superchalupa/sailfish/src/looplab/eventwaiter"
 
@@ -26,6 +28,15 @@ type busComponents struct {
 func (d *busComponents) GetBus() eh.EventBus                 { return d.EventBus }
 func (d *busComponents) GetWaiter() *eventwaiter.EventWaiter { return d.EventWaiter }
 func (d *busComponents) GetPublisher() eh.EventPublisher     { return d.EventPublisher }
+
+var initOptionalLock = sync.Once{}
+var optionalComponents []func(log.Logger, *viper.Viper, *busComponents) func()
+
+func initOptional() {
+	initOptionalLock.Do(func() {
+		optionalComponents = []func(log.Logger, *viper.Viper, *busComponents) func(){}
+	})
+}
 
 func main() {
 	flag.StringSliceP("listen", "l", []string{}, "Listen address.  Formats: (http:[ip]:nn, https:[ip]:port)")
@@ -77,12 +88,26 @@ func main() {
 	d.EventPublisher.AddObserver(d.EventWaiter)
 	go d.GetWaiter().Run()
 
-	setup(ctx, logger, cfgMgr, d)     // set up idrac specific
-	h := starthttp(logger, cfgMgr, d) // (optional) startup of http services
+	shutdownFns := []func(){}
+	for _, fn := range optionalComponents {
+		shutdownFn := fn(logger, cfgMgr, d)
+		if shutdownFn == nil {
+			continue
+		}
 
-	<-ctx.Done() // wait until everything is done
-	shutdown()   // shut down idrac stuff
-	h.shutdown() // shut down http servers
+		// run shutdown fns in reverse order of startup, so append accordingly
+		shutdownFns = append([]func(){shutdownFn}, shutdownFns...)
+	}
+
+	// signal to the runtime it can release viper memory
+	// NOTE: make sure that none of the functions we call above keep references to cfgMgr past this point
+	cfgMgr = nil
+
+	<-ctx.Done() // wait until everything is done (CTRL-C or other signal)
+
+	for _, fn := range shutdownFns {
+		fn()
+	}
 }
 
 func fileExists(fn string) bool {

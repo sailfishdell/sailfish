@@ -16,16 +16,21 @@ import (
 
 	"github.com/superchalupa/sailfish/cmd/metric-engine/metric"
 	"github.com/superchalupa/sailfish/cmd/metric-engine/telemetry-db"
-	"github.com/superchalupa/sailfish/cmd/metric-engine/udb"
 	"github.com/superchalupa/sailfish/cmd/metric-engine/triggers"
+	"github.com/superchalupa/sailfish/cmd/metric-engine/udb"
 )
+
+func init() {
+	initOptional()
+	optionalComponents = append(optionalComponents, func(logger log.Logger, cfg *viper.Viper, d *busComponents) func() {
+		setup(context.Background(), logger, cfg, d)
+		return nil
+	})
+}
 
 func setup(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, d *busComponents) {
 	// register global metric events with event horizon
 	metric.RegisterEvent()
-
-	// cgo will start up its own thread and event processing loop
-	cgoStartup(logger.New("module", "cgo"), d)
 
 	// We are going to initialize 2 instances of AM3 service.  This means we can
 	// run concurrent message processing loops in 2 different goroutines Each
@@ -117,7 +122,4 @@ func injectStartupEvents(logger log.Logger, cfgMgr *viper.Viper, section string,
 			logger.Crit("Error publishing event to internal event bus, should never happen!", "err", err)
 		}
 	}
-}
-func shutdown() {
-	cgoShutdown()
 }

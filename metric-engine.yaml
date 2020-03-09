@@ -1,12 +1,9 @@
 # main:  # we now have default values for everything here in the code. Can override on an as-needed basis
 # udb: # moved udb-related paths under this top-level key. everything is in programtic defaults in code and can be overridden here
 
-# metric engine has no HTTP/HTTPS or PPROF listeners by default. Copy from the local-metric-engine.yaml if this is needed in production
-listen:
-  # specify a 8081 port listener, only will take effect if http added to build tags
-  - "http::8081"
-  # need to try to only enable pprof for debug builds, as it increases memory usage when enabled
-  - "pprof::9081"
+pprof: [ "unix:/run/telemetryservice/http.socket" ]
+SSE: [ "unix:/run/telemetryservice/http.socket" ]
+Redfish: [ "unix:/run/telemetryservice/http.socket" ]
 
 ##############################################
 ##
