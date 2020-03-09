@@ -299,9 +299,13 @@ func processSubscriptionsOrLCLNotify(logger log.Logger, bus eh.EventBus, scanTex
 
 	//LCL events
 	reports := strings.Split(scanText, ",")
-	for i := range reports {
-		publishHelper(logger, bus, eh.NewEvent(metric.RequestReport,
-			&metric.RequestReportData{Name: reports[i]}, time.Now()))
+	for _, name := range reports {
+		evt, err := metric.NewRequestReportCommand(name)
+		if err != nil {
+			logger.Warn("Error creating report request command", "err", err)
+			continue
+		}
+		publishHelper(logger, bus, evt)
 	}
 }
 

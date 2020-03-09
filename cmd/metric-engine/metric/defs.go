@@ -2,6 +2,7 @@ package metric
 
 import (
 	"database/sql/driver"
+	"fmt"
 	"time"
 
 	eh "github.com/looplab/eventhorizon"
@@ -32,6 +33,47 @@ const (
 	AppendStopsWhenFull = "AppendStopsWhenFull"
 	AppendWrapsWhenFull = "AppendWrapsWhenFull"
 )
+
+type Command struct {
+	RequestID    eh.UUID
+	ResponseType eh.EventType
+}
+
+func NewCommand(t eh.EventType) Command {
+	return Command{RequestID: eh.NewUUID(), ResponseType: t}
+}
+
+func (cmd *Command) NewResponseEvent(err error) (eh.Event, error) {
+	data, err := eh.CreateEventData(cmd.ResponseType)
+	if err != nil {
+		return nil, fmt.Errorf("could not create response: %w", err)
+	}
+	cr, ok := data.(*CommandResponse)
+	if !ok {
+		return nil, fmt.Errorf("internal programming error: response encoded in cmd wasn't a response type")
+	}
+	cr.err = err
+	cr.RequestID = cmd.RequestID
+
+	return eh.NewEvent(cmd.ResponseType, cr, time.Now()), nil
+}
+
+func (cmd *Command) ResponseWaitFn() func(eh.Event) bool {
+	return func(evt eh.Event) bool {
+		if evt.EventType() != cmd.ResponseType {
+			return false
+		}
+		if data, ok := evt.Data().(*CommandResponse); ok && data.RequestID == cmd.RequestID {
+			return true
+		}
+		return false
+	}
+}
+
+type CommandResponse struct {
+	RequestID eh.UUID
+	err       error
+}
 
 // SQLTimeInt is a wrapper around golang time that serializes and deserializes 64-bit nanosecond time rather than the default 32-bit second
 type SQLTimeInt struct {
@@ -73,11 +115,26 @@ type FQDDMappingData struct {
 
 // RequestReportData is the event data structure to tell which report names to generate
 type RequestReportData struct {
+	Command
 	Name string
+}
+
+func NewRequestReportCommand(name string) (eh.Event, error) {
+	data, err := eh.CreateEventData(RequestReport)
+	if err != nil {
+		return nil, fmt.Errorf("could not create request report command: %w", err)
+	}
+	cr, ok := data.(*RequestReportData)
+	if !ok {
+		return nil, fmt.Errorf("internal programming error: response encoded in cmd wasn't a response type")
+	}
+	cr.Name = name
+	return eh.NewEvent(RequestReport, cr, time.Now()), nil
 }
 
 // ReportGeneratedData is the event data structure emitted after reports are generated
 type ReportGeneratedData struct {
+	CommandResponse
 	Name string
 }
 
@@ -85,6 +142,6 @@ type ReportGeneratedData struct {
 func RegisterEvent() {
 	eh.RegisterEventData(MetricValueEvent, func() eh.EventData { return &MetricValueEventData{} })
 	eh.RegisterEventData(FriendlyFQDDMapping, func() eh.EventData { return &FQDDMappingData{} })
-	eh.RegisterEventData(RequestReport, func() eh.EventData { return &RequestReportData{} })
+	eh.RegisterEventData(RequestReport, func() eh.EventData { return &RequestReportData{Command: NewCommand(ReportGenerated)} })
 	eh.RegisterEventData(ReportGenerated, func() eh.EventData { return &ReportGeneratedData{} })
 }

@@ -217,11 +217,23 @@ func MakeHandlerGenReport(logger log.Logger, telemetryMgr *telemetryManager, bus
 
 		// input event is a pointer to shared data struct, dont directly use, make a copy
 		name := report.Name
-		err := telemetryMgr.GenerateMetricReport(nil, name)
-		if err != nil {
-			logger.Crit("Error generating metric report", "err", err, "ReportDefintion", name)
+		reportError := telemetryMgr.GenerateMetricReport(nil, name)
+		if reportError != nil {
+			logger.Crit("Error generating metric report", "err", reportError, "ReportDefintion", name)
+			// dont return, because we are going to return the error to the caller
 		}
-		publishHelper(logger, bus, eh.NewEvent(metric.ReportGenerated, &metric.ReportGeneratedData{Name: name}, time.Now()))
+
+		respEvent, err := report.NewResponseEvent(reportError)
+		if err != nil {
+			logger.Crit("Error creating response event", "err", err, "ReportDefintion", name)
+			return
+		}
+
+		data, ok := respEvent.Data().(*metric.ReportGeneratedData)
+		if ok {
+			data.Name = name
+			publishHelper(logger, bus, respEvent)
+		}
 	}
 }
 
