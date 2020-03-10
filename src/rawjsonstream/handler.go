@@ -90,6 +90,7 @@ outer:
 		//fmt.Printf("Send to ch(%d): %+v\n", cmd.EventSeq, cmd)
 		s.GetCommandCh() <- cmd
 		//fmt.Printf("Check on q : %d\n", cmd.EventSeq)
+		<-cmd.GetResCh()
 		//fmt.Printf("Waiting for: %d - %t\n", cmd.EventSeq)
 		cmd.Wait()
 		//fmt.Printf("DONE       : %d - %t\n", cmd.EventSeq)

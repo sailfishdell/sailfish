@@ -152,7 +152,6 @@ func main() {
 	//// backend command handling
 	internalHandlerFunc := domainObjs.GetInternalCommandHandler(ctx)
 
-	// most-used command is event inject, specify that manually to avoid some regexp memory allocations
 
 	// All of the /redfish apis
 	m.PathPrefix("/redfish/").Methods("GET", "PUT", "POST", "PATCH", "DELETE", "HEAD", "OPTIONS").HandlerFunc(handlerFunc)
