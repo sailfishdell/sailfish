@@ -60,7 +60,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	actionhandler.Setup(ctx, ch, eb)
 	uploadhandler.Setup(ctx, ch, eb)
 	event.Setup(ch, eb)
-	domain.StartInjectService(logger, d)
 	arService, _ := ar_mapper2.StartService(ctx, logger, cfgMgr, cfgMgrMu, eb)
 	actionSvc := ah.StartService(ctx, logger, ch, eb)
 	uploadSvc := uploadhandler.StartService(ctx, logger, ch, eb)
@@ -201,6 +200,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	// VIPER Config:
 	// pull the config from the YAML file to populate some static config options
 	self.configChangeHandler = func() {}
+	setup(logger, d)
 
 	return self
 }

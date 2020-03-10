@@ -27,6 +27,7 @@ import (
 
 	"github.com/superchalupa/sailfish/src/http_redfish_sse"
 	"github.com/superchalupa/sailfish/src/http_sse"
+	"github.com/superchalupa/sailfish/src/rawjsonstream"
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
 
 	// cert gen
@@ -226,6 +227,11 @@ func main() {
 				go func() { logger.Info("Server exited", "err", s.Serve(unixListener)) }()
 				go handleShutdown(ctx, logger, s)
 			}
+
+		case strings.HasPrefix(listen, "pipeinput:"):
+			pipeName := strings.TrimPrefix(listen, "pipeinput:")
+			go rawjsonstream.StartPipeHandler(logger, pipeName, domainObjs)
+			logger.Crit("pipe listener started", "path", pipeName)
 
 		case strings.HasPrefix(listen, "https:"):
 			// HTTPS protocol listener

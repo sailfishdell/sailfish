@@ -163,36 +163,31 @@ func (d *DomainObjects) CheckTree() (id eh.UUID, ok bool) {
 
 				}
 			} else {
-				if string(agg.EntityID()) == string(injectUUID) {
-					// it's an inject command. that's ok
-					injectCmds++
-				} else {
-					// aggregate isn't in the tree at that uri
-					fmt.Printf("Validate %s\n", agg.EntityID())
-					fmt.Printf("\tURI: %s", checkuri)
-					rr.ResultsCacheMu.Lock()
-					fmt.Printf("\n\tNOT IN TREE: %d\n", rr.checkcount)
-					if rr.checkcount > 0 {
-						fmt.Printf("\n\tCheck expired, assuming hanging aggregate and removing\n")
+				// aggregate isn't in the tree at that uri
+				fmt.Printf("Validate %s\n", agg.EntityID())
+				fmt.Printf("\tURI: %s", checkuri)
+				rr.ResultsCacheMu.Lock()
+				fmt.Printf("\n\tNOT IN TREE: %d\n", rr.checkcount)
+				if rr.checkcount > 0 {
+					fmt.Printf("\n\tCheck expired, assuming hanging aggregate and removing\n")
 
-						d.Repo.Remove(context.Background(), rr.EntityID())
-						// remove any plugins linked to the now unlinked agg. Careful here
-						// because if a new aggregate is linked in we dont want to delete the
-						// new plugins that may have already been instantiated
-						p, err := InstantiatePlugin(PluginType(rr.ResourceURI))
-						type closer interface {
-							Close()
-						}
-						if err == nil && p != nil {
-							if c, ok := p.(closer); ok {
-								c.Close()
-							}
-						}
-					} else {
-						rr.checkcount++
+					d.Repo.Remove(context.Background(), rr.EntityID())
+					// remove any plugins linked to the now unlinked agg. Careful here
+					// because if a new aggregate is linked in we dont want to delete the
+					// new plugins that may have already been instantiated
+					p, err := InstantiatePlugin(PluginType(rr.ResourceURI))
+					type closer interface {
+						Close()
 					}
-					rr.ResultsCacheMu.Unlock()
+					if err == nil && p != nil {
+						if c, ok := p.(closer); ok {
+							c.Close()
+						}
+					}
+				} else {
+					rr.checkcount++
 				}
+				rr.ResultsCacheMu.Unlock()
 			}
 		} else {
 			fmt.Printf("Validate %s\n", agg.EntityID())
@@ -352,7 +347,6 @@ func (d *DomainObjects) GetInternalCommandHandler(backgroundCtx context.Context)
 			return
 		}
 		//fmt.Printf("Sailfish-pump POST payload is %s\n", b)
-		r.Body.Close()
 
 		contentType := r.Header.Get("Content-type")
 		if contentType == "application/xml" {
@@ -404,11 +398,6 @@ func (d *DomainObjects) DumpStatus() http.Handler {
 				} else if ok {
 					orphans++
 					fmt.Fprintf(w, "MISMATCH(tree has id %s)", treeLookup)
-				} else {
-					if agg.EntityID() == injectUUID {
-						fmt.Fprintf(w, "INJECTCMD")
-						injectCmds++
-					}
 				}
 
 				fmt.Fprintf(w, " %s: %s\n", rr.EntityID(), rr.ResourceURI)
@@ -430,7 +419,6 @@ func (d *DomainObjects) DumpStatus() http.Handler {
 
 		fmt.Fprintf(w, "\nSTATS DUMP\n")
 		fmt.Fprintf(w, "Tree(%d) Aggregates(%d) InjectCmds(%d) Orphans(%d)\n", len(d.Tree), len(aggs), injectCmds, orphans)
-		fmt.Fprintf(w, "InjectChan Q Len = %d\n", len(injectChan))
 		fmt.Fprintf(w, "# PLUGINS = %d\n", len(plugins))
 
 	})

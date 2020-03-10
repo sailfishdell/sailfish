@@ -27,4 +27,3 @@ scp sailfish root@${host}:/flash/data0/go/
 ssh root@${host} mount --bind /flash/data0/go/sailfish /usr/bin/sailfish
 ssh root@${host} restorecon /usr/bin/sailfish /etc/redfish.yaml
 ssh root@${host} systemctl restart sailfish
-ssh root@${host} /opt/dell/bin/sailfish_setup.sh
