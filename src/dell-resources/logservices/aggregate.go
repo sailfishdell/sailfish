@@ -81,12 +81,22 @@ func RegisterAggregate(s *testaggregate.Service) {
 						"Name":        "Log Entry Collection",
 
 						// manually set up the fast expand handler since there isn't currently a nice helper
-						"Members": []interface{}{},
+						"Members@meta": map[string]interface{}{
+							"GET": map[string]interface{}{
+								"plugin":    vw.GetURI(),
+								"property":  "members", // here is where we'll store the count
+								"model":     "default",
+								"formatter": "fastexpand",
+
+								"uribase": vw.GetURI(),
+							}},
+
 						// the fastexpand helper directly stores the count here, no formatter needed
-						"Members@odata.count": 0,
+						"Members@odata.count@meta": vw.Meta(view.GETProperty("members"), view.GETModel("default")),
 					}},
 			}, nil
 		})
+
 
 	s.RegisterAggregateFunction("faultlistservices",
 		func(ctx context.Context, subLogger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, vw *view.View, extra interface{}, params map[string]interface{}) ([]eh.Command, error) {
