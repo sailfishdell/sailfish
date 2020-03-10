@@ -137,7 +137,7 @@ func StartService(ctx context.Context, logger log.Logger, ch eh.CommandHandler, 
 				return
 			}
 			handler = reg.view.GetAction(reg.actionName)
-			logger.Crit("Action Running", "uri", data.ResourceURI,"handler",handler)
+			logger.Crit("Action Running", "uri", data.ResourceURI, "handler", handler)
 
 		}
 

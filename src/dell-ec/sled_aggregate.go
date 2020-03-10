@@ -206,15 +206,15 @@ func RegisterSledAggregate(s *testaggregate.Service) {
 
 }
 
-func remove(s []string, r string) []string{
+func remove(s []string, r string) []string {
 	for i, v := range s {
 		if v == r {
-			s[i] = s[len(s) -1]
-			return s[:len(s) -1]
+			s[i] = s[len(s)-1]
+			return s[:len(s)-1]
 
 		}
 	}
-	return s 
+	return s
 }
 
 // Contains tells whether a contains x.
