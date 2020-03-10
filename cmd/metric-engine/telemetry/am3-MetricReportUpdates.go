@@ -15,15 +15,6 @@ import (
 	log "github.com/superchalupa/sailfish/src/log"
 )
 
-// constants to refer to event types
-const (
-	AddMetricReportDefinition    eh.EventType = "AddMetricReportDefinitionEvent"
-	UpdateMetricReportDefinition eh.EventType = "UpdateMetricReportDefinitionEvent"
-	DeleteMetricReportDefinition eh.EventType = "DeleteMetricReportDefinitionEvent"
-	DatabaseMaintenance          eh.EventType = "DatabaseMaintenanceEvent"
-	PublishClock                 eh.EventType = "PublishClockEvent"
-)
-
 // "configuration" -- TODO: need to move to config file
 const (
 	clockPeriod             = 1000 * time.Millisecond
@@ -81,10 +72,7 @@ func backgroundTasks(logger log.Logger, bus eh.EventBus) {
 // StartupTelemetryBase registers event handlers with the awesome mapper and
 // starts up timers and maintenance goroutines
 func StartupTelemetryBase(logger log.Logger, cfg *viper.Viper, am3Svc eventHandler, d busComponents) error {
-	eh.RegisterEventData(AddMetricReportDefinition, func() eh.EventData { return &MetricReportDefinitionData{} })
-	eh.RegisterEventData(UpdateMetricReportDefinition, func() eh.EventData { return &MetricReportDefinitionData{} })
-	eh.RegisterEventData(DeleteMetricReportDefinition, func() eh.EventData { return &MetricReportDefinitionData{} })
-	eh.RegisterEventData(DatabaseMaintenance, func() eh.EventData { return "" })
+	RegisterEvents()
 
 	cfg.SetDefault("main.databasepath",
 		"file:/run/telemetryservice/telemetry_timeseries_database.db?_foreign_keys=on&cache=shared&mode=rwc&_busy_timeout=1000")
@@ -119,6 +107,9 @@ func StartupTelemetryBase(logger log.Logger, cfg *viper.Viper, am3Svc eventHandl
 		return xerrors.Errorf("telemetry manager initialization failed: %w", err)
 	}
 
+	// hint to runtime that we dont need cfg after this point. dont pass this into functions below here
+	cfg = nil
+
 	bus := d.GetBus()
 	am3Svc.AddEventHandler("Create Metric Report Definition", AddMetricReportDefinition, MakeHandlerCreateMRD(logger, telemetryMgr, bus))
 	am3Svc.AddEventHandler("Update Metric Report Definition", UpdateMetricReportDefinition, MakeHandlerUpdateMRD(logger, telemetryMgr, bus))
@@ -144,25 +135,35 @@ func StartupTelemetryBase(logger log.Logger, cfg *viper.Viper, am3Svc eventHandl
 
 func MakeHandlerCreateMRD(logger log.Logger, telemetryMgr *telemetryManager, bus eh.EventBus) func(eh.Event) {
 	return func(event eh.Event) {
-		reportDef, ok := event.Data().(*MetricReportDefinitionData)
+		reportDef, ok := event.Data().(*AddMetricReportDefinitionData)
 		if !ok {
+			logger.Crit("AddMetricReportDefinition handler got event of incorrect format")
 			return
 		}
 
 		// Can't write to event sent in, so make a local copy
 		localReportDefCopy := *reportDef
-		err := telemetryMgr.addMRD(&localReportDefCopy)
-		if err != nil {
-			logger.Crit("Failed to create or update the Report Definition", "Name", reportDef.Name, "err", err)
-			return
+		addError := telemetryMgr.addMRD(&localReportDefCopy.MetricReportDefinitionData)
+		if addError != nil {
+			logger.Crit("Failed to create or update the Report Definition", "Name", reportDef.Name, "err", addError)
 		}
 
 		// After we've done the adjustments to ReportDefinitionToMetricMeta, there
-		// might be orphan rows.
-		err = telemetryMgr.DeleteOrphans()
+		// might be orphan rows. Errors there dont need to be reported back as part of the command response
+		err := telemetryMgr.DeleteOrphans()
 		if err != nil {
 			logger.Crit("Orphan delete failed", "err", err)
 		}
+
+		respEvent, err := reportDef.NewResponseEvent(addError)
+		if err != nil {
+			logger.Crit("Error creating response event", "err", err, "ReportDefintion", reportDef.Name)
+			return
+		}
+
+		//data, ok := respEvent.Data().(*AddMetricReportDefinitionResponseData)
+		// Should add the populated metric report definition event as a response?
+		publishHelper(logger, bus, respEvent)
 	}
 }
 

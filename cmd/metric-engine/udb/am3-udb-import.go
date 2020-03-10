@@ -17,7 +17,7 @@ import (
 	"golang.org/x/xerrors"
 
 	"github.com/superchalupa/sailfish/cmd/metric-engine/fifocompat"
-	"github.com/superchalupa/sailfish/cmd/metric-engine/telemetry-db"
+	"github.com/superchalupa/sailfish/cmd/metric-engine/telemetry"
 	"github.com/superchalupa/sailfish/src/looplab/event"
 
 	log "github.com/superchalupa/sailfish/src/log"

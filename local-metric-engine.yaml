@@ -4,12 +4,16 @@ main:
 udb:
     udbdatabasepath: file:data/DMLiveObjectDatabase.db?cache=shared&_foreign_keys=off&mode=ro&_busy_timeout=1000
     shmdatabasepath: file:data/SHM.db?cache=shared&_foreign_keys=off&mode=ro&_busy_timeout=1000
-    udbnotifypipe: /dev/null
+    udbnotifypipe: data/udbnotify.pipe
     startup: ["startup-events", "addon-events"]
 
 pprof: [ "unix:data/http.socket" ]
 SSE: [ "unix:data/http.socket" ]
 Redfish: [ "unix:data/http.socket" ]
+
+triggers:
+  clientIPCPipe: data/clientipc
+  subList: data/sublist.json
 
 Addon-Events:
   # this is to test the report definition update codepath

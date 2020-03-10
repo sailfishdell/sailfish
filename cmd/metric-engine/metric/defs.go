@@ -48,12 +48,12 @@ func (cmd *Command) NewResponseEvent(err error) (eh.Event, error) {
 	if err != nil {
 		return nil, fmt.Errorf("could not create response: %w", err)
 	}
-	cr, ok := data.(*CommandResponse)
+	cr, ok := data.(Responser)
 	if !ok {
-		return nil, fmt.Errorf("internal programming error: response encoded in cmd wasn't a response type")
+		return nil, fmt.Errorf("internal programming error: response encoded in cmd wasn't a response type: %T -> %+v", data, data)
 	}
-	cr.err = err
-	cr.RequestID = cmd.RequestID
+	cr.setError(err)
+	cr.setRequestID(cmd.RequestID)
 
 	return eh.NewEvent(cmd.ResponseType, cr, time.Now()), nil
 }
@@ -63,16 +63,42 @@ func (cmd *Command) ResponseWaitFn() func(eh.Event) bool {
 		if evt.EventType() != cmd.ResponseType {
 			return false
 		}
-		if data, ok := evt.Data().(*CommandResponse); ok && data.RequestID == cmd.RequestID {
+		if data, ok := evt.Data().(Responser); ok && data.GetRequestID() == cmd.RequestID {
 			return true
 		}
 		return false
 	}
 }
 
+func (cmd *Command) GetRequestID() eh.UUID {
+	return cmd.RequestID
+}
+
+type Responser interface {
+	GetRequestID() eh.UUID
+	setRequestID(eh.UUID)
+	setError(error)
+}
+
 type CommandResponse struct {
 	RequestID eh.UUID
 	err       error
+}
+
+func (cr *CommandResponse) GetRequestID() eh.UUID {
+	return cr.RequestID
+}
+
+func (cr *CommandResponse) setRequestID(id eh.UUID) {
+	cr.RequestID = id
+}
+
+func (cr *CommandResponse) GetError() error {
+	return cr.err
+}
+
+func (cr *CommandResponse) setError(err error) {
+	cr.err = err
 }
 
 // SQLTimeInt is a wrapper around golang time that serializes and deserializes 64-bit nanosecond time rather than the default 32-bit second

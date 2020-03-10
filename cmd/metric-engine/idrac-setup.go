@@ -15,7 +15,7 @@ import (
 	"github.com/superchalupa/sailfish/src/ocp/am3"
 
 	"github.com/superchalupa/sailfish/cmd/metric-engine/metric"
-	"github.com/superchalupa/sailfish/cmd/metric-engine/telemetry-db"
+	"github.com/superchalupa/sailfish/cmd/metric-engine/telemetry"
 	"github.com/superchalupa/sailfish/cmd/metric-engine/triggers"
 	"github.com/superchalupa/sailfish/cmd/metric-engine/udb"
 )
@@ -110,8 +110,8 @@ func injectStartupEvents(logger log.Logger, cfgMgr *viper.Viper, section string,
 
 		err = json.Unmarshal([]byte(dataString), &eventData)
 		if err != nil {
-			// well if it doesn't unmarshall, try to just send it as a string (Used for sending DatabaseMaintenance events.
-			eventData = dataString
+			logger.Crit("Unmarshal error", "err", err, "json_string", dataString)
+			continue
 		}
 
 		fmt.Printf("\tPublishing Startup Event (%s)\n", name)
@@ -121,5 +121,6 @@ func injectStartupEvents(logger log.Logger, cfgMgr *viper.Viper, section string,
 		if err != nil {
 			logger.Crit("Error publishing event to internal event bus, should never happen!", "err", err)
 		}
+		evt.Wait()
 	}
 }

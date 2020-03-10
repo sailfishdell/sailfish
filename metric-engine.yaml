@@ -28,9 +28,14 @@ Startup-Events:
     #   [ ] Data correct
     data: |
       {
-        "Name": "AggregationMetrics",   "Enabled": true, "Type": "OnRequest", "TimeSpan": 60000000000, "Updates": "AppendWrapsWhenFull", "SuppressDups": false,
-        "Actions": ["LogToMetricReportsCollection"],
-        "Metrics": [ { "SourcePattern": "aggregation-metrics" } ]
+        "Id": "AggregationMetrics",
+        "MetricReportDefinitionEnabled": true,
+        "MetricReportDefinitionType": "OnRequest",
+        "ReportTimespan": "PT60S",
+        "ReportUpdates": "AppendWrapsWhenFull",
+        "SuppressRepeatedMetricValue": false,
+        "ReportActions": ["LogToMetricReportsCollection"],
+        "Metrics": [ { "OEM": { "Dell": {"Source": "aggregation-metrics" }}} ]
       }
 
   - name: AddMetricReportDefinition
@@ -43,16 +48,25 @@ Startup-Events:
     #   [ ] Data correct
     data: |
       {
-        "Name": "CPUMemMetrics",        "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false,
-        "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [ { "SourcePattern": "cpumem" } ]
+        "Id": "CPUMemMetrics",
+        "MetricReportDefinitionEnabled": true,
+        "MetricReportDefinitionType": "Periodic",
+        "ReportUpdates": "Overwrite",
+        "SuppressRepeatedMetricValue": false,
+        "ReportActions": ["RedfishEvent", "LogToMetricReportsCollection"],
+        "Schedule": {"RecurrenceInterval": "PT60S"},
+        "Metrics": [ { "OEM": {"Dell": {"Source": "cpumem" }}} ]
       }
 
   - name: AddMetricReportDefinition
     # "TelemetryCPURegisters.1.ReportInterval": 0,
     data: |
-      { "Name": "CPURegisters",         "Enabled": true, "Type": "OnChange", "Updates": "AppendWrapsWhenFull", "SuppressDups": true,
-        "Actions": [],
+      { "Id": "CPURegisters",
+        "MetricReportDefinitionEnabled": true,
+        "MetricReportDefinitionType": "OnChange",
+        "ReportUpdates": "AppendWrapsWhenFull",
+        "SuppressRepeatedMetricValue": true,
+        "ReportActions": [],
         "Metrics": []
       }
 
@@ -67,11 +81,16 @@ Startup-Events:
     #   [ ] Data correct
     data: |
       {
-        "Name": "CPUSensor",            "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false,
-        "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
+        "Id": "CPUSensor",
+        "MetricReportDefinitionEnabled": true,
+        "MetricReportDefinitionType": "Periodic",
+        "Schedule": {"RecurrenceInterval": "PT60S"},
+        "ReportUpdates": "Overwrite",
+        "SuppressRepeatedMetricValue": false,
+        "ReportActions": ["RedfishEvent", "LogToMetricReportsCollection"],
         "Metrics": [
-          {"MetricID": "TemperatureReading", "FQDDPattern": "iDRAC.Embedded.1#CPU%Temp"},
-          {"MetricID": "TemperatureReading", "FQDDPattern": "CPU.Socket.%"}
+          {"MetricID": "TemperatureReading", "OEM": {"Dell": {"FQDD": "iDRAC.Embedded.1#CPU%Temp"}}},
+          {"MetricID": "TemperatureReading", "OEM": {"Dell": {"FQDD": "CPU.Socket.%"}}}
         ]
       }
 
@@ -87,9 +106,14 @@ Startup-Events:
     #   [ ] Data correct
     data: |
       {
-        "Name": "CUPS", "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false,
-        "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [ { "SourcePattern": "currentcups" } ]
+        "Id": "CUPS",
+        "MetricReportDefinitionEnabled": true,
+        "MetricReportDefinitionType": "Periodic",
+        "Schedule": {"RecurrenceInterval": "PT60S"},
+        "SuppressRepeatedMetricValue": false,
+        "ReportUpdates": "Overwrite",
+        "ReportActions": ["RedfishEvent", "LogToMetricReportsCollection"],
+        "Metrics": [ { "OEM": {"Dell": {"Source": "currentcups" }}} ]
       }
 
   - name: AddMetricReportDefinition
@@ -102,9 +126,14 @@ Startup-Events:
     #   [ ] Data correct
     data: |
       {
-        "Name": "FanSensor",            "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false,
-        "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [ { "SourcePattern": "fan" } ]
+        "Id": "FanSensor",
+        "MetricReportDefinitionEnabled": true,
+        "MetricReportDefinitionType": "Periodic",
+        "Schedule": {"RecurrenceInterval": "PT60S"},
+        "ReportUpdates": "Overwrite",
+        "SuppressRepeatedMetricValue": false,
+        "ReportActions": ["RedfishEvent", "LogToMetricReportsCollection"],
+        "Metrics": [ { "OEM": {"Dell": {"Source": "fan" }}} ]
       }
 
   - name: AddMetricReportDefinition
@@ -122,9 +151,14 @@ Startup-Events:
     # TODO: NOT SURE IF THE FQDDPATTERN IS RIGHT, DONT HAVE AN EXAMPLE
     data: |
       {
-        "Name": "FCSensor",             "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false,
-        "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [{"MetricID": "TemperatureReading", "FQDDPattern": "FC.%"}]
+        "Id": "FCSensor",
+        "MetricReportDefinitionEnabled": true,
+        "MetricReportDefinitionType": "Periodic",
+        "Schedule": {"RecurrenceInterval": "PT60S"},
+        "ReportUpdates": "Overwrite",
+        "SuppressRepeatedMetricValue": false,
+        "ReportActions": ["RedfishEvent", "LogToMetricReportsCollection"],
+        "Metrics": [{"MetricID": "TemperatureReading", "OEM": {"Dell": {"FQDD": "FC.%"}}}]
       }
 
   - name: AddMetricReportDefinition
@@ -139,9 +173,14 @@ Startup-Events:
     #   [ ] Data correct
     data: |
       {
-        "Name": "FPGASensor",           "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false,
-        "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [ { "SourcePattern": "fpga-sensor" } ]
+        "Id": "FPGASensor",
+        "MetricReportDefinitionEnabled": true,
+        "MetricReportDefinitionType": "Periodic",
+        "Schedule": {"RecurrenceInterval": "PT60S"},
+        "ReportUpdates": "Overwrite",
+        "SuppressRepeatedMetricValue": false,
+        "ReportActions": ["RedfishEvent", "LogToMetricReportsCollection"],
+        "Metrics": [ { "OEM": {"Dell": {"Source": "fpga-sensor" }}} ]
       }
 
   - name: AddMetricReportDefinition
@@ -155,9 +194,14 @@ Startup-Events:
     #   [ ] Data correct
     data: |
       {
-        "Name": "GPUMetrics",           "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false,
-        "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [ { "SourcePattern": "gpu-health" } ]
+        "Id": "GPUMetrics",
+        "MetricReportDefinitionEnabled": true,
+        "MetricReportDefinitionType": "Periodic",
+        "Schedule": {"RecurrenceInterval": "PT60S"},
+        "ReportUpdates": "Overwrite",
+        "SuppressRepeatedMetricValue": false,
+        "ReportActions": ["RedfishEvent", "LogToMetricReportsCollection"],
+        "Metrics": [ { "OEM": {"Dell": {"Source": "gpu-health" }}} ]
       }
 
   - name: AddMetricReportDefinition
@@ -171,9 +215,14 @@ Startup-Events:
     #   [ ] Data correct
     data: |
       {
-        "Name": "GPUStatistics",        "Enabled": true, "Type": "Periodic", "Period": 600, "Updates": "Overwrite", "SuppressDups": false,
-        "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [ { "SourcePattern": "gpu-statistics" } ]
+        "Id": "GPUStatistics",
+        "MetricReportDefinitionEnabled": true,
+        "MetricReportDefinitionType": "Periodic",
+        "Schedule": {"RecurrenceInterval": "PT600S"},
+        "ReportUpdates": "Overwrite",
+        "SuppressRepeatedMetricValue": false,
+        "ReportActions": ["RedfishEvent", "LogToMetricReportsCollection"],
+        "Metrics": [ { "OEM": {"Dell": {"Source": "gpu-statistics" }}} ]
       }
 
   - name: AddMetricReportDefinition
@@ -188,11 +237,16 @@ Startup-Events:
     #   [ ] Data correct
     data: |
       {
-        "Name": "MemorySensor",         "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false,
-        "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
+        "Id": "MemorySensor",
+        "MetricReportDefinitionEnabled": true,
+        "MetricReportDefinitionType": "Periodic",
+        "Schedule": {"RecurrenceInterval": "PT60S"},
+        "ReportUpdates": "Overwrite",
+        "SuppressRepeatedMetricValue": false,
+        "ReportActions": ["RedfishEvent", "LogToMetricReportsCollection"],
         "Metrics": [
-          {"MetricID": "TemperatureReading", "FQDDPattern": "DIMM.Socket.%"},
-          { "SourcePattern": "memory-sensor" }
+          {"MetricID": "TemperatureReading", "OEM": {"Dell": {"FQDD": "DIMM.Socket.%"}}},
+          { "OEM": {"Dell": {"Source": "memory-sensor" }}}
         ]
       }
 
@@ -208,9 +262,14 @@ Startup-Events:
     # Gets data from hiitempsensors query
     data: |
       {
-        "Name": "NICSensor",            "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false,
-        "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [{"MetricID": "TemperatureReading", "FQDDPattern": "NIC.%"}]
+        "Id": "NICSensor",
+        "MetricReportDefinitionEnabled": true,
+        "MetricReportDefinitionType": "Periodic",
+        "Schedule": {"RecurrenceInterval": "PT60S"},
+        "ReportUpdates": "Overwrite",
+        "SuppressRepeatedMetricValue": false,
+        "ReportActions": ["RedfishEvent", "LogToMetricReportsCollection"],
+        "Metrics": [{"MetricID": "TemperatureReading", "OEM": {"Dell": {"FQDD": "NIC.%"}}}]
       }
 
   - name: AddMetricReportDefinition
@@ -223,9 +282,14 @@ Startup-Events:
     #   [ ] Data correct
     data: |
       {
-        "Name": "NICStatistics",        "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false,
-        "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [ { "SourcePattern": "nicportstats" } ]
+        "Id": "NICStatistics",
+        "MetricReportDefinitionEnabled": true,
+        "MetricReportDefinitionType": "Periodic",
+        "Schedule": {"RecurrenceInterval": "PT60S"},
+        "ReportUpdates": "Overwrite",
+        "SuppressRepeatedMetricValue": false,
+        "ReportActions": ["RedfishEvent", "LogToMetricReportsCollection"],
+        "Metrics": [ { "OEM": {"Dell": {"Source": "nicportstats" }}} ]
       }
 
   - name: AddMetricReportDefinition
@@ -239,9 +303,14 @@ Startup-Events:
     #   [ ] Data correct
     data: |
       {
-        "Name": "NVMeSMARTData",        "Enabled": true, "Type": "Periodic", "Period": 3600, "Updates": "Overwrite", "SuppressDups": false,
-        "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [ { "SourcePattern": "smart-nvme" } ]
+        "Id": "NVMeSMARTData",
+        "MetricReportDefinitionEnabled": true,
+        "MetricReportDefinitionType": "Periodic",
+        "Schedule": {"RecurrenceInterval": "PT3600S"},
+        "ReportUpdates": "Overwrite",
+        "SuppressRepeatedMetricValue": false,
+        "ReportActions": ["RedfishEvent", "LogToMetricReportsCollection"],
+        "Metrics": [ { "OEM": {"Dell": {"Source": "smart-nvme" }}} ]
       }
 
   - name: AddMetricReportDefinition
@@ -254,9 +323,14 @@ Startup-Events:
     #   [ ] Data correct
     data: |
       {
-        "Name": "PowerMetrics",         "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false,
-        "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [ { "SourcePattern": "powermetrics" } ]
+        "Id": "PowerMetrics",
+        "MetricReportDefinitionEnabled": true,
+        "MetricReportDefinitionType": "Periodic",
+        "Schedule": {"RecurrenceInterval": "PT60S"},
+        "ReportUpdates": "Overwrite",
+        "SuppressRepeatedMetricValue": false,
+        "ReportActions": ["RedfishEvent", "LogToMetricReportsCollection"],
+        "Metrics": [ { "OEM": {"Dell": {"Source": "powermetrics" }}} ]
       }
 
   - name: AddMetricReportDefinition
@@ -269,9 +343,14 @@ Startup-Events:
     #   [ ] Data correct
     data: |
       {
-        "Name": "PowerStatistics",      "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false,
-        "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [ { "SourcePattern": "powerstatistics" } ]
+        "Id": "PowerStatistics",
+        "MetricReportDefinitionEnabled": true,
+        "MetricReportDefinitionType": "Periodic",
+        "Schedule": {"RecurrenceInterval": "PT60S"},
+        "ReportUpdates": "Overwrite",
+        "SuppressRepeatedMetricValue": false,
+        "ReportActions": ["RedfishEvent", "LogToMetricReportsCollection"],
+        "Metrics": [ { "OEM": {"Dell": {"Source": "powerstatistics" }}} ]
       }
 
   - name: AddMetricReportDefinition
@@ -284,9 +363,14 @@ Startup-Events:
     #   [ ] Data correct
     data: |
       {
-        "Name": "PSUMetrics",           "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false,
-        "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [ { "SourcePattern": "psu-sensor" } ]
+        "Id": "PSUMetrics",
+        "MetricReportDefinitionEnabled": true,
+        "MetricReportDefinitionType": "Periodic",
+        "Schedule": {"RecurrenceInterval": "PT60S"},
+        "ReportUpdates": "Overwrite",
+        "SuppressRepeatedMetricValue": false,
+        "ReportActions": ["RedfishEvent", "LogToMetricReportsCollection"],
+        "Metrics": [ { "OEM": {"Dell": {"Source": "psu-sensor" }}} ]
       }
 
   - name: AddMetricReportDefinition
@@ -300,9 +384,14 @@ Startup-Events:
     #   [ ] Data correct
     data: |
       {
-        "Name": "Sensor",               "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false,
-        "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [ { "SourcePattern": "rawsensor" } ]
+        "Id": "Sensor",
+        "MetricReportDefinitionEnabled": true,
+        "MetricReportDefinitionType": "Periodic",
+        "Schedule": {"RecurrenceInterval": "PT60S"},
+        "ReportUpdates": "Overwrite",
+        "SuppressRepeatedMetricValue": false,
+        "ReportActions": ["RedfishEvent", "LogToMetricReportsCollection"],
+        "Metrics": [ { "OEM": {"Dell": {"Source": "rawsensor" }}} ]
       }
 
   - name: AddMetricReportDefinition
@@ -316,9 +405,14 @@ Startup-Events:
     #   [ ] Data correct
     data: |
       {
-        "Name": "StorageDiskSMARTData", "Enabled": true, "Type": "Periodic", "Period": 3600, "Updates": "Overwrite", "SuppressDups": false,
-        "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [ { "SourcePattern": "smart-sas" } ]
+        "Id": "StorageDiskSMARTData",
+        "MetricReportDefinitionEnabled": true,
+        "MetricReportDefinitionType": "Periodic",
+        "Schedule": {"RecurrenceInterval": "PT3600S"},
+        "ReportUpdates": "Overwrite",
+        "SuppressRepeatedMetricValue": false,
+        "ReportActions": ["RedfishEvent", "LogToMetricReportsCollection"],
+        "Metrics": [ { "OEM": {"Dell": {"Source": "smart-sas" }}} ]
       }
 
   - name: AddMetricReportDefinition
@@ -334,9 +428,14 @@ Startup-Events:
     #   [ ] Data correct
     data: |
       {
-        "Name": "StorageSensor",        "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false,
-        "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [ { "SourcePattern": "storage-sensor" } ]
+        "Id": "StorageSensor",
+        "MetricReportDefinitionEnabled": true,
+        "MetricReportDefinitionType": "Periodic",
+        "Schedule": {"RecurrenceInterval": "PT60S"},
+        "ReportUpdates": "Overwrite",
+        "SuppressRepeatedMetricValue": false,
+        "ReportActions": ["RedfishEvent", "LogToMetricReportsCollection"],
+        "Metrics": [ { "OEM": {"Dell": {"Source": "storage-sensor" }}} ]
       }
 
   - name: AddMetricReportDefinition
@@ -349,9 +448,15 @@ Startup-Events:
     #   [ ] Data correct
     data: |
       {
-        "Name": "ThermalMetrics",       "Enabled": true, "Type": "OnChange", "TimeSpan": 60000000000, "Period": 5, "Updates": "Overwrite", "SuppressDups": false,
-        "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [ { "SourcePattern": "thermalmetrics" } ] }
+        "Id": "ThermalMetrics",
+        "MetricReportDefinitionEnabled": true,
+        "MetricReportDefinitionType": "OnChange",
+        "ReportTimespan": "PT60S",
+        "Schedule": {"RecurrenceInterval": "PT5S"},
+        "ReportUpdates": "Overwrite",
+        "SuppressRepeatedMetricValue": false,
+        "ReportActions": ["RedfishEvent", "LogToMetricReportsCollection"],
+        "Metrics": [ { "OEM": {"Dell": {"Source": "thermalmetrics" }}} ] }
 
   - name: AddMetricReportDefinition
     # TODO: Device Poll Frequency: 5
@@ -364,11 +469,16 @@ Startup-Events:
     #   [ ] Data correct
     data: |
       {
-        "Name": "ThermalSensor",        "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false,
-        "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
+        "Id": "ThermalSensor",
+        "MetricReportDefinitionEnabled": true,
+        "MetricReportDefinitionType": "Periodic",
+        "Schedule": {"RecurrenceInterval": "PT60S"},
+        "ReportUpdates": "Overwrite",
+        "SuppressRepeatedMetricValue": false,
+        "ReportActions": ["RedfishEvent", "LogToMetricReportsCollection"],
         "Metrics": [
-          { "MetricId": "TemperatureReading", "FQDDPattern": "iDRAC.Embedded.1#SystemBoardInletTemp" },
-          { "MetricId": "TemperatureReading", "FQDDPattern": "iDRAC.Embedded.1#SystemBoardExhaustTemp" }
+          { "MetricId": "TemperatureReading", "OEM": {"Dell": {"FQDD": "iDRAC.Embedded.1#SystemBoardInletTemp" }}},
+          { "MetricId": "TemperatureReading", "OEM": {"Dell": {"FQDD": "iDRAC.Embedded.1#SystemBoardExhaustTemp" }}}
         ]
       }
 
@@ -379,13 +489,13 @@ Startup-Events:
   - name: AddMetricReportDefinition
     data: |
       {
-        "Name": "Thermal",
-        "Enabled": true,
-        "Type": "Periodic",
-        "Period": 60,
-        "Updates": "NewReport",
-        "SuppressDups": true,
-        "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
+        "Id": "Thermal",
+        "MetricReportDefinitionEnabled": true,
+        "MetricReportDefinitionType": "Periodic",
+        "ReportUpdates": "NewReport",
+        "Schedule": {"RecurrenceInterval": "PT60S"},
+        "SuppressRepeatedMetricValue": true,
+        "ReportActions": ["RedfishEvent", "LogToMetricReportsCollection"],
         "Metrics": [
           {"MetricID": "TemperatureReading"},
           {"MetricID": "RPMReading"}
@@ -1847,14 +1957,14 @@ createdb:
             ) || ','
           else ''
           end ||
-          ' "MetricReport": ' || json((
+          ' "MetricReport": ' || IFNULL((
                 select
                   json_object( '@odata.id', '/redfish/v1/TelemetryService/MetricReports/' || Name )
                 from MetricReport as MR
                 where MR.ReportDefinitionID = MetricReportDefinition.ID
                 order by MR.Sequence DESC
                 LIMIT 1
-                )) || ',' ||
+                ), 'null') || ',' ||
           ifnull((
             SELECT
             ' "Metrics": ' ||  json('[' ||  group_concat(a.JSON) || ']') || ',' ||
@@ -1862,37 +1972,39 @@ createdb:
             FROM
             (
               select
-                (
-                 '{' ||
-                 ' "MetricID": "' || MM.NamePattern || '"' ||
-
-                 case MM.PropertyPattern
-                 when '' then ''
-                 else
-                 -- TODO: this is wrong, as it should be an array
-                 ', "MetricProperties": "' || MM.PropertyPattern ||'"'
-                 end ||
-
-                 case MM.CollectionFunction
-                 when '' then ''
-                 else
-                  ', "CollectionFunction": "' || MM.CollectionFunction || '"' ||
-                  ', "CollectionDuration": "' || MM.CollectionDuration || '"'
-                 end ||
-
-                 case MM.FQDDPattern
-                 when '' then ''
-                 else
-                 ', "OEM": ' || json_object(
+                json_object(
+                  'MetricID',
+                    CASE MM.NamePattern
+                    WHEN '' THEN NULL
+                    ELSE MM.NamePattern
+                    END,
+                  'CollectionFunction',
+                    CASE MM.CollectionFunction
+                    WHEN '' THEN NULL
+                    ELSE MM.CollectionFunction
+                    END,
+                  'CollectionDuration',
+                    CASE MM.CollectionDuration
+                    WHEN 0 THEN NULL
+                    ELSE 'PT' || (MM.CollectionDuration/(3600)) || 'H' || ((MM.CollectionDuration/60)%60) || 'M' || (MM.CollectionDuration%60) || 'S'
+                    END,
+                  'OEM', json_object(
                     'Dell', json_object(
-                      'FQDD', MM.FQDDPattern
+                      'FQDD',
+                        CASE MM.FQDDPattern
+                        WHEN '' THEN NULL
+                        ELSE MM.FQDDPattern
+                        END,
+                      'Source',
+                        CASE MM.SourcePattern
+                        WHEN '' THEN NULL
+                        ELSE MM.SourcePattern
+                        END
                     )
                   )
-                 end ||
-                 '}'
                 ) as JSON
               from MetricMeta as MM
-              left join  ReportDefinitionToMetricMeta as rd2mm on rd2mm.MetaID = MM.ID
+              inner join  ReportDefinitionToMetricMeta as rd2mm on rd2mm.MetaID = MM.ID
               where rd2mm.ReportDefinitionID = MetricReportDefinition.ID
               ) AS a ), '"Metrics": [], "Metrics@odata.count": 0' ) ||
           '}'

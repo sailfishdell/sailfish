@@ -28,38 +28,6 @@ const (
 	maxAcceptableDrift      = 2 * time.Second
 )
 
-// MetricReportDefinitionData is the eh event data for adding a new report definition
-type MetricReportDefinitionData struct {
-	Name    string      `db:"Name"`
-	Type    string      `db:"Type"`    // 'Periodic', 'OnChange', 'OnRequest'
-	Actions StringArray `db:"Actions"` // 	'LogToMetricReportsCollection', 'RedfishEvent'
-	Updates string      `db:"Updates"` // 'AppendStopsWhenFull', 'AppendWrapsWhenFull', 'NewReport', 'Overwrite'
-
-	// Validation: It's assumed that TimeSpan is parsed on ingress. MRD Schema
-	// specifies TimeSpan as a duration.
-	// Represents number of seconds worth of metrics in a report. Metrics will be
-	// reported from the Report generation as the "End" and metrics must have
-	// timestamp > max(End-timespan, report start)
-	TimeSpan time.Duration `db:"TimeSpan"`
-
-	// Validation: It's assumed that Period is parsed on ingress. Redfish
-	// "Schedule" object is flexible, but we'll allow only period in seconds for
-	// now When it gets to this struct, it needs to be expressed in Seconds.
-	Period       int64           `db:"Period"` // period in seconds when type=periodic
-	Metrics      []RawMetricMeta `db:"Metrics" json:"Metrics"`
-	Enabled      bool            `db:"Enabled"`
-	SuppressDups bool            `db:"SuppressDups"`
-}
-
-// MetricReportDefinition represents a DB record for a metric report
-// definition. Basically adds ID and a static AppendLimit (for now, until we
-// can figure out how to make this dynamic).
-type MetricReportDefinition struct {
-	*MetricReportDefinitionData
-	AppendLimit int   `db:"AppendLimit"`
-	ID          int64 `db:"ID"`
-}
-
 // Factory manages getting/putting into db
 type telemetryManager struct {
 	logger           log.Logger
@@ -236,12 +204,12 @@ func (factory *telemetryManager) deleteMRD(mrdEvData *MetricReportDefinitionData
 
 // "Configuration" constants that TODO need to move to be read from cfg file
 const (
-	MinPeriod       = 5
-	MaxPeriod       = 2 * 60 * 60
-	DefaultPeriod   = 180
+	MinPeriod       = 5 * time.Second
+	MaxPeriod       = 2 * time.Hour
+	DefaultPeriod   = (RedfishDuration)(5 * time.Minute)
 	MinTimeSpan     = 60 * time.Second
 	MaxTimeSpan     = 4 * time.Hour
-	DefaultTimeSpan = MaxTimeSpan
+	DefaultTimeSpan = (RedfishDuration)(MaxTimeSpan)
 )
 
 // validateMRD will validate (and fix/set defaults) for MRD -> Validate Type, Period, and Timespan.
@@ -256,42 +224,52 @@ func validateMRD(mrd *MetricReportDefinition) {
 	}
 	TimeSpanMust := func(b bool) {
 		if !b {
-			mrd.Period = DefaultPeriod
+			mrd.TimeSpan = DefaultTimeSpan
 		}
 	}
 
 	// Globally: everything has to be within limits, or zero where allowed
-	PeriodMust(mrd.Period <= MaxPeriod)
-	PeriodMust(mrd.Period >= MinPeriod || mrd.Period == 0)
-	TimeSpanMust(mrd.TimeSpan <= MaxTimeSpan)
-	TimeSpanMust(mrd.TimeSpan >= MinTimeSpan || mrd.TimeSpan == 0)
+	PeriodMust(mrd.Period.Duration() <= MaxPeriod)
+	PeriodMust(mrd.Period.Duration() >= MinPeriod || mrd.Period.Duration() == 0)
+	TimeSpanMust(mrd.GetTimeSpan() <= MaxTimeSpan)
+	TimeSpanMust(mrd.GetTimeSpan() >= MinTimeSpan || mrd.GetTimeSpan() == 0)
 
 	switch mrd.Type {
 	case metric.Periodic:
-		PeriodMust(mrd.Period > 0) // periodic reports must have nonzero period
+		PeriodMust(mrd.Period.Duration() > 0) // periodic reports must have nonzero period
 
 		switch mrd.Updates {
 		case metric.AppendWrapsWhenFull, metric.AppendStopsWhenFull:
-			TimeSpanMust(mrd.TimeSpan > 0) // all Append* reports must have nonzero TimeSpan
-		case metric.Overwrite:
-		case metric.NewReport:
+			TimeSpanMust(mrd.GetTimeSpan() > 0) // all Append* reports must have nonzero TimeSpan
+		case metric.Overwrite, metric.NewReport:
+			// all good
+		default:
+			fmt.Printf("INVALID mrd.Updates: '%s', RESET to '%s'\n", mrd.Updates, metric.Overwrite)
+			mrd.Updates = metric.Overwrite
 		}
 
 	case metric.OnChange:
-		mrd.Period = 0                            // Period must be zero for OnChange
-		TimeSpanMust(mrd.TimeSpan >= MinTimeSpan) // OnChange requires nonzero TimeSpan
+		mrd.Period = RedfishDuration(0)                // Period must be zero for OnChange
+		TimeSpanMust(mrd.GetTimeSpan() >= MinTimeSpan) // OnChange requires nonzero TimeSpan
+		switch mrd.Updates {
+		case metric.AppendWrapsWhenFull, metric.AppendStopsWhenFull, metric.Overwrite, metric.NewReport:
+			// all good
+		default:
+			fmt.Printf("INVALID mrd.Updates: '%s', RESET to '%s'\n", mrd.Updates, metric.Overwrite)
+			mrd.Updates = metric.Overwrite
+		}
 
 	case metric.OnRequest:
 		// Implicitly force Updates/Actions/Period, validate TimeSpan
 		mrd.Updates = metric.AppendWrapsWhenFull
 		mrd.Actions = []string{}
-		mrd.Period = 0                            // Period must be zero for OnChange
-		TimeSpanMust(mrd.TimeSpan >= MinTimeSpan) // OnRequest requires nonzero TimeSpan
+		mrd.Period = RedfishDuration(0)                // Period must be zero for OnChange
+		TimeSpanMust(mrd.GetTimeSpan() >= MinTimeSpan) // OnRequest requires nonzero TimeSpan
 
 	default:
 		mrd.Type = metric.OnRequest
 		mrd.Enabled = false
-		mrd.Period = 0
+		mrd.Period = RedfishDuration(0)
 		mrd.TimeSpan = DefaultTimeSpan
 	}
 }
@@ -394,7 +372,7 @@ func (factory *telemetryManager) updateMRD(mrdEvData *MetricReportDefinitionData
 
 		if mrd.Type == metric.Periodic && mrd.Period != newMRD.Period {
 			// If this is a periodic report, put it in the NextMRTS map so it'll get updated on the next report period
-			factory.NextMRTS[mrd.Name] = factory.MetricTSHWM.Add(time.Duration(newMRD.Period) * time.Second)
+			factory.NextMRTS[mrd.Name] = factory.MetricTSHWM.Add(newMRD.Period.Duration())
 		}
 
 		return nil
@@ -444,7 +422,7 @@ func (factory *telemetryManager) addMRD(mrdEvData *MetricReportDefinitionData) (
 
 		// If this is a periodic report, put it in the NextMRTS map so it'll get updated on the next report period
 		if mrd.Type == metric.Periodic {
-			factory.NextMRTS[mrd.Name] = factory.MetricTSHWM.Add(time.Duration(mrd.Period) * time.Second)
+			factory.NextMRTS[mrd.Name] = factory.MetricTSHWM.Add(mrd.Period.Duration())
 		}
 
 		return nil
@@ -650,8 +628,8 @@ func (factory *telemetryManager) GenerateMetricReport(tx *sqlx.Tx, name string) 
 		delete(factory.NextMRTS, MRD.Name)
 		switch MRD.Type {
 		case metric.Periodic:
-			factory.NextMRTS[MRD.Name] = factory.MetricTSHWM.Add(time.Duration(MRD.Period) * time.Second)
-			sqlargs["Start"] = factory.MetricTSHWM.Add(-time.Duration(MRD.Period) * time.Second).UnixNano()
+			factory.NextMRTS[MRD.Name] = factory.MetricTSHWM.Add(MRD.Period.Duration())
+			sqlargs["Start"] = factory.MetricTSHWM.Add(-MRD.Period.Duration()).UnixNano()
 			switch MRD.Updates {
 			case metric.NewReport:
 				sqlargs["Name"] = fmt.Sprintf("%s-%s", MRD.Name, factory.MetricTSHWM.UTC().Format(time.RFC3339))
@@ -665,7 +643,7 @@ func (factory *telemetryManager) GenerateMetricReport(tx *sqlx.Tx, name string) 
 				SQL = append(SQL, "update_report_ts_seq")
 			}
 		case metric.OnChange, metric.OnRequest:
-			sqlargs["Start"] = factory.MetricTSHWM.Add(-MRD.TimeSpan).UnixNano()
+			sqlargs["Start"] = factory.MetricTSHWM.Add(-MRD.GetTimeSpan()).UnixNano()
 			switch MRD.Updates {
 			case metric.NewReport:
 				sqlargs["Name"] = fmt.Sprintf("%s-%s", MRD.Name, factory.MetricTSHWM.UTC().Format(time.RFC3339))
@@ -772,23 +750,6 @@ func (factory *telemetryManager) CheckOnChangeReports(tx *sqlx.Tx, instancesUpda
 	})
 }
 
-// RawMetricMeta is a sub structure to help serialize stuff to db. it containst
-// the stuff we are putting in or taking out of DB for Meta.
-// Validation: It's assumed that Duration is parsed on ingress. The ingress
-// format is (Redfish Duration): -?P(\d+D)?(T(\d+H)?(\d+M)?(\d+(.\d+)?S)?)?
-// When it gets to this struct, it needs to be expressed in Seconds.
-type RawMetricMeta struct {
-	// Meta fields
-	MetaID             int64         `db:"MetaID"`
-	NamePattern        string        `db:"NamePattern" json:"MetricID"`
-	FQDDPattern        string        `db:"FQDDPattern"`
-	SourcePattern      string        `db:"SourcePattern"`
-	PropertyPattern    string        `db:"PropertyPattern"`
-	Wildcards          StringArray   `db:"Wildcards"`
-	CollectionFunction string        `db:"CollectionFunction"`
-	CollectionDuration time.Duration `db:"CollectionDuration"`
-}
-
 // RawMetricInstance is a sub structure to help serialize stuff to db. it
 // containst the stuff we are putting in or taking out of DB for Instance.
 type RawMetricInstance struct {
@@ -841,7 +802,7 @@ func (factory *telemetryManager) InsertMetricInstance(tx *sqlx.Tx, ev *metric.Me
 
 			// Construct label and Scratch space - (validate and audit this to make sure labels match legacy)
 			mm.Label = fmt.Sprintf("%s %s", mm.Context, mm.Name)
-			mm.FlushTime = metric.SQLTimeInt{Time: mm.Timestamp.Add(mm.CollectionDuration * time.Second)}
+			mm.FlushTime = metric.SQLTimeInt{Time: mm.Timestamp.Add(mm.CollectionDuration.Duration())}
 			mm.CollectionScratch.Sum = 0
 			mm.CollectionScratch.Numvalues = 0
 			mm.CollectionScratch.Maximum = -math.MaxFloat64
@@ -971,7 +932,7 @@ func (factory *telemetryManager) handleAggregatedMV(mm *MetricMeta, floatVal flo
 			}
 
 			// now, reset everything to be ready for the next metric value
-			mm.FlushTime = metric.SQLTimeInt{Time: mm.Timestamp.Add(mm.CollectionDuration * time.Second)}
+			mm.FlushTime = metric.SQLTimeInt{Time: mm.Timestamp.Add(mm.CollectionDuration.Duration())}
 			mm.CollectionScratch.Sum = 0
 			mm.CollectionScratch.Numvalues = 0
 			mm.CollectionScratch.Maximum = -math.MaxFloat64
