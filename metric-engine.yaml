@@ -345,8 +345,8 @@ Startup-Events:
       {
         "Id": "PowerStatistics",
         "MetricReportDefinitionEnabled": true,
-        "MetricReportDefinitionType": "Periodic",
-        "Schedule": {"RecurrenceInterval": "PT60S"},
+        "MetricReportDefinitionType": "OnChange",
+        "ReportTimespan": "PT60S",
         "ReportUpdates": "Overwrite",
         "SuppressRepeatedMetricValue": false,
         "ReportActions": ["RedfishEvent", "LogToMetricReportsCollection"],
@@ -569,7 +569,8 @@ UDB-Metric-Import:
       SHM.db:
         TblsPowerStatistics:
     ScanInterval: 0
-    WaitInterval: 10
+    # telemetrypop populates this table once per minute, dont scan more frequently than that.
+    WaitInterval: 60
     # There is a TblAvgPowerConsumptionStatDataObj, why aren't we using that?
     Query: |
       SELECT
@@ -579,9 +580,9 @@ UDB-Metric-Import:
         friendlyFQDD as FriendlyFQDD,
         FQDD as FQDD,
 
-        -- MEB - 2020-02-07 - observed 10s normal with outliers at 17s, 24s. possibly suppressed upstream
-        10000000000 as 'SensorInterval',
-        2000000000 as 'SensorSlack',
+        -- MEB - 2020-03-10 - From Sailaja - backend reports every minute
+        60000000000 as 'SensorInterval',
+        5000000000 as 'SensorSlack',
         true as 'RequiresExpand',
 
         LastWeekMinPowerTime as 'Metric-LastWeekMinPowerTime',
@@ -589,21 +590,25 @@ UDB-Metric-Import:
         LastWeekMaxPowerTime as 'Metric-LastWeekMaxPowerTime',
         LastWeekMaxPower as 'Metric-LastWeekMaxPower',
         LastWeekAvgPower as 'Metric-LastWeekAvgPower',
-        LastMinuteMinPowerTime as 'Metric-LastMinuteMinPowerTime',
-        LastMinuteMinPower as 'Metric-LastMinuteMinPower',
-        LastMinuteMaxPowerTime as 'Metric-LastMinuteMaxPowerTime',
-        LastMinuteMaxPower as 'Metric-LastMinuteMaxPower',
-        LastMinuteAvgPower as 'Metric-LastMinuteAvgPower',
+
+        LastDayMinPowerTime as 'Metric-LastDayMinPowerTime',
+        LastDayMinPower as 'Metric-LastDayMinPower',
+        LastDayMaxPowerTime as 'Metric-LastDayMaxPowerTime',
+        LastDayMaxPower as 'Metric-LastDayMaxPower',
+        LastDayAvgPower as 'Metric-LastDayAvgPower',
+
         LastHourMinPowerTime as 'Metric-LastHourMinPowerTime',
         LastHourMinPower as 'Metric-LastHourMinPower',
         LastHourMaxPowerTime as 'Metric-LastHourMaxPowerTime',
         LastHourMaxPower as 'Metric-LastHourMaxPower',
         LastHourAvgPower as 'Metric-LastHourAvgPower',
-        LastDayMinPowerTime as 'Metric-LastDayMinPowerTime',
-        LastDayMinPower as 'Metric-LastDayMinPower',
-        LastDayMaxPowerTime as 'Metric-LastDayMaxPowerTime',
-        LastDayMaxPower as 'Metric-LastDayMaxPower',
-        LastDayAvgPower as 'Metric-LastDayAvgPower'
+
+        LastMinuteMinPowerTime as 'Metric-LastMinuteMinPowerTime',
+        LastMinuteMinPower as 'Metric-LastMinuteMinPower',
+        LastMinuteMaxPowerTime as 'Metric-LastMinuteMaxPowerTime',
+        LastMinuteMaxPower as 'Metric-LastMinuteMaxPower',
+        LastMinuteAvgPower as 'Metric-LastMinuteAvgPower'
+
       FROM TblsPowerStatistics
 
   PowerMetrics:
