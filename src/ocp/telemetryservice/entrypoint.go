@@ -44,7 +44,7 @@ type mrdPatch struct {
 }
 
 func New(ctx context.Context, logger log.Logger, chdler eh.CommandHandler, d *domain.DomainObjects) *TelemetryService {
-	logger = logger.New("module", "telemetry")
+	logger = log.With(logger, "module", "telemetry")
 	EventPublisher := eventpublisher.NewEventPublisher()
 	d.EventBus.AddHandler(eh.MatchAnyEventOf(AddedMRDEvent, MetricValueEvent, domain.RedfishResourceRemoved, domain.RedfishResourcePropertiesUpdated2), EventPublisher)
 	EventWaiter := eventwaiter.NewEventWaiter(eventwaiter.SetName("Telemetry Service"), eventwaiter.NoAutoRun)

@@ -463,7 +463,7 @@ func (s *Service) internalInstantiate(name string, parameters map[string]interfa
 	s.RLock()
 	subLogger := s.logger
 	if len(config.Logger) > 0 {
-		subLogger = s.logger.New(config.Logger...)
+		subLogger = log.With(s.logger, config.Logger...)
 	}
 	s.RUnlock()
 	subLogger.Debug("Instantiated new logger")
@@ -571,7 +571,7 @@ func (s *Service) internalInstantiate(name string, parameters map[string]interfa
 	}))
 
 	// Instantiate aggregate
-  cmdErr := func() error {
+	cmdErr := func() error {
 		if len(config.Aggregate) == 0 {
 			subLogger.Debug("no aggregate specified in config file to instantiate.")
 			return nil
@@ -599,17 +599,17 @@ func (s *Service) internalInstantiate(name string, parameters map[string]interfa
 				}
 
 			}
-      err := s.ch.HandleCommand(context.Background(), cmd)
-      if err != nil {
-        subLogger.Crit("Failure trying to Handle Command", "err", err, "cmd", cmd)
-        return err
-      }
+			err := s.ch.HandleCommand(context.Background(), cmd)
+			if err != nil {
+				subLogger.Crit("Failure trying to Handle Command", "err", err, "cmd", cmd)
+				return err
+			}
 		}
-    return nil
+		return nil
 	}()
-  if cmdErr != nil {
-    return nil, nil, cmdErr
-  }
+	if cmdErr != nil {
+		return nil, nil, cmdErr
+	}
 
 	// Run any POST commands
 	for _, execStr := range config.ExecPost {

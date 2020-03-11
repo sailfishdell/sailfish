@@ -209,7 +209,7 @@ func New(logger log.Logger, d busObjs) (svc *service) {
 	})
 
 	svc = &service{
-		logger: logger.New("module", "injectservice"),
+		logger: log.With(logger, "module", "injectservice"),
 		eb:     d.GetBus(),
 		ew:     d.GetWaiter(),
 		// if things wedge here, making this queue longer wont do anything useful, so by default make it fully synchronous.
@@ -508,7 +508,7 @@ func (c *InjectCommand) MarkBarrier() {
 }
 
 func (c *InjectCommand) sendToChn(injectChan chan *eventBundle) error {
-	//requestLogger := log.ContextLogger(c.ctx, "internal_commands").New("module", "inject_event")
+	//requestLogger := log.With(log.ContextLogger(c.ctx, "internal_commands"), "module", "inject_event")
 	//requestLogger.Crit("InjectService: preparing event", "Sequence", c.EventSeq, "Name", c.Name)
 
 	waits := []func(){}
@@ -588,7 +588,7 @@ func (c *InjectCommand) sendToChn(injectChan chan *eventBundle) error {
 }
 
 func (c *InjectCommand) appendDecode(trainload *[]eh.EventData, eventType eh.EventType, m json.RawMessage) {
-	requestLogger := log.ContextLogger(c.ctx, "internal_commands").New("module", "inject_event")
+	requestLogger := log.With(log.ContextLogger(c.ctx, "internal_commands"), "module", "inject_event")
 	if m == nil {
 		// not worth logging unless debugging something weird
 		// requestLogger.Info("Decode: nil message", "eventType", eventType)

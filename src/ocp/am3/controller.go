@@ -47,7 +47,7 @@ func StartService(ctx context.Context, logger log.Logger, name string, d BusObjs
 	var ret *Service
 	ret = &Service{
 		serviceName:   name,
-		logger:        logger.New("module", "am3"),
+		logger:        log.With(logger, "module", "am3"),
 		eb:            d.GetBus(),
 		handledEvents: map[eh.EventType]struct{}{ConfigureAM3Event: {}, ConfigureAM3Multi: {}},
 		multihandlers: map[eh.EventType]map[string]func(eh.Event){},

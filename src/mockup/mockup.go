@@ -29,7 +29,7 @@ import (
 )
 
 func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, ch eh.CommandHandler, eb eh.EventBus, d *domain.DomainObjects) {
-	logger = logger.New("module", "ec")
+	logger = log.With(logger, "module", "ec")
 
 	actionhandler.Setup(ctx, ch, eb)
 	actionSvc := ah.StartService(ctx, logger, d)

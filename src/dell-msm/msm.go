@@ -24,7 +24,7 @@ func (o *ocp) ConfigChangeHandler() { o.configChangeHandler() }
 
 func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, d *domain.DomainObjects) *ocp {
 
-	logger = logger.New("module", "ec")
+	logger = log.With(logger, "module", "ec")
 	self := &ocp{}
 	ch := d.CommandHandler
 	eb := d.EventBus

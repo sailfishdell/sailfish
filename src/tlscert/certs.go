@@ -108,7 +108,7 @@ func (c *mycert) ApplyOption(options ...Option) error {
 // WithLogger is an option that will set up the certs function to use the specified logging interface.
 func WithLogger(logger log.Logger) Option {
 	return func(c *mycert) error {
-		c._logger = logger.New("module", "tlscert")
+		c._logger = log.With(logger, "module", "tlscert")
 		return nil
 	}
 }

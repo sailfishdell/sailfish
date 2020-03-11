@@ -68,7 +68,7 @@ type BusObjs interface {
 }
 
 func StartService(ctx context.Context, logger log.Logger, cfg *viper.Viper, cfgMu *sync.RWMutex, d BusObjs) (*ARService, error) {
-	logger = logger.New("module", "ar2")
+	logger = log.With(logger, "module", "ar2")
 
 	arservice := &ARService{
 		eb:            d.GetBus(),

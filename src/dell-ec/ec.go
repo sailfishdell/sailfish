@@ -45,7 +45,7 @@ func (o *ocp) ConfigChangeHandler() { o.configChangeHandler() }
 
 func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, d *domain.DomainObjects) *ocp {
 
-	logger = logger.New("module", "ec")
+	logger = log.With(logger, "module", "ec")
 	self := &ocp{}
 	ch := d.CommandHandler
 	eb := d.EventBus
@@ -57,7 +57,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	uploadSvc := uploadhandler.StartService(ctx, logger, d)
 	am2Svc, _ := awesome_mapper2.StartService(ctx, logger, eb, ch, d)
 	am3Svc, _ := am3.StartService(ctx, logger, "am3 base service", d)
-	addAM3Functions(logger.New("module", "ec_am3_functions"), am3Svc, d, ctx)
+	addAM3Functions(log.With(logger, "module", "ec_am3_functions"), am3Svc, d, ctx)
 
 	// here introduce new initial event handling
 	ardumpSvc, _ := attributes.StartService(ctx, logger, d)
@@ -154,7 +154,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	// The following model maps a bunch of health related stuff that can be tracked once at a global level.
 	// we can add this model to the views that need to expose it
 	globalHealthModel := model.New()
-	healthLogger := logger.New("module", "health_rollup")
+	healthLogger := log.With(logger, "module", "health_rollup")
 	am2Svc.NewMapping(ctx, healthLogger, cfgMgr, cfgMgrMu, globalHealthModel, "global_health", "global_health", map[string]interface{}{}, nil)
 
 	//*********************************************************************
