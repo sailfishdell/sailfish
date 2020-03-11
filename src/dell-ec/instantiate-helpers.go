@@ -54,7 +54,7 @@ func AddECInstantiate(l log.Logger, instantiateSvc *testaggregate.Service) {
 		if !ok {
 			return nil, errors.New("need a string fqdd for addec_system_modular(), but didnt get one")
 		}
-		instantiateSvc.InstantiateNoRet("manager_cmc_integrated", map[string]interface{}{"FQDD": FQDD})
+		instantiateSvc.Instantiate("manager_cmc_integrated", map[string]interface{}{"FQDD": FQDD})
 
 		return true, nil
 	})
@@ -64,7 +64,7 @@ func AddECInstantiate(l log.Logger, instantiateSvc *testaggregate.Service) {
 		if !ok {
 			return nil, errors.New("need a string fqdd for addec_system_modular(), but didnt get one")
 		}
-		instantiateSvc.InstantiateNoRet("system_chassis", map[string]interface{}{
+		instantiateSvc.Instantiate("system_chassis", map[string]interface{}{
 			"FQDD":                   FQDD,
 			"msmConfigBackup":        view.Action(msmConfigBackup),
 			"chassisMSMConfigBackup": view.Action(chassisMSMConfigBackup),
@@ -78,7 +78,7 @@ func AddECInstantiate(l log.Logger, instantiateSvc *testaggregate.Service) {
 		if !ok {
 			return nil, errors.New("need a string fqdd for addec_system_modular(), but didnt get one")
 		}
-		instantiateSvc.InstantiateNoRet("chassis_cmc_integrated", map[string]interface{}{"FQDD": FQDD})
+		instantiateSvc.Instantiate("chassis_cmc_integrated", map[string]interface{}{"FQDD": FQDD})
 
 		return true, nil
 	})

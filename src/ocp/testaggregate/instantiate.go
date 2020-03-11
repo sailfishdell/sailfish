@@ -571,20 +571,20 @@ func (s *Service) internalInstantiate(name string, parameters map[string]interfa
 	}))
 
 	// Instantiate aggregate
-	func() {
+  cmdErr := func() error {
 		if len(config.Aggregate) == 0 {
 			subLogger.Debug("no aggregate specified in config file to instantiate.")
-			return
+			return nil
 		}
 		fn := s.GetAggregateFunction(config.Aggregate)
 		if fn == nil {
 			subLogger.Crit("invalid aggregate function", "aggregate", config.Aggregate)
-			return
+			return nil
 		}
 		cmds, err := fn(ctx, subLogger, cfgMgr, cfgMgrMu, vw, nil, newParams)
 		if err != nil {
 			subLogger.Crit("aggregate function returned nil")
-			return
+			return nil
 		}
 		// We can get one or more commands back, handle them
 		first := true
@@ -599,9 +599,17 @@ func (s *Service) internalInstantiate(name string, parameters map[string]interfa
 				}
 
 			}
-			s.ch.HandleCommand(context.Background(), cmd)
+      err := s.ch.HandleCommand(context.Background(), cmd)
+      if err != nil {
+        subLogger.Crit("Failure trying to Handle Command", "err", err, "cmd", cmd)
+        return err
+      }
 		}
+    return nil
 	}()
+  if cmdErr != nil {
+    return nil, nil, cmdErr
+  }
 
 	// Run any POST commands
 	for _, execStr := range config.ExecPost {

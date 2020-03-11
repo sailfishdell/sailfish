@@ -767,6 +767,7 @@ func addAM3Functions(logger log.Logger, am3Svc *am3.Service, d *domain.DomainObj
 			aggID, ok := d.GetAggregateIDOK(uri)
 			if ok {
 				logger.Debug("URI already exists, skipping add log", "aggID", aggID, "uri", uri)
+
 			} else {
 				logger.Debug("URI is new and can be added", "URI", uri)
 
@@ -974,11 +975,11 @@ func addAM3Functions(logger log.Logger, am3Svc *am3.Service, d *domain.DomainObj
 		   Format: "expand"},*/
 
 		//Is allowed because already created logs can't have their values changed
-		{Prefix: "/redfish/v1/Managers/CMC.Integrated.1/Logs/Lclog",
-			URI:         "/redfish/v1/Managers/CMC.Integrated.1/Logs/Lclog",
-			Property:    "Members",
-			Format:      "expand",
-			SpecialCase: "prepend"},
+		//{Prefix: "/redfish/v1/Managers/CMC.Integrated.1/Logs/Lclog",
+		//	URI:         "/redfish/v1/Managers/CMC.Integrated.1/Logs/Lclog",
+		//	Property:    "Members",
+		//	Format:      "expand",
+		//	SpecialCase: "prepend"},
 
 		//Is allowed because already created faults can't have their values changed
 		{Prefix: "/redfish/v1/Managers/CMC.Integrated.1/Logs/FaultList",
@@ -1134,7 +1135,7 @@ func addAM3Functions(logger log.Logger, am3Svc *am3.Service, d *domain.DomainObj
 				c.Format += "_prepend"
 			}
 
-			d.CommandHandler.HandleCommand(context.Background(),
+			go d.CommandHandler.HandleCommand(context.Background(),
 				&domain.UpdateRedfishResourceCollection{
 					ID: collection_uuid,
 					Properties: map[string]interface{}{
