@@ -18,6 +18,7 @@ import (
 	"github.com/superchalupa/sailfish/cmd/metric-engine/telemetry"
 	"github.com/superchalupa/sailfish/cmd/metric-engine/triggers"
 	"github.com/superchalupa/sailfish/cmd/metric-engine/udb"
+	"github.com/superchalupa/sailfish/cmd/metric-engine/watchdog"
 )
 
 func init() {
@@ -63,6 +64,12 @@ func setup(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, d *busCo
 
 	//-- Trigger processing
 	err = triggers.StartupTriggerProcessing(logger.New("module", "trigger_am3_functions"), cfgMgr, am3SvcN2, d)
+	if err != nil {
+		panic("Error initializing trigger processing subsystem: " + err.Error())
+	}
+
+	// Watchdog
+	err = watchdog.StartWatchdogHandling(logger, am3SvcN2, d)
 	if err != nil {
 		panic("Error initializing trigger processing subsystem: " + err.Error())
 	}
