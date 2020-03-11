@@ -196,13 +196,13 @@ func (factory *telemetryManager) getSQLX(name string) *sqlx.Stmt {
 }
 
 // deleteMRD will delete the requested MRD from the database
-func (factory *telemetryManager) deleteMRD(mrdEvData *MetricReportDefinitionData) (err error) {
-	_, err = factory.getSQLX("delete_mrd").Exec(mrdEvData.Name)
+func (factory *telemetryManager) deleteMRD(reportDefName string) (err error) {
+	_, err = factory.getSQLX("delete_mrd").Exec(reportDefName)
 	if err != nil {
-		factory.logger.Crit("ERROR deleting MetricReportDefinition", "err", err, "Name", mrdEvData.Name)
+		factory.logger.Crit("ERROR deleting MetricReportDefinition", "err", err, "Name", reportDefName)
 	}
-	delete(factory.NextMRTS, mrdEvData.Name)
-	delete(factory.LastMRTS, mrdEvData.Name)
+	delete(factory.NextMRTS, reportDefName)
+	delete(factory.LastMRTS, reportDefName)
 	return
 }
 
@@ -812,7 +812,7 @@ func (factory *telemetryManager) InsertMetricInstance(tx *sqlx.Tx, ev *metric.Me
 			mm.CollectionScratch.Maximum = -math.MaxFloat64
 			mm.CollectionScratch.Minimum = math.MaxFloat64
 			if mm.CollectionFunction != "" {
-				mm.Label += fmt.Sprintf("- %s (%v)", mm.CollectionFunction, mm.CollectionDuration)
+				mm.Label += fmt.Sprintf("- %s (%v)", mm.CollectionFunction, time.Duration(mm.CollectionDuration))
 			}
 
 			err = findMetricInstance.Get(mm, mm)

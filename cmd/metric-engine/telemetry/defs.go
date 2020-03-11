@@ -134,21 +134,42 @@ type AddMetricReportDefinitionResponseData struct {
 	metric.CommandResponse
 }
 
-func NewAddMRDCommand() (eh.Event, error) {
-	data, err := eh.CreateEventData(AddMetricReportDefinition)
-	if err != nil {
-		return nil, fmt.Errorf("could not create request report command: %w", err)
+type DeleteMetricReportDefinitionData struct {
+	metric.Command
+	Name string
+}
+
+func (delMRD *DeleteMetricReportDefinitionData) SetPathToDelete(reportDefName string) {
+	delMRD.Name = reportDefName
+}
+
+type DeleteMetricReportDefinitionResponseData struct {
+	metric.CommandResponse
+}
+
+func Factory(et eh.EventType) func() (eh.Event, error) {
+	return func() (eh.Event, error) {
+		data, err := eh.CreateEventData(et)
+		if err != nil {
+			return nil, fmt.Errorf("could not create request report command: %w", err)
+		}
+		return eh.NewEvent(et, data, time.Now()), nil
 	}
-	return eh.NewEvent(AddMetricReportDefinition, data, time.Now()), nil
 }
 
 func RegisterEvents() {
+	// Full commands (request/response)
 	eh.RegisterEventData(AddMetricReportDefinition, func() eh.EventData {
 		return &AddMetricReportDefinitionData{Command: metric.NewCommand(AddMetricReportDefinitionResponse)}
 	})
 	eh.RegisterEventData(AddMetricReportDefinitionResponse, func() eh.EventData { return &AddMetricReportDefinitionResponseData{} })
 
+	eh.RegisterEventData(DeleteMetricReportDefinition, func() eh.EventData {
+		return &DeleteMetricReportDefinitionData{Command: metric.NewCommand(DeleteMetricReportDefinitionResponse)}
+	})
+	eh.RegisterEventData(DeleteMetricReportDefinitionResponse, func() eh.EventData { return &DeleteMetricReportDefinitionResponseData{} })
+
+	// not yet converted over to command
 	eh.RegisterEventData(UpdateMetricReportDefinition, func() eh.EventData { return &MetricReportDefinitionData{} })
-	eh.RegisterEventData(DeleteMetricReportDefinition, func() eh.EventData { return &MetricReportDefinitionData{} })
 	eh.RegisterEventData(DatabaseMaintenance, func() eh.EventData { return "" })
 }

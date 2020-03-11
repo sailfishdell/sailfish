@@ -111,9 +111,11 @@ func StartupTelemetryBase(logger log.Logger, cfg *viper.Viper, am3Svc eventHandl
 	cfg = nil
 
 	bus := d.GetBus()
+	// converted to command request/response
 	am3Svc.AddEventHandler("Create Metric Report Definition", AddMetricReportDefinition, MakeHandlerCreateMRD(logger, telemetryMgr, bus))
-	am3Svc.AddEventHandler("Update Metric Report Definition", UpdateMetricReportDefinition, MakeHandlerUpdateMRD(logger, telemetryMgr, bus))
 	am3Svc.AddEventHandler("Delete Metric Report Definition", DeleteMetricReportDefinition, MakeHandlerDeleteMRD(logger, telemetryMgr, bus))
+	// still TODO convert
+	am3Svc.AddEventHandler("Update Metric Report Definition", UpdateMetricReportDefinition, MakeHandlerUpdateMRD(logger, telemetryMgr, bus))
 	am3Svc.AddEventHandler("Generate Metric Report", metric.RequestReport, MakeHandlerGenReport(logger, telemetryMgr, bus))
 	am3Svc.AddEventHandler("Clock", PublishClock, MakeHandlerClock(logger, telemetryMgr, bus))
 	am3Svc.AddEventHandler("Database Maintenance", DatabaseMaintenance, MakeHandlerMaintenance(logger, telemetryMgr, bus))
@@ -155,6 +157,7 @@ func MakeHandlerCreateMRD(logger log.Logger, telemetryMgr *telemetryManager, bus
 			logger.Crit("Orphan delete failed", "err", err)
 		}
 
+		// Generate a "response" event that carries status back to initiator
 		respEvent, err := reportDef.NewResponseEvent(addError)
 		if err != nil {
 			logger.Crit("Error creating response event", "err", err, "ReportDefintion", reportDef.Name)
@@ -193,19 +196,29 @@ func MakeHandlerUpdateMRD(logger log.Logger, telemetryMgr *telemetryManager, bus
 
 func MakeHandlerDeleteMRD(logger log.Logger, telemetryMgr *telemetryManager, bus eh.EventBus) func(eh.Event) {
 	return func(event eh.Event) {
-		reportDef, ok := event.Data().(*MetricReportDefinitionData)
+		reportDef, ok := event.Data().(*DeleteMetricReportDefinitionData)
 		if !ok {
 			return
 		}
 
-		err := telemetryMgr.deleteMRD(reportDef)
-		if err != nil {
-			logger.Crit("Error deleting Metric Report Definition", "Name", reportDef.Name, "err", err)
+		// Handle the requested command
+		delError := telemetryMgr.deleteMRD(reportDef.Name)
+		if delError != nil {
+			logger.Crit("Error deleting Metric Report Definition", "Name", reportDef.Name, "err", delError)
 		}
-		err = telemetryMgr.DeleteOrphans()
+		err := telemetryMgr.DeleteOrphans()
 		if err != nil {
 			logger.Crit("Orphan delete failed", "err", err)
 		}
+
+		// Generate a "response" event that carries status back to initiator
+		respEvent, err := reportDef.NewResponseEvent(delError)
+		if err != nil {
+			logger.Crit("Error creating response event", "err", err, "ReportDefintion", reportDef.Name)
+			return
+		}
+
+		publishHelper(logger, bus, respEvent)
 	}
 }
 
