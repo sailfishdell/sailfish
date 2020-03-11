@@ -9,16 +9,18 @@ import (
 	log "github.com/superchalupa/sailfish/src/log"
 )
 
+// nolint: gochecknoinits
+// have to have init() function to runtime register the compile-time optional components, dont see any other clean way to do this
 func init() {
 	initOptional()
-	optionalComponents = append([]func(log.Logger, *viper.Viper, *busComponents) func(){
-		func(logger log.Logger, cfg *viper.Viper, d *busComponents) func() {
+	optionalComponents = append([]func(log.Logger, *viper.Viper, busIntf) func(){
+		func(logger log.Logger, cfg *viper.Viper, d busIntf) func() {
 			cgoStartup(logger, d)
 			return cgoShutdown
 		}}, optionalComponents...)
 }
 
-func cgoStartup(logger log.Logger, d *busComponents) {
+func cgoStartup(logger log.Logger, d busIntf) {
 	cgo.Startup(logger, d)
 }
 

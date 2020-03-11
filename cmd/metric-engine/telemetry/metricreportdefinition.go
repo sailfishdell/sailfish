@@ -51,10 +51,8 @@ type telemetryManager struct {
 	MaxAcceptableDrift      time.Duration
 }
 
-// newTelemetryManager is the constructor for the base telemetry service functionality
-func newTelemetryManager(logger log.Logger, database *sqlx.DB, cfg *viper.Viper) (*telemetryManager, error) {
-	// make sure not to store the 'cfg' passed in. That would be Bad.
-	// set up programatic defaults that can be overridden in config file
+func setCfgDefaults(cfg *viper.Viper) {
+	// set up programatic defaults based on the constants in this file that can be overridden in config file
 	cfg.SetDefault("defaults.appendlimit", appendLimit)
 	cfg.SetDefault("defaults.smallestreportinterval", int64(smallestReportInterval))
 	cfg.SetDefault("defaults.maxmetricexpandinterval", int64(maxMetricExpandInterval))
@@ -72,6 +70,12 @@ func newTelemetryManager(logger log.Logger, database *sqlx.DB, cfg *viper.Viper)
 	cfg.SetDefault("sql_lists.orphanops", []string{"delete_orphan_metricinstance", "delete_orphan_metricmeta"})
 	cfg.SetDefault("sql_lists.optimizeops", []string{"optimize", "shrink"})
 	cfg.SetDefault("sql_lists.vacuumops", []string{"vacuum", "shrink"})
+}
+
+// newTelemetryManager is the constructor for the base telemetry service functionality
+func newTelemetryManager(logger log.Logger, database *sqlx.DB, cfg *viper.Viper) (*telemetryManager, error) {
+	// make sure not to store the 'cfg' passed in. That would be Bad.
+	setCfgDefaults(cfg)
 
 	factory := &telemetryManager{
 		logger:                  logger,
@@ -95,7 +99,7 @@ func newTelemetryManager(logger log.Logger, database *sqlx.DB, cfg *viper.Viper)
 	// are differnet datatypes, so instead of storing in an interface{} and type
 	// assert, just have two different hashes to map prepared queries of each type
 
-	// create prepared sql from yaml sql strings
+	// create prepared NAMED sql from yaml sql strings
 	for name, sql := range cfg.GetStringMapString("internal.namedsql") {
 		if strings.HasPrefix(name, "noop") {
 			continue
@@ -206,7 +210,7 @@ func (factory *telemetryManager) deleteMRD(mrdEvData *MetricReportDefinitionData
 const (
 	MinPeriod       = 5 * time.Second
 	MaxPeriod       = 2 * time.Hour
-	DefaultPeriod   = (RedfishDuration)(5 * time.Minute)
+	DefaultPeriod   = 5 * time.Minute
 	MinTimeSpan     = 60 * time.Second
 	MaxTimeSpan     = 4 * time.Hour
 	DefaultTimeSpan = (RedfishDuration)(MaxTimeSpan)
@@ -219,7 +223,7 @@ const (
 func validateMRD(mrd *MetricReportDefinition) {
 	PeriodMust := func(b bool) {
 		if !b {
-			mrd.Period = DefaultPeriod
+			mrd.Period = RedfishDuration(DefaultPeriod)
 		}
 	}
 	TimeSpanMust := func(b bool) {
@@ -808,7 +812,7 @@ func (factory *telemetryManager) InsertMetricInstance(tx *sqlx.Tx, ev *metric.Me
 			mm.CollectionScratch.Maximum = -math.MaxFloat64
 			mm.CollectionScratch.Minimum = math.MaxFloat64
 			if mm.CollectionFunction != "" {
-				mm.Label += fmt.Sprintf("- %s (%s)", mm.CollectionFunction, mm.CollectionDuration)
+				mm.Label += fmt.Sprintf("- %s (%v)", mm.CollectionFunction, mm.CollectionDuration)
 			}
 
 			err = findMetricInstance.Get(mm, mm)

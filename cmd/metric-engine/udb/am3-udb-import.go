@@ -243,4 +243,6 @@ func handleUDBNotifyPipe(logger log.Logger, pipePath string, d busComponents) {
 
 		publishAndWait(logger, d.GetBus(), udbChangeEvent, &n)
 	}
+
+	panic("should never finish handling UDB notify pipe")
 }

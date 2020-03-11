@@ -43,7 +43,7 @@ func NewCommand(t eh.EventType) Command {
 	return Command{RequestID: eh.NewUUID(), ResponseType: t}
 }
 
-func (cmd *Command) NewResponseEvent(err error) (eh.Event, error) {
+func (cmd *Command) NewResponseEvent(responseErr error) (eh.Event, error) {
 	data, err := eh.CreateEventData(cmd.ResponseType)
 	if err != nil {
 		return nil, fmt.Errorf("could not create response: %w", err)
@@ -52,7 +52,7 @@ func (cmd *Command) NewResponseEvent(err error) (eh.Event, error) {
 	if !ok {
 		return nil, fmt.Errorf("internal programming error: response encoded in cmd wasn't a response type: %T -> %+v", data, data)
 	}
-	cr.setError(err)
+	cr.setError(responseErr)
 	cr.setRequestID(cmd.RequestID)
 
 	return eh.NewEvent(cmd.ResponseType, cr, time.Now()), nil

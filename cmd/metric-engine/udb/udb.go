@@ -34,9 +34,9 @@ func newImportManager(logger log.Logger, database *sqlx.DB, d busComponents, cfg
 	}
 
 	createFns := map[string]func(logger log.Logger, DB *sqlx.DB, d busComponents, cfg *viper.Viper, n string) (DataImporter, error){
-		"DISABLED": newDisabledSource,
-		"DirectMetric":         newDirectMetric,
-		"MetricColumns":        newImportByColumn,
+		"DISABLED":      newDisabledSource,
+		"DirectMetric":  newDirectMetric,
+		"MetricColumns": newImportByColumn,
 	}
 
 	for k, settings := range subcfg.AllSettings() {
@@ -44,7 +44,7 @@ func newImportManager(logger log.Logger, database *sqlx.DB, d busComponents, cfg
 		// if this panics, the config is messed up. Not going to protect against malformed config here.
 		fn, ok := createFns[settings.(map[string]interface{})["type"].(string)]
 		if !ok {
-			fmt.Printf("Couldnot find type in the function map- %s\n", settings.(map[string]interface{})["type"].(string))
+			fmt.Printf("Could not find type in the function map- %s\n", settings.(map[string]interface{})["type"].(string))
 			continue
 		}
 		meta, err := fn(logger, database, d, subcfg.Sub(k), k)

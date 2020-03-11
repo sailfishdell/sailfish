@@ -81,7 +81,16 @@ func (rf *RFServer) makeCommand(fn func() (eh.Event, error)) func(w http.Respons
 		}
 
 		ret, err := l.Wait(reqCtx)
-		requestLogger.Crit("RESPONSE", "Event", fmt.Sprintf("%v", ret), "Command", fmt.Sprintf("%+v", ret.Data()))
+		if err != nil {
+			// most likely user disconnected before we sent response
+			requestLogger.Info("Wait ERROR", "err", err)
+			return
+		}
+		requestLogger.Crit("RESPONSE", "Event", fmt.Sprintf("%v", ret), "RESPONSE", fmt.Sprintf("%+v", ret.Data()))
+		// TODO: need to get this up to redfish standards for return
+		// Need:
+		// - HTTP headers. Location header for collection POST
+		// - Return the created object. Is this optional?
 		fmt.Fprintf(w, "RET: %+v\n", ret.Data())
 	}
 }

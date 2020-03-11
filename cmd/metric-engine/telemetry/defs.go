@@ -54,19 +54,19 @@ type MetricReportDefinitionData struct {
 }
 
 // UnmarshalJSON special decoder for MetricReportDefinitionData to unmarshal the "period" specially
-func (m *MetricReportDefinitionData) UnmarshalJSON(data []byte) error {
+func (mrd *MetricReportDefinitionData) UnmarshalJSON(data []byte) error {
 	type Alias MetricReportDefinitionData
 	target := struct {
 		*Alias
 		Schedule struct{ RecurrenceInterval RedfishDuration }
 	}{
-		Alias: (*Alias)(m),
+		Alias: (*Alias)(mrd),
 	}
 
 	if err := json.Unmarshal(data, &target); err != nil {
 		return err
 	}
-	m.Period = target.Schedule.RecurrenceInterval
+	mrd.Period = target.Schedule.RecurrenceInterval
 	return nil
 }
 

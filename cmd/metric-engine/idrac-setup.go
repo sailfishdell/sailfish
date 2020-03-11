@@ -21,15 +21,17 @@ import (
 	"github.com/superchalupa/sailfish/cmd/metric-engine/watchdog"
 )
 
+// nolint: gochecknoinits
+// have to have init() function to runtime register the compile-time optional components, better suggestions welcome
 func init() {
 	initOptional()
-	optionalComponents = append(optionalComponents, func(logger log.Logger, cfg *viper.Viper, d *busComponents) func() {
+	optionalComponents = append(optionalComponents, func(logger log.Logger, cfg *viper.Viper, d busIntf) func() {
 		setup(context.Background(), logger, cfg, d)
 		return nil
 	})
 }
 
-func setup(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, d *busComponents) {
+func setup(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, d busIntf) {
 	// register global metric events with event horizon
 	metric.RegisterEvent()
 
@@ -71,7 +73,7 @@ func setup(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, d *busCo
 	// Watchdog
 	err = watchdog.StartWatchdogHandling(logger, am3SvcN2, d)
 	if err != nil {
-		panic("Error initializing trigger processing subsystem: " + err.Error())
+		panic("Error initializing watchdog handling: " + err.Error())
 	}
 
 	// if UDB event loop needs any events (none currently), then we could have a separate list and process that list here.

@@ -15,6 +15,13 @@ import (
 	"github.com/superchalupa/sailfish/src/tlscert"
 )
 
+const (
+	MaxHeaderBytes        = 1 << 20
+	ReadTimeout           = 100 * time.Second
+	DefaultCASerialNumber = 12345
+	DefaultSerialNumber   = 12346
+)
+
 type shutdowner interface {
 	Shutdown(context.Context) error
 }
@@ -80,7 +87,7 @@ func (st *ServerTracker) Shutdown() {
 	st.logger.Warn("Bye!", "module", "main")
 }
 
-func (st *ServerTracker) startServer(handler *mux.Router, listen string) {
+func (st *ServerTracker) startServer(handler http.Handler, listen string) {
 	switch {
 	case strings.HasPrefix(listen, "http:"):
 		// HTTP protocol listener
@@ -90,8 +97,8 @@ func (st *ServerTracker) startServer(handler *mux.Router, listen string) {
 		s := &http.Server{
 			Addr:           addr,
 			Handler:        handler,
-			MaxHeaderBytes: 1 << 20,
-			ReadTimeout:    100 * time.Second,
+			MaxHeaderBytes: MaxHeaderBytes,
+			ReadTimeout:    ReadTimeout,
 			// cannot use writetimeout if we are streaming
 			// WriteTimeout:   10 * time.Second,
 		}
@@ -105,8 +112,8 @@ func (st *ServerTracker) startServer(handler *mux.Router, listen string) {
 		st.logger.Info("UNIX SOCKET listener starting on " + addr)
 		s := &http.Server{
 			Handler:        handler,
-			MaxHeaderBytes: 1 << 20,
-			ReadTimeout:    100 * time.Second,
+			MaxHeaderBytes: MaxHeaderBytes,
+			ReadTimeout:    ReadTimeout,
 		}
 		unixListener, err := net.Listen("unix", addr)
 		if err == nil {
@@ -121,11 +128,11 @@ func (st *ServerTracker) startServer(handler *mux.Router, listen string) {
 		s := &http.Server{
 			Addr:           addr,
 			Handler:        handler,
-			MaxHeaderBytes: 1 << 20,
-			ReadTimeout:    10 * time.Second,
+			MaxHeaderBytes: MaxHeaderBytes,
+			ReadTimeout:    ReadTimeout,
 			// cannot use writetimeout if we are streaming
 			// WriteTimeout:   10 * time.Second,
-			TLSConfig: getTlsCfg(),
+			TLSConfig: getTLSCfg(),
 			// can't remember why this doesn't work... TODO: reason this doesnt work
 			//TLSNextProto:   make(map[string]func(*http.Server, *tls.Conn, http.Handler), 0),
 		}
@@ -133,11 +140,10 @@ func (st *ServerTracker) startServer(handler *mux.Router, listen string) {
 		checkCaCerts(st.logger)
 		st.servers = append(st.servers, func() { st.logger.Info("Server exited", "err", s.ListenAndServeTLS("server.crt", "server.key")) })
 		st.addShutdown(listen, s)
-
 	}
 }
 
-func getTlsCfg() *tls.Config {
+func getTLSCfg() *tls.Config {
 	return &tls.Config{
 		MinVersion: tls.VersionTLS12,
 		// TODO: cli option to enable/disable
@@ -170,13 +176,16 @@ func checkCaCerts(logger log.Logger) {
 			tlscert.CreateCA,
 			tlscert.ExpireInOneYear,
 			tlscert.SetCommonName("CA Cert common name"),
-			tlscert.SetSerialNumber(12345),
+			tlscert.SetSerialNumber(DefaultCASerialNumber),
 			tlscert.SetBaseFilename("ca"),
 			tlscert.GenECDSA(elliptic.P256()),
 			tlscert.SelfSigned(),
 			tlscert.WithLogger(logger),
 		)
-		ca.Serialize()
+		err := ca.Serialize()
+		if err != nil {
+			logger.Crit("Error serializing cert", "err", err)
+		}
 	}
 
 	// TODO: cli option to enable/disable and control cert options
@@ -191,12 +200,20 @@ func checkCaCerts(logger log.Logger) {
 			tlscert.SetCommonName("localhost"),
 			tlscert.SetSubjectKeyID([]byte{1, 2, 3, 4, 6}),
 			tlscert.AddSANDNSName("localhost", "localhost.localdomain"),
-			tlscert.SetSerialNumber(12346),
+			tlscert.SetSerialNumber(DefaultSerialNumber),
 			tlscert.SetBaseFilename("server"),
 			tlscert.WithLogger(logger),
 		)
-		iterInterfaceIPAddrs(logger, func(ip net.IP) { serverCert.ApplyOption(tlscert.AddSANIP(ip)) })
-		serverCert.Serialize()
+		iterInterfaceIPAddrs(logger, func(ip net.IP) {
+			err := serverCert.ApplyOption(tlscert.AddSANIP(ip))
+			if err != nil {
+				logger.Crit("Error applying local IP to cert", "err", err)
+			}
+		})
+		err := serverCert.Serialize()
+		if err != nil {
+			logger.Crit("Error serializing cert", "err", err)
+		}
 	}
 }
 

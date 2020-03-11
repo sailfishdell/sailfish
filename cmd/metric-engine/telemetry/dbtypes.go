@@ -51,6 +51,7 @@ func (m RedfishDuration) MarshalJSON() ([]byte, error) {
 // if this changes, the idx in conversion array below must match
 const durationReString = `-?P((\d+)D)?(T((\d+)H)?((\d+)M)?(((\d+)([.]\d+)?)?S)?)?`
 
+// nolint: gochecknoglobals  // This is basically a const and wont change
 var durationRe = regexp.MustCompile(durationReString)
 
 type conversion struct {
@@ -58,6 +59,7 @@ type conversion struct {
 	multiplier time.Duration
 }
 
+// nolint: gochecknoglobals  // This is basically a const and wont change
 var conversions []conversion = []conversion{
 	{2, 24 * time.Hour},
 	{5, time.Hour},

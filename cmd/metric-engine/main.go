@@ -25,22 +25,29 @@ type busComponents struct {
 	EventPublisher eh.EventPublisher
 }
 
+type busIntf interface {
+	GetBus() eh.EventBus
+	GetWaiter() *eventwaiter.EventWaiter
+}
+
 func (d *busComponents) GetBus() eh.EventBus                 { return d.EventBus }
 func (d *busComponents) GetWaiter() *eventwaiter.EventWaiter { return d.EventWaiter }
 func (d *busComponents) GetPublisher() eh.EventPublisher     { return d.EventPublisher }
 
-var initOptionalLock = sync.Once{}
-var optionalComponents []func(log.Logger, *viper.Viper, *busComponents) func()
+// nolint: gochecknoglobals
+// couldnt really find a better way of doing the compile time optional registration, so basically need some globals
+var (
+	initOptionalLock   = sync.Once{}
+	optionalComponents []func(log.Logger, *viper.Viper, busIntf) func()
+)
 
 func initOptional() {
 	initOptionalLock.Do(func() {
-		optionalComponents = []func(log.Logger, *viper.Viper, *busComponents) func(){}
+		optionalComponents = []func(log.Logger, *viper.Viper, busIntf) func(){}
 	})
 }
 
-func main() {
-	flag.StringSliceP("listen", "l", []string{}, "Listen address.  Formats: (http:[ip]:nn, https:[ip]:port)")
-
+func parseConfigFiles(baseFileName string) *viper.Viper {
 	cfgMgr := viper.New()
 	if err := cfgMgr.BindPFlags(flag.CommandLine); err != nil {
 		panic(fmt.Sprintf("Could not bind viper flags: %s", err))
@@ -49,21 +56,28 @@ func main() {
 	cfgMgr.AutomaticEnv()     // automatically pull in overrides from env
 
 	// load main config file
-	cfgMgr.SetConfigName("metric-engine")
+	cfgMgr.SetConfigName(baseFileName)
 	cfgMgr.AddConfigPath(".")
 	cfgMgr.AddConfigPath("/etc/")
 	if err := cfgMgr.ReadInConfig(); err != nil {
-		panic(fmt.Sprintf("Could not read config file: %s", err))
+		panic(fmt.Sprintf("Could not read config file(%s): %s", baseFileName, err))
 	}
 
 	// Local config for running from the build tree
-	if fileExists("local-metric-engine.yaml") {
-		fmt.Fprintf(os.Stderr, "Reading local-metric-engine.yaml config\n")
-		cfgMgr.SetConfigFile("local-metric-engine.yaml")
+	localFileName := "local-" + baseFileName + ".yaml"
+	if fileExists(localFileName) {
+		fmt.Fprintf(os.Stderr, "Reading %s config\n", localFileName)
+		cfgMgr.SetConfigFile(localFileName)
 		if err := cfgMgr.MergeInConfig(); err != nil {
-			panic(fmt.Sprintf("Error reading local config file: %s", err))
+			panic(fmt.Sprintf("Error reading local config file(%s): %s", localFileName, err))
 		}
 	}
+	return cfgMgr
+}
+
+func main() {
+	flag.StringSliceP("listen", "l", []string{}, "Listen address.  Formats: (http:[ip]:nn, https:[ip]:port)")
+	cfgMgr := parseConfigFiles("metric-engine")
 	flag.Parse() // read command line flags after config files
 
 	logger := log15adapter.Make()
@@ -98,10 +112,6 @@ func main() {
 		// run shutdown fns in reverse order of startup, so append accordingly
 		shutdownFns = append([]func(){shutdownFn}, shutdownFns...)
 	}
-
-	// signal to the runtime it can release viper memory
-	// NOTE: make sure that none of the functions we call above keep references to cfgMgr past this point
-	cfgMgr = nil
 
 	<-ctx.Done() // wait until everything is done (CTRL-C or other signal)
 
