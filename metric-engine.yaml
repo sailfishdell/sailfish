@@ -661,7 +661,8 @@ UDB-Metric-Import:
       SHM.db:
         TblsThermalMetrics:
     ScanInterval: 0
-    WaitInterval: 1
+    # telemetrypop populates this table once per 5sec, changing from 1 sec to 5 sec.
+    WaitInterval: 5
     Query: |
       SELECT
         cast( (julianday('now') - 2440587.5)*86400 * 1000000000 as integer) as Timestamp,
@@ -695,7 +696,7 @@ UDB-Metric-Import:
       SHM.db:
         TblsCpuMemMetrics:
     ScanInterval: 0
-    WaitInterval: 4
+    WaitInterval: 5
     Query: |
       SELECT
         cast( (julianday('now') - 2440587.5)*86400 * 1000000000 as integer) as Timestamp,
@@ -705,6 +706,7 @@ UDB-Metric-Import:
         FQDD as FQDD,
 
         -- MEB 2020-02-07 - observed mostly reliable 5s intervals. Sometimes 10s. Possibly suppressed upstream
+        -- Sailaja 2020-03-11 backend i.e telemetrypop reports every 5s
         5000000000 as 'SensorInterval',
         1000000000 as 'SensorSlack',
         true as 'RequiresExpand',
@@ -727,7 +729,7 @@ UDB-Metric-Import:
       SHM.db:
         TblsPSUMetrics:
     ScanInterval: 0
-    WaitInterval: 5
+    WaitInterval: 60
     Query: |
       SELECT
         cast( (julianday('now') - 2440587.5)*86400 * 1000000000 as integer) as Timestamp,
@@ -737,8 +739,9 @@ UDB-Metric-Import:
         FQDD as FQDD,
 
         -- MEB 2020-02-07 - observed mostly reliable 5s intervals. Sometimes 10s. Possibly suppressed upstream
-        10000000000 as 'SensorInterval',  -- 5s interval w/ 1s slack
-        2000000000 as 'SensorSlack',
+        -- Sailaja 2020-03-11 Backend i.e telemetrypop reports every minute.
+        60000000000 as 'SensorInterval',  -- 60s interval w/ 5s slack
+        5000000000 as 'SensorSlack',
         true as 'RequiresExpand',
 
         Temperature as 'Metric-TemperatureReading',
@@ -764,8 +767,9 @@ UDB-Metric-Import:
         -- MEB 2020-02-07 - TODO -> Need info from Sailaja about the intervals here
         -- My data set has no recurrence on these values, bug in telemetrypop? Or are they really not changing? Too much suppression happening.
         -- TODO FIXME - going to hardcode this as 20s for now
-        20000000000 as 'SensorInterval',
-        4000000000 as 'SensorSlack',
+        -- Sailaja - we need to check this, because backend reports only if there is a change, so should expand happen?
+        5000000000 as 'SensorInterval',
+        1000000000 as 'SensorSlack',
         true as 'RequiresExpand',
 
         CurrentReading as 'Metric-TemperatureReading'
@@ -790,8 +794,9 @@ UDB-Metric-Import:
         -- MEB 2020-02-07 - TODO -> Need info from Sailaja about the intervals here
         -- My data set has no recurrence on these values, bug in telemetrypop? Or are they really not changing? Too much suppression happening.
         -- TODO FIXME - going to hardcode this as 20s for now
-        20000000000 as 'SensorInterval',
-        4000000000 as 'SensorSlack',
+        -- Sailaja - we need to check this, because backend reports only if there is a change, so should expand happen?
+        5000000000 as 'SensorInterval',
+        1000000000 as 'SensorSlack',
         true as 'RequiresExpand',
 
         CurrentReading as 'Metric-TemperatureReading'
@@ -816,8 +821,9 @@ UDB-Metric-Import:
         -- MEB 2020-02-07 - TODO -> Need info from Sailaja about the intervals here
         -- No hardware in MEB test machine. Need info.
         -- TODO FIXME - going to hardcode this as 20s for now
-        20000000000 as 'SensorInterval',  -- 5s interval w/ 1s slack
-        4000000000 as 'SensorSlack',
+        -- Sailaja - we need to check this, because backend reports only if there is a change, so should expand happen?
+        5000000000 as 'SensorInterval',  -- 5s interval w/ 1s slack
+        1000000000 as 'SensorSlack',
         true as 'RequiresExpand',
 
         CurrentReading as 'Metric-TemperatureReading'
@@ -842,6 +848,7 @@ UDB-Metric-Import:
 
         -- MEB 2020-02-07 - observed ~60s regular intervals here, but occasional 5s. WTF?
         -- TODO - investigate sensor interval here
+        -- Sailaja - we need to check this, because reportinterval for this is zero & devicepoll is 60 sec?
         60000000000 as 'SensorInterval',
         5000000000 as 'SensorSlack',
         true as 'RequiresExpand',
@@ -867,6 +874,7 @@ UDB-Metric-Import:
          '/redfish/v1/FIXME/' || FQDD as Property,
         friendlyFQDD as FriendlyFQDD,
         FQDD as FQDD,
+        -- Sailaja - 2020-03-11 what about the expand for this? And waitinterval as reportinterval is big 3600 sec.        
 
         smartData_DOT_percentageUsed as 'Metric-PercentageUsed',
         smartData_DOT_criticalWarning as 'Metric-CriticalWarning',
@@ -1003,8 +1011,8 @@ UDB-Metric-Import:
   NICPortStats:
     Type: DISABLED
     # statistictime is the underlying HWM, so we can scan the table slightly more often
-    ScanInterval: 30
-    WaitInterval: 5
+    ScanInterval: 0
+    WaitInterval: 300
     # CIMVIEW_DCIM_NICStatistics is a VIEW, so do dbchange on the underlying table
     DBChange:
       DMLiveObjectDatabase.db:
@@ -1020,8 +1028,8 @@ UDB-Metric-Import:
         FQDD as FQDD,
 
         -- MEB 2020-02-07 - observed 5s intervals
-        5000000000 as 'SensorInterval',  -- 5s interval w/ 1s slack
-        2000000000 as 'SensorSlack',
+        30000000000 as 'SensorInterval',  -- 5s interval w/ 1s slack
+        5000000000 as 'SensorSlack',
         true as 'RequiresExpand',
 
         TxUnicast as 'Metric-TxUnicast',
