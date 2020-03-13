@@ -51,6 +51,7 @@ type Implementation interface {
 }
 
 func main() {
+	fmt.Println("VER 1")
 	flag.StringSliceP("listen", "l", []string{}, "Listen address.  Formats: (http:[ip]:nn, https:[ip]:port)")
 
 	var cfgMgrMu sync.RWMutex

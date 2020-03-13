@@ -270,7 +270,11 @@ func makePOST(es *EventService, dest string, event eh.Event, context interface{}
 			for i := 0; i < 5 && !logSent; i++ {
 				//Increasing wait between retries, first time don't wait i==0
 				time.Sleep(time.Duration(i) * 2 * time.Second)
-				req, _ := http.NewRequest("POST", dest, bytes.NewBuffer(d))
+				req, err := http.NewRequest("POST", dest, bytes.NewBuffer(d))
+				if err != nil {
+					log.MustLogger("event_service").Crit("ERROR CREATING REQUEST", "destination", dest, "Buffer bytes", d)
+					break
+				}
 				req.Header.Add("OData-Version", "4.0")
 				req.Header.Set("Content-Type", "application/json")
 				resp, err := client.Do(req)
