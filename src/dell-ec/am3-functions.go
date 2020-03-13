@@ -942,49 +942,49 @@ func addAM3Functions(logger log.Logger, am3Svc *am3.Service, d *domain.DomainObj
 	  })*/
 
 	collections = []Collection{
-		/*{Prefix: "/redfish/v1/Chassis/System.Chassis.1/Sensors/Temperatures",
-		   URI: "/redfish/v1/Chassis/System.Chassis.1/Thermal",
-		   Property: "Temperatures",
-		   Format: "expand"},
+		/*
+    {Prefix: "/redfish/v1/Chassis/System.Chassis.1/Sensors/Temperatures",
+		  URI: "/redfish/v1/Chassis/System.Chassis.1/Thermal",
+		  Property: "Temperatures",
+		  Format: "expand"},
 
-		  {Prefix: "/redfish/v1/Chassis/System.Chassis.1/Sensors/Fans",
-		   URI: "/redfish/v1/Chassis/System.Chassis.1/Thermal",
-		   Property: "Fans",
-		   Format: "expand"},
+		{Prefix: "/redfish/v1/Chassis/System.Chassis.1/Sensors/Fans",
+		  URI: "/redfish/v1/Chassis/System.Chassis.1/Thermal",
+		  Property: "Fans",
+		  Format: "expand"},
 
-		  {Prefix: "/redfish/v1/Chassis/System.Chassis.1/PowerControl",
-		   URI: "/redfish/v1/Chassis/System.Chassis.1/Power",
-		   Property: "PowerControl",
-		   Format: "expand",
-		   SpecialCase: "equals"}, //Special case
+		{Prefix: "/redfish/v1/Chassis/System.Chassis.1/PowerControl",
+		  URI: "/redfish/v1/Chassis/System.Chassis.1/Power",
+		  Property: "PowerControl",
+		  Format: "expand",
+		  SpecialCase: "equals"}, //Special case
 
-		  {Prefix: "/redfish/v1/Chassis/System.Chassis.1/Power/PowerSupplies",
-		   URI: "/redfish/v1/Chassis/System.Chassis.1/Power",
-		   Property: "PowerSupplies",
-		   Format: "expand"},
+		{Prefix: "/redfish/v1/Chassis/System.Chassis.1/Power/PowerSupplies",
+		  URI: "/redfish/v1/Chassis/System.Chassis.1/Power",
+		  Property: "PowerSupplies",
+		  Format: "expand"},
 
-		  {Prefix: "/redfish/v1/Chassis/System.Chassis.1/Power/PowerTrends-1",
-		   URI: "/redfish/v1/Chassis/System.Chassis.1/Power",
-		   Property: "Oem/Dell/PowerTrends",
-		   Format: "expand"},
+		{Prefix: "/redfish/v1/Chassis/System.Chassis.1/Power/PowerTrends-1",
+		  URI: "/redfish/v1/Chassis/System.Chassis.1/Power",
+		  Property: "Oem/Dell/PowerTrends",
+		  Format: "expand"},
 
-		  {Prefix: "/redfish/v1/Chassis/System.Chassis.1/Power/PowerTrends-1",
-		   URI: "/redfish/v1/Chassis/System.Chassis.1/Power/PowerTrends-1",
-		   Property: "histograms",
-		   Format: "expand"},*/
+		{Prefix: "/redfish/v1/Chassis/System.Chassis.1/Power/PowerTrends-1",
+		  URI: "/redfish/v1/Chassis/System.Chassis.1/Power/PowerTrends-1",
+		  Property: "histograms",
+		  Format: "expand"},
+    */
 
-		//Is allowed because already created logs can't have their values changed
 		//{Prefix: "/redfish/v1/Managers/CMC.Integrated.1/Logs/Lclog",
 		//	URI:         "/redfish/v1/Managers/CMC.Integrated.1/Logs/Lclog",
 		//	Property:    "Members",
 		//	Format:      "expand",
 		//	SpecialCase: "prepend"},
 
-		//Is allowed because already created faults can't have their values changed
-		{Prefix: "/redfish/v1/Managers/CMC.Integrated.1/Logs/FaultList",
-			URI:      "/redfish/v1/Managers/CMC.Integrated.1/Logs/FaultList",
-			Property: "Members",
-			Format:   "expand"},
+		//{Prefix: "/redfish/v1/Managers/CMC.Integrated.1/Logs/FaultList",
+		//	URI:      "/redfish/v1/Managers/CMC.Integrated.1/Logs/FaultList",
+		//	Property: "Members",
+		//	Format:   "expand"},
 
 		{Prefix: "/redfish/v1/Chassis",
 			URI:      "/redfish/v1/Chassis/System.Chassis.1/Power/PowerControl",
