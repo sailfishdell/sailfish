@@ -7,9 +7,9 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"regexp"
 	"strings"
 	"time"
-	"regexp"
 
 	eh "github.com/looplab/eventhorizon"
 	"github.com/spf13/viper"
@@ -64,7 +64,7 @@ func StartupTriggerProcessing(logger log.Logger, cfg *viper.Viper, am3Svc eventH
 }
 
 // only need to read file once on startup
-func readSubFile(logger log.Logger, subFilePath string, activeSubs SubscriberMap) (error) {
+func readSubFile(logger log.Logger, subFilePath string, activeSubs SubscriberMap) error {
 	logger.Crit("Reading saved subscriber map")
 	jsonstring, err := ioutil.ReadFile(subFilePath)
 	if err != nil {
@@ -115,14 +115,18 @@ func writeSubFile(logger log.Logger, activeSubs SubscriberMap, subFilePath strin
 		subs = append(subs, k)
 	}
 	enc := json.NewEncoder(cfgSaveFd)
-	enc.Encode(subs)
+	if enc != nil {
+		err := enc.Encode(subs)
+		if err != nil {
+			logger.Crit("Error ecoding json content for subscription file", "err", err)
+		}
+	}
 }
 
 // Report generated am3 service notification handler
 func MakeHandlerReportGenerated(logger log.Logger, subscriberMap map[string]*os.File,
 	bus eh.EventBus) func(eh.Event) {
 	return func(event eh.Event) {
-
 		notify, ok := event.Data().(*metric.ReportGeneratedData)
 		if !ok {
 			logger.Crit("Trigger report generated handler got an invalid data event", "event",
@@ -150,7 +154,7 @@ func MakeHandlerReportGenerated(logger log.Logger, subscriberMap map[string]*os.
 // Subscribe request am3 service notification handler
 func MakeHandlerSubscribe(logger log.Logger, activeSubs map[string]*os.File,
 	subFilePath string, bus eh.EventBus) func(eh.Event) {
-	return func(event eh.Event) {		
+	return func(event eh.Event) {
 		notify, ok := event.Data().(*subscriptionData)
 		if !ok {
 			logger.Crit("Subscription request handler got an invalid data event", "event", event, "eventdata", event.Data())
@@ -176,7 +180,6 @@ func MakeHandlerSubscribe(logger log.Logger, activeSubs map[string]*os.File,
 func MakeHandlerUnsubscribe(logger log.Logger, activeSubs map[string]*os.File,
 	subFilePath string, bus eh.EventBus) func(eh.Event) {
 	return func(event eh.Event) {
-		
 		notify, ok := event.Data().(*subscriptionData)
 		if !ok {
 			logger.Crit("Unsubscribe request handler got an invalid data event", "event",
@@ -308,11 +311,11 @@ func handleSubscriptionsAndLCLNotify(logger log.Logger, pipePath string, subscri
 	defer nullWriter.Close()
 
 	// we filter steam input to allow only alphanumeric and few special chars - /,@
-	reg, err := regexp.Compile("[^a-zA-Z0-9/,@]+")
-	if err != nil {
-		logger.Crit("Error initializing regexp to filter input stream at IPC pipe", "err", err)
+	reg := regexp.MustCompile("[^a-zA-Z0-9/,@]+")
+	if reg == nil {
+		logger.Crit("Error initializing regexp to filter input stream at IPC pipe")
 	}
-	
+
 	s := bufio.NewScanner(file)
 	s.Split(bufio.ScanWords)
 	for s.Scan() {
@@ -320,8 +323,8 @@ func handleSubscriptionsAndLCLNotify(logger log.Logger, pipePath string, subscri
 		fmt.Printf("New (Un)Subscrition request/LCL event message - %s\n", scanText)
 		processSubscriptionsOrLCLNotify(logger, bus, scanText)
 	}
-	
+
 	// closing active subscription handles - to keep linters happy. Inside we know we never exit...
 	closeActiveSubs(logger, activeSubs)
-	panic("subscription cmd pipe closed. should never happen.")	
+	panic("subscription cmd pipe closed. should never happen.")
 }
