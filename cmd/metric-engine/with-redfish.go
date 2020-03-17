@@ -43,5 +43,6 @@ func addRedfishHandlers(logger log.Logger, cfgMgr *viper.Viper, d busIntf, serve
 	for _, listen := range listenAddrs {
 		m := serverlist.GetHandler(listen)
 		RFS.AddHandlersToRouter(m)
+		logger.Crit("Add redfish routes to handler", "listen", listen, "handler", m)
 	}
 }

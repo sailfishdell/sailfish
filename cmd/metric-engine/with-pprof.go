@@ -40,6 +40,7 @@ func addPprofHandlers(logger log.Logger, cfgMgr *viper.Viper, serverlist *httpco
 
 	for _, listen := range listenAddrs {
 		m := serverlist.GetHandler(listen)
+		logger.Crit("Add PPROF routes to handler", "listen", listen, "handler", m)
 
 		m.HandleFunc("/debug/pprof/", pprof.Index)
 		m.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)

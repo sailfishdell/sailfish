@@ -43,6 +43,7 @@ func addSSEHandlers(logger log.Logger, cfgMgr *viper.Viper, d busIntf, serverlis
 	for _, listen := range listenAddrs {
 		m := serverlist.GetHandler(listen)
 
+		logger.Crit("Add SSE routes to handler", "listen", listen, "handler", m)
 		m.Path("/events").
 			Methods("GET").
 			Handler(http_sse.NewSSEHandler(d, logger, "UNKNOWN", []string{"Unauthenticated"}, func(eh.Event) bool { return true }))

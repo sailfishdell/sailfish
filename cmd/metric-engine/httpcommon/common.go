@@ -93,7 +93,7 @@ func (st *ServerTracker) startServer(handler http.Handler, listen string) {
 		// HTTP protocol listener
 		// "https:[addr]:port
 		addr := strings.TrimPrefix(listen, "http:")
-		st.logger.Info("HTTP listener starting on " + addr)
+		st.logger.Crit("HTTP listener starting on " + addr)
 		s := &http.Server{
 			Addr:           addr,
 			Handler:        handler,
@@ -109,7 +109,7 @@ func (st *ServerTracker) startServer(handler http.Handler, listen string) {
 		// HTTP protocol listener
 		// "https:[addr]:port
 		addr := strings.TrimPrefix(listen, "unix:")
-		st.logger.Info("UNIX SOCKET listener starting on " + addr)
+		st.logger.Crit("UNIX SOCKET listener starting on " + addr)
 		s := &http.Server{
 			Handler:        handler,
 			MaxHeaderBytes: MaxHeaderBytes,
@@ -136,7 +136,7 @@ func (st *ServerTracker) startServer(handler http.Handler, listen string) {
 			// can't remember why this doesn't work... TODO: reason this doesnt work
 			//TLSNextProto:   make(map[string]func(*http.Server, *tls.Conn, http.Handler), 0),
 		}
-		st.logger.Info("HTTPS listener starting on " + addr)
+		st.logger.Crit("HTTPS listener starting on " + addr)
 		checkCaCerts(st.logger)
 		st.servers = append(st.servers, func() { st.logger.Info("Server exited", "err", s.ListenAndServeTLS("server.crt", "server.key")) })
 		st.addShutdown(listen, s)
