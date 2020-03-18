@@ -167,32 +167,32 @@ type PowerConsumptionDataObjEventData struct {
 
 type AvgPowerConsumptionStatDataObjEventData struct {
 	ObjectHeader         DataObjectHeader
-	AvgPwrLastDay        int    `json:"avgPwrLastDay"`
-	AvgPwrLastHour       int    `json:"avgPwrLastHour"`
-	AvgPwrLastMin        int    `json:"avgPwrLastMin"`
-	AvgPwrLastWeek       int    `json:"avgPwrLastWeek"`
-	DefInterval          int    `json:"defInterval"`
-	DeviceType           int    `json:"deviceType"`
-	MaxPwrConsByInterval int    `json:"maxPwrConsByInterval"`
-	MaxPwrLastDay        int    `json:"maxPwrLastDay"`
-	MaxPwrLastDayTime    float64`json:"maxPwrLastDayTime"`
-	MaxPwrLastHour       int    `json:"maxPwrLastHour"`
-	MaxPwrLastHourTime   float64`json:"maxPwrLastHourTime"`
-	MaxPwrLastMin        int    `json:"maxPwrLastMin"`
-	MaxPwrLastMinTime    float64`json:"maxPwrLastMinTime"`
-	MaxPwrLastWeek       int    `json:"maxPwrLastWeek"`
-	MaxPwrLastWeekTime   float64`json:"maxPwrLastWeekTime"`
-	MinPwrConsByInterval int    `json:"minPwrConsByInterval"`
-	MinPwrLastDay        int    `json:"minPwrLastDay"`
-	MinPwrLastDayTime    float64`json:"minPwrLastDayTime"`
-	MinPwrLastHour       int    `json:"minPwrLastHour"`
-	MinPwrLastHourTime   float64`json:"minPwrLastHourTime"`
-	MinPwrLastMin        int    `json:"minPwrLastMin"`
-	MinPwrLastMinTime    float64`json:"minPwrLastMinTime"`
-	MinPwrLastWeek       int    `json:"minPwrLastWeek"`
-	MinPwrLastWeekTime   float64`json:"minPwrLastWeekTime"`
-	ObjExtFlags          int    `json:"objExtFlags"`
-	OffsetKey            string `json:"offsetKey"`
+	AvgPwrLastDay        int     `json:"avgPwrLastDay"`
+	AvgPwrLastHour       int     `json:"avgPwrLastHour"`
+	AvgPwrLastMin        int     `json:"avgPwrLastMin"`
+	AvgPwrLastWeek       int     `json:"avgPwrLastWeek"`
+	DefInterval          int     `json:"defInterval"`
+	DeviceType           int     `json:"deviceType"`
+	MaxPwrConsByInterval int     `json:"maxPwrConsByInterval"`
+	MaxPwrLastDay        int     `json:"maxPwrLastDay"`
+	MaxPwrLastDayTime    float64 `json:"maxPwrLastDayTime"`
+	MaxPwrLastHour       int     `json:"maxPwrLastHour"`
+	MaxPwrLastHourTime   float64 `json:"maxPwrLastHourTime"`
+	MaxPwrLastMin        int     `json:"maxPwrLastMin"`
+	MaxPwrLastMinTime    float64 `json:"maxPwrLastMinTime"`
+	MaxPwrLastWeek       int     `json:"maxPwrLastWeek"`
+	MaxPwrLastWeekTime   float64 `json:"maxPwrLastWeekTime"`
+	MinPwrConsByInterval int     `json:"minPwrConsByInterval"`
+	MinPwrLastDay        int     `json:"minPwrLastDay"`
+	MinPwrLastDayTime    float64 `json:"minPwrLastDayTime"`
+	MinPwrLastHour       int     `json:"minPwrLastHour"`
+	MinPwrLastHourTime   float64 `json:"minPwrLastHourTime"`
+	MinPwrLastMin        int     `json:"minPwrLastMin"`
+	MinPwrLastMinTime    float64 `json:"minPwrLastMinTime"`
+	MinPwrLastWeek       int     `json:"minPwrLastWeek"`
+	MinPwrLastWeekTime   float64 `json:"minPwrLastWeekTime"`
+	ObjExtFlags          int     `json:"objExtFlags"`
+	OffsetKey            string  `json:"offsetKey"`
 }
 
 type FileReadEventData struct {

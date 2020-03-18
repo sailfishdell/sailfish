@@ -128,10 +128,10 @@ func RegisterAggregate(s *testaggregate.Service) {
 							"MinConsumedWatts":     0,
 						},
 						"RelatedItem": []interface{}{
-              map[string]interface{}{
-                "@odata.id": "/redfish/v1/Chassis/System.Chassis.1",
-              },
-            },
+							map[string]interface{}{
+								"@odata.id": "/redfish/v1/Chassis/System.Chassis.1",
+							},
+						},
 						"RelatedItem@odata.count": 1,
 					},
 				}}, nil

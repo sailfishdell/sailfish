@@ -308,7 +308,7 @@ func (es *EventService) postExternalEvent(subCtx SubscriptionCtx, event eh.Event
 			for i := 0; i < 5 && !logSent; i++ {
 				//Increasing wait between retries, first time don't wait i==0
 				time.Sleep(time.Duration(i) * 2 * time.Second)
-				req,err := http.NewRequest("POST", subCtx.Destination, bytes.NewBuffer(eachEvent.data))
+				req, err := http.NewRequest("POST", subCtx.Destination, bytes.NewBuffer(eachEvent.data))
 				if err != nil {
 					log.MustLogger("event_service").Crit("ERROR CREATING REQUEST", "destination", subCtx.Destination, "Buffer bytes", eachEvent.data)
 					break

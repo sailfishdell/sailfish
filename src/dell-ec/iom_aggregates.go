@@ -105,8 +105,8 @@ func RegisterIOMAggregate(s *testaggregate.Service) {
 					},
 					DefaultFilter: "$select=!IOMConfig_objects/sso_info", //remove when ready
 					Properties: map[string]interface{}{
-						"Id":                       0, 
-						"internal_mgmt_supported":  "", 
+						"Id":                       0,
+						"internal_mgmt_supported":  "",
 						"IOMConfig_objects":        []interface{}{},
 						"Capabilities":             []interface{}{}, //remove when ready
 						"Capabilities@odata.count": 0,

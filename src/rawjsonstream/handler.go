@@ -16,14 +16,6 @@ import (
 	"github.com/superchalupa/sailfish/src/looplab/event"
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
 )
-type busComponents interface {
-	GetBus() eh.EventBus
-}
-
-type inputhandler interface {
-	GetCommandCh() chan *httpinject.InjectCommand
-}
-
 
 const (
 	maxConsolidatedEvents = 20
@@ -72,63 +64,9 @@ func (cmd *InjectCommand) SetPumpSendTime() {
 	}
 }
 
-func watchdog(d *domain.DomainObjects, ch chan *eventBundle) {
-	ctx := context.Background()
-	logger := domain.ContextLogger(ctx, "watchdog")
-
-	//eb := d.EventBus
-	watchdogsPerInterval := 5
-	ew := d.EventWaiter
-
-	WDservice, err := NewSdnotify()
-	defer WDservice.Close()
-	interval := WDservice.GetIntervalUsec()
-	if interval == 0 {
-		interval = 30000000
-	}
-
-	// send watchdogs 3x per interval
-	interval /= watchdogsPerInterval
-	seq := 0
-
-	logger.Crit("Setting up watchdog.", "interval-in-milliseconds", interval)
-
-	// set up listener for the watchdog events
-	listener, err := ew.Listen(context.Background(), func(event eh.Event) bool {
-		return event.EventType() == WatchdogEvent
-	})
-
-	if err != nil {
-		panic("Could not start listener")
-	}
-
-	// endless loop generating and responding to watchdog events
-	watchdogTicker := time.NewTicker(time.Duration(interval) * time.Microsecond)
-	defer watchdogTicker.Stop()
-	for {
-		select {
-		// pet watchdog when we get an event
-		case ev := <-listener.Inbox():
-			if evtS, ok := ev.(event.SyncEvent); ok {
-				evtS.Done()
-			}
-			WDservice.SDNotify("WATCHDOG=1")
-
-		// periodically send event on bus to force watchdog
-		case <-watchdogTicker.C:
-			evt := event.NewSyncEvent(WatchdogEvent, &WatchdogEventData{Seq: seq}, time.Now())
-			evt.Add(1)
-			// use watchdogs with barrier set to periodically clean the queues out
-			ch <- &eventBundle{&evt, true}
-			seq++
-		}
-	}
-}
-
 func StartPipeHandler(logger log.Logger, pipePath string, d *domain.DomainObjects) {
 	injectChan := make(chan *eventBundle, maxQueuedInjectEvents)
 	go sendEventsToInternalBus(injectChan, d.EventBus)
-	go watchdog(d, injectChan)
 
 	// clear file of previous buffered data
 	err := makeFifo(pipePath, 0660)
@@ -192,7 +130,7 @@ func StartPipeHandler(logger log.Logger, pipePath string, d *domain.DomainObject
 
 // iterate elements in fifo by '\n'
 // run each element as line in func
-func pipeIterator(logger log.Logger, f *os.File, fn func( []byte) error) {
+func pipeIterator(logger log.Logger, f *os.File, fn func([]byte) error) {
 	line := []byte{}
 	for {
 		buffer := make([]byte, 4096)
@@ -206,17 +144,16 @@ func pipeIterator(logger log.Logger, f *os.File, fn func( []byte) error) {
 		if len == 0 {
 			continue
 		}
-		nil_idx:= bytes.Index(buffer, []byte{'\x00'})
+		nil_idx := bytes.Index(buffer, []byte{'\x00'})
 		if nil_idx != -1 {
 			//fmt.Printf("before trim %+q\n", buffer);
 			buffer = bytes.Trim(buffer, "\x00")
 		}
-	
 
 		line = append(line, buffer...)
 		idx := bytes.Index(line, []byte{'\n'})
 		for ; idx != -1; idx = bytes.Index(line, []byte{'\n'}) {
-			evt:= line[:idx]
+			evt := line[:idx]
 			//fmt.Printf("EVT %+q \n", evt )
 			fn(evt)
 			line = line[idx+1:]
@@ -315,7 +252,7 @@ func (c *InjectCommand) sendToChn(injectChan chan *eventBundle) error {
 }
 
 func (c *InjectCommand) appendDecode(trainload *[]eh.EventData, eventType eh.EventType, m json.RawMessage) {
-	requestLogger := domain.ContextLogger(c.ctx, "internal_commands")
+	requestLogger := log.ContextLogger(c.ctx, "internal_commands")
 	if m == nil {
 		// not worth logging unless debugging something weird
 		// requestLogger.Info("Decode: nil message", "eventType", eventType)

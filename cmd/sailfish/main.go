@@ -25,6 +25,7 @@ import (
 	eh "github.com/looplab/eventhorizon"
 	"github.com/superchalupa/sailfish/src/http_redfish_sse"
 	"github.com/superchalupa/sailfish/src/http_sse"
+	"github.com/superchalupa/sailfish/src/httpinject"
 	"github.com/superchalupa/sailfish/src/ocp/telemetryservice"
 	"github.com/superchalupa/sailfish/src/rawjsonstream"
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
@@ -96,7 +97,6 @@ func main() {
 	// Handle the API.
 	m := mux.NewRouter()
 	loggingHTTPHandler := makeLoggingHTTPHandler(logger, m)
-
 	injectSvc := httpinject.New(logger, domainObjs)
 	injectSvc.Start()
 
@@ -150,7 +150,6 @@ func main() {
 
 	//// backend command handling
 	internalHandlerFunc := domainObjs.GetInternalCommandHandler(ctx)
-
 
 	// All of the /redfish apis
 	m.PathPrefix("/redfish/").Methods("GET", "PUT", "POST", "PATCH", "DELETE", "HEAD", "OPTIONS").HandlerFunc(handlerFunc)
@@ -270,7 +269,7 @@ func main() {
 
 		case strings.HasPrefix(listen, "pipeinput:"):
 			pipeName := strings.TrimPrefix(listen, "pipeinput:")
-			go rawjsonstream.StartPipeHandler(logger, pipeName)
+			go rawjsonstream.StartPipeHandler(logger, pipeName, domainObjs)
 			logger.Crit("pipe listener started", "path", pipeName)
 
 		case strings.HasPrefix(listen, "https:"):

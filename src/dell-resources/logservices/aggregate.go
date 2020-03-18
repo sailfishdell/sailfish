@@ -97,7 +97,6 @@ func RegisterAggregate(s *testaggregate.Service) {
 			}, nil
 		})
 
-
 	s.RegisterAggregateFunction("faultlistservices",
 		func(ctx context.Context, subLogger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, vw *view.View, extra interface{}, params map[string]interface{}) ([]eh.Command, error) {
 			return []eh.Command{

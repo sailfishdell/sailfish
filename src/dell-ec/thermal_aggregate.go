@@ -10,7 +10,6 @@ import (
 	"github.com/superchalupa/sailfish/src/ocp/view"
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
 
-
 	eh "github.com/looplab/eventhorizon"
 )
 
@@ -80,4 +79,3 @@ func health_map(health int) interface{} {
 		return nil
 	}
 }
-

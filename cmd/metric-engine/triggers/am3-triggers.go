@@ -314,7 +314,7 @@ func handleSubscriptionsAndLCLNotify(logger log.Logger, pipePath string, subscri
 	// / -> to include subscriber file path
 	// , -> to accomodate seperator for trigger events
 	// @ -> subscribe/unsubscribe prefix - subscribe@/unsubscribe@
-	// - -> legacy redfish subsriber pipe path is /var/run/odatalite-providers/telemetryfifo 
+	// - -> legacy redfish subsriber pipe path is /var/run/odatalite-providers/telemetryfifo
 	reg := regexp.MustCompile("[^a-zA-Z0-9/,@-]+")
 	if reg == nil {
 		logger.Crit("Error initializing regexp to filter input stream at IPC pipe")

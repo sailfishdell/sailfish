@@ -340,11 +340,11 @@ func addAM3Functions(logger log.Logger, am3Svc *am3.Service, d *domain.DomainObj
 
 		case name == "PowerCapValue" && FQDD == "System.Chassis.1":
 			key = "PowerLimit/LimitInWatts"
-			powerlimit := 0
+			var powerlimit float64
 			if powercap_enabled {
-				powerlimit, ok = data.Value.(int)
+				powerlimit, ok = data.Value.(float64)
 				if !ok {
-					logger.Error("power limit is not an integer")
+					logger.Error(fmt.Sprintf("power limit is %T\n", data.Value))
 					return
 				}
 			}
@@ -414,7 +414,7 @@ func addAM3Functions(logger log.Logger, am3Svc *am3.Service, d *domain.DomainObj
 					"Id":                       FQDD,
 					"internal_mgmt_supported":  data.Internal_mgmt_supported,
 					"IOMConfig_objects":        rrp_config_objects,
-					"Capabilities":             rrp_capabilities, 
+					"Capabilities":             rrp_capabilities,
 					"Capabilities@odata.count": data.CapabilitiesCount,
 				},
 			})
@@ -784,7 +784,7 @@ func addAM3Functions(logger log.Logger, am3Svc *am3.Service, d *domain.DomainObj
 					severity = "OK"
 				}
 
-				go d.CommandHandler.HandleCommand(
+				d.CommandHandler.HandleCommand(
 					context.Background(),
 					&domain.CreateRedfishResource{
 						ID:          uuid,
@@ -1134,7 +1134,7 @@ func addAM3Functions(logger log.Logger, am3Svc *am3.Service, d *domain.DomainObj
 				c.Format += "_prepend"
 			}
 
-			go d.CommandHandler.HandleCommand(context.Background(),
+			d.CommandHandler.HandleCommand(context.Background(),
 				&domain.UpdateRedfishResourceCollection{
 					ID: collection_uuid,
 					Properties: map[string]interface{}{
@@ -1230,7 +1230,7 @@ func addAM3Functions(logger log.Logger, am3Svc *am3.Service, d *domain.DomainObj
 		if !ok {
 			logger.Error("PowerSupplyEventFn: URI not found", "URI", sensors_URI)
 		} else {
-			go d.CommandHandler.HandleCommand(context.Background(),
+			d.CommandHandler.HandleCommand(context.Background(),
 				&domain.UpdateRedfishResourceProperties2{
 					ID: sensors_uuid,
 					Properties: map[string]interface{}{
@@ -1247,7 +1247,7 @@ func addAM3Functions(logger log.Logger, am3Svc *am3.Service, d *domain.DomainObj
 		if !ok {
 			logger.Error("PowerSupplyEventFn: URI not found", "URI", power_URI)
 		} else {
-			go d.CommandHandler.HandleCommand(context.Background(),
+			d.CommandHandler.HandleCommand(context.Background(),
 				&domain.UpdateRedfishResourceProperties2{
 					ID: power_uuid,
 					Properties: map[string]interface{}{
