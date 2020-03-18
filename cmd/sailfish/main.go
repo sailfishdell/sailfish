@@ -25,7 +25,6 @@ import (
 	eh "github.com/looplab/eventhorizon"
 	"github.com/superchalupa/sailfish/src/http_redfish_sse"
 	"github.com/superchalupa/sailfish/src/http_sse"
-	"github.com/superchalupa/sailfish/src/httpinject"
 	"github.com/superchalupa/sailfish/src/ocp/telemetryservice"
 	"github.com/superchalupa/sailfish/src/rawjsonstream"
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
@@ -271,7 +270,7 @@ func main() {
 
 		case strings.HasPrefix(listen, "pipeinput:"):
 			pipeName := strings.TrimPrefix(listen, "pipeinput:")
-			go rawjsonstream.StartPipeHandler(logger, pipeName, domainObjs, injectSvc)
+			go rawjsonstream.StartPipeHandler(logger, pipeName)
 			logger.Crit("pipe listener started", "path", pipeName)
 
 		case strings.HasPrefix(listen, "https:"):

@@ -167,7 +167,6 @@ type PowerConsumptionDataObjEventData struct {
 
 type AvgPowerConsumptionStatDataObjEventData struct {
 	ObjectHeader         DataObjectHeader
-	AvgPwrConsByInterval int    `json:"avgPwrConsByInterval"`
 	AvgPwrLastDay        int    `json:"avgPwrLastDay"`
 	AvgPwrLastHour       int    `json:"avgPwrLastHour"`
 	AvgPwrLastMin        int    `json:"avgPwrLastMin"`

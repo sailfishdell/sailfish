@@ -328,7 +328,6 @@ func (d *DomainObjects) GetInternalCommandHandler(backgroundCtx context.Context)
 			return
 		}
 		//fmt.Printf("Sailfish-pump POST payload is %s\n", b)
-		r.Body.Close()
 
 		contentType := r.Header.Get("Content-type")
 		if contentType == "application/xml" {

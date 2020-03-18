@@ -81,12 +81,13 @@ func setup(logger log.Logger, d *domain.DomainObjects) {
 				eventData = dataString
 			}
 
-			fmt.Printf("\tPublishing Startup Event (%s)\n", name)
+			//fmt.Printf("\tPublishing Startup Event (%s)\n", name)
 			evt := event.NewSyncEvent(eventType, eventData, time.Now())
 			evt.Add(1)
-			d.GetBus().PublishEvent(context.Background(), evt)
+			d.EventBus.PublishEvent(context.Background(), evt)
 			evt.Wait()
 		}
+		fmt.Println("Published all Startup Events")
 	}
 
 	// After we have our event loops set up,
