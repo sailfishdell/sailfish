@@ -14,7 +14,6 @@ import (
 	eh "github.com/looplab/eventhorizon"
 	log "github.com/superchalupa/sailfish/src/log"
 	"github.com/superchalupa/sailfish/src/looplab/event"
-	domain "github.com/superchalupa/sailfish/src/redfishresource"
 )
 
 const (
@@ -64,9 +63,9 @@ func (cmd *InjectCommand) SetPumpSendTime() {
 	}
 }
 
-func StartPipeHandler(logger log.Logger, pipePath string, d *domain.DomainObjects) {
+func StartPipeHandler(logger log.Logger, pipePath string, eb eh.EventBus) {
 	injectChan := make(chan *eventBundle, maxQueuedInjectEvents)
-	go sendEventsToInternalBus(injectChan, d.EventBus)
+	go sendEventsToInternalBus(injectChan, eb)
 
 	// clear file of previous buffered data
 	err := makeFifo(pipePath, 0660)

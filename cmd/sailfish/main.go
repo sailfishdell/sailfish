@@ -269,7 +269,7 @@ func main() {
 
 		case strings.HasPrefix(listen, "pipeinput:"):
 			pipeName := strings.TrimPrefix(listen, "pipeinput:")
-			go rawjsonstream.StartPipeHandler(logger, pipeName, domainObjs)
++			go rawjsonstream.StartPipeHandler(logger, pipeName, domainObjs.Eventbus )
 			logger.Crit("pipe listener started", "path", pipeName)
 
 		case strings.HasPrefix(listen, "https:"):

@@ -2,6 +2,7 @@ package udb
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/spf13/viper"
@@ -26,6 +27,13 @@ type importManager map[string]DataImporter
 
 func newImportManager(logger log.Logger, database *sqlx.DB, d busComponents, cfg *viper.Viper) (*importManager, error) {
 	ret := importManager{}
+
+	// trigger to disable udb setup
+	subcfgskip := cfg.GetString("UDBmetricreport")
+	if strings.Contains(subcfgskip, "disable") {
+		logger.Crit("DISABLE UDB SETUP")
+		return &ret, nil
+	}
 
 	// Parse the YAML file to set up database imports
 	subcfg := cfg.Sub("UDB-Metric-Import")
