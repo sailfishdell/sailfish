@@ -29,16 +29,16 @@ func ContextLogger(ctx context.Context, module string, opts ...interface{}) Logg
 	if ctx != nil {
 		ctxRqID := ctx.Value(requestIDKey)
 		if ctxRqID != nil {
-			newLogger = newLogger.New("requestID", ctxRqID)
+			newLogger = With(newLogger, "requestID", ctxRqID)
 		}
 
 		ctxSessionID := ctx.Value(sessionIDKey)
 		if ctxSessionID != nil {
-			newLogger = newLogger.New("sessionID", ctxSessionID)
+			newLogger = With(newLogger, "sessionID", ctxSessionID)
 		}
 	}
 	if len(opts) > 0 {
-		newLogger = newLogger.New(opts...)
+		newLogger = With(newLogger, opts...)
 	}
 	return newLogger
 }

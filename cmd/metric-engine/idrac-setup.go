@@ -42,8 +42,8 @@ func setup(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, d busInt
 
 	// Processing loop 1:
 	//  	-- "New" DB access
-	am3SvcN2, _ := am3.StartService(ctx, logger.New("module", "AM3_DB"), "database", d)
-	err := telemetry.StartupTelemetryBase(logger.New("module", "sql_am3_functions"), cfgMgr, am3SvcN2, d)
+	am3SvcN2, _ := am3.StartService(ctx, log.With(logger, "module", "AM3_DB"), "database", d)
+	err := telemetry.StartupTelemetryBase(log.With(logger, "module", "sql_am3_functions"), cfgMgr, am3SvcN2, d)
 	if err != nil {
 		panic("Error initializing base telemetry subsystem: " + err.Error())
 	}
@@ -58,14 +58,14 @@ func setup(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, d busInt
 
 	// Processing loop 2:
 	//  	-- UDB access
-	am3SvcN3, _ := am3.StartService(ctx, logger.New("module", "AM3_UDB"), "udb database", d)
-	err = udb.StartupUDBImport(logger.New("module", "udb_am3_functions"), cfgMgr, am3SvcN3, d)
+	am3SvcN3, _ := am3.StartService(ctx, log.With(logger, "module", "AM3_UDB"), "udb database", d)
+	err = udb.StartupUDBImport(log.With(logger, "module", "udb_am3_functions"), cfgMgr, am3SvcN3, d)
 	if err != nil {
 		panic("Error initializing UDB Import subsystem: " + err.Error())
 	}
 
 	//-- Trigger processing
-	err = triggers.StartupTriggerProcessing(logger.New("module", "trigger_am3_functions"), cfgMgr, am3SvcN2, d)
+	err = triggers.StartupTriggerProcessing(log.With(logger, "module", "trigger_am3_functions"), cfgMgr, am3SvcN2, d)
 	if err != nil {
 		panic("Error initializing trigger processing subsystem: " + err.Error())
 	}
