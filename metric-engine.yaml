@@ -2147,7 +2147,7 @@ createdb:
         FROM
           MetricReport, TblTriggerMetricReport
         WHERE
-          Name = TblTriggerMetricReport.MetricReport
+          instr(MetricReport, Name) > 0
 
   - |
       DROP VIEW IF EXISTS TblTelemetryAttributes;
@@ -2158,7 +2158,7 @@ createdb:
         UNION ALL
         SELECT * FROM TblTelemetryAttributesTelemEnable
         UNION ALL
-        SELECT DISTINCT CurrentValue, Key FROM TblTelemetryAttributesReportTrigger
+        SELECT REPLACE(group_concat(DISTINCT CurrentValue),',',','), Key from TblTelemetryAttributesReportTrigger GROUP BY Key
         
   - |        
      DROP TABLE IF EXISTS TblTriggerMetricReport;
@@ -2170,8 +2170,56 @@ createdb:
       );    
     
   - |
-      INSERT INTO TblTriggerMetricReport ( EemiId, TriggerId, MetricReport )
+     INSERT INTO TblTriggerMetricReport ( EemiId, TriggerId, MetricReport )
       VALUES
+      ('iDRAC.1.6.TMP1000','TMPWarnTrigger','ThermalSensor,ThermalMetrics'),
+      ('iDRAC.1.6.TMP0100','TMPWarnTrigger','ThermalSensor,ThermalMetrics'),
+      ('iDRAC.1.6.TMP0130','TMPWarnTrigger','ThermalSensor,ThermalMetrics'),
+      ('iDRAC.1.6.TMP0126','TMPWarnTrigger','ThermalSensor,ThermalMetrics'),
+      ('iDRAC.1.6.TMPS0100','TMPWarnTrigger','ThermalSensor,ThermalMetrics'),
+      ('iDRAC.1.6.TMP0118','TMPWarnTrigger','ThermalSensor,ThermalMetrics'),
+      ('iDRAC.1.6.TMP1001','TMPWarnTrigger','ThermalSensor,ThermalMetrics'),
+      ('iDRAC.1.6.TMP0114','TMPWarnTrigger','ThermalSensor,ThermalMetrics'),
+      ('iDRAC.1.6.TMP0112','TMPWarnTrigger','ThermalSensor,ThermalMetrics'),
+      ('iDRAC.1.6.TMPS0101','TMPWarnTrigger','ThermalSensor,ThermalMetrics'),
+      ('iDRAC.1.6.TMP0120','TMPWarnTrigger','ThermalSensor,ThermalMetrics'),
+      ('iDRAC.1.6.TMP0102','TMPWarnTrigger','ThermalSensor,ThermalMetrics'),
+      ('iDRAC.1.6.TMP0119','TMPCriticalTrigger','ThermalSensor,ThermalMetrics'),
+      ('iDRAC.1.6.TMP0131','TMPCriticalTrigger','ThermalSensor,ThermalMetrics'),
+      ('iDRAC.1.6.TMP0133','TMPCriticalTrigger','ThermalSensor,ThermalMetrics'),
+      ('iDRAC.1.6.TMP1002','TMPCriticalTrigger','ThermalSensor,ThermalMetrics'),
+      ('iDRAC.1.6.TMP7','TMPCriticalTrigger','ThermalSensor,ThermalMetrics'),
+      ('iDRAC.1.6.TMP0107','TMPCriticalTrigger','ThermalSensor,ThermalMetrics'),
+      ('iDRAC.1.6.TMP0121','TMPCriticalTrigger','ThermalSensor,ThermalMetrics'),
+      ('iDRAC.1.6.TMP0113','TMPCriticalTrigger','ThermalSensor,ThermalMetrics'),
+      ('iDRAC.1.6.TMP0110','TMPCriticalTrigger','ThermalSensor,ThermalMetrics'),
+      ('iDRAC.1.6.TMP0116','TMPCriticalTrigger','ThermalSensor,ThermalMetrics'),
+      ('iDRAC.1.6.TMP0134','TMPCriticalTrigger','ThermalSensor,ThermalMetrics'),
+      ('iDRAC.1.6.TMP0122','TMPCriticalTrigger','ThermalSensor,ThermalMetrics'),
+      ('iDRAC.1.6.TMP1003','TMPCriticalTrigger','ThermalSensor,ThermalMetrics'),
+      ('iDRAC.1.6.TMP0115','TMPCriticalTrigger','ThermalSensor,ThermalMetrics'),
+      ('iDRAC.1.6.TMP0104','TMPCriticalTrigger','ThermalSensor,ThermalMetrics'),
+      ('iDRAC.1.6.TMP0103','TMPCriticalTrigger','ThermalSensor,ThermalMetrics'),
+      ('iDRAC.1.6.TMP0202','TMPCpuWarnTrigger','CUPS,CPUSensor'),
+      ('iDRAC.1.6.TMP0200','TMPCpuWarnTrigger','CUPS,CPUSensor'),
+      ('iDRAC.1.6.MEM0003','MEMCriticalTrigger','MemorySensor'),
+      ('iDRAC.1.6.MEM0010','MEMCriticalTrigger','MemorySensor'),
+      ('iDRAC.1.6.MEM0702','MEMCriticalTrigger','MemorySensor'),
+      ('iDRAC.1.6.MEM0002','MEMCriticalTrigger','MemorySensor'),
+      ('iDRAC.1.6.TMP0127','TMPDiskCriticalTrigger','ThermalMetrics'),
+      ('iDRAC.1.6.TMP0125','TMPDiskCriticalTrigger','ThermalMetrics'),
+      ('iDRAC.1.6.TMP0128','TMPDiskCriticalTrigger','ThermalMetrics'),
+      ('iDRAC.1.6.MEM0701','MEMWarnTrigger','MemorySensor'),
+      ('iDRAC.1.6.PDR112','NVMeWarnTrigger','NVMeSMARTData'),
+      ('iDRAC.1.6.PDR113','NVMeWarnTrigger','NVMeSMARTData'),
+      ('iDRAC.1.6.PDR116','NVMeWarnTrigger','NVMeSMARTData'),
+      ('iDRAC.1.6.FAN0012','FANWarnTrigger','FanSensor'),
+      ('iDRAC.1.6.FAN0002','FANWarnTrigger','FanSensor'),
+      ('iDRAC.1.6.FAN0000','FANWarnTrigger','FanSensor'),
+      ('iDRAC.1.6.FAN0013','FANCriticalTrigger','FanSensor'),
+      ('iDRAC.1.6.FAN0016','FANCriticalTrigger','FanSensor'),
+      ('iDRAC.1.6.FAN0003','FANCriticalTrigger','FanSensor'),
+      ('iDRAC.1.6.FAN0004','FANCriticalTrigger','FanSensor'),     
       ('iDRAC.1.6.FAN0015','FANCriticalTrigger','FanSensor'),
       ('iDRAC.1.6.FAN0001','FANCriticalTrigger','FanSensor'),
       ('iDRAC.1.6.VLT0210','VLTCriticalTrigger','PSUMetrics'),
@@ -2222,9 +2270,8 @@ createdb:
       ('iDRAC.1.6.PDR1002','PDRWarnTrigger','StorageDiskSMARTData'),
       ('iDRAC.1.6.PDR16','PDRWarnTrigger','StorageDiskSMARTData'),
       ('iDRAC.1.6.PDR117','NVMeCriticalTrigger','NVMeSMARTData'),
-      ('iDRAC.1.6.CPU0000','IERRCriticalTrigger','CPURegisters');        
+      ('iDRAC.1.6.CPU0000','IERRCriticalTrigger','CPURegisters');     
  
-
   - |
         DROP VIEW IF EXISTS AggregationMetricsMRView_json ; create view AggregationMetricsMRView_json as select * from JSON where [@odata.id] = '/redfish/v1/TelemetryService/MetricReports/AggregationMetrics';
         DROP VIEW IF EXISTS CPUMemMetricsMRView_json ; create view CPUMemMetricsMRView_json as select * from JSON where [@odata.id] = '/redfish/v1/TelemetryService/MetricReports/CPUMemMetrics';
