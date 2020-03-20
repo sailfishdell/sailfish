@@ -2,8 +2,8 @@
 # udb: # moved udb-related paths under this top-level key. everything is in programtic defaults in code and can be overridden here
 
 pprof: [ "unix:/run/telemetryservice/http.socket" ]
-Redfish: [ "unix:/run/telemetryservice/http.socket" ]
 SSE: [ "unix:/run/telemetryservice/http.socket" ]
+Redfish: [ "unix:/run/telemetryservice/http.socket" ]
 
 ##############################################
 ##
