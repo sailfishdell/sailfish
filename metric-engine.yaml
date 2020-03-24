@@ -1393,6 +1393,7 @@ internal:
       SET
         ShortDesc=:ShortDesc,
         LongDesc=:LongDesc,
+        Enabled=:Enabled,
         AppendLimit=:AppendLimit,
         Type=:Type,
         SuppressDups=:SuppressDups,
