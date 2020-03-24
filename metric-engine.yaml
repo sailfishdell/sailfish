@@ -29,13 +29,19 @@ Startup-Events:
     data: |
       {
         "Id": "AggregationMetrics",
+        "ShortDesc": "Aggregation Metrics Metric Report Definition",
+        "LongDesc": "Aggregation Metrics report  is derived by applying a formula or filter to a set of base metric values for Power, Temperature, CUPS (CPU, Memory, IO, System)",
         "MetricReportDefinitionEnabled": true,
         "MetricReportDefinitionType": "OnRequest",
         "ReportTimespan": "PT60S",
         "ReportUpdates": "AppendWrapsWhenFull",
         "SuppressRepeatedMetricValue": false,
         "ReportActions": ["LogToMetricReportsCollection"],
-        "Metrics": [ { "OEM": { "Dell": {"Source": "aggregation-metrics" }}} ]
+        "Metrics": [
+          {"MetricID": "SystemAvgInletTempHour"},
+          {"MetricID": "SystemMaxInletTempHour"},
+          {"MetricID": "SystemMaxPowerConsumption"}
+        ]
       }
 
   - name: AddMetricReportDefinition
@@ -49,19 +55,33 @@ Startup-Events:
     data: |
       {
         "Id": "CPUMemMetrics",
+        "ShortDesc": "CPU Mem Metrics Metric Report Definition",
+        "LongDesc": "CPU Memory metrics",
         "MetricReportDefinitionEnabled": true,
         "MetricReportDefinitionType": "Periodic",
         "ReportUpdates": "Overwrite",
         "SuppressRepeatedMetricValue": false,
         "ReportActions": ["RedfishEvent", "LogToMetricReportsCollection"],
         "Schedule": {"RecurrenceInterval": "PT60S"},
-        "Metrics": [ { "OEM": {"Dell": {"Source": "cpumem" }}} ]
+        "Metrics": [
+          {"MetricID": "CPUC0ResidencyHigh"},
+          {"MetricID": "CPUC0ResidencyLow"},
+          {"MetricID": "CUPSIIOBandwidthDMI"},
+          {"MetricID": "CUPSIIOBandwidthPort0"},
+          {"MetricID": "CUPSIIOBandwidthPort1"},
+          {"MetricID": "CUPSIIOBandwidthPort2"},
+          {"MetricID": "CUPSIIOBandwidthPort3"},
+          {"MetricID": "NonC0ResidencyHigh"},
+          {"MetricID": "NonC0ResidencyLow"}
+        ]
       }
 
   - name: AddMetricReportDefinition
     # "TelemetryCPURegisters.1.ReportInterval": 0,
     data: |
       { "Id": "CPURegisters",
+        "ShortDesc": "CPU Register Dump Metric Report Definition",
+        "LongDesc": "CPU Register dump (uuencoded binary data). This is platform specific. On Intel platform this represents the MSR registers and on AMD platform this represents the MCA registers. Please refer to OEM documentation on how to decode the binary data.",
         "MetricReportDefinitionEnabled": true,
         "MetricReportDefinitionType": "OnChange",
         "ReportUpdates": "AppendWrapsWhenFull",
@@ -82,6 +102,8 @@ Startup-Events:
     data: |
       {
         "Id": "CPUSensor",
+        "ShortDesc": "CPU Sensor Metric Report Definition",
+        "LongDesc": "CPU Sensor",
         "MetricReportDefinitionEnabled": true,
         "MetricReportDefinitionType": "Periodic",
         "Schedule": {"RecurrenceInterval": "PT60S"},
@@ -89,8 +111,7 @@ Startup-Events:
         "SuppressRepeatedMetricValue": false,
         "ReportActions": ["RedfishEvent", "LogToMetricReportsCollection"],
         "Metrics": [
-          {"MetricID": "TemperatureReading", "OEM": {"Dell": {"FQDD": "iDRAC.Embedded.1#CPU%Temp"}}},
-          {"MetricID": "TemperatureReading", "OEM": {"Dell": {"FQDD": "CPU.Socket.%"}}}
+          {"MetricID": "TemperatureReading"}
         ]
       }
 
@@ -107,13 +128,20 @@ Startup-Events:
     data: |
       {
         "Id": "CUPS",
+        "ShortDesc": "Compute Utilization Per Second (CUPS) Metric Report Definition",
+        "LongDesc": "Compute Utilization Per Second  (percent). This report is platform dependent and the data may not be available on all platforms.",
         "MetricReportDefinitionEnabled": true,
         "MetricReportDefinitionType": "Periodic",
         "Schedule": {"RecurrenceInterval": "PT60S"},
         "SuppressRepeatedMetricValue": false,
         "ReportUpdates": "Overwrite",
         "ReportActions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [ { "OEM": {"Dell": {"Source": "currentcups" }}} ]
+        "Metrics": [
+          {"MetricID": "CPUUsage"},
+          {"MetricID": "IOUsage"},
+          {"MetricID": "MemoryUsage"},
+          {"MetricID": "SystemUsage"}
+        ]
       }
 
   - name: AddMetricReportDefinition
@@ -127,13 +155,17 @@ Startup-Events:
     data: |
       {
         "Id": "FanSensor",
+        "ShortDesc": "Fan Sensor Metric Report Definition",
+        "LongDesc": "Fan sensor",
         "MetricReportDefinitionEnabled": true,
         "MetricReportDefinitionType": "Periodic",
         "Schedule": {"RecurrenceInterval": "PT60S"},
         "ReportUpdates": "Overwrite",
         "SuppressRepeatedMetricValue": false,
         "ReportActions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [ { "OEM": {"Dell": {"Source": "fan" }}} ]
+        "Metrics": [
+          {"MetricID": "RPMReading"}
+        ]
       }
 
   - name: AddMetricReportDefinition
@@ -152,13 +184,17 @@ Startup-Events:
     data: |
       {
         "Id": "FCSensor",
+        "ShortDesc": "FC Temperature Sensor Metric Report Definition",
+        "LongDesc": "FC Temperature sensors",
         "MetricReportDefinitionEnabled": true,
         "MetricReportDefinitionType": "Periodic",
         "Schedule": {"RecurrenceInterval": "PT60S"},
         "ReportUpdates": "Overwrite",
         "SuppressRepeatedMetricValue": false,
         "ReportActions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [{"MetricID": "TemperatureReading", "OEM": {"Dell": {"FQDD": "FC.%"}}}]
+        "Metrics": [
+          {"MetricID": "TemperatureReading"}
+        ]
       }
 
   - name: AddMetricReportDefinition
@@ -174,13 +210,17 @@ Startup-Events:
     data: |
       {
         "Id": "FPGASensor",
+        "ShortDesc": "FPGA Temperature Sensors Metric Report Definition",
+        "LongDesc": "FPGA(Field Programmable Gate Arrays) Temperature sensors",
         "MetricReportDefinitionEnabled": true,
         "MetricReportDefinitionType": "Periodic",
         "Schedule": {"RecurrenceInterval": "PT60S"},
         "ReportUpdates": "Overwrite",
         "SuppressRepeatedMetricValue": false,
         "ReportActions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [ { "OEM": {"Dell": {"Source": "fpga-sensor" }}} ]
+        "Metrics": [
+          {"MetricID": "TemperatureReading"}
+        ]
       }
 
   - name: AddMetricReportDefinition
@@ -195,13 +235,27 @@ Startup-Events:
     data: |
       {
         "Id": "GPUMetrics",
+        "ShortDesc": "GPU Health metrics Metric Report Definition",
+        "LongDesc": "Graphics Processing Unit Health metrics",
         "MetricReportDefinitionEnabled": true,
         "MetricReportDefinitionType": "Periodic",
         "Schedule": {"RecurrenceInterval": "PT60S"},
         "ReportUpdates": "Overwrite",
         "SuppressRepeatedMetricValue": false,
         "ReportActions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [ { "OEM": {"Dell": {"Source": "gpu-health" }}} ]
+        "Metrics": [
+          {"MetricID": "BoardPowerSupplyStatus"},
+          {"MetricID": "BoardTemperature"},
+          {"MetricID": "GPUHealth"},
+          {"MetricID": "GPUStatus"},
+          {"MetricID": "MemoryTemperature"},
+          {"MetricID": "PowerBrakeState"},
+          {"MetricID": "PowerConsumption"},
+          {"MetricID": "PowerSupplyStatus"},
+          {"MetricID": "PrimaryTemperature"},
+          {"MetricID": "SecondaryTemperature"},
+          {"MetricID": "ThermalAlertState"}
+        ]
       }
 
   - name: AddMetricReportDefinition
@@ -216,13 +270,32 @@ Startup-Events:
     data: |
       {
         "Id": "GPUStatistics",
+        "ShortDesc": "GPU Statistics (experimental) Metric Report Definition",
+        "LongDesc": "Graphics Processing Unit Frame Buffer and Graphic Device (GR) memory ECC(Error-correcting code) statistics data. This report is offered as an experimental preview.",
         "MetricReportDefinitionEnabled": true,
         "MetricReportDefinitionType": "Periodic",
         "Schedule": {"RecurrenceInterval": "PT600S"},
         "ReportUpdates": "Overwrite",
         "SuppressRepeatedMetricValue": false,
         "ReportActions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [ { "OEM": {"Dell": {"Source": "gpu-statistics" }}} ]
+        "Metrics": [
+          {"MetricID": "CumulativeDBECounterFB"},
+          {"MetricID": "CumulativeDBECounterGR"},
+          {"MetricID": "CumulativeSBECounterFB"},
+          {"MetricID": "CumulativeSBECounterGR"},
+          {"MetricID": "DBECounterFB"},
+          {"MetricID": "DBECounterFBL2Cache"},
+          {"MetricID": "DBECounterGRL1Cache"},
+          {"MetricID": "DBECounterGRRF"},
+          {"MetricID": "DBECounterGRTex"},
+          {"MetricID": "DBERetiredPages"},
+          {"MetricID": "SBECounterFB"},
+          {"MetricID": "SBECounterFBL2Cache"},
+          {"MetricID": "SBECounterGRL1Cache"},
+          {"MetricID": "SBECounterGRRF"},
+          {"MetricID": "SBECounterGRTex"},
+          {"MetricID": "SBERetiredPages"}
+        ]
       }
 
   - name: AddMetricReportDefinition
@@ -238,6 +311,8 @@ Startup-Events:
     data: |
       {
         "Id": "MemorySensor",
+        "ShortDesc": "Memory Sensor Metric Report Definition",
+        "LongDesc": "Memory temperature sensor",
         "MetricReportDefinitionEnabled": true,
         "MetricReportDefinitionType": "Periodic",
         "Schedule": {"RecurrenceInterval": "PT60S"},
@@ -245,8 +320,7 @@ Startup-Events:
         "SuppressRepeatedMetricValue": false,
         "ReportActions": ["RedfishEvent", "LogToMetricReportsCollection"],
         "Metrics": [
-          {"MetricID": "TemperatureReading", "OEM": {"Dell": {"FQDD": "DIMM.Socket.%"}}},
-          { "OEM": {"Dell": {"Source": "memory-sensor" }}}
+          {"MetricID": "TemperatureReading"}
         ]
       }
 
@@ -263,13 +337,17 @@ Startup-Events:
     data: |
       {
         "Id": "NICSensor",
+        "ShortDesc": "Network Card Sensor Metric Report Definition",
+        "LongDesc": "Network Card temperature sensor",
         "MetricReportDefinitionEnabled": true,
         "MetricReportDefinitionType": "Periodic",
         "Schedule": {"RecurrenceInterval": "PT60S"},
         "ReportUpdates": "Overwrite",
         "SuppressRepeatedMetricValue": false,
         "ReportActions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [{"MetricID": "TemperatureReading", "OEM": {"Dell": {"FQDD": "NIC.%"}}}]
+        "Metrics": [
+          {"MetricID": "TemperatureReading"}
+        ]
       }
 
   - name: AddMetricReportDefinition
@@ -1307,13 +1385,14 @@ internal:
 
     mrd_insert: |
       INSERT INTO MetricReportDefinition
-               ( Name,  Enabled,  AppendLimit,  Type,  SuppressDups,  Actions,  Updates,  Period,  TimeSpan)
-        VALUES (:Name, :Enabled, :AppendLimit, :Type, :SuppressDups, :Actions, :Updates, :Period, :TimeSpan)
+               ( Name,  ShortDesc,  LongDesc,  Enabled,  AppendLimit,  Type,  SuppressDups,  Actions,  Updates,  Period,  TimeSpan)
+        VALUES (:Name, :ShortDesc, :LongDesc, :Enabled, :AppendLimit, :Type, :SuppressDups, :Actions, :Updates, :Period, :TimeSpan)
 
     mrd_update: |
       UPDATE MetricReportDefinition
       SET
-        Enabled=:Enabled,
+        ShortDesc=:ShortDesc,
+        LongDesc=:LongDesc,
         AppendLimit=:AppendLimit,
         Type=:Type,
         SuppressDups=:SuppressDups,
