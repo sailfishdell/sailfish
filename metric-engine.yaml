@@ -1489,6 +1489,7 @@ internal:
     mrd_select_idbyname: SELECT ID FROM MetricReportDefinition where Name=?
 
     delete_mrd: delete from MetricReportDefinition where name=?
+    delete_mr: delete from MetricReport where Name=?
 
     delete_mm_assoc: delete from ReportDefinitionToMetricMeta where ReportDefinitionID=?
 
@@ -1794,7 +1795,7 @@ createdb:
           WHEN 'Periodic' THEN
             CASE
             WHEN MRD.TimeSpan = 0 THEN MR.StartTimestamp
-            WHEN MR.ReportTimestamp - MRD.TimeSpan > MR.StartTimestamp THEN  MR.ReportTimestamp - MRD.TimeSpan
+            WHEN MR.ReportTimestamp - MRD.TimeSpan < MR.StartTimestamp THEN  MR.ReportTimestamp - MRD.TimeSpan
             ELSE StartTimestamp
             END
           WHEN 'OnChange' THEN ReportTimestamp - MRD.TimeSpan
@@ -1954,7 +1955,7 @@ createdb:
           ' "MetricReportDefinitionEnabled": ' || case Enabled when 1 then json('true') else json('false') end || ',' ||
           ' "MetricReportDefinitionType": "' || Type || '",' ||
           ' "MetricReportDefinitionType@Redfish.AllowableValues": ' || json_array('Periodic', 'OnChange', 'OnRequest') || ', ' ||
-          ' "MetricReportHeartbeatInterval": null,' ||
+          ' "MetricReportHeartbeatInterval": ' || json(HeartbeatInterval) ||
           ' "SuppressRepeatedMetricValue": ' || case SuppressDups when 1 then json('true') else json('false') end || ',' ||
           ' "ReportTimespan": "PT' || (TimeSpan/(3600000000000)) || 'H' || ((TimeSpan/60000000000)%60) || 'M' || ((TimeSpan/1000000000)%60) || 'S' || '", ' ||
           ' "ReportUpdates": "' || Updates || '", ' ||
