@@ -1,6 +1,7 @@
 package telemetry
 
 import (
+	"encoding/json"
 	"fmt"
 	"math"
 	"strconv"
@@ -206,6 +207,15 @@ func (factory *telemetryManager) deleteMRD(reportDefName string) (err error) {
 	return
 }
 
+// deleteMR will delete the requested Report from the database
+func (factory *telemetryManager) deleteMR(reportName string) (err error) {
+	_, err = factory.getSQLX("delete_mr").Exec(reportName)
+	if err != nil {
+		factory.logger.Crit("ERROR deleting MetricReport", "err", err, "Name", reportName)
+	}
+	return
+}
+
 // "Configuration" constants that TODO need to move to be read from cfg file
 const (
 	MinPeriod       = 5 * time.Second
@@ -221,6 +231,10 @@ const (
 // - ensure Period is within allowed ranges for Periodic
 // - ensure TimeSpan is set when required
 func validateMRD(mrd *MetricReportDefinition) {
+	if mrd.Name == "" {
+		fmt.Printf("EMPTY NAME\n")
+	}
+
 	PeriodMust := func(b bool) {
 		if !b {
 			mrd.Period = RedfishDuration(DefaultPeriod)
@@ -331,52 +345,56 @@ func (factory *telemetryManager) wrapWithTXOrPassIn(tx *sqlx.Tx, fn func(tx *sql
 	return wrapWithTXOrPassIn(factory.database, tx, fn)
 }
 
-func (factory *telemetryManager) updateMRD(mrdEvData *MetricReportDefinitionData) (err error) {
+func (factory *telemetryManager) updateMRD(reportDef string, updates json.RawMessage) (err error) {
 	return factory.wrapWithTX(func(tx *sqlx.Tx) error {
 		// TODO: Emit an error response message if the metric report definition does not exist
 
-		newMRD := *mrdEvData
-		mrd := &MetricReportDefinition{
-			MetricReportDefinitionData: mrdEvData,
+		// step 1: LOAD existing report definition
+		mrd := MetricReportDefinition{
+			MetricReportDefinitionData: &MetricReportDefinitionData{Name: reportDef},
 			AppendLimit:                factory.AppendLimit,
 		}
-
-		validateMRD(mrd)
-
-		// load the old values
-		err = factory.loadReportDefinition(tx, mrd)
+		err = factory.loadReportDefinition(tx, &mrd)
 		if err != nil || mrd.ID == 0 {
 			return xerrors.Errorf("error getting MetricReportDefinition: ID(%s) NAME(%s) err: %w", mrd.ID, mrd.Name, err)
 		}
+		newMRD := mrd
 
-		// if new type isn't periodic, delete nextmrts
+		// Step 2: apply updates specified
+		json.Unmarshal(updates, &newMRD)
+		newMRD.Name = reportDef // ensure name stays the same... should be no way this isn't the same, but lets be sure.
+
+		// step 3: validate result
+		validateMRD(&newMRD)
+
+		// step 4: update internal bookkeeping tables
 		if newMRD.Type != metric.Periodic {
-			delete(factory.NextMRTS, mrd.Name)
+			delete(factory.NextMRTS, reportDef)
 		}
 
-		_, err = factory.getNamedSQLXTx(tx, "mrd_update").Exec(
-			MetricReportDefinition{MetricReportDefinitionData: &newMRD, AppendLimit: factory.AppendLimit})
+		// step 5: save new report
+		_, err = factory.getNamedSQLXTx(tx, "mrd_update").Exec(newMRD)
 		if err != nil {
-			return xerrors.Errorf("error updating MRD(%+v): %w", mrdEvData, err)
+			return xerrors.Errorf("error updating MRD(%s): %s --ERR--> %w", reportDef, updates, err)
 		}
 
-		err = factory.updateMMList(tx, mrd)
+		err = factory.updateMMList(tx, &newMRD)
 		if err != nil {
-			return xerrors.Errorf("error Updating MetricMeta for MRD(%+v): %w", mrd, err)
+			return xerrors.Errorf("error updating MetricMeta for MRD(%s): %s --ERR--> %w", reportDef, updates, err)
 		}
 
-		if !mrd.Enabled {
+		if !newMRD.Enabled {
 			// we are done if report not enabled
 			return nil
 		}
 
 		// let the next clock tick trigger generations and insert
-		factory.PendingInsert[mrd.Name] = true
-		factory.NextMRTS[mrd.Name] = time.Time{}
+		factory.PendingInsert[newMRD.Name] = true
+		factory.NextMRTS[newMRD.Name] = time.Time{}
 
-		if mrd.Type == metric.Periodic && mrd.Period != newMRD.Period {
+		if newMRD.Type == metric.Periodic && mrd.Period != newMRD.Period {
 			// If this is a periodic report, put it in the NextMRTS map so it'll get updated on the next report period
-			factory.NextMRTS[mrd.Name] = factory.MetricTSHWM.Add(newMRD.Period.Duration())
+			factory.NextMRTS[newMRD.Name] = factory.MetricTSHWM.Add(newMRD.Period.Duration())
 		}
 
 		return nil
@@ -397,8 +415,7 @@ func (factory *telemetryManager) addMRD(mrdEvData *MetricReportDefinitionData) (
 		if err != nil {
 			if strings.HasPrefix(err.Error(), "UNIQUE constraint failed") {
 				// too verbose, but possibly uncomment for debugging
-				//return xerrors.Errorf("cannot ADD already existing MRD(%s).", mrd.Name)
-				return nil
+				return xerrors.Errorf("cannot ADD already existing MRD(%s).", mrd.Name)
 			}
 			return xerrors.Errorf("error inserting MRD(%s): %w", mrd, err)
 		}

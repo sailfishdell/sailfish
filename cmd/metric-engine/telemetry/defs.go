@@ -1,12 +1,15 @@
 package telemetry
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"time"
 
 	eh "github.com/looplab/eventhorizon"
 	"github.com/superchalupa/sailfish/cmd/metric-engine/metric"
+	"github.com/superchalupa/sailfish/src/log"
 )
 
 // constants to refer to event types
@@ -17,6 +20,8 @@ const (
 	UpdateMetricReportDefinitionResponse eh.EventType = "UpdateMetricReportDefinitionEventResponse"
 	DeleteMetricReportDefinition         eh.EventType = "DeleteMetricReportDefinitionEvent"
 	DeleteMetricReportDefinitionResponse eh.EventType = "DeleteMetricReportDefinitionEventResponse"
+	DeleteMetricReport                   eh.EventType = "DeleteMetricReportEvent"
+	DeleteMetricReportResponse           eh.EventType = "DeleteMetricReportEventResponse"
 	DatabaseMaintenance                  eh.EventType = "DatabaseMaintenanceEvent"
 	PublishClock                         eh.EventType = "PublishClockEvent"
 )
@@ -41,8 +46,9 @@ type MetricReportDefinitionData struct {
 	// Validation: It's assumed that Period is parsed on ingress. Redfish
 	// "Schedule" object is flexible, but we'll allow only period in seconds for
 	// now When it gets to this struct, it needs to be expressed in Seconds.
-	Period  RedfishDuration `db:"Period" json:"-"` // when type=periodic, it's a Redfish Duration
-	Metrics []RawMetricMeta `db:"Metrics"`
+	Period    RedfishDuration `db:"Period" json:"-"` // when type=periodic, it's a Redfish Duration
+	Heartbeat RedfishDuration `db:"HeartbeatInterval" json:"MetricReportHeartbeatInterval"`
+	Metrics   []RawMetricMeta `db:"Metrics"`
 
 	// stuff we still need to implement
 	// ShortDesc
@@ -130,8 +136,29 @@ type AddMetricReportDefinitionData struct {
 	MetricReportDefinitionData
 }
 
+func (a *AddMetricReportDefinitionData) DecodeFromReader(ctx context.Context, logger log.Logger, r io.Reader, vars map[string]string) error {
+	decoder := json.NewDecoder(r)
+	return decoder.Decode(a)
+}
+
 type AddMetricReportDefinitionResponseData struct {
 	metric.CommandResponse
+}
+
+type UpdateMetricReportDefinitionData struct {
+	metric.Command
+	ReportDefinitionName string
+	Patch                json.RawMessage
+}
+
+type UpdateMetricReportDefinitionResponseData struct {
+	metric.CommandResponse
+}
+
+func (u *UpdateMetricReportDefinitionData) DecodeFromReader(ctx context.Context, logger log.Logger, r io.Reader, vars map[string]string) error {
+	u.ReportDefinitionName = vars["ID"]
+	decoder := json.NewDecoder(r)
+	return decoder.Decode(&u.Patch)
 }
 
 type DeleteMetricReportDefinitionData struct {
@@ -139,11 +166,26 @@ type DeleteMetricReportDefinitionData struct {
 	Name string
 }
 
-func (delMRD *DeleteMetricReportDefinitionData) SetPathToDelete(reportDefName string) {
-	delMRD.Name = reportDefName
+func (delMRD *DeleteMetricReportDefinitionData) DecodeFromReader(ctx context.Context, logger log.Logger, r io.Reader, vars map[string]string) error {
+	delMRD.Name = vars["ID"]
+	return nil
 }
 
 type DeleteMetricReportDefinitionResponseData struct {
+	metric.CommandResponse
+}
+
+type DeleteMetricReportData struct {
+	metric.Command
+	Name string
+}
+
+func (delMR *DeleteMetricReportData) DecodeFromReader(ctx context.Context, logger log.Logger, r io.Reader, vars map[string]string) error {
+	delMR.Name = vars["ID"]
+	return nil
+}
+
+type DeleteMetricReportResponseData struct {
 	metric.CommandResponse
 }
 
@@ -159,17 +201,31 @@ func Factory(et eh.EventType) func() (eh.Event, error) {
 
 func RegisterEvents() {
 	// Full commands (request/response)
+	// =========== ADD MRD - AddMetricReportDefinition ==========================
 	eh.RegisterEventData(AddMetricReportDefinition, func() eh.EventData {
 		return &AddMetricReportDefinitionData{Command: metric.NewCommand(AddMetricReportDefinitionResponse)}
 	})
 	eh.RegisterEventData(AddMetricReportDefinitionResponse, func() eh.EventData { return &AddMetricReportDefinitionResponseData{} })
 
+	// =========== UPDATE MRD - UpdateMetricReportDefinition ====================
+	eh.RegisterEventData(UpdateMetricReportDefinition, func() eh.EventData {
+		return &UpdateMetricReportDefinitionData{Command: metric.NewCommand(UpdateMetricReportDefinitionResponse)}
+	})
+	eh.RegisterEventData(UpdateMetricReportDefinitionResponse, func() eh.EventData { return &UpdateMetricReportDefinitionResponseData{} })
+
+	// =========== DEL MRD - DeleteMetricReportDefinition =======================
 	eh.RegisterEventData(DeleteMetricReportDefinition, func() eh.EventData {
 		return &DeleteMetricReportDefinitionData{Command: metric.NewCommand(DeleteMetricReportDefinitionResponse)}
 	})
 	eh.RegisterEventData(DeleteMetricReportDefinitionResponse, func() eh.EventData { return &DeleteMetricReportDefinitionResponseData{} })
 
-	// not yet converted over to command
-	eh.RegisterEventData(UpdateMetricReportDefinition, func() eh.EventData { return &MetricReportDefinitionData{} })
+	// =========== DEL MR - DeleteMetricReport ==================================
+	eh.RegisterEventData(DeleteMetricReport, func() eh.EventData {
+		return &DeleteMetricReportData{Command: metric.NewCommand(DeleteMetricReportResponse)}
+	})
+	eh.RegisterEventData(DeleteMetricReportResponse, func() eh.EventData { return &DeleteMetricReportResponseData{} })
+
+	// These aren't planned to ever be commands
+	//   - no need for these to be callable from redfish or other interfaces
 	eh.RegisterEventData(DatabaseMaintenance, func() eh.EventData { return "" })
 }
