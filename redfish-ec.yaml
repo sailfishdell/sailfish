@@ -919,6 +919,8 @@ views:
       "Models":
         "default": {"members": "array()"}
       "Controllers":
+        - "fn": "AM2"
+          "params": {"modelname": "default", "cfgsection": "collection", "uniquename": "'collection_' + view.GetURI()", "passthru": {'collection_uri': 'view.GetURI()'} }
       "View":
         - "fn": "with_URI"
           "params": "parenturi + '/Slots'"

@@ -1066,11 +1066,6 @@ func addAM3Functions(logger log.Logger, am3Svc *am3.Service, d *domain.DomainObj
 			Property: "Members",
 			Format:   "formatOdataList"},
 
-		{Prefix: "/redfish/v1/Chassis/System.Chassis.1/Slots",
-			URI:      "/redfish/v1/Chassis/System.Chassis.1/Slots",
-			Property: "Members",
-			Format:   "formatOdataList"},
-
 		{Prefix: "/redfish/v1/Chassis/System.Chassis.1/SlotConfigs",
 			URI:      "/redfish/v1/Chassis/System.Chassis.1/SlotConfigs",
 			Property: "Members",

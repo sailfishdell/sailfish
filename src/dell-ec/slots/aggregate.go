@@ -28,8 +28,8 @@ func RegisterAggregate(s *testaggregate.Service) {
 					},
 					Properties: map[string]interface{}{
 						"Name":                "DellSlotsCollection",
-						"Members":             []interface{}{},
-						"Members@odata.count": 0,
+            "Members@meta":             vw.Meta(view.GETProperty("members"), view.GETFormatter("expand"), view.GETModel("default")),
+            "Members@odata.count@meta": vw.Meta(view.GETProperty("members"), view.GETFormatter("count"), view.GETModel("default")),
 					}},
 			}, nil
 		})
