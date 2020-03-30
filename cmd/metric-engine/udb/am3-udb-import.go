@@ -24,7 +24,8 @@ import (
 )
 
 const (
-	udbChangeEvent eh.EventType = "UDBChangeEvent"
+	udbChangeEvent    eh.EventType = "UDBChangeEvent"
+	udbReportDefEvent eh.EventType = "UDBReportDefEvent"
 )
 
 type busComponents interface {
@@ -47,6 +48,17 @@ type eventHandlingService interface {
 		-- PRAGMA udbsm.cache_size = 0;
 		-- PRAGMA mmap_size = 0;
 */
+
+type RowIdCurrentVal struct {
+	CurrValue string
+	Rowid     int64
+	key       string
+}
+
+type UDBRowIdCurrentVal struct {
+	RowId             int64
+	EnableTeleRsyslog string
+}
 
 // StartupUDBImport will attach event handlers to handle import UDB import
 func StartupUDBImport(logger log.Logger, cfg *viper.Viper, am3Svc eventHandlingService, d busComponents) error {
@@ -105,7 +117,123 @@ func StartupUDBImport(logger log.Logger, cfg *viper.Viper, am3Svc eventHandlingS
 	// handle UDB notifications
 	go handleUDBNotifyPipe(logger, cfg.GetString("udb.udbnotifypipe"), d)
 
+	// query UDB database for defined list of legacy reports, update the telemetry enable/disable status for each report.
+	configSync, err := newConfigSync(logger, database, d)
+
+	am3Svc.AddEventHandler("UDB Cfg change Notification", udbChangeEvent, MakeHandlerLegacyAttributeSync(logger, importMgr, bus, configSync))
+
+	fmt.Println("before sql query")
 	return nil
+}
+
+type ConfigSync struct {
+	db         *sqlx.DB
+	cfgEntries map[int64]string
+	bus        eh.EventBus
+	Temp       int
+}
+
+func newConfigSync(logger log.Logger, database *sqlx.DB, d busComponents) (*ConfigSync, error) {
+	tempo := 10
+	cfgS := &ConfigSync{
+		db:         database,
+		bus:        d.GetBus(),
+		cfgEntries: map[int64]string{},
+		Temp:       tempo,
+	}
+
+	// TODO: Need to move this query out into the metric-engine.yaml file and prepare it on startup
+	sqltextEnableTele := "select RowID,CurrentValue,Key from TblEnumAttribute where Key like '%Telemetry%';"
+
+	rows, err := database.Queryx(sqltextEnableTele)
+	fmt.Println("after sql query")
+	if err != nil {
+		fmt.Println("sql query failed")
+	}
+
+	for rows.Next() {
+		var RowID int64
+		var CurrentValue string
+		var key string
+		err = rows.Scan(&RowID, &CurrentValue, &key)
+		if err != nil {
+			// report errors out to caller, but safe to continue here and try the next
+			fmt.Println("error with Scan() of row from query: %w", err)
+			continue
+		}
+
+		keys := strings.Split(key, "#")
+		cfgS.cfgEntries[RowID] = keys[1]
+
+		// config option: CurrentValue with key
+		// parse this into an event and publish
+/*
+		n := RowIdCurrentVal{
+			CurrValue: CurrentValue,
+			Rowid:     RowID,
+			key:       keys[1],
+		}
+		fmt.Printf("rowid and currentvalue:%d, %s for report:%s\n", RowID, CurrentValue, keys[1])
+		publishAndWait(logger, d.GetBus(), udbReportDefEvent, &n)
+*/
+	}
+
+	fmt.Printf("DEBUG: got all these configuration settings: %+v\n", cfgS.cfgEntries)
+
+	return cfgS, err
+}
+
+func MakeHandlerLegacyAttributeSync(logger log.Logger, importMgr *importManager, bus eh.EventBus, configSync *ConfigSync) func(eh.Event) {
+	return func(event eh.Event) {
+		notify, ok := event.Data().(*changeNotify)
+		if !ok {
+			logger.Crit("UDB Change Notifier message handler got an invalid data event", "event", event, "eventdata", event.Data())
+			return
+		}
+		//fmt.Printf("Receiving UDB Cfg ChangeEvent %d %s for report:%s\n", notify.Rowid, notify.CurrValue, notify.key)
+
+		// Step 1: Is this a DMLiveObjectDatabase change
+		if notify.Database != "DMLiveObjectDatabase" {
+			return
+		}
+
+		// Step 2: Is this a tblEnumAttribute change
+		if notify.Table != "tblEnumAttribute" {
+			return
+		}
+
+		// Do we care about Operation?  Operation int64 (probably.)
+
+		// Step 3: is this a ROWID we care about?
+		cfg, ok := configSync.cfgEntries[notify.Rowid]
+		if !ok {
+			return
+		}
+
+		// Step 4: Generate a "UpdateMetricReportDefinition" event
+		//	Ok, here first thing we need to do is do a UDB query to find the current value since UDB didn't actually send us the value
+		sqltextEnableTele := "select CurrentValue from TblEnumAttribute where ROWID=?"
+        var CurrentValue string
+		//CurrentValue := configSync.db.Get(sqltextEnableTele,&notify.Rowid)
+        err := configSync.db.Get(&CurrentValue,sqltextEnableTele,&notify.Rowid)
+        if err != nil {
+			logger.Crit("Error checking currentvalue of rowid in database ", "err", err)
+		}
+        fmt.Printf("CurrentValue:%s \n",CurrentValue);
+
+/* 
+You'll need to construct a string with this content:
+
+{"MetricReportDefinitionEnable": true}
+
+(or "false" to disable), then wrap that with an io.Reader, then json.unmarshal that into .Patch
+then publish that message
+Its about 6-10 lines of code 
+*/
+        mrd := MetricReportDefinition{
+			MetricReportDefinitionData: &MetricReportDefinitionData{},
+		}
+	}
 }
 
 func MakeHandlerUDBPeriodicImport(logger log.Logger, importMgr *importManager, bus eh.EventBus) func(eh.Event) {
