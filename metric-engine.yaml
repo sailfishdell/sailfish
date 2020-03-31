@@ -1955,7 +1955,7 @@ createdb:
           ' "MetricReportDefinitionEnabled": ' || case Enabled when 1 then json('true') else json('false') end || ',' ||
           ' "MetricReportDefinitionType": "' || Type || '",' ||
           ' "MetricReportDefinitionType@Redfish.AllowableValues": ' || json_array('Periodic', 'OnChange', 'OnRequest') || ', ' ||
-          ' "MetricReportHeartbeatInterval": ' || json(HeartbeatInterval) ||
+          ' "MetricReportHeartbeatInterval": ' ||  '"PT' || ((HeartbeatInterval/1000000000)/(3600)) || 'H' || (((HeartbeatInterval/1000000000)/60)%60) || 'M' || ((HeartbeatInterval/1000000000)%60) || 'S",'  ||
           ' "SuppressRepeatedMetricValue": ' || case SuppressDups when 1 then json('true') else json('false') end || ',' ||
           ' "ReportTimespan": "PT' || (TimeSpan/(3600000000000)) || 'H' || ((TimeSpan/60000000000)%60) || 'M' || ((TimeSpan/1000000000)%60) || 'S' || '", ' ||
           ' "ReportUpdates": "' || Updates || '", ' ||
@@ -1967,7 +1967,7 @@ createdb:
           case Type
           when 'Periodic' then
           ' "Schedule": ' || json_object(
-              'RecurrenceInterval', 'PT' || (Period/(3600)) || 'H' || ((Period/60)%60) || 'M' || (Period%60) || 'S'
+              'RecurrenceInterval', 'PT' || ((Period/1000000000)/(3600)) || 'H' || (((Period/1000000000)/60)%60) || 'M' || ((Period/1000000000)%60) || 'S'
             ) || ','
           else ''
           end ||
