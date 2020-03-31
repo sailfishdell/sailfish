@@ -401,12 +401,30 @@ func addAM3Functions(logger log.Logger, am3Svc *am3.Service, d *domain.DomainObj
 			return
 		}
 
-		capabilities := data.Capabilities
-		config_objects := data.IOMConfig_objects
-		rrp_config_objects := &domain.RedfishResourceProperty{Value: config_objects}
-		rrp_config_objects.Parse(config_objects)
-		rrp_capabilities := &domain.RedfishResourceProperty{Value: config_objects}
-		rrp_capabilities.Parse(capabilities)
+		capabilities, ok := data.Capabilities.([]interface{})
+    if !ok {
+      logger.Error("Iom Capabilities are not a slice of interfaces", "capabilties", data.Capabilities)
+      return
+    }
+
+		config_objects, ok := data.IOMConfig_objects.(map[string]interface{})
+    if !ok {
+      logger.Error("Iom Config Objects  are not a map of string-interfaces", "iomconfig_objects", data.IOMConfig_objects)
+      return
+    }
+
+    var capabilities_copy []interface{}
+    copy(capabilities_copy, capabilities)
+
+    config_objects_copy := make(map[string]interface{})
+    for key, value := range config_objects {
+      config_objects_copy[key] = value
+    }
+
+		rrp_config_objects := &domain.RedfishResourceProperty{Value: config_objects_copy}
+		rrp_config_objects.Parse(config_objects_copy)
+		rrp_capabilities := &domain.RedfishResourceProperty{Value: capabilities_copy}
+		rrp_capabilities.Parse(capabilities_copy)
 		d.CommandHandler.HandleCommand(context.Background(),
 			&domain.UpdateRedfishResourceProperties2{
 				ID: uuid,
