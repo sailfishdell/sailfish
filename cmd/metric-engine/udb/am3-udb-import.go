@@ -15,6 +15,8 @@ import (
 	eh "github.com/looplab/eventhorizon"
 	"github.com/spf13/viper"
 	"golang.org/x/xerrors"
+	"encoding/json"
+    "io/ioutil"
 
 	"github.com/superchalupa/sailfish/cmd/metric-engine/fifocompat"
 	"github.com/superchalupa/sailfish/cmd/metric-engine/telemetry"
@@ -25,7 +27,6 @@ import (
 
 const (
 	udbChangeEvent    eh.EventType = "UDBChangeEvent"
-	udbReportDefEvent eh.EventType = "UDBReportDefEvent"
 )
 
 type busComponents interface {
@@ -190,22 +191,24 @@ func MakeHandlerLegacyAttributeSync(logger log.Logger, importMgr *importManager,
 			logger.Crit("UDB Change Notifier message handler got an invalid data event", "event", event, "eventdata", event.Data())
 			return
 		}
-		//fmt.Printf("Receiving UDB Cfg ChangeEvent %d %s for report:%s\n", notify.Rowid, notify.CurrValue, notify.key)
-
+		
+        //fmt.Printf("Receiving UDB Cfg ChangeEvent %d,Table:%s,db:%s\n",notify.Rowid,notify.Table,notify.Database)
 		// Step 1: Is this a DMLiveObjectDatabase change
-		if notify.Database != "DMLiveObjectDatabase" {
+		if notify.Database != "DMLiveObjectDatabase.db" {
 			return
 		}
 
 		// Step 2: Is this a tblEnumAttribute change
-		if notify.Table != "tblEnumAttribute" {
+		if notify.Table != "TblEnumAttribute" {
 			return
 		}
 
+        fmt.Printf("configSync.cfgEntries[notify.Rowid]:%s\n",configSync.cfgEntries[notify.Rowid])
 		// Do we care about Operation?  Operation int64 (probably.)
-
+        //cfg *viper.Viper
 		// Step 3: is this a ROWID we care about?
-		cfg, ok := configSync.cfgEntries[notify.Rowid]
+		//cfg, ok := configSync.cfgEntries[notify.Rowid]
+        _, ok = configSync.cfgEntries[notify.Rowid]
 		if !ok {
 			return
 		}
@@ -214,7 +217,6 @@ func MakeHandlerLegacyAttributeSync(logger log.Logger, importMgr *importManager,
 		//	Ok, here first thing we need to do is do a UDB query to find the current value since UDB didn't actually send us the value
 		sqltextEnableTele := "select CurrentValue from TblEnumAttribute where ROWID=?"
         var CurrentValue string
-		//CurrentValue := configSync.db.Get(sqltextEnableTele,&notify.Rowid)
         err := configSync.db.Get(&CurrentValue,sqltextEnableTele,&notify.Rowid)
         if err != nil {
 			logger.Crit("Error checking currentvalue of rowid in database ", "err", err)
@@ -230,9 +232,27 @@ You'll need to construct a string with this content:
 then publish that message
 Its about 6-10 lines of code 
 */
-        mrd := MetricReportDefinition{
-			MetricReportDefinitionData: &MetricReportDefinitionData{},
-		}
+        var EnableString string
+        if CurrentValue == "Enabled" {
+            EnableString = "{\"MetricReportDefinitionEnable\": true}"
+        }else CurrentValue == "Disabled" {
+            EnableString = "{\"MetricReportDefinitionEnable\": false}"
+        }
+
+        var mrd telemetry.MetricReportDefinitionData
+        //jsonstring, err := ioutil.ReadFile(MRDFilePath)
+        jsonstring, err1 := ioutil.ReadFile("/var/run/PowerMetricsindex.json")  
+        if err1 != nil {
+            logger.Crit("didn't read active telemetry MRD: %w", err1)
+            return 
+        }
+        fmt.Printf("jsonstring:%s\n",jsonstring)
+        err = json.Unmarshal(jsonstring, &mrd)
+        if err != nil {
+            logger.Crit("update MRD unmarshal failed: %w", err)
+            return
+        }
+        fmt.Printf("mrd:%+v\n",mrd)
 	}
 }
 
