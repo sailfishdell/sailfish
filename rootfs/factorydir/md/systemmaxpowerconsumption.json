@@ -1,0 +1,13 @@
+{ 
+    "@odata.type": "#MetricDefinition.v1_0_2.MetricDefinition",
+    "Id": "SystemMaxPowerConsumption",
+    "Name": "System Max Power Consumption Metric Definition",
+    "Description": "Peak system power consumption",
+    "MetricType": "Numeric",
+    "MetricDataType": "Decimal",
+    "Units": "W",
+    "Accuracy": 1.0,
+    "SensingInterval": "PT60S",
+    "@odata.context": "/redfish/v1/$metadata#MetricDefinition.MetricDefinition",
+    "@odata.id": "/redfish/v1/TelemetryService/MetricDefinitions/SystemMaxPowerConsumption"
+} 

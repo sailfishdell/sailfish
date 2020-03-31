@@ -117,6 +117,9 @@ func StartupTelemetryBase(logger log.Logger, cfg *viper.Viper, am3Svc eventHandl
 	am3Svc.AddEventHandler("Delete Metric Report", DeleteMetricReport, MakeHandlerDeleteMR(logger, telemetryMgr, bus))
 	am3Svc.AddEventHandler("Update Metric Report Definition", UpdateMetricReportDefinition, MakeHandlerUpdateMRD(logger, telemetryMgr, bus))
 
+	//Metric Defintion Add event
+	am3Svc.AddEventHandler("Create Metric Definition", AddMetricDefinition, MakeHandlerCreateMD(logger, telemetryMgr, bus))
+
 	// just events for now
 	am3Svc.AddEventHandler("Generate Metric Report", metric.RequestReport, MakeHandlerGenReport(logger, telemetryMgr, bus))
 	am3Svc.AddEventHandler("Clock", PublishClock, MakeHandlerClock(logger, telemetryMgr, bus))
@@ -231,6 +234,37 @@ func MakeHandlerDeleteMRD(logger log.Logger, telemetryMgr *telemetryManager, bus
 			return
 		}
 
+		publishHelper(logger, bus, respEvent)
+	}
+}
+
+// MD event handlers
+func MakeHandlerCreateMD(logger log.Logger, telemetryMgr *telemetryManager, bus eh.EventBus) func(eh.Event) {
+	return func(event eh.Event) {
+		fmt.Println("MakeHandlerCreateMD")
+		mdDef, ok := event.Data().(*AddMetricDefinitionData)
+		if !ok {
+			fmt.Println("AddMetricDefinition handler got event of incorrect format")
+			logger.Crit("AddMetricDefinition handler got event of incorrect format")
+			return
+		}
+
+		// Can't write to event sent in, so make a local copy
+		locaMdDefCopy := *mdDef
+		addError := telemetryMgr.addMD(&locaMdDefCopy.MetricDefinitionData)
+		if addError != nil {
+			logger.Crit("Failed to create or update the Metric Definition", "MetricId", mdDef.MetricDefinitionData.MetricId, "err", addError)
+		}
+
+		// Generate a "response" event that carries status back to initiator
+		respEvent, err := mdDef.NewResponseEvent(addError)
+		if err != nil {
+			logger.Crit("Error creating response event", "err", err, "MetricDefintion", mdDef.MetricDefinitionData.MetricId)
+			return
+		}
+
+		//data, ok := respEvent.Data().(*AddMetricReportDefinitionResponseData)
+		// Should add the populated metric report definition event as a response?
 		publishHelper(logger, bus, respEvent)
 	}
 }

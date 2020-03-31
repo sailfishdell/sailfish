@@ -1,0 +1,13 @@
+{ 
+    "@odata.type": "#MetricDefinition.v1_0_2.MetricDefinition",
+    "Id": "PercentDriveLifeRemaining",
+    "Name": "Percent Drive Life Remaining Metric Definition",
+    "Description": "Drive Life Remaining (DLR) in percentage ",
+    "MetricType": "Countdown",
+    "MetricDataType": "Decimal",
+    "Units": "%",
+    "Accuracy": 0.0,
+    "SensingInterval": "PT3600S",
+    "@odata.context": "/redfish/v1/$metadata#MetricDefinition.MetricDefinition",
+    "@odata.id": "/redfish/v1/TelemetryService/MetricDefinitions/PercentDriveLifeRemaining"
+} 

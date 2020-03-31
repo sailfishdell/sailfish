@@ -1,0 +1,13 @@
+{ 
+    "@odata.type": "#MetricDefinition.v1_0_2.MetricDefinition",
+    "Id": "FCOEPktRxCount",
+    "Name": "FCoE Packets Received Count Metric Definition",
+    "Description": "Number of good (FCS valid) packets received with the partition active FCoE(Fiber Channel over Ethernet) MAC address",
+    "MetricType": "Counter",
+    "MetricDataType": "Integer",
+    "Units": "Pkt",
+    "Accuracy": 0.0,
+    "SensingInterval": "PT60S",
+    "@odata.context": "/redfish/v1/$metadata#MetricDefinition.MetricDefinition",
+    "@odata.id": "/redfish/v1/TelemetryService/MetricDefinitions/FCOEPktRxCount"
+} 

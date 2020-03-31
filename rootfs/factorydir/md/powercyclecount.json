@@ -1,0 +1,12 @@
+{ 
+    "@odata.type": "#MetricDefinition.v1_0_2.MetricDefinition",
+    "Id": "PowerCycleCount",
+    "Name": "Power Cycle Count Metric Definition",
+    "Description": "This attribute indicates the count of full hard disk power on/off cycles. ",
+    "MetricType": "Counter",
+    "MetricDataType": "Integer",
+    "Accuracy": 0.0,
+    "SensingInterval": "PT3600S",
+    "@odata.context": "/redfish/v1/$metadata#MetricDefinition.MetricDefinition",
+    "@odata.id": "/redfish/v1/TelemetryService/MetricDefinitions/PowerCycleCount"
+} 

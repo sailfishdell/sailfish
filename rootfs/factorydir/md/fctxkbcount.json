@@ -1,0 +1,13 @@
+{ 
+    "@odata.type": "#MetricDefinition.v1_0_2.MetricDefinition",
+    "Id": "FCTxKBCount",
+    "Name": "Transmitted KB Count Metric Definition",
+    "Description": "This property represents the total KBs transmitted",
+    "MetricType": "Counter",
+    "MetricDataType": "Integer",
+    "Units": "KB",
+    "Accuracy": 0.0,
+    "SensingInterval": "PT60S",
+    "@odata.context": "/redfish/v1/$metadata#MetricDefinition.MetricDefinition",
+    "@odata.id": "/redfish/v1/TelemetryService/MetricDefinitions/FCTxKBCount"
+} 

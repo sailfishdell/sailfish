@@ -24,6 +24,8 @@ const (
 	DeleteMetricReportResponse           eh.EventType = "DeleteMetricReportEventResponse"
 	DatabaseMaintenance                  eh.EventType = "DatabaseMaintenanceEvent"
 	PublishClock                         eh.EventType = "PublishClockEvent"
+	AddMetricDefinition                  eh.EventType = "AddMetricDefinitionEvent"
+	AddMetricDefinitionResponse          eh.EventType = "AddMetricDefinitionEventResponse"
 )
 
 // MetricReportDefinitionData is the eh event data for adding a new report definition
@@ -78,6 +80,19 @@ func (mrd *MetricReportDefinitionData) UnmarshalJSON(data []byte) error {
 
 func (mrd MetricReportDefinitionData) GetTimeSpan() time.Duration {
 	return time.Duration(mrd.TimeSpan)
+}
+
+// MetricDefifinitionData - is the eh event data for adding a new new definition (future)
+type MetricDefinitionData struct {
+	MetricId        string      `db:"MetricId"          json:"Id"`
+	Name            string      `db:"Name"              json:"Name"`
+	Description     string      `db:"Description"       json:"Description"`
+	MetricType      string      `db:"MetricType"        json:"MetricType"`
+	MetricDataType  string      `db:"MetricDataType"    json:"MetricDataType"`
+	Units           string      `db:"Units"             json:"Units"`
+	Accuracy        float32     `db:"Accuracy"          json:"Accuracy"`
+	SensingInterval string      `db:"SensingInterval"   json:"SensingInterval"`
+	DiscreteValues  StringArray `db:"DiscreteValues"   json:"DiscreteValues"`
 }
 
 // RawMetricMeta is a sub structure to help serialize stuff to db. it containst
@@ -189,6 +204,25 @@ type DeleteMetricReportResponseData struct {
 	metric.CommandResponse
 }
 
+// MD defs
+type MetricDefinition struct {
+	*MetricDefinitionData
+}
+
+type AddMetricDefinitionData struct {
+	metric.Command
+	MetricDefinitionData
+}
+
+func (a *AddMetricDefinitionData) DecodeFromReader(ctx context.Context, logger log.Logger, r io.Reader, vars map[string]string) error {
+	decoder := json.NewDecoder(r)
+	return decoder.Decode(a)
+}
+
+type AddMetricDefinitionResponseData struct {
+	metric.CommandResponse
+}
+
 func Factory(et eh.EventType) func() (eh.Event, error) {
 	return func() (eh.Event, error) {
 		data, err := eh.CreateEventData(et)
@@ -224,6 +258,12 @@ func RegisterEvents() {
 		return &DeleteMetricReportData{Command: metric.NewCommand(DeleteMetricReportResponse)}
 	})
 	eh.RegisterEventData(DeleteMetricReportResponse, func() eh.EventData { return &DeleteMetricReportResponseData{} })
+
+	// =========== ADD MD - AddMetricDefinition ==========================
+	eh.RegisterEventData(AddMetricDefinition, func() eh.EventData {
+		return &AddMetricDefinitionData{Command: metric.NewCommand(AddMetricDefinitionResponse)}
+	})
+	eh.RegisterEventData(AddMetricDefinitionResponse, func() eh.EventData { return &AddMetricDefinitionResponseData{} })
 
 	// These aren't planned to ever be commands
 	//   - no need for these to be callable from redfish or other interfaces

@@ -1,0 +1,13 @@
+{ 
+    "@odata.type": "#MetricDefinition.v1_0_2.MetricDefinition",
+    "Id": "SystemOutputPower",
+    "Name": "Current System Output Power Metric Definition",
+    "Description": "Current System Output Power",
+    "MetricType": "Numeric",
+    "MetricDataType": "Decimal",
+    "Units": "W",
+    "Accuracy": 1.0,
+    "SensingInterval": "PT5S",
+    "@odata.context": "/redfish/v1/$metadata#MetricDefinition.MetricDefinition",
+    "@odata.id": "/redfish/v1/TelemetryService/MetricDefinitions/SystemOutputPower"
+} 

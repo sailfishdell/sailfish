@@ -1,0 +1,12 @@
+{ 
+    "@odata.type": "#MetricDefinition.v1_0_2.MetricDefinition",
+    "Id": "FCLossOfSignals",
+    "Name": "FC Loss Of Signals Metric Definition",
+    "Description": "This property represents the lost signals count",
+    "MetricType": "Counter",
+    "MetricDataType": "Integer",
+    "Accuracy": 0.0,
+    "SensingInterval": "PT60S",
+    "@odata.context": "/redfish/v1/$metadata#MetricDefinition.MetricDefinition",
+    "@odata.id": "/redfish/v1/TelemetryService/MetricDefinitions/FCLossOfSignals"
+} 

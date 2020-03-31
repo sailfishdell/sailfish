@@ -1,0 +1,13 @@
+{ 
+    "@odata.type": "#MetricDefinition.v1_0_2.MetricDefinition",
+    "Id": "SysAirFlowEfficiency",
+    "Name": "System Air Flow Efficiency Metric Definition",
+    "Description": "System airflow efficiency metric (SAFE)",
+    "MetricType": "Numeric",
+    "MetricDataType": "Decimal",
+    "Units": "%",
+    "Accuracy": 5.0,
+    "SensingInterval": "PT5S",
+    "@odata.context": "/redfish/v1/$metadata#MetricDefinition.MetricDefinition",
+    "@odata.id": "/redfish/v1/TelemetryService/MetricDefinitions/SysAirFlowEfficiency"
+} 

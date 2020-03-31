@@ -1,0 +1,13 @@
+{ 
+    "@odata.type": "#MetricDefinition.v1_0_2.MetricDefinition",
+    "Id": "SysAirflowUtilization",
+    "Name": "System Airflow Utilization Metric Definition",
+    "Description": "Specifies the system airflow utilization (CFM / Max CFM). CFM (cubic feet per min)",
+    "MetricType": "Numeric",
+    "MetricDataType": "Decimal",
+    "Units": "CFM",
+    "Accuracy": 5.0,
+    "SensingInterval": "PT5S",
+    "@odata.context": "/redfish/v1/$metadata#MetricDefinition.MetricDefinition",
+    "@odata.id": "/redfish/v1/TelemetryService/MetricDefinitions/SysAirflowUtilization"
+} 

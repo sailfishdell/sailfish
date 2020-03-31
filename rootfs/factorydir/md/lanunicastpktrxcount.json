@@ -1,0 +1,13 @@
+{ 
+    "@odata.type": "#MetricDefinition.v1_0_2.MetricDefinition",
+    "Id": "LanUnicastPktRxCount",
+    "Name": "Unicast LAN Packets Received Count Metric Definition",
+    "Description": "Total number of LAN Unicast Packets Received",
+    "MetricType": "Counter",
+    "MetricDataType": "Integer",
+    "Units": "Pkt",
+    "Accuracy": 0.0,
+    "SensingInterval": "PT60S",
+    "@odata.context": "/redfish/v1/$metadata#MetricDefinition.MetricDefinition",
+    "@odata.id": "/redfish/v1/TelemetryService/MetricDefinitions/LanUnicastPktRxCount"
+} 

@@ -1,0 +1,13 @@
+{ 
+    "@odata.type": "#MetricDefinition.v1_0_2.MetricDefinition",
+    "Id": "TxBytes",
+    "Name": "Bytes Transmitted Metric Definition",
+    "Description": "Total number of bytes transmitted, including host and remote management pass through traffic",
+    "MetricType": "Counter",
+    "MetricDataType": "Integer",
+    "Units": "By",
+    "Accuracy": 0.0,
+    "SensingInterval": "PT60S",
+    "@odata.context": "/redfish/v1/$metadata#MetricDefinition.MetricDefinition",
+    "@odata.id": "/redfish/v1/TelemetryService/MetricDefinitions/TxBytes"
+} 

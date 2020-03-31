@@ -5,6 +5,9 @@ pprof: [ "unix:/run/telemetryservice/http.socket" ]
 SSE: [ "unix:/run/telemetryservice/http.socket" ]
 Redfish: [ "unix:/run/telemetryservice/http.socket" ]
 
+main:
+  mddirectory: "/usr/share/factory/telemetryservice/md/"
+
 ##############################################
 ##
 ## MEB Questions: why do we have separate CurrentCUPS from the CIMVIEW_DCIM_NumericSensor table?
@@ -1300,6 +1303,11 @@ internal:
   # Be aware: Viper will lower case all names of config keys, so just them here as lower case or people might get confused.
   #
   namedsql:
+    md_insert: |
+      INSERT INTO MetricDefinition
+               ( MetricId, Name, Description, MetricType, MetricDataType, Units, Accuracy, SensingInterval, DiscreteValues)
+        VALUES (:MetricId, :Name, :Description, :MetricType, :MetricDataType, :Units, :Accuracy, :SensingInterval, :DiscreteValues)
+
     mrd_insert: |
       INSERT INTO MetricReportDefinition
                ( Name,  Enabled,  AppendLimit,  Type,  SuppressDups,  Actions,  Updates,  Period,  TimeSpan)
@@ -2085,6 +2093,10 @@ createdb:
           UNION ALL
         select root, [@odata.id] from MetricReportCollection_JSON
           UNION ALL
+        select root, [@odata.id] from MetricDefinitionCollection_JSON
+          UNION ALL
+        select root, [@odata.id] from MetricDefinition_JSON
+          UNION ALL
         select root, [@odata.id] from MetricReport_JSON
           UNION ALL
         select root, [@odata.id] from TelemetryService_JSON
@@ -2272,7 +2284,73 @@ createdb:
       ('iDRAC.1.6.PDR16','PDRWarnTrigger','StorageDiskSMARTData'),
       ('iDRAC.1.6.PDR117','NVMeCriticalTrigger','NVMeSMARTData'),
       ('iDRAC.1.6.CPU0000','IERRCriticalTrigger','CPURegisters');     
- 
+  
+  # Table poplauted at metric-egine start by reading MD jsons   
+  - |
+     DROP TABLE IF EXISTS MetricDefinition;
+     CREATE TABLE MetricDefinition
+     (
+       ID              INTEGER PRIMARY KEY,
+       MetricId        TEXT UNIQUE NOT NULL,
+       Name            TEXT NOT NULL,
+       Description     TEXT NOT NULL,
+       MetricType      TEXT NOT NULL,
+       MetricDataType  TEXT NOT NULL,
+       Units 	       TEXT, 
+       Accuracy        REAL,
+       SensingInterval TEXT,
+       DiscreteValues  TEXT
+     );    
+  
+  - |
+     DROP VIEW IF EXISTS MetricDefinition_JSON;
+     CREATE VIEW MetricDefinition_JSON as
+      select
+      (
+       '{' ||
+       ' "@odata.type": "#MetricDefinition.v1_2_0.MetricDefinition",' ||
+       ' "@odata.context": "/redfish/v1/$metadata#MetricDefinition.MetricDefinition",' ||
+       ' "@odata.id": "/redfish/v1/TelemetryService/MetricDefinitions/' || MetricId || '",' ||
+       ' "Id": "' || MetricId || '",' ||
+       ' "Name": "' || Name || '",' ||
+       ' "Description": "' || Description || '",' ||
+       ' "MetricType": "' || MetricType || '",' ||
+       ' "MetricDataType": "' || MetricDataType || '",' ||
+       ' "Units": "' || Units || '",' ||
+       ' "Accuracy": ' || Accuracy || ',' ||
+       ' "SensingInterval": "' || SensingInterval || '",' ||
+       ' "DiscreteValues": ' || DiscreteValues || 
+       '}'
+       ) as root,
+            '/redfish/v1/TelemetryService/MetricDefinitions/' || MetricId as [@odata.id]
+       from MetricDefinition;
+
+  - |
+     DROP VIEW IF EXISTS MetricDefinitionCollection_JSON;
+     CREATE VIEW MetricDefinitionCollection_JSON as
+      select
+       json_object(
+        "@odata.context", "/redfish/v1/$metadata#MetricDefinitionCollection.MetricDefinitionCollection",
+        "@odata.id", "/redfish/v1/TelemetryService/MetricDefinitions",
+        "@odata.type", "#MetricDefinitionCollection.MetricDefinitionCollection",
+        "Name", "MetricDefinitions",
+        'Members', (
+          select
+            json_group_array( json_object('@odata.id', [@odata.id]) )
+            from MetricDefinition_JSON
+        )
+       ) as root,
+            '/redfish/v1/TelemetryService/MetricDefinitions' as [@odata.id];
+
+  - |
+     DROP VIEW IF EXISTS TblMetricDefinitionItems;
+     CREATE VIEW TblMetricDefinitionItems AS
+      SELECT
+       MetricId as ResourceType,
+       '/redfish/v1/TelemetryService/MetricDefinitions/' || MetricId as '@odata.id'
+      FROM
+       MetricDefinition;
+    
   - |
         DROP VIEW IF EXISTS AggregationMetricsMRView_json ; create view AggregationMetricsMRView_json as select * from JSON where [@odata.id] = '/redfish/v1/TelemetryService/MetricReports/AggregationMetrics';
         DROP VIEW IF EXISTS CPUMemMetricsMRView_json ; create view CPUMemMetricsMRView_json as select * from JSON where [@odata.id] = '/redfish/v1/TelemetryService/MetricReports/CPUMemMetrics';
@@ -2301,8 +2379,8 @@ createdb:
         DROP VIEW IF EXISTS MetricReportDefinitionCollectionView_json ; create view MetricReportDefinitionCollectionView_json as select * from JSON where [@odata.id] = '/redfish/v1/TelemetryService/MetricReportDefinitions';
         DROP VIEW IF EXISTS TelemetryServiceView_json ; create view TelemetryServiceView_json as select * from JSON where [@odata.id] = '/redfish/v1/TelemetryService';
 
-        DROP VIEW IF EXISTS MetricDefinitionCollectionView_json ; -- create view MetricDefinitionCollectionView_json as select * from JSON  where [@odata.id] = '/redfish/v1/TelemetryService/MetricDefinitions';
-        DROP VIEW IF EXISTS MetricDefinitionView_json ;           -- create view MetricDefinitionView_json as select * from JSON where [@odata.id] = '/redfish/v1/TelemetryService/MetricDefinitions/';
+        DROP VIEW IF EXISTS MetricDefinitionCollectionView_json ; create view MetricDefinitionCollectionView_json as select * from JSON  where [@odata.id] = '/redfish/v1/TelemetryService/MetricDefinitions';
+        DROP VIEW IF EXISTS MetricDefinitionView_json ;           create view MetricDefinitionView_json as select * from JSON;
         DROP VIEW IF EXISTS TelemetryLogServiceLCLogview_json ;   -- create view TelemetryLogServiceLCLogview_json as select * from JSON;
 
 # Logging levels:

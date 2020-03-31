@@ -1,0 +1,11 @@
+{ 
+    "@odata.type": "#MetricDefinition.v1_0_2.MetricDefinition",
+    "Id": "LastWeekMinPowerTime",
+    "Name": "Last Week Min Power Time Metric Definition",
+    "Description": "Last Week Min Power Time",
+    "MetricType": "Discrete",
+    "MetricDataType": "DateTime",
+    "SensingInterval": "PT0S",
+    "@odata.context": "/redfish/v1/$metadata#MetricDefinition.MetricDefinition",
+    "@odata.id": "/redfish/v1/TelemetryService/MetricDefinitions/LastWeekMinPowerTime"
+} 

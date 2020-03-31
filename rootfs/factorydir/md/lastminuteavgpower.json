@@ -1,0 +1,13 @@
+{ 
+    "@odata.type": "#MetricDefinition.v1_0_2.MetricDefinition",
+    "Id": "LastMinuteAvgPower",
+    "Name": "Last Minute Average Power Metric Definition",
+    "Description": "Last Minute Average Power",
+    "MetricType": "Numeric",
+    "MetricDataType": "Decimal",
+    "Units": "W",
+    "Accuracy": 0.0,
+    "SensingInterval": "PT60S",
+    "@odata.context": "/redfish/v1/$metadata#MetricDefinition.MetricDefinition",
+    "@odata.id": "/redfish/v1/TelemetryService/MetricDefinitions/LastMinuteAvgPower"
+} 

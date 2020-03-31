@@ -1,0 +1,12 @@
+{ 
+    "@odata.type": "#MetricDefinition.v1_0_2.MetricDefinition",
+    "Id": "FCOERxPktDroppedCount",
+    "Name": "Rx Packets FCS Error Count Metric Definition",
+    "Description": "Number of received packets with FCS errors",
+    "MetricType": "Counter",
+    "MetricDataType": "Integer",
+    "Accuracy": 0.0,
+    "SensingInterval": "PT60S",
+    "@odata.context": "/redfish/v1/$metadata#MetricDefinition.MetricDefinition",
+    "@odata.id": "/redfish/v1/TelemetryService/MetricDefinitions/FCOERxPktDroppedCount"
+} 

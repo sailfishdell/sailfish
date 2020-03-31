@@ -1,0 +1,13 @@
+{ 
+    "@odata.type": "#MetricDefinition.v1_0_2.MetricDefinition",
+    "Id": "CUPSIIOBandwidthPort1",
+    "Name": "CUPS IIO Bandwidth Port1 Metric Definition",
+    "Description": "Utilization counter of the integrated IO Port on a per x16 port granularity",
+    "MetricType": "Numeric",
+    "MetricDataType": "Decimal",
+    "Units": "CUPS",
+    "Accuracy": 0.0,
+    "SensingInterval": "PT5S",
+    "@odata.context": "/redfish/v1/$metadata#MetricDefinition.MetricDefinition",
+    "@odata.id": "/redfish/v1/TelemetryService/MetricDefinitions/CUPSIIOBandwidthPort1"
+} 
