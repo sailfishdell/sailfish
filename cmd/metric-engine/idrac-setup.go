@@ -59,7 +59,7 @@ func setup(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, d busInt
 	}
 
 	// Import all MDs at start
-	InjectStartupMDAddEvents(logger, cfgMgr, d.GetBus())
+	injectStartupMDAddEvents(logger, cfgMgr, d.GetBus())
 
 	// Processing loop 2:
 	//  	-- UDB access
@@ -85,8 +85,8 @@ func setup(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, d busInt
 }
 
 // Populate all MDs at start from filesystem
-func InjectStartupMDAddEvents(logger log.Logger, cfg *viper.Viper, bus eh.EventBus) error {
-	logger.Crit("InjectStartupMDAddEvents\n")
+func injectStartupMDAddEvents(logger log.Logger, cfg *viper.Viper, bus eh.EventBus) error {
+	logger.Crit("injectStartupMDAddEvents\n")
 
 	cfg.SetDefault("main.mddirectory", "/usr/share/factory/telemetryservice/md/")
 	cfg.SetDefault("main.mrddirectory", "/usr/share/factory/telemetryservice/mrd/")
