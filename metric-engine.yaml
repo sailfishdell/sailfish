@@ -5,9 +5,6 @@ pprof: [ "unix:/run/telemetryservice/http.socket" ]
 SSE: [ "unix:/run/telemetryservice/http.socket" ]
 Redfish: [ "unix:/run/telemetryservice/http.socket" ]
 
-main:
-  mddirectory: "/usr/share/factory/telemetryservice/md/"
-
 ##############################################
 ##
 ## MEB Questions: why do we have separate CurrentCUPS from the CIMVIEW_DCIM_NumericSensor table?
@@ -2304,8 +2301,8 @@ createdb:
   
   - |
      DROP VIEW IF EXISTS MetricDefinition_JSON;
-     CREATE VIEW MetricDefinition_JSON as
-      select
+     CREATE VIEW MetricDefinition_JSON as 
+      SELECT 
       (
        '{' ||
        ' "@odata.type": "#MetricDefinition.v1_2_0.MetricDefinition",' ||
@@ -2316,14 +2313,14 @@ createdb:
        ' "Description": "' || Description || '",' ||
        ' "MetricType": "' || MetricType || '",' ||
        ' "MetricDataType": "' || MetricDataType || '",' ||
-       ' "Units": "' || Units || '",' ||
+       CASE WHEN Units = '' THEN '' ELSE ' "Units": "' || Units || '",'  END ||
        ' "Accuracy": ' || Accuracy || ',' ||
        ' "SensingInterval": "' || SensingInterval || '",' ||
-       ' "DiscreteValues": ' || DiscreteValues || 
+       CASE WHEN DiscreteValues LIKE 'null' THEN '' ELSE ' "DiscreteValues": ' || DiscreteValues END ||
        '}'
-       ) as root,
-            '/redfish/v1/TelemetryService/MetricDefinitions/' || MetricId as [@odata.id]
-       from MetricDefinition;
+       ) AS root,
+            '/redfish/v1/TelemetryService/MetricDefinitions/' || MetricId AS [@odata.id]
+       FROM MetricDefinition;
 
   - |
      DROP VIEW IF EXISTS MetricDefinitionCollection_JSON;
