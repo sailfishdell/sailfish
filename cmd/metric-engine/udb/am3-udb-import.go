@@ -126,7 +126,7 @@ func StartupUDBImport(logger log.Logger, cfg *viper.Viper, am3Svc eventHandlingS
 
 	go configSync.GenerateStartupConfig(logger, d)
 
-	fmt.Println("before sql query")
+	fmt.Println("ConfigSync on startup")
 	return nil
 }
 
@@ -136,29 +136,62 @@ type ConfigSync struct {
 	intEntries  map[int64]string
 	strEntries  map[int64]string
 	bus         eh.EventBus
-	Temp        int
 }
 
 func newConfigSync(logger log.Logger, database *sqlx.DB, d busComponents) (*ConfigSync, error) {
-	tempo := 10
+	
 	cfgS := &ConfigSync{
 		db:          database,
 		bus:         d.GetBus(),
 		enumEntries: map[int64]string{},
 		intEntries:  map[int64]string{},
 		strEntries:  map[int64]string{},
-		Temp:        tempo,
 	}
+   
+    err := GetRowId(database,"Enum",&(cfgS.enumEntries))
+    if err != nil {
+        fmt.Println("GetRowId Enum failed\n")
+	}
+    
+    err = GetRowId(database,"Str",&(cfgS.strEntries))
+    if err != nil {
+        fmt.Println("GetRowId Str failed\n")
+    }
+    
+    err = GetRowId(database,"Int",&(cfgS.intEntries))
+    if err != nil {
+        fmt.Println("GetRowId Int failed\n")
+    }
+    
+	fmt.Printf("DEBUG: got all these ENUM configuration settings: %+v\n", cfgS.enumEntries)
+	fmt.Printf("DEBUG: got all these STR  configuration settings: %+v\n", cfgS.strEntries)
+	fmt.Printf("DEBUG: got all these INT  configuration settings: %+v\n", cfgS.intEntries)
 
-	// TODO: Need to move this query out into the metric-engine.yaml file and prepare it on startup
-	sqltextEnableTele := "select RowID,CurrentValue,Key from TblEnumAttribute where Key like '%Telemetry%';"
+	return cfgS, err
+}
+
+func GetRowId( database *sqlx.DB,dataType string,Entries *map[int64]string)(error){
+
+    var sqltextEnableTele string
+
+    switch dataType {
+    case "Enum":
+        // TODO: Need to move this query out into the metric-engine.yaml file and prepare it on startup
+        sqltextEnableTele = "select RowID,CurrentValue,Key from TblEnumAttribute where Key like '%Telemetry%';"
+    case "Str":
+        // TODO: Need to move this query out into the metric-engine.yaml file and prepare it on startup
+        sqltextEnableTele = "select RowID,CurrentValue,Key from TblStrAttribute where Key like '%Telemetry%';"
+    case "Int":
+        // TODO: Need to move this query out into the metric-engine.yaml file and prepare it on startup
+        sqltextEnableTele = "select RowID,CurrentValue,Key from TblIntAttribute where Key like '%Telemetry%';"
+    }
 
 	rows, err := database.Queryx(sqltextEnableTele)
-	fmt.Println("after sql query")
+	fmt.Println("after sql query ")
 	if err != nil {
 		fmt.Println("sql query failed")
 	}
-
+    
 	for rows.Next() {
 		var RowID int64
 		var CurrentValue string
@@ -170,14 +203,11 @@ func newConfigSync(logger log.Logger, database *sqlx.DB, d busComponents) (*Conf
 			continue
 		}
 
-		cfgS.enumEntries[RowID] = key
+		(*Entries)[RowID] = key
 	}
-
-	fmt.Printf("DEBUG: got all these ENUM configuration settings: %+v\n", cfgS.enumEntries)
-	fmt.Printf("DEBUG: got all these STR  configuration settings: %+v\n", cfgS.strEntries)
-	fmt.Printf("DEBUG: got all these INT  configuration settings: %+v\n", cfgS.intEntries)
-
-	return cfgS, err
+    n := len(*Entries)
+    fmt.Printf("DEBUG: len of map:%d,i:%d\n",n)
+    return err
 }
 
 func (cs ConfigSync) GenerateStartupConfig(logger log.Logger, d busComponents) {
@@ -185,9 +215,9 @@ func (cs ConfigSync) GenerateStartupConfig(logger log.Logger, d busComponents) {
 		table  string
 		mapref *map[int64]string
 	}{
-		{"TblEnumAttributes", &cs.enumEntries},
-		{"TblStrAttributes", &cs.strEntries},
-		{"TblIntAttributes", &cs.intEntries},
+		{"TblEnumAttribute", &cs.enumEntries},
+		{"TblStrAttribute", &cs.strEntries},
+		{"TblIntAttribute", &cs.intEntries},
 	} {
 		for rowid := range *s.mapref {
 			notify := changeNotify{Database: "DMLiveObjectDatabase.db", Table: s.table, Rowid: rowid, Operation: 0}
@@ -246,7 +276,8 @@ func MakeHandlerLegacyAttributeSync(logger log.Logger, importMgr *importManager,
 		case "EnableTelemetry":
 			sqltextEnableTele = "select CurrentValue from TblEnumAttribute where ROWID=?"
 		//case "RsyslogTarget":
-		//case "ReportInterval":
+        case "ReportInterval":
+            sqltextEnableTele = "select CurrentValue from TblIntAttribute where ROWID=?"
 		//case "ReportTriggers":
 		default:
 			fmt.Printf("UNHANDLED TYPE OF KEY\n")
@@ -272,6 +303,11 @@ func MakeHandlerLegacyAttributeSync(logger log.Logger, importMgr *importManager,
 		}
 
 		updateEvent.ReportDefinitionName = keys[1][len("Telemetry") : len(keys[1])-len(".1")]
+        fmt.Printf("===Report: %s\n", updateEvent.ReportDefinitionName)
+        if updateEvent.ReportDefinitionName == "" {
+            updateEvent.ReportDefinitionName = "Telemetry"
+            fmt.Printf("****Global Telemetry\n")
+        }
 
 		switch keys[2] {
 		case "EnableTelemetry":
@@ -283,7 +319,10 @@ func MakeHandlerLegacyAttributeSync(logger log.Logger, importMgr *importManager,
 				fmt.Printf("Disabling report: %s\n", updateEvent.ReportDefinitionName)
 				json.Unmarshal([]byte(jsonDisableMRD), &(updateEvent.Patch))
 			}
-
+        case "ReportInterval":
+            jsonReportTimespanMRD := "{\"ReportTimespan\": \"PT" + CurrentValue + "S\"}"
+            fmt.Printf("Enabling report: %s ReportInterval:%s\n", updateEvent.ReportDefinitionName,jsonReportTimespanMRD)
+            json.Unmarshal([]byte(jsonReportTimespanMRD), &(updateEvent.Patch))
 		}
 		fmt.Printf("About to send event for report(%s): %s\n", updateEvent.ReportDefinitionName, string(updateEvent.Patch))
 		publishAndWait(logger, bus, telemetry.UpdateMetricReportDefinition, updateEvent)
