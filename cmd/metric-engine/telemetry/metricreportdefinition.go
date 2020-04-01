@@ -358,7 +358,8 @@ func (factory *telemetryManager) updateMRD(reportDef string, updates json.RawMes
 		if err != nil || mrd.ID == 0 {
 			return xerrors.Errorf("error getting MetricReportDefinition: ID(%s) NAME(%s) err: %w", mrd.ID, mrd.Name, err)
 		}
-		newMRD := mrd
+		var newData MetricReportDefinitionData = *mrd.MetricReportDefinitionData
+		newMRD := MetricReportDefinition{ MetricReportDefinitionData: &newData,  AppendLimit: factory.AppendLimit, ID: mrd.ID}
 
 		// Step 2: apply updates specified
 		json.Unmarshal(updates, &newMRD)

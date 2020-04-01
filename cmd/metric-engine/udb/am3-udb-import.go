@@ -11,12 +11,11 @@ import (
 	"strings"
 	"time"
 
+	"encoding/json"
 	"github.com/jmoiron/sqlx"
 	eh "github.com/looplab/eventhorizon"
 	"github.com/spf13/viper"
 	"golang.org/x/xerrors"
-	"encoding/json"
-    "io/ioutil"
 
 	"github.com/superchalupa/sailfish/cmd/metric-engine/fifocompat"
 	"github.com/superchalupa/sailfish/cmd/metric-engine/telemetry"
@@ -26,7 +25,9 @@ import (
 )
 
 const (
-	udbChangeEvent    eh.EventType = "UDBChangeEvent"
+	udbChangeEvent eh.EventType = "UDBChangeEvent"
+	jsonEnableMRD               = `{"MetricReportDefinitionEnabled": true}`
+	jsonDisableMRD              = `{"MetricReportDefinitionEnabled": false}`
 )
 
 type busComponents interface {
@@ -123,24 +124,30 @@ func StartupUDBImport(logger log.Logger, cfg *viper.Viper, am3Svc eventHandlingS
 
 	am3Svc.AddEventHandler("UDB Cfg change Notification", udbChangeEvent, MakeHandlerLegacyAttributeSync(logger, importMgr, bus, configSync))
 
+	go configSync.GenerateStartupConfig(logger, d)
+
 	fmt.Println("before sql query")
 	return nil
 }
 
 type ConfigSync struct {
-	db         *sqlx.DB
-	cfgEntries map[int64]string
-	bus        eh.EventBus
-	Temp       int
+	db          *sqlx.DB
+	enumEntries map[int64]string
+	intEntries  map[int64]string
+	strEntries  map[int64]string
+	bus         eh.EventBus
+	Temp        int
 }
 
 func newConfigSync(logger log.Logger, database *sqlx.DB, d busComponents) (*ConfigSync, error) {
 	tempo := 10
 	cfgS := &ConfigSync{
-		db:         database,
-		bus:        d.GetBus(),
-		cfgEntries: map[int64]string{},
-		Temp:       tempo,
+		db:          database,
+		bus:         d.GetBus(),
+		enumEntries: map[int64]string{},
+		intEntries:  map[int64]string{},
+		strEntries:  map[int64]string{},
+		Temp:        tempo,
 	}
 
 	// TODO: Need to move this query out into the metric-engine.yaml file and prepare it on startup
@@ -163,25 +170,30 @@ func newConfigSync(logger log.Logger, database *sqlx.DB, d busComponents) (*Conf
 			continue
 		}
 
-		keys := strings.Split(key, "#")
-		cfgS.cfgEntries[RowID] = keys[1]
-
-		// config option: CurrentValue with key
-		// parse this into an event and publish
-/*
-		n := RowIdCurrentVal{
-			CurrValue: CurrentValue,
-			Rowid:     RowID,
-			key:       keys[1],
-		}
-		fmt.Printf("rowid and currentvalue:%d, %s for report:%s\n", RowID, CurrentValue, keys[1])
-		publishAndWait(logger, d.GetBus(), udbReportDefEvent, &n)
-*/
+		cfgS.enumEntries[RowID] = key
 	}
 
-	fmt.Printf("DEBUG: got all these configuration settings: %+v\n", cfgS.cfgEntries)
+	fmt.Printf("DEBUG: got all these ENUM configuration settings: %+v\n", cfgS.enumEntries)
+	fmt.Printf("DEBUG: got all these STR  configuration settings: %+v\n", cfgS.strEntries)
+	fmt.Printf("DEBUG: got all these INT  configuration settings: %+v\n", cfgS.intEntries)
 
 	return cfgS, err
+}
+
+func (cs ConfigSync) GenerateStartupConfig(logger log.Logger, d busComponents) {
+	for _, s := range []struct {
+		table  string
+		mapref *map[int64]string
+	}{
+		{"TblEnumAttributes", &cs.enumEntries},
+		{"TblStrAttributes", &cs.strEntries},
+		{"TblIntAttributes", &cs.intEntries},
+	} {
+		for rowid := range *s.mapref {
+			notify := changeNotify{Database: "DMLiveObjectDatabase.db", Table: s.table, Rowid: rowid, Operation: 0}
+			publishAndWait(logger, d.GetBus(), udbChangeEvent, &notify)
+		}
+	}
 }
 
 func MakeHandlerLegacyAttributeSync(logger log.Logger, importMgr *importManager, bus eh.EventBus, configSync *ConfigSync) func(eh.Event) {
@@ -191,68 +203,90 @@ func MakeHandlerLegacyAttributeSync(logger log.Logger, importMgr *importManager,
 			logger.Crit("UDB Change Notifier message handler got an invalid data event", "event", event, "eventdata", event.Data())
 			return
 		}
-		
-        //fmt.Printf("Receiving UDB Cfg ChangeEvent %d,Table:%s,db:%s\n",notify.Rowid,notify.Table,notify.Database)
+
+		//fmt.Printf("Receiving UDB Cfg ChangeEvent %d,Table:%s,db:%s\n",notify.Rowid,notify.Table,notify.Database)
 		// Step 1: Is this a DMLiveObjectDatabase change
 		if notify.Database != "DMLiveObjectDatabase.db" {
 			return
 		}
 
 		// Step 2: Is this a tblEnumAttribute change
-		if notify.Table != "TblEnumAttribute" {
-			return
+		keyname := ""
+		ok = false
+		switch notify.Table {
+		case "TblEnumAttribute":
+			keyname, ok = configSync.enumEntries[notify.Rowid]
+		case "TblIntAttribute":
+			keyname, ok = configSync.intEntries[notify.Rowid]
+		case "TblStrAttribute":
+			keyname, ok = configSync.strEntries[notify.Rowid]
 		}
 
-        fmt.Printf("configSync.cfgEntries[notify.Rowid]:%s\n",configSync.cfgEntries[notify.Rowid])
-		// Do we care about Operation?  Operation int64 (probably.)
-        //cfg *viper.Viper
-		// Step 3: is this a ROWID we care about?
-		//cfg, ok := configSync.cfgEntries[notify.Rowid]
-        _, ok = configSync.cfgEntries[notify.Rowid]
 		if !ok {
 			return
 		}
 
 		// Step 4: Generate a "UpdateMetricReportDefinition" event
 		//	Ok, here first thing we need to do is do a UDB query to find the current value since UDB didn't actually send us the value
-		sqltextEnableTele := "select CurrentValue from TblEnumAttribute where ROWID=?"
-        var CurrentValue string
-        err := configSync.db.Get(&CurrentValue,sqltextEnableTele,&notify.Rowid)
-        if err != nil {
+
+		//# tblEnumAttribute
+		//# iDRAC.Embedded.1#TelemetryPSUMetrics.1#EnableTelemetry   (DONE)
+		//# iDRAC.Embedded.1#TelemetryFPGASensor.1#RsyslogTarget
+
+		//# tblIntAttribute
+		//# iDRAC.Embedded.1#TelemetryFPGASensor.1#ReportInterval
+
+		//# tblStrAttribute
+		//# iDRAC.Embedded.1#TelemetryFPGASensor.1#ReportTriggers
+
+		sqltextEnableTele := ""
+		fmt.Printf("GOT KEY: %s\n", keyname)
+		keys := strings.Split(keyname, "#")
+		switch keys[2] {
+		case "EnableTelemetry":
+			sqltextEnableTele = "select CurrentValue from TblEnumAttribute where ROWID=?"
+		//case "RsyslogTarget":
+		//case "ReportInterval":
+		//case "ReportTriggers":
+		default:
+			fmt.Printf("UNHANDLED TYPE OF KEY\n")
+			return
+		}
+
+		var CurrentValue string
+		err := configSync.db.Get(&CurrentValue, sqltextEnableTele, &notify.Rowid)
+		if err != nil {
 			logger.Crit("Error checking currentvalue of rowid in database ", "err", err)
 		}
-        fmt.Printf("CurrentValue:%s \n",CurrentValue);
+		fmt.Printf("CurrentValue:%s \n", CurrentValue)
 
-/* 
-You'll need to construct a string with this content:
+		eventData, err := eh.CreateEventData(telemetry.UpdateMetricReportDefinition)
+		if err != nil {
+			fmt.Printf("Error trying to create update event: %s\n", err)
+			return
+		}
 
-{"MetricReportDefinitionEnable": true}
+		updateEvent, ok := eventData.(*telemetry.UpdateMetricReportDefinitionData)
+		if !ok {
+			fmt.Printf("Internal error trying to type assert to update event")
+		}
 
-(or "false" to disable), then wrap that with an io.Reader, then json.unmarshal that into .Patch
-then publish that message
-Its about 6-10 lines of code 
-*/
-        var EnableString string
-        if CurrentValue == "Enabled" {
-            EnableString = "{\"MetricReportDefinitionEnable\": true}"
-        }else CurrentValue == "Disabled" {
-            EnableString = "{\"MetricReportDefinitionEnable\": false}"
-        }
+		updateEvent.ReportDefinitionName = keys[1][len("Telemetry") : len(keys[1])-len(".1")]
 
-        var mrd telemetry.MetricReportDefinitionData
-        //jsonstring, err := ioutil.ReadFile(MRDFilePath)
-        jsonstring, err1 := ioutil.ReadFile("/var/run/PowerMetricsindex.json")  
-        if err1 != nil {
-            logger.Crit("didn't read active telemetry MRD: %w", err1)
-            return 
-        }
-        fmt.Printf("jsonstring:%s\n",jsonstring)
-        err = json.Unmarshal(jsonstring, &mrd)
-        if err != nil {
-            logger.Crit("update MRD unmarshal failed: %w", err)
-            return
-        }
-        fmt.Printf("mrd:%+v\n",mrd)
+		switch keys[2] {
+		case "EnableTelemetry":
+			switch CurrentValue {
+			case "Enabled":
+				fmt.Printf("Enabling report: %s\n", updateEvent.ReportDefinitionName)
+				json.Unmarshal([]byte(jsonEnableMRD), &(updateEvent.Patch))
+			case "Disabled":
+				fmt.Printf("Disabling report: %s\n", updateEvent.ReportDefinitionName)
+				json.Unmarshal([]byte(jsonDisableMRD), &(updateEvent.Patch))
+			}
+
+		}
+		fmt.Printf("About to send event for report(%s): %s\n", updateEvent.ReportDefinitionName, string(updateEvent.Patch))
+		publishAndWait(logger, bus, telemetry.UpdateMetricReportDefinition, updateEvent)
 	}
 }
 
