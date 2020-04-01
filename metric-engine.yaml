@@ -2338,16 +2338,7 @@ createdb:
         )
        ) as root,
             '/redfish/v1/TelemetryService/MetricDefinitions' as [@odata.id];
-
-  - |
-     DROP VIEW IF EXISTS TblMetricDefinitionItems;
-     CREATE VIEW TblMetricDefinitionItems AS
-      SELECT
-       MetricId as ResourceType,
-       '/redfish/v1/TelemetryService/MetricDefinitions/' || MetricId as '@odata.id'
-      FROM
-       MetricDefinition;
-    
+     
   - |
         DROP VIEW IF EXISTS AggregationMetricsMRView_json ; create view AggregationMetricsMRView_json as select * from JSON where [@odata.id] = '/redfish/v1/TelemetryService/MetricReports/AggregationMetrics';
         DROP VIEW IF EXISTS CPUMemMetricsMRView_json ; create view CPUMemMetricsMRView_json as select * from JSON where [@odata.id] = '/redfish/v1/TelemetryService/MetricReports/CPUMemMetrics';

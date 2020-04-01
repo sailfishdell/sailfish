@@ -263,8 +263,6 @@ func MakeHandlerCreateMD(logger log.Logger, telemetryMgr *telemetryManager, bus 
 			return
 		}
 
-		//data, ok := respEvent.Data().(*AddMetricReportDefinitionResponseData)
-		// Should add the populated metric report definition event as a response?
 		publishHelper(logger, bus, respEvent)
 	}
 }
