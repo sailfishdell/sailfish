@@ -31,8 +31,8 @@ const (
 // MetricReportDefinitionData is the eh event data for adding a new report definition
 type MetricReportDefinitionData struct {
 	Name      string      `db:"Name" json:"Id"`
-	ShortDesc string      `db:"ShortDesc" json:"ShortDesc"`
-	LongDesc  string      `db:"LongDesc" json:"LongDesc"`
+	ShortDesc string      `db:"ShortDesc" json:"Name"`
+	LongDesc  string      `db:"LongDesc" json:"Description"`
 	Type      string      `db:"Type" json:"MetricReportDefinitionType"` // 'Periodic', 'OnChange', 'OnRequest'
 	Actions   StringArray `db:"Actions" json:"ReportActions"`           // 	'LogToMetricReportsCollection', 'RedfishEvent'
 	Updates   string      `db:"Updates" json:"ReportUpdates"`           // 'AppendStopsWhenFull', 'AppendWrapsWhenFull', 'NewReport', 'Overwrite'
