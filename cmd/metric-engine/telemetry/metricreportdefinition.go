@@ -475,23 +475,23 @@ func (factory *telemetryManager) addMRD(mrdEvData *MetricReportDefinitionData) (
 }
 
 func (factory *telemetryManager) addMD(mdEvData *MetricDefinitionData) (err error) {
-    return factory.wrapWithTX(func(tx *sqlx.Tx) error {
-        //TODO: valid MD input, for now all good input read from files
-        //validateMD(md)
+	return factory.wrapWithTX(func(tx *sqlx.Tx) error {
+		//TODO: valid MD input, for now all good input read from files
+		//validateMD(md)
 
-        _, err := factory.getNamedSQLXTx(tx, "md_insert").Exec(mdEvData)
-        if err != nil {
-            if strings.HasPrefix(err.Error(), "UNIQUE constraint failed") {
-                // too verbose, but possibly uncomment for debugging
-                fmt.Printf("cannot ADD already existing MD(%s).", mdEvData.MetricId)
-                return xerrors.Errorf("cannot ADD already existing MD(%s).", mdEvData.MetricId)
-            }
-            fmt.Printf("error inserting MD(%s): %w", mdEvData.MetricId)
-            return xerrors.Errorf("error inserting MD(%s): %w", mdEvData.MetricId, err)
-        }
- 
-        return nil
-    })
+		_, err := factory.getNamedSQLXTx(tx, "md_insert").Exec(mdEvData)
+		if err != nil {
+			if strings.HasPrefix(err.Error(), "UNIQUE constraint failed") {
+				// too verbose, but possibly uncomment for debugging
+				fmt.Printf("cannot ADD already existing MD(%s).", mdEvData.MetricId)
+				return xerrors.Errorf("cannot ADD already existing MD(%s).", mdEvData.MetricId)
+			}
+			fmt.Printf("error inserting MD(%s): %w", mdEvData.MetricId)
+			return xerrors.Errorf("error inserting MD(%s): %w", mdEvData.MetricId, err)
+		}
+
+		return nil
+	})
 }
 
 func (factory *telemetryManager) updateMMList(tx *sqlx.Tx, mrd *MetricReportDefinition) (err error) {
