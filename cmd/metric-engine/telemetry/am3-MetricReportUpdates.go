@@ -71,22 +71,19 @@ func backgroundTasks(logger log.Logger, bus eh.EventBus) {
 
 // StartupTelemetryBase registers event handlers with the awesome mapper and
 // starts up timers and maintenance goroutines
+//
+// regarding: database.SetMaxOpenConns(1)
+// If we run in WAL mode, you can only do one connection. Seems like a base
+// library limitation that's reflected up into the golang implementation.
+// SO: we will ensure that we have ONLY ONE GOROUTINE that does transactions.
+// This isn't a terrible limitation as it is sort of what we want to do
+// anyways.
 func StartupTelemetryBase(logger log.Logger, cfg *viper.Viper, am3Svc eventHandler, d busComponents) error {
-	RegisterEvents()
-
-	cfg.SetDefault("main.databasepath",
-		"file:/run/telemetryservice/telemetry_timeseries_database.db?_foreign_keys=on&cache=shared&mode=rwc&_busy_timeout=1000")
-
 	database, err := sqlx.Open("sqlite3", cfg.GetString("main.databasepath"))
 	if err != nil {
 		return xerrors.Errorf("could not open database(%s): %w", cfg.GetString("main.databasepath"))
 	}
 
-	// If we run in WAL mode, you can only do one connection. Seems like a base
-	// library limitation that's reflected up into the golang implementation.
-	// SO: we will ensure that we have ONLY ONE GOROUTINE that does transactions.
-	// This isn't a terrible limitation as it is sort of what we want to do
-	// anyways.
 	database.SetMaxOpenConns(1)
 
 	// Create tables and views from sql stored in our YAML
@@ -118,7 +115,7 @@ func StartupTelemetryBase(logger log.Logger, cfg *viper.Viper, am3Svc eventHandl
 	am3Svc.AddEventHandler("Delete Metric Report", DeleteMetricReport, MakeHandlerDeleteMR(logger, telemetryMgr, bus))
 	am3Svc.AddEventHandler("Update Metric Report Definition", UpdateMetricReportDefinition, MakeHandlerUpdateMRD(logger, telemetryMgr, bus))
 
-	//Metric Defintion Add event
+	//Metric Definition Add event
 	am3Svc.AddEventHandler("Create Metric Definition", AddMetricDefinition, MakeHandlerCreateMD(logger, telemetryMgr, bus))
 
 	// just events for now
@@ -167,7 +164,6 @@ func MakeHandlerGenericGET(logger log.Logger, telemetryMgr *telemetryManager, bu
 				logger.Crit("Failed to get", "getCmd", getCmd, "err", err)
 			}
 		}()
-
 	}
 }
 
@@ -196,7 +192,7 @@ func MakeHandlerCreateMRD(logger log.Logger, telemetryMgr *telemetryManager, bus
 		// Generate a "response" event that carries status back to initiator
 		respEvent, err := reportDef.NewResponseEvent(addError)
 		if err != nil {
-			logger.Crit("Error creating response event", "err", err, "ReportDefintion", reportDef.Name)
+			logger.Crit("Error creating response event", "err", err, "ReportDefinition", reportDef.Name)
 			return
 		}
 
@@ -231,7 +227,7 @@ func MakeHandlerUpdateMRD(logger log.Logger, telemetryMgr *telemetryManager, bus
 		// Generate a "response" event that carries status back to initiator
 		respEvent, err := update.NewResponseEvent(updError)
 		if err != nil {
-			logger.Crit("Error creating response event", "err", err, "ReportDefintion", update.ReportDefinitionName)
+			logger.Crit("Error creating response event", "err", err, "ReportDefinition", update.ReportDefinitionName)
 			return
 		}
 
@@ -261,7 +257,7 @@ func MakeHandlerDeleteMRD(logger log.Logger, telemetryMgr *telemetryManager, bus
 		// Generate a "response" event that carries status back to initiator
 		respEvent, err := reportDef.NewResponseEvent(delError)
 		if err != nil {
-			logger.Crit("Error creating response event", "err", err, "ReportDefintion", reportDef.Name)
+			logger.Crit("Error creating response event", "err", err, "ReportDefinition", reportDef.Name)
 			return
 		}
 
@@ -272,10 +268,8 @@ func MakeHandlerDeleteMRD(logger log.Logger, telemetryMgr *telemetryManager, bus
 // MD event handlers
 func MakeHandlerCreateMD(logger log.Logger, telemetryMgr *telemetryManager, bus eh.EventBus) func(eh.Event) {
 	return func(event eh.Event) {
-		fmt.Println("MakeHandlerCreateMD")
 		mdDef, ok := event.Data().(*AddMetricDefinitionData)
 		if !ok {
-			fmt.Println("AddMetricDefinition handler got event of incorrect format")
 			logger.Crit("AddMetricDefinition handler got event of incorrect format")
 			return
 		}
@@ -284,13 +278,13 @@ func MakeHandlerCreateMD(logger log.Logger, telemetryMgr *telemetryManager, bus 
 		locaMdDefCopy := *mdDef
 		addError := telemetryMgr.addMD(&locaMdDefCopy.MetricDefinitionData)
 		if addError != nil {
-			logger.Crit("Failed to create or update the Metric Definition", "MetricId", mdDef.MetricDefinitionData.MetricId, "err", addError)
+			logger.Crit("Failed to create or update the Metric Definition", "MetricID", mdDef.MetricDefinitionData.MetricID, "err", addError)
 		}
 
 		// Generate a "response" event that carries status back to initiator
 		respEvent, err := mdDef.NewResponseEvent(addError)
 		if err != nil {
-			logger.Crit("Error creating response event", "err", err, "MetricDefintion", mdDef.MetricDefinitionData.MetricId)
+			logger.Crit("Error creating response event", "err", err, "MetricDefinition", mdDef.MetricDefinitionData.MetricID)
 			return
 		}
 
@@ -333,13 +327,13 @@ func MakeHandlerGenReport(logger log.Logger, telemetryMgr *telemetryManager, bus
 		name := report.Name
 		reportError := telemetryMgr.GenerateMetricReport(nil, name)
 		if reportError != nil {
-			logger.Crit("Error generating metric report", "err", reportError, "ReportDefintion", name)
+			logger.Crit("Error generating metric report", "err", reportError, "ReportDefinition", name)
 			// dont return, because we are going to return the error to the caller
 		}
 
 		respEvent, err := report.NewResponseEvent(reportError)
 		if err != nil {
-			logger.Crit("Error creating response event", "err", err, "ReportDefintion", name)
+			logger.Crit("Error creating response event", "err", err, "ReportDefinition", name)
 			return
 		}
 

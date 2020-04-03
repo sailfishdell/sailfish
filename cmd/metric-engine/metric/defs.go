@@ -36,6 +36,11 @@ const (
 	AppendWrapsWhenFull = "AppendWrapsWhenFull"
 )
 
+const (
+	httpStatusOk         = 200
+	httpStatusBadRequest = 400
+)
+
 type Command struct {
 	RequestID    eh.UUID
 	ResponseType eh.EventType
@@ -108,9 +113,9 @@ func (cr *CommandResponse) SetContext(ctx context.Context) {
 func (cr *CommandResponse) Status(setStatus func(int)) {
 	// expect that subclasses will override this
 	if cr.GetError() != nil {
-		setStatus(400) // same as http.StatusBadRequest (without explicitly importing http package)
+		setStatus(httpStatusBadRequest) // same as http.StatusBadRequest (without explicitly importing http package)
 	}
-	setStatus(200) // OK status
+	setStatus(httpStatusOk) // OK status
 }
 
 func (cr *CommandResponse) Headers(setHeader func(string, string)) {

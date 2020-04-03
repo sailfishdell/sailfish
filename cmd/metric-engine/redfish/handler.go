@@ -67,7 +67,8 @@ func NewRedfishServer(logger log.Logger, d busComponents) *RFServer {
 
 func (rf *RFServer) AddHandlersToRouter(m *mux.Router) {
 	m.HandleFunc("/redfish/v1/TelemetryService/", rf.makeCommand(telemetry.AddMetricReportDefinition)).Methods("POST")
-	m.HandleFunc("/redfish/v1/TelemetryService/Actions/TelemetryService.SubmitTestMetricReport", rf.makeCommand(SubmitTestMetricReportCommandEvent)).Methods("POST")
+	m.HandleFunc("/redfish/v1/TelemetryService/Actions/TelemetryService.SubmitTestMetricReport",
+		rf.makeCommand(SubmitTestMetricReportCommandEvent)).Methods("POST")
 	m.HandleFunc("/redfish/v1/TelemetryService/MetricReportDefinitions", rf.makeCommand(telemetry.AddMetricReportDefinition)).Methods("POST")
 	m.HandleFunc("/redfish/v1/TelemetryService/MetricReportDefinitions/{ID}", rf.makeCommand(telemetry.UpdateMetricReportDefinition)).Methods("PATCH")
 	m.HandleFunc("/redfish/v1/TelemetryService/MetricReportDefinitions/{ID}", rf.makeCommand(telemetry.UpdateMetricReportDefinition)).Methods("PUT")
@@ -81,10 +82,9 @@ type eventHandler interface {
 	AddEventHandler(string, eh.EventType, func(eh.Event))
 }
 
-func Startup(logger log.Logger, cfg *viper.Viper, am3Svc eventHandler, d busComponents) error {
+func Startup(logger log.Logger, cfg *viper.Viper, am3Svc eventHandler, d busComponents) {
 	// Important: don't leak 'cfg' outside the scope of this function!
 	am3Svc.AddEventHandler("Submit Test Metric Report", SubmitTestMetricReportCommandEvent, MakeHandlerSubmitTestMR(logger, d.GetBus()))
-	return nil
 }
 
 func MakeHandlerSubmitTestMR(logger log.Logger, bus eh.EventBus) func(eh.Event) {
@@ -141,6 +141,26 @@ type Response interface {
 	SetContext(context.Context)
 }
 
+func forwardInputAndVars(timeoutCtx context.Context, requestLogger log.Logger, w http.ResponseWriter, r *http.Request, cmd interface{}) {
+	if d, ok := cmd.(inputUser); ok {
+		err := d.UseInput(timeoutCtx, requestLogger, r.Body)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+	}
+
+	if d, ok := cmd.(varUser); ok {
+		vars := mux.Vars(r)
+		vars["uri"] = r.URL.Path
+		err := d.UseVars(timeoutCtx, requestLogger, vars)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+	}
+}
+
 func (rf *RFServer) makeCommand(eventType eh.EventType) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		fn := telemetry.Factory(eventType)
@@ -155,35 +175,17 @@ func (rf *RFServer) makeCommand(eventType eh.EventType) func(w http.ResponseWrit
 		timeoutCtx, cancel := context.WithTimeout(reqCtx, defaultRequestTimeout)
 		defer cancel()
 		requestLogger := log.ContextLogger(timeoutCtx, "REDFISH_HANDLER")
-
-		if d, ok := cmd.(inputUser); ok {
-			err := d.UseInput(timeoutCtx, requestLogger, r.Body)
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusBadRequest)
-				return
-			}
-		}
-
-		if d, ok := cmd.(varUser); ok {
-			vars := mux.Vars(r)
-			vars["uri"] = r.URL.Path
-			err := d.UseVars(timeoutCtx, requestLogger, vars)
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusBadRequest)
-				return
-			}
-		}
+		requestLogger.Info("HANDLE", "Method", r.Method, "Event", fmt.Sprintf("%v", evt), "Command", fmt.Sprintf("%+v", cmd))
 
 		if intCmd == nil {
 			http.Error(w, "internal error: not a command", http.StatusInternalServerError)
 			return
 		}
+		forwardInputAndVars(timeoutCtx, requestLogger, w, r, intCmd)
 
 		l := eventwaiter.NewListener(timeoutCtx, requestLogger, rf.d.GetWaiter(), intCmd.ResponseWaitFn())
 		l.Name = "Redfish Response Listener"
 		defer l.Close()
-
-		requestLogger.Crit("HANDLE", "Method", r.Method, "Event", fmt.Sprintf("%v", evt), "Command", fmt.Sprintf("%+v", cmd))
 
 		err = rf.d.GetBus().PublishEvent(context.Background(), evt)
 		if err != nil {
@@ -207,21 +209,9 @@ func (rf *RFServer) makeCommand(eventType eh.EventType) func(w http.ResponseWrit
 			return
 		}
 
-		// TODO: need to get this up to redfish standards for return
-		// Need:
-		// - HTTP headers. Location header for collection POST
-		// - Return the created object. Is this optional?
-
-		// set up context so that source of this data can abandon the request if caller exits
-		resp.SetContext(timeoutCtx)
-
-		// always set headers first
-		resp.Headers(w.Header().Set)
-
-		// then set status code
-		resp.Status(w.WriteHeader)
-
-		// dont write response at all until setting status code and headers. can't set headers after writing
-		resp.StreamResponse(w)
+		resp.SetContext(timeoutCtx)  // set up context so that source of this data can abandon the request if caller exits
+		resp.Headers(w.Header().Set) // always set headers first
+		resp.Status(w.WriteHeader)   // then set status code
+		resp.StreamResponse(w)       // dont write response at all until setting status code and headers. can't set headers after writing
 	}
 }

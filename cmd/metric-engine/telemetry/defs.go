@@ -128,7 +128,7 @@ func (mrd MetricReportDefinitionData) GetTimeSpan() time.Duration {
 
 // MetricDefifinitionData - is the eh event data for adding a new new definition (future)
 type MetricDefinitionData struct {
-	MetricId        string      `db:"MetricId"          json:"Id"`
+	MetricID        string      `db:"MetricID"          json:"Id"`
 	Name            string      `db:"Name"              json:"Name"`
 	Description     string      `db:"Description"       json:"Description"`
 	MetricType      string      `db:"MetricType"        json:"MetricType"`

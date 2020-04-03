@@ -29,6 +29,11 @@ const (
 	maxAcceptableDrift      = 2 * time.Second
 )
 
+const (
+	httpStatusOk       = 200
+	httpStatusNotFound = 404
+)
+
 // Factory manages getting/putting into db
 type telemetryManager struct {
 	logger           log.Logger
@@ -354,17 +359,17 @@ func (factory *telemetryManager) get(cmd *GenericGETCommandData, resp *GenericGE
 	err := factory.getSQLX("generic_get").Get(&data, cmd.URI)
 	if err != nil {
 		factory.logger.Crit("ERROR getting", "err", err, "URI", cmd.URI)
-		resp.SetStatus(404)
+		resp.SetStatus(httpStatusNotFound)
 
 		// TODO: need a body with eemi error here
 		resp.dataChan <- []byte("Resource not found. (FIXME: replace with redfish compliant error text.)")
-		return nil
+		return err
 	}
 
 	// on $expand, we'd need to parse all the return data and expand @odata.id's
 	// kind of a pain in the backside
 
-	resp.SetStatus(200)
+	resp.SetStatus(httpStatusOk)
 	resp.dataChan <- data
 	return nil
 }
@@ -482,12 +487,9 @@ func (factory *telemetryManager) addMD(mdEvData *MetricDefinitionData) (err erro
 		_, err := factory.getNamedSQLXTx(tx, "md_insert").Exec(mdEvData)
 		if err != nil {
 			if strings.HasPrefix(err.Error(), "UNIQUE constraint failed") {
-				// too verbose, but possibly uncomment for debugging
-				fmt.Printf("cannot ADD already existing MD(%s).", mdEvData.MetricId)
-				return xerrors.Errorf("cannot ADD already existing MD(%s).", mdEvData.MetricId)
+				return xerrors.Errorf("cannot ADD already existing MD(%s).", mdEvData.MetricID)
 			}
-			fmt.Printf("error inserting MD(%s): %w", mdEvData.MetricId, err)
-			return xerrors.Errorf("error inserting MD(%s): %w", mdEvData.MetricId, err)
+			return xerrors.Errorf("error inserting MD(%s): %w", mdEvData.MetricID, err)
 		}
 
 		return nil

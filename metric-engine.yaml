@@ -1551,7 +1551,7 @@ internal:
     md_insert: |
       INSERT INTO MetricDefinition
                ( MetricId, Name, Description, MetricType, MetricDataType, Units, Accuracy, SensingInterval, DiscreteValues)
-        VALUES (:MetricId, :Name, :Description, :MetricType, :MetricDataType, :Units, :Accuracy, :SensingInterval, :DiscreteValues)
+        VALUES (:MetricID, :Name, :Description, :MetricType, :MetricDataType, :Units, :Accuracy, :SensingInterval, :DiscreteValues)
 
     mrd_insert: |
       INSERT INTO MetricReportDefinition
