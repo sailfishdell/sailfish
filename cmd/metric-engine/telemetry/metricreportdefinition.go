@@ -345,6 +345,19 @@ func (factory *telemetryManager) wrapWithTXOrPassIn(tx *sqlx.Tx, fn func(tx *sql
 	return wrapWithTXOrPassIn(factory.database, tx, fn)
 }
 
+func (factory *telemetryManager) get(cmd *GenericGETCommandData, resp *GenericGETResponseData) error {
+	return factory.wrapWithTX(func(tx *sqlx.Tx) error {
+		fmt.Printf("IN GET for %s\n", cmd.uri)
+		err := factory.getSQLXTx(tx, "generic_get").Get(&resp.data, cmd.uri)
+		if err != nil {
+			factory.logger.Crit("ERROR getting", "err", err, "uri", cmd.uri)
+		}
+
+		fmt.Printf("GOT: %s\n", resp.data)
+		return nil
+	})
+}
+
 func (factory *telemetryManager) updateMRD(reportDef string, updates json.RawMessage) (err error) {
 	return factory.wrapWithTX(func(tx *sqlx.Tx) error {
 		// TODO: Emit an error response message if the metric report definition does not exist
