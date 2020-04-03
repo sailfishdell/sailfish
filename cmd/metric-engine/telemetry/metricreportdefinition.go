@@ -346,16 +346,27 @@ func (factory *telemetryManager) wrapWithTXOrPassIn(tx *sqlx.Tx, fn func(tx *sql
 }
 
 func (factory *telemetryManager) get(cmd *GenericGETCommandData, resp *GenericGETResponseData) error {
-	return factory.wrapWithTX(func(tx *sqlx.Tx) error {
-		fmt.Printf("IN GET for %s\n", cmd.uri)
-		err := factory.getSQLXTx(tx, "generic_get").Get(&resp.data, cmd.uri)
-		if err != nil {
-			factory.logger.Crit("ERROR getting", "err", err, "uri", cmd.uri)
-		}
+	defer close(resp.dataChan)
+	// this function seems too cozy with GenericGET Command/Response and probably should be refactored, but it needs some thought
+	// it's also too cozy with HTTP redfish interface, but no direct http dependencies
 
-		fmt.Printf("GOT: %s\n", resp.data)
+	data := []byte{}
+	err := factory.getSQLX("generic_get").Get(&data, cmd.URI)
+	if err != nil {
+		factory.logger.Crit("ERROR getting", "err", err, "URI", cmd.URI)
+		resp.SetStatus(404)
+
+		// TODO: need a body with eemi error here
+		resp.dataChan <- []byte("Resource not found. (FIXME: replace with redfish compliant error text.)")
 		return nil
-	})
+	}
+
+	// on $expand, we'd need to parse all the return data and expand @odata.id's
+	// kind of a pain in the backside
+
+	resp.SetStatus(200)
+	resp.dataChan <- data
+	return nil
 }
 
 func (factory *telemetryManager) updateMRD(reportDef string, updates json.RawMessage) (err error) {

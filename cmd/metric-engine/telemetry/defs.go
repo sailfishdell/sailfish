@@ -33,21 +33,41 @@ const (
 
 type GenericGETCommandData struct {
 	metric.Command
-	uri string
+	URI string
 }
 
 type GenericGETResponseData struct {
 	metric.CommandResponse
-	data string
+	dataChan   chan []byte
+	statusChan chan int
 }
 
 func (u *GenericGETCommandData) UseVars(ctx context.Context, logger log.Logger, vars map[string]string) error {
-	u.uri = vars["uri"]
+	u.URI = vars["uri"]
 	return nil
 }
 
+// panic if called multiple times, only call once!
+func (cr *GenericGETResponseData) SetStatus(s int) {
+	defer close(cr.statusChan)
+	cr.statusChan <- s
+}
+
+func (cr *GenericGETResponseData) Status(setStatus func(int)) {
+	// this will block until we get status, or until requester cancels request
+	select {
+	case s := <-cr.statusChan:
+		setStatus(s)
+	case <-cr.Ctx.Done():
+		// no-op, just drop out here and close it all down
+	}
+}
+
 func (cr *GenericGETResponseData) StreamResponse(w io.Writer) {
-	fmt.Fprintf(w, cr.data)
+	// this will block until dataChan is populated
+	for data := range cr.dataChan {
+		w.Write(data)
+	}
 }
 
 // MetricReportDefinitionData is the eh event data for adding a new report definition
@@ -267,7 +287,13 @@ func RegisterEvents() {
 	eh.RegisterEventData(GenericGETCommandEvent, func() eh.EventData {
 		return &GenericGETCommandData{Command: metric.NewCommand(GenericGETResponseEvent)}
 	})
-	eh.RegisterEventData(GenericGETResponseEvent, func() eh.EventData { return &GenericGETResponseData{} })
+	eh.RegisterEventData(GenericGETResponseEvent, func() eh.EventData {
+		ev := &GenericGETResponseData{
+			dataChan:   make(chan []byte),
+			statusChan: make(chan int),
+		}
+		return ev
+	})
 
 	// =========== ADD MRD - AddMetricReportDefinition ==========================
 	eh.RegisterEventData(AddMetricReportDefinition, func() eh.EventData {

@@ -141,6 +141,7 @@ func StartupTelemetryBase(logger log.Logger, cfg *viper.Viper, am3Svc eventHandl
 	return nil
 }
 
+// handle all HTTP requests for our URLs here. Need to handle all telemetry related requests.
 func MakeHandlerGenericGET(logger log.Logger, telemetryMgr *telemetryManager, bus eh.EventBus) func(eh.Event) {
 	return func(event eh.Event) {
 		getCmd, ok := event.Data().(*GenericGETCommandData)
@@ -156,12 +157,17 @@ func MakeHandlerGenericGET(logger log.Logger, telemetryMgr *telemetryManager, bu
 			return
 		}
 
-		err = telemetryMgr.get(getCmd, respEvent.Data().(*GenericGETResponseData))
-		if err != nil {
-			logger.Crit("Failed to get", "getCmd", getCmd, "err", err)
-		}
-
+		// yes, we really are going to publish the response event before actually doing the work
 		publishHelper(logger, bus, respEvent)
+
+		// async background process to actually read database to satisfy the request
+		go func() {
+			err = telemetryMgr.get(getCmd, respEvent.Data().(*GenericGETResponseData))
+			if err != nil {
+				logger.Crit("Failed to get", "getCmd", getCmd, "err", err)
+			}
+		}()
+
 	}
 }
 
