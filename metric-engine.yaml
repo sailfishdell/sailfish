@@ -1743,6 +1743,8 @@ internal:
 
     mrd_select_idbyname: SELECT ID FROM MetricReportDefinition where Name=?
 
+    generic_get: select root from JSON where [@odata.id] = ?
+
     delete_mrd: delete from MetricReportDefinition where name=?
     delete_mr: delete from MetricReport where Name=?
 

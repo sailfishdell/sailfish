@@ -14,6 +14,9 @@ import (
 
 // constants to refer to event types
 const (
+	GenericGETCommandEvent  eh.EventType = "GenericGETCommandEvent"
+	GenericGETResponseEvent eh.EventType = "GenericGETResponseEvent"
+
 	AddMetricReportDefinition            eh.EventType = "AddMetricReportDefinitionEvent"
 	AddMetricReportDefinitionResponse    eh.EventType = "AddMetricReportDefinitionEventResponse"
 	UpdateMetricReportDefinition         eh.EventType = "UpdateMetricReportDefinitionEvent"
@@ -27,6 +30,25 @@ const (
 	AddMetricDefinition                  eh.EventType = "AddMetricDefinitionEvent"
 	AddMetricDefinitionResponse          eh.EventType = "AddMetricDefinitionEventResponse"
 )
+
+type GenericGETCommandData struct {
+	metric.Command
+	uri string
+}
+
+type GenericGETResponseData struct {
+	metric.CommandResponse
+	data string
+}
+
+func (u *GenericGETCommandData) UseVars(ctx context.Context, logger log.Logger, vars map[string]string) error {
+	u.uri = vars["uri"]
+	return nil
+}
+
+func (cr *GenericGETResponseData) StreamResponse(w io.Writer) {
+	fmt.Fprintf(w, cr.data)
+}
 
 // MetricReportDefinitionData is the eh event data for adding a new report definition
 type MetricReportDefinitionData struct {
@@ -153,7 +175,7 @@ type AddMetricReportDefinitionData struct {
 	MetricReportDefinitionData
 }
 
-func (a *AddMetricReportDefinitionData) DecodeFromReader(ctx context.Context, logger log.Logger, r io.Reader, vars map[string]string) error {
+func (a *AddMetricReportDefinitionData) UseInput(ctx context.Context, logger log.Logger, r io.Reader) error {
 	decoder := json.NewDecoder(r)
 	return decoder.Decode(a)
 }
@@ -172,10 +194,14 @@ type UpdateMetricReportDefinitionResponseData struct {
 	metric.CommandResponse
 }
 
-func (u *UpdateMetricReportDefinitionData) DecodeFromReader(ctx context.Context, logger log.Logger, r io.Reader, vars map[string]string) error {
-	u.ReportDefinitionName = vars["ID"]
+func (u *UpdateMetricReportDefinitionData) UseInput(ctx context.Context, logger log.Logger, r io.Reader) error {
 	decoder := json.NewDecoder(r)
 	return decoder.Decode(&u.Patch)
+}
+
+func (u *UpdateMetricReportDefinitionData) UseVars(ctx context.Context, logger log.Logger, vars map[string]string) error {
+	u.ReportDefinitionName = vars["ID"]
+	return nil
 }
 
 type DeleteMetricReportDefinitionData struct {
@@ -183,7 +209,7 @@ type DeleteMetricReportDefinitionData struct {
 	Name string
 }
 
-func (delMRD *DeleteMetricReportDefinitionData) DecodeFromReader(ctx context.Context, logger log.Logger, r io.Reader, vars map[string]string) error {
+func (delMRD *DeleteMetricReportDefinitionData) UseVars(ctx context.Context, logger log.Logger, vars map[string]string) error {
 	delMRD.Name = vars["ID"]
 	return nil
 }
@@ -197,7 +223,7 @@ type DeleteMetricReportData struct {
 	Name string
 }
 
-func (delMR *DeleteMetricReportData) DecodeFromReader(ctx context.Context, logger log.Logger, r io.Reader, vars map[string]string) error {
+func (delMR *DeleteMetricReportData) UseVars(ctx context.Context, logger log.Logger, vars map[string]string) error {
 	delMR.Name = vars["ID"]
 	return nil
 }
@@ -216,7 +242,7 @@ type AddMetricDefinitionData struct {
 	MetricDefinitionData
 }
 
-func (a *AddMetricDefinitionData) DecodeFromReader(ctx context.Context, logger log.Logger, r io.Reader, vars map[string]string) error {
+func (a *AddMetricDefinitionData) UseInput(ctx context.Context, logger log.Logger, r io.Reader) error {
 	decoder := json.NewDecoder(r)
 	return decoder.Decode(a)
 }
@@ -237,6 +263,12 @@ func Factory(et eh.EventType) func() (eh.Event, error) {
 
 func RegisterEvents() {
 	// Full commands (request/response)
+	// =========== GET - generically get any specific URI =======================
+	eh.RegisterEventData(GenericGETCommandEvent, func() eh.EventData {
+		return &GenericGETCommandData{Command: metric.NewCommand(GenericGETResponseEvent)}
+	})
+	eh.RegisterEventData(GenericGETResponseEvent, func() eh.EventData { return &GenericGETResponseData{} })
+
 	// =========== ADD MRD - AddMetricReportDefinition ==========================
 	eh.RegisterEventData(AddMetricReportDefinition, func() eh.EventData {
 		return &AddMetricReportDefinitionData{Command: metric.NewCommand(AddMetricReportDefinitionResponse)}

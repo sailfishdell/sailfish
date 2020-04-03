@@ -112,6 +112,7 @@ func StartupTelemetryBase(logger log.Logger, cfg *viper.Viper, am3Svc eventHandl
 
 	bus := d.GetBus()
 	// converted to command request/response
+	am3Svc.AddEventHandler("Generic GET Data", GenericGETCommandEvent, MakeHandlerGenericGET(logger, telemetryMgr, bus))
 	am3Svc.AddEventHandler("Create Metric Report Definition", AddMetricReportDefinition, MakeHandlerCreateMRD(logger, telemetryMgr, bus))
 	am3Svc.AddEventHandler("Delete Metric Report Definition", DeleteMetricReportDefinition, MakeHandlerDeleteMRD(logger, telemetryMgr, bus))
 	am3Svc.AddEventHandler("Delete Metric Report", DeleteMetricReport, MakeHandlerDeleteMR(logger, telemetryMgr, bus))
@@ -138,6 +139,30 @@ func StartupTelemetryBase(logger log.Logger, cfg *viper.Viper, am3Svc eventHandl
 	go backgroundTasks(logger, bus)
 
 	return nil
+}
+
+func MakeHandlerGenericGET(logger log.Logger, telemetryMgr *telemetryManager, bus eh.EventBus) func(eh.Event) {
+	return func(event eh.Event) {
+		getCmd, ok := event.Data().(*GenericGETCommandData)
+		if !ok {
+			logger.Crit("AddMetricReportDefinition handler got event of incorrect format")
+			return
+		}
+
+		// Generate a "response" event that carries status back to initiator
+		respEvent, err := getCmd.NewResponseEvent(nil)
+		if err != nil {
+			logger.Crit("Error creating response event", "err", err, "get", getCmd)
+			return
+		}
+
+		err = telemetryMgr.get(getCmd, respEvent.Data().(*GenericGETResponseData))
+		if err != nil {
+			logger.Crit("Failed to get", "getCmd", getCmd, "err", err)
+		}
+
+		publishHelper(logger, bus, respEvent)
+	}
 }
 
 func MakeHandlerCreateMRD(logger log.Logger, telemetryMgr *telemetryManager, bus eh.EventBus) func(eh.Event) {
