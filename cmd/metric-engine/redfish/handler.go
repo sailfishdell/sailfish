@@ -138,6 +138,7 @@ type Response interface {
 	StreamResponse(io.Writer)
 	Headers(func(string, string))
 	Status(func(int))
+	SetContext(context.Context)
 }
 
 func (rf *RFServer) makeCommand(eventType eh.EventType) func(w http.ResponseWriter, r *http.Request) {
@@ -198,7 +199,6 @@ func (rf *RFServer) makeCommand(eventType eh.EventType) func(w http.ResponseWrit
 			http.Error(w, "internal error waiting", http.StatusInternalServerError)
 			return
 		}
-		requestLogger.Crit("RESPONSE", "Event", fmt.Sprintf("%v", ret), "RESPONSE", fmt.Sprintf("%+v", ret.Data()))
 		d := ret.Data()
 		resp, ok := d.(Response)
 		if !ok {
@@ -211,6 +211,9 @@ func (rf *RFServer) makeCommand(eventType eh.EventType) func(w http.ResponseWrit
 		// Need:
 		// - HTTP headers. Location header for collection POST
 		// - Return the created object. Is this optional?
+
+		// set up context so that source of this data can abandon the request if caller exits
+		resp.SetContext(timeoutCtx)
 
 		// always set headers first
 		resp.Headers(w.Header().Set)

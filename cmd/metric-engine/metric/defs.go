@@ -1,6 +1,7 @@
 package metric
 
 import (
+	"context"
 	"database/sql/driver"
 	"fmt"
 	"io"
@@ -84,6 +85,7 @@ type Responser interface {
 
 type CommandResponse struct {
 	RequestID eh.UUID
+	Ctx       context.Context
 	err       error
 }
 
@@ -97,6 +99,10 @@ func (cr *CommandResponse) setRequestID(id eh.UUID) {
 
 func (cr *CommandResponse) GetError() error {
 	return cr.err
+}
+
+func (cr *CommandResponse) SetContext(ctx context.Context) {
+	cr.Ctx = ctx
 }
 
 func (cr *CommandResponse) Status(setStatus func(int)) {
