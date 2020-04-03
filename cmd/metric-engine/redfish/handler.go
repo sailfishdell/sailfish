@@ -135,9 +135,9 @@ func requestContextFromCommand(r *http.Request, cmd interface{}) (context.Contex
 }
 
 type Response interface {
-	GetError() error
-	GetStatusCode() int
 	StreamResponse(io.Writer)
+	Headers(func(string, string))
+	Status(func(int))
 }
 
 func (rf *RFServer) makeCommand(eventType eh.EventType) func(w http.ResponseWriter, r *http.Request) {
@@ -207,16 +207,18 @@ func (rf *RFServer) makeCommand(eventType eh.EventType) func(w http.ResponseWrit
 			return
 		}
 
-		if resp.GetError() != nil {
-			w.WriteHeader(http.StatusBadRequest)
-		}
-
 		// TODO: need to get this up to redfish standards for return
 		// Need:
 		// - HTTP headers. Location header for collection POST
 		// - Return the created object. Is this optional?
 
-		w.WriteHeader(resp.GetStatusCode())
+		// always set headers first
+		resp.Headers(w.Header().Set)
+
+		// then set status code
+		resp.Status(w.WriteHeader)
+
+		// dont write response at all until setting status code and headers. can't set headers after writing
 		resp.StreamResponse(w)
 	}
 }
