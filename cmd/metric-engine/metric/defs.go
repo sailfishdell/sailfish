@@ -121,7 +121,7 @@ func (cr *CommandResponse) Status(setStatus func(int)) {
 func (cr *CommandResponse) Headers(setHeader func(string, string)) {
 	// common headers
 	setHeader("OData-Version", "4.0")
-	setHeader("Server", "sailfish")
+	setHeader("Server", "metric-engine")
 	setHeader("Content-Type", "application/json; charset=utf-8")
 	setHeader("Connection", "keep-alive")
 	setHeader("Cache-Control", "no-Store,no-Cache")
