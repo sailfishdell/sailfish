@@ -486,7 +486,7 @@ func (factory *telemetryManager) addMD(mdEvData *MetricDefinitionData) (err erro
 				fmt.Printf("cannot ADD already existing MD(%s).", mdEvData.MetricId)
 				return xerrors.Errorf("cannot ADD already existing MD(%s).", mdEvData.MetricId)
 			}
-			fmt.Printf("error inserting MD(%s): %w", mdEvData.MetricId)
+			fmt.Printf("error inserting MD(%s): %w", mdEvData.MetricId, err)
 			return xerrors.Errorf("error inserting MD(%s): %w", mdEvData.MetricId, err)
 		}
 
