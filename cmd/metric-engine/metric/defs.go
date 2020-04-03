@@ -3,6 +3,7 @@ package metric
 import (
 	"database/sql/driver"
 	"fmt"
+	"io"
 	"time"
 
 	eh "github.com/looplab/eventhorizon"
@@ -78,6 +79,8 @@ type Responser interface {
 	GetRequestID() eh.UUID
 	setRequestID(eh.UUID)
 	setError(error)
+	GetStatusCode() int
+	StreamResponse(io.Writer)
 }
 
 type CommandResponse struct {
@@ -97,8 +100,16 @@ func (cr *CommandResponse) GetError() error {
 	return cr.err
 }
 
+func (cr *CommandResponse) GetStatusCode() int {
+	return 200
+}
+
 func (cr *CommandResponse) setError(err error) {
 	cr.err = err
+}
+
+func (cr *CommandResponse) StreamResponse(w io.Writer) {
+	fmt.Fprintf(w, "CMD RESPONSE: %+v\n", cr)
 }
 
 // SQLTimeInt is a wrapper around golang time that serializes and deserializes 64-bit nanosecond time rather than the default 32-bit second
