@@ -230,7 +230,7 @@ const (
 // - ensure the Type is valid enum
 // - ensure Period is within allowed ranges for Periodic
 // - ensure TimeSpan is set when required
-func validateMRD(mrd *MetricReportDefinition) {
+func validateMRD(mrd *MetricReportDefinition) error {
 	if mrd.Name == "" {
 		fmt.Printf("EMPTY NAME\n")
 	}
@@ -261,8 +261,7 @@ func validateMRD(mrd *MetricReportDefinition) {
 			TimeSpanMust(mrd.GetTimeSpan() > 0) // all Append* reports must have nonzero TimeSpan
 		case metric.Overwrite, metric.NewReport:
 			// all good
-		default:
-			fmt.Printf("INVALID mrd.Updates: '%s', RESET to '%s'\n", mrd.Updates, metric.Overwrite)
+		default: //invalid 'ReportUpdates'
 			mrd.Updates = metric.Overwrite
 		}
 
@@ -272,8 +271,7 @@ func validateMRD(mrd *MetricReportDefinition) {
 		switch mrd.Updates {
 		case metric.AppendWrapsWhenFull, metric.AppendStopsWhenFull, metric.Overwrite, metric.NewReport:
 			// all good
-		default:
-			fmt.Printf("INVALID mrd.Updates: '%s', RESET to '%s'\n", mrd.Updates, metric.Overwrite)
+		default: //invalid 'ReportUpdates'
 			mrd.Updates = metric.Overwrite
 		}
 
@@ -290,6 +288,8 @@ func validateMRD(mrd *MetricReportDefinition) {
 		mrd.Period = RedfishDuration(0)
 		mrd.TimeSpan = DefaultTimeSpan
 	}
+
+	return nil
 }
 
 func wrapWithTX(db *sqlx.DB, fn func(tx *sqlx.Tx) error) (err error) {
@@ -386,11 +386,17 @@ func (factory *telemetryManager) updateMRD(reportDef string, updates json.RawMes
 		newMRD := MetricReportDefinition{ MetricReportDefinitionData: &newData,  AppendLimit: factory.AppendLimit, ID: mrd.ID}
 
 		// Step 2: apply updates specified
-		json.Unmarshal(updates, &newMRD)
+		err = json.Unmarshal(updates, &newMRD)
+		if err != nil {
+			return err
+		}
 		newMRD.Name = reportDef // ensure name stays the same... should be no way this isn't the same, but lets be sure.
 
 		// step 3: validate result
-		validateMRD(&newMRD)
+		err = validateMRD(&newMRD)
+		if err != nil {
+			return err
+		}
 
 		// step 4: update internal bookkeeping tables
 		if newMRD.Type != metric.Periodic {
@@ -434,7 +440,10 @@ func (factory *telemetryManager) addMRD(mrdEvData *MetricReportDefinitionData) (
 			AppendLimit:                factory.AppendLimit,
 		}
 
-		validateMRD(mrd)
+		err = validateMRD(mrd)
+		if err != nil {
+			return err
+		}
 
 		res, err := factory.getNamedSQLXTx(tx, "mrd_insert").Exec(mrd)
 		if err != nil {
@@ -657,6 +666,9 @@ func (factory *telemetryManager) loadReportDefinition(tx *sqlx.Tx, mrd *MetricRe
 	return nil
 }
 
+// nolint: funlen,gocognit    //  this is all straight line code without a lot of
+// conditionals. Splitting this up would likely impact readability so not
+// splitting this up at this time
 func (factory *telemetryManager) GenerateMetricReport(tx *sqlx.Tx, name string) (err error) {
 	return factory.wrapWithTXOrPassIn(tx, func(tx *sqlx.Tx) error {
 		MRD := &MetricReportDefinition{
@@ -839,11 +851,25 @@ type MetricMeta struct {
 	SuppressDups bool   `db:"SuppressDups"`
 }
 
+func resetMMAggregation(mm *MetricMeta) {
+	// Construct label and Scratch space - (validate and audit this to make sure labels match legacy)
+	mm.Label = fmt.Sprintf("%s %s", mm.Context, mm.Name)
+	mm.FlushTime = metric.SQLTimeInt{Time: mm.Timestamp.Add(mm.CollectionDuration.Duration())}
+	mm.CollectionScratch.Sum = 0
+	mm.CollectionScratch.Numvalues = 0
+	mm.CollectionScratch.Maximum = -math.MaxFloat64
+	mm.CollectionScratch.Minimum = math.MaxFloat64
+	if mm.CollectionFunction != "" {
+		mm.Label += fmt.Sprintf("- %s (%v)", mm.CollectionFunction, time.Duration(mm.CollectionDuration))
+	}
+}
+
 // TODO: Implement more specific wildcard matching (not required for halo+)
 // TODO: Need to look up friendly fqdd (FOR LABEL)
 //  Both of the above TODO should happen in the for rows.Next() {...} loop
 func (factory *telemetryManager) InsertMetricInstance(tx *sqlx.Tx, ev *metric.MetricValueEventData) (instancesCreated int, err error) {
 	err = factory.wrapWithTXOrPassIn(tx, func(tx *sqlx.Tx) error {
+		// prepare sql for transaction outside the loop
 		insertMetricInstance := factory.getNamedSQLXTx(tx, "insert_metric_instance")
 		findMetricInstance := factory.getNamedSQLXTx(tx, "find_metric_instance")
 		setMetricInstanceClean := factory.getNamedSQLXTx(tx, "set_metric_instance_clean")
@@ -863,16 +889,7 @@ func (factory *telemetryManager) InsertMetricInstance(tx *sqlx.Tx, ev *metric.Me
 				continue
 			}
 
-			// Construct label and Scratch space - (validate and audit this to make sure labels match legacy)
-			mm.Label = fmt.Sprintf("%s %s", mm.Context, mm.Name)
-			mm.FlushTime = metric.SQLTimeInt{Time: mm.Timestamp.Add(mm.CollectionDuration.Duration())}
-			mm.CollectionScratch.Sum = 0
-			mm.CollectionScratch.Numvalues = 0
-			mm.CollectionScratch.Maximum = -math.MaxFloat64
-			mm.CollectionScratch.Minimum = math.MaxFloat64
-			if mm.CollectionFunction != "" {
-				mm.Label += fmt.Sprintf("- %s (%v)", mm.CollectionFunction, time.Duration(mm.CollectionDuration))
-			}
+			resetMMAggregation(mm)
 
 			err = findMetricInstance.Get(mm, mm)
 			if err != nil {
@@ -884,19 +901,19 @@ func (factory *telemetryManager) InsertMetricInstance(tx *sqlx.Tx, ev *metric.Me
 				if err != nil {
 					return xerrors.Errorf("error getting last insert ID for MetricInstance(%s): %w", mm, err)
 				}
-				fmt.Printf("Created new MetricInstance(%d)\n", mm.InstanceID)
+				//fmt.Printf("Created new MetricInstance(%d)\n", mm.InstanceID)
 				instancesCreated++
 			}
 
 			if !mm.HasAssocMM {
-				fmt.Printf("INSERTING MetricMeta(%d) ASSOCIATION for MetricInstance(%d)\n", mm.MetaID, mm.InstanceID)
+				//fmt.Printf("INSERTING MetricMeta(%d) ASSOCIATION for MetricInstance(%d)\n", mm.MetaID, mm.InstanceID)
 				_, err = insertMIAssoc.Exec(mm.MetaID, mm.InstanceID) // slow path: should be rare
 				if err != nil && !strings.HasPrefix(err.Error(), "UNIQUE constraint failed") {
 					return xerrors.Errorf("error inserting Association for MetricInstance(%s): %w", mm, err)
 				}
 			}
 			if mm.Dirty {
-				fmt.Printf("Setting Instance(%d) Clean\n", mm.InstanceID)
+				//fmt.Printf("Setting Instance(%d) Clean\n", mm.InstanceID)
 				_, err = setMetricInstanceClean.Exec(mm) // slow path
 				if err != nil {
 					return xerrors.Errorf("error setting metric instance (%d) clean: %w", mm.InstanceID, err)
@@ -1087,9 +1104,10 @@ func (factory *telemetryManager) doInsertMetricValueForInstance(
 			missingInterval = factory.MaxMetricExpandInterval // fill in a max of one hour of metrics
 		}
 
-		fmt.Printf(
-			"EXPAND Instance(%s-%d-%s) lastts(%s) e(%t) s(%t) a(%t) i(%s) m(%s)\n",
-			mm.Source, mm.InstanceID, mm.Name, mm.LastTS, mm.MIRequiresExpand, mm.SuppressDups, after, mm.MISensorInterval, missingInterval)
+		// debugging for expansion, bit too verbose for normal use
+		//fmt.Printf(
+		//"EXPAND Instance(%s-%d-%s) lastts(%s) e(%t) s(%t) a(%t) i(%s) m(%s)\n",
+		//mm.Source, mm.InstanceID, mm.Name, mm.LastTS, mm.MIRequiresExpand, mm.SuppressDups, after, mm.MISensorInterval, missingInterval)
 
 		savedTS := mm.Timestamp
 		savedValue := mm.Value
@@ -1154,21 +1172,19 @@ func (factory *telemetryManager) doInsertMetricValue(
 
 func (factory *telemetryManager) runSQLFromList(sqllist []string, entrylog string, errorlog string) (err error) {
 	factory.logger.Info(entrylog)
-	fmt.Printf("Run %s\n", entrylog)
 	for _, sqlName := range sqllist {
 		sqlName := sqlName // make scopelint happy
 		err := factory.wrapWithTX(func(tx *sqlx.Tx) error {
-			fmt.Printf("\tsql(%s)", sqlName)
 			res, err := factory.getSQLXTx(tx, sqlName).Exec()
 			if err != nil {
-				fmt.Printf("ERROR: %s\n", err)
+				fmt.Printf("Run sql(%s)->ERROR: %s\n", sqlName, err)
 				return xerrors.Errorf(errorlog, sqlName, err)
 			}
 			rows, err := res.RowsAffected()
 			if err != nil {
-				fmt.Printf("->%d rows, err(%s)\n", rows, err)
+				fmt.Printf("Run(%s) sql(%s)->%d rows, err(%s)\n", entrylog, sqlName, rows, err)
 			} else {
-				fmt.Printf("->%d rows, no errors\n", rows)
+				fmt.Printf("Run(%s) sql(%s)->%d rows, no errors\n", entrylog, sqlName, rows)
 			}
 			return nil
 		})

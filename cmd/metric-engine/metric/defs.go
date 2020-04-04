@@ -86,7 +86,7 @@ type Responser interface {
 	GetRequestID() eh.UUID
 	setRequestID(eh.UUID)
 	SetError(error)
-	StreamResponse(io.Writer)
+	StreamResponse(io.Writer) error
 }
 
 type CommandResponse struct {
@@ -144,8 +144,9 @@ func (cr *CommandResponse) SetError(err error) {
 	cr.err = err
 }
 
-func (cr *CommandResponse) StreamResponse(w io.Writer) {
-	fmt.Fprintf(w, "CMD RESPONSE: %+v\n", cr)
+func (cr *CommandResponse) StreamResponse(w io.Writer) error {
+	_, err := fmt.Fprintf(w, "CMD RESPONSE: %+v\n", cr)
+	return err
 }
 
 // SQLTimeInt is a wrapper around golang time that serializes and deserializes 64-bit nanosecond time rather than the default 32-bit second

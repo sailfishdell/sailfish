@@ -63,11 +63,15 @@ func (cr *GenericGETResponseData) Status(setStatus func(int)) {
 	}
 }
 
-func (cr *GenericGETResponseData) StreamResponse(w io.Writer) {
+func (cr *GenericGETResponseData) StreamResponse(w io.Writer) (err error) {
 	// this will block until dataChan is populated
 	for data := range cr.dataChan {
-		w.Write(data)
+		_, err = w.Write(data)
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
 // MetricReportDefinitionData is the eh event data for adding a new report definition

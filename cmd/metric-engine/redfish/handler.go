@@ -135,7 +135,7 @@ func requestContextFromCommand(r *http.Request, cmd interface{}) (context.Contex
 }
 
 type Response interface {
-	StreamResponse(io.Writer)
+	StreamResponse(io.Writer) error
 	Headers(func(string, string))
 	Status(func(int))
 	SetContext(context.Context)
@@ -212,6 +212,9 @@ func (rf *RFServer) makeCommand(eventType eh.EventType) func(w http.ResponseWrit
 		resp.SetContext(timeoutCtx)  // set up context so that source of this data can abandon the request if caller exits
 		resp.Headers(w.Header().Set) // always set headers first
 		resp.Status(w.WriteHeader)   // then set status code
-		resp.StreamResponse(w)       // dont write response at all until setting status code and headers. can't set headers after writing
+		err = resp.StreamResponse(w) // dont write response at all until setting status code and headers. can't set headers after writing
+		if err != nil {
+			requestLogger.Crit("Error writing response", "err", err, "Command", fmt.Sprintf("%+v", cmd))
+		}
 	}
 }

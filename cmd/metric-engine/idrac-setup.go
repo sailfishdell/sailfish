@@ -107,7 +107,7 @@ func setup(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, d busInt
 }
 
 // Populate all MDs at start from filesystem
-func importPersistentSavedRedfishData(logger log.Logger, cfg *viper.Viper, bus eh.EventBus) error {
+func importPersistentSavedRedfishData(_ log.Logger, cfg *viper.Viper, bus eh.EventBus) error {
 	var persistentImportDirs = []struct {
 		name      string
 		subdir    string
@@ -172,7 +172,8 @@ func injectStartupEvents(logger log.Logger, cfgMgr *viper.Viper, section string,
 	for i, v := range events {
 		settings, ok := v.(map[interface{}]interface{})
 		if !ok {
-			return xerrors.Errorf("Startup Event: malformed event in Section(%s), index(%i): Need (%T), got (%T) - %v", section, i, map[interface{}]interface{}{}, v, v)
+			return xerrors.Errorf("Startup Event: malformed event in Section(%s), index(%i): Need (%T), got (%T) - %v",
+				section, i, map[interface{}]interface{}{}, v, v)
 		}
 
 		name, ok := settings["name"].(string)
