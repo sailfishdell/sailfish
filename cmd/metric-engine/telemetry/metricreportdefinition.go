@@ -1214,9 +1214,9 @@ func (factory *telemetryManager) Vacuum() error {
 		}
 		rows, err := res.RowsAffected()
 		if err != nil {
-			fmt.Printf("%s->%d rows, err(%s)\n", sql, rows, err)
+			fmt.Printf("Run(Vacuum) sql(%s)->%d rows, err(%s)\n", sql, rows, err)
 		} else {
-			fmt.Printf("%s->%d rows, no errors\n", sql, rows)
+			fmt.Printf("Run(Vacuum) sql(%s)->%d rows, no errors\n", sql, rows)
 		}
 	}
 	return nil
