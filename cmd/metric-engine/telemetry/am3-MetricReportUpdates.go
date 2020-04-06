@@ -114,16 +114,14 @@ func Startup(logger log.Logger, cfg *viper.Viper, am3Svc eventHandler, d busComp
 	bus := d.GetBus()
 	// converted to command request/response
 	am3Svc.AddEventHandler("Generic GET Data", GenericGETCommandEvent, MakeHandlerGenericGET(logger, telemetryMgr, bus))
-	am3Svc.AddEventHandler("Create Metric Report Definition", AddMetricReportDefinition, MakeHandlerCreateMRD(logger, telemetryMgr, bus))
-	am3Svc.AddEventHandler("Delete Metric Report Definition", DeleteMetricReportDefinition, MakeHandlerDeleteMRD(logger, telemetryMgr, bus))
-	am3Svc.AddEventHandler("Delete Metric Report", DeleteMetricReport, MakeHandlerDeleteMR(logger, telemetryMgr, bus))
-	am3Svc.AddEventHandler("Update Metric Report Definition", UpdateMetricReportDefinition, MakeHandlerUpdateMRD(logger, telemetryMgr, bus))
-
-	//Metric Definition Add event
-	am3Svc.AddEventHandler("Create Metric Definition", AddMetricDefinition, MakeHandlerCreateMD(logger, telemetryMgr, bus))
+	am3Svc.AddEventHandler("Create Metric Report Definition", AddMRDCommandEvent, MakeHandlerCreateMRD(logger, telemetryMgr, bus))
+	am3Svc.AddEventHandler("Delete Metric Report Definition", DeleteMRDCommandEvent, MakeHandlerDeleteMRD(logger, telemetryMgr, bus))
+	am3Svc.AddEventHandler("Delete Metric Report", DeleteMRCommandEvent, MakeHandlerDeleteMR(logger, telemetryMgr, bus))
+	am3Svc.AddEventHandler("Update Metric Report Definition", UpdateMRDCommandEvent, MakeHandlerUpdateMRD(logger, telemetryMgr, bus))
+	am3Svc.AddEventHandler("Create Metric Definition", AddMDCommandEvent, MakeHandlerCreateMD(logger, telemetryMgr, bus))
+	am3Svc.AddEventHandler("Generate Metric Report", metric.GenerateReportCommandEvent, MakeHandlerGenReport(logger, telemetryMgr, bus))
 
 	// just events for now
-	am3Svc.AddEventHandler("Generate Metric Report", metric.RequestReport, MakeHandlerGenReport(logger, telemetryMgr, bus))
 	am3Svc.AddEventHandler("Clock", PublishClock, MakeHandlerClock(logger, telemetryMgr, bus))
 	am3Svc.AddEventHandler("Database Maintenance", DatabaseMaintenance, MakeHandlerMaintenance(logger, telemetryMgr, bus))
 
@@ -151,7 +149,7 @@ func MakeHandlerGenericGET(logger log.Logger, telemetryMgr *telemetryManager, bu
 	return func(event eh.Event) {
 		getCmd, ok := event.Data().(*GenericGETCommandData)
 		if !ok {
-			logger.Crit("AddMetricReportDefinition handler got event of incorrect format")
+			logger.Crit("AddMRDCommand handler got event of incorrect format")
 			return
 		}
 
@@ -177,9 +175,9 @@ func MakeHandlerGenericGET(logger log.Logger, telemetryMgr *telemetryManager, bu
 
 func MakeHandlerCreateMRD(logger log.Logger, telemetryMgr *telemetryManager, bus eh.EventBus) func(eh.Event) {
 	return func(event eh.Event) {
-		reportDef, ok := event.Data().(*AddMetricReportDefinitionData)
+		reportDef, ok := event.Data().(*AddMRDCommandData)
 		if !ok {
-			logger.Crit("AddMetricReportDefinition handler got event of incorrect format")
+			logger.Crit("AddMRDCommand handler got event of incorrect format")
 			return
 		}
 
@@ -204,7 +202,6 @@ func MakeHandlerCreateMRD(logger log.Logger, telemetryMgr *telemetryManager, bus
 			return
 		}
 
-		//data, ok := respEvent.Data().(*AddMetricReportDefinitionResponseData)
 		// Should add the populated metric report definition event as a response?
 		publishHelper(logger, bus, respEvent)
 	}
@@ -212,7 +209,7 @@ func MakeHandlerCreateMRD(logger log.Logger, telemetryMgr *telemetryManager, bus
 
 func MakeHandlerUpdateMRD(logger log.Logger, telemetryMgr *telemetryManager, bus eh.EventBus) func(eh.Event) {
 	return func(event eh.Event) {
-		update, ok := event.Data().(*UpdateMetricReportDefinitionData)
+		update, ok := event.Data().(*UpdateMRDCommandData)
 		if !ok {
 			return
 		}
@@ -239,7 +236,6 @@ func MakeHandlerUpdateMRD(logger log.Logger, telemetryMgr *telemetryManager, bus
 			return
 		}
 
-		//data, ok := respEvent.Data().(*AddMetricReportDefinitionResponseData)
 		// Should add the populated metric report definition event as a response?
 		publishHelper(logger, bus, respEvent)
 	}
@@ -247,7 +243,7 @@ func MakeHandlerUpdateMRD(logger log.Logger, telemetryMgr *telemetryManager, bus
 
 func MakeHandlerDeleteMRD(logger log.Logger, telemetryMgr *telemetryManager, bus eh.EventBus) func(eh.Event) {
 	return func(event eh.Event) {
-		reportDef, ok := event.Data().(*DeleteMetricReportDefinitionData)
+		reportDef, ok := event.Data().(*DeleteMRDCommandData)
 		if !ok {
 			return
 		}
@@ -276,9 +272,9 @@ func MakeHandlerDeleteMRD(logger log.Logger, telemetryMgr *telemetryManager, bus
 // MD event handlers
 func MakeHandlerCreateMD(logger log.Logger, telemetryMgr *telemetryManager, bus eh.EventBus) func(eh.Event) {
 	return func(event eh.Event) {
-		mdDef, ok := event.Data().(*AddMetricDefinitionData)
+		mdDef, ok := event.Data().(*AddMDCommandData)
 		if !ok {
-			logger.Crit("AddMetricDefinition handler got event of incorrect format")
+			logger.Crit("AddMDCommandEvent handler got event of incorrect format")
 			return
 		}
 
@@ -302,7 +298,7 @@ func MakeHandlerCreateMD(logger log.Logger, telemetryMgr *telemetryManager, bus 
 
 func MakeHandlerDeleteMR(logger log.Logger, telemetryMgr *telemetryManager, bus eh.EventBus) func(eh.Event) {
 	return func(event eh.Event) {
-		report, ok := event.Data().(*DeleteMetricReportData)
+		report, ok := event.Data().(*DeleteMRCommandData)
 		if !ok {
 			return
 		}
@@ -326,7 +322,7 @@ func MakeHandlerDeleteMR(logger log.Logger, telemetryMgr *telemetryManager, bus 
 
 func MakeHandlerGenReport(logger log.Logger, telemetryMgr *telemetryManager, bus eh.EventBus) func(eh.Event) {
 	return func(event eh.Event) {
-		report, ok := event.Data().(*metric.RequestReportData)
+		report, ok := event.Data().(*metric.GenerateReportCommandData)
 		if !ok {
 			return
 		}
@@ -345,10 +341,12 @@ func MakeHandlerGenReport(logger log.Logger, telemetryMgr *telemetryManager, bus
 			return
 		}
 
-		data, ok := respEvent.Data().(*metric.ReportGeneratedData)
-		if ok {
-			data.Name = name
-			publishHelper(logger, bus, respEvent)
+		publishHelper(logger, bus, respEvent)
+
+		// Generate the generic "Report Generated" event that things like triggers
+		// and such operate off. Only publish when there is no error generating report
+		if reportError == nil {
+			publishHelper(logger, bus, eh.NewEvent(metric.ReportGenerated, &metric.ReportGeneratedData{Name: name}, time.Now()))
 		}
 	}
 }

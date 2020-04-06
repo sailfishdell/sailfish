@@ -113,8 +113,8 @@ func importPersistentSavedRedfishData(_ log.Logger, cfg *viper.Viper, bus eh.Eve
 		subdir    string
 		eventType eh.EventType
 	}{
-		{"MetricDefinition", cfg.GetString("main.mddirectory"), telemetry.AddMetricDefinition},
-		//{"MetricReportDefinition", cfg.GetString("main.mrddirectory"), telemetry.AddMetricReportDefinition},
+		{"MetricDefinition", cfg.GetString("main.mddirectory"), telemetry.AddMDCommandEvent},
+		//{"MetricReportDefinition", cfg.GetString("main.mrddirectory"), telemetry.AddMRDCommandEvent},
 	}
 
 	// strategy: this process *has* to succeed. If it does not, return error and we panic.

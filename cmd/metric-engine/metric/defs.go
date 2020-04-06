@@ -15,10 +15,13 @@ import (
 
 // definitions for all of the event horizon event names
 const (
+	// command/response
+	GenerateReportCommandEvent  eh.EventType = "GenerateReportCommandEvent"
+	GenerateReportResponseEvent eh.EventType = "GenerateReportResponseEvent"
+
 	// this legitimately should be called a "Metric Value Event", so disable golint stutter wraning
 	MetricValueEvent    eh.EventType = "MetricValueEvent" //nolint: golint
 	FriendlyFQDDMapping eh.EventType = "FriendlyFQDDMapping"
-	RequestReport       eh.EventType = "RequestReport"
 	ReportGenerated     eh.EventType = "ReportGenerated"
 )
 
@@ -187,28 +190,31 @@ type FQDDMappingData struct {
 	FriendlyName string
 }
 
-// RequestReportData is the event data structure to tell which report names to generate
-type RequestReportData struct {
+// GenerateReportCommandData is the event data structure to tell which report names to generate
+type GenerateReportCommandData struct {
 	Command
 	Name string
 }
 
 func NewRequestReportCommand(name string) (eh.Event, error) {
-	data, err := eh.CreateEventData(RequestReport)
+	data, err := eh.CreateEventData(GenerateReportCommandEvent)
 	if err != nil {
 		return nil, fmt.Errorf("could not create request report command: %w", err)
 	}
-	cr, ok := data.(*RequestReportData)
+	cr, ok := data.(*GenerateReportCommandData)
 	if !ok {
 		return nil, fmt.Errorf("internal programming error: response encoded in cmd wasn't a response type")
 	}
 	cr.Name = name
-	return eh.NewEvent(RequestReport, cr, time.Now()), nil
+	return eh.NewEvent(GenerateReportCommandEvent, cr, time.Now()), nil
 }
 
-// ReportGeneratedData is the event data structure emitted after reports are generated
-type ReportGeneratedData struct {
+// GenerateReportResponseData is the event data structure emitted after reports are generated
+type GenerateReportResponseData struct {
 	CommandResponse
+}
+
+type ReportGeneratedData struct {
 	Name string
 }
 
@@ -216,6 +222,11 @@ type ReportGeneratedData struct {
 func RegisterEvent() {
 	eh.RegisterEventData(MetricValueEvent, func() eh.EventData { return &MetricValueEventData{} })
 	eh.RegisterEventData(FriendlyFQDDMapping, func() eh.EventData { return &FQDDMappingData{} })
-	eh.RegisterEventData(RequestReport, func() eh.EventData { return &RequestReportData{Command: NewCommand(ReportGenerated)} })
 	eh.RegisterEventData(ReportGenerated, func() eh.EventData { return &ReportGeneratedData{} })
+
+	// command/response registrations
+	eh.RegisterEventData(GenerateReportCommandEvent, func() eh.EventData {
+		return &GenerateReportCommandData{Command: NewCommand(GenerateReportResponseEvent)}
+	})
+	eh.RegisterEventData(GenerateReportResponseEvent, func() eh.EventData { return &GenerateReportResponseData{} })
 }

@@ -262,7 +262,7 @@ func MakeHandlerLegacyAttributeSync(logger log.Logger, importMgr *importManager,
 			return
 		}
 
-		// Step 4: Generate a "UpdateMetricReportDefinition" event
+		// Step 4: Generate a "UpdateMRDCommandEvent" event
 		//	Ok, here first thing we need to do is do a UDB query to find the current value since UDB didn't actually send us the value
 
 		sqlForCurrentValue := ""
@@ -288,13 +288,13 @@ func MakeHandlerLegacyAttributeSync(logger log.Logger, importMgr *importManager,
 			logger.Crit("Error checking currentvalue of rowid in database ", "err", err)
 		}
 
-		eventData, err := eh.CreateEventData(telemetry.UpdateMetricReportDefinition)
+		eventData, err := eh.CreateEventData(telemetry.UpdateMRDCommandEvent)
 		if err != nil {
 			logger.Crit("Error trying to create update event:", "err", err)
 			return
 		}
 
-		updateEvent, ok := eventData.(*telemetry.UpdateMetricReportDefinitionData)
+		updateEvent, ok := eventData.(*telemetry.UpdateMRDCommandData)
 		if !ok {
 			logger.Crit("Internal error trying to type assert to update event")
 			return
@@ -331,7 +331,7 @@ func MakeHandlerLegacyAttributeSync(logger log.Logger, importMgr *importManager,
 		}
 		logger.Info("CRIT: about to send", "report", updateEvent.ReportDefinitionName, "PATCH", string(updateEvent.Patch))
 		fmt.Printf("About to send event for report %s Patch %s\n", updateEvent.ReportDefinitionName, string(updateEvent.Patch))
-		publishAndWait(logger, bus, telemetry.UpdateMetricReportDefinition, updateEvent)
+		publishAndWait(logger, bus, telemetry.UpdateMRDCommandEvent, updateEvent)
 	}
 }
 

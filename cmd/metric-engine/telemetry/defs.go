@@ -14,21 +14,29 @@ import (
 
 // constants to refer to event types
 const (
+	// GET - get most redfish URIs.
 	GenericGETCommandEvent  eh.EventType = "GenericGETCommandEvent"
 	GenericGETResponseEvent eh.EventType = "GenericGETResponseEvent"
 
-	AddMetricReportDefinition            eh.EventType = "AddMetricReportDefinitionEvent"
-	AddMetricReportDefinitionResponse    eh.EventType = "AddMetricReportDefinitionEventResponse"
-	UpdateMetricReportDefinition         eh.EventType = "UpdateMetricReportDefinitionEvent"
-	UpdateMetricReportDefinitionResponse eh.EventType = "UpdateMetricReportDefinitionEventResponse"
-	DeleteMetricReportDefinition         eh.EventType = "DeleteMetricReportDefinitionEvent"
-	DeleteMetricReportDefinitionResponse eh.EventType = "DeleteMetricReportDefinitionEventResponse"
-	DeleteMetricReport                   eh.EventType = "DeleteMetricReportEvent"
-	DeleteMetricReportResponse           eh.EventType = "DeleteMetricReportEventResponse"
-	DatabaseMaintenance                  eh.EventType = "DatabaseMaintenanceEvent"
-	PublishClock                         eh.EventType = "PublishClockEvent"
-	AddMetricDefinition                  eh.EventType = "AddMetricDefinitionEvent"
-	AddMetricDefinitionResponse          eh.EventType = "AddMetricDefinitionEventResponse"
+	// MRD - Metric Report Definition
+	AddMRDCommandEvent     eh.EventType = "AddMetricReportDefinitionEvent"
+	AddMRDResponseEvent    eh.EventType = "AddMetricReportDefinitionEventResponse"
+	UpdateMRDCommandEvent  eh.EventType = "UpdateMetricReportDefinitionEvent"
+	UpdateMRDResponseEvent eh.EventType = "UpdateMetricReportDefinitionEventResponse"
+	DeleteMRDCommandEvent  eh.EventType = "DeleteMetricReportDefinitionEvent"
+	DeleteMRDResponseEvent eh.EventType = "DeleteMetricReportDefinitionEventResponse"
+
+	// MR - Metric Report
+	DeleteMRCommandEvent  eh.EventType = "DeleteMetricReportEvent"
+	DeleteMRResponseEvent eh.EventType = "DeleteMetricReportEventResponse"
+
+	// MD - Metric Defintiion
+	AddMDCommandEvent  eh.EventType = "AddMetricDefinitionEvent"
+	AddMDResponseEvent eh.EventType = "AddMetricDefinitionEventResponse"
+
+	// generic events
+	DatabaseMaintenance eh.EventType = "DatabaseMaintenanceEvent"
+	PublishClock        eh.EventType = "PublishClockEvent"
 )
 
 type GenericGETCommandData struct {
@@ -194,65 +202,65 @@ type MetricReportDefinition struct {
 	ID          int64 `db:"ID"`
 }
 
-type AddMetricReportDefinitionData struct {
+type AddMRDCommandData struct {
 	metric.Command
 	MetricReportDefinitionData
 }
 
-func (a *AddMetricReportDefinitionData) UseInput(ctx context.Context, logger log.Logger, r io.Reader) error {
+func (a *AddMRDCommandData) UseInput(ctx context.Context, logger log.Logger, r io.Reader) error {
 	decoder := json.NewDecoder(r)
 	return decoder.Decode(a)
 }
 
-type AddMetricReportDefinitionResponseData struct {
+type AddMRDResponseData struct {
 	metric.CommandResponse
 }
 
-type UpdateMetricReportDefinitionData struct {
+type UpdateMRDCommandData struct {
 	metric.Command
 	ReportDefinitionName string
 	Patch                json.RawMessage
 }
 
-type UpdateMetricReportDefinitionResponseData struct {
+type UpdateMRDResponseData struct {
 	metric.CommandResponse
 }
 
-func (u *UpdateMetricReportDefinitionData) UseInput(ctx context.Context, logger log.Logger, r io.Reader) error {
+func (u *UpdateMRDCommandData) UseInput(ctx context.Context, logger log.Logger, r io.Reader) error {
 	decoder := json.NewDecoder(r)
 	return decoder.Decode(&u.Patch)
 }
 
-func (u *UpdateMetricReportDefinitionData) UseVars(ctx context.Context, logger log.Logger, vars map[string]string) error {
+func (u *UpdateMRDCommandData) UseVars(ctx context.Context, logger log.Logger, vars map[string]string) error {
 	u.ReportDefinitionName = vars["ID"]
 	return nil
 }
 
-type DeleteMetricReportDefinitionData struct {
+type DeleteMRDCommandData struct {
 	metric.Command
 	Name string
 }
 
-func (delMRD *DeleteMetricReportDefinitionData) UseVars(ctx context.Context, logger log.Logger, vars map[string]string) error {
+func (delMRD *DeleteMRDCommandData) UseVars(ctx context.Context, logger log.Logger, vars map[string]string) error {
 	delMRD.Name = vars["ID"]
 	return nil
 }
 
-type DeleteMetricReportDefinitionResponseData struct {
+type DeleteMRDResponseData struct {
 	metric.CommandResponse
 }
 
-type DeleteMetricReportData struct {
+type DeleteMRCommandData struct {
 	metric.Command
 	Name string
 }
 
-func (delMR *DeleteMetricReportData) UseVars(ctx context.Context, logger log.Logger, vars map[string]string) error {
+func (delMR *DeleteMRCommandData) UseVars(ctx context.Context, logger log.Logger, vars map[string]string) error {
 	delMR.Name = vars["ID"]
 	return nil
 }
 
-type DeleteMetricReportResponseData struct {
+type DeleteMRResponseData struct {
 	metric.CommandResponse
 }
 
@@ -261,17 +269,17 @@ type MetricDefinition struct {
 	*MetricDefinitionData
 }
 
-type AddMetricDefinitionData struct {
+type AddMDCommandData struct {
 	metric.Command
 	MetricDefinitionData
 }
 
-func (a *AddMetricDefinitionData) UseInput(ctx context.Context, logger log.Logger, r io.Reader) error {
+func (a *AddMDCommandData) UseInput(ctx context.Context, logger log.Logger, r io.Reader) error {
 	decoder := json.NewDecoder(r)
 	return decoder.Decode(a)
 }
 
-type AddMetricDefinitionResponseData struct {
+type AddMDResponseData struct {
 	metric.CommandResponse
 }
 
@@ -299,35 +307,35 @@ func RegisterEvents() {
 		return ev
 	})
 
-	// =========== ADD MRD - AddMetricReportDefinition ==========================
-	eh.RegisterEventData(AddMetricReportDefinition, func() eh.EventData {
-		return &AddMetricReportDefinitionData{Command: metric.NewCommand(AddMetricReportDefinitionResponse)}
+	// =========== ADD MRD - AddMRDCommand ==========================
+	eh.RegisterEventData(AddMRDCommandEvent, func() eh.EventData {
+		return &AddMRDCommandData{Command: metric.NewCommand(AddMRDResponseEvent)}
 	})
-	eh.RegisterEventData(AddMetricReportDefinitionResponse, func() eh.EventData { return &AddMetricReportDefinitionResponseData{} })
+	eh.RegisterEventData(AddMRDResponseEvent, func() eh.EventData { return &AddMRDResponseData{} })
 
-	// =========== UPDATE MRD - UpdateMetricReportDefinition ====================
-	eh.RegisterEventData(UpdateMetricReportDefinition, func() eh.EventData {
-		return &UpdateMetricReportDefinitionData{Command: metric.NewCommand(UpdateMetricReportDefinitionResponse)}
+	// =========== UPDATE MRD - UpdateMRDCommandEvent ====================
+	eh.RegisterEventData(UpdateMRDCommandEvent, func() eh.EventData {
+		return &UpdateMRDCommandData{Command: metric.NewCommand(UpdateMRDResponseEvent)}
 	})
-	eh.RegisterEventData(UpdateMetricReportDefinitionResponse, func() eh.EventData { return &UpdateMetricReportDefinitionResponseData{} })
+	eh.RegisterEventData(UpdateMRDResponseEvent, func() eh.EventData { return &UpdateMRDResponseData{} })
 
-	// =========== DEL MRD - DeleteMetricReportDefinition =======================
-	eh.RegisterEventData(DeleteMetricReportDefinition, func() eh.EventData {
-		return &DeleteMetricReportDefinitionData{Command: metric.NewCommand(DeleteMetricReportDefinitionResponse)}
+	// =========== DEL MRD - DeleteMRDCommandEvent =======================
+	eh.RegisterEventData(DeleteMRDCommandEvent, func() eh.EventData {
+		return &DeleteMRDCommandData{Command: metric.NewCommand(DeleteMRDResponseEvent)}
 	})
-	eh.RegisterEventData(DeleteMetricReportDefinitionResponse, func() eh.EventData { return &DeleteMetricReportDefinitionResponseData{} })
+	eh.RegisterEventData(DeleteMRDResponseEvent, func() eh.EventData { return &DeleteMRDResponseData{} })
 
-	// =========== DEL MR - DeleteMetricReport ==================================
-	eh.RegisterEventData(DeleteMetricReport, func() eh.EventData {
-		return &DeleteMetricReportData{Command: metric.NewCommand(DeleteMetricReportResponse)}
+	// =========== DEL MR - DeleteMRCommandEvent ==================================
+	eh.RegisterEventData(DeleteMRCommandEvent, func() eh.EventData {
+		return &DeleteMRCommandData{Command: metric.NewCommand(DeleteMRResponseEvent)}
 	})
-	eh.RegisterEventData(DeleteMetricReportResponse, func() eh.EventData { return &DeleteMetricReportResponseData{} })
+	eh.RegisterEventData(DeleteMRResponseEvent, func() eh.EventData { return &DeleteMRResponseData{} })
 
-	// =========== ADD MD - AddMetricDefinition ==========================
-	eh.RegisterEventData(AddMetricDefinition, func() eh.EventData {
-		return &AddMetricDefinitionData{Command: metric.NewCommand(AddMetricDefinitionResponse)}
+	// =========== ADD MD - AddMDCommandEvent ==========================
+	eh.RegisterEventData(AddMDCommandEvent, func() eh.EventData {
+		return &AddMDCommandData{Command: metric.NewCommand(AddMDResponseEvent)}
 	})
-	eh.RegisterEventData(AddMetricDefinitionResponse, func() eh.EventData { return &AddMetricDefinitionResponseData{} })
+	eh.RegisterEventData(AddMDResponseEvent, func() eh.EventData { return &AddMDResponseData{} })
 
 	// These aren't planned to ever be commands
 	//   - no need for these to be callable from redfish or other interfaces
