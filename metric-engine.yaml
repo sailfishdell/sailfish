@@ -2567,8 +2567,8 @@ createdb:
        ' "MetricDataType": "' || MetricDataType || '",' ||
        CASE WHEN Units = '' THEN '' ELSE ' "Units": "' || Units || '",'  END ||
        ' "Accuracy": ' || Accuracy || ',' ||
-       ' "SensingInterval": "' || SensingInterval || '",' ||
-       CASE WHEN DiscreteValues LIKE 'null' THEN '' ELSE ' "DiscreteValues": ' || DiscreteValues END ||
+       ' "SensingInterval": "' || SensingInterval || '"' ||
+       CASE WHEN DiscreteValues LIKE 'null' THEN '' ELSE ', "DiscreteValues": ' || DiscreteValues END ||
        '}'
        ) AS root,
             '/redfish/v1/TelemetryService/MetricDefinitions/' || MetricId AS [@odata.id]
