@@ -312,7 +312,7 @@ func handleSubscriptionsAndLCLNotify(logger log.Logger, pipePath string, subscri
 
 	// we filter steam input to allow only alphanumeric and few special chars - /,@-
 	// / -> to include subscriber file path
-	// , -> to accomodate seperator for trigger events
+	// , -> to accommodate separator for trigger events
 	// @ -> subscribe/unsubscribe prefix - subscribe@/unsubscribe@
 	// - -> legacy redfish subsriber pipe path is /var/run/odatalite-providers/telemetryfifo
 	reg := regexp.MustCompile("[^a-zA-Z0-9/,@-]+")

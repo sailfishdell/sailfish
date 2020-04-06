@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"time"
 
@@ -33,9 +32,21 @@ func init() {
 	})
 }
 
+func setDefaults(cfgMgr *viper.Viper) {
+	cfgMgr.SetDefault("main.databasepath",
+		"file:/run/telemetryservice/telemetry_timeseries_database.db?_foreign_keys=on&cache=shared&mode=rwc&_busy_timeout=1000")
+	cfgMgr.SetDefault("main.startup", "startup-events")
+	cfgMgr.SetDefault("main.mddirectory", "/usr/share/factory/telemetryservice/md/")
+	cfgMgr.SetDefault("main.mrddirectory", "/usr/share/factory/telemetryservice/mrd/")
+}
+
 func setup(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, d busIntf) {
 	// register global metric events with event horizon
 	metric.RegisterEvent()
+	telemetry.RegisterEvents()
+
+	// setup viper defaults
+	setDefaults(cfgMgr)
 
 	// We are going to initialize 2 instances of AM3 service.  This means we can
 	// run concurrent message processing loops in 2 different goroutines Each
@@ -52,14 +63,19 @@ func setup(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, d busInt
 
 	// After base event loop, process startup events. They all belong to the base loop.
 	// config file main.startup specifies the section(s) that have the list of events
-	cfgMgr.SetDefault("main.startup", "startup-events")
 	startup := cfgMgr.GetStringSlice("main.startup")
 	for _, section := range startup {
-		injectStartupEvents(logger, cfgMgr, section, d.GetBus())
+		err = injectStartupEvents(logger, cfgMgr, section, d.GetBus())
+		if err != nil {
+			panic("Error processing startup events from YAML, can't continue: " + err.Error())
+		}
 	}
 
 	// Import all MDs at start
-	injectStartupMDAddEvents(logger, cfgMgr, d.GetBus())
+	err = importPersistentSavedRedfishData(logger, cfgMgr, d.GetBus())
+	if err != nil {
+		panic("Error loading Metric Definitions: " + err.Error())
+	}
 
 	// Processing loop 2:
 	//  	-- UDB access
@@ -85,24 +101,19 @@ func setup(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, d busInt
 }
 
 // Populate all MDs at start from filesystem
-func injectStartupMDAddEvents(logger log.Logger, cfg *viper.Viper, bus eh.EventBus) error {
-	logger.Crit("injectStartupMDAddEvents\n")
-
-	cfg.SetDefault("main.mddirectory", "/usr/share/factory/telemetryservice/md/")
-	cfg.SetDefault("main.mrddirectory", "/usr/share/factory/telemetryservice/mrd/")
-
-	mddir := cfg.GetString("main.mddirectory")
-	fmt.Printf("CFG: mddirectory =  %s \n", mddir)
-
+func importPersistentSavedRedfishData(logger log.Logger, cfg *viper.Viper, bus eh.EventBus) error {
 	var persistentImportDirs = []struct {
 		name      string
 		subdir    string
 		eventType eh.EventType
 	}{
 		{"MetricDefinition", cfg.GetString("main.mddirectory"), telemetry.AddMetricDefinition},
-		{"MetricReportDefinition", cfg.GetString("main.mrddirectory"), telemetry.AddMetricReportDefinition},
+		//{"MetricReportDefinition", cfg.GetString("main.mrddirectory"), telemetry.AddMetricReportDefinition},
 	}
 
+	// strategy: this process *has* to succeed. If it does not, return error and we panic.
+	// This ensures that we notice and take care of any issues with the saved files
+	// TODO: need to think of a process to clear out errors and automatically. Theoretically should not happen, but would be fatal if it did.
 	for _, importDir := range persistentImportDirs {
 		files, err := ioutil.ReadDir(importDir.subdir)
 		if err != nil {
@@ -111,32 +122,25 @@ func injectStartupMDAddEvents(logger log.Logger, cfg *viper.Viper, bus eh.EventB
 
 		for _, file := range files {
 			filename := importDir.subdir + file.Name()
-			fmt.Printf("Reading MD file %s \n", filename)
 			jsonstr, err := ioutil.ReadFile(filename)
 			if err != nil {
-				logger.Crit("Error reading import file", "filename", filename, "err", err, "name", importDir.name)
-				continue
+				return xerrors.Errorf("Error reading %s import file(%s): %w", importDir.name, filename, err)
 			}
 
 			eventData, err := eh.CreateEventData(importDir.eventType)
 			if err != nil {
-				logger.Crit("Couldnt create event. Should never happen", "err", err)
-				continue
+				return xerrors.Errorf("Couldnt create %s event for file(%s) import. Should never happen: %w", importDir.name, filename, err)
 			}
-			err = json.Unmarshal([]byte(jsonstr), eventData)
+			err = json.Unmarshal(jsonstr, eventData)
 			if err != nil {
-				logger.Crit("Import of json file failed", "filename", filename, "err", err, "import_dir", importDir.subdir)
-				continue
+				return xerrors.Errorf("Malformed %s JSON file(%s), error unmarshalling JSON: %w", importDir.name, filename, err)
 			}
-			fmt.Printf("raw event data: %+v\n", eventData)
 
-			fmt.Printf("\tPublishing Startup Add Event for MD (%s)\n", filename)
 			evt := event.NewSyncEvent(importDir.eventType, eventData, time.Now())
 			evt.Add(1)
 			err = bus.PublishEvent(context.Background(), evt)
 			if err != nil {
-				logger.Crit("Error publishing event to internal event bus, should never happen!", "err", err)
-				continue // don't wait if publish failed, as wait will never return
+				return xerrors.Errorf("Error publishing %s event for file(%s) import: %w", importDir.name, filename, err)
 			}
 			evt.Wait()
 		}
@@ -145,57 +149,55 @@ func injectStartupMDAddEvents(logger log.Logger, cfg *viper.Viper, bus eh.EventB
 	return nil
 }
 
-func injectStartupEvents(logger log.Logger, cfgMgr *viper.Viper, section string, bus eh.EventBus) {
-	fmt.Printf("Processing Startup Events from %s\n", section)
+func injectStartupEvents(logger log.Logger, cfgMgr *viper.Viper, section string, bus eh.EventBus) error {
 	startup := cfgMgr.Get(section)
 	if startup == nil {
-		logger.Warn("SKIPPING: no startup events found")
-		return
+		logger.Info("SKIPPING STARTUP Event Injection: no startup events found")
+		return nil
 	}
+
+	// strategy: this process *has* to succeed. If it does not, return error and we panic.
+	// This ensures that we notice and take care of any issues with the YAML file
 	events, ok := startup.([]interface{})
 	if !ok {
-		logger.Crit("SKIPPING: Startup Events skipped - malformed.", "Section", section, "malformed-value", startup)
-		return
+		return xerrors.Errorf("Startup event section malformed. Section(%s): Need (%T), got (%T).", section, []interface{}{}, startup)
 	}
+
 	for i, v := range events {
 		settings, ok := v.(map[interface{}]interface{})
 		if !ok {
-			logger.Crit("SKIPPING: malformed event. Expected map", "Section", section, "index", i, "malformed-value", v, "TYPE", fmt.Sprintf("%T", v))
-			continue
+			return xerrors.Errorf("Startup Event: malformed event in Section(%s), index(%i): Need (%T), got (%T) - %v", section, i, map[interface{}]interface{}{}, v, v)
 		}
 
 		name, ok := settings["name"].(string)
 		if !ok {
-			logger.Crit("SKIPPING: Config file section missing event name- 'name' key missing.", "Section", section, "index", i, "malformed-value", v)
-			continue
+			return xerrors.Errorf("Startup Event: event in Section(%s), index(%i) missing 'name' key: %v", section, i, v)
 		}
 		eventType := eh.EventType(name + "Event")
 
 		dataString, ok := settings["data"].(string)
 		if !ok {
-			logger.Crit("SKIPPING: Config file section missing event name- 'data' key missing.", "Section", section, "index", i, "malformed-value", v)
-			continue
+			return xerrors.Errorf("Startup Event: event in Section(%s), index(%i) missing 'data' key: %v", section, i, v)
 		}
 
 		eventData, err := eh.CreateEventData(eventType)
 		if err != nil {
-			logger.Crit("SKIPPING: couldnt instantiate event", "Section", section, "index", i, "malformed-value", v, "event", name, "err", err)
-			continue
+			return xerrors.Errorf("Startup Event: event in Section(%s), index(%i). Could not instantiate event(%+v): %w", section, i, v, err)
 		}
 
 		err = json.Unmarshal([]byte(dataString), &eventData)
 		if err != nil {
-			logger.Crit("Unmarshal error", "err", err, "json_string", dataString)
-			continue
+			return xerrors.Errorf("Startup Event: event in Section(%s), index(%i). Failed to unmarshal JSON for (%+v): %w", section, i, v, err)
 		}
 
-		fmt.Printf("\tPublishing Startup Event (%s)\n", name)
+		logger.Info("Publishing Startup Event", "section", section, "index", i, "eventType", eventType)
 		evt := event.NewSyncEvent(eventType, eventData, time.Now())
 		evt.Add(1)
 		err = bus.PublishEvent(context.Background(), evt)
 		if err != nil {
-			logger.Crit("Error publishing event to internal event bus, should never happen!", "err", err)
+			return xerrors.Errorf("Startup Event: event in Section(%s), index(%i). Failed to publish event for (%+v): %w", section, i, v, err)
 		}
 		evt.Wait()
 	}
+	return nil
 }

@@ -1,8 +1,10 @@
 package metric
 
 import (
+	"context"
 	"database/sql/driver"
 	"fmt"
+	"io"
 	"time"
 
 	eh "github.com/looplab/eventhorizon"
@@ -34,6 +36,11 @@ const (
 	AppendWrapsWhenFull = "AppendWrapsWhenFull"
 )
 
+const (
+	httpStatusOk         = 200
+	httpStatusBadRequest = 400
+)
+
 type Command struct {
 	RequestID    eh.UUID
 	ResponseType eh.EventType
@@ -52,7 +59,7 @@ func (cmd *Command) NewResponseEvent(responseErr error) (eh.Event, error) {
 	if !ok {
 		return nil, fmt.Errorf("internal programming error: response encoded in cmd wasn't a response type: %T -> %+v", data, data)
 	}
-	cr.setError(responseErr)
+	cr.SetError(responseErr)
 	cr.setRequestID(cmd.RequestID)
 
 	return eh.NewEvent(cmd.ResponseType, cr, time.Now()), nil
@@ -77,11 +84,13 @@ func (cmd *Command) GetRequestID() eh.UUID {
 type Responser interface {
 	GetRequestID() eh.UUID
 	setRequestID(eh.UUID)
-	setError(error)
+	SetError(error)
+	StreamResponse(io.Writer)
 }
 
 type CommandResponse struct {
 	RequestID eh.UUID
+	Ctx       context.Context
 	err       error
 }
 
@@ -97,8 +106,45 @@ func (cr *CommandResponse) GetError() error {
 	return cr.err
 }
 
-func (cr *CommandResponse) setError(err error) {
+func (cr *CommandResponse) SetContext(ctx context.Context) {
+	cr.Ctx = ctx
+}
+
+func (cr *CommandResponse) Status(setStatus func(int)) {
+	// expect that subclasses will override this
+	if cr.GetError() != nil {
+		setStatus(httpStatusBadRequest) // same as http.StatusBadRequest (without explicitly importing http package)
+	}
+	setStatus(httpStatusOk) // OK status
+}
+
+func (cr *CommandResponse) Headers(setHeader func(string, string)) {
+	// common headers
+	setHeader("OData-Version", "4.0")
+	setHeader("Server", "metric-engine")
+	setHeader("Content-Type", "application/json; charset=utf-8")
+	setHeader("Connection", "keep-alive")
+	setHeader("Cache-Control", "no-Store,no-Cache")
+	setHeader("Pragma", "no-cache")
+
+	// security headers
+	setHeader("Strict-Transport-Security", "max-age=63072000; includeSubDomains") // for A+ SSL Labs score
+	setHeader("Access-Control-Allow-Origin", "*")
+	setHeader("X-Frame-Options", "DENY")
+	setHeader("X-XSS-Protection", "1; mode=block")
+	setHeader("X-Content-Security-Policy", "default-src 'self'")
+	setHeader("X-Content-Type-Options", "nosniff")
+
+	// compatibility headers
+	setHeader("X-UA-Compatible", "IE=11")
+}
+
+func (cr *CommandResponse) SetError(err error) {
 	cr.err = err
+}
+
+func (cr *CommandResponse) StreamResponse(w io.Writer) {
+	fmt.Fprintf(w, "CMD RESPONSE: %+v\n", cr)
 }
 
 // SQLTimeInt is a wrapper around golang time that serializes and deserializes 64-bit nanosecond time rather than the default 32-bit second

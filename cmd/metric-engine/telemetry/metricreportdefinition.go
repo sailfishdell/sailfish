@@ -29,6 +29,11 @@ const (
 	maxAcceptableDrift      = 2 * time.Second
 )
 
+const (
+	httpStatusOk       = 200
+	httpStatusNotFound = 404
+)
+
 // Factory manages getting/putting into db
 type telemetryManager struct {
 	logger           log.Logger
@@ -345,6 +350,30 @@ func (factory *telemetryManager) wrapWithTXOrPassIn(tx *sqlx.Tx, fn func(tx *sql
 	return wrapWithTXOrPassIn(factory.database, tx, fn)
 }
 
+func (factory *telemetryManager) get(cmd *GenericGETCommandData, resp *GenericGETResponseData) error {
+	defer close(resp.dataChan)
+	// this function seems too cozy with GenericGET Command/Response and probably should be refactored, but it needs some thought
+	// it's also too cozy with HTTP redfish interface, but no direct http dependencies
+
+	data := []byte{}
+	err := factory.getSQLX("generic_get").Get(&data, cmd.URI)
+	if err != nil {
+		factory.logger.Crit("ERROR getting", "err", err, "URI", cmd.URI)
+		resp.SetStatus(httpStatusNotFound)
+
+		// TODO: need a body with eemi error here
+		resp.dataChan <- []byte("Resource not found. (FIXME: replace with redfish compliant error text.)")
+		return err
+	}
+
+	// on $expand, we'd need to parse all the return data and expand @odata.id's
+	// kind of a pain in the backside
+
+	resp.SetStatus(httpStatusOk)
+	resp.dataChan <- data
+	return nil
+}
+
 func (factory *telemetryManager) updateMRD(reportDef string, updates json.RawMessage) (err error) {
 	return factory.wrapWithTX(func(tx *sqlx.Tx) error {
 		// TODO: Emit an error response message if the metric report definition does not exist
@@ -452,23 +481,20 @@ func (factory *telemetryManager) addMRD(mrdEvData *MetricReportDefinitionData) (
 }
 
 func (factory *telemetryManager) addMD(mdEvData *MetricDefinitionData) (err error) {
-    return factory.wrapWithTX(func(tx *sqlx.Tx) error {
-        //TODO: valid MD input, for now all good input read from files
-        //validateMD(md)
+	return factory.wrapWithTX(func(tx *sqlx.Tx) error {
+		//TODO: valid MD input, for now all good input read from files
+		//validateMD(md)
 
-        _, err := factory.getNamedSQLXTx(tx, "md_insert").Exec(mdEvData)
-        if err != nil {
-            if strings.HasPrefix(err.Error(), "UNIQUE constraint failed") {
-                // too verbose, but possibly uncomment for debugging
-                fmt.Printf("cannot ADD already existing MD(%s).", mdEvData.MetricId)
-                return xerrors.Errorf("cannot ADD already existing MD(%s).", mdEvData.MetricId)
-            }
-            fmt.Printf("error inserting MD(%s): %w", mdEvData.MetricId)
-            return xerrors.Errorf("error inserting MD(%s): %w", mdEvData.MetricId, err)
-        }
- 
-        return nil
-    })
+		_, err := factory.getNamedSQLXTx(tx, "md_insert").Exec(mdEvData)
+		if err != nil {
+			if strings.HasPrefix(err.Error(), "UNIQUE constraint failed") {
+				return xerrors.Errorf("cannot ADD already existing MD(%s).", mdEvData.MetricID)
+			}
+			return xerrors.Errorf("error inserting MD(%s): %w", mdEvData.MetricID, err)
+		}
+
+		return nil
+	})
 }
 
 func (factory *telemetryManager) updateMMList(tx *sqlx.Tx, mrd *MetricReportDefinition) (err error) {

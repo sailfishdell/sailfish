@@ -3,6 +3,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 
@@ -11,6 +12,7 @@ import (
 	"github.com/superchalupa/sailfish/cmd/metric-engine/httpcommon"
 	"github.com/superchalupa/sailfish/cmd/metric-engine/redfish"
 	log "github.com/superchalupa/sailfish/src/log"
+	"github.com/superchalupa/sailfish/src/ocp/am3"
 )
 
 // nolint: gochecknoinits
@@ -19,8 +21,11 @@ func init() {
 	initOptional()
 	optionalComponents = append([]func(log.Logger, *viper.Viper, busIntf) func(){
 		func(logger log.Logger, cfg *viper.Viper, d busIntf) func() {
+			redfish.RegisterEvents()
 			serverlist := createHTTPServerBookkeeper(logger)
 			addRedfishHandlers(logger, cfg, d, serverlist)
+			am3SvcN4, _ := am3.StartService(context.Background(), log.With(logger, "module", "Redfish_AM3"), "Redfish", d)
+			redfish.Startup(logger, cfg, am3SvcN4, d)
 			return nil
 		}}, optionalComponents...)
 }

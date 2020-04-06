@@ -25,7 +25,7 @@ func init() {
 		}}, optionalComponents...)
 }
 
-func addPipeHandlers(logger log.Logger, cfgMgr *viper.Viper, d busIntf, serverlist *httpcommon.ServerTracker) {
+func addPipeHandlers(logger log.Logger, cfgMgr *viper.Viper, d busIntf, _ *httpcommon.ServerTracker) {
 	logger.Crit("PIPE ENABLED")
 	cfgMgr.SetDefault("pipe", "metric-engine.pipe")
 

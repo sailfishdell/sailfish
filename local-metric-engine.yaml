@@ -10,9 +10,9 @@ udb:
     startup: ["startup-events", "addon-events"]
 
 pprof: [ "unix:data/http.socket" ]
-SSE: [ "http::8080" ]
+SSE: [ "unix:data/http.socket", "http::8080" ]
 Redfish: [ "unix:data/http.socket" ]
-pipe: [ "metric-engine.pipe" ]
+pipe: [ "data/metric-engine.pipe" ]
 
 triggers:
   clientIPCPipe: data/clientipc
