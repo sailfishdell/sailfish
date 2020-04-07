@@ -37,9 +37,9 @@ const (
 )
 
 const (
-	HttpStatusOk         = 200
-	HttpStatusBadRequest = 400
-	HttpStatusNotFound   = 404
+	HTTPStatusOk         = 200
+	HTTPStatusBadRequest = 400
+	HTTPStatusNotFound   = 404
 )
 
 type Command struct {
@@ -114,9 +114,9 @@ func (cr *CommandResponse) SetContext(ctx context.Context) {
 func (cr *CommandResponse) Status(setStatus func(int)) {
 	// expect that subclasses will override this
 	if cr.GetError() != nil {
-		setStatus(HttpStatusBadRequest) // same as http.StatusBadRequest (without explicitly importing http package)
+		setStatus(HTTPStatusBadRequest) // same as http.StatusBadRequest (without explicitly importing http package)
 	}
-	setStatus(HttpStatusOk) // OK status
+	setStatus(HTTPStatusOk) // OK status
 }
 
 func (cr *CommandResponse) Headers(setHeader func(string, string)) {

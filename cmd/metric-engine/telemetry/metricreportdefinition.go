@@ -354,7 +354,7 @@ func (factory *telemetryManager) get(cmd *GenericGETCommandData, resp *GenericGE
 	err := factory.getSQLX("generic_get").Get(&data, cmd.URI)
 	if err != nil {
 		factory.logger.Crit("ERROR getting", "err", err, "URI", cmd.URI)
-		resp.SetStatus(metric.HttpStatusNotFound)
+		resp.SetStatus(metric.HTTPStatusNotFound)
 
 		// TODO: need a body with eemi error here
 		resp.dataChan <- []byte("Resource not found. (FIXME: replace with redfish compliant error text.)")
@@ -364,7 +364,7 @@ func (factory *telemetryManager) get(cmd *GenericGETCommandData, resp *GenericGE
 	// on $expand, we'd need to parse all the return data and expand @odata.id's
 	// kind of a pain in the backside
 
-	resp.SetStatus(metric.HttpStatusOk)
+	resp.SetStatus(metric.HTTPStatusOk)
 	resp.dataChan <- data
 	return nil
 }
