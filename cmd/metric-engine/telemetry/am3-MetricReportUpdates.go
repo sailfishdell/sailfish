@@ -44,7 +44,7 @@ func publishHelper(logger log.Logger, bus eh.EventBus, event eh.Event) {
 	}
 }
 
-func backgroundTasks(logger log.Logger, bus eh.EventBus) {
+func backgroundTasks(logger log.Logger, bus eh.EventBus, shutdown chan struct{}) {
 	clockTicker := time.NewTicker(clockPeriod)
 	cleanValuesTicker := time.NewTicker(cleanMVTime)
 	vacuumTicker := time.NewTicker(vacuumTime)
@@ -65,11 +65,13 @@ func backgroundTasks(logger log.Logger, bus eh.EventBus) {
 			publishHelper(logger, bus, eh.NewEvent(DatabaseMaintenance, "delete orphans", time.Now())) // belt and suspenders
 		case <-clockTicker.C:
 			publishHelper(logger, bus, eh.NewEvent(PublishClock, nil, time.Now()))
+		case <-shutdown:
+			return
 		}
 	}
 }
 
-// StartupTelemetryBase registers event handlers with the awesome mapper and
+// Startup registers event handlers with the awesome mapper and
 // starts up timers and maintenance goroutines
 //
 // regarding: database.SetMaxOpenConns(1)
@@ -78,10 +80,10 @@ func backgroundTasks(logger log.Logger, bus eh.EventBus) {
 // SO: we will ensure that we have ONLY ONE GOROUTINE that does transactions.
 // This isn't a terrible limitation as it is sort of what we want to do
 // anyways.
-func StartupTelemetryBase(logger log.Logger, cfg *viper.Viper, am3Svc eventHandler, d busComponents) error {
+func Startup(logger log.Logger, cfg *viper.Viper, am3Svc eventHandler, d busComponents) (func(), error) {
 	database, err := sqlx.Open("sqlite3", cfg.GetString("main.databasepath"))
 	if err != nil {
-		return xerrors.Errorf("could not open database(%s): %w", cfg.GetString("main.databasepath"))
+		return nil, xerrors.Errorf("could not open database(%s): %w", cfg.GetString("main.databasepath"))
 	}
 
 	database.SetMaxOpenConns(1)
@@ -95,13 +97,15 @@ func StartupTelemetryBase(logger log.Logger, cfg *viper.Viper, am3Svc eventHandl
 				logger.Info("Ignoring SQL error dropping table/view", "err", err, "sql", sqltext)
 				continue
 			}
-			return xerrors.Errorf("Error running DB Create statement. SQL: %s: ERROR: %w", sqltext, err)
+			database.Close()
+			return nil, xerrors.Errorf("Error running DB Create statement. SQL: %s: ERROR: %w", sqltext, err)
 		}
 	}
 
 	telemetryMgr, err := newTelemetryManager(logger, database, cfg)
 	if err != nil {
-		return xerrors.Errorf("telemetry manager initialization failed: %w", err)
+		database.Close()
+		return nil, xerrors.Errorf("telemetry manager initialization failed: %w", err)
 	}
 
 	// hint to runtime that we dont need cfg after this point. dont pass this into functions below here
@@ -133,9 +137,13 @@ func StartupTelemetryBase(logger log.Logger, cfg *viper.Viper, am3Svc eventHandl
 	telemetryMgr.Vacuum()             //nolint:errcheck
 
 	// start background thread publishing regular maintenance tasks
-	go backgroundTasks(logger, bus)
+	shutdown := make(chan struct{}) // channel to help this goroutine shut down cleanly. close to exit
+	go backgroundTasks(logger, bus, shutdown)
 
-	return nil
+	return func() { // return function that is called at shutdown to cleanly unwind things
+		close(shutdown)
+		database.Close()
+	}, nil
 }
 
 // handle all HTTP requests for our URLs here. Need to handle all telemetry related requests.

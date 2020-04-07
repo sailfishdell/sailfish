@@ -12,6 +12,7 @@ import (
 const (
 	ConfigureAM3Event = eh.EventType("ConfigureAM3Event")
 	ConfigureAM3Multi = eh.EventType("ConfigureAM3Multi")
+	ShutdownAM3       = eh.EventType("AM3Shutdown")
 )
 
 type ConfigureAM3EventData struct {
@@ -21,6 +22,10 @@ type ConfigureAM3EventData struct {
 	fn          func(eh.Event)
 }
 
+type ShutdownAM3Data struct {
+	serviceName string
+}
+
 type Service struct {
 	logger        log.Logger
 	eb            eh.EventBus
@@ -28,6 +33,7 @@ type Service struct {
 	multihandlers map[eh.EventType]map[string]func(eh.Event)
 	handledEvents map[eh.EventType]struct{}
 	serviceName   string
+	listener      *eventwaiter.MultiEventListener
 }
 
 func (s *Service) AddEventHandler(name string, et eh.EventType, fn func(eh.Event)) {
@@ -36,6 +42,10 @@ func (s *Service) AddEventHandler(name string, et eh.EventType, fn func(eh.Event
 
 func (s *Service) AddMultiHandler(name string, et eh.EventType, fn func(eh.Event)) {
 	s.eb.PublishEvent(context.Background(), eh.NewEvent(ConfigureAM3Multi, &ConfigureAM3EventData{serviceName: s.serviceName, name: name, et: et, fn: fn}, time.Now()))
+}
+
+func (s *Service) Shutdown() {
+	s.eb.PublishEvent(context.Background(), eh.NewEvent(ShutdownAM3, &ShutdownAM3Data{serviceName: s.serviceName}, time.Now()))
 }
 
 type BusObjs interface {
@@ -81,11 +91,19 @@ func StartService(ctx context.Context, logger log.Logger, name string, d BusObjs
 					}
 				},
 			},
+			ShutdownAM3: {
+				"setup": func(ev eh.Event) {
+					config := ev.Data().(*ShutdownAM3Data)
+					if config != nil && config.serviceName == ret.serviceName {
+						ret.listener.Close()
+					}
+				},
+			},
 		},
 	}
 
 	// stream processor for action events
-	listener := eventwaiter.NewMultiListener(ctx, logger, d.GetWaiter(), func(ev eh.Event) bool {
+	ret.listener = eventwaiter.NewMultiListener(ctx, logger, d.GetWaiter(), func(ev eh.Event) bool {
 		// normal case first: hash lookup to see if we process this event, should be the fastest way
 		typ := ev.EventType()
 		if _, ok := ret.handledEvents[typ]; ok {
@@ -93,7 +111,7 @@ func StartService(ctx context.Context, logger log.Logger, name string, d BusObjs
 			if typ == ConfigureAM3Event || typ == ConfigureAM3Multi {
 				dataArray, _ := ev.Data().([]eh.EventData)
 				for _, data := range dataArray {
-					if d, ok := data.(*ConfigureAM3EventData); ok {
+					if d, ok := data.(*ConfigureAM3EventData); ok && d.serviceName == ret.serviceName {
 						ret.handledEvents[d.et] = struct{}{}
 					}
 				}
@@ -103,12 +121,12 @@ func StartService(ctx context.Context, logger log.Logger, name string, d BusObjs
 		return false
 	})
 
-	listener.Name = "am3"
+	ret.listener.Name = "am3"
 
 	go func() {
-		defer listener.Close()
+		defer ret.listener.Close()
 		// ProcessEvents handles sync events .Done() for us. We don't need to care
-		listener.ProcessEvents(ctx, func(event eh.Event) {
+		ret.listener.ProcessEvents(ctx, func(event eh.Event) {
 			t := event.EventType()
 			for _, fn := range ret.eventhandlers[t] {
 				for _, eventData := range event.Data().([]eh.EventData) {
