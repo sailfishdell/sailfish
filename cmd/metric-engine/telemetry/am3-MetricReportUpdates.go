@@ -32,8 +32,8 @@ type busComponents interface {
 }
 
 type eventHandler interface {
-	AddEventHandler(string, eh.EventType, func(eh.Event))
-	AddMultiHandler(string, eh.EventType, func(eh.Event))
+	AddEventHandler(string, eh.EventType, func(eh.Event)) error
+	AddMultiHandler(string, eh.EventType, func(eh.Event)) error
 }
 
 // publishHelper will log/eat the error from PublishEvent since we can't do anything useful with it
@@ -86,7 +86,7 @@ func Startup(logger log.Logger, cfg *viper.Viper, am3Svc eventHandler, d busComp
 		return nil, xerrors.Errorf("could not open database(%s): %w", cfg.GetString("main.databasepath"))
 	}
 
-	database.SetMaxOpenConns(1)
+	database.SetMaxOpenConns(1) // see note above. WAL mode requires this
 
 	// Create tables and views from sql stored in our YAML
 	for _, sqltext := range cfg.GetStringSlice("createdb") {
@@ -108,11 +108,9 @@ func Startup(logger log.Logger, cfg *viper.Viper, am3Svc eventHandler, d busComp
 		return nil, xerrors.Errorf("telemetry manager initialization failed: %w", err)
 	}
 
-	// hint to runtime that we dont need cfg after this point. dont pass this into functions below here
-	cfg = nil
+	cfg = nil // hint to runtime that we dont need cfg after this point. dont pass this into functions below here
 
 	bus := d.GetBus()
-	// converted to command request/response
 	am3Svc.AddEventHandler("Generic GET Data", GenericGETCommandEvent, MakeHandlerGenericGET(logger, telemetryMgr, bus))
 	am3Svc.AddEventHandler("Create Metric Report Definition", AddMRDCommandEvent, MakeHandlerCreateMRD(logger, telemetryMgr, bus))
 	am3Svc.AddEventHandler("Delete Metric Report Definition", DeleteMRDCommandEvent, MakeHandlerDeleteMRD(logger, telemetryMgr, bus))
@@ -121,11 +119,8 @@ func Startup(logger log.Logger, cfg *viper.Viper, am3Svc eventHandler, d busComp
 	am3Svc.AddEventHandler("Create Metric Definition", AddMDCommandEvent, MakeHandlerCreateMD(logger, telemetryMgr, bus))
 	am3Svc.AddEventHandler("Generate Metric Report", metric.GenerateReportCommandEvent, MakeHandlerGenReport(logger, telemetryMgr, bus))
 
-	// just events for now
 	am3Svc.AddEventHandler("Clock", PublishClock, MakeHandlerClock(logger, telemetryMgr, bus))
 	am3Svc.AddEventHandler("Database Maintenance", DatabaseMaintenance, MakeHandlerMaintenance(logger, telemetryMgr, bus))
-
-	// multi handler
 	am3Svc.AddMultiHandler("Store Metric Value(s)", metric.MetricValueEvent, MakeHandlerMV(logger, telemetryMgr, bus))
 
 	// database cleanup on start

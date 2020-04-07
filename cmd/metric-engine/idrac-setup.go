@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"time"
 
@@ -40,6 +39,12 @@ func setDefaults(cfgMgr *viper.Viper) {
 	cfgMgr.SetDefault("main.mrddirectory", "/usr/share/factory/telemetryservice/mrd/")
 }
 
+// setup will startup am3 services and database connections
+//
+// We are going to initialize 2 instances of AM3 service.  This means we can
+// run concurrent message processing loops in 2 different goroutines Each
+// goroutine has exclusive access to its database, so we'll be able to
+// simultaneously do ops on each DB
 func setup(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, d busIntf) func() {
 	// register global metric events with event horizon
 	metric.RegisterEvent()
@@ -48,13 +53,7 @@ func setup(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, d busInt
 	// setup viper defaults
 	setDefaults(cfgMgr)
 
-	// We are going to initialize 2 instances of AM3 service.  This means we can
-	// run concurrent message processing loops in 2 different goroutines Each
-	// goroutine has exclusive access to its database, so we'll be able to
-	// simultaneously do ops on each DB
-
-	// Processing loop 1:
-	//  	-- "New" DB access
+	// Processing loop 1: telemetry database
 	am3SvcN2, _ := am3.StartService(ctx, log.With(logger, "module", "AM3_DB"), "database", d)
 	shutdownbase, err := telemetry.Startup(log.With(logger, "module", "sql_am3_functions"), cfgMgr, am3SvcN2, d)
 	if err != nil {
@@ -71,21 +70,20 @@ func setup(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, d busInt
 		}
 	}
 
-	// Import all MDs at start
+	// Import all MDs at start - note this has to happen here as UDB below will set defaults based on AR
 	err = importPersistentSavedRedfishData(logger, cfgMgr, d.GetBus())
 	if err != nil {
 		panic("Error loading Metric Definitions: " + err.Error())
 	}
 
-	// Processing loop 2:
-	//  	-- UDB access
+	// Processing loop 2: UDB database
 	am3SvcN3, _ := am3.StartService(ctx, log.With(logger, "module", "AM3_UDB"), "udb database", d)
 	shutdownudb, err := udb.Startup(log.With(logger, "module", "udb_am3_functions"), cfgMgr, am3SvcN3, d)
 	if err != nil {
 		panic("Error initializing UDB Import subsystem: " + err.Error())
 	}
 
-	//-- Trigger processing
+	// Trigger processing
 	err = triggers.StartupTriggerProcessing(log.With(logger, "module", "trigger_am3_functions"), cfgMgr, am3SvcN2, d)
 	if err != nil {
 		panic("Error initializing trigger processing subsystem: " + err.Error())
@@ -98,11 +96,22 @@ func setup(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, d busInt
 	}
 
 	return func() {
-		fmt.Printf("\n\nSHUTTING DOWN\n\n")
-		am3SvcN3.Shutdown()
-		am3SvcN2.Shutdown()
+		shutdown(logger, am3SvcN3, am3SvcN2)
 		shutdownudb()
 		shutdownbase()
+	}
+}
+
+type Shutdowner interface {
+	Shutdown() error
+}
+
+func shutdown(logger log.Logger, shutdownlist ...Shutdowner) {
+	for _, s := range shutdownlist {
+		err := s.Shutdown()
+		if err != nil {
+			logger.Crit("Error shutting down AM3", "err", err)
+		}
 	}
 }
 

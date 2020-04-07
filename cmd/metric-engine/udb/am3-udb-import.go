@@ -40,7 +40,7 @@ type busComponents interface {
 }
 
 type eventHandlingService interface {
-	AddEventHandler(string, eh.EventType, func(eh.Event))
+	AddEventHandler(string, eh.EventType, func(eh.Event)) error
 }
 
 /*
@@ -56,6 +56,17 @@ type eventHandlingService interface {
 		-- PRAGMA mmap_size = 0;
 */
 
+func attachDB(database *sqlx.DB, dbfile string, as string) error {
+	// attach UDB db
+	attach := "Attach '" + dbfile + "' as " + as
+	_, err := database.Exec(attach)
+	if err != nil {
+		database.Close()
+		return xerrors.Errorf("Could not attach %s database(%s). sql(%s) err: %w", as, dbfile, attach, err)
+	}
+	return nil
+}
+
 // Startup will attach event handlers to handle import UDB import
 func Startup(logger log.Logger, cfg *viper.Viper, am3Svc eventHandlingService, d busComponents) (func(), error) {
 	// setup programatic defaults. can be overridden in config file
@@ -68,38 +79,17 @@ func Startup(logger log.Logger, cfg *viper.Viper, am3Svc eventHandlingService, d
 		return nil, xerrors.Errorf("Could not create empty in-memory sqlite database: %w", err)
 	}
 
-	// attach UDB db
-	attach := "Attach '" + cfg.GetString("udb.udbdatabasepath") + "' as udbdm"
-	fmt.Println(attach)
-	_, err = database.Exec(attach)
+	err = attachDB(database, cfg.GetString("udb.udbdatabasepath"), "udbdm")
 	if err != nil {
-		database.Close()
-		return nil, xerrors.Errorf("Could not attach UDB database. sql(%s) err: %w", attach, err)
+		return nil, xerrors.Errorf("Error attaching UDB db file: %w", err)
 	}
 
-	// attach SHM db
-	attach = "Attach '" + cfg.GetString("udb.shmdatabasepath") + "' as udbsm"
-	fmt.Println(attach)
-	_, err = database.Exec(attach)
+	err = attachDB(database, cfg.GetString("udb.shmdatabasepath"), "udbsm")
 	if err != nil {
-		database.Close()
-		return nil, xerrors.Errorf("Could not attach SHM database. sql(%s) err: %w", attach, err)
+		return nil, xerrors.Errorf("Error attaching SHM db file: %w", err)
 	}
 
-	// we have a separate goroutine for this, so we should be safe to busy-wait
-	_, err = database.Exec(`
-		-- ensure nothing we do will ever modify the source
-		PRAGMA query_only = 1;
-		-- should be set in connection string, but just in case:
-		PRAGMA busy_timeout = 1000;
-		`)
-	if err != nil {
-		database.Close()
-		return nil, xerrors.Errorf("Could not set up initial UDB database parameters: %w", err)
-	}
-
-	// shouldn't need to run more than one query at a time, mostly
-	database.SetMaxOpenConns(1)
+	database.SetMaxOpenConns(1) // shouldn't need to run more than one query concurrently
 
 	importMgr, err := newImportManager(logger, database, d, cfg)
 	if err != nil {
@@ -108,12 +98,24 @@ func Startup(logger log.Logger, cfg *viper.Viper, am3Svc eventHandlingService, d
 	}
 
 	bus := d.GetBus()
-	am3Svc.AddEventHandler("Import UDB Metric Values", telemetry.PublishClock, MakeHandlerUDBPeriodicImport(logger, importMgr, bus))
-	am3Svc.AddEventHandler("UDB Change Notification", udbChangeEvent, MakeHandlerUDBChangeNotify(logger, importMgr, bus))
+	err = am3Svc.AddEventHandler("Import UDB Metric Values", telemetry.PublishClock, MakeHandlerUDBPeriodicImport(logger, importMgr, bus))
+	if err != nil {
+		return nil, xerrors.Errorf("Failed to attach event handler: %w", err)
+	}
+	err = am3Svc.AddEventHandler("UDB Change Notification", udbChangeEvent, MakeHandlerUDBChangeNotify(logger, importMgr, bus))
+	if err != nil {
+		return nil, xerrors.Errorf("Failed to attach event handler: %w", err)
+	}
 
 	// handle sync of legacy AR attributes for MRD enable/disable, etc.
-	configSync, _ := newConfigSync(logger, database, d)
-	am3Svc.AddEventHandler("UDB Cfg change Notification", udbChangeEvent, MakeHandlerLegacyAttributeSync(logger, importMgr, bus, configSync))
+	configSync, err := newConfigSync(logger, database, d)
+	if err != nil {
+		return nil, xerrors.Errorf("Failed to attach event handler: %w", err)
+	}
+	err = am3Svc.AddEventHandler("UDB Cfg change Notification", udbChangeEvent, MakeHandlerLegacyAttributeSync(logger, importMgr, bus, configSync))
+	if err != nil {
+		return nil, xerrors.Errorf("Failed to attach event handler: %w", err)
+	}
 	configSync.kickstartLegacyARConfigSync(logger, d)
 
 	go handleUDBNotifyPipe(logger, cfg.GetString("udb.udbnotifypipe"), d)
@@ -140,17 +142,17 @@ func newConfigSync(logger log.Logger, database *sqlx.DB, d busComponents) (*Conf
 
 	err := GetRowID(logger, database, "Enum", cfgS.enumEntries)
 	if err != nil {
-		logger.Crit("GetRowID Enum failed\n")
+		return nil, xerrors.Errorf("Failed to query legacy UDB AR values for Enum: %w", err)
 	}
 
 	err = GetRowID(logger, database, "Str", cfgS.strEntries)
 	if err != nil {
-		logger.Crit("GetRowID Str failed\n")
+		return nil, xerrors.Errorf("Failed to query legacy UDB AR values for Str: %w", err)
 	}
 
 	err = GetRowID(logger, database, "Int", cfgS.intEntries)
 	if err != nil {
-		logger.Crit("GetRowID Int failed\n")
+		return nil, xerrors.Errorf("Failed to query legacy UDB AR values for Int: %w", err)
 	}
 
 	fmt.Printf("Got all these ENUM configuration settings: %+v\n", cfgS.enumEntries)

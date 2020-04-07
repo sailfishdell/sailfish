@@ -47,7 +47,7 @@ type Service struct {
 }
 
 type am3Service interface {
-	AddEventHandler(name string, et eh.EventType, fn func(eh.Event))
+	AddEventHandler(name string, et eh.EventType, fn func(eh.Event)) error
 }
 
 const instantiate = eh.EventType("instantiate")
