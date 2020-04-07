@@ -30,7 +30,7 @@ const (
 	DeleteMRCommandEvent  eh.EventType = "DeleteMetricReportEvent"
 	DeleteMRResponseEvent eh.EventType = "DeleteMetricReportEventResponse"
 
-	// MD - Metric Defintiion
+	// MD - Metric Definition
 	AddMDCommandEvent  eh.EventType = "AddMetricDefinitionEvent"
 	AddMDResponseEvent eh.EventType = "AddMetricDefinitionEventResponse"
 
