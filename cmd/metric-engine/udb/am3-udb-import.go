@@ -28,7 +28,7 @@ const (
 	udbChangeEvent        eh.EventType = "UDBChangeEvent"
 	jsonEnableMRD                      = `{"MetricReportDefinitionEnabled": true}`
 	jsonDisableMRD                     = `{"MetricReportDefinitionEnabled": false}`
-	jsonReportTimespanMRD              = `{"ReportTimespan": "PT`
+	jsonReportTimespanMRD              = `{"ReportTimespan": "PT%sS"}`
 )
 
 type busComponents interface {
@@ -330,7 +330,7 @@ func MakeHandlerLegacyAttributeSync(logger log.Logger, importMgr *importManager,
 				json.Unmarshal([]byte(jsonDisableMRD), &(updateEvent.Patch))
 			}
 		case "ReportInterval":
-			json.Unmarshal([]byte(fmt.Sprintf("%s%sS\"}", jsonReportTimespanMRD, CurrentValue)), &(updateEvent.Patch))
+			json.Unmarshal([]byte(fmt.Sprintf(jsonReportTimespanMRD, CurrentValue)), &(updateEvent.Patch))
 		}
 		logger.Info("CRIT: about to send", "report", updateEvent.ReportDefinitionName, "PATCH", string(updateEvent.Patch))
 		fmt.Printf("About to send event for report %s Patch %s\n", updateEvent.ReportDefinitionName, string(updateEvent.Patch))
