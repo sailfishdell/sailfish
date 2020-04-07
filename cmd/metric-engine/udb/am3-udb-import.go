@@ -276,6 +276,9 @@ func MakeHandlerLegacyAttributeSync(logger log.Logger, importMgr *importManager,
 		case "ReportInterval":
 			sqlForCurrentValue = "select CurrentValue from TblIntAttribute where ROWID=?"
 		//case "ReportTriggers":
+		case "DevicePollFrequency":
+			// unused: info only key. no need to process.
+			return
 		default:
 			//logger.Crit("UNHANDLED TYPE OF KEY:","keys[2]",keys[2])
 			fmt.Printf("UNHANDLED TYPE OF KEY:%s\n", keys[2])
