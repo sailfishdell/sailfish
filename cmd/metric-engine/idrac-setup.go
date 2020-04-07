@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"time"
 
@@ -27,8 +28,7 @@ import (
 func init() {
 	initOptional()
 	optionalComponents = append(optionalComponents, func(logger log.Logger, cfg *viper.Viper, d busIntf) func() {
-		setup(context.Background(), logger, cfg, d)
-		return nil
+		return setup(context.Background(), logger, cfg, d)
 	})
 }
 
@@ -40,7 +40,7 @@ func setDefaults(cfgMgr *viper.Viper) {
 	cfgMgr.SetDefault("main.mrddirectory", "/usr/share/factory/telemetryservice/mrd/")
 }
 
-func setup(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, d busIntf) {
+func setup(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, d busIntf) func() {
 	// register global metric events with event horizon
 	metric.RegisterEvent()
 	telemetry.RegisterEvents()
@@ -56,7 +56,7 @@ func setup(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, d busInt
 	// Processing loop 1:
 	//  	-- "New" DB access
 	am3SvcN2, _ := am3.StartService(ctx, log.With(logger, "module", "AM3_DB"), "database", d)
-	err := telemetry.StartupTelemetryBase(log.With(logger, "module", "sql_am3_functions"), cfgMgr, am3SvcN2, d)
+	shutdownbase, err := telemetry.Startup(log.With(logger, "module", "sql_am3_functions"), cfgMgr, am3SvcN2, d)
 	if err != nil {
 		panic("Error initializing base telemetry subsystem: " + err.Error())
 	}
@@ -80,7 +80,7 @@ func setup(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, d busInt
 	// Processing loop 2:
 	//  	-- UDB access
 	am3SvcN3, _ := am3.StartService(ctx, log.With(logger, "module", "AM3_UDB"), "udb database", d)
-	err = udb.StartupUDBImport(log.With(logger, "module", "udb_am3_functions"), cfgMgr, am3SvcN3, d)
+	shutdownudb, err := udb.Startup(log.With(logger, "module", "udb_am3_functions"), cfgMgr, am3SvcN3, d)
 	if err != nil {
 		panic("Error initializing UDB Import subsystem: " + err.Error())
 	}
@@ -97,7 +97,13 @@ func setup(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, d busInt
 		panic("Error initializing watchdog handling: " + err.Error())
 	}
 
-	// if UDB event loop needs any events (none currently), then we could have a separate list and process that list here.
+	return func() {
+		fmt.Printf("\n\nSHUTTING DOWN\n\n")
+		am3SvcN3.Shutdown()
+		am3SvcN2.Shutdown()
+		shutdownudb()
+		shutdownbase()
+	}
 }
 
 // Populate all MDs at start from filesystem

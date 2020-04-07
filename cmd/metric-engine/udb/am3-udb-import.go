@@ -25,10 +25,10 @@ import (
 )
 
 const (
-	udbChangeEvent eh.EventType = "UDBChangeEvent"
-	jsonEnableMRD               = `{"MetricReportDefinitionEnabled": true}`
-	jsonDisableMRD              = `{"MetricReportDefinitionEnabled": false}`
-    jsonReportTimespanMRD       = `{"ReportTimespan": "PT`
+	udbChangeEvent        eh.EventType = "UDBChangeEvent"
+	jsonEnableMRD                      = `{"MetricReportDefinitionEnabled": true}`
+	jsonDisableMRD                     = `{"MetricReportDefinitionEnabled": false}`
+	jsonReportTimespanMRD              = `{"ReportTimespan": "PT`
 )
 
 type busComponents interface {
@@ -52,13 +52,8 @@ type eventHandlingService interface {
 		-- PRAGMA mmap_size = 0;
 */
 
-type UDBRowIdCurrentVal struct {
-	RowId             int64
-	EnableTeleRsyslog string
-}
-
-// StartupUDBImport will attach event handlers to handle import UDB import
-func StartupUDBImport(logger log.Logger, cfg *viper.Viper, am3Svc eventHandlingService, d busComponents) error {
+// Startup will attach event handlers to handle import UDB import
+func Startup(logger log.Logger, cfg *viper.Viper, am3Svc eventHandlingService, d busComponents) (func(), error) {
 	// setup programatic defaults. can be overridden in config file
 	cfg.SetDefault("udb.udbdatabasepath", "file:/run/unifieddatabase/DMLiveObjectDatabase.db?cache=shared&_foreign_keys=off&mode=ro&_busy_timeout=1000")
 	cfg.SetDefault("udb.shmdatabasepath", "file:/run/unifieddatabase/SHM.db?cache=shared&_foreign_keys=off&mode=ro&_busy_timeout=1000")
@@ -66,7 +61,7 @@ func StartupUDBImport(logger log.Logger, cfg *viper.Viper, am3Svc eventHandlingS
 
 	database, err := sqlx.Open("sqlite3", ":memory:")
 	if err != nil {
-		return xerrors.Errorf("Could not create empty in-memory sqlite database: %w", err)
+		return nil, xerrors.Errorf("Could not create empty in-memory sqlite database: %w", err)
 	}
 
 	// attach UDB db
@@ -74,7 +69,8 @@ func StartupUDBImport(logger log.Logger, cfg *viper.Viper, am3Svc eventHandlingS
 	fmt.Println(attach)
 	_, err = database.Exec(attach)
 	if err != nil {
-		return xerrors.Errorf("Could not attach UDB database. sql(%s) err: %w", attach, err)
+		database.Close()
+		return nil, xerrors.Errorf("Could not attach UDB database. sql(%s) err: %w", attach, err)
 	}
 
 	// attach SHM db
@@ -82,7 +78,8 @@ func StartupUDBImport(logger log.Logger, cfg *viper.Viper, am3Svc eventHandlingS
 	fmt.Println(attach)
 	_, err = database.Exec(attach)
 	if err != nil {
-		return xerrors.Errorf("Could not attach SHM database. sql(%s) err: %w", attach, err)
+		database.Close()
+		return nil, xerrors.Errorf("Could not attach SHM database. sql(%s) err: %w", attach, err)
 	}
 
 	// we have a separate goroutine for this, so we should be safe to busy-wait
@@ -93,7 +90,8 @@ func StartupUDBImport(logger log.Logger, cfg *viper.Viper, am3Svc eventHandlingS
 		PRAGMA busy_timeout = 1000;
 		`)
 	if err != nil {
-		return xerrors.Errorf("Could not set up initial UDB database parameters: %w", err)
+		database.Close()
+		return nil, xerrors.Errorf("Could not set up initial UDB database parameters: %w", err)
 	}
 
 	// we have only one thread doing updates, so one connection should be
@@ -103,7 +101,7 @@ func StartupUDBImport(logger log.Logger, cfg *viper.Viper, am3Svc eventHandlingS
 	importMgr, err := newImportManager(logger, database, d, cfg)
 	if err != nil {
 		database.Close()
-		return xerrors.Errorf("Error creating udb integration: %w", err)
+		return nil, xerrors.Errorf("Error creating udb integration: %w", err)
 	}
 
 	bus := d.GetBus()
@@ -123,7 +121,7 @@ func StartupUDBImport(logger log.Logger, cfg *viper.Viper, am3Svc eventHandlingS
 	// handle UDB notifications
 	go handleUDBNotifyPipe(logger, cfg.GetString("udb.udbnotifypipe"), d)
 
-	return nil
+	return func() { database.Close() }, nil
 }
 
 type ConfigSync struct {
@@ -307,16 +305,16 @@ func MakeHandlerLegacyAttributeSync(logger log.Logger, importMgr *importManager,
 		if updateEvent.ReportDefinitionName == "" {
 			updateEvent.ReportDefinitionName = "Telemetry"
 		}
-        /* @Michael: should we avoid SerialLog, CPUregister? And FCPortStatistics is a new report.
-           Global telemetry will not be an update MRD event, as not present in sqlite3  -header ./telemetry_timeseries_database.db "select * from MetricReportDefinition"
-         
-		   // temp
-		   if updateEvent.ReportDefinitionName == "FCPortStatistics" {
-		       return
-		   }
-		   if  updateEvent.ReportDefinitionName == "SerialLog" {
-		       return
-		   }
+		/* @Michael: should we avoid SerialLog, CPUregister? And FCPortStatistics is a new report.
+		           Global telemetry will not be an update MRD event, as not present in sqlite3  -header ./telemetry_timeseries_database.db "select * from MetricReportDefinition"
+
+				   // temp
+				   if updateEvent.ReportDefinitionName == "FCPortStatistics" {
+				       return
+				   }
+				   if  updateEvent.ReportDefinitionName == "SerialLog" {
+				       return
+				   }
 		*/
 		switch keys[2] {
 		case "EnableTelemetry":
@@ -329,7 +327,7 @@ func MakeHandlerLegacyAttributeSync(logger log.Logger, importMgr *importManager,
 				json.Unmarshal([]byte(jsonDisableMRD), &(updateEvent.Patch))
 			}
 		case "ReportInterval":
-			json.Unmarshal([]byte(fmt.Sprintf("%s%sS\"}",jsonReportTimespanMRD,CurrentValue)), &(updateEvent.Patch))
+			json.Unmarshal([]byte(fmt.Sprintf("%s%sS\"}", jsonReportTimespanMRD, CurrentValue)), &(updateEvent.Patch))
 		}
 		logger.Info("CRIT: about to send", "report", updateEvent.ReportDefinitionName, "PATCH", string(updateEvent.Patch))
 		fmt.Printf("About to send event for report %s Patch %s\n", updateEvent.ReportDefinitionName, string(updateEvent.Patch))
