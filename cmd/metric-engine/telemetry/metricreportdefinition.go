@@ -29,11 +29,6 @@ const (
 	maxAcceptableDrift      = 2 * time.Second
 )
 
-const (
-	httpStatusOk       = 200
-	httpStatusNotFound = 404
-)
-
 // Factory manages getting/putting into db
 type telemetryManager struct {
 	logger           log.Logger
@@ -359,7 +354,7 @@ func (factory *telemetryManager) get(cmd *GenericGETCommandData, resp *GenericGE
 	err := factory.getSQLX("generic_get").Get(&data, cmd.URI)
 	if err != nil {
 		factory.logger.Crit("ERROR getting", "err", err, "URI", cmd.URI)
-		resp.SetStatus(httpStatusNotFound)
+		resp.SetStatus(metric.HttpStatusNotFound)
 
 		// TODO: need a body with eemi error here
 		resp.dataChan <- []byte("Resource not found. (FIXME: replace with redfish compliant error text.)")
@@ -369,7 +364,7 @@ func (factory *telemetryManager) get(cmd *GenericGETCommandData, resp *GenericGE
 	// on $expand, we'd need to parse all the return data and expand @odata.id's
 	// kind of a pain in the backside
 
-	resp.SetStatus(httpStatusOk)
+	resp.SetStatus(metric.HttpStatusOk)
 	resp.dataChan <- data
 	return nil
 }
