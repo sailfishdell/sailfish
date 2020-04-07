@@ -306,7 +306,8 @@ func MakeHandlerLegacyAttributeSync(logger log.Logger, importMgr *importManager,
 		updateEvent.ReportDefinitionName = keys[1][len("Telemetry") : len(keys[1])-len(".1")]
 
 		if updateEvent.ReportDefinitionName == "" {
-			updateEvent.ReportDefinitionName = "Telemetry"
+			logger.Crit("Skipping report definition update for malformed keyname", "keyname", keys[1])
+			return
 		}
 		/* @Michael: should we avoid SerialLog, CPUregister? And FCPortStatistics is a new report.
 		           Global telemetry will not be an update MRD event, as not present in sqlite3  -header ./telemetry_timeseries_database.db "select * from MetricReportDefinition"
