@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -11,7 +12,6 @@ import (
 	"strings"
 	"time"
 
-	"encoding/json"
 	"github.com/jmoiron/sqlx"
 	eh "github.com/looplab/eventhorizon"
 	"github.com/spf13/viper"
@@ -25,10 +25,14 @@ import (
 )
 
 const (
-	udbChangeEvent        eh.EventType = "UDBChangeEvent"
-	jsonEnableMRD                      = `{"MetricReportDefinitionEnabled": true}`
-	jsonDisableMRD                     = `{"MetricReportDefinitionEnabled": false}`
-	jsonReportTimespanMRD              = `{"ReportTimespan": "PT%sS"}`
+	udbChangeEvent eh.EventType = "UDBChangeEvent"
+)
+
+// format strings for JSON for update events
+const (
+	jsonEnableMRD         = `{"MetricReportDefinitionEnabled": true}`
+	jsonDisableMRD        = `{"MetricReportDefinitionEnabled": false}`
+	jsonReportTimespanMRD = `{"ReportTimespan": "PT%sS"}`
 )
 
 type busComponents interface {
@@ -94,8 +98,7 @@ func Startup(logger log.Logger, cfg *viper.Viper, am3Svc eventHandlingService, d
 		return nil, xerrors.Errorf("Could not set up initial UDB database parameters: %w", err)
 	}
 
-	// we have only one thread doing updates, so one connection should be
-	// fine. keeps sqlite from opening new connections un-necessarily
+	// shouldn't need to run more than one query at a time, mostly
 	database.SetMaxOpenConns(1)
 
 	importMgr, err := newImportManager(logger, database, d, cfg)
@@ -105,20 +108,14 @@ func Startup(logger log.Logger, cfg *viper.Viper, am3Svc eventHandlingService, d
 	}
 
 	bus := d.GetBus()
-	// set up the event handler that will do periodic imports every ~1s.
 	am3Svc.AddEventHandler("Import UDB Metric Values", telemetry.PublishClock, MakeHandlerUDBPeriodicImport(logger, importMgr, bus))
 	am3Svc.AddEventHandler("UDB Change Notification", udbChangeEvent, MakeHandlerUDBChangeNotify(logger, importMgr, bus))
 
-	// query UDB database for defined list of legacy reports, update the telemetry enable/disable status for each report.
-	configSync, err := newConfigSync(logger, database, d)
-
-	// check if a udb change is associated with an AR entry we care about
+	// handle sync of legacy AR attributes for MRD enable/disable, etc.
+	configSync, _ := newConfigSync(logger, database, d)
 	am3Svc.AddEventHandler("UDB Cfg change Notification", udbChangeEvent, MakeHandlerLegacyAttributeSync(logger, importMgr, bus, configSync))
+	configSync.kickstartLegacyARConfigSync(logger, d)
 
-	// generate artificial change notifications to force read of existing AR enable/disable and sync to reports
-	go configSync.kickstartLegacyARConfigSync(logger, d)
-
-	// handle UDB notifications
 	go handleUDBNotifyPipe(logger, cfg.GetString("udb.udbnotifypipe"), d)
 
 	return func() { database.Close() }, nil
@@ -133,7 +130,6 @@ type ConfigSync struct {
 }
 
 func newConfigSync(logger log.Logger, database *sqlx.DB, d busComponents) (*ConfigSync, error) {
-
 	cfgS := &ConfigSync{
 		db:          database,
 		bus:         d.GetBus(),
@@ -142,19 +138,19 @@ func newConfigSync(logger log.Logger, database *sqlx.DB, d busComponents) (*Conf
 		strEntries:  map[int64]string{},
 	}
 
-	err := GetRowId(logger, database, "Enum", cfgS.enumEntries)
+	err := GetRowID(logger, database, "Enum", cfgS.enumEntries)
 	if err != nil {
-		logger.Crit("GetRowId Enum failed\n")
+		logger.Crit("GetRowID Enum failed\n")
 	}
 
-	err = GetRowId(logger, database, "Str", cfgS.strEntries)
+	err = GetRowID(logger, database, "Str", cfgS.strEntries)
 	if err != nil {
-		logger.Crit("GetRowId Str failed\n")
+		logger.Crit("GetRowID Str failed\n")
 	}
 
-	err = GetRowId(logger, database, "Int", cfgS.intEntries)
+	err = GetRowID(logger, database, "Int", cfgS.intEntries)
 	if err != nil {
-		logger.Crit("GetRowId Int failed\n")
+		logger.Crit("GetRowID Int failed\n")
 	}
 
 	fmt.Printf("Got all these ENUM configuration settings: %+v\n", cfgS.enumEntries)
@@ -164,8 +160,7 @@ func newConfigSync(logger log.Logger, database *sqlx.DB, d busComponents) (*Conf
 	return cfgS, err
 }
 
-func GetRowId(logger log.Logger, database *sqlx.DB, dataType string, Entries map[int64]string) error {
-
+func GetRowID(logger log.Logger, database *sqlx.DB, dataType string, entries map[int64]string) error {
 	var sqlForCurrentValue string
 
 	switch dataType {
@@ -196,9 +191,9 @@ func GetRowId(logger log.Logger, database *sqlx.DB, dataType string, Entries map
 			continue
 		}
 
-		Entries[RowID] = key
+		entries[RowID] = key
 	}
-	n := len(Entries)
+	n := len(entries)
 	fmt.Printf("len of map:%d for Tbl%sAttribute\n", n, dataType)
 	return err
 }
@@ -309,21 +304,29 @@ func MakeHandlerLegacyAttributeSync(logger log.Logger, importMgr *importManager,
 			logger.Crit("Skipping report definition update for malformed keyname", "keyname", keys[1])
 			return
 		}
+		err = fmt.Errorf("unknown type of Legacy Config AR: %v", keys)
 		switch keys[2] {
 		case "EnableTelemetry":
 			switch CurrentValue {
 			case "Enabled":
 				logger.Info("Enabling report:", "ReportName", updateEvent.ReportDefinitionName)
-				json.Unmarshal([]byte(jsonEnableMRD), &(updateEvent.Patch))
+				err = json.Unmarshal([]byte(jsonEnableMRD), &(updateEvent.Patch))
 			case "Disabled":
 				logger.Info("Disabling report:", "ReportName", updateEvent.ReportDefinitionName)
-				json.Unmarshal([]byte(jsonDisableMRD), &(updateEvent.Patch))
+				err = json.Unmarshal([]byte(jsonDisableMRD), &(updateEvent.Patch))
+			default:
+				logger.Crit("Got a weird value for EnableTelemetry from AR sync", "CurrentValue", CurrentValue)
 			}
 		case "ReportInterval":
-			json.Unmarshal([]byte(fmt.Sprintf(jsonReportTimespanMRD, CurrentValue)), &(updateEvent.Patch))
+			err = json.Unmarshal([]byte(fmt.Sprintf(jsonReportTimespanMRD, CurrentValue)), &(updateEvent.Patch))
+		default:
+			logger.Crit("Asked to sync legacy AR attribute that I don't know about", "keyname", keys[1], "Attribute", keys[2])
+		}
+		if err != nil {
+			logger.Crit("Legacy AR config sync error", "err", err)
+			return
 		}
 		logger.Info("CRIT: about to send", "report", updateEvent.ReportDefinitionName, "PATCH", string(updateEvent.Patch))
-		fmt.Printf("About to send event for report %s Patch %s\n", updateEvent.ReportDefinitionName, string(updateEvent.Patch))
 		publishAndWait(logger, bus, telemetry.UpdateMRDCommandEvent, updateEvent)
 	}
 }
