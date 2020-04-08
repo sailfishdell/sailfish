@@ -33,6 +33,9 @@ const (
 	jsonEnableMRD         = `{"MetricReportDefinitionEnabled": true}`
 	jsonDisableMRD        = `{"MetricReportDefinitionEnabled": false}`
 	jsonReportTimespanMRD = `{"ReportTimespan": "PT%sS"}`
+	enableTelemetry       = "EnableTelemetry"
+	reportInterval        = "ReportInterval"
+	maxPackedEvents       = 30
 )
 
 type busComponents interface {
@@ -209,7 +212,7 @@ scan:
 		case "RsyslogTarget", "ReportTriggers":
 			// will need to handle rsyslog eventually (TODO:...)
 			continue scan
-		case "EnableTelemetry", "ReportInterval":
+		case enableTelemetry, reportInterval:
 			// WE HANDLE THESE, add to map below
 		default:
 			logger.Crit("Internal error. Unhandled legacy AR key, code needs to be updated!", "keyname", keys[2])
@@ -222,6 +225,7 @@ scan:
 }
 
 func (cs ConfigSync) kickstartLegacyARConfigSync(logger log.Logger, d busComponents) {
+	events := make([]eh.EventData, 0, maxPackedEvents)
 	for _, s := range []struct {
 		table  string
 		mapref *map[int64]string
@@ -231,11 +235,16 @@ func (cs ConfigSync) kickstartLegacyARConfigSync(logger log.Logger, d busCompone
 		{"TblIntAttribute", &cs.intEntries},
 	} {
 		for rowid := range *s.mapref {
-			notify := changeNotify{Database: "DMLiveObjectDatabase.db", Table: s.table, Rowid: rowid, Operation: 0}
-			publishAndWait(logger, d.GetBus(), udbChangeEvent, &notify)
-			// something really odd, this should NOT be needed, but it hangs without it
-			time.Sleep(time.Millisecond)
+			notify := &changeNotify{Database: "DMLiveObjectDatabase.db", Table: s.table, Rowid: rowid, Operation: 0}
+			events = append(events, notify)
+			if len(events) > maxPackedEvents {
+				publishAndWait(logger, d.GetBus(), udbChangeEvent, events)
+				events = make([]eh.EventData, 0, maxPackedEvents)
+			}
 		}
+	}
+	if len(events) > 0 {
+		publishAndWait(logger, d.GetBus(), udbChangeEvent, events)
 	}
 }
 
@@ -284,9 +293,9 @@ func MakeHandlerLegacyAttributeSync(logger log.Logger, importMgr *importManager,
 		sqlForCurrentValue := ""
 		keys := strings.Split(keyname, "#")
 		switch keys[2] {
-		case "EnableTelemetry":
+		case enableTelemetry:
 			sqlForCurrentValue = "select CurrentValue from TblEnumAttribute where ROWID=?"
-		case "ReportInterval":
+		case reportInterval:
 			sqlForCurrentValue = "select CurrentValue from TblIntAttribute where ROWID=?"
 		default:
 			// basically these should all be filtered out way up above
@@ -321,7 +330,7 @@ func MakeHandlerLegacyAttributeSync(logger log.Logger, importMgr *importManager,
 		}
 		err = fmt.Errorf("unknown type of Legacy Config AR: %v", keys)
 		switch keys[2] {
-		case "EnableTelemetry":
+		case enableTelemetry:
 			switch CurrentValue {
 			case "Enabled":
 				logger.Info("Enabling report:", "ReportName", updateEvent.ReportDefinitionName)
@@ -332,7 +341,7 @@ func MakeHandlerLegacyAttributeSync(logger log.Logger, importMgr *importManager,
 			default:
 				logger.Crit("Got a weird value for EnableTelemetry from AR sync", "CurrentValue", CurrentValue)
 			}
-		case "ReportInterval":
+		case reportInterval:
 			logger.Info("Set Report RecurrenceInterval", "ReportName", updateEvent.ReportDefinitionName, "Seconds", CurrentValue)
 			err = json.Unmarshal([]byte(fmt.Sprintf(jsonReportTimespanMRD, CurrentValue)), &(updateEvent.Patch))
 		default:
