@@ -2,7 +2,6 @@ package telemetry
 
 import (
 	"context"
-	"fmt"
 	"strings"
 	"time"
 
@@ -368,7 +367,7 @@ func MakeHandlerMV(logger log.Logger, telemetryMgr *telemetryManager, bus eh.Eve
 
 				if (!telemetryMgr.MetricTSHWM.IsZero()) && (delta > maxMetricTimestampDelta || delta < -maxMetricTimestampDelta) {
 					// if you see this warning consistently, check the import to ensure it's using UTC and not localtime
-					fmt.Printf("Warning: Metric Value Event TIME OFF >1hr - (delta: %s)  Metric: %+v\n", delta, metricValue)
+					logger.Warn("Metric Value Event TIME OFF", "MaxDelta", maxMetricTimestampDelta, "delta", delta, "Event", metricValue)
 				}
 
 				if telemetryMgr.MetricTSHWM.Before(metricValue.Timestamp.Time) {

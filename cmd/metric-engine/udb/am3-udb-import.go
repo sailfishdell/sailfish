@@ -158,10 +158,6 @@ func newConfigSync(logger log.Logger, database *sqlx.DB, d busComponents) (*Conf
 		return nil, xerrors.Errorf("Failed to query legacy UDB AR values for Int: %w", err)
 	}
 
-	fmt.Printf("Got all these ENUM configuration settings: %+v\n", cfgS.enumEntries)
-	fmt.Printf("Got all these STR  configuration settings: %+v\n", cfgS.strEntries)
-	fmt.Printf("Got all these INT  configuration settings: %+v\n", cfgS.intEntries)
-
 	return cfgS, err
 }
 
@@ -199,9 +195,7 @@ scan:
 
 		keys := strings.Split(key, "#")
 		switch keys[2] {
-		case "RsyslogTarget", "ReportTriggers":
-			// will need to handle rsyslog eventually (TODO:...)
-			continue scan
+		// These are all attributes that we dont care about and will skip
 		case "FQDD", "DevicePollFrequency":
 			continue scan
 		case "RSyslogServer1", "RSyslogServer2":
@@ -211,17 +205,19 @@ scan:
 		case "RSyslogServer1Port", "RSyslogServer2Port":
 			continue scan
 
+		// these are attributes we need to sync or TODO soon need to sync
+		case "RsyslogTarget", "ReportTriggers":
+			// will need to handle rsyslog eventually (TODO:...)
+			continue scan
 		case "EnableTelemetry", "ReportInterval":
-			// WE HANDLE THESE, no-op
+			// WE HANDLE THESE, add to map below
 		default:
-			fmt.Printf("UNHANDLED TYPE OF KEY:%s\n", keys[2])
+			logger.Crit("Internal error. Unhandled legacy AR key, code needs to be updated!", "keyname", keys[2])
 			continue scan
 		}
 
 		entries[RowID] = key
 	}
-	n := len(entries)
-	fmt.Printf("len of map:%d for Tbl%sAttribute\n", n, dataType)
 	return err
 }
 
@@ -261,13 +257,12 @@ func MakeHandlerLegacyAttributeSync(logger log.Logger, importMgr *importManager,
 			return
 		}
 
-		//fmt.Printf("Receiving UDB Cfg ChangeEvent %d,Table:%s,db:%s\n",notify.Rowid,notify.Table,notify.Database)
 		// Step 1: Is this a DMLiveObjectDatabase change
 		if notify.Database != "DMLiveObjectDatabase.db" {
 			return
 		}
 
-		// Step 2: Is this a tblEnumAttribute change
+		// Step 2: Is this a tblEnumAttribute change, and does rowid match something we know about
 		keyname := ""
 		ok = false
 		switch notify.Table {
@@ -279,16 +274,14 @@ func MakeHandlerLegacyAttributeSync(logger log.Logger, importMgr *importManager,
 			keyname, ok = configSync.strEntries[notify.Rowid]
 		}
 
-		// step 3: Is this rowId the interested one,i.e Config rowid
+		// step 3: exit if it's not something we found above
 		if !ok {
 			return
 		}
 
 		// Step 4: Generate a "UpdateMRDCommandEvent" event
 		//	Ok, here first thing we need to do is do a UDB query to find the current value since UDB didn't actually send us the value
-
 		sqlForCurrentValue := ""
-
 		keys := strings.Split(keyname, "#")
 		switch keys[2] {
 		case "EnableTelemetry":
@@ -319,6 +312,7 @@ func MakeHandlerLegacyAttributeSync(logger log.Logger, importMgr *importManager,
 			return
 		}
 
+		// awkwardly pull out the name of the MRD to enable/disable
 		updateEvent.ReportDefinitionName = keys[1][len("Telemetry") : len(keys[1])-len(".1")]
 
 		if updateEvent.ReportDefinitionName == "" {
@@ -401,7 +395,6 @@ func publishAndWait(logger log.Logger, bus eh.EventBus, et eh.EventType, data eh
 
 func splitUDBNotify(data []byte, atEOF bool) (advance int, token []byte, err error) {
 	if atEOF {
-		fmt.Printf("EOF\n")
 		return 0, nil, io.EOF
 	}
 	start := bytes.Index(data, []byte("||"))
@@ -411,8 +404,6 @@ func splitUDBNotify(data []byte, atEOF bool) (advance int, token []byte, err err
 	}
 
 	if len(data) < start+1 { // not enough data, read some more
-		// this can happen in normal operations
-		//fmt.Printf("DEBUG (can happen): NEED MORE DATA len(%v), start(%v)\n", len(data), start)
 		return 0, nil, nil
 	}
 
@@ -423,8 +414,6 @@ func splitUDBNotify(data []byte, atEOF bool) (advance int, token []byte, err err
 
 	end := bytes.Index(data[start+1:], []byte("||"))
 	if end == -1 { // didnt find ending ||, read some more
-		// this can happen in normal operations
-		//fmt.Printf("DEBUG (can happen): NO ENDING ||, NEED MORE. len(%v), start(%v), end(%v): %+v\n", len(data), start, end, string(data))
 		return 0, nil, nil
 	}
 
@@ -434,7 +423,6 @@ func splitUDBNotify(data []byte, atEOF bool) (advance int, token []byte, err err
 	}
 
 	// consume everything between start and end markers
-	//fmt.Printf("CONSUME: %v - %v : %v\n", start, end, string(data[start:start+1+end+2]))
 	return start + 1 + end + 2, data[start+2 : start+1+end], nil
 }
 
