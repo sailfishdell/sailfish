@@ -297,8 +297,7 @@ func MakeHandlerLegacyAttributeSync(logger log.Logger, importMgr *importManager,
 			sqlForCurrentValue = "select CurrentValue from TblIntAttribute where ROWID=?"
 		default:
 			// basically these should all be filtered out way up above
-			//logger.Crit("UNHANDLED TYPE OF KEY:","keys[2]",keys[2])
-			fmt.Printf("BAD INPUT FILTER. UNHANDLED TYPE OF KEY:%s\n", keys[2])
+			logger.Crit("TODO: update legacy ar filter, we hit an unhandled key", "key", keys[2])
 			return
 		}
 
@@ -340,6 +339,7 @@ func MakeHandlerLegacyAttributeSync(logger log.Logger, importMgr *importManager,
 				logger.Crit("Got a weird value for EnableTelemetry from AR sync", "CurrentValue", CurrentValue)
 			}
 		case "ReportInterval":
+			logger.Info("Set Report RecurrenceInterval", "ReportName", updateEvent.ReportDefinitionName, "Seconds", CurrentValue)
 			err = json.Unmarshal([]byte(fmt.Sprintf(jsonReportTimespanMRD, CurrentValue)), &(updateEvent.Patch))
 		default:
 			logger.Crit("Asked to sync legacy AR attribute that I don't know about", "keyname", keys[1], "Attribute", keys[2])
@@ -348,7 +348,7 @@ func MakeHandlerLegacyAttributeSync(logger log.Logger, importMgr *importManager,
 			logger.Crit("Legacy AR config sync error", "err", err)
 			return
 		}
-		logger.Info("CRIT: about to send", "report", updateEvent.ReportDefinitionName, "PATCH", string(updateEvent.Patch))
+		logger.Debug("CRIT: about to send", "report", updateEvent.ReportDefinitionName, "PATCH", string(updateEvent.Patch))
 		publishAndWait(logger, bus, telemetry.UpdateMRDCommandEvent, updateEvent)
 	}
 }

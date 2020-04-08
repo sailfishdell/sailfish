@@ -139,8 +139,8 @@ func MakeHandlerReportGenerated(logger log.Logger, subscriberMap map[string]*os.
 
 		//send triggers to active subscribers
 		for k, subscriber := range subscriberMap {
-			fmt.Printf("Report due trigger to subscriber %s - %s \n", k, notify.Name)
-			_, err := fmt.Fprintf(subscriber, "|%s|", notify.Name)
+			fmt.Printf("Report due trigger to subscriber %s - %s \n", k, notify.MRName)
+			_, err := fmt.Fprintf(subscriber, "|%s|", notify.MRName)
 			if err != nil {
 				// remove subscriber on error
 				logger.Warn("Trigger notification to subscriber failed", "err", err)

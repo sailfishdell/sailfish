@@ -315,28 +315,28 @@ func MakeHandlerGenReport(logger log.Logger, telemetryMgr *telemetryManager, bus
 			return
 		}
 
-		// input event is a pointer to shared data struct, dont directly use, make a copy
-		name := report.Name
-		reportError := telemetryMgr.GenerateMetricReport(nil, name)
+		mrName, reportError := telemetryMgr.GenerateMetricReport(nil, report.MRDName)
 		if reportError != nil {
-			logger.Crit("Error generating metric report", "err", reportError, "ReportDefinition", name)
 			// dont return, because we are going to return the error to the caller
+			logger.Crit("Error generating metric report", "err", reportError, "ReportDefinition", report.MRDName)
 		}
 
 		respEvent, err := report.NewResponseEvent(reportError)
 		if err != nil {
-			logger.Crit("Error creating response event", "err", err, "ReportDefinition", name)
+			logger.Crit("Error creating response event", "err", err, "ReportDefinition", report.MRDName, "ReportName", mrName)
 			return
 		}
 
 		publishHelper(logger, bus, respEvent)
+		if reportError != nil {
+			return
+		}
 
 		// Generate the generic "Report Generated" event that things like triggers
 		// and such operate off. Only publish when there is no error generating report
-		if reportError == nil {
-			publishHelper(logger, bus, eh.NewEvent(metric.ReportGenerated, &metric.ReportGeneratedData{Name: name}, time.Now()))
-			logger.Info("Generated Report", "reportname", name, "module", "ReportGeneration")
-		}
+		logger.Info("Generated Report", "MRD-Name", report.MRDName, "MR-Name", mrName, "module", "ReportGeneration")
+		publishHelper(logger, bus,
+			eh.NewEvent(metric.ReportGenerated, &metric.ReportGeneratedData{MRDName: report.MRDName, MRName: mrName}, time.Now()))
 	}
 }
 
@@ -405,12 +405,13 @@ func MakeHandlerClock(logger log.Logger, telemetryMgr *telemetryManager, bus eh.
 		}
 		lastHWM = telemetryMgr.MetricTSHWM
 
-		// Generate any metric reports that need it
-		reportList, _ := telemetryMgr.FastCheckForNeededMRUpdates()
-		for _, report := range reportList {
-			publishHelper(logger, bus, eh.NewEvent(metric.ReportGenerated, &metric.ReportGeneratedData{Name: report}, time.Now()))
-			logger.Info("Generated Report", "reportname", report, "module", "ReportGeneration")
+		pubReport := func(mrd string, mr string) {
+			logger.Info("Generated Report", "MRD-Name", mrd, "MR-Name", mr, "module", "ReportGeneration")
+			publishHelper(logger, bus, eh.NewEvent(metric.ReportGenerated, &metric.ReportGeneratedData{MRDName: mrd, MRName: mr}, time.Now()))
 		}
+
+		// Generate any metric reports that need it
+		telemetryMgr.FastCheckForNeededMRUpdates(pubReport)
 
 		for k, _ := range dbmaint {
 			runMaintenanceCommand(logger, telemetryMgr, k)

@@ -2,6 +2,7 @@ package telemetry
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math"
 	"strconv"
@@ -232,7 +233,7 @@ const (
 // - ensure TimeSpan is set when required
 func validateMRD(mrd *MetricReportDefinition) error {
 	if mrd.Name == "" {
-		fmt.Printf("EMPTY NAME\n")
+		return errors.New("MRD requires a name")
 	}
 
 	PeriodMust := func(b bool) {
@@ -591,25 +592,22 @@ func (factory *telemetryManager) iterMRD(
 	})
 }
 
-func (factory *telemetryManager) FastCheckForNeededMRUpdates() ([]string, error) {
-	generatedList := []string{}
+func (factory *telemetryManager) FastCheckForNeededMRUpdates(reportfn func(string, string)) {
 	if drift := time.Since(factory.MetricTSHWM); drift > factory.MaxAcceptableDrift || drift < -factory.MaxAcceptableDrift {
 		// TODO: FIXME - need a strategy to deal with this before we ship
 		// here is where we could reset things... possible time change detected?
 		factory.logger.Crit("Wall clock MetricTSHWM discrepancy", "drift", drift, "now", time.Now(), "MetricTSHWM", factory.MetricTSHWM)
 	}
-	for MRName, val := range factory.NextMRTS {
+	for mrdName, val := range factory.NextMRTS {
 		if factory.MetricTSHWM.After(val) {
-			err := factory.GenerateMetricReport(nil, MRName)
+			mrName, err := factory.GenerateMetricReport(nil, mrdName)
 			if err != nil {
-				factory.logger.Info("error generating metric report", "report-name", MRName, "err", err)
+				factory.logger.Info("error generating metric report", "report-name", mrdName, "err", err)
 				continue
 			}
-			generatedList = append(generatedList, MRName)
-			factory.logger.Info("Generated Metric Report", "report-name", MRName)
+			reportfn(mrdName, mrName)
 		}
 	}
-	return generatedList, nil
 }
 
 // SyncInternalStateFromDB will clear the .NextMRTS cache and re-populate it
@@ -668,10 +666,10 @@ func (factory *telemetryManager) loadReportDefinition(tx *sqlx.Tx, mrd *MetricRe
 // nolint: funlen,gocognit    //  this is all straight line code without a lot of
 // conditionals. Splitting this up would likely impact readability so not
 // splitting this up at this time
-func (factory *telemetryManager) GenerateMetricReport(tx *sqlx.Tx, name string) (err error) {
-	return factory.wrapWithTXOrPassIn(tx, func(tx *sqlx.Tx) error {
+func (factory *telemetryManager) GenerateMetricReport(tx *sqlx.Tx, mrdName string) (mrname string, err error) {
+	err = factory.wrapWithTXOrPassIn(tx, func(tx *sqlx.Tx) error {
 		MRD := &MetricReportDefinition{
-			MetricReportDefinitionData: &MetricReportDefinitionData{Name: name},
+			MetricReportDefinitionData: &MetricReportDefinitionData{Name: mrdName},
 		}
 		err = factory.loadReportDefinition(tx, MRD)
 		if err != nil || MRD.ID == 0 {
@@ -693,8 +691,8 @@ func (factory *telemetryManager) GenerateMetricReport(tx *sqlx.Tx, name string) 
 			SQL = append(SQL, "insert_report")
 		}
 
+		mrname = MRD.Name
 		sqlargs := map[string]interface{}{
-			"Name":            MRD.Name,
 			"MRDID":           MRD.ID,
 			"ReportTimestamp": factory.MetricTSHWM.UnixNano(),
 		}
@@ -706,7 +704,7 @@ func (factory *telemetryManager) GenerateMetricReport(tx *sqlx.Tx, name string) 
 			sqlargs["Start"] = factory.MetricTSHWM.Add(-MRD.Period.Duration()).UnixNano()
 			switch MRD.Updates {
 			case metric.NewReport:
-				sqlargs["Name"] = fmt.Sprintf("%s-%s", MRD.Name, factory.MetricTSHWM.UTC().Format(time.RFC3339))
+				mrname = fmt.Sprintf("%s-%s", MRD.Name, factory.MetricTSHWM.UTC().Format(time.RFC3339))
 				SQL = []string{"insert_report", "keep_only_3_reports"}
 			case metric.Overwrite:
 				SQL = append(SQL, "update_report_set_start_to_prev_timestamp")
@@ -720,7 +718,7 @@ func (factory *telemetryManager) GenerateMetricReport(tx *sqlx.Tx, name string) 
 			sqlargs["Start"] = factory.MetricTSHWM.Add(-MRD.GetTimeSpan()).UnixNano()
 			switch MRD.Updates {
 			case metric.NewReport:
-				sqlargs["Name"] = fmt.Sprintf("%s-%s", MRD.Name, factory.MetricTSHWM.UTC().Format(time.RFC3339))
+				mrname = fmt.Sprintf("%s-%s", MRD.Name, factory.MetricTSHWM.UTC().Format(time.RFC3339))
 				SQL = []string{"insert_report", "keep_only_3_reports"}
 			case metric.Overwrite:
 				SQL = append(SQL, "update_report_start")
@@ -733,6 +731,7 @@ func (factory *telemetryManager) GenerateMetricReport(tx *sqlx.Tx, name string) 
 		default:
 		}
 
+		sqlargs["Name"] = mrname
 		for _, sql := range SQL {
 			_, err = factory.getNamedSQLXTx(tx, sql).Exec(sqlargs)
 			if err != nil {
@@ -786,6 +785,7 @@ func (factory *telemetryManager) GenerateMetricReport(tx *sqlx.Tx, name string) 
 
 		return nil
 	})
+	return mrname, err
 }
 
 func (factory *telemetryManager) CheckOnChangeReports(tx *sqlx.Tx, instancesUpdated map[int64]struct{}) error {

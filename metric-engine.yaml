@@ -2648,39 +2648,15 @@ createdb:
 #   give 'level' to filter the module output to the specified log level and higher.
 #
 logs:
-    # Log warnings and Crit to stderr (everything else to log file, below)
+    # Log warnings and Crit to stderr
     - Enabled: true
       Level: "warn"
-      PrintFile: true
-      PrintFunction: true
+      PrintFile: false
+      PrintFunction: false
+      #FileName: "debug.log"
       ModulesToEnable:
+        # ar sync can be disabled once we are more confident in it
         - name: "LegacyARSync"
           level: "info"
         - name: "ReportGeneration"
           level: "info"
-
-    # log all web server accesses
-    - Enabled: false
-      Level: "debug"
-      FileName: "debug.log"
-      PrintFile: true
-      PrintFunction: true
-
-    # (DISABLED) log stuff on a module by module basis to FILE
-    - Enabled: false
-      FileName: "/var/log/metric-engine.log"
-      Level: "debug"
-      PrintFile: true
-      PrintFunction: true
-      ModulesToEnable:
-        # all of the loggers below support a heirarchical arrangement where
-        # you can turn on debugging for all modules with (eg.)
-        # "Managers/CMC.Integrated", and you can selectively enable
-        # debugging for a single module by adding the full fqdd, eg.
-        # "Managers/CMC.Integrated.1". For the template config, we only
-        # specify the top levels
-        - name: "Managers/CMC.Integrated"
-          level: "crit"
-
-
-
