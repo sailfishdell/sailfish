@@ -112,7 +112,10 @@ func Startup(logger log.Logger, cfg *viper.Viper, am3Svc eventHandlingService, d
 	if err != nil {
 		return nil, xerrors.Errorf("Failed to attach event handler: %w", err)
 	}
-	err = am3Svc.AddEventHandler("UDB Cfg change Notification", udbChangeEvent, MakeHandlerLegacyAttributeSync(logger, importMgr, bus, configSync))
+	err = am3Svc.AddEventHandler(
+		"UDB Cfg change Notification",
+		udbChangeEvent,
+		MakeHandlerLegacyAttributeSync(log.With(logger, "module", "LegacyARSync"), importMgr, bus, configSync))
 	if err != nil {
 		return nil, xerrors.Errorf("Failed to attach event handler: %w", err)
 	}

@@ -55,7 +55,7 @@ func setup(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, d busInt
 
 	// Processing loop 1: telemetry database
 	am3SvcN2, _ := am3.StartService(ctx, log.With(logger, "module", "AM3_DB"), "database", d)
-	shutdownbase, err := telemetry.Startup(log.With(logger, "module", "sql_am3_functions"), cfgMgr, am3SvcN2, d)
+	shutdownbase, err := telemetry.Startup(log.With(logger, "module", "telemetry"), cfgMgr, am3SvcN2, d)
 	if err != nil {
 		panic("Error initializing base telemetry subsystem: " + err.Error())
 	}
@@ -78,7 +78,7 @@ func setup(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, d busInt
 
 	// Processing loop 2: UDB database
 	am3SvcN3, _ := am3.StartService(ctx, log.With(logger, "module", "AM3_UDB"), "udb database", d)
-	shutdownudb, err := udb.Startup(log.With(logger, "module", "udb_am3_functions"), cfgMgr, am3SvcN3, d)
+	shutdownudb, err := udb.Startup(log.With(logger, "module", "UDB"), cfgMgr, am3SvcN3, d)
 	if err != nil {
 		panic("Error initializing UDB Import subsystem: " + err.Error())
 	}

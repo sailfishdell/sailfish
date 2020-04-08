@@ -2653,6 +2653,11 @@ logs:
       Level: "warn"
       PrintFile: true
       PrintFunction: true
+      ModulesToEnable:
+        - name: "LegacyARSync"
+          level: "info"
+        - name: "ReportGeneration"
+          level: "info"
 
     # log all web server accesses
     - Enabled: false

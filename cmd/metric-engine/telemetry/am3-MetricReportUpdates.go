@@ -335,6 +335,7 @@ func MakeHandlerGenReport(logger log.Logger, telemetryMgr *telemetryManager, bus
 		// and such operate off. Only publish when there is no error generating report
 		if reportError == nil {
 			publishHelper(logger, bus, eh.NewEvent(metric.ReportGenerated, &metric.ReportGeneratedData{Name: name}, time.Now()))
+			logger.Info("Generated Report", "reportname", name, "module", "ReportGeneration")
 		}
 	}
 }
@@ -408,6 +409,7 @@ func MakeHandlerClock(logger log.Logger, telemetryMgr *telemetryManager, bus eh.
 		reportList, _ := telemetryMgr.FastCheckForNeededMRUpdates()
 		for _, report := range reportList {
 			publishHelper(logger, bus, eh.NewEvent(metric.ReportGenerated, &metric.ReportGeneratedData{Name: report}, time.Now()))
+			logger.Info("Generated Report", "reportname", report, "module", "ReportGeneration")
 		}
 
 		for k, _ := range dbmaint {
@@ -439,40 +441,40 @@ func runMaintenanceCommand(logger log.Logger, telemetryMgr *telemetryManager, co
 	var err error
 	switch command {
 	case optimize:
-		fmt.Printf("Running scheduled database optimization\n")
+		logger.Info("Running scheduled database optimization")
 		err = telemetryMgr.Optimize()
 		if err != nil {
 			logger.Crit("Optimize failed", "err", err)
 		}
 
 	case vacuum:
-		fmt.Printf("Running scheduled database storage recovery\n")
+		logger.Info("Running scheduled database storage recovery")
 		err = telemetryMgr.Vacuum()
 		if err != nil {
 			logger.Crit("Vacuum failed", "err", err)
 		}
 
 	case cleanValues: // keep us under database size limits
-		fmt.Printf("Running scheduled cleanup of the stored Metric Values\n")
+		logger.Info("Running scheduled cleanup of the stored Metric Values")
 		err = telemetryMgr.DeleteOldestValues()
 		if err != nil {
 			logger.Crit("DeleteOldestValues failed.", "err", err)
 		}
 
 	case deleteOrphans: // see factory comment for details.
-		fmt.Printf("Running scheduled database consistency cleanup\n")
+		logger.Info("Running scheduled database consistency cleanup")
 		err = telemetryMgr.DeleteOrphans()
 		if err != nil {
 			logger.Crit("Orphan delete failed", "err", err)
 		}
 
 	case prunemv:
-		fmt.Printf("Running scheduled cleanup of the stored Metric Values\n")
+		logger.Info("Running scheduled cleanup of the stored Metric Values")
 		err = telemetryMgr.DeleteOldestValues()
 		if err != nil {
 			logger.Crit("DeleteOldestValues failed.", "err", err)
 		}
-		fmt.Printf("Running scheduled database consistency cleanup\n")
+		logger.Info("Running scheduled database consistency cleanup")
 		err = telemetryMgr.DeleteOrphans()
 		if err != nil {
 			logger.Crit("Orphan delete failed", "err", err)
