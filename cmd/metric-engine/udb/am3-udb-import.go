@@ -185,6 +185,7 @@ func GetRowID(logger log.Logger, database *sqlx.DB, dataType string, entries map
 		logger.Crit("sql query failed for", "dataType", dataType)
 	}
 
+scan:
 	for rows.Next() {
 		var RowID int64
 		var CurrentValue string
@@ -194,6 +195,27 @@ func GetRowID(logger log.Logger, database *sqlx.DB, dataType string, entries map
 			// report errors out to caller, but safe to continue here and try the next
 			logger.Crit("error with Scan() of row from query: ", "err", err)
 			continue
+		}
+
+		keys := strings.Split(key, "#")
+		switch keys[2] {
+		case "RsyslogTarget", "ReportTriggers":
+			// will need to handle rsyslog eventually (TODO:...)
+			continue scan
+		case "FQDD", "DevicePollFrequency":
+			continue scan
+		case "RSyslogServer1", "RSyslogServer2":
+			continue scan
+		case "TelemetrySubscription1", "TelemetrySubscription2":
+			continue scan
+		case "RSyslogServer1Port", "RSyslogServer2Port":
+			continue scan
+
+		case "EnableTelemetry", "ReportInterval":
+			// WE HANDLE THESE, no-op
+		default:
+			fmt.Printf("UNHANDLED TYPE OF KEY:%s\n", keys[2])
+			continue scan
 		}
 
 		entries[RowID] = key
@@ -271,17 +293,12 @@ func MakeHandlerLegacyAttributeSync(logger log.Logger, importMgr *importManager,
 		switch keys[2] {
 		case "EnableTelemetry":
 			sqlForCurrentValue = "select CurrentValue from TblEnumAttribute where ROWID=?"
-		//case "RsyslogTarget":
-		//    sqlForCurrentValue = "select CurrentValue from TblStrAttribute where ROWID=?"
 		case "ReportInterval":
 			sqlForCurrentValue = "select CurrentValue from TblIntAttribute where ROWID=?"
-		//case "ReportTriggers":
-		case "DevicePollFrequency":
-			// unused: info only key. no need to process.
-			return
 		default:
+			// basically these should all be filtered out way up above
 			//logger.Crit("UNHANDLED TYPE OF KEY:","keys[2]",keys[2])
-			fmt.Printf("UNHANDLED TYPE OF KEY:%s\n", keys[2])
+			fmt.Printf("BAD INPUT FILTER. UNHANDLED TYPE OF KEY:%s\n", keys[2])
 			return
 		}
 
