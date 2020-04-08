@@ -111,10 +111,10 @@ func Startup(logger log.Logger, cfg *viper.Viper, am3Svc eventHandler, d busComp
 
 	// schedule database cleanup on first clock tick
 	dbmaint := map[string]struct{}{
-		deleteOrphans: struct{}{},
-		optimize:      struct{}{},
-		vacuum:        struct{}{},
-		cleanValues:   struct{}{},
+		deleteOrphans: {},
+		optimize:      {},
+		vacuum:        {},
+		cleanValues:   {},
 	}
 	bus := d.GetBus()
 	am3Svc.AddEventHandler("Generic GET Data", GenericGETCommandEvent, MakeHandlerGenericGET(logger, telemetryMgr, bus))
@@ -412,7 +412,7 @@ func MakeHandlerClock(logger log.Logger, telemetryMgr *telemetryManager, bus eh.
 		// Generate any metric reports that need it
 		telemetryMgr.FastCheckForNeededMRUpdates(pubReport)
 
-		for k, _ := range dbmaint {
+		for k := range dbmaint {
 			runMaintenanceCommand(logger, telemetryMgr, k)
 			delete(dbmaint, k)
 		}
