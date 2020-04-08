@@ -26,7 +26,7 @@ const (
 	appendLimit             = 24000
 	smallestReportInterval  = 5 * time.Second
 	maxMetricExpandInterval = 1 * time.Hour
-	maxAcceptableDrift      = 2 * time.Second
+	maxAcceptableDrift      = 10 * time.Second
 )
 
 // Factory manages getting/putting into db
