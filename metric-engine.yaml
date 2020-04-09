@@ -1832,10 +1832,41 @@ internal:
       )
 
     find_mrd_by_id: |
-      SELECT ID, Name,  Enabled, AppendLimit, Type, SuppressDups, Actions, Updates, Period, TimeSpan FROM MetricReportDefinition where ID=?
+      SELECT
+        ID,
+        Name,
+        ShortDesc,
+        LongDesc,
+        Enabled,
+        AppendLimit,
+        Type,
+        SuppressDups,
+        Actions,
+        Updates,
+        Period,
+        TimeSpan,
+        HeartbeatInterval,
+        Hidden
+      FROM MetricReportDefinition where ID=?
+
 
     find_mrd_by_name: |
-      SELECT ID, Name,  Enabled, AppendLimit, Type, SuppressDups, Actions, Updates, Period, TimeSpan FROM MetricReportDefinition where Name=?
+      SELECT
+        ID,
+        Name,
+        ShortDesc,
+        LongDesc,
+        Enabled,
+        AppendLimit,
+        Type,
+        SuppressDups,
+        Actions,
+        Updates,
+        Period,
+        TimeSpan,
+        HeartbeatInterval,
+        Hidden
+      FROM MetricReportDefinition where Name=?
 
     insert_mv_int:  INSERT INTO MetricValueInt  (InstanceID, Timestamp, Value) VALUES (?, ?, ?)
     insert_mv_real: INSERT INTO MetricValueReal (InstanceID, Timestamp, Value) VALUES (?, ?, ?)
