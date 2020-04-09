@@ -2,7 +2,6 @@ package telemetry
 
 import (
 	"context"
-	"fmt"
 	"strings"
 	"time"
 
@@ -32,8 +31,8 @@ type busComponents interface {
 }
 
 type eventHandler interface {
-	AddEventHandler(string, eh.EventType, func(eh.Event))
-	AddMultiHandler(string, eh.EventType, func(eh.Event))
+	AddEventHandler(string, eh.EventType, func(eh.Event)) error
+	AddMultiHandler(string, eh.EventType, func(eh.Event)) error
 }
 
 // publishHelper will log/eat the error from PublishEvent since we can't do anything useful with it
@@ -86,7 +85,7 @@ func Startup(logger log.Logger, cfg *viper.Viper, am3Svc eventHandler, d busComp
 		return nil, xerrors.Errorf("could not open database(%s): %w", cfg.GetString("main.databasepath"))
 	}
 
-	database.SetMaxOpenConns(1)
+	database.SetMaxOpenConns(1) // see note above. WAL mode requires this
 
 	// Create tables and views from sql stored in our YAML
 	for _, sqltext := range cfg.GetStringSlice("createdb") {
@@ -108,31 +107,27 @@ func Startup(logger log.Logger, cfg *viper.Viper, am3Svc eventHandler, d busComp
 		return nil, xerrors.Errorf("telemetry manager initialization failed: %w", err)
 	}
 
-	// hint to runtime that we dont need cfg after this point. dont pass this into functions below here
-	cfg = nil
+	cfg = nil // hint to runtime that we dont need cfg after this point. dont pass this into functions below here
 
+	// schedule database cleanup on first clock tick
+	dbmaint := map[string]struct{}{
+		deleteOrphans: {},
+		optimize:      {},
+		vacuum:        {},
+		cleanValues:   {},
+	}
 	bus := d.GetBus()
-	// converted to command request/response
 	am3Svc.AddEventHandler("Generic GET Data", GenericGETCommandEvent, MakeHandlerGenericGET(logger, telemetryMgr, bus))
-	am3Svc.AddEventHandler("Create Metric Report Definition", AddMRDCommandEvent, MakeHandlerCreateMRD(logger, telemetryMgr, bus))
+	am3Svc.AddEventHandler("Create Metric Report Definition", AddMRDCommandEvent, MakeHandlerCreateMRD(logger, telemetryMgr, bus, dbmaint))
 	am3Svc.AddEventHandler("Delete Metric Report Definition", DeleteMRDCommandEvent, MakeHandlerDeleteMRD(logger, telemetryMgr, bus))
 	am3Svc.AddEventHandler("Delete Metric Report", DeleteMRCommandEvent, MakeHandlerDeleteMR(logger, telemetryMgr, bus))
-	am3Svc.AddEventHandler("Update Metric Report Definition", UpdateMRDCommandEvent, MakeHandlerUpdateMRD(logger, telemetryMgr, bus))
+	am3Svc.AddEventHandler("Update Metric Report Definition", UpdateMRDCommandEvent, MakeHandlerUpdateMRD(logger, telemetryMgr, bus, dbmaint))
 	am3Svc.AddEventHandler("Create Metric Definition", AddMDCommandEvent, MakeHandlerCreateMD(logger, telemetryMgr, bus))
 	am3Svc.AddEventHandler("Generate Metric Report", metric.GenerateReportCommandEvent, MakeHandlerGenReport(logger, telemetryMgr, bus))
 
-	// just events for now
-	am3Svc.AddEventHandler("Clock", PublishClock, MakeHandlerClock(logger, telemetryMgr, bus))
-	am3Svc.AddEventHandler("Database Maintenance", DatabaseMaintenance, MakeHandlerMaintenance(logger, telemetryMgr, bus))
-
-	// multi handler
+	am3Svc.AddEventHandler("Clock", PublishClock, MakeHandlerClock(logger, telemetryMgr, bus, dbmaint))
+	am3Svc.AddEventHandler("Database Maintenance", DatabaseMaintenance, MakeHandlerMaintenance(logger, telemetryMgr, bus, dbmaint))
 	am3Svc.AddMultiHandler("Store Metric Value(s)", metric.MetricValueEvent, MakeHandlerMV(logger, telemetryMgr, bus))
-
-	// database cleanup on start
-	telemetryMgr.DeleteOrphans()      //nolint:errcheck
-	telemetryMgr.DeleteOldestValues() //nolint:errcheck
-	telemetryMgr.Optimize()           //nolint:errcheck
-	telemetryMgr.Vacuum()             //nolint:errcheck
 
 	// start background thread publishing regular maintenance tasks
 	shutdown := make(chan struct{}) // channel to help this goroutine shut down cleanly. close to exit
@@ -173,7 +168,7 @@ func MakeHandlerGenericGET(logger log.Logger, telemetryMgr *telemetryManager, bu
 	}
 }
 
-func MakeHandlerCreateMRD(logger log.Logger, telemetryMgr *telemetryManager, bus eh.EventBus) func(eh.Event) {
+func MakeHandlerCreateMRD(logger log.Logger, telemetryMgr *telemetryManager, bus eh.EventBus, dbmaint map[string]struct{}) func(eh.Event) {
 	return func(event eh.Event) {
 		reportDef, ok := event.Data().(*AddMRDCommandData)
 		if !ok {
@@ -181,18 +176,14 @@ func MakeHandlerCreateMRD(logger log.Logger, telemetryMgr *telemetryManager, bus
 			return
 		}
 
+		// schedule cleanup next clock tick
+		dbmaint[deleteOrphans] = struct{}{}
+
 		// Can't write to event sent in, so make a local copy
 		localReportDefCopy := *reportDef
 		addError := telemetryMgr.addMRD(&localReportDefCopy.MetricReportDefinitionData)
 		if addError != nil {
 			logger.Crit("Failed to create or update the Report Definition", "Name", reportDef.Name, "err", addError)
-		}
-
-		// After we've done the adjustments to ReportDefinitionToMetricMeta, there
-		// might be orphan rows. Errors there dont need to be reported back as part of the command response
-		err := telemetryMgr.DeleteOrphans()
-		if err != nil {
-			logger.Crit("Orphan delete failed", "err", err)
 		}
 
 		// Generate a "response" event that carries status back to initiator
@@ -207,7 +198,7 @@ func MakeHandlerCreateMRD(logger log.Logger, telemetryMgr *telemetryManager, bus
 	}
 }
 
-func MakeHandlerUpdateMRD(logger log.Logger, telemetryMgr *telemetryManager, bus eh.EventBus) func(eh.Event) {
+func MakeHandlerUpdateMRD(logger log.Logger, telemetryMgr *telemetryManager, bus eh.EventBus, dbmaint map[string]struct{}) func(eh.Event) {
 	return func(event eh.Event) {
 		update, ok := event.Data().(*UpdateMRDCommandData)
 		if !ok {
@@ -222,12 +213,8 @@ func MakeHandlerUpdateMRD(logger log.Logger, telemetryMgr *telemetryManager, bus
 			return
 		}
 
-		// After we've done the adjustments to ReportDefinitionToMetricMeta, there
-		// might be orphan rows.
-		err := telemetryMgr.DeleteOrphans()
-		if err != nil {
-			logger.Crit("Orphan delete failed", "err", err)
-		}
+		// After we've done the adjustments to ReportDefinitionToMetricMeta, there might be orphan rows. schedule maintenance
+		dbmaint[deleteOrphans] = struct{}{}
 
 		// Generate a "response" event that carries status back to initiator
 		respEvent, err := update.NewResponseEvent(updError)
@@ -327,27 +314,28 @@ func MakeHandlerGenReport(logger log.Logger, telemetryMgr *telemetryManager, bus
 			return
 		}
 
-		// input event is a pointer to shared data struct, dont directly use, make a copy
-		name := report.Name
-		reportError := telemetryMgr.GenerateMetricReport(nil, name)
+		mrName, reportError := telemetryMgr.GenerateMetricReport(nil, report.MRDName)
 		if reportError != nil {
-			logger.Crit("Error generating metric report", "err", reportError, "ReportDefinition", name)
 			// dont return, because we are going to return the error to the caller
+			logger.Crit("Error generating metric report", "err", reportError, "ReportDefinition", report.MRDName)
 		}
 
 		respEvent, err := report.NewResponseEvent(reportError)
 		if err != nil {
-			logger.Crit("Error creating response event", "err", err, "ReportDefinition", name)
+			logger.Crit("Error creating response event", "err", err, "ReportDefinition", report.MRDName, "ReportName", mrName)
 			return
 		}
 
 		publishHelper(logger, bus, respEvent)
+		if reportError != nil {
+			return
+		}
 
 		// Generate the generic "Report Generated" event that things like triggers
 		// and such operate off. Only publish when there is no error generating report
-		if reportError == nil {
-			publishHelper(logger, bus, eh.NewEvent(metric.ReportGenerated, &metric.ReportGeneratedData{Name: name}, time.Now()))
-		}
+		logger.Info("Generated Report", "MRD-Name", report.MRDName, "MR-Name", mrName, "module", "ReportGeneration")
+		publishHelper(logger, bus,
+			eh.NewEvent(metric.ReportGenerated, &metric.ReportGeneratedData{MRDName: report.MRDName, MRName: mrName}, time.Now()))
 	}
 }
 
@@ -379,7 +367,7 @@ func MakeHandlerMV(logger log.Logger, telemetryMgr *telemetryManager, bus eh.Eve
 
 				if (!telemetryMgr.MetricTSHWM.IsZero()) && (delta > maxMetricTimestampDelta || delta < -maxMetricTimestampDelta) {
 					// if you see this warning consistently, check the import to ensure it's using UTC and not localtime
-					fmt.Printf("Warning: Metric Value Event TIME OFF >1hr - (delta: %s)  Metric: %+v\n", delta, metricValue)
+					logger.Warn("Metric Value Event TIME OFF", "MaxDelta", maxMetricTimestampDelta, "delta", delta, "Event", metricValue)
 				}
 
 				if telemetryMgr.MetricTSHWM.Before(metricValue.Timestamp.Time) {
@@ -400,7 +388,7 @@ func MakeHandlerMV(logger log.Logger, telemetryMgr *telemetryManager, bus eh.Eve
 	}
 }
 
-func MakeHandlerClock(logger log.Logger, telemetryMgr *telemetryManager, bus eh.EventBus) func(eh.Event) {
+func MakeHandlerClock(logger log.Logger, telemetryMgr *telemetryManager, bus eh.EventBus, dbmaint map[string]struct{}) func(eh.Event) {
 	// close over lastHWM
 	lastHWM := time.Time{}
 	return func(event eh.Event) {
@@ -416,65 +404,83 @@ func MakeHandlerClock(logger log.Logger, telemetryMgr *telemetryManager, bus eh.
 		}
 		lastHWM = telemetryMgr.MetricTSHWM
 
+		pubReport := func(mrd string, mr string) {
+			logger.Info("Generated Report", "MRD-Name", mrd, "MR-Name", mr, "module", "ReportGeneration")
+			publishHelper(logger, bus, eh.NewEvent(metric.ReportGenerated, &metric.ReportGeneratedData{MRDName: mrd, MRName: mr}, time.Now()))
+		}
+
 		// Generate any metric reports that need it
-		reportList, _ := telemetryMgr.FastCheckForNeededMRUpdates()
-		for _, report := range reportList {
-			publishHelper(logger, bus, eh.NewEvent(metric.ReportGenerated, &metric.ReportGeneratedData{Name: report}, time.Now()))
+		telemetryMgr.FastCheckForNeededMRUpdates(pubReport)
+
+		for k := range dbmaint {
+			runMaintenanceCommand(logger, telemetryMgr, k)
+			delete(dbmaint, k)
 		}
 	}
 }
 
-func MakeHandlerMaintenance(logger log.Logger, telemetryMgr *telemetryManager, bus eh.EventBus) func(eh.Event) {
+func MakeHandlerMaintenance(logger log.Logger, telemetryMgr *telemetryManager, _ eh.EventBus, dbmaint map[string]struct{}) func(eh.Event) {
 	return func(event eh.Event) {
 		command, ok := event.Data().(string)
 		if !ok {
 			return
 		}
-		var err error
+		dbmaint[command] = struct{}{}
+	}
+}
 
-		switch command {
-		case "optimize":
-			fmt.Printf("Running scheduled database optimization\n")
-			err = telemetryMgr.Optimize()
-			if err != nil {
-				logger.Crit("Optimize failed", "err", err)
-			}
+const (
+	optimize      = "optimize"
+	vacuum        = "vacuum"
+	cleanValues   = "clean values"
+	deleteOrphans = "delete orphans"
+	prunemv       = "prune unused metric values"
+)
 
-		case "vacuum":
-			fmt.Printf("Running scheduled database storage recovery\n")
-			err = telemetryMgr.Vacuum()
-			if err != nil {
-				logger.Crit("Vacuum failed", "err", err)
-			}
-
-		case "clean values": // keep us under database size limits
-			fmt.Printf("Running scheduled cleanup of the stored Metric Values\n")
-			err = telemetryMgr.DeleteOldestValues()
-			if err != nil {
-				logger.Crit("DeleteOldestValues failed.", "err", err)
-			}
-
-		case "delete orphans": // see factory comment for details.
-			fmt.Printf("Running scheduled database consistency cleanup\n")
-			err = telemetryMgr.DeleteOrphans()
-			if err != nil {
-				logger.Crit("Orphan delete failed", "err", err)
-			}
-
-		case "prune unused metric values":
-			fmt.Printf("Running scheduled cleanup of the stored Metric Values\n")
-			err = telemetryMgr.DeleteOldestValues()
-			if err != nil {
-				logger.Crit("DeleteOldestValues failed.", "err", err)
-			}
-			fmt.Printf("Running scheduled database consistency cleanup\n")
-			err = telemetryMgr.DeleteOrphans()
-			if err != nil {
-				logger.Crit("Orphan delete failed", "err", err)
-			}
-
-		default:
-			logger.Warn("Unknown database maintenance command string received", "command", command)
+func runMaintenanceCommand(logger log.Logger, telemetryMgr *telemetryManager, command string) {
+	var err error
+	switch command {
+	case optimize:
+		logger.Info("Running scheduled database optimization")
+		err = telemetryMgr.Optimize()
+		if err != nil {
+			logger.Crit("Optimize failed", "err", err)
 		}
+
+	case vacuum:
+		logger.Info("Running scheduled database storage recovery")
+		err = telemetryMgr.Vacuum()
+		if err != nil {
+			logger.Crit("Vacuum failed", "err", err)
+		}
+
+	case cleanValues: // keep us under database size limits
+		logger.Info("Running scheduled cleanup of the stored Metric Values")
+		err = telemetryMgr.DeleteOldestValues()
+		if err != nil {
+			logger.Crit("DeleteOldestValues failed.", "err", err)
+		}
+
+	case deleteOrphans: // see factory comment for details.
+		logger.Info("Running scheduled database consistency cleanup")
+		err = telemetryMgr.DeleteOrphans()
+		if err != nil {
+			logger.Crit("Orphan delete failed", "err", err)
+		}
+
+	case prunemv:
+		logger.Info("Running scheduled cleanup of the stored Metric Values")
+		err = telemetryMgr.DeleteOldestValues()
+		if err != nil {
+			logger.Crit("DeleteOldestValues failed.", "err", err)
+		}
+		logger.Info("Running scheduled database consistency cleanup")
+		err = telemetryMgr.DeleteOrphans()
+		if err != nil {
+			logger.Crit("Orphan delete failed", "err", err)
+		}
+
+	default:
+		logger.Warn("Unknown database maintenance command string received", "command", command)
 	}
 }

@@ -1,7 +1,6 @@
 package udb
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/jmoiron/sqlx"
@@ -48,11 +47,11 @@ func newImportManager(logger log.Logger, database *sqlx.DB, d busComponents, cfg
 	}
 
 	for k, settings := range subcfg.AllSettings() {
-		fmt.Printf("Loading config for %s\n", k)
+		logger.Info("Loading Import Config", "section", k)
 		// if this panics, the config is messed up. Not going to protect against malformed config here.
 		fn, ok := createFns[settings.(map[string]interface{})["type"].(string)]
 		if !ok {
-			fmt.Printf("Could not find type in the function map- %s\n", settings.(map[string]interface{})["type"].(string))
+			logger.Warn("Import function type not found", "type", settings.(map[string]interface{})["type"].(string))
 			continue
 		}
 		meta, err := fn(logger, database, d, subcfg.Sub(k), k)

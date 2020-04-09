@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	"golang.org/x/xerrors"
+
 	eh "github.com/looplab/eventhorizon"
 	"github.com/superchalupa/sailfish/src/log"
 	"github.com/superchalupa/sailfish/src/looplab/eventwaiter"
@@ -36,21 +38,89 @@ type Service struct {
 	listener      *eventwaiter.MultiEventListener
 }
 
-func (s *Service) AddEventHandler(name string, et eh.EventType, fn func(eh.Event)) {
-	s.eb.PublishEvent(context.Background(), eh.NewEvent(ConfigureAM3Event, &ConfigureAM3EventData{serviceName: s.serviceName, name: name, et: et, fn: fn}, time.Now()))
+func (s *Service) AddEventHandler(name string, et eh.EventType, fn func(eh.Event)) error {
+	err := s.eb.PublishEvent(
+		context.Background(),
+		eh.NewEvent(ConfigureAM3Event, &ConfigureAM3EventData{serviceName: s.serviceName, name: name, et: et, fn: fn}, time.Now()))
+	if err != nil {
+		return xerrors.Errorf("Error publishing event to add handler(%s) to AM3(%s): %w", name, s.serviceName, err)
+	}
+	return nil
 }
 
-func (s *Service) AddMultiHandler(name string, et eh.EventType, fn func(eh.Event)) {
-	s.eb.PublishEvent(context.Background(), eh.NewEvent(ConfigureAM3Multi, &ConfigureAM3EventData{serviceName: s.serviceName, name: name, et: et, fn: fn}, time.Now()))
+func (s *Service) AddMultiHandler(name string, et eh.EventType, fn func(eh.Event)) error {
+	err := s.eb.PublishEvent(
+		context.Background(),
+		eh.NewEvent(ConfigureAM3Multi, &ConfigureAM3EventData{serviceName: s.serviceName, name: name, et: et, fn: fn}, time.Now()))
+	if err != nil {
+		return xerrors.Errorf("Error publishing event to add handler(%s) to AM3(%s): %w", name, s.serviceName, err)
+	}
+	return nil
 }
 
-func (s *Service) Shutdown() {
-	s.eb.PublishEvent(context.Background(), eh.NewEvent(ShutdownAM3, &ShutdownAM3Data{serviceName: s.serviceName}, time.Now()))
+func (s *Service) Shutdown() error {
+	err := s.eb.PublishEvent(context.Background(), eh.NewEvent(ShutdownAM3, &ShutdownAM3Data{serviceName: s.serviceName}, time.Now()))
+	if err != nil {
+		return xerrors.Errorf("Error publishing event to shut down AM3(%s): %w", s.serviceName, err)
+	}
+	return nil
 }
 
 type BusObjs interface {
 	GetBus() eh.EventBus
 	GetWaiter() *eventwaiter.EventWaiter
+}
+
+func (s *Service) inlineAddHandler(config *ConfigureAM3EventData) {
+	if config != nil && config.serviceName == s.serviceName {
+		h, ok := s.eventhandlers[config.et]
+		if !ok {
+			h = map[string]func(eh.Event){}
+		}
+		h[config.name] = config.fn
+		s.eventhandlers[config.et] = h
+	}
+}
+func (s *Service) inlineAddMultiHandler(config *ConfigureAM3EventData) {
+	if config != nil && config.serviceName == s.serviceName {
+		h, ok := s.multihandlers[config.et]
+		if !ok {
+			h = map[string]func(eh.Event){}
+		}
+		h[config.name] = config.fn
+		s.multihandlers[config.et] = h
+	}
+}
+
+func (s *Service) inlineProcessEvent(event eh.Event) {
+	t := event.EventType()
+	for _, fn := range s.eventhandlers[t] {
+		for _, eventData := range event.Data().([]eh.EventData) {
+			fn(eh.NewEvent(t, eventData, event.Timestamp()))
+		}
+	}
+
+	for _, fn := range s.multihandlers[t] {
+		fn(event)
+	}
+}
+
+func (s *Service) inlineCheckEvent(ev eh.Event) bool {
+	// normal case first: hash lookup to see if we process this event, should be the fastest way
+	typ := ev.EventType()
+	if _, ok := s.handledEvents[typ]; ok {
+		// self configure... no locks! yay!
+		if typ == ConfigureAM3Event || typ == ConfigureAM3Multi {
+			dataArray, _ := ev.Data().([]eh.EventData)
+			for _, data := range dataArray {
+				if d, ok := data.(*ConfigureAM3EventData); ok && d.serviceName == s.serviceName {
+					s.handledEvents[d.et] = struct{}{}
+				}
+			}
+		}
+		return true
+	}
+	return false
 }
 
 func StartService(ctx context.Context, logger log.Logger, name string, d BusObjs) (*Service, error) {
@@ -67,34 +137,20 @@ func StartService(ctx context.Context, logger log.Logger, name string, d BusObjs
 				// things.  No need for locks as everything is guaranteed to be
 				// single-threaded and not concurrently running
 				"setup": func(ev eh.Event) {
-					config := ev.Data().(*ConfigureAM3EventData)
-					if config != nil && config.serviceName == ret.serviceName {
-						h, ok := ret.eventhandlers[config.et]
-						if !ok {
-							h = map[string]func(eh.Event){}
-						}
-						h[config.name] = config.fn
-						ret.eventhandlers[config.et] = h
-					}
+					config, _ := ev.Data().(*ConfigureAM3EventData) // non-panic()-ing type assert, check nil later
+					ret.inlineAddHandler(config)
 				},
 			},
 			ConfigureAM3Multi: {
 				"setup": func(ev eh.Event) {
-					config := ev.Data().(*ConfigureAM3EventData)
-					if config != nil && config.serviceName == ret.serviceName {
-						h, ok := ret.multihandlers[config.et]
-						if !ok {
-							h = map[string]func(eh.Event){}
-						}
-						h[config.name] = config.fn
-						ret.multihandlers[config.et] = h
-					}
+					config, _ := ev.Data().(*ConfigureAM3EventData) // non-panic()-ing type assert, check nil later
+					ret.inlineAddMultiHandler(config)
 				},
 			},
 			ShutdownAM3: {
 				"setup": func(ev eh.Event) {
-					config := ev.Data().(*ShutdownAM3Data)
-					if config != nil && config.serviceName == ret.serviceName {
+					config, ok := ev.Data().(*ShutdownAM3Data)
+					if ok && config != nil && config.serviceName == ret.serviceName {
 						ret.listener.Close()
 					}
 				},
@@ -103,41 +159,15 @@ func StartService(ctx context.Context, logger log.Logger, name string, d BusObjs
 	}
 
 	// stream processor for action events
-	ret.listener = eventwaiter.NewMultiListener(ctx, logger, d.GetWaiter(), func(ev eh.Event) bool {
-		// normal case first: hash lookup to see if we process this event, should be the fastest way
-		typ := ev.EventType()
-		if _, ok := ret.handledEvents[typ]; ok {
-			// self configure... no locks! yay!
-			if typ == ConfigureAM3Event || typ == ConfigureAM3Multi {
-				dataArray, _ := ev.Data().([]eh.EventData)
-				for _, data := range dataArray {
-					if d, ok := data.(*ConfigureAM3EventData); ok && d.serviceName == ret.serviceName {
-						ret.handledEvents[d.et] = struct{}{}
-					}
-				}
-			}
-			return true
-		}
-		return false
-	})
-
+	ret.listener = eventwaiter.NewMultiListener(ctx, logger, d.GetWaiter(), ret.inlineCheckEvent)
 	ret.listener.Name = "am3"
 
 	go func() {
 		defer ret.listener.Close()
-		// ProcessEvents handles sync events .Done() for us. We don't need to care
-		ret.listener.ProcessEvents(ctx, func(event eh.Event) {
-			t := event.EventType()
-			for _, fn := range ret.eventhandlers[t] {
-				for _, eventData := range event.Data().([]eh.EventData) {
-					fn(eh.NewEvent(t, eventData, event.Timestamp()))
-				}
-			}
-
-			for _, fn := range ret.multihandlers[t] {
-				fn(event)
-			}
-		})
+		err := ret.listener.ProcessEvents(ctx, ret.inlineProcessEvent)
+		if err != nil {
+			logger.Crit("ProcessEvents for AM3 returned an error", "name", ret.serviceName, "err", err)
+		}
 	}()
 
 	return ret, nil

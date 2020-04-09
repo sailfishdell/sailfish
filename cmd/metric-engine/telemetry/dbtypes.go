@@ -76,11 +76,9 @@ func (m *RedfishDuration) UnmarshalJSON(data []byte) error {
 	for _, cnv := range conversions {
 		if len(matched[0][cnv.idx]) > 0 {
 			timeunits, _ := strconv.Atoi(string(matched[0][cnv.idx]))
-			// fmt.Printf("Adding %v * %v\n", timeunits, cnv.multiplier)
 			*m += (RedfishDuration)(time.Duration(timeunits) * cnv.multiplier)
 		}
 	}
-	//fmt.Printf("MATCH: %q\nDURATION: %v\n\n", matched, (time.Duration)(*m))
 	return nil
 }
 

@@ -45,8 +45,8 @@ func InitializeApplicationLogging(logCfgFile string) (logger *MyLogger) {
 	}
 
 	// set search paths for configs
-	logCfg.AddConfigPath("/etc/")
 	logCfg.AddConfigPath(".")
+	logCfg.AddConfigPath("/etc/")
 
 	if err := logCfg.ReadInConfig(); err == nil {
 		fmt.Println("log15adapter: Using config file:", logCfg.ConfigFileUsed())
@@ -138,7 +138,7 @@ func (l *MyLogger) SetupLogHandlersFromConfig(logCfg *viper.Viper) {
 				l.Warn("Nonexistent name for config", "m", m)
 				continue
 			}
-			handler := log.MatchFilterHandler("module", name, wrappedOut)
+			handler := MatchFilterHandler("module", name, wrappedOut)
 
 			level, ok := m["level"]
 			if ok {
@@ -202,4 +202,30 @@ func (o *orhandler) ORHandler(in ...log.Handler) log.Handler {
 		}
 		return nil
 	})
+}
+
+type Record = log.Record
+type Handler = log.Handler
+
+// search through all the keys for a match
+func MatchFilterHandler(key string, value interface{}, h Handler) Handler {
+	return log.FilterHandler(func(r *Record) (pass bool) {
+		switch key {
+		case r.KeyNames.Lvl:
+			return r.Lvl == value
+		case r.KeyNames.Time:
+			return r.Time == value
+		case r.KeyNames.Msg:
+			return r.Msg == value
+		}
+
+		for i := 0; i < len(r.Ctx); i += 2 {
+			if r.Ctx[i] == key {
+				if r.Ctx[i+1] == value {
+					return true
+				}
+			}
+		}
+		return false
+	}, h)
 }

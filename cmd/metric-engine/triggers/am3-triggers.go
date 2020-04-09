@@ -32,7 +32,7 @@ type busComponents interface {
 }
 
 type eventHandlingService interface {
-	AddEventHandler(string, eh.EventType, func(eh.Event))
+	AddEventHandler(string, eh.EventType, func(eh.Event)) error
 }
 
 type SubscriberMap map[string]*os.File
@@ -54,7 +54,10 @@ func StartupTriggerProcessing(logger log.Logger, cfg *viper.Viper, am3Svc eventH
 	//  - Metric reprot generated event
 	//  - New subscription request event
 	//  - New unsubscription request event
-	setupEventHandlers(logger, d.GetBus(), am3Svc, activeSubs, cfg.GetString("triggers.subList"))
+	err := setupEventHandlers(logger, d.GetBus(), am3Svc, activeSubs, cfg.GetString("triggers.subList"))
+	if err != nil {
+		return err
+	}
 
 	// handle Subscription and LCL event related notifications
 	go handleSubscriptionsAndLCLNotify(logger, cfg.GetString("triggers.clientIPCPipe"),
@@ -136,8 +139,8 @@ func MakeHandlerReportGenerated(logger log.Logger, subscriberMap map[string]*os.
 
 		//send triggers to active subscribers
 		for k, subscriber := range subscriberMap {
-			fmt.Printf("Report due trigger to subscriber %s - %s \n", k, notify.Name)
-			_, err := fmt.Fprintf(subscriber, "|%s|", notify.Name)
+			fmt.Printf("Report due trigger to subscriber %s - %s \n", k, notify.MRName)
+			_, err := fmt.Fprintf(subscriber, "|%s|", notify.MRName)
 			if err != nil {
 				// remove subscriber on error
 				logger.Warn("Trigger notification to subscriber failed", "err", err)
@@ -214,22 +217,35 @@ func MakeHandlerPrintSubscribers(logger log.Logger, activeSubs map[string]*os.Fi
 }
 
 func setupEventHandlers(logger log.Logger, bus eh.EventBus, am3Svc eventHandlingService,
-	activeSubs map[string]*os.File, subscriberListFile string) {
+	activeSubs map[string]*os.File, subscriberListFile string) error {
 	// set up the event handler that will send triggers on the report on report generated events.
-	am3Svc.AddEventHandler("Metric Report Generated", metric.ReportGenerated,
+	err := am3Svc.AddEventHandler("Metric Report Generated", metric.ReportGenerated,
 		MakeHandlerReportGenerated(logger, activeSubs, bus))
+	if err != nil {
+		return xerrors.Errorf("Failed to register event handler: %w", err)
+	}
 
 	// set up the event handler to process subscription request.
-	am3Svc.AddEventHandler("Subscribe for Triggers", triggerSubscribeEvent,
+	err = am3Svc.AddEventHandler("Subscribe for Triggers", triggerSubscribeEvent,
 		MakeHandlerSubscribe(logger, activeSubs, subscriberListFile, bus))
+	if err != nil {
+		return xerrors.Errorf("Failed to register event handler: %w", err)
+	}
 
 	// set up the event handler to process unsubscription request.
-	am3Svc.AddEventHandler("Unsubscribe Triggers", triggerUnsubscribeEvent,
+	err = am3Svc.AddEventHandler("Unsubscribe Triggers", triggerUnsubscribeEvent,
 		MakeHandlerUnsubscribe(logger, activeSubs, subscriberListFile, bus))
+	if err != nil {
+		return xerrors.Errorf("Failed to register event handler: %w", err)
+	}
 
 	// set up the event handler to print current subscriptions.
-	am3Svc.AddEventHandler("Print Subscriber Maps", printSubscriberMaps,
+	err = am3Svc.AddEventHandler("Print Subscriber Maps", printSubscriberMaps,
 		MakeHandlerPrintSubscribers(logger, activeSubs, subscriberListFile, bus))
+	if err != nil {
+		return xerrors.Errorf("Failed to register event handler: %w", err)
+	}
+	return nil
 }
 
 // publishHelper will log/eat the error from PublishEvent since we can't do anything useful with it

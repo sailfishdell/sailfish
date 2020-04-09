@@ -12,7 +12,7 @@ import (
 )
 
 type eventHandlingService interface {
-	AddEventHandler(string, eh.EventType, func(eh.Event))
+	AddEventHandler(string, eh.EventType, func(eh.Event)) error
 }
 
 const (
@@ -43,12 +43,15 @@ func StartWatchdogHandling(logger log.Logger, am3Svc eventHandlingService, d bus
 	// add the watchdog handling to the awesome mapper. meaning that the entire
 	// event bus infra has to be working and functional for watchdog to be
 	// pinged.
-	am3Svc.AddEventHandler("Ping Systemd Watchdog", WDEvent, func(eh.Event) {
+	err = am3Svc.AddEventHandler("Ping Systemd Watchdog", WDEvent, func(eh.Event) {
 		err := sd.SDNotify("WATCHDOG=1")
 		if err != nil {
 			logger.Warn("sdnotify() api failed", "err", err)
 		}
 	})
+	if err != nil {
+		return xerrors.Errorf("error adding event handler: %w", err)
+	}
 
 	interval := sd.GetIntervalUsec()
 	if interval == 0 {

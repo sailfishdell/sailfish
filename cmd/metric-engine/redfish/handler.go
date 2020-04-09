@@ -78,7 +78,7 @@ func (rf *RFServer) AddHandlersToRouter(m *mux.Router) {
 }
 
 type eventHandler interface {
-	AddEventHandler(string, eh.EventType, func(eh.Event))
+	AddEventHandler(string, eh.EventType, func(eh.Event)) error
 }
 
 func Startup(logger log.Logger, cfg *viper.Viper, am3Svc eventHandler, d busComponents) {

@@ -33,6 +33,9 @@ const (
 	jsonEnableMRD         = `{"MetricReportDefinitionEnabled": true}`
 	jsonDisableMRD        = `{"MetricReportDefinitionEnabled": false}`
 	jsonReportTimespanMRD = `{"ReportTimespan": "PT%sS"}`
+	enableTelemetry       = "EnableTelemetry"
+	reportInterval        = "ReportInterval"
+	maxPackedEvents       = 30
 )
 
 type busComponents interface {
@@ -40,7 +43,7 @@ type busComponents interface {
 }
 
 type eventHandlingService interface {
-	AddEventHandler(string, eh.EventType, func(eh.Event))
+	AddEventHandler(string, eh.EventType, func(eh.Event)) error
 }
 
 /*
@@ -56,6 +59,17 @@ type eventHandlingService interface {
 		-- PRAGMA mmap_size = 0;
 */
 
+func attachDB(database *sqlx.DB, dbfile string, as string) error {
+	// attach UDB db
+	attach := "Attach '" + dbfile + "' as " + as
+	_, err := database.Exec(attach)
+	if err != nil {
+		database.Close()
+		return xerrors.Errorf("Could not attach %s database(%s). sql(%s) err: %w", as, dbfile, attach, err)
+	}
+	return nil
+}
+
 // Startup will attach event handlers to handle import UDB import
 func Startup(logger log.Logger, cfg *viper.Viper, am3Svc eventHandlingService, d busComponents) (func(), error) {
 	// setup programatic defaults. can be overridden in config file
@@ -68,38 +82,17 @@ func Startup(logger log.Logger, cfg *viper.Viper, am3Svc eventHandlingService, d
 		return nil, xerrors.Errorf("Could not create empty in-memory sqlite database: %w", err)
 	}
 
-	// attach UDB db
-	attach := "Attach '" + cfg.GetString("udb.udbdatabasepath") + "' as udbdm"
-	fmt.Println(attach)
-	_, err = database.Exec(attach)
+	err = attachDB(database, cfg.GetString("udb.udbdatabasepath"), "udbdm")
 	if err != nil {
-		database.Close()
-		return nil, xerrors.Errorf("Could not attach UDB database. sql(%s) err: %w", attach, err)
+		return nil, xerrors.Errorf("Error attaching UDB db file: %w", err)
 	}
 
-	// attach SHM db
-	attach = "Attach '" + cfg.GetString("udb.shmdatabasepath") + "' as udbsm"
-	fmt.Println(attach)
-	_, err = database.Exec(attach)
+	err = attachDB(database, cfg.GetString("udb.shmdatabasepath"), "udbsm")
 	if err != nil {
-		database.Close()
-		return nil, xerrors.Errorf("Could not attach SHM database. sql(%s) err: %w", attach, err)
+		return nil, xerrors.Errorf("Error attaching SHM db file: %w", err)
 	}
 
-	// we have a separate goroutine for this, so we should be safe to busy-wait
-	_, err = database.Exec(`
-		-- ensure nothing we do will ever modify the source
-		PRAGMA query_only = 1;
-		-- should be set in connection string, but just in case:
-		PRAGMA busy_timeout = 1000;
-		`)
-	if err != nil {
-		database.Close()
-		return nil, xerrors.Errorf("Could not set up initial UDB database parameters: %w", err)
-	}
-
-	// shouldn't need to run more than one query at a time, mostly
-	database.SetMaxOpenConns(1)
+	database.SetMaxOpenConns(1) // shouldn't need to run more than one query concurrently
 
 	importMgr, err := newImportManager(logger, database, d, cfg)
 	if err != nil {
@@ -108,12 +101,27 @@ func Startup(logger log.Logger, cfg *viper.Viper, am3Svc eventHandlingService, d
 	}
 
 	bus := d.GetBus()
-	am3Svc.AddEventHandler("Import UDB Metric Values", telemetry.PublishClock, MakeHandlerUDBPeriodicImport(logger, importMgr, bus))
-	am3Svc.AddEventHandler("UDB Change Notification", udbChangeEvent, MakeHandlerUDBChangeNotify(logger, importMgr, bus))
+	err = am3Svc.AddEventHandler("Import UDB Metric Values", telemetry.PublishClock, MakeHandlerUDBPeriodicImport(logger, importMgr, bus))
+	if err != nil {
+		return nil, xerrors.Errorf("Failed to attach event handler: %w", err)
+	}
+	err = am3Svc.AddEventHandler("UDB Change Notification", udbChangeEvent, MakeHandlerUDBChangeNotify(logger, importMgr, bus))
+	if err != nil {
+		return nil, xerrors.Errorf("Failed to attach event handler: %w", err)
+	}
 
 	// handle sync of legacy AR attributes for MRD enable/disable, etc.
-	configSync, _ := newConfigSync(logger, database, d)
-	am3Svc.AddEventHandler("UDB Cfg change Notification", udbChangeEvent, MakeHandlerLegacyAttributeSync(logger, importMgr, bus, configSync))
+	configSync, err := newConfigSync(logger, database, d)
+	if err != nil {
+		return nil, xerrors.Errorf("Failed to attach event handler: %w", err)
+	}
+	err = am3Svc.AddEventHandler(
+		"UDB Cfg change Notification",
+		udbChangeEvent,
+		MakeHandlerLegacyAttributeSync(log.With(logger, "module", "LegacyARSync"), importMgr, bus, configSync))
+	if err != nil {
+		return nil, xerrors.Errorf("Failed to attach event handler: %w", err)
+	}
 	configSync.kickstartLegacyARConfigSync(logger, d)
 
 	go handleUDBNotifyPipe(logger, cfg.GetString("udb.udbnotifypipe"), d)
@@ -140,22 +148,18 @@ func newConfigSync(logger log.Logger, database *sqlx.DB, d busComponents) (*Conf
 
 	err := GetRowID(logger, database, "Enum", cfgS.enumEntries)
 	if err != nil {
-		logger.Crit("GetRowID Enum failed\n")
+		return nil, xerrors.Errorf("Failed to query legacy UDB AR values for Enum: %w", err)
 	}
 
 	err = GetRowID(logger, database, "Str", cfgS.strEntries)
 	if err != nil {
-		logger.Crit("GetRowID Str failed\n")
+		return nil, xerrors.Errorf("Failed to query legacy UDB AR values for Str: %w", err)
 	}
 
 	err = GetRowID(logger, database, "Int", cfgS.intEntries)
 	if err != nil {
-		logger.Crit("GetRowID Int failed\n")
+		return nil, xerrors.Errorf("Failed to query legacy UDB AR values for Int: %w", err)
 	}
-
-	fmt.Printf("Got all these ENUM configuration settings: %+v\n", cfgS.enumEntries)
-	fmt.Printf("Got all these STR  configuration settings: %+v\n", cfgS.strEntries)
-	fmt.Printf("Got all these INT  configuration settings: %+v\n", cfgS.intEntries)
 
 	return cfgS, err
 }
@@ -180,6 +184,7 @@ func GetRowID(logger log.Logger, database *sqlx.DB, dataType string, entries map
 		logger.Crit("sql query failed for", "dataType", dataType)
 	}
 
+scan:
 	for rows.Next() {
 		var RowID int64
 		var CurrentValue string
@@ -191,14 +196,36 @@ func GetRowID(logger log.Logger, database *sqlx.DB, dataType string, entries map
 			continue
 		}
 
+		keys := strings.Split(key, "#")
+		switch keys[2] {
+		// These are all attributes that we dont care about and will skip
+		case "FQDD", "DevicePollFrequency":
+			continue scan
+		case "RSyslogServer1", "RSyslogServer2":
+			continue scan
+		case "TelemetrySubscription1", "TelemetrySubscription2":
+			continue scan
+		case "RSyslogServer1Port", "RSyslogServer2Port":
+			continue scan
+
+		// these are attributes we need to sync or TODO soon need to sync
+		case "RsyslogTarget", "ReportTriggers":
+			// will need to handle rsyslog eventually (TODO:...)
+			continue scan
+		case enableTelemetry, reportInterval:
+			// WE HANDLE THESE, add to map below
+		default:
+			logger.Crit("Internal error. Unhandled legacy AR key, code needs to be updated!", "keyname", keys[2])
+			continue scan
+		}
+
 		entries[RowID] = key
 	}
-	n := len(entries)
-	fmt.Printf("len of map:%d for Tbl%sAttribute\n", n, dataType)
 	return err
 }
 
 func (cs ConfigSync) kickstartLegacyARConfigSync(logger log.Logger, d busComponents) {
+	events := make([]eh.EventData, 0, maxPackedEvents)
 	for _, s := range []struct {
 		table  string
 		mapref *map[int64]string
@@ -208,11 +235,16 @@ func (cs ConfigSync) kickstartLegacyARConfigSync(logger log.Logger, d busCompone
 		{"TblIntAttribute", &cs.intEntries},
 	} {
 		for rowid := range *s.mapref {
-			notify := changeNotify{Database: "DMLiveObjectDatabase.db", Table: s.table, Rowid: rowid, Operation: 0}
-			publishAndWait(logger, d.GetBus(), udbChangeEvent, &notify)
-			// something really odd, this should NOT be needed, but it hangs without it
-			time.Sleep(time.Millisecond)
+			notify := &changeNotify{Database: "DMLiveObjectDatabase.db", Table: s.table, Rowid: rowid, Operation: 0}
+			events = append(events, notify)
+			if len(events) > maxPackedEvents {
+				publishAndWait(logger, d.GetBus(), udbChangeEvent, events)
+				events = make([]eh.EventData, 0, maxPackedEvents)
+			}
 		}
+	}
+	if len(events) > 0 {
+		publishAndWait(logger, d.GetBus(), udbChangeEvent, events)
 	}
 }
 
@@ -234,13 +266,12 @@ func MakeHandlerLegacyAttributeSync(logger log.Logger, importMgr *importManager,
 			return
 		}
 
-		//fmt.Printf("Receiving UDB Cfg ChangeEvent %d,Table:%s,db:%s\n",notify.Rowid,notify.Table,notify.Database)
 		// Step 1: Is this a DMLiveObjectDatabase change
 		if notify.Database != "DMLiveObjectDatabase.db" {
 			return
 		}
 
-		// Step 2: Is this a tblEnumAttribute change
+		// Step 2: Is this a tblEnumAttribute change, and does rowid match something we know about
 		keyname := ""
 		ok = false
 		switch notify.Table {
@@ -252,31 +283,23 @@ func MakeHandlerLegacyAttributeSync(logger log.Logger, importMgr *importManager,
 			keyname, ok = configSync.strEntries[notify.Rowid]
 		}
 
-		// step 3: Is this rowId the interested one,i.e Config rowid
+		// step 3: exit if it's not something we found above
 		if !ok {
 			return
 		}
 
 		// Step 4: Generate a "UpdateMRDCommandEvent" event
 		//	Ok, here first thing we need to do is do a UDB query to find the current value since UDB didn't actually send us the value
-
 		sqlForCurrentValue := ""
-
 		keys := strings.Split(keyname, "#")
 		switch keys[2] {
-		case "EnableTelemetry":
+		case enableTelemetry:
 			sqlForCurrentValue = "select CurrentValue from TblEnumAttribute where ROWID=?"
-		//case "RsyslogTarget":
-		//    sqlForCurrentValue = "select CurrentValue from TblStrAttribute where ROWID=?"
-		case "ReportInterval":
+		case reportInterval:
 			sqlForCurrentValue = "select CurrentValue from TblIntAttribute where ROWID=?"
-		//case "ReportTriggers":
-		case "DevicePollFrequency":
-			// unused: info only key. no need to process.
-			return
 		default:
-			//logger.Crit("UNHANDLED TYPE OF KEY:","keys[2]",keys[2])
-			fmt.Printf("UNHANDLED TYPE OF KEY:%s\n", keys[2])
+			// basically these should all be filtered out way up above
+			logger.Crit("TODO: update legacy ar filter, we hit an unhandled key", "key", keys[2])
 			return
 		}
 
@@ -298,6 +321,7 @@ func MakeHandlerLegacyAttributeSync(logger log.Logger, importMgr *importManager,
 			return
 		}
 
+		// awkwardly pull out the name of the MRD to enable/disable
 		updateEvent.ReportDefinitionName = keys[1][len("Telemetry") : len(keys[1])-len(".1")]
 
 		if updateEvent.ReportDefinitionName == "" {
@@ -306,7 +330,7 @@ func MakeHandlerLegacyAttributeSync(logger log.Logger, importMgr *importManager,
 		}
 		err = fmt.Errorf("unknown type of Legacy Config AR: %v", keys)
 		switch keys[2] {
-		case "EnableTelemetry":
+		case enableTelemetry:
 			switch CurrentValue {
 			case "Enabled":
 				logger.Info("Enabling report:", "ReportName", updateEvent.ReportDefinitionName)
@@ -317,7 +341,8 @@ func MakeHandlerLegacyAttributeSync(logger log.Logger, importMgr *importManager,
 			default:
 				logger.Crit("Got a weird value for EnableTelemetry from AR sync", "CurrentValue", CurrentValue)
 			}
-		case "ReportInterval":
+		case reportInterval:
+			logger.Info("Set Report RecurrenceInterval", "ReportName", updateEvent.ReportDefinitionName, "Seconds", CurrentValue)
 			err = json.Unmarshal([]byte(fmt.Sprintf(jsonReportTimespanMRD, CurrentValue)), &(updateEvent.Patch))
 		default:
 			logger.Crit("Asked to sync legacy AR attribute that I don't know about", "keyname", keys[1], "Attribute", keys[2])
@@ -326,7 +351,7 @@ func MakeHandlerLegacyAttributeSync(logger log.Logger, importMgr *importManager,
 			logger.Crit("Legacy AR config sync error", "err", err)
 			return
 		}
-		logger.Info("CRIT: about to send", "report", updateEvent.ReportDefinitionName, "PATCH", string(updateEvent.Patch))
+		logger.Debug("CRIT: about to send", "report", updateEvent.ReportDefinitionName, "PATCH", string(updateEvent.Patch))
 		publishAndWait(logger, bus, telemetry.UpdateMRDCommandEvent, updateEvent)
 	}
 }
@@ -379,7 +404,6 @@ func publishAndWait(logger log.Logger, bus eh.EventBus, et eh.EventType, data eh
 
 func splitUDBNotify(data []byte, atEOF bool) (advance int, token []byte, err error) {
 	if atEOF {
-		fmt.Printf("EOF\n")
 		return 0, nil, io.EOF
 	}
 	start := bytes.Index(data, []byte("||"))
@@ -389,8 +413,6 @@ func splitUDBNotify(data []byte, atEOF bool) (advance int, token []byte, err err
 	}
 
 	if len(data) < start+1 { // not enough data, read some more
-		// this can happen in normal operations
-		//fmt.Printf("DEBUG (can happen): NEED MORE DATA len(%v), start(%v)\n", len(data), start)
 		return 0, nil, nil
 	}
 
@@ -401,8 +423,6 @@ func splitUDBNotify(data []byte, atEOF bool) (advance int, token []byte, err err
 
 	end := bytes.Index(data[start+1:], []byte("||"))
 	if end == -1 { // didnt find ending ||, read some more
-		// this can happen in normal operations
-		//fmt.Printf("DEBUG (can happen): NO ENDING ||, NEED MORE. len(%v), start(%v), end(%v): %+v\n", len(data), start, end, string(data))
 		return 0, nil, nil
 	}
 
@@ -412,7 +432,6 @@ func splitUDBNotify(data []byte, atEOF bool) (advance int, token []byte, err err
 	}
 
 	// consume everything between start and end markers
-	//fmt.Printf("CONSUME: %v - %v : %v\n", start, end, string(data[start:start+1+end+2]))
 	return start + 1 + end + 2, data[start+2 : start+1+end], nil
 }
 

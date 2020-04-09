@@ -193,9 +193,10 @@ type FQDDMappingData struct {
 // GenerateReportCommandData is the event data structure to tell which report names to generate
 type GenerateReportCommandData struct {
 	Command
-	Name string
+	MRDName string
 }
 
+// NewRequestReportCommand generate a command event. generate a report for the named MRD
 func NewRequestReportCommand(name string) (eh.Event, error) {
 	data, err := eh.CreateEventData(GenerateReportCommandEvent)
 	if err != nil {
@@ -203,9 +204,9 @@ func NewRequestReportCommand(name string) (eh.Event, error) {
 	}
 	cr, ok := data.(*GenerateReportCommandData)
 	if !ok {
-		return nil, fmt.Errorf("internal programming error: response encoded in cmd wasn't a response type")
+		return nil, fmt.Errorf("internal programming error: event created was not of the correct type")
 	}
-	cr.Name = name
+	cr.MRDName = name
 	return eh.NewEvent(GenerateReportCommandEvent, cr, time.Now()), nil
 }
 
@@ -215,7 +216,8 @@ type GenerateReportResponseData struct {
 }
 
 type ReportGeneratedData struct {
-	Name string
+	MRDName string
+	MRName  string
 }
 
 // RegisterEvent should be called only once during initialization to register event types with event horizon
