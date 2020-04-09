@@ -1122,7 +1122,7 @@ UDB-Metric-Import:
          '/redfish/v1/FIXME/' || FQDD as Property,
         friendlyFQDD as FriendlyFQDD,
         FQDD as FQDD,
-        -- Sailaja - 2020-03-11 what about the expand for this? And waitinterval as reportinterval is big 3600 sec.        
+        -- Sailaja - 2020-03-11 what about the expand for this? And waitinterval as reportinterval is big 3600 sec.
 
         smartData_DOT_percentageUsed as 'Metric-PercentageUsed',
         smartData_DOT_criticalWarning as 'Metric-CriticalWarning',
@@ -2432,7 +2432,7 @@ createdb:
         FROM
           MetricReportDefinition as MRD
 
-# TODO: currently gets default values a current triggers, need to reflect config         
+# TODO: currently gets default values a current triggers, need to reflect config
   - |
       DROP VIEW IF EXISTS TblTelemetryAttributesReportTrigger;
       CREATE VIEW         TblTelemetryAttributesReportTrigger AS
@@ -2454,16 +2454,16 @@ createdb:
         SELECT * FROM TblTelemetryAttributesTelemEnable
         UNION ALL
         SELECT REPLACE(group_concat(DISTINCT CurrentValue),',',','), Key from TblTelemetryAttributesReportTrigger GROUP BY Key
-        
-  - |        
+
+  - |
      DROP TABLE IF EXISTS TblTriggerMetricReport;
       CREATE TABLE IF NOT EXISTS TblTriggerMetricReport
       (
         EemiId TEXT,
         TriggerId TEXT,
         MetricReport TEXT
-      );    
-    
+      );
+
   - |
      INSERT INTO TblTriggerMetricReport ( EemiId, TriggerId, MetricReport )
       VALUES
@@ -2514,7 +2514,7 @@ createdb:
       ('iDRAC.1.6.FAN0013','FANCriticalTrigger','FanSensor'),
       ('iDRAC.1.6.FAN0016','FANCriticalTrigger','FanSensor'),
       ('iDRAC.1.6.FAN0003','FANCriticalTrigger','FanSensor'),
-      ('iDRAC.1.6.FAN0004','FANCriticalTrigger','FanSensor'),     
+      ('iDRAC.1.6.FAN0004','FANCriticalTrigger','FanSensor'),
       ('iDRAC.1.6.FAN0015','FANCriticalTrigger','FanSensor'),
       ('iDRAC.1.6.FAN0001','FANCriticalTrigger','FanSensor'),
       ('iDRAC.1.6.VLT0210','VLTCriticalTrigger','PSUMetrics'),
@@ -2565,9 +2565,8 @@ createdb:
       ('iDRAC.1.6.PDR1002','PDRWarnTrigger','StorageDiskSMARTData'),
       ('iDRAC.1.6.PDR16','PDRWarnTrigger','StorageDiskSMARTData'),
       ('iDRAC.1.6.PDR117','NVMeCriticalTrigger','NVMeSMARTData'),
-      ('iDRAC.1.6.CPU0000','IERRCriticalTrigger','CPURegisters');     
-  
-  # Table poplauted at metric-egine start by reading MD jsons   
+      ('iDRAC.1.6.CPU0000','IERRCriticalTrigger','CPURegisters');
+
   - |
      DROP TABLE IF EXISTS MetricDefinition;
      CREATE TABLE MetricDefinition
@@ -2578,16 +2577,16 @@ createdb:
        Description     TEXT NOT NULL,
        MetricType      TEXT NOT NULL,
        MetricDataType  TEXT NOT NULL,
-       Units 	       TEXT, 
+       Units 	         TEXT,
        Accuracy        REAL,
        SensingInterval TEXT,
        DiscreteValues  TEXT
-     );    
-  
+     );
+
   - |
      DROP VIEW IF EXISTS MetricDefinition_JSON;
-     CREATE VIEW MetricDefinition_JSON as 
-      SELECT 
+     CREATE VIEW MetricDefinition_JSON as
+      SELECT
       (
        '{' ||
        ' "@odata.type": "#MetricDefinition.v1_2_0.MetricDefinition",' ||
@@ -2623,7 +2622,7 @@ createdb:
         )
        ) as root,
             '/redfish/v1/TelemetryService/MetricDefinitions' as [@odata.id];
-     
+
   - |
         DROP VIEW IF EXISTS AggregationMetricsMRView_json ; create view AggregationMetricsMRView_json as select * from JSON where [@odata.id] = '/redfish/v1/TelemetryService/MetricReports/AggregationMetrics';
         DROP VIEW IF EXISTS CPUMemMetricsMRView_json ; create view CPUMemMetricsMRView_json as select * from JSON where [@odata.id] = '/redfish/v1/TelemetryService/MetricReports/CPUMemMetrics';
