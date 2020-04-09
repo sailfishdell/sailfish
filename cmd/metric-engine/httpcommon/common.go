@@ -6,6 +6,7 @@ import (
 	"crypto/tls"
 	"net"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -110,6 +111,7 @@ func (st *ServerTracker) startServer(handler http.Handler, listen string) {
 		// "https:[addr]:port
 		addr := strings.TrimPrefix(listen, "unix:")
 		st.logger.Crit("UNIX SOCKET listener starting on " + addr)
+		os.Remove(addr)
 		s := &http.Server{
 			Handler:        handler,
 			MaxHeaderBytes: MaxHeaderBytes,
