@@ -2394,11 +2394,14 @@ createdb:
       DROP VIEW IF EXISTS TblTelemetryAttributesREPORT;
       CREATE VIEW         TblTelemetryAttributesREPORT AS
         SELECT
-          'Enabled' as CurrentValue,
+          CASE MRD.Enabled
+          WHEN true then 'Enabled'
+          WHEN false then 'Disabled'
+          END as CurrentValue,
           'iDRAC.Embedded.1#Telemetry' || Name || '.1#EnableTelemetry'  as Key
         FROM
-          MetricReport
-          
+          MetricReportDefinition as MRD
+
 # TODO: currently gets default values a current triggers, need to reflect config         
   - |
       DROP VIEW IF EXISTS TblTelemetryAttributesReportTrigger;
