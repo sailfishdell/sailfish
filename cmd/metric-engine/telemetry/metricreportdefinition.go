@@ -398,6 +398,8 @@ func (factory *telemetryManager) updateMRD(reportDef string, updates json.RawMes
 			return err
 		}
 
+		factory.logger.Debug("Updating MRD", "OLD_MRD", mrd.MetricReportDefinitionData, "NEW_MRD", newMRD.MetricReportDefinitionData)
+
 		// step 4: update internal bookkeeping tables
 		if newMRD.Type != metric.Periodic {
 			delete(factory.NextMRTS, reportDef)
@@ -504,6 +506,14 @@ func (factory *telemetryManager) addMD(mdEvData *MetricDefinitionData) (err erro
 func (factory *telemetryManager) updateMMList(tx *sqlx.Tx, mrd *MetricReportDefinition) (err error) {
 	//=================================================
 	// Update the list of metrics for this report
+	// BEHAVIOUR: if we get passed 'nil' metrics array in the mrd, do nothing. If
+	// we get a valid array (empty or otherwise), delete the existing
+	// associations and create metric meta and associate
+	if mrd.Metrics == nil {
+		// nil metrics array means dont change anything
+		return nil
+	}
+
 	// First, just delete all the existing metric associations (not the actual MetricMeta, then we'll re-create
 	_, err = factory.getSQLXTx(tx, "delete_mm_assoc").Exec(mrd.ID)
 	if err != nil {
