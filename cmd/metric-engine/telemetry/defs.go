@@ -108,13 +108,7 @@ type MetricReportDefinitionData struct {
 	Heartbeat RedfishDuration `db:"HeartbeatInterval" json:"MetricReportHeartbeatInterval"`
 	Metrics   []RawMetricMeta `db:"Metrics"`
 
-	// stuff we still need to implement
-	// ShortDesc
-	// LongDesc
-	// Heartbeat
-	//
-	// This is in the output, but isn't really an input, so can leave it out
-	// Status
+	Hidden bool `db:"Hidden" json:"-"`
 }
 
 // UnmarshalJSON special decoder for MetricReportDefinitionData to unmarshal the "period" specially
@@ -122,7 +116,7 @@ func (mrd *MetricReportDefinitionData) UnmarshalJSON(data []byte) error {
 	type Alias MetricReportDefinitionData
 	target := struct {
 		*Alias
-		Schedule struct{ RecurrenceInterval RedfishDuration }
+		Schedule *struct{ RecurrenceInterval RedfishDuration } `json:omitifempty`
 	}{
 		Alias: (*Alias)(mrd),
 	}
@@ -130,7 +124,9 @@ func (mrd *MetricReportDefinitionData) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, &target); err != nil {
 		return err
 	}
-	mrd.Period = target.Schedule.RecurrenceInterval
+	if target.Schedule != nil {
+		mrd.Period = target.Schedule.RecurrenceInterval
+	}
 	return nil
 }
 
