@@ -25,7 +25,10 @@ func init() {
 			serverlist := createHTTPServerBookkeeper(logger)
 			addRedfishHandlers(logger, cfg, d, serverlist)
 			am3SvcN4, _ := am3.StartService(context.Background(), log.With(logger, "module", "Redfish_AM3"), "Redfish", d)
-			redfish.Startup(logger, cfg, am3SvcN4, d)
+			err := redfish.Startup(logger, cfg, am3SvcN4, d)
+			if err != nil {
+				panic("redfish startup init failed: " + err.Error())
+			}
 			return nil
 		}}, optionalComponents...)
 }

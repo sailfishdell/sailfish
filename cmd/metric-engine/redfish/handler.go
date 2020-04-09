@@ -12,6 +12,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/spf13/viper"
+	"golang.org/x/xerrors"
 
 	eh "github.com/looplab/eventhorizon"
 
@@ -81,9 +82,13 @@ type eventHandler interface {
 	AddEventHandler(string, eh.EventType, func(eh.Event)) error
 }
 
-func Startup(logger log.Logger, cfg *viper.Viper, am3Svc eventHandler, d busComponents) {
+func Startup(logger log.Logger, cfg *viper.Viper, am3Svc eventHandler, d busComponents) error {
 	// Important: don't leak 'cfg' outside the scope of this function!
-	am3Svc.AddEventHandler("Submit Test Metric Report", SubmitTestMetricReportCommandEvent, MakeHandlerSubmitTestMR(logger, d.GetBus()))
+	err := am3Svc.AddEventHandler("Submit Test Metric Report", SubmitTestMetricReportCommandEvent, MakeHandlerSubmitTestMR(logger, d.GetBus()))
+	if err != nil {
+		return xerrors.Errorf("could not add redfish am3 event handlers: %w", err)
+	}
+	return nil
 }
 
 func MakeHandlerSubmitTestMR(logger log.Logger, bus eh.EventBus) func(eh.Event) {
