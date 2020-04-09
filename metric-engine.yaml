@@ -1900,7 +1900,6 @@ createdb:
         Period            INTEGER not null default 0,
         TimeSpan          INTEGER not null default 0,
         HeartbeatInterval INTEGER NOT NULL DEFAULT 0,
-        NextHeartbeatTS   INTEGER NOT NULL DEFAULT 0,
         Hidden            BOOLEAN NOT NULL DEFAULT FALSE -- Not displayed to the user, only for internal use
       )
 
