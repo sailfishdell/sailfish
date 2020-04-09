@@ -32,7 +32,7 @@ const (
 const (
 	jsonEnableMRD         = `{"MetricReportDefinitionEnabled": true}`
 	jsonDisableMRD        = `{"MetricReportDefinitionEnabled": false}`
-	jsonReportTimespanMRD = `{"ReportTimespan": "PT%sS"}`
+	jsonReportTimespanMRD = `{"Schedule": {"RecurrenceInterval": "PT%sS"}}`
 	enableTelemetry       = "EnableTelemetry"
 	reportInterval        = "ReportInterval"
 	maxPackedEvents       = 30
