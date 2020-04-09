@@ -73,8 +73,8 @@ func attachDB(database *sqlx.DB, dbfile string, as string) error {
 // Startup will attach event handlers to handle import UDB import
 func Startup(logger log.Logger, cfg *viper.Viper, am3Svc eventHandlingService, d busComponents) (func(), error) {
 	// setup programatic defaults. can be overridden in config file
-	cfg.SetDefault("udb.udbdatabasepath", "file:/run/unifieddatabase/DMLiveObjectDatabase.db?cache=shared&_foreign_keys=off&mode=ro&_busy_timeout=1000")
-	cfg.SetDefault("udb.shmdatabasepath", "file:/run/unifieddatabase/SHM.db?cache=shared&_foreign_keys=off&mode=ro&_busy_timeout=1000")
+	cfg.SetDefault("udb.udbdatabasepath", "file:/run/unifieddatabase/DMLiveObjectDatabase.db?cache=shared&_foreign_keys=off&mode=ro&_busy_timeout=1000&nolock=1&cache=shared")
+	cfg.SetDefault("udb.shmdatabasepath", "file:/run/unifieddatabase/SHM.db?cache=shared&_foreign_keys=off&mode=ro&_busy_timeout=1000&nolock=1&cache=shared")
 	cfg.SetDefault("udb.udbnotifypipe", "/run/telemetryservice/udbtdbipcpipe")
 
 	database, err := sqlx.Open("sqlite3", ":memory:")
