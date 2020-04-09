@@ -109,34 +109,76 @@ func Startup(logger log.Logger, cfg *viper.Viper, am3Svc eventHandler, d busComp
 
 	cfg = nil // hint to runtime that we dont need cfg after this point. dont pass this into functions below here
 
-	// schedule database cleanup on first clock tick
+	err = addEventHandlers(logger, am3Svc, telemetryMgr, d)
+	if err != nil {
+		database.Close()
+		return nil, xerrors.Errorf("error adding am3 event handlers: %w", err)
+	}
+
+	// start background thread publishing regular maintenance tasks
+	shutdown := make(chan struct{}) // channel to help this goroutine shut down cleanly. close to exit
+	go backgroundTasks(logger, d.GetBus(), shutdown)
+
+	return func() { // return function that is called at shutdown to cleanly unwind things
+		close(shutdown)
+		database.Close()
+	}, nil
+}
+
+func addEventHandlers(logger log.Logger, am3Svc eventHandler, telemetryMgr *telemetryManager, d busComponents) error {
+	// use this to keep track of maintenance tasks to run on the next clock tick.
+	// start out by priming for cleanup tasks on startup
 	dbmaint := map[string]struct{}{
 		deleteOrphans: {},
 		optimize:      {},
 		vacuum:        {},
 		cleanValues:   {},
 	}
+
 	bus := d.GetBus()
-	am3Svc.AddEventHandler("Generic GET Data", GenericGETCommandEvent, MakeHandlerGenericGET(logger, telemetryMgr, bus))
-	am3Svc.AddEventHandler("Create Metric Report Definition", AddMRDCommandEvent, MakeHandlerCreateMRD(logger, telemetryMgr, bus, dbmaint))
-	am3Svc.AddEventHandler("Delete Metric Report Definition", DeleteMRDCommandEvent, MakeHandlerDeleteMRD(logger, telemetryMgr, bus))
-	am3Svc.AddEventHandler("Delete Metric Report", DeleteMRCommandEvent, MakeHandlerDeleteMR(logger, telemetryMgr, bus))
-	am3Svc.AddEventHandler("Update Metric Report Definition", UpdateMRDCommandEvent, MakeHandlerUpdateMRD(logger, telemetryMgr, bus, dbmaint))
-	am3Svc.AddEventHandler("Create Metric Definition", AddMDCommandEvent, MakeHandlerCreateMD(logger, telemetryMgr, bus))
-	am3Svc.AddEventHandler("Generate Metric Report", metric.GenerateReportCommandEvent, MakeHandlerGenReport(logger, telemetryMgr, bus))
+	err := am3Svc.AddEventHandler("Generic GET Data", GenericGETCommandEvent, MakeHandlerGenericGET(logger, telemetryMgr, bus))
+	if err != nil {
+		return err
+	}
+	err = am3Svc.AddEventHandler("Create Metric Report Definition", AddMRDCommandEvent, MakeHandlerCreateMRD(logger, telemetryMgr, bus, dbmaint))
+	if err != nil {
+		return err
+	}
+	err = am3Svc.AddEventHandler("Delete Metric Report Definition", DeleteMRDCommandEvent, MakeHandlerDeleteMRD(logger, telemetryMgr, bus))
+	if err != nil {
+		return err
+	}
+	err = am3Svc.AddEventHandler("Delete Metric Report", DeleteMRCommandEvent, MakeHandlerDeleteMR(logger, telemetryMgr, bus))
+	if err != nil {
+		return err
+	}
+	err = am3Svc.AddEventHandler("Update Metric Report Definition", UpdateMRDCommandEvent, MakeHandlerUpdateMRD(logger, telemetryMgr, bus, dbmaint))
+	if err != nil {
+		return err
+	}
+	err = am3Svc.AddEventHandler("Create Metric Definition", AddMDCommandEvent, MakeHandlerCreateMD(logger, telemetryMgr, bus))
+	if err != nil {
+		return err
+	}
+	err = am3Svc.AddEventHandler("Generate Metric Report", metric.GenerateReportCommandEvent, MakeHandlerGenReport(logger, telemetryMgr, bus))
+	if err != nil {
+		return err
+	}
 
-	am3Svc.AddEventHandler("Clock", PublishClock, MakeHandlerClock(logger, telemetryMgr, bus, dbmaint))
-	am3Svc.AddEventHandler("Database Maintenance", DatabaseMaintenance, MakeHandlerMaintenance(logger, telemetryMgr, bus, dbmaint))
-	am3Svc.AddMultiHandler("Store Metric Value(s)", metric.MetricValueEvent, MakeHandlerMV(logger, telemetryMgr, bus))
+	err = am3Svc.AddEventHandler("Clock", PublishClock, MakeHandlerClock(logger, telemetryMgr, bus, dbmaint))
+	if err != nil {
+		return err
+	}
+	err = am3Svc.AddEventHandler("Database Maintenance", DatabaseMaintenance, MakeHandlerMaintenance(logger, telemetryMgr, bus, dbmaint))
+	if err != nil {
+		return err
+	}
+	err = am3Svc.AddMultiHandler("Store Metric Value(s)", metric.MetricValueEvent, MakeHandlerMV(logger, telemetryMgr, bus))
+	if err != nil {
+		return err
+	}
 
-	// start background thread publishing regular maintenance tasks
-	shutdown := make(chan struct{}) // channel to help this goroutine shut down cleanly. close to exit
-	go backgroundTasks(logger, bus, shutdown)
-
-	return func() { // return function that is called at shutdown to cleanly unwind things
-		close(shutdown)
-		database.Close()
-	}, nil
+	return nil
 }
 
 // handle all HTTP requests for our URLs here. Need to handle all telemetry related requests.
