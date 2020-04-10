@@ -8,7 +8,10 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
+	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	eh "github.com/looplab/eventhorizon"
@@ -125,6 +128,40 @@ func StartPipeHandler(logger log.Logger, pipePath string, eb eh.EventBus) {
 	}
 
 	pipeIterator(logger, file, injectCmd)
+	fstat, err := file.Stat()
+	if err != nil {
+		fmt.Printf("Error while reading sailfish.pipe file: %s\n", err)
+	} else {
+		fmt.Printf("Sailfish pipe size: %d\n", fstat.Size())
+	}
+
+	out, err := exec.Command("fuser", pipePath).Output()
+	if err != nil {
+		fmt.Printf("Error while running 'fuser': %s\n", err)
+	} else {
+		fmt.Printf("Fuser Output: %s\n", string(out))
+		ppids := strings.Split(string(out), " ")
+		for _, ppid := range ppids {
+			out, err := exec.Command("ps", "-p", ppid).Output()
+			if err != nil {
+				fmt.Printf("ps did not recognize process id %s\n", ppid)
+			} else {
+				pInfo := strings.Split(string(out), "\n")
+				fmt.Printf("PPID: %s\nProcess: %s\n", ppid, pInfo[len(pInfo)-2])
+			}
+		}
+	}
+
+	ret, err := nullWriter.Seek(0, 0)
+	if err != nil {
+		fmt.Printf("NULLWRITER OFFSET ERROR: %s", err)
+	} else {
+		fmt.Printf("NULLWRITER OFFSET SUCCEEDED")
+		fmt.Printf("NEW OFFSET VALUE: %d", ret)
+	}
+
+	logger.Crit("Sending interrupt signal to restart sailfish")
+	syscall.Kill(syscall.Getpid(), syscall.SIGINT)
 }
 
 // iterate elements in fifo by '\n'
@@ -135,7 +172,7 @@ func pipeIterator(logger log.Logger, f *os.File, fn func([]byte) error) {
 		buffer := make([]byte, 4096)
 		len, err := f.Read(buffer)
 		if err == io.EOF {
-			logger.Crit("sailfish.pipe EOF reached")
+			logger.Crit("SAILFISH.PIPE EOF REACHED, STOPPING PIPE ITERATOR")
 			break
 		} else if err != nil {
 			logger.Crit("pipe read error", "error", err)
