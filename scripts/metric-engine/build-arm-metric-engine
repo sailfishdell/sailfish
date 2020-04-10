@@ -47,7 +47,7 @@ then
 	echo "idrac pprof sse and pipe are enabled already in metric-engine"
 else
 	echo "idrac pprof sse and pipe are enabled"
-	sed -i 's/-tags "idrac pprof"/-tags "idrac pprof sse pipe"/g' $compile
+        sed -E -i 's/-tags \"(.+)\"/-tags \"pprof sse pipe libsqlite3 \"/g' $compile 
 fi
 
 $compile
