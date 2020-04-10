@@ -35,20 +35,20 @@ type eventBundle struct {
 }
 
 type InjectCommand struct {
-	sync.WaitGroup
 	ctx        context.Context
 	sendTime   time.Time
 	ingestTime time.Time
 
-	EventSeq     int64             `json:"event_seq"`
-	EventData    json.RawMessage   `json:"data"`
-	EventArray   []json.RawMessage `json:"event_array"`
-	ID           eh.UUID           `json:"id"`
-	Name         eh.EventType      `json:"name"`
-	Encoding     string            `json:"encoding"`
-	Barrier      bool              `json:"barrier"`     // EventBarrier is set if this event should block subsequent events until it is processed
-	Synchronous  bool              `json:"Synchronous"` // Synchronous set if POST should not return until the message is processed
-	PumpSendTime int64             `json:"PumpSendTime"`
+	PumpSendTime   int64             `json:"PumpSendTime"`
+	EventSeq       int64             `json:"event_seq"`
+	EventData      json.RawMessage   `json:"data"`
+	EventArray     []json.RawMessage `json:"event_array"`
+	ID             eh.UUID           `json:"id"`
+	Name           eh.EventType      `json:"name"`
+	Encoding       string            `json:"encoding"`
+	sync.WaitGroup                   // this in the middle of the struct due to linter warning... this produces smallest struct size
+	Barrier        bool              `json:"barrier"`     // EventBarrier is set if this event should block subsequent events until it is processed
+	Synchronous    bool              `json:"Synchronous"` // Synchronous set if POST should not return until the message is processed
 }
 
 func NewInjectCommand() *InjectCommand {
@@ -99,9 +99,7 @@ func StartPipeHandler(logger log.Logger, pipePath string, eb eh.EventBus) {
 		err = decoder.Decode(cmd)
 
 		if err != nil {
-
-			fmt.Printf("error decoding stream json: %s %d\n", err, len(event))
-			fmt.Printf("failed event: %s\n", event)
+			logger.Warn("error decoding json", "err", err, "length", len(event), "event", event)
 			return errors.New("failed to decode json")
 		}
 
@@ -109,21 +107,17 @@ func StartPipeHandler(logger log.Logger, pipePath string, eb eh.EventBus) {
 		cmd.Barrier = true
 		cmd.Synchronous = true
 		if cmd.Name == "" {
-			fmt.Printf("No name specified. dropping: %+v\n", cmd)
-			return errors.New("No name specified. dropping")
+			logger.Warn("no name specified, dropping event", "cmd", cmd)
+			return errors.New("no name specified. dropping")
 		}
 
-		//Enable commented out lines for debugging
 		cmd.Add(1)
 		cmd.EventSeq = seq
-		//fmt.Printf("Send to ch(%d): %+v\n", cmd.EventSeq, cmd)
 
 		cmd.sendToChn(injectChan)
 
-		//fmt.Printf("Waiting for: %d - %t\n", cmd.EventSeq)
 		cmd.Wait()
 		seq++
-		//fmt.Printf("DONE       : %d \n", cmd.EventSeq )
 		return nil
 	}
 
@@ -166,7 +160,7 @@ func StartPipeHandler(logger log.Logger, pipePath string, eb eh.EventBus) {
 
 // iterate elements in fifo by '\n'
 // run each element as line in func
-func pipeIterator(logger log.Logger, f *os.File, fn func([]byte) error) {
+func pipeIterator(logger log.Logger, f io.Reader, fn func([]byte) error) {
 	line := []byte{}
 	for {
 		buffer := make([]byte, 4096)
@@ -180,9 +174,7 @@ func pipeIterator(logger log.Logger, f *os.File, fn func([]byte) error) {
 		if len == 0 {
 			continue
 		}
-		nil_idx := bytes.Index(buffer, []byte{'\x00'})
-		if nil_idx != -1 {
-			//fmt.Printf("before trim %+q\n", buffer);
+		if bytes.Contains(buffer, []byte{'\x00'}) {
 			buffer = bytes.Trim(buffer, "\x00")
 		}
 
@@ -190,7 +182,6 @@ func pipeIterator(logger log.Logger, f *os.File, fn func([]byte) error) {
 		idx := bytes.Index(line, []byte{'\n'})
 		for ; idx != -1; idx = bytes.Index(line, []byte{'\n'}) {
 			evt := line[:idx]
-			//fmt.Printf("EVT %+q \n", evt )
 			fn(evt)
 			line = line[idx+1:]
 		}
@@ -207,9 +198,9 @@ func sendEventsToInternalBus(injectChan chan *eventBundle, eb eh.EventBus) {
 	}
 }
 
-func (c *InjectCommand) sendToChn(injectChan chan *eventBundle) error {
-	//requestLogger := log.ContextLogger(c.ctx, "internal_commands").New("module", "inject_event")
-	//requestLogger.Crit("InjectService: preparing event", "Sequence", c.EventSeq, "Name", c.Name)
+func (cmd *InjectCommand) sendToChn(injectChan chan *eventBundle) error {
+	//requestLogger := log.ContextLogger(cmd.ctx, "internal_commands").New("module", "inject_event")
+	//requestLogger.Crit("InjectService: preparing event", "Sequence", cmd.EventSeq, "Name", cmd.Name)
 
 	waits := []func(){}
 	defer func() {
@@ -227,7 +218,7 @@ func (c *InjectCommand) sendToChn(injectChan chan *eventBundle) error {
 
 		// run the Command .Done() after we've sent all the commands from the "command" queue to the "event" queue (but not yet published).
 		// After the HTTP POST has returned, caller knows that this event is being processed "in order", but might not yet be finished.
-		c.Done()
+		cmd.Done()
 	}()
 
 	totalTrains := 0
@@ -235,17 +226,19 @@ func (c *InjectCommand) sendToChn(injectChan chan *eventBundle) error {
 	waitForEvent := func(evt event.SyncEvent) func() {
 		return func() {
 			doneTrains++
-			if c.Synchronous {
+			if cmd.Synchronous {
 				evt.Wait()
 				// UNCOMMENT THE LINES HERE TO GET COMPREHENSIVE METRICS FOR TIMINGS FOR PROCESSING EACH EVENT
 				// We should do Prometheus metrics RIGHT HERE
-				//fmt.Printf("\tevent %s %d#%d/%d DONE:  ingest: %s  total: %s\n", c.Name, c.EventSeq, totalTrains, doneTrains, time.Now().Sub(c.ingestTime), time.Now().Sub(c.sendTime))
+				//fmt.Printf("\tevent %s %d#%d/%d DONE:  ingest: %s  total: %s\n",
+				//   cmd.Name, cmd.EventSeq, totalTrains, doneTrains, time.Now().Sub(cmd.ingestTime), time.Now().Sub(cmd.sendTime))
 				//} else {
 				// spawn a goroutine to wait for processing to complete since caller declines to wait.
 				//go func(t, d int) {
 				//	evt.Wait()
 				// AND We should do Prometheus metrics RIGHT HERE
-				//	fmt.Printf("\tevent %s %d#%d/%d DONE:  ingest: %s  total: %s\n", c.Name, c.EventSeq, totalTrains, doneTrains, time.Now().Sub(c.ingestTime), time.Now().Sub(c.sendTime))
+				//	fmt.Printf("\tevent %s %d#%d/%d DONE:  ingest: %s  total: %s\n",
+				//     cmd.Name, cmd.EventSeq, totalTrains, doneTrains, time.Now().Sub(cmd.ingestTime), time.Now().Sub(cmd.sendTime))
 				//}(totalTrains, doneTrains)
 			}
 		}
@@ -257,25 +250,25 @@ func (c *InjectCommand) sendToChn(injectChan chan *eventBundle) error {
 			return
 		}
 
-		evt := event.NewSyncEvent(c.Name, trainload, time.Now())
+		evt := event.NewSyncEvent(cmd.Name, trainload, time.Now())
 		evt.Add(1)
 		select {
-		case injectChan <- &eventBundle{&evt, c.Barrier}:
+		case injectChan <- &eventBundle{&evt, cmd.Barrier}:
 			// make sure we don't add the .Wait() until after we know it's being
 			// processed by the other side. Otherwise the context cancel (below, the
-			// case <-c.ctx.Done()) will keep the message from being sent from our
+			// case <-cmd.ctx.Done()) will keep the message from being sent from our
 			// side, and then we'll .Wait() for something that can never be .Done()
 			totalTrains++
 			waits = append(waits, waitForEvent(evt))
-		case <-c.ctx.Done():
-			//requestLogger.Info("CONTEXT CANCELLED! Discarding trainload", "err", c.ctx.Err(), "trainload", trainload, "EventName", c.Name)
+		case <-cmd.ctx.Done():
+			//requestLogger.Info("CONTEXT CANCELLED! Discarding trainload", "err", cmd.ctx.Err(), "trainload", trainload, "EventName", cmd.Name)
 		}
 	}
 
 	// accumulate decode events in trainload slice, then send as it gets full
-	c.appendDecode(&trainload, c.Name, c.EventData)
-	for _, d := range c.EventArray {
-		c.appendDecode(&trainload, c.Name, d)
+	cmd.appendDecode(&trainload, cmd.Name, cmd.EventData)
+	for _, d := range cmd.EventArray {
+		cmd.appendDecode(&trainload, cmd.Name, d)
 		if len(trainload) >= maxConsolidatedEvents {
 			sendTrain(trainload)
 			trainload = make([]eh.EventData, 0, maxConsolidatedEvents)
@@ -287,8 +280,8 @@ func (c *InjectCommand) sendToChn(injectChan chan *eventBundle) error {
 	return nil
 }
 
-func (c *InjectCommand) appendDecode(trainload *[]eh.EventData, eventType eh.EventType, m json.RawMessage) {
-	requestLogger := log.ContextLogger(c.ctx, "internal_commands")
+func (cmd *InjectCommand) appendDecode(trainload *[]eh.EventData, eventType eh.EventType, m json.RawMessage) {
+	requestLogger := log.ContextLogger(cmd.ctx, "internal_commands")
 	if m == nil {
 		// not worth logging unless debugging something weird
 		// requestLogger.Info("Decode: nil message", "eventType", eventType)
@@ -314,7 +307,7 @@ func (c *InjectCommand) appendDecode(trainload *[]eh.EventData, eventType eh.Eve
 		err = ds.Decode(eventData)
 		if err != nil {
 			// failed decode, just send the raw map[string]interface data
-			requestLogger.Warn("Custom Decode error, send data as map[string]interface{}", "err", err, "EventName", c.Name)
+			requestLogger.Warn("Custom Decode error, send data as map[string]interface{}", "err", err, "EventName", cmd.Name)
 			*trainload = append(*trainload, eventData) //preallocated
 			return
 		}
