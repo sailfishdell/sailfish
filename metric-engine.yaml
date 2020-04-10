@@ -1131,14 +1131,18 @@ internal:
     vacuum: vacuum
 
 createdb:
-  - "PRAGMA busy_timeout = 1000;"
-  - "PRAGMA journal_size_limit=512;"
+  #- "PRAGMA busy_timeout = 1000;"
   - "PRAGMA foreign_keys = ON;"
   - "PRAGMA journal_mode = WAL;"
-  - "PRAGMA synchronous = OFF;"
-    # Need to test these for impacts to RAM and CPU usage:
-  #  - "PRAGMA cache_size=4096;"
-  #  - "PRAGMA cache_size=0;"
+  - "PRAGMA journal_size_limit=512;"   # N * page_size
+  - "PRAGMA wal_autocheckpoint = 32;"  # N * page_size
+  - "PRAGMA synchronous = NORMAL;"
+  # seems to have a great memory consumption benefit:
+  - "PRAGMA mmap_size=262144;"         # N bytes - Not "wasting any ram here as it's all in tmpfs already
+  - "PRAGMA main.max_page_count = 2560"  # enforce upper limit of 10MB on DB
+  - "PRAGMA cache=shared;"
+  - "PRAGMA cache_size=0;"   # -N -> N kilobytes. Default without '-' means "Pages"
+
   - |
       CREATE TABLE IF NOT EXISTS MetricReportDefinition
       (
