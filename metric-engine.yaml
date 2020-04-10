@@ -1904,16 +1904,6 @@ createdb:
       )
 
   - |
-      CREATE TABLE IF NOT EXISTS MetricDefinition
-      (
-        ID      INTEGER PRIMARY KEY,
-        Name    TEXT UNIQUE NOT NULL,
-        Accuracy REAL,
-        Calculable TEXT, -- 'NonCalculatable', 'NonSummable', 'Summable'
-        CalculationAlgorithm TEXT
-      )
-
-  - |
       -- These always exist
       -- They are created when the report is created
       -- multiple reports can link to the same MetricMeta (many to many relationship)
@@ -2568,8 +2558,7 @@ createdb:
       ('iDRAC.1.6.CPU0000','IERRCriticalTrigger','CPURegisters');
 
   - |
-     DROP TABLE IF EXISTS MetricDefinition;
-     CREATE TABLE MetricDefinition
+     CREATE TABLE IF NOT EXISTS MetricDefinition
      (
        ID              INTEGER PRIMARY KEY,
        MetricId        TEXT UNIQUE NOT NULL,
