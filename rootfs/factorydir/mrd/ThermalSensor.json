@@ -1,0 +1,15 @@
+{
+  "Id": "ThermalSensor",
+  "Name": "Thermal Sensor Metric Report",
+  "Description": "Temperature Sensor",
+  "MetricReportDefinitionEnabled": true,
+  "MetricReportDefinitionType": "Periodic",
+  "Schedule": {"RecurrenceInterval": "PT60S"},
+  "ReportUpdates": "Overwrite",
+  "SuppressRepeatedMetricValue": false,
+  "ReportActions": ["RedfishEvent", "LogToMetricReportsCollection"],
+  "Metrics": [
+    { "MetricId": "TemperatureReading", "OEM": {"Dell": {"FQDD": "iDRAC.Embedded.1#SystemBoardInletTemp" }}},
+    { "MetricId": "TemperatureReading", "OEM": {"Dell": {"FQDD": "iDRAC.Embedded.1#SystemBoardExhaustTemp" }}}
+  ]
+}

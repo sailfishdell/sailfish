@@ -1,0 +1,13 @@
+{
+  "Id": "Thermal",
+  "MetricReportDefinitionEnabled": true,
+  "MetricReportDefinitionType": "Periodic",
+  "ReportUpdates": "NewReport",
+  "Schedule": {"RecurrenceInterval": "PT60S"},
+  "SuppressRepeatedMetricValue": true,
+  "ReportActions": ["RedfishEvent", "LogToMetricReportsCollection"],
+  "Metrics": [
+    {"MetricID": "TemperatureReading"},
+    {"MetricID": "RPMReading"}
+   ]
+}

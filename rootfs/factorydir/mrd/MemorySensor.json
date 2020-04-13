@@ -1,0 +1,14 @@
+{
+  "Id": "MemorySensor",
+  "Name": "Memory Sensor Metric Report",
+  "Description": "Memory temperature sensor",
+  "MetricReportDefinitionEnabled": true,
+  "MetricReportDefinitionType": "Periodic",
+  "Schedule": {"RecurrenceInterval": "PT60S"},
+  "ReportUpdates": "Overwrite",
+  "SuppressRepeatedMetricValue": false,
+  "ReportActions": ["RedfishEvent", "LogToMetricReportsCollection"],
+  "Metrics": [
+    {"MetricID": "TemperatureReading", "OEM": {"Dell": {"FQDD": "DIMM.Socket.%"}}}
+  ]
+}

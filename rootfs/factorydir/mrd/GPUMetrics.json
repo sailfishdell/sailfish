@@ -1,0 +1,24 @@
+{
+  "Id": "GPUMetrics",
+  "Name": "GPU Health metrics Metric Report",
+  "Description": "Graphics Processing Unit Health metrics",
+  "MetricReportDefinitionEnabled": true,
+  "MetricReportDefinitionType": "Periodic",
+  "Schedule": {"RecurrenceInterval": "PT60S"},
+  "ReportUpdates": "Overwrite",
+  "SuppressRepeatedMetricValue": false,
+  "ReportActions": ["RedfishEvent", "LogToMetricReportsCollection"],
+  "Metrics": [
+    {"MetricID": "BoardPowerSupplyStatus"},
+    {"MetricID": "BoardTemperature"},
+    {"MetricID": "GPUHealth"},
+    {"MetricID": "GPUStatus"},
+    {"MetricID": "MemoryTemperature"},
+    {"MetricID": "PowerBrakeState"},
+    {"MetricID": "PowerConsumption"},
+    {"MetricID": "PowerSupplyStatus"},
+    {"MetricID": "PrimaryTemperature"},
+    {"MetricID": "SecondaryTemperature"},
+    {"MetricID": "ThermalAlertState"}
+  ]
+}

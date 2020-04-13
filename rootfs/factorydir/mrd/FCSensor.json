@@ -1,0 +1,14 @@
+{
+  "Id": "FCSensor",
+  "Name": "FC Temperature Sensor Metric Report",
+  "Description": "FC Temperature sensors",
+  "MetricReportDefinitionEnabled": true,
+  "MetricReportDefinitionType": "Periodic",
+  "Schedule": {"RecurrenceInterval": "PT60S"},
+  "ReportUpdates": "Overwrite",
+  "SuppressRepeatedMetricValue": false,
+  "ReportActions": ["RedfishEvent", "LogToMetricReportsCollection"],
+  "Metrics": [
+    {"MetricID": "TemperatureReading", "OEM": {"Dell": {"FQDD": "FC.%"}}}
+  ]
+}

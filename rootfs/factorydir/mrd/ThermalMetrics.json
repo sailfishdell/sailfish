@@ -1,0 +1,25 @@
+{
+  "Id": "ThermalMetrics",
+  "Name": "Thermal Metrics Metric Report",
+  "Description": "Thermal Metrics",
+  "MetricReportDefinitionEnabled": true,
+  "MetricReportDefinitionType": "OnChange",
+  "ReportTimespan": "PT60S",
+  "Schedule": {"RecurrenceInterval": "PT5S"},
+  "ReportUpdates": "Overwrite",
+  "SuppressRepeatedMetricValue": false,
+  "ReportActions": ["RedfishEvent", "LogToMetricReportsCollection"],
+  "Metrics": [
+    {"MetricID": "ComputePower", "OEM": {"Dell": {"Source": "thermalmetrics" }}},
+    {"MetricID": "ITUE"},
+    {"MetricID": "PSUEfficiency"},
+    {"MetricID": "PowerToCoolRatio"},
+    {"MetricID": "SysAirFlowEfficiency"},
+    {"MetricID": "SysAirflowPerFanPower"},
+    {"MetricID": "SysAirflowPerSysInputPower"},
+    {"MetricID": "SysAirflowUtilization"},
+    {"MetricID": "SysNetAirflow"},
+    {"MetricID": "SysRackTempDelta"},
+    {"MetricID": "TotalPSUHeatDissipation"}
+  ]
+}

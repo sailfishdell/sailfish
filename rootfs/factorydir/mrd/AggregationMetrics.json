@@ -1,0 +1,17 @@
+{
+  "Id": "AggregationMetrics",
+  "Name": "Aggregation Metrics Metric Report",
+  "Description": "Aggregation Metrics report  is derived by applying a formula or filter to a set of base metric values for Power, Temperature, CUPS (CPU, Memory, IO, System)",
+  "MetricReportDefinitionEnabled": true,
+  "MetricReportDefinitionType": "OnRequest",
+  "ReportTimespan": "PT60S",
+  "ReportUpdates": "AppendWrapsWhenFull",
+  "SuppressRepeatedMetricValue": true,
+  "MetricReportHeartbeatInterval": "PT20S",
+  "ReportActions": ["LogToMetricReportsCollection"],
+  "Metrics": [
+    {"MetricID": "SystemAvgInletTempHour"},
+    {"MetricID": "SystemMaxInletTempHour"},
+    {"MetricID": "SystemMaxPowerConsumption"}
+  ]
+}

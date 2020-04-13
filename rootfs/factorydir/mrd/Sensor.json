@@ -1,0 +1,22 @@
+{
+  "Id": "Sensor",
+  "Name": "IPMI Sensor Metric Report",
+  "Description": "All IPMI Sensors",
+  "MetricReportDefinitionEnabled": true,
+  "MetricReportDefinitionType": "Periodic",
+  "Schedule": {"RecurrenceInterval": "PT60S"},
+  "ReportUpdates": "Overwrite",
+  "SuppressRepeatedMetricValue": false,
+  "ReportActions": ["RedfishEvent", "LogToMetricReportsCollection"],
+  "Metrics": [
+    {"MetricID": "AmpsReading"},
+    {"MetricID": "CPUUsagePctReading"},
+    {"MetricID": "IOUsagePctReading"},
+    {"MetricID": "MemoryUsagePctReading"},
+    {"MetricID": "RPMReading", "OEM": {"Dell": {"Source": "rawsensor" }}},
+    {"MetricID": "SystemUsagePctReading"},
+    {"MetricID": "TemperatureReading", "OEM": {"Dell": {"Source": "rawsensor" }}},
+    {"MetricID": "VoltageReading"},
+    {"MetricID": "WattsReading"}
+  ]
+}

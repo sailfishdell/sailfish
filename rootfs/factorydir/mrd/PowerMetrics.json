@@ -1,0 +1,22 @@
+{
+  "Id": "PowerMetrics",
+  "Name": "Power Metrics Metric Report",
+  "Description": "Power consumption for all CPUs, DIMMs, System Input and System Output",
+  "MetricReportDefinitionEnabled": true,
+  "MetricReportDefinitionType": "Periodic",
+  "Schedule": {"RecurrenceInterval": "PT60S"},
+  "ReportUpdates": "Overwrite",
+  "SuppressRepeatedMetricValue": false,
+  "ReportActions": ["RedfishEvent", "LogToMetricReportsCollection"],
+  "Metrics": [
+    {"MetricID": "SystemHeadRoomInstantaneous"},
+    {"MetricID": "SystemInputPower"},
+    {"MetricID": "SystemOutputPower"},
+    {"MetricID": "SystemPowerConsumption"},
+    {"MetricID": "TotalCPUPower"},
+    {"MetricID": "TotalFanPower"},
+    {"MetricID": "TotalMemoryPower"},
+    {"MetricID": "TotalPciePower"},
+    {"MetricID": "TotalStoragePower"}
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "Id": "PowerStatistics",
+  "Name": "Power Statistics Metric Report",
+  "Description": "System power consumption statistics",
+  "MetricReportDefinitionEnabled": true,
+  "MetricReportDefinitionType": "OnChange",
+  "ReportTimespan": "PT60S",
+  "ReportUpdates": "Overwrite",
+  "SuppressRepeatedMetricValue": false,
+  "ReportActions": ["RedfishEvent", "LogToMetricReportsCollection"],
+  "Metrics": [
+    {"MetricID": "LastDayAvgPower"},
+    {"MetricID": "LastDayMaxPower"},
+    {"MetricID": "LastDayMaxPowerTime"},
+    {"MetricID": "LastDayMinPower"},
+    {"MetricID": "LastDayMinPowerTime"},
+    {"MetricID": "LastHourAvgPower"},
+    {"MetricID": "LastHourMaxPower"},
+    {"MetricID": "LastHourMaxPowerTime"},
+    {"MetricID": "LastHourMinPower"},
+    {"MetricID": "LastHourMinPowerTime"},
+    {"MetricID": "LastMinuteAvgPower"},
+    {"MetricID": "LastMinuteMaxPower"},
+    {"MetricID": "LastMinuteMaxPowerTime"},
+    {"MetricID": "LastMinuteMinPower"},
+    {"MetricID": "LastMinuteMinPowerTime"},
+    {"MetricID": "LastWeekAvgPower"},
+    {"MetricID": "LastWeekMaxPower"},
+    {"MetricID": "LastWeekMaxPowerTime"},
+    {"MetricID": "LastWeekMinPower"},
+    {"MetricID": "LastWeekMinPowerTime"}
+  ]
+}

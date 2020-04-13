@@ -36,7 +36,7 @@ func setDefaults(cfgMgr *viper.Viper) {
 		"file:/run/telemetryservice/telemetry_timeseries_database.db?_foreign_keys=on&cache=shared&mode=rwc&_busy_timeout=1000")
 	cfgMgr.SetDefault("main.startup", "startup-events")
 	cfgMgr.SetDefault("main.mddirectory", "/usr/share/factory/telemetryservice/md/")
-	cfgMgr.SetDefault("main.mrddirectory", "/usr/share/factory/telemetryservice/mrd/")
+	cfgMgr.SetDefault("main.mrddirectory", "/var/lib/telemetryservice/mrd/")
 }
 
 // setup will startup am3 services and database connections
@@ -117,13 +117,14 @@ func shutdown(logger log.Logger, shutdownlist ...Shutdowner) {
 
 // Populate all MDs at start from filesystem
 func importPersistentSavedRedfishData(_ log.Logger, cfg *viper.Viper, bus eh.EventBus) error {
+
 	var persistentImportDirs = []struct {
 		name      string
 		subdir    string
 		eventType eh.EventType
 	}{
 		{"MetricDefinition", cfg.GetString("main.mddirectory"), telemetry.AddMDCommandEvent},
-		//{"MetricReportDefinition", cfg.GetString("main.mrddirectory"), telemetry.AddMRDCommandEvent},
+		{"MetricReportDefinition", cfg.GetString("main.mrddirectory"), telemetry.AddMRDCommandEvent},
 	}
 
 	// strategy: this process *has* to succeed. If it does not, return error and we panic.

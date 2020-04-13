@@ -1,0 +1,17 @@
+{
+  "Id": "CUPS",
+  "Name": "Compute Utilization Per Second (CUPS) Metric Report",
+  "Description": "Compute Utilization Per Second  (percent). This report is platform dependent and the data may not be available on all platforms.",
+  "MetricReportDefinitionEnabled": true,
+  "MetricReportDefinitionType": "Periodic",
+  "Schedule": {"RecurrenceInterval": "PT60S"},
+  "SuppressRepeatedMetricValue": false,
+  "ReportUpdates": "Overwrite",
+  "ReportActions": ["RedfishEvent", "LogToMetricReportsCollection"],
+  "Metrics": [
+    {"MetricID": "CPUUsage"},
+    {"MetricID": "IOUsage"},
+    {"MetricID": "MemoryUsage"},
+    {"MetricID": "SystemUsage"}
+  ]
+}
