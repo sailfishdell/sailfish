@@ -4,6 +4,7 @@
 pprof: [ "unix:/run/telemetryservice/http.socket" ]
 SSE: [ "unix:/run/telemetryservice/http.socket" ]
 Redfish: [ "unix:/run/telemetryservice/http.socket" ]
+pipe: [ "/run/telemetryservice/metric-engine.pipe" ]
 
 UDB-Metric-Import:
   CurrentCUPS:
