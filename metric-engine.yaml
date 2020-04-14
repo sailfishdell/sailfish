@@ -926,7 +926,7 @@ internal:
       UPDATE MetricInstance set Dirty=true
 
     set_metric_instance_clean: |
-      UPDATE MetricInstance set Dirty=false where ID=:InstanceID
+      UPDATE MetricInstance set Dirty=false, RequiresExpand=:MVRequiresExpand where ID=:InstanceID
 
     iterate_metric_instance: |
       select distinct
