@@ -43,9 +43,7 @@ func (rh *SSEHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	r.Body.Close()
 	flusher.Flush()
 
-	l := eventwaiter.NewListener(ctx, requestLogger, rh.d.GetWaiter(), func(event eh.Event) bool {
-		return rh.evtFilterFn(event)
-	})
+	l := eventwaiter.NewListener(ctx, requestLogger, rh.d.GetWaiter(), rh.evtFilterFn)
 	l.Name = "SSE Listener"
 	defer l.Close()
 
