@@ -39,6 +39,7 @@ func addPipeHandlers(logger log.Logger, cfgMgr *viper.Viper, d busIntf, _ *httpc
 	cfgMgr = nil
 
 	for _, pipePath := range pipePaths {
+		logger.Crit("Starting up pipe listener", "path", pipePath)
 		go rawjsonstream.StartPipeHandler(logger, pipePath, d.GetBus())
 	}
 }
