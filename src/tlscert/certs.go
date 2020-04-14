@@ -94,7 +94,9 @@ func Load(options ...Option) (c *mycert, err error) {
 	return
 }
 
-// ApplyOption will run the given option functions against the certificate. It's usually done implicitly in the constructor against options given on construction, however it can also be called at runtime to set options.
+// ApplyOption will run the given option functions against the certificate.
+// It's usually done implicitly in the constructor against options given on
+// construction, however it can also be called at runtime to set options.
 func (c *mycert) ApplyOption(options ...Option) error {
 	for _, o := range options {
 		err := o(c)
@@ -124,14 +126,14 @@ func SetBaseFilename(fn string) Option {
 // CreateCA is an option to make this certificate a CA cert
 func CreateCA(c *mycert) error {
 	c.cert.IsCA = true
-	c.cert.KeyUsage = c.cert.KeyUsage | x509.KeyUsageCertSign
+	c.cert.KeyUsage |= x509.KeyUsageCertSign
 	c.cert.BasicConstraintsValid = true
 	return nil
 }
 
 // MakeServer is an option that sets the certificate up to be used in an SSL/HTTPS server
 func MakeServer(c *mycert) error {
-	c.cert.KeyUsage = c.cert.KeyUsage | x509.KeyUsageKeyEncipherment
+	c.cert.KeyUsage |= x509.KeyUsageKeyEncipherment
 	return nil
 }
 
