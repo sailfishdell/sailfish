@@ -165,6 +165,10 @@ func addEventHandlers(logger log.Logger, am3Svc eventHandler, telemetryMgr *tele
 	if err != nil {
 		return err
 	}
+	err = am3Svc.AddEventHandler("Create Trigger", CreateTriggerCommandEvent, MakeHandlerCreateTrigger(logger, telemetryMgr, bus))
+	if err != nil {
+		return err
+	}
 	err = am3Svc.AddEventHandler("Generate Metric Report", metric.GenerateReportCommandEvent, MakeHandlerGenReport(logger, telemetryMgr, bus))
 	if err != nil {
 		return err
@@ -350,6 +354,33 @@ func MakeHandlerCreateMD(logger log.Logger, telemetryMgr *telemetryManager, bus 
 		respEvent, err := mdDef.NewResponseEvent(addError)
 		if err != nil {
 			logger.Crit("Error creating response event", "err", err, "MetricDefinition", mdDef.MetricDefinitionData.MetricID)
+			return
+		}
+
+		publishHelper(logger, bus, respEvent)
+	}
+}
+
+// Trigger event handlers
+func MakeHandlerCreateTrigger(logger log.Logger, telemetryMgr *telemetryManager, bus eh.EventBus) func(eh.Event) {
+	return func(event eh.Event) {
+		tdDef, ok := event.Data().(*CreateTriggerCommandData)
+		if !ok {
+			logger.Crit("CreateTriggerCommandEvent handler got event of incorrect format")
+			return
+		}
+
+		// Can't write to event sent in, so make a local copy
+		locaTdDefCopy := *tdDef
+		addError := telemetryMgr.createTrigger(&locaTdDefCopy.TriggerData)
+		if addError != nil {
+			logger.Crit("Failed to create or update the Trigger", "RedfishID", tdDef.TriggerData.RedfishID, "err", addError)
+		}
+
+		// Generate a "response" event that carries status back to initiator
+		respEvent, err := tdDef.NewResponseEvent(addError)
+		if err != nil {
+			logger.Crit("Error creating response event", "err", err, "Trigger", tdDef.TriggerData.RedfishID)
 			return
 		}
 

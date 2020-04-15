@@ -1,0 +1,44 @@
+{
+    "@odata.type": "#Triggers.v1_1_1.Triggers",
+    "Id": "VLTCriticalTrigger",
+    "Name":"Trigger on system components voltage critical errors",
+    "Description": "Trigger when an OEM event is raised",
+    "MetricType": "Discrete",
+    "TriggerActions": [
+        "RedfishMetricReport"
+    ],
+    "EventTriggers": [
+        "iDRAC.1.6.VLT0210",
+        "iDRAC.1.6.VLT0231",
+        "iDRAC.1.6.VLT0104",
+        "iDRAC.1.6.VLT0204",
+        "iDRAC.1.6.VLT0209",
+        "iDRAC.1.6.VLT0207",
+        "iDRAC.1.6.VLT0219",
+        "iDRAC.1.6.VLT0203",
+        "iDRAC.1.6.VLT0303",
+        "iDRAC.1.6.VLT0234",
+        "iDRAC.1.6.VLT0227",
+        "iDRAC.1.6.VLT0216",
+        "iDRAC.1.6.VLT0201",
+        "iDRAC.1.6.VLT0233",
+        "iDRAC.1.6.VLT0225",
+        "iDRAC.1.6.VLT0301",
+        "iDRAC.1.6.VLT0304",
+        "iDRAC.1.6.VLT0222",
+        "iDRAC.1.6.VLT0215",
+        "iDRAC.1.6.VLT0213",
+        "iDRAC.1.6.VLT0228",
+        "iDRAC.1.6.VLT0221"
+    ],
+    "EventTriggers@odata.count": 22,
+    "Links": {
+    	"MetricReportDefinitions": [
+    	{
+           "@odata.id": "/redfish/v1/TelemetryService/MetricReportDefinitions/PSUMetrics"
+    	}
+    	]
+    },
+    "@odata.context": "/redfish/v1/$metadata#Triggers.Triggers",
+    "@odata.id": "/redfish/v1/TelemetryService/Triggers/VLTCriticalTrigger"
+}

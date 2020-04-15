@@ -814,6 +814,21 @@ internal:
                ( Name,  ShortDesc,  LongDesc,  Enabled,  AppendLimit,  Type,  SuppressDups,  Actions,  Updates,  Period,  TimeSpan,  Hidden)
         VALUES (:Name, :ShortDesc, :LongDesc, :Enabled, :AppendLimit, :Type, :SuppressDups, :Actions, :Updates, :Period, :TimeSpan, :Hidden)
 
+    trg_insert: |
+      INSERT INTO Trigger
+               ( RedfishID, Name, Description, MetricType, TriggerActions)
+        VALUES (:RedfishID, :Name, :Description, :MetricType, :TriggerActions)
+
+    evttrg_insert: |
+      INSERT INTO EventTriggers
+               ( EemiID, TriggerID)
+        VALUES (:EemiID, :TriggerID)
+
+    trgmrd_insert: |
+      INSERT INTO TriggerToMRD
+               ( MetricReportDefinitionID, TriggerID)
+        VALUES (:MetricReportDefinitionID, :TriggerID)
+
     mrd_update: |
       UPDATE MetricReportDefinition
       SET
@@ -1630,6 +1645,10 @@ createdb:
         select root, [@odata.id] from MetricReport_JSON
           UNION ALL
         select root, [@odata.id] from TelemetryService_JSON
+             UNION ALL
+        select root, [@odata.id] from Trigger_JSON
+             UNION ALL
+         select root, [@odata.id] from TriggerCollectionView_JSON
 
 # Backwards compat stuff to get the fcgi_rfsql to work. Drop the tables in a separate statement because it can error out (and be ignored)
   - |
@@ -1685,8 +1704,7 @@ createdb:
 
 # TODO: currently gets default values a current triggers, need to reflect config
   - |
-      DROP VIEW IF EXISTS TblTelemetryAttributesReportTrigger;
-      CREATE VIEW         TblTelemetryAttributesReportTrigger AS
+      CREATE VIEW IF NOT EXISTS TblTelemetryAttributesReportTrigger AS
         SELECT
           TriggerId as CurrentValue,
           'iDRAC.Embedded.1#Telemetry' || Name || '.1#ReportTriggers'  as Key
@@ -1696,8 +1714,7 @@ createdb:
           instr(MetricReport, Name) > 0
 
   - |
-      DROP VIEW IF EXISTS TblTelemetryAttributes;
-      CREATE VIEW         TblTelemetryAttributes AS
+      CREATE VIEW IF NOT EXISTS TblTelemetryAttributes AS
         SELECT * FROM TblTelemetryAttributesREPORT
         UNION ALL
         SELECT * FROM TblTelemetryAttributesRFEnable
@@ -1707,117 +1724,106 @@ createdb:
         SELECT REPLACE(group_concat(DISTINCT CurrentValue),',',','), Key from TblTelemetryAttributesReportTrigger GROUP BY Key
 
   - |
-     DROP TABLE IF EXISTS TblTriggerMetricReport;
-      CREATE TABLE IF NOT EXISTS TblTriggerMetricReport
+      CREATE TABLE IF NOT EXISTS TriggerToMRD
       (
-        EemiId TEXT,
-        TriggerId TEXT,
-        MetricReport TEXT
+        MetricReportDefinitionID      INTEGER not null,
+        TriggerID			  INTEGER not null,
+
+        -- indexes and constraints
+        primary key (TriggerID, MetricReportDefinitionID)
+        foreign key (TriggerID)
+          references Trigger (ID)
+            on delete cascade
+        foreign key (MetricReportDefinitionID)
+          references MetricReportDefinition (ID)
+            on delete cascade
       );
 
   - |
-     INSERT INTO TblTriggerMetricReport ( EemiId, TriggerId, MetricReport )
-      VALUES
-      ('iDRAC.1.6.TMP1000','TMPWarnTrigger','ThermalSensor,ThermalMetrics'),
-      ('iDRAC.1.6.TMP0100','TMPWarnTrigger','ThermalSensor,ThermalMetrics'),
-      ('iDRAC.1.6.TMP0130','TMPWarnTrigger','ThermalSensor,ThermalMetrics'),
-      ('iDRAC.1.6.TMP0126','TMPWarnTrigger','ThermalSensor,ThermalMetrics'),
-      ('iDRAC.1.6.TMPS0100','TMPWarnTrigger','ThermalSensor,ThermalMetrics'),
-      ('iDRAC.1.6.TMP0118','TMPWarnTrigger','ThermalSensor,ThermalMetrics'),
-      ('iDRAC.1.6.TMP1001','TMPWarnTrigger','ThermalSensor,ThermalMetrics'),
-      ('iDRAC.1.6.TMP0114','TMPWarnTrigger','ThermalSensor,ThermalMetrics'),
-      ('iDRAC.1.6.TMP0112','TMPWarnTrigger','ThermalSensor,ThermalMetrics'),
-      ('iDRAC.1.6.TMPS0101','TMPWarnTrigger','ThermalSensor,ThermalMetrics'),
-      ('iDRAC.1.6.TMP0120','TMPWarnTrigger','ThermalSensor,ThermalMetrics'),
-      ('iDRAC.1.6.TMP0102','TMPWarnTrigger','ThermalSensor,ThermalMetrics'),
-      ('iDRAC.1.6.TMP0119','TMPCriticalTrigger','ThermalSensor,ThermalMetrics'),
-      ('iDRAC.1.6.TMP0131','TMPCriticalTrigger','ThermalSensor,ThermalMetrics'),
-      ('iDRAC.1.6.TMP0133','TMPCriticalTrigger','ThermalSensor,ThermalMetrics'),
-      ('iDRAC.1.6.TMP1002','TMPCriticalTrigger','ThermalSensor,ThermalMetrics'),
-      ('iDRAC.1.6.TMP7','TMPCriticalTrigger','ThermalSensor,ThermalMetrics'),
-      ('iDRAC.1.6.TMP0107','TMPCriticalTrigger','ThermalSensor,ThermalMetrics'),
-      ('iDRAC.1.6.TMP0121','TMPCriticalTrigger','ThermalSensor,ThermalMetrics'),
-      ('iDRAC.1.6.TMP0113','TMPCriticalTrigger','ThermalSensor,ThermalMetrics'),
-      ('iDRAC.1.6.TMP0110','TMPCriticalTrigger','ThermalSensor,ThermalMetrics'),
-      ('iDRAC.1.6.TMP0116','TMPCriticalTrigger','ThermalSensor,ThermalMetrics'),
-      ('iDRAC.1.6.TMP0134','TMPCriticalTrigger','ThermalSensor,ThermalMetrics'),
-      ('iDRAC.1.6.TMP0122','TMPCriticalTrigger','ThermalSensor,ThermalMetrics'),
-      ('iDRAC.1.6.TMP1003','TMPCriticalTrigger','ThermalSensor,ThermalMetrics'),
-      ('iDRAC.1.6.TMP0115','TMPCriticalTrigger','ThermalSensor,ThermalMetrics'),
-      ('iDRAC.1.6.TMP0104','TMPCriticalTrigger','ThermalSensor,ThermalMetrics'),
-      ('iDRAC.1.6.TMP0103','TMPCriticalTrigger','ThermalSensor,ThermalMetrics'),
-      ('iDRAC.1.6.TMP0202','TMPCpuWarnTrigger','CUPS,CPUSensor'),
-      ('iDRAC.1.6.TMP0200','TMPCpuWarnTrigger','CUPS,CPUSensor'),
-      ('iDRAC.1.6.MEM0003','MEMCriticalTrigger','MemorySensor'),
-      ('iDRAC.1.6.MEM0010','MEMCriticalTrigger','MemorySensor'),
-      ('iDRAC.1.6.MEM0702','MEMCriticalTrigger','MemorySensor'),
-      ('iDRAC.1.6.MEM0002','MEMCriticalTrigger','MemorySensor'),
-      ('iDRAC.1.6.TMP0127','TMPDiskCriticalTrigger','ThermalMetrics'),
-      ('iDRAC.1.6.TMP0125','TMPDiskCriticalTrigger','ThermalMetrics'),
-      ('iDRAC.1.6.TMP0128','TMPDiskCriticalTrigger','ThermalMetrics'),
-      ('iDRAC.1.6.MEM0701','MEMWarnTrigger','MemorySensor'),
-      ('iDRAC.1.6.PDR112','NVMeWarnTrigger','NVMeSMARTData'),
-      ('iDRAC.1.6.PDR113','NVMeWarnTrigger','NVMeSMARTData'),
-      ('iDRAC.1.6.PDR116','NVMeWarnTrigger','NVMeSMARTData'),
-      ('iDRAC.1.6.FAN0012','FANWarnTrigger','FanSensor'),
-      ('iDRAC.1.6.FAN0002','FANWarnTrigger','FanSensor'),
-      ('iDRAC.1.6.FAN0000','FANWarnTrigger','FanSensor'),
-      ('iDRAC.1.6.FAN0013','FANCriticalTrigger','FanSensor'),
-      ('iDRAC.1.6.FAN0016','FANCriticalTrigger','FanSensor'),
-      ('iDRAC.1.6.FAN0003','FANCriticalTrigger','FanSensor'),
-      ('iDRAC.1.6.FAN0004','FANCriticalTrigger','FanSensor'),
-      ('iDRAC.1.6.FAN0015','FANCriticalTrigger','FanSensor'),
-      ('iDRAC.1.6.FAN0001','FANCriticalTrigger','FanSensor'),
-      ('iDRAC.1.6.VLT0210','VLTCriticalTrigger','PSUMetrics'),
-      ('iDRAC.1.6.VLT0231','VLTCriticalTrigger','PSUMetrics'),
-      ('iDRAC.1.6.VLT0104','VLTCriticalTrigger','PSUMetrics'),
-      ('iDRAC.1.6.VLT0204','VLTCriticalTrigger','PSUMetrics'),
-      ('iDRAC.1.6.VLT0209','VLTCriticalTrigger','PSUMetrics'),
-      ('iDRAC.1.6.VLT0207','VLTCriticalTrigger','PSUMetrics'),
-      ('iDRAC.1.6.VLT0219','VLTCriticalTrigger','PSUMetrics'),
-      ('iDRAC.1.6.VLT0203','VLTCriticalTrigger','PSUMetrics'),
-      ('iDRAC.1.6.VLT0303','VLTCriticalTrigger','PSUMetrics'),
-      ('iDRAC.1.6.VLT0234','VLTCriticalTrigger','PSUMetrics'),
-      ('iDRAC.1.6.VLT0227','VLTCriticalTrigger','PSUMetrics'),
-      ('iDRAC.1.6.VLT0216','VLTCriticalTrigger','PSUMetrics'),
-      ('iDRAC.1.6.VLT0201','VLTCriticalTrigger','PSUMetrics'),
-      ('iDRAC.1.6.VLT0233','VLTCriticalTrigger','PSUMetrics'),
-      ('iDRAC.1.6.VLT0225','VLTCriticalTrigger','PSUMetrics'),
-      ('iDRAC.1.6.VLT0301','VLTCriticalTrigger','PSUMetrics'),
-      ('iDRAC.1.6.VLT0304','VLTCriticalTrigger','PSUMetrics'),
-      ('iDRAC.1.6.VLT0222','VLTCriticalTrigger','PSUMetrics'),
-      ('iDRAC.1.6.VLT0215','VLTCriticalTrigger','PSUMetrics'),
-      ('iDRAC.1.6.VLT0213','VLTCriticalTrigger','PSUMetrics'),
-      ('iDRAC.1.6.VLT0228','VLTCriticalTrigger','PSUMetrics'),
-      ('iDRAC.1.6.VLT0221','VLTCriticalTrigger','PSUMetrics'),
-      ('iDRAC.1.6.TMP0204','TMPCpuCriticalTrigger','CUPS,CPUSensor'),
-      ('iDRAC.1.6.TMP0201','TMPCpuCriticalTrigger','CUPS,CPUSensor'),
-      ('iDRAC.1.6.TMP0203','TMPCpuCriticalTrigger','CUPS,CPUSensor'),
-      ('iDRAC.1.6.CPU0010','CPUWarnTrigger','CPUSensor'),
-      ('iDRAC.1.6.PDR64','PDRCriticalTrigger','StorageDiskSMARTData'),
-      ('iDRAC.1.6.PDR44','PDRCriticalTrigger','StorageDiskSMARTData'),
-      ('iDRAC.1.6.PDR63','PDRCriticalTrigger','StorageDiskSMARTData'),
-      ('iDRAC.1.6.PDR62','PDRCriticalTrigger','StorageDiskSMARTData'),
-      ('iDRAC.1.6.PDR46','PDRCriticalTrigger','StorageDiskSMARTData'),
-      ('iDRAC.1.6.PDR61','PDRCriticalTrigger','StorageDiskSMARTData'),
-      ('iDRAC.1.6.PDR57','PDRCriticalTrigger','StorageDiskSMARTData'),
-      ('iDRAC.1.6.PDR47','PDRCriticalTrigger','StorageDiskSMARTData'),
-      ('iDRAC.1.6.PDR73','PDRCriticalTrigger','StorageDiskSMARTData'),
-      ('iDRAC.1.6.TMP0124','TMPDiskWarnTrigger','ThermalMetrics'),
-      ('iDRAC.1.6.CPU0004','CPUCriticalTrigger','CPUSensor'),
-      ('iDRAC.1.6.CPU0700','CPUCriticalTrigger','CPUSensor'),
-      ('iDRAC.1.6.CPU0702','CPUCriticalTrigger','CPUSensor'),
-      ('iDRAC.1.6.CPU0006','CPUCriticalTrigger','CPUSensor'),
-      ('iDRAC.1.6.CPU0703','CPUCriticalTrigger','CPUSensor'),
-      ('iDRAC.1.6.CPU0701','CPUCriticalTrigger','CPUSensor'),
-      ('iDRAC.1.6.CPU0003','CPUCriticalTrigger','CPUSensor'),
-      ('iDRAC.1.6.PDR1102','PDRWarnTrigger','StorageDiskSMARTData'),
-      ('iDRAC.1.6.PDR86','PDRWarnTrigger','StorageDiskSMARTData'),
-      ('iDRAC.1.6.PDR1002','PDRWarnTrigger','StorageDiskSMARTData'),
-      ('iDRAC.1.6.PDR16','PDRWarnTrigger','StorageDiskSMARTData'),
-      ('iDRAC.1.6.PDR117','NVMeCriticalTrigger','NVMeSMARTData'),
-      ('iDRAC.1.6.CPU0000','IERRCriticalTrigger','CPURegisters');
+      CREATE TABLE IF NOT EXISTS EventTriggers
+      (
+        ID          		  INTEGER NOT NULL PRIMARY KEY,
+        EemiID      		  TEXT not null,
+        TriggerID             INTEGER not null,
 
+        -- indexes and constraints
+        foreign key (TriggerID)
+          references Trigger (ID)
+            on delete cascade
+      );
+
+  - |
+     CREATE TABLE IF NOT EXISTS Trigger
+     (
+       ID              INTEGER NOT NULL PRIMARY KEY,
+       RedfishID       TEXT UNIQUE NOT NULL,
+       Name            TEXT NOT NULL,
+       Description     TEXT NOT NULL,
+       MetricType      TEXT NOT NULL,
+       TriggerActions  TEXT NOT NULL
+     );
+
+  - |
+     -- 'MetricReport' in the column below is mistnmaed and is actually a MetricReportDefinition
+     -- but have to keep this name for compat reasons
+      CREATE VIEW IF NOT EXISTS TblTriggerMetricReport AS
+      SELECT
+        ET.EemiID as EemiId,
+        Trigger.RedfishID as TriggerId,
+        MRD.Name as MetricReport
+      FROM EventTriggers as ET, TriggerToMRD as TR2MRD
+      INNER JOIN Trigger ON Trigger.ID = ET.TriggerID
+      INNER JOIN MetricReportDefinition as MRD ON
+         TR2MRD.MetricReportDefinitionID = MRD.ID
+      WHERE
+         TR2MRD.TriggerID = Trigger.ID;
+
+  - |
+     CREATE VIEW IF NOT EXISTS Trigger_JSON AS
+      SELECT
+      (
+       '{' ||
+       ' "@odata.type": "#Triggers.v1_1_1.Triggers",' ||
+       ' "@odata.context": "/redfish/v1/$metadata#Triggers.Triggers",' ||
+       ' "@odata.id": "/redfish/v1/TelemetryService/Triggers/' || RedfishID || '",' ||
+       ' "Id": "' || RedfishID || '",' ||
+       ' "Name": "' || Name || '",' ||
+       ' "Description": "' || Description || '",' ||
+       ' "MetricType": "' || MetricType || '",' ||
+       ' "TriggerActions": ' || TriggerActions || ',' ||
+       ' "EventTriggers": ' ||
+          (select json_group_array( EemiID) from EventTriggers where EventTriggers.TriggerID = Trigger.ID)  || ',' ||
+       ' "EventTriggers@odata.count": ' ||
+          (select count(EemiID) from EventTriggers where EventTriggers.TriggerID = Trigger.ID)  || ',' ||
+       ' "Links": ' ||
+         json_object (  'MetricReportDefinitions', (
+           select
+             json_group_array( json_object('@odata.id', '/redfish/v1/TelemetryService/MetricReportDefinitions/' ||
+                (select Name from MetricReportDefinition where MetricReportDefinitionID = ID) ))
+           from TriggerToMRD
+           where TriggerToMRD.TriggerID = Trigger.ID )) ||
+       '}'
+       ) AS root,
+            '/redfish/v1/TelemetryService/Triggers/' || RedfishID AS [@odata.id]
+       FROM Trigger;
+
+  - |
+     CREATE VIEW IF NOT EXISTS TriggerCollectionView_JSON as
+      select
+      json_object(
+      "@odata.context", "/redfish/v1/$metadata#TriggerCollection.TriggerCollection",
+      "@odata.id", "/redfish/v1/TelemetryService/Triggers",
+      "@odata.type", "#TriggerCollection.TriggerCollection",
+      "Name", "Triggers",
+      'Members', (
+        select
+          json_group_array( json_object('@odata.id', [@odata.id]) )
+        from Trigger_JSON
+       )
+      ) as root,
+        '/redfish/v1/TelemetryService/Triggers' as [@odata.id]
+
+  # Table populated at metric-engine start by reading MD jsons
   - |
      CREATE TABLE IF NOT EXISTS MetricDefinition
      (
@@ -1834,8 +1840,7 @@ createdb:
      );
 
   - |
-     DROP VIEW IF EXISTS MetricDefinition_JSON;
-     CREATE VIEW MetricDefinition_JSON as
+     CREATE VIEW IF NOT EXISTS MetricDefinition_JSON as
       SELECT
       (
        '{' ||
@@ -1857,8 +1862,7 @@ createdb:
        FROM MetricDefinition;
 
   - |
-     DROP VIEW IF EXISTS MetricDefinitionCollection_JSON;
-     CREATE VIEW MetricDefinitionCollection_JSON as
+     CREATE VIEW IF NOT EXISTS MetricDefinitionCollection_JSON as
       select
        json_object(
         "@odata.context", "/redfish/v1/$metadata#MetricDefinitionCollection.MetricDefinitionCollection",

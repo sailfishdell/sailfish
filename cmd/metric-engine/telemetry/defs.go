@@ -3,7 +3,9 @@ package telemetry
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
+	"strings"
 	"time"
 
 	eh "github.com/looplab/eventhorizon"
@@ -32,6 +34,10 @@ const (
 	// MD - Metric Definition
 	AddMDCommandEvent  eh.EventType = "AddMetricDefinitionEvent"
 	AddMDResponseEvent eh.EventType = "AddMetricDefinitionEventResponse"
+
+	// Trigger
+	CreateTriggerCommandEvent  eh.EventType = "CreateTriggerEvent"
+	CreateTriggerResponseEvent eh.EventType = "CreateTriggerEventResponse"
 
 	// generic events
 	DatabaseMaintenance eh.EventType = "DatabaseMaintenanceEvent"
@@ -114,6 +120,46 @@ type MetricDefinitionData struct {
 	SensingInterval string      `db:"SensingInterval"   json:"SensingInterval"`
 	Accuracy        float32     `db:"Accuracy"          json:"Accuracy"`
 	DiscreteValues  StringArray `db:"DiscreteValues"   json:"DiscreteValues"`
+}
+
+// TriggerData - is the eh event data for adding a new new definition (future)
+//   TODO: this definition is only for the current EEMID based event triggers, needs change/addition
+//          for other types of trigger like numeric
+type TriggerData struct {
+	RedfishID      string      `db:"RedfishID"         json:"Id"`
+	Name           string      `db:"Name"              json:"Name"`
+	Description    string      `db:"Description"       json:"Description"`
+	MetricType     string      `db:"MetricType"        json:"MetricType"`
+	TriggerActions StringArray `db:"TriggerActions"    json:"TriggerActions"`
+	MRDList        StringArray `db:"-"                 json:"-"`             // MRDID [list]
+	EventTriggers  StringArray `db:"-"                 json:"EventTriggers"` // EEMIID [list]
+}
+
+// UnmarshalJSON special decoder for MetricReportDefinitionData to unmarshal "Links" and "DiscreteTriggers"
+func (trg *TriggerData) UnmarshalJSON(data []byte) error {
+	type Alias TriggerData
+	target := struct {
+		*Alias
+		Links struct {
+			MetricReportDefinitions []struct {
+				OdataId string `json:"@odata.id"`
+			}
+		}
+	}{
+		Alias: (*Alias)(trg),
+	}
+
+	if err := json.Unmarshal(data, &target); err != nil {
+		fmt.Println("error json.Unmarshal")
+		return err
+	}
+	// MRDID list array
+	for _, mrd := range target.Links.MetricReportDefinitions {
+		comps := strings.Split(mrd.OdataId, "/")
+		trg.MRDList = append(trg.MRDList, comps[len(comps)-1])
+	}
+
+	return nil
 }
 
 // RawMetricMeta is a sub structure to help serialize stuff to db. it containst
@@ -251,6 +297,36 @@ type AddMDResponseData struct {
 	metric.CommandResponse
 }
 
+// Trigger defs
+type Trigger struct {
+	*TriggerData
+	ID int64 `db:"ID"`
+}
+
+type CreateTriggerCommandData struct {
+	metric.Command
+	TriggerData
+}
+
+func (a *CreateTriggerCommandData) UseInput(ctx context.Context, logger log.Logger, r io.Reader) error {
+	decoder := json.NewDecoder(r)
+	return decoder.Decode(a)
+}
+
+type CreateTriggerResponseData struct {
+	metric.CommandResponse
+}
+
+func Factory(et eh.EventType) func() (eh.Event, error) {
+	return func() (eh.Event, error) {
+		data, err := eh.CreateEventData(et)
+		if err != nil {
+			return nil, fmt.Errorf("could not create request report command: %w", err)
+		}
+		return eh.NewEvent(et, data, time.Now()), nil
+	}
+}
+
 func RegisterEvents() {
 	CMD := metric.NewCommand // save some verbosity
 
@@ -292,6 +368,12 @@ func RegisterEvents() {
 		return &AddMDCommandData{Command: CMD(AddMDResponseEvent)}
 	})
 	eh.RegisterEventData(AddMDResponseEvent, func() eh.EventData { return &AddMDResponseData{} })
+
+	// =========== CREATE Trigger - CreateTriggerCommandEvent ==========================
+	eh.RegisterEventData(CreateTriggerCommandEvent, func() eh.EventData {
+		return &CreateTriggerCommandData{Command: metric.NewCommand(CreateTriggerResponseEvent)}
+	})
+	eh.RegisterEventData(CreateTriggerResponseEvent, func() eh.EventData { return &CreateTriggerResponseData{} })
 
 	// These aren't planned to ever be commands
 	//   - no need for these to be callable from redfish or other interfaces

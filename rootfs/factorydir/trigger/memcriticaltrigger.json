@@ -1,0 +1,26 @@
+{
+    "@odata.type": "#Triggers.v1_1_1.Triggers",
+    "Id": "MEMCriticalTrigger",
+    "Name":"Trigger on memory critical errors",
+    "Description": "Trigger when an OEM event is raised",
+    "MetricType": "Discrete",
+    "TriggerActions": [
+        "RedfishMetricReport"
+    ],
+    "EventTriggers": [
+        "iDRAC.1.6.MEM0003",
+        "iDRAC.1.6.MEM0010",
+        "iDRAC.1.6.MEM0702",
+        "iDRAC.1.6.MEM0002"
+    ],
+    "EventTriggers@odata.count": 4,
+    "Links": {
+    	"MetricReportDefinitions": [
+    	{
+           "@odata.id": "/redfish/v1/TelemetryService/MetricReportDefinitions/MemorySensor"
+    	}
+    	]
+    },
+    "@odata.context": "/redfish/v1/$metadata#Triggers.Triggers",
+    "@odata.id": "/redfish/v1/TelemetryService/Triggers/MEMCriticalTrigger"
+}

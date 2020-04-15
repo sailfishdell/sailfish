@@ -37,6 +37,7 @@ func setDefaults(cfgMgr *viper.Viper) {
 	cfgMgr.SetDefault("main.startup", "startup-events")
 	cfgMgr.SetDefault("main.mddirectory", "/usr/share/factory/telemetryservice/md/")
 	cfgMgr.SetDefault("main.mrddirectory", "/usr/share/factory/telemetryservice/mrd/")
+	cfgMgr.SetDefault("main.triggerdirectory", "/usr/share/factory/telemetryservice/trigger/")
 }
 
 // setup will startup am3 services and database connections
@@ -124,6 +125,7 @@ func importPersistentSavedRedfishData(_ log.Logger, cfg *viper.Viper, bus eh.Eve
 	}{
 		{"MetricDefinition", cfg.GetString("main.mddirectory"), telemetry.AddMDCommandEvent},
 		{"MetricReportDefinition", cfg.GetString("main.mrddirectory"), telemetry.AddMRDCommandEvent},
+		{"Trigger", cfg.GetString("main.triggerdirectory"), telemetry.CreateTriggerCommandEvent},
 	}
 
 	// strategy: this process *has* to succeed. If it does not, return error and we panic.

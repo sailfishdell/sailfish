@@ -493,6 +493,74 @@ func (factory *telemetryManager) addMD(mdEvData *MetricDefinitionData) (err erro
 	})
 }
 
+func (factory *telemetryManager) createTrigger(trEvData *TriggerData) (err error) {
+	return factory.wrapWithTX(func(tx *sqlx.Tx) error {
+		//TODO: valid Trigger input, for now all good input read from files
+		//validateMD(td)
+
+		res, err := factory.getNamedSQLXTx(tx, "trg_insert").Exec(trEvData)
+		if err != nil {
+			if strings.HasPrefix(err.Error(), "UNIQUE constraint failed") {
+				return xerrors.Errorf("cannot ADD already existing Trigger(%s).", trEvData.RedfishID)
+			}
+			return xerrors.Errorf("error inserting Trigger(%s): %w", trEvData.RedfishID, err)
+		}
+
+		var trID int64
+		trID, err = res.LastInsertId()
+		if err != nil {
+			return xerrors.Errorf("error from LastInsertID for Trigger(%s): %w", trEvData.RedfishID, err)
+		}
+
+		// populate EventTriggers
+		for _, eemiid := range trEvData.EventTriggers {
+			evttrg := struct {
+				EemiID    string `db:"EemiID"`
+				TriggerID int64  `db:"TriggerID"`
+			}{EemiID: eemiid, TriggerID: trID}
+
+			_, err := factory.getNamedSQLXTx(tx, "evttrg_insert").Exec(&evttrg)
+			if err != nil {
+				if strings.HasPrefix(err.Error(), "UNIQUE constraint failed") {
+					return xerrors.Errorf("cannot ADD already existing EVTTRG(%s,%d)",
+						evttrg.EemiID, evttrg.TriggerID)
+				}
+				return xerrors.Errorf("error inserting TRGMR(%s,%d): %w",
+					evttrg.EemiID, evttrg.TriggerID, err)
+			}
+		}
+
+		// populate TriggerToMRD
+
+		for _, mrdname := range trEvData.MRDList {
+			MRD := &MetricReportDefinition{
+				MetricReportDefinitionData: &MetricReportDefinitionData{Name: mrdname},
+			}
+			err = factory.loadReportDefinition(tx, MRD)
+			if err != nil || MRD.ID == 0 {
+				return xerrors.Errorf("error getting MetricReportDefinition: ID(%d) NAME(%s) err: %w",
+					MRD.ID, MRD.Name, err)
+			}
+			trgmrd := struct {
+				MetricReportDefinitionID int64 `db:"MetricReportDefinitionID"`
+				TriggerID                int64 `db:"TriggerID"`
+			}{MetricReportDefinitionID: MRD.ID, TriggerID: trID}
+
+			_, err := factory.getNamedSQLXTx(tx, "trgmrd_insert").Exec(&trgmrd)
+			if err != nil {
+				if strings.HasPrefix(err.Error(), "UNIQUE constraint failed") {
+					return xerrors.Errorf("cannot ADD already existing TRGMR(%d:%s,%d:%s )",
+						trgmrd.MetricReportDefinitionID, mrdname, trEvData.RedfishID, trgmrd.TriggerID)
+				}
+				return xerrors.Errorf("error inserting TRGMR(%d:%s,%d:%s ): %w",
+					trgmrd.MetricReportDefinitionID, mrdname, trEvData.RedfishID, trgmrd.TriggerID, err)
+			}
+		}
+
+		return nil
+	})
+}
+
 func (factory *telemetryManager) updateMMList(tx *sqlx.Tx, mrd *MetricReportDefinition) (err error) {
 	//=================================================
 	// Update the list of metrics for this report

@@ -1,0 +1,29 @@
+{
+    "@odata.type": "#Triggers.v1_1_1.Triggers",
+    "Id": "CPUCriticalTrigger",
+    "Name":"Trigger on CPU critical errors",
+    "Description": "Trigger when an OEM event is raised",
+    "MetricType": "Discrete",
+    "TriggerActions": [
+        "RedfishMetricReport"
+    ],
+    "EventTriggers": [
+        "iDRAC.1.6.CPU0004",
+        "iDRAC.1.6.CPU0700",
+        "iDRAC.1.6.CPU0702",
+        "iDRAC.1.6.CPU0006",
+        "iDRAC.1.6.CPU0703",
+        "iDRAC.1.6.CPU0701",
+        "iDRAC.1.6.CPU0003"
+    ],
+    "EventTriggers@odata.count": 7,
+    "Links": {
+    	"MetricReportDefinitions": [
+    	{
+           "@odata.id": "/redfish/v1/TelemetryService/MetricReportDefinitions/CPUSensor"
+    	}
+    	]
+    },
+    "@odata.context": "/redfish/v1/$metadata#Triggers.Triggers",
+    "@odata.id": "/redfish/v1/TelemetryService/Triggers/CPUCriticalTrigger"
+}
