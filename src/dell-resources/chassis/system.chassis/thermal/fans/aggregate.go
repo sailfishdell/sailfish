@@ -27,7 +27,7 @@ func RegisterAggregate(s *testaggregate.Service) {
 					},
 					Properties: map[string]interface{}{
 						"Description":   "Represents the properties for Fan and Cooling",
-						"FanName@meta":  vw.Meta(view.PropGET("name")),
+						"FanName@meta":  vw.Meta(view.PropGET("fanname")),
 						"MemberId@meta": vw.Meta(view.PropGET("unique_name")),
 						"ReadingUnits":  "RPM",
 						"Reading@meta":  vw.Meta(view.PropGET("rpm")),
