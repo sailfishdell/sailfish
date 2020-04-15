@@ -36,7 +36,7 @@ func setDefaults(cfgMgr *viper.Viper) {
 		"file:/run/telemetryservice/telemetry_timeseries_database.db?_foreign_keys=on&cache=shared&mode=rwc&_busy_timeout=1000")
 	cfgMgr.SetDefault("main.startup", "startup-events")
 	cfgMgr.SetDefault("main.mddirectory", "/usr/share/factory/telemetryservice/md/")
-	cfgMgr.SetDefault("main.mrddirectory", "/var/lib/telemetryservice/mrd/")
+	cfgMgr.SetDefault("main.mrddirectory", "/usr/share/factory/telemetryservice/mrd/")
 }
 
 // setup will startup am3 services and database connections
