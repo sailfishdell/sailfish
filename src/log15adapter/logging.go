@@ -72,12 +72,12 @@ func (l *MyLogger) ActivateConfigWatcher(logCfg *viper.Viper) {
 }
 
 type LoggingConfig struct {
-	Enabled         bool
+	ModulesToEnable []map[string]string
 	Level           string
 	FileName        string
+	Enabled         bool
 	PrintFunction   bool
 	PrintFile       bool
-	ModulesToEnable []map[string]string
 }
 
 func (l *MyLogger) SetupLogHandlersFromConfig(logCfg *viper.Viper) {
