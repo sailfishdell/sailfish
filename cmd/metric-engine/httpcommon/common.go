@@ -118,10 +118,11 @@ func (st *ServerTracker) startServer(handler http.Handler, listen string) {
 			ReadTimeout:    ReadTimeout,
 		}
 		unixListener, err := net.Listen("unix", addr)
-		if err == nil {
-			st.servers = append(st.servers, func() { st.logger.Info("Server exited", "err", s.Serve(unixListener)) })
-			st.addShutdown(listen, s)
+		if err != nil {
+			panic("Could not start required listener(" + addr + "). The error was: " + err.Error())
 		}
+		st.servers = append(st.servers, func() { st.logger.Info("Server exited", "err", s.Serve(unixListener)) })
+		st.addShutdown(listen, s)
 
 	case strings.HasPrefix(listen, "https:"):
 		// HTTPS protocol listener
