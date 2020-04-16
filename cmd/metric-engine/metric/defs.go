@@ -45,6 +45,14 @@ const (
 	HTTPStatusNotFound   = 404
 )
 
+type URIChanged struct {
+	URI string
+}
+
+func (u *URIChanged) SetURI(s string) {
+	u.URI = s
+}
+
 type Command struct {
 	RequestID    eh.UUID
 	ResponseType eh.EventType

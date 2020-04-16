@@ -24,7 +24,12 @@ const (
 	cleanMVTime  = 307 * time.Second
 	vacuumTime   = 3607 * time.Second
 	optimizeTime = 10831 * time.Second
+	mrdPath      = "/redfish/v1/TelemetryService/MetricReportDefinitions/"
 )
+
+type urisetter interface {
+	SetURI(string)
+}
 
 type busComponents interface {
 	GetBus() eh.EventBus
@@ -221,11 +226,11 @@ func MakeHandlerCreateMRD(logger log.Logger, telemetryMgr *telemetryManager, bus
 		// schedule cleanup next clock tick
 		dbmaint[deleteOrphans] = struct{}{}
 
-		// Can't write to event sent in, so make a local copy
 		localReportDefCopy := *reportDef
+		// Can't write to event sent in, so make a local copy
 		addError := telemetryMgr.addMRD(&localReportDefCopy.MetricReportDefinitionData)
 		if addError != nil {
-			logger.Crit("Failed to create or update the Report Definition", "Name", reportDef.Name, "err", addError)
+			logger.Crit("Failed to create or update the Metric Report Definition", "Name", reportDef.Name, "err", addError)
 		}
 
 		// Generate a "response" event that carries status back to initiator
@@ -233,6 +238,12 @@ func MakeHandlerCreateMRD(logger log.Logger, telemetryMgr *telemetryManager, bus
 		if err != nil {
 			logger.Crit("Error creating response event", "err", err, "ReportDefinition", reportDef.Name)
 			return
+		}
+		mrd := mrdPath + reportDef.Name
+
+		r, ok := respEvent.Data().(urisetter)
+		if ok {
+			r.SetURI(mrd)
 		}
 
 		// Should add the populated metric report definition event as a response?
@@ -265,6 +276,12 @@ func MakeHandlerUpdateMRD(logger log.Logger, telemetryMgr *telemetryManager, bus
 			return
 		}
 
+		mrd := mrdPath + localUpdate.ReportDefinitionName
+		r, ok := respEvent.Data().(urisetter)
+		if ok {
+			r.SetURI(mrd)
+		}
+
 		// Should add the populated metric report definition event as a response?
 		publishHelper(logger, bus, respEvent)
 	}
@@ -282,6 +299,7 @@ func MakeHandlerDeleteMRD(logger log.Logger, telemetryMgr *telemetryManager, bus
 		if delError != nil {
 			logger.Crit("Error deleting Metric Report Definition", "Name", reportDef.Name, "err", delError)
 		}
+
 		err := telemetryMgr.DeleteOrphans()
 		if err != nil {
 			logger.Crit("Orphan delete failed", "err", err)
@@ -292,6 +310,12 @@ func MakeHandlerDeleteMRD(logger log.Logger, telemetryMgr *telemetryManager, bus
 		if err != nil {
 			logger.Crit("Error creating response event", "err", err, "ReportDefinition", reportDef.Name)
 			return
+		}
+
+		mrd := mrdPath + reportDef.Name
+		r, ok := respEvent.Data().(urisetter)
+		if ok {
+			r.SetURI(mrd)
 		}
 
 		publishHelper(logger, bus, respEvent)

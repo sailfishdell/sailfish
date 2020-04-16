@@ -210,6 +210,7 @@ func (a *AddMRDCommandData) UseInput(ctx context.Context, logger log.Logger, r i
 
 type AddMRDResponseData struct {
 	metric.CommandResponse
+	metric.URIChanged
 }
 
 type UpdateMRDCommandData struct {
@@ -220,6 +221,7 @@ type UpdateMRDCommandData struct {
 
 type UpdateMRDResponseData struct {
 	metric.CommandResponse
+	metric.URIChanged
 }
 
 func (u *UpdateMRDCommandData) UseInput(ctx context.Context, logger log.Logger, r io.Reader) error {
@@ -244,6 +246,7 @@ func (delMRD *DeleteMRDCommandData) UseVars(ctx context.Context, logger log.Logg
 
 type DeleteMRDResponseData struct {
 	metric.CommandResponse
+	metric.URIChanged
 }
 
 type DeleteMRCommandData struct {
