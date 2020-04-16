@@ -2,11 +2,14 @@ package metric
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"time"
 
 	eh "github.com/looplab/eventhorizon"
+
+	"github.com/superchalupa/sailfish/cmd/metric-engine/response"
 )
 
 type Commander interface {
@@ -68,7 +71,7 @@ func (cmd *Command) NewStreamingResponse() (eh.Event, error) {
 	return eh.NewEvent(cmd.ResponseType, data, time.Now()), nil
 }
 
-func (cmd *Command) NewResponseEvent(responseErr error) (eh.Event, error) {
+func (cmd *Command) NewResponseEvent(resp interface{}) (eh.Event, error) {
 	data, err := eh.CreateEventData(cmd.ResponseType)
 	if err != nil {
 		return nil, fmt.Errorf("could not create response: %w", err)
@@ -83,17 +86,45 @@ func (cmd *Command) NewResponseEvent(responseErr error) (eh.Event, error) {
 	cr.responseHeaderHandler = cmd.responseHeaderHandler
 	cr.responseWriteHandler = cmd.responseWriteHandler
 
+	// ===========================================================================
+	// this block should be a good start on getting good output for all success and error cases
 	status := HTTPStatusOk
-	out := []byte("SUCCESS\n")
+	mf := response.NewMessageFactory()
 
-	if responseErr != nil {
-		status = HTTPStatusBadRequest
-		out = []byte("FAILED\n")
+	// if no resp given, return generic happy message
+	if resp == nil {
+		resp = response.NewResponse().
+			SetStatus(HTTPStatusOk).
+			AddPropertyExtendedInfo("", mf.NewMessage("BASE_OK", nil, nil)).
+			AddPropertyExtendedInfo("", mf.NewMessage("IDRAC_OK", nil, nil))
 	}
+
+	// If we got a response, but it isnt a "*response.Response", it's probably an
+	// 'error', so we should convert it to a *response.Response
+	if _, ok := resp.(*response.Response); !ok {
+		errStr := "Bad Request"
+		if err, ok := resp.(error); ok {
+			errStr = err.Error()
+		}
+		resp = response.NewResponse().
+			SetStatus(HTTPStatusBadRequest).
+			AddPropertyExtendedInfo("", mf.NewMessage("GENERAL_ERROR", []string{errStr}, nil))
+	}
+
+	type StatusGetter interface {
+		GetStatus() int
+	}
+	if st, ok := resp.(StatusGetter); ok {
+		status = st.GetStatus()
+	}
+	// ===========================================================================
+	// after this point, we are guaranteed to have a *response.Response
 
 	cr.WriteDefaultHeaders()
 	cr.WriteStatus(status)
-	cr.Write(out)
+
+	enc := json.NewEncoder(cr)
+	enc.Encode(resp)
 
 	return eh.NewEvent(cmd.ResponseType, cr, time.Now()), nil
 }
