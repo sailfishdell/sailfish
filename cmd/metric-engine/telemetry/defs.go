@@ -3,7 +3,6 @@ package telemetry
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"io"
 	"time"
 
@@ -46,39 +45,10 @@ type GenericGETCommandData struct {
 
 type GenericGETResponseData struct {
 	metric.CommandResponse
-	dataChan   chan []byte
-	statusChan chan int
 }
 
 func (u *GenericGETCommandData) UseVars(ctx context.Context, logger log.Logger, vars map[string]string) error {
 	u.URI = vars["uri"]
-	return nil
-}
-
-// panic if called multiple times, only call once!
-func (cr *GenericGETResponseData) SetStatus(s int) {
-	defer close(cr.statusChan)
-	cr.statusChan <- s
-}
-
-func (cr *GenericGETResponseData) Status(setStatus func(int)) {
-	// this will block until we get status, or until requester cancels request
-	select {
-	case s := <-cr.statusChan:
-		setStatus(s)
-	case <-cr.Ctx.Done():
-		// no-op, just drop out here and close it all down
-	}
-}
-
-func (cr *GenericGETResponseData) StreamResponse(w io.Writer) (err error) {
-	// this will block until dataChan is populated
-	for data := range cr.dataChan {
-		_, err = w.Write(data)
-		if err != nil {
-			return err
-		}
-	}
 	return nil
 }
 
@@ -281,57 +251,45 @@ type AddMDResponseData struct {
 	metric.CommandResponse
 }
 
-func Factory(et eh.EventType) func() (eh.Event, error) {
-	return func() (eh.Event, error) {
-		data, err := eh.CreateEventData(et)
-		if err != nil {
-			return nil, fmt.Errorf("could not create request report command: %w", err)
-		}
-		return eh.NewEvent(et, data, time.Now()), nil
-	}
-}
-
 func RegisterEvents() {
+	CMD := metric.NewCommand // save some verbosity
+
 	// Full commands (request/response)
 	// =========== GET - generically get any specific URI =======================
 	eh.RegisterEventData(GenericGETCommandEvent, func() eh.EventData {
-		return &GenericGETCommandData{Command: metric.NewCommand(GenericGETResponseEvent)}
+		return &GenericGETCommandData{Command: CMD(GenericGETResponseEvent)}
 	})
 	eh.RegisterEventData(GenericGETResponseEvent, func() eh.EventData {
-		ev := &GenericGETResponseData{
-			dataChan:   make(chan []byte),
-			statusChan: make(chan int),
-		}
-		return ev
+		return &GenericGETResponseData{}
 	})
 
 	// =========== ADD MRD - AddMRDCommand ==========================
 	eh.RegisterEventData(AddMRDCommandEvent, func() eh.EventData {
-		return &AddMRDCommandData{Command: metric.NewCommand(AddMRDResponseEvent)}
+		return &AddMRDCommandData{Command: CMD(AddMRDResponseEvent)}
 	})
 	eh.RegisterEventData(AddMRDResponseEvent, func() eh.EventData { return &AddMRDResponseData{} })
 
 	// =========== UPDATE MRD - UpdateMRDCommandEvent ====================
 	eh.RegisterEventData(UpdateMRDCommandEvent, func() eh.EventData {
-		return &UpdateMRDCommandData{Command: metric.NewCommand(UpdateMRDResponseEvent)}
+		return &UpdateMRDCommandData{Command: CMD(UpdateMRDResponseEvent)}
 	})
 	eh.RegisterEventData(UpdateMRDResponseEvent, func() eh.EventData { return &UpdateMRDResponseData{} })
 
 	// =========== DEL MRD - DeleteMRDCommandEvent =======================
 	eh.RegisterEventData(DeleteMRDCommandEvent, func() eh.EventData {
-		return &DeleteMRDCommandData{Command: metric.NewCommand(DeleteMRDResponseEvent)}
+		return &DeleteMRDCommandData{Command: CMD(DeleteMRDResponseEvent)}
 	})
 	eh.RegisterEventData(DeleteMRDResponseEvent, func() eh.EventData { return &DeleteMRDResponseData{} })
 
 	// =========== DEL MR - DeleteMRCommandEvent ==================================
 	eh.RegisterEventData(DeleteMRCommandEvent, func() eh.EventData {
-		return &DeleteMRCommandData{Command: metric.NewCommand(DeleteMRResponseEvent)}
+		return &DeleteMRCommandData{Command: CMD(DeleteMRResponseEvent)}
 	})
 	eh.RegisterEventData(DeleteMRResponseEvent, func() eh.EventData { return &DeleteMRResponseData{} })
 
 	// =========== ADD MD - AddMDCommandEvent ==========================
 	eh.RegisterEventData(AddMDCommandEvent, func() eh.EventData {
-		return &AddMDCommandData{Command: metric.NewCommand(AddMDResponseEvent)}
+		return &AddMDCommandData{Command: CMD(AddMDResponseEvent)}
 	})
 	eh.RegisterEventData(AddMDResponseEvent, func() eh.EventData { return &AddMDResponseData{} })
 

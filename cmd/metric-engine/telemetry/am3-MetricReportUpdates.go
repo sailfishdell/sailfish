@@ -195,22 +195,30 @@ func MakeHandlerGenericGET(logger log.Logger, telemetryMgr *telemetryManager, bu
 			return
 		}
 
-		// Generate a "response" event that carries status back to initiator
-		respEvent, err := getCmd.NewResponseEvent(nil)
+		// Generate a "response" event that we use to respond
+		respEvent, err := getCmd.NewStreamingResponse()
 		if err != nil {
 			logger.Crit("Error creating response event", "err", err, "get", getCmd)
 			return
 		}
 
-		// yes, we really are going to publish the response event before actually doing the work
-		publishHelper(logger, bus, respEvent)
+		resp, ok := respEvent.Data().(*GenericGETResponseData)
+		if !ok {
+			logger.Crit("Internal programming error. Could not type assert to *GenericGETResponseData, aborting request.")
+			return
+		}
 
-		// async background process to actually read database to satisfy the request
+		resp.WriteDefaultHeaders()
+
 		go func() {
-			err = telemetryMgr.get(getCmd, respEvent.Data().(*GenericGETResponseData))
+			// leverage automatic SetStatus(HTTPStatusOK) on first Write()
+			err := telemetryMgr.get(getCmd.URI, resp)
 			if err != nil {
 				logger.Crit("Failed to get", "getCmd", getCmd, "err", err)
+				resp.WriteStatus(metric.HTTPStatusNotFound)
+				resp.Write([]byte("Resource not found. (FIXME: replace with redfish compliant error text.)"))
 			}
+			publishHelper(logger, bus, respEvent)
 		}()
 	}
 }

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"math"
 	"strconv"
 	"strings"
@@ -346,26 +347,15 @@ func (factory *telemetryManager) wrapWithTXOrPassIn(tx *sqlx.Tx, fn func(tx *sql
 	return wrapWithTXOrPassIn(factory.database, tx, fn)
 }
 
-func (factory *telemetryManager) get(cmd *GenericGETCommandData, resp *GenericGETResponseData) error {
-	defer close(resp.dataChan)
-	// this function seems too cozy with HTTP redfish interface, but no direct http dependencies
-
+func (factory *telemetryManager) get(uri string, resp io.Writer) error {
 	data := []byte{}
-	err := factory.getSQLX("generic_get").Get(&data, cmd.URI)
+	err := factory.getSQLX("generic_get").Get(&data, uri)
 	if err != nil {
-		factory.logger.Crit("error querying JSON table for URI", "err", err, "URI", cmd.URI)
-		resp.SetStatus(metric.HTTPStatusNotFound)
-
-		// TODO: need a body with eemi error here
-		resp.dataChan <- []byte("Resource not found. (FIXME: replace with redfish compliant error text.)")
+		factory.logger.Crit("error querying JSON table for URI", "err", err, "URI", uri)
 		return err
 	}
 
-	// on $expand, we'd need to parse all the return data and expand @odata.id's
-	// kind of a pain in the backside
-
-	resp.SetStatus(metric.HTTPStatusOk)
-	resp.dataChan <- data
+	resp.Write(data)
 	return nil
 }
 

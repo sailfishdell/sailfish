@@ -1,10 +1,8 @@
 package metric
 
 import (
-	"context"
 	"database/sql/driver"
 	"fmt"
-	"io"
 	"time"
 
 	eh "github.com/looplab/eventhorizon"
@@ -51,113 +49,6 @@ type URIChanged struct {
 
 func (u *URIChanged) SetURI(s string) {
 	u.URI = s
-}
-
-type Command struct {
-	RequestID    eh.UUID
-	ResponseType eh.EventType
-}
-
-func NewCommand(t eh.EventType) Command {
-	return Command{RequestID: eh.NewUUID(), ResponseType: t}
-}
-
-func (cmd *Command) NewResponseEvent(responseErr error) (eh.Event, error) {
-	data, err := eh.CreateEventData(cmd.ResponseType)
-	if err != nil {
-		return nil, fmt.Errorf("could not create response: %w", err)
-	}
-	cr, ok := data.(Responser)
-	if !ok {
-		return nil, fmt.Errorf("internal programming error: response encoded in cmd wasn't a response type: %T -> %+v", data, data)
-	}
-	cr.SetError(responseErr)
-	cr.setRequestID(cmd.RequestID)
-
-	return eh.NewEvent(cmd.ResponseType, cr, time.Now()), nil
-}
-
-func (cmd *Command) ResponseWaitFn() func(eh.Event) bool {
-	return func(evt eh.Event) bool {
-		if evt.EventType() != cmd.ResponseType {
-			return false
-		}
-		if data, ok := evt.Data().(Responser); ok && data.GetRequestID() == cmd.RequestID {
-			return true
-		}
-		return false
-	}
-}
-
-func (cmd *Command) GetRequestID() eh.UUID {
-	return cmd.RequestID
-}
-
-type Responser interface {
-	GetRequestID() eh.UUID
-	setRequestID(eh.UUID)
-	SetError(error)
-	StreamResponse(io.Writer) error
-}
-
-type CommandResponse struct {
-	RequestID eh.UUID
-	Ctx       context.Context
-	err       error
-}
-
-func (cr *CommandResponse) GetRequestID() eh.UUID {
-	return cr.RequestID
-}
-
-func (cr *CommandResponse) setRequestID(id eh.UUID) {
-	cr.RequestID = id
-}
-
-func (cr *CommandResponse) GetError() error {
-	return cr.err
-}
-
-func (cr *CommandResponse) SetContext(ctx context.Context) {
-	cr.Ctx = ctx
-}
-
-func (cr *CommandResponse) Status(setStatus func(int)) {
-	// expect that subclasses will override this
-	if cr.GetError() != nil {
-		setStatus(HTTPStatusBadRequest) // same as http.StatusBadRequest (without explicitly importing http package)
-	}
-	setStatus(HTTPStatusOk) // OK status
-}
-
-func (cr *CommandResponse) Headers(setHeader func(string, string)) {
-	// common headers
-	setHeader("OData-Version", "4.0")
-	setHeader("Server", "metric-engine")
-	setHeader("Content-Type", "application/json; charset=utf-8")
-	setHeader("Connection", "keep-alive")
-	setHeader("Cache-Control", "no-Store,no-Cache")
-	setHeader("Pragma", "no-cache")
-
-	// security headers
-	setHeader("Strict-Transport-Security", "max-age=63072000; includeSubDomains") // for A+ SSL Labs score
-	setHeader("Access-Control-Allow-Origin", "*")
-	setHeader("X-Frame-Options", "DENY")
-	setHeader("X-XSS-Protection", "1; mode=block")
-	setHeader("X-Content-Security-Policy", "default-src 'self'")
-	setHeader("X-Content-Type-Options", "nosniff")
-
-	// compatibility headers
-	setHeader("X-UA-Compatible", "IE=11")
-}
-
-func (cr *CommandResponse) SetError(err error) {
-	cr.err = err
-}
-
-func (cr *CommandResponse) StreamResponse(w io.Writer) error {
-	_, err := fmt.Fprintf(w, "CMD RESPONSE: %+v\n", cr)
-	return err
 }
 
 // SQLTimeInt is a wrapper around golang time that serializes and deserializes 64-bit nanosecond time rather than the default 32-bit second

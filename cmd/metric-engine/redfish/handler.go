@@ -117,38 +117,21 @@ func MakeHandlerSubmitTestMR(logger log.Logger, bus eh.EventBus) func(eh.Event) 
 	}
 }
 
-type Commander interface {
-	GetRequestID() eh.UUID
-	ResponseWaitFn() func(eh.Event) bool
-}
-
+// optional interface
 type inputUser interface {
 	UseInput(context.Context, log.Logger, io.Reader) error
 }
 
+// optional interface
 type varUser interface {
 	UseVars(context.Context, log.Logger, map[string]string) error
-}
-
-func requestContextFromCommand(r *http.Request, cmd interface{}) (context.Context, Commander) {
-	intCmd, ok := cmd.(Commander)
-	if ok {
-		return log.WithRequestID(r.Context(), intCmd.GetRequestID()), intCmd
-	}
-	return r.Context(), nil
-}
-
-type Response interface {
-	StreamResponse(io.Writer) error
-	Headers(func(string, string))
-	Status(func(int))
-	SetContext(context.Context)
 }
 
 func forwardInputAndVars(timeoutCtx context.Context, requestLogger log.Logger, w http.ResponseWriter, r *http.Request, cmd interface{}) {
 	if d, ok := cmd.(inputUser); ok {
 		err := d.UseInput(timeoutCtx, requestLogger, r.Body)
 		if err != nil {
+			requestLogger.Warn("error from command UseInput()", "err", err)
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
@@ -159,66 +142,58 @@ func forwardInputAndVars(timeoutCtx context.Context, requestLogger log.Logger, w
 		vars["uri"] = r.URL.Path
 		err := d.UseVars(timeoutCtx, requestLogger, vars)
 		if err != nil {
+			requestLogger.Warn("error from command UseVars()", "err", err)
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 	}
 }
 
+func (rf *RFServer) makeContextAndLogger(r *http.Request, cmd metric.Commander) (context.Context, log.Logger, func()) {
+	ctx := r.Context()
+	ctx = log.WithRequestID(ctx, cmd.GetRequestID())
+	timeoutCtx, cancel := context.WithTimeout(ctx, defaultRequestTimeout)
+	cmd.SetContext(timeoutCtx)
+	requestLogger := log.ContextLogger(timeoutCtx, "REDFISH_HANDLER")
+	requestLogger.Debug("HANDLE", "Method", r.Method, "URI", r.URL.Path)
+	return timeoutCtx, requestLogger, cancel
+}
+
 func (rf *RFServer) makeCommand(eventType eh.EventType) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		fn := telemetry.Factory(eventType)
-		evt, err := fn()
+		cmd, evt, err := metric.CommandFactory(eventType)()
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
-		cmd := evt.Data()
-		reqCtx, intCmd := requestContextFromCommand(r, cmd)
-		timeoutCtx, cancel := context.WithTimeout(reqCtx, defaultRequestTimeout)
+		// get request based context, attach request id to it, then set up timeout and logger
+		tmCtx, rqLog, cancel := rf.makeContextAndLogger(r, cmd)
 		defer cancel()
-		requestLogger := log.ContextLogger(timeoutCtx, "REDFISH_HANDLER")
-		requestLogger.Info("HANDLE", "Method", r.Method, "Event", fmt.Sprintf("%v", evt), "Command", fmt.Sprintf("%+v", cmd))
 
-		if intCmd == nil {
-			http.Error(w, "internal error: not a command", http.StatusInternalServerError)
-			return
-		}
-		forwardInputAndVars(timeoutCtx, requestLogger, w, r, intCmd)
+		forwardInputAndVars(tmCtx, rqLog, w, r, cmd) // let command pull anything out of read env that it needs
 
-		l := eventwaiter.NewListener(timeoutCtx, requestLogger, rf.d.GetWaiter(), intCmd.ResponseWaitFn())
+		// set up output paths
+		cmd.SetResponseHandlers(w.Header().Set, w.WriteHeader, w)
+
+		// set up listener before publishing to avoid races
+		l := eventwaiter.NewListener(tmCtx, rqLog, rf.d.GetWaiter(), cmd.ResponseWaitFn())
 		l.Name = "Redfish Response Listener"
 		defer l.Close()
 
+		// publish command, which kicks everything off. Note publish based on background context to avoid weirdness in publish
 		err = rf.d.GetBus().PublishEvent(context.Background(), evt)
 		if err != nil {
-			requestLogger.Crit("Error publishing event. This should never happen!", "err", err)
+			rqLog.Crit("Error publishing event. This should never happen!", "err", err)
 			http.Error(w, "internal error publishing", http.StatusInternalServerError)
 			return
 		}
 
-		ret, err := l.Wait(timeoutCtx)
+		_, err = l.Wait(tmCtx) // wait until we get response event or user cancels request
 		if err != nil {
-			// most likely user disconnected before we sent response
-			requestLogger.Info("Wait ERROR", "err", err)
+			rqLog.Info("Wait ERROR", "err", err)
 			http.Error(w, "internal error waiting", http.StatusInternalServerError)
 			return
-		}
-		d := ret.Data()
-		resp, ok := d.(Response)
-		if !ok {
-			requestLogger.Info("Got a non-response", "err", err)
-			http.Error(w, "internal error with response", http.StatusInternalServerError)
-			return
-		}
-
-		resp.SetContext(timeoutCtx)  // set up context so that source of this data can abandon the request if caller exits
-		resp.Headers(w.Header().Set) // always set headers first
-		resp.Status(w.WriteHeader)   // then set status code
-		err = resp.StreamResponse(w) // dont write response at all until setting status code and headers. can't set headers after writing
-		if err != nil {
-			requestLogger.Crit("Error writing response", "err", err, "Command", fmt.Sprintf("%+v", cmd))
 		}
 	}
 }
