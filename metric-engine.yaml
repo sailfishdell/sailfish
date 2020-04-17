@@ -811,8 +811,8 @@ internal:
 
     mrd_insert: |
       INSERT INTO MetricReportDefinition
-               ( Name,  ShortDesc,  LongDesc,  Enabled,  AppendLimit,  Type,  SuppressDups,  Actions,  Updates,  Period,  TimeSpan)
-        VALUES (:Name, :ShortDesc, :LongDesc, :Enabled, :AppendLimit, :Type, :SuppressDups, :Actions, :Updates, :Period, :TimeSpan)
+               ( Name,  ShortDesc,  LongDesc,  Enabled,  AppendLimit,  Type,  SuppressDups,  Actions,  Updates,  Period,  TimeSpan,  Hidden)
+        VALUES (:Name, :ShortDesc, :LongDesc, :Enabled, :AppendLimit, :Type, :SuppressDups, :Actions, :Updates, :Period, :TimeSpan, :Hidden)
 
     mrd_update: |
       UPDATE MetricReportDefinition
@@ -826,7 +826,8 @@ internal:
         Actions=:Actions,
         Period=:Period,
         Updates=:Updates,
-        TimeSpan=:TimeSpan
+        TimeSpan=:TimeSpan,
+        Hidden=:Hidden
       WHERE
         Name=:Name
 
@@ -897,10 +898,10 @@ internal:
         ID AS MetaID, FQDDPattern, SourcePattern, PropertyPattern, Wildcards, CollectionFunction, CollectionDuration, SuppressDups
       FROM MetricMeta
       WHERE
-        (:Name LIKE NamePattern OR NamePattern = '') AND
-        (:FQDD LIKE FQDDPattern OR FQDDPattern = '') AND
-        (:Source LIKE SourcePattern OR SourcePattern = '') AND
-        (:Property LIKE PropertyPattern OR PropertyPattern = '')
+        (NamePattern     = '' OR :Name     LIKE NamePattern)     AND
+        (FQDDPattern     = '' OR :FQDD     LIKE FQDDPattern)     AND
+        (SourcePattern   = '' OR :Source   LIKE SourcePattern)   AND
+        (PropertyPattern = '' OR :Property LIKE PropertyPattern)
 
     insert_metric_instance: |
       INSERT INTO MetricInstance
@@ -1180,7 +1181,7 @@ createdb:
         CollectionDuration INTEGER NOT NULL DEFAULT 0,
 
         -- indexes and constraints
-        unique (NamePattern, SuppressDups, FQDDPattern, SourcePattern, PropertyPattern, Wildcards, CollectionFunction, CollectionDuration)
+        unique (NamePattern, FQDDPattern, SourcePattern, PropertyPattern, SuppressDups, Wildcards, CollectionFunction, CollectionDuration)
       )
 
   - |
