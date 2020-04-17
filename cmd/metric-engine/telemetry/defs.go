@@ -88,8 +88,8 @@ type MetricReportDefinitionData struct {
 	ShortDesc string      `db:"ShortDesc" json:"Name"`
 	LongDesc  string      `db:"LongDesc" json:"Description"`
 	Type      string      `db:"Type" json:"MetricReportDefinitionType"` // 'Periodic', 'OnChange', 'OnRequest'
-	Actions   StringArray `db:"Actions" json:"ReportActions"`           // 	'LogToMetricReportsCollection', 'RedfishEvent'
 	Updates   string      `db:"Updates" json:"ReportUpdates"`           // 'AppendStopsWhenFull', 'AppendWrapsWhenFull', 'NewReport', 'Overwrite'
+	Actions   StringArray `db:"Actions" json:"ReportActions"`           // 	'LogToMetricReportsCollection', 'RedfishEvent'
 
 	// Validation: It's assumed that TimeSpan is parsed on ingress. MRD Schema
 	// specifies TimeSpan as a duration.
@@ -98,9 +98,6 @@ type MetricReportDefinitionData struct {
 	// timestamp > max(End-timespan, report start)
 	TimeSpan RedfishDuration `db:"TimeSpan" json:"ReportTimespan"`
 
-	Enabled      bool `db:"Enabled" json:"MetricReportDefinitionEnabled"`
-	SuppressDups bool `db:"SuppressDups" json:"SuppressRepeatedMetricValue"`
-
 	// Validation: It's assumed that Period is parsed on ingress. Redfish
 	// "Schedule" object is flexible, but we'll allow only period in seconds for
 	// now When it gets to this struct, it needs to be expressed in Seconds.
@@ -108,7 +105,9 @@ type MetricReportDefinitionData struct {
 	Heartbeat RedfishDuration `db:"HeartbeatInterval" json:"MetricReportHeartbeatInterval"`
 	Metrics   []RawMetricMeta `db:"Metrics"`
 
-	Hidden bool `db:"Hidden" json:"-"`
+	Enabled      bool `db:"Enabled" json:"MetricReportDefinitionEnabled"`
+	SuppressDups bool `db:"SuppressDups" json:"SuppressRepeatedMetricValue"`
+	Hidden       bool `db:"Hidden" json:"-"`
 }
 
 // UnmarshalJSON special decoder for MetricReportDefinitionData to unmarshal the "period" specially
@@ -116,7 +115,7 @@ func (mrd *MetricReportDefinitionData) UnmarshalJSON(data []byte) error {
 	type Alias MetricReportDefinitionData
 	target := struct {
 		*Alias
-		Schedule *struct{ RecurrenceInterval RedfishDuration } `json:omitifempty`
+		Schedule *struct{ RecurrenceInterval RedfishDuration }
 	}{
 		Alias: (*Alias)(mrd),
 	}
@@ -142,8 +141,8 @@ type MetricDefinitionData struct {
 	MetricType      string      `db:"MetricType"        json:"MetricType"`
 	MetricDataType  string      `db:"MetricDataType"    json:"MetricDataType"`
 	Units           string      `db:"Units"             json:"Units"`
-	Accuracy        float32     `db:"Accuracy"          json:"Accuracy"`
 	SensingInterval string      `db:"SensingInterval"   json:"SensingInterval"`
+	Accuracy        float32     `db:"Accuracy"          json:"Accuracy"`
 	DiscreteValues  StringArray `db:"DiscreteValues"   json:"DiscreteValues"`
 }
 
