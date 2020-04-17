@@ -208,7 +208,7 @@ func (m *RawMetricMeta) UnmarshalJSON(data []byte) error {
 // definition. Basically adds ID and a static AppendLimit (for now, until we
 // can figure out how to make this dynamic).
 type MetricReportDefinition struct {
-	*MetricReportDefinitionData
+	MetricReportDefinitionData
 	AppendLimit int   `db:"AppendLimit"`
 	ID          int64 `db:"ID"`
 }
@@ -220,7 +220,7 @@ type AddMRDCommandData struct {
 
 func (a *AddMRDCommandData) UseInput(ctx context.Context, logger log.Logger, r io.Reader) error {
 	decoder := json.NewDecoder(r)
-	return decoder.Decode(a)
+	return decoder.Decode(&a.MetricReportDefinitionData)
 }
 
 type AddMRDResponseData struct {
@@ -280,7 +280,7 @@ type DeleteMRResponseData struct {
 
 // MD defs
 type MetricDefinition struct {
-	*MetricDefinitionData
+	MetricDefinitionData
 }
 
 type AddMDCommandData struct {
@@ -290,7 +290,7 @@ type AddMDCommandData struct {
 
 func (a *AddMDCommandData) UseInput(ctx context.Context, logger log.Logger, r io.Reader) error {
 	decoder := json.NewDecoder(r)
-	return decoder.Decode(a)
+	return decoder.Decode(&a.MetricDefinitionData)
 }
 
 type AddMDResponseData struct {

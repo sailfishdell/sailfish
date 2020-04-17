@@ -31,6 +31,11 @@ const (
 	maxAcceptableDrift      = 10 * time.Second
 )
 
+// errors and repeated strings
+const (
+	UniqueConstraintError = "UNIQUE constraint failed"
+)
+
 // Factory manages getting/putting into db
 type telemetryManager struct {
 	logger           log.Logger
@@ -235,6 +240,7 @@ const (
 func validateMRD(mrd *MetricReportDefinition) error {
 	if mrd.Name == "" {
 		return errors.New("MRD requires a name")
+		// return eemi.New(eemi.IDRAC_SWC_0283, []string{"Id"}, []string{"Id"})
 	}
 
 	PeriodMust := func(b bool) {
@@ -304,9 +310,6 @@ func wrapWithTX(db *sqlx.DB, fn func(tx *sqlx.Tx) error) (err error) {
 	}
 
 	// if we error out at all, roll back
-	// if an error happens, that's really weird and there isn't much we can do
-	// about it. Probably have some database inconsistency, so panic() seems like
-	// the only real option. Telemetry service should restart in this case
 	committed := false
 	defer func() {
 		if committed {
@@ -314,6 +317,9 @@ func wrapWithTX(db *sqlx.DB, fn func(tx *sqlx.Tx) error) (err error) {
 		}
 		err := tx.Rollback()
 		if err != nil {
+			// if an error happens, that's really weird and there isn't much we can do
+			// about it. Probably have some database inconsistency, so panic() seems like
+			// the only real option. Telemetry service should restart in this case
 			panic(fmt.Sprintf("database rollback failed(%T), something is very wrong: %s", err, err))
 		}
 	}()
@@ -365,15 +371,15 @@ func (factory *telemetryManager) updateMRD(reportDef string, updates json.RawMes
 
 		// step 1: LOAD existing report definition
 		mrd := MetricReportDefinition{
-			MetricReportDefinitionData: &MetricReportDefinitionData{Name: reportDef},
+			MetricReportDefinitionData: MetricReportDefinitionData{Name: reportDef},
 			AppendLimit:                factory.AppendLimit,
 		}
 		err = factory.loadReportDefinition(tx, &mrd)
 		if err != nil || mrd.ID == 0 {
 			return xerrors.Errorf("error getting MetricReportDefinition: ID(%d) NAME(%s) err: %w", mrd.ID, mrd.Name, err)
 		}
-		var newData MetricReportDefinitionData = *mrd.MetricReportDefinitionData
-		newMRD := MetricReportDefinition{MetricReportDefinitionData: &newData, AppendLimit: factory.AppendLimit, ID: mrd.ID}
+		var newData MetricReportDefinitionData = mrd.MetricReportDefinitionData
+		newMRD := MetricReportDefinition{MetricReportDefinitionData: newData, AppendLimit: factory.AppendLimit, ID: mrd.ID}
 
 		// Step 2: apply updates specified
 		err = json.Unmarshal(updates, &newMRD)
@@ -401,7 +407,7 @@ func (factory *telemetryManager) updateMRD(reportDef string, updates json.RawMes
 			return xerrors.Errorf("error updating MRD(%s): %s --ERR--> %w", reportDef, updates, err)
 		}
 
-		err = factory.updateMMList(tx, &newMRD)
+		err = factory.updateMMList(tx, newMRD)
 		if err != nil {
 			return xerrors.Errorf("error updating MetricMeta for MRD(%s): %s --ERR--> %w", reportDef, updates, err)
 		}
@@ -424,22 +430,22 @@ func (factory *telemetryManager) updateMRD(reportDef string, updates json.RawMes
 	})
 }
 
-func (factory *telemetryManager) addMRD(mrdEvData *MetricReportDefinitionData) (err error) {
+func (factory *telemetryManager) addMRD(mrdEvData MetricReportDefinitionData) (err error) {
 	return factory.wrapWithTX(func(tx *sqlx.Tx) error {
 		// TODO: Emit an error response message if the metric report definition already exists
-		mrd := &MetricReportDefinition{
+		mrd := MetricReportDefinition{
 			MetricReportDefinitionData: mrdEvData,
 			AppendLimit:                factory.AppendLimit,
 		}
 
-		err = validateMRD(mrd)
+		err = validateMRD(&mrd)
 		if err != nil {
 			return err
 		}
 
 		res, err := factory.getNamedSQLXTx(tx, "mrd_insert").Exec(mrd)
 		if err != nil {
-			if strings.HasPrefix(err.Error(), "UNIQUE constraint failed") {
+			if strings.HasPrefix(err.Error(), UniqueConstraintError) {
 				// too verbose, but possibly uncomment for debugging
 				return xerrors.Errorf("cannot ADD already existing MRD(%s).", mrd.Name)
 			}
@@ -452,7 +458,7 @@ func (factory *telemetryManager) addMRD(mrdEvData *MetricReportDefinitionData) (
 
 		err = factory.updateMMList(tx, mrd)
 		if err != nil {
-			return xerrors.Errorf("error Updating MetricMeta for MRD(%d): %w", mrd.ID, err)
+			return xerrors.Errorf("error Updating MetricMeta for MRD %s(%d): %w", mrd.Name, mrd.ID, err)
 		}
 
 		// stop processing any periodic report gen for this report. restart IFF report successfully added back
@@ -476,14 +482,14 @@ func (factory *telemetryManager) addMRD(mrdEvData *MetricReportDefinitionData) (
 	})
 }
 
-func (factory *telemetryManager) addMD(mdEvData *MetricDefinitionData) (err error) {
+func (factory *telemetryManager) addMD(mdEvData MetricDefinitionData) (err error) {
 	return factory.wrapWithTX(func(tx *sqlx.Tx) error {
 		//TODO: valid MD input, for now all good input read from files
 		//validateMD(md)
 
-		_, err := factory.getNamedSQLXTx(tx, "md_insert").Exec(mdEvData)
+		_, err := factory.getNamedSQLXTx(tx, "md_insert").Exec(&mdEvData)
 		if err != nil {
-			if strings.HasPrefix(err.Error(), "UNIQUE constraint failed") {
+			if strings.HasPrefix(err.Error(), UniqueConstraintError) {
 				return xerrors.Errorf("cannot ADD already existing MD(%s).", mdEvData.MetricID)
 			}
 			return xerrors.Errorf("error inserting MD(%s): %w", mdEvData.MetricID, err)
@@ -534,7 +540,7 @@ func (factory *telemetryManager) createTrigger(trEvData *TriggerData) (err error
 
 		for _, mrdname := range trEvData.MRDList {
 			MRD := &MetricReportDefinition{
-				MetricReportDefinitionData: &MetricReportDefinitionData{Name: mrdname},
+				MetricReportDefinitionData: MetricReportDefinitionData{Name: mrdname},
 			}
 			err = factory.loadReportDefinition(tx, MRD)
 			if err != nil || MRD.ID == 0 {
@@ -561,12 +567,12 @@ func (factory *telemetryManager) createTrigger(trEvData *TriggerData) (err error
 	})
 }
 
-func (factory *telemetryManager) updateMMList(tx *sqlx.Tx, mrd *MetricReportDefinition) (err error) {
-	//=================================================
-	// Update the list of metrics for this report
-	// BEHAVIOUR: if we get passed 'nil' metrics array in the mrd, do nothing. If
-	// we get a valid array (empty or otherwise), delete the existing
-	// associations and create metric meta and associate
+//=================================================
+// Update the list of metrics for this report
+// BEHAVIOUR: if we get passed 'nil' metrics array in the mrd, do nothing. If
+// we get a valid array (empty or otherwise), delete the existing
+// associations and create metric meta and associate
+func (factory *telemetryManager) updateMMList(tx *sqlx.Tx, mrd MetricReportDefinition) (err error) {
 	if mrd.Metrics == nil {
 		// nil metrics array means dont change anything
 		return nil
@@ -599,26 +605,27 @@ func (factory *telemetryManager) updateMMList(tx *sqlx.Tx, mrd *MetricReportDefi
 		// First, Find the MetricMeta
 		err = factory.getNamedSQLXTx(tx, "find_mm").Get(&metaID, tempMetric)
 		if err != nil && !xerrors.Is(err, sql.ErrNoRows) {
-			return xerrors.Errorf("error running query to find MetricMeta(%+v) for MRD(%s): %w", tempMetric, mrd, err)
+			return xerrors.Errorf("error running query to find MetricMeta(%+v) for MRD %s(%s): %w", tempMetric, mrd.Name, mrd.ID, err)
 		}
 
 		if err != nil && xerrors.Is(err, sql.ErrNoRows) {
 			// Insert new MetricMeta if it doesn't already exist per above
 			res, err = factory.getNamedSQLXTx(tx, "insert_mm").Exec(tempMetric)
 			if err != nil {
-				return xerrors.Errorf("error inserting MetricMeta(%s) for MRD(%s): %w", tempMetric, mrd, err)
+				return xerrors.Errorf("error inserting MetricMeta(%+v) for MRD(%s): %w", tempMetric, mrd.Name, err)
 			}
 
 			metaID, err = res.LastInsertId()
 			if err != nil {
-				return xerrors.Errorf("error from LastInsertID for MetricMeta(%s): %w", tempMetric, err)
+				return xerrors.Errorf("error from LastInsertID for MetricMeta(%+v): %w", tempMetric, err)
 			}
 		}
 
 		// Next cross link MetricMeta to ReportDefinition
 		_, err = factory.getSQLXTx(tx, "insert_mm_assoc").Exec(mrd.ID, metaID)
-		if err != nil {
-			return xerrors.Errorf("error while inserting MetricMeta(%s) association for MRD(%s): %w", metricToAdd, mrd, err)
+		// if customer lists metric twice in report, that's fine, skip
+		if err != nil && !strings.HasPrefix(err.Error(), UniqueConstraintError) {
+			return xerrors.Errorf("error while inserting MetricMeta(%s) association for MRD %s(%d): %w", metricToAdd, mrd.Name, mrd.ID, err)
 		}
 	}
 	return nil
@@ -635,9 +642,7 @@ func (factory *telemetryManager) iterMRD(
 			return xerrors.Errorf("query error for MRD: %w", err)
 		}
 
-		mrd := MetricReportDefinition{
-			MetricReportDefinitionData: &MetricReportDefinitionData{},
-		}
+		mrd := MetricReportDefinition{}
 
 		// iterate over everything the query returns
 		for rows.Next() {
@@ -726,7 +731,7 @@ func (factory *telemetryManager) loadReportDefinition(tx *sqlx.Tx, mrd *MetricRe
 	}
 
 	if err != nil {
-		return xerrors.Errorf("error loading Metric Report Definition %d:(%s) %w", mrd.ID, mrd.Name, err)
+		return xerrors.Errorf("error loading Metric Report Definition %s(%d) %w", mrd.Name, mrd.ID, err)
 	}
 	return nil
 }
@@ -736,10 +741,10 @@ func (factory *telemetryManager) loadReportDefinition(tx *sqlx.Tx, mrd *MetricRe
 // splitting this up at this time
 func (factory *telemetryManager) GenerateMetricReport(tx *sqlx.Tx, mrdName string) (mrname string, err error) {
 	err = factory.wrapWithTXOrPassIn(tx, func(tx *sqlx.Tx) error {
-		MRD := &MetricReportDefinition{
-			MetricReportDefinitionData: &MetricReportDefinitionData{Name: mrdName},
+		MRD := MetricReportDefinition{
+			MetricReportDefinitionData: MetricReportDefinitionData{Name: mrdName},
 		}
-		err = factory.loadReportDefinition(tx, MRD)
+		err = factory.loadReportDefinition(tx, &MRD)
 		if err != nil || MRD.ID == 0 {
 			return xerrors.Errorf("error getting MetricReportDefinition: ID(%s) NAME(%s) err: %w", MRD.ID, MRD.Name, err)
 		}
@@ -812,7 +817,7 @@ func (factory *telemetryManager) GenerateMetricReport(tx *sqlx.Tx, mrdName strin
 		if !MRD.SuppressDups {
 			rows, err := factory.getNamedSQLXTx(tx, "iterate_metric_instance_for_report").Queryx(MRD)
 			if err != nil {
-				return xerrors.Errorf("error querying MetricInstance for report MRD(%s): %w", MRD, err)
+				return xerrors.Errorf("error querying MetricInstance for report MRD(%s): %w", MRD.Name, err)
 			}
 			for rows.Next() {
 				mm := MetricMeta{}
@@ -824,7 +829,7 @@ func (factory *telemetryManager) GenerateMetricReport(tx *sqlx.Tx, mrdName strin
 				mm.Timestamp = metric.SQLTimeInt{Time: factory.MetricTSHWM}
 				mm.Value = mm.LastValue
 
-				mvRowsInserted, err := factory.doInsertMetricValueForInstance(tx, &mm, func(int64) {}, true)
+				mvRowsInserted, err := factory.doInsertMetricValueForInstance(tx, mm, func(int64) {}, true)
 				totalRows += mvRowsInserted
 				if err != nil {
 					factory.logger.Crit("Error query", "err", err)
@@ -929,7 +934,7 @@ func resetMMAggregation(mm *MetricMeta) {
 // TODO: Implement more specific wildcard matching (not required for halo+)
 // TODO: Need to look up friendly fqdd (FOR LABEL)
 //  Both of the above TODO should happen in the for rows.Next() {...} loop
-func (factory *telemetryManager) InsertMetricInstance(tx *sqlx.Tx, ev *metric.MetricValueEventData) (instancesCreated int, err error) {
+func (factory *telemetryManager) InsertMetricInstance(tx *sqlx.Tx, ev metric.MetricValueEventData) (instancesCreated int, err error) {
 	err = factory.wrapWithTXOrPassIn(tx, func(tx *sqlx.Tx) error {
 		// prepare sql for transaction outside the loop
 		insertMetricInstance := factory.getNamedSQLXTx(tx, "insert_metric_instance")
@@ -944,16 +949,16 @@ func (factory *telemetryManager) InsertMetricInstance(tx *sqlx.Tx, ev *metric.Me
 
 		// First, iterate over the MetricMeta to generate MetricInstance
 		for rows.Next() {
-			mm := &MetricMeta{MetricValueEventData: *ev}
-			err = rows.StructScan(mm)
+			mm := MetricMeta{MetricValueEventData: ev}
+			err = rows.StructScan(&mm)
 			if err != nil {
 				factory.logger.Crit("Error scanning metric meta for event", "err", err, "metric", ev)
 				continue
 			}
 
-			resetMMAggregation(mm)
+			resetMMAggregation(&mm)
 
-			err = findMetricInstance.Get(mm, mm)
+			err = findMetricInstance.Get(&mm, mm)
 			if err != nil {
 				res, err := insertMetricInstance.Exec(mm) // slow path, only ever happens once per instance
 				if err != nil {
@@ -968,7 +973,7 @@ func (factory *telemetryManager) InsertMetricInstance(tx *sqlx.Tx, ev *metric.Me
 
 			if !mm.HasAssocMM {
 				_, err = insertMIAssoc.Exec(mm.MetaID, mm.InstanceID) // slow path: should be rare
-				if err != nil && !strings.HasPrefix(err.Error(), "UNIQUE constraint failed") {
+				if err != nil && !strings.HasPrefix(err.Error(), UniqueConstraintError) {
 					return xerrors.Errorf("error inserting Association for MetricInstance(%s): %w", mm, err)
 				}
 			}
@@ -985,7 +990,7 @@ func (factory *telemetryManager) InsertMetricInstance(tx *sqlx.Tx, ev *metric.Me
 	return instancesCreated, err
 }
 
-func (factory *telemetryManager) InsertMetricValue(tx *sqlx.Tx, ev *metric.MetricValueEventData, updatedInstance func(int64)) (err error) {
+func (factory *telemetryManager) InsertMetricValue(tx *sqlx.Tx, ev metric.MetricValueEventData, updatedInstance func(int64)) (err error) {
 	return factory.wrapWithTXOrPassIn(tx, func(tx *sqlx.Tx) error {
 		// Optimized, so this logic is slightly twisted from the straightforward
 		// implementation
@@ -1020,7 +1025,7 @@ func (factory *telemetryManager) InsertMetricValue(tx *sqlx.Tx, ev *metric.Metri
 	})
 }
 
-func (factory *telemetryManager) IterMetricInstance(tx *sqlx.Tx, mm *MetricMeta, fn func(*MetricMeta) error) error {
+func (factory *telemetryManager) IterMetricInstance(tx *sqlx.Tx, mm MetricMeta, fn func(MetricMeta) error) error {
 	return factory.wrapWithTXOrPassIn(tx, func(tx *sqlx.Tx) error {
 		// And now, foreach MetricInstance, insert MetricValue
 		rows, err := factory.getNamedSQLXTx(tx, "iterate_metric_instance").Queryx(mm)
@@ -1028,7 +1033,7 @@ func (factory *telemetryManager) IterMetricInstance(tx *sqlx.Tx, mm *MetricMeta,
 			return xerrors.Errorf("Error querying MetricInstance(%s): %w", mm, err)
 		}
 		for rows.Next() {
-			err = rows.StructScan(mm)
+			err = rows.StructScan(&mm)
 			if err != nil {
 				factory.logger.Crit("Error scanning struct result for MetricInstance query", "err", err)
 				continue
@@ -1111,7 +1116,7 @@ func (factory *telemetryManager) insertOneMVRow(tx *sqlx.Tx, mm *MetricMeta, upd
 
 	_, err = insertMV.Exec(args...)
 	if err != nil {
-		if !strings.HasPrefix(err.Error(), "UNIQUE constraint failed") {
+		if !strings.HasPrefix(err.Error(), UniqueConstraintError) {
 			return xerrors.Errorf(
 				"Error inserting MetricValue for MetricInstance(%d)/MetricMeta(%d), ARGS: %+v: %w",
 				mm.InstanceID, mm.MetaID, args, err)
@@ -1147,7 +1152,7 @@ func (factory *telemetryManager) pumpMV(tx *sqlx.Tx, mm *MetricMeta, updatedInst
 }
 
 func (factory *telemetryManager) doInsertMetricValueForInstance(
-	tx *sqlx.Tx, mm *MetricMeta,
+	tx *sqlx.Tx, mm MetricMeta,
 	updatedInstance func(int64), expandOnly bool) (numInserted int, err error) {
 	// Here we are going to expand any metrics that were skipped by upstream
 	/// make sure that lastts is set and not the unix zero time
@@ -1174,7 +1179,7 @@ func (factory *telemetryManager) doInsertMetricValueForInstance(
 
 		// TODO: we could use math to smooth this out a bit more rather than just jumping by sensorinterval
 		for mm.Timestamp.Before(savedTS.Time.Add(-mm.MISensorSlack)) {
-			inserted, _, err := factory.pumpMV(tx, mm, updatedInstance, false)
+			inserted, _, err := factory.pumpMV(tx, &mm, updatedInstance, false)
 			if err != nil {
 				factory.logger.Crit("Error inserting metric value", "err", err)
 			}
@@ -1188,7 +1193,7 @@ func (factory *telemetryManager) doInsertMetricValueForInstance(
 	}
 
 	inserted := false
-	inserted, saveInstance, err = factory.pumpMV(tx, mm, updatedInstance, expandOnly)
+	inserted, saveInstance, err = factory.pumpMV(tx, &mm, updatedInstance, expandOnly)
 	if err != nil {
 		factory.logger.Crit("Error inserting metric value", "err", err)
 	}
@@ -1197,7 +1202,7 @@ func (factory *telemetryManager) doInsertMetricValueForInstance(
 	}
 	if saveInstance {
 		_, err = factory.getNamedSQLXTx(tx, "update_metric_instance").Exec(mm)
-		if err != nil && !strings.HasPrefix(err.Error(), "UNIQUE constraint failed") {
+		if err != nil && !strings.HasPrefix(err.Error(), UniqueConstraintError) {
 			return 0, xerrors.Errorf("Failed to update MetricInstance(%d) with MetricMeta(%d): %w", mm.InstanceID, mm.MetaID, err)
 		}
 	}
@@ -1206,12 +1211,12 @@ func (factory *telemetryManager) doInsertMetricValueForInstance(
 }
 
 func (factory *telemetryManager) doInsertMetricValue(
-	tx *sqlx.Tx, ev *metric.MetricValueEventData,
+	tx *sqlx.Tx, ev metric.MetricValueEventData,
 	updatedInstance func(int64)) (foundInstance, dirty bool, err error) {
 	dirty = false
 	foundInstance = false
-	mm := MetricMeta{MetricValueEventData: *ev}
-	err = factory.IterMetricInstance(tx, &mm, func(mm *MetricMeta) error {
+	mm := MetricMeta{MetricValueEventData: ev}
+	err = factory.IterMetricInstance(tx, mm, func(mm MetricMeta) error {
 		foundInstance = true
 		if mm.Dirty {
 			dirty = true
@@ -1249,14 +1254,6 @@ func (factory *telemetryManager) runSQLFromList(sqllist []string, entrylog strin
 	return nil
 }
 
-func (factory *telemetryManager) DeleteOrphans() (err error) {
-	return factory.runSQLFromList(factory.orphanops, "Database Maintenance: Delete Orphans", "Orphan cleanup failed-> '%s': %w")
-}
-
-func (factory *telemetryManager) DeleteOldestValues() (err error) {
-	return factory.runSQLFromList(factory.deleteops, "Database Maintenance: Delete Oldest Metric Values", "Value cleanup failed-> '%s': %w")
-}
-
 func (factory *telemetryManager) Vacuum() error {
 	// cant vacuum inside a transaction
 	entrylog := "Database Maintenance: Vacuum"
@@ -1274,8 +1271,4 @@ func (factory *telemetryManager) Vacuum() error {
 		}
 	}
 	return nil
-}
-
-func (factory *telemetryManager) Optimize() error {
-	return factory.runSQLFromList(factory.optimizeops, "Database Maintenance: Optimize", "Optimization failed-> '%s': %w")
 }
