@@ -10,7 +10,6 @@ import (
 	"crypto/x509/pkix"
 	"encoding/pem"
 	"errors"
-	"fmt"
 	"math/big"
 	"net"
 	"os"
@@ -309,19 +308,18 @@ func publicKey(priv interface{}) interface{} {
 	}
 }
 
-func pemBlockForKey(priv interface{}) *pem.Block {
+func pemBlockForKey(priv interface{}) (*pem.Block, error) {
 	switch k := priv.(type) {
 	case *rsa.PrivateKey:
-		return &pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(k)}
+		return &pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(k)}, nil
 	case *ecdsa.PrivateKey:
 		b, err := x509.MarshalECPrivateKey(k)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Unable to marshal ECDSA private key: %v", err)
-			os.Exit(2)
+			return nil, xerrors.Errorf("Unable to marshal ECDSA private key: %w", err)
 		}
-		return &pem.Block{Type: "EC PRIVATE KEY", Bytes: b}
+		return &pem.Block{Type: "EC PRIVATE KEY", Bytes: b}, nil
 	default:
-		return nil
+		return nil, xerrors.Errorf("Dont know how to marshal key type %s", k)
 	}
 }
 
@@ -351,7 +349,11 @@ func (c *MyCert) Serialize() error {
 		return xerrors.Errorf("certificate creation failed: failed to write private key(%s): %w", c.fileBase+".key", err)
 	}
 	defer keyOut.Close()
-	err = pem.Encode(keyOut, pemBlockForKey(c.priv))
+	pemBlock, err := pemBlockForKey(c.priv)
+	if err != nil {
+		return xerrors.Errorf("certificate encode failed: failed to get pem block for private key(%s): %w", c.fileBase+".key", err)
+	}
+	err = pem.Encode(keyOut, pemBlock)
 	if err != nil {
 		return xerrors.Errorf("certificate encode failed: failed to write private key(%s): %w", c.fileBase+".key", err)
 	}
