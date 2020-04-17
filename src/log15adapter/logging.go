@@ -80,6 +80,15 @@ type LoggingConfig struct {
 	PrintFile       bool
 }
 
+func defaultLogConfig() []LoggingConfig {
+	return []LoggingConfig{{
+		Enabled:       true,
+		Level:         "info",
+		PrintFunction: true,
+		PrintFile:     true,
+	}}
+}
+
 func (l *MyLogger) SetupLogHandlersFromConfig(logCfg *viper.Viper) {
 	LogConfig := []LoggingConfig{}
 
@@ -90,12 +99,7 @@ func (l *MyLogger) SetupLogHandlersFromConfig(logCfg *viper.Viper) {
 
 	if len(LogConfig) == 0 {
 		log.Crit("Setting default config")
-		LogConfig = []LoggingConfig{{
-			Enabled:       true,
-			Level:         "info",
-			PrintFunction: true,
-			PrintFile:     true,
-		}}
+		LogConfig = defaultLogConfig()
 	}
 
 	topLevelHandlers := []log.Handler{}
@@ -104,58 +108,9 @@ func (l *MyLogger) SetupLogHandlersFromConfig(logCfg *viper.Viper) {
 			continue
 		}
 
-		var outputHandler log.Handler
-		switch path := onecfg.FileName; path {
-		case "":
-			fallthrough
-		case "/dev/stderr":
-			outputHandler = log.StreamHandler(os.Stderr, log.TerminalFormat())
-		case "/dev/stdout":
-			outputHandler = log.StreamHandler(os.Stdout, log.TerminalFormat())
-		default:
-			outputHandler = log.Must.FileHandler(path, log.LogfmtFormat())
-		}
+		handler := setupOneHandler(onecfg)
 
-		if onecfg.PrintFile {
-			outputHandler = log.CallerFileHandler(outputHandler)
-		}
-		if onecfg.PrintFunction {
-			outputHandler = log.CallerFuncHandler(outputHandler)
-		}
-
-		wrappedOut := newOrHandler(outputHandler)
-
-		handlers := []log.Handler{}
-
-		loglvl, err := log.LvlFromString(onecfg.Level)
-		if err == nil {
-			handlers = append(handlers, log.LvlFilterHandler(loglvl, wrappedOut))
-		}
-
-		for _, m := range onecfg.ModulesToEnable {
-			name, ok := m["name"]
-			if !ok {
-				l.Warn("Nonexistent name for config", "m", m)
-				continue
-			}
-			handler := MatchFilterHandler("module", name, wrappedOut)
-
-			level, ok := m["level"]
-			if ok {
-				loglvl, err := log.LvlFromString(level)
-				if err == nil {
-					handler = log.LvlFilterHandler(loglvl, handler)
-				} else {
-					l.Warn("Could not parse level for config", "m", m)
-				}
-			} else {
-				l.Warn("Nonexistent level for config", "m", m)
-			}
-
-			handlers = append(handlers, handler)
-		}
-
-		topLevelHandlers = append(topLevelHandlers, wrappedOut.ORHandler(handlers...))
+		topLevelHandlers = append(topLevelHandlers, handler)
 	}
 
 	l.SetHandler(log.MultiHandler(topLevelHandlers...))
@@ -163,6 +118,56 @@ func (l *MyLogger) SetupLogHandlersFromConfig(logCfg *viper.Viper) {
 	if mylog.GlobalLogger == nil {
 		mylog.GlobalLogger = l
 	}
+}
+
+func setupOneHandler(onecfg LoggingConfig) log.Handler {
+	var outputHandler log.Handler
+	switch path := onecfg.FileName; path {
+	case "":
+		fallthrough
+	case "/dev/stderr":
+		outputHandler = log.StreamHandler(os.Stderr, log.TerminalFormat())
+	case "/dev/stdout":
+		outputHandler = log.StreamHandler(os.Stdout, log.TerminalFormat())
+	default:
+		outputHandler = log.Must.FileHandler(path, log.LogfmtFormat())
+	}
+
+	if onecfg.PrintFile {
+		outputHandler = log.CallerFileHandler(outputHandler)
+	}
+	if onecfg.PrintFunction {
+		outputHandler = log.CallerFuncHandler(outputHandler)
+	}
+
+	wrappedOut := newOrHandler(outputHandler)
+
+	handlers := []log.Handler{}
+
+	loglvl, err := log.LvlFromString(onecfg.Level)
+	if err == nil {
+		handlers = append(handlers, log.LvlFilterHandler(loglvl, wrappedOut))
+	}
+
+	for _, m := range onecfg.ModulesToEnable {
+		name, ok := m["name"]
+		if !ok {
+			continue
+		}
+		handler := MatchFilterHandler("module", name, wrappedOut)
+
+		level, ok := m["level"]
+		if ok {
+			loglvl, err := log.LvlFromString(level)
+			if err == nil {
+				handler = log.LvlFilterHandler(loglvl, handler)
+			}
+		}
+
+		handlers = append(handlers, handler)
+	}
+
+	return wrappedOut.ORHandler(handlers...)
 }
 
 type orhandler struct {
@@ -192,7 +197,7 @@ func (o *orhandler) ORHandler(in ...log.Handler) log.Handler {
 		o.producedOutput = false
 		o.outMu.Unlock()
 		for _, h := range in {
-			h.Log(r)
+			_ = h.Log(r) // nothing really can be done if this errors
 			o.outMu.RLock()
 			if o.producedOutput {
 				o.outMu.RUnlock()
