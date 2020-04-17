@@ -361,8 +361,8 @@ func (factory *telemetryManager) get(uri string, resp io.Writer) error {
 		return err
 	}
 
-	resp.Write(data)
-	return nil
+	_, err = resp.Write(data)
+	return err
 }
 
 func (factory *telemetryManager) updateMRD(reportDef string, updates json.RawMessage) (err error) {
@@ -1234,7 +1234,7 @@ func (factory *telemetryManager) runSQLFromList(sqllist []string, entrylog strin
 	factory.logger.Info(entrylog)
 	for _, sqlName := range sqllist {
 		sqlName := sqlName // make scopelint happy
-		err := factory.wrapWithTX(func(tx *sqlx.Tx) error {
+		innerErr := factory.wrapWithTX(func(tx *sqlx.Tx) error {
 			res, err := factory.getSQLXTx(tx, sqlName).Exec()
 			if err != nil {
 				return xerrors.Errorf(errorlog, sqlName, err)
@@ -1247,11 +1247,12 @@ func (factory *telemetryManager) runSQLFromList(sqllist []string, entrylog strin
 			}
 			return nil
 		})
-		if err != nil {
+		if innerErr != nil {
 			factory.logger.Warn("Error running maintenance sql", "name", sqlName, "err", err)
+			err = innerErr
 		}
 	}
-	return nil
+	return err
 }
 
 func (factory *telemetryManager) Vacuum() error {

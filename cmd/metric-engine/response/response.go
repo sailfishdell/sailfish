@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 )
 
+const HTTPStatusOK = 200
+
 type Response struct {
 	Properties map[string]interface{}
 	Headers    map[string]string
@@ -14,7 +16,7 @@ func NewResponse() *Response {
 	return &Response{
 		Properties: map[string]interface{}{},
 		Headers:    map[string]string{},
-		Status:     200,
+		Status:     HTTPStatusOK,
 	}
 }
 

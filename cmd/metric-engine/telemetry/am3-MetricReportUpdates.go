@@ -237,7 +237,10 @@ func MakeHandlerGenericGET(logger log.Logger, telemetryMgr *telemetryManager, bu
 			if err != nil {
 				logger.Crit("Failed to get", "getCmd", getCmd, "err", err)
 				resp.WriteStatus(metric.HTTPStatusNotFound)
-				resp.Write([]byte("Resource not found. (FIXME: replace with redfish compliant error text.)"))
+				_, err = resp.Write([]byte("Resource not found. (FIXME: replace with redfish compliant error text.)"))
+				if err != nil {
+					logger.Crit("write failed", "err", err)
+				}
 			}
 			publishHelper(logger, bus, respEvent)
 		}()

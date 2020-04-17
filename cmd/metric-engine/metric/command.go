@@ -124,9 +124,9 @@ func (cmd *Command) NewResponseEvent(resp interface{}) (eh.Event, error) {
 	cr.WriteStatus(status)
 
 	enc := json.NewEncoder(cr)
-	enc.Encode(resp)
+	err = enc.Encode(resp)
 
-	return eh.NewEvent(cmd.ResponseType, cr, time.Now()), nil
+	return eh.NewEvent(cmd.ResponseType, cr, time.Now()), err
 }
 
 func (cmd *Command) ResponseWaitFn() func(eh.Event) bool {
