@@ -117,7 +117,6 @@ func shutdown(logger log.Logger, shutdownlist ...Shutdowner) {
 
 // Populate all MDs at start from filesystem
 func importPersistentSavedRedfishData(_ log.Logger, cfg *viper.Viper, bus eh.EventBus) error {
-
 	var persistentImportDirs = []struct {
 		name      string
 		subdir    string
