@@ -51,6 +51,10 @@ func (u *URIChanged) SetURI(s string) {
 	u.URI = s
 }
 
+func (u *URIChanged) GetURI() string {
+	return u.URI
+}
+
 // SQLTimeInt is a wrapper around golang time that serializes and deserializes 64-bit nanosecond time rather than the default 32-bit second
 type SQLTimeInt struct {
 	time.Time
