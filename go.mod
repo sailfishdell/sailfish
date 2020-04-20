@@ -32,4 +32,4 @@ require (
 
 replace github.com/looplab/eventhorizon => github.com/looplab/eventhorizon v0.2.1-0.20180328082012-7067a22f516d
 
-go 1.11
+go 1.13
