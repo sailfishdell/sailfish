@@ -46,7 +46,7 @@ func setDefaults(cfgMgr *viper.Viper) {
 // run concurrent message processing loops in 2 different goroutines Each
 // goroutine has exclusive access to its database, so we'll be able to
 // simultaneously do ops on each DB
-func setup(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, d busIntf) func() {
+func setup(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, d am3.BusObjs) func() {
 	// register global metric events with event horizon
 	metric.RegisterEvent()
 	telemetry.RegisterEvents()
