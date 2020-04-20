@@ -237,6 +237,7 @@ type UpdateMRDCommandData struct {
 type UpdateMRDResponseData struct {
 	metric.CommandResponse
 	metric.URIChanged
+	MetricReportDefinitionData
 }
 
 func (u *UpdateMRDCommandData) UseInput(ctx context.Context, logger log.Logger, r io.Reader) error {

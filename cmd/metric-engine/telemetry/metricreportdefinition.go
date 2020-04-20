@@ -365,10 +365,8 @@ func (factory *telemetryManager) get(uri string, resp io.Writer) error {
 	return err
 }
 
-func (factory *telemetryManager) updateMRD(reportDef string, updates json.RawMessage) (err error) {
-	return factory.wrapWithTX(func(tx *sqlx.Tx) error {
-		// TODO: Emit an error response message if the metric report definition does not exist
-
+func (factory *telemetryManager) updateMRD(reportDef string, updates json.RawMessage) (err error, finalMRD MetricReportDefinition) {
+	err = factory.wrapWithTX(func(tx *sqlx.Tx) error {
 		// step 1: LOAD existing report definition
 		mrd := MetricReportDefinition{
 			MetricReportDefinitionData: MetricReportDefinitionData{Name: reportDef},
@@ -412,6 +410,8 @@ func (factory *telemetryManager) updateMRD(reportDef string, updates json.RawMes
 			return xerrors.Errorf("error updating MetricMeta for MRD(%s): %s --ERR--> %w", reportDef, updates, err)
 		}
 
+		finalMRD = newMRD
+
 		if !newMRD.Enabled {
 			// we are done if report not enabled
 			return nil
@@ -428,6 +428,8 @@ func (factory *telemetryManager) updateMRD(reportDef string, updates json.RawMes
 
 		return nil
 	})
+
+	return err, finalMRD
 }
 
 func (factory *telemetryManager) addMRD(mrdEvData MetricReportDefinitionData) (err error) {
