@@ -27,7 +27,8 @@ import (
 
 // TODO: accept override or read from config?
 const (
-	defaultWaiterQueueLen = 200
+	defaultWaiterQueueLen             = 200
+	queueDefaultLoggingStartThreshold = 25
 )
 
 type Listener interface {
@@ -59,7 +60,10 @@ func NewEventWaiter(o ...Option) *EventWaiter {
 		autorun:    true,
 	}
 
-	w.ApplyOption(o...)
+	err := w.ApplyOption(o...)
+	if err != nil && w.logger != nil {
+		w.logger.Info("failed to apply option", "err", err)
+	}
 
 	if w.autorun {
 		go w.Run()
@@ -116,7 +120,7 @@ func (w *EventWaiter) Run() {
 				l.CloseInbox()
 			}
 		case event := <-w.inbox:
-			if len(w.inbox) > 25 {
+			if len(w.inbox) > queueDefaultLoggingStartThreshold {
 				startPrinting = true
 			}
 			if startPrinting && w.logger != nil {
