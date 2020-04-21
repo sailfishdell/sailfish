@@ -38,10 +38,10 @@ const (
 
 	// error strings
 	reportDefinition = "ReportDefinition"
-	typeAssertError  = "handler got event of incorrect format"
-	maintfail        = "Maint failed"
+	typeAssertError  = "incorrect event type"
+	maintfail        = "db maintenance"
 	maintstart       = "Run DB Maintenance Op"
-	respCreateError  = "Error creating response event"
+	respCreateError  = "create response event"
 )
 
 type urisetter interface {
@@ -61,7 +61,7 @@ type eventHandler interface {
 func publishHelper(logger log.Logger, bus eh.EventBus, event eh.Event) {
 	err := bus.PublishEvent(context.Background(), event)
 	if err != nil {
-		logger.Crit("Error publishing event. This should never happen!", "err", err)
+		logger.Crit("publish event", "err", err)
 	}
 }
 
@@ -235,11 +235,11 @@ func MakeHandlerGenericGET(logger log.Logger, telemetryMgr *telemetryManager, bu
 			// leverage automatic SetStatus(HTTPStatusOK) on first Write()
 			err := telemetryMgr.get(getCmd.URI, resp)
 			if err != nil {
-				logger.Crit("Failed to get", "getCmd", getCmd, "err", err)
+				logger.Crit("telemetry get uri", "getCmd", getCmd, "err", err)
 				resp.WriteStatus(metric.HTTPStatusNotFound)
 				_, err = resp.Write([]byte("Resource not found. (FIXME: replace with redfish compliant error text.)"))
 				if err != nil {
-					logger.Crit("write failed", "err", err)
+					logger.Crit("write", "err", err)
 				}
 			}
 			publishHelper(logger, bus, respEvent)
@@ -260,7 +260,7 @@ func MakeHandlerCreateMRD(logger log.Logger, telemetryMgr *telemetryManager, bus
 
 		addError := telemetryMgr.addMRD(reportDef.MetricReportDefinitionData)
 		if addError != nil {
-			logger.Crit("Failed to create the Report Definition", "Name", reportDef.Name, "err", addError)
+			logger.Crit("create report definition", "Name", reportDef.Name, "err", addError)
 		}
 
 		// Generate a "response" event that carries status back to initiator
@@ -293,7 +293,7 @@ func MakeHandlerUpdateMRD(logger log.Logger, telemetryMgr *telemetryManager, bus
 		localUpdate := *update
 		updError, updatedMRD := telemetryMgr.updateMRD(localUpdate.ReportDefinitionName, localUpdate.Patch)
 		if updError != nil {
-			logger.Crit("Failed to create or update the Report Definition", "Name", localUpdate.ReportDefinitionName, "err", updError)
+			logger.Crit("update report definition", "Name", update.ReportDefinitionName, "err", updError)
 			return
 		}
 
@@ -303,7 +303,7 @@ func MakeHandlerUpdateMRD(logger log.Logger, telemetryMgr *telemetryManager, bus
 		// Generate a "response" event that carries status back to initiator
 		respEvent, err := localUpdate.NewResponseEvent(updError)
 		if err != nil {
-			logger.Crit("Error creating response event", "err", err, "ReportDefinition", localUpdate.ReportDefinitionName)
+			logger.Crit(respCreateError, "err", err, reportDefinition, update.ReportDefinitionName)
 			return
 		}
 
@@ -332,7 +332,7 @@ func MakeHandlerDeleteMRD(logger log.Logger, telemetryMgr *telemetryManager, bus
 
 		delError := telemetryMgr.deleteMRD(reportDef.Name)
 		if delError != nil {
-			logger.Crit("Error deleting Metric Report Definition", "Name", reportDef.Name, "err", delError)
+			logger.Crit("delete metric report definition", "Name", reportDef.Name, "err", delError)
 		}
 
 		dbmaint[deleteOrphans] = struct{}{} // set bit to start orphan delete next clock tick
@@ -365,7 +365,7 @@ func MakeHandlerCreateMD(logger log.Logger, telemetryMgr *telemetryManager, bus 
 
 		addError := telemetryMgr.addMD(mdDef.MetricDefinitionData)
 		if addError != nil {
-			logger.Crit("Failed to create or update the Metric Definition", "MetricID", mdDef.MetricID, "err", addError)
+			logger.Crit("create metric definition", "MetricID", mdDef.MetricID, "err", addError)
 		}
 
 		// Generate a "response" event that carries status back to initiator
@@ -384,7 +384,7 @@ func MakeHandlerCreateTrigger(logger log.Logger, telemetryMgr *telemetryManager,
 	return func(event eh.Event) {
 		tdDef, ok := event.Data().(*CreateTriggerCommandData)
 		if !ok {
-			logger.Crit("CreateTriggerCommandEvent handler got event of incorrect format")
+			logger.Crit(typeAssertError)
 			return
 		}
 
@@ -392,13 +392,13 @@ func MakeHandlerCreateTrigger(logger log.Logger, telemetryMgr *telemetryManager,
 		locaTdDefCopy := *tdDef
 		addError := telemetryMgr.createTrigger(&locaTdDefCopy.TriggerData)
 		if addError != nil {
-			logger.Crit("Failed to create or update the Trigger", "RedfishID", tdDef.TriggerData.RedfishID, "err", addError)
+			logger.Crit("create trigger", "RedfishID", tdDef.TriggerData.RedfishID, "err", addError)
 		}
 
 		// Generate a "response" event that carries status back to initiator
 		respEvent, err := tdDef.NewResponseEvent(addError)
 		if err != nil {
-			logger.Crit("Error creating response event", "err", err, "Trigger", tdDef.TriggerData.RedfishID)
+			logger.Crit(respCreateError, "err", err, "Trigger", tdDef.TriggerData.RedfishID)
 			return
 		}
 
@@ -417,7 +417,7 @@ func MakeHandlerDeleteMR(logger log.Logger, telemetryMgr *telemetryManager, bus 
 		// Handle the requested command
 		delError := telemetryMgr.deleteMR(report.Name)
 		if delError != nil {
-			logger.Crit("Error deleting Metric Report", "Name", report.Name, "err", delError)
+			logger.Crit("delete metric report", "Name", report.Name, "err", delError)
 		}
 
 		// Generate a "response" event that carries status back to initiator
@@ -442,7 +442,7 @@ func MakeHandlerGenReport(logger log.Logger, telemetryMgr *telemetryManager, bus
 		mrName, reportError := telemetryMgr.GenerateMetricReport(nil, report.MRDName)
 		if reportError != nil {
 			// dont return, because we are going to return the error to the caller
-			logger.Crit("Error generating metric report", "err", reportError, reportDefinition, report.MRDName)
+			logger.Crit("generate report", "err", reportError, reportDefinition, report.MRDName)
 		}
 
 		respEvent, err := report.NewResponseEvent(reportError)
@@ -480,12 +480,13 @@ func MakeHandlerMV(logger log.Logger, telemetryMgr *telemetryManager, bus eh.Eve
 			for _, eventData := range dataArray {
 				metricValue, ok := eventData.(*metric.MetricValueEventData)
 				if !ok {
+					logger.Crit(typeAssertError)
 					continue
 				}
 
 				err := telemetryMgr.InsertMetricValue(tx, *metricValue, func(instanceid int64) { instancesUpdated[instanceid] = struct{}{} })
 				if err != nil {
-					logger.Crit("Error Inserting Metric Value", "Metric", *metricValue, "err", err)
+					logger.Crit("inserting metric value", "Metric", *metricValue, "err", err)
 					continue
 				}
 
@@ -493,7 +494,7 @@ func MakeHandlerMV(logger log.Logger, telemetryMgr *telemetryManager, bus eh.Eve
 
 				if (!telemetryMgr.MetricTSHWM.IsZero()) && (delta > maxMetricTimestampDelta || delta < -maxMetricTimestampDelta) {
 					// if you see this warning consistently, check the import to ensure it's using UTC and not localtime
-					logger.Warn("Metric Value Event TIME OFF", "MaxDelta", maxMetricTimestampDelta, "delta", delta, "Event", *metricValue)
+					logger.Warn("metric value event time off", "MaxDelta", maxMetricTimestampDelta, "delta", delta, "Event", *metricValue)
 				}
 
 				if telemetryMgr.MetricTSHWM.Before(metricValue.Timestamp.Time) {
@@ -503,13 +504,13 @@ func MakeHandlerMV(logger log.Logger, telemetryMgr *telemetryManager, bus eh.Eve
 			return nil
 		})
 		if err != nil {
-			logger.Crit("critical error storing metric value", "err", err)
+			logger.Crit("store metric value", "err", err)
 		}
 
 		// this will set telemetryMgr.NextMRTS = telemetryMgr.LastMRTS+5s for any reports that have changes
 		err = telemetryMgr.CheckOnChangeReports(nil, instancesUpdated)
 		if err != nil {
-			logger.Crit("Error Finding OnChange Reports for metrics", "instancesUpdated", instancesUpdated, "err", err)
+			logger.Crit("check onchange reports", "instancesUpdated", instancesUpdated, "err", err)
 		}
 	}
 }
