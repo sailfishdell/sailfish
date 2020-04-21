@@ -11,7 +11,7 @@ import (
 	eh "github.com/looplab/eventhorizon"
 
 	"github.com/superchalupa/sailfish/cmd/metric-engine/httpcommon"
-	"github.com/superchalupa/sailfish/src/http_sse"
+	"github.com/superchalupa/sailfish/src/httpsse"
 	log "github.com/superchalupa/sailfish/src/log"
 )
 
@@ -46,6 +46,6 @@ func addSSEHandlers(logger log.Logger, cfgMgr *viper.Viper, d busIntf, serverlis
 		logger.Crit("Add SSE routes to handler", "listen", listen, "handler", m)
 		m.Path("/events").
 			Methods("GET").
-			Handler(http_sse.NewSSEHandler(d, logger, "UNKNOWN", []string{"Unauthenticated"}, func(eh.Event) bool { return true }))
+			Handler(httpsse.NewSSEHandler(d, logger, "UNKNOWN", []string{"Unauthenticated"}, func(eh.Event) bool { return true }))
 	}
 }
