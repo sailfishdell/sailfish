@@ -32,7 +32,7 @@ lint() {
   do
     tags=${i}_TAGS
     paths=${i}_PATHS
-    CMD="golangci-lint run $@ $ARGS"
+    CMD="golangci-lint run $@"
     if ! $CMD --build-tags "${!tags}" ${!paths}; then
       exit 1
     fi
@@ -40,33 +40,38 @@ lint() {
 }
 
 
+moreopts=1
+while [[ $moreopts = 1 && $# -gt 0 ]]; do
+  case "$1" in
+    --about|?|help|-h|--help )
+      echo -e "\nusage: $0 [module]"
+      echo -e "  --full  full               - Run all modules"
+      echo -e "  --me    metric-engine  me  - Metric Engine"
+      echo -e "  --sf    sailfish       sf  - Sailfish"
+      echo -e "\nRuns go meta-linters on last commit and report added issues\n"
+      echo
+      exit 0
+      ;;
+    --full|full)
+      LINT_MODULES="METRIC_ENGINE SAILFISH"
+      shift
+      ;;
+    metric-engine|me|--me)
+      LINT_MODULES="METRIC_ENGINE"
+      shift
+      ;;
+    sailfish|sf|--sf)
+      LINT_MODULES="SAILFISH"
+      shift
+      ;;
+    latestonly)
+      ARGS="$ARGS --new-from-rev=HEAD~"
+      shift
+      ;;
+    *)
+      moreopts=0
+      ;;
+  esac
+done
 
-case "$1" in
-  --about|?|help|-h|--help )
-    echo -e "\nusage: $0 [module]"
-    echo -e "  --full  full               - Run all modules"
-    echo -e "  --me    metric-engine  me  - Metric Engine"
-    echo -e "  --sf    sailfish       sf  - Sailfish"
-    echo -e "\nRuns go meta-linters on last commit and report added issues\n"
-    echo
-    exit 0
-    ;;
-  --full|full)
-    LINT_MODULES="METRIC_ENGINE SAILFISH"
-    shift
-    ;;
-  metric-engine|me|--me)
-    LINT_MODULES="METRIC_ENGINE"
-    shift
-    ;;
-  sailfish|sf|--sf)
-    LINT_MODULES="SAILFISH"
-    shift
-    ;;
-  latestonly )
-    ARGS="$ARGS --new-from-rev=HEAD~"
-    shift
-    ;;
-esac
-
-lint "$@" "$ARGS"
+lint "$ARGS" "$@"
