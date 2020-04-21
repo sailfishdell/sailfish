@@ -309,7 +309,7 @@ func MakeHandlerUpdateMRD(logger log.Logger, telemetryMgr *telemetryManager, bus
 
 		respData, ok := respEvent.Data().(*UpdateMRDResponseData)
 		if ok {
-			respData.MetricReportDefinitionData = *updatedMRD.MetricReportDefinitionData
+			respData.MetricReportDefinitionData = updatedMRD.MetricReportDefinitionData
 		}
 
 		r, ok := respEvent.Data().(urisetter)
