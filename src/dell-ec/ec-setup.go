@@ -38,7 +38,6 @@ func setup(logger log.Logger, d *domain.DomainObjects) {
 	setupCfg := getStartupFileContents(logger, d)
 
 	injectStartupEvents := func(section string) {
-		fmt.Printf("Processing Startup Events from %s\n", section)
 		startup := setupCfg.Get(section)
 		if startup == nil {
 			logger.Warn("SKIPPING: no startup events found")
@@ -94,6 +93,8 @@ func setup(logger log.Logger, d *domain.DomainObjects) {
 	// Read the config file and process any startup events that are listed
 	startup := setupCfg.GetStringSlice("main.startup")
 	for _, section := range startup {
+		fmt.Printf("Processing Startup Events from %s\n", section)
 		injectStartupEvents(section)
+		fmt.Printf("FINISHED Startup Events from %s\n", section)
 	}
 }
