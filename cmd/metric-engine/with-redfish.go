@@ -33,7 +33,7 @@ func init() {
 		}}, optionalComponents...)
 }
 
-func addRedfishHandlers(logger log.Logger, cfgMgr *viper.Viper, d busIntf, serverlist *httpcommon.ServerTracker) {
+func addRedfishHandlers(logger log.Logger, cfgMgr *viper.Viper, d am3.BusObjs, serverlist *httpcommon.ServerTracker) {
 	logger.Crit("REDFISH ENABLED")
 	cfgMgr.SetDefault("redfish", "unix:/run/telemetryservice/http.socket")
 
