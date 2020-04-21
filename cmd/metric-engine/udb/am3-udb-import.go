@@ -31,9 +31,10 @@ const (
 
 // format strings for JSON for update events
 const (
-	jsonEnableMRD              = `{"MetricReportDefinitionEnabled": true}`
-	jsonDisableMRD             = `{"MetricReportDefinitionEnabled": false}`
-	jsonReportTimespanMRD      = `{"Schedule": {"RecurrenceInterval": "PT%sS"}}`
+	jsonEnableMRD         = `{"MetricReportDefinitionEnabled": true}`
+	jsonDisableMRD        = `{"MetricReportDefinitionEnabled": false}`
+	jsonReportTimespanMRD = `{"Schedule": {"RecurrenceInterval": "PT%sS"}}`
+	//jsonReportTriggersMRD      = `{"xxxx": "%s"}}`
 	enableTelemetry            = "EnableTelemetry"
 	reportInterval             = "ReportInterval"
 	reportTriggers             = "ReportTriggers"
@@ -401,11 +402,11 @@ func MakeHandlerLegacyAttributeSync(logger log.Logger, importMgr *importManager,
 		case reportInterval:
 			logger.Info("Set Report RecurrenceInterval", "ReportName", updateEvent.ReportDefinitionName, "Seconds", CurrentValue)
 			err = json.Unmarshal([]byte(fmt.Sprintf(jsonReportTimespanMRD, CurrentValue)), &(updateEvent.Patch))
-
-		case reportTriggers:
-			logger.Info("Set ReportTriggers", "ReportName", updateEvent.ReportDefinitionName, "Triggers:", CurrentValue)
-			err = json.Unmarshal([]byte(fmt.Sprintf(jsonReportTimespanMRD, CurrentValue)), &(updateEvent.Patch))
-
+			/* for now commenting this until the ReportTriggers added to the MRD
+					case reportTriggers:
+						logger.Info("Set ReportTriggers", "ReportName", updateEvent.ReportDefinitionName, "Triggers:", CurrentValue)
+						err = json.Unmarshal([]byte(fmt.Sprintf(jsonReportTriggersMRD, CurrentValue)), &(updateEvent.Patch))
+			****/
 		default:
 			logger.Crit("Asked to sync legacy AR attribute that I don't know about", "keyname", keys[1], "Attribute", keys[2])
 		}
