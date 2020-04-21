@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"strconv"
 	"strings"
 	"time"
@@ -30,12 +31,18 @@ const (
 
 // format strings for JSON for update events
 const (
-	jsonEnableMRD         = `{"MetricReportDefinitionEnabled": true}`
-	jsonDisableMRD        = `{"MetricReportDefinitionEnabled": false}`
-	jsonReportTimespanMRD = `{"Schedule": {"RecurrenceInterval": "PT%sS"}}`
-	enableTelemetry       = "EnableTelemetry"
-	reportInterval        = "ReportInterval"
-	maxPackedEvents       = 30
+	jsonEnableMRD              = `{"MetricReportDefinitionEnabled": true}`
+	jsonDisableMRD             = `{"MetricReportDefinitionEnabled": false}`
+	jsonReportTimespanMRD      = `{"Schedule": {"RecurrenceInterval": "PT%sS"}}`
+	enableTelemetry            = "EnableTelemetry"
+	reportInterval             = "ReportInterval"
+	reportTriggers             = "ReportTriggers"
+	maxPackedEvents            = 30
+	ConfigDBSyncEnable         = "key=iDRAC.Embedded.1#Telemetry%s.1#EnableTelemetry"
+	ConfigDBSyncReportInterval = "key=iDRAC.Embedded.1#Telemetry%s.1#ReportInterval"
+	SyncValueTrue              = "value=Enabled"
+	SyncValueFalse             = "value=Disabled"
+	SyncValue                  = "value=%v"
 )
 
 type busComponents interface {
@@ -132,7 +139,14 @@ func Startup(logger log.Logger, cfg *viper.Viper, am3Svc eventHandlingService, d
 	if err != nil {
 		return nil, xerrors.Errorf("Failed to attach event handler: %w", err)
 	}
+
 	configSync.kickstartLegacyARConfigSync(logger, d)
+
+	err = am3Svc.AddEventHandler("Update Metric Report Definition to Sync ConfigDB", telemetry.UpdateMRDResponseEvent, MakeHandlerUpdateMRDSyncConfigDB(logger, importMgr, bus))
+
+	if err != nil {
+		return nil, xerrors.Errorf("Failed to attach response event handler: %w", err)
+	}
 
 	go handleUDBNotifyPipe(logger, cfg.GetString("udb.udbnotifypipe"), d)
 
@@ -219,10 +233,11 @@ scan:
 			continue scan
 
 		// these are attributes we need to sync or TODO soon need to sync
-		case "RsyslogTarget", "ReportTriggers":
+		case "RsyslogTarget":
 			// will need to handle rsyslog eventually (TODO:...)
 			continue scan
-		case enableTelemetry, reportInterval:
+			//case enableTelemetry, reportInterval, reportTriggers:
+		case enableTelemetry, reportInterval, reportTriggers:
 			// WE HANDLE THESE, add to map below
 		default:
 			logger.Crit("Internal error. Unhandled legacy AR key, code needs to be updated!", "keyname", keys[2])
@@ -232,6 +247,34 @@ scan:
 		entries[RowID] = key
 	}
 	return err
+}
+
+// cfgUtilSet is a helper to shell out to the cfgutil binary for setting AR
+func cfgUtilSet(logger log.Logger, key, value string) error {
+	cmd := exec.Command("/usr/bin/cfgutil", "command=setattr", key, value)
+	output, err := cmd.Output()
+	logger.Debug("cfgutil command=setattr", "key", key, "value", value, "output", string(output), "err", err, "module", "cfgutil")
+	return err
+}
+
+func MakeHandlerUpdateMRDSyncConfigDB(logger log.Logger, importMgr *importManager, bus eh.EventBus) func(eh.Event) {
+	return func(event eh.Event) {
+		logger.Info("Sync update to MRD config to CfgDB")
+		reportDef, ok := event.Data().(*telemetry.UpdateMRDResponseData)
+		if !ok {
+			logger.Crit("AddMRDCommand handler got event of incorrect format at configDBSync")
+			return
+		}
+
+		switch reportDef.Enabled {
+		case true:
+			cfgUtilSet(logger, fmt.Sprintf(ConfigDBSyncEnable, reportDef.Name), SyncValueTrue)
+		case false:
+			cfgUtilSet(logger, fmt.Sprintf(ConfigDBSyncEnable, reportDef.Name), SyncValueFalse)
+		}
+		ReportInterval := time.Duration(reportDef.Period) / time.Second
+		cfgUtilSet(logger, fmt.Sprintf(ConfigDBSyncReportInterval, reportDef.Name), fmt.Sprintf(SyncValue, uint64(ReportInterval)))
+	}
 }
 
 func (cs ConfigSync) kickstartLegacyARConfigSync(logger log.Logger, d busComponents) {
@@ -307,6 +350,10 @@ func MakeHandlerLegacyAttributeSync(logger log.Logger, importMgr *importManager,
 			sqlForCurrentValue = "select CurrentValue from TblEnumAttribute where ROWID=?"
 		case reportInterval:
 			sqlForCurrentValue = "select CurrentValue from TblIntAttribute where ROWID=?"
+
+		case reportTriggers:
+			sqlForCurrentValue = "select CurrentValue from TblStrAttribute where ROWID=?"
+
 		default:
 			// basically these should all be filtered out way up above
 			logger.Crit("TODO: update legacy ar filter, we hit an unhandled key", "key", keys[2])
@@ -354,6 +401,11 @@ func MakeHandlerLegacyAttributeSync(logger log.Logger, importMgr *importManager,
 		case reportInterval:
 			logger.Info("Set Report RecurrenceInterval", "ReportName", updateEvent.ReportDefinitionName, "Seconds", CurrentValue)
 			err = json.Unmarshal([]byte(fmt.Sprintf(jsonReportTimespanMRD, CurrentValue)), &(updateEvent.Patch))
+
+		case reportTriggers:
+			logger.Info("Set ReportTriggers", "ReportName", updateEvent.ReportDefinitionName, "Triggers:", CurrentValue)
+			err = json.Unmarshal([]byte(fmt.Sprintf(jsonReportTimespanMRD, CurrentValue)), &(updateEvent.Patch))
+
 		default:
 			logger.Crit("Asked to sync legacy AR attribute that I don't know about", "keyname", keys[1], "Attribute", keys[2])
 		}

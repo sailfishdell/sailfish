@@ -291,10 +291,9 @@ func MakeHandlerUpdateMRD(logger log.Logger, telemetryMgr *telemetryManager, bus
 
 		// make a local by-value copy of the pointer passed in
 		localUpdate := *update
-		updError, mrdForResponse := telemetryMgr.updateMRD(localUpdate.ReportDefinitionName, localUpdate.Patch)
-
+		updError, updatedMRD := telemetryMgr.updateMRD(localUpdate.ReportDefinitionName, localUpdate.Patch)
 		if updError != nil {
-			logger.Crit("Failed to update the Report Definition", "Name", update.ReportDefinitionName, "err", updError)
+			logger.Crit("Failed to create or update the Report Definition", "Name", localUpdate.ReportDefinitionName, "err", updError)
 			return
 		}
 
@@ -302,20 +301,20 @@ func MakeHandlerUpdateMRD(logger log.Logger, telemetryMgr *telemetryManager, bus
 		dbmaint[deleteOrphans] = struct{}{}
 
 		// Generate a "response" event that carries status back to initiator
-		respEvent, err := update.NewResponseEvent(updError)
+		respEvent, err := localUpdate.NewResponseEvent(updError)
 		if err != nil {
-			logger.Crit("Error creating response event", "err", err, reportDefinition, update.ReportDefinitionName)
+			logger.Crit("Error creating response event", "err", err, "ReportDefinition", localUpdate.ReportDefinitionName)
 			return
 		}
+
 		respData, ok := respEvent.Data().(*UpdateMRDResponseData)
 		if ok {
-			respData.MetricReportDefinitionData = *mrdForResponse.MetricReportDefinitionData
+			respData.MetricReportDefinitionData = *updatedMRD.MetricReportDefinitionData
 		}
 
-		mrd := mrdPath + update.ReportDefinitionName
 		r, ok := respEvent.Data().(urisetter)
 		if ok {
-			r.SetURI(mrd)
+			r.SetURI(mrdPath + localUpdate.ReportDefinitionName)
 		}
 
 		// Should add the populated metric report definition event as a response?
