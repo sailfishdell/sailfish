@@ -15,8 +15,8 @@ import (
 	"github.com/spf13/viper"
 	"golang.org/x/xerrors"
 
-	"github.com/superchalupa/sailfish/cmd/metric-engine/fifocompat"
 	"github.com/superchalupa/sailfish/cmd/metric-engine/metric"
+	"github.com/superchalupa/sailfish/src/fifoutil"
 
 	log "github.com/superchalupa/sailfish/src/log"
 )
@@ -25,6 +25,8 @@ const (
 	triggerSubscribeEvent   eh.EventType = "Subscribe for Triggers"
 	triggerUnsubscribeEvent eh.EventType = "Unsubscribe Triggers"
 	printSubscriberMaps     eh.EventType = "Print Subscriber Maps"
+
+	writeTimeout = 20 * time.Millisecond
 )
 
 type busComponents interface {
@@ -44,14 +46,19 @@ type subscriptionData struct {
 // StartupTriggerProcessing will attach event handlers to handle subscriber events
 func StartupTriggerProcessing(logger log.Logger, cfg *viper.Viper, am3Svc eventHandlingService,
 	d busComponents) error {
+	logger = log.With(logger, "module", "trigger") // set up logger module so that we can filter
+	activeSubs := make(map[string]*os.File)
+
 	// setup programatic defaults. can be overridden in config file
 	cfg.SetDefault("triggers.clientIPCPipe", "/var/run/telemetryservice/telsubandlclnotifypipe")
 	cfg.SetDefault("triggers.subList", "/var/run/telemetryservice/telsvc_subscriptioninfo.json")
 
-	activeSubs := make(map[string]*os.File)
+	// handle Subscription and LCL event related notifications
+	handleSubscriptionsAndLCLNotify(logger, cfg.GetString("triggers.clientIPCPipe"),
+		cfg.GetString("triggers.subList"), activeSubs, d.GetBus())
 
 	//Setup event handlers for
-	//  - Metric reprot generated event
+	//  - Metric report generated event
 	//  - New subscription request event
 	//  - New unsubscription request event
 	err := setupEventHandlers(logger, d.GetBus(), am3Svc, activeSubs, cfg.GetString("triggers.subList"))
@@ -59,16 +66,12 @@ func StartupTriggerProcessing(logger log.Logger, cfg *viper.Viper, am3Svc eventH
 		return err
 	}
 
-	// handle Subscription and LCL event related notifications
-	go handleSubscriptionsAndLCLNotify(logger, cfg.GetString("triggers.clientIPCPipe"),
-		cfg.GetString("triggers.subList"), activeSubs, d.GetBus())
-
 	return nil
 }
 
 // only need to read file once on startup
 func readSubFile(logger log.Logger, subFilePath string, activeSubs SubscriberMap) error {
-	logger.Crit("Reading saved subscriber map")
+	logger.Info("Reading saved subscriber map")
 	jsonstring, err := ioutil.ReadFile(subFilePath)
 	if err != nil {
 		return xerrors.Errorf("didn't read active telemetry subscriptions: %w", err)
@@ -81,27 +84,16 @@ func readSubFile(logger log.Logger, subFilePath string, activeSubs SubscriberMap
 	}
 
 	for _, filename := range sublist {
-		fd, err := os.OpenFile(filename, os.O_RDWR, os.ModeNamedPipe)
+		logger.Info("Restoring subscriber", "filename", filename)
+		// have to use os.O_RDWR to get non-blocking behavior, otherwise this call hangs
+		fd, err := os.OpenFile(filename, os.O_RDWR, 0o664)
 		if err != nil {
-			logger.Crit("error opening subscriber pipe", "filename", filename, "err", err)
+			logger.Crit("Error opening saved subscriber fifo, skipping", "filename", filename, "err", err)
+			continue
 		}
 		activeSubs[filename] = fd
 	}
-
-	fmt.Printf("active subscriber map size  - %d \n", len(activeSubs))
-
 	return nil
-}
-
-// Close all active subscription - executed in defered mode
-func closeActiveSubs(logger log.Logger, activeSubs map[string]*os.File) {
-	for k, openFile := range activeSubs {
-		err := openFile.Close()
-		if err != nil {
-			logger.Warn("Clean-up - pipe close failed - ", "err", err)
-		}
-		delete(activeSubs, k)
-	}
 }
 
 func writeSubFile(logger log.Logger, activeSubs SubscriberMap, subFilePath string) {
@@ -126,29 +118,38 @@ func writeSubFile(logger log.Logger, activeSubs SubscriberMap, subFilePath strin
 	}
 }
 
+const invalidEventStr = "handler got unexpected type of data event, skipping"
+
 // Report generated am3 service notification handler
-func MakeHandlerReportGenerated(logger log.Logger, subscriberMap map[string]*os.File,
+func MakeHandlerReportGenerated(logger log.Logger, activeSubs map[string]*os.File,
 	bus eh.EventBus) func(eh.Event) {
 	return func(event eh.Event) {
 		notify, ok := event.Data().(*metric.ReportGeneratedData)
 		if !ok {
-			logger.Crit("Trigger report generated handler got an invalid data event", "event",
-				event, "eventdata", event.Data())
+			logger.Crit(invalidEventStr, "EventType", event.EventType(), "eventdata", event.Data())
 			return
 		}
 
 		//send triggers to active subscribers
-		for k, subscriber := range subscriberMap {
-			fmt.Printf("Report due trigger to subscriber %s - %s \n", k, notify.MRName)
-			_, err := fmt.Fprintf(subscriber, "|%s|", notify.MRName)
+		for k, subscriber := range activeSubs {
+			logger.Info("Report generated. Trigger subscribers.", "sub", k, "MRName", notify.MRName)
+			err := subscriber.SetWriteDeadline(time.Now().Add(writeTimeout))
 			if err != nil {
+				logger.Warn("Error setting write deadline for subscriber", "filename", k, "err", err)
+			}
+			_, writeErr := subscriber.Write([]byte("|" + notify.MRName + "|"))
+			err = subscriber.SetWriteDeadline(time.Time{}) // zero - remove deadline
+			if err != nil {
+				logger.Warn("Error setting write deadline for subscriber", "filename", k, "err", err)
+			}
+			if writeErr != nil {
 				// remove subscriber on error
-				logger.Warn("Trigger notification to subscriber failed", "err", err)
+				logger.Warn("Trigger notification to subscriber failed", "filename", k, "err", writeErr)
+				delete(activeSubs, k)
 				err := subscriber.Close()
 				if err != nil {
-					logger.Crit("error closing pipe on error", "err", err)
+					logger.Warn("error closing pipe on error", "filename", k, "err", err)
 				}
-				delete(subscriberMap, k)
 			}
 		}
 	}
@@ -160,12 +161,13 @@ func MakeHandlerSubscribe(logger log.Logger, activeSubs map[string]*os.File,
 	return func(event eh.Event) {
 		notify, ok := event.Data().(*subscriptionData)
 		if !ok {
-			logger.Crit("Subscription request handler got an invalid data event", "event", event, "eventdata", event.Data())
+			logger.Crit(invalidEventStr, "EventType", event.EventType(), "eventdata", event.Data())
 			return
 		}
 		subscribedPipe := strings.ToLower(notify.namedPipeName)
 
-		fd, err := os.OpenFile(subscribedPipe, os.O_RDWR, os.ModeNamedPipe)
+		// have to use os.O_RDWR to get non-blocking behavior, otherwise this call can hang forever
+		fd, err := os.OpenFile(subscribedPipe, os.O_RDWR, 0o660)
 		if err != nil {
 			logger.Crit("Error client subscription named pipe", "err", err)
 			return
@@ -185,8 +187,7 @@ func MakeHandlerUnsubscribe(logger log.Logger, activeSubs map[string]*os.File,
 	return func(event eh.Event) {
 		notify, ok := event.Data().(*subscriptionData)
 		if !ok {
-			logger.Crit("Unsubscribe request handler got an invalid data event", "event",
-				event, "eventdata", event.Data())
+			logger.Crit(invalidEventStr, "EventType", event.EventType(), "eventdata", event.Data())
 			return
 		}
 
@@ -256,26 +257,34 @@ func publishHelper(logger log.Logger, bus eh.EventBus, et eh.EventType, data eh.
 	}
 }
 
-func processSubscriptionsOrLCLNotify(logger log.Logger, bus eh.EventBus, scanText string) {
-	fmt.Printf("process request --- %s \n", scanText)
+const (
+	subscribeStr      = "subscribe@"
+	subscribeStrLen   = len(subscribeStr)
+	unsubscribeStr    = "unsubscribe@"
+	unsubscribeStrLen = len(unsubscribeStr)
+)
+
+func processPipeInput(logger log.Logger, bus eh.EventBus, scanText string) {
+	logger.Debug("Process command pipe request", "scantext", scanText)
 	switch {
-	case strings.HasPrefix(scanText, "subscribe@"):
-		subFileName := scanText[len("subscribe@"):]
-		fmt.Printf("Subscription request %s - %s \n", scanText, subFileName)
+	case strings.HasPrefix(scanText, subscribeStr):
+		subFileName := scanText[subscribeStrLen:]
+		logger.Info("Subscription request", "subFileName", subFileName)
 		publishHelper(logger, bus, triggerSubscribeEvent, &subscriptionData{namedPipeName: subFileName})
 
-	case strings.HasPrefix(scanText, "unsubscribe@"):
-		subFileName := scanText[len("unsubscribe@"):]
-		fmt.Printf("Unsubscription request %s - %s \n", scanText, subFileName)
+	case strings.HasPrefix(scanText, unsubscribeStr):
+		subFileName := scanText[unsubscribeStrLen:]
+		logger.Info("Unsubscription request", "subFileName", subFileName)
 		publishHelper(logger, bus, triggerUnsubscribeEvent, &subscriptionData{namedPipeName: subFileName})
 
 	case strings.HasPrefix(scanText, "printInternalMaps"):
-		fmt.Printf("Print internal maps \n")
+		logger.Info("Print internal maps")
 		publishHelper(logger, bus, printSubscriberMaps, nil)
 
 	default:
-		fmt.Printf("LCL events %s \n", scanText)
-		for _, name := range strings.Split(scanText, ",") {
+		reportDefList := strings.Split(scanText, ",")
+		logger.Info("LCL triggered report gen", "reportDefList", reportDefList)
+		for _, name := range reportDefList {
 			evt, err := metric.NewRequestReportCommand(name)
 			if err != nil {
 				logger.Warn("Error creating report request command", "err", err)
@@ -294,57 +303,53 @@ func processSubscriptionsOrLCLNotify(logger log.Logger, bus eh.EventBus, scanTex
 // subscribe@<pipename> for subscription request on pipe
 // unsubscribe@<pipename> for unsubscription request on pipe
 //
-// The reader of the named pipe gets an EOF when the last writer exits. To
-// avoid this, we'll simply open it ourselves for writing and never close it.
-// This will ensure the pipe stays around forever without eof... That's what
-// nullWriter is for, below.
+// we filter steam input to allow only alphanumeric and few special chars - /,@-
+// / -> to include subscriber file path
+// , -> to accommodate separator for trigger events
+// @ -> subscribe/unsubscribe prefix - subscribe@/unsubscribe@
+// - -> legacy redfish subsriber pipe path is /var/run/odatalite-providers/telemetryfifo
+
 func handleSubscriptionsAndLCLNotify(logger log.Logger, pipePath string, subscriberListFile string,
 	activeSubs map[string]*os.File, bus eh.EventBus) {
 	// fetch the active subscriber list on startup
 	readErr := readSubFile(logger, subscriberListFile, activeSubs)
 	if readErr != nil {
-		logger.Crit("Error while restoring subscriber list.", "err", readErr)
+		logger.Warn("Error restoring subscriber list, continuing with empty subscriber list", "err", readErr)
 	}
 
 	//Start listening on the client subscription named pipe IPC for
 	//subscribe/unsubscribe and LCL event notifications
-	err := fifocompat.MakeFifo(pipePath, 0660)
-	if err != nil && !os.IsExist(err) {
-		logger.Warn("Error creating Trigger (un)sub and LCL events IPC pipe", "err", err)
-	}
+	go func() { // run forever in background
+		logger.Info("Subscription handling goroutine started")
+		reg := regexp.MustCompile("[^a-zA-Z0-9/,@-]+") // this will panic if it doesn't work, no need to nil check
 
-	file, err := os.OpenFile(pipePath, os.O_CREATE, os.ModeNamedPipe)
-	if err != nil {
-		logger.Crit("Error opening Trigger (un)sub and LCL events IPC pipe", "err", err)
-	}
-	defer file.Close()
+		for {
+			// clear out everything at startup and recreate files
+			if !fifoutil.IsFIFO(pipePath) {
+				logger.Info("remove previous pipe path and recreate", "pipePath", pipePath)
+				_ = os.Remove(pipePath)
+				err := fifoutil.MakeFifo(pipePath, 0660)
+				if err != nil && !os.IsExist(err) {
+					logger.Warn("Error creating Trigger (un)sub and LCL events IPC pipe", "err", err)
+				}
+			}
 
-	nullWriter, err := os.OpenFile(pipePath, os.O_WRONLY, os.ModeNamedPipe)
-	if err != nil {
-		logger.Crit("Error opening Trigger (un)sub and LCL events IPC  pipe for (placeholder) write", "err", err)
-	}
-	// defer .Close() to keep linters happy. Inside we know we never exit...
-	defer nullWriter.Close()
+			logger.Info("Startup telemetry service trigger pipe processing.")
+			// O_RDONLY opens with blocking behaviour, wont get past this line until somebody writes. that's ok.
+			file, err := os.OpenFile(pipePath, os.O_RDONLY, 0o660) //golang octal prefix: 0o
+			if err != nil {
+				logger.Crit("Error opening Trigger (un)sub and LCL events IPC pipe", "err", err)
+			}
 
-	// we filter steam input to allow only alphanumeric and few special chars - /,@-
-	// / -> to include subscriber file path
-	// , -> to accommodate separator for trigger events
-	// @ -> subscribe/unsubscribe prefix - subscribe@/unsubscribe@
-	// - -> legacy redfish subsriber pipe path is /var/run/odatalite-providers/telemetryfifo
-	reg := regexp.MustCompile("[^a-zA-Z0-9/,@-]+")
-	if reg == nil {
-		logger.Crit("Error initializing regexp to filter input stream at IPC pipe")
-	}
+			s := bufio.NewScanner(file)
+			s.Split(bufio.ScanWords)
+			for s.Scan() {
+				scanText := reg.ReplaceAllString(s.Text(), "")
+				processPipeInput(logger, bus, scanText)
+			}
 
-	s := bufio.NewScanner(file)
-	s.Split(bufio.ScanWords)
-	for s.Scan() {
-		scanText := reg.ReplaceAllString(s.Text(), "")
-		fmt.Printf("New (Un)Subscrition request/LCL event message - %s\n", scanText)
-		processSubscriptionsOrLCLNotify(logger, bus, scanText)
-	}
-
-	// closing active subscription handles - to keep linters happy. Inside we know we never exit...
-	closeActiveSubs(logger, activeSubs)
-	panic("subscription cmd pipe closed. should never happen.")
+			logger.Info("EOF - telemetry service trigger pipe.")
+			file.Close()
+		}
+	}()
 }
