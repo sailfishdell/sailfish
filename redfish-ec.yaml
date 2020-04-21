@@ -1380,5 +1380,5 @@ mappings:
         - {Property: "firmware_version",    FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "FirmwareVersion" }
         - {Property: "hardware_version",    FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "HardwareVersion" }
         - {Property: "graphics_uri",    FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "GraphicsURI" }
-        - {Property: "name",    FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "FanName" }
+        - {Property: "fanname",    FQDD: "{FQDD}", Group: "Info", Index: "1", Name: "FanName" }
 
