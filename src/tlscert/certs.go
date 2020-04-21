@@ -51,8 +51,8 @@ func NewCert(options ...Option) (*MyCert, error) {
 		},
 	}
 
-	c.ApplyOption(options...)
-	return c, nil
+	err := c.ApplyOption(options...)
+	return c, err
 }
 
 func (c *MyCert) logger() log.Logger {
@@ -65,9 +65,9 @@ func (c *MyCert) logger() log.Logger {
 // Load will load certs from the specified file path, us SetBaseFilename() to set
 func Load(options ...Option) (c *MyCert, err error) {
 	c = &MyCert{}
-	c.ApplyOption(options...)
-	if c.fileBase == "" {
-		panic("Key base file path not set.")
+	err = c.ApplyOption(options...)
+	if err != nil || c.fileBase == "" {
+		return nil, xerrors.Errorf("error applying options: %w", err)
 	}
 
 	c.logger().Debug("Try to load existing Key Pair", "CRT", c.fileBase+".crt", "KEY", c.fileBase+".key")
@@ -339,15 +339,21 @@ func (c *MyCert) Serialize() error {
 	if err != nil {
 		return xerrors.Errorf("certificate creation failed: failed to write public key(%s): %w", c.fileBase+".crt", err)
 	}
-	pem.Encode(certOut, &pem.Block{Type: "CERTIFICATE", Bytes: certB})
-	certOut.Close()
+	defer certOut.Close()
+	err = pem.Encode(certOut, &pem.Block{Type: "CERTIFICATE", Bytes: certB})
+	if err != nil {
+		return xerrors.Errorf("certificate encode failed: failed to write public key(%s): %w", c.fileBase+".crt", err)
+	}
 
 	// Private key
 	keyOut, err := os.OpenFile(c.fileBase+".key", os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
 	if err != nil {
 		return xerrors.Errorf("certificate creation failed: failed to write private key(%s): %w", c.fileBase+".key", err)
 	}
-	pem.Encode(keyOut, pemBlockForKey(c.priv))
-	keyOut.Close()
+	defer keyOut.Close()
+	err = pem.Encode(keyOut, pemBlockForKey(c.priv))
+	if err != nil {
+		return xerrors.Errorf("certificate encode failed: failed to write private key(%s): %w", c.fileBase+".key", err)
+	}
 	return nil
 }
