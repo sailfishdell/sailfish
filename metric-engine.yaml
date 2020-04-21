@@ -513,7 +513,7 @@ UDB-Metric-Import:
       WHERE Timestamp > :HWM
 
   NICPortStats:
-    Type: DISABLED
+    Type: MetricColumns
     # statistictime is the underlying HWM, so we can scan the table slightly more often
     ScanInterval: 0
     WaitInterval: 300
@@ -522,78 +522,221 @@ UDB-Metric-Import:
       DMLiveObjectDatabase.db:
         TblNic_Port_Stats_Obj:
         TblNic_Partition_Stats_Obj:
-        TblSfp_Sensor_Obj:
         TblNic_RDMA_Stats_Obj:
+        TblSfp_Sensor_Obj:
     Query: |
-      SELECT
-        StatisticTime * 1000000000 as Timestamp,
-        FQDD as Context,
-         '/redfish/v1/FIXME/' || FQDD as Property,
-        FQDD as FQDD,
+      SELECT DISTINCT
+        TblNic_Port_Stats_Obj.StatisticsTime * 1000000000 as Timestamp,
+        TblNic_Port_Stats_Obj.hdr_DOT_fqdd as Context,
+         '/redfish/v1/FIXME/' || TblNic_Port_Stats_Obj.hdr_DOT_fqdd as Property,
+        TblNic_Port_Stats_Obj.hdr_DOT_fqdd as FQDD,
 
         -- MEB 2020-02-07 - observed 5s intervals
         30000000000 as 'SensorInterval',  -- 5s interval w/ 1s slack
         5000000000 as 'SensorSlack',
         true as 'RequiresExpand',
 
-        TxUnicast as 'Metric-TxUnicast',
-        TxPauseXONFrames as 'Metric-TxPauseXONFrames',
-        TxPauseXOFFFrames as 'Metric-TxPauseXOFFFrames',
-        TxMutlicast as 'Metric-TxMutlicast',
-        TxErrorPktSingleCollision as 'Metric-TxErrorPktSingleCollision',
-        TxErrorPktMultipleCollision as 'Metric-TxErrorPktMultipleCollision',
-        TxErrorPktLateCollision as 'Metric-TxErrorPktLateCollision',
-        TxErrorPktExcessiveCollision as 'Metric-TxErrorPktExcessiveCollision',
-        TxBytes as 'Metric-TxBytes',
-        TxBroadcast as 'Metric-TxBroadcast',
-        RxUnicast as 'Metric-RxUnicast',
-        RxRuntPkt as 'Metric-RxRuntPkt',
-        RxPauseXONFrames as 'Metric-RxPauseXONFrames',
-        RxPauseXOFFFrames as 'Metric-RxPauseXOFFFrames',
-        RxMutlicast as 'Metric-RxMutlicast',
-        RxJabberPkt as 'Metric-RxJabberPkt',
-        RxFalseCarrierDetection as 'Metric-RxFalseCarrierDetection',
-        RxErrorPktFCSErrors as 'Metric-RxErrorPktFCSErrors',
-        RxErrorPktAlignmentErrors as 'Metric-RxErrorPktAlignmentErrors',
-        RxBytes as 'Metric-RxBytes',
-        RxBroadcast as 'Metric-RxBroadcast',
-        RDMATxTotalWritePkts as 'Metric-RDMATxTotalWritePkts',
-        RDMATxTotalSendPkts as 'Metric-RDMATxTotalSendPkts',
-        RDMATxTotalReadReqPkts as 'Metric-RDMATxTotalReadReqPkts',
-        RDMATxTotalPackets as 'Metric-RDMATxTotalPackets',
-        RDMATxTotalBytes as 'Metric-RDMATxTotalBytes',
-        RDMATotalProtocolErrors as 'Metric-RDMATotalProtocolErrors',
-        RDMATotalProtectionErrors as 'Metric-RDMATotalProtectionErrors',
-        RDMARxTotalPackets as 'Metric-RDMARxTotalPackets',
-        RDMARxTotalBytes as 'Metric-RDMARxTotalBytes',
-        PartitionOSDriverState as 'Metric-PartitionOSDriverState',
-        PartitionLinkStatus as 'Metric-PartitionLinkStatus',
-        OSDriverState as 'Metric-OSDriverState',
-        LinkStatus as 'Metric-LinkStatus',
-        LanUnicastPktTXCount as 'Metric-LanUnicastPktTXCount',
-        LanUnicastPktRXCount as 'Metric-LanUnicastPktRXCount',
-        LanFCSRxErrors as 'Metric-LanFCSRxErrors',
-        FCOERxPktDroppedCount as 'Metric-FCOERxPktDroppedCount',
-        FCOEPktTxCount as 'Metric-FCOEPktTxCount',
-        FCOEPktRxCount as 'Metric-FCOEPktRxCount',
-        FCOELinkFailures as 'Metric-FCOELinkFailures',
-        FCCRCErrorCount as 'Metric-FCCRCErrorCount',
-        DiscardedPkts as 'Metric-DiscardedPkts',
+        case TblNic_Port_Stats_Obj.TransmitTotalUnicast
+           when -1 then 'NULL'
+                   else TblNic_Port_Stats_Obj.TransmitTotalUnicast
+        end AS 'Metric-TxUnicast',
+        case TblNic_Port_Stats_Obj.TransmitTotalPauseXONFrames
+           when 4294967295 then 'NULL'
+                   else TblNic_Port_Stats_Obj.TransmitTotalPauseXONFrames
+        end AS 'Metric-TxPauseXONFrames',
+        case TblNic_Port_Stats_Obj.TransmitTotalPauseXOFFFrames
+           when 4294967295 then 'NULL'
+                   else TblNic_Port_Stats_Obj.TransmitTotalPauseXOFFFrames
+        end AS 'Metric-TxPauseXOFFFrames',
+        case TblNic_Port_Stats_Obj.TransmitTotalMutlicast
+           when -1 then 'NULL'
+                   else TblNic_Port_Stats_Obj.TransmitTotalMutlicast
+        end AS 'Metric-TxMutlicast',
+        case TblNic_Port_Stats_Obj.TransmitErrorPktSingleCollision
+           when 4294967295 then 'NULL'
+                   else TblNic_Port_Stats_Obj.TransmitErrorPktSingleCollision
+        end AS 'Metric-TxErrorPktSingleCollision',
+        case TblNic_Port_Stats_Obj.TransmitErrorPktMultipleCollision
+           when 4294967295 then 'NULL'
+                   else TblNic_Port_Stats_Obj.TransmitErrorPktMultipleCollision
+        end AS 'Metric-TxErrorPktMultipleCollision',
+        case TblNic_Port_Stats_Obj.TransmitErrorPktLateCollision
+           when 4294967295 then 'NULL'
+                   else TblNic_Port_Stats_Obj.TransmitErrorPktLateCollision
+        end AS 'Metric-TxErrorPktLateCollision',
+        case TblNic_Port_Stats_Obj.TransmitErrorPktExcessiveCollision
+           when 4294967295 then 'NULL'
+                   else TblNic_Port_Stats_Obj.TransmitErrorPktExcessiveCollision
+        end AS 'Metric-TxErrorPktExcessiveCollision',
+        case TblNic_Port_Stats_Obj.TransmitTotalBytes
+           when -1 then 'NULL'
+                   else TblNic_Port_Stats_Obj.TransmitTotalBytes
+        end AS 'Metric-TxBytes',
+        case TblNic_Port_Stats_Obj.TransmitTotalBroadcast
+           when -1 then 'NULL'
+                   else TblNic_Port_Stats_Obj.TransmitTotalBroadcast
+        end AS 'Metric-TxBroadcast',
+        case TblNic_Port_Stats_Obj.ReceiveTotalUnicast
+           when -1 then 'NULL'
+                   else TblNic_Port_Stats_Obj.ReceiveTotalUnicast
+        end AS 'Metric-RxUnicast',
+        case TblNic_Port_Stats_Obj.ReceiveRuntPkt
+           when 4294967295 then 'NULL'
+                   else TblNic_Port_Stats_Obj.ReceiveRuntPkt
+        end AS 'Metric-RxRuntPkt',
+        case TblNic_Port_Stats_Obj.ReceiveTotalPauseXONFrames
+           when 4294967295 then 'NULL'
+                   else TblNic_Port_Stats_Obj.ReceiveTotalPauseXONFrames
+        end AS 'Metric-RxPauseXONFrames',
+        case TblNic_Port_Stats_Obj.ReceiveTotalPauseXOFFFrames
+           when 4294967295 then 'NULL'
+                   else TblNic_Port_Stats_Obj.ReceiveTotalPauseXOFFFrames
+        end AS 'Metric-RxPauseXOFFFrames',
+        case TblNic_Port_Stats_Obj.ReceiveTotalMutlicast
+           when -1 then 'NULL'
+                   else TblNic_Port_Stats_Obj.ReceiveTotalMutlicast
+        end AS 'Metric-RxMutlicast',
+        case TblNic_Port_Stats_Obj.ReceiveJabberPkt
+           when 4294967295 then 'NULL'
+                   else TblNic_Port_Stats_Obj.ReceiveJabberPkt
+        end AS 'Metric-RxJabberPkt',
+        case TblNic_Port_Stats_Obj.ReceiveFalseCarrierDetection
+           when 4294967295 then 'NULL'
+                   else TblNic_Port_Stats_Obj.ReceiveFalseCarrierDetection
+        end AS 'Metric-RxFalseCarrierDetection',
+        case TblNic_Port_Stats_Obj.ReceiveErrorPktFCSErrors
+           when 4294967295 then 'NULL'
+                   else TblNic_Port_Stats_Obj.ReceiveErrorPktFCSErrors
+        end AS 'Metric-RxErrorPktFCSErrors',
+        case TblNic_Port_Stats_Obj.ReceiveErrorPktAlignmentErrors
+           when 4294967295 then 'NULL'
+                   else TblNic_Port_Stats_Obj.ReceiveErrorPktAlignmentErrors
+        end AS 'Metric-RxErrorPktAlignmentErrors',
+        case TblNic_Port_Stats_Obj.ReceiveTotalBytes
+           when -1 then 'NULL'
+                   else TblNic_Port_Stats_Obj.ReceiveTotalBytes
+        end AS 'Metric-RxBytes',
 
-        -- These dont seem to be populated in the embedded nics that I see. Possibly this is there for add-in cards
-        Temperature as 'Metric-TemperatureReading',
-        VoltageValue as 'Metric-VoltageReading'
+        case TblNic_Port_Stats_Obj.ReceiveTotalBroadcast
+           when -1 then 'NULL'
+                   else TblNic_Port_Stats_Obj.ReceiveTotalBroadcast
+        end AS 'Metric-RxBroadcast',
+        case TblNic_Port_Stats_Obj.OSDriverState
+          when 0 then "Non-operational"
+          when 1 then "Operational"
+          when 2 then "Unknown"
+        end as 'Metric-OSDriverState',
+        case TblNic_Port_Stats_Obj.LinkStatus
+          when 0 then "Down"
+          when 1 then "Up"
+          when 2 then "Unknown"
+        end as 'Metric-LinkStatus',
 
-        -- These are somewhat interesting in the underlying table. Need to see if we can output these as well
+        case TblNic_Port_Stats_Obj.DiscardedPkts
+           when 4294967295 then 'NULL'
+                   else TblNic_Port_Stats_Obj.DiscardedPkts
+        end AS 'Metric-DiscardedPkts',
+
+        case TblNic_RDMA_Stats_Obj.RDMATxTotalWritePkts
+           when -1 then 'NULL'
+                   else TblNic_RDMA_Stats_Obj.RDMATxTotalWritePkts
+        end AS 'Metric-RDMATxTotalWritePkts',
+        case TblNic_RDMA_Stats_Obj.RDMATxTotalSendPkts
+           when -1 then 'NULL'
+                   else TblNic_RDMA_Stats_Obj.RDMATxTotalSendPkts
+        end AS 'Metric-RDMATxTotalSendPkts',
+        case TblNic_RDMA_Stats_Obj.RDMATxTotalReadReqPkts
+           when -1 then 'NULL'
+                   else TblNic_RDMA_Stats_Obj.RDMATxTotalReadReqPkts
+        end AS 'Metric-RDMATxTotalReadReqPkts',
+        case TblNic_RDMA_Stats_Obj.RDMATxTotalPackets
+           when -1 then 'NULL'
+                   else TblNic_RDMA_Stats_Obj.RDMATxTotalPackets
+        end AS 'Metric-RDMATxTotalPackets',
+        case TblNic_RDMA_Stats_Obj.RDMATxTotalBytes
+           when -1 then 'NULL'
+                   else TblNic_RDMA_Stats_Obj.RDMATxTotalBytes
+        end AS 'Metric-RDMATxTotalBytes',
+        case TblNic_RDMA_Stats_Obj.TotalProtocolErrors
+           when 4294967295 then 'NULL'
+                   else TblNic_RDMA_Stats_Obj.TotalProtocolErrors
+        end AS 'Metric-RDMATotalProtocolErrors',
+        case TblNic_RDMA_Stats_Obj.TotalProtectionErrors
+           when 4294967295 then 'NULL'
+                   else TblNic_RDMA_Stats_Obj.TotalProtectionErrors
+        end AS 'Metric-RDMATotalProtectionErrors',
+        case TblNic_RDMA_Stats_Obj.RDMARxTotalPackets
+           when -1 then 'NULL'
+                   else TblNic_RDMA_Stats_Obj.RDMARxTotalPackets
+        end AS 'Metric-RDMARxTotalPackets',
+        case TblNic_RDMA_Stats_Obj.RDMARxTotalBytes
+           when -1 then 'NULL'
+                   else TblNic_RDMA_Stats_Obj.RDMARxTotalBytes
+        end AS 'Metric-RDMARxTotalBytes',
+
+        case TblNic_Partition_Stats_Obj.PartitionOSDriverState
+          when 0 then "Non-operational"
+          when 1 then "Operational"
+          when 2 then "Unknown"
+        end as 'Metric-PartitionOSDriverState',
+        case TblNic_Partition_Stats_Obj.PartitionLinkStatus
+          when 0 then "Down"
+          when 1 then "Up"
+          when 2 then "Unknown"
+        end as 'Metric-PartitionLinkStatus',
+
+        case TblNic_Partition_Stats_Obj.LanUnicastPktTXCount
+           when -1 then 'NULL'
+                   else TblNic_Partition_Stats_Obj.LanUnicastPktTXCount
+        end AS 'Metric-LanUnicastPktTXCount',
+        case TblNic_Partition_Stats_Obj.LanUnicastPktRXCount
+           when -1 then 'NULL'
+                   else TblNic_Partition_Stats_Obj.LanUnicastPktRXCount
+        end AS 'Metric-LanUnicastPktRXCount',
+        case TblNic_Partition_Stats_Obj.LanFCSRxErrors
+           when 4294967295 then 'NULL'
+                   else TblNic_Partition_Stats_Obj.LanFCSRxErrors
+        end AS 'Metric-LanFCSRxErrors',
+        case TblNic_Partition_Stats_Obj.FCOERxPktDroppedCount
+           when 4294967295 then 'NULL'
+                   else TblNic_Partition_Stats_Obj.FCOERxPktDroppedCount
+        end AS 'Metric-FCOERxPktDroppedCount',
+        case TblNic_Partition_Stats_Obj.FCOEPktTxCount
+           when -1 then 'NULL'
+                   else TblNic_Partition_Stats_Obj.FCOEPktTxCount
+        end AS 'Metric-FCOEPktTxCount',
+        case TblNic_Partition_Stats_Obj.FCOEPktRxCount
+           when -1 then 'NULL'
+                   else TblNic_Partition_Stats_Obj.FCOEPktRxCount
+        end AS 'Metric-FCOEPktRxCount',
+        case TblNic_Partition_Stats_Obj.FCOELinkFailures
+           when 4294967295 then 'NULL'
+                   else TblNic_Partition_Stats_Obj.FCOELinkFailures
+        end AS 'Metric-FCOELinkFailures',
+        case TblNic_Partition_Stats_Obj.FCCRCErrorCount
+           when 4294967295 then 'NULL'
+                   else TblNic_Partition_Stats_Obj.FCCRCErrorCount
+        end AS 'Metric-FCCRCErrorCount'
+
+        -- These are somewhat interesting in the underlying table (TblSfp_Sensor_Obj). Need to see
+        -- if we can output these as well
+        -- Temperature as 'Metric-TemperatureReading'
+        -- VoltageValue as 'Metric-VoltageReading'
         --'RXInputPower'
-        --'RXInputPowerStatus'     ,
+        --'RXInputPowerStatus'
         --'TXBiasCurrent'
-        --'TXBiasCurrentStatus'    ,
+        --'TXBiasCurrentStatus'
         --'TXOutputPower'
         --'TXOutputPowerStatus'
 
-      FROM CIMVIEW_DCIM_NICStatistics
-      WHERE Timestamp > :HWM
+      FROM TblNic_Port_Stats_Obj
+      left join TblNic_Partition_Stats_Obj
+        on (instr(TblNic_Partition_Stats_Obj.hdr_DOT_key,TblNic_Port_Stats_Obj.hdr_DOT_fqdd) > 0)
+      left join TblNic_RDMA_Stats_Obj
+        on (instr(TblNic_RDMA_Stats_Obj.hdr_DOT_key,TblNic_Port_Stats_Obj.hdr_DOT_fqdd) > 0)
+      WHERE ((select ActiveOIDMapping.ObjType from ActiveOIDMapping
+        where TblNic_Port_Stats_Obj.OID = ActiveOIDMapping.OID ) = 1809) --NIC_PORT_STATS_OBJ(0x711)
+      AND Timestamp > :HWM
 
   HIITempSensors:
     Type: MetricColumns
@@ -1214,7 +1357,7 @@ createdb:
             references MetricMeta (ID)
               on delete cascade
         );
-        CREATE INDEX IF NOT EXISTS report_definition_2_metric_meta_metric_meta_id_idx ON ReportDefinitionToMetricMeta(MetaID)
+        CREATE INDEX IF NOT EXISTS report_definition_2_metric_meta_id_idx ON ReportDefinitionToMetricMeta(MetaID)
 
   - |
       CREATE TABLE IF NOT EXISTS MetricInstance

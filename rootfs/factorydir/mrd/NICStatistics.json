@@ -48,7 +48,6 @@
     {"MetricID": "TxErrorPktLateCollision"},
     {"MetricID": "TxErrorPktMultipleCollision"},
     {"MetricID": "TxErrorPktSingleCollision"},
-    {"MetricID": "TxErrorPktSingleCollision"},
     {"MetricID": "TxMutlicast"},
     {"MetricID": "TxPauseXOFFFrames"},
     {"MetricID": "TxPauseXONFrames"},
