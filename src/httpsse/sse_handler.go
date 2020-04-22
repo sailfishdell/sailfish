@@ -1,4 +1,4 @@
-package http_sse
+package httpsse
 
 import (
 	"encoding/json"

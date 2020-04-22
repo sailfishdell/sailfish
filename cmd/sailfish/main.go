@@ -24,8 +24,8 @@ import (
 
 	eh "github.com/looplab/eventhorizon"
 	"github.com/superchalupa/sailfish/src/http_redfish_sse"
-	"github.com/superchalupa/sailfish/src/http_sse"
 	"github.com/superchalupa/sailfish/src/httpinject"
+	"github.com/superchalupa/sailfish/src/httpsse"
 	"github.com/superchalupa/sailfish/src/ocp/telemetryservice"
 	"github.com/superchalupa/sailfish/src/rawjsonstream"
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
@@ -126,7 +126,7 @@ func main() {
 	nofilterfn := func(ev eh.Event) bool { return true }
 	// SSE
 	chainAuthSSE := func(u string, p []string) http.Handler {
-		return http_sse.NewSSEHandler(domainObjs, logger, u, p, nofilterfn)
+		return httpsse.NewSSEHandler(domainObjs, logger, u, p, nofilterfn)
 	}
 	m.Path("/events").Methods("GET").HandlerFunc(
 		session.MakeHandlerFunc(logger, domainObjs.EventBus, domainObjs, chainAuthSSE, basicauth.MakeHandlerFunc(chainAuthSSE, chainAuthSSE("UNKNOWN", []string{"Unauthenticated"}))))
@@ -143,7 +143,7 @@ func main() {
 	}
 
 	chainAuthMetricSSE := func(u string, p []string) http.Handler {
-		return http_sse.NewSSEHandler(domainObjs, logger, u, p, MetricFilterfn)
+		return httpsse.NewSSEHandler(domainObjs, logger, u, p, MetricFilterfn)
 	}
 	m.Path("/redfish/v1/TelemetryService/SSE").Methods("GET").HandlerFunc(
 		session.MakeHandlerFunc(logger, domainObjs.EventBus, domainObjs, chainAuthMetricSSE, basicauth.MakeHandlerFunc(chainAuthMetricSSE, chainAuthMetricSSE("UNKNOWN", []string{"Unauthenticated"}))))
