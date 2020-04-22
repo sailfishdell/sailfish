@@ -142,7 +142,7 @@ func (trg *TriggerData) UnmarshalJSON(data []byte) error {
 		*Alias
 		Links struct {
 			MetricReportDefinitions []struct {
-				OdataId string `json:"@odata.id"`
+				OdataID string `json:"@odata.id"`
 			}
 		}
 	}{
@@ -155,7 +155,7 @@ func (trg *TriggerData) UnmarshalJSON(data []byte) error {
 	}
 	// MRDID list array
 	for _, mrd := range target.Links.MetricReportDefinitions {
-		comps := strings.Split(mrd.OdataId, "/")
+		comps := strings.Split(mrd.OdataID, "/")
 		trg.MRDList = append(trg.MRDList, comps[len(comps)-1])
 	}
 
