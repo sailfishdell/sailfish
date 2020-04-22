@@ -25,6 +25,7 @@ type Decoder interface {
 
 type InjectCommand struct {
 	ctx        context.Context
+	logger     log.Logger
 	sendTime   time.Time
 	ingestTime time.Time
 
@@ -39,11 +40,12 @@ type InjectCommand struct {
 	Synchronous  bool              `json:"Synchronous"` // Synchronous set if POST should not return until the message is processed
 }
 
-func NewInjectCommand() *InjectCommand {
+func NewInjectCommand(logger log.Logger) *InjectCommand {
 	return &InjectCommand{
 		ctx:        context.Background(),
 		ingestTime: time.Now(),
 		Barrier:    true,
+		logger:     logger,
 	}
 }
 
@@ -90,7 +92,7 @@ func processPipe(logger log.Logger, pipePath string, seq *int64, eb eh.EventBus)
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		buffer := bytes.Trim(scanner.Bytes(), "\x00")
-		cmd := NewInjectCommand()
+		cmd := NewInjectCommand(logger)
 		decoder := json.NewDecoder(bytes.NewReader(buffer))
 		decoder.DisallowUnknownFields()
 		err := decoder.Decode(cmd)
@@ -143,14 +145,13 @@ func (cmd *InjectCommand) sendTrain(trainload []eh.EventData, eb eh.EventBus) {
 }
 
 func (cmd *InjectCommand) appendDecode(trainload *[]eh.EventData, m json.RawMessage) {
-	requestLogger := log.ContextLogger(cmd.ctx, "internal_commands")
 	if m == nil {
 		return
 	}
 	// create a new, empty event of the requested type. The data will be deserialized into it.
 	data, err := eh.CreateEventData(cmd.Name)
 	if err != nil {
-		requestLogger.Crit("Decode: event type does not exist, skipping", "EventType", cmd.Name, "err", err)
+		cmd.logger.Crit("Decode: event type does not exist, skipping", "EventType", cmd.Name, "err", err)
 		return
 	}
 
@@ -162,10 +163,10 @@ func (cmd *InjectCommand) appendDecode(trainload *[]eh.EventData, m json.RawMess
 	}
 
 	if err != nil {
-		requestLogger.Crit("Event decode failed", "err", err, "EventType", cmd.Name)
+		cmd.logger.Crit("Event decode failed", "err", err, "EventType", cmd.Name)
 		return
 	}
 	// fast path, avoid logging unless debugging
-	//requestLogger.Debug("Decode: normal json decode added to trainload", "data", data)
+	//cmd.logger.Debug("Decode: normal json decode added to trainload", "data", data)
 	*trainload = append(*trainload, data)
 }

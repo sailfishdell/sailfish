@@ -95,8 +95,8 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	//*********************************************************************
 	// /redfish/v1/Sessions
 	//*********************************************************************
-	_, sessionSvcVw, _ := instantiateSvc.Instantiate("sessionservice", map[string]interface{}{})
-	session.SetupSessionService(instantiateSvc, sessionSvcVw, d)
+	svcLogger, sessionSvcVw, _ := instantiateSvc.Instantiate("sessionservice", map[string]interface{}{})
+	session.SetupSessionService(svcLogger, instantiateSvc, sessionSvcVw, d)
 	instantiateSvc.InstantiateNoRet("sessioncollection", map[string]interface{}{"collection_uri": "/redfish/v1/SessionService/Sessions"})
 
 	//*********************************************************************

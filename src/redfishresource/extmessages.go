@@ -110,7 +110,6 @@ func AddEEMIMessage(response map[string]interface{}, a *RedfishResourceAggregate
 			msg := ExtendedInfo{}
 			err := json.Unmarshal([]byte(err_msg), &msg)
 			if err != nil {
-				//log.MustLogger("PATCH").Crit("Error could not be unmarshalled to an EEMI message")
 				return errors.New("Error updating: Could not unmarshal EEMI message")
 			}
 			AddToEEMIList(response, msg, false)

@@ -109,9 +109,10 @@ func MakeHandlerFunc(logger log.Logger, eb eh.EventBus, getter IDGetter, withUse
 	}
 }
 
-func SetupSessionService(svc *testaggregate.Service, v *view.View, d *domain.DomainObjects) {
+func SetupSessionService(logger log.Logger, svc *testaggregate.Service, v *view.View, d *domain.DomainObjects) {
 	eh.RegisterCommand(func() eh.Command {
 		return &POST{
+			logger:         logger,
 			model:          v.GetModel("default"),
 			commandHandler: d.CommandHandler,
 			eventWaiter:    d.EventWaiter,
