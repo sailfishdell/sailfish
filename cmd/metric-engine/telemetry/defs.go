@@ -38,6 +38,12 @@ const (
 	// Trigger
 	CreateTriggerCommandEvent  eh.EventType = "CreateTriggerEvent"
 	CreateTriggerResponseEvent eh.EventType = "CreateTriggerEventResponse"
+	AddTriggerCommandEvent     eh.EventType = "AddTriggerEvent"
+	AddTriggerResponseEvent    eh.EventType = "AddTriggerEventResponse"
+	UpdateTriggerCommandEvent  eh.EventType = "UpdateTriggerEvent"
+	UpdateTriggerResponseEvent eh.EventType = "UpdateTriggerEventResponse"
+	DeleteTriggerCommandEvent  eh.EventType = "DeleteTriggerEvent"
+	DeleteTriggerResponseEvent eh.EventType = "DeleteTriggerEventResponse"
 
 	// generic events
 	DatabaseMaintenance eh.EventType = "DatabaseMaintenanceEvent"
@@ -60,12 +66,12 @@ func (u *GenericGETCommandData) UseVars(ctx context.Context, logger log.Logger, 
 
 // MetricReportDefinitionData is the eh event data for adding a new report definition
 type MetricReportDefinitionData struct {
-	Name      string      `db:"Name" json:"Id"`
+	Name      string      `db:"Name"      json:"Id"`
 	ShortDesc string      `db:"ShortDesc" json:"Name"`
-	LongDesc  string      `db:"LongDesc" json:"Description"`
-	Type      string      `db:"Type" json:"MetricReportDefinitionType"` // 'Periodic', 'OnChange', 'OnRequest'
-	Updates   string      `db:"Updates" json:"ReportUpdates"`           // 'AppendStopsWhenFull', 'AppendWrapsWhenFull', 'NewReport', 'Overwrite'
-	Actions   StringArray `db:"Actions" json:"ReportActions"`           // 	'LogToMetricReportsCollection', 'RedfishEvent'
+	LongDesc  string      `db:"LongDesc"  json:"Description"`
+	Type      string      `db:"Type"      json:"MetricReportDefinitionType"` // 'Periodic', 'OnChange', 'OnRequest'
+	Updates   string      `db:"Updates"   json:"ReportUpdates"`              // 'AppendStopsWhenFull', 'AppendWrapsWhenFull', 'NewReport', 'Overwrite'
+	Actions   StringArray `db:"Actions"   json:"ReportActions"`              // 	'LogToMetricReportsCollection', 'RedfishEvent'
 
 	// Validation: It's assumed that TimeSpan is parsed on ingress. MRD Schema
 	// specifies TimeSpan as a duration.
@@ -81,9 +87,10 @@ type MetricReportDefinitionData struct {
 	Heartbeat RedfishDuration `db:"HeartbeatInterval" json:"MetricReportHeartbeatInterval"`
 	Metrics   []RawMetricMeta `db:"Metrics"`
 
-	Enabled      bool `db:"Enabled" json:"MetricReportDefinitionEnabled"`
-	SuppressDups bool `db:"SuppressDups" json:"SuppressRepeatedMetricValue"`
-	Hidden       bool `db:"Hidden" json:"-"`
+	Enabled      bool        `db:"Enabled" json:"MetricReportDefinitionEnabled"`
+	SuppressDups bool        `db:"SuppressDups" json:"SuppressRepeatedMetricValue"`
+	Hidden       bool        `db:"Hidden" json:"-"`
+	TriggerList  StringArray `db:"-"         json:"-"` // Trigger [list]
 }
 
 // UnmarshalJSON special decoder for MetricReportDefinitionData to unmarshal the "period" specially
@@ -92,6 +99,11 @@ func (mrd *MetricReportDefinitionData) UnmarshalJSON(data []byte) error {
 	target := struct {
 		*Alias
 		Schedule *struct{ RecurrenceInterval RedfishDuration }
+		Links    struct {
+			Triggers []struct {
+				OdataID string `json:"@odata.id"`
+			}
+		}
 	}{
 		Alias: (*Alias)(mrd),
 	}
@@ -102,6 +114,12 @@ func (mrd *MetricReportDefinitionData) UnmarshalJSON(data []byte) error {
 	if target.Schedule != nil {
 		mrd.Period = target.Schedule.RecurrenceInterval
 	}
+	// TriggerList
+	for _, trg := range target.Links.Triggers {
+		comps := strings.Split(trg.OdataID, "/")
+		mrd.TriggerList = append(mrd.TriggerList, comps[len(comps)-1])
+	}
+
 	return nil
 }
 
@@ -153,7 +171,7 @@ func (trg *TriggerData) UnmarshalJSON(data []byte) error {
 		fmt.Println("error json.Unmarshal")
 		return err
 	}
-	// MRDID list array
+	// MRD Name list array
 	for _, mrd := range target.Links.MetricReportDefinitions {
 		comps := strings.Split(mrd.OdataID, "/")
 		trg.MRDList = append(trg.MRDList, comps[len(comps)-1])
@@ -265,20 +283,6 @@ type DeleteMRDResponseData struct {
 	metric.URIChanged
 }
 
-type DeleteMRCommandData struct {
-	metric.Command
-	Name string
-}
-
-func (delMR *DeleteMRCommandData) UseVars(ctx context.Context, logger log.Logger, vars map[string]string) error {
-	delMR.Name = vars["ID"]
-	return nil
-}
-
-type DeleteMRResponseData struct {
-	metric.CommandResponse
-}
-
 // MD defs
 type MetricDefinition struct {
 	MetricDefinitionData
@@ -315,6 +319,72 @@ func (a *CreateTriggerCommandData) UseInput(ctx context.Context, logger log.Logg
 }
 
 type CreateTriggerResponseData struct {
+	metric.CommandResponse
+}
+
+type AddTriggerCommandData struct {
+	metric.Command
+	TriggerData
+}
+
+func (a *AddTriggerCommandData) UseInput(ctx context.Context, logger log.Logger, r io.Reader) error {
+	decoder := json.NewDecoder(r)
+	return decoder.Decode(&a.TriggerData)
+}
+
+type AddTriggerResponseData struct {
+	metric.CommandResponse
+	metric.URIChanged
+}
+
+type UpdateTriggerCommandData struct {
+	metric.Command
+	TriggerName string
+	Patch       json.RawMessage
+}
+
+type UpdateTriggerResponseData struct {
+	metric.CommandResponse
+	metric.URIChanged
+}
+
+func (u *UpdateTriggerCommandData) UseInput(ctx context.Context, logger log.Logger, r io.Reader) error {
+	decoder := json.NewDecoder(r)
+	return decoder.Decode(&u.Patch)
+}
+
+func (u *UpdateTriggerCommandData) UseVars(ctx context.Context, logger log.Logger, vars map[string]string) error {
+	u.TriggerName = vars["ID"]
+	return nil
+}
+
+type DeleteTriggerCommandData struct {
+	metric.Command
+	Name string
+}
+
+func (delTrigger *DeleteTriggerCommandData) UseVars(ctx context.Context, logger log.Logger, vars map[string]string) error {
+	delTrigger.Name = vars["ID"]
+	return nil
+}
+
+type DeleteTriggerResponseData struct {
+	metric.CommandResponse
+	metric.URIChanged
+}
+
+// MR defs
+type DeleteMRCommandData struct {
+	metric.Command
+	Name string
+}
+
+func (delMR *DeleteMRCommandData) UseVars(ctx context.Context, logger log.Logger, vars map[string]string) error {
+	delMR.Name = vars["ID"]
+	return nil
+}
+
+type DeleteMRResponseData struct {
 	metric.CommandResponse
 }
 
@@ -375,6 +445,24 @@ func RegisterEvents() {
 		return &CreateTriggerCommandData{Command: metric.NewCommand(CreateTriggerResponseEvent)}
 	})
 	eh.RegisterEventData(CreateTriggerResponseEvent, func() eh.EventData { return &CreateTriggerResponseData{} })
+
+	// =========== ADD Trigger - AddTriggerCommand ==========================
+	eh.RegisterEventData(AddTriggerCommandEvent, func() eh.EventData {
+		return &AddTriggerCommandData{Command: CMD(AddTriggerResponseEvent)}
+	})
+	eh.RegisterEventData(AddTriggerResponseEvent, func() eh.EventData { return &AddTriggerResponseData{} })
+
+	// =========== UPDATE Trigger - UpdateTriggerCommandEvent ====================
+	eh.RegisterEventData(UpdateTriggerCommandEvent, func() eh.EventData {
+		return &UpdateTriggerCommandData{Command: CMD(UpdateTriggerResponseEvent)}
+	})
+	eh.RegisterEventData(UpdateTriggerResponseEvent, func() eh.EventData { return &UpdateTriggerResponseData{} })
+
+	// =========== DEL Trigger - DeleteTriggerCommandEvent =======================
+	eh.RegisterEventData(DeleteTriggerCommandEvent, func() eh.EventData {
+		return &DeleteTriggerCommandData{Command: CMD(DeleteTriggerResponseEvent)}
+	})
+	eh.RegisterEventData(DeleteTriggerResponseEvent, func() eh.EventData { return &DeleteTriggerResponseData{} })
 
 	// These aren't planned to ever be commands
 	//   - no need for these to be callable from redfish or other interfaces

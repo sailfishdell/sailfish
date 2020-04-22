@@ -31,19 +31,15 @@ const (
 
 // format strings for JSON for update events
 const (
-	jsonEnableMRD         = `{"MetricReportDefinitionEnabled": true}`
-	jsonDisableMRD        = `{"MetricReportDefinitionEnabled": false}`
-	jsonReportTimespanMRD = `{"Schedule": {"RecurrenceInterval": "PT%sS"}}`
-	//jsonReportTriggersMRD      = `{"xxxx": "%s"}}`
-	enableTelemetry            = "EnableTelemetry"
-	reportInterval             = "ReportInterval"
-	reportTriggers             = "ReportTriggers"
-	maxPackedEvents            = 30
-	ConfigDBSyncEnable         = "key=iDRAC.Embedded.1#Telemetry%s.1#EnableTelemetry"
-	ConfigDBSyncReportInterval = "key=iDRAC.Embedded.1#Telemetry%s.1#ReportInterval"
-	SyncValueTrue              = "value=Enabled"
-	SyncValueFalse             = "value=Disabled"
-	SyncValue                  = "value=%v"
+	jsonEnableMRD           = `{"MetricReportDefinitionEnabled": true}`
+	jsonDisableMRD          = `{"MetricReportDefinitionEnabled": false}`
+	jsonReportTimespanMRD   = `{"Schedule": {"RecurrenceInterval": "PT%sS"}}`
+	triggerOdataidPrefix    = "/redfish/v1/TelemetryService/Triggers/"
+	enableTelemetry         = "EnableTelemetry"
+	reportInterval          = "ReportInterval"
+	reportTriggers          = "ReportTriggers"
+	maxPackedEvents         = 30
+	cfgdbTelemetryKeyPrefix = "iDRAC.Embedded.1#Telemetry"
 
 	// error strings
 	addHandlerFail = "Failed to attach event handler: %w"
@@ -254,10 +250,10 @@ scan:
 }
 
 // cfgUtilSet is a helper to shell out to the cfgutil binary for setting AR
-func cfgUtilSet(logger log.Logger, key, value string) error {
-	cmd := exec.Command("/usr/bin/cfgutil", "command=setattr", key, value)
+func cfgUtilSet(logger log.Logger, reportName, key, value string) error {
+	cmd := exec.Command("/usr/bin/cfgutil", "command=setattr", "key="+cfgdbTelemetryKeyPrefix+reportName+".1#"+key, "value="+value)
 	output, err := cmd.Output()
-	logger.Debug("cfgutil command=setattr", "key", key, "value", value, "output", string(output), "err", err, "module", "cfgutil")
+	logger.Debug("cfgutil command=setattr", "report", reportName, "key", key, "value", value, "output", string(output), "err", err, "module", "cfgutil")
 	return err
 }
 
@@ -270,14 +266,17 @@ func MakeHandlerUpdateMRDSyncConfigDB(logger log.Logger, importMgr *importManage
 			return
 		}
 
-		switch reportDef.Enabled {
-		case true:
-			cfgUtilSet(logger, fmt.Sprintf(ConfigDBSyncEnable, reportDef.Name), SyncValueTrue)
-		case false:
-			cfgUtilSet(logger, fmt.Sprintf(ConfigDBSyncEnable, reportDef.Name), SyncValueFalse)
+		if reportDef.Enabled {
+			cfgUtilSet(logger, reportDef.Name, enableTelemetry, "Enabled")
+		} else {
+			cfgUtilSet(logger, reportDef.Name, enableTelemetry, "Disabled")
 		}
-		ReportInterval := time.Duration(reportDef.Period) / time.Second
-		cfgUtilSet(logger, fmt.Sprintf(ConfigDBSyncReportInterval, reportDef.Name), fmt.Sprintf(SyncValue, uint64(ReportInterval)))
+
+		cfgUtilSet(logger, reportDef.Name, reportInterval,
+			strconv.Itoa(int(time.Duration(reportDef.Period)/time.Second)))
+
+		cfgUtilSet(logger, reportDef.Name, reportTriggers,
+			strings.Join(reportDef.TriggerList, ", "))
 	}
 }
 
@@ -303,6 +302,29 @@ func (cs ConfigSync) kickstartLegacyARConfigSync(logger log.Logger, d busCompone
 	if len(events) > 0 {
 		publishHelper(logger, d.GetBus(), udbChangeEvent, events, true)
 	}
+}
+
+// trgList = "trig1,trig2,..."  as in CurrentValue for ReportTriggers
+func makeTriggerLinksPatch(trgList string) (json.RawMessage, error) {
+	lnk := struct {
+		Links struct {
+			Triggers []struct {
+				OdataID string `json:"@odata.id"`
+			}
+		}
+	}{}
+
+	trigs := strings.Split(trgList, ",")
+	for _, trg := range trigs {
+		if trg != "" {
+			oids := struct {
+				OdataID string `json:"@odata.id"`
+			}{triggerOdataidPrefix + strings.TrimSpace(trg)}
+			lnk.Links.Triggers = append(lnk.Links.Triggers, oids)
+		}
+	}
+
+	return json.Marshal(&lnk)
 }
 
 //# tblEnumAttribute
@@ -389,6 +411,7 @@ func MakeHandlerLegacyAttributeSync(logger log.Logger, importMgr *importManager,
 			logger.Crit("Skipping report definition update for malformed keyname", "keyname", keys[1])
 			return
 		}
+
 		err = fmt.Errorf("unknown type of Legacy Config AR: %v", keys)
 		switch keys[2] {
 		case enableTelemetry:
@@ -405,11 +428,15 @@ func MakeHandlerLegacyAttributeSync(logger log.Logger, importMgr *importManager,
 		case reportInterval:
 			logger.Info("Set Report RecurrenceInterval", "ReportName", updateEvent.ReportDefinitionName, "Seconds", CurrentValue)
 			err = json.Unmarshal([]byte(fmt.Sprintf(jsonReportTimespanMRD, CurrentValue)), &(updateEvent.Patch))
-			/* for now commenting this until the ReportTriggers added to the MRD
-					case reportTriggers:
-						logger.Info("Set ReportTriggers", "ReportName", updateEvent.ReportDefinitionName, "Triggers:", CurrentValue)
-						err = json.Unmarshal([]byte(fmt.Sprintf(jsonReportTriggersMRD, CurrentValue)), &(updateEvent.Patch))
-			****/
+
+		case reportTriggers:
+			updateEvent.Patch, err = makeTriggerLinksPatch(CurrentValue)
+			//fmt.Printf(" **** report (%s) trigger update patch : %s\n", updateEvent.ReportDefinitionName, string(updateEvent.Patch))
+			if err != nil {
+				logger.Crit("Legacy AR config sync, report trigger error", "err", err)
+				return
+			}
+
 		default:
 			logger.Crit("Asked to sync legacy AR attribute that I don't know about", "keyname", keys[1], "Attribute", keys[2])
 		}

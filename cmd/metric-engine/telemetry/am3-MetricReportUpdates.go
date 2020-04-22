@@ -39,8 +39,9 @@ const (
 
 	// error strings
 	reportDefinition = "ReportDefinition"
-	typeAssertError  = "incorrect event type"
-	maintfail        = "db maintenance"
+	triggerDef       = "Trigger"
+	typeAssertError  = "handler got event of incorrect format"
+	maintfail        = "Maint failed"
 	maintstart       = "Run DB Maintenance Op"
 	respCreateError  = "create response event"
 )
@@ -191,6 +192,18 @@ func addEventHandlers(logger log.Logger, am3Svc eventHandler, telemetryMgr *tele
 		return err
 	}
 	err = am3Svc.AddEventHandler("Create Trigger", CreateTriggerCommandEvent, MakeHandlerCreateTrigger(logger, telemetryMgr, bus))
+	if err != nil {
+		return err
+	}
+	err = am3Svc.AddEventHandler("Add Trigger", AddTriggerCommandEvent, MakeHandlerAddTrigger(logger, telemetryMgr, bus, dbmaint))
+	if err != nil {
+		return err
+	}
+	err = am3Svc.AddEventHandler("Update Trigger", UpdateTriggerCommandEvent, MakeHandlerUpdateTrigger(logger, telemetryMgr, bus, dbmaint))
+	if err != nil {
+		return err
+	}
+	err = am3Svc.AddEventHandler("Delete Trigger", DeleteTriggerCommandEvent, MakeHandlerDeleteTrigger(logger, telemetryMgr, bus, dbmaint))
 	if err != nil {
 		return err
 	}
@@ -413,6 +426,109 @@ func MakeHandlerCreateTrigger(logger log.Logger, telemetryMgr *telemetryManager,
 		publishHelper(logger, bus, respEvent)
 	}
 }
+
+func MakeHandlerAddTrigger(logger log.Logger, telemetryMgr *telemetryManager, bus eh.EventBus, dbmaint map[string]struct{}) func(eh.Event) {
+	return func(event eh.Event) {
+		trigger, ok := event.Data().(*AddTriggerCommandData)
+		if !ok {
+			logger.Crit(typeAssertError)
+			return
+		}
+
+		// schedule cleanup next clock tick
+		dbmaint[deleteOrphans] = struct{}{}
+
+		addError := telemetryMgr.addTrigger(trigger.TriggerData)
+		if addError != nil {
+			logger.Crit("Failed to create the Report Definition", "Name", trigger.Name, "err", addError)
+		}
+
+		// Generate a "response" event that carries status back to initiator
+		respEvent, err := trigger.NewResponseEvent(addError)
+		if err != nil {
+			logger.Crit(respCreateError, "err", err, triggerDef, trigger.Name)
+			return
+		}
+		mrd := mrdPath + trigger.Name
+
+		r, ok := respEvent.Data().(urisetter)
+		if ok {
+			r.SetURI(mrd)
+		}
+
+		// Should add the populated metric report definition event as a response?
+		publishHelper(logger, bus, respEvent)
+	}
+}
+
+func MakeHandlerUpdateTrigger(logger log.Logger, telemetryMgr *telemetryManager, bus eh.EventBus, dbmaint map[string]struct{}) func(eh.Event) {
+	return func(event eh.Event) {
+		update, ok := event.Data().(*UpdateTriggerCommandData)
+		if !ok {
+			logger.Crit(typeAssertError)
+			return
+		}
+
+		updError := telemetryMgr.updateTrigger(update.TriggerName, update.Patch)
+		if updError != nil {
+			logger.Crit("Failed to update the Report Definition", "Name", update.TriggerName, "err", updError)
+			return
+		}
+
+		// After we've done the adjustments to TriggerToMetricMeta, there might be orphan rows. schedule maintenance
+		dbmaint[deleteOrphans] = struct{}{}
+
+		// Generate a "response" event that carries status back to initiator
+		respEvent, err := update.NewResponseEvent(updError)
+		if err != nil {
+			logger.Crit("Error creating response event", "err", err, triggerDef, update.TriggerName)
+			return
+		}
+
+		mrd := mrdPath + update.TriggerName
+		r, ok := respEvent.Data().(urisetter)
+		if ok {
+			r.SetURI(mrd)
+		}
+
+		// Should add the populated metric report definition event as a response?
+		publishHelper(logger, bus, respEvent)
+	}
+}
+
+func MakeHandlerDeleteTrigger(logger log.Logger, telemetryMgr *telemetryManager, bus eh.EventBus, dbmaint map[string]struct{}) func(eh.Event) {
+	return func(event eh.Event) {
+		trigger, ok := event.Data().(*DeleteTriggerCommandData)
+		if !ok {
+			logger.Crit(typeAssertError)
+			return
+		}
+
+		delError := telemetryMgr.deleteTrigger(trigger.Name)
+		if delError != nil {
+			logger.Crit("Error deleting Trigger", "Name", trigger.Name, "err", delError)
+		}
+
+		dbmaint[deleteOrphans] = struct{}{} // set bit to start orphan delete next clock tick
+
+		// Generate a "response" event that carries status back to initiator
+		respEvent, err := trigger.NewResponseEvent(delError)
+		if err != nil {
+			logger.Crit(respCreateError, "err", err, triggerDef, trigger.Name)
+			return
+		}
+
+		mrd := mrdPath + trigger.Name
+		r, ok := respEvent.Data().(urisetter)
+		if ok {
+			r.SetURI(mrd)
+		}
+
+		publishHelper(logger, bus, respEvent)
+	}
+}
+
+// MR event handlers
 
 func MakeHandlerDeleteMR(logger log.Logger, telemetryMgr *telemetryManager, bus eh.EventBus) func(eh.Event) {
 	return func(event eh.Event) {

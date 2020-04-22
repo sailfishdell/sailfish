@@ -957,6 +957,15 @@ internal:
                ( MetricReportDefinitionID, TriggerID)
         VALUES (:MetricReportDefinitionID, :TriggerID)
 
+    trg_update: |
+      UPDATE Trigger
+      SET
+        Name=:Name,
+        Description=:Description,
+        MetricType=:MetricType,
+        TriggerActions=:TriggerActions
+      WHERE RedfishID=:RedfishID
+
     mrd_update: |
       UPDATE MetricReportDefinition
       SET
@@ -1270,6 +1279,42 @@ internal:
         HeartbeatInterval,
         Hidden
       FROM MetricReportDefinition where Name=?
+
+    find_trg_by_name: |
+      SELECT
+        ID,
+        RedfishID,
+        Name,
+        Description,
+        MetricType,
+        TriggerActions
+      FROM Trigger WHERE RedfishID=?
+
+    find_trg_by_id: |
+      SELECT
+        ID,
+        RedfishID,
+        Name,
+        Description,
+        MetricType,
+        TriggerActions
+      FROM Trigger WHERE ID=?
+
+    trgmrd_del_assoc: |
+      DELETE FROM TriggerToMRD
+      WHERE TriggerID=?
+
+    mrdtrg_del_assoc: |
+      DELETE FROM TriggerToMRD
+      WHERE MetricReportDefinitionID=?
+
+    evttrg_del_assoc: |
+      DELETE FROM EventTriggers
+      WHERE TriggerID=?
+
+    delete_trigger: |
+      DELETE FROM Trigger
+      WHERE RedfishID=?
 
     insert_mv_int:  INSERT INTO MetricValueInt  (InstanceID, Timestamp, Value) VALUES (?, ?, ?)
     insert_mv_real: INSERT INTO MetricValueReal (InstanceID, Timestamp, Value) VALUES (?, ?, ?)
@@ -1708,7 +1753,14 @@ createdb:
               from MetricMeta as MM
               inner join  ReportDefinitionToMetricMeta as rd2mm on rd2mm.MetaID = MM.ID
               where rd2mm.ReportDefinitionID = MetricReportDefinition.ID
-              ) AS a ), '"Metrics": [], "Metrics@odata.count": 0' ) ||
+              ) AS a ), '"Metrics": [], "Metrics@odata.count": 0' ) || ',' ||
+       ' "Links": ' ||
+         json_object (  'Triggers', (
+           select
+             json_group_array( json_object('@odata.id', '/redfish/v1/TelemetryService/Triggers/' ||
+                (select RedfishID from Trigger where TriggerID = ID) ))
+           from TriggerToMRD
+           where TriggerToMRD.MetricReportDefinitionID = MetricReportDefinition.ID )) ||
           '}'
           ) as root,
           '/redfish/v1/TelemetryService/MetricReportDefinitions/' || Name as [@odata.id],

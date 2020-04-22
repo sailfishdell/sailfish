@@ -410,6 +410,20 @@ func (factory *telemetryManager) updateMRD(reportDef string, updates json.RawMes
 			return xerrors.Errorf("error updating MetricMeta for MRD(%s): %s --ERR--> %w", reportDef, updates, err)
 		}
 
+		// Update Trigger Links
+		// make sure if this patch has "Links" - most of AR sync updates come without "Links" and we should
+		//  remove triggers in that case.
+		//  This to distinguish user trying to remove triggers with no triggers in Links vs Links not
+		//  being part of the patch json
+		var patchMap map[string]interface{}
+		json.Unmarshal(updates, &patchMap)
+		if _, foundLinks := patchMap["Links"]; foundLinks {
+			err = populateMRDToTrigger(factory, tx, newMRD.MetricReportDefinitionData, mrd.ID, true) // update
+			if err != nil {
+				return xerrors.Errorf("error populating MRDToTrigger for MRD(%s): %s --ERR--> %w", reportDef, updates, err)
+			}
+		}
+
 		finalMRD = newMRD
 
 		if !newMRD.Enabled {
@@ -480,6 +494,12 @@ func (factory *telemetryManager) addMRD(mrdEvData MetricReportDefinitionData) (e
 			factory.NextMRTS[mrd.Name] = factory.MetricTSHWM.Add(mrd.Period.Duration())
 		}
 
+		// Update Trigger Links
+		err = populateMRDToTrigger(factory, tx, mrdEvData, mrd.ID, false) // insert
+		if err != nil {
+			return err
+		}
+
 		return nil
 	})
 }
@@ -501,8 +521,39 @@ func (factory *telemetryManager) addMD(mdEvData MetricDefinitionData) (err error
 	})
 }
 
+//
+// Validate trigger for required
+func validateTrigger(trg *TriggerData) error {
+	switch {
+	case trg.RedfishID == "":
+		return errors.New("Trigger requires Id / Name")
+	case trg.Name == "":
+		return errors.New("Trigger requires short description")
+	case trg.Description == "":
+		return errors.New("Trigger requires long description")
+	case trg.MetricType == "":
+		return errors.New("Trigger requires MetricType")
+	case len(trg.TriggerActions) < 1:
+		return errors.New("Trigger requires at least one TriggerActions")
+	// EventTriggers or DisceteTriggers based on type.  Links are optionl
+	// Current implemenation needs at least one EEMID, but needs change for future support
+	//  other type triggers
+	case len(trg.EventTriggers) < 1:
+		return errors.New("Trigger requires at least one event in  EventTriggers")
+	}
+
+	return nil
+}
+
 // populate EventTriggers
-func populateEventTriggers(factory *telemetryManager, tx *sqlx.Tx, trEvData *TriggerData, trID int64) error {
+func populateEventTriggers(factory *telemetryManager, tx *sqlx.Tx, trEvData *TriggerData, trID int64, isUpdt bool) error {
+	if isUpdt {
+		// delete current association TriggerID -> MRD IDs
+		_, err := factory.getSQLXTx(tx, "evttrg_del_assoc").Exec(trID)
+		if err != nil {
+			return xerrors.Errorf("error deleting association TRGMRD(%d:%s): %w", trID, trEvData.RedfishID, err)
+		}
+	}
 	for _, eemiid := range trEvData.EventTriggers {
 		evttrg := struct {
 			EemiID    string `db:"EemiID"`
@@ -523,7 +574,15 @@ func populateEventTriggers(factory *telemetryManager, tx *sqlx.Tx, trEvData *Tri
 }
 
 // populate TriggerToMRD
-func populateTriggerToMRD(factory *telemetryManager, tx *sqlx.Tx, trEvData *TriggerData, trID int64) error {
+func populateTriggerToMRD(factory *telemetryManager, tx *sqlx.Tx, trEvData *TriggerData, trID int64, isUpdt bool) error {
+
+	if isUpdt {
+		// delete current association TriggerID -> MRD IDs
+		_, err := factory.getSQLXTx(tx, "trgmrd_del_assoc").Exec(trID)
+		if err != nil {
+			return xerrors.Errorf("error deleting association TRGMRD(%d:%s): %w", trID, trEvData.RedfishID, err)
+		}
+	}
 	for _, mrdname := range trEvData.MRDList {
 		MRD := &MetricReportDefinition{
 			MetricReportDefinitionData: MetricReportDefinitionData{Name: mrdname},
@@ -539,6 +598,8 @@ func populateTriggerToMRD(factory *telemetryManager, tx *sqlx.Tx, trEvData *Trig
 		}{MetricReportDefinitionID: MRD.ID, TriggerID: trID}
 
 		_, err = factory.getNamedSQLXTx(tx, "trgmrd_insert").Exec(&trgmrd)
+
+		// TODO: MRD Links might have added it already, ignore error ?
 		if err != nil {
 			if strings.HasPrefix(err.Error(), UniqueConstraintError) {
 				return xerrors.Errorf("cannot ADD already existing TRGMR(%d:%s,%d:%s )",
@@ -551,9 +612,51 @@ func populateTriggerToMRD(factory *telemetryManager, tx *sqlx.Tx, trEvData *Trig
 	return nil
 }
 
+// populate MRDToTrigger
+func populateMRDToTrigger(factory *telemetryManager, tx *sqlx.Tx, mrdData MetricReportDefinitionData, mrdID int64, isUpdt bool) error {
+	// Current MRDs do not have Trigger "Links", but initial AR sync should get Trigger list from AR
+	if isUpdt {
+		// delete current association TriggerID MRD ID -> TriggerIDs
+		_, err := factory.getSQLXTx(tx, "mrdtrg_del_assoc").Exec(mrdID)
+		if err != nil {
+			return xerrors.Errorf("error deleting association MRDTRG(%d:%s): %w", mrdID, mrdData.Name, err)
+		}
+	}
+	for _, trgname := range mrdData.TriggerList {
+		trg := &Trigger{
+			TriggerData: &TriggerData{RedfishID: trgname},
+		}
+		err := factory.loadTrigger(tx, trg)
+		if err != nil || trg.ID == 0 {
+			return xerrors.Errorf("error getting Trigger: ID(%d) NAME(%s) err: %w",
+				trg.ID, trg.RedfishID, err)
+		}
+		trgmrd := struct {
+			MetricReportDefinitionID int64 `db:"MetricReportDefinitionID"`
+			TriggerID                int64 `db:"TriggerID"`
+		}{MetricReportDefinitionID: mrdID, TriggerID: trg.ID}
+
+		_, err = factory.getNamedSQLXTx(tx, "trgmrd_insert").Exec(trgmrd)
+		// TODO: Triggers might have added it already, ignore error ?
+		if err != nil {
+			if strings.HasPrefix(err.Error(), UniqueConstraintError) {
+				return xerrors.Errorf("cannot ADD already existing TRGMR(%d:%s,%d:%s )",
+					trgmrd.MetricReportDefinitionID, mrdData.Name, trgname, trgmrd.TriggerID)
+			}
+			return xerrors.Errorf("error inserting TRGMR(%d:%s,%d:%s ): %w",
+				trgmrd.MetricReportDefinitionID, mrdData.Name, trgname, trgmrd.TriggerID, err)
+		}
+	}
+	return nil
+}
+
 func (factory *telemetryManager) createTrigger(trEvData *TriggerData) (err error) {
 	return factory.wrapWithTX(func(tx *sqlx.Tx) error {
-		//TODO: valid Trigger input, for now all good input read from files
+		// validate trigger data
+		err = validateTrigger(trEvData)
+		if err != nil {
+			return err
+		}
 
 		res, err := factory.getNamedSQLXTx(tx, "trg_insert").Exec(trEvData)
 		if err != nil {
@@ -569,18 +672,86 @@ func (factory *telemetryManager) createTrigger(trEvData *TriggerData) (err error
 			return xerrors.Errorf("error from LastInsertID for Trigger(%s): %w", trEvData.RedfishID, err)
 		}
 
-		err = populateEventTriggers(factory, tx, trEvData, trID)
+		err = populateEventTriggers(factory, tx, trEvData, trID, false) // insert
 		if err != nil {
 			return err
 		}
 
-		err = populateTriggerToMRD(factory, tx, trEvData, trID)
+		err = populateTriggerToMRD(factory, tx, trEvData, trID, false) // insert
 		if err != nil {
 			return err
 		}
 
 		return nil
 	})
+}
+
+func (factory *telemetryManager) addTrigger(trEvData TriggerData) (err error) {
+	err = factory.createTrigger(&trEvData)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (factory *telemetryManager) updateTrigger(triggerId string, updates json.RawMessage) (err error) {
+	return factory.wrapWithTX(func(tx *sqlx.Tx) error {
+		// TODO: Emit an error response message if the metric report definition does not exist
+
+		// step 1: LOAD existing trigger definition
+		trg := Trigger{
+			TriggerData: &TriggerData{RedfishID: triggerId},
+		}
+		err = factory.loadTrigger(tx, &trg)
+		if err != nil || trg.ID == 0 {
+			return xerrors.Errorf("error getting Trigger: ID(%d) NAME(%s) err: %w", trg.ID, trg.RedfishID, err)
+		}
+		var newData *TriggerData = trg.TriggerData
+		newTrigger := Trigger{TriggerData: newData, ID: trg.ID}
+
+		// Step 2: apply updates specified
+		err = json.Unmarshal(updates, &newTrigger)
+		if err != nil {
+			return err
+		}
+		newTrigger.RedfishID = triggerId // ensure name stays the same... should be no way this isn't the same, but lets be sure.
+
+		// step 3: validate result
+		err = validateTrigger(newTrigger.TriggerData)
+		if err != nil {
+			return err
+		}
+
+		factory.logger.Debug("Updating Trigger", "OLD_Trigger", trg.TriggerData, "NEW_Trigger", newTrigger.TriggerData)
+
+		// step 4: save new trigger
+		_, err = factory.getNamedSQLXTx(tx, "trg_update").Exec(newTrigger)
+		if err != nil {
+			return xerrors.Errorf("error updating Trigger(%s): %s --ERR--> %w", triggerId, updates, err)
+		}
+
+		err = populateEventTriggers(factory, tx, newData, trg.ID, true) //update
+		if err != nil {
+			return err
+		}
+
+		err = populateTriggerToMRD(factory, tx, newData, trg.ID, true) // update
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+}
+
+// deleteMRD will delete the requested MRD from the database
+func (factory *telemetryManager) deleteTrigger(triggerName string) (err error) {
+	_, err = factory.getSQLX("delete_trigger").Exec(triggerName)
+	if err != nil {
+		factory.logger.Crit("ERROR deleting Trigger", "err", err, "Name", triggerName)
+	}
+
+	return
 }
 
 //=================================================
@@ -748,6 +919,24 @@ func (factory *telemetryManager) loadReportDefinition(tx *sqlx.Tx, mrd *MetricRe
 
 	if err != nil {
 		return xerrors.Errorf("error loading Metric Report Definition %s(%d) %w", mrd.Name, mrd.ID, err)
+	}
+	return nil
+}
+
+func (factory *telemetryManager) loadTrigger(tx *sqlx.Tx, trg *Trigger) error {
+	var err error
+
+	switch {
+	case trg.ID > 0:
+		err = factory.getSQLXTx(tx, "find_trg_by_id").Get(trg, trg.ID)
+	case len(trg.RedfishID) > 0:
+		err = factory.getSQLXTx(tx, "find_trg_by_name").Get(trg, trg.RedfishID)
+	default:
+		err = xerrors.Errorf("require either an ID or Name to load a Trigger, didn't get either")
+	}
+
+	if err != nil {
+		return xerrors.Errorf("error loading Trigger %s(%d) %w", trg.RedfishID, trg.ID, err)
 	}
 	return nil
 }

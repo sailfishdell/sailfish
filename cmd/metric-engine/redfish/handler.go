@@ -67,13 +67,21 @@ func NewRedfishServer(logger log.Logger, d busComponents) *RFServer {
 }
 
 func (rf *RFServer) AddHandlersToRouter(m *mux.Router) {
+	// SubmitTestMetricReport
 	m.HandleFunc("/redfish/v1/TelemetryService/Actions/TelemetryService.SubmitTestMetricReport",
 		rf.makeCommand(SubmitTestMetricReportCommandEvent)).Methods("POST")
+	// MetricReportDefinitions
 	m.HandleFunc("/redfish/v1/TelemetryService/MetricReportDefinitions", rf.makeCommand(telemetry.AddMRDCommandEvent)).Methods("POST")
 	m.HandleFunc("/redfish/v1/TelemetryService/MetricReportDefinitions/{ID}", rf.makeCommand(telemetry.UpdateMRDCommandEvent)).Methods("PATCH")
 	m.HandleFunc("/redfish/v1/TelemetryService/MetricReportDefinitions/{ID}", rf.makeCommand(telemetry.UpdateMRDCommandEvent)).Methods("PUT")
 	m.HandleFunc("/redfish/v1/TelemetryService/MetricReportDefinitions/{ID}", rf.makeCommand(telemetry.DeleteMRDCommandEvent)).Methods("DELETE")
+	// MetricReports
 	m.HandleFunc("/redfish/v1/TelemetryService/MetricReports/{ID}", rf.makeCommand(telemetry.DeleteMRCommandEvent)).Methods("DELETE")
+	// Triggers
+	m.HandleFunc("/redfish/v1/TelemetryService/Triggers", rf.makeCommand(telemetry.AddTriggerCommandEvent)).Methods("POST")
+	m.HandleFunc("/redfish/v1/TelemetryService/Triggers/{ID}", rf.makeCommand(telemetry.UpdateTriggerCommandEvent)).Methods("PATCH")
+	m.HandleFunc("/redfish/v1/TelemetryService/Triggers/{ID}", rf.makeCommand(telemetry.UpdateTriggerCommandEvent)).Methods("PUT")
+	m.HandleFunc("/redfish/v1/TelemetryService/Triggers/{ID}", rf.makeCommand(telemetry.DeleteTriggerCommandEvent)).Methods("DELETE")
 	// generic handler last
 	m.PathPrefix("/redfish/v1/TelemetryService").HandlerFunc(rf.makeCommand(telemetry.GenericGETCommandEvent)).Methods("GET")
 }
