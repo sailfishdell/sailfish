@@ -3,7 +3,6 @@ package persistence
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
@@ -16,13 +15,21 @@ import (
 	"github.com/superchalupa/sailfish/cmd/metric-engine/metric"
 	tele "github.com/superchalupa/sailfish/cmd/metric-engine/telemetry"
 	log "github.com/superchalupa/sailfish/src/log"
-	eventL "github.com/superchalupa/sailfish/src/looplab/event"
 	"github.com/superchalupa/sailfish/src/looplab/eventwaiter"
 )
 
 type eventHandler interface {
 	AddEventHandler(string, eh.EventType, func(eh.Event)) error
 }
+
+const (
+	persistChanLen   = 5 // may move to yaml
+	persistTimeDelay = time.Second * 2
+	getTimeout       = persistTimeDelay / 2
+	SAVE             = 0
+	DELETE           = 1
+	mrdDir           = "mrd/"
+)
 
 type Response interface {
 	StreamResponse(io.Writer) error
@@ -37,128 +44,175 @@ type busIntf interface {
 	GetWaiter() *eventwaiter.EventWaiter
 }
 
-func PersistenceHandler(ctx context.Context, logger log.Logger, cfg *viper.Viper, am3Svc eventHandler, d busIntf) func() {
-	pTopDir := cfg.GetString("main.persistencetopdir")
-	pROTopDir := cfg.GetString("main.persistenceROtopdir")
-
-	for _, i := range []struct {
-		am3name   string
-		eventType eh.EventType
-		savedir   string
-	}{
-		{"Create MRD", tele.AddMRDResponseEvent, pTopDir},
-		{"Update MRD", tele.UpdateMRDResponseEvent, pTopDir},
-	} {
-		am3Svc.AddEventHandler(i.am3name, i.eventType, MakeHandlerUpdateJSON(logger, d, i.savedir))
-	}
-
-	for _, i := range []struct {
-		am3name   string
-		eventType eh.EventType
-		savedir   string
-		rodir     string
-	}{
-		{"Delete MRD", tele.DeleteMRDResponseEvent, pTopDir, pROTopDir},
-	} {
-		am3Svc.AddEventHandler(i.am3name, i.eventType, MakeHandlerDeleteJSON(logger, d, i.rodir, i.savedir))
-
-	}
-	return nil
+type persistMeta struct {
+	URI        string
+	actionType int // save (0), delete(1)
+	fileLoc    string
+	bkupLoc    string
 }
 
-// I can have setup function to add.. persistence
-func MakeHandlerDeleteJSON(logger log.Logger, bus busIntf, mrdRO string, mrdperm string) func(eh.Event) {
+func Handler(ctx context.Context, logger log.Logger, cfg *viper.Viper, am3Svc eventHandler, d busIntf) {
+	ch := make(chan persistMeta, persistChanLen)
+	pmrdDir := cfg.GetString("persistence.topsavedir") + mrdDir
+	pROmrdDir := cfg.GetString("persistence.topimportonlydir") + mrdDir
 
-	return func(event eh.Event) {
-		sj, ok := event.Data().(urigetter)
-		if !ok {
-			logger.Warn("MakeHandlerDeleteJSON", "missing", "getURI")
-			return
+	for _, i := range []struct {
+		am3name    string
+		eventType  eh.EventType
+		saveDir    string
+		bkupDir    string
+		jsonAction int
+	}{
+		{"Add MRD", tele.AddMRDResponseEvent, pmrdDir, "", SAVE},
+		{"Update MRD", tele.UpdateMRDResponseEvent, pmrdDir, "", SAVE},
+		{"Delete MRD", tele.DeleteMRDResponseEvent, pmrdDir, pROmrdDir, DELETE},
+	} {
+		err := am3Svc.AddEventHandler(i.am3name, i.eventType, MakeHandlerAddToChan(logger, ch, i.saveDir, i.bkupDir, i.jsonAction))
+		if err != nil {
+			logger.Warn("P-Handler", "err", err.Error())
 		}
-		mrdRedfishPath := sj.GetURI()
+	}
 
-		urlSplit := strings.Split(mrdRedfishPath, "/")
-		mrdName := urlSplit[len(urlSplit)-1]
+	// go thread that persist data in the background
+	go persistJSONwithDelay(logger, d, ch)
+}
 
-		permFilePath := mrdRO + mrdName + ".json"
-		fileToDelete := mrdperm + mrdName + ".json"
+func uriGetter(event eh.Event) string {
+	g, ok := event.Data().(urigetter)
+	if !ok {
+		return ""
+	}
+	return g.GetURI()
+}
 
-		os.Remove(fileToDelete)
-		// TODO  add a common place to read JSON and send event
-		if fileExists(permFilePath) {
-			jsonstr, err := ioutil.ReadFile(permFilePath)
-			if err != nil {
-				logger.Warn("MakeHandlerDeleteJSON", "can not read json", permFilePath)
-				return
-			}
+func MakeHandlerAddToChan(logger log.Logger, ch chan persistMeta, saveDir string, bkupDir string, jsonAction int) func(eh.Event) {
+	return func(event eh.Event) {
+		URI := uriGetter(event)
 
-			eventData, err := eh.CreateEventData(tele.AddMRDCommandEvent)
-			if err != nil {
-				logger.Warn("MakeHandlerDeleteJSON", "can not create event AddMRDCommandEvent")
-				return
-			}
-
-			err = json.Unmarshal(jsonstr, eventData)
-			if err != nil {
-				logger.Warn("MakeHandlerDeleteJSON", "can not unmarshal json to eventData")
-				return
-			}
-
-			evt := eventL.NewSyncEvent(tele.AddMRDCommandEvent, eventData, time.Now())
-			evt.Add(1)
-			err = bus.GetBus().PublishEvent(context.Background(), evt)
+		ch <- persistMeta{
+			URI,
+			jsonAction,
+			saveDir,
+			bkupDir,
 		}
 	}
 }
 
-func MakeHandlerUpdateJSON(logger log.Logger, bus busIntf, mrdPerm string) func(eh.Event) {
-	return func(event eh.Event) {
+func persistJSONwithDelay(logger log.Logger, bus busIntf, ch chan persistMeta) {
+	timer := time.NewTimer(persistTimeDelay)
+	toUpdate := map[string]persistMeta{}
+	trigger := true
 
-		// ensure that this dies eventually
-		cmd, evt, err := metric.CommandFactory(tele.GenericGETCommandEvent)()
-		if err != nil {
-			return
-		}
+	for {
+		select {
+		case meta := <-ch:
+			toUpdate[meta.URI] = meta
 
-		// update to single liner
-		sj, ok := event.Data().(urigetter)
-		if !ok || sj.GetURI() == "" {
-			logger.Warn("MakeHandlerUpdateJSON", "missing", "getURI")
-			return
-		}
-
-		mrdRedfishPath := sj.GetURI()
-		cmd.(*tele.GenericGETCommandData).URI = mrdRedfishPath
-
-		urlSplit := strings.Split(mrdRedfishPath, "/")
-		mrdName := urlSplit[len(urlSplit)-1]
-
-		mrdPath := mrdPerm + "/" + mrdName + ".json"
-
-		outputFile, err := os.OpenFile(mrdPath, os.O_WRONLY|os.O_CREATE, 0666)
-		if err != nil {
-			fmt.Printf("ERROR: %s\n", err.Error())
-			return
-		}
-		cmd.SetResponseHandlers(nil, nil, outputFile)
-
-		go func() {
-			const maxSaveWaitTime = 2 * time.Second
-			ctx, cancel := context.WithTimeout(context.Background(), maxSaveWaitTime)
-			defer cancel()
-			l := eventwaiter.NewListener(ctx, logger, bus.GetWaiter(), cmd.ResponseWaitFn())
-
-			l.Name = "JSON Persistence"
-			err = bus.GetBus().PublishEvent(ctx, evt)
-			if err != nil {
-				fmt.Println("ERROR! %s", err.Error())
+			if !trigger {
+				timer = time.NewTimer(persistTimeDelay)
+				trigger = true
 			}
 
-			defer outputFile.Close()
-			defer l.Close()
-			l.Wait(ctx)
-			fmt.Println("Exit Update JSON - success")
-		}()
+		case <-timer.C:
+			toSave := map[string]persistMeta{}
+
+			for URI, meta := range toUpdate {
+				toSave[URI] = persistMeta{
+					actionType: meta.actionType,
+					fileLoc:    meta.fileLoc,
+					bkupLoc:    meta.bkupLoc,
+				}
+				delete(toUpdate, URI)
+			}
+			trigger = false
+			go persistJSON(logger, bus, toSave)
+		}
+	}
+}
+
+// is it possible to launch two of these at once? shouldn't happen..
+func persistJSON(logger log.Logger, bus busIntf, saveMeta map[string]persistMeta) {
+	for URI, metaData := range saveMeta {
+		switch metaData.actionType {
+		case SAVE:
+			updateJSON(logger, bus, URI, metaData.fileLoc)
+		case DELETE:
+			deleteAndRestoreJSON(logger, bus.GetBus(), URI, metaData.fileLoc, metaData.bkupLoc)
+		default:
+			logger.Warn("Unknown Action", "Action", metaData.actionType, "URI", URI)
+		}
+	}
+}
+
+func getJSONFilePath(uri string, basePath string) string {
+	urlSplit := strings.Split(uri, "/")
+	mrdName := urlSplit[len(urlSplit)-1]
+	return basePath + mrdName + ".json"
+}
+
+func deleteAndRestoreJSON(logger log.Logger, bus eh.EventBus, uri string, mrdPerm string, mrdRO string) {
+	permFilePath := getJSONFilePath(uri, mrdRO)
+	fileToDelete := getJSONFilePath(uri, mrdPerm)
+
+	os.Remove(fileToDelete)
+	if fileExists(permFilePath) {
+		jsonstr, err := ioutil.ReadFile(permFilePath)
+		if err != nil {
+			logger.Warn("deleteAndRestoreJSON", "can not read json", permFilePath)
+			return
+		}
+
+		eventData, err := eh.CreateEventData(tele.AddMRDCommandEvent)
+		if err != nil {
+			logger.Warn("deleteAndRestoreJSON", "can not create event AddMRDCommandEvent")
+			return
+		}
+
+		err = json.Unmarshal(jsonstr, eventData)
+		if err != nil {
+			logger.Warn("deleteAndRestoreJSON", "can not unmarshal json to eventData")
+			return
+		}
+
+		err = bus.PublishEvent(context.Background(), eh.NewEvent(tele.AddMRDCommandEvent, eventData, time.Now()))
+		if err != nil {
+			logger.Warn("deleteAndRestoreJSON", "restore did not succeed for", uri)
+		}
+	}
+}
+
+func updateJSON(logger log.Logger, bus busIntf, uri string, mrdPerm string) {
+	// ensure that this dies eventually
+	cmd, evt, err := metric.CommandFactory(tele.GenericGETCommandEvent)()
+	if err != nil {
+		return
+	}
+
+	cmd.(*tele.GenericGETCommandData).URI = uri
+	filePath := getJSONFilePath(uri, mrdPerm)
+
+	outputFile, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE, 0666)
+	if err != nil {
+		logger.Warn("ERROR: %s\n", err.Error())
+		return
+	}
+	cmd.SetResponseHandlers(nil, nil, outputFile)
+
+	ctx, cancel := context.WithTimeout(context.Background(), getTimeout)
+	defer cancel()
+	l := eventwaiter.NewListener(ctx, logger, bus.GetWaiter(), cmd.ResponseWaitFn())
+
+	l.Name = "JSON Persistence"
+	err = bus.GetBus().PublishEvent(ctx, evt)
+	if err != nil {
+		logger.Warn("updateJSON", "ERROR! %s", err.Error())
+	}
+
+	defer outputFile.Close()
+	defer l.Close()
+	_, err = l.Wait(ctx)
+	if err != nil {
+		logger.Warn("updateJSON", "err", err)
 	}
 }
 

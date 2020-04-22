@@ -19,7 +19,7 @@ func init() {
 	optionalComponents = append([]func(log.Logger, *viper.Viper, busIntf) func(){
 		func(logger log.Logger, cfg *viper.Viper, d busIntf) func() {
 			am3JSONPersist, _ := am3.StartService(context.Background(), log.With(logger, "module", "AM3_JSON_Persist"), "Persistence", d)
-			persistence.PersistenceHandler(context.Background(), logger, cfg, am3JSONPersist, d)
+			persistence.Handler(context.Background(), logger, cfg, am3JSONPersist, d)
 			return nil
 		}}, optionalComponents...)
 }

@@ -5,10 +5,10 @@ pprof: [ "unix:/run/telemetryservice/http.socket" ]
 SSE: [ "unix:/run/telemetryservice/http.socket" ]
 Redfish: [ "unix:/run/telemetryservice/http.socket" ]
 pipe: [ "/run/telemetryservice/metric-engine.pipe" ]
-main:
-  persistencetopdir : "/var/lib/telemetryservice/"
-  persistenceROtopdir: "/usr/share/telemetryservice/"
-  triggerdirectory: "/usr/share/telemetryservice/trigger/"
+
+persistence:
+  topsavedir: "/var/lib/telemetryservice/"
+  topimportonlydir: "/usr/share/telemetryservice/"
 
 
 UDB-Metric-Import:

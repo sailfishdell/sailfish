@@ -22,6 +22,12 @@ import (
 	"github.com/superchalupa/sailfish/cmd/metric-engine/watchdog"
 )
 
+const (
+	mdDir   = "md/"
+	mrdDir  = "mrd/"
+	trigDir = "trigger/"
+)
+
 // nolint: gochecknoinits
 // have to have init() function to runtime register the compile-time optional components, better suggestions welcome
 func init() {
@@ -35,7 +41,7 @@ func setDefaults(cfgMgr *viper.Viper) {
 	cfgMgr.SetDefault("main.databasepath",
 		"file:/run/telemetryservice/telemetry_timeseries_database.db?_foreign_keys=on&cache=shared&mode=rwc&_busy_timeout=1000")
 	cfgMgr.SetDefault("main.startup", "startup-events")
-	cfgMgr.SetDefault("main.mddirectory", "/usr/share/factory/telemetryservice/md/")
+	cfgMgr.SetDefault("main.mddirectory", "/usr/share/telemetryservice/md/")
 }
 
 // setup will startup am3 services and database connections
@@ -121,9 +127,10 @@ func importPersistentSavedRedfishData(_ log.Logger, cfg *viper.Viper, bus eh.Eve
 		subdir    string
 		eventType eh.EventType
 	}{
-		{"MetricDefinition", cfg.GetString("main.mddirectory"), telemetry.AddMDCommandEvent},
-		{"MetricReportDefinition", cfg.GetString("main.persistencetopdir"), telemetry.AddMRDCommandEvent},
-		{"Trigger", cfg.GetString("main.triggerdirectory"), telemetry.CreateTriggerCommandEvent},
+
+		{"MetricDefinition", cfg.GetString("persistence.topimportonlydir") + mdDir, telemetry.AddMDCommandEvent},
+		{"MetricReportDefinition", cfg.GetString("persistence.topsavedir") + mrdDir, telemetry.AddMRDCommandEvent},
+		{"Trigger", cfg.GetString("persistence.topimportonlydir") + trigDir, telemetry.CreateTriggerCommandEvent},
 	}
 
 	// strategy: this process *has* to succeed. If it does not, return error and we panic.

@@ -69,16 +69,15 @@ type eventHandlingService interface {
 
 func attachDB(database *sqlx.DB, dbfile string, as string) error {
 	// attach UDB db
-	attach := ""
-		"PRAGMA cache_size = 0; "
-		"PRAGMA mmap_size=65536; "
-		"PRAGMA  synchronous = NORMAL;"
-		"Attach '" + dbfile + "' as " + as + "; "
-		"PRAGMA " + as + ".cache_size = 0; "
-		"PRAGMA " + as + ".journal_mode = off; "
-		"PRAGMA cache=shared; "
+	attach := "" +
+		"PRAGMA cache_size = 0; " +
+		"PRAGMA mmap_size=65536; " +
+		"PRAGMA  synchronous = NORMAL;" +
+		"Attach '" + dbfile + "' as " + as + "; " +
+		"PRAGMA " + as + ".cache_size = 0; " +
+		"PRAGMA " + as + ".journal_mode = off; " +
+		"PRAGMA cache=shared; " +
 		""
-
 	_, err := database.Exec(attach)
 	if err != nil {
 		database.Close()
