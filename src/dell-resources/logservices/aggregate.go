@@ -87,7 +87,7 @@ func RegisterAggregate(s *testaggregate.Service) {
 								"property":  "members", // here is where we'll store the count
 								"model":     "default",
 								"formatter": "fastexpand",
-								"uribase": vw.GetURI(),
+								"uribase":   vw.GetURI(),
 							}},
 
 						// the fastexpand helper directly stores the count here, no formatter needed
@@ -136,15 +136,15 @@ func RegisterAggregate(s *testaggregate.Service) {
 						"POST": []string{"ConfigureManager"},
 					},
 					Properties: map[string]interface{}{
-						"Description":              "Providing additional health information for the devices which support rolled up health data",
-						"Name":                     "FaultList Entries Collection",
+						"Description": "Providing additional health information for the devices which support rolled up health data",
+						"Name":        "FaultList Entries Collection",
 						"Members@meta": map[string]interface{}{
 							"GET": map[string]interface{}{
 								"plugin":    vw.GetURI(),
 								"property":  "members", // here is where we'll store the count
 								"model":     "default",
 								"formatter": "fastexpand",
-								"uribase": vw.GetURI(),
+								"uribase":   vw.GetURI(),
 							}},
 						"Members@odata.count@meta": vw.Meta(view.GETProperty("members"), view.GETModel("default")),
 					}},

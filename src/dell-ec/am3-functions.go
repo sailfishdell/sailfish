@@ -256,7 +256,7 @@ func addAM3Functions(logger log.Logger, am3Svc *am3.Service, d *domain.DomainObj
 		FQDD := data.FQDD
 		arr := strings.Split(FQDD, "#")
 		// InstPowerEvents handle System.Modular.X power only
-    // AttributeUpdated handles IOM inst power
+		// AttributeUpdated handles IOM inst power
 		if len(arr) != 1 {
 			FQDD = arr[1]
 		}
@@ -403,24 +403,24 @@ func addAM3Functions(logger log.Logger, am3Svc *am3.Service, d *domain.DomainObj
 		}
 
 		capabilities, ok := data.Capabilities.([]interface{})
-    if !ok {
-      logger.Error("Iom Capabilities are not a slice of interfaces", "capabilties", data.Capabilities)
-      return
-    }
+		if !ok {
+			logger.Error("Iom Capabilities are not a slice of interfaces", "capabilties", data.Capabilities)
+			return
+		}
 
 		config_objects, ok := data.IOMConfig_objects.(map[string]interface{})
-    if !ok {
-      logger.Error("Iom Config Objects  are not a map of string-interfaces", "iomconfig_objects", data.IOMConfig_objects)
-      return
-    }
+		if !ok {
+			logger.Error("Iom Config Objects  are not a map of string-interfaces", "iomconfig_objects", data.IOMConfig_objects)
+			return
+		}
 
-    var capabilities_copy []interface{}
-    copy(capabilities_copy, capabilities)
+		var capabilities_copy []interface{}
+		copy(capabilities_copy, capabilities)
 
-    config_objects_copy := make(map[string]interface{})
-    for key, value := range config_objects {
-      config_objects_copy[key] = value
-    }
+		config_objects_copy := make(map[string]interface{})
+		for key, value := range config_objects {
+			config_objects_copy[key] = value
+		}
 
 		rrp_config_objects := &domain.RedfishResourceProperty{Value: config_objects_copy}
 		rrp_config_objects.Parse(config_objects_copy)
@@ -962,37 +962,37 @@ func addAM3Functions(logger log.Logger, am3Svc *am3.Service, d *domain.DomainObj
 
 	collections = []Collection{
 		/*
-    {Prefix: "/redfish/v1/Chassis/System.Chassis.1/Sensors/Temperatures",
-		  URI: "/redfish/v1/Chassis/System.Chassis.1/Thermal",
-		  Property: "Temperatures",
-		  Format: "expand"},
+			    {Prefix: "/redfish/v1/Chassis/System.Chassis.1/Sensors/Temperatures",
+					  URI: "/redfish/v1/Chassis/System.Chassis.1/Thermal",
+					  Property: "Temperatures",
+					  Format: "expand"},
 
-		{Prefix: "/redfish/v1/Chassis/System.Chassis.1/Sensors/Fans",
-		  URI: "/redfish/v1/Chassis/System.Chassis.1/Thermal",
-		  Property: "Fans",
-		  Format: "expand"},
+					{Prefix: "/redfish/v1/Chassis/System.Chassis.1/Sensors/Fans",
+					  URI: "/redfish/v1/Chassis/System.Chassis.1/Thermal",
+					  Property: "Fans",
+					  Format: "expand"},
 
-		{Prefix: "/redfish/v1/Chassis/System.Chassis.1/PowerControl",
-		  URI: "/redfish/v1/Chassis/System.Chassis.1/Power",
-		  Property: "PowerControl",
-		  Format: "expand",
-		  SpecialCase: "equals"}, //Special case
+					{Prefix: "/redfish/v1/Chassis/System.Chassis.1/PowerControl",
+					  URI: "/redfish/v1/Chassis/System.Chassis.1/Power",
+					  Property: "PowerControl",
+					  Format: "expand",
+					  SpecialCase: "equals"}, //Special case
 
-		{Prefix: "/redfish/v1/Chassis/System.Chassis.1/Power/PowerSupplies",
-		  URI: "/redfish/v1/Chassis/System.Chassis.1/Power",
-		  Property: "PowerSupplies",
-		  Format: "expand"},
+					{Prefix: "/redfish/v1/Chassis/System.Chassis.1/Power/PowerSupplies",
+					  URI: "/redfish/v1/Chassis/System.Chassis.1/Power",
+					  Property: "PowerSupplies",
+					  Format: "expand"},
 
-		{Prefix: "/redfish/v1/Chassis/System.Chassis.1/Power/PowerTrends-1",
-		  URI: "/redfish/v1/Chassis/System.Chassis.1/Power",
-		  Property: "Oem/Dell/PowerTrends",
-		  Format: "expand"},
+					{Prefix: "/redfish/v1/Chassis/System.Chassis.1/Power/PowerTrends-1",
+					  URI: "/redfish/v1/Chassis/System.Chassis.1/Power",
+					  Property: "Oem/Dell/PowerTrends",
+					  Format: "expand"},
 
-		{Prefix: "/redfish/v1/Chassis/System.Chassis.1/Power/PowerTrends-1",
-		  URI: "/redfish/v1/Chassis/System.Chassis.1/Power/PowerTrends-1",
-		  Property: "histograms",
-		  Format: "expand"},
-    */
+					{Prefix: "/redfish/v1/Chassis/System.Chassis.1/Power/PowerTrends-1",
+					  URI: "/redfish/v1/Chassis/System.Chassis.1/Power/PowerTrends-1",
+					  Property: "histograms",
+					  Format: "expand"},
+		*/
 
 		//{Prefix: "/redfish/v1/Managers/CMC.Integrated.1/Logs/Lclog",
 		//	URI:         "/redfish/v1/Managers/CMC.Integrated.1/Logs/Lclog",
