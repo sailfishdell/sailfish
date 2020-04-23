@@ -146,7 +146,6 @@ func unmarshalSourceCfg(cfg *viper.Viper) (*dataSourceConfig, error) {
 	cfg.SetDefault("WaitInterval", "5")
 	cfg.SetDefault("ScanInterval", "0")
 	cfg.SetDefault("MaxImport", maximport)
-	cfg.SetDefault("SyncEvent", true)
 	settings := dataSourceConfig{}
 	err := cfg.Unmarshal(&settings)
 	if err != nil {
