@@ -17,6 +17,7 @@ import (
 
 	"github.com/superchalupa/sailfish/cmd/metric-engine/metric"
 	"github.com/superchalupa/sailfish/src/fileutils"
+	"github.com/superchalupa/sailfish/src/looplab/event"
 
 	log "github.com/superchalupa/sailfish/src/log"
 )
@@ -300,10 +301,14 @@ func CPURegisterFileHandling(logger log.Logger, bus eh.EventBus, cpubinfile stri
 
 // publishHelper will log/eat the error from PublishEvent since we can't do anything useful with it
 func publishHelper(logger log.Logger, bus eh.EventBus, et eh.EventType, data eh.EventData) {
-	err := bus.PublishEvent(context.Background(), eh.NewEvent(et, data, time.Now()))
+	evt := event.NewSyncEvent(et, data, time.Now())
+	evt.Add(1)
+	err := bus.PublishEvent(context.Background(), evt)
 	if err != nil {
 		logger.Crit("Error publishing event. This should never happen!", "err", err)
+		return
 	}
+	evt.Wait()
 }
 
 const (
