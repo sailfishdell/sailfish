@@ -1,0 +1,39 @@
+syntax = "proto3";
+
+package alertmodel;
+option java_package = "com.dell.enterprise.common.integration.lib.event.eventlib";
+option java_outer_classname = "AlertModelPayload";
+option java_multiple_files = true;
+
+message AlertModelPayloadMessage {
+
+    int32 id = 1;
+    int32 severityType = 5;
+    string severityName = 6;
+    int32 alertEntityId = 7;
+    string alertEntityName = 8;
+    int32 alertDeviceGroup = 9;
+    string alertDeviceIpAddress = 10;
+    string alertDeviceMacAddress = 11;
+    string alertDeviceIdentifier = 12;
+    string alertDeviceAssetTag = 13;
+    int64 alertDeviceType = 14;
+    int64 definitionId = 15;
+    string catalogName = 16;
+    int32 categoryId = 17;
+    string categoryName = 18;
+    int32 subCategoryId = 19;
+    string subCategoryName = 20;
+    int32 statusType = 21;
+    string statusName = 22;
+    string timeStamp = 23;
+    string message = 24;
+    string eemiMessage = 25;
+    string recommendedAction = 26;
+    string alertMessageId = 27;
+    string alertVarBindDetails = 28;
+    string alertMessageType = 29;
+    string messageArgs = 30;
+    string originOfCondition = 31;
+    int64 originalDeviceType = 32;
+}

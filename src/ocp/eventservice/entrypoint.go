@@ -78,6 +78,18 @@ func New(ctx context.Context, cfg *viper.Viper, cfgMu *sync.RWMutex, d *domain.D
 		actionSvc: actionSvc,
 	}
 
+	if cfg.IsSet("eventsources") {
+		sources := cfg.GetStringMap("eventsources")
+		for k, v := range sources {
+			switch k {
+			case "msm":
+				StartEventSource(d, v)
+			default:
+				fmt.Printf("Unknown event source: %v (%v)\n", k, v)
+			}
+		}
+	}
+
 	GlobalEventService = ret
 	return ret
 }
