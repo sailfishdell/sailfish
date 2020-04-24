@@ -141,6 +141,7 @@ func makeSendFunction(logger log.Logger, bus eh.EventBus, maximport int, syncEve
 		*events = make([]eh.EventData, 0, maximport/2)
 	}
 }
+
 func unmarshalSourceCfg(cfg *viper.Viper) (*dataSourceConfig, error) {
 	cfg.SetDefault("Type", "MetricColumns")
 	cfg.SetDefault("WaitInterval", "5")

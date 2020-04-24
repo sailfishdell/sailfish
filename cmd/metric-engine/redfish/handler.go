@@ -189,7 +189,7 @@ func (rf *RFServer) makeCommand(eventType eh.EventType) func(w http.ResponseWrit
 			return
 		}
 
-		_, err = l.Wait(tmCtx) // wait until we get response event or user cancels request
+		err = l.ProcessOneEvent(tmCtx, func(eh.Event) {}) // wait until we get response event or user cancels request
 		if err != nil {
 			rqLog.Info("Wait ERROR", "err", err)
 			http.Error(w, "internal error waiting", http.StatusInternalServerError)
