@@ -1190,7 +1190,7 @@ func (factory *telemetryManager) doInsertMetricValueForInstance(
 		if missingInterval > factory.MaxMetricExpandInterval {
 			// avoid disasters like filling in metrics since 1970...
 			factory.logger.Warn(
-				"Expand: missed interval too large, adjusted missingInterval to max supported",
+				"adjust missingInterval down",
 				"missingInterval", missingInterval, "max", factory.MaxMetricExpandInterval)
 			missingInterval = factory.MaxMetricExpandInterval // fill in a max of one hour of metrics
 		}
