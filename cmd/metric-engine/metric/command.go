@@ -198,6 +198,10 @@ func (cr *CommandResponse) WriteStatus(s int) {
 }
 
 func (cr *CommandResponse) Write(data []byte) (int, error) {
+	if !json.Valid(data) {
+		return 0, fmt.Errorf("data is not JSON")
+	}
+
 	if cr.responseWriteHandler != nil {
 		return cr.responseWriteHandler.Write(data)
 	}
