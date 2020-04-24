@@ -510,44 +510,43 @@ func splitUDBNotify(data []byte, atEOF bool) (advance int, token []byte, err err
 // This will ensure the pipe stays around forever without eof... That's what
 // nullWriter is for, below.
 func handleUDBNotifyPipe(logger log.Logger, pipePath string, d busComponents) {
-	err := fileutils.MakeFifo(pipePath, 0660)
-	if err != nil && !os.IsExist(err) {
-		logger.Warn("Error creating UDB pipe", "err", err)
-	}
-
-	file, err := os.OpenFile(pipePath, os.O_CREATE, os.ModeNamedPipe)
-	if err != nil {
-		logger.Crit("Error opening UDB pipe", "err", err)
-	}
-
-	defer file.Close()
-
-	nullWriter, err := os.OpenFile(pipePath, os.O_WRONLY, os.ModeNamedPipe)
-	if err != nil {
-		logger.Crit("Error opening UDB pipe for (placeholder) write", "err", err)
-	}
-
-	// defer .Close() to keep linters happy. Inside we know we never exit...
-	defer nullWriter.Close()
-
-	s := bufio.NewScanner(file)
-	s.Split(splitUDBNotify)
-	for s.Scan() {
-		fields := bytes.Split(s.Bytes(), []byte("|"))
-		if len(fields) != numChangeFields {
-			fmt.Printf("DEBUG (shouldnt happen): GOT MISMATCH(%v!=%v): %v\n", len(fields), numChangeFields, s.Text())
-			continue
+	for {
+		// clear out everything at startup and recreate files
+		if !fileutils.IsFIFO(pipePath) {
+			logger.Info("remove previous pipe path and recreate", "pipePath", pipePath)
+			_ = os.Remove(pipePath)
+			err := fileutils.MakeFifo(pipePath, 0660)
+			if err != nil && !os.IsExist(err) {
+				logger.Warn("Error creating UDB pipe", "err", err)
+			}
 		}
 
-		n := changeNotify{
-			Database: string(fields[0]),
-			Table:    string(fields[1]),
+		logger.Info("Startup telemetry service UDB pipe processing.")
+		// O_RDONLY opens with blocking behaviour, wont get past this line until somebody writes. that's ok.
+		file, err := os.OpenFile(pipePath, os.O_RDONLY, 0o660) //golang octal prefix: 0o
+		if err != nil {
+			logger.Crit("Error opening UDB pipe", "err", err)
 		}
-		n.Rowid, _ = strconv.ParseInt(string(fields[2]), 10, 64)
-		n.Operation, _ = strconv.ParseInt(string(fields[3]), 10, 64)
 
-		publishAndWait(logger, d.GetBus(), udbChangeEvent, &n)
+		s := bufio.NewScanner(file)
+		s.Split(splitUDBNotify)
+		for s.Scan() {
+			fields := bytes.Split(s.Bytes(), []byte("|"))
+			if len(fields) != numChangeFields {
+				fmt.Printf("DEBUG (shouldnt happen): GOT MISMATCH(%v!=%v): %v\n", len(fields), numChangeFields, s.Text())
+				continue
+			}
+
+			n := changeNotify{
+				Database: string(fields[0]),
+				Table:    string(fields[1]),
+			}
+			n.Rowid, _ = strconv.ParseInt(string(fields[2]), 10, 64)
+			n.Operation, _ = strconv.ParseInt(string(fields[3]), 10, 64)
+
+			event.PublishAndWait(context.Background(), d.GetBus(), udbChangeEvent, &n)
+		}
+
+		file.Close()
 	}
-
-	panic("should never finish handling UDB notify pipe")
 }
