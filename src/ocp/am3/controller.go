@@ -2,12 +2,10 @@ package am3
 
 import (
 	"context"
-	"time"
-
-	"golang.org/x/xerrors"
 
 	eh "github.com/looplab/eventhorizon"
 	"github.com/superchalupa/sailfish/src/log"
+	"github.com/superchalupa/sailfish/src/looplab/event"
 	"github.com/superchalupa/sailfish/src/looplab/eventwaiter"
 )
 
@@ -39,31 +37,30 @@ type Service struct {
 }
 
 func (s *Service) AddEventHandler(name string, et eh.EventType, fn func(eh.Event)) error {
-	err := s.eb.PublishEvent(
+	return event.PublishAndWaitErr(
 		context.Background(),
-		eh.NewEvent(ConfigureAM3Event, &ConfigureAM3EventData{serviceName: s.serviceName, name: name, et: et, fn: fn}, time.Now()))
-	if err != nil {
-		return xerrors.Errorf("Error publishing event to add handler(%s) to AM3(%s): %w", name, s.serviceName, err)
-	}
-	return nil
+		s.eb,
+		ConfigureAM3Event,
+		&ConfigureAM3EventData{serviceName: s.serviceName, name: name, et: et, fn: fn},
+	)
 }
 
 func (s *Service) AddMultiHandler(name string, et eh.EventType, fn func(eh.Event)) error {
-	err := s.eb.PublishEvent(
+	return event.PublishAndWaitErr(
 		context.Background(),
-		eh.NewEvent(ConfigureAM3Multi, &ConfigureAM3EventData{serviceName: s.serviceName, name: name, et: et, fn: fn}, time.Now()))
-	if err != nil {
-		return xerrors.Errorf("Error publishing event to add handler(%s) to AM3(%s): %w", name, s.serviceName, err)
-	}
-	return nil
+		s.eb,
+		ConfigureAM3Multi,
+		&ConfigureAM3EventData{serviceName: s.serviceName, name: name, et: et, fn: fn},
+	)
 }
 
 func (s *Service) Shutdown() error {
-	err := s.eb.PublishEvent(context.Background(), eh.NewEvent(ShutdownAM3, &ShutdownAM3Data{serviceName: s.serviceName}, time.Now()))
-	if err != nil {
-		return xerrors.Errorf("Error publishing event to shut down AM3(%s): %w", s.serviceName, err)
-	}
-	return nil
+	return event.PublishAndWaitErr(
+		context.Background(),
+		s.eb,
+		ShutdownAM3,
+		&ShutdownAM3Data{serviceName: s.serviceName},
+	)
 }
 
 type BusObjs interface {
@@ -160,7 +157,7 @@ func StartService(ctx context.Context, logger log.Logger, name string, d BusObjs
 
 	// stream processor for action events
 	ret.listener = eventwaiter.NewMultiListener(ctx, logger, d.GetWaiter(), ret.inlineCheckEvent)
-	ret.listener.Name = "am3"
+	ret.listener.Name = "am3-" + name
 
 	go func() {
 		defer ret.listener.Close()

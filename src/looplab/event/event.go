@@ -34,6 +34,7 @@ func PrepSyncEvent(t eh.EventType, d eh.EventData, s time.Time) SyncEvent {
 type syncEvent interface {
 	Add(int)
 	Done()
+	Wait()
 }
 
 func PinSyncEvent(evt eh.Event) {
@@ -48,11 +49,30 @@ func ReleaseSyncEvent(evt eh.Event) {
 	}
 }
 
-func PublishAndWait(ctx context.Context, bus eh.EventBus, t eh.EventType, d eh.EventData) {
-	evt := PrepSyncEvent(t, d, time.Now())
+func WaitSyncEvent(evt eh.Event) {
+	if e, ok := evt.(syncEvent); ok {
+		e.Wait()
+	}
+}
+
+func PublishEventAndWaitErr(ctx context.Context, bus eh.EventBus, evt eh.Event) error {
 	err := bus.PublishEvent(ctx, evt)
 	if err != nil {
-		return
+		return err
 	}
-	evt.Wait()
+	WaitSyncEvent(evt)
+	return nil
+}
+
+func PublishEventAndWait(ctx context.Context, bus eh.EventBus, evt eh.Event) {
+	_ = PublishEventAndWaitErr(ctx, bus, evt)
+}
+
+func PublishAndWaitErr(ctx context.Context, bus eh.EventBus, t eh.EventType, d eh.EventData) error {
+	evt := PrepSyncEvent(t, d, time.Now())
+	return PublishEventAndWaitErr(ctx, bus, evt)
+}
+
+func PublishAndWait(ctx context.Context, bus eh.EventBus, t eh.EventType, d eh.EventData) {
+	_ = PublishAndWaitErr(ctx, bus, t, d) // throw away err
 }
