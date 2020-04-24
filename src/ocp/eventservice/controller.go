@@ -31,7 +31,7 @@ func PublishRedfishEvents(ctx context.Context, logger log.Logger, m propertygett
 
 	EventPublisher := eventpublisher.NewEventPublisher()
 	eb.AddHandler(eh.MatchAnyEventOf(RedfishEvent, domain.RedfishResourceCreated, domain.RedfishResourceRemoved), EventPublisher)
-	EventWaiter := eventwaiter.NewEventWaiter(eventwaiter.SetName("Event Service Publisher"), eventwaiter.NoAutoRun)
+	EventWaiter := eventwaiter.NewEventWaiter(eventwaiter.SetName("Event Service Publisher"), eventwaiter.NoAutoRun, eventwaiter.WithLogger(logger))
 	EventPublisher.AddObserver(EventWaiter)
 	go EventWaiter.Run()
 

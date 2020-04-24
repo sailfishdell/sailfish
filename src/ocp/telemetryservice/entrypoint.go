@@ -47,7 +47,7 @@ func New(ctx context.Context, logger log.Logger, chdler eh.CommandHandler, d *do
 	logger = log.With(logger, "module", "telemetry")
 	EventPublisher := eventpublisher.NewEventPublisher()
 	d.EventBus.AddHandler(eh.MatchAnyEventOf(AddedMRDEvent, MetricValueEvent, domain.RedfishResourceRemoved, domain.RedfishResourcePropertiesUpdated2), EventPublisher)
-	EventWaiter := eventwaiter.NewEventWaiter(eventwaiter.SetName("Telemetry Service"), eventwaiter.NoAutoRun)
+	EventWaiter := eventwaiter.NewEventWaiter(eventwaiter.SetName("Telemetry Service"), eventwaiter.NoAutoRun, eventwaiter.WithLogger(logger))
 	EventPublisher.AddObserver(EventWaiter)
 	go EventWaiter.Run()
 

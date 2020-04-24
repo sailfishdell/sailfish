@@ -59,10 +59,13 @@ type EventService struct {
 
 var GlobalEventService *EventService
 
-func New(ctx context.Context, cfg *viper.Viper, cfgMu *sync.RWMutex, d *domain.DomainObjects, instantiateSvc *testaggregate.Service, actionSvc actionService, uploadSvc uploadService) *EventService {
+func New(ctx context.Context, logger log.Logger, cfg *viper.Viper, cfgMu *sync.RWMutex, d *domain.DomainObjects, instantiateSvc *testaggregate.Service, actionSvc actionService, uploadSvc uploadService) *EventService {
 	EventPublisher := eventpublisher.NewEventPublisher()
 	d.EventBus.AddHandler(eh.MatchAnyEventOf(ExternalRedfishEvent, domain.RedfishResourceRemoved, ExternalMetricEvent), EventPublisher)
-	EventWaiter := eventwaiter.NewEventWaiter(eventwaiter.SetName("Event Service"), eventwaiter.NoAutoRun)
+	EventWaiter := eventwaiter.NewEventWaiter(
+		eventwaiter.SetName("Event Service"),
+		eventwaiter.NoAutoRun,
+		eventwaiter.WithLogger(logger))
 	EventPublisher.AddObserver(EventWaiter)
 	go EventWaiter.Run()
 
@@ -76,6 +79,7 @@ func New(ctx context.Context, cfg *viper.Viper, cfgMu *sync.RWMutex, d *domain.D
 			return instantiateSvc.Instantiate(name, params)
 		},
 		actionSvc: actionSvc,
+		logger:    logger,
 	}
 
 	if cfg.IsSet("eventsources") {
@@ -96,8 +100,7 @@ func New(ctx context.Context, cfg *viper.Viper, cfgMu *sync.RWMutex, d *domain.D
 
 // StartEventService will create a model, view, and controller for the eventservice, then start a goroutine to publish events
 //      If you want to save settings, hook up a mapper to the "default" view returned
-func (es *EventService) StartEventService(ctx context.Context, logger log.Logger, instantiateSvc *testaggregate.Service, params map[string]interface{}) *view.View {
-	es.logger = logger
+func (es *EventService) StartEventService(ctx context.Context, instantiateSvc *testaggregate.Service, params map[string]interface{}) *view.View {
 	es.addparam = func(input map[string]interface{}) (output map[string]interface{}) {
 		output = map[string]interface{}{}
 		for k, v := range params {
@@ -122,7 +125,7 @@ func (es *EventService) StartEventService(ctx context.Context, logger log.Logger
 	eh.RegisterCommand(func() eh.Command {
 		return &POST{es: es, d: es.d}
 	})
-	PublishRedfishEvents(ctx, log.With(logger, "module", "event_service"), esView.GetModel("default"), es.d.EventBus)
+	PublishRedfishEvents(ctx, log.With(es.logger, "module", "event_service"), esView.GetModel("default"), es.d.EventBus)
 
 	return esView
 }
