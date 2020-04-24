@@ -173,7 +173,7 @@ func init() {
 			for _, ee := range execExprSlice {
 				val, err := ee.Evaluate(mp.Params)
 				if err != nil {
-					logger.Error("Expression failed to evaluate", "parameters", mp.Params, "val", val)
+					logger.Error("Expression failed to evaluate", "parameters", mp.Params, "val", val, "err", err)
 					continue
 				}
 			}
