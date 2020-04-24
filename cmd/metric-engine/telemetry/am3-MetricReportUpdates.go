@@ -12,6 +12,7 @@ import (
 
 	"github.com/superchalupa/sailfish/cmd/metric-engine/metric"
 	log "github.com/superchalupa/sailfish/src/log"
+	"github.com/superchalupa/sailfish/src/looplab/event"
 )
 
 // "configuration" -- TODO: need to move to config file
@@ -58,11 +59,16 @@ type eventHandler interface {
 }
 
 // publishHelper will log/eat the error from PublishEvent since we can't do anything useful with it
-func publishHelper(logger log.Logger, bus eh.EventBus, event eh.Event) {
-	err := bus.PublishEvent(context.Background(), event)
+// IFF event passed is a SyncEvent, it will synchronously wait for it.
+// BE CAREFUL to not send sync events from AM3 handlers! High likelihood of unpredictable lockups.
+func publishHelper(logger log.Logger, bus eh.EventBus, evt eh.Event) {
+	event.PinSyncEvent(evt)
+	err := bus.PublishEvent(context.Background(), evt)
 	if err != nil {
 		logger.Crit("publish event", "err", err)
+		return
 	}
+	event.WaitSyncEvent(evt)
 }
 
 func backgroundTasks(logger log.Logger, bus eh.EventBus, shutdown chan struct{}) {
@@ -75,17 +81,19 @@ func backgroundTasks(logger log.Logger, bus eh.EventBus, shutdown chan struct{})
 	defer vacuumTicker.Stop()
 	defer optimizeTicker.Stop()
 	defer clockTicker.Stop()
+
+	// all these are Sync Events, no real value in having >1 in flight at a time
 	for {
 		select {
 		case <-cleanValuesTicker.C:
-			publishHelper(logger, bus, eh.NewEvent(DatabaseMaintenance, cleanValues, time.Now()))
+			publishHelper(logger, bus, event.NewSyncEvent(DatabaseMaintenance, cleanValues, time.Now()))
 		case <-vacuumTicker.C:
-			publishHelper(logger, bus, eh.NewEvent(DatabaseMaintenance, vacuum, time.Now()))
+			publishHelper(logger, bus, event.NewSyncEvent(DatabaseMaintenance, vacuum, time.Now()))
 		case <-optimizeTicker.C:
-			publishHelper(logger, bus, eh.NewEvent(DatabaseMaintenance, optimize, time.Now()))
-			publishHelper(logger, bus, eh.NewEvent(DatabaseMaintenance, deleteOrphans, time.Now())) // belt and suspenders
+			publishHelper(logger, bus, event.NewSyncEvent(DatabaseMaintenance, optimize, time.Now()))
+			publishHelper(logger, bus, event.NewSyncEvent(DatabaseMaintenance, deleteOrphans, time.Now())) // belt and suspenders
 		case <-clockTicker.C:
-			publishHelper(logger, bus, eh.NewEvent(PublishClock, nil, time.Now()))
+			publishHelper(logger, bus, event.NewSyncEvent(PublishClock, nil, time.Now()))
 		case <-shutdown:
 			return
 		}
