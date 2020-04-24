@@ -86,7 +86,7 @@ func main() {
 
 	logger := applog.InitializeApplicationLogging("")
 
-	domainObjs, _ := domain.NewDomainObjects()
+	domainObjs, _ := domain.NewDomainObjects(domain.WithLogger(logger))
 	// redo this later to observe events
 	//domainObjs.EventPublisher.AddObserver(logger)
 	domainObjs.CommandHandler = makeLoggingCmdHandler(logger, domainObjs.CommandHandler)

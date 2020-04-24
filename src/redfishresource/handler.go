@@ -44,16 +44,22 @@ type DomainObjects struct {
 
 	licensesMu sync.RWMutex
 	licenses   []string
+
+	logger log.Logger
 }
 
 // define the starting capacity
 //  	tuned to EC by default. about 330 default entries plus normal max 3k LCL entries
 var INITIAL_CAPACITY int = 3500
 
+type Option func(*DomainObjects) error
+
 // SetupDDDFunctions sets up the full Event Horizon domain
 // returns a handler exposing some of the components.
-func NewDomainObjects() (*DomainObjects, error) {
+func NewDomainObjects(options ...Option) (*DomainObjects, error) {
 	d := DomainObjects{}
+
+	d.ApplyOption(options...)
 
 	d.Tree = make(map[string]eh.UUID, INITIAL_CAPACITY)
 
@@ -61,13 +67,33 @@ func NewDomainObjects() (*DomainObjects, error) {
 	d.Repo = repo.NewRepo()
 
 	// Create the event bus that distributes events.
-	d.EventBus = eventbus.NewEventBus()
-	d.EventPublisher = eventpublisher.NewEventPublisher()
-	d.EventBus.AddHandler(eh.MatchAny(), d.EventPublisher)
+	if d.EventBus == nil {
+		d.EventBus = eventbus.NewEventBus()
+	}
 
-	d.EventWaiter = eventwaiter.NewEventWaiter(eventwaiter.SetName("Main"), eventwaiter.NoAutoRun)
-	d.EventPublisher.AddObserver(d.EventWaiter)
-	go d.EventWaiter.Run()
+	addPublisher := false
+	if d.EventPublisher == nil {
+		addPublisher = true
+		d.EventPublisher = eventpublisher.NewEventPublisher()
+	}
+
+	if addPublisher {
+		d.EventBus.AddHandler(eh.MatchAny(), d.EventPublisher)
+	}
+
+	addWaiter := false
+	if d.EventWaiter == nil {
+		addWaiter = true
+		d.EventWaiter = eventwaiter.NewEventWaiter(
+			eventwaiter.SetName("Main"),
+			eventwaiter.NoAutoRun,
+			eventwaiter.WithLogger(d.logger))
+		go d.EventWaiter.Run()
+	}
+
+	if addWaiter {
+		d.EventPublisher.AddObserver(d.EventWaiter)
+	}
 
 	// specific event bus to handle returns from http
 	d.HTTPResultsBus = eventbus.NewEventBus()
@@ -76,7 +102,7 @@ func NewDomainObjects() (*DomainObjects, error) {
 	d.EventBus.AddHandler(eh.MatchEvent(HTTPCmdProcessed), d.HTTPPublisher)
 
 	// hook up http waiter to the other bus for back compat
-	d.HTTPWaiter = eventwaiter.NewEventWaiter(eventwaiter.SetName("HTTP"), eventwaiter.NoAutoRun)
+	d.HTTPWaiter = eventwaiter.NewEventWaiter(eventwaiter.SetName("HTTP"), eventwaiter.NoAutoRun, eventwaiter.WithLogger(d.logger))
 	d.HTTPPublisher.AddObserver(d.HTTPWaiter)
 	go d.HTTPWaiter.Run()
 
@@ -111,6 +137,52 @@ func NewDomainObjects() (*DomainObjects, error) {
 	}
 
 	return &d, nil
+}
+
+type BusGetter interface {
+	GetBus() eh.EventBus
+	GetWaiter() *eventwaiter.EventWaiter
+	GetPublisher() eh.EventPublisher
+}
+
+func WithLogger(logger log.Logger) Option {
+	return func(d *DomainObjects) error {
+		d.logger = logger
+		return nil
+	}
+}
+
+func WithBus(input eh.EventBus) Option {
+	return func(d *DomainObjects) error {
+		d.EventBus = input
+		return nil
+	}
+}
+
+func WithWaiter(input *eventwaiter.EventWaiter) Option {
+	return func(d *DomainObjects) error {
+		d.EventWaiter = input
+		return nil
+	}
+}
+
+func WithPublisher(input eh.EventPublisher) Option {
+	return func(d *DomainObjects) error {
+		d.EventPublisher = input
+		return nil
+	}
+}
+
+// ApplyOption is run with all of the options given by the constructor, but can
+// also be used after construction to apply options
+func (d *DomainObjects) ApplyOption(options ...Option) error {
+	for _, o := range options {
+		err := o(d)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (d *DomainObjects) GetBus() eh.EventBus                  { return d.EventBus }
@@ -251,7 +323,7 @@ func (d *DomainObjects) ExpandURI(ctx context.Context, uri string) (*RedfishReso
 // Notify implements the Notify method of the EventObserver interface.
 func (d *DomainObjects) Notify(ctx context.Context, event eh.Event) {
 	logger := log.ContextLogger(ctx, "domain")
-	logger.Debug("EVENT", "event", event, "data", event.Data())
+	logger.Debug("EVENT", "event", event, "data", fmt.Sprintf("%+v", event.Data()))
 	if event.EventType() == RedfishResourceCreated {
 		if data, ok := event.Data().(*RedfishResourceCreatedData); ok {
 			logger.Info("Create URI", "URI", data.ResourceURI)
