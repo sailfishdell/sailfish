@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"runtime/debug"
 	"sync"
+	"time"
 
 	flag "github.com/spf13/pflag"
 	"github.com/spf13/viper"
@@ -113,7 +115,21 @@ func main() {
 		shutdownFns = append([]func(){shutdownFn}, shutdownFns...)
 	}
 
-	<-ctx.Done() // wait until everything is done (CTRL-C or other signal)
+	// aggressively free memory after working startup events in the background
+	time.Sleep(time.Second)
+	debug.FreeOSMemory()
+	time.Sleep(time.Second)
+	debug.FreeOSMemory()
+	t := time.Tick(time.Second * 30)
+untilExit:
+	for {
+		select {
+		case <-ctx.Done(): // wait until everything is done (CTRL-C or other signal)
+			break untilExit
+		case <-t:
+			debug.FreeOSMemory()
+		}
+	}
 
 	for _, fn := range shutdownFns {
 		fn()
