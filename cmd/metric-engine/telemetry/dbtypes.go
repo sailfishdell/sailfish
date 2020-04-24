@@ -1,6 +1,7 @@
 package telemetry
 
 import (
+	"bytes"
 	"database/sql/driver"
 	"encoding/json"
 	"errors"
@@ -68,6 +69,11 @@ var conversions []conversion = []conversion{
 }
 
 func (m *RedfishDuration) UnmarshalJSON(data []byte) error {
+	// for null json value in collection duration
+	if bytes.Compare([]byte("null"), data) == 0 {
+		return nil
+	}
+
 	matched := durationRe.FindAllSubmatch(data, -1)
 	*m += (RedfishDuration)(time.Duration(0))
 	if len(matched) == 0 {
