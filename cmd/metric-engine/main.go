@@ -32,6 +32,7 @@ type busComponents struct {
 type busIntf interface {
 	GetBus() eh.EventBus
 	GetWaiter() *eventwaiter.EventWaiter
+	GetPublisher() eh.EventPublisher
 }
 
 func (d *busComponents) GetBus() eh.EventBus                 { return d.EventBus }
